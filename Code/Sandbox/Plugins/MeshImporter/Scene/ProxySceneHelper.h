@@ -23,5 +23,3 @@ CSceneElementPhysProxies* GetSelectedPhysProxiesElement(CSceneElementCommon* pSe
 
 CSceneElementPhysProxies* FindSceneElementOfPhysProxies(CScene& scene, const SPhysProxies* pPhysProxies);
 CSceneElementProxyGeom* FindSceneElementOfProxyGeom(CScene& scene, const phys_geometry* pProxyGeom);
-
-

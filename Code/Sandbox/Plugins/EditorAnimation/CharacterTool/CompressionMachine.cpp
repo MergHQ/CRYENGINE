@@ -136,7 +136,6 @@ public:
 	{
 		m_description = "Preview for '";
 		m_description += m_animationPath;
-		;
 		m_description += "'";
 	}
 
@@ -159,10 +158,10 @@ public:
 			return eTaskResult_Failed;
 		}
 
-		char buffer[ICryPak::g_nMaxPath] = { 0 };
-		string filename = gEnv->pCryPak->AdjustFileName(m_createdFile.c_str(), buffer, 0);
-		m_outputFileSize = gEnv->pCryPak->GetFileSizeOnDisk(filename.c_str());
-		m_compressedCafSize = gEnv->pCryPak->FGetSize(m_animationPath.c_str(), true);
+		CryPathString filename;
+		gEnv->pCryPak->AdjustFileName(m_createdFile, filename, 0);
+		m_outputFileSize = gEnv->pCryPak->GetFileSizeOnDisk(filename);
+		m_compressedCafSize = gEnv->pCryPak->FGetSize(m_animationPath, true);
 		return eTaskResult_Completed;
 	}
 
@@ -269,6 +268,7 @@ static void FormatPreviewName(string* name, string* path, int index)
 CompressionMachine::CompressionMachine()
 	: m_state(eState_Idle)
 	, m_showOriginalAnimation(false)
+	, m_loop(false)
 	, m_previewReloadListener(new AnimationSetExtender(this))
 	, m_referenceReloadListener(new AnimationSetExtender(this))
 	, m_normalizedStartTime(0.0f)
@@ -908,4 +908,3 @@ const char* CompressionMachine::AnimationPathConsideringPreview(const char* inpu
 	return inputCaf;
 }
 }
-

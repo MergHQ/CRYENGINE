@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "TypeTraits.h"
+#include <CryType/TypeTraits.h>
 
 namespace Cry {
 namespace Type {
@@ -61,7 +61,7 @@ private:
 };
 
 template<typename TYPE, bool IS_SUPPORTED = std::is_copy_constructible<TYPE>::value>
-class CAdapater_CopyConstructor : public CDefaultConstructor
+class CAdapater_CopyConstructor : public CCopyConstructor
 {
 
 };
@@ -114,7 +114,7 @@ public:
 private:
 	static void Execute(void* pPlacement, void* pRHS)
 	{
-		const TYPE& value = *static_cast<const TYPE*>(pRHS);
+		TYPE& value = *static_cast<TYPE*>(pRHS);
 		new(pPlacement) TYPE(std::move(value));
 	}
 };
@@ -151,8 +151,157 @@ public:
 private:
 	static void Execute(void* pRHS)
 	{
-		TYPE* rhs = static_cast<TYPE*>(pRHS);
-		rhs->~TYPE();
+		reinterpret_cast<TYPE*>(pRHS)->~TYPE();
+	}
+};
+
+// Operator: Default new
+class CDefaultNewOperator
+{
+public:
+	typedef void*(* FuncPtr)();
+	constexpr CDefaultNewOperator(FuncPtr ptr = nullptr)
+		: m_ptr(ptr)
+	{}
+
+	operator bool() const { return m_ptr != nullptr; }
+	void* operator()() { return m_ptr(); }
+
+private:
+	FuncPtr m_ptr;
+};
+
+template<typename TYPE, bool IS_SUPPORTED = std::is_default_constructible<TYPE>::value>
+class CAdapter_DefaultNew : public CDefaultNewOperator
+{
+
+};
+
+template<typename TYPE>
+class CAdapter_DefaultNew<TYPE, true> : public CDefaultNewOperator
+{
+public:
+	constexpr CAdapter_DefaultNew()
+		: CDefaultNewOperator(&CAdapter_DefaultNew::Execute)
+	{}
+
+private:
+	static void* Execute()
+	{
+		return new TYPE();
+	}
+};
+
+// Operator: Delete
+class CDeleteOperator
+{
+public:
+	typedef void (* FuncPtr)(void*);
+	constexpr CDeleteOperator(FuncPtr ptr = nullptr)
+		: m_ptr(ptr)
+	{}
+
+	operator bool() const { return m_ptr != nullptr; }
+	void operator()(void* pAddress) { m_ptr(pAddress); }
+
+private:
+	FuncPtr m_ptr;
+};
+
+template<typename TYPE, bool IS_SUPPORTED = std::is_destructible<TYPE>::value>
+class CAdapter_Delete : public CDeleteOperator
+{
+
+};
+
+template<typename TYPE>
+class CAdapter_Delete<TYPE, true> : public CDeleteOperator
+{
+public:
+	constexpr CAdapter_Delete()
+		: CDeleteOperator(&CAdapter_Delete::Execute)
+	{}
+
+private:
+	static void Execute(void* pAddress)
+	{
+		TYPE* pObject = static_cast<TYPE*>(pAddress);
+		delete pObject;
+	}
+};
+
+// Operator: New Array
+class CNewArrayOperator
+{
+public:
+	typedef void*(* FuncPtr)(int count);
+	constexpr CNewArrayOperator(FuncPtr ptr = nullptr)
+		: m_ptr(ptr)
+	{}
+
+	operator bool() const { return m_ptr != nullptr; }
+	void* operator()(int count) { return m_ptr(count); }
+
+private:
+	FuncPtr m_ptr;
+};
+
+template<typename TYPE, bool IS_SUPPORTED = std::is_default_constructible<TYPE>::value>
+class CAdapter_NewArray : public CNewArrayOperator
+{
+
+};
+
+template<typename TYPE>
+class CAdapter_NewArray<TYPE, true> : public CNewArrayOperator
+{
+public:
+	constexpr CAdapter_NewArray()
+		: CNewArrayOperator(&CAdapter_NewArray::Execute)
+	{}
+
+private:
+	static void* Execute(int count)
+	{
+		return new TYPE[count];
+	}
+};
+
+// Operator: Delete Array
+class CDeleteArrayOperator
+{
+public:
+	typedef void (* FuncPtr)(void*);
+	constexpr CDeleteArrayOperator(FuncPtr ptr = nullptr)
+		: m_ptr(ptr)
+	{}
+
+	operator bool() const { return m_ptr != nullptr; }
+	void operator()(void* pAddress) { m_ptr(pAddress); }
+
+private:
+	FuncPtr m_ptr;
+};
+
+template<typename TYPE, bool IS_SUPPORTED = std::is_destructible<TYPE>::value>
+class CAdapter_DeleteArray : public CDeleteArrayOperator
+{
+
+};
+
+template<typename TYPE>
+class CAdapter_DeleteArray<TYPE, true> : public CDeleteArrayOperator
+{
+public:
+	constexpr CAdapter_DeleteArray()
+		: CDeleteArrayOperator(&CAdapter_DeleteArray::Execute)
+	{}
+
+private:
+	static void Execute(void* pAddress)
+	{
+		TYPE* pObjectArray = static_cast<TYPE*>(pAddress);
+		delete[]pObjectArray;
 	}
 };
 
@@ -192,6 +341,45 @@ private:
 		TYPE& lhs = *static_cast<TYPE*>(pLHS);
 		const TYPE& rhs = *static_cast<const TYPE*>(pRHS);
 		lhs = rhs;
+	}
+};
+
+// Operator: Move assign
+class CMoveAssignOperator
+{
+public:
+	typedef void (* FuncPtr)(void* pLHS, void* pRHS);
+	constexpr CMoveAssignOperator(FuncPtr ptr = nullptr)
+		: m_ptr(ptr)
+	{}
+
+	operator bool() const { return m_ptr != nullptr; }
+	void operator()(void* pLHS, void* pRHS) { m_ptr(pLHS, pRHS); }
+
+private:
+	FuncPtr m_ptr;
+};
+
+template<typename TYPE, bool IS_SUPPORTED = std::is_move_assignable<TYPE>::value>
+class CAdapter_MoveAssign : public CMoveAssignOperator
+{
+
+};
+
+template<typename TYPE>
+class CAdapter_MoveAssign<TYPE, true> : public CMoveAssignOperator
+{
+public:
+	constexpr CAdapter_MoveAssign()
+		: CMoveAssignOperator(&CAdapter_MoveAssign::Execute)
+	{}
+
+private:
+	static void Execute(void* pLHS, void* pRHS)
+	{
+		TYPE& lhs = *static_cast<TYPE*>(pLHS);
+		TYPE& rhs = *static_cast<TYPE*>(pRHS);
+		lhs = std::move(rhs);
 	}
 };
 

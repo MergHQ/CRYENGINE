@@ -2,38 +2,151 @@
 
 #include "StdAfx.h"
 #include "EffectAssetModel.h"
-#include "EffectAsset.h"
 
 #include <AssetSystem/Asset.h>
 
 #include <CryParticleSystem/IParticlesPfx2.h>
+#include <CrySerialization/IArchiveHost.h>
 
-namespace CryParticleEditor {
-
-CEffectAssetModel::CEffectAssetModel()
-	: m_nextUntitledAssetId(1)
+namespace CryParticleEditor 
 {
-}
 
-void CEffectAssetModel::MakeNewAsset()
+class CSession final : public IAssetEditingSession
 {
-	string untitledName = "Untitled";
-	untitledName += '0' + (m_nextUntitledAssetId / 10) % 10;
-	untitledName += '0' + m_nextUntitledAssetId % 10;
-	untitledName += "*";
-	++m_nextUntitledAssetId;
+public:
+	CSession(pfx2::IParticleEffect* pEffect)
+		:m_pEffect(pEffect)
+	{
+	}
 
-	pfx2::PParticleEffect pNewEffect = GetParticleSystem()->CreateEffect();
-	GetParticleSystem()->RenameEffect(pNewEffect, untitledName.c_str());
+	virtual const char* GetEditorName() const override
+	{
+		return "Particle Editor";
+	}
 
-	signalBeginEffectAssetChange();
+	virtual bool OnSaveAsset(IEditableAsset& asset) override
+	{
+		if (!m_pEffect)
+		{
+			return false;
+		}
 
-	m_pEffectAsset.reset(new CEffectAsset());
-	m_pEffectAsset->SetEffect(pNewEffect); // XXX Pointer type?
-	m_pEffectAsset->MakeNewComponent("%ENGINE%/EngineAssets/Particles/Default.pfxp");
+		const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(asset.GetMetadataFile()));
+		const string pfxFilePath = PathUtil::ReplaceExtension(basePath, "pfx"); // Relative to asset directory.
+		
+		if (!GetISystem()->GetIPak()->MakeDir(asset.GetFolder(), true))
+		{
+			return false;
+		}
 
-	signalEndEffectAssetChange();
-}
+		if (!Serialization::SaveJsonFile(pfxFilePath.c_str(), *m_pEffect))
+		{
+			return false;
+		}
+
+		// Get effect dependency and collect details information.
+		SetDetailsAndDependencies(asset);
+
+		asset.SetFiles({ pfxFilePath });
+		return true;
+	}
+
+	virtual void DiscardChanges(IEditableAsset& asset) override
+	{
+		if (!m_pEffect)
+		{
+			return;
+		}
+
+		const string pfxFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+		Serialization::LoadJsonFile(*m_pEffect, pfxFilePath.c_str());
+	}
+
+	virtual bool OnCopyAsset(INewAsset& asset) override
+	{
+		if (!m_pEffect)
+		{
+			return false;
+		}
+
+		_smart_ptr<pfx2::IParticleEffect> pEffect = DuplicateEffect(PathUtil::RemoveExtension(asset.GetMetadataFile()), m_pEffect);
+
+		CSession session(pEffect);
+		return session.OnSaveAsset(asset);
+	}
+
+	static pfx2::IParticleEffect* GetEffectFromAsset(CAsset* pAsset)
+	{
+		IAssetEditingSession* const pSession = pAsset->GetEditingSession();
+		if (!pSession || strcmp(pSession->GetEditorName(), "Particle Editor") != 0)
+		{
+			return nullptr;
+		}
+		return static_cast<CSession*>(pSession)->GetEffect();
+	}
+
+private:
+	pfx2::IParticleEffect* GetEffect() 
+	{
+		return m_pEffect.get();
+	}
+
+	void SetDetailsAndDependencies(IEditableAsset &asset) const
+	{
+		const size_t componentsCount = m_pEffect->GetNumComponents();
+		size_t totalFeaturesCount = 0;
+		std::vector<SAssetDependencyInfo> dependencies;
+		for (size_t component = 0; component < componentsCount; ++component)
+		{
+			const pfx2::IParticleComponent* pComponent = m_pEffect->GetComponent(component);
+			const size_t featuresCount = pComponent->GetNumFeatures();
+			totalFeaturesCount += featuresCount;
+			for (size_t feature = 0; feature < featuresCount; ++feature)
+			{
+				const pfx2::IParticleFeature* pFeature = pComponent->GetFeature(feature);
+				for (size_t resource = 0, resourcesCount = pFeature->GetNumResources(); resource < resourcesCount; ++resource)
+				{
+					const char* szResourceFilename = pFeature->GetResourceName(resource);
+					auto it = std::find_if(dependencies.begin(), dependencies.end(), [szResourceFilename](const auto& x)
+					{
+						return x.path.CompareNoCase(szResourceFilename);
+					});
+
+					if (it == dependencies.end())
+					{
+						dependencies.emplace_back(szResourceFilename, 1);
+					}
+					else // increment instance count
+					{
+						++(it->usageCount);
+					}
+				}
+			}
+		}
+		asset.SetDependencies(dependencies);
+
+		std::vector<std::pair<string, string>> details =
+		{
+			{ "componentsCount", string().Format("%d", componentsCount) },
+			{ "featuresCount",   string().Format("%d", totalFeaturesCount) },
+		};
+		asset.SetDetails(details);
+	}
+
+	static _smart_ptr<pfx2::IParticleEffect> DuplicateEffect(const char* szNewEffectName, pfx2::IParticleEffect* pOriginal)
+	{
+		pfx2::IParticleSystem* const pParticleSystem = GetParticleSystem();
+		_smart_ptr<pfx2::IParticleEffect> pEffect = pParticleSystem->CreateEffect();
+		pParticleSystem->RenameEffect(pEffect, szNewEffectName);
+		DynArray<char> buffer;
+		Serialization::SaveJsonBuffer(buffer, *pOriginal);
+		Serialization::LoadJsonBuffer(*pEffect, buffer.begin(), buffer.size());
+		return pEffect;
+	}
+
+private:
+	_smart_ptr<pfx2::IParticleEffect> m_pEffect;
+};
 
 bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
 {
@@ -44,29 +157,24 @@ bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
 		return false;
 	}
 
-	signalBeginEffectAssetChange();
-
-	const string pfxFilePath = pAsset->GetFile(0);
-
-	pfx2::PParticleEffect pEffect = GetParticleSystem()->FindEffect(pfxFilePath.c_str());
+	pfx2::PParticleEffect pEffect = CSession::GetEffectFromAsset(pAsset);
 	if (!pEffect)
 	{
-		pEffect = GetParticleSystem()->FindEffect(pfxFilePath.c_str(), true);
+		const char* const szPfxFilePath = pAsset->GetFile(0);
+		pEffect = GetParticleSystem()->FindEffect(szPfxFilePath, true);
 		if (!pEffect)
 			return false;
 	}
-	else
-	{
-		// Reload effect from file every time it is opened, since it might be that the effect has changed
-		// in memory. Opening means reading the current state from disk.
-		Serialization::LoadJsonFile(*pEffect, pfxFilePath.c_str());
-	}
 
-	m_pEffectAsset.reset(new CEffectAsset());
-	m_pEffectAsset->SetAsset(pAsset);
-	m_pEffectAsset->SetEffect(pEffect.get()); // XXX Pointer type?
-
+	signalBeginEffectAssetChange();
+	m_pAsset = pAsset;
+	SetEffect(pEffect);
 	signalEndEffectAssetChange();
+
+	m_pModel->signalChanged.Connect([this]()
+	{
+		SetModified(true);
+	});
 
 	return true;
 }
@@ -74,14 +182,35 @@ bool CEffectAssetModel::OpenAsset(CAsset* pAsset)
 void CEffectAssetModel::ClearAsset()
 {
 	signalBeginEffectAssetChange();
-	m_pEffectAsset.reset();
+	m_pAsset = nullptr;
+	SetEffect(nullptr);
 	signalEndEffectAssetChange();
 }
 
-CEffectAsset* CEffectAssetModel::GetEffectAsset()
+std::unique_ptr<IAssetEditingSession> CEffectAssetModel::CreateEditingSession()
 {
-	return m_pEffectAsset.get();
+	return std::make_unique<CSession>(m_pEffect);
 }
 
+const char* CEffectAssetModel::GetName() const
+{
+	return m_pEffect ? m_pEffect->GetName() : "";
 }
 
+void CEffectAssetModel::SetEffect(pfx2::IParticleEffect* pEffect)
+{
+	m_pEffect = pEffect;
+	m_pModel = pEffect ? stl::make_unique<CParticleGraphModel>(*pEffect) : nullptr;
+}
+
+bool CEffectAssetModel::MakeNewComponent(const char* szTemplateName)
+{
+	if (m_pModel)
+	{
+		return m_pModel->CreateNode(szTemplateName, QPointF()) != nullptr;
+	}
+	return false;
+}
+
+
+}

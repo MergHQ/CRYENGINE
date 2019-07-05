@@ -42,7 +42,7 @@ typedef vector<BlendSpaceDimension> BlendSpaceDimensions;
 
 struct BlendSpaceAnnotation
 {
-	vector<CryGUID> exampleGuids;
+	vector<CryGUID> m_exampleSerializedGuids;
 
 	void Serialize(IArchive& ar);
 };
@@ -266,4 +266,3 @@ struct CombinedBlendSpace
 };
 
 }
-

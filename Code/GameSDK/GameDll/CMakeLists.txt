@@ -89,6 +89,38 @@ add_sources("CryGameSDKDLL_uber_0.cpp"
 		"AI/RateOfDeath/RateOfDeathSimple.cpp"
 		"AI/RateOfDeath/RateOfDeathHelper.h"
 		"AI/RateOfDeath/RateOfDeathSimple.h"
+	SOURCE_GROUP "AI\\\\Action"
+		"AI/Action/AIProxy.cpp"
+		"AI/Action/AIGroupProxy.cpp"
+		"AI/Action/AIProxyManager.cpp"
+		"AI/Action/CommunicationHandler.cpp"
+		"AI/Action/AIHandler.cpp"
+		"AI/Action/AIFaceManager.cpp"
+		"AI/Action/ScriptBind_AIAction.cpp"
+		"AI/Action/AIProxy.h"
+		"AI/Action/AIGroupProxy.h"
+		"AI/Action/AIProxyManager.h"
+		"AI/Action/CommunicationHandler.h"
+		"AI/Action/AIHandler.h"
+		"AI/Action/AIFaceManager.h"
+		"AI/Action/ScriptBind_AIAction.h"
+	SOURCE_GROUP "AI\\\\Action\\\\Range Signaling"
+		"AI/Action/RangeSignalingSystem/AngleAlert.cpp"
+		"AI/Action/RangeSignalingSystem/PersonalRangeSignaling.cpp"
+		"AI/Action/RangeSignalingSystem/Range.cpp"
+		"AI/Action/RangeSignalingSystem/RangeSignaling.cpp"
+		"AI/Action/RangeSignalingSystem/AngleAlert.h"
+		"AI/Action/RangeSignalingSystem/PersonalRangeSignaling.h"
+		"AI/Action/RangeSignalingSystem/Range.h"
+		"AI/Action/RangeSignalingSystem/RangeSignaling.h"
+	SOURCE_GROUP "AI\\\\Action\\\\Signal Timers"
+		"AI/Action/SignalTimers/PersonalSignalTimer.cpp"
+		"AI/Action/SignalTimers/SignalTimers.cpp"
+		"AI/Action/SignalTimers/PersonalSignalTimer.h"
+		"AI/Action/SignalTimers/SignalTimers.h"
+	SOURCE_GROUP "AI\\\\Action\\\\Mannequin"
+		"AI/Action/Mannequin/AnimActionTriStateSDK.cpp"
+		"AI/Action/Mannequin/AnimActionTriStateSDK.h"
 )
 
 add_sources("CryGameSDKDLL_uber_1.cpp"
@@ -959,7 +991,6 @@ add_sources("CryGameSDKDLL_uber_22.cpp"
 add_sources("CryGameSDKDLL_uber_23.cpp"
 	PROJECTS CryGameSDK
 	SOURCE_GROUP "Utility"
-		"LaptopUtil.cpp"
 		"NetInputChainDebug.cpp"
 		"Utility/Wiggle.cpp"
 		"ShotDebug.cpp"
@@ -971,7 +1002,6 @@ add_sources("CryGameSDKDLL_uber_23.cpp"
 		"ScreenResolution.cpp"
 		"CryMacros.h"
 		"Utility/Hermite.h"
-		"LaptopUtil.h"
 		"NetInputChainDebug.h"
 		"Utility/Wiggle.h"
 		"EventDistributor.h"
@@ -1055,6 +1085,31 @@ add_sources("CryGameSDKDLL_uber_24.cpp"
 		"VehicleMovementStdTank.h"
 		"VehicleMovementHelicopter.h"
 		"VehicleMovementStdWheeled.h"
+)
+
+add_sources("CryGameSDKDLL_uber_25.cpp"
+	PROJECTS CryGameSDK
+	SOURCE_GROUP "Dialog System"
+		"DialogSystem/DialogActorContext.cpp"
+		"DialogSystem/DialogLoader.cpp"
+		"DialogSystem/DialogLoaderMK2.cpp"
+		"DialogSystem/DialogScript.cpp"
+		"DialogSystem/DialogSession.cpp"
+		"DialogSystem/DialogSystem.cpp"
+		"DialogSystem/ScriptBind_DialogSystem.cpp"
+		"SubtitleManager.cpp"
+		"DialogSystem/DialogActorContext.h"
+		"DialogSystem/DialogCommon.h"
+		"DialogSystem/DialogLoader.h"
+		"DialogSystem/DialogLoaderMK2.h"
+		"DialogSystem/DialogScript.h"
+		"DialogSystem/DialogSession.h"
+		"DialogSystem/DialogSystem.h"
+		"DialogSystem/ScriptBind_DialogSystem.h"
+		"SubtitleManager.h"
+		"DialogSystem/DialogQueuesManager.h"
+		"DialogSystem/DialogQueuesManager.cpp"
+		"DialogSystem/FlowDialogNode.cpp"
 )
 
 add_sources("CryGameSDKDLL_uber_3.cpp"
@@ -1359,6 +1414,7 @@ end_sources()
 #END-FILE-LIST
 
 add_subdirectory(${CRYENGINE_DIR}/Code/CryPlugins/CryLobby "${CMAKE_CURRENT_BINARY_DIR}/CryLobby")
+add_subdirectory(${CRYENGINE_DIR}/Code/CryPlugins/CryPerceptionSystem "${CMAKE_CURRENT_BINARY_DIR}/CryPerceptionSystem")
 
 CryGameModule(CryGameSDK PCH "StdAfx.cpp" SOLUTION_FOLDER "Projects/GameSDK")
 
@@ -1367,7 +1423,7 @@ target_include_directories( ${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEn
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryLobby )
 target_link_libraries( ${THIS_PROJECT} PRIVATE CryPerceptionSystem )
 
-if (WIN32 OR WIN64)
+if (WINDOWS)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE shell32 Gdi32  )
 elseif(ORBIS)
 	deploy_runtime_dir(../Resources/orbis/sce_sys app/sce_sys)
@@ -1394,4 +1450,52 @@ elseif(DURANGO)
 	)
 elseif(ANDROID)
 	target_link_libraries(${THIS_PROJECT} PRIVATE CryAction)
+endif()
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-parentheses
+		-Wno-reorder
+		-Wno-unused-value
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-unused-private-field
+		-Wno-multichar
+		-Wno-empty-body
+		-Wno-unused-const-variable
+		-Wno-switch
+		-Wno-unused-function
+		-Wno-char-subscripts
+		-Wno-c++11-narrowing
+		-Wno-address-of-packed-member
+		-Wno-invalid-offsetof
+		-Wno-dynamic-class-memaccess
+		-Wno-overloaded-virtual
+		-Wno-writable-strings
+		-Wno-comment
+	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-sign-compare
+		-Wno-ignored-attributes
+		-Wno-int-in-bool-context
+		-Wno-unused-but-set-variable
+		-Wno-misleading-indentation
+		-Wno-logical-not-parentheses
+		-Wno-unknown-pragmas
+		-Wno-maybe-uninitialized
+		-Wno-strict-aliasing
+		-Wno-uninitialized
+		-Wno-unused-const-variable
+		-Wno-multichar
+		-Wno-char-subscripts
+		-Wno-narrowing
+		-Wno-parentheses
+		-Wno-comment
+		-Wno-address
+		-Wno-format
+		-Wno-switch
+	)
 endif()

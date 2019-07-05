@@ -161,4 +161,3 @@ void CTimeEditControl::keyPressEvent(QKeyEvent* event)
 	}
 	QLineEdit::keyPressEvent(event);
 }
-

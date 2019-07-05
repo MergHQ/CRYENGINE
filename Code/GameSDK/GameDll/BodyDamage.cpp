@@ -3,9 +3,10 @@
 #include "StdAfx.h"
 #include "BodyDamage.h"
 #include "BodyManagerCVars.h"
-
 #include "Actor.h"
 #include "GameRules.h"
+#include "Game.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 #define BODYDAMAGE_LIVING_ENTITY_CAPSULE_PARTID 100
 

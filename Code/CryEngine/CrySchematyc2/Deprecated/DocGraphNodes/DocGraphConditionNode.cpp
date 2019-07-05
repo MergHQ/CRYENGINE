@@ -75,7 +75,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphConditionNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
 		CDocGraphNodeBase::AddOutput("True", EScriptGraphPortFlags::Execute);
@@ -218,7 +218,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphConditionNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Serialize(archive);
 
@@ -383,19 +383,19 @@ namespace Schematyc2
 			const IScriptFile& file = CDocGraphNodeBase::GetFile();
 			const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
 			CDomainContext     domainContext(SDomainContextScope(&file, graph.GetScopeGUID()));
-			if(IGlobalFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetGlobalFunction(refGUID))
+			if(gEnv->pSchematyc2->GetEnvRegistry().GetGlobalFunction(refGUID) != nullptr)
 			{
 				return EConditionType::EnvGlobal;
 			}
-			else if(IComponentMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetComponentMemberFunction(refGUID))
+			else if(gEnv->pSchematyc2->GetEnvRegistry().GetComponentMemberFunction(refGUID) != nullptr)
 			{
 				return EConditionType::EnvComponent;
 			}
-			else if(IActionMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetActionMemberFunction(refGUID))
+			else if(gEnv->pSchematyc2->GetEnvRegistry().GetActionMemberFunction(refGUID) != nullptr)
 			{
 				return EConditionType::EnvAction;
 			}
-			else if(const IDocGraph* pGraph = domainContext.GetDocGraph(refGUID))
+			else if(domainContext.GetDocGraph(refGUID) != nullptr)
 			{
 				return EConditionType::Script;
 			}
@@ -566,10 +566,8 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphConditionNode::CompileInputs(IDocGraphNodeCompiler& compiler) const
 	{
-		const IScriptFile& file = CDocGraphNodeBase::GetFile();
-		const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
-		const SGUID        contextGUID = CDocGraphNodeBase::GetContextGUID();
-		const SGUID        refGUID = CDocGraphNodeBase::GetRefGUID();
+		const SGUID contextGUID = CDocGraphNodeBase::GetContextGUID();
+		const SGUID refGUID = CDocGraphNodeBase::GetRefGUID();
 		compiler.CreateStackFrame(*this, EStackFrame::FirstFunctionInput);
 		switch(m_conditionType)
 		{
@@ -581,7 +579,7 @@ namespace Schematyc2
 					if(DocGraphConditionNodeUtils::FunctionIsCondition(*pFunction))
 					{
 						DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstFunctionInput, m_inputValues, compiler);
-						compiler.CallGlobalFunction(refGUID);
+						compiler.CallGlobalFunction(refGUID, CDocGraphNodeBase::GetGUID());
 					}
 				}
 				break;
@@ -597,10 +595,15 @@ namespace Schematyc2
 						SCHEMATYC2_SYSTEM_ASSERT(componentInstanceIdx != INVALID_INDEX);
 						if(componentInstanceIdx != INVALID_INDEX)
 						{
+#ifdef SCHEMATYC2_ASSERTS_ENABLED
+							stack_string guidString;
+							StringUtils::SysGUIDToString(CDocGraphNodeBase::GetGUID().sysGUID, guidString);
+							SCHEMATYC2_SYSTEM_ASSERT_MESSAGE(pFunction->GetComponentGUID() == compiler.GetLibClass().GetComponentInstance(componentInstanceIdx)->GetComponentGUID(), "Condition %s in %s from component has invalid component guid. GUID: %s", pFunction->GetName(), pFunction->GetFileName(), guidString.c_str());
+#endif // SCHEMATYC2_ASSERTS_ENABLED
 							const CAny<uint32> componentIdx = MakeAny(static_cast<uint32>(componentInstanceIdx));
-							compiler.Push(componentIdx);
+							compiler.Push(componentIdx, SGUID(), "");
 							DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstFunctionInput, m_inputValues, compiler);
-							compiler.CallComponentMemberFunction(refGUID);
+							compiler.CallComponentMemberFunction(refGUID, CDocGraphNodeBase::GetGUID());
 						}
 					}
 				}
@@ -617,10 +620,15 @@ namespace Schematyc2
 						SCHEMATYC2_SYSTEM_ASSERT(actionInstanceIdx != INVALID_INDEX);
 						if(actionInstanceIdx != INVALID_INDEX)
 						{
+#ifdef SCHEMATYC2_ASSERTS_ENABLED
+							stack_string guidString;
+							StringUtils::SysGUIDToString(CDocGraphNodeBase::GetGUID().sysGUID, guidString);
+							SCHEMATYC2_SYSTEM_ASSERT_MESSAGE(pFunction->GetActionGUID() == compiler.GetLibClass().GetActionInstance(actionInstanceIdx)->GetActionGUID(), "Condition %s in %s from action has invalid action guid. GUID: %s", pFunction->GetName(), pFunction->GetFileName(), guidString.c_str());
+#endif // SCHEMATYC2_ASSERTS_ENABLED
 							const CAny<uint32> actionIdx = MakeAny(static_cast<uint32>(actionInstanceIdx));
-							compiler.Push(actionIdx);
+							compiler.Push(actionIdx, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::FirstFunctionInput));
 							DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstFunctionInput, m_inputValues, compiler);
-							compiler.CallActionMemberFunction(refGUID);
+							compiler.CallActionMemberFunction(refGUID, CDocGraphNodeBase::GetGUID());
 						}
 					}
 				}
@@ -632,7 +640,7 @@ namespace Schematyc2
 				if(libFunctionId != LibFunctionId::s_invalid)
 				{
 					DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstFunctionInput, m_inputValues, compiler);
-					compiler.CallLibFunction(libFunctionId);
+					compiler.CallLibFunction(libFunctionId, CDocGraphNodeBase::GetGUID());
 				}
 				break;
 			}

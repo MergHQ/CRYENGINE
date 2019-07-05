@@ -3,7 +3,8 @@
 #include "StdAfx.h"
 #include "FileMonitorBase.h"
 
-#include "AudioControlsEditorPlugin.h"
+#include <IEditor.h>
+#include <CryString/CryPath.h>
 
 namespace ACE
 {
@@ -26,7 +27,10 @@ CFileMonitorBase::~CFileMonitorBase()
 //////////////////////////////////////////////////////////////////////////
 void CFileMonitorBase::OnFileChange(char const* szFileName, EChangeType type)
 {
-	start(m_delay);
+	if (_stricmp(PathUtil::GetExt(szFileName), "cryasset") != 0)
+	{
+		start(m_delay);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

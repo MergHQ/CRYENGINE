@@ -9,10 +9,11 @@
 #include "FaceEffectorLibrary.h"
 #include "FaceAnimSequence.h"
 #include "FaceJoystick.h"
+#include "../CharacterInstance.h"
 #include <CryCore/Containers/VectorMap.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/CGF/CryHeaders.h>
-#include "../CharacterInstance.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CFacialAnimationContext
@@ -469,7 +470,7 @@ void CFacialAnimationContext::AnimatePlayingSequences(const QuatTS& rAnimLocatio
 //////////////////////////////////////////////////////////////////////////
 void CFacialAnimationContext::PlaySequence(CFacialAnimSequence* pSequence, bool bExclusive, bool bLooping)
 {
-	assert(pSequence);
+	CRY_ASSERT(pSequence);
 
 	if (bExclusive)
 	{
@@ -545,11 +546,13 @@ void CFacialAnimationContext::StopSequence(CFacialAnimSequence* pSequence)
 		}
 	}
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	if (Console::GetInst().ca_DebugFacial)
 	{
 		const char* szSequenceName = pSequence ? pSequence->GetName() : "NULL";
 		CryLogAlways("Stop Facial Sequence %s", szSequenceName);
 	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -11,6 +11,8 @@ and be the sole place in the game that loads and unloads localization tags
 
 #pragma once
 
+struct IConsoleCmdArgs;
+
 class CGameLocalizationManager
 {
 public:

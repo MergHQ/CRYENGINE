@@ -8,7 +8,7 @@ namespace CryEngine
 	/// Flags that can be used to set the parameters of dynamic lights.
 	/// </summary>
 	[System.Flags]
-	public enum DynamicLightFlags
+	public enum DynamicLightFlags : uint
 	{
 		/// <summary>
 		/// Flag for AreaSpecTex.
@@ -57,7 +57,7 @@ namespace CryEngine
 		/// <summary>
 		/// Flag that indicates that this light is an area light.
 		/// </summary>
-		AreaLight = eDynamicLightFlags.DLF_AREA_LIGHT,
+		AreaLight = eDynamicLightFlags.DLF_AREA,
 		/// <summary>
 		/// Flag that indicates that this light is used for SVOGI.
 		/// </summary>
@@ -527,7 +527,7 @@ namespace CryEngine
 		/// <summary>
 		/// The ID of the entity.
 		/// </summary>
-		public EntitySystem.EntityId EntityId
+		public EntityId EntityId
 		{
 			get
 			{

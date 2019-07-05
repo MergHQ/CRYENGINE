@@ -5,8 +5,11 @@
 #include "LensFlareUtil.h"
 #include "LensFlareItem.h"
 #include "Objects/EntityObject.h"
+#include "Objects/SelectionGroup.h"
 #include "LensFlareEditor.h"
 #include "Viewport.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
 
 BEGIN_MESSAGE_MAP(CLensFlareLightEntityTree, CXTTreeCtrl)
 ON_NOTIFY_REFLECT(NM_DBLCLK, OnTvnItemDoubleClicked)
@@ -15,14 +18,14 @@ END_MESSAGE_MAP()
 CLensFlareLightEntityTree::CLensFlareLightEntityTree()
 {
 	CLensFlareEditor::GetLensFlareEditor()->RegisterLensFlareItemChangeListener(this);
-	GetIEditorImpl()->GetObjectManager()->AddObjectEventListener(functor(*this, &CLensFlareLightEntityTree::OnObjectEvent));
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.Connect(this, &CLensFlareLightEntityTree::OnObjectEvent);
 	m_pLensFlareItem = NULL;
 }
 
 CLensFlareLightEntityTree::~CLensFlareLightEntityTree()
 {
 	CLensFlareEditor::GetLensFlareEditor()->UnregisterLensFlareItemChangeListener(this);
-	GetIEditorImpl()->GetObjectManager()->RemoveObjectEventListener(functor(*this, &CLensFlareLightEntityTree::OnObjectEvent));
+	GetIEditorImpl()->GetObjectManager()->signalObjectsChanged.DisconnectObject(this);
 }
 
 void CLensFlareLightEntityTree::OnLensFlareChangeItem(CLensFlareItem* pLensFlareItem)
@@ -50,33 +53,43 @@ void CLensFlareLightEntityTree::OnLensFlareDeleteItem(CLensFlareItem* pLensFlare
 	}
 }
 
-void CLensFlareLightEntityTree::OnObjectEvent(CBaseObject* pObject, int nEvent)
+void CLensFlareLightEntityTree::OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& event)
 {
-	if (!pObject || !pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-		return;
-
-	switch (nEvent)
+	for (const CBaseObject* pObject : objects)
 	{
-	case OBJECT_ON_RENAME:
-	case OBJECT_ON_DELETE:
+		if (!pObject || !pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
+			continue;
+
+		switch (event.m_type)
+		{
+		case OBJECT_ON_RENAME:
+		{
+			HTREEITEM hItem = FindItem(GetRootItem(), pObject);
+
+			if (!hItem)
+				return;
+
+			SetItemText(hItem, pObject->GetName());
+		}
+		break;
+		case OBJECT_ON_DELETE:
 		{
 			HTREEITEM hItem = FindItem(GetRootItem(), pObject);
 			if (!hItem)
 				return;
-			if (nEvent == OBJECT_ON_RENAME)
-				SetItemText(hItem, pObject->GetName());
-			else
-				DeleteItem(hItem);
+
+			DeleteItem(hItem);
 		}
 		break;
 
-	case OBJECT_ON_ADD:
-		AddLightEntity((CEntityObject*)pObject);
-		break;
+		case OBJECT_ON_ADD:
+			AddLightEntity(static_cast<const CEntityObject*>(pObject));
+			break;
+		}
 	}
 }
 
-HTREEITEM CLensFlareLightEntityTree::FindItem(HTREEITEM hStartItem, CBaseObject* pObject) const
+HTREEITEM CLensFlareLightEntityTree::FindItem(HTREEITEM hStartItem, const CBaseObject* pObject) const
 {
 	HTREEITEM hItem = hStartItem;
 
@@ -96,7 +109,7 @@ HTREEITEM CLensFlareLightEntityTree::FindItem(HTREEITEM hStartItem, CBaseObject*
 	return NULL;
 }
 
-void CLensFlareLightEntityTree::AddLightEntity(CEntityObject* pEntity)
+void CLensFlareLightEntityTree::AddLightEntity(const CEntityObject* pEntity)
 {
 	if (pEntity == NULL || m_pLensFlareItem == NULL)
 		return;
@@ -146,7 +159,5 @@ void CLensFlareLightEntityTree::OnTvnItemDoubleClicked(NMHDR* pNMHDR, LRESULT* p
 		}
 	}
 
-	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 	GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
 }
-

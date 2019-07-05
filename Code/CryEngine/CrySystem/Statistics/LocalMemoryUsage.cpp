@@ -32,10 +32,11 @@
 #include "LocalMemoryUsage.h"
 
 #include <CrySystem/ITimer.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
 
 //#define MAX_LODS 6										// I want an engine-wide const :-(
 #define MAX_SLOTS  100                // GetSlotCount() is not working :-(
@@ -391,7 +392,8 @@ CLocalMemoryUsage::STextureInfo::~STextureInfo()
 
 void CLocalMemoryUsage::STextureInfo::CheckOnAllSectorsP2()
 {
-	int x, y, nMip, nStreamableMipNr, memoryUsage, xOldMemoryUsage, xOldPieces;
+	int x, y, memoryUsage, xOldMemoryUsage;
+	int8 nMip, nStreamableMipNr, xOldPieces;
 	bool nonZero;
 	ITexture* pTexture;
 
@@ -414,7 +416,7 @@ void CLocalMemoryUsage::STextureInfo::CheckOnAllSectorsP2()
 				if (nonZero)    // One more row
 				{
 					pTexture = m_pTexture;
-					nMip = max(0, pTexture->StreamCalculateMipsSigned(*pMipFactor));
+					nMip = pTexture->StreamCalculateMips(*pMipFactor);
 					memoryUsage = pTexture->GetStreamableMemoryUsage(nMip);
 					nStreamableMipNr = pTexture->GetStreamableMipNumber() - nMip;
 					sector->m_memoryUsage_Textures += memoryUsage;
@@ -709,7 +711,6 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 	f32 fColorOK[4] = { LOCALMEMORY_FCOLOR_OK, 1 };
 	f32 fColorWarning[4] = { LOCALMEMORY_FCOLOR_WARNING, 1 };
 	f32 fColorError[4] = { LOCALMEMORY_FCOLOR_ERROR, 1 };
-	f32 fColorOther[4] = { LOCALMEMORY_FCOLOR_OTHER, 1 };
 
 	f32* pColor;
 	Vec3 v0, v1, v2, v3, v4, vTextureDiagram, vTextureDiagram2, vGeometryDiagram, vGeometryDiagram2;
@@ -802,6 +803,7 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 						{
 							if (xDebug == x && yDebug == y)
 							{
+#if !defined(EXCLUDE_NORMAL_LOG)
 								for (TTextureMap::iterator it = m_globalTextures.begin(); it != m_globalTextures.end(); ++it)
 								{
 									STextureInfo* textureObjInfo = &it->second;
@@ -813,6 +815,7 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 										CryLog("Texture: %s %dX%d mipfactor:%.4f", pTexture->GetName(), pTexture->GetWidth(), pTexture->GetHeight(), mipFactor);
 									}
 								}
+#endif
 								sys_LocalMemoryLogText = false;   //Log only once!
 							}
 						}
@@ -838,9 +841,6 @@ void CLocalMemoryUsage::OnRender(IRenderer* pRenderer, const CCamera* camera)
 				}
 			}
 
-			float localMemoryTextureStreamingSpeedLimit = sys_LocalMemoryTextureStreamingSpeedLimit * 1024.f * 1024.f;
-			float localMemoryStatObjStreamingSpeedLimit = sys_LocalMemoryGeometryStreamingSpeedLimit * 1024.f * 1024.f;
-
 			sector++;
 		}
 	}
@@ -865,13 +865,13 @@ void CLocalMemoryUsage::OnUpdate()
 	m_LastCallTime = actTime;
 
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Start");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Start");
 		//StartChecking(RectI(0,0,m_sectorNr.x, m_sectorNr.y));
 		StartChecking(m_actDrawedSectors);
 	}
 
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - CollectGeometry P1");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - CollectGeometry P1");
 		CollectGeometryP1();
 	}
 	{
@@ -898,7 +898,7 @@ void CLocalMemoryUsage::OnUpdate()
 	}
 
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Materials P2");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Materials P2");
 		//We must iterate on materials first
 		for (TMaterialMap::iterator it = m_globalMaterials.begin(); it != m_globalMaterials.end(); ++it)
 		{
@@ -906,14 +906,14 @@ void CLocalMemoryUsage::OnUpdate()
 		}
 	}
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Textures P2");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Textures P2");
 		for (TTextureMap::iterator it = m_globalTextures.begin(); it != m_globalTextures.end(); ++it)
 		{
 			it->second.CheckOnAllSectorsP2();
 		}
 	}
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - StatObjects P2");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - StatObjects P2");
 		for (TStatObjMap::iterator it = m_globalStatObjs.begin(); it != m_globalStatObjs.end(); ++it)
 		{
 			it->second.CheckOnAllSectorsP2();
@@ -928,7 +928,7 @@ void CLocalMemoryUsage::OnUpdate()
 
 void CLocalMemoryUsage::DeleteUnusedResources()
 {
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Deleting unused resources");
+	CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! LocalMemoryUsege::Update - Deleting unused resources");
 
 	// Clear the used flags
 	for (TStatObjMap::iterator it = m_globalStatObjs.begin(); it != m_globalStatObjs.end(); ++it)
@@ -991,7 +991,6 @@ void CLocalMemoryUsage::DeleteUnusedResources()
 			}
 		}
 	}
-	/*
 	   /*
 	   for( TTextureMap::iterator it = m_globalTextures.begin(); it != m_globalTextures.end(); ++it )
 	    it->second.m_used = false;
@@ -1047,21 +1046,21 @@ void CLocalMemoryUsage::StartChecking(const RectI& actProcessedSectors)
 	{
 		for (TTextureMap::iterator it = m_globalTextures.begin(); it != m_globalTextures.end(); ++it)
 		{
-			//CRY_PROFILE_REGION(PROFILE_SYSTEM, "LocalMemoryUsege::StartChecking - Textures");
+			//CRY_PROFILE_SECTION(PROFILE_SYSTEM, "LocalMemoryUsege::StartChecking - Textures");
 			it->second.StartChecking();
 		}
 	}
 	{
 		for (TMaterialMap::iterator it = m_globalMaterials.begin(); it != m_globalMaterials.end(); ++it)
 		{
-			//CRY_PROFILE_REGION(PROFILE_SYSTEM, "LocalMemoryUsege::StartChecking - Materials");
+			//CRY_PROFILE_SECTION(PROFILE_SYSTEM, "LocalMemoryUsege::StartChecking - Materials");
 			it->second.StartChecking();
 		}
 	}
 	{
 		for (TStatObjMap::iterator it = m_globalStatObjs.begin(); it != m_globalStatObjs.end(); ++it)
 		{
-			//CRY_PROFILE_REGION(PROFILE_SYSTEM, "LocalMemoryUsege::StartChecking - StatObjects");
+			//CRY_PROFILE_SECTION(PROFILE_SYSTEM, "LocalMemoryUsege::StartChecking - StatObjects");
 			it->second.StartChecking();
 		}
 	}
@@ -1098,8 +1097,6 @@ void CLocalMemoryUsage::CollectGeometryP1()
 		dwCount += p3DEngine->GetObjectsByType(eERType_Character, &renderNodes[dwCount]);
 		dwCount += p3DEngine->GetObjectsByType(eERType_MovableBrush, &renderNodes[dwCount]);
 
-		AABB objBox;
-
 		for (uint32 dwI = 0; dwI < dwCount; ++dwI)
 		{
 			IRenderNode* pRenderNode = renderNodes[dwI];
@@ -1134,8 +1131,8 @@ void CLocalMemoryUsage::CollectGeometryP1()
 				objScale = max(0.001f, ((IFogVolumeRenderNode*)pRenderNode)->GetMatrix().GetColumn0().GetLength());
 			}
 
+			const AABB objBox = pRenderNode->GetBBox();
 			float maxViewDist = pRenderNode->m_fWSMaxViewDist;
-			pRenderNode->FillBBox(objBox);
 
 			IMaterial* pRenderNodeMat = pRenderNode->GetMaterialOverride();
 
@@ -1193,7 +1190,7 @@ CLocalMemoryUsage::SStatObjInfo* CLocalMemoryUsage::CheckStatObjP1(IStatObj* pSt
 	else
 	{
 		{
-			CRY_PROFILE_REGION(PROFILE_SYSTEM, "! CLocalMemoryUsage::CheckStatObjP1 HASH");
+			CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! CLocalMemoryUsage::CheckStatObjP1 HASH");
 			PREFAST_SUPPRESS_WARNING(6262)
 			pStatObjInfo = &m_globalStatObjs[(INT_PTR)pStatObj];
 		}
@@ -1381,7 +1378,7 @@ void CLocalMemoryUsage::CheckMaterialP1(IMaterial* pMaterial, AABB bounding, flo
 		else
 		{
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "! CLocalMemoryUsage::CheckMaterialP1 HASH");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! CLocalMemoryUsage::CheckMaterialP1 HASH");
 				PREFAST_SUPPRESS_WARNING(6262)
 				pMaterialInfo = &m_globalMaterials[(INT_PTR)pMaterial];
 			}
@@ -1482,17 +1479,17 @@ void CLocalMemoryUsage::CollectMaterialInfo_Recursive(SMaterialInfo* materialInf
 	{
 		for (uint32 dwI = 0; dwI < EFTT_MAX; ++dwI)
 		{
-			SEfResTexture* pTex = rItem.m_pShaderResources->GetTexture(dwI);
+			SEfResTexture* pResTex = rItem.m_pShaderResources->GetTexture(dwI);
 
-			if (pTex && pTex->m_Sampler.m_pITex)
+			if (pResTex && pResTex->m_Sampler.m_pITex)
 			{
-				ITexture* pTexture = pTex->m_Sampler.m_pITex;
+				ITexture* pTexture = pResTex->m_Sampler.m_pITex;
 				if (pTexture && pTexture->GetStreamableMipNumber() > 0)
 				{
 					STextureInfoAndTilingFactor textureInfo;
 
 					textureInfo.m_pTextureInfo = GetTextureInfo(pTexture);
-					textureInfo.m_tilingFactor = pTex->GetTiling(0) * pTex->GetTiling(1);
+					textureInfo.m_tilingFactor = min(fabsf(pResTex->GetTiling(0)), fabsf(pResTex->GetTiling(1)));
 
 					materialInfo->AddTextureInfo(textureInfo);
 				}
@@ -1517,7 +1514,7 @@ CLocalMemoryUsage::STextureInfo * CLocalMemoryUsage::GetTextureInfo(ITexture * p
 	//CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	STextureInfo* pTextureInfo;
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "! CLocalMemoryUsage::CheckStatObjP1 HASH");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "! CLocalMemoryUsage::CheckStatObjP1 HASH");
 		PREFAST_SUPPRESS_WARNING(6262)
 		pTextureInfo = &m_globalTextures[(INT_PTR)pTexture];
 	}

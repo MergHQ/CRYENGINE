@@ -138,10 +138,8 @@ const char* CShaderSrv::GetPlatform() const
 		szTarget = "DURANGO";
 	else if (CParserBin::m_nPlatform == SF_D3D11)
 		szTarget = "D3D11";
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		szTarget = "GL4";
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		szTarget = "GLES3";
+	else if (CParserBin::m_nPlatform == SF_D3D12)
+		szTarget = "D3D12";
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		szTarget = "VULKAN";
 
@@ -245,7 +243,7 @@ EServerError CShaderSrv::Compile(std::vector<uint8>& rVec,
 	if (errCompile != ESOK)
 	{
 		bool logError = true;
-		char* why = "";
+		const char* why = "";
 		switch (errCompile)
 		{
 		case ESNetworkError:
@@ -306,7 +304,6 @@ bool CShaderSrv::Send(CRYSOCKET Socket, const char* pBuffer, uint32 Size)  const
 		CrySock::eCrySockError sockErr = CrySock::TranslateSocketError(result);
 		if (sockErr != CrySock::eCSE_NO_ERROR)
 		{
-			;
 			iLog->Log("ERROR:CShaderSrv::Send failed (%d, %d)\n", (int)result, CrySock::TranslateToSocketError(sockErr));
 			return false;
 		}
@@ -471,10 +468,6 @@ EServerError CShaderSrv::Send(std::vector<uint8>& rCompileData) const
 	// Always add localhost as last resort
 	ServerVec.push_back("localhost");
 
-#if CRY_PLATFORM_WINDOWS
-	int nPort = 0;
-#endif
-
 	//connect
 	for (uint32 nRetries = m_LastWorkingServer; nRetries < m_LastWorkingServer + ServerVec.size() + 6; nRetries++)
 	{
@@ -551,7 +544,6 @@ EServerError CShaderSrv::Send(std::vector<uint8>& rCompileData) const
 		CrySock::closesocket(Socket);
 		return ESNetworkError;
 	}
-	;
 
 	int Status = WSAEventSelect(Socket, wsaEvent, FD_READ);
 	if (Status == CRY_SOCKET_ERROR)

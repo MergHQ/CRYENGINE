@@ -1,33 +1,26 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QComboBox>
-#include <QMenu>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include <QGroupBox>
-
-#include "QControls.h"
-#include "Commands/QCommandAction.h"
-
-#include "Grid.h"
-#include "IUndoManager.h"
-
 #include "AI/AIManager.h"
 #include "Objects/ObjectManager.h"
-
 #include "ViewManager.h"
-#include <Preferences/ViewportPreferences.h>
 
-//////////////////////////////////////////////////////////////////////////
+#include <Commands/QCommandAction.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <QControls.h>
+
+#include <IUndoManager.h>
+
+#include <QComboBox>
+#include <QGroupBox>
+#include <QMenu>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 class QSelectionMaskMenu : public QDynamicPopupMenu
 {
 	Q_OBJECT
-
-public:
-
-	QSelectionMaskMenu() {}
 
 protected:
 
@@ -53,142 +46,6 @@ protected:
 		action->setCheckable(true);
 		action->setChecked(gViewportSelectionPreferences.objectSelectMask == value);
 		addAction(action);
-	}
-};
-
-class QSelectionMaskComboBox : public QComboBox
-{
-	Q_OBJECT
-
-public:
-	QSelectionMaskComboBox()
-	{
-		IObjectManager* iObjMng = GetIEditorImpl()->GetObjectManager();
-		CObjectManager* objMng = static_cast<CObjectManager*>(iObjMng);
-		objMng->signalSelectionMaskChanged.Connect(this, &QSelectionMaskComboBox::OnSelectionMaskChanged);
-
-		addItem("Select All", QVariant(OBJTYPE_ANY));
-		addItem("Brushes", QVariant(OBJTYPE_BRUSH));
-		addItem("No Brushes", QVariant(~OBJTYPE_BRUSH));
-		addItem("Entities", QVariant(OBJTYPE_ENTITY));
-		addItem("Prefabs", QVariant(OBJTYPE_PREFAB));
-		addItem("Areas, Shapes", QVariant(OBJTYPE_VOLUME | OBJTYPE_SHAPE));
-		addItem("AI Points", QVariant(OBJTYPE_AIPOINT));
-		addItem("Decals", QVariant(OBJTYPE_DECAL));
-		addItem("Solids", QVariant(OBJTYPE_SOLID));
-		addItem("No Solids", QVariant(~OBJTYPE_SOLID));
-
-		connect(this, SIGNAL(activated(int)), this, SLOT(OnSelection(int)));
-	}
-
-	~QSelectionMaskComboBox()
-	{
-		IObjectManager* iObjMng = GetIEditorImpl()->GetObjectManager();
-		CObjectManager* objMng = static_cast<CObjectManager*>(iObjMng);
-		objMng->signalSelectionMaskChanged.DisconnectObject(this);
-	}
-
-protected Q_SLOTS:
-	void OnSelection(int sel)
-	{
-		QVariant mask = itemData(sel);
-
-		string command;
-		command.Format("general.set_selection_mask %d", mask.toInt());
-		GetIEditorImpl()->ExecuteCommand(command.c_str());
-	}
-
-private:
-	void OnSelectionMaskChanged(int mask)
-	{
-		for (int i = 0; i < count(); i++)
-		{
-			if (itemData(i).toInt() == mask)
-			{
-				setCurrentIndex(i);
-				break;
-			}
-		}
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
-
-class QCoordSysMenu : public QDynamicPopupMenu
-{
-	Q_OBJECT
-
-public:
-
-	QCoordSysMenu() {}
-
-protected:
-
-	virtual void OnPopulateMenu() override
-	{
-		AddAction("View", COORDS_VIEW);
-		AddAction("Local", COORDS_LOCAL);
-		AddAction("Parent", COORDS_PARENT);
-		AddAction("World", COORDS_WORLD);
-		AddAction("Custom", COORDS_USERDEFINED);
-	}
-
-	void AddAction(const char* str, int value)
-	{
-		string command;
-		command.Format("general.set_coord_sys %d", value);
-		QCommandAction* action = new QCommandAction(str, command.c_str(), nullptr);
-		action->setCheckable(true);
-		action->setChecked(GetIEditorImpl()->GetReferenceCoordSys() == value);
-		addAction(action);
-	}
-};
-
-class QCoordSysComboBox : public QComboBox, public IAutoEditorNotifyListener
-{
-	Q_OBJECT
-
-public:
-	QCoordSysComboBox()
-	{
-		addItem("View", QVariant(COORDS_VIEW));
-		addItem("Local", QVariant(COORDS_LOCAL));
-		addItem("Parent", QVariant(COORDS_PARENT));
-		addItem("World", QVariant(COORDS_WORLD));
-		addItem("Custom", QVariant(COORDS_USERDEFINED));
-
-		connect(this, SIGNAL(activated(int)), this, SLOT(OnSelection(int)));
-	}
-
-	~QCoordSysComboBox()
-	{
-
-	}
-
-protected Q_SLOTS:
-	void OnSelection(int sel)
-	{
-		QVariant mask = itemData(sel);
-		string command;
-		command.Format("general.set_coord_sys %d", mask.toInt());
-		GetIEditorImpl()->ExecuteCommand(command.c_str());
-	}
-
-private:
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override
-	{
-		if (event == eNotify_OnReferenceCoordSysChanged)
-		{
-			const int value = GetIEditorImpl()->GetReferenceCoordSys();
-			for (int i = 0; i < count(); i++)
-			{
-				if (itemData(i).toInt() == value)
-				{
-					setCurrentIndex(i);
-					break;
-				}
-			}
-		}
 	}
 };
 
@@ -251,7 +108,7 @@ protected:
 	virtual void OnPopulateMenu() override
 	{
 		const float anglesArray[] = { 1, 5, 10, 15, 22.5, 30, 45, 90 };
-		const float steps = CRY_ARRAY_COUNT(anglesArray);
+		const int steps = CRY_ARRAY_COUNT(anglesArray);
 		for (int i = 0; i < steps; i++)
 		{
 			string str;
@@ -301,7 +158,7 @@ protected:
 
 	virtual void OnPopulateMenu() override
 	{
-		const float scalesArray[] = { 0.1, 0.25, 0.5, 1, 2, 5, 10 };
+		const float scalesArray[] = { 0.1f, 0.25f, 0.5f, 1.0f, 2.0f, 5.0f, 10.0f };
 		const int steps = CRY_ARRAY_COUNT(scalesArray);
 		for (int i = 0; i < steps; i++)
 		{
@@ -341,7 +198,6 @@ protected:
 			const size_t agentTypeCount = manager->GetNavigationAgentTypeCount();
 
 			string actionName = action->objectName().toStdString().c_str();
-			int numItems = 1;
 
 			for (size_t i = 0; i < agentTypeCount; ++i)
 			{
@@ -367,7 +223,7 @@ protected:
 		for (size_t i = 0; i < agentTypeCount; ++i)
 		{
 			const char* szAgentTypeName = pManager->GetNavigationAgentTypeName(i);
-			
+
 			string actionName = "debug_agent_type" + ToString(i);
 			string fullActionName = actionModule + "." + actionName;
 
@@ -403,7 +259,6 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-
 class QMNMRegenerationAgentTypeMenu : public QDynamicPopupMenu
 {
 	Q_OBJECT
@@ -430,6 +285,15 @@ protected:
 		ICommandManager* pCommandManager = GetIEditorImpl()->GetICommandManager();
 		CAIManager* pManager = GetIEditorImpl()->GetAI();
 		const size_t agentTypeCount = pManager->GetNavigationAgentTypeCount();
+
+		QAction* pRegenerateIgnoredAction = pCommandManager->GetAction("ai.regenerate_ignored");
+		if (pRegenerateIgnoredAction)
+		{
+			addAction(pRegenerateIgnoredAction);
+			pRegenerateIgnoredAction->setObjectName("ignored");
+		}
+
+		addSeparator();
 
 		QAction* pRegenerateAllAction = pCommandManager->GetAction("ai.regenerate_agent_type_all");
 		if (pRegenerateAllAction)
@@ -465,5 +329,3 @@ protected:
 		}
 	}
 };
-
-//////////////////////////////////////////////////////////////////////////

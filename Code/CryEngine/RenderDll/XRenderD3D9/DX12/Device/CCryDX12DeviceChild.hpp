@@ -82,7 +82,7 @@ public:
 			m_Data[guid] = std::make_pair(DataSize, Blob);
 			memcpy(Blob, pData, DataSize);
 		}
-		else
+		else if (elm != m_Data.end())
 		{
 			m_Data.erase(elm);
 		}
@@ -129,12 +129,20 @@ public:
 				if (guid == WKPDID_D3DDebugObjectName)
 				{
 					wchar_t objectname[4096] = { 0 };
-					size_t len = strlen((char*)pData);
+					const int len = static_cast<int>(strlen((char*)pData));
 					MultiByteToWideChar(0, 0, (char*)pData, len, objectname, len);
-					m_pChild->SetName((LPCWSTR)objectname);
+					m_pChild->SetName(objectname);
 				}
 
+				// Reset previous contents
 				m_pChild->SetPrivateData(guid, 0, nullptr);
+			}
+			else
+			{
+				if (guid == WKPDID_D3DDebugObjectName)
+				{
+					m_pChild->SetName(L"");
+				}
 			}
 
 			return m_pChild->SetPrivateData(guid, DataSize, pData);

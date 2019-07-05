@@ -19,6 +19,7 @@
 
 	#include "BlockPacker.h"
 	#include <CryAnimation/ICryAnimation.h>
+	#include <CryEntitySystem/IEntitySystem.h>
 	#include "Brush.h"
 	#include "SceneTreeManager.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
@@ -69,12 +70,27 @@ int CSvoEnv::ExportSvo(ICryArchive* pArchive)
 		uint32 dummyCounter = 0;
 		uint32 totalSizeCounter = 0;
 		PodArray<byte> dummyArray;
-		m_pSvoRoot->SaveNode(dummyArray, dummyCounter, pArchive, totalSizeCounter);
+		m_pSvoRoot->SaveNode(dummyArray, dummyCounter, pArchive, totalSizeCounter, GetPlayableArea());
 
 		PrintMessage("======= Finished SVO data export: %.1f MB in %1.1f sec =======", (float)totalSizeCounter / 1024.f / 1024.f, GetCurAsyncTimeSec() - timeStart);
 	}
 
 	return m_pSvoRoot ? 1 : 0;
+}
+
+AABB CSvoEnv::GetPlayableArea()
+{
+	AABB playableArea = AABB(Vec3(0, 0, 0), Vec3((float)gEnv->p3DEngine->GetTerrainSize()));
+	playableArea.Expand(-Vec3(Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationMapBorder - 1.f, Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationMapBorder - 1.f, 0));
+	return playableArea;
+}
+
+AABB CSvoNode::GetMagnifiedNodeBox(const AABB& nodeBox)
+{
+	AABB expandedBox = nodeBox;
+	float expand = min(nodeBox.max.z - nodeBox.min.z, 64.f);
+	expandedBox.Expand(Vec3(expand));
+	return expandedBox;
 }
 
 Vec3* GeneratePointsOnHalfSphere(int n);
@@ -97,7 +113,7 @@ bool CSvoEnv::Render()
 
 	if (Get3DEngine()->m_pObjectsTree)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_FindProbe");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CSvoEnv::Render_FindProbe");
 
 		AUTO_LOCK(m_csLockGlobalEnvProbe);
 
@@ -147,8 +163,8 @@ bool CSvoEnv::Render()
 	CRenderObject* pObjVox = 0;
 	{
 		pObjVox = Cry3DEngineBase::GetIdentityCRenderObject((*CVoxelSegment::m_pCurrPassInfo));
-		pObjVox->SetAmbientColor(Cry3DEngineBase::Get3DEngine()->GetSkyColor(), (*CVoxelSegment::m_pCurrPassInfo));
-		pObjVox->SetMatrix(Matrix34::CreateIdentity(), (*CVoxelSegment::m_pCurrPassInfo));
+		pObjVox->SetAmbientColor(Cry3DEngineBase::Get3DEngine()->GetSkyColor());
+		pObjVox->SetMatrix(Matrix34::CreateIdentity());
 		pObjVox->m_nSort = 0;
 		pObjVox->m_ObjFlags |= (/*FOB_NO_Z_PASS | */ FOB_NO_FOG);
 
@@ -163,7 +179,7 @@ bool CSvoEnv::Render()
 
 	if (m_bReady && m_pSvoRoot)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Traverse SVO");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CSvoEnv::Traverse SVO");
 
 		//		UpdatePVS();
 
@@ -185,7 +201,7 @@ bool CSvoEnv::Render()
 
 			m_pSvoRoot->CheckReadyForRendering(0, m_arrForStreaming);
 
-			m_pSvoRoot->Render(0, 1, 0, arrVertsOut, m_arrForStreaming);
+			m_pSvoRoot->Render(0, 1, 0, arrVertsOut, m_arrForStreaming, GetPlayableArea());
 
 			CheckUpdateMeshPools();
 		}
@@ -212,7 +228,7 @@ bool CSvoEnv::Render()
 
 	//	if(GetCVars()->e_rsMode != RS_FAT_CLIENT)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_StartStreaming");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CSvoEnv::Render_StartStreaming");
 
 		for (int treeLevel = 0; (treeLevel < SVO_STREAM_QUEUE_MAX_SIZE); treeLevel++)
 		{
@@ -238,13 +254,13 @@ bool CSvoEnv::Render()
 	if (CVoxelSegment::m_arrLoadedSegments.Count() > (maxLoadedNodes - Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests))
 	{
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_UnloadStreamable_Sort");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CSvoEnv::Render_UnloadStreamable_Sort");
 
 			qsort(CVoxelSegment::m_arrLoadedSegments.GetElements(), CVoxelSegment::m_arrLoadedSegments.Count(), sizeof(CVoxelSegment::m_arrLoadedSegments[0]), CVoxelSegment::ComparemLastVisFrameID);
 		}
 
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_UnloadStreamable_FreeRenderData");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CSvoEnv::Render_UnloadStreamable_FreeRenderData");
 
 			int numNodesToDelete = 4 + Cry3DEngineBase::GetCVars()->e_svoMaxStreamRequests;//CVoxelSegment::m_arrLoadedSegments.Count()/1000;
 
@@ -266,6 +282,8 @@ bool CSvoEnv::Render()
 					if (ppChilds[childId] == pSeg->m_pNode)
 					{
 						SAFE_DELETE(ppChilds[childId]); // this also deletes pSeg and unregister it from CVoxelSegment::m_arrLoadedSegments
+						// Do not read from pSeg after this point
+						break;
 					}
 				}
 
@@ -284,7 +302,7 @@ bool CSvoEnv::Render()
 
 	//if(nUserId == 0 || !bMultiUserMode)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_BrickUpdate");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CSvoEnv::Render_BrickUpdate");
 
 		CVoxelSegment::m_updatesInProgressTex = 0;
 		CVoxelSegment::m_updatesInProgressBri = 0;
@@ -316,7 +334,7 @@ bool CSvoEnv::Render()
 
 		if (m_texNodePoolId)
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CSvoEnv::Render_UpdateNodeRenderDataPtrs");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CSvoEnv::Render_UpdateNodeRenderDataPtrs");
 
 			m_pSvoRoot->UpdateNodeRenderDataPtrs();
 		}
@@ -695,7 +713,7 @@ Vec3i ComputeDataCoord(int atlasOffset)
 	return vOffset3D;
 }
 
-void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int treeLevel, PodArray<SVF_P3F_C4B_T2F>& arrVertsOut, PodArray<CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE])
+void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int treeLevel, PodArray<SVF_P3F_C4B_T2F>& arrVertsOut, PodArray<CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE], const AABB& playableArea)
 {
 	float boxSize = m_nodeBox.GetSize().x;
 
@@ -722,13 +740,15 @@ void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int
 
 	// auto allocate new childs
 	if (Cry3DEngineBase::GetCVars()->e_svoTI_Active && m_pSeg && m_pSeg->m_eStreamingStatus == ecss_Ready && m_pSeg->m_pBlockInfo)
-		if (m_pSeg->m_dwChildTrisTest || (m_pSeg->GetBoxSize() > Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize) || (Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide))
+	{
+		if ((m_pSeg->m_dwChildTrisTest && playableArea.IsIntersectBox(GetMagnifiedNodeBox(m_nodeBox))) || (m_pSeg->GetBoxSize() > Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize) || (Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide))
 		{
 			if (nodeToCamDist < boxSizeRated && !bDrawThisNode)
 			{
 				CheckAllocateChilds();
 			}
 		}
+	}
 
 	if ((!m_ppChilds || (nodeToCamDist > boxSizeRated) || (boxSize <= Cry3DEngineBase::GetCVars()->e_svoMinNodeSize))
 	    || (!CVoxelSegment::m_voxCam.IsAABBVisible_E(m_nodeBox) && (nodeToCamDist * 1.5 > boxSizeRated)))
@@ -815,7 +835,7 @@ void CSvoNode::Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int
 			int childId = arrChildId[c];
 			CSvoNode* pChild = m_ppChilds[childId];
 			if (pChild)
-				pChild->Render(nullptr, (nodeKey << 3) + (childId), treeLevel, arrVertsOut, arrForStreaming);
+				pChild->Render(nullptr, (nodeKey << 3) + (childId), treeLevel, arrVertsOut, arrForStreaming, playableArea);
 		}
 	}
 }
@@ -918,9 +938,7 @@ CSvoEnv::CSvoEnv(const AABB& worldBox)
 	m_debugDrawVoxelsCounter = 0;
 	m_voxTexFormat = eTF_R8G8B8A8; // eTF_BC3
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	m_texTrisPoolId = 0;
-	#endif
 	m_texRgb0PoolId = 0;
 	m_texRgb1PoolId = 0;
 	m_texDynlPoolId = 0;
@@ -966,9 +984,7 @@ CSvoEnv::~CSvoEnv()
 
 	SAFE_DELETE(m_pSvoRoot);
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	GetRenderer()->RemoveTexture(m_texTrisPoolId);
-	#endif
 	GetRenderer()->RemoveTexture(m_texRgb0PoolId);
 	GetRenderer()->RemoveTexture(m_texRgb1PoolId);
 	GetRenderer()->RemoveTexture(m_texDynlPoolId);
@@ -1038,7 +1054,7 @@ CSvoNode::~CSvoNode()
 	gSvoEnv->m_nodeCounter--;
 }
 
-uint32 CSvoNode::SaveNode(PodArray<byte>& rS, uint32& nodesCounterRec, ICryArchive* pArchive, uint32& totalSizeCounter)
+uint32 CSvoNode::SaveNode(PodArray<byte>& rS, uint32& nodesCounterRec, ICryArchive* pArchive, uint32& totalSizeCounter, const AABB& playableArea)
 {
 	assert(m_pSeg);
 
@@ -1062,7 +1078,7 @@ uint32 CSvoNode::SaveNode(PodArray<byte>& rS, uint32& nodesCounterRec, ICryArchi
 	// auto allocate new childs same way it happens during rendering
 	if (Cry3DEngineBase::GetCVars()->e_svoTI_Active && m_pSeg && m_pSeg->m_eStreamingStatus == ecss_Ready /*&& m_pSeg->m_pBlockInfo*/)
 	{
-		if (m_pSeg->m_dwChildTrisTest || (m_pSeg->GetBoxSize() > Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize) || (Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide))
+		if ((m_pSeg->m_dwChildTrisTest && playableArea.IsIntersectBox(GetMagnifiedNodeBox(m_nodeBox))) || (m_pSeg->GetBoxSize() > Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize) || (Cry3DEngineBase::GetCVars()->e_svoTI_Troposphere_Subdivide))
 		{
 			CheckAllocateChilds();
 		}
@@ -1076,7 +1092,7 @@ uint32 CSvoNode::SaveNode(PodArray<byte>& rS, uint32& nodesCounterRec, ICryArchi
 		{
 			if (m_ppChilds && m_ppChilds[childId])
 			{
-				m_ppChilds[childId]->SaveNode(rS, nodesCounterRec, pArchive, totalSizeCounter);
+				m_ppChilds[childId]->SaveNode(rS, nodesCounterRec, pArchive, totalSizeCounter, playableArea);
 			}
 		}
 
@@ -1101,13 +1117,11 @@ uint32 CSvoNode::SaveNode(PodArray<byte>& rS, uint32& nodesCounterRec, ICryArchi
 					uint32 nodesCounter = 0;
 					float startTime = Cry3DEngineBase::GetTimer()->GetAsyncCurTime();
 
-					AABB terrainBox = AABB(Vec3(0, 0, 0), Vec3((float)gEnv->p3DEngine->GetTerrainSize(), (float)gEnv->p3DEngine->GetTerrainSize(), (float)gEnv->p3DEngine->GetTerrainSize()));
-					terrainBox.Expand(-Vec3(Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationMapBorder + 1.f, Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationMapBorder + 1.f, 0));
-					bool isInPlayableArea = terrainBox.IsIntersectBox(m_ppChilds[childId]->m_nodeBox);
+					bool isInPlayableArea = playableArea.IsIntersectBox(GetMagnifiedNodeBox(m_ppChilds[childId]->m_nodeBox));
 
 					if (isInPlayableArea && !CVoxelSegment::m_bExportAbortRequested)
 					{
-						m_ppChilds[childId]->SaveNode(arrSvoData, nodesCounter, pArchive, totalSizeCounter);
+						m_ppChilds[childId]->SaveNode(arrSvoData, nodesCounter, pArchive, totalSizeCounter, playableArea);
 					}
 
 					if (nodesCounter)
@@ -1196,7 +1210,7 @@ uint32 CSvoNode::SaveNode(PodArray<byte>& rS, uint32& nodesCounterRec, ICryArchi
 			{
 				((uint32*)&rS[childOffsetsPos])[childId * 2 + 0] = rS.Count();  // file offset
 
-				int childNodeDataSize = m_ppChilds[childId]->SaveNode(rS, nodesCounterRec, pArchive, totalSizeCounter);
+				int childNodeDataSize = m_ppChilds[childId]->SaveNode(rS, nodesCounterRec, pArchive, totalSizeCounter, playableArea);
 
 				((uint32*)&rS[childOffsetsPos])[childId * 2 + 1] = childNodeDataSize;  // file data size
 			}
@@ -1608,9 +1622,7 @@ bool CSvoEnv::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArr
 	svoInfo.pTexTree = GetRenderer()->EF_GetTextureByID(m_texNodePoolId);
 	svoInfo.pTexOpac = GetRenderer()->EF_GetTextureByID(m_texOpasPoolId);
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	svoInfo.pTexTris = GetRenderer()->EF_GetTextureByID(m_texTrisPoolId);
-	#endif
 	svoInfo.pTexRgb0 = GetRenderer()->EF_GetTextureByID(m_texRgb0PoolId);
 	svoInfo.pTexRgb1 = GetRenderer()->EF_GetTextureByID(m_texRgb1PoolId);
 	svoInfo.pTexDynl = GetRenderer()->EF_GetTextureByID(m_texDynlPoolId);
@@ -1619,11 +1631,9 @@ bool CSvoEnv::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArr
 	svoInfo.pTexRgb4 = GetRenderer()->EF_GetTextureByID(m_texRgb4PoolId);
 	svoInfo.pTexNorm = GetRenderer()->EF_GetTextureByID(m_texNormPoolId);
 	svoInfo.pTexAldi = GetRenderer()->EF_GetTextureByID(m_texAldiPoolId);
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	svoInfo.pTexTriA = GetRenderer()->EF_GetTextureByID(gSvoEnv->m_arrRTPoolTris.m_textureId);
 	svoInfo.pTexTexA = GetRenderer()->EF_GetTextureByID(gSvoEnv->m_arrRTPoolTexs.m_textureId);
 	svoInfo.pTexIndA = GetRenderer()->EF_GetTextureByID(gSvoEnv->m_arrRTPoolInds.m_textureId);
-	#endif
 
 	GetGlobalEnvProbeProperties(svoInfo.pGlobalSpecCM, svoInfo.fGlobalSpecCM_Mult);
 
@@ -2151,21 +2161,34 @@ int CSvoEnv::GetWorstPointInSubSet(const int start, const int end)
 
 void CSvoEnv::CheckUpdateMeshPools()
 {
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
+	if (!Get3DEngine()->IsSvoReady(false) && gSvoEnv->m_arrRTPoolInds.m_textureId)
+		return;
+
+	FUNCTION_PROFILER_3DENGINE;
+
 	{
 		PodArrayRT<Vec4>& rAr = gSvoEnv->m_arrRTPoolTris;
 
 		AUTO_READLOCK(rAr.m_Lock);
 
-		if (rAr.m_bModified)
+		if (rAr.m_writeOffsetReady != rAr.m_writeOffset)
 		{
-			gEnv->pRenderer->RemoveTexture(rAr.m_textureId);
-			rAr.m_textureId = 0;
+			ProcessIncrementalTextureUpdate(rAr, eTF_R32G32B32A32F, "PoolTris");
 
-			rAr.m_textureId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
-			                                                         CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimZ, eTF_R32G32B32A32F, eTF_R32G32B32A32F, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
+			rAr.m_writeOffsetReady = rAr.m_writeOffset;
+		}
+	}
 
-			rAr.m_bModified = 0;
+  {
+		PodArrayRT<ColorB>& rAr = gSvoEnv->m_arrRTPoolInds;
+
+		AUTO_READLOCK(rAr.m_Lock);
+
+		if (rAr.m_writeOffsetReady != rAr.m_writeOffset)
+		{
+			ProcessIncrementalTextureUpdate(rAr, m_voxTexFormat, "PoolInds");
+
+			rAr.m_writeOffsetReady = rAr.m_writeOffset;
 		}
 	}
 
@@ -2174,35 +2197,58 @@ void CSvoEnv::CheckUpdateMeshPools()
 
 		AUTO_READLOCK(rAr.m_Lock);
 
-		if (rAr.m_bModified)
+		if (rAr.m_writeOffsetReady != rAr.m_writeOffset)
 		{
-			gEnv->pRenderer->RemoveTexture(rAr.m_textureId);
-			rAr.m_textureId = 0;
+			ProcessIncrementalTextureUpdate(rAr, m_voxTexFormat, "PoolTexs");
 
-			rAr.m_textureId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
-			                                                         CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimZ, m_voxTexFormat, m_voxTexFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
-
-			rAr.m_bModified = 0;
+			rAr.m_writeOffsetReady = rAr.m_writeOffset;
 		}
 	}
+}
 
+template<class T>
+void CSvoEnv::ProcessIncrementalTextureUpdate(PodArrayRT<T>& rAr, ETEX_Format texFormat, const char* szComment)
+{
+	const int maxTexSizeXY = GetCVars()->e_svoTI_RT_MaxTexRes;
+
+	if (!rAr.m_textureId)
 	{
-		PodArrayRT<ColorB>& rAr = gSvoEnv->m_arrRTPoolInds;
+		PrintMessage("%s: create new texture", szComment);
 
-		AUTO_READLOCK(rAr.m_Lock);
-
-		if (rAr.m_bModified)
-		{
-			gEnv->pRenderer->RemoveTexture(rAr.m_textureId);
-			rAr.m_textureId = 0;
-
+		// create new texture
 			rAr.m_textureId = gEnv->pRenderer->UploadToVideoMemory3D((byte*)rAr.GetElements(),
-			                                                         CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimXY, CVoxelSegment::m_voxTexPoolDimZ, m_voxTexFormat, m_voxTexFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM);
-
-			rAr.m_bModified = 0;
-		}
+			maxTexSizeXY, maxTexSizeXY, CVoxelSegment::m_voxTexPoolDimZ,
+			texFormat, texFormat, 1, false, FILTER_POINT, rAr.m_textureId, 0, FT_DONT_STREAM, eLittleEndian, nullptr, true);
 	}
-	#endif
+	else if (rAr.m_writeOffsetReady >= rAr.m_writeOffset)
+	{
+		PrintMessage("%s: update entire texture", szComment);
+
+		// update entire texture
+		gEnv->pRenderer->UpdateTextureInVideoMemory(
+			rAr.m_textureId,
+			(byte*)rAr.GetElements(),
+			0, 0,
+			maxTexSizeXY, maxTexSizeXY,
+			texFormat,
+			0,
+			CVoxelSegment::m_voxTexPoolDimZ);
+	}
+	else
+	{
+		int z0 = CLAMP(rAr.m_writeOffsetReady / (maxTexSizeXY * maxTexSizeXY), 0, CVoxelSegment::m_voxTexPoolDimZ - 1);
+		int z1 = CLAMP(rAr.m_writeOffset / (maxTexSizeXY * maxTexSizeXY) + 1, 0, CVoxelSegment::m_voxTexPoolDimZ);
+
+		PrintMessage("%s: update few slices %d: z0 = %d, z1 = %d, delta = %d", szComment, (int)GetCurrPassMainFrameID(), z0, z1, z1 - z0);
+
+		// update few slices of texture
+		gEnv->pRenderer->UpdateTextureInVideoMemory(
+			rAr.m_textureId,
+			(byte*)(rAr.GetElements() + z0 * maxTexSizeXY * maxTexSizeXY),
+			0, 0, maxTexSizeXY, maxTexSizeXY,
+			texFormat,
+			z0, z1 - z0);
+	}
 }
 
 bool C3DEngine::GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArray<I3DEngine::SLightTI>* pLightsTI_S, PodArray<I3DEngine::SLightTI>* pLightsTI_D)
@@ -2226,110 +2272,95 @@ int C3DEngine::GetSvoCompiledData(ICryArchive* pArchive)
 	return CSvoManager::ExportSvo(pArchive);
 }
 
-void C3DEngine::LoadTISettings(XmlNodeRef pInputNode)
+void C3DEngine::UpdateTISettings()
 {
-	const char* szXmlNodeName = "Total_Illumination_v2";
+	const auto ti = GetTimeOfDay()->GetTotalIlluminationParams();
+	const auto tiAdv = GetTimeOfDay()->GetTotalIlluminationAdvParams();
 
-	// Total illumination
 	if (GetCVars()->e_svoTI_Active >= 0)
-		GetCVars()->e_svoTI_Apply = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Active", "0"));
+		GetCVars()->e_svoTI_Apply = ti.active ? 1 : 0;
 
 	GetCVars()->e_svoVoxelPoolResolution = 64;
-	int voxelPoolResolution = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelPoolResolution", "0"));
+	int voxelPoolResolution = tiAdv.voxelPoolResolution;
 	while (GetCVars()->e_svoVoxelPoolResolution < voxelPoolResolution)
 		GetCVars()->e_svoVoxelPoolResolution *= 2;
 
-	GetCVars()->e_svoTI_VoxelizationLODRatio = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelizationLODRatio", "1"));
-	GetCVars()->e_svoTI_VoxelizationMapBorder = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "VoxelizationMapBorder", "0"));
+	GetCVars()->e_svoTI_VoxelizationLODRatio = tiAdv.voxelizationLodRatio;
+	GetCVars()->e_svoTI_VoxelizationMapBorder = tiAdv.voxelizationMapBorder;
 	GetCVars()->e_svoDVR_DistRatio = GetCVars()->e_svoTI_VoxelizationLODRatio / 2;
 
-	GetCVars()->e_svoTI_InjectionMultiplier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "InjectionMultiplier", "0"));
-	GetCVars()->e_svoTI_NumberOfBounces = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "NumberOfBounces", "0"));
-	GetCVars()->e_svoTI_Saturation = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Saturation", "0"));
-	GetCVars()->e_svoTI_PropagationBooster = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PropagationBooster", "0"));
-	GetCVars()->e_svoTI_PointLightsBias = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PointLightsBias", "0"));
+	GetCVars()->e_svoTI_InjectionMultiplier = ti.injectionMultiplier;
+	GetCVars()->e_svoTI_NumberOfBounces = tiAdv.numberOfBounces;
+	GetCVars()->e_svoTI_Saturation = tiAdv.saturation;
+	GetCVars()->e_svoTI_PropagationBooster = tiAdv.propagationBooster;
+	GetCVars()->e_svoTI_PointLightsBias = tiAdv.pointLightsBias;
 	if (gEnv->IsEditor())
 	{
-		GetCVars()->e_svoTI_UpdateLighting = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UpdateLighting", "0"));
-		GetCVars()->e_svoTI_UpdateGeometry = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UpdateGeometry", "0"));
+		GetCVars()->e_svoTI_UpdateLighting = tiAdv.updateLighting ? 1 : 0;
+		GetCVars()->e_svoTI_UpdateGeometry = ti.updateGeometry ? 1 : 0;
 	}
-	GetCVars()->e_svoTI_SkyColorMultiplier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SkyColorMultiplier", "0"));
-	GetCVars()->e_svoTI_UseLightProbes = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UseLightProbes", "0"));
+	GetCVars()->e_svoTI_SkyColorMultiplier = ti.skyColorMultiplier;
+	GetCVars()->e_svoTI_UseLightProbes = tiAdv.useLightProbes ? 1 : 0;
 	if (!GetCVars()->e_svoTI_UseLightProbes && GetCVars()->e_svoTI_SkyColorMultiplier >= 0)
 		GetCVars()->e_svoTI_SkyColorMultiplier = -GetCVars()->e_svoTI_SkyColorMultiplier - .0001f;
-	GetCVars()->e_svoTI_ConeMaxLength = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ConeMaxLength", "0"));
+	GetCVars()->e_svoTI_ConeMaxLength = ti.coneMaxLength;
 
-	GetCVars()->e_svoTI_DiffuseConeWidth = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "DiffuseConeWidth", "0"));
-	GetCVars()->e_svoTI_DiffuseBias = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "DiffuseBias", "0"));
-	GetCVars()->e_svoTI_DiffuseAmplifier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "DiffuseAmplifier", "0"));
+	GetCVars()->e_svoTI_DiffuseConeWidth = tiAdv.diffuseConeWidth;
+	GetCVars()->e_svoTI_DiffuseBias = ti.diffuseBias;
+	GetCVars()->e_svoTI_DiffuseAmplifier = tiAdv.diffuseAmplifier;
 	if (GetCVars()->e_svoTI_Diffuse_Cache)
 		GetCVars()->e_svoTI_NumberOfBounces++;
 
-	GetCVars()->e_svoTI_SpecularAmplifier = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SpecularAmplifier", "0"));
-	GetCVars()->e_svoTI_SpecularFromDiffuse = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SpecularFromDiffuse", "0"));
+	GetCVars()->e_svoTI_SpecularAmplifier = ti.specularAmplifier;
+	GetCVars()->e_svoTI_SpecularFromDiffuse = tiAdv.specularFromDiffuse ? 1 : 0;
 
-	GetCVars()->e_svoMinNodeSize = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "MinNodeSize", "0"));
+	GetCVars()->e_svoMinNodeSize = ti.minNodeSize;
 
-	GetCVars()->e_svoTI_SkipNonGILights = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SkipNonGILights", "0"));
-	GetCVars()->e_svoTI_ForceGIForAllLights = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ForceGIForAllLights", "0"));
-	GetCVars()->e_svoTI_SSAOAmount = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SSAOAmount", "0"));
-	GetCVars()->e_svoTI_PortalsDeform = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PortalsDeform", "0"));
-	GetCVars()->e_svoTI_PortalsInject = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "PortalsInject", "0"));
-	GetCVars()->e_svoTI_ObjectsMaxViewDistance = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ObjectsMaxViewDistance", "0"));
-	GetCVars()->e_svoTI_SunRSMInject = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SunRSMInject", "0"));
-	GetCVars()->e_svoTI_SSDepthTrace = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "SSDepthTrace", "0"));
+	GetCVars()->e_svoTI_SSAOAmount = ti.ssaoAmount;
+	GetCVars()->e_svoTI_PortalsDeform = tiAdv.portalsDeform;
+	GetCVars()->e_svoTI_PortalsInject = tiAdv.portalsInject;
+	GetCVars()->e_svoTI_ObjectsMaxViewDistance = tiAdv.objectsMaxViewDistance;
+	GetCVars()->e_svoTI_SunRSMInject = tiAdv.sunRSMInject;
+	GetCVars()->e_svoTI_SSDepthTrace = tiAdv.SSDepthTrace;
 
-	GetCVars()->e_svoTI_ShadowsFromSun = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsFromSun", "0"));
-	GetCVars()->e_svoTI_ShadowsSoftness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsSoftness", "0"));
-	GetCVars()->e_svoTI_ShadowsFromHeightmap = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ShadowsFromHeightmap", "0"));
-	GetCVars()->e_svoTI_Troposphere_Active = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Active", "0"));
-	GetCVars()->e_svoTI_Troposphere_Brightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Brightness", "0"));
-	GetCVars()->e_svoTI_Troposphere_Ground_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Ground_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer0_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer0_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer1_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer1_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Snow_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Snow_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer0_Rand = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer0_Rand", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer1_Rand = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer1_Rand", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer0_Dens = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer0_Dens", "0"));
-	GetCVars()->e_svoTI_Troposphere_Layer1_Dens = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Layer1_Dens", "0"));
-	//GetCVars()->e_svoTI_Troposphere_CloudGen_Height = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_Height", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGen_Freq = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_Freq", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGen_FreqStep = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_FreqStep", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGen_Scale = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGen_Scale", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Freq = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGenTurb_Freq", "0"));
-	GetCVars()->e_svoTI_Troposphere_CloudGenTurb_Scale = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_CloudGenTurb_Scale", "0"));
-	GetCVars()->e_svoTI_Troposphere_Density = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Density", "0"));
-	//if (GetCVars()->e_svoTI_Troposphere_Subdivide >= 0)
-	//GetCVars()->e_svoTI_Troposphere_Subdivide = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "Troposphere_Subdivide", "0"));
+	GetCVars()->e_svoTI_ShadowsFromSun = tiAdv.shadowsFromSun ? 1 : 0;
+	GetCVars()->e_svoTI_ShadowsSoftness = tiAdv.shadowsSoftness;
+	GetCVars()->e_svoTI_ShadowsFromHeightmap = tiAdv.shadowsFromHeightmap ? 1 : 0;
+	GetCVars()->e_svoTI_Troposphere_Active = tiAdv.troposphere_Active ? 1 : 0;
+	GetCVars()->e_svoTI_Troposphere_Brightness = tiAdv.troposphere_Brightness;
+	GetCVars()->e_svoTI_Troposphere_Density = tiAdv.troposphere_Density;
 	GetCVars()->e_svoTI_Troposphere_Subdivide = GetCVars()->e_svoTI_Troposphere_Active;
 
-	GetCVars()->e_svoTI_AnalyticalOccluders = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalOccluders", "0"));
-	GetCVars()->e_svoTI_AnalyticalGI = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "AnalyticalGI", "0"));
-	GetCVars()->e_svoTI_TraceVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TraceVoxels", "1"));
+	GetCVars()->e_svoTI_AnalyticalOccluders = tiAdv.analyticalOccluders ? 1 : 0;
+	GetCVars()->e_svoTI_AnalyticalGI = tiAdv.analyticalGI ? 1 : 0;
+	GetCVars()->e_svoTI_TraceVoxels = tiAdv.traceVoxels ? 1 : 0;
 
-	int lowSpecMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "LowSpecMode", "0"));
+	int lowSpecMode = ti.lowSpecMode;
 	if (lowSpecMode > -2 && gEnv->IsEditor()) // otherwise we use value from sys_spec_Light.cfg
 		GetCVars()->e_svoTI_LowSpecMode = lowSpecMode;
+#if !CRY_PLATFORM_DURANGO
+	GetCVars()->e_svoTI_HalfresKernelPrimary = tiAdv.halfResKernelPrimary ? 1 : 0;
+#endif
+	GetCVars()->e_svoTI_HalfresKernelSecondary = tiAdv.halfresKernelSecondary ? 1 : 0;
+	GetCVars()->e_svoTI_UseTODSkyColor = ti.useTodSkyColor;
 
-	GetCVars()->e_svoTI_HalfresKernelPrimary = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HalfresKernelPrimary", "0"));
-	GetCVars()->e_svoTI_HalfresKernelSecondary = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HalfresKernelSecondary", "0"));
-	GetCVars()->e_svoTI_UseTODSkyColor = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "UseTODSkyColor", "0"));
-
-	GetCVars()->e_svoTI_HighGlossOcclusion = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "HighGlossOcclusion", "0"));
-	GetCVars()->e_svoTI_TranslucentBrightness = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "TranslucentBrightness", "2.5"));
+	GetCVars()->e_svoTI_HighGlossOcclusion = tiAdv.highGlossOcclusion;
+	GetCVars()->e_svoTI_TranslucentBrightness = tiAdv.translucentBrightness;
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
-	GetCVars()->e_svoTI_IntegrationMode = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "IntegrationMode", "0"));
+	GetCVars()->e_svoTI_IntegrationMode = tiAdv.integrationMode;
 	#else
 	GetCVars()->e_svoTI_IntegrationMode = 0;
 	#endif
 
-	GetCVars()->e_svoTI_RT_MaxDist = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "RT_MaxDist", "0"));
-
-	GetCVars()->e_svoTI_ConstantAmbientDebug = (float)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "ConstantAmbientDebug", "0"));
+	GetCVars()->e_svoTI_RT_Active = tiAdv.rtActive;
+	GetCVars()->e_svoTI_RT_MaxDistRay = tiAdv.rtMaxDistRay;
+	GetCVars()->e_svoTI_RT_MaxDistCam = tiAdv.rtMaxDistCam;
+	GetCVars()->e_svoTI_RT_MinGloss = tiAdv.rtMinGloss;
+	GetCVars()->e_svoTI_RT_MinRefl = tiAdv.rtMinRefl;
 
 	if (Cry3DEngineBase::GetCVars()->e_svoStreamVoxels != 2)
-		GetCVars()->e_svoStreamVoxels = (int)atof(GetXMLAttribText(pInputNode, szXmlNodeName, "StreamVoxels", "0"));
+		GetCVars()->e_svoStreamVoxels = tiAdv.streamVoxels ? 1 : 0;
 
 	// fall back to run-time voxelization if voxel file data is not prepared
 	if (CSvoNode::IsStreamingActive())
@@ -2415,9 +2446,6 @@ void CSvoEnv::CollectLights()
 			for (int n = 0; n < objCount; n++)
 			{
 				ILightSource* pRN = (ILightSource*)arrObjects[n];
-
-				static ICVar* e_svoMinNodeSize = gEnv->pConsole->GetCVar("e_svoMinNodeSize");
-
 				SRenderLight& rLight = pRN->GetLightProperties();
 
 				I3DEngine::SLightTI lightTI;
@@ -2532,8 +2560,6 @@ void CSvoEnv::CollectAnalyticalOccluders()
 	areaBox.Reset();
 	areaBox.Add(gEnv->pSystem->GetViewCamera().GetPosition());
 	areaBox.Expand(Vec3(GetCVars()->e_svoTI_ConeMaxLength, GetCVars()->e_svoTI_ConeMaxLength, GetCVars()->e_svoTI_ConeMaxLength));
-
-	Vec3 vCamPos = CVoxelSegment::m_voxCam.GetPosition();
 
 	// collect from static entities
 	if (int objCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_MovableBrush, areaBox, (IRenderNode**)0))
@@ -2793,18 +2819,26 @@ void CSvoNode::CheckAllocateChilds()
 
 		AABB childBox = GetChildBBox(childId);
 
-		if (!IsStreamingActive() && Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone && (!m_ppChilds || !m_ppChilds[childId]) && (childBox.GetSize().z == Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize))
-		{
-			bool bThisIsAreaParent, bThisIsLowLodNode;
-			if (!CVoxelSegment::CheckCollectObjectsForVoxelization(childBox, nullptr, bThisIsAreaParent, bThisIsLowLodNode, true))
-			{
-				assert(!CVoxelSegment::m_bExportMode || !"Some meshes are not streamed in, stream cgf must be off for now during EXPORT processs");
+		std::unique_ptr<PodArray<SObjInfo>> areaObjects;
+		bool isAreaParent = false;
+		bool isLowLodNode = false;
 
-				if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
-					Cry3DEngineBase::Get3DEngine()->DrawBBox(childBox, Col_Lime);
-				CVoxelSegment::m_postponedCounter++;
-				continue;
-			}
+		if (!IsStreamingActive() && (!m_ppChilds || !m_ppChilds[childId]) && (childBox.GetSize().z == Cry3DEngineBase::GetCVars()->e_svoMaxNodeSize))
+		{
+			areaObjects = std::unique_ptr<PodArray<SObjInfo>>(new PodArray<SObjInfo>());
+
+			if (!CVoxelSegment::CheckCollectObjectsForVoxelization(childBox, areaObjects.get(), isAreaParent, isLowLodNode, true))
+			{
+				if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone)
+				{
+				  assert(!CVoxelSegment::m_bExportMode || !"Some meshes are not streamed in, stream cgf must be off for now during EXPORT processs");
+
+				  if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)
+					  Cry3DEngineBase::Get3DEngine()->DrawBBox(childBox, Col_Lime);
+				  CVoxelSegment::m_postponedCounter++;
+				  continue;
+			  }
+		  }
 		}
 
 		//					if((m_pCloud->m_dwChildTrisTest & (1<<childId)) ||
@@ -2832,6 +2866,10 @@ void CSvoNode::CheckAllocateChilds()
 				m_ppChilds[childId] = new CSvoNode(childBox, this);
 
 				m_ppChilds[childId]->AllocateSegment(CVoxelSegment::m_nextSegmentId++, 0, 0, ecss_NotLoaded, true);
+
+				m_ppChilds[childId]->m_pSeg->m_areaObjects = std::move(areaObjects);
+				m_ppChilds[childId]->m_pSeg->m_isAreaParent = isAreaParent;
+				m_ppChilds[childId]->m_pSeg->m_isLowLodNode = isLowLodNode;
 
 				if (IsStreamingActive() && m_nodeBox.GetSize().x <= SVO_ROOTLESS_PARENT_SIZE)
 				{

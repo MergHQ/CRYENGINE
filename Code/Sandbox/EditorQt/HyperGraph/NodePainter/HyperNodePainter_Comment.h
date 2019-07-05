@@ -9,5 +9,3 @@ class CHyperNodePainter_Comment : public IHyperNodePainter
 public:
 	virtual void Paint(CHyperNode* pNode, CDisplayList* pList);
 };
-
-

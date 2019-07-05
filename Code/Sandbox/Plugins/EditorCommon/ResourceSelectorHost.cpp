@@ -16,24 +16,33 @@ void SStaticResourceSelectorEntry::EditResource(const SResourceSelectorContext& 
 		edit(context, value);
 }
 
-dll_string SStaticResourceSelectorEntry::ValidateValue(const SResourceSelectorContext& context, const char* newValue, const char* previousValue) const
+SResourceValidationResult SStaticResourceSelectorEntry::ValidateValue(const SResourceSelectorContext& context, const char* newValue, const char* previousValue) const
 {
-	dll_string result = previousValue;
+	SResourceValidationResult result{ false, previousValue };
 	if (validate)
+	{
 		result = validate(context, newValue, previousValue);
+	}
 	else if (validateWithContext)
+	{
 		result = validateWithContext(context, newValue, previousValue, context.contextObject);
+	}
 
 	return result;
 }
 
-dll_string SStaticResourceSelectorEntry::SelectResource(const SResourceSelectorContext& context, const char* previousValue) const
+SResourceSelectionResult SStaticResourceSelectorEntry::SelectResource(const SResourceSelectorContext& context, const char* previousValue) const
 {
-	dll_string result = previousValue;
+	SResourceSelectionResult result;
+
 	if (function)
+	{
 		result = function(context, previousValue);
+	}
 	else if (functionWithContext)
+	{
 		result = functionWithContext(context, previousValue, context.contextObject);
+	}
 
 	return result;
 }

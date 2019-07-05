@@ -73,4 +73,3 @@ private:
 	int            m_iBrackets;
 	Gdiplus::RectF m_normalBounds;
 };
-

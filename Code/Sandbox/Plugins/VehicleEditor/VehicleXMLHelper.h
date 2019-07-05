@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VEHICLE_XML_HELPER__H__
-#define __VEHICLE_XML_HELPER__H__
+#pragma once
 
 struct IVariable;
 
@@ -77,6 +76,3 @@ struct DefinitionTable
 private:
 	static void GetUseReferenceTables(XmlNodeRef definition);
 };
-
-#endif
-

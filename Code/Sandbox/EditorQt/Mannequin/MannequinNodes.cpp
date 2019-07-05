@@ -6,6 +6,7 @@
 #include "MannequinNodes.h"
 #include "MannequinDialog.h"
 #include "MannequinUtil.h"
+#include "IEditorImpl.h"
 
 #include "SequencerSequence.h"
 #include "SequencerDopeSheet.h"
@@ -16,7 +17,7 @@
 
 #include "ISequencerSystem.h"
 
-#include "Objects\EntityObject.h"
+#include "Objects/EntityObject.h"
 #include "ViewManager.h"
 #include "RenderViewport.h"
 #include "Util/MFCUtil.h"
@@ -155,18 +156,18 @@ void CMannNodesCtrl::SetSequence(CSequencerSequence* seq)
 {
 	const int topRowIndex = (m_sequence == seq) ? GetTopRowIndex() : 0;
 
-	int64 time1 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time1 = gEnv->pTimer->GetAsyncTime().GetValue();
 	m_itemInfos.clear();
-	int64 time2 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time2 = gEnv->pTimer->GetAsyncTime().GetValue();
 	DeleteAllItems();
-	int64 time3 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time3 = gEnv->pTimer->GetAsyncTime().GetValue();
 	m_sequence = seq;
-	int64 time4 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time4 = gEnv->pTimer->GetAsyncTime().GetValue();
 
 	Reload();
-	int64 time5 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time5 = gEnv->pTimer->GetAsyncTime().GetValue();
 	m_keysCtrl->Invalidate();
-	int64 time6 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time6 = gEnv->pTimer->GetAsyncTime().GetValue();
 
 	if (nullptr == m_pDropTarget)
 	{
@@ -185,14 +186,14 @@ void CMannNodesCtrl::Reload()
 {
 	const float fScrollPos = SaveVerticalScrollPos();
 
-	int64 time1 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time1 = gEnv->pTimer->GetAsyncTime().GetValue();
 	__super::Reload();
-	int64 time2 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time2 = gEnv->pTimer->GetAsyncTime().GetValue();
 
 	RestoreVerticalScrollPos(fScrollPos);
 
 	SyncKeyCtrl();
-	int64 time3 = gEnv->pTimer->GetAsyncTime().GetValue();
+	//int64 time3 = gEnv->pTimer->GetAsyncTime().GetValue();
 
 	//CryLog("CMannNodesCtrl::Reload %" PRIi64 " %" PRIi64 " %" PRIi64 , time1, time2, time3);
 }
@@ -283,7 +284,6 @@ int CMannNodesCtrl::GetIconIndexForMute(SItemInfo* pItem) const
 //////////////////////////////////////////////////////////////////////////
 void CMannNodesCtrl::FillNodes(CRecord* pRecord)
 {
-	IObjectManager* pObjMgr = GetIEditorImpl()->GetObjectManager();
 	CSequencerSequence* seq = m_sequence;
 
 	const COLORREF TEXT_COLOR_FOR_MISSING_ENTITY = RGB(255, 0, 0);
@@ -411,8 +411,6 @@ void CMannNodesCtrl::SyncKeyCtrl()
 
 	// Forces ctrl to be drawn first.
 	UpdateWindow();
-
-	int nStartRow = 0;
 
 	CXTPReportRows* pRows = GetRows();
 	int nNumRows = pRows->GetCount();
@@ -1235,8 +1233,6 @@ int CMannNodesCtrl::ShowPopupMenuMute(CPoint point, const SItemInfo* pItemInfo)
 {
 	CMenu menu;
 
-	bool onNode = false;
-
 	if (GetSelectedCount() == 1)
 	{
 		bool notOnValidItem = !pItemInfo || !pItemInfo->node;
@@ -1461,4 +1457,3 @@ bool CMannNodesCtrl::CreatePointForAnimationInContextDrop(SItemInfo* pItemInfo, 
 	pTrack->SelectKey(keyID, true);
 	return true;
 }
-

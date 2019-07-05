@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "LevelIndependentFileMan.h"
+#include <CryCore/StlUtils.h>
 
 CLevelIndependentFileMan::CLevelIndependentFileMan()
 {
@@ -31,4 +32,3 @@ void CLevelIndependentFileMan::UnregisterModule(ILevelIndependentFileModule* pMo
 {
 	stl::find_and_erase(m_Modules, pModule);
 }
-

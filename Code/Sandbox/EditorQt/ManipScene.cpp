@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "ManipScene.h"
 
+#include "IEditorImpl.h"
 #include "Serialization.h"
 #include "QViewportEvents.h"
 
@@ -87,8 +88,6 @@ static void DrawElement(const SRenderContext& rc, const SElement& element, Eleme
 	if (element.hidden)
 		return;
 
-	IRenderer* renderer = GetIEditorImpl()->GetRenderer();
-	IPhysicsDebugRenderer* physicsDebugRenderer = GetIEditorImpl()->GetSystem()->GetIPhysicsDebugRenderer();
 	IRenderAuxGeom* aux = rc.pAuxGeom;
 
 	SAuxGeomRenderFlags defaultFlags(e_Mode3D | e_AlphaBlended | e_DrawInFrontOff | e_FillModeSolid | e_CullModeNone | e_DepthWriteOn | e_DepthTestOn);
@@ -97,8 +96,6 @@ static void DrawElement(const SRenderContext& rc, const SElement& element, Eleme
 
 	QuatT transform = spaceProvider->ElementToWorldSpace(element);
 	Matrix34 transformM(transform);
-
-	bool isHighlighted = element.id == highlightedItem;
 
 	if (element.shape == SHAPE_BOX)
 	{
@@ -169,9 +166,6 @@ static void DrawElement(const SRenderContext& rc, const SElement& element, Eleme
 
 void CScene::OnViewportRender(const SRenderContext& rc)
 {
-	IRenderer* renderer = GetIEditorImpl()->GetRenderer();
-	IRenderAuxGeom* aux = rc.pAuxGeom;
-
 	IPhysicsDebugRenderer* physicsDebugRenderer = GetIEditorImpl()->GetSystem()->GetIPhysicsDebugRenderer();
 	physicsDebugRenderer->UpdateCamera(*rc.viewport->Camera());
 
@@ -208,36 +202,32 @@ void CScene::OnViewportRender(const SRenderContext& rc)
 
 	bool hasSelection = !m_selection.IsEmpty();
 
-	if (m_showGizmo && hasSelection)
+	if (m_showGizmo && hasSelection && m_axisHelper.get())
 	{
-		int selectionCaps = GetSelectionCaps();
+		SAuxGeomRenderFlags prevFlags = IRenderAuxGeom::GetAux()->GetRenderFlags();
+		IRenderAuxGeom::GetAux()->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthTestOn | e_DepthWriteOn);
+
+		switch (m_transformationMode)
+		{
+		case MODE_TRANSLATE:
+			m_axisHelper->SetMode(CAxisHelper::MOVE_FLAG);
+			break;
+		case MODE_ROTATE:
+			m_axisHelper->SetMode(CAxisHelper::ROTATE_FLAG);
+			break;
+		case MODE_SCALE:
+			m_axisHelper->SetMode(CAxisHelper::SCALE_FLAG);
+			break;
+		}
+
+		const float gizmoSize = 1.0f;
 		Matrix34 m = Matrix34(GetGizmoOrientation(GetSelectionTransform(SPACE_WORLD), rc.viewport->Camera(), m_transformationSpace));
-		DisplayContext dc;
+		SDisplayContext dc;
 		CDisplayViewportAdapter view(rc.viewport);
 		dc.SetView(&view);
+		m_axisHelper->DrawAxis(m, dc, gizmoSize);
 
-		SGizmoPreferences gizmoParameters;
-		gizmoParameters.axisGizmoSize = 0.2f;
-
-		if (m_axisHelper.get())
-		{
-			switch (m_transformationMode)
-			{
-			case MODE_TRANSLATE:
-				m_axisHelper->SetMode(CAxisHelper::MOVE_FLAG);
-				gizmoParameters.enabled = (selectionCaps & CAP_MOVE) != 0;
-				break;
-			case MODE_ROTATE:
-				m_axisHelper->SetMode(CAxisHelper::ROTATE_FLAG);
-				gizmoParameters.enabled = (selectionCaps & CAP_ROTATE) != 0;
-				break;
-			case MODE_SCALE:
-				m_axisHelper->SetMode(CAxisHelper::SCALE_FLAG);
-				gizmoParameters.enabled = (selectionCaps & CAP_SCALE) != 0;
-				break;
-			}
-			m_axisHelper->DrawAxis(m, gizmoParameters, dc);
-		}
+		IRenderAuxGeom::GetAux()->SetRenderFlags(prevFlags);
 	}
 }
 
@@ -994,8 +984,6 @@ struct CScene::SBlockSelectHandler : public IMouseDragHandler
 
 void CScene::OnMouseMove(const SMouseEvent& ev)
 {
-	SGizmoPreferences gizmoParameters;
-	gizmoParameters.axisGizmoSize = 0.2f;
 	CDisplayViewportAdapter displayView(ev.viewport);
 
 	QuatT selectionTransform = GetSelectionTransform(SPACE_WORLD);
@@ -1023,16 +1011,15 @@ void CScene::OnMouseMove(const SMouseEvent& ev)
 
 		if (gizmoEnabled)
 		{
-			HitContext hc;
+			HitContext hc(&displayView);
 			hc.point2d.x = ev.x;
 			hc.point2d.y = ev.y;
-			hc.view = &displayView;
-			m_axisHelper->HitTest(Matrix34(axesTransform), gizmoParameters, hc);
+			m_axisHelper->HitTest(Matrix34(axesTransform), hc);
 			m_axisHelper->SetHighlightAxis(hc.axis);
 		}
 		else
 		{
-			m_axisHelper->SetHighlightAxis(0);
+			m_axisHelper->SetHighlightAxis(CLevelEditorSharedState::Axis::None);
 		}
 
 		Ray ray;
@@ -1049,8 +1036,6 @@ void CScene::OnViewportMouse(const SMouseEvent& ev)
 	if (!ev.viewport)
 		return;
 
-	SGizmoPreferences gizmoParameters;
-	gizmoParameters.axisGizmoSize = 0.2f;
 	CDisplayViewportAdapter displayView(ev.viewport);
 
 	QuatT selectionTransform = GetSelectionTransform(SPACE_WORLD);
@@ -1070,47 +1055,47 @@ void CScene::OnViewportMouse(const SMouseEvent& ev)
 				Vec3 hitPoint = selectionTransform.t;
 				if (m_showGizmo)
 				{
-					HitContext hc;
+					HitContext hc(&displayView);
 					hc.point2d.x = ev.x;
 					hc.point2d.y = ev.y;
 					hc.view = &displayView;
-					if (!Selection().IsEmpty() && m_axisHelper->HitTest(Matrix34(axesTransform), gizmoParameters, hc))
+					if (!Selection().IsEmpty() && m_axisHelper->HitTest(Matrix34(axesTransform), hc))
 					{
 						Quat localRot(selectionTransform.q);
 						Quat planeRot(GetGizmoOrientation(QuatT(selectionTransform.q, ZERO), ev.viewport->Camera(), m_transformationSpace).q);
 						switch (hc.axis)
 						{
-						case AXIS_X:
+						case CLevelEditorSharedState::Axis::X:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.axis = Vec3(1.0f, 0.0f, 0.0f);
 							constraint.localAxis = localRot * constraint.axis;
 							break;
-						case AXIS_Y:
+						case CLevelEditorSharedState::Axis::Y:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.axis = Vec3(0.0f, 1.0f, 0.0f);
 							constraint.localAxis = localRot * constraint.axis;
 							break;
-						case AXIS_Z:
+						case CLevelEditorSharedState::Axis::Z:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.axis = Vec3(0.0f, 0.0f, 1.0f);
 							constraint.localAxis = localRot * constraint.axis;
 							break;
-						case AXIS_XY:
+						case CLevelEditorSharedState::Axis::XY:
 							constraint.type = STransformConstraint::PLANE;
 							constraint.plane.SetPlane(planeRot * Vec3(0.0f, 0.0f, 1.0f), hitPoint);
 							constraint.axis = Vec3(1.0f, 1.0f, 0.0f);
 							break;
-						case AXIS_XZ:
+						case CLevelEditorSharedState::Axis::XZ:
 							constraint.type = STransformConstraint::PLANE;
 							constraint.plane.SetPlane(planeRot * Vec3(0.0f, 1.0f, 0.0f), hitPoint);
 							constraint.axis = Vec3(1.0f, 0.0f, 1.0f);
 							break;
-						case AXIS_YZ:
+						case CLevelEditorSharedState::Axis::YZ:
 							constraint.type = STransformConstraint::PLANE;
 							constraint.plane.SetPlane(planeRot * Vec3(1.0f, 0.0f, 0.0f), hitPoint);
 							constraint.axis = Vec3(0.0f, 1.0f, 1.0f);
 							break;
-						case AXIS_XYZ:
+						case CLevelEditorSharedState::Axis::XYZ:
 							constraint.type = STransformConstraint::AXIS;
 							constraint.localAxis = Vec3(1.0f, 1.0f, 1.0f);
 							constraint.axis = Vec3(1.0f, 1.0f, 1.0f);
@@ -1391,12 +1376,9 @@ QuatT CScene::GetSelectionTransform(ETransformationSpace space) const
 			r.SetTranslation(r.t / float(selectedElements.size()));
 		}
 
-		if (!_finite(r.t.x) ||
-		    !_finite(r.t.y) ||
-		    !_finite(r.t.z))
+		
+		if (!CRY_VERIFY(_finite(r.t.x) && _finite(r.t.y) && _finite(r.t.z)))
 		{
-			if (::IsDebuggerPresent())
-				__debugbreak();
 			r.SetIdentity();
 		}
 		return r;
@@ -1434,7 +1416,6 @@ int CScene::GetSelectionCaps() const
 
 		caps |= selectedElements[i].caps;
 	}
-	;
 
 	return caps;
 }
@@ -1571,4 +1552,3 @@ void CScene::SetVisibleLayerMask(unsigned int layerMask)
 }
 
 }
-

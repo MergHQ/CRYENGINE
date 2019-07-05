@@ -2,19 +2,20 @@
 
 #include "stdafx.h"
 #include "BatchFileDialog.h"
-#include "QPropertyTree/QPropertyDialog.h"
-#include <CrySerialization/StringList.h>
-#include <CrySerialization/STL.h>
+#include "FileDialogs/SystemFileDialog.h"
+#include "QPropertyTreeLegacy/QPropertyDialog.h"
+#include <IEditor.h>
+#include <CryCore/Platform/CryWindows.h>
 #include <CrySerialization/IArchive.h>
-#include <vector>
-#include <CrySystem/File/ICryPak.h>
+#include <CrySerialization/STL.h>
+#include <CrySerialization/StringList.h>
 #include <CryString/StringUtils.h>
+#include <CrySystem/File/ICryPak.h>
 #include <QApplication>
 #include <QBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <CryCore/Platform/CryWindows.h>
-#include "FileDialogs/SystemFileDialog.h"
+#include <vector>
 
 struct SBatchFileItem
 {
@@ -323,8 +324,6 @@ bool EDITOR_COMMON_API ShowBatchFileDialog(Serialization::StringList* result, co
 		            max(0, center.y() - dialog.height() / 2));
 	}
 
-	int numFailed = 0;
-	int numSaved = 0;
 	std::vector<string> failedFiles;
 	if (dialog.exec() == QDialog::Accepted)
 	{
@@ -341,4 +340,3 @@ bool EDITOR_COMMON_API ShowBatchFileDialog(Serialization::StringList* result, co
 	}
 	return false;
 }
-

@@ -26,4 +26,3 @@ ExtensionFilterVector CExtensionFilter::Parse(const char* pattern)
 	}
 	return result;
 }
-

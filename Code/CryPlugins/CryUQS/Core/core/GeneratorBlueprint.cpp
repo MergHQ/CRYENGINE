@@ -95,7 +95,7 @@ namespace UQS
 			}
 
 			//
-			// if the generator expects shuttled items of a certain type, then make sure the query will store such items at runtime on the blackboard
+			// if the generator expects shuttled items of a certain type, then make sure the query will store such items at runtime in the query context
 			//
 
 			if (const Shared::CTypeInfo* pExpectedShuttleType = m_pGeneratorFactory->GetTypeOfShuttledItemsToExpect())
@@ -141,13 +141,13 @@ namespace UQS
 
 		const Shared::CTypeInfo& CGeneratorBlueprint::GetTypeOfItemsToGenerate() const
 		{
-			assert(m_pGeneratorFactory);
+			CRY_ASSERT(m_pGeneratorFactory);
 			return m_pGeneratorFactory->GetTypeOfItemsToGenerate();
 		}
 
-		Client::GeneratorUniquePtr CGeneratorBlueprint::InstantiateGenerator(const SQueryBlackboard& blackboard, Shared::CUqsString& error) const
+		Client::GeneratorUniquePtr CGeneratorBlueprint::InstantiateGenerator(const SQueryContext& queryContext, Shared::CUqsString& error) const
 		{
-			assert(m_pGeneratorFactory);
+			CRY_ASSERT(m_pGeneratorFactory);
 
 			//
 			// create the input parameters (they will get filled by the function calls below)
@@ -162,13 +162,13 @@ namespace UQS
 
 			CFunctionCallHierarchy functionCalls;
 
-			if (!InstantiateFunctionCallHierarchy(functionCalls, blackboard, error))    // notice: the blackboard.pItemIterationContext is still a nullptr (we're not iterating on the items yet)
+			if (!InstantiateFunctionCallHierarchy(functionCalls, queryContext, error))    // notice: the queryContext.pItemIterationContext is still a nullptr (we're not iterating on the items yet)
 			{
 				return nullptr;
 			}
 
 			bool bExceptionOccurredDuringFunctionCalls = false;
-			const Client::IFunction::SExecuteContext execContext(0, blackboard, error, bExceptionOccurredDuringFunctionCalls);  // currentItemIndex == 0: this is just a dummy, as we're not iterating on items
+			const Client::IFunction::SExecuteContext execContext(0, queryContext, error, bExceptionOccurredDuringFunctionCalls);  // currentItemIndex == 0: this is just a dummy, as we're not iterating on items
 
 			functionCalls.ExecuteAll(execContext, pParams, m_pGeneratorFactory->GetInputParameterRegistry());
 
@@ -182,7 +182,7 @@ namespace UQS
 			//
 
 			Client::GeneratorUniquePtr pGenerator = m_pGeneratorFactory->CreateGenerator(pParams);   // never returns NULL
-			assert(pGenerator);
+			CRY_ASSERT(pGenerator);
 			return pGenerator;
 		}
 

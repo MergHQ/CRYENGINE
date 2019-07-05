@@ -1,5 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+#include <functional>
 
 //////////////////////////////////////////////////////////////////////////
 //! A helper class for an automatic registration
@@ -104,21 +105,26 @@ private:
 
 	void Register()
 	{
-		if (m_RegisterFunction)
+		CRY_ASSERT_MESSAGE(!m_isRegistered, "AutoRegister: Trying register a class that has already been registered");
+		if (m_RegisterFunction && !m_isRegistered)
 		{
 			m_RegisterFunction();
-			m_RegisterFunction = std::function<void()>();
+			m_isRegistered = true;
 		}
 	}
 
 	void Unregister()
 	{
+		CRY_ASSERT_MESSAGE(m_isRegistered, "AutoRegister: Trying unregister a class that has not been previously registered");
+
 		// Only unregister if Register has been called and invalidated m_RegisterFunction.
-		if (m_UnregisterFunction && !m_RegisterFunction)
+		if (m_UnregisterFunction && m_isRegistered)
 		{
 			m_UnregisterFunction();
-			m_UnregisterFunction = std::function<void()>();
 		}
+
+		// Flag for being unregistered even if an unregister function wasn't provided
+		m_isRegistered = false;
 	}
 
 	std::function<void()>    m_RegisterFunction;
@@ -127,10 +133,11 @@ private:
 	CAutoRegister<T>*        m_pNext;
 	CAutoRegister<T>*        m_pPrevious;
 
+	bool                     m_isRegistered = false;
+
 	static CAutoRegister<T>* s_pFirst;
 	static CAutoRegister<T>* s_pLast;
 };
 
 template<typename T> CAutoRegister<T>* CAutoRegister<T>::s_pLast = nullptr;
 template<typename T> CAutoRegister<T>* CAutoRegister<T>::s_pFirst = nullptr;
-

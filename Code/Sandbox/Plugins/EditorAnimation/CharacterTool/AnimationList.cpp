@@ -1,39 +1,40 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-
-#include <CryAnimation/ICryAnimation.h>
-#include <QApplication>
-#include <QClipboard>
-#include "FileDialogs/SystemFileDialog.h"
-#include "Controls/QuestionDialog.h"
-#include <QDir>
-#include <QFile>
 #include "AnimationList.h"
-#include "Serialization.h"
-#include <CrySerialization/IArchiveHost.h>
-#include <CrySystem/File/IFileChangeMonitor.h>
-#include "IEditor.h"
-#include "SkeletonList.h"
-#include "Expected.h"
-#include "Explorer/Explorer.h"
-#include "../Cry3DEngine/CGF/CGFLoader.h"
-#include "IAnimationCompressionManager.h"
-#include <CrySystem/File/ICryPak.h>
+
 #include "AnimEventFootstepGenerator.h"
-#include "QPropertyTree/QPropertyDialog.h"
-#include "QPropertyTree/ContextList.h"
-#include "ListSelectionDialog.h"
-#include "Explorer/ExplorerFileList.h"
-#include "dll_string.h"
-#include "IResourceSelectorHost.h"
+#include "AnimationCompressionManager.h"
 #include "CharacterDocument.h"
 #include "CharacterToolSystem.h"
-#include "IBackgroundTaskManager.h"
 #include "CharacterToolSystem.h"
-#include "AnimationCompressionManager.h"
+#include "IAnimationCompressionManager.h"
+#include "Serialization.h"
+#include "SkeletonList.h"
+#include "../Cry3DEngine/CGF/CGFLoader.h"
+#include <Controls/QuestionDialog.h>
+#include <CryAnimation/ICryAnimation.h>
 #include <CryIcon.h>
-#include "FilePathUtil.h"
+#include <CrySerialization/IArchiveHost.h>
+#include <CrySystem/File/ICryPak.h>
+#include <CrySystem/File/IFileChangeMonitor.h>
+#include <Expected.h>
+#include <Explorer/Explorer.h>
+#include <Explorer/ExplorerFileList.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <IBackgroundTaskManager.h>
+#include <IEditor.h>
+#include <IResourceSelectorHost.h>
+#include <ListSelectionDialog.h>
+#include <PathUtils.h>
+#include <dll_string.h>
+
+#include <QApplication>
+#include <QClipboard>
+#include <QDir>
+#include <QFile>
+#include <QPropertyTreeLegacy/ContextList.h>
+#include <QPropertyTreeLegacy/QPropertyDialog.h>
 
 namespace CharacterTool {
 
@@ -63,7 +64,6 @@ struct UpdateAnimationSizesTask : public IBackgroundTask
 				return eTaskResult_Failed;
 			}
 
-			unsigned int newSize = 0;
 			if (FILE* f = gEnv->pCryPak->FOpen(animationPath, "rb"))
 			{
 				m_newSizes[i] = gEnv->pCryPak->FGetSize(f);
@@ -101,7 +101,7 @@ struct UpdateAnimationSizesTask : public IBackgroundTask
 			if (m_system->explorerData.get())
 			{
 				m_system->explorerData->BeginBatchChange(m_subtree);
-				size_t num = min(m_entries.size(), m_newSizes.size());
+
 				for (size_t i = 0; i < m_entries.size(); ++i)
 					m_system->explorerData->SetEntryColumn(m_entries[i], m_column, m_newSizes[i], true);
 				m_system->explorerData->EndBatchChange(m_subtree);
@@ -118,7 +118,7 @@ static vector<string> LoadJointNames(const char* skeletonPath)
 	CLoaderCGF cgfLoader;
 
 	CChunkFile chunkFile;
-	std::auto_ptr<CContentCGF> cgf(cgfLoader.LoadCGF(skeletonPath, chunkFile, 0));
+	std::unique_ptr<CContentCGF> cgf(cgfLoader.LoadCGF(skeletonPath, chunkFile, 0));
 	if (!cgf.get())
 		return vector<string>();
 
@@ -180,7 +180,7 @@ static bool LoadAnimEvents(ActionOutput* output, AnimEvents* animEvents, const c
 	return true;
 }
 
-static bool LoadAnimationEntry(SEntry<AnimationContent>* entry, SkeletonList* skeletonList, IAnimationSet* animationSet, const string& defaultSkeleton, const char* animEventsFilename)
+static bool LoadAnimationEntry(SEntry<AnimationContent>* entry, const string& skeletonPath, IAnimationSet* animationSet,const char* animEventsFilename)
 {
 	string cafPath = entry->path;
 	cafPath.MakeLower();
@@ -238,15 +238,12 @@ static bool LoadAnimationEntry(SEntry<AnimationContent>* entry, SkeletonList* sk
 			else
 			{
 				entry->content.settings = SAnimSettings();
-				entry->content.settings.build.skeletonAlias = defaultSkeleton;
-				entry->content.newAnimationSkeleton = defaultSkeleton;
 				result = false;
 			}
 		}
 
 		if (entry->content.settings.build.compression.m_usesNameContainsInPerBoneSettings)
 		{
-			string skeletonPath = skeletonList->FindSkeletonPathByName(entry->content.settings.build.skeletonAlias.c_str());
 			if (!skeletonPath.empty())
 			{
 				vector<string> jointNames = LoadJointNames(skeletonPath.c_str());
@@ -340,7 +337,7 @@ static int GetAnimationPakState(const char* animationPath)
 	return result - 1;
 }
 
-void AnimationList::Populate(ICharacterInstance* character, const char* defaultSkeletonAlias, const AnimationSetFilter& filter, const char* animEventsFilename)
+void AnimationList::Populate(ICharacterInstance* character, const AnimationSetFilter& filter, const char* animEventsFilename)
 {
 	if (!character)
 		return;
@@ -351,7 +348,6 @@ void AnimationList::Populate(ICharacterInstance* character, const char* defaultS
 	m_animationSet = animationSet;
 	m_animEventsFilename = animEventsFilename;
 	m_filter = filter;
-	m_defaultSkeletonAlias = defaultSkeletonAlias;
 	m_character = character;
 
 	ReloadAnimationList();
@@ -364,9 +360,8 @@ void AnimationList::SetExplorerData(ExplorerData* explorerData, int subtree)
 	m_explorerColumnFrames = explorerData->AddColumn("Frames", ExplorerColumn::INTEGER, false);
 
 	const ExplorerColumnValue audioValues[] = {
-		{ "No audio",  ""                                },
-		{ "Has audio", "icons:common/animation_audio_event.ico" },
-	};
+		{ "No audio",  ""                                       },
+		{ "Has audio", "icons:common/animation_audio_event.ico" }, };
 	int audioValueCount = sizeof(audioValues) / sizeof(audioValues[0]);
 	m_explorerColumnAudio = explorerData->AddColumn("Audio", ExplorerColumn::ICON, false, audioValues, audioValueCount);
 	m_explorerColumnPak = explorerData->FindColumn("Pak");
@@ -388,8 +383,6 @@ void AnimationList::ReloadAnimationList()
 {
 	m_animations.Clear();
 	m_aliasToId.clear();
-
-	IAnimEvents* animEvents = gEnv->pCharacterManager->GetIAnimEvents();
 
 	std::vector<std::pair<ExplorerEntryId, unsigned int>> audioColumnValues;
 	std::vector<std::pair<ExplorerEntryId, int>> pakColumnValues;
@@ -435,8 +428,6 @@ void AnimationList::ReloadAnimationList()
 		entry->content.loadedAsAdditive = (flags & CA_ASSET_ADDITIVE) != 0;
 		entry->content.importState = AnimationContent::IMPORTED;
 		entry->content.animationId = i;
-		if (entry->content.settings.build.skeletonAlias.empty())
-			entry->content.settings.build.skeletonAlias = m_defaultSkeletonAlias;
 
 		ExplorerEntryId entryId(m_subtree, entry->id);
 		animationPaths.push_back(animationPath);
@@ -575,7 +566,7 @@ bool        AnimationList::LoadOrGetChangedEntry(unsigned int id)
 		else if (!entry->loaded)
 		{
 			EntryModifiedEvent ev;
-			entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_system->compressionSkeletonList, m_animationSet, m_defaultSkeletonAlias, m_animEventsFilename.c_str());
+			entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str());
 			entry->StoreSavedContent();
 			entry->lastContent = entry->savedContent;
 		}
@@ -617,12 +608,12 @@ bool AnimationList::ResaveAnimSettings(const char* filePath)
 	fakeEntry.path = PathUtil::ReplaceExtension(filePath, "caf");
 	fakeEntry.name = PathUtil::GetFileName(fakeEntry.path.c_str());
 
-	if (!LoadAnimationEntry(&fakeEntry, m_system->compressionSkeletonList, m_animationSet, m_defaultSkeletonAlias, m_animEventsFilename.c_str()))
+	if (!LoadAnimationEntry(&fakeEntry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str()))
 		return false;
 
 	{
-		char buffer[ICryPak::g_nMaxPath] = "";
-		const char* realPath = gEnv->pCryPak->AdjustFileName(filePath, buffer, 0);
+		CryPathString realPath;
+		gEnv->pCryPak->AdjustFileName(filePath, realPath, 0);
 		DWORD attribs = GetFileAttributesA(realPath);
 		if (attribs != INVALID_FILE_ATTRIBUTES && (attribs & FILE_ATTRIBUTE_READONLY) != 0)
 			SetFileAttributesA(realPath, FILE_ATTRIBUTE_NORMAL);
@@ -808,11 +799,11 @@ bool PatchAnimEvents(ActionOutput* output, const char* animEventsFilename, const
 
 	if (needToSave)
 	{
-		char realPath[ICryPak::g_nMaxPath];
+		CryPathString realPath;
 		gEnv->pCryPak->AdjustFileName(animEventsFilename, realPath, ICryPak::FLAGS_FOR_WRITING);
 		{
-			string path;
-			string filename;
+			CryPathString path;
+			CryPathString filename;
 			PathUtil::Split(realPath, path, filename);
 			QDir().mkpath(QString::fromLocal8Bit(path.c_str()));
 		}
@@ -829,9 +820,9 @@ bool PatchAnimEvents(ActionOutput* output, const char* animEventsFilename, const
 
 static void CreateFolderForFile(const char* gameFilename)
 {
-	char buf[ICryPak::g_nMaxPath];
-	gEnv->pCryPak->AdjustFileName(gameFilename, buf, ICryPak::FLAGS_FOR_WRITING);
-	QDir().mkpath(QString::fromLocal8Bit(PathUtil::ToUnixPath(PathUtil::GetParentDirectory(buf)).c_str()));
+	CryPathString adjusted;
+	gEnv->pCryPak->AdjustFileName(gameFilename, adjusted, ICryPak::FLAGS_FOR_WRITING);
+	QDir().mkpath(QString::fromLocal8Bit(PathUtil::ToUnixPath(PathUtil::GetParentDirectory(adjusted)).c_str()));
 }
 
 bool AnimationList::SaveAnimationEntry(ActionOutput* output, unsigned int id, bool notifyOfChange)
@@ -847,7 +838,6 @@ bool AnimationList::SaveAnimationEntry(ActionOutput* output, unsigned int id, bo
 		if (entry->content.importState == AnimationContent::NEW_ANIMATION)
 		{
 			SAnimSettings settings;
-			settings.build.skeletonAlias = entry->content.newAnimationSkeleton;
 			if (!settings.Save(animSettingsFilename.c_str()))
 				return false;
 		}
@@ -870,8 +860,8 @@ bool AnimationList::SaveAnimationEntry(ActionOutput* output, unsigned int id, bo
 			if (entry->content.type == AnimationContent::BLEND_SPACE)
 			{
 				XmlNodeRef root = entry->content.blendSpace.SaveToXml();
-				char path[ICryPak::g_nMaxPath] = "";
-				gEnv->pCryPak->AdjustFileName(entry->path.c_str(), path, 0);
+				CryPathString path;
+				gEnv->pCryPak->AdjustFileName(entry->path, path, 0);
 				if (!root->saveToFile(path))
 				{
 					if (output)
@@ -882,8 +872,8 @@ bool AnimationList::SaveAnimationEntry(ActionOutput* output, unsigned int id, bo
 			else if (entry->content.type == AnimationContent::COMBINED_BLEND_SPACE)
 			{
 				XmlNodeRef root = entry->content.combinedBlendSpace.SaveToXml();
-				char path[ICryPak::g_nMaxPath] = "";
-				gEnv->pCryPak->AdjustFileName(entry->path.c_str(), path, 0);
+				CryPathString path;
+				gEnv->pCryPak->AdjustFileName(entry->path, path, 0);
 				if (!root->saveToFile(path))
 				{
 					if (output)
@@ -956,7 +946,7 @@ void AnimationList::RevertEntry(unsigned int id)
 {
 	if (SEntry<AnimationContent>* entry = m_animations.GetById(id))
 	{
-		entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_system->compressionSkeletonList, m_animationSet, m_defaultSkeletonAlias, m_animEventsFilename.c_str());
+		entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str());
 		entry->StoreSavedContent();
 
 		EntryModifiedEvent ev;
@@ -983,7 +973,6 @@ bool AnimationList::UpdateImportEntry(SEntry<AnimationContent>* entry)
 	{
 		entry->content.importState = AnimationContent::NEW_ANIMATION;
 		entry->content.loadedInEngine = false;
-		entry->content.newAnimationSkeleton = m_defaultSkeletonAlias;
 
 		int pakState = GetAnimationPakState(entry->path.c_str());
 		m_system->explorerData->SetEntryColumn(ExplorerEntryId(m_subtree, entry->id), m_explorerColumnPak, pakState, true);
@@ -1021,7 +1010,6 @@ bool AnimationList::ImportAnimation(string* errorMessage, unsigned int id)
 		return false;
 	}
 
-	importEntry->content.settings.build.skeletonAlias = importEntry->content.newAnimationSkeleton;
 	importEntry->content.importState = AnimationContent::WAITING_FOR_CHRPARAMS_RELOAD;
 	SaveEntry(0, importEntry->id);
 
@@ -1130,7 +1118,7 @@ void AnimationList::OnFileChange(const char* filename, EChangeType eType)
 			if (entry)
 			{
 				entryId = ExplorerEntryId(m_subtree, entry->id);
-				LoadAnimationEntry(entry, 0, m_animationSet, 0, m_animEventsFilename.c_str());
+				LoadAnimationEntry(entry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str());
 				EntryModifiedEvent ev;
 				if (entry->Changed(&ev.previousContent))
 				{
@@ -1510,19 +1498,25 @@ void AnimationList::ActionExportHTR(ActionContext& x)
 
 // ---------------------------------------------------------------------------
 
-dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char* previousValue, ICharacterInstance* character)
+SResourceSelectionResult AnimationAliasSelector(const SResourceSelectorContext& context, const char* previousValue, ICharacterInstance* character)
 {
+	SResourceSelectionResult result{ false, previousValue };
 	if (!character)
-		return previousValue;
+	{
+		return result;
+	}
 
-	ListSelectionDialog dialog("CTAnimationAliasSelection", x.parentWidget);
+	ListSelectionDialog dialog("CTAnimationAliasSelection", context.parentWidget);
 	dialog.setWindowTitle("Animation Alias Selection");
-	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetIconPath()));
+	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(context.typeName)->GetIconPath()));
 	dialog.setModal(true);
 
 	IAnimationSet* animationSet = character->GetIAnimationSet();
 	if (!animationSet)
-		return previousValue;
+	{
+		return result;
+	}
+
 	IDefaultSkeleton& skeleton = character->GetIDefaultSkeleton();
 
 	dialog.SetColumnText(0, "Animation Alias");
@@ -1535,7 +1529,9 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 		const char* name = animationSet->GetNameByAnimID(i);
 		const char* animationPath = animationSet->GetFilePathByID(i);
 		if (IsInternalAnimationName(name, animationPath))
+		{
 			continue;
+		}
 
 		AnimationContent::Type type = AnimationContent::ANIMATION;
 
@@ -1543,16 +1539,24 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 		if (flags & CA_ASSET_LMG)
 		{
 			if (animationSet->IsCombinedBlendSpace(i))
+			{
 				type = AnimationContent::COMBINED_BLEND_SPACE;
+			}
 			else
+			{
 				type = AnimationContent::BLEND_SPACE;
+			}
 		}
 		else if (flags & CA_AIMPOSE)
 		{
 			if (animationSet->IsAimPose(i, skeleton))
+			{
 				type = AnimationContent::AIMPOSE;
+			}
 			else if (animationSet->IsLookPose(i, skeleton))
+			{
 				type = AnimationContent::LOOKPOSE;
+			}
 		}
 		bool isAdditive = (flags & CA_ASSET_ADDITIVE) != 0;
 		const char* icon = EntryIconByContentType(type, isAdditive);
@@ -1562,9 +1566,13 @@ dll_string AnimationAliasSelector(const SResourceSelectorContext& x, const char*
 		dialog.AddRowColumn(typeName);
 	}
 
-	return dialog.ChooseItem(previousValue);
+	ListSelectionDialog::SSelectionResult selectionResult = dialog.ChooseItem(previousValue);
+
+	result.selectedResource = selectionResult.selectedItem.c_str();
+	result.selectionAccepted = selectionResult.selectionAccepted;
+
+	return result;
 }
 REGISTER_RESOURCE_SELECTOR("AnimationAlias", AnimationAliasSelector, "icons:common/assets_animation.ico")
 
 }
-

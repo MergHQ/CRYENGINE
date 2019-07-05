@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "ConvertContext.h"
-#include "iconfig.h"
+#include "IConfig.h"
 #include "FileUtil.h"
 #include "UpToDateFileHelpers.h"
 

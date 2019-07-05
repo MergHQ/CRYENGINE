@@ -7,13 +7,6 @@
 
 namespace XMLBinary
 {
-class IDataWriter
-{
-public:
-	virtual ~IDataWriter() {}
-	virtual void Write(const void* pData, size_t size) = 0;
-};
-
 class IFilter
 {
 public:

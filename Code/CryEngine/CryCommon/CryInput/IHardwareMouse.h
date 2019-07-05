@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct ISystemEventListener;
+
 //-----------------------------------------------------------------------------------------------------
 /*
    When double-click, the sequence is the following:
@@ -38,6 +40,7 @@ struct IHardwareMouseEventListener
 };
 
 //-----------------------------------------------------------------------------------------------------
+typedef void* CRY_HWND;
 
 /*! Interface for managing the main OS cursor's state */
 struct IHardwareMouse
@@ -47,8 +50,8 @@ struct IHardwareMouse
 
 	virtual void Release() = 0;
 
-	//! We need to register after the creation of the device but before its init.
-	virtual void OnPreInitRenderer() = 0;
+	//! We need to register after the creation of the device to initialize the software mouse texture.
+	virtual void OnPostInitRenderer() = 0;
 
 	//! We need to register after the creation of input to emulate mouse.
 	virtual void OnPostInitInput() = 0;
@@ -66,12 +69,15 @@ struct IHardwareMouse
 	virtual IHardwareMouseEventListener* GetCurrentExclusiveEventListener() = 0;
 
 	//! Called only in Editor when switching from editing to game mode.
-	virtual void SetConfinedWnd(HWND wnd) = 0;
+	virtual void SetConfinedWnd(CRY_HWND wnd) = 0;
 	virtual void SetGameMode(bool bGameMode) = 0;
 
 	//! Increment when you want to show the cursor, decrement otherwise.
 	virtual void IncrementCounter() = 0;
 	virtual void DecrementCounter() = 0;
+
+	//! Return true is cursor is currently actually visible.
+	virtual bool IsCursorVisible() const = 0;
 
 	//! Standard get/set functions, mainly for Gamepad emulation purpose.
 	virtual void GetHardwareMousePosition(float* pfX, float* pfY) = 0;

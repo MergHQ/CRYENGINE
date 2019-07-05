@@ -95,7 +95,7 @@ void CAIBattleFrontGroup::CalculateAveragePositionOfGroupMembers()
 		if(!battleFrontMember.paused)
 		{
 			const IEntity* entity = gEnv->pEntitySystem->GetEntity(battleFrontMember.entityID);
-			CRY_ASSERT_MESSAGE(entity, "Somehow there is an invalid entity in a battlefront group");
+			CRY_ASSERT(entity, "Somehow there is an invalid entity in a battlefront group");
 			if (!entity)
 				break;
 

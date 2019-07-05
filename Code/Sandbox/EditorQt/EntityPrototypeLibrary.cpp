@@ -4,6 +4,7 @@
 #include "EntityPrototypeLibrary.h"
 
 #include "EntityPrototype.h"
+#include <Util/EditorUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CEntityPrototypeLibrary implementation.
@@ -61,4 +62,3 @@ void CEntityPrototypeLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 		}
 	}
 }
-

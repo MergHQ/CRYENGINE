@@ -2,7 +2,7 @@
 
 from waflib.Configure import conf
 from waflib.TaskGen import feature, after_method, before_method, extension
-from waflib import Task
+from waflib import Task, Utils
 from waflib.Tools import c_preproc
 
 import os
@@ -14,11 +14,15 @@ import subprocess
 @conf
 def configure_mono(conf):
 	v = conf.env
-	v['MONO'] = conf.CreateRootRelativePath('Code/SDKs/Mono/bin/mcs')
+	host = Utils.unversioned_sys_platform()
+	if host == 'win32':
+		v['MONO'] = conf.CreateRootRelativePath('Code/SDKs/Mono/bin/mcs.bat')
+	else:
+		v['MONO'] = conf.CreateRootRelativePath('Code/SDKs/Mono/bin/mcs')
 	mono_lib_path = conf.CreateRootRelativePath('Code/SDKs/Mono/lib/mono')
-	v['MONO_FLAGS'] =   ['-target:library', '-langversion:4', '-platform:anycpu', '-optimize', '-g', '-L ' + mono_lib_path]
+	v['MONO_FLAGS'] =   ['-target:library', '-langversion:4', '-platform:anycpu', '-optimize', '-debug', '-lib:' + mono_lib_path]
 	# TODO: for debug add -debug
-	v['MONO_TGT_F'] = ['-out:']
+	v['MONO_TGT_F'] = '-out:'
 	
 class mono(Task.Task):
 	colo = 'GREEN'	
@@ -49,11 +53,14 @@ class mono(Task.Task):
 		file_cs_meta.close()
 		
 		# Execute mono command
-		mcs_cmd = '%s %s %s' % (env['MONO'], ' '.join(env['MONO_FLAGS']), self.cs_meta_data_node.abspath())
-		for cs_source_node in self.inputs:
-			mcs_cmd += ' %s' % cs_source_node.abspath()
+		mcs_cmd = [env['MONO']]
+		mcs_cmd += env['MONO_FLAGS']
+		mcs_cmd.append(self.cs_meta_data_node.abspath())
 		
-		mcs_cmd += ' %s%s' % (' '.join(env['MONO_TGT_F']), self.outputs[0].abspath())		
+		for cs_source_node in self.inputs:
+			mcs_cmd.append(cs_source_node.abspath())
+		mcs_cmd.append(env['MONO_TGT_F'] + self.outputs[0].abspath())
+				
 		return self.exec_command(mcs_cmd, env=env.env or None)
 
 @feature('swig')

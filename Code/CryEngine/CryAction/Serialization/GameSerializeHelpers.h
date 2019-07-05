@@ -105,6 +105,8 @@ struct SBasicEntityData
 		}
 
 		ser.Value("id", id);
+		ser.Value("guidHipart", guid.hipart);
+		ser.Value("guidLopart", guid.lopart);
 		ser.Value("flags", flags);
 		ser.Value("flags2", flags2);
 
@@ -169,6 +171,7 @@ struct SBasicEntityData
 
 	IEntity*    pEntity;
 	EntityId    id;
+	CryGUID     guid;
 	string      name;
 	string      className;
 	string      archetype;

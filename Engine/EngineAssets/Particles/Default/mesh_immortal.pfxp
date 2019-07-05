@@ -7,7 +7,7 @@
         "PiecesMode": "RandomPiece",
         "PiecePlacement": "Standard",
         "SizeMode": "Scale",
-        "Mesh": "objects/default/primitive_sphere.cgf",
+        "Mesh": "EngineAssets/Objects/primitive_sphere.cgf",
         "OriginMode": "Origin"
       }
     },
@@ -51,7 +51,6 @@
         "AngularInherit": 0.0,
         "PositionInherit": 1.0,
         "VelocityInheritAfterDeath": 0.0,
-        "Enabled": false,
         "VelocityInherit": 1.0
       }
     }

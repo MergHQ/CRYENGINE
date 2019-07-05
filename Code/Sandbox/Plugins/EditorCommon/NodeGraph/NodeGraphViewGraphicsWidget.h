@@ -29,6 +29,7 @@ public:
 	virtual void                             DeleteLater();
 
 	virtual int32                            GetType() const { return eGraphViewWidgetType_Unset; }
+	virtual const CNodeGraphViewStyleItem&   GetStyle() const;
 	virtual CAbstractNodeGraphViewModelItem* GetAbstractItem() const = 0;
 
 	virtual void                             OnItemInvalidated();
@@ -103,4 +104,3 @@ inline T* CNodeGraphViewGraphicsWidget::Cast()
 }
 
 }
-

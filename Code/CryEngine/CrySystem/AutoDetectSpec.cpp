@@ -94,10 +94,10 @@ static void GetCPUName(char* pName, size_t bufferSize)
 	cry_sprintf(pName, bufferSize, name);
 }
 
-void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char* pName, size_t bufferSize)
+void Win32SysInspect::GetOS(SPlatformInfo::SWinInfo& winInfo, char* pName, size_t bufferSize)
 {
-	ver = SPlatformInfo::WinUndetected;
-	is64Bit = false;
+	winInfo.ver = SPlatformInfo::WinUndetected;
+	winInfo.is64Bit = false;
 
 	if (pName && bufferSize)
 		pName[0] = '\0';
@@ -114,34 +114,38 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 			if (sysInfo.dwMajorVersion == 5)
 			{
 				if (sysInfo.dwMinorVersion == 0)
-					ver = SPlatformInfo::Win2000;
+					winInfo.ver = SPlatformInfo::Win2000;
 				else if (sysInfo.dwMinorVersion == 1)
-					ver = SPlatformInfo::WinXP;
+					winInfo.ver = SPlatformInfo::WinXP;
 				else if (sysInfo.dwMinorVersion == 2)
 				{
 					if (sysInfo.wProductType == VER_NT_WORKSTATION)
-						ver = SPlatformInfo::WinXP; // 64 bit windows actually but this will be detected later anyway
+						winInfo.ver = SPlatformInfo::WinXP; // 64 bit windows actually but this will be detected later anyway
 					else if (sysInfo.wProductType == VER_NT_SERVER || sysInfo.wProductType == VER_NT_DOMAIN_CONTROLLER)
-						ver = SPlatformInfo::WinSrv2003;
+						winInfo.ver = SPlatformInfo::WinSrv2003;
 				}
 			}
 			else if (sysInfo.dwMajorVersion == 6)
 			{
 				if (sysInfo.dwMinorVersion == 0)
-					ver = SPlatformInfo::WinVista;
+					winInfo.ver = SPlatformInfo::WinVista;
 				else if (sysInfo.dwMinorVersion == 1)
-					ver = SPlatformInfo::Win7;
+					winInfo.ver = SPlatformInfo::Win7;
 				else if (sysInfo.dwMinorVersion == 2)
-					ver = SPlatformInfo::Win8;
+					winInfo.ver = SPlatformInfo::Win8;
 				else if (sysInfo.dwMinorVersion == 3)
-					ver = SPlatformInfo::Win8Point1;
+					winInfo.ver = SPlatformInfo::Win8Point1;
 			}
 			else if (sysInfo.dwMajorVersion == 10)
 			{
 				if (sysInfo.dwMinorVersion == 0)
-					ver = SPlatformInfo::Win10;
+					winInfo.ver = SPlatformInfo::Win10;
 			}
+
+			winInfo.build = sysInfo.dwBuildNumber;
 		}
+
+		GetWindowsDirectory(winInfo.path, sizeof(winInfo.path));
 
 		typedef BOOL (WINAPI * FP_GetSystemWow64Directory)(LPSTR, UINT);
 		FP_GetSystemWow64Directory pgsw64d((FP_GetSystemWow64Directory) GetProcAddress(GetModuleHandle("kernel32"), "GetSystemWow64DirectoryA"));
@@ -149,15 +153,15 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 		{
 			char str[MAX_PATH];
 			if (!pgsw64d(str, sizeof(str)))
-				is64Bit = GetLastError() != ERROR_CALL_NOT_IMPLEMENTED;
+				winInfo.is64Bit = GetLastError() != ERROR_CALL_NOT_IMPLEMENTED;
 			else
-				is64Bit = true;
+				winInfo.is64Bit = true;
 		}
 
 		if (pName && bufferSize)
 		{
 			const char* windowsVersionText(0);
-			switch (ver)
+			switch (winInfo.ver)
 			{
 			case SPlatformInfo::Win2000:
 				windowsVersionText = "Windows 2000";
@@ -193,7 +197,7 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 			if (sysInfo.wServicePackMajor > 0)
 				cry_sprintf(sptext, "SP %d ", sysInfo.wServicePackMajor);
 
-			cry_sprintf(pName, bufferSize, "%s %s %s(build %d.%d.%d)", windowsVersionText, is64Bit ? "64 bit" : "32 bit",
+			cry_sprintf(pName, bufferSize, "%s %s %s(build %d.%d.%d)", windowsVersionText, winInfo.is64Bit ? "64 bit" : "32 bit",
 			            sptext, sysInfo.dwMajorVersion, sysInfo.dwMinorVersion, sysInfo.dwBuildNumber);
 		}
 	}
@@ -201,91 +205,11 @@ void Win32SysInspect::GetOS(SPlatformInfo::EWinVersion& ver, bool& is64Bit, char
 
 static void GetOSName(char* pName, size_t bufferSize)
 {
-	SPlatformInfo::EWinVersion winVer(SPlatformInfo::WinUndetected);
-	bool is64bit(false);
+	SPlatformInfo::SWinInfo winInfo;
+	winInfo.ver = SPlatformInfo::WinUndetected;
+	winInfo.is64Bit = false;
 
-	Win32SysInspect::GetOS(winVer, is64bit, pName, bufferSize);
-}
-
-bool Win32SysInspect::IsVistaKB940105Required()
-{
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	OSVERSIONINFOEX osv = { sizeof(osv) };
-	osv.dwMajorVersion = HIBYTE(_WIN32_WINNT_VISTA);
-	osv.dwMinorVersion = LOBYTE(_WIN32_WINNT_VISTA);
-	osv.wServicePackMajor = 0;
-
-	const DWORDLONG dwlConditionMask = VerSetConditionMask(
-	  VerSetConditionMask(
-	    VerSetConditionMask(
-	      0, VER_MAJORVERSION, VER_EQUAL),
-	    VER_MINORVERSION, VER_EQUAL),
-	  VER_SERVICEPACKMAJOR, VER_EQUAL);
-	if (!VerifyVersionInfo(&osv, VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR, dwlConditionMask))
-	{
-		// This QFE only ever applies to Windows Vista RTM. Windows Vista SP1 already has this fix,
-		// and earlier versions of Windows do not implement WDDM
-		return false;
-	}
-
-	//MEMORYSTATUSEX mex;
-	//memset(&mex, 0, sizeof(mex));
-	//mex.dwLength = sizeof(mex);
-	//GlobalMemoryStatusEx(&mex);
-
-	//if (mex.ullTotalVirtual >= 4294836224)
-	//{
-	//	// If there is 4 GB of VA space total for this process, then we are a
-	//	// 32-bit Large Address Aware application running on a Windows 64-bit OS.
-
-	//	// We could be a 32-bit Large Address Aware application running on a
-	//	// Windows 32-bit OS and get up to 3 GB, but that has stability implications.
-	//	// Therefore, we recommend the QFE for all 32-bit versions of the OS.
-
-	//	// No need for the fix unless the game is pushing 4 GB of VA
-	//	return false;
-	//}
-
-	const char* sysFile = "dxgkrnl.sys";
-
-	// Ensure we are checking the system copy of the file
-	char sysPath[MAX_PATH];
-	GetSystemDirectory(sysPath, sizeof(sysPath));
-
-	cry_strcat(sysPath, "\\drivers\\");
-	cry_strcat(sysPath, sysFile);
-
-	char buf[2048];
-	if (!GetFileVersionInfo(sysPath, 0, sizeof(buf), buf))
-	{
-		// This should never happen, but we'll assume it's a newer .sys file since we've
-		// narrowed the test to a Windows Vista RTM OS.
-		return false;
-	}
-
-	VS_FIXEDFILEINFO* ver;
-	UINT size;
-	if (!VerQueryValue(buf, "\\", (void**) &ver, &size) || size != sizeof(VS_FIXEDFILEINFO) || ver->dwSignature != 0xFEEF04BD)
-	{
-		// This should never happen, but we'll assume it's a newer .sys file since we've
-		// narrowed the test to a Windows Vista RTM OS.
-		return false;
-	}
-
-	// File major.minor.build.qfe version comparison
-	//   WORD major = HIWORD( ver->dwFileVersionMS ); WORD minor = LOWORD( ver->dwFileVersionMS );
-	//   WORD build = HIWORD( ver->dwFileVersionLS ); WORD qfe = LOWORD( ver->dwFileVersionLS );
-
-	if (ver->dwFileVersionMS > MAKELONG(0, 6) || (ver->dwFileVersionMS == MAKELONG(0, 6) && ver->dwFileVersionLS >= MAKELONG(20648, 6000)))
-	{
-		// QFE fix version of dxgkrnl.sys is 6.0.6000.20648
-		return false;
-	}
-
-	return true;
-	#else
-	return false; // The QFE is not required for a 64-bit native application as it has 8 TB of VA
-	#endif
+	Win32SysInspect::GetOS(winInfo, pName, bufferSize);
 }
 
 static void GetSystemMemory(uint64& totSysMem)
@@ -986,9 +910,7 @@ void CSystem::AutoDetectSpec(const bool detectResolution)
 	char tempBuf[512];
 
 	// get OS
-	SPlatformInfo::EWinVersion winVer(SPlatformInfo::WinUndetected);
-	bool is64bit(false);
-	Win32SysInspect::GetOS(winVer, is64bit, tempBuf, sizeof(tempBuf));
+	GetOSName(tempBuf, sizeof(tempBuf));
 	CryLogAlways("- %s", tempBuf);
 
 	// get system memory
@@ -1032,12 +954,20 @@ void CSystem::AutoDetectSpec(const bool detectResolution)
 
 	if (detectResolution)
 	{
-		if ((m_rWidth->GetFlags() & VF_WASINCONFIG) == 0)
-			m_rWidth->Set(GetSystemMetrics(SM_CXFULLSCREEN));
-		if ((m_rHeight->GetFlags() & VF_WASINCONFIG) == 0)
-			m_rHeight->Set(GetSystemMetrics(SM_CYFULLSCREEN));
-		if ((m_rFullscreen->GetFlags() & VF_WASINCONFIG) == 0)
-			m_rFullscreen->Set(1);
+		if (gEnv->pRenderer)
+		{
+			HMONITOR hMonitor = MonitorFromWindow(reinterpret_cast<HWND>(gEnv->pRenderer->GetHWND()), MONITOR_DEFAULTTOPRIMARY);
+			MONITORINFO monitorInfo;
+			monitorInfo.cbSize = sizeof(monitorInfo);
+			GetMonitorInfo(hMonitor, &monitorInfo);
+
+			if ((m_rWidth->GetFlags() & VF_WASINCONFIG) == 0)
+				m_rWidth->Set(static_cast<int>(monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left));
+			if ((m_rHeight->GetFlags() & VF_WASINCONFIG) == 0)
+				m_rHeight->Set(static_cast<int>(monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top));
+			if ((m_rFullscreen->GetFlags() & VF_WASINCONFIG) == 0)
+				m_rFullscreen->Set(1);
+		}
 	}
 }
 

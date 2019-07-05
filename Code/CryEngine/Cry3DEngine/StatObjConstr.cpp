@@ -48,10 +48,6 @@ CStatObj::CStatObj()
 	m_fLodDistance = 0.0f;
 
 	Init();
-
-#ifdef TRACE_CGF_LEAKS
-	m_sLoadingCallstack = GetSystem()->GetLoadingProfilerCallstack();
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -181,9 +177,10 @@ void CStatObj::ShutDown()
 		}
 	m_arrPhysGeomInfo.m_array.clear();
 
-	m_pStreamedRenderMesh = 0;
-	m_pMergedRenderMesh = 0;
-	SetRenderMesh(0);
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
+	m_pStreamedRenderMesh = pNullMesh;
+	m_pMergedRenderMesh = pNullMesh;
+	SetRenderMesh(pNullMesh);
 
 	//	assert (IsHeapValid());
 
@@ -337,7 +334,8 @@ void CStatObj::MakeRenderMesh()
 
 	FUNCTION_PROFILER_3DENGINE;
 
-	SetRenderMesh(0);
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
+	SetRenderMesh(pNullMesh);
 
 	if (!m_pIndexedMesh || m_pIndexedMesh->GetSubSetCount() == 0)
 		return;
@@ -602,47 +600,33 @@ IStatObj* CStatObj::GetLodObject(int nLodLevel, bool bReturnNearest)
 
 	if (!m_pLODs)
 	{
-		if (bReturnNearest || nLodLevel == 0)
+		if (bReturnNearest)
 			return this;
 		else
 			return NULL;
 	}
 
-	if (bReturnNearest)
-		nLodLevel = CLAMP(nLodLevel, 0, MAX_STATOBJ_LODS_NUM - 1);
+	if(bReturnNearest)
+		nLodLevel = min(nLodLevel, MAX_STATOBJ_LODS_NUM - 1);
 
 	CStatObj* pLod = 0;
 	if (nLodLevel < MAX_STATOBJ_LODS_NUM)
 	{
 		pLod = m_pLODs[nLodLevel];
 
-		// Look up
 		if (bReturnNearest && !pLod)
 		{
-			// Find highest existing lod looking up.
-			int lod = nLodLevel;
-			while (lod > 0 && m_pLODs[lod] == 0)
-				lod--;
-			if (lod > 0)
+			for (int deltaLod = 1; deltaLod < MAX_STATOBJ_LODS_NUM; ++deltaLod)
 			{
-				pLod = m_pLODs[lod];
-			}
-			else
-			{
-				pLod = this;
-			}
-		}
-		// Look down
-		if (bReturnNearest && !pLod)
-		{
-			// Find highest existing lod looking down.
-			for (int lod = nLodLevel + 1; lod < MAX_STATOBJ_LODS_NUM; lod++)
-			{
-				if (m_pLODs[lod])
-				{
-					pLod = m_pLODs[lod];
-					break;
-				}
+				int lower = nLodLevel - deltaLod;
+				if (0 < lower && m_pLODs[lower])
+					return m_pLODs[lower];
+				if (lower == 0)
+					return this;
+
+				int upper = nLodLevel + deltaLod;
+				if (upper < MAX_STATOBJ_LODS_NUM && m_pLODs[upper])
+					return m_pLODs[upper];
 			}
 		}
 	}
@@ -987,9 +971,9 @@ void CStatObj::TryMergeSubObjects(bool bFromStreaming)
 
 					CStatObj* pStatObj = new CStatObj();
 					pStatObj->m_szFileName = m_szFileName;
-					char lodName[32];
-					cry_strcpy(lodName, "-mlod");
-					ltoa(i, lodName + 5, 10);
+					static_assert(MAX_STATOBJ_LODS_NUM < 10, "Increase size of lodName buffer");
+					char lodName[] = "-mlod?"; // '?' is a placeholder for the number
+					ltoa(i, &lodName[5], 10);
 					pStatObj->m_szFileName.append(lodName);
 					pStatObj->m_szGeomName = m_szGeomName;
 					pStatObj->m_bSubObject = true;
@@ -1019,7 +1003,7 @@ void CStatObj::MergeSubObjectsRenderMeshes(bool bFromStreaming, CStatObj* pLod0,
 	if (m_bUnmergable)
 		return;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Merged StatObj");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Merged StatObj");
 	FUNCTION_PROFILER_3DENGINE;
 
 	m_bMerged = false;
@@ -1226,11 +1210,12 @@ bool CStatObj::CanMergeSubObjects()
 //////////////////////////////////////////////////////////////////////////
 void CStatObj::UnMergeSubObjectsRenderMeshes()
 {
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
 	if (m_bMerged)
 	{
 		m_bMerged = false;
 		m_pMergedRenderMesh = 0;
-		SetRenderMesh(0);
+		SetRenderMesh(pNullMesh);
 	}
 	if (m_bMergedLODs)
 	{
@@ -1284,6 +1269,24 @@ CStatObj::SSubObject* CStatObj::FindSubObject_StrStr(const char* sNodeName)
 		}
 	}
 	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+inline void InitializeSubObject(IStatObj::SSubObject& so)
+{
+	so.localTM.SetIdentity();
+	so.name = "";
+	so.properties = "";
+	so.nType = STATIC_SUB_OBJECT_MESH;
+	so.pWeights = 0;
+	so.pFoliage = 0;
+	so.nParent = -1;
+	so.tm.SetIdentity();
+	so.bIdentityMatrix = true;
+	so.bHidden = false;
+	so.helperSize = Vec3(0, 0, 0);
+	so.pStatObj = 0;
+	so.bShadowProxy = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1421,18 +1424,20 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 				hit.inRay.origin = invertedTM.TransformPoint(hit.inRay.origin);
 				hit.inRay.direction = invertedTM.TransformVector(hit.inRay.direction);
 
+#if defined(FEATURE_SVO_GI)
 				int nFirstTriangleId = hit.pHitTris ? hit.pHitTris->Count() : 0;
+#endif
 
 				if (((CStatObj*)m_subObjects[i].pStatObj)->RayIntersection(hit, pCustomMtl))
 				{
 					if (hit.fDistance < fMinDistance)
 					{
-						hitInfo.pStatObj = m_subObjects[i].pStatObj;
 						bAnyHit = true;
 						hitOut = hit;
 					}
 				}
 
+#if defined(FEATURE_SVO_GI)
 				// transform collected triangles from sub-object space into object space
 				if (hit.pHitTris)
 				{
@@ -1443,6 +1448,7 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 							ht.v[c] = m_subObjects[i].tm.TransformPoint(ht.v[c]);
 					}
 				}
+#endif
 			}
 		}
 		if (bAnyHit)
@@ -1460,11 +1466,6 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 		if (pRenderMesh)
 		{
 			bool bRes = CRenderMeshUtils::RayIntersection(pRenderMesh, hitInfo, pCustomMtl);
-			if (bRes)
-			{
-				hitInfo.pStatObj = this;
-				hitInfo.pRenderMesh = pRenderMesh;
-			}
 			return bRes;
 		}
 	}
@@ -1518,11 +1519,11 @@ bool CStatObj::LineSegIntersection(const Lineseg& lineSeg, Vec3& hitPos, int& su
 	return intersects;
 }
 
-void CStatObj::SetRenderMesh(IRenderMesh* pRM)
+void CStatObj::SetRenderMesh(_smart_ptr<IRenderMesh>& pRM)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
-	if (pRM == m_pRenderMesh)
+	if (pRM.get() == m_pRenderMesh.get())
 		return;
 
 	{
@@ -1605,7 +1606,7 @@ int CStatObj::CountChildReferences()
 IStatObj* CStatObj::GetLowestLod()
 {
 	if (int nLowestLod = CStatObj::GetMinUsableLod())
-		return m_pLODs ? (CStatObj*)m_pLODs[CStatObj::GetMinUsableLod()] : (CStatObj*)NULL;
+		return m_pLODs ? (CStatObj*)m_pLODs[nLowestLod] : (CStatObj*)NULL;
 	return this;
 }
 
@@ -1663,7 +1664,7 @@ void CStatObj::GetStatisticsNonRecursive(SStatistics& si)
 
 	for (int j = 0; j < pStatObj->m_arrPhysGeomInfo.GetGeomCount(); j++)
 	{
-		if (pStatObj->GetPhysGeom(j))
+		if (pStatObj->GetPhysGeom(j) && pStatObj->GetPhysGeom(j)->pGeom)
 		{
 			ICrySizer* pPhysSizer = GetISystem()->CreateSizer();
 			pStatObj->GetPhysGeom(j)->pGeom->GetMemoryStatistics(pPhysSizer);

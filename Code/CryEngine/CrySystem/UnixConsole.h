@@ -100,10 +100,10 @@ class CUNIXConsole : public ISystemUserCallback,
 	};
 	DynArray<SConDrawCmd> m_drawCmds;
 	DynArray<SConDrawCmd> m_newCmds;
-	bool                  m_fsMode;
+	bool                  m_fsMode = false;
 
 	CSyslogStats          m_syslogStats;
-	bool                  m_bShowConsole; // hide or show console
+	bool                  m_bShowConsole = true; // hide or show console
 
 	INetNub::SStatistics  m_nubStats;
 
@@ -143,7 +143,7 @@ class CUNIXConsole : public ISystemUserCallback,
 	// currently showing a command from the history.
 	typedef std::deque<string> TCommandHistory;
 	TCommandHistory m_CommandHistory;
-	int             m_HistoryIndex;
+	int             m_HistoryIndex = -1;
 
 	// Interactive prompt.
 	//
@@ -151,24 +151,24 @@ class CUNIXConsole : public ISystemUserCallback,
 	// input thread will wait for one if the response characters.  The response is
 	// stored to m_PromptResponse and m_PromptCond is notified.
 	string               m_Prompt;
-	char                 m_PromptResponseChars[16]; // Null-terminated.
-	char                 m_PromptResponse;
+	char                 m_PromptResponseChars[16] = {}; // Null-terminated.
+	char                 m_PromptResponse = '\0';
 	CryConditionVariable m_PromptCond;
 
-	ISystem*             m_pSystem;
-	IConsole*            m_pConsole;
-	ITimer*              m_pTimer; // Initialized on the first call to OnUpdate().
+	ISystem*             m_pSystem = nullptr;
+	IConsole*            m_pConsole = nullptr;
+	ITimer*              m_pTimer = nullptr; // Initialized on the first call to OnUpdate().
 
 	// Flag indicating if OnUpdate() has been called.
 	//
 	// The initialization of the console variable pointers for 'sv_map' and
 	// 'sv_gamerules' is deferred until the first iteration of the update loop,
 	// because OnInit() is called too early for that.
-	bool       m_OnUpdateCalled;
-	CTimeValue m_LastUpdateTime;
+	bool       m_OnUpdateCalled = false;
+	CTimeValue m_LastUpdateTime = 0.0f;
 
-	ICVar*     m_svMap;
-	ICVar*     m_svGameRules;
+	ICVar*     m_svMap = nullptr;
+	ICVar*     m_svGameRules = nullptr;
 
 	// Terminal window layout.
 	//
@@ -187,50 +187,56 @@ class CUNIXConsole : public ISystemUserCallback,
 	// screen (stdscr).
 
 	// The width and height of the terminal window.
+	// Initialized in the constructor to ease changes
 	unsigned m_Width, m_Height;
 
 	// The height of the header window.
 	// The header window is displayed at the top of the terminal window.
 	// Typically 0 (no header) or 1 (single header line).
+	// Initialized in the constructor to ease changes
 	unsigned m_HeaderHeight;
 
 	// The height of the status window.
 	// This is typically a single line between the log window and the command
 	// window, displayed in inverse video.
+	// Initialized in the constructor to ease changes
 	unsigned m_StatusHeight;
 
 	// The heigth of the command window.
 	// This is typically a single line at the bottom of the screen.
+	// Initialized in the constructor to ease changes
 	unsigned m_CmdHeight;
 
 	// The current text color.
+	// Initialized in the constructor to ease changes
 	int m_Color;
 
 	// The default text color pair (read from curses when the app starts).
+	// Initialized in the constructor to ease changes
 	int m_DefaultColorPair;
 
 	// Flag indicating if color output is enabled.
-	bool m_EnableColor;
+	bool m_EnableColor = true;
 
 	// Flag indicating that the window has been resized.
 	// Set by the SIGWINCH signal handler.
-	bool m_WindowResized;
+	bool m_WindowResized = false;
 
 	// Flag indicating that OnShutdown() has been called.
-	bool m_OnShutdownCalled;
+	bool m_OnShutdownCalled = false;
 
 	// Flag indicating if the console has been initialized (i.e. Init() has been
 	// called).
-	bool m_Initialized;
+	bool m_Initialized = false;
 
 	// Flag indicating if the implied console initialization (performed by the
 	// OnInit() callback) requires a dedicated server.
 	// This flag is set through the public SetRequireDedicatedServer() method.
-	bool m_RequireDedicatedServer;
+	bool m_RequireDedicatedServer = false;
 
 	// The number of (logical) lines scrolled up.
 	// 0 indicates that we're at the bottom of the log.
-	int m_ScrollUp;
+	int m_ScrollUp = 0;
 
 	// Array of color pair handles.
 	// 0: default terminal color
@@ -243,16 +249,16 @@ class CUNIXConsole : public ISystemUserCallback,
 	// 7: magenta
 	// 8: red, normal text
 	// 9: black on white
-	short m_ColorPair[10];
+	short m_ColorPair[10] = {};
 
 	// The keyboard input thread.
-	CUNIXConsoleInputThread* m_pInputThread;
+	CUNIXConsoleInputThread* m_pInputThread = nullptr;
 
 	// The current input line, cursor position, and horizontal scroll position.
 	string m_InputLine;
 	string m_SavedInputLine;
-	int    m_CursorPosition;
-	int    m_ScrollPosition;
+	int    m_CursorPosition = 0;
+	int    m_ScrollPosition = 0;
 
 	// The current progress status string.
 	//

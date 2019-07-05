@@ -148,6 +148,67 @@ protected:
 	size_t size_;
 };/*}}}*/
 
+template<class Container, typename Key, typename Value>
+class DictionarySTL : public KeyValueDictionaryInterface
+{
+public:
+	explicit DictionarySTL(Container& container)
+		: container_(container)
+		, it_(container.begin())
+		, size_(container.size())
+	{
+	}
+
+	virtual bool hasElements() const override { return size_ > 0; }
+	virtual void clear() override
+	{
+		container_.clear();
+		size_ = 0;
+		it_ = container_.end();
+	}
+	virtual void serializeKey(Archive& ar) override 
+	{
+		if (ar.isInput())
+		{
+			Key key;
+			ar(key, "", "");
+			it_ = container_.emplace(key, Value()).first;
+		}
+		else
+		{
+			ar(it_->first, "", "");
+		}
+	}
+	virtual void serializeValue(Archive& ar) override
+	{
+		ar(it_->second, "", "");
+	}
+	virtual bool serializeAsVector(Archive& ar, const char* name, const char* label) override
+	{
+		std::vector<std::pair<Key, Value> > temp(std::make_move_iterator(container_.begin()), std::make_move_iterator(container_.end()));
+		bool result = !ar(temp, name, label);
+
+		container_.clear();
+		container_.insert(std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
+		return result;
+	}
+	virtual TypeID keyType() const override 
+	{
+		return TypeID::get<Key>(); 
+	}
+	virtual void nextElement() override
+	{
+		CRY_ASSERT(it_ != container_.end());
+		++it_;
+	}
+	virtual bool reachedEnd() const override { return it_ == container_.end(); }
+
+protected:
+	Container& container_;
+	typename Container::iterator it_;
+	size_t     size_;
+};
+
 #if YASLI_CXX11
 
 template<class T>
@@ -294,6 +355,19 @@ inline bool YASLI_SERIALIZE_OVERRIDE(yasli::Archive& ar, yasli::string& value, c
 
 YASLI_STRING_NAMESPACE_END
 
+namespace yasli {
+template<class Map, class K, class V>
+static bool SerializeMapAsVector(yasli::Archive& ar, Map& container, const char* name, const char* label)
+{
+	std::vector<std::pair<K, V>> temp(std::make_move_iterator(container.begin()), std::make_move_iterator(container.end()));
+	bool result = !ar(temp, name, label);
+
+	container.clear();
+	container.insert(std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
+	return result;
+}
+}
+
 // ---------------------------------------------------------------------------
 namespace std {
 
@@ -301,23 +375,15 @@ namespace std {
 template<class K, class V, class C, class Alloc>
 bool YASLI_SERIALIZE_OVERRIDE(yasli::Archive& ar, std::map<K, V, C, Alloc>& container, const char* name, const char* label)
 {
-	std::vector<std::pair<K, V> > temp(std::make_move_iterator(container.begin()), std::make_move_iterator(container.end()));
-	bool result = !ar(temp, name, label);
-	
-	container.clear();
-	container.insert(std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
-	return result;
+	yasli::DictionarySTL<std::map<K, V, C, Alloc>, K, V> ser(container);
+	return ar(static_cast<yasli::KeyValueDictionaryInterface&>(ser), name, label);
 }
 
 template<class K, class V, class C, class Alloc>
 bool YASLI_SERIALIZE_OVERRIDE(yasli::Archive& ar, std::unordered_map<K, V, C, Alloc>& container, const char* name, const char* label)
 {
-	std::vector<std::pair<K, V> > temp(std::make_move_iterator(container.begin()), std::make_move_iterator(container.end()));
-	bool result = !ar(temp, name, label);
-
-	container.clear();
-	container.insert(std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
-	return result;
+	yasli::DictionarySTL<std::unordered_map<K, V, C, Alloc>, K, V> ser(container);
+	return ar(static_cast<yasli::KeyValueDictionaryInterface&>(ser), name, label);
 }
 #else
 	template<class K, class V, class C, class Alloc>

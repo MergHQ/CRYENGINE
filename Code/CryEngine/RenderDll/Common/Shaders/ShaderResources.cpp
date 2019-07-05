@@ -5,8 +5,6 @@
 #include "GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
 #include "Common/Textures/TextureHelpers.h"
 
-#include "DriverD3D.h"
-
 //===============================================================================
 
 void CShaderResources::ConvertToInputResource(SInputShaderResources* pDst)
@@ -117,14 +115,6 @@ void CShaderResources::Cleanup()
 	}
 	SAFE_DELETE(m_pDeformInfo);
 	SAFE_DELETE(m_pDetailDecalInfo);
-	if (m_pSky)
-	{
-		for (size_t i = 0; i < sizeof(m_pSky->m_SkyBox) / sizeof(m_pSky->m_SkyBox[0]); ++i)
-		{
-			SAFE_RELEASE(m_pSky->m_SkyBox[i]);
-		}
-		SAFE_DELETE(m_pSky);
-	}
 	ReleaseConstants();
 
 	// not thread safe main thread can potentially access this destroyed entry in mfCreateShaderResources()
@@ -432,6 +422,8 @@ void CShaderResources::SetInvalid()
 
 void CShaderResources::UpdateConstants(IShader* pISH)
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CShaderResources::UpdateConstants");
+
 	_smart_ptr<CShaderResources> pSelf(this);
 	_smart_ptr<IShader> pShader = pISH;
 
@@ -474,7 +466,7 @@ static char* sSetParameterExp(const char* szExpr, Vec4& vVal, DynArray<SShaderPa
 	int n = 0;
 	int nc = 0;
 	char theChar;
-	while (theChar = *szExpr)
+	while ((theChar = *szExpr))
 	{
 		if (theChar == '(')
 		{
@@ -607,7 +599,7 @@ inline void AddShaderParamToArray(SShaderFXParams& FXParams, FixedDynArray<SFXPa
 
 void CShaderResources::RT_UpdateConstants(IShader* pISH)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CShaderResources::RT_UpdateConstants");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CShaderResources::RT_UpdateConstants");
 	//assert(gRenDev->m_pRT->IsRenderThread());
 
 	CShader* pSH = (CShader*)pISH;
@@ -787,21 +779,11 @@ void CShaderResources::RT_UpdateConstants(IShader* pISH)
 		// NOTE: The pointers and the size is 16 byte aligned
 		size_t nSize = m_Constants.size() * sizeof(Vec4);
 
-		m_pConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false);
-		m_pConstantBuffer->UpdateBuffer(&m_Constants[0], Align(nSize, 256));
-
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS) && !CRY_RENDERER_GNM
-		if (m_pConstantBuffer)
+		if ((m_pConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(nSize, false)))
 		{
-			string name = string("PM CBuffer ") + pSH->GetName() + "@" + m_szMaterialName;
-
-			#if CRY_RENDERER_VULKAN || CRY_PLATFORM_ORBIS
-				m_pConstantBuffer->GetD3D()->DebugSetName(name.c_str());
-			#else
-				m_pConstantBuffer->GetD3D()->SetPrivateData(WKPDID_D3DDebugObjectName, (UINT)name.length(), name.c_str());
-			#endif
+			m_pConstantBuffer->UpdateBuffer(&m_Constants[0], Align(nSize, 256));
+			m_pConstantBuffer->SetDebugName(string("Generic Per-Material CB ") + pSH->GetName() + "@" + m_szMaterialName);
 		}
-#endif
 	}
 
 
@@ -835,6 +817,9 @@ void CShaderResources::RT_UpdateResourceSet()
 	bool bContainsInvalidTexture = false;
 	for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
 	{
+		if (!TextureHelpers::IsSlotAvailable(texType))
+			continue;
+
 		ResourceViewHandle hView = EDefaultResourceViews::Default;
 		CTexture* pTex = nullptr;
 
@@ -873,7 +858,7 @@ void CShaderResources::RT_UpdateResourceSet()
 		}
 
 		bContainsInvalidTexture |= !CTexture::IsTextureExist(pTex);
-		m_resources.SetTexture(IShader::GetTextureSlot(texType), pTex, hView, EShaderStage_AllWithoutCompute);
+		m_resources.SetTexture(IShader::GetTextureSlot(texType), pTex, hView, TextureHelpers::GetShaderStagesForTexSlot(texType));
 	}
 
 	// TODO: default material created first doesn't have a constant buffer

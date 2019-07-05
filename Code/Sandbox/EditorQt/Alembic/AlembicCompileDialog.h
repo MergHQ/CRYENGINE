@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CrySystem/XML/IXml.h>
 
 class CAlembicCompileDialog : public CDialog
 {
@@ -86,4 +87,3 @@ private:
 
 	DECLARE_MESSAGE_MAP()
 };
-

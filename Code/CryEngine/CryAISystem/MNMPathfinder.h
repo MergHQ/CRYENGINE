@@ -15,19 +15,24 @@
 #ifndef _MNMPATHFINDER_H_
 #define _MNMPATHFINDER_H_
 
-#include "Navigation/MNM/MNM.h"
-#include "Navigation/MNM/NavMesh.h"
+#include "Navigation/MNM/WayQuery.h"
 #include "NavPath.h"
 #include "Navigation/PathHolder.h"
 #include <CryPhysics/AgePriorityQueue.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/IPathfinder.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQueryFilter.h>
+#include <CryThreading/IJobManager.h>
 
 //////////////////////////////////////////////////////////////////////////
 
+class OffMeshNavigationManager;
+
 namespace MNM
 {
+
+class CNavMesh;
+
 namespace PathfinderUtils
 {
 struct QueuedRequest
@@ -58,6 +63,12 @@ struct QueuedRequest
 			{
 				pFilter->Release();
 			});
+		}
+
+		// Create default snapping metrics if none are provided
+		if (requestParams.snappingMetrics.metricsArray.empty())
+		{
+			requestParams.snappingMetrics.CreateDefault();
 		}
 		
 		SetupDangerousLocationsData();
@@ -120,6 +131,11 @@ struct ProcessingContext
 	ProcessingContext(const size_t maxWaySize)
 		: queryResult(maxWaySize)
 		, status(Invalid)
+		, constructedPathsCount(0)
+		, totalTimeConstructPath(0.0f)
+		, peakTimeConstructPath(0.0f)
+		, totalTimeBeautifyPath(0.0f)
+		, peakTimeBeautifyPath(0.0f)
 	{
 	}
 	
@@ -160,11 +176,19 @@ struct ProcessingContext
 	ProcessingContext& operator=(const ProcessingContext&) = delete;
 
 	ProcessingRequest            processingRequest;
-	CNavMesh::WayQueryResult     queryResult;
-	CNavMesh::WayQueryWorkingSet workingSet;
+	MNM::SWayQueryResult         queryResult;
+	MNM::SWayQueryWorkingSet     workingSet;
 
 	volatile EProcessingStatus   status;
 	JobManager::SJobState        jobState;
+
+	uint32                       constructedPathsCount;
+
+	float                        totalTimeConstructPath;
+	float                        peakTimeConstructPath;
+
+	float                        totalTimeBeautifyPath;
+	float                        peakTimeBeautifyPath;
 };
 
 struct IsProcessingRequestRelatedToQueuedPathId
@@ -196,18 +220,12 @@ public:
 		Reset();
 	}
 
-	struct IsProcessCompleted
-	{
-		bool operator()(const ProcessingContext& context) { return context.status == ProcessingContext::Completed; }
-	};
-
 	struct IsProcessInvalid
 	{
 		bool operator()(const ProcessingContext& context) { return context.status == ProcessingContext::Invalid; }
 	};
 
 	size_t              GetFreeSlotsCount() const     { return std::count_if(m_pool.begin(), m_pool.end(), IsProcessInvalid()); }
-	size_t              GetOccupiedSlotsCount() const { return std::count_if(m_pool.begin(), m_pool.end(), IsProcessCompleted()); }
 	size_t              GetMaxSlots() const           { return m_pool.size(); }
 
 	ProcessingContextId GetFirstAvailableContextId()
@@ -225,7 +243,7 @@ public:
 
 	ProcessingContext& GetContextAtPosition(ProcessingContextId processingContextId)
 	{
-		CRY_ASSERT_MESSAGE(processingContextId >= 0 && processingContextId < m_pool.size(), "ProcessingContextsPool::GetContextAtPosition Trying to access an invalid element of the pool.");
+		CRY_ASSERT(processingContextId >= 0 && processingContextId < m_pool.size(), "ProcessingContextsPool::GetContextAtPosition Trying to access an invalid element of the pool.");
 		return m_pool[processingContextId];
 	}
 
@@ -276,7 +294,7 @@ public:
 
 	void Reset()
 	{
-		const int poolSize = gAIEnv.CVars.MNMPathfinderConcurrentRequests;
+		const int poolSize = gAIEnv.CVars.pathfinder.MNMPathfinderConcurrentRequests;
 
 		m_pool.clear();
 		m_pool.reserve(poolSize);
@@ -297,16 +315,19 @@ struct PathfindingFailedEvent
 	PathfindingFailedEvent()
 		: requestId(MNM::Constants::eQueuedPathID_InvalidID)
 		, request()
+		, result(EMNMPathResult::FailedUnknown)
 	{
 	}
 
-	PathfindingFailedEvent(const MNM::QueuedPathID& _requestId, const MNM::PathfinderUtils::QueuedRequest& _request)
+	PathfindingFailedEvent(const MNM::QueuedPathID& _requestId, const MNM::PathfinderUtils::QueuedRequest& _request, const EMNMPathResult& _result)
 		: requestId(_requestId)
 		, request(_request)
+		, result(_result)
 	{}
 
 	MNM::QueuedPathID                   requestId;
 	MNM::PathfinderUtils::QueuedRequest request;
+	EMNMPathResult						result;
 };
 
 struct IsPathfindingFailedEventRelatedToRequest
@@ -358,7 +379,8 @@ public:
 	void                      Reset();
 
 	virtual MNM::QueuedPathID RequestPathTo(const EntityId requesterEntityId, const MNMPathRequest& request) override;
-	virtual void              CancelPathRequest(MNM::QueuedPathID requestId) override;
+	virtual MNM::QueuedPathID RequestPathTo(const MNMPathRequest& request) override;
+	virtual void              CancelPathRequest(const MNM::QueuedPathID requestId) override;
 
 	void                      WaitForJobsToFinish();
 
@@ -367,16 +389,30 @@ public:
 
 	void                      Update();
 
+	//! If a processing context is available
+	//! setups all required data to process it and
+	//! puts the request into the context to solve it
+	//! The request will eventually get resolved by a parallel job ProcessPathRequestJob that will run the A* solver (may take several frames)
 	void                      SetupNewValidPathRequests();
+
+	//! Dispatches all path requests, removing them from the failed/successful
+	//! Failed requests are dispatched first
+	//! After that, successful requests are dispatched
+	//! Dispatching a request involves calling the callback
 	void                      DispatchResults();
 
 	size_t                    GetRequestQueueSize() const { return m_requestedPathsQueue.size(); }
 
+	//! Executed when the NavMesh changes
+	//! Checks which valid PathRequests on the pool are affected by the change
+	//! A request is considered to be affected if it's on the same meshId and
+	//! the path contains the provided tileId or contains a tile which has tileId as a neighbor
+	//! Affected requests are then re-started on the same context as if they were new
 	void                      OnNavigationMeshChanged(NavigationMeshID meshId, MNM::TileID tileId);
 
 	// Utility function, which takes a triangles way found by MNM::CNavMesh::FindWay() and converts it into a way-point path.
 	static bool ConstructPathFromFoundWay(
-	  const MNM::CNavMesh::WayQueryResult& way,
+	  const MNM::SWayQueryResult& way,
 	  const MNM::CNavMesh& navMesh,
 	  const OffMeshNavigationManager* pOffMeshNavigationManager,
 	  const Vec3& startLocation,
@@ -384,23 +420,34 @@ public:
 	  CPathHolder<PathPointDescriptor>& outputPath);
 
 private:
-
+	// Spawns the appropriate jobs for the pool of processing contexts
 	void              SpawnJobs();
+
+	// Spawns a job depending on the status of the processing context
+	// If the context (the path request) is still in progress, it spawns a process operation
+	// If the context (the path request) is completed, it spawns a construct operation
 	void              SpawnAppropriateJobIfPossible(MNM::PathfinderUtils::ProcessingContext& processingContext);
+
+	// Same as before but now the operations get executed, not just spawned
 	void              ExecuteAppropriateOperationIfPossible(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              SpawnPathfinderProcessingJob(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              SpawnPathConstructionJob(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              WaitForJobToFinish(MNM::PathfinderUtils::ProcessingContext& processingContext);
 	void              ProcessPathRequest(MNM::PathfinderUtils::ProcessingContext& processingContext);
+
+	// Constructs the path (way-point) from a sequence of triangle ids
+	// It may beautify the path by string pulling
+	// Sets the processing context as completed
 	void              ConstructPathIfWayWasFound(MNM::PathfinderUtils::ProcessingContext& processingContext);
 
-	bool              SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext);
-	void              PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request);
+	// Setups and initialized all required data to start the path request
+	EMNMPathResult    SetupForNextPathRequest(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, MNM::PathfinderUtils::ProcessingContext& processingContext);
+	void              PathRequestFailed(MNM::QueuedPathID requestID, const MNM::PathfinderUtils::QueuedRequest& request, const EMNMPathResult result);
 
 	void              CancelResultDispatchingForRequest(MNM::QueuedPathID requestId);
 
 	void              DebugAllStatistics();
-	void              DebugStatistics(MNM::PathfinderUtils::ProcessingContext& processingContext, const float textY);
+	void              DebugStatistics(MNM::PathfinderUtils::ProcessingContext& processingContext, const int contextNumber, const float textY);
 
 	friend void       ProcessPathRequestJob(MNM::PathfinderUtils::ProcessingContext* pProcessingContext);
 	friend void       ConstructPathIfWayWasFoundJob(MNM::PathfinderUtils::ProcessingContext* pProcessingContext);

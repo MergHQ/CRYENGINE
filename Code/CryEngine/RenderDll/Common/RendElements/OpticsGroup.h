@@ -13,7 +13,7 @@ protected:
 
 public:
 
-	COpticsGroup(const char* name = "[Unnamed_Group]") : COpticsElement(name) { _init(); };
+	COpticsGroup(const char* name = "[Unnamed_Group]") : COpticsElement(name) { _init(); }
 	COpticsGroup(const char* name, COpticsElement* elem, ...);
 	virtual ~COpticsGroup(){}
 
@@ -27,6 +27,8 @@ public:
 	void                InsertElement(int nPos, IOpticsElementBase* pElement) override;
 	void                SetElementAt(int i, IOpticsElementBase* elem);
 	void                Invalidate() override;
+
+	bool                IsGroupEnabled() const { return GetElementCount() > 0 && IsEnabled(); }
 
 	bool                IsGroup() const override { return true; }
 	void                validateChildrenGlobalVars(const SAuxParams& aux);

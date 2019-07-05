@@ -21,7 +21,7 @@ CAttrSetTableReader::CAttrSetTableReader(IGeneralMemoryHeap* pHeap)
 
 uint32 CAttrSetTableReader::GetNumAttrs(AttrSetID setId) const
 {
-	assert(setId < m_numAttrs.size());
+	CRY_ASSERT(setId < m_numAttrs.size());
 	uint32 num = m_numAttrs[setId];
 	return num;
 }
@@ -31,8 +31,8 @@ uint32 CAttrSetTableReader::GetNumAttrs(AttrSetID setId) const
 
 uint16 CAttrSetTableReader::GetHeaderAttr(AttrSetID setId, uint32 indAttr) const
 {
-	assert(setId < m_setAddrs.size());
-	assert(indAttr < m_numAttrs[setId]);
+	CRY_ASSERT(setId < m_setAddrs.size());
+	CRY_ASSERT(indAttr < m_numAttrs[setId]);
 
 	FlatAddr flatAddr = m_setAddrs[setId];
 	uint16* pHeader = (uint16*)(m_buffer.GetPointer(flatAddr));
@@ -44,7 +44,7 @@ uint16 CAttrSetTableReader::GetHeaderAttr(AttrSetID setId, uint32 indAttr) const
 
 void CAttrSetTableReader::ReadFromFile(CReader& Reader, IPlatformOS::ISaveReaderPtr& pOSSaveReader, const SFileHeader& headerInfo)
 {
-	assert(m_numAttrs.empty() && m_setAddrs.empty());
+	CRY_ASSERT(m_numAttrs.empty() && m_setAddrs.empty());
 
 	m_numAttrs.resize(headerInfo.m_numAttrSets);
 	m_setAddrs.resize(headerInfo.m_numAttrSets);
@@ -62,7 +62,7 @@ void CAttrSetTableReader::ReadFromFile(CReader& Reader, IPlatformOS::ISaveReader
 
 void CAttrSetTableReader::ReadFromMemory(CReader& Reader, const uint8* pData, uint32 dataSize, const SFileHeader& headerInfo, uint32& outReadLoc)
 {
-	assert(m_numAttrs.empty() && m_setAddrs.empty());
+	CRY_ASSERT(m_numAttrs.empty() && m_setAddrs.empty());
 
 	m_numAttrs.resize(headerInfo.m_numAttrSets);
 	m_setAddrs.resize(headerInfo.m_numAttrSets);

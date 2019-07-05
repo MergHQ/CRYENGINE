@@ -352,4 +352,3 @@ bool BSPTree2D::HasNegativeNode() const
 }
 
 };
-

@@ -193,7 +193,7 @@ void C3DConnexionDriver::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
 {
 	switch (aEventId)
 	{
-	case eNotify_OnMainFrameCreated:
+	case eNotify_OnMainFrameInitialized:
 		InitDevice();
 		break;
 	}

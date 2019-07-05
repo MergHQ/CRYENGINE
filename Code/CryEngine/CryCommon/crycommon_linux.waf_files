@@ -1,18 +1,15 @@
 {
-  "NoUberFile":{
-    "CryAssert":[
-      "CryAssert/CryAssert_Linux.h"
-    ],
-    "CryCore":[
-      {
-        "Platform":[
-          "CryCore/Platform/CryPlatform.Linux.h",
-          "CryCore/Platform/Linux32Specific.h",
-          "CryCore/Platform/Linux64Specific.h",
-          "CryCore/Platform/Linux_Win32Wrapper.h",
-          "CryCore/Platform/LinuxSpecific.h"
+    "NoUberFile": {
+        "CryAssert": [
+            "CryAssert/CryAssert_Linux.h"
+        ], 
+        "CryCore": [], 
+        "CryCore/Platform": [
+            "CryCore/Platform/CryPlatform.Linux.h", 
+            "CryCore/Platform/Linux32Specific.h", 
+            "CryCore/Platform/Linux64Specific.h", 
+            "CryCore/Platform/Linux_Win32Wrapper.h", 
+            "CryCore/Platform/LinuxSpecific.h"
         ]
-      }
-    ]
-  }
+    }
 }

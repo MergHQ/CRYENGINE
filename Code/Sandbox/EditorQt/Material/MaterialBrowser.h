@@ -7,7 +7,10 @@
 #include "Controls/TreeCtrlReport.h"
 #include "Controls/EditorDialog.h"
 #include "Material.h"
+#include <Util/FileUtil.h>
+#include <QLabel>
 
+class CImageEx;
 class CMaterialBrowserCtrl;
 class CMaterialImageListCtrl;
 
@@ -68,12 +71,12 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	// Override from parent class
-	virtual void            DeleteAllItems();
+	virtual void      DeleteAllItems();
 
-	void                    SelectItem(CMaterialBrowserRecord* pRecord, const TMaterialBrowserRecords* pMarkedRecords);
-	void                    UpdateItemState(CMaterialBrowserRecord* pItem);
+	void              SelectItem(CMaterialBrowserRecord* pRecord, const TMaterialBrowserRecords* pMarkedRecords);
+	void              UpdateItemState(CMaterialBrowserRecord* pItem);
 
-	static int _cdecl       RowCompareFunc(const CXTPReportRow** pRow1, const CXTPReportRow** pRow2);
+	static int _cdecl RowCompareFunc(const CXTPReportRow** pRow1, const CXTPReportRow** pRow2);
 
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -87,6 +90,7 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 struct IMaterialBrowserListener
 {
+	virtual ~IMaterialBrowserListener() {}
 	virtual void OnBrowserSelectItem(IDataBaseItem* pItem) = 0;
 };
 
@@ -98,22 +102,21 @@ class QObjectTreeWidget;
 class QPreviewWidget;
 class QHBoxLayout;
 
-
 class QTexturePreview : public QLabel
 {
 public:
 	QTexturePreview(const QString& path, QWidget* pParent = nullptr);
 	QTexturePreview(const QString& path, QSize size, QWidget* pParent = nullptr);
 
-	bool IsPower2(int n);
-	void LoadTexture(const QString& fileName, CImageEx& image);
+	bool  IsPower2(int n);
+	void  LoadTexture(const QString& fileName, CImageEx& image);
 
-	void resizeEvent(QResizeEvent *event) override;
+	void  resizeEvent(QResizeEvent* event) override;
 
 	QSize sizeHint() const override;
 
 private:
-	QSize m_maxSize;
+	QSize   m_maxSize;
 	QPixmap m_originalPixmap;
 };
 
@@ -124,7 +127,6 @@ public:
 	QMaterialPreview(const QString& file = QString(), QWidget* pParent = nullptr);
 	~QMaterialPreview();
 
-
 	void PreviewItem(const QString& path);
 
 signals:
@@ -134,7 +136,7 @@ protected:
 	virtual void paintEvent(QPaintEvent* pEvent) override;
 	virtual void showEvent(QShowEvent* pEvent) override;
 
-	void validateSize();
+	void         validateSize();
 
 private:
 	QPreviewWidget* m_pPreviewWidget;
@@ -195,7 +197,7 @@ public:
 	virtual CMaterialBrowserRecord* InsertItemToTree(IDataBaseItem* pItem, int nSubMtlSlot = -1, CMaterialBrowserRecord* pParentRecord = 0);
 
 	void                            ReloadItems(EViewType viewType);
-	EViewType                       GetViewType() const     { return m_viewType; };
+	EViewType                       GetViewType() const     { return m_viewType; }
 	CMaterialToolBar::EFilter       GetSearchFilter() const { return m_wndToolBar.GetCurFilter(); }
 
 	void                            ClearItems();
@@ -267,7 +269,7 @@ protected:
 
 	void DropToItem(CMaterialBrowserRecord* pTrgItem, CMaterialBrowserRecord* pSrcItem);
 
-	void DoSourceControlOp(CMaterialBrowserRecord * pRecord, ESourceControlOp);
+	void DoSourceControlOp(CMaterialBrowserRecord* pRecord, ESourceControlOp);
 
 	void       OnMakeSubMtlSlot(CMaterialBrowserRecord* pRecord);
 	void       OnClearSubMtlSlot(CMaterialBrowserRecord* pRecord);
@@ -337,4 +339,3 @@ private:
 	HCURSOR                 m_hCursorCreate;
 	HCURSOR                 m_hCursorReplace;
 };
-

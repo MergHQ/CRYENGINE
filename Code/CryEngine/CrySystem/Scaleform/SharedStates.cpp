@@ -4,6 +4,7 @@
 
 #ifdef INCLUDE_SCALEFORM_SDK
 
+#include <CryMath/Cry_Math.h>
 #include <CrySystem/Scaleform/ConfigScaleform.h>
 	#include "SharedStates.h"
 
@@ -22,6 +23,7 @@
 	#include <CryRenderer/ITexture.h>
 	#include <CrySystem/IStreamEngine.h>
 	#include <CryString/UnicodeFunctions.h>
+	#include <CrySystem/ConsoleRegistration.h>
 
 	#ifndef GFC_NO_THREADSUPPORT
 //////////////////////////////////////////////////////////////////////////
@@ -66,8 +68,9 @@ GFile* CryGFxFileOpener::OpenFile(const char* pUrl, SInt flags, SInt /*mode*/)
 	assert(pUrl);
 	if (flags & ~(GFileConstants::Open_Read | GFileConstants::Open_Buffered))
 		return 0;
-	const char* pExt = PathUtil::GetExt(pUrl);
+
 	#if defined(USE_GFX_VIDEO)
+	const char* pExt = PathUtil::GetExt(pUrl);
 	if (!strcmp(pUrl, internal_video_player))
 		return new GMemoryFile(pUrl, fxvideoplayer_swf, sizeof(fxvideoplayer_swf));
 	if (!stricmp(pExt, "usm"))
@@ -215,7 +218,7 @@ void CryGFxTextClipboard::OnTextStore(const wchar_t* szText, UPInt length)
 }
 
 #if CRY_PLATFORM_WINDOWS
-bool CryGFxTextClipboard::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool CryGFxTextClipboard::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	if (uMsg == WM_CLIPBOARDUPDATE)
 	{
@@ -359,19 +362,10 @@ CryGFxLog::~CryGFxLog()
 
 void CryGFxLog::LogMessageVarg(LogMessageType messageType, const char* pFmt, va_list argList)
 {
-	char logBuf[1024];
+	char logBuf[1024] = "<Flash> ";
 	{
-		const char prefix[] = "<Flash> ";
-
-		static_assert(sizeof(prefix) + 128 <= sizeof(logBuf), "Invalid array size!");
-
-		// prefix
-		{
-			cry_strcpy(logBuf, prefix);
-		}
-
 		// msg
-		size_t len = sizeof(prefix) - 1;
+		size_t len = strlen(logBuf);
 		{
 			cry_vsprintf(&logBuf[len], sizeof(logBuf) - len, pFmt, argList);
 			len = strlen(logBuf);
@@ -531,34 +525,20 @@ CryGFxImageCreator::~CryGFxImageCreator()
 
 GImageInfoBase* CryGFxImageCreator::CreateImage(const GFxImageCreateInfo& info)
 {
-	GImageInfoBase* pImageInfo(0);
+	GImageInfoBase* pImageInfo = nullptr;
 	switch (info.Type)
 	{
 	case GFxImageCreateInfo::Input_Image:
+		// create image info and texture for internal image
+		pImageInfo = new GImageInfoXRender(info.pImage);
+		break;
 	case GFxImageCreateInfo::Input_File:
-		{
-			switch (info.Type)
-			{
-			case GFxImageCreateInfo::Input_Image:
-				{
-					// create image info and texture for internal image
-					pImageInfo = new GImageInfoXRender(info.pImage);
-					break;
-				}
-			case GFxImageCreateInfo::Input_File:
-				{
-					// create image info and texture for external image
-					pImageInfo = new GImageInfoFileXRender(info.pFileInfo->FileName.ToCStr(), info.pFileInfo->TargetWidth, info.pFileInfo->TargetHeight);
-					break;
-				}
-			}
-			break;
-		}
+		// create image info and texture for external image
+		pImageInfo = new GImageInfoFileXRender(info.pFileInfo->FileName.ToCStr(), info.pFileInfo->TargetWidth, info.pFileInfo->TargetHeight);
+		break;
 	default:
-		{
-			assert(0);
-			break;
-		}
+		CRY_ASSERT_MESSAGE(false, "Invalid image info");
+		break;
 	}
 	return pImageInfo;
 }

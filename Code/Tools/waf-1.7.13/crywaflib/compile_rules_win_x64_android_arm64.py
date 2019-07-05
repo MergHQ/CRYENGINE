@@ -2,10 +2,10 @@
 import os, re
 from waflib.Configure import conf
 from waflib.TaskGen import after_method, before_method, feature, extension
-from waflib import Utils
+from waflib import Utils, Context, Logs
 import os.path
 
-android_target_version = 23
+android_target_version = 24
 android_gcc_version = 4.9
 android_app_name = "CRYENGINE SDK"
 android_launcher_name = "AndroidLauncher"
@@ -13,7 +13,7 @@ android_package_name = "com.crytek.cryengine"
 android_version_code = "1"
 android_version_name = "1.0"
 android_debuggable = "true"
-android_min_sdk_version = "23"
+android_min_sdk_version = "24"
 android_permissions_required = ["WRITE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE", "INTERNET"]
 
 ANT_BUILD_TEMPLATE = r'''<?xml version="1.0" encoding="UTF-8"?>
@@ -192,7 +192,7 @@ def check_win_x64_android_arm64_installed(conf):
 	else:
 		android_sdk_home 		= os.getenv('ANDROID_HOME', "")
 		android_ndk_home 		= os.getenv('NDK_ROOT', "")
-		android_java_home 	= os.getenv('JAVA_HOME', "")
+		android_java_home 		= os.getenv('JAVA_HOME', "")
 		android_ant_home 		= os.getenv('ANT_HOME', "")
 
 	# Validate paths
@@ -274,7 +274,7 @@ def load_win_x64_android_arm64_common_settings(conf):
 
 	# LLVM STL
 	android_stl_home = android_ndk_home + '/sources/cxx-stl/llvm-libc++'
-	android_stl_include_paths =  [android_stl_home + '/libcxx/include']
+	android_stl_include_paths =  [android_stl_home + '/include']
 	android_stl_lib_name = 'c++_shared'
 	v['DEFINES'] += ['HAVE_SYS_PARAM_H']
 
@@ -297,6 +297,7 @@ def load_win_x64_android_arm64_common_settings(conf):
 	v['ANDROID_TARGET_VERSION'] = android_target_version
 
 	v['ANT'] = android_ant_home + '/bin/ant.bat'
+	v['ADB'] = android_sdk_home + '/platform-tools/adb.exe'
 
 	v['ANDROID_NDK_HOME'] = android_ndk_home 
 	v['ANDROID_SDL_HOME'] = android_stl_home 
@@ -314,20 +315,28 @@ def load_win_x64_android_arm64_common_settings(conf):
 	v['cstlib_PATTERN']     = 'lib%s.a'
 	v['cxxstlib_PATTERN']   = 'lib%s.a'
 
-	v['DEFINES'] += ['_LINUX', 'LINUX', 'LINUX32', 'ANDROID', '_HAS_C9X' ]
+	v['DEFINES'] += ['_LINUX', 'LINUX', 'LINUX32', 'ANDROID', '_HAS_C9X', '_MSC_EXTENSIONS=1' ]
 	
 	if android_target_version >= 21:
 		v['DEFINES'] += ['HAS_STPCPY=1', 'HAVE_LROUND']
 
 	# Setup global include paths
-	v['INCLUDES'] += android_stl_include_paths + [ 
+	v['SYSTEM_INCLUDES'] += android_stl_include_paths + [ 
 		android_ndk_platform_compiler_target + '/usr/include', 
-		android_stl_home + '/include', 
-		android_stl_home + '/libs/arm64-v8a/include',
 		android_ndk_home + '/sources/android/support/include',
-		android_ndk_home + '/sources/android/native_app_glue'
+		#android_ndk_home + '/sources/android/native_app_glue',
+		android_ndk_home + '/sysroot/usr/include',
+		#android_ndk_home + '/sysroot/usr/include/android',
+		android_ndk_home + '/sysroot/usr/include/aarch64-linux-android',		
+		#android_ndk_home + '/sysroot/usr/include/vulkan'
 		]
 		
+		#-isystem ../Code/SDKs/android-ndk/sources/cxx-stl/llvm-libc++/include 
+		#-isystem ../Code/SDKs/android-ndk/sources/android/support/include 
+		#-isystem ../Code/SDKs/android-ndk/sources/cxx-stl/llvm-libc++abi/include 
+		#-isystem ../Code/SDKs/android-ndk/sysroot/usr/include 
+		#-isystem ../Code/SDKs/android-ndk/sysroot/usr/include/aarch64-linux-android
+
 	# Setup global library search path
 	v['LIBPATH'] += [
 		android_stl_home + '/libs/arm64-v8a',
@@ -362,7 +371,53 @@ def load_win_x64_android_arm64_common_settings(conf):
 	
 	compiler_flags = common_flag +[
 	'-g',
-	'-fpic'
+	'-fpic',
+	'-Wno-nonportable-include-path',
+	'-Wno-deprecated',
+	'-fno-exceptions',
+    '-fms-extensions',
+	'-Wno-unused-lambda-capture',
+	'-Wno-undefined-var-template'
+	'-fdata-sections',
+	'-ffunction-sections',
+	'-fno-omit-frame-pointer',
+	'-fno-strict-aliasing',
+	'-funwind-tables',
+	'-gfull',
+	'-ffast-math',
+	'-fno-rtti',
+	'-Wno-unknown-warning-option',
+	'-Wno-delete-non-virtual-dtor',
+	'-Wno-reorder',
+	'-Wno-unknown-pragmas',
+	'-Wno-unused-variable',
+	'-Wno-undefined-var-template',
+	'-Wno-parentheses',
+	'-Wno-unused-private-field',
+	'-Wno-switch',
+	'-Wno-empty-body',
+	'-Wno-format',
+	'-Wno-logical-op-parentheses', 
+	'-Wno-multichar', 
+	'-Wno-invalid-offsetof', 
+	'-Wno-unused-function', 
+	'-Wno-unused-value', 
+	'-Wno-sometimes-uninitialized', 
+	'-Wno-tautological-constant-out-of-range-compare',
+	'-Wno-empty-body',
+	'-Wno-unused-const-variable', 
+	'-Wno-switch', 
+	'-Wno-unused-function', 
+	'-Wno-char-subscripts', 
+	'-Wno-c++11-narrowing', 
+	'-Wno-address-of-packed-member', 
+	'-Wno-invalid-offsetof', 
+	'-Wno-dynamic-class-memaccess', 
+	'-Wno-overloaded-virtual', 
+	'-Wno-writable-strings', 
+	'-Wno-comment'
+	
+	
 	]
 		
 	
@@ -621,7 +676,7 @@ def process_android_java_files(self):
 	
 	# Create text file containing all dlls to load on startup
 	template = compile_template(JAVA_LOAD_SHARED_LIB_LIST_TEMPLATE)
-	shared_libs = {'shared_libs' : [self.env['ANDROID_SDL_LIB_NAME'], 'SDL2', 'SDL2Ext', self.output_file_name] }
+	shared_libs = {'shared_libs' : [self.env['ANDROID_SDL_LIB_NAME'], 'SDL2', self.output_file_name] }
 	shared_lib_startup_dir = apk_folder.make_node('assets')
 	shared_lib_startup_node = shared_lib_startup_dir.make_node('startup_native_shared_lib.txt')
 	shared_lib_startup_task = self.create_task('generate_file', None, shared_lib_startup_node)
@@ -873,8 +928,7 @@ def add_android_lib_copy(self):
 		android_shared_libs = { 'arm64-v8a': [
 			bld.env['ANDROID_SDL_LIB_PATH'],
 			bld.env['ANDROID_NDK_HOME'] + '/prebuilt/android-arm/gdbserver/gdbserver',
-			bld.CreateRootRelativePath('Code/Tools/SDLExtension/lib/android-arm64-v8a/libSDL2Ext.so'),
-			bld.CreateRootRelativePath('Code/SDKs/SDL2/lib/android-arm64-v8a/libSDL2.so')
+			bld.CreateRootRelativePath('Code/SDKs/SDL2/android/arm64-v8a/libSDL2.so')
 		]}
 	else:
 		android_shared_libs = {'arm64-v8a': [] }
@@ -1035,7 +1089,60 @@ class install_apk(Task.Task):
 		""" Run Ant """
 		env = self.env
 		gen = self.generator
+		
+		#Check if a device is connected
+		cmd_check_connection = [env['ADB'], 'get-state']
+		
+		ret = 0
+		try:
+			(out,err) = self.generator.bld.cmd_and_log(cmd_check_connection, output=Context.BOTH, quiet=Context.BOTH)
+		except Exception as e:
+			out = e.stdout
+			err = e.stderr
+			ret = e.returncode		
 
-		cmd = ['adb', 'install', '-r', self.inputs[0].abspath()]
-		ret = self.exec_command(cmd, env=env.env or None)		
+		if ret != 0:
+			if 'no devices' in err:
+				Logs.warn('warning: No device connected. Did not deploy application to device.')
+				return 0
+			else:
+				Logs.error('Command: "adb get-state" failed to run. Did not deploy application to device.')
+				return ret
+		
+		# Try install
+		ret = 0
+		Logs.info('[INFO] Installing package: "%s"' % android_package_name)
+		cmd_install = [env['ADB'], 'install', '-r', self.inputs[0].abspath()] # -r: reinstall
+		try:
+			(out,err) = self.generator.bld.cmd_and_log(cmd_install, output=Context.BOTH, quiet=Context.BOTH)
+		except Exception as e:
+			out = e.stdout
+			err = e.stderr
+			ret = e.returncode	
+					
+		
+		if ret != 0:
+			# Uninstalled if the signiture does not match (deployed by a different pc)			
+			if 'INSTALL_FAILED_UPDATE_INCOMPATIBLE' in err:
+				Logs.info('[INFO] Application with same name but other signiture already exists.')
+				Logs.info('[INFO] Uninstall package "%s".' % android_package_name)
+				cmd_uninstall = [env['ADB'], 'uninstall', android_package_name]
+				ret = self.exec_command(cmd_uninstall, env=env.env or None)	
+				
+				# Install again
+				Logs.info('[INFO] Installing package: "%s"' % android_package_name)
+				ret = self.exec_command(cmd_install, env=env.env or None)	
+		
+		#Try connect for debugging
+		if ret == 0:
+			forward_ports = {'4600' : '4600', '5002' : '5002'}
+			for host_port, device_port in forward_ports.iteritems():	
+				Logs.info('[INFO] ADB forward: Redirect host port: %s to device port: %s' % (host_port, device_port))
+				self.generator.bld.cmd_and_log([env['ADB'], 'forward', 'tcp:' + host_port, 'tcp:' + device_port] , output=Context.BOTH, quiet=Context.BOTH)
+				
+			reverse_ports = {'31455' : '31455', '61453' : '61453'}
+			for device_port, host_port in reverse_ports.iteritems():	
+				Logs.info('[INFO] ADB reverse: Redirect device port %s to host port %s' % (device_port,host_port))
+				self.generator.bld.cmd_and_log([env['ADB'], 'reverse', 'tcp:' + device_port, 'tcp:' + host_port] , output=Context.BOTH, quiet=Context.BOTH)
+		
 		return ret

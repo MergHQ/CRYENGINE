@@ -24,4 +24,3 @@ CNodeInfoWidgetStyle::CNodeInfoWidgetStyle(CNodeWidgetStyle& nodeWidgetStyle)
 };
 
 }
-

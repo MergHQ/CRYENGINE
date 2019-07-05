@@ -1,0 +1,33 @@
+{
+    "toolBar": [
+        {
+            "command": "physics.reset_state_selection",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "reset_state_selection",
+            "type": 0
+        },
+        {
+            "command": "physics.get_state_selection",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "get_state_selection",
+            "type": 0
+        },
+        {
+            "command": "physics.simulate_objects",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "simulate_objects",
+            "type": 0
+        },
+        {
+            "command": "physics.set_physics_tool",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Turns on physics tool mode (Ctrl/Shift modify)",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

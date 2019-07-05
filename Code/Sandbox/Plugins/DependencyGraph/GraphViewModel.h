@@ -46,6 +46,7 @@ class CAssetNodeBase : public CryGraphEditor::CAbstractNodeItem
 {
 public:
 	CAssetNodeBase(CryGraphEditor::CNodeGraphViewModel& viewModel, CAsset* pAsset, const CAssetType* pAssetType, const string& m_path);
+	virtual ~CAssetNodeBase();
 
 	bool                                    CanBeEdited() const;
 	void                                    EditAsset() const;
@@ -66,5 +67,7 @@ protected:
 	CAsset* const           m_pAsset;
 	const CAssetType* const m_pAssetType;
 	string                  m_path;
-};
 
+private:
+	CryGraphEditor::CNodeEditorData* m_pData;
+};

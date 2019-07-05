@@ -74,7 +74,7 @@ void CInventory::PostReloadExtension(IGameObject* pGameObject, const SEntitySpaw
 //------------------------------------------------------------------------
 void CInventory::FullSerialize(TSerialize ser)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Inventory serialization");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Inventory serialization");
 
 	ser.BeginGroup("InventoryItems");
 
@@ -431,7 +431,6 @@ void CInventory::SerializeInventoryForLevelChange(TSerialize ser)
 	{
 		string name;
 		int amount = 0;
-		int users = 0;
 		int capacity = 0;
 		if (ser.IsWriting())
 		{
@@ -498,9 +497,9 @@ void CInventory::ProcessEvent(const SEntityEvent& event)
 }
 
 //------------------------------------------------------------------------
-uint64 CInventory::GetEventMask() const 
+Cry::Entity::EventFlags CInventory::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_RESET;
 }
 
 //------------------------------------------------------------------------
@@ -616,24 +615,21 @@ void CInventory::Clear(bool forceClear)
 		return;
 	}
 
-	if (!gEnv->bServer)
-	{
-		IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
+	IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 
-		TInventoryIt end = m_stats.slots.end();
-		for (TInventoryIt it = m_stats.slots.begin(); it != end; ++it)
+	TInventoryIt end = m_stats.slots.end();
+	for (TInventoryIt it = m_stats.slots.begin(); it != end; ++it)
+	{
+		if (IItem* pItem = pItemSystem->GetItem(*it))
 		{
-			if (IItem* pItem = pItemSystem->GetItem(*it))
-			{
-				pItem->RemoveOwnerAttachedAccessories();
-				pItem->AttachToHand(false);
-				pItem->AttachToBack(false);
-				pItem->SetOwnerId(0);
-				pItem->GetEntity()->Hide(true);
-			}
+			pItem->RemoveOwnerAttachedAccessories();
+			pItem->AttachToHand(false);
+			pItem->AttachToBack(false);
+			pItem->SetOwnerId(0);
+			pItem->GetEntity()->Hide(true);
 		}
 	}
-
+	
 	m_stats.slots.clear();
 	m_stats.accessorySlots.clear();
 	ResetAmmoAndUsers();
@@ -1183,7 +1179,7 @@ void CInventory::ResetAmmo()
 //------------------------------------------------------------------------
 void CInventory::SetInventorySlotCapacity(IInventory::EInventorySlots slotId, unsigned int capacity)
 {
-	CRY_ASSERT_MESSAGE(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
+	CRY_ASSERT(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
 
 	m_stats.slotsInfo[slotId].maxCapacity = capacity;
 }
@@ -1191,7 +1187,7 @@ void CInventory::SetInventorySlotCapacity(IInventory::EInventorySlots slotId, un
 //------------------------------------------------------------------------
 void CInventory::AssociateItemCategoryToSlot(const char* itemCategory, IInventory::EInventorySlots slotId)
 {
-	CRY_ASSERT_MESSAGE(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
+	CRY_ASSERT(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
 
 	m_stats.categoriesToSlot.insert(TCategoriesToSlot::value_type(itemCategory, slotId));
 }
@@ -1199,7 +1195,7 @@ void CInventory::AssociateItemCategoryToSlot(const char* itemCategory, IInventor
 //------------------------------------------------------------------------
 EntityId CInventory::GetLastSelectedInSlot(IInventory::EInventorySlots slotId) const
 {
-	CRY_ASSERT_MESSAGE(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
+	CRY_ASSERT(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
 
 	return m_stats.slotsInfo[slotId].lastSelected;
 }
@@ -1473,7 +1469,7 @@ void CInventory::RemoveAmmoUser(IEntityClass* pAmmoType)
 
 	TAmmoInfoMap::iterator ammoUserIt = m_stats.ammoInfo.find(pAmmoType);
 
-	CRY_ASSERT_MESSAGE(ammoUserIt != m_stats.ammoInfo.end(), "Trying to remove user of an ammo which never was added.");
+	CRY_ASSERT(ammoUserIt != m_stats.ammoInfo.end(), "Trying to remove user of an ammo which never was added.");
 
 	if (ammoUserIt != m_stats.ammoInfo.end())
 	{
@@ -1501,13 +1497,13 @@ void CInventory::ResetAmmoAndUsers()
 
 void CInventory::AddListener(struct IInventoryListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_iteratingListeners == false, "AddListener called during a listener broadcast.");
+	CRY_ASSERT(m_iteratingListeners == false, "AddListener called during a listener broadcast.");
 	stl::push_back_unique(m_listeners, pListener);
 }
 
 void CInventory::RemoveListener(struct IInventoryListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_iteratingListeners == false, "RemoveListener called during a listener broadcast.");
+	CRY_ASSERT(m_iteratingListeners == false, "RemoveListener called during a listener broadcast.");
 	stl::find_and_erase(m_listeners, pListener);
 }
 

@@ -4,7 +4,6 @@
 #include "StdAfx.h"
 #include <CryCore/CryCustomTypes.h>
 #include "../../DeviceManager/DeviceObjects.h"
-#include "DriverD3D.h"
 #include "../../DeviceManager/DevicePSO.h"
 
 

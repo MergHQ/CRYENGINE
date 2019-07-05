@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "DeviceObjects.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 #include "Common/ReverseDepth.h"
 #include "Common/Textures/TextureHelpers.h"
@@ -17,6 +16,7 @@ bool SResourceBinding::IsValid() const
 	switch (type)
 	{
 	case EResourceType::ConstantBuffer: return pConstantBuffer && (pConstantBuffer->IsNullBuffer() || pConstantBuffer->GetD3D());
+	case EResourceType::ShaderResource: return pShaderResource && pShaderResource->GetBuffer();
 	case EResourceType::Texture:        return pTexture && pTexture->GetDevTexture();
 	case EResourceType::Buffer:         return pBuffer && pBuffer->GetDevBuffer();
 	case EResourceType::Sampler:        return samplerState != SamplerStateHandle::Unspecified;
@@ -30,6 +30,7 @@ bool SResourceBinding::IsVolatile() const
 	switch (type)
 	{
 	case EResourceType::ConstantBuffer: return true;
+	case EResourceType::ShaderResource: return true;
 	case EResourceType::Texture:        return pTexture && !(pTexture->GetFlags() & FT_DONT_RELEASE);
 	case EResourceType::Buffer:         return true;
 	case EResourceType::Sampler:        return samplerState == SamplerStateHandle::Unspecified;
@@ -71,7 +72,11 @@ template<typename T> T* SResourceBinding::GetDeviceResourceView() const
 }
 
 template D3DSurface*      SResourceBinding::GetDeviceResourceView<D3DSurface>() const;
-template D3DDepthSurface* SResourceBinding::GetDeviceResourceView<D3DDepthSurface>() const;
+
+// These are #defined to the same thing (NCryVulkan::CImageView) on Linux.
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
+	template D3DDepthSurface* SResourceBinding::GetDeviceResourceView<D3DDepthSurface>() const;
+#endif
 
 DXGI_FORMAT SResourceBinding::GetResourceFormat() const
 {
@@ -101,6 +106,12 @@ SResourceBindPoint::SResourceBindPoint(const SResourceBinding& resource, uint8 _
 	case SResourceBinding::EResourceType::ConstantBuffer:
 	{
 		slotType = ESlotType::ConstantBuffer;
+		flags = EFlags::None;
+	}
+	break;
+	case SResourceBinding::EResourceType::ShaderResource:
+	{
+		slotType = ESlotType::TextureAndBuffer;
 		flags = EFlags::None;
 	}
 	break;
@@ -136,10 +147,10 @@ SResourceBindPoint::SResourceBindPoint(const SResourceBinding& resource, uint8 _
 }
 
 SResourceBindPoint::SResourceBindPoint(ESlotType _type, uint8 _slotNumber, EShaderStage _shaderStages, EFlags _flags)
-	: slotType(_type)
+	: stages(_shaderStages)
 	, flags(_flags)
 	, slotNumber(_slotNumber)
-	, stages(_shaderStages)
+	, slotType(_type)
 {}
 
 CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::SetResources(const CDeviceResourceSetDesc& other)
@@ -149,7 +160,6 @@ CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::SetResources(const C
 	{
 		auto insertResult = m_resources.insert(it);
 
-		SResourceBinding&   existingBinding = insertResult.first->second;
 		SResourceBindPoint& existingBindPoint = insertResult.first->first;
 
 		if (m_invalidateCallback)
@@ -186,12 +196,6 @@ CDeviceResourceSetDesc::~CDeviceResourceSetDesc()
 
 template<SResourceBinding::EResourceType resourceType>
 bool CompareBindings(const SResourceBinding& resourceA, const SResourceBinding& resourceB)
-{
-	return resourceA.fastCompare == resourceB.fastCompare && resourceA.view == resourceB.view;
-}
-
-template<>
-bool CompareBindings<SResourceBinding::EResourceType::ConstantBuffer>(const SResourceBinding& resourceA, const SResourceBinding& resourceB)
 {
 	return resourceA.fastCompare == resourceB.fastCompare && resourceA.view == resourceB.view;
 }
@@ -243,6 +247,7 @@ CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource(SReso
 
 // explicit instantiation
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::ConstantBuffer>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
+template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::ShaderResource>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::Texture>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::Buffer>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
 template CDeviceResourceSetDesc::EDirtyFlags CDeviceResourceSetDesc::UpdateResource<SResourceBinding::EResourceType::Sampler>(SResourceBindPoint bindPoint, const SResourceBinding& binding);
@@ -305,8 +310,8 @@ bool CDeviceResourceSetDesc::OnResourceInvalidated(void* pThis, SResourceBindPoi
 }
 
 CDeviceResourceSet::CDeviceResourceSet(EFlags flags)
-	: m_bValid(false)
-	, m_Flags(flags)
+	: m_Flags(flags)
+	, m_bValid(false)
 {}
 
 CDeviceResourceSet::~CDeviceResourceSet()
@@ -352,7 +357,7 @@ bool CDeviceResourceSet::UpdateWithReevaluation(CDeviceResourceSetPtr& pSet, CDe
 
 void SDeviceResourceLayoutDesc::SetResourceSet(uint32 bindSlot, const CDeviceResourceSetDesc& resourceSet)
 {
-	SLayoutBindPoint bindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::ResourceSet, bindSlot };
+	SLayoutBindPoint bindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::ResourceSet, static_cast<uint8>(bindSlot) };
 	m_resourceBindings[bindPoint] = resourceSet.GetResources();
 }
 
@@ -360,7 +365,17 @@ void SDeviceResourceLayoutDesc::SetConstantBuffer(uint32 bindSlot, EConstantBuff
 {
 	SResourceBinding resource((CConstantBuffer*)nullptr, 0);
 	SResourceBindPoint resourceBindPoint(resource, shaderSlot, shaderStages);
-	SLayoutBindPoint layoutBindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::InlineConstantBuffer, bindSlot };
+	SLayoutBindPoint layoutBindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::InlineConstantBuffer, static_cast<uint8>(bindSlot) };
+
+	m_resourceBindings[layoutBindPoint].clear();
+	m_resourceBindings[layoutBindPoint].insert(std::make_pair(resourceBindPoint, resource));
+}
+
+void SDeviceResourceLayoutDesc::SetShaderResource(uint32 bindSlot, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages)
+{
+	SResourceBinding resource((CDeviceBuffer*)nullptr, 0);
+	SResourceBindPoint resourceBindPoint(resource, shaderSlot, shaderStages);
+	SLayoutBindPoint layoutBindPoint = { SDeviceResourceLayoutDesc::ELayoutSlotType::InlineShaderResource, static_cast<uint8>(bindSlot) };
 
 	m_resourceBindings[layoutBindPoint].clear();
 	m_resourceBindings[layoutBindPoint].insert(std::make_pair(resourceBindPoint, resource));
@@ -431,9 +446,9 @@ uint64 SDeviceResourceLayoutDesc::GetHash() const
 
 				uint32 hashedValues[] =
 				{
-					samplerDesc.m_nMinFilter, samplerDesc.m_nMagFilter,     samplerDesc.m_nMipFilter,
-					samplerDesc.m_nAddressU,  samplerDesc.m_nAddressV,      samplerDesc.m_nAddressW,
-					samplerDesc.m_nAnisotropy, samplerDesc.m_dwBorderColor, samplerDesc.m_bComparison,
+					static_cast<UINT>(samplerDesc.m_nMinFilter),  static_cast<UINT>(samplerDesc.m_nMagFilter),    static_cast<UINT>(samplerDesc.m_nMipFilter),
+					static_cast<UINT>(samplerDesc.m_nAddressU),   static_cast<UINT>(samplerDesc.m_nAddressV),     static_cast<UINT>(samplerDesc.m_nAddressW),
+					static_cast<UINT>(samplerDesc.m_nAnisotropy), static_cast<UINT>(samplerDesc.m_dwBorderColor), samplerDesc.m_bComparison,
 				};
 
 				XXH64_update(&hashState, hashedValues, sizeof(hashedValues));
@@ -443,124 +458,3 @@ uint64 SDeviceResourceLayoutDesc::GetHash() const
 
 	return XXH64_digest(&hashState);
 }
-
-bool SDeviceResourceLayoutDesc::IsValid() const
-{
-	// VALIDATION RULES:
-	// * Cannot bind multiple resources to same layout (CPU side) slot
-	// * Cannot have gaps in layout (CPU side) slots
-	// * Cannot bind multiple resources to same shader slot
-	//   -> Due to dx12, even things like tex0 => (t0, EShaderStage_Vertex), tex1 => (t0, EShaderStage_Pixel) are invalid
-	// * There is a restriction on the GpuBuffer count per resource set. check 'ResourceSetBufferCount'
-
-	auto GetResourceName = [](const SResourceBinding& resource)
-	{
-		switch (resource.type)
-		{
-		case SResourceBinding::EResourceType::Texture:        return resource.pTexture->GetName();
-		case SResourceBinding::EResourceType::Buffer:         return "GpuBuffer";
-		case SResourceBinding::EResourceType::ConstantBuffer: return "ConstantBuffer";
-		case SResourceBinding::EResourceType::Sampler:        return "Sampler";
-		case SResourceBinding::EResourceType::InvalidType:    return "Void";
-		};
-		return "Unknown";
-	};
-
-	auto GetBindPointName = [](SResourceBindPoint bindPoint)
-	{
-		static char buffer[64];
-		char slotPrefix[] = { 'b', 't', 'u', 's' };
-
-		cry_sprintf(buffer, "%c%d", slotPrefix[min((size_t)bindPoint.slotType, CRY_ARRAY_COUNT(slotPrefix) - 1)], bindPoint.slotNumber);
-
-		return buffer;
-	};
-
-	std::set<uint32> usedLayoutBindSlots;
-	std::map<int16, SResourceBinding> usedShaderBindSlotsS[(uint8)SResourceBindPoint::ESlotType::Count][eHWSC_Num]; // used slot numbers per slot type and shader stage
-	std::map<int16, SResourceBinding> usedShaderBindSlotsL[(uint8)SResourceBindPoint::ESlotType::Count][EResourceLayoutSlot_Max + 1];
-
-	auto validateLayoutSlot = [&](uint32 layoutSlot)
-	{
-		if (usedLayoutBindSlots.insert(layoutSlot).second == false)
-		{
-			CRY_ASSERT_TRACE(false, ("Invalid Resource Layout: Multiple resources on layout (CPU side) slot %d", layoutSlot));
-			return false;
-		}
-
-		return true;
-	};
-
-	auto validateResourceBindPoint = [&](uint8 layoutSlot, SResourceBindPoint bindPoint, const SResourceBinding& resource)
-	{
-		// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
-		int validShaderStages = bindPoint.stages;
-		for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
-		{
-			if (validShaderStages & 1)
-			{
-				// Across all layouts, no stage-local slot can be referenced twice
-				auto insertResultS = usedShaderBindSlotsS[uint8(bindPoint.slotType)][shaderClass].insert(std::make_pair(bindPoint.slotNumber, resource));
-				if (insertResultS.second == false)
-				{
-					auto& existingResource = insertResultS.first->second;
-					auto& currentResource = resource;
-
-					CRY_ASSERT_TRACE(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s across multiple layoutSlots: A: %s - B: %s",
-						GetBindPointName(bindPoint), GetResourceName(existingResource), GetResourceName(currentResource)));
-
-					return false;
-				}
-			}
-		}
-
-		// Across all stages, no layout-local slot can be referenced twice
-		auto insertResultL = usedShaderBindSlotsL[uint8(bindPoint.slotType)][layoutSlot].insert(std::make_pair(bindPoint.slotNumber, resource));
-		if (insertResultL.second == false)
-		{
-			auto& existingResource = insertResultL.first->second;
-			auto& currentResource = resource;
-
-			CRY_ASSERT_TRACE(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s within the same layoutSlot: A: %s - B: %s",
-				GetBindPointName(bindPoint), GetResourceName(existingResource), GetResourceName(currentResource)));
-
-			return false;
-		}
-
-		return true;
-	};
-
-	// validate all resource bindings
-	for (auto& itLayoutBinding : m_resourceBindings)
-	{
-		if (!validateLayoutSlot(itLayoutBinding.first.layoutSlot))
-			return false;
-
-		for (auto itResource : itLayoutBinding.second)
-		{
-			if (!validateResourceBindPoint(itLayoutBinding.first.layoutSlot, itResource.first, itResource.second))
-				return false;
-		}
-	}
-
-	// Make sure there are no 'holes' in the used binding slots
-	{
-		int previousSlot = -1;
-		for (auto slot : usedLayoutBindSlots)
-		{
-			if (slot != previousSlot + 1)
-			{
-				CRY_ASSERT_MESSAGE(false, "Invalid Resource Layout: gap in layout (CPU side) slots");
-				return false;
-			}
-
-			previousSlot = slot;
-		}
-
-		if (previousSlot > EResourceLayoutSlot_Max)
-			return false;
-	}
-
-	return true;
-}
-

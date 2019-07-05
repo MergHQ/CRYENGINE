@@ -8,16 +8,14 @@ void CDeviceTexture::DisableMgpuSync()
 		NVDX_ObjectHandle handle = (NVDX_ObjectHandle&)m_handleMGPU;
 		if (handle == NULL)
 		{
-			NvAPI_Status status = NvAPI_D3D_GetObjectHandleForResource(gcpRendD3D->GetDevice().GetRealDevice(), m_pNativeResource, &handle);
-			assert(status == NVAPI_OK);
+			CRY_VERIFY(NvAPI_D3D_GetObjectHandleForResource(gcpRendD3D->GetDevice(), m_pNativeResource, &handle) == NVAPI_OK);
 			m_handleMGPU = handle;
 		}
 		//if (nWidth >= 4 && nHeight >= 4)
 		{
 			NvU32 value = 1;
 			// disable driver watching this texture - it will never be synced unless requested by the application
-			NvAPI_Status status = NvAPI_D3D_SetResourceHint(gcpRendD3D->GetDevice().GetRealDevice(), handle, NVAPI_D3D_SRH_CATEGORY_SLI, NVAPI_D3D_SRH_SLI_APP_CONTROLLED_INTERFRAME_CONTENT_SYNC, &value);
-			assert(status == NVAPI_OK);
+			CRY_VERIFY(NvAPI_D3D_SetResourceHint(gcpRendD3D->GetDevice(), handle, NVAPI_D3D_SRH_CATEGORY_SLI, NVAPI_D3D_SRH_SLI_APP_CONTROLLED_INTERFRAME_CONTENT_SYNC, &value) == NVAPI_OK);
 		}
 	}
 }
@@ -26,12 +24,11 @@ void CDeviceTexture::MgpuResourceUpdate(bool bUpdating)
 {
 	if (gcpRendD3D->m_bVendorLibInitialized && (gRenDev->GetFeatures() & RFT_HW_NVIDIA))
 	{
-		ID3D11Device* pDevice = gcpRendD3D->GetDevice().GetRealDevice();
+		ID3D11Device* pDevice = gcpRendD3D->GetDevice();
 		NVDX_ObjectHandle handle = (NVDX_ObjectHandle&)m_handleMGPU;
 		if (handle == NULL)
 		{
-			NvAPI_Status status = NvAPI_D3D_GetObjectHandleForResource(pDevice, m_pNativeResource, &handle);
-			assert(status == NVAPI_OK);
+			CRY_VERIFY(NvAPI_D3D_GetObjectHandleForResource(pDevice, m_pNativeResource, &handle) == NVAPI_OK);
 			m_handleMGPU = handle;
 		}
 		if (handle)

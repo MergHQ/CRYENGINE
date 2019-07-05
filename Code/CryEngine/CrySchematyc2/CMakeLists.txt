@@ -170,6 +170,8 @@ add_sources("Schematyc_Uber_Module_3.cpp"
 	SOURCE_GROUP "Module\\\\Script\\\\GraphNodes"
 		"Script/GraphNodes/ScriptGraphBeginNode.cpp"
 		"Script/GraphNodes/ScriptGraphBeginNode.h"
+		"Script/GraphNodes/ScriptGraphBranchNode.cpp"
+		"Script/GraphNodes/ScriptGraphBranchNode.h"
 		"Script/GraphNodes/ScriptGraphCommentNode.cpp"
 		"Script/GraphNodes/ScriptGraphCommentNode.h"
 		"Script/GraphNodes/ScriptGraphFunctionNode.cpp"
@@ -270,3 +272,43 @@ target_compile_definitions(${THIS_PROJECT} INTERFACE "USE_SCHEMATYC_LEGACY_CORE"
 target_compile_definitions(${THIS_PROJECT} INTERFACE "USE_SCHEMATYC_LEGACY_BASE_ENV")
 
 target_include_directories( ${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAction" )
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-parentheses
+		-Wno-reorder
+		-Wno-unused-value
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-unused-private-field
+		-Wno-multichar
+		-Wno-switch
+		-Wno-unused-function
+		-Wno-char-subscripts
+		-Wno-c++11-narrowing
+		-Wno-empty-body
+		-Wno-unused-lambda-capture
+		-Wno-sometimes-uninitialized
+	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-sign-compare
+		-Wno-ignored-attributes
+		-Wno-int-in-bool-context
+		-Wno-unused-but-set-variable
+		-Wno-strict-aliasing
+		-Wno-maybe-uninitialized
+		-Wno-misleading-indentation
+		-Wno-unknown-pragmas
+		-Wno-unused-const-variable
+		-Wno-multichar
+		-Wno-char-subscripts
+		-Wno-parentheses
+		-Wno-comment
+		-Wno-address
+		-Wno-format
+		-Wno-switch
+	)
+endif()

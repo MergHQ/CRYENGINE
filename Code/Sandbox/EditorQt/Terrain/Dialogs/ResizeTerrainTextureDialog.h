@@ -18,4 +18,3 @@ public:
 private:
 	CGenerateTerrainTextureUi* m_pTexture;
 };
-

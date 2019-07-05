@@ -2,8 +2,11 @@
 
 #include "StdAfx.h"
 #include "EntityScript.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "EntityObject.h"
 #include "CryEdit.h"
+#include <Util/FileUtil.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include "LuaCommentParser.h"
@@ -40,11 +43,11 @@ enum EScriptParamFlags
 //////////////////////////////////////////////////////////////////////////
 static struct
 {
-	const char*                           prefix;
-	IVariable::EType                      type;
-	IVariable::EDataType                  dataType;
-	int  flags;
-	bool bExactName;
+	const char*          prefix;
+	IVariable::EType     type;
+	IVariable::EDataType dataType;
+	int                  flags;
+	bool                 bExactName;
 } s_scriptParamTypes[] =
 {
 	{ "n",                   IVariable::INT,    IVariable::DT_SIMPLE,                SCRIPTPARAM_POSITIVE, false },
@@ -71,9 +74,13 @@ static struct
 	{ "file",                IVariable::STRING, IVariable::DT_FILE,                  0,                    false },
 	{ "aibehavior",          IVariable::STRING, IVariable::DT_AI_BEHAVIOR,           0,                    false },
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
-	{ "aicharacter",         IVariable::STRING, IVariable::DT_AI_CHARACTER,          0,                    false },
+	{
+		"aicharacter", IVariable::STRING, IVariable::DT_AI_CHARACTER, 0, false
+	},
 #endif
-	{ "aipfpropertieslist",  IVariable::STRING, IVariable::DT_AI_PFPROPERTIESLIST,   0,                    false },
+	{
+		"aipfpropertieslist", IVariable::STRING, IVariable::DT_AI_PFPROPERTIESLIST, 0, false
+	},
 	{ "aientityclasses",     IVariable::STRING, IVariable::DT_AIENTITYCLASSES,       0,                    false },
 	{ "aiterritory",         IVariable::STRING, IVariable::DT_AITERRITORY,           0,                    false },
 	{ "aiwave",              IVariable::STRING, IVariable::DT_AIWAVE,                0,                    false },
@@ -107,11 +114,10 @@ static struct
 	{ "material",            IVariable::STRING, IVariable::DT_MATERIAL,              0 },
 	{ "audioTrigger",        IVariable::STRING, IVariable::DT_AUDIO_TRIGGER,         0 },
 	{ "audioSwitch",         IVariable::STRING, IVariable::DT_AUDIO_SWITCH,          0 },
-	{ "audioSwitchState",    IVariable::STRING, IVariable::DT_AUDIO_SWITCH_STATE,    0 },
-	{ "audioRTPC",           IVariable::STRING, IVariable::DT_AUDIO_RTPC,            0 },
+	{ "audioSwitchState",    IVariable::STRING, IVariable::DT_AUDIO_STATE,           0 },
+	{ "audioRTPC",           IVariable::STRING, IVariable::DT_AUDIO_PARAMETER,       0 },
 	{ "audioEnvironment",    IVariable::STRING, IVariable::DT_AUDIO_ENVIRONMENT,     0 },
-	{ "audioPreloadRequest", IVariable::STRING, IVariable::DT_AUDIO_PRELOAD_REQUEST, 0 },
-};
+	{ "audioPreloadRequest", IVariable::STRING, IVariable::DT_AUDIO_PRELOAD_REQUEST, 0 },                  };
 
 //////////////////////////////////////////////////////////////////////////
 struct CScriptPropertiesDump : public IScriptTableDumpSink
@@ -378,7 +384,7 @@ public:
 			}
 		}
 
-		for (NodesMap::iterator nit = nodes.begin(); nit != nodes.end(); nit++)
+		for (NodesMap::iterator nit = nodes.begin(); nit != nodes.end(); ++nit)
 		{
 			if (m_parentVar)
 			{
@@ -390,7 +396,7 @@ public:
 			}
 		}
 
-		for (NodesMap::iterator nit1 = listNodes.begin(); nit1 != listNodes.end(); nit1++)
+		for (NodesMap::iterator nit1 = listNodes.begin(); nit1 != listNodes.end(); ++nit1)
 		{
 			if (m_parentVar)
 			{
@@ -1100,8 +1106,6 @@ void CEntityScript::RunMethod(IEntity* pEntity, const string& method)
 		return;
 	}
 
-	IScriptSystem* scriptSystem = GetIEditorImpl()->GetSystem()->GetIScriptSystem();
-
 	Script::CallMethod(scriptTable, (const char*)method);
 }
 
@@ -1163,7 +1167,7 @@ void CEntityScript::SetEventsTable(CEntityObject* pEntity)
 		CEntityEventTarget& et = pEntity->GetEventTarget(i);
 		sourceEvents.insert(et.sourceEvent);
 	}
-	for (std::set<string>::iterator it = sourceEvents.begin(); it != sourceEvents.end(); it++)
+	for (std::set<string>::iterator it = sourceEvents.begin(); it != sourceEvents.end(); ++it)
 	{
 		SmartScriptTable pTrgEvents(scriptSystem, false);
 		string sourceEvent = *it;
@@ -1274,7 +1278,11 @@ void CEntityScriptRegistry::OnEntityClassRegistryEvent(EEntityClassRegistryEvent
 				}
 			}
 
+			// We only need to reload entities in case a script class was changed, since schematyc handles reloading themself.
+			if (pEntityClass->GetScriptFile() != nullptr && pEntityClass->GetScriptFile()[0] != '\0')
+			{
 				m_needsScriptReload = true;
+			}
 		}
 		break;
 	case ECRE_CLASS_UNREGISTERED:
@@ -1293,7 +1301,7 @@ void CEntityScriptRegistry::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	if (event == eNotify_OnIdleUpdate && m_needsScriptReload)
 	{
 		m_needsScriptReload = false;
-		CCryEditApp::GetInstance()->OnReloadEntityScripts();
+		GetIEditorImpl()->GetICommandManager()->Execute("entity.reload_all_scripts");
 	}
 }
 
@@ -1400,4 +1408,3 @@ void CEntityScriptRegistry::Release()
 	}
 	m_instance = 0;
 }
-

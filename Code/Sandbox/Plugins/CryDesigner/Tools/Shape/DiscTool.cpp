@@ -90,12 +90,12 @@ bool DiscTool::SnapAngleBy90Degrees(float angle, float& outSnappedAngle)
 
 	if (std::abs(angle) < range)
 		outSnappedAngle = 0;
-	else if (std::abs(angle - 0.25f * PI2) < range)
-		outSnappedAngle = 0.25f * PI2;
-	else if (std::abs(angle + 0.25f * PI2) < range)
-		outSnappedAngle = -0.25f * PI2;
-	else if (std::abs(angle + 0.5f * PI2) < range)
-		outSnappedAngle = -0.5f * PI2;
+	else if (std::abs(angle - static_cast<float>(0.25 * PI2)) < range)
+		outSnappedAngle = static_cast<float>(0.25 * PI2);
+	else if (std::abs(angle + static_cast<float>(0.25 * PI2)) < range)
+		outSnappedAngle = static_cast<float>(-0.25 * PI2);
+	else if (std::abs(angle + static_cast<float>(0.5 * PI2)) < range)
+		outSnappedAngle = static_cast<float>(-0.5 * PI2);
 	else
 	{
 		outSnappedAngle = angle;
@@ -160,7 +160,7 @@ bool DiscTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 n
 	return true;
 }
 
-void DiscTool::Display(DisplayContext& dc)
+void DiscTool::Display(SDisplayContext& dc)
 {
 	DisplayCurrentSpot(dc);
 
@@ -248,4 +248,3 @@ void DiscTool::OnChangeParameter(bool continuous)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Disc, eToolGroup_Shape, "Disc", DiscTool,
                                                            disc, "runs disc tool", "designer.disc")
-

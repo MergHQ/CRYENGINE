@@ -13,7 +13,7 @@ CNodePinWidgetStyle::CNodePinWidgetStyle(const char* szStyleId, CNodeGraphViewSt
 
 	viewStyle.RegisterPinWidgetStyle(this);
 
-	SetColor(QColor(94, 94, 94));
+	SetColor(QColor(145, 145, 145));
 	SetIcon(QIcon("icons:Graph/Node_connection_circle.ico"));
 }
 
@@ -49,4 +49,3 @@ void CNodePinWidgetStyle::GeneratePixmaps()
 }
 
 }
-

@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   3DEngineMemory.h
-//  Version:     v1.00
-//  Created:     23/04/2010 by Chris Raine.
-//  Compilers:   Visual Studio.NET
-// -------------------------------------------------------------------------
-//  History:
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef Engine3DMemory_H
-#define Engine3DMemory_H
+#pragma once
 
 // The type of pool responsible for temporary allocations within the 3dengine
 //
@@ -18,7 +8,6 @@
 // included directly from the precompiled header in 3dEngine, the gamedll will
 // fail to compile!
 #include <CryMemory/CryPool/PoolAlloc.h>
-#include <CrySystem/InplaceFactory.h>
 #include <CryCore/StlUtils.h>
 
 using NCryPoolAlloc::CFirstFit;        // speed of allocations are crucial, so simply use the first fitting free allocation
@@ -26,7 +15,7 @@ using NCryPoolAlloc::CInPlace;         //
 using NCryPoolAlloc::CMemoryDynamic;   // the pool itself will be dynamically allocated
 using NCryPoolAlloc::CListItemInPlace; // use inplace items
 
-// Tempororary Pool Holder
+// Temporary Pool Holder
 class CTemporaryPool
 {
 private:
@@ -52,6 +41,7 @@ private:
 	// cachelines crossed by the temporary pool
 	static bool Initialize(size_t poolSize)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init 3dEngine Temporary Pool");
 		// Create the object instance
 		s_Instance = new CTemporaryPool();
 		if (!s_Instance)
@@ -64,7 +54,7 @@ private:
 		uint8* tempPool = reinterpret_cast<uint8*>(CryModuleMemalign(poolSize, 16));
 		if (!tempPool)
 		{
-			CryFatalError("CTemporaryPool::Init(): could not allocate %" PRISIZE_T " bytes for temportary pool", poolSize);
+			CryFatalError("CTemporaryPool::Init(): could not allocate %" PRISIZE_T " bytes for temporary pool", poolSize);
 			return false;
 		}
 
@@ -78,7 +68,7 @@ private:
 	// Frees the temporary pool
 	static bool Shutdown()
 	{
-		if (s_Instance == NULL)
+		if (s_Instance == nullptr)
 		{
 			CryFatalError("CTemporaryPool::Shutdown(): no temporary pool instance present");
 			return false;
@@ -92,18 +82,8 @@ private:
 			error = true;
 
 		delete s_Instance;
-		s_Instance = NULL;
+		s_Instance = nullptr;
 		return !error;
-	}
-
-	// Templated construct helper member function using an inplace factory
-	//
-	// Called from the templated New<T, Expr> function below. Returns a typed
-	// pointer to the inplace constructed object.
-	template<typename T, typename InPlaceFactory>
-	T* Construct(const InPlaceFactory& factory, void* storage)
-	{
-		return reinterpret_cast<T*>(factory.template apply<T>(storage));
 	}
 
 	// Templated destruct helper member function.
@@ -119,8 +99,8 @@ private:
 	// Empty private constructor/destructors to prevent clients from creating and
 	// destroying instances of CTemporaryPool (there should only be one instance
 	// in the 3DEngine).
-	CTemporaryPool() {};
-	~CTemporaryPool() {};
+	CTemporaryPool() {}
+	~CTemporaryPool() {}
 
 public:
 
@@ -129,28 +109,12 @@ public:
 	{
 		AUTO_LOCK_T(CryCriticalSectionNonRecursive, Lock);
 		void* pData = Pool.Allocate<void*>(size, align);
-		if (pData == NULL)
+		if (pData == nullptr)
 		{
 			CryFatalError("**** could not allocate %" PRISIZE_T " bytes from temporary pool", size);
 		}
 		return Pool.Resolve<void*>(pData);
-	};
-
-	// Allocates memory and constructs object of type 'T'
-	//
-	// Note: This method is respects the alignment of 'T' via C99 alignof()
-	template<typename T, typename Expr>
-	T* New(const Expr& expr)
-	{
-		AUTO_LOCK_T(CryCriticalSectionNonRecursive, Lock);
-		void* pObjStorage = Pool.Allocate<void*>(sizeof(T), alignof(T));
-		if (pObjStorage == NULL)
-		{
-			CryFatalError("**** could not allocate %d bytes from temporary pool",
-			              (int)sizeof(T));
-		}
-		return Construct<T>(expr, pObjStorage);
-	};
+	}
 
 	// Allocates memory and constructs object of type 'T'
 	//
@@ -160,13 +124,13 @@ public:
 	{
 		AUTO_LOCK_T(CryCriticalSectionNonRecursive, Lock);
 		void* pObjStorage = Pool.Allocate<void*>(sizeof(T), alignof(T));
-		if (pObjStorage == NULL)
+		if (pObjStorage == nullptr)
 		{
 			CryFatalError("**** could not allocate %d bytes from temporary pool",
 			              (int)sizeof(T));
 		}
-		return Construct<T>(InplaceFactory(), pObjStorage);
-	};
+		return new (pObjStorage) T;
+	}
 
 	// Frees a block of memory from the temporary pool
 	//
@@ -185,7 +149,7 @@ public:
 	}
 
 	// Static function to retrieve the static instance of CTemporaryPool
-	static CTemporaryPool* Get() { return s_Instance; };
+	static CTemporaryPool* Get() { return s_Instance; }
 
 	void                   GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -268,5 +232,3 @@ namespace util
 extern void* pool_allocate(size_t nSize);
 extern void  pool_free(void* ptr);
 }
-
-#endif

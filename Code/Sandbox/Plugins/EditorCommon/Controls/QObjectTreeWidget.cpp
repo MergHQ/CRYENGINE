@@ -117,7 +117,7 @@ QObjectTreeWidget::QObjectTreeWidget(QWidget* pParent /*= nullptr*/, const char*
 		const auto nodeType = typeVariant.value<NodeType>();
 		if (nodeType == Entry)
 		{
-		  signalOnClickFile(index.data(QObjectTreeView::Id).toString().toLocal8Bit());
+		  signalOnClickFile(index.data(QObjectTreeView::Id).toString().toLocal8Bit().constData());
 		}
 	});
 
@@ -132,7 +132,7 @@ QObjectTreeWidget::QObjectTreeWidget(QWidget* pParent /*= nullptr*/, const char*
 		const auto nodeType = typeVariant.value<NodeType>();
 		if (nodeType == Entry)
 		{
-		  signalOnDoubleClickFile(index.data(QObjectTreeView::Id).toString().toLocal8Bit());
+		  signalOnDoubleClickFile(index.data(QObjectTreeView::Id).toString().toLocal8Bit().constData());
 		}
 	});
 
@@ -374,4 +374,3 @@ QStandardItem* QObjectTreeWidget::FindOrCreate(const QString& itemName, QStandar
 
 	return pResult;
 }
-

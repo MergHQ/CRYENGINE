@@ -2,24 +2,31 @@
 
 #include "StdAfx.h"
 #include "Group.h"
-#include "CryEdit.h"
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "EntityObject.h"
+
+#include "Objects/EntityObject.h"
 #include "Objects/ObjectLayerManager.h"
+#include "Objects/PrefabObject.h"
+#include "CryEdit.h"
+#include "IEditorImpl.h"
+
+#include <Util/MFCUtil.h>
+
+#include <Objects/DisplayContext.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <Viewport.h>
+
+#include <Controls/QuestionDialog.h>
+#include <Util/Math.h>
+
+#include <QDialogButtonBox>
 #include <algorithm>
 
-#include <Serialization/Decorators/EditToolButton.h>
-#include <Serialization/Decorators/EditorActionButton.h>
-
 REGISTER_CLASS_DESC(CGroupClassDesc);
-
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CGroup, CBaseObject)
 
 namespace Private_Group
@@ -29,15 +36,7 @@ void RemoveIfAlreadyChildrenOf(CBaseObject* pParent, std::vector<CBaseObject*>& 
 	objects.erase(std::remove_if(objects.begin(), objects.end(), [pParent](CBaseObject* pObj)
 		{
 			return pObj->GetParent() == pParent;
-	  }), objects.end());
-}
-
-void RemoveIfAlreadyMember(const TBaseObjects& members, std::vector<CBaseObject*>& objects)
-{
-	objects.erase(std::remove_if(objects.begin(), objects.end(), [&members](const CBaseObject* pObj)
-		{
-			return std::find(members.cbegin(), members.cend(), pObj) != members.cend();
-	  }), objects.end());
+		}), objects.end());
 }
 
 void ResetTransforms(CGroup* pParent, const std::vector<CBaseObject*>& children, bool shouldKeepPos, std::vector<Matrix34>& worldTMs,
@@ -66,8 +65,7 @@ void ResetTransforms(CGroup* pParent, const std::vector<CBaseObject*>& children,
 void RestoreTransforms(std::vector<CBaseObject*>& children, bool shouldKeepPos, const std::vector<Matrix34>& worldTMs,
                        const std::vector<ITransformDelegate*>& transformDelegates)
 {
-	CScopedSuspendUndo suspendUndo;
-
+	CScopedSuspendUndo suspendUndoRestore;
 	if (shouldKeepPos)
 	{
 		// Keep old world space transformation.
@@ -160,72 +158,93 @@ private:
 		}
 	}
 
-	CGroup*                          m_pParent { nullptr };
+	CGroup*                          m_pParent;
 	const std::vector<CBaseObject*>& m_children;
-	bool                             m_shouldKeepPos { false };
-	bool                             m_shouldInvalidateTM { false };
+	bool                             m_shouldKeepPos;
+	bool                             m_shouldInvalidateTM;
 	std::vector<ITransformDelegate*> m_transformDelegates;
 };
 
-//////////////////////////////////////////////////////////////////////////
-//! Undo object for attach/detach changes
-class CUndoBatchAttachBaseObject : public IUndoObject
+class CUndoAttachmentHelper : public IUndoObject
 {
-public:
-	CUndoBatchAttachBaseObject(const std::vector<CBaseObject*>& objects, const std::vector<IObjectLayer*>& oldLayers, bool shouldKeepPos,
-	                           bool shouldPlaceOnRoot, bool isAttaching)
-		: m_shouldPlaceOnRoot(shouldPlaceOnRoot)
-		, m_shouldKeepPos(shouldKeepPos)
-		, m_isAttaching(isAttaching)
+protected:
+	std::vector<CryGUID> GetObjectsLayerGuids(const std::vector<CBaseObject*>& objects)
 	{
-		if (objects.empty())
+		std::vector<CryGUID> layerGUIDs;
+		layerGUIDs.reserve(objects.size());
+		for (auto pObject : objects)
+		{
+			CRY_ASSERT(pObject);
+			layerGUIDs.push_back(pObject->GetLayer()->GetGUID());
+		}
+		return layerGUIDs;
+	}
+
+	std::vector<CryGUID> GetObjectsParentGuids(const std::vector<CBaseObject*>& objects)
+	{
+		std::vector<CryGUID> parentGUIDs;
+		parentGUIDs.reserve(objects.size());
+		for (auto pObject : objects)
+		{
+			CRY_ASSERT(pObject);
+			CBaseObject* pParent = pObject->GetParent();
+			if (pParent)
+				parentGUIDs.push_back(pParent->GetId());
+			else
+				parentGUIDs.push_back(CryGUID());
+		}
+		return parentGUIDs;
+	}
+
+	void RemoveMembersToRootHelper(std::vector<CBaseObject*> objects, std::vector<CryGUID>& oldLayersGuids, bool shouldKeepTransform)
+	{
+		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+		CGroup::ForEachParentOf(objects, [pObjectManager, oldLayersGuids, shouldKeepTransform](CBaseObject* pParent, std::vector<CBaseObject*>& children)
+		{
+			CGroup* pGroup = static_cast<CGroup*>(pParent);
+
+			if (!pGroup)
+				return;
+
+			pGroup->RemoveMembers(children, shouldKeepTransform, true);
+
+			for (int i = 0; i < children.size(); ++i)
+			{
+				children[i]->SetLayer(pObjectManager->GetIObjectLayerManager()->FindLayer(oldLayersGuids[i]));
+				children[i]->UpdatePrefab();
+			}
+		});
+	}
+	void Detach(const std::vector<CryGUID>& objectsGuids, bool shouldKeepTransform, bool shouldPlaceOnRoot)
+	{
+		if (objectsGuids.empty())
 		{
 			return;
 		}
-		m_oldLayersGuids.reserve(oldLayers.size());
-		for (auto pOldLayer : oldLayers)
+
+		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+		std::vector<CBaseObject*> objects;
+		objects.reserve(objectsGuids.size());
+		for (auto it = objectsGuids.rbegin(); it != objectsGuids.rend(); ++it)
 		{
-			m_oldLayersGuids.emplace_back(pOldLayer->GetGUID());
+			CBaseObject* pObject = pObjectManager->FindObject(*it);
+			if (pObject)
+			{
+				objects.emplace_back(pObject);
+			}
 		}
-		m_parentGuid = objects[0]->GetParent()->GetId();
-		m_objectsGuids.reserve(objects.size());
-		for (auto pObj : objects)
+		CGroup::ForEachParentOf(objects, [shouldKeepTransform, shouldPlaceOnRoot](CGroup* pGroup, std::vector<CBaseObject*>& children)
 		{
-			m_objectsGuids.emplace_back(pObj->GetId());
-		}
+			pGroup->RemoveMembers(children, shouldKeepTransform, shouldPlaceOnRoot);
+		});
 	}
 
-	virtual void Undo(bool bUndo) override
-	{
-		if (m_isAttaching)
-		{
-			Detach();
-		}
-		else
-		{
-			Attach();
-		}
-	}
-
-	virtual void Redo() override
-	{
-		if (m_isAttaching)
-		{
-			Attach();
-		}
-		else
-		{
-			Detach();
-		}
-	}
-
-private:
-	void Attach()
+	void Attach(const std::vector<CryGUID>& objectsGuids, const CryGUID& attachToGuid, bool shouldKeepTransform)
 	{
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 		std::vector<CBaseObject*> objects;
-		objects.reserve(m_objectsGuids.size());
-		for (const auto& objectGuid : m_objectsGuids)
+		objects.reserve(objectsGuids.size());
+		for (const auto& objectGuid : objectsGuids)
 		{
 			CBaseObject* pObject = pObjectManager->FindObject(objectGuid);
 			if (pObject)
@@ -234,63 +253,154 @@ private:
 			}
 
 		}
-		CBaseObject* pParentObject = pObjectManager->FindObject(m_parentGuid);
+		CBaseObject* pParentObject = pObjectManager->FindObject(attachToGuid);
 
 		if (pParentObject && !objects.empty())
 		{
 			assert(GetIEditor()->IsCGroup(pParentObject));
-			static_cast<CGroup*>(pParentObject)->AddMembers(objects, m_shouldKeepPos);
-
-			for (auto pObject : objects)
-			{
-				pObject->UpdatePrefab();
-			}
+			static_cast<CGroup*>(pParentObject)->AddMembers(objects, shouldKeepTransform);
 		}
 	}
 
-	void Detach()
+	void Attach(const std::vector<CryGUID>& objectsGuids, std::vector<CryGUID>& parentGuids, std::vector<CryGUID>& oldLayersGuids, bool shouldKeepTransform)
 	{
-		if (m_objectsGuids.empty())
+		if (objectsGuids.empty())
 		{
 			return;
 		}
 
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 		std::vector<CBaseObject*> objects;
-		objects.reserve(m_objectsGuids.size());
-		for (auto it = m_objectsGuids.rbegin(); it != m_objectsGuids.rend(); ++it)
+		objects.reserve(objectsGuids.size());
+		for (int i = objectsGuids.size() - 1; i >= 0; i--)
 		{
-			CBaseObject* pObject = pObjectManager->FindObject(*it);
+			CBaseObject* pObject = pObjectManager->FindObject(objectsGuids[i]);
 			if (pObject)
 			{
 				objects.emplace_back(pObject);
-			}
-			else
+			} //make sure we actually have items to delete in the guid arrays
+			else if(oldLayersGuids.size() && parentGuids.size())
 			{
-				m_oldLayersGuids.erase(std::next(it).base());
+				oldLayersGuids.erase(oldLayersGuids.begin() + i);
+				parentGuids.erase(parentGuids.begin() + i);
+			}
+		}
+
+		CRY_ASSERT_MESSAGE(parentGuids.size() == objects.size(), "Non-matching number of old parents to detach to and objects to detach");
+
+		std::unordered_map<CGroup*, std::vector<CBaseObject*>> parentToChildrenMap;
+		std::vector<CBaseObject*> rootObjects;
+		rootObjects.reserve(objectsGuids.size());
+		std::vector<CryGUID> rootObjectLayerGuids;
+		rootObjectLayerGuids.reserve(objectsGuids.size());
+
+		for (auto i = 0; i < parentGuids.size(); ++i)
+		{
+			if (parentGuids[i].IsNull())
+			{
+				rootObjects.push_back(objects[i]);
+				rootObjectLayerGuids.push_back(oldLayersGuids[i]);
+				continue;
 			}
 
+			CGroup* pGroup = static_cast<CGroup*>(pObjectManager->FindObject(parentGuids[i]));
+			parentToChildrenMap[pGroup].push_back(objects[i]);
 		}
-		CBaseObject* pParentObject = pObjectManager->FindObject(m_parentGuid);
-		CGroup* pGroup = static_cast<CGroup*>(pParentObject);
-		pGroup->DetachChildren(objects, m_shouldKeepPos, m_shouldPlaceOnRoot);
 
-		for (int i = 0; i < objects.size(); ++i)
+		RemoveMembersToRootHelper(rootObjects, rootObjectLayerGuids, shouldKeepTransform);
+
+		for (auto& parentToChildrenPair : parentToChildrenMap)
 		{
-			objects[i]->SetLayer(pObjectManager->GetIObjectLayerManager()->FindLayer(m_oldLayersGuids[i]));
-			objects[i]->UpdatePrefab();
+			auto pGroup = parentToChildrenPair.first;
+			std::vector<CBaseObject*>& children = parentToChildrenPair.second;
+
+			pGroup->AddMembers(children, shouldKeepTransform);
+		}
+	}
+};
+
+class CUndoAttach : public CUndoAttachmentHelper
+{
+public:
+	CUndoAttach(const std::vector<CBaseObject*>& objects, const CBaseObject* pParent,  bool shouldKeepPos)
+		: m_shouldKeepPos(shouldKeepPos)
+	{
+		CRY_ASSERT_MESSAGE(pParent, "Invalid parent");
+		CRY_ASSERT_MESSAGE(!objects.empty(), "Can't create attachment undo for 0 objects");
+
+		m_parentGuid = pParent->GetId();
+		m_description.Format("Objects Attached to %s", pParent->GetName());
+		m_oldLayersGuids = GetObjectsLayerGuids(objects);
+		m_oldParentGuids = GetObjectsParentGuids(objects);
+
+		// Default place on root on undo
+		m_objectsGuids.reserve(objects.size());
+		for (auto pObject : objects)
+		{
+			m_objectsGuids.emplace_back(pObject->GetId());
 		}
 	}
 
-	virtual int         GetSize()        { return sizeof(CUndoBatchAttachBaseObject); }
-	virtual const char* GetDescription() { return "Attachment Changed"; }
+	virtual void Undo(bool bUndo) override
+	{
+		// Call attach with all old parents since children could've been attached from multiple different parents on initial execution
+		Attach(m_objectsGuids, m_oldParentGuids, m_oldLayersGuids, m_shouldKeepPos);
+	}
 
+	virtual void Redo() override
+	{
+		// Re-Attach to parent
+		Attach(m_objectsGuids, m_parentGuid, m_shouldKeepPos);
+	}
+
+	virtual const char* GetDescription() { return m_description; }
+
+private:
 	std::vector<CryGUID> m_objectsGuids;
 	std::vector<CryGUID> m_oldLayersGuids;
+	std::vector<CryGUID> m_oldParentGuids;
+	string               m_description;
 	CryGUID              m_parentGuid;
-	bool                 m_shouldPlaceOnRoot;
 	bool                 m_shouldKeepPos;
-	bool                 m_isAttaching;
+};
+
+class CUndoDetach : public CUndoAttachmentHelper
+{
+public:
+	CUndoDetach(const std::vector<CBaseObject*>& objects, bool shouldKeepPos, bool shouldPlaceOnRoot)
+		: m_shouldKeepPos(shouldKeepPos)
+		, m_shouldPlaceOnRoot(shouldPlaceOnRoot)
+	{
+		CRY_ASSERT_MESSAGE(!objects.empty(), "Can't create attachment undo for 0 objects");
+		m_oldLayersGuids = GetObjectsLayerGuids(objects);
+		m_oldParentGuids = GetObjectsParentGuids(objects);
+
+		// Default place on root on undo
+		m_objectsGuids.reserve(objects.size());
+		for (auto pObject : objects)
+		{
+			m_objectsGuids.emplace_back(pObject->GetId());
+		}
+	}
+
+	virtual void Undo(bool bUndo) override
+	{
+		Attach(m_objectsGuids, m_oldParentGuids, m_oldLayersGuids, m_shouldKeepPos);
+	}
+
+	virtual void Redo() override
+	{
+		Detach(m_objectsGuids, m_shouldKeepPos, m_shouldPlaceOnRoot);
+	}
+
+	virtual const char* GetDescription() { return "Objects Detached"; }
+
+private:
+	std::vector<CryGUID> m_objectsGuids;
+	std::vector<CryGUID> m_oldLayersGuids;
+	std::vector<CryGUID> m_oldParentGuids;
+	bool                 m_shouldKeepPos;
+	bool                 m_shouldPlaceOnRoot;
 };
 }
 
@@ -303,34 +413,31 @@ CGroup::CGroup()
 	m_bbox.min = m_bbox.max = Vec3(0, 0, 0);
 	m_bBBoxValid = false;
 	m_bUpdatingPivot = false;
-	SetColor(RGB(0, 255, 0)); // Green
+	SetColor(ColorB(0, 255, 0)); // Green
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	DeleteAllMembers();
 	CBaseObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::DeleteAllMembers()
 {
-	LOADING_TIME_PROFILE_SECTION
-	std::vector<CBaseObject*> members;
-	for (size_t i = 0; i < m_members.size(); ++i)
-		members.push_back(m_members[i]);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
+	std::vector<CBaseObject*> children;
+	for (auto pChild : m_children)
+		children.push_back(pChild);
 
 	// Must collect all linked objects since they're not really considered members of the group
-	size_t childCount = m_members.size(); // cache current size
+	size_t childCount = m_children.size(); // cache current size
 	for (size_t i = 0; i < childCount; ++i)
-		GetAllLinkedObjects(members, members[i]);
+		GetAllLinkedObjects(children, m_children[i]);
 
-	GetObjectManager()->DeleteObjects(members);
+	GetObjectManager()->DeleteObjects(children);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::GetAllLinkedObjects(std::vector<CBaseObject*>& objects, CBaseObject* pObject)
 {
 	for (auto i = 0; i < pObject->GetLinkedObjectCount(); ++i)
@@ -361,7 +468,111 @@ void CGroup::ForEachParentOf(const std::vector<CBaseObject*>& objects, std::func
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+bool CGroup::CanCreateFrom(std::vector<CBaseObject*>& objects)
+{
+	if (objects.empty())
+		return false;
+
+	const auto lastIdx = objects.size() - 1;
+	IObjectLayer* pDestLayer = objects[lastIdx]->GetLayer();
+
+	for (auto i = 0; i < objects.size(); ++i)
+	{
+		if (!objects[i]->AreLinkedDescendantsInLayer(pDestLayer))
+		{
+			string message;
+			message.Format("The objects you are trying to group objects from different layers. All objects will be moved to %s layer\n\n"
+			               "Do you want to continue?", pDestLayer->GetName());
+
+			if (QDialogButtonBox::StandardButton::Yes != CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr(message)))
+			{
+				return false;
+			}
+
+			return true;
+		}
+	}
+
+	return true;
+}
+
+bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
+{
+	// Put the newly created group on the last selected object's layer
+	if (objects.empty())
+	{
+		return false;
+	}
+
+	CBaseObject* pLastSelectedObject = objects[objects.size() - 1];
+	GetIEditorImpl()->GetIUndoManager()->Suspend();
+	SetLayer(pLastSelectedObject->GetLayer());
+	GetIEditorImpl()->GetIUndoManager()->Resume();
+
+	//add ourselves to the last selected group
+	if (CBaseObject* pLastParent = pLastSelectedObject->GetGroup())
+		pLastParent->AddMember(this);
+
+	// Prefab support
+	CPrefabObject* pPrefabToCompareAgainst = nullptr;
+	CPrefabObject* pObjectPrefab = nullptr;
+
+	for (auto pObject : objects)
+	{
+		// Prefab handling
+		pObjectPrefab = (CPrefabObject*)pObject->GetPrefab();
+
+		// Sanity check if user is trying to group objects from different prefabs
+		if (pPrefabToCompareAgainst && pObjectPrefab && pPrefabToCompareAgainst->GetPrefabGuid() != pObjectPrefab->GetPrefabGuid())
+		{
+			return false;
+		}
+
+		if (!pPrefabToCompareAgainst)
+			pPrefabToCompareAgainst = pObjectPrefab;
+	}
+
+	AddMembers(objects);
+
+	GetIEditorImpl()->GetObjectManager()->SelectObject(this);
+	GetIEditorImpl()->SetModifiedFlag();
+	return true;
+}
+
+CGroup* CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
+{
+	if (objects.empty())
+	{
+		return nullptr;
+	}
+
+	CUndo undo("Create Group");
+	CGroup* pGroup = (CGroup*)GetIEditorImpl()->NewObject("Group");
+	if (!pGroup)
+	{
+		undo.Cancel();
+		return nullptr;
+	}
+
+	if (CBaseObject* pLastParent = objects[objects.size() - 1]->GetGroup())
+	{
+		Matrix34 m = pLastParent->GetWorldTM();
+		m.Invert();
+		center = m.TransformPoint(center);
+	}
+	// Snap center to grid.
+	pGroup->SetPos(gSnappingPreferences.Snap3D(center));
+
+	if (!pGroup->CreateFrom(objects))
+	{
+		undo.Cancel();
+		GetIEditorImpl()->DeleteObject(pGroup);
+		return nullptr;
+	}
+
+	return pGroup;
+}
+
 bool CGroup::Init(CBaseObject* prev, const string& file)
 {
 	bool res = CBaseObject::Init(prev, file);
@@ -382,7 +593,6 @@ bool CGroup::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::AddMember(CBaseObject* pMember, bool keepPos)
 {
 	std::vector<CBaseObject*> members = { pMember };
@@ -395,42 +605,62 @@ void CGroup::AddMembers(std::vector<CBaseObject*>& objects, bool keepPos /*= tru
 
 	RemoveIfAlreadyChildrenOf(this, objects);
 
-	RemoveIfAlreadyMember(m_members, objects);
-
 	if (objects.empty())
 	{
 		return;
 	}
 
 	auto batchProcessDispatcher = GetObjectManager()->GetBatchProcessDispatcher();
-	batchProcessDispatcher.Start(objects);
-
-	auto oldNumMembers = m_members.size();
-	m_members.reserve(m_members.size() + objects.size());
-	for (auto pObj : objects)
 	{
-		m_members.push_back(pObj);
+		std::vector<CBaseObject*> batchObjects;
+		for (auto pObject : objects)
+		{
+			batchObjects.push_back(pObject);
+		}
+		// Add current group to array of batched objects. Since this object can be in a different layer,
+		// we want to make sure to batch process in both the detaching objects' layers and the new parent's layer (this)
+		batchObjects.push_back(this);
+		batchProcessDispatcher.Start(batchObjects);
 	}
 
-	AttachChildren(objects, keepPos);
-
-	if (oldNumMembers != m_members.size())
+	//If the object is in another prefab it needs to be removed from it (aka deserialize from CPrefabItem)
+	//CASES:
+	//1 - from top level of a prefab to a group : Needs remove from prefab and add to group  (he'll be the one to serialize)
+	//2 - from different groups in same prefab : Needs no remove from prefab, but remove from group
+	//3 - from another prefab : Needs remove from prefab
+	//4 - from outside group to inside group in prefab : Needs remove from old group and add to new group in prefab
 	{
-		CBaseObject* pObj = nullptr;
-		for (auto i = oldNumMembers; i < m_members.size(); ++i)
+		// Don't record the detach undos since attach undo will take care of this anyways
+		CScopedSuspendUndo suspendUndo;
+		ForEachParentOf(objects, [keepPos](CGroup* pParent, std::vector<CBaseObject*>& children)
 		{
-			pObj = m_members[i];
-			if (CGroup* pPrefab = (CGroup*)pObj->GetPrefab())
+			if (pParent)
 			{
-				pPrefab->AddMember(pObj, true);
+				pParent->RemoveMembers(children, true, true);
 			}
+		});
+	}
+
+	//Attach children already provokes serialization into lib (i.e ModifyTransform), if the object comes from outside guids must be generated before
+	//This needs to happen here or the prefab delete in the attach will mess up id generation
+	if (CBaseObject* pPrefabObject = GetPrefab())
+	{
+		CPrefabObject* pPrefab = static_cast<CPrefabObject*>(pPrefabObject);
+		for (auto pObj : objects)
+		{
+			pPrefab->GenerateGUIDsForObjectAndChildren(pObj);
 		}
 	}
+
+	//Actually attach the objects to the group instance
+	AttachChildren(objects, keepPos);
+
+	//If in a prefab re serialize the group and regenerate all the members in all the group's instances
+	UpdatePrefab(eOCOT_Modify);
 
 	InvalidateBBox();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::RemoveMember(CBaseObject* pMember, bool keepPos, bool placeOnRoot)
 {
 	std::vector<CBaseObject*> members = { pMember };
@@ -439,41 +669,36 @@ void CGroup::RemoveMember(CBaseObject* pMember, bool keepPos, bool placeOnRoot)
 
 void CGroup::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 {
-	LOADING_TIME_PROFILE_SECTION
-	FilterOutNonMembers(members);
-
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	CBaseObject* pPrefab = GetPrefab();
-	if (pPrefab)
-	{
-		pPrefab->RemoveMembers(members, keepPos, placeOnRoot);
-	}
-
 	if (pPrefab != this)
 	{
 		DetachChildren(members, keepPos, placeOnRoot);
 	}
 
 	UpdateGroup();
-}
 
-void CGroup::FilterOutNonMembers(std::vector<CBaseObject*>& objects)
-{
-	objects.erase(std::remove_if(objects.begin(), objects.end(), [this](CBaseObject* pObject)
+	//Since we removed an item the group needs to be re serialized into the prefab item
+	UpdatePrefab(eOCOT_Modify);
+
+	//if we move out from prefab the prefab flag needs to be cleared.
+	for (CBaseObject* pObject : members)
 	{
-		return !pObject || pObject->GetGroup() != this;
-	}), objects.end());
+		if (!pObject->GetPrefab())
+			pObject->ClearFlags(OBJFLAG_PREFAB);
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CGroup::RemoveChild(CBaseObject* child)
+void CGroup::SerializeGeneralVisualProperties(Serialization::IArchive& ar, bool bMultiEdit)
 {
-	bool bMemberChild = stl::find_and_erase(m_members, child);
-	CBaseObject::RemoveChild(child);
-	if (bMemberChild)
-		InvalidateBBox();
+	//Don't add any property to the archive, this will stop properties from showing in the ui
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CGroup::RemoveChild(CBaseObject* pChild)
+{	
+	RemoveChildren({ pChild });
+}
+
 void CGroup::GetBoundBox(AABB& box)
 {
 	if (!m_bBBoxValid)
@@ -482,7 +707,6 @@ void CGroup::GetBoundBox(AABB& box)
 	box.SetTransformedAABB(GetWorldTM(), m_bbox);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::GetLocalBounds(AABB& box)
 {
 	if (!m_bBBoxValid)
@@ -490,11 +714,10 @@ void CGroup::GetLocalBounds(AABB& box)
 	box = m_bbox;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGroup::HitTest(HitContext& hc)
 {
 	bool selected = false;
-	if (m_opened)
+	if (m_opened || hc.ignoreHierarchyLocks)
 	{
 		selected = HitTestMembers(hc);
 	}
@@ -545,7 +768,6 @@ bool CGroup::HitTest(HitContext& hc)
 	return selected;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGroup::HitHelperTestForChildObjects(HitContext& hc)
 {
 	bool result = false;
@@ -562,7 +784,6 @@ bool CGroup::HitHelperTestForChildObjects(HitContext& hc)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGroup::HitTestMembers(HitContext& hcOrg)
 {
 	float mindist = FLT_MAX;
@@ -570,12 +791,9 @@ bool CGroup::HitTestMembers(HitContext& hcOrg)
 	HitContext hc = hcOrg;
 
 	CBaseObject* selected = 0;
-	int numMembers = static_cast<int>(m_members.size());
-	for (int i = 0; i < numMembers; ++i)
+	for (auto pChild : m_children)
 	{
-		CBaseObject* obj = m_members[i];
-
-		if (GetObjectManager()->HitTestObject(obj, hc))
+		if (GetObjectManager()->HitTestObject(pChild, hc))
 		{
 			if (hc.dist < mindist)
 			{
@@ -584,7 +802,7 @@ bool CGroup::HitTestMembers(HitContext& hcOrg)
 				if (hc.object)
 					selected = hc.object;
 				else
-					selected = obj;
+					selected = pChild;
 				hc.object = 0;
 			}
 		}
@@ -598,23 +816,20 @@ bool CGroup::HitTestMembers(HitContext& hcOrg)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::OnContextMenu(CPopupMenuItem* menu)
 {
 	CBaseObject::OnContextMenu(menu);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-
-	if (!gViewportDebugPreferences.showGroupObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showGroupHelper)
+	{
 		return;
+	}
 
-	bool hideNames = dc.flags & DISPLAY_HIDENAMES;
-
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 
 	dc.PushMatrix(GetWorldTM());
 
@@ -627,7 +842,9 @@ void CGroup::Display(CObjectRenderHelper& objRenderHelper)
 		dc.DrawWireBox(boundbox.min, boundbox.max);
 		dc.DepthTestOff();
 		dc.DepthWriteOff();
-		dc.SetColor(GetColor(), 0.15f);
+		ColorB color = GetColor();
+		color.a = 38;
+		dc.SetColor(color);
 		dc.DrawSolidBox(boundbox.min, boundbox.max);
 		dc.DepthWriteOn();
 		dc.DepthTestOn();
@@ -646,6 +863,35 @@ void CGroup::Display(CObjectRenderHelper& objRenderHelper)
 	dc.PopMatrix();
 }
 
+const ColorB& CGroup::GetSelectionPreviewHighlightColor()
+{
+	return gViewportSelectionPreferences.colorGroupBBox;
+}
+
+void CGroup::DrawSelectionPreviewHighlight(SDisplayContext& dc)
+{
+	CBaseObject::DrawSelectionPreviewHighlight(dc);
+
+	AABB bbox;
+	GetBoundBox(bbox);
+
+	dc.DepthTestOff();
+
+	dc.SetColor(GetSelectionPreviewHighlightColor());
+
+	dc.DrawSolidBox(bbox.min, bbox.max);
+	dc.DepthTestOn();
+
+	// Highlight also children objects if this object is opened
+	if (!IsOpen())
+		return;
+
+	for (auto childIdx = 0; childIdx < GetChildCount(); ++childIdx)
+	{
+		GetChild(childIdx)->DrawSelectionPreviewHighlight(dc);
+	}
+}
+
 void CGroup::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CBaseObject::CreateInspectorWidgets(creator);
@@ -657,22 +903,49 @@ void CGroup::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		{
 			if (ar.openBlock("group", "<Group"))
 			{
-			  ar(Serialization::ActionButton(std::bind(&CCryEditApp::OnGroupUngroup, CCryEditApp::GetInstance())), "ungroup", "^Ungroup");
+			  ar(Serialization::ActionButton([]()
+				{
+					GetIEditor()->GetICommandManager()->Execute("group.ungroup");
+				}), "ungroup", "^Ungroup");
 			  if (pObject->IsOpen())
 			  {
-			    ar(Serialization::ActionButton(std::bind(&CCryEditApp::OnGroupClose, CCryEditApp::GetInstance())), "close", "^Close");
-			  }
+			    ar(Serialization::ActionButton([]()
+					{
+						GetIEditor()->GetICommandManager()->Execute("group.close");
+					}), "close", "^Close");
+				}
 			  else
 			  {
-			    ar(Serialization::ActionButton(std::bind(&CCryEditApp::OnGroupOpen, CCryEditApp::GetInstance())), "open", "^Open");
-			  }
+			    ar(Serialization::ActionButton([]()
+					{
+						GetIEditor()->GetICommandManager()->Execute("group.open");
+					}), "open", "^Open");
+				}
 			  ar.closeBlock();
 			}
 		});
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+bool CGroup::CanAddMembers(std::vector<CBaseObject*>& objects)
+{
+	for (CBaseObject* pObject : objects)
+	{
+		if (IsDescendantOf(pObject))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool CGroup::CanAddMember(CBaseObject* pMember)
+{
+	std::vector<CBaseObject*> members = { pMember };
+	return CanAddMembers(members);
+}
+
 void CGroup::Serialize(CObjectArchive& ar)
 {
 	CBaseObject::Serialize(ar);
@@ -695,7 +968,6 @@ void CGroup::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::SerializeMembers(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode = ar.node;
@@ -703,15 +975,14 @@ void CGroup::SerializeMembers(CObjectArchive& ar)
 	{
 		if (!ar.bUndo)
 		{
-			int num = static_cast<int>(m_members.size());
-			for (int i = 0; i < num; ++i)
+			//If we are loading a group that's already full we need to clean it up and reinstance all it's members from the ground up
+			for (auto pChild : m_children)
 			{
-				CBaseObject* member = m_members[i];
-				member->DetachThis(true);
+				GetIEditor()->GetObjectManager()->DeleteObject(pChild);
 			}
-			m_members.clear();
+			m_children.clear();
 
-			// Loading.
+			// Loading, reload all the children from XML
 			XmlNodeRef childsRoot = xmlNode->findChild("Objects");
 			if (childsRoot)
 			{
@@ -728,25 +999,22 @@ void CGroup::SerializeMembers(CObjectArchive& ar)
 	}
 	else
 	{
-		if (m_members.size() > 0 && !ar.bUndo && !ar.IsSavingInPrefab())
+		if (m_children.size() > 0 && !ar.bUndo)
 		{
 			// Saving.
 			XmlNodeRef root = xmlNode->newChild("Objects");
 			ar.node = root;
 
 			// Save all child objects to XML.
-			int num = static_cast<int>(m_members.size());
-			for (int i = 0; i < num; ++i)
+			for (auto pChild : m_children)
 			{
-				CBaseObject* obj = m_members[i];
-				ar.SaveObject(obj, true);
+				ar.SaveObject(pChild, true, true);
 			}
 		}
 	}
 	ar.node = xmlNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Ungroup()
 {
 	StoreUndo("Ungroup");
@@ -772,43 +1040,40 @@ void CGroup::Ungroup()
 
 	DetachChildren(newSelection);
 
-	GetObjectManager()->SelectObjects(newSelection);
+	GetObjectManager()->AddObjectsToSelection(newSelection);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Open()
 {
 	if (!m_opened)
 	{
-		NotifyListeners(OBJECT_ON_UI_PROPERTY_CHANGED);
+		GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_UI_PROPERTY_CHANGED));
 	}
 	m_opened = true;
-	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_GROUP_OPEN);
+	GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_GROUP_OPEN));
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::Close()
 {
 	if (m_opened)
 	{
-		NotifyListeners(OBJECT_ON_UI_PROPERTY_CHANGED);
+		GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_UI_PROPERTY_CHANGED));
 	}
 	m_opened = false;
 	UpdateGroup();
-	GetIEditor()->GetObjectManager()->NotifyObjectListeners(this, OBJECT_ON_GROUP_CLOSE);
+	GetObjectManager()->NotifyObjectListeners(this, CObjectEvent(OBJECT_ON_GROUP_CLOSE));
 }
 
 void CGroup::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
-	// TODO: We need a way of creating objects outside the context of the level/layer. 
+	// TODO: We need a way of creating objects outside the context of the level/layer.
 	// That way we only need to handle adding the final created object and ignore all child events before final creation
 	auto dispatcher = GetIEditor()->GetObjectManager()->GetBatchProcessDispatcher();
 	dispatcher.Start({ this }, true);
 	CBaseObject::PostClone(pFromObject, ctx);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::RecursivelyGetBoundBox(CBaseObject* object, AABB& box, const Matrix34& parentTM)
 {
 	Matrix34 worldTM = parentTM * object->GetLocalTM();
@@ -836,7 +1101,6 @@ void CGroup::RemoveChildren(const std::vector<CBaseObject*>& objects)
 			pObj->m_parent = nullptr;
 		}
 		m_children.clear();
-		m_members.clear();
 	}
 	else
 	{
@@ -848,20 +1112,11 @@ void CGroup::RemoveChildren(const std::vector<CBaseObject*>& objects)
 				return pObj == pChild;
 			});
 		}), m_children.end());
-
-		m_members.erase(std::remove_if(m_members.begin(), m_members.end(), [this, &objects](CBaseObject* pChild)
-		{
-			return std::any_of(objects.cbegin(), objects.cend(), [pChild](CBaseObject* pObj)
-			{
-				return pObj == pChild;
-			});
-		}), m_members.end());
 	}
 
 	InvalidateBBox();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::CalcBoundBox()
 {
 	Matrix34 identityTM;
@@ -871,13 +1126,12 @@ void CGroup::CalcBoundBox()
 	AABB box;
 	box.Reset();
 
-	int numMembers = static_cast<int>(m_members.size());
-	for (int i = 0; i < numMembers; ++i)
+	for (auto pChild : m_children)
 	{
-		RecursivelyGetBoundBox(m_members[i], box, identityTM);
+		RecursivelyGetBoundBox(pChild, box, identityTM);
 	}
 
-	if (numMembers == 0)
+	if (m_children.size() == 0)
 	{
 		box.min = Vec3(-1, -1, -1);
 		box.max = Vec3(1, 1, 1);
@@ -887,7 +1141,6 @@ void CGroup::CalcBoundBox()
 	m_bBBoxValid = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGroup::OnChildModified()
 {
 	if (m_ignoreChildModify)
@@ -898,7 +1151,7 @@ void CGroup::OnChildModified()
 
 void CGroup::InvalidateBBox()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	if (CBaseObject* pParent = GetGroup())
 	{
 		CGroup* pParentGroup = static_cast<CGroup*>(pParent);
@@ -914,46 +1167,6 @@ void CGroup::UpdateGroup()
 	CBaseObject::UpdateGroup();
 }
 
-//! Select objects within specified distance from given position.
-int CGroup::SelectObjects(const AABB& box, bool bUnselect)
-{
-	int numSel = 0;
-
-	AABB objBounds;
-	uint32 hideMask = gViewportDebugPreferences.GetObjectHideMask();
-	int num = static_cast<int>(m_members.size());
-	for (int i = 0; i < num; ++i)
-	{
-		CBaseObject* obj = m_members[i];
-
-		if (obj->IsHidden())
-			continue;
-
-		if (obj->IsFrozen())
-			continue;
-
-		if (obj->GetGroup())
-			continue;
-
-		obj->GetBoundBox(objBounds);
-		if (box.IsIntersectBox(objBounds))
-		{
-			numSel++;
-			if (!bUnselect)
-				GetObjectManager()->SelectObject(obj);
-			else
-				GetObjectManager()->UnselectObject(obj);
-		}
-		// If its group.
-		if (obj->GetRuntimeClass() == RUNTIME_CLASS(CGroup))
-		{
-			numSel += ((CGroup*)obj)->SelectObjects(box, bUnselect);
-		}
-	}
-	return numSel;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CGroup::OnEvent(ObjectEvent event)
 {
 	CBaseObject::OnEvent(event);
@@ -961,80 +1174,29 @@ void CGroup::OnEvent(ObjectEvent event)
 	switch (event)
 	{
 	case EVENT_DBLCLICK:
+		// Select all objects within the group when double clicking the group
 		if (IsOpen())
 		{
-			int numMembers = static_cast<int>(m_members.size());
-			for (int i = 0; i < numMembers; ++i)
+			std::vector<CBaseObject*> children;
+			children.reserve(m_children.size());
+			for (_smart_ptr<CBaseObject> pObject : m_children)
 			{
-				GetObjectManager()->SelectObject(m_members[i]);
+				children.push_back(pObject.get());
 			}
+
+			GetObjectManager()->SelectObjects(children);
 		}
 		break;
 
 	default:
 		{
-			int numMembers = static_cast<int>(m_members.size());
-			for (int i = 0; i < numMembers; ++i)
+			for (auto pChild : m_children)
 			{
-				m_members[i]->OnEvent(event);
+				pChild->OnEvent(event);
 			}
 		}
 		break;
 	}
-};
-
-//////////////////////////////////////////////////////////////////////////
-void CGroup::BindToParent()
-{
-	CBaseObject* parent = GetParent();
-	if (parent && parent->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-	{
-		CEntityObject* parentEntity = (CEntityObject*)parent;
-
-		IEntity* ientParent = parentEntity->GetIEntity();
-		if (ientParent)
-		{
-			for (int i = 0; i < GetChildCount(); ++i)
-			{
-				CBaseObject* child = GetChild(i);
-				if (child && child->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-				{
-					CEntityObject* childEntity = (CEntityObject*)child;
-					if (childEntity->GetIEntity())
-						ientParent->AttachChild(childEntity->GetIEntity(), IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
-				}
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CGroup::DetachThis(bool bKeepPos, bool bPlaceOnRoot)
-{
-	CBaseObject* parent = GetParent();
-	if (parent && parent->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-	{
-		CEntityObject* parentEntity = (CEntityObject*)parent;
-
-		IEntity* ientParent = parentEntity->GetIEntity();
-		if (ientParent)
-		{
-			for (int i = 0; i < GetChildCount(); ++i)
-			{
-				CBaseObject* child = GetChild(i);
-				if (child && child->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-				{
-					CEntityObject* childEntity = (CEntityObject*)child;
-					if (childEntity->GetIEntity())
-					{
-						childEntity->GetIEntity()->DetachThis(IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
-					}
-				}
-			}
-		}
-	}
-
-	CBaseObject::DetachThis(bKeepPos, bPlaceOnRoot);
 }
 
 void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos /* = true */, bool shouldPlaceOnRoot /* = false */)
@@ -1043,27 +1205,22 @@ void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 		return;
 
 	using namespace Private_Group;
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	auto batchProcessDispatcher = GetObjectManager()->GetBatchProcessDispatcher();
 	batchProcessDispatcher.Start(objects);
 
 	if (CUndo::IsRecording())
 	{
-		CUndo::Record(new CUndoBatchAttachBaseObject(objects, GetObjectsLayers(objects), shouldKeepPos, shouldPlaceOnRoot, false));
+		CUndo::Record(new CUndoDetach(objects, shouldKeepPos, shouldPlaceOnRoot));
 	}
 
 	std::vector<Matrix34> worldTMs;
 	std::vector<ITransformDelegate*> transformDelegates;
 
-	GetObjectManager()->signalBeforeObjectsDetached(this, objects, shouldKeepPos);
+	GetObjectManager()->NotifyObjectListeners(objects, CObjectPreDetachedEvent(this, shouldKeepPos));
 
 	ResetTransforms(this, objects, shouldKeepPos, worldTMs, transformDelegates);
-
-	for (auto pChild : objects)
-	{
-		pChild->OnDetachThis();
-	}
 
 	{
 		CScopedSuspendUndo suspendUndo;
@@ -1072,7 +1229,7 @@ void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 
 	RestoreTransforms(objects, shouldKeepPos, worldTMs, transformDelegates);
 
-	GetObjectManager()->signalObjectsDetached(this, objects);
+	GetObjectManager()->NotifyObjectListeners(objects, CObjectDetachedEvent(this));
 
 	// If we didn't mean to detach from the whole hierarchy, then reattach to it's grandparent
 	CGroup* pGrandParent = static_cast<CGroup*>(GetGroup());
@@ -1080,6 +1237,9 @@ void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 	{
 		pGrandParent->AddMembers(objects, shouldKeepPos);
 	}
+	//it's important we notify the layer that something changed as we are moving something that was serialized directly inside it to another place (aka group or prefab)
+	//before this the layer was not notified at all and you ended up with two copies of the same thing
+	GetLayer()->SetModified(true);
 }
 
 void CGroup::DetachAll(bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
@@ -1101,31 +1261,36 @@ void CGroup::DetachAll(bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepPos /*= true*/, bool shouldInvalidateTM /*= true*/)
 {
 	using namespace Private_Group;
-	
+
 	// Make sure there's really objects to attach
 	if (objects.empty())
 		return;
 
 	std::vector<IObjectLayer*> oldLayers = GetObjectsLayers(objects);
 
-	//bool bHasParent = child->m_parent != nullptr;
-
 	RemoveIfAlreadyChildrenOf(this, objects);
 
-	CBatchAttachChildrenTransformationsHandler transormatoinsHandler(this, objects, shouldKeepPos, shouldInvalidateTM);
+	if (CUndo::IsRecording())
+	{
+		CUndo::Record(new CUndoAttach(objects, this, shouldKeepPos));
+	}
+
+	CBatchAttachChildrenTransformationsHandler transformationsHandler(this, objects, shouldKeepPos, shouldInvalidateTM);
 
 	{
 		CScopedSuspendUndo suspendUndo;
-
-		for (auto pChild : objects)
-		{
-			pChild->m_bSuppressUpdatePrefab = true;
-		}
 
 		ForEachParentOf(objects, [shouldKeepPos](CGroup* pParent, std::vector<CBaseObject*>& children)
 		{
 			if (pParent)
 			{
+			  // TODO: optimize
+			  for (auto pChild : children)
+			  {
+			    //If this object is in a prefab we have to clean it up (aka remove the serialized entry from the XML of the item), before the object is assigned to the new prefab
+			    pChild->UpdatePrefab(eOCOT_Delete);
+				}
+
 			  pParent->DetachChildren(children, shouldKeepPos, true);
 			}
 			else
@@ -1134,7 +1299,7 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 			  for (auto pChild : children)
 			  {
 			    pChild->UnLink(true);
-			  }
+				}
 			}
 		});
 
@@ -1147,44 +1312,34 @@ void CGroup::AttachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 		m_children.reserve(m_children.size() + objects.size());
 		m_children.insert(m_children.end(), objects.cbegin(), objects.cend());
 
-		GetObjectManager()->signalBeforeObjectsAttached(this, objects, shouldKeepPos);
+		GetObjectManager()->NotifyObjectListeners(objects, CObjectPreAttachedEvent(this, shouldKeepPos));
 
-		transormatoinsHandler.HandlePreAttach();
-	}
-
-	for (auto pChild : objects)
-	{
-		OnAttachChild(pChild);
+		transformationsHandler.HandlePreAttach();
 	}
 
 	{
 		CScopedSuspendUndo suspendUndo;
 
-		transormatoinsHandler.HandleAttach();
+		transformationsHandler.HandleAttach();
 
-		GetObjectManager()->signalObjectsAttached(this, objects);
+		GetObjectManager()->NotifyObjectListeners(objects, CObjectAttachedEvent(this));
 
-		NotifyListeners(OBJECT_ON_CHILDATTACHED);
-		for (auto pChild : objects)
-		{
-			pChild->m_bSuppressUpdatePrefab = false;
-		}
+		//This causes the group to be re-serialized into the prefab
 		UpdatePrefab(eOCOT_ModifyTransform);
 	}
 
-	if (CUndo::IsRecording())
-	{
-		CUndo::Record(new CUndoBatchAttachBaseObject(objects, oldLayers, shouldKeepPos, false, true));
-	}
+	//it's important we notify the layer that something changed as we are moving something that was serialized directly inside it to another place (aka group or prefab)
+	//before this the layer was not notified at all and you ended up with two copies of the same thing
+	GetLayer()->SetModified(true);
 }
 
 void CGroup::SetMaterial(IEditorMaterial* pMtl)
 {
 	if (pMtl)
 	{
-		for (int i = 0, iNumberSize(m_members.size()); i < iNumberSize; ++i)
+		for (auto pChild : m_children)
 		{
-			m_members[i]->SetMaterial(pMtl);
+			pChild->SetMaterial(pMtl);
 		}
 	}
 	CBaseObject::SetMaterial(pMtl);
@@ -1231,4 +1386,3 @@ void CGroup::UpdatePivot(const Vec3& newWorldPivotPos)
 	CBaseObject::SetWorldPos(newWorldPivotPos);
 	m_bUpdatingPivot = false;
 }
-

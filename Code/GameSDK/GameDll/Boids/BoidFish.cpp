@@ -14,18 +14,21 @@
 #include "StdAfx.h"
 #include "Flock.h"
 #include "BoidFish.h"
-
-#include <CryEntitySystem/IEntitySystem.h>
 #include "BoidsProxy.h"
 
-#include <float.h>
-#include <limits.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/ITimer.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryMath/Cry_Camera.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IBreakableManager.h>
+#include <CryParticleSystem/IParticles.h>
+
+#include <float.h>
+#include <limits.h>
 
 
 #define FISH_PHYSICS_DENSITY 850

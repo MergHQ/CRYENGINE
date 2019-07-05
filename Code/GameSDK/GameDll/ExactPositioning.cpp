@@ -560,8 +560,13 @@ CExactPositioning::ETriggerState CExactPositioning::StateCompleting_HandleEvent(
 // ----------------------------------------------------------------------------
 void CExactPositioning::StateMachine_SendEvent( SStateMachineEvent& event )
 {
+#if defined(USE_CRY_ASSERT)
 	ETriggerState newState = ( this->*m_stateEventHandler )( event );
 	CRY_ASSERT( newState == m_state );
+#else
+	( this->*m_stateEventHandler )( event );
+#endif
+
 }
 
 // ----------------------------------------------------------------------------
@@ -629,7 +634,7 @@ void CExactPositioning::UpdateTargetPointToFinishPoint()
 		return;
 
 	/*
-	CPersistantDebug* pPD = CCryAction::GetCryAction()->GetPersistantDebug();
+	CPersistantDebug* pPD = gEnv->pGameFramework->GetPersistantDebug();
 	bool debug = CAnimationGraphCVars::Get().m_debugExactPos != 0;
 	if (debug)
 		pPD->Begin( string( pEntity->GetName() ) + "_recalculatetriggerpositions", true );			

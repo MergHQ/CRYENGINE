@@ -185,10 +185,21 @@ if (DURANGO_SDK_DIR AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Streaming/TextureSpl
 	)
 endif()
 
+sources_platform(WIN32)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_windows.cpp"
+)
+sources_platform(LINUX)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_posix.cpp"
+)
+
 end_sources()
 #END-FILE-LIST
 
-CryResourceCompilerModule(ResourceCompilerImage PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
+CryResourceCompilerModule(ResourceCompilerImage PCH "stdafx.cpp" SOLUTION_FOLDER "RC")
 
 if (OPTION_PCH)
 	# Disable precompiled header for AtiCubeMapGen *.cpp files which do not '#include "StdAfx.h"'.
@@ -205,6 +216,7 @@ set_libpath_flag()
 target_include_directories( ${THIS_PROJECT} PRIVATE 
 	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
 	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools"
+	"${SDK_DIR}"
 	"${SDK_DIR}/squish-ccr")
 
 if(COMMAND use_orbis_sdk)

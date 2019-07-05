@@ -2,18 +2,23 @@
 
 #include "StdAfx.h"
 #include "AssetThumbnailsGenerator.h"
+
 #include "AssetSystem/AssetManager.h"
 #include "Notifications/NotificationCenter.h"
-#include "FilePathUtil.h"
-#include "ThreadingUtils.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
+#include "ThreadingUtils.h"
+#include <IEditor.h>
 
 namespace AsseThumbnailsGenerator
 {
 
 void GenerateThumbnailsAsync(const string& folder, const std::function<void()>& finalize)
 {
-	std::vector<CAssetPtr> assetsCopy = GetIEditor()->GetAssetManager()->GetAssetsFromDirectory(folder);
+	std::vector<CAssetPtr> assetsCopy = GetIEditor()->GetAssetManager()->GetAssetsFromDirectory(folder, [](CAsset* pAsset)
+	{
+		return pAsset->GetType()->HasThumbnail();
+	});
 	if (assetsCopy.empty())
 	{
 		return;
@@ -36,7 +41,7 @@ void GenerateThumbnailsAsync(const string& folder, const std::function<void()>& 
 				return; // Preempt thumbnail generation when user closed the editor.
 			}
 
-			pNotification->SetMessage(QObject::tr("for asset '%1'").arg(pAsset->GetMetadataFile()));
+			pNotification->SetMessage(QObject::tr("for asset '%1'").arg(pAsset->GetMetadataFile().c_str()));
 
 			pAsset->GenerateThumbnail();
 

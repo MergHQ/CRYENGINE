@@ -71,7 +71,16 @@ private:
 	struct SSpeakInfo
 	{
 		SSpeakInfo() = default;
-		SSpeakInfo(CryAudio::AuxObjectId auxAudioObjectId) : speechAuxObjectId(auxAudioObjectId), voiceAttachmentIndex(-1) {}
+		SSpeakInfo(CryAudio::AuxObjectId auxAudioObjectId)
+			: speechAuxObjectId(auxAudioObjectId)
+			, voiceAttachmentIndex(-1)
+			, pActor(nullptr)
+			, pEntity(nullptr)
+			, pPickedLine(nullptr)
+			, finishTime(0.0f)
+			, priority(0)
+			, bWasCanceled(false)
+		{}
 
 		CResponseActor*       pActor;
 		IEntity*              pEntity;
@@ -85,7 +94,6 @@ private:
 		CryAudio::AuxObjectId speechAuxObjectId;
 		CryAudio::ControlId   startTriggerID;
 		CryAudio::ControlId   stopTriggerID;
-		string                standaloneFile;
 
 		uint32                endingConditions;      //EEndingConditions
 		DRS::LipSyncID        lipsyncId;
@@ -135,7 +143,6 @@ private:
 
 	// CVars
 	int          m_displaySubtitlesCVar;
-	int          m_playAudioCVar;
 	int          m_samePrioCancelsLinesCVar;
 	float        m_defaultMaxQueueTime;
 	static float s_defaultPauseAfterLines;

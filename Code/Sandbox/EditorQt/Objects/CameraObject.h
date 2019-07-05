@@ -1,17 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __cameraobject_h__
-#define __cameraobject_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "EntityObject.h"
 
-class ICameraObjectListener
+struct ICameraObjectListener
 {
-public:
+	virtual ~ICameraObjectListener() {}
 	virtual void OnFovChange(const float fov)                                                                                                      {}
 	virtual void OnNearZChange(const float nearZ)                                                                                                  {}
 	virtual void OnFarZChange(const float farZ)                                                                                                    {}
@@ -36,13 +30,13 @@ public:
 	DECLARE_DYNCREATE(CCameraObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	bool   Init(CBaseObject* prev, const string& file);
-	void   InitVariables();
-	void   Done();
-	string GetTypeDescription() const { return GetTypeName(); };
-	void   Display(CObjectRenderHelper& objRenderHelper) override;
+	bool         Init(CBaseObject* prev, const string& file);
+	void         InitVariables();
+	void         Done();
+	string       GetTypeDescription() const { return GetTypeName(); }
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
 
 	virtual void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
@@ -89,17 +83,17 @@ public:
 	const uint  GetCameraShakeSeed() const { return mv_cameraShakeSeed; }
 	const bool  GetIsOmniCamera() const    { return mv_omniCamera; }
 
-	void RegisterCameraListener(ICameraObjectListener* pListener);
-	void UnregisterCameraListener(ICameraObjectListener* pListener);
+	void        RegisterCameraListener(ICameraObjectListener* pListener);
+	void        UnregisterCameraListener(ICameraObjectListener* pListener);
 
 private:
 	//! Dtor must be protected.
 	CCameraObject();
 
-	// overrided from IAnimNodeCallback
+	// overrides from IAnimNodeCallback
 	//void OnNodeAnimated( IAnimNode *pNode );
 
-	virtual void DrawHighlight(DisplayContext& dc) {};
+	virtual void DrawHighlight(SDisplayContext& dc) {}
 
 	// return world position for the entity targeted by look at.
 	Vec3 GetLookAtEntityPos() const;
@@ -108,7 +102,7 @@ private:
 	void OnNearZChange(IVariable* var);
 	void OnFarZChange(IVariable* var);
 
-	void OnOmniCameraChange(IVariable *var);
+	void OnOmniCameraChange(IVariable* var);
 
 	void UpdateCameraEntity();
 
@@ -126,7 +120,7 @@ private:
 	// Arguments
 	//   fAspectRatio - e.g. 4.0/3.0
 	void GetConePoints(Vec3 q[4], float dist, const float fAspectRatio);
-	void DrawCone(DisplayContext& dc, float dist, float fScale = 1);
+	void DrawCone(SDisplayContext& dc, float dist, float fScale = 1);
 	void CreateTarget();
 	//////////////////////////////////////////////////////////////////////////
 	//! Field of view.
@@ -153,7 +147,7 @@ private:
 	CVariable<float> mv_noiseBFreqMult;
 	CVariable<float> mv_timeOffsetB;
 	CVariable<int>   mv_cameraShakeSeed;
-	CVariable<bool> mv_omniCamera;
+	CVariable<bool>  mv_omniCamera;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Mouse callback.
@@ -168,10 +162,10 @@ private:
 class CCameraObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_ENTITY; };
-	const char*    ClassName()         { return "Camera"; };
-	const char*    Category()          { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CCameraObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ENTITY; }
+	const char*    ClassName()       { return "Camera"; }
+	const char*    Category()        { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CCameraObject); }
 };
 
 /*!
@@ -184,24 +178,24 @@ public:
 	DECLARE_DYNCREATE(CCameraObjectTarget)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	bool    Init(CBaseObject* prev, const string& file);
-	void    InitVariables();
-	string GetTypeDescription() const { return GetTypeName(); };
-	void    Display(CObjectRenderHelper& objRenderHelper) override;
-	bool    HitTest(HitContext& hc);
-	void    GetBoundBox(AABB& box);
-	bool    IsScalable() const override { return false; }
-	bool    IsRotatable() const override { return false; }
-	void    Serialize(CObjectArchive& ar);
+	bool         Init(CBaseObject* prev, const string& file);
+	void         InitVariables();
+	string       GetTypeDescription() const { return GetTypeName(); }
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
+	bool         HitTest(HitContext& hc);
+	void         GetBoundBox(AABB& box);
+	bool         IsScalable() const override  { return false; }
+	bool         IsRotatable() const override { return false; }
+	void         Serialize(CObjectArchive& ar);
 	//////////////////////////////////////////////////////////////////////////
 
 protected:
 	//! Dtor must be protected.
 	CCameraObjectTarget();
 
-	virtual void DrawHighlight(DisplayContext& dc) {};
+	virtual void DrawHighlight(SDisplayContext& dc) {}
 };
 
 /*!
@@ -210,11 +204,8 @@ protected:
 class CCameraObjectTargetClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_ENTITY; };
-	const char*    ClassName()         { return "CameraTarget"; };
-	const char*    Category()          { return ""; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CCameraObjectTarget); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ENTITY; }
+	const char*    ClassName()       { return "CameraTarget"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CCameraObjectTarget); }
 };
-
-#endif // __cameraobject_h__
-

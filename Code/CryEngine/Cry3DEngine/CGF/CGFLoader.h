@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CGFLoader.h
-//  Version:     v1.00
-//  Created:     6/11/2004 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __CGFLoader_h__
-#define __CGFLoader_h__
 #pragma once
 
 #include "../MeshCompiler/MeshCompiler.h"
@@ -24,9 +11,8 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-class ILoaderCGFListener
+struct ILoaderCGFListener
 {
-public:
 	virtual ~ILoaderCGFListener(){}
 	virtual void Warning(const char* format) = 0;
 	virtual void Error(const char* format) = 0;
@@ -42,9 +28,9 @@ public:
 	CLoaderCGF(AllocFncPtr pAlloc = operator new, DestructFncPtr pDestruct = operator delete, bool bAllowStreamSharing = true);
 	~CLoaderCGF();
 
-	CContentCGF* LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags = 0);
-	bool         LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags = 0);
-	bool         LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags = 0);
+	CContentCGF* LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags = 0);
+	bool         LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags = 0);
+	bool         LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags = 0);
 
 	const char*  GetLastError()                                  { return m_LastError; }
 	CContentCGF* GetCContentCGF()                                { return m_pCompiledCGF; }
@@ -52,7 +38,7 @@ public:
 	void         SetMaxWeightsPerVertex(int maxWeightsPerVertex) { m_maxWeightsPerVertex = maxWeightsPerVertex; }
 
 private:
-	bool          LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags);
+	bool          LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags);
 
 	bool          LoadChunks(bool bJustGeometry);
 	bool          LoadExportFlagsChunk(IChunkFile::ChunkDesc* pChunkDesc);
@@ -159,5 +145,3 @@ private:
 	AllocFncPtr         m_pAllocFnc;
 	DestructFncPtr      m_pDestructFnc;
 };
-
-#endif //__CGFLoader_h__

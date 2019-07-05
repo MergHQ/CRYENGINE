@@ -4,6 +4,7 @@
 #include "VehicleXMLSaver.h"
 
 #include <stack>
+#include <CrySystem/ISystem.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
 #include "VehicleXMLHelper.h"
 
@@ -441,7 +442,6 @@ void VehicleDataMerge_ProcessArray(XmlNodeRef source, XmlNodeRef definition, IVa
 		}
 		else if (definitionList.IsArray(propertyDef))
 		{
-			const char* elementName = propertyDef->getAttr("elementName");
 			IVariable* arrayRoot = var;
 
 			// Delete the block of elements from source and re-export it
@@ -500,4 +500,3 @@ XmlNodeRef VehicleDataMergeAndSave(const char* originalXml, XmlNodeRef definitio
 
 	return root;
 }
-

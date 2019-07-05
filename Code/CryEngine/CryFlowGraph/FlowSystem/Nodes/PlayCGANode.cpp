@@ -451,6 +451,10 @@ private:
 			if (m_bLooping)
 				aparams.m_nFlags |= CA_LOOP_ANIMATION;
 
+			bool shouldRepeatLastKey = GetPortBool(pActInfo, IN_REPEAT_LAST_FRAME);
+			if (shouldRepeatLastKey)
+				aparams.m_nFlags |= CA_REPEAT_LAST_KEY;
+
 			m_playbackSpeedMultiplier = GetPortFloat(pActInfo, IN_PLAYBACK_SPEED_MULTIPLIER);
 			aparams.m_fPlaybackSpeed = m_playbackSpeedMultiplier;
 
@@ -503,7 +507,7 @@ private:
 				bool needsManualUpdate = (m_layer == 0);
 				if (IGameObject* pGameObject = gEnv->pGameFramework->GetGameObject(pActInfo->pEntity->GetId()))
 				{
-					if (IAnimatedCharacter* pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->QueryExtension("AnimatedCharacter")))
+					if (pGameObject->QueryExtension("AnimatedCharacter") != nullptr)
 					{
 						needsManualUpdate = false;
 					}

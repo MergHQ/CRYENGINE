@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef WORLD_COLLISION_H
-#define WORLD_COLLISION_H
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CrySystem/ISystem.h>
 #include <CryPhysics/IPhysics.h>
@@ -102,6 +97,3 @@ inline void SetAABBCornerPoints(const AABB& b, Vec3* pts)
 	pts[6].Set(b.max.x, b.max.y, b.max.z);
 	pts[7].Set(b.min.x, b.max.y, b.max.z);
 }
-
-#endif
-

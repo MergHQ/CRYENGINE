@@ -506,7 +506,7 @@ void CSocketIOManagerIOCP::UnregisterSocket(SSocketID sockid)
 	SRegisteredSocket* pSock = GetRegisteredSocket(sockid);
 	if (!pSock)
 		return;
-	CancelIo((HANDLE)pSock->sock);
+	CancelIoEx((HANDLE)pSock->sock, 0);
 
 	*pSock = SRegisteredSocket(pSock->salt + 1);
 }
@@ -846,7 +846,6 @@ bool CSocketIOManagerIOCP::RequestConnect(SSocketID sockid, const TNetAddress& a
 	}
 	else
 	{
-		int err = WSAGetLastError();
 		return false;
 	}
 	#else

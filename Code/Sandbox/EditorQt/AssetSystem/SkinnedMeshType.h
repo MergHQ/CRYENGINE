@@ -11,18 +11,20 @@ class CSkinnedMeshType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CSkinnedMeshType);
 
-	virtual const char*                       GetTypeName() const override { return "SkinnedMesh"; }
-	virtual const char*                       GetUiTypeName() const override { return QT_TR_NOOP("Skinned Mesh"); }
-	virtual const char* GetFileExtension() const override { return "skin"; }
-	virtual bool IsImported() const override { return true; }
-	virtual bool CanBeEdited() const override { return true; }
-	virtual CAssetEditor* Edit(CAsset* asset) const override;
-	virtual bool HasThumbnail() const override { return false; }
-	virtual void GenerateThumbnail(const CAsset* pAsset) const override;
+	virtual const char*                       GetTypeName() const override       { return "SkinnedMesh"; }
+	virtual const char*                       GetUiTypeName() const override     { return QT_TR_NOOP("Skinned Mesh"); }
+	virtual const char*                       GetFileExtension() const override  { return "skin"; }
+	virtual bool                              IsImported() const override        { return true; }
+	virtual bool                              CanBeCopied() const                { return true; }
+	virtual bool                              CanBeEdited() const override       { return true; }
+	virtual bool                              HasThumbnail() const override      { return false; }
+	virtual QColor                            GetThumbnailColor() const override { return QColor(210, 75, 64); }
 	virtual std::vector<CItemModelAttribute*> GetDetails() const override;
-	virtual QVariant GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const override;
+	virtual QVariant                          GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const override;
+
+	virtual CAssetEditor*                     Edit(CAsset* asset) const override;
+	virtual void                              GenerateThumbnail(const CAsset* pAsset) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;
 };
-

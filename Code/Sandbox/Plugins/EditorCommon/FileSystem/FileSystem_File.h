@@ -93,4 +93,3 @@ inline uint qHash(const FilePtr& file, uint seed)
 }
 
 } // namespace FileSystem
-

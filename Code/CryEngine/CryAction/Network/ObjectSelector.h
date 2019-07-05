@@ -15,6 +15,7 @@
 #pragma once
 
 #include "DebugBreakage.h"
+#include <CryPhysics/IPhysics.h>
 
 static const float CObjectSelector_Eps = 1.0f;
 

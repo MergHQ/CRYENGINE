@@ -1,16 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terrainobjectman_h__
-#define __terrainobjectman_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-#include <CryMath/Cry_Math.h>
-#include <vector>
 #include "Quadtree/Quadtree.h"
 #include "Raster.h"
+
+#include <CryMath/Cry_Geo.h>
+#include <vector>
 
 class CTerrainObjectMan;
 
@@ -36,22 +32,16 @@ inline void PackColor(uint32& rColour, const ColorF& crFloatColor)
 	   ((uint32)RoundToInt(std::max(0.f, std::min(255.f * crFloatColor.a, 255.f))) << 24));
 }
 
-// Description:
-//		unpacks a colour on the fly from uint32 to Vec3
 inline const Vec3 UnpackColor(const uint32 cCol)
 {
 	return Vec3((float)(cCol & 0x000000FF) / 255.f, (float)((cCol & 0x0000FF00) >> 8) / 255.f, (float)((cCol & 0x00FF0000) >> 16) / 255.f);
 }
 
-// Description:
-//		unpacks all 4 colour components on the fly from uint32 to ColorF
 inline const ColorF UnpackColor4(const uint32 cCol)
 {
 	return ColorF((float)(cCol & 0x000000FF) / 255.f, (float)((cCol & 0x0000FF00) >> 8) / 255.f, (float)((cCol & 0x00FF0000) >> 16) / 255.f, (float)((cCol & 0xFF000000) >> 24) / 255.f);
 }
 
-// Description:
-//		packs a colour on the fly from uint32 to Vec3
 inline const uint32 PackColor(const Vec3& crCol)
 {
 	return
@@ -323,7 +313,7 @@ struct SAngleBox
 //		Class that generates and manages objects on the terrain taken into account for indirect lighting gen
 class CTerrainObjectMan
 {
-public: // -----------------------------------------------------------------------
+public:
 
 	typedef uint32                                                                                                                   TContentType;//index into m_Objects
 	typedef NQT::CQuadTree<TContentType, 32 /*16*//*max elems per leaf cell*/, uint16 /*pos type*/, uint32 /*big index type*/, true> TQuadTree;
@@ -333,8 +323,6 @@ public: // ---------------------------------------------------------------------
 	// Description:
 	//		constructor taking heightmap width
 	CTerrainObjectMan(const uint32 cWidth);
-	// Description:
-	//		destructor
 	~CTerrainObjectMan();
 	// Description:
 	//		retrieves the ray intersection data from the quadtree, returns true if at least one object has been retrieved
@@ -479,7 +467,7 @@ inline const bool CTerrainObjectMan::CalcRayIntersectionData
 }
 
 inline CTerrainObjectMan::CTerrainObjectMan(const uint32 cWidthUnits)
-	: m_QuadTree(cWidthUnits, TVec2(cWidthUnits >> 1, cWidthUnits >> 1), (logf((float)cWidthUnits) + 8), 16 * 1024 * 1024, 16 * 1024 * 1024),
+	: m_QuadTree(cWidthUnits, TVec2(cWidthUnits >> 1, cWidthUnits >> 1), uint16(logf((float)cWidthUnits) + 8), 16 * 1024 * 1024, 16 * 1024 * 1024),
 	m_cWidth(cWidthUnits)
 {
 	m_LastResults.reserve(scMaxRayCastObjectCount);
@@ -506,6 +494,3 @@ inline const TTerrainObject& CTerrainObjectMan::GetTerrainObjectByID(const uint3
 	assert(cID < m_Objects.size());
 	return m_Objects[cID];//id corresponds exactly to the index
 }
-
-#endif //__terrainobjectman_h__
-

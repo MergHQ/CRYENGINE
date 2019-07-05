@@ -12,6 +12,9 @@ Texture2D<float4>	GBufferA : register(t1);
 Texture2D<float4>	GBufferB : register(t2);
 Texture2D<float4>	GBufferC : register(t3);
 
+TextureCube<float4> EnvProbeDiffuse  : register(t7);
+TextureCube<float4> EnvProbeSpecular : register(t8);
+
 Buffer<uint>                           TileLightMask : register(t16);
 StructuredBuffer<STiledLightShadeInfo> TiledLightsShadeInfo : register(t17);
 Texture2DArray<float4>                 SpotTexArray : register(t18);
@@ -92,11 +95,11 @@ pixout LightingMobilePS(vtxOutWPOS IN)
 	
 	// Environment probe
 	{
-		diffuseAcc = texCUBElod(_cubetex7, float4(attribs.NormalWorld, 8));
+		diffuseAcc = GetTextureCubeLod(EnvProbeDiffuse, ssTrilinearClamp, float4(attribs.NormalWorld, 0));
 		float NdotV = saturate(dot(viewVec, attribs.NormalWorld));
-		specularAcc = GetEnvironmentCMap(_cubetex7, reflect(normalize(worldPos), attribs.NormalWorld), attribs.Smoothness) * GetEnvmapFresnel(attribs.Reflectance, attribs.Smoothness, NdotV);
+		specularAcc = GetEnvironmentCMap(EnvProbeSpecular, ssTrilinearClamp, reflect(normalize(worldPos), attribs.NormalWorld), attribs.Smoothness) * GetEnvmapFresnel(attribs.Reflectance, attribs.Smoothness, NdotV);
 	}
-	
+
 	// Sun
 	{
 		float NdotL = saturate(dot(attribs.NormalWorld, CV_SunLightDir.xyz));
@@ -117,7 +120,7 @@ pixout LightingMobilePS(vtxOutWPOS IN)
 		lightIndex = GetNextTileLightIndex(curMask, lightIndex);
 		[branch] if (lightIndex < 0) break;
 			
-		if (TiledLightsShadeInfo[lightIndex].lightType >= TILEDLIGHT_TYPE_REGULAR_POINT)
+		if (TiledLightsShadeInfo[lightIndex].lightType >= LIGHT_TYPE_REGULAR_POINT)
 		{
 			STiledLightShadeInfo light = TiledLightsShadeInfo[lightIndex];
 			
@@ -127,7 +130,7 @@ pixout LightingMobilePS(vtxOutWPOS IN)
 			float attenuation = GetPhysicalLightAttenuation(length(lightVec), 1.0 / light.posRad.w, light.attenuationParams.x);
 			illuminance *= attenuation;
 			
-			if (light.lightType == TILEDLIGHT_TYPE_REGULAR_PROJECTOR)
+			if (light.lightType == LIGHT_TYPE_REGULAR_PROJECTOR)
 			{
 				float4 projTC = mul(light.projectorMatrix, float4(worldPos + GetWorldViewPos(), 1.0f));  
 				projTC.xy /= projTC.w;

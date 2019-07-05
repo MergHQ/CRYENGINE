@@ -452,7 +452,7 @@ bool CCoverSystem::IsCoverPhysicallyOccupiedByAnyOtherCoverUser(const CoverID& c
 {
 	const ICoverUser::Params& params = coverUserSearchingForEmptySpace.GetParams();
 	const Vec3 locationToTest = GetCoverLocation(coverID, params.distanceToCover);
-	const float occupyRadius = params.inCoverRadius + gAIEnv.CVars.CoverSpacing;
+	const float occupyRadius = params.inCoverRadius + gAIEnv.CVars.legacyCoverSystem.CoverSpacing;
 	const EntityId entityIdToSkip = params.userID;
 
 	for (auto it = m_occupied.cbegin(); it != m_occupied.cend(); ++it)
@@ -479,7 +479,7 @@ uint32 CCoverSystem::GetCover(const Vec3& center, float range, const Vec3* eyes,
 {
 	m_externalQueryBuffer.resize(0);
 
-	uint32 count = m_locations.query_sphere(center, range, m_externalQueryBuffer);
+	m_locations.query_sphere(center, range, m_externalQueryBuffer);
 	uint32 outputCount = 0;
 
 	CoverCollection::const_iterator it = m_externalQueryBuffer.begin();
@@ -574,19 +574,19 @@ void CCoverSystem::DrawSurface(const CoverSurfaceID& surfaceID)
 	}
 }
 
-void CCoverSystem::Update(float updateTime)
+void CCoverSystem::Update(const CTimeValue frameStartTime, const float frameTime)
 {
 	for (auto& coverUser : m_coverUsers)
 	{
-		coverUser.second->Update(updateTime);
+		coverUser.second->Update(frameStartTime, frameTime);
 	}
-	m_dynamicCoverManager.Update(updateTime);
+	m_dynamicCoverManager.Update(frameStartTime, frameTime);
 }
 
 void CCoverSystem::DebugDraw()
 {
 #ifdef CRYAISYSTEM_DEBUG
-	if (gAIEnv.CVars.DebugDrawCoverOccupancy > 0)
+	if (gAIEnv.CVars.legacyCoverSystem.DebugDrawCoverOccupancy > 0)
 	{
 		CDebugDrawContext dc;
 
@@ -615,13 +615,13 @@ void CCoverSystem::DebugDraw()
 		}
 	}
 
-	if (gAIEnv.CVars.DebugDrawCover == 5)
+	if (gAIEnv.CVars.legacyCoverSystem.DebugDrawCover == 5)
 	{
 		CDebugDrawContext dc;
 		dc->TextToScreen(0, 60, "CoverLocationCache size: %" PRISIZE_T, m_coverLocationCache.size());
 	}
 
-	if (gAIEnv.CVars.DebugDrawCover != 2)
+	if (gAIEnv.CVars.legacyCoverSystem.DebugDrawCover != 2)
 		return;
 
 	const CCamera& cam = gEnv->pSystem->GetViewCamera();
@@ -959,7 +959,7 @@ void CCoverSystem::NotifyCoverUsers(const CoverSurfaceID& surfaceID)
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "Cover id=%u is occupied by unregistered entity id=%u", static_cast<uint32>(coverID), static_cast<uint32>(occupantInfo.entityId));
+				CRY_ASSERT(false, "Cover id=%u is occupied by unregistered entity id=%u", static_cast<uint32>(coverID), static_cast<uint32>(occupantInfo.entityId));
 			}
 		}
 	}

@@ -5,6 +5,7 @@
 
 #include "StdAfx.h"
 #include "Audio/GameAudioUtils.h"
+#include <CryEntitySystem/IEntitySystem.h>
 
 //---------------------------------------
 CGameAudioUtils::CGameAudioUtils()
@@ -117,7 +118,7 @@ void CGameAudioUtils::UnregisterSignal(const CAudioSignalPlayer& signalPlayer)
 //	}
 //	else
 //	{
-//		CRY_ASSERT_MESSAGE(0, "CGameAudioUtils::OnSoundEvent failed to find a sound.");
+//		CRY_ASSERT(0, "CGameAudioUtils::OnSoundEvent failed to find a sound.");
 //	}
 //}
 

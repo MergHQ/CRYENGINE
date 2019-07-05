@@ -2,20 +2,19 @@
 
 #include "StdAfx.h"
 #include "CoverSurfaceManager.h"
+#include "LogFile.h"
 #include "Objects/AICoverSurface.h"
+#include <CryAISystem/IAISystem.h>
+#include <CryAISystem/ICoverSystem.h>
+#include <CrySystem/ISystem.h>
 
 const uint32 BAI_COVER_FILE_VERSION_WRITE = 2;
 
-CCoverSurfaceManager::CCoverSurfaceManager()
-{
-}
-
-CCoverSurfaceManager::~CCoverSurfaceManager()
-{
-}
-
 void CCoverSurfaceManager::ClearGameSurfaces()
 {
+	if (!gEnv->pAISystem->GetCoverSystem())
+		return;
+
 	gEnv->pAISystem->GetCoverSystem()->Clear();
 
 	SurfaceObjects::iterator it = m_surfaceObjects.begin();
@@ -112,4 +111,3 @@ const CCoverSurfaceManager::SurfaceObjects& CCoverSurfaceManager::GetSurfaceObje
 {
 	return m_surfaceObjects;
 }
-

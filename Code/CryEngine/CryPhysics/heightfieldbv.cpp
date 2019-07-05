@@ -10,7 +10,7 @@
 #include "heightfieldbv.h"
 
 InitHeightfieldGlobals::InitHeightfieldGlobals() {
-  for(int iCaller=0; iCaller<=MAX_PHYS_THREADS; iCaller++) {
+  for(int iCaller=0; iCaller<MAX_TOT_THREADS; iCaller++) {
     g_BVhf.iNode = 0; g_BVhf.type = heightfield::type;
   }
 }
@@ -104,8 +104,8 @@ int CHeightfieldBV::GetNodeContents(int iNode, BV *pBVCollider,int bColliderUsed
 	if (pBVCollider->type==box::type)	{
 		project_box_on_grid((box*)(primitive*)*pBVCollider,m_phf, (geometry_under_test*)((intptr_t)pGTest & -((intptr_t)bColliderLocal^1)), 
 			ix,iy,nCols,nRows,minz);
-		nCols = min(ix+nCols, m_PatchSize.x);
-		nRows = min(iy+nRows, m_PatchSize.y);
+		nCols = min(ix+nCols, m_PatchSize.x)-ix+min(ix,0);
+		nRows = min(iy+nRows, m_PatchSize.y)-iy+min(iy,0);
 		ix &= ~(ix>>31); iy &= ~(iy>>31);
 	} else {
 		nCols=m_PatchSize.x; nRows=m_PatchSize.y; ix=iy=0;

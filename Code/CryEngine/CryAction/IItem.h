@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Item interface.
-
-   -------------------------------------------------------------------------
-   History:
-   - 29:11:2005   13:52 : Created by Márcio Martins
-
-*************************************************************************/
-#ifndef __IITEM_H__
-#define __IITEM_H__
-
 #pragma once
 
 #include "IGameObject.h"
@@ -25,8 +11,9 @@ enum EViewMode
 	eIVM_ThirdPerson = 2,
 };
 
-struct IWeapon;
+struct IActionController;
 struct IInventory;
+struct IWeapon;
 
 // Summary
 //   Interface to implement a new Item class
@@ -84,7 +71,7 @@ struct IItem : public IGameObjectExtension
 	virtual void         RemoveAllAccessories() = 0;
 	virtual void         DetachAllAccessories() = 0;
 	virtual void         AttachAccessory(IEntityClass* pClass, bool attach, bool noanim, bool force = false, bool firstTimeAttached = false, bool initialLoadoutSetup = false) = 0;
-	virtual void SetCurrentActionController(class IActionController* pActionController) = 0;
+	virtual void         SetCurrentActionController(IActionController* pActionController) = 0;
 	virtual void         UpdateCurrentActionController() = 0;
 	virtual const string GetAttachedAccessoriesString(const char* separator = ",") = 0;
 
@@ -129,5 +116,3 @@ struct IItem : public IGameObjectExtension
 	// gets the original (not current) direction vector of a mounted weapon
 	virtual Vec3 GetMountedDir() const = 0;
 };
-
-#endif // __IITEM_H__

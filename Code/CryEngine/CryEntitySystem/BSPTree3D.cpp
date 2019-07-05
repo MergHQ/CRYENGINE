@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "BSPTree3D.h"
+#include <queue>
 
 void CBSPTree3D::BSPTreeNode::GetMemoryUsage(class ICrySizer* pSizer) const
 {

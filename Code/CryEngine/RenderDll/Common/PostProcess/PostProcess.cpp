@@ -11,6 +11,7 @@
 #include "StdAfx.h"
 #include "PostEffects.h"
 #include <Cry3DEngine/I3DEngine.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 void CParamBool::SetParam(float fParam, bool bForceValue)
 {
@@ -474,6 +475,7 @@ void CPostEffectsMgr::CreateResources()
 		std::for_each(m_pEffects.begin(), m_pEffects.end(), SContainerPostEffectCreateResources());
 	m_bCreated = true;
 }
+
 void CPostEffectsMgr::ReleaseResources()
 {
 	if (m_bCreated)
@@ -595,7 +597,7 @@ uint32 CPostEffectsMgr::GetCRC(const char* pszName)
 {
 	if (!pszName)
 	{
-		assert(false && "CPostEffectsMgr::GetCRC() invalid string passed");
+		CRY_ASSERT(false, "CPostEffectsMgr::GetCRC() invalid string passed");
 		return 0;
 	}
 
@@ -622,7 +624,7 @@ uint32 CPostEffectsMgr::GetCRC(const char* pszName)
 
 CEffectParam* CPostEffectsMgr::GetByName(const char* pszParam)
 {
-	CRY_ASSERT_MESSAGE(pszParam, "mfGetByName: null FX name");
+	CRY_ASSERT(pszParam, "mfGetByName: null FX name");
 
 	uint32 nCurrKey = GetCRC(pszParam);
 
@@ -698,21 +700,19 @@ int CParamTexture::Create(const char* pszFileName)
 
 	const int threadID = gRenDev->m_pRT ? gRenDev->m_pRT->GetThreadList() : 0;
 	CParamTextureThreadSafeData* pThreadSafeData = &m_threadSafeData[threadID];
-
+	
 	if (pThreadSafeData->pTexParam)
 	{
 		// check if texture is same
-		if (!strcmpi(pThreadSafeData->pTexParam->GetName(), pszFileName))
+		if (strcmpi(pThreadSafeData->pTexParam->GetName(), pszFileName) == 0)
 		{
 			return 0;
 		}
-		// release texture if required
-		SAFE_RELEASE(pThreadSafeData->pTexParam);
 	}
 
-	pThreadSafeData->pTexParam = CTexture::ForName(pszFileName, FT_DONT_STREAM, eTF_Unknown);
+	pThreadSafeData->pTexParam = CTexture::ForNamePtr(pszFileName, FT_DONT_STREAM, eTF_Unknown);
 	pThreadSafeData->bSetThisFrame = true;
-	CRY_ASSERT_MESSAGE(pThreadSafeData->pTexParam, "CParamTexture.Create: texture not found!");
+	CRY_ASSERT(pThreadSafeData->pTexParam, "CParamTexture.Create: texture not found!");
 
 	return 1;
 }
@@ -730,14 +730,11 @@ void CParamTexture::Release()
 	if (bIsMultiThreaded)
 	{
 		CParamTextureThreadSafeData* pProcessData = &m_threadSafeData[gRenDev->GetRenderThreadID()];
-		if (pProcessData->pTexParam != pFillData->pTexParam)
-		{
-			SAFE_RELEASE(pProcessData->pTexParam);
-			pProcessData->bSetThisFrame = true;
-		}
+		pProcessData->pTexParam = nullptr;
+		pProcessData->bSetThisFrame = true;
 	}
 
-	SAFE_RELEASE(pFillData->pTexParam);
+	pFillData->pTexParam = nullptr;
 	pFillData->bSetThisFrame = true;
 }
 
@@ -753,22 +750,16 @@ void CParamTexture::SyncMainWithRender()
 		pProcessData = &m_threadSafeData[gRenDev->GetRenderThreadID()];
 		if (pProcessData->bSetThisFrame)
 		{
-			if (pFillData->bSetThisFrame)
-			{
-				// If the main thread also set a texture on the same frame (highly unlikely), then release this texture
-				// 1st before overriding it with the texture set from the render thread
-				SAFE_RELEASE(pFillData->pTexParam);
-			}
+			// If the main thread also set a texture on the same frame (highly unlikely),
+			// then override it with the texture set from the render thread
 			pFillData->pTexParam = pProcessData->pTexParam;
 		}
 	}
 
-	// Reset set value
 	pFillData->bSetThisFrame = false;
 
 	if (bIsMultiThreaded)
 	{
-		// Copy fill data into process data
-		memcpy(pProcessData, pFillData, sizeof(CParamTextureThreadSafeData));
+		pProcessData = pFillData;
 	}
 }

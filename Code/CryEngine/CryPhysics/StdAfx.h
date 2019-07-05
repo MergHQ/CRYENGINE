@@ -43,7 +43,7 @@
 // C6246: Local declaration of <variable> hides declaration of same name in outer scope.
 #define LOCAL_NAME_OVERRIDE_OK PREFAST_SUPPRESS_WARNING(6246)
 // C6201: buffer overrun for <variable>, which is possibly stack allocated: index <name> is out of valid index range <min> to <max>
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 #define INDEX_NOT_OUT_OF_RANGE _Pragma("clang diagnostic ignored \"-Warray-bounds\"")
 #else
 #define INDEX_NOT_OUT_OF_RANGE PREFAST_SUPPRESS_WARNING(6201)
@@ -67,13 +67,13 @@
 #define NO_CRY_STREAM
 class CStream;
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 #undef min
 #undef max
 #endif
 
 #define ENTGRID_2LEVEL
-//#define MULTI_GRID
+#define MULTI_GRID
 
 // uncomment the following block to effectively disable validations
 /*#define VALIDATOR_LOG(pLog,str)
@@ -84,7 +84,7 @@ class CStream;
 #define VALIDATOR_RANGE2(member,minval,maxval)
 #define VALIDATORS_END
 #define ENTITY_VALIDATE(strSource,pStructure)*/
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
 #define DoBreak {__debugbreak();}
 #else
 #define DoBreak { __debugbreak(); }
@@ -129,8 +129,25 @@ template<class dtype> bool is_valid(const dtype &op) { return is_valid(op.x*op.x
 	m_pWorld->m_pRenderer,m_pForeignData,m_iForeignData,m_iForeignFlags)) { \
 	if (m_pWorld->m_vars.bBreakOnValidation) DoBreak return iErrCode; }
 
+#ifndef STANDALONE_PHYSICS
+template<class T,bool alloc> struct SizerAllocator {};
+template<class T> struct SizerAllocator<T,false> { static T *alloc(int count,T* src=nullptr) { return src; } };
+template<> struct SizerAllocator<int,false> {	static int *alloc(int count,int* src=nullptr) { return count ? new int[count] : src; } };
+template<class T> struct SizerAllocator<T,true> {	static T *alloc(int count,T* src=nullptr) { return new typename std::remove_const<T>::type[count]; } };
+#define GetMode GetMode() const { return 0; } \
+	template<class T> bool AddObjectPtr(T* const& ptr, size_t size, int nCount=1) { \
+		if (GetMode()==1 && size)	const_cast<T*&>(ptr) = SizerAllocator<T,!std::is_polymorphic<T>::value>::alloc(size/sizeof(T),ptr); \
+		return AddObject(ptr, size); \
+	}	\
+	bool AddObjectPtr(struct geom* const& ptr, size_t size, int nCount) { return AddObject(ptr, size); }	\
+	int dummy
 // TODO: reference additional headers your program requires here
 #include <CryMemory/CrySizer.h>
+#undef GetMode
+#define AddObject AddObjectPtr
+#else
+#include <CryMemory/CrySizer.h>
+#endif
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILog.h>
 #include <CryPhysics/primitives.h>
@@ -152,30 +169,47 @@ public:
 #endif
 #include "utils.h"
 
-#if MAX_PHYS_THREADS<=1
+#define MAX_TOT_THREADS (MAX_PHYS_THREADS+MAX_EXT_THREADS)
+
+#if MAX_TOT_THREADS<=2
 extern threadID g_physThreadId;
 inline int IsPhysThread() { return iszero((int)(CryGetCurrentThreadId()-g_physThreadId)); }
 inline void MarkAsPhysThread() { g_physThreadId = CryGetCurrentThreadId(); }
 inline void MarkAsPhysWorkerThread(int*) {}
-inline int get_iCaller() { return IsPhysThread()^1; }
+inline int get_iCaller(int allocIfExt = 0) { return IsPhysThread()^1; }
 inline int get_iCaller_int() { return 0; }
-#else // MAX_PHYS_THREADS>1
-TLS_DECLARE(int*,g_pidxPhysThread)
+inline int alloc_extCaller() { return 0; }
+inline int set_extCaller(int slot) { return slot; }
+#else // MAX_PHYS_THREADS>1	or MAX_EXT_THREADS>1
+extern thread_local int* tls_pidxPhysThread;
+extern thread_local int tls_idxExtThread;
 inline int IsPhysThread() {
 	int dummy = 0;
-	INT_PTR ptr = (INT_PTR)TLS_GET(INT_PTR, g_pidxPhysThread);
-	ptr += (INT_PTR)&dummy-ptr & (ptr-1>>sizeof(INT_PTR)*8-1 ^ ptr>>sizeof(INT_PTR)*8-1);
+	INT_PTR ptr = (INT_PTR)tls_pidxPhysThread;
+	ptr += (INT_PTR)&dummy-ptr & (ptr-1>>sizeof(INT_PTR)*8-1 ^ptr>>sizeof(INT_PTR)*8-1);
 	return *(int*)ptr;
 }
 void MarkAsPhysThread();
 void MarkAsPhysWorkerThread(int*);
-inline int get_iCaller() {
+inline int set_extCaller(int slot) { tls_idxExtThread = slot; return slot; }
+inline int alloc_extCaller() {
+	extern volatile int *g_pLockIntersect;
+	int iCaller;
+	for(iCaller=MAX_EXT_THREADS-1; iCaller>0 && g_pLockIntersect[iCaller]; iCaller--);
+	return set_extCaller(iCaller);
+}
+inline int get_iCaller_int() {
 	int dummy = MAX_PHYS_THREADS;
-	INT_PTR ptr = (INT_PTR)TLS_GET(INT_PTR,g_pidxPhysThread);
+	INT_PTR ptr = (INT_PTR)tls_pidxPhysThread;
 	ptr += (INT_PTR)&dummy-ptr & (ptr-1>>sizeof(INT_PTR)*8-1 ^ ptr>>sizeof(INT_PTR)*8-1);
 	return *(int*)ptr;
 }
-#define get_iCaller_int get_iCaller
+inline int get_iCaller(int allocIfExternal = 0) {
+	int iCaller = get_iCaller_int();
+	if (iCaller >= (MAX_PHYS_THREADS + (1-allocIfExternal<<20)))
+		return iCaller + alloc_extCaller();
+	return iCaller + tls_idxExtThread;
+}
 #endif
 
 

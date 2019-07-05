@@ -61,7 +61,7 @@ public:
 
 	IEntity*     GetEntity(SActivationInfo* pActInfo);
 
-	bool         Execute(SActivationInfo* pActInfo, const char* pSignalText, IAISignalExtraData* pData = NULL, int senderId = 0);
+	bool         Execute(SActivationInfo* pActInfo, const char* pSignalText, AISignals::IAISignalExtraData* pData = NULL, int senderId = 0);
 
 protected:
 	virtual void OnCancelPortActivated(IPipeUser* pPipeUser, SActivationInfo* pActInfo);
@@ -88,11 +88,11 @@ protected:
 
 	// you might want to override this method
 	virtual bool ExecuteOnAI(SActivationInfo* pActInfo, const char* pSignalText,
-	                         IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender);
+	                         AISignals::IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender);
 
 	// you might want to override this method
 	virtual bool ExecuteOnEntity(SActivationInfo* pActInfo, const char* pSignalText,
-	                             IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender);
+	                             AISignals::IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender);
 
 	// Utility function to set an AI's speed.
 	void SetSpeed(IAIObject* pAI, int iSpeed);
@@ -160,7 +160,7 @@ class CFlowNode_AISignalBase
 public:
 	CFlowNode_AISignalBase(IFlowNode::SActivationInfo* pActInfo)
 		: CFlowNode_AIBase<false>(pActInfo)
-		, m_SignalText(nullptr)
+		, m_pSignalDescription (nullptr)
 	{
 	}
 
@@ -175,9 +175,9 @@ protected:
 	virtual void TryExecute(IAIObject* pAI, IFlowNode::EFlowEvent event, IFlowNode::SActivationInfo* pActInfo);
 	virtual bool ShouldForce(IFlowNode::SActivationInfo* pActInfo) const;
 
-	const char* m_SignalText;
+	const AISignals::ISignalDescription* m_pSignalDescription;
 
-	virtual IAISignalExtraData* GetExtraData(IFlowNode::SActivationInfo* pActInfo) const { return NULL; }
+	virtual AISignals::IAISignalExtraData* GetExtraData(IFlowNode::SActivationInfo* pActInfo) const { return NULL; }
 };
 
 //---------------------------------------------------------------------------------------------------------------------------------
@@ -189,7 +189,10 @@ class CFlowNode_AISignalAlerted
 {
 public:
 	CFlowNode_AISignalAlerted(IFlowNode::SActivationInfo* pActInfo)
-		: CFlowNode_AISignalBase<CFlowNode_AISignalAlerted>(pActInfo) { m_SignalText = "ACT_ALERTED"; }
+		: CFlowNode_AISignalBase<CFlowNode_AISignalAlerted>(pActInfo) 
+	{
+		m_pSignalDescription = &gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActAlerted_DEPRECATED();
+	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{

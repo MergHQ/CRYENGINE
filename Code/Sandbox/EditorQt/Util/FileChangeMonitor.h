@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <set>
 
 class CFileChangeMonitorListener;
 class CFileChangeMonitorThread;
@@ -90,7 +91,7 @@ private:
 	TListeners                              m_listeners;
 	//! Pointer to implementation class.
 	CFileChangeMonitorThread*               m_pThread;
-	std::auto_ptr<CFileChangeMonitorWindow> m_window;
+	std::unique_ptr<CFileChangeMonitorWindow> m_window;
 };
 
 // Used as base class (aka interface) to subscribe for file change events
@@ -120,4 +121,3 @@ public:
 private:
 	CFileChangeMonitor* m_pMonitor;
 };
-

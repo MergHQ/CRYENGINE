@@ -9,15 +9,15 @@
 
 #include <QtUtil.h>
 #include <QSearchBox.h>
-#include <QAdvancedPropertyTree.h>
+#include <QAdvancedPropertyTreeLegacy.h>
 #include <QCollapsibleFrame.h>
 #include <ProxyModels/DeepFilterProxyModel.h>
 #include <Controls/QPopupWidget.h>
 #include <Controls/DictionaryWidget.h>
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/Events.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 
 #include <QAbstractItemModel>
 #include <QStyledItemDelegate>
@@ -422,7 +422,7 @@ void CVariablesWidget::OnSelectionChanged(const QItemSelection& selected, const 
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{
 				CrySchematycEditor::CPropertiesWidget* pPropertiesWidget = nullptr /*new CrySchematycEditor::CPropertiesWidget(*pItem)*/;
-				PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
+				PopulateLegacyInspectorEvent popEvent([pPropertiesWidget](CInspectorLegacy& inspector)
 				{
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
 					pInspectorWidget->SetWidget(pPropertiesWidget);
@@ -461,7 +461,7 @@ void CVariablesWidget::OnContextMenu(const QPoint& point)
 				QObject::connect(pAction, &QAction::triggered, this, [this, index]()
 					{
 						m_pVariablesList->edit(index);
-				  });
+					});
 			}
 
 			menu.addAction(pCommandManager->GetAction("general.delete"));
@@ -560,4 +560,3 @@ void CVariablesWidget::customEvent(QEvent* pEvent)
 }
 
 }
-

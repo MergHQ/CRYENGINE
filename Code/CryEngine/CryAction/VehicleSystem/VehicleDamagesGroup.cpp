@@ -307,9 +307,7 @@ bool CVehicleDamagesGroup::IsPotentiallyFatal()
 
 		for (TVehicleDamageBehaviorVector::iterator behaviorIte = damageBehaviors.begin(); behaviorIte != damageBehaviors.end(); ++behaviorIte)
 		{
-			//IVehicleDamageBehavior* pBehavio
-			if (CVehicleDamageBehaviorDestroy* pBehaviorDestroy =
-			      CAST_VEHICLEOBJECT(CVehicleDamageBehaviorDestroy, (*behaviorIte)))
+			if (CAST_VEHICLEOBJECT(CVehicleDamageBehaviorDestroy, (*behaviorIte)) != nullptr)
 			{
 				return true;
 			}

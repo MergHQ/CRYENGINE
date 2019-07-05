@@ -71,7 +71,6 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 		}
 
 		//process movement
-		const bool isRemote = isPlayer && !player.IsClient();
 
 		Vec3 move(ZERO);
 		CPlayerStateUtil::CalculateGroundOrJumpMovement( player, movement, isHeavyWeapon, move );
@@ -84,8 +83,6 @@ void CPlayerStateGround::OnPrePhysicsUpdate( CPlayer& player, const SActorFrameM
 
 		//apply movement
 		Vec3 desiredVel(ZERO);
-		Vec3 entityPos = player.GetEntity()->GetWorldPos();
-		Vec3 entityRight(player.GetBaseQuat().GetColumn0());
 
 		float fGroundNormalZ;
 
@@ -348,7 +345,7 @@ bool CPlayerStateGround::CheckForVaultTrigger(CPlayer & player, float frameTime)
 							break;
 
 							default:
-							CRY_ASSERT_TRACE(0, ("Unexpected ledge transition #%d when trying to display HUD prompt for vault-from-standing!", ledgeTransition.m_ledgeTransition));
+							CRY_ASSERT(0, "Unexpected ledge transition #%d when trying to display HUD prompt for vault-from-standing!", ledgeTransition.m_ledgeTransition);
 							break;
 						}
 

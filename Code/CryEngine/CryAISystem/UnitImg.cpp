@@ -105,18 +105,20 @@ void CUnitImg::ExecuteTask()
 			CCCPOINT(CUnitImg_ExecuteTask);
 
 			m_pCurrentAction = nextAction;
-			IAISignalExtraData* pData = NULL;
+			AISignals::IAISignalExtraData* pData = NULL;
+			AISignals::SignalSharedPtr pSignal;
 			switch (m_pCurrentAction->m_Action)
 			{
 			case UA_SIGNAL:
-				GetAISystem()->SendSignal(0, 1, m_pCurrentAction->m_SignalText, pUnit, new AISignalExtraData(m_pCurrentAction->m_SignalData));
+				 pSignal = GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, m_pCurrentAction->m_SignalText, pUnit->GetEntityID(), new AISignals::AISignalExtraData(m_pCurrentAction->m_SignalData));
+				GetAISystem()->SendSignal(0, pSignal);
 				break;
 			case UA_ACQUIRETARGET:
-				GetAISystem()->SendSignal(0, 1, "ORDER_ACQUIRE_TARGET", pUnit, new AISignalExtraData(m_pCurrentAction->m_SignalData));
+				pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOrderAcquireTarget_DEPRECATED(), pUnit->GetEntityID(), new AISignals::AISignalExtraData(m_pCurrentAction->m_SignalData));
+				GetAISystem()->SendSignal(0, pSignal);
 				break;
 			case UA_SEARCH:
 				{
-					const char* signal = "ORDER_SEARCH";
 					if (m_pCurrentAction->m_Point.IsZero())
 					{
 						Vec3 hidePosition(0, 0, 0);
@@ -135,7 +137,9 @@ void CUnitImg::ExecuteTask()
 						pData = GetAISystem()->CreateSignalExtraData();
 						pData->point = hidePosition;
 						pData->iValue = m_pCurrentAction->m_Tag;
-						GetAISystem()->SendSignal(0, 10, signal, pUnit, pData);
+
+						pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOrderSearch_DEPRECATED(), pUnit->GetEntityID(), pData);
+						GetAISystem()->SendSignal(0, pSignal);
 
 						CCCPOINT(CUnitImg_TaskExecuted_A);
 					}
@@ -145,7 +149,9 @@ void CUnitImg::ExecuteTask()
 						pData->point = m_pCurrentAction->m_Point;
 						pData->point2 = m_pCurrentAction->m_Direction;
 						pData->iValue = m_pCurrentAction->m_Tag;
-						GetAISystem()->SendSignal(0, 10, signal, pUnit, pData);
+
+						pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOrderSearch_DEPRECATED(), pUnit->GetEntityID(), pData);
+						GetAISystem()->SendSignal(0, pSignal);
 					}
 					bContinue = false; // force blocking
 				}
@@ -268,7 +274,7 @@ void CUnitImg::Serialize(TSerialize ser)
 {
 	m_refUnit.Serialize(ser, "m_refUnit");
 
-	CRY_ASSERT_MESSAGE(m_Plan.empty(), "Todo: implement serialization of m_Plan");
+	CRY_ASSERT(m_Plan.empty(), "Todo: implement serialization of m_Plan");
 	//SerializeListOfPointers(ser, objectTracker, "Plan", m_Plan);
 	ser.Value("m_TagPoint", m_TagPoint);
 	ser.Value("m_flags", m_flags);
@@ -296,7 +302,7 @@ void CUnitAction::Serialize(TSerialize ser)
 	ser.EnumValue("m_Action", m_Action, UA_NONE, UA_LAST);
 	ser.Value("m_BlockingPlan", m_BlockingPlan);
 
-	CRY_ASSERT_MESSAGE(false, "Todo: implement serialization of blocked actions");
+	CRY_ASSERT(false, "Todo: implement serialization of blocked actions");
 	//ser.Value("BlockingActions", m_BlockingActions);
 	//ser.Value("BlockedActions", m_BlockedActions);
 

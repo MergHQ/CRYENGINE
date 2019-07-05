@@ -1,21 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2001.
-// -------------------------------------------------------------------------
-//  File name:   NamedData.h
-//  Created:     30/10/2001 by Timur.
-//  Description: Collection of Named data blocks
-//
-////////////////////////////////////////////////////////////////////////////
+
 #include "EditorCommonAPI.h"
 #include "Util/MemoryBlock.h"
+#include <CryCore/StlUtils.h>
 
 class CPakFile;
 
+// Collection of Named data blocks
 class EDITOR_COMMON_API CNamedData : public CObject
 {
 	DECLARE_SERIAL(CNamedData)
@@ -30,11 +23,7 @@ public:
 	CMemoryBlock* GetDataBlock(const string& blockName, bool& bCompressed);
 
 	void          Clear();
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CCurveObject)
-public:
-	virtual void Serialize(CArchive& ar);
-	//}}AFX_VIRTUAL
+	virtual void  Serialize(CArchive& ar);
 
 	//! Save named data to pak file.
 	void Save(CPakFile& pakFile);
@@ -48,7 +37,7 @@ public:
 private:
 	struct DataBlock
 	{
-		string      blockName;
+		string       blockName;
 		CMemoryBlock data;
 		CMemoryBlock compressedData;
 		//! This block is compressed.
@@ -58,4 +47,3 @@ private:
 	typedef std::map<string, DataBlock*, stl::less_stricmp<string>> TBlocks;
 	TBlocks m_blocks;
 };
-

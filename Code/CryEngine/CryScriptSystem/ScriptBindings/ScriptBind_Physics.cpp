@@ -272,7 +272,10 @@ int CScriptBind_Physics::SamplePhysEnvironment(IFunctionHandler* pH)
 	if (!pH->GetParams(sph.center, sph.r))
 		return pH->EndFunction();
 	if (pH->GetParamCount() > 2)
+	{
 		pH->GetParam(3, objtypes);
+		objtypes |= ent_addref_results;
+	}
 	pSphere = pWorld->GetGeomManager()->CreatePrimitive(primitives::sphere::type, &sph);
 
 	nEnts = pWorld->GetEntitiesInBox(sph.center - Vec3(sph.r), sph.center + Vec3(sph.r), pEnts, objtypes, CRY_ARRAY_COUNT(ents));

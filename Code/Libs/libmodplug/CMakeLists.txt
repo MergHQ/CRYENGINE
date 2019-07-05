@@ -1,5 +1,7 @@
 
 start_sources()
+
+# -- libmodplug.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS libmodplug_static

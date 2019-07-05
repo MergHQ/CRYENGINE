@@ -8,10 +8,13 @@
 #include <CryMath/Range.h>
 #include <CryCore/functor.h>
 
-struct IFacialEffCtrl;
+struct ICharacterInstance;
+struct IFacialAnimChannel;
 struct IFacialAnimSequence;
-
-class IJoystickSet;
+struct IFacialEffCtrl;
+struct IJoystickChannel;
+struct IJoystickContext;
+struct IJoystickSet;
 
 #define FACE_STORE_ASSET_VALUES (1)
 
@@ -202,6 +205,7 @@ struct IFacialEffectorsLibraryEffectorVisitor
 	virtual void VisitEffector(IFacialEffector* pEffector) = 0;
 	// </interfuscator:shuffle>
 };
+
 struct IFacialEffectorsLibrary
 {
 	// <interfuscator:shuffle>
@@ -223,7 +227,7 @@ struct IFacialEffectorsLibrary
 	//! \note Do not use this at runtime - only in the editor.
 	virtual IFacialEffector* Find(const char* identStr) = 0;
 
-	//! Retrieve the root effector, all effectors contained in the library are direct or inderect siblings of this root.
+	//! Retrieve the root effector, all effectors contained in the library are direct or indirect siblings of this root.
 	virtual IFacialEffector* GetRoot() = 0;
 
 	//! Direct access to effectors.
@@ -291,7 +295,7 @@ struct IFacialInstance
 	virtual bool                 IsPlaySequence(IFacialAnimSequence* pSequence, EFacialSequenceLayer layer) = 0;
 	virtual void                 PauseSequence(EFacialSequenceLayer layer, bool bPaused) = 0;
 
-	//! Seek sequence current time to the specified time offset from the begining of sequence playback time.
+	//! Seek sequence current time to the specified time offset from the beginning of sequence playback time.
 	virtual void SeekSequence(EFacialSequenceLayer layer, float fTime) = 0;
 
 	//! Start/Stop Lip syncing with the sound.
@@ -332,9 +336,6 @@ struct IPhonemeLibrary
 };
 
 //! Main interface to the facial animation system.
-class IJoystickContext;
-class IJoystickChannel;
-struct IFacialAnimChannel;
 struct IFacialAnimation
 {
 	// <interfuscator:shuffle>

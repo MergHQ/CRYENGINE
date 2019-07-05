@@ -17,7 +17,7 @@ public:
 	virtual ~CSmartObjectEventDialog();
 
 	void    SetSOEvent(const CString& sSOEvent) { m_sSOEvent = sSOEvent; }
-	CString GetSOEvent()                        { return m_sSOEvent; };
+	CString GetSOEvent()                        { return m_sSOEvent; }
 
 	// Dialog Data
 	enum { IDD = IDD_AIANCHORS };
@@ -39,4 +39,3 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 };
-

@@ -91,4 +91,3 @@ string GetNodePath(FbxNode* pNode, const char* szLastName)
 	return result;
 }
 }
-

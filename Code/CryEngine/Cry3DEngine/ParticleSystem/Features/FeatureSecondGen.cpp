@@ -13,7 +13,7 @@ namespace pfx2
 template<typename T>
 ILINE T Verify(T in, const char* message)
 {
-	CRY_ASSERT_MESSAGE(in, message);
+	CRY_ASSERT(in, message);
 	return in;
 }
 
@@ -69,21 +69,21 @@ public:
 		CParticleEffect* pEffect = pComponent->GetEffect();
 
 		// Count number of real children
-		uint numChildren = 0;
+		TDynArray<CParticleComponent*> children;
 		for (auto& componentName : m_componentNames)
-			if (pEffect->FindComponentByName(componentName))
-				numChildren++;
+			if (CParticleComponent* pChild = pEffect->FindComponentByName(componentName))
+				stl::push_back_unique(children, pChild);
 
-		if (numChildren == 0)
+		if (children.empty())
 			return nullptr;
 
-		float componentFrac = m_mode == ESecondGenMode::All ? 1.0f : 1.0f / numChildren;
+		float componentFrac = m_mode == ESecondGenMode::All ? 1.0f : 1.0f / children.size();
 		float probability = m_probability * componentFrac;
 		float selectionStart = 0.0f;
 
 		static uint                s_childGroup = 1;
 		static CParticleComponent* s_lastComponent = nullptr;
-		if (probability < 1.0f && numChildren > 1)
+		if (probability < 1.0f && children.size() > 1)
 		{
 			if (pComponent != s_lastComponent)
 				s_childGroup = 1;
@@ -92,47 +92,39 @@ public:
 			s_lastComponent = pComponent;
 		}
 
-		for (auto& componentName : m_componentNames)
+		for (auto pChild : children)
 		{
-			if (auto pChild = pEffect->FindComponentByName(componentName))
+			pChild->SetParent(pComponent);
+
+			// Add Child feature of corresponding name
+			pChild->AddFeature(0, m_pChildFeature);
+
+			if (probability < 1.0f)
 			{
-				pChild->SetParent(pComponent);
-
-				// Add Child feature of corresponding name
-				pChild->AddFeature(0, m_pChildFeature);
-
-				if (probability < 1.0f)
+				// Add Spawn Random feature	
+				if (auto pParam = CRY_PFX2_VERIFY(GetPSystem()->FindFeatureParam("Component", "ActivateRandom")))
 				{
-					// Add Spawn Random feature	
-					if (auto pParam = CRY_PFX2_VERIFY(GetPSystem()->FindFeatureParam("Component", "ActivateRandom")))
+					IParticleFeature* pFeature = pChild->AddFeature(1, *pParam);
+					XmlNodeRef attrs = gEnv->pSystem->CreateXmlNode("ActivateRandom");
+					AddValue(attrs, "Probability", probability);
+
+					if (children.size() > 1)
 					{
-						IParticleFeature* pFeature = pChild->AddFeature(1, *pParam);
-						XmlNodeRef attrs = gEnv->pSystem->CreateXmlNode("ActivateRandom");
-						AddValue(attrs, "Probability", probability);
-
-						if (numChildren > 1)
-						{
-							AddValue(attrs, "Group", s_childGroup);
-						}
-						if (componentFrac < 1.0f)
-						{
-							AddValue(attrs, "SelectionStart", selectionStart);
-							selectionStart += componentFrac;
-						}
-
-						CRY_PFX2_VERIFY(Serialization::LoadXmlNode(*pFeature, attrs));
+						AddValue(attrs, "Group", s_childGroup);
 					}
+					if (componentFrac < 1.0f)
+					{
+						AddValue(attrs, "SelectionStart", selectionStart);
+						selectionStart += componentFrac;
+					}
+
+					CRY_PFX2_VERIFY(Serialization::LoadXmlNode(*pFeature, attrs));
 				}
 			}
 		}
 
 		// Delete this feature
 		return nullptr;
-	}
-
-	const SParticleFeatureParams& GetFeatureParams() const override
-	{
-		static SParticleFeatureParams s_params; return s_params;
 	}
 
 private:

@@ -5,8 +5,8 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <IEditor.h>
 #include <IResourceSelectorHost.h>
-#include <Material\Material.h>
-#include <Material\MaterialManager.h>
+#include <Material/Material.h>
+#include <Material/MaterialManager.h>
 
 #include <CrySerialization/yasli/Archive.h>
 #include <CrySerialization/yasli/Enum.h>
@@ -290,4 +290,3 @@ void CGlobalImportSettings::SOutputSettings::Serialize(yasli::Archive& ar)
 	ar(bVertexPositionFormatF32, "use_32_bit_positions", "Use 32bit precision");
 	ar.doc("When this option is selected, the importer stores vertex positions using 32 bit per coordinate instead of 16 bit.");
 }
-

@@ -121,7 +121,7 @@ namespace UQS
 
 		void CQueryBlueprintFileLibrary::GetQueryRecordNameFromFilePath(const CryPathString& fileName, stack_string& outName) const
 		{
-			outName = fileName;
+			outName = fileName.c_str();
 			outName.replace(m_config.rootPath.c_str(), "");
 			PathUtil::RemoveExtension(outName);
 		}

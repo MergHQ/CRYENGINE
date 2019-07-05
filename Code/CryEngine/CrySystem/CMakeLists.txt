@@ -58,7 +58,7 @@ add_sources("CrySystem_uber_6.cpp"
 )
 
 # -- crysystem_win32.waf_files --
-sources_platform(DURANGO WIN32)
+sources_platform(DURANGO WINDOWS)
 add_sources("CrySystem_uber_6.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Threading"
@@ -79,6 +79,12 @@ add_sources("CrySystem_uber_1.cpp"
 		"OrbisDebugCallStack.cpp"
 )
 
+add_sources("CrySystem_uber_4.cpp"
+	PROJECTS CrySystem
+	SOURCE_GROUP "Profiling"
+		"Profiling/PlatformProfiler_orbis.cpp"
+)
+
 add_sources("CrySystem_uber_7.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "PlatformOS"
@@ -87,7 +93,7 @@ add_sources("CrySystem_uber_7.cpp"
 )
 
 # -- crysystem_posix.waf_files --
-sources_platform(ANDROID APPLE LINUX ORBIS WIN32)
+sources_platform(ANDROID APPLE LINUX ORBIS WINDOWS)
 add_sources("CrySystem_uber_6.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Threading"
@@ -101,7 +107,6 @@ add_sources("CrySystem_uber_0.cpp"
 	SOURCE_GROUP "Header Files"
 		"SystemInit.h"
 		"Statistics/LocalMemoryUsage.h"
-		"MemoryFragmentationProfiler.h"
 		"XML/ReadWriteXMLSink.h"
 		"Serialization/ArchiveHost.h"
 		"PlatformOS/PatternMatcher.h"
@@ -170,6 +175,7 @@ add_sources("CrySystem_uber_0.cpp"
 add_sources("CrySystem_uber_1.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Source Files"
+		"SimpleStringPool.cpp"
 		"SystemRender.cpp"
 		"NotificationNetwork.cpp"
 		"PhysRenderer.cpp"
@@ -296,22 +302,24 @@ add_sources("CrySystem_uber_4.cpp"
 	SOURCE_GROUP "Localization"
 		"LocalizedStringManager.cpp"
 		"LocalizedStringManager.h"
-	SOURCE_GROUP "Profiler"
+	SOURCE_GROUP "Profiling"
 		"DiskProfiler.cpp"
 		"DiskProfilerWindowsSpecific.cpp"
 		"DiskProfilerWindowsSpecific.h"
-		"FrameProfileRender.cpp"
-		"FrameProfileSystem.cpp"
-		"LoadingProfiler.cpp"
+		"Profiling/NullProfiler.cpp"
+		"Profiling/CryProfilingSystem.cpp"
+		"Profiling/ProfilingRenderer.cpp"
+		"Profiling/CryBrofiler.cpp"
+		"Profiling/CryProfilingSystemSharedImpl.cpp"
 		"PerfHUD.cpp"
-		"ProfileLogSystem.cpp"
-		"Sampler.cpp"
 		"DiskProfiler.h"
-		"FrameProfileSystem.h"
-		"LoadingProfiler.h"
+		"Profiling/NullProfiler.h"
+		"Profiling/ProfilingRenderer.h"
+		"Profiling/CryProfilingSystem.h"
+		"Profiling/CryBrofiler.h"
+		"Profiling/PlatformProfiler.h"
+		"Profiling/CryProfilingSystemSharedImpl.h"
 		"PerfHUD.h"
-		"ProfileLogSystem.h"
-		"Sampler.h"
 		"Watchdog.h"
 		"Watchdog.cpp"
 	SOURCE_GROUP "Windows"
@@ -326,15 +334,13 @@ add_sources("CrySystem_uber_5.cpp"
 	SOURCE_GROUP "TestSystem"
 		"ExcelExport.cpp"
 		"Statistics.cpp"
-		"TestSystemLegacy.cpp"
+		"TestSystem.cpp"
 		"UnitTestExcelReporter.cpp"
-		"UnitTestSystem.cpp"
 		"VisRegTest.cpp"
 		"ExcelExport.h"
 		"Statistics.h"
-		"TestSystemLegacy.h"
+		"TestSystem.h"
 		"UnitTestExcelReporter.h"
-		"UnitTestSystem.h"
 		"VisRegTest.h"
 	SOURCE_GROUP "UserAnalytics"
 		"UserAnalytics/UserAnalyticsSystem.cpp"
@@ -378,11 +384,7 @@ add_sources("CrySystem_uber_6.cpp"
 		"NullImplementation/NULLRenderAuxGeom.cpp"
 	SOURCE_GROUP "Threading"
 		"ThreadInfo.cpp"
-		"ThreadProfiler.cpp"
-		"ThreadSampler.cpp"
 		"ThreadInfo.h"
-		"ThreadSampler.h"
-		"ThreadProfiler.h"
 		"ThreadConfigManager.h"
 		"ThreadConfigManager.cpp"
 		"SystemThreading.cpp"
@@ -421,12 +423,10 @@ add_sources("CrySystem_uber_8.cpp"
 		"JobManager/JobManager.cpp"
 		"JobManager/JobManager.h"
 		"JobManager/JobStructs.h"
+		"JobManager/JobSystemTests.cpp"
 	SOURCE_GROUP "JobManager\\\\BlockingBackend"
 		"JobManager/BlockingBackend/BlockingBackEnd.cpp"
 		"JobManager/BlockingBackend/BlockingBackEnd.h"
-	SOURCE_GROUP "JobManager\\\\FallbackBackend"
-		"JobManager/FallbackBackend/FallbackBackend.cpp"
-		"JobManager/FallbackBackend/FallBackBackend.h"
 	SOURCE_GROUP "JobManager\\\\ThreadBackEnd"
 		"JobManager/PCBackEnd/ThreadBackEnd.cpp"
 		"JobManager/PCBackEnd/ThreadBackEnd.h"
@@ -448,7 +448,6 @@ add_sources("CrySystem_uber_9.cpp"
 		"RemoteConsole/RemoteConsole.h"
 	SOURCE_GROUP "Serialization"
 		"Serialization/ArchiveHost.cpp"
-		"Serialization/Test_ArchiveHost.cpp"
 		"Serialization/Token.h"
 		"Serialization/XmlIArchive.cpp"
 		"Serialization/XmlIArchive.h"
@@ -476,6 +475,14 @@ add_sources("CrySystem_uber_9.cpp"
 		"ZLibDecompressor.cpp"
 )
 
+add_sources("CrySystem_uber_10.cpp"
+	PROJECTS CrySystem
+	SOURCE_GROUP "Reflection"
+		"Reflection/FundamentalTypes.cpp"
+		"Reflection/MathTypes.cpp"
+		"Reflection/CommonTypes.cpp"
+)
+
 add_sources("NoUberFile"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Mac"
@@ -499,9 +506,17 @@ add_sources("CrySystem_uber_1.cpp"
 		"DurangoDebugCallstack.cpp"
 )
 
+add_sources("CrySystem_uber_4.cpp"
+	PROJECTS CrySystem
+	SOURCE_GROUP "Profiling"
+		"Profiling/PlatformProfiler_durango.cpp"
+)
+
 add_sources("CrySystem_uber_7.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "PlatformOS"
+		"PlatformOS/PlatformOSUserManager_Durango.h"
+		"PlatformOS/PlatformOSUserManager_Durango.cpp"
 		"PlatformOS/StreamingInstall_Durango.h"
 		"PlatformOS/StreamingInstall_Durango.cpp"
 		"PlatformOS/SaveReaderWriter_Durango.h"
@@ -510,8 +525,17 @@ add_sources("CrySystem_uber_7.cpp"
 		"PlatformOS/PlatformOS_Durango.h"
 )
 
+sources_platform(WINDOWS)
+add_sources("CrySystem_uber_4.cpp"
+	PROJECTS CrySystem
+	SOURCE_GROUP "Profiling"
+		"Profiling/PlatformProfiler_win.cpp"
+		"Profiling/PixForWindows.cpp"
+		"Profiling/PixForWindows.h"
+)
+
 # -- platformos.waf_files --
-sources_platform(ANDROID APPLE LINUX WIN32)
+sources_platform(ANDROID APPLE LINUX WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS CrySystem
 	SOURCE_GROUP "PlatformOS"
@@ -522,34 +546,95 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+MACRO(setup_crysystem)
+	if (WINDOWS)
+		target_link_libraries(${THIS_PROJECT} PRIVATE debug Detours)
+	endif ()
 
-target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 tomcrypt )
-use_scaleform()
-if (WIN32)
-	set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
-	target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
-elseif(LINUX)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE ncursesw m )
-elseif(APPLE)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE ncurses m )
-elseif(ORBIS)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE SceMsgDialog_stub_weak SceImeDialog_stub_weak )
-	target_link_libraries( ${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:SceDbg_stub_weak> )
-elseif(DURANGO)
-	set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY COMPILE_FLAGS "\"/AI${DURANGO_PLATFORM_SDK}/ExtensionSDKs/Xbox Services API/8.0/References/CommonConfiguration/neutral\"")	
-	target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
-elseif(ANDROID)
-	target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/SDL2/include/linux" "${SDK_DIR}/SDL2/include/SDL" )
-endif()
+	target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 )
+	use_scaleform()
+	if (NOT DURANGO)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE tomcrypt )
+	endif()
+	
+	if (WINDOWS)
+		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
+		target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
+		target_link_libraries(${THIS_PROJECT} PRIVATE WinPixEventRuntime)
+	elseif (LINUX)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE ncursesw m )
+	elseif (APPLE)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE ncurses m )
+	elseif (ORBIS)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE SceMsgDialog_stub_weak SceImeDialog_stub_weak )
+		target_link_libraries( ${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:SceDbg_stub_weak> )
+	elseif (DURANGO)
+		set_property(TARGET ${THIS_PROJECT} APPEND PROPERTY COMPILE_FLAGS "\"/AI${DURANGO_PLATFORM_SDK}/ExtensionSDKs/Xbox Services API/8.0/References/CommonConfiguration/neutral\"")
+		target_link_libraries( ${THIS_PROJECT} PRIVATE uuid acphal )
+	elseif (ANDROID)
+		target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/SDL2/include/linux" "${SDK_DIR}/SDL2/include/SDL" )
+	endif()
+	
+	if (OPTION_ENABLE_CRASHRPT)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE CRY_USE_CRASHRPT=1)
+		target_link_libraries( ${THIS_PROJECT} PRIVATE crashrpt )
+	endif()
+
+	if (OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE USE_BROFILER)
+		target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/Brofiler")
+		target_link_libraries( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/Brofiler/ProfilerCore64.lib")
+	endif()
+
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unknown-pragmas #See usages of raw #pragma warning
+			-Wno-unused-private-field #See CScopedWireFrameMode
+			-Wno-multichar #CryNetwork uses multichar constants such as 'bool'
+			-Wno-unused-function # See ScaleformRecording and CrySocks_sce
+			-Wno-invalid-offsetof #Used in stream engine
+			-Wno-address-of-packed-member #See ZipFileFormat
+		)
+	elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-array-bounds
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-unknown-pragmas
+			-Wno-unused-const-variable
+			-Wno-multichar
+			-Wno-return-type
+			-Wno-strict-aliasing
+			-Wno-maybe-uninitialized
+			-Wno-unused-result
+			-Wno-char-subscripts
+			-Wno-parentheses
+			-Wno-comment
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+			-Wno-address-of-packed-member
+		)
+	elseif (MSVC)
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			/we5038 #data member 'member1' will be initialized after data member 'member2' data member 'member' will be initialized after base class 'base_class'
+		)
+	endif()
+ENDMACRO()
 
 if (OPTION_ENABLE_CRASHRPT)
 	add_subdirectory( "${CRY_LIBS_DIR}/crashrpt" "${CMAKE_CURRENT_BINARY_DIR}/crashrpt")
-	target_compile_definitions(${THIS_PROJECT} PRIVATE CRY_USE_CRASHRPT=1)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE crashrpt )
 endif()
 
-if (ANDROID)
-	#Force comping "CryDLMalloc.c" as C++
-	set_source_files_properties("CryDLMalloc.c" PROPERTIES LANGUAGE CXX)
+CryEngineModule(CrySystem PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
+setup_crysystem()
+
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(CrySystemLib PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
+	setup_crysystem()
 endif()

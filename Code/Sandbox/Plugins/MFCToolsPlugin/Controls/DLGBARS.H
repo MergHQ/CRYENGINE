@@ -1,6 +1,4 @@
 /*****************************************************************************
-  DLGBARS.H
-
   Purpose: 
   	Interface for CDlgToolBar, a special type of CToolBar which does not
   	expect a parent frame window to be available, and CDlgStatusBar, which
@@ -24,19 +22,14 @@
   Copyright (c) 1996 Microsoft Corporation. All rights reserved.
 \****************************************************************************/
 
-#ifndef __DLGBARS_H__
-	#define __DLGBARS_H__
+#pragma once
 
-#include "PluginAPI.h"
+#include "MFCToolsDefines.h"
 
-class PLUGIN_API CDlgToolBar : public CToolBar 
+class MFC_TOOLS_PLUGIN_API CDlgToolBar : public CToolBar 
 {   
-// Construction
 public:
 	CDlgToolBar();
-   
-// Implementation
-public:   
 	virtual ~CDlgToolBar();
 
 	BOOL LoadToolBarDepth( UINT nIDResource,int nBtnWidth=16, UINT colorDepth = ILC_COLOR24);
@@ -50,14 +43,10 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };        
 
-class PLUGIN_API CDlgStatusBar : public CStatusBar 
+class MFC_TOOLS_PLUGIN_API CDlgStatusBar : public CStatusBar 
 {   
-// Construction
 public:
 	CDlgStatusBar();
-   
-// Implementation
-public:   
 	virtual ~CDlgStatusBar();
 
 protected:                
@@ -67,10 +56,4 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
-
-
-
-#endif //__DLGBARS_H__
-
-
 

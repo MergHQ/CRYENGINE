@@ -101,8 +101,7 @@ SUnlock::SUnlock(XmlNodeRef node, int rank)
 	if (theReincarnationLevel != NULL && theReincarnationLevel[0] != '\0')
 	{
 		m_reincarnation = atoi(theReincarnationLevel);
-		CPlayerProgression *pPlayerProgression = CPlayerProgression::GetInstance();
-		DesignerWarning(m_reincarnation > 0 && m_reincarnation < pPlayerProgression->GetMaxReincarnations()+1, "Unlock %s reincarnation parameter is outside of the range 0 - %d", theName, pPlayerProgression->GetMaxReincarnations()+1);
+		DesignerWarning(m_reincarnation > 0 && m_reincarnation < CPlayerProgression::GetInstance()->GetMaxReincarnations()+1, "Unlock %s reincarnation parameter is outside of the range 0 - %d", theName, CPlayerProgression::GetInstance()->GetMaxReincarnations()+1);
 	}
 }
 

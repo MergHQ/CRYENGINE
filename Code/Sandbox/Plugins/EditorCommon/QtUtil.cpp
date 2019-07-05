@@ -3,22 +3,28 @@
 #include "StdAfx.h"
 #include "QtUtil.h"
 
-// Qt
-#include <QApplication>
-#include <QStandardPaths>
-#include <QRegularExpression>
-#include <QWidget>
-#include <QLayout>
-#include <QScrollArea>
-#include <QProcess>
-#include <QDir>
-#include <QMenu>
-#include <QPainter>
-#include <QPixmap>
-
 // EditorCommon
 #include "EditorStyleHelper.h"
 #include "ProxyModels/MergingProxyModel.h"
+
+#include <CrySystem/ISystem.h>
+
+// Qt
+#include <QAbstractItemView>
+#include <QAbstractProxyModel>
+#include <QApplication>
+#include <QDir>
+#include <QLayout>
+#include <QMenu>
+#include <QPainter>
+#include <QPixmap>
+#include <QProcess>
+#include <QRegularExpression>
+#include <QScrollArea>
+#include <QStandardPaths>
+#include <QWidget>
+#include <QDesktopServices>
+#include <QUrl>
 
 namespace QtUtil
 {
@@ -94,6 +100,16 @@ EDITOR_COMMON_API bool IsParentOf(QObject* parent, QObject* child)
 QString GetAppDataFolder()
 {
 	return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+}
+
+void AssignMenuRole(QAction* action, const QString& roleString)
+{
+	if (roleString == STRINGIFY(QuitRole))
+		action->setMenuRole(QAction::QuitRole);
+	else if (roleString == STRINGIFY(PreferencesRole))
+		action->setMenuRole(QAction::PreferencesRole);
+	else if (roleString == STRINGIFY(AboutRole))
+		action->setMenuRole(QAction::AboutRole);
 }
 
 void DrawStatePixmap(QPainter* painter, const QRect& iconRect, const QPixmap& pixmap, QStyle::State state)
@@ -186,15 +202,19 @@ EDITOR_COMMON_API void OpenInExplorer(const char* path)
 
 EDITOR_COMMON_API void OpenFileForEdit(const char* filePath)
 {
-#ifdef CRY_PLATFORM_WINDOWS
 	QFileInfo info(filePath);
-	if(info.exists())
-		QProcess::startDetached(filePath);
+	if (info.exists())
+	{
+		if (!QDesktopServices::openUrl(QUrl::fromLocalFile(filePath)))
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR,
+				"Could not open file %s. Might be some restrictions or other issues on your operating system", filePath);
+		}
+	}
 	else
+	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "File does not exist: %s", filePath);
-#else
-	#error //Need platform specific implementation
-#endif
+	}
 }
 
 EDITOR_COMMON_API void RecursiveInstallEventFilter(QWidget* pListener, QWidget* pWatched)

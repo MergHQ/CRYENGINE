@@ -6,6 +6,8 @@
 #include <QViewport.h>
 
 #include <CryAnimation/ICryAnimation.h>
+#include <CryMath/Cry_Camera.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 const int32 kInvalidJointId = -1;
 
@@ -83,7 +85,6 @@ static bool RaycastConnections(const Ray& ray, const Vec3& eye, const IDefaultSk
 	OBB obb;
 	obb.c = Vec3(ZERO);
 	const ColorB black = ColorB(0, 0, 0);
-	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	float hitDist;
 	int32 hitJoint = kInvalidJointId;
 	for (int32 jid = 0, N = (int32)skel.GetJointCount(); jid < N; ++jid)
@@ -230,4 +231,3 @@ void DrawHighlightedJoints(const ICharacterInstance& charIns, std::vector<float>
 		DrawHighlightedJoints(charIns.GetIDefaultSkeleton(), *charIns.GetISkeletonPose(), heat, eye);
 	}
 }
-

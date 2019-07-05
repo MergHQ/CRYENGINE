@@ -1,22 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  File name:   statobj.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef STAT_OBJ_H
-#define STAT_OBJ_H
-
-#if CRY_PLATFORM_DESKTOP
-	#define TRACE_CGF_LEAKS
-#endif
+#pragma once
 
 class CIndexedMesh;
 class CRenderObject;
@@ -27,12 +10,14 @@ struct phys_geometry;
 struct IIndexedMesh;
 struct IParticleEffect;
 
-#include "../Cry3DEngine/Cry3DEngineBase.h"
+#include "Cry3DEngineBase.h"
+#include "RenderMeshUtils.h"
+
 #include <CryCore/Containers/CryArray.h>
+#include <CryThreading/IJobManager.h>
 
 #include <Cry3DEngine/IStatObj.h>
 #include <CrySystem/IStreamEngine.h>
-#include "RenderMeshUtils.h"
 #include <CryMath/GeomQuery.h>
 
 #define MAX_PHYS_GEOMS_TYPES 4
@@ -64,85 +49,6 @@ struct SSpine
 	int   idmat;
 	int   iAttachSpine;
 	int   iAttachSeg;
-};
-
-class CStatObjFoliage : public IFoliage, public Cry3DEngineBase
-{
-public:
-	CStatObjFoliage()
-	{
-		m_next = 0;
-		m_prev = 0;
-		m_lifeTime = 0;
-		m_ppThis = 0;
-		m_pStatObj = 0;
-		m_pRopes = 0;
-		m_pRopesActiveTime = 0;
-		m_nRopes = 0;
-		m_nRefCount = 1;
-		m_timeIdle = 0;
-		m_pVegInst = 0;
-		m_pTrunk = 0;
-		m_pSkinningTransformations[0] = 0;
-		m_pSkinningTransformations[1] = 0;
-		m_iActivationSource = 0;
-		m_flags = 0;
-		m_bGeomRemoved = 0;
-		m_bEnabled = 1;
-		m_timeInvisible = 0;
-		m_bDelete = 0;
-		m_pRenderObject = 0;
-		m_minEnergy = 0.0f;
-		m_stiffness = 0.0f;
-		arrSkinningRendererData[0].pSkinningData = NULL;
-		arrSkinningRendererData[0].nFrameID = 0;
-		arrSkinningRendererData[1].pSkinningData = NULL;
-		arrSkinningRendererData[1].nFrameID = 0;
-		arrSkinningRendererData[2].pSkinningData = NULL;
-		arrSkinningRendererData[2].nFrameID = 0;
-	}
-	~CStatObjFoliage();
-	virtual void             AddRef()  { m_nRefCount++; }
-	virtual void             Release() { if (--m_nRefCount <= 0) m_bDelete = 2; }
-
-	virtual int              Serialize(TSerialize ser);
-	virtual void             SetFlags(int flags);
-	virtual int              GetFlags()                    { return m_flags; }
-	virtual IRenderNode*     GetIRenderNode()              { return m_pVegInst; }
-	virtual int              GetBranchCount()              { return m_nRopes; }
-	virtual IPhysicalEntity* GetBranchPhysics(int iBranch) { return (unsigned int)iBranch < (unsigned int)m_nRopes ? m_pRopes[iBranch] : 0; }
-
-	virtual SSkinningData*   GetSkinningData(const Matrix34& RenderMat34, const SRenderingPassInfo& passInfo);
-
-	uint32                   ComputeSkinningTransformationsCount();
-	void                     ComputeSkinningTransformations(uint32 nList);
-
-	void                     OnHit(struct EventPhysCollision* pHit);
-	void                     Update(float dt, const CCamera& rCamera);
-	void                     BreakBranch(int idx);
-
-	CStatObjFoliage*  m_next, * m_prev;
-	int               m_nRefCount;
-	int               m_flags;
-	CStatObj*         m_pStatObj;
-	IPhysicalEntity** m_pRopes;
-	float*            m_pRopesActiveTime;
-	IPhysicalEntity*  m_pTrunk;
-	int16             m_nRopes;
-	int16             m_bEnabled;
-	float             m_timeIdle, m_lifeTime;
-	IFoliage**        m_ppThis;
-	QuatTS*           m_pSkinningTransformations[2];
-	int               m_iActivationSource;
-	int               m_bGeomRemoved;
-	IRenderNode*      m_pVegInst;
-	CRenderObject*    m_pRenderObject;
-	float             m_timeInvisible;
-	float             m_minEnergy;
-	float             m_stiffness;
-	int               m_bDelete;
-	// history for skinning data, needed for motion blur
-	struct { SSkinningData* pSkinningData; int nFrameID; } arrSkinningRendererData[3]; // tripple buffered for motion blur
 };
 
 struct SClothTangentVtx
@@ -230,11 +136,12 @@ struct SSyncToRenderMeshContext
 	strided_pointer<SPipTangents> pTangents;
 	strided_pointer<Vec3>         pNormals; // TODO: change Vec3 to SPipNormal
 	CStatObj*                     pObj;
+	IRenderMesh*                  mesh;
 	JobManager::SJobState         jobState;
 
 	void                          Set(Vec3* _vmin, Vec3* _vmax, int _iVtx0, int _nVtx, strided_pointer<Vec3> _pVtx, int* _pVtxMap
 	                                  , int _mask, float _rscale, SClothTangentVtx* _ctd, strided_pointer<Vec3> _pMeshVtx
-	                                  , strided_pointer<SPipTangents> _pTangents, strided_pointer<Vec3> _pNormals, CStatObj* _pObj)
+	                                  , strided_pointer<SPipTangents> _pTangents, strided_pointer<Vec3> _pNormals, CStatObj* _pObj, IRenderMesh* _mesh)
 	{
 		vmin = _vmin;
 		vmax = _vmax;
@@ -249,7 +156,15 @@ struct SSyncToRenderMeshContext
 		pTangents = _pTangents;
 		pNormals = _pNormals;
 		pObj = _pObj;
+		mesh = _mesh;
 	}
+};
+
+struct IStatObjLoadedCallback
+{
+	virtual ~IStatObjLoadedCallback() = default;
+	//! Will be called directly from the thread invoking LoadCGFAsync / LoadLowLODsAsync or later from the main thread.
+	virtual void OnLoaded(bool succeeded, CStatObj* object) = 0;
 };
 
 struct CRY_ALIGN(8) CStatObj: public IStatObj, public IStreamCallback, public stl::intrusive_linked_list_node<CStatObj>, public Cry3DEngineBase
@@ -319,7 +234,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Externally set flags from enum EStaticObjectFlags.
 	//////////////////////////////////////////////////////////////////////////
-	int m_nFlags;
+	uint m_nFlags;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Internal Flags.
@@ -389,14 +304,7 @@ public:
 	struct SMeshBoneMapping_uint8* m_pBoneMapping;
 	std::vector<uint16> m_chunkBoneIds;
 	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// for debug purposes
-	//////////////////////////////////////////////////////////////////////////
-#ifdef TRACE_CGF_LEAKS
-	string m_sLoadingCallstack;
-#endif
-
+	
 private:
 
 	// Returns a list of all CStatObj instances contained within this object (all sub-objects plus the parent object itself).
@@ -432,8 +340,8 @@ private:
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// Fast non virtual access functions.
-	ILINE IStatObj::SSubObject& SubObject(int nIndex)  { return m_subObjects[nIndex]; };
-	ILINE int                   SubObjectCount() const { return m_subObjects.size(); };
+	ILINE IStatObj::SSubObject& SubObject(int nIndex)  { return m_subObjects[nIndex]; }
+	ILINE int                   SubObjectCount() const { return m_subObjects.size(); }
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual bool IsUnloadable() const final { return m_bCanUnload; }
@@ -444,19 +352,38 @@ public:
 	void ReleaseIndexedMesh(bool bRenderMeshUpdated = false);
 	virtual ILINE const Vec3 GetVegCenter() final          { return m_vVegCenter; }
 
-	virtual void             SetFlags(int nFlags) final		{ m_nFlags = nFlags; IncrementModificationId(); }
-	virtual int              GetFlags() const final         { return m_nFlags; };
+	virtual void             SetFlags(uint nFlags) final   { m_nFlags = nFlags; IncrementModificationId(); }
+	virtual uint             GetFlags() const final        { return m_nFlags; }
 
-	virtual unsigned int     GetVehicleOnlyPhysics() final { return m_bVehicleOnlyPhysics; };
-	virtual int              GetIDMatBreakable() final     { return m_idmatBreakable; };
-	virtual unsigned int     GetBreakableByGame() final    { return m_bBreakableByGame; };
+	virtual unsigned int     GetVehicleOnlyPhysics() final { return m_bVehicleOnlyPhysics; }
+	virtual int              GetIDMatBreakable() final     { return m_idmatBreakable; }
+	virtual unsigned int     GetBreakableByGame() final    { return m_bBreakableByGame; }
 
 	virtual bool IsDeformable() final;
 
-	// Loader
-	bool LoadCGF(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize);
-	bool LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize);
+	// Loading
+	bool LoadCGF(const char* szFilename, uint32 loadingFlags);
+	void LoadCGFAsync(const char* szFilename, uint32 loadingFlags, IStatObjLoadedCallback* pCallback = nullptr);
+	//! LOD objects should not be loaded directly, but only through LoadLowLODs[Async]
+	void LoadLowLODs(bool useStreaming, uint32 loadingFlags);
+	//! The callback will be invoked when all LODs are loaded, with the base object as parameter.
+	void LoadLowLODsAsync(bool useStreaming, uint32 loadingFlags, IStatObjLoadedCallback* pCallback = nullptr);
+private:
+	class CStatObjAsyncCGFLoader;
+	class AsyncLodLoader;
+	void LoadCGF_Prepare(const char* szFilename, bool isLod);
+	// ensure LoadCGF_Prepare() has been called before
+	bool LoadCGF(IChunkFile* chunkFile, const char* szFilename, bool isLod, uint32 loadingFlags);
+	bool LoadLowLODS_Prepare(uint32 loadingFlags);
+	// ensure LoadLowLODS_Prepare() has been called before
+	CStatObj* LoadLowLOD(int lodLevel, bool useStreaming, uint32 loadingFlags);
+	void LoadLowLODS_Finalize(int nLoadedLods, CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM - 1]);
+	void MakeLodFileName(uint nLod, char (&buffer)[MAX_PATH]);
+	virtual void SetLodObject(int nLod, IStatObj* pLod) final;
+	// Free render resources for unused upper LODs.
+	void CleanUnusedLods();
 
+public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetMaterial(IMaterial * pMaterial) final;
 	virtual IMaterial* GetMaterial() const final { return m_pMaterial; }
@@ -487,12 +414,12 @@ public:
 	//! Refresh object ( reload shaders or/and object geometry )
 	virtual void Refresh(int nFlags) final;
 
-	virtual IRenderMesh* GetRenderMesh() const final { return m_pRenderMesh; };
-	void SetRenderMesh(IRenderMesh * pRM);
+	virtual IRenderMesh* GetRenderMesh() const final { return m_pRenderMesh; }
+	void SetRenderMesh(_smart_ptr<IRenderMesh>& pRM);
 
-	virtual const char* GetFilePath() final                       { return (m_szFileName); }
+	virtual const char* GetFilePath() final                       { return m_szFileName.c_str(); }
 	virtual void        SetFilePath(const char* szFileName) final { m_szFileName = szFileName; }
-	virtual const char* GetGeoName() final                        { return (m_szGeomName); }
+	virtual const char* GetGeoName() final                        { return m_szGeomName.c_str(); }
 	virtual void        SetGeoName(const char* szGeoName) final   { m_szGeomName = szGeoName; }
 	virtual bool IsSameObject(const char* szFileName, const char* szGeomName) final;
 
@@ -518,15 +445,6 @@ public:
 
 	int          GetLoadedTrisCount()         { return m_nLoadedTrisCount; }
 	int          GetRenderTrisCount()         { return m_nRenderTrisCount; }
-
-	// Load LODs
-	virtual void SetLodObject(int nLod, IStatObj * pLod) final;
-	bool LoadLowLODS_Prep(bool bUseStreaming, unsigned long nLoadingFlags);
-	CStatObj* LoadLowLODS_Load(int nLodLevel, bool bUseStreaming, unsigned long nLoadingFlags, const void* pData, int nDataLen);
-	void LoadLowLODS_Finalize(int nLoadedLods, CStatObj * loadedLods[MAX_STATOBJ_LODS_NUM]);
-	void LoadLowLODs(bool bUseStreaming, unsigned long nLoadingFlags);
-	// Free render resources for unused upper LODs.
-	void CleanUnusedLods();
 
 	virtual void FreeIndexedMesh() final;
 	bool RenderDebugInfo(CRenderObject * pObj, const SRenderingPassInfo &passInfo);
@@ -554,7 +472,7 @@ public:
 	// -------------------------------------------------------------------------------
 
 	virtual void StartStreaming(bool bFinishNow, IReadStream_AutoPtr * ppStream) final;
-	void UpdateStreamingPrioriryInternal(const Matrix34A &objMatrix, float fDistance, bool bFullUpdate);
+	void UpdateStreamingPrioriryInternal(float fDistance, bool bFullUpdate);
 
 	void MakeCompiledFileName(char* szCompiledFileName, int nMaxLen);
 
@@ -592,7 +510,7 @@ public:
 	virtual bool RemoveSubObject(int nIndex) final;
 	virtual IStatObj* GetParentObject() const final      { return m_pParentObject; }
 	virtual IStatObj* GetCloneSourceObject() const final { return m_pClonedSourceObject; }
-	virtual bool      IsSubObject() const final          { return m_bSubObject; };
+	virtual bool      IsSubObject() const final          { return m_bSubObject; }
 	virtual bool CopySubObject(int nToIndex, IStatObj * pFromObj, int nFromIndex) final;
 	virtual int PhysicalizeSubobjects(IPhysicalEntity * pent, const Matrix34 * pMtx, float mass, float density = 0.0f, int id0 = 0,
 	                                  strided_pointer<int> pJointsIdMap = 0, const char* szPropsOverride = 0, int idbodyArtic = -1) final;
@@ -614,7 +532,7 @@ public:
 	virtual int Serialize(TSerialize ser) final;
 
 	// Get object properties as loaded from CGF.
-	virtual const char* GetProperties() final                  { return m_szProperties.c_str(); };
+	virtual const char* GetProperties() final                  { return m_szProperties.c_str(); }
 	virtual void        SetProperties(const char* props) final { m_szProperties = props; ParseProperties(); }
 
 	virtual bool GetPhysicalProperties(float& mass, float& density) final;
@@ -658,7 +576,7 @@ public:
 	virtual float GetLodDistance() const final     { return m_fLodDistance; }
 	virtual Vec3  GetDepthSortOffset() const final { return m_depthSortOffset; }
 	virtual int ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) final;
-	bool UpdateStreamableComponents(float fImportance, const Matrix34A &objMatrix, bool bFullUpdate, int nNewLod);
+	bool UpdateStreamableComponents(float fImportance, bool bFullUpdate, int nNewLod);
 	void GetStreamableName(string& sName) final
 	{
 		sName = m_szFileName;
@@ -667,7 +585,7 @@ public:
 			sName += " - ";
 			sName += m_szGeomName;
 		}
-	};
+	}
 	void GetStreamFilePath(stack_string & strOut);
 	void FillRenderObject(const SRendParams &rParams, IRenderNode * pRenderNode, IMaterial * pMaterial,
 	                      SInstancingInfo * pInstInfo, CRenderObject * &pObj, const SRenderingPassInfo &passInfo);
@@ -683,7 +601,7 @@ public:
 
 protected:
 	// Called by async stream callback.
-	bool LoadStreamRenderMeshes(const char* filename, const void* pData, const int nDataSize, bool bLod);
+	bool LoadStreamRenderMeshes(bool bLod, const void* pData = nullptr, const int nDataSize = 0);
 	// Called by sync stream complete callback.
 	void CommitStreamRenderMeshes();
 
@@ -692,7 +610,6 @@ protected:
 	bool CanMergeSubObjects();
 	bool IsMatIDReferencedByObj(uint16 matID);
 
-	//	bool LoadCGF_Info( const char *filename );
 	CStatObj* MakeStatObjFromCgfNode(CContentCGF* pCGF, CNodeCGF* pNode, bool bLod, int nLoadingFlags, AABB& commonBBox);
 	void ParseProperties();
 
@@ -726,23 +643,3 @@ protected:
 	void CheckCreateBillboardMaterial();
 	void CreateBillboardMesh(IMaterial* pMaterial);
 };
-
-//////////////////////////////////////////////////////////////////////////
-inline void InitializeSubObject(IStatObj::SSubObject& so)
-{
-	so.localTM.SetIdentity();
-	so.name = "";
-	so.properties = "";
-	so.nType = STATIC_SUB_OBJECT_MESH;
-	so.pWeights = 0;
-	so.pFoliage = 0;
-	so.nParent = -1;
-	so.tm.SetIdentity();
-	so.bIdentityMatrix = true;
-	so.bHidden = false;
-	so.helperSize = Vec3(0, 0, 0);
-	so.pStatObj = 0;
-	so.bShadowProxy = 0;
-}
-
-#endif // STAT_OBJ_H

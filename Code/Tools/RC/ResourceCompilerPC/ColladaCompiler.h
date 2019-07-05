@@ -18,7 +18,7 @@
 
 #include "SingleThreadedConverter.h"
 
-class ICryXML;
+struct ICryXML;
 class CContentCGF;
 class CPhysicsInterface;
 struct sMaterialLibrary;

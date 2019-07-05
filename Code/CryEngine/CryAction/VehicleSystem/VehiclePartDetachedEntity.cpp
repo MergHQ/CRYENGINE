@@ -20,7 +20,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <IActorSystem.h>
 #include <CryNetwork/ISerialize.h>
-#include <CryAISystem/IAgent.h>
 
 #include "CryAction.h"
 #include "Vehicle.h"
@@ -74,7 +73,7 @@ bool CVehiclePartDetachedEntity::ReloadExtension(IGameObject* pGameObject, const
 //------------------------------------------------------------------------
 void CVehiclePartDetachedEntity::InitVehiclePart(IGameObject* pGameObject)
 {
-	assert(pGameObject);
+	CRY_ASSERT(pGameObject);
 
 	// Set so we receive render events (when GO is set to update due to being visible), allowing last seen timer to reset
 	pGameObject->EnableUpdateSlot(this, 0);
@@ -121,9 +120,9 @@ void CVehiclePartDetachedEntity::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CVehiclePartDetachedEntity::GetEventMask() const 
+Cry::Entity::EventFlags CVehiclePartDetachedEntity::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_RESET;
 }
 
 //------------------------------------------------------------------------

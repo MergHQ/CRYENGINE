@@ -591,7 +591,6 @@ bool Polygon::IsOpen(
 {
 	for (int i = 0, iEdgeSize(edges.size()); i < iEdgeSize; ++i)
 	{
-		const IndexPair& edge(edges[i]);
 		int prevEdge = -1;
 		int nextEdge = -1;
 		GetAdjacentEdgeIndexWithEdgeIndex(i, prevEdge, nextEdge, vertices, edges);
@@ -4281,4 +4280,3 @@ bool Polygon::CheckPrivateFlags(int nFlags) const
 	return m_PrivateFlag & nFlags ? true : false;
 }
 }
-

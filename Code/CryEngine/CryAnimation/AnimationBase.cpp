@@ -45,6 +45,7 @@ public:
 				{
 					g_pCharacterManager = new CharacterManager;
 					gEnv->pCharacterManager = g_pCharacterManager;
+					gEnv->pCharacterManager->PostInit();
 				}
 				AnimEventLoader::SetPreLoadParticleEffects(false);
 				break;
@@ -162,7 +163,6 @@ ILINE void g_LogToFile(const char* szFormat, ...)
 }
 
 f32 g_fCurrTime = 0;
-bool g_bProfilerOn = false;
 
 AnimStatisticsInfo g_AnimStatisticsInfo;
 

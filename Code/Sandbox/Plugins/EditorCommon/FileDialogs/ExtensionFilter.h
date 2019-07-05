@@ -65,4 +65,3 @@ private:
 	QString     m_description;
 	QStringList m_extensions;
 };
-

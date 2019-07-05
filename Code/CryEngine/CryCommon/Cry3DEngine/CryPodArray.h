@@ -52,18 +52,18 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	PodArray() : m_nCount(0), m_pElements(0), m_nAllocatedCount(0)
+	PodArray() : m_pElements(0), m_nCount(0), m_nAllocatedCount(0)
 	{
-		MEMSTAT_REGISTER_CONTAINER(this, EMemStatContainerType::MSC_Vector, T);
+		MEMSTAT_REGISTER_CONTAINER(this, EMemStatContainerType::Vector, T);
 	}
-	PodArray(int elem_count, int nNewCount = 0) : m_nCount(0), m_pElements(0), m_nAllocatedCount(0)
+	PodArray(int elem_count, int nNewCount = 0) : m_pElements(0), m_nCount(0), m_nAllocatedCount(0)
 	{
-		MEMSTAT_REGISTER_CONTAINER(this, EMemStatContainerType::MSC_Vector, T);
+		MEMSTAT_REGISTER_CONTAINER(this, EMemStatContainerType::Vector, T);
 		PreAllocate(elem_count, nNewCount);
 	}
-	PodArray(const PodArray<T>& from) : m_nCount(0), m_pElements(0), m_nAllocatedCount(0)
+	PodArray(const PodArray<T>& from) :m_pElements(0), m_nCount(0), m_nAllocatedCount(0)
 	{
-		MEMSTAT_REGISTER_CONTAINER(this, EMemStatContainerType::MSC_Vector, T);
+		MEMSTAT_REGISTER_CONTAINER(this, EMemStatContainerType::Vector, T);
 		AddList(from);
 	}
 	~PodArray()
@@ -133,7 +133,7 @@ public:
 		MEMSTAT_USAGE(begin(), (sizeof(T) * size()) + overAllocBytes);
 	}
 
-	ILINE void Add(const T& p)
+	ILINE T& Add(const T& p)
 	{
 		if (m_nCount >= m_nAllocatedCount)
 		{
@@ -151,6 +151,7 @@ public:
 		memcpy(&m_pElements[m_nCount], &p, sizeof(m_pElements[m_nCount]));
 		m_nCount++;
 		MEMSTAT_USAGE(begin(), (sizeof(T) * size()) + overAllocBytes);
+		return Last();
 	}
 
 	ILINE T& AddNew()

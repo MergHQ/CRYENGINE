@@ -5,6 +5,9 @@
 
 #include "ViewManager.h"
 #include "GameEngine.h"
+#include "Commands/CommandManager.h"
+
+#include <RenderViewport.h>
 
 #include <QFormLayout>
 #include <QVBoxLayout>
@@ -36,7 +39,7 @@ public:
 		: QDoubleSpinBox(pParent)
 	{
 		setAlignment(Qt::AlignRight | Qt::AlignTrailing | Qt::AlignVCenter);
-		setRange(0.0, 360.0);
+		setRange(-360.0, 360.0);
 		setSingleStep(0.1);
 		setValue(0.0);
 	}
@@ -68,9 +71,22 @@ CGotoPositionDialog::CGotoPositionDialog()
 	QLabel* pDescLine = new QLabel(tr("Enter position here:"));
 	pFormLayout->addRow(pDescLine);
 
+	Vec3 position(0.0f);
+	Vec3 rotation(0.0f);
+	CViewport* pViewport = GetIEditorImpl()->GetViewManager()->GetSelectedViewport();
+	if (pViewport && pViewport->IsRenderViewport() && pViewport->GetType() == ET_ViewportCamera)
+	{
+		CRenderViewport* pRenderViewport = static_cast<CRenderViewport*>(pViewport);
+		Matrix34 transform = pRenderViewport->GetViewTM();
+		position = transform.GetTranslation();
+		rotation = Vec3(RAD2DEG(Ang3::GetAnglesXYZ(transform)));
+	}
+
 	m_pPositionString = new QLineEdit(this);
-	m_pPositionString->setPlaceholderText(tr("0.00, 0.00, 0.00, 0.00, 0, 0"));
+	m_pPositionString->setText(QString("%1, %2, %3, %4, %5, %6").arg(position.x).arg(position.y).arg(position.z).arg(rotation.x).arg(rotation.y).arg(rotation.z));
 	pFormLayout->addRow(m_pPositionString);
+	m_pPositionString->setFocus();
+	m_pPositionString->selectAll();
 
 	connect(m_pPositionString, &QLineEdit::editingFinished, this, &CGotoPositionDialog::OnPositionStringChanged);
 	QGridLayout* pGridLayout = new QGridLayout(this);
@@ -85,9 +101,18 @@ CGotoPositionDialog::CGotoPositionDialog()
 	m_pPositionBoxes[0] = new CPositionSpinBox(this);
 	m_pPositionBoxes[1] = new CPositionSpinBox(this);
 	m_pPositionBoxes[2] = new CPositionSpinBox(this);
+
+	m_pPositionBoxes[0]->setValue(position.x);
+	m_pPositionBoxes[1]->setValue(position.y);
+	m_pPositionBoxes[2]->setValue(position.z);
+
 	m_pRotationBoxes[0] = new CRotationSpinBox(this);
 	m_pRotationBoxes[1] = new CRotationSpinBox(this);
 	m_pRotationBoxes[2] = new CRotationSpinBox(this);
+
+	m_pRotationBoxes[0]->setValue(rotation.x);
+	m_pRotationBoxes[1]->setValue(rotation.y);
+	m_pRotationBoxes[2]->setValue(rotation.z);
 
 	pGridLayout->addWidget(m_pPositionBoxes[0], 1, 0);
 	pGridLayout->addWidget(m_pPositionBoxes[1], 2, 0);
@@ -135,7 +160,7 @@ void CGotoPositionDialog::OnPositionStringChanged()
 			//for(c = *pPosition; c != 0 && (c < '0' || c > '9'); ++pPosition);
 
 			// Search number begin ...
-			while (c = *pPosition, c != 0 && (c<'0' || c> '9'))
+			while (c = *pPosition, c != 0 && c != '-' && (c<'0' || c> '9'))
 			{
 				++pPosition;
 			}
@@ -143,7 +168,7 @@ void CGotoPositionDialog::OnPositionStringChanged()
 			sscanf(pPosition, "%f", &value[i]);
 
 			// ... and now for the number end.
-			while (c = *pPosition++, (c >= '0' && c <= '9') || c == '.');
+			while (c = *pPosition++, (c >= '0' && c <= '9') || c == '.' || c == '-');
 		}
 
 		m_pPositionBoxes[0]->setValue(value[0]);
@@ -194,3 +219,16 @@ void CGotoPositionDialog::GotoPosition()
 	QDialog::accept();
 }
 
+namespace Private_GoToPositionCommands
+{
+	void GoToPosition()
+	{
+		CGotoPositionDialog dlg;
+		dlg.exec();
+	}
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_GoToPositionCommands::GoToPosition, level, go_to_position,
+                                   CCommandDescription("Opens go to position dialog"))
+REGISTER_EDITOR_UI_COMMAND_DESC(level, go_to_position, "Go to Position...", "", "icons:Tools/Go_To_Position.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionGoto_Position, level, go_to_position)

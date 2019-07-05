@@ -21,7 +21,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <IActorSystem.h>
 #include <CryNetwork/ISerialize.h>
-#include <CryAISystem/IAgent.h>
 
 #include "CryAction.h"
 #include "Vehicle.h"
@@ -122,7 +121,7 @@ void CVehiclePartEntity::Reset()
 			{
 				entitySpawnParams.vPosition = Vec3(0.0f, 0.0f, 0.0f);
 				entitySpawnParams.sName = m_entityName.c_str();
-				entitySpawnParams.nFlags |= (m_pVehicle->GetEntity()->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) | ENTITY_FLAG_NEVER_NETWORK_STATIC;
+				entitySpawnParams.nFlags |= m_pVehicle->GetEntity()->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY);
 
 				//if the entity will be created by the server, don't create it on the clients
 				//we will receive an entity spawn from the server and join it on later

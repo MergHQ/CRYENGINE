@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_BREAKPOINTSCONTROL_H)
-#define AFX_BREAKPOINTSCONTROL_H
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
+#pragma once
 
 #include <CryFlowGraph/IFlowGraphDebugger.h>
 
@@ -25,6 +20,8 @@ struct SBreakpointItem
 	EItemType     type;
 };
 
+#pragma warning (push)
+#pragma warning (disable:4264) // 'BOOL CWnd::Create(LPCTSTR,LPCTSTR,DWORD,const RECT &,CWnd *,UINT,CCreateContext *)': no override available for virtual member function from base 'CWnd'; function is hidden
 class CBreakpointsTreeCtrl : public CTreeCtrl, IFlowGraphDebugListener
 {
 	DECLARE_DYNAMIC(CBreakpointsTreeCtrl)
@@ -73,8 +70,6 @@ private:
 	HTREEITEM GetPortItem(const SBreakPointBase& breakpoint);
 
 	IFlowGraphDebuggerPtr     m_pFlowGraphDebugger;
-	CFlowGraphDebuggerEditor* m_pFlowGraphDebuggerEditor;
+	CFlowGraphDebuggerEditor* m_pFlowGraphDebuggerEditor{ nullptr };
 };
-
-#endif // !defined(AFX_BREAKPOINTSCONTROL_H)
-
+#pragma warning (pop)

@@ -66,7 +66,7 @@ public:
 		const auto it = std::find_if(m_factories.begin(), end, [type](const Factories::value_type& lhs) { return lhs.first == type; });
 		if (it == end)
 		{
-			CRY_ASSERT_MESSAGE(m_factoryCount < m_factories.size(), "Too many factories registered. Increase MAX_FACTORIES to fix this.");
+			CRY_ASSERT(m_factoryCount < m_factories.size(), "Too many factories registered. Increase MAX_FACTORIES to fix this.");
 			if (m_factoryCount < m_factories.size())
 			{
 				m_factories[m_factoryCount] = std::make_pair(type, pFactory);
@@ -168,7 +168,7 @@ public:
 		Creator(const TypeDescription* description, ClassFactory* factory = 0){
 			this->description_ = description;
 #if YASLI_NO_RTTI
-			// TODO: remove unnecessary static initialisation
+			// TODO: remove unnecessary static initialization
 			Derived vptrProbe;
             CreatorBase::vptr_ = extractVPtr(&vptrProbe);
 #endif

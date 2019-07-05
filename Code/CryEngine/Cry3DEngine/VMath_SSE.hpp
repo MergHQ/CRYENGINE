@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Version:     v1.00
-//  Created:     Michael Kopietz
-//  Description: unified vector math lib
-// -------------------------------------------------------------------------
-//  History:		- created 1999  for Katmai and K3
-//							-	...
-//							-	integrated into cryengine
-//
-////////////////////////////////////////////////////////////////////////////
-
 #define _DO_NOT_DECLARE_INTERLOCKED_INTRINSICS_IN_MEMORY
 
 namespace NVMath
@@ -136,7 +125,7 @@ ILINE vec4 Vec4Epsilon()
 template<ECacheLvl L>
 ILINE void Prefetch(const void* pData)
 {
-#if (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !defined(__clang__)
+#if (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !CRY_COMPILER_CLANG
 	_mm_prefetch(reinterpret_cast<const char*>(pData), (_mm_hint)L);
 #else
 	_mm_prefetch(reinterpret_cast<const char*>(pData), (int)L);
@@ -264,7 +253,7 @@ ILINE vec4 ShiftAR(vec4 V, uint32 Count)
 template<int INDEX>
 ILINE vec4 Splat(vec4 V)
 {
-	CRY_ASSERT_MESSAGE(0, "Should not be reached!");
+	CRY_ASSERT(0, "Should not be reached!");
 	return Vec4FFFFFFFF();
 }
 template<>

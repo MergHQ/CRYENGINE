@@ -16,7 +16,7 @@ def module_extensions_mono(ctx, kw, entry_prefix, platform, configuration):
 	kw[entry_prefix + 'includes'] += [ ctx.CreateRootRelativePath('Code/SDKs/Mono/include/mono-2.0') ]
 
 	if platform == 'win_x86':
-		kw[entry_prefix + 'libpath'] += [ ctx.CreateRootRelativePath('Code/SDKs/Mono/lib/x86') ]
+		kw[entry_prefix + 'libpath'] += [ ctx.CreateRootRelativePath('Code/SDKs/Mono/lib') ]
 	elif platform == 'win_x64':
 		kw[entry_prefix + 'libpath'] += [ ctx.CreateRootRelativePath('Code/SDKs/Mono/lib/x64') ]
 		

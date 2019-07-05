@@ -1,7 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "Preferences.h"
 #include "QtUtil.h"
+#include <IEditor.h>
 
 #include <CryString/CryPath.h>
 #include <CrySystem/IProjectManager.h>
@@ -13,8 +14,11 @@
 #include <QJsonDocument>
 #include <QFile>
 
-static const char* s_defaultPath = "Editor/Preferences";
-static const char* s_fileSuffix = "pref";
+namespace Private_Preferences
+{
+const char* szDefaultPath = "Editor/Preferences";
+const char* szPreferencesPath = "Preferences.pref";
+}
 
 QString SPreferencePage::GetSerializedProperties()
 {
@@ -31,7 +35,8 @@ void SPreferencePage::FromSerializedProperties(const QByteArray& jsonBlob)
 }
 
 CPreferences::CPreferences()
-	: m_bIsLoading(false)
+	: CUserData({ Private_Preferences::szPreferencesPath })
+	, m_bIsLoading(false)
 {
 	signalSettingsChanged.Connect(this, &CPreferences::Save);
 }
@@ -55,38 +60,42 @@ void CPreferences::Init()
 
 void CPreferences::Load()
 {
-	m_bIsLoading = true;
-
-	QString path = QtUtil::GetAppDataFolder();
-	path += "/Preferences.pref";
-
-	QFile file(path);
-
-	if (file.exists())
-		return Load(path);
-
-	QString projectPreferences(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute());
-	projectPreferences = projectPreferences + "/Editor/Preferences.pref";
-	Load(projectPreferences);
-}
-
-void CPreferences::Load(const QString& path)
-{
-	QFile file(path);
-	if (!file.open(QIODevice::ReadOnly))
+	struct LoadingPreferences
 	{
-		QString msg = "Failed to open path: " + path;
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, msg.toLocal8Bit());
-		m_bIsLoading = false;
+		LoadingPreferences(bool& loading) : m_bIsLoading(loading) { m_bIsLoading = true; }
+		~LoadingPreferences() { m_bIsLoading = false; }
+		bool& m_bIsLoading;
+	};
+
+	LoadingPreferences isLoading(m_bIsLoading);
+	QVariant state = UserDataUtil::Load(Private_Preferences::szPreferencesPath);
+
+	if (state.isValid())
+	{
+		SetState(state);
 		return;
 	}
 
-	QJsonDocument doc(QJsonDocument::fromJson(file.readAll()));
-	QVariantMap preferenceMap = doc.toVariant().toMap();
+	// If the user doesn't have any set preferences, then load project preferences
+	QString projectPreferences(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute());
+	projectPreferences = projectPreferences + "/" + Private_Preferences::szDefaultPath;
 
-	for (auto variantIte = preferenceMap.constBegin(); variantIte != preferenceMap.constEnd(); ++variantIte)
+	QFile file(projectPreferences);
+
+	// If no project preferences exist either, then just use engine deafaults
+	if (!file.open(QIODevice::ReadOnly))
+		return;
+
+	SetState(QJsonDocument::fromJson(file.readAll()).toVariant());
+}
+
+void CPreferences::SetState(const QVariant& state)
+{
+	QVariantMap preferenceMap = state.toMap();
+	QList<QString> keys = preferenceMap.keys();
+
+	for (const auto& path : keys)
 	{
-		const QString& path = variantIte.key();
 		auto ite = m_preferences.find(QtUtil::ToString(path));
 
 		if (ite == m_preferences.end())
@@ -107,26 +116,12 @@ void CPreferences::Load(const QString& path)
 			}
 		}
 	}
-
-	m_bIsLoading = false;
 }
 
 void CPreferences::Save()
 {
 	if (m_bIsLoading)
 		return;
-
-	QString path = QtUtil::GetAppDataFolder();
-	QDir(path).mkpath(path);
-	path += "/Preferences.pref";
-
-	QFile file(path);
-	if (!file.open(QIODevice::WriteOnly))
-	{
-		QString msg = "Failed to open path: " + path;
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, msg.toLocal8Bit());
-		return;
-	}
 
 	QVariantMap preferencesVariant;
 	for (auto ite = m_preferences.begin(); ite != m_preferences.end(); ++ite)
@@ -144,8 +139,7 @@ void CPreferences::Save()
 		preferencesVariant[QtUtil::ToQString(ite->first)] = pagesVariant;
 	}
 
-	QJsonDocument doc(QJsonDocument::fromVariant(preferencesVariant));
-	file.write(doc.toJson());
+	UserDataUtil::Save(Private_Preferences::szPreferencesPath, QJsonDocument::fromVariant(preferencesVariant).toJson());
 }
 
 void CPreferences::Reset(const char* path)
@@ -202,4 +196,3 @@ bool CPreferences::Serialize(yasli::Archive& ar)
 	}
 	return true;
 }
-

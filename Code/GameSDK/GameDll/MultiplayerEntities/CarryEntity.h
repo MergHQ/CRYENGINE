@@ -15,6 +15,7 @@
 #ifndef __CARRYENTITY_H__
 #define __CARRYENTITY_H__
 
+#include <CryEntitySystem/IEntitySystem.h>
 #include "NetworkedPhysicsEntity.h"
 
 typedef CNetworkedPhysicsEntity TParent;
@@ -31,7 +32,7 @@ public:
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	virtual void PostInit(IGameObject *pGameObject);
-	virtual uint64 GetEventMask() const { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const { return Cry::Entity::EventFlags(); }
 	// ~IGameObjectExtension
 
 	void SetSpawnedWeaponId(EntityId weaponId);

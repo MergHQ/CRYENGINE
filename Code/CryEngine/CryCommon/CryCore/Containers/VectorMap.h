@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   VectorMap.h
-//  Version:     v1.00
-//  Created:     20/7/2006 by MichaelS.
-//  Compilers:   Visual Studio.NET 2005
 //  Description: std::map replacement implemented using sorted vector.
 // -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-#ifndef __SORTEDVECTOR_H__
-#define __SORTEDVECTOR_H__
 
 //! --------------------------------------------------------------------------
 //! VectorMap
@@ -60,12 +53,12 @@ public:
 	// For std::map the std::pair key value should be const however we are emulating a map in an std::vector
 	// as we need functions such as sort() on the internal vector it cannot be const.
 	// For complete safety one would need to add a iterator wrapper, wrapping the none-const type to a const type, preventing the use to get access to the non-const key.
-	typedef std::pair<key_type, mapped_type> none_const_value_type; 
-	typedef typename A::template rebind<none_const_value_type>::other none_const_allocator_type;
+	typedef std::pair<key_type, mapped_type> none_const_value_type;
+	typedef typename std::allocator_traits<A>::template rebind_alloc<none_const_value_type> none_const_allocator_type;
 
 	typedef T                                           key_compare;
 
-	class FirstLess : public std::binary_function<value_type, value_type, bool>
+	class FirstLess
 	{
 	public:
 		FirstLess(const key_compare& comp) : m_comp(comp) {}
@@ -79,7 +72,7 @@ public:
 		const key_compare& m_comp;
 	};
 
-	typedef std::vector<none_const_value_type, none_const_allocator_type>         container_type;
+	typedef std::vector<none_const_value_type, none_const_allocator_type> container_type;
 	typedef typename container_type::iterator               iterator;
 	typedef typename container_type::const_iterator         const_iterator;
 	typedef typename container_type::reverse_iterator       reverse_iterator;
@@ -88,7 +81,7 @@ public:
 	typedef const value_type&                               const_reference;
 	typedef value_type*                                     pointer;
 	typedef const value_type*                               const_pointer;
-	typedef typename allocator_type::size_type              size_type;
+	typedef typename std::allocator_traits<allocator_type>::size_type size_type;
 
 	VectorMap();
 	explicit VectorMap(const key_compare& comp);
@@ -368,7 +361,6 @@ typename VectorMap<K, V, T, A>::iterator VectorMap<K, V, T, A >::lower_bound(con
 	int count = 0;
 	count = m_entries.size();
 	iterator first = m_entries.begin();
-	iterator last = m_entries.end();
 	for (; 0 < count; )
 	{
 		// divide and conquer, find half that contains answer
@@ -389,7 +381,6 @@ typename VectorMap<K, V, T, A>::const_iterator VectorMap<K, V, T, A >::lower_bou
 	int count = 0;
 	count = m_entries.size();
 	const_iterator first = m_entries.begin();
-	const_iterator last = m_entries.end();
 	for (; 0 < count; )
 	{
 		// divide and conquer, find half that contains answer
@@ -479,5 +470,3 @@ typename VectorMap<K, V, T, A>::mapped_type& VectorMap<K, V, T, A >::operator[](
 		it = insert(value_type(key, mapped_type())).first;
 	return (*it).second;
 }
-
-#endif //__SORTEDVECTOR_H__

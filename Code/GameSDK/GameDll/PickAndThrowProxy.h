@@ -14,6 +14,7 @@ History:
 #define __PICK_AND_THROW_PROXY
 
 #include <SharedParams/ISharedParams.h>
+#include <CryPhysics/physinterface.h>
 
 class CPlayer;
 struct IItemParamsNode;

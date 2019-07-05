@@ -1,14 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TreeCtrlReport_h__
-#define __TreeCtrlReport_h__
 #pragma once
+
+#include "MFCToolsDefines.h"
+#include <CryCore/StlUtils.h>
+#include <map>
 
 enum { eTreeItemPathOptimalLen = 128 };
 typedef CryStackStringT<char, eTreeItemPathOptimalLen> TreeItemPathString;
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CTreeItemRecord : public CXTPReportRecord
+class MFC_TOOLS_PLUGIN_API CTreeItemRecord : public CXTPReportRecord
 {
 	DECLARE_DYNAMIC(CTreeItemRecord)
 public:
@@ -32,7 +34,7 @@ public:
 	void             SetRect(const CRect& rc)           { m_clientRect = rc; }
 	CRect            GetRect() const                    { return m_clientRect; }
 
-	void             SetItemHeight(int nHeight)         { m_nHeight = nHeight; };
+	void             SetItemHeight(int nHeight)         { m_nHeight = nHeight; }
 	int              GetItemHeight() const              { return m_nHeight; }
 
 	void             SetDropTarget(bool bDropTarget)    { m_bDropTarget = bDropTarget; }
@@ -41,8 +43,8 @@ public:
 	void             SetUserData(void* ptr)             { m_pUserData = ptr; }
 	void*            GetUserData() const                { return m_pUserData; }
 
-	void             SetUserString(const char* userStr) { m_userString = userStr; };
-	const char*      GetUserString()                    { return m_userString.c_str(); };
+	void             SetUserString(const char* userStr) { m_userString = userStr; }
+	const char*      GetUserString()                    { return m_userString.c_str(); }
 
 	int              GetChildCount()                    { return GetChilds()->GetCount(); }
 	CTreeItemRecord* GetChild(int nIndex)               { return (CTreeItemRecord*)GetChilds()->GetAt(nIndex); }
@@ -59,7 +61,7 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CTreeCtrlReport : public CXTPReportControl
+class MFC_TOOLS_PLUGIN_API CTreeCtrlReport : public CXTPReportControl
 {
 	DECLARE_MESSAGE_MAP()
 public:
@@ -116,11 +118,11 @@ protected:
 	// Can be overridden by derived classes.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void             OnFillItems();
-	virtual void             OnItemExpanded(CXTPReportRow* pRow, bool bExpanded) {};
+	virtual void             OnItemExpanded(CXTPReportRow* pRow, bool bExpanded) {}
 	virtual void             OnSelectionChanged();
 	virtual bool             OnBeginDragAndDrop(CXTPReportSelectedRows* pRows, CPoint point);
-	virtual void             OnDragAndDrop(CXTPReportSelectedRows* pRows, CPoint absoluteCursorPos) {};
-	virtual void             OnVerticalScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)      {};
+	virtual void             OnDragAndDrop(CXTPReportSelectedRows* pRows, CPoint absoluteCursorPos) {}
+	virtual void             OnVerticalScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)      {}
 	virtual void             OnItemDblClick(CXTPReportRow* pRow);
 	virtual CTreeItemRecord* CreateGroupRecord(const char* name, int nGroupIcon);
 
@@ -181,6 +183,3 @@ protected:
 
 	Callback             m_callbacks[eCB_LAST];
 };
-
-#endif //__TreeCtrlReport_h__
-

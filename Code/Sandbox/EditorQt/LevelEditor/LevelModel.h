@@ -5,22 +5,24 @@
 #include <QAbstractItemModel>
 
 #include "ProxyModels/ItemModelAttribute.h"
+#include <IEditor.h>
 
 class CObjectLayer;
 struct CLayerChangeEvent;
 
 enum ELayerColumns
 {
-	eLayerColumns_Color, //Must be kept index 0 to match eObjectColumns_LayerColor
-	eLayerColumns_Visible,    //Must be kept index 1 to match eObjectColumns_Visible
-	eLayerColumns_Frozen,     //Must be kept index 2 to match eObjectColumns_Frozen
-	eLayerColumns_Name,       //Must be kept index 3 to match eObjectColumns_Name
+	eLayerColumns_Color,   //Must be kept index 0 to match eObjectColumns_LayerColor
+	eLayerColumns_Visible, //Must be kept index 1 to match eObjectColumns_Visible
+	eLayerColumns_Frozen,  //Must be kept index 2 to match eObjectColumns_Frozen
+	eLayerColumns_VCS,     //Must be kept index 3 to match eObjectColumns_VCS
+	eLayerColumns_Name,    //Must be kept index 4 to match eObjectColumns_Name
 	eLayerColumns_Exportable,
 	eLayerColumns_ExportablePak,
 	eLayerColumns_LoadedByDefault,
 	eLayerColumns_HasPhysics,
 	eLayerColumns_Platform,
-	eLayerColumns_Size	
+	eLayerColumns_Size
 };
 
 enum ELevelElementType
@@ -40,7 +42,14 @@ extern CItemModelAttribute s_PlatformAttribute;
 
 namespace LevelModelsUtil
 {
-void            ProcessIndexList(const QModelIndexList& list, std::vector<CBaseObject*>& outObjects, std::vector<CObjectLayer*>& outLayers, std::vector<CObjectLayer*>& outLayerFolders);
+CObjectLayer*   LayerFromIndexData(const QModelIndex& index);
+CBaseObject*    ObjectFromIndexData(const QModelIndex& index);
+void            GetAllLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers);
+void            GetFolderLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers);
+void            GetObjectLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers);
+void            GetObjectsForIndexList(const QModelIndexList& list, std::vector<CBaseObject*>& outObjects);
+void            GetObjectsAndLayersForIndexList(const QModelIndexList& list, std::vector<CBaseObject*>& outObjects, std::vector<CObjectLayer*>& outLayers, std::vector<CObjectLayer*>& outLayerFolders);
+
 QModelIndexList FilterByColumn(const QModelIndexList& list, int column = 0);
 
 QMimeData*      GetDragDropData(const QModelIndexList& list);
@@ -99,11 +108,10 @@ private:
 	// was this because we want the level models manager to be notified after the event change? in this case let's just call the right method on the level models manager directly...
 	CCrySignal<void(const CLayerChangeEvent&)> signalBeforeLayerUpdateEvent;
 
-	static const char* s_columnNames[eLayerColumns_Size];
+	static const char*                         s_columnNames[eLayerColumns_Size];
 
 	bool IsNameValid(const char* szName);
 	void OnLayerUpdate(const CLayerChangeEvent& event);
 
 	bool m_ignoreLayerUpdates;
 };
-

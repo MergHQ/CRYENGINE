@@ -4,6 +4,7 @@
 
 #include <CryParticleSystem/ParticleParams.h> // just for ETrinary
 #include <CryCore/Containers/CryPtrArray.h>
+#include <CryPhysics/physinterface.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Physical environment management.
@@ -11,15 +12,15 @@
 
 enum EEnvironFlags
 {
-	EFF_LOADED = BIT(0),
+	EFF_LOADED          = BIT(0),
 
 	// Environmental requirements.
-	ENV_GRAVITY   = BIT(1),
-	ENV_WIND      = BIT(2),
-	ENV_WATER     = BIT(3),
+	ENV_GRAVITY         = BIT(1),
+	ENV_WIND            = BIT(2),
+	ENV_WATER           = BIT(3),
 
-	ENV_FORCES    = ENV_GRAVITY | ENV_WIND,
-	ENV_PHYS_AREA = ENV_GRAVITY | ENV_WIND | ENV_WATER,
+	ENV_FORCES          = ENV_GRAVITY | ENV_WIND,
+	ENV_PHYS_AREA       = ENV_GRAVITY | ENV_WIND | ENV_WATER,
 
 	// Collision targets.
 	ENV_TERRAIN         = BIT(4),
@@ -30,6 +31,12 @@ enum EEnvironFlags
 	ENV_COLLIDE_ANY     = ENV_TERRAIN | ENV_STATIC_ENT | ENV_DYNAMIC_ENT,
 	ENV_COLLIDE_PHYSICS = ENV_STATIC_ENT | ENV_DYNAMIC_ENT,
 	ENV_COLLIDE_CACHE   = ENV_TERRAIN | ENV_STATIC_ENT,
+
+	// Visual behavior.
+	ENV_CAST_SHADOWS    = BIT(8),
+
+	// Entity connections
+	ENV_TARGET          = BIT(9)
 };
 
 struct SPhysForces
@@ -197,7 +204,7 @@ struct SPhysEnviron : Cry3DEngineBase
 	}
 
 	// Phys collision
-	static bool PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const& vEnd, float fRadius, uint32 nEnvFlags, IPhysicalEntity* pThisEntity = 0);
+	static bool PhysicsCollision(struct ray_hit& hit, Vec3 const& vStart, Vec3 const& vEnd, float fRadius, uint32 nEnvFlags, IPhysicalEntity* pThisEntity = 0);
 
 	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -255,7 +262,7 @@ struct SWorldPhysEnviron: SPhysEnviron
 		m_AreasChanged.resize(0);
 	}
 
-	bool OnAreaChange(const EventPhysAreaChange& event);
+	bool OnAreaChange(const struct EventPhysAreaChange& event);
 
 private:
 	SAreaSpec               m_SumAreaChanged;
@@ -310,3 +317,14 @@ protected:
 	IVisArea* m_pVisArea;                   // VisArea emitter is in, if needed and if any.
 	void*     m_pVisNodeCache;
 };
+
+
+//////////////////////////////////////////////////////////////////////////
+// Entity functions
+//
+
+struct IEntity;
+struct ParticleTarget;
+
+bool GetPhysicalVelocity(Velocity3& Vel, IEntity* pEnt, const Vec3& vPos);
+bool UpdateTarget(ParticleTarget& target, IEntity* pEntity, const Vec3& vPos);

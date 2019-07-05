@@ -13,6 +13,5 @@ public:
 	virtual void startDrag(Qt::DropActions supportedActions) override;
 
 signals:
-	void dragStarted(const QModelIndexList& dragRows);
+	void dragStarted();
 };
-

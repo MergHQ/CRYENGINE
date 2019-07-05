@@ -12,7 +12,7 @@
 #include <StdAfx.h>
 
 #ifdef USE_PERFHUD
-
+	#include <CryMath/Cry_Math.h>
 	#include "PerfHUD.h"
 	#include "MiniGUI/MiniInfoBox.h"
 	#include "MiniGUI/MiniMenu.h"
@@ -666,14 +666,15 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 		case eKI_ScrollLock:
 			m_sys_perfhud_pause ^= 1;
 			break;
+
+		default:
+			break;
 		}
 	}
 
 	if (rInputEvent.deviceType == eIDT_Gamepad &&
 	    rInputEvent.deviceIndex == 0)
 	{
-		int frameNum = gEnv->pRenderer->GetFrameID(false);
-
 		if (rInputEvent.state == eIS_Pressed)
 		{
 			bool checkState = false;
@@ -705,6 +706,9 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 				{
 					SetNextState();
 				}
+				break;
+
+			default:
 				break;
 			}
 
@@ -769,10 +773,13 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 				triggerReleased = true;
 				break;
 
-				/*case R2:
-				   m_R2Pressed = false;
-				   triggerReleased=true;
-				   break;*/
+			/*case R2:
+				m_R2Pressed = false;
+				triggerReleased=true;
+				break;*/
+
+			default:
+				break;
 			}
 
 			if (triggerReleased)
@@ -1427,16 +1434,10 @@ void CRenderStatsWidget::Update()
 		break;
 #endif
 #if CRY_PLATFORM_MOBILE
-	case ERenderType::OpenGL:
-		pRenderType = "Mobile - OpenGL";
-		break;
 	case ERenderType::Vulkan:
 		pRenderType = "Mobile - Vulkan";
 		break;
 #else
-	case ERenderType::OpenGL:
-		pRenderType = "PC - OpenGL";
-		break;
 	case ERenderType::Vulkan:
 		pRenderType = "PC - Vulkan";
 		break;
@@ -1884,8 +1885,6 @@ CStreamingStatsWidget::CStreamingStatsWidget(IMiniCtrl* pParentMenu, ICryPerfHUD
 //////////////////////////////////////////////////////////////////////////
 void CStreamingStatsWidget::Update()
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-
 	char entryBuffer[CMiniInfoBox::MAX_TEXT_LENGTH] = { 0 };
 
 	//Clear old entries
@@ -2116,8 +2115,6 @@ void CRenderBatchWidget::Enable(int mode)
 	mode = min(mode, DISPLAY_MODE_NUM - 1);
 	EDisplayMode newMode = (EDisplayMode)mode;
 
-	bool bValidMode = false;
-
 	if (m_displayMode != newMode)
 	{
 		//workaround for now,
@@ -2130,6 +2127,9 @@ void CRenderBatchWidget::Enable(int mode)
 
 		case DISPLAY_MODE_GPU_TIMES:
 			m_pRStatsCVar->Set(0);
+			break;
+
+		default:
 			break;
 		}
 

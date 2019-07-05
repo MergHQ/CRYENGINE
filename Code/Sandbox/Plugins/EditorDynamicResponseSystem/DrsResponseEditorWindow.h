@@ -149,7 +149,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// CDockableWindow implementation
-	virtual const char*                       GetPaneTitle() const override        { return "Dynamic Response System"; };
+	virtual const char*                       GetPaneTitle() const override        { return "Dynamic Response System"; }
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	//////////////////////////////////////////////////////////
 
@@ -163,14 +163,14 @@ public slots:
 	Explorer::ExplorerData*   GetExplorerData()         { return m_pExplorerData; }
 	CPropertyTreeWithOptions* GetResponsePropertyTree() { return m_pResponseDockWidget->widget(); }
 private:
-	Explorer::ExplorerData*                 m_pExplorerData;
-	Explorer::ExplorerFileList*             m_pExplorerFiles;
+	Explorer::ExplorerData*                          m_pExplorerData;
+	Explorer::ExplorerFileList*                      m_pExplorerFiles;
 
-	DockedWidget<QTabWidget>*               m_pSignalViews;
-	DockedWidget<CPropertyTreeWithOptions>* m_pResponseDockWidget;
-	CPropertyTreeWithAutoupdateOption*      m_pPropertyTree;
+	DockedWidget<QTabWidget>*                        m_pSignalViews;
+	DockedWidget<CPropertyTreeWithOptions>*          m_pResponseDockWidget;
+	DockedWidget<CPropertyTreeWithAutoupdateOption>* m_pExecutionInfoDockWidget;
+	CPropertyTreeWithAutoupdateOption*               m_pPropertyTree;
 
-	FileExplorerWithButtons*                m_pFileExplorerWidget;
-	RecentResponsesWidget*                  m_pRecentSignalsWidget;
+	FileExplorerWithButtons*                         m_pFileExplorerWidget;
+	RecentResponsesWidget*                           m_pRecentSignalsWidget;
 };
-

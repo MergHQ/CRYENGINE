@@ -21,12 +21,11 @@ MainContext GetContext()
 	if (!pObject->IsKindOf(RUNTIME_CLASS(DesignerObject)))
 		throw std::logic_error("The selected object isn't a designer object type");
 
-	CEditTool* pEditor = GetIEditor()->GetEditTool();
+	CEditTool* pEditor = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (pEditor == NULL || !pEditor->IsKindOf(RUNTIME_CLASS(DesignerEditor)))
 		throw std::logic_error("The selected object isn't a designer object type");
 
 	DesignerObject* pDesignerObject = (DesignerObject*)pObject;
-	DesignerEditor* pDesignerTool = (DesignerEditor*)pEditor;
 	DesignerSession* pSession = DesignerSession::GetInstance();
 
 	MainContext mc;
@@ -192,4 +191,3 @@ void PyDesignerUpdateMesh()
                        "Updates mesh.",
                        "designer.update_mesh()" );
  */
-

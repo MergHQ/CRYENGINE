@@ -1,10 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _H_ILIVECREATEHOST_H_
-#define _H_ILIVECREATEHOST_H_
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
+#pragma	once
 
 #include "ILiveCreateCommon.h"
 
@@ -55,10 +51,8 @@ struct CHostInfoPacket
 //! Host-side (console) LiveCreate interface.
 struct IHost
 {
-public:
-	virtual ~IHost() {};
+	virtual ~IHost() {}
 
-public:
 	//! Initialize host at given listening port.
 	virtual bool Initialize(const uint16 listeningPort = kDefaultHostListenPort,
 	                        const uint16 discoveryServiceListeningPort = kDefaultDiscoverySerivceListenPost,
@@ -81,5 +75,3 @@ public:
 };
 
 }
-
-#endif

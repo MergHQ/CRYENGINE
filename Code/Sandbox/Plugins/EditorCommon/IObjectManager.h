@@ -1,34 +1,36 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __IObjectManager_h__
-#define __IObjectManager_h__
 #pragma once
 
-// forward declarations.
-class CEntityObject;
-struct DisplayContext;
-struct IGizmoManager;
+class CBaseObject;
+class CObjectArchive;
+class CObjectClassDesc;
 class CObjectLayer;
+class CObjectLayerManager;
+class CObjectPhysicsManager;
+class CObjectRenderHelper;
+class CRect;
+class CSelectionGroup;
 class CTrackViewAnimNode;
 class CUsedResources;
-class CSelectionGroup;
-class CObjectLayerManager;
-class CObjectClassDesc;
-class CObjectArchive;
-class CObjectPhysicsManager;
-class CRect;
 class CViewport;
-class CBaseObject;
+class XmlNodeRef;
+
+struct AABB;
 struct CObjectEvent;
 struct HitContext;
+struct IGizmoManager;
 struct IObjectLayerManager;
-class CSelectionGroup;
-class CObjectRenderHelper;
+struct SDisplayContext;
 
 enum EObjectListenerEvent;
 
 #include "ObjectEvent.h"
+#include <CryMath/Cry_Math.h>
 #include <CryExtension/CryGUID.h>
+#include <CryCore/smartptr.h>
+#include <CryCore/functor.h>
+#include <CrySandbox/CrySignal.h>
 
 enum SerializeFlags
 {
@@ -38,8 +40,8 @@ enum SerializeFlags
 };
 
 //////////////////////////////////////////////////////////////////////////
-typedef std::vector<CBaseObject*>                                    CBaseObjectsArray;
-typedef std::pair<bool(CALLBACK*)(CBaseObject const&, void*), void*> BaseObjectFilterFunctor;
+typedef std::vector<CBaseObject*>                                     CBaseObjectsArray;
+typedef std::pair<bool (CALLBACK*)(CBaseObject const&, void*), void*> BaseObjectFilterFunctor;
 
 class CBatchProcessDispatcher
 {
@@ -52,10 +54,9 @@ private:
 	bool m_shouldDispatch { false };
 };
 
-class IGuidProvider
+struct IGuidProvider
 {
-public:
-	virtual ~IGuidProvider() {};
+	virtual ~IGuidProvider() {}
 	virtual CryGUID GetFrom(const CryGUID& loadedGuid) const = 0;
 	CryGUID         GetFor(CBaseObject*) const;
 };
@@ -73,7 +74,6 @@ public:
 //////////////////////////////////////////////////////////////////////////
 struct IObjectManager
 {
-public:
 	enum class ESelectOp
 	{
 		eSelect,
@@ -85,6 +85,8 @@ public:
 	//! This callback will be called on response to object event.
 	typedef Functor2<CBaseObject*, int> EventCallback;
 
+	virtual ~IObjectManager() {}
+
 	virtual bool         CanCreateObject() const = 0;
 
 	virtual CBaseObject* NewObject(CObjectClassDesc*, CBaseObject* prev = nullptr, const string& file = "") = 0;
@@ -94,6 +96,8 @@ public:
 	virtual void         DeleteObject(CBaseObject* obj) = 0;
 	virtual void         DeleteObjects(std::vector<CBaseObject*>& objects) = 0;
 	virtual void         DeleteAllObjects() = 0;
+
+	virtual void         CloneObjects(std::vector<CBaseObject*>& objects, std::vector<CBaseObject*>& outClonedObjects) = 0;
 	virtual CBaseObject* CloneObject(CBaseObject* obj) = 0;
 
 	//! Get number of objects manager by ObjectManager (not contain sub objects of groups).
@@ -126,18 +130,14 @@ public:
 	//! Link single object to target
 	virtual void Link(CBaseObject* pObject, CBaseObject* pLinkTo, const char* szTargetName = "") = 0;
 	//! Link multiple objects to target
-	virtual void Link(const std::vector<CBaseObject*> objects, CBaseObject* pLinkTo, const char* szTargetName = "") = 0;
+	virtual void Link(const std::vector<CBaseObject*>& objects, CBaseObject* pLinkTo, const char* szTargetName = "") = 0;
 
 	//! Display objects on specified display context.
 	virtual void Display(CObjectRenderHelper& objRenderHelper) = 0;
 
-	//! Called when selecting without selection helpers - this is needed since
-	//! the visible object cache is normally not updated when not displaying helpers.
-	virtual void ForceUpdateVisibleObjectCache(DisplayContext& dc) = 0;
-
 	//! Check intersection with objects.
 	//! Find intersection with nearest to ray origin object hit by ray.
-	//! If distance tollerance is specified certain relaxation applied on collision test.
+	//! If distance tolerance is specified certain relaxation applied on collision test.
 	//! @return true if hit any object, and fills hitInfo structure.
 	virtual bool HitTest(HitContext& hitInfo) = 0;
 
@@ -169,20 +169,20 @@ public:
 	virtual void FindObjectsInAABB(const AABB& aabb, std::vector<CBaseObject*>& result) const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	// Find object from in game physical entity.
-	CBaseObject* FindPhysicalObjectOwner(struct IPhysicalEntity* pPhysicalEntity);
-
-	//////////////////////////////////////////////////////////////////////////
 	// Operations on objects.
 	//////////////////////////////////////////////////////////////////////////
 	//! Makes object visible or invisible.
 	virtual void HideObject(CBaseObject* obj, bool hide) = 0;
+	//! Returns if the item can be isolated or if it's already isolated
+	virtual bool ShouldToggleHideAllBut(CBaseObject* pObject) const = 0;
 	//! Isolates the current object's visibility
 	virtual void ToggleHideAllBut(CBaseObject* obj) = 0;
 	//! Unhide all hidden objects.
 	virtual void UnhideAll() = 0;
 	//! Freeze object, making it unselectable.
 	virtual void FreezeObject(CBaseObject* obj, bool freeze) = 0;
+	//! Returns if the item can be isolated or if it's already isolated
+	virtual bool ShouldToggleFreezeAllBut(CBaseObject* pObject) const = 0;
 	//! Isolates the current object's frozen state
 	virtual void ToggleFreezeAllBut(CBaseObject* pObject) = 0;
 	//! Unfreeze all frozen objects.
@@ -191,12 +191,21 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Object Selection.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void SelectObject(CBaseObject* obj) = 0;
-	virtual void UnselectObject(CBaseObject* obj) = 0;
-
+	//! Clear selection and select
+	virtual void SelectObject(CBaseObject* pObject) = 0;
 	virtual void SelectObjects(const std::vector<CBaseObject*>& objects) = 0;
+
+	//! Add objects to current selection
+	virtual void AddObjectToSelection(CBaseObject* pObject) = 0;
+	virtual void AddObjectsToSelection(const std::vector<CBaseObject*>& objects) = 0;
+
+	//! Remove objects from current selection
+	virtual void UnselectObject(CBaseObject* pObject) = 0;
 	virtual void UnselectObjects(const std::vector<CBaseObject*>& objects) = 0;
+
+	//! Toggle selected state
 	virtual void ToggleSelectObjects(const std::vector<CBaseObject*>& objects) = 0;
+	//! Add and remove objects from selection
 	virtual void SelectAndUnselectObjects(const std::vector<CBaseObject*>& selectObjects, const std::vector<CBaseObject*>& unselectObjects) = 0;
 	virtual void SelectAll() = 0;
 
@@ -218,9 +227,9 @@ public:
 	//! Delete all objects in current selection group.
 	virtual void DeleteSelection() = 0;
 
-	//! Generates uniq name base on type name of object.
+	//! Generates unique name base on type name of object.
 	virtual string GenUniqObjectName(const string& typeName) = 0;
-	//! Register object name in object manager, needed for generating uniq names.
+	//! Register object name in object manager, needed for generating unique names.
 	virtual void   RegisterObjectName(const string& name) = 0;
 
 	//! Find object class by name.
@@ -231,16 +240,15 @@ public:
 	virtual std::vector<string> GetAllClasses() const = 0;
 
 	//! Export objects to xml.
-	//! When onlyShared is true ony objects with shared flags exported, overwise only not shared object exported.
+	//! When onlyShared is true only objects with shared flags exported, otherwise only not shared object exported.
 	virtual void Export(const string& levelPath, XmlNodeRef& rootNode, bool isOnlyShared) = 0;
 
 	//! Serialize Objects in manager to specified XML Node.
 	//! @param flags Can be one of SerializeFlags.
 	virtual void Serialize(XmlNodeRef& rootNode, bool isLoading, int flags = SERIALIZE_ALL) = 0;
 
-	//! Load objects from object archive.
-	//! @param bSelect if set newly loaded object will be selected.
-	virtual void LoadObjects(CObjectArchive& ar, bool select) = 0;
+	//! Handles loading of objects from archive, guaranteeing unique names and selecting them
+	virtual void CreateAndSelectObjects(CObjectArchive& ar) = 0;
 
 	virtual void ChangeObjectId(const CryGUID& oldId, const CryGUID& newId) = 0;
 	virtual void NotifyPrefabObjectChanged(CBaseObject* pObject) = 0;
@@ -271,26 +279,20 @@ public:
 	virtual bool IsCreateGameObjects() const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Get acess to object layers manager.
+	//! Get access to object layers manager.
 	virtual CObjectLayerManager* GetLayersManager() const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Get acess to object layers manager.
+	//! Get access to object layers manager.
 	virtual IObjectLayerManager* GetIObjectLayerManager() const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Get acess to object physics manager
+	//! Get access to object physics manager
 	virtual CObjectPhysicsManager* GetPhysicsManager() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Invalidate visibily settings of objects.
+	//! Invalidate visibility settings of objects.
 	virtual void InvalidateVisibleList() = 0;
-
-	//////////////////////////////////////////////////////////////////////////
-	// ObjectManager notification Callbacks.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void AddObjectEventListener(const EventCallback& cb) = 0;
-	virtual void RemoveObjectEventListener(const EventCallback& cb) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Used to indicate starting and ending of objects loading.
@@ -329,8 +331,8 @@ public:
 
 	virtual void EmitPopulateInspectorEvent() const = 0;
 
-	// Legacy object notification, use signalObjectChanged(event, data); instead
-	virtual void NotifyObjectListeners(CBaseObject* pObject, enum EObjectListenerEvent event) = 0;
+	virtual void NotifyObjectListeners(CBaseObject* pObject, const CObjectEvent& event) const = 0;
+	virtual void NotifyObjectListeners(const std::vector<CBaseObject*>& objects, const CObjectEvent& event) const = 0;
 
 	// Called when object gets modified.
 	virtual void            OnObjectModified(CBaseObject* pObject, bool shouldDelete, bool isModifiedTransformOnly) = 0;
@@ -346,22 +348,12 @@ private:
 
 public:
 	//! Substitute old interface-based observer
-	CCrySignal<void(CObjectEvent&)> signalObjectChanged;
+	CCrySignal<void(const std::vector<CBaseObject*>&, const CObjectEvent&)> signalObjectsChanged;
 
 	//! New method of determining when selection is changed
 	//! Query IObjectManager::GetSelection to see what selection currently is
-	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CBaseObject*>&)>                 signalSelectionChanged;
+	CCrySignal<void(const std::vector<CBaseObject*>&, const std::vector<CBaseObject*>&)> signalSelectionChanged;
 
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)>                     signalObjectsDetached;
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)> signalBeforeObjectsDetached;
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)>                     signalObjectsAttached;
-	CCrySignal<void(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)> signalBeforeObjectsAttached;
-	CCrySignal<void(const CObjectLayer&, const std::vector<CBaseObject*>& objects)>                      signalBeforeObjectsDeleted;
-	CCrySignal<void(const CObjectLayer&, const std::vector<CBaseObject*>& objects)>                      signalObjectsDeleted;
-
-	CCrySignal<void(const std::vector<CBaseObject*>& objects)> signalBatchProcessStarted;
+	CCrySignal<void(const std::vector<CBaseObject*>& objects)>                           signalBatchProcessStarted;
 	CCrySignal<void()> signalBatchProcessFinished;
 };
-
-#endif // __IObjectManager_h__
-

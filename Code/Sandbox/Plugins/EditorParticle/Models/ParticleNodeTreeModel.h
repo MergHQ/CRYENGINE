@@ -85,6 +85,7 @@ public:
 	virtual ~CNodesDictionary();
 
 	// CryGraphEditor::CAbstractDictionary
+	virtual void                            ResetEntries() override;
 	virtual int32                           GetNumEntries() const override { return m_root.GetNumChildEntries(); }
 	virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override;
 
@@ -100,4 +101,3 @@ private:
 };
 
 }
-

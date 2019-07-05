@@ -113,6 +113,7 @@ namespace Schematyc2
 		virtual const char* GetName() const = 0;
 		//virtual void SetAccessor(EAccessor accessor) = 0;
 		virtual EAccessor GetAccessor() const = 0;
+		virtual EGraphExecutionFilter GetExecutionFilter() const = 0;
 		virtual void SetElementFlags(EScriptElementFlags flags) = 0;
 		virtual EScriptElementFlags GetElementFlags() const = 0;
 		virtual void SetNewFile(INewScriptFile* pNewFile) = 0;

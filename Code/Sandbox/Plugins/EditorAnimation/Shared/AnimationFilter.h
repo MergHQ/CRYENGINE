@@ -10,7 +10,6 @@ struct SAnimationFilterItem
 {
 	string              path;
 	std::vector<string> tags;
-	string              skeletonAlias;
 	int                 selectedRule;
 
 	SAnimationFilterItem()
@@ -35,11 +34,11 @@ typedef std::vector<SAnimationFilterItem> SAnimationFilterItems;
 
 struct IAnimationFilterCondition : public _reference_target_t
 {
-	bool not;
+	bool invert;
 	virtual bool Check(const SAnimationFilterItem& item) const = 0;
 	virtual void FindTags(std::vector<string>* tags) const {}
 	virtual void Serialize(Serialization::IArchive& ar);
-	IAnimationFilterCondition() : not (false) {}
+	IAnimationFilterCondition() : invert(false) {}
 };
 
 struct SAnimationFilter
@@ -53,4 +52,3 @@ struct SAnimationFilter
 	void FindTags(std::vector<string>* tags) const;
 	void SetInFolderCondition(const char* folder);
 };
-

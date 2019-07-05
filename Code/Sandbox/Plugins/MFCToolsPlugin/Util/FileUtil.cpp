@@ -28,7 +28,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
 #include <CryCore/Platform/CryLibrary.h>
 #include <Preferences/GeneralPreferences.h>
@@ -146,8 +146,8 @@ void OnFilePopupMenuPopulation(CFilePopupMenu* pMenu)
 		typedef CFilePopupMenu::SFilePopupMenuAction SFilePopupMenuAction;
 		if (bIsScEnabled)
 		{
-			pMenu->addAction(new SFilePopupMenuAction(QObject::tr("Copy Source Control Path To Clipboard"), pMenu, [&] { CopySourceControlPathToClipboard(filePath);
-			                                          }));
+			pMenu->addAction(new SFilePopupMenuAction(QObject::tr("Copy Source Control Path To Clipboard"), 
+				pMenu, [&] { CopySourceControlPathToClipboard(filePath); }));
 
 			const auto bIsScEnabledAndNotInPak = bIsScEnabled && !bIsInPak;
 			if (bIsScEnabledAndNotInPak)
@@ -378,7 +378,7 @@ static std::unique_ptr<CDynamicPopupMenu> CreateDynamicPopupMenu(const char* pFi
 	if (pIsSelected)
 	{
 		root.Add<bool*>(QObject::tr("Select").toStdString().c_str(), functor(&SelectFromPopup), pIsSelected);
-		pIsSelected = false;
+		*pIsSelected = false;
 	}
 
 	bool bHasExtraItems = pItems && (!pItems->names.empty());
@@ -453,8 +453,8 @@ void PyShowInExplorer(const char* path)
 }
 
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyShowInExplorer, general, show_in_explorer,
-                                     "Shows a specified file in an OS browser and selects it.",
-                                     "general.show_in_explorer('C:/Sandbox/example.txt')");
+									 "Shows a specified file in an OS browser and selects it.",
+									 "general.show_in_explorer('C:/Sandbox/example.txt')");
 
 }
 
@@ -506,7 +506,7 @@ bool CFileUtil::CompileLuaFile(const char* luaFilename)
 
 		// Show output from Lua compiler
 		if (CryMessageBox((CString("Error output from Lua compiler:\r\n") + CompilerOutput.GetString() +
-		                      CString("\r\nDo you want to edit the file ?")), "Lua Compiler", eMB_YesCancel) == eQR_Yes)
+							  CString("\r\nDo you want to edit the file ?")), "Lua Compiler", eMB_YesCancel) == eQR_Yes)
 		{
 			int line = 0;
 			string cmdLine = luaFile;
@@ -1001,49 +1001,6 @@ inline bool ScanDirectoryFiles(const CString& root, const CString& path, const C
 		pIPak->FindClose(fhandle);
 	}
 
-	/*
-	   CFileFind finder;
-	   BOOL bWorking = finder.FindFile( Path::Make(dir,fileSpec) );
-	   while (bWorking)
-	   {
-	   bWorking = finder.FindNextFile();
-
-	   if (finder.IsDots())
-	    continue;
-
-	   if (!finder.IsDirectory())
-	   {
-	    anyFound = true;
-
-	    CFileUtil::FileDesc fd;
-	    fd.filename = dir + finder.GetFileName();
-	    fd.nFileSize = finder.GetLength();
-
-	    finder.GetCreationTime( &fd.ftCreationTime );
-	    finder.GetLastAccessTime( &fd.ftLastAccessTime );
-	    finder.GetLastWriteTime( &fd.ftLastWriteTime );
-
-	    fd.dwFileAttributes = 0;
-	    if (finder.IsArchived())
-	      fd.dwFileAttributes |= FILE_ATTRIBUTE_ARCHIVE;
-	    if (finder.IsCompressed())
-	      fd.dwFileAttributes |= FILE_ATTRIBUTE_COMPRESSED;
-	    if (finder.IsNormal())
-	      fd.dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-	    if (finder.IsHidden())
-	      fd.dwFileAttributes = FILE_ATTRIBUTE_HIDDEN;
-	    if (finder.IsReadOnly())
-	      fd.dwFileAttributes = FILE_ATTRIBUTE_READONLY;
-	    if (finder.IsSystem())
-	      fd.dwFileAttributes = FILE_ATTRIBUTE_SYSTEM;
-	    if (finder.IsTemporary())
-	      fd.dwFileAttributes = FILE_ATTRIBUTE_TEMPORARY;
-
-	    files.push_back(fd);
-	   }
-	   }
-	 */
-
 	return anyFound;
 }
 
@@ -1068,25 +1025,6 @@ inline int ScanDirectoryRecursive(const CString& root, const CString& path, cons
 
 	if (recursive)
 	{
-		/*
-		   CFileFind finder;
-		   BOOL bWorking = finder.FindFile( Path::Make(dir,"*.*") );
-		   while (bWorking)
-		   {
-		   bWorking = finder.FindNextFile();
-
-		   if (finder.IsDots())
-		    continue;
-
-		   if (finder.IsDirectory())
-		   {
-		    // Scan directory.
-		    if (ScanDirectoryRecursive( root,Path::AddBackslash(path+finder.GetFileName()),fileSpec,files,recursive ))
-		      anyFound = true;
-		   }
-		   }
-		 */
-
 		ICryPak* pIPak = GetIEditor()->GetSystem()->GetIPak();
 
 		// Add all directories.
@@ -1198,86 +1136,9 @@ bool CFileUtil::OverwriteFile(const CString& filename)
 	return true;
 }
 
-/*
-   static bool CheckOutFile( const char *filename )
-   {
-   CString ssafeExe = "C:\\Program Files\\Microsoft Visual Studio\\VSS\\win32\\ss.exe";
-   SetEnvironmentVariable( "ssuser","timur" );
-   SetEnvironmentVariable( "ssdir","\\\\Server2\\XISLE\\ArtworkVss" );
-   //CString SSafeArtwork = "\\\\Server2\\XISLE\\ArtworkVss\\win32\\ss.exe";
-   //CString SSafeArtworkProject = "$/MASTERCD";
-
-   CString cmd = ssafeExe + " " + " checkout cg.dll";
-
-   char currDirectory[MAX_PATH];
-   GetCurrentDirectory( sizeof(currDirectory),currDirectory  );
-   char cmdLine[MAX_PATH];
-   cry_strcpy( cmdLine,cmd );
-
-   PROCESS_INFORMATION pi;
-   STARTUPINFO si;
-   memset( &si,0,sizeof(si) );
-   si.cb = sizeof(si);
-   memset( &pi,0,sizeof(pi) );
-   if (CreateProcess( NULL,cmdLine,NULL,NULL,FALSE,CREATE_NEW_CONSOLE,NULL,currDirectory,&si,&pi ))
-   {
-    // Wait until child process exits.
-    WaitForSingleObject( pi.hProcess, INFINITE );
-
-    // Close process and thread handles.
-    CloseHandle( pi.hProcess );
-    CloseHandle( pi.hThread );
-   }
-   }
- */
-
 //////////////////////////////////////////////////////////////////////////
 bool CFileUtil::CheckoutFile(const char* filename)
 {
-	/*
-	   if (gSettings.ssafeParams.user.IsEmpty())
-	   {
-	   CQuestionDialog::SWarning(QObject::tr(""),QObject::tr("Source Safe login user name must be configured."));
-
-	   // Source safe not configured.
-	   CSrcSafeSettingsDialog dlg;
-	   if (dlg.DoModal() != IDOK)
-	   {
-	    CQuestionDialog::SWarning(QObject::tr(""),QObject::tr("Checkout canceled"));
-	    return false;
-	   }
-	   }
-	   SetEnvironmentVariable( "ssuser",gSettings.ssafeParams.user );
-	   SetEnvironmentVariable( "ssdir",gSettings.ssafeParams.databasePath );
-
-	   CString relFile = Path::GetRelativePath(filename);
-	   if (relFile.IsEmpty())
-	   relFile = filename;
-
-	   CString cmd = gSettings.ssafeParams.exeFile + " checkout " + relFile;
-
-	   char currDirectory[MAX_PATH];
-	   GetCurrentDirectory( sizeof(currDirectory),currDirectory  );
-	   char cmdLine[MAX_PATH];
-	   cry_strcpy( cmdLine,cmd );
-
-	   PROCESS_INFORMATION pi;
-	   STARTUPINFO si;
-	   memset( &si,0,sizeof(si) );
-	   si.cb = sizeof(si);
-	   memset( &pi,0,sizeof(pi) );
-	   if (CreateProcess( NULL,cmdLine,NULL,NULL,FALSE,CREATE_NEW_CONSOLE,NULL,currDirectory,&si,&pi ))
-	   {
-	   // Wait until child process exits.
-	   WaitForSingleObject( pi.hProcess, INFINITE );
-
-	   // Close process and thread handles.
-	   CloseHandle( pi.hProcess );
-	   CloseHandle( pi.hThread );
-	   return true;
-	   }
-	 */
-
 	uint32 attr = CFileUtil::GetAttributes(filename);
 	if (GetIEditor()->IsSourceControlAvailable() && (attr & SCC_FILE_ATTRIBUTE_MANAGED))
 	{
@@ -1315,38 +1176,6 @@ bool CFileUtil::CheckoutFile(const char* filename)
 //////////////////////////////////////////////////////////////////////////
 bool CFileUtil::CheckinFile(const char* filename)
 {
-	/*
-	   SetEnvironmentVariable( "ssuser",gSettings.ssafeParams.user );
-	   SetEnvironmentVariable( "ssdir",gSettings.ssafeParams.databasePath );
-
-	   CString relFile = Path::GetRelativePath(filename);
-	   if (relFile.IsEmpty())
-	   relFile = filename;
-
-	   CString cmd = gSettings.ssafeParams.exeFile + " checkout " + relFile;
-
-	   char currDirectory[MAX_PATH];
-	   GetCurrentDirectory( sizeof(currDirectory),currDirectory  );
-	   char cmdLine[MAX_PATH];
-	   cry_strcpy( cmdLine,cmd );
-
-	   PROCESS_INFORMATION pi;
-	   STARTUPINFO si;
-	   memset( &si,0,sizeof(si) );
-	   si.cb = sizeof(si);
-	   memset( &pi,0,sizeof(pi) );
-	   if (CreateProcess( NULL,cmdLine,NULL,NULL,FALSE,CREATE_NEW_CONSOLE,NULL,currDirectory,&si,&pi ))
-	   {
-	   // Wait until child process exits.
-	   WaitForSingleObject( pi.hProcess, INFINITE );
-
-	   // Close process and thread handles.
-	   CloseHandle( pi.hProcess );
-	   CloseHandle( pi.hThread );
-	   return true;
-	   }
-	 */
-
 	if (GetIEditor()->IsSourceControlAvailable())
 	{
 		uint32 attr = CFileUtil::GetAttributes(filename);
@@ -2241,13 +2070,8 @@ CFileUtil::ECopyTreeResult CFileUtil::MoveFile(const CString& strSourceFile, con
 
 	ECopyTreeResult eCopyResult(ETREECOPYOK);
 
-	intptr_t hfil(0);
-
 	std::vector<CString> cFiles;
 	std::vector<CString> cDirectories;
-
-	size_t nCurrent(0);
-	size_t nTotal(0);
 
 	// First we copy all files (maybe not all, depending on the user options...)
 	BOOL bnLastFileWasCopied(FALSE);
@@ -2417,7 +2241,7 @@ bool CFileUtil::CustomSelectSingleFile(
 }
 
 void CFileUtil::PopupMenu(const char* filename, const char* fullGamePath, CWnd* wnd,
-                          bool* pIsSelected, CFileUtil::ExtraMenuItems* pItems)
+						  bool* pIsSelected, CFileUtil::ExtraMenuItems* pItems)
 {
 	std::function<void()> func([wnd]
 	{
@@ -2477,7 +2301,6 @@ void CFileUtil::GatherAssetFilenamesFromLevel(std::set<CString>& rOutFilenames, 
 	CBaseObjectsArray objArr;
 	CUsedResources usedRes;
 	IMaterialManager* pMtlMan = GetIEditor()->Get3DEngine()->GetMaterialManager();
-	IParticleManager* pPartMan = GetIEditor()->Get3DEngine()->GetParticleManager();
 
 	GetIEditor()->GetObjectManager()->GetObjects(objArr);
 
@@ -2575,7 +2398,6 @@ void CFileUtil::GatherAssetFilenamesFromLevel(DynArray<dll_string>& outFilenames
 	CBaseObjectsArray objArr;
 	CUsedResources usedRes;
 	IMaterialManager* pMtlMan = GetIEditor()->Get3DEngine()->GetMaterialManager();
-	IParticleManager* pPartMan = GetIEditor()->Get3DEngine()->GetParticleManager();
 	bool newFile = true;
 	GetIEditor()->GetObjectManager()->GetObjects(objArr);
 
@@ -2617,8 +2439,6 @@ void CFileUtil::GatherAssetFilenamesFromLevel(DynArray<dll_string>& outFilenames
 		for (size_t i = 0; i < mtlCount; ++i)
 		{
 			IMaterial* pMtl = arrMtls[i];
-
-			size_t subMtls = pMtl->GetSubMtlCount();
 
 			// for the main material
 			IRenderShaderResources* pShaderRes = pMtl->GetShaderItem().m_pShaderResources;
@@ -2772,49 +2592,5 @@ std::vector<string> CFileUtil::PickTagsFromPath(const string& path)
 		tag = path.Tokenize(tokens, curPos);
 	}
 	return tags;
-}
-
-CTempFileHelper::CTempFileHelper(const char* pFileName)
-	: m_fileName(pFileName)
-{
-	if (GetIEditor()->GetConsoleVar("ed_lowercasepaths"))
-		m_fileName = m_fileName.MakeLower();
-
-	m_tempFileName = PathUtil::ReplaceExtension(m_fileName.GetString(), "tmp");
-
-	SetFileAttributes(m_tempFileName, FILE_ATTRIBUTE_NORMAL);
-	DeleteFile(m_tempFileName);
-}
-
-CTempFileHelper::~CTempFileHelper()
-{
-	DeleteFile(m_tempFileName);
-}
-
-bool CTempFileHelper::UpdateFile(bool bBackup)
-{
-	// First, check if the files are actually different
-	if (!CFileUtil::CompareFiles(m_tempFileName, m_fileName))
-	{
-		// If the file changed, make sure the destination file is writable
-		if (!CFileUtil::OverwriteFile(m_fileName))
-		{
-			DeleteFile(m_tempFileName);
-			return false;
-		}
-
-		// Back up the current file if requested
-		if (bBackup)
-			CFileUtil::BackupFile(m_fileName);
-
-		// Move the temp file over the top of the destination file
-		return MoveFileEx(m_tempFileName, m_fileName, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
-	}
-	// If the files are the same, just delete the temp file and return.
-	else
-	{
-		DeleteFile(m_tempFileName);
-		return true;
-	}
 }
 

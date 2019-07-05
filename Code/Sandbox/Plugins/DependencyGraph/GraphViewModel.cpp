@@ -10,11 +10,12 @@
 #include "NodeGraph/AbstractNodeContentWidget.h"
 #include "NodeGraph/PinGridNodeContentWidget.h"
 #include "NodeGraph/ConnectionWidget.h"
-#include "NodeGraph/NodeHeaderWidgetStyle.h"
+#include "NodeGraph/HeaderWidgetStyle.h"
 #include "AssetSystem/AssetManager.h"
 #include "AssetSystem/DependencyTracker.h"
 #include "Notifications/NotificationCenter.h"
 #include <IEditor.h>
+#include <CryString/CryPath.h>
 
 class CGraphViewModel;
 
@@ -137,7 +138,7 @@ public:
 
 protected:
 
-	void AddNodeStyle(const char* szStyleId, CryIcon& icon, QColor iconColor, QColor backgroundColor)
+	void AddNodeStyle(const char* szStyleId, const CryIcon& icon, QColor iconColor, QColor backgroundColor)
 	{
 		CryGraphEditor::CNodeWidgetStyle* pStyle = new CryGraphEditor::CNodeWidgetStyle(szStyleId, *(m_pStyle.get()));
 
@@ -201,7 +202,6 @@ public:
 	virtual QVariant GetId() const override
 	{
 		return QVariant::fromValue(QString("In"));
-		;
 	}
 	virtual bool HasId(QVariant id) const override
 	{
@@ -240,7 +240,6 @@ public:
 	virtual QVariant GetId() const override
 	{
 		return QVariant::fromValue(QString("Out"));
-		;
 	}
 	virtual bool HasId(QVariant id) const override
 	{
@@ -267,11 +266,16 @@ public:
 };
 
 CAssetNodeBase::CAssetNodeBase(CryGraphEditor::CNodeGraphViewModel& viewModel, CAsset* pAsset, const CAssetType* pAssetType, const string& path)
-	: CAbstractNodeItem(viewModel)
+	: CAbstractNodeItem(*(m_pData = new CryGraphEditor::CNodeEditorData()), viewModel)
 	, m_pAsset(pAsset)
 	, m_pAssetType(pAssetType)
 	, m_path(path)
 {
+}
+
+CAssetNodeBase::~CAssetNodeBase()
+{
+	delete m_pData;
 }
 
 bool CAssetNodeBase::CanBeEdited() const
@@ -498,8 +502,8 @@ CryGraphEditor::CAbstractConnectionItem* CGraphViewModel::GetConnectionItemById(
 
 void CGraphViewModel::OnBeginModelChange()
 {
-	m_nodes.clear();
 	m_connections.clear();
+	m_nodes.clear();
 	SignalInvalidated();
 }
 
@@ -536,7 +540,6 @@ void CGraphViewModel::OnEndModelChange()
 			stack.resize(depth + 1, 0);
 		}
 
-		CAssetNode* pNode = nullptr;
 		const string assetKey = string(assetPath).MakeLower();
 		const auto it = map.find(assetKey);
 		if (it == map.end())
@@ -641,4 +644,3 @@ void CGraphViewModel::OnEndModelChange()
 
 	SignalInvalidated();
 }
-

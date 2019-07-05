@@ -8,6 +8,7 @@
 //! Epsilon for vector comparasion.
 #define FLOAT_EPSILON 0.000001f
 
+#include "EditorUtils.h"
 #include <CryMath/Cry_Geo.h>
 
 //!  Compare two vectors if they are equal.
@@ -299,4 +300,3 @@ inline int gcd(int a, int b)
 	}
 	return b;
 }
-

@@ -6,6 +6,7 @@
 
 // Qt
 #include <QClipboard>
+#include <QApplication>
 
 // EditorCommon
 #include "CryIcon.h"
@@ -263,4 +264,3 @@ Internal::CNotification* CNotificationModel::NotificationFromIndex(const QModelI
 
 	return pNotificationCenter->GetNotification(notificationIdx);
 }
-

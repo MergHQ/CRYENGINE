@@ -12,6 +12,33 @@
 
 DECLARE_JOB("AsyncResourceCompiler", TAsyncResourceCompilerJob, CTextureCompiler::ConsumeQueuedResourceCompiler);
 
+namespace Private_TextureCompiler
+{
+
+void AddResourceCachePrefix(char path[])
+{
+	const ICVar* pCacheFolderVar = gEnv->pConsole->GetCVar("sys_resource_cache_folder");
+	const auto cacheFolder = pCacheFolderVar->GetString();
+	const auto cacheFolderLen = strlen(cacheFolder);
+	memmove(path + cacheFolderLen + 1, path, strlen(path) + 1);
+	memcpy(path, cacheFolder, cacheFolderLen);
+	path[cacheFolderLen] = '/';
+	for (int i = 0; i < cacheFolderLen; ++i)
+	{
+		if (path[i] == '\\')
+		{
+			path[i] = '/';
+		}
+	}
+}
+
+bool IsAlias(const char* szFilename)
+{
+	return *szFilename == '%';
+}
+
+}
+
 //////////////////////////////////////////////////////////////////////////
 CTextureCompiler::CTextureCompiler()
 {
@@ -160,7 +187,9 @@ static bool CopyDummy(const char* szImposter, const char* szSrcFile, const char*
 	// Take care of copying dummy out of the pak onto disk.
 	// Dummy then triggers recompilation in subsequent Sandbox starts as well.
 	FILE* pSrcFile = gEnv->pCryPak->FOpen(dummyPath, "rb");
-	HANDLE hDestFile = CreateFile(szDstFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+
+	// Do not create destination file if the source does not exist, this prevents IFileChangeListener events for the void asset file.
+	HANDLE hDestFile = pSrcFile ? CreateFile(szDstFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL) : INVALID_HANDLE_VALUE;
 
 	success = (pSrcFile && (hDestFile != INVALID_HANDLE_VALUE));
 	if (success)
@@ -352,6 +381,11 @@ public:
 
 	~CTemporaryAsset()
 	{
+		if (m_assets.empty())
+		{
+			return;
+		}
+
 		CreateDestinationAssets();
 		DeleteTemp(GetTmpPath());
 	}
@@ -359,6 +393,17 @@ public:
 	const string& GetTmpPath() const
 	{
 		return m_assets.front().tmp;
+	}
+
+	void Discard()
+	{
+		if (m_assets.empty())
+		{
+			return;
+		}
+
+		DeleteTemp(GetTmpPath());
+		m_assets.clear();
 	}
 
 private:
@@ -374,18 +419,20 @@ private:
 				CopyDummy(GetFailedTexture(asset.dst.c_str()), asset.src.c_str(), asset.dst.c_str(), COMPILE_FAILED_DELTA);
 			}
 
-			// Suggest reload of the texture after success or failure.
-			if (gEnv && gEnv->pRenderer)
+			// Suggest reload of the texture after success or failure, except for the editor, 
+			// where the asset reloading is managed by the editor's file monitor.
+			if (gEnv && gEnv->pRenderer && !gEnv->IsEditor())
 			{
 				gEnv->pRenderer->EF_ReloadFile_Request(asset.dst.c_str());
 			}
 		}
 	}
 
-	static string GetTemporaryDirectoryPath()
+	static CryPathString GetTemporaryDirectoryPath()
 	{
-		char path[ICryPak::g_nMaxPath] = {};
-		return gEnv->pCryPak->AdjustFileName("%USER%/TextureCompiler", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		CryPathString path;
+		gEnv->pCryPak->AdjustFileName("%USER%/TextureCompiler", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		return path;
 	}
 
 	// Create a temp directory to store texture asset during processing.
@@ -425,11 +472,6 @@ private:
 			const string dstPath = PathUtil::Make(dir, asset, ext);
 			const string tmpPath = PathUtil::Make(tempDir, asset, ext);
 			assets.emplace_back(srcFile, dstPath, tmpPath);
-
-			// Try to update existing ".cryasset" instead of creating a new one to keep the asset GUID.
-			const string dstCryasset = dstPath + ".cryasset";
-			const string tmpCryasset = tmpPath + ".cryasset";
-			gEnv->pCryPak->CopyFileOnDisk(dstCryasset.c_str(), tmpCryasset.c_str(), false);
 		}
 
 		return assets;
@@ -443,43 +485,39 @@ private:
 	}
 
 	// Returns list of asset filenames without paths.
-	static std::vector<string> GetAssetFiles(const string& srcFile)
+	static std::vector<string> GetAssetFiles(const string& srcFile, bool onlyMentionedFile = false)
 	{
-		// Try to read the file list form .cryasset
-		const string cryasset = srcFile + ".cryasset";
-
-		const XmlNodeRef pXml = (GetFileAttributes(cryasset) != INVALID_FILE_ATTRIBUTES) ? gEnv->pSystem->LoadXmlFromFile(cryasset) : nullptr;
-		if (!pXml)
-		{
-			return{ PathUtil::GetFile(srcFile) };
-		}
-
+		const CryPathString path = PathUtil::Make(PathUtil::GetPathWithoutFilename(srcFile.c_str()).c_str(), "*");
 		std::vector<string> files;
-
-		// Find "AssetMetadata" node. It may be either the root node or a child of the root.
-		const XmlNodeRef pMetadata = pXml->isTag("AssetMetadata") ? pXml : pXml->findChild("AssetMetadata");
-		if (pMetadata)
+		ICryPak* const pPack = gEnv->pCryPak;
+		_finddata_t fd;
+		intptr_t handle = pPack->FindFirst(path, &fd, 0, true);
+		if (handle >= 0)
 		{
-			const XmlNodeRef pFiles = pMetadata->findChild("Files");
-			if (pFiles)
+			do
 			{
-				files.reserve(pFiles->getChildCount());
-				for (int i = 0, n = pFiles->getChildCount(); i < n; ++i)
+				if (!strcmp(fd.name, ".") || !strcmp(fd.name, ".."))
 				{
-					const XmlNodeRef pFile = pFiles->getChild(i);
-					files.emplace_back(pFile->getAttr("path"));
+					continue;
 				}
-			}
+
+				if ((fd.attrib & _A_SUBDIR) != 0)
+				{
+					continue;
+				}
+
+				if(!onlyMentionedFile || strstr(srcFile, fd.name))
+					files.emplace_back(fd.name);
+			} while (pPack->FindNext(handle, &fd) >= 0);
+			pPack->FindClose(handle);
 		}
 
 		// A fallback solution, should never happen.
 		if (files.empty())
 		{
-			iLog->LogError("Cryasset has no data files: %s", cryasset.c_str());
 			files.push_back(PathUtil::GetFile(srcFile));
 		}
 
-		files.emplace_back(PathUtil::GetFile(cryasset));
 		return files;
 	}
 
@@ -491,7 +529,7 @@ private:
 
 		const string srcPath = PathUtil::GetPathWithoutFilename(srcFile);
 		const string dstPath = PathUtil::GetPathWithoutFilename(dstFile);
-		const auto files = GetAssetFiles(srcFile);
+		const auto files = GetAssetFiles(srcFile, true);
 		for (const string& file : files)
 		{
 			const string srcFile = srcPath + file;
@@ -691,6 +729,12 @@ void CTextureCompiler::ConsumeQueuedResourceCompiler(TProcItem* item)
 			{
 				CTemporaryAsset tmpAsset(item->src, item->dst);
 				item->returnval = InvokeResourceCompiler(item->src.c_str(), tmpAsset.GetTmpPath().c_str(), item->windowed, true);
+				if (item->returnval != ERcExitCode::eRcExitCode_Success)
+				{
+					tmpAsset.Discard();
+					iLog->LogError("ResourceCompiler exited with an error for \"%s\""
+					               ", for more details please check \"tools/rc/rc_log.log or try to import the texture by Asset Browser\"\n", item->src.c_str());
+				}
 			}
 
 		NotifyCompilationFinished(item);
@@ -713,7 +757,7 @@ void CTextureCompiler::GetNextItem(TProcItem* &item, int &pending)
 
 	if (foundrc == m_qProcessingList.end())
 	{
-		CRY_ASSERT_MESSAGE(foundrc != m_qProcessingList.end(), "Severe container-damage, should not happen.");
+		CRY_ASSERT(foundrc != m_qProcessingList.end(), "Severe container-damage, should not happen.");
 		return;
 	}
 
@@ -737,10 +781,17 @@ void CTextureCompiler::NotifyCompilationQueueDepleted()
 
 void CTextureCompiler::NotifyCompilationFinished(TProcItem* item)
 {
+	NotifyCompilationFinished(item->src.c_str(), item->dst.c_str(), item->returnval);
+}
+
+void CTextureCompiler::NotifyCompilationFinished(const char* szSourceFile, const char* szDestFile, ERcExitCode eReturnCode)
+{
+	const auto& source = PathUtil::MakeProjectPath(szSourceFile);
+	const auto& dest = PathUtil::MakeProjectPath(szDestFile);
 	CryAutoReadLock<CryRWLock> lock(m_rwLockNotify);
 	for (IAsyncTextureCompileListener* notify : m_sNotifyList)
 	{
-		notify->OnCompilationFinished(item->src.c_str(), item->dst.c_str(), item->returnval);
+		notify->OnCompilationFinished(source.c_str(), dest.c_str(), eReturnCode);
 	};
 }
 
@@ -762,21 +813,28 @@ void CTextureCompiler::NotifyCompilationQueueTriggered(int pending)
 	};
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
-  const char* originalFilename,
+  const char* szOriginalFilename,
   char* processedFilename,
   size_t processedFilenameSizeInBytes,
   bool immediate)
 {
-	// allocates 1k upto 4k on the stack
+	using namespace Private_TextureCompiler;
+	// allocates 1k up to 4k on the stack
 	char sSrcFile[MAX_PATH];
 	char sDestFile[MAX_PATH];
 
-	char sFullSrcFilename[MAX_PATH];
-	char sFullDestFilename[MAX_PATH];
+	CryPathString sFullSrcFilename;
+	CryPathString sFullDestFilename;
 
-	GetOutputFilename(originalFilename, sDestFile, sizeof(sDestFile));
+	GetOutputFilename(szOriginalFilename, sDestFile, sizeof(sDestFile));
+
+	if (!IsAlias(szOriginalFilename))
+	{
+		Private_TextureCompiler::AddResourceCachePrefix(sDestFile);
+	}
 
 	// Adjust filename so that it is global.
 	gEnv->pCryPak->AdjustFileName(sDestFile, sFullDestFilename, 0);
@@ -785,7 +843,7 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 
 	for (uint32 dwIndex = 0;; ++dwIndex)    // check for all input files
 	{
-		GetInputFilename(originalFilename, dwIndex, sSrcFile, sizeof(sSrcFile));
+		GetInputFilename(szOriginalFilename, dwIndex, sSrcFile, sizeof(sSrcFile));
 
 		if (sSrcFile[0] == 0)
 		{
@@ -835,14 +893,14 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 			sourceFile.Close();
 		}
 
+		bool isSkipped = false;
 		// is there no destination file?
 		if (sourceFile.GetHandle() != nullptr && destinationFile.GetHandle() == nullptr)
 		{
 			bInvokeResourceCompiler = true;
 		}
-
 		// if both files exist, is the source file newer?
-		if (sourceFile.GetHandle() != nullptr && destinationFile.GetHandle() != nullptr && !IsFileReadOnly(sFullDestFilename))
+		else if (sourceFile.GetHandle() != nullptr && destinationFile.GetHandle() != nullptr && !IsFileReadOnly(sFullDestFilename))
 		{
 			ICryPak::FileTime timeSrc = gEnv->pCryPak->GetModificationTime(sourceFile.GetHandle());
 			ICryPak::FileTime timeDest = gEnv->pCryPak->GetModificationTime(destinationFile.GetHandle());
@@ -868,6 +926,7 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 			{
 				bInvokeResourceCompiler = (timeDest != timeSrc);
 			}
+			isSkipped = !bInvokeResourceCompiler;
 		}
 
 		destinationFile.Close();
@@ -908,11 +967,15 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 
 			if(!processed)
 			{
-				cry_strcpy(processedFilename, processedFilenameSizeInBytes, originalFilename);
+				cry_strcpy(processedFilename, processedFilenameSizeInBytes, szOriginalFilename);
 
 				// rc failed
 				return EResult::Failed;
 			}
+		}
+		else if (isSkipped && !IsAlias(szOriginalFilename))
+		{
+			NotifyCompilationFinished(sFullSrcFilename, sFullDestFilename, eRcExitCode_Skipped);
 		}
 
 		break;

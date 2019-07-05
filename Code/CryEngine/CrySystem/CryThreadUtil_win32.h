@@ -108,7 +108,7 @@ threadID CryGetThreadId(TThreadHandle hThreadHandle)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CrySetThreadName(TThreadHandle pThreadHandle, const char* sThreadName)
+void CrySetThreadName_SEH(TThreadHandle pThreadHandle, const char* sThreadName)
 {
 	const DWORD MS_VC_EXCEPTION = 0x406D1388;
 
@@ -138,6 +138,31 @@ void CrySetThreadName(TThreadHandle pThreadHandle, const char* sThreadName)
 	{
 	}
 #pragma warning(pop)
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CrySetThreadName(TThreadHandle pThreadHandle, const char* sThreadName)
+{
+	// legacy method of setting the thread name through an exception, still required for backwards compatibility
+	CrySetThreadName_SEH(pThreadHandle, sThreadName);
+
+#if CRY_PLATFORM_DURANGO
+	int threadNameLen = strlen(sThreadName);
+	std::wstring wc(threadNameLen, L' ');
+	mbstowcs(&wc[0], sThreadName, threadNameLen);
+	::SetThreadName(pThreadHandle, &wc[0]);
+#elif CRY_PLATFORM_WINDOWS
+	// Availabe since Windows 10, version 1607
+	// https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-setthreaddescription
+	typedef HRESULT(WINAPI *SetThreadDescriptionFunc)(HANDLE hThread, PCWSTR lpThreadDescription);
+	SetThreadDescriptionFunc pSetThreadDescription = (SetThreadDescriptionFunc)GetProcAddress(GetModuleHandle("Kernel32.dll"), "SetThreadDescription");
+	if (pSetThreadDescription)
+	{
+		CryStackStringT<wchar_t, 64> buf;
+		CryStringUtils::UTF8ToWStr(sThreadName, buf);
+		pSetThreadDescription(GetCurrentThread(), buf.c_str());
+	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -199,6 +224,24 @@ void CryThreadExitCall()
 	// However, in C++ code, the thread is exited before any destructor can be called or any other automatic cleanup can be performed.
 	// Therefore, in C++ code, you should return from your thread function.
 }
+
+//////////////////////////////////////////////////////////////////////////
+bool CryIsThreadAlive(TThreadHandle pThreadHandle)
+{
+	DWORD ret = WaitForSingleObject(pThreadHandle, 0);
+
+	switch (ret)
+	{
+	case WAIT_OBJECT_0: // Thread has been signaled
+		return false;
+	case WAIT_ABANDONED:
+	case WAIT_TIMEOUT:
+	case WAIT_FAILED:
+	default:
+		break;
+	}
+	return true;
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -206,17 +249,16 @@ void CryThreadExitCall()
 //////////////////////////////////////////////////////////////////////////
 namespace CryThreadUtil
 {
+#if defined(USE_FPE)
 ///////////////////////////////////////////////////////////////////////////
 void EnableFloatExceptions(EFPE_Severity eFPESeverity)
 {
-	// Optimization
 	// Enable DAZ/FZ
 	// Denormals Are Zeros
 	// Flush-to-Zero
 	_controlfp(_DN_FLUSH, _MCW_DN);
 	_mm_setcsr(_mm_getcsr() | _MM_FLUSH_ZERO_ON);
 
-#ifndef _RELEASE
 	if (eFPESeverity == eFPE_None)
 	{
 		// mask all floating exceptions off.
@@ -262,7 +304,6 @@ void EnableFloatExceptions(EFPE_Severity eFPESeverity)
 			_mm_setcsr((_mm_getcsr() & ~_MM_MASK_MASK) | (_MM_MASK_INEXACT | _MM_MASK_DENORM));
 		}
 	}
-#endif // _RELEASE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -301,7 +342,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 		return;
 	}
 
-#if CRY_PLATFORM_64BIT
 	//////////////////////////////////////////////////////////////////////////
 	// Note:
 	// DO NOT USE ctx.FltSave.MxCsr ... SetThreadContext() will copy the value of ctx.MxCsr into it
@@ -309,11 +349,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 	DWORD& floatMxCsr = ctx.MxCsr;                    // Hold FPE Mask and Status for MMX (SSE) floating point registers
 	WORD& floatControlWord = ctx.FltSave.ControlWord; // Hold FPE Mask for floating point registers
 	WORD& floatStatuslWord = ctx.FltSave.StatusWord;  // Holds FPE Status for floating point registers
-#else
-	DWORD& floatMxCsr = *(DWORD*)(&ctx.ExtendedRegisters[24]); // Hold FPE Mask and Status for MMX (SSE) floating point registers
-	DWORD& floatControlWord = ctx.FloatSave.ControlWord;       // Hold FPE Mask for floating point registers
-	DWORD& floatStatuslWord = ctx.FloatSave.StatusWord;        // Holds FPE Status for floating point registers
-#endif
 
 	// Flush-To-Zero Mode
 	// Two conditions must be met for FTZ processing to occur:
@@ -323,8 +358,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 	// Set flush mode to zero mode
 	floatControlWord = (floatControlWord & ~_MCW_DN) | _DN_FLUSH;
 	floatMxCsr = (floatMxCsr & ~_MM_FLUSH_ZERO_MASK) | (_MM_FLUSH_ZERO_ON);
-
-#ifndef _RELEASE
 
 	// Reset FPE bits
 	floatControlWord = floatControlWord | _MCW_EM;
@@ -365,7 +398,6 @@ void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity)
 		floatControlWord = (floatControlWord & ~_MCW_EM) | (_EM_INEXACT | _EM_DENORMAL);
 		floatMxCsr = (floatMxCsr & ~_MM_MASK_MASK) | (_MM_MASK_INEXACT | _MM_MASK_DENORM);
 	}
-#endif
 
 	ctx.ContextFlags = CONTEXT_ALL;
 	if (SetThreadContext(hThread, &ctx) == 0)
@@ -394,11 +426,15 @@ void SetFloatingPointExceptionMask(uint nMask)
 {
 	uint temp = 0;
 	_clearfp();
-#if CRY_PLATFORM_32BIT
-	const unsigned int kAllowedBits = _MCW_DN | _MCW_EM | _MCW_RC | _MCW_IC | _MCW_PC;
-#else
+
 	const unsigned int kAllowedBits = _MCW_DN | _MCW_EM | _MCW_RC;
-#endif
+
 	_controlfp_s(&temp, nMask, kAllowedBits);
 }
+#else
+	void EnableFloatExceptions(EFPE_Severity eFPESeverity) {}
+	void EnableFloatExceptions(threadID nThreadId, EFPE_Severity eFPESeverity) {}
+	uint GetFloatingPointExceptionMask() { return 0; }
+	void SetFloatingPointExceptionMask(uint nMask) {}
+#endif
 }

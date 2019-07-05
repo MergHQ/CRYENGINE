@@ -3,8 +3,11 @@
 #pragma once
 
 #include "SandboxAPI.h"
+#include <CrySandbox/CrySignal.h>
+#include <CryCore/smartptr.h>
 #include <CryEntitySystem/IEntityClass.h>
-#include <CryScriptSystem/IScriptSystem.h>
+#include <Util/Variable.h>
+#include <IEditor.h>
 
 #define TSmartPtr             _smart_ptr
 
@@ -15,8 +18,9 @@
 
 // forward declaration
 class CEntityObject;
-struct IScriptTable;
+class CVarBlock;
 struct IScriptObject;
+struct IScriptTable;
 
 #define EVENT_PREFIX "Event_"
 
@@ -195,4 +199,3 @@ private:
 
 	static CEntityScriptRegistry* m_instance;
 };
-

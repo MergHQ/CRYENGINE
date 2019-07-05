@@ -2,9 +2,16 @@
 
 #pragma once
 
+#include <CryCore/BaseTypes.h>
+#include <CryCore/Platform/platform.h>
+#include <CryMath/Cry_Vector3.h>
+#include <CryMath/ISplines.h>
+#include <CryNetwork/SerializeFwd.h>
 #include <CrySerialization/Forward.h>
+#include <CryString/CryString.h>
 
 struct SBezierKey;
+class XmlNodeRef;
 
 //! Interface to the Time Of Day functionality.
 struct ITimeOfDay
@@ -18,6 +25,13 @@ struct ITimeOfDay
 		PARAM_SUN_COLOR,
 		PARAM_SUN_INTENSITY,
 		PARAM_SUN_SPECULAR_MULTIPLIER,
+
+		PARAM_SKYBOX_ANGLE,
+		PARAM_SKYBOX_STRETCHING,
+		PARAM_SKYBOX_COLOR,
+		PARAM_SKYBOX_INTENSITY,
+		PARAM_SKYBOX_FILTER,
+		PARAM_SKYBOX_OPACITY,
 
 		PARAM_FOG_COLOR,
 		PARAM_FOG_COLOR_MULTIPLIER,
@@ -180,13 +194,15 @@ struct ITimeOfDay
 		PARAM_GI_MULTIPLIER,
 		PARAM_SUN_COLOR_MULTIPLIER,
 
+
 		PARAM_TOTAL
 	};
 
 	struct SPresetInfo
 	{
-		const char* m_pName;
-		bool        m_bCurrent;
+		const char* szName;
+		bool        isCurrent;
+		bool        isDefault;
 	};
 
 	enum EVariableType
@@ -194,82 +210,248 @@ struct ITimeOfDay
 		TYPE_FLOAT,
 		TYPE_COLOR
 	};
+
 	struct SVariableInfo
 	{
-		const char*          name;        //!< Variable name.
-		const char*          displayName; //!< Variable user readable name.
-		const char*          group;       //!< Group name.
-		int                  nParamId;
-		EVariableType        type;
-		float                fValue[3];     //!< Value of the variable (3 needed for color type).
-		ISplineInterpolator* pInterpolator; //!< Splines that control variable value.
+		const char*   szName;               //!< Variable name.
+		const char*   szDisplayName;        //!< Variable user readable name.
+		const char*   szGroup;              //!< Group name.
+		int           nParamId;
+		EVariableType type;
+		float         fValue[3];            //!< Value of the variable (3 needed for color type).
 	};
+
 	struct SAdvancedInfo
 	{
 		float fStartTime;
 		float fEndTime;
 		float fAnimSpeed;
 	};
-	struct SEnvironmentInfo
+
+	// Non-dependent on time of a day parameters. Stored per-preset
+	struct Sun
 	{
-		SEnvironmentInfo() : bSunLinkedToTOD(true), sunRotationLatitude(0), sunRotationLongitude(0){}
-		bool  bSunLinkedToTOD;
-		float sunRotationLatitude;
-		float sunRotationLongitude;
+		float latitude;
+		float longitude;
+		bool  sunLinkedToTOD;
 	};
+
+	struct Moon
+	{
+		float  latitude;
+		float  longitude;
+		float  size;
+		string texture;
+	};
+
+	struct Sky
+	{
+		string materialDefSpec;
+		string materialLowSpec;
+	};
+
+	struct Wind
+	{
+		Vec3     windVector;
+		bool     breezeGenerationEnabled;
+		float    breezeStrength;
+		float    breezeVariance;
+		float    breezeLifeTime;
+		unsigned breezeCount;
+		float    breezeRadius;
+		float    breezeSpawnRadius;
+		float    breezeSpread;
+		float    breezeMovementSpeed;
+		float    breezeAwakeThreshold;
+		float    breezeFixedHeight;
+	};
+
+	struct CloudShadows
+	{
+		string texture;
+		Vec3   speed;
+		float  tiling;
+		float  brightness;
+		bool   invert;
+	};
+
+	struct ColorGrading
+	{
+		bool   useTexture;
+		string texture;
+	};
+	
+	struct TotalIllum
+	{
+		bool  active;
+		float injectionMultiplier;
+		float skyColorMultiplier;
+		float useTodSkyColor;
+		float specularAmplifier;
+		float diffuseBias;
+		float coneMaxLength;
+		float ssaoAmount;
+		float minNodeSize;
+		bool  updateGeometry;
+		int   lowSpecMode;
+	};
+
+	//Advanced params
+	struct TotalIllumAdv
+	{
+		int   integrationMode;
+		float portalsDeform;
+		float portalsInject;
+		float diffuseAmplifier;
+		bool  specularFromDiffuse;
+		int   numberOfBounces;
+		float saturation;
+		float propagationBooster;
+		float diffuseConeWidth;
+		bool  updateLighting;
+		bool  halfResKernelPrimary;
+		bool  halfresKernelSecondary;
+		bool  useLightProbes;
+		float voxelizationLodRatio;
+		int   voxelizationMapBorder;
+		int   voxelPoolResolution;
+		float objectsMaxViewDistance;
+		int   sunRSMInject;
+		float SSDepthTrace;
+		bool  shadowsFromSun;
+		float shadowsSoftness;
+		bool  shadowsFromHeightmap;
+		bool  troposphere_Active;
+		float troposphere_Brightness;
+		float troposphere_Density;
+		bool  analyticalOccluders;
+		bool  analyticalGI;
+		bool  traceVoxels;
+		bool  streamVoxels;
+		float translucentBrightness;
+		float pointLightsBias;
+		float highGlossOcclusion;
+		bool  rtActive;
+		float rtMaxDistRay;
+		float rtMaxDistCam;
+		float rtMinGloss;
+		float rtMinRefl;
+	};
+
+	//! Access to variables that control time of the day appearance.
+	struct IVariables
+	{
+		virtual ~IVariables() {}
+
+		virtual int  GetVariableCount() = 0;
+		virtual bool GetVariableInfo(int nIndex, ITimeOfDay::SVariableInfo& varInfo) = 0;
+
+		//! Editor interface.
+		virtual bool InterpolateVarInRange(int nIndex, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const = 0;
+		virtual uint GetSplineKeysCount(int nIndex, int nSpline) const = 0;
+		virtual bool GetSplineKeysForVar(int nIndex, int nSpline, SBezierKey* keysArray, unsigned int keysArraySize) const = 0;
+		virtual bool SetSplineKeysForVar(int nIndex, int nSpline, const SBezierKey* keysArray, unsigned int keysArraySize) = 0;
+		virtual bool UpdateSplineKeyForVar(int nIndex, int nSpline, float fTime, float newValue) = 0;
+
+		virtual void Reset() = 0;
+	};
+
+	//! Constant data, that is not dependent on time change
+	struct IConstants
+	{
+		virtual ~IConstants() {}
+
+		virtual Sun&           GetSunParams() = 0;
+		virtual Moon&          GetMoonParams() = 0;
+		virtual Sky&           GetSkyParams() = 0;
+		virtual Wind&          GetWindParams() = 0;
+		virtual CloudShadows&  GetCloudShadowsParams() = 0;
+		virtual ColorGrading&  GetColorGradingParams() = 0;
+		virtual TotalIllum&    GetTotalIlluminationParams() = 0;
+		virtual TotalIllumAdv& GetTotalIlluminationAdvParams() = 0;
+
+		virtual void           Serialize(Serialization::IArchive& ar) = 0;
+		virtual void           Reset() = 0;
+	};
+
+	struct IPreset
+	{
+		virtual ~IPreset() {}
+
+		virtual IVariables& GetVariables() = 0;
+		virtual IConstants& GetConstants() = 0;
+		virtual void        Reset() = 0;
+	};
+
 	struct IListener
 	{
 		enum class EChangeType
 		{
+			DefaultPresetChanged,
 			CurrentPresetChanged,
 			PresetAdded,
 			PresetRemoved,
-			PresetLoaded
+			PresetLoaded,
 		};
 
-		virtual ~IListener() { }
+		virtual ~IListener() {}
 		virtual void OnChange(const EChangeType changeType, const char* const szPresetName) = 0;
 	};
 
 	// <interfuscator:shuffle>
 	virtual ~ITimeOfDay(){}
 
-	virtual int  GetPresetCount() const = 0;
+	//! Returns the number of presets used by the current active level.
+	virtual int GetPresetCount() const = 0;
+
+	//! Fills in information about the presets used by the active level.
+	//! \sa GetPresetCount
 	virtual bool GetPresetsInfos(SPresetInfo* resultArray, unsigned int arraySize) const = 0;
-	virtual bool SetCurrentPreset(const char* szPresetName) = 0;
+
+	//! There is always a current preset. Even if the user preset and level are not loaded, there is always a build-in default preset.
+	virtual IPreset&    GetCurrentPreset() = 0;
 	virtual const char* GetCurrentPresetName() const = 0;
+
+	//! Applies this preset if the preset has been preloaded for the current level.
+	virtual bool SetCurrentPreset(const char* szPresetName) = 0;
+
+	//! Sets this preset as the default for the current level, if the preset has been already loaded.
+	//! It also applies the specified preset as the current one.
+	virtual bool        SetDefaultPreset(const char* szPresetName) = 0;
+	virtual const char* GetDefaultPresetName() const = 0;
+
+	//! Adds a new preset with a default values to the list of presets of the active level. Sets the preset as current.
+	//! \return Returns true if succeeded, false if a preset with the specified name is already exists.
 	virtual bool AddNewPreset(const char* szPresetName) = 0;
-	virtual bool RemovePreset(const char* szPresetName) = 0;
-	virtual bool SavePreset(const char* szPresetName) const = 0;
+
+	//! Loads and adds the loaded preset to the list of presets of the active level. Sets the preset as current.
 	virtual bool LoadPreset(const char* szFilePath) = 0;
-	virtual void ResetPreset(const char* szPresetName) = 0;
+
+	//! Removes preset from the list of presets of the active level.
+	virtual bool RemovePreset(const char* szPresetName) = 0;
+
+	//! Returns true if succeeded, false if the preset with the specified name could not be found or the save failed.
+	virtual bool SavePreset(const char* szPresetName) const = 0;
+
+	//! Resets the preset to a default values.
+	//! \return Returns true if succeeded, false if a preset with the specified name is not found.
+	virtual bool ResetPreset(const char* szPresetName) = 0;
+
+	//! Unconditionally discards unsaved changes and reloads the preset from the preset data file.
+	virtual void DiscardPresetChanges(const char* szPresetName) = 0;
 
 	virtual bool ImportPreset(const char* szPresetName, const char* szFilePath) = 0;
 	virtual bool ExportPreset(const char* szPresetName, const char* szFilePath) const = 0;
 
-	//! Access to variables that control time of the day appearance.
-	virtual int  GetVariableCount() = 0;
-	virtual bool GetVariableInfo(int nIndex, SVariableInfo& varInfo) = 0;
-	virtual void SetVariableValue(int nIndex, float fValue[3]) = 0;
-
-	//! Editor interface.
-	virtual bool  InterpolateVarInRange(int nIndex, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const = 0;
-	virtual uint  GetSplineKeysCount(int nIndex, int nSpline) const = 0;
-	virtual bool  GetSplineKeysForVar(int nIndex, int nSpline, SBezierKey* keysArray, unsigned int keysArraySize) const = 0;
-	virtual bool  SetSplineKeysForVar(int nIndex, int nSpline, const SBezierKey* keysArray, unsigned int keysArraySize) = 0;
-	virtual bool  UpdateSplineKeyForVar(int nIndex, int nSpline, float fTime, float newValue) = 0;
-	virtual float GetAnimTimeSecondsIn24h() = 0;
-
-	virtual void  ResetVariables() = 0;
+	//! Sets the preset as current without adding it to the list of presets of the active level. Loads the preset from the specified path if it has not yet been loaded.
+	//! Access to the instance of the IPreset interface can be obtained by a subsequent call to the GetCurrentPreset() method.
+	virtual bool PreviewPreset(const char* szPresetName) = 0;
 
 	//! Sets the time of the day specified in hours.
 	virtual void  SetTime(float fHour, bool bForceUpdate = false) = 0;
-	virtual float GetTime() = 0;
+	virtual float GetTime() const = 0;
 
-	//! Sun position.
-	virtual void  SetSunPos(float longitude, float latitude) = 0;
-	virtual float GetSunLatitude() = 0;
-	virtual float GetSunLongitude() = 0;
+	virtual float GetAnimTimeSecondsIn24h() const = 0;
 
 	//! Updates the current ToD.
 	virtual void Tick() = 0;
@@ -277,10 +459,13 @@ struct ITimeOfDay
 	virtual void SetPaused(bool paused) = 0;
 
 	virtual void SetAdvancedInfo(const SAdvancedInfo& advInfo) = 0;
-	virtual void GetAdvancedInfo(SAdvancedInfo& advInfo) = 0;
+	virtual void GetAdvancedInfo(SAdvancedInfo& advInfo) const = 0;
 
 	//! Updates engine parameters after variable values have been changed.
 	virtual void Update(bool bInterpolate = true, bool bForceUpdate = false) = 0;
+
+	//! Updates engine parameters after constant values have been changed
+	virtual void ConstantsChanged() = 0;
 
 	virtual void BeginEditMode() = 0;
 	virtual void EndEditMode() = 0;
@@ -289,7 +474,6 @@ struct ITimeOfDay
 	virtual void Serialize(TSerialize ser) = 0;
 
 	virtual void SetTimer(ITimer* pTimer) = 0;
-	virtual void SetEnvironmentSettings(const SEnvironmentInfo& envInfo) = 0;
 
 	//! Multiplayer serialization.
 	static const int NETSER_FORCESET = BIT(0);
@@ -303,9 +487,25 @@ struct ITimeOfDay
 	// </interfuscator:shuffle>
 
 	//! Listener registration
-	bool RegisterListener(IListener* const pListener) { return RegisterListenerImpl(pListener, "", true); }
+	bool RegisterListener(IListener* const pListener)                                                     { return RegisterListenerImpl(pListener, "", true); }
 	bool RegisterListener(IListener* const pListener, const char* const szDbgName, const bool staticName) { return RegisterListenerImpl(pListener, szDbgName, staticName); }
-	void UnRegisterListener(IListener* const pListener) { return UnRegisterListenerImpl(pListener); }
+	void UnRegisterListener(IListener* const pListener)                                                   { return UnRegisterListenerImpl(pListener); }
+
+	// Helper shortcuts
+	IVariables&          GetVariables()                                      { return GetCurrentPreset().GetVariables(); }
+	IConstants&          GetConstants()                                      { return GetCurrentPreset().GetConstants(); }
+	int                  GetVariableCount()                                  { return GetVariables().GetVariableCount(); }
+	bool                 GetVariableInfo(int nIndex, SVariableInfo& varInfo) { return GetVariables().GetVariableInfo(nIndex, varInfo); }
+	void                 ResetVariables()                                    { GetCurrentPreset().Reset(); }
+	Sun&                 GetSunParams()                                      { return GetConstants().GetSunParams(); }
+	const Moon&          GetMoonParams()                                     { return GetConstants().GetMoonParams(); }
+	const Sky&           GetSkyParams()                                      { return GetConstants().GetSkyParams(); }
+	const Wind&          GetWindParams()                                     { return GetConstants().GetWindParams(); }
+	const CloudShadows&  GetCloudShadowsParams()                             { return GetConstants().GetCloudShadowsParams(); }
+	const TotalIllum&    GetTotalIlluminationParams()                        { return GetConstants().GetTotalIlluminationParams(); }
+	const TotalIllumAdv& GetTotalIlluminationAdvParams()                     { return GetConstants().GetTotalIlluminationAdvParams(); }
+
+	static const char*   GetDefaultPresetFilepath()                          { return "%ENGINE%/EngineAssets/Shading/default.env"; }
 
 protected:
 	virtual bool RegisterListenerImpl(IListener* const pListener, const char* const szDbgName, const bool staticName) = 0;

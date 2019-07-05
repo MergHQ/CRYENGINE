@@ -2,18 +2,20 @@
 
 #include "StdAfx.h"
 #include "SubstanceArchiveImporter.h"
-#include <AssetSystem/AssetImportContext.h>
-#include <AssetSystem/AssetManager.h>
-#include <AssetSystem/Loader/AssetLoaderHelpers.h>
-#include <AssetSystem/Asset.h>
-#include <AssetSystem/EditableAsset.h>
-#include "SandboxPlugin.h"
+
+#include "AssetTypes/SubstanceArchive.h"
 #include "EditorSubstanceManager.h"
 #include "ISubstanceManager.h"
-#include "AssetTypes/SubstanceArchive.h"
+#include "SandboxPlugin.h"
 
-#include <FilePathUtil.h>
-#include "Util/FileUtil.h"
+#include <AssetSystem/Asset.h>
+#include <AssetSystem/AssetImportContext.h>
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/EditableAsset.h>
+#include <AssetSystem/Loader/AssetLoaderHelpers.h>
+#include <PathUtils.h>
+
+#include <Util/FileUtil.h>
 
 
 namespace EditorSubstance
@@ -62,7 +64,7 @@ namespace EditorSubstance
 			}
 			CEditableAsset editAsset = ctx.CreateEditableAsset(*currentAsset);
 			editAsset.SetMetadataFile(relativeFileName + ".cryasset");
-			editAsset.SetFiles("", { relativeFileName });
+			editAsset.SetFiles({ relativeFileName });
 
 			//////////////////////////////////////////////////////////////////////////
 			// gather the information about substance graph

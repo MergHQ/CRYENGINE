@@ -2,15 +2,22 @@
 
 #include "StdAfx.h"
 #include "ObjectPhysicsManager.h"
-#include "Objects/BaseObject.h"
-#include "EntityObject.h"
+
 #include "BrushObject.h"
+#include "EntityObject.h"
 #include "GameEngine.h"
-#include "Util/BoostPythonHelpers.h"
 #include "Material/MaterialManager.h"
+#include "Objects/BaseObject.h"
+#include "PathUtils.h"
 #include "QT/Widgets/QWaitProgress.h"
-#include "FilePathUtil.h"
+#include "ObjectManager.h"
+#include "Util/BoostPythonHelpers.h"
+#include <Util/FileUtil.h>
+#include <Util/XmlArchive.h>
 #include <CryMath/Random.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
 
 #define MAX_OBJECTS_PHYS_SIMULATION_TIME (5)
 
@@ -77,11 +84,19 @@ void PyPhysicsGenerateJoints()
 		pPhysicsManager->Command_GenerateJoints();
 	}
 }
+
+void PyPhysicsStiffIK()
+{
+	ICVar *pStiff = gEnv->pConsole->GetCVar("ed_PhysToolIKStiffMode");
+	QAction* pAction = GetIEditorImpl()->GetICommandManager()->GetAction("physics.stiff_IK");
+	if (pStiff && pAction)
+	{
+		pStiff->Set(!pStiff->GetIVal());
+		pAction->setChecked(pStiff->GetIVal());
+	}
+}
 }
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyPhysicsSimulateObjects, physics, simulate_objects,
-                                     "Applies the physics simulation.",
-                                     "physics.simulate_objects()");
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyPhysicsResetState, physics, reset_state,
                                      "Signals that physics state must be reset on the object.",
                                      "physics.reset_state(str entityName)");
@@ -91,15 +106,29 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyPhysicsGetState, physics, get_state,
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyPhysicsSimulateSelection, physics, simulate_selection,
                                      "Applies the physics simulation to the selected objects.",
                                      "physics.simulate_selection()");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyPhysicsResetSelection, physics, reset_state_selection,
-                                     "Signals that physics state must be reset on the selected objects.",
-                                     "physics.reset_state_selection");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyPhysicsGetStateSelection, physics, get_state_selection,
-                                     "Signals that the object should accept its physical state from game.",
-                                     "physics.get_state_selection");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyPhysicsGenerateJoints, physics, generate_joints,
-                                     "Signals that the object should accept its physical state from game.",
-                                     "physics.generate_joints");
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyPhysicsSimulateObjects, physics, simulate_objects,
+                                   CCommandDescription("Applies the physics simulation."))
+REGISTER_EDITOR_UI_COMMAND_DESC(physics, simulate_objects, "Simulate Objects", "", "icons:General/Simulate_Physics.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionPhysics_Simulate_Objects, physics, simulate_objects)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyPhysicsResetSelection, physics, reset_state_selection,
+                                   CCommandDescription("Signals that physics state must be reset on the selected objects."))
+REGISTER_EDITOR_UI_COMMAND_DESC(physics, reset_state_selection, "Reset Physics State", "", "icons:General/Reset_Physics.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionReset_Physics_State, physics, reset_state_selection)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyPhysicsGetStateSelection, physics, get_state_selection,
+                                   CCommandDescription("Signals that the object should accept its physical state from game."))
+REGISTER_EDITOR_UI_COMMAND_DESC(physics, get_state_selection, "Get Physics State", "", "icons:General/Get_Physics.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionGet_Physics_State, physics, get_state_selection)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyPhysicsGenerateJoints, physics, generate_joints,
+                                   CCommandDescription("Triggers generation of breakable joints"))
+REGISTER_EDITOR_UI_COMMAND_DESC(physics, generate_joints, "Generate Breakable Joints", "", "icons:General/Physics_Generate_Joints.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionPhysics_Generate_Joints, physics, generate_joints)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyPhysicsStiffIK, physics, stiff_IK,	CCommandDescription("Switches to a more stiff ragdoll IK mode"))
+REGISTER_EDITOR_UI_COMMAND_DESC(physics, stiff_IK, "Use Stiff IK Mode", "", "icons:Designer/Designer_Multiply.ico", true)
 
 //////////////////////////////////////////////////////////////////////////
 CObjectPhysicsManager::CObjectPhysicsManager()
@@ -314,7 +343,7 @@ void CObjectPhysicsManager::Command_GenerateJoints()
 		if (pSelection->GetObject(iobj)->GetType() == OBJTYPE_ENTITY || pSelection->GetObject(iobj)->GetType() == OBJTYPE_BRUSH)
 		{
 			CBaseObject* pObj = pSelection->GetObject(iobj);
-			IStatObj* pTrgObj, * pCutObj = 0;
+			IStatObj* pTrgObj = nullptr;
 			IMaterial* pSrcMtl = pObj->GetMaterial() ? pObj->GetMaterial()->GetMatInfo() : 0, * pTplMtl = 0;
 			if (pObj->GetType() == OBJTYPE_ENTITY)
 			{
@@ -430,9 +459,7 @@ void CObjectPhysicsManager::Command_GenerateJoints()
 							if (VerifySingleProxy(pObjTpl))
 							{
 								IStatObj* pCutObj = pObjTpl->Clone(true, true, true), * pSrcObj = pSubObj0->pStatObj;
-								AABB boxTpl = pObjTpl->GetAABB(), boxSrc = pSrcObj->GetAABB();
-								Vec3 szSrc = boxSrc.GetSize(), szTpl = boxTpl.GetSize();
-								int imaxTpl = idxmax3(szTpl), iminTpl = idxmin3(szTpl), imaxSrc = idxmax3(szSrc), iminSrc = idxmin3(szSrc) != imaxSrc ? idxmin3(szSrc) : 2 - imaxSrc;
+								AABB boxTpl = pObjTpl->GetAABB();
 								gwd[1].R = align == -2 ? tplR.T() * gwd[1].R : Matrix33(IDENTITY);
 								AlignCutTemplate(pSrcObj, pObjTpl, align, tplOffs, tplScale, gwd[1].R, gwd[1].offset, gwd[1].scale);
 								gEnv->pLog->LogToConsole("Template orientation in source: x-> %c%c, y-> %c%c, z-> %c%c",
@@ -566,7 +593,7 @@ void CObjectPhysicsManager::Command_GenerateJoints()
 											slot.bIdentityMatrix = 0;
 											slot.tm = pSubObj0->tm * (slot.localTM = tmTpl2Src * slot0.localTM);
 											slot.name = slot0.name + string("_0000");
-											cry_sprintf((char *const)slot.name.end()-4, 5, "%04d", pTrgObj->GetSubObjectCount());
+											cry_sprintf((char* const)slot.name.end() - 4, 5, "%04d", pTrgObj->GetSubObjectCount());
 											slot.properties = slot0.properties;
 											if (kmass && !strstr(slot0.properties, "mass"))
 											{
@@ -742,8 +769,6 @@ void CObjectPhysicsManager::SimulateSelectedObjectsPositions()
 
 	m_pProgress = new CWaitProgress("Simulating Objects");
 
-	GetIEditorImpl()->GetGameEngine()->SetSimulationMode(true, true);
-
 	m_simObjects.clear();
 	for (int i = 0; i < pSel->GetCount(); i++)
 	{
@@ -757,8 +782,12 @@ void CObjectPhysicsManager::SimulateSelectedObjectsPositions()
 		pPhysEntity->Action(&aa);
 
 		m_simObjects.push_back(pSel->GetObject(i));
+		if (pObject->GetIEntity())
+			pObject->SetWorldTM(pObject->GetIEntity()->GetWorldTM());
 	}
 	m_wasSimObjects = m_simObjects.size();
+
+	GetIEditorImpl()->GetGameEngine()->SetSimulationMode(true, true);
 
 	m_fStartObjectSimulationTime = GetISystem()->GetITimer()->GetAsyncCurTime();
 	m_bSimulatingObjects = true;
@@ -847,7 +876,7 @@ void CObjectPhysicsManager::SerializeCollisionClasses(CXmlArchive& xmlAr)
 	if (!xmlAr.bLoading)
 	{
 		// Storing
-		CLogFile::WriteLine("Storing Collision Classes ...");
+		CryLog("Storing Collision Classes ...");
 
 		XmlNodeRef root = xmlAr.root->newChild("CollisionClasses");
 		int count = m_collisionClasses.size();
@@ -860,4 +889,3 @@ void CObjectPhysicsManager::SerializeCollisionClasses(CXmlArchive& xmlAr)
 		}
 	}
 }
-

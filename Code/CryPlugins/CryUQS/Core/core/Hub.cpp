@@ -5,6 +5,7 @@
 #include <CryUQS/DataSource_XML/DataSource_XML_Includes.h>
 #include <CryUQS/Client/ClientIncludes.h>
 #include <CryUQS/StdLib/StdLibRegistration.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
@@ -21,7 +22,7 @@ namespace UQS
 
 		bool Hub_HaveConsistencyChecksBeenDoneAlready()
 		{
-			assert(g_pHub);
+			CRY_ASSERT(g_pHub);
 			return g_pHub->HaveConsistencyChecksBeenDoneAlready();
 		}
 
@@ -37,10 +38,9 @@ namespace UQS
 			: m_bConsistencyChecksDoneAlready(false)
 			, m_bAutomaticUpdateInProgress(false)
 			, m_queryHistoryInGameGUI(m_queryHistoryManager)
-			, m_queryManager(m_queryHistoryManager)
 			, m_pEditorLibraryProvider(nullptr)
 		{
-			assert(!g_pHub);
+			CRY_ASSERT(!g_pHub);
 			g_pHub = this;
 			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CHub");
 			m_utils.SubscribeToStuffInHub(*this);
@@ -56,9 +56,11 @@ namespace UQS
 			REGISTER_COMMAND("UQS_ListQueryBlueprintLibrary", CmdListQueryBlueprintLibrary, 0, "Prints all query-blueprints in the library to the console.");
 			REGISTER_COMMAND("UQS_ListRunningQueries", CmdListRunningQueries, 0, "Prints all currently running queries to the console.");
 			REGISTER_COMMAND("UQS_DumpQueryHistory", CmdDumpQueryHistory, 0, "Dumps all queries that were executed so far to an XML file for de-serialization at a later time.");
+			REGISTER_COMMAND("UQS_DumpQueryHistoryAsync", CmdDumpQueryHistoryAsync, 0, "Dumps all queries that were executed so far to an XML file for de-serialization at a later time.\nUses the job manager to perform the XML serialization asynchronously.");
 			REGISTER_COMMAND("UQS_LoadQueryHistory", CmdLoadQueryHistory, 0, "Loads a history of queries from an XML for debug-rendering and inspection in the 3D world.");
 			REGISTER_COMMAND("UQS_ClearLiveQueryHistory", CmdClearLiveQueryHistory, 0, "Clears the history of currently ongoing queries in memory.");
 			REGISTER_COMMAND("UQS_ClearDeserialzedQueryHistory", CmdClearDeserializedQueryHistory, 0, "Clears the history of queries previously loaded from disk into memory.");
+			REGISTER_COMMAND("UQS_PrintQueryHistoryStatisticsToConsole", CmdPrintQueryHistoryStatisticsToConsole, 0, "Prints some statistics (number of queries, memory usage) of the live and deserialized query history to the console.");
 		}
 
 		CHub::~CHub()
@@ -85,9 +87,9 @@ namespace UQS
 		{
 			CRY_PROFILE_FUNCTION(UQS_PROFILED_SUBSYSTEM_TO_USE);
 
-			// - if this assert fails, then the game code tries to do the update when it hasn't declared to do so
+			// - if this CRY_ASSERT fails, then the game code tries to do the update when it hasn't declared to do so
 			// - this check is done to prevent updating from more than one place
-			assert(gEnv->IsEditing() || (m_bAutomaticUpdateInProgress == !m_overrideFlags.Check(EHubOverrideFlags::CallUpdate)));
+			CRY_ASSERT(gEnv->IsEditing() || (m_bAutomaticUpdateInProgress == !m_overrideFlags.Check(EHubOverrideFlags::CallUpdate)));
 
 			//
 			// query manager
@@ -207,13 +209,13 @@ namespace UQS
 
 		void CHub::AutomaticUpdateBegin()
 		{
-			assert(!m_bAutomaticUpdateInProgress);
+			CRY_ASSERT(!m_bAutomaticUpdateInProgress);
 			m_bAutomaticUpdateInProgress = true;
 		}
 
 		void CHub::AutomaticUpdateEnd()
 		{
-			assert(m_bAutomaticUpdateInProgress);
+			CRY_ASSERT(m_bAutomaticUpdateInProgress);
 			m_bAutomaticUpdateInProgress = false;
 		}
 
@@ -266,7 +268,7 @@ namespace UQS
 					}
 				}
 
-				// from now on, don't allow any further factory registrations (UQS::Core::CFactoryDatabase<>::RegisterFactory() will assert for it)
+				// from now on, don't allow any further factory registrations (UQS::Core::CFactoryDatabase<>::RegisterFactory() will CRY_ASSERT for it)
 				m_bConsistencyChecksDoneAlready = true;
 
 #if UQS_SCHEMATYC_SUPPORT
@@ -365,35 +367,31 @@ namespace UQS
 		{
 			if (g_pHub)
 			{
-				//
-				// create an XML filename with a unique counter as part of it
-				//
-
-				stack_string unadjustedFilePath;
-
-				for (int uniqueCounter = 0; uniqueCounter < 9999; ++uniqueCounter)
+				CryPathString adjustedFilePath;
+				if (HelpBuildHistoryDumpFilePath(pArgs, "QueryHistory_", adjustedFilePath))
 				{
-					unadjustedFilePath.Format("%%USER%%/UQS_Logs/QueryHistory_%04i.xml", uniqueCounter);
-					if (!gEnv->pCryPak->IsFileExist(unadjustedFilePath))	// no need to call gEnv->pCryPak->AdjustFileName() beforehand
-						break;
+					Shared::CUqsString error;
+					if (g_pHub->m_queryHistoryManager.SerializeLiveQueryHistory(adjustedFilePath, error))
+					{
+						CryLogAlways("Successfully dumped query history to '%s'", adjustedFilePath.c_str());
+					}
+					else
+					{
+						CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Serializing the live query to '%s' failed: %s", pArgs->GetArg(0), adjustedFilePath.c_str(), error.c_str());
+					}
 				}
+			}
+		}
 
-				char adjustedFilePath[ICryPak::g_nMaxPath] = "";
-
-				if (!gEnv->pCryPak->AdjustFileName(unadjustedFilePath.c_str(), adjustedFilePath, ICryPak::FLAGS_FOR_WRITING))
+		void CHub::CmdDumpQueryHistoryAsync(IConsoleCmdArgs* pArgs)
+		{
+			if (g_pHub)
+			{
+				CryPathString adjustedFilePath; 
+				if (HelpBuildHistoryDumpFilePath(pArgs, "QueryHistory_Async_", adjustedFilePath))
 				{
-					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Could not adjust the desired file path '%s' for writing", pArgs->GetArg(0), unadjustedFilePath.c_str());
-					return;
+					g_pHub->m_queryHistoryManager.SerializeLiveQueryHistoryAsync(adjustedFilePath);
 				}
-
-				Shared::CUqsString error;
-				if (!g_pHub->m_queryHistoryManager.SerializeLiveQueryHistory(adjustedFilePath, error))
-				{
-					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Serializing the live query to '%s' failed: %s", pArgs->GetArg(0), unadjustedFilePath.c_str(), error.c_str());
-					return;
-				}
-
-				CryLogAlways("Successfully dumped query history to '%s'", adjustedFilePath);
 			}
 		}
 
@@ -440,6 +438,41 @@ namespace UQS
 			if (g_pHub)
 			{
 				g_pHub->m_queryHistoryManager.ClearQueryHistory(IQueryHistoryManager::EHistoryOrigin::Deserialized);
+			}
+		}
+
+		void CHub::CmdPrintQueryHistoryStatisticsToConsole(IConsoleCmdArgs* pArgs)
+		{
+			if (g_pHub)
+			{
+				g_pHub->m_queryHistoryManager.PrintStatisticsOfLiveAndDeserializedHistoryToConsole();
+			}
+		}
+
+		bool CHub::HelpBuildHistoryDumpFilePath(IConsoleCmdArgs* pArgs, const char* szFileNamePrefix, CryPathString& outFilePath)
+		{
+			//
+			// create an XML filename with a unique counter as part of it
+			//
+
+			CryPathString unadjustedFilePath;
+
+			for (int uniqueCounter = 0; uniqueCounter < 9999; ++uniqueCounter)
+			{
+				unadjustedFilePath.Format("%%USER%%/UQS_Logs/%s%04i.xml", szFileNamePrefix, uniqueCounter);
+				if (!gEnv->pCryPak->IsFileExist(unadjustedFilePath))	// no need to call gEnv->pCryPak->AdjustFileName() beforehand
+					break;
+			}
+
+			gEnv->pCryPak->AdjustFileName(unadjustedFilePath.c_str(), outFilePath, ICryPak::FLAGS_FOR_WRITING);
+			if (!outFilePath.empty())
+			{
+				return true;
+			}
+			else
+			{
+				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Could not adjust the desired file path '%s' for writing", pArgs->GetArg(0), unadjustedFilePath.c_str());
+				return false;
 			}
 		}
 

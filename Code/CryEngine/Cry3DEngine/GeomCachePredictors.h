@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // ------------------------------------------------------------------------
-//  File name:   GeomCachePredictors.h
-//  Created:     17/1/2013 by Axel Gneiting
 //  Description: Predictors for index frame compression
 // -------------------------------------------------------------------------
-////////////////////////////////////////////////////////////////////////////
 
 #include <Cry3DEngine/GeomCacheFileFormat.h>
 

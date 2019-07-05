@@ -1,16 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-//////////////////////////////////////////////////////////////////////////
-//  CryENGINE Source File
-//  Copyright (C) 2000-2012, Crytek GmbH, All rights reserved
-//////////////////////////////////////////////////////////////////////////
 
-#include <CryString/StringUtils.h>
 #include "dll_string.h"
-#include <CryCore/functor.h>
 #include "FileSystem/FileSystem_FileFilter.h"
 #include "FileDialogs/ExtensionFilter.h"
+#include "MFCToolsDefines.h"
+#include <CryCore/functor.h>
+#include <CryCore/Containers/CryArray.h>
+#include <CryString/StringUtils.h>
+#include <set>
+#include <vector>
 
 class CWnd;
 class CDynamicPopupMenu;
@@ -29,7 +29,7 @@ enum ECustomFileType
 	EFILE_TYPE_LAST,
 };
 
-class PLUGIN_API CFileUtil
+class MFC_TOOLS_PLUGIN_API CFileUtil
 {
 public:
 	struct FileDesc
@@ -296,28 +296,3 @@ private:
 	static bool ExtractDccFilenameFromAssetDatabase(const CString& assetFilename, CString& dccFilename);
 	static bool ExtractDccFilenameUsingNamingConventions(const CString& assetFilename, CString& dccFilename);
 };
-
-//
-// A helper for creating a temp file to write to, then copying that over the destination
-// file only if it changes (to avoid requiring the user to check out source controlled
-// file unnecessarily)
-//
-class PLUGIN_API CTempFileHelper
-{
-public:
-	CTempFileHelper(const char* pFileName);
-	~CTempFileHelper();
-
-	// Gets the path to the temp file that should be written to
-	const CString& GetTempFilePath() { return m_tempFileName; }
-
-	// After the temp file has been written and closed, this should be called to update
-	// the destination file.
-	// If bBackup is true CFileUtil::BackupFile will be called if the file has changed.
-	bool UpdateFile(bool bBackup);
-
-private:
-	CString m_fileName;
-	CString m_tempFileName;
-};
-

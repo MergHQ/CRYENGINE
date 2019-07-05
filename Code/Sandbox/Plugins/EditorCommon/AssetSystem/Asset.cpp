@@ -2,16 +2,23 @@
 #include "StdAfx.h"
 #include "Asset.h"
 
-#include "AssetType.h"
-#include "AssetManager.h"
 #include "AssetEditor.h"
+#include "AssetManager.h"
+#include "AssetType.h"
+#include "DependencyTracker.h"
+#include "EditableAsset.h"
 #include "Loader/Metadata.h"
+#include "Notifications/NotificationCenter.h"
 
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
 
+#include <IEditor.h>
+
 #include <CryString/CryPath.h>
+#include <QFileInfo>
+
 
 namespace Private_Asset
 {
@@ -23,6 +30,7 @@ static AssetLoader::SAssetMetadata GetMetadata(const CAsset& asset)
 	metadata.guid = asset.GetGUID();
 	metadata.sourceFile = PathUtil::GetFile(asset.GetSourceFile());
 	metadata.files = asset.GetFiles();
+	metadata.workFiles = asset.GetWorkFiles();
 	metadata.details = asset.GetDetails();
 
 	const std::vector<SAssetDependencyInfo>& dependencies = asset.GetDependencies();
@@ -37,19 +45,19 @@ static AssetLoader::SAssetMetadata GetMetadata(const CAsset& asset)
 	// Data files are relative to the asset
 	for (string& str : metadata.files)
 	{
-		if (strncmp(path.c_str(), str.c_str(), path.size()) == 0)
+		if (strnicmp(path.c_str(), str.c_str(), path.size()) == 0)
 		{
 			str.erase(0, path.size());
 		}
 	}
 
-	// Depencencies may be relative to:
+	// Dependencies may be relative to:
 	// - the asset 
 	// - the assets root directory.
 	for (auto& item : metadata.dependencies)
 	{
 		string& str = item.first;
-		if (strncmp(path.c_str(), str.c_str(), path.size()) == 0)
+		if (!path.empty() && strnicmp(path.c_str(), str.c_str(), path.size()) == 0)
 		{
 			// The path is relative to the asset. 
 			str.Format("./%s", str.substr(path.size()));
@@ -63,7 +71,7 @@ static uint64 GetModificationTime(const string& filePath)
 {
 	uint64 timestamp = 0;
 	ICryPak* const pPak = GetISystem()->GetIPak();
-	FILE* pFile = pPak->FOpen(filePath.c_str(), "rbx");
+	FILE* pFile = pPak->FOpen(filePath.c_str(), "rb");
 	if (pFile)
 	{
 		timestamp = pPak->GetModificationTime(pFile);
@@ -72,12 +80,37 @@ static uint64 GetModificationTime(const string& filePath)
 	return timestamp;
 }
 
+bool AddUniqueFile(const string& file, std::vector<string>& files, const string& assetName, const string& fileType)
+{
+	// Ignore empty files.
+	if (file.empty())
+	{
+		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of empty %s '%s' to asset '%s'", fileType, file.c_str(), assetName));
+		return false;
+	}
+
+	// Ignore duplicate files.
+	const string unixFile = PathUtil::ToUnixPath(file);
+	const auto it = std::find_if(files.begin(), files.end(), [&unixFile](auto& other)
+	{
+		return !stricmp(PathUtil::ToUnixPath(other), unixFile);
+	});
+	if (it != files.end())
+	{
+		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of duplicate %s '%s' to asset '%s'", fileType, file.c_str(), assetName));
+		return false;
+	}
+
+	files.push_back(file);
+	return true;
+}
+
 } // namespace Private_Asset
 
 CAsset::CAsset(const char* type, const CryGUID& guid, const char* name)
 	: m_name(name)
 	, m_guid(guid)
-	, m_editor(nullptr)
+	, m_pEditor(nullptr)
 {
 	m_flags.bitField = 0;
 	m_type = GetIEditor()->GetAssetManager()->FindAssetType(type);
@@ -93,15 +126,13 @@ CAsset::CAsset(const char* type, const CryGUID& guid, const char* name)
 }
 
 CAsset::~CAsset()
-{
+{ }
 
-}
-
-const char* CAsset::GetFolder() const
+const string& CAsset::GetFolder() const
 {
 	if (m_folder.empty())
 		m_folder = PathUtil::GetDirectory(m_metadataFile);
-	return m_folder.c_str();
+	return m_folder;
 }
 
 bool CAsset::HasSourceFile() const
@@ -124,10 +155,29 @@ const string CAsset::GetDetailValue(const string& detailName) const
 	return it != m_details.end() && it->first == detailName ? it->second : string();
 }
 
+std::pair<bool, int> CAsset::IsAssetUsedBy(const char* szAnotherAssetPath) const
+{
+	const CDependencyTracker* const pDependencyTracker = CAssetManager::GetInstance()->GetDependencyTracker();
+	return pDependencyTracker->IsAssetUsedBy(GetFile(0), szAnotherAssetPath);
+}
+
+std::pair<bool, int> CAsset::DoesAssetUse(const char* szAnotherAssetPath) const
+{
+	// TODO: binary search
+	auto i = std::find_if(m_dependencies.cbegin(), m_dependencies.cend(), [szAnotherAssetPath](const SAssetDependencyInfo& x)
+	{
+		return x.path.CompareNoCase(szAnotherAssetPath) == 0;
+	});
+
+	return (i != m_dependencies.cend()) ? std::make_pair(true, (*i).usageCount) : std::make_pair(false, 0);
+}
+
 void CAsset::Reimport()
 {
-	if (!IsReadOnly() && GetType()->IsImported())
+	if (!IsImmutable() && GetType()->IsImported() && IsWritable())
+	{
 		CAssetManager::GetInstance()->Reimport(this);
+	}
 }
 
 bool CAsset::CanBeEdited() const
@@ -135,9 +185,23 @@ bool CAsset::CanBeEdited() const
 	return m_type->CanBeEdited();
 }
 
-bool CAsset::IsReadOnly() const
+bool CAsset::IsWritable(bool includeSourceFile /*= true*/) const
 {
-	return m_flags.readOnly;
+	const std::vector<string> filepaths(m_type->GetAssetFiles(*this, includeSourceFile, true));
+	for (const string& path : filepaths)
+	{
+		const QFileInfo fileInfo(QtUtil::ToQString(path));
+		if (fileInfo.exists() && !fileInfo.isWritable())
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+bool CAsset::IsImmutable() const
+{
+	return m_flags.immutable;
 }
 
 void CAsset::Edit(CAssetEditor* pEditor)
@@ -145,13 +209,15 @@ void CAsset::Edit(CAssetEditor* pEditor)
 	if (!CanBeEdited())
 		return;
 
-	if (m_editor)
+	if (m_pEditor)
 	{
-		m_editor->Raise();
-		m_editor->Highlight();
+		m_pEditor->Raise();
+		m_pEditor->Highlight();
 	}
 	else if (pEditor != nullptr)
 	{
+		pEditor->Raise();
+		pEditor->Highlight();
 		pEditor->OpenAsset(this);
 	}
 	else
@@ -163,21 +229,32 @@ void CAsset::Edit(CAssetEditor* pEditor)
 void CAsset::OnOpenedInEditor(CAssetEditor* pEditor)
 {
 	CRY_ASSERT(pEditor);
-	if (m_editor != pEditor)
+	if (m_pEditor != pEditor)
 	{
-		m_editor = pEditor;
+		m_pEditor = pEditor;
 		m_flags.open = true;
-
-		m_editor->signalAssetClosed.Connect(std::function<void(CAsset*)>([this, pEditor](CAsset* pAsset)
+		if (!m_pEditingSession)
 		{
-			if (pAsset == this && pEditor == m_editor)
+			m_pEditingSession = std::move(m_pEditor->CreateEditingSession());
+		}
+
+		m_pEditor->signalAssetClosed.Connect(std::function<void(CAsset*)>([this, pEditor](CAsset* pAsset)
+		{
+			if (pAsset == this && pEditor == m_pEditor)
 			{
-				m_editor = nullptr;
+				m_pEditor->signalAssetClosed.DisconnectById((uintptr_t)this);
+
+				m_pEditor = nullptr;
 				m_flags.open = false;
+
+				if (!IsModified())
+				{
+					m_pEditingSession.reset();
+				}
 
 				NotifyChanged(eAssetChangeFlags_Open);
 			}
-		}));
+		}), (uintptr_t)this);
 
 		NotifyChanged(eAssetChangeFlags_Open);
 	}
@@ -195,8 +272,52 @@ void CAsset::SetModified(bool bModified)
 
 void CAsset::Save()
 {
-	if (m_editor)
-		m_editor->Save();
+	if (!m_pEditingSession && !m_pEditor)
+	{
+		// Have nothing to save.
+		return;
+	}
+
+	if (IsImmutable() || !IsWritable(false))
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to save \"%s\". The asset is read-only.", m_name.c_str());
+		return;
+	}
+
+	CEditableAsset editAsset(*this);
+	bool saved = false;
+
+	if (m_pEditingSession)
+	{
+		saved = m_pEditingSession->OnSaveAsset(editAsset);
+	}
+	else //if (m_pEditor)
+	{
+		saved = m_pEditor->OnSaveAsset(editAsset);
+	}
+
+	if (!saved || !WriteToFile())
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Failed to save asset \"%s\"", m_name.c_str());
+		return;
+	}
+
+	InvalidateThumbnail();
+	SetModified(false);
+}
+
+void CAsset::Reload()
+{
+	if (m_pEditor)
+	{
+		m_pEditor->DiscardAssetChanges();
+	}
+	else if (m_pEditingSession)
+	{
+		CEditableAsset editAsset(*this);
+		m_pEditingSession->DiscardChanges(editAsset);
+		SetModified(false);
+	}
 }
 
 QIcon CAsset::GetThumbnail() const
@@ -215,7 +336,7 @@ QIcon CAsset::GetThumbnail() const
 
 void CAsset::GenerateThumbnail() const
 {
-	if (!IsReadOnly() && m_type->HasThumbnail())
+	if (!IsImmutable() && m_type->HasThumbnail())
 		m_type->GenerateThumbnail(this);
 }
 
@@ -238,17 +359,20 @@ bool CAsset::Validate() const
 	return valid;
 }
 
-void CAsset::WriteToFile()
+bool CAsset::WriteToFile()
 {
 	using namespace Private_Asset;
 
 	XmlNodeRef node = XmlHelpers::CreateXmlNode(AssetLoader::GetMetadataTag());
 	AssetLoader::WriteMetaData(node, GetMetadata(*this));
 
-	if (XmlHelpers::SaveXmlNode(node, m_metadataFile))
+	if (!XmlHelpers::SaveXmlNode(node, m_metadataFile))
 	{
-		m_lastModifiedTime = GetModificationTime(m_metadataFile);
+		return false;
 	}
+
+	m_lastModifiedTime = GetModificationTime(m_metadataFile);
+	return true;
 }
 
 void CAsset::SetName(const char* szName)
@@ -266,7 +390,7 @@ void CAsset::SetMetadataFile(const char* szFilepath)
 	m_metadataFile = PathUtil::ToUnixPath(szFilepath);
 
 	const char* const szEngine = "%engine%";
-	m_flags.readOnly = strnicmp(szEngine, szFilepath, strlen(szEngine)) == 0;
+	m_flags.immutable = strnicmp(szEngine, szFilepath, strlen(szEngine)) == 0;
 	m_folder.clear();
 }
 
@@ -275,49 +399,33 @@ void CAsset::SetSourceFile(const char* szFilepath)
 	m_sourceFile = PathUtil::ToUnixPath(szFilepath);
 }
 
-void CAsset::AddFile(const string& file)
+void CAsset::AddFile(const string& filePath)
 {
-	// Ignore empty files.
-	if (file.empty())
-	{
-		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of empty file '%s' to asset '%s'", file.c_str(), m_name.c_str()));
-		return;
-	}
-
-	// Ignore duplicate files.
-	const string unixFile = PathUtil::ToUnixPath(file);
-	const auto it = std::find_if(m_files.begin(), m_files.end(), [&unixFile](auto& other)
-	{
-		return !stricmp(PathUtil::ToUnixPath(other), unixFile);
-	});
-	if (it != m_files.end())
-	{
-		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_WARNING, string().Format("Ignoring addition of duplicate file '%s' to asset '%s'", file.c_str(), m_name.c_str()));
-		return;
-	}
-
-	m_files.push_back(file);
+	Private_Asset::AddUniqueFile(filePath, m_files, "file", m_name);
 }
 
-void CAsset::SetFiles(const char* szCommonPath, const std::vector<string>& filenames)
+void CAsset::SetFiles(const std::vector<string>& filenames)
 {
 	m_files.clear();
+	m_files.reserve(filenames.size());
+	for (const string& filename : filenames)
+	{
+		AddFile(filename);
+	}
+}
 
-	if (szCommonPath && *szCommonPath)
+void CAsset::AddWorkFile(const string& filePath)
+{
+	Private_Asset::AddUniqueFile(filePath, m_workFiles, "work file", m_name);
+}
+
+void CAsset::SetWorkFiles(const std::vector<string>& filenames)
+{
+	if (m_workFiles == filenames)
 	{
-		for (const string& filename : filenames)
-		{
-			const string filepath = PathUtil::Make(szCommonPath, filename.c_str());
-			AddFile(filepath);
-		}
+		return;
 	}
-	else
-	{
-		for (const string& filename : filenames)
-		{
-			AddFile(filename);
-		}
-	}
+	m_workFiles = filenames;
 }
 
 void CAsset::SetDetail(const string& name, const string& value)
@@ -343,13 +451,13 @@ void CAsset::SetDetail(const string& name, const string& value)
 	}
 }
 
-void CAsset::SetDependencies(std::vector<SAssetDependencyInfo> dependencies)
+void CAsset::SetDependencies(const std::vector<SAssetDependencyInfo>& dependencies)
 {
-	for (SAssetDependencyInfo& filename : dependencies)
+	m_dependencies.clear();
+	for (const SAssetDependencyInfo& info : dependencies)
 	{
-		filename.path = PathUtil::ToUnixPath(filename.path);
+		m_dependencies.emplace_back(PathUtil::ToUnixPath(info.path), info.usageCount);
 	}
-	m_dependencies = std::move(dependencies);
 }
 
 string CAsset::GetThumbnailPath() const
@@ -394,4 +502,3 @@ const QString& CAsset::GetFilterString(bool forceCompute /*=false*/) const
 
 	return m_filterString;
 }
-

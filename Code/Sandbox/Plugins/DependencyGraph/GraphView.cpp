@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Plugin.h"
 #include "GraphView.h"
+
 #include "GraphViewModel.h"
-#include "NodeGraph\AbstractNodeGraphViewModel.h"
-#include "NodeGraph\NodeGraphViewBackground.h"
+#include "Plugin.h"
 
 #include <FileDialogs/ExtensionFilter.h>
 #include <FileDialogs/SystemFileDialog.h>
@@ -119,7 +118,9 @@ void CGraphView::ShowGraphContextMenu(QPointF screenPos)
 		CAbstractDictionary* pAvailableNodesDictionary = pModel->GetRuntimeContext().GetAvailableNodesDictionary();
 		if (pAvailableNodesDictionary)
 		{
+			m_pSearchPopupContent->RemoveAllDictionaries();
 			m_pSearchPopupContent->AddDictionary(*pAvailableNodesDictionary);
+
 			m_pSearchPopup->ShowAt(QPoint(screenPos.x(), screenPos.y()));
 		}
 	}
@@ -164,4 +165,3 @@ void CAssetWidget::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* pEvent)
 
 	CryGraphEditor::CNodeWidget::mouseDoubleClickEvent(pEvent);
 }
-

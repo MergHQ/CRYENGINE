@@ -6,9 +6,9 @@
 // EditorCommon.
 #include <Controls/QuestionDialog.h>
 #include <FileDialogs/EngineFileDialog.h>
-#include <FilePathUtil.h>
-#include <QViewport.h>
 #include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
+#include <QViewport.h>
 #include <ThreadingUtils.h>
 
 // EditorQt.
@@ -18,10 +18,11 @@
 #include <CrySystem/IProjectManager.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
+#include <QApplication>
 #include <QDir>
-#include <QTextStream>
 #include <QTemporaryDir>
 #include <QTemporaryFile>
+#include <QTextStream>
 
 void LogPrintf(const char* szFormat, ...);
 
@@ -30,10 +31,16 @@ QString GetAbsoluteGameFolderPath()
 	return QtUtil::ToQString(gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryAbsolute());
 }
 
+static const char* GetAdjustedTempAssetFolder(CryPathString& path)
+{
+	gEnv->pCryPak->AdjustFileName("%USER%/MeshImporter", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+	return path.c_str();
+}
+
 static QString GetTempAssetFolder()
 {
-	char path[ICryPak::g_nMaxPath] = {};
-	static const QString folder = QtUtil::ToQString(gEnv->pCryPak->AdjustFileName("%USER%/MeshImporter", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH));
+	CryPathString path;
+	static const QString folder = QtUtil::ToQString(GetAdjustedTempAssetFolder(path));
 	QDir().mkpath(folder);
 	return folder;
 }
@@ -46,12 +53,12 @@ QString AppendPath(const QString& lhp, const QString& rhp)
 string MakeAlphaNum(const string& str)
 {
 	string res;
+	res.reserve(str.length());
+
 	for (int i = 0; i < str.length(); ++i)
 	{
-		res += isalnum(str[i]) ? str[i] : ' ';
+		res += isalnum(str[i]) ? str[i] : '_';
 	}
-
-	res.Trim();
 
 	return res;
 }
@@ -416,5 +423,3 @@ std::future<std::pair<bool, string>> CopySourceFileToDirectoryAsync(const string
 		}
 	});
 }
-
-

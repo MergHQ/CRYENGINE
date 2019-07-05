@@ -1,0 +1,21 @@
+{
+    "NoUberFile": {
+        "Code": [
+            "SubstanceCommon.h",
+            "SubstanceCommon.cpp",
+            "SubstancePreset.h",
+            "SubstancePreset.cpp",
+            "ISubstanceManager.h",
+            "SubstanceManager.h",
+            "SubstanceManager.cpp",
+            "SerializationSubstanceEnums.inl",
+            "RCConfigParser.inl",
+            "ISubstanceInstanceRenderer.h"
+        ],
+        "Root": [
+            "StdAfx.cpp",
+            "StdAfx.h",
+            "CrySubstanceAPI.h"
+        ]
+    }
+}

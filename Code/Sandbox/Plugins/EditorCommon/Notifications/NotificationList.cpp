@@ -163,7 +163,7 @@ void CNotificationList::ClearAll()
 void CNotificationList::OnContextMenu(const QPoint& point)
 {
 	QMenu menu;
-	connect(menu.addAction(CryIcon("icons:General/File_Copy.ico"), "Copy"), &QAction::triggered, [this, point]()
+	connect(menu.addAction(CryIcon("icons:General/Copy.ico"), "Copy"), &QAction::triggered, [this, point]()
 	{
 		QObject* pChild = childAt(point);
 		CNotificationWidget* pNotificationWidget = qobject_cast<CNotificationWidget*>(pChild);
@@ -181,4 +181,3 @@ void CNotificationList::OnContextMenu(const QPoint& point)
 	});
 	menu.exec(QCursor::pos());
 }
-

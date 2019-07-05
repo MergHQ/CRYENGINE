@@ -25,18 +25,6 @@
 	#define NAME_FROM_OP(pOp) ""
 #endif
 
-#if ENABLE_CORRUPT_PACKET_DUMP
-static char* eOpNames[] =
-{
-	"eO_NoOp",
-	#define SERIALIZATION_TYPE(T) "eO_" # T,
-	#include <CryNetwork/SerializationTypes.h>
-	#undef SERIALIZATION_TYPE
-	"eO_String",
-	"eO_OptionalGroup"
-};
-#endif
-
 namespace
 {
 const int NUM_BITS_FOR_OPS_SIZE = 16;
@@ -139,7 +127,9 @@ public:
 	void Value(const char* name, T& value, uint32 policy)
 	{
 		NET_ASSERT(m_op < m_pChunk->m_ops.size());
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -170,7 +160,9 @@ public:
 	void Value(const char* name, SSerializeString& value, uint32 policy)
 	{
 		NET_ASSERT(m_op < m_pChunk->m_ops.size());
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -261,7 +253,9 @@ public:
 	template<class T>
 	void Value(const char* name, T& value, uint32 policy)
 	{
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -285,7 +279,9 @@ public:
 
 	void Value(const char* name, SSerializeString& value, uint32 policy)
 	{
+#if defined(USE_CRY_ASSERT)
 		SOp op = m_pChunk->m_ops[m_op];
+#endif
 #if TRACK_ENCODING
 		NET_ASSERT(0 == strcmp(name, op.name.c_str()));
 #endif
@@ -349,6 +345,12 @@ class CSerializationChunk::CBuildImpl : public CSimpleSerializeImpl<false, eST_N
 {
 public:
 	CBuildImpl(CSerializationChunk* pChunk) : m_pChunk(pChunk) {}
+	~CBuildImpl()
+	{
+		// If these asserts fire, then there is likely a mismatch between BeginOptionalGroup() and EndGroup()
+		NET_ASSERT(m_resolveConditions.empty());
+		NET_ASSERT(m_inOptionalGroup.empty());
+	}
 
 	template<class T>
 	void Value(const char* name, T& value, uint32 policy)
@@ -542,10 +544,13 @@ void CSerializationChunk::EncodeToStream(CByteInputStream& input, CNetOutputSeri
 	// TODO: this probably isn't necessary under the current implementation... maybe it could be removed and save a few cycles on serialization
 	MiniQueue<TOps::const_iterator, 128> endGroupOps;
 
+	// NOTE: disable unused variable warnings and never skip input.GetTyped() calls
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	ChunkID savedChunkID = input.GetTyped<ChunkID>();
 	uint8 savedProfile = input.GetTyped<uint8>();
 	NET_ASSERT(savedChunkID == chunkID);
 	NET_ASSERT(savedProfile == nProfile);
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
 
 #if CRC8_ASPECT_FORMAT
 	output.GetOutput().WriteBits(m_crc, 8);

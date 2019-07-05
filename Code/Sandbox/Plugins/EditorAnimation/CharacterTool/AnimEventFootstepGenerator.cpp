@@ -69,7 +69,7 @@ static bool SampleAnimation(BoneSampleMap* framesPerChannel, float* animationLen
 	{
 		const float fNormalizedTime = float(frame) * fInvNbFrames;
 
-		character->SetCharEditMode(CA_CharacterTool);
+		character->SetCharEditMode(CA_CharacterAuxEditor);
 		skeletonPose.SetForceSkeletonUpdate(1);
 
 		skeletonAnimation.SetLayerNormalizedTime(0, fNormalizedTime);
@@ -238,9 +238,6 @@ void FootstepGenerationParameters::SetRightFootJoint(const char* joint)
 //////////////////////////////////////////////////////////////////////////
 bool GenerateFootsteps(AnimationContent* content, string* errorMessage, ICharacterInstance* character, const char* animationName, const FootstepGenerationParameters& params)
 {
-	// Character path (to create intermediate char instances)
-	const char* szFilePath = character->GetFilePath();
-
 	// Sample the animation
 	IDefaultSkeleton& skeleton = character->GetIDefaultSkeleton();
 	float footHeight = params.footHeightMM * 0.001f;
@@ -287,4 +284,3 @@ bool GenerateFootsteps(AnimationContent* content, string* errorMessage, ICharact
 }
 
 }
-

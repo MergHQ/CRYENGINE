@@ -21,7 +21,6 @@
 #include "Leader.h"
 #include "CAISystem.h"
 #include "AICollision.h"
-#include "SmartObjects.h"
 #include "PathFollower.h"
 #include "AIVehicle.h"
 
@@ -206,12 +205,15 @@ bool CPuppet::CheckLineOfFire(const Vec3& vTargetPos, float fDistance, float fSo
 				}
 			}
 
-			m_lineOfFireState.rayID = gAIEnv.pRayCaster->Queue(RayCastRequest::HighestPriority,
-			                                                   RayCastRequest(
-			                                                     firePos, dir, COVER_OBJECT_TYPES,
-			                                                     AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
-			                                                     &skipList[0], skipList.size()),
-			                                                   functor(const_cast<CPuppet&>(*this), &CPuppet::LineOfFireRayComplete));
+			m_lineOfFireState.rayID = gAIEnv.pRayCaster->Queue(
+				RayCastRequest::HighestPriority,
+				RayCastRequest(
+					firePos, dir, COVER_OBJECT_TYPES,
+					AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
+					&skipList[0], skipList.size()),
+				functor(const_cast<CPuppet&>(*this), &CPuppet::LineOfFireRayComplete),
+				nullptr,
+				AIRayCast::SRequesterDebugInfo("CPuppet::CheckLineOfFire", GetEntityID()));
 		}
 
 		return m_lineOfFireState.result;
@@ -294,7 +296,7 @@ bool CPuppet::AdjustFireTarget(CAIObject* targetObject, const Vec3& target, bool
 		{
 			bool found = false;
 
-			if (targetObject && gAIEnv.CVars.EnableCoolMisses && cry_random(0.0f, 1.0f) < gAIEnv.CVars.CoolMissesProbability)
+			if (targetObject && gAIEnv.CVars.legacyFiring.EnableCoolMisses && cry_random(0.0f, 1.0f) < gAIEnv.CVars.legacyFiring.CoolMissesProbability)
 			{
 				if (CAIPlayer* player = targetObject->CastToCAIPlayer())
 				{
@@ -303,7 +305,7 @@ bool CPuppet::AdjustFireTarget(CAIObject* targetObject, const Vec3& target, bool
 
 					float distance = dir.NormalizeSafe();
 
-					if (distance >= gAIEnv.CVars.CoolMissesMinMissDistance)
+					if (distance >= gAIEnv.CVars.legacyFiring.CoolMissesMinMissDistance)
 						found = player->GetMissLocation(fireLocation, dir, clampAngle, out);
 				}
 			}
@@ -595,12 +597,14 @@ void CPuppet::QueueFireTargetValidRay(const CAIObject* targetObj, const Vec3& fi
 	}
 
 	m_validTargetState.rayID = gAIEnv.pRayCaster->Queue(
-	  RayCastRequest::HighestPriority,
-	  RayCastRequest(
-	    firePos, fireDir, COVER_OBJECT_TYPES,
-	    AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
-	    &skipList[0], skipList.size()),
-	  functor(*this, &CPuppet::FireTargetValidRayComplete));
+		RayCastRequest::HighestPriority,
+		RayCastRequest(
+			firePos, fireDir, COVER_OBJECT_TYPES,
+			AI_VISION_RAY_CAST_FLAG_BLOCKED_BY_SOLID_COVER,
+			&skipList[0], skipList.size()),
+		functor(*this, &CPuppet::FireTargetValidRayComplete),
+		nullptr,
+		AIRayCast::SRequesterDebugInfo("CPuppet::QueueFireTargetValidRay", GetEntityID()));
 }
 
 void CPuppet::FireTargetValidRayComplete(const QueuedRayID& rayID, const RayCastResult& result)

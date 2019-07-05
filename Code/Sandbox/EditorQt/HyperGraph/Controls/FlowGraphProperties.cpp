@@ -16,11 +16,8 @@ IMPLEMENT_DYNAMIC(CHGGraphPropsPanel, CWnd)
 
 CHGGraphPropsPanel::CHGGraphPropsPanel(CHyperGraphDialog* pParent, CXTPTaskPanel* pPanel)
 	: m_pParent(pParent),
-	m_pTaskPanel(pPanel),
-	m_pGraph(nullptr),
-	m_bUpdate(false)
-{
-}
+	m_pTaskPanel(pPanel)
+{}
 
 BOOL CHGGraphPropsPanel::Create(DWORD dwStyle, const CRect& rc, CWnd* pParentWnd, UINT nID)
 {
@@ -221,4 +218,3 @@ void CHGSelNodeInfoPanel::SetNodeInfo(std::vector<CHyperNode*>& nodes)
 		}
 	}
 }
-

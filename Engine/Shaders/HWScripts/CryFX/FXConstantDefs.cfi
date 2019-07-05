@@ -142,6 +142,9 @@ cbuffer CBPerViewGlobal : register(b6)
 	
 	float4x4  CV_ViewMatr;
 	float4x4  CV_InvViewMatr;
+	
+	float4x4  CV_ProjMatr;
+	float4x4  CV_ProjMatrUnjittered;
 };
 
 cbuffer CBPerPassShadowGen : register(b5)

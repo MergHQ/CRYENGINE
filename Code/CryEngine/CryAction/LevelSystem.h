@@ -17,10 +17,13 @@
 	#define Log_LevelRotation(...)
 #endif
 
+class CLevelLoadTimeslicer;
+
 class CLevelInfo :
 	public ILevelInfo
 {
 	friend class CLevelSystem;
+	friend class CLevelLoadTimeslicer;
 public:
 	CLevelInfo() : m_heightmapSize(0), m_bMetaDataRead(false), m_isModLevel(false), m_scanTag(ILevelSystem::TAG_UNKNOWN), m_levelTag(ILevelSystem::TAG_UNKNOWN)
 	{
@@ -198,6 +201,7 @@ class CLevelSystem :
 	public ILevelSystem,
 	public ISystem::ILoadingProgressListener
 {
+	friend class CLevelLoadTimeslicer;
 public:
 	CLevelSystem(ISystem* pSystem);
 	virtual ~CLevelSystem();
@@ -217,6 +221,8 @@ public:
 
 	virtual ILevelInfo*       GetCurrentLevel() const { return m_pCurrentLevelInfo; }
 	virtual ILevelInfo*       LoadLevel(const char* levelName);
+	virtual bool              StartLoadLevel(const char* szLevelName);
+	virtual ELevelLoadStatus  UpdateLoadLevelStatus();
 	virtual void              UnLoadLevel();
 	virtual ILevelInfo*       SetEditorLoadedLevel(const char* levelName, bool bReadLevelInfoMetaData = false);
 	virtual void              PrepareNextLevel(const char* levelName);
@@ -245,7 +251,7 @@ private:
 
 	// ILevelSystemListener events notification
 	void OnLevelNotFound(const char* levelName);
-	void OnLoadingStart(ILevelInfo* pLevel);
+	bool OnLoadingStart(ILevelInfo* pLevel);
 	void OnLoadingLevelEntitiesStart(ILevelInfo* pLevelInfo);
 	void OnLoadingComplete(ILevelInfo* pLevel);
 	void OnLoadingError(ILevelInfo* pLevel, const char* error);
@@ -287,9 +293,11 @@ private:
 
 	static int                         s_loadCount;
 
-	std::vector<ILevelSystemListener*> m_listeners;
+	std::set<ILevelSystemListener*>    m_listeners;
 
 	DynArray<string>                   m_levelTypeList;
+
+	std::unique_ptr<CLevelLoadTimeslicer> m_pLevelLoadTimeslicer;
 };
 
 #endif //__LEVELSYSTEM_H__

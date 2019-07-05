@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareEditor.h
-//  Created:     7/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include "DatabaseFrameWnd.h"
 #include "LensFlareUtil.h"
@@ -15,15 +8,15 @@
 #include "LensFlareItemTree.h"
 #include "UserMessageDefines.h"
 
-class CLensFlareView;
-class CLensFlareElementTree;
 class CLensFlareAtomicList;
 class CLensFlareElementPropertyView;
+class CLensFlareElementTree;
 class CLensFlareItem;
 class CLensFlareLibrary;
-class CPropertyCtrl;
 class CLensFlareLightEntityTree;
 class CLensFlareReferenceTree;
+class CLensFlareView;
+class CPropertyCtrl;
 
 class CLensFlareEditor : public CDatabaseFrameWnd, public ILensFlareChangeElementListener
 {
@@ -161,7 +154,6 @@ protected:
 	void            AttachWindowsToPanes();
 	void            SelectLensFlareItem(HTREEITEM hItem, HTREEITEM hPrevItem);
 
-	void            OnEditLensFlare();
 	HTREEITEM       GetLensFlareTreeItem(CLensFlareItem* pItem) const;
 	void            StartEditItem(HTREEITEM hItem);
 	bool            GetFullLensFlareItemName(HTREEITEM hItem, string& outFullName) const;
@@ -208,4 +200,3 @@ private:
 	std::vector<ILensFlareChangeItemListener*> m_LensFlareChangeItemListenerList;
 	std::vector<HTREEITEM>                     m_AllLensFlareTreeItems;
 };
-

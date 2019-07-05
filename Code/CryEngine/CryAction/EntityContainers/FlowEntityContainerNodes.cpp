@@ -4,6 +4,7 @@
 // - 10/02/2016 Created by Dario Sancho
 
 #include "StdAfx.h"
+#include <random>
 
 #include "EntityContainers/EntityContainerMgr.h"
 #include "EntityContainers/IEntityContainerListener.h"
@@ -73,7 +74,7 @@ public:
 
 				if (CCryAction* pCryAction = CCryAction::GetCryAction())
 				{
-					CEntityContainerMgr& containerManager = CCryAction::GetCryAction()->GetEntityContainerMgr();
+					CEntityContainerMgr& containerManager = pCryAction->GetEntityContainerMgr();
 					EntityId containerId = pActInfo->pEntity->GetId();
 
 					if (IsPortActive(pActInfo, eI_AddEntity))
@@ -1161,7 +1162,8 @@ public:
 					// Filtering Random
 					else if (filterType == eFT_Random && kSelectedOutputSize != 0)
 					{
-						std::random_shuffle(ids.begin(), ids.end());
+						static std::mt19937 urng(std::random_device{}());
+						std::shuffle(ids.begin(), ids.end(), urng);;
 					}
 
 					// Output filter results into a container

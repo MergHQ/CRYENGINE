@@ -3,22 +3,19 @@
 #include "StdAfx.h"
 #include "Control.h"
 
-#include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
+#include "AssetsManager.h"
+#include "ContextManager.h"
 #include "AssetUtils.h"
+#include "Context.h"
+#include "NameValidator.h"
+#include "Common/IConnection.h"
+#include "Common/IImpl.h"
+#include "Common/IItem.h"
 
-#include <IItem.h>
 #include <CrySerialization/StringList.h>
 
 namespace ACE
 {
-//////////////////////////////////////////////////////////////////////////
-CControl::CControl(string const& name, ControlId const id, EAssetType const type)
-	: CAsset(name, type)
-	, m_id(id)
-	, m_scope(GlobalScopeId)
-{}
-
 //////////////////////////////////////////////////////////////////////////
 CControl::~CControl()
 {
@@ -28,20 +25,25 @@ CControl::~CControl()
 //////////////////////////////////////////////////////////////////////////
 void CControl::SetName(string const& name)
 {
-	if ((!name.IsEmpty()) && (name != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == 0))
+	string fixedName = name;
+	g_nameValidator.FixupString(fixedName);
+
+	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == EAssetFlags::None) && g_nameValidator.IsValid(fixedName))
 	{
-		SignalControlAboutToBeModified();
+		SignalOnBeforeControlModified();
 
 		if (m_type != EAssetType::State)
 		{
-			m_name = AssetUtils::GenerateUniqueControlName(name, m_type);
+			m_name = AssetUtils::GenerateUniqueControlName(fixedName, m_type);
+			m_id = AssetUtils::GenerateUniqueAssetId(m_name, m_type);
 		}
 		else
 		{
-			m_name = AssetUtils::GenerateUniqueName(name, m_type, m_pParent);
+			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, m_pParent);
+			m_id = AssetUtils::GenerateUniqueStateId(m_pParent->GetName(), m_name);
 		}
 
-		SignalControlModified();
+		SignalOnAfterControlModified();
 		g_assetsManager.OnAssetRenamed(this);
 	}
 }
@@ -51,9 +53,9 @@ void CControl::SetDescription(string const& description)
 {
 	if (description != m_description)
 	{
-		SignalControlAboutToBeModified();
+		SignalOnBeforeControlModified();
 		m_description = description;
-		SignalControlModified();
+		SignalOnAfterControlModified();
 	}
 }
 
@@ -63,7 +65,7 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	// Name
 	string const name = m_name;
 
-	if ((m_flags& EAssetFlags::IsDefaultControl) != 0)
+	if ((m_flags& EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 	{
 		ar(name, "name", "!Name");
 	}
@@ -77,7 +79,7 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	// Description
 	string const description = m_description;
 
-	if ((m_flags& EAssetFlags::IsDefaultControl) != 0)
+	if ((m_flags& EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 	{
 		ar(description, "description", "!Description");
 	}
@@ -88,82 +90,50 @@ void CControl::Serialize(Serialization::IArchive& ar)
 
 	ar.doc(description);
 
-	// Scope
-	Scope scope = m_scope;
+	// Context
+	CryAudio::ContextId contextId = m_contextId;
 
-	if (((m_flags& EAssetFlags::IsDefaultControl) == 0) && (m_type != EAssetType::State))
+	if (((m_flags& EAssetFlags::IsDefaultControl) == EAssetFlags::None) && (m_type != EAssetType::State))
 	{
-		Serialization::StringList scopeList;
-		ScopeInfos scopeInfos;
-		g_assetsManager.GetScopeInfos(scopeInfos);
+		Serialization::StringList contextList;
 
-		for (auto const& scopeInfo : scopeInfos)
+		for (auto const pContext : g_contexts)
 		{
-			scopeList.emplace_back(scopeInfo.name);
+			contextList.emplace_back(pContext->GetName());
 		}
 
-		Serialization::StringListValue const selectedScope(scopeList, g_assetsManager.GetScopeInfo(m_scope).name);
-		ar(selectedScope, "scope", "Scope");
-		scope = g_assetsManager.GetScope(scopeList[selectedScope.index()]);
+		std::sort(contextList.begin(), contextList.end());
+
+		Serialization::StringListValue const selectedContext(contextList, g_contextManager.GetContextName(m_contextId));
+		ar(selectedContext, "context", "Context");
+		contextId = g_contextManager.GenerateContextId(contextList[selectedContext.index()]);
 	}
 
 	// Auto Load
 	bool isAutoLoad = m_isAutoLoad;
 
-	if (m_type == EAssetType::Preload)
+	if ((m_type == EAssetType::Preload) || (m_type == EAssetType::Setting))
 	{
 		ar(isAutoLoad, "auto_load", "Auto Load");
-	}
-
-	// Max Radius
-	float radius = m_radius;
-
-	if (((m_flags& EAssetFlags::IsDefaultControl) == 0) && (m_type == EAssetType::Trigger))
-	{
-		bool hasPlaceholderConnections = false;
-		float connectionMaxRadius = 0.0f;
-
-		for (auto const& connection : m_connections)
-		{
-			Impl::IItem const* const pIItem = g_pIImpl->GetItem(connection->GetID());
-
-			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
-			{
-				connectionMaxRadius = std::max(connectionMaxRadius, pIItem->GetRadius());
-			}
-			else
-			{
-				// If control has placeholder connection we cannot enforce the link between activity radius
-				// and attenuation as the user could be missing the middleware project.
-				hasPlaceholderConnections = true;
-				break;
-			}
-		}
-
-		if (!hasPlaceholderConnections)
-		{
-			radius = connectionMaxRadius;
-		}
 	}
 
 	if (ar.isInput())
 	{
 		SetName(name);
 		SetDescription(description);
-		SetScope(scope);
+		SetContextId(contextId);
 		SetAutoLoad(isAutoLoad);
-		SetRadius(radius);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SetScope(Scope const scope)
+void CControl::SetContextId(CryAudio::ContextId const contextId)
 {
-	if (m_scope != scope)
+	if (m_contextId != contextId)
 	{
-		SignalControlAboutToBeModified();
-		m_scope = scope;
-		SignalControlModified();
+		SignalOnBeforeControlModified();
+		m_contextId = contextId;
+		SignalOnAfterControlModified();
 	}
 }
 
@@ -172,99 +142,81 @@ void CControl::SetAutoLoad(bool const isAutoLoad)
 {
 	if (isAutoLoad != m_isAutoLoad)
 	{
-		SignalControlAboutToBeModified();
+		SignalOnBeforeControlModified();
 		m_isAutoLoad = isAutoLoad;
-		SignalControlModified();
+		SignalOnAfterControlModified();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SetRadius(float const radius)
+IConnection* CControl::GetConnectionAt(size_t const index) const
 {
-	if (radius != m_radius)
-	{
-		SignalControlAboutToBeModified();
-		m_radius = radius;
-		SignalControlModified();
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-ConnectionPtr CControl::GetConnectionAt(size_t const index) const
-{
-	ConnectionPtr pConnection = nullptr;
+	IConnection* pIConnection = nullptr;
 
 	if (index < m_connections.size())
 	{
-		pConnection = m_connections[index];
+		pIConnection = m_connections[index];
 	}
 
-	return pConnection;
+	return pIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CControl::GetConnection(ControlId const id) const
+IConnection* CControl::GetConnection(ControlId const id) const
 {
-	ConnectionPtr pConnection = nullptr;
+	IConnection* pIConnection = nullptr;
 
-	for (auto const& connection : m_connections)
+	for (auto const pITempConnection : m_connections)
 	{
-		if ((connection != nullptr) && (connection->GetID() == id))
+		if ((pITempConnection != nullptr) && (pITempConnection->GetID() == id))
 		{
-			pConnection = connection;
+			pIConnection = pITempConnection;
 			break;
 		}
 	}
 
-	return pConnection;
+	return pIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CControl::GetConnection(Impl::IItem const* const pIItem) const
+void CControl::AddConnection(IConnection* const pIConnection)
 {
-	return GetConnection(pIItem->GetId());
-}
+	Impl::IItem* const pIItem = g_pIImpl->GetItem(pIConnection->GetID());
 
-//////////////////////////////////////////////////////////////////////////
-void CControl::AddConnection(ConnectionPtr const pConnection)
-{
-	if (pConnection != nullptr)
+	if (pIItem != nullptr)
 	{
-		Impl::IItem* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
-
-		if (pIItem != nullptr)
-		{
-			g_pIImpl->EnableConnection(pConnection, g_assetsManager.IsLoading());
-			pConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
-			m_connections.push_back(pConnection);
-			MatchRadiusToAttenuation();
-			SignalConnectionAdded(pIItem);
-			SignalControlModified();
-		}
+		g_pIImpl->EnableConnection(pIConnection, g_assetsManager.IsLoading());
+		pIConnection->SignalConnectionChanged.Connect(this, &CControl::SignalConnectionModified);
+		m_connections.push_back(pIConnection);
+		SignalConnectionAdded();
+		SignalOnAfterControlModified();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::RemoveConnection(ConnectionPtr const pConnection)
+void CControl::RemoveConnection(Impl::IItem* const pIItem)
 {
-	if (pConnection != nullptr)
+	ControlId const id = pIItem->GetId();
+	auto iter = m_connections.begin();
+	auto const iterEnd = m_connections.cend();
+
+	while (iter != iterEnd)
 	{
-		auto const it = std::find(m_connections.begin(), m_connections.end(), pConnection);
+		auto const pIConnection = *iter;
 
-		if (it != m_connections.end())
+		if (pIConnection->GetID() == id)
 		{
-			Impl::IItem* const pIItem = g_pIImpl->GetItem(pConnection->GetID());
+			g_pIImpl->DisableConnection(pIConnection, g_assetsManager.IsLoading());
+			pIConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+			g_pIImpl->DestructConnection(pIConnection);
 
-			if (pIItem != nullptr)
-			{
-				g_pIImpl->DisableConnection(pConnection, g_assetsManager.IsLoading());
-				pConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
-				m_connections.erase(it);
-				MatchRadiusToAttenuation();
-				SignalConnectionRemoved(pIItem);
-				SignalControlModified();
-			}
+			m_connections.erase(iter);
+			SignalConnectionRemoved();
+			SignalOnAfterControlModified();
+			break;
 		}
+
+		++iter;
 	}
 }
 
@@ -275,20 +227,17 @@ void CControl::ClearConnections()
 	{
 		bool const isLoading = g_assetsManager.IsLoading();
 
-		for (auto const& connection : m_connections)
+		for (auto const pIConnection : m_connections)
 		{
-			g_pIImpl->DisableConnection(connection, isLoading);
-			Impl::IItem* const pIItem = g_pIImpl->GetItem(connection->GetID());
+			g_pIImpl->DisableConnection(pIConnection, isLoading);
+			pIConnection->SignalConnectionChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+			g_pIImpl->DestructConnection(pIConnection);
 
-			if (pIItem != nullptr)
-			{
-				SignalConnectionRemoved(pIItem);
-			}
+			SignalConnectionRemoved();
 		}
 
 		m_connections.clear();
-		MatchRadiusToAttenuation();
-		SignalControlModified();
+		SignalOnAfterControlModified();
 	}
 }
 
@@ -299,36 +248,13 @@ void CControl::BackupAndClearConnections()
 	// when middleware data gets reloaded.
 	m_rawConnections.clear();
 
-	if (m_type != EAssetType::Preload)
+	for (auto const pIConnection : m_connections)
 	{
-		for (auto const& connection : m_connections)
+		XmlNodeRef const rawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type, m_contextId);
+
+		if (rawConnection.isValid())
 		{
-			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
-
-			if (pRawConnection != nullptr)
-			{
-				m_rawConnections[-1].push_back(pRawConnection);
-			}
-		}
-	}
-	else
-	{
-		auto const numPlatforms = static_cast<int>(g_platforms.size());
-
-		for (auto const& connection : m_connections)
-		{
-			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(connection, m_type);
-
-			if (pRawConnection != nullptr)
-			{
-				for (int i = 0; i < numPlatforms; ++i)
-				{
-					if (connection->IsPlatformEnabled(static_cast<PlatformIndexType>(i)))
-					{
-						m_rawConnections[i].push_back(pRawConnection);
-					}
-				}
-			}
+			m_rawConnections.push_back(rawConnection);
 		}
 	}
 
@@ -340,12 +266,9 @@ void CControl::ReloadConnections()
 {
 	if (!m_rawConnections.empty())
 	{
-		for (auto const& connectionPair : m_rawConnections)
+		for (auto const& rawConnection : m_rawConnections)
 		{
-			for (auto const& connection : connectionPair.second)
-			{
-				LoadConnectionFromXML(connection, connectionPair.first);
-			}
+			LoadConnectionFromXML(rawConnection);
 		}
 	}
 
@@ -353,133 +276,50 @@ void CControl::ReloadConnections()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::RemoveConnection(Impl::IItem* const pIItem)
-{
-	if (pIItem != nullptr)
-	{
-		ControlId const id = pIItem->GetId();
-		auto it = m_connections.begin();
-		auto const end = m_connections.end();
-		bool const isLoading = g_assetsManager.IsLoading();
-
-		for (; it != end; ++it)
-		{
-			if ((*it)->GetID() == id)
-			{
-				g_pIImpl->DisableConnection(*it, isLoading);
-
-				m_connections.erase(it);
-				MatchRadiusToAttenuation();
-				SignalConnectionRemoved(pIItem);
-				SignalControlModified();
-				break;
-			}
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CControl::SignalControlModified()
+void CControl::SignalOnAfterControlModified()
 {
 	if (!g_assetsManager.IsLoading())
 	{
-		g_assetsManager.OnControlModified(this);
+		g_assetsManager.OnAfterControlModified(this);
 		SetModified(true);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SignalControlAboutToBeModified()
+void CControl::SignalOnBeforeControlModified()
 {
 	if (!g_assetsManager.IsLoading())
 	{
-		g_assetsManager.OnControlAboutToBeModified(this);
+		g_assetsManager.OnBeforeControlModified(this);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SignalConnectionAdded(Impl::IItem* const pIItem)
+void CControl::SignalConnectionAdded()
 {
-	g_assetsManager.OnConnectionAdded(this, pIItem);
+	g_assetsManager.OnConnectionAdded(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SignalConnectionRemoved(Impl::IItem* const pIItem)
+void CControl::SignalConnectionRemoved()
 {
-	g_assetsManager.OnConnectionRemoved(this, pIItem);
+	g_assetsManager.OnConnectionRemoved(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CControl::SignalConnectionModified()
 {
-	MatchRadiusToAttenuation();
-	SignalControlModified();
+	SignalOnAfterControlModified();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex /*= -1*/)
+void CControl::LoadConnectionFromXML(XmlNodeRef const& node)
 {
-	ConnectionPtr pConnection = g_pIImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
+	IConnection* pConnection = g_pIImpl->CreateConnectionFromXMLNode(node, m_type);
 
 	if (pConnection != nullptr)
 	{
-		if (m_type == EAssetType::Preload)
-		{
-			// The connection could already exist but using a different platform
-			ConnectionPtr const pPreviousConnection = GetConnection(pConnection->GetID());
-
-			if (pPreviousConnection == nullptr)
-			{
-				if (platformIndex != -1)
-				{
-					pConnection->ClearPlatforms();
-				}
-
-				AddConnection(pConnection);
-			}
-			else
-			{
-				pConnection = pPreviousConnection;
-			}
-
-			if (platformIndex != -1)
-			{
-				pConnection->SetPlatformEnabled(static_cast<PlatformIndexType>(platformIndex), true);
-			}
-		}
-		else
-		{
-			AddConnection(pConnection);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CControl::MatchRadiusToAttenuation()
-{
-	float radius = 0.0f;
-	bool isPlaceHolder = false;
-
-	for (auto const& connection : m_connections)
-	{
-		Impl::IItem const* const pIItem = g_pIImpl->GetItem(connection->GetID());
-
-		if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
-		{
-			radius = std::max(radius, pIItem->GetRadius());
-		}
-		else
-		{
-			// We don't match controls that have placeholder
-			// connections as we don't know what the real values should be.
-			isPlaceHolder = true;
-			break;
-		}
-	}
-
-	if (!isPlaceHolder)
-	{
-		SetRadius(radius);
+		AddConnection(pConnection);
 	}
 }
 } // namespace ACE

@@ -1,5 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#include <CrySystem/ConsoleRegistration.h>
+
 #ifdef CVAR_CPP
 
 	#undef REGISTER_CVAR_AUTO_STRING
@@ -40,6 +42,7 @@ REGISTER_CVAR_AUTO(int, e_svoMaxAreaMeshSizeKB, 8000, VF_NULL, "Maximum number o
 REGISTER_CVAR_AUTO(int, e_svoRender, 1, VF_NULL, "Enables CPU side (every frame) SVO traversing and update");
 REGISTER_CVAR_AUTO(int, e_svoTI_ResScaleBase, 2, VF_NULL, "Defines resolution of GI cone-tracing targets; 2=half res");
 REGISTER_CVAR_AUTO(int, e_svoTI_ResScaleAir, 4, VF_NULL, "Defines resolution of GI cone-tracing targets; 2=half res");
+REGISTER_CVAR_AUTO(int, e_svoTI_ResScaleSpecular, 1, VF_NULL, "Defines resolution of specular targets; 2=half res");
 REGISTER_CVAR_AUTO(int, e_svoTI_DualTracing, 2, VF_NULL, "Double the number of rays per fragment\n1 = Always ON; 2 = Active only in multi-GPU mode");
 REGISTER_CVAR_AUTO(float, e_svoTI_PointLightsMultiplier, 1.f, VF_NULL, "Modulates point light injection (controls the intensity of bounce light)");
 REGISTER_CVAR_AUTO(float, e_svoTI_EmissiveMultiplier, 4.f, VF_NULL, "Modulates emissive materials light injection\nAllows controlling emission separately from post process glow");
@@ -60,11 +63,7 @@ m_arrVars.Clear();
 #endif
 
 // UI parameters
-#if CRY_PLATFORM_DESKTOP
 REGISTER_CVAR_AUTO(int, e_svoTI_Active, 0, VF_NULL, "Activates voxel GI for the level"); // default value of 0 allows GI to be activated in level settings
-#else
-REGISTER_CVAR_AUTO(int, e_svoTI_Active, -1, VF_NULL, "Activates voxel GI for the level"); // default value of -1 forces disabling of GI on weak platforms
-#endif
 
 REGISTER_CVAR_AUTO(int, e_svoTI_IntegrationMode, 0, VF_EXPERIMENTAL,
                    "GI computations may be used in several ways:\n"
@@ -150,7 +149,8 @@ REGISTER_CVAR_AUTO(int, e_svoTI_AnalyticalGI, 0, VF_EXPERIMENTAL,
 REGISTER_CVAR_AUTO(int, e_svoTI_TraceVoxels, 1, VF_EXPERIMENTAL,
                    "Include voxels into tracing\nAllows to exclude voxel tracing if only proxies are needed");
 REGISTER_CVAR_AUTO(float, e_svoTI_TranslucentBrightness, 0, VF_NULL,
-                   "Adjusts the brightness of semi translucent surfaces\nAffects mostly vegetation leaves and grass");
+                   "Adjusts the brightness of semi translucent surfaces\nAffects mostly vegetation leaves and grass\n"
+									 "Setting this parameter to zero disables custom GI processing for translucent surfaces");
 REGISTER_CVAR_AUTO(int, e_svoStreamVoxels, 0, VF_EXPERIMENTAL,
                    "Enable steaming of voxel data from disk instead of run-time voxelization\n"
                    "Steaming used only in launcher, in the editor voxels are always run-time generated\n"
@@ -245,7 +245,14 @@ REGISTER_CVAR_AUTO(int, e_svoTI_RsmUseColors, 0, VF_NULL, "Render also albedo co
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max, 100, VF_NULL, "Controls amount of voxels allowed to refresh every frame");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_MaxEdit, 10000, VF_NULL, "Controls amount of voxels allowed to refresh every frame during lights editing");
 REGISTER_CVAR_AUTO(int, e_svoTI_Reflect_Vox_Max_Overhead, 50, VF_NULL, "Controls amount of voxels allowed to refresh every frame");
-REGISTER_CVAR_AUTO(float, e_svoTI_RT_MaxDist, 0, VF_NULL, "Maximum distance for detailed mesh ray tracing prototype; applied only in case of maximum glossiness");
+REGISTER_CVAR_AUTO(int, e_svoTI_RT_Active, 0, VF_EXPERIMENTAL, "Activates mesh ray tracing for reflections\nIt is necessary to re-voxelize the scene after activation");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MaxDistRay, 0, VF_EXPERIMENTAL, "Maximum ray distance for mesh tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MaxDistCam, 0, VF_EXPERIMENTAL, "Maximum camera distance for mesh tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MinGloss, 0, VF_EXPERIMENTAL, "Minimum surface glossiness for mesh tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_MinRefl, 0, VF_EXPERIMENTAL, "Minimum surface reflectance for mesh tracing");
+REGISTER_CVAR_AUTO(int, e_svoTI_RT_MaxTrisPerVoxel, 100, VF_EXPERIMENTAL, "Maximum number of triangles registered per voxel");
+REGISTER_CVAR_AUTO(int, e_svoTI_RT_MaxTexRes, 512, VF_EXPERIMENTAL, "Maximum texture size for GPU tracing");
+REGISTER_CVAR_AUTO(float, e_svoTI_RT_SafetyBorder, 0.25f, VF_EXPERIMENTAL, "Extend the area of voxel to triangle intersection. This makes sure the ray finds all necessary triangles");
 REGISTER_CVAR_AUTO(float, e_svoTI_Specular_Sev, 1, VF_NULL, "Controls severity of specular cones; this value limits the material glossiness");
 REGISTER_CVAR_AUTO(float, e_svoVoxDistRatio, 14.f, VF_NULL, "Limits the distance where real-time GPU voxelization used");
 REGISTER_CVAR_AUTO(int, e_svoVoxGenRes, 512, VF_NULL, "GPU voxelization dummy render target resolution");

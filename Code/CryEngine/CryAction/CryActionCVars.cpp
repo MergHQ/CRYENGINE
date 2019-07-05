@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include "CryActionCVars.h"
-#include <CryAISystem/IAIRecorder.h>
 #include "Serialization/XmlSerializeHelper.h"
 #include "Network/GameContext.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 CCryActionCVars* CCryActionCVars::s_pThis = 0;
 
@@ -12,9 +12,6 @@ CCryActionCVars::CCryActionCVars()
 {
 	CRY_ASSERT(!s_pThis);
 	s_pThis = this;
-
-	IConsole* console = gEnv->pConsole;
-	assert(console);
 
 	REGISTER_CVAR2("g_playerInteractorRadius", &playerInteractorRadius, 1.8f, VF_CHEAT, "Maximum radius at which player can interact with other entities");
 	REGISTER_CVAR2("i_itemSystemDebugMemStats", &debugItemMemStats, 0, VF_CHEAT, "Display item memory stats on screen");
@@ -29,11 +26,6 @@ CCryActionCVars::CCryActionCVars()
 
 #if !defined(_RELEASE)
 	REGISTER_CVAR2("g_userNeverAutoSignsIn", &g_userNeverAutoSignsIn, 0, VF_CHEAT, "for autobuilds never automatically bring up the user sign in window, if the user isn't signed in. Can affect performance and skew performance test results. Has to be added to system.cfg, doesn't work if added to the commandline!");
-#endif
-
-#ifdef AI_LOG_SIGNALS
-	REGISTER_CVAR2("ai_LogSignals", &aiLogSignals, 0, VF_CHEAT, "Maximum radius at which player can interact with other entities");
-	REGISTER_CVAR2("ai_MaxSignalDuration", &aiMaxSignalDuration, 3.f, VF_CHEAT, "Maximum radius at which player can interact with other entities");
 #endif
 
 	// Currently, GameDLLs should set this cvar - it's a fundamental change in AI//depot/Games/Crysis2/Branches/Develop/MP/Trunk/Engine/Config/multiplayer.cfg
@@ -68,8 +60,6 @@ CCryActionCVars::CCryActionCVars()
 	REGISTER_CVAR(g_XMLCPBUseExtraZLibCompression, 1, VF_CHEAT, "Enables an extra zlib compression pass on the binary saves.");
 	REGISTER_CVAR(g_XMLCPBBlockQueueLimit, 6, VF_CHEAT | VF_REQUIRE_APP_RESTART, "Limits the number of blocks to queue for saving, causes a main thread stall if exceeded. 0 for no limit.");
 
-	REGISTER_CVAR(g_debugDialogBuffers, 0, VF_NULL, "Enables the on screen debug info for flownode dialog buffers.");
-
 	REGISTER_CVAR(g_allowDisconnectIfUpdateFails, 1, VF_INVISIBLE, "");
 
 	REGISTER_CVAR(g_useSinglePosition, 1, VF_NULL, "Activates the new Single Position update order");
@@ -79,11 +69,16 @@ CCryActionCVars::CCryActionCVars()
 	REGISTER_COMMAND("g_dumpClassRegistry", DumpClassRegistry, 0, "Print to console the list of classes and their associated ids");
 
 	REGISTER_CVAR2("g_enableMergedMeshRuntimeAreas", &g_enableMergedMeshRuntimeAreas, 0, VF_CHEAT | VF_REQUIRE_APP_RESTART, "Enables the Merged Mesh cluster generation and density precalculations at game/level load");
+
+	REGISTER_CVAR(g_useProfileManager, 1, 0, "Use player profiles manager system. \nDefault is 1.\n");
+	REGISTER_CVAR(g_legacyItemSystem,  1, 0, "Initialize Legacy Item System from GameSDK. \nDefault is 1.\n");
+
+	REGISTER_CVAR(g_enableActionGame,  1, 0, "Use CryAction ActionGame and GameContext functionality from GameSDK. \nDefault is 1.\n");
 }
 
 CCryActionCVars::~CCryActionCVars()
 {
-	assert(s_pThis != 0);
+	CRY_ASSERT(s_pThis != 0);
 	s_pThis = 0;
 
 	IConsole* pConsole = gEnv->pConsole;
@@ -96,10 +91,6 @@ CCryActionCVars::~CCryActionCVars()
 	pConsole->UnregisterVariable("g_debug_stats", true);
 	pConsole->UnregisterVariable("g_statisticsMode", true);
 
-#ifdef AI_LOG_SIGNALS
-	pConsole->UnregisterVariable("ai_LogSignals", true);
-	pConsole->UnregisterVariable("ai_MaxSignalDuration", true);
-#endif
 	pConsole->UnregisterVariable("ai_FlowNodeAlertnessCheck", true);
 
 	pConsole->UnregisterVariable("co_usenewcoopanimsystem", true);
@@ -110,6 +101,33 @@ CCryActionCVars::~CCryActionCVars()
 	pConsole->UnregisterVariable("sw_debugInfo");
 	pConsole->UnregisterVariable("sw_draw_bbox");
 	pConsole->UnregisterVariable("g_enableMergedMeshRuntimeAreas", true);
+	pConsole->UnregisterVariable("g_useProfileManager", true);
+	pConsole->UnregisterVariable("g_legacyItemSystem", true);
+
+	pConsole->UnregisterVariable("cl_useCurrentUserNameAsDefault", true);
+#if !defined(_RELEASE)
+	pConsole->UnregisterVariable("g_userNeverAutoSignsIn", true);
+#endif
+	pConsole->UnregisterVariable("g_gameplayAnalyst", true);
+	pConsole->UnregisterVariable("g_multiplayerEnableVehicles", true);
+	pConsole->UnregisterVariable("co_coopAnimDebug", true);
+	pConsole->UnregisterVariable("co_slideWhileStreaming", true);
+	pConsole->UnregisterVariable("ag_defaultAIStance", true);
+	pConsole->UnregisterVariable("g_syncClassRegistry", true);
+	pConsole->UnregisterVariable("g_allowSaveLoadInEditor", true);
+	pConsole->UnregisterVariable("g_saveLoadBasicEntityOptimization", true);
+	pConsole->UnregisterVariable("g_debugSaveLoadMemory", true);
+	pConsole->UnregisterVariable("g_saveLoadUseExportedEntityList", true);
+	pConsole->UnregisterVariable("g_saveLoadExtendedLog", true);
+	pConsole->UnregisterVariable("g_useXMLCPBinForSaveLoad", true);
+	pConsole->UnregisterVariable("g_XMLCPBGenerateXmlDebugFiles", true);
+	pConsole->UnregisterVariable("g_XMLCPBAddExtraDebugInfoToXmlDebugFiles", true);
+	pConsole->UnregisterVariable("g_XMLCPBSizeReportThreshold", true);
+	pConsole->UnregisterVariable("g_XMLCPBUseExtraZLibCompression", true);
+	pConsole->UnregisterVariable("g_XMLCPBBlockQueueLimit", true);
+	pConsole->UnregisterVariable("g_saveLoadDumpEntity", true);
+	pConsole->UnregisterVariable("g_dumpClassRegistry", true);
+	pConsole->UnregisterVariable("g_enableActionGame", true);
 }
 
 void CCryActionCVars::DumpEntitySerializationData(IConsoleCmdArgs* pArgs)

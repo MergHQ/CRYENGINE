@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "AnimationContext.h"
 
@@ -20,6 +17,7 @@
 
 #include <CryMovie/IMovieSystem.h>
 #include <CrySystem/ITimer.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 class CMovieCallback : public IMovieCallback, public ICameraDelegate
 {
@@ -36,7 +34,7 @@ public:
 		{
 			m_cameraObjectGUID = CryGUID::Null();
 		}
-	};
+	}
 
 	void ResetCamera()
 	{
@@ -353,6 +351,11 @@ void CAnimationContext::Stop()
 	{
 		m_bWasRecording = false;
 		SetRecording(true);
+	}
+
+	if (m_pSequence != nullptr)
+	{
+		m_pSequence->Deactivate();
 	}
 
 	m_bPlaying = false;
@@ -716,4 +719,3 @@ void CAnimationContext::OnMovieEvent(EMovieEvent movieEvent, IAnimSequence* pAni
 		break;
 	}
 }
-

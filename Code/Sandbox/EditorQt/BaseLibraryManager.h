@@ -1,13 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __baselibrarymanager_h__
-#define __baselibrarymanager_h__
 #pragma once
 
 #include "IDataBaseItem.h"
 #include "IDataBaseLibrary.h"
 #include "IDataBaseManager.h"
 #include <CryCore/ToolsHelpers/GuidUtil.h>
+#include <CryCore/StlUtils.h>
 #include "BaseLibrary.h"
 #include <CryExtension/CryGUID.h>
 
@@ -34,7 +33,7 @@ public:
 	// Library items.
 	//////////////////////////////////////////////////////////////////////////
 	//! Make a new item in specified library.
-	virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary);
+	virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override;
 	//! Delete item from library and manager.
 	virtual void           DeleteItem(IDataBaseItem* pItem);
 
@@ -61,9 +60,9 @@ public:
 	virtual IDataBaseLibrary* AddLibrary(const string& library, bool bSetFullFilename = false);
 	inline IDataBaseLibrary*  AddLibrary(const char* library, bool bSetFullFilename = false) { return AddLibrary(string(library), bSetFullFilename); } // for CString conversion
 	virtual void              DeleteLibrary(const string& library);
-	inline void				  DeleteLibrary(const char* library) { return DeleteLibrary(string(library)); } // for CString conversion
+	inline void               DeleteLibrary(const char* library)                             { return DeleteLibrary(string(library)); } // for CString conversion
 	//! Get number of libraries.
-	virtual int               GetLibraryCount() const { return m_libs.size(); };
+	virtual int               GetLibraryCount() const                                        { return m_libs.size(); }
 	//! Get number of modified libraries.
 	virtual int               GetModifiedLibraryCount() const;
 
@@ -92,7 +91,7 @@ public:
 	virtual void Serialize(XmlNodeRef& node, bool bLoading);
 
 	//! Export items to game.
-	virtual void Export(XmlNodeRef& node) {};
+	virtual void Export(XmlNodeRef& node) {}
 
 	//! Returns unique name base on input name.
 	virtual string MakeUniqItemName(const string& name);
@@ -123,20 +122,22 @@ public:
 
 	// Called by items to indicated that they have been modified.
 	// Sends item changed event to listeners.
-	void    OnItemChanged(IDataBaseItem* pItem);
-	void    OnUpdateProperties(IDataBaseItem* pItem);
+	void   OnItemChanged(IDataBaseItem* pItem);
+	void   OnUpdateProperties(IDataBaseItem* pItem);
 
-	string MakeFilename(const string& library);
+	virtual string MakeFilename(const string& library);
 
-	bool HasUidMap() const { return m_bUniqGuidMap; }
-	bool HasNameMap() const { return m_bUniqNameMap; }
+	bool   HasUidMap() const  { return m_bUniqGuidMap; }
+	bool   HasNameMap() const { return m_bUniqNameMap; }
 
 protected:
-	void SplitFullItemName(const string& fullItemName, string& libraryName, string& itemName);
-	void NotifyItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event);
-	void NotifyLibraryEvent(IDataBaseLibrary* pLibrary, EDataBaseLibraryEvent event);
-	void NotifyDatabaseEvent(EDataBaseEvent event);
-	void SetRegisteredFlag(CBaseLibraryItem* pItem, bool bFlag);
+	void                SplitFullItemName(const string& fullItemName, string& libraryName, string& itemName);
+	void                NotifyItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event);
+	void                NotifyLibraryEvent(IDataBaseLibrary* pLibrary, EDataBaseLibraryEvent event);
+	void                NotifyDatabaseEvent(EDataBaseEvent event);
+	void                SetRegisteredFlag(CBaseLibraryItem* pItem, bool bFlag);
+
+	virtual const char* GetFileExtension() const { return "xml"; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Must be overriden.
@@ -186,7 +187,7 @@ public:
 		m_pMap = pMap;
 		m_iterator = m_pMap->begin();
 	}
-	virtual void           Release() { delete this; };
+	virtual void           Release() { delete this; }
 	virtual IDataBaseItem* GetFirst()
 	{
 		m_iterator = m_pMap->begin();
@@ -197,12 +198,9 @@ public:
 	virtual IDataBaseItem* GetNext()
 	{
 		if (m_iterator != m_pMap->end())
-			m_iterator++;
+			++m_iterator;
 		if (m_iterator == m_pMap->end())
 			return 0;
 		return m_iterator->second;
 	}
 };
-
-#endif // __baselibrarymanager_h__
-

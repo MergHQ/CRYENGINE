@@ -9,6 +9,7 @@
 #include "IPlayerProfiles.h"
 #include "ScreenResolution.h"
 #include "GameXmlParamReader.h"
+#include <CryRenderer/IRenderer.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +60,7 @@ void CProfileOptions::Init()
 	}
 
 	IPlayerProfileManager* const profileManager = g_pGame->GetIGameFramework()->GetIPlayerProfileManager();
-	CRY_ASSERT_MESSAGE(profileManager != NULL, "IPlayerProfileManager doesn't exist - profile options will not be updated");
+	CRY_ASSERT(profileManager != NULL, "IPlayerProfileManager doesn't exist - profile options will not be updated");
 	if(profileManager)
 		profileManager->AddListener(this, false);
 }
@@ -147,7 +148,6 @@ COption* CProfileOptions::GetOption(const char* option) const
 	if(!option || !option[0])
 		return NULL;
 
-	bool returnValue = false;
 	std::vector<COption*>::const_iterator it = m_allOptions.begin();
 	std::vector<COption*>::const_iterator end = m_allOptions.end();
 	for(; it!=end; ++it)
@@ -168,7 +168,6 @@ COption* CProfileOptions::GetOptionByCVar(const char* cvar) const
 	if(!cvar || !cvar[0])
 		return NULL;
 
-	bool returnValue = false;
 	std::vector<COption*>::const_iterator it = m_allOptions.begin();
 	std::vector<COption*>::const_iterator end = m_allOptions.end();
 	for(; it!=end; ++it)
@@ -478,8 +477,6 @@ bool CProfileOptions::HasPendingOptionValue(const char* optionName)const
 
 	for(; it!=end; ++it)
 	{
-		const SPendingOption& option = (*it);
-		const char* command = it->command.c_str();
 		if(!it->command.compareNoCase(optionName))
 		{
 			return true;
@@ -737,7 +734,6 @@ void CProfileOptions::CCVarSink::OnElementFound(ICVar *pCVar)
 		return;
 
 	const char* name = pCVar->GetName();
-	const char* val = pCVar->GetString();
 
 	COption* pOption = m_pOptions->GetOptionByCVar(name);
 	if(!pOption)

@@ -108,4 +108,3 @@ void CTreeViewDialog::showEvent(QShowEvent* event)
 	CEditorDialog::showEvent(event);
 	m_pSearchBox->setFocus();
 }
-

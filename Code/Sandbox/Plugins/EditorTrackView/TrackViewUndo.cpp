@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "TrackViewUndo.h"
 #include "TrackViewSequenceManager.h"
@@ -98,7 +95,7 @@ std::vector<bool> CUndoAnimKeySelection::SaveKeyStates(CTrackViewSequence* pSequ
 	return selectionState;
 }
 
-void CUndoAnimKeySelection::RestoreKeyStates(CTrackViewSequence* pSequence, const std::vector<bool> keyStates)
+void CUndoAnimKeySelection::RestoreKeyStates(CTrackViewSequence* pSequence, const std::vector<bool>& keyStates)
 {
 	CTrackViewKeyBundle keys = pSequence->GetAllKeys();
 	const unsigned int numkeys = keys.GetKeyCount();
@@ -297,7 +294,7 @@ void CAbstractUndoAnimNodeTransaction::AddNode()
 	m_pParentNode->m_pAnimSequence->AddNode(m_pNode->m_pAnimNode);
 
 	// Release ownership and add node back to parent node
-	CTrackViewNode* pNode = m_pStoredTrackViewNode.release();
+	m_pStoredTrackViewNode.release();
 	m_pParentNode->AddNode(m_pNode);
 
 	m_pNode->BindToEditorObjects();
@@ -464,8 +461,7 @@ void CUndoTrackRemove::Redo()
 CUndoAnimNodeReparent::CUndoAnimNodeReparent(CTrackViewAnimNode* pAnimNode, CTrackViewAnimNode* pNewParent)
 	: CAbstractUndoAnimNodeTransaction(pAnimNode), m_pNewParent(pNewParent), m_pOldParent(m_pParentNode)
 {
-	CTrackViewSequence* pSequence = pAnimNode->GetSequence();
-	assert(pSequence == m_pNewParent->GetSequence() && pSequence == m_pOldParent->GetSequence());
+	CRY_ASSERT(pAnimNode->GetSequence() == m_pNewParent->GetSequence() && pAnimNode->GetSequence() == m_pOldParent->GetSequence());
 
 	Reparent(pNewParent);
 }
@@ -541,4 +537,3 @@ void CUndoTrackNodeDisable::Redo()
 {
 	m_pNode->SetDisabled(m_newState);
 }
-

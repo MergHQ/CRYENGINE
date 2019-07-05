@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __smartobject_h__
-#define __smartobject_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Objects/EntityObject.h"
 #include "SmartObjectsEditorDialog.h"
@@ -16,9 +10,11 @@
  */
 class CSmartObject : public CEntityObject
 {
+private:
+	Matrix34                              m_statObjWorldMatrix;
+
 protected:
 	IStatObj*                             m_pStatObj;
-	AABB                                  m_bbox;
 	IMaterial*                            m_pHelperMtl;
 
 	CSOLibrary::CClassTemplateData const* m_pClassTemplate;
@@ -29,15 +25,16 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool  Init(CBaseObject* prev, const string& file);
-	virtual void  InitVariables() {}
-	virtual void  Done();
-	virtual void  Display(CObjectRenderHelper& objRenderHelper);
-	virtual bool  HitTest(HitContext& hc);
-	virtual void  GetLocalBounds(AABB& box);
-	bool          IsScalable() const override { return false; }
-	virtual void  OnEvent(ObjectEvent eventID);
-	virtual void  GetScriptProperties(XmlNodeRef xmlEntityNode);
+	virtual bool Init(CBaseObject* prev, const string& file) override;
+	virtual void InitVariables() override {}
+	virtual void Done() override;
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
+	virtual bool HitTest(HitContext& hc) override;
+	virtual void GetLocalBounds(AABB& box) override;
+	bool         IsScalable() const override { return false; }
+	virtual void OnEvent(ObjectEvent eventID) override;
+	virtual void GetScriptProperties(XmlNodeRef xmlEntityNode) override;
+	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -63,12 +60,9 @@ public:
 class CSmartObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_AIPOINT; }
-	const char*    ClassName()         { return "SmartObject"; }
-	const char*    Category()          { return "AI"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CSmartObject); }
+	ObjectType     GetObjectType()              { return OBJTYPE_AIPOINT; }
+	const char*    ClassName()                  { return "SmartObject"; }
+	const char*    Category()                   { return "AI"; }
+	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CSmartObject); }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("SmartObject") != nullptr; }
 };
-
-#endif // __smartobject_h__
-

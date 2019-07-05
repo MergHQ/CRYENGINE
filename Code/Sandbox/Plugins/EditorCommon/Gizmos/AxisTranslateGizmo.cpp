@@ -2,33 +2,20 @@
 
 #include "StdAfx.h"
 #include "AxisTranslateGizmo.h"
-#include "IDisplayViewport.h"
-#include "Grid.h"
-#include "Objects/DisplayContext.h"
+
 #include "Gizmos/AxisHelper.h"
+#include "Objects/DisplayContext.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 
 #define HIT_RADIUS (8)
 
-CAxisTranslateGizmo::CAxisTranslateGizmo(bool bDrawArrowTip/* = true*/)
+CAxisTranslateGizmo::CAxisTranslateGizmo(bool bDrawArrowTip /* = true*/)
 	: m_color(1.0f, 1.0f, 1.0f)
 	, m_scale(1.0f)
 	, m_offset(0.0f)
 	, m_bDrawArrowTip(bDrawArrowTip)
 {
-}
-
-CAxisTranslateGizmo::~CAxisTranslateGizmo()
-{
-}
-
-void CAxisTranslateGizmo::SetName(const char* sName)
-{
-	m_name = sName;
-}
-
-const char* CAxisTranslateGizmo::GetName()
-{
-	return m_name.c_str();
 }
 
 void CAxisTranslateGizmo::SetPosition(Vec3 pos)
@@ -57,7 +44,7 @@ void CAxisTranslateGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CAxisTranslateGizmo::DrawArrow(DisplayContext& dc, Vec3 position, Vec3 direction)
+void CAxisTranslateGizmo::DrawArrow(SDisplayContext& dc, Vec3 position, Vec3 direction)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -83,7 +70,7 @@ void CAxisTranslateGizmo::DrawArrow(DisplayContext& dc, Vec3 position, Vec3 dire
 	dc.PopMatrix();
 }
 
-void CAxisTranslateGizmo::Display(DisplayContext& dc)
+void CAxisTranslateGizmo::Display(SDisplayContext& dc)
 {
 	uint32 curflags = dc.GetState();
 	dc.DepthTestOff();
@@ -104,7 +91,7 @@ void CAxisTranslateGizmo::Display(DisplayContext& dc)
 		string msg;
 		msg.Format("%.2f units", translationLen);
 
-		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), view, dc.flags & DISPLAY_2D), textSize, (LPCSTR)msg, true);
+		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), view, dc.display2D), textSize, (LPCSTR)msg, true);
 	}
 
 	// draw a shadow arrow at the initial position
@@ -221,4 +208,3 @@ bool CAxisTranslateGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

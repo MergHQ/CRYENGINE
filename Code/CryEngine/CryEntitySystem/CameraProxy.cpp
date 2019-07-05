@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "CameraProxy.h"
 #include <CryNetwork/ISerialize.h>
+#include <Cry3DEngine/IMaterial.h>
 
 CRYREGISTER_CLASS(CEntityComponentCamera);
 
@@ -34,9 +35,9 @@ void CEntityComponentCamera::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentCamera::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentCamera::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) | ENTITY_EVENT_BIT(ENTITY_EVENT_INIT);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_INIT;
 }
 
 //////////////////////////////////////////////////////////////////////////

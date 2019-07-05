@@ -71,7 +71,7 @@ protected:
 
 	typedef std::vector<unsigned char> TDBuffer;
 
-	CryMT::CLocklessPointerQueue<TDBuffer> m_ProcessingQueue;
+	CryMT::queue<TDBuffer*> m_ProcessingQueue;
 };
 
 #endif // RealtimeRemoteUpdate_h__

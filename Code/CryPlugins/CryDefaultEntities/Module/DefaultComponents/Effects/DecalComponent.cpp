@@ -2,6 +2,7 @@
 #include "DecalComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {
@@ -52,10 +53,10 @@ void CDecalComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CDecalComponent::GetEventMask() const
+Cry::Entity::EventFlags CDecalComponent::GetEventMask() const
 {
-	uint64 bitFlags = (m_bFollowEntityAfterSpawn && m_bSpawned) ? ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) : 0;
-	bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	Cry::Entity::EventFlags bitFlags = (m_bFollowEntityAfterSpawn && m_bSpawned) ? ENTITY_EVENT_XFORM : Cry::Entity::EventFlags();
+	bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 	return bitFlags;
 }

@@ -21,18 +21,18 @@
 
 // EditorCommon
 #include <CrySerialization/Decorators/Resources.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 // EditorQt
 #include "QViewportSettings.h"
 
 #include <CryAnimation/ICryAnimation.h>
-#include <Material\Material.h>
-#include <Material\MaterialManager.h>
+#include <Material/Material.h>
+#include <Material/MaterialManager.h>
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <QPropertyTree/ContextList.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
+#include <QPropertyTreeLegacy/ContextList.h>
 
 #include "Serialization/Decorators/EditorActionButton.h"
 
@@ -633,6 +633,11 @@ void CDialogCAF::UpdateCharacter()
 			QtUtil::ToQString(m_pScene->m_material));
 	}
 
+	if (m_pScene->m_pCharInstance)
+	{
+		m_pScene->m_pCharInstance->SetCharEditMode(m_pScene->m_pCharInstance->GetCharEditMode() | CA_CharacterAuxEditor);
+	}
+
 	ReloadAnimationSet();
 
 	UpdateCurrentAnimation();
@@ -917,10 +922,10 @@ void CDialogCAF::SetupUI()
 
 	m_pViewportContainer->GetDisplayOptionsWidget()->SetUserOptions(Serialization::SStruct(m_viewSettings), "viewSettings", "View");
 
-	m_pPropertyTree = new QPropertyTree();
+	m_pPropertyTree = new QPropertyTreeLegacy();
 	m_pPropertyTree->setArchiveContext(m_pSerializationContextList->Tail());
 	m_pPropertyTree->attach(Serialization::SStruct(*m_pSkeletonProperties.get()));
-	connect(m_pPropertyTree, &QPropertyTree::signalChanged, this, &CDialogCAF::MakeNamesUnique);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &CDialogCAF::MakeNamesUnique);
 
 	m_pRootMotionNodePanel = new Private_DialogCAF::CRootMotionNodePanel();
 
@@ -1035,4 +1040,3 @@ bool CDialogCAF::IsCurrentScene(int sceneId) const
 }
 
 } // namespace MeshImporter
-

@@ -98,6 +98,8 @@ inline QColor DesaturateColor(QColor color)
 	return QColor(average * 255.0f, average * 255.0f, average * 255.0f);
 }
 
+EDITOR_COMMON_API void       AssignMenuRole(QAction* action, const QString& roleString);
+
 EDITOR_COMMON_API void       DrawStatePixmap(QPainter* painter, const QRect& iconRect, const QPixmap& pixmap, QStyle::State state);
 
 EDITOR_COMMON_API QVariant   ToQVariant(const QSize& size);
@@ -124,11 +126,11 @@ EDITOR_COMMON_API QScrollArea* MakeScrollable(QWidget* widget);
 EDITOR_COMMON_API QScrollArea* MakeScrollable(QLayout* widget);
 
 //! Opens an Explorer/Finder window at specific location, selects file if exists
-EDITOR_COMMON_API void         OpenInExplorer(const char* path);
+EDITOR_COMMON_API void OpenInExplorer(const char* path);
 //! Lets the operating system open the file for edit with the associated application
-EDITOR_COMMON_API void		   OpenFileForEdit(const char* filePath);
+EDITOR_COMMON_API void OpenFileForEdit(const char* filePath);
 
-EDITOR_COMMON_API void         RecursiveInstallEventFilter(QWidget* pListener, QWidget* pWatched);
+EDITOR_COMMON_API void RecursiveInstallEventFilter(QWidget* pListener, QWidget* pWatched);
 
 //! Will create the menu action based on the path separated by '/'. Last section of the path will be the action text.
 EDITOR_COMMON_API QAction* AddActionFromPath(const QString& menuPath, QMenu* parentMenu);
@@ -182,4 +184,3 @@ EDITOR_COMMON_API bool MapFromSourceIndirect(const QAbstractItemModel* pProxyMod
 //! Takes a source model index and returns an index in the view's model
 EDITOR_COMMON_API bool MapFromSourceIndirect(const QAbstractItemView* pView, const QModelIndex& sourceIndexIn, QModelIndex& viewIndexOut);
 }
-

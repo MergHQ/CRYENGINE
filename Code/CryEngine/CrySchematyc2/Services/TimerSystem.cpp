@@ -19,21 +19,19 @@ SERIALIZATION_ENUM_END()
 
 namespace Schematyc2
 {
-	TimerId CTimerSystem::ms_nextTimerId = 1;
-
 	//////////////////////////////////////////////////////////////////////////
 	CTimerSystem::CTimerSystem()
 		: m_frameCounter(0)
+		, m_timersPendingDestroy(0)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
-	TimerId CTimerSystem::CreateTimer(const STimerParams& params, const TimerCallback& callback)
+	void CTimerSystem::CreateTimer(const STimerParams& params, const TimerCallback& callback, TimerId& outTimerId)
 	{
 		CRY_ASSERT(callback);
 		if(callback)
 		{
 			uint64							time = 0;
-			const TimerId				timerId = ms_nextTimerId ++;
 			STimerDuration			duration = params.duration;
 			EPrivateTimerFlags	privateFlags = EPrivateTimerFlags::None;
 			switch(duration.units)
@@ -64,31 +62,31 @@ namespace Schematyc2
 			{
 				privateFlags |= EPrivateTimerFlags::Repeat;
 			}
-			m_timers.push_back(STimer(time, timerId, duration, callback, privateFlags));
-			return timerId;
+			outTimerId = m_timers.size();
+			m_timers.push_back(STimer(time, &outTimerId, duration, callback, privateFlags));
 		}
-		return s_invalidTimerId;
+		else
+		{
+			outTimerId = s_invalidTimerId;
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CTimerSystem::DestroyTimer(TimerId timerId)
 	{
-		TimerVector::iterator	iEndTimer = m_timers.end();
-		TimerVector::iterator	iTimer = std::find_if(m_timers.begin(), iEndTimer, SEqualTimerId(timerId));
-		if(iTimer != iEndTimer)
+		if (timerId < m_timers.size())
 		{
-			iTimer->privateFlags |= EPrivateTimerFlags::Destroy;
+			m_timers[timerId].privateFlags |= EPrivateTimerFlags::Destroy;
+			++m_timersPendingDestroy;
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	bool CTimerSystem::StartTimer(TimerId timerId)
 	{
-		TimerVector::iterator	iEndTimer = m_timers.end();
-		TimerVector::iterator	iTimer = std::find_if(m_timers.begin(), iEndTimer, SEqualTimerId(timerId));
-		if(iTimer != iEndTimer)
+		if(timerId < m_timers.size())
 		{
-			STimer&	timer = *iTimer;
+			STimer&	timer = m_timers[timerId];
 			if((timer.privateFlags & EPrivateTimerFlags::Active) == 0)
 			{
 				switch(timer.duration.units)
@@ -114,11 +112,9 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	bool CTimerSystem::StopTimer(TimerId timerId)
 	{
-		TimerVector::iterator	iEndTimer = m_timers.end();
-		TimerVector::iterator	iTimer = std::find_if(m_timers.begin(), iEndTimer, SEqualTimerId(timerId));
-		if(iTimer != iEndTimer)
+		if(timerId < m_timers.size())
 		{
-			STimer&	timer = *iTimer;
+			STimer&	timer = m_timers[timerId];
 			if((timer.privateFlags & EPrivateTimerFlags::Active) != 0)
 			{
 				timer.privateFlags &= ~EPrivateTimerFlags::Active;
@@ -131,11 +127,9 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CTimerSystem::ResetTimer(TimerId timerId)
 	{
-		TimerVector::iterator	iEndTimer = m_timers.end();
-		TimerVector::iterator	iTimer = std::find_if(m_timers.begin(), iEndTimer, SEqualTimerId(timerId));
-		if(iTimer != iEndTimer)
+		if(timerId < m_timers.size())
 		{
-			STimer&	timer = *iTimer;
+			STimer&	timer = m_timers[timerId];
 			if((timer.privateFlags & EPrivateTimerFlags::Active) != 0)
 			{
 				switch(timer.duration.units)
@@ -159,11 +153,9 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	bool CTimerSystem::IsTimerActive(TimerId timerId) const
 	{
-		TimerVector::const_iterator	iEndTimer = m_timers.end();
-		TimerVector::const_iterator	iTimer = std::find_if(m_timers.begin(), iEndTimer, SEqualTimerId(timerId));
-		if(iTimer != iEndTimer)
+		if (timerId < m_timers.size())
 		{
-			return (iTimer->privateFlags & EPrivateTimerFlags::Active) != 0;
+			return (m_timers[timerId].privateFlags & EPrivateTimerFlags::Active) != 0;
 		}
 		return false;
 	}
@@ -171,11 +163,9 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	STimerDuration CTimerSystem::GetTimeRemaining(TimerId timerId) const
 	{
-		TimerVector::const_iterator	iEndTimer = m_timers.end();
-		TimerVector::const_iterator	iTimer = std::find_if(m_timers.begin(), iEndTimer, SEqualTimerId(timerId));
-		if(iTimer != iEndTimer)
+		if (timerId < m_timers.size())
 		{
-			const STimer&	timer = *iTimer;
+			const STimer&	timer = m_timers[timerId];
 			if((timer.privateFlags & EPrivateTimerFlags::Active) != 0)
 			{
 				switch(timer.duration.units)
@@ -245,35 +235,43 @@ namespace Schematyc2
 				}
 			}
 		}
-		// Perform garbage collection.
-		timerCount = m_timers.size();
-		for(size_t iTimer = 0; iTimer < timerCount; )
+
+		if (m_timersPendingDestroy > 0)
 		{
-			STimer&	timer = m_timers[iTimer];
-			if((timer.privateFlags & EPrivateTimerFlags::Destroy) != 0)
+			// Perform garbage collection.
+			timerCount = m_timers.size();
+			for (int32 iTimer = timerCount - 1; iTimer >= 0;)
 			{
-				-- timerCount;
-				if(iTimer < timerCount)
+				STimer&	timer = m_timers[iTimer];
+				if ((timer.privateFlags & EPrivateTimerFlags::Destroy) != 0)
 				{
-					timer = m_timers[timerCount];
+					--timerCount;
+					--m_timersPendingDestroy;
+					if (iTimer < timerCount)
+					{
+						timer = m_timers[timerCount];
+						*timer.timerIdStorage = iTimer;
+					}
 				}
+				--iTimer;
 			}
-			++ iTimer;
+
+			CRY_ASSERT(m_timersPendingDestroy == 0, "[CrySchematy2] Not all timers were destroyed during cleanup");
+			m_timers.resize(timerCount);
 		}
-		m_timers.resize(timerCount);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	CTimerSystem::STimer::STimer()
 		: time(0)
-		, timerId(s_invalidTimerId)
+		, timerIdStorage(nullptr)
 		, privateFlags(EPrivateTimerFlags::None)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
-	CTimerSystem::STimer::STimer(int64 _time, TimerId _timerId, const STimerDuration& _duration, const TimerCallback& _callback, EPrivateTimerFlags _privateFlags)
+	CTimerSystem::STimer::STimer(int64 _time, TimerId* _timerId, const STimerDuration& _duration, const TimerCallback& _callback, EPrivateTimerFlags _privateFlags)
 		: time(_time)
-		, timerId(_timerId)
+		, timerIdStorage(_timerId)
 		, duration(_duration)
 		, callback(_callback)
 		, privateFlags(_privateFlags)
@@ -282,7 +280,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	CTimerSystem::STimer::STimer(const STimer& rhs)
 		: time(rhs.time)
-		, timerId(rhs.timerId)
+		, timerIdStorage(rhs.timerIdStorage)
 		, duration(rhs.duration)
 		, callback(rhs.callback)
 		, privateFlags(rhs.privateFlags)

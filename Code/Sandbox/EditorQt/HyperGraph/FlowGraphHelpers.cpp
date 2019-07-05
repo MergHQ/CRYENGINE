@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "FlowGraphHelpers.h"
-
+#include "IEditorImpl.h"
 
 #include <CryAISystem/IAIAction.h>
 
@@ -61,7 +61,7 @@ void GetHumanName(CHyperFlowGraph* pFlowGraph, CString& outName)
 	GetRealName(pFlowGraph, outName);
 }
 
-void FindGraphsForEntity(CEntityObject* pEntity, std::vector<CHyperFlowGraph*>& outFlowGraphs, CHyperFlowGraph*& outEntityFG)
+void FindGraphsForEntity(const CEntityObject* pEntity, std::vector<CHyperFlowGraph*>& outFlowGraphs, CHyperFlowGraph*& outEntityFG)
 {
 	if (pEntity && pEntity->GetEntityId() != INVALID_ENTITYID)
 	{
@@ -70,7 +70,7 @@ void FindGraphsForEntity(CEntityObject* pEntity, std::vector<CHyperFlowGraph*>& 
 		TFGMap fgMap;
 		CHyperFlowGraph* pEntityGraph = nullptr;
 
-		IEntitySystem* pEntSys = gEnv->pEntitySystem;
+		//IEntitySystem* pEntSys = gEnv->pEntitySystem;
 		EntityId myId = pEntity->GetEntityId();
 		CFlowGraphManager* pFGMgr = GetIEditorImpl()->GetFlowGraphManager();
 		size_t numFG = pFGMgr->GetFlowGraphCount();
@@ -177,4 +177,3 @@ void ListFlowGraphsForEntity(CEntityObject* pEntity)
 	}
 }
 }
-

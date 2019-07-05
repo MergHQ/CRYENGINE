@@ -6,6 +6,7 @@
 IMPLEMENT_DYNAMIC(CDuplicatedObjectsHandlerDlg, CDialogEx)
 CDuplicatedObjectsHandlerDlg::CDuplicatedObjectsHandlerDlg(const char* msg, CWnd* pParent)
 	: CDialogEx(CDuplicatedObjectsHandlerDlg::IDD, pParent)
+	, m_result(eResult_None)
 {
 	m_msg = msg;
 }
@@ -46,4 +47,3 @@ void CDuplicatedObjectsHandlerDlg::OnBnClickedCreateCopiesBtn()
 	m_result = eResult_CreateCopies;
 	OnOK();
 }
-

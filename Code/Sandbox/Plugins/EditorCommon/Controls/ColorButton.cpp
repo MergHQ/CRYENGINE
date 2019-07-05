@@ -2,9 +2,12 @@
 #include "StdAfx.h"
 #include "ColorButton.h"
 
+#include <QApplication>
 #include <QColorDialog>
 #include <QDesktopWidget>
-#include "QtUtil.h"
+#include <QPainter>
+#include <QStyleOption>
+#include <QtUtil.h>
 
 CColorButton::CColorButton()
 	: m_color(Qt::white)
@@ -55,7 +58,6 @@ void CColorButton::paintEvent(QPaintEvent* paintEvent)
 		checkboardPattern = QImage((unsigned char*)pixels, size, size, size * 4, QImage::Format_RGBA8888);
 	}
 
-	QStyle* style = QWidget::style();
 	QPainter painter(this);
 
 	QStyleOption opt;

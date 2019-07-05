@@ -11,6 +11,7 @@
 
 // Includes
 #include "CREBreakableGlassHelpers.h"
+#include "RendElement.h"
 
 // Forward decls
 struct IRenderAuxGeom;

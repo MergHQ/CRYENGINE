@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Raster.h"
 #include "Quadtree/Quadtree.h"
+#include <CryMath/Cry_Geo.h>
 
 const float CBBoxRaster::cMaxExt = (float)(CBBoxRaster::scRasterRes) -0.001f;
 
@@ -136,7 +137,7 @@ const float cLimEps = cLim - 0.001f;
 const float cCorrScale = (cLim + 1.f) / cLim;
 const float cInvCorrScale = 1.f / cCorrScale;
 const float cCorrTrans = 0.5f / cLim;
-const uint32 cMiddleValInt = (float)(CBBoxRaster::scRasterRes >> 1);
+const uint32 cMiddleValInt = CBBoxRaster::scRasterRes >> 1;
 const float cMiddleVal = (float)cMiddleValInt;
 const Vec3 cCorrTransVec(cCorrTrans, cCorrTrans, cCorrTrans);
 };
@@ -431,4 +432,3 @@ void CBBoxRaster::SaveTGA(const char* cpName) const
 			pixels[j * scRasterRes + i] = GetEntry(m_pRasterZX, scRasterRes - 1 - j, i) ? 0xFFFFFFFF : 0;
 	NQT::SaveTGA32(name + "ZX.tga", pixels, scRasterRes);
 }
-

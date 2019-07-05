@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "VehicleFXPanel.h"
 
-#include "Controls\PropertyItem.h"
+#include "Controls/PropertyItem.h"
 
 #include "VehicleData.h"
 #include "VehicleEditorDialog.h"
@@ -98,4 +98,3 @@ void CVehicleFXPanel::OnSize(UINT nType, int cx, int cy)
 	if (m_propsCtrl.m_hWnd)
 		m_propsCtrl.MoveWindow(0, 0, rc.right, rc.bottom, true);
 }
-

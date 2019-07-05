@@ -1,27 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-
-#include "EntityObject.h"
-#include "Geometry\EdMesh.h"
-#include "Material\Material.h"
-#include "Material\MaterialManager.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntitySystem.h>
-
 #include "DistanceCloudObject.h"
+#include "IEditorImpl.h"
+
+#include "Material/MaterialManager.h"
+#include "Objects/ObjectLoader.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 REGISTER_CLASS_DESC(CDistanceCloudObjectClassDesc);
-
-//////////////////////////////////////////////////////////////////////////
-// CDistanceCloudObject implementation.
-//////////////////////////////////////////////////////////////////////////
 
 IMPLEMENT_DYNCREATE(CDistanceCloudObject, CBaseObject)
 
@@ -32,7 +19,6 @@ CDistanceCloudObject::CDistanceCloudObject()
 	m_renderFlags = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CDistanceCloudObject::GetDefaultMaterial() const
 {
 	CMaterial* pDefMat(GetIEditorImpl()->GetMaterialManager()->LoadMaterial("Materials/Clouds/DistanceClouds"));
@@ -40,12 +26,11 @@ CMaterial* CDistanceCloudObject::GetDefaultMaterial() const
 	return pDefMat;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDistanceCloudObject::Init(CBaseObject* prev, const string& file)
 {
 	CDistanceCloudObject* pSrcObj((CDistanceCloudObject*) prev);
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 
 	if (IsCreateGameObjects())
 	{
@@ -69,7 +54,6 @@ bool CDistanceCloudObject::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDistanceCloudObject::CreateGameObject()
 {
 	if (!m_pRenderNode)
@@ -85,10 +69,9 @@ bool CDistanceCloudObject::CreateGameObject()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	if (m_pRenderNode)
 	{
 		GetIEditorImpl()->Get3DEngine()->DeleteRenderNode(m_pRenderNode);
@@ -98,7 +81,6 @@ void CDistanceCloudObject::Done()
 	CBaseObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::UpdateEngineNode()
 {
 	if (!m_pRenderNode)
@@ -132,21 +114,18 @@ void CDistanceCloudObject::UpdateEngineNode()
 	m_pRenderNode->SetProperties(properties);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::SetHidden(bool bHidden)
 {
 	CBaseObject::SetHidden(bHidden);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::UpdateVisibility(bool visible)
 {
 	CBaseObject::UpdateVisibility(visible);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::RegisterOnEngine()
 {
 	IRenderNode* pRenderNode = GetEngineNode();
@@ -156,7 +135,6 @@ void CDistanceCloudObject::RegisterOnEngine()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::UnRegisterFromEngine()
 {
 	IRenderNode* pRenderNode = GetEngineNode();
@@ -166,7 +144,6 @@ void CDistanceCloudObject::UnRegisterFromEngine()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::SetMaterial(IEditorMaterial* mtl)
 {
 	if (!mtl)
@@ -175,23 +152,20 @@ void CDistanceCloudObject::SetMaterial(IEditorMaterial* mtl)
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::InvalidateTM(int nWhyFlags)
 {
 	CBaseObject::InvalidateTM(nWhyFlags);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::GetLocalBounds(AABB& box)
 {
 	box = AABB(Vec3(-1, -1, -1e-4f), Vec3(1, 1, 1e-4f));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	if (IsSelected())
 	{
@@ -215,7 +189,6 @@ void CDistanceCloudObject::Display(CObjectRenderHelper& objRenderHelper)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDistanceCloudObject::Serialize(CObjectArchive& ar)
 {
 	CBaseObject::Serialize(ar);
@@ -239,20 +212,17 @@ void CDistanceCloudObject::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CDistanceCloudObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	XmlNodeRef distanceCloudNode(CBaseObject::Export(levelPath, xmlNode));
 	return distanceCloudNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDistanceCloudObject::HitTest(HitContext& hc)
 {
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CDistanceCloudObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseMove || event == eMouseLDown || event == eMouseLUp)
@@ -262,4 +232,3 @@ int CDistanceCloudObject::MouseCreateCallback(IDisplayViewport* view, EMouseEven
 	}
 	return CBaseObject::MouseCreateCallback(view, event, point, flags);
 }
-

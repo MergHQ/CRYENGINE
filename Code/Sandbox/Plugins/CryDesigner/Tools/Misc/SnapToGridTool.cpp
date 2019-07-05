@@ -2,11 +2,12 @@
 
 #include "StdAfx.h"
 #include "SnapToGridTool.h"
-#include "Tools/Select/SelectTool.h"
-#include "DesignerEditor.h"
+
+#include "Core/Helper.h"
 #include "Core/PolygonDecomposer.h"
-#include "Grid.h"
-#include "ViewManager.h"
+#include "DesignerEditor.h"
+
+#include <Preferences/SnappingPreferences.h>
 
 namespace Designer
 {
@@ -102,4 +103,3 @@ BrushVec3 SnapToGridTool::SnapVertexToGrid(const BrushVec3& vPos)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_SnapToGrid, eToolGroup_Misc, "Snap to Grid", SnapToGridTool,
                                    snaptogrid, "runs snap to grid tool", "designer.snaptogrid");
-

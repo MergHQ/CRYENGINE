@@ -4,15 +4,26 @@
 
 #include "Asset.h"
 
+#include <PoolObject.h>
+
 namespace ACE
 {
-class CLibrary final : public CAsset
+class CLibrary final : public CAsset, public CryAudio::CPoolObject<CLibrary, stl::PSyncNone>
 {
 public:
 
-	explicit CLibrary(string const& name);
-
 	CLibrary() = delete;
+	CLibrary(CLibrary const&) = delete;
+	CLibrary(CLibrary&&) = delete;
+	CLibrary& operator=(CLibrary const&) = delete;
+	CLibrary& operator=(CLibrary&&) = delete;
+
+	explicit CLibrary(string const& name, ControlId const id)
+		: CAsset(name, id, EAssetType::Library)
+		, m_pakStatus(EPakStatus::None)
+	{}
+
+	virtual ~CLibrary() override = default;
 
 	// CAsset
 	virtual void SetModified(bool const isModified, bool const isForced = false) override;

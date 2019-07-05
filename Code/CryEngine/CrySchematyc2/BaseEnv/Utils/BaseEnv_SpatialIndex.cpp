@@ -656,7 +656,6 @@ namespace SchematycBaseEnv
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_GAME);
 		// Send out all events in queue. N.B. This is performed after the update logic in order to reduce cache misses.
-		const uint32 volumeCount = m_volumes.size();
 		for(const SSpatialIndexEvent& event : eventQueue)
 		{
 			const SVolume& volume = m_volumes[VolumeIdxFromId(event.volumeIds[0])];

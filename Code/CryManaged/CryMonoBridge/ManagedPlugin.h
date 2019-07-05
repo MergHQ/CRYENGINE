@@ -11,6 +11,7 @@
 #include "NativeComponents/EntityComponentFactory.h"
 
 #include <CrySchematyc/CoreAPI.h>
+#include <CryMono/IMonoRuntime.h>
 
 class CMonoLibrary;
 

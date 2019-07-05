@@ -1,15 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "Common.h"
+
+#include "Core/Helper.h"
 #include "Objects/DesignerObject.h"
-#include "Objects/DisplayContext.h"
-#include "Helper.h"
-#include "Grid.h"
-#include "Viewport.h"
-#include "SurfaceInfoPicker.h"
-#include <QDir>
-#include <CrySerialization/Enum.h>
 #include "DesignerEditor.h"
+
+#include <SurfaceInfoPicker.h>
+
+#include <Objects/DisplayContext.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
+
+#include <CrySerialization/Enum.h>
+#include <CryPhysics/physinterface.h>
+
+#include <QDir>
 
 namespace Designer
 {
@@ -19,8 +26,10 @@ const BrushFloat kDistanceLimitation((BrushFloat)0.001);
 const BrushFloat kLimitForMagnetic((BrushFloat)8.0);
 const BrushFloat kInitialPrimitiveHeight((BrushFloat)1.0e-5);
 
+CRY_DISABLE_WARN_UNUSED_VARIABLES()
 SERIALIZATION_ENUM_BEGIN(EDesignerTool, "DesignerMode")
 SERIALIZATION_ENUM_END()
+CRY_RESTORE_WARN_UNUSED_VARIABLES()
 
 BrushVec3 WorldPos2ScreenPos(const BrushVec3& worldPos)
 {
@@ -60,9 +69,8 @@ BrushVec3 ScreenPos2WorldPos(const BrushVec3& screenPos)
 	return worldPos;
 }
 
-void DrawSpot(DisplayContext& dc, const BrushMatrix34& worldTM, const BrushVec3& pos, const ColorB& color, float fSize)
+void DrawSpot(SDisplayContext& dc, const BrushMatrix34& worldTM, const BrushVec3& pos, const ColorB& color, float fSize)
 {
-	const BrushMatrix34& viewTM(dc.view->GetViewTM());
 	const BrushMatrix34& invWorldTM(worldTM.GetInverted());
 
 	BrushVec3 positionInScreen = WorldPos2ScreenPos(worldTM.TransformPoint(pos));
@@ -595,7 +603,7 @@ void GetLocalViewRay(const BrushMatrix34& worldTM, IDisplayViewport* view, CPoin
 	outRay.direction = invWorldTM.TransformVector(ToBrushVec3(rayDir));
 }
 
-void DrawPlane(DisplayContext& dc, const BrushVec3& vPivot, const BrushPlane& plane, float s)
+void DrawPlane(SDisplayContext& dc, const BrushVec3& vPivot, const BrushPlane& plane, float s)
 {
 	Matrix33 orthogonalTM = Matrix33::CreateOrthogonalBase(ToVec3(plane.Normal()));
 
@@ -787,7 +795,7 @@ bool PickPosFromWorld(IDisplayViewport* view, const CPoint& point, Vec3& outPick
 	IPhysicalWorld* const pPhysics = GetIEditor()->GetSystem()->GetIPhysicalWorld();
 	if (pPhysics->RayWorldIntersection(pos, dir, types, flags, &hit, 1) > 0)
 	{
-		outPickedPos = gSnappingPreferences.Snap(hit.pt);
+		outPickedPos = gSnappingPreferences.Snap3D(hit.pt);
 		return true;
 	}
 	return false;
@@ -864,4 +872,3 @@ bool SaveSettings(const Serialization::SStruct& outObj, const char* name)
 	return GetIEditor()->GetSystem()->GetArchiveHost()->SaveJsonFile(GetSaveStateFilePath(name).c_str(), outObj);
 }
 }
-

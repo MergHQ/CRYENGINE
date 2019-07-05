@@ -90,7 +90,7 @@ IUIElement* CScriptBind_UIAction::GetElement(const char* sName, int instanceID, 
 	if (gEnv->IsDedicated())
 		return NULL;
 
-	CRY_ASSERT_MESSAGE(gEnv->pFlashUI, "FlashUI extension does not exist!");
+	CRY_ASSERT(gEnv->pFlashUI, "FlashUI extension does not exist!");
 	if (!gEnv->pFlashUI)
 	{
 		UIACTION_WARNING("LUA: FlashUI extension does not exist!");
@@ -117,7 +117,7 @@ IUIAction* CScriptBind_UIAction::GetAction(const char* sName)
 	if (gEnv->IsDedicated())
 		return NULL;
 
-	CRY_ASSERT_MESSAGE(gEnv->pFlashUI, "FlashUI extension does not exist!");
+	CRY_ASSERT(gEnv->pFlashUI, "FlashUI extension does not exist!");
 	if (!gEnv->pFlashUI)
 	{
 		UIACTION_WARNING("LUA: FlashUI extension does not exist!");
@@ -138,7 +138,7 @@ IUIEventSystem* CScriptBind_UIAction::GetEventSystem(const char* sName, IUIEvent
 	if (gEnv->IsDedicated())
 		return NULL;
 
-	CRY_ASSERT_MESSAGE(gEnv->pFlashUI, "FlashUI extension does not exist!");
+	CRY_ASSERT(gEnv->pFlashUI, "FlashUI extension does not exist!");
 	if (!gEnv->pFlashUI)
 	{
 		UIACTION_WARNING("LUA: FlashUI extension does not exist!");
@@ -329,7 +329,6 @@ int CScriptBind_UIAction::SetVariable(IFunctionHandler* pH, const char* elementN
 		const SUIParameterDesc* pVarDesc = pElement->GetVariableDesc(varName);
 		if (pVarDesc)
 		{
-			bool bRet = true;
 			TUIData value;
 			if (SUIToLuaConversationHelper::LuaArgToUIArg(pH, 4, value))
 			{
@@ -1173,7 +1172,7 @@ void SUIEventSystemLuaCallback::SEventSystemListener::Clear()
 //------------------------------------------------------------------------
 SUIArgumentsRet SUIEventSystemLuaCallback::SEventSystemListener::OnEvent(const SUIEvent& event)
 {
-	assert(m_pOwner && m_pEventSystem);
+	CRY_ASSERT(m_pOwner && m_pEventSystem);
 	m_pOwner->OnEvent(m_pEventSystem, event);
 	return SUIArguments();
 }
@@ -1190,12 +1189,12 @@ void SUIEventSystemLuaCallback::SEventSystemListener::OnEventSystemDestroyed(IUI
 namespace SUIConvHelperTmpl
 {
 template<class T>
-ScriptVarType            GetVarType(T& t, int idx)                 { assert(false); return svtNull; }
+ScriptVarType            GetVarType(T& t, int idx)                 { CRY_ASSERT(false); return svtNull; }
 template<> ScriptVarType GetVarType(SmartScriptTable& t, int idx)  { return t->GetAtType(idx); }
 template<> ScriptVarType GetVarType(IFunctionHandler*& t, int idx) { return t->GetParamType(idx); }
 
 template<class T, class V>
-bool                   GetVarValue(T& t, int idx, V& val)                 { assert(false); return false; }
+bool                   GetVarValue(T& t, int idx, V& val)                 { CRY_ASSERT(false); return false; }
 template<class V> bool GetVarValue(SmartScriptTable& t, int idx, V& val)  { return t->GetAt(idx, val); }
 template<class V> bool GetVarValue(IFunctionHandler*& t, int idx, V& val) { return t->GetParam(idx, val); }
 
@@ -1241,13 +1240,13 @@ bool LuaArgToUIArgImpl(T& t, int idx, TUIData& value)
 		}
 		break;
 	case svtNull:
-		CRY_ASSERT_MESSAGE(false, "Invalid data type for UIAction call!");
+		CRY_ASSERT(false, "Invalid data type for UIAction call!");
 		break;
 	case svtUserData:
-		CRY_ASSERT_MESSAGE(false, "Invalid data type for UIAction call!");
+		CRY_ASSERT(false, "Invalid data type for UIAction call!");
 		break;
 	case svtFunction:
-		CRY_ASSERT_MESSAGE(false, "Invalid data type for UIAction call!");
+		CRY_ASSERT(false, "Invalid data type for UIAction call!");
 		break;
 	}
 	return bOk;
@@ -1257,7 +1256,7 @@ template<class T>
 ScriptAnyValue GetValueRaw(const TUIData& value)
 {
 	const T* val = value.GetPtr<T>();
-	assert(val);
+	CRY_ASSERT(val);
 	return ScriptAnyValue(*val);
 }
 

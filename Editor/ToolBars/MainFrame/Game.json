@@ -1,0 +1,33 @@
+{
+    "toolBar": [
+        {
+            "command": "game.toggle_game_mode",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "toggle_game_mode",
+            "type": 0
+        },
+        {
+            "command": "game.toggle_simulate_physics_ai",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "toggle_simulate_physics_ai",
+            "type": 0
+        },
+        {
+            "command": "physics.single_step",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Toggle single-step mode in physics",
+            "type": 0
+        },
+        {
+            "command": "physics.step",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Do a single physics step",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

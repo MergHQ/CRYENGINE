@@ -39,7 +39,7 @@ namespace Schematyc2
 
 	void CDocGraphAbstractInterfaceFunctionNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
 		CDocGraphNodeBase::AddInput("Object", EScriptGraphPortFlags::None, GetAggregateTypeId<ObjectId>());
@@ -132,7 +132,7 @@ namespace Schematyc2
 
 	void CDocGraphAbstractInterfaceFunctionNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Serialize(archive);
 		
@@ -193,11 +193,11 @@ namespace Schematyc2
 		const size_t stackPos = compiler.FindInputOnStack(*this, EInput::Object);
 		if(stackPos != INVALID_INDEX)
 		{
-			compiler.Copy(stackPos, INVALID_INDEX, MakeAny(ObjectId()));
+			compiler.Copy(stackPos, INVALID_INDEX, MakeAny(ObjectId()), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Object));
 		}
 		else
 		{
-			compiler.Push(MakeAny(ObjectId()));	// #SchematycTODO : Can we perhaps grey out the node if this is not connected?
+			compiler.Push(MakeAny(ObjectId()), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Object));	// #SchematycTODO : Can we perhaps grey out the node if this is not connected?
 		}
 		DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
 
@@ -206,14 +206,14 @@ namespace Schematyc2
 		const SGUID        refGUID = CDocGraphNodeBase::GetRefGUID();
 		if(IAbstractInterfaceFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetAbstractInterfaceFunction(refGUID))
 		{
-			compiler.CallEnvAbstractInterfaceFunction(contextGUID, refGUID);
+			compiler.CallEnvAbstractInterfaceFunction(contextGUID, refGUID, CDocGraphNodeBase::GetGUID());
 		}
 		else
 		{
 			ScriptIncludeRecursionUtils::TGetAbstractInterfaceFunctionResult function = ScriptIncludeRecursionUtils::GetAbstractInterfaceFunction(file, refGUID);
 			if(function.second)
 			{
-				compiler.CallLibAbstractInterfaceFunction(contextGUID, refGUID);
+				compiler.CallLibAbstractInterfaceFunction(contextGUID, refGUID, CDocGraphNodeBase::GetGUID());
 			}
 		}
 

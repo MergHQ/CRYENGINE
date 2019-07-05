@@ -295,7 +295,7 @@ template<class T> struct Color_tpl
 			}
 			else
 			{
-				c = 1.055f * pow(c, 1.0f / 2.4f) - 0.055f;
+				c = 1.055f * pow(c, 1.0f / 2.4f) - 0.05499995f;
 			}
 		}
 	}
@@ -1191,16 +1191,5 @@ inline void Color_tpl<T >::grey(const Color_tpl<T>& c)
 
 #define Val_Unused            uint8(0)
 #define Val_Stencil           uint8(0)
-
-inline ColorF ColorGammaToLinear(const ColorF& col)
-{
-	float r = col.r / 255.0f;
-	float g = col.g / 255.0f;
-	float b = col.b / 255.0f;
-
-	return ColorF((float)(r <= 0.04045 ? (r / 12.92) : pow(((double)r + 0.055) / 1.055, 2.4)),
-		(float)(g <= 0.04045 ? (g / 12.92) : pow(((double)g + 0.055) / 1.055, 2.4)),
-		(float)(b <= 0.04045 ? (b / 12.92) : pow(((double)b + 0.055) / 1.055, 2.4)));
-}
 
 #endif // CRYTEK_CRYCOLOR_H

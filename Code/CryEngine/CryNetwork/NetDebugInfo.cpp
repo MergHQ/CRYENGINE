@@ -123,6 +123,8 @@ void CNetDebugObjectsInfo::DrawObjects(uint32 line, const char* pLabel, uint32 c
 
 CNetDebugInfo::CNetDebugInfo()
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CNetDebugInfo::CNetDebugInfo");
+
 	m_sections.push_back(new CNetDebugObjectsInfo());
 	m_sections.push_back(new CNetDebugInternetSimulator());
 	m_sections.push_back(new CNetDebugTrafficBandwidth());
@@ -139,7 +141,7 @@ CNetDebugInfo::CNetDebugInfo()
 
 CNetDebugInfo::~CNetDebugInfo()
 {
-	for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); it++)
+	for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); ++it)
 	{
 		delete (*it);
 	}
@@ -164,7 +166,7 @@ void CNetDebugInfo::Tick()
 		SNetworkProfilingStats debugStats;
 		CNetwork::Get()->GetProfilingStatistics(&debugStats);
 
-		for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); it++)
+		for (std::vector<CNetDebugInfoSection*>::iterator it = m_sections.begin(); it != m_sections.end(); ++it)
 		{
 			(*it)->Tick(&debugStats);
 

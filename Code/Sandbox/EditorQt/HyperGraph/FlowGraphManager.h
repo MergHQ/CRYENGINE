@@ -83,7 +83,7 @@ public:
 
 	// Getters
 	size_t           GetFlowGraphCount() const { return m_graphs.size(); }
-	CHyperFlowGraph* GetFlowGraph(size_t nIndex)  { return m_graphs[nIndex]; };
+	CHyperFlowGraph* GetFlowGraph(size_t nIndex)  { return m_graphs[nIndex]; }
 	void             GetAvailableGroups(std::set<CString>& outGroups, bool bActionGraphs = false);
 
 	CFlowGraphMigrationHelper& GetMigrationHelper() { return m_migrationHelper; }
@@ -109,4 +109,3 @@ private:
 	std::vector<CHyperFlowGraph*> m_graphs;
 	CFlowGraphMigrationHelper     m_migrationHelper;
 };
-

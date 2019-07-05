@@ -2,8 +2,9 @@
 
 #include "StdAfx.h"
 #include "ThreadConfigManager.h"
-#include <CrySystem/IConsole.h>
 #include "System.h"
+#include "CPUDetect.h"
+#include <CrySystem/IConsole.h>
 #include <CryString/StringUtils.h>
 #include <CryCore/CryCustomTypes.h>
 
@@ -91,11 +92,11 @@ const SThreadConfig* CThreadConfigManager::GetDefaultThreadConfig() const
 bool CThreadConfigManager::LoadConfig(const char* pcPath)
 {
 	// Adjust filename for OnDisk or in .pak file loading
-	char szFullPathBuf[ICryPak::g_nMaxPath];
-	gEnv->pCryPak->AdjustFileName(pcPath, szFullPathBuf, 0);
+	CryPathString fullPath;
+	gEnv->pCryPak->AdjustFileName(pcPath, fullPath, 0);
 
 	// Open file
-	XmlNodeRef xmlRoot = GetISystem()->LoadXmlFromFile(szFullPathBuf);
+	XmlNodeRef xmlRoot = GetISystem()->LoadXmlFromFile(fullPath);
 	if (!xmlRoot)
 	{
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "<ThreadConfigInfo>: File \"%s\" not found!", pcPath);
@@ -432,8 +433,6 @@ void CThreadConfigManager::LoadPriority(const XmlNodeRef& rXmlThreadRef, int32& 
 //////////////////////////////////////////////////////////////////////////
 void CThreadConfigManager::LoadDisablePriorityBoost(const XmlNodeRef& rXmlThreadRef, bool& rPriorityBoost, SThreadConfig::TThreadParamFlag& rParamActivityFlag)
 {
-	const char* sValidCharacters = "-,0123456789";
-
 	// Validate node
 	if (!rXmlThreadRef->haveAttr("DisablePriorityBoost"))
 	{
@@ -474,8 +473,6 @@ void CThreadConfigManager::LoadStackSize(const XmlNodeRef& rXmlThreadRef, uint32
 
 	if (rXmlThreadRef->haveAttr("StackSizeKB"))
 	{
-		int32 nPos = 0;
-
 		// Read stack size
 		CryFixedStringT<32> stackSize(rXmlThreadRef->getAttr("StackSizeKB"));
 

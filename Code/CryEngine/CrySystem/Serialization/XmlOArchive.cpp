@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CrySystem/ISystem.h>
 #include <CryExtension/ClassWeaver.h>
 
 #include <CrySerialization/STL.h>
@@ -245,7 +246,7 @@ bool Serialization::CXmlOutputArchive::operator()(IString& value, const char* na
 
 bool Serialization::CXmlOutputArchive::operator()(IWString& value, const char* name, const char* label)
 {
-	CRY_ASSERT_MESSAGE(0,"CXmlOutputArchive::operator() with IWString is not implemented");
+	CRY_ASSERT(0,"CXmlOutputArchive::operator() with IWString is not implemented");
 	CryFatalError("CXmlOutputArchive::operator() with IWString is not implemented");
 	return false;
 }

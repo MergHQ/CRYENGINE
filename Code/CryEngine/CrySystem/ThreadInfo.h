@@ -3,6 +3,8 @@
 #pragma once
 
 #include <CryCore/Platform/CryWindows.h>
+#include <vector>
+#include <map>
 
 struct SThreadInfo
 {

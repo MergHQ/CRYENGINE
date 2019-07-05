@@ -8,7 +8,6 @@
 #include "../Common/RendElements/Utils/PolygonMath2D.h"
 #include "../Common/RendElements/Utils/SpatialHashGrid.h"
 
-#include "DriverD3D.h"
 #include <Cry3DEngine/IRenderNode.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
@@ -334,8 +333,8 @@ void CREBreakableGlass::UpdateImpactShaderConstants()
 //--------------------------------------------------------------------------------------------------
 void CREBreakableGlass::SetImpactShaderConstants(CShader* pShader)
 {
-	const uint numDecalElems = 2;
-//	pShader->FXSetPSFloat(s_ImpactDecalParamName, (Vec4*)m_decalPSConsts, GLASSCFG_MAX_NUM_IMPACT_DECALS * numDecalElems);
+	//const uint numDecalElems = 2;
+	//pShader->FXSetPSFloat(s_ImpactDecalParamName, (Vec4*)m_decalPSConsts, GLASSCFG_MAX_NUM_IMPACT_DECALS * numDecalElems);
 }//-------------------------------------------------------------------------------------------------
 
 #ifdef GLASS_DEBUG_MODE

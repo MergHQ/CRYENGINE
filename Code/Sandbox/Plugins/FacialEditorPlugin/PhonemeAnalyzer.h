@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __PhonemeAnalyzer_h__
-#define __PhonemeAnalyzer_h__
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////
@@ -37,6 +35,7 @@ public:
 		SPhoneme* pPhonemes; // Array of phonemes.
 	};
 
+	virtual ~ILipSyncPhonemeRecognizer() {}
 	virtual void        Release() = 0;
 	virtual bool        RecognizePhonemes(const char* wavfile, const char* text, SSentance** pOutSetence) = 0;
 	virtual const char* GetLastError() = 0;
@@ -58,6 +57,3 @@ private:
 	ILipSyncPhonemeRecognizer* m_pPhonemeParser;
 	string                     m_LastError;
 };
-
-#endif // __PhonemeAnalyzer_h__
-

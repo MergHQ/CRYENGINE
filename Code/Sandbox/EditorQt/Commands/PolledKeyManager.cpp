@@ -2,12 +2,14 @@
 #include "StdAfx.h"
 #include "PolledKeyManager.h"
 
+#include "CommandManager.h"
+#include "IEditorImpl.h"
+
 #include <QCoreApplication>
 #include <QKeyEvent>
 
-#include "PolledKey.h"
-#include "Commands/QCommandAction.h"
-#include "CommandManager.h"
+#include <Commands/PolledKey.h>
+#include <Commands/QCommandAction.h>
 
 CPolledKeyManager::CPolledKeyManager()
 {
@@ -100,4 +102,3 @@ bool CPolledKeyManager::eventFilter(QObject* object, QEvent* event)
 
 	return false;
 }
-

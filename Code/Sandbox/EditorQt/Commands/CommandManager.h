@@ -1,23 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2002.
-// -------------------------------------------------------------------------
-//  Created:     4/7/2002 by Timur.
-//  Description: the command manager
-// -------------------------------------------------------------------------
-//  History:
-//	- 6/29/2011 Refactored by Jaewon for an intimate operation with the scripting system
-//
-////////////////////////////////////////////////////////////////////////////
-#include "ICommandManager.h"
-#include <CrySandbox/CrySignal.h>
 
-class QCommandAction;
+#include <Commands/ICommandManager.h>
+
 class CCustomCommand;
+class QCommandAction;
 
 class CEditorCommandManager : public ICommandManager
 {
@@ -38,18 +26,23 @@ public:
 	bool                             UnregisterCommand(const char* cmdFullName) override;
 	string                           Execute(const string& cmdLine) override;
 	string                           Execute(const string& module, const string& name, const CCommand::CArgs& args);
-	void                             GetCommandList(std::vector<string>& cmds) const;
-	void                             GetCommandList(std::vector<CCommand*>& cmds) const;
-	const CCommandModuleDescription* GetCommandModuleDescription(const char* moduleName);
+	void                             GetCommandList(std::vector<string>& cmds) const override;
+	void                             GetCommandList(std::vector<CCommand*>& cmds) const override;
+	void                             RemapCommand(const char* oldModule, const char* oldName, const char* newModule, const char* newName) override;
+
+	bool                             IsCommandDeprecated(const char* cmdFullName) const override;
+	const CCommandModuleDescription* FindOrCreateModuleDescription(const char* moduleName) override;
 	virtual CCommand*                GetCommand(const char* cmdFullName) const override;
+	virtual void                     SetChecked(const char* cmdFullName, bool checked) override;
 	virtual QAction*                 GetAction(const char* cmdFullName, const char* text = nullptr) const override;
+	virtual QCommandAction*          CreateNewAction(const char* cmdFullName) const override;
+	virtual QCommandAction*          GetCommandAction(const char* command, const char* text = nullptr) const override;
 
 	void                             SetEditorUIActionsEnabled(bool bEnabled);
 
 	//! Used in the console dialog
-	string AutoComplete(const string& substr) const;
-	bool   IsRegistered(const char* module, const char* name) const override;
-	bool   IsRegistered(const char* cmdLine) const override;
+	bool IsRegistered(const char* module, const char* name) const override;
+	bool IsRegistered(const char* cmdLine) const override;
 
 	//! Turning off the warning is needed for reloading the ribbon bar.
 	void            TurnDuplicateWarningOn()  { m_bWarnDuplicate = true; }
@@ -65,9 +58,6 @@ public:
 	void            RemoveCustomCommand(CCustomCommand* pCommand);
 	void            RemoveAllCustomCommands();
 	void            GetCustomCommandList(std::vector<CCommand*>& cmds) const;
-	QCommandAction* GetCommandAction(string command, const char* text = nullptr) const;
-
-	CCrySignal<void()> signalChanged;
 
 protected:
 	struct SCommandTableEntry
@@ -79,6 +69,7 @@ protected:
 	//! A full command name to an actual command mapping
 	typedef std::map<string, SCommandTableEntry> CommandTable;
 	CommandTable m_commands;
+	CommandTable m_deprecatedCommands;
 
 	typedef std::map<string, CCommandModuleDescription*> CommandModuleTable;
 	CommandModuleTable           m_commandModules;
@@ -92,4 +83,3 @@ protected:
 	void          LogCommand(const string& fullCmdName, const CCommand::CArgs& args) const;
 	string        ExecuteAndLogReturn(CCommand* pCommand, const CCommand::CArgs& args);
 };
-

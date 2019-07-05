@@ -19,6 +19,12 @@
 #include "CrySchematyc2/Runtime/IRuntime.h"
 #include "CrySchematyc2/Services/ITimerSystem.h"
 
+#ifdef _RELEASE
+#define SCHEMATYC2_DEBUGGING 0
+#else
+#define SCHEMATYC2_DEBUGGING 1
+#endif
+
 namespace Schematyc2
 {
 class CRuntimeFunction;
@@ -55,29 +61,23 @@ struct ILibAbstractInterface
 
 DECLARE_SHARED_POINTERS(ILibAbstractInterface)
 
-enum class ELibStateMachineLifetime
-{
-	Unknown = 0,
-	Persistent,
-	Task
-};
-
 struct ILibStateMachine
 {
 	virtual ~ILibStateMachine() {}
 
-	virtual SGUID                    GetGUID() const = 0;
-	virtual const char*              GetName() const = 0;
-	virtual ELibStateMachineLifetime GetLifetime() const = 0;
-	virtual size_t                   GetPartner() const = 0;
-	virtual size_t                   GetListenerCount() const = 0;
-	virtual size_t                   GetListener(size_t listenerIdx) const = 0;
-	virtual size_t                   GetVariableCount() const = 0;
-	virtual size_t                   GetVariable(const size_t variableIdx) const = 0;
-	virtual size_t                   GetContainerCount() const = 0;
-	virtual size_t                   GetContainer(const size_t containerIdx) const = 0;
-	virtual void                     SetBeginFunction(const LibFunctionId& functionId) = 0;
-	virtual LibFunctionId            GetBeginFunction() const = 0;
+	virtual SGUID                      GetGUID() const = 0;
+	virtual const char*                GetName() const = 0;
+	virtual EStateMachineLifetime      GetLifetime() const = 0;
+	virtual EStateMachineNetAuthority  GetNetAuthority() const = 0;
+	virtual size_t                     GetPartner() const = 0;
+	virtual size_t                     GetListenerCount() const = 0;
+	virtual size_t                     GetListener(size_t listenerIdx) const = 0;
+	virtual size_t                     GetVariableCount() const = 0;
+	virtual size_t                     GetVariable(const size_t variableIdx) const = 0;
+	virtual size_t                     GetContainerCount() const = 0;
+	virtual size_t                     GetContainer(const size_t containerIdx) const = 0;
+	virtual void                       SetBeginFunction(const LibFunctionId& functionId) = 0;
+	virtual LibFunctionId              GetBeginFunction() const = 0;	
 };
 
 struct ILibState
@@ -227,6 +227,26 @@ struct ILibTransition
 
 struct ILibFunction
 {
+	struct SDebugSymbol
+	{
+		enum class EDebugSymbolType
+		{
+			Node = 0,
+			Input,
+			NodeAndInput,
+
+			Count
+		};
+
+		SDebugSymbol(const SGUID& guid, const string& data, EDebugSymbolType type)
+			: originGuid(guid), data(data), type(type)
+		{}
+
+		SGUID            originGuid;
+		string           data;
+		EDebugSymbolType type;
+	};
+
 	virtual ~ILibFunction() {}
 
 	virtual SGUID                             GetGUID() const = 0;
@@ -257,6 +277,9 @@ struct ILibFunction
 	virtual ActionMemberFunctionConstTable    GetActionMemberFunctionTable() const = 0;
 	virtual size_t                            GetSize() const = 0;
 	virtual const SVMOp*                      GetOp(size_t pos) const = 0;
+	virtual bool                              IsGraphExecutionAllowed() const = 0;
+	virtual const SDebugSymbol*               GetDebugOperationSymbol(size_t pos) const = 0;
+	virtual size_t                            GetDebugOperationsSize() const = 0;
 };
 
 // The following type exists only for backwards compatibility in Hunt and can be removed once all levels have been re-exported.
@@ -321,6 +344,7 @@ struct ILibClass
 	virtual const ILibTransition*                      GetTransition(size_t transitionIdx) const = 0;
 	virtual LibFunctionId                              GetFunctionId(const SGUID& guid) const = 0;
 	virtual const ILibFunction*                        GetFunction(const LibFunctionId& functionId) const = 0;
+	virtual const SGUID                                GetFunctionGUID(const LibFunctionId& functionId) const = 0;
 	virtual const CRuntimeFunction*                    GetFunction_New(uint32 functionIdx) const = 0;
 	virtual void         PreviewGraphFunctions(const SGUID& graphGUID, const StringStreamOutCallback& stringStreamOutCallback) const = 0;
 	virtual void         AddPrecacheResource(IAnyConstPtr resource) = 0;

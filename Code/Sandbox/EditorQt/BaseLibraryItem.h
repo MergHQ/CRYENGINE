@@ -1,12 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __baselibraryitem_h__
-#define __baselibraryitem_h__
 #pragma once
 
 #include "SandboxAPI.h"
 #include "IDataBaseItem.h"
 #include "BaseLibrary.h"
+#include <CryCore/smartptr.h>
 
 class CBaseLibraryItem;
 class CBaseLibrary;
@@ -21,15 +20,15 @@ public:
 	~CBaseLibraryItem();
 
 	//! Set item name.
-	//! Its virtual, in case you want to override it in derrived item.
+	//! Its virtual, in case you want to override it in derived item.
 	virtual void SetName(const string& name)
 	{
 		SetName(name, false);
 	}
 	//! Set item name.
-	inline void SetName(const char* name) // for CString conversion
+	inline void SetName(const char* szName) // for CString conversion
 	{
-		SetName(name, false);
+		SetName(string(szName));
 	}
 	//! Get item name.
 	const string& GetName() const;
@@ -39,7 +38,7 @@ public:
 	//! eg. library Pickup and item PickupRL form full item name: "Pickups.PickupRL".
 	string GetFullName() const;
 
-	//! Get only nameof group from prototype.
+	//! Get only name of group from prototype.
 	string GetGroupName();
 	//! Get short name of prototype without group.
 	string GetShortName();
@@ -62,14 +61,14 @@ public:
 	//! Mark library as modified.
 	void SetModified(bool bModified = true);
 	//! Check if library was modified.
-	bool IsModified() const { return m_bModified; };
+	bool IsModified() const { return m_bModified; }
 
 	//! Validate item for errors.
-	virtual void Validate() {};
+	virtual void Validate() {}
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Gathers resources by this item.
-	virtual void GatherUsedResources(CUsedResources& resources) {};
+	virtual void GatherUsedResources(CUsedResources& resources) {}
 
 protected:
 
@@ -78,19 +77,16 @@ protected:
 	friend class CBaseLibrary;
 	friend class CBaseLibraryManager;
 	// Name of this prototype.
-	string                  m_name;
+	string                   m_name;
 	//! Reference to prototype library who contains this prototype.
 	_smart_ptr<CBaseLibrary> m_library;
 
 	//! Every base library item have unique id.
 	CryGUID m_guid;
 	// True when item modified by editor.
-	bool m_bModified;
+	bool    m_bModified;
 	// True when item registered in manager.
-	bool m_bRegistered;
+	bool    m_bRegistered;
 };
 
 TYPEDEF_AUTOPTR(CBaseLibraryItem);
-
-#endif // __baselibraryitem_h__
-

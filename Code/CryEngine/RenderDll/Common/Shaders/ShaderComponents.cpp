@@ -47,7 +47,6 @@ static void sParseRuntimeShaderFlag(const char* szScr, const char* szAnnotations
 		uint32 n = sscanf(szScr, "%255s %255s", str, strval);
 		if (n == 2)
 		{
-			bool bOK = false;
 			if (strval[0] == '%')
 			{
 				SShaderGen* pGen = gRenDev->m_cEF.m_pGlobalExt;
@@ -201,7 +200,7 @@ const char* CShaderMan::mfGetShaderParamName(ECGParam ePR)
 {
 	int n = 0;
 	const char* szName;
-	while (szName = sParams[n].szName)
+	while ((szName = sParams[n].szName))
 	{
 		if (sParams[n].eParamType == ePR)
 			return szName;
@@ -216,7 +215,7 @@ SParamDB* CShaderMan::mfGetShaderParamDB(const char* szSemantic)
 {
 	const char* szName;
 	int n = 0;
-	while (szName = sParams[n].szName)
+	while ((szName = sParams[n].szName))
 	{
 		int nLen = strlen(szName);
 		if (!strnicmp(szName, szSemantic, nLen) || (sParams[n].szAliasName && !strnicmp(sParams[n].szAliasName, szSemantic, strlen(sParams[n].szAliasName))))
@@ -265,7 +264,7 @@ bool CShaderMan::mfParseParamComp(int comp, SCGParam* pCurParam, const char* szS
 	}
 	const char* szName;
 	int n = 0;
-	while (szName = sParams[n].szName)
+	while ((szName = sParams[n].szName))
 	{
 		int nLen = strlen(szName);
 		if (!strnicmp(szName, szSemantic, nLen) || (sParams[n].szAliasName && !strnicmp(sParams[n].szAliasName, szSemantic, strlen(sParams[n].szAliasName))))
@@ -498,7 +497,7 @@ bool CShaderMan::mfParseFXSampler(SShaderFXParams& FXParams, SFXSampler* pr, con
 	const char* szSemantic = pr->m_Semantic.c_str();
 	const char* szName;
 	int n = 0;
-	while (szName = sSamplers[n].szName)
+	while ((szName = sSamplers[n].szName))
 	{
 		if (!stricmp(szName, szSemantic))
 		{
@@ -585,7 +584,6 @@ static STextureDB sTextures[] =
 	STextureDB(PARAM(TS_WaterVolumeDDN,               ECGT_WaterVolumeDDN),               0),
 	STextureDB(PARAM(TS_WaterVolumeCaustics,          ECGT_WaterVolumeCaustics),          0),
 	STextureDB(PARAM(TS_WaterVolumeRefl,              ECGT_WaterVolumeRefl),              0),
-	STextureDB(PARAM(TS_WaterVolumeReflPrev,          ECGT_WaterVolumeReflPrev),          0),
 	STextureDB(PARAM(TS_RainOcclusion,                ECGT_RainOcclusion),                0),
 	STextureDB(PARAM(TS_TerrainNormMap,               ECGT_TerrainNormMap),               0),
 	STextureDB(PARAM(TS_TerrainBaseMap,               ECGT_TerrainBaseMap),               0),
@@ -639,7 +637,7 @@ bool CShaderMan::mfParseFXTexture(SShaderFXParams& FXParams, SFXTexture* pr, con
 	const char* szSemantic = pr->m_Semantic.c_str();
 	const char* szName;
 	int n = 0;
-	while (szName = sTextures[n].szName)
+	while ((szName = sTextures[n].szName))
 	{
 		if (!stricmp(szName, szSemantic))
 		{
@@ -803,13 +801,13 @@ SCGTexture::SCGTexture(const SCGTexture& sp) : SCGBind(sp)
 	if (!sp.m_pAnimInfo)
 	{
 		m_pAnimInfo = nullptr;
-		if (m_pTexture = sp.m_pTexture)
+		if ((m_pTexture = sp.m_pTexture))
 			m_pTexture->AddRef();
 	}
 	else
 	{
 		m_pTexture = nullptr;
-		if (m_pAnimInfo = sp.m_pAnimInfo)
+		if ((m_pAnimInfo = sp.m_pAnimInfo))
 			m_pAnimInfo->AddRef();
 	}
 

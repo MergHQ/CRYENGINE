@@ -47,12 +47,11 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBeginNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddOutput("Out", EScriptGraphPortFlags::BeginSequence | EScriptGraphPortFlags::Execute);
-		const IScriptFile& file = CDocGraphNodeBase::GetFile();
-		const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
-		const size_t       graphInputCount = graph.GetInputCount();
+		const IDocGraph& graph = CDocGraphNodeBase::GetGraph();
+		const size_t graphInputCount = graph.GetInputCount();
 		m_outputValues.resize(EOutput::FirstParam + graphInputCount);
 		for(size_t graphInputIdx = 0; graphInputIdx < graphInputCount; ++ graphInputIdx)
 		{
@@ -72,8 +71,7 @@ namespace Schematyc2
 		{
 		case EOutput::Out:
 			{
-				const IScriptFile& file = CDocGraphNodeBase::GetFile();
-				const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
+				const IDocGraph& graph = CDocGraphNodeBase::GetGraph();
 				preCompiler.BindFunctionToGUID(graph.GetGUID());
 				for(size_t graphInputIdx = 0, graphInputCount = graph.GetInputCount(); graphInputIdx < graphInputCount; ++ graphInputIdx)
 				{
@@ -165,7 +163,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBeginConstructorNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddOutput("Out", EScriptGraphPortFlags::BeginSequence | EScriptGraphPortFlags::Execute);
 		const IScriptFile& file = CDocGraphNodeBase::GetFile();
@@ -292,7 +290,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBeginDestructorNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddOutput("Out", EScriptGraphPortFlags::BeginSequence | EScriptGraphPortFlags::Execute);
 		const IScriptFile& file = CDocGraphNodeBase::GetFile();
@@ -419,7 +417,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBeginSignalReceiverNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddOutput("Out", EScriptGraphPortFlags::BeginSequence | EScriptGraphPortFlags::Execute);
 		const IScriptFile& file = CDocGraphNodeBase::GetFile();
@@ -543,7 +541,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphMakeEnumerationNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		if(m_pValue)
 		{
@@ -554,7 +552,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphMakeEnumerationNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Serialize(archive);
 
@@ -681,7 +679,7 @@ namespace Schematyc2
 		if(m_pValue)
 		{
 			const size_t stackPos = compiler.GetStackSize();
-			compiler.Push(*m_pValue);
+			compiler.Push(*m_pValue, SGUID(), "");
 			compiler.BindOutputToStack(*this, stackPos, EOutput::Value, *m_pValue);
 		}
 	}
@@ -722,7 +720,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphForLoopNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
 		CDocGraphNodeBase::AddInput("Begin", EScriptGraphPortFlags::None, GetAggregateTypeId<int32>());
@@ -736,7 +734,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphForLoopNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Serialize(archive);
 		archive(m_begin, "begin", "Begin");
 		archive(m_end, "end", "End");
@@ -798,23 +796,23 @@ namespace Schematyc2
 		{
 			if(endStackPos != (compiler.GetStackSize() - 1))
 			{
-				compiler.Copy(endStackPos, INVALID_INDEX, MakeAny(m_end));
+				compiler.Copy(endStackPos, INVALID_INDEX, MakeAny(m_end), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::End));
 			}
 		}
 		else
 		{
-			compiler.Push(MakeAny(m_end));
+			compiler.Push(MakeAny(m_end), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::End));
 		}
 		compiler.BindVariableToStack(*this, compiler.GetStackSize() - 1, EVariable::End);
 		compiler.CreateStackFrame(*this, EStackFrame::Body);
 		const size_t beginStackPos = compiler.FindInputOnStack(*this, EInput::Begin);
 		if(beginStackPos != INVALID_INDEX)
 		{
-			compiler.Copy(beginStackPos, INVALID_INDEX, MakeAny(m_begin));
+			compiler.Copy(beginStackPos, INVALID_INDEX, MakeAny(m_begin), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Begin));
 		}
 		else
 		{
-			compiler.Push(MakeAny(m_begin));
+			compiler.Push(MakeAny(m_begin), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Begin));
 		}
 		compiler.BindOutputToStack(*this, compiler.GetStackSize() - 1, EOutput::Index, MakeAny(int32()));
 	}
@@ -879,7 +877,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphProcessSignalNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
 		CDocGraphNodeBase::AddOutput("Out", EScriptGraphPortFlags::Execute);
@@ -913,7 +911,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphProcessSignalNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Serialize(archive);
 		for(size_t inputIdx = EInput::FirstParam, inputCount = CDocGraphNodeBase::GetInputCount(); inputIdx < inputCount; ++ inputIdx)
 		{
@@ -946,7 +944,7 @@ namespace Schematyc2
 	{
 		compiler.GetObject();
 		DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-		compiler.SendSignal(CDocGraphNodeBase::GetRefGUID());
+		compiler.SendSignal(CDocGraphNodeBase::GetRefGUID(), CDocGraphNodeBase::GetGUID());
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -983,7 +981,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBroadcastSignalNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
 		CDocGraphNodeBase::AddOutput("Out", EScriptGraphPortFlags::Execute);
@@ -1017,7 +1015,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBroadcastSignalNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Serialize(archive);
 		for(size_t inputIdx = EInput::FirstParam, inputCount = CDocGraphNodeBase::GetInputCount(); inputIdx < inputCount; ++ inputIdx)
 		{
@@ -1049,7 +1047,7 @@ namespace Schematyc2
 	void CDocGraphBroadcastSignalNode::CompileInputs(IDocGraphNodeCompiler& compiler) const
 	{
 		DocGraphNodeUtils::CopyInputsToStack(*this, EInput::FirstParam, m_inputValues, compiler);
-		compiler.BroadcastSignal(CDocGraphNodeBase::GetRefGUID());
+		compiler.BroadcastSignal(CDocGraphNodeBase::GetRefGUID(), CDocGraphNodeBase::GetGUID());
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1086,7 +1084,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphGetObjectNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddOutput("Object", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Pull, GetAggregateTypeId<ObjectId>());
 	}
@@ -1158,7 +1156,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerClearNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
@@ -1233,7 +1231,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerSizeNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddOutput("Size", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Pull, GetAggregateTypeId<int32>());
@@ -1326,7 +1324,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerGetNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
@@ -1353,7 +1351,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerGetNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Serialize(archive);
 		archive(m_index, "index", "Index");
 	}
@@ -1414,11 +1412,11 @@ namespace Schematyc2
 					const size_t stackPos = compiler.FindInputOnStack(*this, EInput::Index);
 					if(stackPos != INVALID_INDEX)
 					{
-						compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_index));
+						compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 					}
 					else
 					{
-						compiler.Push(MakeAny(m_index));
+						compiler.Push(MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 					}
 					compiler.AddOutputToStack(*this, EOutput::Value, *pValue);
 					compiler.ContainerGet(CDocGraphNodeBase::GetRefGUID(), *pValue);
@@ -1451,7 +1449,7 @@ namespace Schematyc2
 					compiler.Branch(*this, EMarker::End);
 					compiler.CreateMarker(*this, EMarker::False);
 					compiler.Pop(1);
-					compiler.Push(*pValue);
+					compiler.Push(*pValue, SGUID(), "");
 					compiler.CreateStackFrame(*this, EStackFrame::False);
 				}
 			}
@@ -1499,7 +1497,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphStartTimerNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		const IScriptFile& file = CDocGraphNodeBase::GetFile();
 		const SGUID        refGUID = CDocGraphNodeBase::GetRefGUID();
@@ -1540,7 +1538,7 @@ namespace Schematyc2
 		CRY_ASSERT(pTimer);
 		if(pTimer)
 		{
-			compiler.StartTimer(pTimer->GetGUID());
+			compiler.StartTimer(pTimer->GetGUID(), CDocGraphNodeBase::GetGUID());
 		}
 	}
 
@@ -1578,7 +1576,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphStopTimerNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		const IScriptFile& file = CDocGraphNodeBase::GetFile();
 		const SGUID        refGUID = CDocGraphNodeBase::GetRefGUID();
@@ -1619,7 +1617,7 @@ namespace Schematyc2
 		CRY_ASSERT(pTimer);
 		if(pTimer)
 		{
-			compiler.StopTimer(pTimer->GetGUID());
+			compiler.StopTimer(pTimer->GetGUID(), CDocGraphNodeBase::GetGUID());
 		}
 	}
 
@@ -1657,7 +1655,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphResetTimerNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		const IScriptFile& file = CDocGraphNodeBase::GetFile();
 		const SGUID        refGUID = CDocGraphNodeBase::GetRefGUID();
@@ -1698,7 +1696,7 @@ namespace Schematyc2
 		CRY_ASSERT(pTimer);
 		if(pTimer)
 		{
-			compiler.ResetTimer(pTimer->GetGUID());
+			compiler.ResetTimer(pTimer->GetGUID(), CDocGraphNodeBase::GetGUID());
 		}
 	}
 
@@ -1812,9 +1810,9 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphEndStateNode::End(IDocGraphNodeCompiler& compiler, bool bSuccess) const
 	{
-		compiler.Set(0, MakeAny(int32(bSuccess ? ELibTransitionResult::EndSuccess : ELibTransitionResult::EndFailure)));
-		compiler.Set(1, MakeAny(int32(~0)));
-		compiler.Return();
+		compiler.Set(0, MakeAny(int32(bSuccess ? ELibTransitionResult::EndSuccess : ELibTransitionResult::EndFailure)), SGUID(), "");
+		compiler.Set(1, MakeAny(int32(~0)), SGUID(), "");
+		compiler.Return(CDocGraphNodeBase::GetGUID());
 	}
 
 	//////////////////////////////////////////////////////////////////////////

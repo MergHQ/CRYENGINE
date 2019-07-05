@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __RULER_H__
-#define __RULER_H__
+#pragma once
 
 #include "RulerPoint.h"
 
@@ -73,6 +72,3 @@ private:
 	float       m_sphereScale;
 	float       m_sphereTrans;
 };
-
-#endif //__RULER_H__
-

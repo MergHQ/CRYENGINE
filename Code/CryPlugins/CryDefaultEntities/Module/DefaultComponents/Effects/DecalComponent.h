@@ -39,7 +39,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 			// ~IEntityComponent
 
 #ifndef RELEASE
@@ -73,7 +73,8 @@ namespace Cry
 			{
 				if (m_materialFileName.value.size() > 0 && gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialFileName.value) != nullptr)
 				{
-					IDecalRenderNode* pRenderNode = static_cast<IDecalRenderNode*>(m_pEntity->GetSlotRenderNode(GetEntitySlotId()));
+					const int32 slotId = GetOrMakeEntitySlotId();
+					IDecalRenderNode* pRenderNode = static_cast<IDecalRenderNode*>(m_pEntity->GetSlotRenderNode(slotId));
 					if (pRenderNode == nullptr)
 					{
 						pRenderNode = static_cast<IDecalRenderNode*>(gEnv->p3DEngine->CreateRenderNode(eERType_Decal));
@@ -99,8 +100,8 @@ namespace Cry
 					SDecalProperties decalProperties;
 					decalProperties.m_projectionType = m_projectionType;
 
-					const Matrix34& slotTransform = m_pEntity->GetSlotWorldTM(GetEntitySlotId());
-
+					const Matrix34& slotTransform = m_pEntity->GetSlotWorldTM(slotId);
+					
 					// Get normalized rotation (remove scaling)
 					Matrix33 rotation(slotTransform);
 					if (m_projectionType != SDecalProperties::ePlanar)
@@ -128,7 +129,7 @@ namespace Cry
 
 					m_pEntity->UpdateComponentEventMask(this);
 
-					m_pEntity->SetSlotRenderNode(GetEntitySlotId(), pRenderNode);
+					m_pEntity->SetSlotRenderNode(slotId, pRenderNode);
 				}
 				else
 				{

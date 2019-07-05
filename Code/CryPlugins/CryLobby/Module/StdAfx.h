@@ -54,7 +54,7 @@
 #include <memory>
 #include <vector>
 
-#define NET_ASSERT(x) CRY_ASSERT_MESSAGE(x, # x)
+#define NET_ASSERT(x) CRY_ASSERT(x, # x)
 
 #if _MSC_VER > 1000
 	#pragma intrinsic(memcpy)

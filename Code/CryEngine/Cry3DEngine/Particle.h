@@ -1,13 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef PARTICLE_H
-#define PARTICLE_H
+#pragma once
 
 #include "ParticleEffect.h"
 #include "ParticleMemory.h"
 #include "ParticleEnviron.h"
 #include "ParticleUtils.h"
 #include <CryRenderer/RenderElements/CREParticle.h>
+#include <Cry3DEngine/GeomRef.h>
 
 class CParticleContainer;
 class CParticleSubEmitter;
@@ -397,5 +397,3 @@ private:
 #endif
 
 };
-
-#endif // PARTICLE

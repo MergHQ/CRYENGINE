@@ -20,24 +20,31 @@ class EDITOR_COMMON_API ListSelectionDialog : public CEditorDialog
 {
 	Q_OBJECT
 public:
+
+	struct SSelectionResult
+	{
+		bool        selectionAccepted;
+		std::string selectedItem;
+	};
+
 	ListSelectionDialog(const QString& dialogNameId, QWidget* parent);
-	void        SetColumnText(int column, const char* text);
-	void        SetColumnWidth(int column, int width);
+	void             SetColumnText(int column, const char* text);
+	void             SetColumnWidth(int column, int width);
 
-	void        AddRow(const char* firstColumnValue);
-	void        AddRow(const char* firstColumnValue, QIcon& icon);
-	void        AddRowColumn(const char* value);
+	void             AddRow(const char* firstColumnValue);
+	void             AddRow(const char* firstColumnValue, QIcon& icon);
+	void             AddRowColumn(const char* value);
 
-	const char* ChooseItem(const char* currentValue);
+	SSelectionResult ChooseItem(const char* currentValue);
 
-	QSize       sizeHint() const override;
+	QSize            sizeHint() const override;
 protected slots:
-	void        onActivated(const QModelIndex& index);
-	void        onFilterChanged(const QString&);
+	void             onActivated(const QModelIndex& index);
+	void             onFilterChanged(const QString&);
 protected:
-	bool        eventFilter(QObject* obj, QEvent* event);
+	bool             eventFilter(QObject* obj, QEvent* event);
 private:
-	struct less_str : public std::binary_function<std::string, std::string, bool>
+	struct less_str
 	{
 		bool operator()(const std::string& left, const std::string& right) const { return _stricmp(left.c_str(), right.c_str()) < 0; }
 	};
@@ -51,4 +58,3 @@ private:
 	std::string            m_chosenItem;
 	int                    m_currentColumn;
 };
-

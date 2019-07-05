@@ -7,6 +7,14 @@
 
 	#if CRY_PLATFORM_DURANGO
 		#include <CryCore/Assert/CryAssert.h>
+		#ifndef _RELEASE
+			#define PIX_RECORD_ALLOCATION
+		#endif
+	#endif
+
+	#ifdef PIX_RECORD_ALLOCATION
+		#include <pixmemory.h>
+		#define PIX_BUCKET_ALLOCATOR_ID 1
 	#endif
 
 	#ifndef _RELEASE
@@ -63,7 +71,7 @@ struct SystemAllocator
 };
 }
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		#define BUCKET_ALLOCATOR_DEFAULT_SIZE (256 * 1024 * 1024)
 	#else
 		#define BUCKET_ALLOCATOR_DEFAULT_SIZE (128 * 1024 * 1024)
@@ -94,7 +102,7 @@ public:
 	{
 		void* ptr = NULL;
 
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		if (TraitsT::FallbackOnCRTAllowed && (sz > MaxSize))
 		{
@@ -135,7 +143,7 @@ public:
 	{
 		void* ptr = NULL;
 
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		if ((sz > MaxSize) || (SmallBlockLength % align))
 		{
@@ -162,7 +170,7 @@ public:
 	{
 		using namespace BucketAllocatorDetail;
 
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		size_t sz = 0;
 
@@ -215,6 +223,10 @@ public:
 
 			this->PushOnto(m_freeLists[bucket * NumGenerations + generation], reinterpret_cast<AllocHeader*>(ptr));
 			m_bucketTouched[bucket] = 1;
+
+	#ifdef PIX_RECORD_ALLOCATION
+			PIXRecordMemoryFreeEvent(static_cast<USHORT>(PIX_BUCKET_ALLOCATOR_ID), ptr, 0, reinterpret_cast<UINT64>(ptr));
+	#endif
 		}
 		else if (TraitsT::FallbackOnCRTAllowed)
 		{
@@ -332,11 +344,7 @@ private:
 	static const UINT_PTR PageAlignMask = ~(PageLength - 1);
 	static const UINT_PTR SmallBlockOffsetMask = SmallBlockLength - 1;
 	static const UINT_PTR PageOffsetMask = PageLength - 1;
-	#if CRY_PLATFORM_64BIT
 	static const UINT_PTR FreeListMagic = 0x63f9ab2df2ee1157;
-	#else
-	static const UINT_PTR FreeListMagic = 0xf2ee1157;
-	#endif
 
 	struct PageSBHot
 	{
@@ -511,6 +519,13 @@ private:
 	#ifdef BUCKET_ALLOCATOR_TRACK_CONSUMED
 		CryInterlockedAdd(&m_consumed, TraitsT::GetSizeForBucket(TraitsT::GetBucketForSize(sz)));
 	#endif // BUCKET_ALLOCATOR_TRACK_CONSUMED
+
+	#ifdef PIX_RECORD_ALLOCATION
+		if (ptr)
+		{
+			PIXRecordMemoryAllocationEvent(static_cast<USHORT>(PIX_BUCKET_ALLOCATOR_ID), ptr, sz, reinterpret_cast<UINT64>(ptr));
+		}
+	#endif
 
 		return ptr;
 	}

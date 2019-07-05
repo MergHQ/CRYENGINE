@@ -15,7 +15,7 @@
 #include <AssetSystem/AssetImportContext.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/AssetType.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 #include <Cry3DEngine/I3DEngine.h>
@@ -152,7 +152,7 @@ static std::vector<std::pair<const FbxTool::SAnimationTake*, string>> GetNamedTa
 	return namedTakes;
 }
 
-static bool WriteAssetMetaData(const FbxMetaData::SMetaData& metaData, const string& outputDirectory, const string& filename)
+static bool GenerateAssetFile(const FbxMetaData::SMetaData& metaData, const string& outputDirectory, const string& filename)
 {
 	using namespace Private_AssetImporterFBX;
 
@@ -231,8 +231,12 @@ static void InitializeMaterial(CMaterial* pEditorMaterial, const FbxTool::SMater
 
 	// Lighting settings of fabric (non-metal).
 	// Setting specular from file might mess up rendering if it does not respect PBS conventions.
-	inputRes.m_LMaterial.m_Diffuse = ColorGammaToLinear(ColorF(255, 255, 255));
-	inputRes.m_LMaterial.m_Specular = ColorGammaToLinear(ColorF(61, 61, 61));
+	ColorF col = ColorF(1.0f, 1.0f, 1.0f);
+	col.srgb2rgb();
+	inputRes.m_LMaterial.m_Diffuse = col;
+	col = ColorF(0.24f, 0.24f, 0.24f);
+	col.srgb2rgb();
+	inputRes.m_LMaterial.m_Specular = col;
 	inputRes.m_LMaterial.m_Smoothness = 255.0f;
 
 	constexpr char* defaultTexture[FbxTool::eMaterialChannelType_COUNT]
@@ -290,8 +294,7 @@ static void WriteCHRPARAMS(CAsset* pSkeletonAsset, CAssetImportContext& ctx)
 		{
 			CEditableAsset editableSkeletonAsset = ctx.CreateEditableAsset(*pSkeletonAsset);
 			editableSkeletonAsset.AddFile(chrParamsAssetPath);
-			editableSkeletonAsset.WriteToFile();
-			bWroteChrParams = true;
+			bWroteChrParams = editableSkeletonAsset.WriteToFile();
 		}
 	}
 	if (!bWroteChrParams)
@@ -449,16 +452,6 @@ std::vector<CAsset*> CAssetImporterFBX::ImportAssets(const std::vector<string>& 
 
 	std::vector<CAsset*> importedAssets;
 	importedAssets.reserve(assetPaths.size());
-	for (const string& assetPath : assetPaths)
-	{
-		MoveAsset(ctx, assetPath);
-
-		CAsset* const pAsset = ctx.LoadAsset(assetPath);
-		if (pAsset)
-		{
-			importedAssets.push_back(pAsset);
-		}
-	}
 
 	if (m_bCreateMaterial)
 	{
@@ -474,6 +467,17 @@ std::vector<CAsset*> CAssetImporterFBX::ImportAssets(const std::vector<string>& 
 			{
 				importedAssets.push_back(pMaterialAsset);
 			}
+		}
+	}
+
+	for (const string& assetPath : assetPaths)
+	{
+		MoveAsset(ctx, assetPath);
+
+		CAsset* const pAsset = ctx.LoadAsset(assetPath);
+		if (pAsset)
+		{
+			importedAssets.push_back(pAsset);
 		}
 	}
 
@@ -503,7 +507,7 @@ void CAssetImporterFBX::ImportMesh(CAssetImportContext& ctx)
 	metaData.outputFileExt = "cgf";
 	WriteMaterialMetaData(pFbxScene, metaData.materialData);
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename);
 }
 
 void CAssetImporterFBX::ImportSkeleton(CAssetImportContext& ctx)
@@ -519,7 +523,7 @@ void CAssetImporterFBX::ImportSkeleton(CAssetImportContext& ctx)
 	metaData.sourceFilename = filename;
 	metaData.outputFileExt = "chr";
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename);
 }
 
 void CAssetImporterFBX::ImportAllSkins(CAssetImportContext& ctx)
@@ -563,7 +567,7 @@ void CAssetImporterFBX::ImportSkin(const FbxTool::SNode* pFbxNode, const string&
 	nodeMeta.nodePath = FbxTool::GetPath(pFbxNode);
 	metaData.nodeData.push_back(nodeMeta);
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename + "_" + name);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename + "_" + name);
 }
 
 void CAssetImporterFBX::ImportAllAnimations(CAssetImportContext& ctx)
@@ -602,7 +606,7 @@ void CAssetImporterFBX::ImportAnimation(const FbxTool::SAnimationTake* pTake, co
 	metaData.animationClip.startFrame = pTake->startFrame;
 	metaData.animationClip.endFrame = pTake->endFrame;
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename + "_" + name);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename + "_" + name);
 }
 
 void CAssetImporterFBX::ImportAllTextures(const std::vector<std::pair<string, string>>& relTexs, const string& outputDirectory, CAssetImportContext& ctx)
@@ -651,6 +655,10 @@ void CAssetImporterFBX::MoveAsset(CAssetImportContext& ctx, const string& assetP
 	const string fromAssetPath = PathUtil::Make(fromDir, assetPath.substr(PathUtil::AddSlash(toDir).size()));
 
 	std::unique_ptr<CAsset> pAsset(ctx.LoadAsset(fromAssetPath));
+	if (!pAsset)
+	{
+		return;
+	}
 
 	const std::vector<std::pair<string, string>> movedFilePaths = GetAbsOutputFilePaths(ctx, GetIndependentFiles(pAsset.get()));
 
@@ -699,10 +707,18 @@ string CAssetImporterFBX::ImportMaterial(CAssetImportContext& ctx, const std::ve
 	const int mtlFlags = materialCount > 1 ? MTL_FLAG_MULTI_SUBMTL : 0;
 
 	const string materialName = ctx.GetOutputFilePath("");
-	_smart_ptr<CMaterial> pMaterial = GetIEditor()->GetMaterialManager()->CreateMaterial(materialName, XmlNodeRef(), mtlFlags);
+
+	// Do not overwrite existing.
+	IDataBaseItem* pMaterialItem = GetIEditor()->GetMaterialManager()->FindItemByName(materialName);
+	if (pMaterialItem)
+	{
+		return {};
+	}
+
+	CMaterial* pMaterial = GetIEditor()->GetMaterialManager()->CreateMaterial(materialName, XmlNodeRef(), mtlFlags);
 	if (!pMaterial)
 	{
-		return string();
+		return {};
 	}
 	const string outDir = ctx.GetOutputDirectoryPath();
 	CreateMaterial(pMaterial, pFbxScene, [&relTexs, &outDir](CMaterial* pEditorMaterial, const FbxTool::SMaterial& fbxMaterial)
@@ -731,7 +747,7 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 	});
 
 	string skeletonFilePath;
-	string skinFilePath;
+	QStringList skinsFilePaths;
 
 	if (bHasAnimations)
 	{
@@ -746,7 +762,7 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 			}
 			else if (!strcmp(pAsset->GetType()->GetTypeName(), "SkinnedMesh"))
 			{
-				skinFilePath = pAsset->GetFile(0);
+				skinsFilePaths.append(QString(pAsset->GetFile(0)));
 			}
 		}
 	}
@@ -754,8 +770,9 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 	// Write CDF file.
 	const QString cdf = CreateCDF(
 		QtUtil::ToQString(skeletonFilePath),
-		QtUtil::ToQString(skinFilePath),
-		QString());
+		skinsFilePaths,
+		QStringList());
+
 	if (cdf.isEmpty())
 	{
 		return;
@@ -794,7 +811,7 @@ void CAssetImporterFBX::ReimportAsset(CAsset* pAsset)
 	const string filename = PathUtil::GetFile(absSourcePath);
 	const string basename = PathUtil::RemoveExtension(filename);
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename);
 
 	const string outputDir = PathUtil::GetPathWithoutFilename(pAsset->GetMetadataFile());
 	CAssetImportContext ctx;
@@ -804,4 +821,3 @@ void CAssetImporterFBX::ReimportAsset(CAsset* pAsset)
 		MoveAsset(ctx, PathUtil::Make(outputDir, assetPath));
 	}
 }
-

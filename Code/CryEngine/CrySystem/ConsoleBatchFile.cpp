@@ -15,7 +15,7 @@
 
 #include "StdAfx.h"
 #include "ConsoleBatchFile.h"
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ISystem.h>
 #include "XConsole.h"
 #include <CryString/CryPath.h>
@@ -55,19 +55,13 @@ bool CConsoleBatchFile::ExecuteConfigFile(const char* sFilename)
 		filename = PathUtil::ReplaceExtension(filename, "cfg");
 	}
 
-#if defined(CVARS_WHITELIST)
-	bool ignoreWhitelist = true;
-	if (stricmp(sFilename, "autoexec.cfg") == 0)
-	{
-		ignoreWhitelist = false;
-	}
-#endif // defined(CVARS_WHITELIST)
-
 	//////////////////////////////////////////////////////////////////////////
 	CCryFile file;
 
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		const char* szLog = "Executing console batch file (try game,config,root):";
+#endif
 		string filenameLog;
 		string sfn = PathUtil::GetFile(filename);
 
@@ -79,6 +73,12 @@ bool CConsoleBatchFile::ExecuteConfigFile(const char* sFilename)
 		filenameLog = file.GetFilename();
 		CryLog("%s \"%s\" found in %s ...", szLog, filename.c_str(), filenameLog.c_str());
 	}
+
+	// Only circumvent whitelist when the file was not in an archive, since we expect archives to be signed in release mode when whitelist is used
+	// Note that we still support running release mode without signed / encrypted archives, however this means that a conscious decision to sacrifice security has already been made.
+	const bool ignoreWhitelist = file.IsInPak();
+	// Only allow console commands in autoexec.cfg
+	const bool allowConsoleCommands = !stricmp(sFilename, "autoexec.cfg");
 
 	int nLen = file.GetLength();
 	char* sAllText = new char[nLen + 16];
@@ -124,20 +124,28 @@ bool CConsoleBatchFile::ExecuteConfigFile(const char* sFilename)
 		else
 			continue;
 
-#if defined(CVARS_WHITELIST)
-		auto pWhiteList = gEnv->pSystem->GetCVarsWhiteList();
-		if ((ignoreWhitelist) || (pWhiteList && pWhiteList->IsWhiteListed(strLine, false)))
-#endif // defined(CVARS_WHITELIST)
+		if (ignoreWhitelist || (gEnv->pSystem->IsCVarWhitelisted(strLine.c_str(), false)))
 		{
-			m_pConsole->ExecuteString(strLine);
+			if (allowConsoleCommands)
+			{
+				m_pConsole->ExecuteString(strLine);
+			}
+			else
+			{
+				// Parse the line from .cfg, splitting CVar name and value from the string (format is CVarName=CVarValue)
+				const size_t pos = strLine.find_first_of('=');
+				const string variableName = strLine.substr(0, pos).Trim();
+				const string variableValue = strLine.substr(pos + 1).Trim();
+
+				// Notify console to set the value, or defer if the CVar had not been registered yet (likely since parsing occurs very early)
+				m_pConsole->LoadConfigVar(variableName, variableValue);
+			}
 		}
 #if defined(DEDICATED_SERVER)
-	#if defined(CVARS_WHITELIST)
 		else
 		{
 			gEnv->pSystem->GetILog()->LogError("Failed to execute command: '%s' as it is not whitelisted\n", strLine.c_str());
 		}
-	#endif // defined(CVARS_WHITELIST)
 #endif   // defined(DEDICATED_SERVER)
 	}
 	// See above

@@ -8,7 +8,7 @@
 #include "Prefabs/PrefabManager.h"
 
 namespace Private_GuidCollisionResolver
-{ 
+{
 
 CPrefabItem* FindPrefabItemContaining(CBaseObject* pObject)
 {
@@ -27,7 +27,7 @@ CPrefabItem* FindPrefabItemContaining(CBaseObject* pObject)
 
 CPrefabObject* FindPrefabObjectContaining(CBaseObject* pObject)
 {
-	// we basically have to do this because the object that is conflicting is not registered nor initialized yet and therefore 
+	// we basically have to do this because the object that is conflicting is not registered nor initialized yet and therefore
 	// it has no parent, children and prefab references.
 	auto pPrefabItem = FindPrefabItemContaining(pObject);
 	if (!pPrefabItem)
@@ -78,7 +78,9 @@ bool CGuidCollisionResolver::Resolve()
 		// theirs children anymore by guids.
 		SavePrefabHierarchy(pTopMostPrefab);
 		int i = 5;
-		while (!RegenerateGuids(pTopMostPrefab, pPrefabObject) && --i != 0) {}
+		while (!RegenerateGuids(pTopMostPrefab, pPrefabObject) && --i != 0)
+		{
+		}
 		return i != 0;
 	}
 	return false;
@@ -115,7 +117,7 @@ void CGuidCollisionResolver::SavePrefabHierarchy(CPrefabObject* pPrefabObject)
 			if (pChild->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 			{
 				auto pPrefabChild = static_cast<CPrefabObject*>(pChild);
-				// some prefab children of pPrefabParent might not have been initialized yet, so they won't have a reference to 
+				// some prefab children of pPrefabParent might not have been initialized yet, so they won't have a reference to
 				// the prefab item. These prefabs we treat as normal children. Once guids resolved, initialization will continue
 				// and the children on this skipped prefab child will get correct guids.
 				if (pPrefabChild->GetPrefabItem())
@@ -127,16 +129,25 @@ void CGuidCollisionResolver::SavePrefabHierarchy(CPrefabObject* pPrefabObject)
 	}
 }
 
-const std::vector<CBaseObject*>& CGuidCollisionResolver::GetSavedChildren(CPrefabObject* pPrefabObject)
+const std::vector<CBaseObject*>* CGuidCollisionResolver::GetSavedChildrenPtr(CPrefabObject* pPrefabObject)
 {
 	auto it = std::find_if(m_hierarchy.cbegin(), m_hierarchy.cend(), [pPrefabObject](const std::pair<CPrefabObject*, std::vector<CBaseObject*>>& pair)
 	{
 		return pair.first == pPrefabObject;
 	});
 
-	CRY_ASSERT_MESSAGE(it != m_hierarchy.cend(), "No saved children found for prefab");
+	return (it != m_hierarchy.cend())
+		? &it->second
+		: nullptr;
+}
 
-	return it->second;
+const std::vector<CBaseObject*>& CGuidCollisionResolver::GetSavedChildren(CPrefabObject* pPrefabObject)
+{
+	const std::vector<CBaseObject*>* pChildren = GetSavedChildrenPtr(pPrefabObject);
+
+	CRY_ASSERT_MESSAGE(pChildren != nullptr, "No saved children found for prefab");
+
+	return *pChildren;
 }
 
 bool CGuidCollisionResolver::RegenerateGuidsForPrefabHierarchy(CPrefabObject* pPrefabObject)
@@ -157,9 +168,18 @@ bool CGuidCollisionResolver::RegenerateGuidsForPrefabHierarchy(CPrefabObject* pP
 		pObjectManager->ChangeObjectId(pObject->GetId(), newGuid);
 		if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 		{
-			if (!RegenerateGuidsForPrefabHierarchy(static_cast<CPrefabObject*>(pObject)))
+			CPrefabObject* pPrefabChild = static_cast<CPrefabObject*>(pObject);
+			// See comment in SavePrefabHierarchy() regarding not-yet-initialized prefabs
+			if (pPrefabChild->GetPrefabItem())
 			{
-				return false;
+				if (!RegenerateGuidsForPrefabHierarchy(pPrefabChild))
+				{
+					return false;
+				}
+			}
+			else
+			{
+				CRY_ASSERT_MESSAGE(GetSavedChildrenPtr(pPrefabChild) == nullptr, "There are saved children for non-initialized prefab");
 			}
 		}
 	}
@@ -214,4 +234,3 @@ bool CGuidCollisionResolver::RegenerateGuidsForConflictingObject(CPrefabObject* 
 	// otherwise it's guid is not conflicting anymore since the object it was conflicting with has a new guid
 	return true;
 }
-

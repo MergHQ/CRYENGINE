@@ -12,14 +12,14 @@
 
 #include <QtUtil.h>
 #include <QFilteringPanel.h>
-#include <QAdvancedPropertyTree.h>
+#include <QAdvancedPropertyTreeLegacy.h>
 #include <QCollapsibleFrame.h>
 #include <ProxyModels/AttributeFilterProxyModel.h>
 #include <Controls/QPopupWidget.h>
 #include <Controls/DictionaryWidget.h>
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <EditorFramework/BroadcastManager.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 
 #include <QAbstractItemModel>
 #include <QStyledItemDelegate>
@@ -361,11 +361,11 @@ CComponentsWidget::CComponentsWidget(CMainWindow& editor, QWidget* pParent)
 	QObject::connect(m_pEditor, &CMainWindow::SignalReleasingModel, [this]
 		{
 			SetModel(nullptr);
-	  });
+		});
 	QObject::connect(m_pEditor, &QWidget::destroyed, [this](QObject*)
 		{
 			m_pEditor = nullptr;
-	  });
+		});
 }
 
 CComponentsWidget::~CComponentsWidget()
@@ -459,13 +459,13 @@ void CComponentsWidget::OnSelectionChanged(const QItemSelection& selected, const
 		if (row != -1)
 		{
 			QModelIndex index = selections.at(0);
-			CComponentItem* pItem = reinterpret_cast<CComponentItem*>(index.data(CComponentsModel::Role_Pointer).value<quintptr>());
+			//CComponentItem* pItem = reinterpret_cast<CComponentItem*>(index.data(CComponentsModel::Role_Pointer).value<quintptr>());
 
 			if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 			{
 				CPropertiesWidget* pPropertiesWidget = nullptr /*new CPropertiesWidget(*pItem)*/;
 
-				PopulateInspectorEvent popEvent([pPropertiesWidget](CInspector& inspector)
+				PopulateLegacyInspectorEvent popEvent([pPropertiesWidget](CInspectorLegacy& inspector)
 				{
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Properties");
 					pInspectorWidget->SetWidget(pPropertiesWidget);
@@ -497,7 +497,7 @@ void CComponentsWidget::OnContextMenu(const QPoint& point)
 					{
 						const QModelIndex editIndex = m_pComponentsList->model()->index(index.row(), CComponentsDictionary::Column_Name, index.parent());
 						m_pComponentsList->edit(editIndex);
-				  });
+					});
 			}
 
 			menu.addSeparator();
@@ -596,4 +596,3 @@ void CComponentsWidget::customEvent(QEvent* pEvent)
 }
 
 }
-

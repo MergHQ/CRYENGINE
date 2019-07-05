@@ -6,6 +6,7 @@
 
 #include <CryCore/CryVariant.h>
 #include <CrySystem/XML/IXml.h>
+#include <CryCore/smartptr.h>
 
 struct IReadXMLSink;
 struct IWriteXMLSource;

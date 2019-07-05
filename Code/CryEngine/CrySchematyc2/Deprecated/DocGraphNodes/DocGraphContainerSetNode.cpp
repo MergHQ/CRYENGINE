@@ -48,7 +48,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerSetNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
@@ -74,7 +74,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerSetNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Serialize(archive);
 
@@ -153,20 +153,20 @@ namespace Schematyc2
 
 			if (indexStackPos != INVALID_INDEX)
 			{
-				compiler.Copy(indexStackPos, INVALID_INDEX, MakeAny(m_index));
+				compiler.Copy(indexStackPos, INVALID_INDEX, MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 			}
 			else
 			{
-				compiler.Push(MakeAny(m_index));
+				compiler.Push(MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 			}
 
 			if (valueStackPos != INVALID_INDEX)
 			{
-				compiler.Copy(valueStackPos, INVALID_INDEX, *m_pValue);
+				compiler.Copy(valueStackPos, INVALID_INDEX, *m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 			else
 			{
-				compiler.Push(*m_pValue);
+				compiler.Push(*m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 
 			compiler.ContainerSet(CDocGraphNodeBase::GetRefGUID(), *m_pValue);

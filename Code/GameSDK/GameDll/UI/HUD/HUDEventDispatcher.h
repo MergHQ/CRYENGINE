@@ -449,7 +449,7 @@ public:
 
 	const SHUDEventData& GetData(uint8 index) const
 	{
-		CRY_ASSERT_MESSAGE(index < m_data->size(), "More SHUDEventData requested than provided!");
+		CRY_ASSERT(index < m_data->size(), "More SHUDEventData requested than provided!");
 		return (*m_data)[index];
 	}
 

@@ -216,7 +216,7 @@ int CPhysArea::ApplyParams(const Vec3& pt, Vec3& gravity, const Vec3 &vel, pe_pa
 		transG = GridTrans((CPhysicalPlaceholder*)pent,this);
 	Vec3 ptloc = ((transG*pt-m_offset)*m_R)*m_rscale;
 
-	if (!is_unused(m_pb.waterPlane.origin) && 
+	if (!is_unused(m_pb.waterPlane.origin) && fabs(m_pb.waterDensity)+fabs(m_pb.waterResistance)>0.0f &&
 			!(pent && ((CPhysicalEntity*)pent)->m_flags & pef_ignore_ocean && this==m_pWorld->m_pGlobalArea)) 
 	{
 		if (m_pb.iMedium==iMedium0)
@@ -927,6 +927,10 @@ int CPhysArea::GetStatus(pe_status *_status) const
 		if (status->pMtx3x3)
 			(Matrix33&)*status->pMtx3x3 = m_R*m_scale;
 		status->pGeom=status->pGeomProxy = m_pGeom;
+		if (status->flags & status_addref_geoms) {
+			if (status->pGeom) status->pGeom->AddRef();
+			if (status->pGeomProxy) status->pGeomProxy->AddRef();
+		}
 		return 1;
 	}
 
@@ -955,7 +959,8 @@ int CPhysArea::GetStatus(pe_status *_status) const
 				ptres[1] = cnt.n;
 			}	else if (m_ptSpline) {
 				Vec3 p0,p1,p2,v0,v1,v2;
-				float tClosest,mindist = FindSplineClosestPt(ptloc, i,tClosest);
+				float tClosest;
+				FindSplineClosestPt(ptloc, i, tClosest);
 				p0 = m_ptSpline[max(0,i-1)]; p1 = m_ptSpline[i]; p2 = m_ptSpline[min(m_npt-1,i+1)];
 				v2 = (p0+p2)*0.5f-p1; v1 = p1-p0; v0 = (p0+p1)*0.5f;
 				ptres[0] = (v2*tClosest+v1)*tClosest+v0;
@@ -1432,7 +1437,7 @@ void CPhysArea::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 				i1 = i0+1 & i0-m_npt+1>>31;
 				pRenderer->DrawLine(m_R*Vec3(m_pt[i0].x,m_pt[i0].y,m_zlim[j])*m_scale+m_offset,
 														m_R*Vec3(m_pt[i1].x,m_pt[i1].y,m_zlim[j])*m_scale+m_offset, m_iSimClass);
-				((hash ^= ((Vec3i*)m_pt)[i0].x*3) ^= ((Vec3i*)m_pt)[i0].y*5) ^= ((Vec3i*)m_pt)[i0].z*7;
+				(hash ^= ((Vec2i*)m_pt)[i0].x*3) ^= ((Vec2i*)m_pt)[i0].y*5;
 			}
 			hash+=iszero(hash+1);	hash+=iszero(hash);
 			PREFAST_SUPPRESS_WARNING(6240);
@@ -1487,7 +1492,7 @@ void CPhysArea::GetMemoryStatistics(ICrySizer *pSizer) const
 		pSizer->AddObject(m_pt, sizeof(m_pt[0])*(m_npt+1));
 		pSizer->AddObject(m_idxSort[0], sizeof(m_idxSort[0][0])*m_npt);
 		pSizer->AddObject(m_idxSort[1], sizeof(m_idxSort[1][0])*m_npt);
-		pSizer->AddObject(m_pMask, sizeof(m_pMask[0])*((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1));
+		pSizer->AddObject(m_pMask, sizeof(m_pMask[0])*((m_npt-1>>5)+1)*MAX_TOT_THREADS);
 	}
 	if (m_ptSpline)
 		pSizer->AddObject(m_ptSpline, sizeof(m_ptSpline[0])*m_npt);
@@ -1527,7 +1532,7 @@ void CPhysArea::ProcessBorder()
 		if (m_pMask) delete[] m_pMask;
 		m_idxSort[0] = new int[m_npt];
 		m_idxSort[1] = new int[m_npt];
-		memset(m_pMask = new unsigned int[((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1)],0,((m_npt-1>>5)+1)*(MAX_PHYS_THREADS+1)*sizeof(int));
+		memset(m_pMask = new unsigned int[((m_npt-1>>5)+1)*MAX_TOT_THREADS],0,((m_npt-1>>5)+1)*MAX_TOT_THREADS*sizeof(int));
 		float *xstart = new float[m_npt];
 
 		for(int iend=0; iend<2; iend++)	{
@@ -1623,7 +1628,7 @@ IPhysicalEntity *CPhysicalWorld::AddArea(Vec3 *pt,int npt, float zmin,float zmax
 
 	pArea->m_offset = pArea->m_offset0+pos;
 	pArea->m_R = Matrix33(q)*pArea->m_R0;
-	memset(pArea->m_pMask = new unsigned int[((npt-1>>5)+1)*(MAX_PHYS_THREADS+1)],0,((npt-1>>5)+1)*(MAX_PHYS_THREADS+1)*sizeof(int));
+	memset(pArea->m_pMask = new unsigned int[((npt-1>>5)+1)*MAX_TOT_THREADS],0,((npt-1>>5)+1)*MAX_TOT_THREADS*sizeof(int));
 
 	sz = Matrix33(pArea->m_R).Fabs()*pArea->m_size0*scale;
 	center = pArea->m_offset+pArea->m_R*(BBox[0]+BBox[1])*(pArea->m_scale*0.5f);
@@ -1813,7 +1818,7 @@ void CPhysicalWorld::RemoveArea(IPhysicalEntity *_pArea)
 	DetachEntityGridThunks(pArea);
 	m_nAreas--;	m_nTypeEnts[PE_AREA]--;
 	pArea->m_next=m_pDeletedAreas; m_pDeletedAreas=pArea;
-	for(int i=0;i<=MAX_PHYS_THREADS;i++)
+	for(int i=0;i<MAX_TOT_THREADS;i++)
 		m_prevGEAobjtypes[i] = -1;
 }
 
@@ -1852,7 +1857,7 @@ int CPhysicalWorld::CheckAreas(const Vec3 &ptc, Vec3 &gravity, pe_params_buoyanc
 	}
 
 	if (m_vars.bMultithreaded+iCaller>MAX_PHYS_THREADS)
-		iCaller = get_iCaller();
+		iCaller = get_iCaller(1);
 	WriteLock lock0(m_lockCaller[iCaller]);
 	ReadLock lock1(m_lockAreas);
 

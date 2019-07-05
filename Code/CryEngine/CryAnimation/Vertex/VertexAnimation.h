@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryAnimation/IVertexAnimation.h>
+#include <CryRenderer/IShader.h>
 #include "VertexData.h"
 
 namespace Skeleton {
@@ -47,7 +48,6 @@ struct SVertexSkinData
 	uint                                             transformationCount;
 
 	strided_pointer<const Vec3>                      pVertexPositions;
-	strided_pointer<const Vec3>                      pVertexPositionsPrevious;
 	strided_pointer<const uint32>                    pVertexColors;
 	strided_pointer<const Vec2>                      pVertexCoords;
 	strided_pointer<const Quat>                      pVertexQTangents;

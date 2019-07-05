@@ -1,16 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   CryCustomTypes.h
-//  Created:     2009-10-23 by Scott.
 //  Description: Derived CTypeInfos for structs, enums, etc.
 //               Compressed numerical types, and associated TypeInfos.
 // -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _CRY_CUSTOM_TYPES_H
-#define _CRY_CUSTOM_TYPES_H
 
 #include "CryTypeInfo.h"
 #include <CryString/CryFixedString.h>
@@ -981,7 +976,9 @@ struct CEnumInfo : TEnumInfo<CEnumDef, TInt>
       if (Elems.empty())                                      \
       {                                                       \
         CEnumDef::SInit::Init(Elems);                         \
+CRY_DISABLE_WARN_UNUSED_VARIABLES();                          \
         CEnumDef::SInit __VA_ARGS__;                          \
+CRY_RESTORE_WARN_UNUSED_VARIABLES();                          \
       }                                                       \
       static CEnumInfo<TInt> info( # EType, Elems, enum_str); \
       return info;                                            \
@@ -989,4 +986,3 @@ struct CEnumInfo : TEnumInfo<CEnumDef, TInt>
   };
 
 #pragma warning(pop)
-#endif

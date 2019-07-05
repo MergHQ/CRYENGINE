@@ -3,8 +3,14 @@
 #pragma once
 
 #include "SplineObject.h"
+#include <ObjectEvent.h>
+#include <Util/Variable.h>
 
-// Road Sector
+struct SDisplayContext;
+class CObjectRenderHelper;
+class CInspectorWidgetCreator;
+class CObjectArchive;
+
 struct CRoadSector
 {
 	std::vector<Vec3> points;
@@ -21,13 +27,11 @@ struct CRoadSector
 	}
 
 	CRoadSector(const CRoadSector& old)
-	{
-		points = old.points;
-		t0 = old.t0;
-		t1 = old.t1;
-
-		m_pRoadSector = 0;
-	}
+		: points(old.points)
+		, t0(old.t0)
+		, t1(old.t1)
+		, m_pRoadSector(nullptr)
+	{}
 
 	void Release();
 };
@@ -47,18 +51,18 @@ public:
 	DECLARE_DYNCREATE(CRoadObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
 	void InitVariables();
 	void Done();
 
 	void Display(CObjectRenderHelper& objRenderHelper);
-	void DrawRoadObject(DisplayContext& dc, COLORREF col);
-	void DrawSectorLines(DisplayContext& dc);
+	void DrawRoadObject(SDisplayContext& dc, COLORREF col);
+	void DrawSectorLines(SDisplayContext& dc);
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	void         SetHidden(bool bHidden);
 	void         UpdateVisibility(bool visible);
@@ -99,17 +103,17 @@ protected:
 	virtual void UpdateSectors();
 
 	// Ignore default draw highlight.
-	void  DrawHighlight(DisplayContext& dc) {};
+	void  DrawHighlight(SDisplayContext& dc) {}
 
 	float GetLocalWidth(int index, float t);
 
-	//overrided from CBaseObject.
+	// Overrides from CBaseObject.
 	void InvalidateTM(int nWhyFlags);
 
 	//! Called when Road variable changes.
 	void OnParamChange(IVariable* var);
 
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	void InitBaseVariables();
 
@@ -131,4 +135,3 @@ protected:
 	bool m_bIgnoreParamUpdate;
 	bool m_bNeedUpdateSectors;
 };
-

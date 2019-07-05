@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
 
@@ -153,9 +152,7 @@ bool CD3D9Renderer::CreateUnitVolumeMesh(t_arrDeferredMeshIndBuff& arrDeferredIn
 		hr = GetDeviceObjectFactory().CreateBuffer(arrDeferredVerts.size(), sizeof(SDeferMeshVert), 0, CDeviceObjectFactory::BIND_VERTEX_BUFFER, &pUnitFrustumVB, &arrDeferredVerts[0]);
 		assert(SUCCEEDED(hr));
 
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-		pUnitFrustumVB->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Unit Frustum"), "Unit Frustum");
-#endif
+		SetDebugName(pUnitFrustumVB, "Unit Frustum");
 	}
 
 	if (!arrDeferredInds.empty())
@@ -163,9 +160,7 @@ bool CD3D9Renderer::CreateUnitVolumeMesh(t_arrDeferredMeshIndBuff& arrDeferredIn
 		hr = GetDeviceObjectFactory().CreateBuffer(arrDeferredInds.size(), sizeof(arrDeferredInds[0]), 0, CDeviceObjectFactory::BIND_INDEX_BUFFER, &pUnitFrustumIB, &arrDeferredInds[0]);
 		assert(SUCCEEDED(hr));
 
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-		pUnitFrustumVB->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Unit Frustum"), "Unit Frustum");
-#endif
+		SetDebugName(pUnitFrustumVB, "Unit Frustum");
 	}
 
 	return SUCCEEDED(hr);

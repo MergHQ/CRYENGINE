@@ -20,8 +20,10 @@ History:
 #include "SmokeManager.h"
 #include "PersistantStats.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 #include <CryAISystem/IAIObject.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <IPerceptionManager.h>
 
 //------------------------------------------------------------------------
@@ -155,10 +157,6 @@ void CGrenade::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity, fl
 				&& pOwnerEntity->GetPhysics()->GetStatus(&dyn) 
 				&& GetEntity()->GetPhysics()->GetStatus(&dynProj) && gEnv->pAISystem)
 			{
-
-				Vec3 ownerVel( dyn.v);
-				Vec3 grenadeDir(dynProj.v.GetNormalizedSafe());
-
 				// Trigger the signal at the predicted landing position.
 				Vec3 predictedPos = pos;
 				float dummySpeed;

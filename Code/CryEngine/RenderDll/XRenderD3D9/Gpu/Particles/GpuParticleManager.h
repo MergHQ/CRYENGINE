@@ -46,7 +46,7 @@ public:
 
 	// gets initialized the first time it is called and will allocate buffers
 	// (so make sure its only called from the render thread)
-	gpu::CBitonicSort* GetBitonicSort();
+	gpu::CBitonicSort* GetBitonicSort(CGraphicsPipeline* pGraphicsPipeline);
 
 	// this needs to be called from the render thread when the renderer
 	// is teared down to make sure the runtimes are not still persistent when the
@@ -76,6 +76,10 @@ private:
 	gpu::CStructuredResource<uint, gpu::BufferFlagsReadWriteReadback>          m_counter;
 	gpu::CStructuredResource<uint, gpu::BufferFlagsReadWriteReadback>          m_scratch;
 	gpu::CStructuredResource<SReadbackData, gpu::BufferFlagsReadWriteReadback> m_readback;
+
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	std::unique_ptr<CClearRegionPass>  m_clearRegionPass;
+#endif
 
 	int m_numRuntimesReadback;
 

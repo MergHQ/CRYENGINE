@@ -77,9 +77,13 @@ void CGameAchievements::GiveAchievement(int achievement)
 					//-- Successful return value of the Award function has been changed from incorrect eCRE_Awarded to more sensible eCRE_Queued.
 					CRY_TODO(3,9,2010, "Register a callback to inform game when queued award is processed successfully or failed.");
 
+#if !defined(EXCLUDE_NORMAL_LOG) && defined(USE_CRY_ASSERT)
 					ECryRewardError error = pReward->Award(user, achievementId, NULL, NULL, NULL);
 					CryLog("Award error %d", error);
 					CRY_ASSERT(error == eCRE_Queued);
+#else
+					pReward->Award(user, achievementId, NULL, NULL, NULL);
+#endif
 				}
 			}
 		}

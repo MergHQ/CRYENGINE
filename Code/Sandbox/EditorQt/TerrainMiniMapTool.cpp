@@ -1,20 +1,24 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "TerrainMiniMapTool.h"
 
-#include <Cry3DEngine/I3DEngine.h>
-#include <CrySandbox/IEditorGame.h>
-#include <CryGame/IGameFramework.h>
-#include <ILevelSystem.h>
 #include "CryEditDoc.h"
 #include "GameEngine.h"
-#include "Util/ImageTIF.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "FilePathUtil.h"
-#include "Objects/DisplayContext.h"
-#include "TerrainMiniMapTool.h"
+
+#include <Util/Image.h>
+#include <Util/ImageTIF.h>
+
+#include <PathUtils.h>
+#include <IUndoManager.h>
+#include <IUndoObject.h>
+#include <Serialization/Decorators/EditorActionButton.h>
 #include <Viewport.h>
-#include "IUndoManager.h"
+
+#include <CryGame/IGameFramework.h>
+#include <CrySandbox/IEditorGame.h>
+#include <ILevelSystem.h>
+#include <Objects/DisplayContext.h>
 
 #define MAP_SCREENSHOT_SETTINGS "MapScreenshotSettings.xml"
 #define MAX_RESOLUTION_SHIFT    11
@@ -61,11 +65,11 @@ class CUndoTerrainMiniMapTool : public IUndoObject
 {
 public:
 	CUndoTerrainMiniMapTool()
-	{
-		m_Undo = GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap();
+		: m_Undo{ GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap() }
+	{	
 	}
 protected:
-	virtual const char* GetDescription() { return "MiniMap Params"; };
+	virtual const char* GetDescription() { return "MiniMap Params"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -90,16 +94,14 @@ private:
 //////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CTerrainMiniMapTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainMiniMapTool::CTerrainMiniMapTool()
-	: m_bGenerationFinished(true)
+	: m_minimap(GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap())
+	, m_bDragging(false)
+	, b_stateScreenShot(false)
+	, m_exportDds(true)
+	, m_exportTif(true)
+	, m_bGenerationFinished(true)
 {
-	m_minimap = GetIEditorImpl()->GetDocument()->GetCurrentMission()->GetMinimap();
-	m_bDragging = false;
-	b_stateScreenShot = false;
-	m_exportDds = true;
-	m_exportTif = true;
-
 	m_path = PathUtil::GamePathToCryPakPath(GetIEditorImpl()->GetGameEngine()->GetLevelPath().GetString());
 	if (strstr(m_path, ":\\") == nullptr)
 	{
@@ -113,7 +115,6 @@ CTerrainMiniMapTool::CTerrainMiniMapTool()
 	GetIEditorImpl()->RegisterNotifyListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainMiniMapTool::~CTerrainMiniMapTool()
 {
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
@@ -144,7 +145,6 @@ void CTerrainMiniMapTool::SetCameraHeight(float fHeight)
 	GetIEditorImpl()->GetIUndoManager()->Accept("Mini Map Camera Height");
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainMiniMapTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseLDown || (event == eMouseMove && (flags & MK_LBUTTON)))
@@ -184,8 +184,7 @@ bool CTerrainMiniMapTool::MouseCallback(CViewport* view, EMouseEvent event, CPoi
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainMiniMapTool::Display(DisplayContext& dc)
+void CTerrainMiniMapTool::Display(SDisplayContext& dc)
 {
 	dc.SetColor(0, 0, 1);
 	dc.DrawTerrainRect(m_minimap.vCenter.x - 0.5f, m_minimap.vCenter.y - 0.5f,
@@ -270,10 +269,9 @@ void CTerrainMiniMapTool::SendParameters(void* data, uint32 width, uint32 height
 	m_bGenerationFinished = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::Generate(bool bHideProxy)
 {
-	m_ConstClearList.clear();
+	m_constClearList.clear();
 
 	if (bHideProxy)
 		gEnv->SetIsEditorGameMode(true); // To hide objects with collision_proxy_nomaterialset and editor materials
@@ -296,13 +294,17 @@ void CTerrainMiniMapTool::Generate(bool bHideProxy)
 		{
 			XmlNodeRef ChildNode = root->getChild(i);
 			const char* pTagName = ChildNode->getTag();
+			if (!pTagName)
+			{
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[MiniMap: %s] Console variable has no tag name", MAP_SCREENSHOT_SETTINGS);
+				continue;
+			}
 			ICVar* pVar = gEnv->pConsole->GetCVar(pTagName);
 			if (pVar)
 			{
-				m_ConstClearList[pTagName] = pVar->GetFVal();
+				m_constClearList[pTagName] = pVar->GetFVal();
 				const char* pAttr = ChildNode->getAttr("value");
-				string Value = pAttr;
-				pVar->Set(Value.c_str());
+				pVar->SetFromString(pAttr);
 			}
 			else
 			{
@@ -312,16 +314,15 @@ void CTerrainMiniMapTool::Generate(bool bHideProxy)
 	}
 	else
 	{
-		m_ConstClearList["r_HDRRendering"] = gEnv->pConsole->GetCVar("r_HDRRendering")->GetFVal();
-
-		m_ConstClearList["r_PostProcessEffects"] = gEnv->pConsole->GetCVar("r_PostProcessEffects")->GetFVal();
-		m_ConstClearList["e_Lods"] = gEnv->pConsole->GetCVar("e_Lods")->GetFVal();
-		m_ConstClearList["e_ViewDistRatio"] = gEnv->pConsole->GetCVar("e_ViewDistRatio")->GetFVal();
-		m_ConstClearList["e_VegetationSpritesDistanceRatio"] = gEnv->pConsole->GetCVar("e_VegetationSpritesDistanceRatio")->GetFVal();
-		m_ConstClearList["e_ViewDistRatioVegetation"] = gEnv->pConsole->GetCVar("e_ViewDistRatioVegetation")->GetFVal();
-		m_ConstClearList["e_TerrainLodRatio"] = gEnv->pConsole->GetCVar("e_TerrainLodRatio")->GetFVal();
-		m_ConstClearList["e_ScreenShotQuality"] = gEnv->pConsole->GetCVar("e_ScreenShotQuality")->GetFVal();
-		m_ConstClearList["e_Vegetation"] = gEnv->pConsole->GetCVar("e_Vegetation")->GetFVal();
+		m_constClearList["r_HDRRendering"] = gEnv->pConsole->GetCVar("r_HDRRendering")->GetFVal();
+		m_constClearList["r_PostProcessEffects"] = gEnv->pConsole->GetCVar("r_PostProcessEffects")->GetFVal();
+		m_constClearList["e_Lods"] = gEnv->pConsole->GetCVar("e_Lods")->GetFVal();
+		m_constClearList["e_ViewDistRatio"] = gEnv->pConsole->GetCVar("e_ViewDistRatio")->GetFVal();
+		m_constClearList["e_VegetationSpritesDistanceRatio"] = gEnv->pConsole->GetCVar("e_VegetationSpritesDistanceRatio")->GetFVal();
+		m_constClearList["e_ViewDistRatioVegetation"] = gEnv->pConsole->GetCVar("e_ViewDistRatioVegetation")->GetFVal();
+		m_constClearList["e_TerrainLodRatio"] = gEnv->pConsole->GetCVar("e_TerrainLodRatio")->GetFVal();
+		m_constClearList["e_ScreenShotQuality"] = gEnv->pConsole->GetCVar("e_ScreenShotQuality")->GetFVal();
+		m_constClearList["e_Vegetation"] = gEnv->pConsole->GetCVar("e_Vegetation")->GetFVal();
 
 		gEnv->pConsole->GetCVar("r_HDRRendering")->Set(0);
 		gEnv->pConsole->GetCVar("r_PostProcessEffects")->Set(0);
@@ -342,7 +343,6 @@ void CTerrainMiniMapTool::Generate(bool bHideProxy)
 	b_stateScreenShot = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
@@ -359,7 +359,6 @@ void CTerrainMiniMapTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::LoadSettingsXML()
 {
 	string settingsXmlPath = m_path;
@@ -382,7 +381,6 @@ void CTerrainMiniMapTool::LoadSettingsXML()
 	m_minimap.vExtends.y = max(0.5f * (endY - startY), kMinExtend);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainMiniMapTool::ResetToDefault()
 {
 	if (b_stateScreenShot)
@@ -390,13 +388,30 @@ void CTerrainMiniMapTool::ResetToDefault()
 		ICVar* pVar = gEnv->pConsole->GetCVar("e_ScreenShot");
 		if (pVar && pVar->GetIVal() == 0)
 		{
-			for (std::map<string, float>::iterator it = m_ConstClearList.begin(); it != m_ConstClearList.end(); ++it)
+			for (auto it : m_constClearList)
 			{
-				ICVar* pVar = gEnv->pConsole->GetCVar(it->first.c_str());
+				ICVar* pVar = gEnv->pConsole->GetCVar(it.first.c_str());
 				if (pVar)
-					pVar->Set(it->second);
+				{
+					switch (pVar->GetType())
+					{
+					case ECVarType::Float:
+						pVar->Set(it.second);
+						break;
+					case ECVarType::Int:
+						assert(it.second == (int)it.second);
+						pVar->Set((int)it.second);
+						break;
+					case ECVarType::Int64:
+						assert(it.second == (int64)it.second);
+						pVar->Set((int64)it.second);
+						break;
+					default:
+						CRY_ASSERT_MESSAGE(0, "Unexpected data Type");
+					}
+				}
 			}
-			m_ConstClearList.clear();
+			m_constClearList.clear();
 
 			b_stateScreenShot = false;
 			GetIEditorImpl()->Get3DEngine()->SetScreenshotCallback(0);
@@ -448,4 +463,3 @@ void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 		}
 	}
 }
-

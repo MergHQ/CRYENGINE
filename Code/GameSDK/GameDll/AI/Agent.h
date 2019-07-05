@@ -12,6 +12,8 @@
 	#include <CryAISystem/IAIObject.h>
 	#include <CryMath/Cry_Vector3.h>
 	#include <CryAnimation/ICryAnimation.h>
+	#include <IActorSystem.h>
+	#include "Game.h"
 
 struct VisionID;
 struct IAnimationGraphState;
@@ -216,10 +218,10 @@ public:
 		return NULL;
 	}
 
-	void SetSignal(int signalID, const char* text, IAISignalExtraData* data = NULL)
+	void SetSignal(AISignals::SignalSharedPtr pSignal)
 	{
 		assert(m_pAIActor);
-		m_pAIActor->SetSignal(signalID, text, NULL, data);
+		m_pAIActor->SetSignal(pSignal);
 	}
 
 	bool IsPointInFOV(const Vec3& pos) const

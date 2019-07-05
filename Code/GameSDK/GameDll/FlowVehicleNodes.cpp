@@ -20,6 +20,7 @@
 #include "VehicleMovementBase.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 class CVehicleActionEntityAttachment;
 

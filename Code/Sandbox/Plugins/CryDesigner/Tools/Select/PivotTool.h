@@ -22,7 +22,7 @@ public:
 	void Enter() override;
 	void Leave() override;
 
-	void Display(DisplayContext& dc) override;
+	void Display(SDisplayContext& dc) override;
 
 	bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) override;
 	bool OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) override;
@@ -48,4 +48,3 @@ private:
 	EPivotSelectionType    m_PivotSelectionType;
 };
 }
-

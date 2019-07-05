@@ -2,10 +2,12 @@
 
 #include "StdAfx.h"
 #include "BooleanTool.h"
+
+#include "Objects/DesignerObject.h"
 #include "DesignerEditor.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "Core/Helper.h"
 #include "DesignerSession.h"
+
+#include <Serialization/Decorators/EditorActionButton.h>
 
 using Serialization::ActionButton;
 
@@ -92,7 +94,7 @@ void BooleanTool::BooleanOperation(EBooleanOperationEnum booleanType)
 
 	UpdateSurfaceInfo();
 	Designer::ApplyPostProcess(designerObjList[0]->GetMainContext());
-	GetIEditor()->SelectObject(designerObjList[0]);
+	GetIEditor()->GetObjectManager()->AddObjectToSelection(designerObjList[0]);
 
 	DesignerSession::GetInstance()->SetBaseObject(designerObjList[0]);
 	//TODO: we should just quit the tool
@@ -112,4 +114,3 @@ void BooleanTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Boolean, eToolGroup_Modify, "Boolean", BooleanTool,
                                                            boolean, "runs boolean tool", "designer.boolean")
-

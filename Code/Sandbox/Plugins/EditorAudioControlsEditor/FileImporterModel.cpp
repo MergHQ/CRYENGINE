@@ -5,6 +5,8 @@
 
 #include <ProxyModels/ItemModelAttribute.h>
 #include <EditorStyleHelper.h>
+#include <PathUtils.h>
+#include <QtUtil.h>
 
 namespace ACE
 {
@@ -13,40 +15,47 @@ QString const CFileImporterModel::s_replaceAction("Import (as replacement)");
 QString const CFileImporterModel::s_unsupportedAction("Unsupported file type");
 QString const CFileImporterModel::s_sameFileAction("Source file is target file");
 
-static CItemModelAttribute s_sourceAttribute("Source", eAttributeType_String, CItemModelAttribute::Visible, false);
-static CItemModelAttribute s_targetAttribute("Target", eAttributeType_String, CItemModelAttribute::Visible, false);
-static CItemModelAttribute s_importAttribute("Import", eAttributeType_Boolean, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_sourceAttribute("Source", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_targetAttribute("Target", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_importAttribute("Import", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, false, Qt::Unchecked, Qt::CheckStateRole);
 
 //////////////////////////////////////////////////////////////////////////
-CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns const column)
+CItemModelAttribute* GetAttributeForColumn(CFileImporterModel::EColumns column)
 {
 	CItemModelAttribute* pAttribute = nullptr;
 
 	switch (column)
 	{
 	case CFileImporterModel::EColumns::Source:
-		pAttribute = &s_sourceAttribute;
-		break;
+		{
+			pAttribute = &s_sourceAttribute;
+			break;
+		}
 	case CFileImporterModel::EColumns::Target:
-		pAttribute = &s_targetAttribute;
-		break;
+		{
+			pAttribute = &s_targetAttribute;
+			break;
+		}
 	case CFileImporterModel::EColumns::Import:
-		pAttribute = &s_importAttribute;
-		break;
+		{
+			pAttribute = &s_importAttribute;
+			break;
+		}
 	default:
-		pAttribute = nullptr;
-		break;
+		{
+			pAttribute = nullptr;
+			break;
+		}
 	}
 
 	return pAttribute;
 }
 
 //////////////////////////////////////////////////////////////////////////
-CFileImporterModel::CFileImporterModel(FileImportInfos& fileInfos, QString const& assetFolderPath, QString const& targetPath, QObject* const pParent)
+CFileImporterModel::CFileImporterModel(FileImportInfos& fileInfos, QObject* pParent)
 	: QAbstractItemModel(pParent)
 	, m_fileImportInfos(fileInfos)
-	, m_targetPath(targetPath)
-	, m_assetFolder(assetFolderPath)
+	, m_gameFolder(QtUtil::ToQString(PathUtil::GetGameFolder()))
 {
 }
 
@@ -88,79 +97,126 @@ QVariant CFileImporterModel::data(QModelIndex const& index, int role) const
 				{
 					switch (role)
 					{
-					case Qt::DisplayRole:
+					case Qt::DisplayRole: // Intentional fall-through.
 					case Qt::ToolTipRole:
-						variant = m_fileImportInfos[index.row()].sourceInfo.filePath();
-						break;
+						{
+							variant = m_fileImportInfos[index.row()].sourceInfo.filePath();
+							break;
+						}
+					default:
+						{
+							break;
+						}
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::Target):
 				{
 					switch (role)
 					{
-					case Qt::DisplayRole:
+					case Qt::DisplayRole: // Intentional fall-through.
 					case Qt::ToolTipRole:
 						{
 							SFileImportInfo const& fileInfo = m_fileImportInfos[index.row()];
 
 							if (fileInfo.isTypeSupported)
 							{
-								variant = m_assetFolder.relativeFilePath(m_fileImportInfos[index.row()].targetInfo.filePath());
+								variant = m_gameFolder.relativeFilePath(m_fileImportInfos[index.row()].targetInfo.filePath());
 							}
 							else
 							{
 								variant = "-";
 							}
+
+							break;
 						}
-						break;
+					default:
+						{
+							break;
+						}
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::Import):
 				{
 					switch (role)
 					{
 					case Qt::DisplayRole:
-						switch (m_fileImportInfos[index.row()].actionType)
 						{
-						case SFileImportInfo::EActionType::New:
-							variant = s_newAction;
-							break;
-						case SFileImportInfo::EActionType::Replace:
-							variant = s_replaceAction;
-							break;
-						case SFileImportInfo::EActionType::Ignore:
-							variant = m_fileImportInfos[index.row()].targetInfo.isFile() ? s_replaceAction : s_newAction;
-							break;
-						case SFileImportInfo::EActionType::None:
-							variant = s_unsupportedAction;
-							break;
-						case SFileImportInfo::EActionType::SameFile:
-							variant = s_sameFileAction;
+							switch (m_fileImportInfos[index.row()].actionType)
+							{
+							case SFileImportInfo::EActionType::New:
+								{
+									variant = s_newAction;
+									break;
+								}
+							case SFileImportInfo::EActionType::Replace:
+								{
+									variant = s_replaceAction;
+									break;
+								}
+							case SFileImportInfo::EActionType::Ignore:
+								{
+									variant = m_fileImportInfos[index.row()].targetInfo.isFile() ? s_replaceAction : s_newAction;
+									break;
+								}
+							case SFileImportInfo::EActionType::None:
+								{
+									variant = s_unsupportedAction;
+									break;
+								}
+							case SFileImportInfo::EActionType::SameFile:
+								{
+									variant = s_sameFileAction;
+									break;
+								}
+							default:
+								{
+									break;
+								}
+							}
+
 							break;
 						}
-						break;
 					case Qt::ToolTipRole:
-						switch (m_fileImportInfos[index.row()].actionType)
 						{
-						case SFileImportInfo::EActionType::New:
-							variant = tr("New file in target location will be created.");
-							break;
-						case SFileImportInfo::EActionType::Replace:
-							variant = tr("Existing file in target location will get replaced.");
-							break;
-						case SFileImportInfo::EActionType::Ignore:
-							variant = tr("File will not get imported.");
-							break;
-						case SFileImportInfo::EActionType::None:
-							variant = tr("File type is not supported.");
-							break;
-						case SFileImportInfo::EActionType::SameFile:
-							variant = tr("Source files is target file.");
+							switch (m_fileImportInfos[index.row()].actionType)
+							{
+							case SFileImportInfo::EActionType::New:
+								{
+									variant = tr("New file in target location will be created.");
+									break;
+								}
+							case SFileImportInfo::EActionType::Replace:
+								{
+									variant = tr("Existing file in target location will get replaced.");
+									break;
+								}
+							case SFileImportInfo::EActionType::Ignore:
+								{
+									variant = tr("File will not get imported.");
+									break;
+								}
+							case SFileImportInfo::EActionType::None:
+								{
+									variant = tr("File type is not supported.");
+									break;
+								}
+							case SFileImportInfo::EActionType::SameFile:
+								{
+									variant = tr("Source files is target file.");
+									break;
+								}
+							default:
+								{
+									break;
+								}
+							}
+
 							break;
 						}
-						break;
 					case Qt::CheckStateRole:
 						{
 							SFileImportInfo const& fileInfo = m_fileImportInfos[index.row()];
@@ -169,11 +225,21 @@ QVariant CFileImporterModel::data(QModelIndex const& index, int role) const
 							{
 								variant = (fileInfo.actionType != SFileImportInfo::EActionType::Ignore) ? Qt::Checked : Qt::Unchecked;
 							}
+
+							break;
 						}
-						break;
+					default:
+						{
+							break;
+						}
 					}
+
+					break;
 				}
-				break;
+			default:
+				{
+					break;
+				}
 			}
 		}
 	}

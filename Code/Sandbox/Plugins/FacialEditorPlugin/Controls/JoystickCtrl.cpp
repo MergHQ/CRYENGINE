@@ -41,11 +41,6 @@ public:
 	}
 
 	// IUndoObject
-	virtual int GetSize()
-	{
-		return sizeof(*this);
-	}
-
 	virtual const char* GetDescription()
 	{
 		return "JoystickCtrl";
@@ -105,6 +100,8 @@ private:
 			m_undo.Save(pJoystick);
 		}
 
+		virtual ~JoystickEntry() {}
+
 		virtual void Undo(bool bUndo, IJoystickSet* pJoystickSet)
 		{
 			IJoystick* pJoystick = (pJoystickSet && m_id ? pJoystickSet->GetJoystickByID(m_id) : 0);
@@ -147,11 +144,6 @@ public:
 			m_pContext->SerializeJoystickSet(m_pJoystickSet, m_undo, false);
 	}
 	// IUndoObject
-	virtual int GetSize()
-	{
-		return sizeof(*this);
-	}
-
 	virtual const char* GetDescription()
 	{
 		return "JoystickCtrl";
@@ -182,9 +174,8 @@ private:
 	IJoystickSet*         m_pJoystickSet;
 };
 
-class IJoystickActionMode : public _reference_target_t
+struct IJoystickActionMode : public _reference_target_t
 {
-public:
 	virtual void OnClick(const Vec2& vPosition, bool controlHeld, IJoystickActionContext* pContext) {}
 	virtual void OnStartDragging(const Vec2& vPosition, IJoystickActionContext* pContext)           {}
 	virtual void OnDragging(const Vec2& vPosition, IJoystickActionContext* pContext)                {}
@@ -633,7 +624,6 @@ public:
 
 			return;
 		}
-		;
 
 		if (pJoystick)
 		{
@@ -962,8 +952,7 @@ void CJoystickCtrl::Render(CDC& dc)
 			LineEntry(Vec2(-1,    1),     Vec2(-1,    0.8f),  0),
 			LineEntry(Vec2(1,     1),     Vec2(1,     0.8f),  0),
 			LineEntry(Vec2(-1,    -1),    Vec2(-1,    -0.8f), 0),
-			LineEntry(Vec2(1,     -1),    Vec2(1,     -0.8f), 0)
-		};
+			LineEntry(Vec2(1,     -1),    Vec2(1,     -0.8f), 0) };
 		unsigned keyFoundFlags = 0;
 		for (IJoystick::ChannelType axis = IJoystick::ChannelType(0); axis < 2; axis = (IJoystick::ChannelType)(axis + 1))
 		{
@@ -1529,7 +1518,6 @@ void CJoystickCtrl::RenderString(CDC& dc, const char* szString, const Vec2& posi
 	enum {MAX_STRING = 256};
 	WCHAR wszString[MAX_STRING];
 
-	int length = min((szString ? int(strlen(szString)) : 0), MAX_STRING - 1);
 	Unicode::Convert(wszString, szString ? szString : "");
 
 	if (wcslen(wszString) == 0)
@@ -1684,4 +1672,3 @@ void CJoystickCtrl::UpdateDocumentRect()
 
 	OnClientSizeUpdated();
 }
-

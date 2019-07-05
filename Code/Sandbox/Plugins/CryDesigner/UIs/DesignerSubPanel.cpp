@@ -1,13 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Core/SmoothingGroupManager.h"
 #include "DesignerSubPanel.h"
+
+#include "Core/SmoothingGroupManager.h"
+#include "Objects/DesignerObject.h"
 #include "Tools/BaseTool.h"
-#include "QCollapsibleFrame.h"
 
 #include <QBoxLayout>
-#include <QTabWidget>
 
 namespace Designer
 {
@@ -109,7 +109,7 @@ QWidget* DesignerSubPanel::OrganizeSettingLayout(QWidget* pParent)
 	QBoxLayout* pBoxLayout = new QBoxLayout(QBoxLayout::TopToBottom);
 	pBoxLayout->setContentsMargins(0, 0, 0, 0);
 
-	m_pSettingProperties = new QPropertyTree(pPaper);
+	m_pSettingProperties = new QPropertyTreeLegacy(pPaper);
 
 	m_pSettingProperties->setSizeToContent(true);
 	m_pSettingProperties->setExpandLevels(2);
@@ -122,9 +122,9 @@ QWidget* DesignerSubPanel::OrganizeSettingLayout(QWidget* pParent)
 	pBoxLayout->addWidget(m_pSettingProperties);
 	pPaper->setLayout(pBoxLayout);
 
-	QObject::connect(m_pSettingProperties, &QPropertyTree::signalChanged, pPaper, [ = ] { NotifyDesignerSettingChanges(false);
+	QObject::connect(m_pSettingProperties, &QPropertyTreeLegacy::signalChanged, pPaper, [ = ] { NotifyDesignerSettingChanges(false);
 	                 });
-	QObject::connect(m_pSettingProperties, &QPropertyTree::signalContinuousChange, pPaper, [ = ] { NotifyDesignerSettingChanges(true);
+	QObject::connect(m_pSettingProperties, &QPropertyTreeLegacy::signalContinuousChange, pPaper, [ = ] { NotifyDesignerSettingChanges(true);
 	                 });
 
 	return pPaper;
@@ -215,4 +215,3 @@ void DesignerSubPanel::UpdateBackFaceCheckBox(Model* pModel)
 }
 
 REGISTER_GENERALPANEL(SettingPanel, DesignerSubPanel, DesignerSubPanelConstructor);
-

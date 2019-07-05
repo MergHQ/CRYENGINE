@@ -406,9 +406,10 @@ real ComputeRc(RigidBody *body0, entity_contact **pContacts, int nAngContacts,in
 
 void InitContactSolver(float time_interval)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Physics Contact Solver");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Physics Contact Solver");
 
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	if (!g_RBdata[iCaller])
 		g_RBdata[iCaller] = new RBdata;
 	g_nContacts = g_nBodies = 0;
@@ -429,6 +430,7 @@ void CleanupContactSolvers()
 char *AllocSolverTmpBuf(int size)
 {
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	if (g_iSolverBufPos+size<sizeof(g_SolverBuf)) {
 		g_iSolverBufPos += size;
 		memset(g_SolverBuf+g_iSolverBufPos-size, 0, size);
@@ -455,6 +457,7 @@ extern RigidBody g_StaticRigidBodies[];
 void RegisterContact(entity_contact *pcontact)
 {
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	if (!(pcontact->flags & (contact_maintain_count|contact_rope)))
 		pcontact->pBounceCount = &pcontact->iCount;
 	if ((UINT_PTR)pcontact->pbody[1]-(UINT_PTR)g_StaticRigidBodies<(UINT_PTR)(sizeof(RigidBody)*MAX_PHYS_THREADS))
@@ -463,9 +466,12 @@ void RegisterContact(entity_contact *pcontact)
 	g_nContacts = min(g_nContacts,(int)(CRY_ARRAY_COUNT(g_pContacts))-1);
 }
 
+entity_contact **GetContacts(int &nContacts, int iCaller) { nContacts	= g_nContacts; return g_pContacts; }
+
 void DisablePreCG()
 {
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	g_bUsePreCG = false;
 }
 
@@ -488,9 +494,9 @@ inline void ApplyImpulse(body_helper *pbody, const Vec3& dP, const Vec3& dL, int
 #define g_Bodies     pBodies
 
 int InvokeContactSolverMC(contact_helper *pContactsRB,contact_helper_constraint *pContactsC,body_helper *pBodies, 
-													int nContacts,int nBodies, float Ebefore, int nMaxIters,float e,float minSeparationSpeed)
+													int nContacts,int nBodies, float Ebefore, int nMaxIters,int nPasses,float e,float minSeparationSpeed)
 {
-	CRY_PROFILE_REGION(PROFILE_PHYSICS, "LCPMC");
+	CRY_PROFILE_SECTION(PROFILE_PHYSICS, "LCPMC");
 	int iCaller = get_iCaller_int();
 	int i,j,bBounced,istart,iend,istep,nBounces=0,bContactBounced;
 	float vrel,dPn,dPtang,Eafter;
@@ -551,7 +557,7 @@ int InvokeContactSolverMC(contact_helper *pContactsRB,contact_helper_constraint 
 					if ((g_ContactsC[i].C*dp).len2() > max(sqr(e),g_ContactsRB[i].vreq.len2()*sqr(0.05f))) {
 						dP = g_ContactsC[i].Kinv*-dp;
 						dPn = dP*g_ContactsRB[i].n;
-						if (min(g_ContactsRB[i].Pspare, fabsf(g_ContactsRB[i].Pn+dPn)-g_ContactsRB[i].Pspare*1.01f)>1e-5f) {
+						if (g_ContactsRB[i].Pspare && fabsf(g_ContactsRB[i].Pn+dPn)>g_ContactsRB[i].Pspare*1.01f) {
 							float t = (g_ContactsRB[i].Pspare*1.01f-fabsf(g_ContactsRB[i].Pn))/fabsf(dPn);
 							dP*=t; dPn*=t;
 							bContactBounced = isneg(0.001f-t);
@@ -632,7 +638,7 @@ int InvokeContactSolverMC(contact_helper *pContactsRB,contact_helper_constraint 
 			Eafter += g_Bodies[i].v.len2()*g_Bodies[i].M + g_Bodies[i].L*g_Bodies[i].w;
 		nBounces += g_nContacts-bBounced >> 4;
 
-	} while (bBounced && nBounces<nMaxIters && Eafter<Ebefore*3.0f);
+	} while (bBounced && nBounces<nMaxIters && Eafter<Ebefore*3.0f && --nPasses>0);
 	return bBounced;
 }
 
@@ -690,7 +696,7 @@ void InvokeDelayedContactSolver(CMemStream &stm)
 	{int tag; stm.Read(tag); if (tag!=MEMSTREAM_DEBUG_TAG+1) {printf("end %x!=%x\n",tag, MEMSTREAM_DEBUG_TAG+1); __debugbreak();}}
 #endif 
 	stm.bMeasureOnly = 0;
-	*bBounced = InvokeContactSolverMC(pContactsRB,pContactsC,pBodies, nContacts,nBodies, Ebefore,nMaxIters,e,minSeparationSpeed);
+	*bBounced = InvokeContactSolverMC(pContactsRB,pContactsC,pBodies, nContacts,nBodies, Ebefore,nMaxIters,1<<30,e,minSeparationSpeed);
 }
 
 
@@ -738,7 +744,7 @@ struct GridTransDyn {
 };
 
 template<typename TransFull, typename TransRot, int ipass>
-int PrepContacts(int iCaller, int &nConstraintsRes, SEntityGrid* &pgridRes, int &bMultigridRes)
+int PrepContacts(int iCaller, int &nConstraintsRes, SEntityGrid* &pgridRes, int &bMultigridRes, float *MscaleInv=nullptr)
 {
 	int nBodies=0, nConstraints=0, bMultigrid=0;
 	SEntityGrid *pgrid = ipass==0 ? GetGridFromEntity(g_pContacts[0]->pent[0]) : pgridRes;
@@ -786,7 +792,7 @@ int PrepContacts(int iCaller, int &nConstraintsRes, SEntityGrid* &pgridRes, int 
 			g_ContactsC[i].C.SetIdentity();
 			if (bMultigrid)
 				continue;
-		}	else for(iop=0;iop<2;iop++)
+		}	else if (ipass<2) for(iop=0;iop<2;iop++)
 			*(CPhysicalEntity**)&g_Bodies[cnt.pbody[iop]->bProcessed[iCaller]-1].Iinv = cnt.pent[iop];
 
 		TransRot AtoG(cnt.pent[0],pgrid), BtoG(cnt.pent[1],pgrid);
@@ -797,6 +803,7 @@ int PrepContacts(int iCaller, int &nConstraintsRes, SEntityGrid* &pgridRes, int 
 			dotproduct_matrix(nloc,nloc, g_ContactsC[i].C);
 		} else if (cnt.flags & contact_use_C_2dof) {
 			Vec3 nloc = AtoG(cnt.nloc);
+			g_ContactsC[i].C.SetIdentity();
 			g_ContactsC[i].C -= dotproduct_matrix(nloc,nloc,Ctmp);
 		}
 
@@ -810,9 +817,20 @@ int PrepContacts(int iCaller, int &nConstraintsRes, SEntityGrid* &pgridRes, int 
 			if (!(cnt.flags & contact_angular)) {
 				cnt.pbody[0]->GetContactMatrix(cnt.pt[0]-cnt.pbody[0]->pos, K0);
 				cnt.pbody[1]->GetContactMatrix(AtoB(cnt.pt[1])-cnt.pbody[1]->pos, K1);
-			} else {
+			} else if (!((cnt.pbody[0]->flags | cnt.pbody[1]->flags) & rb_articulated)) {
 				K0 = cnt.pbody[0]->Iinv;
 				K1 = cnt.pbody[1]->Iinv;
+			}	else {
+				if (cnt.pbody[0]->flags & rb_articulated)
+					((ArticulatedBody*)cnt.pbody[0])->GetContactMatrixRot(K0, cnt.pent[0]==cnt.pent[1] ? (ArticulatedBody*)cnt.pbody[1] : nullptr);
+				else K0 = cnt.pbody[0]->Iinv;
+				if (cnt.pbody[1]->flags & rb_articulated)
+					((ArticulatedBody*)cnt.pbody[1])->GetContactMatrixRot(K1, cnt.pent[0]==cnt.pent[1] ? (ArticulatedBody*)cnt.pbody[0] : nullptr);
+				else K1 = cnt.pbody[1]->Iinv;
+			}
+			if (ipass==2) {
+				K0 *= MscaleInv[g_infos[g_ContactsRB[i].iBody[0]].iLevel];
+				K1 *= MscaleInv[g_infos[g_ContactsRB[i].iBody[1]].iLevel];
 			}
 			g_ContactsRB[i].K = AtoG(K0) + BtoG(K1);
 		}
@@ -848,13 +866,15 @@ int PrepContacts(int iCaller, int &nConstraintsRes, SEntityGrid* &pgridRes, int 
 }
 
 template<typename TransFull,typename TransRot>
-void PrepContactsMore(int iCaller, SEntityGrid *pgrid=nullptr)
+int PrepContactsMore(int iCaller, SEntityGrid *pgrid=nullptr)
 {
+	int flagsOR = 0;
 	for(int i=0; i<g_nContacts; i++) {
 		entity_contact &cnt = *g_pContacts[i];
 		TransRot AtoG(cnt.pent[0], pgrid);
 		TransFull BtoA(cnt.pent[1], cnt.pent[0]);
 		Vec3 com0 = cnt.pbody[0]->pos;
+		flagsOR |= cnt.flags;
 		if (sizeof(TransFull)>sizeof(noGridTrans) && cnt.flags & contact_rope) {
 			CPhysicalEntity *prope = (CPhysicalEntity*)cnt.nextAux;
 			AtoG = TransRot(prope, pgrid);
@@ -879,6 +899,7 @@ void PrepContactsMore(int iCaller, SEntityGrid *pgrid=nullptr)
 			((char*)&cnt.iCount-(char*)g_pContacts[i])))->bProcessed;
 		g_ContactsRB[i].Pn = 0;
 	}
+	return flagsOR;
 }
 
 template<typename TransDyn>
@@ -993,7 +1014,7 @@ __solver_step++;
 	g_nBodies = nBodies;
 
 	if (g_bUsePreCG && g_nContacts<16 && !bMultigrid) {
-		CRY_PROFILE_REGION(PROFILE_PHYSICS, "PreCG");
+		CRY_PROFILE_SECTION(PROFILE_PHYSICS, "PreCG");
 
 		real a,b,r2,r2new,pAp,vmax,vdiff;
 
@@ -1099,16 +1120,63 @@ __solver_step++;
 		}
 	}
 
-	int nArtic = 0;
+	int nArtic=0, hasRopes=0;
 	if (!bMultigrid) {
-		PrepContactsMore<noGridTrans,noGridTrans>(iCaller);
+		hasRopes = PrepContactsMore<noGridTrans,noGridTrans>(iCaller) & contact_rope;
 		nArtic = PrepBodies<noGridTrans>(iCaller);
 	} else {
-		PrepContactsMore<GridTransFull,GridTransRot>(iCaller,pgrid);
+		hasRopes = PrepContactsMore<GridTransFull,GridTransRot>(iCaller,pgrid) & contact_rope;
 		nArtic = PrepBodies<GridTransDyn>(iCaller,pgrid);
 	}
+	bool useDecay = pss->massDecay<1 && pss->massDecay>0 && !nArtic && !hasRopes;
 
-	bBounced = InvokeContactSolverMC(g_ContactsRB,g_ContactsC,g_Bodies, g_nContacts,nBodies, Ebefore, nMaxIters,e,pss->minSeparationSpeed);
+	bBounced = InvokeContactSolverMC(g_ContactsRB,g_ContactsC,g_Bodies, g_nContacts,nBodies, Ebefore, nMaxIters,useDecay ? pss->massDecayPrepasses : 1<<30,e,pss->minSeparationSpeed);
+
+	if (bBounced && useDecay) {
+		float minMinv=g_Bodies[0].Minv, maxMinv[2] = { minMinv,minMinv };
+		for(i=1;i<nBodies;i++) if (g_Bodies[i].Minv > maxMinv[0])	{
+			maxMinv[1]=maxMinv[0]; maxMinv[0]=g_Bodies[i].Minv;
+		} else if (g_Bodies[i].Minv > maxMinv[1])
+			maxMinv[1]=g_Bodies[i].Minv;
+		else
+			minMinv = min(minMinv,g_Bodies[i].Minv);
+		int maxLevel = min(99,pss->massDecayMaxLevel);
+		for(i=0;i<nBodies;i++) // mark heavy bodies as level 0, rest as maxLevel
+			g_infos[i].iLevel = isneg(maxMinv[1]-g_Bodies[i].Minv*pss->massDecayHeavyThresh)*maxLevel;
+		for(int repeat=(iter=0)+1;iter<1000 && repeat;iter++) 
+			for(i=(g_nContacts-1)*(iter&1),repeat=0; inrange(i,-1,g_nContacts); i+=1-(iter&1)*2) { // iterate contacts forward and backwards
+				int i0=g_ContactsRB[i].iBody[0], i1=g_ContactsRB[i].iBody[1], l0=g_infos[i0].iLevel, l1=g_infos[i1].iLevel;
+				if (max(l0,l1) > min(l0,l1)+1 && !((g_pBodies[i0]->flags | g_pBodies[i1]->flags) & rb_no_mass_decay)) { // we can lower the level of one body
+					int swap=l1-l0>>31; i0^=i1&swap; i1^=i0&swap; i0^=i1&swap; // [i0] has lower level
+					g_infos[i1].iLevel = min(maxLevel,g_infos[i0].iLevel+1);
+					repeat++;
+				}
+			}
+		for(i=maxLevel=0;i<nBodies;i++)
+			maxLevel = max(maxLevel,g_infos[i].iLevel);
+		if (maxLevel>=pss->massDecayMinLevel && iter>1) {
+			float M0=0, M1=0, massDecayInv=1/pss->massDecay, Mscale[100], MscaleInv[100];
+			for(i=1,Mscale[0]=MscaleInv[0]=1; i<=maxLevel; i++)
+				Mscale[i]=max(1e-5f,Mscale[i-1]*pss->massDecay), MscaleInv[i]=min_safe(1e5f,MscaleInv[i-1]*massDecayInv);
+			for(i=0;i<nBodies;i++) {
+				M0 += g_Bodies[i].M;
+				M1 += g_Bodies[i].M*Mscale[g_infos[i].iLevel];
+			}
+			M1=1/(M0/=M1);
+			for(i=1;i<=maxLevel;i++) 
+				Mscale[i]*=M0, MscaleInv[i]*=M1;
+			// scale level 1+ body masses by massDecay^level * M0/M1
+			for(i=0;i<nBodies;i++) {
+				g_Bodies[i].M*=Mscale[j=g_infos[i].iLevel];	g_Bodies[i].L*=Mscale[j];
+				g_Bodies[i].Minv*=MscaleInv[j];	g_Bodies[i].Iinv*=MscaleInv[j];
+			}
+			if (!bMultigrid)
+				PrepContacts<noGridTrans,noGridTrans,2>(iCaller,nConstraints,pgrid,bMultigrid,MscaleInv);
+			else
+				PrepContacts<GridTransFull,GridTransRot,2>(iCaller,nConstraints,pgrid,bMultigrid,MscaleInv);
+		}
+		bBounced = InvokeContactSolverMC(g_ContactsRB,g_ContactsC,g_Bodies, g_nContacts,nBodies, Ebefore, nMaxIters,1<<30,e,pss->minSeparationSpeed);
+	}
 
 	if (!bMultigrid)
 		UpdateBodies<noGridTrans>(iCaller);
@@ -1191,7 +1259,7 @@ __solver_step++;
 		}
 
 		if (bBounced) {
-			{ CRY_PROFILE_REGION(PROFILE_PHYSICS,"LCPCG");
+			{ CRY_PROFILE_SECTION(PROFILE_PHYSICS,"LCPCG");
 
 			cgiter = pss->nMaxLCPCGiters;
 			for(i=0;i<nBodies;i++) {
@@ -1456,7 +1524,7 @@ __solver_step++;
 			}//"LCPCG"
 
 			if (bBounced) {
-				CRY_PROFILE_REGION(PROFILE_PHYSICS, "LCPCG-unproj");
+				CRY_PROFILE_SECTION(PROFILE_PHYSICS, "LCPCG-unproj");
 
 				///////////////////////////////////////////////////////////////////////////////////
 				// now, use a separate solver for unprojections (unproject each body independently)

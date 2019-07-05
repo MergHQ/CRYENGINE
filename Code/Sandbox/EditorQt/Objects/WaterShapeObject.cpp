@@ -2,16 +2,17 @@
 
 #include "StdAfx.h"
 #include "WaterShapeObject.h"
-#include "Material\MaterialManager.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
+#include "IEditorImpl.h"
+#include "Material/MaterialManager.h"
+
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
 #include <Cry3DEngine/I3DEngine.h>
 
 REGISTER_CLASS_DESC(CWaterShapeObjectClassDesc);
 
 IMPLEMENT_DYNCREATE(CWaterShapeObject, CShapeObject)
 
-//////////////////////////////////////////////////////////////////////////
 CWaterShapeObject::CWaterShapeObject()
 {
 	m_pWVRN = 0;
@@ -20,14 +21,12 @@ CWaterShapeObject::CWaterShapeObject()
 	m_fogPlane = Plane(Vec3(0, 0, 1), 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CWaterShapeObject::Init(CBaseObject* prev, const string& file)
 {
 	bool res = CShapeObject::Init(prev, file);
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::InitVariables()
 {
 	__super::InitVariables();
@@ -47,6 +46,8 @@ void CWaterShapeObject::InitVariables()
 	mv_waterCausticIntensity = 1.0f;
 	mv_waterCausticTiling = 1.0f;
 	mv_waterCausticHeight = 0.5f;
+	mv_waterDensity = 1000;
+	mv_waterResistance = 1000;
 	mv_waterVolume = 0.0f;
 	mv_accVolume = 0.001f;
 	mv_borderPad = 0.0f;
@@ -82,6 +83,8 @@ void CWaterShapeObject::InitVariables()
 	m_pVarObject->AddVariable(mv_waterCausticIntensity, "CausticIntensity", "CausticIntensity", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	m_pVarObject->AddVariable(mv_waterCausticTiling, "CausticTiling", "CausticTiling", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	m_pVarObject->AddVariable(mv_waterCausticHeight, "CausticHeight", "CausticHeight", functor(*this, &CWaterShapeObject::OnWaterParamChange));
+	m_pVarObject->AddVariable(mv_waterDensity, "PhysDensity", "WaterDensity", functor(*this, &CWaterShapeObject::OnWaterParamChange));
+	m_pVarObject->AddVariable(mv_waterResistance, "PhysResistance", "WaterResistance", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	
 	m_pVarObject->AddVariable(mv_GroupAdv, mv_waterVolume, "Volume", "FixedVolume", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	m_pVarObject->AddVariable(mv_GroupAdv, mv_accVolume, "VolumeAcc", "VolumeAccuracy", functor(*this, &CWaterShapeObject::OnWaterParamChange));
@@ -95,14 +98,13 @@ void CWaterShapeObject::InitVariables()
 	m_pVarObject->AddVariable(mv_GroupAdv, mv_minVel, "MinWaveVel", "MinWaveVel", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	m_pVarObject->AddVariable(mv_GroupAdv, mv_simDepth, "DepthCells", "DepthCells", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	m_pVarObject->AddVariable(mv_GroupAdv, mv_hlimit, "HeightLimit", "HeightLimit", functor(*this, &CWaterShapeObject::OnWaterParamChange));
-	m_pVarObject->AddVariable(mv_GroupAdv, mv_velResistance, "Resistance", "Resistance", functor(*this, &CWaterShapeObject::OnWaterParamChange));
+	m_pVarObject->AddVariable(mv_GroupAdv, mv_velResistance, "Resistance", "WaveResistance", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	m_pVarObject->AddVariable(mv_GroupAdv, mv_simAreaGrowth, "SimAreaGrowth", "SimAreaGrowth", functor(*this, &CWaterShapeObject::OnWaterParamChange));
 	m_pVarObject->AddVariable(mv_GroupAdv, "Advanced");
 
 	mv_ratioViewDist.SetLimits(0, 255);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CShapeObject::CreateInspectorWidgets(creator);
@@ -123,6 +125,8 @@ void CWaterShapeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_waterCausticIntensity, ar);
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_waterCausticTiling, ar);
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_waterCausticHeight, ar);
+		pObject->m_pVarObject->SerializeVariable(&pObject->mv_waterDensity, ar);
+		pObject->m_pVarObject->SerializeVariable(&pObject->mv_waterResistance, ar);
 
 		if (ar.openBlock("Advanced", "Advanced"))
 		{
@@ -145,30 +149,26 @@ void CWaterShapeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CWaterShapeObject::CreateGameObject()
 {
 	m_pWVRN = static_cast<IWaterVolumeRenderNode*>(GetIEditorImpl()->Get3DEngine()->CreateRenderNode(eERType_WaterVolume));
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::PostLoad(CObjectArchive& ar)
 {
 	__super::PostLoad(ar);
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetName(const string& name)
 {
 	CShapeObject::SetName(name);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	if (m_pWVRN)
 		GetIEditorImpl()->Get3DEngine()->DeleteRenderNode(m_pWVRN);
 	m_pWVRN = NULL;
@@ -176,19 +176,16 @@ void CWaterShapeObject::Done()
 	CShapeObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::OnParamChange(IVariable* var)
 {
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CWaterShapeObject::GetPremulFogColor() const
 {
 	return Vec3(mv_waterFogColor) * max(float(mv_waterFogColorMultiplier), 0.0f);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::OnWaterParamChange(IVariable* var)
 {
 	if (m_pWVRN)
@@ -202,6 +199,8 @@ void CWaterShapeObject::OnWaterParamChange(IVariable* var)
 		m_pWVRN->SetCausticIntensity(mv_waterCausticIntensity);
 		m_pWVRN->SetCausticTiling(mv_waterCausticTiling);
 		m_pWVRN->SetCausticHeight(mv_waterCausticHeight);
+
+		m_pWVRN->SetPhysParams(mv_waterDensity, mv_waterResistance);
 		pe_params_area pa;
 		pa.volume = mv_waterVolume;
 		pa.volumeAccuracy = mv_accVolume;
@@ -221,7 +220,6 @@ void CWaterShapeObject::OnWaterParamChange(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::Physicalize()
 {
 	if (m_pWVRN)
@@ -240,13 +238,11 @@ void CWaterShapeObject::Physicalize()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::OnWaterPhysicsParamChange(IVariable* var)
 {
 	Physicalize();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetMaterial(IEditorMaterial* mtl)
 {
 	CShapeObject::SetMaterial(mtl);
@@ -272,7 +268,6 @@ void CWaterShapeObject::SetMaterial(IEditorMaterial* mtl)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::UpdateGameArea()
 {
 	if (m_bIgnoreGameUpdate)
@@ -309,6 +304,7 @@ void CWaterShapeObject::UpdateGameArea()
 			m_pWVRN->SetCausticIntensity(mv_waterCausticIntensity);
 			m_pWVRN->SetCausticTiling(mv_waterCausticTiling);
 			m_pWVRN->SetCausticHeight(mv_waterCausticHeight);
+			m_pWVRN->SetPhysParams(mv_waterDensity, mv_waterResistance);
 			pe_params_area pa;
 			pa.volume = mv_waterVolume;
 			pa.volumeAccuracy = mv_accVolume;
@@ -335,19 +331,13 @@ void CWaterShapeObject::UpdateGameArea()
 			else
 				m_pWVRN->SetMaterial(0);
 
-			unsigned int renderFlags = m_pWVRN->GetRndFlags();
-			if (CheckFlags(OBJFLAG_INVISIBLE) || IsHiddenBySpec())
-				renderFlags |= ERF_HIDDEN;
-			else
-				renderFlags &= ~ERF_HIDDEN;
-			m_pWVRN->SetRndFlags(renderFlags);
+			m_pWVRN->SetRndFlags(ERF_HIDDEN, CheckFlags(OBJFLAG_INVISIBLE) || IsHiddenBySpec());
 		}
 	}
 
 	m_bAreaModified = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::Serialize(CObjectArchive& ar)
 {
 	XmlNodeRef xmlNode(ar.node);
@@ -408,6 +398,14 @@ void CWaterShapeObject::Serialize(CObjectArchive& ar)
 		float waterCausticHeight(0.5f);
 		xmlNode->getAttr("CausticHeight", waterCausticHeight);
 		mv_waterCausticHeight = waterCausticHeight;
+
+		float waterDensity(1000.0f);
+		xmlNode->getAttr("PhysDensity", waterDensity);
+		mv_waterDensity = waterDensity;
+
+		float waterResistance(1000.0f);
+		xmlNode->getAttr("PhysResistance", waterResistance);
+		mv_waterResistance = waterResistance;
 	}
 	else
 	{
@@ -425,19 +423,18 @@ void CWaterShapeObject::Serialize(CObjectArchive& ar)
 		xmlNode->setAttr("CausticIntensity", mv_waterCausticIntensity);
 		xmlNode->setAttr("CausticTiling", mv_waterCausticTiling);
 		xmlNode->setAttr("CausticHeight", mv_waterCausticHeight);
+		xmlNode->setAttr("PhysDensity", mv_waterDensity);
+		xmlNode->setAttr("PhysResistance", mv_waterResistance);
 	}
 
 	__super::Serialize(ar);
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 XmlNodeRef CWaterShapeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	__super::SetMinSpec(nSpec, bSetChildren);
@@ -445,7 +442,6 @@ void CWaterShapeObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 		m_pWVRN->SetMinSpec(nSpec);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetMaterialLayersMask(uint32 nLayersMask)
 {
 	__super::SetMaterialLayersMask(nLayersMask);
@@ -453,22 +449,19 @@ void CWaterShapeObject::SetMaterialLayersMask(uint32 nLayersMask)
 		m_pWVRN->SetMaterialLayers(nLayersMask);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::SetHidden(bool bHidden)
 {
 	__super::SetHidden(bHidden);
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaterShapeObject::UpdateVisibility(bool visible)
 {
 	if (visible == CheckFlags(OBJFLAG_INVISIBLE) ||
-	    m_pWVRN && (bool(m_pWVRN->GetRndFlags() & ERF_HIDDEN) == (visible && !IsHiddenBySpec())) // force update if spec changed
+	    m_pWVRN && (m_pWVRN->IsHidden() == (visible && !IsHiddenBySpec())) // force update if spec changed
 	    )
 	{
 		__super::UpdateVisibility(visible);
 		UpdateGameArea();
 	}
 }
-

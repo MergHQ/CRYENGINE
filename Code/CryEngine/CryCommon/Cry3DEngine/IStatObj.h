@@ -1,41 +1,33 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File:IStatObj.h
-//  Interface for CStatObj class
-//
-//	History:
-//	-:Created by Vladimir Kajalin
-//
-//////////////////////////////////////////////////////////////////////
+#pragma once
 
-#ifndef _IStatObj_H_
-#define _IStatObj_H_
-
-#include <CryCore/smartptr.h>     // TYPEDEF_AUTOPTR
-
-struct    IMaterial;
-struct    ShadowMapFrustum;
-class CRenderObject;
-struct    IShader;
-class IReadStream;
-struct    SRenderingPassInfo;
-TYPEDEF_AUTOPTR(IReadStream);
-
-// Interface to non animated object.
-struct phys_geometry;
-struct IChunkFile;
-
-// General forward declaration.
-class CRenderObject;
-struct SMeshLodInfo;
-
-#include <Cry3DEngine/CGF/CryHeaders.h>
+#include "IMeshObj.h"
+#include <CryCore/smartptr.h>
+#include <CryCore/stridedptr.h>
+#include <CryMemory/CrySizer.h>
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Geo.h>
-#include "IMeshObj.h"
-#include <CryPhysics/IPhysics.h>
 #include <CryCore/BitMask.h>
+
+class CRenderObject;
+class IReadStream;
+
+struct IChunkFile;
+struct IMaterial;
+struct IShader;
+struct ITetrLattice;
+struct pe_geomparams;
+struct phys_geometry;
+struct ShadowMapFrustum;
+struct SMeshLodInfo;
+struct SRenderingPassInfo;
+
+namespace primitives {
+struct box;
+}
+
+TYPEDEF_AUTOPTR(IReadStream);
 
 //! Type of static sub object.
 enum EStaticSubObjectType
@@ -50,24 +42,24 @@ enum EStaticSubObjectType
 };
 
 //! Flags that can be set on static object.
-enum EStaticObjectFlags
+enum EStaticObjectFlags : uint32
 {
-	STATIC_OBJECT_HIDDEN           = BIT(0),  //!< When set static object will not be displayed.
-	STATIC_OBJECT_CLONE            = BIT(1),  //!< specifies whether this object was cloned for modification.
-	STATIC_OBJECT_GENERATED        = BIT(2),  //!< tells that the object was generated procedurally (breakable obj., f.i.).
-	STATIC_OBJECT_CANT_BREAK       = BIT(3),  //!< StatObj has geometry unsuitable for procedural breaking.
-	STATIC_OBJECT_DEFORMABLE       = BIT(4),  //!< StatObj can be procedurally smeared (using SmearStatObj).
-	STATIC_OBJECT_COMPOUND         = BIT(5),  //!< StatObj has subobject meshes.
-	STATIC_OBJECT_MULTIPLE_PARENTS = BIT(6),  //!< Child StatObj referenced by several parents.
+	STATIC_OBJECT_HIDDEN           = BIT32(0),  //!< When set static object will not be displayed.
+	STATIC_OBJECT_CLONE            = BIT32(1),  //!< specifies whether this object was cloned for modification.
+	STATIC_OBJECT_GENERATED        = BIT32(2),  //!< tells that the object was generated procedurally (breakable obj., f.i.).
+	STATIC_OBJECT_CANT_BREAK       = BIT32(3),  //!< StatObj has geometry unsuitable for procedural breaking.
+	STATIC_OBJECT_DEFORMABLE       = BIT32(4),  //!< StatObj can be procedurally smeared (using SmearStatObj).
+	STATIC_OBJECT_COMPOUND         = BIT32(5),  //!< StatObj has subobject meshes.
+	STATIC_OBJECT_MULTIPLE_PARENTS = BIT32(6),  //!< Child StatObj referenced by several parents.
 
 	// Collisions
-	STATIC_OBJECT_NO_PLAYER_COLLIDE = BIT(10),
+	STATIC_OBJECT_NO_PLAYER_COLLIDE = BIT32(10),
 
 	// Special flags.
-	STATIC_OBJECT_SPAWN_ENTITY       = BIT(20),  //!< StatObj spawns entity when broken.
-	STATIC_OBJECT_PICKABLE           = BIT(21),  //!< StatObj can be picked by players.
-	STATIC_OBJECT_NO_AUTO_HIDEPOINTS = BIT(22),  //!< Do not generate AI auto hide points around object if it's dynamic.
-	STATIC_OBJECT_DYNAMIC            = BIT(23),  //!< mesh data should be kept in system memory (and yes, the name *is* an oxymoron).
+	STATIC_OBJECT_SPAWN_ENTITY       = BIT32(20),  //!< StatObj spawns entity when broken.
+	STATIC_OBJECT_PICKABLE           = BIT32(21),  //!< StatObj can be picked by players.
+	STATIC_OBJECT_NO_AUTO_HIDEPOINTS = BIT32(22),  //!< Do not generate AI auto hide points around object if it's dynamic.
+	STATIC_OBJECT_DYNAMIC            = BIT32(23),  //!< mesh data should be kept in system memory (and yes, the name *is* an oxymoron).
 
 };
 
@@ -86,6 +78,7 @@ struct SRayHitTriangle
 	Vec3       v[3];
 	Vec2       t[3];
 	ColorB     c[3];
+	Vec3       vn[3];
 	Vec3       n;
 	IMaterial* pMat;
 	uint8      nTriArea;
@@ -97,10 +90,35 @@ struct SRayHitTriangle
 struct SRayHitInfo
 {
 	SRayHitInfo()
+		// Do not replace with memset to avoid compiler issues (VS2019/GCC8.3)
+		: inReferencePoint(0.0f)
+		, inRay(Vec3(0.0f), Vec3(0.0f))
+		, bInFirstHit(false)
+		, inRetTriangle(false)
+		, bUseCache(false)
+		, bOnlyZWrite(false)
+#if defined(FEATURE_SVO_GI)
+		, bGetVertColorAndTC(false)
+		, useBoxIntersection(false)
+		, pHitTris(nullptr)
+		, vHitTC(0.0f)
+		, vHitColor(0.0f)
+		, vHitTangent(0.0f)
+		, vHitBitangent(0.0f)
+#endif
+		, fMaxHitDistance(false)
+		, vTri0(0.0f)
+		, vTri1(0.0f)
+		, vTri2(0.0f)
+		, fDistance(0.0f)
+		, vHitPos(0.0f)
+		, vHitNormal(0.0f)
+		, nHitMatID(0)
+		, nHitTriID(HIT_UNKNOWN)
+		, nHitSurfaceID(0)
 	{
-		memset(this, 0, sizeof(*this));
-		nHitTriID = HIT_UNKNOWN;
 	}
+
 	// Input parameters.
 	Vec3  inReferencePoint;
 	Ray   inRay;
@@ -108,12 +126,19 @@ struct SRayHitInfo
 	bool  inRetTriangle;
 	bool  bUseCache;
 	bool  bOnlyZWrite;
+#if defined(FEATURE_SVO_GI)
 	bool  bGetVertColorAndTC;
+	bool  useBoxIntersection;            //!< Collect triangles overlapping specified area
+	PodArray<SRayHitTriangle>* pHitTris; //!< Pre-allocated array for found triangles
+	Vec2                       vHitTC;
+	Vec4                       vHitColor;
+	Vec4                       vHitTangent;
+	Vec4                       vHitBitangent;
+#endif
 	float fMaxHitDistance;   //!< When not 0, only hits with closer distance will be registered.
 	Vec3  vTri0;
 	Vec3  vTri1;
 	Vec3  vTri2;
-	float fMinHitOpacity;
 
 	// Output parameters.
 	float                      fDistance; //!< Distance from reference point.
@@ -122,13 +147,6 @@ struct SRayHitInfo
 	int                        nHitMatID;     //!< Material Id that was hit.
 	int                        nHitTriID;     //!< Triangle Id that was hit.
 	int                        nHitSurfaceID; //!< Material Id that was hit.
-	struct IRenderMesh*        pRenderMesh;
-	struct IStatObj*           pStatObj;
-	Vec2                       vHitTC;
-	Vec4                       vHitColor;
-	Vec4                       vHitTangent;
-	Vec4                       vHitBitangent;
-	PodArray<SRayHitTriangle>* pHitTris;
 };
 
 enum EFileStreamingStatus
@@ -199,20 +217,22 @@ struct IStreamable
 	EFileStreamingStatus  m_eStreamingStatus;
 	uint32                m_nSelectedFrameId : 31;
 	uint32                m_nStatsInUse      : 1;
+
+	bool                  warnedWhenCGFPoolIsOutOfMemory = false;
 };
 
 //! Represents a static object that can be rendered in the scene, represented by the .CGF format
 struct IStatObj : IMeshObj, IStreamable
 {
 	//! Loading flags.
-	enum ELoadingFlags
+	enum ELoadingFlags : uint32
 	{
-		ELoadingFlagsPreviewMode    = BIT(0),
-		ELoadingFlagsForceBreakable = BIT(1),
-		ELoadingFlagsIgnoreLoDs     = BIT(2),
-		ELoadingFlagsTessellate     = BIT(3), //!< If e_StatObjTessellation enabled.
-		ELoadingFlagsJustGeometry   = BIT(4), //!< For streaming, to avoid parsing all chunks.
-		ELoadingFlagsNoErrorIfFail  = BIT(5), //!< Don't log error message if the file is not found
+		ELoadingFlagsPreviewMode    = BIT32(0),
+		ELoadingFlagsForceBreakable = BIT32(1),
+		ELoadingFlagsIgnoreLoDs     = BIT32(2),
+		ELoadingFlagsTessellate     = BIT32(3), //!< If e_StatObjTessellation enabled.
+		ELoadingFlagsJustGeometry   = BIT32(4), //!< For streaming, to avoid parsing all chunks.
+		ELoadingFlagsNoErrorIfFail  = BIT32(5), //!< Don't log error message if the file is not found
 	};
 
 	struct SSubObject
@@ -289,10 +309,10 @@ struct IStatObj : IMeshObj, IStreamable
 	// <interfuscator:shuffle>
 	//! Set static object flags.
 	//! \param nFlags Flags to set, a combination of EStaticObjectFlags values.
-	virtual void SetFlags(int nFlags) = 0;
+	virtual void SetFlags(uint nFlags) = 0;
 
 	//! Retrieve flags set on the static object.
-	virtual int GetFlags() const = 0;
+	virtual uint GetFlags() const = 0;
 
 	//! Retrieves the internal flag m_nVehicleOnlyPhysics.
 	virtual unsigned int GetVehicleOnlyPhysics() = 0;
@@ -460,7 +480,7 @@ struct IStatObj : IMeshObj, IStreamable
 	//! Retrieve the static object, from which this one was cloned (if that is the case)
 	virtual IStatObj* GetCloneSourceObject() const = 0;
 
-	//! Find sub-pbject by name.
+	//! Find sub-object by name.
 	virtual IStatObj::SSubObject* FindSubObject(const char* sNodeName) = 0;
 
 	//! Find sub-object by name (including spaces, comma and semi-colon.
@@ -501,7 +521,7 @@ struct IStatObj : IMeshObj, IStreamable
 	//!     Optional output parameter. If it is specified then the file will not be written to the drive but instead
 	//!     the function returns a pointer to the IChunkFile interface with filled CGF chunks. Caller of the function
 	//!     is responsible to call Release method of IChunkFile to release it later.
-	virtual bool SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile = NULL, bool bHavePhysicalProxy = false) = 0;
+	virtual bool SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile = nullptr, bool bHavePhysicalProxy = false) = 0;
 
 	// Clone static geometry. Makes an exact copy of the Static object and the contained geometry.
 	// virtual IStatObj* Clone(bool bCloneChildren=true, bool nDynamic=false) = 0;
@@ -509,7 +529,7 @@ struct IStatObj : IMeshObj, IStreamable
 	//! Clones static geometry, Makes an exact copy of the Static object and the contained geometry.
 	virtual IStatObj* Clone(bool bCloneGeometry, bool bCloneChildren, bool bMeshesOnly) = 0;
 
-	//! Make sure that both objects have one-to-one vertex correspondance.
+	//! Make sure that both objects have one-to-one vertex correspondence.
 	//! Sets MorphBuddy for this object's render mesh
 	//! \return 0 if failed (due to objects having no vertex maps most likely).
 	virtual int SetDeformationMorphTarget(IStatObj* pDeformed) = 0;
@@ -563,7 +583,7 @@ struct IStatObj : IMeshObj, IStreamable
 	virtual void SetStreamingDependencyFilePath(const char* szFileName) = 0;
 
 	//! Expose the computelod function from the engine.
-	virtual int  ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) = 0;
+	virtual int          ComputeLodFromScale(float fScale, float fLodRatioNormalized, float fEntDistance, bool bFoliage, bool bForPrecache) = 0;
 
 	virtual SMeshLodInfo ComputeGeometricMean() const = 0;
 
@@ -576,7 +596,5 @@ struct IStatObj : IMeshObj, IStreamable
 	// </interfuscator:shuffle>
 
 protected:
-	virtual ~IStatObj() {}; //!< Should be never called, use Release() instead.
+	virtual ~IStatObj() {} //!< Should be never called, use Release() instead.
 };
-
-#endif // _IStatObj_H_

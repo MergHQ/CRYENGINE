@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "PartitionGrid.h"
 #include "Entity.h"
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
 
 // Pool Allocator.
 CPartitionGrid::SectorGroup_PoolAlloc* CPartitionGrid::g_SectorGroupPoolAlloc = NULL;
@@ -320,17 +320,17 @@ void CPartitionGrid::BeginReset()
 //////////////////////////////////////////////////////////////////////////
 // Unit Testing of Patritition grid
 //////////////////////////////////////////////////////////////////////////
-#ifdef CRY_UNIT_TESTING
+#ifdef CRY_TESTING
 
-CRY_UNIT_TEST(CUT_PartitionGrid)
+CRY_TEST(CUT_PartitionGrid)
 {
 	CPartitionGrid* pGrid = GetIEntitySystem()->GetPartitionGrid();
 	float fMetersX = 1000;
 	float fMetersY = 1000;
 	pGrid->AllocateGrid(fMetersX, fMetersY);
 
-	CRY_UNIT_TEST_ASSERT(pGrid->m_nWidth == (int)(fMetersX / (SECTORS_PER_GROUP * METERS_PER_SECTOR)));
-	CRY_UNIT_TEST_ASSERT(pGrid->m_nHeight == (int)(fMetersY / (SECTORS_PER_GROUP * METERS_PER_SECTOR)));
+	CRY_TEST_ASSERT(pGrid->m_nWidth == (int)(fMetersX / (SECTORS_PER_GROUP * METERS_PER_SECTOR)));
+	CRY_TEST_ASSERT(pGrid->m_nHeight == (int)(fMetersY / (SECTORS_PER_GROUP * METERS_PER_SECTOR)));
 
 	SGridLocation* obj[5];
 	ZeroStruct(obj);
@@ -344,15 +344,15 @@ CRY_UNIT_TEST(CUT_PartitionGrid)
 	query.aabb = AABB(Vec3(400, 400, -1), Vec3(620, 620, 1));
 
 	pGrid->GetEntitiesInBox(query);
-	CRY_UNIT_TEST_ASSERT(query.pEntities && query.pEntities->size() == 4);   // Must find 4 objects inside.
+	CRY_TEST_ASSERT(query.pEntities && query.pEntities->size() == 4);   // Must find 4 objects inside.
 
 	obj[0] = pGrid->Rellocate(obj[0], Vec3(-100, -100, 0), 0);
 	pGrid->GetEntitiesInBox(query);
-	CRY_UNIT_TEST_ASSERT(query.pEntities && query.pEntities->size() == 3);   // Must find 3 objects inside.
+	CRY_TEST_ASSERT(query.pEntities && query.pEntities->size() == 3);   // Must find 3 objects inside.
 
 	obj[1] = pGrid->Rellocate(obj[1], Vec3(10000, 10000, 0), 0);
 	pGrid->GetEntitiesInBox(query);
-	CRY_UNIT_TEST_ASSERT(query.pEntities && query.pEntities->size() == 2);   // Must find 2 objects inside.
+	CRY_TEST_ASSERT(query.pEntities && query.pEntities->size() == 2);   // Must find 2 objects inside.
 
 	for (int i = 0; i < 5; i++)
 		pGrid->FreeLocation(obj[i]);
@@ -360,4 +360,4 @@ CRY_UNIT_TEST(CUT_PartitionGrid)
 	pGrid->DeallocateGrid();
 }
 
-#endif //CRY_UNIT_TESTING
+#endif //CRY_TESTING

@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.6.2)
-
-set(TOOLS_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
-
-include("${TOOLS_CMAKE_DIR}/Configure.cmake")
+include_guard(GLOBAL)
+# Header guard to avoid duplicate execution when configuring (template) projects with OPTION_ENGINE
+# Templates include Configure.cmake and add_subdirectory(${CRYENGINE_DIR}) which also includes Configure.cmake
+# Templates do need Configure.cmake to set up some defines.
+# In order to not have duplicate add_subdirectory calls (which causes errors), we need an include guard here.
 
 if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX OR OPTION_PAKTOOLS OR OPTION_DOXYGEN_EXAMPLES)
 	# Add custom project with just listing of cmake files
@@ -19,17 +19,9 @@ if (OPTION_SANDBOX AND OPTION_STATIC_LINKING)
 	set(OPTION_SANDBOX OFF)
 endif()
 
-if (OPTION_SANDBOX AND WIN64)
-	# Find Qt before including any plugin subdirectories
-	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2015_64/Qt")
-	elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2015_64/Qt")
-	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2013_64")
-	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-		set(QT_DIR "${SDK_DIR}/Qt/5.6/msvc2012_64")
-	endif()
+if (OPTION_SANDBOX AND WINDOWS)
+	set(QT_DEPLOY_ROOT "${SDK_DIR}/Qt/5.12.3_python_37/msvc2017_64")
+	set(QT_DIR "${QT_DEPLOY_ROOT}/Qt")
 	set(Qt5_DIR "${QT_DIR}")
 
 	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}" NO_DEFAULT_PATH)
@@ -66,7 +58,7 @@ if (OPTION_CRYMONO)
 	add_subdirectory(Code/CryManaged)
 endif()
 
-macro(generate_unit_test_targets target_name using_runner_target_name)
+macro(generate_crytest_targets target_name using_runner_target_name)
 	add_custom_target(${target_name})
 	set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL TRUE)
 	set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD TRUE)
@@ -82,37 +74,19 @@ macro(generate_unit_test_targets target_name using_runner_target_name)
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_crytest -crytest_open_report</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|x64'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_crytest -crytest_open_report</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>		
 			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">
 				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
 				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
-				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-			</PropertyGroup>
-			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
-				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
-				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-			</PropertyGroup>
-			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Profile|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
-				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
-				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-			</PropertyGroup>		
-			<PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">
-				<LocalDebuggerCommand>${OUTPUT_DIRECTORY}/${runner}.exe</LocalDebuggerCommand>
-				<LocalDebuggerWorkingDirectory>${OUTPUT_DIRECTORY}</LocalDebuggerWorkingDirectory>
-				<LocalDebuggerCommandArguments>-run_unit_tests -unit_test_open_failed</LocalDebuggerCommandArguments>
+				<LocalDebuggerCommandArguments>-run_crytest -crytest_open_report</LocalDebuggerCommandArguments>
 				<DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
 			</PropertyGroup>
 		</Project>")
@@ -120,15 +94,15 @@ macro(generate_unit_test_targets target_name using_runner_target_name)
 endmacro()
 
 # Run Unit Test
-if (OPTION_ENGINE AND (WIN32 OR WIN64))
-	generate_unit_test_targets(run_unit_tests WindowsLauncher)
+if (OPTION_ENGINE AND WINDOWS)
+	generate_crytest_targets(run_crytest WindowsLauncher)
 endif()
 
-if (OPTION_SANDBOX AND WIN64)
-	generate_unit_test_targets(run_unit_tests_sandbox Sandbox)
+if (OPTION_SANDBOX AND WINDOWS)
+	generate_crytest_targets(run_crytest_sandbox Sandbox)
 endif()
 
-if(WIN64 AND EXISTS "${CRYENGINE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
+if(WINDOWS AND EXISTS "${CRYENGINE_DIR}/Code/Tools/ShaderCacheGen/ShaderCacheGen")
 	option(OPTION_SHADERCACHEGEN "Build the shader cache generator." OFF)
 endif()
 
@@ -140,11 +114,10 @@ if (OPTION_PAKTOOLS AND EXISTS "${CRYENGINE_DIR}/Code/Tools/PakEncrypt")
 	add_subdirectory(Code/Tools/PakEncrypt)
 endif()
 
-if (OPTION_RC AND EXISTS "${CRYENGINE_DIR}/Code/Tools/rc")
+if (OPTION_RC AND EXISTS "${CRYENGINE_DIR}/Code/Tools/RC")
 	include(ExternalProject)
 	ExternalProject_Add(RC
-		CMAKE_ARGS "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}" "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}" "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}" "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-		SOURCE_DIR "${CRYENGINE_DIR}/Code/Tools/rc"
+		SOURCE_DIR "${CRYENGINE_DIR}/Code/Tools/RC"
 		BUILD_COMMAND "${CMAKE_COMMAND}" --build "." --config $<$<CONFIG:Profile>:Release>$<$<NOT:$<CONFIG:Profile>>:$<CONFIG>>
 		INSTALL_COMMAND echo "Skipping install"
 	)

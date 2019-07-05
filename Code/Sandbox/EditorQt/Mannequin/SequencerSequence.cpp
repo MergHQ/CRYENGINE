@@ -136,4 +136,3 @@ void CSequencerSequence::SetTimeRange(Range timeRange)
 		anode->SetTimeRange(timeRange);
 	}
 }
-

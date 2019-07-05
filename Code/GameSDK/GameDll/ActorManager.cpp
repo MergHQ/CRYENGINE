@@ -7,6 +7,7 @@
 #include "PlayerVisTable.h"
 
 #include "IActorSystem.h"
+#include "Game.h"
 
 
 CActorManager * CActorManager::GetActorManager()
@@ -233,7 +234,7 @@ void CActorManager::ActorRemoved(IActor * pActor)
 
 void CActorManager::ActorRevived(IActor * pActor)
 {
-	CRY_ASSERT_MESSAGE(gEnv->bMultiplayer || gEnv->IsEditor(), "ERROR! This should only be called in multiplayer or in the editor!");
+	CRY_ASSERT(gEnv->bMultiplayer || gEnv->IsEditor(), "ERROR! This should only be called in multiplayer or in the editor!");
 	
 	bool bFound = false;
 
@@ -304,8 +305,8 @@ void CActorManager::CacheDataFromActor(const IActor* pActor, IEntity* pEntity, c
 	m_actorSpectatorModes[iActorIndex]	= spectatorMode;
 
 	//Make sure we haven't truncated the numbers by assigning to int16s / int8s
-	CRY_ASSERT_TRACE(m_actorTeamNums[iActorIndex] == iModifiedTeamNum,    ("%s '%s' team number broken! %d != %d",    pActor->GetEntity()->GetClass()->GetName(), pActor->GetEntity()->GetName(), m_actorTeamNums[iActorIndex], iModifiedTeamNum));
-	CRY_ASSERT_TRACE(m_actorSpectatorModes[iActorIndex] == spectatorMode, ("%s '%s' spectator mode broken! %d != %d", pActor->GetEntity()->GetClass()->GetName(), pActor->GetEntity()->GetName(), m_actorSpectatorModes[iActorIndex], spectatorMode));
+	CRY_ASSERT(m_actorTeamNums[iActorIndex] == iModifiedTeamNum,    "%s '%s' team number broken! %d != %d",    pActor->GetEntity()->GetClass()->GetName(), pActor->GetEntity()->GetName(), m_actorTeamNums[iActorIndex], iModifiedTeamNum);
+	CRY_ASSERT(m_actorSpectatorModes[iActorIndex] == spectatorMode, "%s '%s' spectator mode broken! %d != %d", pActor->GetEntity()->GetClass()->GetName(), pActor->GetEntity()->GetName(), m_actorSpectatorModes[iActorIndex], spectatorMode);
 
 #if USE_ACTOR_PTR_LOOKUP
 	m_actorPtrToIndex.insert(TActorPtrIndexMap::value_type(pActor, iActorIndex));

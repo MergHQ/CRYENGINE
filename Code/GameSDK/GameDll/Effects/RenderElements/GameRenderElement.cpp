@@ -4,6 +4,11 @@
 
 // Includes
 #include "StdAfx.h"
+
+// Inclusion must be in this order 
+#include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IShader.h>
+
 #include "GameRenderElement.h"
 
 //--------------------------------------------------------------------------------------------------

@@ -3,6 +3,9 @@
 #ifndef ___HUDTYPES___
 #define ___HUDTYPES___
 
+#include "AutoEnum.h"
+#include <CryCore/Containers/CryListenerSet.h>
+
 // These remap to flash frames
 enum ECrosshairTypes {
 	eHCH_None = 0,

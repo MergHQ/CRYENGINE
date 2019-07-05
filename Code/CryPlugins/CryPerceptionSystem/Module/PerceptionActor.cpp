@@ -7,8 +7,6 @@
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 
-static const uint32 kOnCloseContactCRC = CCrc32::Compute("OnCloseContact");
-
 static const float kCloseContactTimeOutValue = 1.5f;
 
 CPerceptionActor::CPerceptionActor() :
@@ -76,7 +74,7 @@ void CPerceptionActor::CheckCloseContact(IAIObject* pTarget)
 		const float distSq = Distance::Point_PointSq(m_pAIActor->CastToIAIObject()->GetPos(), pTarget->GetPos());
 		if (distSq < sqr(m_meleeRange))
 		{
-			m_pAIActor->SetSignal(1, "OnCloseContact", pTarget->GetEntity(), 0, kOnCloseContactCRC);
+			m_pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCloseContact(), pTarget->GetEntityID()));
 			
 			m_closeContactTimeOut = kCloseContactTimeOutValue;
 		}

@@ -6,7 +6,7 @@
 
 #if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
 	#include <CrySystem/ISystem.h>
-	#include <CrySystem/IConsole.h>
+	#include <CrySystem/ConsoleRegistration.h>
 	#include <CryThreading/IThreadManager.h>
 	#include <CryExtension/CryGUID.h>
 	#include <CrySystem/CryVersion.h>
@@ -137,7 +137,7 @@ void CUserAnalytics::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 
 			if (!gEnv->pThreadManager->SpawnThread(m_pUserAnalyticsSendThread, "UserAnalytics"))
 			{
-				CRY_ASSERT_MESSAGE(false, "Error spawning \"UserAnalytics\" thread.");
+				CRY_ASSERT(false, "Error spawning \"UserAnalytics\" thread.");
 				delete m_pUserAnalyticsSendThread;
 				m_pUserAnalyticsSendThread = nullptr;
 			}
@@ -398,7 +398,6 @@ void CUserAnalytics::ReadUserIdFromDisk()
 {
 	PWSTR pLocalDirectoryPath = nullptr;
 	HRESULT hr = SHGetKnownFolderPath(FOLDERID_Profile, KF_FLAG_CREATE | KF_FLAG_DONT_UNEXPAND, nullptr, &pLocalDirectoryPath);
-	bool success = true;
 	if (SUCCEEDED(hr))
 	{
 		// Convert from UNICODE to UTF-8
@@ -423,7 +422,7 @@ void CUserAnalytics::ReadUserIdFromDisk()
 		if (Serialization::LoadJsonFile(launcherInfo, sFilePath.c_str()))
 		{
 			m_userId = string().Format("%" PRIu64, launcherInfo.userId);
-		}		
+		}
 
 		CoTaskMemFree(pLocalDirectoryPath);
 	}

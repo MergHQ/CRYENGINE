@@ -37,7 +37,6 @@ static const std::vector<SXmlType>& GetXmlTypes()
 			{ "EntityPrototypeLibrary", "Entity Archetype Library", EDB_TYPE_ENTITY_ARCHETYPE, GetIEditorImpl()->GetEntityProtManager() },
 			{ "GameTokensLibrary", "Game Token Library", EDB_TYPE_GAMETOKEN, GetIEditorImpl()->GetGameTokenManager() },
 			{ "ParticleLibrary", "Particle Library", EDB_TYPE_PARTICLE, GetIEditorImpl()->GetParticleManager() },
-			{ "PrefabsLibrary", "Prefab Library", EDB_TYPE_PREFAB, GetIEditorImpl()->GetPrefabManager() }
 		}
 	};
 	return xmlTypes;
@@ -146,4 +145,3 @@ CAssetEditor* CXmlType::Edit(CAsset* pAsset) const
 
 	return nullptr;
 }
-

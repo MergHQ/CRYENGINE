@@ -45,7 +45,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 	if (!(m_rpFlags & CS_FLAG_DRAW_MODEL))
 		return;
 
-	assert(RendParams.pMatrix);
+	CRY_ASSERT(RendParams.pMatrix);
 
 	const Matrix34& RenderMat34 = *RendParams.pMatrix;
 
@@ -100,7 +100,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 
 	SRendParams attachmentRendParams(RendParams);
 	{
-		uint64 uAdditionalObjFlags = 0;
+		ERenderObjectFlags uAdditionalObjFlags = FOB_NONE;
 		if (m_rpFlags & CS_FLAG_DRAW_NEAR)
 			uAdditionalObjFlags |= FOB_NEAREST;
 
@@ -113,8 +113,6 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 	const f32 attachmentCullingRation = (gEnv->bMultiplayer) ? Console::GetInst().ca_AttachmentCullingRationMP : Console::GetInst().ca_AttachmentCullingRation;
 	m_fZoomDistanceSq = std::fminf(m_fZoomDistanceSq, sqr(RendParams.fDistance * fZoomFactor / attachmentCullingRation));
 	const auto& FinalMat = (attachmentRendParams.dwFObjFlags & FOB_NEAREST) != 0 ? *RendParams.pNearestMatrix : RenderMat34;
-
-	m_AttachmentManager.DrawMergedAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, m_fZoomDistanceSq);
 	
 	if (m_pDefaultSkeleton->m_ObjectType == CGA)
 		RenderCGA(RendParams, FinalMat, passInfo);
@@ -122,7 +120,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 		RenderCHR(RendParams, FinalMat, passInfo);
 
 	// draw weapon and binded objects
-	m_AttachmentManager.DrawAttachments(attachmentRendParams, FinalMat, passInfo, fZoomFactor, m_fZoomDistanceSq);
+	m_AttachmentManager.DrawAttachments(attachmentRendParams, RenderMat34, passInfo, fZoomFactor, m_fZoomDistanceSq);
 
 #ifndef _RELEASE
 	// in-game debug rendering of characters attachments proxies 
@@ -133,8 +131,6 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 
 void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix34& RenderMat34, const SRenderingPassInfo& passInfo)
 {
-	int nList = (int)CharacterManager::GetRendererMainThreadId();
-
 	if (GetSkinningTransformationCount())
 		CryFatalError("CryAnimation: CGA should not have Dual-Quaternions for Skinning");
 
@@ -143,7 +139,7 @@ void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix
 	Matrix34 orthoTm34 = RenderMat34;
 	IMaterial* pMaterial = nodeRP.pMaterial;
 	uint32 numJoints = m_SkeletonPose.GetPoseData().GetJointCount();
-	assert(numJoints > 0);
+	CRY_ASSERT(numJoints > 0);
 	if (Console::GetInst().ca_DrawBaseMesh)
 	{
 		for (uint32 i = 0; i < numJoints; i++)
@@ -158,10 +154,6 @@ void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix
 				nodeRP.pMatrix = &tm34;
 				nodeRP.dwFObjFlags |= FOB_TRANS_MASK;
 				nodeRP.pInstance = &m_SkeletonPose.m_arrCGAJoints[i];
-
-				// apply additional depth sort offset, if set
-				const Vec3 depthSortOffset = (orthoTm34 * Matrix34(poseData.GetJointAbsolute(i))).TransformVector(m_SkeletonPose.m_arrCGAJoints[i].m_CGAObjectInstance->GetDepthSortOffset());
-				// TODO: ^ Dot me against the camera's forward vector. Is orthoTm34 already operating in the camera-space?
 
 				// apply custom joint material, if set
 				nodeRP.pMaterial = m_SkeletonPose.m_arrCGAJoints[i].m_pMaterial ? m_SkeletonPose.m_arrCGAJoints[i].m_pMaterial.get() : pMaterial;
@@ -249,7 +241,7 @@ void CCharInstance::RenderCHR(const SRendParams& inputRendParams, const Matrix34
 	pObj->m_fAlpha = RendParams.fAlpha;
 	pObj->m_fDistance = RendParams.fDistance;
 
-	pObj->SetAmbientColor(RendParams.AmbientColor, passInfo);
+	pObj->SetAmbientColor(RendParams.AmbientColor);
 
 	pObj->m_ObjFlags |= RendParams.dwFObjFlags;
 	SRenderObjData* pD = pObj->GetObjData();
@@ -260,7 +252,7 @@ void CCharInstance::RenderCHR(const SRendParams& inputRendParams, const Matrix34
 		pD->SetShaderParams(RendParams.pShaderParams);
 	}
 
-	pObj->SetMatrix(rRenderMat34, passInfo);
+	pObj->SetMatrix(rRenderMat34);
 
 	pObj->m_nClipVolumeStencilRef = RendParams.nClipVolumeStencilRef;
 	pObj->m_nTextureID = RendParams.nTextureID;
@@ -305,7 +297,8 @@ void CCharInstance::RenderCHR(const SRendParams& inputRendParams, const Matrix34
 		pObj->m_ObjFlags |= FOB_ALLOW_TESSELLATION;
 	}
 
-	pObj->m_nSort = fastround_positive(RendParams.fDistance * 2.0f);
+	CRY_ASSERT(RendParams.fDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
+	pObj->m_nSort = HalfFlip(CryConvertFloatToHalf(RendParams.fDistance * 2.0f));
 
 	if (!m_bHideMaster)
 	{
@@ -370,8 +363,7 @@ SSkinningData* CCharInstance::GetSkinningData(const SRenderingPassInfo& passInfo
 {
 	DEFINE_PROFILER_FUNCTION();
 
-	CAttachmentManager* pAttachmentManager = static_cast<CAttachmentManager*>(GetIAttachmentManager());
-	uint32 numSkinningBones = GetSkinningTransformationCount() + pAttachmentManager->GetExtraBonesCount();
+	uint32 numSkinningBones = GetSkinningTransformationCount();
 
 	bool bNeedJobSyncVar = true;
 
@@ -391,7 +383,7 @@ SSkinningData* CCharInstance::GetSkinningData(const SRenderingPassInfo& passInfo
 	arrSkinningRendererData[nList].pSkinningData = pSkinningData;
 	arrSkinningRendererData[nList].nFrameID = nFrameID;
 
-	assert(pSkinningData);
+	CRY_ASSERT(pSkinningData);
 	PREFAST_ASSUME(pSkinningData);
 
 	// set data for motion blur

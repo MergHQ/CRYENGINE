@@ -2,7 +2,8 @@
 
 #pragma once
 
-#include <IItem.h>
+#include "../Common/IItem.h"
+#include <PoolObject.h>
 
 namespace ACE
 {
@@ -10,7 +11,7 @@ namespace Impl
 {
 namespace Wwise
 {
-enum class EItemType
+enum class EItemType : CryAudio::EnumFlagsType
 {
 	None,
 	SoundBank,
@@ -23,20 +24,25 @@ enum class EItemType
 	StateGroup,
 	VirtualFolder,
 	WorkUnit,
-	PhysicalFolder,
-};
+	PhysicalFolder, };
 
-class CItem final : public IItem
+class CItem final : public IItem, public CryAudio::CPoolObject<CItem, stl::PSyncNone>
 {
 public:
 
+	CItem() = delete;
+	CItem(CItem const&) = delete;
+	CItem(CItem&&) = delete;
+	CItem& operator=(CItem const&) = delete;
+	CItem& operator=(CItem&&) = delete;
+
 	explicit CItem(
-	  string const& name,
-	  ControlId const id,
-	  EItemType const type,
-	  EItemFlags const flags = EItemFlags::None,
-	  EPakStatus const pakStatus = EPakStatus::None,
-	  string const& filePath = "")
+		string const& name,
+		ControlId const id,
+		EItemType const type,
+		EItemFlags const flags = EItemFlags::None,
+		EPakStatus const pakStatus = EPakStatus::None,
+		string const& filePath = "")
 		: m_name(name)
 		, m_id(id)
 		, m_type(type)
@@ -44,17 +50,13 @@ public:
 		, m_pakStatus(pakStatus)
 		, m_filePath(filePath)
 		, m_pParent(nullptr)
-		, m_radius(0.0f)
 	{}
 
 	virtual ~CItem() override = default;
 
-	CItem() = delete;
-
 	// IItem
 	virtual ControlId     GetId() const override                        { return m_id; }
 	virtual string const& GetName() const override                      { return m_name; }
-	virtual float         GetRadius() const override                    { return m_radius; }
 	virtual size_t        GetNumChildren() const override               { return m_children.size(); }
 	virtual IItem*        GetChildAt(size_t const index) const override { return m_children[index]; }
 	virtual IItem*        GetParent() const override                    { return m_pParent; }
@@ -66,7 +68,6 @@ public:
 	EPakStatus    GetPakStatus() const             { return m_pakStatus; }
 
 	void          SetFlags(EItemFlags const flags) { m_flags = flags; }
-	void          SetRadius(float const radius)    { m_radius = radius; }
 
 	void          AddChild(CItem* const pChild);
 	void          RemoveChild(CItem* const pChild);
@@ -76,19 +77,17 @@ private:
 
 	void SetParent(CItem* const pParent) { m_pParent = pParent; }
 
+	string const        m_name;
 	ControlId const     m_id;
 	EItemType const     m_type;
-	string const        m_name;
+	EItemFlags          m_flags;
 	string const        m_filePath;
 	EPakStatus const    m_pakStatus;
-	std::vector<CItem*> m_children;
 	CItem*              m_pParent;
-	float               m_radius;
-	EItemFlags          m_flags;
+	std::vector<CItem*> m_children;
 };
 
 using ItemCache = std::map<ControlId, CItem*>;
 } // namespace Wwise
 } // namespace Impl
 } // namespace ACE
-

@@ -24,7 +24,7 @@ public:
 	virtual void   OnLButtonUp(const SMouseEvent& me)             {}
 	virtual void   OnMouseMove(const SMouseEvent& me)             {}
 
-	virtual void   Display(DisplayContext& dc)                    {}
+	virtual void   Display(SDisplayContext& dc)                   {}
 
 	virtual void   OnGizmoLMBDown(int mode)                       {}
 	virtual void   OnGizmoLMBUp(int mode)                         {}
@@ -39,4 +39,3 @@ private:
 
 }
 }
-

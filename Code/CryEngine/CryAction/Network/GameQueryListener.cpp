@@ -14,6 +14,7 @@
 #include "StdAfx.h"
 #include "GameQueryListener.h"
 #include "CryAction.h"
+#include <CrySystem/CryVersion.h>
 
 CGameQueryListener::CGameQueryListener()
 	: m_pNetListener(nullptr)

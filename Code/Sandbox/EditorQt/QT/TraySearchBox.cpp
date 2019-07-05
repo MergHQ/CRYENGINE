@@ -18,13 +18,15 @@
 // Editor
 #include "TraySearchBox.h"
 #include "QtMainFrame.h"
+#include "IEditorImpl.h"
 #include "Commands/CommandManager.h"
-#include "Commands/QCommandAction.h"
 
 // EditorCommon
+#include <Commands/QCommandAction.h>
 #include <Controls/QPopupWidget.h>
 #include <ProxyModels/DeepFilterProxyModel.h>
 #include <Notifications/NotificationCenter.h>
+#include <EditorFramework/TrayArea.h>
 
 void CTraySearchBox::QMenuTreeView::mouseMoveEvent(QMouseEvent* pEvent)
 {
@@ -43,7 +45,7 @@ CTraySearchBox::CTraySearchBox(QWidget* pParent /* = nullptr*/)
 {
 	EnableContinuousSearch(true);
 	connect(this, &QLineEdit::textChanged, this, &CTraySearchBox::ShowSearchResults);
-	signalOnFiltered.Connect(this, &CTraySearchBox::OnFilter);
+	signalOnSearch.Connect(this, &CTraySearchBox::OnFilter);
 
 	m_pFilterProxy = new QDeepFilterProxyModel();
 	m_pFilterProxy->setSourceModel(CreateMainMenuModel());
@@ -203,7 +205,6 @@ void CTraySearchBox::AddActionsToModel(QMenu* pParentMenu, QStandardItemModel* p
 
 void CTraySearchBox::keyPressEvent(QKeyEvent* pKeyEvent)
 {
-	int key = pKeyEvent->key();
 	switch (pKeyEvent->key())
 	{
 	case Qt::Key_Escape:
@@ -235,4 +236,3 @@ static void PyFocus()
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_SearchCommands::PyFocus, search, focus,
                                    CCommandDescription("Focus Editor global search"));
 REGISTER_EDITOR_COMMAND_SHORTCUT(search, focus, "Ctrl+Alt+F");
-

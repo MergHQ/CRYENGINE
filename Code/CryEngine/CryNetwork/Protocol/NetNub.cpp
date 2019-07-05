@@ -24,10 +24,51 @@
 #include "Network.h"
 #include <CryMemory/STLGlobalAllocator.h>
 #include <CryLobby/CommonICryMatchMaking.h>
+#include <CrySystem/CryVersion.h>
 
 static const float STATS_UPDATE_INTERVAL_NUB = 0.25f;
 static const float KESTIMEOUT = 30.0f;
-static const int VERSION_SIZE = 6;
+static const int VERSION_SIZE = 4;
+
+namespace EncryptionVersionFlags
+{
+	enum EFlags : uint8
+	{
+		eFlags_AES_CBC = BIT(0),
+		eFlags_SHA_256_HMAC = BIT(1),
+		eFlags_DF_KEY_EXCHAGE = BIT(2),
+		eFlags_STREAM_CIPHER = BIT(3)
+	};
+
+	constexpr static uint8 GetFlags()
+	{
+		return 0
+#if ALLOW_ENCRYPTION
+#if ENCRYPTION_RIJNDAEL || ENCRYPTION_CNG_AES || ENCRYPTION_TOMCRYPT_AES
+			| eFlags_AES_CBC
+#elif ENCRYPTION_STREAMCIPHER
+			| eFlags_STREAM_CIPHER
+#else
+#error "Unknown configuration"
+#endif
+#endif // ALLOW_ENCRYPTION
+
+#if ALLOW_HMAC
+#if HMAC_CNG_SHA256 || HMAC_TOMCRYPT_SHA256
+			| eFlags_SHA_256_HMAC
+#else
+#error "Unknown configuration"
+#endif
+#endif // ALLOW_HMAC
+
+#if ENCRYPTION_GENERATE_KEYS
+			| eFlags_DF_KEY_EXCHAGE
+#endif // ENCRYPTION_GENERATE_KEYS
+			;
+	}
+}
+
+
 
 void TraceUnrecognizedPacket(const char* inszTxt, const uint8* cBuf, size_t nCount, const TNetAddress& ip)
 {
@@ -60,8 +101,8 @@ typename Map::iterator LookupAddress(const TNetAddress& addr, Map& m, uint32 fla
 		if (const SIPv4Addr* pAddr = stl::get_if<SIPv4Addr>(&addr))
 		{
 			int count = 0;
-			Map::iterator itOut = m.end();
-			for (typename Map::iterator it = m.begin(); it != m.end(); ++it)
+			auto itOut = m.end();
+			for (auto it = m.begin(); it != m.end(); ++it)
 			{
 				if (const SIPv4Addr* pKey = stl::get_if<SIPv4Addr>(&it->first))
 				{
@@ -225,7 +266,9 @@ CNetNub::CNetNub(const TNetAddress& addr, IGameNub* pGameNub,
 	INetworkMember(eNMUO_Nub),
 	m_pNetwork(NULL),
 	m_pSecurity(pNetSecurity ? pNetSecurity : &s_defaultSecurity),
+#if ENABLE_GAME_QUERY
 	m_pGameQuery(pGameQuery),
+#endif
 	m_pGameNub(pGameNub),
 	m_bDead(false),
 	m_addr(addr),
@@ -237,12 +280,12 @@ CNetNub::CNetNub(const TNetAddress& addr, IGameNub* pGameNub,
 #if TIMER_DEBUG
 	char buffer[128];
 	cry_sprintf(buffer, "CNetNub::CNetNub() m_statsTimer [%p]", this);
+	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, buffer);
 #else
-	char* buffer = NULL;
+	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, nullptr);
 #endif // TIMER_DEBUG
 
 	m_pLobby = gEnv->pLobby;
-	m_statsTimer = TIMER.ADDTIMER(g_time, TimerCallback, this, buffer);
 	++g_objcnt.nub;
 }
 
@@ -411,7 +454,7 @@ void CNetNub::DeleteNub()
 	SCOPED_GLOBAL_LOCK;
 	for (TChannelMap::iterator i = m_channels.begin(); i != m_channels.end(); ++i)
 	{
-		DisconnectChannel(eDC_NubDestroyed, &i->first, NULL, "Nub destroyed");
+		DisconnectChannel(eDC_NubDestroyed, i->first, *i->second->GetNetChannel(), "Nub destroyed");
 	}
 
 	m_bDead = true;
@@ -430,8 +473,6 @@ bool CNetNub::ConnectTo(const char* address, const char* connectionString)
 	CNubConnectingLock conlk(this);
 	NetLogAlways("connection requested to: %s", address);
 	ICryLobby* pLobby = gEnv->pLobby;
-	const char* nat_prefix = "<nat>";
-	size_t nat_prefixLen = strlen(nat_prefix);
 	const char* sessionPrefix = "<session>";
 	CrySessionHandle session = CrySessionInvalidHandle;
 	string addressStr = address;
@@ -545,8 +586,11 @@ void CNetNub::LogChannelPerformanceMetrics(uint32 id) const
 		if (!(pNetChannel->IsLocal()) && ((id == 0) || (id == pNetChannel->GetLocalChannelID())))
 		{
 			foundChannel = true;
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 			const INetChannel::SPerformanceMetrics* pMetrics = pNetChannel->GetPerformanceMetrics();
 			NetLogAlways(" %5d :   %6d  :   %3d   :  %3d   : %s", pNetChannel->GetLocalChannelID(), pMetrics->m_bandwidthShares, pMetrics->m_packetRate, pMetrics->m_packetRateIdle, pNetChannel->GetName());
+#endif
 		}
 	}
 
@@ -613,14 +657,40 @@ void CNetNub::DoConnectTo(const TNetAddressVec& ips, CrySessionHandle session, s
 	pc.conlk = conlk;
 	pc.session = session;
 
-	if (SendPendingConnect(pc))
-		m_pendingConnections.push_back(pc);
+	const bool isLocal = stl::get_if<TLocalNetAddress>(&pc.to) != nullptr;
 
-	//if (pc.pChannel != NULL)
-	//{
-	//	if (SendPendingConnect(pc))
-	//	m_pendingConnections.push_back(pc);
-	//}
+	// Initialize in legacy mode
+	pc.tokenMode = CNetProfileTokens::EMode::Legacy;
+	pc.profileTokenPair.profile = CNetCVars::Get().ProfileId;
+	pc.legacyToken = CNetCVars::Get().TokenId;
+	ChannelSecurity::CHMac::FillDummyToken(pc.profileTokenPair.token);
+
+	if (!isLocal)
+	{
+		INetworkServicePtr pNetTokens = CNetwork::Get()->GetService("NetProfileTokens");
+		if (pNetTokens && (eNSS_Ok == pNetTokens->GetState()))
+		{
+			CNetProfileTokens* pNetProfileTokens = static_cast<CNetProfileTokens*>(pNetTokens->GetNetProfileTokens());
+			pc.tokenMode = pNetProfileTokens->GetMode();
+			switch (pc.tokenMode)
+			{
+			case CNetProfileTokens::EMode::ProfileTokens:
+				pNetProfileTokens->Client_GetToken(pc.profileTokenPair);
+				break;
+			case CNetProfileTokens::EMode::Legacy:
+				break;
+			default:
+				NetWarning("Unexpected NetProfileTokens mode");
+				return;
+			}
+		}
+	}
+
+	if (pc.hmac.Init(pc.profileTokenPair.token))
+	{
+		if (SendPendingConnect(pc))
+			m_pendingConnections.push_back(pc);
+	}
 }
 
 bool CNetNub::IsConnecting()
@@ -636,7 +706,7 @@ void CNetNub::DisconnectPlayer(EDisconnectionCause cause, EntityId plr_id, const
 		if (pCh->GetContextView() && pCh->GetContextView()->HasWitness(plr_id))
 		{
 			SCOPED_GLOBAL_LOCK;
-			DisconnectChannel(cause, 0, pCh, reason);
+			DisconnectChannel(cause, *pCh, reason);
 			break;
 		}
 	}
@@ -664,11 +734,10 @@ void CNetNub::TimerCallback(NetTimerId, void* p, CTimeValue)
 #if TIMER_DEBUG
 		char buffer[128];
 		cry_sprintf(buffer, "CNetNub::TimerCallback() m_statsTimer [%p]", pThis);
-#else
-		char* buffer = NULL;
-#endif // TIMER_DEBUG
-
 		pThis->m_statsTimer = TIMER.ADDTIMER(g_time + STATS_UPDATE_INTERVAL_NUB, TimerCallback, pThis, buffer);
+#else
+		pThis->m_statsTimer = TIMER.ADDTIMER(g_time + STATS_UPDATE_INTERVAL_NUB, TimerCallback, pThis, nullptr);
+#endif // TIMER_DEBUG
 	}
 }
 
@@ -678,7 +747,7 @@ bool CNetNub::SendPendingConnect(SPendingConnection& pc)
 	// so we might not have a valid channel here
 	if (pc.pChannel && pc.pChannel->IsDead())
 	{
-		AddDisconnectEntry(pc.to, pc.session, eDC_CantConnect, "Dead channel");
+		AddDisconnectEntry(pc.to, pc.session, pc.pChannel->GetHmac(), eDC_CantConnect, "Dead channel");
 		return false;
 	}
 	if (pc.pChannel && pc.pChannel->IsConnectionEstablished())
@@ -701,44 +770,42 @@ bool CNetNub::SendPendingConnect(SPendingConnection& pc)
 			return false; // staying in this state too long
 		}
 
-		SFileVersion ver = gEnv->pSystem->GetProductVersion();
-		uint32 v[VERSION_SIZE];
+		const SFileVersion ver = gEnv->pSystem->GetProductVersion();
+		uint32 buildVersion[VERSION_SIZE];
 		for (int i = 0; i < 4; i++)
-			v[i] = htonl(ver.v[i]);
-		v[4] = htonl(PROTOCOL_VERSION);
-		v[5] = htonl(CNetwork::Get()->GetExternalSocketIOManager().caps);
+			buildVersion[i] = htonl(ver[i]);
+		const uint32 protocolVersion = htonl(PROTOCOL_VERSION);
+		const uint32 socketCaps = htonl(CNetwork::Get()->GetExternalSocketIOManager().caps);
+		const uint8 encryptionFlags = EncryptionVersionFlags::GetFlags();
 
-		uint32 profile = 0;
-		uint32 tokenId = 0;
+		const uint32 profile = htonl(pc.profileTokenPair.profile);
+		const uint32 legacyToken = htonl(pc.legacyToken);
+		const CrySessionHandle session = htonl(pc.session);
 
-		if (ICVar* pP = gEnv->pConsole->GetCVar("cl_profile"))
-		{
-			pc.profile = pP->GetIVal();
-			profile = htonl(pc.profile);
-		}
-		tokenId = htonl(CNetCVars::Get().TokenId);
+		const size_t messageSize = 1 
+			+ (VERSION_SIZE + 2) * sizeof(uint32)  // versions 
+			+ 1                                    // encryption flags
+			+ 2 * sizeof(uint32)                   // profile/tokenId
+			+ sizeof(CrySessionHandle)             // session
+			;
+		const size_t bufferSize = messageSize + ChannelSecurity::CHMac::HashSize;
+		uint8 pBuffer[bufferSize];
 
-		size_t cslen = pc.connectionString.length();
+		uint8* pCur = pBuffer;
+		StepDataWrite(pCur, Frame_IDToHeader[eH_ConnectionSetup], false);
+		StepDataWrite(pCur, buildVersion, VERSION_SIZE, false);
+		StepDataWrite(pCur, protocolVersion, false);
+		StepDataWrite(pCur, socketCaps, false);
+		StepDataWrite(pCur, encryptionFlags, false);
+		StepDataWrite(pCur, profile, false);
+		StepDataWrite(pCur, legacyToken, false);
+		StepDataWrite(pCur, session, false);
+		
+		const size_t curSize = pCur - pBuffer;
+		CRY_ASSERT(curSize == messageSize);
 
-		// cppcheck-suppress allocaCalled
-		PREFAST_SUPPRESS_WARNING(6255) uint8 * pBuffer = (uint8*) alloca(1 + (VERSION_SIZE)*sizeof(uint32) + 2 * sizeof(uint32) + sizeof(CrySessionHandle) + cslen);
-
-		uint32 cur_size = 0;
-		pBuffer[cur_size] = Frame_IDToHeader[eH_ConnectionSetup];
-		cur_size++;
-		memcpy(pBuffer + cur_size, v, VERSION_SIZE * sizeof(uint32));
-		cur_size += VERSION_SIZE * sizeof(uint32);
-		memcpy(pBuffer + cur_size, &profile, sizeof(uint32));
-		cur_size += sizeof(uint32);
-		memcpy(pBuffer + cur_size, &tokenId, sizeof(uint32));
-		cur_size += sizeof(uint32);
-		CrySessionHandle session = htonl(pc.session);
-		memcpy(pBuffer + cur_size, &session, sizeof(CrySessionHandle));
-		cur_size += sizeof(CrySessionHandle);
-		memcpy(pBuffer + cur_size, pc.connectionString.data(), cslen);
-		cur_size += cslen;
-
-		bool bSuccess = SendTo(pBuffer, cur_size, pc.to);
+		const bool hmacSucceeded = pc.hmac.HashAndFinish(pBuffer, curSize, pCur);
+		bool bSuccess = hmacSucceeded && SendTo(pBuffer, bufferSize, pc.to);
 
 		pc.lastSend = g_time;
 		pc.connectCounter++;
@@ -746,7 +813,9 @@ bool CNetNub::SendPendingConnect(SPendingConnection& pc)
 			NetWarning("Retrying connection to %s (%d)", RESOLVER.ToString(pc.to).c_str(), pc.connectCounter);
 
 		if (!bSuccess)
-			AddDisconnectEntry(pc.to, pc.session, eDC_CantConnect, "Failed sending connect packet");
+		{
+			AddSilentDisconnectEntry(pc.to, pc.session, eDC_CantConnect, "Failed sending connect packet");
+		}
 
 		return bSuccess;
 	}
@@ -763,10 +832,10 @@ bool CNetNub::SendPendingConnect(SPendingConnection& pc)
 		if ((pc.connectCounter % 10) == 0)
 			NetWarning("Resending KeyExchange1 to %s (%d)", RESOLVER.ToString(pc.to).c_str(), pc.connectCounter);
 		pc.connectCounter++;
-		return SendKeyExchange1(pc, true);
+		return SendKeyExchange1(pc);
 	}
 
-	AddDisconnectEntry(pc.to, pc.session, eDC_ProtocolError, "Key establishment handshake ordering error trying to send pending connect");
+	AddDisconnectEntry(pc.to, pc.session, pc.hmac, eDC_ProtocolError, "Key establishment handshake ordering error trying to send pending connect");
 
 	// should never come here
 	NET_ASSERT(0);
@@ -837,8 +906,10 @@ bool CNetNub::Init(CNetwork* pNetwork)
 	TNetAddress ipLocal;
 
 	uint32 flags = 0;
+#if ENABLE_GAME_QUERY
 	if (m_pGameQuery)
 		flags |= eSF_BroadcastReceive;
+#endif
 	flags |= eSF_BigBuffer;
 
 	ISocketIOManager* pSocketIOManager = &CNetwork::Get()->GetInternalSocketIOManager();
@@ -980,6 +1051,7 @@ void CNetNub::OnPacket(const TNetAddress& from, const uint8* pData, uint32 nLeng
 		case eH_CryLobby:
 			processed = true;
 			break;
+#if ENABLE_GAME_QUERY
 		case eH_PingServer:
 			processed = ProcessPingQuery(from, pData, nLength);
 			break;
@@ -987,6 +1059,7 @@ void CNetNub::OnPacket(const TNetAddress& from, const uint8* pData, uint32 nLeng
 			ProcessLanQuery(from);
 			processed = true;
 			break;
+#endif
 #ifdef __WITH_PB__
 		case eH_PunkBuster:
 			ProcessPunkBuster(from, pData, nLength);
@@ -1030,11 +1103,7 @@ void CNetNub::OnPacket(const TNetAddress& from, const uint8* pData, uint32 nLeng
 			processed = true;
 			break;
 		case eH_DisconnectAck:
-			ProcessDisconnectAck(from);
-			processed = true;
-			break;
-		case eH_AlreadyConnecting:
-			ProcessAlreadyConnecting(from, pData, nLength);
+			ProcessDisconnectAck(from, pData, nLength);
 			processed = true;
 			break;
 		}
@@ -1086,30 +1155,95 @@ bool CNetNub::ProcessTransportPacketFrom(const TNetAddress& from, const uint8* p
 	return true;
 }
 
-void CNetNub::ProcessDisconnectAck(const TNetAddress& from)
+void CNetNub::ProcessDisconnectAck(const TNetAddress& from, const uint8* pData, uint32 nLength)
 {
 	ASSERT_GLOBAL_LOCK;
-	m_disconnectMap.erase(from);
+	
+	const size_t messageSize = 1;
+	const size_t bufferSize = messageSize + ChannelSecurity::CHMac::HashSize;
+
+	if (nLength != bufferSize)
+	{
+		return;
+	}
+
+	TDisconnectMap::iterator iter = m_disconnectMap.find(from);
+	if (iter == m_disconnectMap.end())
+	{
+		return;
+	}
+
+	SDisconnect& dis = iter->second;
+	if (!dis.hmac.HashFinishAndVerify(pData, messageSize, pData + messageSize))
+	{
+		return;
+	}
+
+	m_disconnectMap.erase(iter);
 }
 
 void CNetNub::ProcessDisconnect(const TNetAddress& from, const uint8* pData, uint32 nSize)
 {
+	const size_t minMessageSize = 1 + 1;   // 1 + cause
+	const size_t minBufferSize = minMessageSize + ChannelSecurity::CHMac::HashSize;
+
+	if (nSize < minBufferSize)
+	{
+		// this is definitely a corrupted packet, ignore
+		return;
+	}
+
+	const size_t messageSize = nSize - ChannelSecurity::CHMac::HashSize;
+	const uint8* pHmacData = pData + messageSize;
+
 	CNetChannel* pNetChannel = GetChannelForIP(from, 0);
+	TPendingConnectionSet::iterator pendingConnectionIter = m_pendingConnections.end();
+	TConnectingMap::iterator connectingMapIter = m_connectingMap.end();
+
+	// Verify
+	ChannelSecurity::CHMac* pHmac = nullptr;
+	{
+		if (pNetChannel)
+		{
+			pHmac = &pNetChannel->GetHmac();
+		}
+		else
+		{
+			pendingConnectionIter = FindPendingConnection(from, false);
+			if (pendingConnectionIter != m_pendingConnections.end())
+			{
+				pHmac = &pendingConnectionIter->hmac;
+			}
+			else
+			{
+				connectingMapIter = m_connectingMap.find(from);
+				if (connectingMapIter != m_connectingMap.end())
+				{
+					pHmac = &connectingMapIter->second.hmac;
+				}
+			}
+		}
+
+		if (!pHmac) 
+		{
+			return; // packet from unknown source
+		}
+
+		if (!pHmac->HashFinishAndVerify(pData, messageSize, pHmacData))
+		{
+			return; // HMAC verification failed, ignore packet
+		}
+	}
+	NET_ASSERT(pHmac != nullptr);
+
+	// Parse
 	uint8 cause = eDC_Unknown;
 	string reason;
-
-	if (nSize < 2)
+	std::vector<string> r;
 	{
-		// this is definitely a corrupted packet, disconnect the channel, if any
-		cause = eDC_ProtocolError;
-		reason = "Corrupted disconnect packet";
-		if (pNetChannel && !pNetChannel->IsDead())
-			DisconnectChannel(eDC_ProtocolError, &from, pNetChannel, reason.c_str());
-	}
-	else
-	{
-		std::vector<string> r;
-		cause = pData[1];
+		const uint8* pCur = pData;
+		++pCur;
+		StepDataCopy(&cause, pCur, 1, false);
 		STATIC_CHECK((eDC_Timeout == 0), eDC_Timeout_NOT_EQUAL_0);//fix compiler warning
 		if (/*cause < eDC_Timeout || */ cause > eDC_Unknown)//first term not required anymore (due to previous line)
 		{
@@ -1118,18 +1252,21 @@ void CNetNub::ProcessDisconnect(const TNetAddress& from, const uint8* pData, uin
 		}
 		else
 		{
-			string backlog((char*)pData + 2, (char*)pData + nSize);
+			NET_ASSERT(pCur <= pData + messageSize);
+			string backlog((const char*)pCur, (const char*)pData + messageSize);
 			ParseBacklogString(backlog, reason, r);
 			if (reason.empty())
 				reason = "No reason";
-		}
-		if (pNetChannel && !pNetChannel->IsDead())
-		{
-			NetLog("Received disconnect packet from %s: %s", RESOLVER.ToString(from).c_str(), reason.c_str());
-			for (size_t i = 0; i < r.size(); ++i)
-				NetLog("  [remote] %s", r[i].c_str());
-			DisconnectChannel((EDisconnectionCause)cause, &from, pNetChannel, ("Remote disconnected: " + reason).c_str());
-		}
+		}	
+	}
+
+	// Act on disconnect
+	if (pNetChannel && !pNetChannel->IsDead())
+	{
+		NetLog("Received disconnect packet from %s: %s", RESOLVER.ToString(from).c_str(), reason.c_str());
+		for (size_t i = 0; i < r.size(); ++i)
+			NetLog("  [remote] %s", r[i].c_str());
+		DisconnectChannel((EDisconnectionCause)cause, from, *pNetChannel, ("Remote disconnected: " + reason).c_str());
 	}
 
 	// if we received a disconnect packet without a channel, we should try removing pre-channel record possibly in
@@ -1137,37 +1274,43 @@ void CNetNub::ProcessDisconnect(const TNetAddress& from, const uint8* pData, uin
 	if (!pNetChannel)
 	{
 		// active connect, need to inform GameNub
-		for (TPendingConnectionSet::iterator iter = m_pendingConnections.begin(); iter != m_pendingConnections.end(); ++iter)
+		if (pendingConnectionIter != m_pendingConnections.end())
 		{
-			if (iter->to == from)
-			{
-				NetWarning("Connection to %s refused", RESOLVER.ToString(from).c_str());
-				NetWarning("%s", reason.c_str());
-				TO_GAME(&CNetNub::GC_FailedActiveConnect, this, (EDisconnectionCause)cause, RESOLVER.ToString(from).c_str() + string(" refused connection\n") + reason, CNubKeepAliveLock(this));
-				m_pendingConnections.erase(iter);
-				break;
-			}
+			NetWarning("Connection to %s refused", RESOLVER.ToString(from).c_str());
+			NetWarning("%s", reason.c_str());
+			TO_GAME(&CNetNub::GC_FailedActiveConnect, this, (EDisconnectionCause)cause, RESOLVER.ToString(from).c_str() + string(" refused connection\n") + reason, CNubKeepAliveLock(this));
+			m_pendingConnections.erase(pendingConnectionIter);
 		}
 
-		TConnectingMap::iterator iter = m_connectingMap.find(from);
-		if (iter != m_connectingMap.end())
+		if (connectingMapIter != m_connectingMap.end())
 		{
 			NetWarning("%s disconnected pre-maturely", RESOLVER.ToString(from).c_str());
 			NetWarning("%s", reason.c_str());
-			m_connectingMap.erase(iter->first);
+			m_connectingMap.erase(connectingMapIter);
 			// no need to add a disconnect entry, since it's a remote disconnect
 		}
 	}
 
-	AckDisconnect(from);
+	AckDisconnect(from, *pHmac);
 }
 
-void CNetNub::AckDisconnect(const TNetAddress& to)
+void CNetNub::AckDisconnect(const TNetAddress& to, ChannelSecurity::CHMac& hmac)
 {
 	TAckDisconnectSet::iterator it = m_ackDisconnectSet.lower_bound(to);
 	if (it == m_ackDisconnectSet.end() || !equiv(to, *it))
 	{
-		SendTo(&Frame_IDToHeader[eH_DisconnectAck], 1, to);
+		const size_t messageSize = 1;
+		const size_t bufferSize = messageSize + ChannelSecurity::CHMac::HashSize;
+		uint8 buffer[bufferSize];
+
+		buffer[0] = Frame_IDToHeader[eH_DisconnectAck];
+
+		if (!hmac.HashAndFinish(buffer, messageSize, buffer + messageSize))
+		{
+			return;
+		}
+
+		SendTo(buffer, bufferSize, to);
 		m_ackDisconnectSet.insert(it, to);
 	}
 }
@@ -1180,46 +1323,37 @@ void CNetNub::GC_FailedActiveConnect(EDisconnectionCause cause, string descripti
 	m_pGameNub->FailedActiveConnect(cause, description.c_str());
 }
 
-void CNetNub::ProcessAlreadyConnecting(const TNetAddress& from, const uint8* pData, uint32 nSize)
+void CNetNub::DisconnectChannel(EDisconnectionCause cause, CNetChannel& channel, const char* reason)
 {
-	NetLog("Started connection to %s [waiting for data]", RESOLVER.ToString(from).c_str());
-	for (TPendingConnectionSet::iterator iter = m_pendingConnections.begin(); iter != m_pendingConnections.end(); ++iter)
+	const TNetAddress* pFrom = nullptr;
+	for (TChannelMap::const_iterator iter = m_channels.begin(); iter != m_channels.end(); ++iter)
 	{
-		if (iter->to == from)
+		if (iter->second == &channel)
 		{
-			iter->connectCounter = -5;
+			pFrom = &iter->first;
 			break;
 		}
 	}
-}
-
-void CNetNub::DisconnectChannel(EDisconnectionCause cause, const TNetAddress* pFrom, CNetChannel* pChannel, const char* reason)
-{
+	NET_ASSERT(pFrom != nullptr);
 	if (!pFrom)
 	{
-		NET_ASSERT(pChannel);
-		for (TChannelMap::const_iterator iter = m_channels.begin(); iter != m_channels.end(); ++iter)
-			if (iter->second == pChannel)
-				pFrom = &iter->first;
-	}
-	if (!pChannel)
-	{
-		NET_ASSERT(pFrom);
-		PREFAST_ASSUME(pFrom);
-		pChannel = GetChannelForIP(*pFrom, 0);
+		NetWarning("Unable to disconnect unknown channel");
+		return;
 	}
 
-	if (pChannel)
-	{
-		pChannel->Destroy(cause, reason);
+	DisconnectChannel(cause, *pFrom, channel, reason);
+}
 
-		for (TPendingConnectionSet::iterator iter = m_pendingConnections.begin(); iter != m_pendingConnections.end(); ++iter)
+void CNetNub::DisconnectChannel(EDisconnectionCause cause, const TNetAddress& from, CNetChannel& channel, const char* reason)
+{
+	channel.Destroy(cause, reason);
+
+	for (TPendingConnectionSet::iterator iter = m_pendingConnections.begin(); iter != m_pendingConnections.end(); ++iter)
+	{
+		if (iter->pChannel == &channel)
 		{
-			if (iter->pChannel == pChannel)
-			{
-				m_pendingConnections.erase(iter);
-				break;
-			}
+			m_pendingConnections.erase(iter);
+			break;
 		}
 	}
 
@@ -1229,10 +1363,7 @@ void CNetNub::DisconnectChannel(EDisconnectionCause cause, const TNetAddress* pF
 		CNetwork::Get()->AddExecuteString("es_dump_entities");
 	}
 
-	if (pFrom)
-	{
-		AddDisconnectEntry(*pFrom, pChannel ? pChannel->GetSession() : CrySessionInvalidHandle, cause, reason);
-	}
+	AddDisconnectEntry(from, channel.GetSession(), channel.GetHmac(), cause, reason);
 }
 
 void CNetNub::DisconnectChannel(EDisconnectionCause cause, CrySessionHandle session, const char* pReason)
@@ -1250,7 +1381,7 @@ void CNetNub::DisconnectChannel(EDisconnectionCause cause, CrySessionHandle sess
 
 			if (pMMPrivate->GetChannelIDFromGameSessionHandle(pChannel->GetSession()) == id)
 			{
-				DisconnectChannel(cause, &iter->first, pChannel, pReason);
+				DisconnectChannel(cause, iter->first, *pChannel, pReason);
 			}
 		}
 	}
@@ -1326,25 +1457,39 @@ void CNetNub::SendDisconnect(const TNetAddress& to, SDisconnect& dis)
 	if (dis.lastNotify + 0.5f >= now)
 		return;
 
+	const size_t maxMessageSize = 1
+		+ 1                         // cause
+		+ sizeof(dis.info)          // reason
 #if defined(_DEBUG)
-	uint8 buffer[2 + sizeof(dis.info) + sizeof(dis.backlog)]; // frame + cause + reason + backlog
-#else
-	uint8 buffer[2 + sizeof(dis.info)]; // frame + cause + reason
+		+ sizeof(dis.backlog)       // backlog
 #endif
-	NET_ASSERT(sizeof(buffer) <= MAX_TRANSMISSION_PACKET_SIZE);
-	buffer[0] = Frame_IDToHeader[eH_Disconnect];
-	buffer[1] = dis.cause;
-	memcpy(buffer + 2, dis.info, dis.infoLength);
+		;
+	const size_t maxBufferSize = maxMessageSize + ChannelSecurity::CHMac::HashSize;
+	static_assert(maxBufferSize <= MAX_TRANSMISSION_PACKET_SIZE, "Buffer size is too big");
+	uint8 buffer[maxBufferSize];
+
+	uint8* pCur = buffer;
+	StepDataWrite(pCur, Frame_IDToHeader[eH_Disconnect], false);
+	StepDataWrite(pCur, (uint8)dis.cause, false);
+	StepDataWrite(pCur, dis.info, dis.infoLength, false);
 #if defined(_DEBUG)
-	memcpy(buffer + 2 + dis.infoLength, dis.backlog, dis.backlogLen);
-	SendTo(buffer, 2 + dis.infoLength + dis.backlogLen, to);
-#else
-	SendTo(buffer, 2 + dis.infoLength, to);
+	StepDataWrite(pCur, dis.backlog, dis.backlogLen, false);
 #endif
 
+	const size_t messageSize = pCur - buffer;
+	NET_ASSERT(messageSize <= maxMessageSize);
+	const size_t bufferSize = messageSize + ChannelSecurity::CHMac::HashSize;
+
+	if (!dis.hmac.HashAndFinish(buffer, messageSize, pCur))
+	{
+		return;
+	}
+
+	SendTo(buffer, bufferSize, to);
 	dis.lastNotify = now;
 }
 
+#if ENABLE_GAME_QUERY
 bool CNetNub::ProcessPingQuery(const TNetAddress& from, const uint8* pData, uint32 nSize)
 {
 	//NET_ASSERT( GetFrameType(((uint8*)MMM_PACKETDATA.PinHdl(hdl))[0]) == QueryFrameHeader );
@@ -1368,12 +1513,15 @@ bool CNetNub::ProcessPingQuery(const TNetAddress& from, const uint8* pData, uint
 
 void CNetNub::ProcessLanQuery(const TNetAddress& from)
 {
-	NET_ASSERT(m_pGameQuery);
-
-	XmlNodeRef xml = m_pGameQuery->GetGameState();
-	XmlString str = xml->getXML();
-	m_pSocketMain->Send((const uint8*)str.c_str(), str.length(), from);
+	if (m_pGameQuery)
+	{
+		XmlNodeRef xml = m_pGameQuery->GetGameState();
+		XmlString str = xml->getXML();
+		m_pSocketMain->Send((const uint8*)str.c_str(), str.length(), from);
+	}
 }
+#endif
+
 
 void CNetNub::LobbySafeDisconnect(CNetChannel* pChannel, EDisconnectionCause cause, const char* reason)
 {
@@ -1439,49 +1587,64 @@ void CNetNub::OnError(const TNetAddress& from, ESocketError err)
 
 bool CNetNub::SendKeyExchange0(const TNetAddress& to, SConnecting& con, bool doNotRegenerate)
 {
-	static const size_t KS = sizeof(CExponentialKeyExchange::KEY_TYPE);
-	uint8 pktbuf[1 + 3 * KS + sizeof(uint32)];
+	const size_t KS = sizeof(CExponentialKeyExchange::KEY_TYPE);
+	const size_t messageSize = 1 + 3 * KS + sizeof(uint32);
+	const size_t bufferSize = messageSize + ChannelSecurity::CHMac::HashSize;
+	uint8 pktbuf[bufferSize];
 
-	pktbuf[0] = Frame_IDToHeader[eH_ConnectionSetup_KeyExchange_0];
-#if ALLOW_ENCRYPTION
-	if (doNotRegenerate)
-	{
-	}
-	else
+	uint8* pCur = pktbuf;
+
+	StepDataWrite(pCur, Frame_IDToHeader[eH_ConnectionSetup_KeyExchange_0], false);
+#if ENCRYPTION_GENERATE_KEYS
+	if (!doNotRegenerate)
 	{
 		con.exchange.Generate(con.g, con.p, con.A);
 	}
-	memcpy(pktbuf + 1, &con.g, KS);
-	memcpy(pktbuf + 1 + KS, &con.p, KS);
-	memcpy(pktbuf + 1 + 2 * KS, &con.A, KS);
+	StepDataWrite(pCur, con.g.key, KS, false);
+	StepDataWrite(pCur, con.p.key, KS, false);
+	StepDataWrite(pCur, con.A.key, KS, false);
 #else
-	memset(pktbuf + 1, 0, KS + KS + KS);    // Lets not send the stack
+	memset(pCur, 0, 3 * KS);    // Lets not send the stack
+	pCur += 3 * KS;
 #endif
 	uint32 socketCaps = htonl(CNetwork::Get()->GetExternalSocketIOManager().caps);
-	memcpy(pktbuf + 1 + 3 * KS, &socketCaps, sizeof(uint32));
-	return SendTo(pktbuf, sizeof(pktbuf), to);
+	StepDataWrite(pCur, socketCaps, false);
+
+	const size_t curSize = pCur - pktbuf;
+	CRY_ASSERT(curSize == messageSize);
+
+	const bool hmacSucceeded = con.hmac.HashAndFinish(pktbuf, curSize, pCur);
+	return hmacSucceeded && SendTo(pktbuf, bufferSize, to);
 }
 
-bool CNetNub::SendKeyExchange1(SPendingConnection& pc, bool doNotRegenerate)
+bool CNetNub::SendKeyExchange1(SPendingConnection& pc)
 {
 	static const size_t KS = sizeof(CExponentialKeyExchange::KEY_TYPE);
-	uint8 pktbuf[1 + KS];
-
-	pktbuf[0] = Frame_IDToHeader[eH_ConnectionSetup_KeyExchange_1];
-#if ALLOW_ENCRYPTION
-	if (doNotRegenerate)
-	{
-	}
-	else
-	{
-		pc.exchange.Generate(pc.B, pc.g, pc.p, pc.A);
-	}
-	assert(sizeof(pc.B) == KS);
-	memcpy(pktbuf + 1, &pc.B, KS);
-#else
-	memset(pktbuf + 1, 0, KS);    // Lets not send the stack
+	const size_t messageSize = 1 
+#if ENCRYPTION_GENERATE_KEYS
+		+ KS
 #endif
-	return SendTo(pktbuf, sizeof(pktbuf), pc.to);
+		+ pc.connectionStringBuf.size()
+		;
+	const size_t bufferSize = messageSize + ChannelSecurity::CHMac::HashSize;
+	// cppcheck-suppress allocaCalled
+	PREFAST_SUPPRESS_WARNING(6255) uint8* pktbuf = (uint8*)alloca(bufferSize);
+
+	uint8* pCur = pktbuf;
+
+	StepDataWrite(pCur, Frame_IDToHeader[eH_ConnectionSetup_KeyExchange_1], false);
+#if ENCRYPTION_GENERATE_KEYS
+	static_assert(sizeof(pc.B) == KS, "invalid size");
+	StepDataWrite(pCur, pc.B.key, KS, false);
+#endif
+
+	StepDataWrite(pCur, pc.connectionStringBuf.data(), pc.connectionStringBuf.size(), false);
+
+	const size_t curSize = pCur - pktbuf;
+	CRY_ASSERT(curSize == messageSize);
+
+	const bool hmacSucceeded = pc.hmac.HashAndFinish(pktbuf, curSize, pCur);
+	return hmacSucceeded && SendTo(pktbuf, bufferSize, pc.to);
 }
 
 void CNetNub::ProcessKeyExchange0(const TNetAddress& from, const uint8* pData, uint32 nSize)
@@ -1489,64 +1652,119 @@ void CNetNub::ProcessKeyExchange0(const TNetAddress& from, const uint8* pData, u
 	if (GetChannelForIP(from, 0) != NULL)
 		return;
 
-	for (TPendingConnectionSet::iterator iter = m_pendingConnections.begin(); iter != m_pendingConnections.end(); ++iter)
+	TPendingConnectionSet::iterator iter = FindPendingConnection(from, true);
+	if (iter == m_pendingConnections.end())
+		return;
+
+	SPendingConnection& con = *iter;
+	if (con.kes != eKES_SetupInitiated)
+		return;
+
+	const size_t KS = sizeof(CExponentialKeyExchange::KEY_TYPE);
+	const size_t messageSize = 1 + 3 * KS + sizeof(uint32);
+	const size_t bufferSize = messageSize + ChannelSecurity::CHMac::HashSize;
+
+	if (nSize != bufferSize)
 	{
-		if (!(iter->to == from))
-		{
-			for (TNetAddressVec::const_iterator it = iter->tos.begin(); it != iter->tos.end(); ++it)
-			{
-				if (*it == from)
-				{
-					iter->to = from;
-					goto L_continue;
-				}
-			}
-
-			continue;
-		}
-
-L_continue:
-
-		if (iter->kes != eKES_SetupInitiated)
-			break;
-
-		if (nSize != 1 + 3 * CExponentialKeyExchange::KEY_SIZE + sizeof(uint32))
-		{
-			NetWarning("processing KeyExchange0 with illegal sized packet");
-			break;
-		}
-
-		++pData;
-#if ALLOW_ENCRYPTION
-		memcpy(iter->g.key, pData, CExponentialKeyExchange::KEY_SIZE);
-		pData += CExponentialKeyExchange::KEY_SIZE;
-		memcpy(iter->p.key, pData, CExponentialKeyExchange::KEY_SIZE);
-		pData += CExponentialKeyExchange::KEY_SIZE;
-		memcpy(iter->A.key, pData, CExponentialKeyExchange::KEY_SIZE);
-		pData += CExponentialKeyExchange::KEY_SIZE;
-#else
-		pData += CExponentialKeyExchange::KEY_SIZE + CExponentialKeyExchange::KEY_SIZE + CExponentialKeyExchange::KEY_SIZE;
-#endif
-		memcpy(&iter->socketCaps, pData, sizeof(uint32));
-		pData += sizeof(uint32);
-		iter->socketCaps = ntohl(iter->socketCaps);
-
-		if (!SendKeyExchange1(*iter))
-		{
-			NetWarning("failed sending KeyExchange1");
-			break;
-		}
-#if ALLOW_ENCRYPTION
-		const CExponentialKeyExchange::KEY_TYPE cKey = iter->exchange.GetKey();
-#else
-		CExponentialKeyExchange::KEY_TYPE cKey;   // dummy
-#endif
-
-		iter->kes = eKES_KeyEstablished;
-		iter->kesStart = g_time;
-		CreateChannel(iter->to, cKey, "" /* NULL */, iter->socketCaps, iter->profile, iter->session, iter->conlk);   // the empty string ("") will be translated to NULL when creating GameChannel
-		break;
+		NetWarning("processing KeyExchange0 with illegal sized packet");
+		return;
 	}
+
+	if (!con.hmac.HashFinishAndVerify(pData, messageSize, pData + messageSize))
+	{
+		return;
+	}
+
+	const uint8* pCur = pData;
+	pCur += 1;
+#if ENCRYPTION_GENERATE_KEYS
+	StepDataCopy(con.g.key, pCur, KS, false);
+	StepDataCopy(con.p.key, pCur, KS, false);
+	StepDataCopy(con.A.key, pCur, KS, false);
+#else
+	pCur += 3 * KS;
+#endif
+
+	uint32 socketCaps;
+	StepDataCopy(&socketCaps, pCur, 1, false);
+	
+	CRY_ASSERT((pCur - pData) == messageSize);
+
+	con.to = from;
+	con.socketCaps = ntohl(socketCaps);
+
+#if ENCRYPTION_GENERATE_KEYS
+	if (con.tokenMode == CNetProfileTokens::EMode::Legacy)
+	{
+		con.exchange.Generate(con.B, con.g, con.p, con.A);
+
+		const CExponentialKeyExchange::KEY_TYPE& cKey = con.exchange.GetKey();
+		con.profileTokenPair.token.inputEncryption.secret.resize(CExponentialKeyExchange::KEY_SIZE);
+		con.profileTokenPair.token.inputEncryption.secret.copy(0, cKey.key, CExponentialKeyExchange::KEY_SIZE);
+		con.profileTokenPair.token.outputEncryption.secret = con.profileTokenPair.token.inputEncryption.secret;
+
+		// Causing slightly different key, can be improved by properly re-deriving key
+		con.profileTokenPair.token.outputEncryption.secret[0] += 1;
+	}
+	else
+	{
+		NetWarning("Unable to use exchanged keys: wrong token mode");
+	}
+#endif
+
+	ChannelSecurity::CHMac channelHmac = con.hmac;
+#if ENCRYPTION_GENERATE_KEYS
+	if (con.tokenMode == CNetProfileTokens::EMode::Legacy)
+	{
+		// Reinitialize dummy hmac with the same secret
+		// We have to leave con.hmac as dummy hmac as we may continue to call SendKeyExchange1().
+		con.profileTokenPair.token.hmacSecret = con.profileTokenPair.token.inputEncryption.secret;
+		channelHmac.Init(con.profileTokenPair.token);
+	}
+#endif
+
+	bool securityInitRes;
+	ChannelSecurity::SInitState securityInit(con.profileTokenPair.token, channelHmac, *&securityInitRes);
+	if (!securityInitRes)
+	{
+		return;
+	}
+
+	if (!PrepareConnectionString(con, securityInit.outputCipher))
+	{
+		NetWarning("Failed encrypt connection string");
+		return;
+	}
+
+	if (!SendKeyExchange1(con))
+	{
+		NetWarning("failed sending KeyExchange1");
+		return;
+	}
+
+	con.kes = eKES_KeyEstablished;
+	con.kesStart = g_time;
+	
+	CreateChannel(con.to, std::move(securityInit), "" /* NULL */, con.socketCaps, con.profileTokenPair.profile, con.session, con.conlk);   // the empty string ("") will be translated to NULL when creating GameChannel
+}
+
+bool CNetNub::PrepareConnectionString(SPendingConnection& con, ChannelSecurity::CCipher& outputCipher)
+{
+	const size_t blockSize = ChannelSecurity::CCipher::GetBlockSize();
+	NET_ASSERT(IsPowerOfTwo(blockSize));
+	const size_t cslen = con.connectionString.size();
+	const size_t connStringMessageSize = 4 + cslen;
+	size_t connectionStringBufSize = Align(connStringMessageSize, blockSize);
+
+	con.connectionStringBuf.resize(connectionStringBufSize);
+	uint8* pCur = con.connectionStringBuf.data();
+	uint32 stringSize = htonl(cslen);
+	StepDataWrite(pCur, stringSize, false);
+	StepDataWrite(pCur, con.connectionString.data(), cslen, false);
+	NET_ASSERT((pCur - con.connectionStringBuf.data()) == connStringMessageSize);
+	::memset(pCur, 0, connectionStringBufSize - connStringMessageSize);
+
+	return outputCipher.EncryptInPlace(con.connectionStringBuf.data(), connectionStringBufSize);
 }
 
 void CNetNub::ProcessKeyExchange1(const TNetAddress& from, const uint8* pData, uint32 nSize)
@@ -1557,36 +1775,134 @@ void CNetNub::ProcessKeyExchange1(const TNetAddress& from, const uint8* pData, u
 	TConnectingMap::iterator iterCon = m_connectingMap.find(from);
 	if (iterCon == m_connectingMap.end())
 	{
-		AddDisconnectEntry(from, CrySessionInvalidHandle, eDC_CantConnect, "KeyExchange1 with no connection");
+		AddSilentDisconnectEntry(from, CrySessionInvalidHandle, eDC_CantConnect, "KeyExchange1 with no connection");
 		return; // ignore silently
 	}
 
-	if (iterCon->second.kes != eKES_SentKeyExchange)
+	SConnecting& con = iterCon->second;
+
+	if (con.kes != eKES_SentKeyExchange)
 		return;
 
-	if (nSize != 1 + CExponentialKeyExchange::KEY_SIZE)
+	static const size_t KS = sizeof(CExponentialKeyExchange::KEY_TYPE);
+	const size_t minMessageSize = 1
+#if ENCRYPTION_GENERATE_KEYS
+		+ KS
+#endif
+		+ 0                           // variable size connection string
+		;
+	const size_t minBufferSize = minMessageSize + ChannelSecurity::CHMac::HashSize;
+
+	if (nSize < minBufferSize)
 	{
 		NetWarning("processing KeyExchange1 with illegal sized packet");
-		AddDisconnectEntry(from, iterCon->second.session, eDC_CantConnect, "processing KeyExchange1 with illegal sized packet");
+		AddSilentDisconnectEntry(from, con.session, eDC_CantConnect, "processing KeyExchange1 with illegal sized packet");
 		return;
 	}
 
-#if ALLOW_ENCRYPTION
-	++pData;
-	memcpy(iterCon->second.B.key, pData, CExponentialKeyExchange::KEY_SIZE);
+	const size_t messageSize = nSize - ChannelSecurity::CHMac::HashSize;
 
-	iterCon->second.exchange.Calculate(iterCon->second.B);
+	if (!con.hmac.HashFinishAndVerify(pData, messageSize, pData + messageSize))
+	{
+		return;
+	}
 
-	const CExponentialKeyExchange::KEY_TYPE cKey = iterCon->second.exchange.GetKey();
-#else
-	CExponentialKeyExchange::KEY_TYPE cKey; //dummy
+	const uint8* pCur = pData;
+	pCur += 1;
+#if ENCRYPTION_GENERATE_KEYS
+	StepDataCopy(con.B.key, pCur, KS, false);
+
+	con.exchange.Calculate(con.B);
+
+	if (con.tokenMode == CNetProfileTokens::EMode::Legacy)
+	{
+		const CExponentialKeyExchange::KEY_TYPE& cKey = con.exchange.GetKey();
+		con.profileTokenPair.token.inputEncryption.secret.resize(CExponentialKeyExchange::KEY_SIZE);
+		con.profileTokenPair.token.inputEncryption.secret.copy(0, cKey.key, CExponentialKeyExchange::KEY_SIZE);
+		con.profileTokenPair.token.outputEncryption.secret = con.profileTokenPair.token.inputEncryption.secret;
+
+		// Reinitialize dummy hmac with the same secret
+		con.profileTokenPair.token.hmacSecret = con.profileTokenPair.token.inputEncryption.secret;
+		con.hmac.Init(con.profileTokenPair.token);
+
+		// Causing slightly different key, can be improved by properly re-deriving key
+		con.profileTokenPair.token.inputEncryption.secret[0] += 1;
+	}
+	else
+	{
+		NetWarning("Unable to use exchanged keys: wrong token mode");
+	}
 #endif
 
-	iterCon->second.kes = eKES_KeyEstablished;
-	iterCon->second.kesStart = g_time;
+	bool securityInitRes;
+	ChannelSecurity::SInitState securityInit(con.profileTokenPair.token, con.hmac, *&securityInitRes);
+	if (!securityInitRes)
+	{
+		AddDisconnectEntry(from, con.session, con.hmac, eDC_CantConnect, "processing KeyExchange1, failed security init");
+		return;
+	}
+
+	NET_ASSERT(minMessageSize == (pCur - pData));
+
+	const size_t connectionStringBufSize = messageSize - minMessageSize;
+
+	if (connectionStringBufSize < 4)
+	{
+		NetWarning("processing KeyExchange1 with illegal sized connection string part");
+		AddDisconnectEntry(from, con.session, con.hmac, eDC_CantConnect, "processing KeyExchange1 with illegal sized packet");
+		return;
+	}
+
+	const size_t blockSize = ChannelSecurity::CCipher::GetBlockSize();
+	NET_ASSERT(IsPowerOfTwo(blockSize));
+	if ((connectionStringBufSize) & (blockSize - 1))
+	{
+		NetWarning("Illegal packet block alignment [message size was %zu, from %s]", messageSize, RESOLVER.ToString(from).c_str());
+		AddDisconnectEntry(from, con.session, con.hmac, eDC_CantConnect, "processing KeyExchange1 with illegal sized packet");
+		return;
+	}
+
+	std::unique_ptr<uint8[]> pConnectionStringBuf(new uint8[connectionStringBufSize]);
+	::memcpy(pConnectionStringBuf.get(), pCur, connectionStringBufSize);
+	pCur += connectionStringBufSize;
+	NET_ASSERT((pCur - pData) == messageSize);
+
+	string connectionString;
+	if (!ProcessConnectionString(pConnectionStringBuf.get(), connectionStringBufSize, securityInit.inputCipher, *&connectionString))
+	{
+		NetWarning("Failed to process connection string [from %s]", messageSize, RESOLVER.ToString(from).c_str());
+		AddDisconnectEntry(from, con.session, con.hmac, eDC_CantConnect, "processing KeyExchange1 with illegal connection string");
+		return;
+	}
+	
+	con.kes = eKES_KeyEstablished;
+	con.kesStart = g_time;
 
 	// now that we have established the private key, let's go create the channel
-	CreateChannel(from, cKey, iterCon->second.connectionString, iterCon->second.socketCaps, iterCon->second.profile, iterCon->second.session, CNubConnectingLock());
+	
+	CreateChannel(from, std::move(securityInit), connectionString, con.socketCaps, con.profileTokenPair.profile, con.session, CNubConnectingLock());
+}
+
+bool CNetNub::ProcessConnectionString(uint8* pBuf, const size_t bufSize, ChannelSecurity::CCipher& inputCipher, string& outConnectionString)
+{
+	if (!inputCipher.DecryptInPlace(pBuf, bufSize))
+	{
+		return false;
+	}
+
+	const uint8* pCur = pBuf;
+
+	uint32 connectionStringSize;
+	StepDataCopy(&connectionStringSize, pCur, 1, false);
+	connectionStringSize = ntohl(connectionStringSize);
+
+	if (connectionStringSize > (bufSize - 4))
+	{
+		return false;
+	}
+
+	outConnectionString = string(reinterpret_cast<const char*>(pCur), reinterpret_cast<const char*>(pCur + connectionStringSize));
+	return true;
 }
 
 void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 nSize)
@@ -1606,58 +1922,116 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 	if (GetChannelForIP(from, 0) != NULL)
 		return;
 
-	if (nSize < 1 + VERSION_SIZE * sizeof(uint32) + 2 * sizeof(uint32) + sizeof(CrySessionHandle))
+	const size_t messageSize = 1
+		+ (VERSION_SIZE + 2) * sizeof(uint32)  // versions
+		+ 1                                    // encryption flags
+		+ 2 * sizeof(uint32)                   // profile/tokenId
+		+ sizeof(CrySessionHandle)             // session
+		;
+	const size_t packetSize = messageSize + ChannelSecurity::CHMac::HashSize;
+	if (nSize != packetSize)
 	{
-		AddDisconnectEntry(from, CrySessionInvalidHandle, eDC_ProtocolError, "Too short connection packet");
+		AddSilentDisconnectEntry(from, CrySessionInvalidHandle, eDC_ProtocolError, "Too short connection packet");
 		return;
 	}
 
-	SFileVersion ver = gEnv->pSystem->GetProductVersion();
-	uint32 v[VERSION_SIZE];
-	memcpy(v, pData + 1, VERSION_SIZE * sizeof(uint32));
-
-	uint32 profile_data = 0;
-	memcpy(&profile_data, (char*)pData + 1 + VERSION_SIZE * sizeof(uint32), sizeof(uint32));
-	uint32 profile = ntohl(profile_data);
-
-	memcpy(&profile_data, (char*)pData + 1 + VERSION_SIZE * sizeof(uint32) + sizeof(uint32), sizeof(uint32));
-	uint32 tokenId = ntohl(profile_data);
-
+	uint32 buildVersion[VERSION_SIZE];
+	uint32 protocolVersion;
+	uint32 socketCaps;
+	uint8 encryptionFlags;
+	uint32 profile;
+	uint32 tokenLegacy;
 	CrySessionHandle session;
-	memcpy(&session, (char*)pData + 1 + VERSION_SIZE * sizeof(uint32) + 2 * sizeof(uint32), sizeof(CrySessionHandle));
+	const uint8* pHmacData = pData + messageSize;
+
+	{
+		const uint8* pCurData = pData;
+		pCurData += 1;
+		StepDataCopy(buildVersion, pCurData, VERSION_SIZE, false);
+		StepDataCopy(&protocolVersion, pCurData, 1, false);
+		StepDataCopy(&socketCaps, pCurData, 1, false);
+		StepDataCopy(&encryptionFlags, pCurData, 1, false);
+		StepDataCopy(&profile, pCurData, 1, false);
+		StepDataCopy(&tokenLegacy, pCurData, 1, false);
+		StepDataCopy(&session, pCurData, 1, false);
+		CRY_ASSERT(messageSize == (pCurData - pData));
+	}
+
+	for (uint32& v : buildVersion) { v = ntohl(v); }
+	protocolVersion = ntohl(protocolVersion);
+	socketCaps = ntohl(socketCaps);
+	profile = ntohl(profile);
+	tokenLegacy = ntohl(tokenLegacy);
 	session = ntohl(session);
 
+	const SFileVersion ver = gEnv->pSystem->GetProductVersion();
+	
 	for (int i = 0; i < 4; i++)
 	{
-		if (v[i] != ntohl(ver.v[i]))
+		if (buildVersion[i] != ver[i])
 		{
-			AddDisconnectEntry(from, session, eDC_VersionMismatch, "Build version mismatch");
+			AddSilentDisconnectEntry(from, session, eDC_VersionMismatch, "Build version mismatch");
 			m_connectingMap.erase(from);
 			return;
 		}
 	}
-	if (v[4] != ntohl(PROTOCOL_VERSION))
+	if (protocolVersion != PROTOCOL_VERSION)
 	{
-		AddDisconnectEntry(from, session, eDC_VersionMismatch, "Protocol version mismatch");
+		AddSilentDisconnectEntry(from, session, eDC_VersionMismatch, "Protocol version mismatch");
+		m_connectingMap.erase(from);
+		return;
+	}
+	if (encryptionFlags != EncryptionVersionFlags::GetFlags())
+	{
+		AddSilentDisconnectEntry(from, session, eDC_VersionMismatch, "Encryption version mismatch");
 		m_connectingMap.erase(from);
 		return;
 	}
 
-	if (!stl::get_if<TLocalNetAddress>(&from))
+	const bool isLocal = stl::get_if<TLocalNetAddress>(&from) != nullptr;
+
+	CNetProfileTokens::EMode tokenMode = CNetProfileTokens::EMode::Legacy;
+	CNetProfileTokens::SProfileTokenPair profileToken;
+	ChannelSecurity::CHMac::FillDummyToken(profileToken.token);
+	if (!isLocal)
 	{
 		INetworkServicePtr pNetTokens = CNetwork::Get()->GetService("NetProfileTokens");
-
 		if (pNetTokens && (eNSS_Ok == pNetTokens->GetState()))
 		{
-			if (!pNetTokens->GetNetProfileTokens()->IsValid(profile, tokenId))
+			CNetProfileTokens* pNetProfileTokens = static_cast<CNetProfileTokens*>(pNetTokens->GetNetProfileTokens());
+			tokenMode = pNetProfileTokens->GetMode();
+			switch (tokenMode)
 			{
-				AddDisconnectEntry(from, session, eDC_VersionMismatch, "Client token id mismatch");
-				m_connectingMap.erase(from);
-				return;
+			case CNetProfileTokens::EMode::Legacy:
+				if (!pNetProfileTokens->IsValid(profile, tokenLegacy))
+				{
+					AddSilentDisconnectEntry(from, session, eDC_AuthenticationFailed, "Client token id mismatch");
+					m_connectingMap.erase(from);
+					return;
+				}
+				break;
+
+			case CNetProfileTokens::EMode::ProfileTokens:
+				if (!pNetProfileTokens->Server_FindToken(profile, *&profileToken))
+				{
+					AddSilentDisconnectEntry(from, session, eDC_AuthenticationFailed, "Client token id mismatch");
+					m_connectingMap.erase(from);
+					return;
+				}
+				break;
 			}
 		}
 	}
-	string connectionString((char*)pData + 1 + VERSION_SIZE * sizeof(uint32) + 2 * sizeof(uint32) + sizeof(CrySessionHandle), (char*)pData + nSize);
+
+	ChannelSecurity::CHMac hmac;
+	if (!hmac.Init(profileToken.token))
+	{
+		return;
+	}
+	if (!hmac.HashFinishAndVerify(pData, messageSize, pHmacData))
+	{
+		return;
+	}
 
 	bool doNotRegenerate = false;
 	TConnectingMap::iterator iterCon = m_connectingMap.find(from);
@@ -1667,7 +2041,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 		{
 		case eKES_NotStarted:
 		case eKES_SetupInitiated:
-			AddDisconnectEntry(from, session, eDC_ProtocolError, "Key establishment handshake ordering error");
+			AddDisconnectEntry(from, session, iterCon->second.hmac, eDC_ProtocolError, "Key establishment handshake ordering error");
 			return;
 		case eKES_SentKeyExchange:
 			break;
@@ -1682,6 +2056,9 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 	else
 		iterCon = m_connectingMap.insert(std::make_pair(from, SConnecting())).first;
 
+
+	iterCon->second.hmac = std::move(hmac);
+
 	SendKeyExchange0(from, iterCon->second, doNotRegenerate);
 
 	if (gEnv->bMultiplayer && m_pLobby && m_pLobby->GetMatchMaking())
@@ -1693,7 +2070,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 		// What we can say is if CryMatchMaking knows of this address then it doesn't want to be disconnected because of m_disconnectMap so make sure it is not stored.
 		m_disconnectMap.erase(from);
 
-		CRY_ASSERT_MESSAGE(session != CrySessionInvalidHandle, "Incoming connection with no session");
+		CRY_ASSERT(session != CrySessionInvalidHandle, "Incoming connection with no session");
 
 		if (session == CrySessionInvalidHandle || !m_pLobby->GetMatchMakingPrivate()->IsNetAddressInLobbyConnection(from))
 		{
@@ -1701,15 +2078,16 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 			{
 				CryLogAlways("Canary : Duplicate Channel ID - Work around");
 			}
-			AddDisconnectEntry(from, session, eDC_ProtocolError, "Invalid session");
+			AddDisconnectEntry(from, session, iterCon->second.hmac, eDC_ProtocolError, "Invalid session");
 		}
 	}
 
-	iterCon->second.connectionString = connectionString;
 	iterCon->second.kes = eKES_SentKeyExchange;
-	iterCon->second.socketCaps = ntohl(v[5]);
-	iterCon->second.profile = profile;
+	iterCon->second.socketCaps = socketCaps;
 	iterCon->second.session = session;
+	iterCon->second.tokenMode = tokenMode;
+	iterCon->second.profileTokenPair = profileToken;
+	
 	if (!doNotRegenerate)
 		iterCon->second.kesStart = g_time;
 }
@@ -1746,11 +2124,10 @@ void CNetNub::GetMemoryStatistics(ICrySizer* pSizer)
 	m_pSocketMain->GetMemoryStatistics(pSizer);
 }
 
-void CNetNub::CreateChannel(const TNetAddress& ip, const CExponentialKeyExchange::KEY_TYPE& key, const string& connectionString, uint32 remoteSocketCaps, uint32 proifle, CrySessionHandle session, CNubConnectingLock conlk)
+void CNetNub::CreateChannel(const TNetAddress& ip, ChannelSecurity::SInitState&& securityInit, const string& connectionString, uint32 remoteSocketCaps, uint32 proifle, CrySessionHandle session, CNubConnectingLock conlk)
 {
 	// this function is executed on the network thread
-
-	CNetChannel* pNetChannel = new CNetChannel(ip, key, remoteSocketCaps, session);    // I don't want to pass the 32 bytes key by value between threads
+	CNetChannel* pNetChannel = new CNetChannel(ip, std::move(securityInit), remoteSocketCaps, session);
 	pNetChannel->SetProfileId(proifle);
 
 	TO_GAME(&CNetNub::GC_CreateChannel, this, pNetChannel, connectionString, conlk);
@@ -1761,6 +2138,7 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 	// this function is executed on the game thread with the global lock held
 	// see CSystem::Update -> CNetwork::SyncWithGame
 	//SCOPED_GLOBAL_LOCK; - no need to lock
+	ASSERT_GLOBAL_LOCK;
 
 	TConnectingMap::iterator iterCon = m_connectingMap.find(pNetChannel->GetIP());
 	bool fromRequest = iterCon != m_connectingMap.end();
@@ -1781,7 +2159,7 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 		if (!pending)
 		{
 			// the IP associated with the NetChannel is not tracked (we didn't find it in either list), probably it gets removed pre-maturely
-			AddDisconnectEntry(pNetChannel->GetIP(), pNetChannel->GetSession(), eDC_CantConnect, "Pending connection not found");
+			AddDisconnectEntry(pNetChannel->GetIP(), pNetChannel->GetSession(), pNetChannel->GetHmac(), eDC_CantConnect, "Pending connection not found");
 			delete pNetChannel;
 			return;
 		}
@@ -1798,7 +2176,7 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 				m_connectingMap.erase(iterCon->first);
 			}
 
-			AddDisconnectEntry(pNetChannel->GetIP(), pNetChannel->GetSession(), eDC_CantConnect, "Address not found in MatchMaking");
+			AddDisconnectEntry(pNetChannel->GetIP(), pNetChannel->GetSession(), pNetChannel->GetHmac(), eDC_CantConnect, "Address not found in MatchMaking");
 			delete pNetChannel;
 
 			return;
@@ -1810,7 +2188,7 @@ void CNetNub::GC_CreateChannel(CNetChannel* pNetChannel, string connectionString
 	{
 		if (fromRequest)
 			m_connectingMap.erase(iterCon->first);
-		AddDisconnectEntry(pNetChannel->GetIP(), pNetChannel->GetSession(), res.cause, res.errorMsg);
+		AddDisconnectEntry(pNetChannel->GetIP(), pNetChannel->GetSession(), pNetChannel->GetHmac(), res.cause, res.errorMsg);
 		delete pNetChannel;
 		return;
 	}
@@ -1848,18 +2226,7 @@ uint32 CNetNub::GetTotalBandwidthShares() const
 }
 #endif // NEW_BANDWIDTH_MANAGEMENT
 
-void CNetNub::SendConnecting(const TNetAddress& to, SConnecting& con)
-{
-	CTimeValue now = g_time;
-	if (con.lastNotify + 0.5f >= now)
-		return;
-
-	SendTo(Frame_IDToHeader + eH_AlreadyConnecting, 1, to);
-
-	con.lastNotify = now;
-}
-
-void CNetNub::AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, EDisconnectionCause cause, const char* reason)
+void CNetNub::AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, const ChannelSecurity::CHMac& hmac, EDisconnectionCause cause, const char* reason)
 {
 	// If we are using CCryMatchMaking then it is responsible for the connections so don't send nub disconnects just inform matchmaking.
 	if (m_pLobby && m_pLobby->GetMatchMaking())
@@ -1888,12 +2255,28 @@ void CNetNub::AddDisconnectEntry(const TNetAddress& ip, CrySessionHandle session
 		dc.backlog[0] = 0;
 #endif // !defined(EXCLUDE_NORMAL_LOG)
 
+		dc.hmac = hmac;
+
 		TDisconnectMap::iterator iterDis = m_disconnectMap.insert(std::make_pair(ip, dc)).first;
 
 		if (cause != eDC_ICMPError) // If we are here because of eDC_ICMPError from a send then the send here will bring us here again and cause a stack overflow.
 		{
 			SendDisconnect(ip, iterDis->second);
 		}
+	}
+}
+
+void CNetNub::AddSilentDisconnectEntry(const TNetAddress& ip, CrySessionHandle session, EDisconnectionCause cause, const char* szReason)
+{
+	// Notify legacy lobby to keep functionality
+	if (m_pLobby && m_pLobby->GetMatchMaking())
+	{
+		CryLog("CNetNub::AddSilentDisconnectEntry calling SessionDisconnectRemoteConnection reason %s", szReason ? szReason : "no reason");
+		m_pLobby->GetMatchMakingPrivate()->SessionDisconnectRemoteConnectionFromNub(session, cause);
+	}
+	else
+	{
+		NetLog("Silent disconnect, cause %u reason: %s", cause, szReason);
 	}
 }
 
@@ -1975,4 +2358,28 @@ bool CNetNub::IsEstablishingContext() const
 		}
 	}
 	return false;
+}
+
+
+CNetNub::TPendingConnectionSet::iterator CNetNub::FindPendingConnection(const TNetAddress& queryAddr, const bool checkAllTos)
+{
+	TPendingConnectionSet::iterator iter = std::find_if(m_pendingConnections.begin(), m_pendingConnections.end(),
+		[&](const SPendingConnection& pc)
+		{
+			if (pc.to == queryAddr)
+			{
+				return true;
+			}
+
+			if (checkAllTos)
+			{
+				TNetAddressVec::const_iterator it = std::find(pc.tos.begin(), pc.tos.end(), queryAddr);
+				if (it != pc.tos.end())
+				{
+					return true;
+				}
+			}
+			return false;
+		});
+	return iter;
 }

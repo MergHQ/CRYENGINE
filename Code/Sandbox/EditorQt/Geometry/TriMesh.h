@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TriMesh_h__
-#define __TriMesh_h__
 #pragma once
 
 #include <Cry3DEngine/IIndexedMesh.h>
@@ -43,7 +41,6 @@ struct CTriEdge
 	int    face[2]; // Indices to edge faces (-1 if no face).
 	uint32 flags;   // see ETriMeshFlags
 
-	CTriEdge() {}
 	bool operator==(const CTriEdge& edge) const
 	{
 		if ((v[0] == edge.v[0] && v[1] == edge.v[1]) ||
@@ -121,20 +118,20 @@ public:
 		COPY_ALL       = 0xFFFF,
 	};
 	// geometry data
-	CTriFace*      pFaces;
-	CTriEdge*      pEdges;
-	CTriVertex*    pVertices;
-	SMeshTexCoord* pUV;
-	SMeshColor*    pColors;     // If allocated same size as pVerts array.
-	Vec3*          pWSVertices; // World space vertices.
-	float*         pWeights;
-	CTriLine*      pLines;
+	CTriFace*      pFaces{ nullptr };
+	CTriEdge*      pEdges{ nullptr };
+	CTriVertex*    pVertices{ nullptr };
+	SMeshTexCoord* pUV{ nullptr };
+	SMeshColor*    pColors{ nullptr };     // If allocated same size as pVerts array.
+	Vec3*          pWSVertices{ nullptr }; // World space vertices.
+	float*         pWeights{ nullptr };
+	CTriLine*      pLines{ nullptr };
 
-	int            nFacesCount;
-	int            nVertCount;
-	int            nUVCount;
-	int            nEdgeCount;
-	int            nLinesCount;
+	int            nFacesCount{ 0 };
+	int            nVertCount{ 0 };
+	int            nUVCount{ 0 };
+	int            nEdgeCount{ 0 };
+	int            nLinesCount{ 0 };
 
 	AABB           bbox;
 
@@ -145,7 +142,7 @@ public:
 	CBitArray edgeSel;
 	CBitArray faceSel;
 	// Every bit of the selection mask correspond to a stream, if bit is set this stream have some elements selected
-	int       streamSelMask;
+	int streamSelMask{ 0 };
 
 	// Selection element type.
 	// see ESubObjElementType
@@ -183,7 +180,7 @@ public:
 
 	void ReallocStream(int stream, int nNewCount);
 	void GetStreamInfo(int stream, void*& pStream, int& nElementSize) const;
-	int  GetStreamSize(int stream) const { return m_streamSize[stream]; };
+	int  GetStreamSize(int stream) const { return m_streamSize[stream]; }
 
 	void SetFromMesh(CMesh& mesh);
 	void UpdateIndexedMesh(IIndexedMesh* pIndexedMesh) const;
@@ -209,7 +206,7 @@ public:
 	// Clear all selections, return true if something was selected.
 	bool       ClearSelection();
 	void       SoftSelection(const SSubObjSelOptions& options);
-	CBitArray* GetStreamSelection(int nStream)  { return m_streamSel[nStream]; };
+	CBitArray* GetStreamSelection(int nStream)  { return m_streamSel[nStream]; }
 	// Returns true if specified stream have any selected elements.
 	bool       StreamHaveSelection(int nStream) { return (streamSelMask & (1 << nStream)) != 0; }
 	void       GetEdgesByVertex(MeshElementsArray& inVertices, MeshElementsArray& outEdges);
@@ -223,6 +220,3 @@ private:
 	int        m_streamSize[LAST_STREAM];
 	CBitArray* m_streamSel[LAST_STREAM];
 };
-
-#endif // __TriMesh_h__
-

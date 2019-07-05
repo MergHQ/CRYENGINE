@@ -13,11 +13,12 @@
 
 #include <CryCore/Platform/CryLibrary.h>
 
+#include <CrySystem/SystemInitParams.h>
 #include <CrySystem/IConsole.h>
 #include <CrySystem/File/ICryPak.h>
 
 #include <CryCore/Platform/platform_impl.inl>
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.h>
+#include <CryString/CryWinStringUtils.h>
 #include <CryString/StringUtils.h>
 
 // Advise notebook graphics drivers to prefer discrete GPU when no explicit application profile exists

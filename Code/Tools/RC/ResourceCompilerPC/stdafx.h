@@ -7,6 +7,7 @@
 
 #pragma once
 #include <CryCore/Platform/platform.h>
+#include <CryCore/Platform/CryLibrary.h>
 
 typedef string tstring;
 
@@ -39,5 +40,5 @@ typedef string tstring;
 
 #include <CryRenderer/VertexFormats.h>
 
-#include "..\ResourceCompiler\IRCLog.h"
-#include "..\ResourceCompiler\SwapEndianness.h"
+#include <IRCLog.h>
+#include <SwapEndianness.h>

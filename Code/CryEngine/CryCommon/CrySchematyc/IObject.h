@@ -145,6 +145,13 @@ struct IObjectDump
 	virtual void operator()(const STimer& timer)               {}
 };
 
+struct IObjectSignalListener 
+{
+	virtual ~IObjectSignalListener() {}
+
+	virtual void ProcessSignal(const SObjectSignal& signal) = 0;
+};
+
 struct IObject
 {
 	virtual ~IObject() {}
@@ -165,6 +172,9 @@ struct IObject
 	virtual IEntity*                      GetEntity() const = 0;
 
 	virtual IObjectPropertiesPtr          GetObjectProperties() const = 0;
+
+	virtual void                          AddSignalListener(IObjectSignalListener& signalListener) = 0;
+	virtual void                          RemoveSignalListener(IObjectSignalListener& signalListener) = 0;
 
 	template<typename SIGNAL> inline void ProcessSignal(const SIGNAL& signal, const CryGUID& senderGUID = CryGUID())
 	{

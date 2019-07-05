@@ -15,6 +15,7 @@
 #include "FlowSystemCVars.h"
 #include "Inspectors/FlowFilters.h"
 #include <CryFlowGraph/IFlowSystem.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CryAISystem/IAgent.h>
 
@@ -153,8 +154,6 @@ CFlowSystemCVars::CFlowSystemCVars()
 {
 	assert(s_pThis == 0);
 	s_pThis = this;
-
-	IConsole* pConsole = gEnv->pConsole;
 
 	REGISTER_COMMAND("fg_Inspector", Inspector, 0,
 	                 "Toggles FlowGraph System DefaultInspector.\n"

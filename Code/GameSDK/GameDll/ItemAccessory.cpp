@@ -18,6 +18,7 @@ History:
 #include "RecordingSystem.h"
 #include "ItemAnimation.h"
 #include "EquipmentLoadout.h"
+#include <IGameplayRecorder.h>
 
 //------------------------------------------------------------------------
 CItem *CItem::AddAccessory(IEntityClass* pClass)
@@ -212,7 +213,6 @@ void CItem::AttachAccessory(IEntityClass* pAccessoryClass, bool attach, bool noa
 	if (!force && IsBusy())
 		return;
 
-	bool anim = !noanim && m_stats.fp;
 	const SAccessoryParams *params = GetAccessoryParams(pAccessoryClass);
 	if (!params)
 		return;
@@ -281,7 +281,7 @@ void CItem::AttachAccessory(IEntityClass* pAccessoryClass, bool attach, bool noa
 				{
 					if(m_sharedparams->accessoryparams[i].pAccessoryClass == pAccessoryClass)
 					{
-						CRY_ASSERT_MESSAGE(i < 16, "CItem::AttachAccessory - attachment history only supports 16 attachments. Need to make m_attachedAccessoryHistory larger.");
+						CRY_ASSERT(i < 16, "CItem::AttachAccessory - attachment history only supports 16 attachments. Need to make m_attachedAccessoryHistory larger.");
 						m_attachedAccessoryHistory |= bit;
 						break;
 					}
@@ -581,7 +581,7 @@ void CItem::SwitchAccessory(const ItemString& accessory)
 	{
 		char errorMsg[256];
 		cry_sprintf(errorMsg, "CItem::SwitchAccessory failed to find network safe class id for %s", accessory.c_str());
-		CRY_ASSERT_MESSAGE(result, errorMsg);
+		CRY_ASSERT(result, errorMsg);
 	}
 #endif
 
@@ -664,7 +664,7 @@ void CItem::DetachAccessory(const ItemString& accessory)
 	{
 		char errorMsg[256];
 		cry_sprintf(errorMsg, "CItem::DetachAccessory failed to find network safe class id for %s", accessory.c_str());
-		CRY_ASSERT_MESSAGE(result, errorMsg);
+		CRY_ASSERT(result, errorMsg);
 	}
 #endif
 

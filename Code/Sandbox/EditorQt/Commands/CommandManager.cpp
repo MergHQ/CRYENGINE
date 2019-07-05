@@ -3,12 +3,15 @@
 #include "StdAfx.h"
 #include "CommandManager.h"
 #include "IconManager.h"
-#include "Commands/QCommandAction.h"
-#include "PolledKey.h"
-#include "Qt/QtUtil.h"
-#include "KeyboardShortcut.h"
-#include "CustomCommand.h"
-#include "CryIcon.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+
+#include <Commands/CustomCommand.h>
+#include <Commands/PolledKey.h>
+#include <Commands/QCommandAction.h>
+#include <CryIcon.h>
+#include <KeyboardShortcut.h>
+#include <QtUtil.h>
 
 CEditorCommandManager::CEditorCommandManager()
 	: m_bWarnDuplicate(true) {}
@@ -95,7 +98,9 @@ bool CEditorCommandManager::AddCommand(CCommand* pCommand, TPfnDeleter deleter)
 	  CommandTable::value_type(GetFullCommandName(module, name),
 	                           entry));
 
+	signalCommandAdded(pCommand);
 	signalChanged();
+
 	return true;
 }
 
@@ -142,6 +147,14 @@ string CEditorCommandManager::Execute(const string& module, const string& name, 
 	}
 	else
 	{
+		// Check to see if the command was replaced or deprecated
+		auto it = m_deprecatedCommands.find(fullName);
+		if (it != m_deprecatedCommands.end())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Using renamed command \"%s\", please switch to using \"%s\" instead", fullName.c_str(), it->second.pCommand->GetCommandString().c_str());
+			return "";
+		}
+
 		string errMsg;
 
 		errMsg.Format("Error: Trying to execute a unknown command, '%s'!", fullName);
@@ -178,6 +191,14 @@ string CEditorCommandManager::Execute(const string& cmdLine)
 	}
 	else
 	{
+		// Check to see if the command was replaced or deprecated
+		auto it = m_deprecatedCommands.find(cmdTxt);
+		if (it != m_deprecatedCommands.end())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Using renamed command \"%s\", please switch to using \"%s\" instead", cmdTxt.c_str(), it->second.pCommand->GetCommandString().c_str());
+			return "";
+		}
+
 		GetIEditorImpl()->GetSystem()->GetIConsole()->ExecuteString(cmdLine);
 	}
 
@@ -214,7 +235,24 @@ void CEditorCommandManager::GetCommandList(std::vector<CCommand*>& cmds) const
 	std::sort(cmds.begin(), cmds.end());
 }
 
-const CCommandModuleDescription* CEditorCommandManager::GetCommandModuleDescription(const char* moduleName)
+void CEditorCommandManager::RemapCommand(const char* oldModule, const char* oldName, const char* newModule, const char* newName)
+{
+	string oldCommand = GetFullCommandName(oldModule, oldName);
+	string newCommand = GetFullCommandName(newModule, newName);
+
+	auto it = m_commands.find(newCommand);
+	if (it != m_commands.end())
+	{
+		m_deprecatedCommands.insert(CommandTable::value_type(oldCommand, it->second));
+	}
+}
+
+bool CEditorCommandManager::IsCommandDeprecated(const char* cmdFullName) const
+{
+	return m_commands.find(cmdFullName) == m_commands.end() && m_deprecatedCommands.find(cmdFullName) != m_deprecatedCommands.end();
+}
+
+const CCommandModuleDescription* CEditorCommandManager::FindOrCreateModuleDescription(const char* moduleName)
 {
 	auto it = m_commandModules.find(moduleName);
 	if (it != m_commandModules.end())
@@ -238,6 +276,14 @@ CCommand* CEditorCommandManager::GetCommand(const char* cmdFullName) const
 	}
 	else
 	{
+		// Check to see if the command was replaced or deprecated
+		auto it = m_deprecatedCommands.find(cmdFullName);
+		if (it != m_deprecatedCommands.end())
+		{
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Using renamed command \"%s\", please switch to using \"%s\" instead", cmdFullName, it->second.pCommand->GetCommandString());
+			return it->second.pCommand;
+		}
+
 		// go through the custom commands
 		CCommand* pResult = nullptr;
 		for (CCustomCommand* pCommand : m_CustomCommands)
@@ -252,39 +298,15 @@ CCommand* CEditorCommandManager::GetCommand(const char* cmdFullName) const
 	}
 }
 
-string CEditorCommandManager::AutoComplete(const string& substr) const
+void CEditorCommandManager::SetChecked(const char* cmdFullName, bool checked)
 {
-	std::vector<string> cmds;
-	GetCommandList(cmds);
-
-	// If substring is empty return first command.
-	if (substr.empty() && (cmds.empty() == false))
-		return cmds[0];
-
-	size_t substrLen = substr.length();
-
-	for (size_t i = 0; i < cmds.size(); ++i)
+	QAction* pAction = GetAction(cmdFullName);
+	if (!pAction)
 	{
-		size_t cmdLen = cmds[i].length();
-
-		if (cmdLen >= substrLen && !strncmp(cmds[i].c_str(), substr.c_str(), substrLen))
-		{
-			if (substrLen == cmdLen)
-			{
-				++i;
-
-				if (i < cmds.size())
-					return cmds[i];
-				else
-					return cmds[i - 1];
-			}
-
-			return cmds[i];
-		}
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Command \'%s\' is not registered.", cmdFullName);
+		return;
 	}
-
-	// Not found
-	return "";
+	pAction->setChecked(checked);
 }
 
 bool CEditorCommandManager::IsRegistered(const char* module, const char* name) const
@@ -312,21 +334,19 @@ bool CEditorCommandManager::IsRegistered(const char* cmdLine_) const
 }
 
 // get any registered command actions. cmdFullName can also include arguments
-QCommandAction* CEditorCommandManager::GetCommandAction(string command, const char* text) const
+QCommandAction* CEditorCommandManager::GetCommandAction(const char* command, const char* text) const
 {
-	bool bNoArguments = true;
-
-	string cmd;
+	string cmd(command);
 	// we need to get first substring
-	size_t delim_pos = command.find_first_of(' ');
+	size_t delim_pos = cmd.find_first_of(' ');
 	// if we have substrings, then we have arguments
-	bNoArguments = (delim_pos == string::npos);
+	bool bNoArguments = (delim_pos == string::npos);
 
 	CommandTable::const_iterator it;
 
 	if (!bNoArguments)
 	{
-		cmd = command.substr(0, delim_pos);
+		cmd = cmd.substr(0, delim_pos);
 		it = m_commands.find(cmd);
 	}
 	else
@@ -342,13 +362,51 @@ QCommandAction* CEditorCommandManager::GetCommandAction(string command, const ch
 		}
 		else
 		{
-			return new QCommandAction(text ? text : "No Label - Replace Me!", command.c_str(), nullptr);
+			std::vector<CCustomCommand*>::const_iterator customCommandIte = std::find_if(m_CustomCommands.cbegin(), m_CustomCommands.cend(), [command](const CCustomCommand* pCommand)
+			{
+				return pCommand->GetCommandString() == command;
+			});
+
+			// If there's a custom command for this action that can be a ui command, return the requested command
+			if (customCommandIte != m_CustomCommands.cend() && (*customCommandIte)->CanBeUICommand())
+			{
+				return static_cast<QCommandAction*>(static_cast<CUiCommand*>(*customCommandIte)->GetUiInfo());
+			}
+
+			// If no custom command was found, then the action isn't registered, and we have no ui info for this command action
+			return new QCommandAction(text ? text : "No Label - Replace Me!", command, nullptr);
 		}
 	}
 
-	CryLog("Command not found: %s", command.c_str());
+	it = m_deprecatedCommands.find(cmd);
+	if (it != m_deprecatedCommands.end())
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Using renamed command \"%s\", please switch to using \"%s\" instead", cmd, it->second.pCommand->GetCommandString());
+		if (bNoArguments && it->second.pCommand->CanBeUICommand())
+		{
+			return static_cast<QCommandAction*>(static_cast<CUiCommand*>(it->second.pCommand)->GetUiInfo());
+		}
+		else
+		{
+			return new QCommandAction(text ? text : "No Label - Replace Me!", cmd, nullptr);
+		}
+	}
+
+	CryLog("Command not found: %s", command);
 
 	return nullptr;
+}
+
+QCommandAction* CEditorCommandManager::CreateNewAction(const char* cmdFullName) const
+{
+	QCommandAction* pCommandAction = GetCommandAction(cmdFullName);
+	if (!pCommandAction)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to create action for \"%s\". Command doesn't exist", cmdFullName);
+		return nullptr;
+	}
+
+	return new QCommandAction(*pCommandAction);
 }
 
 void CEditorCommandManager::RegisterAction(QCommandAction* action, const string& command)
@@ -377,7 +435,7 @@ void CEditorCommandManager::RegisterAction(QCommandAction* action, const string&
 
 				action->setShortcuts(defaults);
 			}
-			
+
 			if (action->QAction::icon().isNull())
 			{
 				string iconStr = command->GetUiInfo()->icon;
@@ -440,8 +498,11 @@ void CEditorCommandManager::AddCustomCommand(CCustomCommand* pCommand)
 	if (it == m_CustomCommands.end())
 	{
 		m_CustomCommands.push_back(pCommand);
-		QCommandAction* action = new QCommandAction(*pCommand);
-		pCommand->SetUiInfo(action);
+		QCommandAction* pCommandAction = new QCommandAction(*pCommand);
+		pCommand->SetUiInfo(pCommandAction);
+
+		signalCommandAdded(pCommand);
+		signalCustomCommandAdded(pCommandAction);
 		signalChanged();
 	}
 }
@@ -634,7 +695,7 @@ void CEditorCommandManager::SetEditorUIActionsEnabled(bool bEnabled)
 	if (!bEnabled)
 	{
 		// shameless hack, keep this one action always enabled to allow resume of editor functionality
-		QCommandAction* suspendAction = GetCommandAction("general.suspend_game_input");
+		QCommandAction* suspendAction = GetCommandAction("game.toggle_suspend_input");
 
 		if (suspendAction)
 		{
@@ -642,4 +703,3 @@ void CEditorCommandManager::SetEditorUIActionsEnabled(bool bEnabled)
 		}
 	}
 }
-

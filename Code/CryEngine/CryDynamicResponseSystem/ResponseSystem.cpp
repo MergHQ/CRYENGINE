@@ -10,6 +10,7 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <CryDynamicResponseSystem/IDynamicResponseCondition.h>
 #include <CryGame/IGameFramework.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "ResponseSystemDataImportHelper.h"
 #include "DialogLineDatabase.h"
@@ -138,15 +139,26 @@ CResponseSystem::~CResponseSystem()
 //--------------------------------------------------------------------------------------------------
 bool CResponseSystem::Init()
 {	
+	bool isDataPathEmpty = (0 == strlen(m_pDataPath->GetString()));
+
 	m_filesFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + m_pDataPath->GetString();
 	m_pSpeakerManager->Init();
-	m_pDialogLineDatabase->InitFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "DialogLines");
+
+	if (!isDataPathEmpty)
+	{
+		m_pDialogLineDatabase->InitFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "DialogLines");
+	}
 	
 	m_currentTime.SetSeconds(0.0f);
 
 	m_pVariableCollectionManager->GetCollection(CVariableCollection::s_globalCollectionName)->CreateVariable("CurrentTime", 0.0f);
 
-	return m_pResponseManager->LoadFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "Responses");
+	bool isLoaded = false;
+	if (!isDataPathEmpty)
+	{
+		isLoaded = m_pResponseManager->LoadFromFiles(m_filesFolder + CRY_NATIVE_PATH_SEPSTR "Responses");
+	}
+	return isLoaded;
 }
 
 //--------------------------------------------------------------------------------------------------

@@ -1,23 +1,24 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CSHADER_H__
-#define __CSHADER_H__
+#pragma once
 
-#include <map>
 #include "CShaderBin.h"
 #include "ShaderSerialize.h"
 #include "ShaderCache.h"
-#include "ShaderComponents.h" // ECGParam
+#include "ShaderComponents.h"
 #include "../ResFileLookupDataMan.h"
 
+#include <map>
+
 struct SRenderBuf;
-class CRenderElement;
 struct SEmitter;
 struct SParticleInfo;
 struct SPartMoveStage;
 struct SSunFlare;
 
-//===================================================================
+class CRenderElement;
+
+//===============================================================================
 
 struct SMacroFX
 {
@@ -217,6 +218,8 @@ class CShaderMan :
 	//////////////////////////////////////////////////////////////////////////
 
 private:
+	void           mfUpdateBuildVersion(const char* szCachePath);
+
 	STexAnim*      mfReadTexSequence(const char* name, int Flags, bool bFindOnly);
 	int            mfReadTexSequence(STexSamplerRT* smp, const char* name, int Flags, bool bFindOnly);
 
@@ -354,7 +357,7 @@ public:
 
 	EShaderCacheMode             m_eCacheMode;
 
-	char*                        m_szShaderPrecache;
+	const char*                  m_szShaderPrecache;
 
 	FXShaderCacheCombinations    m_ShaderCacheCombinations[2];
 	FXShaderCacheCombinations    m_ShaderCacheExportCombinations;
@@ -454,7 +457,7 @@ public:
 		{
 			CryComment("Load System Shader '%s'...", szName);
 
-			if (pSysShader = mfForName(szName, EF_SYSTEM))
+			if ((pSysShader = mfForName(szName, EF_SYSTEM)))
 				return true;
 		}
 
@@ -531,7 +534,7 @@ public:
 	void mfAddLTCombination(SCacheCombination* cmb, FXShaderCacheCombinations& CmbsMapDst, DWORD dwL);
 #endif
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )           //AMD Port
 	#pragma warning( disable : 4267 ) // conversion from 'size_t' to 'XXX', possible loss of data
 #endif
@@ -560,10 +563,6 @@ public:
 	static float EvalWaveForm2(SWaveForm* wf, float frac);
 };
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop ) //AMD Port
 #endif
-
-//=====================================================================
-
-#endif                   // __CSHADER_H__

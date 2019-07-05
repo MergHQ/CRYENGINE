@@ -22,10 +22,15 @@ History:
 #include "Player.h"
 #include "Announcer.h"
 
+#include <CrySystem/ConsoleRegistration.h>
+
 
 #define ANNOUNCEMENT_NOT_PLAYING_TIME -1.0f
 
+#if !defined(_RELEASE)
 int static aa_debug = 0;
+#endif
+
 int static aa_peopleNeeded = 2;
 
 int static aa_enabled = 1;
@@ -71,7 +76,7 @@ void CAreaAnnouncer::Init()
 
 	//Scan for areas
 	IEntityClass* pTargetClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AreaBox");
-	CRY_ASSERT_MESSAGE(pTargetClass, "Unable to find Target class AreaBox");
+	CRY_ASSERT(pTargetClass, "Unable to find Target class AreaBox");
 
 	if(pTargetClass)
 	{
@@ -136,7 +141,7 @@ void CAreaAnnouncer::LoadAnnouncementArea(const IEntity* pEntity, const char* ar
 	if(signal[0] != signal[1] && (signal[0] == INVALID_AUDIOSIGNAL_ID || signal[1] == INVALID_AUDIOSIGNAL_ID))
 	{
 #if defined(USER_benp)
-		CRY_ASSERT_MESSAGE(0, ("'%s' only has signal for 1 team!", areaName));
+		CRY_ASSERT(0, ("'%s' only has signal for 1 team!", areaName));
 #endif
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "'%s' only has signal for 1 team!", areaName);
 	}
@@ -200,9 +205,6 @@ void CAreaAnnouncer::EntityRevived(EntityId entityId)
 	const EntityId clientId = gEnv->pGameFramework->GetClientActorId();
 	if(entityId == clientId)
 	{
-		CGameRules *pGameRules = g_pGame->GetGameRules();
-		CMiscAnnouncer *pMiscAnnouncer = pGameRules->GetMiscAnnouncer();
-	
 		TAudioSignalID signal = BuildAnnouncement(clientId);
 		if(signal != INVALID_AUDIOSIGNAL_ID)
 		{
@@ -219,7 +221,7 @@ TAudioSignalID CAreaAnnouncer::BuildAnnouncement(const EntityId clientId)
 	{
 		IActorSystem* pActorSystem = gEnv->pGameFramework->GetIActorSystem();
 
-		if (CActor* pClientActor = static_cast<CActor*>(pActorSystem->GetActor(clientId)))
+		if (pActorSystem->GetActor(clientId) != nullptr)
 		{
 			int actorCount[k_maxAnnouncementAreas];
 			memset(&actorCount, 0, sizeof(actorCount));

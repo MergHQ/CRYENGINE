@@ -106,7 +106,7 @@ bool HeightManipulator::IsCursorCloseToPole(const BrushMatrix34& worldTM, CViewp
 	return GetProjectedPosToPole(worldTM, view, ray, projectedPos);
 }
 
-void HeightManipulator::Display(DisplayContext& dc)
+void HeightManipulator::Display(SDisplayContext& dc)
 {
 	if (!m_bValid)
 		return;
@@ -128,4 +128,3 @@ void HeightManipulator::Display(DisplayContext& dc)
 	}
 }
 }
-

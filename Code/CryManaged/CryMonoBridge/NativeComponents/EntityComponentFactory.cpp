@@ -47,7 +47,7 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	CMonoClass* pEntityComponentClass = gEnv->pMonoRuntime->GetCryCoreLibrary()->GetClass("CryEngine", "EntityComponent");
 
 	auto prevEventMask = m_eventMask;
-	m_eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED);
+	m_eventMask = ENTITY_EVENT_LEVEL_LOADED;
 
 	if (m_pClass.get() == pEntityComponentClass)
 	{
@@ -63,7 +63,8 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		return;
 	}
 
-	m_pInternalSetEntityMethod = pEntityComponentClass->FindMethod("SetEntity", 2);
+	m_pInternalSetEntityMethod = pEntityComponentClass->FindMethod("SetEntity", 3);
+	m_pInternalUpdateComponentHandleMethod = pEntityComponentClass->FindMethod("UpdateEntityComponentHandle", 1);
 
 	m_pInitializeMethod = m_pClass->FindMethodWithDescInInheritedClasses("OnInitialize()", pEntityComponentClass);
 
@@ -72,11 +73,42 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 		std::weak_ptr<CMonoMethod> pMethod = m_pClass->FindMethodWithDescInInheritedClasses(szMethodSignature, pEntityComponentClass);
 		if (!pMethod.expired())
 		{
-			m_eventMask |= ENTITY_EVENT_BIT(associatedEvent);
+			m_eventMask.Add(associatedEvent);
 		}
 		else
 		{
-			m_eventMask &= ~ENTITY_EVENT_BIT(associatedEvent);
+			m_eventMask.Remove(associatedEvent);
+		}
+
+		return pMethod;
+	};
+
+	auto tryGetInternalMethod = [this, pEntityComponentClass](const char* szMethodSignature, const char* szInternalMethodName, int parameterCount, EEntityEvent associatedEvent) -> std::weak_ptr<CMonoMethod>
+	{
+		std::weak_ptr<CMonoMethod> pMethod;
+		if (!m_pClass->FindMethodWithDescInInheritedClasses(szMethodSignature, pEntityComponentClass).expired())
+		{
+			pMethod = pEntityComponentClass->FindMethod(szInternalMethodName, parameterCount);
+			m_eventMask |= associatedEvent;
+		}
+		else
+		{
+			pMethod.reset();
+			m_eventMask &= ~associatedEvent;
+		}
+		return pMethod;
+	};
+
+	auto tryGetBaseMethod = [this, pEntityComponentClass](const char* szMethodSignature, EEntityEvent associatedEvent) -> std::weak_ptr<CMonoMethod>
+	{
+		std::weak_ptr<CMonoMethod> pMethod = m_pClass->FindMethodWithDescInBaseClass(szMethodSignature, pEntityComponentClass);
+		if (!pMethod.expired())
+		{
+			m_eventMask.Add(associatedEvent);
+		}
+		else
+		{
+			m_eventMask.Remove(associatedEvent);
 		}
 
 		return pMethod;
@@ -88,25 +120,28 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 	m_pHideMethod = tryGetMethod("OnHide()", ENTITY_EVENT_HIDE);
 	m_pUnHideMethod = tryGetMethod("OnUnhide()", ENTITY_EVENT_UNHIDE);
 	m_pPrePhysicsUpdateMethod = tryGetMethod("OnPrePhysicsUpdate(single)", ENTITY_EVENT_PREPHYSICSUPDATE);
+	m_pMoveNearAreaMethod = tryGetMethod("OnMoveNearArea(EntityId,int,EntityId,single)", ENTITY_EVENT_MOVENEARAREA);
+	m_pLeaveNearAreaMethod = tryGetMethod("OnLeaveNearArea(EntityId,int,EntityId)", ENTITY_EVENT_LEAVENEARAREA);
+	m_pEnterNearAreaMethod = tryGetMethod("OnEnterNearArea(EntityId,int,EntityId,single)", ENTITY_EVENT_ENTERNEARAREA);
+	m_pMoveInsideAreaMethod = tryGetMethod("OnMoveInsideArea(EntityId,int,EntityId)", ENTITY_EVENT_MOVEINSIDEAREA);
+	m_pLeaveAreaMethod = tryGetMethod("OnLeaveArea(EntityId,int,EntityId)", ENTITY_EVENT_LEAVEAREA);
+	m_pEnterAreaMethod = tryGetMethod("OnEnterArea(EntityId,int,EntityId)", ENTITY_EVENT_ENTERAREA);
 	m_pRemoveMethod = tryGetMethod("OnRemove()", ENTITY_EVENT_DONE);
 
+	// The update event is split into an editor and game update method.
 	m_pUpdateMethod = tryGetMethod("OnUpdate(single)", ENTITY_EVENT_UPDATE);
 	m_pUpdateMethodEditing = tryGetMethod("OnEditorUpdate(single)", ENTITY_EVENT_UPDATE);
 	if (!m_pUpdateMethod.expired() || !m_pUpdateMethodEditing.expired())
 	{
-		m_eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+		m_eventMask |= ENTITY_EVENT_UPDATE;
 	}
 
-	if (!m_pClass->FindMethodWithDescInInheritedClasses("OnCollision(CollisionEvent)", pEntityComponentClass).expired())
-	{
-		m_pCollisionMethod = pEntityComponentClass->FindMethod("OnCollisionInternal", 12);
-		m_eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
-	}
-	else
-	{
-		m_pCollisionMethod.reset();
-		m_eventMask &= ~ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
-	}
+	// Some methods are not overriden by the user, so we don't need to check if they're overriden.
+	m_pTimerMethod = tryGetBaseMethod("OnTimer(byte)", ENTITY_EVENT_TIMER);
+
+	// Some methods require objects to be sent. These methods use an internal method that converts the loose values to structs.
+	m_pAnimationEventMethod = tryGetInternalMethod("OnAnimationEvent(AnimationEvent,Character)", "OnAnimationEventInternal", 2, ENTITY_EVENT_ANIM_EVENT);
+	m_pCollisionMethod = tryGetInternalMethod("OnCollision(CollisionEvent)", "OnCollisionInternal", 12, ENTITY_EVENT_COLLISION);
 
 	if (prevEventMask != m_eventMask)
 	{
@@ -121,6 +156,16 @@ void CManagedEntityComponentFactory::CacheMethods(bool isAbstract)
 }
 
 std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromPool() const
+{
+	return CreateFromBuffer(CryModuleMalloc(GetSize()));
+}
+
+size_t CManagedEntityComponentFactory::GetSize() const
+{
+	return sizeof(CManagedEntityComponent) + sizeof(SPropertyValue) * m_properties.size();
+}
+
+std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromBuffer(void* pBuffer) const
 {
 	// We allocate extra memory for entity components in order to support getting properties from the Schematyc callbacks at the end of this file.
 	// This allows us to get both the property being processed and the component itself from one pointer currently being handled by Schematyc
@@ -144,49 +189,8 @@ std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromPool
 		}
 	};
 
-	void* pComponentBuffer = CryModuleMalloc(GetSize());
-	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pComponentBuffer) CManagedEntityComponent(*this), CustomDeleter());
+	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pBuffer) CManagedEntityComponent(*this), CustomDeleter());
 
-	InitializeComponent(pComponent);
-
-	return pComponent;
-}
-
-size_t CManagedEntityComponentFactory::GetSize() const
-{
-	return sizeof(CManagedEntityComponent) + sizeof(SPropertyValue) * m_properties.size();
-}
-
-std::shared_ptr<IEntityComponent> CManagedEntityComponentFactory::CreateFromBuffer(void* pComponentBuffer) const
-{
-	// We allocate extra memory for entity components in order to support getting properties from the Schematyc callbacks at the end of this file.
-	// This allows us to get both the property being processed and the component itself from one pointer currently being handled by Schematyc
-	// Otherwise we would need to refactor Schematyc to utilize std::function, introducing extra overhead in terms of both memory and performance.
-	struct CustomDeleter
-	{
-		void operator()(CManagedEntityComponent* p)
-		{
-			// Explicitly call destructors of properties
-			for (size_t i = 0, n = p->GetPropertyCount(); i < n; ++i)
-			{
-				SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>(reinterpret_cast<uintptr_t>(p) + sizeof(CManagedEntityComponent) + i * sizeof(SPropertyValue));
-				pPropertyValue->~SPropertyValue();
-			}
-
-			// Explicit call to the destructor
-			p->~CManagedEntityComponent();
-		}
-	};
-
-	std::shared_ptr<CManagedEntityComponent> pComponent = std::shared_ptr<CManagedEntityComponent>(new(pComponentBuffer) CManagedEntityComponent(*this), CustomDeleter());
-
-	InitializeComponent(pComponent);
-
-	return pComponent;
-}
-
-void CManagedEntityComponentFactory::InitializeComponent(std::shared_ptr<CManagedEntityComponent> pComponent) const
-{
 	// Keep a weak reference to all objects, this allows us to reallocate components on deserialization
 	const_cast<CManagedEntityComponentFactory*>(this)->m_componentInstances.emplace_back(pComponent);
 
@@ -194,10 +198,12 @@ void CManagedEntityComponentFactory::InitializeComponent(std::shared_ptr<CManage
 	for (auto it = m_properties.begin(); it != m_properties.end(); ++it)
 	{
 		size_t offsetFromParent = sizeof(CManagedEntityComponent) + std::distance(m_properties.begin(), it) * sizeof(SPropertyValue);
-		SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>((reinterpret_cast<uintptr_t>(pComponent.get()) + offsetFromParent));
+		SPropertyValue* pPropertyValue = reinterpret_cast<SPropertyValue*>((reinterpret_cast<uintptr_t>(pBuffer) + offsetFromParent));
 
 		new(pPropertyValue) SPropertyValue(*it->get(), nullptr, pComponent->GetObject());
 	}
+
+	return pComponent;
 }
 
 void CManagedEntityComponentFactory::OnClassDeserialized(MonoInternals::MonoClass* pMonoClass, const Schematyc::SSourceFileInfo& managedSourceFileInfo, const char* szName, const char* szUiCategory, const char* szUiDescription, const char* szIcon)
@@ -837,7 +843,7 @@ CManagedEntityComponentFactory::CSchematycFunction::CSchematycFunction(std::shar
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "Tried to register Schematyc function with non-primitive parameter type!");
+			CRY_ASSERT(false, "Tried to register Schematyc function with non-primitive parameter type!");
 			break;
 		}
 
@@ -919,7 +925,7 @@ void CManagedEntityComponentFactory::CSchematycFunction::Execute(Schematyc::CRun
 				break;
 
 			default:
-				CRY_ASSERT_MESSAGE(false, "Tried to execute Schematyc function with non-primitive parameter type!");
+				CRY_ASSERT(false, "Tried to execute Schematyc function with non-primitive parameter type!");
 				break;
 			}
 		}
@@ -968,7 +974,7 @@ void CManagedEntityComponentFactory::CSchematycSignal::CSignalClassDesc::AddPara
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "Tried to add Schematyc signal parameter with non-primitive type!");
+		CRY_ASSERT(false, "Tried to add Schematyc signal parameter with non-primitive type!");
 		break;
 	}
 }

@@ -20,7 +20,6 @@
 
 #include "Configuration.h"
 #include "AIConsoleVariables.h"
-#include "AISignalCRCs.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AI system environment.
@@ -50,17 +49,20 @@ class CCoverSystem;
 namespace BehaviorTree
 {
 class BehaviorTreeManager;
-class GraftManager;
 }
 namespace Perception
 {
-	class CAuditionMap;
+class CAuditionMap;
 }
 class CVisionMap;
 class CFactionMap;
 class CFactionSystem;
 class CGroupManager;
+namespace Cry { namespace AI { namespace CollisionAvoidance
+{
 class CCollisionAvoidanceSystem;
+}}}
+
 class CAIObjectManager;
 class NavigationSystem;
 namespace AIActionSequence {
@@ -76,8 +78,7 @@ struct IAIBubblesSystem;
 
 struct SAIEnvironment
 {
-	AIConsoleVars            CVars;
-	AISIGNALS_CRC            SignalCRCs;
+	SAIConsoleVars            CVars;
 
 	SConfiguration           configuration;
 
@@ -100,17 +101,17 @@ struct SAIEnvironment
 	CCoverSystem*                        pCoverSystem;
 	NavigationSystem*                    pNavigationSystem;
 	BehaviorTree::BehaviorTreeManager*   pBehaviorTreeManager;
-	BehaviorTree::GraftManager*          pGraftManager;
 	Perception::CAuditionMap*            pAuditionMap;
 	CVisionMap*                          pVisionMap;
 	CFactionMap*                         pFactionMap;
 	CFactionSystem*                      pFactionSystem;
 	CGroupManager*                       pGroupManager;
-	CCollisionAvoidanceSystem*           pCollisionAvoidanceSystem;
+	Cry::AI::CollisionAvoidance::CCollisionAvoidanceSystem* pCollisionAvoidanceSystem;
 	struct IMovementSystem*              pMovementSystem;
 	AIActionSequence::SequenceManager*   pSequenceManager;
 	ClusterDetector*                     pClusterDetector;
 	CFormationManager*                   pFormationManager;
+	AISignals::CSignalManager*           pSignalManager;
 
 #ifdef CRYAISYSTEM_DEBUG
 	IAIBubblesSystem* pBubblesSystem;

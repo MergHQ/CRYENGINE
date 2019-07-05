@@ -23,7 +23,7 @@ extern CSvoEnv* gSvoEnv;
 
 void CSvoManager::CheckAllocateGlobalCloud()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!gSvoEnv && Cry3DEngineBase::GetCVars()->e_svoEnabled)
 	{
 		float mapSize = (float)Cry3DEngineBase::Get3DEngine()->GetTerrainSize();
@@ -41,13 +41,14 @@ char* CSvoManager::GetStatusString(int lineId)
 	if (lineId == (slotId++) && (CVoxelSegment::m_addPolygonToSceneCounter || GetCVars()->e_svoEnabled))
 	{
 		int allSlotsNum = SVO_ATLAS_DIM_BRICKS_XY * SVO_ATLAS_DIM_BRICKS_XY * SVO_ATLAS_DIM_BRICKS_Z;
-		cry_sprintf(szText, "SVO pool: %2d of %dMB x %d, %3d/%3d of %4d = %.1f Async: %2d, Post: %2d, Loaded: %4d",
+		cry_sprintf(szText, "SVO pool: %2d of %dMB x %d, %3d/%3d of %4d = %.1f Async: %2d, Post: %2d, Loaded: %4d, %s",
 		            CVoxelSegment::m_poolUsageBytes / 1024 / 1024,
 		            int(CVoxelSegment::m_voxTexPoolDimXY * CVoxelSegment::m_voxTexPoolDimXY * CVoxelSegment::m_voxTexPoolDimZ / 1024 / 1024) * (gSvoEnv->m_voxTexFormat == eTF_BC3 ? 1 : 4),
 		            CVoxelSegment::m_svoDataPoolsCounter,
 		            CVoxelSegment::m_addPolygonToSceneCounter, CVoxelSegment::m_poolUsageItems, allSlotsNum,
 		            (float)CVoxelSegment::m_poolUsageItems / allSlotsNum,
-		            CVoxelSegment::m_streamingTasksInProgress, CVoxelSegment::m_postponedCounter, CVoxelSegment::m_arrLoadedSegments.Count());
+		            CVoxelSegment::m_streamingTasksInProgress, CVoxelSegment::m_postponedCounter, CVoxelSegment::m_arrLoadedSegments.Count(),
+		            CSvoNode::IsStreamingActive() ? "OFV" : "RTV");
 		return szText;
 	}
 
@@ -123,7 +124,6 @@ char* CSvoManager::GetStatusString(int lineId)
 		return szText;
 	}
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	if (lineId == (slotId++) && gSvoEnv->m_arrRTPoolInds.Count())
 	{
 		cry_sprintf(szText, "RT pools: tex %.2f, verts %.2f, inds %.2f",
@@ -132,7 +132,6 @@ char* CSvoManager::GetStatusString(int lineId)
 		            (float)gSvoEnv->m_arrRTPoolInds.Count() / max((float)gSvoEnv->m_arrRTPoolInds.capacity(), 1.f));
 		return szText;
 	}
-	#endif
 
 	return nullptr;
 }
@@ -173,7 +172,9 @@ void CSvoManager::Release()
 
 void CSvoManager::Render(bool bSyncUpdate)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSvoManager::Render");
+
 	if (GetCVars()->e_svoTI_Apply && (!m_bLevelLoadingInProgress || gEnv->IsEditor()) && !GetCVars()->e_svoTI_Active)
 	{
 		GetCVars()->e_svoTI_Active = 1;
@@ -190,7 +191,7 @@ void CSvoManager::Render(bool bSyncUpdate)
 
 	if (GetCVars()->e_svoLoadTree)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("SVO Load Tree");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "SVO Load Tree");
 		SAFE_DELETE(gSvoEnv);
 
 		GetCVars()->e_svoEnabled = 1;
@@ -205,7 +206,7 @@ void CSvoManager::Render(bool bSyncUpdate)
 
 	if (GetCVars()->e_svoEnabled && GetCVars()->e_svoRender)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("SVO Render");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "SVO Render");
 
 		CheckAllocateGlobalCloud();
 

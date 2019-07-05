@@ -17,12 +17,14 @@
 #include "IUIGameEventSystem.h"
 #include "UICVars.h"
 #include "UITypes.h"
+#include "Game.h"
 
 class CWarningsManager;
 class CProfileOptions;
 class C2DRenderUtils;
 class ScreenLayoutManager;
 class CHUDSilhouettes;
+class CHUDMissionObjectiveSystem;
 
 
 class CUIManager

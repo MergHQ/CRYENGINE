@@ -105,20 +105,22 @@ void XMLCPB::InitializeDataTypeInfo()
 		s_TypeInfos[i].basicType = DT_STR;
 	}
 
+#if defined(USE_CRY_ASSERT)
 	// some checking
 	for (uint i = 0; i < DT_NUMTYPES; ++i)
 	{
 		const STypeInfo& info = s_TypeInfos[i];
-		assert(info.type == i);
-		assert(info.basicType < DT_NUM_BASIC_TYPES);
+		CRY_ASSERT(info.type == i);
+		CRY_ASSERT(info.basicType < DT_NUM_BASIC_TYPES);
 	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 const char* XMLCPB::GetConstantString(uint32 ind)
 {
-	assert(ind < DT_NUM_CONST_STR);
+	CRY_ASSERT(ind < DT_NUM_CONST_STR);
 	return s_constStrings[ind];
 }
 

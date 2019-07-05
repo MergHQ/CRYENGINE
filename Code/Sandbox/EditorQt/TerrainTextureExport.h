@@ -1,46 +1,27 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_TerrainTextureExport_H__4CAA5295_2647_42FD_8334_359F55EBA777__INCLUDED_)
-#define AFX_TerrainTextureExport_H__4CAA5295_2647_42FD_8334_359F55EBA777__INCLUDED_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-// TerrainTextureExport.h : header file
-//
+#pragma once
 
 #include "Controls/ColorCheckBox.h"
-
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainTextureExport dialog
+#include <Util/Image.h>
 
 class CTerrainTextureExport : public CDialog
 {
-	// Construction
 public:
-	CTerrainTextureExport(CWnd* pParent = NULL);   // standard constructor
+	CTerrainTextureExport(CWnd* pParent = nullptr);
 	~CTerrainTextureExport();
 
-	// Dialog Data
-	//{{AFX_DATA(CTerrainTextureExport)
 	enum { IDD = IDD_TERRAIN_TEXTURE_EXPORT };
-	//}}AFX_DATA
 
 	void ImportExport(bool bIsImport, bool bIsClipboard = false);
 
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CTerrainTextureExport)
-
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	string BrowseTerrainTexture(bool bIsSave);
-		//}}AFX_VIRTUAL
+	virtual void DoDataExchange(CDataExchange* pDX);
+	string       BrowseTerrainTexture(bool bIsSave);
 
-	void DrawPreview(CDC& dc);
-	void PreviewToTile(uint32& outX, uint32& outY, uint32 x, uint32 y);
+	void         DrawPreview(CDC& dc);
+	void         PreviewToTile(uint32& outX, uint32& outY, uint32 x, uint32 y);
 
-	// Implementation
 protected:
 	CBitmap               m_bmpLightmap;
 	CDC                   m_dcLightmap;
@@ -72,9 +53,3 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Visual C++ will insert additional declarations immediately before the previous line.
-
-#endif // !defined(AFX_TerrainTextureExport_H__4CAA5295_2647_42FD_8334_359F55EBA777__INCLUDED_)
-

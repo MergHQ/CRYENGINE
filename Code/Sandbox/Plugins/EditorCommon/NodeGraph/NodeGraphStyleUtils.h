@@ -7,6 +7,9 @@
 #include <QPixmap>
 #include <QRectF>
 
+class QIcon;
+class CryIcon;
+
 namespace CryGraphEditor {
 
 namespace StyleUtils {
@@ -43,4 +46,3 @@ inline QRectF operator+(const QRectF& a, const QRect& b)
 {
 	return a.adjusted(b.left(), b.top(), b.right(), b.bottom());
 }
-

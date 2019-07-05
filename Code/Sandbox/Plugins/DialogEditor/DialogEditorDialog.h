@@ -4,11 +4,11 @@
 
 #include "DialogScriptView.h"
 #include "Controls/ColorCtrl.h"
-#include "Util/Variable.h"
 
 class CBaseObject;
 class CEntityObject;
 class CDialogManager;
+struct IVariable;
 
 #define DIALOG_EDITOR_NAME "Dialog Editor"
 #define DIALOG_EDITOR_VER  "1.00"
@@ -194,4 +194,3 @@ protected:
 	CImageList      m_imageList;
 	CDialogManager* m_pDM;
 };
-

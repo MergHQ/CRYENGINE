@@ -26,13 +26,9 @@
 #define MAX_ERROR_STRING MAX_WARNING_LENGTH
 
 // Disable printf argument verification since it is generated at runtime
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic ignored "-Wformat-security"
-	#else
-		#pragma GCC diagnostic push
-		#pragma GCC diagnostic ignored "-Wformat-security"
-	#endif
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat-security"
 #endif
 //////////////////////////////////////////////////////////////////////
 
@@ -245,7 +241,7 @@ IMaterial* Cry3DEngineBase::MakeSystemMaterialFromShader(const char* sShaderName
 //////////////////////////////////////////////////////////////////////////
 bool Cry3DEngineBase::IsValidFile(const char* sFilename)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	return gEnv->pCryPak->IsFileExist(sFilename);
 }
@@ -306,17 +302,6 @@ void Cry3DEngineBase::DrawQuad(const Vec3& v0, const Vec3& v1, const Vec3& v2, c
 	GetRenderer()->GetIRenderAuxGeom()->DrawTriangle(v0, color, v1, color, v2, color);
 }
 
-// Check if preloading is enabled.
-bool Cry3DEngineBase::IsPreloadEnabled()
-{
-	bool bPreload = false;
-	ICVar* pSysPreload = GetConsole()->GetCVar("sys_preload");
-	if (pSysPreload && pSysPreload->GetIVal() != 0)
-		bPreload = true;
-
-	return bPreload;
-}
-
 //////////////////////////////////////////////////////////////////////////
 bool Cry3DEngineBase::CheckMinSpec(uint32 nMinSpec)
 {
@@ -341,12 +326,8 @@ bool Cry3DEngineBase::IsEscapePressed()
 	return false;
 }
 
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic error "-Wformat-security"
-	#else
-		#pragma GCC diagnostic pop
-	#endif
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic pop
 #endif
 
 #include <CryCore/CrtDebugStats.h>

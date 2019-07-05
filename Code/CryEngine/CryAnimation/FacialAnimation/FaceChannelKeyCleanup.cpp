@@ -67,20 +67,25 @@ void VerifyStructure(int numKeys, FaceChannelCleanupKeysKeyEntry* keyEntries)
 	for (int listIndex = 0; listIndex < LIST_DEF_COUNT; ++listIndex)
 	{
 		int startIndex = listDefs[listIndex].startIndex;
-		int (FaceChannelCleanupKeysKeyEntry::* links)[2] = listDefs[listIndex].links;
+
+		// Using pointer to data member array type alias to avoid CppCheck error message about missing initialization from
+		//     int (FaceChannelCleanupKeysKeyEntry::* links)[2] = listDefs[listIndex].links;
+		using PtrToIntMemArr = int (FaceChannelCleanupKeysKeyEntry::*)[2];
+		PtrToIntMemArr links = listDefs[listIndex].links;
+
 		for (int index = (keyEntries[startIndex].*links)[NEXT]; index >= 0; index = (keyEntries[index].*links)[NEXT])
 		{
-			assert((keyEntries[(keyEntries[index].*links)[NEXT]].*links)[PREVIOUS] == index);
-			assert((keyEntries[(keyEntries[index].*links)[PREVIOUS]].*links)[NEXT] == index);
+			CRY_ASSERT((keyEntries[(keyEntries[index].*links)[NEXT]].*links)[PREVIOUS] == index);
+			CRY_ASSERT((keyEntries[(keyEntries[index].*links)[PREVIOUS]].*links)[NEXT] == index);
 			if (listDefs[listIndex].checkIndexOrder == CheckIndexOrder)
 			{
-				assert((keyEntries[index].*links)[PREVIOUS] < 0 || index > (keyEntries[index].*links)[PREVIOUS]);
-				assert((keyEntries[index].*links)[NEXT] < 0 || index < (keyEntries[index].*links)[NEXT]);
+				CRY_ASSERT((keyEntries[index].*links)[PREVIOUS] < 0 || index > (keyEntries[index].*links)[PREVIOUS]);
+				CRY_ASSERT((keyEntries[index].*links)[NEXT] < 0 || index < (keyEntries[index].*links)[NEXT]);
 			}
 			if (float (FaceChannelCleanupKeysKeyEntry::* sortKey) = listDefs[listIndex].sortKey)
 			{
-				assert((keyEntries[index].*links)[PREVIOUS] < 0 || keyEntries[index].*sortKey >= keyEntries[(keyEntries[index].*links)[PREVIOUS]].*sortKey);
-				assert((keyEntries[index].*links)[NEXT] < 0 || keyEntries[index].*sortKey <= keyEntries[(keyEntries[index].*links)[NEXT]].*sortKey);
+				CRY_ASSERT((keyEntries[index].*links)[PREVIOUS] < 0 || keyEntries[index].*sortKey >= keyEntries[(keyEntries[index].*links)[PREVIOUS]].*sortKey);
+				CRY_ASSERT((keyEntries[index].*links)[NEXT] < 0 || keyEntries[index].*sortKey <= keyEntries[(keyEntries[index].*links)[NEXT]].*sortKey);
 			}
 		}
 	}
@@ -100,7 +105,6 @@ void VerifyStructure(int numKeys, FaceChannelCleanupKeysKeyEntry* keyEntries)
 		TreeEntry(MAIN_TREE,                             &FaceChannelCleanupKeysKeyEntry::parent,     &FaceChannelCleanupKeysKeyEntry::children)
 	};
 	enum {NUM_TREE_REMOVAL_ENTRIES = CRY_ARRAY_COUNT(treeEntries)};
-	int countChangedItem = -1;
 	for (int treeIndex = 0; treeIndex < NUM_TREE_REMOVAL_ENTRIES; ++treeIndex)
 	{
 		int root = treeEntries[treeIndex].root;
@@ -120,7 +124,7 @@ void VerifyStructure(int numKeys, FaceChannelCleanupKeysKeyEntry* keyEntries)
 					int child = (keyEntries[index].*children)[i];
 					if (child >= 0)
 					{
-						assert((keyEntries[child].*parent) == index);
+						CRY_ASSERT((keyEntries[child].*parent) == index);
 						(*this)(child);
 					}
 				}
@@ -141,7 +145,7 @@ void VerifyStructure(int numKeys, FaceChannelCleanupKeysKeyEntry* keyEntries)
 		{
 			for (int child = index, ancestor = keyEntries[child].sortParent; ancestor >= 0; child = ancestor, ancestor = keyEntries[ancestor].sortParent)
 			{
-				assert(keyEntries[ancestor].sortChildren[0] == child || keyEntries[ancestor].sortChildren[1] == child);
+				CRY_ASSERT(keyEntries[ancestor].sortChildren[0] == child || keyEntries[ancestor].sortChildren[1] == child);
 			}
 		}
 	}
@@ -220,7 +224,7 @@ void FaceChannel::CleanupKeys(CFacialAnimChannelInterpolator* pSpline, float err
 			}
 		}
 	}
-	assert(pSpline->num_keys() == keyEntries[mainTree.children[0]].count);
+	CRY_ASSERT(pSpline->num_keys() == keyEntries[mainTree.children[0]].count);
 
 	// Add all the keys to the list of keys to reevaluate, and the list of neighbours.
 	reevaluateKeysList.links[NEXT] = REEVALUATE_KEYS_LIST;
@@ -266,7 +270,7 @@ void FaceChannel::CleanupKeys(CFacialAnimChannelInterpolator* pSpline, float err
 		VERIFY_STRUCTURE(numKeys, keyEntries);
 		for (int index = reevaluateKeysList.links[NEXT], next = keyEntries[index].links[NEXT]; index >= 0; index = next, next = keyEntries[index].links[NEXT])
 		{
-			assert(keyEntries[index].currentList == REEVALUATE_KEYS_LIST);
+			CRY_ASSERT(keyEntries[index].currentList == REEVALUATE_KEYS_LIST);
 
 			// Reevaluate the potential error for deleting this key.
 			//for (int testWithDeletedKey = 0; testWithDeletedKey < 2; ++testWithDeletedKey)
@@ -287,9 +291,9 @@ void FaceChannel::CleanupKeys(CFacialAnimChannelInterpolator* pSpline, float err
 					}
 
 					// Temporarily delete the key.
-					assert(keyIndex >= 0 && keyIndex < pSpline->num_keys());
-					assert(pSpline->time(keyIndex) == keyEntries[index].time);
-					assert(pSpline->value(keyIndex) == keyEntries[index].value);
+					CRY_ASSERT(keyIndex >= 0 && keyIndex < pSpline->num_keys());
+					CRY_ASSERT(pSpline->time(keyIndex) == keyEntries[index].time);
+					CRY_ASSERT(pSpline->value(keyIndex) == keyEntries[index].value);
 					key = pSpline->key(keyIndex);
 					pSpline->erase(keyIndex);
 				}
@@ -345,7 +349,7 @@ void FaceChannel::CleanupKeys(CFacialAnimChannelInterpolator* pSpline, float err
 
 			// Add the node to the active list at the given point (either before or after the sort tree node).
 			{
-				assert(keyEntries[position].currentList == ACTIVE_KEYS_LIST);
+				CRY_ASSERT(keyEntries[position].currentList == ACTIVE_KEYS_LIST);
 				const int direction = relative;
 				const int otherDirection = 1 - relative;
 				keyEntries[index].links[direction] = keyEntries[position].links[direction];
@@ -405,7 +409,7 @@ void FaceChannel::CleanupKeys(CFacialAnimChannelInterpolator* pSpline, float err
 					if (child == keyEntries[ancestor].children[1])
 						keyIndex += keyEntries[keyEntries[ancestor].children[0]].count + 1;
 				}
-				assert(keyIndex >= 0 && keyIndex < pSpline->num_keys());
+				CRY_ASSERT(keyIndex >= 0 && keyIndex < pSpline->num_keys());
 				pSpline->erase(keyIndex);
 			}
 
@@ -434,7 +438,12 @@ void FaceChannel::CleanupKeys(CFacialAnimChannelInterpolator* pSpline, float err
 			for (int treeIndex = 0; treeIndex < NUM_TREE_REMOVAL_ENTRIES; ++treeIndex)
 			{
 				int (FaceChannelCleanupKeysKeyEntry::* const parentPtr) = treeRemovalEntries[treeIndex].parent;
-				int (FaceChannelCleanupKeysKeyEntry::* const childrenPtr)[2] = treeRemovalEntries[treeIndex].children;
+
+				// Using const pointer to data member array type alias to avoid CppCheck error message about missing initialization from
+				//     int (FaceChannelCleanupKeysKeyEntry::* const childrenPtr)[2] = treeRemovalEntries[treeIndex].children;
+				using ConstPtrToIntMemArr = int (FaceChannelCleanupKeysKeyEntry::* const)[2];
+				ConstPtrToIntMemArr childrenPtr = treeRemovalEntries[treeIndex].children;
+
 				const int numKeysToRemove = treeRemovalEntries[treeIndex].numItemsToRemove;
 				const int* const keysToRemove = treeRemovalEntries[treeIndex].itemsToRemove;
 
@@ -495,7 +504,7 @@ void FaceChannel::CleanupKeys(CFacialAnimChannelInterpolator* pSpline, float err
 						keyEntries[updateIndex].count += keyEntries[child].count;
 				}
 			}
-			assert(pSpline->num_keys() == keyEntries[mainTree.children[0]].count);
+			CRY_ASSERT(pSpline->num_keys() == keyEntries[mainTree.children[0]].count);
 			VERIFY_STRUCTURE(numKeys, keyEntries);
 
 			// Add all the neighbours to the reevaluate list (but not the key to be deleted).

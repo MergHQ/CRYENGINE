@@ -48,5 +48,5 @@ public:
 	void ClearStalls();
 
 private:
-	std::auto_ptr<detail::CTimerThread> m_pThread;
+	std::unique_ptr<detail::CTimerThread> m_pThread;
 };

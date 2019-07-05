@@ -2,25 +2,14 @@
 
 #include "stdafx.h"
 #include "Noise.h"
-#include "Util\DynamicArray2D.h"
-
+#include "LogFile.h"
+#include "Util/DynamicArray2D.h"
+#include "Util/EditorUtils.h"
+#include <CryMath/Cry_Math.h>
 #include <CryMath/Random.h>
 
 #pragma warning (push)
 #pragma warning (disable : 4244)
-
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-CNoise::CNoise()
-{
-
-}
-
-CNoise::~CNoise()
-{
-
-}
 
 __forceinline float CNoise::Spline(float x, float* knot)
 {
@@ -218,4 +207,3 @@ cleanup:
 }
 
 #pragma warning (pop)
-

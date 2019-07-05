@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CRYMEMFILE_HEADER_
-#define _CRYMEMFILE_HEADER_
+#pragma once
 
 // derived class to get correct memory allocation/deallocation with custom memory manager - and to avoid memory leaks from calling Detach()
 class CCryMemFile : public CMemFile
@@ -13,7 +12,7 @@ class CCryMemFile : public CMemFile
 
 	virtual void Free(BYTE* lpMem)
 	{
-		/*return*/ free(lpMem);
+		free(lpMem);
 	}
 
 	virtual BYTE* Realloc(BYTE* lpMem, SIZE_T nBytes)
@@ -21,7 +20,7 @@ class CCryMemFile : public CMemFile
 		return (BYTE*)realloc(lpMem, nBytes);
 	}
 
-public: // ---------------------------------------------------------------
+public:
 
 	CCryMemFile(UINT nGrowBytes = 1024) : CMemFile(nGrowBytes) {}
 	CCryMemFile(BYTE* lpBuffer, UINT nBufferSize, UINT nGrowBytes = 0) : CMemFile(lpBuffer, nBufferSize, nGrowBytes) {}
@@ -43,6 +42,3 @@ public: // ---------------------------------------------------------------
 		return 0;
 	}
 };
-
-#endif // _CRYMEMFILE_HEADER_
-

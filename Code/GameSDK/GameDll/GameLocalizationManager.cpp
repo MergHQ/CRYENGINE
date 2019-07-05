@@ -14,6 +14,7 @@ Also as a special case credits are dynamically loaded
 #include "StdAfx.h"
 #include "GameLocalizationManager.h"
 #include "Network/Lobby/GameLobby.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 CGameLocalizationManager::CGameLocalizationManager()
 {
@@ -70,7 +71,7 @@ void CGameLocalizationManager::LegacyLoadLocalizationData()
 	{
 		do
 		{
-			CRY_ASSERT_MESSAGE(stricmp(PathUtil::GetExt(fd.name), "xml") == 0, "expected xml files only");
+			CRY_ASSERT(stricmp(PathUtil::GetExt(fd.name), "xml") == 0, "expected xml files only");
 
 			string filename = szLocalizationFolderPath + fd.name;
 			pLocMan->LoadExcelXmlSpreadsheet(filename.c_str());
@@ -126,7 +127,7 @@ void CGameLocalizationManager::LoadTag( ELocalizationTag tag )
 		}
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(0, "Unknown GameLocalizationManger Tag");
+		CRY_ASSERT(0, "Unknown GameLocalizationManger Tag");
 		break;
 	}
 }

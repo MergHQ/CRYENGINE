@@ -16,7 +16,7 @@ bool CSkeletonAnim::StartAnimation(const char* szAnimName, const struct CryCharA
 	if (szAnimName == 0)
 	{
 		g_pILog->LogError("No name for animation specified");
-		assert(!"No name for animation specified");
+		CRY_ASSERT(!"No name for animation specified");
 		return false;
 	}
 
@@ -55,6 +55,8 @@ bool CSkeletonAnim::StartAnimationById(int32 id, const struct CryCharAnimationPa
 	if (RootName == 0)
 		return 0;
 
+	m_pInstance->ResetQuasiStaticSleepTimer();
+
 	CryCharAnimationParams AnimPrams = Params;
 	if (AnimPrams.m_nLayerID > 0)
 	{
@@ -89,14 +91,9 @@ bool CSkeletonAnim::StartAnimationById(int32 id, const struct CryCharAnimationPa
 	const ModelAnimationHeader* pAnim = NULL;
 	int32 nAnimID = id;
 
-	const ModelAnimationHeader* pAnimAim0 = NULL;
-	int32 nAnimAimID0 = -1;
-	const ModelAnimationHeader* pAnimAim1 = NULL;
-	int32 nAnimAimID1 = -1;
-
 	CAnimationSet* pAnimationSet = m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 
-	assert(Params.m_fTransTime < 60.0f); //transition times longer than 1 minute are useless
+	CRY_ASSERT(Params.m_fTransTime < 60.0f); //transition times longer than 1 minute are useless
 
 	if (nAnimID < 0)
 		return 0;
@@ -107,9 +104,8 @@ bool CSkeletonAnim::StartAnimationById(int32 id, const struct CryCharAnimationPa
 
 	pAnim = pAnimationSet->GetModelAnimationHeader(nAnimID);
 
-	if (pAnim == 0)
+	if (!CRY_VERIFY(pAnim))
 	{
-		assert(0);
 		return 0;
 	}
 
@@ -188,7 +184,7 @@ bool CSkeletonAnim::StartAnimationById(int32 id, const struct CryCharAnimationPa
 	if (pAnim->m_nAssetType == LMG_File)
 	{
 		GlobalAnimationHeaderLMG& rLMG = g_AnimationManager.m_arrGlobalLMG[nGlobalID];
-		assert(rLMG.IsAssetLMG());
+		CRY_ASSERT(rLMG.IsAssetLMG());
 		uint32 IsCreated = rLMG.IsAssetCreated();
 		if (IsCreated == 0)
 		{
@@ -250,10 +246,9 @@ bool CSkeletonAnim::StartAnimationById(int32 id, const struct CryCharAnimationPa
 // actually stopped (if the layer existed and the animation was played there)
 bool CSkeletonAnim::StopAnimationInLayer(int32 nLayer, f32 fBlendOutTime)
 {
-	if (nLayer < 0 || nLayer >= numVIRTUALLAYERS)
+	if (!CRY_VERIFY(nLayer >= 0 && nLayer < numVIRTUALLAYERS))
 	{
 		gEnv->pLog->LogError("illegal layer index used in function StopAnimationInLayer: '%d'  for Model: %s", nLayer, m_pInstance->m_pDefaultSkeleton->GetModelFilePath());
-		assert(0);
 		return 0;
 	}
 
@@ -327,7 +322,7 @@ uint32 CSkeletonAnim::AnimationToQueue(const ModelAnimationHeader* pAnim, int nA
 		}
 	}
 
-	if (AnimParams.m_nFlags & CA_REMOVE_FROM_FIFO)
+	if (AnimParams.m_nFlags & CA_REMOVE_FROM_FIFO || m_pInstance->IsQuasiStaticSleeping())
 	{
 		RemoveAnimFromFIFO(AnimParams.m_nLayerID, 0, true);
 	}
@@ -339,8 +334,7 @@ uint32 CSkeletonAnim::AnimationToQueue(const ModelAnimationHeader* pAnim, int nA
 		if (pAnim->m_nAssetType == LMG_File)
 		{
 			GlobalAnimationHeaderLMG& rLMG = g_AnimationManager.m_arrGlobalLMG[pAnim->m_nGlobalAnimId];
-			assert(rLMG.IsAssetLMG());
-			if (rLMG.IsAssetLMG() == 0)
+			if (!CRY_VERIFY(rLMG.IsAssetLMG()))
 				return 0; //--- probably data mismatch
 
 			AnimOnStack.m_pParametricSampler = AllocateRuntimeParametric();
@@ -530,7 +524,7 @@ const CAnimation* CSkeletonAnim::FindAnimInFIFO(uint32 nUserToken, int nLayer) c
 	int endLayer = numVIRTUALLAYERS;
 	if (nLayer >= 0)
 	{
-		assert(nLayer >= 0 && nLayer < numVIRTUALLAYERS);
+		CRY_ASSERT(nLayer >= 0 && nLayer < numVIRTUALLAYERS);
 		startLayer = nLayer;
 		endLayer = nLayer + 1;
 	}

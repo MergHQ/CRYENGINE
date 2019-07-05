@@ -12,7 +12,6 @@
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryCore/AlignmentTools.h>
 #include "../Textures/TextureHelpers.h"
-#include "DriverD3D.h"
 
 extern CD3D9Renderer gcpRendD3D;
 
@@ -47,6 +46,8 @@ int CShaderManBin::Size()
 
 void CShaderManBin::GetMemoryUsage(ICrySizer* pSizer) const
 {
+	SIZER_COMPONENT_NAME(pSizer, "Bin Shaders");
+
 	pSizer->AddObject(m_BinPaths);
 	pSizer->AddObject(m_BinValidCRCs);
 
@@ -143,11 +144,8 @@ SShaderBin* CShaderManBin::SaveBinShader(
 		{
 
 		}
-		if (dwToken == eT_fetchinst)
-		{
-			int nnn = 0;
-		}
-		else if (dwToken == eT_include)
+
+		if (dwToken == eT_include)
 		{
 			assert(bKey);
 			SkipCharacters(&buf, kWhiteSpace);
@@ -171,7 +169,7 @@ SShaderBin* CShaderManBin::SaveBinShader(
 
 			PathUtil::RemoveExtension(com);
 
-			SShaderBin* pBIncl = GetBinShader(com, true, 0);
+			//SShaderBin* pBIncl = GetBinShader(com, true, 0);
 			//
 			//assert(pBIncl);
 
@@ -260,7 +258,7 @@ SShaderBin* CShaderManBin::SaveBinShader(
 			pBin->m_Tokens.push_back(0);
 		}
 	}
-	if (!pBin->m_Tokens[0])
+	if (!pBin->m_Tokens.size() || !pBin->m_Tokens[0])
 		pBin->m_Tokens.push_back(eT_skip);
 
 	pBin->SetCRC(pBin->ComputeCRC());
@@ -553,8 +551,7 @@ void CShaderManBin::mfGeneratePublicFXParams(CShader* pSH, CParserBin& Parser)
 					sp.m_Type = eType_FCOLOR;
 					if (szVal[0] == '{')
 						szVal++;
-					int n = sscanf(szVal, "%f, %f, %f, %f", &sp.m_Value.m_Color[0], &sp.m_Value.m_Color[1], &sp.m_Value.m_Color[2], &sp.m_Value.m_Color[3]);
-					assert(n == 4);
+					CRY_VERIFY(sscanf(szVal, "%f, %f, %f, %f", &sp.m_Value.m_Color[0], &sp.m_Value.m_Color[1], &sp.m_Value.m_Color[2], &sp.m_Value.m_Color[3]) == 4);
 				}
 				else
 				{
@@ -708,7 +705,7 @@ bool CShaderManBin::SaveBinShaderLocalInfo(SShaderBin* pBin, uint32 dwName, uint
 
 SShaderBin* CShaderManBin::LoadBinShader(FILE* fpBin, const char* szName, const char* szNameBin, bool bReadParams)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	gEnv->pCryPak->FSeek(fpBin, 0, SEEK_SET);
 	SShaderBinHeader Header;
@@ -968,7 +965,10 @@ SShaderBin* CShaderManBin::GetBinShader(const char* szName, bool bInclude, uint3
 	stack_string nameFile;
 	string nameBin;
 	FILE* fpSrc = NULL;
+
+#if !defined(_RELEASE)
 	uint32 nSourceCRC32 = 0;
+#endif
 
 	const char *szExt = bInclude ? "cfi" : "cfx";
 	// First look for source in Game folder
@@ -1260,10 +1260,10 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 		FX_TOKEN(ForceDrawLast)
 		FX_TOKEN(ForceDrawFirst)
 		FX_TOKEN(Hair)
-		FX_TOKEN(SkinPass)
 		FX_TOKEN(ForceGeneralPass)
 		FX_TOKEN(ForceDrawAfterWater)
 		FX_TOKEN(DepthFixup)
+		FX_TOKEN(DepthFixupReplace)
 		FX_TOKEN(SingleLightPass)
 		FX_TOKEN(Refractive)
 		FX_TOKEN(ForceRefractionUpdate)
@@ -1426,11 +1426,14 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 			ef->m_Flags2 |= EF2_FORCE_DRAWAFTERWATER;
 			break;
 		case eT_DepthFixup:
-#if !CRY_PLATFORM_ORBIS
 			if (!ef)
 				break;
 			ef->m_Flags2 |= EF2_DEPTH_FIXUP;
-#endif
+			break;
+		case eT_DepthFixupReplace:
+			if (!ef)
+				break;
+			ef->m_Flags2 |= EF2_DEPTH_FIXUP_REPLACE;
 			break;
 		case eT_SingleLightPass:
 			if (!ef)
@@ -1469,12 +1472,6 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 			if (!ef)
 				break;
 			ef->m_Flags2 |= EF2_ALPHABLENDSHADOWS;
-			break;
-
-		case eT_SkinPass:
-			if (!ef)
-				break;
-			ef->m_Flags2 |= EF2_SKINPASS;
 			break;
 
 		case eT_EyeOverlay:
@@ -1526,10 +1523,7 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 				else if (eT == eT_Custom)
 					ef->m_eSHDType = eSHDT_CustomDraw;
 				else if (eT == eT_Sky)
-				{
 					ef->m_eSHDType = eSHDT_Sky;
-					ef->m_Flags |= EF_SKY;
-				}
 				else if (eT == eT_OceanShore)
 					ef->m_eSHDType = eSHDT_OceanShore;
 				else if (eT == eT_DebugHelper)
@@ -1565,8 +1559,6 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 					ef->m_eShaderType = eST_PostProcess;
 				else if (eT == eT_HDR)
 					ef->m_eShaderType = eST_HDR;
-				else if (eT == eT_Sky)
-					ef->m_eShaderType = eST_Sky;
 				else if (eT == eT_Glass)
 					ef->m_eShaderType = eST_Glass;
 				else if (eT == eT_Vegetation)
@@ -2057,7 +2049,7 @@ void CShaderManBin::AddAffectedParameter(CParserBin& Parser, std::vector<SFXPara
 		AffectedParams.push_back(*pParam);
 	else
 	{
-		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3 | SF_VULKAN))
+		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_VULKAN))
 		{
 			assert(eSHClass < eHWSC_Num);
 			if (((nFlags & PF_TWEAKABLE_MASK) || pParam->m_Values.c_str()[0] == '(') && pParam->m_nRegister[eSHClass] >= 0 && pParam->m_nRegister[eSHClass] < 1000)
@@ -2450,7 +2442,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_PackParameters(CParserBin& Parser,
 	// Replace new parameters in shader tokens
 	for (uint32 n = 0; n < AffectedFunc.size(); n++)
 	{
-		CRY_ASSERT_MESSAGE(AffectedFunc[n] < Parser.m_CodeFragments.size(), "function index is larger than number of CodeFragments!");
+		CRY_ASSERT(AffectedFunc[n] < Parser.m_CodeFragments.size(), "function index is larger than number of CodeFragments!");
 
 		SCodeFragment* st = &Parser.m_CodeFragments[AffectedFunc[n]];
 		//const char *szName = Parser.GetString(st->m_dwName);
@@ -2657,7 +2649,7 @@ void CShaderManBin::AddTextureToScript(CParserBin& Parser, SFXTexture* pr, PodAr
 
 bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Parser, FXMacroBin& Macros, SShaderFXParams& FXParams, uint32 dwSHName, EHWShaderClass eSHClass, uint64& nAffectMask, uint32 dwSHType, PodArray<uint32>& SHData, SShaderTechnique* pShTech)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 	assert(gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread());
 
 	bool bRes = true;
@@ -2726,7 +2718,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 	nAffectMask = 0;
 	for (i = 0; i < AffectedFragments.size(); i++)
 	{
-		CRY_ASSERT_MESSAGE(AffectedFragments[i] < Parser.m_CodeFragments.size(), "fragment index is larger than number of CodeFragments!");
+		CRY_ASSERT(AffectedFragments[i] < Parser.m_CodeFragments.size(), "fragment index is larger than number of CodeFragments!");
 
 		SCodeFragment* s = &Parser.m_CodeFragments[AffectedFragments[i]];
 		if (s->m_eType != eFT_Function && s->m_eType != eFT_Structure && s->m_eType != eFT_ConstBuffer && s->m_eType != eFT_StorageClass)
@@ -2973,7 +2965,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 			Parser.CopyTokens(cf, SHData, Replaces, NewTokens, h);
 			if (cf->m_eType == eFT_Sampler)
 			{
-				if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
+				if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_VULKAN))
 				{
 					int nT = Parser.m_Tokens[cf->m_nLastToken - 1];
 					//assert(nT >= eT_s0 && nT <= eT_s15);
@@ -2998,7 +2990,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_LoadShader(CParserBin& Parser, FXM
 {
 	assert(gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread());
 
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 	bool bRes = true;
 
 	assert(!SHFrame.IsEmpty());
@@ -3127,7 +3119,6 @@ bool CShaderManBin::ParseBinFX_Technique_Pass(CParserBin& Parser, SParserFrame& 
 	byte AlphaRef = 0;
 	int State = GS_DEPTHWRITE;
 
-	int nMaxTMU = 0;
 	signed char Cull = -1;
 	int nIndex;
 	EToken eSrcBlend = eT_unknown;
@@ -3659,7 +3650,7 @@ bool CShaderManBin::ParseBinFX_Technique_CustomRE(CParserBin& Parser, SParserFra
 
 SShaderTechnique* CShaderManBin::ParseBinFX_Technique(CParserBin& Parser, SParserFrame& Frame, SParserFrame Annotations, std::vector<SShaderTechParseParams>& techParams, bool* bPublic)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	SParserFrame OldFrame = Parser.BeginFrame(Frame);
 
@@ -3729,7 +3720,7 @@ float g_fTimeA;
 
 bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pBin->m_szName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pBin->m_szName);
 
 	bool bRes = true;
 
@@ -3853,10 +3844,9 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 	ef->mfFree();
 
 	assert(ef->m_HWTechniques.Num() == 0);
-	int nInd = 0;
 
 	ETokenStorageClass nTokenStorageClass;
-	while (nTokenStorageClass = Parser.ParseObject(sCommands))
+	while ((nTokenStorageClass = Parser.ParseObject(sCommands)))
 	{
 		EToken eT = Parser.GetToken();
 		SCodeFragment Fr;
@@ -3882,7 +3872,7 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 				SFXSampler Pr;
 				Parser.CopyTokens(Parser.m_Name, Pr.m_dwName);
 	#ifdef _DEBUG
-				const char* sampName = Parser.GetString(Parser.m_Name);
+				//const char* sampName = Parser.GetString(Parser.m_Name);
 	#endif
 				if (eT == eT_SamplerState)
 					Pr.m_eType = eSType_Sampler;
@@ -4029,10 +4019,10 @@ bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 						else
 							Pr.m_nCB = CB_PER_DRAW;
 					}
-					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_GLES3 | SF_VULKAN))
+					else if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 					{
-						uint32 nTokName = Parser.GetToken(Parser.m_Name);
-						const char* name = Parser.GetString(nTokName);
+						//uint32 nTokName = Parser.GetToken(Parser.m_Name);
+						//const char* name = Parser.GetString(nTokName);
 						
 						Pr.m_nCB = CB_PER_DRAW;
 					}
@@ -4218,7 +4208,7 @@ SShaderTexSlots* CShaderManBin::GetTextureSlots(CParserBin& Parser, SShaderBin* 
 				SParamCacheInfo::AffectedFuncsVec& AffectedFragments = pCache->m_AffectedFuncs;
 				for (uint32 i = 0; i < AffectedFragments.size(); i++)
 				{
-					CRY_ASSERT_MESSAGE(AffectedFragments[i] < Parser.m_CodeFragments.size(), "fragment index is larger than number of CodeFragments!");
+					CRY_ASSERT(AffectedFragments[i] < Parser.m_CodeFragments.size(), "fragment index is larger than number of CodeFragments!");
 
 					SCodeFragment* s = &Parser.m_CodeFragments[AffectedFragments[i]];
 
@@ -4459,7 +4449,7 @@ bool CShaderManBin::ParseBinFX_Dummy(SShaderBin* pBin, std::vector<string>& Shad
 
 	ETokenStorageClass nTokenStorageClass;
 
-	while (nTokenStorageClass = Parser.ParseObject(sCommands))
+	while ((nTokenStorageClass = Parser.ParseObject(sCommands)))
 	{
 		EToken eT = Parser.GetToken();
 		SCodeFragment Fr;
@@ -4516,7 +4506,7 @@ bool CShaderManBin::ParseBinFX_Dummy(SShaderBin* pBin, std::vector<string>& Shad
 			{
 				uint32 nToken = Parser.m_Tokens[Parser.m_Name.m_nFirstToken];
 				bool bPublicTechnique = false;
-				SShaderTechnique* pShTech = ParseBinFX_Technique(Parser, Parser.m_Data, Parser.m_Annotations, techParams, &bPublicTechnique);
+				ParseBinFX_Technique(Parser, Parser.m_Data, Parser.m_Annotations, techParams, &bPublicTechnique);
 				if (bPublicTechnique)
 				{
 					const char* name = Parser.GetString(nToken);
@@ -4751,7 +4741,6 @@ uint32 SFXParam::GetComponent(EHWShaderClass eSHClass)
 		assert(b[0] == 'c');
 		if (b[0] == 'c')
 		{
-			int nReg = atoi(&b[1]);
 			b++;
 			while (*b != '.')
 			{

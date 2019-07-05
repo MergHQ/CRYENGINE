@@ -61,11 +61,9 @@
 
 #include <qt_windows.h>
 
-#if QT_VERSION >= 0x050000
-	#include <QWindow>
-//#include <5.2.1/QtGui/qpa/qplatformnativeinterface.h>
-	#define QT_WA(unicode, ansi) unicode
-#endif
+#include <QWindow>
+
+#define QT_WA(unicode, ansi) unicode
 
 /*!
     \class QWinWidget qwinwidget.h
@@ -130,16 +128,12 @@ void QWinWidget::init()
 		}, {
 			SetWindowLongA((HWND)winId(), GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 		})
-#if QT_VERSION >= 0x050000
 		QWindow * window = windowHandle();
 		window->setProperty("_q_embedded_native_parent_handle", (WId)hParent);
 		//HWND h = static_cast<HWND>(QGuiApplication::platformNativeInterface()->nativeResourceForWindow("handle", window));
 		HWND h = (HWND)QWidget::winId();
 		SetParent(h, hParent);
 		window->setFlags(Qt::FramelessWindowHint);
-#else
-		SetParent(winId(), hParent);
-#endif
 		QEvent e(QEvent::EmbeddingControl);
 		QApplication::sendEvent(this, &e);
 	}
@@ -257,15 +251,9 @@ void QWinWidget::resetFocus()
 
 /*! \reimp
  */
-#if QT_VERSION >= 0x050000
 bool QWinWidget::nativeEvent(const QByteArray&, void* message, long*)
-#else
-bool QWinWidget::winEvent(MSG* msg, long*)
-#endif
 {
-#if QT_VERSION >= 0x050000
 	MSG* msg = (MSG*)message;
-#endif
 	if (msg->message == WM_SETFOCUS)
 	{
 		Qt::FocusReason reason;
@@ -426,4 +414,3 @@ bool QWinWidget::focusNextPrevChild(bool next)
 
 	return true;
 }
-

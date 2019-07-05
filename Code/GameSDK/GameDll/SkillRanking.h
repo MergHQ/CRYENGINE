@@ -20,6 +20,7 @@ History:
 #endif
 
 #include <CryCore/Containers/CryFixedArray.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 class CSkillRanking
 {

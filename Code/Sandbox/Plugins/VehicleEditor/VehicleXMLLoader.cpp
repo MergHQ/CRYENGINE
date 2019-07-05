@@ -4,6 +4,7 @@
 #include "VehicleXMLLoader.h"
 
 #include <stack>
+#include <CrySystem/ISystem.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
 
 #include "VehicleData.h"
@@ -309,4 +310,3 @@ IVehicleData* VehicleDataLoad(const XmlNodeRef& definition, const XmlNodeRef& da
 
 //
 // end of CVehicleDataLoader implementation
-

@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef FINDZERORANGES_H
-#define FINDZERORANGES_H
+#pragma once
+
 #include "BitFiddling.h"
 
 template<typename Func>
@@ -52,5 +52,3 @@ inline void FindZeroRanges(const uint32* str, size_t strLen, Func& yield)
 		yield(bitIdx, carry);
 	}
 }
-
-#endif

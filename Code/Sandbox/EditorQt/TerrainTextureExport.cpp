@@ -2,35 +2,31 @@
 
 #include "StdAfx.h"
 #include "TerrainTextureExport.h"
+
+// Sandbox
 #include "Terrain/TerrainTexGen.h"
-#include "Qt/Widgets/QWaitProgress.h"
+#include "Terrain/TerrainManager.h"
 #include "CryEditDoc.h"
 #include "ResizeResolutionDialog.h"
-#include "Viewport.h"
-#include "Terrain/TerrainManager.h"
 #include "TerrainLighting.h"
-#include "Controls/QuestionDialog.h"
-#include "Util/FileUtil.h"
 
+// MFC Tools
+#include <Util/FileUtil.h>
+
+// Editor Common
+#include <Controls/QuestionDialog.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <FileDialogs/SystemFileDialog.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
+#include <Viewport.h>
 
 #define TERRAIN_PREVIEW_RESOLUTION 256
 const char* szFileProperty = "File";
 
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainTextureExport dialog
-
-//CDC CTerrainTextureExport::m_dcLightmap;
-
 CTerrainTextureExport::CTerrainTextureExport(CWnd* pParent /*=NULL*/)
 	: CDialog(CTerrainTextureExport::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(CTerrainTextureExport)
-	//}}AFX_DATA_INIT
-
 	m_cx = 19;
 	m_cy = 24;
 
@@ -69,17 +65,14 @@ ON_WM_LBUTTONUP()
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainTextureExport message handlers
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CTerrainTextureExport::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
 	m_terrain.Allocate(TERRAIN_PREVIEW_RESOLUTION, TERRAIN_PREVIEW_RESOLUTION);
 
-	string filePath(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString().toLocal8Bit());
+	string filePath(QtUtil::ToString(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString()));
 	GetDlgItem(IDC_FILE)->SetWindowText(filePath);
 
 	CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
@@ -108,7 +101,6 @@ void CTerrainTextureExport::PreviewToTile(uint32& outX, uint32& outY, uint32 x, 
 	outY = x;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::DrawPreview(CDC& dc)
 {
 	//CPaintDC dc(this); // device context for painting
@@ -251,10 +243,9 @@ void CTerrainTextureExport::OnGenerate()
 	EndWaitCursor();
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CTerrainTextureExport::BrowseTerrainTexture(bool bIsSave)
 {
-	string filePath(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString().toLocal8Bit());
+	string filePath(QtUtil::ToString(GET_PERSONALIZATION_PROPERTY(CTerrainTextureExport, szFileProperty).toString()));
 	if (filePath.empty())
 		filePath = CFileUtil::FormatInitialFolderForFileDialog(PathUtil::GamePathToCryPakPath("", true).c_str()) + "terraintex.bmp";
 
@@ -278,7 +269,6 @@ string CTerrainTextureExport::BrowseTerrainTexture(bool bIsSave)
 	return "";
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::ImportExport(bool bIsImport, bool bIsClipboard)
 {
 	string filePath;
@@ -326,7 +316,6 @@ void CTerrainTextureExport::ImportExport(bool bIsImport, bool bIsClipboard)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::OnExport()
 {
 	if (rcSel.top < 0)
@@ -339,7 +328,6 @@ void CTerrainTextureExport::OnExport()
 	ImportExport(false /*bIsImport*/);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::OnImport()
 {
 	if (rcSel.top < 0)
@@ -354,7 +342,6 @@ void CTerrainTextureExport::OnImport()
 	GetIEditorImpl()->SetModifiedFlag();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::OnLButtonDown(UINT nFlags, CPoint point)
 {
 	CDialog::OnLButtonDown(nFlags, point);
@@ -389,7 +376,6 @@ void CTerrainTextureExport::OnLButtonDown(UINT nFlags, CPoint point)
 	DrawPreview(*(GetDC()));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	if (m_bSelectMode)
@@ -400,7 +386,6 @@ void CTerrainTextureExport::OnLButtonUp(UINT nFlags, CPoint point)
 	CDialog::OnLButtonUp(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::OnMouseMove(UINT nFlags, CPoint point)
 {
 	CDialog::OnMouseMove(nFlags, point);
@@ -428,7 +413,6 @@ void CTerrainTextureExport::OnMouseMove(UINT nFlags, CPoint point)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTextureExport::OnChangeResolutionBtn()
 {
 	if (rcSel.left == -1 || rcSel.top == -1)
@@ -487,4 +471,3 @@ void CTerrainTextureExport::OnChangeResolutionBtn()
 
 	GetIEditorImpl()->GetActiveView()->Update();
 }
-

@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include "BehaviorTreeDefines.h"
 #include "Node.h"
-#include <CryCore/Containers/VectorMap.h>
 #include "IBehaviorTree.h"
+
+#include <CryCore/Containers/VectorMap.h>
+
 #ifdef USE_GLOBAL_BUCKET_ALLOCATOR
 	#include <CryMemory/BucketAllocatorImpl.h>
 #endif
@@ -48,19 +51,22 @@ public:
 		return node;
 	}
 
-	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual INodePtr CreateNodeFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool isLoadingFromEditor) override
 	{
+
 		INodePtr node = context.nodeFactory.CreateNodeOfType(xml->getTag());
 
 		if (node)
 		{
-			MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "CreateNodeFromXml: %s", xml->getTag());
+			MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "CreateNodeFromXml: %s", xml->getTag());
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 			static_cast<Node*>(node.get())->SetXmlLine(xml->getLine());
 #endif
 
-			if (node->LoadFromXml(xml, context) == LoadSuccess)
+			const LoadResult loadResult = node->LoadFromXml(xml, context, isLoadingFromEditor);
+
+			if (isLoadingFromEditor || loadResult == LoadSuccess)
 			{
 				return node;
 			}
@@ -74,9 +80,9 @@ public:
 		nodeCreator->SetNodeFactory(this);
 		m_nodeCreators.insert(std::make_pair(stack_string(nodeCreator->GetTypeName()), nodeCreator));
 
-#ifdef USING_BEHAVIOR_TREE_DEBUG_MEMORY_USAGE
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		gEnv->pLog->Log("Modular behavior tree node '%s' has a class size of %" PRISIZE_T " bytes.", nodeCreator->GetTypeName(), nodeCreator->GetNodeClassSize());
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 	}
 
 	virtual void TrimNodeCreators()

@@ -2,41 +2,35 @@
 
 #include "StdAfx.h"
 #include "AssetBrowserDialog.h"
+
 #include "AssetBrowser.h"
 #include "AssetModel.h"
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetManager.h"
+#include "AssetSystem/AssetManagerHelpers.h"
+#include "AssetSystem/Loader/AssetLoaderHelpers.h"
 
-#include "QtUtil.h"
+#include "Controls/QuestionDialog.h"
+#include "EditorFramework/PersonalizationManager.h"
+#include "FileDialogs/FileNameLineEdit.h"
+#include "PathUtils.h"
+#include "ProxyModels/AttributeFilterProxyModel.h"
 #include "QAdvancedTreeView.h"
 #include "QThumbnailView.h"
-#include "ProxyModels/AttributeFilterProxyModel.h"
-#include "FileDialogs/FileNameLineEdit.h"
-#include "FilePathUtil.h"
+#include "QtUtil.h"
 
+#include <QAbstractButton>
 #include <QDirIterator>
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QDialogButtonBox>
+#include <QVariant>
+
+#include <numeric>
 
 namespace Private_AssetBrowserDialog
 {
-
-QStringList GetUiNamesFromAssetTypeNames(const std::vector<string>& typeNames)
-{
-	CAssetManager* const pManager = CAssetManager::GetInstance();
-	QStringList uiNames;
-	uiNames.reserve(typeNames.size());
-	for (const string& typeName : typeNames)
-	{
-		CAssetType* const pType = pManager->FindAssetType(typeName.c_str());
-		if (pType)
-		{
-			uiNames.push_back(pType->GetUiTypeName());
-		}
-	}
-	return uiNames;
-}
 
 void SetButtonsEnabled(QDialogButtonBox* pButtons, QDialogButtonBox::ButtonRole role, bool bValue)
 {
@@ -49,13 +43,37 @@ void SetButtonsEnabled(QDialogButtonBox* pButtons, QDialogButtonBox::ButtonRole 
 	}
 }
 
+static std::vector<string> FindAssetMetaDataPaths(const string& dir)
+{
+	const size_t dirLen = PathUtil::AddSlash(dir).size();
+	std::vector<string> assetPaths;
+	QDirIterator iterator(QtUtil::ToQString(dir), QStringList() << "*.cryasset", QDir::Files, QDirIterator::Subdirectories);
+	while (iterator.hasNext())
+	{
+		const string filePath = QtUtil::ToString(iterator.next()).substr(dirLen); // Remove leading path to search directory.
+		assetPaths.push_back(filePath);
+	}
+	return assetPaths;
+}
+
+static bool ShowConfirmOverwriteDialog()
+{
+	CQuestionDialog dialog;
+	dialog.SetupQuestion(
+		QObject::tr("Asset already exists."),
+		QObject::tr("Overwrite existing asset?"),
+		QDialogButtonBox::Yes | QDialogButtonBox::No);
+
+	return dialog.Execute() == QDialogButtonBox::Yes;
+}
+
 } // namespace Private_AssetBrowserDialog
 
 class CAssetBrowserDialog::CBrowser : public CAssetBrowser
 {
 public:
-	CBrowser(CAssetBrowserDialog* pOwner, bool bAllowMultipleAssets, QWidget* pParent)
-		: CAssetBrowser(!pOwner->IsReadOnlyMode(), pParent)
+	CBrowser(const std::vector<CAssetType*>& assetTypes, CAssetBrowserDialog* pOwner, bool bAllowMultipleAssets, QWidget* pParent)
+		: CAssetBrowser(assetTypes, !pOwner->IsReadOnlyMode(), pParent)
 		, m_pOwner(pOwner)
 	{
 		if (!bAllowMultipleAssets)
@@ -68,7 +86,7 @@ public:
 		GetThumbnailsView()->GetInternalView()->setDragEnabled(false);
 	}
 
-	virtual void OnDoubleClick(CAsset* pAsset) override
+	virtual void OnActivated(CAsset* pAsset) override
 	{
 		m_pOwner->OnAccept();
 	}
@@ -89,17 +107,34 @@ protected:
 			ScrollToSelected();
 		});
 	}
+
+	virtual void UpdatePreview(const QModelIndex& currentIndex) override
+	{
+		// The dialog does not do quick edit/preview. 
+	}
 };
 
 CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNames, Mode mode, QWidget* pParent)
 	: CEditorDialog(QStringLiteral("CAssetPicker"), pParent)
 	, m_mode(mode)
 	, m_overwriteMode(OverwriteMode::AllowOverwrite)
-	, m_pBrowser(new CBrowser(this, mode == Mode::OpenMultipleAssets, nullptr))
+	, m_pBrowser(new CBrowser(AssetManagerHelpers::GetAssetTypesFromTypeNames(assetTypeNames), this, mode == Mode::OpenMultipleAssets, nullptr))
+	, m_pAssetType(nullptr)
 {
 	using namespace Private_AssetBrowserDialog;
 
-	AddPersonalizedProjectProperty("Layout", [this]()
+	m_pBrowser->Initialize();
+	const QString propertyName = QtUtil::ToQString(std::accumulate(assetTypeNames.begin(), assetTypeNames.end(), "Layout"));
+
+	// Load generic asset browser layout valid for all asset types. Some things might be later overwritten by asset type specific personalization
+	const QVariantMap& personalization = GetIEditor()->GetPersonalizationManager()->GetState(GetDialogName());
+	QVariant layout = personalization.value("layout");
+	if (layout.isValid())
+	{
+		m_pBrowser->SetLayout(layout.toMap());
+	}
+
+	AddPersonalizedProjectProperty(propertyName, [this]()
 	{
 		return m_pBrowser->GetLayout();
 	}, [this](const QVariant& variant)
@@ -108,14 +143,11 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 		{
 			QVariantMap map = variant.value<QVariantMap>();
 			map.remove("filters");
-
+			// No need to have editor content differing between asset types
+			map.remove("editorContent");
 			m_pBrowser->SetLayout(map);
 		}
 	});
-
-	m_pAssetTypeFilter = std::make_shared<CAttributeFilter>(&AssetModelAttributes::s_AssetTypeAttribute);
-	m_pAssetTypeFilter->SetFilterValue(GetUiNamesFromAssetTypeNames(assetTypeNames));
-	m_pBrowser->AddFilter(m_pAssetTypeFilter);
 
 	QDialogButtonBox* pButtons = new QDialogButtonBox();
 	pButtons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -130,7 +162,7 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 		{
 			if (pAsset)
 			{
-				assetNames << pAsset->GetName();
+				assetNames << pAsset->GetName().c_str();
 			}
 		}
 		if (!assetNames.empty())
@@ -151,7 +183,7 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 	pPathLayout->setObjectName(QStringLiteral("pathLayout"));
 	pPathLayout->setContentsMargins(3, 0, 3, 0);
 
-	QString assetTypename(assetTypeNames.size() == 1 ? QtUtil::ToQString(assetTypeNames[0]) : QStringLiteral("asset"));
+	const QString assetTypename(assetTypeNames.size() == 1 ? QtUtil::ToQString(assetTypeNames[0]) : QStringLiteral("asset"));
 
 	switch (m_mode)
 	{
@@ -175,6 +207,12 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 		CRY_ASSERT_MESSAGE(false, "Unknown dialog mode");
 	}
 
+	if (!IsReadOnlyMode())
+	{
+		CRY_ASSERT(assetTypeNames.size() == 1);
+		m_pAssetType = CAssetManager::GetInstance()->FindAssetType(assetTypeNames[0]);
+	}
+
 	pPathLayout->addWidget(m_pPathEdit);
 
 	auto* const pMainLayout = new QVBoxLayout();
@@ -184,6 +222,13 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 	pMainLayout->addWidget(pButtons, Qt::AlignRight);
 	setLayout(pMainLayout);
 }
+	
+void CAssetBrowserDialog::showEvent(QShowEvent* pEvent)
+{
+	CEditorDialog::showEvent(pEvent);
+
+	m_pPathEdit->setFocus();
+}
 
 CAsset* CAssetBrowserDialog::GetSelectedAsset()
 {
@@ -192,12 +237,33 @@ CAsset* CAssetBrowserDialog::GetSelectedAsset()
 
 std::vector<CAsset*> CAssetBrowserDialog::GetSelectedAssets()
 {
-	return m_pBrowser->GetSelectedAssets().toStdVector();
+	return m_pBrowser->GetSelectedAssets();
 }
 
 void CAssetBrowserDialog::SelectAsset(const CAsset& asset)
 {
 	m_pBrowser->SelectAsset(asset);
+}
+
+void CAssetBrowserDialog::SelectAsset(const string& path)
+{
+	m_pBrowser->SelectAsset(path.c_str());
+
+	if (m_mode != Mode::Create)
+	{
+		return;
+	}
+
+	const QStringList filenames = m_pPathEdit->GetFileNames();
+	if (!filenames.isEmpty())
+	{
+		return;
+	}
+
+	// We did not find any existing asset by the specified name, 
+	// set the name as the default asset name for the new asset.
+	const string assetName(AssetLoader::GetAssetName(path));
+	m_pPathEdit->setText(QtUtil::ToQString(assetName));
 }
 
 void CAssetBrowserDialog::OnAccept()
@@ -212,52 +278,40 @@ void CAssetBrowserDialog::OnAccept()
 	}
 }
 
-static std::vector<string> FindAssetMetaDataPaths(const string& dir)
-{
-	const size_t dirLen = PathUtil::AddSlash(dir).size();
-	std::vector<string> assetPaths;
-	QDirIterator iterator(QtUtil::ToQString(dir), QStringList() << "*.cryasset", QDir::Files, QDirIterator::Subdirectories);
-	while (iterator.hasNext())
-	{
-		const string filePath = QtUtil::ToString(iterator.next()).substr(dirLen); // Remove leading path to search directory.
-		assetPaths.push_back(filePath);
-	}
-	return assetPaths;
-}
-
-static bool ShowConfirmOverwriteDialog()
-{
-	CQuestionDialog dialog;
-	dialog.SetupQuestion(
-	  QObject::tr("Asset already exists."),
-	  QObject::tr("Overwrite existing asset?"),
-	  QDialogButtonBox::Yes | QDialogButtonBox::No);
-
-	return dialog.Execute() == QDialogButtonBox::Yes;
-}
-
 void CAssetBrowserDialog::OnAcceptSave()
 {
-	const QStringList selectedFolders = m_pBrowser->GetSelectedFolders();
-	const QString folder = selectedFolders.isEmpty() ? QString() : selectedFolders.back();
+	using namespace Private_AssetBrowserDialog;
+
+	CRY_ASSERT(m_pAssetType);
+
+	const std::vector<string>& selectedFolders = m_pBrowser->GetSelectedFolders();
+	const string folder = selectedFolders.empty() ? string() : selectedFolders.back();
 
 	const QStringList filenames = m_pPathEdit->GetFileNames();
 	if (filenames.isEmpty() || filenames.back().isEmpty())
 	{
 		return;
 	}
-	const string filename = QtUtil::ToString(filenames.back());
 
-	const string absFolderPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), QtUtil::ToString(folder));
-	std::vector<string> otherAssets = FindAssetMetaDataPaths(absFolderPath);
-	bool bAlreadyExists = false;
-	for (const string& otherAsset : otherAssets)
+	const string assetName = QtUtil::ToString(filenames.back());
+	const string assetPath = PathUtil::Make(folder, assetName);
+
+	const string cryassetPath = m_pAssetType->MakeMetadataFilename(assetPath.c_str());
+
+	string reasonToReject;
+	if (!CAssetType::IsValidAssetPath(cryassetPath.c_str(), reasonToReject))
 	{
-		// Here we remove two extensions in total. Since each asset meta-data file has a name in the
-		// format <name>.<ext>.cryasset, this will give us <name>.
-		const string otherAssetName = PathUtil::GetFileName(PathUtil::RemoveExtension(otherAsset));
+		CQuestionDialog::SCritical(tr("Asset path is invalid."), QtUtil::ToQString(reasonToReject));
+		return;
+	}
 
-		if (!stricmp(otherAssetName.c_str(), filename.c_str()))
+	const string absFolderPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), folder);
+	const std::vector<string> otherAssets = FindAssetMetaDataPaths(absFolderPath);
+	const string filename = m_pAssetType->MakeMetadataFilename(assetName.c_str());
+	bool bAlreadyExists = false;
+	for (const string& otherFilename : otherAssets)
+	{
+		if (!stricmp(otherFilename.c_str(), filename.c_str()))
 		{
 			bAlreadyExists = true;
 			break;
@@ -288,7 +342,7 @@ void CAssetBrowserDialog::OnAcceptSave()
 		}
 	}
 
-	m_assetPath = PathUtil::Make(QtUtil::ToString(folder), filename);
+	m_assetPath = assetPath;
 
 	accept();
 }

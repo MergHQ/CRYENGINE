@@ -17,4 +17,3 @@
 #else
 	#define EDITOR_COMMON_API
 #endif
-

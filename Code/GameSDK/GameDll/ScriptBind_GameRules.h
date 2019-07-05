@@ -20,7 +20,8 @@ History:
 
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryMemory/CrySizer.h>
 
 
 class CGameRules;

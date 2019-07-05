@@ -4,41 +4,36 @@
 #include "Util/PakFile.h"
 #include "Util/CryMemFile.h"
 #include "Util/MemoryBlock.h"
+#include <IEditor.h>
 
-//////////////////////////////////////////////////////////////////////////
 CPakFile::CPakFile()
-	: m_pArchive(NULL),
-	m_pCryPak(NULL)
+	: m_pArchive(NULL)
+	, m_pCryPak(NULL)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 CPakFile::CPakFile(ICryPak* pCryPak)
 	: m_pArchive(NULL),
 	m_pCryPak(pCryPak)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 CPakFile::~CPakFile()
 {
 	Close();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CPakFile::CPakFile(const char* filename)
 {
 	m_pArchive = NULL;
 	Open(filename);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPakFile::Close()
 {
 	m_pArchive = NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPakFile::Open(const char* filename, bool bAbsolutePath)
 {
 	if (m_pArchive)
@@ -57,7 +52,6 @@ bool CPakFile::Open(const char* filename, bool bAbsolutePath)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPakFile::OpenForRead(const char* filename)
 {
 	if (m_pArchive)
@@ -71,7 +65,6 @@ bool CPakFile::OpenForRead(const char* filename)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPakFile::UpdateFile(const char* filename, CCryMemFile& file, bool bCompress)
 {
 	if (m_pArchive)
@@ -85,7 +78,6 @@ bool CPakFile::UpdateFile(const char* filename, CCryMemFile& file, bool bCompres
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPakFile::UpdateFile(const char* filename, CMemoryBlock& mem, bool bCompress, int nCompressLevel)
 {
 	if (m_pArchive)
@@ -108,7 +100,6 @@ bool CPakFile::UpdateFile(const char* filename, void* pBuffer, int nSize, bool b
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPakFile::RemoveFile(const char* filename)
 {
 	if (m_pArchive)
@@ -118,7 +109,6 @@ bool CPakFile::RemoveFile(const char* filename)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPakFile::RemoveDir(const char* directory)
 {
 	if (m_pArchive)
@@ -127,4 +117,3 @@ bool CPakFile::RemoveDir(const char* directory)
 	}
 	return false;
 }
-

@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "DebugHistory.h"
-//#include "PersistantDebug.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 std::set<CDebugHistoryManager*>* CDebugHistoryManager::m_allhistory;
 
@@ -13,11 +13,6 @@ static int g_currentlyVisibleCount = 0;
 void Draw2DLine(float x1, float y1, float x2, float y2, ColorF color, float fThickness)
 {
 	IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
-
-	x1 /= gEnv->pRenderer->GetOverlayWidth();
-	y1 /= gEnv->pRenderer->GetOverlayHeight();
-	x2 /= gEnv->pRenderer->GetOverlayWidth();
-	y2 /= gEnv->pRenderer->GetOverlayHeight();
 
 	ColorB rgba((uint8)(color.r * 255.0f), (uint8)(color.g * 255.0f), (uint8)(color.b * 255.0f), (uint8)(color.a * 255.0f));
 	pAux->DrawLine(Vec3(x1, y1, 0), rgba, Vec3(x2, y2, 0), rgba, fThickness);
@@ -125,11 +120,11 @@ void CDebugHistory::SetupLayoutAbs(float leftx, float topy, float width, float h
 
 void CDebugHistory::SetupLayoutRel(float leftx, float topy, float width, float height, float margin)
 {
-	m_layoutTopLeft.x = leftx  * gEnv->pRenderer->GetOverlayWidth();
-	m_layoutTopLeft.y = topy   * gEnv->pRenderer->GetOverlayHeight();
-	m_layoutExtent.x  = width  * gEnv->pRenderer->GetOverlayWidth();
-	m_layoutExtent.y  = height * gEnv->pRenderer->GetOverlayHeight();
-	m_layoutMargin    = margin * gEnv->pRenderer->GetOverlayHeight();
+	m_layoutTopLeft.x = leftx;
+	m_layoutTopLeft.y = topy;
+	m_layoutExtent.x = width;
+	m_layoutExtent.y = height;
+	m_layoutMargin = margin;
 }
 
 //--------------------------------------------------------------------------------
@@ -181,6 +176,19 @@ void CDebugHistory::ClearHistory()
 	m_count = 0;
 	m_scopeCurMax = m_scopeInnerMax;
 	m_scopeCurMin = m_scopeInnerMin;
+}
+
+//--------------------------------------------------------------------------------
+
+void CDebugHistory::AddLevel(float val, const ColorF& color, const char* szName)
+{
+	if (!szName || !szName[0])
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Provide name for debug history level");
+		return;
+	}
+
+	m_levels.emplace(szName, SLevelInfo(val, color));
 }
 
 //--------------------------------------------------------------------------------
@@ -395,14 +403,18 @@ void CDebugHistory::Render()
 		}
 	}
 
+	Vec2 screenResolution(
+	  (gEnv->pRenderer) ? static_cast<float>(gEnv->pRenderer->GetOverlayWidth()) : 0,
+	  (gEnv->pRenderer) ? static_cast<float>(gEnv->pRenderer->GetOverlayHeight()) : 0);
+
 	if (m_colorGridNumber.a > 0.0f)
 	{
-		float x1 = m_layoutTopLeft.x;
-		float y1 = m_layoutTopLeft.y + m_layoutMargin;
+		float x1 = m_layoutTopLeft.x * screenResolution.x;
+		float y1 = (m_layoutTopLeft.y + m_layoutMargin) * screenResolution.y;
 		//		float x2 = m_layoutTopLeft.x + m_layoutExtent.x;
-		float y2 = m_layoutTopLeft.y + m_layoutExtent.y - m_layoutMargin * 2.0f;
+		float y2 = (m_layoutTopLeft.y + m_layoutExtent.y - m_layoutMargin * 2.0f) * screenResolution.y;
 
-		char* gridNumberPrecision = "%f";
+		const char* gridNumberPrecision = "%f";
 		if (scopeExtent >= 100.0f)
 		{
 			gridNumberPrecision = "%.0f";
@@ -437,7 +449,7 @@ void CDebugHistory::Render()
 			CryFixedStringT<32> label;
 			label.Format(gridNumberPrecision, y);
 
-			IRenderAuxText::DrawText(Vec3(x, screeny + offsety, 0.5f), 1.4f, m_colorGridNumber, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_IgnoreOverscan, label.c_str());
+			IRenderAuxText::DrawText(Vec3(x, screeny + offsety, 0.5f), 1.4f, m_colorGridNumber, eDrawText_2D | eDrawText_FixedSize | eDrawText_IgnoreOverscan, label.c_str());
 		}
 	}
 
@@ -470,11 +482,32 @@ void CDebugHistory::Render()
 		}
 	}
 
+	//draw levels
+	for (const auto& level : m_levels)
+	{
+		const SLevelInfo& info = level.second;
+
+		const float y = info.val;
+		if (y > m_scopeCurMin && y < m_scopeCurMax)
+		{
+			const float x1 = m_layoutTopLeft.x;
+			const float y1 = m_layoutTopLeft.y + m_layoutMargin;
+			const float x2 = m_layoutTopLeft.x + m_layoutExtent.x;
+			const float y2 = m_layoutTopLeft.y + m_layoutExtent.y - m_layoutMargin * 2.0f;
+
+			const float scopefractiony = (scopeExtent != 0.0f) ? (y - m_scopeCurMin) / scopeExtent : 0.5f;
+			const float screeny = LERP(y2, y1, scopefractiony);
+			Draw2DLine(x1, screeny, x2, screeny, info.color);
+		}
+	}
+
 	if (m_colorName.a > 0.0f)
 	{
 		const int offsety = -12;
 
-		IRenderAuxText::DrawText(Vec3(m_layoutTopLeft.x + 0.5f * m_layoutExtent.x, m_layoutTopLeft.y + offsety, 0.5f), 1.2f, m_colorName, eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | eDrawText_Center | eDrawText_IgnoreOverscan, m_szName);
+		const float textX = screenResolution.x * (m_layoutTopLeft.x + 0.5f * m_layoutExtent.x);
+		const float textY = screenResolution.y * m_layoutTopLeft.y + offsety;
+		IRenderAuxText::DrawText(Vec3(textX, textY, 0.5f), 1.2f, m_colorName, eDrawText_2D | eDrawText_FixedSize | eDrawText_Center | eDrawText_IgnoreOverscan, m_szName);
 	}
 }
 
@@ -518,15 +551,12 @@ IDebugHistory* CDebugHistoryManager::GetHistory(const char* id)
 
 //--------------------------------------------------------------------------------
 
-void CDebugHistoryManager::Render(bool bSetupRenderer)
+void CDebugHistoryManager::Render()
 {
 	if (m_histories.empty())
 		return;
 
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
-
-	if (bSetupRenderer)
-		CDebugHistoryManager::SetupRenderer();
 
 	MapIterator it = m_histories.begin();
 	while (it != m_histories.end())
@@ -555,30 +585,22 @@ void CDebugHistoryManager::GetMemoryUsage(ICrySizer* s) const
 
 //--------------------------------------------------------------------------------
 
-void CDebugHistoryManager::SetupRenderer()
-{
-	const int screenw = gEnv->pRenderer->GetOverlayWidth();
-	const int screenh = gEnv->pRenderer->GetOverlayHeight();
-
-	IRenderAuxGeom* pAux = gEnv->pRenderer->GetIRenderAuxGeom();
-	SAuxGeomRenderFlags flags = pAux->GetRenderFlags();
-	flags.SetMode2D3DFlag(e_Mode2D);
-	pAux->SetRenderFlags(flags);
-}
-
-//--------------------------------------------------------------------------------
-
 void CDebugHistoryManager::RenderAll()
 {
 	if (g_currentlyVisibleCount == 0)
 		return;
 
+	IRenderAuxGeom* pAux = IRenderAuxGeom::GetAux();
+	SAuxGeomRenderFlags flags = pAux->GetRenderFlags();
+	flags.SetMode2D3DFlag(e_ModeUnit);
+	SAuxGeomRenderFlags prevFlags = pAux->SetRenderFlags(flags);
+
 	if (m_allhistory)
 	{
-		SetupRenderer();
 		for (std::set<CDebugHistoryManager*>::iterator iter = m_allhistory->begin(); iter != m_allhistory->end(); ++iter)
-			(*iter)->Render(false);
+			(*iter)->Render();
 	}
+	pAux->SetRenderFlags(prevFlags);
 }
 
 //--------------------------------------------------------------------------------

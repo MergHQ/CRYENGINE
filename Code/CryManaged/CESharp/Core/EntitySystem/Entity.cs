@@ -270,6 +270,21 @@ namespace CryEngine
 			}
 		}
 
+		/// <summary>
+		/// Get or sets the entity flags of this <see cref="Entity"/>. When setting the flags it completely replaces all flags which are already set in the entity.
+		/// </summary>
+		public EntityFlags Flags
+		{
+			get
+			{
+				return (EntityFlags)NativeHandle.GetFlags();
+			}
+			set
+			{
+				NativeHandle.SetFlags((uint)value);
+			}
+		}
+
 		[SerializeValue]
 		internal IEntity NativeHandle { get; set; }
 
@@ -340,7 +355,7 @@ namespace CryEngine
 		/// <returns></returns>
 		public T AddComponent<T>() where T : EntityComponent, new()
 		{
-            var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
+			var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
 
 			return NativeInternals.Entity.AddComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
 		}
@@ -350,18 +365,16 @@ namespace CryEngine
 		/// </summary>
 		public T GetComponent<T>() where T : EntityComponent
 		{
-            var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
+			var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
 
-            return NativeInternals.Entity.GetComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
+			return NativeInternals.Entity.GetComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
 		}
 
 		private EntityComponent[] GetComponents(Type type)
 		{
-            var componentTypeGUID = EntityComponent.GetComponentTypeGUID(type);
-            
-			EntityComponent[] baseComponents;
+			var componentTypeGUID = EntityComponent.GetComponentTypeGUID(type);
 
-			NativeInternals.Entity.GetComponents(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart, out baseComponents);
+			NativeInternals.Entity.GetComponents(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart, out EntityComponent[] baseComponents);
 
 			return baseComponents;
 		}
@@ -371,7 +384,7 @@ namespace CryEngine
 		/// </summary>
 		/// <returns>Every <see cref="EntityComponent"/> that matches the type <typeparamref name="T"/>.</returns>
 		/// <typeparam name="T">The type the components have to match.</typeparam>
-		public List<T> GetComponents<T>() where T: EntityComponent
+		public List<T> GetComponents<T>() where T : EntityComponent
 		{
 			var baseComponents = GetComponents(typeof(T));
 
@@ -465,9 +478,9 @@ namespace CryEngine
 		/// <returns></returns>
 		public T GetOrCreateComponent<T>() where T : EntityComponent, new()
 		{
-            var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
+			var componentTypeGUID = EntityComponent.GetComponentTypeGUID<T>();
 
-            return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
+			return NativeInternals.Entity.GetOrCreateComponent(NativeEntityPointer, componentTypeGUID.hipart, componentTypeGUID.lopart) as T;
 		}
 
 		/// <summary>
@@ -490,7 +503,7 @@ namespace CryEngine
 		{
 			var entity = NativeHandle;
 
-            uint flags = !keepWorldTransform ? 0 : (uint)IEntity.EAttachmentFlags.ATTACHMENT_KEEP_TRANSFORMATION;
+			uint flags = !keepWorldTransform ? 0 : (uint)IEntity.EAttachmentFlags.ATTACHMENT_KEEP_TRANSFORMATION;
 			entity.DetachThis(flags);
 			if(parent != null)
 			{
@@ -679,6 +692,34 @@ namespace CryEngine
 			viewDistanceRatio = MathHelpers.Clamp01(viewDistanceRatio);
 
 			NativeHandle.SetViewDistRatio((int)(viewDistanceRatio * 255));
+		}
+
+		/// <summary>
+		/// Adds one or more flags to the current set of entity flags (bitwise OR).
+		/// </summary>
+		/// <param name="flags">Combination of <see cref="EntityFlags"/> to add.</param>
+		public void AddFlags(EntityFlags flags)
+		{
+			NativeHandle.AddFlags((uint)flags);
+		}
+
+		/// <summary>
+		/// Removes one or more flags from the current set of entity flags (bitwise AND NOT).
+		/// </summary>
+		/// <param name="flags">Combination of <see cref="EntityFlags"/> to remove.</param>
+		public void ClearFlags(EntityFlags flags)
+		{
+			NativeHandle.ClearFlags((uint)flags);
+		}
+
+		/// <summary>
+		/// Checks if the specified entity flags are set.
+		/// </summary>
+		/// <param name="flags">Combination of <see cref="EntityFlags"/> to check.</param>
+		/// <returns><c>true</c> if the flags are set, <c>false</c> otherwise.</returns>
+		public bool CheckFlags(EntityFlags flags)
+		{
+			return NativeHandle.CheckFlags((uint)flags);
 		}
 	}
 }

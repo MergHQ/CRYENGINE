@@ -14,10 +14,9 @@ public:
 	explicit CNewLevelDialog();
 	~CNewLevelDialog();
 
-	CLevelType::SCreateParams GetResult() const;
+	CLevelType::SLevelCreateParams GetResult() const;
 
 private:
 	struct Implementation;
 	std::unique_ptr<Implementation> p;
 };
-

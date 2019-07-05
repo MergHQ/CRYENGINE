@@ -17,7 +17,7 @@
 namespace CrySchematycEditor {
 
 CNodeItem::CNodeItem(Schematyc::IScriptGraphNode& scriptNode, CryGraphEditor::CNodeGraphViewModel& model)
-	: CAbstractNodeItem(model)
+	: CAbstractNodeItem(*(m_pData = new CryGraphEditor::CNodeEditorData()), model)
 	, m_scriptNode(scriptNode)
 	, m_isDirty(false)
 {
@@ -31,13 +31,16 @@ CNodeItem::~CNodeItem()
 {
 	for (CryGraphEditor::CAbstractPinItem* pItem : m_pins)
 		delete pItem;
+
+	delete m_pData;
 }
 
 CryGraphEditor::CNodeWidget* CNodeItem::CreateWidget(CryGraphEditor::CNodeGraphView& view)
 {
 	CryGraphEditor::CNodeWidget* pNodeWidget = new CryGraphEditor::CNodeWidget(*this, view);
-	CryGraphEditor::CPinGridNodeContentWidget* pContent = new CryGraphEditor::CPinGridNodeContentWidget(*pNodeWidget, view);
+	new CryGraphEditor::CPinGridNodeContentWidget(*pNodeWidget, view);
 
+	// cppcheck-suppress memleak
 	return pNodeWidget;
 }
 
@@ -361,4 +364,3 @@ void CNodeItem::Validate()
 }
 
 }
-

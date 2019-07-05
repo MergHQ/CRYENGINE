@@ -56,7 +56,6 @@
 #define IDD_PANEL_VOLUME                                                                     55
 #define IDD_PANEL_DISPLAY_HIDE                                                               56
 #define IDR_GAMEACCELERATOR                                                                  57
-#define IDD_PANEL_DISPLAY_RENDER                                                             58
 #define IDD_CONSOLE                                                                          59
 #define IDD_SHADERS                                                                          60
 #define IDD_PANEL_BUILDING                                                                   61
@@ -1047,7 +1046,6 @@
 #define IDC_DISPLAY_PROFILE2                                                                 1492
 #define IDC_ANIMATION                                                                        1493
 #define IDC_DISPLAY_BEAMS                                                                    1494
-#define IDC_HIGHLIGHT_BREAKABLE                                                              1495
 #define IDC_EVENT_REMOVE                                                                     1496
 #define IDC_DISPLAY_AIDEBUGDRAWCOVER                                                         1497
 #define IDC_EVENT_SEND                                                                       1498
@@ -3085,6 +3083,9 @@
 #define IDC_SCISSORS                                                                         35417
 #define ID_RELOAD_ARCHETYPES                                                                 35418
 #define ID_VIEW_TITLEBAR                                                                     35419
+#define IDC_PHYS_PIN                                                                         35420
+#define IDC_PHYS_FORK                                                                        35421
+
 
 // Next default values for new objects
 //
@@ -3092,9 +3093,8 @@
 	#ifndef APSTUDIO_READONLY_SYMBOLS
 		#define _APS_3D_CONTROLS         1
 		#define _APS_NEXT_RESOURCE_VALUE 566
-		#define _APS_NEXT_COMMAND_VALUE  35420
+		#define _APS_NEXT_COMMAND_VALUE  35422
 		#define _APS_NEXT_CONTROL_VALUE  2616
 		#define _APS_NEXT_SYMED_VALUE    2616
 	#endif
 #endif
-

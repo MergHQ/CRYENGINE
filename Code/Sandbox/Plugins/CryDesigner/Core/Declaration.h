@@ -157,4 +157,3 @@ typedef std::set<IndexPair>         EdgeSet;
 typedef std::set<int>               EdgeIndexSet;
 typedef std::map<int, EdgeIndexSet> EdgeMap;
 }
-

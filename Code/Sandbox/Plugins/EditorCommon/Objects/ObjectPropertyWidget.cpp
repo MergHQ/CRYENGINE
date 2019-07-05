@@ -3,14 +3,19 @@
 #include "StdAfx.h"
 #include "ObjectPropertyWidget.h"
 
-#include <QAdvancedPropertyTree.h>
-#include <CrySerialization/IArchive.h>
-#include "Qt/Widgets/QEditToolButton.h"
-
 #include "Objects/BaseObject.h"
-#include "IUndoManager.h"
 #include "IObjectManager.h"
-#include "Objects/SelectionGroup.h"
+#include "QAdvancedPropertyTreeLegacy.h"
+
+// EditorQt
+#include <Objects/SelectionGroup.h>
+
+// EditorInterface
+#include <IUndoManager.h>
+#include <IEditor.h>
+
+#include <CrySerialization/IArchive.h>
+#include <QBoxLayout>
 
 struct CObjectPropertyWidget::SBaseObjectSerializer
 {
@@ -34,7 +39,7 @@ struct CObjectPropertyWidget::SBaseObjectSerializer
 	const CBaseObjectPtr m_object;
 	const bool           m_bMultiEdit;
 
-	TSerializationFunc& m_serializationFunc;
+	TSerializationFunc&  m_serializationFunc;
 };
 
 CObjectPropertyWidget::CObjectPropertyWidget(TSerializationFunc serializationFunc)
@@ -59,12 +64,9 @@ CObjectPropertyWidget::~CObjectPropertyWidget()
 
 	if (m_propertyTree)
 	{
-		m_propertyTree->setParent(nullptr);
 		m_propertyTree->deleteLater();
 	}
 }
-
-
 
 void CObjectPropertyWidget::CreatePropertyTrees()
 {
@@ -79,14 +81,15 @@ void CObjectPropertyWidget::CreatePropertyTrees()
 	auto selectionCount = pSelectionGroup->GetCount();
 	m_objectSerializers.reserve(selectionCount);
 
-	m_propertyTree.reset(new QAdvancedPropertyTree("ObjectPropertyWidget"));
+	m_propertyTree.reset(new QAdvancedPropertyTreeLegacy("ObjectPropertyWidget"));
 	m_propertyTree->setExpandLevels(2);
 	m_propertyTree->setValueColumnWidth(0.6f);
 	m_propertyTree->setAggregateMouseEvents(false);
 	m_propertyTree->setFullRowContainers(true);
 	m_propertyTree->setSizeToContent(true);
 
-	QObject::connect(m_propertyTree.get(), SIGNAL(signalPushUndo()), this, SLOT(UndoPush()));
+	connect(m_propertyTree.get(), &QPropertyTreeLegacy::signalBeginUndo, this, &CObjectPropertyWidget::OnBeginUndo);
+	connect(m_propertyTree.get(), &QPropertyTreeLegacy::signalEndUndo, this, &CObjectPropertyWidget::OnUndoEnd);
 
 	bool bMultiEdit = false;
 
@@ -110,7 +113,7 @@ void CObjectPropertyWidget::CreatePropertyTrees()
 	for (size_t i = 0, n = pSelectionGroup->GetCount(); i < n; ++i)
 	{
 		CBaseObject* pObject = pSelectionGroup->GetObject(i);
-		pObject->AddEventListener(functor(*this, &CObjectPropertyWidget::OnObjectEvent));
+		pObject->signalChanged.Connect(this, &CObjectPropertyWidget::OnObjectEvent);
 
 		m_objectSerializers.emplace_back(pObject, bMultiEdit, m_serializationFunc);
 		structs.emplace_back(m_objectSerializers.back());
@@ -122,15 +125,13 @@ void CObjectPropertyWidget::CreatePropertyTrees()
 }
 
 // Separate object updates are processed in a lazy manner, else we risk doing too many updates
-void CObjectPropertyWidget::OnObjectEvent(class CBaseObject* object, int event)
+void CObjectPropertyWidget::OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_TRANSFORM ||
-	    event == OBJECT_ON_RENAME ||
-	    event == OBJECT_ON_UI_PROPERTY_CHANGED)
+	if (event.m_type == OBJECT_ON_TRANSFORM || event.m_type == OBJECT_ON_RENAME || event.m_type == OBJECT_ON_UI_PROPERTY_CHANGED)
 	{
 		m_bReloadProperties = true;
 	}
-	else if (event == OBJECT_ON_DELETE)
+	else if (event.m_type == OBJECT_ON_DELETE)
 	{
 		m_bCleanupDeletedObjects = true;
 		m_bReloadProperties = false;
@@ -144,22 +145,33 @@ void CObjectPropertyWidget::UnregisterObjects()
 	{
 		for (SBaseObjectSerializer& pSer : m_objectSerializers)
 		{
-			pSer.m_object->RemoveEventListener(functor(*this, &CObjectPropertyWidget::OnObjectEvent));
+			pSer.m_object->signalChanged.DisconnectObject(this);
 		}
 	}
 }
 
-void CObjectPropertyWidget::UndoPush()
+void CObjectPropertyWidget::OnBeginUndo()
 {
 	GetIEditor()->GetIUndoManager()->Begin();
 	if (m_propertyTree)
 	{
 		for (SBaseObjectSerializer& pSer : m_objectSerializers)
 		{
-			pSer.m_object->StoreUndo("Button Edit");
+			pSer.m_object->StoreUndo("Object Modify");
 		}
 	}
-	GetIEditor()->GetIUndoManager()->Accept("Button Edit");
+}
+
+void CObjectPropertyWidget::OnUndoEnd(bool undoAccepted)
+{
+	if (!undoAccepted)
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Object Modify");
+	}
 }
 
 void CObjectPropertyWidget::OnEditorNotifyEvent(EEditorNotifyEvent event)

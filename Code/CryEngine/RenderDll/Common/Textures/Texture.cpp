@@ -34,13 +34,16 @@ int CTexture::s_nStreamingUpdateMode;
 bool CTexture::s_bPrecachePhase;
 bool CTexture::s_bInLevelPhase = false;
 bool CTexture::s_bPrestreamPhase;
-int CTexture::s_nStreamingThroughput = 0;
+
+size_t CTexture::s_nStreamingThroughput = 0;
 float CTexture::s_nStreamingTotalTime = 0;
+
 CTextureStreamPoolMgr* CTexture::s_pPoolMgr;
 std::set<string> CTexture::s_vTexReloadRequests;
 CryCriticalSection CTexture::s_xTexReloadLock;
 #ifdef TEXTURE_GET_SYSTEM_COPY_SUPPORT
-CTexture::LowResSystemCopyType CTexture::s_LowResSystemCopy;
+CTexture::LowResSystemCopyType CTexture::s_LowResSystemCopy[TEX_SYS_COPY_MAX_SLOTS];
+CryReadModifyLock CTexture::s_LowResSystemCopyLock;
 #endif
 
 #if defined(TEXSTRM_DEFERRED_UPLOAD)
@@ -186,19 +189,11 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_nPersistentSize = 0;
 	m_fAvgBrightness = 0.0f;
 
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	m_nDeviceAddressInvalidated = 0;
-#endif
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	m_nESRAMOffset = SKIP_ESRAM;
-#endif
 
 	m_nUpdateFrameID = -1;
 	m_nAccessFrameID = -1;
 	m_nCustomID = -1;
-	m_pDevTexture = NULL;
-
-	m_bAsyncDevTexCreation = false;
+	m_pDevTexture = nullptr;
 
 	m_bIsLocked = false;
 	m_bNeedRestoring = false;
@@ -248,20 +243,10 @@ CTexture::~CTexture()
 	InvalidateDeviceResource(this, eResourceDestroyed);
 
 	// sizes of these structures should NOT exceed L2 cache line!
-#if CRY_PLATFORM_64BIT
 	static_assert((offsetof(CTexture, m_fCurrentMipBias) - offsetof(CTexture, m_pFileTexMips)) <= 64, "Invalid offset!");
-	//static_assert((offsetof(CTexture, m_pFileTexMips) % 64) == 0, "Invalid offset!");
-#endif
 
-#ifndef _RELEASE
-	if (!gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsRenderLoadingThread())
-		__debugbreak();
-#endif
-
-#ifndef _RELEASE
-	if (IsStreaming())
-		__debugbreak();
-#endif
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread());
+	CRY_ASSERT(!IsStreaming());
 
 	ReleaseDeviceTexture(false);
 
@@ -277,13 +262,15 @@ CTexture::~CTexture()
 		s_pStreamListener->OnDestroyedStreamedTexture(this);
 #endif
 
-#ifndef _RELEASE
-	if (m_bInDistanceSortedList)
-		__debugbreak();
-#endif
+	CRY_ASSERT(!m_bInDistanceSortedList);
 
 #ifdef TEXTURE_GET_SYSTEM_COPY_SUPPORT
-	s_LowResSystemCopy.erase(this);
+	{
+		AUTO_MODIFYLOCK(s_LowResSystemCopyLock);
+
+		for (int slot = 0; slot < TEX_SYS_COPY_MAX_SLOTS; slot++)
+			s_LowResSystemCopy[slot].erase(this);
+	}
 #endif
 }
 
@@ -371,22 +358,32 @@ CTexture* CTexture::FindOrRegisterTextureObject(const char* name, uint32 nFlags,
 
 void CTexture::RefDevTexture(CDeviceTexture* pDeviceTex)
 {
-	m_pDevTexture = pDeviceTex;
+	// Hard-wired device-resources can't have a unique owner (they are shared)
+	if ((m_pDevTexture))
+		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == nullptr);
+
+	if ((m_pDevTexture = pDeviceTex))
+		m_pDevTexture->SetOwner(nullptr);
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
 }
 
 void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 {
-	if (m_pDevTexture)
-		m_pDevTexture->SetOwner(NULL);
-	SAFE_RELEASE(m_pDevTexture);
+	// Substitute device-resource by a strictly subset one (texture-config doesn't change, only residency)
+	if ((m_pDevTexture))
+	{
+		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
+		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->Release();
+	}
 
-	m_pDevTexture = pDeviceTex;
-	if (m_pDevTexture)
+	if ((m_pDevTexture = pDeviceTex))
 	{
 		m_pDevTexture->SetNoDelete(!!(m_eFlags & FT_DONT_RELEASE));
 		m_pDevTexture->SetOwner(this);
+
+		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
 	}
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
@@ -394,11 +391,18 @@ void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 
 void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 {
-	SAFE_RELEASE(m_pDevTexture);
-
-	m_pDevTexture = pDeviceTex;
-	if (m_pDevTexture)
+	// Take ownership of an entirely different device-resource (texture-config does change)
+	if ((m_pDevTexture))
 	{
+		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
+		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->Release();
+	}
+
+	if ((m_pDevTexture = pDeviceTex))
+	{
+		m_pDevTexture->SetOwner(this);
+
 		const STextureLayout Layput = m_pDevTexture->GetLayout();
 
 		m_nWidth       = Layput.m_nWidth;
@@ -413,7 +417,6 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 		m_bIsSRGB      = Layput.m_bIsSRGB;
 
 		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
-		CryInterlockedAdd(&CTexture::s_nStatsCurManagedNonStreamedTexMem, m_nDevTextureSize);
 	}
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
@@ -431,9 +434,16 @@ void CTexture::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_SrcName);
 
 #ifdef TEXTURE_GET_SYSTEM_COPY_SUPPORT
-	const LowResSystemCopyType::iterator& it = s_LowResSystemCopy.find(this);
-	if (it != CTexture::s_LowResSystemCopy.end())
-		pSizer->AddObject((*it).second.m_lowResSystemCopy);
+	{
+		AUTO_MODIFYLOCK(s_LowResSystemCopyLock);
+
+		for (int slot = 0; slot < TEX_SYS_COPY_MAX_SLOTS; slot++)
+		{
+			const LowResSystemCopyType::iterator& it = s_LowResSystemCopy[slot].find(this);
+			if (it != CTexture::s_LowResSystemCopy[slot].end())
+				pSizer->AddObject((*it).second.m_lowResSystemCopy);
+		}
+	}
 #endif
 
 	if (m_pFileTexMips)
@@ -443,62 +453,80 @@ void CTexture::GetMemoryUsage(ICrySizer* pSizer) const
 //=======================================================
 // Low-level functions calling CreateDeviceTexture()
 
-bool CTexture::CreateRenderTarget(ETEX_Format eFormat, const ColorF& cClear)
+void CTexture::CreateRenderTarget(ETEX_Format eFormat, const ColorF& cClear)
 {
 	if (m_eSrcFormat == eTF_Unknown)
 		m_eSrcFormat = eFormat;
 	if (m_eSrcFormat == eTF_Unknown)
-		return false;
+	{
+		m_eFlags |= FT_FAILED;
+		return;
+	}
 
 	SetClosestFormatSupported();
 	m_eFlags |= FT_USAGE_RENDERTARGET;
 	m_cClearColor = cClear;
 	m_nMips = m_eFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(m_nWidth, m_nHeight) : m_nMips;
-	bool bRes = CreateDeviceTexture(nullptr);
+	
+	SSubresourceData pData(nullptr);
+	CreateDeviceTexture(std::move(pData));
 	PostCreate();
-
-	return bRes;
 }
 
-bool CTexture::CreateDepthStencil(ETEX_Format eFormat, const ColorF& cClear)
+void CTexture::CreateDepthStencil(ETEX_Format eFormat, const ColorF& cClear)
 {
 	if (m_eSrcFormat == eTF_Unknown)
 		m_eSrcFormat = eFormat;
 	if (m_eSrcFormat == eTF_Unknown)
-		return false;
+	{
+		m_eFlags |= FT_FAILED;
+		return;
+	}
 
 	SetClosestFormatSupported();
 	m_eFlags |= FT_USAGE_DEPTHSTENCIL;
 	m_cClearColor = cClear;
 	m_nMips = m_eFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(m_nWidth, m_nHeight) : m_nMips;
-	bool bRes = CreateDeviceTexture(nullptr);
-	PostCreate();
 
-	return bRes;
+	SSubresourceData pData(nullptr);
+	CreateDeviceTexture(std::move(pData));
+	PostCreate();
 }
 
-bool CTexture::CreateShaderResource(STexData& td)
+void CTexture::CreateShaderResource(STexDataPtr&& td)
 {
-	m_nWidth = td.m_nWidth;
-	m_nHeight = td.m_nHeight;
-	m_nDepth = td.m_nDepth;
-	m_eSrcFormat = td.m_eFormat;
-	m_nMips = td.m_nMips;
-	m_fAvgBrightness = td.m_fAvgBrightness;
-	m_cMinColor = td.m_cMinColor;
-	m_cMaxColor = td.m_cMaxColor;
-	m_bUseDecalBorderCol = (td.m_nFlags & FIM_DECAL) != 0;
-	m_bIsSRGB = (td.m_nFlags & FIM_SRGB_READ) != 0;
+	m_nWidth = td->m_nWidth;
+	m_nHeight = td->m_nHeight;
+	m_nDepth = td->m_nDepth;
+	m_eSrcFormat = td->m_eFormat;
+	m_nMips = td->m_nMips;
+	m_fAvgBrightness = td->m_fAvgBrightness;
+	m_cMinColor = td->m_cMinColor;
+	m_cMaxColor = td->m_cMaxColor;
+	m_bUseDecalBorderCol = (td->m_nFlags & FIM_DECAL) != 0;
+	m_bIsSRGB = (td->m_nFlags & FIM_SRGB_READ) != 0;
 
 	assert((m_nDepth == 1) || (m_eTT == eTT_3D));
 	assert((m_nArraySize == 1) || (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray || m_eTT == eTT_2DArray));
 	assert((m_nArraySize % 6) || (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray));
-	assert(!td.m_pData[1] || !(m_eFlags & FT_REPLICATE_TO_ALL_SIDES) || (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray));
+	assert(!td->m_pData[1] || !(m_eFlags & FT_REPLICATE_TO_ALL_SIDES) || (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray));
 	assert(m_nWidth && m_nHeight && m_nMips);
 
 	SetClosestFormatSupported();
-	if (!ImagePreprocessing(td))
-		return false;
+	if (!(td = ImagePreprocessing(std::move(td), m_eDstFormat)))
+	{
+		SetNoTexture(m_eTT == eTT_Cube ? CRendererResources::s_ptexNoTextureCM : CRendererResources::s_ptexNoTexture);
+		delete td;
+		return;
+	}
+
+#if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
+	if (m_eFlags & FT_KEEP_LOWRES_SYSCOPY)
+	{
+		uint16 width, height;
+		ITexture::GetLowResSystemCopy(width, height);
+	}
+#endif
 
 	assert(m_nWidth && m_nHeight && m_nMips);
 
@@ -506,26 +534,22 @@ bool CTexture::CreateShaderResource(STexData& td)
 	if (nMaxTextureSize > 0)
 	{
 		if (m_nWidth > nMaxTextureSize || m_nHeight > nMaxTextureSize)
-			return false;
+		{
+			SetNoTexture(m_eTT == eTT_Cube ? CRendererResources::s_ptexNoTextureCM : CRendererResources::s_ptexNoTexture);
+			delete td;
+			return;
+		}
 	}
 
-	// Semi-consecutive data: {{slice,0},{slice,0},{0,0}}
-	const void* pData[6 * 2 + 2];
-	pData[6 * 2 + 0] = nullptr;
-	pData[6 * 2 + 1] = nullptr;
-	for (uint32 i = 0; i < 6; i++)
-		pData[i * 2 + 0] = td.m_pData[i],
-		pData[i * 2 + 1] = nullptr;
-
-	bool bRes = CreateDeviceTexture(pData);
-
-	return bRes;
+	SSubresourceData pData = td->Transfer();
+	CreateDeviceTexture(std::move(pData));
+	delete td;
 }
 
 //=======================================================
 // Mid-level functions calling Create...()
 
-bool CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat)
+void CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, const byte* pSrcData, ETEX_Format eSrcFormat)
 {
 	if (nMips <= 0)
 		nMips = CTexture::CalcNumMips(nWidth, nHeight);
@@ -533,24 +557,23 @@ bool CTexture::Create2DTexture(int nWidth, int nHeight, int nMips, int nFlags, b
 	m_eSrcFormat = eSrcFormat;
 	m_nMips = nMips;
 
-	STexData td;
-	td.m_eFormat = eSrcFormat;
-	td.m_nWidth = nWidth;
-	td.m_nHeight = nHeight;
-	td.m_nDepth = 1;
-	td.m_nMips = nMips;
-	td.m_pData[0] = pSrcData;
+	STexDataPtr td = new STexData;
 
-	bool bRes = CreateShaderResource(td);
-	if (!bRes)
-		m_eFlags |= FT_FAILED;
+	td->m_eFormat = eSrcFormat;
+	td->m_eTileMode = m_eSrcTileMode;
+	td->m_nWidth = nWidth;
+	td->m_nHeight = nHeight;
+	td->m_nDepth = 1;
+	td->m_nMips = nMips;
+	td->m_pData[0] = pSrcData;
+	if (nFlags & FT_TAKEOVER_DATA_POINTER)
+		td->SetReallocated(0);
 
+	CreateShaderResource(std::move(td));
 	PostCreate();
-
-	return bRes;
 }
 
-bool CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat)
+void CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, const byte* pSrcData, ETEX_Format eSrcFormat)
 {
 	//if (nMips <= 0)
 	//  nMips = CTexture::CalcNumMips(nWidth, nHeight);
@@ -558,21 +581,20 @@ bool CTexture::Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, i
 	m_eSrcFormat = eSrcFormat;
 	m_nMips = nMips;
 
-	STexData td;
-	td.m_eFormat = eSrcFormat;
-	td.m_nWidth = nWidth;
-	td.m_nHeight = nHeight;
-	td.m_nDepth = nDepth;
-	td.m_nMips = nMips;
-	td.m_pData[0] = pSrcData;
+	STexDataPtr td = new STexData;
 
-	bool bRes = CreateShaderResource(td);
-	if (!bRes)
-		m_eFlags |= FT_FAILED;
+	td->m_eFormat = eSrcFormat;
+	td->m_eTileMode = m_eSrcTileMode;
+	td->m_nWidth = nWidth;
+	td->m_nHeight = nHeight;
+	td->m_nDepth = nDepth;
+	td->m_nMips = nMips;
+	td->m_pData[0] = pSrcData;
+	if (nFlags & FT_TAKEOVER_DATA_POINTER)
+		td->SetReallocated(0);
 
+	CreateShaderResource(std::move(td));
 	PostCreate();
-
-	return bRes;
 }
 
 //=======================================================
@@ -584,7 +606,7 @@ CTexture* CTexture::GetOrCreateTextureObject(const char* name, uint32 nWidth, ui
 
 	bool bFound = false;
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "%s", name);
+	MEMSTAT_CONTEXT(EMemStatContextType::Texture, name);
 
 	CTexture* pTex = FindOrRegisterTextureObject(name, nFlags, eFormat, bFound);
 	if (bFound)
@@ -639,6 +661,7 @@ CTexture* CTexture::GetOrCreateTextureArray(const char* name, uint32 nWidth, uin
 	nFlags &= ~FT_USAGE_ALLOWREADSRGB;
 
 	CTexture* pTex = GetOrCreateTextureObject(name, nWidth, nHeight, 1, eType, nFlags, eFormat, nCustomID);
+
 	pTex->SetWidth(nWidth);
 	pTex->SetHeight(nHeight);
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
@@ -646,31 +669,28 @@ CTexture* CTexture::GetOrCreateTextureArray(const char* name, uint32 nWidth, uin
 	assert((eType != eTT_CubeArray) || !(nArraySize % 6));
 	pTex->m_nDepth = 1;
 
-	bool bRes;
 	if (nFlags & FT_USAGE_RENDERTARGET)
 	{
-		bRes = pTex->CreateRenderTarget(eFormat, Clr_Unknown);
+		pTex->CreateRenderTarget(eFormat, Clr_Unknown);
 	}
 	else if (nFlags & FT_USAGE_DEPTHSTENCIL)
 	{
-		bRes = pTex->CreateDepthStencil(eFormat, Clr_Unknown);
+		pTex->CreateDepthStencil(eFormat, Clr_Unknown);
 	}
 	else
 	{
-		STexData td;
+		STexDataPtr td = new STexData;
 
-		td.m_eFormat = eFormat;
-		td.m_nDepth = 1;
-		td.m_nWidth = nWidth;
-		td.m_nHeight = nHeight;
-		td.m_nMips = nMips;
-		td.m_nFlags = sRGB ? FIM_SRGB_READ : 0;
+		td->m_eFormat = eFormat;
+		td->m_nDepth = 1;
+		td->m_nWidth = nWidth;
+		td->m_nHeight = nHeight;
+		td->m_nMips = nMips;
+		td->m_nFlags = sRGB ? FIM_SRGB_READ : 0;
 
-		bRes = pTex->CreateShaderResource(td);
+		pTex->CreateShaderResource(std::move(td));
 	}
 
-	if (!bRes)
-		pTex->m_eFlags |= FT_FAILED;
 	pTex->PostCreate();
 
 	return pTex;
@@ -684,12 +704,19 @@ CTexture* CTexture::GetOrCreateRenderTarget(const char* name, uint32 nWidth, uin
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
 	pTex->m_eFlags |= nFlags;
 
-	bool bRes = pTex->CreateRenderTarget(eFormat, cClear);
-	if (!bRes)
-		pTex->m_eFlags |= FT_FAILED;
+	pTex->CreateRenderTarget(eFormat, cClear);
 	pTex->PostCreate();
 
 	return pTex;
+}
+
+_smart_ptr<CTexture> CTexture::GetOrCreateRenderTargetPtr(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
+{
+	CTexture* pTex = GetOrCreateRenderTarget(name, nWidth, nHeight, cClear, eTT, nFlags, eFormat, nCustomID);
+	_smart_ptr<CTexture> result;
+	result.Assign_NoAddRef(pTex);
+
+	return result;
 }
 
 CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
@@ -700,32 +727,34 @@ CTexture* CTexture::GetOrCreateDepthStencil(const char* name, uint32 nWidth, uin
 	pTex->m_nMips = nFlags & FT_FORCE_MIPS ? CTexture::CalcNumMips(pTex->m_nWidth, pTex->m_nHeight) : pTex->m_nMips;
 	pTex->m_eFlags |= nFlags;
 
-	bool bRes = pTex->CreateDepthStencil(eFormat, cClear);
-	if (!bRes)
-		pTex->m_eFlags |= FT_FAILED;
+	pTex->CreateDepthStencil(eFormat, cClear);
 	pTex->PostCreate();
 
 	return pTex;
 }
 
-CTexture* CTexture::GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation)
+_smart_ptr<CTexture> CTexture::GetOrCreateDepthStencilPtr(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID)
+{
+	CTexture* pTex = GetOrCreateDepthStencil(name, nWidth, nHeight, cClear, eTT, nFlags, eFormat, nCustomID);
+	_smart_ptr<CTexture> result;
+	result.Assign_NoAddRef(pTex);
+
+	return result;
+}
+
+CTexture* CTexture::GetOrCreate2DTexture(const char* szName, int nWidth, int nHeight, int nMips, int nFlags, const byte* pSrcData, ETEX_Format eSrcFormat, bool bAsyncDevTexCreation)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	CTexture* pTex = GetOrCreateTextureObject(szName, nWidth, nHeight, 1, eTT_2D, nFlags, eSrcFormat, -1);
-	pTex->m_bAsyncDevTexCreation = bAsyncDevTexCreation;
-	bool bFound = false;
-
 	pTex->Create2DTexture(nWidth, nHeight, nMips, nFlags, pSrcData, eSrcFormat);
 
 	return pTex;
 }
 
-CTexture* CTexture::GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, byte* pSrcData, ETEX_Format eSrcFormat)
+CTexture* CTexture::GetOrCreate3DTexture(const char* szName, int nWidth, int nHeight, int nDepth, int nMips, int nFlags, const byte* pSrcData, ETEX_Format eSrcFormat)
 {
 	CTexture* pTex = GetOrCreateTextureObject(szName, nWidth, nHeight, nDepth, eTT_3D, nFlags, eSrcFormat, -1);
-	bool bFound = false;
-
 	pTex->Create3DTexture(nWidth, nHeight, nDepth, nMips, nFlags, pSrcData, eSrcFormat);
 
 	return pTex;
@@ -733,36 +762,30 @@ CTexture* CTexture::GetOrCreate3DTexture(const char* szName, int nWidth, int nHe
 
 //=======================================================
 
-bool CTexture::Reload()
+void CTexture::Reload()
 {
-	bool bOK = false;
-
 	// If the texture is flagged to not be released, we skip the reloading
 	if (m_eFlags & FT_DONT_RELEASE)
-		return bOK;
+		return;
 
 	if (IsStreamed())
 	{
 		ReleaseDeviceTexture(false);
-		return ToggleStreaming(true);
+		ToggleStreaming(true);
+		return;
 	}
 
-	if (m_eFlags & FT_FROMIMAGE)
+	if (m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL))
 	{
-		assert(!(m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)));
-		bOK = LoadFromImage(m_SrcName.c_str());   // true=reloading
-		if (!bOK)
-			SetNoTexture(m_eTT == eTT_Cube ? CRendererResources::s_ptexNoTextureCM : CRendererResources::s_ptexNoTexture);
+		SSubresourceData pData(nullptr);
+		CreateDeviceTexture(std::move(pData));
 	}
-	else if (m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL))
+	else
 	{
-		bOK = CreateDeviceTexture(nullptr);
-		assert(bOK);
+		LoadFromImage(m_SrcName.c_str());
 	}
 
 	PostCreate();
-
-	return bOK;
 }
 
 CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eFormat)
@@ -771,8 +794,8 @@ CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eFormat
 
 	bool bFound = false;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Textures");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "%s", name);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Textures");
+	MEMSTAT_CONTEXT(EMemStatContextType::Texture, name);
 
 	CRY_DEFINE_ASSET_SCOPE("Texture", name);
 
@@ -817,7 +840,7 @@ CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eFormat
 	}
 
 	if (!CTexture::s_bPrecachePhase)
-		pTex->m_eFlags |= pTex->Load(eFormat)  ? 0 : FT_FAILED;
+		pTex->Load(eFormat);
 
 	return pTex;
 }
@@ -839,9 +862,9 @@ struct CompareTextures
 	}
 };
 
-void CTexture::Precache()
+void CTexture::Precache(const bool isBlocking)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	if (!s_bPrecachePhase)
 		return;
@@ -850,19 +873,18 @@ void CTexture::Precache()
 
 	gEnv->pLog->UpdateLoadingScreen("Requesting textures precache ...");
 
-	gRenDev->ExecuteRenderThreadCommand( []{ CTexture::RT_Precache(); },
-		ERenderCommandFlags::LevelLoadingThread_executeDirect|ERenderCommandFlags::FlushAndWait );
-
-	gEnv->pLog->UpdateLoadingScreen("Textures precache done.");
+	gRenDev->ExecuteRenderThreadCommand( [isBlocking]{ CTexture::RT_Precache(isBlocking); },
+		ERenderCommandFlags::LevelLoadingThread_executeDirect
+		| (isBlocking ? ERenderCommandFlags::FlushAndWait : ERenderCommandFlags::None));
+	if (isBlocking)
+	{
+		gEnv->pLog->UpdateLoadingScreen("Textures precache done.");
+	}
 }
 
-void CTexture::RT_Precache()
+void CTexture::RT_Precache(const bool isFinalPrecache)
 {
-	if (gRenDev->CheckDeviceLost())
-		return;
-
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_Precache");
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	// Disable invalid file access logging if texture streaming is disabled
 	// If texture streaming is turned off, we will hit this on the renderthread
@@ -871,13 +893,16 @@ void CTexture::RT_Precache()
 	int pakLogFileAccess = 0;
 	if (!CRenderer::CV_r_texturesstreaming)
 	{
-		if (sysPakLogInvalidAccess = gEnv->pConsole->GetCVar("sys_PakLogInvalidFileAccess"))
+		if ((sysPakLogInvalidAccess = gEnv->pConsole->GetCVar("sys_PakLogInvalidFileAccess")))
 		{
 			pakLogFileAccess = sysPakLogInvalidAccess->GetIVal();
 		}
 	}
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue t0 = gEnv->pTimer->GetAsyncTime();
+#endif
+
 	CryLog("-- Precaching textures...");
 	iLog->UpdateLoadingScreen(0);
 
@@ -925,6 +950,7 @@ void CTexture::RT_Precache()
 			{
 				if (!pTexture->m_bStreamPrepared || !pTexture->IsStreamable())
 				{
+					pTexture->m_fpMinMipCur = MAX_MIP_LEVELS << 8;
 					pTexture->m_bPostponed = false;
 					pTexture->Load(pTexture->m_eDstFormat);
 				}
@@ -968,7 +994,7 @@ void CTexture::RT_Precache()
 			pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture)
 			{
 				pTexture->m_bStreamHighPriority |= 1;
-				pTexture->m_fpMinMipCur = 0;
+				pTexture->m_fpMinMipCur = MAX_MIP_LEVELS << 8;
 
 				s_pTextureStreamer->Precache(pTexture);
 
@@ -980,11 +1006,16 @@ void CTexture::RT_Precache()
 	if (!gEnv->IsEditor())
 		CryLog("========================== Finished loading textures ============================");
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue t1 = gEnv->pTimer->GetAsyncTime();
 	float dt = (t1 - t0).GetSeconds();
 	CryLog("Precaching textures done in %.2f seconds", dt);
+#endif
 
-	s_bPrecachePhase = false;
+	if (isFinalPrecache)
+	{
+		s_bPrecachePhase = false;
+	}
 
 	// Restore pakLogFileAccess if it was disabled during precaching
 	// because texture precaching was disabled
@@ -994,36 +1025,34 @@ void CTexture::RT_Precache()
 	}
 }
 
-bool CTexture::Load(ETEX_Format eFormat)
+void CTexture::Load(ETEX_Format eFormat)
 {
-	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(ETEX_Format eTFDst)", m_SrcName);
+	CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "CTexture::Load(ETEX_Format eTFDst)", m_SrcName);
 	m_bWasUnloaded = false;
 	m_bStreamed = false;
 
-	bool bFound = LoadFromImage(m_SrcName.c_str(), eFormat);   // false=not reloading
-
-	if (!bFound)
-		SetNoTexture(m_eTT == eTT_Cube ? CRendererResources::s_ptexNoTextureCM : CRendererResources::s_ptexNoTexture);
+	LoadFromImage(m_SrcName.c_str(), eFormat);   // false=not reloading
 
 	m_eFlags |= FT_FROMIMAGE;
 	PostCreate();
-
-	return bFound;
 }
 
-bool CTexture::ToggleStreaming(const bool bEnable)
+void CTexture::ToggleStreaming(const bool bEnable)
 {
 	if (!(m_eFlags & (FT_FROMIMAGE | FT_DONT_RELEASE)) || (m_eFlags & FT_DONT_STREAM))
-		return false;
+		return;
+
 	AbortStreamingTasks(this);
 	if (bEnable)
 	{
 		if (IsStreamed())
-			return true;
+			return;
+
 		ReleaseDeviceTexture(false);
 		m_bStreamed = true;
 		if (StreamPrepare(true))
-			return true;
+			return;
+
 		if (m_pFileTexMips)
 		{
 			Unlink();
@@ -1032,21 +1061,19 @@ bool CTexture::ToggleStreaming(const bool bEnable)
 		}
 		m_bStreamed = false;
 		if (m_bNoTexture)
-			return true;
+			return;
 	}
+
 	ReleaseDeviceTexture(false);
-	return Reload();
+	Reload();
 }
 
-bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
+void CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(name);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, name);
 
-	if (CRenderer::CV_r_texnoload)
-	{
-		if (SetNoTexture())
-			return true;
-	}
+	if (CRenderer::CV_r_texnoload && SetNoTexture())
+		return;
 
 	string sFileName(name);
 	sFileName.MakeLower();
@@ -1060,8 +1087,9 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 		if (StreamPrepare(true))
 		{
 			assert(m_pDevTexture);
-			return true;
+			return;
 		}
+
 		m_eFlags |= FT_DONT_STREAM;
 		m_bStreamed = false;
 		m_bForceStreamHighRes = false;
@@ -1074,7 +1102,6 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 				m_pFileTexMips = NULL;
 				m_bStreamed = false;
 			}
-			return true;
 		}
 	}
 
@@ -1085,7 +1112,7 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 	if (m_bPostponed)
 	{
 		if (s_pTextureStreamer->BeginPrepare(this, sFileName, (m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0))
-			return true;
+			return;
 	}
 
 	uint32 nImageFlags =
@@ -1093,22 +1120,25 @@ bool CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 	  ((m_eFlags & FT_STREAMED_PREPARE) ? FIM_READ_VIA_STREAMS : 0) |
 	  ((m_eFlags & FT_DONT_STREAM) ? FIM_IMMEDIATE_RC : 0);
 
-	_smart_ptr<CImageFile> pImage = CImageFile::mfLoad_file(sFileName, nImageFlags);
-	return Load(pImage);
+	Load(CImageFile::mfLoad_file(sFileName, nImageFlags));
 }
 
-bool CTexture::Load(CImageFile* pImage)
+void CTexture::Load(CImageFilePtr&& pImage)
 {
 	if (!pImage || pImage->mfGetFormat() == eTF_Unknown)
-		return false;
+	{
+		SetNoTexture(m_eTT == eTT_Cube ? CRendererResources::s_ptexNoTextureCM : CRendererResources::s_ptexNoTexture);
+		return;
+	}
 
-	//LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(CImageFile* pImage)", pImage->mfGet_filename().c_str());
+	//CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "CTexture::Load(CImageFile* pImage)", pImage->mfGet_filename().c_str());
 
 	if ((m_eFlags & FT_ALPHA) && !pImage->mfIs_image(0))
 	{
 		SetNoTexture(CRendererResources::s_ptexWhite);
-		return true;
+		return;
 	}
+
 	const char* name = pImage->mfGet_filename().c_str();
 	if (pImage->mfGet_Flags() & FIM_SPLITTED)              // propagate splitted file flag
 		m_eFlags |= FT_SPLITTED;
@@ -1148,56 +1178,44 @@ bool CTexture::Load(CImageFile* pImage)
 	  (pImage->mfGet_NumSides() == 1) ? eTT_2D :
 	  eTT_2DArray;
 
-	STexData td;
-	td.m_nFlags = pImage->mfGet_Flags();
-	td.m_pData[0] = pImage->mfGet_image(0);
-	td.m_nWidth = pImage->mfGet_width();
-	td.m_nHeight = pImage->mfGet_height();
-	td.m_nDepth = pImage->mfGet_depth();
-	td.m_eFormat = pImage->mfGetFormat();
-	td.m_nMips = pImage->mfGet_numMips();
-	td.m_fAvgBrightness = pImage->mfGet_avgBrightness();
-	td.m_cMinColor = pImage->mfGet_minColor();
-	td.m_cMaxColor = pImage->mfGet_maxColor();
-	if ((m_eFlags & FT_NOMIPS) || td.m_nMips <= 0)
-		td.m_nMips = 1;
-	td.m_pFilePath = pImage->mfGet_filename();
+	STexDataPtr td = new STexData;
+
+	td->m_nFlags = pImage->mfGet_Flags();
+	td->m_nWidth = pImage->mfGet_width();
+	td->m_nHeight = pImage->mfGet_height();
+	td->m_nDepth = pImage->mfGet_depth();
+	td->m_eFormat = pImage->mfGetFormat();
+	td->m_eTileMode = pImage->mfGetTileMode();
+	td->m_nMips = pImage->mfGet_numMips();
+	td->m_fAvgBrightness = pImage->mfGet_avgBrightness();
+	td->m_cMinColor = pImage->mfGet_minColor();
+	td->m_cMaxColor = pImage->mfGet_maxColor();
+	if ((m_eFlags & FT_NOMIPS) || td->m_nMips <= 0)
+		td->m_nMips = 1;
+	td->m_pFilePath = pImage->mfGet_filename();
 
 	// base range after normalization, fe. [0,1] for 8bit images, or [0,2^15] for RGBE/HDR data
-	if (CImageExtensionHelper::IsDynamicRange(td.m_eFormat))
+	if (CImageExtensionHelper::IsDynamicRange(td->m_eFormat))
 	{
-		td.m_cMinColor /= td.m_cMaxColor.a;
-		td.m_cMaxColor /= td.m_cMaxColor.a;
+		td->m_cMinColor /= td->m_cMaxColor.a;
+		td->m_cMaxColor /= td->m_cMaxColor.a;
 	}
 
-	// check if it's a cubemap
-	if (pImage->mfIs_image(1))
+	// Move data-pointer from Image into TexData
+	for (int i = 0, j = !pImage->mfIs_image(1) ? 1 : 6; i < j; i++)
 	{
-		for (int i = 1; i < 6; i++)
-		{
-			td.m_pData[i] = pImage->mfGet_image(i);
-		}
+		td->AssignData(i, pImage->mfGet_image(i, true));
 	}
 
-	bool bRes = false;
-	if (pImage)
-	{
-		FormatFixup(td);
-		bRes = CreateShaderResource(td);
-	}
-
-	for (int i = 0; i < 6; i++)
-		if (td.m_pData[i] && td.WasReallocated(i))
-			SAFE_DELETE_ARRAY(td.m_pData[i]);
-
-	return bRes;
+	CreateShaderResource(std::move(CTexture::FormatFixup(std::move(td))));
 }
 
-void CTexture::UpdateData(STexData& td, int flags)
+void CTexture::UpdateData(STexDataPtr&& td, int flags)
 {
 	m_eFlags = flags;
-	m_eDstFormat = td.m_eFormat;
-	CreateShaderResource(td);
+	m_eDstFormat = td->m_eFormat;
+
+	CreateShaderResource(std::move(td));
 }
 
 ETEX_Format CTexture::FormatFixup(ETEX_Format eFormat)
@@ -1230,105 +1248,100 @@ ETEX_Format CTexture::FormatFixup(ETEX_Format eFormat)
 	}
 }
 
-bool CTexture::FormatFixup(STexData& td)
+STexDataPtr CTexture::FormatFixup(STexDataPtr&& td)
 {
-	const ETEX_Format eSrcFormat = td.m_eFormat;
-	const ETEX_Format eDstFormat = FormatFixup(td.m_eFormat);
+	const ETEX_Format eSrcFormat = td->m_eFormat;
+	const ETEX_Format eDstFormat = FormatFixup(eSrcFormat);
 	CRY_ASSERT(eDstFormat != eTF_Unknown);
 
-	if (m_eSrcTileMode == eTM_None)
+	if (td->m_eTileMode == eTM_None)
 	{
 		// Try and expand
-		int nSourceSize = CTexture::TextureDataSize(td.m_nWidth, td.m_nHeight, td.m_nDepth, td.m_nMips, 1, eSrcFormat);
-		int nTargetSize = CTexture::TextureDataSize(td.m_nWidth, td.m_nHeight, td.m_nDepth, td.m_nMips, 1, eDstFormat);
+		uint32 nSourceSize = CTexture::TextureDataSize(td->m_nWidth, td->m_nHeight, td->m_nDepth, td->m_nMips, 1, eSrcFormat, eTM_None);
+		uint32 nTargetSize = CTexture::TextureDataSize(td->m_nWidth, td->m_nHeight, td->m_nDepth, td->m_nMips, 1, eDstFormat, eTM_None);
 
-		for (int nImage = 0; nImage < sizeof(td.m_pData) / sizeof(td.m_pData[0]); ++nImage)
+		for (int nImage = 0; nImage < sizeof(td->m_pData) / sizeof(td->m_pData[0]); ++nImage)
 		{
-			if (td.m_pData[nImage])
+			if (td->m_pData[nImage])
 			{
 				byte* pNewImage = new byte[nTargetSize];
-				CTexture::ExpandMipFromFile(pNewImage, nTargetSize, td.m_pData[nImage], nSourceSize, eSrcFormat, eDstFormat);
-				td.AssignData(nImage, pNewImage);
+				CTexture::ExpandMipFromFile(pNewImage, nTargetSize, td->m_pData[nImage], nSourceSize, eSrcFormat, eDstFormat);
+				td->AssignData(nImage, pNewImage);
 			}
 		}
 
-		td.m_eFormat = eDstFormat;
+		td->m_eFormat = eDstFormat;
 	}
 	else
 	{
-#ifndef _RELEASE
-		if (eDstFormat != eSrcFormat)
-			__debugbreak();
-#endif
+		CRY_ASSERT(eDstFormat == eSrcFormat);
 	}
 
-	return true;
+	return td;
 }
 
-bool CTexture::ImagePreprocessing(STexData& td)
+STexDataPtr CTexture::ImagePreprocessing(STexDataPtr&& td, ETEX_Format eDstFormat)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
-	const char* pTexFileName = td.m_pFilePath ? td.m_pFilePath : "$Unknown";
+	#if !defined(_RELEASE)
+	const char* pTexFileName = td->m_pFilePath ? td->m_pFilePath : "$Unknown";
+#endif
 
-	if (m_eDstFormat == eTF_Unknown)
+	if (eDstFormat == eTF_Unknown)
 	{
-		td.m_pData[0] = td.m_pData[1] = td.m_pData[2] = td.m_pData[3] = td.m_pData[4] = td.m_pData[5] = 0;
-		m_nWidth = m_nHeight = m_nDepth = m_nMips = 0;
+		// NOTE: leaks memory
+		td->m_pData[0] = td->m_pData[1] = td->m_pData[2] = td->m_pData[3] = td->m_pData[4] = td->m_pData[5] = 0;
 
 #if !defined(_RELEASE)
-		TextureError(pTexFileName, "Trying to create a texture with unsupported target format %s!", NameForTextureFormat(m_eSrcFormat));
+		TextureError(pTexFileName, "Trying to process a texture with unsupported target format %s->unknown!", NameForTextureFormat(td->m_eFormat));
 #endif
-		return false;
+		return nullptr;
 	}
 
-	const ETEX_Format eSrcFormat = td.m_eFormat;
-	const bool fmtConversionNeeded = eSrcFormat != m_eDstFormat;
+	const ETEX_Format eSrcFormat = td->m_eFormat;
+	const bool fmtConversionNeeded = eSrcFormat != eDstFormat;
 
-#if !CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if !CRY_PLATFORM_WINDOWS
 	if (fmtConversionNeeded)
 	{
-		td.m_pData[0] = td.m_pData[1] = td.m_pData[2] = td.m_pData[3] = td.m_pData[4] = td.m_pData[5] = 0;
-		m_nWidth = m_nHeight = m_nDepth = m_nMips = 0;
+		// NOTE: leaks memory
+		td->m_pData[0] = td->m_pData[1] = td->m_pData[2] = td->m_pData[3] = td->m_pData[4] = td->m_pData[5] = 0;
 
 	#if !defined(_RELEASE)
-		TextureError(pTexFileName, "Trying an image format conversion from %s to %s. This is not supported on this platform!", NameForTextureFormat(eSrcFormat), NameForTextureFormat(m_eDstFormat));
+		TextureError(pTexFileName, "Trying an image format conversion from %s to %s. This is not supported on this platform!", NameForTextureFormat(eSrcFormat), NameForTextureFormat(eDstFormat));
 	#endif
-		return false;
+		return nullptr;
 	}
 #else
 
-	const bool doProcessing = fmtConversionNeeded && (m_eFlags & FT_TEX_FONT) == 0; // we generate the font in native format
+	const bool doProcessing = fmtConversionNeeded;
 	if (doProcessing)
 	{
-		const int nSrcWidth = td.m_nWidth;
-		const int nSrcHeight = td.m_nHeight;
+		const int nSrcWidth = td->m_nWidth;
+		const int nSrcHeight = td->m_nHeight;
 
 		for (int i = 0; i < 6; i++)
 		{
-			byte* pSrcData = td.m_pData[i];
-			if (pSrcData)
+			if (const byte* pSrcData = td->m_pData[i])
 			{
-				int nOutSize = 0;
-				byte* pNewData = Convert(pSrcData, nSrcWidth, nSrcHeight, td.m_nMips, eSrcFormat, m_eDstFormat, td.m_nMips, nOutSize, true);
+				uint32 nOutSize = 0;
+				const byte* pNewData = Convert(pSrcData, nSrcWidth, nSrcHeight, td->m_nMips, eSrcFormat, eDstFormat, td->m_nMips, nOutSize, true);
 				if (pNewData)
-					td.AssignData(i, pNewData);
+					td->AssignData(i, pNewData);
 			}
 		}
+
+		td->m_eFormat = eDstFormat;
 	}
 #endif
 
-#if defined(TEXTURE_GET_SYSTEM_COPY_SUPPORT)
-	if (m_eFlags & FT_KEEP_LOWRES_SYSCOPY)
-		PrepareLowResSystemCopy(td.m_pData[0], true);
-#endif
-
-	return true;
+	return td;
 }
 
-int CTexture::CalcNumMips(int nWidth, int nHeight)
+int8 CTexture::CalcNumMips(int nWidth, int nHeight)
 {
-	int nMips = 0;
+	int8 nMips = 0;
 	while (nWidth || nHeight)
 	{
 		if (!nWidth)   nWidth = 1;
@@ -1340,7 +1353,7 @@ int CTexture::CalcNumMips(int nWidth, int nHeight)
 	return nMips;
 }
 
-uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM)
+uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -1351,9 +1364,9 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 		return 0;
 
 	const bool bIsBlockCompressed = IsBlockCompressed(eTF);
-	nWidth = max(1U, nWidth);
+	nWidth  = max(1U, nWidth);
 	nHeight = max(1U, nHeight);
-	nDepth = max(1U, nDepth);
+	nDepth  = max(1U, nDepth);
 
 	if (eTM != eTM_None)
 	{
@@ -1365,7 +1378,7 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 #if CRY_PLATFORM_ORBIS
 		if (bIsBlockCompressed)
 		{
-			nWidth = ((nWidth + 3) & (-4));
+			nWidth  = ((nWidth  + 3) & (-4));
 			nHeight = ((nHeight + 3) & (-4));
 		}
 #endif
@@ -1373,20 +1386,17 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 #if CRY_PLATFORM_CONSOLE
 		return CDeviceTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM, CDeviceObjectFactory::BIND_SHADER_RESOURCE);
 #endif
-
-		__debugbreak();
-		return 0;
 	}
-	else
+
 	{
 		const uint32 nBytesPerElement = bIsBlockCompressed ? BytesPerBlock(eTF) : BytesPerPixel(eTF);
 
 		uint32 nSize = 0;
 		while ((nWidth || nHeight || nDepth) && nMips)
 		{
-			nWidth = max(1U, nWidth);
+			nWidth  = max(1U, nWidth);
 			nHeight = max(1U, nHeight);
-			nDepth = max(1U, nDepth);
+			nDepth  = max(1U, nDepth);
 
 			uint32 nU = nWidth;
 			uint32 nV = nHeight;
@@ -1395,15 +1405,15 @@ uint32 CTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, u
 			if (bIsBlockCompressed)
 			{
 				// depth is not 4x4x4 compressed, but 4x4x1
-				nU = ((nWidth + 3) / (4));
+				nU = ((nWidth  + 3) / (4));
 				nV = ((nHeight + 3) / (4));
 			}
 
 			nSize += nU * nV * nW * nBytesPerElement;
 
-			nWidth >>= 1;
+			nWidth  >>= 1;
 			nHeight >>= 1;
-			nDepth >>= 1;
+			nDepth  >>= 1;
 
 			--nMips;
 		}
@@ -1470,14 +1480,14 @@ bool CTexture::IsInPlaceFormat(const ETEX_Format fmt)
 	}
 }
 
-void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* src, const int srcSize, const ETEX_Format eSrcFormat, const ETEX_Format eDstFormat)
+void CTexture::ExpandMipFromFile(byte* dst, const uint32 dstSize, const byte* src, const uint32 srcSize, const ETEX_Format eSrcFormat, const ETEX_Format eDstFormat)
 {
 	if (IsInPlaceFormat(eSrcFormat))
 	{
 		assert(dstSize == srcSize);
-		if (pSrcData != src)
+		if (dst != src)
 		{
-			cryMemcpy(pSrcData, src, srcSize);
+			memcpy(dst, src, srcSize);
 		}
 
 		return;
@@ -1489,63 +1499,63 @@ void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* 
 	case eTF_B8G8R8: // -> eTF_R8G8B8A8
 		assert(eDstFormat == eTF_R8G8B8A8);
 		{
-			for (int i = srcSize / 3 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 3) - 1; i >= 0; --i)
 			{
-				pSrcData[i * 4 + 0] = src[i * 3 + 2];
-				pSrcData[i * 4 + 1] = src[i * 3 + 1];
-				pSrcData[i * 4 + 2] = src[i * 3 + 0];
-				pSrcData[i * 4 + 3] = 255;
+				dst[i * 4 + 0] = src[i * 3 + 2];
+				dst[i * 4 + 1] = src[i * 3 + 1];
+				dst[i * 4 + 2] = src[i * 3 + 0];
+				dst[i * 4 + 3] = 255;
 			}
 		}
 		break;
 	case eTF_L8V8U8X8: // -> eTF_R8G8B8A8S
 		assert(eDstFormat == eTF_R8G8B8A8S);
 		{
-			for (int i = srcSize / 4 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 4) - 1; i >= 0; --i)
 			{
-				pSrcData[i * 4 + 0] = src[i * 3 + 0];
-				pSrcData[i * 4 + 1] = src[i * 3 + 1];
-				pSrcData[i * 4 + 2] = src[i * 3 + 2];
-				pSrcData[i * 4 + 3] = src[i * 3 + 3];
+				dst[i * 4 + 0] = src[i * 3 + 0];
+				dst[i * 4 + 1] = src[i * 3 + 1];
+				dst[i * 4 + 2] = src[i * 3 + 2];
+				dst[i * 4 + 3] = src[i * 3 + 3];
 			}
 		}
 		break;
 	case eTF_L8V8U8: // -> eTF_R8G8B8A8S
 		assert(eDstFormat == eTF_R8G8B8A8S);
 		{
-			for (int i = srcSize / 3 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 3) - 1; i >= 0; --i)
 			{
-				pSrcData[i * 4 + 0] = src[i * 3 + 0];
-				pSrcData[i * 4 + 1] = src[i * 3 + 1];
-				pSrcData[i * 4 + 2] = src[i * 3 + 2];
-				pSrcData[i * 4 + 3] = 255;
+				dst[i * 4 + 0] = src[i * 3 + 0];
+				dst[i * 4 + 1] = src[i * 3 + 1];
+				dst[i * 4 + 2] = src[i * 3 + 2];
+				dst[i * 4 + 3] = 255;
 			}
 		}
 		break;
 	case eTF_L8: // -> eTF_R8G8B8A8
 		assert(eDstFormat == eTF_R8G8B8A8);
 		{
-			for (int i = srcSize - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize) - 1; i >= 0; --i)
 			{
 				const byte bSrc = src[i];
-				pSrcData[i * 4 + 0] = bSrc;
-				pSrcData[i * 4 + 1] = bSrc;
-				pSrcData[i * 4 + 2] = bSrc;
-				pSrcData[i * 4 + 3] = 255;
+				dst[i * 4 + 0] = bSrc;
+				dst[i * 4 + 1] = bSrc;
+				dst[i * 4 + 2] = bSrc;
+				dst[i * 4 + 3] = 255;
 			}
 		}
 		break;
 	case eTF_A8L8: // -> eTF_R8G8B8A8
 		assert(eDstFormat == eTF_R8G8B8A8);
 		{
-			for (int i = srcSize - 1; i >= 0; i -= 2)
+			for (ptrdiff_t i = ptrdiff_t(srcSize) - 1; i >= 0; i -= 2)
 			{
 				const byte bSrcL = src[i - 1];
 				const byte bSrcA = src[i - 0];
-				pSrcData[i * 4 + 0] = bSrcL;
-				pSrcData[i * 4 + 1] = bSrcL;
-				pSrcData[i * 4 + 2] = bSrcL;
-				pSrcData[i * 4 + 3] = bSrcA;
+				dst[i * 4 + 0] = bSrcL;
+				dst[i * 4 + 1] = bSrcL;
+				dst[i * 4 + 2] = bSrcL;
+				dst[i * 4 + 3] = bSrcA;
 			}
 		}
 		break;
@@ -1553,26 +1563,26 @@ void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* 
 	case eTF_B5G5R5A1: // -> eTF_B8G8R8A8
 		assert(eDstFormat == eTF_B8G8R8A8);
 		{
-			for (int i = srcSize / 2 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 2) - 1; i >= 0; --i)
 			{
 				const uint16 rgb5551 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
-				pSrcData[i * 4 + 0] = ((rgb5551 >> 0) * 33) >> 2;
-				pSrcData[i * 4 + 1] = ((rgb5551 >> 5) * 33) >> 2;
-				pSrcData[i * 4 + 2] = ((rgb5551 >> 10) * 33) >> 2;
-				pSrcData[i * 4 + 3] = ((rgb5551 >> 15) ? 255 : 0);
+				dst[i * 4 + 0] = ((rgb5551 >> 0) * 33) >> 2;
+				dst[i * 4 + 1] = ((rgb5551 >> 5) * 33) >> 2;
+				dst[i * 4 + 2] = ((rgb5551 >> 10) * 33) >> 2;
+				dst[i * 4 + 3] = ((rgb5551 >> 15) ? 255 : 0);
 			}
 		}
 		break;
 	case eTF_B5G6R5: // -> eTF_B8G8R8X8
 		assert(eDstFormat == eTF_B8G8R8X8);
 		{
-			for (int i = srcSize / 2 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 2) - 1; i >= 0; --i)
 			{
 				const uint16 rgb565 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
-				pSrcData[i * 4 + 0] = ((rgb565 >> 0) * 33) >> 2;
-				pSrcData[i * 4 + 1] = ((rgb565 >> 5) * 65) >> 4;
-				pSrcData[i * 4 + 2] = ((rgb565 >> 11) * 33) >> 2;
-				pSrcData[i * 4 + 3] = 255;
+				dst[i * 4 + 0] = ((rgb565 >> 0) * 33) >> 2;
+				dst[i * 4 + 1] = ((rgb565 >> 5) * 65) >> 4;
+				dst[i * 4 + 2] = ((rgb565 >> 11) * 33) >> 2;
+				dst[i * 4 + 3] = 255;
 			}
 		}
 		break;
@@ -1581,13 +1591,13 @@ void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* 
 		assert((eSrcFormat == eTF_B4G4R4A4 && eDstFormat == eTF_B8G8R8A8) ||
 		       (eSrcFormat == eTF_R4G4B4A4 && eDstFormat == eTF_R8G8B8A8));
 		{
-			for (int i = srcSize / 2 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 2) - 1; i >= 0; --i)
 			{
 				const uint16 rgb4444 = uint16((src[i * 2 + 0] << 8) + src[i * 2 + 1]);
-				pSrcData[i * 4 + 0] = (rgb4444 >> 0) * 17;
-				pSrcData[i * 4 + 1] = (rgb4444 >> 4) * 17;
-				pSrcData[i * 4 + 2] = (rgb4444 >> 8) * 17;
-				pSrcData[i * 4 + 3] = (rgb4444 >> 12) * 17;
+				dst[i * 4 + 0] = (rgb4444 >> 0) * 17;
+				dst[i * 4 + 1] = (rgb4444 >> 4) * 17;
+				dst[i * 4 + 2] = (rgb4444 >> 8) * 17;
+				dst[i * 4 + 3] = (rgb4444 >> 12) * 17;
 			}
 		}
 		break;
@@ -1595,22 +1605,22 @@ void CTexture::ExpandMipFromFile(byte* pSrcData, const int dstSize, const byte* 
 		assert(eDstFormat == eTF_R8G8 || eDstFormat == eTF_R8G8B8A8);
 		if (eDstFormat == eTF_R8G8)
 		{
-			for (int i = srcSize / 1 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 1) - 1; i >= 0; --i)
 			{
 				const uint8 rgb44 = uint8(src[i * 1 + 0]);
-				pSrcData[i * 2 + 0] = (rgb44 >> 0) * 17;
-				pSrcData[i * 2 + 1] = (rgb44 >> 4) * 17;
+				dst[i * 2 + 0] = (rgb44 >> 0) * 17;
+				dst[i * 2 + 1] = (rgb44 >> 4) * 17;
 			}
 		}
 		else
 		{
-			for (int i = srcSize / 1 - 1; i >= 0; --i)
+			for (ptrdiff_t i = ptrdiff_t(srcSize / 1) - 1; i >= 0; --i)
 			{
 				const uint8 rgb44 = uint8(src[i * 1 + 0]);
-				pSrcData[i * 4 + 0] = (rgb44 >> 0) * 17;
-				pSrcData[i * 4 + 1] = (rgb44 >> 4) * 17;
-				pSrcData[i * 4 + 2] = 0;
-				pSrcData[i * 4 + 3] = 255;
+				dst[i * 4 + 0] = (rgb44 >> 0) * 17;
+				dst[i * 4 + 1] = (rgb44 >> 4) * 17;
+				dst[i * 4 + 2] = 0;
+				dst[i * 4 + 3] = 255;
 			}
 		}
 		break;
@@ -1718,25 +1728,25 @@ byte* CTexture::GetData32(int nSide, int nLevel, byte* pDstData, ETEX_Format eDs
 	{
 		if (m_eDstFormat != eTF_R8G8B8A8)
 		{
-		  int nOutSize = 0;
+			uint32 nOutSize = 0;
 
-		  if (m_eSrcFormat == eDstFormat && pDstData)
-		  {
-		    memcpy(pDstData, pData, GetDeviceDataSize());
-		  }
-		  else
-		  {
-		    pDstData = Convert((byte*)pData, m_nWidth, m_nHeight, 1, m_eSrcFormat, eDstFormat, 1, nOutSize, true);
-		  }
+			if (m_eSrcFormat == eDstFormat && pDstData)
+			{
+				memcpy(pDstData, pData, GetDeviceDataSize());
+			}
+			else
+			{
+				pDstData = (byte*)Convert((byte*)pData, m_nWidth, m_nHeight, 1, m_eSrcFormat, eDstFormat, 1, nOutSize, true);
+			}
 		}
 		else
 		{
-		  if (!pDstData)
-		  {
-		    pDstData = new byte[m_nWidth * m_nHeight * 4];
-		  }
+			if (!pDstData)
+			{
+				pDstData = new byte[m_nWidth * m_nHeight * 4];
+			}
 
-		  memcpy(pDstData, pData, m_nWidth * m_nHeight * 4);
+			memcpy(pDstData, pData, m_nWidth * m_nHeight * 4);
 		}
 
 		return true;
@@ -1748,9 +1758,9 @@ byte* CTexture::GetData32(int nSide, int nLevel, byte* pDstData, ETEX_Format eDs
 #endif
 }
 
-const int CTexture::GetSize(bool bIncludePool) const
+const size_t CTexture::GetAllocatedSystemMemory(bool bIncludePool, bool bIncludeCache) const
 {
-	int nSize = sizeof(CTexture);
+	size_t nSize = sizeof(*this);
 	nSize += m_SrcName.capacity();
 
 	// TODO: neccessary?
@@ -1762,9 +1772,10 @@ const int CTexture::GetSize(bool bIncludePool) const
 
 	if (m_pFileTexMips)
 	{
-		nSize += m_pFileTexMips->GetSize(m_nMips, m_CacheFileHeader.m_nSides);
+		if (bIncludeCache)
+			nSize += m_pFileTexMips->GetAllocatedSystemMemory(m_nMips, m_CacheFileHeader.m_nSides);
 		if (bIncludePool && m_pFileTexMips->m_pPoolItem)
-			nSize += m_pFileTexMips->m_pPoolItem->GetSize();
+			nSize += m_pFileTexMips->m_pPoolItem->GetAllocatedSystemMemory();
 	}
 
 	return nSize;
@@ -1774,16 +1785,11 @@ void CTexture::Init()
 {
 	SDynTexture::Init();
 	InitStreaming();
-
-	SDynTexture2::Init(eTP_Clouds);
-	SDynTexture2::Init(eTP_Sprites);
-	SDynTexture2::Init(eTP_VoxTerrain);
-	SDynTexture2::Init(eTP_DynTexSources);
 }
 
 void CTexture::PostInit()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 }
 
 int __cdecl TexCallback(const VOID* arg1, const VOID* arg2)
@@ -1823,9 +1829,6 @@ void CTexture::Update()
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	CRenderer* rd = gRenDev;
-	char buf[256] = "";
-
 	// reload pending texture reload requests
 	{
 		std::set<string> queue;
@@ -1857,6 +1860,8 @@ void CTexture::Update()
 	}
 
 #ifndef CONSOLE_CONST_CVAR_MODE
+	char buf[256] = "";
+
 	if (CRenderer::CV_r_texlog)
 	{
 		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
@@ -1905,9 +1910,9 @@ void CTexture::Update()
 					int w = Texs[i]->GetWidth();
 					int h = Texs[i]->GetHeight();
 
-					int nTSize = Texs[i]->m_pFileTexMips->GetSize(Texs[i]->GetNumMips(), Texs[i]->GetNumSides());
+					size_t nTSize = Texs[i]->m_pFileTexMips->GetAllocatedSystemMemory(Texs[i]->GetNumMips(), Texs[i]->GetNumSides());
 
-					fprintf(fp, "%d\t\t%d x %d\t\tType: %s\t\tMips: %d\t\tFormat: %s\t\t(%s)\n", nTSize, w, h, Texs[i]->NameForTextureType(Texs[i]->GetTextureType()), Texs[i]->GetNumMips(), Texs[i]->NameForTextureFormat(Texs[i]->GetDstFormat()), Texs[i]->GetName());
+					fprintf(fp, "%" PRISIZE_T "\t\t%d x %d\t\tType: %s\t\tMips: %d\t\tFormat: %s\t\t(%s)\n", nTSize, w, h, Texs[i]->NameForTextureType(Texs[i]->GetTextureType()), Texs[i]->GetNumMips(), Texs[i]->NameForTextureFormat(Texs[i]->GetDstFormat()), Texs[i]->GetName());
 					//Size += Texs[i]->GetDataSize();
 					Size += nTSize;
 
@@ -2223,16 +2228,14 @@ void CTexture::ShutDown()
 	s_pPoolMgr->Flush();
 }
 
-bool CTexture::ReloadFile_Request(const char* szFileName)
+void CTexture::ReloadFile_Request(const char* szFileName)
 {
 	s_xTexReloadLock.Lock();
 	s_vTexReloadRequests.insert(szFileName);
 	s_xTexReloadLock.Unlock();
-
-	return true;
 }
 
-bool CTexture::ReloadFile(const char* szFileName) threadsafe
+void CTexture::ReloadFile(const char* szFileName) threadsafe
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -2254,8 +2257,12 @@ bool CTexture::ReloadFile(const char* szFileName) threadsafe
 	if (realName.size() >= (uint32)gameFolderPathLength && memcmp(realName.data(), gameFolderPath, gameFolderPathLength) == 0)
 		realName += gameFolderPathLength;
 
-	_smart_ptr<CTexture> pFoundTexture = nullptr;
-	bool bStatus = true;
+	CCryNameTSCRC crc32NameBase = GenName(realName, 0);
+	CCryNameTSCRC crc32NameAtch = GenName(realName, FT_ALPHA);
+
+	// Search texture in a thread-safe manner, and protect the found texture from deletion
+	_smart_ptr<CTexture> pFoundTextureBase = nullptr;
+	_smart_ptr<CTexture> pFoundTextureAtch = nullptr;
 
 	{
 		CryAutoReadLock<CryRWLock> lock(s_cResLock);
@@ -2263,36 +2270,21 @@ bool CTexture::ReloadFile(const char* szFileName) threadsafe
 		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
 		if (pRL)
 		{
-			// Search texture in a thread-safe manner, and protect the found texture from deletion
-			// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
-			ResourcesMapItor itor;
-			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
-			{
-				CTexture* pTexture = (CTexture*)itor->second;
-				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
-					continue;
+			const auto& itorBase = pRL->m_RMap.find(crc32NameBase);
+			const auto& itorAtch = pRL->m_RMap.find(crc32NameAtch);
 
-				string srcName = PathUtil::ToUnixPath(pTexture->m_SrcName);
-				if (strlen(srcName) >= (uint32)gameFolderPathLength && _strnicmp(srcName, gameFolderPath, gameFolderPathLength) == 0)
-					srcName += gameFolderPathLength;
-
-				//CryLogAlways("realName = %s srcName = %s gameFolderPath = %s szFileName = %s", realName, srcName, gameFolderPath, szFileName);
-				if (!stricmp(realName, srcName))
-				{
-					pFoundTexture = pTexture;
-					break;
-				}
-			}
+			if (itorBase != pRL->m_RMap.end())
+				pFoundTextureBase = (CTexture*)itorBase->second;
+			if (itorAtch != pRL->m_RMap.end())
+				pFoundTextureAtch = (CTexture*)itorAtch->second;
 		}
 	}
 
 	// Trigger the texture's reload without holding the resource-library lock to evade dead-locks
-	if (pFoundTexture)
-	{
-		bStatus = pFoundTexture->Reload();
-	}
-
-	return bStatus;
+	if (pFoundTextureBase)
+		pFoundTextureBase->Reload();
+	if (pFoundTextureAtch)
+		pFoundTextureAtch->Reload();
 }
 
 void CTexture::ReloadTextures() threadsafe
@@ -2402,9 +2394,12 @@ void CTexture::LogTextures(ILog* pLog) threadsafe
 
 bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 {
+	m_eFlags |= FT_FAILED;
+
 	if (pDefaultTexture)
 	{
-		m_pDevTexture = pDefaultTexture->m_pDevTexture;
+		RefDevTexture(pDefaultTexture->GetDevTexture());
+
 		m_eSrcFormat = pDefaultTexture->GetSrcFormat();
 		m_eDstFormat = pDefaultTexture->GetDstFormat();
 		m_nMips = pDefaultTexture->GetNumMips();
@@ -2416,12 +2411,6 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 		m_cMaxColor = 1.0f;
 		m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
 
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-		m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
-#endif
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-		m_nESRAMOffset = SKIP_ESRAM;
-#endif
 
 		m_bNoTexture = true;
 		if (m_pFileTexMips)
@@ -2430,13 +2419,16 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 			StreamState_ReleaseInfo(this, m_pFileTexMips);
 			m_pFileTexMips = NULL;
 		}
+
 		m_bStreamed = false;
 		m_bPostponed = false;
-		m_eFlags |= FT_FAILED;
+
 		m_nDevTextureSize = 0;
 		m_nPersistentSize = 0;
+
 		return true;
 	}
+
 	return false;
 }
 
@@ -2450,85 +2442,6 @@ const char* CTexture::GetFormatName() const
 const char* CTexture::GetTypeName() const
 {
 	return NameForTextureType(GetTextureType());
-}
-
-//////////////////////////////////////////////////////////////////////////
-CDynTextureSource::CDynTextureSource()
-	: m_refCount(1)
-	, m_width(0)
-	, m_height(0)
-	, m_lastUpdateTime(0)
-	, m_lastUpdateFrameID(0)
-	, m_pDynTexture(0)
-{
-}
-
-CDynTextureSource::~CDynTextureSource()
-{
-	SAFE_DELETE(m_pDynTexture);
-}
-
-void CDynTextureSource::AddRef()
-{
-	CryInterlockedIncrement(&m_refCount);
-}
-
-void CDynTextureSource::Release()
-{
-	long refCnt = CryInterlockedDecrement(&m_refCount);
-	if (refCnt <= 0)
-		delete this;
-}
-
-void CDynTextureSource::CalcSize(uint32& width, uint32& height) const
-{
-	uint32 size;
-	uint32 logSize;
-	switch (CRenderer::CV_r_envtexresolution)
-	{
-	case 0:
-	case 1:
-		size = 256;
-		logSize = 8;
-		break;
-	case 2:
-	case 3:
-	default:
-		size = 512;
-		logSize = 9;
-		break;
-	}
-
-	width = size;
-	height = size;
-}
-
-void CDynTextureSource::GetTexGenInfo(float& offsX, float& offsY, float& scaleX, float& scaleY) const
-{
-	assert(m_pDynTexture);
-	if (!m_pDynTexture || !m_pDynTexture->IsValid())
-	{
-		offsX = 0;
-		offsY = 0;
-		scaleX = 1;
-		scaleY = 1;
-		return;
-	}
-
-	ITexture* pSrcTex(m_pDynTexture->GetTexture());
-	float invSrcWidth(1.0f / (float) pSrcTex->GetWidth());
-	float invSrcHeight(1.0f / (float) pSrcTex->GetHeight());
-	offsX = m_pDynTexture->m_nX * invSrcWidth;
-	offsY = m_pDynTexture->m_nY * invSrcHeight;
-	assert(m_width <= m_pDynTexture->m_nWidth && m_height <= m_pDynTexture->m_nHeight);
-	scaleX = m_width * invSrcWidth;
-	scaleY = m_height * invSrcHeight;
-}
-
-void CDynTextureSource::InitDynTexture(ETexPool eTexPool)
-{
-	CalcSize(m_width, m_height);
-	m_pDynTexture = new SDynTexture2(m_width, m_height, FT_USAGE_RENDERTARGET | FT_STATE_CLAMP | FT_NOMIPS, "DynTextureSource", eTexPool);
 }
 
 struct FlashTextureSourceSharedRT_AutoUpdate
@@ -2932,11 +2845,11 @@ CFlashTextureSourceBase::CFlashTextureSourceBase(const char* pFlashFileName, con
 	, m_width(16)
 	, m_height(16)
 	, m_aspectRatio(1.0f)
-	, m_pElement(NULL)
 	, m_autoUpdate(true)
-	, m_pFlashFileName(pFlashFileName)
 	, m_perFrameRendering(false)
+	, m_pFlashFileName(pFlashFileName)
 	, m_pFlashPlayer(CFlashPlayerInstanceWrapperNULL::Get())
+	, m_pElement(NULL)
 	//, m_texStateIDs
 #if defined(ENABLE_DYNTEXSRC_PROFILING)
 	, m_pMatSrc(pArgs ? pArgs->m_pMtlSrc : 0)
@@ -3276,8 +3189,8 @@ bool CFlashTextureSource::UpdateDynTex(int rtWidth, int rtHeight)
 SDynTexture* CFlashTextureSourceSharedRT::ms_pDynTexture = nullptr;
 CMipmapGenPass* CFlashTextureSourceSharedRT::ms_pMipMapper = nullptr;
 int CFlashTextureSourceSharedRT::ms_instCount = 0;
-int CFlashTextureSourceSharedRT::ms_sharedRTWidth = 256;
-int CFlashTextureSourceSharedRT::ms_sharedRTHeight = 256;
+uint16 CFlashTextureSourceSharedRT::ms_sharedRTWidth = 256;
+uint16 CFlashTextureSourceSharedRT::ms_sharedRTHeight = 256;
 
 CFlashTextureSourceSharedRT::CFlashTextureSourceSharedRT(const char* pFlashFileName, const IRenderer::SLoadShaderItemArgs* pArgs)
 	: CFlashTextureSourceBase(pFlashFileName, pArgs)
@@ -3326,7 +3239,7 @@ int CFlashTextureSourceSharedRT::NearestPowerOfTwo(int n)
 
 void CFlashTextureSourceSharedRT::SetSharedRTDim(int width, int height)
 {
-	ms_sharedRTWidth = NearestPowerOfTwo(width > 16 ? width : 16);
+	ms_sharedRTWidth  = NearestPowerOfTwo(width  > 16 ? width  : 16);
 	ms_sharedRTHeight = NearestPowerOfTwo(height > 16 ? height : 16);
 }
 
@@ -3426,7 +3339,7 @@ void CDynTextureSourceLayerActivator::ActivateLayer(const char* pLayerName, bool
 void CRenderer::EF_AddRTStat(CTexture* pTex, int nFlags, int nW, int nH)
 {
 	SRTargetStat TS;
-	int nSize;
+	uint32 nSize;
 	ETEX_Format eTF;
 	if (!pTex)
 	{
@@ -3435,7 +3348,7 @@ void CRenderer::EF_AddRTStat(CTexture* pTex, int nFlags, int nW, int nH)
 			nW = CRendererResources::s_renderWidth;
 		if (nH < 0)
 			nH = CRendererResources::s_renderHeight;
-		nSize = CTexture::TextureDataSize(nW, nH, 1, 1, 1, eTF);
+		nSize = CTexture::TextureDataSize(nW, nH, 1, 1, 1, eTF, eTM_Optimal);
 		TS.m_Name = "Back buffer";
 	}
 	else
@@ -3445,7 +3358,7 @@ void CRenderer::EF_AddRTStat(CTexture* pTex, int nFlags, int nW, int nH)
 			nW = pTex->GetWidth();
 		if (nH < 0)
 			nH = pTex->GetHeight();
-		nSize = CTexture::TextureDataSize(nW, nH, 1, pTex->GetNumMips(), 1, eTF);
+		nSize = CTexture::TextureDataSize(nW, nH, 1, pTex->GetNumMips(), 1, eTF, eTM_Optimal);
 		const char* szName = pTex->GetName();
 		if (szName && szName[0] == '$')
 			TS.m_Name = string("@") + string(&szName[1]);
@@ -3532,7 +3445,10 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 
 STexPool::~STexPool()
 {
+#ifndef _RELEASE
 	bool poolEmpty = true;
+#endif
+
 	STexPoolItemHdr* pITH = m_ItemsList.m_Next;
 	while (pITH != &m_ItemsList)
 	{
@@ -3552,7 +3468,7 @@ STexPool::~STexPool()
 		*const_cast<STexPool**>(&pIT->m_pOwner) = NULL;
 		pITH = pNext;
 	}
-	CRY_ASSERT_MESSAGE(poolEmpty, "Texture pool was not empty on shutdown");
+	CRY_ASSERT(poolEmpty, "Texture pool was not empty on shutdown");
 }
 
 const ETEX_Type CTexture::GetTextureType() const
@@ -3567,73 +3483,94 @@ const int CTexture::GetTextureID() const
 
 #ifdef TEXTURE_GET_SYSTEM_COPY_SUPPORT
 
-const ColorB* CTexture::GetLowResSystemCopy(uint16& nWidth, uint16& nHeight, int** ppLowResSystemCopyAtlasId)
+const ColorB* CTexture::GetLowResSystemCopy(uint16& width, uint16& height, int** ppUserData, int maxTexSize)
 {
-	const LowResSystemCopyType::iterator& it = s_LowResSystemCopy.find(this);
-	if (it != CTexture::s_LowResSystemCopy.end())
+	AUTO_READLOCK(s_LowResSystemCopyLock);
+
+	// find slot based on requested texture size, snap texture size to power of 2
+	int slot = CLAMP((int)log2(maxTexSize) - 4, 0, TEX_SYS_COPY_MAX_SLOTS - 1);
+	maxTexSize = (int)exp2(slot + 4);
+
+	LowResSystemCopyType::iterator it = s_LowResSystemCopy[slot].find(this);
+
+	// load if not ready yet
+	if (it == CTexture::s_LowResSystemCopy[slot].end())
 	{
-		nWidth = (*it).second.m_nLowResCopyWidth;
-		nHeight = (*it).second.m_nLowResCopyHeight;
-		*ppLowResSystemCopyAtlasId = &(*it).second.m_nLowResSystemCopyAtlasId;
+		if (m_eTT != eTT_2D || (m_nMips <= 1 && (m_nWidth > maxTexSize || m_nHeight > maxTexSize)) || m_eDstFormat < eTF_BC1 || m_eDstFormat > eTF_BC7)
+			return nullptr;
+
+		// to switch to modify we need to unlock first
+		s_LowResSystemCopyLock.UnlockRead();
+		{ // to reduce contention, we want to hold the modify lock as shortly as possible
+			AUTO_MODIFYLOCK(s_LowResSystemCopyLock);
+			s_LowResSystemCopy[slot][this]; // make a map entry for this
+		}
+		
+		// 'restore' AUTO_READLOCK
+		s_LowResSystemCopyLock.LockRead();
+		it = s_LowResSystemCopy[slot].find(this);
+		SLowResSystemCopy& rCopy = it->second;
+		PrepareLowResSystemCopy(maxTexSize, rCopy.m_lowResSystemCopy, rCopy.m_nLowResCopyWidth, rCopy.m_nLowResCopyHeight);
+	}
+
+	if (it != CTexture::s_LowResSystemCopy[slot].end())
+	{
+		width = (*it).second.m_nLowResCopyWidth;
+		height = (*it).second.m_nLowResCopyHeight;
+		if (ppUserData)
+			*ppUserData = &(*it).second.m_nLowResSystemCopyAtlasId;
 		return (*it).second.m_lowResSystemCopy.GetElements();
 	}
+
+	assert(!"CTexture::GetLowResSystemCopy failed");
 
 	return NULL;
 }
 
-/*#ifndef eTF_BC3
-   #define eTF_BC1 eTF_DXT1
-   #define eTF_BC2 eTF_DXT3
-   #define eTF_BC3 eTF_DXT5
- #endif*/
-
-void CTexture::PrepareLowResSystemCopy(byte* pTexData, bool bTexDataHasAllMips)
+bool CTexture::PrepareLowResSystemCopy(const uint16 maxTexSize, PodArray<ColorB>& textureData, uint16& width, uint16& height)
 {
-	if (m_eTT != eTT_2D || (m_nMips <= 1 && (m_nWidth > 16 || m_nHeight > 16)))
-		return;
+	_smart_ptr<IImageFile> imageData = gEnv->pRenderer->EF_LoadImage(GetName(), 0);
 
-	// this function handles only compressed textures for now
-	if (m_eDstFormat != eTF_BC3 && m_eDstFormat != eTF_BC1 && m_eDstFormat != eTF_BC2 && m_eDstFormat != eTF_BC7)
-		return;
-
-	// make sure we skip non diffuse textures
-	if (strstr(GetName(), "_ddn")
-	    || strstr(GetName(), "_ddna")
-	    || strstr(GetName(), "_mask")
-	    || strstr(GetName(), "_spec.")
-	    || strstr(GetName(), "_gloss")
-	    || strstr(GetName(), "_displ")
-	    || strstr(GetName(), "characters")
-	    || strstr(GetName(), "$")
-	    )
-		return;
-
-	if (pTexData)
+	if (imageData)
 	{
-		SLowResSystemCopy& rSysCopy = s_LowResSystemCopy[this];
+		width = imageData->mfGet_width();
+		height = imageData->mfGet_height();
+		byte* pSrcData = imageData->mfGet_image(0);
+		ETEX_Format texFormat = imageData->mfGetFormat();
 
-		rSysCopy.m_nLowResCopyWidth = m_nWidth;
-		rSysCopy.m_nLowResCopyHeight = m_nHeight;
+		int mipLevel = 0;
 
-		int nSrcOffset = 0;
-		int nMipId = 0;
-
-		while ((rSysCopy.m_nLowResCopyWidth > 16 || rSysCopy.m_nLowResCopyHeight > 16 || nMipId < 2) && (rSysCopy.m_nLowResCopyWidth >= 8 && rSysCopy.m_nLowResCopyHeight >= 8))
+		while (width > maxTexSize || height > maxTexSize)
 		{
-			nSrcOffset += TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat);
-			rSysCopy.m_nLowResCopyWidth /= 2;
-			rSysCopy.m_nLowResCopyHeight /= 2;
-			nMipId++;
+			int sizeDxtMip = gRenDev->GetTextureFormatDataSize(width, height, 1, 1, texFormat, eTM_None);
+			pSrcData += sizeDxtMip;
+
+			width /= 2;
+			height /= 2;
+			mipLevel++;
 		}
 
-		int nSizeDxtMip = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, m_eDstFormat);
-		int nSizeRgbaMip = TextureDataSize(rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, 1, 1, eTF_R8G8B8A8);
+		assert(texFormat >= eTF_BC1 && texFormat <= eTF_BC7);
 
-		rSysCopy.m_lowResSystemCopy.CheckAllocated(nSizeRgbaMip / sizeof(ColorB));
+		int nSizeDxtMip0 = gRenDev->GetTextureFormatDataSize(width, height, 1, 1, texFormat, eTM_None);
+		int nSizeMip0 = gRenDev->GetTextureFormatDataSize(width, height, 1, 1, eTF_R8G8B8A8, eTM_None);
 
-		gRenDev->DXTDecompress(pTexData + (bTexDataHasAllMips ? nSrcOffset : 0), nSizeDxtMip,
-		                       (byte*)rSysCopy.m_lowResSystemCopy.GetElements(), rSysCopy.m_nLowResCopyWidth, rSysCopy.m_nLowResCopyHeight, 1, m_eDstFormat, false, 4);
+		textureData.PreAllocate(nSizeMip0 / sizeof(ColorB), nSizeMip0 / sizeof(ColorB));
+
+		gRenDev->DXTDecompress(pSrcData, nSizeDxtMip0, (byte*)textureData.GetElements(), width, height, 1, texFormat, false, 4);
+
+		if (m_bIsSRGB)
+		{
+			for (int i = 0; i < textureData.Count(); i++)
+			{
+				ColorF colF = textureData[i];
+				colF.srgb2rgb();
+				textureData[i] = colF;
+			}
+		}
 	}
+
+	return !textureData.IsEmpty();
 }
 
 #endif // TEXTURE_GET_SYSTEM_COPY_SUPPORT

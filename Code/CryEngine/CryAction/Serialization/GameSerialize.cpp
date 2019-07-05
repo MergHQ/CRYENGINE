@@ -17,11 +17,9 @@
 #include <CryMovie/IMovieSystem.h>
 #include "IPlayerProfiles.h"
 #include <CrySystem/IStreamEngine.h>
-#include "DialogSystem/DialogSystem.h"
 #include "MaterialEffects/MaterialEffects.h"
 #include "Network/GameContext.h"
 #include "Network/GameServerNub.h"
-#include "ColorGradientManager.h"
 
 #ifdef USE_COPYPROTECTION
 	#include "CopyProtection.h"
@@ -29,6 +27,7 @@
 
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryPhysics/IDeferredCollisionEvent.h>
+#include <CrySystem/CryVersion.h>
 
 #include <set>
 #include <time.h>
@@ -44,9 +43,6 @@ static const char* SAVEGAME_GAMETOKEN_SECTION = "GameTokens";
 static const char* SAVEGAME_TERRAINSTATE_SECTION = "TerrainState";
 static const char* SAVEGAME_TIMER_SECTION = "Timer";
 static const char* SAVEGAME_FLOWSYSTEM_SECTION = "FlowSystem";
-static const char* SAVEGAME_COLORGRADIANTMANAGER_SECTION = "ColorGradientManager";
-static const char* SAVEGAME_DIALOGSYSTEM_SECTION = "DialogSystem";
-static const char* SAVEGAME_AUDIOSYSTEM_SECTION = "AudioSystem";
 static const char* SAVEGAME_LTLINVENTORY_SECTION = "LTLInventory";
 static const char* SAVEGAME_VIEWSYSTEM_SECTION = "ViewSystem";
 static const char* SAVEGAME_MATERIALEFFECTS_SECTION = "MatFX";
@@ -86,8 +82,7 @@ struct CGameSerialize::DebugSaveParts
 ILevelInfo* GetLevelInfo()
 {
 	ILevelSystem* pLevelSystem = CCryAction::GetCryAction()->GetILevelSystem();
-	assert(pLevelSystem != 0);
-	if (pLevelSystem)
+	if (CRY_VERIFY(pLevelSystem))
 	{
 		return pLevelSystem->GetCurrentLevel();
 	}
@@ -98,8 +93,6 @@ ILevelInfo* GetLevelInfo()
 bool VerifyEntities(const TBasicEntityDatas& basicEntityData)
 {
 	CRY_ASSERT(gEnv);
-	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-	CRY_ASSERT(pEntitySystem);
 
 	TBasicEntityDatas::const_iterator itEnd = basicEntityData.end();
 	for (TBasicEntityDatas::const_iterator it = basicEntityData.begin(); it != itEnd; ++it)
@@ -201,7 +194,7 @@ CGameSerialize::~CGameSerialize()
 //////////////////////////////////////////////////////////////////////////
 void CGameSerialize::OnSpawn(IEntity* pEntity, SEntitySpawnParams&)
 {
-	assert(pEntity);
+	CRY_ASSERT(pEntity);
 
 	if (!gEnv->bMultiplayer && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
 	{
@@ -224,15 +217,15 @@ bool CGameSerialize::OnRemove(IEntity* pEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
+bool CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 {
-	assert(pLevelInfo);
+	CRY_ASSERT(pLevelInfo);
 
 	// load the list of entities to serialize from the level pak.
 	//	This creates a list of ids which will be fully serialized.
 
 	m_dynamicEntities.clear();
-	m_serializeEntities.clear();
+	m_serializedEntityGUIDs.clear();
 
 	if (pLevelInfo)
 	{
@@ -242,22 +235,35 @@ void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 		if (node)
 		{
 			int count = node->getChildCount();
-			m_serializeEntities.reserve(count);
-			for (int i = 0; i < count; ++i)
-			{
-				XmlNodeRef child = node->getChild(i);
-				EntityId id = 0;
-				child->getAttr("id", id);
+			m_serializedEntityGUIDs.reserve(count);
 
-				m_serializeEntities.push_back(id);
+			if (count > 0)
+			{
+				// Validate that the first item is a valid guid
+				// This is necessary as in the past the serialization XML used entity ids, and not GUIDs
+				if (!node->getChild(0)->haveAttr("guid"))
+				{
+					CryMessageBox("Level serialization XML contained legacy entity identifiers, please re-export the level and try again!", "Level Load Warning", eMB_Info);
+					return false;
+				}
+
+				for (int i = 0; i < count; ++i)
+				{
+					XmlNodeRef child = node->getChild(i);
+					CryGUID id;
+					child->getAttr("guid", id);
+
+					m_serializedEntityGUIDs.push_back(id);
+				}
 			}
 		}
 	}
+	return true;
 }
 
 void CGameSerialize::OnUnloadComplete(ILevelInfo* pLevel)
 {
-	stl::free_container(m_serializeEntities);
+	stl::free_container(m_serializedEntityGUIDs);
 	stl::free_container(m_dynamicEntities);
 }
 
@@ -344,8 +350,10 @@ bool CGameSerialize::SaveGame(CCryAction* pCryAction, const char* method, const 
 		return false;
 	}
 
+#if CAPTURE_REPLAY_LOG
 	Vec3 camPos = gEnv->pSystem->GetViewCamera().GetPosition();
 	MEMSTAT_LABEL_FMT("Savegame_start (pos=%4.2f,%4.2f,%4.2f)", camPos.x, camPos.y, camPos.z);
+#endif
 
 	Clean();
 	checkpoint.Check("Clean");
@@ -356,7 +364,7 @@ bool CGameSerialize::SaveGame(CCryAction* pCryAction, const char* method, const 
 	if (!saveEnvironment.InitSave(name, reason))
 		return false;
 
-	assert(gEnv->pSystem);
+	CRY_ASSERT(gEnv->pSystem);
 	SSaveGameAutoCleanup autoCleanup;
 
 	//savegame header
@@ -796,7 +804,7 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 
 		// Flushing the system clears the navagation data, so reload it.
 		const ILevelInfo* pLevelInfo = GetLevelInfo();
-		CRY_ASSERT_MESSAGE(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
+		CRY_ASSERT(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
 		if (pLevelInfo)
 		{
 			const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();
@@ -846,11 +854,11 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 	{
 		return loadEnvironment.m_failure;
 	}
-	assert(!loadEnvironment.m_bLoadingErrors);
+	CRY_ASSERT(!loadEnvironment.m_bLoadingErrors);
 
 	// load game data and proxies
 	LoadGameData(loadEnvironment);
-	//assert(!loadEnvironment.m_bLoadingErrors);
+	//CRY_ASSERT(!loadEnvironment.m_bLoadingErrors);
 
 	//unlock entity system
 	pEntitySystem->LockSpawning(false);
@@ -1024,7 +1032,7 @@ void CGameSerialize::SaveEngineSystems(SSaveEnvironment& savEnv)
 	savEnv.m_checkpoint.Check("3DEngine");
 	{
 		// game tokens
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Game token serialization");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Game token serialization");
 		savEnv.m_pCryAction->GetIGameTokenSystem()->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_GAMETOKEN_SECTION));
 		savEnv.m_checkpoint.Check("GameToken");
 	}
@@ -1046,20 +1054,10 @@ void CGameSerialize::SaveEngineSystems(SSaveEnvironment& savEnv)
 		savEnv.m_pCryAction->GetIFlowSystem()->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_FLOWSYSTEM_SECTION));
 	savEnv.m_checkpoint.Check("FlowSystem");
 
-	//ColorGradientManager data
-	if (savEnv.m_pCryAction->GetColorGradientManager())
-		savEnv.m_pCryAction->GetColorGradientManager()->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_COLORGRADIANTMANAGER_SECTION));
-	savEnv.m_checkpoint.Check("ColorGradientManager");
-
 	CMaterialEffects* pMatFX = static_cast<CMaterialEffects*>(savEnv.m_pCryAction->GetIMaterialEffects());
 	if (pMatFX)
 		pMatFX->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_MATERIALEFFECTS_SECTION));
 	savEnv.m_checkpoint.Check("MaterialFX");
-
-	CDialogSystem* pDS = savEnv.m_pCryAction->GetDialogSystem();
-	if (pDS)
-		pDS->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_DIALOGSYSTEM_SECTION));
-	savEnv.m_checkpoint.Check("DialogSystem");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1074,7 +1072,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 	entities.reserve(gEnv->pEntitySystem->GetNumEntities());
 
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Basic entity data serialization");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Basic entity data serialization");
 
 		gameState.BeginGroup("BasicEntityData");
 		int nSavedEntityCount = 0;
@@ -1090,12 +1088,13 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 			}
 
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Basic entity data serialization");
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "Basic entity data serialization");
 
 				// basic entity data
 				SBasicEntityData bed;
 				bed.pEntity = pEntity;
 				bed.id = pEntity->GetId();
+				bed.guid = pEntity->GetGuid();
 
 				// if we're not going to serialize these, don't bother fetching them
 				if (!(flags & ENTITY_FLAG_UNREMOVABLE) || !CCryActionCVars::Get().g_saveLoadBasicEntityOptimization)
@@ -1169,7 +1168,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 		for (TEntitiesToSerialize::const_iterator it = entities.begin(); it != itEnd; ++it)
 		{
 			IEntity* pEntity = *it;
-			assert(pEntity);
+			CRY_ASSERT(pEntity);
 			//that's all that is left from entity properties (using early out to reduce save size)
 			int32 iEntityFlags = pEntity->GetFlags();
 			if ((iEntityFlags & ENTITY_SERIALIZE_PROPERTIES) && !(iEntityFlags & ENTITY_FLAG_UNREMOVABLE))
@@ -1214,7 +1213,7 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 
 	for (int pass = 0; pass < 2; pass++) // save (and thus load) ropes after other entities (during pass 1) to make sure attachments are ready during loading
 		// fall back on the previous save code if no list is present
-		if (m_serializeEntities.empty() || CCryActionCVars::Get().g_saveLoadUseExportedEntityList == 0)
+		if (m_serializedEntityGUIDs.empty() || CCryActionCVars::Get().g_saveLoadUseExportedEntityList == 0)
 		{
 			for (TEntitiesToSerialize::const_iterator iter = entities.begin(), end = entities.end(); iter != end; ++iter)
 			{
@@ -1252,16 +1251,16 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 		}
 		else
 		{
-			for (TEntityVector::iterator iter = m_serializeEntities.begin(), end = m_serializeEntities.end(); iter != end; ++iter)
+			for (const CryGUID& entityGUID : m_serializedEntityGUIDs)
 			{
-				EntityId id = *iter;
+				EntityId id = gEnv->pEntitySystem->FindEntityByGuid(entityGUID);;
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 
 				if (pEntity)
 				{
 					if ((pEntity->GetPhysics() && pEntity->GetPhysics()->GetType() == PE_ROPE) == !pass)
 						continue;
-					CRY_ASSERT_TRACE(!(pEntity->GetFlags() & ENTITY_FLAG_LOCAL_PLAYER), ("%s has ENTITY_FLAG_LOCAL_PLAYER - local player should not be in m_serializeEntities!", pEntity->GetEntityTextDescription().c_str()));
+					CRY_ASSERT(!(pEntity->GetFlags() & ENTITY_FLAG_LOCAL_PLAYER), "%s has ENTITY_FLAG_LOCAL_PLAYER - local player should not be in m_serializeEntities!", pEntity->GetEntityTextDescription().c_str());
 
 					// c++ entity data
 					gameState.BeginGroup("Entity");
@@ -1283,7 +1282,7 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 			}
 
 			// also save all dynamic entities
-			assert(stl::find(m_dynamicEntities, CCryAction::GetCryAction()->GetClientActorId()));
+			CRY_ASSERT(stl::find(m_dynamicEntities, CCryAction::GetCryAction()->GetClientActorId()));
 			for (TEntitySet::iterator iter = m_dynamicEntities.begin(), end = m_dynamicEntities.end(); iter != end; ++iter)
 			{
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(*iter);
@@ -1444,35 +1443,6 @@ void CGameSerialize::LoadEngineSystems(SLoadEnvironment& loadEnv)
 			GameWarning("Unable to open section %s", SAVEGAME_FLOWSYSTEM_SECTION);
 	}
 	loadEnv.m_checkpoint.Check("FlowSystem");
-
-	// Load ColorGradientManager data
-	if (loadEnv.m_pCryAction->GetColorGradientManager())
-	{
-		loadEnv.m_pSer = loadEnv.m_pLoadGame->GetSection(SAVEGAME_COLORGRADIANTMANAGER_SECTION);
-		if (loadEnv.m_pSer)
-			loadEnv.m_pCryAction->GetColorGradientManager()->Serialize(*loadEnv.m_pSer);
-		else
-			GameWarning("Unable to open section %s", SAVEGAME_COLORGRADIANTMANAGER_SECTION);
-	}
-	loadEnv.m_checkpoint.Check("ColorGradientManager");
-
-	// Dialog System Reset & Serialization
-	CDialogSystem* pDS = loadEnv.m_pCryAction->GetDialogSystem();
-	if (pDS)
-		pDS->Reset(false);
-
-	// Dialog System First Pass [recreates DialogSessions]
-	loadEnv.m_pSer = loadEnv.m_pLoadGame->GetSection(SAVEGAME_DIALOGSYSTEM_SECTION);
-	if (!loadEnv.m_pSer.get())
-		GameWarning("Unable to open section %s", SAVEGAME_DIALOGSYSTEM_SECTION);
-	else
-	{
-		if (pDS)
-		{
-			pDS->Serialize(*loadEnv.m_pSer);
-		}
-	}
-	loadEnv.m_checkpoint.Check("DialogSystem");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1551,13 +1521,13 @@ bool CGameSerialize::LoadLevel(SLoadEnvironment& loadEnv, SGameStartParams& star
 
 	// Remove all AI objects created during the level load too (to avoid collisions with ones in the save file).
 	//	For quickloads this flush/reload happens earlier.
-	assert(!bIsQuickLoading);
+	CRY_ASSERT(!bIsQuickLoading);
 	if (gEnv->pAISystem)
 		gEnv->pAISystem->FlushSystem();
 
 	// Flushing the system clears the navagation data, so reload it.
 	const ILevelInfo* pLevelInfo = GetLevelInfo();
-	CRY_ASSERT_MESSAGE(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
+	CRY_ASSERT(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
 	if (pLevelInfo)
 	{
 		const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();
@@ -1695,7 +1665,8 @@ void CGameSerialize::LoadBasicEntityData(SLoadEnvironment& loadEnv)
 
 			SEntitySpawnParams params;
 			params.id = bed.id;
-			assert(!bed.ignorePosRotScl);
+			params.guid = bed.guid;
+			CRY_ASSERT(!bed.ignorePosRotScl);
 			//this will also be set in RepositionEntities
 			params.vPosition = bed.pos;
 			params.qRotation = bed.rot;

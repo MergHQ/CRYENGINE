@@ -2,6 +2,8 @@
 
 #pragma once
 
+struct CryGUID;
+
 struct IObjectLayer
 {
 	//! Get layer name.
@@ -11,7 +13,7 @@ struct IObjectLayer
 	virtual string GetFullName() const = 0;
 
 	//! Get GUID assigned to this layer.
-	virtual CryGUID GetGUID() const = 0;
+	virtual const CryGUID& GetGUID() const = 0;
 
 	virtual ~IObjectLayer() {}
 	virtual void SetModified(bool isModified = true) = 0;
@@ -21,6 +23,19 @@ struct IObjectLayer
 	virtual bool IsFrozen(bool bRecursive = true) const = 0;
 
 	virtual IObjectLayer* GetParentIObjectLayer() const = 0;
+
+	//! Returns the filepath of this layer. The path may not exist if the level has not been saved yet.
+	virtual string GetLayerFilepath() const = 0;
+
+	//! Number of nested layers.
+	virtual int  GetChildCount() const = 0;
+
+	//! Specifies if the layer is folder layer.
+	virtual bool IsFolder() const = 0;
+
+	virtual IObjectLayer* GetChildIObjectLayer(int index) const = 0;
+
+	//! Return the list of file that comprise the layer (not including .lyr file)
+	//! Paths to files are relative to the corresponding level folder.
+	virtual const std::vector<string>& GetFiles() const = 0; 
 };
-
-

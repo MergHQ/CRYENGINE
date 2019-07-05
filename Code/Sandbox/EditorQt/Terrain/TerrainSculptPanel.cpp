@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 
 #include <QGridLayout>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include "CryIcon.h"
 #include "Terrain/TerrainSculptPanel.h"
@@ -22,7 +22,7 @@ QTerrainSculptButtons::QTerrainSculptButtons(QWidget* parent)
 	AddTool(RUNTIME_CLASS(CFlattenTool), "Flatten");
 	AddTool(RUNTIME_CLASS(CSmoothTool), "Smooth");
 	AddTool(RUNTIME_CLASS(CRiseLowerTool), "Raise/Lower");
-	AddTool(RUNTIME_CLASS(CTerrainMoveTool), "Move");
+	AddTool(RUNTIME_CLASS(CTerrainMoveTool), "Duplicate");
 	AddTool(RUNTIME_CLASS(CMakeHolesTool), "Make Holes");
 	AddTool(RUNTIME_CLASS(CFillHolesTool), "Fill Holes");
 }
@@ -35,7 +35,7 @@ void QTerrainSculptButtons::AddTool(CRuntimeClass* pRuntimeClass, const char* te
 	icon = "icons:TerrainEditor/" + icon;
 
 	QEditToolButton* pToolButton = new QEditToolButton(nullptr);
-	pToolButton->SetToolClass(pRuntimeClass, nullptr, &mTerrainBrush);
+	pToolButton->SetToolClass(pRuntimeClass);
 	pToolButton->setText(text);
 	pToolButton->setIcon(CryIcon(icon));
 	pToolButton->setIconSize(QSize(24, 24));
@@ -55,7 +55,7 @@ QTerrainSculptPanel::QTerrainSculptPanel(QWidget* parent)
 	localLayout->setAlignment(localLayout, Qt::AlignTop);
 
 	localLayout->addWidget(new QTerrainSculptButtons());
-	m_pPropertyTree = new QPropertyTree();
+	m_pPropertyTree = new QPropertyTreeLegacy();
 	localLayout->addWidget(m_pPropertyTree);
 }
 
@@ -66,4 +66,3 @@ bool QTerrainSculptPanel::CanEditTool(CEditTool* pTool)
 
 	return pTool->IsKindOf(RUNTIME_CLASS(CTerrainTool)) || pTool->IsKindOf(RUNTIME_CLASS(CTerrainMoveTool));
 }
-

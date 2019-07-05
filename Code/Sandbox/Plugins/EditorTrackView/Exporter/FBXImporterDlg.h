@@ -23,4 +23,3 @@ protected:
 
 	bool                m_bConfirmed;
 };
-

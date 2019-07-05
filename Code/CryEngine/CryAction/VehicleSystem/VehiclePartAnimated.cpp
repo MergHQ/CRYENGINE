@@ -5,6 +5,7 @@
 #include "StdAfx.h"
 
 #include <CryAnimation/ICryAnimation.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include "IVehicleSystem.h"
 
 #include "CryAction.h"
@@ -241,9 +242,10 @@ void CVehiclePartAnimated::InitGeometry()
 			}
 
 			ISkeletonAnim* pSkeletonAnim = m_pCharInstance->GetISkeletonAnim();
+#if ENABLE_VEHICLE_DEBUG
 			ISkeletonPose* pSkeletonPose = m_pCharInstance->GetISkeletonPose();
 			IDefaultSkeleton& rIDefaultSkeleton = m_pCharInstance->GetIDefaultSkeleton();
-
+#endif
 			if (pSkeletonAnim)
 				pSkeletonAnim->StopAnimationsAllLayers();
 
@@ -481,7 +483,7 @@ bool CVehiclePartAnimated::ChangeState(EVehiclePartState state, int flags)
 
 				for (uint32 i = 0; i < rIDefaultSkeleton.GetJointCount(); i++)
 				{
-					if (IStatObj* pStatObjIntact = pSkeletonPose->GetStatObjOnJoint(i))
+					if (pSkeletonPose->GetStatObjOnJoint(i) != nullptr)
 					{
 						const char* jointName = rIDefaultSkeleton.GetJointNameByID(i);
 						IStatObj* pStatObj = GetDestroyedGeometry(jointName);

@@ -13,7 +13,9 @@
 namespace gpu
 {
 
-CMergeSort::CMergeSort(uint32 maxElements) : m_data(maxElements), m_maxElements(maxElements)
+CMergeSort::CMergeSort(CGraphicsPipeline* pGraphicsPipeline, uint32 maxElements)
+	: m_maxElements(NextPower2(maxElements))
+	, m_data(NextPower2(maxElements))
 {
 	m_params.CreateDeviceBuffer();
 	m_data.Initialize(true);
@@ -28,6 +30,11 @@ CMergeSort::CMergeSort(uint32 maxElements) : m_data(maxElements), m_maxElements(
 	m_passesMergeSort[1].SetInlineConstantBuffer(8, m_params.GetDeviceConstantBuffer());
 	m_passesMergeSort[1].SetOutputUAV(0, &m_data.GetBackBuffer().GetBuffer());
 	m_passesMergeSort[1].SetOutputUAV(1, &m_data.Get().GetBuffer());
+
+	for (auto& pass : m_passesMergeSort)
+	{
+		pass.SetGraphicsPipeline(pGraphicsPipeline);
+	}
 }
 
 void CMergeSort::Sort(uint32 numElements, CDeviceCommandListRef RESTRICT_REFERENCE commandList)

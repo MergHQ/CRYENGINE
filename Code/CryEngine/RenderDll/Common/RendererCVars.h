@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include "Renderer.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 	#define SUPPORTS_INPLACE_TEXTURE_STREAMING
@@ -17,10 +19,38 @@ class CRendererCVars
 public:
 	void InitCVars();
 
+	static int GetMaxCustomResSize(int maxTextureSize = 0)
+	{
+		return std::min(CV_r_CustomResMaxSize, maxTextureSize ? maxTextureSize : INT_MAX);
+	}
+
+	static int GetCustomResWidth(bool custom = false, int maxTextureSize = 0, int textureWidth = 0)
+	{
+		if (!CV_r_CustomResWidth || !custom) return textureWidth;
+
+		const int customWidth = std::min(GetMaxCustomResSize(CV_r_CustomResWidth), maxTextureSize ? maxTextureSize : INT_MAX);
+		const int clampedWidth = std::max(std::min(customWidth, textureWidth ? textureWidth : INT_MAX), textureWidth ? (textureWidth + 1) >> 1 : 0);
+
+		return clampedWidth; // If multiple of 8: std::min(Align(clampedWidth, 8), customWidth);
+	}
+
+	static int GetCustomResHeight(bool custom = false, int maxTextureSize = 0, int textureHeight = 0)
+	{
+		if (!CV_r_CustomResHeight || !custom) return textureHeight;
+
+		const int customHeight = std::min(GetMaxCustomResSize(CV_r_CustomResHeight), maxTextureSize ? maxTextureSize : INT_MAX);
+		const int clampedHeight = std::max(std::min(customHeight, textureHeight ? textureHeight : INT_MAX), textureHeight ? (textureHeight + 1) >> 1 : 0);
+
+		return clampedHeight; // If multiple of 8: std::min(Align(clampedHeight, 8), customHeight);
+	}
+
+	static bool IsRainEnabled() { return CV_r_rain > 0; }
+	static bool IsSnowEnabled() { return CV_r_snow > 0; }
+
 protected:
 
 	// Helper methods.
-	static int  GetTexturesStreamPoolSize();
+	static size_t GetTexturesStreamPoolSize();
 	static void Cmd_ShowRenderTarget(IConsoleCmdArgs* pArgs);
 	static void OnChange_CachedShadows(ICVar* pCVar);
 	static void OnChange_GeomInstancingThreshold(ICVar* pVar);
@@ -50,13 +80,17 @@ public:
 	static float CV_r_overrideRefreshRate;
 	static int   CV_r_overrideScanlineOrder;
 #endif
-#if CRY_PLATFORM_WINDOWS
-	static int CV_r_FullscreenPreemption;
+
+#if CRY_PLATFORM_ANDROID
+	#define GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL 1
+#else
+	#define GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL 0
 #endif
+
 	DeclareStaticConstIntCVar(CV_r_SyncToFrameFence, 1);
+	DeclareStaticConstIntCVar(CV_r_GraphicsPipelineMobile, GRAPHICS_PIPELINE_MOBILE_DEFAULT_VAL);
 
 	static int   CV_r_GraphicsPipeline;
-	static int   CV_r_GraphicsPipelineMobile;
 	static int   CV_r_GraphicsPipelinePassScheduler;
 
 	static int   CV_r_DeferredShadingTiled;
@@ -70,11 +104,8 @@ public:
 	static int   CV_r_MotionBlurQuality;
 	static int   CV_r_MotionBlurGBufferVelocity;
 	static float CV_r_MotionBlurThreshold;
-	static int   CV_r_UseMergedPosts;
 	static int   CV_r_MaxFrameLatency;
-	static int   CV_r_texatlassize;
 	static int   CV_r_DeferredShadingSortLights;
-	static int   CV_r_batchtype;
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_RENDERER_GNM
 	//HACK: make sure we can only use it for dx11
 	static int CV_r_SilhouettePOM;
@@ -103,25 +134,16 @@ public:
 	static int   CV_r_ShowDynTexturesMaxCount;
 	static int   CV_r_ShaderCompilerDontCache;
 	static int   CV_r_dyntexmaxsize;
-	static int   CV_r_dyntexatlascloudsmaxsize;
-	static int   CV_r_dyntexatlasspritesmaxsize;
-	static int   CV_r_dyntexatlasvoxterrainsize;
-	static int   CV_r_dyntexatlasdyntexsrcsize;
 	static int   CV_r_texminanisotropy;
 	static int   CV_r_texmaxanisotropy;
 	static int   CV_r_rendertargetpoolsize;
 	static int   CV_r_watercausticsdeferred;
 	static int   CV_r_WaterUpdateThread;
-	static int   CV_r_ConditionalRendering;
 	static int   CV_r_watercaustics;
 	static int   CV_r_watervolumecaustics;
 	static int   CV_r_watervolumecausticsdensity;
-	static int   CV_r_watervolumecausticsresolution;
-#if CRY_PLATFORM_DESKTOP
 	static ICVar*       CV_r_ShaderTarget;
-	static int          ShaderTargetFlag;
-#endif
-
+	static uint         ShaderTargetFlag;
 	static ICVar*       CV_r_VkShaderCompiler;
 
 	//  static int CV_r_envcmwrite;
@@ -135,14 +157,15 @@ public:
 	static int CV_r_shaderslogcachemisses;
 	static int CV_r_shadersImport;
 	static int CV_r_shadersExport;
+	static int CV_r_shadersCacheClearOnVersionChange;
 	static int CV_r_meshpoolsize;
 	static int CV_r_meshinstancepoolsize;
+	static int CV_r_MeshPoolForceFreeAfterUpdate;
 	static int CV_r_multigpu;
 
 	static int CV_r_nodrawnear;
 	static int CV_r_DrawNearShadows;
-	static int CV_r_scissor;
-	static int CV_r_usezpass;
+	static int CV_r_UseZPass;
 	static int CV_r_VegetationSpritesTexRes;
 	static int CV_r_ShowVideoMemoryStats;
 	static int CV_r_TexturesStreamingDebugMinSize;
@@ -160,14 +183,18 @@ public:
 
 	static int CV_r_BreakOnError;
 
+	static int CV_r_PipelineResourceDiscardAfterFrame;
+
+#if CRY_PLATFORM_DURANGO
+	static int CV_r_TexturesStagingRingEnabled;
+	static int CV_r_TexturesStagingRingSize;
+#endif
 	static int CV_r_TexturesStreamPoolSize; //plz do not access directly, always by GetTexturesStreamPoolSize()
-	static int CV_r_TexturesStreamPoolSecondarySize;
 	static int CV_r_texturesstreampooldefragmentation;
 	static int CV_r_texturesstreampooldefragmentationmaxmoves;
 	static int CV_r_texturesstreampooldefragmentationmaxamount;
 
 	static int CV_r_ReprojectOnlyStaticObjects;
-	static int CV_r_ReadZBufferDirectlyFromVMEM;
 	static int CV_r_durango_async_dips;
 	static int CV_r_durango_async_dips_sync;
 	static int CV_r_D3D12SubmissionThread;
@@ -214,24 +241,18 @@ public:
 	DeclareStaticConstIntCVar(CV_r_deferredshadingLightVolumes, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecals, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecalsDebug, 0);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingLBuffersFmt, 1);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingScissor, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingDebugGBuffer, 0);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingEnvProbes, 1);
-	static int CV_r_DeferredShadingAmbient;
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingAmbientLights, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingLights, 1);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingAreaLights, 0);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingStencilPrepass, 1);
 	static int CV_r_HDRSwapChain;
 	DeclareStaticConstIntCVar(CV_r_HDRDebug, 0);
 	static int CV_r_HDRBloom;
 	static int CV_r_HDRBloomQuality;
 	static int CV_r_HDRVignetting;
-	DeclareStaticConstIntCVar(CV_r_HDRTexFormat, 1);
+	static int CV_r_HDRTexFormat;
 	DeclareStaticConstIntCVar(CV_r_HDRRangeAdapt, HDR_RANGE_ADAPT_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_GrainEnableExposureThreshold, 0);
-
 	static int CV_r_HDREyeAdaptationMode;
 	DeclareStaticConstIntCVar(CV_r_geominstancing, GEOM_INSTANCING_DEFAULT_VAL);
 	DeclareStaticConstIntCVar(CV_r_geominstancingdebug, 0);
@@ -251,8 +272,6 @@ public:
 	static int   CV_r_ShadowsScreenSpace;
 	static float CV_r_ShadowsScreenSpaceLength;
 	DeclareStaticConstIntCVar(CV_r_debuglights, 0);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingDepthBoundsTest, DEF_SHAD_DBT_DEFAULT_VAL);
-	DeclareStaticConstIntCVar(CV_r_deferredshadingDBTstencil, DEF_SHAD_DBT_STENCIL_DEFAULT_VAL);
 	static int CV_r_sunshafts;
 	DeclareStaticConstIntCVar(CV_r_SonarVision, 1);
 	DeclareStaticConstIntCVar(CV_r_ThermalVision, 1);
@@ -280,8 +299,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_showtimegraph, 0);
 	DeclareStaticConstIntCVar(CV_r_DebugFontRendering, 0);
 	DeclareStaticConstIntCVar(CV_profileStreaming, 0);
-	DeclareStaticConstIntCVar(CV_r_graphstyle, 0);
-	DeclareStaticConstIntCVar(CV_r_showbufferusage, 0);
 	DeclareStaticConstIntCVar(CV_r_profileshaders, 0);
 	DeclareStaticConstIntCVar(CV_r_ProfileShadersSmooth, 4);
 	DeclareStaticConstIntCVar(CV_r_ProfileShadersGroupByName, 1);
@@ -314,7 +331,6 @@ public:
 #if defined(SUPPORTS_INPLACE_TEXTURE_STREAMING)
 	static int CV_r_texturesstreamingInPlace;
 #endif
-	DeclareStaticConstIntCVar(CV_r_lightssinglepass, 1);
 	static int CV_r_envcmresolution;
 	static int CV_r_envtexresolution;
 	DeclareStaticConstIntCVar(CV_r_waterreflections_mgpu, 0);
@@ -388,17 +404,16 @@ public:
 	//DeclareStaticConstIntCVar(CV_r_measureoverdraw, 0);
 	enum { CV_r_measureoverdraw = 0 };
 	DeclareStaticConstIntCVar(CV_r_ShowLightBounds, 0);
-	DeclareStaticConstIntCVar(CV_r_TextureCompressor, 1);
 	DeclareStaticConstIntCVar(CV_r_TexturesStreamingDebugDumpIntoLog, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugTexelDensity, 0);
 	DeclareStaticConstIntCVar(CV_e_DebugDraw, 0);
+	DeclareStaticConstIntCVar(CV_e_TerrainBlendingDebug, 0);
+	DeclareStaticConstIntCVar(CV_e_Clouds, 0);
 	static int CV_r_RainDropsEffect;
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMode, 2);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMinimalResolveArea, 0);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolveMaxResolveCount, 0);
 	DeclareStaticConstIntCVar(CV_r_RefractionPartialResolvesDebug, 0);
-	DeclareStaticConstIntCVar(CV_r_Batching, 1);
-	DeclareStaticConstIntCVar(CV_r_Unlit, 0);
 	DeclareStaticConstIntCVar(CV_r_HideSunInCubemaps, 1);
 	DeclareStaticConstIntCVar(CV_r_ParticlesDebug, 0);
 	DeclareStaticConstIntCVar(CV_r_CubemapGenerationTimeout, 100);
@@ -453,6 +468,7 @@ public:
 	static float CV_r_ShadowsParticleNormalEffect;
 	static float CV_r_shadow_jittering; // dont use this directly for rendering. use m_shadowJittering or GetShadowJittering() instead;
 
+    static int   CV_r_ShadowsLocalLightsLinearizeDepth;
 	static int   CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
 	static int   CV_r_ShadowCastingLightsMaxCount;
 	static int   CV_r_HeightMapAO;
@@ -468,6 +484,10 @@ public:
 	static float CV_r_PostProcessHUD3DGlowAmount;
 	static float CV_r_normalslength;
 	static float CV_r_TexelsPerMeter;
+	static float CV_r_OverdrawComplexity;
+	static float CV_r_OverdrawComplexityBluePoint;
+	static float CV_r_OverdrawComplexitySmoothness;
+	static float CV_r_OverdrawComplexityCompression;
 	static float CV_r_TexturesStreamingMaxRequestedMB;
 	static int   CV_r_TexturesStreamingMaxRequestedJobs;
 	static float CV_r_TexturesStreamingMipBias;
@@ -531,6 +551,7 @@ public:
 	static int   CV_r_AntialiasingMode_CB;
 	static int   CV_r_AntialiasingMode;
 	static int   CV_r_AntialiasingModeSCull;
+	static float CV_r_AntialiasingSMAAThreshold;
 	static int   CV_r_AntialiasingTAAPattern;
 	static float CV_r_AntialiasingTAAFalloffHiFreq;
 	static float CV_r_AntialiasingTAAFalloffLowFreq;
@@ -604,8 +625,6 @@ public:
 	static float  CV_r_VolumetricFogMinimumLightBulbSize;
 	static int    CV_r_VolumetricFogSunLightCorrection;
 
-	static int    CV_r_UsePersistentRTForModelHUD;
-
 	static int    CV_d3d11_CBUpdateStats;
 	static ICVar* CV_d3d11_forcedFeatureLevel;
 
@@ -618,7 +637,7 @@ public:
 
 #if defined(CRY_PLATFORM_WINDOWS)
 	static int CV_d3d11_preventDriverThreading;
-	ICVar*     CV_r_FullscreenNativeRes;
+	ICVar*     m_CVFullscreenNativeRes;
 #endif
 
 	static int CV_r_VolumetricClouds;
@@ -643,6 +662,7 @@ public:
 	ICVar* m_CVWidth;
 	ICVar* m_CVHeight;
 	ICVar* m_CVWindowType;
+	ICVar* CV_r_ResizableWindow;
 	ICVar* m_CVColorBits;
 	ICVar* m_CVDisplayInfo;
 	//////////////////////////////////////////////////////////////////////////
@@ -659,17 +679,18 @@ public:
 		union
 		{
 			int   intValue;
+			int64 int64Value;
 			float floatValue;
 			char  stringValue[64];
 		};
 
 		const char* name;
-		int         type;
+		ECVarType   type;
 
 		SUpdateRecord(ICVar* pCVar);
 		bool operator==(const SUpdateRecord& rhs)
 		{
-			return type == rhs.type && (strcmp(name, rhs.name) == 0);
+			return type == rhs.type && cry_stricmp(name, rhs.name) == 0;
 		}
 	};
 

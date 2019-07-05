@@ -2,9 +2,17 @@
 
 #pragma once
 
-#include "Util/PakFile.h"
+#include "SandboxAPI.h"
 #include "Util/Image.h"
-#include "QT/Widgets/QWaitProgress.h"
+#include "Util/PakFile.h"
+
+#include <QT/Widgets/QWaitProgress.h>
+#include <vector>
+
+struct IStatInstGroup;
+class CTerrainLightGen;
+class CObjectLayer;
+class CUsedResources;
 
 enum EGameExport
 {
@@ -17,9 +25,6 @@ enum EGameExport
 	eExp_AI_All           = eExp_AI_MNM | eExp_AI_CoverSurfaces,
 };
 
-class CTerrainLightGen;
-class CWaitProgress;
-
 struct SGameExporterSettings
 {
 	bool    bHiQualityCompression;
@@ -28,6 +33,7 @@ struct SGameExporterSettings
 	int     nApplySS;
 	float   fBrMultiplier;
 	EEndian eExportEndian;
+	bool    exportBinaryXml;
 
 	SGameExporterSettings();
 	void SetLowQuality();
@@ -45,7 +51,7 @@ struct SANDBOX_API SLevelPakHelper
 };
 
 /*!	CGameExporter implements exporting of data from Editor to Game format.
-    It will produce level.pak file in current level folder, with necessary exported files.
+   It will produce level.pak file in current level folder, with necessary exported files.
  */
 class SANDBOX_API CGameExporter
 {
@@ -72,6 +78,8 @@ private: // --------------------------------------------------------------------
 
 	bool               OpenLevelPack(SLevelPakHelper& lphelper, bool bCryPak = false);
 	bool               CloseLevelPack(SLevelPakHelper& lphelper, bool bCryPak = false);
+	void               WriteXmlFileToPak(XmlNodeRef& root, const string& filename, int xmlMemReserve = 1024);
+	void               WriteXmlFile(XmlNodeRef& root, const string& filename, CPakFile& pak, int xmlMemReserve);
 
 	bool               DoExport(unsigned int flags = 0, const char* subdirectory = 0);
 	void               ExportLevelData(const string& path, bool bExportMission = true);
@@ -80,7 +88,7 @@ private: // --------------------------------------------------------------------
 	void               ExportBrushes(const string& path);
 	bool               ExportSurfaceTexture(CPakFile& levelPakFile, const char* szFilePathNamefloat, float fLeft = 0.0f, float fTop = 0.0f, float fWidth = 1.0f, float fHeight = 1.0f);
 	bool               ExportMap(const char* pszGamePath, bool bSurfaceTexture, EEndian eExportEndian);
-	void               ExportMergedMeshInstanceSectors(const char* pszGamePath, EEndian eExportEndian, std::vector<struct IStatInstGroup*>* pVegGroupTable);
+	void               ExportMergedMeshInstanceSectors(const char* pszGamePath, EEndian eExportEndian, std::vector<IStatInstGroup*>* pVegGroupTable);
 	void               ExportDynTexSrcLayerInfo(const char* pszGamePath);
 	void               ExportOcclusionMesh(const char* pszGamePath);
 	void               ExportHeightMap(const char* pszGamePath, EEndian eExportEndian);
@@ -123,9 +131,17 @@ private: // --------------------------------------------------------------------
 	{
 		SProgressHelper(CWaitProgress& ref, const uint32 dwMax, CTerrainLightGen& rLightGen, CFile& toFile,
 		                std::vector<int16>& rIndexBlock, const ULONGLONG FileTileOffset, const ULONGLONG ElementFileSize, const char* szFilename)
-			: m_Progress(ref), m_Current(0), m_Max(dwMax), m_rLightGen(rLightGen), m_toFile(toFile),
-			m_rIndexBlock(rIndexBlock), m_IndexBlockPos(0), m_FileTileOffset(FileTileOffset), m_ElementFileSize(ElementFileSize),
-			m_szFilename(szFilename)
+			: m_Progress(ref)
+			, m_Current(0)
+			, m_Max(dwMax)
+			, m_rLightGen(rLightGen)
+			, m_toFile(toFile)
+			, m_rIndexBlock(rIndexBlock)
+			, m_IndexBlockPos(0)
+			, m_FileTileOffset(FileTileOffset)
+			, m_ElementFileSize(ElementFileSize)
+			, m_szFilename(szFilename)
+			, m_TempMem()
 		{
 			m_dwLayerExtends[0] = m_dwLayerExtends[1] = 0;
 		}
@@ -152,7 +168,7 @@ private: // --------------------------------------------------------------------
 
 		std::vector<int16>& m_rIndexBlock;              //
 		uint32              m_IndexBlockPos;            //
-		const char*         m_szFilename;               // points to the filenname
+		const char*         m_szFilename;               // points to the filename
 
 		SRecursionHelper    m_TempMem[32];              //
 	};
@@ -200,4 +216,3 @@ private:
 
 	static CGameExporter* m_pCurrentExporter;
 };
-

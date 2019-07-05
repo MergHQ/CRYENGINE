@@ -775,7 +775,6 @@ void BevelTool::PP0_SubdivideSpreadedEdge(int nSubdivideNum)
 
 			DESIGNER_ASSERT(nCount < 2);
 
-			int nEdgeIndex = -1;
 			BrushEdge3D sideEdge = pEdgePolygon->GetEdge(i);
 
 			BrushVec3 vApexPos = rp.mapBetweenEdgeIdToApex[edgeId];
@@ -1070,7 +1069,7 @@ int BevelTool::GetEdgeCountHavingVertexInElementList(const BrushVec3& vertex, co
 	return nCount;
 }
 
-void BevelTool::Display(DisplayContext& dc)
+void BevelTool::Display(SDisplayContext& dc)
 {
 	BaseTool::Display(dc);
 	ElementSet* pSelected = DesignerSession::GetInstance()->GetSelectedElements();
@@ -1080,4 +1079,3 @@ void BevelTool::Display(DisplayContext& dc)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Bevel, eToolGroup_Modify, "Bevel", BevelTool,
                                    bevel, "runs bevel tool", "designer.bevel")
-

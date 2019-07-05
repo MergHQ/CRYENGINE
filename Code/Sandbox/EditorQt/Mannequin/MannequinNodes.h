@@ -1,23 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannequinNodes_h__
-#define __MannequinNodes_h__
+#pragma once
 
-//#include "Controls\MltiTree.h"
-#include "Controls\TreeCtrlReport.h"
+#include "Controls/TreeCtrlReport.h"
 #include "ISequencerSystem.h"
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-// forward declarations.
 class CSequencerNode;
 class CSequencerTrack;
 class CSequencerSequence;
 class CSequencerDopeSheetBase;
 
-//////////////////////////////////////////////////////////////////////////
 class CMannNodesCtrl : public CTreeCtrlReport
 {
 public:
@@ -148,6 +140,3 @@ protected:
 	// Drag / Drop
 	COleDropTarget* m_pDropTarget;
 };
-
-#endif // __MannequinNodes_h__
-

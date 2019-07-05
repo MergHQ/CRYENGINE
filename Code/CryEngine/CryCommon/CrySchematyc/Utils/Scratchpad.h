@@ -150,6 +150,11 @@ public:
 		return 0 == memcmp(m_pData,rhs.m_pData,m_size);
 	}
 
+	bool IsEmpty() const
+	{
+		return m_size == 0;
+	}
+
 protected:
 
 	inline void Copy(const CScratchpad& rhs)

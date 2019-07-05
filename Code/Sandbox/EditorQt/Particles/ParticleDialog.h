@@ -1,14 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __particledialog_h__
-#define __particledialog_h__
 #pragma once
 
 #include "BaseLibraryDialog.h"
-#include "Controls\SplitterCtrl.h"
-#include "Controls\TreeCtrlEx.h"
-#include "Controls\PropertyCtrlEx.h"
-#include "Controls\PreviewModelCtrl.h"
+#include "Controls/PreviewModelCtrl.h"
+#include "Controls/PropertyCtrlEx.h"
+#include "Controls/SplitterCtrl.h"
+#include "Controls/TreeCtrlEx.h"
+#include "Objects/EntityScript.h"
 
 class CParticleItem;
 class CParticleManager;
@@ -75,7 +74,7 @@ protected:
 	bool         AddItem(bool bFromParent);
 
 	//////////////////////////////////////////////////////////////////////////
-	// Some functions can be overriden to modify standard functionality.
+	// Some functions can be overridden to modify standard functionality.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void      InitToolbar(UINT nToolbarResID);
 	virtual HTREEITEM InsertItemToTree(CBaseLibraryItem* pItem, HTREEITEM hParent);
@@ -104,8 +103,6 @@ protected:
 	CPropertyCtrlEx   m_propsCtrl;
 	CImageList        m_imageList;
 
-	CImageList*       m_dragImage;
-
 	bool              m_bForceReloadPropsCtrl;
 	bool              m_bAutoAssignToSelection;
 	bool              m_bRealtimePreviewUpdate;
@@ -119,8 +116,5 @@ protected:
 	HTREEITEM                    m_hDropItem;
 	HTREEITEM                    m_hDraggedItem;
 
-	TSmartPtr<CParticleItem>     m_pDraggedItem;
+	TSmartPtr<CParticleItem>     m_pDraggedParticleItem;
 };
-
-#endif // __particledialog_h__
-

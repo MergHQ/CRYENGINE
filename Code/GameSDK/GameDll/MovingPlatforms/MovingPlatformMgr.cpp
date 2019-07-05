@@ -5,8 +5,11 @@
 #include "CorpseManager.h"
 #include "Utility/CryWatch.h"
 #include "EnvironmentalWeapon.h"
+#include "Game.h"
 #include "GameRulesModules/IGameRulesObjectivesModule.h"
 #include "MultiplayerEntities/CarryEntity.h"
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryPhysics/IPhysics.h>
 
 //------------------------------------------------------------------------------------------
 CMovingPlatformMgr::CMovingPlatformMgr()

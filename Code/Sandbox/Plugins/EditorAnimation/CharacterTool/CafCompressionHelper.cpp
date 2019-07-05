@@ -6,10 +6,10 @@
 #include "CafCompressionHelper.h"
 #include "Shared/AnimSettings.h"
 
-#include <FilePathUtil.h>
-#include <CrySystem/ISystem.h>
-#include <CrySystem/File/ICryPak.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+#include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ISystem.h>
+#include <PathUtils.h>
 #include <QtCore/QDir>
 
 static const char* ANIMATION_COMPRESSION_TEMP_ROOT = "Editor/Tmp/AnimationCompression/";
@@ -102,12 +102,6 @@ bool CafCompressionHelper::CompressAnimationForPreview(string* outputCafPath, st
 		return false;
 
 	const string inputFilePath = PathUtil::ReplaceExtension(animationPath, "i_caf"); //AnimSettingsFileHelper::GetIntermediateFilename(animationPath);
-
-	if (animSettings.build.skeletonAlias.empty())
-	{
-		outErrorMessage->Format("Skeleton alias is not specified.");
-		return false;
-	}
 
 	if (gEnv->pCryPak->IsFileExist(inputFilePath, ICryPak::eFileLocation_OnDisk) == false)
 	{
@@ -299,4 +293,3 @@ void CafCompressionHelper::CleanUpCompressionResult(const char* createdFile)
 		path = createdFolder;
 	}
 }
-

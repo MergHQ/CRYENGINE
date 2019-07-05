@@ -2,16 +2,16 @@
 
 #include "StdAfx.h"
 #include "CylinderTool.h"
-#include "Core/Model.h"
-#include "Util/PrimitiveShape.h"
-#include "DesignerEditor.h"
-#include "Util/HeightManipulator.h"
-#include "Util/ExtrusionSnappingHelper.h"
-#include "ViewManager.h"
-#include "ToolFactory.h"
+
 #include "Core/Helper.h"
 #include "Util/Display.h"
+#include "Util/ExtrusionSnappingHelper.h"
+#include "Util/HeightManipulator.h"
+#include "Util/PrimitiveShape.h"
+#include "DesignerEditor.h"
 #include "DesignerSession.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -66,7 +66,7 @@ bool CylinderTool::OnLButtonDown(CViewport* view, UINT nFlags, CPoint point)
 	return true;
 }
 
-void CylinderTool::Display(DisplayContext& dc)
+void CylinderTool::Display(SDisplayContext& dc)
 {
 	if (!GetModel() || !GetBaseObject())
 		return;
@@ -158,4 +158,3 @@ void CylinderTool::OnChangeParameter(bool continuous)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Cylinder, eToolGroup_Shape, "Cylinder", CylinderTool,
                                                            cylinder, "runs cylinder tool", "designer.cylinder")
-

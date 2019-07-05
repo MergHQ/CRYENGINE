@@ -14,7 +14,7 @@ namespace Cry
 	namespace DefaultComponents
 	{
 		class CAlembicComponent
-			: public IEntityComponent
+			: public IEditorEntityComponent
 		{
 		protected:
 			friend CPlugin_CryDefaultEntities;
@@ -24,8 +24,12 @@ namespace Cry
 			virtual void   Initialize() final;
 
 			virtual void   ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 			// ~IEntityComponent
+
+			// IEditorEntityComponent
+			virtual bool SetMaterial(int slotId, const char* szMaterial) override;
+			// ~IEditorEntityComponent
 
 		public:
 			CAlembicComponent() {}
@@ -40,7 +44,11 @@ namespace Cry
 				desc.SetIcon("icons:ObjectTypes/object.ico");
 				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
+				desc.AddBase<IEditorEntityComponent>();
+
 				desc.AddMember(&CAlembicComponent::m_filePath, 'file', "FilePath", "File", "Determines the geom cache file (abc / cbc) to load", "%ENGINE%/EngineAssets/GeomCaches/default.cbc");
+				desc.AddMember(&CAlembicComponent::m_playSpeed, 'pspd', "PlaySpeed", "Speed", "Determines the play speed of the animation", 0.005f);
+				desc.AddMember(&CAlembicComponent::m_materialPath, 'mat', "Material", "Material", "Specifies the override material for the selected object", "");
 			}
 
 			virtual void Enable(bool bEnable);
@@ -52,9 +60,18 @@ namespace Cry
 
 			virtual void SetFilePath(const char* szFilePath);
 			const char* GetFilePath() const { return m_filePath.value.c_str(); }
+			
+			virtual void Play();
+			virtual void Pause();
+			virtual void Stop();
 
 		protected:
 			Schematyc::GeomCacheFileName m_filePath;
+			
+			bool m_isPlayEnabled = false;
+			float m_playSpeed = 0.005f;
+			float m_currentTime = 0.01f;
+			Schematyc::MaterialFileName m_materialPath;
 		};
 	}
 }

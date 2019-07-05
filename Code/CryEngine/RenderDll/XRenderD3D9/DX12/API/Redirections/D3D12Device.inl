@@ -153,10 +153,10 @@ struct Handable
 #include "D3D12Resource.inl"
 
 // ==============================================================================
-template<const int numTargets>
+template<int numTargets>
 class BroadcastableD3D12Device : public ID3D12Device
 {
-	template<const int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
+	template<int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
 	friend class NCryDX12::CDevice;
 
 	int           m_RefCount;
@@ -295,8 +295,6 @@ public:
 	  REFIID riid,
 	  _COM_Outptr_ void** ppCommandList) final
 	{
-		BroadcastableD3D12CommandAllocator<numTargets>* Allocator = (BroadcastableD3D12CommandAllocator<numTargets>*)pCommandAllocator;
-
 		return BroadcastableD3D12GraphicsCommandList<numTargets>::CreateCommandList(m_Target, nodeMask, type, pCommandAllocator, pInitialState, riid, ppCommandList);
 	}
 
@@ -597,7 +595,7 @@ public:
 	  REFIID riid,
 	  _COM_Outptr_opt_ void** ppvResource) final
 	{
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return E_FAIL;
 	}
 
@@ -608,7 +606,7 @@ public:
 	  REFIID riid,
 	  _COM_Outptr_opt_ void** ppvResource) final
 	{
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return E_FAIL;
 	}
 
@@ -619,7 +617,7 @@ public:
 	  _In_opt_ LPCWSTR Name,
 	  _Out_ HANDLE* pHandle) final
 	{
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return E_FAIL;
 	}
 
@@ -628,7 +626,7 @@ public:
 	  REFIID riid,
 	  _COM_Outptr_opt_ void** ppvObj) final
 	{
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return E_FAIL;
 	}
 
@@ -638,7 +636,7 @@ public:
 	  /* [annotation][out] */
 	  _Out_ HANDLE* pNTHandle) final
 	{
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return E_FAIL;
 	}
 
@@ -646,7 +644,7 @@ public:
 	  UINT NumObjects,
 	  _In_reads_(NumObjects)  ID3D12Pageable* const* ppObjects) final
 	{
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return E_FAIL;
 	}
 
@@ -654,7 +652,7 @@ public:
 	  UINT NumObjects,
 	  _In_reads_(NumObjects)  ID3D12Pageable* const* ppObjects) final
 	{
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return E_FAIL;
 	}
 
@@ -706,7 +704,7 @@ public:
 	  _COM_Outptr_opt_ void** ppvCommandSignature) final
 	{
 		// TODO: implement BroadcastableD3D12CommandSignature
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 		return Redirect(CreateCommandSignature(pDesc, pRootSignature, riid, ppvCommandSignature));
 	}
 

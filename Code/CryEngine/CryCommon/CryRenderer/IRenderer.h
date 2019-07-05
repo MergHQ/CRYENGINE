@@ -1,36 +1,75 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//  File:Renderer.h - API Independent
-//
-//  History:
-//  -Jan 31,2001:Originally created by Marco Corbetta
-//  -: Taken over by Andrey Khonich
-//
-//////////////////////////////////////////////////////////////////////
-
 #pragma once
 
+#include <memory>
+#include "ITexture.h"
 #include <CryMath/Cry_Geo.h>
-#include <CryRenderer/IFlares.h> // <> required for Interfuscator
-#include <CryThreading/IJobManager.h>
-
 #include <CryExtension/ClassWeaver.h>
 #include <CrySystem/IEngineModule.h>
 #include <CrySystem/TimeValue.h>
 #include <CryCore/BaseTypes.h>
+#include <CryCore/Containers/CryArray.h>
 #include <CryCore/CryVariant.h>
-#include "IRenderView.h"
+#include <CryRenderer/RenderObject.h>
+#include <CryMemory/IDefragAllocator.h>
 
-#include <vector>
+class CCamera;
+class CMesh;
+class CObjManager;
+class CREMesh;
+class CRenderElement;
+class CRenderObject;
+class CRenderView;
+class CShadowVolEdge;
+class CTexMan;
+class CVegetation;
+class CVrProjectionManager;
+class ICrySizer;
 
-// forward declarations
-struct SRenderingPassInfo;
+struct CStatObj;
+struct GRendererCommandBufferReadOnly;
+struct ICharacterInstance;
+struct IClipVolume;
+struct IColorGradingController;
+struct IConsole;
+struct ICVar;
+struct IFFont;
+struct IFlashLoadMovieImage;
+struct IFlashPlayer_RenderProxy;
 struct IFoliage;
+struct IImageFile;
+struct ILog;
+struct IOpticsManager;
+struct IPhysicalEntity;
+struct IRenderAuxGeom;
+struct IRenderMesh;
+struct IScaleformPlayback;
+struct IStatObj;
+struct IStereoRenderer;
+struct ISystem;
+struct ITimer;
+struct RenderLMData;
+struct SClipVolumeBlendInfo;
+struct SDeferredLightVolume;
+struct SShadowCacheUpdateMasks;
+struct ShadowMapFrustum;
+struct SMeshBakingInputParams;
+struct SMeshBakingOutput;
+struct SParticleAddJobCompare;
+struct SParticleRenderInfo;
+struct SPointSpriteVertex;
+struct SPrimitiveGroup;
+struct SRendererCloakParams;
+struct SRenderingPassInfo;
 struct SRenderLight;
+struct SREPointSpriteCreateParams;
+struct SShaderParam;
+struct SSkyLightRenderParams;
+struct STextDrawContext;
 struct SWaterRippleInfo;
 
-class CRenderView;
+enum EDataType : int;
 
 //! Callback used for DXTCompress.
 typedef void (* MIPDXTcallback)(const void* buffer, size_t count, void* userData);
@@ -59,60 +98,10 @@ struct ICaptureFrameListener
 
 // Forward declarations.
 //////////////////////////////////////////////////////////////////////
-typedef void* WIN_HWND;
+typedef void* CRY_HWND;
 typedef void* WIN_HINSTANCE;
 typedef void* WIN_HDC;
 typedef void* WIN_HGLRC;
-
-class CREMesh;
-class CMesh;
-//class   CImage;
-struct  CStatObj;
-class CVegetation;
-struct  ShadowMapFrustum;
-struct  IStatObj;
-class CObjManager;
-struct  SPrimitiveGroup;
-struct  ICharacterInstance;
-class CRenderElement;
-class CRenderObject;
-class CTexMan;
-//class   ColorF;
-class CShadowVolEdge;
-class CCamera;
-struct SDeferredLightVolume;
-struct  ILog;
-struct  IConsole;
-struct  ICVar;
-struct  ITimer;
-struct  ISystem;
-class ICrySizer;
-struct IRenderAuxGeom;
-struct SREPointSpriteCreateParams;
-struct SPointSpriteVertex;
-struct RenderLMData;
-struct SShaderParam;
-struct SSkyLightRenderParams;
-struct SParticleRenderInfo;
-struct SParticleAddJobCompare;
-struct IFlashPlayer_RenderProxy;
-struct IColorGradingController;
-struct IStereoRenderer;
-struct STextDrawContext;
-struct IRenderMesh;
-class IOpticsManager;
-struct SRendererCloakParams;
-struct ShadowFrustumMGPUCache;
-struct IAsyncTextureCompileListener;
-struct IClipVolume;
-struct SClipVolumeBlendInfo;
-class IImageFile;
-class CVrProjectionManager;
-
-//////////////////////////////////////////////////////////////////////
-struct IScaleformPlayback;
-struct GRendererCommandBufferReadOnly;
-struct IFlashLoadMovieImage;
 
 //////////////////////////////////////////////////////////////////////
 namespace CryOVR
@@ -129,8 +118,7 @@ typedef float         vec2_t[2];
 #include <CryMath/Cry_Color.h>
 #include "Tarray.h"
 
-#include <CryFont/IFont.h>
-
+#define OMNI_SIDES_NUM 6
 #define MAX_NUM_VIEWPORTS 7
 
 //! Query types for CryInd editor (used in EF_Query() function).
@@ -150,12 +138,16 @@ enum ERenderQueryTypes
 	EFQ_IncrementFrameID,
 	EFQ_DeviceLost,
 
+	EFQ_Alloc_APITargets,
 	EFQ_Alloc_APITextures,
 	EFQ_Alloc_APIMesh,
 
 	//! Memory allocated by meshes in system memory.
 	EFQ_Alloc_Mesh_SysMem,
 	EFQ_Mesh_Count,
+
+	EFQ_GetDeviceBufferMaxCounts,
+	EFQ_GetDeviceBufferPoolStats,
 
 	EFQ_HDRModeEnabled,
 	EFQ_ParticlesTessellation,
@@ -222,6 +214,16 @@ enum ERenderQueryTypes
 	EFQ_ReverseDepthEnabled,
 
 	EFQ_GetLastD3DDebugMessage
+};
+
+enum class EGraphicsPipelineType
+{
+	Invalid = 0,
+	Standard,
+	Minimum,
+	Billboard,
+	Mobile,
+	CharacterTool,
 };
 
 // Interface to the graphics constant buffers
@@ -294,13 +296,11 @@ class IManager;
 //////////////////////////////////////////////////////////////////////
 #define R_DX11_RENDERER   0
 #define R_DX12_RENDERER   1
-#define R_GL_RENDERER     2
 #define R_VK_RENDERER     3
 #define R_GNM_RENDERER    4
 
 #define STR_DX11_RENDERER   "DX11"
 #define STR_DX12_RENDERER   "DX12"
-#define STR_GL_RENDERER     "GL"
 #define STR_VK_RENDERER     "VK"
 #define STR_GNM_RENDERER    "GNM"
 #define STR_AUTO_RENDERER   "Auto"
@@ -308,8 +308,7 @@ class IManager;
 #define STR_ORBIS_SHADER_TARGET   "ORBIS"
 #define STR_DURANGO_SHADER_TARGET "DURANGO"
 #define STR_D3D11_SHADER_TARGET   "D3D11"
-#define STR_GL4_SHADER_TARGET     "GL4"
-#define STR_GLES3_SHADER_TARGET   "GLES3"
+#define STR_D3D12_SHADER_TARGET   "D3D12"
 #define STR_VULKAN_SHADER_TARGET  "VULKAN"
 
 //////////////////////////////////////////////////////////////////////
@@ -344,11 +343,11 @@ class IManager;
 
 #define RFT_HW_HDR           0x80000     // Hardware supports high dynamic range rendering.
 
-#define RFT_HW_SM20          0x100000    // Shader model 2.0
-#define RFT_HW_SM2X          0x200000    // Shader model 2.X
-#define RFT_HW_SM30          0x400000    // Shader model 3.0
-#define RFT_HW_SM40          0x800000    // Shader model 4.0
-#define RFT_HW_SM50          0x1000000   // Shader model 5.0
+#define RFT_HW_SM40          0x0100000   // Shader model 4.0
+#define RFT_HW_SM50          0x0200000   // Shader model 5.0
+#define RFT_HW_SM51          0x0400000   // Shader model 5.1
+#define RFT_HW_SM60          0x0800000   // Shader model 6.0, 6.1
+#define RFT_HW_SM62          0x1000000   // Shader model 6.2
 
 #define RFT_FREE_0x2000000   0x2000000
 #define RFT_FREE_0x4000000   0x4000000
@@ -377,23 +376,25 @@ class IManager;
 
 //====================================================================
 // Draw shaders flags (EF_EndEf3d)
-enum EShaderRenderingFlags
+enum EShaderRenderingFlags : uint32
 {
-	SHDF_ALLOWHDR           = BIT(0),
-	SHDF_CUBEMAPGEN         = BIT(1),
-	SHDF_ZPASS              = BIT(2),
-	SHDF_STEREO_LEFT_EYE    = BIT(3),
-	SHDF_STEREO_RIGHT_EYE   = BIT(4),
-	SHDF_ALLOWPOSTPROCESS   = BIT(5),
-	SHDF_BILLBOARDS         = BIT(6),
-	SHDF_ALLOW_AO           = BIT(8),
-	SHDF_ALLOW_WATER        = BIT(9),
-	SHDF_NOASYNC            = BIT(10),
-	SHDF_NO_DRAWNEAR        = BIT(11),
-	SHDF_NO_DRAWCAUSTICS    = BIT(14),
-	SHDF_NO_SHADOWGEN       = BIT(15),
-	SHDF_SECONDARY_VIEWPORT = BIT(16),
-	SHDF_FORWARD_MINIMAL    = BIT(17),
+	SHDF_ALLOWHDR           = BIT32(0),
+	SHDF_CUBEMAPGEN         = BIT32(1),
+	SHDF_ZPASS              = BIT32(2),
+	SHDF_STEREO_LEFT_EYE    = BIT32(3),
+	SHDF_STEREO_RIGHT_EYE   = BIT32(4),
+	SHDF_ALLOWPOSTPROCESS   = BIT32(5),
+	SHDF_BILLBOARDS         = BIT32(6),
+	SHDF_ALLOW_AO           = BIT32(7),
+	SHDF_ALLOW_WATER        = BIT32(8),
+	SHDF_ALLOW_SKY          = BIT32(9),
+	SHDF_NOASYNC            = BIT32(10),
+	SHDF_NO_DRAWNEAR        = BIT32(11),
+	SHDF_NO_DRAWCAUSTICS    = BIT32(12),
+	SHDF_NO_SHADOWGEN       = BIT32(13),
+	SHDF_SECONDARY_VIEWPORT = BIT32(14),
+	SHDF_FORWARD_MINIMAL    = BIT32(15),
+	SHDF_ALLOW_RENDER_DEBUG = BIT32(16),
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -403,73 +404,76 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 
 //////////////////////////////////////////////////////////////////////
 // Object states
-#define OS_ALPHA_BLEND         0x1
-#define OS_ADD_BLEND           0x2
-#define OS_MULTIPLY_BLEND      0x4
-#define OS_TRANSPARENT         (OS_ALPHA_BLEND | OS_ADD_BLEND | OS_MULTIPLY_BLEND)
-#define OS_NODEPTH_TEST        0x8
-#define OS_NODEPTH_WRITE       0x10
-#define OS_ANIM_BLEND          0x20
-#define OS_ENVIRONMENT_CUBEMAP 0x40
+#define OS_ALPHA_BLEND                    0x1
+#define OS_ADD_BLEND                      0x2
+#define OS_MULTIPLY_BLEND                 0x4
+#define OS_TRANSPARENT                    (OS_ALPHA_BLEND | OS_ADD_BLEND | OS_MULTIPLY_BLEND)
+#define OS_NODEPTH_TEST                   0x8
+#define OS_NODEPTH_WRITE                  0x10
+#define OS_ANIM_BLEND                     0x20
+#define OS_ENVIRONMENT_CUBEMAP            0x40
 
 // Render State flags (uint32)
-#define GS_BLSRC_ZERO              0x01
-#define GS_BLSRC_ONE               0x02
-#define GS_BLSRC_DSTCOL            0x03
-#define GS_BLSRC_ONEMINUSDSTCOL    0x04
-#define GS_BLSRC_SRCALPHA          0x05
-#define GS_BLSRC_ONEMINUSSRCALPHA  0x06
-#define GS_BLSRC_DSTALPHA          0x07
-#define GS_BLSRC_ONEMINUSDSTALPHA  0x08
-#define GS_BLSRC_ALPHASATURATE     0x09
-#define GS_BLSRC_SRCALPHA_A_ZERO   0x0A  // separate alpha blend state
-#define GS_BLSRC_SRC1ALPHA         0x0B  // dual source blending
-#define GS_BLSRC_MASK              0x0F
-#define GS_BLSRC_SHIFT             0
+#define GS_BLSRC_ZERO                     0x01
+#define GS_BLSRC_ONE                      0x02
+#define GS_BLSRC_DSTCOL                   0x03
+#define GS_BLSRC_ONEMINUSDSTCOL           0x04
+#define GS_BLSRC_SRCALPHA                 0x05
+#define GS_BLSRC_ONEMINUSSRCALPHA         0x06
+#define GS_BLSRC_DSTALPHA                 0x07
+#define GS_BLSRC_ONEMINUSDSTALPHA         0x08
+#define GS_BLSRC_ALPHASATURATE            0x09
+#define GS_BLSRC_SRCALPHA_A_ZERO          0x0A // separate alpha blend state
+#define GS_BLSRC_SRC1ALPHA                0x0B // dual source blending
+#define GS_BLSRC_SRC1ALPHA_A_ONE          0x0C
+#define GS_BLSRC_SRCALPHA_A_ONE           0x0D // separate alpha blend state
+#define GS_BLSRC_MASK                     0x0F
+#define GS_BLSRC_SHIFT                    0
 
-#define GS_BLDST_ZERO              0x10
-#define GS_BLDST_ONE               0x20
-#define GS_BLDST_SRCCOL            0x30
-#define GS_BLDST_ONEMINUSSRCCOL    0x40
-#define GS_BLDST_SRCALPHA          0x50
-#define GS_BLDST_ONEMINUSSRCALPHA  0x60
-#define GS_BLDST_DSTALPHA          0x70
-#define GS_BLDST_ONEMINUSDSTALPHA  0x80
-#define GS_BLDST_ONE_A_ZERO        0x90 // separate alpha blend state
-#define GS_BLDST_ONEMINUSSRC1ALPHA 0xA0 // dual source blending
-#define GS_BLDST_MASK              0xF0
-#define GS_BLDST_SHIFT             4
+#define GS_BLDST_ZERO                     0x10
+#define GS_BLDST_ONE                      0x20
+#define GS_BLDST_SRCCOL                   0x30
+#define GS_BLDST_ONEMINUSSRCCOL           0x40
+#define GS_BLDST_SRCALPHA                 0x50
+#define GS_BLDST_ONEMINUSSRCALPHA         0x60
+#define GS_BLDST_DSTALPHA                 0x70
+#define GS_BLDST_ONEMINUSDSTALPHA         0x80
+#define GS_BLDST_ONE_A_ZERO               0x90 // separate alpha blend state
+#define GS_BLDST_ONEMINUSSRC1ALPHA        0xA0 // dual source blending
+#define GS_BLDST_ONEMINUSSRC1ALPHA_A_ZERO 0xB0
+#define GS_BLDST_MASK                     0xF0
+#define GS_BLDST_SHIFT                    4
 
-#define GS_DEPTHWRITE              0x00000100
-#define GS_NODEPTHTEST             0x00000200
-#define GS_STENCIL                 0x00000400
-#define GS_ALPHATEST               0x00000800
+#define GS_DEPTHWRITE                     0x00000100
+#define GS_NODEPTHTEST                    0x00000200
+#define GS_STENCIL                        0x00000400
+#define GS_ALPHATEST                      0x00000800
 
-#define GS_COLMASK_SHIFT           12
-#define GS_COLMASK_MASK            0x0000F000
+#define GS_COLMASK_SHIFT                  12
+#define GS_COLMASK_MASK                   0x0000F000
 
 // Color Exclusion Mask
 // Note: Do not concatenate!
 enum ColorMask
 {
-	GS_NOCOLMASK_NONE				= 0,
-	GS_NOCOLMASK_R					= 0x00001000,
-	GS_NOCOLMASK_G					= 0x00002000,
-	GS_NOCOLMASK_B					= 0x00003000,
-	GS_NOCOLMASK_A					= 0x00004000,
-	GS_NOCOLMASK_GBA				= 0x00005000,
-	GS_NOCOLMASK_RBA				= 0x00006000,
-	GS_NOCOLMASK_RGA				= 0x00007000,
-	GS_NOCOLMASK_RGB				= 0x00008000,
-	GS_NOCOLMASK_RGBA				= 0x00009000,
-	GS_NOCOLMASK_GBUFFER_OVERLAY	= 0x0000A000,
+	GS_NOCOLMASK_NONE               = 0,
+	GS_NOCOLMASK_R                  = 0x00001000,
+	GS_NOCOLMASK_G                  = 0x00002000,
+	GS_NOCOLMASK_B                  = 0x00003000,
+	GS_NOCOLMASK_A                  = 0x00004000,
+	GS_NOCOLMASK_GBA                = 0x00005000,
+	GS_NOCOLMASK_RBA                = 0x00006000,
+	GS_NOCOLMASK_RGA                = 0x00007000,
+	GS_NOCOLMASK_RGB                = 0x00008000,
+	GS_NOCOLMASK_RGBA               = 0x00009000,
+	GS_NOCOLMASK_GBUFFER_OVERLAY    = 0x0000A000,
 
-	GS_NOCOLMASK_COUNT				= 0x0000B000,
+	GS_NOCOLMASK_COUNT              = 0x0000B000,
 };
 static_assert(GS_NOCOLMASK_COUNT <= GS_COLMASK_MASK, "Exceeded count limit of possible color masks (16)");
 
 #define GS_WIREFRAME               0x00010000
-#define GS_POINTRENDERING          0x00020000
+#define GS_POINTRENDERING          0x00020000 // unused - add to free bits
 
 #define GS_DEPTHFUNC_LEQUAL        0x00000000
 #define GS_DEPTHFUNC_EQUAL         0x00040000
@@ -558,18 +562,6 @@ namespace gpu_pfx2
 	class IParticleComponentRuntime;
 }
 
-struct CRY_ALIGN(16) SAddParticlesToSceneJob
-{
-	void GetMemoryUsage(ICrySizer* pSizer) const {}
-
-	SShaderItem* pShaderItem;
-	CRenderObject* pRenderObject;
-	IParticleVertexCreator* pVertexCreator = nullptr;
-	gpu_pfx2::IParticleComponentRuntime* pGpuRuntime = nullptr;
-	int16 nCustomTexId;
-	AABB aabb;
-};
-
 #ifdef SUPPORT_HW_MOUSE_CURSOR
 class IHWMouseCursor
 {
@@ -582,9 +574,6 @@ public:
 #endif
 
 //////////////////////////////////////////////////////////////////////
-#include <CryRenderer/IShader.h> // <> required for Interfuscator
-#include <CryRenderer/IRenderMesh.h>
-#include "IMeshBaking.h"
 
 //! Flags passed in function FreeResources.
 #define FRR_DELETED_MESHES           BIT(0)
@@ -639,26 +628,26 @@ public:
 #define FRT_CLEAR                       (FRT_CLEAR_COLOR | FRT_CLEAR_DEPTH | FRT_CLEAR_STENCIL)
 
 //! Flags used in DrawText function.
-enum EDrawTextFlags
+enum EDrawTextFlags : uint32
 {
 	eDrawText_Default,
-	eDrawText_Center         = BIT(0),  //!< Centered alignment, otherwise right or left.
-	eDrawText_Right          = BIT(1),  //!< Right alignment, otherwise center or left.
-	eDrawText_CenterV        = BIT(2),  //!< Center vertically, oterhwise top.
-	eDrawText_Bottom         = BIT(3),  //!< Bottom alignment.
+	eDrawText_Center         = BIT32(0),  //!< Centered alignment, otherwise right or left.
+	eDrawText_Right          = BIT32(1),  //!< Right alignment, otherwise center or left.
+	eDrawText_CenterV        = BIT32(2),  //!< Center vertically, otherwise top.
+	eDrawText_Bottom         = BIT32(3),  //!< Bottom alignment.
 
-	eDrawText_2D             = BIT(4),  //!< 3-component vector is used for xy screen position, otherwise it's 3d world space position.
+	eDrawText_2D             = BIT32(4),  //!< 3-component vector is used for xy screen position, otherwise it's 3d world space position.
 
-	eDrawText_FixedSize      = BIT(5),  //!< Font size is defined in the actual pixel resolution, otherwise it's in the virtual 800x600.
-	eDrawText_800x600        = BIT(6),  //!< Position are specified in the virtual 800x600 resolution, otherwise coordinates are in pixels.
+	eDrawText_FixedSize      = BIT32(5),  //!< Font size is defined in the actual pixel resolution, otherwise it's in the virtual 800x600.
+	eDrawText_800x600        = BIT32(6),  //!< Position are specified in the virtual 800x600 resolution, otherwise coordinates are in pixels.
 
-	eDrawText_Monospace      = BIT(7),  //!< Non proportional font rendering (Font width is same for all characters).
+	eDrawText_Monospace      = BIT32(7),  //!< Non proportional font rendering (Font width is same for all characters).
 
-	eDrawText_Framed         = BIT(8),  //!< Draw a transparent, rectangular frame behind the text to ease readability independent from the background.
+	eDrawText_Framed         = BIT32(8),  //!< Draw a transparent, rectangular frame behind the text to ease readability independent from the background.
 
-	eDrawText_DepthTest      = BIT(9),  //!< Text should be occluded by world geometry using the depth buffer.
-	eDrawText_IgnoreOverscan = BIT(10), //!< Ignore the overscan borders, text should be drawn at the location specified.
-	eDrawText_LegacyBehavior = BIT(11)  //!< Reserved for internal system use.
+	eDrawText_DepthTest      = BIT32(9),  //!< Text should be occluded by world geometry using the depth buffer.
+	eDrawText_IgnoreOverscan = BIT32(10), //!< Ignore the overscan borders, text should be drawn at the location specified.
+	eDrawText_LegacyBehavior = BIT32(11)  //!< Reserved for internal system use.
 };
 
 //! \cond INTERNAL
@@ -670,8 +659,8 @@ struct SDrawTextInfo
 	int flags;
 
 	//! Text color, (r,g,b,a) all members must be specified.
-	float color[4];
-	Vec2  scale;
+	float   color[4];
+	Vec2    scale;
 	IFFont* pFont;
 
 	SDrawTextInfo()
@@ -731,7 +720,6 @@ enum class ERenderType : uint8
 	Undefined,
 	Direct3D11,
 	Direct3D12,
-	OpenGL,
 	Vulkan,
 	GNM
 };
@@ -747,14 +735,13 @@ enum {CULL_SIZEX = 256};
 enum {CULL_SIZEY = 128};
 #endif
 
-class ITextureStreamListener
+struct ITextureStreamListener
 {
-public:
-	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int nMips, int nMinMipAvailable) = 0;
+	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int8 nMips, int8 nMinMipAvailable) = 0;
 	virtual void OnUploadedStreamedTexture(void* pHandle) = 0;
 	virtual void OnDestroyedStreamedTexture(void* pHandle) = 0;
-	virtual void OnTextureWantsMip(void* pHandle, int nMinMip) = 0;
-	virtual void OnTextureHasMip(void* pHandle, int nMinMip) = 0;
+	virtual void OnTextureWantsMip(void* pHandle, int8 nMinMip) = 0;
+	virtual void OnTextureHasMip(void* pHandle, int8 nMinMip) = 0;
 	virtual void OnBegunUsingTextures(void** pHandles, size_t numHandles) = 0;
 	virtual void OnEndedUsingTextures(void** pHandle, size_t numHandles) = 0;
 
@@ -785,12 +772,15 @@ enum ERenderPipelineProfilerStats
 {
 	eRPPSTATS_OverallFrame = 0,
 	eRPPSTATS_Recursion,
+	eRPPSTATS_UIFlash,
+	eRPPSTATS_Aux,
 
 	// Scene
 	eRPPSTATS_SceneOverall,
 	eRPPSTATS_SceneDecals,
 	eRPPSTATS_SceneForward,
 	eRPPSTATS_SceneWater,
+	eRPPSTATS_SceneTransparent,
 
 	// Shadows
 	eRPPSTATS_ShadowsOverall,
@@ -804,7 +794,6 @@ enum ERenderPipelineProfilerStats
 
 	// VFX
 	eRPPSTATS_VfxOverall,
-	eRPPSTATS_VfxTransparent,
 	eRPPSTATS_VfxFog,
 	eRPPSTATS_VfxFlares,
 
@@ -858,6 +847,7 @@ struct RPProfilerDetailedStats
 
 struct ISvoRenderer
 {
+	virtual ~ISvoRenderer() {}
 	virtual bool IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN) { return false; }
 	virtual void SetEditingHelper(const Sphere& sp)                                          {}
 	virtual void Release()                                                                   {}
@@ -870,20 +860,35 @@ struct SDisplayContextKey
 {
 	struct SInvalidKey
 	{
-		bool operator<(const SInvalidKey&) const { return false; }
+		bool operator<(const SInvalidKey&) const  { return false; }
 		bool operator==(const SInvalidKey&) const { return true; }
 		bool operator!=(const SInvalidKey&) const { return false; }
 	};
 
-	CryVariant<SInvalidKey, uint32_t, HWND> key;
-	bool operator<(const SDisplayContextKey &o) const { return key < o.key; }
-	bool operator==(const SDisplayContextKey &o) const { return key == o.key; }
-	bool operator!=(const SDisplayContextKey &o) const { return !(*this == o); }
+	CryVariant<SInvalidKey, uint32_t, CRY_HWND> key;
+	bool operator<(const SDisplayContextKey& o) const  { return key < o.key; }
+	bool operator==(const SDisplayContextKey& o) const { return key == o.key; }
+	bool operator!=(const SDisplayContextKey& o) const { return !(*this == o); }
 
-	bool operator==(const uint32_t &o) const { return key == o; }
-	bool operator!=(const uint32_t &o) const { return !(*this == o); }
-	bool operator==(const HWND &o) const { return key == o; }
-	bool operator!=(const HWND &o) const { return !(*this == o); }
+	bool operator==(const uint32_t& o) const           { return key == o; }
+	bool operator!=(const uint32_t& o) const           { return !(*this == o); }
+	bool operator==(const CRY_HWND& o) const           { return key == o; }
+	bool operator!=(const CRY_HWND& o) const           { return !(*this == o); }
+};
+
+//! \cond INTERNAL
+//! Describes the key used to create a graphics pipeline
+struct SGraphicsPipelineKey
+{
+	SGraphicsPipelineKey() = default;
+	SGraphicsPipelineKey(const uint32_t key) : key(key) {}
+	bool operator<(const SGraphicsPipelineKey& o) const  { return key < o.key; }
+	bool operator==(const SGraphicsPipelineKey& o) const { return key == o.key; }
+	bool operator!=(const SGraphicsPipelineKey& o) const { return !(*this == o); }
+
+	static constexpr uint32_t InvalidGraphicsPipelineKey = UINT_MAX;
+	static constexpr uint32_t BaseGraphicsPipelineKey = 0;
+	uint32_t                  key = InvalidGraphicsPipelineKey;
 };
 
 //! \cond INTERNAL
@@ -937,17 +942,25 @@ struct IRenderer//: public IRendererCallbackServer
 
 	struct SDisplayContextDescription
 	{
-		HWND handle  = 0; // WIN_HWND
+		CRY_HWND      handle = 0;
 
-		ColorF clearColor               = Clr_Empty;
-		ColorF clearDepthStencil        = Clr_FarPlane_Rev;
-		Vec2i  superSamplingFactor      = { 1, 1 };
-		Vec2i  screenResolution         = { 0, 0 };
+		ColorF        clearColor = Clr_Empty;
+		ColorF        clearDepthStencil = Clr_FarPlane_Rev;
+		Vec2i         superSamplingFactor = { 1, 1 };
+		Vec2i         screenResolution = { 0, 0 };
 
-		EViewportType type              = eViewportType_Default;
-		uint16 renderFlags              = FRT_CLEAR | FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL;
+		EViewportType type = eViewportType_Default;
+		uint16        renderFlags = FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL;
 
-		bool vsync                      = true;
+		bool          vsync = true;
+	};
+
+	struct SGraphicsPipelineDescription
+	{
+		SGraphicsPipelineDescription() : type(EGraphicsPipelineType::Invalid) {}
+
+		EGraphicsPipelineType type = EGraphicsPipelineType::Invalid;
+		uint32_t              shaderFlags = 0;
 	};
 
 	virtual ~IRenderer(){}
@@ -957,8 +970,12 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual ERenderType GetRenderType() const = 0;
 
 	//! Initializes the renderer, parameters are self-explanatory.
-	virtual WIN_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, WIN_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) = 0;
+	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, struct SSystemInitParams& initParams, bool bReInit = false) = 0;
 	virtual void     PostInit() = 0;
+
+	virtual void UpdateVsync() = 0;
+	virtual void UpdateWindowMode() = 0;
+	virtual void UpdateResolution() = 0;
 
 	//! Start active rendering of the intro movies while initializing the rest of the engine.
 	virtual void StartRenderIntroMovies() = 0;
@@ -987,9 +1004,21 @@ struct IRenderer//: public IRendererCallbackServer
 	/////////////////////////////////////////////////////////////////////////////////
 	// Render-context management
 	/////////////////////////////////////////////////////////////////////////////////
-	virtual SDisplayContextKey     CreateSwapChainBackedContext(const SDisplayContextDescription& desc) = 0;
-	virtual void                   ResizeContext(const SDisplayContextKey& key, int width, int height) = 0;
-	virtual bool                   DeleteContext(const SDisplayContextKey& key) = 0;
+	virtual SDisplayContextKey CreateSwapChainBackedContext(const SDisplayContextDescription& desc) = 0;
+	virtual void               ResizeContext(const SDisplayContextKey& key, int width, int height) = 0;
+	virtual bool               DeleteContext(const SDisplayContextKey& key) = 0;
+
+	/////////////////////////////////////////////////////////////////////////////////
+	// Render-pipeline management
+	/////////////////////////////////////////////////////////////////////////////////
+	virtual SGraphicsPipelineKey               CreateGraphicsPipeline(const SGraphicsPipelineDescription& desc) = 0;
+	virtual void                               ResizeGraphicsPipeline(const SGraphicsPipelineKey& key, int width, int height) = 0;
+	virtual void                               ResizePipelineAndContext(const SGraphicsPipelineKey& graphicsPipelineKey, const SDisplayContextKey& displayContextKey, int width, int height) = 0;
+	virtual bool                               DeleteGraphicsPipeline(const SGraphicsPipelineKey& key) = 0;
+	virtual void                               ResetActiveGraphicsPipeline() = 0;
+	virtual std::shared_ptr<CGraphicsPipeline> FindGraphicsPipeline(const SGraphicsPipelineKey& key) const = 0;
+	virtual SGraphicsPipelineKey               RT_CreateGraphicsPipeline(const SGraphicsPipelineDescription& desc) = 0;
+	virtual bool                               RT_DeleteGraphicsPipeline(const SGraphicsPipelineKey& key) = 0;
 
 #if CRY_PLATFORM_WINDOWS
 	virtual RectI    GetDefaultContextWindowCoordinates() = 0;
@@ -1010,7 +1039,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual int EnumDisplayFormats(SDispFormat* Formats) = 0;
 
 	//! Should be called at the beginning of every frame.
-	virtual void BeginFrame(const SDisplayContextKey& key) = 0;
+	virtual void BeginFrame(const SDisplayContextKey& key, const SGraphicsPipelineKey& graphicsPipelineKey) = 0;
 
 	//! Should be called at the beginning of every frame.
 	virtual void FillFrame(ColorF clearColor) = 0;
@@ -1030,13 +1059,13 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Should be called at the end of every frame.
 	virtual void EndFrame() = 0;
 
-	//! Try to flush the render thread commands to keep the render thread active during level loading, but simpy return if the render thread is still busy
-	virtual void               TryFlush() = 0;
+	//! Try to flush the render thread commands to keep the render thread active during level loading, but simply return if the render thread is still busy
+	virtual void         TryFlush() = 0;
 
-	virtual Vec2               SetViewportDownscale(float xscale, float yscale) = 0;
+	virtual Vec2         SetViewportDownscale(float xscale, float yscale) = 0;
 
-	virtual CRenderView*   GetOrCreateRenderView(IRenderView::EViewType Type = IRenderView::eViewType_Default) = 0;
-	virtual void           ReturnRenderView(CRenderView* pRenderView) = 0;
+	virtual CRenderView* GetOrCreateRenderView(IRenderView::EViewType Type = IRenderView::eViewType_Default) = 0;
+	virtual void         ReturnRenderView(CRenderView* pRenderView) = 0;
 
 	//! Set delta gamma.
 	virtual bool SetGammaDelta(const float fGamma) = 0;
@@ -1096,8 +1125,8 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Note: This implies all pins have to be released at some point or all clients will forever be stuck with old data.
 	//! (Un)pinning can be arbitrarily nested from any thread and will never block forward progress of the render thread or GPU.
 	//! The function may fail (by returning nullptr) if no data is available, in which case you must not call UnpinOcclusionBuffer.
-	virtual float* PinOcclusionBuffer(Matrix44A& camera) = 0;
-	virtual void   UnpinOcclusionBuffer() = 0;
+	virtual float* PinOcclusionBuffer(Matrix44A& camera, const SGraphicsPipelineKey& graphicsPipelineKey) = 0;
+	virtual void   UnpinOcclusionBuffer(const SGraphicsPipelineKey& graphicsPipelineKey) = 0;
 
 	//! Get current bpp.
 	virtual int GetColorBpp() = 0;
@@ -1117,57 +1146,59 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Projects to screen.
 	//! Returns true if successful.
 	virtual bool ProjectToScreen(
-	  float ptx, float pty, float ptz,
-	  float* sx, float* sy, float* sz) = 0;
+		float ptx, float pty, float ptz,
+		float* sx, float* sy, float* sz) = 0;
 
 	//! Unprojects to screen.
 	virtual int UnProject(
-	  float sx, float sy, float sz,
-	  float* px, float* py, float* pz,
-	  const float modelMatrix[16],
-	  const float projMatrix[16],
-	  const int viewport[4]) = 0;
+		float sx, float sy, float sz,
+		float* px, float* py, float* pz,
+		const float modelMatrix[16],
+		const float projMatrix[16],
+		const int viewport[4]) = 0;
 
 	//! Unprojects from screen.
 	virtual int UnProjectFromScreen(
-	  float sx, float sy, float sz,
-	  float* px, float* py, float* pz) = 0;
+		float sx, float sy, float sz,
+		float* px, float* py, float* pz) = 0;
 
-	virtual bool WriteDDS(byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) = 0;
-	virtual bool WriteTGA(byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) = 0;
-	virtual bool WriteJPG(byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality = 100) = 0;
+	virtual bool WriteDDS(const byte* dat, int wdt, int hgt, int Size, const char* name, ETEX_Format eF, int NumMips) = 0;
+	virtual bool WriteTGA(const byte* dat, int wdt, int hgt, const char* name, int src_bits_per_pixel, int dest_bits_per_pixel) = 0;
+	virtual bool WriteJPG(const byte* dat, int wdt, int hgt, char* name, int src_bits_per_pixel, int nQuality = 100) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////
 	//Replacement functions for Font
 
 	virtual bool FontUploadTexture(class CFBitmap*, ETEX_Format eTF = eTF_R8G8B8A8) = 0;
-	virtual int  FontCreateTexture(int Width, int Height, byte* pData, ETEX_Format eTF = eTF_R8G8B8A8, bool genMips = false) = 0;
-	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, byte* pData) = 0;
+	virtual int  FontCreateTexture(int Width, int Height, const byte* pData, ETEX_Format eTF = eTF_R8G8B8A8, bool genMips = false) = 0;
+	virtual bool FontUpdateTexture(int nTexId, int X, int Y, int USize, int VSize, const byte* pData) = 0;
 	virtual void FontReleaseTexture(class CFBitmap* pBmp) = 0;
 
 	virtual bool FlushRTCommands(bool bWait, bool bImmediatelly, bool bForce) = 0;
 	virtual int  CurThreadList() = 0;
 
-	virtual void FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer) = 0;
-	virtual void FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback) = 0;
-	virtual void FlashRenderPlayer(std::shared_ptr<IFlashPlayer> &&pPlayer) = 0;
+	virtual void FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy>&& pPlayer) = 0;
+	virtual void FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy>&& pPlayer, int cbIdx, bool finalPlayback) = 0;
+	virtual void FlashRenderPlayer(std::shared_ptr<IFlashPlayer>&& pPlayer) = 0;
 	virtual void FlashRemoveTexture(ITexture* pTexture) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////
 	// External interface for shaders
 	/////////////////////////////////////////////////////////////////////////////////
-	virtual bool           EF_PrecacheResource(SShaderItem *pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1) = 0;
-	virtual bool           EF_PrecacheResource(SShaderItem* pSI, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1) = 0;
-	virtual bool           EF_PrecacheResource(IShader* pSH, float fMipFactor, float fTimeToReady, int Flags) = 0;
-	virtual bool           EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1) = 0;
-	virtual bool           EF_PrecacheResource(IRenderMesh* pPB, IMaterial* pMaterial, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
-	virtual bool           EF_PrecacheResource(SRenderLight* pLS, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(SRenderLight* pLS, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(IRenderShaderResources* pShaderResources, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(IRenderShaderResources* pShaderResources, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(SShaderItem* pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(SShaderItem* pSI, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(IShader* pSH, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
+	virtual bool EF_PrecacheResource(IRenderMesh* pPB, IMaterial* pMaterial, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId) = 0;
 
-	virtual void           PostLevelLoading() = 0;
-	virtual void           PostLevelUnload() = 0;
+	virtual void PostLevelLoading() = 0;
+	virtual void PostLevelUnload() = 0;
 
-	virtual void           EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) = 0;
-	virtual void           GetMemoryUsageParticleREs(ICrySizer* pSizer) {}
+	virtual void EF_AddMultipleParticlesToScene(const struct SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) = 0;
+	virtual void GetMemoryUsageParticleREs(ICrySizer* pSizer) {}
 
 	/////////////////////////////////////////////////////////////////////////////////
 	// Shaders/Shaders management /////////////////////////////////////////////////////////////////////////////////
@@ -1237,16 +1268,16 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Load lightmap for name.
 	virtual int  EF_LoadLightmap(const char* name) = 0;
-	virtual DynArray<uint16_t> EF_RenderEnvironmentCubeHDR(size_t size, const Vec3& Pos) = 0;
+	virtual DynArray<uint16_t> EF_RenderEnvironmentCubeHDR(int size, const Vec3& Pos) = 0;
 	// Writes a TIF file to the system with the requested preset
 	// Intended for use with EF_RenderEnvironmentCubeHDR
 	virtual bool WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) = 0;
 
 	//! Stores GBuffers region to atlas textures.
-	virtual bool StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture *pDataD, ITexture *pDataN) = 0;
+	virtual bool StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture* pDataD, ITexture* pDataN, CGraphicsPipeline* pGraphicsPipeline) = 0;
 
 	//! Create new RE (RenderElement) of type (edt).
-	virtual CRenderElement*  EF_CreateRE(EDataType edt) = 0;
+	virtual CRenderElement* EF_CreateRE(EDataType edt) = 0;
 
 	//! Start using of the shaders (return first index for allow recursions).
 	virtual void EF_StartEf(const SRenderingPassInfo& passInfo) = 0;
@@ -1261,28 +1292,26 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual CRenderObject* EF_DuplicateRO(CRenderObject* pObj, const SRenderingPassInfo& passInfo) = 0;
 
 	//! Draw all shaded REs in the list
-	virtual void EF_EndEf3D(const int nFlags, const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo) = 0;
+	virtual void         EF_EndEf3D(const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo, const int nRenderFlags) = 0;
 
-	virtual void EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) = 0;
+	virtual void         EF_PrepareShadowTasksForRenderView(const SRenderingPassInfo& passInfo) = 0;
+
 	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) = 0;
-	virtual void PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32 *timeSlicedShadowsUpdated) = 0;
-	virtual void PrepareShadowPool(CRenderView* pRenderView) const = 0;
+	virtual uint32       PrepareShadowFrustumForShadowPool(IRenderView* pMainRenderView, ShadowMapFrustum* pFrustum, const SRenderLight& light, uint32 frameID, uint32 *timeSlicedShadowsUpdated) = 0;
+	virtual void         PrepareShadowPool(CRenderView* pRenderView) const = 0;
 
 	// Dynamic lights.
-	virtual bool EF_IsFakeDLight(const SRenderLight* Source) = 0;
+	virtual bool EF_IsFakeDLight(const SRenderLight* Source) const = 0;
 	virtual void EF_ADDDlight(SRenderLight* Source, const SRenderingPassInfo& passInfo) = 0;
-	virtual bool EF_UpdateDLight(SRenderLight* pDL) = 0;
+	virtual bool EF_UpdateDLight(SRenderLight* pDL) const = 0;
 	virtual bool EF_AddDeferredDecal(const SDeferredDecal& rDecal, const SRenderingPassInfo& passInfo) { return true; }
 
 	// Deferred lights/vis areas
 
 	virtual int EF_AddDeferredLight(const SRenderLight& pLight, float fMult, const SRenderingPassInfo& passInfo) = 0;
 
-	// Deferred clip volumes
-	virtual void Ef_AddDeferredGIClipVolume(const IRenderMesh* pClipVolume, const Matrix34& mxTransform) = 0;
-
 	//! Called in between levels to free up memory.
-	virtual void EF_ReleaseDeferredData() = 0;
+	virtual void EF_ReleaseDeferredData(CGraphicsPipeline* pGraphicsPipeline) = 0;
 
 	//! Called in between levels to free up memory.
 	virtual SInputShaderResources* EF_CreateInputShaderResource(IRenderShaderResources* pOptionalCopyFrom = 0) = 0;
@@ -1336,22 +1365,22 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! Creates/deletes RenderMesh object.
 	virtual _smart_ptr<IRenderMesh> CreateRenderMesh(
-	  const char* szType
-	  , const char* szSourceName
-	  , IRenderMesh::SInitParamerers* pInitParams = NULL
-	  , ERenderMeshType eBufType = eRMT_Static
-	  ) = 0;
+		const char* szType
+		, const char* szSourceName
+		, IRenderMesh::SInitParamerers* pInitParams = NULL
+		, ERenderMeshType eBufType = eRMT_Static
+		) = 0;
 
 	virtual _smart_ptr<IRenderMesh> CreateRenderMeshInitialized(
-	  const void* pVertBuffer, int nVertCount, InputLayoutHandle eVF,
-	  const vtx_idx* pIndices, int nIndices,
-	  const PublicRenderPrimitiveType nPrimetiveType, const char* szType, const char* szSourceName, ERenderMeshType eBufType = eRMT_Static,
-	  int nMatInfoCount = 1, int nClientTextureBindID = 0,
-	  bool (* PrepareBufferCallback)(IRenderMesh*, bool) = NULL,
-	  void* CustomData = NULL,
-	  bool bOnlyVideoBuffer = false,
-	  bool bPrecache = true,
-	  const SPipTangents* pTangents = NULL, bool bLockForThreadAcc = false, Vec3* pNormals = NULL) = 0;
+		const void* pVertBuffer, int nVertCount, InputLayoutHandle eVF,
+		const vtx_idx* pIndices, int nIndices,
+		const PublicRenderPrimitiveType nPrimetiveType, const char* szType, const char* szSourceName, ERenderMeshType eBufType = eRMT_Static,
+		int nMatInfoCount = 1, int nClientTextureBindID = 0,
+		bool (*PrepareBufferCallback)(IRenderMesh*, bool) = NULL,
+		void* CustomData = NULL,
+		bool bOnlyVideoBuffer = false,
+		bool bPrecache = true,
+		const SPipTangents* pTangents = NULL, bool bLockForThreadAcc = false, Vec3* pNormals = NULL) = 0;
 
 	virtual int  GetFrameID(bool bIncludeRecursiveCalls = true) = 0;
 
@@ -1382,24 +1411,26 @@ struct IRenderer//: public IRendererCallbackServer
 	//////////////////////////////////////////////////////////////////////
 
 	//! Interface for renderer side SVO.
-	virtual ISvoRenderer*            GetISvoRenderer() { return 0; }
+	virtual ISvoRenderer*         GetISvoRenderer() { return 0; }
 
-	virtual IColorGradingController* GetIColorGradingController() = 0;
-	virtual IStereoRenderer*         GetIStereoRenderer() const = 0;
+	virtual CVrProjectionManager* GetVrProjectionManager() = 0;
+	virtual IStereoRenderer*      GetIStereoRenderer() const = 0;
 
-	virtual void                     Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, const char* text, ColorF& color, float fScale) = 0;
+	virtual gpu_pfx2::IManager* GetGpuParticleManager() = 0;
+
+	virtual void                  Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, const char* text, ColorF& color, float fScale) = 0;
 
 	// NB: The following functions will be removed.
 	virtual void         EnableVSync(bool enable) = 0;
 
-	virtual unsigned int UploadToVideoMemory(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
-	virtual unsigned int UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
-	virtual unsigned int UploadToVideoMemoryCube(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
+	virtual unsigned int UploadToVideoMemory(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
+	virtual unsigned int UploadToVideoMemory3D(unsigned char* data, int w, int h, int d, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
+	virtual unsigned int UploadToVideoMemoryCube(unsigned char* data, int w, int h, ETEX_Format eTFSrc, ETEX_Format eTFDst, int8 nummipmap, bool repeat = true, int filter = FILTER_BILINEAR, int Id = 0, const char* szCacheName = NULL, int flags = 0, EEndian eEndian = eLittleEndian, RectI* pRegion = NULL, bool bAsynDevTexCreation = false) = 0;
 	virtual void         UpdateTextureInVideoMemory(uint32 tnum, unsigned char* newdata, int posx, int posy, int w, int h, ETEX_Format eTFSrc = eTF_B8G8R8, int posz = 0, int sizez = 1) = 0;
 
 	// NB: Without header.
-	virtual bool DXTCompress(byte* raw_data, int nWidth, int nHeight, ETEX_Format eTF, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback) = 0;
-	virtual bool DXTDecompress(byte* srcData, const size_t srcFileSize, byte* dstData, int nWidth, int nHeight, int nMips, ETEX_Format eSrcTF, bool bUseHW, int nDstBytesPerPix) = 0;
+	virtual bool DXTCompress  (const byte* raw_data, int nWidth, int nHeight, ETEX_Format eTF, bool bUseHW, bool bGenMips, int nSrcBytesPerPix, MIPDXTcallback callback) = 0;
+	virtual bool DXTDecompress(const byte* srcData, const size_t srcFileSize, byte* dstData, int nWidth, int nHeight, int nMips, ETEX_Format eSrcTF, bool bUseHW, int nDstBytesPerPix) = 0;
 	virtual void RemoveTexture(unsigned int TextureId) = 0;
 
 	virtual bool BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBakingOutput* pReturnValues) = 0;
@@ -1410,18 +1441,18 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! This routines uses 2 destination surfaces.  It triggers a backbuffer copy to one of its surfaces, and then copies the other surface to system memory.
 	//! This hopefully will remove any CPU stalls due to the rect lock call since the buffer will already be in system memory when it is called.
-	//! \param pDstARGBA8			Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface).
-	//! \param destinationWidth	Width of the frame to copy.
-	//! \param destinationHeight	Height of the frame to copy.
+	//! \param pDstRGB8          Pointer to a buffer that will hold the captured frame (should be at least 3*dstWidth*dstHeight for RGB surface).
+	//! \param destinationWidth	 Width of the frame to copy.
+	//! \param destinationHeight Height of the frame to copy.
 	//! \note If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions of the surface are used for the copy.
-	virtual bool CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight) = 0;
+	virtual bool CaptureFrameBufferFast(unsigned char* pDstRGB8, int destinationWidth, int destinationHeight) = 0;
 
 	//! Copy a captured surface to a buffer.
-	//! \param pDstARGBA8			Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface).
-	//! \param destinationWidth	Width of the frame to copy.
-	//! \param destinationHeight	Height of the frame to copy.
+	//! \param pDstRGB8          Pointer to a buffer that will hold the captured frame (should be at least 3*dstWidth*dstHeight for RGB surface).
+	//! \param destinationWidth  Width of the frame to copy.
+	//! \param destinationHeight Height of the frame to copy.
 	//! \note If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions of the surface are used for the copy.
-	virtual bool CopyFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight) = 0;
+	virtual bool CopyFrameBufferFast(unsigned char* pDstRGB8, int destinationWidth, int destinationHeight) = 0;
 
 	//! This routine registers a callback address that is called when a new frame is available.
 	//! \param pCapture			Address of the ICaptureFrameListener object.
@@ -1444,7 +1475,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void CloseCaptureFrameBufferFast(void) = 0;
 
 	//! This routine checks for any frame buffer callbacks that are needed and calls them.
-	virtual void                CaptureFrameBufferCallBack(void) = 0;
+	virtual void CaptureFrameBufferCallBack(void) = 0;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Single frame capture interface
@@ -1455,9 +1486,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool ScreenShot(const char* filename = nullptr, const SDisplayContextKey& displayContextKey = {}) = 0;
 
 	//! Copy frame buffer into destination memory buffer.
-	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true, EReadTextureFormat format = EReadTextureFormat::RGB8) = 0;
-
-	virtual gpu_pfx2::IManager* GetGpuParticleManager() = 0;
+	virtual bool                ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true, EReadTextureFormat format = EReadTextureFormat::RGB8) = 0;
 
 	virtual void                RegisterSyncWithMainListener(ISyncMainWithRenderListener* pListener) = 0;
 	virtual void                RemoveSyncWithMainListener(const ISyncMainWithRenderListener* pListener) = 0;
@@ -1473,7 +1502,7 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Resume renderer that was stopped at the end of the frame with StopRendererAtFrameEnd().
 	virtual void     ResumeRendererFromFrameEnd() = 0;
 
-	virtual WIN_HWND GetHWND() = 0;
+	virtual CRY_HWND GetHWND() = 0;
 
 	//! Set the window icon to be displayed on the output window.
 	//! The parameter is the path to a DDS texture file to be used as the icon.
@@ -1515,45 +1544,46 @@ struct IRenderer//: public IRendererCallbackServer
 		}
 	};
 
-	virtual IScaleformPlayback*                         SF_CreatePlayback() const = 0;
-	virtual int                                         SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) = 0;
-	virtual bool                                        SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) = 0;
-	virtual bool                                        SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) = 0;
-	virtual void                                        SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const = 0;
-	virtual void                                        SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const = 0;
-	virtual void                                        SF_GetMeshMaxSize(int& numVertices, int& numIndices) const = 0;
+	virtual IScaleformPlayback*                       SF_CreatePlayback() const = 0;
+	virtual int                                       SF_CreateTexture(int width, int height, int numMips, const unsigned char* pData, ETEX_Format eTF, int flags) = 0;
+	virtual bool                                      SF_UpdateTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData, size_t pitch, size_t size, ETEX_Format eTF) = 0;
+	virtual bool                                      SF_ClearTexture(int texId, int mipLevel, int numRects, const SUpdateRect* pRects, const unsigned char* pData) = 0;
+	virtual void                                      SF_Playback(IScaleformPlayback* pRenderer, GRendererCommandBufferReadOnly* pBuffer) const = 0;
+	virtual void                                      SF_Drain(GRendererCommandBufferReadOnly* pBuffer) const = 0;
+	virtual void                                      SF_GetMeshMaxSize(int& numVertices, int& numIndices) const = 0;
 
-	virtual ITexture*                                   CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) = 0;
-	virtual ITexture*                                   CreateTextureArray(const char* name, ETEX_Type eType, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, uint32 nFlags, ETEX_Format eTF, int nCustomID) = 0;
+	virtual ITexture*                                 CreateTexture(const char* name, int width, int height, int numMips, unsigned char* pData, ETEX_Format eTF, int flags) = 0;
+	virtual ITexture*                                 CreateTextureArray(const char* name, ETEX_Type eType, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, uint32 nFlags, ETEX_Format eTF, int nCustomID) = 0;
 
-	virtual const RPProfilerStats*                      GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) = 0;
-	virtual const RPProfilerStats*                      GetRPPStatsArray(bool bCalledFromMainThread = true) = 0;
-	virtual const DynArray<RPProfilerDetailedStats>*    GetRPPDetailedStatsArray(bool bCalledFromMainThread = true) = 0;
+	virtual const RPProfilerStats*                    GetRPPStats(ERenderPipelineProfilerStats eStat, bool bCalledFromMainThread = true) = 0;
+	virtual const RPProfilerStats*                    GetRPPStatsArray(bool bCalledFromMainThread = true) = 0;
+	virtual const DynArray<RPProfilerDetailedStats>*  GetRPPDetailedStatsArray(bool bCalledFromMainThread = true) = 0;
 
-	virtual int                                         GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) = 0;
+	virtual int                                       GetPolygonCountByType(uint32 EFSList, EVertexCostTypes vct, uint32 z, bool bCalledFromMainThread = true) = 0;
 
-	virtual void                                        StartLoadtimeFlashPlayback(ILoadtimeCallback* pCallback) = 0;
-	virtual void                                        StopLoadtimeFlashPlayback() = 0;
-				                                        
-	virtual void                                        SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness) = 0;
-	virtual void                                        SetVolumetricCloudParams(int nTexID) = 0;
-	virtual void                                        SetVolumetricCloudNoiseTex(int cloudNoiseTexId, int edgeNoiseTexId) = 0;
+	virtual void                                      StartLoadtimeFlashPlayback(ILoadtimeCallback* pCallback) = 0;
+	virtual void                                      StopLoadtimeFlashPlayback() = 0;
 
-	virtual int                                         GetMaxTextureSize() = 0;
+	virtual void                                      SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness) = 0;
+	virtual void                                      SetVolumetricCloudParams(int nTexID) = 0;
+	virtual void                                      SetVolumetricCloudNoiseTex(int cloudNoiseTexId, int edgeNoiseTexId) = 0;
 
-	virtual const char*                                 GetTextureFormatName(ETEX_Format eTF) = 0;
-	virtual int                                         GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF) = 0;
-	virtual bool                                        IsTextureFormatSupported(ETEX_Format eTF) = 0;
+	virtual int                                       GetMaxTextureSize() = 0;
 
-	virtual void                                        SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) = 0;
+	virtual const char*                               GetTextureFormatName(ETEX_Format eTF) = 0;
+	virtual uint32                                    GetTextureFormatDataSize(int nWidth, int nHeight, int nDepth, int nMips, ETEX_Format eTF, ETEX_TileMode mode) = 0;
+	virtual bool                                      IsTextureFormatSupported(ETEX_Format eTF) = 0;
 
-	virtual uint32                                      GetActiveGPUCount() const = 0;
-	virtual ShadowFrustumMGPUCache*                     GetShadowFrustumMGPUCache() = 0;
-	virtual const StaticArray<int, MAX_GSM_LODS_NUM>&   GetCachedShadowsResolution() const = 0;
-	virtual void                                        SetCachedShadowsResolution(const StaticArray<int, MAX_GSM_LODS_NUM>& arrResolutions) = 0;
-	virtual void                                        UpdateCachedShadowsLodCount(int nGsmLods) const = 0;
-				                                        
-	virtual void                                        SetTexturePrecaching(bool stat) = 0;
+	virtual void                                      SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) = 0;
+
+	virtual uint32                                    GetActiveGPUCount() const = 0;
+	virtual SShadowCacheUpdateMasks*                  GetShadowCacheUdapteMasks() = 0;
+	virtual const StaticArray<int, MAX_GSM_LODS_NUM>& GetCachedShadowsResolution() const = 0;
+	virtual void                                      SetCachedShadowsResolution(const StaticArray<int, MAX_GSM_LODS_NUM>& arrResolutions) = 0;
+	virtual void                                      UpdateCachedShadowsLodCount(int nGsmLods) const = 0;
+
+	virtual void                                      SetTexturePrecaching(bool stat) = 0;
+	virtual void                                      PrecachePostponedTextures() = 0;
 
 	//! Platform-specific.
 	virtual void RT_InsertGpuCallback(uint32 context, GpuCallbackFunc callback) = 0;
@@ -1561,12 +1591,15 @@ struct IRenderer//: public IRendererCallbackServer
 
 	struct SGpuInfo
 	{
-		const char* name;
-		unsigned int nNodeCount;
-		UINT VendorId;
-		UINT DeviceId;
-		UINT SubSysId;
-		UINT Revision;
+		CryFixedStringT<64> name;
+		unsigned int        nNodeCount;
+		UINT                vendorId;
+		UINT                deviceId;
+		UINT                subSysId;
+		UINT                revision;
+		SIZE_T              dedicatedVideoMemory;
+		unsigned long       driverVersion;
+		const char*         szDriverBuildNumber;
 	};
 
 	virtual void QueryActiveGpuInfo(SGpuInfo& info) const = 0;
@@ -1575,7 +1608,8 @@ struct IRenderer//: public IRendererCallbackServer
 	{
 		float fWaitForMain;
 		float fWaitForRender;
-		float fWaitForGPU;
+		float fWaitForGPU_MT;
+		float fWaitForGPU_RT;
 		float fTimeProcessedRT;
 		float fTimeProcessedRTScene;  //!< The part of the render thread between the "SCENE" profiler labels.
 		float fTimeProcessedGPU;
@@ -1671,6 +1705,8 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool  LoadShaderLevelCache() = 0;
 	virtual void  UnloadShaderLevelCache() = 0;
 
+	virtual void  ClearShaderPipelineStateCache() = 0;
+
 	virtual void  SetRendererCVar(ICVar* pCVar, const char* pArgText, const bool bSilentMode = false) = 0;
 
 #ifdef SUPPORT_HW_MOUSE_CURSOR
@@ -1681,23 +1717,8 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual IGraphicsDeviceConstantBufferPtr CreateGraphiceDeviceConstantBuffer() = 0;
 
 private:
-	//! Use private for EF_Query to prevent client code to submit arbitary combinations of output data/size.
+	//! Use private for EF_Query to prevent client code to submit arbitrary combinations of output data/size.
 	virtual void EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nInOutSize0, void* pInOut1, uint32 nInOutSize1) = 0;
-};
-
-//! Util class to change wireframe mode.
-//! \cond INTERNAL
-class CScopedWireFrameMode
-{
-public:
-	CScopedWireFrameMode(IRenderer* pRenderer, int nMode) : m_nMode(nMode)
-	{
-	}
-	~CScopedWireFrameMode()
-	{
-	}
-private:
-	int        m_nMode;
 };
 
 struct SShaderCacheStatistics
@@ -1725,6 +1746,9 @@ struct SMeshPoolStatistics
 	//! The highest amount of memory allocated within the mesh data pool.
 	size_t nPoolInUsePeak;
 
+	//! The highest amount of memory requested within the mesh data pool.
+	size_t nPoolRequestPeak;
+
 	//! The size of the mesh data size in bytes.
 	size_t nInstancePoolSize;
 
@@ -1734,20 +1758,78 @@ struct SMeshPoolStatistics
 	//! The highest amount of memory allocated within the mesh data pool.
 	size_t nInstancePoolInUsePeak;
 
+	//! The highest amount of memory requested within the mesh data pool.
+	size_t nInstancePoolRequestPeak;
+
+	//! The amount of memory currently in use outside the pool.
+	size_t nUnpooledInUse;
+
+	//! The highest amount of memory allocated without the mesh data pool.
+	size_t nUnpooledInUsePeak;
+
+	//! The highest amount of memory requested without the mesh data pool.
+	size_t nUnpooledRequestPeak;
+
 	size_t nFallbacks;
 	size_t nInstanceFallbacks;
+
 	size_t nFlushes;
 
-	SMeshPoolStatistics()
-		: nPoolSize(),
-		nPoolInUse(),
-		nInstancePoolSize(),
-		nInstancePoolInUse(),
-		nInstancePoolInUsePeak(),
-		nFallbacks(),
-		nInstanceFallbacks(),
-		nFlushes()
+	SMeshPoolStatistics() :
+		nPoolSize(0),
+		nPoolInUse(0),
+		nPoolInUsePeak(0),
+		nPoolRequestPeak(0),
+		nInstancePoolSize(0),
+		nInstancePoolInUse(0),
+		nInstancePoolInUsePeak(0),
+		nInstancePoolRequestPeak(0),
+		nUnpooledInUse(0),
+		nUnpooledInUsePeak(0),
+		nUnpooledRequestPeak(0),
+		nFallbacks(0),
+		nInstanceFallbacks(0),
+		nFlushes(0)
 	{}
+};
+
+struct SDeviceBufferIndices
+{
+	uint32 nBufferUsage;
+	uint32 nBufferBindType;
+
+	SDeviceBufferIndices()
+		: nBufferUsage()
+		, nBufferBindType()
+	{}
+};
+
+struct SDeviceBufferPoolStats
+{
+	//! A description to the buffer
+	string buffer_descr;
+
+	//! Size of a pool bank in bytes
+	size_t bank_size;
+
+	//! Number of banks currently allocated
+	size_t num_banks;
+
+	//! Number of allocations present in the device pool
+	size_t num_allocs;
+
+	//! Backing allocator statistics
+	IDefragAllocatorStats allocator_stats;
+
+	SDeviceBufferPoolStats()
+		: buffer_descr()
+		, bank_size()
+		, num_banks()
+		, num_allocs()
+		, allocator_stats()
+	{
+		memset(&allocator_stats, 0x0, sizeof(allocator_stats));
+	}
 };
 
 struct SRendererQueryGetAllTexturesParam
@@ -1843,7 +1925,7 @@ struct SRendParams
 
 	Matrix34*                 pPrevMatrix; //!< object previous transformations - motion blur specific.
 
-	Matrix34*				  pNearestMatrix; //!< object transformations - nearest camera specific.
+	Matrix34*                 pNearestMatrix; //!< object transformations - nearest camera specific.
 
 	IVisArea*                 m_pVisArea; //!< VisArea that contains this object, used for RAM-ambient cube query.
 
@@ -1865,7 +1947,7 @@ struct SRendParams
 
 	float                     fDistance; //!< Distance from camera.
 
-	uint64                    dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
+	ERenderObjectFlags        dwFObjFlags; //!< Approximate information about the lights not included into nDLightMask.
 
 	uint32                    nMaterialLayersBlend; //!< Material layers blending amount
 
@@ -1898,6 +1980,13 @@ struct SRendParams
 	uint32                    nEditorSelectionID; //!< Selection ID and information for editor
 };
 //! \endcond
+
+struct SAuxStatObjParams
+{
+	SRendParams renderParams;
+	Matrix34 transformMatix;
+	IStatObj* pStatObj;
+};
 
 struct SRendererCloakParams
 {

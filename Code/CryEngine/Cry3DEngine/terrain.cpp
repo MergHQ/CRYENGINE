@@ -27,12 +27,12 @@ namespace TerrainSectorRenderTempData {
 void GetMemoryUsage(ICrySizer* pSizer);
 }
 
-void CTerrain::AddVisSector(CTerrainNode* pNode, uint32 passCullMask)
+void CTerrain::AddVisSector(CTerrainNode* pNode, FrustumMaskType passCullMask)
 {
 	m_lstVisSectors.Add(STerrainVisItem(pNode, passCullMask));
 }
 
-void CTerrain::CheckVis(const SRenderingPassInfo& passInfo, uint32 passCullMask)
+void CTerrain::CheckVis(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -202,6 +202,7 @@ void CTerrain::CheckNodesGeomUnload(const SRenderingPassInfo& passInfo)
 void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
+	MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "CTerrain::UpdateNodesIncrementaly");
 
 #if defined(FEATURE_SVO_GI)
 	// make sure top most node is always ready
@@ -246,95 +247,131 @@ void CTerrain::UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo)
 					switch (pNode->m_eTexStreamingStatus)
 					{
 					case ecss_NotLoaded:
-						DrawBBox(pNode->GetBBoxVirtual(), Col_Red);
+						DrawBBox(pNode->GetBBox(), Col_Red);
 						break;
 					case ecss_InProgress:
-						DrawBBox(pNode->GetBBoxVirtual(), Col_Green);
+						DrawBBox(pNode->GetBBox(), Col_Green);
 						break;
 					case ecss_Ready:
-						DrawBBox(pNode->GetBBoxVirtual(), Col_Blue);
+						DrawBBox(pNode->GetBBox(), Col_Blue);
 						break;
 					}
 			}
 		}
 	}
 
+	// in the editor build all procedural vegetation on level load and make sure it is always up to date
+	if (gEnv->IsEditor())
+	{
+		const bool newVal = Get3DEngine()->m_supportOfflineProceduralVegetation && (GetCVars()->e_ProcVegetation != 0);
+
+		if (newVal != m_isOfflineProceduralVegetationReady)
+		{
+			if (newVal)
+			{
+				// update of all procedural vegetation when feature is triggered from OFF to ON
+				CheckUpdateProcObjectsInArea(GetParentNode()->GetBBox(), true);
+			}
+
+			m_isOfflineProceduralVegetationReady = newVal;
+		}
+	}
+
 	// process procedural objects
 	if (m_lstActiveProcObjNodes.Count())
 	{
-		static int paramsCheckSumm = 0;
-		if (!CTerrainNode::GetProcObjChunkPool() || paramsCheckSumm != (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk))
-		{
-			while (m_lstActiveProcObjNodes.Count() > 0)
-			{
-				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
-				m_lstActiveProcObjNodes.DeleteLast();
-			}
-
-			delete CTerrainNode::GetProcObjChunkPool();
-			CTerrainNode::SetProcObjChunkPool(new SProcObjChunkPool(MAX_PROC_OBJ_CHUNKS_NUM));
-
-			delete CTerrainNode::GetProcObjPoolMan();
-			CTerrainNode::SetProcObjPoolMan(new CProcVegetPoolMan(MAX_PROC_SECTORS_NUM));
-
-			paramsCheckSumm = (MAX_PROC_OBJ_CHUNKS_NUM + MAX_PROC_SECTORS_NUM + GetCVars()->e_ProcVegetationMaxObjectsInChunk);
-		}
-
 		// make sure distances are correct
 		for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
 			m_lstActiveProcObjNodes[i]->UpdateDistance(passInfo);
 
-		// sort by distance
-		qsort(m_lstActiveProcObjNodes.GetElements(), m_lstActiveProcObjNodes.Count(),
-		      sizeof(m_lstActiveProcObjNodes[0]), CmpTerrainNodesDistance);
+		ProcessActiveProcObjNodes();
 
+		IF (GetCVars()->e_ProcVegetation == 2, 0)
+		{
+			for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
+				DrawBBox(m_lstActiveProcObjNodes[i]->GetBBox(), m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
+		}
+	}
+}
+
+bool CTerrain::CheckUpdateProcObjectsInArea(const AABB& areaBox, bool bForceSyncUpdate)
+{
+	if (GetTerrain()->m_bProcVegetationInUse && GetCVars()->e_ProcVegetation)
+	{
+		if (bForceSyncUpdate && !gEnv->IsEditor())
+		{
+			// release all procedural nodes
+			while (m_lstActiveProcObjNodes.Count())
+			{
+				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
+				m_lstActiveProcObjNodes.DeleteLast();
+			}
+		}
+
+		PodArray<CTerrainNode*> arrNodes;
+		m_pParentNode->IntersectWithBox(areaBox, &arrNodes);
+
+		// visit leaf nodes
+		for (int i = 0; i < arrNodes.Count(); i++)
+		{
+			if (!arrNodes[i]->m_nTreeLevel && !arrNodes[i]->IsProcObjectsReady())
+			{
+				ActivateNodeProcObj(arrNodes[i]);
+
+				if (!bForceSyncUpdate)
+					return false;
+			}
+		}
+
+		if (bForceSyncUpdate) // distribute objects
+			ProcessActiveProcObjNodes(true);
+	}
+
+	return true;
+}
+
+void CTerrain::ProcessActiveProcObjNodes(bool bSyncUpdate)
+{
+	// sort by distance
+	qsort(m_lstActiveProcObjNodes.GetElements(), m_lstActiveProcObjNodes.Count(), sizeof(m_lstActiveProcObjNodes[0]), CmpTerrainNodesDistance);
+
+	if (!gEnv->IsEditor() || !GetCVars()->e_ProcVegetation)
+	{
 		// release unimportant sectors
-		static int nMaxSectors = MAX_PROC_SECTORS_NUM;
-		while (m_lstActiveProcObjNodes.Count() > (GetCVars()->e_ProcVegetation ? nMaxSectors : 0))
+		while (m_lstActiveProcObjNodes.Count() > (GetCVars()->e_ProcVegetation ? GetCVars()->e_ProcVegetationMaxSectorsInCache : 0))
 		{
 			m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
 			m_lstActiveProcObjNodes.DeleteLast();
 		}
+	}
 
-		while (1)
+	while (1)
+	{
+		// build most important not ready sector
+		bool bAllDone = true;
+		for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
 		{
-			// release even more if we are running out of memory
-			while (m_lstActiveProcObjNodes.Count())
+			if (m_lstActiveProcObjNodes[i]->CheckUpdateProcObjects())
 			{
-				int nAll = 0;
-				int nUsed = CTerrainNode::GetProcObjChunkPool()->GetUsedInstancesCount(nAll);
-				if (nAll - nUsed > (MAX_PROC_OBJ_CHUNKS_NUM / MAX_PROC_SECTORS_NUM)) // make sure at least X chunks are free and ready to be used in this frame
-					break;
-
-				m_lstActiveProcObjNodes.Last()->RemoveProcObjects(false);
-				m_lstActiveProcObjNodes.DeleteLast();
-
-				nMaxSectors = min(nMaxSectors, m_lstActiveProcObjNodes.Count());
-			}
-
-			// build most important not ready sector
-			bool bAllDone = true;
-			for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
-			{
-				if (m_lstActiveProcObjNodes[i]->CheckUpdateProcObjects(passInfo))
-				{
-					bAllDone = false;
-					break;
-				}
-			}
-
-			if (!Get3DEngine()->IsTerrainSyncLoad() || bAllDone)
+				bAllDone = false;
 				break;
+			}
 		}
 
-		//    if(m_lstActiveProcObjNodes.Count())
-		//    m_lstActiveProcObjNodes[0]->RemoveProcObjects(false);
-
-		IF (GetCVars()->e_ProcVegetation == 2, 0)
-			for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
-				DrawBBox(m_lstActiveProcObjNodes[i]->GetBBoxVirtual(),
-				         m_lstActiveProcObjNodes[i]->IsProcObjectsReady() ? Col_Green : Col_Red);
+		if (!(Get3DEngine()->IsTerrainSyncLoad() || bSyncUpdate) || bAllDone)
+			break;
 	}
+}
+
+int CTerrain::GetActiveProcObjNodesCount(int& objectsNum, int& maxSectorsNum)
+{
+	maxSectorsNum = GetTerrainSize() / CTerrain::GetSectorSize();
+	maxSectorsNum *= maxSectorsNum;
+
+	objectsNum = 0;
+	for (int i = 0; i < m_lstActiveProcObjNodes.Count(); i++)
+		objectsNum += m_lstActiveProcObjNodes[i]->m_arrProcObjects.Count();
+	return m_lstActiveProcObjNodes.Count();
 }
 
 int CTerrain::UpdateOcean(const SRenderingPassInfo& passInfo)
@@ -437,11 +474,6 @@ void CTerrain::GetMemoryUsage(class ICrySizer* pSizer) const
 		pSizer->AddObject(m_arrSecInfoPyramid);
 	}
 
-	{
-		SIZER_COMPONENT_NAME(pSizer, "ProcVeget");
-		pSizer->AddObject(CTerrainNode::GetProcObjPoolMan());
-	}
-
 	pSizer->AddObject(m_lstVisSectors);
 	pSizer->AddObject(m_lstActiveTextureNodes);
 	pSizer->AddObject(m_lstActiveProcObjNodes);
@@ -458,7 +490,7 @@ void CTerrain::GetMemoryUsage(class ICrySizer* pSizer) const
 		SIZER_COMPONENT_NAME(pSizer, "StaticIndices");
 		for (int i = 0; i < SRangeInfo::e_max_surface_types; ++i)
 			for (int j = 0; j < 4; ++j)
-				pSizer->AddObject(CTerrainNode::m_arrIndices[i][j]);
+				pSizer->AddObject(CTerrainNode::s_arrIndices[i][j]);
 	}
 }
 
@@ -469,11 +501,7 @@ void CTerrain::GetObjects(PodArray<SRNInfo>* pLstObjects)
 int CTerrain::GetTerrainNodesAmount()
 {
 	//	((N pow l)-1)/(N-1)
-#if defined(__GNUC__)
 	uint64 amount = (uint64)0xaaaaaaaaaaaaaaaaULL;
-#else
-	uint64 amount = (uint64)0xaaaaaaaaaaaaaaaa;
-#endif
 	amount >>= (65 - (GetParentNode()->m_nTreeLevel + 1) * 2);
 	return (int)amount;
 }

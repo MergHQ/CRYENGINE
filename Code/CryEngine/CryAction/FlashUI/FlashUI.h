@@ -19,6 +19,8 @@
 #include <CryGame/IGameFramework.h>
 #include <ILevelSystem.h>
 #include "FlashUIEventSystem.h"
+#include "FlashUIFlowNodeFactory.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #if !defined (_RELEASE) || defined(RELEASE_LOGGING)
 	#define UIACTION_LOGGING
@@ -54,7 +56,7 @@ class CFlashUI
 	CRYGENERATE_SINGLETONCLASS_GUID(CFlashUI, "FlashUI", "35ae7f0f-bb13-437b-9c5f-fcd2568616a5"_cry_guid)
 
 	CFlashUI();
-	virtual ~CFlashUI() {}
+	virtual ~CFlashUI() = default;
 
 public:
 	// IFlashUI
@@ -144,12 +146,8 @@ public:
 
 	// ILevelSystemListener
 	virtual void OnLevelNotFound(const char* levelName) override;
-	virtual void OnLoadingStart(ILevelInfo* pLevel) override              {}
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) override {}
-	virtual void OnLoadingComplete(ILevelInfo* pLevel) override           {}
 	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) override;
 	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) override;
-	virtual void OnUnloadComplete(ILevelInfo* pLevel) override {}
 	// ~ILevelSystemListener
 
 	// ILoadtimeCallback
@@ -254,7 +252,7 @@ private:
 	typedef std::vector<std::shared_ptr<IFlashPlayer>> TPlayerList;
 	TPlayerList           m_loadtimePlayerList;
 
-	std::vector<CFlashUiFlowNodeFactory*> m_UINodes;
+	CFlashUiFlowNodeFactory_AutoArray m_UINodes;
 
 	typedef std::map<ITexture*, string> TTextureMap;
 	TTextureMap       m_preloadedTextures;

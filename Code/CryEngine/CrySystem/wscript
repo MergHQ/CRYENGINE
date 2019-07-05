@@ -17,7 +17,7 @@ def build(bld):
 		vs_filter   = 'CryEngine',
 		file_list   = ['crysystem.waf_files'] + scaleform_file_list,
 		win_file_list     = ['platformos.waf_files', 'crysystem_win32.waf_files'],
-		durango_file_list = ['crysystem_win32.waf_files', 'crysystem_durango.waf_files'],
+		durango_file_list = ['platformos.waf_files', 'platformos_durango.waf_files', 'crysystem_win32.waf_files', 'crysystem_durango.waf_files'],
 		linux_file_list   = ['platformos.waf_files', 'crysystem_posix.waf_files'],
 		darwin_file_list  = ['platformos.waf_files', 'crysystem_posix.waf_files'],
 		android_file_list = ['platformos.waf_files', 'crysystem_posix.waf_files'],

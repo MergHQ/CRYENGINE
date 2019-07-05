@@ -16,7 +16,7 @@
 #include "waterman.h"
 #include "particleentity.h"
 
-CParticleEntity *CParticleEntity::g_pCurParticle[MAX_PHYS_THREADS+1] = { 0 };
+CParticleEntity *CParticleEntity::g_pCurParticle[MAX_TOT_THREADS] = { 0 };
 
 
 CParticleEntity::CParticleEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
@@ -376,6 +376,11 @@ int CParticleEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 			ser.EndGroup();
 			m_heading=m_vel.normalized();
 		}
+		else // Make sure we don't move
+		{
+			m_vel = Vec3(ZERO);
+			m_wspin = Vec3(ZERO);
+		}
 
 		ser.Value("pos", m_pos, 'wrl3');
 	}
@@ -507,8 +512,10 @@ int g_retest=0;*/
 
 int CParticleEntity::DoStep(float time_interval, int iCaller)
 {
-	static ray_hit _hits[MAX_PHYS_THREADS+1][8];
-  ray_hit (&hits)[8] = _hits[get_iCaller()];
+	if (iCaller==MAX_PHYS_THREADS)
+		iCaller += alloc_extCaller();
+	static ray_hit _hits[MAX_TOT_THREADS][8];
+  ray_hit (&hits)[8] = _hits[iCaller];
 	pe_action_impulse ai;
 	//pe_action_register_coll_event arce;
 	pe_status_dynamics sd;
@@ -524,7 +531,7 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 	portals[0] = nullptr;
 
 	if (m_depth<0) {
-		gravity = m_waterGravity*min(1.0f,-m_depth*m_rdim); kAirResistance = m_kWaterResistance;
+		gravity = m_waterGravity*min(1.0f,max(0.0f,-m_depth*m_rdim-0.1f)); kAirResistance = m_kWaterResistance;
 	} else {
 		gravity = m_gravity; kAirResistance = m_kAirResistance;
 	}
@@ -691,7 +698,9 @@ int CParticleEntity::DoStep(float time_interval, int iCaller)
 				event.partid[1] += hits[j].iNode-event.partid[1] & pCollider->m_nParts-1>>31; // return iNode for partless entitis (ropes, cloth)
 				event.iPrim[1] = max(0,hits[j].iPrim);
 
-				if (pCollider->GetType()!=PE_PARTICLE && 
+				if (pCollider->m_parts[ipart].flags & geom_no_coll_response)
+					hits[j].pCollider = 0; // will also disregard the hit as solid
+				else if (pCollider->GetType()!=PE_PARTICLE && 
 						(pCollider->m_iSimClass>0 || pCollider->m_parts[ipart].flags & geom_monitor_contacts) && 
 						!(pCollider->m_parts[ipart].flagsCollider & geom_no_particle_impulse)) 
 				{	Vec3 vrel = vel0-event.vloc[1];
@@ -862,7 +871,7 @@ goto doretest; }*/
 
 			if (nhits = m_pWorld->CheckAreas(this,gravity,pb,4,Vec3(ZERO),iCaller)) {
 				if (!is_unused(gravity))
-					m_waterGravity=m_gravity = (gravity-m_pWorld->m_vars.gravity).len2() < gravity.len2()*sqr(0.01) ? m_gravity0 : gravity;
+					m_gravity = (gravity-m_pWorld->m_vars.gravity).len2() < gravity.len2()*sqr(0.01) ? m_gravity0 : gravity;
 				for(i=0,m_depth=depth=0; i<nhits; i++) {
 					vmedium[pb[i].iMedium] += pb[i].waterFlow;
 					if (pb[i].iMedium==0 && (depth=(m_pos-pb[i].waterPlane.origin)*pb[i].waterPlane.n)<0)
@@ -881,7 +890,7 @@ goto doretest; }*/
 	return 1;
 }
 
-static geom_contact g_ParticleContact[MAX_PHYS_THREADS+1];
+static geom_contact g_ParticleContact[MAX_TOT_THREADS];
 
 int CParticleEntity::RayTrace(SRayTraceRes& rtr)
 {
@@ -899,7 +908,7 @@ int CParticleEntity::RayTrace(SRayTraceRes& rtr)
 
 	if (box_ray_intersection(&abox,&rtr.pRay->m_ray,&inters)) {
 		int caller = get_iCaller();
-		assert (0 <= caller && caller < (MAX_PHYS_THREADS+1));
+		assert (0 <= caller && caller < MAX_TOT_THREADS);
 
 		rtr.pcontacts = &g_ParticleContact[caller];
 		rtr.pcontacts->pt = inters.pt[0];

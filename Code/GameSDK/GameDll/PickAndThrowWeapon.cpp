@@ -814,9 +814,7 @@ void CPickAndThrowWeapon::OnSelected(bool selected)
 
 	if (selected)
 	{
-		const SPickAndThrowParams::SGrabTypeParams& grabParams					  = GetGrabTypeParams(); 
-		const SPickAndThrowParams::SGrabTypeParams::TPropertyFlags& propertyFlags = grabParams.m_propertyFlags; 
-
+		const SPickAndThrowParams::SGrabTypeParams& grabParams = GetGrabTypeParams();
 		const bool validTargetEntity = (pTargetEntity != NULL);
 
 		int16 actionType = eEVE_Pickup;
@@ -1100,7 +1098,7 @@ bool CPickAndThrowWeapon::UpdateAimAnims( SParams_WeaponFPAiming &aimAnimParams)
 }
 
 //---------------------------------------------------------------------------
-void CPickAndThrowWeapon::UpdateTags(const class IActionController *pActionController, class CTagState &tagState, bool selected) const
+void CPickAndThrowWeapon::UpdateTags(const IActionController *pActionController, class CTagState &tagState, bool selected) const
 {
 	CWeapon::UpdateTags(pActionController, tagState, selected);
 
@@ -1135,8 +1133,6 @@ bool CPickAndThrowWeapon::OnActionAttack(EntityId actorId, const ActionId& actio
 {
 	if (m_state != eST_IDLE)
 		return false;
-
-	const SPickAndThrowParams::SThrowParams& throwParams = GetThrowParams();
 
 	if (activationMode == eAAM_OnPress && m_state == eST_IDLE)
 	{
@@ -2034,11 +2030,11 @@ void CPickAndThrowWeapon::ScaleTimeValue(float& timeValueToScale, const float to
 //---------------------------------------------------------------------------
 void CPickAndThrowWeapon::PerformCameraShake(const SPickAndThrowParams::SCameraShakeParams& camShake, const CPlayer* pPlayer )
 {
-	CRY_ASSERT_MESSAGE(pPlayer, "CPickAndThrowWeapon::PerformCameraShake(...) < error pPlayer is NULL");
+	CRY_ASSERT(pPlayer, "CPickAndThrowWeapon::PerformCameraShake(...) < error pPlayer is NULL");
 	if(camShake.enabled && camShake.time > 0.0f)
 	{
 		CScreenEffects* pScreenFX = g_pGame->GetScreenEffects();
-		CRY_ASSERT_MESSAGE(pScreenFX, "CPickAndThrowWeapon::PerformCameraShake(...) < error pScreenFX is NULL");
+		CRY_ASSERT(pScreenFX, "CPickAndThrowWeapon::PerformCameraShake(...) < error pScreenFX is NULL");
 
 		float attenuation = 1.0f;
 		if (camShake.viewAngleAttenuation)
@@ -2097,7 +2093,6 @@ void CPickAndThrowWeapon::UpdateChargedThrowPreRelease( const float frameTime )
 	if (g_pGameCVars->pl_pickAndThrow.chargedThrowDebugOutputEnabled)
 	{
 		const CCamera& cam = gEnv->p3DEngine->GetRenderingCamera(); 
-		const IEntity* pEntity = CalculateBestChargedThrowAutoAimTarget(cam.GetMatrix()); 
 
 		// Draw cone
 		float length = g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance; 
@@ -2603,7 +2598,6 @@ Vec3 CPickAndThrowWeapon::CalculateChargedThrowDir(const Matrix34& attackerTrans
 		}
 
 		// if no auto aim, or no valid target we set the thrown entity to intersect camera view dir at max autoaim range
-		const CCamera& cam = gEnv->p3DEngine->GetRenderingCamera();
 		target = viewDir * g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance + viewPos;
 	}
 
@@ -2634,7 +2628,6 @@ IEntity* CPickAndThrowWeapon::CalculateBestChargedThrowAutoAimTarget(const Matri
 	float    fBestScore  = 0.0f; 
 
 	const TAutoaimTargets& players = g_pGame->GetAutoAimManager().GetAutoAimTargets();
-	const int targetCount = players.size();
 
 	// Cache commonly required constants for scoring
 	const float autoAimDistSqrd   = g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance * g_pGameCVars->pl_pickAndThrow.chargedThrowAutoAimDistance; 
@@ -2778,9 +2771,10 @@ void CPickAndThrowWeapon::OnThrownObjectSeen(const Agent& agent, EntityId object
 		pManager->HandleStimulusEventForAgent(aiTargetId, aiPlayerId, "SeeThrownObject", eventInfo);
 
 		// Send signal to target AI
-		IAISignalExtraData *pData = pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData *pData = pAISystem->CreateSignalExtraData();
 		pData->nID = objectId;
-		pAISystem->SendSignal(SIGNALFILTER_SENDER, AISIGNAL_DEFAULT, "OnThrownObjectSeen", agent.GetAIObject(), pData);
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnThrownObjectSeen(), agent.GetAIObject()->GetEntityID(), pData);
+		pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 	}
 }
 
@@ -3068,10 +3062,6 @@ void CPickAndThrowWeapon::DecideGrabType()
 	if (CActor* pActor = GetNPCGrabbedActor())
 	{
 		m_isNPC = true;
-		CPlayer *pOwner = GetOwnerPlayer();
-		Vec3 playerDir2D = pOwner ? pOwner->GetBaseQuat().GetColumn1() : FORWARD_DIRECTION;
-		Vec3 NPCDir2D = GetNPCGrabbedPlayer()->GetBaseQuat().GetColumn1();
-
 		SmartScriptTable props;
 		IScriptTable* pScriptTable = pActor->GetEntity()->GetScriptTable();
 		stack_string grabType;
@@ -3161,8 +3151,6 @@ void CPickAndThrowWeapon::OnSuccesfulHit( const ray_hit& hitResult )
 //---------------------------------------------------------------------------
 void CPickAndThrowWeapon::OnFailedHit()
 {
-	const SCollisionTestParams& collisionParams = m_collisionHelper.GetCollisionTestParams();
-
 	if (m_currentMeleeAutoTargetId != 0)
 	{
 		m_collisionHelper.PerformMeleeOnAutoTarget(m_currentMeleeAutoTargetId);
@@ -3254,9 +3242,7 @@ int CPickAndThrowWeapon::DoSimpleMeleeHit( const ray_hit& hitResult, EntityId co
 
 //---------------------------------------------------------------------------
 void CPickAndThrowWeapon::DoSimpleMeleeImpulse( const ray_hit& hitResult, EntityId collidedEntityId, int hitTypeID )
-{
-	CActor* pWeaponOwner = GetOwnerActor();
-	
+{	
 	float impulseScale = 1.0f;
 	bool delayImpulse = false;
 
@@ -4266,7 +4252,6 @@ void CPickAndThrowWeapon::DebugDraw()
 			const CAnimation &playerAnim = pPlayerCharacter->GetISkeletonAnim()->GetAnimFromFIFO(ITEM_OWNER_ACTION_LAYER, 0);
 			const CAnimation &NPCAnim = pNPCCharacter->GetISkeletonAnim()->GetAnimFromFIFO(0, 0);
 
-			float timepopo = pPlayerCharacter->GetISkeletonAnim()->GetLayerNormalizedTime( ITEM_OWNER_ACTION_LAYER );
 			const char* pPlayerAnimName = pPlayerCharacter->GetIAnimationSet()->GetNameByAnimID( playerAnim.GetAnimationId() );
 			const char* pNPCAnimName = pNPCCharacter->GetIAnimationSet()->GetNameByAnimID( NPCAnim.GetAnimationId() );
 

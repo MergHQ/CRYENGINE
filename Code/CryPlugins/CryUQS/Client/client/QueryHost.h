@@ -76,6 +76,10 @@ namespace UQS
 			// - persists when starting a new query (unless explicitly clearing them)
 			Shared::CVariantDict&           GetRuntimeParamsStorage();
 
+			// - sets the priority level of the query
+			// - default = 1 (lowest priority)
+			void                            SetPriority(int priority);
+
 			// - actually starts the query that has been prepared so far
 			// - cancels a possibly running query
 			// - the returned query ID may be invalid (which happens when the query couldn't even be started, e. g. due to missing runtime-parameters) (in this case, the callback will be triggered as well)
@@ -123,6 +127,7 @@ namespace UQS
 			Functor1<void*>                 m_pCallback;
 			void*                           m_pCallbackUserData;
 			Shared::CVariantDict            m_runtimeParams;
+			int                             m_priority;
 			Core::CQueryID                  m_queryID;
 			Core::QueryResultSetUniquePtr   m_pResultSet;
 			string                          m_exceptionMessageIfAny;
@@ -135,6 +140,7 @@ namespace UQS
 			, m_pCallback(nullptr)
 			, m_pCallbackUserData(nullptr)
 			, m_runtimeParams()
+			, m_priority(UQS::Client::SQueryRequest::kDefaultPriority)
 			, m_queryID(Core::CQueryID::CreateInvalid())
 			, m_pResultSet()
 		{
@@ -193,6 +199,12 @@ namespace UQS
 		inline Shared::CVariantDict& CQueryHost::GetRuntimeParamsStorage()
 		{
 			return m_runtimeParams;
+		}
+
+		inline void CQueryHost::SetPriority(int priority)
+		{
+			CRY_ASSERT(priority > 0);
+			m_priority = priority;
 		}
 
 		inline Core::CQueryID CQueryHost::StartQuery()
@@ -292,7 +304,7 @@ namespace UQS
 			// start the query
 			//
 
-			const SQueryRequest queryRequest(m_queryBlueprintID, m_runtimeParams, m_querierName.c_str(), functor(*this, &CQueryHost::OnUQSQueryFinished));
+			const SQueryRequest queryRequest(m_queryBlueprintID, m_runtimeParams, m_querierName.c_str(), functor(*this, &CQueryHost::OnUQSQueryFinished), m_priority);
 			UQS::Shared::CUqsString error;
 			m_queryID = pHub->GetQueryManager().StartQuery(queryRequest, error);
 
@@ -319,14 +331,14 @@ namespace UQS
 
 		inline const Core::IQueryResultSet& CQueryHost::GetResultSet() const
 		{
-			assert(m_runningStatus == ERunningStatus::FinishedWithSuccess);
-			assert(m_pResultSet);
+			CRY_ASSERT(m_runningStatus == ERunningStatus::FinishedWithSuccess);
+			CRY_ASSERT(m_pResultSet);
 			return *m_pResultSet;
 		}
 
 		inline const char* CQueryHost::GetExceptionMessage() const
 		{
-			assert(m_runningStatus == ERunningStatus::ExceptionOccurred);
+			CRY_ASSERT(m_runningStatus == ERunningStatus::ExceptionOccurred);
 			return m_exceptionMessageIfAny.c_str();
 		}
 
@@ -337,7 +349,7 @@ namespace UQS
 
 		inline void CQueryHost::OnUQSQueryFinished(const Core::SQueryResult& result)
 		{
-			assert(result.queryID == m_queryID);
+			CRY_ASSERT(result.queryID == m_queryID);
 
 			m_queryID = Core::CQueryID::CreateInvalid();
 
@@ -360,7 +372,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 				m_exceptionMessageIfAny = "CQueryHost::OnUQSQueryFinished: unhandled status enum.";
 				m_runningStatus = ERunningStatus::ExceptionOccurred;
 				break;
@@ -429,7 +441,7 @@ namespace UQS
 		template <class TItem>
 		typename CQueryHostT<TItem>::SResultingItemWithScore CQueryHostT<TItem>::GetResultSetItem(size_t index) const
 		{
-			assert(GetResultSet().GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
+			CRY_ASSERT(GetResultSet().GetItemFactory().GetItemType() == Shared::SDataTypeHelper<TItem>::GetTypeInfo());
 			const Core::IQueryResultSet::SResultSetEntry& resultSetEntry = GetResultSet().GetResult(index);
 			SResultingItemWithScore res = { *static_cast<const TItem*>(resultSetEntry.pItem), resultSetEntry.score };
 			return res;

@@ -12,8 +12,8 @@ struct STagDefinitionImportsInfo
 {
 	void SetFilename(const char* const filename)
 	{
-		assert(filename);
-		assert(filename[0]);
+		CRY_ASSERT(filename);
+		CRY_ASSERT(filename[0]);
 
 		m_filename = filename;
 	};
@@ -39,8 +39,8 @@ struct STagDefinitionImportsInfo
 
 	STagDefinitionImportsInfo& AddImport(const char* const filename)
 	{
-		assert(filename);
-		assert(filename[0]);
+		CRY_ASSERT(filename);
+		CRY_ASSERT(filename[0]);
 
 		m_imports.push_back(STagDefinitionImportsInfo());
 		STagDefinitionImportsInfo& importsInfo = m_imports.back();

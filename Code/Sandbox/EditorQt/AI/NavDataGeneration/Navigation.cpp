@@ -56,7 +56,7 @@ void CNavigation::Serialize(TSerialize ser)
 
 //
 //-----------------------------------------------------------------------------------------------------------
-void CNavigation::FlushSystemNavigation(void)
+void CNavigation::FlushSystemNavigation()
 {
 }
 
@@ -302,7 +302,7 @@ bool CNavigation::CreateNavigationShape(const SNavigationShapeParams& params)
 	else if (params.areaType == AREATYPE_PERCEPTION_MODIFIER)
 	{
 		if (listPts.size() < 2)
-			return false;
+			return true; // Do not report too few points as errors.
 
 		PerceptionModifierShapeMap::iterator di;
 		di = m_mapPerceptionModifiers.find(params.szPathName);
@@ -372,11 +372,10 @@ void CNavigation::Update() const
 void CNavigation::GetMemoryStatistics(ICrySizer* pSizer)
 {
 	size_t size = 0;
-	for (ShapeMap::iterator itr = m_mapDesignerPaths.begin(); itr != m_mapDesignerPaths.end(); itr++)
+	for (ShapeMap::iterator itr = m_mapDesignerPaths.begin(); itr != m_mapDesignerPaths.end(); ++itr)
 	{
 		size += (itr->first).capacity();
 		size += itr->second.MemStats();
 	}
 	pSizer->AddObject(&m_mapDesignerPaths, size);
 }
-

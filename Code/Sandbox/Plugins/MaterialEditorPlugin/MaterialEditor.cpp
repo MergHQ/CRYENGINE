@@ -4,13 +4,11 @@
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/EditableAsset.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QLineEdit>
-
-#include "EditorFramework/Inspector.h"
+#include <EditorFramework/Events.h>
+#include <EditorFramework/Inspector.h>
+#include <LevelEditor/LevelEditorSharedState.h>
 
 #include "SubMaterialView.h"
 #include "MaterialPreview.h"
@@ -23,26 +21,90 @@
 
 #include <CryCore/CryTypeInfo.h>
 
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QToolButton>
+
+namespace Private_MaterialEditor
+{
+
 REGISTER_VIEWPANE_FACTORY(CMaterialEditor, "Material Editor", "Tools", false);
+
+class CSession : public IAssetEditingSession
+{
+public:
+	CSession(CMaterial* pMaterial) : m_pMaterial(pMaterial) {}
+
+	virtual const char* GetEditorName() const override
+	{
+		return "Material Editor";
+	}
+
+	virtual bool OnSaveAsset(IEditableAsset& asset) override
+	{
+		if (!m_pMaterial || !m_pMaterial->Save(false))
+		{
+			return false;
+		}
+
+		//Fill metadata and dependencies to update cryasset file
+		asset.SetFiles({ m_pMaterial->GetFilename() });
+
+		std::vector<SAssetDependencyInfo> filenames;
+
+		//TODO : not all dependencies are found, some paths are relative to same folder which is not good ...
+		int textureCount = m_pMaterial->GetTextureDependencies(filenames);
+
+		std::vector<std::pair<string, string>> details;
+		details.push_back(std::pair<string, string>("subMaterialCount", ToString(m_pMaterial->GetSubMaterialCount())));
+		details.push_back(std::pair<string, string>("textureCount", ToString(textureCount)));
+
+		asset.SetDetails(details);
+		asset.SetDependencies(filenames);
+		return true;
+	}
+
+	virtual void DiscardChanges(IEditableAsset& asset) override
+	{
+		if (!m_pMaterial)
+		{
+			return;
+		}
+
+		m_pMaterial->Reload();
+	}
+
+	virtual bool OnCopyAsset(INewAsset& asset) override
+	{
+		CMaterial* pMaterial = GetIEditor()->GetMaterialManager()->DuplicateMaterial(PathUtil::Make(asset.GetFolder(), asset.GetName()), m_pMaterial);
+		CSession session(pMaterial);
+		return session.OnSaveAsset(asset);
+	}
+
+	static CMaterial* GetSessionMaterial(CAsset* pAsset)
+	{
+		IAssetEditingSession* pSession = pAsset->GetEditingSession();
+		if (!pSession || strcmp(pSession->GetEditorName(), "Material Editor") != 0)
+		{
+			return nullptr;
+		}
+		return static_cast<CSession*>(pSession)->GetMaterial();
+	}
+
+private:
+	CMaterial* GetMaterial() { return m_pMaterial; }
+
+	_smart_ptr<CMaterial> m_pMaterial;
+};
+
+}
 
 CMaterialEditor::CMaterialEditor()
 	: CAssetEditor("Material")
 	, m_pMaterial(nullptr)
 {
-	EnableDockingSystem();
-
-	RegisterDockableWidget("Properties", [&]() 
-	{
-		auto inspector = new CInspector(this);
-		inspector->SetLockable(false);
-		return inspector;
-	}, true);
-
-	RegisterDockableWidget("Material", [&]() { return new CSubMaterialView(this); }, true);
-	RegisterDockableWidget("Preview", [&]() { return new CMaterialPreviewWidget(this); });
-
-	InitMenuBar();
-
+	RegisterActions();
 	GetIEditor()->GetMaterialManager()->AddListener(this);
 }
 
@@ -51,21 +113,23 @@ CMaterialEditor::~CMaterialEditor()
 	GetIEditor()->GetMaterialManager()->RemoveListener(this);
 }
 
+void CMaterialEditor::RegisterActions()
+{
+	RegisterAction("general.undo", &CMaterialEditor::OnUndo);
+	RegisterAction("general.redo", &CMaterialEditor::OnRedo);
+}
+
 void CMaterialEditor::InitMenuBar()
 {
-	AddToMenu(CEditor::MenuItems::SaveAs);
-	AddToMenu(CEditor::MenuItems::EditMenu);
-	AddToMenu(CEditor::MenuItems::Undo);
-	AddToMenu(CEditor::MenuItems::Redo);
+	AddToMenu({ CEditor::MenuItems::FileMenu, CEditor::MenuItems::SaveAs, CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo, CEditor::MenuItems::Redo });
 
-	CAbstractMenu* fileMenu = GetMenu(CEditor::MenuItems::FileMenu);
-	QAction* action = fileMenu->CreateAction(CryIcon("icons:General/Picker.ico") ,tr("Pick Material From Scene"), 0, 1);
-	connect(action, &QAction::triggered, this, &CMaterialEditor::OnPickMaterial);
+	CAbstractMenu* pFileMenu = GetMenu(CEditor::MenuItems::FileMenu);
+	QAction* pAction = pFileMenu->CreateAction(CryIcon("icons:General/Picker.ico"), tr("Pick Material From Scene"), 0, 1);
+	connect(pAction, &QAction::triggered, this, &CMaterialEditor::OnPickMaterial);
 
 	//Add a material actions menu
 	//TODO: consider adding a toolbar for material actions
 	CAbstractMenu* materialMenu = GetRootMenu()->CreateMenu(tr("Material"), 0, 3);
-	materialMenu->SetEnabled(!IsReadOnly());
 	materialMenu->signalAboutToShow.Connect(this, &CMaterialEditor::FillMaterialMenu);
 }
 
@@ -78,8 +142,10 @@ void CMaterialEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		//HACK : Due to the questionable behavior of material manager, which clears itself when the level is loaded
 		//The materials used in the scene (and the material editor) will be recreated after the scene is loaded,
 		//making the material editor appear to be not in sync. A quick hack is to reload from filename, to get the updated material.
-		if(GetAssetBeingEdited())
+		if (GetAssetBeingEdited())
+		{
 			OnOpenAsset(GetAssetBeingEdited());
+		}
 	}
 }
 
@@ -90,7 +156,7 @@ void CMaterialEditor::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEve
 
 	CMaterial* item = (CMaterial*)pItem;
 
-	if(pItem == m_pMaterial.get())
+	if (pItem == m_pMaterial.get())
 	{
 		switch (event)
 		{
@@ -98,12 +164,14 @@ void CMaterialEditor::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEve
 		case EDB_ITEM_EVENT_UPDATE_PROPERTIES:
 			signalMaterialPropertiesChanged(item);
 			if (GetAssetBeingEdited())
+			{
 				GetAssetBeingEdited()->SetModified(true);
+			}
 			break;
 		case EDB_ITEM_EVENT_DELETE:
 			//Note: this happens on loading of the level. We will not handle it but things may be unexpected if the item is actually being deleted from the old material editor
 			/*CRY_ASSERT_MESSAGE(0, "Material was deleted by other means while it was being edited, this case is not well handled");
-			TryCloseAsset();*/
+			   TryCloseAsset();*/
 			break;
 		default:
 			break;
@@ -116,23 +184,29 @@ void CMaterialEditor::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEve
 		case EDB_ITEM_EVENT_CHANGED:
 		case EDB_ITEM_EVENT_UPDATE_PROPERTIES:
 			signalMaterialPropertiesChanged(item);
-			if(GetAssetBeingEdited())
+			if (GetAssetBeingEdited())
+			{
 				GetAssetBeingEdited()->SetModified(true);
+			}
 			break;
 		case EDB_ITEM_EVENT_DELETE: //deleted from DB, what to do ?
 			if (item == m_pEditedMaterial)
+			{
 				SelectMaterialForEdit(nullptr);
+			}
 			break;
 		default:
 			break;
 		}
-	}	
+	}
 }
 
 void CMaterialEditor::OnSubMaterialsChanged(CMaterial::SubMaterialChange change)
 {
 	if (GetAssetBeingEdited())
+	{
 		GetAssetBeingEdited()->SetModified(true);
+	}
 
 	switch (change)
 	{
@@ -140,17 +214,25 @@ void CMaterialEditor::OnSubMaterialsChanged(CMaterial::SubMaterialChange change)
 		if (m_pMaterial->IsMultiSubMaterial())
 		{
 			if (m_pMaterial->GetSubMaterialCount() > 0)
+			{
 				SelectMaterialForEdit(m_pMaterial->GetSubMaterial(0));
+			}
 			else
+			{
 				SelectMaterialForEdit(nullptr);
+			}
 		}
 		else
+		{
 			SelectMaterialForEdit(m_pMaterial);
+		}
 		break;
 	case CMaterial::SubMaterialSet:
 		//If the material we are currently editing is no longer a child of loaded material, clear it
 		if (m_pEditedMaterial && m_pMaterial->IsMultiSubMaterial() && m_pEditedMaterial->GetParent() != m_pMaterial)
+		{
 			SelectMaterialForEdit(nullptr);
+		}
 		break;
 	case CMaterial::SlotCountChanged:
 		if (m_pMaterial->IsMultiSubMaterial() && m_pMaterial->GetSubMaterialCount() == 0)
@@ -163,23 +245,33 @@ void CMaterialEditor::OnSubMaterialsChanged(CMaterial::SubMaterialChange change)
 	}
 }
 
-void CMaterialEditor::OnReadOnlyChanged()
+void CMaterialEditor::OnInitialize()
 {
-	//Refresh the tree, will make it read-only or not depending on the state
-	if(GetAssetBeingEdited())
-		BroadcastPopulateInspector();
+	RegisterDockableWidget("Properties", [&]()
+	{
+		CInspector* pInspector = new CInspector(this);
+		pInspector->SetLockable(false);
 
-	CAbstractMenu* materialMenu = GetMenu(tr("Material"));
-	CRY_ASSERT(materialMenu);
-	materialMenu->SetEnabled(!IsReadOnly());
+		if (m_pEditedMaterial)
+		{
+			BroadcastPopulateInspector();
+		}
+
+		return pInspector;
+	}, true);
+
+	RegisterDockableWidget("Material", [&]() { return new CSubMaterialView(this); }, true);
+	RegisterDockableWidget("Preview", [&]() { return new CMaterialPreviewWidget(this); });
+
+	InitMenuBar();
 }
 
-void CMaterialEditor::CreateDefaultLayout(CDockableContainer* sender)
+void CMaterialEditor::OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser)
 {
-	auto centerWidget = sender->SpawnWidget("Properties");
-	sender->SpawnWidget("Preview", centerWidget, QToolWindowAreaReference::Right);
-	auto materialWidget = sender->SpawnWidget("Material", centerWidget, QToolWindowAreaReference::Top);
-	sender->SetSplitterSizes(materialWidget, { 1, 4 });
+	QWidget* pCenterWidget = pSender->SpawnWidget("Properties", pAssetBrowser, QToolWindowAreaReference::VSplitRight);
+	pSender->SpawnWidget("Preview", pCenterWidget, QToolWindowAreaReference::Right);
+	QWidget* pMaterialWidget = pSender->SpawnWidget("Material", pCenterWidget, QToolWindowAreaReference::Top);
+	pSender->SetSplitterSizes(pMaterialWidget, { 1, 4 });
 }
 
 void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
@@ -192,7 +284,6 @@ void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
 		if (m_pEditedMaterial)
 		{
 			signalMaterialForEditChanged(m_pEditedMaterial);
-			BroadcastPopulateInspector();
 		}
 	}
 	CAssetEditor::OnLayoutChange(state);
@@ -200,47 +291,40 @@ void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
 
 bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
 {
+	using namespace Private_MaterialEditor;
+
+	CAbstractMenu* materialMenu = GetMenu(tr("Material"));
+	CRY_ASSERT(materialMenu);
+	materialMenu->SetEnabled(!pAsset->IsImmutable());
+
 	const auto& filename = pAsset->GetFile(0);
 	CRY_ASSERT(filename && *filename);
 
-	const auto materialName = GetIEditor()->GetMaterialManager()->FilenameToMaterial(filename);
+	const string materialName = GetIEditor()->GetMaterialManager()->FilenameToMaterial(filename);
 
-	CMaterial* material = (CMaterial*)GetIEditor()->GetMaterialManager()->FindItemByName(materialName);
-	if (!material)
-		material = GetIEditor()->GetMaterialManager()->LoadMaterial(materialName, false);
-	else
-		material->Reload(); //Enforce loading from file every time as we cannot assume the file has not changed compared to in-memory material
-
-	CRY_ASSERT(material);
-
-	SetMaterial(material);
-
-	return true;
-}
-
-bool CMaterialEditor::OnSaveAsset(CEditableAsset& editAsset)
-{
-	bool ret = m_pMaterial->Save(false);
-
-	//Fill metadata and dependencies to update cryasset file
-	if (ret)
+	CMaterial* pMaterial = CSession::GetSessionMaterial(pAsset);
+	if (!pMaterial)
 	{
-		editAsset.SetFiles("", { m_pMaterial->GetFilename() });
-
-		std::vector<SAssetDependencyInfo> filenames;
-
-		//TODO : not all dependencies are found, some paths are relative to same folder which is not good ...
-		int textureCount = m_pMaterial->GetTextureDependencies(filenames);
-
-		std::vector<std::pair<string, string>> details;
-		details.push_back(std::pair<string, string>("subMaterialCount" , ToString(m_pMaterial->GetSubMaterialCount())));
-		details.push_back(std::pair<string, string>( "textureCount", ToString(textureCount) ));
-
-		editAsset.SetDetails(details);
-		editAsset.SetDependencies(filenames);
+		pMaterial = static_cast<CMaterial*>(GetIEditor()->GetMaterialManager()->FindItemByName(materialName));
 	}
 
-	return ret;
+	if (!pMaterial)
+	{
+		pMaterial = GetIEditor()->GetMaterialManager()->LoadMaterial(materialName, false);
+	}
+	else if (!pAsset->IsModified())
+	{
+		pMaterial->Reload(); //Enforce loading from file every time as we cannot assume the file has not changed compared to in-memory material
+	}
+
+	if (!pMaterial)
+	{
+		return false;
+	}
+
+	SetMaterial(pMaterial);
+
+	return true;
 }
 
 void CMaterialEditor::OnCloseAsset()
@@ -248,9 +332,25 @@ void CMaterialEditor::OnCloseAsset()
 	SetMaterial(nullptr);
 }
 
-void CMaterialEditor::OnDiscardAssetChanges()
+void CMaterialEditor::OnDiscardAssetChanges(CEditableAsset& editAsset)
 {
-	m_pMaterial->Reload();
+	CRY_ASSERT(GetAssetBeingEdited());
+	CRY_ASSERT(GetAssetBeingEdited()->GetEditingSession());
+
+	GetAssetBeingEdited()->GetEditingSession()->DiscardChanges(editAsset);
+}
+
+std::unique_ptr<IAssetEditingSession> CMaterialEditor::CreateEditingSession()
+{
+	using namespace Private_MaterialEditor;
+
+	if (!m_pMaterial)
+	{
+		return nullptr;
+	}
+
+	CSession* pSession = new CSession(m_pMaterial);
+	return std::unique_ptr<IAssetEditingSession>(pSession);
 }
 
 void CMaterialEditor::SelectMaterialForEdit(CMaterial* pMaterial)
@@ -269,7 +369,7 @@ void CMaterialEditor::BroadcastPopulateInspector()
 {
 	if (m_pEditedMaterial)
 	{
-		m_pMaterialSerializer.reset(new CMaterialSerializer(m_pEditedMaterial, IsReadOnly()));
+		m_pMaterialSerializer.reset(new CMaterialSerializer(m_pEditedMaterial, !m_pEditedMaterial->CanModify()));
 		string title = m_pMaterial->GetName();
 		if (m_pMaterial->IsMultiSubMaterial())
 		{
@@ -278,9 +378,10 @@ void CMaterialEditor::BroadcastPopulateInspector()
 			title += "]";
 		}
 
-		PopulateInspectorEvent event([this](CInspector& inspector) {
-			inspector.AddWidget(m_pMaterialSerializer->CreatePropertyTree());
-		}, title);
+		PopulateInspectorEvent event([this](CInspector& inspector)
+		  {
+		                             inspector.AddPropertyTree(m_pMaterialSerializer->CreatePropertyTree());
+			}, title);
 		event.Broadcast(this);
 	}
 	else
@@ -397,7 +498,7 @@ void CMaterialEditor::OnPickMaterial()
 	auto pickMaterialTool = new CPickMaterialTool();
 	pickMaterialTool->SetActiveEditor(this);
 
-	GetIEditor()->SetEditTool(pickMaterialTool);
+	GetIEditor()->GetLevelEditorSharedState()->SetEditTool(pickMaterialTool);
 }
 
 void CMaterialEditor::OnResetSubMaterial(int slot)
@@ -413,6 +514,3 @@ void CMaterialEditor::OnRemoveSubMaterial(int slot)
 	CRY_ASSERT(m_pMaterial && m_pMaterial->IsMultiSubMaterial());
 	m_pMaterial->SetSubMaterial(slot, nullptr);
 }
-
-
-

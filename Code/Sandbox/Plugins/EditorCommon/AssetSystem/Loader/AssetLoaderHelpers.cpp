@@ -11,6 +11,7 @@
 #include <Cry3DEngine/CGF/IChunkFile.h>  
 #include <Cry3DEngine/CGF/CGFContent.h>
 #include <CryString/CryPath.h>
+#include <stack>
 
 namespace AssetLoader
 {
@@ -39,34 +40,14 @@ string GetAssetName(const char* szPath)
 	return szExt ? string(szFile, szExt - szFile) : string(szFile);
 }
 
-CAsset* CAssetFactory::LoadAssetFromXmlFile(const char* szAssetPath)
+bool IsMetadataFile(const char* szPath)
 {
-	ICryPak* const pPak = GetISystem()->GetIPak();
-	FILE* pFile = pPak->FOpen(szAssetPath, "rbx");
-	if (!pFile)
-	{
-		return nullptr;
-	}
-
-	std::vector<char> buffer(pPak->FGetSize(pFile));
-	const uint64 timestamp = pPak->GetModificationTime(pFile);
-	const size_t numberOfBytesRead = pPak->FReadRawAll(buffer.data(), buffer.size(), pFile);
-	pPak->FClose(pFile);
-
-	return CAssetFactory::LoadAssetFromInMemoryXmlFile(szAssetPath, timestamp, buffer.data(), numberOfBytesRead);
+	const char* const szExt = PathUtil::GetExt(szPath);
+	return stricmp(szExt, "cryasset") == 0;
 }
 
-CAsset* CAssetFactory::LoadAssetFromInMemoryXmlFile(const char* szAssetPath, uint64 timestamp, const char* pBuffer, size_t numberOfBytes)
+CAsset* CAssetFactory::CreateFromMetadata(const char* szAssetPath, const SAssetMetadata& metadata)
 {
-	AssetLoader::SAssetMetadata metadata;
-	{
-		XmlNodeRef container = GetISystem()->LoadXmlFromBuffer(pBuffer, numberOfBytes);
-		if (!container || !AssetLoader::ReadMetadata(container, metadata))
-		{
-			return nullptr;
-		}
-	}
-
 	const string path = PathUtil::GetPathWithoutFilename(szAssetPath);
 
 	CryGUID guid = (metadata.guid != CryGUID::Null()) ? metadata.guid : CryGUID::Create();
@@ -74,17 +55,27 @@ CAsset* CAssetFactory::LoadAssetFromInMemoryXmlFile(const char* szAssetPath, uin
 	CAsset* const pAsset = new CAsset(metadata.type, guid, GetAssetName(szAssetPath));
 
 	CEditableAsset editableAsset(*pAsset);
-	editableAsset.SetLastModifiedTime(timestamp);
-	editableAsset.SetFiles(path, metadata.files);
+	for (const string& filename : metadata.files)
+	{
+		editableAsset.AddFile(PathUtil::Make(path, filename.c_str()));
+	}
+	for (const string& filename : metadata.workFiles)
+	{
+		editableAsset.AddWorkFile(filename.c_str());
+	}
 	editableAsset.SetMetadataFile(szAssetPath);
 	editableAsset.SetDetails(metadata.details);
 
 	// Source file may be next to the asset or relative to the assets root directory.
 	if (!metadata.sourceFile.empty() && !strpbrk(metadata.sourceFile.c_str(), "/\\"))
 	{
-		metadata.sourceFile = PathUtil::Make(path, metadata.sourceFile);
+		editableAsset.SetSourceFile(PathUtil::Make(path, metadata.sourceFile));
 	}
-	editableAsset.SetSourceFile(metadata.sourceFile);
+	else
+	{
+		editableAsset.SetSourceFile(metadata.sourceFile);
+	}
+
 
 	// Make dependency paths relative to the assets root directory.
 	{
@@ -93,11 +84,11 @@ CAsset* CAssetFactory::LoadAssetFromInMemoryXmlFile(const char* szAssetPath, uin
 		{
 			if (strncmp("./", x.first.c_str(), 2) == 0)
 			{
-				return { PathUtil::Make(path.c_str(), x.first.c_str() + 2), x.second };
+				return{ PathUtil::Make(path.c_str(), x.first.c_str() + 2), x.second };
 			}
 			else
 			{
-				return { x.first, x.second };
+				return{ x.first, x.second };
 			}
 		});
 
@@ -115,7 +106,58 @@ CAsset* CAssetFactory::LoadAssetFromInMemoryXmlFile(const char* szAssetPath, uin
 	}
 
 	return pAsset;
+}
 
+std::vector<CAsset*> CAssetFactory::LoadAssetsFromMetadataFiles(const std::vector<string>& metadataFiles)
+{
+	std::vector<CAsset*> newAssets;
+	newAssets.reserve(metadataFiles.size());
+	for (const string& metadataFile : metadataFiles)
+	{
+		auto pNewAsset = LoadAssetFromXmlFile(metadataFile);
+		CRY_ASSERT_MESSAGE(pNewAsset, "The asset %s doesn't exist on file system. Figure out why it was passed here in the first place", metadataFile);
+		if (pNewAsset)
+		{
+			newAssets.push_back(pNewAsset);
+		}
+	}
+	return newAssets;
+}
+
+CAsset* CAssetFactory::LoadAssetFromXmlFile(const char* szAssetPath)
+{
+	ICryPak* const pPak = GetISystem()->GetIPak();
+	FILE* pFile = pPak->FOpen(szAssetPath, "rb");
+	if (!pFile)
+	{
+		return nullptr;
+	}
+
+	std::vector<char> buffer(pPak->FGetSize(pFile));
+	const uint64 timestamp = pPak->GetModificationTime(pFile);
+	const size_t numberOfBytesRead = pPak->FReadRawAll(buffer.data(), buffer.size(), pFile);
+	pPak->FClose(pFile);
+
+	return CAssetFactory::LoadAssetFromInMemoryXmlFile(szAssetPath, timestamp, buffer.data(), numberOfBytesRead);
+}
+
+CAsset* CAssetFactory::LoadAssetFromInMemoryXmlFile(const char* szAssetPath, uint64 timestamp, const char* pBuffer, size_t numberOfBytes)
+{
+	AssetLoader::SAssetMetadata metadata;
+
+	XmlNodeRef container = GetISystem()->LoadXmlFromBuffer(pBuffer, numberOfBytes);
+	if (!container || !AssetLoader::ReadMetadata(container, metadata))
+	{
+		return nullptr;
+	}
+
+	CAsset* const pAsset = CreateFromMetadata(szAssetPath, metadata);
+	if (pAsset)
+	{
+		CEditableAsset editableAsset(*pAsset);
+		editableAsset.SetLastModifiedTime(timestamp);
+	}
+	return pAsset;
 }
 
 std::vector<CAsset*> CAssetFactory::LoadAssetsFromPakFile(const char* szArchivePath, std::function<bool(const char* szAssetRelativePath, uint64 timestamp)> predicate)
@@ -150,7 +192,7 @@ std::vector<CAsset*> CAssetFactory::LoadAssetsFromPakFile(const char* szArchiveP
 			ICryPak* const pPak = GetISystem()->GetIPak();
 
 			auto closeFile = [pPak](FILE* f) { return pPak->FClose(f); };
-			std::unique_ptr<FILE, decltype(closeFile)> file(pPak->FOpen(path, "rbx"), closeFile);
+			std::unique_ptr<FILE, decltype(closeFile)> file(pPak->FOpen(path, "rb"), closeFile);
 			if (!file)
 			{
 				return;
@@ -176,4 +218,3 @@ std::vector<CAsset*> CAssetFactory::LoadAssetsFromPakFile(const char* szArchiveP
 }
 
 } // namespace AssetLoader
-

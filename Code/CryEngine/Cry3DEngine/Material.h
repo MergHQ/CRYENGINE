@@ -1,31 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   Material.h
-//  Version:     v1.00
-//  Created:     3/9/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __Material_h__
-#define __Material_h__
 #pragma once
 
 #include <Cry3DEngine/IMaterial.h>
 
 #if CRY_PLATFORM_DESKTOP
-	#define TRACE_MATERIAL_LEAKS
 	#define SUPPORT_MATERIAL_EDITING
 #endif
 
 class CMaterialLayer : public IMaterialLayer
 {
 public:
-	CMaterialLayer() : m_nRefCount(0), m_nFlags(0)
+	CMaterialLayer() : m_nFlags(0), m_nRefCount(0)
 	{
 	}
 
@@ -38,7 +24,7 @@ public:
 	virtual void AddRef()
 	{
 		m_nRefCount++;
-	};
+	}
 
 	virtual void Release()
 	{
@@ -112,7 +98,7 @@ public:
 	virtual void AddRef();
 	virtual void Release();
 
-	virtual int  GetNumRefs() { return m_nRefCount; };
+	virtual int  GetNumRefs() { return m_nRefCount; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// IMaterial implementation
@@ -122,15 +108,15 @@ public:
 	virtual IMaterialManager* GetMaterialManager();
 
 	virtual void              SetName(const char* pName);
-	virtual const char*       GetName() const     { return m_sMaterialName; };
+	virtual const char*       GetName() const     { return m_sMaterialName; }
 
-	virtual void              SetFlags(int flags) { m_Flags = flags; };
-	virtual int               GetFlags() const    { return m_Flags; };
+	virtual void              SetFlags(int flags) { m_Flags = flags; }
+	virtual int               GetFlags() const    { return m_Flags; }
 
 	// Returns true if this is the default material.
 	virtual bool          IsDefault() const;
 
-	virtual int           GetSurfaceTypeId() const { return m_nSurfaceTypeId; };
+	virtual int           GetSurfaceTypeId() const { return m_nSurfaceTypeId; }
 
 	virtual void          SetSurfaceType(const char* sSurfaceTypeName);
 	virtual ISurfaceType* GetSurfaceType();
@@ -241,13 +227,6 @@ public:
 #endif
 
 	virtual CryCriticalSection& GetSubMaterialResizeLock();
-public:
-	//////////////////////////////////////////////////////////////////////////
-	// for debug purposes
-	//////////////////////////////////////////////////////////////////////////
-#ifdef TRACE_MATERIAL_LEAKS
-	string m_sLoadingCallstack;
-#endif
 
 private:
 
@@ -287,7 +266,7 @@ private:
 	void*  m_pUserData;
 
 	string m_sMaterialLinkName;
-	// name of mat templalte material
+	// name of mat template material
 	string m_sMatTemplate;
 #endif
 
@@ -315,5 +294,3 @@ private:
 	_smart_ptr<IMaterial> m_pConsoleMtl;
 #endif
 };
-
-#endif // __Material_h__

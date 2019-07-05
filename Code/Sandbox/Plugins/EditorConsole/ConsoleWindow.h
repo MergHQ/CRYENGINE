@@ -1,49 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   ConsoleWindow.h
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
-#include <CryCore/Platform/platform.h>
-#include <CrySystem/ISystem.h>
-#include <CryCore/BoostHelpers.h> // to make sure we get own throw_exceptions
-#include <boost/circular_buffer.hpp>
-#include <algorithm>
-#include "Messages.h"
+
 #include "AutoCompletePopup.h"
+#include "Messages.h"
 
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QListView>
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QWidget>
-
-#include "TabLineEdit.h"
-#include <QtViewPane.h>
-
-#include "Util/EditorUtils.h"
-
-#include <QTextEdit>
-
-#include <CrySystem/ILog.h>
-
-#include "EditorFramework/Editor.h"
-#include <QMenu>
-#include <QMenuBar>
-
+#include <EditorFramework/Editor.h>
 #include <QSearchBox.h>
+
+class QTextEdit;
+class QTabLineEdit;
+class QWidget;
 
 //the limit to number of console messages to cache
 //this ensures an upper bound in memory usage and processing time in case of huge log-spam
@@ -54,6 +21,22 @@
 class CConsoleWindow : public CDockableEditor, public ILogCallback
 {
 	Q_OBJECT;
+
+public:
+	CConsoleWindow(QWidget* pParent = nullptr);
+	~CConsoleWindow();
+
+	virtual void Initialize() override;
+
+	//////////////////////////////////////////////////////////
+	// CDockableWindow implementation
+	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_BOTTOM; }
+	//////////////////////////////////////////////////////////
+
+private:
+
+	void RegisterActions();
+
 	virtual const char* GetEditorName() const override { return "Console"; }
 
 	//handle incoming update message
@@ -71,6 +54,9 @@ class CConsoleWindow : public CDockableEditor, public ILogCallback
 	//handle enter pressed
 	void HandleEnter();
 
+	//handle context menu on console history
+	void HandleContextMenu(const QPoint& pt);
+
 	//handle auto-complete selection change
 	void HandleAutoCompleteSelection(const QString& selection, CAutoCompletePopup::ESelectReason reason);
 
@@ -83,38 +69,23 @@ class CConsoleWindow : public CDockableEditor, public ILogCallback
 	//when one of the following is called, also move the pop-up window
 	void keyPressEvent(QKeyEvent* e);
 
-	void OnWriteToFile(const char* sText, bool bNewLine) {};
+	void OnWriteToFile(const char* sText, bool bNewLine) {}
 	void OnWriteToConsole(const char* sText, bool bNewLine);
 
 	//setup this window
 	void         SetupUI();
 
-	virtual bool OnSave() override;
 	virtual bool OnFind() override;
 	virtual bool OnFindNext() override;
 	virtual bool OnFindPrevious() override;
 
+	bool OnSave();
 	bool         ClearConsole();
 	void         SearchBox(const QString& text);
-	void         ClearSearchBox();
 	void         HighlightSelection(const QString& text);
 	void         SearchBoxEnterPressed();
 	bool         OnCloseSearch();
 	bool m_searchBackwards;
-
-public:
-	//constructor
-	CConsoleWindow(QWidget* pParent = nullptr);
-
-	//destructor
-	~CConsoleWindow();
-
-	//static QTextEdit& GetEditLog(){ return m_pHistory;}
-
-	//////////////////////////////////////////////////////////
-	// CDockableWindow implementation
-	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_BOTTOM; }
-	//////////////////////////////////////////////////////////
 
 protected:
 	virtual bool eventFilter(QObject* o, QEvent* ev) Q_DECL_OVERRIDE;
@@ -146,10 +117,9 @@ private:
 	int           m_lastConsoleLineNumber;
 
 	//if set, keep the history scrolled down all the way at all times
-	int               m_sticky;
+	int        m_sticky;
 
-	QSearchBox        m_searchBox;
-	QWidget*          m_searchWidget;
-	QString           m_lastSearchBoxString;
+	QSearchBox m_searchBox;
+	QWidget*   m_searchWidget;
+	QString    m_lastSearchBoxString;
 };
-

@@ -2,8 +2,6 @@
 
 #pragma once
 
-#define NOT_USE_CRY_MEMORY_MANAGER
-
 #include <CryCore/Project/CryModuleDefs.h>
 #define eCryModule eCryM_EnginePlugin
 

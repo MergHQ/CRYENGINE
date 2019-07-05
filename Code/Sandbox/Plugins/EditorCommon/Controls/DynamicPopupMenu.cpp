@@ -3,14 +3,17 @@
 #include "StdAfx.h"
 #include "DynamicPopupMenu.h"
 
+#include "Commands/ICommandManager.h"
+#include "Commands/QCommandAction.h"
 #include "EditorCommonInit.h"
-#include "ICommandManager.h"
+
+#include <IEditor.h>
+#include <CryIcon.h>
+
+#include <QCursor>
+#include <QMenu>
 
 #include <algorithm>
-
-#include <QMenu>
-#include <QCursor>
-#include <QAction>
 
 //////////////////////////////////////////////////////////////////////////
 class CPopupMenuItemCommand : public CPopupMenuItem
@@ -19,25 +22,39 @@ public:
 	CPopupMenuItemCommand(const char* text, const char* command)
 		: CPopupMenuItem(text)
 		, m_command(command)
+		, m_shouldUseText(true)
 	{
-		m_function = [&]() {
+		m_function = [&]()
+		{
 			GetIEditor()->GetICommandManager()->Execute(m_command);
 		};
 	}
 
-	virtual bool IsEditorCommand() { return true; }
-	const char* GetCommand() const { return m_command; }
+	CPopupMenuItemCommand(const char* command)
+		: CPopupMenuItem(command)
+		, m_command(command)
+		, m_shouldUseText(false)
+	{
+		m_function = [&]()
+		{
+			GetIEditor()->GetICommandManager()->Execute(m_command);
+		};
+	}
 
+	virtual bool IsEditorCommand()  { return true; }
+	const char*  GetCommand() const { return m_command; }
+	//We are using the item text instead of editor command description for the generated qaction text
+	bool ShouldUseText() const { return m_shouldUseText; }
 private:
 	string m_command;
+	bool m_shouldUseText;
 };
 
 /////////////////////////////////////////////////////////////////////////
 class QPopupMenuItemAction : public QAction
 {
 public:
-	
-	QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem> item, QObject* parent);
+	QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem>& item, QObject* parent);
 	~QPopupMenuItemAction();
 
 	void OnTriggered();
@@ -47,7 +64,7 @@ private:
 	std::shared_ptr<CPopupMenuItem> m_item;
 };
 
-QPopupMenuItemAction::QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem> item, QObject* parent)
+QPopupMenuItemAction::QPopupMenuItemAction(const std::shared_ptr<CPopupMenuItem>& item, QObject* parent)
 	: QAction(QString(item->Text()), parent)
 	, m_item(item)
 {
@@ -80,7 +97,7 @@ void QPopupMenuItemAction::OnTriggered()
 
 void QPopupMenuItemAction::OnHovered()
 {
-	if(m_item->m_hoverFunc)
+	if (m_item->m_hoverFunc)
 		m_item->m_hoverFunc();
 }
 
@@ -93,11 +110,6 @@ void CDynamicPopupMenu::Clear()
 {
 	m_root.GetChildren().clear();
 }
-
-CPopupMenuItem::~CPopupMenuItem()
-{
-}
-
 
 CPopupMenuItem& CPopupMenuItem::Add(const char* text)
 {
@@ -114,7 +126,7 @@ CPopupMenuItem& CPopupMenuItem::Add(const char* text, const std::function<void()
 	return *item;
 }
 
-CPopupMenuItem& CPopupMenuItem::Add(const char* text,const char* icon, const std::function<void()>& function)
+CPopupMenuItem& CPopupMenuItem::Add(const char* text, const char* icon, const std::function<void()>& function)
 {
 	CPopupMenuItem* item = new CPopupMenuItem(text);
 	item->m_function = function;
@@ -131,6 +143,13 @@ CPopupMenuItem& CPopupMenuItem::AddSeparator()
 CPopupMenuItem& CPopupMenuItem::AddCommand(const char* text, string commandToExecute)
 {
 	CPopupMenuItemCommand* item = new CPopupMenuItemCommand(text, commandToExecute);
+	AddChildren(item);
+	return *item;
+}
+
+CPopupMenuItem& CPopupMenuItem::AddCommand(string commandToExecute)
+{
+	CPopupMenuItemCommand* item = new CPopupMenuItemCommand(commandToExecute);
 	AddChildren(item);
 	return *item;
 }
@@ -176,10 +195,24 @@ void CDynamicPopupMenu::PopulateQMenu(class QMenu* menu, CPopupMenuItem* parentI
 				menu->addSeparator();
 			else if (childItem->IsEditorCommand())
 			{
-				const char* cmd = static_cast<CPopupMenuItemCommand*>(childItem.get())->GetCommand();
-				QAction* action = GetIEditor()->GetICommandManager()->GetAction(cmd, text.c_str());
-				action->setEnabled(childItem->IsEnabled());
-				menu->addAction(action);
+
+				CPopupMenuItemCommand* pPopupMenuItem = static_cast<CPopupMenuItemCommand*>(childItem.get());
+				const char* cmd = pPopupMenuItem->GetCommand();
+				
+				//If we want to use all default ui data from this command or override with our own text
+				if (!pPopupMenuItem->ShouldUseText())
+				{
+					QAction* action = GetIEditor()->GetICommandManager()->GetAction(cmd);
+					action->setEnabled(childItem->IsEnabled());
+					menu->addAction(action);
+				}
+				else
+				{
+					QAction* action = GetIEditor()->GetICommandManager()->CreateNewAction(cmd);
+					action->setText(QString(text));
+					action->setEnabled(childItem->IsEnabled());
+					menu->addAction(action);
+				}
 			}
 			else
 			{
@@ -209,5 +242,3 @@ void CDynamicPopupMenu::SpawnAtCursor()
 {
 	Spawn(QCursor::pos().x(), QCursor::pos().y());
 }
-
-

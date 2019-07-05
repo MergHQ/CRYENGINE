@@ -1,5 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+
 #ifndef QTWM_DLL
 #define QTWM_DLL
 #endif // ! QTWM_DLL
@@ -12,4 +13,3 @@
 #else
 #define CRYQT_API
 #endif
-

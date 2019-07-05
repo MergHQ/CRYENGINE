@@ -28,6 +28,7 @@
 #include "GameRulesTypes.h"
 
 struct IInventory;
+struct IActor;
 
 class CGameRulesStandardSetup : public IGameRulesPlayerSetupModule,
 								public IGameRulesPickupListener,

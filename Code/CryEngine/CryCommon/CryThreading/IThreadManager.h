@@ -81,6 +81,9 @@ public:
 	// </interfuscator:shuffle>
 };
 
+#include <CrySystem/ISystem.h>
+
+#if defined(USE_FPE)
 class CScopedFloatingPointException
 {
 public:
@@ -96,3 +99,11 @@ public:
 private:
 	uint oldMask;
 };
+#else
+class CScopedFloatingPointException
+{
+public:
+	CScopedFloatingPointException(EFPE_Severity eFPESeverity){}
+	~CScopedFloatingPointException(){}
+};
+#endif

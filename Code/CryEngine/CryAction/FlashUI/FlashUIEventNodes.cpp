@@ -18,7 +18,7 @@ CFlashUIEventSystemFunctionNode::CFlashUIEventSystemFunctionNode(IUIEventSystem*
 	: CFlashUIBaseNodeDynPorts(sCategory)
 	, m_pSystem(pSystem)
 {
-	CRY_ASSERT_MESSAGE(m_pSystem && pEventDesc, "NULL pointer passed!");
+	CRY_ASSERT(m_pSystem && pEventDesc, "NULL pointer passed!");
 
 	m_eventDesc = *pEventDesc;
 	m_iEventId = m_pSystem->GetEventId(pEventDesc->sName);
@@ -78,7 +78,7 @@ void CFlashUIEventSystemFunctionNode::ProcessEvent(EFlowEvent event, SActivation
 			int i = 0;
 			for (; i < end; ++i)
 			{
-				CRY_ASSERT_MESSAGE(i < res.GetArgCount(), "UIEvent returns wrong number of arguments!");
+				CRY_ASSERT(i < res.GetArgCount(), "UIEvent returns wrong number of arguments!");
 				ActivateDynOutput(i < res.GetArgCount() ? res.GetArg(i) : TUIData(string("")), m_eventDesc.OutputParams.Params[i], pActInfo, i + 1);
 			}
 			if (m_eventDesc.OutputParams.IsDynamic)
@@ -103,7 +103,7 @@ CFlashUIEventSystemEventNode::CFlashUIEventSystemEventNode(IUIEventSystem* pSyst
 	: CFlashUIBaseNodeDynPorts(sCategory)
 	, m_pSystem(pSystem)
 {
-	CRY_ASSERT_MESSAGE(m_pSystem && pEventDesc, "NULL pointer passed!");
+	CRY_ASSERT(m_pSystem && pEventDesc, "NULL pointer passed!");
 
 	m_iEventId = m_pSystem->GetEventId(pEventDesc->sName);
 	m_eventDesc = *pEventDesc;
@@ -176,7 +176,7 @@ void CFlashUIEventSystemEventNode::FlushNextEvent(SActivationInfo* pActInfo)
 		if (checkValue >= 0)
 		{
 			bTriggerEvent = false;
-			CRY_ASSERT_MESSAGE(checkValue < args.GetArgCount(), "Port does not exist!");
+			CRY_ASSERT(checkValue < args.GetArgCount(), "Port does not exist!");
 			if (checkValue < args.GetArgCount())
 			{
 				string val = GetPortString(pActInfo, eI_CheckValue);
@@ -192,7 +192,7 @@ void CFlashUIEventSystemEventNode::FlushNextEvent(SActivationInfo* pActInfo)
 			int i = 0;
 			for (; i < end; ++i)
 			{
-				CRY_ASSERT_MESSAGE(i < args.GetArgCount(), "UIEvent received wrong number of arguments!");
+				CRY_ASSERT(i < args.GetArgCount(), "UIEvent received wrong number of arguments!");
 				ActivateDynOutput(i < args.GetArgCount() ? args.GetArg(i) : TUIData(string("")), m_eventDesc.InputParams.Params[i], pActInfo, i + 1);
 			}
 			if (m_eventDesc.InputParams.IsDynamic)

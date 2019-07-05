@@ -87,6 +87,7 @@ static const int sSimulateExplosionMaxEntitiesToSkip = 20;
 #include "EnvironmentalWeapon.h"
 
 #include <IPerceptionManager.h>
+#include <IGameplayRecorder.h>
 
 //------------------------------------------------------------------------
 // Our local client has hit something locally
@@ -412,7 +413,7 @@ void CGameRules::ProcessServerHit(const HitInfo& hitInfo)
 
 		bool bActorKilled = false;
 		IGameRulesDamageHandlingModule * pDamageHandler = GetDamageHandlingModule();
-		CRY_ASSERT_MESSAGE(pDamageHandler, "No Damage handling module found!");
+		CRY_ASSERT(pDamageHandler, "No Damage handling module found!");
 		if (pDamageHandler)
 		{
 			bActorKilled = pDamageHandler->SvOnHit(hitInfo);
@@ -557,7 +558,7 @@ int CGameRules::GetFreeExplosionIndex()
 
 void CGameRules::QueueExplosion(const ExplosionInfo &explosionInfo)
 {
-	CRY_ASSERT_TRACE (explosionInfo.type, ("Queueing an explosion with an invalid hit type! (effect='%s'/'%s')", explosionInfo.effect_name.c_str(), explosionInfo.effect_class.c_str()));
+	CRY_ASSERT (explosionInfo.type, ("Queueing an explosion with an invalid hit type! (effect='%s'/'%s')", explosionInfo.effect_name.c_str(), explosionInfo.effect_class.c_str()));
 
 	int index = GetFreeExplosionIndex();
 
@@ -680,8 +681,6 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 	float minExtent = g_pGameCVars->g_ec_extent;
 	int   removeThreshold = max(1, g_pGameCVars->g_ec_removeThreshold);
 
-	IActor *pClientActor = g_pGame->GetIGameFramework()->GetClientActor();
-
 	Vec3 radiusVec(radiusScale * explosionInfo.physRadius);
 	int i = gEnv->pPhysicalWorld->GetEntitiesInBox(explosionInfo.pos-radiusVec,explosionInfo.pos+radiusVec,pents, ent_rigid|ent_sleeping_rigid);
 	int removedCount = 0;
@@ -775,7 +774,7 @@ void CGameRules::ClientExplosion(SExplosionContainer &explosionContainer)
 	{
 
 		IGameRulesDamageHandlingModule* pDamageHandling = GetDamageHandlingModule();
-		CRY_ASSERT_MESSAGE(pDamageHandling, "No Damage handling module found!");
+		CRY_ASSERT(pDamageHandling, "No Damage handling module found!");
 		if (pDamageHandling)
 		{
 			pDamageHandling->SvOnExplosion(explosionInfo, affectedEntities);
@@ -810,12 +809,12 @@ void CGameRules::ClientExplosion(SExplosionContainer &explosionContainer)
 		if (pClientActor)
 		{
 			CRY_ASSERT (pClientActor->IsPlayer());
-			CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
+			//CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
 
 			//const EntityId clientId = pClientActor->GetEntityId();
-			const Vec3 playerPos = pClientActor->GetEntity()->GetWorldPos();
+			//const Vec3 playerPos = pClientActor->GetEntity()->GetWorldPos();
 
-			const float distSq = (playerPos - explosionInfo.pos).len2();
+			//const float distSq = (playerPos - explosionInfo.pos).len2();
 
 			//if(distSq < explosionInfo.radius * explosionInfo.radius)
 			//{
@@ -890,8 +889,8 @@ void CGameRules::ProjectileExplosion(const SProjectileExplosionParams &projectil
 				CCCPOINT(Projectile_Explode);
 			}
 
-			CRY_ASSERT_MESSAGE(pExplosionParams->hitTypeId, string().Format("Invalid hit type '%s' in explosion params for '%s'", pExplosionParams->type.c_str(), projectileNetClassName));
-			CRY_ASSERT_MESSAGE(pExplosionParams->hitTypeId == GetHitTypeId(pExplosionParams->type.c_str()), "Sanity Check Failed: Stored explosion type id does not match the type string, possibly PreCacheLevelResources wasn't called on this ammo type");
+			CRY_ASSERT(pExplosionParams->hitTypeId, string().Format("Invalid hit type '%s' in explosion params for '%s'", pExplosionParams->type.c_str(), projectileNetClassName));
+			CRY_ASSERT(pExplosionParams->hitTypeId == GetHitTypeId(pExplosionParams->type.c_str()), "Sanity Check Failed: Stored explosion type id does not match the type string, possibly PreCacheLevelResources wasn't called on this ammo type");
 
 			ExplosionInfo explosionInfo(
 					projectileExplosionInfo.m_shooterId, 
@@ -1577,7 +1576,7 @@ IMPLEMENT_RMI(CGameRules, ClTaggedEntity)
 	default :
 		{
 			// should not get here, should be handled by SvAddTaggedEntity
-			CRY_ASSERT_MESSAGE(0, "ClTaggedEntity: Unhandled reason in tagging RMI, ClTaggedEntity." );
+			CRY_ASSERT(0, "ClTaggedEntity: Unhandled reason in tagging RMI, ClTaggedEntity." );
 		}
 		break;
 	}
@@ -1672,7 +1671,7 @@ IMPLEMENT_RMI(CGameRules, ClProcessHit)
 			}
 		}
 
-		CRY_ASSERT_TRACE (params.hitTypeId, ("%s '%s' is taking damage of an unknown type %u - not informing entity it's been hit!", pActor->GetEntity()->GetClass()->GetName(), pActor->GetEntity()->GetName(), params.hitTypeId));
+		CRY_ASSERT(params.hitTypeId, "%s '%s' is taking damage of an unknown type %u - not informing entity it's been hit!", pActor->GetEntity()->GetClass()->GetName(), pActor->GetEntity()->GetName(), params.hitTypeId);
 
 		if (params.hitTypeId)
 		{
@@ -1896,7 +1895,7 @@ IMPLEMENT_RMI(CGameRules, SvRequestRevive)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRules::SvRequestRevive() RMI - failed to find our spawning module, this is required");
+		CRY_ASSERT(0, "CGameRules::SvRequestRevive() RMI - failed to find our spawning module, this is required");
 	}
 
 	return true;

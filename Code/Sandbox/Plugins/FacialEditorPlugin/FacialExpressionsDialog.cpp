@@ -986,7 +986,6 @@ void CFacialExpressionsDialog::OnTreeRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	CMenu menu;
 	menu.CreatePopupMenu();
 
-	IFacialEffCtrl* pSelectedCtrl = m_treeCtrl.GetSelectedCtrl();
 	IFacialEffector* pSelected = m_treeCtrl.GetSelectedEffector();
 
 	if (pSelected)
@@ -1150,4 +1149,3 @@ void CFacialExpressionsDialog::OnDestroy()
 	if (m_pDropTarget)
 		delete m_pDropTarget;
 }
-

@@ -10,7 +10,6 @@
 #include "ShadowUtils.h"
 
 #include "Common/RenderView.h"
-#include "DriverD3D.h"
 #include "GraphicsPipeline/Common/FullscreenPass.h"
 #include "GraphicsPipeline/Common/ComputeRenderPass.h"
 
@@ -165,7 +164,7 @@ void CShadowUtils::GetCubemapFrustumForLight(const SRenderLight* pLight, int nS,
 	   };*/
 
 	Vec3 vForward = Vec3(sCubeVector[nS][0], sCubeVector[nS][1], sCubeVector[nS][2]);
-	Vec3 vUp = Vec3(sCubeVector[nS][3], sCubeVector[nS][4], sCubeVector[nS][5]);
+	//Vec3 vUp = Vec3(sCubeVector[nS][3], sCubeVector[nS][4], sCubeVector[nS][5]);
 	Vec3 vEyePt = pLight->m_Origin;
 	vForward = vForward + vEyePt;
 
@@ -356,9 +355,6 @@ void CShadowUtils::mathMatrixLookAtSnap(Matrix44A* pMatr, const Vec3& Eye, const
 	//TD - add ratios to the frustum
 	fSnapXY *= 2.0f;
 
-	float fZSnap = 192.0f * 2.0f / 16777216.f /*1024.0f*/;
-	//fZSnap *= 32.0f;
-
 	Vec3 zaxis = vLightDir.GetNormalized();
 	Vec3 xaxis = (vUp.Cross(zaxis)).GetNormalized();
 	Vec3 yaxis = zaxis.Cross(xaxis);
@@ -385,12 +381,10 @@ void CShadowUtils::mathMatrixLookAtSnap(Matrix44A* pMatr, const Vec3& Eye, const
 
 	float fTranslX = (*pMatr)(3, 0);
 	float fTranslY = (*pMatr)(3, 1);
-	float fTranslZ = (*pMatr)(3, 2);
+	//float fTranslZ = (*pMatr)(3, 2);
 
 	(*pMatr)(3, 0) = snap_frac2(fTranslX, fSnapXY);
 	(*pMatr)(3, 1) = snap_frac2(fTranslY, fSnapXY);
-	//(*pMatr)(3,2) = snap_frac2(fTranslZ, fZSnap);
-
 }
 
 //todo move frustum computations to the 3d engine
@@ -462,7 +456,7 @@ void CShadowUtils::GetShadowMatrixForObject(Matrix44A& mLightProj, Matrix44A& mL
 	{
 		mLightProj.SetIdentity();
 		mLightView.SetIdentity();
-		vFrustumInfo.x = 0.1;
+		vFrustumInfo.x = 0.1f;
 		vFrustumInfo.y = 100.0f;
 		vFrustumInfo.w = 0.00001f;  //ObjDepthTestBias;
 		vFrustumInfo.z = 0.0f;
@@ -541,7 +535,12 @@ bool CShadowUtils::GetSubfrustumMatrix(Matrix44A& result, const ShadowMapFrustum
 	cropMatrix.m31 = -(1.0f + cropMatrix.m11 * crop.y);
 
 	result = pFullFrustum->mLightViewMatrix * cropMatrix;
-	return !(crop.x < -1.0f || crop.z > 1.0f || crop.y < -1.0f || crop.w > 1.0f);
+
+	// Return false when the sub-frustum rectangle is completely outside
+	bool comletelyoutx = fabs(crop.x) > 1.0f && fabs(crop.x + crop.z) > 1.0f && copysignf(0.0f, crop.x) == copysignf(0.0f, crop.x + crop.z);
+	bool comletelyouty = fabs(crop.y) > 1.0f && fabs(crop.y + crop.w) > 1.0f && copysignf(0.0f, crop.y) == copysignf(0.0f, crop.y + crop.w);
+
+	return !comletelyoutx && !comletelyouty;
 }
 
 bool CShadowUtils::SetupShadowsForFog(SShadowCascades& shadowCascades, const CRenderView* pRenderView)
@@ -675,7 +674,6 @@ bool CShadowUtils::GetShadowCascadesSamplingInfo(SShadowCascadesSamplingInfo& sa
 {
 	CRY_ASSERT(pRenderView != nullptr);
 
-	EShaderQuality shaderQuality = gcpRendD3D->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
 	const auto& PF = pRenderView->GetShaderConstants();
 	const bool bCloudShadow = gcpRendD3D->m_bCloudShadowsEnabled && (gcpRendD3D->GetCloudShadowTextureId() > 0);
 
@@ -772,10 +770,10 @@ Matrix44 CShadowUtils::GetClipToTexSpaceMatrix(const ShadowMapFrustum* pFrustum,
 		const int texHeight = max(pFrustum->pDepthTex->GetHeight(), 1);
 
 		Matrix44 mCropView(IDENTITY);
-		mCropView.m00 = pFrustum->shadowPoolPack[0].GetDim().x / float(texWidth);
-		mCropView.m11 = pFrustum->shadowPoolPack[0].GetDim().y / float(texHeight);
-		mCropView.m30 = pFrustum->shadowPoolPack[0].Min.x      / float(texWidth);
-		mCropView.m31 = pFrustum->shadowPoolPack[0].Min.y      / float(texHeight);
+		mCropView.m00 = pFrustum->shadowCascade.GetDim().x / float(texWidth);
+		mCropView.m11 = pFrustum->shadowCascade.GetDim().y / float(texHeight);
+		mCropView.m30 = pFrustum->shadowCascade.Min.x      / float(texWidth);
+		mCropView.m31 = pFrustum->shadowCascade.Min.y      / float(texHeight);
 
 		mClipToTexSpace = mClipToTexSpace * mCropView;
 	}
@@ -812,12 +810,12 @@ CShadowUtils::SShadowSamplingInfo CShadowUtils::GetDeferredShadowSamplingInfo(Sh
 		blendInfo.y = 1.0f / (1.0f - fBlendVal);
 
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance && 
-			pFr->shadowPoolPack[0].GetDim().x > 0 && pFr->shadowPoolPack[0].GetDim().y > 0)
+			pFr->shadowCascade.GetDim().x > 0 && pFr->shadowCascade.GetDim().y > 0)
 		{
-			blendTcNormalize.x =  pFr->pDepthTex->GetWidth()                       / float(pFr->shadowPoolPack[0].GetDim().x);
-			blendTcNormalize.y =  pFr->pDepthTex->GetHeight()                      / float(pFr->shadowPoolPack[0].GetDim().y);
-			blendTcNormalize.z = -static_cast<float>(pFr->shadowPoolPack[0].Min.x) / float(pFr->shadowPoolPack[0].GetDim().x);
-			blendTcNormalize.w = -static_cast<float>(pFr->shadowPoolPack[0].Min.y) / float(pFr->shadowPoolPack[0].GetDim().y);
+			blendTcNormalize.x =  pFr->pDepthTex->GetWidth()  / pFr->shadowCascade.GetDim().x;
+			blendTcNormalize.y =  pFr->pDepthTex->GetHeight() / pFr->shadowCascade.GetDim().y;
+			blendTcNormalize.z = -pFr->shadowCascade.Min.x    / pFr->shadowCascade.GetDim().x;
+			blendTcNormalize.w = -pFr->shadowCascade.Min.y    / pFr->shadowCascade.GetDim().y;
 		}
 
 		if (const ShadowMapFrustum* pPrevFr = pFr->pPrevFrustum)
@@ -886,7 +884,7 @@ void CShadowUtils::GetForwardShadowSamplingInfo(
 	{
 		float fFilteredArea = gcpRendD3D->GetShadowJittering() * (pFr->fWidthS + pFr->fBlurS);
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest)
-			fFilteredArea *= 0.1;
+			fFilteredArea *= 0.1f;
 
 		kernelSize = fFilteredArea;
 	}

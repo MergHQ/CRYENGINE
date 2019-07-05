@@ -1,16 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _ITIMER_H_
-#define _ITIMER_H_
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-
-#include "TimeValue.h"        // CTimeValue
+#include "TimeValue.h"
 #include <CryNetwork/SerializeFwd.h>
-
-struct tm;
 
 //! Interface to the Timer System.
 struct ITimer
@@ -29,7 +22,7 @@ struct ITimer
 	};
 
 	// <interfuscator:shuffle>
-	virtual ~ITimer() {};
+	virtual ~ITimer() {}
 
 	//! Resets the timer
 	//! \note Only needed because float precision wasn't last that long - can be removed if 64bit is used everywhere.
@@ -110,7 +103,7 @@ struct ITimer
 
 	// Summary:
 	//	Force fixed frame time. Passing time <= 0 will disable fixed frame time
-	virtual void SetFixedFrameTime(float time) {};
+	virtual void SetFixedFrameTime(float time) {}
 
 	//! Convert from ticks (CryGetTicks()) to seconds.
 	virtual float TicksToSeconds(int64 ticks) const = 0;
@@ -122,35 +115,3 @@ struct ITimer
 	virtual ITimer* CreateNewTimer() = 0;
 	// </interfuscator:shuffle>
 };
-
-//! \cond INTERNAL
-//! This class is used for automatic profiling of a section of the code.
-//! Creates an instance of this class, and upon exiting from the code section.
-template<typename time>
-class CITimerAutoProfiler
-{
-public:
-	CITimerAutoProfiler(ITimer* pTimer, time& rTime) :
-		m_pTimer(pTimer),
-		m_rTime(rTime)
-	{
-		rTime -= pTimer->GetAsyncCurTime();
-	}
-
-	~CITimerAutoProfiler()
-	{
-		m_rTime += m_pTimer->GetAsyncCurTime();
-	}
-
-protected:
-	ITimer* m_pTimer;
-	time&   m_rTime;
-};
-//! \endcond
-
-//! Include this string AUTO_PROFILE_SECTION(pITimer, g_fTimer) for the section of code where the profiler timer must be turned on and off.
-//! The profiler timer is just some global or static float or double value that accumulates the time (in seconds) spent in the given block of code.
-//! pITimer is a pointer to the ITimer interface, g_fTimer is the global accumulator.
-#define AUTO_PROFILE_SECTION(pITimer, g_fTimer) CITimerAutoProfiler<double> __section_auto_profiler(pITimer, g_fTimer)
-
-#endif //_ITIMER_H_

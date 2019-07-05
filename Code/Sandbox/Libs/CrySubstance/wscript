@@ -1,0 +1,16 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+def build(bld):
+	bld.CreateDynamicModule(
+        target = 'CrySubstance',
+        vs_filter = 'Sandbox',
+        includes = '.',
+        file_list = 'crysubstance.waf_files',
+        pch = 'StdAfx.cpp',
+		module_extension = ['substance'],
+        defines = ['CrySubstanceEXPORTS', 'WIN32', 'NOT_USE_CRY_MEMORY_MANAGER'],
+        win_lib = ['dwmapi', 'gdi32', 'Ole32'],
+        cxxflags = ['/EHsc', '/GR', '/wd4251', '/wd4275' ]
+    )
+	
+	

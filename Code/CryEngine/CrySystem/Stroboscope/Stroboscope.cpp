@@ -10,6 +10,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
+#include <random>
+#include <CryRenderer/IRenderer.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(ENABLE_PROFILING_CODE)
 
@@ -34,10 +37,10 @@ bool SStrobosopeSamplingData::SCallstackSampling::operator<(const SCallstackSamp
 
 ////////////////////////////////////////////////////////////////////////////
 CStroboscope::CStroboscope()
-	: m_started(0)
-	, m_startTime(0)
+	: m_startTime(0)
 	, m_endTime(-1)
 	, m_throttle(100)
+	, m_started(0)
 	, m_run(false)
 {
 	m_result.Clear();
@@ -126,6 +129,8 @@ void CStroboscope::ProfileThreads()
 	int64 curr, prev, start;
 	curr = prev = start = CryGetTicks();
 
+	std::mt19937 urng(std::random_device{}());
+
 	int frameId = -1;
 	m_sampling.StartFrame = -1;
 	while (m_run)
@@ -134,7 +139,7 @@ void CStroboscope::ProfileThreads()
 		frameId = gEnv->pRenderer->GetFrameID();
 		if (m_sampling.StartFrame == -1)
 			m_sampling.StartFrame = frameId;
-		std::random_shuffle(threads.begin(), threads.end());
+		std::shuffle(threads.begin(), threads.end(),urng);
 		curr = CryGetTicks();
 		if (!SampleThreads(threads, (float)(curr - prev) / (float)freq, frameId) || (m_endTime > 0 && gEnv->pTimer->GetAsyncCurTime() > m_endTime))
 			m_run = false;
@@ -248,7 +253,7 @@ void CStroboscope::UpdateResult()
 					string file, procname;
 					int line;
 					void* baseAddr;
-					bool ok = IDebugCallStack::instance()->GetProcNameForAddr(addr, procname, baseAddr, file, line);
+					IDebugCallStack::instance()->GetProcNameForAddr(addr, procname, baseAddr, file, line);
 					string module = IDebugCallStack::instance()->GetModuleNameForAddr(addr);
 
 					SStrobosopeResult::SSymbolInfo info;

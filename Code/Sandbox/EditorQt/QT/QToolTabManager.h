@@ -2,29 +2,21 @@
 
 #pragma once
 
-struct IViewPaneClass;
-class CWnd;
-
 #include "SandboxAPI.h"
-#include <QFrame>
-#include <QDir>
+#include <Controls/SandboxWindowing.h>
+#include <Util/UserDataUtil.h>
+#include <QFileInfo>
+
+class CWnd;
+class QFocusEvent;
 
 //Internal class for IPane management.
-class QTabPane : public QFrame
+class QTabPane : public QBaseTabPane
 {
 	Q_OBJECT
 public:
-	string m_title;
-	string m_category;
-	string m_class;
 
-	CWnd*  m_MfcWnd;
-	bool   m_bViewCreated;
-
-	IPane* m_pane;
-
-	QSize  m_defaultSize;
-	QSize  m_minimumSize;
+	CWnd* m_MfcWnd;
 
 public:
 	QTabPane();
@@ -35,10 +27,12 @@ protected:
 
 	void          closeEvent(QCloseEvent* event);
 	virtual QSize sizeHint() const        { return m_defaultSize; }
-	virtual QSize minimumSizeHint() const { return m_minimumSize; }
+	// if there is an mfc widget return stored minimum size, if not let qt handle min size hint calculation
+	virtual QSize minimumSizeHint() const { return m_MfcWnd ? m_minimumSize : QBaseTabPane::minimumSizeHint(); }
+	void focusInEvent(QFocusEvent* pEvent);
 };
 
-class SANDBOX_API CTabPaneManager
+class SANDBOX_API CTabPaneManager : public CUserData
 {
 	friend class QTabPane;
 public:
@@ -67,10 +61,11 @@ public:
 
 	void   CloseAllPanes();
 
-	IPane* FindPaneByClass(const char* paneClassName);
-	IPane* FindPaneByTitle(const char* title);
+	IPane*              FindPaneByClass(const char* paneClassName);
+	IPane*              FindPaneByTitle(const char* title);
+	IPane*              FindPane(const std::function<bool(IPane*, const string& /*className*/)>& predicate);
+	std::vector<IPane*> FindAllPanelsByClass(const char* paneClassName);
 
-	void   Close(IPane* pane);
 	void   BringToFront(IPane* pane);
 	IPane* OpenOrCreatePane(const char* paneClassName);
 
@@ -85,7 +80,7 @@ public:
 
 	static CTabPaneManager* GetInstance();
 
-	void OnTabPaneMoved(QWidget* tabPane, bool visible);
+	void                    OnTabPaneMoved(QWidget* tabPane, bool visible);
 
 private:
 	QTabPane*                 CreateTabPane(const char* paneClassName, const char* title = 0, int nOverrideDockDirection = -1, bool bLoadLayoutPersonalization = false);
@@ -101,10 +96,9 @@ private:
 
 	class QToolWindowManager* GetToolManager() const;
 
-	void                      SetDefaultLayout();
-
 	QTabPane*                 FindTabPane(IPane* pane);
 
+	void                      FocusTabPane(QTabPane* pPane);
 	bool                      CloseTabPane(QTabPane* pane);
 
 	bool                      LoadLayoutFromFile(const char* fullFilename);
@@ -130,4 +124,3 @@ private:
 	QWidget* const                 m_pParent;
 	bool                           m_layoutLoaded;
 };
-

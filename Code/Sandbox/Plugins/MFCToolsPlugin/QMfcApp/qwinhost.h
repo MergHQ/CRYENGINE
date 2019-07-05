@@ -38,14 +38,13 @@
 **
 ****************************************************************************/
 
-// Declaration of the QWinHost classes
+#pragma once
 
-#ifndef QWINHOST_H
-#define QWINHOST_H
-
+#include "MFCToolsDefines.h"
+#include "Controls/SandboxWindowing.h"
 #include <QWidget>
 
-class PLUGIN_API QWinHost : public QWidget
+class MFC_TOOLS_PLUGIN_API QWinHost : public QMFCPaneHost
 {
 	Q_OBJECT
 public:
@@ -56,18 +55,12 @@ public:
 	HWND window() const;
 
 protected:
-	virtual HWND createWindow(HWND parent, HINSTANCE instance);
-
 	bool         event(QEvent* e);
 	void         showEvent(QShowEvent*);
 	void         focusInEvent(QFocusEvent*);
 	void         resizeEvent(QResizeEvent*);
 
-#if QT_VERSION >= 0x050000
 	bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-#else
-	bool winEvent(MSG* msg, long* result);
-#endif
 
 protected:
 	void         fixParent();
@@ -77,6 +70,3 @@ protected:
 	bool  own_hwnd;
 	HWND  hwnd;
 };
-
-#endif // QWINHOST_H
-

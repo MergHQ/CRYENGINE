@@ -5,6 +5,7 @@
 #include <IEditor.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/AssetImporter.h>
+#include <CryString/CryPath.h>
 
 CModel::CModel()
 	: m_pAsset(nullptr)
@@ -16,15 +17,6 @@ CModel::CModel()
 		signalBeginChange();
 	}, (uintptr_t)this);
 	pAssetManager->signalAfterAssetsInserted.Connect([this](const std::vector<CAsset*>&)
-	{
-		signalEndChange();
-	}, (uintptr_t)this);
-
-	pAssetManager->signalBeforeAssetsUpdated.Connect([this]()
-	{
-		signalBeginChange();
-	}, (uintptr_t)this);
-	pAssetManager->signalAfterAssetsUpdated.Connect([this]()
 	{
 		signalEndChange();
 	}, (uintptr_t)this);
@@ -55,9 +47,6 @@ CModel::~CModel()
 
 	pAssetManager->signalBeforeAssetsInserted.DisconnectById((uintptr_t)this);
 	pAssetManager->signalAfterAssetsInserted.DisconnectById((uintptr_t)this);
-
-	pAssetManager->signalBeforeAssetsUpdated.DisconnectById((uintptr_t)this);
-	pAssetManager->signalAfterAssetsUpdated.DisconnectById((uintptr_t)this);
 
 	pAssetManager->signalBeforeAssetsRemoved.DisconnectById((uintptr_t)this);
 	pAssetManager->signalAfterAssetsRemoved.DisconnectById((uintptr_t)this);
@@ -106,4 +95,3 @@ const std::vector<string> CModel::GetSourceFileExtensions(const CAssetType* asse
 	}
 	return {};
 }
-

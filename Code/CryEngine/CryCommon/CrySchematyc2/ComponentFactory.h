@@ -188,6 +188,10 @@ namespace Schematyc2
 			return m_pDefaultNetworkParams ? m_pDefaultNetworkParams->Clone() : INetworkSpawnParamsPtr();
 		}
 
+		virtual Cry::Type::CTypeDesc GetTypeDesc() const final
+		{
+			return Cry::Type::DescOf<COMPONENT>();
+		}
 		// ~IComponentFactory
 
 	private:

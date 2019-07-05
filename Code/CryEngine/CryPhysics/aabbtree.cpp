@@ -158,7 +158,7 @@ float CAABBTree::BuildNode(int iNode, int iTriStart,int nTris, Vec3 center,Vec3 
 		return size.GetVolume();
 	}
 
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	volatile // compiler bug workaround?
 #endif
 	int iAxis, allowedAxis=-1;
@@ -629,7 +629,7 @@ void CAABBTree::Load(CMemStream &stm, CGeometry *pGeom)
 
 int CAABBTree::SanityCheck()
 {
-	int iCaller = MAX_PHYS_THREADS;
+	const int iCaller = MAX_PHYS_THREADS;
 	const int maxDepth1 = (CRY_ARRAY_COUNT(g_BBoxBuf)-1)/4;
 	const int maxDepth2 = (CRY_ARRAY_COUNT(g_BBoxExtBuf)-1)/2;
 	return SanityCheckTree(this, min(maxDepth1, maxDepth2));

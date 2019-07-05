@@ -35,9 +35,9 @@ public:
 		}
 	}
 
-	virtual uint64 GetEventMask() const override
+	virtual Cry::Entity::EventFlags GetEventMask() const override
 	{
 		// Listen to the enter and leave events, in order to receive callbacks above when entities enter our trigger box
-		return ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVEAREA);
+		return { ENTITY_EVENT_ENTERAREA, ENTITY_EVENT_LEAVEAREA };
 	}
 };

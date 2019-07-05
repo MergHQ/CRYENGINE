@@ -95,7 +95,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 		}
 
 		D3DShaderResource* pSRV = NULL;
-		hr = gcpRendD3D->GetDevice().CreateShaderResourceView(pResource, &srvDesc, &pSRV);
+		hr = gcpRendD3D->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, &pSRV);
 		pResult = pSRV;
 	}
 	else // SResourceView::eRenderTargetView || SResourceView::eDepthStencilView || SResourceView::eUnorderedAccessView)
@@ -156,7 +156,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 		case SResourceView::eRenderTargetView:
 			{
 				D3DSurface* pRTV = NULL;
-				hr = gcpRendD3D->GetDevice().CreateRenderTargetView(pResource, &rtvDesc, &pRTV);
+				hr = gcpRendD3D->GetDevice()->CreateRenderTargetView(pResource, &rtvDesc, &pRTV);
 				pResult = pRTV;
 			}
 			break;
@@ -187,7 +187,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 					dsvDesc.ViewDimension = (D3D11_DSV_DIMENSION)(rtvDesc.ViewDimension - 1);
 
 				D3DDepthSurface* pDSV = NULL;
-				hr = gcpRendD3D->GetDevice().CreateDepthStencilView(pResource, &dsvDesc, &pDSV);
+				hr = gcpRendD3D->GetDevice()->CreateDepthStencilView(pResource, &dsvDesc, &pDSV);
 				pResult = pDSV;
 			}
 			break;
@@ -207,7 +207,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 					uavDesc.ViewDimension = D3D11_UAV_DIMENSION_UNKNOWN;
 
 				D3DUAV* pUAV = NULL;
-				hr = gcpRendD3D->GetDevice().CreateUnorderedAccessView(pResource, &uavDesc, &pUAV);
+				hr = gcpRendD3D->GetDevice()->CreateUnorderedAccessView(pResource, &uavDesc, &pUAV);
 				pResult = pUAV;
 			}
 			break;
@@ -305,7 +305,7 @@ CDeviceResource::ESubstitutionResult CDeviceResource::SubstituteUsedResource()
 	const auto& fenceManager = rFactory.GetDX11Scheduler()->GetFenceManager();
 
 	// NOTE: Poor man's resource tracking (take current time as last-used moment)
-	HRESULT hResult = rFactory.GetDX11Device()->SubstituteUsedCommittedResource(fenceManager.GetCurrentValues(), &m_pNativeResource);
+	HRESULT hResult = rFactory.GetDX11Device()->SubstituteUsedCommittedResource(fenceManager.GetCurrentValue(), &m_pNativeResource);
 
 	if (hResult == S_FALSE)
 		return eSubResult_Kept;
@@ -385,9 +385,6 @@ STextureLayout CDeviceTexture::GetLayout() const
 	Layout.m_eTT = m_eTT;
 	Layout.m_eFlags = m_eFlags;
 	Layout.m_bIsSRGB = m_bIsSrgb;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	Layout.m_nESRAMOffset = SKIP_ESRAM;
-#endif
 
 	if (!GetBaseTexture())
 		return Layout;
@@ -515,12 +512,6 @@ STextureLayout CDeviceTexture::GetLayout(D3DBaseView* pView)
 	else if (pView->m_Type == 1) { pDSV = static_cast<D3DDepthSurface*>(pView); }
 	else if (pView->m_Type == 2) { pSRV = static_cast<D3DShaderResource*>(pView); }
 	else if (pView->m_Type == 3) { pUAV = static_cast<D3DUAV*>(pView); }
-#elif !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES
-	// TODO for GL
-	pView->QueryInterface(__uuidof(ID3D11UnorderedAccessView), (void**)&pUAV);
-	pView->QueryInterface(__uuidof(ID3D11ShaderResourceView), (void**)&pSRV);
-	pView->QueryInterface(__uuidof(ID3D11DepthStencilView), (void**)&pDSV);
-	pView->QueryInterface(__uuidof(ID3D11RenderTargetView), (void**)&pRTV);
 #endif
 
 	if (pUAV)
@@ -719,9 +710,6 @@ STextureLayout CDeviceTexture::GetLayout(D3DBaseView* pView)
 	Layout.m_nDepth       = nDepth;
 	Layout.m_nMips        = nMips;
 	Layout.m_nArraySize   = nSlices;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	Layout.m_nESRAMOffset = SKIP_ESRAM;
-#endif
 
 	return Layout;
 }
@@ -735,10 +723,10 @@ SResourceMemoryAlignment CDeviceTexture::GetAlignment(uint8 mip /*= 0*/, uint8 s
 	if (!(Layout.m_nHeight = Layout.m_nHeight >> mip)) Layout.m_nHeight = 1;
 	if (!(Layout.m_nDepth  = Layout.m_nDepth  >> mip)) Layout.m_nDepth  = 1;
 
-	Alignment.typeStride   = CTexture::TextureDataSize(1              , 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
-	Alignment.rowStride    = CTexture::TextureDataSize(Layout.m_nWidth, 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
-	Alignment.planeStride  = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
-	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat));
+	Alignment.typeStride   = CTexture::TextureDataSize(1              , 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.rowStride    = CTexture::TextureDataSize(Layout.m_nWidth, 1               , 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.planeStride  = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, 1              , 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
+	Alignment.volumeStride = CTexture::TextureDataSize(Layout.m_nWidth, Layout.m_nHeight, Layout.m_nDepth, 1, 1, DeviceFormats::ConvertToTexFormat(m_eNativeFormat), eTM_None);
 
 	return Alignment;
 }
@@ -769,26 +757,27 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTra
 	if (!(pStagingResource = m_pStagingResource[0]))
 	{
 		pStagingResource = GetDeviceObjectFactory().AllocateStagingResource(m_pNativeResource, FALSE, pStagingMemory);
+		::SetDebugName(pStagingResource, stack_string(::GetDebugName(pStagingResource).c_str()).append(" Write-StagingB"));
 	}
 
 	assert(pStagingResource);
 
 #if (CRY_RENDERER_DIRECT3D >= 111)
-	gcpRendD3D->GetDeviceContext().CopySubresourceRegion1(pStagingResource, nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
+	gcpRendD3D->GetDeviceContext()->CopySubresourceRegion1(pStagingResource, nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
 #else
-	gcpRendD3D->GetDeviceContext().CopySubresourceRegion(pStagingResource, nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL);
+	gcpRendD3D->GetDeviceContext()->CopySubresourceRegion(pStagingResource, nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL);
 #endif
 
 	// Although CopySubresourceRegion() is asynchronous, the following Map() will synchronize under D3D11
 	// And without Map() there is no access to the contents, which means synchronization is automatic.
 
 	D3D11_MAPPED_SUBRESOURCE lrct;
-	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_READ, 0, &lrct);
+	HRESULT hr = gcpRendD3D->GetDeviceContext()->Map(pStagingResource, nSubRes, D3D11_MAP_READ, 0, &lrct);
 
 	if (S_OK == hr)
 	{
 		const bool update = cbTransfer(lrct.pData, lrct.RowPitch, lrct.DepthPitch);
-		gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Unmap(pStagingResource, nSubRes);
+		gcpRendD3D->GetDeviceContext()->Unmap(pStagingResource, nSubRes);
 	}
 
 	if (!(m_pStagingResource[0]))
@@ -802,9 +791,9 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes)
 	assert(m_pStagingResource[0]);
 
 #if (CRY_RENDERER_DIRECT3D >= 111)
-	gcpRendD3D->GetDeviceContext().CopySubresourceRegion1(m_pStagingResource[0], nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
+	gcpRendD3D->GetDeviceContext()->CopySubresourceRegion1(m_pStagingResource[0], nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
 #else
-	gcpRendD3D->GetDeviceContext().CopySubresourceRegion(m_pStagingResource[0], nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL);
+	gcpRendD3D->GetDeviceContext()->CopySubresourceRegion(m_pStagingResource[0], nSubRes, 0, 0, 0, m_pNativeResource, nSubRes, NULL);
 #endif
 
 	GetDeviceObjectFactory().IssueFence(m_hStagingFence[0]);
@@ -817,6 +806,7 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes, StagingHook
 	if (!(pStagingResource = m_pStagingResource[1]))
 	{
 		pStagingResource = GetDeviceObjectFactory().AllocateStagingResource(m_pNativeResource, TRUE, pStagingMemory);
+		::SetDebugName(pStagingResource, stack_string(::GetDebugName(pStagingResource).c_str()).append(" Read-StagingB"));
 	}
 	else
 	{
@@ -830,20 +820,20 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes, StagingHook
 	// D3D11_USAGE_DYNAMIC Resources must use either MAP_WRITE_DISCARD or MAP_WRITE_NO_OVERWRITE with Map.
 
 	D3D11_MAPPED_SUBRESOURCE lrct;
-	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_NO_OVERWRITE_SR, 0, &lrct);
+	HRESULT hr = gcpRendD3D->GetDeviceContext()->Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_NO_OVERWRITE_SR, 0, &lrct);
 	if (S_OK != hr)
-		hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_DISCARD_SR, 0, &lrct);
+		hr = gcpRendD3D->GetDeviceContext()->Map(pStagingResource, nSubRes, D3D11_MAP_WRITE_DISCARD_SR, 0, &lrct);
 
 	if (S_OK == hr)
 	{
 		const bool update = cbTransfer(lrct.pData, lrct.RowPitch, lrct.DepthPitch);
-		gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Unmap(pStagingResource, 0);
+		gcpRendD3D->GetDeviceContext()->Unmap(pStagingResource, 0);
 		if (update)
 		{
 #if (CRY_RENDERER_DIRECT3D >= 111)
-			gcpRendD3D->GetDeviceContext().CopySubresourceRegion1(m_pNativeResource, nSubRes, 0, 0, 0, pStagingResource, nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
+			gcpRendD3D->GetDeviceContext()->CopySubresourceRegion1(m_pNativeResource, nSubRes, 0, 0, 0, pStagingResource, nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
 #else
-			gcpRendD3D->GetDeviceContext().CopySubresourceRegion(m_pNativeResource, nSubRes, 0, 0, 0, pStagingResource, nSubRes, NULL);
+			gcpRendD3D->GetDeviceContext()->CopySubresourceRegion(m_pNativeResource, nSubRes, 0, 0, 0, pStagingResource, nSubRes, NULL);
 #endif
 		}
 	}
@@ -859,9 +849,9 @@ void CDeviceTexture::UploadFromStagingResource(const uint32 nSubRes)
 	assert(m_pStagingResource[1]);
 
 #if (CRY_RENDERER_DIRECT3D >= 111)
-	gcpRendD3D->GetDeviceContext().CopySubresourceRegion1(m_pNativeResource, nSubRes, 0, 0, 0, m_pStagingResource[1], nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
+	gcpRendD3D->GetDeviceContext()->CopySubresourceRegion1(m_pNativeResource, nSubRes, 0, 0, 0, m_pStagingResource[1], nSubRes, NULL, D3D11_COPY_NO_OVERWRITE);
 #else
-	gcpRendD3D->GetDeviceContext().CopySubresourceRegion(m_pNativeResource, nSubRes, 0, 0, 0, m_pStagingResource[1], nSubRes, NULL);
+	gcpRendD3D->GetDeviceContext()->CopySubresourceRegion(m_pNativeResource, nSubRes, 0, 0, 0, m_pStagingResource[1], nSubRes, NULL);
 #endif
 
 	GetDeviceObjectFactory().IssueFence(m_hStagingFence[1]);
@@ -873,12 +863,12 @@ void CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload, S
 	GetDeviceObjectFactory().SyncFence(m_hStagingFence[forUpload], true, true);
 
 	D3D11_MAPPED_SUBRESOURCE lrct;
-	HRESULT hr = gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(m_pStagingResource[forUpload], nSubRes, forUpload ? D3D11_MAP_WRITE : D3D11_MAP_READ, 0, &lrct);
+	HRESULT hr = gcpRendD3D->GetDeviceContext()->Map(m_pStagingResource[forUpload], nSubRes, forUpload ? D3D11_MAP_WRITE : D3D11_MAP_READ, 0, &lrct);
 
 	if (S_OK == hr)
 	{
 		const bool update = cbTransfer(lrct.pData, lrct.RowPitch, lrct.DepthPitch);
-		gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Unmap(m_pStagingResource[forUpload], nSubRes);
+		gcpRendD3D->GetDeviceContext()->Unmap(m_pStagingResource[forUpload], nSubRes);
 	}
 }
 

@@ -13,6 +13,8 @@
 #include "StdAfx.h"
 #include "XMLPatcher.h"
 #include <CryString/StringUtils.h>
+#include <CrySystem/ConsoleRegistration.h>
+#include <CrySystem/File/ICryPak.h>
 
 CXMLPatcher::CXMLPatcher(XmlNodeRef& patchXML)
 {

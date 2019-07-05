@@ -21,6 +21,9 @@
 
 CTerrain::CTerrain(const STerrainInfo& TerrainInfo)
 {
+	m_nUnitsToSectorBitShift = 0;
+	m_fHeightmapZRatio = 0;
+	m_bHeightMapModified = false;
 	m_bProcVegetationInUse = false;
 	m_nLoadedSectors = 0;
 	m_bOceanIsVisible = 0;
@@ -48,6 +51,7 @@ CTerrain::CTerrain(const STerrainInfo& TerrainInfo)
 	}
 
 	m_fInvUnitSize = 1.f / m_fUnitSize;
+	m_nTerrainUnits = TerrainInfo.heightMapSize_InUnits;
 	m_nTerrainSize = int(TerrainInfo.heightMapSize_InUnits * m_fUnitSize);
 	m_nSectorSize = TerrainInfo.sectorSize_InMeters;
 	m_nSectorsTableSize = TerrainInfo.sectorsTableSize_InSectors;
@@ -64,13 +68,12 @@ CTerrain::CTerrain(const STerrainInfo& TerrainInfo)
 
 	assert(m_nSectorsTableSize == m_nTerrainSize / m_nSectorSize);
 
-	m_nTerrainSizeDiv = int(m_nTerrainSize * m_fInvUnitSize) - 1;
-
 	assert(!Get3DEngine()->m_pObjectsTree);
 	Get3DEngine()->m_pObjectsTree = COctreeNode::Create(AABB(Vec3(0,0,0), Vec3((float)GetTerrainSize())), NULL);
 
 	m_SSurfaceType.PreAllocate(SRangeInfo::e_max_surface_types, SRangeInfo::e_max_surface_types);
 
+	ResetHeightMapCache();
 	InitHeightfieldPhysics();
 
 	if (GetRenderer())
@@ -238,8 +241,7 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 	if (!bNoLog)
 		PrintMessage("Opening %s ...", szFileName);
 
-	// rbx open flags, x is a hint to not cache whole file in memory.
-	FILE* fpDiffTexFile = gEnv->pCryPak->FOpen(Get3DEngine()->GetLevelFilePath(szFileName), "rbx");
+	FILE* fpDiffTexFile = gEnv->pCryPak->FOpen(Get3DEngine()->GetLevelFilePath(szFileName), "rb");
 
 	if (!fpDiffTexFile)
 	{
@@ -343,11 +345,11 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 
 		if (!m_bEditor)
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CTerrain::OpenTerrainTextureFile: ReleaseHoleNodes & UpdateTerrainNodes");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CTerrain::OpenTerrainTextureFile: ReleaseHoleNodes & UpdateTerrainNodes");
 
-			int nNodesCounterBefore = CTerrainNode::m_nNodesCounter;
+			int nNodesCounterBefore = CTerrainNode::s_nodesCounter;
 			GetParentNode()->ReleaseHoleNodes();
-			PrintMessage("  %d out of %d nodes cleaned", nNodesCounterBefore - CTerrainNode::m_nNodesCounter, nNodesCounterBefore);
+			PrintMessage("  %d out of %d nodes cleaned", nNodesCounterBefore - CTerrainNode::s_nodesCounter, nNodesCounterBefore);
 
 			if (Get3DEngine()->m_pObjectsTree)
 				Get3DEngine()->m_pObjectsTree->UpdateTerrainNodes();
@@ -376,6 +378,8 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 	m_texCache[0].InitPool(0, m_arrBaseTexInfos.m_TerrainTextureLayer[0].nSectorSizePixels, eTexPoolFormat);
 	m_texCache[1].InitPool(0, m_arrBaseTexInfos.m_TerrainTextureLayer[1].nSectorSizePixels, eTexPoolFormat);
 	m_texCache[2].InitPool(0, nSectorHeightMapTextureDim, eTF_R32F);
+
+	m_isOfflineProceduralVegetationReady = false;
 
 	return true;
 }

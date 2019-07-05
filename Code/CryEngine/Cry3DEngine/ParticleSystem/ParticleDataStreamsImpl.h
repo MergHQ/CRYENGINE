@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #ifdef CRY_PFX2_USE_SSE
 template<> ILINE pfx2::UColv convert<pfx2::UColv>(UCol v) { return _mm_set1_epi32(v.dcolor); }
@@ -18,14 +18,14 @@ ILINE void TIOStream<T>::Fill(SUpdateRange range, T value)
 	UpdateRangeV rangev(range);
 	Tv valuev = convert<Tv>(value);
 	for (TParticleId idx = rangev.m_begin; idx < rangev.m_end; idx += VStride)
-		*(Tv*)(m_pStream + idx) = valuev;
+		*(Tv*)(m_aElems + idx) = valuev;
 }
 
 template<typename T>
-ILINE TIStream<T>::TIStream(const T* pStream, T defaultVal)
-	: TIOStream<T>(pStream ? const_cast<T*>(pStream) : reinterpret_cast<T*>(&m_safeSink))
+ILINE TIStream<T>::TIStream(const T* pStream, uint count, T defaultVal)
+	: TIOStream<const T>(pStream && count ? pStream : reinterpret_cast<const T*>(&m_safeSink), pStream && count ? count : 1)
 	, m_safeSink(convert<Tv>(defaultVal))
-	, m_safeMask(pStream ? ~0 : 0)
+	, m_safeMask(pStream && count ? ~0 : 0)
 {
 }
 

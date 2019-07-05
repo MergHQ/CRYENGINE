@@ -5,6 +5,8 @@
 #include "Effects/GameEffects/LightningGameEffect.h"
 #include "Utility/Hermite.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryMath/Random.h>
 
 void CLightningRenderNode::CTriStrip::Reset()
 {
@@ -47,7 +49,7 @@ void CLightningRenderNode::CTriStrip::Draw(const SRendParams& renderParams, cons
 
 	bool nAfterWater = true;
 
-	pRenderObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+	pRenderObject->SetMatrix(Matrix34::CreateIdentity());
 	pRenderObject->m_ObjFlags |= FOB_NO_FOG;
 	pRenderObject->m_ObjFlags &= ~FOB_ALLOW_TESSELLATION;
 	pRenderObject->m_nSort = fastround_positive(distanceToCamera * 2.0f);
@@ -170,7 +172,6 @@ void CLightningRenderNode::CSegment::Draw(const SLightningParams& desc, const SP
 		Vec3 up0 = dir0.Cross(front);
 		Vec3 up1 = dir1.Cross(front);
 		Vec3 up = (up0 + up1).GetNormalized();
-		float t = i / float(m_numFuzzyPoints - 1);
 
 		SLightningVertex v;
 		v.color = white;
@@ -232,16 +233,6 @@ CLightningRenderNode::~CLightningRenderNode()
 {
 }
 
-const char* CLightningRenderNode::GetEntityClassName() const
-{
-	return "Lightning";
-}
-
-const char* CLightningRenderNode::GetName() const
-{
-	return "Lightning";
-}
-
 void CLightningRenderNode::Render(const struct SRendParams& rParam, const SRenderingPassInfo& passInfo)
 {
 	if (!m_pMaterial)
@@ -267,16 +258,6 @@ IPhysicalEntity* CLightningRenderNode::GetPhysics() const
 
 void CLightningRenderNode::SetPhysics(IPhysicalEntity*)
 {
-}
-
-void CLightningRenderNode::SetMaterial(IMaterial* pMat)
-{
-	m_pMaterial = pMat;
-}
-
-IMaterial* CLightningRenderNode::GetMaterialOverride()
-{
-	return m_pMaterial;
 }
 
 void CLightningRenderNode::Precache()

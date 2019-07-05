@@ -7,16 +7,9 @@
 #include <CryRenderer/VertexFormats.h>
 #include "../ModelMesh.h"
 
-/*
-   CSoftwareMesh
- */
-
 CSoftwareMesh::CSoftwareMesh() :
 	m_blendCount(0)
-{
-}
-
-//
+{}
 
 bool CSoftwareMesh::Create(const CMesh& mesh, const DynArray<RChunk>& renderChunks, const Vec3& positionOffset)
 {
@@ -103,7 +96,7 @@ bool CSoftwareMesh::Create(const CMesh& mesh, const DynArray<RChunk>& renderChun
 			colors[i] = 0xffffffff;
 		coords[i] = mesh.m_pTexCoord[i].GetUV();
 		tangents[i] = mesh.m_pQTangents[i].GetQ();
-		assert(tangents[i].IsUnit());
+		CRY_ASSERT(tangents[i].IsUnit());
 	}
 
 #if defined(SUBDIVISION_ACC_ENGINE)
@@ -213,8 +206,7 @@ bool CSoftwareMesh::Create(IRenderMesh& renderMesh, const DynArray<RChunk>& rend
 
 	AllocateVertices(vertexCount);
 
-	const bool texCoordsAre32Bits = renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3F_C4B_T2F;
-	CRY_ASSERT(texCoordsAre32Bits || renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3S_C4B_T2S);
+	CRY_ASSERT(renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3F_C4B_T2F || renderMesh.GetVertexFormat() == EDefaultInputLayouts::P3S_C4B_T2S);
 
 	strided_pointer<Vec3> positions = GetWritePositions();
 	strided_pointer<uint32> colors = GetWriteColors();
@@ -224,14 +216,11 @@ bool CSoftwareMesh::Create(IRenderMesh& renderMesh, const DynArray<RChunk>& rend
 	{
 		positions[i] = *((const Vec3*)(pPositions + i * positionStride)) + positionOffset;
 		colors[i] = *((const uint32*)(pColors + i * colorStride));
-		if (texCoordsAre32Bits)
-			coords[i] = *((const Vec2*)(pCoords + i * coordStride));
-		else
-			coords[i] = ((const Vec2f16*)(pCoords + i * coordStride))->ToVec2();
+		coords[i] = *((const Vec2*)(pCoords + i * coordStride));
 
 		const SPipQTangents& tangent = *(const SPipQTangents*)(pTangents + i * tangentStride);
 		tangents[i] = SPipQTangents(tangent).GetQ();
-		assert(tangents[i].IsUnit());
+		CRY_ASSERT(tangents[i].IsUnit());
 	}
 
 	strided_pointer<SoftwareVertexBlendIndex> blendIndices = GetWriteBlendIndices();
@@ -306,8 +295,7 @@ bool CSoftwareVertexFrames::Create(const CSkinningInfo& skinningInfo, const Vec3
 		frame.name = skinningInfo.m_arrMorphTargets[i]->m_strName;
 
 		uint vertexCount = uint(skinningInfo.m_arrMorphTargets[i]->m_arrExtMorph.size());
-		assert(vertexCount);
-		if (vertexCount <= 0)
+		if (!CRY_VERIFY(vertexCount != 0))
 		{
 			//			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION,VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "arrExtMorph[] is empty in lod %d", nLOD);
 			return false;

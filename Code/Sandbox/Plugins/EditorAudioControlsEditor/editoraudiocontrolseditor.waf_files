@@ -1,64 +1,107 @@
 {
     "EditorAudioControlsEditor_uber_0.cpp": {
-        "Connections": [
-            "ConnectionsWidget.h", 
-            "ConnectionsWidget.cpp", 
-            "ConnectionsModel.h", 
-            "ConnectionsModel.cpp"
-        ], 
-        "MiddlewareData": [
-            "MiddlewareDataWidget.h", 
-            "MiddlewareDataWidget.cpp", 
-            "MiddlewareDataModel.h", 
-            "MiddlewareDataModel.cpp"
-        ], 
-        "Preferences": [
-            "PreferencesDialog.h", 
-            "PreferencesDialog.cpp"
-        ], 
-        "Properties": [
-            "PropertiesWidget.h", 
-            "PropertiesWidget.cpp"
-        ], 
-        "ResourceSelector": [
-            "ResourceSelectors.cpp", 
-            "ResourceSelectorDialog.cpp", 
-            "ResourceSelectorDialog.h", 
-            "ResourceSelectorModel.cpp", 
-            "ResourceSelectorModel.h"
-        ], 
+        "Assets": [
+            "Asset.cpp",
+            "Asset.h",
+            "AssetsManager.cpp",
+            "AssetsManager.h",
+            "Control.cpp",
+            "Control.h",
+            "Folder.cpp",
+            "Folder.h",
+            "Library.cpp",
+            "Library.h"
+        ],
+        "ConnectionsWidget": [
+            "ConnectionsWidget.cpp",
+            "ConnectionsWidget.h",
+            "ConnectionsModel.cpp",
+            "ConnectionsModel.h"
+        ],
+        "Deprecated": [
+            "AudioControlsLoader.cpp",
+            "AudioControlsLoader.h"
+        ],
+        "Editor": [
+            "AudioControlsEditorPlugin.cpp",
+            "AudioControlsEditorPlugin.h",
+            "ImplementationManager.cpp",
+            "ImplementationManager.h",
+            "MainWindow.cpp",
+            "MainWindow.h"
+        ],
+        "FileImporter": [
+            "CreateFolderDialog.cpp",
+            "CreateFolderDialog.h",
+            "FileImporterDialog.cpp",
+            "FileImporterDialog.h",
+            "FileImporterModel.cpp",
+            "FileImporterModel.h",
+            "FolderSelectorDialog.cpp",
+            "FolderSelectorDialog.h",
+            "FolderSelectorFilterModel.cpp",
+            "FolderSelectorFilterModel.h"
+        ],
+        "FileUtils": [
+            "FileLoader.cpp",
+            "FileLoader.h",
+            "FileMonitorBase.cpp",
+            "FileMonitorBase.h",
+            "FileMonitorMiddleware.cpp",
+            "FileMonitorMiddleware.h",
+            "FileMonitorSystem.cpp",
+            "FileMonitorSystem.h",
+            "FileWriter.cpp",
+            "FileWriter.h"
+        ],
+        "MiddlewareDataWidget": [
+            "MiddlewareDataWidget.cpp",
+            "MiddlewareDataWidget.h"
+        ],
+        "PreferencesDialog": [
+            "PreferencesDialog.cpp",
+            "PreferencesDialog.h"
+        ],
+        "PropertiesWidget": [
+            "PropertiesWidget.cpp",
+            "PropertiesWidget.h"
+        ],
+        "ResourceSelectorDialog": [
+            "ResourceSelectors.cpp",
+            "ResourceSelectorDialog.cpp",
+            "ResourceSelectorDialog.h",
+            "ResourceFilterProxyModel.cpp",
+            "ResourceFilterProxyModel.h",
+            "ResourceLibraryModel.cpp",
+            "ResourceLibraryModel.h",
+            "ResourceSourceModel.cpp",
+            "ResourceSourceModel.h"
+        ],
         "Root": [
-            "AudioAssetsManager.h", 
-            "AudioAssetsManager.cpp", 
-            "AudioControlsEditorPlugin.cpp", 
-            "AudioControlsEditorPlugin.h", 
-            "AudioControlsEditorWindow.h", 
-            "AudioControlsEditorWindow.cpp", 
-            "StdAfx.cpp", 
-            "StdAfx.h", 
-            "AudioControlsWriter.cpp", 
-            "AudioControlsWriter.h", 
-            "AudioControlsLoader.h", 
-            "AudioControlsLoader.cpp", 
-            "AudioAssets.h", 
-            "AudioAssets.cpp", 
-            "AudioControlsEditorUndo.h", 
-            "AudioControlsEditorUndo.cpp", 
-            "ImplementationManager.h", 
-            "ImplementationManager.cpp", 
-            "SystemControlsEditorIcons.h", 
-            "AudioTreeView.cpp", 
-            "AudioTreeView.h", 
-            "FileMonitor.cpp", 
-            "FileMonitor.h"
-        ], 
-        "SystemControls": [
-            "SystemControlsWidget.h", 
-            "SystemControlsWidget.cpp", 
-            "SystemControlsModel.cpp", 
-            "SystemControlsModel.h"
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ],
+        "SystemControlsWidget": [
+            "SystemControlsWidget.cpp",
+            "SystemControlsWidget.h",
+            "SystemFilterProxyModel.cpp",
+            "SystemFilterProxyModel.h",
+            "SystemLibraryModel.cpp",
+            "SystemLibraryModel.h",
+            "SystemSourceModel.cpp",
+            "SystemSourceModel.h"
+        ],
+        "Utils": [
+            "AssetIcons.h",
+            "AssetUtils.cpp",
+            "AssetUtils.h",
+            "NameValidator.cpp",
+            "NameValidator.h",
+            "ScopeInfo.h",
+            "TreeView.cpp",
+            "TreeView.h"
         ]
-    }, 
+    },
     "NoUberFile": {
         "Resources": [
             "AudioControlsEditorUI.qrc"

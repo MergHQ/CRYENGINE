@@ -70,13 +70,6 @@ public:
 #ifdef STREAMENGINE_ENABLE_STATS
 	struct SStats
 	{
-		SStats() : m_nTotalReadBytes(0), m_nCurrentReadBandwith(0),
-			m_nReadBytesInLastSecond(0), m_fReadingDuringLastSecond(.0f),
-			m_nTempBytesRead(0), m_nActualReadBandwith(0), m_nTempReadOffset(0),
-			m_nTotalReadOffset(0), m_nReadOffsetInLastSecond(0), m_nTempRequestCount(0),
-			m_nTotalRequestCount(0), m_nRequestCountInLastSecond(0)
-		{}
-
 		void Update(const CTimeValue& deltaT);
 
 		void Reset()
@@ -87,20 +80,20 @@ public:
 			m_TotalReadTime.SetValue(0);
 		}
 
-		float      m_fReadingDuringLastSecond;
+		float      m_fReadingDuringLastSecond  = .0f;
 		CTimeValue m_TotalReadTime;
-		uint64     m_nTotalReadBytes;
-		uint64     m_nTotalReadOffset;
-		uint32     m_nTotalRequestCount;
-		uint32     m_nCurrentReadBandwith;  // Read bandwidth over one second
-		uint32     m_nActualReadBandwith;   // Actual read bandwidth extrapolated over one second
-		uint32     m_nReadBytesInLastSecond;
-		uint32     m_nRequestCountInLastSecond;
-		uint64     m_nReadOffsetInLastSecond;
+		uint64     m_nTotalReadBytes           = 0;
+		uint64     m_nTotalReadOffset          = 0;
+		uint32     m_nTotalRequestCount        = 0;
+		uint32     m_nCurrentReadBandwith      = 0;  // Read bandwidth over one second
+		uint32     m_nActualReadBandwith       = 0;   // Actual read bandwidth extrapolated over one second
+		uint32     m_nReadBytesInLastSecond    = 0;
+		uint32     m_nRequestCountInLastSecond = 0;
+		uint64     m_nReadOffsetInLastSecond   = 0;
 
-		uint32     m_nTempRequestCount;
-		uint64     m_nTempBytesRead;
-		uint64     m_nTempReadOffset;
+		uint32     m_nTempRequestCount = 0;
+		uint64     m_nTempBytesRead    = 0;
+		uint64     m_nTempReadOffset   = 0;
 		CTimeValue m_TempReadTime;
 	};
 

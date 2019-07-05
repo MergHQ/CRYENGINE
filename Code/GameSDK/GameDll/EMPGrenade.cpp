@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "EMPGrenade.h"
+#include "GameCVars.h"
 #include "Player.h"
 
 CEMPGrenade::CEMPGrenade() : m_bActive(false), m_pulsePos(ZERO)
@@ -17,8 +18,6 @@ void CEMPGrenade::Update( SEntityUpdateContext &ctx, int updateSlot )
 {
 	if (m_bActive)
 	{
-		const Matrix34& worldMat = GetEntity()->GetWorldTM();
-
 		if(gEnv->bServer && m_postExplosionLifetime > 0.f)
 		{
 			m_postExplosionLifetime -= ctx.fFrameTime;

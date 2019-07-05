@@ -1,12 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 /*
    quadtree definition
  */
-#ifndef QUADTREE_H
-#define QUADTREE_H
-
-#pragma once
 
 #include "QuadtreeHelper.h"
 #include <CryCore/Platform/platform.h>
@@ -653,7 +651,7 @@ private:
 	  const float cRadiusSq
 	) const;
 	//!< makes sure that there exist no node without any leaves or children
-	void        EnsureTreeIntegrity(const TTravRecVecType crTraversedNodes);
+	void        EnsureTreeIntegrity(const TTravRecVecType& crTraversedNodes);
 	//!< returns the slice index for a given center pos and leaf pos (4 quadrant and each halved as well)
 	const uint8 GetSliceIndex(const float cDirX, const float cDirY, const float cDistSq, uint8& rNextIndex) const;
 	//!< adds all leaves from a leaf node if intersecting with the ray
@@ -707,5 +705,3 @@ private:
 #include "QuadtreeUtilities.inl"
 #include "Quadtree.inl"
 #include "QuadtreeNodeLeaf.inl"
-#endif//QUADTREE_H
-

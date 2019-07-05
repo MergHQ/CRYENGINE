@@ -7,10 +7,6 @@
 
 static const float fMIN_PULSE_PERIOD = 0.1f;
 
-//////////////////////////////////////////////////////////////////////////
-// CParticleSubEmitter implementation.
-//////////////////////////////////////////////////////////////////////////
-
 CParticleSubEmitter::CParticleSubEmitter(CParticleSource* pSource, CParticleContainer* pCont)
 	: m_ChaosKey(0U)
 	, m_nEmitIndex(0)
@@ -53,7 +49,7 @@ void CParticleSubEmitter::Initialize(float fAge)
 	// Compute lifetime params.
 	m_fStartAge = m_fStopAge = m_fActivateAge + params.fSpawnDelay(VRANDOM);
 	m_fLastEmitAge = -fHUGE;
-	if (params.bContinuous)
+	if (params.bContinuous || !params.fParticleLifeTime)
 	{
 		if (params.fEmitterLifeTime)
 			m_fStopAge += params.fEmitterLifeTime(VRANDOM);
@@ -629,7 +625,7 @@ void CParticleSubEmitter::UpdateAudio()
 
 				if (m_startAudioTriggerId != CryAudio::InvalidControlId || m_stopAudioTriggerId != CryAudio::InvalidControlId)
 				{
-					CryAudio::SCreateObjectData const objectData("ParticleSubEmitter", spawnParams.occlusionType, GetEmitTM(), INVALID_ENTITYID, true);
+					CryAudio::SCreateObjectData const objectData("ParticleSubEmitter", spawnParams.occlusionType, GetEmitTM(), true);
 					m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 					m_currentAudioOcclusionType = spawnParams.occlusionType;
 

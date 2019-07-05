@@ -23,27 +23,6 @@
 #include "Brush.h"
 #include "ClipVolumeManager.h"
 
-void C3DEngine::RegisterLightSourceInSectors(SRenderLight* pDynLight, const SRenderingPassInfo& passInfo)
-{
-	// AntonK: this hack for colored shadow maps is temporary, since we will render it another way in the future
-	if (pDynLight->m_Flags & DLF_SUN || !m_pTerrain || !pDynLight->m_pOwner)
-		return;
-
-	if (GetRenderer()->EF_IsFakeDLight(pDynLight))
-		return;
-
-	// pass to outdoor only outdoor lights and some indoor projectors
-	IVisArea* pLightArea = pDynLight->m_pOwner->GetEntityVisArea();
-	if (!pLightArea || ((pDynLight->m_Flags & DLF_PROJECT) && pLightArea->IsConnectedToOutdoor()))
-	{
-		if (m_pObjectsTree)
-			m_pObjectsTree->AddLightSource(pDynLight, passInfo);
-	}
-
-	if (m_pVisAreaManager)
-		m_pVisAreaManager->AddLightSource(pDynLight, passInfo);
-}
-
 ILightSource* C3DEngine::CreateLightSource()
 {
 	// construct new object
@@ -83,7 +62,7 @@ void CLightEntity::SetLightProperties(const SRenderLight& light)
 
 	m_light.m_fLightFrustumAngle = CLAMP(m_light.m_fLightFrustumAngle, 0.f, (LIGHT_PROJECTOR_MAX_FOV / 2.f));
 
-	if (!(m_light.m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT)))
+	if (!(m_light.m_Flags & DLF_PROJECT))
 		m_light.m_fLightFrustumAngle = 90.f / 2.f;
 
 	m_light.m_pOwner = this;
@@ -107,18 +86,6 @@ void CLightEntity::SetLightProperties(const SRenderLight& light)
 		lightEntities.InsertBefore((ILightSource*)this, 0);
 }
 
-const PodArray<SRenderLight*>* C3DEngine::GetStaticLightSources()
-{
-	m_tmpLstLights.Clear();
-
-	for (ILightSource* pStaticLight : m_lstStaticLights)
-	{
-		m_tmpLstLights.Add(&pStaticLight->GetLightProperties());
-	}
-
-	return &m_tmpLstLights;
-}
-
 void C3DEngine::FindPotentialLightSources(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -137,7 +104,7 @@ void C3DEngine::FindPotentialLightSources(const SRenderingPassInfo& passInfo)
 		if (pLight->m_Flags & DLF_DEFERRED_LIGHT)
 			break; // process deferred lights in CLightEntity::Render(), deferred lights are stored in the end of this array
 
-		int nRenderNodeMinSpec = (pLightEntity->m_dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT;
+		int nRenderNodeMinSpec = (pLightEntity->GetRndFlags() & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT;
 		if (!CheckMinSpec(nRenderNodeMinSpec))
 			continue;
 
@@ -155,15 +122,6 @@ void C3DEngine::FindPotentialLightSources(const SRenderingPassInfo& passInfo)
 		if (pLight->m_Flags & DLF_DEFERRED_CUBEMAPS)
 		{
 			OBB obb(OBB::CreateOBBfromAABB(Matrix33(pLight->m_ObjMatrix), AABB(-pLight->m_ProbeExtents, pLight->m_ProbeExtents)));
-			bIsVisible = passInfo.GetCamera().IsOBBVisible_F(pLight->m_Origin, obb);
-		}
-		else if (pLight->m_Flags & DLF_AREA_LIGHT)
-		{
-			// OBB test for area lights.
-			Vec3 vBoxMax(pLight->m_fRadius, pLight->m_fRadius + pLight->m_fAreaWidth, pLight->m_fRadius + pLight->m_fAreaHeight);
-			Vec3 vBoxMin(-0.1f, -(pLight->m_fRadius + pLight->m_fAreaWidth), -(pLight->m_fRadius + pLight->m_fAreaHeight));
-
-			OBB obb(OBB::CreateOBBfromAABB(Matrix33(pLight->m_ObjMatrix), AABB(vBoxMin, vBoxMax)));
 			bIsVisible = passInfo.GetCamera().IsOBBVisible_F(pLight->m_Origin, obb);
 		}
 		else
@@ -277,36 +235,32 @@ void C3DEngine::AddDynamicLightSource(const SRenderLight& LSource, ILightSource*
 
 	for (int i = 0; i < m_lstDynLights.Count(); i++)
 	{
-		if (m_lstDynLights[i]->m_pOwner == pEnt)
+		SRenderLight* pRenderLight = m_lstDynLights[i];
+		if (pRenderLight->m_pOwner == pEnt)
 		{
-			// copy lsource (keep old CRenderObject)
-			CRenderObject* pObj[MAX_RECURSION_LEVELS];
-			memcpy(&pObj[0], &(m_lstDynLights[i]->m_pObject[0]), sizeof(pObj));
-			*m_lstDynLights[i] = LSource;
+			// Keep the referenced objects
+			pRenderLight->CopyFrom(LSource, false);
 
 			//reset DLF_CASTSHADOW_MAPS
 			if (!passInfo.RenderShadows())
-				m_lstDynLights[i]->m_Flags &= ~DLF_CASTSHADOW_MAPS;
-
-			memcpy(&m_lstDynLights[i]->m_pObject[0], &pObj[0], sizeof(pObj));
+				pRenderLight->m_Flags &= ~DLF_CASTSHADOW_MAPS;
 
 			// !HACK: Needs to decrement reference counter of shader because m_lstDynLights never release light sources
-			if (LSource.m_Shader.m_pShader)
-				LSource.m_Shader.m_pShader->Release();
-
-			m_lstDynLights[i]->m_pOwner = pEnt;
+			if (pRenderLight->m_Shader.m_pShader)
+				pRenderLight->m_Shader.m_pShader->Release();
 
 			// set base params
-			//m_lstDynLights[i]->m_BaseOrigin = m_lstDynLights[i]->m_Origin;
+			//pRenderLight->m_BaseOrigin = pRenderLight->m_Origin;
 
 			ColorF cNewColor;
-			IF_LIKELY ((m_lstDynLights[i]->m_Flags & DLF_DEFERRED_CUBEMAPS) == 0)
-				cNewColor = ColorF(LSource.m_Color.r * fFadeout, LSource.m_Color.g * fFadeout, LSource.m_Color.b * fFadeout, LSource.m_Color.a);
+			IF_LIKELY ((pRenderLight->m_Flags & DLF_DEFERRED_CUBEMAPS) == 0)
+				cNewColor = ColorF(pRenderLight->m_Color.r * fFadeout, pRenderLight->m_Color.g * fFadeout, pRenderLight->m_Color.b * fFadeout, pRenderLight->m_Color.a);
 			else
-				cNewColor = ColorF(LSource.m_Color.r, LSource.m_Color.g, LSource.m_Color.b, clamp_tpl(fFadeout, 0.f, 1.f)); // use separate
-			m_lstDynLights[i]->SetLightColor(cNewColor);
+				cNewColor = ColorF(pRenderLight->m_Color.r, pRenderLight->m_Color.g, pRenderLight->m_Color.b, clamp_tpl(fFadeout, 0.f, 1.f)); // use separate
 
-			m_lstDynLights[i]->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
+			pRenderLight->m_pOwner = pEnt;
+			pRenderLight->SetLightColor(cNewColor);
+			pRenderLight->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
 
 			return;
 		}
@@ -316,25 +270,22 @@ void C3DEngine::AddDynamicLightSource(const SRenderLight& LSource, ILightSource*
 	// Add new lsource into list and set some parameters
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
-	m_lstDynLights.Add(new SRenderLight);
-	*m_lstDynLights.Last() = LSource;
+	SRenderLight* pRenderLight = new SRenderLight(LSource);
 
 	// add ref to avoid shader deleting
-	if (m_lstDynLights.Last()->m_Shader.m_pShader)
-		m_lstDynLights.Last()->m_Shader.m_pShader->AddRef();
+	if (pRenderLight->m_Shader.m_pShader)
+		pRenderLight->m_Shader.m_pShader->AddRef();
 
-	m_lstDynLights.Last()->m_pOwner = pEnt;
+	pRenderLight->m_pOwner = pEnt;
+	pRenderLight->SetLightColor(ColorF(pRenderLight->m_Color.r * fFadeout, pRenderLight->m_Color.g * fFadeout, pRenderLight->m_Color.b * fFadeout, pRenderLight->m_Color.a));
+	pRenderLight->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
 
-	m_lstDynLights.Last()->SetLightColor(ColorF(LSource.m_Color.r * fFadeout, LSource.m_Color.g * fFadeout, LSource.m_Color.b * fFadeout, LSource.m_Color.a));
-
-	m_lstDynLights.Last()->m_n3DEngineUpdateFrameID = passInfo.GetMainFrameID();
+	m_lstDynLights.Add(pRenderLight);
 }
 
 void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-
-	const CCamera& rCamera = passInfo.GetCamera();
 
 	m_lstDynLightsNoLight.Clear();
 
@@ -351,103 +302,23 @@ void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& pass
 	}
 	else
 	{
-		IVisArea* pCameraVisArea = GetVisAreaFromPos(rCamera.GetPosition());
-
 		for (int i = 0; i < m_lstDynLights.Count(); i++)
 		{
-			m_lstDynLights[i]->m_Id = -1;
+			SRenderLight* pLight = m_lstDynLights[i];
+			CLightEntity* pLightEntity = (CLightEntity*)pLight->m_pOwner;
 
-			if (m_lstDynLights[i]->m_pOwner && m_lstDynLights[i]->m_pOwner->GetEntityVisArea())
+			pLight->m_Id = -1;
+
+			if (!pLightEntity->IsVisible(AABB(), 0.0f, passInfo))
 			{
-				// vis area lsource
-
-				bool bIsVisible = false;
-				if (m_lstDynLights[i]->m_Flags & DLF_DEFERRED_CUBEMAPS)
-				{
-					OBB obb(OBB::CreateOBBfromAABB(Matrix33(m_lstDynLights[i]->m_ObjMatrix), AABB(-m_lstDynLights[i]->m_ProbeExtents, m_lstDynLights[i]->m_ProbeExtents)));
-					bIsVisible = passInfo.GetCamera().IsOBBVisible_F(m_lstDynLights[i]->m_Origin, obb);
-				}
-				else if (m_lstDynLights[i]->m_Flags & DLF_AREA_LIGHT)
-				{
-					// OBB test for area lights.
-					Vec3 vBoxMax(m_lstDynLights[i]->m_fRadius, m_lstDynLights[i]->m_fRadius + m_lstDynLights[i]->m_fAreaWidth, m_lstDynLights[i]->m_fRadius + m_lstDynLights[i]->m_fAreaHeight);
-					Vec3 vBoxMin(-0.1f, -(m_lstDynLights[i]->m_fRadius + m_lstDynLights[i]->m_fAreaWidth), -(m_lstDynLights[i]->m_fRadius + m_lstDynLights[i]->m_fAreaHeight));
-
-					OBB obb(OBB::CreateOBBfromAABB(Matrix33(m_lstDynLights[i]->m_ObjMatrix), AABB(vBoxMin, vBoxMax)));
-					bIsVisible = passInfo.GetCamera().IsOBBVisible_F(m_lstDynLights[i]->m_Origin, obb);
-				}
-				else
-					bIsVisible = passInfo.GetCamera().IsSphereVisible_F(Sphere(m_lstDynLights[i]->m_Origin, m_lstDynLights[i]->m_fRadius));
-
-				if (!bIsVisible)
-				{
-					FreeLightSourceComponents(m_lstDynLights[i]);
-					m_lstDynLights.Delete(i);
-					i--;
-					continue; // invisible
-				}
-
-				// check if light is visible thru light area portal cameras
-				if (CVisArea* pArea = (CVisArea*)m_lstDynLights[i]->m_pOwner->GetEntityVisArea())
-					if (pArea->m_nRndFrameId == passInfo.GetFrameID() && pArea != (CVisArea*)pCameraVisArea)
-					{
-						int nCam = 0;
-						for (; nCam < pArea->m_lstCurCamerasLen; nCam++)
-							if (CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + nCam].IsSphereVisible_F(Sphere(m_lstDynLights[i]->m_Origin, m_lstDynLights[i]->m_fRadius)))
-								break;
-
-						if (nCam == pArea->m_lstCurCamerasLen)
-						{
-							FreeLightSourceComponents(m_lstDynLights[i]);
-							m_lstDynLights.Delete(i);
-							i--;
-							continue; // invisible
-						}
-					}
-
-				// check if lsource is in visible area
-				ILightSource* pEnt = m_lstDynLights[i]->m_pOwner;
-				if (!pEnt->IsLightAreasVisible() && pCameraVisArea != pEnt->GetEntityVisArea())
-				{
-					if (m_lstDynLights[i]->m_Flags & DLF_THIS_AREA_ONLY)
-					{
-						if (pEnt->GetEntityVisArea())
-						{
-							if (passInfo.GetFrameID() - pEnt->GetDrawFrame(0) > MAX_FRAME_ID_STEP_PER_FRAME)
-							{
-								FreeLightSourceComponents(m_lstDynLights[i]);
-								m_lstDynLights.Delete(i);
-								i--;
-								continue;   // area invisible
-							}
-						}
-						else
-						{
-							FreeLightSourceComponents(m_lstDynLights[i]);
-							m_lstDynLights.Delete(i);
-							i--;
-							continue;   // area invisible
-						}
-					}
-				}
-			}
-			else
-			{
-				// outdoor lsource
-				if (!(m_lstDynLights[i]->m_Flags & DLF_DIRECTIONAL) && !m_lstDynLights[i]->m_pOwner->IsLightAreasVisible())
-				{
-					FreeLightSourceComponents(m_lstDynLights[i]);
-					m_lstDynLights.Delete(i);
-					i--;
-					continue; // outdoor invisible
-				}
+				FreeLightSourceComponents(pLight);
+				m_lstDynLights.Delete(i);
+				i--;
+				continue; // invisible
 			}
 
-			if (m_lstDynLights[i]->m_Flags & DLF_DEFERRED_LIGHT)
+			if (pLight->m_Flags & DLF_DEFERRED_LIGHT)
 			{
-				SRenderLight* pLight = m_lstDynLights[i];
-				CLightEntity* pLightEntity = (CLightEntity*)pLight->m_pOwner;
-
 				if (passInfo.RenderShadows() && (pLight->m_Flags & DLF_CASTSHADOW_MAPS) && pLight->m_Id >= 0)
 				{
 					pLightEntity->UpdateGSMLightSourceShadowFrustum(passInfo);
@@ -460,19 +331,19 @@ void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& pass
 
 				if (GetCVars()->e_DynamicLights)
 				{
-					AddLightToRenderer(*m_lstDynLights[i], 1.f, passInfo);
+					AddLightToRenderer(*pLight, 1.f, passInfo);
 				}
 
-				FreeLightSourceComponents(m_lstDynLights[i]);
+				FreeLightSourceComponents(pLight);
 				m_lstDynLights.Delete(i);
 				i--;
 				continue;
 			}
 
-			if (GetRenderer()->EF_IsFakeDLight(m_lstDynLights[i]))
+			if (GetRenderer()->EF_IsFakeDLight(pLight))
 			{
 				// ignored by renderer
-				m_lstDynLightsNoLight.Add(m_lstDynLights[i]);
+				m_lstDynLightsNoLight.Add(pLight);
 				m_lstDynLights.Delete(i);
 				i--;
 				continue;
@@ -492,30 +363,11 @@ void C3DEngine::PrepareLightSourcesForRendering_0(const SRenderingPassInfo& pass
 					bWarningPrinted = true;
 				}
 
-				FreeLightSourceComponents(m_lstDynLights[i]);
+				FreeLightSourceComponents(pLight);
 				m_lstDynLights.Delete(i);
 				i--;
 				continue;
 			}
-
-			if (m_lstDynLights[i]->m_Flags & DLF_PROJECT
-			    && m_lstDynLights[i]->m_fLightFrustumAngle < 90 // actual fov is twice bigger
-			    && (m_lstDynLights[i]->m_pLightImage || m_lstDynLights[i]->m_pLightDynTexSource)
-			    /*&& (m_lstDynLights[i]->m_pLightImage->GetFlags() & FT_FORCE_CUBEMAP)*/)
-			{
-				// prepare projector camera for frustum test
-				m_arrLightProjFrustums.PreAllocate(i + 1, i + 1);
-				CCamera& cam = m_arrLightProjFrustums[i];
-				cam.SetPosition(m_lstDynLights[i]->m_Origin);
-				//				Vec3 Angles(m_lstDynLights[i]->m_ProjAngles[1], 0, m_lstDynLights[i]->m_ProjAngles[2]+90.0f);
-				//			cam.SetAngle(Angles);
-				Matrix34 entMat = ((ILightSource*)(m_lstDynLights[i]->m_pOwner))->GetMatrix();
-				Matrix33 matRot = Matrix33::CreateRotationVDir(entMat.GetColumn(0));
-				cam.SetMatrixNoUpdate(Matrix34(matRot, m_lstDynLights[i]->m_Origin));
-				cam.SetFrustum(1, 1, (m_lstDynLights[i]->m_fLightFrustumAngle * 2) / 180.0f * gf_PI, 0.1f, m_lstDynLights[i]->m_fRadius);
-
-			}
-
 		}
 
 		m_nRealLightsNum = m_lstDynLights.Count();
@@ -535,37 +387,32 @@ void C3DEngine::PrepareLightSourcesForRendering_1(const SRenderingPassInfo& pass
 		// do not delete lsources during recursion, becasue hmap lpasses are shared between levels
 		for (int i = 0; i < m_nRealLightsNum && i < m_lstDynLights.Count(); i++)
 		{
-			m_lstDynLights[i]->m_Id = -1;
-			GetRenderer()->EF_ADDDlight(m_lstDynLights[i], passInfo);
-			assert(m_lstDynLights[i]->m_Id == i);
-			if (m_lstDynLights[i]->m_Id != -1)
-			{
-				RegisterLightSourceInSectors(m_lstDynLights[i], passInfo);
-			}
+			SRenderLight* pLight = m_lstDynLights[i];
+
+			pLight->m_Id = -1;
+			GetRenderer()->EF_ADDDlight(pLight, passInfo);
+			assert(pLight->m_Id == i);
 		}
 	}
 	else
 	{
 		for (int i = 0; i < m_nRealLightsNum && i < m_lstDynLights.Count(); i++)
 		{
-			m_lstDynLights[i]->m_Id = -1;
+			SRenderLight* pLight = m_lstDynLights[i];
 
-			if (m_lstDynLights[i]->m_Flags & DLF_SUN || GetCVars()->e_DynamicLightsConsistentSortOrder)
-				CheckAddLight(m_lstDynLights[i], passInfo);
-
-			if (m_lstDynLights[i]->m_fRadius >= 0.5f)
-			{
-				assert(m_lstDynLights[i]->m_fRadius >= 0.5f && !(m_lstDynLights[i]->m_Flags & DLF_FAKE));
-				RegisterLightSourceInSectors(m_lstDynLights[i], passInfo);
-			}
+			pLight->m_Id = -1;
+			if (pLight->m_Flags & DLF_SUN || GetCVars()->e_DynamicLightsConsistentSortOrder)
+				CheckAddLight(pLight, passInfo);
 		}
 
 		for (int i = m_nRealLightsNum; i < m_lstDynLights.Count(); i++)
 		{
+			SRenderLight* pLight = m_lstDynLights[i];
+
 			// ignored by renderer
-			m_lstDynLights[i]->m_Id = -1;
-			GetRenderer()->EF_ADDDlight(m_lstDynLights[i], passInfo);
-			assert(m_lstDynLights[i]->m_Id == -1);
+			pLight->m_Id = -1;
+			GetRenderer()->EF_ADDDlight(pLight, passInfo);
+			assert(pLight->m_Id == -1);
 		}
 	}
 
@@ -573,10 +420,11 @@ void C3DEngine::PrepareLightSourcesForRendering_1(const SRenderingPassInfo& pass
 	{
 		for (int i = 0; i < m_lstDynLights.Count(); i++)
 		{
-			SRenderLight* pL = m_lstDynLights[i];
+			const SRenderLight* pLight = m_lstDynLights[i];
+
 			float fSize = 0.05f * (sinf(GetCurTimeSec() * 10.f) + 2.0f);
-			DrawSphere(pL->m_Origin, fSize, pL->m_Color);
-			IRenderAuxText::DrawLabelF(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)(pL->m_pOwner ? pL->m_pOwner->m_ucViewDistRatio : 0));
+			DrawSphere(pLight->m_Origin, fSize, pLight->m_Color);
+			IRenderAuxText::DrawLabelF(pLight->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pLight->m_Id, pLight->m_fRadius, (int)(pLight->m_pOwner ? pLight->m_pOwner->m_ucViewDistRatio : 0));
 		}
 	}
 }
@@ -638,7 +486,7 @@ void C3DEngine::InitShadowFrustums(const SRenderingPassInfo& passInfo)
 						pFr->AddRef();
 					}
 
-					CLightEntity::ProcessPerObjectFrustum(pFr, &m_lstPerObjectShadows[i], pSun, passInfo);
+					CLightEntity::InitShadowFrustum_OBJECT(pFr, &m_lstPerObjectShadows[i], pSun, passInfo);
 					++m_nCustomShadowFrustumCount;
 				}
 			}
@@ -686,11 +534,7 @@ void C3DEngine::AddPerObjectShadow(IShadowCaster* pCaster, float fConstBias, flo
 	if (bRequiresObjTreeUpdate)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
-
-		if (static_cast<IRenderNode*>(pCaster)->m_pOcNode)
-		{
-			static_cast<COctreeNode*>(static_cast<IRenderNode*>(pCaster)->m_pOcNode)->SetCompiled(IRenderNode::GetRenderNodeListId(pCaster->GetRenderNodeType()), false);
-		}
+		static_cast<IRenderNode*>(pCaster)->MarkAsUncompiled();
 	}
 }
 
@@ -700,14 +544,10 @@ void C3DEngine::RemovePerObjectShadow(IShadowCaster* pCaster)
 	if (pOS)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
+		static_cast<IRenderNode*>(pCaster)->MarkAsUncompiled();
 
 		size_t nIndex = (size_t)(pOS - m_lstPerObjectShadows.begin());
 		m_lstPerObjectShadows.Delete(nIndex);
-
-		if (static_cast<IRenderNode*>(pCaster)->m_pOcNode)
-		{
-			static_cast<COctreeNode*>(static_cast<IRenderNode*>(pCaster)->m_pOcNode)->SetCompiled(IRenderNode::GetRenderNodeListId(pCaster->GetRenderNodeType()), false);
-		}
 	}
 }
 
@@ -814,7 +654,7 @@ void C3DEngine::UpdateLightSources(const SRenderingPassInfo& passInfo)
 
 bool IsSphereInsideHull(const SPlaneObject* pHullPlanes, int nPlanesNum, const Sphere& objSphere);
 
-void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInfo& passInfo)
+void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	const CCamera& pCam = passInfo.GetCamera();
 	Vec3 vViewVec = pLight->m_Origin - pCam.GetPosition();
@@ -822,9 +662,7 @@ void C3DEngine::SetupLightScissors(SRenderLight* pLight, const SRenderingPassInf
 
 	// Use max of width/height for area lights.
 	float fMaxRadius = pLight->m_fRadius;
-	if (pLight->m_Flags & DLF_AREA_LIGHT) // Use max for area lights.
-		fMaxRadius += max(pLight->m_fAreaWidth, pLight->m_fAreaHeight);
-	else if (pLight->m_Flags & DLF_DEFERRED_CUBEMAPS)
+	if (pLight->m_Flags & DLF_DEFERRED_CUBEMAPS)
 		fMaxRadius = pLight->m_ProbeExtents.len();  // This is not optimal for a box
 
 	ITexture* pLightTexture = pLight->m_pLightImage ? pLight->m_pLightImage : pLight->m_pLightDynTexSource ? pLight->m_pLightDynTexSource->GetTexture() : NULL;
@@ -1292,50 +1130,6 @@ float C3DEngine::GetLightAmountInRange(const Vec3& pPos, float fRange, bool bAcc
 ILightSource* C3DEngine::GetSunEntity()
 {
 	return m_pSun;
-}
-
-PodArray<struct ILightSource*>* C3DEngine::GetAffectingLights(const AABB& bbox, bool bAllowSun, const SRenderingPassInfo& passInfo)
-{
-	PodArray<struct ILightSource*>& lstAffectingLights = m_tmpLstAffectingLights;
-	lstAffectingLights.Clear();
-
-	// fill temporary list
-	for (int i = 0; i < m_lstStaticLights.Count(); i++)
-	{
-		CLightEntity* pLightEntity = (CLightEntity*)m_lstStaticLights[i];
-		SRenderLight* pLight = &pLightEntity->GetLightProperties();
-		if (pLight->m_Flags & DLF_SUN)
-			continue;
-
-		ILightSource* p = (ILightSource*)pLightEntity;
-		lstAffectingLights.Add(p);
-	}
-
-	// search for same cached list
-	for (int nListId = 0; nListId < m_lstAffectingLightsCombinations.Count(); nListId++)
-	{
-		PodArray<struct ILightSource*>* pCachedList = m_lstAffectingLightsCombinations[nListId];
-		if (pCachedList->Count() == lstAffectingLights.Count() &&
-		    !memcmp(pCachedList->GetElements(), lstAffectingLights.GetElements(), lstAffectingLights.Count() * sizeof(ILightSource*)))
-			return pCachedList;
-	}
-
-	// if not found in cache - create new
-	PodArray<struct ILightSource*>* pNewList = new PodArray<struct ILightSource*>;
-	pNewList->AddList(lstAffectingLights);
-	m_lstAffectingLightsCombinations.Add(pNewList);
-
-	return pNewList;
-}
-
-void C3DEngine::UregisterLightFromAccessabilityCache(ILightSource* pLight)
-{
-	// search for same cached list
-	for (int nListId = 0; nListId < m_lstAffectingLightsCombinations.Count(); nListId++)
-	{
-		PodArray<struct ILightSource*>* pCachedList = m_lstAffectingLightsCombinations[nListId];
-		pCachedList->Delete(pLight);
-	}
 }
 
 void C3DEngine::OnCasterDeleted(IShadowCaster* pCaster)

@@ -35,11 +35,11 @@ public:
 
 	enum ProjectileTimer
 	{
-		ePTIMER_LIFETIME		= 0x110,
-		ePTIMER_SHOWTIME		= 0x111,
-		ePTIMER_STICKY			= 0x112,
-		ePTIMER_ACTIVATION	= 0x113, 
-		ePTIMER_BEACONDELAY = 0x114,
+		ePTIMER_LIFETIME		= 0,
+		ePTIMER_SHOWTIME		= 1,
+		ePTIMER_STICKY			= 2,
+		ePTIMER_ACTIVATION	= 3, 
+		ePTIMER_BEACONDELAY = 4,
 	};
 
 	enum ProjectileFlags
@@ -162,7 +162,7 @@ public:
 	virtual void PostRemoteSpawn();
 	virtual void HandleEvent( const SGameObjectEvent &);
 	virtual void ProcessEvent(const SEntityEvent& );
-	virtual uint64 GetEventMask() const;
+	virtual Cry::Entity::EventFlags GetEventMask() const;
 	virtual void SetChannelId(uint16 id) {};
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	virtual int  GetMemorySize() { return sizeof(*this); };

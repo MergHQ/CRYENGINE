@@ -1,9 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <IEditor.h>
 #include <QObject>
 #include <QDateTime>
-#include <IEditor.h>
+#include <QVector>
 
 class CNotificationCenter;
 
@@ -60,7 +61,7 @@ public:
 	{
 		for (const QString& command : m_commands)
 		{
-			GetIEditor()->ExecuteCommand(command.toLocal8Bit());
+			GetIEditor()->ExecuteCommand(command.toLocal8Bit().constData());
 		}
 	}
 
@@ -145,4 +146,3 @@ protected:
 };
 
 } // namespace Internal
-

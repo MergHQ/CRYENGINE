@@ -4,6 +4,7 @@
 #define __CRY_HASH_UTIL_H__
 
 #include <CryString/StringUtils.h>
+#include <CryMemory/CrySizer.h>
 
 //-----------------------------------------------------------------------------------
 // HASH Tools.

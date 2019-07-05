@@ -1,51 +1,54 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+
+#include "StdAfx.h"
 #include "LevelEditorViewport.h"
 
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryPhysics/IPhysics.h>
-#include <CryAISystem/IAISystem.h>
-#include <CrySystem/IConsole.h>
-#include <CrySystem/ITimer.h>
-#include <CryInput/IInput.h>
-#include <CrySystem/ITestSystem.h>
-#include <CryRenderer/IRenderAuxGeom.h>
-#include "CryMath/Cry_GeoIntersect.h"
-#include <CryInput/IHardwareMouse.h>
-#include <CryGame/IGameFramework.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryPhysics/IPhysicsDebugRenderer.h>
-#include <DefaultComponents/Cameras/CameraComponent.h>
-#include "Gizmos/IGizmoManager.h"
-
-#include "Controls/DynamicPopupMenu.h"
-#include "EditorFramework/Events.h"
-#include "ViewportInteraction.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/BaseObject.h"
-#include "IUndoManager.h"
-#include "IViewportManager.h"
-#include "IObjectManager.h"
-#include "ILevelEditor.h"
-#include "EditTool.h"
-#include "CryEditDoc.h"
-
-#include <QResizeEvent>
-#include "QtUtil.h"
-#include "Grid.h"
-#include "RenderLock.h"
-
+#include "AI/AIManager.h"
 #include "Objects/CameraObject.h"
+#include "QT/Widgets/QViewportHeader.h"
 #include "Terrain/Heightmap.h"
 #include "Util/Ruler.h"
-#include "DragDrop.h"
-#include "AssetSystem/AssetManager.h"
-#include "QT/Widgets/QViewportHeader.h"
-#include "ViewManager.h"
+#include "CryEditDoc.h"
 #include "GameEngine.h"
-#include "ProcessInfo.h"
 #include "ObjectCreateTool.h"
-#include "AI/AIManager.h"
+#include "ProcessInfo.h"
+#include "ViewManager.h"
+
+#include <AssetSystem/AssetManager.h>
+#include <Controls/DynamicPopupMenu.h>
+#include <EditorFramework/Events.h>
+#include <Gizmos/IGizmoManager.h>
+#include <Gizmos/Gizmo.h>
+#include <LevelEditor/Tools/EditTool.h>
+#include <Objects/BaseObject.h>
+#include "Objects/ObjectManager.h"
+#include <Preferences/SnappingPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <ILevelEditor.h>
+#include <IObjectManager.h>
+#include <IUndoManager.h>
+#include <IViewportManager.h>
+#include <QtUtil.h>
+#include <RenderLock.h>
+#include <ViewportInteraction.h>
+#include <Util/AffineParts.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ITimeOfDay.h>
+#include <CryAISystem/IAISystem.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryGame/IGameFramework.h>
+#include <CryInput/IHardwareMouse.h>
+#include <CryInput/IInput.h>
+#include <CryMath/Cry_GeoIntersect.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryPhysics/IPhysicsDebugRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/IConsole.h>
+#include <CrySystem/ITimer.h>
+#include <DefaultComponents/Cameras/CameraComponent.h>
+
+#include <QResizeEvent>
 
 inline bool SortCameraObjectsByName(CEntityObject* pObject1, CEntityObject* pObject2)
 {
@@ -79,80 +82,68 @@ static CPopupMenuItem& AddCheckbox(CPopupMenuItem& menu, const char* text, int* 
 
 namespace Private_AssetDrag
 {
-	static bool TryAssetDragCreate(const CDragDropData* pDragDropData, string& className)
+static CAsset* GetAsset(const CDragDropData& pDragDropData)
+{
+	if (!pDragDropData.HasCustomData("Assets"))
 	{
-		if (!pDragDropData->HasCustomData("Assets"))
-		{
-			return false;
-		}
-
-		QVector<quintptr> assets;
-		{
-			QByteArray byteArray = pDragDropData->GetCustomData("Assets");
-			QDataStream stream(byteArray);
-			stream >> assets;
-		}
-		assert(!assets.empty());
-
-		if (assets.size() > 1)
-		{
-			// We do not handle multi-asset drops.
-			return false;
-		}
-
-		CAssetManager* const pAssetManager = GetIEditor()->GetAssetManager();
-
-		CAsset* const pAsset = (CAsset*)assets[0];
-		assert(pAsset);
-
-		const char* szClassName = pAsset->GetType()->GetObjectClassName();
-		if (!szClassName)
-		{
-			return false;
-		}
-
-		className = szClassName;
-		return true;
+		return nullptr;
 	}
 
-	static bool TryObjectCreate(const CDragDropData* pDragDropData, string& className)
+	QVector<quintptr> assets;
 	{
-		if (!pDragDropData->HasCustomData("EngineFilePaths") || !pDragDropData->HasCustomData("ObjectClassNames"))
-		{
-			return false;
-		}
-
-		QStringList engineFilePaths;
-		{
-			QByteArray byteArray = pDragDropData->GetCustomData("EngineFilePaths");
-			QDataStream stream(byteArray);
-			stream >> engineFilePaths;
-		}
-
-		QStringList objectClassNames;
-		{
-			QByteArray byteArray = pDragDropData->GetCustomData("ObjectClassNames");
-			QDataStream stream(byteArray);
-			stream >> objectClassNames;
-		}
-
-		assert(!engineFilePaths.empty() && !objectClassNames.empty());
-
-		if (engineFilePaths.size() > 1)
-		{
-			// We do not handle multi-asset drops.
-			return false;
-		}
-
-		className = QtUtil::ToString(objectClassNames.front());
-		return !className.empty();
+		QByteArray byteArray = pDragDropData.GetCustomData("Assets");
+		QDataStream stream(byteArray);
+		stream >> assets;
 	}
+	assert(!assets.empty());
+
+	if (assets.size() > 1)
+	{
+		// We do not handle multi-asset drops.
+		return nullptr;
+	}
+
+	return reinterpret_cast<CAsset*>(assets[0]);
+}
+
+static bool FindClassName(const CDragDropData* pDragDropData, string& className)
+{
+	if (!pDragDropData->HasCustomData("EngineFilePaths") || !pDragDropData->HasCustomData("ObjectClassNames"))
+	{
+		return false;
+	}
+
+	QStringList engineFilePaths;
+	{
+		QByteArray byteArray = pDragDropData->GetCustomData("EngineFilePaths");
+		QDataStream stream(byteArray);
+		stream >> engineFilePaths;
+	}
+
+	QStringList objectClassNames;
+	{
+		QByteArray byteArray = pDragDropData->GetCustomData("ObjectClassNames");
+		QDataStream stream(byteArray);
+		stream >> objectClassNames;
+	}
+
+	assert(!engineFilePaths.empty() && !objectClassNames.empty());
+
+	if (engineFilePaths.size() > 1)
+	{
+		// We do not handle multi-asset drops.
+		return false;
+	}
+
+	className = QtUtil::ToString(objectClassNames.front());
+	return !className.empty();
+}
 }
 
 CLevelEditorViewport::CLevelEditorViewport()
-	: CRenderViewport()
+	: m_camFOV(gViewportPreferences.defaultFOV)
+	, m_headerWidget(nullptr)
 {
-	m_camFOV = gViewportPreferences.defaultFOV;
 }
 
 CLevelEditorViewport::~CLevelEditorViewport()
@@ -163,7 +154,7 @@ CLevelEditorViewport::~CLevelEditorViewport()
 	}
 }
 
-bool CLevelEditorViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType)
+bool CLevelEditorViewport::CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportType viewportType)
 {
 	return CRenderViewport::CreateRenderContext(hWnd, IRenderer::eViewportType_Default);
 }
@@ -173,58 +164,184 @@ bool CLevelEditorViewport::DragEvent(EDragEvent eventId, QEvent* event, int flag
 	bool result = CRenderViewport::DragEvent(eventId, event, flags);
 	if (!result)
 	{
-		return AssetDragCreate(eventId, event, flags);
+		return HandleDragEvent(eventId, event, flags);
 	}
 	return result;
 }
 
-bool CLevelEditorViewport::AssetDragCreate(EDragEvent eventId, QEvent* event, int flags)
+bool CLevelEditorViewport::HandleDragEvent(EDragEvent eventId, QEvent* event, int flags)
 {
-	using namespace Private_AssetDrag;
 
+	CDragDropData::ClearDragTooltip(GetViewWidget());
+
+	//just return if we are leaving from drop action
+	if (eventId == EDragEvent::eDragLeave)
+	{
+		return true;
+	}
+
+	//Get drag&drop info from generic QEvent
 	QDropEvent* const pDragEvent = (QDropEvent*)event;
 	const CDragDropData* const pDragDropData = CDragDropData::FromMimeData(pDragEvent->mimeData());
 
 	string className;
 
-	if (!TryAssetDragCreate(pDragDropData, className) && !TryObjectCreate(pDragDropData, className))
+	//Check if this event is an asset drop
+	if (DropHasAsset(*pDragDropData))
+	{
+		//Check if we can apply this asset to an object
+		if (ApplyAsset(*pDragDropData, pDragEvent, eventId))
+		{
+			return true;
+		}
+
+		//Check if this asset has a class name that can be instantiated in the level
+		CAsset* pAsset = Private_AssetDrag::GetAsset(*pDragDropData);
+		className = pAsset->GetType()->GetObjectClassName();
+
+		if (className.empty())
+		{
+			if (eventId == eDragEnter)
+			{
+				event->accept();
+				return true;
+			}
+
+			return false;
+		}
+
+		if (className == "Environment")
+		{
+			if (!GetIEditor()->GetDocument()->IsDocumentReady())
+			{
+				return false;
+			}
+
+			switch (eventId)
+			{
+			case eDragEnter:
+				break;
+			case eDragMove:
+				CDragDropData::ShowDragText(GetViewWidget(), QString("%1 \"%2\"").arg(QObject::tr("Apply environment"), QtUtil::ToQString(pAsset->GetName())));
+				break;
+			case eDragLeave:
+				CDragDropData::ClearDragTooltip(GetViewWidget());
+				break;
+			case eDrop:
+				{
+					pDragEvent->acceptProposedAction();
+					event->accept();
+
+					ITimeOfDay* const pTimeOfDay = GetIEditor()->Get3DEngine()->GetTimeOfDay();
+					const string preset = pAsset->GetType()->GetObjectFilePath(pAsset);
+					if (pTimeOfDay->SetDefaultPreset(preset))
+					{
+						const char* szMessage = QT_TR_NOOP("Default environment now set to");
+						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "%s %s", szMessage, pAsset->GetName().c_str());
+						return true;
+					}
+					else if (pTimeOfDay->LoadPreset(preset) && pTimeOfDay->SetDefaultPreset(preset))
+					{
+						const char* szMessage = QT_TR_NOOP("Environment Asset added to the level in Level Settings. Default environment now set to");
+						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "%s %s", szMessage, pAsset->GetName().c_str());
+						return true;
+					}
+					return false;
+				}
+				break;
+			}
+			event->accept();
+			return true;
+		}
+	}
+
+	//The asset does not have a valid class name, search in the dragDrop data for a class name that we can instantiate
+	if (className.empty())
+	{
+		if (pDragDropData && !Private_AssetDrag::FindClassName(pDragDropData, className))
+		{
+			return false;
+		}
+	}
+
+	//Create the ObjectCreateTool too for this class
+	if (!GetIEditor()->StartObjectCreation(className.c_str(), nullptr))
 	{
 		return false;
 	}
 
-	GetIEditor()->StartObjectCreation(className.c_str(), nullptr);
-	CEditTool* const pEditTool = GetIEditor()->GetEditTool();
-	if (!pEditTool)
-	{
-		return false;
-	}
-
+	//If we destroy the drag object we want to stop creation
 	QDrag* const pDrag = pDragEvent->source()->findChild<QDrag*>();
 	assert(pDrag);
 	QObject::connect(pDrag, &QObject::destroyed, [](auto)
 	{
-		CEditTool* editTool = GetIEditor()->GetEditTool();
-		CObjectCreateTool* objectCreateTool = editTool ? DYNAMIC_DOWNCAST(CObjectCreateTool, editTool) : nullptr;
+		CEditTool* pEditTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
+		CObjectCreateTool* objectCreateTool = pEditTool ? DYNAMIC_DOWNCAST(CObjectCreateTool, pEditTool) : nullptr;
 
 		if (objectCreateTool)
 		{
-			objectCreateTool->Abort();
+		  objectCreateTool->Abort();
 		}
 	});
 
-	return pEditTool->OnDragEvent(this, eventId, event, flags);
+	//pass drag info to current edit tool
+	return GetIEditor()->GetLevelEditorSharedState()->GetEditTool()->OnDragEvent(this, eventId, event, flags);
+}
+
+bool CLevelEditorViewport::DropHasAsset(const CDragDropData& dragDropData)
+{
+	return Private_AssetDrag::GetAsset(dragDropData);
+}
+
+bool CLevelEditorViewport::ApplyAsset(const CDragDropData& dragDropData, QDropEvent* pDropEvent, EDragEvent eventId)
+{
+	CPoint point(pDropEvent->pos().x(), pDropEvent->pos().y());
+	HitContext hitContext(this);
+
+	CAsset* pAsset = Private_AssetDrag::GetAsset(dragDropData);
+	//find if we are hitting an object at "point", if we are check if the asset can be applied
+	if (HitTest(point, hitContext) && hitContext.object != nullptr && hitContext.object->CanApplyAsset(*pAsset))
+	{
+		string dragText;
+		dragText.Format("Assign %s \"%s\" to \"%s\"", pAsset->GetType()->GetUiTypeName(), pAsset->GetName(), hitContext.object->GetName());
+		switch (eventId)
+		{
+		case eDragMove:
+			{
+				CDragDropData::ShowDragText(GetViewWidget(), QString(dragText));
+			}
+			break;
+		case eDrop:
+			{
+				string undoDescription;
+				undoDescription.Format("Apply %s \"%s\" to \"%s\"", pAsset->GetType()->GetUiTypeName(), pAsset->GetName(), hitContext.object->GetName());
+				CUndo undo(undoDescription.c_str());
+				hitContext.object->ApplyAsset(*pAsset, &hitContext);
+
+				//accept action to complete drop operation
+				pDropEvent->acceptProposedAction();
+			}
+			break;
+		}
+
+		pDropEvent->accept();
+
+		return true;
+	}
+
+	return false;
 }
 
 void CLevelEditorViewport::PopulateMenu(CPopupMenuItem& menu)
 {
 	{
 		ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
-		CPopupMenuItem& itemZ = menu.AddCommand("Speed Height-Relative", "camera.toggle_speed_height_relative");
-		pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(s_cameraPreferences.speedHeightRelativeEnabled);
-		CPopupMenuItem& itemT = menu.AddCommand("Terrain Collision", "camera.toggle_terrain_collisions");
-		pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(s_cameraPreferences.terrainCollisionEnabled);
-		CPopupMenuItem& itemO = menu.AddCommand("Object Collision", "camera.toggle_object_collisions");
-		pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(s_cameraPreferences.objectCollisionEnabled);
+		menu.AddCommand("camera.toggle_speed_height_relative");
+		pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(s_cameraPreferences.IsSpeedHeightRelativeEnabled());
+		menu.AddCommand("camera.toggle_terrain_collisions");
+		pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(s_cameraPreferences.IsTerrainCollisionEnabled());
+		menu.AddCommand("camera.toggle_object_collisions");
+		pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(s_cameraPreferences.IsObjectCollisionEnabled());
 		menu.AddSeparator();
 	}
 
@@ -258,7 +375,7 @@ void CLevelEditorViewport::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	CRenderViewport::OnEditorNotifyEvent(event);
 
-	if(event == eNotify_OnEndNewScene)
+	if (event == eNotify_OnEndNewScene)
 	{
 		CHeightmap* pHmap = GetIEditorImpl()->GetHeightmap();
 		float sx = pHmap->GetWidth() * 0.5f;
@@ -305,13 +422,13 @@ void CLevelEditorViewport::AddCameraMenuItems(CPopupMenuItem& menu)
 		for (int i = 0; i < cameraObjects.size(); ++i)
 		{
 			customCameraMenu.Add(cameraObjects[i]->GetName(), functor(*this, &CRenderViewport::SetCameraObject), (CBaseObject*)cameraObjects[i])
-				.Check(m_cameraObjectId == cameraObjects[i]->GetId());
+			.Check(m_cameraObjectId == cameraObjects[i]->GetId());
 		}
 	}
 	else
 	{
 		customCameraMenu.Add("No Cameras", functor(*this, &CRenderViewport::SetDefaultCamera))
-			.Enable(false);
+		.Enable(false);
 	}
 
 	// If no camera object is selected in the viewport the camera movement is always locked
@@ -328,10 +445,10 @@ void CLevelEditorViewport::AddCameraMenuItems(CPopupMenuItem& menu)
 template<typename T>
 struct CVarAutoSetAndRestore
 {
-	ICVar *pCVar;
-	T oldValue;
+	ICVar* pCVar;
+	T      oldValue;
 
-	CVarAutoSetAndRestore(const char *cvarName, T newValue)
+	CVarAutoSetAndRestore(const char* cvarName, T newValue)
 	{
 		pCVar = GetIEditor()->GetSystem()->GetIConsole()->GetCVar(cvarName);
 		if (pCVar)
@@ -350,18 +467,18 @@ private:
 };
 
 template<>
-float CVarAutoSetAndRestore<float>::GetCVarValue()
+float CVarAutoSetAndRestore<float >::GetCVarValue()
 {
 	return pCVar->GetFVal();
 }
 
 template<>
-int CVarAutoSetAndRestore<int>::GetCVarValue()
+int CVarAutoSetAndRestore<int >::GetCVarValue()
 {
 	return pCVar->GetIVal();
 }
 
-void CLevelEditorViewport::OnRender()
+void CLevelEditorViewport::OnRender(SDisplayContext& context)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -446,24 +563,27 @@ void CLevelEditorViewport::OnRender()
 		CCamera tmpCamera = m_Camera;
 		const int cubeRes = 512;
 
-		Matrix34 cubeFaceOrientation[6] = { Matrix34::CreateRotationZ(DEG2RAD(-90)),
+		Matrix34 cubeFaceOrientation[6] = {
+			Matrix34::CreateRotationZ(DEG2RAD(-90)),
 			Matrix34::CreateRotationZ(DEG2RAD(90)),
 			Matrix34::CreateRotationX(DEG2RAD(90)),
 			Matrix34::CreateRotationX(DEG2RAD(-90)),
 			Matrix34::CreateIdentity(),
 			Matrix34::CreateRotationZ(DEG2RAD(180)) };
 
-		CVarAutoSetAndRestore<int> intCvars[] = { CVarAutoSetAndRestore<int>("r_motionblur", 0),
-			CVarAutoSetAndRestore<int>("r_HDRVignetting", 0),
-			CVarAutoSetAndRestore<int>("r_AntialiasingMode", 0),
-			CVarAutoSetAndRestore<int>("e_clouds", 0),
-			CVarAutoSetAndRestore<int>("r_sunshafts", 0),
-			CVarAutoSetAndRestore<int>("e_CoverageBuffer", 0),
+		CVarAutoSetAndRestore<int> intCvars[] = {
+			CVarAutoSetAndRestore<int>("r_motionblur",               0),
+			CVarAutoSetAndRestore<int>("r_HDRVignetting",            0),
+			CVarAutoSetAndRestore<int>("r_AntialiasingMode",         0),
+			CVarAutoSetAndRestore<int>("e_clouds",                   0),
+			CVarAutoSetAndRestore<int>("r_sunshafts",                0),
+			CVarAutoSetAndRestore<int>("e_CoverageBuffer",           0),
 			CVarAutoSetAndRestore<int>("e_StatObjBufferRenderTasks", 0) };
-		CVarAutoSetAndRestore<float> floatCvars[] = { CVarAutoSetAndRestore<float>("e_LodRatio", 1000.0f),
-			CVarAutoSetAndRestore<float>("e_ViewDistRatio", 10000.0f),
+		CVarAutoSetAndRestore<float> floatCvars[] = {
+			CVarAutoSetAndRestore<float>("e_LodRatio",                1000.0f),
+			CVarAutoSetAndRestore<float>("e_ViewDistRatio",           10000.0f),
 			CVarAutoSetAndRestore<float>("e_ViewDistRatioVegetation", 10000.0f),
-			CVarAutoSetAndRestore<float>("t_scale", 0.0f) };
+			CVarAutoSetAndRestore<float>("t_scale",                   0.0f) };
 
 		m_engine->Tick();
 		m_engine->Update();
@@ -476,25 +596,25 @@ void CLevelEditorViewport::OnRender()
 			tmpCamera.SetFrustum(cubeRes, cubeRes, DEG2RAD(90), tmpCamera.GetNearPlane(), tmpCamera.GetFarPlane(), 1.0f);
 
 			// Display Context handle forces rendering of the world go to the current viewport output window.
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(tmpCamera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
-			RenderAll(passInfo);
-			m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC, passInfo, __FUNCTION__);
+
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, tmpCamera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
+			RenderAll(CObjectRenderHelper{ context, passInfo });
+			m_engine->RenderWorld(renderFlags | m_graphicsPipelineDesc.shaderFlags, passInfo, __FUNCTION__);
 		}
 		m_renderer->EnableSwapBuffers(true);
 	}
 	else
 	{
 		GetIEditor()->GetSystem()->SetViewCamera(m_Camera);
-		if (ITestSystem* pTestSystem = GetISystem()->GetITestSystem())
-			pTestSystem->BeforeRender();
 
 		m_engine->Tick();
 		m_engine->Update();
 
 		// Display Context handle forces rendering of the world go to the current viewport output window.
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
-		RenderAll(passInfo);
-		m_engine->RenderWorld(renderFlags | SHDF_ALLOW_AO | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOWHDR | SHDF_ZPASS, passInfo, __FUNCTION__);
+
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, false, this->m_displayContextKey);
+		RenderAll(CObjectRenderHelper{ context, passInfo });
+		m_engine->RenderWorld(renderFlags | m_graphicsPipelineDesc.shaderFlags, passInfo, __FUNCTION__);
 	}
 
 	if (!m_renderer->IsStereoEnabled() && !m_Camera.m_bOmniCamera)
@@ -506,29 +626,22 @@ void CLevelEditorViewport::OnRender()
 		}
 
 		/*
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera);
-		m_displayContext.SetView(this);
-	
-		m_renderer->EF_StartEf(passInfo);
+		   SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera);
+		   m_displayContext.SetView(this);
 
-		// Setup two infinite lights for helpers drawing.
-		SRenderLight light[2];
-		light[0].m_Flags |= DLF_DIRECTIONAL;
-		light[0].SetPosition(m_Camera.GetPosition());
-		light[0].SetLightColor(ColorF(1, 1, 1, 1));
-		light[0].SetSpecularMult(1.0f);
-		light[0].SetRadius(1000000);
-		m_renderer->EF_ADDDlight(&light[0], passInfo);
+		   m_renderer->EF_StartEf(passInfo);
 
-		light[1].m_Flags |= DLF_DIRECTIONAL;
-		light[1].SetPosition(Vec3(100000, 100000, 100000));
-		light[1].SetLightColor(ColorF(1, 1, 1, 1));
-		light[1].SetSpecularMult(1.0f);
-		light[1].SetRadius(1000000);
-		m_renderer->EF_ADDDlight(&light[1], passInfo);
-		//////////////////////////////////////////////////////////////////////////
-		*/
+		   // Setup two infinite lights for helpers drawing.
+		   SRenderLight light[2];
+		   light[0].m_Flags |= DLF_DIRECTIONAL;
+		   light[0].SetPosition(m_Camera.GetPosition());
+		   light[0].SetLightColor(ColorF(1, 1, 1, 1));
+		   light[0].SetSpecularMult(1.0f);
+		   light[0].SetRadius(1000000);
+		   m_renderer->EF_ADDDlight(&light[0], passInfo);
 
+
+		 */
 
 		//m_renderer->EF_EndEf3D(renderFlags | SHDF_NOASYNC | SHDF_STREAM_SYNC | SHDF_ALLOWHDR, -1, -1, passInfo);
 
@@ -543,11 +656,11 @@ void CLevelEditorViewport::OnRender()
 		// Draw Axis arrow in lower left corner.
 		if (ge && ge->IsLevelLoaded())
 		{
-			DrawAxis();
+			DrawAxis(context);
 		}
 
 		// Draw 2D helpers.
-		m_displayContext.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+		context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
 
 		// Display cursor string.
 		RenderCursorString();
@@ -555,79 +668,68 @@ void CLevelEditorViewport::OnRender()
 		if (gViewportPreferences.showSafeFrame)
 		{
 			UpdateSafeFrame();
-			RenderSafeFrame();
+			RenderSafeFrame(context);
 		}
 
-		RenderSelectionRectangle();
+		RenderSelectionRectangle(context);
 	}
-
-	if (ITestSystem* pTestSystem = GetISystem()->GetITestSystem())
-		pTestSystem->AfterRender();
 }
 
-void CLevelEditorViewport::RenderAll(const SRenderingPassInfo& passInfo)
+void CLevelEditorViewport::RenderAll(CObjectRenderHelper& displayInfo)
 {
 	// Draw physics helper/proxies, if requested
 #if !defined(_RELEASE) && !CRY_PLATFORM_DURANGO
-	if (m_bRenderStats) GetIEditor()->GetSystem()->RenderPhysicsHelpers();
+	if (m_bRenderStats)
+	{
+		GetIEditor()->GetSystem()->RenderPhysicsHelpers();
+	}
 #endif
+	SDisplayContext& dc = displayInfo.GetDisplayContextRef();
 
-	// Draw all objects.
-	DisplayContext& dctx = m_displayContext;
+	dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+	GetIEditor()->GetObjectManager()->Display(displayInfo);
 
-	dctx.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
-	GetIEditor()->GetObjectManager()->Display(CObjectRenderHelper{ dctx, passInfo });
-
-	RenderSelectedRegion();
-	RenderSnapMarker();
-
-	if (gViewportPreferences.showGridGuide
-		&& GetIEditor()->IsHelpersDisplayed())
-		RenderSnappingGrid();
+	RenderSelectedRegion(dc);
+	RenderSnapMarker(dc);
+	RenderSnappingGrid(dc);
 
 	IAISystem* aiSystem = GetIEditor()->GetSystem()->GetAISystem();
 	if (aiSystem)
-		aiSystem->DebugDraw();
-
-	if (gViewportDebugPreferences.GetDebugFlags() & DBG_MEMINFO)
 	{
-		ProcessMemInfo mi;
-		CProcessInfo::QueryMemInfo(mi);
-		int MB = 1024 * 1024;
-		string str;
-		str.Format("WorkingSet=%dMb, PageFile=%dMb, PageFaults=%d", mi.WorkingSet / MB, mi.PagefileUsage / MB, mi.PageFaultCount);
-		IRenderAuxText::TextToScreenColor(1, 1, 1, 0, 0, 1, str);
+		aiSystem->DebugDraw();
 	}
 
-	// Display editing tool.
+	// Display editing tool
 	if (GetEditTool() && m_bMouseInside)
 	{
-		GetEditTool()->Display(dctx);
+		GetEditTool()->Display(dc);
 	}
 }
 
-void CLevelEditorViewport::RenderSnappingGrid()
+void CLevelEditorViewport::RenderSnappingGrid(SDisplayContext& context)
 {
+	if (!context.showSnappingGridGuide)
+	{
+		return;
+	}
+
 	// First, Check whether we should draw the grid or not.
 	const CSelectionGroup* pSelGroup = GetIEditorImpl()->GetSelection();
-	if (pSelGroup == NULL || pSelGroup->GetCount() != 1)
+	if (pSelGroup == nullptr || pSelGroup->GetCount() != 1)
 		return;
-	if (GetIEditor()->GetEditMode() != eEditModeMove
-		&& GetIEditor()->GetEditMode() != eEditModeRotate)
+	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Move
+	    && GetIEditor()->GetLevelEditorSharedState()->GetEditMode() != CLevelEditorSharedState::EditMode::Rotate)
 		return;
 
 	if (gSnappingPreferences.gridSnappingEnabled() == false && gSnappingPreferences.angleSnappingEnabled() == false)
 		return;
-	if (GetIEditor()->GetEditTool() && !GetIEditor()->GetEditTool()->IsDisplayGrid() && !(GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()
-		&& GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()->NeedsSnappingGrid()))
-	{
+
+	CEditTool* pTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && !pTool->IsDisplayGrid() && !(GetIEditor()->GetGizmoManager()->GetHighlightedGizmo() && GetIEditor()->GetGizmoManager()->GetHighlightedGizmo()->NeedsSnappingGrid()))
 		return;
-	}
 
-	DisplayContext& dc = m_displayContext;
-
-	int prevState = dc.GetState();
-	dc.DepthWriteOff();
+	int prevState = context.GetState();
+	context.DepthWriteOff();
 
 	Vec3 p = pSelGroup->GetObject(0)->GetWorldPos();
 
@@ -635,10 +737,10 @@ void CLevelEditorViewport::RenderSnappingGrid()
 	pSelGroup->GetObject(0)->GetBoundBox(bbox);
 	float size = 2 * bbox.GetRadius();
 	float alphaMax = 1.0f, alphaMin = 0.2f;
-	dc.SetLineWidth(3);
+	context.SetLineWidth(3);
 
-	if (GetIEditor()->GetEditMode() == eEditModeMove && gSnappingPreferences.gridSnappingEnabled())
-		// Draw the translation grid.
+	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move && gSnappingPreferences.gridSnappingEnabled())
+	// Draw the translation grid.
 	{
 		Vec3 u = m_constructionPlaneAxisX;
 		Vec3 v = m_constructionPlaneAxisY;
@@ -651,48 +753,50 @@ void CLevelEditorViewport::RenderSnappingGrid()
 		{
 			// Draw u lines.
 			float alphaCur = alphaMax - fabsf(float(i) / float(nSteps)) * (alphaMax - alphaMin);
-			dc.DrawLine(p + v * (step * i), p + u * size + v * (step * i),
-				ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
-			dc.DrawLine(p + v * (step * i), p - u * size + v * (step * i),
-				ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + v * (step * i), p + u * size + v * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + v * (step * i), p - u * size + v * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
 			// Draw v lines.
-			dc.DrawLine(p + u * (step * i), p + v * size + u * (step * i),
-				ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
-			dc.DrawLine(p + u * (step * i), p - v * size + u * (step * i),
-				ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + u * (step * i), p + v * size + u * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
+			context.DrawLine(p + u * (step * i), p - v * size + u * (step * i),
+			                 ColorF(0, 0, 0, alphaCur), ColorF(0, 0, 0, alphaMin));
 		}
 	}
-	else if (GetIEditor()->GetEditMode() == eEditModeRotate && gSnappingPreferences.angleSnappingEnabled())
-		// Draw the rotation grid.
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Rotate && gSnappingPreferences.angleSnappingEnabled())
+	// Draw the rotation grid.
 	{
-		int nAxis(GetAxisConstrain());
-		if (nAxis == AXIS_X || nAxis == AXIS_Y || nAxis == AXIS_Z)
+		CLevelEditorSharedState::Axis axisConstraint(GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint());
+		if (axisConstraint == CLevelEditorSharedState::Axis::X ||
+		    axisConstraint == CLevelEditorSharedState::Axis::Y ||
+		    axisConstraint == CLevelEditorSharedState::Axis::Z)
 		{
 			Vec3 xAxis(1, 0, 0);
 			Vec3 yAxis(0, 1, 0);
 			Vec3 zAxis(0, 0, 1);
 			Vec3 rotAxis;
-			if (nAxis == AXIS_X)
+			if (axisConstraint == CLevelEditorSharedState::Axis::X)
 				rotAxis = m_snappingMatrix.TransformVector(xAxis);
-			else if (nAxis == AXIS_Y)
+			else if (axisConstraint == CLevelEditorSharedState::Axis::Y)
 				rotAxis = m_snappingMatrix.TransformVector(yAxis);
-			else if (nAxis == AXIS_Z)
+			else if (axisConstraint == CLevelEditorSharedState::Axis::Z)
 				rotAxis = m_snappingMatrix.TransformVector(zAxis);
 			Vec3 anotherAxis = m_constructionPlane.n * size;
 			float step = gSnappingPreferences.angleSnap();
 			int nSteps = pos_directed_rounding(180.0f / step);
 			for (int i = 0; i < nSteps; ++i)
 			{
-				AngleAxis rot(i * step * gf_PI / 180.0, rotAxis);
+				AngleAxis rot(i* step* gf_PI / 180.0, rotAxis);
 				Vec3 dir = rot * anotherAxis;
-				dc.DrawLine(p, p + dir,
-					ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
-				dc.DrawLine(p, p - dir,
-					ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
+				context.DrawLine(p, p + dir,
+				                 ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
+				context.DrawLine(p, p - dir,
+				                 ColorF(0, 0, 0, alphaMax), ColorF(0, 0, 0, alphaMin));
 			}
 		}
 	}
-	dc.SetState(prevState);
+	context.SetState(prevState);
 }
 
 void CLevelEditorViewport::OnCameraSpeedChanged()
@@ -709,7 +813,7 @@ void CLevelEditorViewport::OnMenuCreateCameraFromCurrentView()
 	GetIEditor()->GetIUndoManager()->Begin();
 
 	CryGUID cameraComponentGUID = Schematyc::GetTypeGUID<Cry::DefaultComponents::CCameraComponent>();
-	
+
 	if (CEntityObject* pNewCameraObject = static_cast<CEntityObject*>(pObjMgr->NewObject("EntityWithComponent", nullptr, cameraComponentGUID.ToString())))
 	{
 		// If new camera was successfully created copy parameters from old camera
@@ -717,7 +821,7 @@ void CLevelEditorViewport::OnMenuCreateCameraFromCurrentView()
 
 		auto* pCameraComponent = pNewCameraObject->GetIEntity()->GetComponent<Cry::DefaultComponents::CCameraComponent>();
 		CRY_ASSERT(pCameraComponent != nullptr);
-		if(pCameraComponent != nullptr)
+		if (pCameraComponent != nullptr)
 		{
 			pCameraComponent->SetFieldOfView(CryTransform::CAngle::FromRadians(GetFOV()));
 		}
@@ -738,7 +842,6 @@ void CLevelEditorViewport::OnMenuSelectCurrentCamera()
 	{
 		GetIEditor()->GetIUndoManager()->Begin();
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-		pObjectManager->ClearSelection();
 		pObjectManager->SelectObject(pCameraObject);
 		GetIEditor()->GetIUndoManager()->Accept("Select Current Camera");
 	}
@@ -826,7 +929,7 @@ bool CLevelEditorViewport::IsSelectedCamera() const
 
 void CLevelEditorViewport::CycleCamera()
 {
-	if (GetCameraObject() == NULL)    // The default camera is active ATM.
+	if (GetCameraObject() == nullptr)    // The default camera is active ATM.
 	{
 		std::vector<CEntityObject*> objects;
 		((CObjectManager*)GetIEditor()->GetObjectManager())->GetCameras(objects);
@@ -868,7 +971,7 @@ void CLevelEditorViewport::CenterOnSelection()
 	}
 }
 
-void CLevelEditorViewport::CenterOnAABB(AABB* const aabb) 
+void CLevelEditorViewport::CenterOnAABB(AABB* const aabb)
 {
 	CViewport* pViewport = GetIEditor()->GetViewManager()->GetGameViewport();
 
@@ -904,7 +1007,6 @@ void CLevelEditorViewport::CenterOnAABB(AABB* const aabb)
 		pViewport->SetViewTM(newTM);
 	}
 }
-
 
 Vec3 CLevelEditorViewport::ViewToWorld(POINT vp, bool* collideWithTerrain, bool onlyTerrain, bool bSkipVegetation, bool bTestRenderMesh) const
 {
@@ -956,7 +1058,7 @@ Vec3 CLevelEditorViewport::ViewToWorld(POINT vp, bool* collideWithTerrain, bool 
 	}
 
 	int col = 0;
-	const int queryFlags = (onlyTerrain || GetIEditor()->IsSnapToTerrainEnabled()) ? ent_terrain : ent_all;
+	const int queryFlags = (onlyTerrain || gSnappingPreferences.IsSnapToTerrainEnabled()) ? ent_terrain : ent_all;
 	for (int chcnt = 0; chcnt < 3; chcnt++)
 	{
 		hit.pCollider = 0;
@@ -969,9 +1071,9 @@ Vec3 CLevelEditorViewport::ViewToWorld(POINT vp, bool* collideWithTerrain, bool 
 
 		IRenderNode* pVegNode = 0;
 		if (bSkipVegetation && hit.pCollider &&
-			hit.pCollider->GetiForeignData() == PHYS_FOREIGN_ID_STATIC &&
-			(pVegNode = (IRenderNode*)hit.pCollider->GetForeignData(PHYS_FOREIGN_ID_STATIC)) &&
-			pVegNode->GetRenderNodeType() == eERType_Vegetation)
+		    hit.pCollider->GetiForeignData() == PHYS_FOREIGN_ID_STATIC &&
+		    (pVegNode = (IRenderNode*)hit.pCollider->GetForeignData(PHYS_FOREIGN_ID_STATIC)) &&
+		    pVegNode->GetRenderNodeType() == eERType_Vegetation)
 		{
 			// skip vegetation
 		}
@@ -1051,7 +1153,7 @@ Vec3 CLevelEditorViewport::ViewToWorldNormal(POINT vp, bool onlyTerrain, bool bT
 	vp.x = vp.x * m_currentResolution.width / (float)rc.Width();
 	vp.y = vp.y * m_currentResolution.height / (float)rc.Height();
 
-	Vec3 pos0(0,0,0),pos1(0,0,0);
+	Vec3 pos0(0, 0, 0), pos1(0, 0, 0);
 	if (!GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 0), pos0))
 		return Vec3(0, 0, 1);
 	if (!GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 1), pos1))
@@ -1090,7 +1192,7 @@ Vec3 CLevelEditorViewport::ViewToWorldNormal(POINT vp, bool onlyTerrain, bool bT
 	}
 
 	int col = 1;
-	const int queryFlags = (onlyTerrain || GetIEditor()->IsSnapToGeometryEnabled()) ? ent_terrain : ent_terrain | ent_static;
+	const int queryFlags = (onlyTerrain || gSnappingPreferences.IsSnapToGeometryEnabled()) ? ent_terrain : ent_terrain | ent_static;
 	while (col)
 	{
 		hit.pCollider = 0;
@@ -1182,3 +1284,77 @@ bool CLevelEditorViewport::MouseCallback(EMouseEvent event, CPoint& point, int f
 	return true;
 }
 
+namespace Private_LevelEditorCommands
+{
+void SetDefaultCamera()
+{
+	CViewport* pViewport = GetIEditorImpl()->GetViewManager()->GetSelectedViewport();
+	if (pViewport && pViewport->IsRenderViewport() && pViewport->GetType() == ET_ViewportCamera)
+	{
+		static_cast<CLevelEditorViewport*>(pViewport)->SetDefaultCamera();
+	}
+}
+
+void SetSelectedCamera()
+{
+	CViewport* pViewport = GetIEditorImpl()->GetViewManager()->GetSelectedViewport();
+	if (pViewport && pViewport->IsRenderViewport() && pViewport->GetType() == ET_ViewportCamera)
+	{
+		static_cast<CLevelEditorViewport*>(pViewport)->SetSelectedCamera();
+	}
+}
+
+void CycleCurrentCamera()
+{
+	CViewport* pViewport = GetIEditorImpl()->GetViewManager()->GetSelectedViewport();
+	if (pViewport && pViewport->IsRenderViewport() && pViewport->GetType() == ET_ViewportCamera)
+	{
+		static_cast<CLevelEditorViewport*>(pViewport)->CycleCamera();
+	}
+}
+
+void ToggleWireFrameMode()
+{
+	int nWireframe(R_SOLID_MODE);
+	ICVar* r_wireframe(gEnv->pConsole->GetCVar("r_wireframe"));
+
+	if (r_wireframe)
+	{
+		nWireframe = r_wireframe->GetIVal();
+	}
+
+	if (nWireframe != R_WIREFRAME_MODE)
+	{
+		nWireframe = R_WIREFRAME_MODE;
+	}
+	else
+	{
+		nWireframe = R_SOLID_MODE;
+	}
+
+	if (r_wireframe)
+	{
+		r_wireframe->Set(nWireframe);
+	}
+}
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::SetDefaultCamera, viewport, make_default_camera_current,
+                                   CCommandDescription("Set current camera to be the default camera"))
+REGISTER_EDITOR_UI_COMMAND_DESC(viewport, make_default_camera_current, "Default Camera", "", "", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionCamera_Default, viewport, make_default_camera_current)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::SetSelectedCamera, viewport, make_selected_camera_current,
+                                   CCommandDescription("Set selected camera to be the default camera"))
+REGISTER_EDITOR_UI_COMMAND_DESC(viewport, make_selected_camera_current, "Selected Camera", "", "", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionCamera_Selected_Object, viewport, make_selected_camera_current)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::SetSelectedCamera, viewport, cycle_current_camera,
+                                   CCommandDescription("Cycle current active camera"))
+REGISTER_EDITOR_UI_COMMAND_DESC(viewport, cycle_current_camera, "Cycle Camera", "Ctrl+'", "", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionCamera_Cycle, viewport, cycle_current_camera)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::ToggleWireFrameMode, viewport, toggle_wireframe_mode,
+                                   CCommandDescription("Toggles between solid and wireframe mode in the viewport"))
+REGISTER_EDITOR_UI_COMMAND_DESC(viewport, toggle_wireframe_mode, "Wireframe/Solid Mode", "Alt+W", "icons:Viewport/Modes/display_wireframe.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionWireframe, viewport, toggle_wireframe_mode)

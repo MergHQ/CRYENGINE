@@ -62,7 +62,7 @@ bool CActionScope::InstallAnimation(int animID, const CryCharAnimationParams& an
 
 void CActionScope::StopAnimationOnLayer(uint32 layer, float blendTime)
 {
-	CRY_ASSERT_MESSAGE(layer < m_numLayers, "Overrunning scope!");
+	CRY_ASSERT(layer < m_numLayers, "Overrunning scope!");
 
 	ISkeletonAnim& skeletonAnimation = *m_scopeContext.pCharInst->GetISkeletonAnim();
 	const uint32 actualLayer = layer + m_layer;
@@ -302,7 +302,7 @@ bool CActionScope::CanInstall(EPriorityComparison priorityComp, FragmentID fragI
 
 void CActionScope::InitAnimationParams(const SAnimationEntry& animEntry, const uint32 sequencerLayer, const SAnimBlend& animBlend, CryCharAnimationParams& paramsOut)
 {
-	CRY_ASSERT_MESSAGE(sequencerLayer < m_numLayers, "Overrunning scope!");
+	CRY_ASSERT(sequencerLayer < m_numLayers, "Overrunning scope!");
 
 	paramsOut.m_fTransTime = animBlend.duration;
 	paramsOut.m_nLayerID = m_layer + sequencerLayer;
@@ -392,7 +392,7 @@ bool CActionScope::InstallAnimation(const SAnimationEntry& animEntry, int layer,
 
 void CActionScope::QueueAnimFromSequence(uint32 layer, uint32 pos, bool isPersistent)
 {
-	CRY_ASSERT_MESSAGE(layer < m_numLayers, "Invalid layer idx");
+	CRY_ASSERT(layer < m_numLayers, "Invalid layer idx");
 	SSequencer& sequencer = m_layerSequencers[layer];
 
 	if (pos < sequencer.sequence.size())
@@ -408,7 +408,7 @@ void CActionScope::QueueAnimFromSequence(uint32 layer, uint32 pos, bool isPersis
 		}
 		sequencer.flags |= eSF_Queued;
 
-		CRY_ASSERT_MESSAGE(sequencer.installTime >= 0.0f, "Invalid exit time!");
+		CRY_ASSERT(sequencer.installTime >= 0.0f, "Invalid exit time!");
 	}
 	else if (!isPersistent)
 	{
@@ -423,7 +423,7 @@ void CActionScope::QueueAnimFromSequence(uint32 layer, uint32 pos, bool isPersis
 
 void CActionScope::QueueProcFromSequence(uint32 layer, uint32 pos)
 {
-	CRY_ASSERT_MESSAGE(layer < m_procSequencers.size(), "Invalid layer idx");
+	CRY_ASSERT(layer < m_procSequencers.size(), "Invalid layer idx");
 	SProcSequencer& sequencer = m_procSequencers[layer];
 
 	if (pos < sequencer.sequence.size())
@@ -436,7 +436,7 @@ void CActionScope::QueueProcFromSequence(uint32 layer, uint32 pos)
 
 int CActionScope::GetNumAnimsInSequence(uint32 layer) const
 {
-	CRY_ASSERT_MESSAGE(layer < m_numLayers, "Invalid layer idx");
+	CRY_ASSERT(layer < m_numLayers, "Invalid layer idx");
 	SSequencer& sequencer = m_layerSequencers[layer];
 
 	return sequencer.sequence.size();
@@ -473,7 +473,7 @@ void CActionScope::ClipInstalled(uint8 fragPart)
 
 void CActionScope::ApplyAnimWeight(uint32 layer, float weight)
 {
-	CRY_ASSERT_MESSAGE(layer < GetTotalLayers(), "Invalid layer");
+	CRY_ASSERT(layer < GetTotalLayers(), "Invalid layer");
 
 	if (layer < GetTotalLayers())
 	{
@@ -496,7 +496,7 @@ void CActionScope::ApplyAnimWeight(uint32 layer, float weight)
 
 bool CActionScope::PlayPendingAnim(uint32 layer, float timePassed)
 {
-	CRY_ASSERT_MESSAGE(layer < m_numLayers, "Invalid layer idx");
+	CRY_ASSERT(layer < m_numLayers, "Invalid layer idx");
 	SSequencer& sequencer = m_layerSequencers[layer];
 	IActionPtr pPlayingAction = GetPlayingAction();
 
@@ -509,7 +509,6 @@ bool CActionScope::PlayPendingAnim(uint32 layer, float timePassed)
 	if ((sequencer.pos < sequencer.sequence.size()) || isBlendingOut)
 	{
 		uint8 fragPart = 0;
-		bool isTransition = false;
 		const SAnimationEntry* animation = NULL;
 		SAnimationEntry animNull;
 		animNull.animRef.SetByString(NULL);
@@ -554,7 +553,7 @@ bool CActionScope::PlayPendingAnim(uint32 layer, float timePassed)
 
 bool CActionScope::PlayPendingProc(uint32 layer)
 {
-	CRY_ASSERT_MESSAGE(layer < m_procSequencers.size(), "Invalid layer idx");
+	CRY_ASSERT(layer < m_procSequencers.size(), "Invalid layer idx");
 	SProcSequencer& sequencer = m_procSequencers[layer];
 
 	sequencer.flags &= ~eSF_Queued;
@@ -701,7 +700,7 @@ bool CActionScope::QueueFragment(FragmentID fragID, const SFragTagState& fragTag
 	const uint32 numScopeLayers = m_numLayers;
 	const uint32 numLayers = min(numAnimLayers, numScopeLayers);
 
-	CRY_ASSERT_MESSAGE(numLayers <= m_numLayers, "Invalid layer count");
+	CRY_ASSERT(numLayers <= m_numLayers, "Invalid layer count");
 
 	m_userToken = userToken;
 

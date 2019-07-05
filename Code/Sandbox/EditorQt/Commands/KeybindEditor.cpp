@@ -3,46 +3,49 @@
 #include <StdAfx.h>
 
 #include "KeybindEditor.h"
-#include <QTreeWidget>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QAbstractItemModel>
-#include <QPushButton>
-#include <QHeaderView>
-#include <QAction>
-#include <QKeySequence>
-#include <QStyledItemDelegate>
-#include <QLineEdit>
-#include <QKeyEvent>
-#include <QSortFilterProxyModel>
-#include <QJsonDocument>
-#include <QKeySequenceEdit>
-#include <QMenu>
-#include <QToolButton>
-#include <QDir>
 
-#include "Command.h"
-#include "Commands/CommandModel.h"
 #include "Commands/CommandManager.h"
-#include "Commands/CustomCommand.h"
-#include "QCommandAction.h"
+#include "IEditorImpl.h"
 #include "QSearchBox.h"
 #include "QAdvancedTreeView.h"
 #include "ProxyModels/DeepFilterProxyModel.h"
 #include "Util/BoostPythonHelpers.h"
-#include "Qt/QtUtil.h"
 #include "QT/QtMainFrame.h"
-#include "FileDialogs/SystemFileDialog.h"
 #include "QtViewPane.h"
-#include <QtUtil.h>
+
+#include <Commands/Command.h>
+#include <Commands/CommandModel.h>
+#include <Commands/CustomCommand.h>
+#include <Commands/QCommandAction.h>
 #include <CryIcon.h>
-#include <EditorStyleHelper.h>
 #include <CrySystem/IProjectManager.h>
+#include <EditorFramework/Events.h>
+#include <EditorStyleHelper.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <QtUtil.h>
+
+#include <QAbstractItemModel>
+#include <QAction>
+#include <QDir>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QJsonDocument>
+#include <QKeyEvent>
+#include <QKeySequence>
+#include <QLineEdit>
+#include <QMenu>
+#include <QPushButton>
+#include <QStyledItemDelegate>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 REGISTER_HIDDEN_VIEWPANE_FACTORY(CKeybindEditor, "Keyboard Shortcuts", "Settings", true)
 
 namespace Private_KeybindEditor
 {
+
+const char* szKeybindsPath = "Keybinds.json";
+
 QString KeySequenceListToString(const QList<QKeySequence>& list)
 {
 	QString string(QKeySequence::listToString(list, QKeySequence::NativeText));
@@ -177,14 +180,11 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_KeybindEditor::PyRemoveCustomComman
                                      "Creates a new custom command binds it to the shortcut",
                                      "keybind.remove_custom_command(str command)");
 
-class CKeybindEditor::KeybindModel : public CommandModel
+class CKeybindEditor::KeybindModel : public CCommandModel
 {
-	friend CommandModelFactory;
-
 public:
+	KeybindModel();
 	virtual ~KeybindModel();
-
-	virtual void Initialize();
 
 	//QAbstractItemModel implementation begin
 	virtual QVariant data(const QModelIndex& index, int role /* = Qt::DisplayRole */) const override;
@@ -192,14 +192,14 @@ public:
 	//QAbstractItemModel implementation end
 
 protected:
-	KeybindModel();
 
 	typedef std::map<QKeySequence, std::vector<CUiCommand*>> ConflictsMap;
 
-	virtual void Rebuild() override;
+	void Initialize();
+	void Rebuild();
 
-	void         UpdateConflicts(CUiCommand* command, QList<QKeySequence> oldShortcuts);
-	bool         HasConflicts(CUiCommand* command, ConflictsMap* conflictsOut = nullptr) const;
+	void UpdateConflicts(CUiCommand* command, QList<QKeySequence> oldShortcuts);
+	bool HasConflicts(CUiCommand* command, ConflictsMap* conflictsOut = nullptr) const;
 
 protected:
 	ConflictsMap m_conflicts;
@@ -209,8 +209,7 @@ protected:
 
 CKeybindEditor::KeybindModel::KeybindModel()
 {
-	GetIEditorImpl()->GetCommandManager()->signalChanged.Connect(this, &KeybindModel::Rebuild);
-	Rebuild();
+	Initialize();
 }
 
 CKeybindEditor::KeybindModel::~KeybindModel()
@@ -226,7 +225,7 @@ void CKeybindEditor::KeybindModel::Initialize()
 
 void CKeybindEditor::KeybindModel::Rebuild()
 {
-	CommandModel::Rebuild();
+	CCommandModel::Rebuild();
 
 	m_conflicts.clear();
 
@@ -250,8 +249,6 @@ void CKeybindEditor::KeybindModel::Rebuild()
 void CKeybindEditor::KeybindModel::UpdateConflicts(CUiCommand* command, QList<QKeySequence> oldShortcuts)
 {
 	QList<QKeySequence> shortcuts = static_cast<QCommandAction*>(command->GetUiInfo())->shortcuts();
-
-	bool bChanged = false;
 	QSet<CCommand*> changedCommands;
 
 	for (const QKeySequence& seq : oldShortcuts)
@@ -340,7 +337,7 @@ bool CKeybindEditor::KeybindModel::HasConflicts(CUiCommand* command, ConflictsMa
 
 QVariant CKeybindEditor::KeybindModel::data(const QModelIndex& index, int role /* = Qt::DisplayRole */) const
 {
-	QVariant variant = CommandModel::data(index, role);
+	QVariant variant = CCommandModel::data(index, role);
 	if (variant.isValid())
 		return variant;
 
@@ -434,7 +431,7 @@ QVariant CKeybindEditor::KeybindModel::data(const QModelIndex& index, int role /
 
 bool CKeybindEditor::KeybindModel::setData(const QModelIndex& index, const QVariant& value, int role /*= Qt::EditRole*/)
 {
-	if (CommandModel::setData(index, value, role))
+	if (CCommandModel::setData(index, value, role))
 		return true;
 
 	//no need to notify of the change here because there can only be one view of this model
@@ -472,177 +469,209 @@ bool CKeybindEditor::KeybindModel::setData(const QModelIndex& index, const QVari
 
 //////////////////////////////////////////////////////////////////////////
 
+CKeybindLineEdit::CKeybindLineEdit(QWidget* pParent)
+	: QWidget(pParent)
+	, m_pLineEdit(new QLineEdit(this))
+{
+	m_pLineEdit->setPlaceholderText(tr("Press shortcut"));
+	m_pLineEdit->setFrame(true);
+	m_pLineEdit->installEventFilter(this);
+
+	QToolButton* plusButton = new QToolButton;
+	plusButton->setText(tr("Add Shortcut"));
+	plusButton->setToolTip(tr("Add Shortcut"));
+	plusButton->setIcon(CryIcon(QPixmap(":icons/General/Plus.ico")));
+	connect(plusButton, &QToolButton::clicked, this, &CKeybindLineEdit::OnPlus);
+
+	QToolButton* minusButton = new QToolButton;
+	minusButton->setText(tr("Remove Shortcut"));
+	minusButton->setToolTip(tr("Remove Shortcut"));
+	minusButton->setIcon(CryIcon(QPixmap(":icons/General/Minus.ico")));
+	connect(minusButton, &QToolButton::clicked, this, &CKeybindLineEdit::OnMinus);
+
+	QToolButton* clearButton = new QToolButton;
+	clearButton->setText(tr("Clear Shortcuts"));
+	clearButton->setToolTip(tr("Clear Shortcuts"));
+	clearButton->setIcon(CryIcon(QPixmap(":icons/General/Close.ico")));
+	connect(clearButton, &QToolButton::clicked, this, &CKeybindLineEdit::OnClear);
+
+	QHBoxLayout* layout = new QHBoxLayout;
+	layout->setContentsMargins(0, 0, 0, 0);
+	layout->setSpacing(0);
+	layout->addWidget(m_pLineEdit);
+	layout->addWidget(plusButton);
+	layout->addWidget(minusButton);
+	layout->addWidget(clearButton);
+
+	setLayout(layout);
+	setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+}
+
+void CKeybindLineEdit::SetText(const QString& text)
+{
+	m_pLineEdit->setText(text);
+}
+
+QString CKeybindLineEdit::GetText() const
+{
+	return m_pLineEdit->text();
+}
+
+bool CKeybindLineEdit::event(QEvent* pEvent)
+{
+	//Shortcuts will not be triggered from within this control, they will set the keybind instead.
+	if (pEvent->type() == QEvent::Shortcut || pEvent->type() == QEvent::ShortcutOverride)
+	{
+		QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
+		keyPressEvent(pKeyEvent);
+		if (pKeyEvent->isAccepted())
+			return true;
+	}
+
+	return QWidget::event(pEvent);
+}
+
+bool CKeybindLineEdit::eventFilter(QObject* pObject, QEvent* pEvent)
+{
+	switch (pEvent->type())
+	{
+	case QEvent::Shortcut:
+	case QEvent::ShortcutOverride:
+	case QEvent::KeyPress:
+		{
+			QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
+			keyPressEvent(pKeyEvent);
+			if (pKeyEvent->isAccepted())
+				return true;
+		}
+		break;
+	case QEvent::FocusOut:
+		{
+			// Since focus can change while editing a shortcut, we must first check if the widget
+			// at the current cursor position is a child of this widget, if so, then don't delete this widget
+			QWidget* pWidgetAtCursor = QApplication::widgetAt(QCursor::pos());
+			if (!isAncestorOf(pWidgetAtCursor))
+			{
+				// Destroy the in-place editing widget when focus is lost so we don't have a non-focused
+				// line edit in the Keybinds view
+				deleteLater();
+			}
+		}
+	default:
+		return false;
+	}
+
+	return false;
+}
+
+void CKeybindLineEdit::keyPressEvent(QKeyEvent* pEvent)
+{
+	if (pEvent->isAutoRepeat())
+	{
+		return;
+	}
+
+	QList<QKeySequence> shortcuts = Private_KeybindEditor::StringToKeySequenceList(m_pLineEdit->text());
+
+	switch (pEvent->key())
+	{
+	case 0:
+	case Qt::Key_unknown:
+	case Qt::Key_Meta:
+	case Qt::Key_Control:
+	case Qt::Key_Alt:
+	case Qt::Key_AltGr:
+	case Qt::Key_Shift:
+		break;
+
+	case Qt::Key_Return:
+	case Qt::Key_Enter:
+		if (!pEvent->modifiers() || (pEvent->modifiers() & Qt::KeyboardModifier::KeypadModifier))
+		{
+			pEvent->ignore();
+			return;
+		}
+	case Qt::Key_Escape:
+		if (!pEvent->modifiers())
+		{
+			// Cancel editing
+			deleteLater();
+			return;
+		}
+	// Intentional fallthrough
+	default:
+		QKeySequence seq = QKeySequence(pEvent->key() | pEvent->modifiers());
+
+		if (shortcuts.indexOf(seq) == -1)
+		{
+			shortcuts.pop_back();
+			shortcuts.push_back(seq);
+
+			m_pLineEdit->setText(Private_KeybindEditor::KeySequenceListToString(shortcuts));
+		}
+		break;
+	}
+}
+
+void CKeybindLineEdit::OnPlus()
+{
+	QList<QKeySequence> shortcuts = Private_KeybindEditor::StringToKeySequenceList(m_pLineEdit->text());
+
+	if (shortcuts.isEmpty() || !shortcuts.last().isEmpty())
+		shortcuts.push_back(QKeySequence());
+
+	m_pLineEdit->setText(Private_KeybindEditor::KeySequenceListToString(shortcuts));
+	m_pLineEdit->setFocus(Qt::OtherFocusReason);
+}
+
+void CKeybindLineEdit::OnMinus()
+{
+	QList<QKeySequence> shortcuts = Private_KeybindEditor::StringToKeySequenceList(m_pLineEdit->text());
+
+	if (!shortcuts.isEmpty())
+		shortcuts.pop_back();
+
+	m_pLineEdit->setText(Private_KeybindEditor::KeySequenceListToString(shortcuts));
+	m_pLineEdit->setFocus(Qt::OtherFocusReason);
+}
+
+void CKeybindLineEdit::OnClear()
+{
+	m_pLineEdit->setText(QString());
+	m_pLineEdit->setFocus(Qt::OtherFocusReason);
+}
+
+//////////////////////////////////////////////////////////////////////////
 class CKeybindEditor::KeybindItemDelegate : public QStyledItemDelegate
 {
 	//Notes:
 	//We are not using QKeySequenceEdit intentionally
 	//ESC, Enter/Return and modifier keys on their own can not be bound at this point
 	//Windows: Alt+F4 will close the parent QWindow. This can be alleviated by installing an event filter but binding a shortcut to Alt+F4 makes little sense
-	class KeybindLineEdit : public QWidget
-	{
-	public:
-		KeybindLineEdit(QWidget* parent)
-			: QWidget(parent)
-			, m_lineEdit(new QLineEdit(this))
-		{
-			m_lineEdit->setPlaceholderText(tr("Press shortcut"));
-			m_lineEdit->setFrame(true);
-			m_lineEdit->installEventFilter(this);
-
-			QToolButton* plusButton = new QToolButton;
-			plusButton->setText(tr("Add Shortcut"));
-			plusButton->setToolTip(tr("Add Shortcut"));
-			plusButton->setIcon(CryIcon(QPixmap(":icons/General/Plus.ico")));
-			connect(plusButton, &QToolButton::clicked, this, &KeybindLineEdit::OnPlus);
-
-			QToolButton* minusButton = new QToolButton;
-			minusButton->setText(tr("Remove Shortcut"));
-			minusButton->setToolTip(tr("Remove Shortcut"));
-			minusButton->setIcon(CryIcon(QPixmap(":icons/General/Minus.ico")));
-			connect(minusButton, &QToolButton::clicked, this, &KeybindLineEdit::OnMinus);
-
-			QToolButton* clearButton = new QToolButton;
-			clearButton->setText(tr("Clear Shortcuts"));
-			clearButton->setToolTip(tr("Clear Shortcuts"));
-			clearButton->setIcon(CryIcon(QPixmap(":icons/General/Close.ico")));
-			connect(clearButton, &QToolButton::clicked, this, &KeybindLineEdit::OnClear);
-
-			QHBoxLayout* layout = new QHBoxLayout;
-			layout->setContentsMargins(0, 0, 0, 0);
-			layout->setSpacing(0);
-			layout->addWidget(m_lineEdit);
-			layout->addWidget(plusButton);
-			layout->addWidget(minusButton);
-			layout->addWidget(clearButton);
-
-			setLayout(layout);
-			setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
-		}
-
-		bool event(QEvent* event) override
-		{
-			//Shortcuts will not be triggered from within this control, they will set the keybind instead.
-			if (event->type() == QEvent::Shortcut || event->type() == QEvent::ShortcutOverride)
-			{
-				QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-				keyPressEvent(keyEvent);
-				keyEvent->accept();
-				return true;
-			}
-
-			return QWidget::event(event);
-		}
-
-		bool eventFilter(QObject* object, QEvent* event)
-		{
-			switch (event->type())
-			{
-			case QEvent::Shortcut:
-			case QEvent::ShortcutOverride:
-			case QEvent::KeyPress:
-			{
-				QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-				keyPressEvent(keyEvent);
-				keyEvent->accept();
-				return true;
-			}
-			case QEvent::FocusOut:
-			{
-				// Destroy the in-place editing widget when focus is lost so we don't have a non-focused
-				// line edit in the Keybinds view
-				deleteLater();
-			}
-			default:
-				return false;
-			}
-		}
-
-		void keyPressEvent(QKeyEvent* event) override
-		{
-			if (event->isAutoRepeat())
-			{
-				return;
-			}
-
-			QList<QKeySequence> shortcuts = Private_KeybindEditor::StringToKeySequenceList(m_lineEdit->text());
-
-			switch (event->key())
-			{
-			case 0:
-			case Qt::Key_unknown:
-			case Qt::Key_Meta:
-			case Qt::Key_Control:
-			case Qt::Key_Alt:
-			case Qt::Key_AltGr:
-			case Qt::Key_Shift:
-				break;
-
-			default:
-				QKeySequence seq = QKeySequence(event->key() | event->modifiers());
-
-				if (shortcuts.indexOf(seq) == -1)
-				{
-					shortcuts.pop_back();
-					shortcuts.push_back(seq);
-
-					m_lineEdit->setText(Private_KeybindEditor::KeySequenceListToString(shortcuts));
-				}
-				break;
-			}
-		}
-
-		void OnPlus()
-		{
-			QList<QKeySequence> shortcuts = Private_KeybindEditor::StringToKeySequenceList(m_lineEdit->text());
-
-			if (shortcuts.isEmpty() || !shortcuts.last().isEmpty())
-				shortcuts.push_back(QKeySequence());
-
-			m_lineEdit->setText(Private_KeybindEditor::KeySequenceListToString(shortcuts));
-			m_lineEdit->setFocus(Qt::OtherFocusReason);
-		}
-
-		void OnMinus()
-		{
-			QList<QKeySequence> shortcuts = Private_KeybindEditor::StringToKeySequenceList(m_lineEdit->text());
-
-			if (!shortcuts.isEmpty())
-				shortcuts.pop_back();
-
-			m_lineEdit->setText(Private_KeybindEditor::KeySequenceListToString(shortcuts));
-			m_lineEdit->setFocus(Qt::OtherFocusReason);
-		}
-
-		void OnClear()
-		{
-			m_lineEdit->setText(QString());
-			m_lineEdit->setFocus(Qt::OtherFocusReason);
-		}
-
-		QLineEdit* m_lineEdit;
-	};
-
 public:
-	KeybindItemDelegate(QObject* parent = 0)
-		: QStyledItemDelegate(parent)
-	{}
-
-	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+	KeybindItemDelegate(QObject* pParent = 0)
+		: QStyledItemDelegate(pParent)
 	{
-		return new KeybindLineEdit(parent);
 	}
 
-	void setEditorData(QWidget* editor, const QModelIndex& index) const override
+	QWidget* createEditor(QWidget* pParent, const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
-		auto keybindLineEdit = static_cast<KeybindLineEdit*>(editor);
+		CKeybindLineEdit* pEditor = new CKeybindLineEdit(pParent);
+		connect(pEditor, &CKeybindLineEdit::editingFinished, this, &KeybindItemDelegate::commitAndCloseEditor);
+		return pEditor;
+	}
+
+	void setEditorData(QWidget* pEditor, const QModelIndex& index) const override
+	{
+		auto pLineEdit = static_cast<CKeybindLineEdit*>(pEditor);
 		auto text = index.data(Qt::DisplayRole).toString();
-		keybindLineEdit->m_lineEdit->setText(text);
+		pLineEdit->SetText(text);
 	}
 
-	void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override
+	void setModelData(QWidget* pEditor, QAbstractItemModel* model, const QModelIndex& index) const override
 	{
-		auto keybindLineEdit = static_cast<KeybindLineEdit*>(editor);
-		model->setData(index, keybindLineEdit->m_lineEdit->text(), Qt::EditRole);
+		auto pLineEdit = static_cast<CKeybindLineEdit*>(pEditor);
+		model->setData(index, pLineEdit->GetText(), Qt::EditRole);
 	}
 
 	void paint(QPainter* pPainter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
@@ -651,20 +680,28 @@ public:
 		opt.state &= ~QStyle::State_Open;
 		QStyledItemDelegate::paint(pPainter, opt, index);
 	}
+
+private slots:
+	void commitAndCloseEditor()
+	{
+		QWidget* pEditor = qobject_cast<QWidget*>(sender()->parent());
+		commitData(pEditor);
+		closeEditor(pEditor);
+	}
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 CKeybindEditor::CKeybindEditor(QWidget* parent)
 	: CDockableWidget(parent)
+	, CUserData({ Private_KeybindEditor::szKeybindsPath })
 	, m_treeView(new QAdvancedTreeView())
 {
-	m_model = CommandModelFactory::Create<KeybindModel>();
+	m_model = new KeybindModel();
 	QDeepFilterProxyModel::BehaviorFlags behavior = QDeepFilterProxyModel::AcceptIfChildMatches | QDeepFilterProxyModel::AcceptIfParentMatches;
 	QDeepFilterProxyModel* proxy = new QDeepFilterProxyModel(behavior);
 	proxy->setSourceModel(m_model);
-	proxy->setFilterKeyColumn(1);
-	proxy->setFilterRole((int)CommandModel::Roles::SearchRole);
+	proxy->setFilterKeyColumn(-1);
 
 	QSearchBox* searchBox = new QSearchBox();
 	searchBox->SetModel(proxy);
@@ -730,7 +767,7 @@ void CKeybindEditor::OnContextMenu(const QPoint& pos) const
 	QModelIndex index = m_treeView->indexAt(pos);
 	if (index.isValid())
 	{
-		QVariant commandVar = index.model()->data(index, (int)CommandModel::Roles::CommandPointerRole);
+		QVariant commandVar = index.model()->data(index, (int)CCommandModel::Roles::CommandPointerRole);
 		if (commandVar.isValid())
 		{
 			command = commandVar.value<CCommand*>();
@@ -767,13 +804,11 @@ void CKeybindEditor::customEvent(QEvent* event)
 		const string& command = commandEvent->GetCommand();
 		if (command == "general.delete")
 		{
-			CEditorCommandManager* comMan = GetIEditorImpl()->GetCommandManager();
-
 			CCommand* command = nullptr;
 			QModelIndex index = m_treeView->selectionModel()->currentIndex();
 			if (index.isValid())
 			{
-				QVariant commandVar = index.model()->data(index, (int)CommandModel::Roles::CommandPointerRole);
+				QVariant commandVar = index.model()->data(index, (int)CCommandModel::Roles::CommandPointerRole);
 				if (commandVar.isValid())
 				{
 					command = commandVar.value<CCommand*>();
@@ -795,7 +830,7 @@ void CKeybindEditor::OnAddCustomCommand() const
 	customCommand->Register();
 
 	QAbstractItemModel* model = m_treeView->model();
-	QModelIndexList list = model->match(model->index(0, 0, QModelIndex()), (int)CommandModel::Roles::CommandPointerRole, QVariant::fromValue((CCommand*)customCommand), 1, Qt::MatchRecursive | Qt::MatchExactly);
+	QModelIndexList list = model->match(model->index(0, 0, QModelIndex()), (int)CCommandModel::Roles::CommandPointerRole, QVariant::fromValue((CCommand*)customCommand), 1, Qt::MatchRecursive | Qt::MatchExactly);
 	if (!list.isEmpty())
 	{
 		m_treeView->expand(list.first().parent());
@@ -901,7 +936,7 @@ void CKeybindEditor::SetState(const QVariant& state)
 			QCommandAction* action = comMgr->GetCommandAction(commandStr);
 			if (action)
 			{
-				if (shortcutsVar.isValid())//read valid shortcuts even if shortcutsAsKeySeq is empty
+				if (shortcutsVar.isValid()) //read valid shortcuts even if shortcutsAsKeySeq is empty
 					action->setShortcuts(shortcutsAsKeySeq);
 			}
 		}
@@ -934,14 +969,18 @@ void CKeybindEditor::LoadKeybindsFromFile(const char* filename)
 	}
 
 	QJsonDocument doc(QJsonDocument::fromJson(file.readAll()));
-	QVariant layout = doc.toVariant();
+	QVariant keybindsVariant = doc.toVariant();
 
-	if (layout.isValid())
+	if (keybindsVariant.isValid())
 	{
-		SetState(layout);
+		SetState(keybindsVariant);
 		GetIEditorImpl()->GetCommandManager()->signalChanged();
 	}
-	//TODO : error message
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "Failed to load corrupted Keybinds file: %s", filename);
+		return;
+	}
 }
 
 void CKeybindEditor::OnKeybindsChanged()
@@ -951,28 +990,50 @@ void CKeybindEditor::OnKeybindsChanged()
 
 void CKeybindEditor::SaveUserKeybinds()
 {
-	QString userKeybinds = QtUtil::GetAppDataFolder();
-	QDir(userKeybinds).mkpath(userKeybinds);
-	userKeybinds += "/Keybinds.json";
-	SaveKeybindsToFile(userKeybinds.toStdString().c_str());
+	QJsonDocument doc(QJsonDocument::fromVariant(GetState()));
+	UserDataUtil::Save(Private_KeybindEditor::szKeybindsPath, doc.toJson());
+}
+
+std::vector<string> CKeybindEditor::GetKeyBindDirectories(const char* szRelativePath)
+{
+	std::vector<string> result;
+
+	string editorToolbarPath = PathUtil::Make("Editor", szRelativePath);
+
+	// Engine defaults
+	result.push_back(PathUtil::Make(PathUtil::GetEnginePath().c_str(), editorToolbarPath));
+	// Game project specific tool-bars
+	result.push_back(PathUtil::Make(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute(), editorToolbarPath));
+	// User tool-bars
+	result.push_back(UserDataUtil::GetUserPath(szRelativePath));
+
+	return result;
 }
 
 void CKeybindEditor::LoadUserKeybinds()
 {
-	QString userKeybinds = QtUtil::GetAppDataFolder();
-	userKeybinds += "/Keybinds.json";
-	QFile file(userKeybinds);
+	std::vector<string> keyBindDirectories = GetKeyBindDirectories(Private_KeybindEditor::szKeybindsPath);
+	bool keyBindsUpdated = false;
 
-	// If there's no user keybinds, try and load project keybinds
-	if (file.exists())
-		return LoadKeybindsFromFile(userKeybinds.toStdString().c_str());
+	// Load all keybinds in the order of Engine -> Project -> User defined
+	for (const string& keyBindDirectory : keyBindDirectories)
+	{
+		QFile file(keyBindDirectory.c_str());
+		if (!file.open(QIODevice::ReadOnly))
+			continue;
 
-	QString projKeybinds(GetIEditorImpl()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute());
-	projKeybinds = projKeybinds + "/Editor/Keybinds.json";
+		QJsonDocument doc(QJsonDocument::fromJson(file.readAll()));
+		QVariant keybindsVariant = doc.toVariant();
 
-	if (QFile(projKeybinds).exists())
-		return LoadKeybindsFromFile(projKeybinds.toUtf8());
+		if (keybindsVariant.isValid())
+		{
+			SetState(keybindsVariant);
+			keyBindsUpdated = true;
+		}
+	}
 
-	LoadKeybindsFromFile(PathUtil::Make(PathUtil::GetEnginePath(), "%EDITOR%/Keybinds.json").c_str());
+	if (keyBindsUpdated)
+	{
+		GetIEditorImpl()->GetCommandManager()->signalChanged();
+	}
 }
-

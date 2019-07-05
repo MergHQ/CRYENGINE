@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ixml.h
-//  Version:     v1.00
-//  Created:     16/7/2002 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CryCore/Platform/platform.h>
@@ -61,10 +50,10 @@ struct ISerialize;
 class XmlString : public string
 {
 public:
-	XmlString() {};
-	XmlString(const char* str) : string(str) {};
+	XmlString() {}
+	XmlString(const char* str) : string(str) {}
 #ifdef  _AFX
-	XmlString(const CString& str) : string((const char*)str) {};
+	XmlString(const CString& str) : string((const char*)str) {}
 #endif
 
 	operator const char*() const { return c_str(); }
@@ -129,7 +118,7 @@ protected:
 protected:
 	// <interfuscator:shuffle>
 	virtual void DeleteThis() = 0;
-	virtual ~IXmlNode() {};
+	virtual ~IXmlNode() {}
 	// </interfuscator:shuffle>
 
 public:
@@ -141,11 +130,11 @@ public:
 	// AddRef/Release need to be virtual to permit overloading from CXMLNodePool.
 
 	//! Reference counting.
-	virtual void AddRef() { m_nRefCount++; };
+	virtual void AddRef() { m_nRefCount++; }
 
 	//! When ref count reaches zero, the XML node dies.
-	virtual void Release()           { if (--m_nRefCount <= 0) DeleteThis(); };
-	virtual int  GetRefCount() const { return m_nRefCount; };
+	virtual void Release()           { if (--m_nRefCount <= 0) DeleteThis(); }
+	virtual int  GetRefCount() const { return m_nRefCount; }
 
 	//! Get XML node tag.
 	virtual const char* getTag() const = 0;
@@ -256,7 +245,7 @@ public:
 	virtual void setAttr(const char* key, const Vec4& value) = 0;
 	virtual void setAttr(const char* key, const Vec3d& value) = 0;
 	virtual void setAttr(const char* key, const Quat& value) = 0;
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	//! Compatability functions, on Linux and Mac long int is the default int64_t.
 	ILINE void setAttr(const char* key, unsigned long int value, bool useHexFormat = true)
 	{
@@ -295,7 +284,7 @@ public:
 	virtual bool getAttr(const char* key, XmlString& value) const = 0;
 	virtual bool getAttr(const char* key, ColorB& value) const = 0;
 
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	//! Compatability functions, on Linux and Mac long int is the default int64_t.
 	ILINE bool getAttr(const char* key, unsigned long int& value, bool useHexFormat = true) const
 	{
@@ -334,11 +323,11 @@ public:
 
 	//! Inline Helpers.
 	//! @{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 	bool getAttr(const char* key, long& value) const           { int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
 	bool getAttr(const char* key, unsigned long& value) const  { unsigned int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
-	void setAttr(const char* key, unsigned long value)         { setAttr(key, (unsigned int)value); };
-	void setAttr(const char* key, long value)                  { setAttr(key, (int)value); };
+	void setAttr(const char* key, unsigned long value)         { setAttr(key, (unsigned int)value); }
+	void setAttr(const char* key, long value)                  { setAttr(key, (int)value); }
 #endif
 	bool getAttr(const char* key, unsigned short& value) const { unsigned int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
 	bool getAttr(const char* key, unsigned char& value) const  { unsigned int v; if (getAttr(key, v)) { value = v; return true; } else return false; }
@@ -549,6 +538,19 @@ struct IXmlTableReader
 //! \endcond
 #endif
 
+
+namespace XMLBinary
+{
+	//! Binary XML writer interface. Serves as a sink for saving binary XML files.
+	class IDataWriter
+	{
+	public:
+		virtual ~IDataWriter() {}
+		//! Write (append) binary xml data chunk to the end of the file
+		virtual void Write(const void* pData, size_t size) = 0;
+	};
+}
+
 //////////////////////////////////////////////////////////////////////////
 //! IXmlUtils structure.
 struct IXmlUtils
@@ -582,6 +584,9 @@ struct IXmlUtils
 
 	//! Create XML to file in the binary form.
 	virtual bool SaveBinaryXmlFile(const char* sFilename, XmlNodeRef root) = 0;
+
+	//! Write XML in the binary form using custom writer object.
+	virtual bool SaveBinaryXmlWithWriter(XMLBinary::IDataWriter& writer, XmlNodeRef root) = 0;
 
 	//! Read XML data from file in the binary form.
 	virtual XmlNodeRef LoadBinaryXmlFile(const char* sFilename, bool bEnablePatching = true) = 0;

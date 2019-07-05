@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CAISYSTEM_H_
-#define _CAISYSTEM_H_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <map>
 #include "AI/NavDataGeneration/AILog.h"
@@ -165,7 +160,7 @@ struct SShape
 			Vec3 pt, norm;
 
 			// test top
-			norm = Vec3(0, 0, (end.z > start.z) ? -1 : 1); // because plane test is one sided
+			norm = Vec3(0.f, 0.f, (end.z > start.z) ? -1.f : 1.f); // because plane test is one sided
 			if (Intersect::Line_Plane(Line(start, end), Plane::CreatePlane(norm, aabb.max), pt) &&
 			    IsPointInsideShape(pt, false) &&
 			    intersects < maxIntersections)
@@ -322,7 +317,7 @@ inline void SShape::BuildMask(float granularity)
 //===================================================================
 // CShapeMask
 //===================================================================
-inline CShapeMask::CShapeMask() : m_nx(0), m_ny(0), m_dx(0), m_dy(0)
+inline CShapeMask::CShapeMask() : m_nx(0), m_ny(0), m_dx(0), m_dy(0), m_bytesPerRow(0)
 {
 }
 
@@ -468,6 +463,3 @@ struct SPerceptionModifierShape : SShape
 typedef std::map<string, SShape>                   ShapeMap;
 
 typedef std::map<string, SPerceptionModifierShape> PerceptionModifierShapeMap;
-
-#endif // _CAISYSTEM_H_
-

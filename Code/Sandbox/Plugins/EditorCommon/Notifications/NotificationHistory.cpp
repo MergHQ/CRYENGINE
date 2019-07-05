@@ -5,15 +5,16 @@
 #include "Internal/Notifications_Internal.h"
 #include "Internal/NotificationModel_Internal.h"
 
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QToolButton>
-#include <QHeaderView>
-
 // EditorCommon
 #include "QAdvancedTreeView.h"
 #include "CryIcon.h"
 #include "EditorFramework/PersonalizationManager.h"
+
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QToolButton>
+#include <QHeaderView>
+#include <QMenu>
 
 CNotificationHistory::CNotificationHistory(QWidget* pParent /* = nullptr*/)
 	: QWidget(pParent)
@@ -192,4 +193,3 @@ void CNotificationHistory::SaveState()
 	SET_PERSONALIZATION_PROPERTY(CNotificationHistory, "ShowErrors", m_pShowErrors->isChecked());
 	SET_PERSONALIZATION_PROPERTY(CNotificationHistory, "TreeView", m_pTreeView->GetState());
 }
-

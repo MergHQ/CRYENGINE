@@ -60,7 +60,7 @@ CNodeLiveReaderRef CReader::GetRoot()
 {
 	CNodeLiveReaderRef nodeRef(*this, XMLCPB_ROOTNODE_ID);    // root node always have same live ID and is always valid
 
-	assert(m_liveNodes[0].IsValid());
+	CRY_ASSERT(m_liveNodes[0].IsValid());
 	return nodeRef;
 }
 
@@ -93,7 +93,7 @@ const CNodeLiveReader& CReader::ActivateLiveNodeFromCompact(NodeGlobalID nodeId)
 		}
 	}
 
-	assert(found);
+	CRY_ASSERT(found);
 	m_numActiveNodes++;
 	if (m_numActiveNodes > m_maxNumActiveNodes)
 		m_maxNumActiveNodes = m_numActiveNodes;
@@ -105,13 +105,10 @@ const CNodeLiveReader& CReader::ActivateLiveNodeFromCompact(NodeGlobalID nodeId)
 
 CNodeLiveReader* CReader::GetNodeLive(NodeLiveID nodeId)
 {
-	CNodeLiveReader* pNode = NULL;
-	assert(nodeId < m_liveNodes.size());
+	if (CRY_VERIFY(nodeId < m_liveNodes.size()))
+		return &(m_liveNodes[nodeId]);
 
-	if (nodeId < m_liveNodes.size())
-		pNode = &(m_liveNodes[nodeId]);
-
-	return pNode;
+	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,7 +118,7 @@ void CReader::FreeNodeLive(NodeLiveID nodeId)
 	if (nodeId < m_firstFreeLiveNode)
 		m_firstFreeLiveNode = nodeId;
 
-	assert(nodeId < m_liveNodes.size());
+	CRY_ASSERT(nodeId < m_liveNodes.size());
 
 	m_liveNodes[nodeId].Reset();
 	m_numActiveNodes--;
@@ -181,7 +178,7 @@ void CReader::ReadDataFromZLibBuffer(IPlatformOS::ISaveReaderPtr& pOSSaveReader,
 
 			if (isCompressedData)
 			{
-				assert(blockHeader.m_compressedSize < XMLCPB_ZLIB_BUFFER_SIZE);
+				CRY_ASSERT(blockHeader.m_compressedSize < XMLCPB_ZLIB_BUFFER_SIZE);
 				ReadDataFromFileInternal(pOSSaveReader, m_pZLibCompressedBuffer, blockHeader.m_compressedSize);
 				if (!m_errorReading)
 				{
@@ -216,7 +213,7 @@ void CReader::ReadDataFromZLibBuffer(IPlatformOS::ISaveReaderPtr& pOSSaveReader,
 // TODO: remove all those pOSSaveReader parameter chains and make it a member, passing it along is not needed anymore
 void CReader::ReadDataFromFileInternal(IPlatformOS::ISaveReaderPtr& pOSSaveReader, void* pDst, uint32 numBytes)
 {
-	assert(pOSSaveReader.get());
+	CRY_ASSERT(pOSSaveReader.get());
 
 	if (!m_errorReading)
 	{
@@ -275,8 +272,12 @@ bool CReader::ReadBinaryFile(const char* pFileName)
 
 			if (!m_errorReading)
 			{
+#if defined(USE_CRY_ASSERT)
 				const CNodeLiveReader& root = ActivateLiveNodeFromCompact(m_numNodes - 1);   // the last node is always the root
-				assert(root.GetLiveId() == XMLCPB_ROOTNODE_ID);
+				CRY_ASSERT(root.GetLiveId() == XMLCPB_ROOTNODE_ID);
+#else
+				ActivateLiveNodeFromCompact(m_numNodes - 1);   // the last node is always the root
+#endif
 
 				pOSSaveReader->TouchFile();
 			}
@@ -358,8 +359,8 @@ bool CReader::CheckFileCorruption(IPlatformOS::ISaveReaderPtr& pOSSaveReader, co
 
 void CReader::ReadDataFromMemory(const uint8* pData, uint32 dataSize, void* pSrc, uint32 numBytes, uint32& outReadLoc)
 {
-	assert(pData);
-	assert(pSrc);
+	CRY_ASSERT(pData);
+	CRY_ASSERT(pSrc);
 
 	if (!m_errorReading && pData && pSrc && numBytes > 0)
 	{
@@ -405,8 +406,12 @@ bool CReader::ReadBinaryMemory(const uint8* pData, uint32 uSize)
 
 		if (!m_errorReading)
 		{
+#if defined(USE_CRY_ASSERT)
 			const CNodeLiveReader& root = ActivateLiveNodeFromCompact(m_numNodes - 1);   // the last node is always the root
-			assert(root.GetLiveId() == XMLCPB_ROOTNODE_ID);
+			CRY_ASSERT(root.GetLiveId() == XMLCPB_ROOTNODE_ID);
+#else
+			ActivateLiveNodeFromCompact(m_numNodes - 1);   // the last node is always the root
+#endif
 		}
 	}
 
@@ -443,8 +448,8 @@ void CReader::CreateNodeAddressTables()
 		CNodeLiveReader node(*this);
 		node.ActivateFromCompact(0, n);
 		addr = node.GetAddrNextNode();
-		assert(addr > m_nodesAddrTable[n]);
+		CRY_ASSERT(addr > m_nodesAddrTable[n]);
 	}
 
-	assert(addr == m_nodesDataSize);
+	CRY_ASSERT(addr == m_nodesDataSize);
 }

@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 #include <CryMovie/IMovieSystem.h>
@@ -24,7 +21,6 @@ public:
 	void                   AppendTrack(CTrackViewTrack* pTrack);
 	void                   AppendTrackBundle(const CTrackViewTrackBundle& bundle);
 
-	bool                   IsOneTrack() const;
 	bool                   AreAllOfSameType() const { return m_bAllOfSameType; }
 	bool                   HasRotationTrack() const { return m_bHasRotationTrack; }
 
@@ -57,6 +53,9 @@ class CTrackViewTrack : public CTrackViewNode, public ITrackViewKeyBundle
 	friend class CTrackViewKeyConstHandle;
 	friend class CTrackViewKeyBundle;
 	friend class CAbstractUndoTrackTransaction;
+
+public:
+	using SAnimKeysIndicesByIndex = AnimTrackKeysIndices;
 
 public:
 	CTrackViewTrack(IAnimTrack* pTrack, CTrackViewAnimNode* pTrackAnimNode, CTrackViewNode* pParentNode,
@@ -168,9 +167,6 @@ protected:
 	virtual void GetKey(uint keyIndex, STrackKey* pKey) const;
 
 private:
-	using SAnimTimeVector       = std::vector<SAnimTime>;
-	using SerializationCallback = std::function<void(SAnimTimeVector&)>;
-
 	CTrackViewTrack*    GetSubTrack(uint index);
 
 	CTrackViewKeyHandle GetPrevKey(const SAnimTime time);
@@ -190,9 +186,8 @@ private:
 	virtual bool        IsKeyAnimLoopable(const uint index) const            { return false; }
 
 	void                RemoveKey(const int index);
-	void                GetSelectedKeysTimes(std::vector<SAnimTime>& selectedKeysTimes);
-	void                SelectKeysByAnimTimes(const std::vector<SAnimTime>& selectedKeys);
-	void                SerializeSelectedKeys(XmlNodeRef& xmlNode, bool bLoading, SerializationCallback callback = [](SAnimTimeVector&) {}, const SAnimTime time = SAnimTime(0), size_t index = 0,	SAnimTimeVector keysTimes = SAnimTimeVector());
+	void                GetSelectedKeysIndices(SAnimKeysIndicesByIndex& selectedKeysIndices);
+	void                SerializeSelectedKeys(XmlNodeRef& xmlNode, bool bLoading, const SAnimTime time = SAnimTime(0), size_t index = 0);
 	
 	CTrackViewKeyBundle GetKeys(bool bOnlySelected, SAnimTime t0, SAnimTime t1);
 	CTrackViewKeyHandle GetSubTrackKeyHandle(uint index) const;
@@ -204,4 +199,3 @@ private:
 	CTrackViewAnimNode*    m_pTrackAnimNode;
 	std::vector<bool>      m_keySelectionStates;
 };
-

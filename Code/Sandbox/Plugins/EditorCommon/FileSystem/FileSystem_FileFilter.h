@@ -34,11 +34,7 @@ public:
 	static SFileFilter ForTreeExtension(const QString& extension);
 	static SFileFilter ForDirectoryAndExtension(const QString& directoryEnginePath, const QString& extension);
 	static SFileFilter ForDirectoryTreeAndExtension(const QString& directoryEnginePath, const QString& extension);
-
 	static SFileFilter ForFileType(const SFileType*);
-	static SFileFilter ForDirectoryAndFileType(const QString& directory, const SFileType*);
-	static SFileFilter ForDirectoryTokenAndFileType(const QString& directoryToken, const SFileType*);
-	// ... a method for everything that is used at least twice
 
 protected:
 	friend class CSnapshot;
@@ -49,4 +45,3 @@ protected:
 } // namespace FileSystem
 
 Q_DECLARE_METATYPE(FileSystem::SFileFilter)
-

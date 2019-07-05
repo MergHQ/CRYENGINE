@@ -4,6 +4,7 @@
 #include "ControllerDefragHeap.h"
 
 #include "ControllerPQ.h"
+#include <CryMemory/IMemory.h>
 
 CControllerDefragHeap::CControllerDefragHeap()
 	: m_pAddressRange(NULL)
@@ -34,7 +35,7 @@ CControllerDefragHeap::~CControllerDefragHeap()
 
 void CControllerDefragHeap::Init(size_t capacity)
 {
-	assert(!m_pAllocator);
+	CRY_ASSERT(!m_pAllocator);
 
 	m_pAddressRange = CryGetIMemoryManager()->ReserveAddressRange(capacity, "Anim Defrag Heap");
 	m_pBaseAddress = m_pAddressRange->GetBaseAddress();
@@ -94,7 +95,7 @@ CControllerDefragHdl CControllerDefragHeap::AllocPinned(size_t sz, IControllerRe
 			{
 				ret = CControllerDefragHdl(apr.hdl);
 
-				MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+				MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 				MEMREPLAY_SCOPE_ALLOC(m_pBaseAddress + apr.offs, apr.usableSize, MinAlignment);
 			}
 			else
@@ -104,7 +105,7 @@ CControllerDefragHdl CControllerDefragHeap::AllocPinned(size_t sz, IControllerRe
 		}
 		else if (AllowGPHFallback)
 		{
-			MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 			ret = CControllerDefragHdl(FixedAlloc(sz, true));
 
@@ -116,7 +117,7 @@ CControllerDefragHdl CControllerDefragHeap::AllocPinned(size_t sz, IControllerRe
 	}
 	else
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		ret = CControllerDefragHdl(FixedAlloc(sz, false));
 
@@ -136,11 +137,11 @@ void CControllerDefragHeap::Free(CControllerDefragHdl hdl)
 		UINT_PTR offs = m_pAllocator->Pin(hdl.AsHdl());
 
 		{
-			MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 			MEMREPLAY_SCOPE_FREE(m_pBaseAddress + offs);
 		}
 
-		assert(hdl.IsValid());
+		CRY_ASSERT(hdl.IsValid());
 
 		// Ensure that pages are unmapped
 		UINT_PTR sz = m_pAllocator->UsableSize(hdl.AsHdl());
@@ -151,7 +152,7 @@ void CControllerDefragHeap::Free(CControllerDefragHdl hdl)
 	}
 	else
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		FixedFree(hdl.AsFixed());
 
@@ -161,7 +162,7 @@ void CControllerDefragHeap::Free(CControllerDefragHdl hdl)
 
 size_t CControllerDefragHeap::UsableSize(CControllerDefragHdl hdl)
 {
-	assert(hdl.IsValid());
+	CRY_ASSERT(hdl.IsValid());
 	if (!hdl.IsFixed())
 	{
 		return m_pAllocator->UsableSize(hdl.AsHdl());
@@ -192,7 +193,7 @@ uint32 CControllerDefragHeap::BeginCopy(void* pContext, UINT_PTR dstOffset, UINT
 
 		if (nIdx != (uint32) - 1)
 		{
-			assert(nIdx >= 0 && nIdx < CRY_ARRAY_COUNT(m_copiesInFlight));
+			CRY_ASSERT(nIdx >= 0 && nIdx < CRY_ARRAY_COUNT(m_copiesInFlight));
 			Copy& cp = m_copiesInFlight[nIdx];
 			stl::reconstruct(cp, pContext, dstOffset, srcOffset, size, pNotification);
 
@@ -224,12 +225,9 @@ uint32 CControllerDefragHeap::BeginCopy(void* pContext, UINT_PTR dstOffset, UINT
 void CControllerDefragHeap::Relocate(uint32 userMoveId, void* pContext, UINT_PTR newOffset, UINT_PTR oldOffset, UINT_PTR size)
 {
 	Copy& cp = m_copiesInFlight[userMoveId - 1];
-	if (cp.inUse && (cp.pContext == pContext))
+	if (CRY_VERIFY(cp.inUse && (cp.pContext == pContext)))
 	{
-#ifndef _RELEASE
-		if (cp.relocated)
-			__debugbreak();
-#endif
+		CRY_ASSERT(!cp.relocated);
 
 		char* pNewBase = m_pBaseAddress + newOffset;
 		char* pOldBase = m_pBaseAddress + oldOffset;
@@ -237,34 +235,26 @@ void CControllerDefragHeap::Relocate(uint32 userMoveId, void* pContext, UINT_PTR
 		for (IControllerRelocatableChain* rbc = (IControllerRelocatableChain*)pContext; rbc; rbc = rbc->GetNext())
 			rbc->Relocate(pNewBase, pOldBase);
 
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 		MEMREPLAY_SCOPE_REALLOC(m_pBaseAddress + oldOffset, m_pBaseAddress + newOffset, size, MinAlignment);
 
 		cp.relocateFrameId = m_tickId;
 		cp.relocated = true;
 		return;
 	}
-
-#ifndef _RELEASE
-	__debugbreak();
-#endif
 }
 
 void CControllerDefragHeap::CancelCopy(uint32 userMoveId, void* pContext, bool bSync)
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_queuedCancelLock);
-#ifndef _RELEASE
-	if (m_numQueuedCancels == CRY_ARRAY_COUNT(m_queuedCancels))
-		__debugbreak();
-#endif
-	assert(m_numQueuedCancels < CRY_ARRAY_COUNT(m_queuedCancels));
+	CRY_ASSERT(m_numQueuedCancels < CRY_ARRAY_COUNT(m_queuedCancels));
 	m_queuedCancels[m_numQueuedCancels++] = userMoveId;
 }
 
 void CControllerDefragHeap::SyncCopy(void* pContext, UINT_PTR dstOffset, UINT_PTR srcOffset, UINT_PTR size)
 {
 	// Not supported - but shouldn't be needed.
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 }
 
 bool CControllerDefragHeap::IncreaseRange(UINT_PTR offs, UINT_PTR sz)

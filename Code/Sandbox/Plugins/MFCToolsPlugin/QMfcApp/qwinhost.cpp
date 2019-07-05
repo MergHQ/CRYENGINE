@@ -51,9 +51,7 @@
 #include <qt_windows.h>
 #include <QApplication>
 
-#if QT_VERSION >= 0x050000
-	#define QT_WA(unicode, ansi) unicode
-#endif
+#define QT_WA(unicode, ansi) unicode
 
 /*!
     \class QWinHost qwinhost.h
@@ -87,7 +85,7 @@
     QWidget::setParent or move the QWinHost into a different layout.
  */
 QWinHost::QWinHost(QWidget* parent, Qt::WindowFlags f)
-	: QWidget(parent, f), wndproc(0), own_hwnd(false), hwnd(0)
+	: QMFCPaneHost(parent, f), wndproc(0), own_hwnd(false), hwnd(0)
 {
 	setAttribute(Qt::WA_NoBackground);
 	setAttribute(Qt::WA_NoSystemBackground);
@@ -107,42 +105,17 @@ QWinHost::~QWinHost()
 		QT_WA({
 			SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)wndproc);
 		}, {
-			SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)wndproc);
-		})
+			SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)wndproc); })
 #else
 		QT_WA({
 			SetWindowLong(hwnd, GWL_WNDPROC, (LONG)wndproc);
 		}, {
-			SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)wndproc);
-		})
+			SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)wndproc); })
 #endif
 	}
 
 	if (hwnd && own_hwnd)
 		DestroyWindow(hwnd);
-}
-
-/*!
-    Reimplement this virtual function to create and return the native
-    Win32 window. \a parent is the handle to this widget, and \a
-    instance is the handle to the application instance. The returned HWND
-    must be a child of the \a parent HWND.
-
-    The default implementation returns null. The window returned by a
-    reimplementation of this function is owned by this QWinHost
-    instance and will be destroyed in the destructor.
-
-    This function is called by the implementation of polish() if no
-    window has been set explicitly using setWindow(). Call polish() to
-    force this function to be called.
-
-    \sa setWindow()
- */
-HWND QWinHost::createWindow(HWND parent, HINSTANCE instance)
-{
-	Q_UNUSED(parent);
-	Q_UNUSED(instance);
-	return 0;
 }
 
 /*!
@@ -175,7 +148,7 @@ void QWinHost::fixParent()
     call DestroyWindow. To verify that the handle is destroyed when expected, handle
     WM_DESTROY in the window procedure.
 
-    \sa window(), createWindow()
+    \sa window()
  */
 void QWinHost::setWindow(HWND window, bool bOwnWindow)
 {
@@ -196,7 +169,7 @@ void QWinHost::setWindow(HWND window, bool bOwnWindow)
     Returns the handle to the native Win32 window, or null if no
     window has been set or created yet.
 
-    \sa setWindow(), createWindow()
+    \sa setWindow()
  */
 HWND QWinHost::window() const
 {
@@ -228,8 +201,7 @@ LRESULT CALLBACK WinHostProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			QT_WA({
 				SendMessage((HWND)widget->winId(), msg, wParam, lParam);
 			}, {
-				SendMessageA((HWND)widget->winId(), msg, wParam, lParam);
-			})
+				SendMessageA((HWND)widget->winId(), msg, wParam, lParam); })
 			break;
 
 		case WM_KEYDOWN:
@@ -238,8 +210,7 @@ LRESULT CALLBACK WinHostProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				QT_WA({
 					SendMessage((HWND)widget->winId(), msg, wParam, lParam);
 				}, {
-					SendMessageA((HWND)widget->winId(), msg, wParam, lParam);
-				})
+					SendMessageA((HWND)widget->winId(), msg, wParam, lParam); })
 			}
 			break;
 
@@ -263,8 +234,7 @@ LRESULT CALLBACK WinHostProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}, {
 		if (oldproc)
 			return CallWindowProcA(oldproc, hwnd, msg, wParam, lParam);
-		return DefWindowProcA(hwnd, msg, wParam, lParam);
-	})
+		return DefWindowProcA(hwnd, msg, wParam, lParam); })
 }
 
 /*!
@@ -277,7 +247,6 @@ bool QWinHost::event(QEvent* e)
 	case QEvent::Polish:
 		if (!hwnd)
 		{
-			hwnd = createWindow((HWND)winId(), qWinAppInst());
 			fixParent();
 			own_hwnd = hwnd != 0;
 		}
@@ -291,8 +260,7 @@ bool QWinHost::event(QEvent* e)
 			}, {
 				void* oldProc = (void*)GetWindowLongPtrA(hwnd, GWLP_WNDPROC);
 				if (oldProc != WinHostProc)
-					wndproc = (void*)SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)WinHostProc);
-			})
+					wndproc = (void*)SetWindowLongPtrA(hwnd, GWLP_WNDPROC, (LONG_PTR)WinHostProc); })
 #else
 			QT_WA({
 				void* oldProc = (void*)GetWindowLong(hwnd, GWLP_WNDPROC);
@@ -301,16 +269,14 @@ bool QWinHost::event(QEvent* e)
 			}, {
 				void* oldProc = (void*)GetWindowLongA(hwnd, GWL_WNDPROC);
 				if (oldProc != WinHostProc)
-					wndproc = (void*)SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)WinHostProc);
-			})
+					wndproc = (void*)SetWindowLongA(hwnd, GWL_WNDPROC, (LONG)WinHostProc); })
 #endif
 
 			LONG style;
 			QT_WA({
 				style = GetWindowLong(hwnd, GWL_STYLE);
 			}, {
-				style = GetWindowLongA(hwnd, GWL_STYLE);
-			})
+				style = GetWindowLongA(hwnd, GWL_STYLE); })
 			if (style & WS_TABSTOP)
 				setFocusPolicy(Qt::FocusPolicy(focusPolicy() | Qt::StrongFocus));
 		}
@@ -363,15 +329,9 @@ void QWinHost::resizeEvent(QResizeEvent* e)
 /*!
     \reimp
  */
-#if QT_VERSION >= 0x050000
 bool QWinHost::nativeEvent(const QByteArray& eventType, void* message, long* result)
-#else
-bool QWinHost::winEvent(MSG* msg, long* result)
-#endif
 {
-#if QT_VERSION >= 0x050000
 	MSG* msg = (MSG*)message;
-#endif
 	switch (msg->message)
 	{
 	case WM_SETFOCUS:
@@ -383,10 +343,5 @@ bool QWinHost::winEvent(MSG* msg, long* result)
 	default:
 		break;
 	}
-#if QT_VERSION >= 0x050000
 	return QWidget::nativeEvent(eventType, message, result);
-#else
-	return QWidget::winEvent(msg, result);
-#endif
 }
-

@@ -113,12 +113,12 @@ void CEntityAIBehaviorTreeComponent::OnShutDown()
 	EnsureBehaviorTreeIsStopped();
 }
 
-uint64 CEntityAIBehaviorTreeComponent::GetEventMask() const
+Cry::Entity::EventFlags CEntityAIBehaviorTreeComponent::GetEventMask() const
 {
 	return
-		ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME);
+		ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED |
+		ENTITY_EVENT_RESET |
+		ENTITY_EVENT_START_GAME;
 }
 
 void CEntityAIBehaviorTreeComponent::ProcessEvent(const SEntityEvent& event)

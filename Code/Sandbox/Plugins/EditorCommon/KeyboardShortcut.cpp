@@ -129,4 +129,3 @@ QList<QKeySequence> CKeyboardShortcut::ToKeySequence() const
 
 	return QList<QKeySequence>();
 }
-

@@ -1,13 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ObjectCreateTool_h__
-#define __ObjectCreateTool_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
+#include "LevelEditor/Tools/EditTool.h"
+#include <Objects/BaseObject.h>
 
 class CBaseObject;
+class CObjectClassDesc;
 class QMimeData;
 
 //TODO : Replacement for CObjectCreateTool, work in progress
@@ -33,14 +31,13 @@ public:
 	const char*       GetSelectedObjectFile()  { return m_objectFile; }
 
 private:
-	virtual void DeleteThis() override { delete this; };
+	virtual void DeleteThis() override { delete this; }
 
 	bool         CanStartCreation();
 	void         StartCreation();
 	void         FinishCreation(bool restart);
 	void         CancelCreation(bool clear = true);
-	void         RestartCreation();
-	bool		 IsCreating() const { return m_createdObject != nullptr; }
+	bool         IsCreating() const { return m_createdObject != nullptr; }
 
 	bool         IsValidDragData(const QMimeData* data, bool acceptValue);
 
@@ -54,6 +51,3 @@ private:
 	// after creation has started (nodes in a navigation area)
 	bool m_bContinuousCreation;
 };
-
-#endif // __ObjectCreateTool_h__
-

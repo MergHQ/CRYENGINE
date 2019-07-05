@@ -34,7 +34,7 @@ int TranslateSeekMode(IPlatformOS::ISaveReader::ESeekMode mode)
 		return SEEK_END;
 	default:
 		{
-			CRY_ASSERT_TRACE(false, ("Unrecognized seek mode %i", static_cast<int>(mode)));
+			CRY_ASSERT(false, "Unrecognized seek mode %i", static_cast<int>(mode));
 			return INVALID_SEEK;
 		}
 	}
@@ -205,7 +205,7 @@ void UpdateFileStats(const char* fileName)
 ////////////////////////////////////////////////////////////////////////////
 
 CSaveReader_CryPak::CSaveReader_CryPak(const char* fileName)
-	: CCryPakFile(fileName, "rbx") // x=don't cache full file
+	: CCryPakFile(fileName, "rb")
 {
 	m_eLastError = m_pFile == NULL ? IPlatformOS::eFOC_ErrorOpenRead : IPlatformOS::eFOC_Success;
 }

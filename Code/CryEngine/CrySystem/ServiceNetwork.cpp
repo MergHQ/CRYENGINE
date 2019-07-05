@@ -12,6 +12,8 @@
 #include "ServiceNetwork.h"
 #include "RemoteCommandHelpers.h"
 #include <CryNetwork/CrySocks.h>
+#include <CryCore/CryEndian.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 //-----------------------------------------------------------------------------
 
@@ -65,9 +67,9 @@ inline void TranslateAddress(const CRYSOCKADDR_IN& addr, ServiceNetworkAddress& 
 //-----------------------------------------------------------------------------
 
 CServiceNetworkMessage::CServiceNetworkMessage(const uint32 id, const uint32 size)
-	: m_refCount(1)
+	: m_id(id)
 	, m_size(size)
-	, m_id(id)
+	, m_refCount(1)
 {
 	// Allocate buffer memory
 	m_pData = CryModuleMalloc(size);
@@ -147,24 +149,11 @@ CServiceNetworkConnection::CServiceNetworkConnection(
 		const ServiceNetworkAddress& remoteAddress)
 
 	: m_pManager(manager)
-	, m_connectionID(connectionID)
+	, m_endpointType(endpointType)
 	, m_socket(socket)
 	, m_localAddress(localAddress)
 	, m_remoteAddress(remoteAddress)
-	, m_endpointType(endpointType)
-	, m_state(eState_Initializing)
-	, m_sendQueueDataSize(0)
-	, m_receiveQueueDataSize(0)
-	, m_messageDataSentSoFar(0)
-	, m_messageDataReceivedSoFar(0)
-	, m_bCloseRequested(false)
-	, m_pCurrentReceiveMessage(NULL)
-	, m_messageReceiveLength(0)
-	, m_messageDummyReadLength(0)
-	, m_reconnectTryCount(0)
-	, m_bDisableCommunication(false)
-	, m_pSendedMessages(NULL)
-	, m_refCount(1)
+	, m_connectionID(connectionID)
 {
 	// put the socket back in non blocking mode
 	CrySock::MakeSocketNonBlocking(m_socket);
@@ -336,10 +325,9 @@ void CServiceNetworkConnection::Shutdown()
 	}
 
 	// Release all pending messages (they wont be sent anyway)
-	while (!m_pSendQueue.empty())
+	for (CServiceNetworkMessage* pMessage : m_pSendQueue.pop_all())
 	{
-		CServiceNetworkMessage* message = m_pSendQueue.pop();
-		message->Release();
+		pMessage->Release();
 	}
 
 	// release current in-flight message
@@ -655,8 +643,7 @@ void CServiceNetworkConnection::ProcessSendingQueue()
 	// Get the top message from the send queue
 	if (NULL == m_pSendedMessages)
 	{
-		m_pSendedMessages = m_pSendQueue.pop();
-		if (NULL == m_pSendedMessages)
+		if (!m_pSendQueue.try_pop(m_pSendedMessages))
 		{
 			return;
 		}
@@ -1097,12 +1084,9 @@ bool CServiceNetworkConnection::SendMsg(IServiceNetworkMessage* message)
 
 IServiceNetworkMessage* CServiceNetworkConnection::ReceiveMsg()
 {
-	// Anything on the queue ?
-	IServiceNetworkMessage* message = NULL;
-	if (!m_pReceiveQueue.empty())
+	CServiceNetworkMessage* message = NULL;
+	if (m_pReceiveQueue.try_pop(message))
 	{
-		message = m_pReceiveQueue.pop();
-
 		// Report connection problems
 		LOG_VERBOSE(3, "Connection local='%s', remote='%s', this=%p: message ID %d (size=%d) popped by receive end",
 		            m_localAddress.ToString().c_str(),
@@ -1201,8 +1185,6 @@ CServiceNetworkListener::CServiceNetworkListener(CServiceNetwork* pManager, CRYS
 	: m_pManager(pManager)
 	, m_socket(socket)
 	, m_localAddress(address)
-	, m_closeRequestReceived(false)
-	, m_refCount(1)
 {
 	LOG_VERBOSE(3, "Listener() local='%s', this=%p",
 	            m_localAddress.ToString().c_str(),
@@ -1538,6 +1520,16 @@ void CServiceNetworkListener::ProcessPendingConnections()
 	}
 }
 
+const uint32 CServiceNetwork::GetReceivedDataQueueLimit() const
+{
+	return m_pReceiveDataQueueLimit->GetIVal();
+}
+
+const uint32 CServiceNetwork::GetSendDataQueueLimit() const
+{
+	return m_pSendDataQueueLimit->GetIVal();
+}
+
 //-----------------------------------------------------------------------------
 
 CServiceNetwork::CServiceNetwork()
@@ -1591,9 +1583,9 @@ CServiceNetwork::~CServiceNetwork()
 	}
 
 	// Release the CVars
-	SAFE_RELEASE(m_pVerboseLevel);
-	SAFE_RELEASE(m_pReceiveDataQueueLimit);
-	SAFE_RELEASE(m_pSendDataQueueLimit);
+	SAFE_UNREGISTER_CVAR(m_pVerboseLevel);
+	SAFE_UNREGISTER_CVAR(m_pReceiveDataQueueLimit);
+	SAFE_UNREGISTER_CVAR(m_pSendDataQueueLimit);
 }
 
 #ifndef RELEASE

@@ -18,6 +18,7 @@
 
 //#include "DebugDrawContext.h"
 
+#ifdef CRYAISYSTEM_DEBUG
 // AI Stimulus names for debugging
 static const char* g_szAIStimulusType[EAIStimulusType::AISTIM_LAST] =
 {
@@ -45,6 +46,7 @@ static const char* g_szAIGrenadeStimType[AIGRENADE_LAST] =
 	" FLASH_BANG",
 	" SMOKE"
 };
+#endif
 
 CPerceptionManager* CPerceptionManager::s_pInstance = nullptr;
 
@@ -978,11 +980,12 @@ void CPerceptionManager::HandleCollision(const SStimulusRecord& stim)
 		if (!perceptionActor || !perceptionActor->IsEnabled())
 			continue;
 
-		IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->iValue = thrownByPlayer ? 1 : 0;
 		pData->fValue = sqrtf(distSq);
 		pData->point = stim.pos;
-		pReceiverActor->SetSignal(0, "OnCloseCollision", 0, pData);
+		
+		pReceiverActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCloseCollision(), 0, pData));
 
 		if (thrownByPlayer)
 		{
@@ -1030,11 +1033,11 @@ void CPerceptionManager::HandleExplosion(const SStimulusRecord& stim)
 				continue;
 		}
 
-		IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->point = stim.pos;
 
 		SetLastExplosionPosition(stim.pos, pReceiverObject);
-		pReceiverActor->SetSignal(0, "OnExposedToExplosion", 0, pData);
+		pReceiverActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnExposedToExplosion(), 0, pData));
 
 		if (IPuppet* pReceiverPuppet = pReceiverObject->CastToIPuppet())
 			pReceiverPuppet->SetAlarmed();
@@ -1054,7 +1057,6 @@ void CPerceptionManager::HandleBulletHit(const SStimulusRecord& stim)
 
 	IEntity* pShooterEnt = gEnv->pEntitySystem->GetEntity(stim.sourceId);
 	IAIObject* pShooterObject = pShooterEnt ? pShooterEnt->GetAI() : nullptr;
-	IAIActor* pShooterActor = pShooterObject ? pShooterObject->CastToIAIActor() : nullptr;
 
 	// Send bullet events
 	size_t activeCount = lookUp.GetActiveCount();
@@ -1224,13 +1226,14 @@ void CPerceptionManager::HandleGrenade(const SStimulusRecord& stim)
 
 					if (!result || result[0].dist > dist * 0.9f)
 					{
-						IAISignalExtraData* pEData = gEnv->pAISystem->CreateSignalExtraData(); // no leak - this will be deleted inside SendAnonymousSignal
+						AISignals::IAISignalExtraData* pEData = gEnv->pAISystem->CreateSignalExtraData(); // no leak - this will be deleted inside SendAnonymousSignal
 						pEData->point = stim.pos;                                            // avoid predicted pos
 						pEData->nID = shooterId;
 						pEData->iValue = 1;
 
 						SetLastExplosionPosition(stim.pos, pAIObject);
-						gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, "OnGrenadeDanger", pAIObject, pEData);
+						const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGrenadeDanger(), pAIObject->GetEntityID(), pEData);
+						gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 
 						RecordStimulusEvent(stim, 0.0f, *pAIObject);
 					}
@@ -1252,13 +1255,14 @@ void CPerceptionManager::HandleGrenade(const SStimulusRecord& stim)
 
 				IAIObject* pAIObject = lookUp.GetActor<IAIObject>(actorIndex);
 
-				IAISignalExtraData* pEData = gEnv->pAISystem->CreateSignalExtraData();  // no leak - this will be deleted inside SendAnonymousSignal
+				AISignals::IAISignalExtraData* pEData = gEnv->pAISystem->CreateSignalExtraData();  // no leak - this will be deleted inside SendAnonymousSignal
 				pEData->point = stim.pos;
 				pEData->nID = shooterId;
 				pEData->iValue = 2;
 
 				SetLastExplosionPosition(stim.pos, pAIObject);
-				gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, "OnGrenadeDanger", pAIObject, pEData);
+				const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGrenadeDanger(), pAIObject->GetEntityID(), pEData);
+				gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 
 				RecordStimulusEvent(stim, 0.0f, *pAIObject);
 			}
@@ -1295,9 +1299,11 @@ void CPerceptionManager::HandleGrenade(const SStimulusRecord& stim)
 
 					if (!gEnv->pAISystem->GetGlobalRaycaster()->Cast(RayCastRequest(vAIActorPos, delta * dist, objTypes, flags)))
 					{
-						IAISignalExtraData* pExtraData = gEnv->pAISystem->CreateSignalExtraData();
+						AISignals::IAISignalExtraData* pExtraData = gEnv->pAISystem->CreateSignalExtraData();
 						pExtraData->iValue = 0;
-						gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, "OnExposedToFlashBang", pAIObject, pExtraData);
+
+						AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnExposedToFlashBang(), pAIObject->GetEntityID(), pExtraData);
+						gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 
 						RecordStimulusEvent(stim, 0.0f, *pAIObject);
 					}
@@ -1318,7 +1324,8 @@ void CPerceptionManager::HandleGrenade(const SStimulusRecord& stim)
 				if (Distance::Point_PointSq(stim.pos, lookUp.GetPosition(actorIndex)) > radSq)
 					continue;
 
-				gEnv->pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, "OnExposedToSmoke", pAIObject);
+				const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnExposedToSmoke(), pAIObject->GetEntityID());
+				gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 
 				RecordStimulusEvent(stim, 0.0f, *pAIObject);
 			}
@@ -1849,7 +1856,6 @@ void CPerceptionManager::DebugDrawPerformance(IAIDebugRenderer* pDebugRenderer, 
 
 		for (size_t actorIndex = 0; actorIndex < activeActorCount; ++actorIndex)
 		{
-			IAIActor* pAIActor = lookUp.GetActor<IAIActor>(actorIndex);
 			pDebugRenderer->DrawSphere(lookUp.GetPosition(actorIndex), 1.0f, ColorB(255, 0, 0));
 		}
 	}

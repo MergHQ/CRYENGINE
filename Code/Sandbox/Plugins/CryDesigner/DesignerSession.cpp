@@ -110,14 +110,11 @@ void DesignerSession::SetBaseObject(CBaseObject* pBaseObject)
 
 void DesignerSession::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
-	bool bExclusiveModeBeforeSave = false;
 	ElementSet* pSelected = GetSelectedElements();
 	switch (event)
 	{
 	case eNotify_OnBeginGameMode:
 	case eNotify_OnBeginBindViewport:
-		gDesignerSettings.bExclusiveMode = false;
-		gExclusiveModeSettings.EnableExclusiveMode(gDesignerSettings.bExclusiveMode);
 		pSelected->Clear();
 		gDesignerSettings.Update(true);
 		signalDesignerEvent(eDesignerNotify_SettingsChanged, nullptr);
@@ -126,25 +123,7 @@ void DesignerSession::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnBeginLoad:
 	case eNotify_OnBeginNewScene:
 	case eNotify_OnBeginSceneOpen:
-		// make sure we clear the cache here
-		ClearCache();
-	// fallthrough
-	case eNotify_OnBeginSceneSave:
-		bExclusiveModeBeforeSave = gDesignerSettings.bExclusiveMode;
-		if (gDesignerSettings.bExclusiveMode)
-		{
-			gDesignerSettings.bExclusiveMode = false;
-			gExclusiveModeSettings.EnableExclusiveMode(gDesignerSettings.bExclusiveMode);
-		}
-		break;
-
-	case eNotify_OnEndSceneSave:
-		if (bExclusiveModeBeforeSave)
-		{
-			gDesignerSettings.bExclusiveMode = true;
-			gExclusiveModeSettings.EnableExclusiveMode(gDesignerSettings.bExclusiveMode);
-			bExclusiveModeBeforeSave = false;
-		}
+		EndSession();
 		break;
 	case eNotify_OnSelectionChange:
 		{
@@ -248,7 +227,7 @@ void DesignerSession::UpdateSelectionMeshFromSelectedElements(MainContext& mc)
 	if (m_pSelectionMesh == NULL)
 		m_pSelectionMesh = new PolygonMesh;
 
-	int renderFlag = mc.pCompiler->GetRenderFlags();
+	uint64 renderFlag = mc.pCompiler->GetRenderFlags();
 	int viewDist = mc.pCompiler->GetViewDistRatio();
 	uint32 minSpec = mc.pObject->GetMinSpec();
 	uint32 materialLayerMask = mc.pObject->GetMaterialLayersMask();
@@ -278,7 +257,7 @@ void DesignerSession::UpdateSelectionMesh(
 	if (m_pSelectionMesh == NULL)
 		m_pSelectionMesh = new PolygonMesh;
 
-	int renderFlag = pCompiler->GetRenderFlags();
+	uint64 renderFlag = pCompiler->GetRenderFlags();
 	int viewDist = pCompiler->GetViewDistRatio();
 	uint32 minSpec = pObj->GetMinSpec();
 	uint32 materialLayerMask = pObj->GetMaterialLayersMask();
@@ -314,19 +293,6 @@ void DesignerSession::BeginSession()
 		Model* model;
 		model = GetModel();
 		model->SetShelf(eShelf_Base);
-
-		if (gDesignerSettings.bExclusiveMode)
-		{
-			if (model && model->IsEmpty())
-			{
-				gDesignerSettings.bExclusiveMode = false;
-				gDesignerSettings.Update(true);
-			}
-			else
-			{
-				gExclusiveModeSettings.EnableExclusiveMode(true);
-			}
-		}
 
 		signalDesignerEvent(eDesignerNotify_BeginDesignerSession, nullptr);
 
@@ -378,10 +344,9 @@ void DesignerSession::EndSession()
 		// In that case, designer won't have data to work with so we need to ensure the tool has quit.
 		if (GetDesigner())
 		{
-			GetIEditor()->SetEditTool(nullptr);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 		}
 
-		gExclusiveModeSettings.EnableExclusiveMode(false);
 		signalDesignerEvent(eDesignerNotify_EndDesignerSession, nullptr);
 		ClearCache();
 	}
@@ -393,4 +358,3 @@ bool DesignerSession::GetIsActive()
 }
 
 }
-

@@ -460,7 +460,7 @@ def LoadFileLists(ctx, kw):
 		# Handle PCH files
 		if pch_file != '' and found_pch == False:
 			# PCH specified but not found
-			ctx.cry_file_error('[%s] Could not find PCH file "%s" in provided file list (%s).\nPlease verify that the name of the pch is the same as provided in a WAF file and that the PCH is not stored in an UberFile.' % (kw['target'], pch_file, ', '.join(file_lists)), 'wscript' )
+			ctx.cry_file_error('[%s] Could not find PCH file "%s" in provided file list (%s).\nPlease verify that the name of the pch is the same as provided in a WAF file and that the PCH is not stored in an UberFile.' % (kw['target'], pch_file, ', '.join(kw['file_list'])), 'wscript' )
 		
 		# Try some heuristic when to use PCH files
 		if ctx.is_option_true('use_uber_files') and found_pch and len(uber_file_relative_list) > 0 and ctx.options.file_filter == "" and ctx.cmd != 'generate_uber_files':
@@ -1153,7 +1153,9 @@ def CryLauncher(ctx, *k, **kw):
 		kw_per_launcher['is_package_host'] 		= True
 		kw_per_launcher['resource_path'] 		= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 		= project
+		kw_per_launcher['defines']              += [ 'CRY_IS_APPLICATION' ]
 		executable_name = ctx.get_executable_name(project)
+
 		
 		# Avoid two project with the same executable name to link to the same output_file_name simultaneously. 
 		# Two link.exe writing to the same file in parallel does not work.
@@ -1227,6 +1229,7 @@ def CryDedicatedServer(ctx, *k, **kw):
 		kw_per_launcher['is_package_host'] 	            = True
 		kw_per_launcher['resource_path'] 				= ctx.launch_node().make_node(ctx.game_code_folder(project) + '/Resources')
 		kw_per_launcher['project_name'] 				= project
+		kw_per_launcher['defines']                      += [ 'CRY_IS_APPLICATION' ]
 		executable_name = ctx.get_dedicated_server_executable_name( project )
 		
 		# Avoid two project with the same executable name to link to the same output_file_name simultaneously. 
@@ -1257,6 +1260,7 @@ def CryConsoleApplication(ctx, *k, **kw):
 	set_cryengine_flags(ctx, kw)
 	SetupRunTimeLibraries(ctx,kw)
 	kw.setdefault('win_linkflags', []).extend(['/SUBSYSTEM:CONSOLE'])
+	kw['defines'] += [ 'CRY_IS_APPLICATION' ]
 	
 	ConfigureTaskGenerator(ctx, kw)
 		
@@ -1301,7 +1305,7 @@ def CryEditor(ctx, *k, **kw):
 			
 	kw['features'] += [ 'generate_rc_file' ]
 	kw['cxxflags'] += ['/EHsc', '/GR', '/bigobj', '/Zm200', '/wd4251', '/wd4275' ]
-	kw['defines']  += [ 'SANDBOX_EXPORTS', 'PLUGIN_IMPORTS', 'EDITOR_COMMON_IMPORTS' ]
+	kw['defines']  += [ 'SANDBOX_EXPORTS', 'PLUGIN_IMPORTS', 'EDITOR_COMMON_IMPORTS', 'CRY_IS_APPLICATION' ]
 	kw.setdefault('win_linkflags', []).extend(['/SUBSYSTEM:WINDOWS'])
 	
 	ConfigureTaskGenerator(ctx, kw)
@@ -1323,6 +1327,8 @@ def CryGenericExecutable(ctx, *k, **kw):
 	# Setup TaskGenerator specific settings	
 	SetupRunTimeLibraries(ctx,kw)
 	ConfigureTaskGenerator(ctx, kw)
+	
+	kw['defines']  += [ 'CRY_IS_APPLICATION' ]
 		
 	if not BuildTaskGenerator(ctx, kw):
 		return
@@ -1331,7 +1337,7 @@ def CryGenericExecutable(ctx, *k, **kw):
 	
 ###############################################################################
 @conf
-def CryPlugin(ctx, *k, **kw):
+def CryEditorPlugin(ctx, *k, **kw):
 	"""
 	Wrapper for CryEngine Editor Plugins
 	"""
@@ -1345,7 +1351,7 @@ def CryPlugin(ctx, *k, **kw):
 	kw['cxxflags'] += ['/EHsc', '/GR', '/wd4251', '/wd4275']
 	kw['defines']   += [ 'PLUGIN_EXPORTS', 'EDITOR_COMMON_IMPORTS', 'NOT_USE_CRY_MEMORY_MANAGER' ]
 	kw['output_sub_folder']  = 'EditorPlugins'
-	kw['use']  += ['EditorCommon']
+	kw['use']  += ['EditorCommon', 'Sandbox']
 	kw['includes'] +=  [ctx.CreateRootRelativePath('Code/Sandbox/EditorQt/Include'), ctx.CreateRootRelativePath('Code/Sandbox/EditorQt')]
 		
 	ConfigureTaskGenerator(ctx, kw)
@@ -1397,6 +1403,7 @@ def CryResourceCompiler(ctx, *k, **kw):
 	kw['output_sub_folder'] = ctx.CreateRootRelativePath('Tools/rc')
 	
 	kw.setdefault('win_linkflags', []).extend(['/SUBSYSTEM:CONSOLE'])
+	kw['defines']  += [ 'CRY_IS_APPLICATION' ]
 	
 	ConfigureTaskGenerator(ctx, kw)
 

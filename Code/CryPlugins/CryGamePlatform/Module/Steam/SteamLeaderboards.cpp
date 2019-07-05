@@ -1,9 +1,10 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-
 #include "SteamLeaderboards.h"
-#include "SteamPlatform.h"
+#include "SteamService.h"
+#include "SteamUserIdentifier.h"
 
 namespace Cry
 {
@@ -11,6 +12,12 @@ namespace Cry
 	{
 		namespace Steam
 		{
+			CLeaderboards::CLeaderboards(CService& steamService)
+				: m_service(steamService)
+			{
+
+			}
+
 			void CLeaderboards::FindOrCreateLeaderboard(const char* name, ELeaderboardSortMethod sortMethod, ELeaderboardDisplayType displayType)
 			{
 				ISteamUserStats* pSteamUserStats = SteamUserStats();
@@ -20,13 +27,10 @@ namespace Cry
 				}
 				SteamAPICall_t hSteamAPICall = pSteamUserStats->FindOrCreateLeaderboard(name, sortMethod, displayType);
 				m_callResultFindLeaderboard.Set(hSteamAPICall, this, &CLeaderboards::OnFindLeaderboard);
-
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
 			}
 
 			void CLeaderboards::OnFindLeaderboard(LeaderboardFindResult_t* pResult, bool bIOFailure)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
 				ISteamUserStats* pSteamUserStats = SteamUserStats();
 
 				if (!pResult->m_bLeaderboardFound || bIOFailure || !pSteamUserStats)
@@ -39,17 +43,17 @@ namespace Cry
 					SteamAPICall_t hSteamAPICall = pSteamUserStats->DownloadLeaderboardEntries(pResult->m_hSteamLeaderboard, m_pQueuedEntryRequest->request, m_pQueuedEntryRequest->minRange, m_pQueuedEntryRequest->maxRange);
 					m_callResultEntriesDownloaded.Set(hSteamAPICall, this, &CLeaderboards::OnEntriesDownloaded);
 
-					CPlugin::GetInstance()->SetAwaitingCallback(1);
-
 					m_pQueuedEntryRequest.reset();
 				}
 
-				if (m_pQueuedUpdateRequest != nullptr)
+				if (!m_queuedUpdateRequests.empty())
 				{
-					int scoreDetails[1] = { static_cast<int>(m_pQueuedUpdateRequest->scoreType) };
-					SteamAPICall_t hSteamAPICall = pSteamUserStats->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, m_pQueuedUpdateRequest->method, m_pQueuedUpdateRequest->score, scoreDetails, 1);
+					const SQueuedUpdateRequest& request = m_queuedUpdateRequests[0];
+					int scoreDetails[1] = { static_cast<int>(request.scoreType) };
+					pSteamUserStats->UploadLeaderboardScore(pResult->m_hSteamLeaderboard, request.method, request.score, scoreDetails, 1);
 
-					m_pQueuedUpdateRequest.reset();
+					m_queuedUpdateRequests.erase( m_queuedUpdateRequests.begin() );
+					FindNextLeaderboardToUpdateScore();
 				}
 			}
 
@@ -72,12 +76,10 @@ namespace Cry
 
 			void CLeaderboards::OnEntriesDownloaded(LeaderboardScoresDownloaded_t* pResult, bool bIOFailure)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
-
 				LeaderboardEntry_t leaderboardEntry;
 				int32 details[3];
 
-				auto* pUser = CPlugin::GetInstance()->GetLocalClient();
+				CAccount* pAccount = m_service.GetLocalAccount();
 
 				ISteamUserStats* pSteamUserStats = SteamUserStats();
 				if (!pSteamUserStats)
@@ -101,7 +103,9 @@ namespace Cry
 							Identifier leaderboardIdentifier;
 							leaderboardIdentifier.szName = pSteamUserStats->GetLeaderboardName(pResult->m_hSteamLeaderboard);
 
-							pListener->OnEntryDownloaded(leaderboardIdentifier, pSteamFriends->GetFriendPersonaName(leaderboardEntry.m_steamIDUser), leaderboardEntry.m_nGlobalRank, leaderboardEntry.m_nScore, (EScoreType)details[0], leaderboardEntry.m_steamIDUser.ConvertToUint64() == pUser->GetIdentifier());
+							const CSteamID userID = ExtractSteamID(pAccount->GetIdentifier());
+							const bool isCurrentUser = leaderboardEntry.m_steamIDUser == userID;
+							pListener->OnEntryDownloaded(leaderboardIdentifier, pSteamFriends->GetFriendPersonaName(leaderboardEntry.m_steamIDUser), leaderboardEntry.m_nGlobalRank, leaderboardEntry.m_nScore, (EScoreType)details[0], isCurrentUser);
 						}
 					}
 				}
@@ -114,16 +118,29 @@ namespace Cry
 					return;
 				}
 
-				m_pQueuedUpdateRequest = stl::make_unique<SQueuedUpdateRequest>();
-				m_pQueuedUpdateRequest->method = bForce ? k_ELeaderboardUploadScoreMethodForceUpdate : k_ELeaderboardUploadScoreMethodKeepBest;
-				m_pQueuedUpdateRequest->score = score;
-				m_pQueuedUpdateRequest->scoreType = scoreType;
+				SQueuedUpdateRequest request;
+				request.method = bForce ? k_ELeaderboardUploadScoreMethodForceUpdate : k_ELeaderboardUploadScoreMethodKeepBest;
+				request.score = score;
+				request.scoreType = scoreType;
+				request.name = leaderboardId.szName;
+				m_queuedUpdateRequests.push_back( request );
+				if (m_queuedUpdateRequests.size()==1)
+					FindNextLeaderboardToUpdateScore();
+			}
 
-				// If score is time based then sort leaderboard ascending and display in milliseconds, otherwise descending and numeric.
-				ELeaderboardSortMethod sortMethod = (scoreType == EScoreType::Time) ? k_ELeaderboardSortMethodAscending : k_ELeaderboardSortMethodDescending;
-				ELeaderboardDisplayType displayType = (scoreType == EScoreType::Time) ? k_ELeaderboardDisplayTypeTimeMilliSeconds : k_ELeaderboardDisplayTypeNumeric;
 
-				FindOrCreateLeaderboard(leaderboardId.szName, sortMethod, displayType);
+			void CLeaderboards::FindNextLeaderboardToUpdateScore()
+			{
+				if (!m_queuedUpdateRequests.empty())
+				{
+					const SQueuedUpdateRequest& request = m_queuedUpdateRequests[0];
+
+					// If score is time based then sort leaderboard ascending and display in milliseconds, otherwise descending and numeric.
+					ELeaderboardSortMethod sortMethod = (request.scoreType == EScoreType::Time) ? k_ELeaderboardSortMethodAscending : k_ELeaderboardSortMethodDescending;
+					ELeaderboardDisplayType displayType = (request.scoreType == EScoreType::Time) ? k_ELeaderboardDisplayTypeTimeMilliSeconds : k_ELeaderboardDisplayTypeNumeric;
+
+					FindOrCreateLeaderboard(request.name.c_str(), sortMethod, displayType);
+				}
 			}
 		}
 	}

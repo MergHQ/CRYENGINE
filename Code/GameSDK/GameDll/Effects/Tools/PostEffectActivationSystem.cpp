@@ -6,6 +6,7 @@
 #include "StdAfx.h"
 #include "PostEffectActivationSystem.h"
 #include "IItemSystem.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 //--------------------------------------------------------------------------------------------------
 // Name: Initialise

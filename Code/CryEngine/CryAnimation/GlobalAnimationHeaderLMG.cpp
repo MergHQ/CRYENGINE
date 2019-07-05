@@ -216,7 +216,6 @@ bool GlobalAnimationHeaderLMG::LoadAndParseXML(CAnimationSet* pAnimationSet, boo
 bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNodeRef root)
 {
 	const char* pathnameLMG = GetFilePath();
-	const char* fileExt = PathUtil::GetExt(pathnameLMG);
 
 	InvalidateAssetCreated();
 	InvalidateAssetLMG();
@@ -555,7 +554,7 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 						else
 						{
 							const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(id);
-							assert(pAnim->m_nAssetType == CAF_File);
+							CRY_ASSERT(pAnim->m_nAssetType == CAF_File);
 							int32 gaid = pAnim->m_nGlobalAnimId;
 							GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[gaid];
 							if (rCAF.IsAssetNotFound())
@@ -661,14 +660,16 @@ bool GlobalAnimationHeaderLMG::LoadFromXML(CAnimationSet* pAnimationSet, XmlNode
 
 						for (size_t p = 0; p < CRY_ARRAY_COUNT(facePointNames); ++p)
 						{
-							if (nodeExample->getAttr(facePointNames[p], face.idx[p]))
+							int32 facePointID; // int32 in order to detect possible negative numbers
+							if (nodeExample->getAttr(facePointNames[p], facePointID))
 							{
-								if (face.idx[p] >= (numExamples + numPseudo))
+								if (facePointID < 0 || facePointID >= (numExamples + numPseudo))
 								{
-									m_Status.Format("Error: Blend annotation %d contains a reference to non-existing example with index %d.", int32(i), int32(face.idx[p]));
+									m_Status.Format("Error: Blend annotation %d contains a reference to non-existing example with index %d.", int32(i), facePointID);
 									gEnv->pLog->LogError("CryAnimation %s: %s", m_Status.c_str(), pathnameLMG);
 									return false;
 								}
+								face.idx[p] = uint8(facePointID);
 								face.num++;
 							}
 						}
@@ -1032,7 +1033,7 @@ bool GlobalAnimationHeaderLMG::Export2HTR(const char* szAnimationName, const cha
 	for (uint32 j = 0; j < numJoints; j++)
 	{
 		const CDefaultSkeleton::SJoint* pJoint = &pDefaultSkeleton->m_arrModelJoints[j];
-		assert(pJoint);
+		CRY_ASSERT(pJoint);
 		jointNameArray.push_back(pJoint->m_strJointName.c_str());
 
 		int16 parentID = pJoint->m_idxParent;
@@ -1081,11 +1082,11 @@ bool GlobalAnimationHeaderLMG::Export2HTR(const char* szAnimationName, const cha
 		if (fWeight == 0.0f)
 			continue;
 		const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(nAnimID);
-		assert(pAnim->m_nAssetType == CAF_File);
+		CRY_ASSERT(pAnim->m_nAssetType == CAF_File);
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[pAnim->m_nGlobalAnimId];
 
 		const CDefaultSkeleton::SJoint* pJointRoot = &pDefaultSkeleton->m_arrModelJoints[0];
-		assert(pJointRoot);
+		CRY_ASSERT(pJointRoot);
 		IController* pControllerRoot = rCAF.GetControllerByJointCRC32(pJointRoot->m_nJointCRC32);
 		f32 t = timestep;
 		arrAnimation[0][0].q.SetIdentity();
@@ -1109,7 +1110,7 @@ bool GlobalAnimationHeaderLMG::Export2HTR(const char* szAnimationName, const cha
 		for (uint32 j = 1; j < numJoints; j++)
 		{
 			const CDefaultSkeleton::SJoint* pJoint = &pDefaultSkeleton->m_arrModelJoints[j];
-			assert(pJoint);
+			CRY_ASSERT(pJoint);
 			IController* pController = rCAF.GetControllerByJointCRC32(pJoint->m_nJointCRC32);
 			t = 0.0f;
 			for (uint32 k = 0; k < nFrames; k++)
@@ -1139,11 +1140,10 @@ bool GlobalAnimationHeaderLMG::Export2HTR(const char* szAnimationName, const cha
 		Vec3 rel = arrAnimation[0][k].t;
 		arrAnimation[0][k] = arrAnimation[0][k - 1] * arrAnimation[0][k];
 		Vec3 abs1 = arrAnimation[0][k].t;
-		uint32 ddd = 0;
 	}
 
-	bool htr = GlobalAnimationHeaderCAF::SaveHTR(szAnimationName, savePath, jointNameArray, jointParentArray, arrAnimation, parrDefJoints);
-	bool caf = GlobalAnimationHeaderCAF::SaveICAF(szAnimationName, savePath, jointNameArray, arrAnimation);
+	GlobalAnimationHeaderCAF::SaveHTR(szAnimationName, savePath, jointNameArray, jointParentArray, arrAnimation, parrDefJoints);
+	GlobalAnimationHeaderCAF::SaveICAF(szAnimationName, savePath, jointNameArray, arrAnimation);
 	return true;
 }
 
@@ -1211,14 +1211,12 @@ void GlobalAnimationHeaderLMG::Init_MoveSpeed(const CAnimationSet* pAnimationSet
 	for (uint32 i = 0; i < numAssets; i++)
 	{
 		int32 animID = pAnimationSet->GetAnimIDByCRC(m_arrParameter[i].m_animName.m_CRC32);
-		assert(animID >= 0);
+		CRY_ASSERT(animID >= 0);
 		int32 globalID = pAnimationSet->GetGlobalIDByAnimID_Fast(animID);
-		assert(globalID >= 0);
-		if (globalID < 0)
+		if (!CRY_VERIFY(globalID >= 0))
 			break;
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[globalID];
-		assert(rCAF.IsAssetLoaded());
-		if (rCAF.IsAssetLoaded() == 0)
+		if (!CRY_VERIFY(rCAF.IsAssetLoaded()))
 		{
 			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Asset for parameter-extraction not in memory: '%s'", rCAF.GetFilePath());
 			break;
@@ -1268,14 +1266,12 @@ void GlobalAnimationHeaderLMG::Init_TurnSpeed(const CAnimationSet* pAnimationSet
 	for (uint32 i = 0; i < numAssets; i++)
 	{
 		int32 animID = pAnimationSet->GetAnimIDByCRC(m_arrParameter[i].m_animName.m_CRC32);
-		assert(animID >= 0);
+		CRY_ASSERT(animID >= 0);
 		int32 globalID = pAnimationSet->GetGlobalIDByAnimID_Fast(animID);
-		assert(globalID >= 0);
-		if (globalID < 0)
+		if (!CRY_VERIFY(globalID >= 0))
 			break;
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[globalID];
-		assert(rCAF.IsAssetLoaded());
-		if (rCAF.IsAssetLoaded() == 0)
+		if (!CRY_VERIFY(rCAF.IsAssetLoaded()))
 		{
 			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Asset for parameter-extraction not in memory: '%s'", rCAF.GetFilePath());
 			break;
@@ -1301,7 +1297,6 @@ void GlobalAnimationHeaderLMG::Init_TurnSpeed(const CAnimationSet* pAnimationSet
 		for (uint32 k = 0; k < numKeys; k++, fk += 1.0f)
 			pController->GetOP(fk, rot_keys[k], pos_keys[k]);
 
-		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
 		uint32 poses = 0;
 		f32 turnspeed = 0.0f;
@@ -1328,15 +1323,13 @@ void GlobalAnimationHeaderLMG::Init_TurnAngle(const CAnimationSet* pAnimationSet
 	for (uint32 i = 0; i < numAssets; i++)
 	{
 		int32 animID = pAnimationSet->GetAnimIDByCRC(m_arrParameter[i].m_animName.m_CRC32);
-		assert(animID >= 0);
+		CRY_ASSERT(animID >= 0);
 		int32 globalID = pAnimationSet->GetGlobalIDByAnimID_Fast(animID);
-		assert(globalID >= 0);
-		if (globalID < 0)
+		if (!CRY_VERIFY(globalID >= 0))
 			break;
 
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[globalID];
-		assert(rCAF.IsAssetLoaded());
-		if (rCAF.IsAssetLoaded() == 0)
+		if (!CRY_VERIFY(rCAF.IsAssetLoaded()))
 		{
 			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Asset for parameter-extraction not in memory: '%s'", rCAF.GetFilePath());
 			break;
@@ -1362,7 +1355,6 @@ void GlobalAnimationHeaderLMG::Init_TurnAngle(const CAnimationSet* pAnimationSet
 		for (uint32 k = 0; k < numKeys; k++, fk += 1.0f)
 			pController->GetO(fk, rot_keys[k]);
 
-		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
 		f32 turnangle = 0.0f;
 		for (uint32 k = 0; k < ekey; k++)
@@ -1386,14 +1378,12 @@ void GlobalAnimationHeaderLMG::Init_TravelAngle(const CAnimationSet* pAnimationS
 	for (uint32 i = 0; i < numAssets; i++)
 	{
 		int32 animID = pAnimationSet->GetAnimIDByCRC(m_arrParameter[i].m_animName.m_CRC32);
-		assert(animID >= 0);
+		CRY_ASSERT(animID >= 0);
 		int32 globalID = pAnimationSet->GetGlobalIDByAnimID_Fast(animID);
-		assert(globalID >= 0);
-		if (globalID < 0)
+		if (!CRY_VERIFY(globalID >= 0))
 			break;
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[globalID];
-		assert(rCAF.IsAssetLoaded());
-		if (rCAF.IsAssetLoaded() == 0)
+		if (!CRY_VERIFY(rCAF.IsAssetLoaded()))
 		{
 			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Asset for parameter-extraction not in memory: '%s'", rCAF.GetFilePath());
 			break;
@@ -1420,7 +1410,6 @@ void GlobalAnimationHeaderLMG::Init_TravelAngle(const CAnimationSet* pAnimationS
 
 		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
-		f32 fTravelAngle = 0.0f;
 		Vec3 totalMovement(0.0f, 0.0f, 0.0f);
 		for (uint32 k = skey; k < ekey; k++)
 		{
@@ -1443,14 +1432,12 @@ void GlobalAnimationHeaderLMG::Init_SlopeAngle(const CAnimationSet* pAnimationSe
 	for (uint32 i = 0; i < numAssets; i++)
 	{
 		int32 animID = pAnimationSet->GetAnimIDByCRC(m_arrParameter[i].m_animName.m_CRC32);
-		assert(animID >= 0);
+		CRY_ASSERT(animID >= 0);
 		int32 globalID = pAnimationSet->GetGlobalIDByAnimID_Fast(animID);
-		assert(globalID >= 0);
-		if (globalID < 0)
+		if (!CRY_VERIFY(globalID >= 0))
 			break;
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[globalID];
-		assert(rCAF.IsAssetLoaded());
-		if (rCAF.IsAssetLoaded() == 0)
+		if (!CRY_VERIFY(rCAF.IsAssetLoaded()))
 		{
 			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Asset for parameter-extraction not in memory: '%s'", rCAF.GetFilePath());
 			break;
@@ -1476,7 +1463,6 @@ void GlobalAnimationHeaderLMG::Init_SlopeAngle(const CAnimationSet* pAnimationSe
 		for (uint32 k = 0; k < numKeys; k++, fk += 1.0f)
 			pController->GetOP(fk, rot_keys[k], pos_keys[k]);
 
-		uint32 skey = uint32(m_DimPara[dim].m_skey * (numKeys - 1));
 		uint32 ekey = uint32(m_DimPara[dim].m_ekey * (numKeys - 1));
 		uint32 poses = 0;
 		f32 fSlopeAngle = 0.0f;
@@ -1504,14 +1490,12 @@ void GlobalAnimationHeaderLMG::Init_TravelDist(const CAnimationSet* pAnimationSe
 	for (uint32 i = 0; i < numAssets; i++)
 	{
 		int32 animID = pAnimationSet->GetAnimIDByCRC(m_arrParameter[i].m_animName.m_CRC32);
-		assert(animID >= 0);
+		CRY_ASSERT(animID >= 0);
 		int32 globalID = pAnimationSet->GetGlobalIDByAnimID_Fast(animID);
-		assert(globalID >= 0);
-		if (globalID < 0)
+		if (!CRY_VERIFY(globalID >= 0))
 			break;
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[globalID];
-		assert(rCAF.IsAssetLoaded());
-		if (rCAF.IsAssetLoaded() == 0)
+		if (!CRY_VERIFY(rCAF.IsAssetLoaded()))
 		{
 			CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Asset for parameter-extraction not in memory: '%s'", rCAF.GetFilePath());
 			break;
@@ -1536,7 +1520,6 @@ void GlobalAnimationHeaderLMG::Init_TravelDist(const CAnimationSet* pAnimationSe
 
 		f32 fTravelDist = (key1.t - key0.t).GetLength();
 
-		f32 anf3 = m_arrParameter[i].m_Para[dim];
 		m_arrParameter[i].m_Para[dim] = fTravelDist;
 	}
 	if (init_count == numAssets)

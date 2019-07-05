@@ -25,7 +25,7 @@ class CUqsQueryDocument;
 class CUqsDatabaseSerializationCache;
 class CQueryListProvider;
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 
 class QLineEdit;
 class QDialogButtonBox;
@@ -63,9 +63,9 @@ private:
 	QString           m_resultingString;
 };
 
-class CMainEditorWindow 
+class CMainEditorWindow
 	: public CDockableWindow
-	, public IEditorNotifyListener
+	  , public IEditorNotifyListener
 {
 	Q_OBJECT
 
@@ -82,6 +82,10 @@ public:
 
 	CMainEditorWindow();
 	~CMainEditorWindow();
+
+	//IPane
+	virtual QMenu* GetPaneMenu() const override;
+	//~IPane
 
 	// CDockableWindow
 	virtual const char*                       GetPaneTitle() const override;
@@ -142,13 +146,14 @@ private:
 	Explorer::ExplorerPanel*                m_pLibraryPanel;
 
 	QTabWidget*                             m_pDocumentTabsWidget;
-	QPropertyTree*                          m_pDocumentPropertyTree;
+	QPropertyTreeLegacy*                          m_pDocumentPropertyTree;
 	CUqsQueryDocument*                      m_pCurrentDocument;
 
 	QWidget*                                m_pSimulatorPanel;
-	QPropertyTree*                          m_pSimulatorPropertyTree;  // contains the runtime-params of the currently selected query blueprint
+	QPropertyTreeLegacy*                          m_pSimulatorPropertyTree;  // contains the runtime-params of the currently selected query blueprint
 	QPushButton*                            m_pSimulatorButton;
 	QCheckBox*                              m_pSimulatorRunModeCheckBox;
 	CQuerySimulator                         m_querySimulator;
 	SSimulatedRuntimeParams                 m_simulatedRuntimeParams;
+	QMenu* m_pPaneMenu;
 };

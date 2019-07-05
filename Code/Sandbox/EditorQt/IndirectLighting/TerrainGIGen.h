@@ -1,33 +1,24 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terraingigen_h__
-#define __terraingigen_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#include "IndirectLighting/Quadtree/Quadtree.h"
+#include "IndirectLighting/RasterMPMan.h"
+#include "IndirectLighting/SHHeightmapAccessibility.h"
+#include "IndirectLighting/TerrainObjectMan.h"
 
-#include "Quadtree/Quadtree.h"
 #include <PRT/SHFramework.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include "Raster.h"
-#include "SHHeightmapAccessibility.h"
-#include "TerrainObjectMan.h"
-#include "RasterMPMan.h"
+#include <Util/Image.h>
+#include <Terrain/Sky Accessibility/HeightmapAccessibility.h>
 
-// forward declaration.
-class CTerrainObjectMan;
-struct STempBBoxData;
-class CTerrainGrid;
-template<class THemisphereSink>
-class CHeightmapAccessibility;
+struct IRenderMesh;
+struct IStatObj;
+struct SHeightmapTriangleValidator;
 struct SSHSampleOnDemand;
 struct SSHSample;
-
-template<class T>
-struct SIndirectGridPoint;
-
-struct SHeightmapTriangleValidator;
+struct STempBBoxData;
+class CPakFile;
+class CTerrainObjectMan;
 
 /** Class that generates indirect lighting information
  */
@@ -49,22 +40,16 @@ public:
 		{}
 	};
 
-	// -----------------------------------------------------------------------
-	// Description:
-	//		default constructor
 	CTerrainGIGen();
-	// Description:
-	//		destructor
-	~CTerrainGIGen();
 	// Description:
 	//		generates the quadtree
 	const bool Generate
 	(
-	  CPakFile& rLevelPakFile,
-	  uint8*& rpTerrainAccMap,
-	  uint32& rTerrainAccMapRes,
-	  const uint32 cApplySS,
-	  const SConfigProp& crConfigProps = SConfigProp()
+		CPakFile& rLevelPakFile,
+		uint8*& rpTerrainAccMap,
+		uint32& rTerrainAccMapRes,
+		const uint32 cApplySS,
+		const SConfigProp& crConfigProps = SConfigProp()
 	);//cGranularity is grid res in meters and must be power of 2
 
 	typedef NSH::SScalarCoeff_tpl<float>          TSingleCoeffType;
@@ -84,26 +69,22 @@ public:
 	static const uint32 scUnUsed = 0x4;             //force to set it as UnUsed
 	static const uint32 scLowResShift = 5;          //32x32 units for each low res texel
 
-private: // ---------------------------------------------------------------------
+private:
 
 	// Description:
 	//		editor representation of a grid point
 	template<class TPosType>
 	struct SEditorGridPoint
 	{
+		SEditorGridPoint() : x(0), y(0), shCoeffs(0), flags(0) {}
+
+		const uint8 GetFlags() const              { return flags; }
+		void        SetFlag(const uint32 cFlag)   { flags = cFlag; }
+		void        UnSetFlag(const uint32 cFlag) { flags &= ~cFlag; }
+
 		TCoeffType  shCoeffs;   // original non compressed scalar sh coeffs
-
-		const uint8 GetFlags() const            { return flags; }
-		void        SetFlag(const uint32 cFlag) { flags = cFlag; }
-		void        UnSetFlag(const uint32 cFlag)
-		{
-			flags &= ~cFlag;
-		}
-
-		SEditorGridPoint() : x(0), y(0), shCoeffs(0), flags(0){}
-
-		TPosType x, y;           // x/y position of grid point
-		uint32   flags;
+		TPosType    x, y;       // x/y position of grid point
+		uint32      flags;
 	};
 
 	typedef uint32                                                                                                                                          TIndexType; //32 bit sample index (we will have more than 32767)
@@ -205,25 +186,25 @@ private: // --------------------------------------------------------------------
 	//		adds outdoor brushes and vegetation objects to the object manager for the ray casting
 	void PrepareObjects
 	(
-	  const float cWaterLevel,
-	  CTerrainObjectMan& rTerrainMan,
-	  const float* cpHeightMap,
-	  const uint32 cWidthUnits,
-	  const uint32 cHeigthMapRes
+		const float cWaterLevel,
+		CTerrainObjectMan& rTerrainMan,
+		const float* cpHeightMap,
+		const uint32 cWidthUnits,
+		const uint32 cHeigthMapRes
 	);
 	// Description:
 	//		prepares brush, called from PrepareObjects
 	//		returns true if it was processed
 	const bool PrepareBrush
 	(
-	  CBaseObject* pObj,
-	  const float cWaterLevel,
-	  CTerrainObjectMan& rTerrainMan,
-	  const float* cpHeightMap,
-	  const uint32 cWidthUnits,
-	  const uint32 cHeigthMapRes,
-	  const float cWorldHMapScale,
-	  AABB& rBoxObject
+		CBaseObject* pObj,
+		const float cWaterLevel,
+		CTerrainObjectMan& rTerrainMan,
+		const float* cpHeightMap,
+		const uint32 cWidthUnits,
+		const uint32 cHeigthMapRes,
+		const float cWorldHMapScale,
+		AABB& rBoxObject
 	);
 
 	// Description:
@@ -231,14 +212,14 @@ private: // --------------------------------------------------------------------
 	//		returns true if it was processed
 	const bool PrepareEntity
 	(
-	  CBaseObject* pObj,
-	  const float cWaterLevel,
-	  CTerrainObjectMan& rTerrainMan,
-	  const float* cpHeightMap,
-	  const uint32 cWidthUnits,
-	  const uint32 cHeigthMapRes,
-	  const float cWorldHMapScale,
-	  const bool cIsPrefab
+		CBaseObject* pObj,
+		const float cWaterLevel,
+		CTerrainObjectMan& rTerrainMan,
+		const float* cpHeightMap,
+		const uint32 cWidthUnits,
+		const uint32 cHeigthMapRes,
+		const float cWorldHMapScale,
+		const bool cIsPrefab
 	);
 
 	// Description:
@@ -247,34 +228,34 @@ private: // --------------------------------------------------------------------
 	//		cIsBrush if true then object size need to be tested for adding to object samples (basically all vegetation is added whereas brushes not)
 	void AddSamplesAroundObjects
 	(
-	  CTerrainObjectMan& rTerrainObjMan,
-	  THeightmapAccess& rHMapCalc,
-	  TObjectVec& rObjectVec,
-	  const uint8 cResMultiplier,
-	  const float* cpHeightMap,
-	  const uint8 cMaxMultiplier,
-	  const EObjectType cObjectType = eOT_Veg
+		CTerrainObjectMan& rTerrainObjMan,
+		THeightmapAccess& rHMapCalc,
+		TObjectVec& rObjectVec,
+		const uint8 cResMultiplier,
+		const float* cpHeightMap,
+		const uint8 cMaxMultiplier,
+		const EObjectType cObjectType = eOT_Veg
 	);
 	// Description:
 	//		retrieves the interpolated value from up to 4 quadtree nodes (which are the grid points)
 	//		returns true if at least one value was provided for interpolation (from rNodes)
 	const bool InterpolateGridPoint
 	(
-	  int pClosestNodes[2],
-	  const uint32 cLeafCount,
-	  const TQuadTree::TInitialInterpolRetrievalType cpNodes,
-	  TCoeffType& rInterpolatedCoeffs
+		int pClosestNodes[2],
+		const uint32 cLeafCount,
+		const TQuadTree::TInitialInterpolRetrievalType cpNodes,
+		TCoeffType& rInterpolatedCoeffs
 	) const;
 	// Description:
 	//		generates a material vector for each static (sub)object
 	//		returns true if a sh flag has been found somewhere
 	void GenMaterialVec
 	(
-	  IStatObj* pStatObj,
-	  IRenderNode* pRenderNode,
-	  std::vector<std::vector<int>>& rMats, //each sub object contains sub materials which are indices
-	  std::vector<ColorF>& rMaterials,      //the real colours
-	  const ColorF cDefMat = ColorF(0.5f, 0.5f, 0.5f, 1.f)
+		IStatObj* pStatObj,
+		IRenderNode* pRenderNode,
+		std::vector<std::vector<int>>& rMats, //each sub object contains sub materials which are indices
+		std::vector<ColorF>& rMaterials,      //the real colours
+		const ColorF cDefMat = ColorF(0.5f, 0.5f, 0.5f, 1.f)
 	);
 	// Description:
 	//		returns the color for an object, multiplies average texture color and diffuse color together
@@ -288,31 +269,31 @@ private: // --------------------------------------------------------------------
 	//		adds the coarse grid points to the quadtree
 	void AddCoarseGridPoints
 	(
-	  const float cWaterLevel,
-	  const uint32 cGridWidth,
-	  const uint32 cHighResWidth,
-	  const float* const cpHeightMap,
-	  const CTerrainObjectMan& crTerrainMan
+		const float cWaterLevel,
+		const uint32 cGridWidth,
+		const uint32 cHighResWidth,
+		const float* const cpHeightMap,
+		const CTerrainObjectMan& crTerrainMan
 	);
 	// Description:
 	//		processes the mesh
 	//		returns true if object is on ground
 	const bool ProcessMesh
 	(
-	  IStatObj* pStatObj,
-	  const AABB& crBBox,
-	  const Matrix34& crWorldMat,
-	  const std::vector<std::vector<int>>& crMatIndices,
-	  const std::vector<ColorF>& crMatColours,
-	  std::vector<STempBBoxData>& rBBoxVec,
-	  const bool cIsVegetation,
-	  const float* cpHeightMap,
-	  const float cWorldHMapScale,
-	  const uint32 cHeigthMapRes,
-	  SObjectBBoxes& rObjectBox,
-	  const bool cCheckAgainstHeightMap,
-	  AABB& rMinMaxCalculated,
-	  IRenderMesh* pReplacementMesh = NULL
+		IStatObj* pStatObj,
+		const AABB& crBBox,
+		const Matrix34& crWorldMat,
+		const std::vector<std::vector<int>>& crMatIndices,
+		const std::vector<ColorF>& crMatColours,
+		std::vector<STempBBoxData>& rBBoxVec,
+		const bool cIsVegetation,
+		const float* cpHeightMap,
+		const float cWorldHMapScale,
+		const uint32 cHeigthMapRes,
+		SObjectBBoxes& rObjectBox,
+		const bool cCheckAgainstHeightMap,
+		AABB& rMinMaxCalculated,
+		IRenderMesh* pReplacementMesh = NULL
 	);
 	// Description:
 	//		returns object center distance to ground
@@ -322,12 +303,12 @@ private: // --------------------------------------------------------------------
 	//		marks samples being outside any object range (to save ray casting) and samples not needed in high res
 	void MarkSamples
 	(
-	  CTerrainObjectMan& rTerrainObjMan,
-	  const uint32 cRes,
-	  THeightmapAccess& rCalc,
-	  const uint8 cMaxMultiplier,
-	  const float* cpHeightMap,
-	  const uint32 cWidthUnits
+		CTerrainObjectMan& rTerrainObjMan,
+		const uint32 cRes,
+		THeightmapAccess& rCalc,
+		const uint8 cMaxMultiplier,
+		const float* cpHeightMap,
+		const uint32 cWidthUnits
 	);
 	// Description:
 	//		sets the data for the samples around the objects and due to colour diffs, uses m_AdditionalSamples
@@ -336,16 +317,16 @@ private: // --------------------------------------------------------------------
 	//		generates the samples for the additional samples (samples around objects, per object samples)
 	void GenerateAddSampleVec
 	(
-	  const CTerrainObjectMan& crTerrainObjMan,
-	  const CHemisphereSink_SH& crCalcSink
+		const CTerrainObjectMan& crTerrainObjMan,
+		const CHemisphereSink_SH& crCalcSink
 	);
 	// Description:
 	//		calculates the normal at the heightmap pos
 	const Vec3 ComputeHeightmapNormal
 	(
-	  const uint16 cHPosX, const uint16 cHPosY,
-	  const float* const cpHeightMap,
-	  const uint32 cHighResWidth
+		const uint16 cHPosX, const uint16 cHPosY,
+		const float* const cpHeightMap,
+		const uint32 cHighResWidth
 	) const;
 	// Description:
 	//		goes through all samples and allocates data for sh coeffs for the samples we really need
@@ -361,24 +342,24 @@ private: // --------------------------------------------------------------------
 	//		adapts samples which are obstructed to a different position
 	void AdaptObstructedSamplePos
 	(
-	  const uint32 cFullWidth,
-	  const CTerrainObjectMan& crTerrainObjMan,
-	  const THeightmapAccess& crCalc,
-	  SSHSample& rSample,
-	  SSHSample& rSampleLeft,
-	  SSHSample& rSampleRight,
-	  SSHSample& rSampleUpper,
-	  SSHSample& rSampleLower
+		const uint32 cFullWidth,
+		const CTerrainObjectMan& crTerrainObjMan,
+		const THeightmapAccess& crCalc,
+		SSHSample& rSample,
+		SSHSample& rSampleLeft,
+		SSHSample& rSampleRight,
+		SSHSample& rSampleUpper,
+		SSHSample& rSampleLower
 	);
 	// Description:
 	//		adds terrain voxels as shadow caster
 	void AddTerrainVoxels
 	(
-	  const float cWaterLevel,
-	  CTerrainObjectMan& rTerrainMan,
-	  const float* cpHeightMap,
-	  const uint32 cHeigthMapRes,
-	  const float cWorldHMapScale
+		const float cWaterLevel,
+		CTerrainObjectMan& rTerrainMan,
+		const float* cpHeightMap,
+		const uint32 cHeigthMapRes,
+		const float cWorldHMapScale
 	);
 	// Description:
 	//		builds the sector table which indicates which sectors are of any interests
@@ -396,16 +377,16 @@ private: // --------------------------------------------------------------------
 	//		calculates the sky accessibility for the terrain in terms of objects
 	void CalcTerrainOcclusion
 	(
-	  CPakFile& rLevelPakFile,
-	  const uint32 cRGBImageRes,
-	  const uint64 cWidthUnits,
-	  CTerrainObjectMan& rTerrainMan,
-	  const float* const cpHeightMap,
-	  const CHemisphereSink_SH& crCalcSink,
-	  uint8*& rpTerrainAccMap,
-	  uint32& rTerrainAccMapRes,
-	  const uint32 cApplySuperSampling,
-	  uint8* pHeightMapAccMap
+		CPakFile& rLevelPakFile,
+		const uint32 cRGBImageRes,
+		const uint64 cWidthUnits,
+		CTerrainObjectMan& rTerrainMan,
+		const float* const cpHeightMap,
+		const CHemisphereSink_SH& crCalcSink,
+		uint8*& rpTerrainAccMap,
+		uint32& rTerrainAccMapRes,
+		const uint32 cApplySuperSampling,
+		uint8* pHeightMapAccMap
 	);
 	// Description:
 	//		blurs the terrain access. map
@@ -414,24 +395,24 @@ private: // --------------------------------------------------------------------
 	//		retrieves interpolated height
 	const float GetFilteredHeight
 	(
-	  const uint16 cXPos,
-	  const uint16 cYPos,
-	  const uint32 cRGBImageRes,
-	  const uint32 cXYRes,
-	  const float* const cpHeightMap,
-	  const uint32 cRGBToXYResShift
+		const uint16 cXPos,
+		const uint16 cYPos,
+		const uint32 cRGBImageRes,
+		const uint32 cXYRes,
+		const float* const cpHeightMap,
+		const uint32 cRGBToXYResShift
 	) const;
 	// Description:
 	//		post processes a sample (weighting, lookup...)
 	void PostProcessSample
 	(
-	  const uint8 cScale,
-	  const TCoeffType& crSHCoeffs,
-	  uint8* pHeightMapAccMap,
-	  const uint32 cWidth,
-	  const uint32 cX,
-	  const uint32 cY,
-	  const NSH::TSample& crLookupVec
+		const uint8 cScale,
+		const TCoeffType& crSHCoeffs,
+		uint8* pHeightMapAccMap,
+		const uint32 cWidth,
+		const uint32 cX,
+		const uint32 cY,
+		const NSH::TSample& crLookupVec
 	);
 	// Description:
 	//		retrieves height at a specific position from the full resolution heightmap
@@ -446,9 +427,9 @@ private: // --------------------------------------------------------------------
 inline const bool CTerrainGIGen::IsSectorUsed(const uint16 cX, const uint16 cY) const
 {
 	size_t nSectorIndex(
-	  (cX >> CObstructionAccessManager::scSectorSizeShift) * m_SectorRowNum +
-	  (cY >> CObstructionAccessManager::scSectorSizeShift)
-	  );
+		(cX >> CObstructionAccessManager::scSectorSizeShift) * m_SectorRowNum +
+		(cY >> CObstructionAccessManager::scSectorSizeShift)
+		);
 
 	if (nSectorIndex < m_SectorTable.size())
 	{
@@ -463,9 +444,9 @@ inline const bool CTerrainGIGen::IsSectorUsed(const uint16 cX, const uint16 cY) 
 inline const bool CTerrainGIGen::IsSectorUsedByNonVeg(const uint16 cX, const uint16 cY) const
 {
 	size_t nSectorIndex(
-	  (cX >> CObstructionAccessManager::scSectorSizeShift) * m_SectorRowNum +
-	  (cY >> CObstructionAccessManager::scSectorSizeShift)
-	  );
+		(cX >> CObstructionAccessManager::scSectorSizeShift) * m_SectorRowNum +
+		(cY >> CObstructionAccessManager::scSectorSizeShift)
+		);
 
 	if (nSectorIndex < m_SectorTable.size())
 	{
@@ -480,9 +461,9 @@ inline const bool CTerrainGIGen::IsSectorUsedByNonVeg(const uint16 cX, const uin
 inline void CTerrainGIGen::SetSectorUsed(const uint16 cX, const uint16 cY, const uint8 cVal)
 {
 	size_t nSectorIndex(
-	  (cX >> CObstructionAccessManager::scSectorSizeShift) * m_SectorRowNum +
-	  (cY >> CObstructionAccessManager::scSectorSizeShift)
-	  );
+		(cX >> CObstructionAccessManager::scSectorSizeShift) * m_SectorRowNum +
+		(cY >> CObstructionAccessManager::scSectorSizeShift)
+		);
 	if (nSectorIndex < m_SectorTable.size())
 	{
 		m_SectorTable[nSectorIndex] |= cVal;
@@ -499,10 +480,6 @@ inline void CTerrainGIGen::DeAllocateContiguousSampleData()
 inline CTerrainGIGen::CTerrainGIGen() :
 	m_FirstTime(true), m_pSmallHeightMapAccMap(NULL), m_pTempBlurArea(NULL),
 	m_QuadTree(4 * 1024 * 1024, 16 * 1024 * 1024), m_ActiveChunk(0)
-{}
-
-//////////////////////////////////////////////////////////////////////////
-inline CTerrainGIGen::~CTerrainGIGen()
 {}
 
 inline const bool CTerrainGIGen::IsTriangleAboveTerrain(const Vec3& crWorldA, const Vec3& crWorldB, const Vec3& crWorldC) const
@@ -528,6 +505,3 @@ struct SHeightmapTriangleValidator : public ITriangleValidator
 		return m_crTerrainGen.IsTriangleAboveTerrain(crA, crB, crC);
 	}
 };
-
-#endif // __terraingigen_h__
-

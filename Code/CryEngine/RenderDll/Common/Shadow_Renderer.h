@@ -1,20 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(SHADOWRENDERER_H)
-#define SHADOWRENDERER_H
+#pragma once
 
+#include <CryThreading/IJobManager.h>
 #include "ShadowUtils.h"
 
 #include "Textures/PowerOf2BlockPacker.h" // CPowerOf2BlockPacker
 
 #include <CryCore/Containers/VectorSet.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include <array>
 #include <bitset>
-
-#define OMNI_SIDES_NUM 6
-
-constexpr uint32 kMaxShadowPassesNum = sizeof(uint32) * CHAR_BIT - 1; // reserve first bit for main view
 
 // data used to compute a custom shadow frustum for near shadows
 struct CustomShadowMapFrustumData
@@ -63,13 +60,17 @@ struct ShadowMapFrustum : public CMultiThreadRefCount
 			memset(mOctreePathNodeProcessed, 0x0, sizeof(mOctreePathNodeProcessed));
 			mGeneration = cacheGeneration;
 			mObjectsRendered = 0;
+			mTraverseOctreeJobState.Wait();
 		}
+		
 		uint32                           mObjectsRendered;
 		uint8                            mGeneration;
 
 		static const int                 MAX_TRAVERSAL_PATH_LENGTH = 32;
 		uint8                            mOctreePath[MAX_TRAVERSAL_PATH_LENGTH];
 		uint8                            mOctreePathNodeProcessed[MAX_TRAVERSAL_PATH_LENGTH];
+
+		JobManager::SJobState            mTraverseOctreeJobState;
 	};
 
 public:
@@ -81,23 +82,19 @@ public:
 
 	//packer params
 	uint              nPackID[OMNI_SIDES_NUM];
-	TRect_tpl<uint32> shadowPoolPack[OMNI_SIDES_NUM];
+	union {
+		TRect_tpl<uint32>  shadowPoolPack[OMNI_SIDES_NUM];
+		TRect_tpl<float>   shadowCascade;
+	};
 
 	uint8             nShadowPoolUpdateRate;                                   // For time-sliced updates: Update rate in frames count
 
 	// Only one side in case of directional lights
-	std::bitset<OMNI_SIDES_NUM> nOmniFrustumMask;                              // Mask of enabled sides
+	uint32                      nUpdateSideMask = 0x3F;                        // Mask of out-of-date frustum sides
 	uint32                      nSideSampleMask = 0;                           // Mask of sides that participate in shadow casting
-	uint8                       nSideDrawnOnFrame[OMNI_SIDES_NUM] = { 0 };     // Congruence class of FrameID upon which side was last rendererd (modulo 255).
-	std::bitset<OMNI_SIDES_NUM> nSideCacheMask;                                // In case of time-sliced updates: Bit-mask indicating whether or not a frusutm side is cached and valid and does not require updates.
-	std::bitset<OMNI_SIDES_NUM> nOutdatedSideMask = 0xff;                      // Mask of out-of-date frustum sides
-	std::bitset<OMNI_SIDES_NUM> nSideInvalidatedMask = 0xff;                   // Mask of invalidated frustum sides for each GPU
+	uint32                      nSideDrawnOnFrame[OMNI_SIDES_NUM] = { 0 };     // FrameID when it has been rendered the last time
+	uint32                      nSideDrawnWithN  [OMNI_SIDES_NUM] = { 0 };     // FrameID when it has been rendered the last time
 
-	std::atomic<uint32>&       GetSideSampleMask()       { return *reinterpret_cast<std::atomic<uint32>*>(&this->nSideSampleMask); }
-	const std::atomic<uint32>& GetSideSampleMask() const { return *reinterpret_cast<const std::atomic<uint32>*>(&this->nSideSampleMask); }
-	std::atomic<uint32>&       GetOnePassCastersCount() const  { return *reinterpret_cast<std::atomic<uint32>*>(&this->onePassCastersNum); }
-
-	// flags
 	bool bIncrementalUpdate;
 
 	// if set to true - castersList contains all casters in light radius
@@ -107,6 +104,7 @@ public:
 	float fBlendVal;
 
 	bool  bIsMGPUCopy;
+	bool  bRestrictToRT;
 
 	//sampling parameters
 	f32 fWidthS, fWidthT;
@@ -145,7 +143,6 @@ public:
 	float                           fDepthConstBias;
 	float                           fDepthSlopeBias;
 	float                           fDepthBiasClamp;
-	mutable int                     onePassCastersNum = 0;        // Contains number of casters if one-pass octree traversal is used for this frustum
 
 	CCamera                         FrustumPlanes[OMNI_SIDES_NUM];
 	AABB                            aabbCasters;      //casters bbox in world space
@@ -168,12 +165,13 @@ public:
 		, mLightProjMatrix(IDENTITY)
 		, mLightViewMatrix(IDENTITY)
 		, vFrustInfo(ZERO)
+		, nShadowPoolUpdateRate(0)
 		, bIncrementalUpdate(false)
 		, bOmniDirectionalShadow(false)
 		, bBlendFrustum(false)
 		, fBlendVal(0)
 		, bIsMGPUCopy(false)
-		, nShadowPoolUpdateRate(0)
+		, bRestrictToRT(false)
 		, fWidthS(0)
 		, fWidthT(0)
 		, fBlurS(0)
@@ -208,8 +206,8 @@ public:
 		, nUpdateFrameId(-1000)
 		, pLightOwner(nullptr)
 		, nShadowMapLod(0)
-		, m_Flags(0)
 		, nShadowCacheLod(0)
+		, m_Flags(0)
 	{
 		ZeroArray(nPackID);
 	}
@@ -251,83 +249,62 @@ public:
 		}
 	}
 
-	void RequestUpdate()
+	// --------------------------------------------------------
+	inline void RequestUpdates(uint32 sides)  { nUpdateSideMask = sides; }
+	inline void RequestUpdate(int side)       { nUpdateSideMask |= BIT(side); }
+	inline void ClearUpdates(uint32 sides)    { nUpdateSideMask &= ~sides; }
+	inline uint32 UpdateRequests()      const { return nUpdateSideMask; }
+
+	// --------------------------------------------------------
+	inline void RequestSamples(uint32 sides)  { nSideSampleMask = sides; }
+	inline void RequestSample(int side)       { nSideSampleMask |= BIT(side); }
+	inline void ClearSamples(uint32 sides)    { nSideSampleMask &= ~sides; }
+	inline uint32 SampleRequests()      const { return nSideSampleMask; }
+
+	// --------------------------------------------------------
+	inline bool ShouldUpdate()          const { return (nUpdateSideMask) != 0; }
+	inline bool ShouldUpdate(int side)  const { return (nUpdateSideMask & BIT(side)) != 0; }
+
+	// --------------------------------------------------------
+	inline bool ShouldSample()          const { return (nSideSampleMask) != 0; }
+	inline bool ShouldSample(int side)  const { return (nSideSampleMask & BIT(side)) != 0; }
+
+	// --------------------------------------------------------
+	inline bool ShouldProcess()         const { return ((nUpdateSideMask | nSideSampleMask)) != 0; }
+	inline bool ShouldProcess(int side) const { return ((nUpdateSideMask | nSideSampleMask) & BIT(side)) != 0; }
+
+	// --------------------------------------------------------
+	// Caching is: don't update and do sample
+	inline bool ShouldCache()           const { return (((~nUpdateSideMask) & nSideSampleMask)) == nSideSampleMask; }
+	inline bool ShouldCache(int side)   const { return (((~nUpdateSideMask) & nSideSampleMask) & BIT(side)) != 0; }
+
+	// --------------------------------------------------------
+	inline void MarkSideAsRendered(int side, uint32 frameID, size_t numItems)
 	{
-		nOutdatedSideMask.set();
+		nSideDrawnOnFrame[side] = frameID;
+		nSideDrawnWithN  [side] = uint32(numItems);
 	}
 
-	// Invalidates current content and requests update
-	void Invalidate()
+	inline void MarkSideAsUnrendered(uint32 sides)
 	{
-		// Mark frustum as out-of-date
-		RequestUpdate();
-		// And invalidate all sides
-		nSideInvalidatedMask.set();
+		for (int nS = 0; nS < OMNI_SIDES_NUM; nS++)
+		{
+			nSideDrawnOnFrame[nS] = sides & BIT(nS) ? 0 : nSideDrawnOnFrame[nS];
+			nSideDrawnWithN  [nS] = sides & BIT(nS) ? 0 : nSideDrawnWithN  [nS];
+		}
 	}
 
-	void InvalidateSide(int side)
-	{
-		nOutdatedSideMask.set(side);
-		nSideInvalidatedMask.set(side);
-	}
+	// --------------------------------------------------------
+	inline bool HasVariableUpdateRate() const { return bUseShadowsPool & (nShadowPoolUpdateRate != 0); }
+	inline bool HasSamplableContents(int side) const { return nSideDrawnOnFrame[side] > 0; }
 
-	bool isUpdateRequested() const
-	{
-		return nSideInvalidatedMask.any() || nOutdatedSideMask.any();
-	}
+	inline size_t GetCasterNum(int side) const { return nSideDrawnWithN[side]; }
+	inline size_t GetCasterNum() const { size_t n = 0; for (int nS = 0; nS < OMNI_SIDES_NUM; nS++) n += nSideDrawnWithN[nS]; return n; }
 
-	bool isSideOutdated(int side) const
-	{
-		return nOutdatedSideMask[side];
-	}
+	inline bool IsCached() const { return m_eFrustumType == e_GsmCached || m_eFrustumType == e_HeightMapAO; }
+	inline bool IsDynamicGsmCascade() const { return (m_Flags & DLF_SUN) && (m_eFrustumType == e_GsmDynamic || m_eFrustumType == e_GsmDynamicDistance); }
 
-	bool isSideInvalidated(int side) const
-	{
-		return nSideInvalidatedMask[side];
-	}
-
-	bool ShouldCacheSideHint(int side) const
-	{
-		return nSideCacheMask[side];
-	}
-
-	bool ShouldSampleSide(int side) const
-	{
-		return !!(GetSideSampleMask().load() & BIT(side));
-	}
-
-	bool ShouldSample() const
-	{
-		return !!GetSideSampleMask().load();
-	}
-
-	bool ShouldUpdateSide(int side) const
-	{
-		return !nSideCacheMask[side] && ShouldSampleSide(side);
-	}
-
-	void MarkSideAsRendered(int side, uint8 frameID8)
-	{
-		nOutdatedSideMask.set(side, false);
-		nSideInvalidatedMask.set(side, false);
-		nSideDrawnOnFrame[side] = frameID8;
-	}
-
-	void MarkShadowGenMaskForSide(int side)
-	{
-		GetSideSampleMask() |= BIT(side);
-	}
-
-	bool IsCached() const
-	{
-		return m_eFrustumType == e_GsmCached || m_eFrustumType == e_HeightMapAO;
-	}
-
-	bool IsDynamicGsmCascade() const
-	{
-		return (m_Flags & DLF_SUN) && (m_eFrustumType == e_GsmDynamic || m_eFrustumType == e_GsmDynamicDistance);
-	}
-
+	// --------------------------------------------------------
 	ILINE bool IntersectAABB(const AABB& bbox, bool* pAllIn, int side = -1) const
 	{
 		if (bOmniDirectionalShadow)
@@ -441,16 +418,6 @@ public:
 		}
 	}
 
-	void ResetCasterLists()
-	{
-		onePassCastersNum = 0;
-	}
-
-	int GetCasterNum() const
-	{
-		return onePassCastersNum;
-	}
-
 	int GetNumSides() const
 	{
 		return bOmniDirectionalShadow ? OMNI_SIDES_NUM : 1;
@@ -466,13 +433,13 @@ public:
 	void SortRenderItemsForFrustumAsync(int side, struct SRendItem* pFirst, size_t nNumRendItems);
 
 	// Reserves a shadowpool slot
-	void                         PrepareForShadowPool(uint32 frameID, uint32& numShadowPoolAllocsThisFrame, CPowerOf2BlockPacker& blockPack, TArray<SShadowAllocData>& shadowPoolAlloc, const SRenderLight& light, uint32 timeSlicedShadowUpdatesLimit = ~0, uint32* timeSlicedShadowsUpdated = nullptr);
+	uint32  AssignShadowPoolLocations(uint32& numShadowPoolAllocsThisFrame, CPowerOf2BlockPacker& blockPack, TArray<SShadowAllocData>& shadowPoolAlloc, const SRenderLight& light);
 	// For time-sliced updates: Returns a mask of per-side flags that hint whether or not the side should be updated
-	std::bitset<6>               GenerateTimeSlicedUpdateCacheMask(uint32 frameID) const;
+	uint32  GenerateTimeSlicedUpdateCacheMask(uint32 frameID, uint32* timeSlicedShadowsUpdated = nullptr);
 
 	CRenderView*                 GetNextAvailableShadowsView(CRenderView* pMainRenderView);
 
-	_smart_ptr<ShadowMapFrustum> Clone() const { return new ShadowMapFrustum(*this); }
+	_smart_ptr<ShadowMapFrustum> Clone() const { auto* ptr = new ShadowMapFrustum(*this); ptr->bRestrictToRT = true; return ptr; }
 
 	bool NodeRequiresShadowCacheUpdate(const IRenderNode* pNode) const
 	{
@@ -487,6 +454,7 @@ public:
 		{
 			CRY_ASSERT(nShadowCacheLod >= 0 && nShadowCacheLod < MAX_GSM_CACHED_LODS_NUM);
 			pNode->m_shadowCacheLastRendered[nShadowCacheLod] = isCached ? pShadowCacheData->mGeneration : 0;
+			// TODO: Number might not be right when called from multiple threads
 			pShadowCacheData->mObjectsRendered++;
 		}
 	}
@@ -501,48 +469,18 @@ public:
 };
 typedef _smart_ptr<ShadowMapFrustum> ShadowMapFrustumPtr;
 
-struct SShadowRenderer
+struct SShadowCacheUpdateMasks : public ISyncMainWithRenderListener
 {
-	// Iterate FrustumsToRender array from the CRenderView, and draw render nodes in every frustum there.
-	static void FinishRenderFrustumsToView(CRenderView* pRenderView);
-};
-
-struct ShadowFrustumMGPUCache : public ISyncMainWithRenderListener
-{
-	StaticArray<ShadowMapFrustumPtr, MAX_GSM_LODS_NUM> m_staticShadowMapFrustums;
-	ShadowMapFrustumPtr                                m_pHeightMapAOFrustum;
-
 	uint32 nUpdateMaskMT;
 	uint32 nUpdateMaskRT;
 
-	ShadowFrustumMGPUCache()
+	SShadowCacheUpdateMasks()
 		: nUpdateMaskMT(0), nUpdateMaskRT(0)
-	{
-		m_pHeightMapAOFrustum = NULL;
-		m_staticShadowMapFrustums.fill(NULL);
-	};
+	{}
 
 	void Init()
 	{
-		m_pHeightMapAOFrustum = new ShadowMapFrustum;
-		m_pHeightMapAOFrustum->pShadowCacheData = std::make_shared<ShadowMapFrustum::ShadowCacheData>();
-
-		for (int i = 0; i < m_staticShadowMapFrustums.size(); ++i)
-		{
-			m_staticShadowMapFrustums[i] = new ShadowMapFrustum;
-			m_staticShadowMapFrustums[i]->pShadowCacheData = std::make_shared<ShadowMapFrustum::ShadowCacheData>();
-		}
-
 		nUpdateMaskMT = nUpdateMaskRT = 0;
-	}
-
-	void Release()
-	{
-		m_pHeightMapAOFrustum = 0;
-		for (int i = 0; i < m_staticShadowMapFrustums.size(); ++i)
-		{
-			m_staticShadowMapFrustums[i] = 0;
-		}
 	}
 
 	virtual void SyncMainWithRender()
@@ -575,8 +513,8 @@ struct SShadowFrustumToRender
 	IRenderViewPtr      pShadowsView;
 
 	SShadowFrustumToRender() : pFrustum(0), pLight(0), nLightID(0) {}
-	SShadowFrustumToRender(ShadowMapFrustum* _pFrustum, SRenderLight* _pLight, int _nLightID, IRenderViewPtr _pShadowsView)
-		: pFrustum(_pFrustum)
+	SShadowFrustumToRender(ShadowMapFrustumPtr&& _pFrustum, SRenderLight* _pLight, int _nLightID, IRenderViewPtr&& _pShadowsView)
+		: pFrustum(std::move(_pFrustum))
 		, pLight(_pLight)
 		, nLightID(_nLightID)
 		, pShadowsView(std::move(_pShadowsView))
@@ -585,5 +523,3 @@ struct SShadowFrustumToRender
 		CRY_ASSERT(pFrustum->pDepthTex == nullptr);
 	}
 };
-
-#endif

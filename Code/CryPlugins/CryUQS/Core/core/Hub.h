@@ -69,9 +69,13 @@ namespace UQS
 			static void                                                CmdListQueryBlueprintLibrary(IConsoleCmdArgs* pArgs);
 			static void                                                CmdListRunningQueries(IConsoleCmdArgs* pArgs);
 			static void                                                CmdDumpQueryHistory(IConsoleCmdArgs* pArgs);
+			static void                                                CmdDumpQueryHistoryAsync(IConsoleCmdArgs* pArgs);
 			static void                                                CmdLoadQueryHistory(IConsoleCmdArgs* pArgs);
 			static void                                                CmdClearLiveQueryHistory(IConsoleCmdArgs* pArgs);
 			static void                                                CmdClearDeserializedQueryHistory(IConsoleCmdArgs* pArgs);
+			static void                                                CmdPrintQueryHistoryStatisticsToConsole(IConsoleCmdArgs* pArgs);
+
+			static bool                                                HelpBuildHistoryDumpFilePath(IConsoleCmdArgs* pArgs, const char* szFileNamePrefix, CryPathString& outFilePath);
 
 		private:
 			CEnumFlags<EHubOverrideFlags>                              m_overrideFlags;
@@ -98,7 +102,7 @@ namespace UQS
 		};
 
 		// - this gets set to a valid instance in CHub::CHub() and reset in CHub::~CHub()
-		// - only one instance can exist at a time (or an assert() will fail)
+		// - only one instance can exist at a time (or an CRY_ASSERT() will fail)
 		extern CHub*   g_pHub;
 
 	}

@@ -152,9 +152,7 @@ void CMatchMakingHandler::Search( int freeSlots, int maxResults, SCrySessionSear
 	param.m_maxNumReturn = maxResults;
 	param.m_ranked = false;
 
-	int curData = 0;
-
-	CRY_ASSERT_MESSAGE( numSearchParameters < FIND_GAMES_SEARCH_NUM_DATA, "Session search data buffer overrun" );
+	CRY_ASSERT( numSearchParameters < FIND_GAMES_SEARCH_NUM_DATA, "Session search data buffer overrun" );
 	searchParameters[ numSearchParameters ].m_operator = eCSSO_Equal;
 	searchParameters[ numSearchParameters ].m_data.m_id = LID_MATCHDATA_VERSION;
 	searchParameters[ numSearchParameters ].m_data.m_type = eCLUDT_Int32;
@@ -248,11 +246,12 @@ void CMatchMakingHandler::OnSearchResult( SCrySessionSearchResult* pSession )
 		
 		const CGameLobby::EActiveStatus activeStatus = (CGameLobby::EActiveStatus) GameLobbyData::GetSearchResultsData( pSession, LID_MATCHDATA_ACTIVE );
 		bool bIsBadServer = pLobby->IsBadServer( pSession->m_id );
+#if defined(TRACK_MATCHMAKING)
 		const int skillRank = pLobby->CalculateAverageSkill();
+		float sessionScore = LegacyC2MatchMakingScore( pSession, pLobby, false );
+#endif
 		const int sessionSkillRank = GameLobbyData::GetSearchResultsData( pSession, LID_MATCHDATA_SKILL );
 		const int sessionLanguageId = GameLobbyData::GetSearchResultsData( pSession, LID_MATCHDATA_LANGUAGE );
-
-		float sessionScore = LegacyC2MatchMakingScore( pSession, pLobby, false );
 
 		int32 region = 0;
 #if GAMELOBBY_USE_COUNTRY_FILTERING
@@ -502,7 +501,7 @@ void CMatchMakingHandler::Update( float dt )
 				break;
 			}
 		default:
-			CRY_ASSERT_MESSAGE( false, "MMHandler: Invalid task ID in waiting tasks" );
+			CRY_ASSERT( false, "MMHandler: Invalid task ID in waiting tasks" );
 		}
 
 		//pop and loop queue

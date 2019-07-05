@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "RoomscaleCamera.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <array>
 
 namespace Cry
@@ -51,33 +52,21 @@ namespace Cry
 				if (event.event == ENTITY_EVENT_UPDATE)
 				{
 					const CCamera& systemCamera = gEnv->pSystem->GetViewCamera();
-					float fov = (75.0_degrees).ToRadians();
 
-					bool camera_matrix_initialized_with_hmd = false;
-					IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager();
-					if (pHmdManager && pHmdManager->IsStereoSetupOk())
+					if (IHmdDevice* pDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
 					{
-						if (IHmdDevice* pDevice = pHmdManager->GetHmdDevice())
-						{
-							float arf_notUsed;
-							pDevice->GetCameraSetupInfo(fov, arf_notUsed);
+						const auto& worldTranform = m_pEntity->GetWorldTM();
+						pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
 
-							const auto& worldTranform = m_pEntity->GetWorldTM();
-							pDevice->EnableLateCameraInjectionForCurrentFrame(std::make_pair(Quat(worldTranform), worldTranform.GetTranslation()));
-
-							const HmdTrackingState& state = pDevice->GetLocalTrackingState();
-							m_camera.SetMatrix(worldTranform * Matrix34::Create(Vec3(1.f), state.pose.orientation, state.pose.position));
-
-							camera_matrix_initialized_with_hmd = true;
-						}
+						const HmdTrackingState& state = pDevice->GetLocalTrackingState();
+						m_camera.SetMatrix(worldTranform * Matrix34::Create(Vec3(1.f), state.pose.orientation, state.pose.position));
 					}
-
-					if (!camera_matrix_initialized_with_hmd)
+					else
 					{
 						m_camera.SetMatrix(m_pEntity->GetWorldTM() * Matrix34::Create(Vec3(1.f), IDENTITY, m_pEntity->GetWorldRotation().GetInverted() * Vec3(0, 0, 1.7f)));
 					}
 
-					m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), fov, m_nearPlane, m_farPlane, systemCamera.GetPixelAspectRatio());
+					m_camera.SetFrustum(systemCamera.GetViewSurfaceX(), systemCamera.GetViewSurfaceZ(), (75.0_degrees).ToRadians(), m_nearPlane, m_farPlane, systemCamera.GetPixelAspectRatio());
 
 					gEnv->pSystem->SetViewCamera(m_camera);
 				}
@@ -90,10 +79,10 @@ namespace Cry
 				}
 			}
 
-			uint64 CRoomscaleCameraComponent::GetEventMask() const
+			Cry::Entity::EventFlags CRoomscaleCameraComponent::GetEventMask() const
 			{
-				uint64 bitFlags = IsActive() ? ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) : 0;
-				bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) | ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+				Cry::Entity::EventFlags bitFlags = IsActive() ? ENTITY_EVENT_UPDATE : Cry::Entity::EventFlags();
+				bitFlags |= ENTITY_EVENT_START_GAME | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 				return bitFlags;
 			}

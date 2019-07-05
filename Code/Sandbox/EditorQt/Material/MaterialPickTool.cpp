@@ -1,11 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Viewport.h"
-#include "Material/MaterialManager.h"
 #include "MaterialPickTool.h"
+
+#include "IEditorImpl.h"
+#include "Material/MaterialManager.h"
 #include "SurfaceInfoPicker.h"
 #include "Objects/DisplayContext.h"
+#include "Viewport.h"
+
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 #define RENDER_MESH_TEST_DISTANCE 0.2f
 
@@ -48,7 +54,7 @@ bool CMaterialPickTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMaterialPickTool::Display(DisplayContext& dc)
+void CMaterialPickTool::Display(SDisplayContext& dc)
 {
 	CPoint mousePoint;
 	::GetCursorPos(&mousePoint);
@@ -98,7 +104,6 @@ bool CMaterialPickTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 	view->SetCurrentCursor(STD_CURSOR_HIT, "");
 
 	IMaterial* pNearestMaterial(NULL);
-	IEntity* pNearnestEntity(NULL);
 
 	m_Mouse2DPosition = point;
 
@@ -121,9 +126,9 @@ bool CMaterialPickTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 //////////////////////////////////////////////////////////////////////////
 class CMaterialPickTool_ClassDesc : public IClassDesc
 {
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
-	virtual const char*    ClassName()       { return "EditTool.PickMaterial"; };
-	virtual const char*    Category()        { return "Material"; };
+	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
+	virtual const char*    ClassName()       { return "EditTool.PickMaterial"; }
+	virtual const char*    Category()        { return "Material"; }
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMaterialPickTool); }
 };
 
@@ -152,4 +157,3 @@ void CMaterialPickTool::SetMaterial(IMaterial* pMaterial)
 		m_displayString += sfType;
 	}
 }
-

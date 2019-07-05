@@ -596,7 +596,7 @@ public:
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
 	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
 	virtual void SerializeSpawnInfo( TSerialize ser ) override;
 	virtual ISerializableInfoPtr GetSpawnInfo() override;
@@ -1268,7 +1268,6 @@ public:
 	bool HasActiveNavPath() const;
 
 	bool HasShadowCharacter() const;
-	int  GetShadowCharacterSlot() const;
 	ICharacterInstance *GetShadowCharacter() const;
 
 	void UpdateVisibility();

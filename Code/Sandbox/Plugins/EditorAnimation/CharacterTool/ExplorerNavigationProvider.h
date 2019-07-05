@@ -11,4 +11,3 @@ namespace CharacterTool
 struct System;
 Serialization::INavigationProvider* CreateExplorerNavigationProvider(System* system);
 }
-

@@ -16,6 +16,7 @@ History:
 #define __REPLAYOBJECT_H__
 
 #include <ICryMannequin.h>
+#include <IGameObject.h>
 
 class CReplayObjectAction : public TAction<SAnimationContext>
 {
@@ -66,7 +67,7 @@ public:
 	virtual void PostRemoteSpawn() {}
 	virtual void HandleEvent( const SGameObjectEvent &) {}
 	virtual void ProcessEvent(const SEntityEvent& ) {}
-	virtual uint64 GetEventMask() const { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const { return Cry::Entity::EventFlags(); }
 	virtual void SetChannelId(uint16 id) {}
 	virtual void GetMemoryUsage(ICrySizer * s) const {}
 	//~IGameObjectExtension

@@ -47,7 +47,7 @@ HS_CONTROL_POINT_OUTPUT_ZPASS Common_ZPassHS(InputPatch<vert2fragZ, 3> inputPatc
 
 ///////////////// domain shader //////////////////
 
-void FillEvalInput(in const OutputPatch<HS_CONTROL_POINT_OUTPUT_ZPASS, 3> triPatch, in HS_CONSTANT_DATA_OUTPUT hsConstData, in float3 vBaryCoords, inout CommonEvaluationInputDS evalInput)
+void FillEvalInput_ZPass(in const OutputPatch<HS_CONTROL_POINT_OUTPUT_ZPASS, 3> triPatch, in HS_CONSTANT_DATA_OUTPUT hsConstData, in float3 vBaryCoords, inout CommonEvaluationInputDS evalInput)
 {
 	evalInput.vBaryCoords = vBaryCoords;
 	FillEvalInputControlPoint(triPatch[0].controlPoint, triPatch[1].controlPoint, triPatch[2].controlPoint, hsConstData, evalInput);
@@ -61,7 +61,7 @@ void FillEvalInput(in const OutputPatch<HS_CONTROL_POINT_OUTPUT_ZPASS, 3> triPat
 	evalInput.vViewPos = g_VS_WorldViewPos.xyz;
 }
 
-void ProcessEvalOutput(in CommonEvaluationOutputDS evalOutput, inout vert2fragZ dsOutput)
+void ProcessEvalOutput_ZPass(in CommonEvaluationOutputDS evalOutput, inout vert2fragZ dsOutput)
 {
 	dsOutput.baseTC = evalOutput.vBaseTC;
 #if (!%GRASS && !%TEMP_TERRAIN) || %_RT_ALPHABLEND 
@@ -81,11 +81,11 @@ vert2fragZ Common_ZPassDS( HS_CONSTANT_DATA_OUTPUT hsConstData, float3 vBaryCoor
 	vert2fragZ output = (vert2fragZ)0;
 
 	CommonEvaluationInputDS evalInput = (CommonEvaluationInputDS)0;
-	FillEvalInput(TrianglePatch, hsConstData, vBaryCoords, evalInput);
+	FillEvalInput_ZPass(TrianglePatch, hsConstData, vBaryCoords, evalInput);
 
 	CommonEvaluationOutputDS evalOutput;
 	Evaluate(evalInput, evalOutput);
-	ProcessEvalOutput(evalOutput, output);
+	ProcessEvalOutput_ZPass(evalOutput, output);
 
 	// Custom output for g-buffer stage
 #if %_RT_MOTION_BLUR && !%_RT_ALPHABLEND

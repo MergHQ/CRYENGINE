@@ -853,7 +853,7 @@ public class Serializer : MarshalByRefObject, ISerializedObject
 
 				if(!compiled)
 				{
-					throw new CryEngine.Compilation.CompilationFailedException(string.Format("Failed to compile the source code!\n{0}", generateResult));
+					throw new CryEngine.Compilation.CompilationFailedException(string.Format("Failed to compile the source code!\n{0}", generateResult), new string[0], 0);
 				}
 				
 				filePath = generateResult;

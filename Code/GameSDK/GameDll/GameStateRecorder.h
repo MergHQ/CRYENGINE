@@ -19,6 +19,7 @@
 
 #include "TestSystem/IGameStateRecorder.h"
 #include "Actor.h"
+#include <IGameplayRecorder.h>
 
 #define MAX_FIRE_MODES 10
 #define TItemName const char*

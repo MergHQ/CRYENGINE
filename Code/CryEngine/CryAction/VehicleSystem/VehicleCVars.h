@@ -50,8 +50,6 @@ public:
 	int   v_goliathMode;
 	int   v_show_all;
 	int   v_staticTreadDeform;
-	float v_tpvDist;
-	float v_tpvHeight;
 	int   v_debugSuspensionIK;
 	int   v_serverControlled;
 	int   v_clientPredict;
@@ -81,7 +79,7 @@ public:
 
 	static inline CVehicleCVars& Get()
 	{
-		assert(s_pThis != 0);
+		CRY_ASSERT(s_pThis != 0);
 		return *s_pThis;
 	}
 

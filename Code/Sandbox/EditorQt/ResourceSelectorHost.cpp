@@ -8,6 +8,9 @@
 #include "Util/FileUtil.h"
 #include "FileSystem/FileSystem_Snapshot.h"
 
+#include <CryCore/StlUtils.h>
+#include <CryString/CryPath.h>
+
 namespace Private_ResourceSelectorHost
 {
 class CResourceSelectorHost : public IResourceSelectorHost
@@ -29,7 +32,7 @@ public:
 		const auto it = m_typeMap.find(typeName);
 		if (it == m_typeMap.end())
 		{
-			//Changed from warning to assert as this is a programmer error which should never happen 
+			//Changed from warning to assert as this is a programmer error which should never happen
 			//as it could allow invalid data to be inputted and saved
 			CRY_ASSERT_MESSAGE(0, "No Resource Selector is registered for resource type \"%s\"", typeName);
 			return &defaultEntry;
@@ -38,7 +41,7 @@ public:
 		return it->second;
 	}
 
-	dll_string  SelectResource(const char* typeName, const char* previousValue, QWidget* parentWidget = nullptr, void* contextObject = nullptr) const override
+	SResourceSelectionResult SelectResource(const char* typeName, const char* previousValue, QWidget* parentWidget = nullptr, void* contextObject = nullptr) const override
 	{
 		auto selector = GetSelector(typeName);
 		SResourceSelectorContext context;
@@ -83,14 +86,19 @@ private:
 
 // ---------------------------------------------------------------------------
 
-dll_string AnyFileSelector(const SResourceSelectorContext& x, const char* previousValue)
+SResourceSelectionResult AnyFileSelector(const SResourceSelectorContext& context, const char* previousValue)
 {
 	string relativeFilename = previousValue;
 	string startPath = PathUtil::GetPathWithoutFilename(previousValue);
-	if (CFileUtil::SelectSingleFile(x.parentWidget, EFILE_TYPE_ANY, relativeFilename, "", startPath))
-		return relativeFilename.GetBuffer();
-	else
-		return previousValue;
+	SResourceSelectionResult result{ false, previousValue };
+
+	if (CFileUtil::SelectSingleFile(context.parentWidget, EFILE_TYPE_ANY, relativeFilename, "", startPath))
+	{
+		result.selectedResource = relativeFilename.GetBuffer();
+		result.selectionAccepted = true;
+	}
+
+	return result;
 }
 
 REGISTER_RESOURCE_SELECTOR("AnyFile", AnyFileSelector, "")
@@ -102,4 +110,3 @@ IResourceSelectorHost* CreateResourceSelectorHost()
 {
 	return new Private_ResourceSelectorHost::CResourceSelectorHost();
 }
-

@@ -312,4 +312,3 @@ CSequencerTrack* CFERootNode::CreateTrack(ESequencerParamType nParamId)
 
 	return newTrack;
 }
-

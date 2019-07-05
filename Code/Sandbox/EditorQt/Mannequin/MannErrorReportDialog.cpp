@@ -2,18 +2,19 @@
 
 #include "stdafx.h"
 #include "MannErrorReportDialog.h"
-#include "Util/Clipboard.h"
-#include "Util/CryMemFile.h"          // CCryMemFile
-#include "Util/MFCUtil.h"
-#include "Util\Mailer.h"
+#include "Mannequin/MannequinDialog.h"
+#include "Util/Mailer.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 
-#include "MannequinDialog.h"
+//MFC
+#include <Util/Clipboard.h>
+#include <Util/MFCUtil.h>
+
+#include <Util/CryMemFile.h>
 
 #include <CryGame/IGameFramework.h>
-#include "ICryMannequinEditor.h"
-
-// CMannErrorReportDialog dialog
+#include <ICryMannequinEditor.h>
 
 static int __stdcall CompareItems(LPARAM p1, LPARAM p2, LPARAM sort)
 {
@@ -61,7 +62,6 @@ public:
 
 		const char* errorString[] = { "None", "Fragment", "Transition" };
 		CString text, file, object, module, type;
-		int count = err.count;
 
 		text = err.error;
 		file = err.file;
@@ -122,22 +122,22 @@ IMPLEMENT_DYNAMIC(CMannErrorMessageRecord, CXTPReportRecord)
 //	//////////////////////////////////////////////////////////////////////////
 //	// IClassDesc
 //	//////////////////////////////////////////////////////////////////////////
-//	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; };
+//	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; }
 //	virtual REFGUID ClassID()
 //	{
 //		static const GUID guid =
 //			{ 0xea523b7e, 0x3f63, 0x821b, { 0x48, 0x23, 0xa1, 0x31, 0xfc, 0x5b, 0x46, 0xa3 } };
 //		return guid;
 //	}
-//	virtual const char* ClassName() { return "Error Report"; };
-//	virtual const char* Category() { return "Editor"; };
+//	virtual const char* ClassName() { return "Error Report"; }
+//	virtual const char* Category() { return "Editor"; }
 //	//////////////////////////////////////////////////////////////////////////
-//	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMannErrorReportDialog); };
-//	virtual const char* GetPaneTitle() { return _T("Error Report"); };
-//	virtual QRect GetPaneRect() { return QRect(0,0,600,200); };
+//	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMannErrorReportDialog); }
+//	virtual const char* GetPaneTitle() { return _T("Error Report"); }
+//	virtual QRect GetPaneRect() { return QRect(0,0,600,200); }
 //	virtual QSize GetMinSize() { return QSize(200,100); }
-//	virtual bool SinglePane() { return true; };
-//	virtual bool WantIdleUpdate() { return true; };
+//	virtual bool SinglePane() { return true; }
+//	virtual bool WantIdleUpdate() { return true; }
 //};
 
 //IMPLEMENT_DYNCREATE(CMannErrorReportDialog,CXTResizeDialog)
@@ -333,8 +333,6 @@ void CMannErrorReportDialog::ReloadErrors()
 	for (int i = 0; i < m_errorRecords.size(); i++)
 	{
 		CMannErrorRecord& err = m_errorRecords[i];
-		const char* str = err.error;
-
 		m_wndReport.AddRecord(new CMannErrorMessageRecord(err, m_contexts));
 	}
 
@@ -914,7 +912,7 @@ void CMannErrorReportDialog::OnReportItemDblClick(NMHDR* pNotifyStruct, LRESULT*
 	CMannErrorMessageRecord* pRecord = DYNAMIC_DOWNCAST(CMannErrorMessageRecord, pItemNotify->pRow->GetRecord());
 	if (pRecord)
 	{
-		bool bDone = false;
+		//bool bDone = false;
 		CMannErrorRecord* pError = pRecord->m_pRecord;
 		if (pError)
 		{
@@ -986,8 +984,8 @@ void CMannErrorReportDialog::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* re
 		CMannErrorMessageRecord* pRecord = DYNAMIC_DOWNCAST(CMannErrorMessageRecord, pItemNotify->pRow->GetRecord());
 		if (pRecord)
 		{
-			bool bDone = false;
-			CMannErrorRecord* pError = pRecord->m_pRecord;
+			//bool bDone = false;
+			//CMannErrorRecord* pError = pRecord->m_pRecord;
 			//if (pError && pError->pObject != NULL)
 			//{
 			//	CUndo undo( "Select Object(s)" );
@@ -1033,4 +1031,3 @@ void CMannErrorReportDialog::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* re
    }
    }
  */
-

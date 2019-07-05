@@ -29,12 +29,12 @@ void Streaks::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 
 Streaks::Streaks(const char* name)
 	: COpticsElement(name, 0.5f)
-	, m_fThickness(0.3f)
-	, m_nNoiseSeed(81)
+	, m_bUseSpectrumTex(false)
 	, m_fSizeNoiseStrength(0.8f)
 	, m_fThicknessNoiseStrength(0.6f)
 	, m_fSpacingNoiseStrength(0.2f)
-	, m_bUseSpectrumTex(false)
+	, m_fThickness(0.3f)
+	, m_nNoiseSeed(81)
 {
 	m_vMovement.x = 1.f;
 	m_vMovement.y = 1.f;
@@ -48,6 +48,7 @@ Streaks::Streaks(const char* name)
 	m_meshDirty = true;
 
 	m_constantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
+	if (m_constantBuffer) m_constantBuffer->SetDebugName("Streaks Per-Primitive CB");
 	m_indexBuffer = ~0u;
 }
 
@@ -74,8 +75,9 @@ void Streaks::Load(IXmlNode* pNode)
 		{
 			if (gradientTexName && gradientTexName[0])
 			{
-				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(gradientTexName));
-				SetSpectrumTex((CTexture*)pTexture);
+				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(gradientTexName);
+				m_pSpectrumTex.reset();
+				m_pSpectrumTex.Assign_NoAddRef(static_cast<CTexture*>(pTexture));
 			}
 		}
 
@@ -111,7 +113,7 @@ CTexture* Streaks::GetTexture()
 	{
 		if (m_pSpectrumTex == nullptr)
 		{
-			m_pSpectrumTex = std::move(CTexture::ForName("%ENGINE%/EngineAssets/Textures/flares/spectrum_full.tif", FT_DONT_STREAM, eTF_Unknown));
+			m_pSpectrumTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/flares/spectrum_full.tif", FT_DONT_STREAM, eTF_Unknown);
 		}
 
 		return m_pSpectrumTex;

@@ -137,7 +137,10 @@ namespace UQS
 			: m_pOwningHistoryManager(nullptr)
 			, m_queryID(CQueryID::CreateInvalid())
 			, m_parentQueryID(CQueryID::CreateInvalid())
+			, m_priority(0)
 			, m_queryLifetimeStatus(EQueryLifetimeStatus::QueryIsNotCreatedYet)
+			, m_queryCreatedFrame(0)
+			, m_queryDestroyedFrame(0)
 			, m_bGotCanceledPrematurely(false)
 			, m_bExceptionOccurred(false)
 			, m_longestEvaluatorName(0)
@@ -145,12 +148,15 @@ namespace UQS
 			// nothing
 		}
 
-		CHistoricQuery::CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
+		CHistoricQuery::CHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, int priority, CQueryHistoryManager* pOwningHistoryManager)
 			: m_pOwningHistoryManager(pOwningHistoryManager)
 			, m_queryID(queryID)
 			, m_parentQueryID(parentQueryID)
 			, m_querierName(szQuerierName)
+			, m_priority(priority)
 			, m_queryLifetimeStatus(EQueryLifetimeStatus::QueryIsNotCreatedYet)
+			, m_queryCreatedFrame(0)
+			, m_queryDestroyedFrame(0)
 			, m_bGotCanceledPrematurely(false)
 			, m_bExceptionOccurred(false)
 			, m_longestEvaluatorName(0)
@@ -163,18 +169,20 @@ namespace UQS
 			return m_debugRenderWorldPersistent;
 		}
 
-		void CHistoricQuery::OnQueryCreated()
+		CDebugMessageCollection& CHistoricQuery::GetDebugMessageCollection()
 		{
-			m_queryCreatedTimestamp = gEnv->pTimer->GetAsyncTime();
+			return m_debugMessageCollection;
+		}
+
+		void CHistoricQuery::OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp, const char* szQueryBlueprintName)
+		{
+			m_queryCreatedFrame = queryCreatedFrame;
+			m_queryCreatedTimestamp = queryCreatedTimestamp;
+			m_queryBlueprintName = szQueryBlueprintName;
 			m_queryLifetimeStatus = EQueryLifetimeStatus::QueryIsAlive;
 
 			// notify the top-level query-history-manager that the underlying query has just been created/started
 			m_pOwningHistoryManager->UnderlyingQueryJustGotCreated(m_queryID);
-		}
-
-		void CHistoricQuery::OnQueryBlueprintInstantiationStarted(const char* szQueryBlueprintName)
-		{
-			m_queryBlueprintName = szQueryBlueprintName;
 		}
 
 		void CHistoricQuery::OnQueryCanceled(const CQueryBase::SStatistics& finalStatistics)
@@ -190,6 +198,7 @@ namespace UQS
 
 		void CHistoricQuery::OnQueryDestroyed()
 		{
+			m_queryDestroyedFrame = gEnv->nMainFrameID;
 			m_queryDestroyedTimestamp = gEnv->pTimer->GetAsyncTime();
 			m_queryLifetimeStatus = EQueryLifetimeStatus::QueryIsDestroyed;
 
@@ -202,11 +211,6 @@ namespace UQS
 			m_exceptionMessage = szExceptionMessage;
 			m_bExceptionOccurred = true;
 			m_finalStatistics = finalStatistics;
-		}
-
-		void CHistoricQuery::OnWarningOccurred(const char* szWarningMessage)
-		{
-			m_warningMessages.push_back(szWarningMessage);
 		}
 
 		void CHistoricQuery::OnGenerationPhaseFinished(size_t numGeneratedItems, const CQueryBlueprint& queryBlueprint)
@@ -252,7 +256,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.nonWeightedScore = nonWeightedSingleScore;
 			result.weightedScore = weightedSingleScore;
 			result.status = SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndScoredTheItem;
@@ -263,7 +267,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem;
 		}
 
@@ -271,7 +275,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -280,7 +284,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricInstantEvaluatorResult& result = item.resultOfAllInstantEvaluators[instantEvaluatorIndex];
-			assert(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricInstantEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricInstantEvaluatorResult::EStatus::ExceptionOccurredInHimself;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -289,7 +293,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow;
 		}
 
@@ -297,7 +301,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.nonWeightedScore = nonWeightedSingleScore;
 			result.weightedScore = weightedSingleScore;
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndScoredTheItem;
@@ -308,14 +312,14 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::HasFinishedAndDiscardedTheItem;
 		}
 
 		void CHistoricQuery::OnDeferredEvaluatorGotAborted(size_t deferredEvaluatorIndex, size_t itemIndex, const char* szReasonForAbort)
 		{
 			SHistoricDeferredEvaluatorResult& result = m_items[itemIndex].resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::IsRunningNow);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::GotAborted;
 			result.furtherInformationAboutStatus = szReasonForAbort;
 		}
@@ -324,7 +328,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInFunctionCall;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -333,7 +337,7 @@ namespace UQS
 		{
 			SHistoricItem& item = m_items[itemIndex];
 			SHistoricDeferredEvaluatorResult& result = item.resultOfAllDeferredEvaluators[deferredEvaluatorIndex];
-			assert(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
+			CRY_ASSERT(result.status == SHistoricDeferredEvaluatorResult::EStatus::HasNotRunYet);
 			result.status = SHistoricDeferredEvaluatorResult::EStatus::ExceptionOccurredInHimself;
 			result.furtherInformationAboutStatus = szExceptionMessage;
 		}
@@ -345,8 +349,9 @@ namespace UQS
 
 		void CHistoricQuery::CreateItemDebugProxyViaItemFactoryForItem(const Client::IItemFactory& itemFactory, const void* pItem, size_t indexInGeneratedItemsForWhichToCreateTheProxy)
 		{
-			itemFactory.CreateItemDebugProxyForItem(pItem, m_itemDebugProxyFactory);
-			std::unique_ptr<CItemDebugProxyBase> freshlyCreatedItemProxy = m_itemDebugProxyFactory.GetAndForgetLastCreatedDebugItemRenderProxy();
+			CItemDebugProxyFactory itemDebugProxyFactory;
+			itemFactory.CreateItemDebugProxyForItem(pItem, itemDebugProxyFactory);
+			std::unique_ptr<CItemDebugProxyBase> freshlyCreatedItemProxy = itemDebugProxyFactory.GetAndForgetLastCreatedDebugItemRenderProxy();
 			m_items[indexInGeneratedItemsForWhichToCreateTheProxy].pDebugProxy = std::move(freshlyCreatedItemProxy);
 		}
 
@@ -497,6 +502,25 @@ namespace UQS
 			return EItemAnalyzeStatus::SurvivedAllEvaluators;
 		}
 
+		size_t CHistoricQuery::ComputeElapsedFramesFromQueryCreationToDestruction() const
+		{
+			switch (m_queryLifetimeStatus)
+			{
+			case EQueryLifetimeStatus::QueryIsNotCreatedYet:
+				return 0;
+
+			case EQueryLifetimeStatus::QueryIsAlive:
+				return (gEnv->nMainFrameID - m_queryCreatedFrame);
+
+			case EQueryLifetimeStatus::QueryIsDestroyed:
+				return (m_queryDestroyedFrame - m_queryCreatedFrame);
+
+			default:
+				CRY_ASSERT(0);
+				return 0;
+			}
+		}
+
 		CTimeValue CHistoricQuery::ComputeElapsedTimeFromQueryCreationToDestruction() const
 		{
 			// elapsed time
@@ -512,7 +536,7 @@ namespace UQS
 				return (m_queryDestroyedTimestamp - m_queryCreatedTimestamp);
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 				return CTimeValue();
 			}
 		}
@@ -579,7 +603,7 @@ namespace UQS
 
 				// accept all remaining item stati
 
-				assert(status == EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun || status == EItemAnalyzeStatus::StillBeingEvaluated || status == EItemAnalyzeStatus::SurvivedAllEvaluators);
+				CRY_ASSERT(status == EItemAnalyzeStatus::DisqualifiedDueToBadScoreAfterAllEvaluatorsHadRun || status == EItemAnalyzeStatus::StillBeingEvaluated || status == EItemAnalyzeStatus::SurvivedAllEvaluators);
 
 				//
 				// update the range of best/worst score
@@ -651,7 +675,7 @@ namespace UQS
 					break;
 
 				default:
-					assert(0);
+					CRY_ASSERT(0);
 				}
 
 				m_debugRenderWorldPersistent.DrawAllAddedPrimitivesAssociatedWithItem(i, evaluatorDrawMasks, color, bShowDetails);
@@ -732,7 +756,7 @@ namespace UQS
 			{
 				color = bHighlight ? Col_Red : Col_DeepPink;
 			}
-			else if (!m_warningMessages.empty())
+			else if (m_debugMessageCollection.HasSomeWarnings())
 			{
 				color = bHighlight ? Col_OrangeRed : Col_Orange;
 			}
@@ -749,13 +773,14 @@ namespace UQS
 
 			const CTimeValue elapsedTime = ComputeElapsedTimeFromQueryCreationToDestruction();
 			const bool bFoundTooFewItems = (m_finalStatistics.numItemsInFinalResultSet == 0) || (m_finalStatistics.numItemsInFinalResultSet < m_finalStatistics.numDesiredItems);
-			const bool bEncounteredSomeWarnings = !m_warningMessages.empty();
+			const bool bEncounteredSomeWarnings = m_debugMessageCollection.HasSomeWarnings();
 			const IQueryHistoryConsumer::SHistoricQueryOverview overview(
 				color,
 				m_querierName.c_str(),
 				m_queryID,
 				m_parentQueryID,
 				m_queryBlueprintName.c_str(),
+				m_priority,
 				numGeneratedItems,
 				numItemsInFinalResultSet,
 				elapsedTime,
@@ -784,6 +809,11 @@ namespace UQS
 				consumer.AddTextLineToCurrentHistoricQuery(color, "'%s' / '%s'", m_finalStatistics.querierName.c_str(), m_finalStatistics.queryBlueprintName.c_str());
 			}
 
+			// priority
+			{
+				consumer.AddTextLineToCurrentHistoricQuery(color, "Priority: %i", m_priority);
+			}
+
 			// exception message
 			{
 				if (m_bExceptionOccurred)
@@ -796,26 +826,18 @@ namespace UQS
 				}
 			}
 
-			// warning messages
+			// debug messages
 			{
-				if (m_warningMessages.empty())
-				{
-					consumer.AddTextLineToCurrentHistoricQuery(color, "No warnings");
-				}
-				else
-				{
-					consumer.AddTextLineToCurrentHistoricQuery(Col_Orange, "%i warnings:", (int)m_warningMessages.size());
-					for (const string& warningMessage : m_warningMessages)
-					{
-						consumer.AddTextLineToCurrentHistoricQuery(Col_Orange, "%s", warningMessage.c_str());
-					}
-				}
+				m_debugMessageCollection.EmitAllMessagesToQueryHistoryConsumer(consumer, color, Col_White, Col_Orange);
 			}
 
 			// elapsed frames and time, and timestamps of creation + destruction of the query
 			{
-				// elapsed frames
-				consumer.AddTextLineToCurrentHistoricQuery(color, "elapsed frames until result:  %i", (int)m_finalStatistics.totalElapsedFrames);
+				// elapsed frames (this is NOT the same as the *consumed* frames)
+				consumer.AddTextLineToCurrentHistoricQuery(color, "elapsed frames until result:  %i", (int)ComputeElapsedFramesFromQueryCreationToDestruction());
+
+				// consumed frames
+				consumer.AddTextLineToCurrentHistoricQuery(color, "consumed frames until result: %i", (int)m_finalStatistics.totalConsumedFrames);
 
 				// elapsed time (this is NOT the same as the *consumed* time)
 				const float elapsedTimeInMS = ComputeElapsedTimeFromQueryCreationToDestruction().GetMilliSeconds();
@@ -829,10 +851,10 @@ namespace UQS
 
 				int hours, minutes, seconds, milliseconds;
 
-				UQS::Shared::CTimeValueUtil::Split(m_queryCreatedTimestamp, &hours, &minutes, &seconds, &milliseconds);
+				m_queryCreatedTimestamp.Split(&hours, &minutes, &seconds, &milliseconds);
 				consumer.AddTextLineToCurrentHistoricQuery(color, "timestamp query created:      %i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
 
-				UQS::Shared::CTimeValueUtil::Split(m_queryDestroyedTimestamp, &hours, &minutes, &seconds, &milliseconds);
+				m_queryDestroyedTimestamp.Split(&hours, &minutes, &seconds, &milliseconds);
 				consumer.AddTextLineToCurrentHistoricQuery(color, "timestamp query destroyed:    %i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
 			}
 
@@ -911,7 +933,7 @@ namespace UQS
 
 		void CHistoricQuery::FillQueryHistoryConsumerWithDetailedInfoAboutItem(IQueryHistoryConsumer& consumer, size_t itemIndex) const
 		{
-			assert(itemIndex < m_items.size());
+			CRY_ASSERT(itemIndex < m_items.size());
 
 			const SHistoricItem& item = m_items[itemIndex];
 
@@ -1100,20 +1122,20 @@ namespace UQS
 			ar(m_parentQueryID, "m_parentQueryID");
 			ar(m_querierName, "m_querierName");
 			ar(m_queryBlueprintName, "m_queryBlueprintName");
+			ar(m_priority, "m_priority");
 			ar(m_queryLifetimeStatus, "m_queryLifetimeStatus");
 			ar(m_queryCreatedTimestamp, "m_queryCreatedTimestamp");
 			ar(m_queryDestroyedTimestamp, "m_queryDestroyedTimestamp");
 			ar(m_bGotCanceledPrematurely, "m_bGotCanceledPrematurely");
 			ar(m_bExceptionOccurred, "m_bExceptionOccurred");
 			ar(m_exceptionMessage, "m_exceptionMessage");
-			ar(m_warningMessages, "m_warningMessages");
 			ar(m_debugRenderWorldPersistent, "m_debugRenderWorldPersistent");
+			ar(m_debugMessageCollection, "m_debugMessageCollection");
 			ar(m_items, "m_items");
 			ar(m_instantEvaluatorNames, "m_instantEvaluatorNames");
 			ar(m_deferredEvaluatorNames, "m_deferredEvaluatorNames");
 			ar(m_longestEvaluatorName, "m_longestEvaluatorName");
 			ar(m_finalStatistics, "m_finalStatistics");
-			ar(m_itemDebugProxyFactory, "m_itemDebugProxyFactory");		// notice: it wouldn't even be necessary to serialize the CItemDebugProxyFactory as its only member variables is just used for intermediate storage and will always be set to its default value at the time of serialization
 		}
 
 		//===================================================================================
@@ -1121,6 +1143,12 @@ namespace UQS
 		// CQueryHistory
 		//
 		//===================================================================================
+
+		void CQueryHistory::SHistoryData::Serialize(Serialization::IArchive& ar)
+		{
+			ar(metaData, "m_metaData");			// "m_" prefix is for backwards compatibility when loading a previously saved history
+			ar(historicQueries, "m_history");	// ditto
+		}
 
 		CQueryHistory::CQueryHistory()
 		{
@@ -1131,26 +1159,26 @@ namespace UQS
 		{
 			if (this != &other)
 			{
-				m_history = std::move(other.m_history);
-				m_metaData = std::move(other.m_metaData);
+				m_historyData = std::move(other.m_historyData);
+				// bypass m_serializationMutex
 			}
 			return *this;
 		}
 
-		HistoricQuerySharedPtr CQueryHistory::AddNewHistoryEntry(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, CQueryHistoryManager* pOwningHistoryManager)
+		HistoricQuerySharedPtr CQueryHistory::AddNewHistoryEntry(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, int priority, CQueryHistoryManager* pOwningHistoryManager)
 		{
 			//
 			// insert the new historic query into the correct position in the array such that children will always reside somewhere after their parent
 			// (this gives us the desired depth-first traversal when scrolling through all historic queries)
 			//
 
-			auto insertPos = m_history.end();
+			auto insertPos = m_historyData.historicQueries.end();
 
 			if (parentQueryID.IsValid())
 			{
 				// search backwards from the end as this will find the insert position quicker
 				// (this leverages the fact that child queries will often get started at roughly the same time as their parent, thus having them reside quite at the end)
-				for (auto rit = m_history.rbegin(), rendIt = m_history.rend(); rit != rendIt; ++rit)
+				for (auto rit = m_historyData.historicQueries.rbegin(), rendIt = m_historyData.historicQueries.rend(); rit != rendIt; ++rit)
 				{
 					const CHistoricQuery* pCurrentHistoricQuery = rit->get();
 
@@ -1163,31 +1191,31 @@ namespace UQS
 				}
 			}
 
-			HistoricQuerySharedPtr pNewEntry(new CHistoricQuery(queryID, szQuerierName, parentQueryID, pOwningHistoryManager));
-			insertPos = m_history.insert(insertPos, std::move(pNewEntry));
+			HistoricQuerySharedPtr pNewEntry(new CHistoricQuery(queryID, szQuerierName, parentQueryID, priority, pOwningHistoryManager));
+			insertPos = m_historyData.historicQueries.insert(insertPos, std::move(pNewEntry));
 			return *insertPos;
 		}
 
 		void CQueryHistory::Clear()
 		{
-			m_history.clear();
+			m_historyData.historicQueries.clear();
 			// keep m_metaData
 		}
 
 		size_t CQueryHistory::GetHistorySize() const
 		{
-			return m_history.size();
+			return m_historyData.historicQueries.size();
 		}
 
 		const CHistoricQuery& CQueryHistory::GetHistoryEntryByIndex(size_t index) const
 		{
-			assert(index < m_history.size());
-			return *m_history[index];
+			CRY_ASSERT(index < m_historyData.historicQueries.size());
+			return *m_historyData.historicQueries[index];
 		}
 
 		const CHistoricQuery* CQueryHistory::FindHistoryEntryByQueryID(const CQueryID& queryID) const
 		{
-			for (const HistoricQuerySharedPtr& pHistoricEntry : m_history)
+			for (const HistoricQuerySharedPtr& pHistoricEntry : m_historyData.historicQueries)
 			{
 				if (pHistoricEntry->GetQueryID() == queryID)
 				{
@@ -1201,7 +1229,7 @@ namespace UQS
 		{
 			size_t memoryUsed = 0;
 
-			for (const HistoricQuerySharedPtr& q : m_history)
+			for (const HistoricQuerySharedPtr& q : m_historyData.historicQueries)
 			{
 				memoryUsed += q->GetRoughMemoryUsage();
 			}
@@ -1211,13 +1239,114 @@ namespace UQS
 
 		void CQueryHistory::SetArbitraryMetaDataForSerialization(const char* szKey, const char* szValue)
 		{
-			m_metaData[szKey] = szValue;
+			m_historyData.metaData[szKey] = szValue;
 		}
 
-		void CQueryHistory::Serialize(Serialization::IArchive& ar)
+		bool CQueryHistory::SerializeToXmlFile(const char* szXmlFilePath, string& error) const
 		{
-			ar(m_metaData, "m_metaData");
-			ar(m_history, "m_history");
+			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
+			if (pArchiveHost->SaveXmlFile(szXmlFilePath, Serialization::SStruct(m_historyData), "UQSQueryHistory"))
+			{
+				return true;
+			}
+			else
+			{
+				error = "Serialization::IArchiveHost::SaveXmlFile() failed for some reason";
+				return false;
+			}
+		}
+
+		bool CQueryHistory::DeserializeFromXmlFile(const char* szXmlFilePath, string& error)
+		{
+			Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
+			if (pArchiveHost->LoadXmlFile(Serialization::SStruct(m_historyData), szXmlFilePath))
+			{
+				return true;
+			}
+			else
+			{
+				error = "Serialization::IArchiveHost::LoadXmlFile() failed for some reason (file not found?)";
+				return false;
+			}
+		}
+
+		bool CQueryHistory::IsHistoricQueryAndAllParentQueriesFinished(const CHistoricQuery& historicQuery) const
+		{
+			if (g_pHub->GetQueryManager().FindQueryByQueryID(historicQuery.GetQueryID()))
+				return false;
+
+			const CQueryID& parentQueryID = historicQuery.GetParentQueryID();
+			if (!parentQueryID.IsValid())
+				return true;
+
+			// recursively walk up the query tree
+			const CHistoricQuery* pParentHistoricQuery = FindHistoryEntryByQueryID(parentQueryID);
+			if (pParentHistoricQuery)	// this may fail if the history-so-far gets cleared before a new child query gets added to it (perfectly valid use-case)
+			{
+				if (!IsHistoricQueryAndAllParentQueriesFinished(*pParentHistoricQuery))
+					return false;
+			}
+
+			return true;
+		}
+
+		DECLARE_JOB("UQSHistory", TAsyncXmlSerializeJob, CQueryHistory::AsyncXmlSerializeJob);
+		void CQueryHistory::AsyncXmlSerializeJob(string xmlFilePath, SHistoryData snapshot)
+		{
+			if (m_serializationMutex.TryLock())
+			{
+#if !defined(EXCLUDE_NORMAL_LOG)
+				const CTimeValue timestampBefore = gEnv->pTimer->GetAsyncTime();
+#endif
+				Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
+				if (pArchiveHost->SaveXmlFile(xmlFilePath.c_str(), Serialization::SStruct(snapshot), "UQSQueryHistory"))
+				{
+#if !defined(EXCLUDE_NORMAL_LOG)
+					const CTimeValue timestampAfter = gEnv->pTimer->GetAsyncTime();
+					const float elapsedSeconds = (timestampAfter - timestampBefore).GetSeconds();
+					CryLogAlways("[UQS] Successfully dumped query history containing %i queries to '%s' in %.2f seconds", (int)snapshot.historicQueries.size(), xmlFilePath.c_str(), elapsedSeconds);
+#endif
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[UQS] Could not serialize the live query history to xml file '%s' (Serialization::IArchiveHost::SaveXmlFile() failed for some reason)", xmlFilePath.c_str());
+				}
+				m_serializationMutex.Unlock();
+			}
+			else
+			{
+				CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[UQS] CQueryHistory::StartAsyncXmlSerializeJob: async serializing still in progress - please try again in a few seconds.");
+			}
+		}
+
+		void CQueryHistory::StartAsyncXmlSerializeJob(const char* szXmlFilePath)
+		{
+			string xmlFilePath(szXmlFilePath);
+			SHistoryData snapshot;
+			snapshot.metaData = m_historyData.metaData;
+
+			// snap-shoot only finished queries and also only if their potential parent (and grand-parent, etc.) have also finished
+			// (we might get race-conditions otherwise or end up with dangling parent query IDs in children)
+			for (const HistoricQuerySharedPtr& pHistoricQuery : m_historyData.historicQueries)
+			{
+				if (IsHistoricQueryAndAllParentQueriesFinished(*pHistoricQuery))
+				{
+					snapshot.historicQueries.push_back(pHistoricQuery);
+				}
+			}
+
+			TAsyncXmlSerializeJob job(xmlFilePath, snapshot);
+			job.SetClassInstance(this);
+			job.Run(JobManager::eStreamPriority);
+			CryLogAlways("[UQS] Just added a new job to serialize the live query history. We'll let you know once that job is finished.");
+		}
+
+		void CQueryHistory::PrintStatisticsToConsole(const char* szMessagePrefix) const
+		{
+#if !defined(EXCLUDE_NORMAL_LOG)
+			size_t totalMemoryUsage = GetRoughMemoryUsage();
+			CryLogAlways("%s%i queries in history, %.2fkb (%.2fmb) memory usage", szMessagePrefix, (int)m_historyData.historicQueries.size(), (float)totalMemoryUsage / 1024.0f, (float)totalMemoryUsage / (1024.0f * 1024.0f));
+#endif
 		}
 
 	}

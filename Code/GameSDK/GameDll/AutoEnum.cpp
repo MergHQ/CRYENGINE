@@ -45,7 +45,7 @@ TBitfield AutoEnum_GetBitfieldFromString(const char* inString, const char** inAr
 			{
 				if (0 == stricmp(inArray[i] + skipChars, gotToken))
 				{
-					CRY_ASSERT_MESSAGE((reply & BIT(i)) == 0, string().Format("Bit '%s' already turned on! Does it feature more than once in string '%s'?", gotToken, inString));
+					CRY_ASSERT((reply & BIT(i)) == 0, string().Format("Bit '%s' already turned on! Does it feature more than once in string '%s'?", gotToken, inString));
 
 #if DO_PARSE_BITFIELD_STRING_LOGS
 					CryLog("AutoEnum_GetBitfieldFromString: Token = '%s' = BIT(%d) = %d, remaining string = '%s'", gotToken, i, BIT(i), foundAtIndex ? szStartFrom : "");
@@ -56,7 +56,7 @@ TBitfield AutoEnum_GetBitfieldFromString(const char* inString, const char** inAr
 					break;
 				}
 			}
-			CRY_ASSERT_MESSAGE(bDone, string().Format("No flag called '%s' in list", gotToken));
+			CRY_ASSERT(bDone, string().Format("No flag called '%s' in list", gotToken));
 		}
 		while (foundAtIndex);
 	}
@@ -95,7 +95,7 @@ bool AutoEnum_GetEnumValFromString(const char* inString, const char** inArray, i
 				break;
 			}
 		}
-		CRY_ASSERT_MESSAGE(done, string().Format("No flag called '%s' in enum list", inString));
+		CRY_ASSERT(done, string().Format("No flag called '%s' in enum list", inString));
 	}
 
 	return done;

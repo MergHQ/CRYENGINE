@@ -4,8 +4,6 @@
 #include "ImageGif.h"
 #include <CrySystem/File/CryFile.h>
 
-//---------------------------------------------------------------------------
-
 #define NEXTBYTE        (*ptr++)
 #define IMAGESEP        0x2c
 #define GRAPHIC_EXT     0xf9
@@ -22,6 +20,7 @@ struct SGIFRGBcolor
 {
 	uint8 red, green, blue;
 };
+
 struct SGIFRGBPixel
 {
 	uint8 red, green, blue, alpha;
@@ -75,12 +74,10 @@ static int log2(int);
  * three bytes, compute the bit Offset into our 24-bit chunk, shift to
  * bring the desired code to the bottom, then mask it off and return it.
  */
-inline int ReadCode(void)
+inline int ReadCode()
 {
-	int RawCode, ByteOffset;
-
-	ByteOffset = BitOffset / 8;
-	RawCode = Raster[ByteOffset] + (0x100 * Raster[ByteOffset + 1]);
+	int ByteOffset = BitOffset / 8;
+	int RawCode = Raster[ByteOffset] + (0x100 * Raster[ByteOffset + 1]);
 
 	if (CodeSize >= 8)
 		RawCode += (0x10000 * Raster[ByteOffset + 2]);
@@ -322,7 +319,7 @@ bool CImageGif::Load(const string& fileName, CImageEx& outImage)
 	 * reading some files.
 	 */
 
-	/* Start reading the raster data. First we get the intial code size
+	/* Start reading the raster data. First we get the initial code size
 	 * and compute decompressor constant values, based on this code size.
 	 */
 
@@ -463,4 +460,3 @@ cleanup:
 	if (OutCode) { CHK(delete[] OutCode); }
 	return ret;
 }
-

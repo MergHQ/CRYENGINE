@@ -29,7 +29,18 @@ struct UV
 
 struct Face
 {
-	uint32 idx[3];
+	Face(uint32 i0, uint32 i1, uint32 i2)
+		: vertex{i0, i1, i2}
+		, normal{i0, i1, i2}
+		, texCoord{i0, i1, i2}
+		, color{i0, i1, i2}
+	{
+	}
+
+	uint32 vertex[3];
+	uint32 normal[3];
+	uint32 texCoord[3];
+	uint32 color[3];
 };
 
 struct Color
@@ -88,8 +99,9 @@ const float kTangentDelta = 0.01f;
 const float kAspectRatio = 1.777778f;
 const int kReserveCount = 7;             // x,y,z,rot_x,rot_y,rot_z,fov
 const string kMasterCameraName = "MasterCamera";
-}   // namespace
-}
+
+} // unnamed namespace
+} // namespace Export
 
 struct EDITOR_COMMON_API SExportMesh : public _i_reference_target_t
 {
@@ -106,7 +118,6 @@ public:
 
 struct EDITOR_COMMON_API SExportObject : public _i_reference_target_t
 {
-public:
 	SExportObject(const char* pName);
 
 	int                           GetVertexCount() const    { return m_vertices.size(); }
@@ -131,9 +142,12 @@ public:
 	Export::EEntityObjectType     GetObjectEntityType() const                               { return entityType; }
 	size_t                        GetEntityAnimationDataCount() const                       { return m_entityAnimData.size(); }
 	const Export::EntityAnimData* GetEntityAnimationData(int index) const                   { return &m_entityAnimData[index]; }
-	void                          AddEntityAnimationData(Export::EntityAnimData entityData) { m_entityAnimData.push_back(entityData); };
+	void                          AddEntityAnimationData(Export::EntityAnimData entityData) { m_entityAnimData.push_back(entityData); }
 	void                          SetLastPtr(CBaseObject* pObject)                          { m_pLastObject = pObject; }
 	CBaseObject*                  GetLastObjectPtr()                                        { return m_pLastObject; }
+
+	// Updates meshes topology so that faces can have shared vertices, normals, and texture coordinates, if any.
+	void Weld();
 
 	Export::Quat                         rot;
 	Export::Vector3D                     pos;
@@ -149,7 +163,6 @@ public:
 
 	int                       nParent;
 	size_t                    m_MeshHash;
-	bool                      bIsCameraTarget;
 	char                      name[EXP_NAMESIZE];
 	char                      materialName[EXP_NAMESIZE];
 	Export::EEntityObjectType entityType;
@@ -166,4 +179,3 @@ struct EDITOR_COMMON_API SExportData
 
 	std::vector<_smart_ptr<SExportObject>> m_objects;
 };
-

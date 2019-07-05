@@ -5,7 +5,7 @@
 #include "ModelAnimationSet.h"
 #include "ModelMesh.h"
 #include <CrySystem/IStreamEngine.h>
-#include "ParamLoader.h"
+#include "ChrParamLoader.h"
 
 class CSkin;
 class CDefaultSkeleton;
@@ -21,10 +21,7 @@ public:
 	}
 	~CryCHRLoader()
 	{
-#ifndef _RELEASE
-		if (m_pStream)
-			__debugbreak();
-#endif
+		CRY_ASSERT(m_pStream == nullptr);
 		ClearModel();
 	}
 

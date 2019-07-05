@@ -15,14 +15,15 @@
 #include "Model.h"
 #include <CryString/StringUtils.h>
 #include <CryString/CryPath.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 int CAnimationManager::GetGlobalIDbyFilePath_CAF(const char* szAnimFileName) const
 {
 	const int id = m_AnimationMapCAF.GetValue(szAnimFileName);
 	if (id >= 0)
 	{
-		assert(size_t(id) < m_arrGlobalCAF.size());
-		assert(!stricmp(m_arrGlobalCAF[id].GetFilePath(), szAnimFileName));
+		CRY_ASSERT(size_t(id) < m_arrGlobalCAF.size());
+		CRY_ASSERT(!stricmp(m_arrGlobalCAF[id].GetFilePath(), szAnimFileName));
 		return id;
 	}
 	return -1;
@@ -37,7 +38,7 @@ int CAnimationManager::GetGlobalIDbyFilePath_AIM(const char* szAnimFilePath) con
 	{
 		if (m_arrGlobalAIM[id].GetFilePathCRC32() == crc32)
 		{
-			assert(!stricmp(m_arrGlobalAIM[id].GetFilePath(), szAnimFilePath));
+			CRY_ASSERT(!stricmp(m_arrGlobalAIM[id].GetFilePath(), szAnimFilePath));
 			return id;
 		}
 	}
@@ -48,7 +49,7 @@ int CAnimationManager::GetGlobalIDbyFilePath_AIM(const char* szAnimFilePath) con
 int CAnimationManager::GetGlobalIDbyFilePath_LMG(const char* szAnimFilePath) const
 {
 	const int id = GetGlobalIDbyFilePathCRC_LMG(CCrc32::ComputeLowercase(szAnimFilePath));
-	assert(id == -1 || stricmp(m_arrGlobalLMG[id].GetFilePath(), szAnimFilePath) == 0);
+	CRY_ASSERT(id == -1 || stricmp(m_arrGlobalLMG[id].GetFilePath(), szAnimFilePath) == 0);
 
 	return id;
 }
@@ -143,7 +144,7 @@ bool CAnimationManager::LoadAnimationTCB(int nAnimId, DynArray<CControllerTCB>& 
 		return 0;
 	const CDefaultSkeleton* pDefaultSkeleton = (const CDefaultSkeleton*)pIDefaultSkeleton;
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	GlobalAnimationHeaderCAF& rGlobalAnim = m_arrGlobalCAF[nAnimId];
 	int32 nStartKey = pCGA->m_start;
@@ -157,8 +158,7 @@ bool CAnimationManager::LoadAnimationTCB(int nAnimId, DynArray<CControllerTCB>& 
 	rGlobalAnim.m_fTotalDuration = rGlobalAnim.m_fEndSec - rGlobalAnim.m_fStartSec;
 
 	uint32 numCtrl = rGlobalAnim.m_nControllers;
-	assert(numCtrl == 0);
-	if (numCtrl)
+	if (!CRY_VERIFY(numCtrl == 0))
 		return true;
 
 	uint32 numController = 0;
@@ -236,14 +236,14 @@ const IAnimEventList* CAnimationManager::GetAnimEventList(const char* animationF
 	const int32 globalCafId = GetGlobalIDbyFilePath_CAF(animationFilePath);
 	if (0 <= globalCafId)
 	{
-		assert(globalCafId < (int32)(m_arrGlobalCAF.size()));
+		CRY_ASSERT(globalCafId < (int32)(m_arrGlobalCAF.size()));
 		return &m_arrGlobalCAF[globalCafId].m_AnimEventsCAF;
 	}
 
 	const int32 globalLmgId = GetGlobalIDbyFilePath_LMG(animationFilePath);
 	if (0 <= globalLmgId)
 	{
-		assert(globalLmgId < (int32)(m_arrGlobalLMG.size()));
+		CRY_ASSERT(globalLmgId < (int32)(m_arrGlobalLMG.size()));
 		return &m_arrGlobalLMG[globalLmgId].m_AnimEventsLMG;
 	}
 
@@ -632,7 +632,7 @@ EReloadCAFResult CAnimationManager::ReloadCAF(const char* szFilePathCAF)
 		GlobalAnimationHeaderAIM& rAIM = m_arrGlobalAIM[id];
 		if (rAIM.m_FilePathCRC32 == nCRC32)
 		{
-			assert(!strcmp(rAIM.GetFilePath(), szFilePathCAF));
+			CRY_ASSERT(!strcmp(rAIM.GetFilePath(), szFilePathCAF));
 			rAIM.m_nControllers = 0;
 			int status = rAIM.LoadAIM();
 			if (status)
@@ -691,7 +691,7 @@ EReloadCAFResult CAnimationManager::ReloadCAF(const char* szFilePathCAF)
 		GlobalAnimationHeaderCAF& rCAF = m_arrGlobalCAF[id];
 		if (rCAF.m_FilePathCRC32 == nCRC32)
 		{
-			assert(!strcmp(rCAF.GetFilePath(), szFilePathCAF));
+			CRY_ASSERT(!strcmp(rCAF.GetFilePath(), szFilePathCAF));
 			rCAF.m_nControllers = 0;
 			int status = rCAF.LoadCAF();
 			if (status)
@@ -740,7 +740,7 @@ int CAnimationManager::ReloadLMG(const char* szFilePath)
 		GlobalAnimationHeaderLMG& rBlendSpace = m_arrGlobalLMG[id];
 		if (rBlendSpace.m_FilePathCRC32 == nCRC32)
 		{
-			assert(!strcmp(rBlendSpace.GetFilePath(), szFilePath));
+			CRY_ASSERT(!strcmp(rBlendSpace.GetFilePath(), szFilePath));
 			bool status = false;
 #ifdef EDITOR_PCDEBUGCODE
 			stack_string path = szFilePath;
@@ -823,7 +823,7 @@ void CAnimationManager::UnloadAnimationCAF(GlobalAnimationHeaderCAF& rCAF)
 	if (rCAF.m_nControllers2 == 0)
 		return;
 
-	assert(rCAF.GetControllersCount());
+	CRY_ASSERT(rCAF.GetControllersCount());
 
 	rCAF.ClearControllers();
 
@@ -838,7 +838,7 @@ void CAnimationManager::UnloadAnimationCAF(GlobalAnimationHeaderCAF& rCAF)
 
 void CAnimationManager::UnloadAnimationAIM(int nGLobalAnimID)
 {
-	assert(m_arrGlobalAIM[nGLobalAnimID].GetControllersCount());
+	CRY_ASSERT(m_arrGlobalAIM[nGLobalAnimID].GetControllersCount());
 	m_arrGlobalAIM[nGLobalAnimID].ClearControllers();
 }
 
@@ -873,18 +873,14 @@ bool AnimSearchHelper::AddAnimation(uint32 crc, uint32 gahIndex)
 void AnimSearchHelper::AddAnimation(const string& path, uint32 gahIndex)
 {
 	stack_string pathDir = PathUtil::GetPathWithoutFilename(path);
-	PathUtil::ToUnixPath(pathDir);
-	if (strcmp(pathDir, "animations/human/male/behavior/fear/") == 0)
-		int A = 0;
-	if (strcmp(pathDir, "animations\\human\\male\\behavior\\fear\\") == 0)
-		int A = 0;
+	stack_string const unixPath = PathUtil::ToUnixPath(pathDir);
 
-	uint32 crc = CCrc32::ComputeLowercase(pathDir);
+	uint32 crc = CCrc32::ComputeLowercase(unixPath);
 	if (AddAnimation(crc, gahIndex))
 	{
-		for (int32 lastSlashPos = pathDir.rfind('/'); lastSlashPos >= 0; lastSlashPos = pathDir.rfind('/', lastSlashPos - 1))
+		for (int32 lastSlashPos = unixPath.rfind('/'); lastSlashPos >= 0; lastSlashPos = unixPath.rfind('/', lastSlashPos - 1))
 		{
-			uint32 parentDirCRC = CCrc32::ComputeLowercase(pathDir, size_t(lastSlashPos + 1), 0);
+			uint32 parentDirCRC = CCrc32::ComputeLowercase(unixPath, size_t(lastSlashPos + 1), 0);
 			TSubFolderCrCVector* pSubFolderVec = NULL;
 			TSubFoldersMap::iterator parentFolderIter = m_SubFoldersMap.find(parentDirCRC);
 			if (parentFolderIter == m_SubFoldersMap.end())
@@ -997,7 +993,6 @@ void CAnimationManager::DebugAnimUsage(uint32 printtxt)
 		{
 			m_arrGlobalHeaderDBA[b].m_nEmpty = 0;
 			const char* pName = m_arrGlobalHeaderDBA[b].m_strFilePathDBA;
-			uint32 nDBACRC32 = m_arrGlobalHeaderDBA[b].m_FilePathDBACRC32;
 			uint32 nUsedAssets = m_arrGlobalHeaderDBA[b].m_nUsedAnimations;
 			size_t nSizeOfDBA = m_arrGlobalHeaderDBA[b].SizeOf_DBA();
 			uint32 nLastUsedTimeSec = m_arrGlobalHeaderDBA[b].m_nLastUsedTimeDelta / 1000;

@@ -17,31 +17,11 @@ namespace Internal
 namespace FilterUtils
 {
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
 template<class T>
 inline bool QSet_intersects(const QSet<T>& one, const QSet<T>& other)
 {
 	return one.intersects(other);
 }
-#else
-template<class T>
-inline bool QSet_intersects(const QSet<T>& one, const QSet<T>& other)
-{
-	const bool otherIsBigger = other.size() > one.size();
-	const QSet<T>& smallestSet = otherIsBigger ? one : other;
-	const QSet<T>& biggestSet = otherIsBigger ? other : one;
-	typename QSet<T>::const_iterator i = smallestSet.cbegin();
-	typename QSet<T>::const_iterator e = smallestSet.cend();
-
-	while (i != e)
-	{
-		if (biggestSet.contains(*i))
-			return true;
-		++i;
-	}
-	return false;
-}
-#endif
 
 struct SDirectoryIncluded
 {
@@ -179,4 +159,3 @@ inline SCheckDirectoryResult CheckDirectory(
 } // namespace FilterUtils
 } // namespace Internal
 } // namespace FileSystem
-

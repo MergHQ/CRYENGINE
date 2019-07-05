@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "LensFlareEditor.h"
+
+#include "IEditorImpl.h"
 #include "LensFlareView.h"
 #include "LensFlareAtomicList.h"
 #include "LensFlareElementTree.h"
@@ -11,10 +13,17 @@
 #include "LensFlareUndo.h"
 #include "LensFlareLightEntityTree.h"
 #include "LensFlareReferenceTree.h"
-#include "Controls/PropertyCtrl.h"
+#include "LogFile.h"
 #include "Objects/EntityObject.h"
-#include "Util/Clipboard.h"
-#include "Dialogs/QGroupDialog.h"
+
+#include <Controls/PropertyCtrl.h>
+#include <Controls/QuestionDialog.h>
+#include <Dialogs/QGroupDialog.h>
+#include <IObjectManager.h>
+#include <Util/Clipboard.h>
+#include <Util/FileUtil.h>
+
+#include <QDialogButtonBox>
 
 CLensFlareEditor* CLensFlareEditor::s_pLensFlareEditor = NULL;
 const char* CLensFlareEditor::s_pLensFlareEditorClassName = "Lens Flare Editor";
@@ -108,14 +117,18 @@ void CLensFlareEditor::CreatePanes()
 {
 	const CSize basicMinimumSize(16, 16);
 	CXTPDockingPane* pElementTreePane = CreatePane(_T("Element Tree"), basicMinimumSize, IDW_LENSFLARE_ELEMENTTREE_PANE, kDefaultRect, xtpPaneDockBottom);
-	CXTPDockingPane* pViewPane = CreatePane(_T("Preview"), basicMinimumSize, IDW_LENSFLARE_PREVIEW_PANE, kDefaultRect, xtpPaneDockTop, pElementTreePane);
-	CXTPDockingPane* pBasicSetPane = CreatePane(_T("Basic Set"), basicMinimumSize, IDW_LENSFLARE_ATOMICLIST_PANE, kDefaultRect, xtpPaneDockLeft, pElementTreePane);
+	CreatePane(_T("Preview"), basicMinimumSize, IDW_LENSFLARE_PREVIEW_PANE, kDefaultRect, xtpPaneDockTop, pElementTreePane);
+
 #ifndef DISABLE_REFERENCETREE
-	CXTPDockingPane* pReferencePane = CreatePane(_T("Reference Tree"), basicMinimumSize, IDW_LENSFLARE_REFERENCETREE_PANE, kDefaultRect, xtpPaneDockRight, pBasicSetPane);
+	CXTPDockingPane* pBasicSetPane = CreatePane(_T("Basic Set"), basicMinimumSize, IDW_LENSFLARE_ATOMICLIST_PANE, kDefaultRect, xtpPaneDockLeft, pElementTreePane);
+	CreatePane(_T("Reference Tree"), basicMinimumSize, IDW_LENSFLARE_REFERENCETREE_PANE, kDefaultRect, xtpPaneDockRight, pBasicSetPane);
+#else
+	CreatePane(_T("Basic Set"), basicMinimumSize, IDW_LENSFLARE_ATOMICLIST_PANE, kDefaultRect, xtpPaneDockLeft, pElementTreePane);
 #endif
-	CXTPDockingPane* pLensFlareTreePane = CreatePane(_T("Lens Flare Tree"), basicMinimumSize, IDW_LENSFLARE_TREE_PANE, CRect(0, 0, 200, 600), xtpPaneDockLeft);
+
+	CreatePane(_T("Lens Flare Tree"), basicMinimumSize, IDW_LENSFLARE_TREE_PANE, CRect(0, 0, 200, 600), xtpPaneDockLeft);
 	CXTPDockingPane* pPropertyPane = CreatePane(_T("Properties"), basicMinimumSize, IDW_LENSFLARE_PROPERTY_PANE, CRect(0, 0, 200, 600), xtpPaneDockRight);
-	CXTPDockingPane* pLensFlareEntityTreePane = CreatePane(_T("Light Entities"), basicMinimumSize, IDW_LENSFLARE_LIGHTENTITYTREE_PANE, CRect(0, 0, 200, 200), xtpPaneDockBottom, pPropertyPane);
+	CreatePane(_T("Light Entities"), basicMinimumSize, IDW_LENSFLARE_LIGHTENTITYTREE_PANE, CRect(0, 0, 200, 200), xtpPaneDockBottom, pPropertyPane);
 }
 
 CXTPDockingPane* CLensFlareEditor::CreatePane(const string& name, const CSize& minSize, UINT nID, CRect rc, XTPDockingPaneDirection direction, CXTPDockingPaneBase* pNeighbour)
@@ -199,13 +212,13 @@ void CLensFlareEditor::DoDataExchange(CDataExchange* pDX)
 
 class CLensFlareEditorClass : public IViewPaneClass
 {
-	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return CLensFlareEditor::s_pLensFlareEditorClassName; };
-	virtual const char*    Category()        override { return "Database"; };
+	virtual ESystemClassID SystemClassID()   override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return CLensFlareEditor::s_pLensFlareEditorClassName; }
+	virtual const char*    Category()        override { return "Database"; }
 	virtual const char*    GetMenuPath()     override { return ""; }
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CLensFlareEditor); };
-	virtual const char*    GetPaneTitle()    override { return CLensFlareEditor::s_pLensFlareEditorClassName; };
-	virtual bool           SinglePane()      override { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CLensFlareEditor); }
+	virtual const char*    GetPaneTitle()    override { return CLensFlareEditor::s_pLensFlareEditorClassName; }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CLensFlareEditorClass)
@@ -699,9 +712,9 @@ void CLensFlareEditor::OnSelectAssignedObjects()
 	if (assignedObjects.empty())
 		return;
 
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 	for (int i = 0, iAssignedObjectsSize(assignedObjects.size()); i < iAssignedObjectsSize; ++i)
-		GetIEditorImpl()->SelectObject(assignedObjects[i]);
+		GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(assignedObjects[i]);
 }
 
 void CLensFlareEditor::OnGetFlareFromSelection()
@@ -733,7 +746,6 @@ void CLensFlareEditor::OnGetFlareFromSelection()
 
 void CLensFlareEditor::OnTvnBeginlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMTVDISPINFO pTVDispInfo = reinterpret_cast<LPNMTVDISPINFO>(pNMHDR);
 	HTREEITEM hItem = GetTreeCtrl().GetSelectedItem();
 
 	if (hItem == GetRootItem())
@@ -815,7 +827,6 @@ void CLensFlareEditor::ChangeGroupName(HTREEITEM hItem, const string& newGroupNa
 	if (hItem == NULL || newGroupName.IsEmpty())
 		return;
 
-	bool bRenamed = false;
 	string fullGroupName;
 	if (!GetFullLensFlareItemName(hItem, fullGroupName))
 		return;
@@ -1037,7 +1048,6 @@ void CLensFlareEditor::GetAllLensFlareItems(std::vector<HTREEITEM>& outItemList)
 		GetLensFlareItemsUnderSpecificItem(hItem, outItemList);
 		hItem = GetTreeCtrl().GetNextItem(hItem, TVGN_NEXT);
 	}
-	;
 }
 
 void CLensFlareEditor::GetLensFlareItemsUnderSpecificItem(HTREEITEM hItem, std::vector<HTREEITEM>& outItemList) const
@@ -1117,7 +1127,6 @@ void CLensFlareEditor::OnRemoveItem()
 			HTREEITEM hItem = stl::find_in_map(m_itemsToTree, pSelectedLensFlareItem, (HTREEITEM)0);
 			if (hItem)
 			{
-				CLensFlareItem* pGroupItemAsTreeItemData = (CLensFlareItem*)GetTreeCtrl().GetItemData(hItem);
 				UpdateLensOpticsNames(pSelectedLensFlareItem->GetFullName(), "");
 				GetTreeCtrl().DeleteItem(hItem);
 				m_itemsToTree.erase(pSelectedLensFlareItem);
@@ -1285,4 +1294,3 @@ void CLensFlareEditor::OnUpdateProperties(IVariable* var)
 {
 	GetIEditorImpl()->GetLensFlareManager()->Modified();
 }
-

@@ -14,6 +14,8 @@
 namespace CryGraphEditor {
 
 class CNodeWidgetStyle;
+class CGroupWidgetStyle;
+class CCommentWidgetStyle;
 class CConnectionWidgetStyle;
 class CNodePinWidgetStyle;
 
@@ -52,6 +54,12 @@ public:
 	void                          RegisterNodeWidgetStyle(CNodeWidgetStyle* pStyle);
 	const CNodeWidgetStyle*       GetNodeWidgetStyle(const char* styleId) const;
 
+	void                          RegisterGroupWidgetStyle(CGroupWidgetStyle* pStyle);
+	const CGroupWidgetStyle*      GetGroupWidgetStyle(const char* styleId) const;
+
+	void                          RegisterCommentWidgetStyle(CCommentWidgetStyle* pStyle);
+	const CCommentWidgetStyle*    GetCommentWidgetStyle(const char* styleId) const;
+
 	void                          RegisterConnectionWidgetStyle(CConnectionWidgetStyle* pStyle);
 	const CConnectionWidgetStyle* GetConnectionWidgetStyle(const char* styleId) const;
 
@@ -59,35 +67,37 @@ public:
 	const CNodePinWidgetStyle*    GetPinWidgetStyle(const char* styleId) const;
 
 	// Properties
-	const QColor& GetSelectionColor() const                      { return m_selectionColor; }
-	void          SetSelectionColor(const QColor color)          { m_selectionColor = color; }
+	const QColor& GetSelectionColor() const                       { return m_selectionColor; }
+	void          SetSelectionColor(const QColor& color)          { m_selectionColor = color; }
 
-	const QColor& GetHighlightColor() const                      { return m_highlightColor; }
-	void          SetHighlightColor(const QColor color)          { m_highlightColor = color; }
+	const QColor& GetHighlightColor() const                       { return m_highlightColor; }
+	void          SetHighlightColor(const QColor& color)          { m_highlightColor = color; }
 
-	const QColor& GetGridBackgroundColor() const                 { return m_gridBackgroundColor; }
-	void          SetGridBackgroundColor(const QColor color)     { m_gridBackgroundColor = color; }
+	const QColor& GetGridBackgroundColor() const                  { return m_gridBackgroundColor; }
+	void          SetGridBackgroundColor(const QColor& color)     { m_gridBackgroundColor = color; }
 
-	const QColor& GetGridSegmentLineColor() const                { return m_gridSegmentLineColor; }
-	void          SetGridSegmentLineColor(const QColor color)    { m_gridSegmentLineColor = color; }
+	const QColor& GetGridSegmentLineColor() const                 { return m_gridSegmentLineColor; }
+	void          SetGridSegmentLineColor(const QColor& color)    { m_gridSegmentLineColor = color; }
 
-	float         GetGridSegementLineWidth() const               { return m_gridSegmentLineWidth; }
-	void          SetGridSegementLineWidth(float width)          { m_gridSegmentLineWidth = width; }
+	float         GetGridSegementLineWidth() const                { return m_gridSegmentLineWidth; }
+	void          SetGridSegementLineWidth(float width)           { m_gridSegmentLineWidth = width; }
 
-	float         GetGridSegmentSize() const                     { return m_gridSegmentSize; }
-	void          SetGridSegmentSize(float width)                { m_gridSegmentSize = width; }
+	float         GetGridSegmentSize() const                      { return m_gridSegmentSize; }
+	void          SetGridSegmentSize(float width)                 { m_gridSegmentSize = width; }
 
-	const QColor& GetGridSubSegmentLineColor() const             { return m_gridSubSegmentLineColor; }
-	void          SetGridSubSegmentLineColor(const QColor color) { m_gridSubSegmentLineColor = color; }
+	const QColor& GetGridSubSegmentLineColor() const              { return m_gridSubSegmentLineColor; }
+	void          SetGridSubSegmentLineColor(const QColor& color) { m_gridSubSegmentLineColor = color; }
 
-	int32         GetGridSubSegmentCount() const                 { return m_gridSubSegmentCount; }
-	void          SetGridSubSegmentCount(int32 count)            { m_gridSubSegmentCount = count; }
+	int32         GetGridSubSegmentCount() const                  { return m_gridSubSegmentCount; }
+	void          SetGridSubSegmentCount(int32 count)             { m_gridSubSegmentCount = count; }
 
-	float         GetGridSubSegmentLineWidth() const             { return m_gridSubSegmentLineWidth; }
-	void          SetGridSubSegmentLineWidth(float width)        { m_gridSubSegmentLineWidth = width; }
+	float         GetGridSubSegmentLineWidth() const              { return m_gridSubSegmentLineWidth; }
+	void          SetGridSubSegmentLineWidth(float width)         { m_gridSubSegmentLineWidth = width; }
 
 private:
 	std::unordered_map<StyleIdHash, CNodeWidgetStyle*>       m_nodeWidgetStylesById;
+	std::unordered_map<StyleIdHash, CGroupWidgetStyle*>      m_groupWidgetStylesById;
+	std::unordered_map<StyleIdHash, CCommentWidgetStyle*>    m_commentWidgetStylesById;
 	std::unordered_map<StyleIdHash, CConnectionWidgetStyle*> m_connectionWidgetStylesById;
 	std::unordered_map<StyleIdHash, CNodePinWidgetStyle*>    m_pinWidgetStylesById;
 
@@ -105,4 +115,3 @@ private:
 };
 
 }
-

@@ -29,9 +29,9 @@ CAxisHelperExtended::CAxisHelperExtended()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAxisHelperExtended::DrawAxes(DisplayContext& dc, const Matrix34& matrix)
+void CAxisHelperExtended::DrawAxes(SDisplayContext& dc, const Matrix34& matrix)
 {
-	const DWORD updateTime = 2000; // 2 sec
+	const DWORD updateTime = 30;
 	const ISelectionGroup* const pSelection = GetIEditor()->GetISelectionGroup();
 	const size_t numSels = pSelection->GetCount();
 	if (numSels == 0)
@@ -70,12 +70,12 @@ void CAxisHelperExtended::DrawAxes(DisplayContext& dc, const Matrix34& matrix)
 		IPhysicalEntity** pSkip = (m_skipEntities.size() != 0) ? &m_skipEntities[0] : nullptr;
 		ray_hit xHitPos, xHitNeg, yHitPos, yHitNeg, zHitPos, zHitNeg;
 
-		const bool bHasHitPosX = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, vDirX * ms_maxDist, ent_all, rwi_any_hit, &xHitPos, 1, pSkip, m_skipEntities.size());
-		const bool bHasHitPosY = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, vDirY * ms_maxDist, ent_all, rwi_any_hit, &yHitPos, 1, pSkip, m_skipEntities.size());
-		const bool bHasHitPosZ = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, vDirZ * ms_maxDist, ent_all, rwi_any_hit, &zHitPos, 1, pSkip, m_skipEntities.size());
-		const bool bHasHitNegX = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, -vDirX * ms_maxDist, ent_all, rwi_any_hit, &xHitNeg, 1, pSkip, m_skipEntities.size());
-		const bool bHasHitNegY = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, -vDirY * ms_maxDist, ent_all, rwi_any_hit, &yHitNeg, 1, pSkip, m_skipEntities.size());
-		const bool bHasHitNegZ = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, -vDirZ * ms_maxDist, ent_all, rwi_any_hit, &zHitNeg, 1, pSkip, m_skipEntities.size());
+		const bool bHasHitPosX = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, vDirX * ms_maxDist, ent_all, rwi_stop_at_pierceable, &xHitPos, 1, pSkip, m_skipEntities.size());
+		const bool bHasHitPosY = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, vDirY * ms_maxDist, ent_all, rwi_stop_at_pierceable, &yHitPos, 1, pSkip, m_skipEntities.size());
+		const bool bHasHitPosZ = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, vDirZ * ms_maxDist, ent_all, rwi_stop_at_pierceable, &zHitPos, 1, pSkip, m_skipEntities.size());
+		const bool bHasHitNegX = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, -vDirX * ms_maxDist, ent_all, rwi_stop_at_pierceable, &xHitNeg, 1, pSkip, m_skipEntities.size());
+		const bool bHasHitNegY = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, -vDirY * ms_maxDist, ent_all, rwi_stop_at_pierceable, &yHitNeg, 1, pSkip, m_skipEntities.size());
+		const bool bHasHitNegZ = gEnv->pPhysicalWorld->RayWorldIntersection(m_position, -vDirZ * ms_maxDist, ent_all, rwi_stop_at_pierceable, &zHitNeg, 1, pSkip, m_skipEntities.size());
 
 		m_lastDistPosX = bHasHitPosX ? xHitPos.dist : -1.0f;
 		m_lastDistNegX = bHasHitNegX ? xHitNeg.dist : -1.0f;
@@ -98,7 +98,7 @@ void CAxisHelperExtended::DrawAxes(DisplayContext& dc, const Matrix34& matrix)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAxisHelperExtended::DrawAxis(DisplayContext& dc, const Vec3& direction, const float dist, const Vec3& up, const Vec3& color)
+void CAxisHelperExtended::DrawAxis(SDisplayContext& dc, const Vec3& direction, const float dist, const Vec3& up, const Vec3& color)
 {
 	const float BALL_SIZE = 0.005f;
 	const float TEXT_SIZE = 1.4f;
@@ -146,4 +146,3 @@ void CAxisHelperExtended::DrawAxis(DisplayContext& dc, const Vec3& direction, co
 
 //////////////////////////////////////////////////////////////////////////
 const float CAxisHelperExtended::ms_maxDist = 1000.0f;
-

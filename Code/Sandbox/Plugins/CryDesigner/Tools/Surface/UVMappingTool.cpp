@@ -88,17 +88,18 @@ void UVMappingTool::Enter()
 	__super::Enter();
 
 	FillSecondShelfWithSelectedElements();
-	int nCurrentEditMode = GetIEditor()->GetEditMode();
+	CLevelEditorSharedState* pLevelEditorState = GetIEditor()->GetLevelEditorSharedState();
+	CLevelEditorSharedState::EditMode currentEditMode = pLevelEditorState->GetEditMode();
 
-	GetIEditor()->SetEditMode(eEditModeMove);
-	GetIEditor()->SetReferenceCoordSys(COORDS_WORLD);
-	GetIEditor()->SetEditMode(eEditModeScale);
-	GetIEditor()->SetReferenceCoordSys(COORDS_WORLD);
-	GetIEditor()->SetEditMode(nCurrentEditMode);
+	pLevelEditorState->SetEditMode(CLevelEditorSharedState::EditMode::Move);
+	pLevelEditorState->SetCoordSystem(CLevelEditorSharedState::CoordSystem::World);
+	pLevelEditorState->SetEditMode(CLevelEditorSharedState::EditMode::Scale);
+	pLevelEditorState->SetCoordSystem(CLevelEditorSharedState::CoordSystem::World);
+	pLevelEditorState->SetEditMode(currentEditMode);
 
-	if (GetIEditor()->GetEditMode() == eEditModeRotate)
+	if (pLevelEditorState->GetEditMode() == CLevelEditorSharedState::EditMode::Rotate)
 	{
-		GetIEditor()->SetReferenceCoordSys(COORDS_LOCAL);
+		pLevelEditorState->SetCoordSystem(CLevelEditorSharedState::CoordSystem::Local);
 	}
 
 	ElementSet* pSelected = DesignerSession::GetInstance()->GetSelectedElements();
@@ -322,8 +323,8 @@ void UVMappingTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipul
 
 	MODEL_SHELF_RECONSTRUCTOR(GetModel());
 
-	int editMode = GetIEditor()->GetEditMode();
-	if (editMode == eEditModeMove)
+	CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		Vec3 vTranslation = offsetTM.GetTranslation();
 		BrushVec3 vNormal(0, 0, 0);
@@ -352,7 +353,7 @@ void UVMappingTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipul
 		CompileShelf(eShelf_Construction);
 		GetDesigner()->UpdateTMManipulator(m_MouseDownContext.m_MouseDownPos + vTranslation, vNormal.GetNormalized());
 	}
-	else if (editMode == eEditModeRotate)
+	else if (editMode == CLevelEditorSharedState::EditMode::Rotate)
 	{
 		for (int i = 0, iCount(m_MouseDownContext.m_UVInfos.size()); i < iCount; ++i)
 		{
@@ -377,7 +378,7 @@ void UVMappingTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipul
 		}
 		CompileShelf(eShelf_Construction);
 	}
-	else if (editMode == eEditModeScale)
+	else if (editMode == CLevelEditorSharedState::EditMode::Scale)
 	{
 		Vec3 vScale(offsetTM.m00, offsetTM.m11, offsetTM.m22);
 		for (int i = 0, iCount(m_MouseDownContext.m_UVInfos.size()); i < iCount; ++i)
@@ -534,4 +535,3 @@ void UVMappingTool::OnChangeParameter(bool continuous)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_UVMapping, eToolGroup_Surface, "UV Mapping", UVMappingTool,
                                                            uvmapping, "runs uvmapping tool", "designer.uvmapping")
-

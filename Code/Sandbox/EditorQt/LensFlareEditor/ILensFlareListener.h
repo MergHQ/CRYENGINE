@@ -5,16 +5,15 @@
 class CLensFlareItem;
 class CLensFlareElement;
 
-class ILensFlareChangeItemListener
+struct ILensFlareChangeItemListener
 {
-public:
+	virtual ~ILensFlareChangeItemListener() {}
 	virtual void OnLensFlareChangeItem(CLensFlareItem* pLensFlareItem) = 0;
 	virtual void OnLensFlareDeleteItem(CLensFlareItem* pLensFlareItem) = 0;
 };
 
-class ILensFlareChangeElementListener
+struct ILensFlareChangeElementListener
 {
-public:
+	virtual ~ILensFlareChangeElementListener() {}
 	virtual void OnLensFlareChangeElement(CLensFlareElement* pLensFlareElement) = 0;
 };
-

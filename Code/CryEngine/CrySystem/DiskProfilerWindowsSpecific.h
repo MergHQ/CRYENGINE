@@ -2,14 +2,13 @@
 
 #pragma once
 
-#include "StdAfx.h"
-
 #include "Log.h"
 
 #include <CryCore/Platform/platform.h>
 
 #if CRY_PLATFORM_WINDOWS
 
+#include <CryCore/Platform/CryWindows.h>
 #include <winioctl.h>
 
 class CDiskProfilerWindowsSpecific

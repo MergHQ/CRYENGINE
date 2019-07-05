@@ -54,8 +54,6 @@ class CEngineModule_CryNetwork : public INetworkEngineModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		ISystem* pSystem = env.pSystem;
-
 		CNetwork* pNetwork = new CNetwork;
 
 		int ncpu = env.pi.numCoresAvailableToProcess;

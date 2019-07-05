@@ -24,6 +24,7 @@ class CLayerSetSwitchNode
 	{
 		eIP_Set = 0,
 		eIP_LayerSetName,
+		eIP_LayerSetScopeName,
 		eIP_Serialize,
 	};
 
@@ -65,9 +66,10 @@ private:
 	virtual void GetConfiguration(SFlowNodeConfig &config) override
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void   ("Set",              _HELP("Apply the selected configuration.")),
-			InputPortConfig<string>("LayerSetName", "", _HELP("Slot in which the character is loaded or -1 for all loaded characters."), nullptr, _UICONFIG(LAYERSWITCHNODE_UICONFIG)),
-			InputPortConfig<bool>  ("Serialize", false, _HELP("Enables objects in this layer being saved/loaded.")),
+			InputPortConfig_Void   ("Set",                   _HELP("Apply the selected configuration.")),
+			InputPortConfig<string>("LayerSetName",      "", _HELP("LayerSet that defines which layers will be unhidden."), nullptr, _UICONFIG(LAYERSWITCHNODE_UICONFIG)),
+			InputPortConfig<string>("LayerSetScopeName", "", _HELP("LayerSet scope definition (to limit the number of layers that will hidden). Leave empty for affecting all layers."), nullptr, _UICONFIG(LAYERSWITCHNODE_UICONFIG)),
+			InputPortConfig<bool>  ("Serialize",      false, _HELP("Enables objects in this layer being saved/loaded.")),
 			{0}
 		};
 		static const SOutputPortConfig out_config[] = {
@@ -109,7 +111,7 @@ private:
 			{
 				if (IsPortActive(pActInfo, eIP_Set))
 				{
-					CRY_PROFILE_REGION(PROFILE_GAME, __FUNCTION__);
+					CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 					bool bSuccess = false;
 					const string& layerSetName = GetPortString(pActInfo, eIP_LayerSetName);
@@ -117,39 +119,24 @@ private:
 					{
 						const bool bIsSerialized = GetPortBool(pActInfo, eIP_Serialize);
 
-						TLayerSetNameToContent::const_iterator cacheIt = m_layerSetCache.find(layerSetName);
-						if (cacheIt != m_layerSetCache.end())
-						{
-							const SCacheEntry& cacheEntry = cacheIt->second;
-							gEnv->pEntitySystem->EnableLayerSet(cacheEntry.szNames.data(), cacheEntry.szNames.size(), bIsSerialized, this);
-							bSuccess = true;
-						}
-						else
-						{
-							if (!gEnv->IsEditor())
-							{
-								GameWarning("[LayerSetSwitchNode] layer set %s wasn't found in the cache. Trying to parse the XML at runtime !", layerSetName.c_str());
-							}
+						TStringNames    layerSetStringNamesCache;
+						TSzNames        layerSetSzNamesCache;
+						const TSzNames* pLayerSetSzNames = nullptr;
 
-							TStringNames layerStringNames;
-							if (ParseXml(layerStringNames, layerSetName))
-							{
-								if (!layerStringNames.empty())
-								{
-									TSzNames layerSzNames;
-									UpdateSzNamesFromStringNames(layerSzNames, layerStringNames);
+						TStringNames    layerSetScopeStringNamesCache;
+						TSzNames        layerSetScopeSzNamesCache;
+						const TSzNames* pLayerSetScopeSzNames = nullptr;
 
-									gEnv->pEntitySystem->EnableLayerSet(&layerSzNames[0], layerSzNames.size(), bIsSerialized, this);
-									bSuccess = true;
-								}
-								else
-								{
-									GameWarning(string().Format("!layerStringNames.empty() : Selected layer \"%s\" set definition was read properly but seems to contain no visible layer. Are you sure this file is still valid ?", layerSetName.c_str()).c_str());
-								}
+						if(GetLayerSet(layerSetStringNamesCache, layerSetSzNamesCache, layerSetName, pLayerSetSzNames))
+						{
+							const string& layerSetScopeName = GetPortString(pActInfo, eIP_LayerSetScopeName);
+							if (!layerSetName.empty() && GetLayerSet(layerSetScopeStringNamesCache, layerSetScopeSzNamesCache, layerSetScopeName, pLayerSetScopeSzNames))
+							{
+								gEnv->pEntitySystem->EnableScopedLayerSet(pLayerSetSzNames->data(), pLayerSetSzNames->size(), pLayerSetScopeSzNames->data(), pLayerSetScopeSzNames->size(), bIsSerialized, this);
 							}
 							else
 							{
-								GameWarning(string().Format("ParseXml(layerSetName) : Failed to read the selected layer set definition \"%s\". Are you sure this file still exists ?", layerSetName.c_str()).c_str());
+								gEnv->pEntitySystem->EnableLayerSet(pLayerSetSzNames->data(), pLayerSetSzNames->size(), bIsSerialized, this);
 							}
 						}
 					}
@@ -163,14 +150,49 @@ private:
 		}
 	}
 
+	bool GetLayerSet(TStringNames& stringNamesCache, TSzNames& szNamesCache, const string& layerSetName, const TSzNames*& pResultSzNames)
+	{
+		bool hasSucceeded = false;
+		if (!layerSetName.empty())
+		{
+			TLayerSetNameToContent::const_iterator cacheIt = m_layerSetCache.find(layerSetName);
+			if (cacheIt != m_layerSetCache.end())
+			{
+				const SCacheEntry& cacheEntry = cacheIt->second;
+				pResultSzNames = &cacheEntry.szNames;
+				hasSucceeded = true;
+			}
+			else
+			{
+				if (!gEnv->IsEditor())
+				{
+					GameWarning("[LayerSetSwitchNode] layer set %s wasn't found in the cache. Trying to parse the XML at runtime !", layerSetName.c_str());
+				}
+
+				if (ParseXml(stringNamesCache, layerSetName))
+				{
+					if (!stringNamesCache.empty())
+					{
+						UpdateSzNamesFromStringNames(szNamesCache, stringNamesCache);
+						pResultSzNames = &szNamesCache;
+						hasSucceeded = true;
+					}
+					else
+					{
+						GameWarning("!layerStringNames.empty() : Selected layer \"%s\" set definition was read properly but seems to contain no visible layer. Are you sure this file is still valid ?", layerSetName.c_str());
+					}
+				}
+				else
+				{
+					GameWarning("ParseXml(layerSetName) : Failed to read the selected layer set definition \"%s\". Are you sure this file still exists ?", layerSetName.c_str());
+				}
+			}
+		}
+		return hasSucceeded;
+	}
+
 	// ILevelSystemListener
-	virtual void OnLevelNotFound(const char* levelName) override {};
-	virtual void OnLoadingStart(ILevelInfo* pLevel) override {};
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) override {};
 	virtual void OnLoadingComplete(ILevelInfo* pLevel) override { m_currentLevelName = pLevel->GetName(); RefreshLayerSetsUIEnum(); Preload(); };
-	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) override {};
-	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) override {};
-	virtual void OnUnloadComplete(ILevelInfo* pLevel) override {};
 	// ~ILevelSystemListener
 
 	// IEntityLayerSetUpdateListener
@@ -359,9 +381,9 @@ private:
 
 	typedef std::map<string, SCacheEntry> TLayerSetNameToContent;
 
-	TLayerSetNameToContent              m_layerSetCache;
-	TPathString                         m_currentLevelName;
-	bool                                m_bRegistered;
+	TLayerSetNameToContent m_layerSetCache;
+	TPathString            m_currentLevelName;
+	bool                   m_bRegistered;
 };
 
 #undef LAYERSWITCHNODE_ROOT_FOLDER

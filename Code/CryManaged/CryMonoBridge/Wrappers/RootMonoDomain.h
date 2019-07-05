@@ -15,11 +15,11 @@ public:
 	// CMonoDomain
 	virtual bool IsRoot() override { return true; }
 
-	virtual bool Reload() override { CRY_ASSERT_MESSAGE(false, "Cannot unload the root domain!"); return false; }
+	virtual bool Reload() override { CRY_ASSERT(false, "Cannot unload the root domain!"); return false; }
 	// ~CMonoDomain
 
 	void Initialize();
 	bool IsInitialized() const { return m_pDomain != nullptr; }
 
-	CMonoLibrary& CRootMonoDomain::GetNetCoreLibrary();
+	CMonoLibrary& GetNetCoreLibrary();
 };

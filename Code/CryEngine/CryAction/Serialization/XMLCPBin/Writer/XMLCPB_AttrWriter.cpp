@@ -32,7 +32,7 @@ bool IsInitialized(T val)
 	return IsInitialized(*reinterpret_cast<uint32*>(&val));
 }
 
-	#define ASSERT_INITIALIZED(cond, name) CRY_ASSERT_TRACE(IsInitialized(cond), ("Saving uninitialized variable %s", name))
+	#define ASSERT_INITIALIZED(cond, name) CRY_ASSERT(IsInitialized(cond), ("Saving uninitialized variable %s", name))
 #else
 	#define ASSERT_INITIALIZED(cond, name)
 #endif
@@ -65,7 +65,7 @@ void CAttrWriter::SetName(const char* pName)
 
 void CAttrWriter::Set(const char* pName, const char* pDataString)
 {
-	assert(pDataString);
+	CRY_ASSERT(pDataString);
 
 	int size = strlen(pDataString);
 	if (size > MAX_SIZE_FOR_A_DATASTRING)
@@ -167,7 +167,7 @@ void CAttrWriter::Set(const char* pAttrName, uint val)
 
 void CAttrWriter::Set(const char* pAttrName, bool val)
 {
-	assert(IsInRange((int)val, 0, 2));
+	CRY_ASSERT(IsInRange((int)val, 0, 2));
 
 	SetName(pAttrName);
 	m_type = eAttrDataType(DT_0 + val);
@@ -330,7 +330,7 @@ void CAttrWriter::Set(const char* pAttrName, const Quat& val)
 
 void CAttrWriter::Set(const char* pAttrName, const uint8* data, uint32 len, bool needInmediateCopy)
 {
-	assert(data && len > 0);
+	CRY_ASSERT(data && len > 0);
 	ASSERT_INITIALIZED(data[0], pAttrName);
 
 	SetName(pAttrName);
@@ -368,7 +368,7 @@ void CAttrWriter::PackFloatInSemiConstType(float val, uint32 ind, uint32& numVal
 		type = PFSC_N1;
 	else
 	{
-		assert(numVals < 4);
+		CRY_ASSERT(numVals < 4);
 		m_data.m_floatSemiConstant.v[numVals] = val;
 		++numVals;
 	}
@@ -382,8 +382,8 @@ void CAttrWriter::PackFloatInSemiConstType(float val, uint32 ind, uint32& numVal
 
 uint16 CAttrWriter::CalcHeader() const
 {
-	assert(m_type != DT_INVALID);
-	assert(m_nameID <= MAX_NAMEID);
+	CRY_ASSERT(m_type != DT_INVALID);
+	CRY_ASSERT(m_nameID <= MAX_NAMEID);
 	uint16 header = (m_nameID << BITS_TYPEID) | m_type;
 	return header;
 }
@@ -413,7 +413,7 @@ void CAttrWriter::Compact()
 	{
 	case DT_STR:
 		{
-			assert(m_data.m_dataStringID < MAX_NUM_STRDATA);
+			CRY_ASSERT(m_data.m_dataStringID < MAX_NUM_STRDATA);
 			uint16 dataStringID = m_data.m_dataStringID;
 			buffer.AddDataEndianAware(dataStringID);
 			break;
@@ -534,7 +534,7 @@ void CAttrWriter::Compact()
 		}
 
 	default:
-		assert(false);
+		CRY_ASSERT(false);
 		break;
 	}
 }
@@ -557,7 +557,7 @@ const char* CAttrWriter::GetStrData() const
 	if (IsTypeStrConstant(m_type))
 		return m_Writer.GetStrDataConstantsTable().GetString(GetStringConstantID(m_type));
 
-	assert(false);
+	CRY_ASSERT(false);
 
 	return NULL;
 }
@@ -660,7 +660,7 @@ void CAttrWriter::AddDataToStatistics()
 void CAttrWriter::WriteFileStatistics(const CStringTableWriter& stringTable)
 {
 	FILE* pFile = gEnv->pCryPak->FOpen("DataAttrStatistics.txt", "wb");
-	assert(pFile);
+	CRY_ASSERT(pFile);
 
 	string strTmp;
 

@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include "Common/FileImportInfo.h"
 #include <QAbstractItemModel>
 #include <QDir>
-#include <FileImportInfo.h>
 
 namespace ACE
 {
@@ -14,17 +14,21 @@ class CFileImporterModel final : public QAbstractItemModel
 
 public:
 
-	enum class EColumns
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Source,
 		Target,
 		Import,
-		Count,
-	};
-
-	explicit CFileImporterModel(FileImportInfos& fileImportInfos, QString const& assetFolderPath, QString const& targetPath, QObject* const pParent);
+		Count, };
 
 	CFileImporterModel() = delete;
+	CFileImporterModel(CFileImporterModel const&) = delete;
+	CFileImporterModel(CFileImporterModel&&) = delete;
+	CFileImporterModel& operator=(CFileImporterModel const&) = delete;
+	CFileImporterModel& operator=(CFileImporterModel&&) = delete;
+
+	explicit CFileImporterModel(FileImportInfos& fileImportInfos, QObject* const pParent);
+	virtual ~CFileImporterModel() override = default;
 
 	static QString const s_newAction;
 	static QString const s_replaceAction;
@@ -56,7 +60,6 @@ protected:
 private:
 
 	FileImportInfos& m_fileImportInfos;
-	QString const    m_targetPath;
-	QDir const       m_assetFolder;
+	QDir const       m_gameFolder;
 };
 } // namespace ACE

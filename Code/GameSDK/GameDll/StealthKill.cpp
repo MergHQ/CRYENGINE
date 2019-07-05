@@ -351,8 +351,6 @@ void CStealthKill::DoDeathBlow(CActor* pTarget)
 
 		if(gEnv->bServer)
 		{
-			CGameRules *pGameRules = g_pGame->GetGameRules();
-
 			HitInfo hitInfo;
 			ConstructHitInfo(m_pPlayer->GetEntityId(), pTarget->GetEntityId(), targetDir, hitInfo);
 			g_pGame->GetGameRules()->ClientHit(hitInfo);
@@ -426,7 +424,7 @@ bool CStealthKill::IsKillerAbleToExecute() const
 //-----------------------------------------------------------------------
 void CStealthKill::DeathBlow(CActor* pTarget)
 {
-	CRY_ASSERT_MESSAGE(m_isBusy, "Stealth kill should be in progress when triggering the death blow");
+	CRY_ASSERT(m_isBusy, "Stealth kill should be in progress when triggering the death blow");
 	if (!m_isBusy)
 		return;
 
@@ -521,7 +519,7 @@ void CStealthKill::ResetState(IActor* pTarget)
 //-----------------------------------------------------------------------
 void CStealthKill::Leave(CActor* pTarget)
 {
-	CRY_ASSERT_MESSAGE(m_isBusy, "Stealth kill cannot be stopped if it is not in progress");
+	CRY_ASSERT(m_isBusy, "Stealth kill cannot be stopped if it is not in progress");
 	if (!m_isBusy)
 		return;
 
@@ -552,16 +550,16 @@ void CStealthKill::Leave(CActor* pTarget)
 //-----------------------------------------------------------------------
 void CStealthKill::Enter(int targetEntityId, int animIndex)
 {
-	CRY_ASSERT_MESSAGE(!m_isBusy, "Stealth kill should not be initiated while a stealth kill is already in progress");
+	CRY_ASSERT(!m_isBusy, "Stealth kill should not be initiated while a stealth kill is already in progress");
 	if (m_isBusy)
 		return;
 
 	CActor *pTargetActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(targetEntityId));
-	CRY_ASSERT_MESSAGE(pTargetActor != NULL, "Stealth kill should act upon an actor");
+	CRY_ASSERT(pTargetActor != NULL, "Stealth kill should act upon an actor");
 	if (pTargetActor == NULL)
 		return;
 
-	CRY_ASSERT_MESSAGE(pTargetActor->GetActorClass() == CPlayer::GetActorClassType(), "TargetActor is not a CPlayer");
+	CRY_ASSERT(pTargetActor->GetActorClass() == CPlayer::GetActorClassType(), "TargetActor is not a CPlayer");
 
 	int randomAnim = 0;
 	{
@@ -584,7 +582,7 @@ void CStealthKill::Enter(int targetEntityId, int animIndex)
 		ConstructHitInfo(m_pPlayer->GetEntityId(), pTargetActor->GetEntityId(), m_pPlayer->GetEntity()->GetForwardDir(), hitInfo);
 		static_cast<CPlayer*> (pTargetActor)->GetHitDeathReactions()->OnReaction( hitInfo, &animIndex );
 
-		CRY_ASSERT_MESSAGE( !gEnv->bMultiplayer || animIndex < 4, "NetSerialize_StealthKill doesn't support more than 4 animation variation for stealthkill!!" );
+		CRY_ASSERT( !gEnv->bMultiplayer || animIndex < 4, "NetSerialize_StealthKill doesn't support more than 4 animation variation for stealthkill!!" );
 		randomAnim = animIndex;
 	}
 
@@ -793,8 +791,8 @@ uint8 CStealthKill::GetAnimIndex()
 
 void CStealthKill::SetTargetForAttackAttempt(EntityId targetId)
 {
-	CRY_ASSERT_MESSAGE(!m_isBusy, "Trying to set an attempted target while mid attack");
-	CRY_ASSERT_MESSAGE(m_targetId == 0, "Trying to override an existing target");
+	CRY_ASSERT(!m_isBusy, "Trying to set an attempted target while mid attack");
+	CRY_ASSERT(m_targetId == 0, "Trying to override an existing target");
 
 	CHANGED_NETWORK_STATE(m_pPlayer, CPlayer::ASPECT_SNAP_TARGET);
 	m_targetId = targetId;
@@ -825,8 +823,6 @@ void CStealthKill::ForceFinishKill()
 	CActor* pCurrentTarget = GetTarget();
 	if (pCurrentTarget)
 	{
-		Vec3 targetDir = pCurrentTarget->GetEntity()->GetForwardDir();
-
 		HitInfo hitInfo;
 		CStealthKill::ConstructHitInfo(m_pPlayer->GetEntityId(), pCurrentTarget->GetEntityId(), m_pPlayer->GetEntity()->GetForwardDir(), hitInfo);
 		g_pGame->GetGameRules()->KillPlayer(pCurrentTarget, true, true, hitInfo);

@@ -2,6 +2,7 @@
 
 #pragma once
 #include "Controls/EditorDialog.h"
+#include "Version.h"
 
 #include <QLabel>
 
@@ -20,4 +21,3 @@ protected:
 private:
 	Version m_version;
 };
-

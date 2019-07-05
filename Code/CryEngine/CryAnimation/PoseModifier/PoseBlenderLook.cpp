@@ -140,10 +140,10 @@ bool CPoseBlenderLook::PrepareInternal(const SAnimationPoseModifierParams& param
 	for (uint32 i = 0; i < numActiveAnims; i++)
 	{
 		int32 nAnimID = rCurLayer[i].GetAnimationId();
-		assert(rCurLayer[i].IsActivated());
+		CRY_ASSERT(rCurLayer[i].IsActivated());
 		const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(nAnimID);
-		assert(pAnim);
-		assert(pAnim->m_nGlobalAnimId > -1);
+		CRY_ASSERT(pAnim);
+		CRY_ASSERT(pAnim->m_nGlobalAnimId > -1);
 		if (pAnim->m_nAssetType == AIM_File)
 		{
 			GlobalAnimationHeaderAIM& rGAH = g_AnimationManager.m_arrGlobalAIM[pAnim->m_nGlobalAnimId];

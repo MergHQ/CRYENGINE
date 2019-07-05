@@ -2,66 +2,87 @@
 
 #pragma once
 
+struct IOffMeshNavigationManager;
+
 namespace MNM
 {
 
-struct OffMeshLink : public _i_reference_target_t
+//! Interface class for custom off-mesh link data
+struct IOffMeshLink : public _i_reference_target_t
 {
 public:
 
-	enum LinkType
+	//! Used for acquiring navigation data of the link during the addition process.
+	struct SNavigationData
 	{
-		eLinkType_Invalid = -1,
-		eLinkType_SmartObject,
-		eLinkType_Custom,
+		NavigationMeshID meshId;
+		TriangleID       startTriangleId;
+		TriangleID       endTriangleId;
+		AreaAnnotation   annotation;
 	};
 
-	virtual ~OffMeshLink() {};
+	virtual ~IOffMeshLink() {}
 
 protected:
 
-	OffMeshLink(LinkType _linkType, EntityId _entityId)
-		: m_linkType(_linkType)
-		, m_entityId(_entityId)
+	IOffMeshLink(const CryGUID& linkTypeGuid, const EntityId entityId)
+		: m_instanceId()
+		, m_entityId(entityId)
+		, m_typeGuid(linkTypeGuid)
 	{
 	}
 
 	// Do not implement.
-	OffMeshLink() /*= delete*/;
+	IOffMeshLink() = delete;
 
 public:
+	//! Returns off-mesh link ID
+	inline OffMeshLinkID GetLinkId() const                 { return m_instanceId; }
 
-	ILINE LinkType      GetLinkType() const               { return m_linkType; }
-	ILINE void          SetLinkID(OffMeshLinkID linkID)   { m_linkID = linkID; }
-	ILINE OffMeshLinkID GetLinkId() const                 { return m_linkID; }
-	ILINE EntityId      GetEntityIdForOffMeshLink() const { return m_entityId; }
+	//! Returns owner's entity ID
+	inline EntityId      GetEntityIdForOffMeshLink() const { return m_entityId; }
+
+	template<typename LinkDataClass>
+	bool IsTypeOf() const
+	{
+		return m_typeGuid == LinkDataClass::GetGuid();
+	}
 
 	template<class LinkDataClass>
 	LinkDataClass* CastTo()
 	{
-		return (m_linkType == LinkDataClass::GetType()) ? static_cast<LinkDataClass*>(this) : NULL;
+		return IsTypeOf<LinkDataClass>() ? static_cast<LinkDataClass*>(this) : nullptr;
 	}
 
 	template<class LinkDataClass>
 	const LinkDataClass* CastTo() const
 	{
-		return (m_linkType == LinkDataClass::GetType()) ? static_cast<const LinkDataClass*>(this) : NULL;
+		return IsTypeOf<LinkDataClass>() ? static_cast<const LinkDataClass*>(this) : nullptr;
 	}
 
-	virtual bool         CanUse(const IEntity* pRequester, float* costMultiplier) const = 0;
+	//! Returns true if the off-mesh link can be used by requester entity in path-finding and fills the cost multiplier for traversing the link
+	//! Warning: In the case of asynchronous path-finding, this function can be called from different threads. It is responsibility of the implementation code to make it thread safe.
+	virtual bool          CanUse(const EntityId requesterEntityId, float* pCostMultiplier) const = 0;
 
-	virtual OffMeshLink* Clone() const = 0;
-	virtual Vec3         GetStartPosition() const = 0;
-	virtual Vec3         GetEndPosition() const = 0;
+	//! Returns start position of the off-mesh link
+	virtual Vec3          GetStartPosition() const = 0;
 
-	virtual bool         IsEnabled() const { return true; }
+	//! Returns end position of the off-mesh link
+	virtual Vec3          GetEndPosition() const = 0;
+
+private:
+	friend struct ::IOffMeshNavigationManager;
+
+	//! Sets off-mesh link ID. Called only by the IOffMeshNavigationManager when the link is created.
+	inline void SetLinkId(OffMeshLinkID linkID) { m_instanceId = linkID; }
 
 protected:
-	LinkType      m_linkType;
+
+	OffMeshLinkID m_instanceId;
 	EntityId      m_entityId;
-	OffMeshLinkID m_linkID;
+	CryGUID       m_typeGuid;
 };
 
-DECLARE_SHARED_POINTERS(OffMeshLink);
+TYPEDEF_AUTOPTR(IOffMeshLink);
 
 } // namespace MNM

@@ -5,6 +5,8 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IShader.h>
 
+#include <CryPhysics/physinterface.h>
+
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
@@ -118,6 +120,8 @@ struct SRenderParameters
 
 	EMiniumSystemSpec                     m_castShadowSpec = EMiniumSystemSpec::Always;
 	bool                                  m_bIgnoreVisAreas = false;
+	bool                                  m_bIgnoreTerrainLayerBlend = false;
+	bool                                  m_bIgnoreDecalBlend = false;
 	Schematyc::Range<0, 100, 0, 100, int> m_viewDistanceRatio = 100;
 	Schematyc::Range<0, 100, 0, 100, int> m_lodDistance = 100;
 	EMeshGIMode                           m_giMode = EMeshGIMode::Disabled;
@@ -128,6 +132,8 @@ static void ReflectType(Schematyc::CTypeDesc<SRenderParameters>& desc)
 	desc.SetGUID("{291C60F6-A493-41B3-AC63-B9E0187DC074}"_cry_guid);
 	desc.AddMember(&SRenderParameters::m_castShadowSpec, 'shad', "ShadowSpec", "Minimum Shadow Graphics", "Minimum graphical setting to cast shadows from this light", EMiniumSystemSpec::Always);
 	desc.AddMember(&SRenderParameters::m_bIgnoreVisAreas, 'visa', "IgnoreVisArea", "Ignore Visareas", "Whether this component will ignore vis areas", false);
+	desc.AddMember(&SRenderParameters::m_bIgnoreTerrainLayerBlend, 'itlb', "IgnoreTerrainLayerBlend", "Ignore Terrain Layer Blending", "Whether this component will ignore terrain layer blending", false);
+	desc.AddMember(&SRenderParameters::m_bIgnoreDecalBlend, 'idb', "IgnoreDecalBlend", "Ignore Decal Blending", "Whether this component will ignore decal blending", false);
 	desc.AddMember(&SRenderParameters::m_viewDistanceRatio, 'view', "ViewDistRatio", "View Distance", "View distance from 0 to 100, 100 being always visible", 100);
 	desc.AddMember(&SRenderParameters::m_lodDistance, 'lodd', "LODDistance", "LOD Distance", "Level of Detail distance from 0 to 100, 100 being always best LOD", 100);
 	desc.AddMember(&SRenderParameters::m_giMode, 'gimo', "GIMode", "GI and Usage Mode", "The way object is used by GI and by some other systems", EMeshGIMode::Disabled);
@@ -135,7 +141,7 @@ static void ReflectType(Schematyc::CTypeDesc<SRenderParameters>& desc)
 
 // Base implementation for our physics mesh components
 class CBaseMeshComponent
-	: public IEntityComponent
+	: public IEditorEntityComponent
 {
 protected:
 	// IEntityComponent
@@ -170,13 +176,13 @@ protected:
 		}
 	}
 
-	virtual uint64 GetEventMask() const override
+	virtual Cry::Entity::EventFlags GetEventMask() const override
 	{
-		uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_SLOT_CHANGED);
+		Cry::Entity::EventFlags bitFlags = ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_SLOT_CHANGED;
 
 		if (((uint32)m_type & (uint32)EMeshType::Collider) != 0)
 		{
-			bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED);
+			bitFlags |= ENTITY_EVENT_PHYSICAL_TYPE_CHANGED;
 		}
 
 		return bitFlags;
@@ -207,7 +213,15 @@ protected:
 				{
 					slotFlags |= ENTITY_SLOT_IGNORE_VISAREAS;
 				}
-
+				if (!m_renderParameters.m_bIgnoreTerrainLayerBlend)
+				{
+					slotFlags |= ENTITY_SLOT_ALLOW_TERRAIN_LAYER_BLEND;
+				}
+				if (!m_renderParameters.m_bIgnoreDecalBlend)
+				{
+					slotFlags |= ENTITY_SLOT_ALLOW_DECAL_BLEND;
+				}
+				
 				UpdateGIModeEntitySlotFlags((uint8)m_renderParameters.m_giMode, slotFlags);
 
 				m_pEntity->SetSlotFlags(GetEntitySlotId(), slotFlags);
@@ -227,6 +241,8 @@ protected:
 					SEntityPhysicalizeParams physParams;
 					physParams.nSlot = GetEntitySlotId();
 					physParams.type = pPhysicalEntity->GetType();
+					physParams.nLod = 1; // used for ragdolls
+					physParams.fStiffnessScale = m_ragdollStiffness;
 
 					switch (m_physics.m_weightType)
 					{
@@ -267,6 +283,8 @@ public:
 
 	virtual SPhysicsParameters& GetPhysicsParameters()       { return m_physics; }
 	const SPhysicsParameters&   GetPhysicsParameters() const { return m_physics; }
+
+	float m_ragdollStiffness = 0;
 
 protected:
 	SPhysicsParameters m_physics;

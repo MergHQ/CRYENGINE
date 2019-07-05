@@ -317,7 +317,6 @@ void BenchmarkRendererSensor::processCommands()
 			}
 			break;
 		}
-		;
 	}
 	queue.reset();
 }
@@ -445,13 +444,14 @@ void BenchmarkRendererSensor::copyStereoFrameToScreen(CTexture* left, CTexture* 
 	m_renderer->m_cEF.mfRefreshSystemShader("Stereo", CShaderMan::s_ShaderStereo);
 	CShader* pShader = m_renderer->m_cEF.s_ShaderStereo;
 
-	int width = m_renderer->GetWidth();
-	int height = m_renderer->GetHeight();
+	CTexture* pOutput = m_renderer->GetActiveColorOutput();
+	int width = pOutput->GetWidth();
+	int height = pOutput->GetHeight();
 	
 	Vec4 pParams = Vec4((float)width, (float)height, 0, 0);
 
 	m_copyPass.SetTechnique(pShader, "SideBySide", 0);
-	m_copyPass.SetRenderTarget(0, m_renderer->GetActiveColorOutput());
+	m_copyPass.SetRenderTarget(0, pOutput);
 	m_copyPass.SetState(GS_NODEPTHTEST);
 	m_copyPass.SetTextureSamplerPair(0, left, EDefaultSamplerStates::LinearClamp);
 	m_copyPass.SetTextureSamplerPair(1, right, EDefaultSamplerStates::LinearClamp);

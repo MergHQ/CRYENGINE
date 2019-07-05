@@ -4,6 +4,7 @@
 #include "ProgressBar3D.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <IActorSystem.h>
 
 CProgressBar3D::CProgressBar3D()
 {

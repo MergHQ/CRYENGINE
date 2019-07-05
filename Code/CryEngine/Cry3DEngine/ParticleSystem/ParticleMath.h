@@ -3,23 +3,27 @@
 #pragma once
 
 #include "ParticleCommon.h"
+#include <CryMath/Range.h>
 
 namespace pfx2
 {
 
 using namespace crymath;
+
 // 4x vector types of standard types
 #ifdef CRY_PFX2_USE_SSE
-typedef f32v4  floatv;
-typedef u32v4  uint32v;
-typedef i32v4  int32v;
-typedef uint32 uint8v;
-typedef u32v4  UColv;
+typedef f32v4    floatv;
+typedef u32v4    uint32v;
+typedef i32v4    int32v;
+typedef uint32   uint8v;
+typedef mask32v4 maskv;
+typedef u32v4    UColv;
 #else
 typedef float  floatv;
 typedef uint32 uint32v;
 typedef int32  int32v;
 typedef uint8  uint8v;
+typedef uint32 maskv;
 typedef UCol   UColv;
 #endif
 
@@ -32,29 +36,13 @@ typedef Vec4_tpl<floatv>  Vec4v;
 typedef Quat_tpl<floatv>  Quatv;
 typedef Plane_tpl<floatv> Planev;
 
-#ifdef CRY_PFX2_USE_SSE
-struct ColorFv
-{
-	ColorFv() {}
-	ColorFv(floatv _r, floatv _g, floatv _b)
-		: r(_r), g(_g), b(_b) {}
-	floatv r, g, b;
-};
-#else
-typedef ColorF ColorFv;
-#endif
-
 ///////////////////////////////////////////////////////////////////////////
 // Vector/scalar conversions
+template<typename T> ILINE floatv ToFloatv(T t)  { return convert<floatv>(+t); }
 
-floatv  ToFloatv(float v);
-uint32v ToUint32v(uint32 v);
-floatv  ToFloatv(int32v v);
-floatv  ToFloatv(uint32v v);
-uint32v ToUint32v(floatv v);
-Vec3v   ToVec3v(Vec3 v);
-Vec4v   ToVec4v(Vec4 v);
-Planev  ToPlanev(Plane v);
+ILINE Vec3v  ToVec3v(Vec3 const& v)   { return Vec3v(v); }
+ILINE Vec4v  ToVec4v(Vec4 const& v)   { return Vec4v((Vec4f const&)v); }
+ILINE Planev ToPlanev(Plane const& v) { return Planev(ToVec3v(v.n), ToFloatv(v.d)); }
 
 uint8  FloatToUFrac8Saturate(float v);
 
@@ -85,24 +73,12 @@ Vec3  HMax(const Vec3v& v0);
 template<typename T> Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, const Vec3_tpl<T>& b, const Vec3_tpl<T>& c);
 template<typename T> Vec3_tpl<T> MAdd(const Vec3_tpl<T>& a, T b, const Vec3_tpl<T>& c);
 
-// Quaternion functions
-
-Quatv AddAngularVelocity(Quatv initial, Vec3v angularVel, floatv deltaTime);
-
 // Color
 
-ColorF  ToColorF(UCol color);
-ColorFv ToColorFv(UColv color);
-ColorFv ToColorFv(ColorF color);
-UCol    ColorFToUCol(const ColorF& color);
-UColv   ColorFvToUColv(const ColorFv& color);
-UColv   ToUColv(UCol color);
-
-#ifdef CRY_PFX2_USE_SSE
-ColorFv operator+(const ColorFv& a, const ColorFv& b);
-ColorFv operator*(const ColorFv& a, const ColorFv& b);
-ColorFv operator*(const ColorFv& a, floatv b);
-#endif
+Vec3  ToVec3(UCol color);
+Vec3v ToVec3v(UColv color);
+UCol  ToUCol(const Vec3& color);
+UColv ToUColv(const Vec3v& color);
 
 // Return the correct update time for a particle
 template<typename T>
@@ -113,23 +89,40 @@ template<typename T>
 T StartTime(T curTime, T frameTime, T absAge);
 
 
-// non vectorized
+///////////////////////////////////////////////////////////////////////////
+// Fast approx cube root, implemented by blending between square root and fourth root
+struct CubeRootApprox
+{
+	// Specify point at which cube root is accurate (apart from 0 and 1)
+	CubeRootApprox(float anchor)
+	{
+		float correct = pow(anchor, 0.333333f);
+		float anchorSqrt = sqrt_fast(anchor);
+		m_blend = (correct - anchorSqrt) / (sqrt_fast(anchorSqrt) - anchorSqrt);
+	}
+
+	template<typename T>
+	T operator()(T f) const
+	{
+		T fsqrt = sqrt_fast(f);
+		return fsqrt + (sqrt_fast(fsqrt) - fsqrt) * convert<T>(m_blend);
+	}
+private:
+	float m_blend;
+};
+
+///////////////////////////////////////////////////////////////////////////
+// Polar math
 
 void RotateAxes(Vec3* v0, Vec3* v1, const float angle);
 Vec3 PolarCoordToVec3(float azimuth, float altitude);
 
-///////////////////////////////////////////////////////////////////////////
-template<typename F>
-struct Slope
-{
-	F scale;
-	F start;
+// Generate points on geometry from parameters
 
-	Slope(F scale = 1, F start = 0) : scale(scale), start(start) {}
-	template<typename F2> Slope(const Slope<F2>& o) : scale(convert<F>(o.scale)), start(convert<F>(o.start)) {}
-
-	F operator()(F val) const { return MAdd(val, scale, start); }
-};
+Vec2 CirclePoint(float a);
+Vec2 DiskPoint(float a, float r2);
+Vec3 SpherePoint(float a, float z);
+Vec3 BallPoint(float a, float z, float r3);
 
 }
 

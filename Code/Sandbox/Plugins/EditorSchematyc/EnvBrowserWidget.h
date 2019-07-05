@@ -131,4 +131,3 @@ namespace Schematyc
 		CEnvBrowserFilter* m_pFilter;
 	};
 }
-

@@ -8,6 +8,7 @@
 #include <CryFlowGraph/IFlowSystem.h>
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
 #include <CryAISystem/IAIAction.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "FlowGraph.h"
 #include "FlowGraphNode.h"
@@ -20,6 +21,7 @@
 
 #include "IconManager.h"
 #include "GameEngine.h"
+#include "LogFile.h"
 
 #include "Objects/EntityObject.h"
 #include "Objects/PrefabObject.h"
@@ -255,7 +257,7 @@ CHyperNode* CFlowGraphManager::CreateNode(CHyperGraph* pGraph, const char* sNode
 
 void CFlowGraphManager::ReloadGraphs()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// create undos
 	std::vector<IUndoObject*> m_CurrentFgUndos;
@@ -295,7 +297,7 @@ void CFlowGraphManager::UpdateNodePrototypeWithoutReload(const char* nodeClassNa
 
 void CFlowGraphManager::ReloadClasses()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// rebuilds m_prototypes from where nodes are cloned when they are created.
 	// since some nodes could be changed / removed
@@ -465,7 +467,6 @@ UIEnumType ParseUIConfig(const char* sUIConfig, std::map<string, string>& outEnu
 			outEnumPairs[str] = value;
 			resToken = TokenizeString(values, " ,", pos);
 		}
-		;
 	}
 
 	return enumType;
@@ -844,7 +845,7 @@ void CFlowGraphManager::FreeGraphsForActions()
 //////////////////////////////////////////////////////////////////////////
 CHyperFlowGraph* CFlowGraphManager::CreateEditorGraphForModule(IFlowGraphModule* pModule)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	assert(pModule);
 	if (pModule)
@@ -882,7 +883,7 @@ CHyperFlowGraph* CFlowGraphManager::CreateEditorGraphForModule(IFlowGraphModule*
 //////////////////////////////////////////////////////////////////////////
 CHyperFlowGraph* CFlowGraphManager::FindGraph(IFlowGraphPtr pFG)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	for (int i = 0; i < m_graphs.size(); ++i)
 		if (m_graphs[i]->GetIFlowGraph() == pFG.get())
 			return m_graphs[i];
@@ -1141,4 +1142,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyOpenFlowGraphView, flowgraph, open_view,
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyOpenFlowGraphViewAndSelect, flowgraph, open_view_and_select,
                                      "Opens named Flow Graph and select entity node",
                                      "flowgraph.open_view_and_select(str flowGraphName,str entityName)");
-

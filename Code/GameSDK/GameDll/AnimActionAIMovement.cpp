@@ -161,9 +161,8 @@ IAction::EStatus CAnimActionAIMovement::UpdatePending(float timePassed)
 	TBase::UpdatePending(timePassed);
 
 	const EMoveState newMoveState = CalculateState();
-	const bool changedState = SetState(newMoveState);
-
-	const bool fragmentWasSet = UpdateFragmentVariation(true /* force update */);
+	SetState(newMoveState);
+	UpdateFragmentVariation(true /* force update */);
 
 	return m_eStatus;
 }
@@ -460,16 +459,12 @@ CAnimActionAIMovement::EMoveState CAnimActionAIMovement::CalculateState()
 		}
 		else
 		{
-			const Quat &animLoc  = player.GetAnimatedCharacter()->GetAnimLocation().q;
-			const Quat &viewQuat = player.GetViewQuat();
-
 			const SPredictedCharacterStates& prediction = player.GetAnimatedCharacter()->GetOverriddenMotionParameters();
 
 			float signedAngle = 0.0f;
 			prediction.GetParam(eMotionParamID_TurnAngle, signedAngle);
 			const float unsignedAngle = fabsf(signedAngle);
 
-			const float MAX_MOVE_SPEED_FOR_TURN = 0.25f;
 			const float MIN_TURN_ANGLE = DEG2RAD(1.0f); // hardcoded minimum, we don't kick in turn animations unless above this number
 			const float MIN_BIG_TURN_ANGLE = DEG2RAD(120.0f);
 			CRY_ASSERT(MIN_BIG_TURN_ANGLE >= MIN_TURN_ANGLE);

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "IKTorsoAim.h"
 
@@ -117,7 +118,7 @@ void CIKTorsoAim::SetAbsoluteTargetPosition(const Vec3& targetPosition)
 
 void CIKTorsoAim::SetFeatherWeights(uint32 weights, const f32* customBlends)
 {
-	assert(weights <= TORSOAIM_MAX_JOINTS);
+	CRY_ASSERT(weights <= TORSOAIM_MAX_JOINTS);
 	memcpy(m_setParams.weights, customBlends, sizeof(f32) * weights);
 	m_setParams.numParents = weights - 1;
 }
@@ -337,8 +338,8 @@ bool CIKTorsoAim::Execute(const SAnimationPoseModifierParams& params)
 		params.pPoseData->SetJointAbsoluteO(idx, params.pPoseData->GetJointAbsolute(idx).q.GetNormalized());
 
 		childidx = idx;
-		assert(params.pPoseData->GetJointAbsolute(idx).IsValid());
-		assert(params.pPoseData->GetJointAbsolute(idx).q.IsUnit());
+		CRY_ASSERT(params.pPoseData->GetJointAbsolute(idx).IsValid());
+		CRY_ASSERT(params.pPoseData->GetJointAbsolute(idx).q.IsUnit());
 
 		idx = pidx;
 	}
@@ -349,8 +350,8 @@ bool CIKTorsoAim::Execute(const SAnimationPoseModifierParams& params)
 		int16 pidx = rIDefaultSkeleton.GetJointParentIDByID(idx);
 		params.pPoseData->SetJointRelative(idx, params.pPoseData->GetJointAbsolute(pidx).GetInverted() * params.pPoseData->GetJointAbsolute(idx));
 
-		assert(params.pPoseData->GetJointRelative(idx).IsValid());
-		assert(params.pPoseData->GetJointRelative(idx).q.IsUnit());
+		CRY_ASSERT(params.pPoseData->GetJointRelative(idx).IsValid());
+		CRY_ASSERT(params.pPoseData->GetJointRelative(idx).q.IsUnit());
 
 		idx = pidx;
 	}
@@ -359,8 +360,8 @@ bool CIKTorsoAim::Execute(const SAnimationPoseModifierParams& params)
 	{
 		int32 p = rIDefaultSkeleton.GetJointParentIDByID(i);
 		params.pPoseData->SetJointAbsolute(i, params.pPoseData->GetJointAbsolute(p) * params.pPoseData->GetJointRelative(i));
-		assert(params.pPoseData->GetJointAbsolute(idx).IsValid());
-		assert(params.pPoseData->GetJointAbsolute(idx).q.IsUnit());
+		CRY_ASSERT(params.pPoseData->GetJointAbsolute(idx).IsValid());
+		CRY_ASSERT(params.pPoseData->GetJointAbsolute(idx).q.IsUnit());
 	}
 
 #if DO_DEBUG_RENDER

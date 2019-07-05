@@ -24,11 +24,13 @@
 #include <CryAISystem/IAISystem.h>
 #include <CryRenderer/IRenderer.h>
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryMovie/IMovieSystem.h>
 #include <ServiceNetwork.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryInput/IInput.h>
 #include <CrySystem/ILog.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryScriptSystem/IScriptSystem.h>
@@ -38,7 +40,9 @@
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include "TestSystemLegacy.h"             // CTestSystem
+#ifdef CRY_TESTING
+	#include "TestSystem.h"
+#endif // CRY_TESTING
 #include "VisRegTest.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <Cry3DEngine/ITimeOfDay.h>
@@ -51,7 +55,6 @@
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"
 #include "NotificationNetwork.h"
-#include <CrySystem/Profilers/ProfileLog.h>
 #include <CryString/CryPath.h>
 
 #include "XML/xml.h"
@@ -63,7 +66,6 @@
 #include "LocalizedStringManager.h"
 #include "XML/XmlUtils.h"
 #include "Serialization/ArchiveHost.h"
-#include "ThreadProfiler.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
 #include "SystemEventDispatcher.h"
 #include "HardwareMouse.h"
@@ -71,12 +73,12 @@
 #include <CryMemory/ILocalMemoryUsage.h>
 #include "ResourceManager.h"
 #include "MemoryManager.h"
-#include "LoadingProfiler.h"
 #include <CryLiveCreate/ILiveCreateHost.h>
 #include <CryLiveCreate/ILiveCreateManager.h>
 #include "OverloadSceneManager/OverloadSceneManager.h"
 #include <CryThreading/IThreadManager.h>
-#include <CryReflection/IReflection.h>
+#include <CryReflection/IModule.h>
+#include <CryUDR/InterfaceIncludes.h>
 
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include <CrySystem/ZLib/IZlibDecompressor.h>
@@ -84,10 +86,19 @@
 #include <zlib.h>
 #include "RemoteConsole/RemoteConsole.h"
 #include "ImeManager.h"
-#include "BootProfiler.h"
 #include "Watchdog.h"
 #include "NullImplementation/NULLAudioSystems.h"
 #include "NullImplementation/NULLRenderAuxGeom.h"
+
+#include "BootProfiler.h"
+#if ALLOW_BROFILER
+#	include <Cry_Brofiler.h>
+#	include "Profiling/CryBrofiler.h"
+#endif
+#include "Profiling/ProfilingRenderer.h"
+#include "Profiling/NullProfiler.h"
+#include "Profiling/CryProfilingSystem.h"
+#include "Profiling/CryProfilingSystemSharedImpl.h"
 
 #include <CryMath/PNoise3.h>
 #include <CryString/StringUtils.h>
@@ -96,6 +107,7 @@
 
 #include "ExtensionSystem/CryPluginManager.h"
 #include "ProjectManager/ProjectManager.h"
+#include "UserAnalytics/UserAnalyticsSystem.h"
 
 #include "DebugCallStack.h"
 #include "ManualFrameStep.h"
@@ -115,8 +127,8 @@ WATERMARKDATA(_m);
 #include "Interprocess/StatsAgent.h"
 
 #if CRY_PLATFORM_WINDOWS
-#include <timeapi.h>
-#include <algorithm>
+	#include <timeapi.h>
+	#include <algorithm>
 #endif
 
 // Define global cvars.
@@ -134,6 +146,10 @@ CMTSafeHeap* g_pPakHeap = 0;// = &g_pakHeap;
 
 //////////////////////////////////////////////////////////////////////////
 #include "Validator.h"
+#include "CPUDetect.h"
+#include <CrySystem/CVarOverride.h>
+#include "CmdLine.h"
+#include <CryMath/Random.h>
 
 #if CRY_PLATFORM_ANDROID
 namespace
@@ -194,9 +210,7 @@ struct SCVarsWhitelistConfigSink : public ILoadConfigurationEntrySink
 {
 	virtual void OnLoadConfigurationEntry(const char* szKey, const char* szValue, const char* szGroup)
 	{
-		ICVarsWhitelist* pCVarsWhitelist = gEnv->pSystem->GetCVarsWhiteList();
-		bool whitelisted = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(szKey, false) : true;
-		if (whitelisted)
+		if (gEnv->pSystem->IsCVarWhitelisted(szKey, false))
 		{
 			gEnv->pConsole->LoadConfigVar(szKey, szValue);
 		}
@@ -214,13 +228,10 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	: m_gameLibrary(nullptr)
 #endif
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem Constructor");
+
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
-
-	//////////////////////////////////////////////////////////////////////////
-	// Clear environment.
-	//////////////////////////////////////////////////////////////////////////
-	memset(&m_env, 0, sizeof(m_env));
 
 	//////////////////////////////////////////////////////////////////////////
 	// Reset handles.
@@ -232,26 +243,11 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.pSystem = this;
 	m_env.pTimer = &m_Time;
 	m_env.pNameTable = &m_nameTable;
-	m_env.pFrameProfileSystem = &m_FrameProfileSystem;
-	m_env.bServer = false;
-	m_env.bMultiplayer = false;
-	m_env.bHostMigrating = false;
-	m_env.bDeepProfiling = 0;
-	m_env.bBootProfilerEnabledFrames = false;
-	m_env.callbackStartSection = 0;
-	m_env.callbackEndSection = 0;
-
-	m_env.bUnattendedMode = false;
-	m_env.bTesting = false;
-
-#if CRY_PLATFORM_DURANGO
-	m_env.ePLM_State = EPLM_UNDEFINED;
-#endif
+	m_env.startProfilingSection = &CNullProfiler::StartSectionStatic;
+	m_env.recordProfilingMarker = &CNullProfiler::RecordMarkerStatic;
 
 	m_env.SetFMVIsPlaying(false);
 	m_env.SetCutsceneIsPlaying(false);
-
-	m_env.szDebugStatus[0] = '\0';
 
 #if CRY_PLATFORM_DESKTOP
 	m_env.SetIsClient(false);
@@ -267,8 +263,11 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_PhysThread = nullptr;
 
 	m_pIFont = nullptr;
+#ifdef CRY_TESTING
 	m_pTestSystem = nullptr;
+#endif
 	m_pVisRegTest = nullptr;
+	m_rIntialWindowSizeRatio = nullptr;
 	m_rWidth = nullptr;
 	m_rHeight = nullptr;
 	m_rColorBits = nullptr;
@@ -302,7 +301,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 
 	m_pUserCallback = nullptr;
 #if defined(CVARS_WHITELIST)
-	m_pCVarsWhitelist = nullptr;
 	m_pCVarsWhitelistConfigSink = &g_CVarsWhitelistConfigSink;
 #endif // defined(CVARS_WHITELIST)
 	m_sys_memory_debug = nullptr;
@@ -313,10 +311,10 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_sys_job_system_enable = nullptr;
 	m_sys_job_system_profiler = nullptr;
 	m_sys_job_system_max_worker = nullptr;
+	m_sys_job_system_worker_boost_enabled = nullptr;
 	m_sys_spec = nullptr;
 	m_sys_firstlaunch = nullptr;
 	m_sys_enable_budgetmonitoring = nullptr;
-	m_sys_preload = nullptr;
 	m_sys_use_Mono = nullptr;
 	m_sys_dll_ai = nullptr;
 	m_sys_dll_response_system = nullptr;
@@ -337,8 +335,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bShaderCacheGenMode = false;
 	m_bRelaunch = false;
 	m_iLoadingMode = 0;
-	m_bEditor = false;
-	m_bPreviewMode = false;
 	m_bIgnoreUpdates = false;
 	m_bNoCrashDialog = false;
 
@@ -349,7 +345,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_expectingMapCommand = false;
 #endif
 
-	m_nStrangeRatio = 1000;
 	// no mem stats at the moment
 	m_pMemStats = nullptr;
 	m_pSizer = nullptr;
@@ -383,25 +378,72 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pXMLUtils = new CXmlUtils(this);
 	m_pArchiveHost = Serialization::CreateArchiveHost();
 
-	m_pTestSystem = stl::make_unique<CTestSystemLegacy>(this);
-
 	m_pMemoryManager = CryGetIMemoryManager();
 	m_pResourceManager = new CResourceManager;
 	m_pTextModeConsole = nullptr;
-	m_pThreadProfiler = nullptr;
 	m_pDiskProfiler = nullptr;
 	m_ttMemStatSS = 0;
+
+	m_pLegacyProfiler = nullptr;
+	m_pProfilingSystem = nullptr;
+	m_pProfileRenderer = nullptr;
+
+#ifdef ENABLE_PROFILING_CODE
+	const std::vector<Cry::ProfilerRegistry::SEntry>& profilers = Cry::ProfilerRegistry::Get();
+
+	const Cry::ProfilerRegistry::SEntry* cmdLineProfilerChoice = nullptr;
+	for (const Cry::ProfilerRegistry::SEntry& profilerEntry : profilers)
+	{
+		if (strstr(startupParams.szSystemCmdLine, profilerEntry.cmdLineArgument.c_str()) != nullptr)
+		{
+			if (CRY_VERIFY_WITH_MESSAGE(cmdLineProfilerChoice == nullptr, "You specified more than one profiler on the command line!"))
+				cmdLineProfilerChoice = &profilerEntry;
+		}
+	}
+
+	const Cry::ProfilerRegistry::SEntry defaultEntry = CCryProfilingSystem::MakeRegistryEntry();
+	
+	if (cmdLineProfilerChoice == nullptr)
+	{
+		cmdLineProfilerChoice = &defaultEntry;
+	}
+
+	m_pProfilingSystem = cmdLineProfilerChoice->factory();
+	m_env.startProfilingSection = cmdLineProfilerChoice->sectionCallback;
+	m_env.recordProfilingMarker = cmdLineProfilerChoice->markerCallback;
+
+	if (cmdLineProfilerChoice->name == defaultEntry.name)
+	{
+		m_pLegacyProfiler = reinterpret_cast<CCryProfilingSystem*>(m_pProfilingSystem);
+	}
 
 #if defined(ENABLE_LOADING_PROFILER)
 	if (!startupParams.bShaderCacheGen)
 	{
-		CBootProfiler::GetInstance().Init(this);
+		CBootProfiler::GetInstance().Init(this, startupParams.szSystemCmdLine);
+	}
+	if (m_pLegacyProfiler)
+		m_pLegacyProfiler->SetBootProfiler(&CBootProfiler::GetInstance());
+#endif
+	m_pProfileRenderer = new CProfilingRenderer;
+
+	const char* szVerbosity = strstr(startupParams.szSystemCmdLine, "-profile_verbosity=");
+	if (szVerbosity != nullptr)
+	{
+		szVerbosity += sizeof("-profile_verbosity=") - 1;
+		int verbosity = atoi(szVerbosity);
+		if (verbosity > 0)
+			CCryProfilingSystem::s_verbosity = verbosity;
 	}
 #endif
 
 	InitThreadSystem();
 
-	LOADING_TIME_PROFILE_SECTION_NAMED("CSystem Boot");
+#ifdef CRY_TESTING
+	m_pTestSystem = stl::make_unique<CryTest::CTestSystem>(this);
+#endif
+
+	CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CSystem Boot");
 
 	m_pMiniGUI = nullptr;
 	m_pPerfHUD = nullptr;
@@ -419,16 +461,15 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.pJobManager = GetJobManagerInterface();
 
 	m_UpdateTimesIdx = 0U;
-	m_bNeedDoWorkDuringOcclusionChecks = false;
 
 	m_PlatformOSCreateFlags = 0;
 
 	m_bHasRenderedErrorMessage = false;
-	
+
 	m_pImeManager = nullptr;
 	RegisterWindowMessageHandler(this);
 
-	m_env.pConsole = new CXConsole;
+	m_env.pConsole = new CXConsole(*this);
 	if (startupParams.pPrintSync)
 		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
 
@@ -462,7 +503,6 @@ CSystem::~CSystem()
 	FreeLib(m_dll.hGame);
 	FreeLib(m_dll.hSound);
 	SAFE_DELETE(m_pVisRegTest);
-	SAFE_DELETE(m_pThreadProfiler);
 #if defined(USE_DISK_PROFILER)
 	SAFE_DELETE(m_pDiskProfiler);
 #endif
@@ -473,20 +513,23 @@ CSystem::~CSystem()
 	//	SAFE_DELETE(m_pMemoryManager);
 	SAFE_DELETE(m_pNULLRenderAuxGeom);
 
+#ifdef CRY_TESTING
+	m_pTestSystem.reset();
+#endif
+
 	gEnv->pThreadManager->UnRegisterThirdPartyThread("Main");
 	ShutDownThreadSystem();
 
 	SAFE_DELETE(g_pPakHeap);
 
-	m_pTestSystem.reset();
+	m_env.startProfilingSection = &CNullProfiler::StartSectionStatic;
+	m_env.recordProfilingMarker = &CNullProfiler::RecordMarkerStatic;
+	SAFE_DELETE(m_pProfilingSystem);
 
 	m_env.pSystem = nullptr;
 #if !defined(SYS_ENV_AS_STRUCT)
 	gEnv = 0;
 #endif
-
-	// The FrameProfileSystem should clean up as late as possible as some modules create profilers during shutdown!
-	m_FrameProfileSystem.Done();
 
 #if CRY_PLATFORM_WINDOWS
 	((DebugCallStack*)IDebugCallStack::instance())->uninstallErrorHandler();
@@ -545,19 +588,16 @@ void CSystem::ShutDown()
 
 	SAFE_DELETE(m_pManualFrameStepController);
 
-	m_FrameProfileSystem.Enable(false, false);
-
-#if defined(ENABLE_LOADING_PROFILER)
-	CLoadingProfilerSystem::ShutDown();
-#endif
-
 	if (m_pSystemEventDispatcher)
 	{
 		m_pSystemEventDispatcher->RemoveListener(this);
 	}
 
 	if (m_pUserCallback)
+	{
 		m_pUserCallback->OnShutdown();
+		m_pUserCallback = nullptr;
+	}
 
 	GetIRemoteConsole()->Stop();
 
@@ -573,9 +613,9 @@ void CSystem::ShutDown()
 	KillPhysicsThread();
 
 	if (m_sys_firstlaunch)
-		m_sys_firstlaunch->Set("0");
+		m_sys_firstlaunch->Set(0);
 
-	if (m_bEditor)
+	if (m_env.IsEditor())
 	{
 		// restore the old saved cvars
 		if (m_env.pConsole->GetCVar("r_Width"))
@@ -586,14 +626,14 @@ void CSystem::ShutDown()
 			m_env.pConsole->GetCVar("r_ColorBits")->Set(m_iColorBits);
 	}
 
-	if (m_bEditor && !m_bRelaunch)
+	if (m_env.IsEditor() && !m_bRelaunch)
 	{
 		SaveConfiguration();
 	}
 
 	//if (!m_bEditor && !bRelaunch)
 #if !CRY_PLATFORM_DURANGO && !CRY_PLATFORM_ORBIS
-	if (!m_bEditor)
+	if (!m_env.IsEditor())
 	{
 		if (m_pCVarQuit && m_pCVarQuit->GetIVal())
 		{
@@ -617,9 +657,8 @@ void CSystem::ShutDown()
 			SAFE_RELEASE(m_env.pAudioSystem);
 
 			// Log must be last thing released.
-			SAFE_RELEASE(m_env.pProfileLogSystem);
 			m_env.pLog->FlushAndClose();
-			SAFE_RELEASE(m_env.pLog);   // creates log backup
+			SAFE_RELEASE(m_env.pLog); // creates log backup
 
 	#if CRY_PLATFORM_WINDOWS
 			((DebugCallStack*)IDebugCallStack::instance())->uninstallErrorHandler();
@@ -645,6 +684,16 @@ void CSystem::ShutDown()
 	//////////////////////////////////////////////////////////////////////////
 	// Release Game.
 	//////////////////////////////////////////////////////////////////////////
+
+	if (m_env.pGameFramework)
+	{
+		m_env.pGameFramework->ShutDown();
+#if !defined(CRY_IS_MONOLITHIC_BUILD)
+		// This handle keeps gamedll loaded, it must be emptied on shutdown in order to properly clean up
+		m_gameLibrary.Set(nullptr);
+#endif
+	}
+
 	if (m_env.pEntitySystem)
 		m_env.pEntitySystem->Unload();
 
@@ -656,13 +705,8 @@ void CSystem::ShutDown()
 
 	UnloadSchematycModule();
 
-	if (gEnv->pGameFramework != nullptr)
-	{
-		gEnv->pGameFramework->ShutDown();
-	}
-
-	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
+	UnloadEngineModule("CryAction");
 	SAFE_DELETE(m_pPluginManager);
 
 	m_pPlatformOS.reset();
@@ -692,7 +736,7 @@ void CSystem::ShutDown()
 	//////////////////////////////////////////////////////////////////////////
 	// Clear 3D Engine resources.
 	if (m_env.p3DEngine)
-		m_env.p3DEngine->UnloadLevel();
+		m_env.p3DEngine->ShutDown();
 	//////////////////////////////////////////////////////////////////////////
 
 	// Shutdown resource manager.
@@ -741,30 +785,32 @@ void CSystem::ShutDown()
 
 	// Release console variables.
 
-	SAFE_RELEASE(m_pCVarQuit);
-	SAFE_RELEASE(m_rWidth);
-	SAFE_RELEASE(m_rHeight);
-	SAFE_RELEASE(m_rColorBits);
-	SAFE_RELEASE(m_rDepthBits);
-	SAFE_RELEASE(m_cvSSInfo);
-	SAFE_RELEASE(m_rStencilBits);
-	SAFE_RELEASE(m_rFullscreen);
-	SAFE_RELEASE(m_rDriver);
-	SAFE_RELEASE(m_pPhysicsLibrary);
+	SAFE_UNREGISTER_CVAR(m_pCVarQuit);
+	SAFE_UNREGISTER_CVAR(m_rIntialWindowSizeRatio);
+	SAFE_UNREGISTER_CVAR(m_rWidth);
+	SAFE_UNREGISTER_CVAR(m_rHeight);
+	SAFE_UNREGISTER_CVAR(m_rColorBits);
+	SAFE_UNREGISTER_CVAR(m_rDepthBits);
+	SAFE_UNREGISTER_CVAR(m_cvSSInfo);
+	SAFE_UNREGISTER_CVAR(m_rStencilBits);
+	SAFE_UNREGISTER_CVAR(m_rFullscreen);
+	SAFE_UNREGISTER_CVAR(m_rDriver);
+	SAFE_UNREGISTER_CVAR(m_pPhysicsLibrary);
 
-	SAFE_RELEASE(m_sysWarnings);
-	SAFE_RELEASE(m_sysKeyboard);
-	SAFE_RELEASE(m_sys_profile_watchdog_timeout);
-	SAFE_RELEASE(m_sys_job_system_filter);
-	SAFE_RELEASE(m_sys_job_system_enable);
-	SAFE_RELEASE(m_sys_job_system_profiler);
-	SAFE_RELEASE(m_sys_job_system_max_worker);
-	SAFE_RELEASE(m_sys_spec);
-	SAFE_RELEASE(m_sys_firstlaunch);
-	SAFE_RELEASE(m_sys_enable_budgetmonitoring);
-	SAFE_RELEASE(m_sys_physics_enable_MT);
-	SAFE_RELEASE(m_sys_min_step);
-	SAFE_RELEASE(m_sys_max_step);
+	SAFE_UNREGISTER_CVAR(m_sysWarnings);
+	SAFE_UNREGISTER_CVAR(m_sysKeyboard);
+	SAFE_UNREGISTER_CVAR(m_sys_profile_watchdog_timeout);
+	SAFE_UNREGISTER_CVAR(m_sys_job_system_filter);
+	SAFE_UNREGISTER_CVAR(m_sys_job_system_enable);
+	SAFE_UNREGISTER_CVAR(m_sys_job_system_profiler);
+	SAFE_UNREGISTER_CVAR(m_sys_job_system_max_worker);
+	SAFE_UNREGISTER_CVAR(m_sys_job_system_worker_boost_enabled);
+	SAFE_UNREGISTER_CVAR(m_sys_spec);
+	SAFE_UNREGISTER_CVAR(m_sys_firstlaunch);
+	SAFE_UNREGISTER_CVAR(m_sys_enable_budgetmonitoring);
+	SAFE_UNREGISTER_CVAR(m_sys_physics_enable_MT);
+	SAFE_UNREGISTER_CVAR(m_sys_min_step);
+	SAFE_UNREGISTER_CVAR(m_sys_max_step);
 
 	//Purposely leaking the object as we do not want to block the MainThread waiting for the Watchdog thread to join
 	if (m_pWatchdog != nullptr)
@@ -819,12 +865,15 @@ void CSystem::ShutDown()
 
 	// Shut down the streaming system and console as late as possible and after audio!
 	SAFE_DELETE(m_pStreamEngine);
+
+	// Shut down UDR before the console gets released as it accesses it during destruction!
+	UnloadEngineModule("CryUDR");
+
 	SAFE_RELEASE(m_env.pConsole);
 
 	// Log must be last thing released.
-	SAFE_RELEASE(m_env.pProfileLogSystem);
 	m_env.pLog->FlushAndClose();
-	SAFE_RELEASE(m_env.pLog); // creates log backup
+	SAFE_RELEASE(m_env.pLog);   // creates log backup
 
 	// DefaultValidator is used by the logging system, make sure to delete this member after logging system!
 	SAFE_DELETE(m_pDefaultValidator);
@@ -838,18 +887,38 @@ void CSystem::ShutDown()
 #if CAPTURE_REPLAY_LOG
 	CryGetIMemReplay()->Stop();
 #endif
+	SAFE_DELETE(m_env.pStatoscope);
+
+#if CRY_PLATFORM_LINUX
+	// Delete lock file
+	if (m_iApplicationInstance != -1)
+	{
+		// In case of a crash this will not get called
+		// but the OS clears the directory on reboot so
+		// "leaking" the file is not that bad
+
+		string path;
+		path.Format("/tmp/CrytekApplication%d.lock", m_iApplicationInstance);
+		remove(path.c_str());
+		m_iApplicationInstance = -1;
+	}
+#endif // CRY_PLATFORM_LINUX
 
 	// Fix to improve wait() time within third party APIs using sleep()
 #if CRY_PLATFORM_WINDOWS
 	TIMECAPS tc;
-	UINT wTimerRes;
 	if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR)
 	{
 		CryFatalError("Error while changing the system timer resolution!");
 	}
-	wTimerRes = std::min(std::max(tc.wPeriodMin, 1u), tc.wPeriodMax);
-	timeEndPeriod(wTimerRes);
+	timeEndPeriod(tc.wPeriodMin);
 #endif // CRY_PLATFORM_WINDOWS
+
+	if (m_env.pJobManager)
+	{
+		m_env.pJobManager->ShutDown();
+		m_env.pJobManager = nullptr;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -857,6 +926,9 @@ void CSystem::ShutDown()
 void CSystem::Quit()
 {
 	CryLog("CSystem::Quit invoked from thread %" PRI_THREADID " (main is %" PRI_THREADID ")", GetCurrentThreadId(), gEnv->mMainThreadId);
+
+	if (m_bQuit)
+		return;
 	m_bQuit = true;
 
 	if (m_pUserCallback)
@@ -869,7 +941,7 @@ void CSystem::Quit()
 	if (m_pTextModeConsole)
 		m_pTextModeConsole->OnShutdown();
 
-	if (m_env.pRenderer) 
+	if (m_env.pRenderer)
 	{
 		ICVar* pCVarGamma = m_env.pConsole->GetCVar("r_Gamma");
 		if (pCVarGamma)
@@ -976,6 +1048,20 @@ void CSystem::SetIProcess(IProcess* process)
 	//m_pProcess->SetPMessage("");
 }
 
+void CSystem::StartBootProfilerSession(const char* szName)
+{
+#ifdef ENABLE_LOADING_PROFILER
+	CBootProfiler::GetInstance().StartSession(szName);
+#endif
+}
+
+void CSystem::EndBootProfilerSession()
+{
+#ifdef ENABLE_LOADING_PROFILER
+	CBootProfiler::GetInstance().StopSession();
+#endif
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Physics thread task
 //////////////////////////////////////////////////////////////////////////
@@ -1028,12 +1114,11 @@ public:
 		LARGE_INTEGER stepStart, stepEnd;
 #endif
 		LARGE_INTEGER waitStart, waitEnd;
-		uint64 yieldBegin = 0U;
 
 		while (true)
 		{
 			{
-				CRY_PROFILE_REGION_WAITING(PROFILE_PHYSICS, "Wait - Physics Update");
+				CRY_PROFILE_SECTION_WAITING(PROFILE_PHYSICS, "Wait - Physics Update");
 
 				QueryPerformanceCounter(&waitStart);
 				m_FrameEvent.Wait(); // Wait until new frame
@@ -1041,7 +1126,7 @@ public:
 			}
 
 			{
-				CRY_PROFILE_REGION(PROFILE_PHYSICS, "Physics Update");
+				CRY_PROFILE_SECTION(PROFILE_PHYSICS, "Physics Update");
 
 				m_lastWaitTimeTaken = waitEnd.QuadPart - waitStart.QuadPart;
 
@@ -1114,7 +1199,7 @@ public:
 			PhysicsVars* vars = gEnv->pPhysicalWorld->GetPhysVars();
 			vars->lastTimeStep = 0;
 			m_bIsActive = 0;
-			m_stepRequested = min((float)m_stepRequested, 2.f * vars->maxWorldStep);
+			m_stepRequested = 0;
 			while (m_bProcessing);
 			return 1;
 		}
@@ -1158,8 +1243,7 @@ public:
 
 	void EnsureStepDone()
 	{
-		CRY_PROFILE_REGION_WAITING(PROFILE_SYSTEM, "SysUpdate:PhysicsEnsureDone");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("SysUpdate:PhysicsEnsureDone");
+		CRY_PROFILE_SECTION_WAITING(PROFILE_SYSTEM, "SysUpdate:PhysicsEnsureDone");
 
 		if (m_bIsActive)
 		{
@@ -1226,66 +1310,10 @@ int CSystem::SetThreadState(ESubsystem subsys, bool bActive)
 			}
 		}
 		break;
+	default:
+		break;
 	}
 	return 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::SleepIfInactive()
-{
-	LOADING_TIME_PROFILE_SECTION;
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
-	// Disable throttling, when various Profilers are in use
-
-	#if defined(CRY_PROFILE_MARKERS_USE_GPA)
-	return;
-	#endif
-
-	#if ALLOW_BROFILER
-	if (::Profiler::IsActive())
-	{
-		return;
-	}
-	#endif
-
-	if (gEnv->pConsole->GetCVar("e_StatoscopeEnabled")->GetIVal())
-	{
-		return;
-	}
-#endif
-
-	// ProcessSleep()
-	if (m_env.IsDedicated() || m_bEditor || gEnv->bMultiplayer)
-		return;
-
-#if CRY_PLATFORM_WINDOWS
-	if (GetIRenderer())
-	{
-		WIN_HWND hRendWnd = GetIRenderer()->GetHWND();
-		if (!hRendWnd)
-			return;
-
-		// Loop here waiting for window to be activated.
-		for (int nLoops = 0; nLoops < 5; nLoops++)
-		{
-			WIN_HWND hActiveWnd = ::GetActiveWindow();
-			if (hActiveWnd == hRendWnd)
-				break;
-
-			if (m_hWnd)
-			{
-				PumpWindowMessage(true, m_hWnd);
-			}
-			if (gEnv->pGameFramework)
-			{
-				// During the time demo, do not sleep even in inactive window.
-				if (gEnv->pGameFramework->IsInTimeDemo())
-					break;
-			}
-			CrySleep(5);
-		}
-	}
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1319,7 +1347,7 @@ void CSystem::SleepIfNeeded()
 				if (maxFPS == 0)
 				{
 					const bool bInLoading = (ESYSTEM_GLOBAL_STATE_RUNNING != m_systemGlobalState);
-					if (bInLoading || IsPaused())
+					if (bInLoading || IsPaused() || m_throttleFPS)
 					{
 						maxFPS = 60;
 					}
@@ -1336,7 +1364,7 @@ void CSystem::SleepIfNeeded()
 		ITimer* pTimer = gEnv->pTimer;
 		static int64 sTimeLast = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
 		int64 currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
-		for (;; )
+		for (;;)
 		{
 			const int64 frameTime = currentTime - sTimeLast;
 			if (frameTime >= thresholdMs)
@@ -1361,11 +1389,7 @@ WNDPROC g_prevWndProc;
 LRESULT CALLBACK BreakWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	if (msg == WM_HOTKEY)
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-		CryDebugBreak();
-	#else
-		__asm int 3;
-	#endif
+		__debugbreak();
 	return CallWindowProc(g_prevWndProc, hWnd, msg, wParam, lParam);
 }
 
@@ -1409,7 +1433,7 @@ class BreakListener : public IInputEventListener
 	bool OnInputEvent(const SInputEvent& ie)
 	{
 		if (ie.deviceType == eIDT_Keyboard && ie.keyId == eKI_Pause && ie.state & (eIS_Pressed | eIS_Down))
-			CryDebugBreak();
+			__debugbreak();
 		return true;
 	}
 } g_BreakListener;
@@ -1456,6 +1480,8 @@ int prev_sys_float_exceptions = -1;
 //////////////////////////////////////////////////////////////////////
 void CSystem::PrePhysicsUpdate()
 {
+	CRY_PROFILE_SECTION(PROFILE_SYSTEM, "System::PrePhysicsUpdate");
+
 	if (m_env.pGameFramework)
 	{
 		m_env.pGameFramework->PrePhysicsUpdate();
@@ -1486,6 +1512,8 @@ void CSystem::PrePhysicsUpdate()
 
 void CSystem::RunMainLoop()
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::MainLoop");
+
 	if (m_bShaderCacheGenMode)
 	{
 		return;
@@ -1513,7 +1541,7 @@ void CSystem::RunMainLoop()
 #if CRY_PLATFORM_DURANGO
 		Windows::UI::Core::CoreWindow::GetForCurrentThread()->Dispatcher->ProcessEvents(Windows::UI::Core::CoreProcessEventsOption::ProcessAllIfPresent);
 #endif
-		if (!DoFrame({}))
+		if (!DoFrame())
 		{
 			break;
 		}
@@ -1521,11 +1549,13 @@ void CSystem::RunMainLoop()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ESystemUpdateFlags> updateFlags)
+bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	// The frame profile system already creates an "overhead" profile label
-	// in StartFrame(). Hence we have to set the FRAMESTART before.
-	CRY_PROFILE_FRAMESTART("Main");
+	if(m_pProfilingSystem && !updateFlags.Check(ESYSUPDATE_EDITOR))
+		m_pProfilingSystem->StartFrame();
+#if ALLOW_BROFILER
+	BROFILER_FRAME("Main");
+#endif
 
 	if (m_pManualFrameStepController != nullptr && m_pManualFrameStepController->Update() == EManualFrameStepResult::Block)
 	{
@@ -1533,23 +1563,16 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		return true;
 	}
 
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	m_env.GetJobManager()->SetFrameStartTime(m_env.pTimer->GetAsyncTime());
 #endif
-
-	if (!updateFlags.Check(ESYSUPDATE_EDITOR))
-	{
-		m_env.pFrameProfileSystem->StartFrame();
-	}
-
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, __FUNC__);
-	CRYPROFILE_SCOPE_PROFILE_MARKER(__FUNC__);
 
 	if (m_env.pGameFramework != nullptr)
 	{
 		m_env.pGameFramework->PreSystemUpdate();
 	}
-	
+
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
 	{
 		m_pPluginManager->UpdateBeforeSystem();
@@ -1567,7 +1590,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	}
 
 	if (!m_env.IsEditing())  // Editor calls its own rendering update
-		RenderBegin(displayContextKey);
+		RenderBegin(displayContextKey, graphicsPipelineKey);
 
 	bool continueRunning = true;
 
@@ -1581,7 +1604,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 			pauseMode = 0;
 			updateFlags |= ESYSUPDATE_IGNORE_AI;
 		}
-		else if(m_env.pGameFramework != nullptr)
+		else if (m_env.pGameFramework != nullptr)
 		{
 			pauseMode = (m_env.pGameFramework->IsGamePaused() || !m_env.pGameFramework->IsGameStarted()) ? 1 : 0;
 		}
@@ -1609,7 +1632,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_pPluginManager->UpdateAfterSystem();
 	}
 
-	// Synchronize all animations so ensure that their computation have finished
+	// Synchronize all animations to ensure that their computation has finished
 	// Has to be done before view update, in case camera depends on a joint
 	if (m_env.pCharacterManager && !IsLoading())
 	{
@@ -1630,7 +1653,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	const bool isCameraFrozen = pCameraFreeze && pCameraFreeze->GetIVal() != 0;
 
 	const CCamera& rCameraToSet = isCameraFrozen ? m_env.p3DEngine->GetRenderingCamera() : m_ViewCamera;
-	m_env.p3DEngine->PrepareOcclusion(rCameraToSet);
+	m_env.p3DEngine->PrepareOcclusion(rCameraToSet, SGraphicsPipelineKey::BaseGraphicsPipelineKey);
 
 	if (m_env.pGameFramework != nullptr)
 	{
@@ -1642,7 +1665,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_pPluginManager->UpdateBeforeRender();
 	}
 
-	Render();
+	Render(graphicsPipelineKey);
 
 	if (m_env.pGameFramework != nullptr)
 	{
@@ -1689,25 +1712,19 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 
 		m_env.p3DEngine->SyncProcessStreamingUpdate();
 
-		if (NeedDoWorkDuringOcclusionChecks())
-		{
-			DoWorkDuringOcclusionChecks();
-		}
-
-		m_env.pFrameProfileSystem->EndFrame();
+		if(m_pProfilingSystem)
+			m_pProfilingSystem->EndFrame();
 	}
 
 	SleepIfNeeded();
-
 	return continueRunning;
 }
 
 //////////////////////////////////////////////////////////////////////
 bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 {
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CSystem::Update()");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::Update");
 
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
 	// do the dedicated sleep earlier than the frame profiler to avoid having it counted
@@ -1738,7 +1755,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (g_cvars.sys_keyboard_break && !g_breakListenerOn)
 	{
 	#if CRY_PLATFORM_WINDOWS
-		if (m_bEditor && !g_pBreakHotkeyThread)
+		if (m_env.IsEditor() && !g_pBreakHotkeyThread)
 		{
 			g_pBreakHotkeyThread = new SBreakHotKeyThread();
 			if (!gEnv->pThreadManager->SpawnThread(g_pBreakHotkeyThread, "WINAPI_BreakHotkeyListener"))
@@ -1765,11 +1782,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		g_breakListenerOn = false;
 	}
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
-#if CRY_PLATFORM_WINDOWS
-	// enable/disable SSE fp exceptions (#nan and /0)
-	// need to do it each frame since sometimes they are being reset
-	_mm_setcsr(_mm_getcsr() & ~0x280 | (g_cvars.sys_float_exceptions > 0 ? 0 : 0x280));
-#endif
 
 	m_nUpdateCounter++;
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
@@ -1778,9 +1790,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		gEnv->pRenderer->ScreenShot(m_sDelayedScreeenshot.c_str());
 		m_sDelayedScreeenshot.clear();
 	}
-
-	// Check if game needs to be sleeping when not active.
-	SleepIfInactive();
 
 	if (m_pUserCallback)
 		m_pUserCallback->OnUpdate();
@@ -1801,7 +1810,10 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	CTimeValue updateStart = gEnv->pTimer->GetAsyncTime();
 
 	if (m_env.pLog)
+	{
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Log::Update");
 		m_env.pLog->Update();
+	}
 
 #if !defined(RELEASE) || defined(RELEASE_LOGGING)
 	GetIRemoteConsole()->Update();
@@ -1818,12 +1830,12 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 		// if aspect ratio changes or is different from default we need to update camera
 		const float fNewAspectRatio = gEnv->pRenderer->GetPixelAspectRatio();
-		const int   nNewWidth       = gEnv->pRenderer->GetOverlayWidth();
-		const int   nNewHeight      = gEnv->pRenderer->GetOverlayHeight();
+		const int nNewWidth = gEnv->pRenderer->GetOverlayWidth();
+		const int nNewHeight = gEnv->pRenderer->GetOverlayHeight();
 
 		if ((fNewAspectRatio != rCamera.GetPixelAspectRatio()) ||
-		    (nNewWidth       != rCamera.GetViewSurfaceX()) ||
-		    (nNewHeight      != rCamera.GetViewSurfaceZ()))
+			(nNewWidth != rCamera.GetViewSurfaceX()) ||
+			(nNewHeight != rCamera.GetViewSurfaceZ()))
 		{
 			rCamera.SetFrustum(
 				nNewWidth,
@@ -1833,44 +1845,18 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				rCamera.GetFarPlane(),
 				fNewAspectRatio);
 
-
 			SetViewCamera(rCamera);
 		}
 	}
 
-#ifndef EXCLUDE_UPDATE_ON_CONSOLE
+#if defined (CRY_TESTING) && !defined(EXCLUDE_UPDATE_ON_CONSOLE)
 	if (m_pTestSystem)
 		m_pTestSystem->Update();
-#endif //EXCLUDE_UPDATE_ON_CONSOLE
+#endif
 	if (nPauseMode != 0)
 		m_bPaused = true;
 	else
 		m_bPaused = false;
-
-#if CRY_PLATFORM_WINDOWS
-	if (m_bInDevMode && g_cvars.sys_vtune != 0)
-	{
-		static bool bVtunePaused = true;
-
-		bool bPaused = false;
-
-		if (GetISystem()->GetIInput())
-		{
-			bPaused = !(GetKeyState(VK_SCROLL) & 1);
-		}
-		{
-			if (bVtunePaused && !bPaused)
-			{
-				GetIProfilingSystem()->VTuneResume();
-			}
-			if (!bVtunePaused && bPaused)
-			{
-				GetIProfilingSystem()->VTunePause();
-			}
-			bVtunePaused = bPaused;
-		}
-	}
-#endif
 
 	if (m_pStreamEngine)
 	{
@@ -1895,8 +1881,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		}
 	}
 
-	//static bool sbPause = false;
-	//bool bPause = false;
 	bool bNoUpdate = false;
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
 	//check what is the current process
@@ -1910,8 +1894,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		updateFlags = { ESYSUPDATE_IGNORE_AI, ESYSUPDATE_IGNORE_PHYSICS };
 	}
 
-	//if ((pProcess->GetFlags() & PROC_MENU) || (m_sysNoUpdate && m_sysNoUpdate->GetIVal()))
-	//		bPause = true;
 	m_bNoUpdate = bNoUpdate;
 #endif //EXCLUDE_UPDATE_ON_CONSOLE
 	//check if we are quitting from the game
@@ -1921,7 +1903,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 #if CRY_PLATFORM_WINDOWS
 	// process window messages
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PeekMessageW");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:PeekMessageW");
 
 		if (m_hWnd && ::IsWindow((HWND)m_hWnd))
 		{
@@ -1933,6 +1915,9 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	//////////////////////////////////////////////////////////////////////
 	//update time subsystem
 	m_Time.UpdateOnFrameStart();
+
+	const CTimeValue& frameStartTime = m_Time.GetFrameStartTime();
+	const float frameTime = m_Time.GetFrameTime();
 
 	// Don't do a thing if we're not in a level
 	if (m_env.p3DEngine && bNotLoading)
@@ -1960,8 +1945,8 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (m_env.pInput)
 	{
 		bool updateInput =
-		  !(updateFlags & ESYSUPDATE_EDITOR) ||
-		  (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS);
+			!(updateFlags & ESYSUPDATE_EDITOR) ||
+			(updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS);
 		if (updateInput)
 		{
 			//////////////////////////////////////////////////////////////////////
@@ -1969,7 +1954,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 #if !CRY_PLATFORM_WINDOWS
 			m_env.pInput->Update(true);
 #else
-			bool bFocus = (::GetForegroundWindow() == m_hWnd) || m_bEditor;
+			bool bFocus = (::GetForegroundWindow() == m_hWnd) || m_env.IsEditor();
 			{
 				WriteLock lock(g_lockInput);
 				m_env.pInput->Update(bFocus);
@@ -2008,7 +1993,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	//update console system
 	if (m_env.pConsole)
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:Console");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:Console");
 
 		if (!(updateFlags & ESYSUPDATE_EDITOR))
 			m_env.pConsole->Update();
@@ -2054,8 +2039,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		CPhysicsThreadTask* pPhysicsThreadTask = ((CPhysicsThreadTask*)m_PhysThread);
 		if (!pPhysicsThreadTask)
 		{
-			CRY_PROFILE_REGION(PROFILE_SYSTEM, "SystemUpdate: AllAIAndPhysics");
-			CRYPROFILE_SCOPE_PROFILE_MARKER("SystemUpdate: AllAIAndPhysics");
+			CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SystemUpdate: AllAIAndPhysics");
 
 			//////////////////////////////////////////////////////////////////////
 			// update entity system (a little bit) before physics
@@ -2073,8 +2057,8 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				maxTimeStep = 0.25f;
 			int maxSteps = 1;
 			float fCurTime = m_Time.GetCurrTime();
-			float fPrevTime = m_env.pPhysicalWorld->GetPhysicsTime();
-			float timeToDo = m_Time.GetFrameTime();//fCurTime - fPrevTime;
+			//float fPrevTime = m_env.pPhysicalWorld->GetPhysicsTime();
+			float timeToDo = frameTime;//fCurTime - fPrevTime;
 			if (m_env.bMultiplayer)
 				timeToDo = m_Time.GetRealFrameTime();
 			m_env.pPhysicalWorld->TracePendingRays();
@@ -2086,9 +2070,9 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 				if ((nPauseMode != 1) && !(updateFlags & ESYSUPDATE_IGNORE_PHYSICS) && g_cvars.sys_physics && !bNoUpdate)
 				{
-					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:Physics");
+					CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:Physics");
 
-					int iPrevTime = m_env.pPhysicalWorld->GetiPhysicsTime();
+					//int iPrevTime = m_env.pPhysicalWorld->GetiPhysicsTime();
 					//float fPrevTime=m_env.pPhysicalWorld->GetPhysicsTime();
 					pVars->bMultithreaded = 0;
 					pVars->timeScalePlayers = 1.0f;
@@ -2108,8 +2092,8 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 						   float fFixedStep = m_env.pGame->GetFixedStep();
 						   for(i=min(20*iStep,m_env.pGame->SnapTime(iCurTime)-m_pGame->SnapTime(iPrevTime)); i>0; i-=iStep)
 						   {
-						    m_env.pGame->ExecuteScheduledEvents();
-						    m_env.pPhysicalWorld->TimeStep(fFixedStep, ent_rigid|ent_skip_flagged);
+							m_env.pGame->ExecuteScheduledEvents();
+							m_env.pPhysicalWorld->TimeStep(fFixedStep, ent_rigid|ent_skip_flagged);
 						   }
 
 						   m_env.pPhysicalWorld->SetiPhysicsTime(iPrevTime);
@@ -2131,19 +2115,18 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 				if (bNotLoading)
 				{
-					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
-					CRYPROFILE_SCOPE_PROFILE_MARKER("PumpLoggedEvents");
+					CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
 					m_env.pPhysicalWorld->PumpLoggedEvents();
 				}
 
 				// now AI
 				if ((nPauseMode == 0) && !(updateFlags & ESYSUPDATE_IGNORE_AI) && g_cvars.sys_ai && !bNoUpdate)
 				{
-					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:AI");
+					CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:AI");
 					//////////////////////////////////////////////////////////////////////
 					//update AI system - match physics
 					if (m_env.pAISystem && !m_cvAIUpdate->GetIVal() && g_cvars.sys_ai)
-						m_env.pAISystem->Update(gEnv->pTimer->GetFrameStartTime(), gEnv->pTimer->GetFrameTime());
+						m_env.pAISystem->Update(frameStartTime, frameTime);
 				}
 			}
 
@@ -2161,8 +2144,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		{
 			if (bNotLoading)
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
-				CRYPROFILE_SCOPE_PROFILE_MARKER("PumpLoggedEvents");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
 				m_env.pPhysicalWorld->PumpLoggedEvents();
 			}
 
@@ -2178,12 +2160,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				pPhysicsThreadTask->Resume();
 				float lag = pPhysicsThreadTask->GetRequestedStep();
 
-				if (pPhysicsThreadTask->RequestStep(m_Time.GetFrameTime()))
+				if (pPhysicsThreadTask->RequestStep(frameTime))
 				{
-					pVars->threadLag = lag + m_Time.GetFrameTime();
+					pVars->threadLag = lag + frameTime;
 					//GetILog()->Log("Physics thread lags behind; accum time %.3f", pVars->threadLag);
 				}
-
 			}
 			else
 			{
@@ -2194,11 +2175,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 			}
 			if ((nPauseMode == 0) && !(updateFlags & ESYSUPDATE_IGNORE_AI) && g_cvars.sys_ai && !bNoUpdate)
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:AI");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:AI");
 				//////////////////////////////////////////////////////////////////////
 				//update AI system
 				if (m_env.pAISystem && !m_cvAIUpdate->GetIVal())
-					m_env.pAISystem->Update(gEnv->pTimer->GetFrameStartTime(), gEnv->pTimer->GetFrameTime());
+					m_env.pAISystem->Update(frameStartTime, frameTime);
 			}
 		}
 		pe_params_waterman pwm;
@@ -2243,52 +2224,27 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		if (m_env.p3DEngine)
 			m_env.p3DEngine->Tick();  // clear per frame temp data
 
-		if (m_pProcess && (m_pProcess->GetFlags() & PROC_3DENGINE))
+		if (m_pProcess)
 		{
-			if ((nPauseMode != 1))
-				if (!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON))
+			if (m_pProcess->GetFlags() & PROC_3DENGINE)
+			{
+				if ((nPauseMode != 1) && !IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON))
 				{
-					if (m_env.p3DEngine)
-					{
-						//					m_env.p3DEngine->SetCamera(m_ViewCamera);
-						m_pProcess->Update();
-#ifndef EXCLUDE_UPDATE_ON_CONSOLE
-						//////////////////////////////////////////////////////////////////////////
-						// Strange, !do not remove... ask Timur for the meaning of this.
-						//////////////////////////////////////////////////////////////////////////
-						if (m_nStrangeRatio > 32767)
-						{
-							gEnv->pScriptSystem->SetGCFrequency(-1); // lets get nasty.
-						}
-						//////////////////////////////////////////////////////////////////////////
-						// Strange, !do not remove... ask Timur for the meaning of this.
-						//////////////////////////////////////////////////////////////////////////
-						if (m_nStrangeRatio > 1000)
-						{
-							if (m_pProcess && (m_pProcess->GetFlags() & PROC_3DENGINE))
-								m_nStrangeRatio += cry_random(1, 11);
-						}
-#endif      //EXCLUDE_UPDATE_ON_CONSOLE
-						//////////////////////////////////////////////////////////////////////////
-					}
+					m_pProcess->Update();
 				}
-		}
-		else
-		{
-			if (m_pProcess)
+			}
+			else
+			{
 				m_pProcess->Update();
+			}
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////
 	//update sound system part 2
-	if (!g_cvars.sys_deferAudioUpdateOptim && !bNoUpdate)
+	if (!bNoUpdate)
 	{
 		UpdateAudioSystems();
-	}
-	else
-	{
-		m_bNeedDoWorkDuringOcclusionChecks = true;
 	}
 
 	//////////////////////////////////////////////////////////////////////
@@ -2355,6 +2311,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		m_env.pHardwareMouse->Update();
 	}
 
+	if (gEnv->pUDR && nPauseMode == 0)
+	{
+		gEnv->pUDR->Update(frameStartTime, frameTime);
+	}
+
 	//Now update frame statistics
 	CTimeValue cur_time = gEnv->pTimer->GetAsyncTime();
 
@@ -2373,7 +2334,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	UpdateUpdateTimes();
 
 	return !m_bQuit;
-
 }
 
 IManualFrameStepController* CSystem::GetManualFrameStepController() const
@@ -2390,39 +2350,32 @@ bool CSystem::UpdateLoadtime()
 	   // during level loading
 	   if (m_env.pInput)
 	   {
-	    //////////////////////////////////////////////////////////////////////
-	    //update input system
-	   #if !CRY_PLATFORM_WINDOWS
-	    m_env.pInput->Update(true);
-	   #else
-	    bool bFocus = (GetFocus()==m_hWnd) || m_bEditor;
-	    {
-	      WriteLock lock(g_lockInput);
-	      m_env.pInput->Update(bFocus);
-	      g_BreakListenerTask.m_nBreakIdle = 0;
-	    }
-	   #endif
+		//////////////////////////////////////////////////////////////////////
+		//update input system
+	 #if !CRY_PLATFORM_WINDOWS
+		m_env.pInput->Update(true);
+	 #else
+		bool bFocus = (GetFocus()==m_hWnd) || m_bEditor;
+		{
+		  WriteLock lock(g_lockInput);
+		  m_env.pInput->Update(bFocus);
+		  g_BreakListenerTask.m_nBreakIdle = 0;
+		}
+	 #endif
 	   }
 	 */
 
 	return !m_bQuit;
 }
 
-void CSystem::DoWorkDuringOcclusionChecks()
-{
-	if (g_cvars.sys_deferAudioUpdateOptim && !m_bNoUpdate)
-	{
-		UpdateAudioSystems();
-		m_bNeedDoWorkDuringOcclusionChecks = false;
-	}
-}
-
 void CSystem::UpdateAudioSystems()
 {
-	if (m_env.pAudioSystem != nullptr && !IsLoading()) //do not update pAudioSystem during async level load
+	const bool isLoadInProgress = m_systemGlobalState > ESYSTEM_GLOBAL_STATE_INIT &&
+								  m_systemGlobalState <= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END;
+
+	if (m_env.pAudioSystem != nullptr && !isLoadInProgress)   //do not update pAudioSystem during async level load
 	{
 		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "UpdateAudioSystems");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("UpdateAudioSystems");
 
 		m_env.pAudioSystem->ExternalUpdate();
 	}
@@ -2448,6 +2401,18 @@ void CSystem::GetUpdateStats(SSystemUpdateStats& stats)
 			stats.minUpdateTime = min(stats.minUpdateTime, t);
 		}
 		stats.avgUpdateTime /= m_updateTimes.size();
+
+		size_t sz = m_updateTimes.size();
+		if (sz > 1)
+		{
+			const std::pair<CTimeValue, float> head = m_updateTimes.front();
+			const std::pair<CTimeValue, float> tail = m_updateTimes.back();
+			stats.avgUpdateRate = (sz - 1) / (tail.first - head.first).GetSeconds();
+		}
+		else
+		{
+			stats.avgUpdateRate = 0.0f;
+		}
 	}
 }
 
@@ -2498,7 +2463,7 @@ void CSystem::SetViewCamera(CCamera& Camera)
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CSystem::LoadXmlFromFile(const char* sFilename, bool bReuseStrings)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(sFilename);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sFilename);
 
 	return m_pXMLUtils->LoadXmlFromFile(sFilename, bReuseStrings);
 }
@@ -2506,7 +2471,7 @@ XmlNodeRef CSystem::LoadXmlFromFile(const char* sFilename, bool bReuseStrings)
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CSystem::LoadXmlFromBuffer(const char* buffer, size_t size, bool bReuseStrings)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	return m_pXMLUtils->LoadXmlFromBuffer(buffer, size, bReuseStrings);
 }
 
@@ -2584,6 +2549,8 @@ inline const char* ValidatorModuleToString(EValidatorModule module)
 		return "Online";
 	case VALIDATOR_MODULE_DRS:
 		return "DynamicResponseSystem";
+	default:
+		break;
 	}
 	return "";
 }
@@ -2722,7 +2689,8 @@ void CSystem::Deltree(const char* szFolder, bool bRecurse)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::GetLocalizedPath(char const* const szLanguage, string& szLocalizedPath)
 {
-	szLocalizedPath = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + szLanguage + "_xml.pak";
+	string pakSuffix = (g_cvars.sys_localization_pak_suffix) ? g_cvars.sys_localization_pak_suffix->GetString() : "";
+	szLocalizedPath = PathUtil::GetLocalizationFolder() + CRY_NATIVE_PATH_SEPSTR + szLanguage + pakSuffix + ".pak";
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2813,16 +2781,10 @@ void CSystem::UnloadSchematycModule()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::Strange()
-{
-	m_nStrangeRatio += cry_random(1, 101);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSystem::Relaunch(bool bRelaunch)
 {
 	if (m_sys_firstlaunch)
-		m_sys_firstlaunch->Set("0");
+		m_sys_firstlaunch->Set(0);
 
 	m_bRelaunch = bRelaunch;
 	SaveConfiguration();
@@ -2855,8 +2817,13 @@ IResourceManager* CSystem::GetIResourceManager()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::debug_GetCallStackRaw(void** callstack, uint32& callstackLength)
 {
+#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_WINAPI
 	uint32 callstackCapacity = callstackLength;
+#endif
+
+#if CRY_PLATFORM_WINAPI
 	uint32 nNumStackFramesToSkip = 1;
+#endif
 
 	memset(callstack, 0, sizeof(void*) * callstackLength);
 
@@ -2911,16 +2878,9 @@ void CSystem::debug_GetCallStackRaw(void** callstack, uint32& callstackLength)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ApplicationTest(const char* szParam)
-{
-	assert(szParam);
-	if (m_pTestSystem)
-		m_pTestSystem->ApplicationTest(szParam);
-}
-
 void CSystem::ExecuteCommandLine()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	// should only be called once
 	{
 		static bool bCalledAlready = false;
@@ -2947,9 +2907,7 @@ void CSystem::ExecuteCommandLine()
 		{
 			string sLine = pCmd->GetName();
 
-#if defined(CVARS_WHITELIST)
-			if (!GetCVarsWhiteList() || GetCVarsWhiteList()->IsWhiteListed(sLine, false))
-#endif
+			if (gEnv->pSystem->IsCVarWhitelisted(sLine.c_str(), false))
 			{
 				if (pCmd->GetValue())
 					sLine += string(" ") + pCmd->GetValue();
@@ -2958,22 +2916,15 @@ void CSystem::ExecuteCommandLine()
 				GetIConsole()->ExecuteString(sLine.c_str(), false, !m_bShaderCacheGenMode);
 			}
 #if defined(DEDICATED_SERVER)
-	#if defined(CVARS_WHITELIST)
 			else
 			{
 				GetILog()->LogError("Failed to execute command: '%s' as it is not whitelisted\n", sLine.c_str());
 			}
-	#endif
 #endif
 		}
 	}
 
 	//gEnv->pConsole->ExecuteString("sys_RestoreSpec test*"); // to get useful debugging information about current spec settings to the log file
-}
-
-void CSystem::DumpMemoryCoverage()
-{
-	m_MemoryFragmentationProfiler.DumpMemoryCoverage();
 }
 
 ITextModeConsole* CSystem::GetITextModeConsole()
@@ -3018,7 +2969,7 @@ ESystemConfigSpec CSystem::GetMaxConfigSpec() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-IProjectManager* CSystem::GetIProjectManager()
+Cry::IProjectManager* CSystem::GetIProjectManager()
 {
 	return m_pProjectManager;
 }
@@ -3028,20 +2979,6 @@ CPNoise3* CSystem::GetNoiseGen()
 {
 	static CPNoise3 m_pNoiseGen;
 	return &m_pNoiseGen;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CProfilingSystem::VTuneResume()
-{
-	CryLogAlways("Profiler Resume");
-	CryProfile::ProfilerResume();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CProfilingSystem::VTunePause()
-{
-	CryProfile::ProfilerPause();
-	CryLogAlways("Profiler Pause");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3082,9 +3019,7 @@ void CSystem::UpdateUpdateTimes()
 	sUpdateTimes& sample = m_UpdateTimes[m_UpdateTimesIdx];
 	if (m_PhysThread)
 	{
-		static uint64 lastPhysTime = 0U;
 		static uint64 lastMainTime = 0U;
-		static uint64 lastYields = 0U;
 		static uint64 lastPhysWait = 0U;
 		uint64 physTime = 0, mainTime = 0;
 		uint32 yields = 0;
@@ -3109,6 +3044,16 @@ IPhysicsDebugRenderer* CSystem::GetIPhysicsDebugRenderer()
 IPhysRenderer* CSystem::GetIPhysRenderer()
 {
 	return m_pPhysRenderer;
+}
+
+ICryProfilingSystem* CSystem::GetProfilingSystem()
+{
+	return m_pProfilingSystem;
+}
+
+ILegacyProfiler* CSystem::GetLegacyProfilerInterface()
+{
+	return m_pLegacyProfiler;
 }
 
 #ifndef _RELEASE
@@ -3147,6 +3092,8 @@ void CSystem::SetLoadOrigin(LevelLoadOrigin origin)
 			return;
 		}
 		break;
+	default:
+		break;
 	}
 
 	m_loadOrigin = origin;
@@ -3157,7 +3104,7 @@ void CSystem::SetLoadOrigin(LevelLoadOrigin origin)
 //////////////////////////////////////////////////////////////////////
 void CSystem::OnLanguageCVarChanged(ICVar* const pLanguage)
 {
-	if (pLanguage != nullptr && pLanguage->GetType() == CVAR_STRING)
+	if (pLanguage != nullptr && pLanguage->GetType() == ECVarType::String)
 	{
 		CSystem* const pSystem = static_cast<CSystem*>(gEnv->pSystem);
 
@@ -3201,7 +3148,7 @@ void CSystem::OnLanguageCVarChanged(ICVar* const pLanguage)
 //////////////////////////////////////////////////////////////////////
 void CSystem::OnLanguageAudioCVarChanged(ICVar* const pLanguageAudio)
 {
-	if (pLanguageAudio != nullptr && pLanguageAudio->GetType() == CVAR_STRING)
+	if (pLanguageAudio != nullptr && pLanguageAudio->GetType() == ECVarType::String)
 	{
 		CSystem* const pSystem = static_cast<CSystem*>(gEnv->pSystem);
 
@@ -3217,10 +3164,7 @@ void CSystem::OnLanguageAudioCVarChanged(ICVar* const pLanguageAudio)
 			pSystem->OpenLanguageAudioPak(szNewLanguage);
 			pSystem->m_currentLanguageAudio = szNewLanguage;
 
-			if (gEnv->pAudioSystem != nullptr)
-			{
-				gEnv->pAudioSystem->OnLanguageChanged();
-			}
+			pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED, 0, 0);
 		}
 	}
 }
@@ -3228,7 +3172,7 @@ void CSystem::OnLanguageAudioCVarChanged(ICVar* const pLanguageAudio)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::OnLocalizationFolderCVarChanged(ICVar* const pLocalizationFolder)
 {
-	if (pLocalizationFolder && pLocalizationFolder->GetType() == CVAR_STRING)
+	if (pLocalizationFolder && pLocalizationFolder->GetType() == ECVarType::String)
 	{
 		CSystem* const pSystem = static_cast<CSystem* const>(gEnv->pSystem);
 
@@ -3292,6 +3236,8 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 			}
 		}
 		break;
+	default:
+		break;
 	}
 }
 
@@ -3334,12 +3280,14 @@ void CSystem::SetSystemGlobalState(const ESystemGlobalState systemGlobalState)
 	{
 		if (gEnv && gEnv->pTimer)
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			const CTimeValue endTime = gEnv->pTimer->GetAsyncTime();
 			const float numSeconds = endTime.GetDifferenceInSeconds(s_startTime);
+#endif
 			CryLog("SetGlobalState %d->%d '%s'->'%s' %3.1f seconds",
-			       m_systemGlobalState, systemGlobalState,
-			       CSystem::GetSystemGlobalStateName(m_systemGlobalState), CSystem::GetSystemGlobalStateName(systemGlobalState),
-			       numSeconds);
+				   m_systemGlobalState, systemGlobalState,
+				   CSystem::GetSystemGlobalStateName(m_systemGlobalState), CSystem::GetSystemGlobalStateName(systemGlobalState),
+				   numSeconds);
 			s_startTime = gEnv->pTimer->GetAsyncTime();
 		}
 	}
@@ -3356,19 +3304,23 @@ void CSystem::RegisterWindowMessageHandler(IWindowMessageHandler* pHandler)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::UnregisterWindowMessageHandler(IWindowMessageHandler* pHandler)
 {
+#if defined(USE_CRY_ASSERT)
 	bool bRemoved = stl::find_and_erase(m_windowMessageHandlers, pHandler);
 	assert(pHandler && bRemoved && "This IWindowMessageHandler was not registered");
+#else
+	stl::find_and_erase(m_windowMessageHandlers, pHandler);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CSystem::PumpWindowMessage(bool bAll, WIN_HWND opaqueHWnd)
+int CSystem::PumpWindowMessage(bool bAll, CRY_HWND opaqueHWnd)
 {
 #if CRY_PLATFORM_WINDOWS
 	int count = 0;
 	const HWND hWnd = (HWND)opaqueHWnd;
 	const bool bUnicode = hWnd != NULL ?
-	                      IsWindowUnicode(hWnd) != FALSE :
-	                      !(gEnv && gEnv->IsEditor());
+						  IsWindowUnicode(hWnd) != FALSE :
+						  !(gEnv && gEnv->IsEditor());
 	#if defined(UNICODE) || defined(_UNICODE)
 	// Once we compile as Unicode app on Windows, we should detect non-Unicode windows
 	assert(bUnicode && "The window is not Unicode, this is most likely a bug");
@@ -3392,6 +3344,19 @@ int CSystem::PumpWindowMessage(bool bAll, WIN_HWND opaqueHWnd)
 		if (msg.message == WM_QUIT)
 		{
 			return -1;
+		}
+
+		if (msg.message == WM_ACTIVATE)
+		{
+			if (msg.wParam != WA_INACTIVE)
+				m_hWndActive = msg.hwnd;
+			else
+				m_hWndActive = (CRY_HWND)msg.lParam;
+
+			// During the time demo, do not sleep even in inactive window.
+			if (!gEnv->pGameFramework || !gEnv->pGameFramework->IsInTimeDemo())
+				// use sys_maxFPS to throttle the engine
+				m_throttleFPS = msg.wParam != WA_INACTIVE;
 		}
 
 		// Pre-process the message for IME
@@ -3425,6 +3390,33 @@ bool CSystem::IsImeSupported() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CSystem::IsCVarWhitelisted(const char* szName, bool silent) const
+{
+	CRY_ASSERT(szName != nullptr);
+
+	if (szName[0] == '?')
+	{
+		return true;
+	}
+
+	if (szName[0] == '+')
+	{
+		++szName;
+	}
+
+	const char* pNameEnd = std::max(strchr(szName, ' '), strchr(szName, '='));
+	if (pNameEnd == nullptr)
+	{
+		return ::IsCVarWhitelisted(szName);
+	}
+	else
+	{
+		const string name(szName, pNameEnd);
+		return ::IsCVarWhitelisted(name.c_str());
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 #if CRY_PLATFORM_WINDOWS
 
 enum class EMouseWheelOrigin
@@ -3434,34 +3426,51 @@ enum class EMouseWheelOrigin
 	WindowSpaceClamped
 };
 
-#ifndef GET_X_LPARAM
-#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
-#endif
-#ifndef GET_Y_LPARAM
-#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
-#endif
+	#ifndef GET_X_LPARAM
+		#define GET_X_LPARAM(lp) ((int)(short)LOWORD(lp))
+	#endif
+	#ifndef GET_Y_LPARAM
+		#define GET_Y_LPARAM(lp) ((int)(short)HIWORD(lp))
+	#endif
 
-bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool CSystem::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	static bool sbInSizingModalLoop;
 	int x = GET_X_LPARAM(lParam);
 	int y = GET_Y_LPARAM(lParam);
 	EHARDWAREMOUSEEVENT event = (EHARDWAREMOUSEEVENT)-1;
 	*pResult = 0;
+	LPWINDOWPOS wpos;
+
 	switch (uMsg)
 	{
 	// System event translation
 	case WM_CLOSE:
 		Quit();
 		return false;
-	case WM_MOVE:
-		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_MOVE, x, y);
-		return false;
-	case WM_SIZE:
-		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, x, y);
-		return false;
 	case WM_WINDOWPOSCHANGED:
-		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_POS_CHANGED, 1, 0);
+	{
+		wpos = (LPWINDOWPOS)lParam;
+
+		// Process position and size changes through this event message, as  unprocessed WM_WINDOWPOSCHANGED 
+		// messages are then translated by DefWindowProc to WM_SIZE and WM_MOVE events anyway.
+		// Check the window is moved or resized. Separate checks are intentional, as both events can occur from the a single ::SetWindowPos call
+		if (!(wpos->flags & SWP_NOMOVE))
+		{
+			// If a MOVE is detected (logic inversion intended, the flag NOMOVE must NOT be set) send a MOVE event (top-left location as params)
+			GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_MOVE, wpos->x, wpos->y);
+		}
+		if (!(wpos->flags & SWP_NOSIZE))
+		{
+			// If a SIZE is detected (logic inversion intended; the flag NOSIZE must NOT be set) send a SIZE event (dimensions as params)
+			GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, wpos->cx, wpos->cy);
+		}
+		// Neither: send a POS_CHANGED with the params (details/flags are in the struct (WindowPos*)lParam flags member)
+		if ((wpos->flags & SWP_NOSIZE) && (wpos->flags & SWP_NOMOVE))
+		{
+			GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_POS_CHANGED, wParam, lParam);
+		}
+	}
 		return false;
 	case WM_STYLECHANGED:
 		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_STYLE_CHANGED, 1, 0);
@@ -3485,7 +3494,29 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 	case WM_DEVICECHANGE:
 		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_DEVICE_CHANGED, wParam, lParam);
 		return false;
-
+	case WM_SYSKEYDOWN:
+	{
+		// If ALT is pressed
+		const bool bAltPressed = ((lParam >> 29 & 0x1) != 0);
+		if (bAltPressed)
+		{
+			// ALT + Enter to go exclusive fullscreen
+			if (wParam == VK_RETURN)
+			{
+				// Check "r_WindowType" cvar value (0=Windowed 3=exclusive fullscreen)
+				ICVar* CVWtype = gEnv->pConsole->GetCVar("r_WindowType");
+				const bool bIsCurrentlyFS = (CVWtype != nullptr &&  CVWtype->GetIVal() == 3);
+				// Toggle the value (the cvar will be tied to a callback in the renderer to make changes)
+				CVWtype->Set((bIsCurrentlyFS ? 0 : 3));
+				// Broadcast sysevent (param1 = is fullscreen, param2 = not used)
+				GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, (bIsCurrentlyFS ? 0 : 1), 0);
+			}
+			// Tell Windows the message is handled
+			*pResult = 0;
+			return true;
+		}
+	}
+	break;
 	case WM_SYSCOMMAND:
 		if ((wParam & 0xFFF0) == SC_SCREENSAVE)
 		{
@@ -3536,7 +3567,6 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 			}
 		}
 		return (uMsg != WM_CAPTURECHANGED);
-
 	// Events that should be forwarded to the hardware mouse
 	case WM_MOUSEMOVE:
 		event = HARDWAREMOUSEEVENT_MOVE;
@@ -3582,7 +3612,7 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 				case EMouseWheelOrigin::WindowSpace:
 					{
 						POINT p{ x, y };
-						ScreenToClient(hWnd, &p);
+						ScreenToClient((HWND)hWnd, &p);
 						x = p.x;
 						y = p.y;
 						break;
@@ -3590,9 +3620,9 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 				case EMouseWheelOrigin::WindowSpaceClamped:
 					{
 						POINT p{ x, y };
-						ScreenToClient(hWnd, &p);
+						ScreenToClient((HWND)hWnd, &p);
 						RECT r;
-						GetClientRect(hWnd, &r);
+						GetClientRect((HWND)hWnd, &r);
 						x = crymath::clamp<int>(p.x, 0, r.right - r.left);
 						y = crymath::clamp<int>(p.y, 0, r.bottom - r.top);
 						break;
@@ -3627,7 +3657,7 @@ bool CSystem::HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, 
 
 //////////////////////////////////////////////////////////////////////////
 #if CRY_PLATFORM_WINDOWS
-static LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+static LRESULT WINAPI WndProc(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	CSystem* pSystem = 0;
 	if (gEnv)
@@ -3665,14 +3695,14 @@ static LRESULT WINAPI WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 
 	// Handle with the default procedure
 	#if defined(UNICODE) || defined(_UNICODE)
-	assert(IsWindowUnicode(hWnd) && "Window should be Unicode when compiling with UNICODE");
+	assert(IsWindowUnicode((HWND)hWnd) && "Window should be Unicode when compiling with UNICODE");
 	#else
-	if (!IsWindowUnicode(hWnd))
+	if (!IsWindowUnicode((HWND)hWnd))
 	{
-		return DefWindowProcA(hWnd, uMsg, wParam, lParam);
+		return DefWindowProcA((HWND)hWnd, uMsg, wParam, lParam);
 	}
 	#endif
-	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
+	return DefWindowProcW((HWND)hWnd, uMsg, wParam, lParam);
 }
 #endif
 
@@ -3685,6 +3715,31 @@ void* CSystem::GetRootWindowMessageHandler()
 	assert(false && "This platform does not support window message handlers");
 	return NULL;
 #endif
+}
+
+ICmdLine* CSystem::GetICmdLine()
+{
+	return m_pCmdLine;
+}
+
+IUserAnalyticsSystem* CSystem::GetIUserAnalyticsSystem()
+{
+	return m_pUserAnalyticsSystem;
+}
+
+Cry::IPluginManager* CSystem::GetIPluginManager()
+{
+	return m_pPluginManager;
+}
+
+uint32 CSystem::GetCPUFlags()
+{
+	return m_pCpu ? m_pCpu->GetFeatures() : 0;
+}
+
+int CSystem::GetLogicalCPUCount()
+{
+	return m_pCpu ? m_pCpu->GetLogicalCPUCount() : 0;
 }
 
 #undef EXCLUDE_UPDATE_ON_CONSOLE

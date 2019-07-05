@@ -1,61 +1,152 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "LevelModel.h"
 
-#include <QtUtil.h>
-#include <QMimeData>
-#include <QApplication>
-#include <QByteArray>
+#include "QtUtil.h"
 
 #include "Objects/ObjectLayer.h"
 #include "Objects/ObjectLayerManager.h"
-#include <CryCore/ToolsHelpers/GuidUtil.h>
+#include "CryCore/ToolsHelpers/GuidUtil.h"
 
 #include "CryIcon.h"
 #include "QAdvancedItemDelegate.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include "LevelLayerModel.h"
 #include "DragDrop.h"
+#include "IEditorImpl.h"
+
+#include "VersionControl/VersionControl.h"
+#include "VersionControl/AssetsVCSStatusProvider.h"
+#include "VersionControl/UI/VersionControlUIHelper.h"
+
+#include <QMimeData>
+#include <QApplication>
+#include <QByteArray>
 
 //////////////////////////////////////////////////////////////////////////
 class CBaseObject;
 class CObjectLayer;
 namespace LevelModelsUtil
 {
-void ProcessIndexList(const QModelIndexList& list, std::vector<CBaseObject*>& outObjects, std::vector<CObjectLayer*>& outLayers, std::vector<CObjectLayer*>& outLayerFolders)
+// Required when dealing with indices of models that are not directly LevelLayerModel or LevelModel (Ex: sort/filter models)
+CObjectLayer* LayerFromIndexData(const QModelIndex& index)
+{
+	QVariant pointerVariant = index.data((int)CLevelModel::Roles::InternalPointerRole);
+	return reinterpret_cast<CObjectLayer*>(pointerVariant.value<intptr_t>());
+}
+
+// Required when dealing with indices of models that are not directly LevelLayerModel or LevelModel (Ex: sort/filter models)
+CBaseObject* ObjectFromIndexData(const QModelIndex& index)
+{
+	QVariant pointerVariant = index.data((int)CLevelModel::Roles::InternalPointerRole);
+	return reinterpret_cast<CBaseObject*>(pointerVariant.value<intptr_t>());
+}
+
+void ProcessIndices(const QModelIndexList& list, std::function<void(const QModelIndex&, int)> callback)
+{
+	for (const QModelIndex& index : list)
+	{
+		callback(index, index.data((int)CLevelModel::Roles::TypeCheckRole).toInt());
+	}
+}
+
+void GetAllLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers)
+{
+	outLayers.reserve(list.count());
+	ProcessIndices(list, [&outLayers](const QModelIndex& index, int type)
+		{
+			if (type != ELevelElementType::eLevelElement_Layer)
+				return;
+
+			CObjectLayer* pLayer = LayerFromIndexData(index);
+			outLayers.push_back(pLayer);
+		});
+}
+
+void GetFolderLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers)
+{
+	outLayers.reserve(list.count());
+	ProcessIndices(list, [&outLayers](const QModelIndex& index, int type)
+		{
+			if (type != ELevelElementType::eLevelElement_Layer)
+				return;
+
+			CObjectLayer* pLayer = LayerFromIndexData(index);
+
+			if (pLayer->GetLayerType() != eObjectLayerType_Folder)
+				return;
+
+			outLayers.push_back(pLayer);
+		});
+}
+
+void GetObjectLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers)
+{
+	outLayers.reserve(list.count());
+	ProcessIndices(list, [&outLayers](const QModelIndex& index, int type)
+		{
+			if (type != ELevelElementType::eLevelElement_Layer)
+				return;
+
+			CObjectLayer* pLayer = LayerFromIndexData(index);
+
+			if (pLayer->GetLayerType() == eObjectLayerType_Folder)
+				return;
+
+			outLayers.push_back(pLayer);
+		});
+}
+
+void GetObjectsForIndexList(const QModelIndexList& list, std::vector<CBaseObject*>& outObjects)
+{
+	outObjects.reserve(list.count());
+	ProcessIndices(list, [&outObjects](const QModelIndex& index, int type)
+		{
+			if (type != ELevelElementType::eLevelElement_Object)
+				return;
+
+			outObjects.push_back(ObjectFromIndexData(index));
+		});
+}
+
+void GetObjectsAndLayersForIndexList(const QModelIndexList& list, std::vector<CBaseObject*>& outObjects, std::vector<CObjectLayer*>& outLayers, std::vector<CObjectLayer*>& outLayerFolders)
 {
 	outObjects.reserve(list.count());
 	outLayers.reserve(list.count());
 	outLayerFolders.reserve(list.count());
 
-	for (auto& index : list)
-	{
-		QVariant type = index.data((int)CLevelModel::Roles::TypeCheckRole);
-		QVariant internalPtrVar = index.data((int)CLevelModel::Roles::InternalPointerRole);
-		switch (type.toInt())
+	ProcessIndices(list, [&outObjects, &outLayers, &outLayerFolders](const QModelIndex& index, int type)
 		{
-		case ELevelElementType::eLevelElement_Layer:
+			switch (type)
 			{
-				CObjectLayer* pLayer = reinterpret_cast<CObjectLayer*>(internalPtrVar.value<intptr_t>());
+			case ELevelElementType::eLevelElement_Layer:
+				{
+				  CObjectLayer* pLayer = LayerFromIndexData(index);
 
-				if (pLayer->GetLayerType() == eObjectLayerType_Layer)
-				{
-					outLayers.push_back(pLayer);
+				  switch (pLayer->GetLayerType())
+				  {
+					case eObjectLayerType_Layer:
+					case eObjectLayerType_Terrain:
+						{
+						  outLayers.push_back(pLayer);
+						  break;
+						}
+					case eObjectLayerType_Folder:
+						{
+						  outLayerFolders.push_back(pLayer);
+						  break;
+						}
+					}
 				}
-				else if (pLayer->GetLayerType() == eObjectLayerType_Folder)
-				{
-					outLayerFolders.push_back(pLayer);
-				}
+				break;
+			case ELevelElementType::eLevelElement_Object:
+				outObjects.push_back(ObjectFromIndexData(index));
+				break;
+			default:
+				break;
 			}
-			break;
-		case ELevelElementType::eLevelElement_Object:
-			outObjects.push_back(reinterpret_cast<CBaseObject*>(internalPtrVar.value<intptr_t>()));
-			break;
-		default:
-			break;
-		}
-	}
+		});
 }
 
 QModelIndexList FilterByColumn(const QModelIndexList& list, int column /*= 0*/)
@@ -78,7 +169,7 @@ QMimeData* GetDragDropData(const QModelIndexList& list)
 	std::vector<CBaseObject*> objects;
 	std::vector<CObjectLayer*> layers;
 	std::vector<CObjectLayer*> folders;
-	ProcessIndexList(FilterByColumn(list, list.first().column()), objects, layers, folders);
+	GetObjectsAndLayersForIndexList(FilterByColumn(list, list.first().column()), objects, layers, folders);
 	layers.insert(layers.end(), folders.cbegin(), folders.cend());
 
 	if (layers.empty() && objects.empty())
@@ -168,11 +259,11 @@ bool ProcessDragDropData(const QMimeData* data, std::vector<CBaseObject*>& outOb
 
 namespace LevelModelsAttributes
 {
-CItemModelAttribute s_ExportableAttribute("Exportable", eAttributeType_Boolean, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_ExportablePakAttribute("Exportable to Pak", eAttributeType_Boolean, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_LoadedByDefaultAttribute("Loaded in Game", eAttributeType_Boolean, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_HasPhysicsAttribute("Has Physics", eAttributeType_Boolean, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_PlatformAttribute("Platform", eAttributeType_String, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_ExportableAttribute("Exportable", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_ExportablePakAttribute("Exportable to Pak", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_LoadedByDefaultAttribute("Loaded in Game", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_HasPhysicsAttribute("Has Physics", &Attributes::s_booleanAttributeType, CItemModelAttribute::StartHidden, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_PlatformAttribute("Platform", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 }
 
 //See IEntitySystem.h
@@ -184,7 +275,7 @@ QString CLevelModel::LayerSpecToString(int spec)
 		str += "PC, ";
 
 	if (spec & eSpecType_XBoxOne)
-		str += "XBox One, ";
+		str += "Xbox One, ";
 
 	if (spec & eSpecType_PS4)
 		str += "PS4, ";
@@ -199,12 +290,12 @@ QString CLevelModel::LayerSpecToString(int spec)
 
 int CLevelModel::LayerSpecToInt(const QString& specStr)
 {
-	int spec;
+	int spec = 0;
 
 	if (specStr.contains("PC"))
 		spec = spec | eSpecType_PC;
 
-	if (specStr.contains("XBox One"))
+	if (specStr.contains("Xbox One"))
 		spec = spec | eSpecType_XBoxOne;
 
 	if (specStr.contains("PS4"))
@@ -239,6 +330,8 @@ CItemModelAttribute* CLevelModel::GetColumnAttribute(int column) const
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eLayerColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
+	case eLayerColumns_VCS:
+		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eLayerColumns_Exportable:
 		return &LevelModelsAttributes::s_ExportableAttribute;
 	case eLayerColumns_ExportablePak:
@@ -296,27 +389,29 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 					}
 
 				}
+				break;
 			case Qt::DecorationRole:
 				if (pLayer->GetLayerType() == eObjectLayerType_Layer)
 				{
 					if (GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer() == pLayer)
-						return CryIcon("icons:General/layer_active.ico").pixmap(16, 16, QIcon::Normal, QIcon::On);
+						return CryIcon("icons:General/layer_active.ico").pixmap(24, 24, QIcon::Normal, QIcon::On);
 					else
-						return CryIcon("icons:General/layer.ico").pixmap(16, 16);
+						return CryIcon("icons:General/layer.ico");
 				}
 				else if (pLayer->GetLayerType() == eObjectLayerType_Folder)
 				{
 					//IsChildOf also checks for indirect ancestory (if it's a grandchild etc.)
-					auto currentLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
-					if(currentLayer && currentLayer->IsChildOf(pLayer))
-						return CryIcon("icons:General/Folder_Tree_Active.ico").pixmap(16, 16);
+					CObjectLayer* currentLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
+					if (currentLayer && currentLayer->IsChildOf(pLayer))
+						return CryIcon("icons:General/Folder_Tree_Active.ico");
 					else
-						return CryIcon("icons:General/Folder_Tree.ico").pixmap(16, 16);
-				} 
+						return CryIcon("icons:General/Folder_Tree.ico");
+				}
 				else if (pLayer->GetLayerType() == eObjectLayerType_Terrain)
 				{
-					return CryIcon("icons:Tools/tools_terrain-editor.ico").pixmap(16, 16);
+					return CryIcon("icons:Tools/tools_terrain-editor.ico");
 				}
+				break;
 			}
 			break;
 		case ELayerColumns::eLayerColumns_Visible:
@@ -333,26 +428,48 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				}
 			case QAdvancedItemDelegate::s_IconOverrideRole:
 				if (pLayer->IsVisible(false))
-					return CryIcon("icons:General/Visibility_True.ico");
+					return CryIcon("icons:General/Visibility_True.ico").pixmap(16, 16);
 				else
-					return CryIcon("icons:General/Visibility_False.ico");
+					return CryIcon("icons:General/Visibility_False.ico").pixmap(16, 16);
 			default:
 				break;
 			}
+			break;
 		case ELayerColumns::eLayerColumns_Frozen:
-
 			switch (role)
 			{
 			case Qt::CheckStateRole:
-					return pLayer->IsFrozen(false) ? Qt::Checked : Qt::Unchecked;
+				return pLayer->IsFrozen(false) ? Qt::Checked : Qt::Unchecked;
 			case QAdvancedItemDelegate::s_IconOverrideRole:
 				if (pLayer->IsFrozen(false))
-					return CryIcon("icons:General/editable_false.ico");
+					return CryIcon("icons:levelexplorer_lock_true.ico").pixmap(16, 16);
 				else
-					return CryIcon("icons:General/editable_true.ico");
+					return CryIcon("icons:general_lock_false.ico").pixmap(16, 16);
 			default:
 				break;
 			}
+			break;
+		case ELayerColumns::eLayerColumns_VCS:
+			{
+				if (role != Qt::DecorationRole && role != Qt::DisplayRole && !CVersionControl::GetInstance().IsOnline())
+					break;
+
+				const bool isFolder = pLayer->GetLayerType() == eObjectLayerType_Folder;
+				if (isFolder)
+				{
+					if (role == Qt::DisplayRole)
+						return "-";
+					if (role == Qt::TextAlignmentRole)
+						return Qt::AlignCenter;
+					break; // don't handle folders anymore
+				}
+
+				if (role == Qt::DecorationRole)
+					return VersionControlUIHelper::GetIconFromStatus(CAssetsVCSStatusProvider::GetStatus(*pLayer));
+				if (role == VersionControlUIHelper::GetVCSStatusRole())
+					return CAssetsVCSStatusProvider::GetStatus(*pLayer);
+			}
+			break;
 		case ELayerColumns::eLayerColumns_Exportable:
 			switch (role)
 			{
@@ -381,7 +498,6 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				return pLayer->HasPhysics() ? Qt::Checked : Qt::Unchecked;
 			}
 			break;
-
 		case ELayerColumns::eLayerColumns_Platform:
 			switch (role)
 			{
@@ -394,23 +510,24 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 			switch (role)
 			{
 			case Qt::DecorationRole:
-			{
-				COLORREF colorRef = pLayer->GetColor();
-				return QColor::fromRgb(GetRValue(colorRef), GetGValue(colorRef), GetBValue(colorRef));
-			}
+				{
+					ColorB color = pLayer->GetColor();
+					return QColor::fromRgb(color.r, color.g, color.b);
+				}
 			case QAdvancedItemDelegate::s_DrawRectOverrideRole:
-			{
-				// Force the layer color to take the full height of the item in the tree
-				QRect decorationRect;
-				decorationRect.setX(-3);
-				decorationRect.setY(-4);
-				decorationRect.setWidth(4);
-				decorationRect.setHeight(24);
-				return decorationRect;
-			}
+				{
+					// Force the layer color to take the full height of the item in the tree
+					QRect decorationRect;
+					decorationRect.setX(-3);
+					decorationRect.setY(-4);
+					decorationRect.setWidth(4);
+					decorationRect.setHeight(24);
+					return decorationRect;
+				}
 			default:
 				break;
 			}
+			break;
 		}
 	}
 	return QVariant();
@@ -428,7 +545,7 @@ bool CLevelModel::setData(const QModelIndex& index, const QVariant& value, int r
 			if (role == Qt::EditRole)
 			{
 				string newName = QtUtil::ToString(value.toString());
-				
+
 				// Make sure the name actually changed before attempting to rename
 				const char* szName = newName.c_str();
 				if (szName == pLayer->GetName())
@@ -514,12 +631,15 @@ QVariant CLevelModel::headerData(int section, Qt::Orientation orientation, int r
 		if (section == eLayerColumns_Visible)
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eLayerColumns_Frozen)
-			return CryIcon("icons:Navigation/Basics_Select_False.ico");
+			return CryIcon("icons:general_lock_true.ico");
+		if (section == eLayerColumns_VCS)
+			return CryIcon("icons:VersionControl/icon.ico");
 	}
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible, Frozen and Layer Color we don't return the name because we use Icons instead
-		if (section != eLayerColumns_Visible && section != eLayerColumns_Frozen && section != eLayerColumns_Color)
+		if (section != eLayerColumns_Visible && section != eLayerColumns_Frozen && section != eLayerColumns_VCS
+		    && section != eLayerColumns_Color)
 		{
 			return pAttribute->GetName();
 		}
@@ -539,6 +659,7 @@ QVariant CLevelModel::headerData(int section, Qt::Orientation orientation, int r
 		case eLayerColumns_Name:
 		case eLayerColumns_Visible:
 		case eLayerColumns_Frozen:
+		case eLayerColumns_VCS:
 			return "";
 		default:
 			return "Layers";
@@ -597,11 +718,11 @@ QModelIndex CLevelModel::index(int row, int column, const QModelIndex& parent) c
 			// index for a top level layer
 			int index = 0;
 			const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-			for (CObjectLayer* pLayer : layers)
+			for (IObjectLayer* pLayer : layers)
 			{
 				// since all the layers are stored together we need look for the ones
 				// that have no parents as these are the top level layers
-				if (pLayer->GetParent() == nullptr)
+				if (pLayer->GetParentIObjectLayer() == nullptr)
 				{
 					if (index == row)
 					{
@@ -666,7 +787,7 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 		return false;
 	}
 	bool hasOnlyLayers = layers.size() && !objects.size();
-	bool hasOnlyObjects = !layers.size() && objects.size();
+
 	if (!parent.isValid())
 	{
 		if (!hasOnlyLayers)
@@ -688,21 +809,21 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 	switch (targetLayer->GetLayerType())
 	{
 	case eObjectLayerType_Folder:
-	{
-		CUndo undo("Move Layers");
-		if (!hasOnlyLayers)
 		{
-			return false;
-		}
-		for (auto& layer : layers)
-		{
-			if (!targetLayer->IsChildOf(layer) && layer->GetParent() != targetLayer)
+			CUndo undo("Move Layers");
+			if (!hasOnlyLayers)
 			{
-				targetLayer->AddChild(layer);
+				return false;
 			}
+			for (auto& layer : layers)
+			{
+				if (!targetLayer->IsChildOf(layer) && layer->GetParent() != targetLayer)
+				{
+					targetLayer->AddChild(layer);
+				}
+			}
+			return true;
 		}
-		return true;
-	}
 	case eObjectLayerType_Layer:
 		{
 			CUndo undo("Move Objects & Layers");
@@ -737,7 +858,7 @@ bool CLevelModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, in
 				}
 			}
 			// Re-select all objects
-			pObjectManager->SelectObjects(objects);
+			pObjectManager->AddObjectsToSelection(objects);
 			return true;
 		}
 
@@ -781,20 +902,20 @@ bool CLevelModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action,
 	switch (targetLayer->GetLayerType())
 	{
 	case eObjectLayerType_Folder:
-	{
-		if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return targetLayer->IsChildOf(layer) || layer->GetParent() == targetLayer; }))
 		{
-			return false;
+			if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return targetLayer->IsChildOf(layer) || layer->GetParent() == targetLayer; }))
+			{
+				return false;
+			}
+
+			bool result = hasOnlyLayers && QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
+			if (result)
+				CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Move to %1").arg(QtUtil::ToQString(targetLayer->GetName())));
+			else
+				CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Invalid operation"));
+
+			return result;
 		}
-
-		bool result = hasOnlyLayers && QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
-		if (result)
-			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Move to %1").arg(QtUtil::ToQString(targetLayer->GetName())));
-		else
-			CDragDropData::ShowDragText(qApp->widgetAt(QCursor::pos()), QString("Invalid operation"));
-
-		return result;
-	}
 	case eObjectLayerType_Layer:
 		{
 			auto targetParentLayer = targetLayer->GetParent();
@@ -842,9 +963,9 @@ int CLevelModel::rowCount(const QModelIndex& parent) const
 		// rowCount for the top level layers
 		int count = 0;
 		const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-		for (CObjectLayer* pOtherLayer : layers)
+		for (IObjectLayer* pOtherLayer : layers)
 		{
-			if (pOtherLayer->GetParent() == nullptr)
+			if (pOtherLayer->GetParentIObjectLayer() == nullptr)
 			{
 				// since all the layers are stored together we need to count only
 				// the top level ones to get the right index
@@ -887,13 +1008,13 @@ QModelIndex CLevelModel::IndexFromLayer(const CObjectLayer* pLayer) const
 			// pLayer is a top level item
 			int index = 0;
 			const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-			for (CObjectLayer* pOtherLayer : layers)
+			for (IObjectLayer* pOtherLayer : layers)
 			{
 				if (pOtherLayer == pLayer)
 				{
 					return createIndex(index, 0, reinterpret_cast<quintptr>(pLayer));
 				}
-				if (pOtherLayer->GetParent() == nullptr)
+				if (pOtherLayer->GetParentIObjectLayer() == nullptr)
 				{
 					// since all the layers are stored together we need to count only
 					// the top level ones to get the right index
@@ -912,9 +1033,9 @@ int CLevelModel::RootRowIfInserted(const CObjectLayer* pLayer) const
 
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
 
-	for (CObjectLayer* pOtherLayer : layers)
+	for (IObjectLayer* pOtherLayer : layers)
 	{
-		if (pOtherLayer->GetParent() == nullptr)//Only count top level layers
+		if (pOtherLayer->GetParentIObjectLayer() == nullptr)//Only count top level layers
 		{
 			if (pLayer->GetGUID() < pOtherLayer->GetGUID())
 			{
@@ -1005,7 +1126,7 @@ void CLevelModel::OnLayerUpdate(const CLayerChangeEvent& event)
 		endInsertRows();
 		break;
 	case CLayerChangeEvent::LE_AFTER_REMOVE:
-		// we don't handle LE_BEFORE_REMOVE event and reset the whole model here because we can't have 2 layer models 
+		// we don't handle LE_BEFORE_REMOVE event and reset the whole model here because we can't have 2 layer models
 		// changing at the same time. Let say we have 2 layers and an object from one layer is linked to an object form
 		// another layer. If you delete one of the layers, then during the deletion another layer has to be updated.
 		// That's why we can't use beginRemoveRows() on LE_BEFORE_REMOVE and then endRemoveRows() on LE_AFTER_REMOVE.
@@ -1030,7 +1151,10 @@ void CLevelModel::OnLayerUpdate(const CLayerChangeEvent& event)
 	case CLayerChangeEvent::LE_AFTER_PARENT_CHANGE:
 		endMoveRows();
 		break;
-	case CLayerChangeEvent::LE_MODIFY:
+	case CLayerChangeEvent::LE_RENAME:
+	case CLayerChangeEvent::LE_LAYERCOLOR:
+	case CLayerChangeEvent::LE_VISIBILITY:
+	case CLayerChangeEvent::LE_FROZEN:
 		dataChanged(index(layerIdx.row(), 0, parentIdx), index(layerIdx.row(), columnCount(parentIdx) - 1, parentIdx));
 		break;
 	case CLayerChangeEvent::LE_UPDATE_ALL:
@@ -1041,4 +1165,3 @@ void CLevelModel::OnLayerUpdate(const CLayerChangeEvent& event)
 		break;
 	}
 }
-

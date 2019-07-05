@@ -42,7 +42,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 
 			virtual void ShutDown() final { Reset(); }
 			// ~IEntityComponent
@@ -64,7 +64,7 @@ namespace Cry
 
 			virtual void RequestMoveTo(const Vec3 &position)
 			{
-				CRY_ASSERT_MESSAGE(m_movementRequestId.id == 0, "RequestMoveTo can not be called while another request is being handled!");
+				CRY_ASSERT(m_movementRequestId.id == 0, "RequestMoveTo can not be called while another request is being handled!");
 
 				MovementRequest movementRequest;
 				movementRequest.entityID = GetEntityId();
@@ -80,7 +80,7 @@ namespace Cry
 			{
 				CRY_ASSERT(m_movementRequestId.id != 0);
 
-				gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_movementRequestId);
+				gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestId);
 				m_movementRequestId = 0;
 
 				if (m_pathFinderRequestId != 0)

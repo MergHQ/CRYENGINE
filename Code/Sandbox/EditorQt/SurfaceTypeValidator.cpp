@@ -2,18 +2,21 @@
 
 #include "stdafx.h"
 #include "SurfaceTypeValidator.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
 #include <Cry3DEngine/IMaterial.h>
 #include <CryAction/IMaterialEffects.h>
 #include <CryGame/IGameFramework.h>
 #include "Material/Material.h"
 
 #include <CrySystem/ICryLink.h>
+#include <CryPhysics/IPhysics.h>
 
 void CSurfaceTypeValidator::Validate()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
-	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 	std::set<string> reportedMaterialNames;
 
 	CBaseObjectsArray objects;
@@ -59,7 +62,7 @@ void CSurfaceTypeValidator::Validate()
 					if (usedSubMaterials[surfaceIDIndex] && surfaceTypeIDs[surfaceIDIndex] <= 0 && reportedMaterialNames.insert(materialSpec).second)
 					{
 						CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Physicalized object has material (%s) with invalid surface type. %s", materialSpec.c_str(),
-						           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", pObject->GetName()));
+						           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", pObject->GetName()));
 					}
 				}
 			}
@@ -108,4 +111,3 @@ void CSurfaceTypeValidator::GetUsedSubMaterials(pe_params_part* pPart, char used
 		}
 	}
 }
-

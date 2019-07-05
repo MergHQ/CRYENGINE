@@ -5,6 +5,7 @@
 #include <CryFlowGraph/IFlowBaseNode.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/ITimeOfDay.h>
+#include <Cry3DEngine/IBreezeGenerator.h>
 #include <CrySystem/IStreamEngine.h>
 
 class CFlowNode_EnvMoonDirection : public CFlowBaseNode<eNCT_Singleton>
@@ -138,8 +139,8 @@ public:
 				ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 				if (pTOD)
 				{
-					ActivateOutput(pActInfo, eOP_Latitude, pTOD->GetSunLatitude());
-					ActivateOutput(pActInfo, eOP_Longitude, pTOD->GetSunLongitude());
+					ActivateOutput(pActInfo, eOP_Latitude, pTOD->GetSunParams().latitude);
+					ActivateOutput(pActInfo, eOP_Longitude, pTOD->GetSunParams().longitude);
 				}
 			}
 			if (IsPortActive(pActInfo, eIP_Set))
@@ -150,7 +151,8 @@ public:
 					float latitude = GetPortFloat(pActInfo, eIP_Latitude);
 					float longitude = GetPortFloat(pActInfo, eIP_Longitude);
 
-					pTOD->SetSunPos(longitude, latitude);
+					pTOD->GetSunParams().longitude = longitude;
+					pTOD->GetSunParams().latitude = latitude;
 					bool forceUpdate = GetPortBool(pActInfo, eIP_ForceUpdate);
 					pTOD->Update(true, forceUpdate);
 
@@ -286,8 +288,8 @@ public:
 					m_durationLeft = GetPortFloat(pActInfo, IN_DURATION);
 					m_sunTimeToUpdate = GetPortFloat(pActInfo, IN_SUN_POSITION_UPDATE_INTERVAL);
 					m_TODTimeToUpdate = GetPortFloat(pActInfo, IN_TOD_FORCE_UPDATE_INTERVAL);
-					m_startSunLongitude = pTOD->GetSunLongitude();
-					m_startSunLatitude = pTOD->GetSunLatitude();
+					m_startSunLongitude = pTOD->GetSunParams().longitude;
+					m_startSunLatitude = pTOD->GetSunParams().latitude;
 					m_startTOD = pTOD->GetTime();
 					m_blending = true;
 					m_paused = false;
@@ -369,7 +371,7 @@ public:
 		m_sunTimeToUpdate = GetPortFloat(pActInfo, IN_SUN_POSITION_UPDATE_INTERVAL);
 
 		float endLatitude = GetPortFloat(pActInfo, IN_SUN_LATITUDE);
-		float currLatitude = pTOD->GetSunLatitude();
+		float currLatitude = pTOD->GetSunParams().latitude;
 		if (endLatitude >= 0)
 		{
 			currLatitude = m_startSunLatitude + (endLatitude - m_startSunLatitude) * blendPos;
@@ -377,14 +379,19 @@ public:
 		}
 
 		float endLongitude = GetPortFloat(pActInfo, IN_SUN_LONGITUDE);
-		float currLongitude = pTOD->GetSunLongitude();
+		float currLongitude = pTOD->GetSunParams().longitude;
 		if (endLongitude >= 0)
 		{
 			currLongitude = m_startSunLongitude + (endLongitude - m_startSunLongitude) * blendPos;
 			needUpdate = true;
 		}
+
 		if (needUpdate)
-			pTOD->SetSunPos(currLongitude, currLatitude);
+		{
+			pTOD->GetSunParams().longitude = currLongitude;
+			pTOD->GetSunParams().latitude = currLatitude;
+		}
+
 		return needUpdate;
 	}
 
@@ -397,6 +404,7 @@ public:
 CFlowNode_TimeOfDayTransitionTrigger::InternalID CFlowNode_TimeOfDayTransitionTrigger::m_IDCounter = 0;
 CFlowNode_TimeOfDayTransitionTrigger::InternalID CFlowNode_TimeOfDayTransitionTrigger::m_activeID = 0xffffffff;
 
+//////////////////////////////////////////////////////////////////////////
 class CFlowNode_EnvWind : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
@@ -407,26 +415,74 @@ public:
 	enum EInputPorts
 	{
 		eIP_Get = 0,
+		eIP_Set,
+		eIP_WindVector,
+		eIP_BreezeEnabled,
+		eIP_BreezeStrength,
+		eIP_BreezeMovementSpeed,
+		eIP_BreezeVariance,
+		eIP_BreezeLifetime,
+		eIP_BreezeCount,
+		eIP_BreezeSpawnRadius,
+		eIP_BreezeSpread,
+		eIP_BreezeRadius,
+		eIP_BreezeAwakeThreshold,
+		eIP_BreezeFixedHeight
 	};
 
 	enum EOutputPorts
 	{
 		eOP_WindVector,
+		eOP_BreezeEnabled,
+		eOP_BreezeStrength,
+		eOP_BreezeMovementSpeed,
+		eOP_BreezeVariance,
+		eOP_BreezeLifetime,
+		eOP_BreezeCount,
+		eOP_BreezeSpawnRadius,
+		eOP_BreezeSpread,
+		eOP_BreezeRadius,
+		eOP_BreezeAwakeThreshold,
+		eOP_BreezeFixedHeight
 	};
 
 	void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Get", _HELP("Get the Current Environment Wind Vector")),
+			InputPortConfig_Void("Get",                    _HELP("Get Wind Parameters")),
+			InputPortConfig_Void("Set",                    _HELP("Set Wind Parameters")),
+			InputPortConfig<Vec3>("WindVector",            Vec3(1.f, 0.f, 0.f),          _HELP("Environment Wind Vector")),
+			InputPortConfig<bool>("BreezeGeneration",      false,                        _HELP("Breeze Generation Enabled")),
+			InputPortConfig<float>("BreezeStrength",       1.f,                          _HELP("Breeze Strength")),
+			InputPortConfig<float>("BreezeMovementSpeed",  8.f,                          _HELP("Breeze Movement Speed")),
+			InputPortConfig<float>("BreezeVariance",       1.f,                          _HELP("Breeze Variation")),
+			InputPortConfig<float>("BreezeLifeTime",       15.f,                         _HELP("Breeze Life Time")),
+			InputPortConfig<int>("BreezeCount",            4,                            _HELP("Breeze Count")),
+			InputPortConfig<float>("BreezeSpawnRadius",    25.f,                         _HELP("Breeze Spawn Radius")),
+			InputPortConfig<float>("BreezeSpread",         0.f,                          _HELP("Breeze Spread")),
+			InputPortConfig<float>("BreezeRadius",         5.f,                          _HELP("Breeze Radius")),
+			InputPortConfig<float>("BreezeAwakeThreshold", 0.f,                          _HELP("Breeze Awake Threshold")),
+			InputPortConfig<float>("FixedHeight",          -1.f,                         _HELP("Breeze Height. If -1, use terrain height")),
 			{ 0 }
 		};
 		static const SOutputPortConfig out_config[] = {
-			OutputPortConfig<Vec3>("WindVector", _HELP("Current Environment Wind Vector")),
+			OutputPortConfig<Vec3>("WindVector",                                          _HELP("Current Environment Wind Vector")),
+			OutputPortConfig<bool>("BreezeGeneration",                                    _HELP("Breeze Generation Enabled")),
+			OutputPortConfig<float>("BreezeStrength",                                     _HELP("Breeze Strength")),
+			OutputPortConfig<float>("BreezeMovementSpeed",                                _HELP("Breeze Movement Speed")),
+			OutputPortConfig<float>("BreezeVariance",                                     _HELP("Breeze Variation")),
+			OutputPortConfig<float>("BreezeLifeTime",                                     _HELP("Breeze Life Time")),
+			OutputPortConfig<int>("BreezeCount",                                          _HELP("Breeze Count")),
+			OutputPortConfig<float>("BreezeSpawnRadius",                                  _HELP("Breeze Spawn Radius")),
+			OutputPortConfig<float>("BreezeSpread",                                       _HELP("Breeze Spread")),
+			OutputPortConfig<float>("BreezeRadius",                                       _HELP("Breeze Radius")),
+			OutputPortConfig<float>("BreezeAwakeThreshold",                               _HELP("Breeze Awake Threshold")),
+			OutputPortConfig<float>("FixedHeight",                                        _HELP("Breeze Height. If -1, use terrain height")),
 			{ 0 }
 		};
 		config.pInputPorts = in_config;
 		config.pOutputPorts = out_config;
-		config.sDescription = _HELP("Get the Environment's Wind Data");
+		config.sDescription = _HELP("Access 3DEngine's Wind Parameters");
 		config.SetCategory(EFLN_APPROVED);
 	}
 
@@ -438,6 +494,51 @@ public:
 			if (IsPortActive(pActInfo, eIP_Get))
 			{
 				ActivateOutput(pActInfo, eOP_WindVector, gEnv->p3DEngine->GetGlobalWind(false));
+
+				if (const IBreezeGenerator* pBreezeGenerator = gEnv->p3DEngine->GetBreezeGenerator())
+				{
+					const BreezeGeneratorParams params = pBreezeGenerator->GetParams();
+					
+					ActivateOutput(pActInfo, eOP_BreezeEnabled,        params.breezeGenerationEnabled);
+					ActivateOutput(pActInfo, eOP_BreezeStrength,       params.breezeStrength);
+					ActivateOutput(pActInfo, eOP_BreezeMovementSpeed,  params.breezeMovementSpeed);
+					ActivateOutput(pActInfo, eOP_BreezeVariance,       params.breezeVariance);
+					ActivateOutput(pActInfo, eOP_BreezeLifetime,       params.breezeLifeTime);
+					ActivateOutput(pActInfo, eOP_BreezeCount,          params.breezeCount);
+					ActivateOutput(pActInfo, eOP_BreezeSpawnRadius,    params.breezeSpawnRadius);
+					ActivateOutput(pActInfo, eOP_BreezeSpread,         params.breezeSpread);
+					ActivateOutput(pActInfo, eOP_BreezeRadius,         params.breezeRadius);
+					ActivateOutput(pActInfo, eOP_BreezeAwakeThreshold, params.breezeAwakeThreshold);
+					ActivateOutput(pActInfo, eOP_BreezeFixedHeight,    params.breezeFixedHeight);
+				}
+			}
+			if (IsPortActive(pActInfo, eIP_Set))
+			{
+				const Vec3 wind = GetPortVec3(pActInfo, eIP_WindVector);
+				gEnv->p3DEngine->SetWind(wind);
+
+				if (IBreezeGenerator* pBreezeGenerator = gEnv->p3DEngine->GetBreezeGenerator())
+				{
+					BreezeGeneratorParams params = pBreezeGenerator->GetParams();
+
+					params.windVector = wind;
+					params.breezeGenerationEnabled = GetPortBool(pActInfo, eIP_BreezeEnabled);
+					params.breezeStrength          = GetPortFloat(pActInfo, eIP_BreezeStrength);
+					params.breezeVariance          = GetPortFloat(pActInfo, eIP_BreezeVariance);
+					params.breezeLifeTime          = GetPortFloat(pActInfo, eIP_BreezeLifetime);
+
+					const int breezeCount          = GetPortInt(pActInfo, eIP_BreezeCount);
+					params.breezeCount = breezeCount > 0 ? breezeCount : 0;
+
+					params.breezeRadius            = GetPortFloat(pActInfo, eIP_BreezeRadius);
+					params.breezeSpawnRadius       = GetPortFloat(pActInfo, eIP_BreezeSpawnRadius);
+					params.breezeSpread            = GetPortFloat(pActInfo, eIP_BreezeSpread);
+					params.breezeMovementSpeed     = GetPortFloat(pActInfo, eIP_BreezeMovementSpeed);
+					params.breezeAwakeThreshold    = GetPortFloat(pActInfo, eIP_BreezeAwakeThreshold);
+					params.breezeFixedHeight       = GetPortFloat(pActInfo, eIP_BreezeFixedHeight);
+					
+					pBreezeGenerator->SetParams(params);
+				}
 			}
 			break;
 		}
@@ -521,7 +622,7 @@ public:
 class CFlowNode_SkyMaterialSwitch : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
-	CFlowNode_SkyMaterialSwitch(SActivationInfo* pActInfo){};
+	CFlowNode_SkyMaterialSwitch(SActivationInfo* pActInfo){}
 	virtual void GetMemoryUsage(ICrySizer* s) const;
 	void         GetConfiguration(SFlowNodeConfig& config);
 	void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
@@ -535,15 +636,16 @@ void CFlowNode_SkyMaterialSwitch::GetMemoryUsage(ICrySizer* s) const
 void CFlowNode_SkyMaterialSwitch::GetConfiguration(SFlowNodeConfig& config)
 {
 	static const SInputPortConfig in_config[] = {
-		InputPortConfig<string>("mat_Material", _HELP("Skybox material name")),
-		InputPortConfig<bool>("Start",          false,                         _HELP("Trigger to start the loading")),
-		InputPortConfig<float>("Angle",         1.f,                           _HELP("Sky box rotation")),
-		InputPortConfig<float>("Stretching",    1.f,                           _HELP("Sky box stretching")),
+		InputPortConfig<string>("hdr_mat_Material",    _HELP("Skybox material name (default-spec)")),
+		InputPortConfig<string>("mat_Material",        _HELP("Skybox material name (low-spec)")),
+		InputPortConfig<bool>("Start",          false, _HELP("Trigger to start the loading")),
+		InputPortConfig<float>("Angle",         1.f,   _HELP("Skybox rotation")),
+		InputPortConfig<float>("Stretching",    1.f,   _HELP("Skybox stretching")),
 		{ 0 }
 	};
 
 	config.pInputPorts = in_config;
-	config.sDescription = _HELP("Node for sky box switching");
+	config.sDescription = _HELP("Node for sky material switching");
 	config.SetCategory(EFLN_ADVANCED);
 }
 
@@ -552,23 +654,22 @@ void CFlowNode_SkyMaterialSwitch::ProcessEvent(EFlowEvent event, SActivationInfo
 	switch (event)
 	{
 	case eFE_Activate:
-		if (IsPortActive(pActInfo, 1))
+		if (IsPortActive(pActInfo, 2))
 		{
-			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE, GetPortFloat(pActInfo, 2));
-			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING, GetPortFloat(pActInfo, 3));
+			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE, GetPortFloat(pActInfo, 3));
+			gEnv->p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING, GetPortFloat(pActInfo, 4));
 
-			string mat = GetPortString(pActInfo, 0);
-
-			IMaterial* pSkyMtl = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(mat, false, false, IMaterialManager::ELoadingFlagsPreviewMode);
-
-			if (pSkyMtl != NULL)
+			const string matNames[2] =
 			{
-				gEnv->p3DEngine->SetSkyMaterial(pSkyMtl);
-				gEnv->pLog->Log("Sky box switched");
-			}
-			else
+				GetPortString(pActInfo, 1), // eSkyType_Sky
+				GetPortString(pActInfo, 0)  // eSkyType_HDRSky
+			};
+
+			for (int skyTypeIdx = 0; skyTypeIdx < eSkySpec_NumSkySpecs; ++skyTypeIdx)
 			{
-				gEnv->pLog->LogError("Error switching sky box: can't find material");
+				const string matName = matNames[skyTypeIdx];
+				IMaterial *const pSkyMtl = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(matNames[skyTypeIdx], false, false, IMaterialManager::ELoadingFlagsPreviewMode);
+				gEnv->p3DEngine->SetSkyMaterial(pSkyMtl, (eSkyType) skyTypeIdx);
 			}
 		}
 		break;
@@ -819,8 +920,6 @@ public:
 	}
 };
 
-
-
 class CFlowNode_GetCurrentPreset : public CFlowBaseNode<eNCT_Singleton>
 {
 public:
@@ -846,7 +945,7 @@ public:
 	void GetConfiguration(SFlowNodeConfig& config)
 	{
 		static const SInputPortConfig in_config[] = {
-			InputPortConfig_Void("Get",  _HELP("Get the current Preset name")),
+			InputPortConfig_Void("Get", _HELP("Get the current Preset name")),
 			//blend time might be here
 			{ 0 }
 		};
@@ -867,21 +966,20 @@ public:
 		switch (event)
 		{
 		case eFE_Activate:
-		{
-			if (IsPortActive(pActInfo, eIP_Get))
 			{
-				ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
+				if (IsPortActive(pActInfo, eIP_Get))
+				{
+					ITimeOfDay* pTOD = gEnv->p3DEngine->GetTimeOfDay();
 
-				string presetName = (pTOD ? pTOD->GetCurrentPresetName() : "");
+					string presetName = (pTOD ? pTOD->GetCurrentPresetName() : "");
 
-				ActivateOutput(pActInfo, eOP_PresetName, presetName);
+					ActivateOutput(pActInfo, eOP_PresetName, presetName);
+				}
 			}
-		}
-		break;
+			break;
 		}
 	}
 };
-
 
 REGISTER_FLOW_NODE("Environment:MoonDirection", CFlowNode_EnvMoonDirection);
 REGISTER_FLOW_NODE("Environment:Sun", CFlowNode_EnvSun);

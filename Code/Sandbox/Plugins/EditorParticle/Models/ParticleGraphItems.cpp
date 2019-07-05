@@ -22,15 +22,14 @@
 namespace CryParticleEditor {
 
 CNodeItem::CNodeItem(pfx2::IParticleComponent& component, CryGraphEditor::CNodeGraphViewModel& viewModel)
-	: CAbstractNodeItem(viewModel)
+	: CAbstractNodeItem(*(m_pData = new CryGraphEditor::CNodeEditorData()), viewModel)
 	, m_component(component)
 {
 	SetAcceptsDeactivation(true);
 	SetAcceptsRenaming(true);
 
 	m_name = component.GetName();
-	m_position.setX(component.GetNodePosition().x);
-	m_position.setY(component.GetNodePosition().y);
+	m_data.SetPos(Vec2(component.GetNodePosition().x, component.GetNodePosition().y));
 
 	uint32 featureCount = m_component.GetNumFeatures();
 	m_pins.reserve(featureCount + 1);
@@ -66,6 +65,8 @@ CNodeItem::~CNodeItem()
 	{
 		delete pItem;
 	}
+
+	delete m_pData;
 }
 
 void CNodeItem::SetPosition(QPointF position)
@@ -85,9 +86,9 @@ CryGraphEditor::CNodeWidget* CNodeItem::CreateWidget(CryGraphEditor::CNodeGraphV
 	pNode->SetHeaderNameWidth(120);
 	CFeatureGridNodeContentWidget* pContent = new CFeatureGridNodeContentWidget(*pNode, static_cast<CParentPinItem&>(*m_pins[0]), static_cast<CChildPinItem&>(*m_pins[1]), view);
 
-	pNode->AddHeaderIcon(new CEmitterActiveIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
-	pNode->AddHeaderIcon(new CEmitterVisibleIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
-	pNode->AddHeaderIcon(new CSoloEmitterModeIcon(*pNode), CryGraphEditor::CNodeHeader::EIconSlot::Right);
+	pNode->AddHeaderIcon(new CEmitterActiveIcon(*pNode), CryGraphEditor::CHeaderWidget::EIconSlot::Right);
+	pNode->AddHeaderIcon(new CEmitterVisibleIcon(*pNode), CryGraphEditor::CHeaderWidget::EIconSlot::Right);
+	pNode->AddHeaderIcon(new CSoloEmitterModeIcon(*pNode), CryGraphEditor::CHeaderWidget::EIconSlot::Right);
 
 	pNode->SetContentWidget(pContent);
 
@@ -124,6 +125,7 @@ void CNodeItem::SetName(const QString& name)
 	{
 		m_component.SetName(newName.c_str());
 		CAbstractNodeItem::SetName(GetName());
+		OnChanged();
 
 		// TODO: Move this into an CAbstractNodeItem method.
 		if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
@@ -145,6 +147,7 @@ void CNodeItem::SetDeactivated(bool isDeactivated)
 	{
 		m_component.SetEnabled(!isDeactivated);
 		SignalDeactivatedChanged(isDeactivated);
+		OnChanged();
 	}
 }
 
@@ -225,10 +228,10 @@ CChildPinItem* CNodeItem::GetChildPinItem()
 	return static_cast<CChildPinItem*>(m_pins[1]);
 }
 
-uint32 CNodeItem::GetIndex() const
+uint32 CNodeItem::GetEffectIndex() const
 {
 	CParticleGraphModel& model = static_cast<CParticleGraphModel&>(GetViewModel());
-	const pfx2::IParticleEffectPfx2& effect = model.GetEffectInterface();
+	const pfx2::IParticleEffect& effect = model.GetEffectInterface();
 
 	const uint32 numNodes = effect.GetNumComponents();
 	for (uint32 i = 0; i < numNodes; ++i)
@@ -254,6 +257,7 @@ CFeatureItem* CNodeItem::AddFeature(uint32 index, const pfx2::SParticleFeaturePa
 			m_pins.push_back(pFeatureItem->GetPinItem());
 		}
 		SignalFeatureAdded(*pFeatureItem);
+		OnChanged();
 
 		if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 		{
@@ -272,7 +276,6 @@ void CNodeItem::RemoveFeature(uint32 index)
 		CFeatureItem* pFeatureItem = m_features.at(index);
 
 		GetViewModel().SignalRemoveCustomItem(*pFeatureItem);
-		SignalFeatureRemoved(*pFeatureItem);
 
 		m_features.erase(m_features.begin() + index);
 
@@ -295,10 +298,12 @@ void CNodeItem::RemoveFeature(uint32 index)
 			CUndo::Record(new CUndoFeatureRemove(*pFeatureItem));
 
 		delete pFeatureItem;
+		SignalFeatureRemoved(*pFeatureItem);
 	}
 
 	if (index < m_component.GetNumFeatures())
 		m_component.RemoveFeature(index);
+	OnChanged();
 }
 
 bool CNodeItem::MoveFeatureAtIndex(uint32 featureIndex, uint32 destIndex)
@@ -327,6 +332,7 @@ bool CNodeItem::MoveFeatureAtIndex(uint32 featureIndex, uint32 destIndex)
 		if (m_component.GetFeature(destIndex) == &pFeatureItem->GetFeatureInterface())
 		{
 			SignalFeatureMoved(*pFeatureItem);
+			OnChanged();
 			if (GetIEditor()->GetIUndoManager()->IsUndoRecording())
 			{
 				CUndo::Record(new CUndoFeatureMove(*pFeatureItem, featureIndex));
@@ -343,12 +349,18 @@ void CNodeItem::SetVisible(bool isVisible)
 	{
 		m_component.SetVisible(isVisible);
 		SignalVisibleChanged(isVisible);
+		OnChanged();
 	}
 }
 
 bool CNodeItem::IsVisible()
 {
 	return m_component.IsVisible();
+}
+
+void CNodeItem::OnChanged()
+{
+	static_cast<CParticleGraphModel*>(&GetViewModel())->OnNodeItemChanged(this);
 }
 
 CFeaturePinItem::CFeaturePinItem(CFeatureItem& feature)
@@ -378,6 +390,22 @@ bool CFeaturePinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherP
 		return pOtherPin->IsInputPin() && !pOtherPin->IsConnected();
 
 	return true;
+}
+
+bool CParentPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const
+{
+	if (pOtherPin && pOtherPin->IsOutputPin() && !IsConnected())
+	{
+		const auto& otherNodeItem = static_cast<const CNodeItem&>(pOtherPin->GetNodeItem());
+		if (otherNodeItem.GetComponentInterface().CanBeParent(&m_nodeItem.GetComponentInterface()))
+			return true;
+	}
+	return false;
+}
+
+bool CChildPinItem::CanConnect(const CryGraphEditor::CAbstractPinItem* pOtherPin) const
+{
+	return !pOtherPin || (pOtherPin->IsInputPin() && pOtherPin->CanConnect(this));
 }
 
 CFeatureItem::CFeatureItem(pfx2::IParticleFeature& feature, CNodeItem& node, CryGraphEditor::CNodeGraphViewModel& viewModel)
@@ -413,6 +441,7 @@ void CFeatureItem::SetDeactivated(bool isDeactivated)
 		// Note: Property tree listens only to node properties changed
 		//			 events. So at least for now we need to invalidate the whole node.
 		m_node.SignalInvalidated();
+		m_node.OnChanged();
 	}
 }
 
@@ -469,27 +498,20 @@ QColor CFeatureItem::GetColor() const
 }
 
 CConnectionItem::CConnectionItem(CBasePinItem& sourcePin, CBasePinItem& targetPin, CryGraphEditor::CNodeGraphViewModel& viewModel)
-	: CryGraphEditor::CAbstractConnectionItem(viewModel)
-	, m_sourcePin(sourcePin)
-	, m_targetPin(targetPin)
+	: CryGraphEditor::CAbstractConnectionItem(sourcePin, targetPin, viewModel)
 {
-	m_sourcePin.AddConnection(*this);
-	m_targetPin.AddConnection(*this);
+	sourcePin.AddConnection(*this);
+	targetPin.AddConnection(*this);
 
-	string sourceNodeName = QtUtil::ToString(m_sourcePin.GetNodeItem().GetName());
-	string sourceNodePin = QtUtil::ToString(m_sourcePin.GetName());
-	string targetNodeName = QtUtil::ToString(m_targetPin.GetNodeItem().GetName());
-	string targetNodePin = QtUtil::ToString(m_targetPin.GetName());
+	string sourceNodeName = QtUtil::ToString(sourcePin.GetNodeItem().GetName());
+	string sourceNodePin = QtUtil::ToString(sourcePin.GetName());
+	string targetNodeName = QtUtil::ToString(targetPin.GetNodeItem().GetName());
+	string targetNodePin = QtUtil::ToString(targetPin.GetName());
 
 	string id;
 	id.Format("%s-%s::%s-%s", sourceNodeName, sourceNodePin, targetNodeName, targetNodePin);
 
 	m_id = CCrc32::Compute(id.c_str());
-}
-
-CConnectionItem::~CConnectionItem()
-{
-
 }
 
 CryGraphEditor::CConnectionWidget* CConnectionItem::CreateWidget(CryGraphEditor::CNodeGraphView& view)
@@ -509,9 +531,8 @@ bool CConnectionItem::HasId(QVariant id) const
 
 void CConnectionItem::OnConnectionRemoved()
 {
-	m_sourcePin.RemoveConnection(*this);
-	m_targetPin.RemoveConnection(*this);
+	GetSourcePinItem().RemoveConnection(*this);
+	GetTargetPinItem().RemoveConnection(*this);
 }
 
 }
-

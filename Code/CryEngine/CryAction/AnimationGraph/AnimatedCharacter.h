@@ -34,7 +34,7 @@
 #endif
 
 #ifdef ANIMCHAR_PROFILE_HEAVY
-	#define ANIMCHAR_PROFILE_SCOPE(label) CRY_PROFILE_REGION(PROFILE_ACTION, label)
+	#define ANIMCHAR_PROFILE_SCOPE(label) CRY_PROFILE_SECTION(PROFILE_ACTION, label)
 #else
 	#define ANIMCHAR_PROFILE_SCOPE(label) {}
 #endif
@@ -183,7 +183,7 @@ public:
 	virtual void                 FullSerialize(TSerialize ser);
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
 	virtual void                 ProcessEvent(const SEntityEvent& event);
-	virtual uint64               GetEventMask() const;
+	virtual Cry::Entity::EventFlags               GetEventMask() const;
 	virtual void                 PostSerialize();
 	virtual void                 SerializeSpawnInfo(TSerialize ser) {}
 	virtual ISerializableInfoPtr GetSpawnInfo()                     { return 0; }
@@ -694,11 +694,7 @@ private:
 
 //--------------------------------------------------------------------------------
 #undef UNIQUE
-#if defined(CRY_PLATFORM_64BIT)
-	#define UNIQUE(s) (s + string().Format("%016llX", (uint64) this)).c_str()
-#else
-	#define UNIQUE(s) (s + string().Format("%08X", (uint32) this)).c_str()
-#endif
+#define UNIQUE(s) (s + string().Format("%016llX", (uint64) this)).c_str()
 
 //--------------------------------------------------------------------------------
 

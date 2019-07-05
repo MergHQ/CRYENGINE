@@ -6,6 +6,7 @@
 #include "EntityArchetype.h"
 #include "ScriptProperties.h"
 #include <CryString/CryPath.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include "EntitySystem.h"
 
 #define ENTITY_ARCHETYPES_LIBS_PATH "/Libs/EntityArchetypes/"
@@ -121,7 +122,7 @@ IEntityArchetype* CEntityArchetypeManager::LoadArchetype(const char* sArchetype)
 
 	const string& sLibName = GetLibraryFromName(sArchetype);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_ArchetypeLib, 0, sLibName.c_str());
+	MEMSTAT_CONTEXT(EMemStatContextType::ArchetypeLib, sLibName.c_str());
 
 	// If archetype is not found try to load the library first.
 	if (LoadLibrary(sLibName))

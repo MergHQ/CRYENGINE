@@ -1,14 +1,13 @@
 {
-  "NoUberFile":{
-    "CryThreading":[
-      "CryThreading/CryAtomics_win32.h",
-      "CryThreading/CryAtomics_impl_win32.h",
-      "CryThreading/CryThread_win32.h",
-      "CryThreading/CryThreadImpl_win32.h",
-	  "CryCore/Platform/platform_impl_winapi.inl"
-    ],
-    "CryNetwork":[
-      "CryNetwork/CrySocks_win32.h"
-    ]
-  }
+    "NoUberFile": {
+        "CryNetwork": [
+            "CryNetwork/CrySocks_win32.h"
+        ], 
+        "CryThreading": [
+            "CryThreading/CryAtomics_win32.h", 
+            "CryThreading/CryAtomics_impl_win32.h", 
+            "CryThreading/CryThread_win32.h", 
+            "CryThreading/CryThreadImpl_win32.h"
+        ]
+    }
 }

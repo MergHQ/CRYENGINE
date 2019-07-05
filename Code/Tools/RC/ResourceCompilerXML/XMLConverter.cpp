@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "XMLConverter.h"
 #include "IRCLog.h"
-#include "IXmlSerializer.h"
+#include "IXMLSerializer.h"
 #include <CrySystem/XML/XMLBinaryHeaders.h>
 #include "XMLBinaryReader.h"
 #include "XMLBinaryWriter.h"
@@ -322,15 +322,15 @@ static bool xmlsAreEqual(XmlNodeRef node0, XmlNodeRef node1, XMLBinary::IFilter*
 
 static string GetNormalizedFullPath(const string& relativePath)
 {
-	char fullname[MAX_PATH];
-	const DWORD len = GetFullPathNameA(relativePath.c_str(), sizeof(fullname), fullname, 0);
-	if ((len == 0) || (len >= sizeof(fullname)))
+	const string absolutePath = PathHelpers::GetAbsolutePath(relativePath);
+
+	if(absolutePath.empty())
 	{
-		RCLogError("XML: Failed to obtain full path for \"%s\"", relativePath.c_str());
+		RCLogError("XML: Failed to obtain full path for '%s'", relativePath.c_str());
 		return string();
 	}
 	// note: maybe normalization via ToDosPath() is unneeded, but MSDN is not very clear about it.
-	return PathUtil::ToDosPath(string(fullname));
+	return PathUtil::ToDosPath(absolutePath);
 }
 
 static XmlNodeRef ConvertFromExcelXmlToCryEngineTableXml(XmlNodeRef root, IXMLSerializer* pSerializer, const string& sInputFile)
@@ -612,7 +612,7 @@ bool XMLCompiler::Process()
 
 	// Write out the destination file.
 	{
-		SetFileAttributes(sOutputFile.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+		FileUtil::MakeWritable(sOutputFile.c_str());
 
 		FILE* const pDestinationFile = fopen(sOutputFile.c_str(), "wb");
 		if (pDestinationFile == 0)

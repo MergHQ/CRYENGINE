@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "AbstractNodeGraphViewModelItem.h"
 
 #include <CrySandbox/CrySignal.h>
@@ -58,7 +59,7 @@ public:
 	virtual bool                     CanConnect(const CAbstractPinItem* pOtherPin) const = 0;
 	virtual bool                     IsConnected() const        { return (m_connections.size() > 0); }
 
-	virtual const ConnectionItemSet& GetConnectionItems() const { return m_connections; };
+	virtual const ConnectionItemSet& GetConnectionItems() const { return m_connections; }
 
 	virtual void                     AddConnection(CAbstractConnectionItem& connection);
 	virtual void                     RemoveConnection(CAbstractConnectionItem& connection);
@@ -78,4 +79,3 @@ private:
 };
 
 }
-

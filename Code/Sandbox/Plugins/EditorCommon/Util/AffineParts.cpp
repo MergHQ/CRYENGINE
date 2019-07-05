@@ -718,4 +718,3 @@ void AffineParts::SpectralDecompose(const Matrix34& tm)
 	scale = Vec3(parts.k.x, parts.k.y, parts.k.z);
 	fDet = parts.f;
 }
-

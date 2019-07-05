@@ -19,4 +19,3 @@ private:
 
 	ICVar*                  m_pPlatformsCvar;
 };
-

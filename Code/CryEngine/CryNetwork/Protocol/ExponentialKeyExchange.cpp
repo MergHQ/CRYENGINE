@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+
+#if ENCRYPTION_GENERATE_KEYS
 #include "ExponentialKeyExchange.h"
 #include <BigDigits/bigd.h>
 #include <BigDigits/bigdigits.h>
@@ -8,8 +10,6 @@
 // big digits defines uint32_t as unsigned long, which breaks compilation
 #undef uint32_t
 #include <CrySystem/ITimer.h>
-
-#if ALLOW_ENCRYPTION
 
 namespace
 {

@@ -43,12 +43,12 @@ inline ATOM __RegisterSmartClass(HINSTANCE hInstance, DWORD nIcon)
 ///////////////////////////////////////////////////////////////////////////////////////////
 #define _BEGIN_MSG_MAP(__class)                                                            \
   virtual LRESULT __Tiny_WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) \
-  { int wmId = 0, wmEvent = 0;                                                             \
+  {                                                                                        \
     switch (message) {
 
 #define _BEGIN_DLG_MSG_MAP(__class)                                                        \
   virtual LRESULT __Tiny_WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) \
-  { int wmId = 0, wmEvent = 0;                                                             \
+  {                                                                                        \
     switch (message) {
 
 #define _MESSAGE_HANDLER(__message, __handler)       \
@@ -56,11 +56,11 @@ inline ATOM __RegisterSmartClass(HINSTANCE hInstance, DWORD nIcon)
     return __handler(hWnd, message, wParam, lParam); \
     break;
 
-#define _BEGIN_COMMAND_HANDLER() \
-  case WM_COMMAND:               \
-    wmId = LOWORD(wParam);       \
-    wmEvent = HIWORD(wParam);    \
-    switch (wmId) {              \
+#define _BEGIN_COMMAND_HANDLER()        \
+  case WM_COMMAND: {                    \
+    int const wmId = LOWORD(wParam);    \
+    int const wmEvent = HIWORD(wParam); \
+    switch (wmId) {                     \
 
 #define _COMMAND_HANDLER(__wmId, __command_handler)          \
   case __wmId:                                               \
@@ -96,7 +96,8 @@ inline ATOM __RegisterSmartClass(HINSTANCE hInstance, DWORD nIcon)
     return DefWindowProc(hWnd, message, wParam, lParam); \
     break;                                               \
     }                                                    \
-    break;
+    break;                                               \
+    }
 
 #define  _END_MSG_MAP()                                  \
   default:                                               \
@@ -446,7 +447,7 @@ public:
 	virtual BOOL Create(ULONG nID = 0, DWORD dwStyle = WS_VISIBLE, DWORD dwExStyle = 0, const RECT* pRect = NULL, _TinyWindow* pParentWnd = NULL)
 	{
 		BOOL bRes = _TinyWindow::Create(RICHEDIT_CLASS, _T(""), dwStyle, dwExStyle, pRect, pParentWnd, nID);
-		int n = ::GetLastError();
+
 		if (!bRes) return FALSE;
 		return TRUE;
 	}
@@ -495,7 +496,7 @@ public:
 	virtual void ScrollToLine(UINT iLine)
 	{
 		UINT iChar = (UINT)SendMessage(EM_LINEINDEX, iLine, 0);
-		UINT iLineLength = (UINT)SendMessage(EM_LINELENGTH, iChar - 1, 0);
+		SendMessage(EM_LINELENGTH, iChar - 1, 0);
 		SendMessage(EM_SETSEL, iChar, iChar);
 		SendMessage(EM_LINESCROLL, 0, -99999);
 		SendMessage(EM_LINESCROLL, 0, iLine - GetCenterLine());
@@ -714,14 +715,14 @@ public:
 		return TRUE;
 
 	}
-	virtual HTREEITEM AddItemToTree(LPTSTR lpszItem, LPARAM ud = NULL, HTREEITEM hParent = NULL, UINT iImage = 0)
+	virtual HTREEITEM AddItemToTree(LPCSTR lpszItem, LPARAM ud = NULL, HTREEITEM hParent = NULL, UINT iImage = 0)
 	{
 		TVITEM tv;
 		TVINSERTSTRUCT tvins;
 		static HTREEITEM hPrev = (HTREEITEM) TVI_FIRST;
 		memset(&tv, 0, sizeof(TVITEM));
 		tv.mask = TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE;
-		tv.pszText = lpszItem;
+		tv.pszText = const_cast<CHAR*>(lpszItem);
 		tv.lParam = ud;
 		tv.iImage = iImage;
 		tv.iSelectedImage = iImage;
@@ -777,7 +778,7 @@ public:
 	virtual BOOL Create(ULONG nID = 0, DWORD dwStyle = WS_VISIBLE, DWORD dwStyleEx = 0, const RECT* pRect = NULL, _TinyWindow* pParentWnd = NULL)
 	{
 		BOOL bRes = _TinyWindow::Create(_T("SCROLLBAR"), _T(""), dwStyle, dwStyleEx, pRect, pParentWnd, nID);
-		int n = GetLastError();
+
 		if (SBS_VERT & dwStyle) m_nBar = SB_VERT;
 		if (SBS_HORZ & dwStyle) m_nBar = SB_HORZ;
 		if (!bRes) return FALSE;

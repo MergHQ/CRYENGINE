@@ -6,6 +6,7 @@
 #include "RigidBodyComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {
@@ -150,9 +151,9 @@ void CAreaComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CAreaComponent::GetEventMask() const
+Cry::Entity::EventFlags CAreaComponent::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 }
 
 #ifndef RELEASE
@@ -175,8 +176,6 @@ void CAreaComponent::Render(const IEntity& entity, const IEntityComponent& compo
 		Vec3 samples[8][8][8];
 		QuatT transform(pos.pos, pos.q);
 		AABB bbox = AABB(pos.BBox[0], pos.BBox[1]);
-		float frameTime = gEnv->pTimer->GetCurrTime();
-		float theta = frameTime - floor(frameTime);
 
 		float len[3] =
 		{

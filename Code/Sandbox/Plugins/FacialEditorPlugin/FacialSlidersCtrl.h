@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FacialSlidersCtrl_h__
-#define __FacialSlidersCtrl_h__
 #pragma once
 
 #include "FacialEdContext.h"
@@ -45,7 +43,6 @@ protected:
 	afx_msg void OnRClickSlider(UINT nID, NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnItemChanged(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnBeginDrag(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnEndDrag(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 
@@ -74,15 +71,20 @@ private:
 
 	struct SSliderInfo
 	{
+		SSliderInfo() 
+			: bEnabled(false)
+			, rowColor(0)
+			, pSlider(nullptr)
+			, pBalance(nullptr)
+			, pEffector(nullptr)
+		{}
+
 		bool                   bEnabled;
 		COLORREF               rowColor;
 		CRect                  rc;
 		CSliderCtrlCustomDraw* pSlider;
 		CNumberCtrl*           pBalance;
-		//CWnd *pNumberCtrl;
 		IFacialEffector*       pEffector;
-
-		SSliderInfo() { pSlider = 0; pEffector = 0; bEnabled = false; rowColor = 0; }
 	};
 	typedef std::vector<SSliderInfo> SliderContainer;
 	SliderContainer   m_sliders;
@@ -93,6 +95,3 @@ private:
 	CImageList*       m_pDragImage;
 	bool              m_bLDragging;
 };
-
-#endif // __FacialSlidersCtrl_h__
-

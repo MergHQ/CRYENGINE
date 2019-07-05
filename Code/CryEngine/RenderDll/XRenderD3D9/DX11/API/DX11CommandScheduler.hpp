@@ -1,10 +1,11 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
 #include "DX11Base.hpp"
 #include "DX11Device.hpp"
-#include "DX11CommandListFence.hpp"
+#include "DX11CommandList.hpp"
+#include "DX11CommandListPool.hpp"
 
 namespace NCryDX11 {
 
@@ -12,11 +13,13 @@ class CDevice;
 
 class CCommandScheduler : public CDeviceObject
 {
-	typedef std::function<void(void*, int)> QueueEventCallbackType;
-
 public:
 	CCommandScheduler(CDevice* pDevice);
 	virtual ~CCommandScheduler();
+	
+	inline CCommandListPool& GetCommandListPool() { return m_CmdListPool; }
+
+	bool RecreateCommandListPool();
 
 	void Flush(bool bWait);
 	void GarbageCollect();
@@ -25,39 +28,27 @@ public:
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Fence management API
-	ILINE const CCommandListFenceSet& GetFenceManager() const { return m_CmdFenceSet; }
-
-	ILINE UINT64 InsertFence(int nPoolId = CMDQUEUE_IMMEDIATE)
-	{
-		return m_CmdFenceSet.GetCurrentValue(nPoolId);
-	}
-
-	ILINE HRESULT FlushToFence(UINT64 fenceValue)
-	{
-		Flush(false);
-		return S_OK;
-	}
-
-	ILINE HRESULT TestForFence(UINT64 fenceValue)
-	{
-		return m_CmdFenceSet.IsCompleted(fenceValue, CMDQUEUE_IMMEDIATE) ? S_OK : S_FALSE;
-	}
-
-	ILINE HRESULT WaitForFence(UINT64 fenceValue)
-	{
-		m_CmdFenceSet.WaitForFence(fenceValue, CMDQUEUE_IMMEDIATE);
-		return S_OK;
-	}
-
+	ILINE const CCommandListFenceSet& GetFenceManager() const { return m_CmdListFenceSet; }
+	
 private:
 #define FRAME_FENCES         32
 #define FRAME_FENCE_LATENCY  32
 #define FRAME_FENCE_INFLIGHT std::min(MAX_FRAMES_IN_FLIGHT, CRendererCVars::CV_r_MaxFrameLatency + 1)
-	UINT64                        m_FrameFenceValuesSubmitted[FRAME_FENCES][CMDQUEUE_NUM];
-	UINT64                        m_FrameFenceValuesCompleted[FRAME_FENCES][CMDQUEUE_NUM];
+	UINT64                        m_FrameFenceValuesSubmitted[FRAME_FENCES];
+	UINT64                        m_FrameFenceValuesCompleted[FRAME_FENCES];
 	ULONG                         m_FrameFenceCursor;
 
-	CCommandListFenceSet          m_CmdFenceSet;
+	CCommandListFenceSet          m_CmdListFenceSet;
+#if defined(_ALLOW_INITIALIZER_LISTS)
+	CCommandListPool              m_CmdListPool;
+#else
+	std::vector<CCommandListPool> m_CmdListPool;
+#endif
+
+#ifdef DX11_STATS
+	size_t m_NumCommandListOverflows;
+	size_t m_NumCommandListSplits;
+#endif // DX11_STATS
 };
 
 }

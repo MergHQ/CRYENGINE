@@ -65,7 +65,7 @@ bool QAdvancedItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model
 				m_dragCheckButtons |= mouseEvent->button();
 
 				//Cancel action, example a right click has been pressed, revert all states
-				for (auto& i : m_checkedIndices)
+				for (size_t num = m_checkedIndices.size(), i = 0; i < num; ++i)
 				{
 					RevertDragCheck(model);
 				}
@@ -385,4 +385,3 @@ Qt::CheckState QAdvancedItemDelegate::Check(QAbstractItemModel* model, const QMo
 
 	return returnVal;
 }
-

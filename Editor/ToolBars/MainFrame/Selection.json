@@ -1,0 +1,70 @@
+{
+    "toolBar": [
+        {
+            "command": "selection.go_to",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Go to Selection",
+            "type": 0
+        },
+        {
+            "command": "general.find",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Find...",
+            "type": 0
+        },
+        "separator",
+        {
+            "command": "group.create_from_selection",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "create_from_selection",
+            "type": 0
+        },
+        {
+            "command": "group.ungroup",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "ungroup",
+            "type": 0
+        },
+        {
+            "command": "tools.link",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Link",
+            "type": 0
+        },
+        {
+            "command": "tools.unlink",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Unlink",
+            "type": 0
+        },
+        {
+            "command": "prefab.create_from_selection",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Create Prefab from Selected Objects",
+            "type": 0
+        },
+        "separator",
+        {
+            "command": "selection.lock_objects",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "lock_objects",
+            "type": 0
+        },
+        {
+            "command": "object.unlock_all",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "unlock_all",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

@@ -29,6 +29,8 @@ add_sources("NoUberFile"
 		"../../CryPhysics/qhull.cpp"
 		"../../CryPhysics/utils.h"
 		"../../CryPhysics/utils.cpp"
+        "../../CryPhysics/cvars.h"
+        "../../CryPhysics/cvars.cpp"
 )
 
 end_sources()

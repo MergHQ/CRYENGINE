@@ -34,4 +34,3 @@ QWidget* CGraphViewWidget::CreatePropertiesWidget(CryGraphEditor::GraphItemSet& 
 }
 
 }
-

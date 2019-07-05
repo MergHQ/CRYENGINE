@@ -1,23 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_TOPRENDERERWND_H__5E850B78_3791_40B5_BD0A_850682E8CAF9__INCLUDED_)
-#define AFX_TOPRENDERERWND_H__5E850B78_3791_40B5_BD0A_850682E8CAF9__INCLUDED_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
+#pragma once
 
 #include "2DViewport.h"
+#include <Util/Image.h>
 
-class CPopupMenuItem;
-
-// Predeclare because of friend declaration
 class CTopRendererWnd : public C2DViewport
 {
 	DECLARE_DYNCREATE(CTopRendererWnd)
 public:
 	CTopRendererWnd();
-	virtual ~CTopRendererWnd();
 
 	/** Get type of this viewport.
 	 */
@@ -34,7 +26,7 @@ public:
 	void         SerializeDisplayOptions(Serialization::IArchive& ar);
 
 	void         SetShowWater(bool bShow) { m_bShowWater = bShow; }
-	bool         GetShowWater() const     { return m_bShowWater; };
+	bool         GetShowWater() const     { return m_bShowWater; }
 
 protected:
 	void ResetSurfaceTexture();
@@ -66,12 +58,8 @@ private:
 
 public:
 	// Display options.
-	bool m_bDisplayLabels;
 	bool m_bShowHeightmap;
 	bool m_bLastShowHeightmapState;
 	bool m_bShowStatObjects;
 	bool m_bShowWater;
 };
-
-#endif // !defined(AFX_TOPRENDERERWND_H__5E850B78_3791_40B5_BD0A_850682E8CAF9__INCLUDED_)
-

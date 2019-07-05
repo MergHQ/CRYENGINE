@@ -18,15 +18,25 @@ namespace CharacterInstanceProcessing
 SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 {
 	DEFINE_PROFILER_FUNCTION();
+
 	CRY_ASSERT(ctx.state == SContext::EState::Unstarted);
+
+	CRY_ASSERT(ctx.pInstance != nullptr);
+	CRY_ASSERT(ctx.pInstance->GetRefCount() > 0);
+	CRY_ASSERT(ctx.pInstance->GetProcessingContext() == &ctx);
 
 	if (ctx.pParent)
 	{
 		ctx.pInstance->SetupThroughParent(ctx.pParent);
-	}
-	else
-	{
-		ctx.pInstance->SetupThroughParams(m_pParams);
+
+		// Anticipated skip for quasi-static objects
+		// This allows to skip the animation update for those objects which just stay in the same pose / animation loop for a long time
+		ctx.pInstance->AdvanceQuasiStaticSleepTimer();
+		if (ctx.pInstance->IsQuasiStaticSleeping())
+		{
+			g_pCharacterManager->Debug_IncreaseQuasiStaticCullCounter();
+			return SContext::EState::Finished;
+		}
 	}
 
 	const uint32 wasAnimPlaying = ctx.pInstance->m_SkeletonAnim.m_IsAnimPlaying;
@@ -34,6 +44,7 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 	ctx.pInstance->m_SkeletonAnim.m_IsAnimPlaying = false;
 	QuatTS location = ctx.pInstance->m_location;
 
+	// Animation queue update
 	ctx.pInstance->m_SkeletonAnim.ProcessAnimations(location);
 
 	if (!GetMemoryPool())
@@ -56,27 +67,29 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 		pSkeletonPose->m_physics.RequestForcedPostSynchronization();
 	}
 
+	// Skip rest of the update (pose update) for objects that are not in view
+	if (!ctx.pInstance->m_SkeletonPose.m_bFullSkeletonUpdate)
+	{
+		return SContext::EState::JobSkipped;
+	}
+
 	return SContext::EState::StartAnimationProcessed;
 }
 
 SContext::EState SExecuteJob::operator()(const SContext& ctx)
 {
 	DEFINE_PROFILER_FUNCTION();
-	CRY_ASSERT(ctx.pInstance != nullptr);
-	CRY_ASSERT(ctx.pInstance->GetRefCount() > 0);
 
 	if (ctx.state != SContext::EState::StartAnimationProcessed)
 		return SContext::EState::Failure;
 
-	if (ctx.pParent)
-	{
-		CRY_ASSERT(ctx.pBone != nullptr);
-		ctx.pInstance->m_location = ctx.pBone->GetAttWorldAbsolute();
-	}
+	CRY_ASSERT(ctx.pInstance != nullptr);
+	CRY_ASSERT(ctx.pInstance->GetRefCount() > 0);
+	CRY_ASSERT(ctx.pInstance->GetProcessingContext() == &ctx);
 
 	CSkeletonAnim& skelAnim = ctx.pInstance->m_SkeletonAnim;
-	if (!skelAnim.m_pSkeletonPose->m_bFullSkeletonUpdate)
-		return SContext::EState::JobSkipped;
+	CRY_ASSERT_MESSAGE(skelAnim.m_pSkeletonPose->m_bFullSkeletonUpdate,   "The current job should have been skipped!");
+	CRY_ASSERT_MESSAGE(ctx.state != SContext::EState::JobSkipped,         "The current job should have been skipped!");
 
 	CSkeletonPose* pSkeletonPose = skelAnim.m_pSkeletonPose;
 	if (!pSkeletonPose->GetPoseDataWriteable())
@@ -89,11 +102,7 @@ SContext::EState SExecuteJob::operator()(const SContext& ctx)
 
 	pSkeletonPose->GetPoseData().Validate(*pSkeletonPose->m_pInstance->m_pDefaultSkeleton);
 
-	pSkeletonPose->m_pInstance->m_AttachmentManager.UpdateLocationsExceptExecute(
-		*pSkeletonPose->GetPoseDataWriteable());
-
-	pSkeletonPose->m_pInstance->m_AttachmentManager.UpdateLocationsExecute(
-	  *pSkeletonPose->GetPoseDataWriteable());
+	pSkeletonPose->m_pInstance->m_AttachmentManager.UpdateSockets(*pSkeletonPose->GetPoseDataWriteable());
 
 	return SContext::EState::JobExecuted;
 }
@@ -101,16 +110,28 @@ SContext::EState SExecuteJob::operator()(const SContext& ctx)
 SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 {
 	DEFINE_PROFILER_FUNCTION();
-	CRY_ASSERT(ctx.pInstance != nullptr);
-	CRY_ASSERT(ctx.pInstance->GetRefCount() > 0);
 
 	// Finish Animation Computations has been called explicitly already
 	// earlier in the frame, so we don't need to process it again
 	if (ctx.state == SContext::EState::Finished)
 		return ctx.state;
 
+	CRY_ASSERT(ctx.pInstance != nullptr);
+	CRY_ASSERT(ctx.pInstance->GetRefCount() > 0);
+	CRY_ASSERT(ctx.pInstance->GetProcessingContext() == &ctx);
+
 	CRY_ASSERT(ctx.state != SContext::EState::StartAnimationProcessed);
 	CRY_ASSERT(ctx.state != SContext::EState::Failure);
+
+	if (ctx.pParent)
+	{
+		const IAttachment* pAttachment = ctx.pParent->m_AttachmentManager.GetInterfaceByNameCRC(ctx.attachmentNameCRC);
+
+		if (pAttachment)
+		{
+			ctx.pInstance->m_location = pAttachment->GetAttWorldAbsolute();
+		}
+	}
 
 	// make sure that the job has been run or has been skipped
 	// for some reason (usually because we did not request a full skeleton update)
@@ -164,8 +185,7 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 			ctx.pInstance->m_SkeletonPose.m_physics.m_timeStandingUp +=
 			  static_cast<float>(__fsel(ctx.pInstance->m_SkeletonPose.m_physics.m_timeStandingUp,
 			                            ctx.pInstance->m_fOriginalDeltaTime, 0.0f));
-			ctx.pInstance->m_AttachmentManager.UpdateLocationsExecuteUnsafe(
-			  ctx.pInstance->m_SkeletonPose.GetPoseDataExplicitWriteable());
+			ctx.pInstance->m_AttachmentManager.UpdateAttachedObjects();
 			ctx.pInstance->m_SkeletonAnim.PoseModifiersSwapBuffersAndClearActive();
 		}
 	}
@@ -177,10 +197,10 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 	return SContext::EState::Finished;
 }
 
-void SContext::Initialize(CCharInstance* _pInst, const CAttachmentBONE* _pBone, const CCharInstance* _pParent, int _numChildren)
+void SContext::Initialize(CCharInstance* _pInst, const IAttachment* _pAttachment, const CCharInstance* _pParent, int _numChildren)
 {
 	pInstance = _pInst;
-	pBone = _pBone;
+	attachmentNameCRC = _pAttachment ? _pAttachment->GetNameCRC() : 0;
 	pParent = _pParent;
 	numChildren = _numChildren;
 	pCommandBuffer = (Command::CBuffer*)CharacterInstanceProcessing::GetMemoryPool()->Allocate(sizeof(Command::CBuffer));
@@ -208,7 +228,7 @@ void CContextQueue::ClearContexts()
 	{
 		auto& ctx = m_contexts[i];
 		ctx.pInstance.reset();
-		ctx.pBone = nullptr;
+		ctx.attachmentNameCRC = 0;
 		ctx.pParent = nullptr;
 		ctx.numChildren = 0;
 		ctx.pCommandBuffer = nullptr;

@@ -85,7 +85,7 @@ bool CVehicleSeatSerializer::ReloadExtension(IGameObject* pGameObject, const SEn
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CVehicleSeatSerializer::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CVehicleSeatSerializer::ReloadExtension not implemented");
 
 	return false;
 }

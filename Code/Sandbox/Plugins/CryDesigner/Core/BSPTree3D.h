@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Model.h"
+#include "Polygon.h"
 
 namespace Designer
 {
@@ -31,4 +31,3 @@ private:
 	BSPTree3DNode* BuildBSP(PolygonList& polygonList);
 };
 }
-

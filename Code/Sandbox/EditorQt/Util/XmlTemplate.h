@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __XmlTemplate_h__
-#define __XmlTemplate_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#include <CrySystem/XML/IXml.h>
+#include <CryString/CryString.h>
+#include <map>
 
 /*!
  *	CXmlTemplate is XML base template of parameters.
@@ -32,13 +31,11 @@ public:
 };
 
 /*!
- *	CXmlTemplateRegistry is a collection of all registred templates.
+ *	CXmlTemplateRegistry is a collection of all registered templates.
  */
 class CXmlTemplateRegistry
 {
 public:
-	CXmlTemplateRegistry();
-
 	void       LoadTemplates(const string& path);
 	void       AddTemplate(const string& name, XmlNodeRef& tmpl);
 
@@ -47,6 +44,3 @@ public:
 private:
 	std::map<string, XmlNodeRef> m_templates;
 };
-
-#endif // __XmlTemplate_h__
-

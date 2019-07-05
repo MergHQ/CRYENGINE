@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "IEditorImpl.h"
 #include "LensFlareElementTree.h"
 #include "LensFlareItem.h"
 #include "LensFlareManager.h"
@@ -494,8 +495,6 @@ void CLensFlareElementTree::ElementChanged(CLensFlareElement* pPrevLensFlareElem
 
 void CLensFlareElementTree::OnTvnBeginlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	LPNMTVDISPINFO pTVDispInfo = reinterpret_cast<LPNMTVDISPINFO>(pNMHDR);
-
 	// Mark message as handled and suppress default handling
 	*pResult = 0;
 }
@@ -1200,4 +1199,3 @@ void CLensFlareElementTree::UpdateDraggingFromOtherWindow()
 	if (bChanged)
 		RedrawWindow();
 }
-

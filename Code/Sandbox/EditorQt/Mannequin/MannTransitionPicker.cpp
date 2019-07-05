@@ -145,4 +145,3 @@ void CMannTransitionPickerDlg::OnOk()
 		__super::OnOK();
 	}
 }
-

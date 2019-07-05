@@ -5,13 +5,18 @@
 
 #include "DefaultComponents/AI/PathfindingComponent.h"
 #include "DefaultComponents/Audio/AreaComponent.h"
+#include "DefaultComponents/Audio/DefaultListenerComponent.h"
+#include "DefaultComponents/Audio/DefaultTriggerComponent.h"
 #include "DefaultComponents/Audio/EnvironmentComponent.h"
 #include "DefaultComponents/Audio/ListenerComponent.h"
+#include "DefaultComponents/Audio/MultiListenerComponent.h"
 #include "DefaultComponents/Audio/OcclusionComponent.h"
 #include "DefaultComponents/Audio/ParameterComponent.h"
 #include "DefaultComponents/Audio/PreloadComponent.h"
-#include "DefaultComponents/Audio/SwitchComponent.h"
+#include "DefaultComponents/Audio/SettingComponent.h"
+#include "DefaultComponents/Audio/SwitchStateComponent.h"
 #include "DefaultComponents/Audio/TriggerComponent.h"
+#include "DefaultComponents/Audio/VelocityComponent.h"
 #include "DefaultComponents/Cameras/CameraComponent.h"
 #include "DefaultComponents/Cameras/VirtualReality/RoomscaleCamera.h"
 #include "DefaultComponents/Constraints/LineConstraint.h"
@@ -38,9 +43,14 @@
 #include "DefaultComponents/Physics/CylinderPrimitiveComponent.h"
 #include "DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
 #include "DefaultComponents/Physics/RigidBodyComponent.h"
+#include "DefaultComponents/Physics/RagdollComponent.h"
+#include "DefaultComponents/Physics/ClothComponent.h"
+#include "DefaultComponents/Physics/ParticleComponent.h"
 #include "DefaultComponents/Physics/SampleRigidbodyActorComponent.h"
+#include "DefaultComponents/Physics/LocalGridComponent.h"
 #include "DefaultComponents/Physics/SpherePrimitiveComponent.h"
 #include "DefaultComponents/Physics/AreaComponent.h"
+#include "DefaultComponents/Physics/WaterVolumeComponent.h"
 #include "DefaultComponents/Physics/ThrusterComponent.h"
 #include "DefaultComponents/Physics/Vehicles/VehicleComponent.h"
 #include "DefaultComponents/Physics/Vehicles/WheelComponent.h"
@@ -57,8 +67,6 @@
 
 IEntityRegistrator* IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator* IEntityRegistrator::g_pLast = nullptr;
-
-
 
 CPlugin_CryDefaultEntities::~CPlugin_CryDefaultEntities()
 {
@@ -88,11 +96,18 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 	{
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPathfindingComponent));
-			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope);
-		}
+			Cry::DefaultComponents::CPathfindingComponent::Register(componentScope); }
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CAreaComponent));
 			Cry::Audio::DefaultComponents::CAreaComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CDefaultListenerComponent));
+			Cry::Audio::DefaultComponents::CDefaultListenerComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CDefaultTriggerComponent));
+			Cry::Audio::DefaultComponents::CDefaultTriggerComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CEnvironmentComponent));
@@ -101,6 +116,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CListenerComponent));
 			Cry::Audio::DefaultComponents::CListenerComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CMultiListenerComponent));
+			Cry::Audio::DefaultComponents::CMultiListenerComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::COcclusionComponent));
@@ -115,12 +134,20 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 			Cry::Audio::DefaultComponents::CPreloadComponent::Register(componentScope);
 		}
 		{
-			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSwitchComponent));
-			Cry::Audio::DefaultComponents::CSwitchComponent::Register(componentScope);
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSwitchStateComponent));
+			Cry::Audio::DefaultComponents::CSwitchStateComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSettingComponent));
+			Cry::Audio::DefaultComponents::CSettingComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CTriggerComponent));
 			Cry::Audio::DefaultComponents::CTriggerComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CVelocityComponent));
+			Cry::Audio::DefaultComponents::CVelocityComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CCameraComponent));
@@ -215,8 +242,24 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 			Cry::DefaultComponents::CRigidBodyComponent::Register(componentScope);
 		}
 		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CRagdollComponent));
+			Cry::DefaultComponents::CRagdollComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CClothComponent));
+			Cry::DefaultComponents::CClothComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CPhysParticleComponent));
+			Cry::DefaultComponents::CPhysParticleComponent::Register(componentScope);
+		}
+		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSampleActorComponent));
 			Cry::DefaultComponents::CSampleActorComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CLocalGridComponent));
+			Cry::DefaultComponents::CLocalGridComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CSpherePrimitiveComponent));
@@ -233,6 +276,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CAreaComponent));
 			Cry::DefaultComponents::CAreaComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CWaterVolumeComponent));
+			Cry::DefaultComponents::CWaterVolumeComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CThrusterComponent));
@@ -304,7 +351,7 @@ void CPlugin_CryDefaultEntities::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 						"CRYENGINE Default Entity Components",
 						[this](Schematyc::IEnvRegistrar& registrar) { RegisterComponents(registrar); }
 						)
-				);
+					);
 			}
 		}
 		break;

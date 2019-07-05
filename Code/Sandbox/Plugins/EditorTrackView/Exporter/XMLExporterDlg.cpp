@@ -51,4 +51,3 @@ void QXMLExporterDlg::OnConfirmed()
 	m_bConfirmed = true;
 	QDialog::accept();
 }
-

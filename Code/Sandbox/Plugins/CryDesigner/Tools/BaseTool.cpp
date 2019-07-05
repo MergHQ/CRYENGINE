@@ -1,20 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Tools/BaseTool.h"
-#include "DesignerEditor.h"
-#include "ViewManager.h"
-#include "Core/Model.h"
-#include "Core/UVIslandManager.h"
-#include "Core/SmoothingGroupManager.h"
-#include "Objects/DesignerObject.h"
-#include "Core/ModelCompiler.h"
+#include "BaseTool.h"
+
 #include "Core/Helper.h"
-#include "ToolFactory.h"
-#include <CrySerialization/Enum.h>
+#include "Core/ModelCompiler.h"
+#include "Core/SmoothingGroupManager.h"
+#include "Core/UVIslandManager.h"
 #include "Util/ExcludedEdgeManager.h"
+#include "DesignerEditor.h"
 #include "DesignerSession.h"
-#include "Objects/DisplayContext.h"
+
+#include <CrySerialization/Enum.h>
+#include <Objects/DisplayContext.h>
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -77,17 +76,17 @@ bool BaseTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 // remove those ASAP please
 ModelCompiler* BaseTool::GetCompiler() const
 {
-	return 	DesignerSession::GetInstance()->GetCompiler();
+	return DesignerSession::GetInstance()->GetCompiler();
 }
 
 CBaseObject* BaseTool::GetBaseObject() const
 {
-	return 	DesignerSession::GetInstance()->GetBaseObject();
+	return DesignerSession::GetInstance()->GetBaseObject();
 }
 
 MainContext BaseTool::GetMainContext() const
 {
-	return 	DesignerSession::GetInstance()->GetMainContext();
+	return DesignerSession::GetInstance()->GetMainContext();
 }
 
 void BaseTool::ApplyPostProcess(int postprocesses)
@@ -118,9 +117,9 @@ Model* BaseTool::GetModel() const
 	return DesignerSession::GetInstance()->GetModel();
 }
 
-void BaseTool::Display(DisplayContext& dc)
+void BaseTool::Display(SDisplayContext& dc)
 {
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 		return;
 	DisplayDimensionHelper(dc);
 }
@@ -132,7 +131,7 @@ bool BaseTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 n
 	return true;
 }
 
-void BaseTool::DisplayDimensionHelper(DisplayContext& dc, const AABB& aabb)
+void BaseTool::DisplayDimensionHelper(SDisplayContext& dc, const AABB& aabb)
 {
 	if (gDesignerSettings.bDisplayDimensionHelper)
 	{
@@ -143,7 +142,7 @@ void BaseTool::DisplayDimensionHelper(DisplayContext& dc, const AABB& aabb)
 	}
 }
 
-void BaseTool::DisplayDimensionHelper(DisplayContext& dc, ShelfID nShelf)
+void BaseTool::DisplayDimensionHelper(SDisplayContext& dc, ShelfID nShelf)
 {
 	AABB aabb = GetModel()->GetBoundBox(nShelf);
 	if (!aabb.IsReset())
@@ -159,4 +158,3 @@ bool BaseTool::IsModelEmpty() const
 }
 
 }
-

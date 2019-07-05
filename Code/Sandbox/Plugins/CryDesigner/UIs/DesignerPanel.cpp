@@ -2,19 +2,18 @@
 
 #include "StdAfx.h"
 #include "DesignerPanel.h"
-#include "Core/SmoothingGroupManager.h"
+
+#include "Objects/DesignerObject.h"
 #include "Tools/BaseTool.h"
-#include "Material/MaterialManager.h"
-#include "QtViewPane.h"
-#include "QCollapsibleFrame.h"
-#include "CryIcon.h"
-#include <QTabWidget>
-#include <QBoxLayout>
-#include <QLabel>
-#include <QFrame>
-#include <QToolButton>
-#include <QFontMetrics>
+#include "DesignerEditor.h"
 #include "DesignerSession.h"
+
+#include <QCollapsibleFrame.h>
+
+#include <QFontMetrics>
+#include <QLabel>
+#include <QTabWidget>
+#include <QToolButton>
 
 #define CREATE_BUTTON(tool, row, column, enforce) QObject::connect(AddButton(tool, wc, row, column), &QToolButton::clicked, this, [ = ] { OnClickedButton(tool, enforce); })
 
@@ -282,7 +281,7 @@ void DesignerPanel::OnClickedButton(EDesignerTool tool, bool ensureDesigner)
 	Designer::SwitchToDesignerToolForObject(DesignerSession::GetInstance()->GetBaseObject());
 	CRY_ASSERT(GetDesigner());
 
-	CEditTool* pEditTool = GetIEditor()->GetEditTool();
+	CEditTool* pEditTool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (pEditTool->IsKindOf(RUNTIME_CLASS(DesignerEditor)))
 	{
 		DesignerEditor* pDesignerEditor = static_cast<DesignerEditor*>(pEditTool);
@@ -542,4 +541,3 @@ void DesignerPanel::UpdateCheckButtons(EDesignerTool tool)
 	}
 }
 }
-

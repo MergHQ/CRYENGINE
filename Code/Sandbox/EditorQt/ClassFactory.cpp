@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "ClassFactory.h"
+#include <CryCore/StlUtils.h>
 
 CClassFactory::CClassFactory()
 {
@@ -90,4 +91,3 @@ void CClassFactory::GetClassesByCategory(const char* pCategory, std::vector<ICla
 
 	std::sort(rOutClasses.begin(), rOutClasses.end(), ClassDescNameCompare);
 }
-

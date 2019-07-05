@@ -259,7 +259,7 @@ struct CHitDeathReactionsSystem::SPredGetMemoryUsage
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 #ifndef _RELEASE
-struct CHitDeathReactionsSystem::SPredGetAnims : public std::unary_function<void, const ReactionsContainer::value_type&>
+struct CHitDeathReactionsSystem::SPredGetAnims
 {
 	typedef std::set<uint32> AnimCRCsContainer;
 
@@ -388,7 +388,7 @@ public:
 	}
 
 private:
-	struct SPredPrintStreamingStats : public std::unary_function<void, const ProfilesContainersItem&>
+	struct SPredPrintStreamingStats
 	{
 		SPredPrintStreamingStats(CHitDeathReactionsDebugWidget& widget) : m_widget(widget) {}
 
@@ -498,7 +498,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
-struct CHitDeathReactionsSystem::SPredRequestAnims : public std::unary_function<void, const ReactionsContainer::value_type&>
+struct CHitDeathReactionsSystem::SPredRequestAnims
 {
 	SPredRequestAnims(bool bRequest, EntityId entityId, const IAnimationDatabase* piAnimDB)
 		: m_bRequest(bRequest)
@@ -710,7 +710,7 @@ ProfileId CHitDeathReactionsSystem::GetReactionParamsForActor(const CActor& acto
 			// Seed the random generator with the key obtained for this reaction params instance
 			m_pseudoRandom.seed(gEnv->bNoRandomSeed ? 0 : profileId);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "HitDeathReactions_SharedData");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "HitDeathReactions_SharedData");
 
 			// Instantiate the shared reaction containers
 			ReactionsContainerPtr pNewHitReactions(new ReactionsContainer);
@@ -1101,7 +1101,7 @@ ProfileId CHitDeathReactionsSystem::GetActorProfileId(const CActor& actor) const
 	if (pHitDeathReactions != NULL)
 	{
 		ProfileId cachedProfileId = pHitDeathReactions->GetProfileId();
-		CRY_ASSERT_TRACE((cachedProfileId == INVALID_PROFILE_ID) || (cachedProfileId == key), ("IMPORTANT ASSERT! %s actor's cached ProfileId doesn't match its actual ProfileId!", actor.GetEntity()->GetName()));
+		CRY_ASSERT((cachedProfileId == INVALID_PROFILE_ID) || (cachedProfileId == key), "IMPORTANT ASSERT! %s actor's cached ProfileId doesn't match its actual ProfileId!", actor.GetEntity()->GetName());
 	}
 #endif
 
@@ -1146,7 +1146,7 @@ ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const char* sz
 		if (gEnv->pScriptSystem->GetGlobalValue(HIT_DEATH_REACTIONS_SCRIPT_TABLE, pHitDeathReactionsTable) &&
 		    pHitDeathReactionsTable->GetValue(LOAD_XML_DATA_FUNCTION, loadXMLDataFnc))
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "HitDeathReactions_SharedReactionTables");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "HitDeathReactions_SharedReactionTables");
 
 			// [*DavidR | 23/Jun/2010] ToDo: We should expose CryAction's XMLLoadScript functionality so it can be used outside
 			// that project. The only way to use it currently is through lua binds, hence the following call
@@ -1167,7 +1167,7 @@ ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const char* sz
 
 void CHitDeathReactionsSystem::GenerateTagMapping(ScriptTablePtr pTags, const char* pArrayName, const int tagType, STagMappingHelper& tagMappingHelper)
 {
-	CRY_ASSERT_MESSAGE(tagType < STagMappingHelper::ETagType_NUM, "TagType index out of range!");
+	CRY_ASSERT(tagType < STagMappingHelper::ETagType_NUM, "TagType index out of range!");
 
 	const char* pTagName = NULL;
 	if (pTags->GetValue(VARIATION_VALUE, pTagName))
@@ -2231,7 +2231,7 @@ void CHitDeathReactionsSystem::GetReactionAnimParamsFromScript(const CActor& act
 
 					// Shuffle IDs
 					SRandomGeneratorFunct randomFunctor(m_pseudoRandom);
-					std::random_shuffle(reactionAnim.animCRCs.begin(), reactionAnim.animCRCs.end(), randomFunctor);
+					std::shuffle(reactionAnim.animCRCs.begin(), reactionAnim.animCRCs.end(), randomFunctor);
 				}
 			}
 		}

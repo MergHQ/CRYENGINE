@@ -1,0 +1,27 @@
+{
+    "toolBar": [
+        {
+            "command": "general.toggle_sync_selection",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "toggle_sync_selection",
+            "type": 0
+        },
+        "separator",
+        {
+            "command": "asset.view_recursive_view",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "view_recursive_view",
+            "type": 0
+        },
+        {
+            "command": "asset.view_hide_irrelevant_folders",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "view_hide_irrelevant_folders",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

@@ -2,21 +2,15 @@
 
 #pragma once
 
-#include <CryCore/StlUtils.h>
+#include "EditorFramework/EditorWidget.h"
 #include "CurveEditorContent.h"
-#include <QWidget>
+
 #include <CryMath/Range.h>
 #include <CryMovie/AnimTime.h>
 
 class QToolBar;
 
-namespace CurveEditorHelpers
-{
-// Picks a nice color value for a curve. Wraps around after 4.
-EDITOR_COMMON_API ColorB GetCurveColor(const uint n);
-}
-
-class EDITOR_COMMON_API CCurveEditor : public QWidget
+class EDITOR_COMMON_API CCurveEditor : public CEditorWidget
 {
 	Q_OBJECT
 public:
@@ -28,6 +22,8 @@ public:
 
 	SAnimTime            Time() const    { return m_time; }
 	void                 SetTime(const SAnimTime time);
+
+	void                 SelectKeysWidthTimes(const std::set<SAnimTime>& times);
 
 	enum class ELimit : uint
 	{
@@ -126,8 +122,6 @@ private:
 	void                                                                        RightButtonMousePressEvent(QMouseEvent* pEvent);
 	void                                                                        MiddleButtonMousePressEvent(QMouseEvent* pEvent);
 
-	void                                                                        customEvent(QEvent* pEvent) override;
-
 	void                                                                        SelectInRect(const QRect& rect, bool bToggleSelected = false, bool bDeselect = false);
 
 	void                                                                        PreContentUpdate();
@@ -174,4 +168,3 @@ private:
 	int                            m_rulerTicksYOffset;
 	float                          m_fitMargin;
 };
-

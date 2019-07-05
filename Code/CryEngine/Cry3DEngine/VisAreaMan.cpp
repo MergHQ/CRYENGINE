@@ -198,7 +198,7 @@ SAABBTreeNode* SAABBTreeNode::GetTopNode(const AABB& box, void** pNodeCache)
 	}
 
 	// Find top node containing box.
-	for (;; )
+	for (;;)
 	{
 		int i;
 		for (i = 0; i < 2; i++)
@@ -286,7 +286,7 @@ void CVisAreaManager::UpdateAABBTree()
 	m_pAABBTree = new SAABBTreeNode(lstAreas, nodeBox);
 }
 
-bool CVisAreaManager::IsEntityVisible(IRenderNode* pEnt)
+bool CVisAreaManager::IsEntityVisible(IRenderNode* pEnt) const
 {
 	if (GetCVars()->e_Portals == 3)
 		return true;
@@ -385,37 +385,6 @@ void CVisAreaManager::SetCurAreas(const SRenderingPassInfo& passInfo)
 	      PrintMessage("CurArea = %s, nRes = %d", m_pCurArea->m_sName, nConnections);
 	    }
 	   }*/
-}
-
-bool CVisAreaManager::IsSkyVisible()
-{
-	return m_bSkyVisible;
-}
-
-bool CVisAreaManager::IsOceanVisible()
-{
-	return m_bOceanVisible;
-}
-
-bool CVisAreaManager::IsOutdoorAreasVisible()
-{
-	if (!m_pCurArea && !m_pCurPortal)
-	{
-		m_bOutdoorVisible = true;
-		return m_bOutdoorVisible; // camera not in the areas
-	}
-
-	if (m_pCurPortal && m_pCurPortal->m_lstConnections.Count() == 1)
-	{
-		m_bOutdoorVisible = true;
-		return m_bOutdoorVisible; // camera is in exit portal
-	}
-
-	if (m_bOutdoorVisible)
-		return true; // exit is visible
-
-	// note: outdoor camera is no modified in this case
-	return false;
 }
 
 /*void CVisAreaManager::SetAreaFogVolume(CTerrain * pTerrain, CVisArea * pVisArea)
@@ -522,10 +491,10 @@ void CVisAreaManager::PortalsDrawDebug()
 			float fError = pPortal->IsPortalValid() ? 1.f : fBlink;
 
 			ColorB col(
-			  (int)clamp_tpl(fError * 255.0f, 0.0f, 255.0f),
-			  (int)clamp_tpl(fError * (pPortal->m_lstConnections.Count() < 2) * 255.0f, 0.0f, 255.0f),
-			  0,
-			  64);
+				(int)clamp_tpl(fError * 255.0f, 0.0f, 255.0f),
+				(int)clamp_tpl(fError * (pPortal->m_lstConnections.Count() < 2) * 255.0f, 0.0f, 255.0f),
+				0,
+				64);
 			DrawBBox(pPortal->m_boxArea.min, pPortal->m_boxArea.max, col);
 
 			IRenderAuxText::DrawLabelEx((pPortal->m_boxArea.min + pPortal->m_boxArea.max) * 0.5f, 1, (float*)&oneVec, 0, 1, pPortal->GetName());
@@ -557,7 +526,7 @@ void CVisAreaManager::PortalsDrawDebug()
 	}
 }
 
-void CVisAreaManager::DrawVisibleSectors(const SRenderingPassInfo& passInfo, uint32 passCullMask)
+void CVisAreaManager::DrawVisibleSectors(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -622,6 +591,7 @@ void CVisAreaManager::DephysicalizeInBox(const AABB& bbox)
 void CVisAreaManager::CheckVis(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CVisAreaManager::CheckVis");
 
 	if (passInfo.IsGeneralPass())
 	{
@@ -681,9 +651,9 @@ void CVisAreaManager::CheckVis(const SRenderingPassInfo& passInfo)
 			// reset scissor if skybox is visible also thru skyboxonly portal
 			if (m_bSkyVisible && m_lstOutdoorPortalCameras.Count() == 1)
 				m_lstOutdoorPortalCameras[0].m_ScissorInfo.x1 =
-				  m_lstOutdoorPortalCameras[0].m_ScissorInfo.x2 =
-				    m_lstOutdoorPortalCameras[0].m_ScissorInfo.y1 =
-				      m_lstOutdoorPortalCameras[0].m_ScissorInfo.y2 = 0;
+					m_lstOutdoorPortalCameras[0].m_ScissorInfo.x2 =
+						m_lstOutdoorPortalCameras[0].m_ScissorInfo.y1 =
+							m_lstOutdoorPortalCameras[0].m_ScissorInfo.y2 = 0;
 		}
 		else if (m_pCurPortal)
 		{
@@ -720,6 +690,17 @@ void CVisAreaManager::CheckVis(const SRenderingPassInfo& passInfo)
 
 	if (GetCVars()->e_Portals == 2)
 		PortalsDrawDebug();
+
+	if (!m_bOutdoorVisible)
+	{
+		if (!m_pCurArea && !m_pCurPortal)
+			m_bOutdoorVisible = true; // camera not in the areas
+		else if (m_pCurPortal && m_pCurPortal->m_lstConnections.Count() == 1)
+			m_bOutdoorVisible = true; // camera is in exit portal
+
+		// exit is visible
+		// note: outdoor camera is no modified in this case
+	}
 }
 
 void CVisAreaManager::ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName)
@@ -1065,7 +1046,7 @@ CVisArea* CVisAreaManager::CreateVisArea(VisAreaGUID visGUID)
 	return new CVisArea(visGUID);
 }
 
-bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(CVisArea* pVisArea, int nMaxReqursion, PodArray<CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo)
+bool CVisAreaManager::IsEntityVisAreaVisibleRecursive(const CVisArea* pVisArea, int nMaxRecursion, PodArray<const CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	int nAreaId = pUnavailableAreas->Count();
 	pUnavailableAreas->Add(pVisArea);
@@ -1076,19 +1057,23 @@ bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(CVisArea* pVisArea, int nM
 		// check is lsource area was rendered in prev frame
 		if (abs(pVisArea->m_nRndFrameId - passInfo.GetFrameID()) > 2)
 		{
-			if (nMaxReqursion > 1)
+			if (nMaxRecursion > 1)
+			{
 				for (int n = 0; n < pVisArea->m_lstConnections.Count(); n++)
 				{
 					// loop other sectors
 					CVisArea* pNeibArea = (CVisArea*)pVisArea->m_lstConnections[n];
 					if (-1 == pUnavailableAreas->Find(pNeibArea) &&
 					    (!pLight || Overlap::Sphere_AABB(Sphere(pLight->m_Origin, pLight->m_fRadius), *pNeibArea->GetAABBox())))
-						if (IsEntityVisAreaVisibleReqursive(pNeibArea, nMaxReqursion - 1, pUnavailableAreas, pLight, passInfo))
+					{
+						if (IsEntityVisAreaVisibleRecursive(pNeibArea, nMaxRecursion - 1, pUnavailableAreas, pLight, passInfo))
 						{
 							bFound = true;
 							break;
 						} //if visible
+					}
 				}     // for
+			}
 		}
 		else
 			bFound = true;
@@ -1100,81 +1085,17 @@ bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(CVisArea* pVisArea, int nM
 	return bFound;
 }
 
-bool CVisAreaManager::IsEntityVisAreaVisible(IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo)
+bool CVisAreaManager::IsEntityVisAreaVisible(const IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	if (!pEnt)
 		return false;
 
-	PodArray<CVisArea*>& lUnavailableAreas = m_tmpLstUnavailableAreas;
-	lUnavailableAreas.Clear();
+	PodArray<const CVisArea*> lUnavailableAreas;
 
+	lUnavailableAreas.Clear();
 	lUnavailableAreas.PreAllocate(nMaxReqursion, 0);
 
-	return IsEntityVisAreaVisibleReqursive((CVisArea*)pEnt->GetEntityVisArea(), nMaxReqursion, &lUnavailableAreas, pLight, passInfo);
-	/*
-	   if(pEnt->GetEntityVisArea())
-	   {
-	    if(pEnt->GetEntityVisArea())//->IsPortal())
-	    { // check is lsource area was rendered in prev frame
-	      CVisArea * pVisArea = pEnt->GetEntityVisArea();
-	      int nRndFrameId = passInfo.GetFrameID();
-	      if(abs(pVisArea->m_nRndFrameId - nRndFrameId)>2)
-	      {
-	        if(!nCheckNeighbors)
-	          return false; // this area is not visible
-
-	        // try neibhour areas
-	        bool bFound = false;
-	        if(pEnt->GetEntityVisArea()->IsPortal())
-	        {
-	          CVisArea * pPort = pEnt->GetEntityVisArea();
-	          for(int n=0; n<pPort->m_lstConnections.Count(); n++)
-	          { // loop other sectors
-	            CVisArea * pNeibArea = (CVisArea*)pPort->m_lstConnections[n];
-	            if(abs(pNeibArea->m_nRndFrameId - passInfo.GetFrameID())<=2)
-	            {
-	              bFound=true;
-	              break;
-	            }
-	          }
-	        }
-	        else
-	        {
-	          for(int t=0; !bFound && t<pVisArea->m_lstConnections.Count(); t++)
-	          { // loop portals
-	            CVisArea * pPort = (CVisArea*)pVisArea->m_lstConnections[t];
-	            if(abs(pPort->m_nRndFrameId - passInfo.GetFrameID())<=2)
-	            {
-	              bFound=true;
-	              break;
-	            }
-
-	            for(int n=0; n<pPort->m_lstConnections.Count(); n++)
-	            { // loop other sectors
-	              CVisArea * pNeibArea = (CVisArea*)pPort->m_lstConnections[n];
-	              if(abs(pNeibArea->m_nRndFrameId - passInfo.GetFrameID())<=2)
-	              {
-	                bFound=true;
-	                break;
-	              }
-	            }
-	          }
-	        }
-
-	        if(!bFound)
-	          return false;
-
-	        return true;
-	      }
-	    }
-	    else
-	      return false; // not visible
-	   }
-	   else if(!IsOutdoorAreasVisible())
-	    return false;
-
-	   return true;
-	 */
+	return IsEntityVisAreaVisibleRecursive((CVisArea*)pEnt->GetEntityVisArea(), nMaxReqursion, &lUnavailableAreas, pLight, passInfo);
 }
 
 int __cdecl CVisAreaManager__CmpDistToPortal(const void* v1, const void* v2)
@@ -1346,7 +1267,7 @@ void CVisAreaManager::DrawOcclusionAreasIntoCBuffer(const SRenderingPassInfo& pa
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(pArea->m_lstShapePoints.Count() == 2, "Occlusion area only supports planes or quads");
+						CRY_ASSERT(pArea->m_lstShapePoints.Count() == 2, "Occlusion area only supports planes or quads");
 
 						activeVerts.arrvActiveVerts[0] = pArea->m_lstShapePoints[0];
 						activeVerts.arrvActiveVerts[1] = pArea->m_lstShapePoints[0] + Vec3(0, 0, pArea->m_fHeight);
@@ -1476,7 +1397,11 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 	CryLog("Precaching the level ...");
 	//  gEnv->pLog->UpdateLoadingScreen(0);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	float fPrecacheTimeStart = GetTimer()->GetAsyncCurTime();
+#endif
+
+	int nRenderingFlags = SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO | SHDF_ALLOW_SKY;
 
 	GetRenderer()->EnableSwapBuffers((GetCVars()->e_PrecacheLevel >= 2) ? true : false);
 
@@ -1526,8 +1451,8 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 			cam.SetFrustum(GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight(), gf_PI / 2, cam.GetNearPlane(), cam.GetFarPlane());
 			//	Get3DEngine()->SetupCamera(cam);
 
-			GetRenderer()->BeginFrame({});
-			Get3DEngine()->RenderWorld(SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(cam), "PrecacheVisAreas");
+			GetRenderer()->BeginFrame({}, SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+			Get3DEngine()->RenderWorld(nRenderingFlags, SRenderingPassInfo::CreateGeneralPassRenderingInfo(SGraphicsPipelineKey::BaseGraphicsPipelineKey, cam), "PrecacheVisAreas");
 			GetRenderer()->RenderDebug();
 			GetRenderer()->EndFrame();
 
@@ -1555,8 +1480,8 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 			cam.SetPosition(pPrecachePoints[p]);
 			cam.SetFrustum(GetRenderer()->GetOverlayWidth(), GetRenderer()->GetOverlayHeight(), gf_PI / 2, cam.GetNearPlane(), cam.GetFarPlane());
 
-			GetRenderer()->BeginFrame({});
-			Get3DEngine()->RenderWorld(SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(cam), "PrecacheOutdoor");
+			GetRenderer()->BeginFrame({}, SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+			Get3DEngine()->RenderWorld(nRenderingFlags, SRenderingPassInfo::CreateGeneralPassRenderingInfo(SGraphicsPipelineKey::BaseGraphicsPipelineKey, cam), "PrecacheOutdoor");
 			GetRenderer()->RenderDebug();
 			GetRenderer()->EndFrame();
 
@@ -1569,8 +1494,10 @@ void CVisAreaManager::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePo
 
 	GetRenderer()->EnableSwapBuffers(true);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	float fPrecacheTime = GetTimer()->GetAsyncCurTime() - fPrecacheTimeStart;
 	CryLog("Level Precache finished in %.2f seconds", fPrecacheTime);
+#endif
 }
 
 void CVisAreaManager::GetObjectsAround(Vec3 vExploPos, float fExploRadius, PodArray<SRNInfo>* pEntList, bool bSkip_ERF_NO_DECALNODE_DECALS, bool bSkipDynamicObjects)
@@ -1605,8 +1532,8 @@ void CVisAreaManager::IntersectWithBox(const AABB& aabbBox, PodArray<CVisArea*>*
 {
 	for (int p = 0; p < m_lstPortals.Count(); p++)
 	{
-		if (m_lstPortals[p]->m_boxArea.min.x<aabbBox.max.x&& m_lstPortals[p]->m_boxArea.max.x> aabbBox.min.x &&
-		    m_lstPortals[p]->m_boxArea.min.y<aabbBox.max.y&& m_lstPortals[p]->m_boxArea.max.y> aabbBox.min.y)
+		if (m_lstPortals[p]->m_boxArea.min.x<aabbBox.max.x && m_lstPortals[p]->m_boxArea.max.x> aabbBox.min.x &&
+		    m_lstPortals[p]->m_boxArea.min.y<aabbBox.max.y && m_lstPortals[p]->m_boxArea.max.y> aabbBox.min.y)
 		{
 			plstResult->Add(m_lstPortals[p]);
 		}
@@ -1614,57 +1541,11 @@ void CVisAreaManager::IntersectWithBox(const AABB& aabbBox, PodArray<CVisArea*>*
 
 	for (int v = 0; v < m_lstVisAreas.Count(); v++)
 	{
-		if (m_lstVisAreas[v]->m_boxArea.min.x<aabbBox.max.x&& m_lstVisAreas[v]->m_boxArea.max.x> aabbBox.min.x &&
-		    m_lstVisAreas[v]->m_boxArea.min.y<aabbBox.max.y&& m_lstVisAreas[v]->m_boxArea.max.y> aabbBox.min.y)
+		if (m_lstVisAreas[v]->m_boxArea.min.x<aabbBox.max.x && m_lstVisAreas[v]->m_boxArea.max.x> aabbBox.min.x &&
+		    m_lstVisAreas[v]->m_boxArea.min.y<aabbBox.max.y && m_lstVisAreas[v]->m_boxArea.max.y> aabbBox.min.y)
 		{
 			plstResult->Add(m_lstVisAreas[v]);
 		}
-	}
-}
-
-void CVisAreaManager::AddLightSourceReqursive(SRenderLight* pLight, CVisArea* pArea, const int32 nDeepness, const SRenderingPassInfo& passInfo)
-{
-	if (pArea->IsObjectsTreeValid())
-	{
-		pArea->GetObjectsTree()->AddLightSource(pLight, passInfo);
-	}
-
-	if (1 < nDeepness)
-	{
-		for (int v = 0; v < pArea->m_lstConnections.Count(); v++)
-		{
-			CVisArea* pConArea = pArea->m_lstConnections[v];
-			AddLightSourceReqursive(pLight, pConArea, nDeepness - 1, passInfo);
-		}
-	}
-}
-
-void CVisAreaManager::AddLightSource(SRenderLight* pLight, const SRenderingPassInfo& passInfo)
-{
-	CVisArea* pLightArea = (CVisArea*)GetVisAreaFromPos(pLight->m_Origin);
-
-	bool bThisAreaInly = (pLight->m_Flags & DLF_THIS_AREA_ONLY) != 0;
-
-	if (pLightArea)
-	{
-		int nPortal = pLightArea->IsPortal() ? 1 : 0;
-		AddLightSourceReqursive(pLight, pLightArea, nPortal + (bThisAreaInly ? 2 : 3), passInfo);
-	}
-	else if (!bThisAreaInly)
-	{
-		AABB lightBox(
-		  pLight->m_Origin - Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius),
-		  pLight->m_Origin + Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius));
-		PodArray<CVisArea*>& arrAreas = m_tmpLstLightBoxAreas;
-		arrAreas.Clear();
-		m_pVisAreaManager->IntersectWithBox(lightBox, &arrAreas, true);
-		for (int i = 0; i < arrAreas.Count(); i++)
-			if (arrAreas[i]->IsPortal() && arrAreas[i]->IsConnectedToOutdoor())
-			{
-				pLightArea = arrAreas[i];
-				int nPortal = pLightArea->IsPortal() ? 1 : 0;
-				AddLightSourceReqursive(pLight, pLightArea, nPortal + (bThisAreaInly ? 2 : 3), passInfo);
-			}
 	}
 }
 
@@ -1773,9 +1654,9 @@ void CVisAreaManager::ClearRegion(const AABB& region)
 			bool deletedPortal = m_lstPortals.Delete(pVisArea);
 			bool deletedOccluder = m_lstOcclAreas.Delete(pVisArea);
 
-			CRY_ASSERT_MESSAGE(!deletedVis || (m_visAreas.Find(pVisArea) >= 0), "Should only clear pooled vis areas, going to leak");
-			CRY_ASSERT_MESSAGE(!deletedPortal || (m_portals.Find(pVisArea) >= 0), "Should only clear pooled portals, going to leak");
-			CRY_ASSERT_MESSAGE(!deletedOccluder || (m_occlAreas.Find(pVisArea) >= 0), "Should only clear pooled occluders, going to leak");
+			CRY_ASSERT(!deletedVis || (m_visAreas.Find(pVisArea) >= 0), "Should only clear pooled vis areas, going to leak");
+			CRY_ASSERT(!deletedPortal || (m_portals.Find(pVisArea) >= 0), "Should only clear pooled portals, going to leak");
+			CRY_ASSERT(!deletedOccluder || (m_occlAreas.Find(pVisArea) >= 0), "Should only clear pooled occluders, going to leak");
 
 			if (deletedVis || deletedPortal || deletedOccluder)
 			{
@@ -1892,7 +1773,7 @@ void CVisAreaManager::GenerateStatObjAndMatTables(std::vector<IStatObj*>* pStatO
 	HelperGenerateStatObjAndMatTables(m_lstPortals, pStatObjTable, pMatTable, pStatInstGroupTable, pExportInfo);
 }
 
-bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos)
+bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos) const
 {
 	CVisArea* pAreaBox = (CVisArea*)GetVisAreaFromPos(box.GetCenter());
 	CVisArea* pAreaPos = (CVisArea*)GetVisAreaFromPos(pos);
@@ -1915,7 +1796,7 @@ bool CVisAreaManager::IsAABBVisibleFromPoint(AABB& box, Vec3 pos)
 	return bRes;
 }
 
-bool CVisAreaManager::FindShortestPathToVisArea(CVisArea* pThisArea, CVisArea* pTargetArea, PodArray<CVisArea*>& arrVisitedAreas, int& nRecursion, const Shadowvolume& sv)
+bool CVisAreaManager::FindShortestPathToVisArea(CVisArea* pThisArea, CVisArea* pTargetArea, PodArray<CVisArea*>& arrVisitedAreas, int& nRecursion, const Shadowvolume& sv) const
 {
 	// skip double processing
 	if (arrVisitedAreas.Find(pThisArea) >= 0)

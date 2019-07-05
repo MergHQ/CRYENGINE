@@ -7,8 +7,8 @@
 
 CCryFriends::CCryFriends(CCryLobby* pLobby, CCryLobbyService* pService)
 {
-	CRY_ASSERT_MESSAGE(pLobby, "CCryFriends::CCryFriends: Lobby not specified");
-	CRY_ASSERT_MESSAGE(pService, "CCryFriends::CCryFriends: Service not specified");
+	CRY_ASSERT(pLobby, "CCryFriends::CCryFriends: Lobby not specified");
+	CRY_ASSERT(pService, "CCryFriends::CCryFriends: Service not specified");
 
 	m_pLobby = pLobby;
 	m_pService = pService;
@@ -23,7 +23,7 @@ ECryLobbyError CCryFriends::Initialise()
 {
 	for (uint32 i = 0; i < MAX_FRIENDS_TASKS; i++)
 	{
-		CRY_ASSERT_MESSAGE(m_pTask[i], "CCryFriends: Task base pointers not setup");
+		CRY_ASSERT(m_pTask[i], "CCryFriends: Task base pointers not setup");
 		m_pTask[i]->used = false;
 	}
 
@@ -34,7 +34,7 @@ ECryLobbyError CCryFriends::Terminate()
 {
 	for (uint32 i = 0; i < MAX_FRIENDS_TASKS; i++)
 	{
-		CRY_ASSERT_MESSAGE(m_pTask[i], "CCryFriends: Task base pointers not setup");
+		CRY_ASSERT(m_pTask[i], "CCryFriends: Task base pointers not setup");
 
 		if (m_pTask[i]->used)
 		{
@@ -55,7 +55,7 @@ ECryLobbyError CCryFriends::StartTask(uint32 eTask, bool startRunning, CryFriend
 		{
 			STask* pTask = m_pTask[i];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCryFriends: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCryFriends: Task base pointers not setup");
 
 			if (!pTask->used)
 			{
@@ -100,7 +100,7 @@ void CCryFriends::FreeTask(CryFriendsTaskID fTaskID)
 {
 	STask* pTask = m_pTask[fTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCryFriends: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCryFriends: Task base pointers not setup");
 
 	for (uint32 i = 0; i < MAX_FRIENDS_PARAMS; i++)
 	{
@@ -129,7 +129,7 @@ void CCryFriends::CancelTask(CryLobbyTaskID lTaskID)
 		{
 			STask* pTask = m_pTask[i];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCryFriends: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCryFriends: Task base pointers not setup");
 
 			if (pTask->used && (pTask->lTaskID == lTaskID))
 			{
@@ -147,7 +147,7 @@ ECryLobbyError CCryFriends::CreateTaskParamMem(CryFriendsTaskID fTaskID, uint32 
 {
 	STask* pTask = m_pTask[fTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCryFriends: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCryFriends: Task base pointers not setup");
 
 	if (paramDataSize > 0)
 	{
@@ -174,7 +174,7 @@ void CCryFriends::UpdateTaskError(CryFriendsTaskID fTaskID, ECryLobbyError error
 {
 	STask* pTask = m_pTask[fTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCryFriends: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCryFriends: Task base pointers not setup");
 
 	if (pTask->error == eCLE_Success)
 	{

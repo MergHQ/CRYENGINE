@@ -1,47 +1,31 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 2014.
-// -------------------------------------------------------------------------
-//  File name:   QViewportPane.cpp
-//  Version:     v1.00
-//  Created:     15/10/2014 by timur.
-//  Description: QViewportPane implementation file
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "QViewportPane.h"
 
-#include <QMouseEvent>
-#include <QKeyEvent>
-#include <QGuiApplication>
-#include <QLayout>
-#include <QApplication>
-#include <QVBoxLayout>
-
-#include <QStyleOption>
-#include <QPainter>
-
+#include "EditorFramework/Events.h"
+#include "Objects/BaseObject.h"
+#include "GameEngine.h"
+#include "IViewportManager.h"
+#include "QFullScreenWidget.h"
 #include "QtUtil.h"
+#include "RenderViewport.h"
+#include "Viewport.h"
+
+#include <IEditor.h>
 
 #include <CryInput/IHardwareMouse.h>
 
-#include "EditorFramework/Events.h"
-#include "IViewportManager.h"
-#include "Viewport.h"
-#include "GameEngine.h"
-#include "QFullScreenWidget.h"
-
-#include "RenderViewport.h"
+#include <QKeyEvent>
+#include <QLayout>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QStyleOption>
+#include <QVBoxLayout>
 
 namespace
 {
-//////////////////////////////////////////////////////////////////////////
+
 inline uint32 GetMouseFlags(Qt::MouseButtons buttons, Qt::KeyboardModifiers modifiers)
 {
 	uint32 nFlags = 0;
@@ -60,7 +44,6 @@ inline uint32 GetMouseFlags(Qt::MouseButtons buttons, Qt::KeyboardModifiers modi
 	return nFlags;
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline uint32 GetWheelFlags(QWheelEvent* event)
 {
 	uint32 nFlags = 0;
@@ -79,7 +62,6 @@ inline uint32 GetWheelFlags(QWheelEvent* event)
 	return nFlags;
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline uint32 GetKeyFlags(QKeyEvent* event)
 {
 	uint32 nFlags = 0;
@@ -122,15 +104,8 @@ CPoint QPointToCPointLocal(const QWidget* widget, const QPoint& point)
 	return CPoint(QtUtil::PixelScale(widget, point.x()), QtUtil::PixelScale(widget, point.y()));
 }
 
-//! Converts a QPointF to a CPoint, using local space of the provided widget.
-CPoint QPointToCPointLocal(const QWidget* widget, const QPointF& point)
-{
-	return CPoint(QtUtil::PixelScale(widget, point.x()), QtUtil::PixelScale(widget, point.y()));
-}
+} // unnamed namespace
 
-};
-
-//////////////////////////////////////////////////////////////////////////
 QViewportWidget::QViewportWidget(CViewport* viewport)
 {
 	m_viewport = viewport;
@@ -142,7 +117,6 @@ QViewportWidget::QViewportWidget(CViewport* viewport)
 	setAcceptDrops(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
 	if (ShouldForwardEvent())
@@ -153,7 +127,6 @@ void QViewportWidget::mouseMoveEvent(QMouseEvent* event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
 	EMouseEvent key;
@@ -174,7 +147,6 @@ void QViewportWidget::mouseDoubleClickEvent(QMouseEvent* event)
 	//event->ignore();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::mousePressEvent(QMouseEvent* event)
 {
 	if (ShouldForwardEvent())
@@ -191,7 +163,6 @@ void QViewportWidget::mousePressEvent(QMouseEvent* event)
 	}
 	else
 	{
-
 		if (GetIEditor()->GetViewportManager()->GetGameViewport() == m_viewport)
 		{
 			// if game mode is suspended, unsuspend now
@@ -213,7 +184,6 @@ void QViewportWidget::mousePressEvent(QMouseEvent* event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::mouseReleaseEvent(QMouseEvent* event)
 {
 	if (ShouldForwardEvent())
@@ -239,7 +209,6 @@ void QViewportWidget::mouseReleaseEvent(QMouseEvent* event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::keyPressEvent(QKeyEvent* event)
 {
 	if (ShouldForwardEvent())
@@ -251,7 +220,7 @@ void QViewportWidget::keyPressEvent(QKeyEvent* event)
 			return;
 		else if (nChar == Qt::Key_Escape)
 		{
-			GetIEditor()->SetEditTool(0);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 			return;
 		}
 		event->ignore();
@@ -263,7 +232,6 @@ bool QViewportWidget::focusNextPrevChild(bool next)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::keyReleaseEvent(QKeyEvent* event)
 {
 	if (ShouldForwardEvent())
@@ -273,12 +241,11 @@ void QViewportWidget::keyReleaseEvent(QKeyEvent* event)
 		if (m_viewport->OnKeyUp(nChar, nRepCnt, GetKeyFlags(event)))
 			return;
 	}
-	
+
 	//TODO : all key and mouse events must be correctly ignored if not handled
 	//event->ignore();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::wheelEvent(QWheelEvent* event)
 {
 	if (ShouldForwardEvent())
@@ -296,7 +263,6 @@ void QViewportWidget::wheelEvent(QWheelEvent* event)
 	//event->ignore();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::enterEvent(QEvent* pEvent)
 {
 	// These events are dispatched immediately. There are cases in which an enter frame event will be
@@ -324,7 +290,6 @@ void QViewportWidget::leaveEvent(QEvent*)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::resizeEvent(QResizeEvent* event)
 {
 	QWidget::resizeEvent(event);
@@ -332,7 +297,6 @@ void QViewportWidget::resizeEvent(QResizeEvent* event)
 	setAttribute(Qt::WA_PaintOnScreen, false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QViewportWidget::paintEvent(QPaintEvent* event)
 {
 	if (GetIEditor()->IsUpdateSuspended())
@@ -436,18 +400,33 @@ void QViewportWidget::dropEvent(QDropEvent* event)
 	}
 }
 
-void QViewportWidget::customEvent(QEvent* evt)
+void QViewportWidget::customEvent(QEvent* pEvent)
 {
-	if (evt->type() == SandboxEvent::CameraMovement)
+	if (pEvent->type() == SandboxEvent::CameraMovement)
 	{
-		CameraTransformEvent* mouse3devt = static_cast<CameraTransformEvent*>(evt);
+		CameraTransformEvent* mouse3devt = static_cast<CameraTransformEvent*>(pEvent);
 		m_viewport->OnCameraTransformEvent(mouse3devt);
-		evt->setAccepted(true);
+		pEvent->setAccepted(true);
 	}
-	if (evt->type() == SandboxEvent::CryInput)
+
+	if (pEvent->type() == SandboxEvent::CryInput)
 	{
-		CryInputEvent* e = static_cast<CryInputEvent*>(evt);
+		CryInputEvent* e = static_cast<CryInputEvent*>(pEvent);
 		m_viewport->OnFilterCryInputEvent(e);
+	}
+
+	if (pEvent->type() == SandboxEvent::Command)
+	{
+		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
+		const string& command = pCommandEvent->GetCommand();
+		if (command == "viewport.toggle_helpers")
+		{
+			auto& settings = m_viewport->GetHelperSettings();
+			settings.enabled = !settings.enabled;
+			settings.signalStateChanged();
+
+			pEvent->setAccepted(true);
+		}
 	}
 }
 
@@ -458,7 +437,7 @@ QAspectRatioWidget::QAspectRatioWidget(QViewportWidget* pViewport)
 	setLayout(m_layout);
 	layout()->addWidget(pViewport);
 
-	if(pViewport->GetViewport() && pViewport->GetViewport()->IsRenderViewport())
+	if (pViewport->GetViewport() && pViewport->GetViewport()->IsRenderViewport())
 	{
 		CRenderViewport* rv = (CRenderViewport*)pViewport->GetViewport();
 		rv->signalResolutionChanged.Connect(this, &QAspectRatioWidget::updateAspect);
@@ -472,7 +451,7 @@ void QAspectRatioWidget::paintEvent(QPaintEvent* pe)
 	o.initFrom(this);
 	QPainter p(this);
 	style()->drawPrimitive(QStyle::PE_Widget, &o, &p, this);
-};
+}
 
 void QAspectRatioWidget::updateAspect()
 {
@@ -483,7 +462,7 @@ void QAspectRatioWidget::updateAspect()
 
 QAspectLayout::QAspectLayout() : m_child(nullptr)
 {
-};
+}
 
 QAspectLayout::~QAspectLayout()
 {
@@ -550,121 +529,118 @@ void QAspectLayout::setGeometry(const QRect& rect)
 {
 	QLayout::setGeometry(rect);
 
-	if (m_child)
+	if (!m_child)
 	{
-		QViewportWidget* w = qobject_cast<QViewportWidget*>(m_child->widget());
-		if (w)
+		return;
+	}
+
+	QViewportWidget* w = qobject_cast<QViewportWidget*>(m_child->widget());
+	if (!w)
+	{
+		return;
+	}
+
+	CViewport* viewport = w->GetViewport();
+	CViewport::EResolutionMode mode = viewport->GetResolutionMode();
+
+	int width, height;
+	viewport->GetResolution(width, height);
+	width = width / w->devicePixelRatioF();
+	height = height / w->devicePixelRatioF();
+
+	QPoint upleft;
+	QPoint downRight;
+
+	switch (mode)
+	{
+	case CViewport::EResolutionMode::Window:
 		{
-			CViewport* viewport = w->GetViewport();
-			CViewport::EResolutionMode mode = viewport->GetResolutionMode();
+			upleft = rect.topLeft();
+			downRight = rect.bottomRight();
+			break;
+		}
+	case CViewport::EResolutionMode::Stretch:
+		{
+			// First get aspect ratio of current widget and aspect ratio of child widget
+			float viewportAspect = width / (float)height;
 
-			int width, height;
-			viewport->GetResolution(width, height);
+			width = rect.width();
+			height = rect.height();
+			float ownAspect = width / (float)height;
 
-			QPoint upleft;
-			QPoint downRight;
+			float startX, endX, startY, endY;
 
-			width = width / w->devicePixelRatioF();
-			height = height / w->devicePixelRatioF();
-
-			switch (mode)
+			if (ownAspect > viewportAspect)
 			{
-			case CViewport::EResolutionMode::Window:
-				{
-					upleft = rect.topLeft();
-					downRight = rect.bottomRight();
-					break;
-				}
-			case CViewport::EResolutionMode::Stretch:
-				{
-					// First get aspect ratio of current widget and aspect ratio of child widget
-					float viewportAspect = width / (float)height;
-
-					width = rect.width();
-					height = rect.height();
-					float ownAspect = width / (float)height;
-
-					float startX, endX, startY, endY;
-
-					if (ownAspect > viewportAspect)
-					{
-						startY = 0;
-						endY = height;
-						int screenWidth = viewportAspect * height;
-						startX = (width - screenWidth) / 2;
-						endX = (width + screenWidth) / 2;
-					}
-					else
-					{
-						startX = 0;
-						endX = width;
-						int screenHeight = width / viewportAspect;
-						startY = (height - screenHeight) / 2;
-						endY = (height + screenHeight) / 2;
-					}
-
-					upleft.setX(startX);
-					upleft.setY(startY);
-					downRight.setX(endX);
-					downRight.setY(endY);
-					break;
-				}
-			case CViewport::EResolutionMode::Center:
-				{
-					// Now find the difference between this resolution and the new geometry and split it into two
-					upleft.setX((rect.width() - width) / 2);
-					upleft.setY((rect.height() - height) / 2);
-					downRight.setX(upleft.x() + width);
-					downRight.setY(upleft.y() + height);
-					break;
-				}
-			case CViewport::EResolutionMode::TopRight:
-				{
-					upleft.setX(rect.width() - width);
-					upleft.setY(0);
-					downRight.setX(rect.width());
-					downRight.setY(height);
-					break;
-				}
-			case CViewport::EResolutionMode::TopLeft:
-				{
-					upleft.setX(0);
-					upleft.setY(0);
-					downRight.setX(width);
-					downRight.setY(height);
-					break;
-				}
-			case CViewport::EResolutionMode::BottomRight:
-				{
-					upleft.setX(rect.width() - width);
-					upleft.setY(rect.height() - height);
-					downRight.setX(rect.width());
-					downRight.setY(rect.height());
-					break;
-				}
-			case CViewport::EResolutionMode::BottomLeft:
-				{
-					upleft.setX(0);
-					upleft.setY(rect.height() - height);
-					downRight.setX(width);
-					downRight.setY(rect.height());
-
-					break;
-				}
+				startY = 0;
+				endY = height;
+				int screenWidth = viewportAspect * height;
+				startX = (width - screenWidth) / 2;
+				endX = (width + screenWidth) / 2;
+			}
+			else
+			{
+				startX = 0;
+				endX = width;
+				int screenHeight = width / viewportAspect;
+				startY = (height - screenHeight) / 2;
+				endY = (height + screenHeight) / 2;
 			}
 
-			QRect finalRect(upleft, downRight);
-
-			m_child->setGeometry(finalRect);
+			upleft.setX(startX);
+			upleft.setY(startY);
+			downRight.setX(endX);
+			downRight.setY(endY);
+			break;
+		}
+	case CViewport::EResolutionMode::Center:
+		{
+			// Now find the difference between this resolution and the new geometry and split it into two
+			upleft.setX((rect.width() - width) / 2);
+			upleft.setY((rect.height() - height) / 2);
+			downRight.setX(upleft.x() + width);
+			downRight.setY(upleft.y() + height);
+			break;
+		}
+	case CViewport::EResolutionMode::TopRight:
+		{
+			upleft.setX(rect.width() - width);
+			upleft.setY(0);
+			downRight.setX(rect.width());
+			downRight.setY(height);
+			break;
+		}
+	case CViewport::EResolutionMode::TopLeft:
+		{
+			upleft.setX(0);
+			upleft.setY(0);
+			downRight.setX(width);
+			downRight.setY(height);
+			break;
+		}
+	case CViewport::EResolutionMode::BottomRight:
+		{
+			upleft.setX(rect.width() - width);
+			upleft.setY(rect.height() - height);
+			downRight.setX(rect.width());
+			downRight.setY(rect.height());
+			break;
+		}
+	case CViewport::EResolutionMode::BottomLeft:
+		{
+			upleft.setX(0);
+			upleft.setY(rect.height() - height);
+			downRight.setX(width);
+			downRight.setY(rect.height());
+			break;
 		}
 	}
-	else
-	{
-		m_child->setGeometry(rect);
-	}
+
+	QRect source(upleft, downRight);
+	QRect limits(0, 0, rect.width() - 1, rect.height() - 1);
+	m_child->setGeometry(source.intersected(limits));
 }
 
-//////////////////////////////////////////////////////////////////////////
 QViewportPane::QViewportPane(CViewport* viewport, QWidget* headerWidget)
 {
 	m_viewport = viewport;
@@ -676,7 +652,7 @@ QViewportPane::QViewportPane(CViewport* viewport, QWidget* headerWidget)
 	QVBoxLayout* layout = new QVBoxLayout;
 	layout->setContentsMargins(0, 0, 0, 0);
 	layout->setSpacing(0);
-	if(m_headerWidget)
+	if (m_headerWidget)
 		layout->addWidget(m_headerWidget);
 
 	// wrap renderviewports in letterboxing widget to preserve aspect ratio in custom resolutions
@@ -695,3 +671,16 @@ QViewportPane::QViewportPane(CViewport* viewport, QWidget* headerWidget)
 	viewport->SetViewWidget(m_viewWidget);
 }
 
+namespace Private_QViewportPane
+{
+
+void ToggleHelpers()
+{
+	CommandEvent("viewport.toggle_helpers").SendToKeyboardFocus();
+}
+
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_QViewportPane::ToggleHelpers, viewport, toggle_helpers, CCommandDescription("Toggle display of helpers in the viewport"))
+REGISTER_EDITOR_UI_COMMAND_DESC(viewport, toggle_helpers, "", "Ctrl+H", "icons:Viewport/viewport-helpers.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionShow_Hide_Helpers, viewport, toggle_helpers)

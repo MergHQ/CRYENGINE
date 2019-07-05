@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include <IExportManager.h>
+#include <vector>
+#include <map>
 
 typedef std::vector<IExporter*>     TExporters;
 typedef std::map<CBaseObject*, int> TObjectMap;
@@ -28,8 +31,6 @@ public:
 	//! Add to Export Data geometry from selected objects
 	//! return true if succeed, otherwise false
 	bool AddSelectedObjects();
-
-	bool AddSelectedEntityObjects();
 
 	//! Add to Export Data geometry from objects inside selected region volume
 	//! return true if succeed, otherwise false
@@ -78,4 +79,3 @@ private:
 
 	CBaseObject* m_pBaseObj;
 };
-

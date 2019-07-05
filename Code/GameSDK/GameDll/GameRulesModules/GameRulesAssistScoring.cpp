@@ -58,7 +58,7 @@ void CGameRulesAssistScoring::Init(XmlNodeRef xml)
 
 	if (!xml->getAttr("maxTimeBetweenAttackAndKillForAssist", m_maxTimeBetweenAttackAndKillForAssist))
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpawning failed to find valid maxTimeBetweenAttackAndKillForAssist param");
+		CRY_ASSERT(0, "CGameRulesMPSpawning failed to find valid maxTimeBetweenAttackAndKillForAssist param");
 	}
 	int iValue = 0;
 	if (xml->getAttr("teamSpecificScoring", iValue))
@@ -68,12 +68,12 @@ void CGameRulesAssistScoring::Init(XmlNodeRef xml)
 
 	if (!xml->getAttr("maxAssistScore", m_maxAssistScore))
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpawning failed to find valid maxAssistScore param");
+		CRY_ASSERT(0, "CGameRulesMPSpawning failed to find valid maxAssistScore param");
 	}
 
 	if (!xml->getAttr("assistScoreMultiplier", m_assistScoreMultiplier))
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpawning failed to find valid assistScoreMultiplier param");
+		CRY_ASSERT(0, "CGameRulesMPSpawning failed to find valid assistScoreMultiplier param");
 	}
 
 	CGameRules* pGameRules = g_pGame->GetGameRules();
@@ -175,7 +175,7 @@ void CGameRulesAssistScoring::OnEntityHit(const HitInfo &info, const float tagDu
 void CGameRulesAssistScoring::SvDoScoringForDeath(const EntityId victimId, const EntityId shooterId, const char *weaponClassName, int damage, int material, int hit_type)
 {
 	DbgLog("CGameRulesAssistScoring::SvDoScoringForDeath()");
-	CRY_ASSERT_MESSAGE(gEnv->bServer, "CGameRulesAssistScoring::SvDoScoringForDeath() should only be called on the server");
+	CRY_ASSERT(gEnv->bServer, "CGameRulesAssistScoring::SvDoScoringForDeath() should only be called on the server");
 
 	TTargetAttackerMap::iterator it=m_targetAttackerMap.find(victimId);
 	if(it!=m_targetAttackerMap.end())
@@ -190,12 +190,11 @@ void CGameRulesAssistScoring::SvDoScoringForDeath(const EntityId victimId, const
 		float fEarliestTimeForAssistShoot = time - m_maxTimeBetweenAttackAndKillForAssist;
 
 		bool hadAssist=false;
-		bool awardedSuicideKill=false;
 
 		for (TAttackers::reverse_iterator vit=it->second.rbegin(); vit!=it->second.rend(); ++vit)
 		{
 			SAttackerData &data = *vit;
-			CRY_ASSERT_MESSAGE(data.m_entityId, string().Format("List of %s's recent attackers includes entity ID 0! Why has a NULL entity been allocated a slot in the list?", m_pGameRules->GetEntityName(victimId)));
+			CRY_ASSERT(data.m_entityId, string().Format("List of %s's recent attackers includes entity ID 0! Why has a NULL entity been allocated a slot in the list?", m_pGameRules->GetEntityName(victimId)));
 			if ( (data.m_lastShootTime > fEarliestTimeForAssistShoot) || (time < data.m_tagExpirationTime))
 			{
 				DbgLog("CGameRulesAssistScoring::SvDoScoringForDeath() found entity %d %s has attacked the dead entity %s recently enough to be considered for assist", data.m_entityId, m_pGameRules->GetEntityName(data.m_entityId), m_pGameRules->GetEntityName(victimId));
@@ -209,7 +208,7 @@ void CGameRulesAssistScoring::SvDoScoringForDeath(const EntityId victimId, const
 
 					DbgLog("CGameRulesAssistScoring::SvDoScoringForDeath() has found player %s has assisted in killing entity %s, awarding assist points", m_pGameRules->GetEntityName(data.m_entityId), m_pGameRules->GetEntityName(victimId));
 					IGameRulesScoringModule *scoringModule = m_pGameRules->GetScoringModule();
-					CRY_ASSERT_MESSAGE(scoringModule, "CGameRulesAssistScoring::SvDoScoringForDeath() failed to find a scoring module, this should NOT happen");
+					CRY_ASSERT(scoringModule, "CGameRulesAssistScoring::SvDoScoringForDeath() failed to find a scoring module, this should NOT happen");
 					if (scoringModule)
 					{
 						EGRST type = EGRST_PlayerKillAssist;
@@ -296,12 +295,11 @@ void CGameRulesAssistScoring::ClHandleAssistsForDeath(const EntityId victimId, c
 		float time=m_pGameRules->GetServerTime();
 
 		bool hadAssist=false;
-		bool awardedSuicideKill=false;
 
 		for (TAttackers::reverse_iterator vit=it->second.rbegin(); vit!=it->second.rend(); ++vit)
 		{
 			SAttackerData &data = *vit;
-			CRY_ASSERT_MESSAGE(data.m_entityId, string().Format("List of %s's recent attackers includes entity ID 0! Why has a NULL entity been allocated a slot in the list?", m_pGameRules->GetEntityName(victimId)));
+			CRY_ASSERT(data.m_entityId, string().Format("List of %s's recent attackers includes entity ID 0! Why has a NULL entity been allocated a slot in the list?", m_pGameRules->GetEntityName(victimId)));
 			float fEarliestTime = time - m_maxTimeBetweenAttackAndKillForAssist;
 			if(data.m_lastShootTime >= fEarliestTime)
 			{
@@ -340,13 +338,13 @@ void CGameRulesAssistScoring::OnEntityKilled(const HitInfo &hitInfo)
 		char weaponClassName[128];
 		if (!g_pGame->GetIGameFramework()->GetNetworkSafeClassName(weaponClassName, sizeof(weaponClassName), hitInfo.weaponClassId))
 		{
-			cry_strcpy(weaponClassName, "unknown weapon");
+			cry_fixed_size_strcpy(weaponClassName, "unknown weapon");
 		}
 
 		EntityId victimId = hitInfo.targetId;
 
 		IEntity* pVictimEntity = gEnv->pEntitySystem->GetEntity(victimId);
-		CRY_ASSERT_MESSAGE(pVictimEntity, "failed to resolve our victim that has been killed!!!");
+		CRY_ASSERT(pVictimEntity, "failed to resolve our victim that has been killed!!!");
 
 		if(pVictimEntity)
 		{
@@ -358,7 +356,7 @@ void CGameRulesAssistScoring::OnEntityKilled(const HitInfo &hitInfo)
 		EntityId victimId = hitInfo.targetId;
 
 		IEntity *pVictimEntity = gEnv->pEntitySystem->GetEntity(victimId);
-		CRY_ASSERT_MESSAGE(pVictimEntity, "failed to resolve our victim that has been killed!!!");
+		CRY_ASSERT(pVictimEntity, "failed to resolve our victim that has been killed!!!");
 
 		if (pVictimEntity)
 		{
@@ -370,18 +368,16 @@ void CGameRulesAssistScoring::OnEntityKilled(const HitInfo &hitInfo)
 EntityId CGameRulesAssistScoring::SvGetMostRecentAttacker(EntityId targetId)
 {
 	DbgLog("CGameRulesAssistScoring::SvGetMostRecentAttacker");
-	CRY_ASSERT_MESSAGE(gEnv->bServer, "CGameRulesAssistScoring::SvGetMostRecentAttacker should only be called on the server");
+	CRY_ASSERT(gEnv->bServer, "CGameRulesAssistScoring::SvGetMostRecentAttacker should only be called on the server");
 
 	TTargetAttackerMap::iterator it=m_targetAttackerMap.find(targetId);
 
 	if (it==m_targetAttackerMap.end())
 	{
-		CRY_ASSERT_MESSAGE(0, string().Format("CGameRulesAssistScoring::SvGetMostRecentAttacker failed to find a targetAttacker mapping element for target %s", m_pGameRules->GetEntityName(targetId)));
+		CRY_ASSERT(0, string().Format("CGameRulesAssistScoring::SvGetMostRecentAttacker failed to find a targetAttacker mapping element for target %s", m_pGameRules->GetEntityName(targetId)));
 	}
 	else
 	{
-		float time=m_pGameRules->GetServerTime();
-
 		if (!it->second.empty())
 		{
 			TAttackers::const_iterator vit = it->second.begin();

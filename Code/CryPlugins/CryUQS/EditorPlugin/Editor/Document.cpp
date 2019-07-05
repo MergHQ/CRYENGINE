@@ -7,7 +7,7 @@
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/CryStrings.h>
 #include <CrySerialization/StringList.h>
-#include <Serialization/PropertyTree/PropertyTree.h>
+#include <Serialization/PropertyTreeLegacy/PropertyTreeLegacy.h>
 
 #include "Blueprints.h"
 #include "EditorContext.h"
@@ -41,7 +41,7 @@ CQueryBlueprintShuttle::CQueryBlueprintShuttle(const CUqsEditorContext& editorCo
 
 void CQueryBlueprintShuttle::OnTextualQueryBlueprintLoaded(const UQS::Core::ITextualQueryBlueprint& loadedTextualQueryBlueprint)
 {
-	assert(!m_pQueryBlueprintForLoading);
+	CRY_ASSERT(!m_pQueryBlueprintForLoading);
 	m_pQueryBlueprintForLoading.reset(new UQSEditor::CQueryBlueprint);
 	CUqsDocSerializationContext serializationContext(m_editorContext);
 	m_pQueryBlueprintForLoading->BuildSelfFromITextualQueryBlueprint(loadedTextualQueryBlueprint, serializationContext);
@@ -49,13 +49,13 @@ void CQueryBlueprintShuttle::OnTextualQueryBlueprintLoaded(const UQS::Core::ITex
 
 void CQueryBlueprintShuttle::OnTextualQueryBlueprintGettingSaved(UQS::Core::ITextualQueryBlueprint& textualQueryBlueprintToFillBeforeSaving)
 {
-	assert(m_pQueryBlueprintForSaving);
+	CRY_ASSERT(m_pQueryBlueprintForSaving);
 	m_pQueryBlueprintForSaving->BuildITextualQueryBlueprintFromSelf(textualQueryBlueprintToFillBeforeSaving);
 }
 
 void CQueryBlueprintShuttle::OnTextualQueryBlueprintGettingValidated(UQS::Core::ITextualQueryBlueprint& textualQueryBlueprintToFillBeforeValidating)
 {
-	assert(m_pQueryBlueprintForValidating);
+	CRY_ASSERT(m_pQueryBlueprintForValidating);
 	m_pQueryBlueprintForValidating->BuildITextualQueryBlueprintFromSelf(textualQueryBlueprintToFillBeforeValidating);
 }
 
@@ -85,7 +85,7 @@ bool CUqsQueryDocument::CreateNew(const char* szQueryName, stack_string& outErro
 
 	if (bResult)
 	{
-		assert(shuttle.m_pQueryBlueprintForLoading);
+		CRY_ASSERT(shuttle.m_pQueryBlueprintForLoading);
 		m_pQueryBlueprint = std::move(shuttle.m_pQueryBlueprintForLoading);
 
 		// NOTE pavloi 2016.07.04: query name was sanitized and potentially slightly different from szQueryName
@@ -138,7 +138,7 @@ bool CUqsQueryDocument::Load(const char* szQueryName)
 	if (bResult)
 	{
 		m_bNeverSaved = false;
-		assert(shuttle.m_pQueryBlueprintForLoading);
+		CRY_ASSERT(shuttle.m_pQueryBlueprintForLoading);
 		m_pQueryBlueprint = std::move(shuttle.m_pQueryBlueprintForLoading);
 	}
 	else
@@ -202,7 +202,7 @@ void CUqsQueryDocument::Serialize(Serialization::IArchive& archive)
 	}
 }
 
-void CUqsQueryDocument::AttachToTree(PropertyTree* pTree)
+void CUqsQueryDocument::AttachToTree(PropertyTreeLegacy* pTree)
 {
 	if (m_pTree != pTree)
 	{

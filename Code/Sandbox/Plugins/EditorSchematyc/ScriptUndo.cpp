@@ -50,4 +50,3 @@ void CScriptUndoObject::Redo()
 }
 
 }
-

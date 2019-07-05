@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <stack>
 
 class CAsset;
 class CAssetType;
@@ -57,4 +58,3 @@ public:
 protected:
 	CAsset* m_pAsset;
 };
-

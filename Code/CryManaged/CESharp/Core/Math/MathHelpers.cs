@@ -68,7 +68,20 @@ namespace CryEngine
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static float Clamp(float value, float min, float max)
 		{
-			return Math.Min(Math.Max(min, value), max);
+			if(min > max)
+			{
+				ThrowMinMaxException(min, max);
+			}
+
+			if(value < min)
+			{
+				return min;
+			}
+			else if(value > max)
+			{
+				return max;
+			}
+			return value;
 		}
 
 		/// <summary>
@@ -81,7 +94,20 @@ namespace CryEngine
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static int Clamp(int value, int min, int max)
 		{
-			return Math.Min(Math.Max(min, value), max);
+			if(min > max)
+			{
+				ThrowMinMaxException(min, max);
+			}
+			
+			if(value < min)
+			{
+				return min;
+			}
+			else if(value > max)
+			{
+				return max;
+			}
+			return value;
 		}
 
 		/// <summary>
@@ -92,7 +118,15 @@ namespace CryEngine
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static float Clamp01(float value)
 		{
-			return Math.Min(Math.Max(0.0f, value), 1.0f);
+			if(value < 0.0f)
+			{
+				return 0.0f;
+			}
+			else if(value > 1.0f)
+			{
+				return 1.0f;
+			}
+			return value;
 		}
 
 		/// <summary>
@@ -273,7 +307,14 @@ namespace CryEngine
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static float Lerp(float a , float b, float t)
 		{
-			t = Math.Max(Math.Min(1.0f, t), 0f);
+			if(t < 0.0f)
+			{
+				t = 0.0f;
+			}
+			else if(t > 1.0f)
+			{
+				t = 1.0f;
+			}
 			return LerpUnclamped(a, b, t);
 		}
 
@@ -315,5 +356,10 @@ namespace CryEngine
 			t = Repeat(t, length * 2.0f);
 			return length - Math.Abs(t - length);
 		}
-	}
+
+		private static void ThrowMinMaxException<T>(T min, T max)
+		{
+			throw new ArgumentException(string.Format("{0} and {1} are invalid values for min and max! Make sure that min is always smaller than max.", min, max));
+		}
+}
 }

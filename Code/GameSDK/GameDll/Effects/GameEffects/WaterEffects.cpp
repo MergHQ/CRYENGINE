@@ -1,8 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "Game.h"
 #include "WaterEffects.h"
-
+#include <CryMemory/CrySizer.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CWaterGameEffects::CWaterGameEffects()
 	: m_waterDropletsAmount(-1.0f)

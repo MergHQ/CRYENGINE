@@ -283,8 +283,8 @@ int CLivingEntity::SetParams(pe_params *_params, int bThreadSafe)
 	ChangeRequest<pe_params> req(this,m_pWorld,_params,bThreadSafe);
 	if (req.IsQueued()) {
 		if (_params->type==pe_player_dimensions::type_id && (unsigned int)m_iSimClass<7u) {
-			int iter=0,iCaller=get_iCaller();
-			WriteLockCond lockc(m_pWorld->m_lockCaller[iCaller], iCaller==MAX_PHYS_THREADS);
+			int iter=0,iCaller=get_iCaller(1);
+			WriteLockCond lockc(m_pWorld->m_lockCaller[iCaller], iCaller>=MAX_PHYS_THREADS);
 			float hCyl,hPivot;	
 			Vec3 size,pos;
 			quaternionf qrot;
@@ -330,8 +330,9 @@ int CLivingEntity::SetParams(pe_params *_params, int bThreadSafe)
 				m_timeRotChanged = m_pWorld->m_timePhysics;
 			}
 
-			//if ((m_qrot.v^prevq.v).len2() > m_qrot.v.len2()*prevq.v.len2()*sqr(0.001f)) {
-			if (fabs_tpl(m_qrot.v.x)+fabs_tpl(m_qrot.v.y)+fabs_tpl(prevq.v.x)+fabs_tpl(prevq.v.y)>0) {
+			int auxFlags=0;
+			for(int i=1;i<m_nParts;auxFlags|=m_parts[i++].flagsCollider);
+			if (fabs_tpl(m_qrot.v.x)+fabs_tpl(m_qrot.v.y)+fabs_tpl(prevq.v.x)+fabs_tpl(prevq.v.y)+auxFlags>0) {
 				Vec3 dirUnproj(0,0,1);
 				if (((pe_params_pos*)_params)->bRecalcBounds && m_bActive && UnprojectionNeeded(m_pos,m_qrot,m_hCyl,m_hPivot,m_size,m_bUseCapsule,dirUnproj)>0) {
 					pe_params_pos pp; pp.q = prevq;
@@ -813,6 +814,20 @@ void SLivingEntityNetSerialize::Serialize( TSerialize ser )
 	ser.Value( "pos", pos, 'wrld');
 	ser.Value( "vel", vel, 'pLVl');
 	ser.Value( "velRequested", velRequested, 'pLVl');
+	ser.Value( "bFlying", bFlying);
+	ser.Value( "bJumpRequested", bJumpRequested);
+	ser.Value( "dh", dh);
+	ser.Value( "dhSpeed", dhSpeed);
+	ser.Value( "stablehTime", stablehTime);
+	if (ser.BeginOptionalGroup("groundColl", idEntGroundCollider>0)) {
+		ser.Value("idEnt", idEntGroundCollider);
+		ser.Value("ipart", ipartGroundCollider);
+		ser.Value("posGround", posOnGroundCollider);
+		ser.EndGroup();
+	}	else {
+		idEntGroundCollider = -1;
+		posOnGroundCollider.zero();
+	}
 }
 
 int CLivingEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
@@ -823,6 +838,10 @@ int CLivingEntity::GetStateSnapshot(TSerialize ser, float time_back, int flags)
 		m_pos,
 		m_vel,
 		m_velRequested,
+		m_bFlying,
+		m_bJumpRequested,
+		m_dh, m_dhSpeed, m_stablehTime,
+		(m_pWorld ? m_pWorld->GetPhysicalEntityId(m_pLastGroundCollider) : -2), m_iLastGroundColliderPart, m_posLastGroundColl
 	};
 	helper.Serialize( ser );
 
@@ -887,7 +906,6 @@ int CLivingEntity::SetStateFromSnapshot(CStream &stm, int flags)
 		stm.Read(tmp); m_timeFlying = tmp*(10.0f/65536);
 	} else m_timeFlying = 0;
 	unsigned int imft; stm.ReadNumberInBits(imft,2);
-	static float flytable[] = {0.0f, 0.2f, 0.5f, 1.0f};
 	stm.Read(bnz);
 	m_bFlying = bnz ? 1:0;
 	ReleaseGroundCollider();
@@ -935,9 +953,9 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 			helper.pos += helper.vel * dtBack;
 		}
 
-		const float MAX_DIFFERENCE = std::max( helper.vel.GetLength() * 0.1f, 0.1f );
+/*		const float MAX_DIFFERENCE = std::max( helper.vel.GetLength() * 0.1f, 0.1f );
 
-/*
+
 		{
 			IPersistantDebug * pPD = gEnv->pGameFramework->GetIPersistantDebug();
 			Vec3 pts[3] = {debugOnlyOriginalHelperPos, helper.pos, m_pos};
@@ -954,14 +972,22 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 		}
 */
 
-		float distance = m_pos.GetDistance(helper.pos);
 		setpos.pos = helper.pos;
 
-		SetParams( &setpos,0 );
+		SetParams( &setpos, (m_flags & pef_update)!=0 || get_iCaller()<MAX_PHYS_THREADS);	// apply changes immediately for custom-step entities	or if called from a phys thread
 
 		WriteLock lock1(m_lockLiving);
 		m_vel = helper.vel;
 		m_velRequested = helper.velRequested;
+		m_bFlying = helper.bFlying;
+		m_bJumpRequested = helper.bJumpRequested;
+		m_dh = helper.dh;
+		m_dhSpeed = helper.dhSpeed;
+		m_stablehTime = helper.stablehTime;
+
+		SetGroundCollider((CPhysicalEntity*)m_pWorld->GetPhysicalEntityById(helper.idEntGroundCollider));
+		m_iLastGroundColliderPart = helper.ipartGroundCollider;
+		m_posLastGroundColl = helper.posOnGroundCollider;
 	}
 
 	return 1;
@@ -971,8 +997,7 @@ int CLivingEntity::SetStateFromSnapshot(TSerialize ser, int flags)
 float CLivingEntity::ShootRayDown(le_precomp_entity* pents, int nents, le_precomp_part *pparts, const Vec3 &pos,
 	Vec3 &nslope, float time_interval, bool bUseRotation,bool bUpdateGroundCollider,bool bIgnoreSmallObjects)
 {
-	int i,j,jbest,ncont,idbest,idbestAux=-1,iPrim=-1,bHasMatSubst=0;
-	int j1,iCaller=get_iCaller_int();
+	int i,j,jbest,ncont,idbest,idbestAux=-1,iPrim=-1,bHasMatSubst=0,j1;
 	Matrix33 R;
 	Vec3 pt,axis=m_qrot*Vec3(0,0,1);
 	float h=-1E10f,maxdim,maxarea,haux=-1E10f;
@@ -1280,7 +1305,7 @@ int CLivingEntity::Step(float time_interval)
 	time_interval = m_pWorld->m_bWorldStep==2 ? min(time_interval, dt) : dt;
 	time_interval = max(time_interval, 0.001f);
 
-	const int iCaller = get_iCaller_int();
+	const int iCaller = get_iCaller();
 	int i,j,jmin,ipartMin,nents,ncont,bFlying,bWasFlying,bUnprojected,idmat,iPrim, bHasExtraParts=0,
 		bHasFastPhys,icnt,nUnproj,bStaticUnproj,bDynUnproj,bMoving=0,nPrecompEnts=0,nPrecompParts=0, nUsedPartsCount=0,
 		&nNoResponseAllocLE=m_pWorld->m_threadData[iCaller].nNoResponseAllocLE,
@@ -1782,8 +1807,8 @@ int CLivingEntity::Step(float time_interval)
 					if (tmin<=ip.time_interval) {
 						tmin = max(tlim,tmin-m_pWorld->m_vars.maxContactGapPlayer);
 						pos += gwd[0].v*tmin; 
-						static const float g_cosSlide=cos_tpl(0.3f), g_sinSlide=sin_tpl(0.3f);
-						/*if (bFlying) {
+						/*static const float g_cosSlide=cos_tpl(0.3f), g_sinSlide=sin_tpl(0.3f);
+						if (bFlying) {
 							if ((ncontact*axis)*(1-m_bSwimming)>g_cosSlide)
 								ncontact = axis*g_cosSlide + (pos-ptcontact-axis*(axis*(pos-ptcontact))).normalized()*g_sinSlide;
 						} else */
@@ -1877,22 +1902,21 @@ int CLivingEntity::Step(float time_interval)
 
 				if (m_parts[0].flagsCollider!=0 && (bUnprojected || !(m_flags & lef_loosen_stuck_checks))) {
 					ip.bSweepTest = false;
-					gwd[0].offset = pos + gwd[0].R*m_parts[0].pos; 
-					gwd[0].v = -axis; 
+					gwd[0].offset = pos + gwd[0].R*m_parts[0].pos;
+					gwd[0].v = -axis;
 					ip.bStopAtFirstTri = true; ip.bNoBorder = true; ip.time_interval = m_size.z*10;
-					for(i=0; i<nents; ++i) 
+					for(i=0; i<nents; ++i)
 						if (pPrecompEnts[i].iSimClass==0) {
-							CPhysicalEntity *const pent = pPrecompEnts[i].pent;
-							for(int j1=pPrecompEnts[i].iPartsBegin; j1<pPrecompEnts[i].iPartsEnd; ++j1) 
+							for(int j1=pPrecompEnts[i].iPartsBegin; j1<pPrecompEnts[i].iPartsEnd; ++j1)
 								if (pPrecompParts[j1].partflags & collider_flags && !(pPrecompParts[j1].partflags & geom_no_coll_response)) {
 									gwd[1].R = Matrix33(pPrecompParts[j1].partrot);
 									gwd[1].offset = pPrecompParts[j1].partoff;
 									gwd[1].scale = pPrecompParts[j1].partscale;
 									if(m_pCylinderGeom->Intersect(pPrecompParts[j1].pgeom, gwd,gwd+1, &ip, pcontacts)) { 
 									if (pcontacts->t>m_pWorld->m_vars.maxContactGapPlayer)
-										vel.zero(),m_bStuck=1;	
-									pos = pos0; m_timeUseLowCap=1.0f; 
-									goto nomove; 
+										vel.zero(),m_bStuck=1;
+									pos = pos0; m_timeUseLowCap=1.0f;
+									goto nomove;
 								}
 							}
 					} nomove:;

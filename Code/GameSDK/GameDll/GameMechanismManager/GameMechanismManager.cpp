@@ -4,6 +4,7 @@
 #include "GameMechanismManager.h"
 #include "GameMechanismBase.h"
 #include "Utility/CryWatch.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 CGameMechanismManager * CGameMechanismManager::s_instance = NULL;
 
@@ -31,7 +32,7 @@ class CGameMechanismIterator
 
 	~CGameMechanismIterator()
 	{
-		CRY_ASSERT_MESSAGE (s_firstIterator == this, "Should only free up game mechanism iterators in reverse order to their creation!");
+		CRY_ASSERT (s_firstIterator == this, "Should only free up game mechanism iterators in reverse order to their creation!");
 		s_firstIterator = m_nextIterator;
 	}
 

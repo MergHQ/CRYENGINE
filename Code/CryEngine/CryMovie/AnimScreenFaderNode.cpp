@@ -4,6 +4,7 @@
 #include "AnimScreenFaderNode.h"
 #include "ScreenFaderTrack.h"
 #include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace
 {
@@ -232,7 +233,10 @@ void CAnimScreenFaderNode::Activate(bool bActivate)
 
 void CAnimScreenFaderNode::Deactivate() 
 {
-	gEnv->pRenderer->EF_SetPostEffectParamVec4("ScreenFader_Color", Vec4(0, 0, 0, 0), true);
+	if (gEnv->pRenderer != nullptr)
+	{
+		gEnv->pRenderer->EF_SetPostEffectParamVec4("ScreenFader_Color", Vec4(0, 0, 0, 0), true);
+	}
 	m_bActive = false;
 }
 

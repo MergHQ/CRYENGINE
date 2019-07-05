@@ -200,4 +200,4 @@ string CD3DDebug::GetLastMessage()
 	return res;
 }
 
-#endif //!CAFE && !CRY_USE_OPENGL
+#endif //!CAFE

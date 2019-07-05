@@ -44,7 +44,7 @@ void SOnScreenMessageDef::Read(const XmlNodeRef xml)
 	// Read prompt icon information
 	const char * inputMapName = xml->getAttr("inputMapName");
 	const char * inputName = xml->getAttr("inputName");
-	CRY_ASSERT_MESSAGE((inputMapName == NULL) == (inputName == NULL), string().Format("Provided %s", inputMapName ? "inputMapName but not inputName" : "inputName but not inputMapName"));
+	CRY_ASSERT((inputMapName == NULL) == (inputName == NULL), string().Format("Provided %s", inputMapName ? "inputMapName but not inputName" : "inputName but not inputMapName"));
 	if ((inputMapName != NULL) && (inputMapName[0]) && (inputName != NULL) && inputName[0])
 	{
 		m_pInputRenderInfo->CreateForInput(inputMapName, inputName);

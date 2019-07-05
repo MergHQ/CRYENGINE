@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <IImpl.h>
+#include "../Common/IImpl.h"
 
 #include "Item.h"
 
@@ -14,69 +14,76 @@ namespace Impl
 {
 namespace Fmod
 {
-static Platforms s_platforms;
-
 class CDataPanel;
 
 class CImpl final : public IImpl
 {
 public:
 
+	CImpl(CImpl const&) = delete;
+	CImpl(CImpl&&) = delete;
+	CImpl& operator=(CImpl const&) = delete;
+	CImpl& operator=(CImpl&&) = delete;
+
 	CImpl();
 	virtual ~CImpl() override;
 
 	// IImpl
+	virtual void           Initialize(SImplInfo& implInfo, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) override;
 	virtual QWidget*       CreateDataPanel() override;
 	virtual void           DestroyDataPanel() override;
-	virtual void           Reload(bool const preserveConnectionStatus = true) override;
-	virtual void           SetPlatforms(Platforms const& platforms) override { s_platforms = platforms; }
+	virtual void           Reload(SImplInfo& implInfo) override;
 	virtual IItem*         GetItem(ControlId const id) const override;
 	virtual CryIcon const& GetItemIcon(IItem const* const pIItem) const override;
 	virtual QString const& GetItemTypeName(IItem const* const pIItem) const override;
-	virtual string const&  GetName() const override                                         { return m_implName; }
-	virtual string const&  GetFolderName() const override                                   { return m_implFolderName; }
-	virtual char const*    GetAssetsPath() const override                                   { return m_assetsPath.c_str(); }
-	virtual char const*    GetProjectPath() const override                                  { return m_projectPath.c_str(); }
 	virtual void           SetProjectPath(char const* const szPath) override;
-	virtual bool           SupportsProjects() const override                                { return true; }
-	virtual bool           IsSystemTypeSupported(EAssetType const assetType) const override { return true; }
 	virtual bool           IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
 	virtual EAssetType     ImplTypeToAssetType(IItem const* const pIItem) const override;
-	virtual ConnectionPtr  CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
-	virtual ConnectionPtr  CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) override;
-	virtual XmlNodeRef     CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType) override;
-	virtual void           EnableConnection(ConnectionPtr const pConnection, bool const isLoading) override;
-	virtual void           DisableConnection(ConnectionPtr const pConnection, bool const isLoading) override;
-	virtual void           OnAboutToReload() override;
-	virtual void           OnReloaded() override;
+	virtual IConnection*   CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
+	virtual IConnection*   CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType) override;
+	virtual XmlNodeRef     CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType, CryAudio::ContextId const contextId) override;
+	virtual XmlNodeRef     SetDataNode(char const* const szTag, CryAudio::ContextId const contextId) override;
+	virtual void           OnBeforeWriteLibrary() override;
+	virtual void           OnAfterWriteLibrary() override;
+	virtual void           EnableConnection(IConnection const* const pIConnection, bool const isLoading) override;
+	virtual void           DisableConnection(IConnection const* const pIConnection, bool const isLoading) override;
+	virtual void           DestructConnection(IConnection const* const pIConnection) override;
+	virtual void           OnBeforeReload() override;
+	virtual void           OnAfterReload() override;
 	virtual void           OnSelectConnectedItem(ControlId const id) const override;
-	virtual void           OnFileImporterOpened() override {}
-	virtual void           OnFileImporterClosed() override {}
+	virtual void           OnFileImporterOpened() override                                                                 {}
+	virtual void           OnFileImporterClosed() override                                                                 {}
+	virtual bool           CanDropExternalData(QMimeData const* const pData) const override                                { return false; }
+	virtual bool           DropExternalData(QMimeData const* const pData, FileImportInfos& fileImportInfos) const override { return false; }
+	virtual ControlId      GenerateItemId(QString const& name, QString const& path, bool const isLocalized) override       { return g_invalidControlId; }
 	// ~IImpl
 
 	CItem const& GetRootItem() const { return m_rootItem; }
 
 	void         Serialize(Serialization::IArchive& ar);
 
+	static std::vector<string> s_programmerSoundEvents;
+
 private:
 
 	void   Clear();
-	CItem* CreatePlaceholderItem(string const& name, EItemType const type, CItem* const pParent);
+	void   SetImplInfo(SImplInfo& implInfo);
+	void   SetLocalizedAssetsPath();
+	CItem* CreatePlaceholderItem(string const& name, EItemType const type, bool const isLocalized, CItem* const pParent);
 	CItem* GetItemFromPath(string const& fullpath);
 	CItem* CreatePlaceholderFolderPath(string const& path);
 
 	using ConnectionIds = std::map<ControlId, int>;
 
-	CItem               m_rootItem { "", s_aceInvalidId, EItemType::None };
-	ItemCache           m_itemCache; // cache of the items stored by id for faster access
-	ConnectionIds       m_connectionsByID;
-	CryAudio::SImplInfo m_implInfo;
-	string              m_implName;
-	string              m_implFolderName;
-	string              m_projectPath;
-	string const        m_assetsPath;
-	char const* const   m_szUserSettingsFile;
-	CDataPanel*         m_pDataPanel;
+	CItem             m_rootItem { "", g_invalidControlId, EItemType::None };
+	ItemCache         m_itemCache;   // cache of the items stored by id for faster access
+	ConnectionIds     m_connectionsByID;
+	CDataPanel*       m_pDataPanel;
+	string            m_implName;
+	string            m_projectPath;
+	string const      m_assetsPath;
+	string            m_localizedAssetsPath;
+	char const* const m_szUserSettingsFile;
 };
 } // namespace Fmod
 } // namespace Impl

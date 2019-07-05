@@ -7,5 +7,7 @@ uint cry_srand(uint seed) { g_rnd.seed(seed); return 0; }
 //SEnv env,*gEnv=&env;
 
 int g_iLastProfilerId=0; 
-ProfilerData g_pd[MAX_PHYS_THREADS+1];
-extern "C" CRYPHYSICS_API ProfilerData *GetProfileData(int iThread) { return &g_pd[iThread]; } 
+ProfilerData g_pd[MAX_PHYS_THREADS+MAX_EXT_THREADS];
+extern "C" CRYPHYSICS_API ProfilerData *GetProfileData(int iThread) { return &g_pd[iThread]; }
+
+void CSimpleThreadBackOff::Backoff() {}

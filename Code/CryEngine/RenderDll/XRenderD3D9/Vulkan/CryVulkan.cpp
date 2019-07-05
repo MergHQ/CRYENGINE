@@ -7,6 +7,11 @@
 	#include "CryVulkanWrappers/GI/DXGI/CCryVKGIFactory_DXGI.hpp"
 #endif
 
+#if USE_SDL2 && (CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS || CRY_PLATFORM_LINUX)
+	#include <SDL_syswm.h>
+#endif
+
+
 
 HRESULT WINAPI D3DCreateBlob(SIZE_T NumBytes, ID3DBlob** ppBuffer)
 {

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CryThreading/CryThreadSafePushContainer.h>
+
 #define LV_MAX_COUNT                255
 #define LV_CELL_MAX_LIGHTS          64
 #define LV_MAX_LIGHTS               2048
@@ -29,10 +31,7 @@
 class CLightVolumesMgr : public Cry3DEngineBase
 {
 public:
-	CLightVolumesMgr()
-	{
-		Init();
-	}
+	CLightVolumesMgr();
 
 	void   Init();
 	void   Reset();
@@ -48,11 +47,11 @@ private:
 	{
 		SLightVolInfo() : vVolume(ZERO, 0.0f), nNextVolume(0), nClipVolumeID(0)
 		{
-		};
+		}
 		SLightVolInfo(const Vec3& pPos, float fRad, uint8 clipVolumeID)
 			: vVolume(pPos, fRad), nNextVolume(0), nClipVolumeID(clipVolumeID)
 		{
-		};
+		}
 
 		Vec4   vVolume;       // xyz: position, w: radius
 		uint16 nNextVolume;   // index of next light volume for this hash bucket (0 if none)
@@ -63,7 +62,7 @@ private:
 	{
 		SLightCell() : nLightCount(0)
 		{
-		};
+		}
 
 		uint16 nLightID[LV_CELL_MAX_LIGHTS];
 		uint8  nLightCount;
@@ -73,7 +72,7 @@ private:
 	{
 		static const uint32 nHashBits = 9;
 		static const uint32 nGoldenRatio32bits = 2654435761u; // (2^32) / (golden ratio)
-		return (k * nGoldenRatio32bits) >> (32 - nHashBits);  // ref: knuths integer multiplicative hash function
+		return (k * nGoldenRatio32bits) >> (32 - nHashBits);  // ref: Knuth's integer multiplicative hash function
 	}
 
 	inline uint16 GetWorldHashBucketKey(const int32 x, const int32 y, const int32 z, const int32 nBucketSize = LV_WORLD_BUCKET_SIZE) const
@@ -87,9 +86,10 @@ private:
 	typedef DynArray<SLightVolume> LightVolumeVector;
 
 private:
-	LightVolumeVector                           m_pLightVolumes[RT_COMMAND_BUF_COUNT]; // Final light volume list. <todo> move light list creation to renderer to avoid double-buffering this
-	CThreadSafeRendererContainer<SLightVolInfo> m_pLightVolsInfo;                      // World cells data
-	SLightCell m_pWorldLightCells[LV_LIGHTS_WORLD_BUCKET_SIZE];                        // 2D World cell buckets for light sources ids
-	uint16     m_nWorldCells[LV_WORLD_BUCKET_SIZE];                                    // World cell buckets for light volumes
-	bool       m_bUpdateLightVolumes : 1;
+	LightVolumeVector m_pLightVolumes[RT_COMMAND_BUF_COUNT];           // Final light volume list. <todo> move light list creation to renderer to avoid double-buffering this
+	SLightVolInfo     m_pLightVolsInfo[LV_MAX_COUNT];                  // World cells data
+	int               m_lightVolsInfoCount;                            // number of elements in m_pLightVolsInfo
+	SLightCell        m_pWorldLightCells[LV_LIGHTS_WORLD_BUCKET_SIZE]; // 2D World cell buckets for light sources ids
+	uint16            m_nWorldCells[LV_WORLD_BUCKET_SIZE];             // World cell buckets for light volumes
+	bool              m_bUpdateLightVolumes : 1;
 };

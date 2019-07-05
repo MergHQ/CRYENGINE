@@ -8,7 +8,7 @@
 #include <CryAudioImplWwise/GlobalData.h>
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/ILocalizationManager.h>
+#include <CrySystem/XML/IXml.h>
 
 namespace ACE
 {
@@ -23,7 +23,7 @@ string const g_eventsFolderName = "Events";
 string const g_environmentsFolderName = "Master-Mixer Hierarchy";
 string const g_soundBanksFolderName = "SoundBanks";
 string const g_soundBanksInfoFileName = "SoundbanksInfo.xml";
-ControlId g_soundBanksFolderId = s_aceInvalidId;
+ControlId g_soundBanksFolderId = g_invalidControlId;
 
 //////////////////////////////////////////////////////////////////////////
 EItemType TagToItemType(char const* const szTag)
@@ -97,13 +97,11 @@ string BuildPath(IItem const* const pIItem)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, CItem& rootItem, ItemCache& itemCache)
+CProjectLoader::CProjectLoader(string const& projectPath, string const& soundbanksPath, string const& localizedBanksPath, CItem& rootItem, ItemCache& itemCache)
 	: m_rootItem(rootItem)
 	, m_itemCache(itemCache)
 	, m_projectPath(projectPath)
 {
-	LoadEventsMetadata(soundbanksPath);
-
 	// Wwise places all the Work Units in the same root physical folder but some of those WU can be nested
 	// inside each other so to be able to reference them in the right order we build a cache with the path and UIDs
 	// so that we can load them in the right order (i.e. the top most parent first)
@@ -122,17 +120,7 @@ CProjectLoader::CProjectLoader(string const& projectPath, string const& soundban
 	CItem* const pSoundBanks = CreateItem(g_soundBanksFolderName, EItemType::PhysicalFolder, m_rootItem, EPakStatus::None);
 	g_soundBanksFolderId = pSoundBanks->GetId();
 	LoadSoundBanks(soundbanksPath, false, *pSoundBanks);
-
-	char const* const szLanguage = gEnv->pSystem->GetLocalizationManager()->GetLanguage();
-	string const locaFolder =
-	  PathUtil::GetLocalizationFolder() +
-	  "/" +
-	  szLanguage +
-	  "/" AUDIO_SYSTEM_DATA_ROOT "/" +
-	  CryAudio::Impl::Wwise::s_szImplFolderName +
-	  "/" +
-	  CryAudio::s_szAssetsFolderName;
-	LoadSoundBanks(locaFolder, true, *pSoundBanks);
+	LoadSoundBanks(localizedBanksPath, true, *pSoundBanks);
 
 	if (pSoundBanks->GetNumChildren() == 0)
 	{
@@ -156,6 +144,8 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 
 	if (handle != -1)
 	{
+		EItemFlags const flags = isLocalized ? EItemFlags::IsLocalized : EItemFlags::None;
+
 		do
 		{
 			string const name = fd.name;
@@ -164,23 +154,17 @@ void CProjectLoader::LoadSoundBanks(string const& folderPath, bool const isLocal
 			{
 				if ((fd.attrib & _A_SUBDIR) == 0)
 				{
-					if ((name.find(".bnk") != string::npos) && (name.compareNoCase("Init.bnk") != 0))
+					if ((_stricmp(PathUtil::GetExt(name), "bnk") == 0) && (name.compareNoCase("Init.bnk") != 0))
 					{
-						string const fullname = folderPath + "/" + name;
-						ControlId const id = CryAudio::StringToId(fullname);
+						string const fullName = folderPath + "/" + name;
+						ControlId const id = CryAudio::StringToId(fullName);
 						CItem* const pItem = stl::find_in_map(m_itemCache, id, nullptr);
 
 						if (pItem == nullptr)
 						{
-							EItemFlags flags = EItemFlags::None;
 
-							if (isLocalized)
-							{
-								flags = EItemFlags::IsLocalized;
-							}
-
-							EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(fullname.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
-							auto const pSoundBank = new CItem(name, id, EItemType::SoundBank, flags, pakStatus, fullname);
+							EPakStatus const pakStatus = gEnv->pCryPak->IsFileExist(fullName.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
+							auto const pSoundBank = new CItem(name, id, EItemType::SoundBank, flags, pakStatus, fullName);
 
 							parent.AddChild(pSoundBank);
 							m_itemCache[id] = pSoundBank;
@@ -236,18 +220,18 @@ void CProjectLoader::LoadFolder(string const& folderPath, string const& folderNa
 //////////////////////////////////////////////////////////////////////////
 void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent, EPakStatus const pakStatus)
 {
-	XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + "/" + filePath);
+	XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(m_projectPath + "/" + filePath);
 
-	if (pRoot != nullptr)
+	if (rootNode.isValid())
 	{
-		uint32 const fileId = CryAudio::StringToId(pRoot->getAttr("ID"));
+		uint32 const fileId = CryAudio::StringToId(rootNode->getAttr("ID"));
 
 		if (m_filesLoaded.count(fileId) == 0)
 		{
 			// Make sure we've loaded any work units we depend on before loading
-			if (pRoot->haveAttr("RootDocumentID"))
+			if (rootNode->haveAttr("RootDocumentID"))
 			{
-				uint32 const parentDocumentId = CryAudio::StringToId(pRoot->getAttr("RootDocumentID"));
+				uint32 const parentDocumentId = CryAudio::StringToId(rootNode->getAttr("RootDocumentID"));
 
 				if (m_items.count(parentDocumentId) == 0)
 				{
@@ -266,11 +250,11 @@ void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent, EPa
 			}
 
 			// Each files starts with the type of item and then the WorkUnit
-			int const childCount = pRoot->getChildCount();
+			int const childCount = rootNode->getChildCount();
 
 			for (int i = 0; i < childCount; ++i)
 			{
-				LoadXml(pRoot->getChild(i)->findChild("WorkUnit"), parent, pakStatus);
+				LoadXml(rootNode->getChild(i)->findChild("WorkUnit"), parent, pakStatus);
 			}
 
 			m_filesLoaded.insert(fileId);
@@ -279,17 +263,17 @@ void CProjectLoader::LoadWorkUnitFile(const string& filePath, CItem& parent, EPa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadXml(XmlNodeRef const& rootNode, CItem& parent, EPakStatus const pakStatus)
 {
-	if (pRoot != nullptr)
+	if (rootNode.isValid())
 	{
 		CItem* pItem = &parent;
-		EItemType const type = TagToItemType(pRoot->getTag());
+		EItemType const type = TagToItemType(rootNode->getTag());
 
 		if (type != EItemType::None)
 		{
-			string const name = pRoot->getAttr("Name");
-			uint32 const itemId = CryAudio::StringToId(pRoot->getAttr("ID"));
+			string const name = rootNode->getAttr("Name");
+			uint32 const itemId = CryAudio::StringToId(rootNode->getAttr("ID"));
 
 			// Check if this item has not been created before. It could have been created in
 			// a different Work Unit as a reference
@@ -306,14 +290,14 @@ void CProjectLoader::LoadXml(XmlNodeRef const pRoot, CItem& parent, EPakStatus c
 			}
 		}
 
-		XmlNodeRef const pChildren = pRoot->findChild("ChildrenList");
+		XmlNodeRef const childNode = rootNode->findChild("ChildrenList");
 
-		if (pChildren != nullptr)
+		if (childNode.isValid())
 		{
-			int const childCount = pChildren->getChildCount();
+			int const childCount = childNode->getChildCount();
 			for (int i = 0; i < childCount; ++i)
 			{
-				LoadXml(pChildren->getChild(i), *pItem, pakStatus);
+				LoadXml(childNode->getChild(i), *pItem, pakStatus);
 			}
 		}
 	}
@@ -337,8 +321,8 @@ CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CIte
 		case EItemType::WorkUnit:
 			{
 				pItem = new CItem(name, id, type, EItemFlags::IsContainer, pakStatus, m_projectPath + fullPathName + ".wwu");
+				break;
 			}
-			break;
 		case EItemType::PhysicalFolder:
 			{
 				if (id != g_soundBanksFolderId)
@@ -349,25 +333,21 @@ CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CIte
 				{
 					pItem = new CItem(name, id, type, EItemFlags::IsContainer);
 				}
+
+				break;
 			}
-			break;
-		case EItemType::VirtualFolder:
-		case EItemType::SwitchGroup:
+		case EItemType::VirtualFolder: // Intentional fall-through.
+		case EItemType::SwitchGroup:   // Intentional fall-through.
 		case EItemType::StateGroup:
 			{
 				pItem = new CItem(name, id, type, EItemFlags::IsContainer, pakStatus);
+				break;
 			}
-			break;
 		default:
 			{
 				pItem = new CItem(name, id, type, EItemFlags::None, pakStatus);
-
-				if (type == EItemType::Event)
-				{
-					pItem->SetRadius(m_eventsInfoMap[CryAudio::StringToId(name.c_str())].maxRadius);
-				}
+				break;
 			}
-			break;
 		}
 
 		parent.AddChild(pItem);
@@ -375,57 +355,6 @@ CItem* CProjectLoader::CreateItem(const string& name, EItemType const type, CIte
 	}
 
 	return pItem;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadEventsMetadata(const string& soundbanksPath)
-{
-	m_eventsInfoMap.clear();
-	string path = soundbanksPath;
-	path += "/" + g_soundBanksInfoFileName;
-	XmlNodeRef const pRootNode = GetISystem()->LoadXmlFromFile(path.c_str());
-
-	if (pRootNode != nullptr)
-	{
-		XmlNodeRef const pSoundBanksNode = pRootNode->findChild("SoundBanks");
-
-		if (pSoundBanksNode != nullptr)
-		{
-			int const numSoundBankNodes = pSoundBanksNode->getChildCount();
-
-			for (int i = 0; i < numSoundBankNodes; ++i)
-			{
-				XmlNodeRef const pSoundBankNode = pSoundBanksNode->getChild(i);
-
-				if (pSoundBankNode != nullptr)
-				{
-					XmlNodeRef const pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
-
-					if (pIncludedEventsNode != nullptr)
-					{
-						int const numEventNodes = pIncludedEventsNode->getChildCount();
-
-						for (int j = 0; j < numEventNodes; ++j)
-						{
-							XmlNodeRef const pEventNode = pIncludedEventsNode->getChild(j);
-
-							if (pEventNode != nullptr)
-							{
-								SEventInfo info;
-
-								if (!pEventNode->getAttr("MaxAttenuation", info.maxRadius))
-								{
-									info.maxRadius = 0.0f;
-								}
-
-								m_eventsInfoMap[CryAudio::StringToId(pEventNode->getAttr("Name"))] = info;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -450,11 +379,11 @@ void CProjectLoader::BuildFileCache(string const& folderPath)
 				else
 				{
 					string const path = folderPath + "/" + name;
-					XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(m_projectPath + "/" + path);
+					XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(m_projectPath + "/" + path);
 
-					if (pRoot != nullptr)
+					if (rootNode.isValid())
 					{
-						m_filesCache[CryAudio::StringToId(pRoot->getAttr("ID"))] = path;
+						m_filesCache[CryAudio::StringToId(rootNode->getAttr("ID"))] = path;
 					}
 				}
 			}

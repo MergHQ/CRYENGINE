@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryNetwork/ISerialize.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
@@ -21,14 +22,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void   Initialize() final;
 	virtual void   ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final; // Need all events except pre physics update
+	virtual Cry::Entity::EventFlags GetEventMask() const final; // Need all events except pre physics update
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_FLOWGRAPH; }
-	virtual void         Release() final            { delete this; };
+	virtual void         Release() final            { delete this; }
 	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override final;
 	virtual void         GameSerialize(TSerialize ser) final;
 	virtual bool         NeedGameSerialize() final;
@@ -45,8 +46,6 @@ public:
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}
-private:
-	void OnMove();
 
 private:
 	IFlowGraph* m_pFlowGraph;

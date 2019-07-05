@@ -1,15 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __GameTokenDialog_h__
-#define __GameTokenDialog_h__
 #pragma once
 
 #include "BaseLibraryDialog.h"
-#include "Controls\SplitterCtrl.h"
-#include "Controls\TreeCtrlEx.h"
-#include "Controls\PropertyCtrl.h"
-#include "Controls\PreviewModelCtrl.h"
+
 #include "Controls/ListCtrlEx.h"
+#include "Controls/PreviewModelCtrl.h"
+#include "Controls/PropertyCtrl.h"
+#include "Controls/SplitterCtrl.h"
+#include "Controls/TreeCtrlEx.h"
 
 class CGameTokenItem;
 class CGameTokenManager;
@@ -21,7 +20,7 @@ public:
 
 public:
 	enum { IDD = IDD_DATABASE };
-	CGameTokenTreeContainerDialog() : CToolbarDialog(IDD) { m_pTreeCtrl = 0; };
+	CGameTokenTreeContainerDialog() : CToolbarDialog(IDD) { m_pTreeCtrl = 0; }
 
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -44,8 +43,12 @@ class CGameTokenDialog : public CBaseLibraryDialog
 	class CXTPTaskPanelSpecific : public CXTPTaskPanel
 	{
 	public:
-		CXTPTaskPanelSpecific() : CXTPTaskPanel(){};
-		~CXTPTaskPanelSpecific(){};
+		CXTPTaskPanelSpecific()
+			: CXTPTaskPanel()
+			, m_poMyOwner(nullptr)
+		{}
+
+		~CXTPTaskPanelSpecific(){}
 
 		BOOL              OnCommand(WPARAM wParam, LPARAM lParam);
 
@@ -65,7 +68,7 @@ public:
 	virtual UINT    GetDialogMenuID();
 
 	CGameTokenItem* GetSelectedGameToken();
-	void            SetSelectedGameToken(CGameTokenItem *item);
+	void            SetSelectedGameToken(CGameTokenItem* item);
 	void            UpdateSelectedItemInReport();
 
 protected:
@@ -95,7 +98,7 @@ protected:
 	afx_msg void    OnTokenLocalOnlyChange();
 
 	//////////////////////////////////////////////////////////////////////////
-	// Some functions can be overriden to modify standart functionality.
+	// Some functions can be overridden to modify standard functionality.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void InitToolbar(UINT nToolbarResID);
 	virtual void ReloadItems();
@@ -124,8 +127,6 @@ private:
 	CPropertyCtrl                 m_propsCtrl;
 	CImageList                    m_imageList;
 
-	CImageList*                   m_dragImage;
-
 	// Manager.
 	CGameTokenManager*    m_pGameTokenManager;
 
@@ -143,6 +144,3 @@ private:
 
 	bool                  m_bSkipUpdateItems;
 };
-
-#endif // __GameTokenDialog_h__
-

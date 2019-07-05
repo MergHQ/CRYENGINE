@@ -34,6 +34,10 @@ public:
 	//! Emitted when layer models have been created or destroyed
 	CCrySignal<void()> signalLayerModelsUpdated;
 
+	//signals sent when any of the CLevelLayerModels owned by this model are undergoing a reset
+	CCrySignal<void()> signalLayerModelResetBegin;
+	CCrySignal<void()> signalLayerModelResetEnd;
+
 private:
 	CLevelModelsManager();
 	~CLevelModelsManager();
@@ -46,19 +50,22 @@ private:
 
 	QAbstractItemModel* CreateLayerModelFromIndex(const QModelIndex& sourceIndex);
 
-	void OnBatchProcessStarted(const std::vector<CBaseObject*>& objects);
-	void OnBatchProcessFinished();
+	void                OnBatchProcessStarted(const std::vector<CBaseObject*>& objects);
+	void                OnBatchProcessFinished();
+	void                OnLayerUpdate(const CLayerChangeEvent& event);
+	void                DisconnectChildrenModels(CObjectLayer* pLayer);
 
-	void OnLayerUpdate(const CLayerChangeEvent& event);
-
-	void DisconnectChildrenModels(CObjectLayer* pLayer);
+	//Create a new CLevelLayerModel from this layer and register to its reset events
+	CLevelLayerModel* CreateLevelLayerModel(CObjectLayer* pLayer);
+	//Called when a CLevelLayerModel owned by this Model undergoes a reset event
+	void              OnLevelLayerModelResetBegin();
+	void              OnLevelLayerModelResetEnd();
 
 	std::unordered_map<CObjectLayer*, CLevelLayerModel*> m_layerModels;
-	std::vector<CLevelLayerModel*> m_layerModelsInvolvedInBatching;
-	CLevelModel* m_levelModel{ nullptr };
-	CMergingProxyModel* m_allObjectsModel{ nullptr };
+	std::vector<CLevelLayerModel*>                       m_layerModelsInvolvedInBatching;
+	CLevelModel*         m_levelModel{ nullptr };
+	CMergingProxyModel*  m_allObjectsModel{ nullptr };
 	CMountingProxyModel* m_fullLevelModel{ nullptr };
-	int m_batchProcessStackIndex{ 0 };
-	bool m_ignoreLayerNotify{ false };
+	int                  m_batchProcessStackIndex{ 0 };
+	bool                 m_ignoreLayerNotify{ false };
 };
-

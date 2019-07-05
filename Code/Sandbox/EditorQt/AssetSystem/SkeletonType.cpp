@@ -2,18 +2,19 @@
 
 #include "StdAfx.h"
 #include "SkeletonType.h"
+
+#include "PathUtils.h"
 #include "QT/Widgets/QPreviewWidget.h"
-#include "FilePathUtil.h"
-#include <ThreadingUtils.h>
+#include "IEditorImpl.h"
 
 #include <AssetSystem/AssetEditor.h>
-
 #include <ProxyModels/ItemModelAttribute.h>
+#include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CSkeletonType)
 
 // Detail attributes.
-CItemModelAttribute CSkeletonType::s_bonesCountAttribute("Bones count", eAttributeType_Int, CItemModelAttribute::StartHidden);
+CItemModelAttribute CSkeletonType::s_bonesCountAttribute("Bones count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 CAssetEditor* CSkeletonType::Edit(CAsset* asset) const
 {
@@ -71,5 +72,3 @@ void CSkeletonType::GenerateThumbnail(const CAsset* pAsset) const
 		pPreviewWidget->SavePreview(thumbnailFileName.c_str());
 	}).get();
 }
-
-

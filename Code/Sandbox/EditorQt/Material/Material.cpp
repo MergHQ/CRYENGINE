@@ -2,18 +2,26 @@
 
 #include "StdAfx.h"
 #include "Material.h"
+
+#include "BaseLibrary.h"
+#include "LogFile.h"
 #include "MaterialHelpers.h"
 #include "MaterialManager.h"
-#include "BaseLibrary.h"
-#include "AssetSystem/Asset.h"
 
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryCore/Containers/CryArray.h>
-#include <Cry3DEngine/CGF/CryHeaders.h>
-#include <CryAnimation/ICryAnimation.h>
+#include <AssetSystem/Asset.h>
 #include <ISourceControl.h>
+#include <IUndoObject.h>
+#include <PathUtils.h>
+#include <UsedResources.h>
+#include <Util/FileUtil.h>
+#include <Util/EditorUtils.h>
+
+#include <Cry3DEngine/CGF/CryHeaders.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryCore/Containers/CryArray.h>
 #include <CryRenderer/IShader.h>
-#include <FilePathUtil.h>
 
 
 SMaterialLayerResources::SMaterialLayerResources()
@@ -172,9 +180,9 @@ void CMaterial::RenameSubMaterial(CMaterial* pSubMaterial, const string& newName
 		}
 
 	protected:
-		virtual void Release() { delete this; };
+		virtual void Release() { delete this; }
 
-		virtual const char* GetDescription() { return "Rename Sub-Material"; };
+		virtual const char* GetDescription() { return "Rename Sub-Material"; }
 
 		virtual void        Undo(bool bUndo)
 		{
@@ -553,6 +561,8 @@ bool CMaterial::LoadShader()
 	{
 		UpdateMatInfo();
 	}
+
+	GetIEditorImpl()->GetRenderer()->FlushRTCommands(true, true, true);
 
 	GetIEditorImpl()->GetMaterialManager()->OnLoadShader(this);
 
@@ -1330,8 +1340,6 @@ bool CMaterial::IsBreakable2D() const
 	if ((GetFlags() & MTL_FLAG_NODRAW) != 0)
 		return false;
 
-	int result = 0;
-
 	const string& surfaceTypeName = GetSurfaceTypeName();
 	if (ISurfaceTypeManager* pSurfaceManager = GetIEditorImpl()->Get3DEngine()->GetMaterialManager()->GetSurfaceTypeManager())
 	{
@@ -1746,13 +1754,6 @@ bool CMaterial::Save(bool bSkipReadOnly)
 	CBaseLibraryItem::SerializeContext ctx(mtlNode, false);
 	Serialize(ctx);
 
-	//CMaterialManager *pMatMan = (CMaterialManager*)GetLibrary()->GetManager();
-	// get file name from material name.
-	//string filename = pMatMan->MaterialToFilename( GetName() );
-
-	//char path[ICryPak::g_nMaxPath];
-	//filename = gEnv->pCryPak->AdjustFileName( filename,path,0 );
-
 	if (XmlHelpers::SaveXmlNode(mtlNode, GetFilename(true)))
 	{
 		// If material successfully saved, clear modified flag.
@@ -1904,9 +1905,9 @@ public:
 	}
 
 protected:
-	virtual void Release() { delete this; };
+	virtual void Release() { delete this; }
 
-	virtual const char* GetDescription() { return m_undoDescription; };
+	virtual const char* GetDescription() { return m_undoDescription; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -1925,10 +1926,10 @@ protected:
 		}
 
 		CBaseLibraryItem::SerializeContext ctx(m_undo, true);
-		ctx.bUndo = bUndo;
+		ctx.bUndo = true;
 		pMaterial->Serialize(ctx);
 
-		if (m_bForceUpdate && bUndo)
+		if (m_bForceUpdate)
 		{
 			GetIEditorImpl()->GetMaterialManager()->OnUpdateProperties(pMaterial);
 		}
@@ -2101,4 +2102,3 @@ void CMaterial::SetHighlightFlags(int highlightFlags)
 
 	UpdateHighlighting();
 }
-

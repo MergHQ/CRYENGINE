@@ -17,7 +17,7 @@ class CAudioAreaAmbienceEntity final
 public:
 	// CDesignerEntityComponent
 	virtual void                  ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64                GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERNEARAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_MOVENEARAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_MOVEINSIDEAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVEAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVENEARAREA); }
+	virtual Cry::Entity::EventFlags GetEventMask() const override { return CDesignerEntityComponent::GetEventMask() | ENTITY_EVENT_ENTERNEARAREA | ENTITY_EVENT_MOVENEARAREA | ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_MOVEINSIDEAREA | ENTITY_EVENT_LEAVEAREA | ENTITY_EVENT_LEAVENEARAREA; }
 
 	virtual IEntityPropertyGroup* GetPropertyGroup() final      { return this; }
 

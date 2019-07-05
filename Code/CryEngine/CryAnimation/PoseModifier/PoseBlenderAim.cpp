@@ -113,7 +113,6 @@ bool CPoseBlenderAim::PrepareInternal(const SAnimationPoseModifierParams& params
 	if (nDirIKLayer < 1 || nDirIKLayer >= numVIRTUALLAYERS)
 		return false;
 	f32 fDirIKLayerWeight = pSkeletonAnim->m_layers[nDirIKLayer].m_transitionQueue.m_fLayerTransitionWeight;
-	f32 t0 = 1.0f - fDirIKLayerWeight;
 	f32 t1 = fDirIKLayerWeight;
 	for (uint32 i = 0; i < MAX_EXEC_QUEUE * 2; i++)
 	{
@@ -138,10 +137,10 @@ bool CPoseBlenderAim::PrepareInternal(const SAnimationPoseModifierParams& params
 	for (uint32 i = 0; i < numActiveAnims; i++)
 	{
 		int32 nAnimID = rCurLayer[i].GetAnimationId();
-		assert(rCurLayer[i].IsActivated());
+		CRY_ASSERT(rCurLayer[i].IsActivated());
 		const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(nAnimID);
-		assert(pAnim);
-		assert(pAnim->m_nGlobalAnimId > -1);
+		CRY_ASSERT(pAnim);
+		CRY_ASSERT(pAnim->m_nGlobalAnimId > -1);
 		if (pAnim->m_nAssetType == AIM_File)
 		{
 			GlobalAnimationHeaderAIM& rGAH = g_AnimationManager.m_arrGlobalAIM[pAnim->m_nGlobalAnimId];

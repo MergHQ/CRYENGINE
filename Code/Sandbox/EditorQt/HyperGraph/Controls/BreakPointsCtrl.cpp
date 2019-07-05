@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "BreakPointsCtrl.h"
+#include "IEditorImpl.h"
 
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
 
@@ -413,8 +414,6 @@ void CBreakpointsTreeCtrl::OnBreakpointInvalidated(const SBreakPoint& breakpoint
 
 			if (pPort)
 			{
-				CHyperFlowGraph* pFlowgraph = GetIEditorImpl()->GetFlowGraphManager()->FindGraph(pFlowGraph);
-				CFlowNode* pNode = pFlowgraph->FindFlowNode(breakpoint.addr.node);
 				SetItemText(hPortItem, pPort->GetHumanName());
 			}
 		}
@@ -594,4 +593,3 @@ void CBreakpointsTreeCtrl::EnableTracepoint(HTREEITEM hItem, bool enable)
 }
 
 #undef VALIDATE_DEBUGGER
-

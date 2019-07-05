@@ -5,12 +5,15 @@
 #include "EditorCommonAPI.h"
 #include "EditorFramework/StateSerializable.h"
 #include "QToolwindowManager/QToolWindowManager.h"
-#include <functional>
-#include <QWidget>
+
 #include <QVariantMap>
+#include <QWidget>
+
+#include <functional>
 #include <map>
 
 class CAbstractMenu;
+struct IPane;
 
 class EDITOR_COMMON_API CDockableContainer : public QWidget, public IStateSerializable
 {
@@ -21,15 +24,19 @@ class EDITOR_COMMON_API CDockableContainer : public QWidget, public IStateSerial
 		std::function<QWidget*()> m_factory;
 		bool                      m_isUnique;
 		bool                      m_isInternal;
-		FactoryInfo() {};
-		FactoryInfo(std::function<QWidget*()> factory, bool isUnique, bool isInternal);
+		FactoryInfo() {}
+		FactoryInfo(std::function<QWidget*()> factory, bool isUnique, bool isInternal)
+			: m_factory(factory), m_isUnique(isUnique), m_isInternal(isInternal)
+		{}
 	};
 	struct WidgetInstance
 	{
 		QWidget* m_widget;
 		QString  m_spawnName;
-		WidgetInstance() {};
-		WidgetInstance(QWidget* widget, QString spawnName);
+		WidgetInstance() {}
+		WidgetInstance(QWidget* widget, QString spawnName)
+			: m_widget(widget), m_spawnName(spawnName)
+		{}
 	};
 
 public:
@@ -55,6 +62,8 @@ public:
 	virtual QVariantMap GetState() const override;
 	virtual void        SetState(const QVariantMap& state) override;
 
+	std::vector<IPane*> GetPanes();
+
 	//! Spawn a widget of the named class and dock it at the specified location.
 	//! Single-instance widgets will not have their position changes, but will be brought to front.
 	QWidget* SpawnWidget(QString name, const QToolWindowAreaTarget& target);
@@ -77,12 +86,17 @@ signals:
 private:
 	typedef std::map<QString, FactoryInfo>    TNameMap;
 	typedef std::map<QString, WidgetInstance> TWidgetMap;
-	void showEvent(QShowEvent* event);
+
+	virtual void showEvent(QShowEvent* event) override;
+	virtual void paintEvent(QPaintEvent*) override;
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 
 	// Extra spawning functions; wraps internal functionality
 	QWidget* SpawnWidget(QString name, QString forceObjectName, const QToolWindowAreaTarget& target);
 	QWidget* SpawnWidget(QString name, QString forceObjectName, IToolWindowArea* area = nullptr, QToolWindowAreaReference reference = QToolWindowAreaReference::Combine, int index = -1, QRect geometry = QRect());
 	QWidget* Spawn(QString name, QString forceObjectName = QString());
+
+	void     CloseSpawnedWidgets();
 
 	// Called when a widget gets removed/destroyed.
 	void OnWidgetDestroyed(QObject* pObject);
@@ -93,12 +107,13 @@ private:
 	void    BuildWindowMenu();
 	// Resets the layout to the default.
 	void    ResetLayout();
+
 	TNameMap                                 m_registry;
 	TWidgetMap                               m_spawned;
 	QToolWindowManager*                      m_toolManager;
 	std::function<void(CDockableContainer*)> m_defaultLayoutCallback;
-	CAbstractMenu*							 m_pMenu;
+	CAbstractMenu*                           m_pMenu;
 	QMetaObject::Connection                  m_layoutChangedConnection;
 	QVariantMap                              m_startingLayout;
+	QPointer<QWidget>                        m_pOwner;
 };
-

@@ -53,20 +53,20 @@ void CC4::InitFireModes()
 	{
 		if (crygti_isof<CPlant>(m_firemodes[i]))
 		{
-			CRY_ASSERT_MESSAGE((m_plantFM == -1), "Multiple Plant firemodes assigned to weapon");
+			CRY_ASSERT((m_plantFM == -1), "Multiple Plant firemodes assigned to weapon");
 
 			m_plantFM = i;
 		}
 		else if (crygti_isof<CDetonate>(m_firemodes[i]))
 		{
-			CRY_ASSERT_MESSAGE((m_detonateFM == -1), "Multiple Detonate firemodes assigned to weapon");
+			CRY_ASSERT((m_detonateFM == -1), "Multiple Detonate firemodes assigned to weapon");
 
 			m_detonateFM = i;
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(m_detonateFM >= 0, "No Detonate firemode assigned to weapon");
-	CRY_ASSERT_MESSAGE(m_plantFM >= 0, "No Plant firemode assigned to weapon");
+	CRY_ASSERT(m_detonateFM >= 0, "No Detonate firemode assigned to weapon");
+	CRY_ASSERT(m_plantFM >= 0, "No Plant firemode assigned to weapon");
 
 	SetCurrentFireMode(m_plantFM);
 }
@@ -306,7 +306,6 @@ void CC4::OnEnterFirstPerson()
 
 	if (!m_pDetonatorArmedMaterial && m_weaponsharedparams->pC4Params)
 	{
-		IMaterialManager* pMatManager = gEnv->p3DEngine->GetMaterialManager();
 		IEntityClass* pClass = (m_accessories.empty() == false) ? m_accessories[0].pClass : NULL;
 
 		const SAccessoryParams* params = GetAccessoryParams(pClass);

@@ -49,8 +49,8 @@ bool CAnimationManager::SaveAIMImage(const char* name, FILETIME timeStamp, bool 
 		header->SaveToChunkFile(&chunkFile, bigEndianOutput);
 	}
 
-	SetFileAttributes( name,FILE_ATTRIBUTE_ARCHIVE );
-	chunkFile.Write( name );
+	FileUtil::MakeWritable(name);
+	chunkFile.Write(name);
 
 	FileUtil::SetFileTimes(name, timeStamp);
 	const __int64 fileSize = FileUtil::GetFileSize(name);
@@ -88,7 +88,6 @@ bool CAnimationManager::SaveCAFImage(const char* name, FILETIME timeStamp, bool 
 	}
 	std::sort(sortedHeaders.begin(), sortedHeaders.end(), &HeaderLessFuncCAF);
 
-	uint32 numGAH = m_arrGlobalAnimations.size();
 	for (size_t i = 0; i < numHeaders; ++i)
 	{
 		GlobalAnimationHeaderCAF* header = sortedHeaders[i];
@@ -100,9 +99,8 @@ bool CAnimationManager::SaveCAFImage(const char* name, FILETIME timeStamp, bool 
 		header->SaveToChunkFile(&chunkFile, bigEndianOutput);
 	}
 
-
-	SetFileAttributes( name,FILE_ATTRIBUTE_ARCHIVE );
-	chunkFile.Write( name );
+	FileUtil::MakeWritable(name);
+	chunkFile.Write(name);
 
 	FileUtil::SetFileTimes(name, timeStamp);
 	const __int64 fileSize = FileUtil::GetFileSize(name);
@@ -135,7 +133,7 @@ bool CAnimationManager::AddAIMHeaderOnly(const GlobalAnimationHeaderAIM& header)
 		newHeader.m_arrController[i].reset(); // release controllers
 	}
 
-	ThreadUtils::AutoLock lock(m_lockAIMs);
+	std::lock_guard<std::recursive_mutex> lock(m_lockAIMs);
 	if (HasAIM(header.m_FilePathCRC32))
 		return false;
 	m_arrGlobalAIM.push_back(header);
@@ -153,7 +151,7 @@ bool CAnimationManager::AddCAFHeaderOnly(const GlobalAnimationHeaderCAF& header)
 		return false;
 	}
 
-	ThreadUtils::AutoLock lock(m_lockCAFs);
+	std::lock_guard<std::recursive_mutex> lock(m_lockCAFs);
 	if (HasCAF(header.m_FilePathCRC32))
 	{
 		return false;

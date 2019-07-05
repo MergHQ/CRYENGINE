@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 #if defined(USE_GEOM_CACHES)
@@ -30,4 +27,3 @@ private:
 	virtual bool                IsKeyAnimLoopable(const uint index) const override;
 };
 #endif
-

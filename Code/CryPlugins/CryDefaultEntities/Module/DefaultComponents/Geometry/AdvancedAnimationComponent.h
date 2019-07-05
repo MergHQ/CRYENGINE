@@ -51,8 +51,12 @@ protected:
 	virtual void   Initialize() override;
 
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	// ~IEntityComponent
+
+	// IEditorEntityComponent
+	virtual bool SetMaterial(int slotId, const char* szMaterial) override;
+	// ~IEditorEntityComponent
 
 public:
 	struct SDefaultScopeSettings
@@ -82,8 +86,11 @@ public:
 		desc.SetIcon("icons:General/Mannequin.ico");
 		desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
 
+		desc.AddBase<IEditorEntityComponent>();
+
 		desc.AddMember(&CAdvancedAnimationComponent::m_type, 'type', "Type", "Type", "Determines the behavior of the static mesh", EMeshType::RenderAndCollider);
 		desc.AddMember(&CAdvancedAnimationComponent::m_characterFile, 'file', "Character", "Character", "Determines the character to load", "");
+		desc.AddMember(&CAdvancedAnimationComponent::m_materialPath, 'mat', "Material", "Material", "Specifies the override material for the selected object", "");
 		desc.AddMember(&CAdvancedAnimationComponent::m_renderParameters, 'rend', "Render", "Rendering Settings", "Settings for the rendered representation of the component", SRenderParameters());
 
 		desc.AddMember(&CAdvancedAnimationComponent::m_databasePath, 'dbpa', "DatabasePath", "Animation Database", "Path to the Mannequin .adb file", "");
@@ -150,7 +157,11 @@ public:
 	
 	virtual void QueueCustomFragment(IAction& action)
 	{
-		m_pActionController->Queue(action);
+		CRY_ASSERT(m_pActionController != nullptr);
+		if (m_pActionController != nullptr)
+		{
+			m_pActionController->Queue(action);
+		}
 	}
 
 	// TODO: Expose resource selector for tags
@@ -171,17 +182,33 @@ public:
 
 	TagID GetTagId(const char* szTagName) const
 	{
+		CRY_ASSERT(m_pControllerDefinition != nullptr);
+		if (m_pControllerDefinition == nullptr)
+		{
+			return TAG_ID_INVALID;
+		}
+
 		return m_pControllerDefinition->m_tags.Find(szTagName);
 	}
 
 	FragmentID GetFragmentId(const char* szFragmentName) const
 	{
+		CRY_ASSERT(m_pControllerDefinition != nullptr);
+		if (m_pControllerDefinition == nullptr)
+		{
+			return FRAGMENT_ID_INVALID;
+		}
+
 		return m_pControllerDefinition->m_fragmentIDs.Find(szFragmentName);
 	}
 
 	virtual void SetTagWithId(TagID id, bool bSet)
 	{
-		m_pAnimationContext->state.Set(id, bSet);
+		CRY_ASSERT(m_pAnimationContext != nullptr);
+		if (m_pAnimationContext != nullptr)
+		{
+			m_pAnimationContext->state.Set(id, bSet);
+		}
 	}
 
 	ICharacterInstance* GetCharacter() const { return m_pCachedCharacter; }
@@ -257,6 +284,15 @@ public:
 		}
 
 		m_pEntity->SetCharacter(m_pCachedCharacter, GetOrMakeEntitySlotId(), false);
+
+		if (!m_materialPath.value.empty())
+		{
+			if (IMaterial* pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialPath.value, false))
+			{
+				m_pEntity->SetSlotMaterial(GetEntitySlotId(), pMaterial);
+			}
+		}
+
 		SetAnimationDrivenMotion(m_bAnimationDrivenMotion);
 
 		if (m_pControllerDefinition != nullptr)
@@ -324,6 +360,7 @@ protected:
 
 	Schematyc::CharacterFileName              m_characterFile;
 	Schematyc::MannequinAnimationDatabasePath m_databasePath;
+	Schematyc::MaterialFileName               m_materialPath;
 
 	SDefaultScopeSettings                     m_defaultScopeSettings;
 

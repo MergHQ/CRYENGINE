@@ -1,7 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "Serialization/QPropertyTree2/IPropertyTreeWidget.h"
+#include "EditorCommonAPI.h"
+#include "Serialization/QPropertyTree/IPropertyTreeWidget.h"
+#include <CryMath/Cry_Math.h>
 
 #include <QWidget>
 
@@ -36,4 +38,3 @@ private:
 	bool          m_uniformScale;
 	bool          m_ignoreSignals;
 };
-

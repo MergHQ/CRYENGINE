@@ -24,14 +24,14 @@ bool CEntityContainerObject::ReloadExtension(IGameObject* pGameObject, const SEn
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CEntityContainerObject::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CEntityContainerObject::ReloadExtension not implemented");
 	return false;
 }
 
 
 bool CEntityContainerObject::GetEntityPoolSignature(TSerialize signature)
 {
-	CRY_ASSERT_MESSAGE(false, "CEntityContainerObject::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CEntityContainerObject::GetEntityPoolSignature not implemented");
 	return true;
 }
 
@@ -82,9 +82,9 @@ void CEntityContainerObject::ProcessEvent(const SEntityEvent& entityEvent)
 	}
 }
 
-uint64 CEntityContainerObject::GetEventMask() const
+Cry::Entity::EventFlags CEntityContainerObject::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
+	return ENTITY_EVENT_START_GAME | ENTITY_EVENT_RESET | ENTITY_EVENT_EDITOR_PROPERTY_CHANGED | ENTITY_EVENT_DONE;
 }
 
 bool CEntityContainerObject::ReadEditorProperties()

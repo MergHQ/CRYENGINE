@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TURRET__H__
-#define __TURRET__H__
+#pragma once
 
 #include <CryAISystem/IVisionMap.h>
 
@@ -14,13 +13,14 @@
 #include "GameRulesModules/IGameRulesKillListener.h"
 #include "AutoAimManager.h"
 #include "AI/AIAwarenessToPlayerHelper.h"
+#include <IGameObject.h>
 
-class IActionController;
-struct SAnimationContext;
+struct IActionController;
 struct HitInfo;
-class CLaserBeam;
+struct SAnimationContext;
 struct SLaserParams;
 
+class CLaserBeam;
 
 enum ETurretBehaviorState
 {
@@ -53,7 +53,7 @@ public:
 	virtual ~CTurret();
 
 	// IEntityEvent
-	virtual uint64 GetEventMask() const { return ~(0); } // All events
+	virtual Cry::Entity::EventFlags GetEventMask() const { return Cry::Entity::EventFlags(static_cast<Cry::Entity::EEvent>(~0)); }
 	virtual	void ProcessEvent( const SEntityEvent &event );
 	// ~IEntityEvent
 
@@ -372,5 +372,3 @@ private:
 
 	DECLARE_STATE_MACHINE( CTurret, Behaviour );
 };
-
-#endif

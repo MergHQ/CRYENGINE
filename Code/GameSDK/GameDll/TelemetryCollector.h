@@ -28,6 +28,7 @@ History:
 #include <CryNetwork/INetwork.h>
 #include "DownloadMgr.h"
 #include <CryCore/Containers/CryFixedArray.h>
+#include <CryCore/Platform/IPlatformOS.h>
 #include <queue>
 
 #ifdef ENABLE_PROFILING_CODE
@@ -73,8 +74,8 @@ class CTelemetryCollector : public ITelemetryCollector, public ILevelSystemListe
 		string					m_curSessionId;
 		string					m_websafeClientName;
 #ifdef ENABLE_PROFILING_CODE
-		CryFixedStringT<512>	m_telemetryRecordingPath;
-		CryFixedStringT<512> m_telemetryMemoryLogPath;
+		CryPathString	        m_telemetryRecordingPath;
+		CryPathString           m_telemetryMemoryLogPath;
 #endif
 
 		CryMutex			m_largeFileMutex;
@@ -109,7 +110,7 @@ class CTelemetryCollector : public ITelemetryCollector, public ILevelSystemListe
 	public:
 		struct SLargeFileSubmitData
 		{
-			char m_remoteFileName[ICryPak::g_nMaxPath];			// remote filename to submit to
+			char m_remoteFileName[MAX_PATH];			// remote filename to submit to
 			char m_chunkData[k_largeFileSubmitChunkSize];		// current chunk data being submitted
 			char m_postHeaderContents[k_maxHttpHeaderSize];		// post header contents - we'll need to patch for each chunk send. 
 			int m_postHeaderSize;															// post header size
@@ -310,13 +311,8 @@ class CTelemetryCollector : public ITelemetryCollector, public ILevelSystemListe
 		virtual void	GetMemoryUsage(ICrySizer* pSizer) const;
 
 		// ILevelSystemListener
-		virtual void OnLevelNotFound(const char* levelName) {}
-		virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) {}
-		virtual void OnLoadingStart(ILevelInfo* pLevel);
+		virtual bool OnLoadingStart(ILevelInfo* pLevel);
 		virtual void OnLoadingComplete(ILevelInfo* pLevel);
-		virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) {}
-		virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) {}
-		virtual void OnUnloadComplete(ILevelInfo* pLevel) {}
 		//~ILevelSystemListener
 };
 
@@ -514,7 +510,7 @@ class CTelemetryStrProducer : public CTelemetryMemBufferProducer
 																				// the m_payload str, but the CryStringT constructor for m_payload will use the same ptr. if it duplicated
 																				// the str contents to a new ptr, or did anything else to its internal ptr, then the ptr used for the
 																				// CTelemetryMemBufferProducer would be the wrong one
-																				CRY_ASSERT_MESSAGE(inCopyMe.c_str()==m_payload.c_str(),"CTelemetryStrProducer ptr mismatch - likely to corrupt data");
+																				CRY_ASSERT(inCopyMe.c_str()==m_payload.c_str(),"CTelemetryStrProducer ptr mismatch - likely to corrupt data");
 																			}
 };
 

@@ -6,7 +6,7 @@
 
 namespace Designer
 {
-class Model;
+
 class ModelCompiler;
 class DesignerObject;
 
@@ -16,7 +16,7 @@ bool UpdateStatObj(CBaseObject* pObj);
 bool UpdateGameResource(CBaseObject* pObj);
 bool GetIStatObj(CBaseObject* pObj, _smart_ptr<IStatObj>* pOutStatObj);
 bool GenerateGameFilename(CBaseObject* pObj, string& outFileName);
-bool GetRenderFlag(CBaseObject* pObj, int& outRenderFlag);
+bool GetRenderFlag(CBaseObject* pObj, uint64& outRenderFlag);
 bool GetCompiler(CBaseObject* pObj, ModelCompiler*& pCompiler);
 bool GetModel(CBaseObject* pObj, Model*& pModel);
 bool HitTest(const BrushRay& ray, MainContext& mc, HitContext& hc);
@@ -63,5 +63,4 @@ void                         MakeRectangle(const BrushPlane& plane, const BrushV
 void                         ConvertMeshFacesToFaces(const std::vector<Vertex>& vertices, std::vector<SMeshFace>& meshFaces, std::vector<std::vector<Vec3>>& outFaces);
 void                         MergeTwoObjects(const MainContext& mc0, const MainContext& mc1);
 int                          AddVertex(std::vector<Vertex>& vertices, const Vertex& newVertex);
-};
-
+}

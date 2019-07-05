@@ -20,11 +20,12 @@
 
 #include "StdAfx.h"
 #include "NetMsgDispatcher.h"
-#include <CryRenderer/IRenderer.h> // for debug render
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "GameClientChannel.h"
 #include "GameClientNub.h"
 #include "GameServerChannel.h"
 #include "GameServerNub.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 // ------------------------------------------------------------------------
 // Local CVARS
@@ -116,7 +117,7 @@ void CNetMessageDistpatcher::SendMessage(const SNetMsgData& msg)
 {
 	uint32 cntDispatchedMsgs = 0;
 
-	CRY_ASSERT_MESSAGE(msg.tgt != SNetMsgData::eT_Invalid, "Invalid message target");
+	CRY_ASSERT(msg.tgt != SNetMsgData::eT_Invalid, "Invalid message target");
 
 	// Create network message
 	INetSendablePtr netMsg = new CSimpleNetMessage<SNetMsgData>(msg, CNetMessageDistpatcher::OnIncomingMessage);
@@ -219,8 +220,12 @@ void CNetMessageDistpatcher::DispatchQueuedMessagesToLocalListeners()
 // ------------------------------------------------------------------------
 void CNetMessageDistpatcher::RegisterListener(INetMsgListener* pListener, const char* name)
 {
+#if !defined(_RELEASE)
 	const bool ok = m_listeners.Add(pListener, name);
 	NET_MSG_DISPATCHER_LOG("[RegisterListener]: %s Registering listener %s [total:%" PRISIZE_T "] - %s", DbgTranslateLocationToString(), name ? name : "[unnamed]", m_listeners.ValidListenerCount(), ok ? "OK" : "ALREADY REGISTERED");
+#else
+	m_listeners.Add(pListener, name);
+#endif
 }
 
 // ------------------------------------------------------------------------

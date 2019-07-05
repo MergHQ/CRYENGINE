@@ -9,6 +9,7 @@ History:
 *************************************************************************/
 
 #include "StdAfx.h"
+#include <CryFont/IFont.h>
 #include "PlayerInput.h"
 #include "Player.h"
 #include "PlayerStateEvents.h"
@@ -30,7 +31,7 @@ History:
 #include "GameRulesModules/IGameRulesSpectatorModule.h"
 
 #include "Utility/CryWatch.h"
-#include "UI/HUD//HUDEventWrapper.h"
+#include "UI/HUD/HUDEventWrapper.h"
 
 #include <IWorldQuery.h>
 #include <IInteractor.h>
@@ -300,7 +301,7 @@ void CPlayerInput::OnAction( const ActionId& actionId, int activationMode, float
 	bool handled = false;
 
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "New Action Processing");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "New Action Processing");
 
 		handled = m_actionHandler.Dispatch(this, m_pPlayer->GetEntityId(), actionId, activationMode, value, filterOut);
 	}
@@ -308,7 +309,7 @@ void CPlayerInput::OnAction( const ActionId& actionId, int activationMode, float
 	//------------------------------------
 
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "Regular Action Processing");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "Regular Action Processing");
 		bool inKillCam = g_pGame->GetRecordingSystem() && (g_pGame->GetRecordingSystem()->IsPlayingBack() || g_pGame->GetRecordingSystem()->IsPlaybackQueued());
 		if (!handled)
 		{
@@ -532,8 +533,6 @@ void CPlayerInput::DrawDebugInfo()
 	// pUIDraw->DrawCircleHollow(fX, fY, fRadius, 1.0f, whiteColor.pack_argb8888());
 
 	// Print explanatory text
-	IFFont* pFont = gEnv->pCryFont->GetFont("default");
-
 	string sMsg;
 	sMsg.Format("Raw input: (%f, %f)", m_xi_deltaRotationRaw.z, m_xi_deltaRotationRaw.x);
 	IRenderAuxText::Draw2dLabel( fX - fRadius, fY + fRadius + fSize, fSize, Col_Green, false, "%s", sMsg.c_str());
@@ -834,7 +833,6 @@ void CPlayerInput::HandleMovingDetachedCamera(const Ang3 &deltaRotation, const V
 
 		SFreeCamPointData *camData = NULL;
 		SFreeCamPointData *lastCamData = NULL;
-		float totalDistance = 0.f;
 		Vec3 diff;
 
 		for (int num=0; num < MAX_FREE_CAM_DATA_POINTS; ++num)
@@ -1464,7 +1462,7 @@ void CPlayerInput::AddInputCancelHandler (IPlayerInputCancelHandler * handler, E
 	assert (slot >= 0 && slot < kCHS_num);
 
 #ifndef _RELEASE
-	CRY_ASSERT_TRACE (m_inputCancelHandler[slot] == NULL, ("%s already has an input cancel handler \"%s\" installed in slot %d - can't add \"%s\" too", m_pPlayer->GetEntity()->GetEntityTextDescription().c_str(), m_inputCancelHandler[slot]->DbgGetCancelHandlerName().c_str(), slot, handler->DbgGetCancelHandlerName().c_str()));
+	CRY_ASSERT (m_inputCancelHandler[slot] == NULL, ("%s already has an input cancel handler \"%s\" installed in slot %d - can't add \"%s\" too", m_pPlayer->GetEntity()->GetEntityTextDescription().c_str(), m_inputCancelHandler[slot]->DbgGetCancelHandlerName().c_str(), slot, handler->DbgGetCancelHandlerName().c_str()));
 #endif
 
 	m_inputCancelHandler[slot] = handler;
@@ -2526,9 +2524,6 @@ bool CPlayerInput::OnActionQuickGrenadeThrow( EntityId entityId, const ActionId&
 		return false;
 	}
 
-	bool suitVisorOn = false;
-	bool allowSwitch = true;
-	const float currentTime = gEnv->pTimer->GetCurrTime();
 	bool inKillCam = g_pGame->GetRecordingSystem() && (g_pGame->GetRecordingSystem()->IsPlayingBack() || g_pGame->GetRecordingSystem()->IsPlaybackQueued());
 	IVehicle* pVehicle = m_pPlayer->GetLinkedVehicle();
 
@@ -2872,7 +2867,6 @@ void CAIInput::GetState( SSerializedPlayerInput& input )
 	SMovementState movementState;
 	m_pPlayer->GetMovementController()->GetMovementState( movementState );
 
-	Quat worldRot = m_pPlayer->GetBaseQuat();
 	input.stance = movementState.stance;
 	input.bodystate = 0;
 

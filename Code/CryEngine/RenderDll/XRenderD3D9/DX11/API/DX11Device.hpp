@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -10,20 +10,23 @@ class CDevice : public CRefCounted
 {
 public:
 	static CDevice*                  Create(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL* pFeatureLevel);
-	static CDevice*                  Create(ID3D11Device* device, D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_9_1);
+	static CDevice*                  Create(D3DDevice* device, D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_9_1);
 
-	ILINE ID3D11Device*              GetD3D11Device() const        { return /*PassAddRef*/ (m_pDevice); }
+	ILINE D3DDevice*                 GetD3D11Device() const                 { return /*PassAddRef*/ (m_pD3DDevice); }
+	ILINE D3DDeviceContext*          GetD3D11ImmediateDeviceContext() const { return /*PassAddRef*/ (m_pD3DImmediateDeviceContext); }
 
 protected:
-	CDevice(ID3D11Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel);
+	CDevice(D3DDevice* d3dDevice, D3DDeviceContext* d3dDeviceContext, D3D_FEATURE_LEVEL featureLevel);
 	~CDevice();
 
 private:
-	DX11_PTR(ID3D11Device) m_pDevice;
+	DX11_PTR(D3DDevice)        m_pD3DDevice;
+	DX11_PTR(D3DDeviceContext) m_pD3DImmediateDeviceContext;
+	
 	D3D_FEATURE_LEVEL      m_featureLevel;
 
 public:
-	HRESULT                     CheckFeatureSupport(D3D11_FEATURE Feature, void *pFeatureSupportData, UINT FeatureSupportDataSize) { m_pDevice->CheckFeatureSupport(Feature, pFeatureSupportData, FeatureSupportDataSize); }
+	HRESULT                     CheckFeatureSupport(D3D11_FEATURE Feature, void *pFeatureSupportData, UINT FeatureSupportDataSize) { return m_pD3DDevice->CheckFeatureSupport(Feature, pFeatureSupportData, FeatureSupportDataSize); }
 	D3D_FEATURE_LEVEL           GetFeatureLevel() const { return m_featureLevel; }
 
 	CCommandScheduler&          GetScheduler() { return m_Scheduler; }
@@ -31,10 +34,15 @@ public:
 
 	HRESULT STDMETHODCALLTYPE DuplicateCommittedResource(
 		_In_ ID3D11Resource* pInputResource,
-		_Out_ ID3D11Resource** ppOutputResource) threadsafe;
+		_Out_ ID3D11Resource** ppOutputResource
+#if DURANGO_USE_ESRAM
+		,_In_ int32 nESRAMOffset = ~0,
+		_In_ int32 nESRAMSize = 0
+#endif
+	) threadsafe;
 
 	HRESULT STDMETHODCALLTYPE SubstituteUsedCommittedResource(
-		_In_ const FVAL64 (&fenceValues)[CMDQUEUE_NUM],
+		_In_ const FVAL64& fenceValue,
 		_Inout_ ID3D11Resource** ppSubstituteResource) threadsafe;
 
 	HRESULT STDMETHODCALLTYPE CreateOrReuseStagingResource(
@@ -56,8 +64,8 @@ public:
 		_In_ REFIID riidResource,
 		_COM_Outptr_opt_ void** ppvResource) threadsafe;
 
-	void FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe;
-	void ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Resource* pObject, bool bReusable = true) threadsafe;
+	void FlushReleaseHeap(UINT64 completedFenceValue, UINT64 pruneFenceValue) threadsafe;
+	void ReleaseLater(const FVAL64& fenceValue, ID3D11Resource* pObject, bool bReusable = true) threadsafe;
 
 	void FlushAndWaitForGPU();
 

@@ -3,12 +3,14 @@
 #include "StdAfx.h"
 #include "MovementBlock_UseSmartObject.h"
 #include "MovementActor.h"
-#include <CryAISystem/MovementUpdateContext.h>
 #include "MovementHelpers.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-#include "Navigation/MNM/OffGridLinks.h"
 #include "PipeUser.h"
 #include "AIBubblesSystem/AIBubblesSystem.h"
+
+#include "SmartObjectOffMeshNavigation.h"
+
+#include <CryAISystem/MovementUpdateContext.h>
 
 namespace Movement
 {
@@ -44,9 +46,9 @@ Movement::Block::Status UseSmartObject::Update(const MovementUpdateContext& cont
 	return baseStatus;
 }
 
-void UseSmartObject::SetUpcomingPath(const CNavPath& upcomingPath)
+void UseSmartObject::SetUpcomingPath(const INavPath& upcomingPath)
 {
-	m_upcomingPath = upcomingPath;
+	upcomingPath.CopyTo(&m_upcomingPath);
 }
 
 void UseSmartObject::SetUpcomingStyle(const MovementStyle& upcomingStyle)
@@ -61,7 +63,7 @@ void UseSmartObject::OnTraverseStarted(const MovementUpdateContext& context)
 
 UseExactPositioningBase::TryRequestingExactPositioningResult UseSmartObject::TryRequestingExactPositioning(const MovementUpdateContext& context)
 {
-	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
+	MNM::IOffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
 	OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 	if (pSOLink)
@@ -74,7 +76,7 @@ UseExactPositioningBase::TryRequestingExactPositioningResult UseSmartObject::Try
 			// Smart object is busy so stop movement and wait for your turn
 			context.actor.GetAdapter().ClearMovementState();
 
-			m_timeSpentWaitingForSmartObjectToBecomeFree += gEnv->pTimer->GetFrameTime();
+			m_timeSpentWaitingForSmartObjectToBecomeFree += context.updateTime;
 			if (m_timeSpentWaitingForSmartObjectToBecomeFree > 10.0f)
 			{
 				const EntityId actorEntityId = context.actor.GetEntityId();
@@ -172,7 +174,7 @@ void UseSmartObject::HandleExactPositioningError(const MovementUpdateContext& co
 
 Vec3 UseSmartObject::GetSmartObjectEndPosition() const
 {
-	MNM::OffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetOffMeshNavigationManager()->GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
+	MNM::IOffMeshLink* pOffMeshLink = gAIEnv.pNavigationSystem->GetIOffMeshNavigationManager().GetOffMeshLink(m_smartObjectMNMData.offMeshLinkID);
 	OffMeshLink_SmartObject* pSOLink = pOffMeshLink ? pOffMeshLink->CastTo<OffMeshLink_SmartObject>() : NULL;
 
 	assert(pSOLink);

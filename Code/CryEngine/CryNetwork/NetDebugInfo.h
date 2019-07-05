@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __NETDEBUGINFO_H__
-#define __NETDEBUGINFO_H__
-
 #pragma once
 
 #include "Config.h"
@@ -204,5 +201,3 @@ private:
 };
 
 #endif // ENABLE_NET_DEBUG_INFO
-
-#endif

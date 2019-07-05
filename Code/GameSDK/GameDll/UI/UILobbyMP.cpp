@@ -13,8 +13,9 @@
 #include "UILobbyMP.h"
 
 #include <CryGame/IGameFramework.h>
-#include "Game.h"
 #include "Actor.h"
+#include "Game.h"
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Network/Lobby/GameLobby.h"
 #include "Network/Lobby/GameBrowser.h"
@@ -42,8 +43,6 @@ void CUILobbyMP::InitEventSystem()
 {
 	if (!gEnv->pFlashUI)
 		return;
-
-	ICVar* pServerVar = gEnv->pConsole->GetCVar("cl_serveraddr");
 
 	// events to send from this class to UI flowgraphs
 	m_pUIFunctions = gEnv->pFlashUI->CreateEventSystem("LobbyMP", IUIEventSystem::eEST_SYSTEM_TO_UI);
@@ -424,13 +423,10 @@ void CUILobbyMP::LeaveGame()
 ////////////////////////////////////////////////////////////////////////////
 void CUILobbyMP::MatchmakingSessionSearchCallback(CryLobbyTaskID taskID, ECryLobbyError error, SCrySessionSearchResult* session, void* arg)
 {
-	int breakhere = 0;
 	if (error == eCLE_SuccessContinue || error == eCLE_Success)
 	{
 		if(session)
 		{
-			CGameBrowser *pGameBrowser = g_pGame->GetGameBrowser();
-			CGameLobby *pGameLobby = g_pGame->GetGameLobby();
 			pUILObbyMP->ServerFound(*session, session->m_data.m_name);
 		}
 	}
@@ -455,7 +451,7 @@ void CUILobbyMP::AwardTrophy(int trophy)
 		//achievements are only for online lobbies
 		if(pLobby && pLobby->GetLobbyService(eCLS_Online) && pLobby->GetLobbyService(eCLS_Online)->GetReward())
 		{
-			ECryRewardError error = pLobby->GetLobbyService(eCLS_Online)->GetReward()->Award(user, achievementId, NULL, NULL, NULL);
+			pLobby->GetLobbyService(eCLS_Online)->GetReward()->Award(user, achievementId, NULL, NULL, NULL);
 		}
 	}
 }
@@ -510,7 +506,6 @@ void CUILobbyMP::GetFriendsCB(CryLobbyTaskID taskID, ECryLobbyError error, SFrie
 {
 	if(error == eCLE_Success)
 	{
-		ICryFriends* pFriends = gEnv->pNetwork->GetLobby()->GetFriends();
 		int containerIdx = (int)((TRUNCATE_PTR)pArg);
 
 		IFlowSystemContainerPtr pContainer = gEnv->pFlowSystem->GetContainer(containerIdx);
@@ -549,9 +544,13 @@ void CUILobbyMP::InviteFriends(int containerIdx, int friendIdx)
 		pContainer->GetItem(friendIdx).GetValueWithConversion(userId);
 
 	CrySessionHandle handle = g_pGame->GetGameLobby()->GetCurrentSessionHandle();
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 	ECryLobbyError error = pFriends->FriendsSendGameInvite(user, handle, &(m_FriendsMap[containerIdx][friendIdx]), 1, NULL, CUILobbyMP::InviteFriendsCB, NULL);
-	
 	CryLog("UILobbyMP: Sending friend invite to: %s, error: %d", userId.c_str(), error);
+#else
+	pFriends->FriendsSendGameInvite(user, handle, &(m_FriendsMap[containerIdx][friendIdx]), 1, NULL, CUILobbyMP::InviteFriendsCB, NULL);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////

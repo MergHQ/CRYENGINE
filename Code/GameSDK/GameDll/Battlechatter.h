@@ -82,6 +82,7 @@ AUTOENUM_BUILDENUMWITHTYPE_WITHINVALID_WITHNUM(EBattlechatter, BATTLECHATTER_LIS
 class CActor;
 class CActorManager;
 struct SActorData;
+struct IActor;
 
 class CBattlechatter: public IGameRulesKillListener, public IGameRulesTeamChangedListener
 {

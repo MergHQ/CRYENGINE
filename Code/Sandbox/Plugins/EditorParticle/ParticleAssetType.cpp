@@ -2,10 +2,12 @@
 #include <StdAfx.h>
 #include "ParticleAssetType.h"
 
-#include <AssetSystem/Loader/AssetLoaderHelpers.h>
+#include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/EditableAsset.h>
+#include <AssetSystem/Loader/AssetLoaderHelpers.h>
+#include <AssetSystem/MaterialType.h>
 #include <FileDialogs/EngineFileDialog.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 #include <CryParticleSystem/IParticlesPfx2.h>
 
@@ -21,6 +23,10 @@
 
 REGISTER_ASSET_TYPE(CParticlesType)
 
+// Detail attributes.
+CItemModelAttribute CParticlesType::s_componentsCountAttribute("Components count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CParticlesType::s_featuresCountAttribute("Features count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+
 namespace Private_ParticleAssetType
 {
 
@@ -34,7 +40,7 @@ static string ShowSaveDialog()
 	return QtUtil::ToString(filePath);
 }
 
-static bool MakeNewComponent(pfx2::IParticleEffectPfx2* pEffect)
+static bool MakeNewComponent(pfx2::IParticleEffect* pEffect)
 {
 	pfx2::IParticleComponent* const pComp = pEffect->AddComponent();
 	if (!pComp)
@@ -68,19 +74,31 @@ static string CreateAssetMetaData(const string& pfxFilePath)
 
 } // namespace Private_ParticleAssetType
 
-struct CParticlesType::SCreateParams
-{
-	bool bUseExistingEffect;
-
-	SCreateParams()
-		: bUseExistingEffect(false)
-	{
-	}
-};
-
 CryIcon CParticlesType::GetIconInternal() const
 {
 	return CryIcon("icons:common/assets_particles.ico");
+}
+
+std::vector<CItemModelAttribute*> CParticlesType::GetDetails() const
+{
+	return
+	{
+		&s_componentsCountAttribute,
+		&s_featuresCountAttribute
+	};
+}
+
+QVariant CParticlesType::GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const
+{
+	if (pDetail == &s_componentsCountAttribute)
+	{
+		return GetVariantFromDetail(pAsset->GetDetailValue("componentsCount"), pDetail);
+	}
+	else if (pDetail == &s_featuresCountAttribute)
+	{
+		return GetVariantFromDetail(pAsset->GetDetailValue("featuresCount"), pDetail);
+	}
+	return QVariant();
 }
 
 CAssetEditor* CParticlesType::Edit(CAsset* asset) const
@@ -90,18 +108,17 @@ CAssetEditor* CParticlesType::Edit(CAsset* asset) const
 
 bool CParticlesType::CreateForExistingEffect(const char* szFilePath) const
 {
-	SCreateParams params;
+	SParticlesCreateParams params;
 	params.bUseExistingEffect = true;
 	return Create(szFilePath, &params);
 }
 
-bool CParticlesType::OnCreate(CEditableAsset& editAsset, const void* pCreateParams) const
+bool CParticlesType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	using namespace Private_ParticleAssetType;
 
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
-
-	const string pfxFilePath = basePath + ".pfx";
+	const string pfxFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+	CRY_ASSERT(stricmp(PathUtil::GetExt(pfxFilePath.c_str()), GetFileExtension()) == 0);
 
 	std::shared_ptr<pfx2::IParticleSystem> pParticleSystem = pfx2::GetIParticleSystem();
 	if (!pParticleSystem)
@@ -109,13 +126,14 @@ bool CParticlesType::OnCreate(CEditableAsset& editAsset, const void* pCreatePara
 		return false;
 	}
 
-	const bool bCreatePfxFile = !(pCreateParams && ((SCreateParams*)pCreateParams)->bUseExistingEffect);
+	const bool bCreatePfxFile = !(pCreateParams && ((SParticlesCreateParams*)pCreateParams)->bUseExistingEffect);
 
 	if (bCreatePfxFile)
 	{
 		pfx2::PParticleEffect pEffect = pParticleSystem->CreateEffect();
 		pParticleSystem->RenameEffect(pEffect, pfxFilePath.c_str());
 		MakeNewComponent(pEffect.get());
+		pEffect->Update();
 
 		if (!Serialization::SaveJsonFile(pfxFilePath.c_str(), *pEffect))
 		{
@@ -123,8 +141,7 @@ bool CParticlesType::OnCreate(CEditableAsset& editAsset, const void* pCreatePara
 		}
 	}
 
-	editAsset.SetFiles("", { pfxFilePath });
+	asset.AddFile(pfxFilePath.c_str());
 
 	return true;
 }
-

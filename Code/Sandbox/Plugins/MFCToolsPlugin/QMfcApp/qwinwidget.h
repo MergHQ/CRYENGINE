@@ -38,17 +38,15 @@
 **
 ****************************************************************************/
 
-// Declaration of the QWinWidget classes
-
-#ifndef QWINWIDGET_H
-#define QWINWIDGET_H
+#pragma once
 
 #include <QWidget>
 #include "qmfcapp.h"
+#include "MFCToolsDefines.h"
 
 class CWnd;
 
-class PLUGIN_API QWinWidget : public QWidget
+class MFC_TOOLS_PLUGIN_API QWinWidget : public QWidget
 {
 public:
 	QWinWidget(HWND hParentWnd, QObject* parent = 0, Qt::WindowFlags f = 0);
@@ -69,11 +67,7 @@ protected:
 
 	bool focusNextPrevChild(bool next);
 	void focusInEvent(QFocusEvent* e);
-#if QT_VERSION >= 0x050000
 	bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-#else
-	bool winEvent(MSG* msg, long* result);
-#endif
 
 private:
 	void init();
@@ -85,6 +79,3 @@ private:
 	HWND prevFocus;
 	bool reenable_parent;
 };
-
-#endif // QWINWIDGET_H
-

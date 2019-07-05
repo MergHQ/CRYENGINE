@@ -19,10 +19,14 @@ class CFolderSelectorDialog final : public CEditorDialog
 
 public:
 
-	explicit CFolderSelectorDialog(QString const& assetFolderPath, QString const& targetPath, QWidget* const pParent);
-	virtual ~CFolderSelectorDialog() override;
-
 	CFolderSelectorDialog() = delete;
+	CFolderSelectorDialog(CFolderSelectorDialog const&) = delete;
+	CFolderSelectorDialog(CFolderSelectorDialog&&) = delete;
+	CFolderSelectorDialog& operator=(CFolderSelectorDialog const&) = delete;
+	CFolderSelectorDialog& operator=(CFolderSelectorDialog&&) = delete;
+
+	explicit CFolderSelectorDialog(QString const& assetFolderPath, QString const& targetPath, QWidget* pParent);
+	virtual ~CFolderSelectorDialog() override;
 
 signals:
 
@@ -44,5 +48,6 @@ private:
 	CTreeView* const                  m_pTreeView;
 	QString const                     m_assetFolderPath;
 	QString                           m_targetPath;
+	QString                           m_targetFolder;
 };
 } // namespace ACE

@@ -14,8 +14,10 @@ History:
 #include "StdAfx.h"
 #include "EntityEffects.h"
 
+#include <CryMath/Cry_Geo.h> // required by ParticleParams.h
+#include <CryRenderer/IRenderer.h> // required by ParticleParams.h
 #include <CryParticleSystem/ParticleParams.h>
-#include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
 
 IParticleEmitter* EntityEffects::SpawnParticleFX( const char* effectName, const EntityEffects::SEffectSpawnParams& spawnParams, const char* requester /*= NULL*/)
 {
@@ -118,8 +120,8 @@ namespace EntityEffects
 
 	void CEffectsController::InitWithEntity(IEntity *pEntity)
 	{
-		CRY_ASSERT_MESSAGE(pEntity, "Init Effect controller with NULL entity, this will crash!");
-		CRY_ASSERT_MESSAGE((m_pOwnerEntity == NULL), "Effect controller had already an entity assigned");
+		CRY_ASSERT(pEntity, "Init Effect controller with NULL entity, this will crash!");
+		CRY_ASSERT((m_pOwnerEntity == NULL), "Effect controller had already an entity assigned");
 
 		m_pOwnerEntity = pEntity;
 	}

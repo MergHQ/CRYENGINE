@@ -18,6 +18,7 @@
 #include "CryActionCVars.h"
 #include "IAnimatedCharacter.h"
 #include <CryGame/IGameFramework.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 const static char* COOP_ANIM_NAME = "CoopAnimation";
 const static int MY_ANIM = 54545;
@@ -119,8 +120,7 @@ bool CCooperativeAnimation::AreActorsValid() const
 		return false;
 
 	TCharacterParams::const_iterator itEnd = m_paramsList.end();
-	TCharacterParams::const_iterator it = std::find_if(m_paramsList.begin(), itEnd,
-	                                                   std::not1(std::mem_fun_ref(&SCharacterParams::IsActorValid)));
+	TCharacterParams::const_iterator it = std::find_if(m_paramsList.begin(), itEnd,[](const SCharacterParams& p) { return !p.IsActorValid(); } );
 
 	return (it == itEnd);
 }
@@ -434,7 +434,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 	CRY_ASSERT(pAnimChar);
 
 	IAnimationGraphState* pGraphState = pAnimChar->GetAnimationGraphState();
-	CRY_ASSERT_MESSAGE(pGraphState, "Cannot retrieve animation graph state");
+	CRY_ASSERT(pGraphState, "Cannot retrieve animation graph state");
 	if (!pGraphState)
 		return false;
 
@@ -494,7 +494,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 		// exist. Therefore, running animations won't be interrupted if this fails.
 		if (!pGraphState->SetInputOptional("Signal", cSignal))
 		{
-			CRY_ASSERT_MESSAGE(0, "Could not set animation graph input 'coopanimation'.");
+			CRY_ASSERT(0, "Could not set animation graph input 'coopanimation'.");
 			CryLogAlways("Cooperative Animation start failed - animation graph not prepared?");
 			return false;
 		}
@@ -502,7 +502,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 		// Set the variation
 		if (!pGraphState->SetVariationInput("CoopAnimation", params.sSignalName))
 		{
-			CRY_ASSERT_MESSAGE(0, "Could not set animation graph variation 'CoopAnimation'.");
+			CRY_ASSERT(0, "Could not set animation graph variation 'CoopAnimation'.");
 			CryLogAlways("Cooperative Animation start failed - animation graph not prepared?");
 			return false;
 		}
@@ -521,7 +521,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 		cOutPut = pGraphState->QueryOutput("CoopAnim");
 		if (!cOutPut || cOutPut[0] == '\0')
 		{
-			CRY_ASSERT_MESSAGE(0, "Could not retrieve correct output from AG");
+			CRY_ASSERT(0, "Could not retrieve correct output from AG");
 			CryLogAlways("Cooperative Animation - state teleport failed? (Could not retrieve correct output from AG graph state %s)", pGraphState->GetCurrentStateName());
 
 			if (m_generalParams.bForceStart)
@@ -942,7 +942,7 @@ void CCooperativeAnimation::DetermineReferencePositionAndCalculateTargets()
 				m_refPoint.q = m_refPoint.q * (!rot);
 			else
 			{
-				CRY_ASSERT_MESSAGE(0, "Possibly an invalid quaternion, or only z deviation in animations.");
+				CRY_ASSERT(0, "Possibly an invalid quaternion, or only z deviation in animations.");
 			}
 
 			// now get the correct world space vector that point from the actor to the
@@ -975,7 +975,7 @@ QuatT CCooperativeAnimation::GetStartOffset(SCharacterParams& params)
 
 	if (!params.pActor)
 	{
-		CRY_ASSERT_MESSAGE(params.pActor, "No valid Actor received!");
+		CRY_ASSERT(params.pActor, "No valid Actor received!");
 		return retVal;
 	}
 
@@ -1000,7 +1000,7 @@ QuatT CCooperativeAnimation::GetStartOffset(SCharacterParams& params)
 	float animDuration = pAnimSet->GetDuration_sec(id);
 	if (animDuration < params.fSlidingDuration)
 	{
-		CRY_ASSERT_MESSAGE(animDuration > params.fSlidingDuration, "Incorrect parameter: Sliding Duration longer than animation.");
+		CRY_ASSERT(animDuration > params.fSlidingDuration, "Incorrect parameter: Sliding Duration longer than animation.");
 		CryLogAlways("Warning: sliding duration longer than actual animation. Will adjust given parameter.");
 		params.fSlidingDuration = min(animDuration, animParamDefaultSlidingDuration);
 	}
@@ -1008,7 +1008,7 @@ QuatT CCooperativeAnimation::GetStartOffset(SCharacterParams& params)
 	// the first key will always be in the center so this helper function will
 	// reconstruct the actual starting location of the character's root from the
 	// original scene
-	const bool success = pAnimSet->GetAnimationDCCWorldSpaceLocation(id, retVal);
+	pAnimSet->GetAnimationDCCWorldSpaceLocation(id, retVal);
 	retVal.q.NormalizeSafe();
 
 	return retVal;
@@ -1021,10 +1021,11 @@ void CCooperativeAnimation::CleanupForFinishedCharacter(SCharacterParams& params
 
 	IAnimatedCharacter* pAC = params.pActor;
 
+#if defined(USE_CRY_ASSERT)
 	const ICooperativeAnimationManager* const pCAManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 	CRY_ASSERT(pCAManager);
-
-	CRY_ASSERT_MESSAGE(!pCAManager->IsActorBusy(params.pActor, this), "Cleaning up for a character that's already playing a second animation");
+	CRY_ASSERT(!pCAManager->IsActorBusy(params.pActor, this), "Cleaning up for a character that's already playing a second animation");
+#endif
 
 	// reset the movementOverride for the characters that haven't
 	// finished their animations yet (in case of premature termination)
@@ -1047,14 +1048,15 @@ void CCooperativeAnimation::CleanupForFinishedCharacter(SCharacterParams& params
 		// Release reference
 		if (params.animationState != SCharacterParams::AS_Unrequested)
 		{
+#if defined(USE_CRY_ASSERT)
 			const bool bReleased = gEnv->pCharacterManager->CAF_Release(params.animFilepathCRC);
 			CRY_ASSERT(bReleased);
+#else
+			gEnv->pCharacterManager->CAF_Release(params.animFilepathCRC);
+#endif
 
 			params.animationState = SCharacterParams::AS_Unrequested;
 		}
-
-		ISkeletonAnim* pISkeletonAnim = params.pActor->GetEntity()->GetCharacter(0)->GetISkeletonAnim();
-		CRY_ASSERT(pISkeletonAnim);
 
 		// reactivate animation graph
 		pAC->GetAnimationGraphState()->Pause(false, eAGP_PlayAnimationNode);
@@ -1165,8 +1167,12 @@ bool CCooperativeAnimation::UpdateAnimationsStreaming()
 			case SCharacterParams::AS_Unrequested:
 				{
 					// Request
+#if defined(USE_CRY_ASSERT)
 					const bool bRefAdded = gEnv->pCharacterManager->CAF_AddRef(params->animFilepathCRC);
 					CRY_ASSERT(bRefAdded);
+#else
+				gEnv->pCharacterManager->CAF_AddRef(params->animFilepathCRC);
+#endif
 
 					params->animationState = SCharacterParams::AS_NotReady;
 				}

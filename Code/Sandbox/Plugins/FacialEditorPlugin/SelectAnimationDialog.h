@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SELECTANIMATIONDIALOG_H__
-#define __SELECTANIMATIONDIALOG_H__
+#pragma once
 
 #include "Dialogs/GenericSelectItemDialog.h"
 
@@ -10,7 +9,7 @@ struct ICharacterInstance;
 class CSelectAnimationDialog : public CGenericSelectItemDialog
 {
 	DECLARE_DYNAMIC(CSelectAnimationDialog)
-	CSelectAnimationDialog(CWnd* pParent = NULL);   // standard constructor
+	CSelectAnimationDialog(CWnd* pParent = NULL);
 	virtual ~CSelectAnimationDialog() {}
 
 	void    SetCharacterInstance(ICharacterInstance* pCharacterInstance);
@@ -27,6 +26,3 @@ protected:
 
 	ICharacterInstance* m_pCharacterInstance;
 };
-
-#endif //__SELECTANIMATIONDIALOG_H__
-

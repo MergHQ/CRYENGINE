@@ -3,34 +3,53 @@
 #include "StdAfx.h"
 #include "AbstractNodeItem.h"
 #include "AbstractPinItem.h"
-
+#include "AbstractNodeGraphViewModel.h"
 #include "NodeGraphViewStyle.h"
 
 namespace CryGraphEditor {
 
-CAbstractNodeItem::CAbstractNodeItem(CNodeGraphViewModel& viewModel)
+CAbstractNodeItem::CAbstractNodeItem(CNodeEditorData& data, CNodeGraphViewModel& viewModel)
 	: CAbstractNodeGraphViewModelItem(viewModel)
 	, m_isDeactivated(false)
-	, m_acceptsRenaming(false)
 	, m_hasErrors(false)
 	, m_hasWarnings(false)
+	, m_data(data)
 {
 	SetAccpetsMoves(true);
+	SetAcceptsGroup(true);
 	SetAcceptsSelection(true);
 	SetAcceptsHighlightning(true);
 	SetAcceptsDeactivation(true);
+
+	m_data.SignalDataChanged.Connect(this, &CAbstractNodeItem::OnDataChanged);
 }
 
 CAbstractNodeItem::~CAbstractNodeItem()
 {
+	m_data.SignalDataChanged.DisconnectObject(this);
+}
 
+void CAbstractNodeItem::SetName(const QString& name)
+{
+	if (GetAcceptsRenaming() && m_name != name)
+	{
+		m_name = name;
+		SignalNameChanged();
+	}
+}
+
+QPointF CAbstractNodeItem::GetPosition() const
+{
+	Vec2 pos = m_data.GetPos();
+	return QPointF(pos.x, pos.y);
 }
 
 void CAbstractNodeItem::SetPosition(QPointF position)
 {
-	if (GetAcceptsMoves() && m_position != position)
+	Vec2 pos(position.x(), position.y());
+	if (GetAcceptsMoves() && m_data.GetPos() != pos)
 	{
-		m_position = position;
+		m_data.SetPos(pos);
 		SignalPositionChanged();
 	}
 }
@@ -52,15 +71,6 @@ void CAbstractNodeItem::SetWarnings(bool hasWarnings)
 void CAbstractNodeItem::SetErrors(bool hasErrors)
 {
 	m_hasErrors = hasErrors;
-}
-
-void CAbstractNodeItem::SetName(const QString& name)
-{
-	if (m_acceptsRenaming && m_name != name)
-	{
-		m_name = name;
-		SignalNameChanged();
-	}
 }
 
 CAbstractPinItem* CAbstractNodeItem::GetPinItemById(QVariant id) const
@@ -98,5 +108,9 @@ uint32 CAbstractNodeItem::GetPinItemIndex(const CAbstractPinItem& pin) const
 	return 0xffffffff;
 }
 
+void CAbstractNodeItem::OnDataChanged()
+{
+	SignalPositionChanged();
 }
 
+}

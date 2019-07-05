@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef VICON_CLIENTCODES_H
-#define VICON_CLIENTCODES_H
+#pragma once
 
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_WINDOWS
 	#define DISABLE_VICON 1
 #endif
 
@@ -55,7 +54,7 @@ public:
 		return v;
 	}
 
-	struct CompareNames : std::binary_function<string, string, bool>
+	struct CompareNames
 	{
 		bool operator()(const string& a_S1, const string& a_S2) const
 		{
@@ -307,6 +306,3 @@ private:
 	Plane       FitMarkers(bool bUseDefault);
 
 };
-
-#endif
-

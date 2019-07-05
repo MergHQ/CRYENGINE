@@ -168,7 +168,9 @@ void CAIPlayer::CollectExposedCover()
 			m_exposedCoverState.rayID = gAIEnv.pRayCaster->Queue(
 			  RayCastRequest::MediumPriority,
 			  RayCastRequest(pos, dir, ent_static, flags),
-			  functor(*this, &CAIPlayer::CollectExposedCoverRayComplete));
+			  functor(*this, &CAIPlayer::CollectExposedCoverRayComplete),
+				nullptr,
+				AIRayCast::SRequesterDebugInfo("CAIPlayer::CollectExposedCover", GetEntityID()));
 		}
 	}
 }
@@ -308,13 +310,13 @@ float CAIPlayer::AdjustTargetVisibleRange(const CAIActor& observer, float fVisib
 		{
 		//	case AILL_LIGHT: SOMSpeed
 		case AILL_MEDIUM:
-			fRangeScale *= gAIEnv.CVars.SightRangeMediumIllumMod;
+			fRangeScale *= gAIEnv.CVars.legacyPerception.SightRangeMediumIllumMod;
 			break;
 		case AILL_DARK:
-			fRangeScale *= gAIEnv.CVars.SightRangeDarkIllumMod;
+			fRangeScale *= gAIEnv.CVars.legacyPerception.SightRangeDarkIllumMod;
 			break;
 		case AILL_SUPERDARK:
-			fRangeScale *= gAIEnv.CVars.SightRangeSuperDarkIllumMod;
+			fRangeScale *= gAIEnv.CVars.legacyPerception.SightRangeSuperDarkIllumMod;
 			break;
 		}
 	}
@@ -340,7 +342,7 @@ float CAIPlayer::AdjustTargetVisibleRange(const CAIActor& observer, float fVisib
 //---------------------------------------------------------------------------------
 bool CAIPlayer::IsAffectedByLight() const
 {
-	return (gAIEnv.CVars.PlayerAffectedByLight != 0 ||
+	return (gAIEnv.CVars.legacyPerception.PlayerAffectedByLight != 0 ||
 	        MyBase::IsAffectedByLight());
 }
 
@@ -488,7 +490,7 @@ void CAIPlayer::Update(EUpdateType type)
 		CollectExposedCover();
 
 #ifdef CRYAISYSTEM_DEBUG
-	if (gAIEnv.CVars.DebugDrawDamageControl > 0)
+	if (gAIEnv.CVars.legacyDebugDraw.DebugDrawDamageControl > 0)
 		UpdateHealthHistory();
 #endif
 
@@ -676,11 +678,11 @@ void CAIPlayer::UpdatePlayerStuntActions()
 		    && pAIActor->GetAttentionTarget()
 		    && pAIActor->GetAttentionTarget()->GetEntityID() == GetEntityID())
 		{
-			IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
+			AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 			pData->iValue = 1;
 			pData->fValue = Distance::Point_Point(m_stuntTargets[i].pAIActor->GetPos(), m_stuntTargets[i].threatPos);
 			pData->point = m_stuntTargets[i].threatPos;
-			pAIActor->SetSignal(1, "OnCloseCollision", 0, pData);
+			pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCloseCollision(), 0, pData));
 			if (CPuppet* pPuppet = pAIActor->CastToCPuppet())
 				pPuppet->SetAlarmed();
 			m_stuntTargets[i].signalled = true;
@@ -805,7 +807,7 @@ void CAIPlayer::AddThrownEntity(EntityId id)
 			float dist = FLT_MAX;
 			if (!GetAISystem()->CheckVisibilityToBody(pPuppet, pThrownActor, dist))
 				continue;
-			pPuppet->SetSignal(1, "OnGroupMemberMutilated", pThrownActor->GetEntity(), 0);
+			pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberMutilated(), pThrownActor->GetEntityID()));
 			pPuppet->SetAlarmed();
 		}
 	}
@@ -833,7 +835,7 @@ void CAIPlayer::AddThrownEntity(EntityId id)
 
 void CAIPlayer::HandleArmoredHit()
 {
-	NotifyPlayerActionToTheLookingAgents("OnTargetArmoredHit");
+	NotifyPlayerActionToTheLookingAgents(GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetArmoredHit());
 }
 
 void CAIPlayer::HandleCloaking(bool cloak)
@@ -842,18 +844,18 @@ void CAIPlayer::HandleCloaking(bool cloak)
 
 	m_Parameters.m_bCloaked = cloak;
 	m_Parameters.m_fLastCloakEventTime = pAISystem->GetFrameStartTime().GetSeconds();
-	NotifyPlayerActionToTheLookingAgents(cloak ? "OnTargetCloaked" : "OnTargetUncloaked");
+	NotifyPlayerActionToTheLookingAgents(cloak ? GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetCloaked() : GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetUncloaked());
 }
 
 void CAIPlayer::HandleStampMelee()
 {
 	if (!m_Parameters.m_bCloaked)
-		NotifyPlayerActionToTheLookingAgents("OnTargetStampMelee");
+		NotifyPlayerActionToTheLookingAgents(GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetStampMelee());
 }
 
 //-----------------------------------------------------------
 
-void CAIPlayer::NotifyPlayerActionToTheLookingAgents(const char* eventName)
+void CAIPlayer::NotifyPlayerActionToTheLookingAgents(const AISignals::ISignalDescription& signalDescription)
 {
 	CAISystem* pAISystem = GetAISystem();
 	ActorLookUp& lookUp = *gAIEnv.pActorLookUp;
@@ -887,12 +889,12 @@ void CAIPlayer::NotifyPlayerActionToTheLookingAgents(const char* eventName)
 				const bool bCanSeeTarget = pAIActor->CanSee(targetVisionId);
 				if (bCanSeeTarget)
 				{
-					AISignalExtraData* pData = new AISignalExtraData;
+					AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 					pData->nID = playerId;
 					pData->iValue = pAIActor->GetAttentionTargetType();
 					pData->iValue2 = pAIActor->GetAttentionTargetThreat();
 					pData->fValue = pAIActor->GetPos().GetDistance(GetPos());
-					pAISystem->SendSignal(SIGNALFILTER_SENDER, 1, eventName, pAIActor, pData);
+					pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, pAIActor->GetEntityID(), pData));
 				}
 			}
 		}
@@ -953,7 +955,7 @@ void CAIPlayer::Event(unsigned short eType, SAIEVENT* pEvent)
 	case AIEVENT_LOWHEALTH:
 		{
 			const float scale = (pEvent != NULL) ? pEvent->fThreat : 1.0f;
-			m_mercyTimer = gAIEnv.CVars.RODLowHealthMercyTime * scale;
+			m_mercyTimer = gAIEnv.CVars.legacyPuppetRod.RODLowHealthMercyTime * scale;
 		}
 		break;
 	case AIEVENT_ENABLE:
@@ -1011,7 +1013,7 @@ bool CAIPlayer::GetMissLocation(const Vec3& shootPos, const Vec3& shootDir, floa
 
 void CAIPlayer::NotifyMissLocationConsumed()
 {
-	m_coolMissCooldown += gAIEnv.CVars.CoolMissesCooldown;
+	m_coolMissCooldown += gAIEnv.CVars.legacyFiring.CoolMissesCooldown;
 }
 
 //
@@ -1112,7 +1114,7 @@ void CAIPlayer::DebugDraw()
 	if (IsLowHealthPauseActive())
 	{
 		ICVar* pLowHealth = gEnv->pConsole->GetCVar("g_playerLowHealthThreshold");
-		dc->Draw2dLabel(150, 190, 2.0f, color, true, "Mercy %.2f/%.2f (when below %0.2f)", m_mercyTimer, gAIEnv.CVars.RODLowHealthMercyTime, pLowHealth->GetFVal());
+		dc->Draw2dLabel(150, 190, 2.0f, color, true, "Mercy %.2f/%.2f (when below %0.2f)", m_mercyTimer, gAIEnv.CVars.legacyPuppetRod.RODLowHealthMercyTime, pLowHealth->GetFVal());
 	}
 
 	for (unsigned i = 0, ni = m_exposedCoverObjects.size(); i < ni; ++i)
@@ -1151,8 +1153,7 @@ bool CAIPlayer::IsGrabbedEntityInView(const Vec3& pos) const
 {
 	bool bInViewDist = true;
 
-	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-	assert(pEntitySystem);
+	assert(gEnv->pEntitySystem);
 
 	IEntity* pObjectEntity = GetGrabbedEntity();
 

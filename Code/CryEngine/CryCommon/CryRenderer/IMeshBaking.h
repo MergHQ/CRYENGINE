@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __IMESHBAKING_H__
-#define __IMESHBAKING_H__
+#pragma once
 
 struct SMeshBakingMaterialParams
 {
@@ -35,5 +34,3 @@ struct SMeshBakingOutput
 	ITexture* ppOuputTexture[3];
 	ITexture* ppIntermediateTexture[3];
 };
-
-#endif // __IMESHBAKING_H__

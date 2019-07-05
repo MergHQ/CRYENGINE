@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MannequinChangeMonitor.h"
 #include "helper/MannequinFileChangeWriter.h"
+#include "IEditorImpl.h"
 
 CMannequinChangeMonitor::CMannequinChangeMonitor()
 	:
@@ -26,4 +27,3 @@ void CMannequinChangeMonitor::OnFileChange(const char* sFilename, EChangeType eT
 		m_pFileChangeWriter->ShowFileManager();
 	}
 }
-

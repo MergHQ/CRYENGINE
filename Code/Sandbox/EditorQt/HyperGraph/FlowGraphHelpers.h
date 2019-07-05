@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FlowGraphHelpers_h__
-#define __FlowGraphHelpers_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <vector>
 
@@ -47,12 +42,9 @@ inline void GetHumanName(CHyperFlowGraph* pFlowGraph, string& outName) // for CS
 //     outEntityFlowGraph - If the entity is owner of a flowgraph this is the pointer to
 // Return Value:
 //     none
-void FindGraphsForEntity(CEntityObject* pEntity, std::vector<CHyperFlowGraph*>& outFlowGraphs, CHyperFlowGraph*& outEntityFlowGraph);
+void FindGraphsForEntity(const CEntityObject* pEntity, std::vector<CHyperFlowGraph*>& outFlowGraphs, CHyperFlowGraph*& outEntityFlowGraph);
 
 void OpenFlowGraphView(CHyperFlowGraph* pFlowGraph, string selectNode);
 
 void ListFlowGraphsForEntity(CEntityObject* pEntity);
 };
-
-#endif
-

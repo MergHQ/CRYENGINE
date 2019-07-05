@@ -2,18 +2,22 @@
 #include <StdAfx.h>
 #include "QPreviewWidget.h"
 
-#include "Material/Material.h"
 #include "Material/MaterialManager.h"
 #include "IIconManager.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "ViewportInteraction.h"
-#include <Preferences/ViewportPreferences.h>
 #include "Objects/ParticleEffectObject.h"
 
+#include <PathUtils.h>
+#include <Preferences/ViewportPreferences.h>
+#include <RenderLock.h>
+
 #include <Cry3DEngine/I3DEngine.h>
-#include <CryEntitySystem/IEntitySystem.h>
 #include <CryAnimation/ICryAnimation.h>
-#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryParticleSystem/IParticles.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+
 #include <QtUtil.h>
 #include <QDir.h>
 #include <QFileInfo>
@@ -23,9 +27,6 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QCursor>
-
-#include "RenderLock.h"
-#include "FilePathUtil.h"
 
 namespace Private_PreviewWidget
 {
@@ -279,6 +280,12 @@ bool QPreviewWidget::CreateContext()
 		desc.screenResolution.y = m_height;
 
 		m_displayContextKey = m_pRenderer->CreateSwapChainBackedContext(desc);
+
+		m_graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+		m_graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+
+		m_graphicsPipelineKey = m_pRenderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
+
 		m_bContextCreated = true;
 
 		return true;
@@ -757,7 +764,7 @@ void QPreviewWidget::contextMenuEvent(QContextMenuEvent* event)
 	}
 }
 
-void QPreviewWidget::resizeEvent(QResizeEvent *ev)
+void QPreviewWidget::resizeEvent(QResizeEvent* ev)
 {
 	QWidget::resizeEvent(ev);
 
@@ -767,12 +774,11 @@ void QPreviewWidget::resizeEvent(QResizeEvent *ev)
 		return;
 
 	//ignore sizes when widget is invisible, just used to render pixmaps
-	if (isVisible()) 
+	if (isVisible())
 	{
 		m_width = cx;
 		m_height = cy;
 	}
-
 	gEnv->pRenderer->ResizeContext(m_displayContextKey, m_width, m_height);
 }
 
@@ -810,7 +816,7 @@ bool QPreviewWidget::Render()
 
 		SetCamera(m_camera);
 
-		m_pRenderer->BeginFrame(m_displayContextKey);
+		m_pRenderer->BeginFrame(m_displayContextKey, m_graphicsPipelineKey);
 
 		DrawBackground();
 		if (m_bGrid || m_bAxis)
@@ -828,99 +834,95 @@ bool QPreviewWidget::Render()
 		gEnv->pConsole->GetCVar("r_displayInfo")->Set((int)m_bShowRenderInfo);
 
 		// Render object.
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, m_displayContextKey);
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, m_displayContextKey);
 		m_pRenderer->EF_StartEf(passInfo);
 
+		// Add lights.
+		for (std::size_t i = 0; i < m_lights.size(); ++i)
 		{
-			CScopedWireFrameMode scopedWireFrame(m_pRenderer, m_bDrawWireFrame ? R_WIREFRAME_MODE : R_SOLID_MODE);
-
-			// Add lights.
-			for (std::size_t i = 0; i < m_lights.size(); ++i)
-			{
-				m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
-			}
-
-			if (m_pCurrentMaterial)
-			{
-				m_pCurrentMaterial->DisableHighlight();
-			}
-
-			_smart_ptr<IMaterial> pMaterial;
-			if (m_pCurrentMaterial)
-			{
-				pMaterial = m_pCurrentMaterial->GetMatInfo();
-			}
-
-			if (m_bPrecacheMaterial)
-			{
-				auto pCurrentMaterial = pMaterial;
-				if (!pCurrentMaterial)
-				{
-					if (m_pObject)
-					{
-						pCurrentMaterial = m_pObject->GetMaterial();
-					}
-					else if (m_pEntity)
-					{
-						pCurrentMaterial = m_pEntity->GetMaterial();
-					}
-					else if (m_pCharacter)
-					{
-						pCurrentMaterial = m_pCharacter->GetIMaterial();
-					}
-					else if (m_pEmitter)
-					{
-						pCurrentMaterial = m_pEmitter->GetMaterial();
-					}
-				}
-
-				if (pCurrentMaterial)
-				{
-					pCurrentMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
-				}
-			}
-
-			bool bNoPreview = false;
-			{
-				// activate shader item
-				auto pCurrentMaterial = pMaterial;
-				if (!pCurrentMaterial)
-				{
-					if (m_pObject)
-					{
-						pCurrentMaterial = m_pObject->GetMaterial();
-					}
-					else if (m_pEntity)
-					{
-						pCurrentMaterial = m_pEntity->GetMaterial();
-					}
-					else if (m_pCharacter)
-					{
-						pCurrentMaterial = m_pCharacter->GetIMaterial();
-					}
-					else if (m_pEmitter)
-					{
-						pCurrentMaterial = m_pEmitter->GetMaterial();
-					}
-				}
-				// ActivateAllShaderItem();
-
-				if (pCurrentMaterial)
-				{
-					if ((pCurrentMaterial->GetFlags() & MTL_FLAG_NOPREVIEW))
-					{
-						bNoPreview = true;
-					}
-				}
-			}
-
-			if (m_bShowObject && !bNoPreview)
-			{
-				RenderObject(pMaterial, passInfo);
-			}
-
-			m_pRenderer->EF_EndEf3D(SHDF_NOASYNC | SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+			m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
 		}
+
+		if (m_pCurrentMaterial)
+		{
+			m_pCurrentMaterial->DisableHighlight();
+		}
+
+		_smart_ptr<IMaterial> pMaterial;
+		if (m_pCurrentMaterial)
+		{
+			pMaterial = m_pCurrentMaterial->GetMatInfo();
+		}
+
+		if (m_bPrecacheMaterial)
+		{
+			auto pCurrentMaterial = pMaterial;
+			if (!pCurrentMaterial)
+			{
+				if (m_pObject)
+				{
+					pCurrentMaterial = m_pObject->GetMaterial();
+				}
+				else if (m_pEntity)
+				{
+					pCurrentMaterial = m_pEntity->GetMaterial();
+				}
+				else if (m_pCharacter)
+				{
+					pCurrentMaterial = m_pCharacter->GetIMaterial();
+				}
+				else if (m_pEmitter)
+				{
+					pCurrentMaterial = m_pEmitter->GetMaterial();
+				}
+			}
+
+			if (pCurrentMaterial)
+			{
+				pCurrentMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
+			}
+		}
+
+		bool bNoPreview = false;
+		{
+			// activate shader item
+			auto pCurrentMaterial = pMaterial;
+			if (!pCurrentMaterial)
+			{
+				if (m_pObject)
+				{
+					pCurrentMaterial = m_pObject->GetMaterial();
+				}
+				else if (m_pEntity)
+				{
+					pCurrentMaterial = m_pEntity->GetMaterial();
+				}
+				else if (m_pCharacter)
+				{
+					pCurrentMaterial = m_pCharacter->GetIMaterial();
+				}
+				else if (m_pEmitter)
+				{
+					pCurrentMaterial = m_pEmitter->GetMaterial();
+				}
+			}
+			// ActivateAllShaderItem();
+
+			if (pCurrentMaterial)
+			{
+				if ((pCurrentMaterial->GetFlags() & MTL_FLAG_NOPREVIEW))
+				{
+					bNoPreview = true;
+				}
+			}
+		}
+
+		if (m_bShowObject && !bNoPreview)
+		{
+			RenderObject(pMaterial, passInfo);
+		}
+
+		m_pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
 
 		m_pRenderer->RenderDebug(false);
 		m_pRenderer->EndFrame();
@@ -939,11 +941,10 @@ void QPreviewWidget::RenderObject(IMaterial* pMaterial, const SRenderingPassInfo
 	using namespace Private_PreviewWidget;
 
 	SRendParams renderParams;
-	renderParams.dwFObjFlags = 0;
 
 	auto scaledColor = m_ambientColor * m_ambientMultiplier;
 	renderParams.AmbientColor = ColorF(scaledColor.redF(), scaledColor.greenF(), scaledColor.blueF(), scaledColor.alphaF());
-	renderParams.dwFObjFlags |= FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
+	renderParams.dwFObjFlags = FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
 	renderParams.pMaterial = pMaterial;
 
 	Matrix34 matrix;
@@ -1101,6 +1102,8 @@ void QPreviewWidget::DeleteRenderContex()
 		// Do not delete primary context.
 		if (m_displayContextKey != reinterpret_cast<HWND>(m_pRenderer->GetHWND()))
 			m_pRenderer->DeleteContext(m_displayContextKey);
+
+		m_pRenderer->DeleteGraphicsPipeline(m_graphicsPipelineKey);
 		m_bContextCreated = false;
 	}
 }
@@ -1392,4 +1395,3 @@ void QPreviewWidget::DrawBackground()
 	//m_pRenderer->DrawImageWithUV(0, 0, 0.5f, clientWidth, clientHeight, m_backgroundTextureId, uvs, uvt, color[0], color[1], color[2], color[3]);
 	IRenderAuxGeom::GetAux()->SetOrthographicProjection(false);
 }
-

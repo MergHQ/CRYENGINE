@@ -44,14 +44,14 @@ public:
 	CryTypeId GetTypeId() const
 	{
 		const ITypeDesc* pTypeDesc = GetTypeDesc();
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Object is not reflected.");
+		CRY_ASSERT(pTypeDesc, "Object is not reflected.");
 		return pTypeDesc ? pTypeDesc->GetTypeId() : CryTypeId();
 	}
 
 	const ITypeDesc* GetTypeDesc() const
 	{
 		const ITypeDesc* pTypeDesc = GetReflectionRegistry().FindTypeByIndex(m_typeIndex);
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Object is not reflected.");
+		CRY_ASSERT(pTypeDesc, "Object is not reflected.");
 		return pTypeDesc;
 	}
 

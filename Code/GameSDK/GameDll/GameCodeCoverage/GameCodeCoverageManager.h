@@ -108,7 +108,7 @@ class CNamedCheckpointGroup
 class CGameCodeCoverageManager : public CGameMechanismBase
 {
 	// String comparison for set and map
-	struct cmp_str : public std::binary_function<const char *, const char *, bool>
+	struct cmp_str
 	{
 		bool operator()(char const * a, char const * b) const
 		{

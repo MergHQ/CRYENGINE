@@ -21,20 +21,20 @@ public:
 
 	inline CTransform(const Vec3& translation, const CRotation& rotation, const Vec3& scale)
 		: m_translation(translation)
-		, m_rotation(rotation)
 		, m_scale(scale)
+		, m_rotation(rotation)
 	{}
 
 	explicit inline CTransform(const QuatT& transform, const Vec3& scale = Vec3(1.0f, 1.0f, 1.0f))
 		: m_translation(transform.t)
-		, m_rotation(transform.q)
 		, m_scale(scale)
+		, m_rotation(transform.q)
 	{}
 
 	explicit inline CTransform(const Matrix34& transform)
 		: m_translation(transform.GetTranslation())
-		, m_rotation(Matrix33(transform))
 		, m_scale(transform.GetScale())
+		, m_rotation(Matrix33(transform))
 	{}
 
 	inline void SetTranslation(const Vec3& translation)

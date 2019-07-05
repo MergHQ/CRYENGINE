@@ -13,6 +13,7 @@
 
 #include "StdAfx.h"
 #include "FlowEntityNode.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 CFlowEntityClass::CFlowEntityClass(IEntityClass* pEntityClass)
@@ -303,7 +304,7 @@ void CFlowEntityNode::SendEventToEntity(SActivationInfo* pActInfo, IEntity* pEnt
 			{
 			case eFDT_Int:
 				{
-					event.nParam[1] = INT_PTR(IEntityEventHandler::Int);
+					event.nParam[1] = INT_PTR(IEntityClass::EVT_INT);
 					const int value = GetPortInt(pActInfo, iInput);
 					event.nParam[2] = INT_PTR(&value);
 					pEntity->SendEvent(event);
@@ -311,7 +312,7 @@ void CFlowEntityNode::SendEventToEntity(SActivationInfo* pActInfo, IEntity* pEnt
 				}
 			case eFDT_Float:
 				{
-					event.nParam[1] = INT_PTR(IEntityEventHandler::Float);
+					event.nParam[1] = INT_PTR(IEntityClass::EVT_FLOAT);
 					const float value = GetPortFloat(pActInfo, iInput);
 					event.nParam[2] = INT_PTR(&value);
 					pEntity->SendEvent(event);
@@ -319,7 +320,7 @@ void CFlowEntityNode::SendEventToEntity(SActivationInfo* pActInfo, IEntity* pEnt
 				}
 			case eFDT_EntityId:
 				{
-					event.nParam[1] = INT_PTR(IEntityEventHandler::Entity);
+					event.nParam[1] = INT_PTR(IEntityClass::EVT_ENTITY);
 					const EntityId value = GetPortEntityId(pActInfo, iInput);
 					event.nParam[2] = INT_PTR(&value);
 					pEntity->SendEvent(event);
@@ -327,7 +328,7 @@ void CFlowEntityNode::SendEventToEntity(SActivationInfo* pActInfo, IEntity* pEnt
 				}
 			case eFDT_Vec3:
 				{
-					event.nParam[1] = INT_PTR(IEntityEventHandler::Vector);
+					event.nParam[1] = INT_PTR(IEntityClass::EVT_VECTOR);
 					const Vec3 value = GetPortVec3(pActInfo, iInput);
 					event.nParam[2] = INT_PTR(&value);
 					pEntity->SendEvent(event);
@@ -335,7 +336,7 @@ void CFlowEntityNode::SendEventToEntity(SActivationInfo* pActInfo, IEntity* pEnt
 				}
 			case eFDT_String:
 				{
-					event.nParam[1] = INT_PTR(IEntityEventHandler::String);
+					event.nParam[1] = INT_PTR(IEntityClass::EVT_STRING);
 					const string value = GetPortString(pActInfo, iInput);
 					event.nParam[2] = INT_PTR(value.c_str());
 					pEntity->SendEvent(event);
@@ -343,7 +344,7 @@ void CFlowEntityNode::SendEventToEntity(SActivationInfo* pActInfo, IEntity* pEnt
 				}
 			case eFDT_Bool:
 				{
-					event.nParam[1] = INT_PTR(IEntityEventHandler::Bool);
+					event.nParam[1] = INT_PTR(IEntityClass::EVT_BOOL);
 					const bool value = GetPortBool(pActInfo, iInput);
 					event.nParam[2] = INT_PTR(&value);
 					pEntity->SendEvent(event);
@@ -2488,7 +2489,6 @@ public:
 		if (IsPortActive(pActInfo, EIP_Beam))
 		{
 			const char* entityName = pActInfo->pEntity->GetName();
-			bool isPlayer = gEnv->pGameFramework->GetClientActorId() == pActInfo->pEntity->GetId();
 
 			const Vec3 vPrevSca = pActInfo->pEntity->GetScale();
 

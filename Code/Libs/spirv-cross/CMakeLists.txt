@@ -25,7 +25,7 @@ CryEngineStaticModule(spirv-cross SOLUTION_FOLDER "Libs")
 
 target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/spirv-cross")
 
-if (WIN32 OR WIN64)
+if (WINDOWS)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE -D_CRT_SECURE_NO_WARNINGS)
 	target_compile_options(${THIS_PROJECT} PRIVATE
 		/wd4530 # C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc

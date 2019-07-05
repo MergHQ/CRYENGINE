@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "ParticleNodeTreeModel.h"
+#include <stack>
 
 namespace CryParticleEditor {
 
@@ -91,12 +92,7 @@ CNodesDictionary::~CNodesDictionary()
 
 }
 
-const CAbstractDictionaryEntry* CNodesDictionary::GetEntry(int32 index) const
-{
-	return m_root.GetChildEntry(index);
-}
-
-void CNodesDictionary::LoadTemplates()
+void CNodesDictionary::ResetEntries()
 {
 	const string assetDir = "%ENGINE%/EngineAssets/Particles/";
 	const size_t extensionLength = sizeof(".pfxp") - 1;
@@ -123,7 +119,7 @@ void CNodesDictionary::LoadTemplates()
 			do
 			{
 				if (!strcmp(data.name, ".") || !strcmp(data.name, ".."))
-					continue;				
+					continue;
 
 				if ((data.attrib & _A_SUBDIR) != 0)
 				{
@@ -136,13 +132,21 @@ void CNodesDictionary::LoadTemplates()
 					const QString name = filename.substr(0, filename.length() - extensionLength);
 					const QString filePath = path + "/" + filename;
 					pCategory->CreateNode(name, filePath);
-				}				
-			}
-			while (pPak->FindNext(handle, &data) >= 0);
+				}
+			} while (pPak->FindNext(handle, &data) >= 0);
 			pPak->FindClose(handle);
 		}
 	}
 }
 
+const CAbstractDictionaryEntry* CNodesDictionary::GetEntry(int32 index) const
+{
+	return m_root.GetChildEntry(index);
 }
 
+void CNodesDictionary::LoadTemplates()
+{
+	Reset();
+}
+
+}

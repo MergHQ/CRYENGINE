@@ -3,15 +3,19 @@
 #include "StdAfx.h"
 #include "FileImporterDialog.h"
 
+#include "Common.h"
 #include "FileImporterModel.h"
 #include "TreeView.h"
 #include "FolderSelectorDialog.h"
+#include "Common/IImpl.h"
 
 #include <ProxyModels/AttributeFilterProxyModel.h>
+#include <PathUtils.h>
 #include <QtUtil.h>
 #include <CrySystem/ISystem.h>
 #include <CryIcon.h>
 
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
@@ -25,13 +29,26 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QString const& assetFolderPath, QString const& targetPath, QWidget* const pParent)
+CFileImporterDialog::CFileImporterDialog(
+	FileImportInfos const& fileInfos,
+	QString const& assetsPath,
+	QString const& localizedAssetsPath,
+	QString const& targetPath,
+	QString const& targetFolderName,
+	bool const isLocalized,
+	bool const getImplItemIds,
+	QWidget* const pParent)
 	: CEditorDialog("AudioFileImporterDialog", pParent)
 	, m_fileImportInfos(fileInfos)
-	, m_assetFolderPath(assetFolderPath)
+	, m_assetsPath(assetsPath)
+	, m_localizedAssetsPath(localizedAssetsPath)
 	, m_targetPath(targetPath)
+	, m_targetFolderName(targetFolderName)
+	, m_isLocalized(isLocalized)
+	, m_getImplItemIds(getImplItemIds)
+	, m_gameFolder(QtUtil::ToQString(PathUtil::GetGameFolder()))
 	, m_pTargetDirLineEdit(new QLineEdit(this))
-	, m_pFileImporterModel(new CFileImporterModel(m_fileImportInfos, assetFolderPath, targetPath, this))
+	, m_pFileImporterModel(new CFileImporterModel(m_fileImportInfos, this))
 	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this))
 	, m_pTreeView(new CTreeView(this, QAdvancedTreeView::BehaviorFlags(QAdvancedTreeView::Behavior::PreserveSelectionAfterReset | QAdvancedTreeView::Behavior::UseItemModelAttribute)))
 {
@@ -39,14 +56,19 @@ CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QStri
 	setWindowTitle(tr("Audio File Importer"));
 
 	auto const pTargetDirLabel = new QLabel(tr("Target folder:"));
-	m_pTargetDirLineEdit->setText(m_targetPath);
-	m_pTargetDirLineEdit->setToolTip(m_targetPath);
+	QString const relativeTargetPath = m_gameFolder.relativeFilePath(m_targetPath);
+	m_pTargetDirLineEdit->setText(relativeTargetPath);
+	m_pTargetDirLineEdit->setToolTip(relativeTargetPath);
 	m_pTargetDirLineEdit->setReadOnly(true);
 
-	auto const pBrowseButton = new QToolButton(this);
+	auto const pBrowseButton = new QToolButton();
 	pBrowseButton->setIcon(CryIcon("icons:General/Folder.ico"));
 	pBrowseButton->setToolTip(tr("Select target folder"));
 	pBrowseButton->setIconSize(QSize(16, 16));
+
+	auto const pLocalizedCheckBox = new QCheckBox(tr("Localized  "));
+	pLocalizedCheckBox->setToolTip(tr("Select if the target folder is inside the localization folder or not."));
+	pLocalizedCheckBox->setChecked(m_isLocalized);
 
 	auto const pSetAllLabel = new QLabel(tr("Set all to:"));
 
@@ -60,6 +82,7 @@ CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QStri
 	pToolbarLayout->addWidget(pTargetDirLabel);
 	pToolbarLayout->addWidget(m_pTargetDirLineEdit);
 	pToolbarLayout->addWidget(pBrowseButton);
+	pToolbarLayout->addWidget(pLocalizedCheckBox);
 	pToolbarLayout->addSpacing(25);
 	pToolbarLayout->addWidget(pSetAllLabel);
 	pToolbarLayout->addWidget(pImportButton);
@@ -97,16 +120,14 @@ CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QStri
 	pMainLayout->addWidget(pDialogButtons);
 	setLayout(pMainLayout);
 
-	QDir targetFolder(m_targetPath);
-
-	if (!targetFolder.exists())
-	{
-		targetFolder.mkpath(m_targetPath);
-	}
-
 	QObject::connect(pBrowseButton, &QToolButton::clicked, this, &CFileImporterDialog::OnCreateFolderSelector);
-
 	QObject::connect(m_pFileImporterModel, &CFileImporterModel::SignalActionChanged, this, &CFileImporterDialog::OnActionChanged);
+
+	QObject::connect(pLocalizedCheckBox, &QCheckBox::toggled, [&](bool const isChecked)
+		{
+			m_isLocalized = isChecked;
+			UpdateTargetPath(m_targetFolderName);
+		});
 
 	QObject::connect(pImportButton, &QPushButton::clicked, this, &CFileImporterDialog::OnSetImportAll);
 	QObject::connect(pIgnoreButton, &QPushButton::clicked, this, &CFileImporterDialog::OnSetIgnoreAll);
@@ -118,32 +139,29 @@ CFileImporterDialog::CFileImporterDialog(FileImportInfos const& fileInfos, QStri
 //////////////////////////////////////////////////////////////////////////
 QSize CFileImporterDialog::sizeHint() const
 {
-	return QSize(800, 500);
+	return QSize(900, 500);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileImporterDialog::OnCreateFolderSelector()
+void CFileImporterDialog::UpdateTargetPath(QString const& targetFolderName)
 {
-	auto const pFolderSelectorDialog = new CFolderSelectorDialog(m_assetFolderPath, m_targetPath, this);
-	QObject::connect(pFolderSelectorDialog, &CFolderSelectorDialog::SignalSetTargetPath, this, &CFileImporterDialog::OnTargetPathChanged);
-	pFolderSelectorDialog->exec();
-}
+	m_targetFolderName = targetFolderName;
+	QDir const targetDir((m_isLocalized ? m_localizedAssetsPath : m_assetsPath) + "/" + m_targetFolderName);
+	QString const targetPath = targetDir.absolutePath() + "/";
 
-//////////////////////////////////////////////////////////////////////////
-void CFileImporterDialog::OnTargetPathChanged(QString const& targetPath)
-{
 	if (m_targetPath.compare(targetPath, Qt::CaseInsensitive) != 0)
 	{
 		m_targetPath = targetPath;
-		m_pTargetDirLineEdit->setText(m_targetPath);
-		m_pTargetDirLineEdit->setToolTip(m_targetPath);
+		QString const relativeTargetPath = m_gameFolder.relativeFilePath(m_targetPath);
+		m_pTargetDirLineEdit->setText(relativeTargetPath);
+		m_pTargetDirLineEdit->setToolTip(relativeTargetPath);
 
 		for (auto& fileInfo : m_fileImportInfos)
 		{
 			if (fileInfo.isTypeSupported && fileInfo.sourceInfo.isFile())
 			{
-				QString targetPath = m_targetPath + fileInfo.parentFolderName + fileInfo.sourceInfo.fileName();
-				QFileInfo const targetFile(targetPath);
+				QString const filePath = m_targetPath + fileInfo.parentFolderName + fileInfo.sourceInfo.fileName();
+				QFileInfo const targetFile(filePath);
 
 				fileInfo.targetInfo = targetFile;
 
@@ -151,11 +169,16 @@ void CFileImporterDialog::OnTargetPathChanged(QString const& targetPath)
 				{
 					fileInfo.actionType = SFileImportInfo::EActionType::SameFile;
 				}
-				else
+				else if (fileInfo.actionType != SFileImportInfo::EActionType::Ignore)
 				{
 					fileInfo.actionType = (targetFile.isFile() ? SFileImportInfo::EActionType::Replace : SFileImportInfo::EActionType::New);
 				}
 			}
+		}
+
+		if (!targetDir.exists())
+		{
+			targetDir.mkpath(m_targetPath);
 		}
 
 		m_pFileImporterModel->Reset();
@@ -163,9 +186,17 @@ void CFileImporterDialog::OnTargetPathChanged(QString const& targetPath)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CFileImporterDialog::OnCreateFolderSelector()
+{
+	auto const pFolderSelectorDialog = new CFolderSelectorDialog((m_isLocalized ? m_localizedAssetsPath : m_assetsPath), m_targetPath, this);
+	QObject::connect(pFolderSelectorDialog, &CFolderSelectorDialog::SignalSetTargetPath, this, &CFileImporterDialog::UpdateTargetPath);
+	pFolderSelectorDialog->exec();
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CFileImporterDialog::OnActionChanged(Qt::CheckState const isChecked)
 {
-	auto const& selection = m_pTreeView->selectionModel()->selectedRows(static_cast<int>(CFileImporterModel::EColumns::Import));
+	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(static_cast<int>(CFileImporterModel::EColumns::Import));
 
 	if (selection.size() > 1)
 	{
@@ -267,7 +298,16 @@ void CFileImporterDialog::OnApplyImport()
 					}
 				}
 
-				if (!sourceFile.copy(fullTargetPath))
+				if (sourceFile.copy(fullTargetPath))
+				{
+					if (m_getImplItemIds)
+					{
+						QString const& absPath = fileInfo.targetInfo.absolutePath();
+						QString const& path = m_isLocalized ? absPath.mid(m_localizedAssetsPath.size() + 1) : absPath.mid(m_assetsPath.size() + 1);
+						g_importedItemIds.emplace_back(g_pIImpl->GenerateItemId(fileInfo.targetInfo.fileName(), path, m_isLocalized));
+					}
+				}
+				else
 				{
 					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING,
 					           "[Audio Controls Editor] Could not copy %s to %s",

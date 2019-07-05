@@ -1,17 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CFillSliderCtrl_h__
-#define __CFillSliderCtrl_h__
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "SliderCtrlEx.h"
 
 // This notification (Sent with WM_COMMAND) sent when slider changes position.
 #include "UserMessageDefines.h"
 
-/////////////////////////////////////////////////////////////////////////////
-// CFillSliderCtrl window
-class PLUGIN_API CFillSliderCtrl : public CSliderCtrlEx
+class MFC_TOOLS_PLUGIN_API CFillSliderCtrl : public CSliderCtrlEx
 {
 public:
 	enum EFillStyle
@@ -69,6 +66,3 @@ protected:
 	COLORREF m_fillColorEnd;
 	CPoint   m_mousePos;
 };
-
-#endif //__CFillSliderCtrl_h__
-

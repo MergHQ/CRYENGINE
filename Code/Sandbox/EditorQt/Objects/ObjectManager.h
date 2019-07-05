@@ -2,27 +2,22 @@
 
 #pragma once
 
-#include "IObjectManager.h"
-#include "Objects/BaseObject.h"
-#include <Objects/ObjectPropertyWidget.h>
-#include "SelectionGroup.h"
-#include <CrySandbox/CrySignal.h>
+#include "Objects/SelectionGroup.h"
 #include "IEditorImpl.h"
 
-// forward declarations.
-class CGizmoManager;
-class CCameraObject;
+#include <Objects/BaseObject.h>
+#include <Objects/ObjectPropertyWidget.h>
+#include <IObjectManager.h>
+
+#include <CrySandbox/CrySignal.h>
+
 class CEntityObject;
-class CObjectArchive;
-class CObjectLayer;
-class CObjectClassDesc;
-class CWaitProgress;
-class CViewport;
-class CObjectManipulatorOwner;
 class CGeomCacheEntity;
+class CObjectLayer;
+class CWaitProgress;
 
 //////////////////////////////////////////////////////////////////////////
-// Helper class to signal when we are exportin a level to game
+// Helper class to signal when we are exporting a level to game
 //////////////////////////////////////////////////////////////////////////
 class CObjectManagerLevelIsExporting
 {
@@ -45,9 +40,6 @@ public:
 class CObjectManager : public IObjectManager
 {
 public:
-	//! Selection functor callback.
-	//! Callback function must return a boolean value.
-	//! Return true if selection should proceed, or false to abort object selection.
 	CObjectManager();
 	~CObjectManager();
 
@@ -60,7 +52,9 @@ public:
 	void         DeleteObjects(std::vector<CBaseObject*>& objects);
 
 	void         DeleteAllObjects();
-	CBaseObject* CloneObject(CBaseObject* obj);
+
+	void         CloneObjects(std::vector<CBaseObject*>& objects, std::vector<CBaseObject*>& outClonedObjects) override;
+	CBaseObject* CloneObject(CBaseObject* obj) override;
 
 	//! Get number of objects manager by ObjectManager (not contain sub objects of groups).
 	int GetObjectCount() const;
@@ -91,7 +85,7 @@ public:
 	//! Link single object to target
 	virtual void Link(CBaseObject* pObject, CBaseObject* pLinkTo, const char* szTargetName = "") override;
 	//! Link multiple objects to target
-	virtual void Link(const std::vector<CBaseObject*> objects, CBaseObject* pLinkTo, const char* szTargetName = "") override;
+	virtual void Link(const std::vector<CBaseObject*>& objects, CBaseObject* pLinkTo, const char* szTargetName = "") override;
 
 	//! Get all camera sources in object manager
 	void GetCameras(std::vector<CEntityObject*>& objects);
@@ -102,13 +96,9 @@ public:
 	//! Display objects on display context.
 	void Display(CObjectRenderHelper& objRenderHelper);
 
-	//! Called when selecting without selection helpers - this is needed since
-	//! the visible object cache is normally not updated when not displaying helpers.
-	void ForceUpdateVisibleObjectCache(DisplayContext& dc);
-
 	//! Check intersection with objects.
 	//! Find intersection with nearest to ray origin object hit by ray.
-	//! If distance tollerance is specified certain relaxation applied on collision test.
+	//! If distance tolerance is specified certain relaxation applied on collision test.
 	//! @return true if hit any object, and fills hitInfo structure.
 	bool HitTest(HitContext& hitInfo);
 
@@ -141,19 +131,23 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Find object from in game physical entity.
-	CBaseObject* FindPhysicalObjectOwner(struct IPhysicalEntity* pPhysicalEntity);
+	CBaseObject* FindPhysicalObjectOwner(IPhysicalEntity* pPhysicalEntity);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Operations on objects.
 	//////////////////////////////////////////////////////////////////////////
 	//! Makes object visible or invisible.
 	void HideObject(CBaseObject* obj, bool hide);
+	//! Returns if the item can be isolated or if it's already isolated
+	bool ShouldToggleHideAllBut(CBaseObject* pObject) const override;
 	//! Isolates the current object's visibility
 	void ToggleHideAllBut(CBaseObject* pObj) override;
 	//! Unhide all hidden objects.
 	void UnhideAll();
 	//! Freeze object, making it unselectable.
 	void FreezeObject(CBaseObject* obj, bool freeze);
+	//! Returns if the item can be isolated or if it's already isolated
+	bool ShouldToggleFreezeAllBut(CBaseObject* pObject) const override;
 	//! Isolates the current object's frozen state
 	void ToggleFreezeAllBut(CBaseObject* pObject) override;
 	//! Unfreeze all frozen objects.
@@ -162,12 +156,21 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Object Selection.
 	//////////////////////////////////////////////////////////////////////////
-	void SelectObject(CBaseObject* obj);
-	void UnselectObject(CBaseObject* obj);
-
+	//! Clear selection and select
+	void SelectObject(CBaseObject* pObject) override;
 	void SelectObjects(const std::vector<CBaseObject*>& objects) override;
+
+	//! Add objects to current selection
+	void AddObjectToSelection(CBaseObject* pObject) override;
+	void AddObjectsToSelection(const std::vector<CBaseObject*>& objects) override;
+
+	//! Remove objects from current selection
+	void UnselectObject(CBaseObject* pObject) override;
 	void UnselectObjects(const std::vector<CBaseObject*>& objects) override;
+
+	//! Toggle selected state
 	void ToggleSelectObjects(const std::vector<CBaseObject*>& objects) override;
+	//! Add and remove objects from selection
 	void SelectAndUnselectObjects(const std::vector<CBaseObject*>& selectObjects, const std::vector<CBaseObject*>& unselectObjects) override;
 	void SelectAll() override;
 
@@ -187,7 +190,7 @@ public:
 	void InvertSelection() override;
 
 	//! Get current selection.
-	const CSelectionGroup* GetSelection() const { return &m_currSelection; };
+	const CSelectionGroup* GetSelection() const { return &m_currSelection; }
 
 	bool                   IsObjectDeletionAllowed(CBaseObject* pObject);
 
@@ -197,11 +200,11 @@ public:
 	uint32 ForceID() const     { return m_forceID; }
 	void   ForceID(uint32 FID) { m_forceID = FID; }
 
-	//! Generates uniq name base on type name of object.
+	//! Generates unique name base on type name of object.
 	string GenUniqObjectName(const string& typeName);
-	//! Register object name in object manager, needed for generating uniq names.
+	//! Register object name in object manager, needed for generating unique names.
 	void   RegisterObjectName(const string& name);
-	//! Decrease name number and remove if it was last in object manager, needed for generating uniq names.
+	//! Decrease name number and remove if it was last in object manager, needed for generating unique names.
 	void   UpdateRegisterObjectName(const string& name);
 	//! Enable/Disable generating of unique object names (Enabled by default).
 	//! Return previous value.
@@ -220,16 +223,15 @@ public:
 	virtual std::vector<string> GetAllClasses() const override;
 
 	//! Export objects to xml.
-	//! When onlyShared is true ony objects with shared flags exported, overwise only not shared object exported.
+	//! When onlyShared is true only objects with shared flags exported, otherwise only not shared object exported.
 	void Export(const string& levelPath, XmlNodeRef& rootNode, bool onlyShared);
 
 	//! Serialize Objects in manager to specified XML Node.
 	//! @param flags Can be one of SerializeFlags.
 	void Serialize(XmlNodeRef& rootNode, bool bLoading, int flags = SERIALIZE_ALL);
 
-	//! Load objects from object archive.
-	//! @param bSelect if set newly loaded object will be selected.
-	void LoadObjects(CObjectArchive& ar, bool bSelect);
+	//! Handles loading of objects from archive, guaranteeing unique names and selecting them
+	void CreateAndSelectObjects(CObjectArchive& ar) override;
 
 	//! Delete from Object manager all objects without SHARED flag.
 	void DeleteNotSharedObjects();
@@ -257,32 +259,21 @@ public:
 	void IterateTypeConverters(CRuntimeClass* pSource, std::function<void(const char* szTargetName, std::function<void(CBaseObject* pObject)> conversionFunc)> callback) override;
 
 	// Enables/Disables creating of game objects.
-	void SetCreateGameObject(bool enable) { m_createGameObjects = enable; };
-	//! Return true if objects loaded from xml should immidiatly create game objects associated with them.
-	bool IsCreateGameObjects() const      { return m_createGameObjects; };
+	void SetCreateGameObject(bool enable) { m_createGameObjects = enable; }
+	//! Return true if objects loaded from xml should immediately create game objects associated with them.
+	bool IsCreateGameObjects() const      { return m_createGameObjects; }
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Get acess to object layers manager.
+	//! Get access to object layers manager.
 	CObjectLayerManager* GetLayersManager() const { return m_pLayerManager; }
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Get acess to object layers manager.
+	//! Get access to object layers manager.
 	IObjectLayerManager* GetIObjectLayerManager() const;
 
 	//////////////////////////////////////////////////////////////////////////
-	//! Invalidate visibily settings of objects.
+	//! Invalidate visibility settings of objects.
 	void InvalidateVisibleList();
-
-	//////////////////////////////////////////////////////////////////////////
-	// ObjectManager notification Callbacks.
-	//////////////////////////////////////////////////////////////////////////
-
-	// Legacy object notification, use signalObjectChanged.Connect(); instead
-	void AddObjectEventListener(const EventCallback& cb);
-
-	// Legacy object notification, use signalObjectChanged.DisconnectById()
-	// or signalObjectChanged.DisconnectByIdDisconnectObject instead
-	void RemoveObjectEventListener(const EventCallback& cb);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Used to indicate starting and ending of objects loading.
@@ -299,39 +290,38 @@ public:
 	ICharacterInstance* GetCharacterFromObject(CBaseObject* pObject);
 
 	// Called when object gets modified.
-	void                         OnObjectModified(CBaseObject* pObject, bool bDelete, bool boModifiedTransformOnly);
+	void                   OnObjectModified(CBaseObject* pObject, bool bDelete, bool boModifiedTransformOnly);
 
-	void                         UnregisterNoExported();
-	void                         RegisterNoExported();
+	void                   UnregisterNoExported();
+	void                   RegisterNoExported();
 
-	virtual void                 FindAndRenameProperty2(const char* property2Name, const string& oldValue, const string& newValue);
-	virtual void                 FindAndRenameProperty2If(const char* property2Name, const string& oldValue, const string& newValue, const char* otherProperty2Name, const string& otherValue);
+	virtual void           FindAndRenameProperty2(const char* property2Name, const string& oldValue, const string& newValue);
+	virtual void           FindAndRenameProperty2If(const char* property2Name, const string& oldValue, const string& newValue, const char* otherProperty2Name, const string& otherValue);
 
-	virtual void                 SaveEntitiesInternalState(struct IDataWriteStream& writer) const;
-	virtual void                 AssignLayerIDsToRenderNodes();
+	virtual void           SaveEntitiesInternalState(IDataWriteStream& writer) const;
+	virtual void           AssignLayerIDsToRenderNodes();
 
-	void                         ResolveMissingObjects();
-	void                         ResolveMissingMaterials();
+	void                   ResolveMissingObjects();
+	void                   ResolveMissingMaterials();
 
-	class CObjectPhysicsManager* GetPhysicsManager()
-	{ return m_pPhysicsManager; }
+	CObjectPhysicsManager* GetPhysicsManager()                         { return m_pPhysicsManager; }
 
-	bool         IsLoading() const                           { return m_bLoadingObjects; }
+	bool                   IsLoading() const                           { return m_bLoadingObjects; }
 
-	void         SetExportingLevel(bool bExporting) override { m_bLevelExporting = bExporting; }
-	bool         IsExportingLevelInprogress() const override { return m_bLevelExporting; }
+	void                   SetExportingLevel(bool bExporting) override { m_bLevelExporting = bExporting; }
+	bool                   IsExportingLevelInprogress() const override { return m_bLevelExporting; }
 
-	void         SetSelectionMask(int mask) const override;
+	void                   SetSelectionMask(int mask) const override;
 
-	virtual void EmitPopulateInspectorEvent() const override;
+	virtual void           EmitPopulateInspectorEvent() const override;
 
-	virtual bool IsLayerChanging() const override { return m_bLayerChanging; }
+	virtual bool           IsLayerChanging() const override { return m_bLayerChanging; }
 
 	CCrySignal<void(int)> signalSelectionMaskChanged;
 
 private:
+	friend CBaseObject;
 	friend CObjectArchive;
-	friend class CBaseObject;
 	/** Creates and serialize object from xml node.
 	   @param objectNode Xml node to serialize object info from.
 	   @param pUndoObject Pointer to deleted object for undo.
@@ -339,15 +329,18 @@ private:
 	 */
 	CBaseObject* NewObject(CObjectArchive&, CBaseObject* pUndoObject, bool bLoadInCurrentLayer) override;
 
+	//! Load objects from object archive.
+	void LoadObjects(CObjectArchive& ar);
+
 	//! Update visibility of all objects.
 	void UpdateVisibilityList();
 	//! Get array of all objects in manager.
 	void GetAllObjects(TBaseObjects& objects) const;
 
 	void LinkToObject(CBaseObject* pObject, CBaseObject* pLinkTo);
-	void LinkToObject(const std::vector<CBaseObject*> objects, CBaseObject* pLinkTo);
-	void LinkToBone(const std::vector<CBaseObject*> objects, CEntityObject* pLinkTo);
-	void LinkToGeomCacheNode(const std::vector<CBaseObject*> objects, CGeomCacheEntity* pLinkTo, const char* target);
+	void LinkToObject(const std::vector<CBaseObject*>& objects, CBaseObject* pLinkTo);
+	void LinkToBone(const std::vector<CBaseObject*>& objects, CEntityObject* pLinkTo);
+	void LinkToGeomCacheNode(const std::vector<CBaseObject*>& objects, CGeomCacheEntity* pLinkTo, const char* target);
 
 	void UnlinkObjects(const std::vector<CBaseObject*>& objects);
 
@@ -358,10 +351,10 @@ private:
 	void SelectObjectInRect(CBaseObject* pObj, CViewport* view, HitContext hc, ESelectOp bSelect);
 	void HitTestObjectAgainstRect(CBaseObject* pObj, CViewport* view, HitContext hc, std::vector<CryGUID>& guids);
 
-	// Legacy object notification, use signalObjectChanged(event, data); instead
-	void NotifyObjectListeners(CBaseObject* pObject, EObjectListenerEvent event);
+	void NotifyObjectListeners(CBaseObject* pObject, const CObjectEvent& event) const override;
+	void NotifyObjectListeners(const std::vector<CBaseObject*>& objects, const CObjectEvent& event) const override;
 
-	void FindDisplayableObjects(DisplayContext& dc, const SRenderingPassInfo* passInfo, bool bDisplay);
+	void FindDisplayableObjects(SDisplayContext& dc, const SRenderingPassInfo* passInfo, bool bDisplay);
 
 	void UpdateAttachedEntities();
 
@@ -392,17 +385,12 @@ private:
 	uint32 m_forceID;
 
 	//! Array of currently visible objects.
-	TBaseObjects m_visibleObjects;
-	bool         m_bVisibleObjectValid;
-	unsigned int m_lastHideMask;
+	TBaseObjects    m_visibleObjects;
+	bool            m_bVisibleObjectValid;
+	unsigned int    m_lastHideMask;
 
-	float        m_maxObjectViewDistRatio;
+	float           m_maxObjectViewDistRatio;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Selection.
-	//! Current selection group.
-	//! This is a pointer due to the legacy support of supporting saved selections by name and switching them by switching the pointer
-	//! Leaving the pointer for now
 	CSelectionGroup m_currSelection;
 
 	//TODO : these should not be necessary
@@ -424,7 +412,7 @@ private:
 	int            m_totalObjectsToLoad;
 	//////////////////////////////////////////////////////////////////////////
 
-	class CObjectPhysicsManager* m_pPhysicsManager;
+	CObjectPhysicsManager* m_pPhysicsManager;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Numbering for names.
@@ -441,4 +429,3 @@ private:
 
 	std::vector<SConverter> m_typeConverters;
 };
-

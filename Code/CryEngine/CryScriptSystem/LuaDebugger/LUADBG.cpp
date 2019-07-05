@@ -19,10 +19,6 @@
 	#include <CryInput/IInput.h>
 
 	#include <direct.h>
-	#if CRY_PLATFORM_32BIT
-		#include "Shlwapi.h"
-		#pragma comment(lib, "Shlwapi.lib")
-	#endif
 
 	#pragma warning(disable: 4244)
 
@@ -85,8 +81,7 @@ LRESULT CSourceEdit::OnPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	int w, h;
 	UINT i;
 	int iLine;
-	const char* pszFile = NULL;
-	/////////////////////////////
+
 	GetClientRect(&rect);
 	w = rect.right - rect.left;
 	h = rect.bottom - rect.top;
@@ -539,6 +534,10 @@ LRESULT CLUADbg::OnCreate(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	string sUIFolder = "LIBS/UI/UIACTIONS/";
 	m_wFilesTree.ScanFiles((char*)sUIFolder.c_str());
+
+	string sUIScripts = "ui/";
+	m_wFilesTree.ScanFiles((char*)sUIScripts.c_str());
+
 	string sItemsFolder = "ITEMS/";
 	m_wFilesTree.ScanFiles((char*)sItemsFolder.c_str());
 
@@ -1112,7 +1111,6 @@ void CLUADbg::GetStackAndLocals()
 	{
 		std::vector<SLuaStackEntry> callstack;
 		m_pScriptSystem->GetCallStack(callstack);
-		const char* pszText = NULL;
 		int iItem = 0;
 		m_wCallstack.Clear();
 
@@ -1378,7 +1376,6 @@ HTREEITEM CLUADbg::AddVariableToTree(const char* sName, ScriptVarType type, HTRE
 		}
 		else
 		{
-			float fVal = 0;
 			if (type == svtString)
 			{
 				bRetrieved = m_pIVariable->GetValue(sName, szContent);
@@ -1427,7 +1424,6 @@ HTREEITEM CLUADbg::AddVariableToTree(const char* sName, ScriptVarType type, HTRE
 void CLUADbg::OnElementFound(const char* sName, ScriptVarType type)
 {
 	HTREEITEM hRoot = NULL;
-	UINT iRecursionLevel = 0;
 	SmartScriptTable pTable(m_pScriptSystem, true);
 	IScriptTable* pIOldTbl = NULL;
 	HTREEITEM hOldRoot = NULL;
@@ -1509,7 +1505,7 @@ bool CLUADbg::InvokeDebugger(const char* pszSourceFile, int iLine, const char* p
 	::SetForegroundWindow(m_hWnd);
 	if (gEnv && gEnv->pSystem && gEnv->pSystem->GetIHardwareMouse())
 		gEnv->pSystem->GetIHardwareMouse()->IncrementCounter();
-	if (gEnv->IsDedicated())
+	if (gEnv->IsDedicated() && gEnv->pInput)
 		gEnv->pInput->ShowCursor(true);
 
 	if (pszSourceFile && pszSourceFile[0] == '@')

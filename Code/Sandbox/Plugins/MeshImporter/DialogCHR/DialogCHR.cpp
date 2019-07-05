@@ -30,8 +30,9 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryPhysics/IPhysicsDebugRenderer.h>
+#include <CryPhysics/physinterface.h>
 
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 #include <QtViewPane.h>
 #include <Material/Material.h>
 #include <Material/MaterialManager.h>
@@ -43,7 +44,7 @@
 #include <Controls/QMenuComboBox.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include <QTemporaryFile>
 #include <QTemporaryDir>
@@ -449,7 +450,10 @@ void CDialogCHR::UpdateCharacter()
 	}
 
 	m_pCharacter->m_pCharInstance = CreateTemporaryCharacter(skeletonFilePath, skinFilePath, QString());
-	m_pCharacter->m_pCharInstance->SetCharEditMode(m_pCharacter->m_pCharInstance->GetCharEditMode() | CA_CharacterTool);
+	if (m_pCharacter->m_pCharInstance)
+	{
+		m_pCharacter->m_pCharInstance->SetCharEditMode(m_pCharacter->m_pCharInstance->GetCharEditMode() | CA_CharacterAuxEditor);
+	}
 
 	m_pCharacter->m_pPoseModifier = CSkeletonPoseModifier::CreateClassInstance();
 
@@ -489,7 +493,7 @@ CDialogCHR::CDialogCHR(QWidget* pParent)
 	m_pPreviewModeWidget = new CPreviewModeWidget();
 	m_pViewportContainer->SetHeaderWidget(m_pPreviewModeWidget);
 
-	m_pPropertyTree = new QPropertyTree();
+	m_pPropertyTree = new QPropertyTreeLegacy();
 	m_pPropertyTree->setSliderUpdateDelay(0);
 
 	m_pModelProperties.reset(new CModelProperties(m_pPropertyTree));
@@ -1213,4 +1217,3 @@ void CDialogCHR::OnViewportMouse(const SMouseEvent& ev)
 }
 
 } // namespace MeshImporter
-

@@ -15,6 +15,7 @@
 #include "Brush.h"
 #include "VisAreas.h"
 #include "MatMan.h"
+#include "StatObjFoliage.h"
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryParticleSystem/IParticles.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
@@ -119,6 +120,8 @@ foundbox:
 			pEngine->m_arrEntsInFoliage[i].timeIdle = 0;
 
 		IRenderNode* pVeg = GetRenderNodeFromPhys(pOverlap->pForeignData[1], pOverlap->iForeignData[1]);
+		if (!pVeg)
+			return 1;
 		const CCamera& cam = gEnv->pSystem->GetViewCamera();
 		int cullDist = GetCVars()->e_CullVegActivation;
 		int iSource = 0;
@@ -216,7 +219,7 @@ void CDeferredCollisionEventOnPhysCollision::RayTraceVegetation()
 	pCollision->pEntity[1]->GetStatus(&sp);
 	mtx = mtxw * mtx;
 
-	if (pStatObj->m_nSpines && pCollision->n * pCollision->vloc[0] > 0)
+	if (pStatObj->m_nSpines && pCollision->n * pCollision->vloc[0] < 0)
 	{
 		ai.impulse = pCollision->vloc[0] * (pCollision->mass[0] * 0.5f);
 		pt = pt0 = pCollision->pt;

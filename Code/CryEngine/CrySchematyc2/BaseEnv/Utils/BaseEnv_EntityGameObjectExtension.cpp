@@ -57,7 +57,7 @@ namespace SchematycBaseEnv
 	{
 		SetGameObject(pGameObject);
 		
-		IEntityAttributesComponent* pAttribComponent = GetEntity()->GetOrCreateComponent<IEntityAttributesComponent>();
+		GetEntity()->GetOrCreateComponent<IEntityAttributesComponent>();
 
 		// NOTE pavloi 2016.11.25: CEntityClassRegistrar::RegisterEntityClass() sets a pointer to SEntityClass in the userProxyData
 		const CEntityClassRegistrar::SEntityClass* pClassUserData = static_cast<CEntityClassRegistrar::SEntityClass*>(GetEntity()->GetClass()->GetUserProxyData());
@@ -108,9 +108,9 @@ namespace SchematycBaseEnv
 
 	void CEntityGameObjectExtension::PostRemoteSpawn() {}
 
-	uint64 CEntityGameObjectExtension::GetEventMask() const
+	Cry::Entity::EventFlags CEntityGameObjectExtension::GetEventMask() const
 	{
-		return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_LEVEL) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
+		return ENTITY_EVENT_RESET | ENTITY_EVENT_START_LEVEL | ENTITY_EVENT_DONE;
 	}
 
 	void CEntityGameObjectExtension::ProcessEvent(const SEntityEvent& event)

@@ -1,7 +1,7 @@
 @ECHO OFF
 
 REM Initialize values
-SET CRYSELECT=%~dp0tools\CryVersionSelector\cryselect.exe
+SET CRYSELECT=%~dp0tools\CryVersionSelector\bin\cryselect\cryselect.exe
 SET ENGINE=%~dp0cryengine.cryengine
 SET PAUSE_ON_END=0
 

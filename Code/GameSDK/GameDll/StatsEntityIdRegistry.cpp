@@ -73,7 +73,7 @@ CStatsEntityIdRegistry::CStatsEntityIdRegistry()
 		{
 			SClassId entity;
 			entity.m_pClass = pClassRegistry->FindClass(pName);
-			CRY_ASSERT_TRACE(entity.m_pClass, ("Failed to find class '%s' referenced in StatsEntityIds.xml", pName));
+			CRY_ASSERT(entity.m_pClass, "Failed to find class '%s' referenced in StatsEntityIds.xml", pName);
 			entity.m_id = atoi(pValue);
 			vec.push_back(entity);
 		}
@@ -111,7 +111,7 @@ CStatsEntityIdRegistry::CStatsEntityIdRegistry()
 uint16 CStatsEntityIdRegistry::GetGameModeId( const char *pModeName ) const
 {
 	const IEntityClass *pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(pModeName);
-	CRY_ASSERT_TRACE(pClass, ("Failed to find class '%s'", pModeName));
+	CRY_ASSERT(pClass, "Failed to find class '%s'", pModeName);
 	return GetGameModeId(pClass);
 }
 

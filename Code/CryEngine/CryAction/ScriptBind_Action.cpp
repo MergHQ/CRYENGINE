@@ -1,23 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "GameObjects/GameObject.h"
 #include "ScriptBind_Action.h"
+#include "GameObjects/GameObject.h"
 #include "Serialization/XMLScriptLoader.h"
 #include "CryAction.h"
 #include "Network/GameServerChannel.h"
 #include "Network/GameServerNub.h"
 #include "Network/GameContext.h"
-#include "SignalTimers/SignalTimers.h"
-#include "RangeSignalingSystem/RangeSignaling.h"
 #include <CryEntitySystem/IEntitySystem.h>
-#include "AIProxy.h"
 #include <CryGame/IGameTokens.h>
 #include <IEffectSystem.h>
 #include <IGameplayRecorder.h>
 #include "PersistantDebug.h"
-#include <CryAISystem/IAIObject.h>
-#include <CryAISystem/IAIObjectManager.h>
 
 //------------------------------------------------------------------------
 CScriptBind_Action::CScriptBind_Action(CCryAction* pCryAction)
@@ -58,10 +53,6 @@ void CScriptBind_Action::RegisterGlobals()
 	SCRIPT_REG_GLOBAL(eGE_ScoreReset);
 	SCRIPT_REG_GLOBAL(eGE_Damage);
 	SCRIPT_REG_GLOBAL(eGE_WeaponHit);
-
-	gEnv->pScriptSystem->SetGlobalValue("QueryAimFromMovementController", CAIProxy::QueryAimFromMovementController);
-	gEnv->pScriptSystem->SetGlobalValue("OverriddenAndAiming", CAIProxy::OverriddenAndAiming);
-	gEnv->pScriptSystem->SetGlobalValue("OverriddenAndNotAiming", CAIProxy::OverriddenAndNotAiming);
 }
 
 //------------------------------------------------------------------------
@@ -111,29 +102,18 @@ void CScriptBind_Action::RegisterMethods()
 
 	SCRIPT_REG_TEMPLFUNC(DontSyncPhysics, "entityId");
 
-	SCRIPT_REG_TEMPLFUNC(EnableSignalTimer, "entityId, text");
-	SCRIPT_REG_TEMPLFUNC(DisableSignalTimer, "entityId, text");
-	SCRIPT_REG_TEMPLFUNC(SetSignalTimerRate, "entityId, text, float, float");
-	SCRIPT_REG_TEMPLFUNC(ResetSignalTimer, "entityId, text");
-
-	SCRIPT_REG_TEMPLFUNC(EnableRangeSignaling, "entityId, bEnable");
-	SCRIPT_REG_TEMPLFUNC(DestroyRangeSignaling, "entityId");
-	SCRIPT_REG_TEMPLFUNC(ResetRangeSignaling, "entityId");
-
-	SCRIPT_REG_TEMPLFUNC(AddRangeSignal, "entityId, float, float, text");
-	SCRIPT_REG_TEMPLFUNC(AddTargetRangeSignal, "entityId, targetId, float, float, text");
-	SCRIPT_REG_TEMPLFUNC(AddAngleSignal, "entityId, float, float, text");
-
 	SCRIPT_REG_FUNC(SetViewCamera);
 	SCRIPT_REG_FUNC(ResetToNormalCamera);
 
-	SCRIPT_REG_FUNC(RegisterWithAI);
+	
 	SCRIPT_REG_TEMPLFUNC(HasAI, "entityId");
 
 	SCRIPT_REG_TEMPLFUNC(GetClassName, "classId");
-	SCRIPT_REG_TEMPLFUNC(SetAimQueryMode, "entityId, mode");
 
 	SCRIPT_REG_TEMPLFUNC(PreLoadADB, "adbFileName");
+
+	// Temporary registered here, will be moved to GameSDK later
+	SCRIPT_REG_FUNC(RegisterWithAI);
 }
 
 int CScriptBind_Action::LoadXML(IFunctionHandler* pH, const char* definitionFile, const char* dataFile)
@@ -148,7 +128,7 @@ int CScriptBind_Action::SaveXML(IFunctionHandler* pH, const char* definitionFile
 
 int CScriptBind_Action::IsGameStarted(IFunctionHandler* pH)
 {
-	return pH->EndFunction(m_pCryAction->IsGameStarted());
+	return pH->EndFunction(gEnv->pGameFramework->IsGameStarted());
 }
 
 int CScriptBind_Action::IsRMIServer(IFunctionHandler* pH)
@@ -561,34 +541,6 @@ int CScriptBind_Action::ClearStaticTag(IFunctionHandler* pH, ScriptHandle entity
 	return pH->EndFunction();
 }
 
-//-------------------------------------------------------------------------
-int CScriptBind_Action::EnableSignalTimer(IFunctionHandler* pH, ScriptHandle entityId, const char* sText)
-{
-	bool bRet = CSignalTimer::ref().EnablePersonalManager((EntityId)entityId.n, sText);
-	return pH->EndFunction(bRet);
-}
-
-//-------------------------------------------------------------------------
-int CScriptBind_Action::DisableSignalTimer(IFunctionHandler* pH, ScriptHandle entityId, const char* sText)
-{
-	bool bRet = CSignalTimer::ref().DisablePersonalSignalTimer((EntityId)entityId.n, sText);
-	return pH->EndFunction(bRet);
-}
-
-//-------------------------------------------------------------------------
-int CScriptBind_Action::SetSignalTimerRate(IFunctionHandler* pH, ScriptHandle entityId, const char* sText, float fRateMin, float fRateMax)
-{
-	bool bRet = CSignalTimer::ref().SetTurnRate((EntityId)entityId.n, sText, fRateMin, fRateMax);
-	return pH->EndFunction(bRet);
-}
-
-//-------------------------------------------------------------------------
-int CScriptBind_Action::ResetSignalTimer(IFunctionHandler* pH, ScriptHandle entityId, const char* sText)
-{
-	bool bRet = CSignalTimer::ref().ResetPersonalTimer((EntityId)entityId.n, sText);
-	return pH->EndFunction(bRet);
-}
-
 //------------------------------------------------------------------------
 int CScriptBind_Action::SendGameplayEvent(IFunctionHandler* pH, ScriptHandle entityId, int event)
 {
@@ -630,105 +582,6 @@ int CScriptBind_Action::CacheItemGeometry(IFunctionHandler* pH, const char* item
 }
 
 //------------------------------------------------------------------------
-int CScriptBind_Action::EnableRangeSignaling(IFunctionHandler* pH, ScriptHandle entityId, bool bEnable)
-{
-	CCryAction::GetCryAction()->GetRangeSignaling()->EnablePersonalRangeSignaling((EntityId)entityId.n, bEnable);
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::DestroyRangeSignaling(IFunctionHandler* pH, ScriptHandle entityId)
-{
-	CCryAction::GetCryAction()->GetRangeSignaling()->DestroyPersonalRangeSignaling((EntityId)entityId.n);
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::ResetRangeSignaling(IFunctionHandler* pH, ScriptHandle entityId)
-{
-	CCryAction::GetCryAction()->GetRangeSignaling()->ResetPersonalRangeSignaling((EntityId)entityId.n);
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::AddRangeSignal(IFunctionHandler* pH, ScriptHandle entityId, float fRadius, float fFlexibleBoundary, const char* sSignal)
-{
-	if (gEnv->pAISystem)
-	{
-		// Get optional signal data
-		IAISignalExtraData* pData = NULL;
-		if (pH->GetParamCount() > 4)
-		{
-			SmartScriptTable dataTable;
-			if (pH->GetParam(5, dataTable))
-			{
-				pData = gEnv->pAISystem->CreateSignalExtraData();
-				CRY_ASSERT(pData);
-				pData->FromScriptTable(dataTable);
-			}
-		}
-
-		CCryAction::GetCryAction()->GetRangeSignaling()->AddRangeSignal((EntityId)entityId.n, fRadius, fFlexibleBoundary, sSignal, pData);
-		gEnv->pAISystem->FreeSignalExtraData(pData);
-	}
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::AddTargetRangeSignal(IFunctionHandler* pH, ScriptHandle entityId, ScriptHandle targetId, float fRadius, float fFlexibleBoundary, const char* sSignal)
-{
-	if (gEnv->pAISystem)
-	{
-		// Get optional signal data
-		IAISignalExtraData* pData = NULL;
-		if (pH->GetParamCount() > 5)
-		{
-			SmartScriptTable dataTable;
-			if (pH->GetParam(6, dataTable))
-			{
-				pData = gEnv->pAISystem->CreateSignalExtraData();
-				CRY_ASSERT(pData);
-				pData->FromScriptTable(dataTable);
-			}
-		}
-
-		CCryAction::GetCryAction()->GetRangeSignaling()->AddTargetRangeSignal((EntityId)entityId.n, (EntityId)targetId.n, fRadius, fFlexibleBoundary, sSignal, pData);
-		gEnv->pAISystem->FreeSignalExtraData(pData);
-	}
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::AddAngleSignal(IFunctionHandler* pH, ScriptHandle entityId, float fAngle, float fFlexibleBoundary, const char* sSignal)
-{
-	if (gEnv->pAISystem)
-	{
-		// Get optional signal data
-		IAISignalExtraData* pData = NULL;
-		if (pH->GetParamCount() > 4)
-		{
-			SmartScriptTable dataTable;
-			if (pH->GetParam(5, dataTable))
-			{
-				pData = gEnv->pAISystem->CreateSignalExtraData();
-				CRY_ASSERT(pData);
-				pData->FromScriptTable(dataTable);
-			}
-		}
-
-		CCryAction::GetCryAction()->GetRangeSignaling()->AddAngleSignal((EntityId)entityId.n, fAngle, fFlexibleBoundary, sSignal, pData);
-		gEnv->pAISystem->FreeSignalExtraData(pData);
-	}
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
 int CScriptBind_Action::DontSyncPhysics(IFunctionHandler* pH, ScriptHandle entityId)
 {
 	if (CGameObject* pGO = static_cast<CGameObject*>(CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity((EntityId)entityId.n)))
@@ -738,9 +591,57 @@ int CScriptBind_Action::DontSyncPhysics(IFunctionHandler* pH, ScriptHandle entit
 	return pH->EndFunction();
 }
 
+//------------------------------------------------------------------------
+int CScriptBind_Action::HasAI(IFunctionHandler* pH, ScriptHandle entityId)
+{
+	const EntityId id = (EntityId)entityId.n;
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
+	
+	const bool hasAI = pEntity ? pEntity->HasAI() : false;
+	return pH->EndFunction(hasAI);
+}
+
+//------------------------------------------------------------------------
+int CScriptBind_Action::GetClassName(IFunctionHandler* pH, int classId)
+{
+	char className[128];
+	bool retrieved = CCryAction::GetCryAction()->GetNetworkSafeClassName(className, sizeof(className), classId);
+
+	if (retrieved)
+	{
+		return pH->EndFunction(className);
+	}
+
+	return pH->EndFunction();
+}
+
+// ============================================================================
+//	Pre-load a mannequin ADB file.
+//
+//	In:		The function handler (NULL is invalid!)
+//	In:		The name of the ADB file.
+//
+//	Returns:	A default result code (in Lua: void).
+//
+int CScriptBind_Action::PreLoadADB(IFunctionHandler* pH, const char* adbFileName)
+{
+	IF_LIKELY (adbFileName != NULL)
+	{
+		IMannequin& mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
+		if (mannequinInterface.GetAnimationDatabaseManager().Load(adbFileName) == NULL)
+		{
+			GameWarning("PreLoadADB(): Failed to pre-load '%s'!", adbFileName);
+		}
+	}
+
+	return pH->EndFunction();
+}
+
+#include <CryAISystem/IAIActorProxy.h>
+#include <CryAISystem/IAIObjectManager.h>
+
 //
 //-----------------------------------------------------------------------------------------------------------
-// (MATT) Moved here from Scriptbind_AI when that was moved to the AI system {2008/02/15:15:23:16}
 int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 {
 	if (gEnv->bMultiplayer && !gEnv->bServer)
@@ -812,121 +713,121 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 
 	case AIOBJECT_INFECTED:
 	case AIOBJECT_ALIENTICK:
+	{
+		// (MATT) The pActor/pVehicle test below - is it basically trying to distiguish between the two cases above? If so, separate them! {2008/02/15:19:38:08}
+		if (!pActor)
 		{
-			// (MATT) The pActor/pVehicle test below - is it basically trying to distiguish between the two cases above? If so, separate them! {2008/02/15:19:38:08}
-			if (!pActor)
-			{
-				GameWarning("RegisterWithAI: no Actor for %s.", pEntity->GetName());
-				return pH->EndFunction();
-			}
-			pGameObject = pActor->GetGameObject();
+			GameWarning("RegisterWithAI: no Actor for %s.", pEntity->GetName());
+			return pH->EndFunction();
 		}
-		break;
+		pGameObject = pActor->GetGameObject();
+	}
+	break;
 	case AIOBJECT_BOAT:
 	case AIOBJECT_CAR:
+	{
+		if (!pVehicle)
 		{
-			if (!pVehicle)
-			{
-				GameWarning("RegisterWithAI: no Vehicle for %s (Id %i).", pEntity->GetName(), pEntity->GetId());
-				return pH->EndFunction();
-			}
-			pGameObject = pVehicle->GetGameObject();
+			GameWarning("RegisterWithAI: no Vehicle for %s (Id %i).", pEntity->GetName(), pEntity->GetId());
+			return pH->EndFunction();
 		}
-		break;
+		pGameObject = pVehicle->GetGameObject();
+	}
+	break;
 
 	case AIOBJECT_HELICOPTER:
 	case AIOBJECT_HELICOPTERCRYSIS2:
+	{
+		if (!pVehicle)
 		{
-			if (!pVehicle)
-			{
-				GameWarning("RegisterWithAI: no Vehicle for %s (Id %i).", pEntity->GetName(), pEntity->GetId());
-				return pH->EndFunction();
-			}
-			pGameObject = pVehicle->GetGameObject();
-			params.m_moveAbility.b3DMove = true;
+			GameWarning("RegisterWithAI: no Vehicle for %s (Id %i).", pEntity->GetName(), pEntity->GetId());
+			return pH->EndFunction();
 		}
-		break;
+		pGameObject = pVehicle->GetGameObject();
+		params.m_moveAbility.b3DMove = true;
+	}
+	break;
 	case AIOBJECT_PLAYER:
+	{
+		if (IsDemoPlayback())
+			return pH->EndFunction();
+
+		SmartScriptTable pTable;
+
+		if (pH->GetParamCount() > 2)
+			pH->GetParam(3, pTable);
+		else
+			return pH->EndFunction();
+
+		pGameObject = pActor->GetGameObject();
+
+		pTable->GetValue("groupid", params.m_sParamStruct.m_nGroup);
+
+		const char* faction = 0;
+		if (pTable->GetValue("esFaction", faction) && gEnv->pAISystem)
 		{
-			if (IsDemoPlayback())
-				return pH->EndFunction();
-
-			SmartScriptTable pTable;
-
-			if (pH->GetParamCount() > 2)
-				pH->GetParam(3, pTable);
-			else
-				return pH->EndFunction();
-
-			pGameObject = pActor->GetGameObject();
-
-			pTable->GetValue("groupid", params.m_sParamStruct.m_nGroup);
-
-			const char* faction = 0;
-			if (pTable->GetValue("esFaction", faction) && gEnv->pAISystem)
+			params.m_sParamStruct.factionID = gEnv->pAISystem->GetFactionMap().GetFactionID(faction);
+			if (faction && *faction && (params.m_sParamStruct.factionID == IFactionMap::InvalidFactionID))
 			{
-				params.m_sParamStruct.factionID = gEnv->pAISystem->GetFactionMap().GetFactionID(faction);
-				if (faction && *faction && (params.m_sParamStruct.factionID == IFactionMap::InvalidFactionID))
-				{
-					GameWarning("Unknown faction '%s' being set...", faction);
-				}
-			}
-			else
-			{
-				// MÃ¡rcio: backwards compatibility
-				int species = -1;
-				if (!pTable->GetValue("eiSpecies", species))
-					pTable->GetValue("species", species);
-
-				if (species > -1)
-					params.m_sParamStruct.factionID = species;
-			}
-
-			pTable->GetValue("commrange", params.m_sParamStruct.m_fCommRange); //Luciano - added to use GROUPONLY signals
-
-			SmartScriptTable pPerceptionTable;
-			if (pTable->GetValue("Perception", pPerceptionTable))
-			{
-				pPerceptionTable->GetValue("sightrange", params.m_sParamStruct.m_PerceptionParams.sightRange);
+				GameWarning("Unknown faction '%s' being set...", faction);
 			}
 		}
-		break;
+		else
+		{
+			// Márcio: backwards compatibility
+			int species = -1;
+			if (!pTable->GetValue("eiSpecies", species))
+				pTable->GetValue("species", species);
+
+			if (species > -1)
+				params.m_sParamStruct.factionID = species;
+		}
+
+		pTable->GetValue("commrange", params.m_sParamStruct.m_fCommRange); //Luciano - added to use GROUPONLY signals
+
+		SmartScriptTable pPerceptionTable;
+		if (pTable->GetValue("Perception", pPerceptionTable))
+		{
+			pPerceptionTable->GetValue("sightrange", params.m_sParamStruct.m_PerceptionParams.sightRange);
+		}
+	}
+	break;
 	case AIOBJECT_SNDSUPRESSOR:
-		{
-			// (MATT) This doesn't need a proxy? {2008/02/15:19:45:58}
-			SmartScriptTable pTable;
-			// Properties table
-			if (pH->GetParamCount() > 2)
-				pH->GetParam(3, pTable);
-			else
-				return pH->EndFunction();
-			if (!pTable->GetValue("radius", params.m_moveAbility.pathRadius))
-				params.m_moveAbility.pathRadius = 10.f;
-			break;
-		}
+	{
+		// (MATT) This doesn't need a proxy? {2008/02/15:19:45:58}
+		SmartScriptTable pTable;
+		// Properties table
+		if (pH->GetParamCount() > 2)
+			pH->GetParam(3, pTable);
+		else
+			return pH->EndFunction();
+		if (!pTable->GetValue("radius", params.m_moveAbility.pathRadius))
+			params.m_moveAbility.pathRadius = 10.f;
+		break;
+	}
 	case AIOBJECT_WAYPOINT:
 		break;
 		/*
-		   // this block is commented out since params.m_sParamStruct is currently ignored in pEntity->RegisterInAISystem()
-		   // instead of setting the group id here, it will be set from the script right after registering
-		   default:
-		   // try to get groupid settings for anchors
-		   params.m_sParamStruct.m_nGroup = -1;
-		   params.m_sParamStruct.m_nSpecies = -1;
-		   {
-		   SmartScriptTable pTable;
-		   if ( pH->GetParamCount() > 2 )
-		   pH->GetParam( 3, pTable );
-		   if ( *pTable )
-		   pTable->GetValue( "groupid", params.m_sParamStruct.m_nGroup );
-		   }
-		   break;
-		 */
+		// this block is commented out since params.m_sParamStruct is currently ignored in pEntity->RegisterInAISystem()
+		// instead of setting the group id here, it will be set from the script right after registering
+		default:
+		// try to get groupid settings for anchors
+		params.m_sParamStruct.m_nGroup = -1;
+		params.m_sParamStruct.m_nSpecies = -1;
+		{
+		SmartScriptTable pTable;
+		if (pH->GetParamCount() > 2)
+		pH->GetParam(3, pTable);
+		if (*pTable)
+		pTable->GetValue("groupid", params.m_sParamStruct.m_nGroup);
+		}
+		break;
+		*/
 	}
 
 	params.name = pEntity->GetName();
 
-	// Register in AI to get a new AI object, deregistering the old one in the process
+	// Register in AI to get a new AI object, unregistering the old one in the process
 	gEnv->pAISystem->GetAIObjectManager()->CreateAIObject(params);
 
 	// (MATT) ? {2008/02/15:19:46:29}
@@ -953,70 +854,6 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 
 		if (IAIActorProxy* proxy = aiObject->GetProxy())
 			proxy->UpdateMeAlways(!autoDisable);
-	}
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::HasAI(IFunctionHandler* pH, ScriptHandle entityId)
-{
-	bool bResult = false;
-
-	const EntityId id = (EntityId)entityId.n;
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
-	if (pEntity)
-	{
-		bResult = (pEntity->GetAI() != 0);
-	}
-
-	return pH->EndFunction(bResult);
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::GetClassName(IFunctionHandler* pH, int classId)
-{
-	char className[128];
-	bool retrieved = CCryAction::GetCryAction()->GetNetworkSafeClassName(className, sizeof(className), classId);
-
-	if (retrieved)
-	{
-		return pH->EndFunction(className);
-	}
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Action::SetAimQueryMode(IFunctionHandler* pH, ScriptHandle entityId, int mode)
-{
-	IEntity* entity = gEnv->pEntitySystem->GetEntity(static_cast<EntityId>(entityId.n));
-	IAIObject* ai = entity ? entity->GetAI() : NULL;
-	CAIProxy* proxy = ai ? static_cast<CAIProxy*>(ai->GetProxy()) : NULL;
-
-	if (proxy)
-		proxy->SetAimQueryMode(static_cast<CAIProxy::AimQueryMode>(mode));
-
-	return pH->EndFunction();
-}
-
-// ============================================================================
-//	Pre-load a mannequin ADB file.
-//
-//	In:		The function handler (NULL is invalid!)
-//	In:		The name of the ADB file.
-//
-//	Returns:	A default result code (in Lua: void).
-//
-int CScriptBind_Action::PreLoadADB(IFunctionHandler* pH, const char* adbFileName)
-{
-	IF_LIKELY (adbFileName != NULL)
-	{
-		IMannequin& mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
-		if (mannequinInterface.GetAnimationDatabaseManager().Load(adbFileName) == NULL)
-		{
-			GameWarning("PreLoadADB(): Failed to pre-load '%s'!", adbFileName);
-		}
 	}
 
 	return pH->EndFunction();

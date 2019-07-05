@@ -168,7 +168,6 @@ void CAILightManager::Update(bool forceUpdate)
 
 	CTimeValue t = GetAISystem()->GetFrameStartTime();
 	int64 dt = (t - m_lastUpdateTime).GetMilliSecondsAsInt64();
-	int nDynLightsAtStart = m_dynLights.size();     // Just for debugging - the vector can shrink
 
 	//	if (dt > 0.25f || forceUpdate)
 	{
@@ -216,7 +215,7 @@ void CAILightManager::Update(bool forceUpdate)
 //===================================================================
 void CAILightManager::DebugDraw()
 {
-	int mode = gAIEnv.CVars.DebugDrawLightLevel;
+	int mode = gAIEnv.CVars.legacyDebugDraw.DebugDrawLightLevel;
 	if (mode == 0)
 		return;
 
@@ -267,7 +266,7 @@ void CAILightManager::DebugDraw()
 				playerEffectCol = ColorB(255, 128, 255);
 				break;
 			default:
-				CRY_ASSERT_MESSAGE(false, "CAILightManager::DebugDraw Unhandled light level");
+				CRY_ASSERT(false, "CAILightManager::DebugDraw Unhandled light level");
 				break;
 			}
 		}

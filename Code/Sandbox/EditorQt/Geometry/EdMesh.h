@@ -1,18 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __edmesh_h__
-#define __edmesh_h__
 #pragma once
 
-#include "EdGeometry.h"
-#include "Objects\SubObjSelection.h"
-#include "TriMesh.h"
+#include "SandboxAPI.h"
+#include "Geometry/EdGeometry.h"
+#include "Geometry/TriMesh.h"
+#include "Objects/SubObjSelection.h"
 
-// Flags that can be set on CEdMesh.
-enum CEdMeshFlags
-{
+#include <Util/PakFile.h>
 
-};
+struct IMaterial;
+struct SGeometryDebugDrawInfo;
+struct SRenderingPassInfo;
+struct SRendParams;
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
@@ -27,7 +26,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// CEdGeometry implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual EEdGeometryType GetType() const { return GEOM_TYPE_MESH; };
+	virtual EEdGeometryType GetType() const { return GEOM_TYPE_MESH; }
 
 	virtual void            GetBounds(AABB& box);
 	virtual CEdGeometry*    Clone();
@@ -35,7 +34,7 @@ public:
 	virtual void            GetTM(Matrix34* pTM, size_t idx = 0);
 	virtual bool            StartSubObjSelection(const Matrix34& nodeWorldTM, int elemType, int nFlags);
 	virtual void            EndSubObjSelection();
-	virtual void            Display(DisplayContext& dc);
+	virtual void            Display(SDisplayContext& dc);
 	virtual bool            HitTest(HitContext& hit);
 	bool                    GetSelectionReferenceFrame(Matrix34& refFrame);
 	//////////////////////////////////////////////////////////////////////////
@@ -43,17 +42,17 @@ public:
 	~CEdMesh();
 
 	// Return filename of mesh.
-	const string& GetFilename() const { return m_filename; };
-	void           SetFilename(const string& filename);
+	const string& GetFilename() const { return m_filename; }
+	void          SetFilename(const string& filename);
 
 	//! Reload geometry of mesh.
 	void ReloadGeometry();
 	void AddUser();
 	void RemoveUser();
-	int  GetUserCount() const { return m_nUserCount; };
+	int  GetUserCount() const { return m_nUserCount; }
 
 	//////////////////////////////////////////////////////////////////////////
-	void SetFlags(int nFlags) { m_nFlags = nFlags; };
+	void SetFlags(int nFlags) { m_nFlags = nFlags; }
 	int  GetFlags()           { return m_nFlags; }
 	//////////////////////////////////////////////////////////////////////////
 
@@ -126,10 +125,9 @@ private:
 	};
 	struct SSubObjHitTestResult
 	{
-		CTriMesh::EStream stream;      // To What stream of the TriMesh this result apply.
-		MeshElementsArray elems;       // List of hit elements.
-		float             minDistance; // Minimal distance to the hit.
-		SSubObjHitTestResult() { minDistance = FLT_MAX; }
+		CTriMesh::EStream stream { CTriMesh::VERTICES }; // To What stream of the TriMesh this result apply.
+		MeshElementsArray elems;                         // List of hit elements.
+		float             minDistance { FLT_MAX };       // Minimal distance to the hit.
 	};
 	bool HitTestVertex(HitContext& hit, SSubObjHitTestEnvironment& env, SSubObjHitTestResult& result);
 	bool HitTestEdge(HitContext& hit, SSubObjHitTestEnvironment& env, SSubObjHitTestResult& result);
@@ -141,7 +139,7 @@ private:
 
 	//////////////////////////////////////////////////////////////////////////
 	//! CGF filename.
-	string   m_filename;
+	string    m_filename;
 	IStatObj* m_pStatObj;
 	int       m_nUserCount;
 	int       m_nFlags;
@@ -160,13 +158,10 @@ private:
 		CBitArray m_tempBitArray;
 		bool      bNoDisplay;
 
-		SubObjCache() : pTriMesh(0), bNoDisplay(false) {};
+		SubObjCache() : pTriMesh(0), bNoDisplay(false) {}
 	};
 	SubObjCache*               m_pSubObjCache;
 
 	std::vector<IIndexedMesh*> m_tempIndexedMeshes;
 	std::vector<Matrix34>      m_tempMatrices;
 };
-
-#endif // __edmesh_h__
-

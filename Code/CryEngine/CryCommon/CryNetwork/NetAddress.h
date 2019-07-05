@@ -6,7 +6,7 @@
 #include <CryNetwork/CrySocks.h>
 #include <CryLobby/CommonICryLobby.h>
 
-#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_ORBIS && defined(__GNUC__)
+#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_ORBIS && (defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG))
 	#define _SS_MAXSIZE 256
 #endif
 

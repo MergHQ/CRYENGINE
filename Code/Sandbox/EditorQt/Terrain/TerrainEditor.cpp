@@ -1,24 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "TerrainEditor.h"
 
-#include <QTabWidget>
-#include <QLayout>
-#include <QMenu>
-#include <QMenuBar>
-
-#include "Util/BoostPythonHelpers.h"
-#include "TerrainDialog.h"
-#include "TerrainTexture.h"
-#include "MinimapPanel.h"
-#include "TerrainTexturePainter.h"
 #include "Terrain/TerrainLayerPanel.h"
 #include "Terrain/TerrainLayerView.h"
 #include "Terrain/TerrainSculptPanel.h"
-#include "Commands/QCommandAction.h"
-#include "QMfcApp/qwinwidget.h"
+#include "Util/BoostPythonHelpers.h"
 #include "CryEdit.h"
+#include "MinimapPanel.h"
+#include "TerrainDialog.h"
+#include "TerrainMoveTool.h"
+#include "TerrainTexturePainter.h"
+
+#include <Commands/QCommandAction.h>
+#include <EditorFramework/Events.h>
+#include <LevelEditor/LevelEditorSharedState.h>
 
 extern CCryEditApp theApp;
 
@@ -31,15 +28,6 @@ CTerrainDialog* GetTerrainDialog()
 	if (!g_terrainDialog)
 		g_terrainDialog = new CTerrainDialog();
 	return g_terrainDialog;
-}
-
-CTerrainTextureDialog* g_terrainLayers = nullptr;
-
-CTerrainTextureDialog* GetTerrainLayers()
-{
-	if (!g_terrainLayers)
-		g_terrainLayers = new CTerrainTextureDialog();
-	return g_terrainLayers;
 }
 
 // Terrain Functions
@@ -68,36 +56,9 @@ void PyGenerateTerrainTexture()       { GetTerrainDialog()->GenerateTerrainTextu
 void PyExportTerrainArea()            { GetTerrainDialog()->OnExportTerrainArea(); }
 void PyExportTerrainAreaWithObjects() { GetTerrainDialog()->OnExportTerrainAreaWithObjects(); }
 void PyReloadTerrain()                { GetTerrainDialog()->OnReloadTerrain(); }
-void PySelectTerrain()                { GetIEditorImpl()->SetEditMode(eEditModeSelectArea); }
+void PySelectTerrain()                { GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::SelectArea); }
 
-// Layer Functions
-void PyImportLayers()        { GetTerrainLayers()->OnImport(); }
-void PyExportLayers()        { GetTerrainLayers()->OnExport(); }
-void PyRefineTiles()         { GetTerrainLayers()->OnRefineTerrainTextureTiles(); }
-void PyNewLayer()            { GetTerrainLayers()->OnLayersNewItem(); }
-void PyDeleteLayer()         { GetTerrainLayers()->OnLayersDeleteItem(); }
-void PyMoveLayerUp()         { GetTerrainLayers()->OnLayersMoveItemUp(); }
-void PyMoveLayerDown()       { GetTerrainLayers()->OnLayersMoveItemDown(); }
-void PyDuplicateLayer() { GetTerrainLayers()->OnDuplicateItem(); }
-
-void PyFloodLayer()
-{
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
-	if (!pTool || !pTool->IsKindOf(RUNTIME_CLASS(CTerrainTexturePainter)))
-	{
-		pTool = new CTerrainTexturePainter();
-		GetIEditorImpl()->SetEditTool(pTool);
-	}
-
-	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CTerrainTexturePainter)))
-	{
-		CTerrainTexturePainter* pPainterTool = (CTerrainTexturePainter*)pTool;
-		pPainterTool->Action_StopUndo();
-		pPainterTool->Action_Flood();
-		pPainterTool->Action_StopUndo();
-	}
 }
-};
 
 REGISTER_VIEWPANE_FACTORY(CTerrainEditor, "Terrain Editor", "Tools", true)
 
@@ -194,11 +155,6 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyGenerateTerrain, terrain, generate_terrai
                                      "terrain.generate_terrain()");
 REGISTER_EDITOR_COMMAND_TEXT(terrain, generate_terrain, "Generate Terrain...");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyRefineTiles, terrain, refine_tiles,
-                                     "Splits the tiles into smaller tiles.",
-                                     "terrain.refine_tiles()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, refine_tiles, "Refine Terrain Texture Tiles");
-
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTerrainTextureDialog, terrain, terrain_texture_dialog,
                                      "Shows dialog for terrain texture modifying.",
                                      "terrain.terrain_texture_dialog()");
@@ -239,77 +195,67 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySelectTerrain, terrain, select_terrain,
                                      "terrain.select_terrain()");
 REGISTER_EDITOR_COMMAND_TEXT(terrain, select_terrain, "Select Terrain");
 
-// Layers commands
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyImportLayers, terrain, import_layers,
-                                     "Imports terrain layers.",
-                                     "terrain.import_layers()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, import_layers, "Import Layers...");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyExportLayers, terrain, export_layers,
-                                     "Exports the layers from the current terrain.",
-                                     "terrain.export_layers()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, export_layers, "Export Layers...");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyNewLayer, terrain, create_layer,
-                                     "Creates a new layer.",
-                                     "terrain.create_layer()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, create_layer, "Create Layer");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyDeleteLayer, terrain, delete_layer,
-                                     "Deletes the selected layer.",
-                                     "terrain.delete_layer()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, delete_layer, "Delete Layer");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyDuplicateLayer, terrain, duplicate_layer,
-                                     "Duplicates the selected layer.",
-                                     "terrain.duplicate_layer()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, duplicate_layer, "Duplicate Layer");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerUp, terrain, move_layer_up,
-                                     "Moves the selected layer by one slot up.",
-                                     "terrain.move_layer_up()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, move_layer_up, "Move Layer Up");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMoveLayerDown, terrain, move_layer_down,
-                                     "Moves the selected layer by one slot down.",
-                                     "terrain.move_layer_down()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, move_layer_down, "Move Layer Down");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyFloodLayer, terrain, flood_layer,
-                                     "Floods the selected layer over the all terrain.",
-                                     "terrain.flood_layer()");
-REGISTER_EDITOR_COMMAND_TEXT(terrain, flood_layer, "Flood Layer");
-
 CTerrainEditor::CTerrainEditor(QWidget* parent)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
-	QTabWidget* p_Tabs = new QTabWidget(this);
-	SetContent(p_Tabs);
-	p_Tabs->setTabsClosable(false);
+	m_pTabWidget = new QTabWidget(this);
+	SetContent(m_pTabWidget);
+	m_pTabWidget->setTabsClosable(false);
 
-	p_Tabs->addTab(new QTerrainSculptPanel(), "Sculpt");
-	p_Tabs->addTab(new QTerrainLayerPanel(), "Paint");
-	p_Tabs->addTab(new QMinimapPanel(), "Mini Map");
+	m_sculptTabIdx = m_pTabWidget->addTab(new QTerrainSculptPanel(), "Sculpt");
+	m_paintTabIdx = m_pTabWidget->addTab(new QTerrainLayerPanel(), "Paint");
+	m_pTabWidget->addTab(new QMinimapPanel(), "Mini Map");
 
-	InitTerrainMenu();
-	InstallReleaseMouseFilter(this);
+	// Should be called after tabs were created
+	RegisterActions();
 }
 
-CTerrainEditor::~CTerrainEditor()
+void CTerrainEditor::RegisterActions()
 {
+	RegisterAction("terrain.flatten_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CFlattenTool)); });
+	RegisterAction("terrain.smooth_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CSmoothTool)); });
+	RegisterAction("terrain.raise_lower_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CRiseLowerTool)); });
+	RegisterAction("terrain.duplicate_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CTerrainMoveTool)); });
+	RegisterAction("terrain.make_holes_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CMakeHolesTool)); });
+	RegisterAction("terrain.fill_holes_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CFillHolesTool)); });
+	RegisterAction("terrain.paint_texture_tool", [this]() { CTerrainEditor::SetTerrainTool(m_paintTabIdx, RUNTIME_CLASS(CTerrainTexturePainter)); });
+}
+
+void CTerrainEditor::SetTerrainTool(int tabIndex, CRuntimeClass* pToolClass)
+{
+	auto pLevelEditorState = GetIEditorImpl()->GetLevelEditorSharedState();
+	auto pCurrentTool = pLevelEditorState->GetEditTool();
+
+	if (pCurrentTool && pCurrentTool->GetRuntimeClass() == pToolClass)
+		return;
+
+	CEditTool* pTerrainTool = (CEditTool*)pToolClass->CreateObject();
+
+	if (!pTerrainTool)
+		return;
+
+	pLevelEditorState->SetEditTool(pTerrainTool);
+
+	m_pTabWidget->setCurrentIndex(tabIndex);
+}
+
+void CTerrainEditor::Initialize()
+{
+	CDockableEditor::Initialize();
+
+	InitTerrainMenu();
 }
 
 void CTerrainEditor::SetLayout(const QVariantMap& state)
 {
 	CEditor::SetLayout(state);
 	QTerrainLayerView* pLayerView = findChild<QTerrainLayerView*>();
-	
+
 	QVariant layerStateVar = state.value("layerView");
 	if (layerStateVar.isValid() && layerStateVar.type() == QVariant::Map)
 	{
 		pLayerView->SetState(layerStateVar.value<QVariantMap>());
 	}
-
 }
 
 QVariantMap CTerrainEditor::GetLayout() const
@@ -323,92 +269,99 @@ QVariantMap CTerrainEditor::GetLayout() const
 	return state;
 }
 
-CTerrainTextureDialog* CTerrainEditor::GetTextureLayerEditor()
-{
-	return GetTerrainLayers();
-}
-
 void CTerrainEditor::InitTerrainMenu()
 {
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu,
-		CEditor::MenuItems::EditMenu
-	};
+		CEditor::MenuItems::EditMenu };
 	AddToMenu(&items[0], 2);
 
 	CAbstractMenu* const pFileMenu = GetMenu(MenuItems::FileMenu);
 	CRY_ASSERT(pFileMenu);
 	if (pFileMenu)
 	{
-		int sec;
-		
-		sec = pFileMenu->GetNextEmptySection();
-		pFileMenu->AddAction(GetAction("terrain.generate_terrain_texture"), sec);
-		pFileMenu->AddAction(GetAction("terrain.generate_terrain"), sec);
+		int sec = pFileMenu->GetNextEmptySection();
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.generate_terrain_texture"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.generate_terrain"), sec);
 
 		sec = pFileMenu->GetNextEmptySection();
-		pFileMenu->AddAction(GetAction("terrain.import_heightmap"), sec);
-		pFileMenu->AddAction(GetAction("terrain.export_heightmap"), sec);
-		pFileMenu->AddAction(GetAction("terrain.import_block"), sec);
-		pFileMenu->AddAction(GetAction("terrain.export_block"), sec);
-		pFileMenu->AddAction(GetAction("terrain.export_area"), sec);
-		pFileMenu->AddAction(GetAction("terrain.export_area_with_objects"), sec);
-		pFileMenu->AddAction(GetAction("terrain.terrain_texture_dialog"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.import_heightmap"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.export_heightmap"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.import_block"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.export_block"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.export_area"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.export_area_with_objects"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.terrain_texture_dialog"), sec);
 
 		sec = pFileMenu->GetNextEmptySection();
-		pFileMenu->AddAction(GetAction("terrain.import_layers"), sec);
-		pFileMenu->AddAction(GetAction("terrain.export_layers"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.import_layers"), sec);
+		pFileMenu->AddAction(GetAction_Deprecated("terrain.export_layers"), sec);
 	}
 
 	CAbstractMenu* const pEditMenu = GetMenu(MenuItems::EditMenu);
 	CRY_ASSERT(pEditMenu);
 	if (pEditMenu)
 	{
-		int sec = 0;
+		int sec = pEditMenu->GetNextEmptySection();
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.select_terrain"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.select_terrain"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.make_isle"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.remove_ocean"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.set_ocean_height"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.make_isle"), sec);
-		pEditMenu->AddAction(GetAction("terrain.remove_ocean"), sec);
-		pEditMenu->AddAction(GetAction("terrain.set_ocean_height"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.set_terrain_max_height"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.set_terrain_max_height"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.flatten_light"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.flatten_heavy"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.flatten_light"), sec);
-		pEditMenu->AddAction(GetAction("terrain.flatten_heavy"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.smooth"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.smooth_slope"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.smooth_beach_coast"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.smooth"), sec);
-		pEditMenu->AddAction(GetAction("terrain.smooth_slope"), sec);
-		pEditMenu->AddAction(GetAction("terrain.smooth_beach_coast"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.normalize"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.reduce_range_light"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.reduce_range_heavy"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.normalize"), sec);
-		pEditMenu->AddAction(GetAction("terrain.reduce_range_light"), sec);
-		pEditMenu->AddAction(GetAction("terrain.reduce_range_heavy"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.erase_terrain"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.resize_terrain"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.invert_heightmap"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.reload_terrain"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.erase_terrain"), sec);
-		pEditMenu->AddAction(GetAction("terrain.resize_terrain"), sec);
-		pEditMenu->AddAction(GetAction("terrain.invert_heightmap"), sec);
-		pEditMenu->AddAction(GetAction("terrain.reload_terrain"), sec);
+		pEditMenu->AddAction(GetAction_Deprecated("terrain.refine_tiles"), sec);
 
 		sec = pEditMenu->GetNextEmptySection();
-		pEditMenu->AddAction(GetAction("terrain.refine_tiles"), sec);
+		pEditMenu->AddAction(new QCommandAction("Brush Settings...", "general.open_pane 'Brush Settings'", nullptr));
 	}
 
-	CAbstractMenu* pLayerMenu = GetMenu(tr("Layers"));
-	pLayerMenu->AddAction(GetAction("terrain.create_layer"));
-	pLayerMenu->AddAction(GetAction("terrain.delete_layer"));
-	pLayerMenu->AddAction(GetAction("terrain.duplicate_layer"));
-	pLayerMenu->AddAction(GetAction("terrain.move_layer_up"));
-	pLayerMenu->AddAction(GetAction("terrain.move_layer_down"));
+	CAbstractMenu* pLayerMenu = GetRootMenu()->CreateMenu(tr("Layers"), 0);
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.create_layer"));
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.delete_layer"));
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.duplicate_layer"));
 
 	int sec = pLayerMenu->GetNextEmptySection();
-	pLayerMenu->AddAction(GetAction("terrain.flood_layer"), sec);
-}
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.move_layer_to_top"), sec);
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.move_layer_up"), sec);
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.move_layer_down"), sec);
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.move_layer_to_bottom"), sec);
 
+	sec = pLayerMenu->GetNextEmptySection();
+	pLayerMenu->AddAction(GetAction_Deprecated("terrain.flood_layer"), sec);
+
+	CAbstractMenu* pToolsMenu = GetRootMenu()->CreateMenu(tr("Tools"), 0);
+	pToolsMenu->AddAction(GetAction("terrain.flatten_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.smooth_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.raise_lower_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.duplicate_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.make_holes_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.fill_holes_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.paint_texture_tool"), sec);
+
+	ForceRebuildMenu();
+}

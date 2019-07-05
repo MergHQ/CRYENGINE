@@ -4,6 +4,7 @@
 #include "AreaProxy.h"
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CRYREGISTER_CLASS(CEntityComponentArea);
 
@@ -81,7 +82,7 @@ void CEntityComponentArea::OnMove()
 					s_tmpWorldPoints[i] = worldTM.TransformPoint(m_localPoints[i]);
 				}
 
-				CRY_ASSERT_MESSAGE(!s_tmpWorldPoints.empty(), "An area shape without points cannot be moved, Verify that it is properly initialized!");
+				CRY_ASSERT(!s_tmpWorldPoints.empty(), "An area shape without points cannot be moved, Verify that it is properly initialized!");
 
 				if (!s_tmpWorldPoints.empty())
 				{
@@ -127,8 +128,6 @@ void CEntityComponentArea::OnEnable(bool bIsEnable, bool bIsCallScript)
 			m_gravityParams.damping = m_fDamping;
 			physparams.type = PE_AREA;
 			m_areaDefinition.pGravityParams = &m_gravityParams;
-
-			m_pEntity->SetTimer(0, 11000);
 		}
 		m_pEntity->Physicalize(physparams);
 
@@ -190,11 +189,9 @@ void CEntityComponentArea::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentArea::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentArea::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_SCRIPT_EVENT) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_SCRIPT_EVENT | ENTITY_EVENT_RENDER_VISIBILITY_CHANGE;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -412,7 +409,10 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 					}
 				}
 
-				CRY_ASSERT(m_abObstructSound.size() == 6);
+				if (m_abObstructSound.size() != 6)
+				{
+					CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, "Parsing invalid area box in entity %s, likely caused by invalid export. Re-export is recommended!", m_pEntity->GetName());
+				}
 			}
 		}
 
@@ -424,17 +424,26 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			for (int i = 0; i < entitiesNode->getChildCount(); i++)
 			{
 				XmlNodeRef entNode = entitiesNode->getChild(i);
-				EntityId entityId;
-				EntityGUID entityGuid;
-				if (entNode->getAttr("Id", entityId) && (entityId != INVALID_ENTITYID))
+				CryGUID entityGuid;
+				if (entNode->getAttr("GUID", entityGuid))
 				{
-					m_pArea->AddEntity(entityId);
+					m_pArea->AddEntity(entityGuid);
 				}
 			}
 		}
 	}
 	else
 	{
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+		stack_string errorMessage;
+		if (!IsValid(errorMessage))
+		{
+			CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, errorMessage);
+			// Skip saving of this component
+			return;
+		}
+#endif
+
 		// Save points.
 		XmlNodeRef const areaNode = componentNode->newChild("Area");
 		areaNode->setAttr("Id", m_pArea->GetID());
@@ -447,48 +456,31 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 
 		if (type == ENTITY_AREA_TYPE_SHAPE)
 		{
-			// AreaShapes must consist out of at least 2 points.
-			size_t const numLocalPoints = m_localPoints.size();
+			const size_t numLocalPoints = m_localPoints.size();
 
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
 			if ((numLocalPoints + 2) != m_abObstructSound.size())
 			{
-				stack_string temp;
-				temp.Format("Trying to save an AreaShape with mismatching points and sound obstruction count. (%u and %u)", numLocalPoints + 2, m_abObstructSound.size());
-				CRY_ASSERT_MESSAGE(false, temp.c_str());
 				m_abObstructSound.resize(numLocalPoints + 2);
 			}
-#endif //INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
+#endif
 
-			if (numLocalPoints > 1)
+			XmlNodeRef const pointsNode = areaNode->newChild("Points");
+
+			for (size_t i = 0; i < numLocalPoints; ++i)
 			{
-				XmlNodeRef const pointsNode = areaNode->newChild("Points");
-
-				for (size_t i = 0; i < numLocalPoints; ++i)
-				{
-					XmlNodeRef const pntNode = pointsNode->newChild("Point");
-					pntNode->setAttr("Pos", m_localPoints[i]);
-					pntNode->setAttr("ObstructSound", m_abObstructSound[i]);
-				}
-
-				// Adding "Roof" and "Floor"
-				XmlNodeRef const roofNode = areaNode->newChild("Roof");
-				roofNode->setAttr("ObstructSound", m_abObstructSound[numLocalPoints]);
-				XmlNodeRef const floorNode = areaNode->newChild("Floor");
-				floorNode->setAttr("ObstructSound", m_abObstructSound[numLocalPoints + 1]);
-
-				areaNode->setAttr("Height", m_pArea->GetHeight());
+				XmlNodeRef const pntNode = pointsNode->newChild("Point");
+				pntNode->setAttr("Pos", m_localPoints[i]);
+				pntNode->setAttr("ObstructSound", m_abObstructSound[i]);
 			}
-#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-			else
-			{
-				stack_string temp;
-				Vec2 min, max;
-				m_pArea->GetBBox(min, max);
-				temp.Format("Trying to save an AreaShape with less than 2 points! (Name: %s) (MinX: %.2f MinY: %.2f MaxX: %.2f MaxY: %.2f)", m_pArea->GetAreaEntityName(), min.x, min.y, max.x, max.y);
-				CRY_ASSERT_MESSAGE(false, temp.c_str());
-			}
-#endif //INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
+
+			// Adding "Roof" and "Floor"
+			XmlNodeRef const roofNode = areaNode->newChild("Roof");
+			roofNode->setAttr("ObstructSound", m_abObstructSound[numLocalPoints]);
+			XmlNodeRef const floorNode = areaNode->newChild("Floor");
+			floorNode->setAttr("ObstructSound", m_abObstructSound[numLocalPoints + 1]);
+
+			areaNode->setAttr("Height", m_pArea->GetHeight());
 		}
 		else if (type == ENTITY_AREA_TYPE_SPHERE)
 		{
@@ -505,27 +497,20 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			areaNode->setAttr("BoxMax", bmax);
 
 			// Set sound obstruction
-			if (!m_abObstructSound.empty())
-			{
-				XmlNodeRef const pNodeSoundData = areaNode->newChild("SoundData");
+			XmlNodeRef const pNodeSoundData = areaNode->newChild("SoundData");
 
-				if (pNodeSoundData)
+			if (pNodeSoundData)
+			{
+				size_t index = 0;
+
+				for (bool const isObstructed : m_abObstructSound)
 				{
-					size_t index = 0;
+					CryFixedStringT<16> temp;
+					temp.Format("Side%" PRISIZE_T, ++index);
 
-					for (bool const isObstructed : m_abObstructSound)
-					{
-						CryFixedStringT<16> temp;
-						temp.Format("Side%" PRISIZE_T, ++index);
-
-						XmlNodeRef const pNodeSide = pNodeSoundData->newChild(temp.c_str());
-						pNodeSide->setAttr("ObstructSound", isObstructed);
-					}
+					XmlNodeRef const pNodeSide = pNodeSoundData->newChild(temp.c_str());
+					pNodeSide->setAttr("ObstructSound", isObstructed);
 				}
-			}
-			else
-			{
-				CRY_ASSERT_MESSAGE(m_abObstructSound.size() == 6, "AreaBox is missing obstruct sound data. Its initialization could have failed!");
 			}
 		}
 		else if (type == ENTITY_AREA_TYPE_GRAVITYVOLUME)
@@ -541,20 +526,42 @@ void CEntityComponentArea::LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef
 			}
 		}
 
-		const std::vector<EntityId>& entIDs = *m_pArea->GetEntities();
+		const CArea::EntityIdVector& entityIdentifiers = m_pArea->GetEntityIdentifiers();
 		// Export Entities.
-		if (!entIDs.empty())
+		if (!entityIdentifiers.empty())
 		{
 			XmlNodeRef nodes = areaNode->newChild("Entities");
-			for (uint32 i = 0; i < entIDs.size(); i++)
+			for (const std::pair<EntityId, EntityGUID>& identifierPair : entityIdentifiers)
 			{
-				int entityId = entIDs[i];
+				const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(identifierPair.first);
+				CRY_ASSERT(pEntity != nullptr);
+
 				XmlNodeRef entNode = nodes->newChild("Entity");
-				entNode->setAttr("Id", entityId);
+				entNode->setAttr("GUID", pEntity->GetGuid());
 			}
 		}
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+bool CEntityComponentArea::IsValid(stack_string& errorMessageOut) const
+{
+	switch(m_pArea->GetAreaType())
+	{
+	case ENTITY_AREA_TYPE_SHAPE:
+		errorMessageOut.Format("Trying to save an AreaShape with mismatching points and sound obstruction count. (%u and %u)", m_localPoints.size() + 2, m_abObstructSound.size());
+		// Shapes require more than one point
+		return m_localPoints.size() > 1;
+	case ENTITY_AREA_TYPE_BOX:
+		errorMessageOut.Format("Trying to save an AreaBox with missing obstruct sound data!");
+		// Obstruction data for each face needs to be present
+		return m_abObstructSound.size() == 6;
+	default:
+		return true;
+	}
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 void CEntityComponentArea::ReadPolygonsForAreaSolid(CCryFile& file, int numberOfPolygons, bool bObstruction)
@@ -711,9 +718,6 @@ void CEntityComponentArea::SetGravityVolume(const Vec3* pPoints, int nNumPoints,
 	m_bezierPoints.resize(nNumPoints);
 	if (nNumPoints > 0)
 		memcpy(&m_bezierPoints[0], pPoints, nNumPoints * sizeof(Vec3));
-
-	if (!bDontDisableInvisible)
-		m_pEntity->SetTimer(0, 11000);
 
 	m_pArea->SetAreaType(ENTITY_AREA_TYPE_GRAVITYVOLUME);
 }

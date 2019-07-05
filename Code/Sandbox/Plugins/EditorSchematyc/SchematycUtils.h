@@ -7,4 +7,3 @@ namespace CrySchematycEditor {
 void MakeScriptElementNameUnique(stack_string& name, Schematyc::IScriptElement* pScope = nullptr);
 
 }
-

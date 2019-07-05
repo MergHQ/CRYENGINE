@@ -152,9 +152,10 @@ namespace Schematyc2
 		{
 		public:
 
-			inline CBase(const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
+			inline CBase(const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
 				: m_guid(guid)
 				, m_inputParamsAreResources(false)
+				, m_function(function)
 			{
 				StringUtils::SeparateTypeNameAndNamespace(declaration, m_name, m_namespace);
 				SetFileName(fileName, projectDir);
@@ -326,6 +327,10 @@ namespace Schematyc2
 				return m_inputParamsAreResources;
 			}
 
+			virtual const Cry::Reflection::CFunction& GetFunction() const final
+			{
+				return m_function;
+			}
 			// ~IGlobalFunction
 
 		protected:
@@ -462,6 +467,7 @@ namespace Schematyc2
 			TVariantVector m_variantInputs;
 			TSizeTVector   m_outputs;
 			TVariantVector m_variantOutputs;
+			Cry::Reflection::CFunction m_function;
 			bool           m_inputParamsAreResources;
 		};
 	}
@@ -474,8 +480,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)();
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{}
 
@@ -499,8 +505,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)();
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -531,8 +537,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -567,8 +573,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -605,8 +611,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -645,8 +651,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -687,8 +693,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -731,8 +737,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2, PARAM3);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -777,8 +783,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -825,8 +831,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -875,8 +881,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -927,8 +933,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -981,8 +987,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -1037,8 +1043,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -1095,8 +1101,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -1155,8 +1161,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -1217,8 +1223,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -1281,8 +1287,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -1347,8 +1353,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -1415,8 +1421,8 @@ namespace Schematyc2
 
 		typedef PARAM0 (*TFunctionPtr)(PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8, PARAM9);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::IS_RETURN);
@@ -1485,8 +1491,8 @@ namespace Schematyc2
 
 		typedef void (*TFunctionPtr)(PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7, PARAM8, PARAM9);
 
-		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir)
-			: CBase(guid, declaration, fileName, projectDir)
+		inline CGlobalFunction(TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir, const Cry::Reflection::CFunction& function)
+			: CBase(guid, declaration, fileName, projectDir, function)
 			, m_functionPtr(functionPtr)
 		{
 			CBase::AddParam<PARAM0>(GlobalFunction::ParamFlags::NONE);
@@ -1561,7 +1567,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1573,7 +1579,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1585,7 +1591,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1597,7 +1603,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1609,7 +1615,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1621,7 +1627,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1633,7 +1639,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1645,7 +1651,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1657,7 +1663,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1669,7 +1675,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1681,7 +1687,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1693,7 +1699,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1705,7 +1711,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1717,7 +1723,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1729,7 +1735,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1741,7 +1747,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1753,7 +1759,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1765,7 +1771,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1777,7 +1783,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1789,7 +1795,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 
@@ -1801,7 +1807,7 @@ namespace Schematyc2
 
 		inline IGlobalFunctionPtr operator () (TFunctionPtr functionPtr, const SGUID& guid, const char* declaration, const char* fileName, const char* projectDir) const
 		{
-			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir));
+			return IGlobalFunctionPtr(new TGlobalFunction(functionPtr, guid, declaration, fileName, projectDir, Cry::Reflection::CFunctionCreator<Cry::Reflection::Utils::CFunctionDesc<TFunctionPtr>>(functionPtr)));
 		}
 	};
 }

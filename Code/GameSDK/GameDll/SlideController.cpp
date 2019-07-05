@@ -256,7 +256,6 @@ void CSlideController::UpdateSlidingState( CPlayer& player, float frameTime, boo
 {
 	m_kickTimer = max(m_kickTimer-frameTime, 0.0f);
 	
-	const float time = gEnv->pTimer->GetFrameStartTime().GetSeconds();
 	if(m_slideAction && m_slideAction->IsStarted() && (m_lazyExitTimer>0.0f) && ((gEnv->pTimer->GetFrameStartTime().GetSeconds()-m_lazyExitTimer) > 0.01f ))
 	{
 		continueSliding = false;
@@ -289,8 +288,6 @@ void CSlideController::GoToState( CPlayer& player, ESlideState newState )
 {
 	if(newState != m_state)
 	{
-		const ESlideState previousState = m_state;
-
 		m_state = newState;
 
 		OnSlideStateChanged(player);

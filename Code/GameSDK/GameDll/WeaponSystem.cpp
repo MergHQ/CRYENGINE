@@ -87,7 +87,7 @@ public:
 	{
 		const size_t memoryUsed = m_memoryPool.GetTotalMemory().nUsed;
 
-		CRY_ASSERT_MESSAGE(memoryUsed == 0, "Freeing memory pool, but there is still objects using it!");
+		CRY_ASSERT(memoryUsed == 0, "Freeing memory pool, but there is still objects using it!");
 		if (memoryUsed != 0)
 		{
 			CryLog("WeaponComponentAllocator: Memory pool for '%s' will be freed but is still in use! Current used size '%" PRISIZE_T "'", TImplementation::GetStaticType()->GetName(), memoryUsed);
@@ -295,9 +295,9 @@ void CWeaponSystem::Reload()
 
 void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "WeaponSystem: Load Item Params" );
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "WeaponSystem: Load Item Params" );
 
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 	
 	int numItems = pItemSystem->GetItemParamsCount();
 
@@ -320,8 +320,8 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 			return;
 		}
 
-		CRY_ASSERT_MESSAGE(pItemShared, "Failed to create item params");
-		CRY_ASSERT_MESSAGE(itemRootNodeParams != NULL, "No xml found for item params");
+		CRY_ASSERT(pItemShared, "Failed to create item params");
+		CRY_ASSERT(itemRootNodeParams != NULL, "No xml found for item params");
 
 		if (!itemRootNodeParams)
 		{
@@ -343,7 +343,7 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 			const char* baseItemFile = pItemSystem->GetItemParamsDescriptionFile(inheritItem);
 			overrideParamsNode = itemRootNodeParams;
 			itemRootNodeParams = gEnv->pSystem->LoadXmlFromFile(baseItemFile);
-			CRY_ASSERT_MESSAGE(itemRootNodeParams != NULL, "No xml found for base item params");
+			CRY_ASSERT(itemRootNodeParams != NULL, "No xml found for base item params");
 
 			m_weaponAlias.AddAlias(inheritItem, pItemName);
 		}
@@ -362,7 +362,7 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 			{
 				CWeaponSharedParams* pWeaponShared = pStorage->GetWeaponSharedParameters(pItemName, true);
 
-				CRY_ASSERT_MESSAGE(pWeaponShared, "Failed to create weapon params");
+				CRY_ASSERT(pWeaponShared, "Failed to create weapon params");
 
 				if(pWeaponShared)
 				{
@@ -380,7 +380,7 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 }
 
 //------------------------------------------------------------------------
-void CWeaponSystem::OnLoadingStart(ILevelInfo *pLevel)
+bool CWeaponSystem::OnLoadingStart(ILevelInfo *pLevel)
 {
 	CCCPOINT(WeaponSystem_OnLoadingStart);
 
@@ -402,6 +402,7 @@ void CWeaponSystem::OnLoadingStart(ILevelInfo *pLevel)
 	}
 
 	CRY_ASSERT(m_linkedProjectiles.size() == 0);
+	return true;
 }
 
 //------------------------------------------------------------------------
@@ -458,7 +459,7 @@ void CWeaponSystem::DestroyFireModePlugin(IFireModePlugin* pObject)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Destroy fire mode plugin couldn't be executed, fire mode plugin type destructor method not found, leaking memory!");
+		CRY_ASSERT(false, "Destroy fire mode plugin couldn't be executed, fire mode plugin type destructor method not found, leaking memory!");
 		CryLogAlways("Destroy fire mode plugin couldn't be executed for fire mode plugin type '%s', leaking memory!", pObject->GetRunTimeType()->GetName());
 	}
 }
@@ -493,7 +494,7 @@ void CWeaponSystem::DestroyFireMode(CFireMode* pObject)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Destroy fire mode couldn't be executed, fire mode type destructor method not found, leaking memory!");
+		CRY_ASSERT(false, "Destroy fire mode couldn't be executed, fire mode type destructor method not found, leaking memory!");
 		CryLogAlways("Destroy fire mode couldn't be executed for fire mode type '%s', leaking memory!", pObject->GetRunTimeType()->GetName());
 	}
 }
@@ -533,7 +534,7 @@ void CWeaponSystem::DestroyZoomMode(CIronSight* pObject)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Destroy zoom mode couldn't be executed, zoom mode type destructor method not found, leaking memory!");
+		CRY_ASSERT(false, "Destroy zoom mode couldn't be executed, zoom mode type destructor method not found, leaking memory!");
 		CryLogAlways("Destroy zoom mode couldn't be executed for zoom mode type '%s', leaking memory!", pObject->GetRunTimeType()->GetName());
 	}
 }
@@ -593,11 +594,6 @@ CProjectile *CWeaponSystem::DoSpawnAmmo(IEntityClass* pAmmoType, bool isRemote, 
 	spawnParams.pClass = pAmmoType;
 	spawnParams.sName = "ammo";
 	spawnParams.nFlags = pAmmoParams->flags | ENTITY_FLAG_NO_PROXIMITY; // No proximity for this entity.
-	if (pAmmoParams->serverSpawn)
-	{
-		// This projectile is going to be bound to the network, make sure we know it's a dynamic entity
-		spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
-	}
 	
 	IEntity *pEntity = NULL;
 
@@ -808,8 +804,8 @@ void CWeaponSystem::Scan(const char *folderName)
 //------------------------------------------------------------------------
 bool CWeaponSystem::ScanXML(XmlNodeRef &root, const char *xmlFile)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "WeaponSystem");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Weapon xml (%s)", xmlFile);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "WeaponSystem");
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Weapon xml (%s)", xmlFile);
 
 	if (strcmpi(root->getTag(), "ammo"))
 		return false;
@@ -893,7 +889,7 @@ void CWeaponSystem::DebugGun(IConsoleCmdArgs *args)
 
 	if(!CItem::sDebugGunClass)
 	{
-		CRY_ASSERT_MESSAGE(0, "DebugGun is not defined.");
+		CRY_ASSERT(0, "DebugGun is not defined.");
 		return;
 	}
 
@@ -926,7 +922,7 @@ void CWeaponSystem::RefGun(IConsoleCmdArgs *args)
 
 		if(!CItem::sRefWeaponClass)
 		{
-			CRY_ASSERT_MESSAGE(0, "RefWeapon is not defined.");
+			CRY_ASSERT(0, "RefWeapon is not defined.");
 			return;
 		}
 
@@ -1059,12 +1055,14 @@ void CWeaponSystem::RemoveFromPool(CProjectile *pProjectile)
 //------------------------------------------------------------------------
 void CWeaponSystem::DumpPoolSizes()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CryLog("Ammo Pool Statistics:");
 	for (TAmmoPoolMap::iterator it=m_pools.begin(); it!=m_pools.end(); ++it)
 	{
 		int size=it->second.size;
 		CryLog("%s: %d", it->first->GetName(), size);
 	}
+#endif
 }
 
 void CWeaponSystem::FreePools()

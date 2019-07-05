@@ -1,12 +1,11 @@
 
 set(MSVC_COMMON_FLAGS 
-	/nologo	    # Don't show version info
+	/nologo     # Don't show version info
 	/W3         # Enable warning level 3
 	/fp:fast    # Use fast floating point precision model
 	/Zc:wchar_t # Parse wchar_t as internal type
 	/GF         # Eliminate Duplicate Strings
 	/Gy         # Enable function level linking
-	/GR-        # Disable RTTI
 	/utf-8      # Set source and execution charset to utf-8
 	/Wv:18      # Disable warnings until SDK depedencies switch to UTF-8/ASCII.
 	/MP         # Build with multiple processes
@@ -14,9 +13,14 @@ set(MSVC_COMMON_FLAGS
 
 	/WX         # Treat warnings as errors
 	/wd4653     # Ignore PCH for any individual file that has different optimization settings
+	/wd4275     # non dll-interface class '' used as base for dll-interface class ''
+	/wd4961     # No profile data was merged into '', profile-guided optimizations disabled
+	/wd4068     # 'Unknown pragma' - sometimes need these in code to prevent global suppression.
 )
 string(REPLACE ";" " " MSVC_COMMON_FLAGS "${MSVC_COMMON_FLAGS}")
- 
+
+set(CMAKE_RC_FLAGS /nologo)
+
 # Override cxx flags
 set(CMAKE_CXX_FLAGS "${MSVC_COMMON_FLAGS}" CACHE STRING "C++ Common Flags" FORCE)
 
@@ -40,7 +44,7 @@ set(CMAKE_MODULE_LINKER_FLAGS_PROFILE "/debug /INCREMENTAL" CACHE STRING "Profil
 
 set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "/debug" CACHE STRING "Release link flags" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "/debug" CACHE STRING "Release link flags" FORCE)
-set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "/debug /INCREMENTAL" CACHE STRING "Release link flags" FORCE)
+set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "/debug  /OPT:REF /OPT:ICF" CACHE STRING "Release link flags" FORCE)
 
 function (wrap_whole_archive project target source)
 	set(${target} "${${source}}" PARENT_SCOPE)
@@ -58,3 +62,5 @@ function (wrap_whole_archive project target source)
 	set_target_properties(${project} PROPERTIES LINK_FLAGS ${whole_archive_link_flags})
 endfunction()
 
+message(STATUS "MSVC_VERSION = ${MSVC_VERSION}")
+message(STATUS "MSVC_TOOLSET_VERSION = ${MSVC_TOOLSET_VERSION}")

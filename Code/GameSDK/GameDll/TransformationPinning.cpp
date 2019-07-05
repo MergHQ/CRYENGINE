@@ -95,8 +95,6 @@ bool CTransformationPinning::Execute(const SAnimationPoseModifierParams& params)
 		Init(params);
 	}
 
-	ISkeletonPose* pSkeletonPose = params.pCharacterInstance->GetISkeletonPose();
-	IDefaultSkeleton& rIDefaultSkeleton = m_source->GetIDefaultSkeleton();
 	int sourceJoints = m_source->GetIDefaultSkeleton().GetJointCount();
 	CRY_ASSERT(sourceJoints == params.pCharacterInstance->GetIDefaultSkeleton().GetJointCount());
 	
@@ -131,10 +129,11 @@ bool CTransformationPinning::Execute(const SAnimationPoseModifierParams& params)
 				int16 parent = m_source->GetIDefaultSkeleton().GetJointParentIDByID(i);
 				QuatT invParent = params.pPoseData->GetJointAbsolute(parent).GetInverted();
 				params.pPoseData->SetJointRelative(i, invParent * params.pPoseData->GetJointAbsolute(i));
+#if defined(USE_CRY_ASSERT)
 				QuatT thisJnt = params.pPoseData->GetJointAbsolute(parent) * params.pPoseData->GetJointRelative(i);
-
 				CRY_ASSERT(params.pPoseData->GetJointRelative(i).IsValid());
 				CRY_ASSERT(thisJnt.IsValid());
+#endif
 			}
 			break;
 		case TransformationPinJoint::Inherit:

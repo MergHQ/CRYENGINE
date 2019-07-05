@@ -95,8 +95,6 @@ public:
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
-		EFlowEvent eventType = event;
-
 		switch (event)
 		{
 		case eFE_Activate:
@@ -180,7 +178,7 @@ public:
 
 			if (bApply && pActInfo->pGraph != nullptr)
 			{
-				if (IConsole* pConsole = gEnv->pConsole)
+				if (gEnv->pConsole != nullptr)
 				{
 					ICVar* pCVar = gEnv->pConsole->GetCVar("e_shadowscacheupdate"); // full update time sliced?
 					if (pCVar) pCVar->Set(1);
@@ -238,8 +236,6 @@ public:
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
-		EFlowEvent eventType = event;
-
 		switch (event)
 		{
 		case eFE_Activate:

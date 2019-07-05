@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __LUACOMMENTPARSER_H__
-#define __LUACOMMENTPARSER_H__
+#pragma once
 
 struct LuaTable
 {
@@ -50,7 +49,6 @@ public:
 	bool                     OpenScriptFile(const char* path);
 	bool                     ParseComment(const char* tablePath, const char* varName, float* minVal, float* maxVal, float* stepVal, string* desc);
 	static LuaCommentParser* GetInstance();
-	~LuaCommentParser(void);
 	void                     CloseScriptFile();
 protected:
 	int                      FindTables(LuaTable* parentTable = NULL, int offset = 0);
@@ -67,6 +65,3 @@ private:
 	LuaCommentParser();
 	LuaTable* m_RootTable;
 };
-
-#endif __LUACOMMENTPARSER_H__
-

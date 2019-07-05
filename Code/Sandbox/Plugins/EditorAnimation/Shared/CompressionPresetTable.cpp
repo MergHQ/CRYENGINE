@@ -44,12 +44,11 @@ bool SCompressionPresetTable::Save(const char* fullPath)
 	return oa.save(fullPath);
 }
 
-const SCompressionPresetEntry* SCompressionPresetTable::FindPresetForAnimation(const char* animationPath, const vector<string>& tags, const char* skeletonAlias) const
+const SCompressionPresetEntry* SCompressionPresetTable::FindPresetForAnimation(const char* animationPath, const vector<string>& tags) const
 {
 	SAnimationFilterItem item;
 	item.path = animationPath;
 	item.tags = tags;
-	item.skeletonAlias = skeletonAlias;
 
 	for (size_t i = 0; i < entries.size(); ++i)
 	{
@@ -60,4 +59,3 @@ const SCompressionPresetEntry* SCompressionPresetTable::FindPresetForAnimation(c
 
 	return 0;
 }
-

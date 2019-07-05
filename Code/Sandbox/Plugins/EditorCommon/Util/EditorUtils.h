@@ -5,10 +5,7 @@
 #include "EditorCommonAPI.h"
 
 #include <CrySystem/XML/IXml.h>
-#include <CrySystem/ISystem.h>
-
-//! Typedef for quaternion.
-//typedef CryQuat Quat;
+#include <functional>
 
 struct IDisplayViewport;
 
@@ -145,30 +142,15 @@ EDITOR_COMMON_API bool OpenHelpPage(const char* szName);
 //////////////////////////////////////////////////////////////////////////
 namespace XmlHelpers
 {
-inline XmlNodeRef CreateXmlNode(const char* sTag)
-{
-	return GetISystem()->CreateXmlNode(sTag);
+EDITOR_COMMON_API XmlNodeRef CreateXmlNode(const char* sTag);
+
+EDITOR_COMMON_API bool SaveXmlNode(XmlNodeRef node, const char* filename);
+
+EDITOR_COMMON_API XmlNodeRef LoadXmlFromFile(const char* fileName);
+
+EDITOR_COMMON_API XmlNodeRef LoadXmlFromBuffer(const char* buffer, size_t size);
 }
 
-inline bool SaveXmlNode(XmlNodeRef node, const char* filename)
-{
-	return node->saveToFile(filename);
-}
-
-inline XmlNodeRef LoadXmlFromFile(const char* fileName)
-{
-	return GetISystem()->LoadXmlFromFile(fileName);
-}
-
-inline XmlNodeRef LoadXmlFromBuffer(const char* buffer, size_t size)
-{
-	return GetISystem()->LoadXmlFromBuffer(buffer, size);
-}
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Tokenize string.
-//////////////////////////////////////////////////////////////////////////
 inline string TokenizeString(const string& str, const char* pszTokens, int& iStart)
 {
 	assert(iStart >= 0);
@@ -183,7 +165,6 @@ inline string TokenizeString(const string& str, const char* pszTokens, int& iSta
 	if (pszPlace < pszEnd)
 	{
 		int nIncluding = (int)strspn(pszPlace, pszTokens);
-		;
 
 		if ((pszPlace + nIncluding) < pszEnd)
 		{
@@ -234,7 +215,7 @@ inline void SplitString(const string& rSrcStr, std::vector<string>& rDestStrings
 
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos);
 			}
 
 			break;
@@ -243,7 +224,7 @@ inline void SplitString(const string& rSrcStr, std::vector<string>& rDestStrings
 		{
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.GetString() + lastPos), crtPos - lastPos);
 			}
 		}
 
@@ -267,7 +248,7 @@ inline void SplitString(string& rSrcStr, std::vector<string>& rDestStrings, char
 
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos);
 			}
 
 			break;
@@ -276,7 +257,7 @@ inline void SplitString(string& rSrcStr, std::vector<string>& rDestStrings, char
 		{
 			if (crtPos != lastPos)
 			{
-				rDestStrings.push_back(string((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos));
+				rDestStrings.emplace_back((const char*)(rSrcStr.c_str() + lastPos), crtPos - lastPos);
 			}
 		}
 
@@ -350,4 +331,3 @@ class CArchive;
 
 EDITOR_COMMON_API CArchive& operator<<(CArchive& ar, const string& str); // for CString conversion
 EDITOR_COMMON_API CArchive& operator>>(CArchive& ar, string& str);       // for CString conversion
-

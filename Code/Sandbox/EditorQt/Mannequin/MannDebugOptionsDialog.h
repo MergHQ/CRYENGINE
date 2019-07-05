@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_DEBUG_OPTIONS_DIALOG_H__
-#define __MANN_DEBUG_OPTIONS_DIALOG_H__
 #pragma once
 
 #include "MannequinBase.h"
@@ -19,9 +17,6 @@ protected:
 
 	virtual BOOL OnInitDialog();
 
-	std::auto_ptr<CPropertiesPanel> m_pPanel;
-	CMannequinModelViewport*        m_pModelViewport;
+	std::unique_ptr<CPropertiesPanel> m_pPanel;
+	CMannequinModelViewport*          m_pModelViewport;
 };
-
-#endif
-

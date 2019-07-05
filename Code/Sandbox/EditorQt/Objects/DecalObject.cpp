@@ -1,23 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "DecalObject.h"
 
-#include "Viewport.h"
+#include "IEditorImpl.h"
+#include "Geometry/EdMesh.h"
+#include "Material/MaterialManager.h"
+
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
 #include <Preferences/ViewportPreferences.h>
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "EntityObject.h"
-#include "Geometry\EdMesh.h"
-#include "Material\MaterialManager.h"
-
 #include <Serialization/Decorators/EditToolButton.h>
 #include <Serialization/Decorators/EditorActionButton.h>
+#include <Util/Math.h>
+#include <Viewport.h>
 
 #include <Cry3DEngine/I3DEngine.h>
-
-#include <Preferences/ViewportPreferences.h>
-
-#include "DecalObject.h"
+#include <CryPhysics/IPhysics.h>
 
 class CDecalObjectTool : public CEditTool
 {
@@ -27,45 +26,35 @@ public:
 	CDecalObjectTool();
 
 	virtual string GetDisplayName() const override { return "Decal Object"; }
-	virtual void   Display(DisplayContext& dc)     {};
+	virtual void   Display(SDisplayContext& dc)    {}
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual void   SetUserData(const char* userKey, void* userData);
 
 protected:
-	virtual ~CDecalObjectTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 private:
 	CDecalObject* m_pDecalObj;
 };
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CDecalObjectTool, CEditTool)
 
 CDecalObjectTool::CDecalObjectTool()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
-CDecalObjectTool::~CDecalObjectTool()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CDecalObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDecalObjectTool::OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDecalObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (m_pDecalObj)
@@ -73,7 +62,6 @@ bool CDecalObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObjectTool::SetUserData(const char* userKey, void* userData)
 {
 	m_pDecalObj = static_cast<CDecalObject*>(userData);
@@ -138,22 +126,20 @@ void CDecalObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 
 		if (ar.openBlock("decal", "<Decal"))
 		{
-			Serialization::SEditToolButton reorientateButton("");
-			reorientateButton.SetToolClass(RUNTIME_CLASS(CDecalObjectTool), "decal", pObject);
-			ar(reorientateButton, "reorientate", "^Reorientate");
-			ar(Serialization::ActionButton(std::bind(&CDecalObject::UpdateProjection, pObject)), "update_projection", "^Update Projection");
-			ar.closeBlock();
+		  Serialization::SEditToolButton reorientateButton("");
+		  reorientateButton.SetToolClass(RUNTIME_CLASS(CDecalObjectTool), "decal", pObject);
+		  ar(reorientateButton, "reorientate", "^Reorientate");
+		  ar(Serialization::ActionButton(std::bind(&CDecalObject::UpdateProjection, pObject)), "update_projection", "^Update Projection");
+		  ar.closeBlock();
 		}
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::OnParamChanged(IVariable* pVar)
 {
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::OnViewDistRatioChanged(IVariable* pVar)
 {
 	if (m_pRenderNode)
@@ -166,7 +152,6 @@ void CDecalObject::OnViewDistRatioChanged(IVariable* pVar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CDecalObject::GetDefaultMaterial() const
 {
 	CMaterial* pDefMat(GetIEditorImpl()->GetMaterialManager()->LoadMaterial("Materials/Decals/Default"));
@@ -174,12 +159,11 @@ CMaterial* CDecalObject::GetDefaultMaterial() const
 	return pDefMat;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDecalObject::Init(CBaseObject* prev, const string& file)
 {
 	CDecalObject* pSrcDecalObj((CDecalObject*) prev);
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 
 	if (IsCreateGameObjects())
 	{
@@ -206,7 +190,6 @@ bool CDecalObject::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CDecalObject::GetProjectionType() const
 {
 	return m_projectionType;
@@ -217,7 +200,7 @@ void CDecalObject::UpdateProjection()
 	if (GetProjectionType() > 0)
 		UpdateEngineNode();
 }
-//////////////////////////////////////////////////////////////////////////
+
 bool CDecalObject::CreateGameObject()
 {
 	if (!m_pRenderNode)
@@ -233,10 +216,9 @@ bool CDecalObject::CreateGameObject()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	if (m_pRenderNode)
 	{
 		GetIEditorImpl()->Get3DEngine()->DeleteRenderNode(m_pRenderNode);
@@ -246,7 +228,6 @@ void CDecalObject::Done()
 	CBaseObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::UpdateEngineNode()
 {
 	if (!m_pRenderNode)
@@ -320,35 +301,30 @@ void CDecalObject::UpdateEngineNode()
 	m_pRenderNode->SetViewDistRatio(m_viewDistRatio);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::SetHidden(bool bHidden)
 {
 	CBaseObject::SetHidden(bHidden);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::UpdateVisibility(bool visible)
 {
 	CBaseObject::UpdateVisibility(visible);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	__super::SetMinSpec(nSpec, bSetChildren);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::SetMaterialLayersMask(uint32 nLayersMask)
 {
 	__super::SetMinSpec(nLayersMask);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::SetMaterial(IEditorMaterial* mtl)
 {
 	if (!mtl)
@@ -357,27 +333,24 @@ void CDecalObject::SetMaterial(IEditorMaterial* mtl)
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::InvalidateTM(int nWhyFlags)
 {
 	CBaseObject::InvalidateTM(nWhyFlags);
 	UpdateEngineNode();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::GetLocalBounds(AABB& box)
 {
 	box = AABB(Vec3(-1, -1, -1), Vec3(1, 1, 1));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::MouseCallbackImpl(CViewport* view, EMouseEvent event, CPoint& point, int flags, bool callerIsMouseCreateCallback)
 {
 	static bool s_mousePosTracked(false);
 
 	if ((callerIsMouseCreateCallback && !flags))
 	{
-		Vec3 pos(view->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain()));
+		Vec3 pos(view->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain()));
 		SetPos(pos);
 		s_mousePosTracked = false;
 	}
@@ -471,7 +444,6 @@ void CDecalObject::MouseCallbackImpl(CViewport* view, EMouseEvent event, CPoint&
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CDecalObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseMove || event == eMouseLDown || event == eMouseLUp)
@@ -488,13 +460,13 @@ int CDecalObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event,
 	return CBaseObject::MouseCreateCallback(view, event, point, flags);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-
-	if (!gViewportDebugPreferences.showDecalObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showDecalHelper)
+	{
 		return;
+	}
 
 	if (IsSelected())
 	{
@@ -536,7 +508,6 @@ void CDecalObject::Display(CObjectRenderHelper& objRenderHelper)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDecalObject::Serialize(CObjectArchive& ar)
 {
 	CBaseObject::Serialize(ar);
@@ -566,7 +537,6 @@ void CDecalObject::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CDecalObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	XmlNodeRef decalNode(CBaseObject::Export(levelPath, xmlNode));
@@ -574,7 +544,6 @@ XmlNodeRef CDecalObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	return decalNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDecalObject::RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt)
 {
 	Vec3 pa, pb;
@@ -601,7 +570,6 @@ bool CDecalObject::RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CDecalObject::HitTest(HitContext& hc)
 {
 	// Selectable by icon.
@@ -641,4 +609,3 @@ bool CDecalObject::HitTest(HitContext& hc)
 
 	return false;
 }
-

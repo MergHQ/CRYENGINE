@@ -61,16 +61,7 @@ struct SEntityInterest
 	bool           SupportsActorClass(const char* szActorClass) const;
 	bool           IsValid() const     { return m_entityId > 0; }
 
-	void           Invalidate()
-	{
-		IEntity* pEntity = GetEntity();
-		if (pEntity && gAIEnv.pSmartObjectManager)
-		{
-			gAIEnv.pSmartObjectManager->RemoveSmartObjectState(pEntity, "Registered");
-		}
-		m_entityId = 0;
-		m_sActionName = string();
-	}
+	void           Invalidate();
 
 	void Serialize(TSerialize ser)
 	{

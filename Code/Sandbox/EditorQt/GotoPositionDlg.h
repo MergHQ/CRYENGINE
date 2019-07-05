@@ -34,4 +34,3 @@ private:
 	Ang3              m_rotation;
 	Vec2              m_segment;
 };
-

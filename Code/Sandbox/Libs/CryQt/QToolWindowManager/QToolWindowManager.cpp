@@ -1,9 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "QToolWindowManager.h"
+
+#include "IToolWindowDragHandler.h"
+#include "QCustomWindowFrame.h"
 #include "QToolWindowArea.h"
+#include "QToolWindowDragHandlerDropTargets.h"
 #include "QToolWindowRollupBarArea.h"
 #include "QToolWindowWrapper.h"
 
@@ -15,21 +18,17 @@
 #include <QWindowStateChangeEvent>
 #include <QWindow>
 
-#include "QToolWindowDragHandlerDropTargets.h"
-#include "IToolWindowDragHandler.h"
-#include "QCustomWindowFrame.h"
-
 #if defined(WIN32) || defined(WIN64)
-#include <windows.h>
+	#include <windows.h>
 #endif
 
-QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config, QToolWindowManagerClassFactory* factory)
-	: QWidget(parent),
-	m_factory(factory ? factory : new QToolWindowManagerClassFactory()),
-	m_dragHandler(nullptr),
-	m_config(config.toMap()),
-	m_layoutChangeNotifyLocks(0),
-	m_closingWindow(0)
+QToolWindowManager::QToolWindowManager(QWidget* parent /*= 0*/, QVariant config, QToolWindowManagerClassFactory* factory)
+	: QWidget(parent)
+	, m_factory(factory ? factory : new QToolWindowManagerClassFactory())
+	, m_dragHandler(nullptr)
+	, m_config(config.toMap())
+	, m_layoutChangeNotifyLocks(0)
+	, m_closingWindow(0)
 {
 	if (!m_factory->parent())
 	{
@@ -38,7 +37,8 @@ QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config,
 	m_mainWrapper = new QToolWindowWrapper(this);
 	m_mainWrapper->getWidget()->setObjectName("mainWrapper");
 	setLayout(new QVBoxLayout(this));
-	layout()->setMargin(0);
+	layout()->setMargin(2);
+	layout()->setSpacing(0);
 	layout()->addWidget(m_mainWrapper->getWidget());
 	m_lastArea = createArea();
 	m_draggedWrapper = nullptr;
@@ -66,13 +66,13 @@ QToolWindowManager::QToolWindowManager(QWidget *parent /*= 0*/, QVariant config,
 QToolWindowManager::~QToolWindowManager()
 {
 	suspendLayoutNotifications();
-	while(!m_areas.isEmpty())
+	while (!m_areas.isEmpty())
 	{
 		auto a = m_areas.first();
 		a->setParent(nullptr);
 		delete a;
 	}
-	while(!m_wrappers.isEmpty())
+	while (!m_wrappers.isEmpty())
 	{
 		auto w = m_wrappers.first();
 		w->setParent(nullptr);
@@ -81,17 +81,16 @@ QToolWindowManager::~QToolWindowManager()
 	delete m_dragHandler;
 }
 
-
-QSizePreservingSplitter::QSizePreservingSplitter(QWidget * parent) 
-	: QSplitter(parent) 
+QSizePreservingSplitter::QSizePreservingSplitter(QWidget* parent)
+	: QSplitter(parent)
 {
 }
-QSizePreservingSplitter::QSizePreservingSplitter(Qt::Orientation orientation, QWidget * parent) 
-	: QSplitter(orientation, parent) 
+QSizePreservingSplitter::QSizePreservingSplitter(Qt::Orientation orientation, QWidget* parent)
+	: QSplitter(orientation, parent)
 {
 }
 
-void QSizePreservingSplitter::childEvent(QChildEvent *c)
+void QSizePreservingSplitter::childEvent(QChildEvent* c)
 {
 	if (c->type() == QEvent::ChildRemoved)
 	{
@@ -102,11 +101,11 @@ void QSizePreservingSplitter::childEvent(QChildEvent *c)
 			int s = l[i] + handleWidth();
 			if (i == 0)
 			{
-				l[1] = l[1]+s;
+				l[1] = l[1] + s;
 			}
 			else
 			{
-				l[i-1] = l[i-1]+s;
+				l[i - 1] = l[i - 1] + s;
 			}
 			l.removeAt(i);
 			QSplitter::childEvent(c);
@@ -123,8 +122,7 @@ void QSizePreservingSplitter::childEvent(QChildEvent *c)
 	}
 }
 
-
-QSplitter *QToolWindowManager::createSplitter()
+QSplitter* QToolWindowManager::createSplitter()
 {
 	return m_factory->createSplitter(this);
 }
@@ -145,7 +143,7 @@ IToolWindowWrapper* QToolWindowManager::createWrapper()
 	{
 		int i = qrand();
 		name = QString::asprintf("wrapper#%d", i);
-		foreach(IToolWindowWrapper* w2, m_wrappers)
+		foreach(IToolWindowWrapper * w2, m_wrappers)
 		{
 			if (name.compare(w2->getWidget()->objectName()))
 			{
@@ -173,7 +171,7 @@ void QToolWindowManager::removeWrapper(IToolWindowWrapper* wrapper)
 	m_wrappers.removeOne(wrapper);
 }
 
-void QToolWindowManager::startDrag(const QList<QWidget*> &toolWindows, IToolWindowArea* area)
+void QToolWindowManager::startDrag(const QList<QWidget*>& toolWindows, IToolWindowArea* area)
 {
 	if (toolWindows.isEmpty())
 	{
@@ -183,9 +181,9 @@ void QToolWindowManager::startDrag(const QList<QWidget*> &toolWindows, IToolWind
 	m_draggedToolWindows = toolWindows;
 
 	QRect floatingGeometry = QRect(QCursor::pos(), area->size());
-	moveToolWindows(toolWindows, nullptr, QToolWindowAreaReference::Drag, -1, floatingGeometry);
-	m_lastArea = nullptr;
-	updateDragPosition();
+	//This will release all the too windows from the current area, create a new floating wrapper with a new area inside and then add all the tool windows to it
+	//Then startDrag() will be called on the wrapper (this will then call QToolWindowManager::startDrag(IToolWindowWrapper* wrapper) aka the wrapper version of dragging)
+	moveToolWindows(toolWindows, area, QToolWindowAreaReference::Drag, -1, floatingGeometry);
 }
 
 void QToolWindowManager::startDrag(IToolWindowWrapper* wrapper)
@@ -214,9 +212,9 @@ void QToolWindowManager::addToolWindow(QWidget* toolWindow, const QToolWindowAre
 
 void QToolWindowManager::addToolWindows(const QList<QWidget*>& toolWindows, IToolWindowArea* area, QToolWindowAreaReference::eType reference /*= Combine*/, int index /*= -1*/, QRect geometry /*= QRect()*/)
 {
-	foreach(QWidget* toolWindow, toolWindows)
+	foreach(QWidget * toolWindow, toolWindows)
 	{
-		if(!ownsToolWindow(toolWindow))
+		if (!ownsToolWindow(toolWindow))
 		{
 			toolWindow->hide();
 			toolWindow->setParent(0);
@@ -230,7 +228,7 @@ void QToolWindowManager::addToolWindows(const QList<QWidget*>& toolWindows, IToo
 
 void QToolWindowManager::addToolWindows(const QList<QWidget*>& toolWindows, const QToolWindowAreaTarget& target, const QTWMToolType toolType /*= ttStandard*/)
 {
-	foreach(QWidget* toolWindow, toolWindows)
+	foreach(QWidget * toolWindow, toolWindows)
 	{
 		insertToToolTypes(toolWindow, toolType);
 	}
@@ -250,7 +248,7 @@ void QToolWindowManager::moveToolWindow(QWidget* toolWindow, const QToolWindowAr
 
 void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, const QToolWindowAreaTarget& target, const QTWMToolType toolType /*= ttStandard*/)
 {
-	foreach(QWidget* toolWindow, toolWindows)
+	foreach(QWidget * toolWindow, toolWindows)
 	{
 		insertToToolTypes(toolWindow, toolType);
 	}
@@ -259,17 +257,7 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, con
 
 void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, IToolWindowArea* area, QToolWindowAreaReference::eType reference /*= Combine*/, int index /*= -1*/, QRect geometry /*= QRect()*/)
 {
-	IToolWindowWrapper* wrapper = nullptr;
-	bool currentAreaIsSimple = true;
-	foreach(QWidget* toolWindow, toolWindows)
-	{
-		// when iterating  over the tool windows, we will figure out if the current are is actually roll-ups and not tabs
-		IToolWindowArea* currentArea = findClosestParent<IToolWindowArea*>(toolWindow);
-		if (currentAreaIsSimple && currentArea && currentArea->areaType() == watTabs)
-			currentAreaIsSimple = false;
-		releaseToolWindow(toolWindow, false);
-	}
-
+	//If no area find one
 	if (!area)
 	{
 		if (m_lastArea)
@@ -286,53 +274,80 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 			m_mainWrapper->setContents(m_lastArea->getWidget());
 		}
 	}
+
+	QPoint dragOffset;
+	//Get the current mouse position and offset from the area before we remove the tool windows from it
+	if (area && reference == QToolWindowAreaReference::Drag)
+	{
+		QPoint widgetPos = area->mapToGlobal(area->rect().topLeft());
+		dragOffset = widgetPos - QCursor::pos();
+	}
+
+	IToolWindowWrapper* wrapper = nullptr;
+	bool currentAreaIsSimple = true;
+	foreach(QWidget * toolWindow, toolWindows)
+	{
+		// when iterating  over the tool windows, we will figure out if the current one is actually roll-ups and not tabs
+		IToolWindowArea* currentArea = findClosestParent<IToolWindowArea*>(toolWindow);
+		if (currentAreaIsSimple && currentArea && currentArea->areaType() == watTabs)
+			currentAreaIsSimple = false;
+		releaseToolWindow(toolWindow, false);
+	}
+
 	switch (reference)
 	{
-	case QToolWindowAreaReference::Top: // top of furthest parent
+	case QToolWindowAreaReference::Top:    // top of furthest parent
 	case QToolWindowAreaReference::Bottom: // bottom of furthest parent
-	case QToolWindowAreaReference::Left: // left of furthest parent
-	case QToolWindowAreaReference::Right: // right of furthest parent
+	case QToolWindowAreaReference::Left:   // left of furthest parent
+	case QToolWindowAreaReference::Right:  // right of furthest parent
 		area = qobject_cast<IToolWindowArea*>(splitArea(getFurthestParentArea(area->getWidget())->getWidget(), reference));
 		break;
-	case QToolWindowAreaReference::HSplitTop: // above closest parent
+	case QToolWindowAreaReference::HSplitTop:    // above closest parent
 	case QToolWindowAreaReference::HSplitBottom: // below closest parent
-	case QToolWindowAreaReference::VSplitLeft: // left of closest parent
-	case QToolWindowAreaReference::VSplitRight: // right of closest parent
+	case QToolWindowAreaReference::VSplitLeft:   // left of closest parent
+	case QToolWindowAreaReference::VSplitRight:  // right of closest parent
 		area = qobject_cast<IToolWindowArea*>(splitArea(area->getWidget(), reference));
 		break;
 	case QToolWindowAreaReference::Floating:
 	case QToolWindowAreaReference::Drag:
-	{
-		// when dragging we will try to determine target are type, from window types.
-		// when we drag more tool windows, we preserve area type geofre drag started
-		QTWMWrapperAreaType areaType = watTabs;
-		if (toolWindows.count() > 1)
 		{
-			if (currentAreaIsSimple)
+			// when dragging we will try to determine target are type, from window types.
+			QTWMWrapperAreaType areaType = watTabs;
+			if (toolWindows.count() > 1)
+			{
+				if (currentAreaIsSimple)
+					areaType = watRollups;
+			}
+			else if (m_toolWindowsTypes[toolWindows[0]] == ttSimple)
+			{
 				areaType = watRollups;
-		}
-		else if (m_toolWindowsTypes[toolWindows[0]] == ttSimple)
-		{
-			areaType = watRollups;
-		}
+			}
 
-		// create new window
-		area = createArea(areaType);
-		wrapper = createWrapper();
-		wrapper->setContents(area->getWidget());
-		wrapper->getWidget()->show();
+			// create new window
+			area = createArea(areaType);
+			wrapper = createWrapper();
+			wrapper->setContents(area->getWidget());
+			wrapper->getWidget()->show();
 
-		if (geometry != QRect())
-		{
-			wrapper->getWidget()->setGeometry(geometry);
+			if (geometry != QRect()) //we have geometry, apply the mouse offset
+			{
+				//If we have a  title bar we want to move the mouse to half the height of it
+				QCustomTitleBar* pTitleBar = wrapper->getWidget()->findChild<QCustomTitleBar*>();
+				if (pTitleBar)
+				{
+					dragOffset.setY(-pTitleBar->height() / 2);
+				}
+				//apply the mouse offset to the current rect
+				geometry.moveTopLeft(geometry.topLeft() + dragOffset);
+				wrapper->getWidget()->setGeometry(geometry);
+			}
+			else //with no present geometry we just create a new one
+			{
+				wrapper->getWidget()->setGeometry(QRect(QPoint(0, 0), toolWindows[0]->sizeHint()));
+				wrapper->getWidget()->move(QCursor::pos());
+			}
 		}
-		else
-		{
-			wrapper->getWidget()->setGeometry(QRect(QPoint(0, 0), toolWindows[0]->sizeHint()));
-			wrapper->getWidget()->move(QCursor::pos());
-		}		
-	}
-	break;
+		break;
 	default: //combine + hidden
 		// no special handling needed
 		break;
@@ -342,8 +357,9 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 		area->addToolWindows(toolWindows, index);
 		m_lastArea = area;
 	}
+	//This will remove the previous area the tool windows where attached to
 	simplifyLayout();
-	foreach(QWidget* toolWindow, toolWindows)
+	foreach(QWidget * toolWindow, toolWindows)
 	{
 		toolWindowVisibilityChanged(toolWindow, toolWindow->parent() != 0);
 	}
@@ -352,8 +368,7 @@ void QToolWindowManager::moveToolWindows(const QList<QWidget*>& toolWindows, ITo
 	if (reference == QToolWindowAreaReference::Drag && wrapper)
 	{
 		m_draggedWrapper = wrapper;
-		// Move wrapper to mouse position
-		wrapper->getWidget()->move(QCursor::pos());
+		//start the drag on the new wrapper, will end up calling QToolWindowManager::startDrag(IToolWindowWrapper* wrapper)
 		wrapper->startDrag();
 	}
 }
@@ -400,7 +415,7 @@ bool QToolWindowManager::event(QEvent* e)
 #if defined(WIN32) || defined(WIN64)
 	if (e->type() == QEvent::ParentChange && m_config.value(QTWM_WRAPPERS_ARE_CHILDREN, false).toBool())
 	{
-		foreach(IToolWindowWrapper* wrapper, m_wrappers)
+		foreach(IToolWindowWrapper * wrapper, m_wrappers)
 		{
 			if (wrapper->getWidget()->isWindow() && wrapper->getContents())
 			{
@@ -415,7 +430,7 @@ bool QToolWindowManager::event(QEvent* e)
 QWidget* QToolWindowManager::splitArea(QWidget* area, QToolWindowAreaReference reference, QWidget* insertWidget)
 {
 	QWidget* residingWidget = insertWidget;
-	
+
 	if (!residingWidget)
 	{
 		residingWidget = createArea()->getWidget();
@@ -441,7 +456,7 @@ QWidget* QToolWindowManager::splitArea(QWidget* area, QToolWindowAreaReference r
 	}
 	bool useParentSplitter = false;
 	int targetIndex = 0;
-	QList<int> parentSizes; 
+	QList<int> parentSizes;
 	if (parentSplitter)
 	{
 		parentSizes = parentSplitter->sizes();
@@ -497,8 +512,8 @@ QWidget* QToolWindowManager::splitArea(QWidget* area, QToolWindowAreaReference r
 	// This can issues, as contents can still be referencing deleted wrappers.
 	// Manually send all contents a parent changed event.
 	QList<QWidget*> contentsWidgets = residingWidget->findChildren<QWidget*>();
-	foreach(QWidget* w, contentsWidgets)
-		qApp->sendEvent(w, new QEvent(QEvent::ParentChange));
+	foreach(QWidget * w, contentsWidgets)
+	qApp->sendEvent(w, new QEvent(QEvent::ParentChange));
 
 	return residingWidget;
 }
@@ -545,7 +560,6 @@ bool QToolWindowManager::releaseToolWindows(QList<QWidget*> toolWindows, bool al
 	return result;
 }
 
-
 bool QToolWindowManager::tryCloseToolWindow(QWidget* toolWindow)
 {
 	m_closingWindow++;
@@ -554,7 +568,7 @@ bool QToolWindowManager::tryCloseToolWindow(QWidget* toolWindow)
 	if (!toolWindow->close())
 	{
 		qWarning("Widget could not be closed");
-		result =  false;
+		result = false;
 	}
 
 	m_closingWindow--;
@@ -600,10 +614,10 @@ bool QToolWindowManager::releaseToolWindow(QWidget* toolWindow, bool allowClose 
 				{
 					return false;
 				}
-				moveToolWindow(toolWindow, nullptr, QToolWindowAreaReference::Hidden);				
+				moveToolWindow(toolWindow, nullptr, QToolWindowAreaReference::Hidden);
 				break;
 			}
-			//intentional fallthrough
+		//intentional fallthrough
 		case rcpForget:
 		case rcpDelete:
 			if (!tryCloseToolWindow(toolWindow))
@@ -612,7 +626,7 @@ bool QToolWindowManager::releaseToolWindow(QWidget* toolWindow, bool allowClose 
 			}
 			moveToolWindow(toolWindow, nullptr, QToolWindowAreaReference::Hidden);
 			m_toolWindows.removeOne(toolWindow);
-			
+
 			if (releasePolicy == rcpDelete)
 				toolWindow->deleteLater();
 			return true;
@@ -628,7 +642,7 @@ bool QToolWindowManager::releaseToolWindow(QWidget* toolWindow, bool allowClose 
 		previousTabWidget->adjustDragVisuals();
 	}
 	toolWindow->hide();
-	toolWindow->setParent(0);	
+	toolWindow->setParent(0);
 	return true;
 }
 
@@ -682,7 +696,7 @@ void QToolWindowManager::updateDragPosition()
 			m_preview->setParent(previewArea);
 			m_preview->setGeometry(m_dragHandler->getRectFromCursorPos(previewArea, m_lastArea));
 		}
-		
+
 		m_preview->show();
 	}
 	else
@@ -711,7 +725,7 @@ void QToolWindowManager::finishWrapperDrag()
 	QList<QWidget*> contentsWidgets = contents->findChildren<QWidget*>();
 	contentsWidgets << contents;
 
-	foreach(QWidget* w, contentsWidgets)
+	foreach(QWidget * w, contentsWidgets)
 	{
 		IToolWindowArea* area = qobject_cast<IToolWindowArea*>(w);
 		if (area && ownsArea(area))
@@ -727,20 +741,20 @@ void QToolWindowManager::finishWrapperDrag()
 
 		switch (target.reference)
 		{
-		case QToolWindowAreaReference::Top: // top of furthest parent
+		case QToolWindowAreaReference::Top:    // top of furthest parent
 		case QToolWindowAreaReference::Bottom: // bottom of furthest parent
-		case QToolWindowAreaReference::Left: // left of furthest parent
-		case QToolWindowAreaReference::Right: // right of furthest parent
+		case QToolWindowAreaReference::Left:   // left of furthest parent
+		case QToolWindowAreaReference::Right:  // right of furthest parent
 			splitArea(getFurthestParentArea(target.area->getWidget())->getWidget(), target.reference, contents);
 			break;
-		case QToolWindowAreaReference::HSplitTop: // above closest parent
+		case QToolWindowAreaReference::HSplitTop:    // above closest parent
 		case QToolWindowAreaReference::HSplitBottom: // below closest parent
-		case QToolWindowAreaReference::VSplitLeft: // left of closest parent
-		case QToolWindowAreaReference::VSplitRight: // right of closest parent
+		case QToolWindowAreaReference::VSplitLeft:   // left of closest parent
+		case QToolWindowAreaReference::VSplitRight:  // right of closest parent
 			splitArea(target.area->getWidget(), target.reference, contents);
 			break;
 		case QToolWindowAreaReference::Combine:
-			// take all widgets anywhere in the wrapper and add them to the selected area		
+			// take all widgets anywhere in the wrapper and add them to the selected area
 			moveToolWindows(toolWindows, target);
 			break;
 		}
@@ -750,7 +764,7 @@ void QToolWindowManager::finishWrapperDrag()
 	if (target.reference != QToolWindowAreaReference::Combine)
 	{
 		// Inform about the move of all tools in the dragged wrapper and make sure the layout is saved
-		foreach(QWidget* w, toolWindows)
+		foreach(QWidget * w, toolWindows)
 		{
 			toolWindowVisibilityChanged(w, true);
 		}
@@ -770,7 +784,7 @@ void QToolWindowManager::finishWrapperResize()
 		QList<QWidget*> contentsWidgets = contents->findChildren<QWidget*>();
 		contentsWidgets << contents;
 
-		foreach(QWidget* w, contentsWidgets)
+		foreach(QWidget * w, contentsWidgets)
 		{
 			IToolWindowArea* area = qobject_cast<IToolWindowArea*>(w);
 			if (area && ownsArea(area))
@@ -781,7 +795,7 @@ void QToolWindowManager::finishWrapperResize()
 	}
 
 	// Inform about the resize of all tools in the dragged wrapper and make sure the layout is saved
-	foreach(QWidget* w, toolWindows)
+	foreach(QWidget * w, toolWindows)
 	{
 		toolWindowVisibilityChanged(w, true);
 	}
@@ -793,11 +807,11 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 {
 	suspendLayoutNotifications();
 	bool madeChanges; // Some layout changes may require multiple iterations to fully simplify.
-	do 
+	do
 	{
 		madeChanges = false;
 		QList<IToolWindowArea*> areasToRemove;
-		foreach(IToolWindowArea* area, m_areas)
+		foreach(IToolWindowArea * area, m_areas)
 		{
 			//remove empty areas (if this is only area in main wrapper, only remove it when we explicitly ask for that)
 			if (area->count() == 0 && (clearMain || qobject_cast<IToolWindowWrapper*>(area->parent()) != m_mainWrapper))
@@ -814,8 +828,8 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 				IToolWindowWrapper* sw = findClosestParent<IToolWindowWrapper*>(s);
 
 				//If splitter only contains one object, replace the splitter with the contained object
-				if (s->count() == 1) 
-				{					
+				if (s->count() == 1)
+				{
 					if (sp_s)
 					{
 						int index = sp_s->indexOf(s);
@@ -851,7 +865,7 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 					{
 						oldSum += i;
 					}
-					for(int i = oldSizes.count() - 1; i >= 0; i--)
+					for (int i = oldSizes.count() - 1; i >= 0; i--)
 					{
 						sp_s->insertWidget(index, s->widget(i));
 						newSizes.insert(index, (float)oldSizes[i] / oldSum * newSum);
@@ -866,7 +880,7 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 			}
 		}
 
-		foreach(IToolWindowArea* area, areasToRemove)
+		foreach(IToolWindowArea * area, areasToRemove)
 		{
 			area->hide();
 			IToolWindowWrapper* aw = qobject_cast<IToolWindowWrapper*>(area->parentWidget());
@@ -878,11 +892,12 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 			m_areas.removeOne(area);
 			area->deleteLater();
 		}
-	} while (madeChanges);
+	}
+	while (madeChanges);
 
 	QList<IToolWindowWrapper*> wrappersToRemove;
 	//Remove empty wrappers
-	foreach(IToolWindowWrapper* wrapper, m_wrappers)
+	foreach(IToolWindowWrapper * wrapper, m_wrappers)
 	{
 		if (wrapper->getWidget()->isWindow() && !wrapper->getContents())
 		{
@@ -890,7 +905,7 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 		}
 	}
 
-	foreach(IToolWindowWrapper* wrapper, wrappersToRemove)
+	foreach(IToolWindowWrapper * wrapper, wrappersToRemove)
 	{
 		m_wrappers.removeOne(wrapper);
 		wrapper->hide();
@@ -898,11 +913,11 @@ void QToolWindowManager::simplifyLayout(bool clearMain /* = false */)
 	}
 
 	//Update area visuals
-	foreach(IToolWindowArea* area, m_areas)
+	foreach(IToolWindowArea * area, m_areas)
 	{
 		area->adjustDragVisuals();
 	}
-	
+
 	resumeLayoutNotifications();
 	notifyLayoutChange();
 }
@@ -916,7 +931,7 @@ QVariant QToolWindowManager::saveState()
 		result["mainWrapper"] = saveWrapperState(m_mainWrapper);
 	}
 	QVariantList floatingWindowsData;
-	foreach(IToolWindowWrapper* wrapper, m_wrappers)
+	foreach(IToolWindowWrapper * wrapper, m_wrappers)
 	{
 		if (wrapper->getWidget()->isWindow() && wrapper->getContents() && wrapper->getContents()->metaObject())
 		{
@@ -931,7 +946,7 @@ QVariant QToolWindowManager::saveState()
 	return result;
 }
 
-void QToolWindowManager::restoreState(const QVariant &data)
+void QToolWindowManager::restoreState(const QVariant& data)
 {
 	if (!data.isValid()) { return; }
 	QVariantMap dataMap = data.toMap();
@@ -943,7 +958,7 @@ void QToolWindowManager::restoreState(const QVariant &data)
 	}
 	suspendLayoutNotifications();
 	m_mainWrapper->getWidget()->hide();
-	foreach(IToolWindowWrapper* wrapper, m_wrappers)
+	foreach(IToolWindowWrapper * wrapper, m_wrappers)
 	{
 		wrapper->getWidget()->hide();
 	}
@@ -956,17 +971,17 @@ void QToolWindowManager::restoreState(const QVariant &data)
 		restoreWrapperState(windowData.toMap(), stateFormat);
 	}
 	simplifyLayout();
-	foreach(QWidget* toolWindow, m_toolWindows)
+	foreach(QWidget * toolWindow, m_toolWindows)
 	{
 		toolWindowVisibilityChanged(toolWindow, toolWindow->parentWidget() != 0);
 	}
 	resumeLayoutNotifications();
-	notifyLayoutChange();	
+	notifyLayoutChange();
 }
 
 bool QToolWindowManager::isAnyWindowActive()
 {
-	foreach(QWidget* tool, m_toolWindows)
+	foreach(QWidget * tool, m_toolWindows)
 	{
 		if (tool->isActiveWindow())
 		{
@@ -1007,10 +1022,10 @@ QVariantMap QToolWindowManager::saveWrapperState(IToolWindowWrapper* wrapper)
 	}
 }
 
-IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap &data, int stateFormat, IToolWindowWrapper* wrapper)
+IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap& data, int stateFormat, IToolWindowWrapper* wrapper)
 {
 	QWidget* newContents = nullptr;
-	
+
 	if (wrapper && data.contains("name"))
 	{
 		wrapper->getWidget()->setObjectName(data["name"].toString());
@@ -1085,7 +1100,7 @@ IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap &d
 
 	if (data.contains("geometry"))
 	{
-		// Adjust position of frameless non-maximized windows since Qt will otherwise adjust for a non-existant frame (as of Qt 5.6)
+		// Adjust position of frameless non-maximized windows since Qt will otherwise adjust for a non-existent frame (as of Qt 5.6)
 		if (wrapper->getWidget()->windowFlags().testFlag(Qt::FramelessWindowHint) && !wrapper->getWidget()->windowState().testFlag(Qt::WindowMaximized))
 		{
 			QWidget* w = wrapper->getWidget();
@@ -1099,13 +1114,13 @@ IToolWindowWrapper* QToolWindowManager::restoreWrapperState(const QVariantMap &d
 	return wrapper;
 }
 
-QVariantMap QToolWindowManager::saveSplitterState(QSplitter *splitter) 
+QVariantMap QToolWindowManager::saveSplitterState(QSplitter* splitter)
 {
 	QVariantMap result;
 	result["state"] = splitter->saveState().toBase64();
 	result["type"] = "splitter";
 	QVariantList items;
-	for(int i = 0; i < splitter->count(); i++)
+	for (int i = 0; i < splitter->count(); i++)
 	{
 		QWidget* item = splitter->widget(i);
 		QVariantMap itemValue;
@@ -1132,9 +1147,10 @@ QVariantMap QToolWindowManager::saveSplitterState(QSplitter *splitter)
 	return result;
 }
 
-QSplitter *QToolWindowManager::restoreSplitterState(const QVariantMap &data, int stateFormat)
+QSplitter* QToolWindowManager::restoreSplitterState(const QVariantMap& data, int stateFormat)
 {
-	if (data["items"].toList().count() < 2) {
+	if (data["items"].toList().count() < 2)
+	{
 		qWarning("Invalid splitter encountered");
 		if (data["items"].toList().count() == 0)
 		{
@@ -1233,8 +1249,7 @@ QString QToolWindowManager::textForPosition(QToolWindowAreaReference reference)
 		"Split vertically, place left",
 		"Split vertically, place right",
 		"Add to tab list",
-		""
-	};
+		"" };
 	QString s;
 	return texts[reference];
 }
@@ -1257,7 +1272,7 @@ void QToolWindowManager::raiseCurrentArea()
 	if (m_lastArea)
 	{
 		QWidget* w = m_lastArea->getWidget();
-		while (w->parentWidget() && ! w->isWindow())
+		while (w->parentWidget() && !w->isWindow())
 		{
 			w = w->parentWidget();
 		}
@@ -1270,9 +1285,6 @@ void QToolWindowManager::raiseCurrentArea()
 void QToolWindowManager::clear()
 {
 	releaseToolWindows(toolWindows(), true);
-	// make sure pending deletions are processed, so two unique tools don't co-exist
-	qApp->processEvents();
-	QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 	if (!m_areas.isEmpty())
 	{
 		m_lastArea = m_areas.first();
@@ -1290,7 +1302,7 @@ void QToolWindowManager::bringAllToFront()
 	QSet<HWND> handles;
 	HWND h;
 	QList<QWidget*> list = QApplication::topLevelWidgets();
-	foreach (w, list)
+	foreach(w, list)
 	{
 		if (w && !w->windowState().testFlag(Qt::WindowMinimized) && (qobject_cast<IToolWindowWrapper*>(w) || qobject_cast<QCustomWindowFrame*>(w)))
 		{
@@ -1322,10 +1334,16 @@ void QToolWindowManager::bringToFront(QWidget* toolWindow)
 		return;
 	while (area->indexOf(toolWindow) == -1)
 	{
-		toolWindow = toolWindow->parentWidget();		
+		toolWindow = toolWindow->parentWidget();
 	}
 	area->setCurrentWidget(toolWindow);
-	area->getWidget()->window()->raise();
+
+	// Make sure the window is no longer minimized, activate it and show
+	QWidget* pWindow = area->getWidget()->window();
+	pWindow->setWindowState((pWindow->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+	pWindow->show();
+	pWindow->raise();
+
 	toolWindow->setFocus();
 }
 
@@ -1351,7 +1369,7 @@ QString QToolWindowManager::getToolPath(QWidget* toolWindow) const
 
 QToolWindowAreaTarget QToolWindowManager::targetFromPath(const QString& toolPath) const
 {
-	foreach(IToolWindowArea* w, m_areas)
+	foreach(IToolWindowArea * w, m_areas)
 	{
 		if (w->count() > 0 && getToolPath(w->widget(0)) == toolPath)
 		{
@@ -1361,7 +1379,7 @@ QToolWindowAreaTarget QToolWindowManager::targetFromPath(const QString& toolPath
 	return QToolWindowAreaTarget(QToolWindowAreaReference::Floating);
 }
 
-IToolWindowArea *QToolWindowManager::areaOf(QWidget *toolWindow)
+IToolWindowArea* QToolWindowManager::areaOf(QWidget* toolWindow)
 {
 	return findClosestParent<IToolWindowArea*>(toolWindow);
 }
@@ -1376,14 +1394,14 @@ void QToolWindowManager::SwapAreaType(IToolWindowArea* oldArea, QTWMWrapperAreaT
 	if (!parentSplitter && !targetWrapper)
 	{
 		qWarning("Could not determine area parent");
-		return ;
+		return;
 	}
-	
+
 	newArea->addToolWindows(oldArea->toolWindows());
 	if (parentSplitter)
 	{
 		int targetIndex = parentSplitter->indexOf(oldArea->getWidget());
-		parentSplitter->insertWidget(targetIndex, newArea->getWidget());		
+		parentSplitter->insertWidget(targetIndex, newArea->getWidget());
 	}
 	else
 	{
@@ -1396,10 +1414,10 @@ void QToolWindowManager::SwapAreaType(IToolWindowArea* oldArea, QTWMWrapperAreaT
 	m_areas.insert(oldAreaIndex, newArea);
 	oldArea->getWidget()->setParent(nullptr);
 	newArea->adjustDragVisuals();
-	
+
 }
 
-IToolWindowArea* QToolWindowManagerClassFactory::createArea(QToolWindowManager* manager, QWidget *parent /*= 0*/, QTWMWrapperAreaType areaType)
+IToolWindowArea* QToolWindowManagerClassFactory::createArea(QToolWindowManager* manager, QWidget* parent /*= 0*/, QTWMWrapperAreaType areaType)
 {
 	if (manager->config().value(QTWM_SUPPORT_SIMPLE_TOOLS, false).toBool() && areaType == watRollups)
 		return new QToolWindowRollupBarArea(manager, parent);
@@ -1455,4 +1473,3 @@ QToolWindowManager::QTWMNotifyLock::~QTWMNotifyLock()
 		m_parent->notifyLayoutChange();
 	}
 }
-

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "GpuComputeBackend.h"
-#include "DriverD3D.h"
 
 namespace gpu
 {

@@ -2,22 +2,36 @@
 #include "StdAfx.h"
 #include "AssetEditor.h"
 
+#include "AssetFilesGroupController.h"
 #include "AssetManager.h"
 #include "AssetType.h"
-#include "EditableAsset.h"
-#include "Loader/AssetLoaderHelpers.h"
 #include "Browser/AssetBrowserDialog.h"
-#include "Controls/SingleSelectionDialog.h"
+#include "Browser/AssetBrowserWidget.h"
+#include "Commands/QCommandAction.h"
 #include "Controls/QuestionDialog.h"
-#include "QtUtil.h"
-#include "FilePathUtil.h"
+#include "Controls/SingleSelectionDialog.h"
 #include "CryExtension/CryGUID.h"
 #include "DragDrop.h"
+#include "EditableAsset.h"
+#include "EditorFramework/Events.h"
+#include "FileOperationsExecutor.h"
+#include "FileUtils.h"
+#include "Loader/AssetLoaderHelpers.h"
+#include "Notifications/NotificationCenter.h"
+#include "PathUtils.h"
+#include "QtUtil.h"
+#include "ThreadingUtils.h"
+
+#include <IEditor.h>
 
 #include <QCloseEvent>
+#include <QToolBar>
+#include <QToolButton>
 
 namespace Private_AssetEditor
 {
+
+static const char* const s_szAssetBrowserPanelName = "Asset Browser";
 
 //! Makes a temporary copy of files in construct time
 //!	and moves them back in the destructor.
@@ -31,7 +45,7 @@ public:
 			return;
 		}
 
-		static const string tempPrefix = GetTemporaryDirectoryPath();
+		static const CryPathString tempPrefix(GetTemporaryDirectoryPath());
 
 		m_files.reserve(files.size());
 
@@ -76,10 +90,11 @@ public:
 		}
 	}
 private:
-	static string GetTemporaryDirectoryPath()
+	static CryPathString GetTemporaryDirectoryPath()
 	{
-		char path[ICryPak::g_nMaxPath] = {};
-		return GetISystem()->GetIPak()->AdjustFileName("%USER%/temp", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		CryPathString path;
+		GetISystem()->GetIPak()->AdjustFileName("%USER%/temp", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		return path;
 	}
 
 private:
@@ -107,16 +122,16 @@ public:
 	}
 };
 
-};
+}
 
-CAssetEditor* CAssetEditor::OpenAssetForEdit(const char* editorClassName, CAsset* asset)
+CAssetEditor* CAssetEditor::OpenAssetForEdit(const char* szEditorClassName, CAsset* pAsset)
 {
-	CRY_ASSERT(asset);
-	IPane* pane = GetIEditor()->CreateDockable(editorClassName);
-	if (pane)
+	CRY_ASSERT(pAsset);
+	IPane* pPane = GetIEditor()->CreateDockable(szEditorClassName);
+	if (pPane)
 	{
-		CAssetEditor* assetEditor = static_cast<CAssetEditor*>(pane);
-		if (assetEditor->OpenAsset(asset))
+		CAssetEditor* assetEditor = static_cast<CAssetEditor*>(pPane);
+		if (assetEditor->OpenAsset(pAsset))
 		{
 			return assetEditor;
 		}
@@ -131,8 +146,7 @@ CAssetEditor::CAssetEditor(const char* assetType, QWidget* pParent /*= nullptr*/
 	auto type = CAssetManager::GetInstance()->FindAssetType(assetType);
 	CRY_ASSERT(type);//type must exist
 	m_supportedAssetTypes.push_back(type);
-
-	Init();
+	RegisterActions();
 }
 
 CAssetEditor::CAssetEditor(const QStringList& assetTypes, QWidget* pParent /*= nullptr*/)
@@ -146,15 +160,7 @@ CAssetEditor::CAssetEditor(const QStringList& assetTypes, QWidget* pParent /*= n
 		CRY_ASSERT(type);//type must exist
 		m_supportedAssetTypes.push_back(type);
 	}
-
-	Init();
-}
-
-void CAssetEditor::Init()
-{
-	InitGenericMenu();
-
-	setAcceptDrops(true);
+	RegisterActions();
 }
 
 bool CAssetEditor::OpenAsset(CAsset* pAsset)
@@ -165,6 +171,13 @@ bool CAssetEditor::OpenAsset(CAsset* pAsset)
 
 	if (pAsset == m_assetBeingEdited)
 		return true;
+
+	string errorMsg;
+	if (!pAsset->GetType()->IsAssetValid(pAsset, errorMsg))
+	{
+		GetIEditor()->GetNotificationCenter()->ShowInfo("Cant open the asset for edit", QtUtil::ToQString(errorMsg));
+		return false;
+	}
 
 	if (!Close())
 	{
@@ -182,16 +195,30 @@ bool CAssetEditor::OpenAsset(CAsset* pAsset)
 
 	CEditableAsset editableAsset(*pAsset);
 	editableAsset.SetOpenedInAssetEditor(this);
-
+	signalAssetOpened();
 	return true;
 }
 
 bool CAssetEditor::CanOpenAsset(CAsset* pAsset)
 {
-	if (!pAsset)
+	return pAsset && CanOpenAsset(pAsset->GetType());
+}
+
+bool CAssetEditor::CanOpenAsset(const CAssetType* pType)
+{
+	if (!pType)
 		return false;
 
-	return std::find(m_supportedAssetTypes.begin(), m_supportedAssetTypes.end(), pAsset->GetType()) != m_supportedAssetTypes.end();
+	return std::find(m_supportedAssetTypes.begin(), m_supportedAssetTypes.end(), pType) != m_supportedAssetTypes.end();
+}
+
+void CAssetEditor::RegisterActions()
+{
+	RegisterAction("general.new", &CAssetEditor::OnNew);
+	RegisterAction("general.open", &CAssetEditor::OnOpen);
+	RegisterAction("general.save", &CAssetEditor::OnSave);
+	RegisterAction("general.save_as", &CAssetEditor::OnSaveAs);
+	RegisterAction("general.close", &CAssetEditor::OnClose);
 }
 
 void CAssetEditor::InitGenericMenu()
@@ -227,7 +254,7 @@ void CAssetEditor::UpdateWindowTitle()
 		if (m_assetBeingEdited->IsModified())
 			setWindowTitle(QString(m_assetBeingEdited->GetName()) + " *");
 		else
-			setWindowTitle(m_assetBeingEdited->GetName());
+			setWindowTitle(m_assetBeingEdited->GetName().c_str());
 
 		setWindowIcon(m_assetBeingEdited->GetType()->GetIcon());
 	}
@@ -243,12 +270,9 @@ void CAssetEditor::SetAssetBeingEdited(CAsset* pAsset)
 	if (m_assetBeingEdited == pAsset)
 		return;
 
-	bool bWasReadOnly = false;
-
 	if (m_assetBeingEdited)
 	{
 		m_assetBeingEdited->signalChanged.DisconnectObject(this);
-		bWasReadOnly = m_assetBeingEdited->IsReadOnly();
 	}
 
 	m_assetBeingEdited = pAsset;
@@ -261,25 +285,15 @@ void CAssetEditor::SetAssetBeingEdited(CAsset* pAsset)
 		{
 			if (std::find(assets.begin(), assets.end(), GetAssetBeingEdited()) != assets.end())
 			{
-			  OnCloseAsset();
-			  CRY_ASSERT(GetAssetBeingEdited() != nullptr);
-			  signalAssetClosed(GetAssetBeingEdited());
-			  SetAssetBeingEdited(nullptr);
+				CloseAsset();
 			}
 		}, (uintptr_t)this);
 
 		pAsset->signalChanged.Connect(this, &CAssetEditor::OnAssetChanged);
-
-		if (bWasReadOnly != pAsset->IsReadOnly())
-			OnReadOnlyChanged();
 	}
 	else
 	{
 		CAssetManager::GetInstance()->signalBeforeAssetsRemoved.DisconnectById((uintptr_t)this);
-
-		//No longer considered read only after closing the asset
-		if (bWasReadOnly)
-			OnReadOnlyChanged();
 	}
 }
 
@@ -292,9 +306,14 @@ bool CAssetEditor::OnAboutToCloseAssetInternal(string& reason) const
 		return true;
 	}
 
+	if (m_assetBeingEdited->GetEditingSession())
+	{
+		return true;
+	}
+
 	if (m_assetBeingEdited->IsModified())
 	{
-		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName()));
+		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName().c_str()));
 		return false;
 	}
 
@@ -315,7 +334,7 @@ bool CAssetEditor::TryCloseAsset()
 		if (reason.empty())
 		{
 			// Show generic modification message.
-			reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName()));
+			reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(m_assetBeingEdited->GetName().c_str()));
 		}
 
 		const QString title = tr("Closing %1").arg(GetEditorName());
@@ -327,8 +346,7 @@ bool CAssetEditor::TryCloseAsset()
 			bClose = true;
 			break;
 		case QDialogButtonBox::Discard:
-			OnDiscardAssetChanges();
-			GetAssetBeingEdited()->SetModified(false);
+			DiscardAssetChanges();
 			bClose = true;
 			break;
 		case QDialogButtonBox::No:
@@ -346,10 +364,7 @@ bool CAssetEditor::TryCloseAsset()
 
 	if (bClose)
 	{
-		OnCloseAsset();
-		CRY_ASSERT(GetAssetBeingEdited() != nullptr);
-		signalAssetClosed(GetAssetBeingEdited());
-		SetAssetBeingEdited(nullptr);
+		CloseAsset();
 		return true;
 	}
 	else
@@ -362,12 +377,7 @@ void CAssetEditor::OnAssetChanged(CAsset& asset, int changeFlags)
 {
 	CRY_ASSERT(&asset == m_assetBeingEdited);
 
-	if (changeFlags & eAssetChangeFlags_ReadOnly)
-	{
-		OnReadOnlyChanged();
-	}
-
-	if (changeFlags & eAssetChangeFlags_Modified)
+	if (changeFlags & (eAssetChangeFlags_Modified | eAssetChangeFlags_Open))
 	{
 		UpdateWindowTitle();
 	}
@@ -429,6 +439,9 @@ bool CAssetEditor::OnNew()
 
 void CAssetEditor::InternalNewAsset(CAssetType* pAssetType)
 {
+	if (!Close())
+		return;
+
 	const string assetTypeName = pAssetType->GetTypeName();
 
 	const string assetBasePath = CAssetBrowserDialog::CreateSingleAssetForType(assetTypeName, CAssetBrowserDialog::OverwriteMode::NoOverwrite);
@@ -436,9 +449,6 @@ void CAssetEditor::InternalNewAsset(CAssetType* pAssetType)
 	{
 		return; // Operation cancelled by user.
 	}
-
-	if (!Close())
-		return;
 
 	const string assetPath = assetBasePath + string().Format(".%s.cryasset", pAssetType->GetFileExtension());
 	if (pAssetType->Create(assetPath))
@@ -463,7 +473,7 @@ bool CAssetEditor::OnOpen()
 	CAsset* const asset = CAssetBrowserDialog::OpenSingleAssetForTypes(supportedAssetTypeNames);
 	if (asset)
 	{
-		(void)OpenAsset(asset);
+		OpenAsset(asset);
 	}
 	return true;
 }
@@ -473,7 +483,7 @@ bool CAssetEditor::OnOpenFile(const QString& path)
 	auto asset = CAssetManager::GetInstance()->FindAssetForFile(path.toStdString().c_str());
 	if (asset)
 	{
-		(void)OpenAsset(asset);
+		OpenAsset(asset);
 	}
 	return true;
 }
@@ -491,7 +501,7 @@ bool CAssetEditor::Close()
 bool CAssetEditor::OnClose()
 {
 	//Note: this is only the callback for menu action, every other place should call close()
-	(void)Close();
+	Close();
 	return true;//returns true because the menu action is handled
 }
 
@@ -508,6 +518,10 @@ bool CAssetEditor::CanQuit(std::vector<string>& unsavedChanges)
 
 void CAssetEditor::closeEvent(QCloseEvent* pEvent)
 {
+	// Make sure to give CDockableEditor a chance to handle the event as well
+	// Currently it makes sure to save personalization/layout changes on close
+	CDockableEditor::closeEvent(pEvent);
+
 	if (TryCloseAsset())
 	{
 		pEvent->accept();
@@ -547,8 +561,6 @@ void CAssetEditor::dragEnterEvent(QDragEnterEvent* pEvent)
 		QStringList engineFilePaths;
 		stream >> engineFilePaths;
 
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
-
 		if (engineFilePaths.size() == 1)
 		{
 			CAsset* asset = CAssetManager::GetInstance()->FindAssetForFile(engineFilePaths[0].toStdString().c_str());
@@ -564,7 +576,6 @@ void CAssetEditor::dragEnterEvent(QDragEnterEvent* pEvent)
 	if (pDragDropData->HasFilePaths())
 	{
 		const auto filePaths = pDragDropData->GetFilePaths();
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
 
 		if (filePaths.size() == 1)
 		{
@@ -608,8 +619,6 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 		QStringList engineFilePaths;
 		stream >> engineFilePaths;
 
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
-
 		if (engineFilePaths.size() == 1)
 		{
 			CAsset* asset = CAssetManager::GetInstance()->FindAssetForFile(engineFilePaths[0].toStdString().c_str());
@@ -625,7 +634,6 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 	if (pDragDropData->HasFilePaths())
 	{
 		const auto filePaths = pDragDropData->GetFilePaths();
-		const auto meshType = CAssetManager::GetInstance()->FindAssetType("Mesh");
 
 		if (filePaths.size() == 1)
 		{
@@ -640,40 +648,32 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 	}
 }
 
-bool CAssetEditor::InternalSaveAsset(CAsset* pAsset)
+void CAssetEditor::CreateDefaultLayout(CDockableContainer* pSender)
 {
-	//TODO: Figure out how to handle writing metadata generically without opening the file twice
-	//(one in OnSaveAsset implementation and one here)
+	using namespace Private_AssetEditor;
 
-	//TODO: here the editable asset retains every metadata of the old asset, which means if it is not overwritten in OnSaveAsset, some metadata could carry over.
-	//Perhaps the safest way would be to clear it before passing it. Also means that calling things like AddFile() in there will result in warnings because the file was duplicated etc...
-
-	CEditableAsset editAsset(*pAsset);
-	if (!OnSaveAsset(editAsset))
-	{
-		return false;
-	}
-
-	editAsset.InvalidateThumbnail();
-	editAsset.WriteToFile();
-	pAsset->SetModified(false);
-
-	return true;
+	QWidget* const pAssetBrowser = pSender->SpawnWidget(s_szAssetBrowserPanelName);
+	OnCreateDefaultLayout(pSender, pAssetBrowser);
 }
 
-bool CAssetEditor::Save()
+void CAssetEditor::DiscardAssetChanges()
 {
-	if (!m_assetBeingEdited)
+	CAsset* pAsset = GetAssetBeingEdited();
+	if (pAsset)
 	{
-		return true;
+		CEditableAsset editAsset(*pAsset);
+		OnDiscardAssetChanges(editAsset);
+		pAsset->SetModified(false);
 	}
-
-	return InternalSaveAsset(m_assetBeingEdited);
 }
 
 bool CAssetEditor::OnSave()
 {
-	Save();
+	CAsset* pAsset = GetAssetBeingEdited();
+	if (pAsset)
+	{
+		pAsset->Save();
+	}
 	return true;
 }
 
@@ -681,6 +681,12 @@ bool CAssetEditor::OnSaveAs()
 {
 	if (!m_assetBeingEdited)
 	{
+		return true;
+	}
+
+	if (!m_assetBeingEdited->GetType()->CanBeCopied() || !m_assetBeingEdited->GetEditingSession())
+	{
+		CRY_ASSERT_MESSAGE(m_assetBeingEdited->GetType()->CanBeCopied() && m_assetBeingEdited->GetEditingSession(), "%s asset type does not handle \"Save as\"", m_assetBeingEdited->GetType()->GetUiTypeName());
 		return true;
 	}
 
@@ -694,9 +700,9 @@ bool CAssetEditor::OnSaveAs()
 	{
 		return true; // Operation cancelled by user.
 	}
-	const string newAssetPath = assetBasePath + string().Format(".%s.cryasset", pAssetType->GetFileExtension());
+	const string newAssetPath = PathUtil::AdjustCasing(pAssetType->MakeMetadataFilename(assetBasePath));
 
-	if (newAssetPath.Compare(m_assetBeingEdited->GetMetadataFile()) == 0)
+	if (newAssetPath.CompareNoCase(m_assetBeingEdited->GetMetadataFile()) == 0)
 	{
 		return OnSave();
 	}
@@ -705,63 +711,69 @@ bool CAssetEditor::OnSaveAs()
 	CAsset* pAsset = pAssetManager->FindAssetForMetadata(newAssetPath);
 	if (pAsset)
 	{
-		// Cancel if unable to delete.
-		pAssetManager->DeleteAssets({ pAsset }, true);
-		pAsset = pAssetManager->FindAssetForMetadata(newAssetPath);
-		if (pAsset)
+		pAsset->signalAfterRemoved.Connect([this](const CAsset* pAsset)
 		{
-			return true;
-		}
-	}
+			CreateAssetCopyAndOpen(pAsset->GetMetadataFile());
+		});
 
-	// Create new asset on disk.
-	if (!InternalSaveAs(newAssetPath))
-	{
+		pAssetManager->DeleteAssetsWithFiles({ pAsset });
 		return true;
 	}
 
-	pAsset = AssetLoader::CAssetFactory::LoadAssetFromXmlFile(newAssetPath);
-	pAssetManager->MergeAssets({ pAsset });
-
-	if (pAsset)
+	// Create a copy.
+	if (!CreateAssetCopyAndOpen(newAssetPath))
 	{
-		// Close previous asset and unconditionally discard all changes.
-		OnDiscardAssetChanges();
-		GetAssetBeingEdited()->SetModified(false);
-		OnCloseAsset();
-		CRY_ASSERT(GetAssetBeingEdited() != nullptr);
-		signalAssetClosed(GetAssetBeingEdited());
-		SetAssetBeingEdited(nullptr);
-
-		OpenAsset(pAsset);
-	}
-	return true;
-}
-
-bool CAssetEditor::InternalSaveAs(const string& newAssetPath)
-{
-	CRY_ASSERT(m_assetBeingEdited);
-
-	using namespace Private_AssetEditor;
-
-	// 1. Make a temp copy of asset files.
-	// 2. Save asset changes.
-	// 3. Move updated files under the new asset name.
-	// 4. Restore old files from the temp copy.
-	// TODO: consider a direct implementation of the SaveAs. e.g CAssetType::SaveAs(CAsset& asset, string newAssetPath)
-
-	CAutoAssetRecovery tempCopy(*m_assetBeingEdited);
-	if (!tempCopy.IsValid() || !OnSave())
-	{
-		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Unable to copy asset: %s", m_assetBeingEdited->GetName());
 		return false;
 	}
 
-	const bool result = m_assetBeingEdited->GetType()->CopyAsset(m_assetBeingEdited, newAssetPath);
-	size_t numberOfFilesDeleted(0);
-	m_assetBeingEdited->GetType()->DeleteAssetFiles(*m_assetBeingEdited, false, numberOfFilesDeleted);
-	// tempCopy restores asset files.
-	return result;
+	return true;
+}
+
+bool CAssetEditor::CreateAssetCopy(const string& path)
+{
+	if (!m_assetBeingEdited)
+	{
+		return false;
+	}
+
+	// Create a copy.
+	CAssetType::SCreateParams createParams;
+	createParams.pSourceAsset = m_assetBeingEdited;
+
+	return m_assetBeingEdited->GetType()->Create(path, &createParams);
+}
+
+bool CAssetEditor::CreateAssetCopyAndOpen(const string& path)
+{
+	if (!CreateAssetCopy(path))
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to create asset copy: %s - from: %s", path, m_assetBeingEdited->GetMetadataFile());
+		return false;
+	}
+
+	CAsset* pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(path);
+	if (!pAsset)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to create asset copy: %s - from: %s", path, m_assetBeingEdited->GetMetadataFile());
+		return false;
+	}
+
+	// Close and discard all changes
+	DiscardAssetChanges();
+	CloseAsset();
+	OpenAsset(pAsset);
+
+	return true;
+}
+
+void CAssetEditor::CloseAsset()
+{
+	CRY_ASSERT(GetAssetBeingEdited() != nullptr);
+
+	OnCloseAsset();
+	CAsset* const pAssetToClose = GetAssetBeingEdited();
+	SetAssetBeingEdited(nullptr);
+	signalAssetClosed(pAssetToClose);
 }
 
 bool CAssetEditor::SaveBackup(const string& backupFolder)
@@ -775,7 +787,7 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 	// 4. Restore old files from the temp copy.
 
 	CAutoAssetRecovery tempCopy(*m_assetBeingEdited);
-	
+
 	if (!tempCopy.IsValid() || !OnSave())
 	{
 		return false;
@@ -791,15 +803,37 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 		CRY_ASSERT(strncmp(file.c_str(), assetsRoot.c_str(), assetsRoot.size()));
 		CryPathString destFile = PathUtil::Make(backupFolder.c_str(), file.c_str() + assetsRoot.size());
 		pCryPak->MakeDir(PathUtil::GetDirectory(destFile.c_str()));
-		PathUtil::MoveFileAllowOverwrite(file.c_str(), destFile.c_str());
+		FileUtils::MoveFileAllowOverwrite(file.c_str(), destFile.c_str());
 	}
-	
+
 	// tempCopy restores asset files.
 	return true;
 }
 
-bool CAssetEditor::IsReadOnly() const
+bool CAssetEditor::OnSaveAsset(CEditableAsset& editAsset)
 {
-	return GetAssetBeingEdited() != nullptr ? GetAssetBeingEdited()->IsReadOnly() : false;
+	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
 }
 
+void CAssetEditor::Initialize()
+{
+	using namespace Private_AssetEditor;
+
+	CDockableEditor::Initialize();
+
+	InitGenericMenu();
+
+	setAcceptDrops(true);
+
+	if (IsDockingSystemEnabled())
+	{
+		EnableDockingSystem();
+		RegisterDockableWidget(s_szAssetBrowserPanelName, [this]()
+		{
+			CAssetBrowserWidget* const pAssetBrowser = new CAssetBrowserWidget(this);
+			pAssetBrowser->Initialize();
+			return pAssetBrowser;
+		}, true, false);
+	}
+	OnInitialize();
+}

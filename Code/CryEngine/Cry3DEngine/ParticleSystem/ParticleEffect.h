@@ -18,7 +18,7 @@ struct SSerializationContext
 
 uint GetVersion(IArchive& ar);
 
-class CParticleEffect : public IParticleEffectPfx2
+class CParticleEffect final : public IParticleEffect
 {
 public:
 	CParticleEffect();
@@ -27,12 +27,12 @@ public:
 	virtual cstr                   GetName() const override;
 	virtual void                   Serialize(Serialization::IArchive& ar) override;
 	virtual IParticleEmitter*      Spawn(const ParticleLoc& loc, const SpawnParams* pSpawnParams = NULL) override;
-	virtual uint                   GetNumComponents() const override              { return m_components.size(); }
-	virtual IParticleComponent*    GetComponent(uint componentIdx) const override { return m_components[componentIdx]; }
+	virtual uint                   GetNumComponents() const override       { return m_components.size(); }
+	virtual IParticleComponent*    GetComponent(uint index) const override { return index < m_components.size() ? m_components[index] : nullptr; }
 	virtual IParticleComponent*    AddComponent() override;
 	virtual void                   RemoveComponent(uint componentIdx, bool all) override;
 	virtual void                   SetChanged() override;
-	virtual void                   Update() override;
+	virtual void                   Update() override                       { Compile(); }
 	virtual Serialization::SStruct GetEffectOptionsSerializer() const override;
 	virtual TParticleAttributesPtr CreateAttributesInstance() const override;
 	// ~pfx2 IParticleEffect
@@ -51,28 +51,27 @@ public:
 	virtual int                   GetChildCount() const override                                     { return 0; }
 	virtual IParticleEffect*      GetChild(int index) const override                                 { return 0; }
 	virtual void                  ClearChilds() override                                             {}
-	virtual void                  InsertChild(int slot, IParticleEffect* pEffect) override           {}
-	virtual int                   FindChild(IParticleEffect* pEffect) const override                 { return -1; }
-	virtual void                  SetParent(IParticleEffect* pParent) override                       {}
+	virtual void                  InsertChild(int slot, ::IParticleEffect* pEffect) override         {}
+	virtual int                   FindChild(::IParticleEffect* pEffect) const override               { return -1; }
+	virtual void                  SetParent(::IParticleEffect* pParent) override                     {}
 	virtual IParticleEffect*      GetParent() const override                                         { return 0; }
-	virtual bool                  LoadResources() override                                           { return true; }
-	virtual void                  UnloadResources() override                                         {}
+	virtual bool                  LoadResources() override;
+	virtual void                  UnloadResources() override;
 	virtual void                  Serialize(XmlNodeRef node, bool bLoading, bool bChildren) override {}
 	virtual void                  Reload(bool bChildren) override                                    {}
 	virtual bool                  IsSubstitutedPfx1() const override                                 { return m_substitutedPfx1; }
 	virtual void                  SetSubstitutedPfx1(bool b) override                                { m_substitutedPfx1 = b; }
 	// pfx1 IParticleEffect
 
+	void                      Compile();
 	TComponents&              GetComponents()                                               { return m_components; }
 	const TComponents&        GetComponents() const                                         { return m_components; }
+	TComponents&              GetTopComponents()                                            { return m_topComponents; }
+	const TComponents&        GetTopComponents() const                                      { return m_topComponents; }
+	void                      SortFromTop();
 	CParticleComponent*       FindComponentByName(const char* name) const;
 	TAttributeTablePtr        GetAttributeTable() const                                     { return m_pAttributes; }
 	string                    MakeUniqueName(const CParticleComponent* forComponent, const char* name);
-	uint                      AddRenderObjectId();
-	uint                      GetNumRenderObjectIds() const;
-	STimingParams const&      GetTimings() const                                            { return m_timings; }
-	uint                      GetEnvironFlags() const                                       { return m_environFlags; }
-	void                      AddEnvironFlags(uint flags)                                   { m_environFlags |= flags; }
 	string                    GetShortName() const;
 	int                       GetEditVersion() const;
 
@@ -80,19 +79,12 @@ private:
 	string             m_name;
 	TAttributeTablePtr m_pAttributes;
 	TComponents        m_components;
-	STimingParams      m_timings;
-	uint               m_numRenderObjects;
-	uint               m_environFlags;
+	TComponents        m_topComponents;
 	int                m_editVersion;
 	bool               m_dirty;
 	bool               m_substitutedPfx1;
 
 	void               Sort();
-
-public:
-	// List of components with specific features, called per emitter
-	TComponents MainPreUpdate;
-	TComponents RenderDeferred;
 };
 
 }

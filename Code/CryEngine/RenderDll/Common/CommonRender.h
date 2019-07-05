@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _BASERESOURCE_H_
-#define _BASERESOURCE_H_
+#pragma once
 
 #include <CryMath/Cry_Math.h>
 
@@ -12,7 +11,7 @@
 
 #include <CryMemory/STLGlobalAllocator.h>
 
-#include "XRenderD3D9/DeviceManager/DeviceFormats.h" // SPixFormat
+#include "XRenderD3D9/DeviceManager/DeviceFormats.h"
 
 #define VSCONST_INSTDATA                0
 #define VSCONST_SKINMATRIX              0
@@ -115,6 +114,10 @@ enum EConstantBufferShaderSlot
 
 	eConstantBufferShaderSlot_Max                       = 7,
 	eConstantBufferShaderSlot_Count                     = 8,
+};
+
+enum EShaderResourceShaderSlot
+{
 };
 
 enum EResourceLayoutSlot
@@ -374,12 +377,12 @@ struct SSamplerState
 		, m_nAddressV(eSamplerAddressMode_Wrap)
 		, m_nAddressW(eSamplerAddressMode_Wrap)
 		, m_nAnisotropy(0)
+		, m_nPadding(0)
 		, m_dwBorderColor(0)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(0)
-		, m_bSRGBLookup(false)
 		, m_bActive(false)
 		, m_bComparison(false)
+		, m_bSRGBLookup(false)
 		, m_bPAD(0)
 	{
 	}
@@ -392,12 +395,12 @@ struct SSamplerState
 		, m_nAddressV(bClamp ? eSamplerAddressMode_Clamp : eSamplerAddressMode_Wrap)
 		, m_nAddressW(bClamp ? eSamplerAddressMode_Clamp : eSamplerAddressMode_Wrap)
 		, m_nAnisotropy(ExtractAniso(nFilter))
+		, m_nPadding(0)
 		, m_dwBorderColor(0)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(0)
-		, m_bSRGBLookup(false)
 		, m_bActive(false)
 		, m_bComparison(false)
+		, m_bSRGBLookup(false)
 		, m_bPAD(0)
 	{
 	}
@@ -410,12 +413,12 @@ struct SSamplerState
 		, m_nAddressV(nAddressV)
 		, m_nAddressW(nAddressW)
 		, m_nAnisotropy(ExtractAniso(nFilter))
+		, m_nPadding(0)
 		, m_dwBorderColor(borderColor)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(0)
-		, m_bSRGBLookup(false)
 		, m_bActive(false)
 		, m_bComparison(bComparison)
+		, m_bSRGBLookup(false)
 		, m_bPAD(0)
 	{
 	}
@@ -428,12 +431,12 @@ struct SSamplerState
 		, m_nAddressV(src.m_nAddressV)
 		, m_nAddressW(src.m_nAddressW)
 		, m_nAnisotropy(src.m_nAnisotropy)
+		, m_nPadding(src.m_nPadding)
 		, m_dwBorderColor(src.m_dwBorderColor)
 		, m_fMipLodBias(0.0f)
-		, m_nPadding(src.m_nPadding)
-		, m_bSRGBLookup(src.m_bSRGBLookup)
 		, m_bActive(src.m_bActive)
 		, m_bComparison(src.m_bComparison)
+		, m_bSRGBLookup(src.m_bSRGBLookup)
 		, m_bPAD(src.m_bPAD)
 	{
 	}
@@ -567,6 +570,33 @@ struct SInputLayout
 	SInputLayout(SInputLayout&& src) = default;
 	SInputLayout& operator=(const SInputLayout& src) = default;
 	SInputLayout& operator=(SInputLayout&& src) = default;
+
+	bool operator==(const std::vector<D3D11_INPUT_ELEMENT_DESC>& descs) const
+	{
+		size_t count = m_Declaration.size();
+		if (count != descs.size())
+		{
+			return false;
+		}
+
+		for (size_t i = 0; i < count; ++i)
+		{
+			const D3D11_INPUT_ELEMENT_DESC& desc0 = m_Declaration[i];
+			const D3D11_INPUT_ELEMENT_DESC& desc1 = descs[i];
+
+			if (0 != cry_stricmp(desc0.SemanticName, desc1.SemanticName) ||
+				desc0.SemanticIndex != desc1.SemanticIndex ||
+				desc0.Format != desc1.Format ||
+				desc0.InputSlot != desc1.InputSlot ||
+				desc0.AlignedByteOffset != desc1.AlignedByteOffset ||
+				desc0.InputSlotClass != desc1.InputSlotClass ||
+				desc0.InstanceDataStepRate != desc1.InstanceDataStepRate)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 };
 
 //=================================================================
@@ -684,10 +714,10 @@ struct SResourceBinding
 		InvalidType = 0,
 
 		ConstantBuffer,
+		ShaderResource,
 		Texture,
 		Buffer,
 		Sampler,
-		Resource,
 	};
 
 	inline SResourceBinding()
@@ -713,17 +743,18 @@ struct SResourceBinding
 		, type(EResourceType::ConstantBuffer)
 	{}
 
+	inline SResourceBinding(CDeviceBuffer* _pShaderResource, ResourceViewHandle _view)
+		: pShaderResource(_pShaderResource)
+		, view(_view)
+		, type(EResourceType::ShaderResource)
+	{}
+
 	inline SResourceBinding(SamplerStateHandle _samplerState)
 		: fastCompare(0)
 		, type(EResourceType::Sampler)
 	{
 		samplerState = _samplerState;
 	}
-
-	inline SResourceBinding(CBaseResource* _pResource)
-		: pResource(_pResource)
-		, type(EResourceType::Resource)
-	{}
 
 	bool IsValid() const;
 	bool IsVolatile() const;
@@ -741,8 +772,8 @@ struct SResourceBinding
 		CTexture*          pTexture;
 		CGpuBuffer*        pBuffer;
 		CConstantBuffer*   pConstantBuffer;
+		CDeviceBuffer*     pShaderResource;
 		SamplerStateHandle samplerState;
-		CBaseResource*     pResource;
 
 		uintptr_t          fastCompare;
 	};
@@ -779,7 +810,7 @@ private:
 
 public:
 	CResourceBindingInvalidator() { }
-	virtual ~CResourceBindingInvalidator() { CRY_ASSERT_MESSAGE(m_invalidateCallbacks.empty(), "Make sure any clients (e.g. Renderpasses, resource sets, etc..) are released before destroying this resource"); }
+	virtual ~CResourceBindingInvalidator() { CRY_ASSERT(m_invalidateCallbacks.empty(), "Make sure any clients (e.g. Renderpasses, resource sets, etc..) are released before destroying this resource"); }
 
 	size_t CountInvalidateCallbacks() threadsafe;
 	void AddInvalidateCallback(void* listener, const SResourceBindPoint bindPoint, const SResourceBinding::InvalidateCallbackFunction& callback) threadsafe;
@@ -915,5 +946,3 @@ public:
 
 	virtual void               GetMemoryUsage(ICrySizer* pSizer) const = 0;
 };
-
-#endif

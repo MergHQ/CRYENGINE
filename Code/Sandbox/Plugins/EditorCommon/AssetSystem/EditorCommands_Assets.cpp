@@ -1,76 +1,157 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
-#include "IEditor.h"
-#include "BoostPythonMacros.h"
-
-#include "EditorFramework/Events.h"
-
-#include "QtUtil.h"
+#include "AssetManager.h"
 #include "AssetSystem/Browser/AssetDropHandler.h"
+#include "BoostPythonMacros.h"
+#include "Browser/AssetBrowser.h"
+#include "EditorFramework/Events.h"
 #include "FileDialogs/SystemFileDialog.h"
+#include "QtUtil.h"
+
+#include <IEditor.h>
 
 namespace Private_EditorCommands
 {
-	//Asset browser is not a unique pane but this one has a unique behavior. It is toggled on F2
-	void ToggleAssetBrowser()
+
+void ShowInAssetBrowser(const char* path)
+{
+	string cmd = string().Format("asset.show_in_browser '%s'", path);
+	CommandEvent(cmd.c_str()).SendToKeyboardFocus();
+}
+
+void ShowInNewAssetBrowser(const char* path)
+{
+	CAssetBrowser* const pAssetBrowser = static_cast<CAssetBrowser*>(GetIEditor()->CreateDockable("Asset Browser"));
+	if (pAssetBrowser)
 	{
-		CommandEvent("asset.toggle_asset_browser").SendToKeyboardFocus();
+		pAssetBrowser->SelectAsset(path);
+	}
+}
+
+void EditAsset(const char* path)
+{
+	CAsset* const pAsset = GetIEditor()->GetAssetManager()->FindAssetForFile(path);
+	if (pAsset)
+	{
+		pAsset->Edit();
+	}
+}
+
+void ShowNewAssetBrowser()
+{
+	GetIEditor()->ExecuteCommand("general.open_pane 'Asset Browser'");
+}
+
+void ImportFiles(const std::vector<string>& filePaths)
+{
+	CAssetDropHandler dropHandler;
+	if (dropHandler.CanImportAny(filePaths))
+	{
+		CAssetDropHandler::SImportParams importParams;
+		dropHandler.Import(filePaths, importParams);
+	}
+}
+
+//! Shows file dialog for importing multiple assets.
+void PyImportDialog()
+{
+	std::vector<string> filePaths;
+	{
+		CSystemFileDialog::RunParams runParams;
+		std::vector<QString> v = CSystemFileDialog::RunImportMultipleFiles(runParams, nullptr);
+		filePaths.reserve(v.size());
+		std::transform(v.begin(), v.end(), std::back_inserter(filePaths), QtUtil::ToString);
+	}
+	ImportFiles(filePaths);
+}
+
+//! Imports multiple assets.
+//! \param filePath Absolute file path.
+void PyImportFiles(const char* filePath)
+{
+	ImportFiles({ string(filePath) });
+}
+
+int PyTypeCount(const char* assetType)
+{
+	int result = -1;
+	const CAssetType* pPrefabType = GetIEditor()->GetAssetManager()->FindAssetType(assetType);
+	if (pPrefabType)
+	{
+		result = GetIEditor()->GetAssetManager()->GetAssetsOfTypeCount(pPrefabType);
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_ERROR, "Asset Type %s does not exist", assetType);
+		result = -1;
 	}
 
-	void ShowInAssetBrowser(const char* path)
-	{
-		string cmd("asset.show_in_asset_browser ");
-		cmd += path;
-		CommandEvent(cmd.c_str()).SendToKeyboardFocus();
-	}
+	return result;
+}
 
-	void ShowNewAssetBrowser()
-	{
-		GetIEditor()->ExecuteCommand("general.open_pane 'Asset Browser'");
-	}
-
-	void ImportFiles(const std::vector<string>& filePaths)
-	{
-		CAssetDropHandler dropHandler;
-		if (dropHandler.CanImportAny(filePaths))
-		{
-			CAssetDropHandler::SImportParams importParams;
-			(void)dropHandler.Import(filePaths, importParams);
-		}
-	}
-
-	//! Shows file dialog for importing multiple assets.
-	void PyImportDialog()
-	{
-		std::vector<string> filePaths;
-		{
-			CSystemFileDialog::RunParams runParams;
-			std::vector<QString> v = CSystemFileDialog::RunImportMultipleFiles(runParams, nullptr);
-			filePaths.reserve(v.size());
-			std::transform(v.begin(), v.end(), std::back_inserter(filePaths), QtUtil::ToString);
-		}
-		ImportFiles(filePaths);
-	}
-
-	//! Imports multiple assets.
-	//! \param filePath Absolute file path.
-	void PyImportFiles(const char* filePath)
-	{
-		ImportFiles({ string(filePath) });
-	}
 }
 
 DECLARE_PYTHON_MODULE(asset);
 
-REGISTER_PYTHON_COMMAND(Private_EditorCommands::ToggleAssetBrowser, asset, toggle_browser, "Show/Hide the main Asset Browser");
-REGISTER_EDITOR_COMMAND_SHORTCUT(asset, toggle_browser, "F2; Alt+B");
-REGISTER_PYTHON_COMMAND(Private_EditorCommands::ShowInAssetBrowser, asset, show_in_browser, "Show asset in asset browser");
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, toggle_browser, CCommandDescription("Show/Hide the main Asset Browser"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, toggle_browser, "Quick Asset Browser", "Alt+B", "icons:Tools/tools_asset-browser.ico", false)
 
-REGISTER_PYTHON_COMMAND(Private_EditorCommands::ShowNewAssetBrowser, asset, open_browser, "Opens a new Asset Browser");
-REGISTER_EDITOR_COMMAND_SHORTCUT(asset, open_browser, "Alt+F2; Ctrl+Alt+B");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ShowInAssetBrowser, asset, show_in_browser,
+                                   CCommandDescription("Show asset in asset browser").Param("path", "The path to the asset to be shown"))
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ShowInNewAssetBrowser, asset, show_in_new_browser,
+                                   CCommandDescription("Show asset in a new instance of asset browser").Param("path", "The path to the asset to be shown"));
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EditAsset, asset, edit,
+                                   CCommandDescription("Open asset for editing").Param("path", "The path to the asset to be edited"))
+
+REGISTER_PYTHON_COMMAND(Private_EditorCommands::ShowNewAssetBrowser, asset, open_browser, "Opens a new Asset Browser")
+REGISTER_EDITOR_COMMAND_SHORTCUT(asset, open_browser, "Alt+F2; Ctrl+Alt+B")
 
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportFiles, asset, import, "Imports assets");
-REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportDialog, asset, import_dialog, "Imports assets");
+REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportDialog, asset, import_dialog, "Imports assets")
 REGISTER_EDITOR_COMMAND_TEXT(asset, import_dialog, "Import");
 
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyTypeCount, asset, count_assets_of_type,
+                                   CCommandDescription("Count the number of assets of a specific type").Param("type", "The name of the asset type"))
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_thumbnails, CCommandDescription("Generate All Thumbnails"))
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, save_all, CCommandDescription("Saves all assets"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, save_all, "Save All", "", "icons:General/Save_all.ico", false)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_details, CCommandDescription("Details"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_details, "Shows Details", "", "icons:common/general_view_list.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_thumbnails, CCommandDescription("Thumbnails"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_thumbnails, "Shows Thumbnails", "", "icons:common/general_view_thumbnail.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_split_horizontally, CCommandDescription("Split Horizontally. Shows both details and thumbnails"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_split_horizontally, "Split Horizontally", "", "icons:common/general_view_horizonal.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_split_vertically, CCommandDescription("Split Vertically. Shows both details and thumbnails"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_split_vertically, "Split Vertically", "", "icons:common/general_view_vertical.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_folder_tree, CCommandDescription("Show Folder Tree"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_folder_tree, "", "", "icons:common/general_view_folder_tree.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_recursive_view, CCommandDescription("Recursive View"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_recursive_view, "", "", "icons:common/general_view_recursive_view.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_hide_irrelevant_folders, CCommandDescription("Hide Irrelevant Folders"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_hide_irrelevant_folders, "", "", "icons:common/general_hide_irrelevant_folders.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, show_hide_breadcrumb_bar, CCommandDescription("Show Breadcrumb Bar"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, show_hide_breadcrumb_bar, "", "", "icons:General/Breadcrumb_Bar.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, manage_work_files, CCommandDescription("Manage Work Files..."))
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_and_repair_all_metadata, CCommandDescription("Generate/Repair All Metadata"))
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, discard_changes, CCommandDescription("Discard Changes"));
+
+#if ASSET_BROWSER_USE_PREVIEW_WIDGET
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, show_preview, CCommandDescription("Show Preview"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, show_preview, "", "", "", true)
+#endif

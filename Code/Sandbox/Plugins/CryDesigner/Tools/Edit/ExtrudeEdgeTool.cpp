@@ -2,11 +2,12 @@
 
 #include "StdAfx.h"
 #include "ExtrudeEdgeTool.h"
-#include "Util/ElementSet.h"
-#include "Util/ExcludedEdgeManager.h"
+
 #include "Core/Model.h"
+#include "Core/ModelCompiler.h"
 #include "DesignerEditor.h"
-#include "Serialization/Decorators/EditorActionButton.h"
+
+#include <Serialization/Decorators/EditorActionButton.h>
 
 using Serialization::ActionButton;
 
@@ -16,7 +17,6 @@ void ExtrudeEdgeTool::Enter()
 {
 	__super::Enter();
 	m_bManipulatingGizmo = false;
-	;
 	m_bHitGizmo = false;
 	m_CreatedPolygons.clear();
 
@@ -227,4 +227,3 @@ void ExtrudeEdgeTool::FlipPolygons()
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_ExtrudeEdge, eToolGroup_Edit, "Extrude Edge", ExtrudeEdgeTool,
                                                            extrudeedge, "runs extrude edge tool", "designer.extrudeedge")
-

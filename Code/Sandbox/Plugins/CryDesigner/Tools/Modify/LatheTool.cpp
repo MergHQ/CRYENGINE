@@ -79,7 +79,7 @@ bool LatheTool::OnMouseMove(
 	return true;
 }
 
-void LatheTool::Display(DisplayContext& dc)
+void LatheTool::Display(SDisplayContext& dc)
 {
 	if (!m_bChoosePathPolygonPhase)
 		MagnetTool::Display(dc);
@@ -351,7 +351,7 @@ ELatheErrorCode LatheTool::CreateShapeAlongPath(
 	GetModel()->RemovePolygon(pInitProfilePolygon);
 	GetModel()->MovePolygonsBetweenShelves(eShelf_Construction, eShelf_Base);
 
-	bool bSubtractedFloor = GluePolygons(pPathPolygon, newPolygons);
+	GluePolygons(pPathPolygon, newPolygons);
 
 	ElementSet* pSelected = DesignerSession::GetInstance()->GetSelectedElements();
 	pSelected->Clear();
@@ -364,4 +364,3 @@ ELatheErrorCode LatheTool::CreateShapeAlongPath(
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Lathe, eToolGroup_Modify, "Lathe", LatheTool,
                                    lathe, "runs lathe tool", "designer.lathe")
-

@@ -2,58 +2,115 @@
 
 #include "StdAfx.h"
 #include "RenderViewport.h"
-#include <CryInput/IInput.h>
-
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryPhysics/IPhysics.h>
-#include <CryAISystem/IAISystem.h>
-#include <CrySystem/IConsole.h>
-#include <CrySystem/ITimer.h>
-#include <CryInput/IInput.h>
-#include <CrySystem/ITestSystem.h>
-#include <CryRenderer/IRenderAuxGeom.h>
-#include <CryMath/Cry_GeoIntersect.h>
-#include <CryMath/Cry_Math.h>
-#include <CryInput/IHardwareMouse.h>
-#include <CryGame/IGameFramework.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryPhysics/IPhysicsDebugRenderer.h>
-#include "Gizmos/IGizmoManager.h"
 
 #include "Controls/DynamicPopupMenu.h"
 #include "EditorFramework/Events.h"
-#include "ViewportInteraction.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects\BaseObject.h"
+#include "Gizmos/IGizmoManager.h"
+#include "LevelEditor/Tools/EditTool.h"
+#include "Objects/BaseObject.h"
+#include "Preferences/SnappingPreferences.h"
+#include "Preferences/ViewportPreferences.h"
+#include "ILevelEditor.h"
+#include "IObjectManager.h"
 #include "IUndoManager.h"
 #include "IViewportManager.h"
-#include "IObjectManager.h"
-#include "ILevelEditor.h"
-#include "EditTool.h"
-
-#include <QResizeEvent>
 #include "QtUtil.h"
-#include "Grid.h"
 #include "RenderLock.h"
+#include "ViewportInteraction.h"
 
-void* CRenderViewport::m_currentContextWnd = 0;
-CRenderViewport* CRenderViewport::m_pPrimaryViewport = 0;
+#include <IEditor.h>
 
-#define MAX_ORBIT_DISTANCE        (2000.0f)
-#define RENDER_MESH_TEST_DISTANCE (0.2f)
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryAISystem/IAISystem.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryInput/IHardwareMouse.h>
+#include <CryInput/IInput.h>
+#include <CryMath/Cry_GeoIntersect.h>
+#include <CryMath/Cry_Math.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryPhysics/IPhysicsDebugRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/IConsole.h>
+#include <CrySystem/ITimer.h>
+
+void* CRenderViewport::m_currentContextWnd = nullptr;
+CRenderViewport* CRenderViewport::m_pPrimaryViewport = nullptr;
 
 namespace
 {
 const char renderViewportTitleName[] = "Perspective";
+const float g_renderMeshTestDistance = 0.2f;
 }
 
 SCameraPreferences CRenderViewport::s_cameraPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SCameraPreferences, &CRenderViewport::s_cameraPreferences);
 
+YASLI_ENUM_BEGIN_NESTED(SCameraPreferences, EViewportBehavior, "ViewportBehaviour")
+YASLI_ENUM(SCameraPreferences::eViewport_Push, "push", "Push Content");
+YASLI_ENUM(SCameraPreferences::eViewport_Drag, "drag", "Drag Content");
+YASLI_ENUM_END()
+
+bool SCameraPreferences::Serialize(yasli::Archive& ar)
+{
+	ar.openBlock("general", "General");
+	ar(viewportPanningStyle, "viewportPanningStyle", "Viewport Panning Style");
+	ar(speedHeightRelativeEnabled, "speedHeightRelativeEnabled", "Speed Height Relative");
+	ar.closeBlock();
+
+	ar.openBlock("collisions", "Collisions");
+	ar(terrainCollisionEnabled, "terrainCollisionEnabled", "Terrain Collision");
+	ar(objectCollisionEnabled, "objectCollisionEnabled", "Object Collision");
+	ar.closeBlock();
+
+	return true;
+}
+
+bool SCameraPreferences::IsTerrainCollisionEnabled() const
+{
+	return terrainCollisionEnabled;
+}
+
+bool SCameraPreferences::IsObjectCollisionEnabled() const
+{
+	return objectCollisionEnabled;
+}
+
+bool SCameraPreferences::IsSpeedHeightRelativeEnabled() const
+{
+	return speedHeightRelativeEnabled;
+}
+
+SCameraPreferences::EViewportBehavior SCameraPreferences::GetViewportPanningStyle() const
+{
+	return viewportPanningStyle;
+}
+
+void SCameraPreferences::SetTerrainCollision(bool enabled)
+{
+	terrainCollisionEnabled = enabled;
+	GetIEditor()->GetPreferences()->Save();
+}
+
+void SCameraPreferences::SetObjectCollision(bool enabled)
+{
+	objectCollisionEnabled = enabled;
+	GetIEditor()->GetPreferences()->Save();
+}
+
+void SCameraPreferences::SetSpeedHeightRelative(bool enabled)
+{
+	speedHeightRelativeEnabled = enabled;
+	GetIEditor()->GetPreferences()->Save();
+}
+
+void SCameraPreferences::SetViewportPanningStyle(EViewportBehavior behavior)
+{
+	viewportPanningStyle = behavior;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // CRenderViewport
 //////////////////////////////////////////////////////////////////////////
-
 CRenderViewport::CRenderViewport() : m_pCameraDelegate(nullptr)
 {
 	m_pSkipEnts = 0;
@@ -61,6 +118,7 @@ CRenderViewport::CRenderViewport() : m_pCameraDelegate(nullptr)
 
 	m_bRenderStats = true;
 	m_bUpdateViewport = false;
+	m_lastViewportRenderTime = 0;
 
 	m_pSkipEnts = new PIPhysicalEntity[1024];
 
@@ -80,7 +138,6 @@ CRenderViewport::CRenderViewport() : m_pCameraDelegate(nullptr)
 
 	GetIEditor()->RegisterNotifyListener(this);
 
-	m_displayContext.pIconManager = GetIEditor()->GetIconManager();
 	GetIEditor()->GetIUndoManager()->AddListener(this);
 
 	m_currentResolution.width = m_currentResolution.height = 0;
@@ -94,8 +151,6 @@ CRenderViewport::CRenderViewport() : m_pCameraDelegate(nullptr)
 	m_lastCameraSpeedScale = 1.0f;
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::OnFilterCryInputEvent(CryInputEvent* evt)
 {
 	SInputEvent* pInput = evt->GetInputEvent();
@@ -120,8 +175,6 @@ void CRenderViewport::OnFilterCryInputEvent(CryInputEvent* evt)
 	}
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 CRenderViewport::~CRenderViewport()
 {
 	DestroyRenderContext();
@@ -130,10 +183,8 @@ CRenderViewport::~CRenderViewport()
 	delete[] m_pSkipEnts;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::InitCommon()
 {
-
 	m_Camera = GetIEditor()->GetSystem()->GetViewCamera();
 	SetViewTM(m_Camera.GetMatrix());
 
@@ -150,8 +201,8 @@ void CRenderViewport::InitCommon()
 
 	m_cameraObjectId = CryGUID::Null();
 
-	m_moveSpeed = 0.1;
-	m_moveSpeedIncrements = log((m_moveSpeed - 0.01) * 100) / log(1.1) + 0.5;
+	m_moveSpeed = 0.1f;
+	m_moveSpeedIncrements = log((m_moveSpeed - 0.01f) * 100) / log(1.1) + 0.5;
 
 	m_bLockCameraMovement = true;
 
@@ -164,7 +215,6 @@ void CRenderViewport::InitCommon()
 	m_engine = GetIEditor()->Get3DEngine();
 }
 
-//////////////////////////////////////////////////////////////////////////
 static int OnPaintFilter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 {
 	// Win32 handles first-chance exceptions generated during the execution of WM_PAINT.
@@ -185,7 +235,6 @@ static int OnPaintFilter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::OnPaintSafe()
 {
 	__try
@@ -203,7 +252,6 @@ void CRenderViewport::OnPaintSafe()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::ProcessMouse()
 {
 	CPoint point;
@@ -214,6 +262,12 @@ void CRenderViewport::ProcessMouse()
 	{
 		if (gEnv->pHardwareMouse && m_lastMousePos != point)
 		{
+			// Ensure, viewport is set correctly, even after switching widgets while in game mode
+			if (GetIEditor()->GetViewportManager()->GetSelectedViewport() != this)
+			{
+				GetIEditor()->GetViewportManager()->SelectViewport(this);
+			}
+
 			gEnv->pHardwareMouse->Event(point.x, point.y, HARDWAREMOUSEEVENT_MOVE);
 		}
 		m_lastMousePos = point;
@@ -244,21 +298,21 @@ void CRenderViewport::ProcessMouse()
 
 	//TODO : This may have broken player movement in mannequin but commenting it out for refactoring
 	/*if (m_PlayerControl)
-	{
-		if (m_bInRotateMode)
-		{
-			f32 MousedeltaX = (m_mousePos.x - point.x);
-			f32 MousedeltaY = (m_mousePos.y - point.y);
-			m_relCameraRotZ += MousedeltaX;
-			m_relCameraRotX += MousedeltaY;
-			CPoint pnt = m_mousePos;
-			ClientToScreen(&pnt);
-			SetCursorPos(pnt.x, pnt.y);
+	   {
+	   if (m_bInRotateMode)
+	   {
+	    f32 MousedeltaX = (m_mousePos.x - point.x);
+	    f32 MousedeltaY = (m_mousePos.y - point.y);
+	    m_relCameraRotZ += MousedeltaX;
+	    m_relCameraRotX += MousedeltaY;
+	    CPoint pnt = m_mousePos;
+	    ClientToScreen(&pnt);
+	    SetCursorPos(pnt.x, pnt.y);
 
-			if (m_bAttachCameraToSelected) m_bCaptureAttachOffset = true;
-		}
-	}
-	else*/ if ((m_bInRotateMode && m_bInMoveMode) || m_bInZoomMode)
+	    if (m_bAttachCameraToSelected) m_bCaptureAttachOffset = true;
+	   }
+	   }
+	   else*/if ((m_bInRotateMode && m_bInMoveMode) || m_bInZoomMode)
 	{
 		if (m_eCameraMoveState == ECameraMoveState::NoMove)
 			m_eCameraMoveState = ECameraMoveState::MovingWithoutUndoPushed;
@@ -297,12 +351,7 @@ void CRenderViewport::ProcessMouse()
 
 		ypr.y = CLAMP(ypr.y, -1.5f, 1.5f);    // to keep rotation in reasonable range
 		// In the recording mode of a custom camera, the z rotation is allowed.
-
-		//		bool bExclusiveMode = GetIEditor()->GetEditTool() && GetIEditor()->GetEditTool()->IsExclusiveMode();
-		//		if( GetCameraObject() == NULL || (!GetIEditor()->GetAnimation()->IsRecordMode() && !bExclusiveMode) )
-		{
-			ypr.z = 0;    // to have camera always upward
-		}
+		ypr.z = 0;    // to have camera always upward
 
 		camtm = Matrix34(CCamera::CreateOrientationYPR(ypr), camtm.GetTranslation());
 		SetViewTM(camtm);
@@ -322,6 +371,12 @@ void CRenderViewport::ProcessMouse()
 		Matrix34 m = GetViewTM();
 		Vec3 xdir = m.GetColumn0().GetNormalized();
 		Vec3 zdir = m.GetColumn2().GetNormalized();
+
+		if (s_cameraPreferences.GetViewportPanningStyle() == SCameraPreferences::eViewport_Drag)
+		{
+			xdir.Flip();
+			zdir.Flip();
+		}
 
 		Vec3 pos = m.GetTranslation();
 		pos += 0.1f * speedScale * (xdir * (point.x - m_mousePos.x) + zdir * (m_mousePos.y - point.y));
@@ -356,7 +411,7 @@ void CRenderViewport::ProcessMouse()
 
 		// Calc new source.
 		Vec3 dst = m_orbitTarget + rotateTM * vInitViewProjection;
-	
+
 		Matrix34 camTM = Matrix34(rotateTM, dst);
 		SetViewTM(camTM);
 		if (m_bAttachCameraToSelected) m_bCaptureAttachOffset = true;
@@ -375,13 +430,11 @@ void CRenderViewport::ProcessMouse()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::ResetContent()
 {
 	CViewport::ResetContent();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::UpdateContent(int flags)
 {
 	CViewport::UpdateContent(flags);
@@ -391,7 +444,6 @@ void CRenderViewport::UpdateContent(int flags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -419,14 +471,14 @@ void CRenderViewport::Update()
 		}
 	}
 
-	if (IsFocused())
-	{
-		ProcessMouse();
-		ProcessKeys();
-	}
-
 	if (GetIEditor()->IsInGameMode())
 	{
+		if (IsFocused())
+		{
+			ProcessMouse();
+			ProcessKeys();
+		}
+
 		if (CScopedRenderLock lock = CScopedRenderLock())
 		{
 			gEnv->pRenderer->GetIRenderAuxGeom()->SetCurrentDisplayContext(m_displayContextKey);
@@ -450,6 +502,32 @@ void CRenderViewport::Update()
 		return;
 	}
 
+	const ICVar* pSysMaxFPS = gEnv->pConsole->GetCVar("sys_MaxFPS");
+	const int maxFPS = pSysMaxFPS->GetIVal();
+	if (maxFPS > 0)
+	{
+		const ITimer* pTimer = gEnv->pTimer;
+		if (!m_lastViewportRenderTime)
+		{
+			m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		}
+		const int64 currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		const int64 microSecPassed = currentTime - m_lastViewportRenderTime;
+		const int64 targetMicroSecPassed = static_cast<int64>((1.0f / maxFPS) * 1000000.0f);
+
+		if (microSecPassed < targetMicroSecPassed)
+		{
+			return;
+		}
+		m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+	}
+
+	if (IsFocused())
+	{
+		ProcessMouse();
+		ProcessKeys();
+	}
+
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
 		m_viewTM = m_Camera.GetMatrix(); // synchronize.
@@ -457,12 +535,12 @@ void CRenderViewport::Update()
 		// Render
 		if (!m_bRenderContextCreated)
 		{
-			HWND hWnd = GetSafeHwnd();
+			CRY_HWND hWnd = GetSafeHwnd();
 			if (!CreateRenderContext(hWnd))
 				return;
 		}
 
-		// Why 16? Internal effects can use half or quarter renderbuffer size so this ensures some leeway in resolution (see CE-8648)
+		// Why 16? Internal effects can use half or quarter render buffer size so this ensures some leeway in resolution (see CE-8648)
 		CRect rcClient;
 		GetClientRect(&rcClient);
 		if (rcClient.right < 16 || rcClient.bottom < 16)
@@ -472,10 +550,10 @@ void CRenderViewport::Update()
 		SScopedCurrentContext context(this);
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(m_displayContextKey);
+		SDisplayContext displayContext = InitDisplayContext(m_displayContextKey);
 
 		// 3D engine stats
-		GetIEditor()->GetSystem()->RenderBegin(m_displayContextKey);
+		GetIEditor()->GetSystem()->RenderBegin(m_displayContextKey, m_graphicsPipelineKey);
 
 		bool bRenderStats = m_bRenderStats;
 
@@ -483,21 +561,19 @@ void CRenderViewport::Update()
 		if (!m_bCanDrawWithoutLevelLoaded && (!le || !le->IsLevelLoaded() || !GetIEditor()->IsDocumentReady()))
 		{
 			bRenderStats = false;
-			DrawBackground();
+			DrawBackground(displayContext);
 		}
 		else
 		{
-			OnRender();
+			OnRender(displayContext);
 		}
 
-		ProcessRenderListeners(m_displayContext);
+		ProcessRenderListeners(displayContext);
 
-		m_displayContext.Flush2D();
+		displayContext.Flush2D();
 
 		// draw gizmos on top of 2d icons.
-		GetIEditor()->GetGizmoManager()->Display(m_displayContext);
-
-		// 3D engine stats
+		GetIEditor()->GetGizmoManager()->Display(displayContext);
 
 		CCamera CurCamera = gEnv->pSystem->GetViewCamera();
 		gEnv->pSystem->SetViewCamera(m_Camera);
@@ -520,7 +596,6 @@ void CRenderViewport::Update()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::SetCameraObject(CBaseObject* cameraObject)
 {
 	m_pCameraDelegate = NULL;
@@ -568,7 +643,6 @@ void CRenderViewport::SetCameraDelegate(const ICameraDelegate* pDelegate)
 	GetIEditor()->Notify(eNotify_CameraChanged);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CRenderViewport::GetCameraObject() const
 {
 	CBaseObject* pCameraObject = NULL;
@@ -587,7 +661,6 @@ CBaseObject* CRenderViewport::GetCameraObject() const
 	return pCameraObject;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
@@ -646,16 +719,7 @@ void CRenderViewport::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-namespace {
-inline Vec3 NegY(const Vec3& v, float y)
-{
-	return Vec3(v.x, y - v.y, v.z);
-}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSelectionRectangle()
+void CRenderViewport::RenderSelectionRectangle(SDisplayContext& context)
 {
 	if (m_selectedRect.IsRectEmpty())
 	{
@@ -665,17 +729,15 @@ void CRenderViewport::RenderSelectionRectangle()
 	CPoint topLeft(m_selectedRect.left, m_selectedRect.top);
 	CPoint bottomRight(m_selectedRect.right, m_selectedRect.bottom);
 
-	m_displayContext.SetColor(1, 1, 1, 0.4f);
-	m_displayContext.DrawWireQuad2d(topLeft, bottomRight, 1, true, false);
+	context.SetColor(1, 1, 1, 0.4f);
+	context.DrawWireQuad2d(topLeft, bottomRight, 1, true, false);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::InitDisplayContext(SDisplayContextKey displayContextKey)
+SDisplayContext CRenderViewport::InitDisplayContext(const SDisplayContextKey& displayContextKey)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	// Draw all objects.
-	DisplayContext& dctx = m_displayContext;
+	SDisplayContext dctx;
 	dctx.SetDisplayContext(displayContextKey, IRenderer::eViewportType_Default);
 	dctx.SetView(this);
 	dctx.SetCamera(&m_Camera);
@@ -683,50 +745,58 @@ void CRenderViewport::InitDisplayContext(SDisplayContextKey displayContextKey)
 	dctx.engine = m_engine;
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
-	dctx.flags = 0;
-	if (!gViewportPreferences.displayLabels || !(GetIEditor()->IsHelpersDisplayed()))
+	dctx.pIconManager = GetIEditor()->GetIconManager();
+
+	if (m_helperSettings.enabled)
 	{
-		dctx.flags |= DISPLAY_HIDENAMES;
-	}
-	if (gViewportPreferences.displayLinks && GetIEditor()->IsHelpersDisplayed())
-	{
-		dctx.flags |= DISPLAY_LINKS;
-	}
-	if (m_bDegradateQuality)
-	{
-		dctx.flags |= DISPLAY_DEGRADATED;
-	}
-	if (gViewportPreferences.showBBoxes)
-	{
-		dctx.flags |= DISPLAY_BBOX;
+		dctx.enabled = m_helperSettings.enabled;
+
+		dctx.showIcons = m_helperSettings.showIcons;
+		dctx.showMesh = m_helperSettings.showMesh;
+		dctx.showAnimationTracks = m_helperSettings.showAnimationTracks;
+		dctx.showBoundingBoxes = m_helperSettings.showBoundingBoxes;
+		dctx.showComponentHelpers = m_helperSettings.showComponentHelpers;
+		dctx.showDimensions = m_helperSettings.showDimensions;
+		dctx.fillSelectedShapes = m_helperSettings.fillSelectedShapes;
+		dctx.showFrozenObjectsHelpers = m_helperSettings.showFrozenObjectsHelpers;
+		dctx.showTextLabels = m_helperSettings.showTextLabels;
+		dctx.showEntityObjectsTextLabels = m_helperSettings.showEntityObjectsTextLabels;
+		dctx.showLinks = m_helperSettings.showLinks;
+		dctx.showMeshStatsOnMouseOver = m_helperSettings.showMeshStatsOnMouseOver;
+		dctx.showRadii = m_helperSettings.showRadii;
+		dctx.showSelectedObjectOrientation = m_helperSettings.showSelectedObjectOrientation;
+		dctx.showSnappingGridGuide = m_helperSettings.showSnappingGridGuide;
+		dctx.showTriggerBounds = m_helperSettings.showTriggerBounds;
+
+		dctx.showAreaHelper = m_helperSettings.showAreaHelper;
+		dctx.showBrushHelper = m_helperSettings.showBrushHelper;
+		dctx.showDecalHelper = m_helperSettings.showDecalHelper;
+		dctx.showEntityObjectHelper = m_helperSettings.showEntityObjectHelper;
+		dctx.showEnviromentProbeHelper = m_helperSettings.showEnviromentProbeHelper;
+		dctx.showGroupHelper = m_helperSettings.showGroupHelper;
+		dctx.showPrefabHelper = m_helperSettings.showPrefabHelper;
+		dctx.showPrefabBounds = m_helperSettings.showPrefabBounds;
+		dctx.showPrefabChildrenHelpers = m_helperSettings.showPrefabChildrenHelpers;
+		dctx.showRoadHelper = m_helperSettings.showRoadHelper;
+		dctx.showShapeHelper = m_helperSettings.showShapeHelper;
 	}
 
-	if (gViewportPreferences.displayTracks && GetIEditor()->IsHelpersDisplayed())
-	{
-		dctx.flags |= DISPLAY_TRACKS;
-		dctx.flags |= DISPLAY_TRACKTICKS;
-	}
+	// Selection helpers should be visible even if helpers are disabled
+	dctx.displaySelectionHelpers = m_bAdvancedSelectMode;
 
-	if (m_bAdvancedSelectMode)
-		dctx.flags |= DISPLAY_SELECTION_HELPERS;
-
-	if (GetIEditor()->GetReferenceCoordSys() == COORDS_WORLD)
-	{
-		dctx.flags |= DISPLAY_WORLDSPACEAXIS;
-	}
+	return dctx;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::DrawAxis()
+void CRenderViewport::DrawAxis(SDisplayContext& context)
 {
-	if (!GetIEditor()->IsHelpersDisplayed())      // show axis only if draw helpers is activated
+	if (!m_helperSettings.enabled)
 		return;
 
 	Vec3 colX(1, 0, 0), colY(0, 1, 0), colZ(0, 0, 1), colW(1, 1, 1);
 	Vec3 pos(50, 50, 0.1f); // Bottom-left corner
 
-	Vec3 posInWorld(0,0,0);
-	if (!GetCamera().Unproject(pos,posInWorld))
+	Vec3 posInWorld(0, 0, 0);
+	if (!GetCamera().Unproject(pos, posInWorld))
 		return;
 
 	float screenScale = GetScreenScaleFactor(posInWorld);
@@ -738,42 +808,37 @@ void CRenderViewport::DrawAxis()
 	Vec3 y(0, length, 0);
 	Vec3 z(0, 0, length);
 
-	DisplayContext& dc = m_displayContext;
-	int prevRState = dc.GetState();
+	int prevRState = context.GetState();
 
-	dc.DepthWriteOff();
-	dc.DepthTestOff();
-	dc.CullOff();
-	dc.SetLineWidth(1);
-
-	dc.SetColor(colX);
-	dc.DrawLine(posInWorld, posInWorld + x);
-	dc.DrawArrow(posInWorld + x * 0.9f, posInWorld + x, arrowSize);
-	dc.SetColor(colY);
-	dc.DrawLine(posInWorld, posInWorld + y);
-	dc.DrawArrow(posInWorld + y * 0.9f, posInWorld + y, arrowSize);
-	dc.SetColor(colZ);
-	dc.DrawLine(posInWorld, posInWorld + z);
-	dc.DrawArrow(posInWorld + z * 0.9f, posInWorld + z, arrowSize);
-
-	dc.SetColor(colW);
-	dc.DrawTextLabel(posInWorld + x, textSize, "x");
-	dc.DrawTextLabel(posInWorld + y, textSize, "y");
-	dc.DrawTextLabel(posInWorld + z, textSize, "z");
-
-	dc.DepthWriteOn();
-	dc.DepthTestOn();
-	dc.CullOn();
-	dc.SetState(prevRState);
+	context.DepthWriteOff();
+	context.DepthTestOff();
+	context.CullOff();
+	context.SetLineWidth(1);
+	context.SetColor(colX);
+	context.DrawLine(posInWorld, posInWorld + x);
+	context.DrawArrow(posInWorld + x * 0.9f, posInWorld + x, arrowSize);
+	context.SetColor(colY);
+	context.DrawLine(posInWorld, posInWorld + y);
+	context.DrawArrow(posInWorld + y * 0.9f, posInWorld + y, arrowSize);
+	context.SetColor(colZ);
+	context.DrawLine(posInWorld, posInWorld + z);
+	context.DrawArrow(posInWorld + z * 0.9f, posInWorld + z, arrowSize);
+	context.SetColor(colW);
+	context.DrawTextLabel(posInWorld + x, textSize, "x");
+	context.DrawTextLabel(posInWorld + y, textSize, "y");
+	context.DrawTextLabel(posInWorld + z, textSize, "z");
+	context.DepthWriteOn();
+	context.DepthTestOn();
+	context.CullOn();
+	context.SetState(prevRState);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::DrawBackground()
+void CRenderViewport::DrawBackground(SDisplayContext& context)
 {
-	DisplayContext& dc = m_displayContext;
-
-	if (!GetIEditor()->IsHelpersDisplayed())      // show gradient bg only if draw helpers are activated
+	if (!m_helperSettings.enabled)
+	{
 		return;
+	}
 
 	const float startX = 0.0f;
 	const float endX = m_Camera.GetViewSurfaceX();
@@ -799,11 +864,10 @@ void CRenderViewport::DrawBackground()
 	ColorB secondC(GetRValue(topColor), GetGValue(topColor), GetBValue(topColor), 255.0f);
 	ColorB firstC(GetRValue(bottomColor), GetGValue(bottomColor), GetBValue(bottomColor), 255.0f);
 
-	dc.SetState(e_Mode2D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
-	dc.DrawQuadGradient(bottomRight, bottomLeft, topLeft, topRight, secondC, firstC);
+	context.SetState(e_Mode2D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOn | e_DepthTestOn);
+	context.DrawQuadGradient(bottomRight, bottomLeft, topLeft, topRight, secondC, firstC);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::RenderCursorString()
 {
 	if (m_cursorStr.IsEmpty())
@@ -825,7 +889,6 @@ void CRenderViewport::RenderCursorString()
 	IRenderAuxText::Draw2dLabel(point.x + 12, point.y + 4, 1.2f, col, false, "%s", (const char*)m_cursorStr);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::UpdateSafeFrame()
 {
 	CRect rcClient;
@@ -869,20 +932,16 @@ void CRenderViewport::UpdateSafeFrame()
 	m_safeTitle.DeflateRect(m_safeFrame.Width() * SAFE_TITLE_SCALE_FACTOR, m_safeFrame.Height() * SAFE_TITLE_SCALE_FACTOR);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSafeFrame()
+void CRenderViewport::RenderSafeFrame(SDisplayContext& context)
 {
-	RenderSafeFrame(m_safeFrame, 0.75f, 0.75f, 0, 0.8f);
-	RenderSafeFrame(m_safeAction, 0, 0.85f, 0.80f, 0.8f);
-	RenderSafeFrame(m_safeTitle, 0.80f, 0.60f, 0, 0.8f);
+	RenderSafeFrame(context, m_safeFrame, 0.75f, 0.75f, 0, 0.8f);
+	RenderSafeFrame(context, m_safeAction, 0, 0.85f, 0.80f, 0.8f);
+	RenderSafeFrame(context, m_safeTitle, 0.80f, 0.60f, 0, 0.8f);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSafeFrame(const CRect& frame, float r, float g, float b, float a)
+void CRenderViewport::RenderSafeFrame(SDisplayContext& context, const CRect& frame, float r, float g, float b, float a)
 {
-	DisplayContext& dc = m_displayContext;
-
-	dc.SetColor(r, g, b, a);
+	context.SetColor(r, g, b, a);
 
 	const int LINE_WIDTH = 2;
 	for (int i = 0; i < LINE_WIDTH; i++)
@@ -890,18 +949,16 @@ void CRenderViewport::RenderSafeFrame(const CRect& frame, float r, float g, floa
 		Vec3 topLeft(frame.left + i, frame.top + i, 0);
 		Vec3 bottomRight(frame.right - i, frame.bottom - i, 0);
 
-		dc.DrawWireBox(topLeft, bottomRight);
+		context.DrawWireBox(topLeft, bottomRight);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CRenderViewport::GetAspectRatio() const
 {
 	return gViewportPreferences.defaultAspectRatio;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSnapMarker()
+void CRenderViewport::RenderSnapMarker(SDisplayContext& context)
 {
 	if (!gSnappingPreferences.markerDisplay())
 		return;
@@ -910,8 +967,6 @@ void CRenderViewport::RenderSnapMarker()
 	::GetCursorPos(&point);
 	ScreenToClient(&point);
 	Vec3 p = MapViewToCP(point);
-
-	DisplayContext& dc = m_displayContext;
 
 	float fScreenScaleFactor = GetScreenScaleFactor(p);
 
@@ -922,71 +977,20 @@ void CRenderViewport::RenderSnapMarker()
 	y = y * gSnappingPreferences.markerSize() * fScreenScaleFactor * 0.1f;
 	z = z * gSnappingPreferences.markerSize() * fScreenScaleFactor * 0.1f;
 
-	dc.SetColor(gSnappingPreferences.markerColor());
-	dc.DrawLine(p - x, p + x);
-	dc.DrawLine(p - y, p + y);
-	dc.DrawLine(p - z, p + z);
+	context.SetColor(gSnappingPreferences.markerColor());
+	context.DrawLine(p - x, p + x);
+	context.DrawLine(p - y, p + y);
+	context.DrawLine(p - z, p + z);
 
 	point = WorldToView(p);
 
 	int s = 8;
-	dc.DrawLine2d(point + CPoint(-s, -s), point + CPoint(s, -s), 0);
-	dc.DrawLine2d(point + CPoint(-s, s), point + CPoint(s, s), 0);
-	dc.DrawLine2d(point + CPoint(-s, -s), point + CPoint(-s, s), 0);
-	dc.DrawLine2d(point + CPoint(s, -s), point + CPoint(s, s), 0);
+	context.DrawLine2d(point + CPoint(-s, -s), point + CPoint(s, -s), 0);
+	context.DrawLine2d(point + CPoint(-s, s), point + CPoint(s, s), 0);
+	context.DrawLine2d(point + CPoint(-s, -s), point + CPoint(-s, s), 0);
+	context.DrawLine2d(point + CPoint(s, -s), point + CPoint(s, s), 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
-static void OnMenuDisplayWireframe()
-{
-	ICVar* piVar(gEnv->pConsole->GetCVar("r_wireframe"));
-	int nRenderMode = piVar->GetIVal();
-	if (nRenderMode != R_WIREFRAME_MODE)
-	{
-		piVar->Set(R_WIREFRAME_MODE);
-	}
-	else
-	{
-		piVar->Set(R_SOLID_MODE);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-static void OnMenuDisplayPointMode()
-{
-	ICVar* piVar(gEnv->pConsole->GetCVar("r_wireframe"));
-	int nRenderMode = piVar->GetIVal();
-	if (nRenderMode != R_POINT_MODE)
-	{
-		piVar->Set(R_POINT_MODE);
-	}
-	else
-	{
-		piVar->Set(R_SOLID_MODE);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-static void OnMenuTargetAspectRatio(float aspect)
-{
-	gViewportPreferences.defaultAspectRatio = aspect;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::ToggleCameraObject()
-{
-	/*m_bSequenceCamera = !m_bSequenceCamera;
-	   if (m_bSequenceCamera == false)
-	   gEnv->p3DEngine->SetPostEffectParam("Dof_Active", 0);*/
-
-	SetCameraObject(0);
-
-	//GetIEditor()->GetAnimation()->ForceAnimation();
-
-	//GetIEditor()->GetAnimation()->ForceAnimation();
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::SetCamera(const CCamera& camera)
 {
 	const CCamera& ccam = gEnv->pSystem->GetViewCamera();
@@ -996,7 +1000,6 @@ void CRenderViewport::SetCamera(const CCamera& camera)
 	SetViewTM(m_Camera.GetMatrix());
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CRenderViewport::GetCameraRotateSpeed() const
 {
 	return gViewportMovementPreferences.camRotateSpeed;
@@ -1022,7 +1025,6 @@ void CRenderViewport::SetCameraMoveSpeedIncrements(int sp, bool bnotify)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* CRenderViewport::GetCameraMenuName() const
 {
 	// Do explicit instead of using GetCameraObject because we are interested in the
@@ -1045,16 +1047,15 @@ const char* CRenderViewport::GetCameraMenuName() const
 	return "Camera";
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CRenderViewport::GetCameraSpeedScale() const
 {
-	if (s_cameraPreferences.speedHeightRelativeEnabled)
+	if (s_cameraPreferences.IsSpeedHeightRelativeEnabled())
 	{
 		// Always check terrain height, regardless of terrain collision flag
 		Vec3 pos = GetViewTM().GetTranslation();
 		float h = pos.z - GetIEditor()->GetTerrainElevation(pos.x, pos.y);
 
-		if ((s_cameraPreferences.objectCollisionEnabled) && h > 1.0f)
+		if ((s_cameraPreferences.IsObjectCollisionEnabled()) && h > 1.0f)
 		{
 			// Check objects below camera tool
 			ray_hit hit;
@@ -1068,7 +1069,6 @@ float CRenderViewport::GetCameraSpeedScale() const
 	return 1.0f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 {
 	Matrix34 camMatrix = viewTM;
@@ -1080,7 +1080,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 		static const float object_offset = 1.0f;
 
 		Vec3 p = camMatrix.GetTranslation();
-		if (s_cameraPreferences.terrainCollisionEnabled)
+		if (s_cameraPreferences.IsTerrainCollisionEnabled())
 		{
 			float z = GetIEditor()->GetTerrainElevation(p.x, p.y);
 			if (p.z < z + terrain_offset)
@@ -1089,7 +1089,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 				camMatrix.SetTranslation(p);
 			}
 		}
-		if (s_cameraPreferences.objectCollisionEnabled)
+		if (s_cameraPreferences.IsObjectCollisionEnabled())
 		{
 			ray_hit hit;
 			Vec3 p0 = GetViewTM().GetTranslation();
@@ -1124,8 +1124,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 			return;
 		}
 
-		const bool bExclusiveMode = GetIEditor()->GetEditTool() && GetIEditor()->GetEditTool()->IsExclusiveMode();
-		const bool bPushUndo = !bExclusiveMode && (m_eCameraMoveState == ECameraMoveState::MovingWithoutUndoPushed);
+		const bool bPushUndo = m_eCameraMoveState == ECameraMoveState::MovingWithoutUndoPushed;
 		if (bPushUndo)
 		{
 			GetIEditor()->GetIUndoManager()->Begin();
@@ -1148,14 +1147,12 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 	m_Camera.SetMatrix(camMatrix);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRenderViewport::RenderSelectedRegion()
+void CRenderViewport::RenderSelectedRegion(SDisplayContext& context)
 {
 	if (!m_engine)
 		return;
 
-	AABB box;
-	GetIEditor()->GetSelectedRegion(box);
+	AABB box = GetIEditor()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return;
 
@@ -1163,8 +1160,6 @@ void CRenderViewport::RenderSelectedRegion()
 	float y1 = box.min.y;
 	float x2 = box.max.x;
 	float y2 = box.max.y;
-
-	DisplayContext& dc = m_displayContext;
 
 	float fMaxSide = MAX(y2 - y1, x2 - x1);
 	if (fMaxSide < 0.1f)
@@ -1175,7 +1170,7 @@ void CRenderViewport::RenderSelectedRegion()
 	float fMaxZ = 0;
 
 	// Draw yellow border lines.
-	dc.SetColor(1, 1, 0, 1);
+	context.SetColor(1, 1, 0, 1);
 	float offset = 0.01f;
 	Vec3 p1, p2;
 
@@ -1188,7 +1183,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x1;
 		p2.y = y + fStep;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		p1.x = x2;
 		p1.y = y;
@@ -1197,7 +1192,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x2;
 		p2.y = y + fStep;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		fMinZ = min(fMinZ, min(p1.z, p2.z));
 		fMaxZ = max(fMaxZ, max(p1.z, p2.z));
@@ -1211,7 +1206,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x + fStep;
 		p2.y = y1;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		p1.x = x;
 		p1.y = y2;
@@ -1220,7 +1215,7 @@ void CRenderViewport::RenderSelectedRegion()
 		p2.x = x + fStep;
 		p2.y = y2;
 		p2.z = m_engine->GetTerrainElevation(p2.x, p2.y) + offset;
-		dc.DrawLine(p1, p2);
+		context.DrawLine(p1, p2);
 
 		fMinZ = min(fMinZ, min(p1.z, p2.z));
 		fMaxZ = max(fMaxZ, max(p1.z, p2.z));
@@ -1238,8 +1233,7 @@ void CRenderViewport::RenderSelectedRegion()
 			Vec3(x1, y1, fMinZ),
 			Vec3(x2, y1, fMinZ),
 			Vec3(x2, y2, fMinZ),
-			Vec3(x1, y2, fMinZ)
-		};
+			Vec3(x1, y2, fMinZ) };
 
 		// Generate vertices
 		static AABB boxPrev(0.0f);
@@ -1305,20 +1299,19 @@ void CRenderViewport::RenderSelectedRegion()
 		{
 			Vec3& p = base[i];
 
-			dc.DrawLine(p, Vec3(p.x, p.y, p.z + fBoxHeight), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 1));
-			dc.DrawLine(Vec3(p.x, p.y, p.z + fBoxHeight), Vec3(p.x, p.y, p.z + fBoxHeight + fBoxOver), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 0));
+			context.DrawLine(p, Vec3(p.x, p.y, p.z + fBoxHeight), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 1));
+			context.DrawLine(Vec3(p.x, p.y, p.z + fBoxHeight), Vec3(p.x, p.y, p.z + fBoxHeight + fBoxOver), ColorF(1, 1, 0, 1), ColorF(1, 1, 0, 0));
 		}
 
 		// Draw volume
-		dc.DepthWriteOff();
-		dc.CullOff();
-		dc.pRenderAuxGeom->DrawTriangles(&verts[0], verts.size(), &inds[0], numInds, &colors[0]);
-		dc.CullOn();
-		dc.DepthWriteOn();
+		context.DepthWriteOff();
+		context.CullOff();
+		context.pRenderAuxGeom->DrawTriangles(&verts[0], verts.size(), &inds[0], numInds, &colors[0]);
+		context.CullOn();
+		context.DepthWriteOn();
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::ProcessKeys()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -1332,8 +1325,6 @@ void CRenderViewport::ProcessKeys()
 	Vec3 xdir = m.GetColumn0().GetNormalized();
 
 	Vec3 pos = GetViewTM().GetTranslation();
-
-	IConsole* console = GetIEditor()->GetSystem()->GetIConsole();
 
 	float speedScale = 60.0f * GetIEditor()->GetSystem()->GetITimer()->GetFrameTime();
 	if (speedScale > 20) speedScale = 20;
@@ -1434,19 +1425,18 @@ Vec3 CRenderViewport::WorldToView3D(const Vec3& wp, int nFlags) const
 	return out;
 }
 
-//////////////////////////////////////////////////////////////////////////
 POINT CRenderViewport::WorldToView(const Vec3& wp) const
 {
-	CPoint p(0,0);
+	CPoint p(0, 0);
 
-	Vec3 out(0,0,0);
+	Vec3 out(0, 0, 0);
 	GetCamera().Project(wp, out);
 	if (std::isfinite(out.x) && std::isfinite(out.y))
 	{
 		CRect rc;
 		GetClientRect(&rc);
-		p.x = out.x * ((float)rc.Width()/m_currentResolution.width);
-		p.y = out.y * ((float)rc.Height()/m_currentResolution.height);
+		p.x = out.x * ((float)rc.Width() / m_currentResolution.width);
+		p.y = out.y * ((float)rc.Height() / m_currentResolution.height);
 	}
 
 	return p;
@@ -1489,7 +1479,6 @@ Vec3 CRenderViewport::UpViewDirection() const
 	return m_Camera.GetUp();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRenderViewport::AdjustObjectPosition(const ray_hit& hit, Vec3& outNormal, Vec3& outPos) const
 {
 	Matrix34A objMat, objMatInv;
@@ -1525,7 +1514,7 @@ bool CRenderViewport::AdjustObjectPosition(const ray_hit& hit, Vec3& outNormal, 
 
 	// put into position object space hit position
 	Vec3 vOS_HitPos = objMatInv.TransformPoint(hit.pt);
-	vOS_HitPos -= vOS_HitDir * RENDER_MESH_TEST_DISTANCE * fWorldScaleInv;
+	vOS_HitPos -= vOS_HitDir * g_renderMeshTestDistance * fWorldScaleInv;
 
 	IRenderMesh* pRM = pEntObject->GetRenderMesh();
 
@@ -1547,7 +1536,6 @@ bool CRenderViewport::AdjustObjectPosition(const ray_hit& hit, Vec3& outNormal, 
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRenderViewport::RayRenderMeshIntersection(IRenderMesh* pRenderMesh, const Vec3& vInPos, const Vec3& vInDir, Vec3& vOutPos, Vec3& vOutNormal) const
 {
 	SRayHitInfo hitInfo;
@@ -1563,7 +1551,6 @@ bool CRenderViewport::RayRenderMeshIntersection(IRenderMesh* pRenderMesh, const 
 	return bRes;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const
 {
 	if (!m_renderer)
@@ -1575,13 +1562,13 @@ void CRenderViewport::ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const
 	vp.x = vp.x * m_currentResolution.width / (float)rc.Width();
 	vp.y = vp.y * m_currentResolution.height / (float)rc.Height();
 
-	Vec3 pos0(0,0,0), pos1(0,0,0);
+	Vec3 pos0(0, 0, 0), pos1(0, 0, 0);
 
-	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 0),pos0);
-	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 1),pos1);
+	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 0), pos0);
+	GetCamera().Unproject(Vec3(vp.x, m_currentResolution.height - vp.y, 1), pos1);
 
 	if (!IsVectorInValidRange(pos0))
-		pos0 = Vec3(0,0,0);
+		pos0 = Vec3(0, 0, 0);
 	if (!IsVectorInValidRange(pos1))
 		pos1 = Vec3(0, 0, 0);
 
@@ -1592,7 +1579,6 @@ void CRenderViewport::ViewToWorldRay(POINT vp, Vec3& raySrc, Vec3& rayDir) const
 	rayDir = v;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CRenderViewport::GetScreenScaleFactor(const Vec3& worldPoint) const
 {
 	Vec3 pointVec = worldPoint - m_Camera.GetPosition();
@@ -1603,7 +1589,6 @@ float CRenderViewport::GetScreenScaleFactor(const Vec3& worldPoint) const
 	return dist;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRenderViewport::HitTest(CPoint point, HitContext& hitInfo)
 {
 	hitInfo.camera = &m_Camera;
@@ -1611,7 +1596,6 @@ bool CRenderViewport::HitTest(CPoint point, HitContext& hitInfo)
 	return CViewport::HitTest(point, hitInfo);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRenderViewport::IsBoundsVisible(const AABB& box) const
 {
 	// If at least part of bbox is visible then its visible.
@@ -1653,8 +1637,7 @@ void CRenderViewport::GetResolution(int& x, int& y)
 	y = m_currentResolution.height;
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CRenderViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType)
+bool CRenderViewport::CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportType viewportType)
 {
 	// Create context.
 	if (hWnd && m_renderer && !m_bRenderContextCreated)
@@ -1671,6 +1654,19 @@ bool CRenderViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType vi
 		desc.screenResolution.y = m_currentResolution.height;
 
 		m_displayContextKey = m_renderer->CreateSwapChainBackedContext(desc);
+
+		if (viewportType == IRenderer::eViewportType_Default)
+		{
+			m_graphicsPipelineDesc.type = EGraphicsPipelineType::Standard;
+			m_graphicsPipelineDesc.shaderFlags = SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO | SHDF_ALLOW_SKY | SHDF_ALLOW_RENDER_DEBUG;
+		}
+		else
+		{
+			m_graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+			m_graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+		}
+		m_graphicsPipelineKey = m_renderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
+
 		m_bRenderContextCreated = true;
 
 		// Make main context current.
@@ -1681,7 +1677,6 @@ bool CRenderViewport::CreateRenderContext(HWND hWnd, IRenderer::EViewportType vi
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::DestroyRenderContext()
 {
 	// Destroy render context.
@@ -1691,11 +1686,13 @@ void CRenderViewport::DestroyRenderContext()
 		if (m_displayContextKey != static_cast<HWND>(m_renderer->GetHWND()))
 			m_renderer->DeleteContext(m_displayContextKey);
 
+		m_renderer->ResetActiveGraphicsPipeline();
+		m_renderer->DeleteGraphicsPipeline(m_graphicsPipelineKey);
+
 		m_bRenderContextCreated = false;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::SetDefaultCamera()
 {
 	if (IsDefaultCamera())
@@ -1705,7 +1702,6 @@ void CRenderViewport::SetDefaultCamera()
 	SetCameraObject(0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRenderViewport::IsDefaultCamera() const
 {
 	if (m_cameraObjectId != CryGUID::Null() || GetCameraObject() || m_pCameraDelegate)
@@ -1714,7 +1710,6 @@ bool CRenderViewport::IsDefaultCamera() const
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CRenderViewport::SPreviousContext CRenderViewport::SetCurrentContext()
 {
 	SPreviousContext x;
@@ -1724,8 +1719,6 @@ CRenderViewport::SPreviousContext CRenderViewport::SetCurrentContext()
 
 	return x;
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 void CRenderViewport::RestorePreviousContext(const SPreviousContext& x) const
 {
@@ -1747,7 +1740,6 @@ void CRenderViewport::RestorePreviousContext(const SPreviousContext& x) const
    }
  */
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::HideCursor()
 {
 	if (m_bCursorHidden || !gViewportPreferences.hideMouseCursorWhenCaptured)
@@ -1758,7 +1750,6 @@ void CRenderViewport::HideCursor()
 	m_bCursorHidden = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::ShowCursor()
 {
 	if (!m_bCursorHidden || !gViewportPreferences.hideMouseCursorWhenCaptured)
@@ -1769,13 +1760,11 @@ void CRenderViewport::ShowCursor()
 	m_bCursorHidden = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::BeginUndoTransaction()
 {
 	CScopedRenderLock::Lock();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::EndUndoTransaction()
 {
 	CScopedRenderLock::Unlock();
@@ -1797,7 +1786,7 @@ void CRenderViewport::OnResizeInternal(int width, int height)
 
 	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, m_currentResolution.width, m_currentResolution.height);
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CRenderViewport::OnResize()
 {
 	CRect rcClient;
@@ -1819,7 +1808,6 @@ void CRenderViewport::OnResize()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRenderViewport::OnPaint()
 {
 	m_isOnPaint = true;
@@ -1827,18 +1815,9 @@ void CRenderViewport::OnPaint()
 	m_isOnPaint = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRenderViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 {
-	if (event == eMouseLDown && m_renderer)
-	{
-		// Force the visible object cache to be updated - this is to ensure that
-		// selection will work properly even if helpers are not being displayed,
-		// in which case the cache is not updated every frame.
-		if (!GetIEditor()->IsHelpersDisplayed())
-			GetIEditor()->GetObjectManager()->ForceUpdateVisibleObjectCache(this->m_displayContext);
-	}
-	else if (event == eMouseLUp)
+	if (event == eMouseLUp)
 	{
 		// Update viewports after done with actions.
 		GetIEditor()->UpdateViews(eUpdateObjects);
@@ -1851,9 +1830,9 @@ bool CRenderViewport::MouseCallback(EMouseEvent event, CPoint& point, int flags)
 	}
 
 	// accelerate only if camera is actually moving, but not if mouse wheel is pressed
-	if (!(flags & (MK_CONTROL | MK_MBUTTON)) && (event == eMouseWheel) && 
-		((gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_SpeedOnly) ||
-		((m_eCameraMoveState != ECameraMoveState::NoMove) && gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_ZoomSpeed)))
+	if (!(flags & (MK_CONTROL | MK_MBUTTON)) && (event == eMouseWheel) &&
+	    ((gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_SpeedOnly) ||
+	     ((m_eCameraMoveState != ECameraMoveState::NoMove) && gViewportMovementPreferences.mouseWheelBehavior == SViewportMovementPreferences::eWheel_ZoomSpeed)))
 	{
 		Accelerate((point.x > 0) ? 1 : -1);
 		return true;
@@ -1959,31 +1938,30 @@ void CRenderViewport::OnCameraTransformEvent(CameraTransformEvent* msg)
 
 namespace
 {
-	void PyToggleCameraTerrainCollisions()
-	{
-		CRenderViewport::s_cameraPreferences.terrainCollisionEnabled = !CRenderViewport::s_cameraPreferences.terrainCollisionEnabled;
-	}
+void PyToggleCameraTerrainCollisions()
+{
+	CRenderViewport::s_cameraPreferences.SetTerrainCollision(!CRenderViewport::s_cameraPreferences.IsTerrainCollisionEnabled());
+}
 
-	void PyToggleCameraObjectCollisions()
-	{
-		CRenderViewport::s_cameraPreferences.objectCollisionEnabled = !CRenderViewport::s_cameraPreferences.objectCollisionEnabled;
-	}
+void PyToggleCameraObjectCollisions()
+{
+	CRenderViewport::s_cameraPreferences.SetObjectCollision(!CRenderViewport::s_cameraPreferences.IsObjectCollisionEnabled());
+}
 
-	void PyToggleCameraSpeedHeightRelative()
-	{
-		CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled = !CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled;
-	}
+void PyToggleCameraSpeedHeightRelative()
+{
+	CRenderViewport::s_cameraPreferences.SetSpeedHeightRelative(!CRenderViewport::s_cameraPreferences.IsSpeedHeightRelativeEnabled());
+}
 }
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyToggleCameraTerrainCollisions, camera, toggle_terrain_collisions,
-	CCommandDescription("Camera Terrain Collisions"));
-REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_terrain_collisions, "Camera Terrain Collisions", "Q", "")
+                                   CCommandDescription("Camera Terrain Collisions"))
+REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_terrain_collisions, "Camera Terrain Collisions", "Q", "", true)
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyToggleCameraObjectCollisions, camera, toggle_object_collisions,
-	"Camera Object Collisions",
-	"camera.toggle_object_collisions()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyToggleCameraObjectCollisions, camera, toggle_object_collisions,
+                                   CCommandDescription("Camera Object Collisions"))
+REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_object_collisions, "Camera Object Collisions", "", "", true)
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyToggleCameraSpeedHeightRelative, camera, toggle_speed_height_relative,
-	CCommandDescription("Camera Speed Height-Relative"));
-REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_speed_height_relative, "Camera Speed Height-Relative", "Z", "")
-
+                                   CCommandDescription("Camera Speed Height-Relative"))
+REGISTER_EDITOR_UI_COMMAND_DESC(camera, toggle_speed_height_relative, "Camera Speed Height-Relative", "Z", "", true)

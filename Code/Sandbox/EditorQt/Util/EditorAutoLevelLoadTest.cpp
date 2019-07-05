@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "EditorAutoLevelLoadTest.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
 
 CEditorAutoLevelLoadTest& CEditorAutoLevelLoadTest::Instance()
 {
@@ -29,4 +31,3 @@ void CEditorAutoLevelLoadTest::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	}
 }
-

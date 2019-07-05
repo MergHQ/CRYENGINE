@@ -4,13 +4,14 @@
 #include "PresetEditor.h"
 #include "SandboxPlugin.h"
 // EditorCommon
+#include <AssetSystem/EditableAsset.h>
 #include <AssetSystem/AssetManager.h>
 #include <QtViewPane.h>
 #include <QVBoxLayout>
 #include <QSplitter>
 #include <QLabel>
 
-#include "Serialization/QPropertyTree/QPropertyTree.h"
+#include "Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h"
 #include <CrySerialization/IArchive.h>
 #include "QScrollableBox.h"
 #include "OutputEditorDialog.h"
@@ -22,7 +23,6 @@
 #include "Renderers/Base.h"
 #include "EditorFramework/PersonalizationManager.h"
 #include "Controls/QMenuComboBox.h"
-
 
 
 namespace Personalization
@@ -43,39 +43,12 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	, m_pOutputsGraphEditor(nullptr)
 	, m_pPreset(nullptr)
 {
-	AddToMenu(CEditor::MenuItems::SaveAs);
-
 	m_pScrollBox = new QScrollableBox();
 	
-	m_pSubstanceMenu = GetMenu("Substance Preset");
-	QAction* const pAction = m_pSubstanceMenu->CreateAction("Reset Inputs");
-	connect(pAction, &QAction::triggered, [=]()
-	{
-		if (m_pPreset)
-		{
-			m_pPreset->Reset();
-			m_propertyTree->revert();
-			PushPresetToRender();
-		}
-	});
-
-	QAction* const pRevertAction = m_pSubstanceMenu->CreateAction("Revert Changes");
-	connect(pRevertAction, &QAction::triggered, [=]()
-	{
-		if (m_pPreset)
-		{
-			m_pPreset->Reload();
-			m_propertyTree->revert();
-			m_pOutputsWidget->RefreshOutputs();
-			PushPresetToRender();
-		}
-	});
-
-	
-	QHBoxLayout* resolutionLayout = new QHBoxLayout(this);
-	m_pComboXRes = new QMenuComboBox(this);
-	m_pComboYRes = new QMenuComboBox(this);
-	m_pResUnified = new QToolButton(this);
+	QHBoxLayout* resolutionLayout = new QHBoxLayout();
+	m_pComboXRes = new QMenuComboBox();
+	m_pComboYRes = new QMenuComboBox();
+	m_pResUnified = new QToolButton();
 	m_pResUnified->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum));
 	m_pResUnified->setIcon(CryIcon("icons:General/Uniform.ico"));
 	m_pResUnified->setIconSize(QSize(24, 24));
@@ -105,7 +78,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	GetIEditor()->GetPersonalizationManager()->GetProperty(Personalization::Module, Personalization::YRes, yRes);
 	m_pComboXRes->SetText(xRes);
 	m_pComboYRes->SetText(yRes);
-	m_pResolutionWidget = new QWidget(m_pScrollBox);
+	m_pResolutionWidget = new QWidget();
 	m_pResolutionWidget->setLayout(resolutionLayout);
 	m_pScrollBox->addWidget(m_pResolutionWidget);
 
@@ -120,17 +93,17 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 		ResolutionChanged(m_pComboXRes, index);
 	});
 
-	m_propertyTree = new QPropertyTree(m_pScrollBox);
+	m_propertyTree = new QPropertyTreeLegacy();
 	m_pScrollBox->addWidget(m_propertyTree);
 	m_propertyTree->setSizeToContent(true);
 	SetContent(m_pScrollBox);
-	QObject::connect(m_propertyTree, &QPropertyTree::signalContinuousChange, [=]
+	QObject::connect(m_propertyTree, &QPropertyTreeLegacy::signalContinuousChange, [=]
 	{
 		GetAssetBeingEdited()->SetModified(true);
 		PushPresetToRender();
 	}
 	);
-	QObject::connect(m_propertyTree, &QPropertyTree::signalSerialized, [=](Serialization::IArchive& ar)
+	QObject::connect(m_propertyTree, &QPropertyTreeLegacy::signalSerialized, [=](Serialization::IArchive& ar)
 	{
 		if (ar.isOutput())
 		{
@@ -144,7 +117,35 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	);
 	SetPreviewResolution();
 	m_pScrollBox->hide();
+}
 
+void CSubstancePresetEditor::OnInitialize()
+{
+	AddToMenu(CEditor::MenuItems::SaveAs);
+
+	m_pSubstanceMenu = GetRootMenu()->CreateMenu("Substance Preset", 0);
+	QAction* const pAction = m_pSubstanceMenu->CreateAction("Reset Inputs");
+	connect(pAction, &QAction::triggered, [=]()
+	{
+		if (m_pPreset)
+		{
+			m_pPreset->Reset();
+			m_propertyTree->revert();
+			PushPresetToRender();
+		}
+	});
+
+	QAction* const pRevertAction = m_pSubstanceMenu->CreateAction("Revert Changes");
+	connect(pRevertAction, &QAction::triggered, [=]()
+	{
+		if (m_pPreset)
+		{
+			m_pPreset->Reload();
+			m_propertyTree->revert();
+			m_pOutputsWidget->RefreshOutputs();
+			PushPresetToRender();
+		}
+	});
 }
 
 void CSubstancePresetEditor::UniformResolutionClicked()

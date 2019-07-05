@@ -5,6 +5,7 @@
 #include "CommandHistory.h"
 #include "RecursionLoopGuard.h"
 #include "IUndoManager.h"
+#include "IEditorImpl.h"
 #include <QMouseEvent>
 #include <QLayout>
 #include <QAdvancedTreeView.h>
@@ -138,7 +139,6 @@ int QHistoryModel::columnCount(const QModelIndex& parent) const
 QVariant QHistoryModel::data(const QModelIndex& index, int role) const
 {
 	int row = index.row();
-	int col = index.column();
 
 	switch (role)
 	{
@@ -301,4 +301,3 @@ CHistoryPanel::CHistoryPanel()
 CHistoryPanel::~CHistoryPanel()
 {
 }
-

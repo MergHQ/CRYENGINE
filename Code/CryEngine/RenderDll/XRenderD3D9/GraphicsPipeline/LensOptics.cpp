@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include "LensOptics.h"
 #include "CompiledRenderObject.h"
 #include "Common/RendElements/RootOpticsElement.h"
@@ -17,6 +16,9 @@ void CLensOpticsStage::Init()
 
 void CLensOpticsStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+	PROFILE_LABEL_SCOPE("LENS_OPTICS");
+
 	CRenderView* pRenderView = RenderView();
 
 	auto& lensOpticsElements = pRenderView->GetRenderItems(EFSLIST_LENSOPTICS);
@@ -24,7 +26,7 @@ void CLensOpticsStage::Execute()
 
 	if (!lensOpticsElements.empty())
 	{
-		CTexture* pDestRT = CRendererResources::s_ptexSceneTargetR11G11B10F[0];
+		CTexture* pDestRT = m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0];
 
 		D3DViewPort viewport;
 		viewport.TopLeftX = viewport.TopLeftY = 0.0f;
@@ -34,8 +36,7 @@ void CLensOpticsStage::Execute()
 		viewport.MaxDepth = 1.0f;
 
 		SRenderViewInfo viewInfo[CCamera::eEye_eCount];
-		//size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo, &viewport);
-		size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+		size_t viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
 		assert(viewport.Width == viewInfo[0].viewport.width && viewport.Height == viewInfo[0].viewport.height);
 
 		const int  frameID          = pRenderView->GetFrameId();
@@ -57,14 +58,13 @@ void CLensOpticsStage::Execute()
 			m_passLensOptics.BeginAddingPrimitives();
 			std::vector<CPrimitiveRenderPass*> prePasses;
 
-			CD3D9Renderer* pRD = gcpRendD3D;
 			CRenderObject* pObj = re.pRenderObject;
 			SRenderObjData* pOD = pObj->GetObjData();
 
 			SRenderLight* pLight = pOD ? &pRenderView->GetLight(eDLT_DeferredLight, pOD->m_nLightID) : nullptr;
 			RootOpticsElement* pRootElem = pLight ? (RootOpticsElement*)pLight->GetLensOpticsElement() : nullptr;
 
-			if (!pRootElem || pRootElem->GetType() != eFT_Root)
+			if (!pRootElem || !pRootElem->IsEnabled() || pRootElem->GetType() != eFT_Root)
 				continue;
 
 			CFlareSoftOcclusionQuery* pOcc = static_cast<CFlareSoftOcclusionQuery*>(pLight->m_pSoftOccQuery);
@@ -72,7 +72,7 @@ void CLensOpticsStage::Execute()
 				continue;
 
 			{
-				PROFILE_LABEL_SCOPE(pLight->m_sName && pLight->m_sName[0] != '\0' ? pLight->m_sName : "unknown");
+				PROFILE_LABEL_SCOPE_DYNAMIC((pLight->m_sName && pLight->m_sName[0] != '\0' ? pLight->m_sName : "unknown"), "LIGHT");
 
 				pRootElem->SetOcclusionQuery(pOcc);
 				pOcc->SetOccPlaneSizeRatio(pRootElem->GetOccSize());
@@ -92,7 +92,7 @@ void CLensOpticsStage::Execute()
 				}
 				else
 				{
-					flareLight.m_vPos = pObj->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig()).GetTranslation();
+					flareLight.m_vPos = pObj->GetMatrix().GetTranslation();
 					ColorF& c = pLight->m_Color;
 					flareLight.m_cLdrClr.set(c.r, c.g, c.b, 1.0f);
 					flareLight.m_fRadius = pLight->m_fRadius;
@@ -125,7 +125,7 @@ void CLensOpticsStage::Execute()
 					flareLight.m_fViewAngleFalloff = 0.0;
 				}
 
-				if (pRootElem->ProcessAll(m_passLensOptics, prePasses, flareLight, viewInfo, viewInfoCount, false, bUpdateOcclusion))
+				if (pRootElem->ProcessAll(&m_graphicsPipeline, m_passLensOptics, prePasses, flareLight, viewInfo, viewInfoCount, false, bUpdateOcclusion))
 				{
 					if (bUpdateOcclusion)
 					{
@@ -152,7 +152,7 @@ void CLensOpticsStage::UpdateOcclusionQueries(SRenderViewInfo* pViewInfo, int vi
 
 	CFlareSoftOcclusionQuery::BatchReadResults(); // copy to system memory previous frame
 
-	m_softOcclusionManager.Update(pViewInfo, viewInfoCount);
+	m_softOcclusionManager.Update(pViewInfo, viewInfoCount, m_graphicsPipeline.GetCurrentRenderView());
 
 	CFlareSoftOcclusionQuery::ReadbackSoftOcclQuery(); // update current frame to staging buffer
 	for (int i = 0, iSize(m_softOcclusionManager.GetSize()); i < iSize; ++i)

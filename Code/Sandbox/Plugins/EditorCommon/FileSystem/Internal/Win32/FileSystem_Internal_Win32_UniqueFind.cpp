@@ -40,4 +40,3 @@ bool CUniqueFind::FindFirst(const QString& path)
 } // namespace Win32
 } // namespace Internal
 } // namespace FileSystem
-

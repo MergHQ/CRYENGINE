@@ -1,14 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
-#include <QSearchBox.h>
-
-#include <QTimer>
-#include <QAction>
-#include <QSortFilterProxyModel>
+#include "StdAfx.h"
+#include "QSearchBox.h"
 
 #include "ProxyModels/DeepFilterProxyModel.h"
-#include "CryIcon.h"
+
+#include <CryIcon.h>
+
+#include <QAction>
+#include <QSortFilterProxyModel>
+#include <QTimer>
+#include <QTreeView>
 
 QSearchBox::QSearchBox(QWidget* parent /*= 0*/)
 	: QLineEdit(parent)
@@ -23,11 +25,6 @@ QSearchBox::QSearchBox(QWidget* parent /*= 0*/)
 
 	m_action = addAction(CryIcon(QPixmap("icons:General/Search.ico")), QLineEdit::TrailingPosition);//TODO : make a real delete icon !!
 	connect(m_action, &QAction::triggered, this, &QSearchBox::OnClear);
-}
-
-QSearchBox::~QSearchBox()
-{
-
 }
 
 void QSearchBox::SetSearchFunction(std::function<void(const QString&)> function)
@@ -51,7 +48,7 @@ void QSearchBox::SetModel(QSortFilterProxyModel* model, SearchMode mode)
 			break;
 		case SearchMode::TokenizedString:
 			CRY_ASSERT(0);
-			//intentional fallthrough
+			// intentional fall through
 		case SearchMode::String:
 		default:
 			m_searchFunction = [model](const QString& str) { model->setFilterFixedString(str); };
@@ -63,7 +60,6 @@ void QSearchBox::SetModel(QSortFilterProxyModel* model, SearchMode mode)
 		setEnabled(false);
 		m_searchFunction = std::function<void(const QString&)>();
 	}
-
 }
 
 void QSearchBox::SetModel(QDeepFilterProxyModel* model, SearchMode mode /*= SearchMode::TokenizedString*/)
@@ -99,7 +95,7 @@ void QSearchBox::SetModel(QDeepFilterProxyModel* model, SearchMode mode /*= Sear
 void QSearchBox::SetAutoExpandOnSearch(QTreeView* treeView)
 {
 	//if need to detach, you can detach with the treeView pointer
-	signalOnFiltered.Connect([this, treeView]() 
+	signalOnSearch.Connect([this, treeView]() 
 	{ 
 		if(!text().isEmpty())
 			treeView->expandAll(); 
@@ -157,12 +153,12 @@ void QSearchBox::OnSearch()
 		m_timer->stop();
 	}
 
-	QString currentText = text();
+	const QString currentText = text();
 	if (m_searchFunction && currentText != m_lastSearchedText)
 	{
-		m_lastSearchedText = currentText;
 		m_searchFunction(text());
-		signalOnFiltered();
+		signalOnSearch(m_lastSearchedText.isEmpty());
+		m_lastSearchedText = currentText;
 	}
 }
 
@@ -170,4 +166,3 @@ void QSearchBox::OnClear()
 {
 	clear();
 }
-

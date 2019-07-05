@@ -4,14 +4,21 @@
 #include <CryString/UnicodeFunctions.h>
 #include <CryCore/Platform/WindowsUtils.h>
 #include <CrySystem/IProjectManager.h>
+#include <CrySystem/ConsoleRegistration.h>
+#include <CrySystem/SystemInitParams.h>
+#include <CryFont/IFont.h>
 
 #include "D3DStereo.h"
 #include "D3DPostProcess.h"
+#include "D3D_SVO.h"
 #include "D3DREBreakableGlassBuffer.h"
 #include "NullD3D11Device.h"
 #include "PipelineProfiler.h"
 #include <CryInput/IHardwareMouse.h>
 #include <Common/RenderDisplayContext.h>
+#include <Gpu/Particles/GpuParticleManager.h>
+#include <GraphicsPipeline/ComputeSkinning.h>
+#include <GraphicsPipeline/Common/SceneRenderPass.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#if defined(USE_AMD_API)
@@ -60,24 +67,20 @@ void CD3D9Renderer::DisplaySplash()
 
 	HBITMAP hImage = (HBITMAP)LoadImage(CryGetCurrentModule(), "splash.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
+	HWND hwnd = (HWND)m_hWnd;
 	if (hImage != INVALID_HANDLE_VALUE)
 	{
 		RECT rect;
-		HDC hDC = GetDC(m_hWnd);
+		HDC hDC = GetDC(hwnd);
 		HDC hDCBitmap = CreateCompatibleDC(hDC);
 		BITMAP bm;
 
-		GetClientRect(m_hWnd, &rect);
+		GetClientRect(hwnd, &rect);
 		GetObjectA(hImage, sizeof(bm), &bm);
 		SelectObject(hDCBitmap, hImage);
 
-		DWORD x = rect.left + (((rect.right - rect.left) - bm.bmWidth) >> 1);
-		DWORD y = rect.top + (((rect.bottom - rect.top) - bm.bmHeight) >> 1);
-
-		//    BitBlt(hDC, x, y, bm.bmWidth, bm.bmHeight, hDCBitmap, 0, 0, SRCCOPY);
-
 		RECT Rect;
-		GetWindowRect(m_hWnd, &Rect);
+		GetWindowRect(hwnd, &Rect);
 		StretchBlt(hDC, 0, 0, Rect.right - Rect.left, Rect.bottom - Rect.top, hDCBitmap, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
 
 		DeleteObject(hImage);
@@ -86,208 +89,9 @@ void CD3D9Renderer::DisplaySplash()
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-static CryCriticalSection gs_contextLock;
-
-CRenderDisplayContext* CD3D9Renderer::FindDisplayContext(const SDisplayContextKey& key) threadsafe const
-{
-	if (key == SDisplayContextKey{})
-		return GetBaseDisplayContext();
-
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-	auto it = m_displayContexts.find(key);
-	if (it != m_displayContexts.end())
-		return it->second.get();
-
-	return nullptr;
-}
-
-std::pair<bool, SDisplayContextKey> CD3D9Renderer::SetCurrentContext(const SDisplayContextKey &key) threadsafe
-{
-	const auto prevKey = m_activeContextKey;
-
-	if (key == SDisplayContextKey{})
-	{
-		UpdateActiveContext(m_pBaseDisplayContext, {});
-		return { true, prevKey };
-	}
-
-	auto it = m_displayContexts.find(key);
-	if (it == m_displayContexts.end())
-		return { false, prevKey };
-	UpdateActiveContext(it->second, key);
-	return { true, prevKey };
-}
-
-SDisplayContextKey CD3D9Renderer::AddCustomContext(const CRenderDisplayContextPtr &context) threadsafe
-{
-	SDisplayContextKey key;
-	key.key.emplace<uint32_t>(context->m_uniqueId);
-
-	{
-		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-		m_displayContexts.emplace(std::make_pair(key, context));
-	}
-
-	return key;
-}
-
-SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayContextDescription& desc) threadsafe
-{
-	LOADING_TIME_PROFILE_SECTION;
-
-	const int width = desc.screenResolution.x;
-	const int height = desc.screenResolution.y;
-	const std::string name = desc.type == IRenderer::eViewportType_Default ? "MainView-SwapChain" : "SecView-SwapChain";
-
-	auto pDC = std::make_shared<CSwapChainBackedRenderDisplayContext>(desc, name, m_uniqueDisplayContextId++);
-
-	pDC->m_bMainViewport = desc.type == IRenderer::eViewportType_Default;
-	pDC->m_desc.renderFlags |= pDC->m_bMainViewport ? FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL : 0;
-	pDC->m_desc.superSamplingFactor.x = std::max<int>(1, desc.superSamplingFactor.x);
-	pDC->m_desc.superSamplingFactor.y = std::max<int>(1, desc.superSamplingFactor.y);
-	pDC->m_desc.screenResolution.x = 0;
-	pDC->m_desc.screenResolution.y = 0;
-
-	pDC->m_nSSSamplesX = pDC->m_desc.superSamplingFactor.x;
-	pDC->m_nSSSamplesY = pDC->m_desc.superSamplingFactor.y;
-
-	pDC->CreateSwapChain(desc.handle, desc.vsync);
-
-	SDisplayContextKey key;
-	if (desc.handle)
-		key.key.emplace<HWND>(desc.handle);
-	else
-		key.key.emplace<uint32_t>(pDC->m_uniqueId);
-
-	if (width * height)
-	{
-		pDC->ChangeDisplayResolution(width, height);
-	}
-
-	{
-		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-		m_displayContexts.emplace(std::make_pair(key, std::move(pDC)));
-	}
-
-	return key;
-}
-
-void CD3D9Renderer::ResizeContext(CRenderDisplayContext *pDC, int width, int height) threadsafe
-{
-	if (pDC->m_desc.screenResolution.x != width ||
-		pDC->m_desc.screenResolution.y != height)
-	{
-		pDC->m_desc.screenResolution.x = width;
-		pDC->m_desc.screenResolution.y = height;
-
-		ChangeViewport(pDC, 0, 0, width, height);
-
-		// Must be deferred to Render Thread
-		gRenDev->ExecuteRenderThreadCommand([=] { EF_DisableTemporalEffects(); }, 
-			ERenderCommandFlags::None
-		);
-	}
-}
-
-void CD3D9Renderer::ResizeContext(const SDisplayContextKey& key, int width, int height) threadsafe
-{
-	CRenderDisplayContext* pDC = FindDisplayContext(key);
-	if (pDC)
-		ResizeContext(pDC, width, height);
-}
-
-bool CD3D9Renderer::DeleteContext(const SDisplayContextKey& key) threadsafe
-{
-	// Make sure there are no outstanding render commands which use the current viewport
-	FlushRTCommands(true, true, true);
-
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-	auto it = m_displayContexts.find(key);
-	if (it == m_displayContexts.end())
-		return false;
-
-	auto deletedContext = std::move(it->second);
-	m_displayContexts.erase(it);
-
-	// If deleting active context, set active context to some other context
-	if (m_pActiveContext == deletedContext)
-	{
-		const auto *pair = m_displayContexts.size() ? &*m_displayContexts.begin() : nullptr;
-		UpdateActiveContext(pair->second, pair->first);
-	}
-
-	return true;
-}
-
-void CD3D9Renderer::UpdateActiveContext(const std::shared_ptr<CRenderDisplayContext> &ctx, const SDisplayContextKey &key)
-{
-	m_pActiveContext = ctx;
-	m_activeContextKey = key;
-}
-
-CRenderDisplayContext* CD3D9Renderer::GetActiveDisplayContext() const
-{
-	return m_pActiveContext ? m_pActiveContext.get() : m_pBaseDisplayContext.get();
-}
-
-CSwapChainBackedRenderDisplayContext* CD3D9Renderer::GetBaseDisplayContext() const
-{
-	return m_pBaseDisplayContext.get();
-}
-
-WIN_HWND CD3D9Renderer::GetCurrentContextHWND()
-{
-	return m_pActiveContext && m_pActiveContext->IsSwapChainBacked() ? 
-		static_cast<CSwapChainBackedRenderDisplayContext*>(m_pActiveContext.get())->GetWindowHandle() : 
-		m_hWnd;
-}
-
-#ifdef CRY_PLATFORM_WINDOWS
-RectI CD3D9Renderer::GetDefaultContextWindowCoordinates()
-{
-	auto hWnd = m_pBaseDisplayContext->GetWindowHandle();
-	{
-		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-		for (const auto& pair : m_displayContexts)
-		{
-			if (pair.second->IsMainViewport() && stl::holds_alternative<HWND>(pair.first.key))
-				hWnd = stl::get<HWND>(pair.first.key);
-		}
-	}
-
-	RECT rcClient;
-	::GetClientRect(hWnd, &rcClient);
-	::ClientToScreen(hWnd, (LPPOINT)&rcClient.left);
-	::ClientToScreen(hWnd, (LPPOINT)&rcClient.right);
-
-	return RectI
-	{
-		rcClient.left,
-		rcClient.top,
-		static_cast<int>(m_pBaseDisplayContext->GetDisplayResolution().x),
-		static_cast<int>(m_pBaseDisplayContext->GetDisplayResolution().y)
-	};
-}
-#endif
-
-bool CD3D9Renderer::IsCurrentContextMainVP()
-{
-	return m_pActiveContext ? m_pActiveContext->IsMainViewport() : true;
-}
-
 bool CD3D9Renderer::ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView)
 {
-	if (m_bDeviceLost)
-		return true;
-
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
-#endif
+	CRY_ASSERT(!m_pRT || m_pRT->IsRenderThread());
 
 	pRenderView->ChangeRenderResolution(nNewRenderWidth, nNewRenderHeight, false);
 	pRenderView->SetViewport(SRenderViewport(0, 0, nNewRenderWidth, nNewRenderHeight));
@@ -297,12 +101,7 @@ bool CD3D9Renderer::ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHe
 
 bool CD3D9Renderer::ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHeight, CRenderOutput* pRenderOutput)
 {
-	if (m_bDeviceLost)
-		return true;
-
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
-#endif
+	CRY_ASSERT(!m_pRT || m_pRT->IsRenderThread());
 
 	pRenderOutput->ChangeOutputResolution(nNewOutputWidth, nNewOutputHeight);
 	pRenderOutput->SetViewport(SRenderViewport(0, 0, nNewOutputWidth, nNewOutputHeight));
@@ -310,7 +109,7 @@ bool CD3D9Renderer::ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHe
 	return true;
 }
 
-bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, CRenderDisplayContext* pDC)
+bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, bool bForceReset, CRenderDisplayContext* pDC)
 {
 	CSwapChainBackedRenderDisplayContext* pBC = GetBaseDisplayContext();
 
@@ -318,13 +117,10 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	m_isChangingResolution = true;
 
-	const int  nPrevColorDepth = m_cbpp;
 	if (nNewColDepth < 24)
 		nNewColDepth = 16;
 	else
 		nNewColDepth = 32;
-
-	bool wasFullscreen = previousWindowState == EWindowState::Fullscreen;
 
 	// Save the new dimensions
 	m_cbpp = nNewColDepth;
@@ -333,9 +129,8 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	m_overrideScanlineOrder = CV_r_overrideScanlineOrder;
 #endif
 
-	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
-
-	if (IsFullscreen() && nNewColDepth == 16)
+	const bool isFullscreen = IsFullscreen();
+	if (isFullscreen && nNewColDepth == 16)
 	{
 		m_zbpp = 16;
 		m_sbpp = 0;
@@ -345,7 +140,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	CRY_ASSERT(!IsEditorMode() || bForceReset);
 
-	HRESULT hr = S_OK;
 	if (!IsEditorMode() && (pDC == pBC))
 	{
 		// This is only allowed for the main viewport
@@ -358,43 +152,28 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		// disable floating point exceptions due to driver bug when switching to fullscreen
 		SCOPED_DISABLE_FLOAT_EXCEPTIONS();
 #endif
-		if (m_CVWidth)
-			m_CVWidth->Set(nNewDisplayWidth);
-		if (m_CVHeight)
-			m_CVHeight->Set(nNewDisplayHeight);
-		if (m_CVColorBits)
-			m_CVColorBits->Set(nNewColDepth);
 
-		AdjustWindowForChange(nNewDisplayWidth, nNewDisplayHeight, previousWindowState);
-
-		pBC->ChangeOutputIfNecessary(IsFullscreen(), m_VSync != 0);
-
-#if DURANGO_ENABLE_ASYNC_DIPS
-		WaitForAsynchronousDevice();
-#endif
+		pBC->ChangeOutputIfNecessary(isFullscreen, IsVSynced());
 
 // 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
-		pBC->SetFullscreenState(IsFullscreen());
-		pBC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight);
+		if (isFullscreen)
+		{
+			// Leave fullscreen before resizing as SetFullscreenState doesn't
+			// resize the swapchain unless the fullscreen state changes
+			pBC->SetFullscreenState(!isFullscreen);
+		}
 
-		if (gEnv->pHardwareMouse)
-			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, IsFullscreen() ? 1 : 0, 0);
+		pBC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight);
+		pBC->SetFullscreenState(isFullscreen);
+
 #endif
 	}
 	else
 	{
 		pDC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight);
 		if (pDC->IsSwapChainBacked())
-			static_cast<CSwapChainBackedRenderDisplayContext*>(pDC)->SetFullscreenState(IsFullscreen());
-	}
-
-	CRendererResources::OnDisplayResolutionChanged(nNewDisplayWidth, nNewDisplayHeight);
-
-	ICryFont* pCryFont = gEnv->pCryFont;
-	if (pCryFont)
-	{
-		IFFont* pFont = pCryFont->GetFont("default");
+			static_cast<CSwapChainBackedRenderDisplayContext*>(pDC)->SetFullscreenState(isFullscreen);
 	}
 
 	PostDeviceReset();
@@ -404,26 +183,20 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 	return true;
 }
 
-bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, EWindowState previousWindowState, bool bForceReset, const SDisplayContextKey& displayContextKey)
+bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, bool bForceReset, const SDisplayContextKey& displayContextKey)
 {
-	if (m_bDeviceLost)
-		return true;
-
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
-#endif
+	CRY_ASSERT(!m_pRT || m_pRT->IsRenderThread());
 
 	CRenderDisplayContext* pBC = GetBaseDisplayContext();
 	CRenderDisplayContext* pDC = pBC;
 	if (displayContextKey != SDisplayContextKey{})
 		pDC = FindDisplayContext(displayContextKey);
 
-	return ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight, nNewColDepth, nNewRefreshHZ, previousWindowState, bForceReset, pDC);
+	return ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight, nNewColDepth, nNewRefreshHZ, bForceReset, pDC);
 }
 
 void CD3D9Renderer::PostDeviceReset()
 {
-	m_bDeviceLost = 0;
 	if (IsFullscreen())
 		SetGamma(CV_r_gamma + m_fDeltaGamma, CV_r_brightness, CV_r_contrast, true);
 
@@ -437,70 +210,53 @@ void CD3D9Renderer::PostDeviceReset()
 //       to provide different behavior, such as switching to an entirely
 //       different window for fullscreen mode (as in the MFC sample apps).
 //-----------------------------------------------------------------------------
-HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int displayHeight, EWindowState previousWindowState)
+HRESULT CD3D9Renderer::ChangeWindowProperties(const int displayWidth, const int displayHeight)
 {
-	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
-
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_WINDOWS
 	if (IsEditorMode())
 		return S_OK;
 #endif
 
-#if CRY_RENDERER_OPENGL
-	const DXGI_SWAP_CHAIN_DESC& swapChainDesc(m_devInfo.SwapChainDesc());
-
-	DXGI_MODE_DESC modeDesc;
-	modeDesc.Width  = displayWidth;
-	modeDesc.Height = displayHeight;
-	modeDesc.RefreshRate = swapChainDesc.BufferDesc.RefreshRate;
-	modeDesc.Format = swapChainDesc.BufferDesc.Format;
-	modeDesc.ScanlineOrdering = swapChainDesc.BufferDesc.ScanlineOrdering;
-	modeDesc.Scaling = swapChainDesc.BufferDesc.Scaling;
-
-	HRESULT result = pDC->GetSwapChain()->ResizeTarget(&modeDesc);
-	if (FAILED(result))
-		return result;
-#elif CRY_PLATFORM_WINDOWS
-	RectI monitorBounds = pDC->GetCurrentMonitorBounds();
-
+#if CRY_PLATFORM_WINDOWS
+	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
+	HWND hwnd = (HWND)m_hWnd;
 	if (IsFullscreen())
 	{
-		if (previousWindowState != EWindowState::Fullscreen)
+		if (m_lastWindowState != EWindowState::Fullscreen)
 		{
 			constexpr auto fullscreenStyle = WS_POPUP | WS_VISIBLE;
-			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenStyle);
+			SetWindowLongPtrW(hwnd, GWL_STYLE, fullscreenStyle);
 		}
-			
-		SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW);
+
+		SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
-	else if (m_windowState == EWindowState::BorderlessWindow || m_windowState == EWindowState::BorderlessFullscreen)
+	else if (m_currWindowState == EWindowState::BorderlessWindow || m_currWindowState == EWindowState::BorderlessFullscreen)
 	{
-		if (previousWindowState != EWindowState::BorderlessWindow)
+		RectI monitorBounds = pDC->GetCurrentMonitorBounds();
+
+		if (m_lastWindowState != EWindowState::BorderlessWindow)
 		{
 			// Set fullscreen-mode style
 			constexpr auto fullscreenWindowStyle = WS_POPUP | WS_VISIBLE;
-			SetWindowLongPtrW(m_hWnd, GWL_STYLE, fullscreenWindowStyle);
+			SetWindowLongPtrW(hwnd, GWL_STYLE, fullscreenWindowStyle);
 		}
 
 		const int x = monitorBounds.x + (monitorBounds.w - displayWidth) / 2;
 		const int y = monitorBounds.y + (monitorBounds.h - displayHeight) / 2;
-		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, displayWidth, displayHeight, SWP_SHOWWINDOW);
+		SetWindowPos(hwnd, HWND_NOTOPMOST, x, y, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
 	else
 	{
-		const ICVar* pResizeableWindow = gEnv->pConsole->GetCVar("r_resizableWindow");
 		auto windowedStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-		if (pResizeableWindow && pResizeableWindow->GetIVal() == 0)
+		if (CV_r_ResizableWindow && CV_r_ResizableWindow->GetIVal() == 0)
 		{
 			windowedStyle &= ~(WS_MAXIMIZEBOX | WS_THICKFRAME);
 		}
-		if (previousWindowState != EWindowState::Windowed)
-		{
-			SetWindowLongPtrW(m_hWnd, GWL_STYLE, windowedStyle);
-		}
+
+		SetWindowLongPtrW(hwnd, GWL_STYLE, windowedStyle);
 
 		RECT windowRect;
-		GetWindowRect(m_hWnd, &windowRect);
+		GetWindowRect(hwnd, &windowRect);
 
 		const int x = windowRect.left;
 		const int y = windowRect.top;
@@ -511,7 +267,7 @@ HRESULT CD3D9Renderer::AdjustWindowForChange(const int displayWidth, const int d
 
 		const int width = windowRect.right - windowRect.left;
 		const int height = windowRect.bottom - windowRect.top;
-		SetWindowPos(m_hWnd, HWND_NOTOPMOST, x, y, width, height, SWP_SHOWWINDOW);
+		SetWindowPos(hwnd, HWND_NOTOPMOST, x, y, width, height, SWP_SHOWWINDOW);
 	}
 #endif
 
@@ -529,7 +285,7 @@ bool compareDXGIMODEDESC(const DXGI_MODE_DESC& lhs, const DXGI_MODE_DESC& rhs)
 
 int CD3D9Renderer::EnumDisplayFormats(SDispFormat* formats)
 {
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_WINDOWS
 
 	#if defined(SUPPORT_DEVICE_INFO)
 
@@ -590,18 +346,16 @@ void CD3D9Renderer::UnSetRes()
 
 void CD3D9Renderer::DestroyWindow(void)
 {
-#if defined(USE_SDL2_VIDEO) && (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES)
-	DXGLDestroySDLWindow(m_hWnd);
-#elif defined(USE_SDL2_VIDEO) && (CRY_RENDERER_VULKAN)
+#if defined(USE_SDL2_VIDEO) && (CRY_RENDERER_VULKAN)
 	VKDestroySDLWindow(m_hWnd);
 #elif CRY_PLATFORM_WINDOWS
 	if (gEnv && gEnv->pSystem && !m_bShaderCacheGen)
 	{
-		gEnv->pSystem->UnregisterWindowMessageHandler(this);
+		GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 	if (m_hWnd)
 	{
-		::DestroyWindow(m_hWnd);
+		::DestroyWindow((HWND)m_hWnd);
 		m_hWnd = NULL;
 	}
 	if (m_hIconBig)
@@ -614,12 +368,19 @@ void CD3D9Renderer::DestroyWindow(void)
 		::DestroyIcon(m_hIconSmall);
 		m_hIconSmall = NULL;
 	}
+	if (m_hCursor)
+	{
+		::DestroyCursor(m_hCursor);
+		m_hCursor = NULL;
+	}
 #endif
 }
 
 static CD3D9Renderer::SGammaRamp orgGamma;
 
+#if CRY_PLATFORM_WINDOWS
 static BOOL g_doGamma = false;
+#endif
 
 void CD3D9Renderer::RestoreGamma(void)
 {
@@ -629,7 +390,7 @@ void CD3D9Renderer::RestoreGamma(void)
 	if (!(GetFeatures() & RFT_HWGAMMA))
 		return;
 
-	if (CV_r_nohwgamma)
+	if ((CV_r_nohwgamma == 1) || (CV_r_nohwgamma == 2 && IsEditorMode()))
 		return;
 
 	m_fLastGamma = 1.0f;
@@ -646,10 +407,10 @@ void CD3D9Renderer::RestoreGamma(void)
 
 	m_hWndDesktop = GetDesktopWindow();
 
-	if (HDC dc = GetDC(m_hWndDesktop))
+	if (HDC dc = GetDC((HWND)m_hWndDesktop))
 	{
 		SetDeviceGammaRamp(dc, &orgGamma);
-		ReleaseDC(m_hWndDesktop, dc);
+		ReleaseDC((HWND)m_hWndDesktop, dc);
 	}
 #endif
 }
@@ -664,7 +425,7 @@ void CD3D9Renderer::GetDeviceGamma()
 
 	m_hWndDesktop = GetDesktopWindow();
 
-	if (HDC dc = GetDC(m_hWndDesktop))
+	if (HDC dc = GetDC((HWND)m_hWndDesktop))
 	{
 		g_doGamma = true;
 
@@ -678,7 +439,7 @@ void CD3D9Renderer::GetDeviceGamma()
 			}
 		}
 
-		ReleaseDC(m_hWndDesktop, dc);
+		ReleaseDC((HWND)m_hWndDesktop, dc);
 	}
 #endif
 }
@@ -688,7 +449,7 @@ void CD3D9Renderer::SetDeviceGamma(SGammaRamp* gamma)
 	if (!(GetFeatures() & RFT_HWGAMMA))
 		return;
 
-	if (CV_r_nohwgamma)
+	if ((CV_r_nohwgamma == 1) || (CV_r_nohwgamma == 2 && IsEditorMode()))
 		return;
 
 #if CRY_PLATFORM_WINDOWS
@@ -697,7 +458,7 @@ void CD3D9Renderer::SetDeviceGamma(SGammaRamp* gamma)
 
 	m_hWndDesktop = GetDesktopWindow();  // TODO: DesktopWindow - does not represent actual output window thus gamma affects all desktop monitors !!!
 
-	if (HDC dc = GetDC(m_hWndDesktop))
+	if (HDC dc = GetDC((HWND)m_hWndDesktop))
 	{
 		g_doGamma = true;
 		// INFO!!! - very strange: in the same time
@@ -705,7 +466,7 @@ void CD3D9Renderer::SetDeviceGamma(SGammaRamp* gamma)
 		// SetDeviceGammaRamp -> FALSE but WORKS!!!
 		// at least for desktop window DC... be careful
 		SetDeviceGammaRamp(dc, gamma);
-		ReleaseDC(m_hWndDesktop, dc);
+		ReleaseDC((HWND)m_hWndDesktop, dc);
 	}
 #endif
 }
@@ -727,6 +488,8 @@ void CD3D9Renderer::SetGamma(float fGamma, float fBrightness, float fContrast, b
 
 	SGammaRamp gamma;
 
+	// Code kept for possible backward compatibility
+	const bool bModifyOldTable = false;
 	float fInvGamma = 1.f / fGamma;
 
 	float fAdd = (fBrightness - 0.5f) * 0.5f - fContrast * 0.5f + 0.25f;
@@ -736,17 +499,26 @@ void CD3D9Renderer::SetGamma(float fGamma, float fBrightness, float fContrast, b
 	{
 		float pfInput[3];
 
-		pfInput[0] = (float)(orgGamma.red[i] >> 8) / 255.f;
-		pfInput[1] = (float)(orgGamma.green[i] >> 8) / 255.f;
-		pfInput[2] = (float)(orgGamma.blue[i] >> 8) / 255.f;
+		if (bModifyOldTable)
+		{
+			pfInput[0] = (float)(orgGamma.red  [i] >> 8) / 255.f;
+			pfInput[1] = (float)(orgGamma.green[i] >> 8) / 255.f;
+			pfInput[2] = (float)(orgGamma.blue [i] >> 8) / 255.f;
+		}
+		else
+		{
+			pfInput[0] = i / 255.f;
+			pfInput[1] = i / 255.f;
+			pfInput[2] = i / 255.f;
+		}
 
 		pfInput[0] = pow_tpl(pfInput[0], fInvGamma) * fMul + fAdd;
 		pfInput[1] = pow_tpl(pfInput[1], fInvGamma) * fMul + fAdd;
 		pfInput[2] = pow_tpl(pfInput[2], fInvGamma) * fMul + fAdd;
 
-		gamma.red[i] = CLAMP(int_round(pfInput[0] * 65535.f), 0, 65535);
+		gamma.red  [i] = CLAMP(int_round(pfInput[0] * 65535.f), 0, 65535);
 		gamma.green[i] = CLAMP(int_round(pfInput[1] * 65535.f), 0, 65535);
-		gamma.blue[i] = CLAMP(int_round(pfInput[2] * 65535.f), 0, 65535);
+		gamma.blue [i] = CLAMP(int_round(pfInput[2] * 65535.f), 0, 65535);
 	}
 
 	SetDeviceGamma(&gamma);
@@ -765,7 +537,7 @@ bool CD3D9Renderer::SetGammaDelta(const float fGamma)
 
 void CD3D9Renderer::ShutDownFast()
 {
-	CVrProjectionManager::Reset();
+	SAFE_DELETE(m_pVRProjectionManager);
 
 	// Flush RT command buffer
 	ForceFlushRTCommands();
@@ -774,24 +546,25 @@ void CD3D9Renderer::ShutDownFast()
 	//CBaseResource::ShutDown();
 
 	SAFE_DELETE(m_pRT);
-
-#if CRY_RENDERER_OPENGL
-	#if !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
-	if (CV_r_multithreaded)
-		DXGLReleaseContext(m_devInfo.Device());
-	#endif
-	m_devInfo.Release();
-#endif
 }
+
+static CryCriticalSection gs_contextLock;
 
 void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
-	CVrProjectionManager::Reset();
+	if (m_pGpuParticleManager)
+		static_cast<gpu_pfx2::CManager*>(m_pGpuParticleManager)->CleanupResources();
+
+
+	CSceneRenderPass::Shutdown();
+	m_particleBuffer.Release();
 
 	CREBreakableGlassBuffer::RT_ReleaseInstance();
-	SAFE_DELETE(m_pColorGradingControllerD3D);
+	SAFE_DELETE(m_pVRProjectionManager);
 	SAFE_DELETE(m_pPostProcessMgr);
 	SAFE_DELETE(m_pWaterSimMgr);
+	SAFE_DELETE(m_pGpuParticleManager);
+	SAFE_DELETE(m_pComputeSkinningStorage);
 	SAFE_DELETE(m_pStereoRenderer);
 	SAFE_DELETE(m_pPipelineProfiler);
 #if defined(ENABLE_RENDER_AUX_GEOM)
@@ -800,9 +573,9 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 
 	for (size_t i = 0; i < 3; ++i)
 		while (m_CharCBActiveList[i].next != &m_CharCBActiveList[i])
-			delete m_CharCBActiveList[i].next->item<& SCharacterInstanceCB::list>();
+			delete m_CharCBActiveList[i].next->item<&SCharacterInstanceCB::list>();
 	while (m_CharCBFreeList.next != &m_CharCBFreeList)
-		delete m_CharCBFreeList.next->item<& SCharacterInstanceCB::list>();
+		delete m_CharCBFreeList.next->item<&SCharacterInstanceCB::list>();
 
 	CHWShader::mfFlushPendedShadersWait(-1);
 	if (!IsShaderCacheGenMode())
@@ -814,7 +587,26 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	}
 	else
 	{
-		RT_GraphicsPipelineShutdown();
+		CREParticle::ResetPool();
+
+		if (m_pStereoRenderer)
+			m_pStereoRenderer->ReleaseBuffers();
+
+#if defined(ENABLE_RENDER_AUX_GEOM)
+		if (m_pRenderAuxGeomD3D)
+			m_pRenderAuxGeomD3D->ReleaseResources();
+#endif //ENABLE_RENDER_AUX_GEOM
+
+		m_pBaseGraphicsPipeline.reset();
+		m_pActiveGraphicsPipeline.reset();
+		m_graphicsPipelines.clear();
+
+#if defined(FEATURE_SVO_GI)
+		// TODO: GraphicsPipeline-Stage shutdown with ShutDown()
+		if (auto pSvoRenderer = CSvoRenderer::GetInstance(false))
+			pSvoRenderer->Release();
+#endif
+
 		EF_Exit();
 
 		ForceFlushRTCommands();
@@ -826,30 +618,21 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 
 #if defined(SUPPORT_DEVICE_INFO)
 	//m_devInfo.Release();
-	#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-		#if OGL_SINGLE_CONTEXT
-	m_pRT->m_kDXGLDeviceContextHandle.Set(NULL);
-		#else
-	m_pRT->m_kDXGLDeviceContextHandle.Set(NULL, !CV_r_multithreaded);
-	m_pRT->m_kDXGLContextHandle.Set(NULL);
-		#endif
-	#endif
 #endif
 
 	// Shut Down all contexts.
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-		for (auto &pDisplayContext : m_displayContexts)
+		for (auto& pDisplayContext : m_displayContexts)
 			pDisplayContext.second->ReleaseResources();
 	}
 
-#if !CRY_PLATFORM_ORBIS && !CRY_RENDERER_OPENGL
-	GetDeviceContext().ReleaseDeviceContext();
-#endif
-
 #if defined(ENABLE_NULL_D3D11DEVICE)
-	if (m_bShaderCacheGen)
-		GetDevice().ReleaseDevice();
+	if (m_bShaderCacheGen && m_pDevice != NULL)
+	{
+		m_pDevice->Release();
+		m_pDevice = NULL;
+	}
 #endif
 }
 
@@ -858,7 +641,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	m_bInShutdown = true;
 
 	// Force Flush RT command buffer
-	ForceFlushRTCommands();	
+	ForceFlushRTCommands();
 	PreShutDown();
 
 	DeleteAuxGeomCollectors();
@@ -866,23 +649,19 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 
 	if (m_pRT)
 	{
-		ExecuteRenderThreadCommand( [=]{ this->RT_ShutDown(bReInit ? 0 : FRR_SHUTDOWN); }, ERenderCommandFlags::FlushAndWait);
+		ExecuteRenderThreadCommand([=] { this->RT_ShutDown(bReInit ? 0 : FRR_SHUTDOWN); }, ERenderCommandFlags::FlushAndWait);
 	}
 
 	//CBaseResource::ShutDown();
 	ForceFlushRTCommands();
 
-#ifdef USE_PIX_DURANGO
-	SAFE_RELEASE(m_pPixPerf);
-#endif
 	//////////////////////////////////////////////////////////////////////////
 	// Clear globals.
 	//////////////////////////////////////////////////////////////////////////
 
-
 	// Release Display Contexts, freeing Swap Channels.
 	m_pBaseDisplayContext = nullptr;
-	UpdateActiveContext(nullptr, {});
+	SetActiveContext(nullptr, {});
 
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
@@ -891,12 +670,13 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 
 	SAFE_DELETE(m_pRT);
 
-#if CRY_RENDERER_OPENGL
-	#if !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
-	if (CV_r_multithreaded)
-		DXGLReleaseContext(GetDevice().GetRealDevice());
-	#endif
+	if (!m_DevBufMan.Shutdown())
+		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR_DBGBRK, "could not free all buffers from CDevBufferMan!");
+
+#if CRY_PLATFORM_IOS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX
+#if defined(SUPPORT_DEVICE_INFO)
 	m_devInfo.Release();
+#endif
 #endif
 
 	if (!bReInit)
@@ -906,7 +686,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 		iTimer = NULL;
 		iSystem = NULL;
 	}
-	
+
 	PostShutDown();
 }
 
@@ -914,7 +694,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 {
 	KBDLLHOOKSTRUCT* pkbhs = (KBDLLHOOKSTRUCT*) lParam;
-	BOOL bControlKeyDown = 0;
+
 	switch (nCode)
 	{
 	case HC_ACTION:
@@ -930,7 +710,7 @@ LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 #endif
 
 #if defined(SUPPORT_DEVICE_INFO)
-HWND CD3D9Renderer::CreateWindowCallback()
+CRY_HWND CD3D9Renderer::CreateWindowCallback()
 {
 	const CRenderDisplayContext* pDC = gcpRendD3D->GetBaseDisplayContext();
 
@@ -941,15 +721,33 @@ HWND CD3D9Renderer::CreateWindowCallback()
 }
 #endif
 
+void CD3D9Renderer::InitBaseDisplayContext()
+{
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_LINUX
+	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
+
+	// Update base context hWnd and key
+	SDisplayContextKey baseContextKey;
+	baseContextKey.key.emplace<CRY_HWND>(m_pBaseDisplayContext->GetWindowHandle());
+	m_pBaseDisplayContext->CreateSwapChain(m_hWnd, IsFullscreen(), IsVSynced());
+
+	{
+		AUTO_LOCK(gs_contextLock);
+		m_displayContexts.erase(baseContextKey);
+
+		baseContextKey.key.emplace<CRY_HWND>(m_hWnd);
+		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
+	}
+#endif
+}
+
 bool CD3D9Renderer::SetWindow(int width, int height)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
-	iSystem->RegisterWindowMessageHandler(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CD3DRenderer");
 
-#if USE_SDL2_VIDEO && (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES)
-	DXGLCreateSDLWindow(m_WinTitle, width, height, IsFullscreen(), &m_hWnd);
-#elif USE_SDL2_VIDEO && (CRY_RENDERER_VULKAN)
+#if USE_SDL2_VIDEO && (CRY_RENDERER_VULKAN)
 	VKCreateSDLWindow(m_WinTitle, width, height, IsFullscreen(), &m_hWnd);
 #elif CRY_PLATFORM_WINDOWS
 	DWORD style, exstyle;
@@ -967,7 +765,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 	const int monitorWidth = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
 	const int monitorHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
 
-	bool isFullscreenWindow = m_windowState == EWindowState::BorderlessWindow;
+	bool isFullscreenWindow = m_currWindowState == EWindowState::BorderlessWindow;
 
 	if (IsFullscreen() || isFullscreenWindow)
 	{
@@ -1020,7 +818,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			return false;
 		}
 		m_hWnd = CreateWindowExA(exstyle, wc.lpszClassName, m_WinTitle, style, x, y, width, height, NULL, NULL, wc.hInstance, NULL);
-		ShowWindow(m_hWnd, SW_HIDE);
+		ShowWindow((HWND)m_hWnd, SW_HIDE);
 	}
 	else
 	{
@@ -1034,6 +832,19 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 				SetWindowIcon(gEnv->pConsole->GetCVar("r_WindowIconTexture")->GetString());
 			}
 
+			if (m_hCursor == NULL && gEnv->pConsole->GetCVar("r_MouseUseSystemCursor")->GetIVal() != 0)
+			{
+				const char* texture = gEnv->pConsole->GetCVar("r_MouseCursorTexture")->GetString();
+				if (texture && *texture)
+				{
+					m_hCursor = CreateResourceFromTexture(this, texture, eResourceType_Cursor);
+				}
+				else
+				{
+					m_hCursor = ::LoadCursor(NULL, IDC_ARROW);
+				}
+			}
+
 			// Moved from Game DLL
 			WNDCLASSEXW wc;
 			memset(&wc, 0, sizeof(WNDCLASSEXW));
@@ -1043,6 +854,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			wc.hInstance = CryGetCurrentModule();
 			wc.hIcon = m_hIconBig;
 			wc.hIconSm = m_hIconSmall;
+			wc.hCursor = m_hCursor;
 			wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 			wc.lpszClassName = pClassName;
 			if (!RegisterClassExW(&wc))
@@ -1054,7 +866,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 			wstring wideTitle = Unicode::Convert<wstring>(m_WinTitle);
 
 			m_hWnd = CreateWindowExW(exstyle, pClassName, wideTitle.c_str(), style, x, y, width, height, NULL, NULL, wc.hInstance, NULL);
-			if (m_hWnd && !IsWindowUnicode(m_hWnd))
+			if (m_hWnd && !IsWindowUnicode((HWND)m_hWnd))
 			{
 				CryFatalError("Expected an UNICODE window for launcher");
 				return false;
@@ -1066,40 +878,33 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 				SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, NULL, 0);
 		}
 
-		if (m_hWnd)
+		HWND hwnd = (HWND)m_hWnd;
+		if (hwnd)
 		{
-			ShowWindow(m_hWnd, SW_SHOWNORMAL);
-			const bool wasFocusSet = SetFocus(m_hWnd) != nullptr;
+			ShowWindow(hwnd, SW_SHOWNORMAL);
+			const bool wasFocusSet = SetFocus(hwnd) != nullptr;
 			CRY_ASSERT(wasFocusSet);
 			// Attempt to move the window to the foreground and activate it
 			// Note that this will fail if the user alt-tabbed away to another application while the engine was starting
 			// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms633539(v=vs.85).aspx
-			SetForegroundWindow(m_hWnd);
+			SetForegroundWindow(hwnd);
 		}
 	}
 #endif
 
-#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_LINUX
-	m_VSync = !IsEditorMode() ? CV_r_vsync : 0;
-
-	// Update base context hWnd and key
-	SDisplayContextKey baseContextKey;
-	baseContextKey.key.emplace<HWND>(m_pBaseDisplayContext->GetWindowHandle());
-	m_pBaseDisplayContext->CreateSwapChain(m_hWnd, m_VSync != 0);
-	{
-		AUTO_LOCK(gs_contextLock);
-		m_displayContexts.erase(baseContextKey);
-
-		baseContextKey.key.emplace<HWND>(m_hWnd);
-		m_displayContexts.emplace(std::make_pair(std::move(baseContextKey), m_pBaseDisplayContext));
-	}
-
 	if (!m_hWnd)
 		iConsole->Exit("Couldn't create window\n");
-#else
-	return false;
+
+#if CRY_PLATFORM_WINDOWS
+	if (m_hWnd)
+	{
+		m_changedMonitor = true;
+		m_activeMonitor = nullptr;
+	}
 #endif
-	return true;
+
+	return m_hWnd != nullptr;
+
 }
 
 bool CD3D9Renderer::SetWindowIcon(const char* path)
@@ -1120,7 +925,7 @@ bool CD3D9Renderer::SetWindowIcon(const char* path)
 	{
 		if (m_hWnd)
 		{
-			SendMessage(m_hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIconBig);
+			SendMessage((HWND)m_hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIconBig);
 		}
 		if (m_hIconBig)
 		{
@@ -1138,11 +943,11 @@ bool CD3D9Renderer::SetWindowIcon(const char* path)
 	{
 		if (m_hWnd)
 		{
-			SendMessage(m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
+			SendMessage((HWND)m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
 		}
 		if (m_hWnd)
 		{
-			SendMessage(m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
+			SendMessage((HWND)m_hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hIconSmall);
 		}
 		if (m_hIconSmall)
 		{
@@ -1164,7 +969,7 @@ bool CD3D9Renderer::SetWindowIcon(const char* path)
   static void OnQShaderChange_Shader ## name(ICVar * pVar)                \
   {                                                                       \
     int iQuality = eSQ_Low;                                               \
-    if (gRenDev->GetFeatures() & (RFT_HW_SM2X | RFT_HW_SM30))             \
+    if (gRenDev->GetFeatures() & (RFT_HW_SM40))                           \
       iQuality = CLAMP(pVar->GetIVal(), 0, eSQ_Max);                      \
     gRenDev->EF_SetShaderQuality(eST_ ## name, (EShaderQuality)iQuality); \
   }
@@ -1180,7 +985,6 @@ QUALITY_VAR(Water)
 QUALITY_VAR(FX)
 QUALITY_VAR(PostProcess)
 QUALITY_VAR(HDR)
-QUALITY_VAR(Sky)
 
 #undef QUALITY_VAR
 
@@ -1188,7 +992,7 @@ static void OnQShaderChange_Renderer(ICVar* pVar)
 {
 	int iQuality = eRQ_Low;
 
-	if (gRenDev->GetFeatures() & (RFT_HW_SM2X | RFT_HW_SM30))
+	if (gRenDev->GetFeatures() & (RFT_HW_SM40))
 		iQuality = CLAMP(pVar->GetIVal(), 0, eSQ_Max);
 	else
 		pVar->ForceSet("0");
@@ -1259,50 +1063,14 @@ const char* sGetSQuality(const char* szName)
 	}
 }
 
-static void Command_ColorGradingChartImage(IConsoleCmdArgs* pCmd)
+CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, SSystemInitParams& initParams, bool bReInit)
 {
-	CColorGradingController* pCtrl = gcpRendD3D->m_pColorGradingControllerD3D;
-	if (pCmd && pCtrl)
-	{
-		const int numArgs = pCmd->GetArgCount();
-		if (numArgs == 1)
-		{
-			const CTexture* pChart = pCtrl->GetStaticColorChart();
-			if (pChart)
-				iLog->Log("current static chart is \"%s\"", pChart->GetName());
-			else
-				iLog->Log("no static chart loaded");
-		}
-		else if (numArgs == 2)
-		{
-			const char* pArg = pCmd->GetArg(1);
-			if (pArg && pArg[0])
-			{
-				if (pArg[0] == '0' && !pArg[1])
-				{
-					pCtrl->LoadStaticColorChart(0);
-					iLog->Log("static chart reset");
-				}
-				else
-				{
-					if (pCtrl->LoadStaticColorChart(pArg))
-						iLog->Log("\"%s\" loaded successfully", pArg);
-					else
-						iLog->Log("failed to load \"%s\"", pArg);
-				}
-			}
-		}
-	}
-}
-
-WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, WIN_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
-{
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Create and set the current aux collector to capture any aux commands
 	SetCurrentAuxGeomCollector(GetOrCreateAuxGeomCollector(gEnv->pSystem->GetViewCamera()));
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Renderer initialisation");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Renderer initialisation");
 
 	if (!iSystem || !iLog)
 		return 0;
@@ -1310,46 +1078,13 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	iLog->Log("Initializing Direct3D and creating game window:");
 	INDENT_LOG_DURING_SCOPE();
 
-	m_CVWidth = iConsole->GetCVar("r_Width");
-	m_CVHeight = iConsole->GetCVar("r_Height");
-	m_CVWindowType = iConsole->GetCVar("r_WindowType");
-	m_CVDisplayInfo = iConsole->GetCVar("r_DisplayInfo");
-	m_CVColorBits = iConsole->GetCVar("r_ColorBits");
-
 #if CRY_PLATFORM_WINDOWS
-	CV_r_FullscreenNativeRes = iConsole->GetCVar("r_FullscreenNativeRes");
-#endif
-
-	m_windowState = CalculateWindowState();
-
-	bool bNativeResolution;
-#if CRY_PLATFORM_CONSOLE || CRY_PLATFORM_MOBILE
-	bNativeResolution = true;
-#elif CRY_PLATFORM_WINDOWS
-	bNativeResolution = CV_r_FullscreenNativeRes && CV_r_FullscreenNativeRes->GetIVal() != 0 && (m_windowState == EWindowState::Fullscreen || m_windowState == EWindowState::BorderlessWindow);
-
 	REGISTER_STRING_CB("r_WindowIconTexture", "%ENGINE%/EngineAssets/Textures/default_icon.dds", VF_CHEAT | VF_CHEAT_NOCHECK,
 	                   "Sets the image (dds file) to be displayed as the window and taskbar icon",
 	                   SetWindowIconCVar);
-#else
-	bNativeResolution = false;
 #endif
 
-#if CRY_PLATFORM_DESKTOP
-	REGISTER_STRING_CB("r_MouseCursorTexture", "%ENGINE%/EngineAssets/Textures/Cursor_Green.dds", VF_NULL,
-	                   "Sets the image (dds file) to be displayed as the mouse cursor",
-	                   SetMouseCursorIconCVar);
-#endif // CRY_PLATFORM_DESKTOP
-
-	REGISTER_INT("r_resizableWindow", 1, VF_NULL, "Turn on resizable window borders. Changes are only applied after changing the window style once.");
-
-#if (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES) && !DXGL_FULL_EMULATION
-	#if OGL_SINGLE_CONTEXT
-	DXGLInitialize(0);
-	#else
-	DXGLInitialize(CV_r_multithreaded ? 4 : 0);
-	#endif
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
+	m_currWindowState = CalculateWindowState();
 
 	iLog->Log("Direct3D driver is creating...");
 	iLog->Log("Crytek Direct3D driver version %4.2f (%s <%s>)", VERSION_D3D, __DATE__, __TIME__);
@@ -1359,16 +1094,13 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 	iLog->Log("Creating window called '%s' (%dx%d)", m_WinTitle, width, height);
 
-	if (Glhwnd == (WIN_HWND)1)
+	m_bEditor = gEnv->IsEditor();
+	if (m_bEditor && m_currWindowState == EWindowState::Fullscreen)
 	{
-		Glhwnd = 0;
-		m_bEditor = true;
-
-		if (m_windowState == EWindowState::Fullscreen)
-			m_windowState = EWindowState::Windowed;
+		m_currWindowState = EWindowState::Windowed;
 	}
 
-	m_bShaderCacheGen = bShaderCacheGen;
+	m_bShaderCacheGen = initParams.bShaderCacheGen;
 
 	// RenderPipeline parameters
 	int renderWidth, renderHeight;
@@ -1380,7 +1112,7 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	m_sbpp = stencilBits;
 
 	CRenderDisplayContext* pDC = GetBaseDisplayContext();
-	CalculateResolutions(width, height, bNativeResolution, IsFullscreen(), &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
+	CalculateResolutions(width, height, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
 	pDC->m_DisplayWidth =  displayWidth;
 	pDC->m_DisplayHeight = displayHeight;
@@ -1391,20 +1123,19 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 		// call init stereo before device is created!
 		m_pStereoRenderer->InitDeviceBeforeD3D();
 
-		while (true)
+#if CRY_PLATFORM_DURANGO
+		m_hWnd = (CRY_HWND)initParams.window;
+#else
+		m_hWnd = CRY_HWND(0);
+#endif
+
+		// Creates Device here.
+		bool bRes = m_pRT->RC_CreateDevice();
+		if (!bRes)
 		{
-			m_hWnd = (HWND)Glhwnd;
-
-			// Creates Device here.
-			bool bRes = m_pRT->RC_CreateDevice();
-			if (!bRes)
-			{
-				CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "Rendering device creation failed!");
-				ShutDown(true);
-				return 0;
-			}
-
-			break;
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "Rendering device creation failed!");
+			ShutDown(true);
+			return CRY_HWND(0);
 		}
 
 #if defined(SUPPORT_DEVICE_INFO)
@@ -1451,18 +1182,18 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 			break;
 		case D3D_FEATURE_LEVEL_11_1:
 			iLog->Log(" Feature level: D3D 11_1");
-			iLog->Log(" Vertex Shaders version %d.%d", 5, 0);
-			iLog->Log(" Pixel Shaders version %d.%d", 5, 0);
+			iLog->Log(" Vertex Shaders version %d.%d", 5, 1);
+			iLog->Log(" Pixel Shaders version %d.%d", 5, 1);
 			break;
 		case D3D_FEATURE_LEVEL_12_0:
 			iLog->Log(" Feature level: D3D 12_0");
-			iLog->Log(" Vertex Shaders version %d.%d", 5, 1);
-			iLog->Log(" Pixel Shaders version %d.%d", 5, 1);
+			iLog->Log(" Vertex Shaders version %d.%d", 6, 0);
+			iLog->Log(" Pixel Shaders version %d.%d", 6, 0);
 			break;
 		case D3D_FEATURE_LEVEL_12_1:
 			iLog->Log(" Feature level: D3D 12_1");
-			iLog->Log(" Vertex Shaders version %d.%d", 5, 1);
-			iLog->Log(" Pixel Shaders version %d.%d", 5, 1);
+			iLog->Log(" Vertex Shaders version %d.%d", 6, 2);
+			iLog->Log(" Pixel Shaders version %d.%d", 6, 2);
 			break;
 		default:
 			iLog->Log(" Feature level: Unknown");
@@ -1490,13 +1221,19 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 		CRenderer::OnChange_GeomInstancingThreshold(0);   // to get log printout and to set the internal value (vendor dependent)
 
-		m_Features |= RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30;
+		m_Features |= RFT_HW_SM40;
 
 		if (!m_bDeviceSupportsInstancing)
 			_SetVar("r_GeomInstancing", 0);
 
 		const char* str = NULL;
-		if (m_Features & RFT_HW_SM50)
+		if (m_Features & RFT_HW_SM62)
+			str = "SM.6.2";
+		else if (m_Features & RFT_HW_SM60)
+			str = "SM.6.0";
+		else if (m_Features & RFT_HW_SM51)
+			str = "SM.5.1";
+		else if (m_Features & RFT_HW_SM50)
 			str = "SM.5.0";
 		else if (m_Features & RFT_HW_SM40)
 			str = "SM.4.0";
@@ -1504,8 +1241,8 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 			assert(0);
 		iLog->Log(" Shader model usage: '%s'", str);
 
-		// Needs to happen post D3D device creation
-		CVrProjectionManager::Instance()->Init(this);
+		m_pVRProjectionManager = new CVrProjectionManager(this);
+		m_pVRProjectionManager->Init();
 
 		CRendererResources::OnDisplayResolutionChanged(displayWidth, displayHeight);
 		CRendererResources::OnOutputResolutionChanged(outputWidth, outputHeight);
@@ -1515,21 +1252,25 @@ WIN_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	{
 
 		// force certain features during shader cache gen mode
-		m_Features |= RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30;
+		m_Features |= RFT_HW_SM40;
 
 #if defined(ENABLE_NULL_D3D11DEVICE)
-		m_DeviceWrapper.AssignDevice(new NullD3D11Device);
+		if (m_pDevice != NULL)
+			CryFatalError("Trying to assign two difference devices");
+		m_pDevice = new NullD3D11Device;
 		D3DDeviceContext* pContext = NULL;
 	#if (CRY_RENDERER_DIRECT3D >= 113)
-		GetDevice().GetImmediateContext3(&pContext);
+		GetDevice()->GetImmediateContext3(&pContext);
 	#elif (CRY_RENDERER_DIRECT3D >= 112)
-		GetDevice().GetImmediateContext2(&pContext);
+		GetDevice()->GetImmediateContext2(&pContext);
 	#elif (CRY_RENDERER_DIRECT3D >= 111)
-		GetDevice().GetImmediateContext1(&pContext);
+		GetDevice()->GetImmediateContext1(&pContext);
 	#else
-		GetDevice().GetImmediateContext(&pContext);
+		GetDevice()->GetImmediateContext(&pContext);
 	#endif
-		m_DeviceContextWrapper.AssignDeviceContext(pContext);
+		if (m_pDeviceContext != NULL && m_pDeviceContext != pContext)
+			CryFatalError("Trying to assign two difference devices context");
+		m_pDeviceContext = pContext;
 #endif
 	}
 
@@ -1559,7 +1300,6 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	QUALITY_VAR(FX);
 	QUALITY_VAR(PostProcess);
 	QUALITY_VAR(HDR);
-	QUALITY_VAR(Sky);
 
 #undef QUALITY_VAR
 
@@ -1572,30 +1312,13 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	                 "otherwise it prints their current state\n"
 	                 "Usage: q_Quality [0=low/1=med/2=high/3=very high]");
 
-	REGISTER_COMMAND("r_ColorGradingChartImage", &Command_ColorGradingChartImage, 0,
-	                 "If called with a parameter it loads a color chart image. This image will overwrite\n"
-	                 " the dynamic color chart blending result and be used during post processing instead.\n"
-	                 "If called with no parameter it displays the name of the previously loaded chart.\n"
-	                 "To reset a previously loaded chart call r_ColorGradingChartImage 0.\n"
-	                 "Usage: r_ColorGradingChartImage [path of color chart image/reset]");
-
 #if defined(DURANGO_VSGD_CAP)
 	REGISTER_COMMAND("GPUCapture", &GPUCapture, VF_NULL,
 	                 "Usage: GPUCapture name"
 	                 "Takes a PIX GPU capture with the specified name\n");
 #endif
 
-#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-	#if OGL_SINGLE_CONTEXT
-	if (!m_pRT->IsRenderThread())
-		DXGLUnbindDeviceContext(GetDeviceContext().GetRealDeviceContext());
-	#else
-	if (!m_pRT->IsRenderThread())
-		DXGLUnbindDeviceContext(GetDeviceContext().GetRealDeviceContext(), !CV_r_multithreaded);
-	#endif
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-
-	if (!bShaderCacheGen)
+	if (!m_bShaderCacheGen)
 	{
 		ExecuteRenderThreadCommand([=] { this->RT_Init(); }, ERenderCommandFlags::FlushAndWait);
 	}
@@ -1607,17 +1330,18 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 
 #if CRY_PLATFORM_WINDOWS
 	// Initialize the set of connected monitors
-	HandleMessage(0, WM_DEVICECHANGE, 0, 0, 0);
-	m_bDisplayChanged = false;
+	OnSystemEvent(ESYSTEM_EVENT_DEVICE_CHANGED, 0, 0);
+	m_changedMonitor = false;
 	m_bWindowRestored = false;
 #endif
 
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
-	if (m_pPipelineProfiler && !IsShaderCacheGenMode())
+	if (!IsShaderCacheGenMode())
 	{
 		m_pPipelineProfiler->Init();
 	}
 #endif
+
 	m_bInitialized = true;
 
 	//  Cry_memcheck();
@@ -1637,7 +1361,7 @@ void CD3D9Renderer::InitAMDAPI()
 		m_bVendorLibInitialized = status == AGS_SUCCESS;
 		if (!m_bVendorLibInitialized)
 			break;
-		
+
 		iLog->Log("AGS: Catalyst Version: %s  Driver Version: %s", g_gpuInfo.radeonSoftwareVersion, g_gpuInfo.driverVersion);
 
 		m_nGPUs = 1;
@@ -1653,7 +1377,7 @@ void CD3D9Renderer::InitAMDAPI()
 			m_nGPUs = numGPUs;
 			iLog->Log("AGS: Multi GPU count = %d", numGPUs);
 		}
-		
+
 		m_bDeviceSupports_AMDExt = g_extensionsSupported;
 	}
 	while (0);
@@ -1666,7 +1390,7 @@ void CD3D9Renderer::InitAMDAPI()
 		HMODULE hDLL;
 		HRESULT hr = S_OK;
 		D3DDevice* device = NULL;
-		device = GetDevice().GetRealDevice();
+		device = GetDevice();
 
 	#if defined _WIN64
 		hDLL = GetModuleHandle("atidxx64.dll");
@@ -1737,7 +1461,7 @@ void CD3D9Renderer::InitNVAPI()
 	#if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	// TODO: add DX12/Vulkan support
 	D3DDevice* device = NULL;
-	device = GetDevice().GetRealDevice();
+	device = GetDevice();
 	status = NvAPI_D3D_GetCurrentSLIState(device, &sliState);
 
 	if (status != NVAPI_OK)
@@ -1763,6 +1487,7 @@ void CD3D9Renderer::InitNVAPI()
 	iLog->Log("NVDBT supported");
 #endif // USE_NV_API
 }
+
 #if CRY_PLATFORM_DURANGO
 bool CD3D9Renderer::CreateDeviceDurango()
 {
@@ -1777,18 +1502,18 @@ bool CD3D9Renderer::CreateDeviceDurango()
 	ID3D12Device* pD3D12Device = nullptr;
 #endif
 
-	typedef HRESULT(WINAPI * FP_D3D11CreateDevice)(IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, CONST D3D_FEATURE_LEVEL*, UINT, UINT, ID3D11Device**, D3D_FEATURE_LEVEL*, ID3D11DeviceContext**);
+	typedef HRESULT(WINAPI * FP_D3DCreateDevice)(IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, CONST D3D_FEATURE_LEVEL*, UINT, UINT, ID3D11Device**, D3D_FEATURE_LEVEL*, ID3D11DeviceContext**);
 
-	FP_D3D11CreateDevice pD3D11CD =
+	FP_D3DCreateDevice pD3DCD =
 #if (CRY_RENDERER_DIRECT3D >= 120)
-		(FP_D3D11CreateDevice)DX12CreateDevice;
+		(FP_D3DCreateDevice)DX12CreateDevice;
 #else
-		(FP_D3D11CreateDevice)D3D11CreateDevice;
+		(FP_D3DCreateDevice)D3D11CreateDevice;
 #endif
 
-	if (pD3D11CD)
+	if (pD3DCD)
 	{
-		// On Durango we use an internal resolution of 720p but create a 1080p swap chain and do custom upscaling.
+		// On Durango we use a different internal resolution than the swap chain and do custom upscaling.
 		// This is required since the swap chain scaling does just point filtering and since the engine requires the
 		// backbuffer to be RGBA and not BGRA as required by the swap chain on Durango.
 
@@ -1812,7 +1537,7 @@ bool CD3D9Renderer::CreateDeviceDurango()
 
 		D3D_FEATURE_LEVEL featureLevel;
 
-		HRESULT hr = pD3D11CD(nullptr, driverType, 0, creationFlags, pFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &pD3D11Device, &featureLevel, &pD3D11Context);
+		HRESULT hr = pD3DCD(nullptr, driverType, 0, creationFlags, pFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &pD3D11Device, &featureLevel, &pD3D11Context);
 		if (SUCCEEDED(hr) && pD3D11Device && pD3D11Context)
 		{
 #if (CRY_RENDERER_DIRECT3D >= 120)
@@ -1852,50 +1577,40 @@ bool CD3D9Renderer::CreateDeviceDurango()
 	}
 
 	{
+		m_pDevice = reinterpret_cast<D3DDevice*>(pD3D11Device);
+		D3DDeviceContext* pDeviceContext = nullptr;
+		// TODOL check documentation if it is ok to ignore the context from create device? (both pointers are the same), some refcounting to look out for?
 #if (CRY_RENDERER_DIRECT3D >= 111)
-		// TODOL check documentation if it is ok to ignore the context from create device? (both pointers are the same), some refcounting to look out for?\	
-		ID3D11Device1* pDevice1 = static_cast<ID3D11Device1*>(pD3D11Device);
-		m_DeviceWrapper.AssignDevice(pDevice1);
-
-		D3DDeviceContext* pDeviceContext1 = nullptr;
-		GetDevice().GetImmediateContext1(&pDeviceContext1);
-		m_DeviceContextWrapper.AssignDeviceContext(pDeviceContext1);
+		GetDevice()->GetImmediateContext1(&pDeviceContext);
 #else
-		m_DeviceWrapper.AssignDevice(pD3D11Device);
-		m_DeviceContextWrapper.AssignDeviceContext(pDeviceContext);
+		GetDevice()->GetImmediateContext(&pDeviceContext);
 #endif
+		m_pDeviceContext = pDeviceContext;
 	}
 
 #if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	{
 		// create performance context	and context
 		ID3DXboxPerformanceDevice* pPerformanceDevice = nullptr;
-		ID3DXboxPerformanceContext* pPerformanceDeviceContext = nullptr;
+		ID3DXboxPerformanceContext* pPerformanceContext = nullptr;
 
-		hr = GetDevice().QueryInterface(__uuidof(ID3DXboxPerformanceDevice), (void**)&pPerformanceDevice);
+		hr = GetDevice()->QueryInterface(__uuidof(ID3DXboxPerformanceDevice), (void**)&pPerformanceDevice);
 		assert(hr == S_OK);
 
-		hr = GetDeviceContext().QueryInterface(__uuidof(ID3DXboxPerformanceContext), (void**)&pPerformanceDeviceContext);
+		hr = GetDeviceContext()->QueryInterface(__uuidof(ID3DXboxPerformanceContext), (void**)&pPerformanceContext);
 		assert(hr == S_OK);
 
-		m_PerformanceDeviceWrapper.AssignPerformanceDevice(m_pPerformanceDevice = pPerformanceDevice);
-		m_PerformanceDeviceContextWrapper.AssignPerformanceDeviceContext(m_pPerformanceDeviceContext = pPerformanceDeviceContext);
+		m_pPerformanceDevice = pPerformanceDevice;
+		m_pPerformanceContext = pPerformanceContext;
 	}
 
-	hr = GetPerformanceDevice().SetDriverHint(XBOX_DRIVER_HINT_CONSTANT_BUFFER_OFFSETS_IN_CONSTANTS, 1);
+	hr = GetPerformanceDevice()->SetDriverHint(XBOX_DRIVER_HINT_CONSTANT_BUFFER_OFFSETS_IN_CONSTANTS, 1);
 	assert(hr == S_OK);
 #endif
 
-#ifdef USE_PIX_DURANGO
-	HRESULT res = GetDeviceContext().QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_pPixPerf));
-	assert(SUCCEEDED(res));
-#endif
-
-	m_DevMan.Init();
-
 	// Post device creation callbacks
-	OnD3D11CreateDevice(GetDevice().GetRealDevice());
-	OnD3D11PostCreateDevice(GetDevice().GetRealDevice());
+	OnD3D11CreateDevice(GetDevice());
+	OnD3D11PostCreateDevice(GetDevice());
 
 	return true;
 }
@@ -1907,11 +1622,12 @@ bool CD3D9Renderer::CreateDeviceMobile()
 	if (!m_devInfo.CreateDevice(m_zbpp, OnD3D11CreateDevice, CreateWindowCallback))
 		return false;
 
+	InitBaseDisplayContext();
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 
-	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, EWindowState::Fullscreen);
+	ChangeWindowProperties(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y);
 
-	pDC->ChangeOutputIfNecessary(true, m_VSync != 0);
+	pDC->ChangeOutputIfNecessary(true, IsVSynced());
 
 	return true;
 }
@@ -1930,17 +1646,21 @@ bool CD3D9Renderer::CreateDeviceDesktop()
 	//query adapter name
 	const DXGI_ADAPTER_DESC1& desc = m_devInfo.AdapterDesc();
 	m_adapterInfo.name = CryStringUtils::WStrToUTF8(desc.Description).c_str();
-	m_adapterInfo.VendorId = desc.VendorId;
-	m_adapterInfo.DeviceId = desc.DeviceId;
-	m_adapterInfo.SubSysId = desc.SubSysId;
-	m_adapterInfo.Revision = desc.Revision;
+	m_adapterInfo.vendorId = desc.VendorId;
+	m_adapterInfo.deviceId = desc.DeviceId;
+	m_adapterInfo.subSysId = desc.SubSysId;
+	m_adapterInfo.revision = desc.Revision;
+	m_adapterInfo.dedicatedVideoMemory = desc.DedicatedVideoMemory;
+	m_adapterInfo.driverVersion = m_devInfo.DriverVersion();
+	m_adapterInfo.szDriverBuildNumber = m_devInfo.DriverBuildNumber();
 
+	InitBaseDisplayContext();
 	OnD3D11PostCreateDevice(m_devInfo.Device());
 #endif
 
-	AdjustWindowForChange(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y, EWindowState::Fullscreen);
+	ChangeWindowProperties(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y);
 
-	pDC->ChangeOutputIfNecessary(true, m_VSync != 0);
+	pDC->ChangeOutputIfNecessary(IsFullscreen(), IsVSynced());
 
 	return true;
 }
@@ -1953,30 +1673,16 @@ bool CD3D9Renderer::CreateDeviceGNM()
 
 	pDC->CreateSwapChain(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y);
 
-	GetDevice().AssignDevice(gGnmDevice);
+	if (m_pDevice != NULL && m_pDevice != gGnmDevice)
+		CryFatalError("Trying to assign two difference devices");
+	m_pDevice = gGnmDevice;
 
-	BindContextToThread(CryGetCurrentThreadId());
-	m_DeviceContextWrapper.AssignDeviceContext(gGnmDevice);
+	if (m_pDeviceContext != NULL && m_pDeviceContext != gGnmDevice)
+		CryFatalError("Trying to assign two difference devices context");
+	m_pDeviceContext = gGnmDevice;
 
 	OnD3D11CreateDevice(gGnmDevice);
 	OnD3D11PostCreateDevice(gGnmDevice);
-
-	return true;
-}
-#elif CRY_PLATFORM_ORBIS
-bool CD3D9Renderer::CreateDeviceOrbis()
-{
-	auto* pDC = GetBaseDisplayContext();
-
-	DXOrbis::CreateCCryDXOrbisRenderDevice();
-	DXOrbis::CreateCCryDXOrbisSwapChain();
-	DXOrbis::Device()->RegisterDeviceThread();
-
-	GetDevice().AssignDevice(nullptr);
-	GetDeviceContext().AssignDeviceContext(nullptr);
-
-	OnD3D11CreateDevice(GetDevice().GetRealDevice());
-	OnD3D11PostCreateDevice(GetDevice().GetRealDevice());
 
 	return true;
 }
@@ -1984,10 +1690,8 @@ bool CD3D9Renderer::CreateDeviceOrbis()
 
 bool CD3D9Renderer::CreateDevice()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	ChangeLog();
-
-	auto* pDC = GetBaseDisplayContext();
 
 	m_pixelAspectRatio = 1.0f;
 	m_dwCreateFlags = 0;
@@ -2008,11 +1712,6 @@ bool CD3D9Renderer::CreateDevice()
 #elif CRY_RENDERER_GNM
 	if (!CreateDeviceGNM())
 		return false;
-
-#elif CRY_PLATFORM_ORBIS
-	if (!CreateDeviceOrbis())
-		return false;
-
 #else
 	#error UNKNOWN RENDER DEVICE PLATFORM
 #endif
@@ -2028,7 +1727,7 @@ bool CD3D9Renderer::CreateDevice()
 
 	m_pStereoRenderer->InitDeviceAfterD3D();
 
-	UpdateActiveContext(m_pBaseDisplayContext, {});
+	SetActiveContext(m_pBaseDisplayContext, {});
 
 	return true;
 }
@@ -2067,31 +1766,35 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 		}
 #else
 		struct { SIZE_T CurrentUsage; } videoMemoryInfoA = {};
-		struct { SIZE_T CurrentUsage; } videoMemoryInfoB = {};
 
 	#if CRY_RENDERER_GNM
+		struct { SIZE_T CurrentUsage; } videoMemoryInfoB = {};
 		gGnmDevice->GetMemoryUsageStats(videoMemoryInfoA.CurrentUsage, videoMemoryInfoB.CurrentUsage);
 	#endif
+#endif
 
 		vidMemUsedThisFrame = size_t(videoMemoryInfoA.CurrentUsage);
 		vidMemUsedRecently = 0;
-#endif
 	}
 }
 
 //===========================================================================================
 
+#if defined(SUPPORT_DEVICE_INFO) && !CRY_RENDERER_VULKAN
+#include <d3d10.h>
+#endif
+
 HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CD3D9Renderer* rd = gcpRendD3D;
-	rd->m_DeviceWrapper.AssignDevice(pd3dDevice);
+	rd->m_pDevice = pd3dDevice;
 	GetDeviceObjectFactory().AssignDevice(pd3dDevice);
 
 #if defined(SUPPORT_DEVICE_INFO)
-	rd->m_DeviceContextWrapper.AssignDeviceContext(rd->m_devInfo.Context());
+	rd->m_pDeviceContext = rd->m_devInfo.Context();
 #endif
-	rd->m_Features |= RFT_OCCLUSIONQUERY | RFT_ALLOWANISOTROPIC | RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30 | RFT_HW_SM40 | RFT_HW_SM50;
+	rd->m_Features |= RFT_OCCLUSIONQUERY | RFT_ALLOWANISOTROPIC | RFT_HW_SM40 | RFT_HW_SM50;
 
 #if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 	rd->m_d3dDebug.Init(pd3dDevice);
@@ -2104,8 +1807,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	GetDeviceObjectFactory().AllocatePredefinedInputLayouts();
 
 #if defined(SUPPORT_DEVICE_INFO)
-	rd->BindContextToThread(CryGetCurrentThreadId());
-
 	LARGE_INTEGER driverVersion;
 	driverVersion.LowPart = 0;
 	driverVersion.HighPart = 0;
@@ -2114,8 +1815,11 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	driverVersion.HighPart = (VK_VERSION_MAJOR(version) << 16) | VK_VERSION_MINOR(version);
 	driverVersion.LowPart = (VK_VERSION_PATCH(version) << 16) | VK_HEADER_VERSION;
 	#else
-	rd->m_devInfo.Adapter()->CheckInterfaceSupport(__uuidof(ID3D11Device), &driverVersion);
+	// Note  You can use CheckInterfaceSupport only to check whether a Direct3D 10.x interface is
+	// supported, and only on Windows Vista SP1 and later versions of the operating system.
+	rd->m_devInfo.Adapter()->CheckInterfaceSupport(__uuidof(ID3D10Device), &driverVersion);
 	#endif
+
 	iLog->Log("D3D Adapter: Description: %ls", rd->m_devInfo.AdapterDesc().Description);
 	iLog->Log("D3D Adapter: Driver version (UMD): %d.%02d.%02d.%04d", HIWORD(driverVersion.u.HighPart), LOWORD(driverVersion.u.HighPart), HIWORD(driverVersion.u.LowPart), LOWORD(driverVersion.u.LowPart));
 	iLog->Log("D3D Adapter: VendorId = 0x%.4X", rd->m_devInfo.AdapterDesc().VendorId);
@@ -2190,13 +1894,9 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	rd->m_bDeviceSupportsInstancing = true;
 #endif
 
-#if !CRY_RENDERER_OPENGLES
 	rd->m_bDeviceSupportsGeometryShaders = (rd->m_Features & RFT_HW_SM40) != 0;
-#else
-	rd->m_bDeviceSupportsGeometryShaders = false;
-#endif
 
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN
+#if !CRY_RENDERER_VULKAN
 	rd->m_bDeviceSupportsTessellation = (rd->m_Features & RFT_HW_SM50) != 0;
 #else
 	rd->m_bDeviceSupportsTessellation = false;
@@ -2237,17 +1937,13 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 
 HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CD3D9Renderer* rd = gcpRendD3D;
 	auto* pDC = rd->GetBaseDisplayContext();
 
 	pDC->m_nSSSamplesX = CV_r_Supersampling;
 	pDC->m_nSSSamplesY = CV_r_Supersampling;
 	pDC->m_bMainViewport = true;
-
-#if DX11_WRAPPABLE_INTERFACE && CAPTURE_REPLAY_LOG
-	rd->MemReplayWrapD3DDevice();
-#endif
 
 	// Force resize
 	const auto displayWidth = pDC->GetDisplayResolution().x;
@@ -2262,112 +1958,187 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	rd->ReleaseAuxiliaryMeshes();
 	rd->CreateAuxiliaryMeshes();
 
-	rd->m_bDeviceLost = 0;
-
 	//rd->ResetToDefault();
 
 	return S_OK;
 }
 
-#if CRY_PLATFORM_WINDOWS
-// Renderer looks for multi-monitor setup changes and fullscreen key combination
-bool CD3D9Renderer::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+// Change the Window Mode (windowed with border / borderless / fullscreen)
+void CD3D9Renderer::UpdateWindowMode()
 {
-	switch (message)
+#if CRY_PLATFORM_WINDOWS
+
+	// In non-editor mode
+	if (!IsEditorMode())
 	{
-	case WM_DISPLAYCHANGE:
-	case WM_DEVICECHANGE:
+		// Set self as the active window
+		::SetActiveWindow(static_cast<HWND>(GetHWND()));
+
+		// Is the window resizable?
+		ICVar* cvResize = gEnv->pConsole->GetCVar("r_resizableWindow");
+		bool bFixedSize = ((cvResize != nullptr) && (cvResize->GetIVal() == 0));
+
+		// target style
+		DWORD dwStyle = 0;
+
+		EWindowState windowMode = static_cast<EWindowState>(m_CVWindowType->GetIVal());
+		switch (windowMode)
 		{
-			// Count the number of connected display devices
-			bool bHaveMonitorsChanged = true;
-			uint connectedMonitors = 0;
-			EnumDisplayMonitors(NULL, NULL, CountConnectedMonitors, reinterpret_cast<LPARAM>(&connectedMonitors));
-
-			// Check for changes
-			if (connectedMonitors > m_nConnectedMonitors)
-			{
-				iSystem->GetILog()->LogAlways("[Renderer] A display device has been connected to the system");
-			}
-			else if (connectedMonitors < m_nConnectedMonitors)
-			{
-				iSystem->GetILog()->LogAlways("[Renderer] A display device has been disconnected from the system");
-			}
-			else
-			{
-				bHaveMonitorsChanged = false;
-			}
-
-			// Update state
-			m_nConnectedMonitors = connectedMonitors;
-			m_bDisplayChanged = bHaveMonitorsChanged;
+		case EWindowState::Windowed:
+		{
+			// Change to overlapped window style, add a sizing border and controls to resizable windows
+			dwStyle = (bFixedSize) ?
+				m_dwWinstyleBorder & ~(WS_MAXIMIZEBOX | WS_THICKFRAME) :
+				m_dwWinstyleBorder | (WS_MAXIMIZEBOX | WS_THICKFRAME);
 		}
 		break;
+		case EWindowState::BorderlessFullscreen:
+			// fallthough intentional
+		case EWindowState::BorderlessWindow:
+			// fallthough intentional
+		case EWindowState::Fullscreen:
+			dwStyle = m_dwWinstyleNoBorder;
+			break;
+		default:
+			break;
+		}
 
-	case WM_SYSKEYDOWN:
+		// Window handle
+		HWND hWnd = static_cast<HWND>(m_hWnd);
+
+		// Client coordinates (to get the uper-left corner)
+		RECT targetRect{ 0, 0, 0, 0 };
+		::GetClientRect(hWnd, &targetRect);
+
+		// set style, compensate for window borders in windowed mode
+		SetWindowLongPtrW(hWnd, GWL_STYLE, dwStyle);
+
+		if (windowMode == EWindowState::Windowed)
 		{
-			const bool bAlt = (lParam & (1 << 29)) != 0;
-			if (bAlt)
-			{
-				if (wParam == VK_RETURN) // ALT+ENTER
-				{
-					if (m_CVWindowType != nullptr)
-					{
-						if (m_CVWindowType->GetIVal() == static_cast<int>(EWindowState::Fullscreen))
-						{
-							m_CVWindowType->Set(static_cast<int>(EWindowState::Windowed));
-						}
-						else
-						{
-							m_CVWindowType->Set(static_cast<int>(EWindowState::Fullscreen));
-						}
+			::AdjustWindowRectEx(
+				&targetRect
+				, dwStyle
+				, false
+				, static_cast<DWORD>(::GetWindowLongPtr(hWnd, GWL_EXSTYLE))
+			);
+		}
 
-						// Indicate that we have handled the event
-						*pResult = 0;
-						return true;
-					}
-				}
-				else if (wParam == VK_MENU)
-				{
-					// Windows tries to focus the menu when pressing Alt,
-					// so we need to tell it that we already handled the event
-					*pResult = 0;
-					return true;
-				}
+		// Position the window in the centre of the current monitor
+		int nWidth = (targetRect.right - targetRect.left);
+		int nHeight = (targetRect.bottom - targetRect.top);
+		const RectI bounds = GetBaseDisplayContext()->GetCurrentMonitorBounds();
+
+		// Center window (hide, then move/size, then unhide)
+		ShowWindow(hWnd, SW_HIDE);
+		SetWindowPos(
+			hWnd
+			, (windowMode == EWindowState::Fullscreen) ? HWND_TOPMOST : HWND_NOTOPMOST          // Z-Order (fullscreen exclusive = topmost)
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((bounds.w / 2) - (nWidth / 2))    // upper-left X
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((bounds.h / 2) - (nHeight / 2))   // upper-left Y
+			, nWidth    // Width
+			, nHeight   // Height
+			, (SWP_SHOWWINDOW | SWP_DRAWFRAME)    // Flags
+		);
+		ShowWindow(hWnd, SW_SHOW);
+
+	}
+
+#endif //CRY_PLATFORM_WINDOWS
+}
+
+// Change resolution
+void CD3D9Renderer::UpdateResolution()
+{
+#if CRY_PLATFORM_WINDOWS
+	// The ISystemEventListener will catch the resize/etc event generated from the ::SetWindowPos call below, and resize graphics resources on that event
+
+	// Set self as the active window
+	::SetActiveWindow(static_cast<HWND>(GetHWND()));
+
+	const HWND hWnd = static_cast<HWND>(m_hWnd);
+	RECT targetRect{ 0, 0, 0, 0 };
+
+	// Move/size the window to the new coordinates/resolution in non-editor mode
+	if (!IsEditorMode())
+	{
+		// Get client area dimensions in screen space (to use the top-left point)
+		::GetClientRect(hWnd, &targetRect);
+		::ClientToScreen(hWnd, (POINT*)&targetRect.left);
+
+		// set rectangle width, height (based on existing top-left coords)
+		targetRect.right = targetRect.left + m_CVWidth->GetIVal();
+		targetRect.bottom = targetRect.top + m_CVHeight->GetIVal();
+
+		const EWindowState windowMode = static_cast<EWindowState>(m_CVWindowType->GetIVal());
+
+		// Make adjustments to the rectangle to compensate for current window decorations
+		if (windowMode == EWindowState::Windowed)
+		{
+			::AdjustWindowRectEx(
+				&targetRect
+				, static_cast<DWORD>(::GetWindowLongPtr(hWnd, GWL_STYLE))    // window style
+				, false    // False = No menu
+				, static_cast<DWORD>(::GetWindowLongPtr(hWnd, GWL_EXSTYLE))  // extended style
+			);
+		}
+
+		// Position the window in the centre of the current monitor
+		const int nWidth = (targetRect.right - targetRect.left);
+		const int nHeight = (targetRect.bottom - targetRect.top);
+		const RectI scrnBounds = GetBaseDisplayContext()->GetCurrentMonitorBounds();
+		// Move & size (triggers window events)
+		SetWindowPos(
+			hWnd
+			, (windowMode == EWindowState::Fullscreen) ? HWND_TOPMOST : HWND_NOTOPMOST              // Z-Ordering
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((scrnBounds.w / 2) - (nWidth / 2))    // upper-left X
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((scrnBounds.h / 2) - (nHeight / 2))   // upper-left Y
+			, nWidth   // Width
+			, nHeight  // Height
+			, (SWP_SHOWWINDOW | SWP_FRAMECHANGED)  // Flags
+		);
+
+	}
+#endif // CRY_PLATFORM_WINDOWS
+}
+
+void CD3D9Renderer::OnSystemEvent(ESystemEvent eEvent, UINT_PTR wParam, UINT_PTR lParam)
+{
+
+#ifdef CRY_PLATFORM_WINDOWS
+
+	switch (eEvent)
+	{
+	case ESYSTEM_EVENT_DISPLAY_CHANGED:
+	{
+		if (!IsEditorMode()) 
+		{
+			// Resolution has chaned while out of focus - normally another app changing resolution
+			if (::GetFocus() != static_cast<HWND>(GetHWND()) && IsFullscreen())
+			{
+				// Change back to windowed
+				m_CVWindowType->Set(static_cast<int>(EWindowState::Windowed));
+				// Send event
+				gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, 0, 0);
 			}
 		}
-		break;
-
-	case WM_SIZE:
+	}
+	case ESYSTEM_EVENT_RESIZE:
+	{
+		// Only in editor mode (as the window is externally influenced)
+		if (IsEditorMode())
 		{
-			if (wParam == SIZE_RESTORED)
-			{
-				m_bWindowRestored = true;
-			}
-			if (m_CVWidth != nullptr && !m_isChangingResolution && !IsFullscreen())
-			{
-				m_CVWidth->Set(LOWORD(lParam));
-				m_CVHeight->Set(HIWORD(lParam));
-			}
+			// Set the width (CVars only trigger when input and stored values differ; this avoids a self-triggering loop)
+			m_CVWidth->Set((int)wParam);
+			m_CVHeight->Set((int)lParam);
 		}
-		break;
-
-	case WM_ACTIVATE:
-		{
-			// Toggle DXGI fullscreen state when user alt-tabs out
-			// This is required since we explicitly set the DXGI_MWA_NO_WINDOW_CHANGES, forbidding DXGI from handling this itself
-			if (IsFullscreen())
-			{
-				gcpRendD3D->ExecuteRenderThreadCommand([wParam]()
-				{
-					gcpRendD3D->GetBaseDisplayContext()->SetFullscreenState(wParam != 0);
-				}, ERenderCommandFlags::None);
-			}
-		}
+	}
+	break;
+	default:
 		break;
 	}
-	return false;
+#endif //CRY_PLATFORM_WINDOWS
+
 }
-#endif // CRY_PLATFORM_WINDOWS
 
 #include "DeviceInfo.inl"
 

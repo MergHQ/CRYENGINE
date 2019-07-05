@@ -2,37 +2,27 @@
 
 #include "StdAfx.h"
 #include "UVMappingEditor.h"
-#include "QViewportSettings.h"
-#include "Core/Helper.h"
-#include "Core/Model.h"
-#include "Material/MaterialManager.h"
+
 #include "Core/UVIslandManager.h"
-#include "UIs/UICommon.h"
-#include "UIs/DesignerPanel.h"
-#include "Core/UVIslandManager.h"
-#include "Util/ElementSet.h"
-#include "Core/SmoothingGroupManager.h"
-#include "UVCursor.h"
-#include "CryIcon.h"
-#include "Controls/QMenuComboBox.h"
-#include "DesignerSession.h"
-#include "Objects/DisplayContext.h"
+#include "DesignerEditor.h"
+
+// EditorQt
+#include <Material/MaterialManager.h>
+
+// EditorCommon
+#include <Controls/QMenuComboBox.h>
+#include <QViewportSettings.h>
 
 #include <QBoxLayout>
-#include <QGridLayout>
-#include <QSplitter>
-#include <QToolBar>
-#include <QMenuBar>
-#include <QShortcut>
-#include <QToolButton>
 #include <QCheckBox>
-#include <QKeySequence>
-#include <QLabel>
+#include <QGridLayout>
+#include <QToolBar>
+#include <QToolButton>
 
 namespace Designer {
 namespace UVMapping {
 
-UVMappingEditor* g_pUVMappingEditor = NULL;
+UVMappingEditor* g_pUVMappingEditor = nullptr;
 
 UVMappingEditor* GetUVEditor()
 {
@@ -42,6 +32,8 @@ UVMappingEditor* GetUVEditor()
 UVMappingEditor::UVMappingEditor()
 {
 	GetIEditor()->RegisterNotifyListener(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &UVMappingEditor::InitializeMaterialComboBox);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditModeChanged.Connect(this, &UVMappingEditor::OnEditModeChanged);
 	GetIEditor()->GetMaterialManager()->AddListener(this);
 
 	m_PrevTool = m_Tool = eUVMappingTool_Island;
@@ -51,7 +43,7 @@ UVMappingEditor::UVMappingEditor()
 	m_bLButtonDown = false;
 	m_bHitGizmo = false;
 	m_PrevPivotType = ePivotType_Selection;
-	m_CameraZAngle = PI * 0.5f;
+	m_CameraZAngle = static_cast<float>(PI * 0.5);
 
 	m_ElementSet = new UVElementSet;
 	m_SharedElementSet = new UVElementSet;
@@ -72,7 +64,11 @@ UVMappingEditor::UVMappingEditor()
 
 	setContentsMargins(0, 0, 0, 0);
 
-	m_pViewport = new QViewport(gEnv, 0);
+	IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc;
+	graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+	graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_FORWARD_MINIMAL | SHDF_ALLOWHDR;
+
+	m_pViewport = new QViewport(gEnv, graphicsPipelineDesc, 0);
 	m_pViewport->AddConsumer(m_pGizmo.get());
 	m_pViewportAdapter.reset(new CDisplayViewportAdapter(m_pViewport));
 
@@ -117,11 +113,31 @@ UVMappingEditor::UVMappingEditor()
 
 UVMappingEditor::~UVMappingEditor()
 {
+	GetIEditor()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
+	GetIEditor()->GetLevelEditorSharedState()->signalEditModeChanged.DisconnectObject(this);
 	GetIEditor()->UnregisterNotifyListener(this);
 	m_pGizmo->RemoveCallback(this);
 	GetIEditor()->GetMaterialManager()->RemoveListener(this);
 	DesignerSession::GetInstance()->signalDesignerEvent.DisconnectObject(this);
 	g_pUVMappingEditor = NULL;
+}
+
+void UVMappingEditor::OnEditModeChanged(CLevelEditorSharedState::EditMode editMode)
+{
+	switch (editMode)
+	{
+	case CLevelEditorSharedState::EditMode::Move:
+		OnTranslation();
+		break;
+
+	case CLevelEditorSharedState::EditMode::Rotate:
+		OnRotation();
+		break;
+
+	case CLevelEditorSharedState::EditMode::Scale:
+		OnScale();
+		break;
+	}
 }
 
 void UVMappingEditor::CreateTexturePanelMesh()
@@ -232,7 +248,7 @@ void UVMappingEditor::OnMouseEvent(const SMouseEvent& me_)
 
 	if (me.type == SMouseEvent::TYPE_PRESS && me.button == SMouseEvent::BUTTON_LEFT)
 	{
-		int axis;
+		CLevelEditorSharedState::Axis axis;
 		m_bLButtonDown = true;
 		m_bHitGizmo = m_pGizmo->HitTest(me.viewport, me.x, me.y, axis);
 		if (!m_bHitGizmo)
@@ -263,7 +279,7 @@ void UVMappingEditor::OnRender(const SRenderContext& rc)
 {
 	IRenderAuxGeom* aux = gEnv->pRenderer->GetIRenderAuxGeom();
 
-	DisplayContext dc;
+	SDisplayContext dc;
 	m_pViewportAdapter->EnableXYViewport(true);
 	dc.SetView(m_pViewportAdapter.get());
 
@@ -314,30 +330,9 @@ void UVMappingEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
 	{
-	case eNotify_OnEditModeChange:
-		switch (GetIEditor()->GetEditMode())
-		{
-		case eEditModeMove:
-			OnTranslation();
-			break;
-
-		case eEditModeRotate:
-			OnRotation();
-			break;
-
-		case eEditModeScale:
-			OnScale();
-			break;
-		}
-		break;
-
 	case eNotify_OnIdleUpdate:
 		OnIdle();
 		UpdateObject();
-		break;
-
-	case eNotify_OnEditToolEndChange:
-		InitializeMaterialComboBox();
 		break;
 
 	case eNotify_OnSelectionChange:
@@ -401,7 +396,7 @@ void UVMappingEditor::UpdateObject()
 	}
 }
 
-void UVMappingEditor::RenderUnwrappedMesh(DisplayContext& dc)
+void UVMappingEditor::RenderUnwrappedMesh(SDisplayContext& dc)
 {
 	if (!m_pObject)
 		return;
@@ -422,7 +417,7 @@ void UVMappingEditor::RenderUnwrappedMesh(DisplayContext& dc)
 	}
 }
 
-void UVMappingEditor::RenderUnwrappedPolygon(DisplayContext& dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB color)
+void UVMappingEditor::RenderUnwrappedPolygon(SDisplayContext& dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB color)
 {
 	if (!pPolygon || (!m_bViewAllUVIslands && pPolygon->GetSubMatID() != GetSubMatID()))
 		return;
@@ -462,7 +457,7 @@ void UVMappingEditor::SetSubMatID(int nSubMatID)
 	}
 }
 
-void UVMappingEditor::RenderElements(DisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet)
+void UVMappingEditor::RenderElements(SDisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet)
 {
 	dc.SetColor(color);
 	for (int i = 0, iCount(pUVElementSet->GetCount()); i < iCount; ++i)
@@ -643,9 +638,9 @@ void UVMappingEditor::OnUnmap()
 void UVMappingEditor::OnRotateCamera()
 {
 	SViewportState vs = m_pViewport->GetState();
-	m_CameraZAngle += PI * 0.5f;
-	if (m_CameraZAngle + 0.01f > 2.0f * PI)
-		m_CameraZAngle = 0;
+	m_CameraZAngle += static_cast<float>(PI * 0.5);
+	if (m_CameraZAngle + 0.01f > static_cast<float>(2.0 * PI))
+		m_CameraZAngle = 0.0f;
 	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(vs.cameraTarget.q));
 	ypr.x = m_CameraZAngle;
 	vs.cameraTarget.q = Quat(CCamera::CreateOrientationYPR(ypr));
@@ -919,4 +914,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PyScaleMode, uvma
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PySelectAll, uvmapping, select_all, "Select all", "uvmapping.select_all")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PyRefresh, uvmapping, refresh, "Refresh islands to remove unused and sync", "uvmapping.refresh")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(DesignerUVMappingCommand::PyGoto, uvmapping, goto, "Moves the camera to the selected island", "uvmapping.goto")
-

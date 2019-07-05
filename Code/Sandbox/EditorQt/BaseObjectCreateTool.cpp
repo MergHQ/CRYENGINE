@@ -2,6 +2,9 @@
 #include <StdAfx.h>
 #include "BaseObjectCreateTool.h"
 
+#include "IEditorImpl.h"
+#include "IUndoManager.h"
+#include <Objects/BaseObject.h>
 #include <QEvent>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
@@ -134,4 +137,3 @@ void CBaseObjectCreateTool::FinishCreation(bool restart, CViewport* pView, const
 		Abort();
 	}
 }
-

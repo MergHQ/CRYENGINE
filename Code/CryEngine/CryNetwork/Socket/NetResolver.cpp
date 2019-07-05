@@ -97,7 +97,7 @@ private:
 template<>
 void CResolverToNumericStringVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 class CResolverToNumericStringVisitor_LocalBuffer
@@ -280,7 +280,7 @@ private:
 template<>
 void CResolverToStringVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 #endif
 
@@ -574,7 +574,7 @@ private:
 template<>
 void CIsPrivateAddrVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 }
@@ -746,7 +746,7 @@ private:
 template<>
 void CConvertAddrVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 bool ConvertAddr(const TNetAddress& addrIn, CRYSOCKADDR* pSockAddr, int* addrLen)

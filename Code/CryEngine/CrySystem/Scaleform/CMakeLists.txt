@@ -48,7 +48,7 @@ if(OPTION_SCALEFORMHELPER AND NOT (ORBIS OR ANDROID))
 	target_compile_definitions( ${THIS_PROJECT} PRIVATE -DCRY_IS_SCALEFORM_HELPER)
 	target_link_libraries(${THIS_PROJECT} PRIVATE zlib expat)
 	use_scaleform()
-	if (WIN32 OR WIN64)
+	if (WINDOWS)
 		target_link_libraries(${THIS_PROJECT} PRIVATE Ole32 Winmm)
 	endif()
 	if (LINUX)
@@ -57,6 +57,40 @@ if(OPTION_SCALEFORMHELPER AND NOT (ORBIS OR ANDROID))
 	if (APPLE)
 		target_link_libraries(${THIS_PROJECT} PRIVATE png16)
 	endif()
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-parentheses
+			-Wno-reorder
+			-Wno-unused-value
+			-Wno-unknown-pragmas
+			-Wno-format
+			-Wno-unused-private-field
+			-Wno-empty-body
+			-Wno-switch
+			-Wno-unused-function
+		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-unknown-pragmas
+			-Wno-unused-const-variable
+			-Wno-maybe-uninitialized
+			-Wno-strict-aliasing
+			-Wno-multichar
+			-Wno-char-subscripts
+			-Wno-parentheses
+			-Wno-comment
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
+    endif()
 else()
 	CryFileContainer(CryScaleformHelper SOLUTION_FOLDER "CryEngine")
 endif()

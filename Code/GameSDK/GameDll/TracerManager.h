@@ -18,6 +18,8 @@ History:
 # pragma once
 #endif
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
 enum
 {
 	kTracerFlag_scaleToDistance				= BIT(0),

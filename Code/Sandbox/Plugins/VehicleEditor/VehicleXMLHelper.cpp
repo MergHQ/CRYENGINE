@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "VehicleXMLHelper.h"
 #include <Util/Variable.h>
+#include <CrySystem/ISystem.h>
 
 #include <algorithm>
 
@@ -940,4 +941,3 @@ void DefinitionTable::Dump()
 		CryLog("## %s is a %s", (const char*)it->first, name, type);
 	}
 }
-

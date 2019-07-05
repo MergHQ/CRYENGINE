@@ -2,8 +2,11 @@
 
 #include "StdAfx.h"
 #include "Plugin.h"
-#include "Menu/AbstractMenu.h"
-#include <AssetSystem/AssetManager.h>
+
+#include <AssetSystem/Browser/AssetBrowser.h>
+#include <EditorFramework/PersonalizationManager.h>
+#include <Menu/AbstractMenu.h>
+
 #include <CryCore/Platform/platform_impl.inl>
 
 // Plugin instance
@@ -16,11 +19,11 @@ CDependencyGraph::CDependencyGraph()
 	CRY_ASSERT(g_pInstance == nullptr);
 	g_pInstance = this;
 
-	GetIEditor()->GetAssetManager()->signalContextMenuRequested.Connect([](CAbstractMenu& menu, const std::vector<CAsset*>& assets, std::shared_ptr<IUIContext> context)
+	CAssetBrowser::s_signalContextMenuRequested.Connect([](CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::vector<string>& folders, std::shared_ptr<IUIContext> context)
 	{
 		if (assets.size() == 1)
 		{
-			auto action = menu.CreateAction(QObject::tr("Show Dependency Graph"), menu.FindSectionByName("Assets"));
+			auto action = menu.CreateAction(QObject::tr("Show Dependency Graph"), menu.FindOrCreateSectionByName("Assets"));
 			QObject::connect(action, &QAction::triggered, [asset = assets.front()]()
 			{ 
 				GetIEditor()->ExecuteCommand("asset.show_dependency_graph '%s'", asset->GetMetadataFile());
@@ -31,7 +34,7 @@ CDependencyGraph::CDependencyGraph()
 
 CDependencyGraph::~CDependencyGraph()
 {
-	GetIEditor()->GetAssetManager()->signalContextMenuRequested.DisconnectById((uintptr_t)this);
+	CAssetBrowser::s_signalContextMenuRequested.DisconnectById((uintptr_t)this);
 	CRY_ASSERT(g_pInstance == this);
 	g_pInstance = nullptr;
 }
@@ -50,4 +53,3 @@ const QVariant& CDependencyGraph::GetPersonalizationProperty(const QString& prop
 {
 	return GetIEditor()->GetPersonalizationManager()->GetProperty(GetPluginName(), propName);
 }
-

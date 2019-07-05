@@ -299,7 +299,7 @@ float CTargetTrackPlayerModifier::GetModValue(const CTargetTrack* pTrack,
 	{
 		CAIObject* owner = ownerWeak.GetAIObject();
 
-		if (CAIActor* ownerActor = owner->CastToCAIActor())
+		if (owner->CastToCAIActor() != nullptr)
 		{
 			CWeakRef<CAIObject> targetWeak = pTrack->GetAITarget();
 

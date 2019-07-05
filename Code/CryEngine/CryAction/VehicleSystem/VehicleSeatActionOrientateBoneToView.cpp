@@ -138,7 +138,7 @@ Vec3 CVehicleSeatActionOrientateBoneToView::GetDesiredAimPosition() const
 Vec3 CVehicleSeatActionOrientateBoneToView::GetCurrentLookPosition() const
 {
 	ISkeletonPose* pSkeleton = GetSkeleton();
-	CRY_ASSERT_MESSAGE(pSkeleton, "CVehicleSeatActionOrientateBoneToView::GetCurrentLookPosition - Couldn't get ISkeletonPose from vehicle entity");
+	CRY_ASSERT(pSkeleton, "CVehicleSeatActionOrientateBoneToView::GetCurrentLookPosition - Couldn't get ISkeletonPose from vehicle entity");
 
 	QuatT lookQuat = pSkeleton->GetAbsJointByID(m_LookBoneId);
 	return m_pVehicle->GetEntity()->GetWorldPos() + lookQuat.t;

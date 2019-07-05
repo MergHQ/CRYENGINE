@@ -61,7 +61,7 @@ public:
 		{
 			m_asyncQueue.FlushNextPresent(); VK_ASSERT(!IsPresentScheduled(), "Flush didn't dry out all outstanding Present() calls!");
 			VkResult result = vkAcquireNextImageKHR(m_pDevice->GetVkDevice(), m_KHRSwapChain, ~0ULL, Semaphore, VK_NULL_HANDLE, &m_nCurrentBackBufferIndex);
-			VK_ASSERT(result == VK_SUCCESS);
+			CRY_VULKAN_VERIFY(result == VK_SUCCESS, "");
 			m_bChangedBackBufferIndex = false;
 		}
 		// ... and inject it as sync-primitive into the core-command-list - which is the one active at the moment of this call (which can be mid-frame)
@@ -101,6 +101,7 @@ public:
 	void    UnblockBuffers(CCommandList* pCommandList);
 	void    VerifyBufferCounters();
 	void    ForfeitBuffers();
+	void    FlushAndWaitForBuffers();
 
 private:
 	CDevice*                 m_pDevice;

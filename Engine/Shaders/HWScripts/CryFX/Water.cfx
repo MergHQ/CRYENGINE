@@ -287,17 +287,10 @@ SWaterParams GetWaterParams()
 {
 	SWaterParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.mReflProj = cbWater.mReflProj;
 	params.OceanParams0 = cbWater.OceanParams0;
 	params.OceanParams1 = cbWater.OceanParams1;
 	params.cOceanFogColorDensity = cbWater.cOceanFogColorDensity;
-#else
-	params.mReflProj = mReflProj;
-	params.OceanParams0 = OceanParams0;
-	params.OceanParams1 = OceanParams1;
-	params.cOceanFogColorDensity = cOceanFogColorDensity;
-#endif
 
 	return params;
 }
@@ -1053,16 +1046,11 @@ pixout WaterPS(v2f_hs IN)
 #if %ENVIRONMENT_MAP
 	half3 lerpedNormal = lerp(half3(0,0,1), vNormal, ReflectionBumpScale);
 	half3 R = reflect(-vView, lerpedNormal);
-	half4 cReflCM = GetEnvironmentCMap(envCubeTex, R, fGloss);
+	half4 cReflCM = GetEnvironmentCMap(envCubeTex, ssMaterialTrilinearClamp, R, fGloss);
 	half3 cSpecularAcc = DecodeHDRCubemap(cReflCM) * ReflectionScale;
-
 #else
-
 	half2 reflNewst = (IN.envTC.xy / IN.envTC.w) + vNormal.xy * ReflectionBumpScale;
-#if %_RT_COMPUTE_SKINNING
 	half3 cSpecularAcc = oceanReflectionTex.Sample(ssMaterialTrilinearClamp, reflNewst.xy) / PS_HDR_RANGE_ADAPT_MAX;
-#endif
-
 #endif
 
 
@@ -1161,7 +1149,7 @@ pixout WaterPS(v2f_hs IN)
 	half EdotL = saturate( dot( -CV_SunLightDir.xyz, vView ) );
 	float waveHeightFactor = IN.vPosWS.w * 0.5 + saturate(fNdotE) * (1 - saturate( vNormal.z ));
 #if %ENVIRONMENT_MAP
-	refractColor += surfaceSSSColor * GetEnvironmentCMap( envCubeTex, -vView.xyz, clamp( waveHeightFactor, 0.2, 0.7 ) ) * waveHeightFactor * fA;
+	refractColor += surfaceSSSColor * GetEnvironmentCMap( envCubeTex, ssMaterialTrilinearClamp, -vView.xyz, clamp( waveHeightFactor, 0.2, 0.7 ) ) * waveHeightFactor * fA;
 #endif
 	refractColor += surfaceSSSColor * (EdotL * EdotL) * (params.cOceanFogColorDensity.xyz * CV_SunColor.xyz) * waveHeightFactor * fA;
 #endif

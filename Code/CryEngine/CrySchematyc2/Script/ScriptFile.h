@@ -118,7 +118,7 @@ namespace Schematyc2
 		virtual const IScriptClassBase* GetClassBase(const SGUID& guid) const override;
 		virtual EVisitStatus VisitClassBases(const ScriptClassBaseVisitor& visitor, const SGUID& scopeGUID, bool bRecurseHierarchy) override;
 		virtual EVisitStatus VisitClassBases(const ScriptClassBaseConstVisitor& visitor, const SGUID& scopeGUID, bool bRecurseHierarchy) const override;
-		virtual IScriptStateMachine* AddStateMachine(const SGUID& scopeGUID, const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID) override;
+		virtual IScriptStateMachine* AddStateMachine(const SGUID& scopeGUID, const char* szName, EStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID) override;
 		virtual IScriptStateMachine* GetStateMachine(const SGUID& guid) override;
 		virtual const IScriptStateMachine* GetStateMachine(const SGUID& guid) const override;
 		virtual EVisitStatus VisitStateMachines(const ScriptStateMachineVisitor& visitor, const SGUID& scopeGUID, bool bRecurseHierarchy) override;

@@ -150,7 +150,6 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 				{
 					const SAnimClip& animClip = clipSequence[c];
 
-					float time = 0.0f;
 					if (animClip.blend.exitTime < 0.0f)
 					{
 						timeTally += lastDuration;
@@ -223,9 +222,7 @@ bool InsertClipTracksToNode(CSequencerNode* node, const SFragmentData& fragData,
 				for (uint32 c = 0; c < numClips; c++)
 				{
 					const SProceduralEntry& procClip = clipSequence[c];
-					float blendDuration = procClip.blend.duration;
 
-					float time = 0.0f;
 					timeTally += procClip.blend.exitTime;
 					if ((endTime > 0.0f) && (timeTally > endTime))
 					{
@@ -330,7 +327,7 @@ void GetFragmentFromClipTracks(CFragment& fragment, CSequencerNode* animNode, ui
 
 			float lastTime = fragStartTime;
 			bool foundBlock = false;
-			bool lastClipTypeMatched = false;
+
 			for (uint32 c = 0; c < numKeys; c++)
 			{
 				animTrack->GetKey(c, &clipKey);
@@ -1340,7 +1337,7 @@ void CFragmentHistory::SaveSequence(const char* filename)
 void CFragmentHistory::UpdateScopeMasks(const SMannequinContexts* contexts, const TagState& globalTags)
 {
 	const uint32 numScopes = contexts->m_controllerDef->m_scopeIDs.GetNum();
-	for (THistoryBuffer::iterator iter = m_items.begin(); iter != m_items.end(); iter++)
+	for (THistoryBuffer::iterator iter = m_items.begin(); iter != m_items.end(); ++iter)
 	{
 		SHistoryItem& item = *iter;
 		if (item.type == SHistoryItem::Fragment)
@@ -1364,8 +1361,6 @@ void CTagControl::Init(CVarBlock* pVarBlock, const CTagDefinition& tagDef, TagSt
 	m_tagGroupList.clear();
 
 	const uint32 numTags = tagDef.GetNum();
-
-	const char* lastGroupName = NULL;
 	uint32 numGroups = tagDef.GetNumGroups();
 	for (uint32 i = 0; i < numGroups; i++)
 	{
@@ -1501,4 +1496,3 @@ void CTagControl::SetCallback(IVariable::OnSetCallback func)
 		var.AddOnSetCallback(func);
 	}
 }
-

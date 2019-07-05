@@ -17,7 +17,9 @@
 
 //#include "Utility/CryWatch.h"
 
+#if !defined(_RELEASE)
 #define ENABLE_NAN_CHECK
+#endif
 
 #undef CHECKQNAN_FLT
 #ifdef ENABLE_NAN_CHECK
@@ -47,9 +49,10 @@ static const float IDLE_CHECK_MOVEMENT_TIMEOUT = 3.0f;
 // ~IDLE Checking stuff
 
 #define lerpf(a, b, l) (a + (l * (b - a)))
+
+#if !defined(_RELEASE)
 static float s_dbg_my_white[4] = {1,1,1,1};
-
-
+#endif
 
 CPlayerMovementController::CPlayerMovementController(CPlayer* pPlayer) :
 	m_pPlayer(pPlayer),
@@ -116,9 +119,6 @@ inline float filterFloat(float value, float target, float maxChange)
 
 void CPlayerMovementController::ApplyControllerAcceleration( float& xRot, float& zRot, float dt )
 {
-	float initialRotX = xRot;
-	float initialRotZ = zRot;
-
 	if(g_pGameCVars->pl_aim_acceleration_enabled)
 	{
 		//This is now a much simpler acceleration model
@@ -162,7 +162,7 @@ bool CPlayerMovementController::RequestMovement( CMovementRequest& request )
 	{
 		if (IVehicle* pVehicle = m_pPlayer->GetLinkedVehicle())
 		{
-			if (IMovementController* pController = pVehicle->GetPassengerMovementController(m_pPlayer->GetEntityId()))
+			if (pVehicle->GetPassengerMovementController(m_pPlayer->GetEntityId()) != nullptr)
 			{
 				IVehicleSeat* pSeat = pVehicle->GetSeatForPassenger(m_pPlayer->GetEntityId());
 				pSeat->ProcessPassengerMovementRequest(request);
@@ -414,9 +414,11 @@ ILINE static f32 GetYaw( const Vec3& v0, const Vec3& v1 )
   return a;
 }
 
-static float yellow[4] = {1,1,0,1};
+#if !defined(_RELEASE)
 static CTimeValue lastTime;
+static float yellow[4] = {1,1,0,1};
 static int y = 100;
+#endif
 
 #if !defined(_RELEASE)
 static void DebugDrawWireFOVCone(IRenderer* pRend, const Vec3& pos, const Vec3& dir, float rad, float fov, const ColorB& col)
@@ -759,8 +761,6 @@ void CPlayerMovementController::Update( float frameTime, SActorFrameMovementPara
 	// Look and aim direction
 
 	Vec3 eyePosition(playerPos.x, playerPos.y, m_currentMovementState.eyePosition.z);
-
-	EMovementControlMethod mcmH = pAnimatedCharacter ? pAnimatedCharacter->GetMCMH() : eMCM_Undefined;
 
 	bool hasLookTarget = false;
 	Vec3 tgt = eyePosition + 5.0f * currentBodyDirection;
@@ -1618,7 +1618,7 @@ void CPlayerMovementController::UpdateMovementState( SMovementState& state )
 			state.animationEyeDirection.zero();
 
 			//Try to retrieve eye direction, or failing that head direction
-			if( ISkeletonPose* pSkelPose = pCharacter->GetISkeletonPose())
+			if(pCharacter->GetISkeletonPose() != nullptr)
 			{
 				if(m_pPlayer->HasBoneID(BONE_HEAD))
 				{

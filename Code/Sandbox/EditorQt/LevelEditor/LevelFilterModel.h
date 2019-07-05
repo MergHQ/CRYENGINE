@@ -33,4 +33,3 @@ public:
 private:
 	mutable CPathIsLevelCache m_cache;
 };
-

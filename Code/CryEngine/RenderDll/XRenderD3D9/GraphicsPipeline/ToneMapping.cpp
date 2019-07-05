@@ -2,32 +2,25 @@
 
 #include "StdAfx.h"
 #include "ToneMapping.h"
-
-#include "SunShafts.h"
 #include "ColorGrading.h"
-#include "DriverD3D.h"
+#include "Bloom.h"
+#include "SunShafts.h"
 #include "D3DPostProcess.h"
 
 #include <Common/RenderDisplayContext.h>
 
 void CToneMappingStage::Execute()
 {
-	// 0 is used for disable debugging and 1 is used to just show the average and estimated luminance, and exposure values.
-	if (CRenderer::CV_r_HDRDebug > 1)
-	{
-		ExecuteDebug();
-		return;
-	}
-
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TONEMAPPING");
 
-	CSunShaftsStage*    pSunShaftsStage    = (CSunShaftsStage   *)GetStdGraphicsPipeline().GetStage(eStage_Sunshafts);
-	CColorGradingStage* pColorGradingStage = (CColorGradingStage*)GetStdGraphicsPipeline().GetStage(eStage_ColorGrading);
+	CSunShaftsStage* pSunShaftsStage = m_graphicsPipeline.GetStage<CSunShaftsStage>();
+	CBloomStage* pBloomStage = m_graphicsPipeline.GetStage<CBloomStage>();
+	CColorGradingStage* pColorGradingStage = m_graphicsPipeline.GetStage<CColorGradingStage>();
 
-	bool bSunShafts = false;
-	bool bHighQualitySunshafts = false;
-	bool bColorGrading = false;
-	bool bBloomEnabled = CRenderer::CV_r_HDRBloom && CRenderer::CV_r_PostProcess;
+	bool bColorGradingEnabled = pColorGradingStage->IsStageActive(EShaderRenderingFlags(0));
+	bool bSunShaftsEnabled = pSunShaftsStage->IsStageActive(EShaderRenderingFlags(0));
+	bool bBloomEnabled = pBloomStage->IsStageActive(EShaderRenderingFlags(0));
 	bool bApplyDithering = CRenderer::CV_r_HDRDithering && CRenderer::CV_r_PostProcess;
 	bool bVignettingEnabled = CRenderer::CV_r_HDRVignetting && CRenderer::CV_r_PostProcess;
 
@@ -35,47 +28,48 @@ void CToneMappingStage::Execute()
 	CTexture* pSunShaftsTex = CRendererResources::s_ptexBlack;
 	CTexture* pColorChartTex = CRendererResources::s_ptexBlack;
 
-	bSunShafts = pSunShaftsStage->IsActive();
-
-	if (bSunShafts)
+	if (bSunShaftsEnabled)
 		pSunShaftsTex = pSunShaftsStage->GetFinalOutputRT();
 
-	if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
+	if (bColorGradingEnabled)
 	{
-		bColorGrading = true;
-		pColorChartTex = pColorChartTexTentative;
+		if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
+			pColorChartTex = pColorChartTexTentative;
+		else
+			bColorGradingEnabled = false;
 	}
 
-	int featureMask = ((int)bSunShafts << 1) | ((int)bColorGrading << 2) | ((int)bBloomEnabled << 3) |
+	int featureMask = ((int)bSunShaftsEnabled << 1) | ((int)bColorGradingEnabled << 2) | ((int)bBloomEnabled << 3) |
 	                  ((CRenderer::CV_r_HDREyeAdaptationMode & 0xF) << 5) | ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
-	if (m_passToneMapping.IsDirty(featureMask, pSunShaftsTex->GetTextureID(), pColorChartTex->GetTextureID()))
+	if (m_passToneMapping.IsDirty(featureMask, pSunShaftsTex->GetTextureID(), pColorChartTex->GetTextureID(), CRendererResources::s_ptexCurLumTexture->GetTextureID()))
 	{
 		uint64 rtMask = 0;
 		if (CRenderer::CV_r_HDREyeAdaptationMode == 2)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-		if (bColorGrading)
+		if (bColorGradingEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 		if (bVignettingEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 		if (bBloomEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE3];
-		if (bSunShafts)
+		if (bSunShaftsEnabled)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 		if (bApplyDithering)
 			rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE6];
 
+		// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
 		static CCryNameTSCRC techToneMapping("HDRFinalPass");
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
-		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
+		m_passToneMapping.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexDisplayTargetDst);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
 		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 		m_passToneMapping.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);	// Enables reflection constants addition in the shader
 
-		CTexture* pBloomTex = bBloomEnabled ? CRendererResources::s_ptexHDRFinalBloom : CRendererResources::s_ptexBlack;
+		CTexture* pBloomTex = bBloomEnabled ? m_graphicsPipelineResources.m_pTexHDRFinalBloom : CRendererResources::s_ptexBlack;
 
 		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTexture(0, CRendererResources::s_ptexHDRTarget);
+		m_passToneMapping.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 		m_passToneMapping.SetTexture(1, CRendererResources::s_ptexCurLumTexture);
 		m_passToneMapping.SetTexture(2, pBloomTex);
 		m_passToneMapping.SetTexture(7, CRendererResources::s_ptexVignettingMap);
@@ -102,7 +96,7 @@ void CToneMappingStage::Execute()
 	m_passToneMapping.SetConstant(bloomColorName, hdrSetupParams[1] * Vec4(Vec3(1.0f / 8.0f), 1.0f), eHWSC_Pixel); // Division by 8.0f was done in shader before, remove this at some point
 
 	Vec4 shaftsSunCol(0, 0, 0, 0);
-	if (bSunShafts)
+	if (bSunShaftsEnabled)
 	{
 		Vec4 sunShaftParams[2];
 		pSunShaftsStage->GetCompositionParams(sunShaftParams[0], sunShaftParams[1]);
@@ -120,13 +114,14 @@ void CToneMappingStage::Execute()
 
 void CToneMappingStage::ExecuteDebug()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TONEMAPPING-DEBUG");
 
 	CShader* pShader = CShaderMan::s_shHDRPostProcess;
 
 	int featureMask = ((CRenderer::CV_r_HDRDebug & 0xF) << 9);
 
-	if (m_passToneMapping.IsDirty(featureMask))
+	if (m_passToneMapping.IsDirty(featureMask, CRendererResources::s_ptexCurLumTexture->GetTextureID()))
 	{
 		uint64 rtMask = 0;
 
@@ -139,18 +134,18 @@ void CToneMappingStage::ExecuteDebug()
 		static CCryNameTSCRC techToneMapping("HDRFinalDebugPass");
 		const auto primFlags = CRenderer::CV_r_HDRDebug == 2 ? CRenderPrimitive::eFlags_ReflectShaderConstants_PS : CRenderPrimitive::eFlags_None;
 
+		// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
-		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
+		m_passToneMapping.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexDisplayTargetDst);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
-		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);	
+		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 		m_passToneMapping.SetPrimitiveFlags(primFlags);
 		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTexture(0, CRendererResources::s_ptexHDRTarget);
+		m_passToneMapping.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 		m_passToneMapping.SetTexture(1, CRendererResources::s_ptexCurLumTexture);
 		m_passToneMapping.SetRequireWorldPos(true);
 		m_passToneMapping.SetRequirePerViewConstantBuffer(true);
 	}
-
 
 	if (CRenderer::CV_r_HDRDebug == 2)
 	{
@@ -170,15 +165,12 @@ void CToneMappingStage::ExecuteFixedExposure(CTexture* pColorTex, CTexture* pDep
 {
 	PROFILE_LABEL_SCOPE("TONEMAPPING_FIXED_EXPOSURE");
 
-	CRenderView* pRenderView = RenderView();
-	const CRenderOutput* pOutput = pRenderView->GetRenderOutput();
-
 //	ASSERT_LEGACY_PIPELINE
 	return;
-	// TODO: tonemap in-place (sadly)
 
-	CTexture* pSrcTex = CRendererResources::s_ptexHDRTarget;
-	CTexture* pDstTex = CRendererResources::s_ptexSceneDiffuse;
+	// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
+	CTexture* pSrcTex = m_graphicsPipelineResources.m_pTexHDRTarget;
+	CTexture* pDstTex = m_graphicsPipelineResources.m_pTexDisplayTargetDst;
 
 	auto& pass = m_passFixedExposureToneMapping;
 

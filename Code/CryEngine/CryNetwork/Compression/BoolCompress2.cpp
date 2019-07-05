@@ -107,19 +107,19 @@ ILINE CBoolCompress2::SSymLow CBoolCompress2::GetSymLow(bool isLastValue, uint8 
 }
 #endif
 
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
 
-#if defined(CRY_UNIT_TESTING) && USE_MEMENTO_PREDICTORS
+#if defined(CRY_TESTING) && USE_MEMENTO_PREDICTORS
 
-CRY_UNIT_TEST_SUITE(NetCompression)
+CRY_TEST_SUITE(NetCompression)
 {
 
 	CBoolCompress2::TMemento ChangeMemento(const CBoolCompress2& pol, bool value, CBoolCompress2::TMemento m)
 	{
 		pol.UpdateMemento(m, value);
-		CRY_UNIT_TEST_ASSERT(m.lastValue == value);
-		CRY_UNIT_TEST_ASSERT(m.prob > 0);
-		CRY_UNIT_TEST_ASSERT(m.prob <= CBoolCompress2::StateRange);
+		CRY_TEST_ASSERT(m.lastValue == value);
+		CRY_TEST_ASSERT(m.prob > 0);
+		CRY_TEST_ASSERT(m.prob <= CBoolCompress2::StateRange);
 		return m;
 	}
 
@@ -132,7 +132,7 @@ CRY_UNIT_TEST_SUITE(NetCompression)
 		for (int i = 0; i < 50; i++)
 		{
 			CBoolCompress2::TMemento m1 = ChangeMemento(pol, value, m);
-			CRY_UNIT_TEST_ASSERT(m1.prob >= m.prob);
+			CRY_TEST_ASSERT(m1.prob >= m.prob);
 		}
 	}
 
@@ -144,11 +144,11 @@ CRY_UNIT_TEST_SUITE(NetCompression)
 		for (int i = 0; i < 50; i++)
 		{
 			CBoolCompress2::TMemento m1 = ChangeMemento(pol, !m.lastValue, m);
-			CRY_UNIT_TEST_ASSERT(m1.prob <= m.prob);
+			CRY_TEST_ASSERT(m1.prob <= m.prob);
 		}
 	}
 
-	CRY_UNIT_TEST(NoOverflow)
+	CRY_TEST(NoOverflow)
 	{
 		NoOverflowHelper1(true);
 		NoOverflowHelper1(false);
@@ -166,9 +166,9 @@ CRY_UNIT_TEST_SUITE(NetCompression)
 		CCommInputStream in(buffer, len);
 		bool x;
 		c.ReadValue(m, in, x);
-		CRY_UNIT_TEST_ASSERT(x == value);
+		CRY_TEST_ASSERT(x == value);
 		#if CRC8_ENCODING
-		CRY_UNIT_TEST_ASSERT(out.GetCRC() == in.GetCRC());
+		CRY_TEST_ASSERT(out.GetCRC() == in.GetCRC());
 		#endif
 	}
 	#else
@@ -182,14 +182,14 @@ CRY_UNIT_TEST_SUITE(NetCompression)
 		CNetInputSerializeImpl in(buffer, len);
 		bool x;
 		c.ReadValue(m, &in, x);
-		CRY_UNIT_TEST_ASSERT(x == value);
+		CRY_TEST_ASSERT(x == value);
 		#if CRC8_ENCODING
-		CRY_UNIT_TEST_ASSERT(out.GetCRC() == in.GetCRC());
+		CRY_TEST_ASSERT(out.GetCRC() == in.GetCRC());
 		#endif
 	}
 	#endif
 
-	CRY_UNIT_TEST(EncDec)
+	CRY_TEST(EncDec)
 	{
 		for (int i = 0; i < 2; i++)
 		{

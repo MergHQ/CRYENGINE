@@ -372,4 +372,3 @@ void ModelDB::GetVertexList(std::vector<BrushVec3>& outVertexList) const
 		outVertexList[i] = m_VertexDB[i].m_Pos;
 }
 };
-

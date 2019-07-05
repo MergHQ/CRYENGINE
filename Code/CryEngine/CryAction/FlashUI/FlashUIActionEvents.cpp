@@ -22,12 +22,12 @@ CFlashUIActionEvents::CFlashUIActionEvents()
 	, m_pUIFunctions(NULL)
 {
 	m_pGameFramework = gEnv->pGameFramework;
-	CRY_ASSERT_MESSAGE(m_pGameFramework, "IGameFramework is not initialized, crash can follow!");
+	CRY_ASSERT(m_pGameFramework, "IGameFramework is not initialized, crash can follow!");
 
 	m_pLevelSystem = m_pGameFramework ? m_pGameFramework->GetILevelSystem() : NULL;
-	CRY_ASSERT_MESSAGE(m_pLevelSystem, "ILevelSystem is not initialized, crash can follow!");
+	CRY_ASSERT(m_pLevelSystem, "ILevelSystem is not initialized, crash can follow!");
 
-	CRY_ASSERT_MESSAGE(gEnv->pFlashUI, "No FlashUI extension available!");
+	CRY_ASSERT(gEnv->pFlashUI, "No FlashUI extension available!");
 	if (gEnv->pFlashUI)
 	{
 		// system events (notify ui)

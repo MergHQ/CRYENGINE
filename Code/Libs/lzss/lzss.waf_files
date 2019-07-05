@@ -1,10 +1,8 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"../../SDKs/lzss/lzss.cpp",
-			"../../SDKs/lzss/LZSS.H"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/lzss/lzss.cpp",
+            "../../SDKs/lzss/LZSS.H"
+        ]
+    }
 }

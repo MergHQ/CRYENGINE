@@ -2,113 +2,98 @@
 
 #include "StdAfx.h"
 #include "IEditorImpl.h"
-#include "CryEdit.h"
-#include "CryEditDoc.h"
-#include "Dialogs/CustomColorDialog.h"
-#include "ClassFactory.h"
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
-#include "PluginManager.h"
-#include "IconManager.h"
-#include "ViewManager.h"
-#include "Gizmos/GizmoManager.h"
-#include "Gizmos/TransformManipulator.h"
+#include "AI/AIManager.h"
+#include "Commands/CommandManager.h"
+#include "Commands/PolledKeyManager.h"
+#include "Commands/PythonManager.h"
+#include "CustomActions/CustomActionsEditorManager.h"
+#include "Export/ExportManager.h"
+#include "FileSystem/FileSystem_Enumerator.h"
+#include "GameTokens/GameTokenManager.h"
+#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraphModuleManager.h"
-#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
-#include "Export/ExportManager.h"
-#include "Material/MaterialFXGraphMan.h"
-#include "CustomActions/CustomActionsEditorManager.h"
-#include "AI/AIManager.h"
-#include "UI/UIManager.h"
-#include "Undo/Undo.h"
-#include "Material/MaterialManager.h"
-#include "Material/MaterialPickTool.h"
-#include "EntityPrototypeManager.h"
-#include "GameEngine.h"
-#include "BaseLibraryDialog.h"
+#include "LensFlareEditor/LensFlareManager.h"
 #include "Material/Material.h"
-#include "EntityPrototype.h"
+#include "Material/MaterialBrowser.h"
+#include "Material/MaterialFXGraphMan.h"
+#include "Material/MaterialManager.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Objects/ObjectManager.h"
+#include "Objects/PrefabObject.h"
 #include "Particles/ParticleManager.h"
 #include "Prefabs/PrefabManager.h"
-#include "GameTokens/GameTokenManager.h"
-#include "LensFlareEditor/LensFlareManager.h"
-#include "DataBaseDialog.h"
-#include "UIEnumsDatabase.h"
-#include "Util/Ruler.h"
-#include "Script/ScriptEnvironment.h"
-#include "Gizmos/AxisHelper.h"
-#include "PickObjectTool.h"
-#include "ObjectCreateTool.h"
-#include "Vegetation/VegetationMap.h"
-#include "Terrain/TerrainManager.h"
-#include "Terrain/SurfaceType.h"
-#include <Cry3DEngine/I3DEngine.h>
-#include <CrySystem/IConsole.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryMovie/IMovieSystem.h>
-#include <ISourceControl.h>
-#include <IDevManager.h>
-#include "Objects/ObjectLayerManager.h"
-#include "BackgroundTaskManager.h"
-#include "BackgroundScheduleManager.h"
-#include "EditorFileMonitor.h"
-#include <CrySandbox/IEditorGame.h>
-#include "EditMode/ObjectMode.h"
-#include "Mission.h"
-#include "Commands/PythonManager.h"
-#include "Commands/PolledKeyManager.h"
-#include "EditorFramework/PersonalizationManager.h"
-#include "EditorFramework/BroadcastManager.h"
-#include "EditorCommonInit.h"
-#include "AssetSystem/AssetManager.h"
-#include <Preferences/ViewportPreferences.h>
-#include "MainThreadWorker.h"
-
-#include <CrySerialization/Serializer.h>
-#include <CrySandbox/CryInterop.h>
-#include "ResourceSelectorHost.h"
-#include "Util/BoostPythonHelpers.h"
-
-#include "FileSystem/FileSystem_Enumerator.h"
-
 #include "QT/QtMainFrame.h"
 #include "QT/QToolTabManager.h"
 #include "QT/Widgets/QPreviewWidget.h"
-#include "Material/MaterialBrowser.h"
+#include "Script/ScriptEnvironment.h"
+#include "Terrain/TerrainManager.h"
+#include "UI/UIManager.h"
+#include "Undo/Undo.h"
+#include "Util/Ruler.h"
+#include "Vegetation/VegetationMap.h"
 
-#include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
-#include <Notifications/NotificationCenterImpl.h>
-#include <EditorFramework/TrayArea.h>
+#include "BackgroundScheduleManager.h"
+#include "BackgroundTaskManager.h"
+#include "BaseLibraryDialog.h"
+#include "ClassFactory.h"
+#include "CryEdit.h"
+#include "CryEditDoc.h"
+#include "DataBaseDialog.h"
+#include "EditorFileMonitor.h"
+#include "EntityPrototypeManager.h"
+#include "GameEngine.h"
+#include "IconManager.h"
+#include "IDevManager.h"
+#include "LogFile.h"
+#include "MainThreadWorker.h"
+#include "Mission.h"
+#include "ObjectCreateTool.h"
+#include "PhysTool.h"
+#include "PluginManager.h"
+#include "ResourceSelectorHost.h"
+#include "SurfaceInfoPicker.h"
+#include "ViewManager.h"
+
+// MFC
+#include <Dialogs/CustomColorDialog.h>
+#include <MFCToolsPlugin.h>
+
+// EditorCommon
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetModel.h>
+#include <ConfigurationManager.h>
+#include <EditorCommonInit.h>
+#include <EditorFramework/BroadcastManager.h>
+#include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Preferences.h>
+#include <EditorFramework/ToolBar/ToolBarService.h>
+#include <EditorFramework/TrayArea.h>
+#include <Gizmos/GizmoManager.h>
+#include <ISourceControl.h>
+#include <LevelEditor/Tools/ObjectMode.h>
+#include <Notifications/NotificationCenterImpl.h>
+#include <PathUtils.h>
 #include <Preferences/GeneralPreferences.h>
-#include <CrySystem/IProjectManager.h>
+#include <Preferences/ViewportPreferences.h>
+#include <UIEnumsDatabase.h>
+#include <CrySystem/ConsoleRegistration.h>
 
-#include <QFileInfo>
-#include "ConfigurationManager.h"
-#include <CryGame/IGameFramework.h>
+#include <CrySandbox/CryInterop.h>
+#include <CrySandbox/IEditorGame.h>
 
 LINK_SYSTEM_LIBRARY("version.lib")
-// Shell utility library
-LINK_SYSTEM_LIBRARY("Shlwapi.lib")
-
-// CBaseObject hacks
-#include "SurfaceInfoPicker.h"
-#include "Objects/PrefabObject.h"
-#include "PhysTool.h"
-
-#include "MFCToolsPlugin.h"
 
 // even in Release mode, the editor will return its heap, because there's no Profile build configuration for the editor
 #ifdef _RELEASE
 	#undef _RELEASE
 #endif
+#include <CryInput/IInput.h>
 #include <CryCore/CrtDebugStats.h>
-#include "LinkTool.h"
 
 static CCryEditDoc * theDocument;
-static CEditorImpl* s_pEditor = NULL;
+static CEditorImpl* s_pEditor = nullptr;
 
 IEditor*     GetIEditor() { return s_pEditor; }
 
@@ -121,9 +106,8 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	: m_bInitialized(false)
 	, m_objectHideMask(0)
 	, editorConfigSpec(CONFIG_MEDIUM_SPEC)
-	, m_areHelpersEnabled(true)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	//This is dangerous and should (in theory) be set at the end of the constructor for safety, after everything is properly initialized.
 	//Code within this scope can use GetIEditorImpl() at their own risk
@@ -137,36 +121,35 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	EditorCommon::SetIEditor(this);
 	MFCToolsPlugin::SetEditor(s_pEditor);
 
-	m_currEditMode = eEditModeSelect;
-	m_prevEditMode = m_currEditMode;
-	m_pEditTool = 0;
 	m_pLevelIndependentFileMan = new CLevelIndependentFileMan;
-	m_pExportManager = 0;
+	m_pLevelEditorSharedState.reset(new CLevelEditorSharedState);
+	m_pExportManager = nullptr;
 	SetMasterCDFolder();
 	m_bExiting = false;
 	m_pClassFactory = CClassFactory::Instance();
 
-	m_pGlobalBroadcastManager = new CBroadcastManager();
-	m_pNotificationCenter = new CNotificationCenter();
-	m_pTrayArea = new CTrayArea();
-	m_pCommandManager = new CEditorCommandManager();
-	m_pPersonalizationManager = new CPersonalizationManager();
-	m_pPreferences = new CPreferences();
+	m_pGlobalBroadcastManager = new CBroadcastManager;
+	m_pNotificationCenter = new CNotificationCenter;
+	m_pTrayArea = new CTrayArea;
+	m_pToolBarService = new CToolBarService;
+	m_pCommandManager = new CEditorCommandManager;
+	m_pPersonalizationManager = new CPersonalizationManager;
+	m_pPreferences = new CPreferences;
 	CAutoRegisterPreferencesHelper::RegisterAll();
-	m_pPythonManager = new CEditorPythonManager();
+	m_pPythonManager = new CEditorPythonManager;
 	m_pPythonManager->Init();//must be initialized before plugins are initialized
-	m_pAssetManager = new CAssetManager();
-	m_pPolledKeyManager = new CPolledKeyManager();
-	m_pConsoleSync = 0;
-	m_pEditorFileMonitor.reset(new CEditorFileMonitor());
+	m_pAssetManager = new CAssetManager;
+	CAssetModel::CAutoRegisterColumn::RegisterAll();
+	m_pPolledKeyManager = new CPolledKeyManager;
+	m_pEditorFileMonitor.reset(new CEditorFileMonitor);
 	m_pBackgroundTaskManager.reset(new BackgroundTaskManager::CTaskManager);
 	m_pBackgroundScheduleManager.reset(new BackgroundScheduleManager::CScheduleManager);
 	m_pBGTasks.reset(new BackgroundTaskManager::CBackgroundTasksListener);
 
 	m_pUIEnumsDatabase = new CUIEnumsDatabase;
 	m_pPluginManager = new CPluginManager;
-	m_pTerrainManager = new CTerrainManager();
-	m_pVegetationMap = new CVegetationMap();
+	m_pTerrainManager = new CTerrainManager;
+	m_pVegetationMap = new CVegetationMap;
 	m_pObjectManager = new CObjectManager;
 	m_pGizmoManager = new CGizmoManager;
 	m_pViewManager = new CViewManager;
@@ -175,7 +158,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pAIManager = new CAIManager;
 	m_pUIManager = new CUIManager;
 	m_pCustomActionsManager = new CCustomActionsEditorManager;
-	m_pMaterialManager = new CMaterialManager();
+	m_pMaterialManager = new CMaterialManager;
 	m_pEntityManager = new CEntityPrototypeManager;
 	m_particleManager = new CParticleManager;
 	m_pPrefabManager = new CPrefabManager;
@@ -186,39 +169,22 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pFlowGraphModuleManager = new CEditorFlowGraphModuleManager;
 	m_pFlowGraphDebuggerEditor = new CFlowGraphDebuggerEditor;
 	m_pMatFxGraphManager = new CMaterialFXGraphMan;
-	m_pDevManager = new CDevManager();
-	m_pSourceControl = 0;
+	m_pDevManager = new CDevManager;
+	m_pSourceControl = nullptr;
 	m_pScriptEnv = new EditorScriptEnvironment();
 
 	m_pResourceSelectorHost.reset(CreateResourceSelectorHost());
 	CAutoRegisterResourceSelector::RegisterAll();
 
 	m_pRuler = new CRuler;
-	m_pConfigurationManager = new CConfigurationManager();
+	m_pConfigurationManager = new CConfigurationManager;
 
-	m_pMainThreadWorker = new CMainThreadWorker();
+	m_pMainThreadWorker = new CMainThreadWorker;
 
-	m_selectedRegion.min = Vec3(0, 0, 0);
-	m_selectedRegion.max = Vec3(0, 0, 0);
-	ZeroStruct(m_lastAxis);
-	m_lastAxis[eEditModeSelect] = AXIS_XY;
-	m_lastAxis[eEditModeSelectArea] = AXIS_XY;
-	m_lastAxis[eEditModeMove] = AXIS_XY;
-	m_lastAxis[eEditModeRotate] = AXIS_Z;
-	m_lastAxis[eEditModeScale] = AXIS_XY;
-	ZeroStruct(m_lastCoordSys);
-	m_lastCoordSys[eEditModeSelect] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeSelectArea] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeMove] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeRotate] = COORDS_LOCAL;
-	m_lastCoordSys[eEditModeScale] = COORDS_LOCAL;
-	m_bAxisVectorLock = false;
 	m_bUpdates = true;
 
 	m_bSelectionLocked = false;
-	m_snapModeFlags = 0;
 
-	m_pPickTool = 0;
 	m_bMatEditMode = false;
 	m_bShowStatusText = true;
 
@@ -300,6 +266,7 @@ CEditorImpl::~CEditorImpl()
 	SAFE_DELETE(m_pPreferences)
 	SAFE_DELETE(m_pPersonalizationManager)
 	SAFE_DELETE(m_pCommandManager)
+	SAFE_DELETE(m_pToolBarService)
 	SAFE_DELETE(m_pTrayArea)
 	SAFE_DELETE(m_pNotificationCenter)
 	SAFE_DELETE(m_pPythonManager)
@@ -399,17 +366,13 @@ void CEditorImpl::Update()
 		SetModifiedFlag(FALSE);
 	}
 
-	if (m_pGameEngine != NULL)
+	if (m_pGameEngine != nullptr)
 	{
 		IEditorGame* pEditorGame = m_pGameEngine->GetIEditorGame();
-		if (pEditorGame != NULL)
+		if (pEditorGame != nullptr)
 		{
-			IEditorGame::HelpersDrawMode::EType helpersDrawMode = IEditorGame::HelpersDrawMode::Hide;
-			if (GetIEditor()->IsHelpersDisplayed())
-			{
-				helpersDrawMode = IEditorGame::HelpersDrawMode::Show;
-			}
-			pEditorGame->UpdateHelpers(helpersDrawMode);
+			auto* pActiveViewport = GetActiveDisplayViewport();
+			pEditorGame->UpdateHelpers(pActiveViewport ? pActiveViewport->GetHelperSettings().enabled : false);
 		}
 	}
 
@@ -481,7 +444,7 @@ void CEditorImpl::CloseDocument()
 {
 	if (theDocument)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		Notify(eNotify_OnBeginSceneClose);
 		theDocument->DeleteContents();
 		delete theDocument;
@@ -658,205 +621,6 @@ void CEditorImpl::SetDataModified()
 	GetDocument()->SetModifiedFlag(TRUE);
 }
 
-int CEditorImpl::GetEditMode()
-{
-	return m_currEditMode;
-}
-
-void CEditorImpl::SetEditMode(int editMode)
-{
-	m_currEditMode = (EEditMode)editMode;
-	m_prevEditMode = m_currEditMode;
-	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
-	SetSelectedRegion(box);
-
-	if (GetEditTool() && !GetEditTool()->IsNeedMoveTool())
-	{
-		SetEditTool(0, true);
-	}
-
-	if (editMode == eEditModeMove || editMode == eEditModeRotate || editMode == eEditModeScale)
-	{
-		SetAxisConstrains(m_lastAxis[editMode]);
-		SetReferenceCoordSys(m_lastCoordSys[editMode]);
-	}
-
-	Notify(eNotify_OnEditModeChange);
-}
-
-void CEditorImpl::SetEditTool(CEditTool* tool, bool bStopCurrentTool)
-{
-	CViewport* pViewport = GetIEditorImpl()->GetActiveView();
-	if (pViewport)
-	{
-		pViewport->SetCurrentCursor(STD_CURSOR_DEFAULT);
-	}
-
-	if (tool == 0)
-	{
-		// Replace tool with the object modify edit tool.
-		if (m_pEditTool != 0 && m_pEditTool->IsKindOf(RUNTIME_CLASS(CObjectMode)))
-		{
-			// Do not change.
-			return;
-		}
-		else
-		{
-			tool = new CObjectMode;
-		}
-	}
-
-	Notify(eNotify_OnEditToolBeginChange);
-
-	m_pEditTool = tool;
-
-	// Make sure pick is aborted.
-	if (tool != m_pPickTool)
-	{
-		m_pPickTool = 0;
-	}
-	Notify(eNotify_OnEditToolEndChange);
-}
-
-void CEditorImpl::SetEditTool(const string& sEditToolName, bool bStopCurrentTool)
-{
-	CEditTool* pTool = GetEditTool();
-	if (pTool && pTool->GetRuntimeClass()->m_lpszClassName)
-	{
-		// Check if already selected.
-		if (stricmp(pTool->GetRuntimeClass()->m_lpszClassName, sEditToolName) == 0)
-			return;
-	}
-
-	IClassDesc* pClass = GetIEditorImpl()->GetClassFactory()->FindClass(sEditToolName);
-	if (!pClass)
-	{
-		Warning("Editor Tool %s not registered.", (const char*)sEditToolName);
-		return;
-	}
-	if (pClass->SystemClassID() != ESYSTEM_CLASS_EDITTOOL)
-	{
-		Warning("Class name %s is not a valid Edit Tool class.", (const char*)sEditToolName);
-		return;
-	}
-	CRuntimeClass* pRtClass = pClass->GetRuntimeClass();
-	if (pRtClass && pRtClass->IsDerivedFrom(RUNTIME_CLASS(CEditTool)))
-	{
-		CEditTool* pEditTool = (CEditTool*)pRtClass->CreateObject();
-		GetIEditorImpl()->SetEditTool(pEditTool);
-		return;
-	}
-	else
-	{
-		Warning("Class name %s is not a valid Edit Tool class.", (const char*)sEditToolName);
-		return;
-	}
-}
-
-CEditTool* CEditorImpl::GetEditTool()
-{
-	return m_pEditTool;
-}
-
-void CEditorImpl::SetAxisConstrains(AxisConstrains axisFlags)
-{
-	gGizmoPreferences.axisConstraint = axisFlags;
-	m_lastAxis[m_currEditMode] = gGizmoPreferences.axisConstraint;
-	m_pViewManager->SetAxisConstrain(axisFlags);
-
-	// Update all views.
-	UpdateViews(eUpdateObjects, NULL);
-	Notify(eNotify_OnAxisConstraintChanged);
-}
-
-AxisConstrains CEditorImpl::GetAxisConstrains()
-{
-	return gGizmoPreferences.axisConstraint;
-}
-
-uint16 CEditorImpl::GetSnapMode()
-{
-	return m_snapModeFlags;
-}
-
-void CEditorImpl::EnableSnapToTerrain(bool bEnable)
-{
-	m_snapModeFlags &= ~eSnapMode_Terrain;
-	if (bEnable) // Disable geometry before enabling terrain snapping
-		m_snapModeFlags = (m_snapModeFlags & ~eSnapMode_Geometry) | bEnable * eSnapMode_Terrain;
-}
-
-bool CEditorImpl::IsSnapToTerrainEnabled() const
-{
-	return m_snapModeFlags & eSnapMode_Terrain;
-}
-
-void CEditorImpl::EnableSnapToNormal(bool bEnable)
-{
-	m_snapModeFlags = (m_snapModeFlags & ~eSnapMode_SurfaceNormal) | bEnable * eSnapMode_SurfaceNormal;
-}
-
-void CEditorImpl::EnableHelpersDisplay(bool bEnable)
-{
-	m_areHelpersEnabled = bEnable;
-}
-
-void CEditorImpl::EnablePivotSnapping(bool bEnable)
-{
-	m_bPivotSnappingEnabled = bEnable;
-}
-
-bool CEditorImpl::IsSnapToNormalEnabled() const
-{
-	return m_snapModeFlags & eSnapMode_SurfaceNormal;
-}
-
-bool CEditorImpl::IsHelpersDisplayed() const
-{
-	return m_areHelpersEnabled;
-}
-
-bool CEditorImpl::IsPivotSnappingEnabled() const
-{
-	return m_bPivotSnappingEnabled;
-}
-
-void CEditorImpl::EnableSnapToGeometry(bool bEnable)
-{
-	m_snapModeFlags &= ~eSnapMode_Geometry;
-	if (bEnable) // Disable terrain before enabling geometry snapping
-		m_snapModeFlags = (m_snapModeFlags & ~eSnapMode_Terrain) | bEnable * eSnapMode_Geometry;
-}
-
-bool CEditorImpl::IsSnapToGeometryEnabled() const
-{
-	return m_snapModeFlags & eSnapMode_Geometry;
-}
-
-void CEditorImpl::SetReferenceCoordSys(RefCoordSys refCoords)
-{
-	if (refCoords != gGizmoPreferences.referenceCoordSys)
-	{
-		gGizmoPreferences.referenceCoordSys = refCoords;
-		m_lastCoordSys[m_currEditMode] = gGizmoPreferences.referenceCoordSys;
-
-		// Update all views.
-		UpdateViews(eUpdateObjects, NULL);
-
-		// Update the construction plane infos.
-		CViewport* pViewport = GetActiveView();
-		if (pViewport)
-			pViewport->MakeSnappingGridPlane(GetIEditorImpl()->GetAxisConstrains());
-
-		Notify(eNotify_OnReferenceCoordSysChanged);
-	}
-}
-
-RefCoordSys CEditorImpl::GetReferenceCoordSys()
-{
-	return gGizmoPreferences.referenceCoordSys;
-}
-
 CBaseObject* CEditorImpl::NewObject(const char* type, const char* file /*=nullptr*/, bool bInteractive /*= false*/)
 {
 	CUndo undo("Create new object");
@@ -882,7 +646,6 @@ CBaseObject* CEditorImpl::NewObject(const char* type, const char* file /*=nullpt
 			pLayer->SetVisible(true);
 			pLayer->SetModified();
 
-			m_pObjectManager->ClearSelection();
 			m_pObjectManager->SelectObject(pObject);
 		}
 
@@ -908,38 +671,31 @@ CBaseObject* CEditorImpl::CloneObject(CBaseObject* obj)
 	return GetObjectManager()->CloneObject(obj);
 }
 
-void CEditorImpl::StartObjectCreation(const char* type, const char* file)
+bool CEditorImpl::StartObjectCreation(const char* type, const char* file /*= nullptr*/)
 {
 	if (!GetDocument()->IsDocumentReady())
-		return;
+	{
+		return false;
+	}
 
 	CObjectCreateTool* tool = new CObjectCreateTool();
-	GetIEditorImpl()->SetEditTool(tool);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(tool);
 	tool->SelectObjectToCreate(type, file);
+
+	return true;
 }
 
 CBaseObject* CEditorImpl::GetSelectedObject()
 {
-	CBaseObject* obj = 0;
 	if (m_pObjectManager->GetSelection()->GetCount() != 1)
 		return 0;
 	return m_pObjectManager->GetSelection()->GetObject(0);
 }
 
-void CEditorImpl::SelectObject(CBaseObject* obj)
-{
-	GetObjectManager()->SelectObject(obj);
-}
-
-void CEditorImpl::SelectObjects(std::vector<CBaseObject*> objects)
-{
-	GetObjectManager()->SelectObjects(objects);
-}
-
 IObjectManager* CEditorImpl::GetObjectManager()
 {
 	return m_pObjectManager;
-};
+}
 
 IGizmoManager* CEditorImpl::GetGizmoManager()
 {
@@ -949,16 +705,6 @@ IGizmoManager* CEditorImpl::GetGizmoManager()
 const CSelectionGroup* CEditorImpl::GetSelection() const
 {
 	return m_pObjectManager->GetSelection();
-}
-
-int CEditorImpl::ClearSelection()
-{
-	if (GetSelection()->IsEmpty())
-		return 0;
-	string countString = GetCommandManager()->Execute("general.clear_selection");
-	int count = 0;
-	FromString(count, countString.c_str());
-	return count;
 }
 
 void CEditorImpl::LockSelection(bool bLock)
@@ -990,24 +736,9 @@ void CEditorImpl::ToggleGameInputSuspended()
 	return GetGameEngine()->ToggleGameInputSuspended();
 }
 
-void CEditorImpl::PickObject(IPickObjectCallback* callback, CRuntimeClass* targetClass, bool bMultipick)
+CLevelEditorSharedState* CEditorImpl::GetLevelEditorSharedState()
 {
-	m_pPickTool = new CPickObjectTool(callback, targetClass);
-	((CPickObjectTool*)m_pPickTool)->SetMultiplePicks(bMultipick);
-	SetEditTool(m_pPickTool);
-}
-
-void CEditorImpl::CancelPick()
-{
-	SetEditTool(0);
-	m_pPickTool = 0;
-}
-
-bool CEditorImpl::IsPicking()
-{
-	if (GetEditTool() == m_pPickTool && m_pPickTool != 0)
-		return true;
-	return false;
+	return m_pLevelEditorSharedState.get();
 }
 
 CViewManager* CEditorImpl::GetViewManager()
@@ -1111,29 +842,34 @@ CVegetationMap* CEditorImpl::GetVegetationMap()
 	return m_pVegetationMap;
 }
 
-void CEditorImpl::SetSelectedRegion(const AABB& box)
+CWnd* CEditorImpl::OpenView(const char* szViewClassName)
 {
-	m_selectedRegion = box;
+	return CTabPaneManager::GetInstance()->OpenMFCPane(szViewClassName);
 }
 
-void CEditorImpl::GetSelectedRegion(AABB& box)
+CWnd* CEditorImpl::FindView(const char* szViewClassName)
 {
-	box = m_selectedRegion;
+	return CTabPaneManager::GetInstance()->FindMFCPane(szViewClassName);
 }
 
-CWnd* CEditorImpl::OpenView(const char* sViewClassName)
+IPane* CEditorImpl::CreateDockable(const char* szClassName)
 {
-	return CTabPaneManager::GetInstance()->OpenMFCPane(sViewClassName);
+	return CTabPaneManager::GetInstance()->CreatePane(szClassName);
 }
 
-CWnd* CEditorImpl::FindView(const char* sViewClassName)
+IPane* CEditorImpl::FindDockable(const char* szClassName)
 {
-	return CTabPaneManager::GetInstance()->FindMFCPane(sViewClassName);
+	return CTabPaneManager::GetInstance()->FindPaneByClass(szClassName);
 }
 
-IPane* CEditorImpl::CreateDockable(const char* className)
+std::vector<IPane*> CEditorImpl::FindAllDockables(const char* szClassName)
 {
-	return CTabPaneManager::GetInstance()->CreatePane(className);
+	return CTabPaneManager::GetInstance()->FindAllPanelsByClass(szClassName);
+}
+
+IPane* CEditorImpl::FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate)
+{
+	return CTabPaneManager::GetInstance()->FindPane(predicate);
 }
 
 void CEditorImpl::RaiseDockable(IPane* pPane)
@@ -1187,8 +923,6 @@ IDataBaseManager* CEditorImpl::GetDBItemManager(EDataBaseItemType itemType)
 		return m_pMaterialManager;
 	case EDB_TYPE_ENTITY_ARCHETYPE:
 		return m_pEntityManager;
-	case EDB_TYPE_PREFAB:
-		return m_pPrefabManager;
 	case EDB_TYPE_GAMETOKEN:
 		return m_pGameTokenManager;
 	case EDB_TYPE_PARTICLE:
@@ -1252,11 +986,11 @@ void CEditorImpl::SetInGameMode(bool inGame)
 	{
 		bWasInSimulationMode = GetIEditorImpl()->GetGameEngine()->GetSimulationMode();
 		GetIEditorImpl()->GetGameEngine()->SetSimulationMode(false);
-		GetIEditorImpl()->GetCommandManager()->Execute("general.enter_game_mode");
+		GetIEditorImpl()->GetCommandManager()->Execute("game.enter");
 	}
 	else
 	{
-		GetIEditorImpl()->GetCommandManager()->Execute("general.exit_game_mode");
+		GetIEditorImpl()->GetCommandManager()->Execute("game.exit");
 		GetIEditorImpl()->GetGameEngine()->SetSimulationMode(bWasInSimulationMode);
 	}
 }
@@ -1337,7 +1071,14 @@ void CEditorImpl::OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pI
 	OpenDataBaseLibrary(type, pItem);
 }
 
-void CEditorImpl::SetConsoleVar(const char* var, float value)
+void CEditorImpl::SetConsoleVar(const char* var, const int value)
+{
+	ICVar* ivar = GetSystem()->GetIConsole()->GetCVar(var);
+	if (ivar)
+		ivar->Set(value);
+}
+
+void CEditorImpl::SetConsoleVar(const char* var, const float value)
 {
 	ICVar* ivar = GetSystem()->GetIConsole()->GetCVar(var);
 	if (ivar)
@@ -1379,7 +1120,7 @@ void CEditorImpl::OnObjectHideMaskChanged()
 	if (maskChanges & (OBJTYPE_ENTITY | OBJTYPE_PREFAB | OBJTYPE_GROUP | OBJTYPE_BRUSH | OBJTYPE_GEOMCACHE))
 		gEnv->p3DEngine->OnObjectModified(NULL, ERF_CASTSHADOWMAPS);
 
-	GetIEditorImpl()->Notify(eNotify_OnDisplayRenderUpdate);
+	GetIEditorImpl()->Notify(eNotify_OnObjectHideMaskChange);
 
 	m_objectHideMask = hideMask;
 }
@@ -1394,6 +1135,16 @@ void CEditorImpl::Notify(EEditorNotifyEvent event)
 	{
 		(*it++)->OnEditorNotifyEvent(event);
 	}
+}
+
+void CEditorImpl::RegisterAllObjectModeSubTools()
+{
+	CAutoRegisterObjectModeSubToolHelper::RegisterAll();
+}
+
+void CEditorImpl::UnRegisterAllObjectModeSubTools()
+{
+	CAutoRegisterObjectModeSubToolHelper::UnregisterAll();
 }
 
 void CEditorImpl::RegisterNotifyListener(IEditorNotifyListener* listener)
@@ -1432,7 +1183,7 @@ ISourceControl* CEditorImpl::GetSourceControl()
 	return 0;
 }
 
-IProjectManager* CEditorImpl::GetProjectManager()
+Cry::IProjectManager* CEditorImpl::GetProjectManager()
 {
 	return m_pSystem->GetIProjectManager();
 }
@@ -1552,7 +1303,7 @@ ESystemConfigSpec CEditorImpl::GetEditorConfigSpec() const
 
 void CEditorImpl::InitFinished()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!m_bInitialized)
 	{
@@ -1571,7 +1322,6 @@ void CEditorImpl::InitFinished()
 
 		m_pNotificationCenter->Init();
 		m_pPreferences->Init();
-		SEditorSettings::Load();
 		gViewportDebugPreferences.objectHideMaskChanged.Connect(this, &CEditorImpl::OnObjectHideMaskChanged);
 		m_pObjectManager->LoadClassTemplates("%EDITOR%");
 	}
@@ -1732,7 +1482,7 @@ bool CEditorImpl::IsGroupOpen(CBaseObject* pObject)
 
 void CEditorImpl::OpenGroup(CBaseObject* pObject)
 {
-	if (!pObject || !IsCGroup(pObject))
+	if (!pObject || (!IsCGroup(pObject) && !IsCPrefabObject(pObject)))
 		return;
 
 	CGroup* pGroup = static_cast<CGroup*>(pObject);
@@ -1761,41 +1511,6 @@ void CEditorImpl::OnRequestMaterial(IMaterial* pMatInfo)
 {
 	if (GetMaterialManager())
 		GetMaterialManager()->OnRequestMaterial(pMatInfo);
-}
-
-void CEditorImpl::OnGroupMake()
-{
-	CCryEditApp::GetInstance()->OnGroupMake();
-}
-
-void CEditorImpl::OnGroupAttach()
-{
-	CCryEditApp::GetInstance()->OnGroupAttach();
-}
-
-void CEditorImpl::OnGroupDetach()
-{
-	CCryEditApp::GetInstance()->OnGroupDetach();
-}
-
-void CEditorImpl::OnGroupDetachToRoot()
-{
-	CCryEditApp::GetInstance()->OnGroupDetachToRoot();
-}
-
-void CEditorImpl::OnLinkTo()
-{
-	CLinkTool::PickObject();
-}
-
-void CEditorImpl::OnUnLink()
-{
-	CCryEditApp::GetInstance()->OnEditToolUnlink();
-}
-
-void CEditorImpl::OnPrefabMake()
-{
-	m_pPrefabManager->MakeFromSelection();
 }
 
 bool CEditorImpl::PickObject(const Vec3& vWorldRaySrc, const Vec3& vWorldRayDir, SRayHitInfo& outHitInfo, CBaseObject* pObject)
@@ -1859,4 +1574,3 @@ void CEditorImpl::SetPlayerViewMatrix(const Matrix34& tm, bool bEyePos /*= true*
 	if (GetGameEngine())
 		GetGameEngine()->SetPlayerViewMatrix(tm, bEyePos);
 }
-

@@ -14,7 +14,7 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CCreateFolderDialog::CCreateFolderDialog(QWidget* const pParent)
+CCreateFolderDialog::CCreateFolderDialog(QWidget* pParent)
 	: CEditorDialog("AudioCreateFolderDialog", pParent)
 	, m_folderName("new_folder")
 {
@@ -22,7 +22,8 @@ CCreateFolderDialog::CCreateFolderDialog(QWidget* const pParent)
 	setWindowTitle("Add Folder");
 
 	auto const pLineEdit = new QLineEdit(m_folderName, this);
-	auto const pValidator = new CNameValidator(s_regexInvalidFileName, pLineEdit);
+	auto const pValidator = new CNameValidator(pLineEdit);
+	pValidator->Initialize(s_regexInvalidFileName);
 	pLineEdit->setValidator(pValidator);
 	pLineEdit->setMaxLength(64);
 	pLineEdit->setMinimumWidth(150);
@@ -40,13 +41,13 @@ CCreateFolderDialog::CCreateFolderDialog(QWidget* const pParent)
 	SetResizable(false);
 
 	QObject::connect(pLineEdit, &QLineEdit::textChanged, [=](QString const& folderName)
-	{
-		QString fixedFolderName = folderName;
-		pValidator->fixup(fixedFolderName);
-		pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(!fixedFolderName.isEmpty());
-		m_folderName = fixedFolderName;
-		pLineEdit->setToolTip(fixedFolderName);
-	});
+		{
+			QString fixedFolderName = folderName;
+			pValidator->fixup(fixedFolderName);
+			pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(!fixedFolderName.isEmpty());
+			m_folderName = fixedFolderName;
+			pLineEdit->setToolTip(fixedFolderName);
+		});
 
 	QObject::connect(pDialogButtons, &QDialogButtonBox::accepted, this, &CCreateFolderDialog::OnAccept);
 	QObject::connect(pDialogButtons, &QDialogButtonBox::rejected, this, &CCreateFolderDialog::reject);

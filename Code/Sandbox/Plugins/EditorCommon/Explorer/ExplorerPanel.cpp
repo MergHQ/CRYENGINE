@@ -3,34 +3,23 @@
 #include "stdafx.h"
 #include "ExplorerPanel.h"
 
+#include "Explorer/Explorer.h"
+#include "Explorer/ExplorerFileList.h"
+#include "Explorer/ExplorerModel.h"
+#include "Expected.h"
+#include "QAdvancedItemDelegate.h"
+#include "QSearchBox.h"
+
 #include <QApplication>
-#include <QAdvancedTreeView.h>
 #include <QBoxLayout>
 #include <QClipboard>
-#include <QLineEdit>
-#include <QPushButton>
-#include <QToolButton>
-#include <QSortFilterProxyModel>
-#include <QMenu>
 #include <QDockWidget>
-#include <QHeaderView>
-#include <QEvent>
 #include <QFocusEvent>
-#include "QSearchBox.h"
-#include "Explorer.h"
-#include "ExplorerModel.h"
-#include "ExplorerFileList.h"
-
-#include <CryCore/Platform/CryWindows.h>
-#include <shellapi.h>
-
-#include "QAdvancedItemDelegate.h"
-#include "CryIcon.h"
-
-//////////////////////////////////////////////////////////////////////////
-// Serialization method for a tree view
-//////////////////////////////////////////////////////////////////////////
-
+#include <QHeaderView>
+#include <QMenu>
+#include <QPushButton>
+#include <QSortFilterProxyModel>
+#include <QToolButton>
 
 QString GetIndexPath(QAbstractItemModel* model, const QModelIndex& index)
 {
@@ -574,8 +563,8 @@ ExplorerPanel::ExplorerPanel(QWidget* parent, ExplorerData* explorerData)
 
 	m_filterOptions.reset(new FilterOptions(*explorerData));
 
-	m_filterOptionsTree = new QPropertyTree(this);
-	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
+	m_filterOptionsTree = new QPropertyTreeLegacy(this);
+	PropertyTreeStyle treeStyle(QPropertyTreeLegacy::defaultTreeStyle());
 	treeStyle.propertySplitter = false;
 	treeStyle.groupRectangle = false;
 	m_filterOptionsTree->setTreeStyle(treeStyle);
@@ -625,7 +614,6 @@ ExplorerPanel::ExplorerPanel(QWidget* parent, ExplorerData* explorerData)
 
 ExplorerPanel::~ExplorerPanel()
 {
-	m_treeView->setModel(0);
 }
 
 void ExplorerPanel::SetDockWidget(QDockWidget* dockWidget)
@@ -782,6 +770,8 @@ void ExplorerPanel::UpdateRootMenu()
 
 void ExplorerPanel::OnFilterTextChanged(const QString& str)
 {
+	if (str.isEmpty()) ExpandToDepthDefault();
+
 	bool modelChanged = m_treeView->model() != m_filterModel || m_filterModel == 0;
 	if (modelChanged)
 	{
@@ -886,17 +876,23 @@ void ExplorerPanel::OnHeaderColumnToggle()
 
 void ExplorerPanel::OnContextMenu(const QPoint& pos)
 {
+	ExplorerEntries entries;
+	GetSelectedEntries(&entries);
+
+	bool haveChildren = std::any_of(entries.begin(), entries.end(), [](auto const& e) {return e->children.size() > 0; });
+
 	QMenu menu;
 	menu.addAction("Copy Name", this, SLOT(OnMenuCopyName()));
 	menu.addAction("Copy Path", this, SLOT(OnMenuCopyPath()), QKeySequence("Ctrl+C"));
 	menu.addAction("Paste Selection", this, SLOT(OnMenuPasteSelection()), QKeySequence("Ctrl+V"));
-	menu.addAction("Expand All", this, SLOT(OnMenuExpandAll()));
-	menu.addAction("Collapse All", this, SLOT(OnMenuCollapseAll()));
+	if (haveChildren)
+	{
+		menu.addAction("Expand All", this, SLOT(OnMenuExpandAll()));
+		menu.addAction("Collapse All", this, SLOT(OnMenuCollapseAll()));
+	}
 	menu.addSeparator();
 
-	ExplorerEntries entries;
 	ExplorerActions actions;
-	GetSelectedEntries(&entries);
 	m_explorerData->GetCommonActions(&actions, entries);
 
 	for (size_t i = 0; i < actions.size(); ++i)
@@ -1176,7 +1172,7 @@ void ExplorerPanel::SetTreeViewModel(QAbstractItemModel* model)
 	}
 }
 
-void ExplorerPanel::OnExplorerEndReset()
+void ExplorerPanel::ExpandToDepthDefault()
 {
 	m_treeView->expandToDepth(1);
 }
@@ -1278,4 +1274,3 @@ void ExplorerPanel::OnExplorerEntryModified(ExplorerEntryModifyEvent& ev)
 }
 
 }
-

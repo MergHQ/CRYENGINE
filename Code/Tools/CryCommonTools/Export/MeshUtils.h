@@ -586,7 +586,7 @@ public:
 			bOk = bOk && AppendArray(dstVertexCount, m_morphTargets[i].positions, srcVertexCount, other.m_morphTargets[i].positions, Vec3(ZERO));
 		}
 
-		const Face face = { 0, 0, 0 };
+		const Face face = { {0, 0, 0} };
 		bOk = bOk && AppendArray(dstFaceCount, m_faces,      srcFaceCount, other.m_faces,      face);
 		bOk = bOk && AppendArray(dstFaceCount, m_faceMatIds, srcFaceCount, other.m_faceMatIds, 0);
 

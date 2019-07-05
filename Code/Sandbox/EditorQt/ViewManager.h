@@ -2,12 +2,12 @@
 
 #pragma once
 
-#include "IViewportManager.h"
-#include "Viewport.h"
-#include "QtViewPane.h"
+#include "SandboxAPI.h"
+#include <IViewportManager.h>
+#include <QtViewPane.h>
+#include <Viewport.h>
+#include <CryMath/Cry_Geo.h>
 
-// forward declaration.
-class CViewport;
 class QWidget;
 
 // Description of viewport.
@@ -26,14 +26,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       { return m_className.c_str(); };
-	virtual const char*    Category()        { return "Viewport"; };
-	virtual const char*    GetMenuPath()     { return "Viewport"; };
+	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       { return m_className.c_str(); }
+	virtual const char*    Category()        { return "Viewport"; }
+	virtual const char*    GetMenuPath()     { return "Viewport"; }
 	//////////////////////////////////////////////////////////////////////////
-	virtual CRuntimeClass* GetRuntimeClass() { return 0; };
-	virtual const char*    GetPaneTitle()    { return name.c_str(); };
-	virtual bool           SinglePane()      { return false; };
+	virtual CRuntimeClass* GetRuntimeClass() { return 0; }
+	virtual const char*    GetPaneTitle()    { return name.c_str(); }
+	virtual bool           SinglePane()      { return false; }
 	virtual IPane*         CreatePane() const override;
 	//////////////////////////////////////////////////////////////////////////
 
@@ -58,8 +58,6 @@ public:
 	bool       IsViewport(QWidget* w);
 	void       SelectViewport(CViewport* pViewport);
 	CViewport* GetSelectedViewport() const { return m_pSelectedView; }
-
-	void       SetAxisConstrain(int axis);
 
 	//! Reset all views.
 	void        ResetViews();
@@ -87,7 +85,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Get currently active camera object id.
-	CryGUID GetCameraObjectId() const override                { return m_cameraObjectId; }
+	CryGUID GetCameraObjectId() const override                 { return m_cameraObjectId; }
 	//! Sets currently active camera object id.
 	void    SetCameraObjectId(CryGUID cameraObjectId) override { m_cameraObjectId = cameraObjectId; }
 
@@ -136,13 +134,8 @@ private:
 	void RegisterViewport(CViewport* vp);
 	void UnregisterViewport(CViewport* vp);
 
-public:
-	CCrySignal<void(int)> signalAxisConstrainChanged;
-
 private:
-	//////////////////////////////////////////////////////////////////////////
-	//FIELDS.
-	AABB                         m_updateRegion;
+	AABB m_updateRegion;
 
 	//! Origin of 2d viewports.
 	Vec3  m_origin2D;
@@ -152,16 +145,15 @@ private:
 	//! Id of camera object.
 	CryGUID m_cameraObjectId;
 
-	int  m_nGameViewports;
-	bool m_bGameViewportsUpdated;
+	int     m_nGameViewports;
+	bool    m_bGameViewportsUpdated;
 
 	//! Array of viewport descriptions.
 	std::vector<CViewportClassDesc*> m_viewportDesc;
 	//! Array of currently existing viewports.
-	std::vector<CViewport*>                    m_viewports;
+	std::vector<CViewport*>          m_viewports;
 
-	CViewport*                    m_pSelectedView;
+	CViewport*                       m_pSelectedView;
 
-	std::vector<ICameraDelegate*> m_cameraDelegates;
+	std::vector<ICameraDelegate*>    m_cameraDelegates;
 };
-

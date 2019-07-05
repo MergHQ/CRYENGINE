@@ -7,7 +7,7 @@
 struct entity_contact;
 const int MAX_CONTACTS = 9984;
 
-enum rbflags { rb_RK4=0x1, rb_articulated=0x10 };
+enum rbflags { rb_RK4=0x1, rb_articulated=0x10, rb_no_mass_decay=0x20 };
 
 class RigidBody {
 public:
@@ -58,6 +58,7 @@ struct ArticulatedBody {
 	Vec3 Pext,Lext;
 
 	void GetContactMatrix(const Vec3& r, Matrix33 &K);
+	void GetContactMatrixRot(Matrix33 &K, ArticulatedBody *buddy=nullptr);
 	void ApplyImpulse(const Vec3& dP, const Vec3& dL, body_helper *bodies, int iCaller);
 };
 
@@ -115,5 +116,6 @@ void CleanupContactSolvers();
 void RegisterContact(entity_contact *pcontact);
 int InvokeContactSolver(float time_interval, SolverSettings *pss, float Ebefore, entity_contact **&pContacts,int &nContacts);
 char *AllocSolverTmpBuf(int size);
+entity_contact **GetContacts(int &nContacts, int iCaller = get_iCaller_int());
 
 #endif

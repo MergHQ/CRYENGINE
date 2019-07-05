@@ -156,11 +156,7 @@ void CAnimationDatabaseLibrary::CreateResource(THandle& hdlOut, const char* name
 
 void CAnimationDatabaseLibrary::PublishResource(THandle& hdl)
 {
-#ifndef _RELEASE
-	if (!hdl)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(hdl);
 	uint32 crc = CCrc32::ComputeLowercase(hdl->GetFilename());
 	Insert(crc, const_cast<CAnimationDatabase*>(static_cast<const CAnimationDatabase*>(hdl)));
 }
@@ -226,11 +222,7 @@ void CAnimationTagDefLibrary::CreateResource(THandle& hdlOut, const char* name, 
 
 void CAnimationTagDefLibrary::PublishResource(THandle& hdlOut)
 {
-#ifndef _RELEASE
-	if (!hdlOut)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(hdlOut);
 	uint32 crc32 = CCrc32::ComputeLowercase(hdlOut->GetFilename());
 	Insert(crc32, const_cast<CTagDefinition*>(hdlOut));
 }
@@ -284,8 +276,6 @@ void CAnimationControllerDefLibrary::CreateResource(THandle& hdlOut, const char*
 	char normalizedFilename[DEF_PATH_LENGTH];
 	NormalizeFilename(normalizedFilename, name);
 
-	uint32 crc32 = CCrc32::ComputeLowercase(normalizedFilename);
-
 	SControllerDef* pDef = NULL;
 	XmlNodeRef xml = gEnv->pSystem->GetXmlUtils()->LoadXmlFromFile(normalizedFilename);
 	if (xml)
@@ -300,11 +290,7 @@ void CAnimationControllerDefLibrary::CreateResource(THandle& hdlOut, const char*
 
 void CAnimationControllerDefLibrary::PublishResource(THandle& hdl)
 {
-#ifndef _RELEASE
-	if (!hdl)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(hdl);
 	uint32 crc32 = hdl->m_filename.crc;
 	Insert(crc32, const_cast<SControllerDef*>(hdl));
 }
@@ -344,7 +330,7 @@ const IAnimationDatabase* CAnimationDatabaseManager::Load(const char* databaseNa
 		return nullptr;
 	}
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Mannequin, 0, "Load ADB: %s", databaseName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Mannequin, "Load ADB: %s", databaseName);
 
 	const IAnimationDatabase* pDb = CAnimationDatabaseLibrary::LoadResource(databaseName, 0);
 	return pDb;
@@ -355,7 +341,7 @@ IAnimationDatabase* CAnimationDatabaseManager::Create(const char* filename, cons
 	char normalizedFilename[DEF_PATH_LENGTH];
 	NormalizeFilename(normalizedFilename, filename);
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Mannequin, 0, "Create ADB: %s", normalizedFilename);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Mannequin, "Create ADB: %s", normalizedFilename);
 
 	uint32 crc32 = CCrc32::ComputeLowercase(normalizedFilename);
 
@@ -407,7 +393,7 @@ CTagDefinition* CAnimationDatabaseManager::CreateTagDefinition(const char* filen
 	char normalizedFilename[DEF_PATH_LENGTH];
 	NormalizeFilename(normalizedFilename, filename);
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Mannequin, 0, "Create TagDefinition: %s", normalizedFilename);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Mannequin, "Create TagDefinition: %s", normalizedFilename);
 
 	uint32 crc32 = CCrc32::ComputeLowercase(normalizedFilename);
 
@@ -422,7 +408,7 @@ CTagDefinition* CAnimationDatabaseManager::CreateTagDefinition(const char* filen
 
 const SControllerDef* CAnimationDatabaseManager::LoadControllerDef(const char* filename)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Mannequin, 0, "Load ControllerDef: %s", filename);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Mannequin, "Load ControllerDef: %s", filename);
 
 	const SControllerDef* const pDef = CAnimationControllerDefLibrary::LoadResource(filename, 0);
 	return pDef;
@@ -448,7 +434,7 @@ const CTagDefinition* CAnimationDatabaseManager::LoadTagDefs(const char* filenam
 	char normalizedFilename[DEF_PATH_LENGTH];
 	NormalizeFilename(normalizedFilename, filename);
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Mannequin, 0, "Load TagDefs: %s", normalizedFilename);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Mannequin, "Load TagDefs: %s", normalizedFilename);
 
 	const CTagDefinition* pTagDef = CAnimationTagDefLibrary::LoadResource(filename, isTags ? eTDF_Tags : 0);
 	return pTagDef;
@@ -640,7 +626,7 @@ void CAnimationDatabaseManager::RevertTagDef(const char* szFilename)
 
 void CAnimationDatabaseManager::ReloadTagDefinition(CTagDefinition* pTagDefinition)
 {
-	assert(pTagDefinition);
+	CRY_ASSERT(pTagDefinition);
 	pTagDefinition->Clear();
 
 	const char* const filename = pTagDefinition->GetFilename();
@@ -712,7 +698,8 @@ void CAnimationDatabaseManager::GetAffectedFragmentsString(const CTagDefinition*
 				for (uint32 tagSetIndex = 0; tagSetIndex < numTagSets; ++tagSetIndex)
 				{
 					SFragTagState tagState;
-					uint32 numOptions = pCurrentDatabase->GetTagSetInfo(fragIndex, tagSetIndex, tagState);
+					pCurrentDatabase->GetTagSetInfo(fragIndex, tagSetIndex, tagState);
+
 					if (isGlobalTag)
 					{
 						if (pQueryTagDef->IsSet(tagState.globalTags, tagID))
@@ -937,7 +924,7 @@ void CAnimationDatabaseManager::GetIncludedTagDefs(const CTagDefinition* pQuerie
 	for (uint32 importIndex = 0, size = flatImportsInfoList.size(); importIndex < size; ++importIndex)
 	{
 		const STagDefinitionImportsInfo* pImportsInfo = flatImportsInfoList[importIndex];
-		assert(pImportsInfo);
+		CRY_ASSERT(pImportsInfo);
 		CTagDefinition* pFoundTagDef = stl::find_in_map(m_tagDefs, CCrc32::ComputeLowercase(pImportsInfo->GetFilename()), NULL);
 
 		if (pFoundTagDef && (pFoundTagDef != pQueriedTagDef))
@@ -992,8 +979,7 @@ void CAnimationDatabaseLibrary::AnimEntryToXML(XmlNodeRef outXmlAnimEntry, const
 	{
 		outXmlAnimEntry->setAttr("weightList", animEntry.weightList);
 	}
-	char channelName[10];
-	cry_strcpy(channelName, "channel0");
+	char channelName[] = "channel0";
 	for (uint32 i = 0; i < MANN_NUMBER_BLEND_CHANNELS; i++)
 	{
 		if (animEntry.blendChannels[i] != 0.0f)
@@ -1015,8 +1001,7 @@ bool CAnimationDatabaseLibrary::XMLToAnimEntry(SAnimationEntry& animEntry, XmlNo
 	root->getAttr("weight", animEntry.playbackWeight);
 	root->getAttr("weightList", animEntry.weightList);
 
-	char channelName[10];
-	cry_strcpy(channelName, "channel0");
+	char channelName[] = "channel0";
 	for (uint32 i = 0; i < MANN_NUMBER_BLEND_CHANNELS; i++)
 	{
 		channelName[7] = '0' + i;
@@ -1751,7 +1736,6 @@ XmlNodeRef CAnimationDatabaseManager::SaveDatabase
 	}
 
 	const CAnimationDatabase::TSubADBList& vSubADBs = subAnimDB ? subAnimDB->subADBs : animDB.m_subADBs;
-	const uint32 numSubADBs = vSubADBs.size();
 	if (!vSubADBs.empty())
 	{
 		XmlNodeRef subADBList;
@@ -2088,7 +2072,7 @@ SControllerDef* CAnimationControllerDefLibrary::LoadControllerDef(const XmlNodeR
 		DynArray<bool> loadedScopeDefs(scopeTD.GetNum(), false);
 		const uint32 numScopeDefs = scopeDefList ? scopeDefList->getChildCount() : 0;
 
-		assert(numScopeDefs <= sizeof(ActionScopes) * 8);
+		CRY_ASSERT(numScopeDefs <= sizeof(ActionScopes) * 8);
 
 		for (uint32 i = 0; i < numScopeDefs; ++i)
 		{
@@ -2288,8 +2272,7 @@ EModifyFragmentIdResult CAnimationDatabaseManager::CreateFragmentID(const CTagDe
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	if (!fragmentDefs)
+	if (!CRY_VERIFY(fragmentDefs))
 	{
 		return eMFIR_UnknownInputTagDefinition;
 	}
@@ -2300,9 +2283,12 @@ EModifyFragmentIdResult CAnimationDatabaseManager::CreateFragmentID(const CTagDe
 	{
 		return eMFIR_DuplicateName;
 	}
-
+#if defined(USE_CRY_ASSERT)
 	const int newFragmentTagId = fragmentDefs->AddTag(szFragmentIdName);
-	assert(newFragmentTagId != FRAGMENT_ID_INVALID);
+	CRY_ASSERT(newFragmentTagId != FRAGMENT_ID_INVALID);
+#else
+	fragmentDefs->AddTag(szFragmentIdName);
+#endif
 
 	for (TControllerDefList::const_iterator cit = m_controllerDefs.begin(); cit != m_controllerDefs.end(); ++cit)
 	{
@@ -2325,7 +2311,7 @@ EModifyFragmentIdResult CAnimationDatabaseManager::CreateFragmentID(const CTagDe
 		if (usingSameFragmentDef)
 		{
 			CAnimationDatabase::SFragmentEntry* fragmentEntry = new CAnimationDatabase::SFragmentEntry();
-			assert(otherAnimDB->m_fragmentList.size() == newFragmentTagId);
+			CRY_ASSERT(otherAnimDB->m_fragmentList.size() == newFragmentTagId);
 			otherAnimDB->m_fragmentList.push_back(fragmentEntry);
 		}
 	}
@@ -2364,9 +2350,8 @@ EModifyFragmentIdResult CAnimationDatabaseManager::RenameFragmentID(const CTagDe
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	assert(fragmentDefs == &fragmentIds);
-	if (!fragmentDefs)
+	CRY_ASSERT(fragmentDefs == &fragmentIds);
+	if (!CRY_VERIFY(fragmentDefs))
 	{
 		return eMFIR_UnknownInputTagDefinition;
 	}
@@ -2390,9 +2375,8 @@ EModifyFragmentIdResult CAnimationDatabaseManager::DeleteFragmentID(const CTagDe
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	assert(fragmentDefs == &fragmentIds);
-	if (!fragmentDefs)
+	CRY_ASSERT(fragmentDefs == &fragmentIds);
+	if (!CRY_VERIFY(fragmentDefs))
 		return eMFIR_UnknownInputTagDefinition;
 
 	fragmentDefs->RemoveTag(fragmentID);
@@ -2434,9 +2418,8 @@ bool CAnimationDatabaseManager::SetFragmentTagDef(const CTagDefinition& fragment
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	assert(fragmentDefs == &fragmentIds);
-	if (fragmentDefs)
+	CRY_ASSERT(fragmentDefs == &fragmentIds);
+	if (CRY_VERIFY(fragmentDefs))
 	{
 		fragmentDefs->SetSubTagDefinition(fragmentID, pFragTagDefs);
 		return true;
@@ -2456,8 +2439,7 @@ void CAnimationDatabaseManager::SetFragmentDef(const SControllerDef& inControlle
 	const uint32 controllerDefFilenameCrc = CCrc32::ComputeLowercase(controllerDefFilename);
 
 	SControllerDef* controllerDef = stl::find_in_map(m_controllerDefs, controllerDefFilenameCrc, NULL);
-	assert(controllerDef);
-	if (!controllerDef)
+	if (!CRY_VERIFY(controllerDef))
 	{
 		return;
 	}
@@ -2473,7 +2455,7 @@ void CAnimationDatabaseManager::SetFragmentDef(const SControllerDef& inControlle
 
 bool CAnimationDatabaseManager::DeleteFragmentEntry(IAnimationDatabase* pDatabaseInterface, FragmentID fragmentID, const SFragTagState& tagState, uint32 optionIdx, bool logWarning)
 {
-	assert(pDatabaseInterface);
+	CRY_ASSERT(pDatabaseInterface);
 	CAnimationDatabase* pDatabase = static_cast<CAnimationDatabase*>(pDatabaseInterface);
 
 	bool successfullyDeleted = pDatabase->DeleteEntry(fragmentID, tagState, optionIdx);
@@ -2511,7 +2493,7 @@ bool CAnimationDatabaseManager::DeleteFragmentEntry(IAnimationDatabase* pDatabas
 
 uint32 CAnimationDatabaseManager::AddFragmentEntry(IAnimationDatabase* pDatabaseInterface, FragmentID fragmentID, const SFragTagState& tagState, const CFragment& fragment)
 {
-	assert(pDatabaseInterface);
+	CRY_ASSERT(pDatabaseInterface);
 	CAnimationDatabase* pDatabase = static_cast<CAnimationDatabase*>(pDatabaseInterface);
 
 	uint32 idxRoot = pDatabase->AddEntry(fragmentID, tagState, fragment);
@@ -2531,8 +2513,12 @@ uint32 CAnimationDatabaseManager::AddFragmentEntry(IAnimationDatabase* pDatabase
 			pCurrDatabase->m_pTagDef->TagListToFlags(sTaglist.c_str(), targetTagState.globalTags);
 			FragmentID targetFragID = pCurrDatabase->m_pFragDef->Find(fragCRC);
 
+#if defined(USE_CRY_ASSERT)
 			uint32 currIdx = pCurrDatabase->AddEntry(targetFragID, targetTagState, fragment);
 			CRY_ASSERT(currIdx == idxRoot);
+#else
+			pCurrDatabase->AddEntry(targetFragID, targetTagState, fragment);
+#endif
 		}
 	}
 
@@ -2541,7 +2527,7 @@ uint32 CAnimationDatabaseManager::AddFragmentEntry(IAnimationDatabase* pDatabase
 
 void CAnimationDatabaseManager::SetFragmentEntry(IAnimationDatabase* pDatabaseInterface, FragmentID fragmentID, const SFragTagState& tagState, uint32 optionIdx, const CFragment& fragment)
 {
-	assert(pDatabaseInterface);
+	CRY_ASSERT(pDatabaseInterface);
 	CAnimationDatabase* pDatabase = static_cast<CAnimationDatabase*>(pDatabaseInterface);
 
 	int fragCRC = pDatabase->m_pFragDef->GetTagCRC(fragmentID);
@@ -2711,7 +2697,6 @@ void CAnimationDatabaseManager::PrepareSave(const CAnimationDatabase& animDB, co
 	const CAnimationDatabase::TSubADBList& vSubADBs = subAnimDB ? subAnimDB->subADBs : animDB.m_subADBs;
 	for (CAnimationDatabase::TSubADBList::const_iterator itSubADB = vSubADBs.begin(); itSubADB != vSubADBs.end(); ++itSubADB)
 		PrepareSave(animDB, &(*itSubADB), vFragSaveList, mBlendSaveDatabase);
-
 }
 
 void CAnimationDatabaseManager::SaveDatabasesSnapshot(SSnapshotCollection& snapshotCollection) const
@@ -2848,8 +2833,7 @@ void CAnimationDatabaseManager::SaveSubADB
 ) const
 {
 	XmlNodeRef xmlAnimationDatabase = SaveDatabase(animationDatabase, &subADB, vFragSaveList, mBlendSaveDatabase);
-	assert(xmlAnimationDatabase != 0);
-	if (!xmlAnimationDatabase)
+	if (!CRY_VERIFY(xmlAnimationDatabase != 0))
 	{
 		return;
 	}
@@ -2864,8 +2848,8 @@ void CAnimationDatabaseManager::SaveSubADB
 void CAnimationDatabaseManager::SaveDatabase(IMannequinWriter* pWriter, const IAnimationDatabase* pIAnimationDatabase) const
 {
 	const CAnimationDatabase* pAnimationDatabase = static_cast<const CAnimationDatabase*>(pIAnimationDatabase);
-	assert(pWriter);
-	assert(pAnimationDatabase);
+	CRY_ASSERT(pWriter);
+	CRY_ASSERT(pAnimationDatabase);
 
 	TFragmentSaveList vFragSaveList;
 	TFragmentBlendSaveDatabase mBlendSaveDatabase;
@@ -2877,8 +2861,7 @@ void CAnimationDatabaseManager::SaveDatabase(IMannequinWriter* pWriter, const IA
 		SaveSubADB(pWriter, *pAnimationDatabase, pAnimationDatabase->m_subADBs[i], vFragSaveList, mBlendSaveDatabase);
 
 	XmlNodeRef xmlAnimationDatabase = SaveDatabase(*pAnimationDatabase, NULL, vFragSaveList, mBlendSaveDatabase);
-	assert(xmlAnimationDatabase != 0);
-	if (!xmlAnimationDatabase)
+	if (!CRY_VERIFY(xmlAnimationDatabase))
 	{
 		return;
 	}
@@ -2889,12 +2872,11 @@ void CAnimationDatabaseManager::SaveDatabase(IMannequinWriter* pWriter, const IA
 
 void CAnimationDatabaseManager::SaveControllerDef(IMannequinWriter* pWriter, const SControllerDef* pControllerDef) const
 {
-	assert(pWriter);
-	assert(pControllerDef);
+	CRY_ASSERT(pWriter);
+	CRY_ASSERT(pControllerDef);
 
 	XmlNodeRef xmlControllerDef = SaveControllerDef(*pControllerDef);
-	assert(xmlControllerDef != 0);
-	if (!xmlControllerDef)
+	if (!CRY_VERIFY(xmlControllerDef))
 	{
 		return;
 	}
@@ -2905,8 +2887,8 @@ void CAnimationDatabaseManager::SaveControllerDef(IMannequinWriter* pWriter, con
 
 void CAnimationDatabaseManager::SaveTagDefinition(IMannequinWriter* pWriter, const CTagDefinition* pTagDefinition) const
 {
-	assert(pWriter);
-	assert(pTagDefinition);
+	CRY_ASSERT(pWriter);
+	CRY_ASSERT(pTagDefinition);
 
 	mannequin::TTagDefinitionSaveDataList saveList;
 	mannequin::SaveTagDefinition(*pTagDefinition, saveList);

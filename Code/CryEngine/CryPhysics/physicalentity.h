@@ -10,6 +10,37 @@ struct SRayTraceRes;
 
 #include <CryNetwork/ISerialize.h>
 
+struct SMemSerializer : ISerialize {
+	SMemSerializer(int size0=256) { buf=new char[size=size0]; pos=0; reading=false; }
+	SMemSerializer(char *buf0, bool read=true) { buf=buf0; size=-1; pos=0; reading=read; }
+	virtual ~SMemSerializer() { if (size>0) delete[] buf; }
+	virtual void ReadStringValue(const char * name, SSerializeString &curValue, uint32 policy=0) {}
+	virtual void WriteStringValue(const char * name, SSerializeString& buffer, uint32 policy=0) {}
+	virtual void Update( ISerializeUpdateFunction * pUpdate ) {}
+	virtual void FlagPartialRead() {}
+	virtual void BeginGroup( const char * szName ) {}
+	virtual bool BeginOptionalGroup(const char* szName, bool condition) { Value(szName, condition); return condition; }
+	virtual void EndGroup() {}
+	virtual bool IsReading() const { return reading!=0; }
+	virtual bool ShouldCommitValues() const { return true; }
+	virtual ESerializationTarget GetSerializationTarget() const { return eST_SaveGame; }
+	virtual bool Ok() const { return true; }
+#define SERIALIZATION_TYPE(T) \
+	virtual void Value( const char * name, T& x, uint32 policy=0 ) { \
+		if (pos+sizeof(T)>(unsigned int)size) { ReallocateList(buf,size,size+256); size+=256; } \
+		T *op[2]; op[reading]=(T*)(buf+pos); op[reading^1]=&x; *op[0]=*op[1]; pos+=sizeof(T); \
+	}
+#include <CryNetwork/SerializationTypes.h>
+#undef SERIALIZATION_TYPE
+#define SERIALIZATION_TYPE(T) virtual void ValueWithDefault( const char * name, T& x, const T& defaultValue ) { Value(name,x); }
+#include <CryNetwork/SerializationTypes.h>
+#undef SERIALIZATION_TYPE
+	virtual void ValueWithDefault( const char * name, SSerializeString& x, const SSerializeString& defaultValue ) {}
+	int reading;
+	char* buf;
+	int pos,size;
+};
+
 enum phentity_flags_int { 
 	pef_use_geom_callbacks = 0x20000000,
 	sef_skeleton = 0x04
@@ -172,7 +203,7 @@ public:
 
 	// Not supported, use Create/Delete instead
 	void* operator new (size_t sz) throw() { return NULL; } 
-	void operator delete (void* p) { __debugbreak(); }
+	void operator delete (void* p) { CRY_FUNCTION_NOT_IMPLEMENTED; }
 
 	template <typename T>
 	static T* Create(CPhysicalWorld* pWorld, IGeneralMemoryHeap* pHeap) {
@@ -223,6 +254,7 @@ public:
 	virtual float GetMaxFriction() { return 100.0f; }
 	virtual bool IgnoreCollisionsWith(const CPhysicalEntity *pent, int bCheckConstraints=0) const { return false; }
 	virtual void GetSleepSpeedChange(int ipart, Vec3 &v,Vec3 &w) { v.zero(); w.zero(); }
+	virtual void OnHostSync(CPhysicalEntity *pHost) {}
 
 	virtual int AddCollider(CPhysicalEntity *pCollider);
 	virtual int AddColliderNoLock(CPhysicalEntity *pCollider) { return AddCollider(pCollider); }
@@ -349,10 +381,11 @@ public:
 
 	Vec3 m_pos;
 	quaternionf m_qrot;
-	coord_block *m_pNewCoords;
+	coord_block *m_pNewCoords, *m_pSyncCoords;
 
 	CPhysicalEntity **m_pColliders;
 	int m_nColliders,m_nCollidersAlloc;
+	int m_nSyncColliders;
 	mutable volatile int m_lockColliders;
 
 	CPhysicalEntity *m_pOuterEntity;
@@ -377,7 +410,7 @@ public:
 	int m_nGroundPlanes;
 
 	int (*m_pUsedParts)[16];
-	volatile unsigned int m_nUsedParts;
+	volatile uint64 m_nUsedParts;
 
 	CPhysicalPlaceholder *m_pLastPortal = nullptr;
 	CPhysicalPlaceholder *GetLastPortal() const { return m_pLastPortal; }

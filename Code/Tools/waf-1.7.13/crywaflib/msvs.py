@@ -818,15 +818,9 @@ def strip_unsupported_msbuild_platforms(conf):
 		msbuild_dir = 'C:/Program Files (x86)/MSBuild'
 		
 	# Visual Studio behave oddly when picking which "Platform" folder to use.
-	# If there is no "Platform" folder in root assume that MSBUILD uses the MSVC versioned one
-	# VS2012 Pro -> Root/Platform
-	# VS2012 Exp -> Root/<msvc_version>/Platforms
 	msbuild_base = msbuild_dir + '/Microsoft.Cpp/' + ms_build_version
-	if os.path.exists(msbuild_base + '/Platforms'):
-		msbuild_folder_path = msbuild_base + '/Platforms/'
-	else:
-		toolset = 'V' + cur_env['MSVC_VERSION'].replace('.','') # 11.0 -> v110
-		msbuild_folder_path ='%s/%s/Platforms/' % (msbuild_base, toolset)
+	toolset = 'V' + cur_env['MSVC_VERSION'].replace('.','') # 11.0 -> v110
+	msbuild_folder_path ='%s/%s/Platforms/' % (msbuild_base, toolset)
 		
 	# Platform to MSBUILD folder map
 	required_folder_for_platform = { 		
@@ -943,7 +937,7 @@ class vsnode(object):
 		"""
 		Override in subclasses...
 		"""
-		return 'cd /d "%s" & %s' % (self.ctx.srcnode.abspath(), getattr(self.ctx, 'waf_command', 'cry_waf.exe'))
+		return 'cd /d "%s" & %s' % (self.ctx.srcnode.abspath(), getattr(self.ctx, 'waf_command', self.ctx.srcnode.abspath() + '/Code/Tools/waf-1.7.13/bin/cry_waf.exe'))
 
 	def ptype(self):
 		"""
@@ -1066,12 +1060,13 @@ class vsnode_project(vsnode):
 		"""
 		Returns a list of triplet (configuration, platform, output_directory)
 		"""
-		ret = []
+		ret = []		
 		for c in self.ctx.configurations:
 			waf_configuration = self.ctx.convert_vs_configuration_to_waf_configuration(c)
 			waf_spec = self.ctx.convert_vs_spec_to_waf_spec(c)
-			
+						
 			for p in self.ctx.platforms:
+				
 				x = build_property()
 				x.outdir = ''
 				x.platform_toolset = ''
@@ -1146,14 +1141,13 @@ class vsnode_alias(vsnode_project):
 		self.project_filter = {}
 		android_platform_target_version = ''
 		
-		tools_version_lookup = { '11.0': '4.0', '12.0': '12.0', '14.0': '14.0' }
 		max_msvc_version = 0
 		for env in self.ctx.all_envs.values():
 			msvc_version = getattr(env, 'MSVC_VERSION', '')
-			if isinstance(msvc_version, basestring) and msvc_version in tools_version_lookup:
+			if isinstance(msvc_version, basestring):
 				if float(msvc_version) > max_msvc_version:
 					max_msvc_version = float(msvc_version)
-					self.vstoolsver = tools_version_lookup[msvc_version]
+					self.vstoolsver = msvc_version
 					
 class vsnode_build_all(vsnode_alias):
 	"""
@@ -1693,14 +1687,13 @@ class msvs_generator(BuildContext):
 
 		# Note: only vsver is relevant for Visual Studio version selector
 		# We select from the highest Visual C++ version in use in the current configuration
-		version_lookup = { '11.0': '2012', '12.0': '2013', '14.0': '2015' }
 		max_msvc_version = 0
 		for env in self.all_envs.values():
 			msvc_version = getattr(env, 'MSVC_VERSION', '')
-			if isinstance(msvc_version, basestring) and msvc_version in version_lookup:
+			if isinstance(msvc_version, basestring):
 				if float(msvc_version) > max_msvc_version:
 					max_msvc_version = float(msvc_version)
-					self.vsver = version_lookup[msvc_version]
+					self.vsver = msvc_version
 
 	def execute(self):
 		"""

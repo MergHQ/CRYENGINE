@@ -1,11 +1,9 @@
 {
-	"NoUberFile":
-	{
-		"Root":
-		[
-			"main.cpp",
-			"StdAfx.cpp",
-			"StdAfx.h"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "main.cpp",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
 }

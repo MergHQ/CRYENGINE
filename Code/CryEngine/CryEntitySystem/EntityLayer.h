@@ -5,6 +5,7 @@
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryCore/StlUtils.h>
 #include <CryEntitySystem/IEntityLayer.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
 struct SEntityLayerGarbage
 {
@@ -103,6 +104,7 @@ private:
 
 	void EnableBrushes(bool isEnable);
 	void EnableEntities(bool isEnable);
+	void EnableEntity(CEntity& entity, EntityProp& property, bool isEnable);
 	void ReEvalNeedForHeap();
 	void NotifyActivationToListeners(bool bActivated);
 

@@ -36,7 +36,7 @@
 #include "UI/HUD/HUDEventDispatcher.h"
 #include "PersistantStats.h"
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning(disable: 4244)
 #endif
 
@@ -415,7 +415,6 @@ int CScriptBind_Actor::LinkToEntity(IFunctionHandler *pH)
 
 	if (pActor)
 	{
-		IEntity *pEntity(0);
 		ScriptHandle entityId;
 
 		entityId.n = 0;
@@ -630,7 +629,6 @@ int CScriptBind_Actor::SetHealth(IFunctionHandler *pH, float health)
 int CScriptBind_Actor::DamageInfo(IFunctionHandler *pH, ScriptHandle shooter, ScriptHandle target, ScriptHandle weapon, ScriptHandle projectile, float damage, int damageType, Vec3 hitDirection)
 {
 	EntityId shooterID = (EntityId)shooter.n;
-	EntityId targetID = (EntityId)target.n;
 	EntityId weaponID = (EntityId)weapon.n;
 	EntityId projectileID = (EntityId)projectile.n;
 	CProjectile *pProjectile = g_pGame->GetWeaponSystem()->GetProjectile(projectileID);
@@ -760,8 +758,6 @@ int CScriptBind_Actor::HurryAnimationGraph(IFunctionHandler *pH)
 int CScriptBind_Actor::SetTurnAnimationParams(
 	IFunctionHandler* pH, const float turnThresholdAngle, const float turnThresholdTime)
 {
-	bool result = false;
-
 	if ( (turnThresholdAngle < 0.0f) || (turnThresholdTime < 0.0f) )
 	{
 		CryLog("SetTurnAnimationParams(): Invalid parameter(s)!");

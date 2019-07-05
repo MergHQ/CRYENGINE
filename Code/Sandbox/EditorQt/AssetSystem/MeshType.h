@@ -11,18 +11,21 @@ class CMeshType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CMeshType);
 
-	virtual const char*                       GetTypeName() const override { return "Mesh"; }
-	virtual const char*                       GetUiTypeName() const override { return QT_TR_NOOP("Mesh"); }
-	virtual const char* GetFileExtension() const override { return "cgf"; }
-	virtual bool IsImported() const override { return true; }
-	virtual bool CanBeEdited() const override { return true; }
-	virtual CAssetEditor* Edit(CAsset* asset) const override;
-	virtual bool HasThumbnail() const override { return true; }
-	virtual void GenerateThumbnail(const CAsset* pAsset) const override;
-	virtual const char* GetObjectClassName() const { return "Brush"; }
+	virtual const char*                       GetTypeName() const override       { return "Mesh"; }
+	virtual const char*                       GetUiTypeName() const override     { return QT_TR_NOOP("Mesh"); }
+	virtual const char*                       GetFileExtension() const override  { return "cgf"; }
+	virtual bool                              IsImported() const override        { return true; }
+	virtual bool                              CanBeCopied() const                { return true; }
+	virtual bool                              CanBeEdited() const override       { return true; }
+	virtual bool                              HasThumbnail() const override      { return true; }
+	virtual const char*                       GetObjectClassName() const         { return "Brush"; }
+	virtual QColor                            GetThumbnailColor() const override { return QColor(129, 84, 210); }
 	virtual std::vector<CItemModelAttribute*> GetDetails() const override;
 	virtual QVariant                          GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const override;
-	virtual bool MoveAsset(CAsset* pAsset, const char* szNewPath, bool bMoveSourcefile) const override;
+
+	virtual void                              GenerateThumbnail(const CAsset* pAsset) const override;
+	virtual CAssetEditor*                     Edit(CAsset* asset) const override;
+	virtual bool                              MoveAsset(CAsset* pAsset, const char* szNewPath, bool bMoveSourcefile) const override;
 
 private:
 	virtual CryIcon GetIconInternal() const override;
@@ -33,4 +36,3 @@ public:
 	static CItemModelAttribute s_triangleCountAttribute;
 	static CItemModelAttribute s_materialCountAttribute;
 };
-

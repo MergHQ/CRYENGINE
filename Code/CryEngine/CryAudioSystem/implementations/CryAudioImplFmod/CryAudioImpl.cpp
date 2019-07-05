@@ -1,18 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImpl.h"
-#include "AudioImplCVars.h"
-#include <Logger.h>
+#include "Impl.h"
+#include "CVars.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
 
-#if CRY_PLATFORM_DURANGO
-	#include <apu.h>
-	#include <shapexmacontext.h>
-#endif // CRY_PLATFORM_DURANGO
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
+	#include <Logger.h>
+#endif // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -22,10 +20,6 @@ namespace Fmod
 {
 // Define global objects.
 CCVars g_cvars;
-
-#if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
-MemoryPoolReferenced g_audioImplMemoryPoolSecondary;
-#endif // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
 
 //////////////////////////////////////////////////////////////////////////
 class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
@@ -46,27 +40,14 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-#if defined(PROVIDE_FMOD_IMPL_SECONDARY_POOL)
-		size_t secondarySize = 0;
-		void* pSecondaryMemory = nullptr;
-
-	#if CRY_PLATFORM_DURANGO
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Fmod Implementation Audio Pool Secondary");
-		secondarySize = g_cvars.m_secondaryMemoryPoolSize << 10;
-
-		APU_ADDRESS temp;
-		HRESULT const result = ApuAlloc(&pSecondaryMemory, &temp, secondarySize, SHAPE_XMA_INPUT_BUFFER_ALIGNMENT);
-		CRY_ASSERT(result == S_OK);
-	#endif  // CRY_PLATFORM_DURANGO
-
-		g_audioImplMemoryPoolSecondary.InitMem(secondarySize, (uint8*)pSecondaryMemory);
-#endif    // PROVIDE_AUDIO_IMPL_SECONDARY_POOL
-
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplFmod::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
+
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CImpl");
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplFmod::OnEvent, nullptr);
 
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 		if (m_bSuccess)
 		{
 			Cry::Audio::Log(ELogType::Always, "CryAudioImplFmod loaded");
@@ -75,6 +56,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		{
 			Cry::Audio::Log(ELogType::Error, "CryAudioImplFmod failed to load");
 		}
+#endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 		return m_bSuccess;
 	}

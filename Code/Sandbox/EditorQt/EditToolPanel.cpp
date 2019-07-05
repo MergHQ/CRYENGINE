@@ -1,10 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <StdAfx.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include "EditToolPanel.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
+#include <LevelEditor/LevelEditorSharedState.h>
 #include <CrySerialization/IArchive.h>
 
 void SEditToolSerializer::YASLI_SERIALIZE_METHOD(Serialization::IArchive& ar)
@@ -15,13 +16,16 @@ void SEditToolSerializer::YASLI_SERIALIZE_METHOD(Serialization::IArchive& ar)
 
 QEditToolPanel::QEditToolPanel(QWidget* parent)
 	: QWidget(parent)
+	, m_pPropertyTree(nullptr)
 {
-	GetIEditorImpl()->RegisterNotifyListener(this);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalPreEditToolChanged.Connect(this, &QEditToolPanel::OnPreEditToolChanged);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &QEditToolPanel::OnEditToolChanged);
 }
 
 QEditToolPanel::~QEditToolPanel()
 {
-	GetIEditorImpl()->UnregisterNotifyListener(this);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalPreEditToolChanged.DisconnectObject(this);
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 
 	if (m_pPropertyTree)
 		m_pPropertyTree->detach();
@@ -30,19 +34,17 @@ QEditToolPanel::~QEditToolPanel()
 		m_toolSerializer.pEditTool->signalPropertiesChanged.DisconnectObject(this);
 }
 
-void QEditToolPanel::OnEditorNotifyEvent(EEditorNotifyEvent e)
+void QEditToolPanel::OnPreEditToolChanged()
 {
-	if (eNotify_OnEditToolBeginChange == e)
+	SetTool(nullptr);
+}
+
+void QEditToolPanel::OnEditToolChanged()
+{
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && CanEditTool(pTool))
 	{
-		SetTool(nullptr);
-	}
-	else if (eNotify_OnEditToolEndChange == e)
-	{
-		CEditTool* pTool = GetIEditorImpl()->GetEditTool();
-		if (pTool && CanEditTool(pTool))
-		{
-			SetTool(pTool);
-		}
+		SetTool(pTool);
 	}
 }
 
@@ -70,4 +72,3 @@ void QEditToolPanel::SetTool(CEditTool* pTool)
 		m_pPropertyTree->attach(structs);
 	}
 }
-

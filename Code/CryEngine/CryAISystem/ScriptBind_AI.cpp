@@ -15,6 +15,7 @@
  *********************************************************************/
 
 #include "StdAfx.h"
+#include <random>
 #include "ScriptBind_AI.h"
 #include <CrySystem/ISystem.h>
 #include <CryAISystem/IAISystem.h>
@@ -1045,28 +1046,28 @@ CScriptBind_AI::CScriptBind_AI() :
 	SCRIPT_REG_GLOBAL(AIREADIBILITY_INTERESTING);
 
 	//SCRIPT_REG_GLOBAL("SIGNALID_THROWGRENADE", -10);
-	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITY", SIGNALFILTER_READABILITY);
-	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITYAT", SIGNALFILTER_READABILITYAT);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_LASTOP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_GROUPONLY);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_GROUPONLY_EXCEPT);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_FACTIONONLY);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_ANYONEINCOMM);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_ANYONEINCOMM_EXCEPT);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_TARGET);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SUPERGROUP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SUPERFACTION);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SUPERTARGET);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTGROUP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTINCOMM);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTINCOMM_FACTION);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_NEARESTINCOMM_LOOKING);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_HALFOFGROUP);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_SENDER);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_LEADER);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_LEADERENTITY);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_FORMATION);
-	SCRIPT_REG_GLOBAL(SIGNALFILTER_FORMATION_EXCEPT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITY", AISignals::SIGNALFILTER_READABILITY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALID_READIBILITYAT", AISignals::SIGNALFILTER_READABILITYAT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_LASTOP", AISignals::SIGNALFILTER_LASTOP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_GROUPONLY", AISignals::SIGNALFILTER_GROUPONLY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_GROUPONLY_EXCEPT", AISignals::SIGNALFILTER_GROUPONLY_EXCEPT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_FACTIONONLY", AISignals::SIGNALFILTER_FACTIONONLY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_ANYONEINCOMM", AISignals::SIGNALFILTER_ANYONEINCOMM);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_ANYONEINCOMM_EXCEPT", AISignals::SIGNALFILTER_ANYONEINCOMM_EXCEPT);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_TARGET", AISignals::SIGNALFILTER_TARGET);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SUPERGROUP", AISignals::SIGNALFILTER_SUPERGROUP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SUPERFACTION", AISignals::SIGNALFILTER_SUPERFACTION);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SUPERTARGET", AISignals::SIGNALFILTER_SUPERTARGET);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTGROUP", AISignals::SIGNALFILTER_NEARESTGROUP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTINCOMM", AISignals::SIGNALFILTER_NEARESTINCOMM);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTINCOMM_FACTION", AISignals::SIGNALFILTER_NEARESTINCOMM_FACTION);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_NEARESTINCOMM_LOOKING", AISignals::SIGNALFILTER_NEARESTINCOMM_LOOKING);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_HALFOFGROUP", AISignals::SIGNALFILTER_HALFOFGROUP);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_SENDER", AISignals::SIGNALFILTER_SENDER);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_LEADER", AISignals::SIGNALFILTER_LEADER);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_LEADERENTITY", AISignals::SIGNALFILTER_LEADERENTITY);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_FORMATION", AISignals::SIGNALFILTER_FORMATION);
+	gEnv->pScriptSystem->SetGlobalValue("SIGNALFILTER_FORMATION_EXCEPT", AISignals::SIGNALFILTER_FORMATION_EXCEPT);
 
 	SCRIPT_REG_GLOBAL(AIOBJECTFILTER_SAMEFACTION);
 	SCRIPT_REG_GLOBAL(AIOBJECTFILTER_SAMEGROUP);
@@ -2894,7 +2895,7 @@ int CScriptBind_AI::IsGoalPipe(IFunctionHandler* pH)
 	return pH->EndFunction(false);
 }
 
-bool CScriptBind_AI::GetSignalExtraData(IFunctionHandler* pH, int iParam, IAISignalExtraData*& pEData)
+bool CScriptBind_AI::GetSignalExtraData(IFunctionHandler* pH, int iParam, AISignals::IAISignalExtraData*& pEData)
 {
 	bool bDataFound = false;
 	SmartScriptTable theObj;
@@ -3006,12 +3007,13 @@ int CScriptBind_AI::Signal(IFunctionHandler* pH)
 			return pH->EndFunction();
 		}
 
-		IAISignalExtraData* pEData = 0;
+		AISignals::IAISignalExtraData* pEData = 0;
 		GetSignalExtraData(pH, 5, pEData);
 
 		if (IAIObject* aiObject = pEntity->GetAI())
 		{
-			GetAISystem()->SendSignal(cFilter, nSignalID, szSignalText, aiObject, pEData);
+			const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(nSignalID, szSignalText, aiObject->GetEntityID(), pEData);
+			GetAISystem()->SendSignal(cFilter, pSignal);
 
 			return pH->EndFunction();
 		}
@@ -3062,7 +3064,7 @@ int CScriptBind_AI::FreeSignal(IFunctionHandler* pH)
 	if (pH->GetParamCount() > 4)
 		pEntity = GetEntityFromParam(pH, 5);
 
-	IAISignalExtraData* pEData = 0;
+	AISignals::IAISignalExtraData* pEData = nullptr;
 	GetSignalExtraData(pH, 6, pEData);
 
 	if (pEntity)
@@ -3070,7 +3072,7 @@ int CScriptBind_AI::FreeSignal(IFunctionHandler* pH)
 		pObject = pEntity->GetAI();
 	}
 
-	GetAISystem()->SendAnonymousSignal(nSignalID, szSignalText, pos, fRadius, pObject, pEData);
+	GetAISystem()->SendAnonymousSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(nSignalID, szSignalText, pObject->GetEntityID(), pEData), pos, fRadius);
 
 	return pH->EndFunction();
 }
@@ -3584,7 +3586,9 @@ int CScriptBind_AI::FindObjectOfType(IFunctionHandler* pH)
 
 		if (chooseRandom && !randomObjs.empty())
 		{
-			std::random_shuffle(randomObjs.begin(), randomObjs.end());
+			static std::mt19937 urng(std::random_device{}());
+			std::shuffle(randomObjs.begin(), randomObjs.end(), urng);
+
 			pFoundObject = randomObjs[0];
 		}
 
@@ -5964,9 +5968,11 @@ int CScriptBind_AI::SetLeader(IFunctionHandler* pH)
 			if (pOldLeader != pAIObject)
 			{
 				if (pOldLeader)
-					GetAISystem()->SendSignal(0, 0, "OnLeaderDeassigned", pOldLeader);
+				{
+					GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderDeassigned_DEPRECATED(), pOldLeader->GetEntityID()));
+				}
 				GetAISystem()->SetLeader(pAIObject);
-				GetAISystem()->SendSignal(0, 0, "OnLeaderAssigned", pAIObject);
+				GetAISystem()->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaderAssigned_DEPRECATED(), pAIObject->GetEntityID()));
 			}
 		}
 	}
@@ -6853,13 +6859,7 @@ int CScriptBind_AI::GetDirectAnchorPos(IFunctionHandler* pH)
 //-----------------------------------------------------------------------------------------------------------
 int CScriptBind_AI::InvalidateHidespot(IFunctionHandler* pH)
 {
-	GET_ENTITY(1);
-
-	IAIObject* pAI = pEntity->GetAI();
-	CPipeUser* pPipeUser = CastToCPipeUserSafe(pAI);
-
-	if (pPipeUser)
-		pPipeUser->m_CurrentHideObject.Invalidate();
+	AIWarningID("<CScriptBind_AI>", "InvalidateHidespot: Hidespots aren't supported anymore!");
 
 	return pH->EndFunction();
 }
@@ -6909,7 +6909,6 @@ int CScriptBind_AI::EvalHidespot(IFunctionHandler* pH)
 	}
 
 	Vec3 floorPos = pShooterAIActor->GetFloorPosition(pShooter->GetPos());
-	const SAIBodyInfo& bodyInfo = pShooterAIActor->GetBodyInfo();
 
 	// Hard-coded for human size
 	Vec3 waistPos = floorPos + Vec3(0, 0, 0.75f);
@@ -7457,7 +7456,6 @@ int CScriptBind_AI::IsAgentInTargetFOV(IFunctionHandler* pH)
 	viewDir.z = 0.0f;
 	viewDir.NormalizeSafe();
 
-	Vec3 p(pTarget->GetPos() + Vec3(0, 0, 0.5f));
 	float dot = dirToTarget.Dot(viewDir);
 
 	if (dot > cosf(DEG2RAD(FOV / 2)))
@@ -8209,20 +8207,7 @@ int CScriptBind_AI::GetDistanceAlongPath(IFunctionHandler* pH)
 //====================================================================
 int CScriptBind_AI::IgnoreCurrentHideObject(IFunctionHandler* pH)
 {
-	if (pH->GetParamCount() < 1)
-	{
-		AIWarningID("<IgnoreCurrentHideObject> ", "Too few parameters.");
-		return pH->EndFunction();
-	}
-	GET_ENTITY(1);
-
-	float timeOut = 10.0f;
-	if (pH->GetParamCount() > 1)
-		pH->GetParam(2, timeOut);
-
-	IPipeUser* pPipeUser = CastToIPipeUserSafe(pEntity->GetAI());
-	if (pPipeUser)
-		pPipeUser->IgnoreCurrentHideObject(timeOut);
+	AIWarningID("<CScriptBind_AI>", "IgnoreCurrentHideObject: Hidespots aren't supported anymore!");
 
 	return pH->EndFunction(0);
 }
@@ -8232,22 +8217,7 @@ int CScriptBind_AI::IgnoreCurrentHideObject(IFunctionHandler* pH)
 //====================================================================
 int CScriptBind_AI::GetCurrentHideAnchor(IFunctionHandler* pH)
 {
-	if (pH->GetParamCount() < 1)
-	{
-		AIWarningID("<GetCurrentHideAnchor> ", "Too few parameters.");
-		return pH->EndFunction();
-	}
-
-	GET_ENTITY(1);
-	CPipeUser* pPipeUser = CastToCPipeUserSafe(pEntity->GetAI());
-	if (pPipeUser && pPipeUser->m_CurrentHideObject.GetHideSpotType() == SHideSpotInfo::eHST_ANCHOR)
-	{
-		const char* szName = pPipeUser->m_CurrentHideObject.GetAnchorName();
-		if (szName && szName[0])
-		{
-			return pH->EndFunction(szName);
-		}
-	}
+	AIWarningID("<CScriptBind_AI>", "GetCurrentHideAnchor: Hidespots aren't supported anymore!");
 
 	return pH->EndFunction();
 }
@@ -8571,9 +8541,9 @@ int CScriptBind_AI::NotifySurpriseEntityAction(IFunctionHandler* pH)
 			IAIObject* pAttTarget = pAIActor->GetAttentionTarget();
 			if (pAttTarget && (pAttTarget->GetEntityID() == miracleId))
 			{
-				IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+				AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 				pData->iValue = note;
-				pAIActor->SetSignal(1, "SURPRISE_ACTION", pEntity, pData);
+				pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSurpriseAction_DEPRECATED(), miracleId, pData));
 			}
 		}
 	}
@@ -10138,7 +10108,7 @@ int CScriptBind_AI::GetTacticalPoints(IFunctionHandler* pH)
 	}
 
 	SmartScriptTable specTable;
-	char* sQueryName = "null";
+	const char* sQueryName = "null";
 	int queryID = 0;
 	bool bRemoveQuery = true;
 
@@ -10206,14 +10176,7 @@ int CScriptBind_AI::GetTacticalPoints(IFunctionHandler* pH)
 			bool bMarkAsHidespot = false;
 			if (pH->GetParamCount() > 3 && pH->GetParam(4, bMarkAsHidespot) && bMarkAsHidespot)
 			{
-				const SHideSpot* pHS = point.GetHidespot();
-				const SHideSpotInfo* pHSInfo = point.GetHidespotInfo();
-				if (pHS && pHSInfo)
-				{
-					CPipeUser* pPipeUser = CastToCPipeUserSafe(pAI);
-					if (pPipeUser)
-						pPipeUser->m_CurrentHideObject.Set(pHS, pHSInfo->pos, pHSInfo->dir);
-				}
+				AIWarningID("<CScriptBind_AI>", "GetTacticalPoints: marking as hide point isn't supported anymore!");
 			}
 		}
 
@@ -10235,13 +10198,19 @@ int CScriptBind_AI::GetTacticalPoints(IFunctionHandler* pH)
 //
 int CScriptBind_AI::DestroyAllTPSQueries(IFunctionHandler* pH)
 {
-	gAIEnv.pTacticalPointSystem->DestroyAllQueries();
+	if (gAIEnv.pTacticalPointSystem)
+	{
+		gAIEnv.pTacticalPointSystem->DestroyAllQueries();
+	}
 
 	return(pH->EndFunction());
 }
 
 int CScriptBind_AI::CreateQueryFromTacticalSpec(SmartScriptTable specTable)
 {
+	if (!gAIEnv.pTacticalPointSystem)
+		return 0;
+
 	ITacticalPointSystem* pTPS = gAIEnv.pTacticalPointSystem;
 	int option = 0;
 	bool bOk = true, bAllTables = true, bAtLeastOneGenerationProvided = false, bAtLeastOneWeightProvided = false;
@@ -10998,7 +10967,7 @@ int CScriptBind_AI::LoadBehaviors(IFunctionHandler* pH, const char* folderName, 
 	{
 		if (!BehaviorLoader()(behaviorExplorer.behaviors, it->first.c_str(), it->second))
 		{
-			CRY_ASSERT_TRACE(false, ("Couldn't load behavior %s", it->first.c_str()));
+			CRY_ASSERT(false, "Couldn't load behavior %s", it->first.c_str());
 			++numFailed;
 		}
 	}
@@ -11241,7 +11210,7 @@ int CScriptBind_AI::UpdateGlobalPerceptionScale(IFunctionHandler* pH, float visu
 int CScriptBind_AI::QueueBubbleMessage(IFunctionHandler* pH, ScriptHandle entityID, const char* message)
 {
 	EntityId id = static_cast<EntityId>(entityID.n);
-	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id))
+	if (gEnv->pEntitySystem->GetEntity(id) != nullptr)
 	{
 		AIQueueBubbleMessage("Message from LUA", id, message, eBNS_Balloon | eBNS_LogWarning);
 	}

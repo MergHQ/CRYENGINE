@@ -46,7 +46,7 @@ void CStatObj::Refresh(int nFlags)
 
 		ShutDown();
 		Init();
-		bool bRes = LoadCGF(m_szFileName, false, 0, 0, 0);
+		bool bRes = LoadCGF(m_szFileName, 0);
 
 		// Shutdown/Init sequence might produce same modification id as before, so we make sure to store a different value.
 		m_nModificationId = oldModificationId + 1;
@@ -59,7 +59,7 @@ void CStatObj::Refresh(int nFlags)
 			// load default in case of error
 			ShutDown();
 			Init();
-			LoadCGF(DEFAULT_CGF_NAME, 0, 0, 0, 0);
+			LoadCGF(DEFAULT_CGF_NAME, 0);
 			m_bDefaultObject = true;
 		}
 
@@ -67,57 +67,216 @@ void CStatObj::Refresh(int nFlags)
 	}
 }
 
-void CStatObj::LoadLowLODs(bool bUseStreaming, unsigned long nLoadingFlags)
+void CStatObj::LoadLowLODs(bool useStreaming, uint32 loadingFlags)
 {
-	if (!LoadLowLODS_Prep(bUseStreaming, nLoadingFlags))
+	if (!LoadLowLODS_Prepare(loadingFlags))
 		return;
 
 	int nLoadedLods = 1;
-	CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM];
-	for (int nLodLevel = 0; nLodLevel < MAX_STATOBJ_LODS_NUM; nLodLevel++)
-		loadedLods[nLodLevel] = 0;
-
-	for (int nLodLevel = 1; nLodLevel < MAX_STATOBJ_LODS_NUM; nLodLevel++)
+	CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM] = { nullptr };
+	for (int lodLevel = 1; lodLevel < MAX_STATOBJ_LODS_NUM; lodLevel++)
 	{
-		CStatObj* pLodStatObj = LoadLowLODS_Load(nLodLevel, bUseStreaming, nLoadingFlags, NULL, 0);
+		CStatObj* pLodStatObj = LoadLowLOD(lodLevel, useStreaming, loadingFlags);
 		if (!pLodStatObj)
 			break;
-		nLoadedLods++;
 
-		loadedLods[nLodLevel] = pLodStatObj;
+		++nLoadedLods;
+		loadedLods[lodLevel] = pLodStatObj;
 	}
 
 	LoadLowLODS_Finalize(nLoadedLods, loadedLods);
 }
 
-bool CStatObj::LoadLowLODS_Prep(bool bUseStreaming, unsigned long nLoadingFlags)
+CStatObj* CStatObj::LoadLowLOD(int lodLevel, bool useStreaming, uint32 loadingFlags)
+{
+	char szLodFileName[MAX_PATH];
+	MakeLodFileName(lodLevel, szLodFileName);
+
+	CStatObj* pLodStatObj = stl::find_in_map(m_pObjManager->m_nameToObjectMap, CONST_TEMP_STRING(szLodFileName), nullptr);
+	if (pLodStatObj)
+	{
+		pLodStatObj->m_pLod0 = this; // Must be here.
+
+		typedef std::set<CStatObj*> LoadedObjects;
+		LoadedObjects::iterator it = m_pObjManager->m_lstLoadedObjects.find(pLodStatObj);
+		if (it != m_pObjManager->m_lstLoadedObjects.end())
+		{
+			m_pObjManager->m_lstLoadedObjects.erase(it);
+			m_pObjManager->m_nameToObjectMap.erase(CONST_TEMP_STRING(szLodFileName));
+		}
+	}
+	else if (IsValidFile(szLodFileName))
+	{
+		pLodStatObj = new CStatObj();
+		pLodStatObj->m_pLod0 = this;
+
+		if (useStreaming && GetCVars()->e_StreamCgf)
+			pLodStatObj->m_bCanUnload = true;
+
+		pLodStatObj->LoadCGF_Prepare(szLodFileName, true);
+		CReadOnlyChunkFile chunkFile(false, false);
+		if(!pLodStatObj->LoadCGF(&chunkFile, szLodFileName, true, loadingFlags))
+		{
+			if (GetLodObject(lodLevel) != pLodStatObj)
+				SAFE_RELEASE(pLodStatObj);
+			SetLodObject(lodLevel, nullptr);
+		}
+	}
+	return pLodStatObj;
+}
+
+class CStatObj::AsyncLodLoader : public IStreamCallback
+{
+public:
+	static void Load(CStatObj* pBaseObject, bool useStreaming, uint32 loadingFlags, IStatObjLoadedCallback* pCallback = nullptr)
+	{
+		new AsyncLodLoader(pBaseObject, useStreaming, loadingFlags, pCallback); // will delete itself
+	}
+
+private:
+	AsyncLodLoader(CStatObj* pBaseObject, bool useStreaming, uint32 loadingFlags, IStatObjLoadedCallback* pCallback = nullptr) :
+		m_pLODs{}, m_pBaseObject(pBaseObject), m_pCallback(pCallback), m_loadingFlags(loadingFlags), m_streamsRunning(0)
+	{
+		CObjManager* const pObjManager = Cry3DEngineBase::GetObjManager();
+		for (int lodLevel = 1; lodLevel < MAX_STATOBJ_LODS_NUM; ++lodLevel)
+		{
+			char szLodFileName[MAX_PATH];
+			pBaseObject->MakeLodFileName(lodLevel, szLodFileName);
+
+			CStatObj* pLodStatObj = stl::find_in_map(pObjManager->m_nameToObjectMap, CONST_TEMP_STRING(szLodFileName), NULL);
+			if (pLodStatObj)
+			{
+				pLodStatObj->m_pLod0 = pBaseObject; // Must be here.
+
+				auto it = pObjManager->m_lstLoadedObjects.find(pLodStatObj);
+				if (it != pObjManager->m_lstLoadedObjects.end())
+				{
+					pObjManager->m_lstLoadedObjects.erase(it);
+					pObjManager->m_nameToObjectMap.erase(CONST_TEMP_STRING(szLodFileName));
+				}
+
+				m_pLODs[lodLevel - 1] = pLodStatObj;
+			}
+			else if (Cry3DEngineBase::IsValidFile(szLodFileName))
+			{
+				pLodStatObj = new CStatObj();
+				pLodStatObj->m_pLod0 = pBaseObject; // Must be here.
+				if (useStreaming && Cry3DEngineBase::GetCVars()->e_StreamCgf)
+					pLodStatObj->m_bCanUnload = true;
+
+				pLodStatObj->LoadCGF_Prepare(szLodFileName, true);
+
+				m_pLODs[lodLevel - 1] = pLodStatObj;
+				StreamReadParams params(lodLevel);
+				gEnv->pSystem->GetStreamEngine()->StartRead(eStreamTaskTypeGeometry, szLodFileName, this, &params);
+				++m_streamsRunning;
+			}
+			else
+			{
+				pBaseObject->SetLodObject(lodLevel, nullptr);
+				break;
+			}
+		}
+
+		if (m_streamsRunning == 0)
+			Finalize();
+	}
+
+	virtual void StreamOnComplete(IReadStream* pStream, unsigned) override
+	{
+		uint lodLevel = static_cast<uint>(pStream->GetUserData());
+		assert(lodLevel < MAX_STATOBJ_LODS_NUM);
+		CStatObj* pLodObject = m_pLODs[lodLevel-1];
+		assert(m_streamsRunning != 0);
+		--m_streamsRunning;
+		
+		if (!pStream->IsError())
+		{
+			CReadOnlyChunkFile chunkFile(false, false);
+			if (!chunkFile.ReadFromMemory(pStream->GetBuffer(), pStream->GetBytesRead()))
+				LodFailed(lodLevel);
+			else
+				pLodObject->LoadCGF(&chunkFile, pLodObject->GetFilePath(), true, m_loadingFlags);
+		}
+		else
+			LodFailed(lodLevel);
+
+		if (m_streamsRunning == 0)
+			Finalize();
+	}
+
+	void Finalize()
+	{
+		int nLoadedLods = 1;
+		CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM] = { 0 };
+		int lodLevel = 1;
+		// gather the successful LODs
+		for (; lodLevel < MAX_STATOBJ_LODS_NUM; ++lodLevel)
+		{
+			if (m_pLODs[lodLevel - 1] == nullptr)
+				break;
+
+			++nLoadedLods;
+			loadedLods[lodLevel] = m_pLODs[lodLevel - 1];
+		}
+		// and remove remaining ones (if any)
+		for (; lodLevel < MAX_STATOBJ_LODS_NUM; ++lodLevel)
+			LodFailed(lodLevel);
+
+		m_pBaseObject->LoadLowLODS_Finalize(nLoadedLods, loadedLods);
+
+		if (m_pCallback)
+			m_pCallback->OnLoaded(true, m_pBaseObject);
+
+		delete this;
+	}
+
+	void LodFailed(uint lodLevel)
+	{
+		if (m_pBaseObject->GetLodObject(lodLevel) != m_pLODs[lodLevel - 1])
+			SAFE_RELEASE(m_pLODs[lodLevel - 1])
+		else
+			m_pLODs[lodLevel - 1] = nullptr;
+
+		m_pBaseObject->SetLodObject(lodLevel, nullptr);
+	}
+
+	CStatObj* m_pLODs[MAX_STATOBJ_LODS_NUM - 1];
+	CStatObj* m_pBaseObject;
+	IStatObjLoadedCallback* m_pCallback;
+	uint32    m_loadingFlags;
+	uint32    m_streamsRunning;
+};
+
+void CStatObj::LoadLowLODsAsync(bool useStreaming, uint32 loadingFlags, IStatObjLoadedCallback* pCallback)
+{
+	if (!LoadLowLODS_Prepare(loadingFlags))
+	{
+		if(pCallback)
+			pCallback->OnLoaded(false, this);
+	}
+	else
+	{
+		AsyncLodLoader::Load(this, useStreaming, loadingFlags, pCallback);
+	}
+}
+
+bool CStatObj::LoadLowLODS_Prepare(uint32 loadingFlags)
 {
 	m_bLodsLoaded = true;
 
-	if (nLoadingFlags & ELoadingFlagsIgnoreLoDs)
+	if (loadingFlags & ELoadingFlagsIgnoreLoDs)
 	{
 		return false;
 	}
-
-	const char* sFileExt = PathUtil::GetExt(m_szFileName);
 
 	if (m_nLoadedLodsNum > 1 && GetFlags() & STATIC_OBJECT_COMPOUND)
 	{
 		for (int nLodLevel = 1; nLodLevel < MAX_STATOBJ_LODS_NUM; nLodLevel++)
 		{
-			// make lod file name
-			char sLodFileName[512];
-			char sLodNum[8];
-			cry_strcpy(sLodFileName, m_szFileName);
-			char* sPointSeparator = strchr(sLodFileName, '.');
-			if (sPointSeparator)
-				*sPointSeparator = '\0'; // Terminate at the dot
-			cry_strcat(sLodFileName, "_lod");
-			ltoa(nLodLevel, sLodNum, 10);
-			cry_strcat(sLodFileName, sLodNum);
-			cry_strcat(sLodFileName, ".");
-			cry_strcat(sLodFileName, sFileExt);
-
+			char sLodFileName[MAX_PATH];
+			MakeLodFileName(nLodLevel, sLodFileName);
+			
 			if (IsValidFile(sLodFileName))
 			{
 				m_nLoadedLodsNum = 1;
@@ -140,86 +299,20 @@ bool CStatObj::LoadLowLODS_Prep(bool bUseStreaming, unsigned long nLoadingFlags)
 	return true;
 }
 
-CStatObj* CStatObj::LoadLowLODS_Load(int nLodLevel, bool bUseStreaming, unsigned long nLoadingFlags, const void* pData, int nDataLen)
-{
-	const char* sFileExt = PathUtil::GetExt(m_szFileName);
-
-	// make lod file name
-	char sLodFileName[512];
-	char sLodNum[8];
-	cry_strcpy(sLodFileName, m_szFileName);
-	char* sPointSeparator = strchr(sLodFileName, '.');
-	if (sPointSeparator)
-		*sPointSeparator = '\0'; // Terminate at the dot
-	cry_strcat(sLodFileName, "_lod");
-	ltoa(nLodLevel, sLodNum, 10);
-	cry_strcat(sLodFileName, sLodNum);
-	cry_strcat(sLodFileName, ".");
-	cry_strcat(sLodFileName, sFileExt);
-
-	CStatObj* pLodStatObj = m_pLODs ? (CStatObj*)m_pLODs[nLodLevel] : (CStatObj*)NULL;
-
-	// try to load
-	bool bRes = false;
-
-	pLodStatObj = stl::find_in_map(m_pObjManager->m_nameToObjectMap, CONST_TEMP_STRING(sLodFileName), NULL);
-
-	if (pLodStatObj)
-	{
-		pLodStatObj->m_pLod0 = this; // Must be here.
-		bRes = true;
-
-		typedef std::set<CStatObj*> LoadedObjects;
-		LoadedObjects::iterator it = m_pObjManager->m_lstLoadedObjects.find(pLodStatObj);
-		if (it != m_pObjManager->m_lstLoadedObjects.end())
-		{
-			m_pObjManager->m_lstLoadedObjects.erase(it);
-			m_pObjManager->m_nameToObjectMap.erase(CONST_TEMP_STRING(sLodFileName));
-		}
-	}
-	else if (pData || IsValidFile(sLodFileName))
-	{
-		if (!pLodStatObj)
-		{
-			pLodStatObj = new CStatObj();
-			pLodStatObj->m_pLod0 = this; // Must be here.
-		}
-
-		if (bUseStreaming && GetCVars()->e_StreamCgf)
-			pLodStatObj->m_bCanUnload = true;
-
-		bRes = pLodStatObj->LoadCGF(sLodFileName, true, nLoadingFlags, pData, nDataLen);
-	}
-
-	if (!bRes)
-	{
-		if ((m_pLODs ? (CStatObj*)m_pLODs[nLodLevel] : (CStatObj*)NULL) != pLodStatObj)
-		{
-			SAFE_RELEASE(pLodStatObj);
-		}
-		SetLodObject(nLodLevel, 0);
-		return NULL;
-	}
-
-	bool bLodCompound = (pLodStatObj->GetFlags() & STATIC_OBJECT_COMPOUND) != 0;
-	bool bLod0Compund = (GetFlags() & STATIC_OBJECT_COMPOUND) != 0;
-
-	SetLodObject(nLodLevel, pLodStatObj);
-
-	if (bLodCompound != bLod0Compund)
-	{
-		// LOD0 and LOD differ.
-		FileWarning(0, sLodFileName, "Invalid LOD%d, LOD%d have different merging property from LOD0", nLodLevel, nLodLevel);
-	}
-
-	return pLodStatObj;
-}
-
 void CStatObj::LoadLowLODS_Finalize(int nLoadedLods, CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM])
 {
-	//////////////////////////////////////////////////////////////////////////
+	// Put LODs into main object
+	for (int lodLevel = 1; lodLevel < nLoadedLods; lodLevel++)
+	{
+		SetLodObject(lodLevel, loadedLods[lodLevel]);
+
+		bool bLodCompound = (loadedLods[lodLevel]->GetFlags() & STATIC_OBJECT_COMPOUND) != 0;
+		bool bLod0Compund = (GetFlags() & STATIC_OBJECT_COMPOUND) != 0;
+		if (bLodCompound != bLod0Compund)
+			FileWarning(0, loadedLods[lodLevel]->GetFilePath(), "Invalid LOD%d: Has different merging property from LOD0", lodLevel);
+	}
+
 	// Put LODs into the sub objects.
-	//////////////////////////////////////////////////////////////////////////
 	if (nLoadedLods > 1)
 	{
 		m_bLodsAreLoadedFromSeparateFile = true;
@@ -231,8 +324,6 @@ void CStatObj::LoadLowLODS_Finalize(int nLoadedLods, CStatObj* loadedLods[MAX_ST
 				continue;
 
 			CStatObj* pSubStatObj = (CStatObj*)pSubObject->pStatObj;
-
-			//			int nLoadedTrisCount = ((CStatObj*)pSubObject->pStatObj)->m_nLoadedTrisCount;
 
 			for (int nLodLevel = 1; nLodLevel < nLoadedLods; nLodLevel++)
 			{
@@ -261,12 +352,29 @@ void CStatObj::LoadLowLODS_Finalize(int nLoadedLods, CStatObj* loadedLods[MAX_ST
 	}
 }
 
+void CStatObj::MakeLodFileName(uint lod, char (&buffer)[MAX_PATH])
+{
+	assert(lod < MAX_STATOBJ_LODS_NUM);
+	cry_strcpy(buffer, m_szFileName.c_str());
+	if (lod > 0) // lod 0 is just the original file name
+	{
+		char* sPointSeparator = strchr(buffer, '.');
+		if (sPointSeparator)
+			*sPointSeparator = '\0'; // Terminate at the dot
+		cry_strcat(buffer, "_lod");
+		char sLodNum[8];
+		ltoa(lod, sLodNum, 10);
+		cry_strcat(buffer, sLodNum);
+	}
+	cry_strcat(buffer, ".");
+	cry_strcat(buffer, PathUtil::GetExt(m_szFileName));
+}
+
 //////////////////////////////////////////////////////////////////////////
+// Free render resources for unused upper LODs.
 void CStatObj::CleanUnusedLods()
 {
-	//////////////////////////////////////////////////////////////////////////
-	// Free render resources for unused upper LODs.
-	//////////////////////////////////////////////////////////////////////////
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
 	if (m_nLoadedLodsNum > 1)
 	{
 		int nMinLod = GetMinUsableLod();
@@ -279,11 +387,10 @@ void CStatObj::CleanUnusedLods()
 
 			if (pStatObj->m_pRenderMesh)
 			{
-				pStatObj->SetRenderMesh(0);
+				pStatObj->SetRenderMesh(pNullMesh);
 			}
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////
 }
 
 void TransformMesh(CMesh& mesh, Matrix34 tm)
@@ -305,67 +412,31 @@ void TransformMesh(CMesh& mesh, Matrix34 tm)
 	}
 }
 
-#if INCLUDE_MEMSTAT_CONTEXTS
-static string FindCGFSourceFilename(const char* filename)
-{
-	CChunkFile infoChunkFile;
-	if (!infoChunkFile.Read(filename))
-	{
-		return string();
-	}
-
-	for (int i = 0, n = infoChunkFile.NumChunks(); i < n; ++i)
-	{
-		const IChunkFile::ChunkDesc* const pChunkDesc = infoChunkFile.GetChunk(i);
-		if (pChunkDesc->chunkType == ChunkType_SourceInfo)
-		{
-			return (const char*)pChunkDesc->data;
-		}
-	}
-
-	return string();
-}
-#endif //INCLUDE_MEMSTAT_CONTEXTS
-
 //////////////////////////////////////////////////////////////////////////
-bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, const int nDataSize, bool bLod)
+bool CStatObj::LoadStreamRenderMeshes(bool bLod, const void* pData, const int nDataSize)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CGF, EMemStatContextFlags::MSF_Instance, "%s", m_szFileName.c_str());
-	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextType::CGF, m_szFileName.c_str());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CLoaderCGF cgfLoader(util::pool_allocate, util::pool_free, GetCVars()->e_StatObjTessellationMode != 2 || bLod);
-	CStackContainer<CContentCGF> contentContainer(InplaceFactory(m_szFileName));
-	CContentCGF* pCGF = contentContainer.get();
-	CExportInfoCGF* pExportInfo = pCGF->GetExportInfo();
+	CContentCGF cgfContent(m_szFileName);
+	CExportInfoCGF* pExportInfo = cgfContent.GetExportInfo();
 
-	bool bMeshAssigned = false;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Load CGF.
-	//////////////////////////////////////////////////////////////////////////
-	class Listener : public ILoaderCGFListener
-	{
-	public:
-		virtual void Warning(const char* format) {}
-		virtual void Error(const char* format)   {}
-		virtual bool IsValidationEnabled()       { return false; }
-	};
-
-	bool bLoaded = false;
-	bool bLoadedChunks = false;
-
-	Listener listener;
+	bool wasLoadSuccessful = false;
 	CReadOnlyChunkFile chunkFile(false, true);  // Chunk file must exist until CGF is completely loaded, and if loading from file do not make a copy of it.
-
-	if (filename && filename[0])
-		bLoadedChunks = chunkFile.Read(filename);
+	if(pData && nDataSize > 0)
+		wasLoadSuccessful = chunkFile.ReadFromMemory(pData, nDataSize);
 	else
-		bLoadedChunks = chunkFile.ReadFromMemory(pData, nDataSize);
+	{
+		stack_string streamFilename;
+		GetStreamFilePath(streamFilename);
+		wasLoadSuccessful = chunkFile.Read(streamFilename);
+	}
 
-	if (bLoadedChunks)
-		bLoaded = cgfLoader.LoadCGF(contentContainer.get(), m_szFileName, chunkFile, &listener, 0);
+	if (wasLoadSuccessful)
+		wasLoadSuccessful = cgfLoader.LoadCGF(&cgfContent, m_szFileName, chunkFile, nullptr, 0);
 
-	if (!bLoaded)
+	if (!wasLoadSuccessful)
 	{
 		FileWarning(0, m_szFileName, "CGF Streaming Failed: %s", cgfLoader.GetLastError());
 		return false;
@@ -374,12 +445,12 @@ bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, c
 	//////////////////////////////////////////////////////////////////////////
 
 	int nSubObjCount = (int)m_subObjects.size();
-
+	bool bMeshAssigned = false;
 	bool bBreakNodeLoop = false;
 
-	for (int i = 0; i < pCGF->GetNodeCount() && !bBreakNodeLoop; i++)
+	for (int i = 0; i < cgfContent.GetNodeCount() && !bBreakNodeLoop; i++)
 	{
-		CNodeCGF* pNode = pCGF->GetNode(i);
+		CNodeCGF* pNode = cgfContent.GetNode(i);
 		if (!pNode->pMesh)
 			continue;
 
@@ -437,7 +508,7 @@ bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, c
 
 				if (!bLod && (pExportInfo->bMergeAllNodes || m_nSubObjectMeshCount == 0))
 				{
-					AnalyzeFoliage(pStatObj->m_pStreamedRenderMesh, pCGF);
+					AnalyzeFoliage(pStatObj->m_pStreamedRenderMesh, &cgfContent);
 				}
 			}
 		}
@@ -451,7 +522,7 @@ bool CStatObj::LoadStreamRenderMeshes(const char* filename, const void* pData, c
 	// Merge sub-objects for the new lod.
 	if (GetCVars()->e_StatObjMerge)
 	{
-		CStatObj* pLod0 = (m_pLod0 != 0) ? (CStatObj*)m_pLod0 : this;
+		CStatObj* pLod0 = (m_pLod0 != nullptr) ? (CStatObj*)m_pLod0 : this;
 		pLod0->TryMergeSubObjects(true);
 	}
 	//////////////////////////////////////////////////////////////////////////
@@ -466,7 +537,7 @@ void CStatObj::CommitStreamRenderMeshes()
 	{
 		CryAutoCriticalSection lock(m_streamingMeshLock);
 		SetRenderMesh(m_pStreamedRenderMesh);
-		m_pStreamedRenderMesh = 0;
+		m_pStreamedRenderMesh = nullptr;
 	}
 	if (m_pLODs)
 	{
@@ -520,56 +591,30 @@ bool CStatObj::IsDeformable()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CStatObj::LoadCGF(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize)
+bool CStatObj::LoadCGF(const char* filename, uint32 loadingFlags)
 {
-	FUNCTION_PROFILER_3DENGINE;
-
-	CRY_DEFINE_ASSET_SCOPE("CGF", filename);
-
 	if (m_bSubObject) // Never execute this on the sub objects.
 		return true;
 
-#if INCLUDE_MEMSTAT_CONTEXTS
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CGF, EMemStatContextFlags::MSF_Instance, "%s", filename);
-#endif
+	FUNCTION_PROFILER_3DENGINE;
+	CRY_DEFINE_ASSET_SCOPE("CGF", filename);
+	MEMSTAT_CONTEXT(EMemStatContextType::CGF, filename);
 
-	PrintComment("Loading %s", filename);
-	if (!bLod)
-		GetConsole()->TickProgressBar();
-
-	m_nRenderTrisCount = m_nLoadedTrisCount = 0;
-	m_nLoadedVertexCount = 0;
-	m_szFileName = filename;
-	m_szFileName.replace('\\', '/');
-
-	// Determine if stream only cgf is available
-	stack_string streamPath;
-	GetStreamFilePath(streamPath);
-	m_bHasStreamOnlyCGF = gEnv->pCryPak->IsFileExist(streamPath.c_str());
-
-	if (!m_bCanUnload)
-	{
-		if (m_bHasStreamOnlyCGF)
-		{
-			if (!LoadCGF_Int(filename, bLod, nLoadingFlags, pData, nDataSize))
-				return false;
-			return LoadStreamRenderMeshes(streamPath.c_str(), 0, 0, bLod);
-		}
-	}
-
-	return LoadCGF_Int(filename, bLod, nLoadingFlags, pData, nDataSize);
+	LoadCGF_Prepare(filename, false);
+	CReadOnlyChunkFile chunkFile(false, false);
+	return LoadCGF(&chunkFile, filename, false, loadingFlags);
 }
 
 //////////////////////////////////////////////////////////////////////////
-static _smart_ptr<IMaterial> LoadCGFMaterial(CMatMan* pMatMan, const char* szMaterialName, const char* szCgfFilename, unsigned long nLoadingFlags)
+static _smart_ptr<IMaterial> LoadCGFMaterial(CMatMan* pMatMan, const char* szMaterialName, const char* szCgfFilename, uint32 loadingFlags)
 {
-	_smart_ptr<IMaterial> pMaterial = pMatMan->LoadCGFMaterial(szMaterialName, szCgfFilename, nLoadingFlags);
+	_smart_ptr<IMaterial> pMaterial = pMatMan->LoadCGFMaterial(szMaterialName, szCgfFilename, loadingFlags);
 	if (pMaterial->IsDefault())
 	{
 		// If the material file is not found then let's try to use material file
 		// with the name that is the same as the name of the .cgf file.
 		const string cgfBasedMaterialName = PathUtil::GetFileName(szCgfFilename);
-		pMaterial = pMatMan->LoadCGFMaterial(cgfBasedMaterialName.c_str(), szCgfFilename, nLoadingFlags);
+		pMaterial = pMatMan->LoadCGFMaterial(cgfBasedMaterialName.c_str(), szCgfFilename, loadingFlags);
 		if (pMaterial->IsDefault())
 		{
 			pMatMan->FileWarning(0, szCgfFilename, "CGF is unable to load its material, see XML reader error above for material info.");
@@ -588,22 +633,98 @@ static _smart_ptr<IMaterial> LoadCGFMaterial(CMatMan* pMatMan, const char* szMat
 	return pMaterial;
 }
 
-bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadingFlags, const void* pData, const int nDataSize)
+class CStatObj::CStatObjAsyncCGFLoader : public IStreamCallback
 {
-	CLoaderCGF cgfLoader(util::pool_allocate, util::pool_free, GetCVars()->e_StatObjTessellationMode != 2 || bLod);
-	CStackContainer<CContentCGF> contentContainer(InplaceFactory(filename));
-	CContentCGF* pCGF = contentContainer.get();
+public:
+	CStatObjAsyncCGFLoader(CStatObj* pObject, const char* szFilename, uint32 loadingFlags, IStatObjLoadedCallback* pCallback) :
+		m_pObject(pObject), m_pCallback(pCallback), m_loadingFlags(loadingFlags)
+	{
+		gEnv->pSystem->GetStreamEngine()->StartRead(eStreamTaskTypeGeometry, szFilename, this);
+	}
 
+	virtual void StreamOnComplete(IReadStream* pStream, unsigned) override
+	{
+		bool succeeded = false;
+		if (pStream->IsError())
+		{
+			if (!(m_loadingFlags & CStatObj::ELoadingFlagsNoErrorIfFail))
+				Cry3DEngineBase::FileWarning(0, m_pObject->GetFilePath(), "CGF Streaming Failed: %s", pStream->GetErrorName());
+		}
+		else
+		{
+			CReadOnlyChunkFile chunkFile(false, false);
+			if (chunkFile.ReadFromMemory(pStream->GetBuffer(), pStream->GetBytesRead()))
+				succeeded = m_pObject->LoadCGF(&chunkFile, m_pObject->GetFilePath(), false, m_loadingFlags);
+		}
+
+		if (m_pCallback)
+			m_pCallback->OnLoaded(succeeded, m_pObject);
+		
+		delete this;
+	}
+
+private:
+	CStatObj* m_pObject;
+	IStatObjLoadedCallback* m_pCallback;
+	uint32    m_loadingFlags;
+};
+
+void CStatObj::LoadCGFAsync(const char* filename, uint32 loadingFlags, IStatObjLoadedCallback* pCallback)
+{
+	if (m_bSubObject) // Never execute this on the sub objects.
+		return;
+	
+	FUNCTION_PROFILER_3DENGINE;
+	CRY_DEFINE_ASSET_SCOPE("CGF", filename);
+	MEMSTAT_CONTEXT(EMemStatContextType::CGF, filename);
+
+	LoadCGF_Prepare(filename, false);
+	new CStatObjAsyncCGFLoader(this, filename, loadingFlags, pCallback);
+}
+
+void CStatObj::LoadCGF_Prepare(const char* filename, bool isLod)
+{
+	PrintComment("Loading %s", filename);
+	if (!isLod)
+		GetConsole()->TickProgressBar();
+
+	m_nRenderTrisCount = m_nLoadedTrisCount = 0;
+	m_nLoadedVertexCount = 0;
+	m_szFileName = filename;
+	m_szFileName.replace('\\', '/');
+
+	// Determine if stream only cgf is available
+	stack_string streamPath;
+	GetStreamFilePath(streamPath);
+	m_bHasStreamOnlyCGF = gEnv->pCryPak->IsFileExist(streamPath.c_str());
+}
+
+bool CStatObj::LoadCGF(IChunkFile* chunkFile, const char* filename, bool isLod, uint32 loadingFlags)
+{
 	//////////////////////////////////////////////////////////////////////////
 	// Load CGF.
 	//////////////////////////////////////////////////////////////////////////
 	class Listener : public ILoaderCGFListener
 	{
 	public:
-		virtual void Warning(const char* format) { Cry3DEngineBase::Warning("%s", format); }
-		virtual void Error(const char* format)   { Cry3DEngineBase::Error("%s", format); }
-		virtual bool IsValidationEnabled()       { return Cry3DEngineBase::GetCVars()->e_StatObjValidate != 0; }
+		virtual void Warning(const char* format) override { Cry3DEngineBase::Warning("%s", format); }
+		virtual void Error(const char* format)   override { Cry3DEngineBase::Error("%s", format); }
+		
+		virtual bool IsValidationEnabled()       override { return Cry3DEngineBase::GetCVars()->e_StatObjValidate != 0; }
 	};
+
+	Listener listener;
+	CLoaderCGF cgfLoader(util::pool_allocate, util::pool_free, GetCVars()->e_StatObjTessellationMode != 2 || isLod);
+	CContentCGF cgfContent(filename);
+	
+	if (!cgfLoader.LoadCGF(&cgfContent, filename, *chunkFile, &listener, loadingFlags))
+	{
+		if (!(loadingFlags & IStatObj::ELoadingFlagsNoErrorIfFail))
+		{
+			FileWarning(0, filename, "CGF Loading Failed: %s", cgfLoader.GetLastError());
+		}
+		return false;
+	}
 
 #if !defined(_RELEASE)
 	if (GetCVars()->e_CGFMaxFileSize >= 0 && !stristr(filename, DEFAULT_CGF_NAME))
@@ -617,36 +738,14 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 		}
 	}
 #endif
-
-	Listener listener;
-	CReadOnlyChunkFile chunkFile(false, bLod);  // Chunk file must exist until CGF is completely loaded, and if loading from file do not make a copy of it.
-
-	bool bLoaded = false;
-	if (nDataSize)
-	{
-		if (chunkFile.ReadFromMemory(pData, nDataSize))
-			bLoaded = cgfLoader.LoadCGF(contentContainer.get(), filename, chunkFile, &listener, nLoadingFlags);
-	}
-	else
-	{
-		bLoaded = cgfLoader.LoadCGF(contentContainer.get(), filename, chunkFile, &listener, nLoadingFlags);
-	}
-	if (!bLoaded)
-	{
-		if (!(nLoadingFlags & IStatObj::ELoadingFlagsNoErrorIfFail))
-		{
-			FileWarning(0, filename, "CGF Loading Failed: %s", cgfLoader.GetLastError());
-		}
-
-		return false;
-	}
+		
 	//////////////////////////////////////////////////////////////////////////
 
 	INDENT_LOG_DURING_SCOPE(true, "While loading static object geometry '%s'", filename);
 
-	CExportInfoCGF* pExportInfo = pCGF->GetExportInfo();
-	CNodeCGF* pFirstMeshNode = NULL;
-	CMesh* pFirstMesh = NULL;
+	CExportInfoCGF* pExportInfo = cgfContent.GetExportInfo();
+	CNodeCGF* pFirstMeshNode = nullptr;
+	CMesh* pFirstMesh = nullptr;
 	m_nSubObjectMeshCount = 0;
 
 	if (!pExportInfo->bCompiledCGF)
@@ -658,17 +757,17 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	m_bMeshStrippedCGF = pExportInfo->bNoMesh;
 
 	bool bHasJoints = false;
-	if (nLoadingFlags & ELoadingFlagsForceBreakable)
+	if (loadingFlags & ELoadingFlagsForceBreakable)
 		m_nFlags |= STATIC_OBJECT_DYNAMIC;
 
-	m_nNodeCount = pCGF->GetNodeCount();
+	m_nNodeCount = cgfContent.GetNodeCount();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Find out number of meshes, and get pointer to the first found mesh.
 	//////////////////////////////////////////////////////////////////////////
-	for (int i = 0; i < pCGF->GetNodeCount(); i++)
+	for (int i = 0; i < cgfContent.GetNodeCount(); i++)
 	{
-		CNodeCGF* pNode = pCGF->GetNode(i);
+		CNodeCGF* pNode = cgfContent.GetNode(i);
 		if (pNode->type == CNodeCGF::NODE_MESH)
 		{
 			if (m_szProperties.empty())
@@ -688,27 +787,27 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	}
 
 	bool bIsLod0Merged = false;
-	if (bLod && m_pLod0)
+	if (isLod && m_pLod0)
 	{
-		// This is a log object, check if parent was merged or not.
+		// This is a lod object, check if parent was merged or not.
 		bIsLod0Merged = m_pLod0->m_nSubObjectMeshCount == 0;
 	}
 
-	if (pExportInfo->bMergeAllNodes || (m_nSubObjectMeshCount <= 1 && !bHasJoints && (!bLod || bIsLod0Merged)))
+	if (pExportInfo->bMergeAllNodes || (m_nSubObjectMeshCount <= 1 && !bHasJoints && (!isLod || bIsLod0Merged)))
 	{
 		// If we merging all nodes, ignore sub object meshes.
 		m_nSubObjectMeshCount = 0;
 
-		if (pCGF->GetCommonMaterial())
+		if (cgfContent.GetCommonMaterial())
 		{
-			if (nLoadingFlags & ELoadingFlagsPreviewMode)
+			if (loadingFlags & ELoadingFlagsPreviewMode)
 			{
 				m_pMaterial = GetMatMan()->GetDefaultMaterial();
 				m_pMaterial->AddRef();
 			}
 			else
 			{
-				m_pMaterial = ::LoadCGFMaterial(GetMatMan(), pCGF->GetCommonMaterial()->name, m_szFileName.c_str(), nLoadingFlags);
+				m_pMaterial = ::LoadCGFMaterial(GetMatMan(), cgfContent.GetCommonMaterial()->name, m_szFileName.c_str(), loadingFlags);
 			}
 		}
 	}
@@ -728,14 +827,14 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 
 	if (GetCVars()->e_StatObjValidate)
 	{
-		const char* pErrorDescription = 0;
+		const char* pErrorDescription = nullptr;
 		if (pFirstMesh && (!pFirstMesh->Validate(&pErrorDescription)))
 		{
 			FileWarning(0, filename, "CGF has invalid merged mesh (%s)", pErrorDescription);
 			assert(!"CGF has invalid merged mesh");
 			return false;
 		}
-		if (!pCGF->ValidateMeshes(&pErrorDescription))
+		if (!cgfContent.ValidateMeshes(&pErrorDescription))
 		{
 			FileWarning(0, filename, "CGF has invalid meshes (%s)", pErrorDescription);
 			assert(!"CGF has invalid meshes");
@@ -777,7 +876,7 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 				_smart_ptr<IRenderMesh> pRenderMesh = MakeRenderMesh(pFirstMesh, !m_bCanUnload);
 				SetRenderMesh(pRenderMesh);
 				pMainMesh = m_pRenderMesh;
-				bRenderMeshLoaded |= (m_pRenderMesh != 0);
+				bRenderMeshLoaded |= (m_pRenderMesh != nullptr);
 			}
 			else
 			{
@@ -789,7 +888,7 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 			//////////////////////////////////////////////////////////////////////////
 			// Physicalize merged geometry.
 			//////////////////////////////////////////////////////////////////////////
-			if (!bLod)
+			if (!isLod)
 			{
 				PhysicalizeCompiled(pFirstMeshNode);
 			}
@@ -803,20 +902,20 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	//////////////////////////////////////////////////////////////////////////
 	// Create SubObjects.
 	//////////////////////////////////////////////////////////////////////////
-	if (pCGF->GetNodeCount() > 1 || m_nSubObjectMeshCount > 0)
+	if (cgfContent.GetNodeCount() > 1 || m_nSubObjectMeshCount > 0)
 	{
-		nodes.reserve(pCGF->GetNodeCount());
+		nodes.reserve(cgfContent.GetNodeCount());
 
 		scratch_vector<std::pair<CNodeCGF*, CStatObj*>> meshToObject;
-		meshToObject.reserve(pCGF->GetNodeCount());
+		meshToObject.reserve(cgfContent.GetNodeCount());
 
 		//////////////////////////////////////////////
 		// Count required subobjects and reserve space
 		//////////////////////////////////////////////
 		size_t nSubObjects = 0;
-		for (int ii = 0; ii < pCGF->GetNodeCount(); ii++)
+		for (int ii = 0; ii < cgfContent.GetNodeCount(); ii++)
 		{
-			CNodeCGF* pNode = pCGF->GetNode(ii);
+			CNodeCGF* pNode = cgfContent.GetNode(ii);
 
 			if (pNode->bPhysicsProxy)
 				continue;
@@ -845,9 +944,9 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 		//////////////////////////////////////////////
 
 		int nNumMeshes = 0;
-		for (int ii = 0; ii < pCGF->GetNodeCount(); ii++)
+		for (int ii = 0; ii < cgfContent.GetNodeCount(); ii++)
 		{
-			CNodeCGF* pNode = pCGF->GetNode(ii);
+			CNodeCGF* pNode = cgfContent.GetNode(ii);
 
 			if (pNode->bPhysicsProxy)
 				continue;
@@ -861,8 +960,8 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 			subObject.name = pNode->name;
 			subObject.properties = pNode->properties;
 			subObject.nParent = -1;
-			subObject.pWeights = 0;
-			subObject.pFoliage = 0;
+			subObject.pWeights = nullptr;
+			subObject.pFoliage = nullptr;
 			subObject.helperSize.Set(0, 0, 0);
 
 			if (pNode->type == CNodeCGF::NODE_MESH)
@@ -873,7 +972,7 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 				nNumMeshes++;
 				subObject.nType = STATIC_SUB_OBJECT_MESH;
 
-				if (stristr(pNode->name, "shadowproxy") != 0)
+				if (stristr(pNode->name, "shadowproxy") != nullptr)
 					subObject.bShadowProxy = true;
 
 				if (stricmp(pNode->name, MESH_NAME_FOR_MAIN) == 0)
@@ -910,7 +1009,7 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 					}
 					break;
 				default:
-					assert(0); // unknown type.
+					CRY_ASSERT(0, "Unknown CGFNode Helper type %d", pNode->helperType);
 				}
 			}
 
@@ -935,7 +1034,7 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 				if (!subObject.pStatObj)
 				{
 					// Create a StatObj from the CGF node.
-					subObject.pStatObj = MakeStatObjFromCgfNode(pCGF, pNode, bLod, nLoadingFlags, commonBBox);
+					subObject.pStatObj = MakeStatObjFromCgfNode(&cgfContent, pNode, isLod, loadingFlags, commonBBox);
 					if (pNode->pSharedMesh)
 						meshToObject.push_back(std::make_pair(pNode->pSharedMesh, static_cast<CStatObj*>(subObject.pStatObj)));
 					else
@@ -1066,14 +1165,11 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 			if (bHaveMeshNamedMain)
 			{
 				// If have mesh named main, then mark all sub object hidden except the one called "Main".
-				for (int i = 0, n = m_subObjects.size(); i < n; i++)
+				for (auto& subObject : m_subObjects)
 				{
-					if (m_subObjects[i].nType == STATIC_SUB_OBJECT_MESH)
+					if (subObject.nType == STATIC_SUB_OBJECT_MESH)
 					{
-						if (stricmp(m_subObjects[i].name, MESH_NAME_FOR_MAIN) == 0)
-							m_subObjects[i].bHidden = false;
-						else
-							m_subObjects[i].bHidden = true;
+						subObject.bHidden = (stricmp(subObject.name, MESH_NAME_FOR_MAIN) != 0);
 					}
 				}
 			}
@@ -1090,11 +1186,11 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	//////////////////////////////////////////////////////////////////////////
 	// Physicalize physics proxy nodes.
 	//////////////////////////////////////////////////////////////////////////
-	if (!bLod)
+	if (!isLod)
 	{
-		for (int i = 0, numNodes = pCGF->GetNodeCount(); i < numNodes; i++)
+		for (int i = 0, numNodes = cgfContent.GetNodeCount(); i < numNodes; i++)
 		{
-			CNodeCGF* pNode = pCGF->GetNode(i);
+			CNodeCGF* pNode = cgfContent.GetNode(i);
 			if (pNode->bPhysicsProxy)
 			{
 				CStatObj* pStatObjParent = this;
@@ -1113,14 +1209,14 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	//////////////////////////////////////////////////////////////////////////
 	// Analyze foliage info.
 	//////////////////////////////////////////////////////////////////////////
-	if (!bLod && (pExportInfo->bMergeAllNodes || m_nSubObjectMeshCount == 0) && !m_bCanUnload)
+	if (!isLod && (pExportInfo->bMergeAllNodes || m_nSubObjectMeshCount == 0) && !m_bCanUnload)
 	{
-		AnalyzeFoliage(pMainMesh, pCGF);
+		AnalyzeFoliage(pMainMesh, &cgfContent);
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	for (int i = 0; i < pCGF->GetNodeCount(); i++)
-		if (strstr(pCGF->GetNode(i)->properties, "deformable"))
+	for (int i = 0; i < cgfContent.GetNodeCount(); i++)
+		if (strstr(cgfContent.GetNode(i)->properties, "deformable"))
 			m_nFlags |= STATIC_OBJECT_DEFORMABLE;
 
 	if (m_nSubObjectMeshCount > 0)
@@ -1128,14 +1224,14 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	else
 		m_nFlags &= ~STATIC_OBJECT_COMPOUND;
 
-	if (!bLod && !m_szProperties.empty())
+	if (!isLod && !m_szProperties.empty())
 	{
 		ParseProperties();
 	}
 
-	if (!bLod)
+	if (!isLod)
 	{
-		CPhysicalizeInfoCGF* pPi = pCGF->GetPhysicalizeInfo();
+		CPhysicalizeInfoCGF* pPi = cgfContent.GetPhysicalizeInfo();
 		if (pPi->nRetTets)
 		{
 			m_pLattice = GetPhysicalWorld()->GetGeomManager()->CreateTetrLattice(pPi->pRetVtx, pPi->nRetVtx, pPi->pRetTets, pPi->nRetTets);
@@ -1199,6 +1295,11 @@ bool CStatObj::LoadCGF_Int(const char* filename, bool bLod, unsigned long nLoadi
 	// Recursive computation of m_fLODDistance for compound- and sub-objects
 	ComputeAndStoreLodDistances();
 
+	if (!m_bCanUnload && m_bHasStreamOnlyCGF)
+	{
+		return LoadStreamRenderMeshes(isLod);
+	}
+
 	return true;
 }
 
@@ -1225,7 +1326,7 @@ std::vector<CStatObj*> CStatObj::GatherAllObjects()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CStatObj* CStatObj::MakeStatObjFromCgfNode(CContentCGF* pCGF, CNodeCGF* pNode, bool bLod, int nLoadingFlags, AABB& commonBBox)
+CStatObj* CStatObj::MakeStatObjFromCgfNode(CContentCGF* pCGF, CNodeCGF* pNode, bool bLod, int loadingFlags, AABB& commonBBox)
 {
 	CNodeCGF* pTMNode = pNode;
 	if (pNode->pSharedMesh)
@@ -1262,14 +1363,14 @@ CStatObj* CStatObj::MakeStatObjFromCgfNode(CContentCGF* pCGF, CNodeCGF* pNode, b
 
 	if (pNode->pMaterial)
 	{
-		if (nLoadingFlags & ELoadingFlagsPreviewMode)
+		if (loadingFlags & ELoadingFlagsPreviewMode)
 		{
 			pStatObj->m_pMaterial = GetMatMan()->GetDefaultMaterial();
 			pStatObj->m_pMaterial->AddRef();
 		}
 		else
 		{
-			pStatObj->m_pMaterial = ::LoadCGFMaterial(GetMatMan(), pNode->pMaterial->name, m_szFileName.c_str(), nLoadingFlags);
+			pStatObj->m_pMaterial = ::LoadCGFMaterial(GetMatMan(), pNode->pMaterial->name, m_szFileName.c_str(), loadingFlags);
 		}
 		if (!m_pMaterial || m_pMaterial->IsDefault())
 			m_pMaterial = pStatObj->m_pMaterial; // take it as a general stat obj material.
@@ -1285,7 +1386,7 @@ CStatObj* CStatObj::MakeStatObjFromCgfNode(CContentCGF* pCGF, CNodeCGF* pNode, b
 	pStatObj->m_fGeometricMeanFaceArea = pNode->meshInfo.fGeometricMean;
 	pStatObj->CalcRadiuses();
 
-	if (nLoadingFlags & ELoadingFlagsForceBreakable)
+	if (loadingFlags & ELoadingFlagsForceBreakable)
 		pStatObj->m_nFlags |= STATIC_OBJECT_DYNAMIC;
 
 	if (pNode->pMesh)
@@ -1331,7 +1432,7 @@ _smart_ptr<IRenderMesh> CStatObj::MakeRenderMesh(CMesh* pMesh, bool bDoRenderMes
 	m_nLoadedTrisCount = pMesh->GetIndexCount() / 3;
 	m_nLoadedVertexCount = pMesh->GetVertexCount();
 	if (!m_nLoadedTrisCount)
-		return 0;
+		return nullptr;
 
 	m_nRenderTrisCount = 0;
 	m_nRenderMatIds = 0;
@@ -1362,9 +1463,9 @@ _smart_ptr<IRenderMesh> CStatObj::MakeRenderMesh(CMesh* pMesh, bool bDoRenderMes
 	if (gEnv->pRenderer)
 	{
 		if (!pMesh)
-			return 0;
+			return nullptr;
 		if (pMesh->GetSubSetCount() == 0)
-			return 0;
+			return nullptr;
 
 		size_t nRenderMeshSize = ~0U;
 		if (bDoRenderMesh)
@@ -1385,9 +1486,9 @@ _smart_ptr<IRenderMesh> CStatObj::MakeRenderMesh(CMesh* pMesh, bool bDoRenderMes
 #ifdef MESH_TESSELLATION_ENGINE
 				nFlags |= FSM_ENABLE_NORMALSTREAM;
 #endif
-				nRenderMeshSize = pOutRenderMesh->SetMesh(*pMesh, 0, nFlags, NULL, true);
+				nRenderMeshSize = pOutRenderMesh->SetMesh(*pMesh, 0, nFlags, nullptr, true);
 				if (nRenderMeshSize == ~0U)
-					return 0;
+					return nullptr;
 			}
 
 			bool arrMaterialSupportsTeselation[32];
@@ -1403,7 +1504,7 @@ _smart_ptr<IRenderMesh> CStatObj::MakeRenderMesh(CMesh* pMesh, bool bDoRenderMes
 
 static inline CNodeCGF* CreateNodeCGF(CContentCGF* pCGF, CStatObj* pStatObj, const char* name, CNodeCGF* pParent, CMaterialCGF* pMaterial, const Matrix34& localTM = Matrix34(IDENTITY), const char* properties = 0)
 {
-	CNodeCGF* pNode = NULL;
+	CNodeCGF* pNode = nullptr;
 
 	// Add single node for merged mesh.
 	pNode = new CNodeCGF;
@@ -1411,7 +1512,7 @@ static inline CNodeCGF* CreateNodeCGF(CContentCGF* pCGF, CStatObj* pStatObj, con
 	if (!pNode)
 	{
 		CryLog("SaveToCgf: failed to allocate CNodeCGF aborting");
-		return 0;
+		return nullptr;
 	}
 
 	cry_sprintf(pNode->name, "%s", name);
@@ -1447,7 +1548,7 @@ static inline CNodeCGF* CreateNodeCGF(CContentCGF* pCGF, CStatObj* pStatObj, con
 		IStatObj::SSubObject* pSubObj = pStatObj->GetSubObject(subidx);
 		if (!(nodes[subidx] = CreateNodeCGF(pCGF, (CStatObj*)pSubObj->pStatObj, pSubObj->pStatObj ? pSubObj->pStatObj->GetGeoName() : pSubObj->name.c_str(),
 		                                    pSubObj->nParent >= 0 ? nodes[pSubObj->nParent] : pNode, pMaterial, pSubObj->localTM, pSubObj->properties)))
-			pNode = 0;
+			pNode = nullptr;
 	}
 	return pNode;
 }
@@ -1457,12 +1558,12 @@ static inline CNodeCGF* CreateNodeCGF(CContentCGF* pCGF, CStatObj* pStatObj, con
 bool CStatObj::SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile, bool bHavePhiscalProxy)
 {
 #if defined(INCLUDE_SAVECGF)
-	CContentCGF* pCGF = new CContentCGF(sFilename);
+	CContentCGF cgfContent(sFilename);
 
-	pCGF->GetExportInfo()->bCompiledCGF = true;
-	pCGF->GetExportInfo()->bMergeAllNodes = (GetSubObjectCount() <= 0);
-	pCGF->GetExportInfo()->bHavePhysicsProxy = bHavePhiscalProxy;
-	cry_strcpy(pCGF->GetExportInfo()->rc_version_string, "From Sandbox");
+	cgfContent.GetExportInfo()->bCompiledCGF = true;
+	cgfContent.GetExportInfo()->bMergeAllNodes = (GetSubObjectCount() <= 0);
+	cgfContent.GetExportInfo()->bHavePhysicsProxy = bHavePhiscalProxy;
+	cry_fixed_size_strcpy(cgfContent.GetExportInfo()->rc_version_string, "From Sandbox");
 
 	CChunkFile* pChunkFile = new CChunkFile();
 	if (pOutChunkFile)
@@ -1481,7 +1582,7 @@ bool CStatObj::SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile, bool
 	//std::vector<CMaterialCGF*> subMaterials;
 
 	bool bResult = false;
-	if (CreateNodeCGF(pCGF, this, GetGeoName() ? GetGeoName() : "Merged", NULL, pMaterialCGF))
+	if (CreateNodeCGF(&cgfContent, this, GetGeoName() ? GetGeoName() : "Merged", nullptr, pMaterialCGF))
 	{
 		CSaverCGF cgfSaver(*pChunkFile);
 
@@ -1490,7 +1591,7 @@ bool CStatObj::SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile, bool
 		const bool bStorePositionsAsF16 = false;
 		const bool bStoreIndicesAsU16 = (sizeof(vtx_idx) == sizeof(uint16));
 
-		cgfSaver.SaveContent(pCGF, bNeedEndianSwap, bStorePositionsAsF16, bUseQtangents, bStoreIndicesAsU16);
+		cgfSaver.SaveContent(&cgfContent, bNeedEndianSwap, bStorePositionsAsF16, bUseQtangents, bStoreIndicesAsU16);
 
 		bResult = true;
 	}
@@ -1501,13 +1602,9 @@ bool CStatObj::SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile, bool
 		pChunkFile->Release();
 	}
 
-	delete pCGF;
-
 	return bResult;
 #else // #if defined(INCLUDE_SAVECGF)
-	#if !defined(_RELEASE)
-	__debugbreak();
-	#endif
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 	return false;
 #endif
 }
@@ -1530,10 +1627,10 @@ void CStatObj::ParseProperties()
 	FUNCTION_PROFILER_3DENGINE;
 
 	int nLen = m_szProperties.size();
-	if (nLen >= 4090)
+	if (nLen >= 4096)
 	{
-		Warning("CGF '%s' have longer then 4K geometry info file", m_szFileName.c_str());
-		nLen = 4090;
+		Warning("CGF '%s' has a geometry info file of more than 4kB", m_szFileName.c_str());
+		nLen = 4096;
 	}
 
 	char properties[4096];
@@ -1584,7 +1681,6 @@ void CStatObj::ParseProperties()
 					m_phys_density = (float)atof(right);
 				}
 				//////////////////////////////////////////////////////////////////////////
-
 			}
 			else
 			{
@@ -1615,7 +1711,7 @@ void CStatObj::ParseProperties()
 				{
 					m_bNoHitRefinement = true;
 					for (int i = m_arrPhysGeomInfo.GetGeomCount() - 1; i >= 0; i--)
-						m_arrPhysGeomInfo[i]->pGeom->SetForeignData(0, 0);
+						m_arrPhysGeomInfo[i]->pGeom->SetForeignData(nullptr, 0);
 				}
 				else if (0 == strcmp(line, "no_explosion_occlusion"))
 				{
@@ -1633,7 +1729,7 @@ void CStatObj::CheckCreateBillboardMaterial()
 	// Check if billboard textures exist
 	const char * arrTextureSuffixes[2] = { "_billbalb.dds", "_billbnorm.dds" };
 	int nBillboardTexturesFound = 0;
-	assert(EFTT_DIFFUSE == 0 && EFTT_NORMALS == 1);
+	static_assert(EFTT_DIFFUSE == 0 && EFTT_NORMALS == 1, "This code relies on specific enum values.");
 	for (int nSlot = EFTT_DIFFUSE; nSlot <= EFTT_NORMALS; nSlot++)
 	{
 		string szTextureName = m_szFileName;

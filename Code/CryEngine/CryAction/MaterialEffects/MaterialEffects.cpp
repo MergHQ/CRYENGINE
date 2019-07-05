@@ -11,6 +11,8 @@
 #include "MaterialFGManager.h"
 #include "MaterialEffectsDebug.h"
 #include <CryMemory/PoolAllocator.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #define MATERIAL_EFFECTS_SPREADSHEET_FILE     "libs/materialeffects/materialeffects.xml"
 #define MATERIAL_EFFECTS_LIBRARIES_FOLDER     "libs/materialeffects/fxlibs"
@@ -92,7 +94,7 @@ CMaterialEffects::~CMaterialEffects()
 
 void CMaterialEffects::LoadFXLibraries()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "MaterialEffects");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "MaterialEffects");
 
 	m_mfxLibraries.clear();
 	m_effectContainers.clear();
@@ -128,7 +130,7 @@ void CMaterialEffects::LoadFXLibraries()
 
 void CMaterialEffects::LoadFXLibrary(const char* name)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "FX Library XML (%s)", name);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "FX Library XML (%s)", name);
 
 	string path = PathUtil::Make(MATERIAL_EFFECTS_LIBRARIES_FOLDER, name);
 	string fileName = name;
@@ -147,9 +149,9 @@ void CMaterialEffects::LoadFXLibrary(const char* name)
 		}
 
 		std::pair<TFXLibrariesMap::iterator, bool> iterPair = m_mfxLibraries.insert(TFXLibrariesMap::value_type(libName, CMFXLibrary()));
-		assert(iterPair.second == true);
+		CRY_ASSERT(iterPair.second == true);
 		libIter = iterPair.first;
-		assert(libIter != m_mfxLibraries.end());
+		CRY_ASSERT(libIter != m_mfxLibraries.end());
 
 		const TMFXNameId& libraryNameId = libIter->first; // uses CryString's ref-count feature
 		CMFXLibrary& mfxLibrary = libIter->second;
@@ -352,9 +354,8 @@ void CMaterialEffects::LoadSpreadSheet()
 					if (m_surfaceIdToMatrixEntry.size() < matId)
 					{
 						m_surfaceIdToMatrixEntry.resize(matId + 1);
-						if (matId >= kMaxSurfaceCount)
+						if (!CRY_VERIFY(matId < kMaxSurfaceCount, "MaterialEffects.cpp: SurfaceTypes exceeds 256. Reconsider implementation."))
 						{
-							assert(false && "MaterialEffects.cpp: SurfaceTypes exceeds 256. Reconsider implementation.");
 							CryLogAlways("MaterialEffects.cpp: SurfaceTypes exceeds %d. Reconsider implementation.", kMaxSurfaceCount);
 						}
 					}
@@ -444,7 +445,7 @@ void CMaterialEffects::LoadSpreadSheet()
 			for (int x = 0; x < m_surfacesLookupTable.m_nCols; ++x)
 			{
 				TMFXEffectId idRowCol = m_surfacesLookupTable.GetValue(y, x, USHRT_MAX);
-				assert(idRowCol != USHRT_MAX);
+				CRY_ASSERT(idRowCol != USHRT_MAX);
 				TMFXContainerPtr pEffectRowCol = InternalGetEffect(idRowCol);
 				if (pEffectRowCol)
 				{
@@ -452,7 +453,7 @@ void CMaterialEffects::LoadSpreadSheet()
 					if (y < m_surfacesLookupTable.m_nCols)
 					{
 						TMFXEffectId idColRow = m_surfacesLookupTable.GetValue(x, y, USHRT_MAX);
-						assert(idColRow != USHRT_MAX);
+						CRY_ASSERT(idColRow != USHRT_MAX);
 						TMFXContainerPtr pEffectColRow = InternalGetEffect(idColRow);
 						if (idRowCol != idColRow)
 						{
@@ -509,7 +510,7 @@ void CMaterialEffects::LoadSpreadSheet()
 
 void CMaterialEffects::PreLoadAssets()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	for (TMFXEffectId id = 0; id < m_effectContainers.size(); ++id)
 		if (m_effectContainers[id])
@@ -891,7 +892,7 @@ bool CMaterialEffects::PlayBreakageEffect(ISurfaceType* pSurfaceType, const char
 
 void CMaterialEffects::CompleteInit()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	if (m_bDataInitialized)
 		return;
@@ -973,7 +974,7 @@ void CMaterialEffects::UnloadFXLibrariesWithPrefix(const char* szName)
 
 void CMaterialEffects::LoadFXLibraryFromXMLInMemory(const char* szName, XmlNodeRef root)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "FX Library XML (%s)", szName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "FX Library XML (%s)", szName);
 
 	const string libName = szName;
 
@@ -987,9 +988,9 @@ void CMaterialEffects::LoadFXLibraryFromXMLInMemory(const char* szName, XmlNodeR
 		}
 
 		std::pair<TFXLibrariesMap::iterator, bool> iterPair = m_mfxLibraries.insert(TFXLibrariesMap::value_type(libName, CMFXLibrary()));
-		assert(iterPair.second == true);
+		CRY_ASSERT(iterPair.second == true);
 		libIter = iterPair.first;
-		assert(libIter != m_mfxLibraries.end());
+		CRY_ASSERT(libIter != m_mfxLibraries.end());
 
 		const TMFXNameId& libraryNameId = libIter->first; // uses CryString's ref-count feature
 		CMFXLibrary& mfxLibrary = libIter->second;

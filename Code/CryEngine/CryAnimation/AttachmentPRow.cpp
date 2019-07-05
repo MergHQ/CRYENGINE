@@ -4,6 +4,7 @@
 #include "AttachmentPRow.h"
 
 #include <CryString/StringUtils.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "AttachmentManager.h"
 #include "CharacterInstance.h"
 
@@ -19,7 +20,7 @@ void CAttachmentPROW::UpdateRow(Skeleton::CPoseData& rPoseData)
 
 #ifdef EDITOR_PCDEBUGCODE
 	//ERROR-CHECK: check if bones and x-axis align
-	if (pSkelInstance->m_CharEditMode & CA_CharacterTool)
+	if (pSkelInstance->m_CharEditMode & CA_CharacterAuxEditor)
 	{
 		QuatTS rPhysLocation = pSkelInstance->m_location;
 		g_pAuxGeom->SetRenderFlags(SAuxGeomRenderFlags(e_Def3DPublicRenderflags));
@@ -73,7 +74,7 @@ const QuatTS CAttachmentPROW::GetAttWorldAbsolute() const
 uint32 CAttachmentPROW::SetJointName(const char* szJointName)
 {
 	m_nRowJointID = -1;
-	if (!szJointName)  { assert(0); return 0; }
+	if (!CRY_VERIFY(szJointName))  { return 0; }
 	int nJointID = m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetJointIDByName(szJointName);
 	if (nJointID < 0)
 	{
@@ -95,8 +96,6 @@ void CAttachmentPROW::PostUpdateSimulationParams(bool bAttachmentSortingRequired
 
 void CAttachmentPROW::HideInRecursion(uint32 x)
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_RECURSION, x != 0);
-
 	if (x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_RECURSION;
 	else
@@ -105,8 +104,6 @@ void CAttachmentPROW::HideInRecursion(uint32 x)
 
 void CAttachmentPROW::HideInShadow(uint32 x)
 {
-	m_pAttachmentManager->OnHideAttachment(this, FLAGS_ATTACH_HIDE_SHADOW_PASS, x != 0);
-
 	if (x)
 		m_AttFlags |= FLAGS_ATTACH_HIDE_SHADOW_PASS;
 	else
@@ -115,9 +112,6 @@ void CAttachmentPROW::HideInShadow(uint32 x)
 
 void CPendulaRow::PostUpdate(const CAttachmentManager* pAttachmentManager, const char* pJointName)
 {
-	const CCharInstance* pSkelInstance = pAttachmentManager->m_pSkelInstance;
-	const CDefaultSkeleton& rDefaultSkeleton = *pSkelInstance->m_pDefaultSkeleton;
-
 	m_fConeAngle = max(0.00f, m_fConeAngle);
 
 	m_nSimFPS = m_nSimFPS < 10 ? 10 : m_nSimFPS;
@@ -414,7 +408,6 @@ void CPendulaRow::UpdatePendulumRow(const CAttachmentManager* pAttachmentManager
 				const QuatT absJoint = rPoseData.GetJointAbsolute(dm.m_jointID) * qyz;
 				const QuatTS AttLocation = rPhysLocation * absJoint;
 
-				const Vec3 op = dm.m_vBobPosition;
 				f32 t = 1;
 				const QuatT AttLocationLerp = QuatT::CreateNLerp(dm.m_vLocationPrev, QuatT(AttLocation.q, AttLocation.t), t);
 				const Vec3 hn = (AttLocationLerp.q * qx).GetColumn2();
@@ -438,7 +431,7 @@ void CPendulaRow::UpdatePendulumRow(const CAttachmentManager* pAttachmentManager
 					const Vec3 ipos = (Vec3::CreateLerp(dm.m_vAttModelRelativePrev, rPhysLocation.q * absJoint.t, t) - absProxyLerp.t) * absProxyLerp.q;
 					if (proxy.GetDistance(ipos, m_vCapsule.y) < 0.001f)
 					{
-						f32 dist = proxy.GetDistance(ipos, m_vCapsule.y);
+						//f32 dist = proxy.GetDistance(ipos, m_vCapsule.y);
 						//g_pAuxGeom->Draw2dLabel( 1, g_YLine, 1.3f, ColorF(0,1,0,1), false,"Capsule for '%s' starts inside of proxy: %s (dist: %f)",pAttName,proxy.GetName(),dist), g_YLine+=16.0f;
 						continue;
 					}
@@ -578,7 +571,7 @@ void CPendulaRow::UpdatePendulumRow(const CAttachmentManager* pAttachmentManager
 				Vec3 ortho2 = ortho1 % vSimulationAxisN;
 				Matrix33 m33;
 				m33.SetFromVectors(ortho1, vSimulationAxisN, ortho2);
-				assert(m33.IsOrthonormalRH());
+				CRY_ASSERT(m33.IsOrthonormalRH());
 
 				{
 					f32 bsize = m_fRodLength;

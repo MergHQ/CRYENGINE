@@ -33,7 +33,7 @@ void CAIReinforcementSpot::Done()
 //////////////////////////////////////////////////////////////////////////
 bool CAIReinforcementSpot::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 196, 0));
+	SetColor(ColorB(255, 196, 0));
 	bool res = __super::Init(prev, file);
 
 	return res;
@@ -48,7 +48,7 @@ float CAIReinforcementSpot::GetRadius()
 //////////////////////////////////////////////////////////////////////////
 void CAIReinforcementSpot::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	const Matrix34& wtm = GetWorldTM();
 
 	Vec3 wp = wtm.GetTranslation();
@@ -96,9 +96,9 @@ void CAIReinforcementSpot::Display(CObjectRenderHelper& objRenderHelper)
 		{
 			ColorB col;
 			// Blend between red and the selected color
-			col.r = (255 + GetRValue(GetColor())) / 2;
-			col.g = (0 + GetGValue(GetColor())) / 2;
-			col.b = (0 + GetBValue(GetColor())) / 2;
+			col.r = (255 + GetColor().r) / 2;
+			col.g = (0 + GetColor().g) / 2;
+			col.b = (0 + GetColor().b) / 2;
 			col.a = 255;
 			dc.SetColor(col);
 			dc.DrawWireSphere(Vec3(0, 0, 0), avoidRadius);
@@ -134,4 +134,3 @@ void CAIReinforcementSpot::GetLocalBounds(AABB& box)
 	box.min = -Vec3(r, r, r);
 	box.max = Vec3(r, r, r);
 }
-

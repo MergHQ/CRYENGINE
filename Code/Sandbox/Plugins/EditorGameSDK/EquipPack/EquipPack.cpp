@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "EquipPack.h"
 #include "EquipPackLib.h"
+#include <CrySystem/XML/IXml.h>
+#include <CryCore/StlUtils.h>
 
 CEquipPack::CEquipPack(CEquipPackLib* pCreator)
 {
@@ -163,4 +165,3 @@ bool CEquipPack::Save(XmlNodeRef node)
 	}
 	return true;
 }
-

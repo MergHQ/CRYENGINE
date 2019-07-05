@@ -22,10 +22,8 @@ const char* MovementActor::GetName() const
 	return pEntity ? pEntity->GetName() : "(none)";
 }
 
-void MovementActor::RequestPathTo(const Vec3& destination, float lengthToTrimFromThePathEnd, const SSnapToNavMeshRulesInfo& snappingRules, const MNMDangersFlags dangersFlags /* = eMNMDangers_None */, const bool considerActorsAsPathObstacles, const MNMCustomPathCostComputerSharedPtr& pCustomPathCostComputer)
+void MovementActor::RequestPathTo(const Vec3& destination, float lengthToTrimFromThePathEnd, const MNM::SOrderedSnappingMetrics& snappingMetrics, const MNMDangersFlags dangersFlags /* = eMNMDangers_None */, const bool considerActorsAsPathObstacles, const MNMCustomPathCostComputerSharedPtr& pCustomPathCostComputer)
 {
-	const bool cutPathAtSmartObject = false;
-
 	const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityID);
 	if (!pEntity)
 		return;
@@ -34,7 +32,7 @@ void MovementActor::RequestPathTo(const Vec3& destination, float lengthToTrimFro
 	{
 		MNMPathRequest request(pEntity->GetPos(), destination, Vec3(0, 1, 0), -1, 0.0f, lengthToTrimFromThePathEnd, true, NULL, this->pAdapter->GetNavigationAgentTypeID(), dangersFlags);
 		request.pCustomPathCostComputer = pCustomPathCostComputer;
-		request.snappingRules = snappingRules;
+		request.snappingMetrics = snappingMetrics;
 		callbacks.queuePathRequestFunction(request);
 	}
 }
@@ -85,7 +83,7 @@ bool MovementActor::AddActionAbilityCallbacks(const SMovementActionAbilityCallba
 		bNoCallbackAlreadyPresent &= actionAbilities.m_postPathFollowingUpdateCallback.AddUnique(ability.postPathFollowingUpdateCallback);
 	}
 	
-	CRY_ASSERT_MESSAGE(bNoCallbackAlreadyPresent, "MovementActor::AddActionAbilityCallbacks - Trying to add the same movement action ability twice");
+	CRY_ASSERT(bNoCallbackAlreadyPresent, "MovementActor::AddActionAbilityCallbacks - Trying to add the same movement action ability twice");
 	return true;
 }
 

@@ -7,6 +7,9 @@
 #include "MaterialEffectsCVars.h"
 #include "MFXContainer.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+
 namespace MaterialEffectsUtils
 {
 #ifdef MATERIAL_EFFECTS_DEBUG
@@ -24,7 +27,7 @@ void CVisualDebug::AddEffectDebugVisual(const TMFXEffectId effectId, const SMFXR
 		}
 
 		const char* debugFilter = CMaterialEffectsCVars::Get().mfx_DebugVisualFilter->GetString();
-		assert(debugFilter);
+		CRY_ASSERT(debugFilter);
 		bool ignoreFilter = (strlen(debugFilter) == 0) || (strcmp(debugFilter, "0") == 0);
 		bool addToDebugList = ignoreFilter || (stricmp(debugFilter, m_lastSearchHint.materialName1.c_str()) == 0);
 
@@ -47,7 +50,7 @@ void CVisualDebug::AddLastSearchHint(const TMFXEffectId effectId, const char* cu
 	m_lastSearchHint.Reset();
 
 	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-	assert(pSurfaceTypeManager);
+	CRY_ASSERT(pSurfaceTypeManager);
 
 	m_lastSearchHint.materialName1 = customName;
 	m_lastSearchHint.materialName2 = pSurfaceTypeManager->GetSurfaceType(surfaceIndex2)->GetName();
@@ -59,8 +62,8 @@ void CVisualDebug::AddLastSearchHint(const TMFXEffectId effectId, const IEntityC
 	m_lastSearchHint.Reset();
 
 	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-	assert(pSurfaceTypeManager);
-	assert(pEntityClass);
+	CRY_ASSERT(pSurfaceTypeManager);
+	CRY_ASSERT(pEntityClass);
 
 	m_lastSearchHint.materialName1 = pEntityClass->GetName();
 	m_lastSearchHint.materialName2 = pSurfaceTypeManager->GetSurfaceType(surfaceIndex2)->GetName();
@@ -72,7 +75,7 @@ void CVisualDebug::AddLastSearchHint(const TMFXEffectId effectId, const int surf
 	m_lastSearchHint.Reset();
 
 	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
-	assert(pSurfaceTypeManager);
+	CRY_ASSERT(pSurfaceTypeManager);
 
 	m_lastSearchHint.materialName1 = pSurfaceTypeManager->GetSurfaceType(surfaceIndex1)->GetName();
 	m_lastSearchHint.materialName2 = pSurfaceTypeManager->GetSurfaceType(surfaceIndex2)->GetName();

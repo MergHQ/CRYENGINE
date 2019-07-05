@@ -494,7 +494,6 @@ bool CItemSharedParams::ReadGeometry(const XmlNodeRef& paramsNode)
 				childNode->getAttr("scale", geometryDef.scale);
 				childNode->getAttr("useParentMaterial", geometryDef.useParentMaterial);
 
-				const char *hand = childNode->getAttr("hand");
 				geometryDef.modelPath = childNode->getAttr("name");
 				geometryDef.material = childNode->getAttr("material");
 
@@ -691,7 +690,7 @@ bool CItemSharedParams::ReadAccessories(const XmlNodeRef& paramsNode)
 
 			if (tooManyAttachments)
 			{
-				CRY_ASSERT_MESSAGE(!tooManyAttachments, "This weapon has too many initial attachments");
+				CRY_ASSERT(!tooManyAttachments, "This weapon has too many initial attachments");
 				GameWarning("Too many initial attachments defined for this weapon, maximum allowed is (%d)", initialSetup.max_size());
 			}
 		}
@@ -993,7 +992,6 @@ void CItemSharedParams::CacheResources( CItemResourceCache& itemResourceCache, c
 	}
 
 	CItemGeometryCache& geomCache = itemResourceCache.GetItemGeometryCache();
-	CItemParticleEffectCache& particleCache = itemResourceCache.GetParticleEffectCache();
 	CItemMaterialAndTextureCache& materialCache = itemResourceCache.GetMaterialsAndTextureCache();
 
 	TGeometryDefVector::const_iterator geometryEndCit = geometry.end();

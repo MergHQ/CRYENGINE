@@ -7,7 +7,6 @@
 	#pragma once
 #endif
 
-#include "AIPIDController.h"
 #include <CryMath/Random.h>
 #include <CryAISystem/ITacticalPointSystem.h>
 #include <CrySystem/TimeValue.h>
@@ -150,16 +149,16 @@ inline int MovementUrgencyToIndex(float urgency)
 
 class CGoalOpXMLReader
 {
-	CXMLAttrReader<unsigned short int>  m_dictAIObjectType;
-	CXMLAttrReader<EAnimationMode>      m_dictAnimationMode;
-	CXMLAttrReader<bool>                m_dictBools;
-	CXMLAttrReader<ECoverUsageLocation> m_dictCoverLocation;
-	CXMLAttrReader<EFireMode>           m_dictFireMode;
-	CXMLAttrReader<ELookMotivation>     m_dictLook;
-	CXMLAttrReader<EAIRegister>         m_dictRegister;
-	CXMLAttrReader<ESignalFilter>       m_dictSignalFilter;
-	CXMLAttrReader<EStance>             m_dictStance;
-	CXMLAttrReader<float>               m_dictUrgency;
+	CXMLAttrReader<unsigned short int>       m_dictAIObjectType;
+	CXMLAttrReader<EAnimationMode>           m_dictAnimationMode;
+	CXMLAttrReader<bool>                     m_dictBools;
+	CXMLAttrReader<ECoverUsageLocation>      m_dictCoverLocation;
+	CXMLAttrReader<EFireMode>                m_dictFireMode;
+	CXMLAttrReader<ELookMotivation>          m_dictLook;
+	CXMLAttrReader<EAIRegister>              m_dictRegister;
+	CXMLAttrReader<AISignals::ESignalFilter> m_dictSignalFilter;
+	CXMLAttrReader<EStance>                  m_dictStance;
+	CXMLAttrReader<float>                    m_dictUrgency;
 
 public:
 	CGoalOpXMLReader();
@@ -202,7 +201,7 @@ public:
 	{ return m_dictLook.Get(node, szAttrName, eValue, bMandatory); }
 	bool GetRegister(const XmlNodeRef& node, const char* szAttrName, EAIRegister& eValue, bool bMandatory = false)
 	{ return m_dictRegister.Get(node, szAttrName, eValue, bMandatory); }
-	bool GetSignalFilter(const XmlNodeRef& node, const char* szAttrName, ESignalFilter& eValue, bool bMandatory = false)
+	bool GetSignalFilter(const XmlNodeRef& node, const char* szAttrName, AISignals::ESignalFilter& eValue, bool bMandatory = false)
 	{ return m_dictSignalFilter.Get(node, szAttrName, eValue, bMandatory); }
 	bool GetStance(const XmlNodeRef& node, const char* szAttrName, EStance& eValue, bool bMandatory = false)
 	{ return m_dictStance.Get(node, szAttrName, eValue, bMandatory); }
@@ -694,14 +693,14 @@ public:
 ////////////////////////////////////////////////////////
 class COPSignal : public CGoalOp
 {
-	int           m_nSignalID;
-	string        m_sSignal;
-	ESignalFilter m_cFilter;
-	bool          m_bSent;
-	int           m_iDataValue;
+	int                      m_nSignalID;
+	string                   m_sSignal;
+	AISignals::ESignalFilter m_cFilter;
+	bool                     m_bSent;
+	int                      m_iDataValue;
 
 public:
-	COPSignal(int nSignalID, const string& sSignal, ESignalFilter cFilter, int iDataValue) :
+	COPSignal(int nSignalID, const string& sSignal, const AISignals::ESignalFilter cFilter, int iDataValue) :
 		m_nSignalID(nSignalID), m_sSignal(sSignal), m_cFilter(cFilter), m_bSent(false), m_iDataValue(iDataValue) {}
 	COPSignal(const XmlNodeRef& node);
 
@@ -1026,7 +1025,7 @@ public:
 	virtual void          Reset(CPipeUser* pPipeUser);
 	virtual void          Serialize(TSerialize ser);
 
-	bool                  NotifySignalReceived(CAIObject* pPipeUser, const char* szText, IAISignalExtraData* pData);
+	bool                  NotifySignalReceived(CAIObject* pPipeUser, const char* szText, AISignals::IAISignalExtraData* pData);
 };
 
 ////////////////////////////////////////////////////////

@@ -13,7 +13,7 @@
 
 // build like Qt foreach macro but iterates backwards
 #define reverse_foreach(variable, container)                                       \
-  for (QForeachContainer<QT_FOREACH_DECLTYPE(container)> _container_((container)); \
+  for (auto _container_ = QtPrivate::qMakeForeachContainer(container);             \
        _container_.control && _container_.i != _container_.e--;                    \
        _container_.control ^= 1)                                                   \
     for (variable = *_container_.e; _container_.control; _container_.control = 0)
@@ -141,8 +141,16 @@ public:
 		}
 		else if (proxyRow == m_pModel->rowCount(proxyParent))
 		{
-			auto mapping = GetMappingFromProxy(proxyParent);
-			*sourceParent = *mapping;
+			if (proxyParent.isValid())
+			{
+				auto mapping = GetMappingFromProxy(proxyParent);
+				*sourceParent = *mapping;
+			}
+			else
+			{
+				*sourceParent = QModelIndex();
+			}
+
 			if (sourceParent->isValid())
 			{
 				*sourceModel = sourceParent->model();
@@ -778,6 +786,7 @@ void CMergingProxyModel::Unmount(SourceModel* submodel)
 		beginRemoveRows(QModelIndex(), it->rootRowFirst, it->rootRowLast);
 	}
 
+	p->Disconnect(it->connections);
 	p->MoveMountsAfter(it, -mountRows);
 	p->m_sourceModelMounts.erase(it);
 	p->m_mountPoints.removeAll(it);
@@ -1215,4 +1224,3 @@ QHash<int, QByteArray> CMergingProxyModel::roleNames() const
 }
 
 #undef reverse_foreach
-

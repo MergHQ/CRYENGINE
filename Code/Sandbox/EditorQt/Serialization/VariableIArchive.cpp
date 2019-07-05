@@ -218,7 +218,6 @@ bool CVariableIArchive::SerializeResourceSelector(const Serialization::SStruct& 
 bool CVariableIArchive::SerializeStringListStaticValue(const Serialization::SStruct& ser, const char* name, const char* label)
 {
 	StringListStaticValue* const pStringListStaticValue = reinterpret_cast<StringListStaticValue*>(ser.pointer());
-	const StringListStatic& stringListStatic = pStringListStaticValue->stringList();
 
 	_smart_ptr<IVariable> pChild = VarUtil::FindChildVariable(m_pVariable, m_childIndexOverride, name);
 	if (pChild)
@@ -248,4 +247,3 @@ bool CVariableIArchive::SerializeRangeUInt(const Serialization::SStruct& ser, co
 	const Serialization::RangeDecorator<unsigned int>* const pRange = reinterpret_cast<Serialization::RangeDecorator<unsigned int>*>(ser.pointer());
 	return VarUtil::ReadChildVariableAs<int>(m_pVariable, m_childIndexOverride, name, *pRange->value);
 }
-

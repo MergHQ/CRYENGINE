@@ -21,6 +21,7 @@ History:
 #include <GameXmlParamReader.h>
 #include "GameRulesModules/IGameRulesRoundsModule.h"
 #include "GameRulesModules/IGameRulesStateModule.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #define ANNOUNCER_FILENAME "Scripts/Sounds/cw2_Annoucements.xml"
 
@@ -150,7 +151,7 @@ CAnnouncer::~CAnnouncer()
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(0, string().Format("~CAnnouncer() has found a soundID we were listening to %x; which has failed to resolve into a valid ISound*", soundID).c_str());
+			CRY_ASSERT(0, string().Format("~CAnnouncer() has found a soundID we were listening to %x; which has failed to resolve into a valid ISound*", soundID).c_str());
 			CryLog("[ANNOUNCER] Found a dangling soundID being listened to %x but failed to resolve it. Doing nothing", soundID);
 		}
 	}*/
@@ -306,16 +307,24 @@ void CAnnouncer::LoadAnnouncements(const EGameMode gamemode)
 							{
 								const char * gamemodeOptionName = gamemodeOptionXML->getTag();
 
+#if DESIGNER_WARNING_ENABLED
 								bool loaded = LoadAnnouncementOption(gamemodeOptionName, gamemodeOptionXML, conditions, storedName, onScreenMessage, noRepeatTime, numAnnouncementsAdded);
 								DesignerWarning(loaded, "While reading '%s' found an unexpected tag '%s' inside an announcement (name='%s' condition='%s')", filename, optionName, name, conStr);
+#else
+								LoadAnnouncementOption(gamemodeOptionName, gamemodeOptionXML, conditions, storedName, onScreenMessage, noRepeatTime, numAnnouncementsAdded);
+#endif
 							}
 						}
 					}
 				}
 				else
 				{
+#if DESIGNER_WARNING_ENABLED
 					bool loaded = LoadAnnouncementOption(optionName, optionXML, conditions, storedName, onScreenMessage, noRepeatTime, numAnnouncementsAdded);
 					DesignerWarning(loaded, "While reading '%s' found an unexpected tag '%s' inside an announcement (name='%s' condition='%s')", filename, optionName, name, conStr);
+#else
+					LoadAnnouncementOption(optionName, optionXML, conditions, storedName, onScreenMessage, noRepeatTime, numAnnouncementsAdded);
+#endif
 				}
 			}
 
@@ -356,7 +365,7 @@ const char* CAnnouncer::GetGamemodeName(EGameMode mode)
 	case eGM_Gladiator:
 		return "GL";
 	default:
-		CRY_ASSERT_TRACE(false, ("Annoucner doesn't know what gamemode attribute to check for (%d needs adding to switch statement)", mode));
+		CRY_ASSERT(false, "Annoucner doesn't know what gamemode attribute to check for (%d needs adding to switch statement)", mode);
 		return "";
 	}
 }
@@ -594,7 +603,7 @@ bool CAnnouncer::AnnounceInternal(EntityId entityID, const int overrideTeamId, c
 				okToAnnounce=true;
 				break;
 			default:
-				CRY_ASSERT_MESSAGE(0, string().Format("AnnounceInternal() unhandled context=%d", context));
+				CRY_ASSERT(0, string().Format("AnnounceInternal() unhandled context=%d", context));
 				break;
 		}
 
@@ -888,7 +897,7 @@ void CAnnouncer::CmdCheckAnnouncements(IConsoleCmdArgs* pCmdArgs)
 //		pSound->RemoveEventListener((ISoundEventListener*) this);
 //		if (!stl::find_and_erase(m_soundsBeingListenedTo, pSound->GetId()))
 //		{
-//			CRY_ASSERT_MESSAGE(0, "CAnnouncer::OnSoundEvent() failed to find a sound in our own listeners vector. This should not happen");
+//			CRY_ASSERT(0, "CAnnouncer::OnSoundEvent() failed to find a sound in our own listeners vector. This should not happen");
 //		}
 //	}
 //	else if(event == SOUND_EVENT_ON_LOAD_FAILED)
@@ -897,7 +906,7 @@ void CAnnouncer::CmdCheckAnnouncements(IConsoleCmdArgs* pCmdArgs)
 //		pSound->RemoveEventListener((ISoundEventListener*) this);
 //		if (!stl::find_and_erase(m_soundsBeingListenedTo, pSound->GetId()))
 //		{
-//			CRY_ASSERT_MESSAGE(0, "CAnnouncer::OnSoundEvent() failed to find a sound in our own listeners vector. This should not happen");
+//			CRY_ASSERT(0, "CAnnouncer::OnSoundEvent() failed to find a sound in our own listeners vector. This should not happen");
 //		}
 //	}
 //}

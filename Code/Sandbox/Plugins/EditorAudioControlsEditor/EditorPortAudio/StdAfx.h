@@ -18,4 +18,3 @@
 #include <algorithm>
 
 #include <CryMath/Cry_Math.h>
-

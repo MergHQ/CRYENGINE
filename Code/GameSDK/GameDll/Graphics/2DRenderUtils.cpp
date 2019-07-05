@@ -18,6 +18,7 @@ History:
 #include "2DRenderUtils.h"
 #include "UI/UIManager.h"
 #include "UI/Utils/ScreenLayoutManager.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 //-----------------------------------------------------------------------------------------------------
 
@@ -213,12 +214,8 @@ void C2DRenderUtils::InternalDrawQuad( float fX, float fY,
 	Vec2 p2( fX+fSizeX+fOff, fY+fSizeY+fOff );
 	m_pLayoutManager->ConvertFromVirtualToRenderScreenSpace( &(p1.x), &(p1.y) );
 	m_pLayoutManager->ConvertFromVirtualToRenderScreenSpace( &(p2.x), &(p2.y) );
-	const float z  = 0.0f;
-
-	uint32 uiDiffuse = cfDiffuse.pack_argb8888();
 
 	InternalDrawImage(iTextureID,fX,fY,fSizeX,fSizeY,0.0f,cfDiffuse,0,0,1,1);
-
 }
 
 //-----------------------------------------------------------------------------------------------------

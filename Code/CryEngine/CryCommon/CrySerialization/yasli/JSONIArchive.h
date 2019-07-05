@@ -45,6 +45,7 @@ public:
 	YASLI_INLINE bool operator()(BlackBox& ser, const char* name = "", const char* label = 0) override;
 	YASLI_INLINE bool operator()(ContainerInterface& ser, const char* name = "", const char* label = 0) override;
 	YASLI_INLINE bool operator()(KeyValueInterface& ser, const char* name = "", const char* label = 0) override;
+	YASLI_INLINE bool operator()(KeyValueDictionaryInterface& ser, const char* name = "", const char* label = 0) override;
 	YASLI_INLINE bool operator()(PointerInterface& ser, const char* name = "", const char* label = 0) override;
 
 	using Archive::operator();
@@ -76,11 +77,10 @@ private:
 	typedef std::vector<Level> Stack;
 	Stack stack_;
 
-	std::auto_ptr<MemoryReader> reader_;
+	std::unique_ptr<MemoryReader> reader_;
 	Token token_;
 	std::vector<char> unescapeBuffer_;
 	string filename_;
-	void* buffer_;
 };
 
 YASLI_INLINE double parseFloat(const char* s);

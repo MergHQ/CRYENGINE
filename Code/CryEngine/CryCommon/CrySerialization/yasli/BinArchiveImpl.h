@@ -292,8 +292,6 @@ bool BinOArchive::operator()(PointerInterface& ptr, const char* name, const char
 		YASLI_ASSERT(0 && "Writing unregistered class. Use YASLI_CLASS_NAME macro for registration.");
 	}
 
-	TypeID baseType = ptr.baseType();
-
 	if(ptr.get()){
 		stream_ << typeName;
 		stream_.write(char(0));

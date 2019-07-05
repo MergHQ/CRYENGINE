@@ -5,6 +5,8 @@
 
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryMath/Cry_Camera.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if MANUAL_FRAME_STEP_ENABLED
 
@@ -38,10 +40,10 @@ float CManualFrameStepController::SCVars::manualFrameStepFrequency = 0.0f;
 CManualFrameStepController::CManualFrameStepController()
 	: m_framesLeft(-1)
 	, m_framesGenerated(0)
-	, m_pendingRequest(false)
-	, m_previousStepSmoothing(true)
 	, m_previousFixedStep(0.0f)
 	, m_heldTimer(-1.0f)
+	, m_pendingRequest(false)
+	, m_previousStepSmoothing(true)
 {
 	if (gEnv->pInput)
 	{
@@ -315,11 +317,11 @@ bool CManualFrameStepController::OnInputEvent(const SInputEvent& inputEvent)
 				stack_string framesFolder;
 				GetFramesFolder(framesFolder);
 
-				char buffer[ICryPak::g_nMaxPath];
-				const char* szAdjustedFramesFolder = gEnv->pCryPak->AdjustFileName(framesFolder.c_str(), buffer, ICryPak::FLAGS_FOR_WRITING);
+				CryPathString adjustedFramesFolder;
+				gEnv->pCryPak->AdjustFileName(framesFolder.c_str(), adjustedFramesFolder, ICryPak::FLAGS_FOR_WRITING);
 
 				char szBuffer[MAX_PATH + 256];
-				cry_sprintf(szBuffer, "explorer.exe %s\\%s", szAdjustedFramesFolder, lastFrameName.c_str());
+				cry_sprintf(szBuffer, "explorer.exe %s\\%s", adjustedFramesFolder.c_str(), lastFrameName.c_str());
 
 				STARTUPINFO startupInfo;
 				ZeroMemory(&startupInfo, sizeof(startupInfo));
@@ -333,6 +335,8 @@ bool CManualFrameStepController::OnInputEvent(const SInputEvent& inputEvent)
 			break;
 		}
 	#endif // MANUAL_FRAME_STEP_VIEW_HISTORY
+	default:
+		break;
 	}
 
 	return false;
@@ -350,6 +354,8 @@ void CManualFrameStepController::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 

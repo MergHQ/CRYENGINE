@@ -12,17 +12,17 @@
 #include "StdAfx.h"
 
 #include "Steam/CrySteamLobby.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #if USE_STEAM
 
 #include <../../CryPlugins/CryGamePlatform/Interface/IGamePlatform.h>
+#include <../../CryPlugins/CryGamePlatform/Interface/IPlatformService.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		#pragma comment( lib, "steam_api64.lib")
-	#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		#pragma comment( lib, "steam_api.lib")
 	#endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -182,8 +182,13 @@ ECryLobbyError CCrySteamLobbyService::Initialise(ECryLobbyServiceFeatures featur
 	if (SteamUser() == NULL)
 	{
 		Cry::GamePlatform::IPlugin* pPlugin = gEnv->pSystem->GetIPluginManager()->QueryPlugin<Cry::GamePlatform::IPlugin>();
-		CRY_ASSERT(pPlugin != nullptr);
-		CRY_ASSERT(pPlugin->GetType() == Cry::GamePlatform::EType::Steam);
+		
+		if ((pPlugin == nullptr) ||
+			(pPlugin->GetMainService() == nullptr) || 
+			(pPlugin->GetMainService()->GetServiceIdentifier() != Cry::GamePlatform::SteamServiceID))
+		{
+			ret = eCLE_NotInitialised;
+		}
 
 		if (ret != eCLE_Success)
 		{

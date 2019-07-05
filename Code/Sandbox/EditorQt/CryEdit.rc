@@ -1245,57 +1245,6 @@ BEGIN
     CONTROL         "Roads/Rivers",IDC_HIDE_ROADS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,60,24,59,10
 END
 
-IDD_PANEL_DISPLAY_RENDER DIALOGEX 0, 0, 156, 396
-STYLE DS_SETFONT | WS_CHILD
-FONT 8, "MS Shell Dlg 2", 400, 0, 0x1
-BEGIN
-    CONTROL         "Fog",IDC_DISPLAY_FOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,53,28,10
-    CONTROL         "Sky box",IDC_DISPLAY_SKYBOX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,44,38,10
-    CONTROL         "Terrain",IDC_DISPLAY_TERRAIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,54,35,10
-    CONTROL         "Ocean",IDC_DISPLAY_WATER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,93,35,10
-    CONTROL         "Roads",IDC_DISPLAY_ROADS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,24,32,10
-    CONTROL         "Shadow Maps",IDC_DISPLAY_SHADOWMAPS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,34,56,10
-    CONTROL         "Detail Texture",IDC_DISPLAY_DETAILTEX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,43,60,10
-    CONTROL         "Vegetation",IDC_DISPLAY_STATICOBJ,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,64,47,10
-    CONTROL         "Decals",IDC_DISPLAY_DECALS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,33,38,10
-    CONTROL         "Procedural vegetation",IDC_DISPLAY_DETAILOBJ,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,115,82,10
-    CONTROL         "Particles",IDC_DISPLAY_PARTICLES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,104,43,10
-    PUSHBUTTON      "All",IDC_DISPLAY_ALL,5,4,40,12
-    PUSHBUTTON      "None",IDC_DISPLAY_NONE,47,4,40,12
-    PUSHBUTTON      "Invert",IDC_DISPLAY_INVERT,89,4,40,12
-    GROUPBOX        "Render Mode",IDC_STATIC,4,176,148,46
-    CONTROL         "Solid",IDC_FILL_MODE,"Button",BS_AUTORADIOBUTTON,10,198,31,10
-    CONTROL         "Wireframe",IDC_WIREFRAME_MODE,"Button",BS_AUTORADIOBUTTON,10,209,46,10
-    GROUPBOX        "Debug/Profile Options",IDC_STATIC,4,267,148,121
-    CONTROL         "Show Helpers",IDC_DISPLAY_HELPERS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,142,52,10
-    CONTROL         "Frame Profiler",IDC_DISPLAY_PROFILE2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,311,57,10
-    CONTROL         "Engine Memory Info",IDC_MEM_STATS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,301,79,10
-    CONTROL         "Game Token Debugger",IDC_GAME_TOKEN_DEBUGGER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,321,86,10
-    CONTROL         "AI Debug Draw",IDC_DISPLAY_AIDEBUGDRAW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,237,65,10
-    CONTROL         "Profile Shaders",IDC_DISPLAY_PROFILESHADERS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,331,63,10
-    CONTROL         "Show Overdraw",IDC_DISPLAY_OVERDRAW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,351,67,10
-    CONTROL         "Renderer Resources Stats",IDC_DISPLAY_RENDERERRESOURCES,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,341,99,10
-    CONTROL         "Budgets",IDC_DISPLAY_BUDGET_MONITOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,280,40,10
-    CONTROL         "Clouds",IDC_DISPLAY_CLOUDS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,23,37,10
-    CONTROL         "Geom Caches",IDC_DISPLAY_GEOMCACHES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,74,54,10
-    CONTROL         "Imposters",IDC_DISPLAY_IMPOSTERS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,73,60,10
-    CONTROL         "Light Beams",IDC_DISPLAY_BEAMS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,83,55,10
-    CONTROL         "Global illumination",IDC_DISPLAY_GLOBAL_ILLUMINATION,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,5,63,67,10
-    CONTROL         "Point Mode",IDC_POINT_MODE,"Button",BS_AUTORADIOBUTTON,10,187,52,10
-    CONTROL         "Drawcalls per Object",IDC_DISPLAY_DRAWCALLS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,291,80,10
-    CONTROL         "AI Debug Draw Cover",IDC_DISPLAY_AIDEBUGDRAWCOVER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,9,248,86,10
-    GROUPBOX        "Profile Options",IDC_STATIC,4,131,148,38
-    GROUPBOX        "Ai Options",IDC_STATIC,4,226,148,37
-    CONTROL         "Show Proxy",IDC_DISPLAY_PHYSICSDEBUGDRAW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,154,52,10
-    CONTROL         "Highlight Breakable Materials",IDC_HIGHLIGHT_BREAKABLE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,361,107,10
-    CONTROL         "Highlight Missing Surface Type",IDC_HIGHLIGHT_MISSING_SURFACE_TYPE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,372,111,10
-END
-
 IDD_PANEL_DISPLAY_STEREO DIALOGEX 0, 0, 232, 144
 STYLE DS_SETFONT | WS_CHILD
 FONT 8, "MS Shell Dlg 2", 400, 0, 0x1
@@ -6450,8 +6399,8 @@ BEGIN
         MENUITEM "High",                        ID_GAME_ENABLEHIGHSPEC
         MENUITEM "Medium",                      ID_GAME_ENABLEMEDIUMSPEC
         MENUITEM "Low",                         ID_GAME_ENABLELOWSPEC
-        MENUITEM "XBoxOne",                     ID_GAME_ENABLEDURANGOSPEC
-				MENUITEM "PS4",													ID_GAME_ENABLEORBISSPEC
+        MENUITEM "Xbox One",                     ID_GAME_ENABLEDURANGOSPEC
+		MENUITEM "PS4",													ID_GAME_ENABLEORBISSPEC
     END
     POPUP "&Group"
     BEGIN
@@ -7066,6 +7015,9 @@ IDC_PHYS_PINCH          CURSOR                  "res\\phys_pinch.cur"
 IDC_PHYS_GRAB           CURSOR                  "res\\phys_pull.cur"
 IDC_PHYS_AIM            CURSOR                  "res\\phys_hit.cur"
 IDC_SCISSORS            CURSOR                  "res\\scissors.cur"
+IDC_PHYS_PIN            CURSOR                  "res\\phys_pin.cur"
+IDC_PHYS_FORK           CURSOR                  "res\\phys_fork.cur"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

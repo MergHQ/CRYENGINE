@@ -69,7 +69,7 @@ public:
 		m_bMapsFullResource = bMapsFullResource;
 	}
 
-	ILINE void SetMips(TRange<uint16>& mips)
+	ILINE void SetMips(const TRange<uint16>& mips)
 	{
 		m_mips = mips;
 	}

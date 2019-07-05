@@ -285,4 +285,3 @@ bool CCVarWindow::CCVarModel::setData(const QModelIndex& index, const QVariant& 
 	}
 	return false;
 }
-

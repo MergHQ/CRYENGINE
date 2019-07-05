@@ -130,11 +130,13 @@ struct ILocalizationManager
 
 	// <interfuscator:shuffle>
 	virtual ~ILocalizationManager(){}
-	virtual const char*                                 LangNameFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id) = 0;
+	virtual const char*                                 LangNameFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id) const = 0;
+	virtual const char*                                 ISOCodeFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id) const = 0;
 	virtual ILocalizationManager::TLocalizationBitfield MaskSystemLanguagesFromSupportedLocalizations(const ILocalizationManager::TLocalizationBitfield systemLanguages) = 0;
 	virtual ILocalizationManager::TLocalizationBitfield IsLanguageSupported(const ILocalizationManager::EPlatformIndependentLanguageID id) = 0;
 	virtual bool        SetLanguage(const char* sLanguage) = 0;
-	virtual const char* GetLanguage() = 0;
+	virtual const char* GetLanguage() const = 0;
+	virtual const char* GetLanguageISOCode() const = 0;
 
 	//! Load the descriptor file with tag information.
 	virtual bool InitLocalizationData(const char* sFileName, bool bReload = false) = 0;
@@ -230,6 +232,7 @@ struct ILocalizationManager
 	virtual void LocalizeDuration(int seconds, string& outDurationString) = 0;
 	virtual void LocalizeNumber(int number, string& outNumberString) = 0;
 	virtual void LocalizeNumber(float number, int decimals, string& outNumberString) = 0;
+	virtual void AddLocalizationEntry(const string& token, const string& translation) = 0;
 	// </interfuscator:shuffle>
 
 	static ILINE TLocalizationBitfield LocalizationBitfieldFromPILID(EPlatformIndependentLanguageID pilid)

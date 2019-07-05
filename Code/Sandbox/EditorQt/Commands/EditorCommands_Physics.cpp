@@ -1,8 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 
-#include "IEditorImpl.h"
 #include "PhysTool.h"
+#include "IEditorImpl.h"
+#include <Commands/ICommandManager.h>
+#include <BoostPythonMacros.h>
+#include <LevelEditor/LevelEditorSharedState.h>
+#include <CrySystem/ISystem.h>
+#include <CryPhysics/IPhysics.h>
+#include <QAction>
 
 namespace Private_EditorCommands
 {
@@ -25,10 +31,10 @@ void PyPhysicsSingleStep()
 
 void PySetPhysicsTool()
 {
-	if (GetIEditorImpl()->GetEditTool() && GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CPhysPullTool)))
-		GetIEditorImpl()->SetEditTool(0);
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool() && GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CPhysPullTool)))
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	else
-		GetIEditorImpl()->SetEditTool(new CPhysPullTool());
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(new CPhysPullTool());
 }
 }
 
@@ -48,4 +54,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PySetPhysicsTool, p
                                      "Turns on physics tool mode (Ctrl/Shift modify)",
                                      "physics.set_physics_tool()");
 REGISTER_EDITOR_COMMAND_ICON(physics, set_physics_tool, "icons:General/Physics_Tool.ico");
-

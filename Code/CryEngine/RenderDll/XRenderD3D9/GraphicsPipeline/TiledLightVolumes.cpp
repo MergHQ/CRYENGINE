@@ -2,8 +2,8 @@
 
 #include "StdAfx.h"
 #include "TiledLightVolumes.h"
+#include "TiledShading.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "D3D_SVO.h"
 
@@ -35,7 +35,7 @@ struct HLSL_VolumeLightListGenConstants
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CTiledLightVolumesStage::CTiledLightVolumesStage()
+CTiledLightVolumesStage::CTiledLightVolumesStage(CGraphicsPipeline& graphicsPipeline) : CGraphicsPipelineStage(graphicsPipeline)
 {
 	// 16 byte alignment is important for performance on nVidia cards
 	static_assert(sizeof(STiledLightVolumeInfo) % 16 == 0, "STiledLightVolumeInfo should be 16 byte aligned for GPU performance");
@@ -73,8 +73,8 @@ void CTiledLightVolumesStage::Init()
 {
 	// Cubemap Array(s) ==================================================================
 
-#if CRY_RENDERER_OPENGLES || CRY_PLATFORM_ANDROID
-	ETEX_Format textureAtlasFormatSpecDiff = eTF_R16G16B16A16F;
+#if CRY_PLATFORM_ANDROID
+	ETEX_Format textureAtlasFormatSpecDiff = eTF_R9G9B9E5;
 	ETEX_Format textureAtlasFormatSpot = eTF_EAC_R11;
 #else
 	ETEX_Format textureAtlasFormatSpecDiff = eTF_BC6UH;
@@ -83,7 +83,8 @@ void CTiledLightVolumesStage::Init()
 
 	if (!m_specularProbeAtlas.texArray)
 	{
-		m_specularProbeAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledSpecProbeTexArr", SpecProbeSize, SpecProbeSize, AtlasArrayDim * 6, IntegerLog2(SpecProbeSize) - 1, eTT_CubeArray, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
+		std::string name = "$TiledSpecProbeTexArr" + m_graphicsPipeline.GetUniqueIdentifierName();
+		m_specularProbeAtlas.texArray = CTexture::GetOrCreateTextureArray(name.c_str(), SpecProbeSize, SpecProbeSize, AtlasArrayDim * 6, IntegerLog2(SpecProbeSize) - 1, eTT_CubeArray, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
 		m_specularProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_specularProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -97,7 +98,8 @@ void CTiledLightVolumesStage::Init()
 
 	if (!m_diffuseProbeAtlas.texArray)
 	{
-		m_diffuseProbeAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledDiffuseProbeTexArr", DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim * 6, 1, eTT_CubeArray, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
+		std::string name = "$TiledDiffuseProbeTexArr" + m_graphicsPipeline.GetUniqueIdentifierName();
+		m_diffuseProbeAtlas.texArray = CTexture::GetOrCreateTextureArray(name.c_str(), DiffuseProbeSize, DiffuseProbeSize, AtlasArrayDim * 6, 1, eTT_CubeArray, FT_DONT_STREAM, textureAtlasFormatSpecDiff);
 		m_diffuseProbeAtlas.items.resize(AtlasArrayDim);
 
 		if (m_diffuseProbeAtlas.texArray->GetFlags() & FT_FAILED)
@@ -112,7 +114,8 @@ void CTiledLightVolumesStage::Init()
 	if (!m_spotTexAtlas.texArray)
 	{
 		// Note: BC4 has 4x4 as lowest mipmap
-		m_spotTexAtlas.texArray = CTexture::GetOrCreateTextureArray("$TiledSpotTexArr", SpotTexSize, SpotTexSize, AtlasArrayDim * 1, IntegerLog2(SpotTexSize) - 1, eTT_2DArray, FT_DONT_STREAM, textureAtlasFormatSpot);
+		std::string name = "$TiledSpotTexArr" + m_graphicsPipeline.GetUniqueIdentifierName();
+		m_spotTexAtlas.texArray = CTexture::GetOrCreateTextureArray(name.c_str(), SpotTexSize, SpotTexSize, AtlasArrayDim * 1, IntegerLog2(SpotTexSize) - 1, eTT_2DArray, FT_DONT_STREAM, textureAtlasFormatSpot);
 		m_spotTexAtlas.items.resize(AtlasArrayDim);
 
 		if (m_spotTexAtlas.texArray->GetFlags() & FT_FAILED)
@@ -129,24 +132,29 @@ void CTiledLightVolumesStage::Init()
 	if (!m_lightCullInfoBuf.IsAvailable())
 	{
 		m_lightCullInfoBuf.Create(MaxNumTileLights, sizeof(STiledLightCullInfo), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_CPU_WRITE | CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, NULL);
+		m_lightCullInfoBuf.SetDebugName("LightCullInfoBuf");
 	}
 
 	if (!m_lightShadeInfoBuf.IsAvailable())
 	{
 		m_lightShadeInfoBuf.Create(MaxNumTileLights, sizeof(STiledLightShadeInfo), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_CPU_WRITE | CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, NULL);
+		m_lightShadeInfoBuf.SetDebugName("LightShadeInfoBuf");
 	}
 
 	// Tiled Light Volumes ===============================================================
 
 	m_lightVolumeInfoBuf.Create(MaxNumTileLights, sizeof(STiledLightVolumeInfo), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_CPU_WRITE | CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, NULL);
 	
+	// preallocate light volume buffer
+	m_lightVolumeBuffer.Create();
+
 	// Create geometry for light volumes
 	{
 		CD3D9Renderer* pRenderer = gcpRendD3D;
 		t_arrDeferredMeshVertBuff vertices;
 		t_arrDeferredMeshIndBuff indices;
 		Vec4 vertexData[256];
-		
+
 		for (uint32 i = 0; i < eVolumeType_Count; i++)
 		{
 			switch (i)
@@ -167,7 +175,7 @@ void CTiledLightVolumesStage::Init()
 			}
 
 			assert(vertices.size() < CRY_ARRAY_COUNT(vertexData));
-			
+
 			SVolumeGeometry& volumeMesh = m_volumeMeshes[i];
 
 			volumeMesh.numIndices = indices.size();
@@ -205,14 +213,8 @@ void CTiledLightVolumesStage::Resize(int renderWidth, int renderHeight)
 {
 	// Tiled Light Lists =================================================================
 
-	int gridWidth = renderWidth;
-	int gridHeight = renderHeight;
-	
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-		CVrProjectionManager::Instance()->GetProjectionSize(renderWidth, renderHeight, gridWidth, gridHeight);
-	
-	const uint32 dispatchSizeX = gridWidth  / LightTileSizeX + (gridWidth  % LightTileSizeX > 0 ? 1 : 0);
-	const uint32 dispatchSizeY = gridHeight / LightTileSizeY + (gridHeight % LightTileSizeY > 0 ? 1 : 0);
+	uint32 dispatchSizeX = renderWidth  / LightTileSizeX + (renderWidth  % LightTileSizeX > 0 ? 1 : 0);
+	uint32 dispatchSizeY = renderHeight / LightTileSizeY + (renderHeight % LightTileSizeY > 0 ? 1 : 0);
 
 	if (m_dispatchSizeX == dispatchSizeX &&
 		m_dispatchSizeY == dispatchSizeY)
@@ -226,13 +228,14 @@ void CTiledLightVolumesStage::Resize(int renderWidth, int renderHeight)
 	if (!m_tileOpaqueLightMaskBuf.IsAvailable())
 	{
 		m_tileOpaqueLightMaskBuf.Create(dispatchSizeX * dispatchSizeY * 8, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, NULL);
+		m_tileOpaqueLightMaskBuf.SetDebugName("TileOpaqueLightMaskBuf");
 	}
 
 	if (!m_tileTranspLightMaskBuf.IsAvailable())
 	{
 		m_tileTranspLightMaskBuf.Create(dispatchSizeX * dispatchSizeY * 8, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, NULL);
+		m_tileTranspLightMaskBuf.SetDebugName("TileTranspLightMaskBuf");
 	}
-
 }
 
 void CTiledLightVolumesStage::Clear()
@@ -253,8 +256,6 @@ void CTiledLightVolumesStage::Clear()
 
 void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources)
 {
-//	Clear();
-
 	// Cubemap Array(s) ==================================================================
 
 	if (destroyResolutionIndependentResources)
@@ -263,9 +264,19 @@ void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources
 		m_diffuseProbeAtlas.items.clear();
 		m_spotTexAtlas.items.clear();
 
-		SAFE_RELEASE_FORCE(m_specularProbeAtlas.texArray);
-		SAFE_RELEASE_FORCE(m_diffuseProbeAtlas.texArray);
-		SAFE_RELEASE_FORCE(m_spotTexAtlas.texArray);
+#if DEVRES_USE_PINNING
+		m_specularProbeAtlas.texArray->GetDevTexture()->Unpin();
+		m_diffuseProbeAtlas.texArray->GetDevTexture()->Unpin();
+		m_spotTexAtlas.texArray->GetDevTexture()->Unpin();
+#endif
+
+		ITexture* pSpec = m_specularProbeAtlas.texArray.ReleaseOwnership();
+		ITexture* pDiff = m_diffuseProbeAtlas.texArray.ReleaseOwnership();
+		ITexture* pSpot = m_spotTexAtlas.texArray.ReleaseOwnership();
+
+		SAFE_RELEASE_FORCE(pSpec);
+		SAFE_RELEASE_FORCE(pDiff);
+		SAFE_RELEASE_FORCE(pSpot);
 	}
 
 	// Tiled Light Lists =================================================================
@@ -277,6 +288,7 @@ void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources
 	{
 		m_lightCullInfoBuf.Release();
 		m_lightShadeInfoBuf.Release();
+		m_lightVolumeBuffer.Release();
 	}
 
 	m_tileOpaqueLightMaskBuf.Release();
@@ -299,14 +311,6 @@ void CTiledLightVolumesStage::Update()
 {
 	// Tiled Light Volumes ===============================================================
 
-	if (CRenderer::CV_r_DeferredShadingTiled >= 3)
-	{
-		const ColorI nulls = { 0, 0, 0, 0 };
-
-		CClearSurfacePass::Execute(&m_tileOpaqueLightMaskBuf, nulls);
-		CClearSurfacePass::Execute(&m_tileTranspLightMaskBuf, nulls);
-	}
-
 	GenerateLightList();
 }
 
@@ -321,7 +325,6 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 	for (uint32 i = 0; i < kNumPasses; i++)
 		m_numVolumesPerPass[i] = 0;
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	STiledLightInfo* pLightInfo = GetTiledLightInfo();
 
 	const SRenderViewInfo& viewInfo = GetCurrentViewInfo();
@@ -363,8 +366,6 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 	STiledLightVolumeInfo volumeInfo[MaxNumTileLights];
 	for (uint32 i = 0; i < kNumPasses; i++)
 	{
-		bool bInsideVolume = i < eVolumeType_Count;
-
 		for (uint32 j = 0; j < m_numVolumesPerPass[i]; j++)
 		{
 			STiledLightInfo& lightInfo = pLightInfo[volumeLightIndices[i][j]];
@@ -450,7 +451,6 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 
 int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor, TextureAtlas& atlas, int arrayIndex)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	const int frameID = gRenDev->GetRenderFrameID();
 
 	// Make sure the texture is loaded already
@@ -501,6 +501,9 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor,
 			}
 		}
 
+		if (minValue == frameID)
+			return -1;
+
 		arrayIndex = minIndex;
 	}
 
@@ -520,16 +523,16 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor,
 			if (item.texture->StreamGetLoadedMip() < item.texture->GetNumPersistentMips())
 			{
 				// 0 = near, 1 = far
-				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(0).nRoundUpdateId + 1, 0);
-				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(1).nRoundUpdateId + 1, 1);
+				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(0).nRoundUpdateId + 1);
+				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(1).nRoundUpdateId + 1);
 			}
 		}
 
 		++m_numAtlasEvictions;
 	}
 
-	item.mipFactorRequested = std::min<float>(item.invalid || item.accessFrameID != frameID ? item.mipFactorMinSize : item.mipFactorRequested, mipFactor);
-	item.lowestRenderableMip  = std::min<int>(item.invalid ? item.highestMip : item.lowestRenderableMip, pTexInput->IsStreamed() ? pTexInput->StreamGetLoadedMip() : 0);
+	item.mipFactorRequested  = std::min<float>(item.invalid || item.accessFrameID != frameID ? item.mipFactorMinSize : item.mipFactorRequested, mipFactor);
+	item.lowestRenderableMip = std::min<int>(item.invalid ? item.highestMip : item.lowestRenderableMip, pTexInput->IsStreamed() ? pTexInput->StreamGetLoadedMip() : 0);
 	item.accessFrameID = frameID;
 	item.updateFrameID = updateID;
 	item.texture = pTexInput;
@@ -551,17 +554,17 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor,
 		if (!pTexInput->IsLoaded())
 		{
 			iLog->LogError("TiledShading: Texture not found: %s",
-				pTexInput->GetName());
+			               pTexInput->GetName());
 		}
 		else if (pTexInput->GetDstFormat() != atlas.texArray->GetDstFormat())
 		{
 			iLog->LogError("TiledShading: Unsupported texture format: %s (W:%i H:%i F:%s), it has to be equal to the tile-atlas (F:%s), please change the texture's preset by re-exporting with CryTif",
-				pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName(), atlas.texArray->GetFormatName());
+			               pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName(), atlas.texArray->GetFormatName());
 		}
 		else
 		{
 			iLog->LogError("TiledShading: Unsupported texture properties: %s (W:%i H:%i F:%s)",
-				pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName());
+			               pTexInput->GetName(), pTexInput->GetWidth(), pTexInput->GetHeight(), pTexInput->GetFormatName());
 		}
 
 		return -1;
@@ -588,8 +591,8 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 
 		CTexture* pTexUpload = item.texture;
 
-		const int availableMip = pTexUpload->IsStreamed() ? std::max(0, pTexUpload->StreamGetLoadedMip       (                       )) : 0;
-		const int requestedMip = pTexUpload->IsStreamed() ? std::max(0, pTexUpload->StreamCalculateMipsSigned(item.mipFactorRequested)) : 0;
+		const int8 availableMip = pTexUpload->IsStreamed() ? pTexUpload->StreamGetLoadedMip (                       ) : 0;
+		const int8 requestedMip = pTexUpload->IsStreamed() ? pTexUpload->StreamCalculateMips(item.mipFactorRequested) : 0;
 
 		// Copy for as long as we have less data in the array than in the texture
 		if (item.lowestTransferedMip > availableMip)
@@ -597,11 +600,11 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 			item.lowestTransferedMip = availableMip;
 
 			// Update atlas
-			const uint32 numMisMips = availableMip;
-			const uint32 numSrcMips = (uint32)pTexUpload->GetNumMips();
-			const uint32 numDstMips = (uint32)atlas.texArray->GetNumMips();
-			const uint32 numSkpMips = IntegerLog2(std::max((uint32)(pTexUpload->GetWidth() >> numMisMips) / atlas.texArray->GetWidth(), 1U));
-			const uint32 numFaces = atlas.texArray->GetTexType() == eTT_CubeArray ? 6 : 1;
+			const int8 numMisMips = availableMip;
+			const int8 numSrcMips = (uint32)pTexUpload->GetNumMips();
+			const int8 numDstMips = (uint32)atlas.texArray->GetNumMips();
+			const int8 numSkpMips = IntegerLog2(std::max((uint32)(pTexUpload->GetWidth() >> numMisMips) / atlas.texArray->GetWidth(), 1U));
+			const int8 numFaces = atlas.texArray->GetTexType() == eTT_CubeArray ? 6 : 1;
 
 			CDeviceTexture* pTexInputDevTex = pTexUpload->GetDevTexture();
 			CDeviceTexture* pTexArrayDevTex = atlas.texArray->GetDevTexture();
@@ -617,8 +620,8 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 
 				const SResourceRegionMapping mapping =
 				{
-					{ 0, 0, 0, SrcSubresource }, // src position
-					{ 0, 0, 0, DstSubresource }, // dst position
+					{ 0, 0, 0, SrcSubresource  }, // src position
+					{ 0, 0, 0, DstSubresource  }, // dst position
 					{ w, h, d, NumSubresources }, // size
 					D3D11_COPY_NO_OVERWRITE_REVERT
 				};
@@ -643,8 +646,8 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 
 					const SResourceRegionMapping mapping =
 					{
-						{ 0, 0, 0, SrcSubresource }, // src position
-						{ 0, 0, 0, DstSubresource }, // dst position
+						{ 0, 0, 0, SrcSubresource  }, // src position
+						{ 0, 0, 0, DstSubresource  }, // dst position
 						{ W, H, D, NumSubresources }, // size
 						D3D11_COPY_NO_OVERWRITE_REVERT
 					};
@@ -676,8 +679,8 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 			if (issueCommand)
 			{
 				// 0 = near, 1 = far
-				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(0).nRoundUpdateId + 1, 0);
-				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(1).nRoundUpdateId + 1, 1);
+				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(0).nRoundUpdateId + 1);
+				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(1).nRoundUpdateId + 1);
 			}
 		}
 	}
@@ -685,10 +688,6 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 
 std::pair<size_t, size_t> CTiledLightVolumesStage::MeasureTextures(TextureAtlas& atlas)
 {
-	const UINT w = atlas.texArray->GetWidth();
-	const UINT h = atlas.texArray->GetHeight();
-	const UINT d = atlas.texArray->GetDepth();
-
 	std::pair<size_t, size_t> atlasSize = {};
 
 	// Check if texture is already in atlas
@@ -744,11 +743,7 @@ void CTiledLightVolumesStage::InjectSunIntoTiledLights(uint32_t& counter)
 	lightShadeInfo.shadowParams = Vec2(1, 0);
 	lightShadeInfo.shadowMaskIndex = 0;
 	lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
-
-	Vec3 sunColor;
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
-	sunColor *= gcpRendD3D->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
-	lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
+	lightShadeInfo.color = m_pRenderView->GetSunLightColor();
 
 	++counter;
 }
@@ -759,6 +754,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
+	CDeferredShading* pDeferredShading = pRenderView->GetGraphicsPipeline()->GetDeferredShading();
 
 	const auto& defLights = pRenderView->GetLightsArray(eDLT_DeferredLight);
 	const auto& envProbes = pRenderView->GetLightsArray(eDLT_DeferredCubemap);
@@ -767,7 +763,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 	const SRenderViewInfo& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
 	const Vec3 cameraPosition = pRenderView->GetCamera(CCamera::eEye_Left).GetPosition();
 
-	const uint32 maxSliceCount = CRendererResources::s_ptexShadowMask->StreamGetNumSlices();	// Should be set to same texture as CShadowMaskStage::m_pShadowMaskRT
+	const uint32 maxSliceCount = m_graphicsPipelineResources.m_pTexShadowMask->StreamGetNumSlices();	// Should be set to same texture as CShadowMaskStage::m_pShadowMaskRT
 
 	const float invCameraFar = 1.0f / viewInfo.farClipPlane;
 
@@ -777,8 +773,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 	matView.m12 *= -1;
 	matView.m22 *= -1;
 	matView.m32 *= -1;
-
-	int nThreadID = gRenDev->GetRenderThreadID();
 
 	uint32 numTileLights = 0;
 	uint32 numSkipLights = 0;
@@ -812,10 +806,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 			if (renderLight.m_Flags & (DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY))
 				continue;
 
-			// Skip non-ambient area light if support is disabled
-			if ((renderLight.m_Flags & DLF_AREA_LIGHT) && !(renderLight.m_Flags & DLF_AMBIENT) && !CRenderer::CV_r_DeferredShadingAreaLights)
-				continue;
-
 			++numRenderLights;
 
 			if (numTileLights == MaxNumTileLights)
@@ -823,17 +813,19 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 			// Setup standard parameters
 			float mipFactor = (cameraPosition - renderLight.m_Origin).GetLengthSquared() / max(0.001f, renderLight.m_fRadius * renderLight.m_fRadius);
-			bool areaLightRect = (renderLight.m_Flags & DLF_AREA_LIGHT) && renderLight.m_fAreaWidth && renderLight.m_fAreaHeight && renderLight.m_fLightFrustumAngle;
+			bool isAreaLight = (renderLight.m_Flags & DLF_AREA) != 0;
 			float volumeSize = (lightListIdx == 0) ? renderLight.m_ProbeExtents.len() : renderLight.m_fRadius;
 			Vec3 pos = renderLight.GetPosition();
 			lightInfo.posRad = Vec4(pos, volumeSize);
 			Vec4 posVS = Vec4(pos, 1) * matView;
 			lightInfo.depthBoundsVS = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
 			lightShadeInfo.posRad = Vec4(pos.x, pos.y, pos.z, volumeSize);
-			lightShadeInfo.attenuationParams = Vec2(areaLightRect ? (renderLight.m_fAreaWidth + renderLight.m_fAreaHeight) * 0.25f : renderLight.m_fAttenuationBulbSize, renderLight.m_fAreaHeight * 0.5f);
-			float itensityScale = rd->m_fAdaptedSceneScaleLBuffer;
-			lightShadeInfo.color = Vec4(renderLight.m_Color.r * itensityScale, renderLight.m_Color.g * itensityScale,
-				renderLight.m_Color.b * itensityScale, renderLight.m_SpecMult);
+			lightShadeInfo.attenuationParams = Vec2(renderLight.m_fAttenuationBulbSize, renderLight.m_fAreaHeight * 0.5f);
+			float intensityScale = rd->m_fAdaptedSceneScaleLBuffer;
+			lightShadeInfo.color = Vec4(renderLight.m_Color.r * intensityScale,
+			                            renderLight.m_Color.g * intensityScale,
+			                            renderLight.m_Color.b * intensityScale,
+			                            renderLight.m_SpecMult);
 			lightShadeInfo.resIndex = 0;
 			lightShadeInfo.resMipClamp0 = 0;
 			lightShadeInfo.resMipClamp1 = 0;
@@ -926,8 +918,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 							continue;  // Skip light
 
 						lightShadeInfo.resIndex = arrayIndex;
-						lightShadeInfo.resMipClamp0 =
-						lightShadeInfo.resMipClamp1 = m_spotTexAtlas.items[arrayIndex].lowestRenderableMip;
+						lightShadeInfo.resMipClamp0 = lightShadeInfo.resMipClamp1 = m_spotTexAtlas.items[arrayIndex].lowestRenderableMip;
 					}
 
 					// Prevent culling errors for frustums with large FOVs by slightly enlarging the frustum
@@ -953,36 +944,107 @@ void CTiledLightVolumesStage::GenerateLightList()
 					lightShadeInfo.projectorMatrix = projMatT;
 				}
 
-				// Handle rectangular area lights
-				if (areaLightRect)
+				// Handle area lights
+				if (isAreaLight)
 				{
-					lightInfo.volumeType = tlVolumeOBB;
 					lightShadeInfo.lightType = ambientLight ? tlTypeAmbientArea : tlTypeRegularArea;
-
-					float expensionRadius = renderLight.m_fRadius * 1.08f;
-					Vec3 scale(expensionRadius, expensionRadius, expensionRadius);
-					Matrix34 areaLightMat = CShadowUtils::GetAreaLightMatrix(&renderLight, scale);
-
-					lightInfo.volumeParams0 = Vec4(areaLightMat.GetColumn0().GetNormalized(), areaLightMat.GetColumn0().GetLength() * 0.5f);
-					lightInfo.volumeParams1 = Vec4(areaLightMat.GetColumn1().GetNormalized(), areaLightMat.GetColumn1().GetLength() * 0.5f);
-					lightInfo.volumeParams2 = Vec4(areaLightMat.GetColumn2().GetNormalized(), areaLightMat.GetColumn2().GetLength() * 0.5f);
 
 					float volumeSize = renderLight.m_fRadius + max(renderLight.m_fAreaWidth, renderLight.m_fAreaHeight);
 					lightInfo.depthBoundsVS = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
 
-					float areaFov = renderLight.m_fLightFrustumAngle * 2.0f;
-					if (renderLight.m_Flags & DLF_CASTSHADOW_MAPS)
-						areaFov = min(areaFov, 135.0f); // Shadow can only cover ~135 degree FOV without looking bad, so we clamp the FOV to hide shadow clipping
+					// Pre-transform polygonal shape vertices
+					Matrix33 rotationMat;
+					rotationMat.SetColumn0(renderLight.m_ObjMatrix.GetColumn0().GetNormalized());
+					rotationMat.SetColumn1(renderLight.m_ObjMatrix.GetColumn1().GetNormalized());
+					rotationMat.SetColumn2(renderLight.m_ObjMatrix.GetColumn2().GetNormalized());	
 
-					const float cosAngle = cosf(areaFov * (gf_PI / 360.0f));
+					Vec3 lightPos = renderLight.GetPosition() - viewInfo.cameraOrigin;
+					Vec3 polygonPos[4];
+					float areaWidth = renderLight.m_fAreaWidth * 0.5f;
+					float areaHeight = renderLight.m_fAreaHeight * 0.5f;
+
+					if (renderLight.m_nAreaShape == 1) // Rectangular light source
+					{
+						polygonPos[0] = rotationMat.TransformVector(Vec3(-areaWidth, 0, -areaHeight)) + lightPos;
+						polygonPos[1] = rotationMat.TransformVector(Vec3(areaWidth, 0, -areaHeight)) + lightPos;
+						polygonPos[2] = rotationMat.TransformVector(Vec3(areaWidth, 0, areaHeight)) + lightPos;
+						polygonPos[3] = rotationMat.TransformVector(Vec3(-areaWidth, 0, areaHeight)) + lightPos;
+					}
+					else
+					{
+						Vec3 ex = rotationMat.TransformVector(Vec3(1, 0, 0) * areaWidth  * 0.5f);
+						Vec3 ey = rotationMat.TransformVector(Vec3(0, 0, 1) * areaHeight * 0.5f);
+						polygonPos[0] = lightPos - ex - ey;
+						polygonPos[1] = lightPos + ex - ey;
+						polygonPos[2] = lightPos + ex + ey;
+						polygonPos[3] = lightPos - ex + ey;
+					}
 
 					Matrix44 areaLightParams;
-					areaLightParams.SetRow4(0, Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(1, Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(2, Vec4(renderLight.m_ObjMatrix.GetColumn2().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(3, Vec4(renderLight.m_fAreaWidth * 0.5f, renderLight.m_fAreaHeight * 0.5f, 0, cosAngle));
+					areaLightParams.SetRow4(0, Vec4(polygonPos[0].x, polygonPos[0].y, polygonPos[0].z, renderLight.m_nAreaShape));
+					areaLightParams.SetRow4(1, Vec4(polygonPos[1].x, polygonPos[1].y, polygonPos[1].z, renderLight.m_bAreaTwoSided));
+					areaLightParams.SetRow4(2, Vec4(polygonPos[2].x, polygonPos[2].y, polygonPos[2].z, renderLight.m_bAreaTextured));
+					areaLightParams.SetRow4(3, Vec4(polygonPos[3].x, polygonPos[3].y, polygonPos[3].z, 0));
+
+					lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
+					{
+						CTexture* pAreaTexture = (CTexture*)renderLight.m_pLightImage;
+
+						int arrayIndex = InsertTexture(pAreaTexture, mipFactor, m_spotTexAtlas, -1);
+						if (arrayIndex < 0)
+							continue;  // Skip light
+
+						lightShadeInfo.resIndex = arrayIndex;
+						lightShadeInfo.resMipClamp0 = lightShadeInfo.resMipClamp1 = m_spotTexAtlas.items[arrayIndex].lowestRenderableMip;
+					}
 
 					lightShadeInfo.projectorMatrix = areaLightParams;
+
+					// Draw light geometry helper when light is selected
+					if (renderLight.m_pOwner->GetRndFlags() & ERF_SELECTED)
+					{
+						if (renderLight.m_nAreaShape == 1) // Rectangular light source
+						{
+							Vec3 p0 = Vec3(-renderLight.m_fAreaWidth * 0.5f, 0, -renderLight.m_fAreaHeight * 0.5f);
+							Vec3 p1 = Vec3(-renderLight.m_fAreaWidth * 0.5f, 0, renderLight.m_fAreaHeight * 0.5f);
+							Vec3 p2 = Vec3(renderLight.m_fAreaWidth * 0.5f, 0, renderLight.m_fAreaHeight * 0.5f);
+							Vec3 p3 = Vec3(renderLight.m_fAreaWidth * 0.5f, 0, -renderLight.m_fAreaHeight * 0.5f);
+
+							p0 = rotationMat.TransformVector(p0) + renderLight.GetPosition();
+							p1 = rotationMat.TransformVector(p1) + renderLight.GetPosition();
+							p2 = rotationMat.TransformVector(p2) + renderLight.GetPosition();
+							p3 = rotationMat.TransformVector(p3) + renderLight.GetPosition();
+							
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p0, ColorB(1.0f), p1, ColorB(1.0f));
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p1, ColorB(1.0f), p2, ColorB(1.0f));
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p2, ColorB(1.0f), p3, ColorB(1.0f));
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p3, ColorB(1.0f), p0, ColorB(1.0f));
+						}
+						else if (renderLight.m_nAreaShape == 2) // Circular light source
+						{
+							float radiusX = renderLight.m_fAreaWidth * 0.25f;
+							float radiusZ = renderLight.m_fAreaHeight * 0.25f;
+
+							Vec3 p0, p1;
+							p0.x = radiusX * sin(0.0f);
+							p0.y = 0;
+							p0.z = radiusZ * cos(0.0f);
+							p0 = rotationMat.TransformVector(p0) + renderLight.GetPosition();
+
+							float step = 10.0f / 180 * gf_PI;
+							for (float angle = step; angle < 360.0f / 180 * gf_PI + step; angle += step)
+							{
+								p1.x = radiusX * sin(angle);
+								p1.y = 0;
+								p1.z = radiusZ * cos(angle);
+
+								p1 = rotationMat.TransformVector(p1) + renderLight.GetPosition();
+								gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p0, ColorB(1.0f), p1, ColorB(1.0f));
+
+								p0 = p1;
+							}
+						}
+					}
 				}
 
 				// Handle shadow casters
@@ -1003,12 +1065,12 @@ void CTiledLightVolumesStage::GenerateLightList()
 						if (numTileLights + numSides > MaxNumTileLights)
 							continue;  // Skip light
 
-						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)CDeferredShading::Instance().m_nShadowPoolSize), firstFrustum.fDepthConstBias);
+						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)pDeferredShading->m_nShadowPoolSize), firstFrustum.fDepthConstBias);
 						const Vec3 cubeDirs[6] = { Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, -1, 0), Vec3(0, 1, 0), Vec3(0, 0, -1), Vec3(0, 0, 1) };
 
 						for (int side = 0; side < numSides; ++side)
 						{
-							bool shouldSample = firstFrustum.ShouldSampleSide(side) && renderLight.m_ShadowMaskIndex < maxSliceCount;
+							bool shouldSample = firstFrustum.ShouldSample(side) && renderLight.m_ShadowMaskIndex < maxSliceCount;
 
 							CShadowUtils::SShadowsSetupInfo shadowsSetup = rd->ConfigShadowTexgen(pRenderView, &firstFrustum, side);
 							Matrix44A shadowMat = shadowsSetup.ShadowMat;
@@ -1069,7 +1131,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 		}
 
 		// Add sun after cubemaps
-		if (lightListIdx == 1 && pRenderView->HaveSunLight())
+		if (lightListIdx == 1 && pRenderView->HasSunLight())
 			InjectSunIntoTiledLights(numTileLights);
 	}
 
@@ -1158,7 +1220,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), 2.0f, Col_Blue, false, "Tiled Shading Debug");
 		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, m_numSkippedLights > 0 ? Col_Red : Col_Blue, false, "Skipped Lights: %i", m_numSkippedLights);
 		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, Col_Blue, false, "Atlas Updates: %i, Evictions: %i, Str. Sizes: %zu/%zu/%zu bytes, Non-Str.Sizes: %zu/%zu/%zu bytes",
-			m_numAtlasUpdates, m_numAtlasEvictions, specularAtlasSize.first, diffuseAtlasSize.first, projectorAtlasSize.first, specularAtlasSize.second, diffuseAtlasSize.second, projectorAtlasSize.second);
+		                            m_numAtlasUpdates, m_numAtlasEvictions, specularAtlasSize.first, diffuseAtlasSize.first, projectorAtlasSize.first, specularAtlasSize.second, diffuseAtlasSize.second, projectorAtlasSize.second);
 		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), 2.0f, Col_Yellow, false, "Light-vector:");
 
 		rowPos += (rowHeight - rowHeightSmall);
@@ -1171,7 +1233,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 			const AtlasItem* pItem = nullptr;
 			if ((lightShadeInfo.resIndex != lightShadeInfo.resNoIndex))
 			{
-				if ((lightShadeInfo.lightType == tlTypeProbe))
+				if (lightShadeInfo.lightType == tlTypeProbe)
 					pItem = &m_specularProbeAtlas.items[lightShadeInfo.resIndex];
 				if ((lightShadeInfo.lightType == tlTypeAmbientProjector || lightShadeInfo.lightType == tlTypeRegularProjector))
 					pItem = &m_spotTexAtlas.items[lightShadeInfo.resIndex];
@@ -1182,9 +1244,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 			int lastUpdate = pItem ? pItem->updateFrameID : 0;
 			const char* pName = pItem && pItem->texture ? pItem->texture->GetName() : "-";
 			int streamed0 = 0; // 32x32 non-streamed full-resolution
-			int streamed1 = pItem && pItem->texture && pItem->texture->IsStreamed() ? std::max(0, pItem->texture->StreamGetLoadedMip()) : 0;
-
-			Vec4 color = lightShadeInfo.color;
+			int streamed1 = pItem && pItem->texture && pItem->texture->IsStreamed() ? std::max<int8>(0, pItem->texture->StreamGetLoadedMip()) : 0;
 
 #if 0
 			SDrawTextInfo ti;
@@ -1213,7 +1273,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 				isValid ? '!' : '?',
 				pName);
 
-			if (rowPos >= (rd->GetHeight() - rowHeightSmall))
+			if (rowPos >= (rd->GetOverlayHeight() - rowHeightSmall))
 			{
 				rowPos = rowReset;
 				colPos += 800;
@@ -1223,43 +1283,18 @@ void CTiledLightVolumesStage::GenerateLightList()
 }
 
 
-bool CTiledLightVolumesStage::IsSeparateVolumeListGen()
-{
-	return !(CRenderer::CV_r_DeferredShadingTiled < 3 && !CRenderer::CV_r_GraphicsPipelineMobile) && !gcpRendD3D->GetGraphicsPipeline().GetOmniCameraStage()->IsEnabled();
-}
-
-
 void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 dispatchSizeY)
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
-	CTexture* pDepthRT = CRendererResources::s_ptexSceneDepthScaled[2];
-	assert(CRendererCVars::CV_r_VrProjectionType > 0 || (pDepthRT->GetWidth() == dispatchSizeX && pDepthRT->GetHeight() == dispatchSizeY));
-
-	{
-		PROFILE_LABEL_SCOPE("COPY_DEPTH_EIGHTH");
-
-		static CCryNameTSCRC techCopy("CopyToDeviceDepth");
-
-		m_passCopyDepth.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
-		m_passCopyDepth.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
-		m_passCopyDepth.SetTechnique(CShaderMan::s_shPostEffects, techCopy, 0);
-		m_passCopyDepth.SetRequirePerViewConstantBuffer(true);
-		m_passCopyDepth.SetDepthTarget(pDepthRT);
-		m_passCopyDepth.SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
-		m_passCopyDepth.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[2]);
-		
-		m_passCopyDepth.BeginConstantUpdate();
-		m_passCopyDepth.Execute();
-	}
-
 	PROFILE_LABEL_SCOPE("TILED_VOLUMES");
 
 	GenerateLightVolumeInfo();
-	
+
+	CTexture* pDepthRT = m_graphicsPipelineResources.m_pTexSceneDepthScaled[2];
+	assert(CRendererCVars::CV_r_VrProjectionType > 0 || (pDepthRT->GetWidth() == dispatchSizeX && pDepthRT->GetHeight() == dispatchSizeY));
+
 	SRenderViewInfo viewInfo[2];
-	size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
-	
+	size_t viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
+
 	Matrix44 matViewProj[2];
 	Vec4 worldBasisX[2], worldBasisY[2], worldBasisZ[2], viewerPos[2];
 	for (int i = 0; i < viewInfoCount; ++i)
@@ -1276,7 +1311,13 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 		worldBasisZ[i] = wBasisZ;
 		viewerPos[i]   = camPos;
 	}
-	
+	{
+		const ColorI nulls = { 0, 0, 0, 0 };
+
+		CClearSurfacePass::Execute(&m_tileOpaqueLightMaskBuf, nulls);
+		CClearSurfacePass::Execute(&m_tileTranspLightMaskBuf, nulls);
+	}
+
 	{
 		D3DViewPort viewport;
 		viewport.TopLeftX = viewport.TopLeftY = 0.0f;
@@ -1284,19 +1325,19 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 		viewport.Height = (float)pDepthRT->GetHeight();
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
-		
+
 		m_passLightVolumes.SetDepthTarget(pDepthRT);
 		m_passLightVolumes.SetViewport(viewport);
 		m_passLightVolumes.SetOutputUAV(0, &m_tileOpaqueLightMaskBuf);
 		m_passLightVolumes.SetOutputUAV(1, &m_tileTranspLightMaskBuf);
 		m_passLightVolumes.BeginAddingPrimitives();
-		
+
 		uint32 curIndex = 0;
 		for (uint32 pass = 0; pass < eVolumeType_Count * 2; pass++)
 		{
 			uint32 volumeType = pass % eVolumeType_Count;
 			bool bInsideVolume = pass < eVolumeType_Count;
-			
+
 			if (m_numVolumesPerPass[pass] > 0)
 			{
 				CRenderPrimitive& primitive = m_volumePasses[pass];
@@ -1306,14 +1347,14 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 				primitive.SetRenderState(bInsideVolume ? GS_NODEPTHTEST : GS_DEPTHFUNC_GEQUAL);
 				primitive.SetEnableDepthClip(!bInsideVolume);
 				primitive.SetCullMode(bInsideVolume ? eCULL_Front : eCULL_Back);
-				primitive.SetTexture(3, CRendererResources::s_ptexLinearDepthScaled[2], EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
+				primitive.SetTexture(3, m_graphicsPipelineResources.m_pTexLinearDepthScaled[2], EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
 				primitive.SetBuffer(1, &m_lightVolumeInfoBuf, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
 
 				SVolumeGeometry& volumeMesh = m_volumeMeshes[volumeType];
 				uint32 numIndices = volumeMesh.numIndices;
 				uint32 numVertices = volumeMesh.numVertices;
 				uint32 numInstances = m_numVolumesPerPass[pass];
-			
+
 				primitive.SetCustomVertexStream(~0u, EDefaultInputLayouts::Empty, 0);
 				primitive.SetCustomIndexStream(volumeMesh.indexBuffer, Index16);
 				primitive.SetDrawInfo(eptTriangleList, 0, 0, numIndices * numInstances);
@@ -1325,8 +1366,6 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 
 					constants->screenScale = Vec4((float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), 0, 0);
 
-					float zn = viewInfo[0].nearClipPlane;
-					float zf = viewInfo[0].farClipPlane;
 					constants->lightIndexOffset = curIndex;
 					constants->numVertices = numVertices;
 
@@ -1348,7 +1387,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 
 					primitive.GetConstantManager().EndTypedConstantUpdate(constants);
 				}
-				
+
 				m_passLightVolumes.AddPrimitive(&primitive);
 			}
 
@@ -1359,18 +1398,18 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 	m_passLightVolumes.Execute();
 }
 
-
 void CTiledLightVolumesStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TILED_LIGHT_VOLUMES");
 
 	int screenWidth  = GetViewport().width;
 	int screenHeight = GetViewport().height;
-	int gridWidth  = screenWidth;
-	int gridHeight = screenHeight;
+	int gridWidth    = screenWidth;
+	int gridHeight   = screenHeight;
 
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
+	if (m_graphicsPipeline.GetVrProjectionManager()->IsMultiResEnabledStatic())
+		m_graphicsPipeline.GetVrProjectionManager()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
 
 	uint32 dispatchSizeX = gridWidth  / LightTileSizeX + (gridWidth  % LightTileSizeX > 0 ? 1 : 0);
 	uint32 dispatchSizeY = gridHeight / LightTileSizeY + (gridHeight % LightTileSizeY > 0 ? 1 : 0);

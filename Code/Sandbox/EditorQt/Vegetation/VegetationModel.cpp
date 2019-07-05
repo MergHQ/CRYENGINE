@@ -1,16 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
-
+#include "StdAfx.h"
 #include "VegetationModel.h"
 
 #include "VegetationMap.h"
 #include "VegetationObject.h"
 #include "VegetationDragDropData.h"
+#include "IEditorImpl.h"
 
 #include "Terrain/TerrainManager.h"
 
 #include <QFileInfo>
 #include <QSet>
+
+#if defined(GetObject)
+	#undef GetObject
+#endif
 
 namespace Private_VegetationModel
 {
@@ -23,25 +27,59 @@ CVegetationModel::CVegetationModelItem::CVegetationModelItem(const QString& name
 	, row(row)
 	, pVegetationObject(nullptr)
 	, visibility(EVisibility::Hidden)
+	, pModel(nullptr)
 	, pParent(nullptr)
 {}
 
-CVegetationModel::CVegetationModelItem::CVegetationModelItem(int r, CVegetationObject* pVegetationObject, CVegetationModelItem* pParent)
+CVegetationModel::CVegetationModelItem::CVegetationModelItem(int r, CVegetationObject* pVegetationObject, CVegetationModelItem* pParent, CVegetationModel* pModel)
 	: name(pVegetationObject->GetFileName())
 	, row(r)
 	, pVegetationObject(pVegetationObject)
+	, pModel(pModel)
 	, visibility(pVegetationObject->IsHidden() ? EVisibility::Hidden : EVisibility::Visible)
 	, pParent(pParent)
-{}
+{
+	IVariable* pFileNameVar = pVegetationObject->GetVarObject()->FindVariable("Object", false);
+	pFileNameVar->AddOnSetCallback(functor(*this, &CVegetationModelItem::OnVegetationObjectFileChange));
+}
+
+CVegetationModel::CVegetationModelItem::~CVegetationModelItem()
+{
+	if (pVegetationObject)
+	{
+		IVariable* pFileNameVar = pVegetationObject->GetVarObject()->FindVariable("Object", false);
+		if (pFileNameVar)
+		{
+			pFileNameVar->RemoveOnSetCallback(functor(*this, &CVegetationModelItem::OnVegetationObjectFileChange));
+		}
+	}
+}
+
+void CVegetationModel::CVegetationModelItem::OnVegetationObjectFileChange(IVariable* pFileNameVar)
+{
+	assert(pModel);
+	name = pVegetationObject->GetFileName();
+	pModel->UpdateObjectName(this);
+}
+
+void CVegetationModel::UpdateObjectName(CVegetationModelItem* pVegetationObjectItem)
+{
+	//Object name can be changed from another editor instance, so here it can not be in selected state
+	if (pVegetationObjectItem)
+	{
+		auto topLeftIndex = createIndex(pVegetationObjectItem->row, 0, pVegetationObjectItem);
+		dataChanged(topLeftIndex, topLeftIndex.sibling(topLeftIndex.row(), static_cast<int>(Column::Count)));
+	}
+}
 
 CVegetationModel::~CVegetationModel()
 {
 	DisconnectVegetationMap();
 }
 
-CVegetationModel::CVegetationModelItem* CVegetationModel::CVegetationModelItem::AddChild(CVegetationObject* pVegetationObject)
+CVegetationModel::CVegetationModelItem* CVegetationModel::CVegetationModelItem::AddChild(CVegetationObject* pVegetationObject, CVegetationModel* pModel)
 {
-	VegetationModelItemPtr pChildPtr(new CVegetationModelItem(children.size(), pVegetationObject, this));
+	VegetationModelItemPtr pChildPtr(new CVegetationModelItem(children.size(), pVegetationObject, this, pModel));
 	children.push_back(std::move(pChildPtr));
 	return children.back().get();
 }
@@ -163,7 +201,7 @@ QVariant CVegetationModel::data(const QModelIndex& index, int role) const
 	}
 
 	auto pTreeItem = static_cast<CVegetationModelItem*>(index.internalPointer());
-	// Object Visiblity/Name columns have to be merged
+	// Object Visibility/Name columns have to be merged
 	if (role == Qt::CheckStateRole && static_cast<Column>(index.column()) == Column::VisibleAndObject)
 	{
 		return CVegetationModelItem::GetCheckStateFromVisibility(pTreeItem->visibility);
@@ -285,7 +323,7 @@ bool CVegetationModel::setData(const QModelIndex& index, const QVariant& value, 
 
 	if (bDataChanged)
 	{
-		dataChanged(index, index);
+		dataChanged(QModelIndex(), QModelIndex());
 	}
 
 	return bDataChanged;
@@ -475,7 +513,7 @@ void CVegetationModel::BeginResetOnLevelChange()
 
 void CVegetationModel::EndResetOnLevelChange()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	beginResetModel();
 	m_pVegetationMap = GetIEditorImpl()->GetVegetationMap();
 	ConnectVegetationMap();
@@ -945,7 +983,7 @@ void CVegetationModel::MoveInstancesToGroup(const QString& groupName, const QVec
 
 void CVegetationModel::AddVegetationObjectToGroup(CVegetationModelItem* pGroup, CVegetationObject* pVegetationObject)
 {
-	auto newObjectItem = pGroup->AddChild(pVegetationObject);
+	auto newObjectItem = pGroup->AddChild(pVegetationObject, this);
 	m_vegetationObjectToItem[pVegetationObject] = newObjectItem;
 }
 
@@ -1054,6 +1092,14 @@ void CVegetationModel::Reset()
 	m_groups.clear();
 	m_vegetationObjectToItem.clear();
 	LoadObjects();
+	endResetModel();
+}
+
+void CVegetationModel::Clear()
+{
+	beginResetModel();
+	m_groups.clear();
+	m_vegetationObjectToItem.clear();
 	endResetModel();
 }
 
@@ -1332,4 +1378,3 @@ void CVegetationModel::UpdateParentVisibilityRecursively(CVegetationModelItem* p
 	// bubble up
 	UpdateParentVisibilityRecursively(pParent);
 }
-

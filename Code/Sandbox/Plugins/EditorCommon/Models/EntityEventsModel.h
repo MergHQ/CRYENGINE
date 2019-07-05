@@ -32,4 +32,3 @@ public:
 private:
 	IEntityClass& m_class;
 };
-

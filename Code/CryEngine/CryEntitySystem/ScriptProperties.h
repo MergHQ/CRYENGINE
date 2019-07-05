@@ -3,6 +3,8 @@
 #pragma once
 
 struct IScriptObject;
+class XmlNodeRef;
+struct IScriptTable;
 
 //////////////////////////////////////////////////////////////////////////
 // This class handles assignment of entity script properties from XML nodes

@@ -2,14 +2,16 @@
 
 #include "StdAfx.h"
 #include "ModelCompiler.h"
-#include "Model.h"
-#include "Util/Undo.h"
+
 #include "Core/EdgesSharpnessManager.h"
-#include "Core/UVIslandManager.h"
+#include "Core/HalfEdgeMesh.h"
+#include "Core/LoopPolygons.h"
+#include "Core/Model.h"
+#include "Core/ModelDB.h"
 #include "Core/SmoothingGroupManager.h"
-#include "LoopPolygons.h"
-#include "HalfEdgeMesh.h"
-#include "ModelDB.h"
+#include "Core/UVIslandManager.h"
+#include "DesignerSession.h"
+#include "Util/Undo.h"
 
 namespace Designer
 {
@@ -775,7 +777,7 @@ void Model::QueryPolygonsSharingEdge(
 	edgeAABB.Reset();
 	edgeAABB.Add(ToVec3(edge.m_v[0]));
 	edgeAABB.Add(ToVec3(edge.m_v[1]));
-	edgeAABB.Expand(Vec3(0.001, 0.001f, 0.001f));
+	edgeAABB.Expand(Vec3(0.001f, 0.001f, 0.001f));
 
 	for (int i = 0, iPolygonSize(m_Polygons[m_ShelfID].size()); i < iPolygonSize; ++i)
 	{
@@ -2284,7 +2286,7 @@ void Model::SetShelf(ShelfID shelfID) const
 	m_ShelfID = shelfID;
 }
 
-void Model::InvalidateAABB(ShelfID nShelf) const
+void Model::InvalidateAABB(ShelfID nShelf)
 {
 	switch (nShelf)
 	{
@@ -2297,6 +2299,30 @@ void Model::InvalidateAABB(ShelfID nShelf) const
 		m_BoundBox[0].bValid = m_BoundBox[1].bValid = false;
 		break;
 	}
+
+	DesignerSession* pSession = DesignerSession::GetInstance();
+	ModelCompiler* pCompiller = pSession->GetCompiler();
+	if (!pCompiller)
+	{
+		return;
+	}
+
+	for (int i = eShelf_Base; i < cShelfMax; ++i)
+	{
+		if (!m_BoundBox[i].bValid)
+		{
+			// Force 3dEngine update (via reset) IRenderNode with a modified (recompiled) designer mesh.
+			pSession->GetCompiler()->DeleteRenderNode(static_cast<Designer::ShelfID>(i));
+			pSession->GetCompiler()->Compile(pSession->GetBaseObject(), this, static_cast<Designer::ShelfID>(i), true);
+		}
+	}
+
+	// Force update shadow cache only for the real mesh, not for intermediate result
+	const bool recomputeShadows = !m_BoundBox[eShelf_Base].bValid;
+	if (recomputeShadows)
+	{
+		GetIEditor()->Get3DEngine()->SetRecomputeCachedShadows();
+	}
 }
 
 void Model::InvalidateSmoothingGroups() const
@@ -2304,4 +2330,3 @@ void Model::InvalidateSmoothingGroups() const
 	GetSmoothingGroupMgr()->InvalidateAll();
 }
 }
-

@@ -13,8 +13,8 @@
 
 CCryDedicatedServerArbitrator::CCryDedicatedServerArbitrator(CCryLobby* pLobby, CCryLobbyService* pService)
 {
-	CRY_ASSERT_MESSAGE(pLobby, "CCryDedicatedServerArbitrator::CCryDedicatedServerArbitrator: Lobby not specified");
-	CRY_ASSERT_MESSAGE(pService, "CCryDedicatedServerArbitrator::CCryDedicatedServerArbitrator: Service not specified");
+	CRY_ASSERT(pLobby, "CCryDedicatedServerArbitrator::CCryDedicatedServerArbitrator: Lobby not specified");
+	CRY_ASSERT(pService, "CCryDedicatedServerArbitrator::CCryDedicatedServerArbitrator: Service not specified");
 
 	m_pLobby = pLobby;
 	m_pService = pService;

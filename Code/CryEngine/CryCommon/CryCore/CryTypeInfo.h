@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   TypeInfo.h
-//  Version:     v1.00
-//  Created:     03/05/2005 by Scott.
-//  Description: Declaration of CTypeInfo and related types.
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __CRY_TYPEINFO_H
-#define __CRY_TYPEINFO_H
 #pragma once
 
 #include <CryCore/Platform/platform.h>
@@ -184,7 +173,7 @@ struct CTypeInfo
 	inline bool             HasSubVars() const
 	{ return NextSubVar(0) != 0; }
 #define ForAllSubVars(pVar, Info) \
-  for (const CTypeInfo::CVarInfo* pVar = 0; pVar = (Info).NextSubVar(pVar); )
+  for (const CTypeInfo::CVarInfo* pVar = 0; (pVar = (Info).NextSubVar(pVar)); )
 
 	//! Named var search.
 	virtual const CVarInfo* FindSubVar(cstr name) const
@@ -200,5 +189,3 @@ struct CTypeInfo
 	//! \return sequential strings in enumeration, then 0 when out of range.
 	virtual cstr EnumElem(uint nIndex) const { return 0; }
 };
-
-#endif // __CRY_TYPEINFO_H

@@ -8,6 +8,7 @@
 
 #include "StdAfx.h"
 #include "Huffman.h"
+#include <CryMemory/CrySizer.h>
 
 void HuffmanCoder::BitStreamBuilder::AddBits(uint32 value, uint32 numBits)
 {
@@ -231,6 +232,24 @@ size_t HuffmanCoder::UncompressInput(const uint8* const pInput, const size_t num
 	}
 
 	return numOutputBytes;
+}
+
+void HuffmanCoder::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(this, sizeof(*this));
+
+	if (m_Counts != NULL)
+	{
+		pSizer->AddObject(m_Counts, sizeof(uint32), MAX_NUM_SYMBOLS);
+	}
+	if (m_TreeNodes != NULL)
+	{
+		pSizer->AddObject(m_TreeNodes, sizeof(HuffmanTreeNode), MAX_NUM_NODES);
+	}
+	if (m_Codes != NULL)
+	{
+		pSizer->AddObject(m_Codes, sizeof(HuffmanSymbolCode), MAX_NUM_CODES);
+	}
 }
 
 //Private functions

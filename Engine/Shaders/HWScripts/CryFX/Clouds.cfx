@@ -38,7 +38,7 @@ float Script : STANDARDSGLOBAL
   string Script =
 		   //"Public;"
            "ShaderDrawType = Sky;"
-           "ShaderType = Sky;"
+           "ShaderType = General;"
 >;
 
 ///////////////// Constants //////////////////
@@ -545,7 +545,7 @@ Texture3D VolCloudGlobalShadowTex : register(t5) = TS_VolCloudShadow;
 Texture3D VolCloudNoiseTex : register(t6);
 Texture3D VolCloudEdgeNoiseTex : register(t7);
 
-Texture2D VolFogShadowTex : register(t8) = TS_VolumetricFogShadow0;
+Texture2D<float2> VolFogShadowTex : register(t8) = TS_VolumetricFogShadow0;
 
 Texture3D VolFogSamplingTex : register(t9) = TS_VolumetricFog;
 TextureCube VolFogGlobalEnvProbeTex0 : register(t10) = TS_VolumetricFogGlobalEnvProbe0;
@@ -627,8 +627,10 @@ cbuffer CBVolumetricClouds : register(b3)
 		float4 vfHeightDensityParams; // PB_VolumetricFogHeightDensityParams
 		float4 vfHeightDensityRampParams; // PB_VolumetricFogHeightDensityRampParams
 		float4 vfDistanceParams; // PB_VolumetricFogDistanceParams
+#if %_RT_VOLUMETRIC_FOG
 		float4 vfGlobalEnvProbeParams0; // PB_VolumetricFogGlobalEnvProbe0
 		float4 vfGlobalEnvProbeParams1; // PB_VolumetricFogGlobalEnvProbe1
+#endif
 		float4 vfTimeParams; // PB_time
 
 		// upscale parameters
@@ -787,11 +789,13 @@ SVolumetricFogParams GetVolumetricFogParams()
 	params.farDistCenterLeft = vfDistanceParams.z;
 	params.farDistCenter = vfDistanceParams.w;
 
+#if %_RT_VOLUMETRIC_FOG
 	params.globalProbeColor0 = vfGlobalEnvProbeParams0.xyz;
 	params.globalProbeAttenuation0 = vfGlobalEnvProbeParams0.w;
 
 	params.globalProbeColor1 = vfGlobalEnvProbeParams1.xyz;
 	params.globalProbeAttenuation1 = vfGlobalEnvProbeParams1.w;
+#endif
 
 	params.timeParams = vfTimeParams;
 #else
@@ -841,11 +845,13 @@ SVolumetricFogParams GetVolumetricFogParams()
 	params.farDistCenterLeft = vc.vfDistanceParams.z;
 	params.farDistCenter = vc.vfDistanceParams.w;
 
+#if %_RT_VOLUMETRIC_FOG
 	params.globalProbeColor0 = vc.vfGlobalEnvProbeParams0.xyz;
 	params.globalProbeAttenuation0 = vc.vfGlobalEnvProbeParams0.w;
 
 	params.globalProbeColor1 = vc.vfGlobalEnvProbeParams1.xyz;
 	params.globalProbeAttenuation1 = vc.vfGlobalEnvProbeParams1.w;
+#endif
 
 	params.timeParams = vc.vfTimeParams;
 #endif
@@ -1668,7 +1674,7 @@ void RenderCloudMonolithicCS(uint3 GroupID : SV_GroupID,
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).a;
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * vVolFogShadowDarkeningSunAmb.xz + vVolFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
@@ -2541,7 +2547,7 @@ void RenderCloudCS(uint3 GroupID : SV_GroupID,
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).a;
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, vPixelUV.xy, 0.0f).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * vVolFogShadowDarkeningSunAmb.xz + vVolFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * vVolFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);
@@ -3056,7 +3062,7 @@ pixout CloudsBlendPS( vtxOutWPOS IN )
 #else
 	#if %_RT_SAMPLE0
 		// Read volumetric shadows and apply to the global fog.
-		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, IN.baseTC.xy, 0.0f).a;
+		const float volFogShadowContrib = VolFogShadowTex.SampleLevel(VolCloudTrilinearClampSState, IN.baseTC.xy, 0.0f).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * params.volFogShadowDarkeningSunAmb.xz + params.volFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, worldPos, cameraToWorldPos, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * params.volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);

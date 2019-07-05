@@ -5,7 +5,7 @@
 
 #include "IEditorImpl.h"
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class CEditTool;
 
 struct SEditToolSerializer
@@ -20,13 +20,14 @@ public:
 	CEditTool* pEditTool;
 };
 
-class QEditToolPanel : public QWidget, public IEditorNotifyListener
+class QEditToolPanel : public QWidget
 {
 public:
 	QEditToolPanel(QWidget* parent = nullptr);
 	virtual ~QEditToolPanel() override;
 
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent e) override;
+	void OnPreEditToolChanged();
+	void OnEditToolChanged();
 
 protected:
 	void         ReloadProperties(CEditTool* pTool);
@@ -34,7 +35,6 @@ protected:
 	virtual bool CanEditTool(CEditTool* pTool) = 0;
 
 protected:
-	QPropertyTree*      m_pPropertyTree;
+	QPropertyTreeLegacy*      m_pPropertyTree;
 	SEditToolSerializer m_toolSerializer;
 };
-

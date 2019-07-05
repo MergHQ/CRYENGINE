@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef AILOG_H
-#define AILOG_H
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #ifndef _DEBUG
 // comment this out to remove asserts at compile time
@@ -63,6 +58,3 @@ void AILogAlways(const char* format, ...) PRINTF_PARAMS(1, 2);
 
 /// Displays messages during loading - also gives an opportunity for system/display to update
 void AILogLoading(const char* format, ...) PRINTF_PARAMS(1, 2);
-
-#endif // file included
-

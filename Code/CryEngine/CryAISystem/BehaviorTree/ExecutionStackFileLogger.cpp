@@ -4,7 +4,7 @@
 #include "ExecutionStackFileLogger.h"
 #include <CryAISystem/BehaviorTree/Node.h>
 
-#ifdef USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 namespace BehaviorTree
 {
 
@@ -25,9 +25,9 @@ static bool IsCharAllowedInFileNames(const char ch)
 	return false;
 }
 
-static void SanitizeFileName(stack_string& fileName)
+static void SanitizeFileName(CryPathString& fileName)
 {
-	for (stack_string::iterator it = fileName.begin(); it != fileName.end(); ++it)
+	for (CryPathString::iterator it = fileName.begin(); it != fileName.end(); ++it)
 	{
 		if (!IsCharAllowedInFileNames(*it))
 			*it = '_';
@@ -41,15 +41,15 @@ ExecutionStackFileLogger::ExecutionStackFileLogger(const EntityId entityId)
 		m_agentName = pEntity->GetName();
 	}
 
-	stack_string fileName;
+	CryPathString fileName;
 	fileName.Format("MBT_%s_%i.txt", m_agentName.c_str(), entityId);
 	SanitizeFileName(fileName);
 
-	stack_string filePath("%USER%/MBT_Logs/");
+	CryPathString filePath("%USER%/MBT_Logs/");
 	filePath.append(fileName);
 
-	m_logFilePath[0] = '\0';
-	if (gEnv->pCryPak->AdjustFileName(filePath.c_str(), m_logFilePath, ICryPak::FLAGS_FOR_WRITING))
+	gEnv->pCryPak->AdjustFileName(filePath.c_str(), m_logFilePath, ICryPak::FLAGS_FOR_WRITING);
+	if (!m_logFilePath.empty())
 	{
 		m_openState = NotYetAttemptedToOpenForWriteAccess;
 	}
@@ -84,7 +84,7 @@ void ExecutionStackFileLogger::LogDebugTree(const DebugTree& debugTree, const Up
 				}
 			}
 			header.Format("Modular Behavior Tree '%s' for agent '%s' with EntityId = %i (logging started at %s)\n\n", instance.behaviorTreeTemplate->mbtFilename.c_str(), m_agentName.c_str(), updateContext.entityId, startTime);
-			m_logFile.Write(header.c_str(), header.length() + 1);
+			m_logFile.Write(header.c_str(), header.length());
 			m_logFile.Flush();
 		}
 	}
@@ -93,35 +93,64 @@ void ExecutionStackFileLogger::LogDebugTree(const DebugTree& debugTree, const Up
 	{
 		if (const DebugNode* pRoot = debugTree.GetFirstNode().get())
 		{
-			LogNodeRecursively(*pRoot, updateContext, instance, 0);
-			stack_string textLine("-----------------------------------------\n");
-			m_logFile.Write(textLine.c_str(), textLine.length() + 1);
+			stack_string textLine;
+
+			// current time
+			int hours, minutes, seconds, milliseconds;
+			gEnv->pTimer->GetAsyncTime().Split(&hours, &minutes, &seconds, &milliseconds);
+			textLine.Format("time = %i:%02i:%02i:%03i, system frame = %i\n", hours, minutes, seconds, milliseconds, (int)gEnv->nMainFrameID);
+			m_logFile.Write(textLine.c_str(), textLine.length());
+
+			LogNodeRecursively(*pRoot, 0);
+
+			textLine = "-----------------------------------------\n";
+			m_logFile.Write(textLine.c_str(), textLine.length());
 		}
 	}
 }
 
-void ExecutionStackFileLogger::LogNodeRecursively(const DebugNode& debugNode, const UpdateContext& updateContext, const BehaviorTreeInstance& instance, const int indentLevel)
+void ExecutionStackFileLogger::LogNodeRecursively(const DebugNode& debugNode, const int indentLevel)
 {
 	const Node* pNode = static_cast<const Node*>(debugNode.node);
 	const uint32 lineNum = pNode->GetXmlLine();
 	const char* nodeType = pNode->GetCreator()->GetTypeName();
 	stack_string customText;
-	const RuntimeDataID runtimeDataID = MakeRuntimeDataID(updateContext.entityId, pNode->GetNodeID());
-	UpdateContext updateContextWithValidRuntimeData = updateContext;
-	updateContextWithValidRuntimeData.runtimeData = pNode->GetCreator()->GetRuntimeData(runtimeDataID);
-	pNode->GetCustomDebugText(updateContextWithValidRuntimeData, customText);
-	if (!customText.empty())
-		customText.insert(0, " - ");
+	if (!debugNode.customDebugText.empty())
+	{
+		customText.append(" - ");
+		customText.append(debugNode.customDebugText);
+	}
+
+	const char* strNodeStatus;
+	switch (debugNode.nodeStatus)
+	{
+	case Running:
+		strNodeStatus = "[RUNNING]  ";
+		break;
+
+	case Success:
+		strNodeStatus = "[SUCCEEDED]";
+		break;
+
+	case Failure:
+		strNodeStatus = "[FAILED]   ";
+		break;
+
+	case Invalid:
+	default:
+		strNodeStatus = "[INVALID]  ";
+		break;
+	}
 
 	stack_string textLine;
-	textLine.Format("%5i %*s %s%s\n", lineNum, indentLevel * 2, "", nodeType, customText.c_str());
-	m_logFile.Write(textLine.c_str(), textLine.length() + 1);
+	textLine.Format("%5i %s %*s %s%s\n", lineNum, strNodeStatus, indentLevel * 2, "", nodeType, customText.c_str());
+	m_logFile.Write(textLine.c_str(), textLine.length());
 
 	for (DebugNode::Children::const_iterator it = debugNode.children.begin(), end = debugNode.children.end(); it != end; ++it)
 	{
-		LogNodeRecursively(*(*it), updateContext, instance, indentLevel + 1);
+		LogNodeRecursively(*(*it), indentLevel + 1);
 	}
 }
 
 }
-#endif  // USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#endif  // DEBUG_MODULAR_BEHAVIOR_TREE

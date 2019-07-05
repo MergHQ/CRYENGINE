@@ -33,7 +33,6 @@ FbxScene* LoadFBXFile(const char* filename)
 	{
 		// Unrecognizable file format. Try to fall back to FbxImporter::eFBX_BINARY
 		lFileFormat = lSdkManager->GetIOPluginRegistry()->FindReaderIDByDescription("FBX binary (*.fbx)");
-		;
 	}
 
 	// Initialize the importer.
@@ -354,4 +353,3 @@ bool CFacialEditorDialog::ImportFBXAsSequence(IFacialAnimSequence* newSequence, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-

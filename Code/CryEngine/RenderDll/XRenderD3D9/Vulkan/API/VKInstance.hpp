@@ -34,8 +34,26 @@ struct SPhysicalDeviceInfo
 	std::array<VkFormatProperties, VK_FORMAT_RANGE_SIZE> formatProperties;
 };
 
+class CInstanceHolder
+{
+protected:
+	VkInstance m_instanceHandle;
+
+public:
+
+	CInstanceHolder() : m_instanceHandle(VK_NULL_HANDLE) {}
+
+	~CInstanceHolder()
+	{
+		if (m_instanceHandle != VK_NULL_HANDLE)
+		{
+			vkDestroyInstance(m_instanceHandle, VK_NULL_HANDLE);
+		}
+	}
+};
+
 //CInstance handles the initalization of the Vulkan API and instance, querying the hardware capabilities and creating a device and surface
-class CInstance
+class CInstance : public CInstanceHolder
 {
 
 public:
@@ -77,6 +95,8 @@ private:
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugLayerCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, 
 		uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData);
 
+	bool ValidateDeviceFeatures(const SPhysicalDeviceInfo& deviceInfo) const;
+
 private:
 	struct SExtensionInfo
 	{
@@ -98,7 +118,6 @@ private:
 	std::vector<const char*>    m_enabledPhysicalDeviceLayers;
 	std::vector<SExtensionInfo> m_enabledPhysicalDeviceExtensions;
 
-	VkInstance                  m_instanceHandle;
 	VkDebugReportCallbackEXT    m_debugLayerCallbackHandle;
 
 };

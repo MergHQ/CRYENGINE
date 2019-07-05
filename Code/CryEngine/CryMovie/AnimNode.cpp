@@ -261,10 +261,6 @@ IAnimTrack* CAnimNode::CreateTrackInternal(const CAnimParamType& paramType, EAni
 		pTrack = new CAudioTriggerTrack;
 		break;
 
-	case eAnimParamType_AudioFile:
-		pTrack = new CAudioFileTrack;
-		break;
-
 	case eAnimParamType_AudioParameter:
 		pTrack = new CAudioParameterTrack;
 		break;
@@ -381,7 +377,7 @@ IAnimTrack* CAnimNode::CreateTrack(const CAnimParamType& paramType)
 
 void CAnimNode::SerializeAnims(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmptyTracks)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Animation, 0, "CAnimNode");
+	MEMSTAT_CONTEXT(EMemStatContextType::Animation, "CAnimNode");
 
 	if (bLoading)
 	{
@@ -400,7 +396,7 @@ void CAnimNode::SerializeAnims(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmp
 			XmlNodeRef trackNode = xmlNode->getChild(i);
 			paramType.Serialize(trackNode, bLoading, paramTypeVersion);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Animation, 0, gEnv->pMovieSystem->GetParamTypeName(paramType));
+			MEMSTAT_CONTEXT(EMemStatContextType::Animation, gEnv->pMovieSystem->GetParamTypeName(paramType));
 
 			if (paramTypeVersion == 0) // for old version with sound and animation param ids swapped
 			{

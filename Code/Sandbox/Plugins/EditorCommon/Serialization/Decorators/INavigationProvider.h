@@ -12,6 +12,7 @@ struct SNavigationContext
 
 struct INavigationProvider
 {
+	virtual ~INavigationProvider() {}
 	virtual const char* GetIcon(const char* type, const char* path) const = 0;
 	virtual const char* GetFileSelectorMaskForType(const char* type) const = 0;
 	virtual bool        IsSelected(const char* type, const char* path, int index) const = 0;
@@ -26,4 +27,3 @@ struct INavigationProvider
 };
 
 }
-

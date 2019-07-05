@@ -34,39 +34,6 @@
 #define eCryM_EnginePlugin 27
 #define eCryM_EditorPlugin 28
 #define eCryM_Schematyc2 29
+#define eCryM_UniversalDebugRecordings 30
 
-#define eCryM_Num 30
-
-static const wchar_t* g_moduleNames[] =
-{
-	L"",
-	L"Cry3DEngine",
-	L"CryAction",
-	L"CryAISystem",
-	L"CryAnimation",
-	L"CryDynamicResponseSystem",
-	L"CryEntitySystem",
-	L"CryFont",
-	L"CryInput",
-	L"CryMovie",
-	L"CryNetwork",
-	L"CryLobby",
-	L"CryPhysics",
-	L"CryScriptSystem",
-	L"CryAudioSystem",
-	L"CrySystem",
-	L"CryGame",
-	L"CryRenderer",
-	L"Launcher",
-	L"Sandbox",
-	L"CryLiveCreate",
-	L"CryOnline",
-	L"CryAudioImplementation",
-	L"CryMonoBridge",
-	L"CryScaleformHelper",
-	L"CryFlowGraph",
-	L"Legacy Module",
-	L"Engine Plug-ins",
-	L"Editor Plug-ins",
-	L"Schematyc2"
-};
+#define eCryM_Num 31

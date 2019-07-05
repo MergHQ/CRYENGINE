@@ -1,57 +1,42 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   IShader.h : Shaders common interface.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
 #pragma once
 
-#ifndef _ISHADER_H_
-#define _ISHADER_H_
-
+#include <CryCore/BitMask.h>
+#include <CryCore/Containers/CryArray.h>
 #include <CryCore/smartptr.h>
-#include <CryRenderer/IFlares.h> // <> required for Interfuscator
-#include <CryRenderer/VertexFormats.h>
-
 #include <CryMath/Cry_XOptimise.h>
 #include <CryMemory/CrySizer.h>
+#include <CryRenderer/IFlares.h>
+#include <CryRenderer/VertexFormats.h>
 
-#include <CryThreading/CryThreadSafeRendererContainer.h>
-
-#include <CryCore/BitMask.h>
-
-struct IMaterial;
+class CMaterial;
+class CREMesh;
 class CRenderElement;
 class CRenderObject;
-class CREMesh;
+class CShader;
+
+struct IAnimNode;
+struct IClipVolume;
+struct IMaterial;
 struct IRenderMesh;
 struct IShader;
+struct ITexture;
 struct IVisArea;
-class CShader;
-class CRenderElement;
-class CRenderElement;
-struct STexAnim;
-struct SShaderPass;
-struct SShaderItem;
-class ITexture;
-struct IMaterial;
 struct SParam;
-class CMaterial;
+struct SShaderItem;
+struct SShaderPass;
 struct SShaderSerializeContext;
-struct IAnimNode;
 struct SSkinningData;
 struct SSTexSamplerFX;
-struct IClipVolume;
+struct STexAnim;
 
 namespace JobManager {
 struct SJobState;
 }
 
 //! Geometry Culling type.
-enum ECull
+enum ECull : uint8
 {
 	eCULL_Back = 0, //!< Back culling flag.
 	eCULL_Front,    //!< Front culling flag.
@@ -256,6 +241,7 @@ struct SShaderParam
 
 				switch (sp->m_Type)
 				{
+				case eType_HALF:
 				case eType_FLOAT:
 					sp->m_Value.m_Float = pr.m_Float;
 					break;
@@ -287,6 +273,18 @@ struct SShaderParam
 						sp->m_Value.m_String = new char[len];
 						strcpy(sp->m_Value.m_String, str);
 					}
+					break;
+				case eType_BOOL:
+					sp->m_Value.m_Bool = pr.m_Bool;
+					break;
+				case eType_BYTE:
+					sp->m_Value.m_Byte = pr.m_Byte;
+					break;
+				case eType_CAMERA:
+					sp->m_Value.m_pCamera = pr.m_pCamera;
+					break;
+				case eType_UNKNOWN:
+					CryLog("Unable to set parameter of type 'unknown'.");
 					break;
 				}
 				break;
@@ -426,15 +424,23 @@ class CTexture;
 #include <CryRenderer/ITexture.h>
 
 //! Vertex modificators definitions (must be 16 bit flag).
-#define MDV_BENDING           0x100
-#define MDV_DET_BENDING       0x200
-#define MDV_DET_BENDING_GRASS 0x400
-#define MDV_WIND              0x800
-#define MDV_DEPTH_OFFSET      0x2000
+enum EVertexModifier : uint16
+{
+	MDV_BENDING           = 0x100,
+	MDV_DET_BENDING       = 0x200,
+	MDV_DET_BENDING_GRASS = 0x400,
+	MDV_WIND              = 0x800,
+	MDV_DEPTH_OFFSET      = 0x2000,
+
+	MDV_DEFORMTYPE_MASK   = 0xF,
+	MDV_NONE              = 0
+};
+
+CRY_CREATE_ENUM_FLAG_OPERATORS(EVertexModifier);
 
 //! \cond INTERNAL
 //! Deformations/Morphing types.
-enum EDeformType
+enum EDeformType : uint16
 {
 	eDT_Unknown              = 0,
 	eDT_SinWave              = 1,
@@ -655,30 +661,12 @@ struct SDetailDecalInfo
 	}
 };
 
-struct SSkyInfo
-{
-	ITexture* m_SkyBox[3];
-	float     m_fSkyLayerHeight;
-
-	int       Size()
-	{
-		int nSize = sizeof(SSkyInfo);
-		return nSize;
-	}
-	SSkyInfo()
-	{
-		memset(this, 0, sizeof(SSkyInfo));
-	}
-};
-
 enum EResClassName
 {
 	eRCN_Texture,
 	eRCN_Shader,
 };
 //! \endcond
-
-#include "IRenderer.h"
 
 //==============================================================================
 
@@ -854,7 +842,26 @@ struct SEfTexModificator
 
 	void   Reset()
 	{
-		memset(this, 0, sizeof(*this));
+		// Do not replace with memset to avoid compiler issues (VS2019/GCC8.3)
+		m_TexGenMatrix.SetZero();
+		m_TexMatrix.SetZero();
+		m_Tiling[0] = m_Tiling[1] = m_Tiling[2] = 0.0f;
+		m_Offs[0] = m_Offs[1] = m_Offs[2] = 0.0f;
+		m_RotOscCenter[0] = m_RotOscCenter[1] = m_RotOscCenter[2] = 0.0f;
+		m_OscRate[0] = m_OscRate[1] = 0.0f;
+		m_OscAmplitude[0] = m_OscAmplitude[1] = 0.0f;
+		m_OscPhase[0] = m_OscPhase[1] = 0.0f;
+		m_LastTime[0] = m_LastTime[1] = 0.0f;
+		m_CurrentJitter[0] = m_CurrentJitter[1] = 0.0f;
+		m_RotOscPhase[0] = m_RotOscPhase[1] = m_RotOscPhase[2] = 0;
+		m_Rot[0] = m_Rot[1] = m_Rot[2] = 0;
+		m_RotOscRate[0] = m_RotOscRate[1] = m_RotOscRate[2] = 0;
+		m_RotOscAmplitude[0] = m_RotOscAmplitude[1] = m_RotOscAmplitude[2] = 0;
+		m_eTGType = 0;
+		m_eRotType = 0;
+		m_eMoveType[0] = m_eMoveType[1] = 0;
+		m_bTexGenProjected = false;
+
 		m_Tiling[0] = m_Tiling[1] = 1.0f;
 	}
 	inline SEfTexModificator()
@@ -1181,7 +1188,7 @@ struct SEfResTexture
 		m_Ext.Cleanup();
 	}
 
-	~SEfResTexture()
+	virtual ~SEfResTexture()
 	{
 		Cleanup();
 	}
@@ -1326,7 +1333,6 @@ struct IRenderShaderResources
 	virtual int                        GetResFlags() = 0;
 	virtual void                       SetMtlLayerNoDrawFlags(uint8 nFlags) = 0;
 	virtual uint8                      GetMtlLayerNoDrawFlags() const = 0;
-	virtual SSkyInfo*                  GetSkyInfo() = 0;
 	virtual CCamera*                   GetCamera() = 0;
 	virtual void                       SetCamera(CCamera* pCam) = 0;
 	virtual void                       SetMaterialName(const char* szName) = 0;
@@ -1481,13 +1487,11 @@ typedef _smart_ptr<SInputShaderResources> SInputShaderResourcesPtr;
 #define SHGD_TEX_CUSTOM           0x1000
 #define SHGD_TEX_CUSTOM_SECONDARY 0x2000
 #define SHGD_TEX_DECAL            0x4000
-#define SHGD_HW_GLES3             0x20000
 #define SHGD_USER_ENABLED         0x40000
 // 0x80000
 #define SHGD_HW_VULKAN             0x100000
-#define SHGD_HW_DX10               0x200000
+#define SHGD_HW_DX12               0x200000
 #define SHGD_HW_DX11               0x400000
-#define SHGD_HW_GL4                0x800000
 #define SHGD_HW_WATER_TESSELLATION 0x1000000
 #define SHGD_HW_SILHOUETTE_POM     0x2000000
 #define SHGD_TEX_MASK              (SHGD_TEX_DETAIL | SHGD_TEX_NORMALS | SHGD_TEX_ENVCM | SHGD_TEX_SPECULAR | SHGD_TEX_TRANSLUCENCY | SHGD_TEX_HEIGHT | SHGD_TEX_SUBSURFACE | SHGD_TEX_CUSTOM | SHGD_TEX_CUSTOM_SECONDARY | SHGD_TEX_DECAL)
@@ -1626,13 +1630,12 @@ enum EShaderType
 	eST_HUD3D,
 	eST_PostProcess,
 	eST_HDR,
-	eST_Sky,
 	eST_Particle,
 	eST_Compute,
 	eST_Max  //!< To define array size.
 };
 
-enum EShaderQuality
+enum EShaderQuality : uint8
 {
 	eSQ_Low      = 0,
 	eSQ_Medium   = 1,
@@ -1641,7 +1644,7 @@ enum EShaderQuality
 	eSQ_Max      = 4
 };
 
-enum ERenderQuality
+enum ERenderQuality : uint8
 {
 	eRQ_Low      = 0,
 	eRQ_Medium   = 1,
@@ -1705,13 +1708,11 @@ enum EShaderTechniqueID
 
 //! EFSLIST_ lists.
 //! \note Declaration order/index value has no explicit meaning.
-//! If you change this, you must also update SEF_ListDG::GetDescription.
-enum ERenderListID
+enum ERenderListID : uint8
 {
 	EFSLIST_INVALID = 0,             //!< Don't use, internally used.
-	EFSLIST_PREPROCESS,              //!< Pre-process items.
+
 	EFSLIST_GENERAL,                 //!< Opaque ambient_light+shadow passes.
-	EFSLIST_ZPREPASS,                //!< Items that are rendered into the z-prepass.
 	EFSLIST_TERRAINLAYER,            //!< Unsorted terrain layers.
 	EFSLIST_SHADOW_GEN,              //!< Shadow map generation.
 	EFSLIST_DECAL,                   //!< Opaque or transparent decals.
@@ -1723,7 +1724,6 @@ enum ERenderListID
 	EFSLIST_AFTER_HDRPOSTPROCESS,    //!< After hdr post-processing screen effects.
 	EFSLIST_AFTER_POSTPROCESS,       //!< After post-processing screen effects.
 	EFSLIST_SHADOW_PASS,             //!< Shadow mask generation (usually from from shadow maps).
-	EFSLIST_SKIN,                    //!< Skin rendering pre-process.
 	EFSLIST_HALFRES_PARTICLES,       //!< Half resolution particles.
 	EFSLIST_PARTICLES_THICKNESS,     //!< Particles thickness passes.
 	EFSLIST_LENSOPTICS,              //!< Lens-optics processing.
@@ -1733,10 +1733,15 @@ enum ERenderListID
 	EFSLIST_NEAREST_OBJECTS,         //!< Nearest objects.
 	EFSLIST_FORWARD_OPAQUE,          //!< Forward opaque pass objects.
 	EFSLIST_FORWARD_OPAQUE_NEAREST,  //!< Nearest forward opaque pass objects.
-	EFSLIST_CUSTOM,                  //!< Custom scene pass.
-	EFSLIST_HIGHLIGHT,               //!< Candidate for selection objects
 	EFSLIST_DEBUG_HELPER,            //!< Debug helper render items.
 	EFSLIST_SKY,                     //!< Sky elements
+
+	// Implicit lists which the renderer clones render-elements into conditionally
+	EFSLIST_PREPROCESS,              //!< Pre-process items.
+	EFSLIST_ZPREPASS,                //!< Items that are rendered into the z-prepass.
+	EFSLIST_ZPREPASS_NEAREST,        //!< Nearest z-prepass.
+	EFSLIST_CUSTOM,                  //!< Custom scene pass.
+	EFSLIST_HIGHLIGHT,               //!< Candidate for selection objects
 
 	EFSLIST_NUM
 };
@@ -1780,7 +1785,7 @@ enum ERenderListID
 #define EF_OFFSETBUMP                    0x8000
 #define EF_NOTFOUND                      0x10000
 #define EF_DEFAULT                       0x20000
-#define EF_SKY                           0x40000
+#define EF_UNUSED_SKY                    0x40000 // TODO: remove if possible
 #define EF_USELIGHTS                     0x80000
 #define EF_ALLOW3DC                      0x100000
 #define EF_FOGSHADER                     0x200000
@@ -1796,40 +1801,41 @@ enum ERenderListID
 #define EF_REFRACTIVE                    0x40000000
 #define EF_NOPREVIEW                     0x80000000
 
-#define EF_PARSE_MASK                    (EF_SUPPORTSINSTANCING | EF_SKY | EF_HASCULL | EF_USELIGHTS | EF_REFRACTIVE)
+#define EF_PARSE_MASK                    (EF_SUPPORTSINSTANCING | EF_HASCULL | EF_USELIGHTS | EF_REFRACTIVE)
 
 // SShader::Flags2
 // Additional Different useful flags
 
-#define EF2_PREPR_SCANWATER      0x4
-#define EF2_NOCASTSHADOWS        0x8
-#define EF2_NODRAW               0x10
-#define EF2_WRINKLE_BLENDING     0x20
-#define EF2_HASOPAQUE            0x40
-#define EF2_AFTERHDRPOSTPROCESS  0x80
-#define EF2_DONTSORTBYDIST       0x100
-#define EF2_FORCE_WATERPASS      0x200
-#define EF2_FORCE_GENERALPASS    0x400
-#define EF2_AFTERPOSTPROCESS     0x800
-#define EF2_IGNORERESOURCESTATES 0x1000
-#define EF2_EYE_OVERLAY          0x2000
-#define EF2_FORCE_TRANSPASS      0x4000
-#define EF2_FORCE_ZPASS          0x10000
-#define EF2_FORCE_DRAWLAST       0x20000
-#define EF2_FORCE_DRAWAFTERWATER 0x40000
-#define EF2_BILLBOARD            0x80000
-#define EF2_DEPTH_FIXUP          0x100000
-#define EF2_SINGLELIGHTPASS      0x200000
-#define EF2_FORCE_DRAWFIRST      0x400000
-#define EF2_HAIR                 0x800000
-#define EF2_DETAILBUMPMAPPING    0x1000000
-#define EF2_HASALPHATEST         0x2000000
-#define EF2_HASALPHABLEND        0x4000000
-#define EF2_ZPREPASS             0x8000000
-#define EF2_VERTEXCOLORS         0x10000000
-#define EF2_SKINPASS             0x20000000
-#define EF2_HW_TESSELLATION      0x40000000
-#define EF2_ALPHABLENDSHADOWS    0x80000000
+#define EF2_PREPR_SCANWATER        0x4
+#define EF2_NOCASTSHADOWS          0x8
+#define EF2_NODRAW                 0x10
+#define EF2_WRINKLE_BLENDING       0x20
+#define EF2_HASOPAQUE              0x40
+#define EF2_AFTERHDRPOSTPROCESS    0x80
+#define EF2_DONTSORTBYDIST         0x100
+#define EF2_FORCE_WATERPASS        0x200
+#define EF2_FORCE_GENERALPASS      0x400
+#define EF2_AFTERPOSTPROCESS       0x800
+#define EF2_IGNORERESOURCESTATES   0x1000
+#define EF2_EYE_OVERLAY            0x2000
+#define EF2_FORCE_TRANSPASS        0x4000
+#define EF2_FORCE_ZPASS            0x8000
+#define EF2_FORCE_DRAWLAST         0x10000
+#define EF2_FORCE_DRAWAFTERWATER   0x20000
+#define EF2_BILLBOARD              0x40000
+#define EF2_DEPTH_FIXUP            0x80000
+#define EF2_DEPTH_FIXUP_REPLACE    0x100000
+#define EF2_SINGLELIGHTPASS        0x200000
+#define EF2_FORCE_DRAWFIRST        0x400000
+#define EF2_HAIR                   0x800000
+#define EF2_DETAILBUMPMAPPING      0x1000000
+#define EF2_HASALPHATEST           0x2000000
+#define EF2_HASALPHABLEND          0x4000000
+#define EF2_ZPREPASS               0x8000000
+#define EF2_VERTEXCOLORS           0x10000000
+// UNUSED                          0x20000000
+#define EF2_HW_TESSELLATION        0x40000000
+#define EF2_ALPHABLENDSHADOWS      0x80000000
 
 struct IShader
 {
@@ -1863,7 +1869,7 @@ public:
 	virtual InputLayoutHandle          GetVertexFormat(void) = 0;
 
 	virtual EShaderType                GetShaderType() = 0;
-	virtual uint32                     GetVertexModificator() = 0;
+	virtual EVertexModifier            GetVertexModificator() = 0;
 
 	virtual void                       GetMemoryUsage(ICrySizer* pSizer) const = 0;
 	// </interfuscator:shuffle>
@@ -1915,6 +1921,11 @@ struct SShaderItem
 			return false;
 		return true;
 	}
+
+	inline bool IsEmissive   () const { return (m_pShaderResources && m_pShaderResources->IsEmissive()); }
+	inline bool IsAlphaTested() const { return (m_pShaderResources && m_pShaderResources->IsAlphaTested()); }
+	inline bool IsVegetation () const { return (m_pShader && m_pShader->GetShaderType() == eST_Vegetation); }
+	inline bool IsTesselated () const { return (m_pShader && m_pShader->GetFlags2() & EF2_HW_TESSELLATION); }
 
 	inline struct SShaderTechnique* GetTechnique() const;
 	bool                            IsMergable(SShaderItem& PrevSI);
@@ -1975,45 +1986,45 @@ typedef DynArray<CRenderChunk> TRenderChunkArray;
 
 //////////////////////////////////////////////////////////////////////
 // DLights
-enum eDynamicLightFlags
+enum eDynamicLightFlags : uint32
 {
-	DLF_AREA_SPEC_TEX           = BIT(0),
-	DLF_DIRECTIONAL             = BIT(1),
-	DLF_BOX_PROJECTED_CM        = BIT(2),
+	DLF_AREA_SPEC_TEX           = BIT32(0),
+	DLF_DIRECTIONAL             = BIT32(1),
+	DLF_BOX_PROJECTED_CM        = BIT32(2),
 	// UNUSED										= BIT(3),
-	DLF_POST_3D_RENDERER        = BIT(4),
-	DLF_CASTSHADOW_MAPS         = BIT(5),
-	DLF_POINT                   = BIT(6),
-	DLF_PROJECT                 = BIT(7),
-	// UNUSED                   = BIT(8),
+	DLF_POST_3D_RENDERER        = BIT32(4),
+	DLF_CASTSHADOW_MAPS         = BIT32(5),
+	DLF_POINT                   = BIT32(6),
+	DLF_PROJECT                 = BIT32(7),
+	// UNUSED                   = BIT32(8),
 	//	UNUSED										= BIT(9),
-	DLF_IGNORES_VISAREAS        = BIT(10),
-	DLF_DEFERRED_CUBEMAPS       = BIT(11),
-	DLF_HAS_CLIP_VOLUME         = BIT(12),
-	DLF_DISABLED                = BIT(13),
-	DLF_AREA_LIGHT              = BIT(14),
-	DLF_USE_FOR_SVOGI           = BIT(15),
+	DLF_IGNORES_VISAREAS        = BIT32(10),
+	DLF_DEFERRED_CUBEMAPS       = BIT32(11),
+	DLF_HAS_CLIP_VOLUME         = BIT32(12),
+	DLF_DISABLED                = BIT32(13),
+	DLF_AREA                    = BIT32(14),
+	DLF_USE_FOR_SVOGI           = BIT32(15),
 	// UNUSED										=	BIT(16),
-	DLF_FAKE                    = BIT(17),   //!< No lighting, used for Flares, beams and such.
-	DLF_SUN                     = BIT(18),
-	DLF_LM                      = BIT(19),
-	DLF_THIS_AREA_ONLY          = BIT(20),   //!< Affects only current area/sector.
-	DLF_AMBIENT                 = BIT(21),   //!< Ambient light (has name indicates, used for replacing ambient).
-	DLF_INDOOR_ONLY             = BIT(22),   //!< Do not affect height map.
-	DLF_VOLUMETRIC_FOG          = BIT(23),   //!< Affects volumetric fog.
-	DLF_LINK_TO_SKY_COLOR       = BIT(24),   //!< Multiply light color with current sky color (use GI sky color if available).
-	DLF_ATTACH_TO_SUN           = BIT(25),   //!< Add only to  Light Propagation Volume if it's possible.
-	DLF_TRACKVIEW_TIMESCRUBBING = BIT(26),   //!< Add only to  Light Propagation Volume if it's possible.
-	DLF_VOLUMETRIC_FOG_ONLY     = BIT(27),   //!< Affects only volumetric fog.
+	DLF_FAKE                    = BIT32(17),   //!< No lighting, used for Flares, beams and such.
+	DLF_SUN                     = BIT32(18),
+	DLF_LM                      = BIT32(19),
+	DLF_THIS_AREA_ONLY          = BIT32(20),   //!< Affects only current area/sector.
+	DLF_AMBIENT                 = BIT32(21),   //!< Ambient light (has name indicates, used for replacing ambient).
+	DLF_INDOOR_ONLY             = BIT32(22),   //!< Do not affect height map.
+	DLF_VOLUMETRIC_FOG          = BIT32(23),   //!< Affects volumetric fog.
+	DLF_LINK_TO_SKY_COLOR       = BIT32(24),   //!< Multiply light color with current sky color (use GI sky color if available).
+	DLF_ATTACH_TO_SUN           = BIT32(25),   //!< Add only to  Light Propagation Volume if it's possible.
+	DLF_TRACKVIEW_TIMESCRUBBING = BIT32(26),   //!< Add only to  Light Propagation Volume if it's possible.
+	DLF_VOLUMETRIC_FOG_ONLY     = BIT32(27),   //!< Affects only volumetric fog.
 
 	//! Deprecated. Remove once deferred shading by default.
-	DLF_DEFERRED_LIGHT = BIT(29),
+	DLF_DEFERRED_LIGHT = BIT32(29),
 
 	//! Deprecated. Remove all dependencies editor side, etc.
-	DLF_SPECULAROCCLUSION = BIT(30),
-	DLF_DIFFUSEOCCLUSION  = BIT(31),
+	DLF_SPECULAROCCLUSION = BIT32(30),
+	DLF_DIFFUSEOCCLUSION  = BIT32(31),
 
-	DLF_LIGHTTYPE_MASK    = (DLF_DIRECTIONAL | DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT)
+	DLF_LIGHTTYPE_MASK    = (DLF_DIRECTIONAL | DLF_POINT | DLF_PROJECT | DLF_AREA)
 };
 
 //! Area light types.
@@ -2129,7 +2140,7 @@ struct SRenderLight
 	{
 		// Adjust light intensity so that the intended brightness is reached 1 meter from the light's surface
 		// I / (1 + bulb)^2 = 1; I = (1 + bulb)^2
-		if (m_Flags & (DLF_AREA_LIGHT | DLF_AMBIENT))
+		if (m_Flags & DLF_AMBIENT)
 			return 1.0f;
 		return sqr(1.0f + m_fAttenuationBulbSize);
 	}
@@ -2243,7 +2254,7 @@ struct SRenderLight
 	}
 
 	//! Use this instead of m_Color.
-	const ColorF& GetFinalColor(const ColorF& cColor) const
+	const ColorF& GetFinalColor() const
 	{
 		return m_Color;
 	}
@@ -2308,7 +2319,7 @@ struct SRenderLight
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	void CopyFrom( const SRenderLight &dl )
+	void CopyFrom(const SRenderLight &dl, bool includingObjects = true)
 	{
 		if (this == &dl)
 			return;
@@ -2316,7 +2327,10 @@ struct SRenderLight
 		DropResources();
 
 		m_pOwner = dl.m_pOwner;
-		memcpy(m_pObject, dl.m_pObject, sizeof(m_pObject));
+
+		if (includingObjects)
+			memcpy(m_pObject, dl.m_pObject, sizeof(m_pObject));
+
 		m_Shader = dl.m_Shader;
 		m_pShadowMapFrustums = dl.m_pShadowMapFrustums;
 		m_pDiffuseCubemap = dl.m_pDiffuseCubemap;
@@ -2357,6 +2371,9 @@ struct SRenderLight
 		m_pLightAnim = dl.m_pLightAnim;
 		m_fAreaWidth = dl.m_fAreaWidth;
 		m_fAreaHeight = dl.m_fAreaHeight;
+		m_bAreaTwoSided = dl.m_bAreaTwoSided;
+		m_bAreaTextured = dl.m_bAreaTextured;
+		m_nAreaShape = dl.m_nAreaShape;
 		m_fBoxWidth = dl.m_fBoxWidth;
 		m_fBoxHeight = dl.m_fBoxHeight;
 		m_fBoxLength = dl.m_fBoxLength;
@@ -2444,8 +2461,12 @@ public:
 	float                m_fClipRadius = 100.f;
 	float                m_fAttenuationBulbSize = 0.1f;
 
+	// Area Light properties
 	float                m_fAreaWidth = 1.f;
 	float                m_fAreaHeight = 1.f;
+	bool                 m_bAreaTwoSided = false;
+	bool                 m_bAreaTextured = false;
+	uint8                m_nAreaShape = 0;
 
 	float                m_fFogRadialLobe = 0;  //!< The blend ratio of two radial lobe for volumetric fog.
 
@@ -2556,13 +2577,13 @@ struct SWaterRippleInfo
 };
 
 //! Runtime shader flags for HW skinning.
-enum EHWSkinningRuntimeFlags
+enum EHWSkinningRuntimeFlags : uint32
 {
-	eHWS_MotionBlured             = BIT(2),
-	eHWS_SkinnedLinear            = BIT(3),
-	eHWS_DC_deformation_Skinning  = BIT(4),
-	eHWS_DC_Deformation_PreMorphs = BIT(5),
-	eHWS_DC_Deformation_Tangents  = BIT(6)
+	eHWS_MotionBlured             = BIT32(2),
+	eHWS_SkinnedLinear            = BIT32(3),
+	eHWS_DC_deformation_Skinning  = BIT32(4),
+	eHWS_DC_Deformation_PreMorphs = BIT32(5),
+	eHWS_DC_Deformation_Tangents  = BIT32(6)
 };
 
 //! Shader graph support.
@@ -2680,8 +2701,3 @@ struct SShaderGraphBlock
 
 typedef std::vector<SShaderGraphBlock*> FXShaderGraphBlocks;
 typedef FXShaderGraphBlocks::iterator   FXShaderGraphBlocksItor;
-
-#include <CryRenderer/RenderElements/RendElement.h>
-#include "RenderObject.h"
-
-#endif // _ISHADER

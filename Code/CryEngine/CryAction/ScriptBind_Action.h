@@ -6,7 +6,6 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 #include <IViewSystem.h>
 
 // FIXME: Cell SDK GCC bug workaround.
@@ -229,74 +228,6 @@ public:
 	//! <description>Doesn't sync physics for the specified entity.</description>
 	int DontSyncPhysics(IFunctionHandler* pH, ScriptHandle entityId);
 
-	//! <code>Action.EnableSignalTimer( entityId, sText )</code>
-	//!		<param name="entityId">Identifier for the entity.
-	//!		<param name="sText">Text for the signal.</param>
-	//! <description>Enables the signal timer.</description>
-	int EnableSignalTimer(IFunctionHandler* pH, ScriptHandle entityId, const char* sText);
-
-	//! <code>Action.DisableSignalTimer( entityId, sText )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="sText">Text for the signal.</param>
-	//! <description>Disables the signal timer.</description>
-	int DisableSignalTimer(IFunctionHandler* pH, ScriptHandle entityId, const char* sText);
-
-	//! <code>Action.SetSignalTimerRate( entityId, sText, fRateMin, fRateMax )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="sText">Text for the signal.</param>
-	//!		<param name="fRateMin">Minimum rate for the signal timer.</param>
-	//!		<param name="fRateMax">Maximum rate for the signal timer.</param>
-	//! <description>Sets the rate for the signal timer.</description>
-	int SetSignalTimerRate(IFunctionHandler* pH, ScriptHandle entityId, const char* sText, float fRateMin, float fRateMax);
-
-	//! <code>Action.ResetSignalTimer( entityId, sText )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="sText">Text for the signal.</param>
-	//! <description>Resets the rate for the signal timer.</description>
-	int ResetSignalTimer(IFunctionHandler* pH, ScriptHandle entityId, const char* sText);
-
-	//! <code>Action.EnableRangeSignaling( entityId, bEnable )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="bEnable">Enable/Disable range signalling.</param>
-	//! <description>Enable/Disable range signalling for the specified entity.</description>
-	int EnableRangeSignaling(IFunctionHandler* pH, ScriptHandle entityId, bool bEnable);
-
-	//! <code>Action.DestroyRangeSignaling( entityId )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	int DestroyRangeSignaling(IFunctionHandler* pH, ScriptHandle entityId);
-
-	//! <code>Action.ResetRangeSignaling( entityId )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	int ResetRangeSignaling(IFunctionHandler* pH, ScriptHandle entityId);
-
-	//! <code>Action.AddRangeSignal( entityId, fRadius, fFlexibleBoundary, sSignal )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="fRadius">Radius of the range area.</param>
-	//!		<param name="fFlexibleBoundary">Flexible boundary size.</param>
-	//!		<param name="sSignal">String for signal.</param>
-	//! <description>Adds a range for the signal.</description>
-	int AddRangeSignal(IFunctionHandler* pH, ScriptHandle entityId, float fRadius, float fFlexibleBoundary, const char* sSignal);
-
-	//! <code>Action.AddTargetRangeSignal( entityId, targetId, fRadius, fFlexibleBoundary, sSignal )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="targetId">Identifier for the target.</param>
-	//!		<param name="fRadius">Radius of the range area.</param>
-	//!		<param name="fFlexibleBoundary">Flexible boundary size.</param>
-	//!		<param name="sSignal">String for signal.</param>
-	int AddTargetRangeSignal(IFunctionHandler* pH, ScriptHandle entityId, ScriptHandle targetId, float fRadius, float fFlexibleBoundary, const char* sSignal);
-
-	//! <code>Action.AddRangeSignal( entityId, fAngle, fFlexibleBoundary, sSignal )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="fAngle">Angle value.</param>
-	//!		<param name="fFlexibleBoundary">Flexible boundary size.</param>
-	//!		<param name="sSignal">String for signal.</param>
-	//! <description>Adds an angle for the signal.</description>
-	int AddAngleSignal(IFunctionHandler* pH, ScriptHandle entityId, float fAngle, float fFlexibleBoundary, const char* sSignal);
-
-	//! <code>Action.RegisterWithAI()</code>
-	//! <description>Registers the entity to AI System, creating an AI object associated to it.</description>
-	int RegisterWithAI(IFunctionHandler* pH);
-
 	//! <code>Action.HasAI( entityId )</code>
 	//! <returns>true if the entity has an AI object associated to it, meaning it has been registered with the AI System</returns>
 	int HasAI(IFunctionHandler* pH, ScriptHandle entityId);
@@ -305,20 +236,14 @@ public:
 	//! <returns>the matching class name if available for specified classId.</returns>
 	int GetClassName(IFunctionHandler* pH, int classId);
 
-	//! <code>Action.SetAimQueryMode( entityId, mode )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="mode">QueryAimFromMovementController or OverriddenAndAiming or OverriddenAndNotAiming</param>
-	//! <description>
-	//!		Set the aim query mode for the ai proxy. Normally the ai proxy
-	//!		asks the movement controller if the character is aiming.
-	//!		You can override that and set your own 'isAiming' state.
-	//! </description>
-	int SetAimQueryMode(IFunctionHandler* pH, ScriptHandle entityId, int mode);
-
 	//! <code>Action.PreLoadADB( adbFileName )</code>
 	//!		<param name="adbFileName">The path and filename of the animation ADB file which is to be pre-loaded.</param>
 	//! <description>Use this function to pre-cache ADB files.</description>
 	int PreLoadADB(IFunctionHandler* pH, const char* adbFileName);
+
+	//! <code>Action.RegisterWithAI()</code>
+	//! <description>Registers the entity to AI System, creating an AI object associated to it.</description>
+	int RegisterWithAI(IFunctionHandler* pH);
 
 private:
 	void RegisterGlobals();

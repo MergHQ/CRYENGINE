@@ -51,21 +51,7 @@ protected:
 	//player inventory
 	void WritePlayerInventory(XmlNodeRef parentNode);
 	void ReadPlayerInventory(XmlNodeRef parentNode);
-
-	//get data or log warning
-	template<class T>
-	bool GetAttrSave(XmlNodeRef source, const char *name, T &data);
 };
 
-template<class T>
-ILINE bool CCheckpointGame::GetAttrSave(XmlNodeRef source, const char *name, T &data)
-{
-	CRY_ASSERT(source != NULL);
-	CRY_ASSERT(name);
-	bool found = source->getAttr(name, data);
-	if(!found)
-		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed reading %s from checkpoint node %s.", name, source->getTag());
-	return found;
-}
 
 #endif //__CHECKPOINTGAME_H__

@@ -10,6 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include <StdAfx.h>
+#include <CryMath/Cry_Math.h>
 #include "MiniButton.h"
 #include "DrawContext.h"
 #include <CrySystem/ISystem.h>
@@ -263,6 +264,8 @@ void CMiniButton::OnEvent(float x, float y, EMiniCtrlEvent event)
 				m_pParent->OnEvent(x, y, eCtrlEvent_MouseOff);
 			}
 		}
+		break;
+	default:
 		break;
 	}
 }

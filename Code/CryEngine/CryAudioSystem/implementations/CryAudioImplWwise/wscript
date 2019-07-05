@@ -13,7 +13,12 @@ def build(bld):
 			Logs.error('[ERROR] Attempting to build CryAudioImplWwise, but could not find the Wwise SDK at Code/SDKs/Audio/wwise/SDK, skipping.')
 			return
 
-	wwise_core_libs             = [ 'AkMemoryMgr', 'AkMusicEngine', 'AkSoundEngine', 'AkStreamMgr' ]
+	wwise_core_libs             = [ 
+		'AkMemoryMgr',
+		'AkMusicEngine',
+		'AkSoundEngine',
+		'AkStreamMgr' 
+	]
 
 	wwise_plugins_libs          = [
 		'AkAudioInputSource',
@@ -27,6 +32,8 @@ def build(bld):
 		'AkHarmonizerFX',
 		'AkMatrixReverbFX',
 		'AkMeterFX',
+		'AkMotionSourceSource',
+		'AkOpusDecoder',
 		'AkParametricEQFX',
 		'AkPeakLimiterFX',
 		'AkPitchShifterFX',
@@ -36,11 +43,11 @@ def build(bld):
 		'AkSilenceSource',
 		'AkSineSource',
 		'AkSoundSeedImpactFX',
-		'AkSoundSeedWind',
-		'AkSoundSeedWoosh',
+		'AkSoundSeedWindSource',
+		'AkSoundSeedWooshSource',
 		'AkSpatialAudio',
 		'AkStereoDelayFX',
-		'AkSynthOne',
+		'AkSynthOneSource',
 		'AkTimeStretchFX',
 		'AkToneSource',
 		'AkTremoloFX',
@@ -58,10 +65,7 @@ def build(bld):
 		'iZTrashDynamicsFX',
 		'iZTrashFiltersFX',
 		'iZTrashMultibandDistortionFX',
-		'AkMotionGenerator',
-		'AkRumble',
-		'AuroHeadphoneFX',
-		'AuroPannerMixer'		
+		'AuroHeadphoneFX'
 	]
 
 	# CommunicationCentral must be the linked before other wwise libraries on gcc-based linkers
@@ -69,11 +73,11 @@ def build(bld):
 
 	common_wwise_libs           = wwise_core_libs + wwise_plugins_libs
 
-	win_libs                    = [ 'Ole32', 'dxguid', 'ws2_32', 'Dsound', 'XINPUT9_1_0', 'Msacm32' ]
-	win_release_libs            = common_wwise_libs + wwise_extra_plugins_libs + win_libs
+	win_libs                    = [ 'Ole32', 'oleaut32', 'Msacm32', 'dinput8', 'Winmm', 'dsound', 'dxguid', 'ws2_32', 'xinput' ] + ['AkMotionGeneratorSource',  'AkMotionSink']
+	win_release_libs            = common_wwise_libs + wwise_extra_plugins_libs + win_libs 
 	win_non_release_libs        = comm_central_libs + win_release_libs + [ 'SFlib' ]
 	
-	durango_libs                = [ 'MMDevApi', 'Ws2_32', 'combase', 'kernelx', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'xaudio2', 'acphal' ]
+	durango_libs                = [ 'MMDevApi', 'Ws2_32', 'combase', 'kernelx', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'xaudio2', 'acphal' ] + ['AkMotionGeneratorSource',  'AkMotionSink']
 	durango_release_libs        = common_wwise_libs + wwise_extra_plugins_libs + durango_libs
 	durango_non_release_libs    = comm_central_libs + durango_release_libs
 
@@ -91,7 +95,7 @@ def build(bld):
 	darwin_release_libs         = common_wwise_libs + darwin_wwise_libs
 	darwin_non_release_libs     = comm_central_libs + darwin_release_libs
 
-	android_release_libs        = common_wwise_libs + [ 'CrankcaseAudioREVModelPlayerFX', 'AuroHeadphoneFX', 'AuroPannerMixer' ]
+	android_release_libs        = common_wwise_libs + [ 'CrankcaseAudioREVModelPlayerFX', 'AuroHeadphoneFX', 'AkMotionGeneratorSource', 'AkMotionSink' ]
 	android_non_release_libs    = comm_central_libs + android_release_libs
 
 	wwise_lib_subfolder = 'vc110'
@@ -103,6 +107,8 @@ def build(bld):
 			wwise_lib_subfolder = 'vc120'
 		if msvc_version == '14.0':
 			wwise_lib_subfolder = 'vc140'
+		if msvc_version == '15.0':
+			wwise_lib_subfolder = 'vc150'
 	except:
 		pass
 
@@ -179,13 +185,13 @@ def build(bld):
 		android_profile_lib             = android_non_release_libs,
 		android_performance_lib         = android_release_libs,
 		android_release_lib             = android_release_libs,
-		android_arm_debug_libpath       = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Debug/lib'),
-		android_arm_profile_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Profile/lib'),
-		android_arm_performance_libpath = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib'),
-		android_arm_release_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-9_armeabi-v7a/Release/lib'),
+		android_arm_debug_libpath       = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_armeabi-v7a/Debug/lib'),
+		android_arm_profile_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_armeabi-v7a/Profile/lib'),
+		android_arm_performance_libpath = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_armeabi-v7a/Release/lib'),
+		android_arm_release_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_armeabi-v7a/Release/lib'),
 
-		android_arm64_debug_libpath       = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-21_arm64-v8a/Debug/lib'),
-		android_arm64_profile_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-21_arm64-v8a/Profile/lib'),
-		android_arm64_performance_libpath = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-21_arm64-v8a/Release/lib'),
-		android_arm64_release_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/android-21_arm64-v8a/Release/lib'),
+		android_arm64_debug_libpath       = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_arm64-v8a/Debug/lib'),
+		android_arm64_profile_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_arm64-v8a/Profile/lib'),
+		android_arm64_performance_libpath = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_arm64-v8a/Release/lib'),
+		android_arm64_release_libpath     = bld.CreateRootRelativePath('Code/SDKs/Audio/wwise/SDK/Android_arm64-v8a/Release/lib'),
 	)

@@ -2,12 +2,8 @@
 
 #pragma once
 
+#include "Common/ControlInfo.h"
 #include <QWidget>
-
-#include <ControlInfo.h>
-#include <FileImportInfo.h>
-
-#include <FileDialogs/ExtensionFilter.h>
 
 class QVBoxLayout;
 
@@ -19,22 +15,20 @@ class CMiddlewareDataWidget final : public QWidget
 
 public:
 
+	CMiddlewareDataWidget() = delete;
+	CMiddlewareDataWidget(CMiddlewareDataWidget const&) = delete;
+	CMiddlewareDataWidget(CMiddlewareDataWidget&&) = delete;
+	CMiddlewareDataWidget& operator=(CMiddlewareDataWidget const&) = delete;
+	CMiddlewareDataWidget& operator=(CMiddlewareDataWidget&&) = delete;
+
 	explicit CMiddlewareDataWidget(QWidget* const pParent);
 	virtual ~CMiddlewareDataWidget() override;
-
-	CMiddlewareDataWidget() = delete;
-
-signals:
-
-	void SignalSelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId);
 
 private:
 
 	void InitImplDataWidget();
 	void ClearImplDataWidget();
 	void GetConnectedControls(ControlId const implItemId, SControlInfos& controlInfos);
-	void OnImportFiles(ExtensionFilterVector const& extensionFilters, QStringList const& supportedTypes, QString const& targetFolderName);
-	void OpenFileImporter(FileImportInfos const& fileImportInfos, QString const& targetFolderName);
 
 	QVBoxLayout* const m_pLayout;
 	QWidget*           m_pImplDataPanel;

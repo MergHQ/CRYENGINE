@@ -56,19 +56,19 @@ struct ISpeakerManager
 	};
 	struct IListener
 	{
-		enum eLineEvent
+		enum eLineEvent : uint32
 		{
-			eLineEvent_Started                               = BIT(0), //line started successfully
-			eLineEvent_Finished                              = BIT(1), //line finished successfully
-			eLineEvent_Canceled                              = BIT(2), //was canceled while playing (by calling cancel or by destroying the actor)
-			eLineEvent_Queued                                = BIT(3), //line is waiting to start
+			eLineEvent_Started                               = BIT32(0), //line started successfully
+			eLineEvent_Finished                              = BIT32(1), //line finished successfully
+			eLineEvent_Canceled                              = BIT32(2), //was canceled while playing (by calling cancel or by destroying the actor)
+			eLineEvent_Queued                                = BIT32(3), //line is waiting to start
 
-			eLineEvent_SkippedBecauseOfFaultyData            = BIT(4), //was not started because of incorrect data.
-			eLineEvent_SkippedBecauseOfPriority              = BIT(5), //another more important line was already playing (pLine will hold that line) and the line did not allow queuing
-			eLineEvent_SkippedBecauseOfTimeOut               = BIT(6), //line was queued for some time but could not start in the allowed max-queue time
-			eLineEvent_SkippedBecauseOfNoValidLineVariations = BIT(7), //line used up all his line variations. (most commonly happens with the only-once flag)
-			eLineEvent_SkippedBecauseOfAlreadyRequested      = BIT(8), //the line was already running or queued
-			eLineEvent_SkippedBecauseOfExternalCode          = BIT(9), //a registered listener declined the execution of the line
+			eLineEvent_SkippedBecauseOfFaultyData            = BIT32(4), //was not started because of incorrect data.
+			eLineEvent_SkippedBecauseOfPriority              = BIT32(5), //another more important line was already playing (pLine will hold that line) and the line did not allow queuing
+			eLineEvent_SkippedBecauseOfTimeOut               = BIT32(6), //line was queued for some time but could not start in the allowed max-queue time
+			eLineEvent_SkippedBecauseOfNoValidLineVariations = BIT32(7), //line used up all his line variations. (most commonly happens with the only-once flag)
+			eLineEvent_SkippedBecauseOfAlreadyRequested      = BIT32(8), //the line was already running or queued
+			eLineEvent_SkippedBecauseOfExternalCode          = BIT32(9), //a registered listener declined the execution of the line
 
 			//useful combination, if you are only interested in IF the line has ended and not HOW it happened.
 			eLineEvent_HasEndedInAnyWay          = eLineEvent_Finished | eLineEvent_Canceled,
@@ -387,14 +387,14 @@ public:
 	 */
 	virtual IDataImportHelper* GetCustomDataformatHelper() = 0;
 
-	enum eResetHints
+	enum eResetHints : uint32
 	{
 		eResetHint_Nothing              = 0,
-		eResetHint_StopRunningResponses = BIT(0),
-		eResetHint_ResetAllResponses    = BIT(1),
-		eResetHint_Variables            = BIT(2),
-		eResetHint_Speaker              = BIT(3),
-		eResetHint_DebugInfos           = BIT(4),
+		eResetHint_StopRunningResponses = BIT32(0),
+		eResetHint_ResetAllResponses    = BIT32(1),
+		eResetHint_Variables            = BIT32(2),
+		eResetHint_Speaker              = BIT32(3),
+		eResetHint_DebugInfos           = BIT32(4),
 		//... implementation specifics
 		eResetHint_All                  = 0xFFFFFFFF
 	};
@@ -651,7 +651,6 @@ struct IDialogLine
 	virtual const string& GetStartAudioTrigger() const = 0;
 	virtual const string& GetEndAudioTrigger() const = 0;
 	virtual const string& GetLipsyncAnimation() const = 0;
-	virtual const string& GetStandaloneFile() const = 0;
 	virtual float         GetPauseLength() const = 0;
 	virtual const string& GetCustomData() const = 0;
 
@@ -659,7 +658,6 @@ struct IDialogLine
 	virtual void          SetStartAudioTrigger(const string& trigger) = 0;
 	virtual void          SetEndAudioTrigger(const string& trigger) = 0;
 	virtual void          SetLipsyncAnimation(const string& lipsyncAnimation) = 0;
-	virtual void          SetStandaloneFile(const string& standAlonefile) = 0;
 	virtual void          SetPauseLength(float length) = 0;
 	virtual void          SetCustomData(const string& data) = 0;
 

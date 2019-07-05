@@ -339,10 +339,8 @@ void CSaverCGF::SaveNodes(
 	for (int i = 0; i < numNodes; i++)
 	{
 		CNodeCGF* pNode = m_pCGF->GetNode(i);
-		const char* pNodeName = pNode->name;
 
 		// Check if not yet saved.
-		uint32 numSavedNodes = m_savedNodes.size();
 		//	if (m_savedNodes.find(pNode) == m_savedNodes.end())
 	#if defined(RESOURCE_COMPILER)
 		SaveNode(pNode, bSwapEndian, bStorePositionsAsF16, bUseQtangents, bStoreIndicesAsU16, pSkinningInfo);
@@ -447,13 +445,12 @@ int CSaverCGF::SaveNode(
 		pNode->nObjectChunkId = SaveHelperChunk(pNode, bSwapEndian);
 	}
 
-	int nextChunk = m_pChunkFile->NumChunks();
-
 	int positionIndex = pNode->pos_cont_id;
 	int rotationIndex = pNode->rot_cont_id;
 	int scaleIndex = pNode->scl_cont_id;
 
-	#if defined(RESOURCE_COMPILER)
+#if defined(RESOURCE_COMPILER)
+	int nextChunk = m_pChunkFile->NumChunks();
 	int controllerIndex = -1;
 	if (pSkinningInfo)
 	{
@@ -485,7 +482,7 @@ int CSaverCGF::SaveNode(
 			scaleIndex = ++nextChunk;
 		}
 	}
-	#endif
+#endif
 
 	chunk.pos_cont_id = positionIndex;
 	chunk.rot_cont_id = rotationIndex;
@@ -689,11 +686,12 @@ int CSaverCGF::SaveNodeMesh(
 		chunk.nVerts = pNode->meshInfo.nVerts;
 		chunk.nIndices = pNode->meshInfo.nIndices;
 		chunk.nSubsets = pNode->meshInfo.nSubsets;
-		chunk.bboxMax = pNode->meshInfo.bboxMin;
+		chunk.bboxMin = pNode->meshInfo.bboxMin;
 		chunk.bboxMax = pNode->meshInfo.bboxMax;
 	}
 
-	const bool bEmptyMesh = m_bDoNotSaveMeshData || pNode->bPhysicsProxy || !pNode->pMesh;
+	const bool bHaveMesh = pNode->pMesh && !pNode->bPhysicsProxy;
+	const bool bEmptyMesh = m_bDoNotSaveMeshData || !bHaveMesh;
 
 	if (bEmptyMesh)
 	{
@@ -712,13 +710,24 @@ int CSaverCGF::SaveNodeMesh(
 		}
 	}
 
-	if (!bEmptyMesh)
+	if (bHaveMesh)
 	{
 		CMesh& mesh = *pNode->pMesh;
 
 		mesh.RecomputeTexMappingDensity();
 		chunk.texMappingDensity = mesh.m_texMappingDensity;
 		chunk.nFlags |= MESH_CHUNK_DESC_0801::HAS_TEX_MAPPING_DENSITY;
+
+		if (mesh.RecomputeGeometricMeanFaceArea())
+		{
+			chunk.geometricMeanFaceArea = mesh.m_geometricMeanFaceArea;
+			chunk.nFlags |= MESH_CHUNK_DESC_0801::HAS_FACE_AREA;
+		}
+	}
+
+	if (!bEmptyMesh)
+	{
+		CMesh& mesh = *pNode->pMesh;
 
 		chunk.nSubsetsChunkId = SaveMeshSubsetsChunk(mesh, bSwapEndian);
 

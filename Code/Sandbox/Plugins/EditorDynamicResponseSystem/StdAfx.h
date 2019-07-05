@@ -14,4 +14,3 @@
 #include <QtViewPane.h>
 #include <QDockWidget>
 #include <QMainWindow>
-

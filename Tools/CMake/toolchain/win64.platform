@@ -1,0 +1,4 @@
+platform_name=Windows (64-bit)
+generator_suffix= Win64
+solution_path=solutions_cmake\win64
+toolchain=toolchain\windows\WindowsPC-MSVC.cmake

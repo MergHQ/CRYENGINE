@@ -1,18 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   visareas.h
-//  Version:     v1.00
-//  Created:     18/12/2002 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description: visibility areas header
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef VisArea_H
-#define VisArea_H
+#pragma once
 
 #include "BasicArea.h"
 #include "PolygonClipContext.h"
@@ -63,7 +51,7 @@ struct SPortalColdData : public SGenericColdData
 	OcclusionTestClient m_occlusionTestClient;
 };
 
-struct CVisArea : public IVisArea, public CBasicArea
+struct CVisArea final : public IVisArea, public CBasicArea
 {
 	static void StaticReset();
 
@@ -79,10 +67,10 @@ struct CVisArea : public IVisArea, public CBasicArea
 	void                    Init();
 	ILINE SGenericColdData* GetColdData()                               { return m_pVisAreaColdData; }
 	ILINE void              SetColdDataPtr(SGenericColdData* pColdData) { m_pVisAreaColdData = pColdData; }
-	bool                    IsSphereInsideVisArea(const Vec3& vPos, const f32 fRadius);
+	bool                    IsSphereInsideVisArea(const Vec3& vPos, const f32 fRadius) const;
 	bool                    IsPointInsideVisArea(const Vec3& vPos) const;
-	bool                    IsBoxOverlapVisArea(const AABB& objBox);
-	bool                    ClipToVisArea(bool bInside, Sphere& sphere, Vec3 const& vNormal);
+	bool                    IsBoxOverlapVisArea(const AABB& objBox) const;
+	bool                    ClipToVisArea(bool bInside, Sphere& sphere, Vec3 const& vNormal) const;
 	bool                    FindVisArea(IVisArea* pAnotherArea, int nMaxRecursion, bool bSkipDisabledPortals);
 	bool                    FindVisAreaReqursive(IVisArea* pAnotherArea, int nMaxReqursion, bool bSkipDisabledPortals, StaticDynArray<CVisArea*, 1024>& arrVisitedParents);
 	bool                    GetDistanceThruVisAreas(AABB vCurBoxIn, IVisArea* pTargetArea, const AABB& targetBox, int nMaxReqursion, float& fResDist);
@@ -93,12 +81,12 @@ struct CVisArea : public IVisArea, public CBasicArea
 	Vec3                    GetConnectionNormal(CVisArea* pPortal);
 	void                    PreRender(int nReqursionLevel, CCamera CurCamera, CVisArea* pParent, CVisArea* pCurPortal, bool* pbOutdoorVisible, PodArray<CCamera>* plstOutPortCameras, bool* pbSkyVisible, bool* pbOceanVisible, PodArray<CVisArea*>& lstVisibleAreas, const SRenderingPassInfo& passInfo);
 	void                    UpdatePortalCameraPlanes(CCamera& cam, Vec3* pVerts, bool bMergeFrustums, const SRenderingPassInfo& passInfo);
-	int                     GetVisAreaConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals = false);
-	int                     GetRealConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals = false);
-	bool                    IsPortalValid();
-	bool                    IsPortalIntersectAreaInValidWay(CVisArea* pPortal);
+	int                     GetVisAreaConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals = false) const;
+	int                     GetRealConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals = false) const;
+	bool                    IsPortalValid() const;
+	bool                    IsPortalIntersectAreaInValidWay(CVisArea* pPortal) const;
 	bool                    IsPortal() const;
-	bool                    IsShapeClockwise();
+	bool                    IsShapeClockwise() const;
 	bool                    IsAffectedByOutLights() const { return m_bAffectedByOutLights; }
 	bool                    IsActive()                    { return m_bActive || (GetCVars()->e_Portals == 4); }
 	void                    UpdateGeometryBBox();
@@ -116,7 +104,6 @@ struct CVisArea : public IVisArea, public CBasicArea
 	int                     SaveHeader(byte*& pData, int& nDataSize);
 	int                     SaveObjetsTree(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, SHotUpdateInfo* pExportInfo, byte* pHead);
 	int                     GetData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
-	int                     GetSegmentData(byte*& pData, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, std::vector<IStatInstGroup*>* pStatInstGroupTable, EEndian eEndian, SHotUpdateInfo* pExportInfo);
 #endif
 	template<class T>
 	int                 LoadHeader_T(T*& f, int& nDataSizeLeft, EEndian eEndian, int& objBlockSize);
@@ -134,7 +121,6 @@ struct CVisArea : public IVisArea, public CBasicArea
 	float               GetHeight();
 	float               CalcSignedArea();
 
-	bool                CalcPortalBlendPlanes(Vec3 camPos);
 	virtual void        GetClipVolumeMesh(_smart_ptr<IRenderMesh>& renderMesh, Matrix34& worldTM) const;
 	virtual const AABB& GetClipVolumeBBox() const                       { return *GetStaticObjectAABBox(); }
 	virtual uint8       GetStencilRef() const                           { return m_nStencilRef; }
@@ -145,7 +131,7 @@ struct CVisArea : public IVisArea, public CBasicArea
 	static VisAreaGUID  GetGUIDFromFile(byte* f, EEndian eEndian);
 	VisAreaGUID         GetGUID() const { return m_nVisGUID; }
 
-	const Vec3          GetFinalAmbientColor();
+	const Vec3          GetFinalAmbientColor() const;
 
 	static PodArray<CVisArea*>     m_lUnavailableAreas;
 	static PodArray<Vec3>          s_tmpLstPortVertsClipped;
@@ -229,8 +215,6 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	PodArray<CVisArea*>         m_lstActiveOcclVolumes;
 	PodArray<CVisArea*>         m_lstIndoorActiveOcclVolumes;
 	PodArray<CVisArea*>         m_lstVisibleAreas;
-	PodArray<CVisArea*>         m_tmpLstUnavailableAreas;
-	PodArray<CVisArea*>         m_tmpLstLightBoxAreas;
 	bool                        m_bOutdoorVisible;
 	bool                        m_bSkyVisible;
 	bool                        m_bOceanVisible;
@@ -245,24 +229,26 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	void                 SetCurAreas(const SRenderingPassInfo& passInfo);
 	PodArray<CVisArea*>* GetActiveEntransePortals() { return &m_lstActiveEntransePortals; }
 	void                 PortalsDrawDebug();
-	bool                 IsEntityVisible(IRenderNode* pEnt);
-	bool                 IsOutdoorAreasVisible();
-	bool                 IsSkyVisible();
-	bool                 IsOceanVisible();
+
+	bool                 IsEntityVisible(IRenderNode* pEnt) const;
+	bool                 IsSkyVisible() const { return m_bSkyVisible; }
+	bool                 IsOceanVisible() const { return m_bOceanVisible; }
+	bool                 IsOutdoorAreasVisible() const { return m_bOutdoorVisible; }
+
 	CVisArea*            CreateVisArea(VisAreaGUID visGUID);
 	bool                 DeleteVisArea(CVisArea* pVisArea);
 	bool                 SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const float fObjRadiusSqr);
 	void                 CheckVis(const SRenderingPassInfo& passInfo);
-	void                 DrawVisibleSectors(const SRenderingPassInfo& passInfo, uint32 passCullMask);
+	void                 DrawVisibleSectors(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask);
 	void                 ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName);
 	void                 ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate);
 	void                 UpdateVisArea(CVisArea* pArea, const Vec3* pPoints, int nCount, const char* szName, const SVisAreaInfo& info);
 	virtual void         UpdateConnections();
 	void                 MoveObjectsIntoList(PodArray<SRNInfo>* plstVisAreasEntities, const AABB* boxArea, bool bRemoveObjects = false);
-	IVisArea*            GetVisAreaFromPos(const Vec3& vPos);
+	IVisArea*            GetVisAreaFromPos(const Vec3& vPos) const;
 	bool                 IntersectsVisAreas(const AABB& box, void** pNodeCache = 0);
 	bool                 ClipOutsideVisAreas(Sphere& sphere, Vec3 const& vNormal, void* pNodeCache = 0);
-	bool                 IsEntityVisAreaVisible(IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo);
+	bool                 IsEntityVisAreaVisible(const IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const;
 	void                 MakeActiveEntransePortalsList(const CCamera* pCamera, PodArray<CVisArea*>& lstActiveEntransePortals, CVisArea* pThisPortal, const SRenderingPassInfo& passInfo);
 	void                 MergeCameras(CCamera& cam, const CCamera& camPlus, const SRenderingPassInfo& passInfo);
 	void                 DrawOcclusionAreasIntoCBuffer(const SRenderingPassInfo& passInfo);
@@ -280,11 +266,9 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	virtual int          GetCompiledDataSize(SHotUpdateInfo* pExportInfo);
 	void                 UnregisterEngineObjectsInArea(const SHotUpdateInfo* pExportInfo, PodArray<IRenderNode*>& arrUnregisteredObjects, bool bOnlyEngineObjects);
 	void                 PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePoints, int nPrecachePointsNum);
-	void                 AddLightSource(SRenderLight* pLight, const SRenderingPassInfo& passInfo);
-	void                 AddLightSourceReqursive(SRenderLight* pLight, CVisArea* pArea, const int32 nDeepness, const SRenderingPassInfo& passInfo);
-	bool                 IsEntityVisAreaVisibleReqursive(CVisArea* pVisArea, int nMaxReqursion, PodArray<CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo);
-	bool                 IsAABBVisibleFromPoint(AABB& aabb, Vec3 vPos);
-	bool                 FindShortestPathToVisArea(CVisArea* pThisArea, CVisArea* pTargetArea, PodArray<CVisArea*>& arrVisitedAreas, int& nRecursion, const struct Shadowvolume& sv);
+	bool                 IsEntityVisAreaVisibleRecursive(const CVisArea* pVisArea, int nMaxRecursion, PodArray<const CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const;
+	bool                 IsAABBVisibleFromPoint(AABB& aabb, Vec3 vPos) const;
+	bool                 FindShortestPathToVisArea(CVisArea* pThisArea, CVisArea* pTargetArea, PodArray<CVisArea*>& arrVisitedAreas, int& nRecursion, const struct Shadowvolume& sv) const;
 
 	int                  GetNumberOfVisArea() const;                            // the function give back the accumlated number of visareas and portals
 	IVisArea*            GetVisAreaById(int nID) const;                         // give back the visarea interface based on the id (0..GetNumberOfVisArea()) it can be a visarea or a portal
@@ -349,5 +333,3 @@ private:
 	std::vector<SActiveVerts> m_allActiveVerts;
 #endif
 };
-
-#endif // VisArea_H

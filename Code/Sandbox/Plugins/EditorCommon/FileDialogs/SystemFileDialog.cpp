@@ -2,8 +2,6 @@
 #include "StdAfx.h"
 #include "SystemFileDialog.h"
 
-#include <QTranslator>
-
 bool IsWildcardExtension(const QString& ext)
 {
 	return ext == "*";
@@ -172,4 +170,3 @@ QString CSystemFileDialog::RunSelectDirectory(const RunParams& runParams, QWidge
 	}
 	return selectedFiles.front();
 }
-

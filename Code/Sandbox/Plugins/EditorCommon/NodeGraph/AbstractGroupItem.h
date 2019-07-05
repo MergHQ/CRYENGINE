@@ -2,54 +2,72 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+#include "GroupEditorData.h"
 #include "AbstractNodeGraphViewModelItem.h"
 
 #include <CrySandbox/CrySignal.h>
+#include <Serialization/PropertyTreeLegacy/Serialization.h>
 
-#include <QVariant>
-#include <QString>
 #include <QColor>
+#include <QString>
 #include <QPointF>
+#include <QVariant>
 
 namespace CryGraphEditor {
 
+class CGroupWidget;
+class CNodeGraphView;
 class CNodeGraphViewModel;
-
-typedef std::vector<CAbstractNodeGraphViewModelItem*> ItemArray;
 
 class EDITOR_COMMON_API CAbstractGroupItem : public CAbstractNodeGraphViewModelItem
 {
 public:
 	enum : int32 { Type = eItemType_Group };
 
-public:
-	CAbstractGroupItem(CNodeGraphViewModel& viewModel);
+public:	
+	CAbstractGroupItem(CGroupEditorData& data, CNodeGraphViewModel& viewModel);
 	virtual ~CAbstractGroupItem();
 
+public:
 	// CAbstractNodeGraphViewModelItem
-	virtual int32   GetType() const override     { return Type; }
-
-	virtual QPointF GetPosition() const override { return m_position; }
-	virtual void    SetPosition(QPointF position) override;
+	virtual QVariant           GetId() const override { return m_data.GetId(); }
+	virtual int32              GetType() const override { return Type; }
+	virtual QString            GetName() const override;
+	virtual void               SetName(const QString& name) override;
+	virtual QPointF            GetPosition() const override;
+	virtual void               SetPosition(QPointF position) override;
 	// ~CAbstractNodeGraphViewModelItem
 
-	//virtual CGroupWidget*      CreateWidget(CNodeGraphView& view) = 0;
-	//virtual QVariant            GetInstanceId() const = 0;
+public:
+	virtual CGroupWidget*      GetWidget() const { return nullptr; }
+	virtual CGroupWidget*      CreateWidget(CNodeGraphView& view) { return nullptr; }
+	virtual const char*        GetStyleId() const { return "Group"; }
+	
+public:
+	CGroupEditorData&          GetEditorData()        { return m_data; }
+	const CGroupEditorData&    GetEditorData() const  { return m_data; }
 
-	//virtual const ItemArray& GetItems() const = 0;
+	CGroupItems&               GetItems()       { return GetEditorData().GetItems(); }
+	const CGroupItems&         GetItems() const { return GetEditorData().GetItems(); }
 
-	//
-	const QString& GetName() const  { return m_name; }
-	const QColor&  GetColor() const { return m_color; }
+	void                       LinkItem(CAbstractNodeGraphViewModelItem& item);
+	void                       UnlinkItem(CAbstractNodeGraphViewModelItem& item);
 
 public:
-	CCrySignal<void()> SignalPositionChanged;
+	void                       OnDataChanged();
+
+public:
+	CCrySignal<void()>                    SignalAABBChanged;
+	CCrySignal<void()>                    SignalPositionChanged;
+	CCrySignal<void(CAbstractGroupItem&)> SignalItemsChanged;
 
 private:
-	QPointF m_position;
-	QString m_name;
-	QColor  m_color;
+	void                       UpdateLinkedItemsPositions();
+
+private:
+	CGroupEditorData&          m_data;
+	QColor                     m_color;
 };
 
-}
-
+} //namespace CryGraphEditor

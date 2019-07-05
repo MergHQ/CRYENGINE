@@ -1,8 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "QCollapsibleFrame.h"
 
-#include <qtabbar.h>
+#include <QApplication>
+#include <QEvent>
+#include <QFrame>
+#include <QLabel>
+#include <QPushButton>
+#include <QStyleOption>
+#include <QTabBar>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 // removes dark tinting
 const CryIconColorMap CCollapsibleFrameHeader::s_colorMap = []

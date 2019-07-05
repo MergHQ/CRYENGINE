@@ -18,7 +18,7 @@ const char* ModelAnimationHeader::GetFilePath() const
 	else if (m_nAssetType == LMG_File)
 		return g_AnimationManager.m_arrGlobalLMG[m_nGlobalAnimId].GetFilePath();
 
-	assert(0);
+	CRY_ASSERT(0);
 	return 0;
 }
 
@@ -169,12 +169,12 @@ int CAnimationSet::LoadFileCAF(const char* szFilePath, const char* szAnimName)
 	if (IsCreated == 0)
 	{
 		//asset is not created, so let's create by loading the CAF
-		assert(rCAF.GetControllersCount() == 0);
+		CRY_ASSERT(rCAF.GetControllersCount() == 0);
 		uint8 status = rCAF.LoadCAF();
 		if (status)
 		{
 			rCAF.ClearAssetRequested();
-			assert(rCAF.IsAssetLoaded());
+			CRY_ASSERT(rCAF.IsAssetLoaded());
 			if (Console::GetInst().ca_UseIMG_CAF)
 				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, rCAF.GetFilePath(), "Unnecessary Loading of CAF-files: Probably no valid IMG-file available");
 		}
@@ -195,7 +195,7 @@ int CAnimationSet::LoadFileCAF(const char* szFilePath, const char* szAnimName)
 					if (status)
 					{
 						rCAF.ClearAssetRequested();
-						assert(rCAF.IsAssetLoaded());
+						CRY_ASSERT(rCAF.IsAssetLoaded());
 						if (Console::GetInst().ca_UseIMG_CAF)
 							g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, rCAF.GetFilePath(), "Unnecessary Loading of CAF-files: Probably no valid IMG-file availbale");
 					}
@@ -251,7 +251,7 @@ int CAnimationSet::LoadFileAIM(const char* szFilePath, const char* szAnimName, c
 
 	//----------------------------------------------------------------------------------------
 
-	assert(rAIM.GetControllersCount() == 0);
+	CRY_ASSERT(rAIM.GetControllersCount() == 0);
 	uint8 status = rAIM.LoadAIM();
 	if (status)
 	{
@@ -302,12 +302,12 @@ int CAnimationSet::LoadFileANM(const char* szFileName, const char* szAnimName, D
 		if (loaded)
 		{
 			// No asserts on data
-			//assert(g_AnimationManager.m_arrGlobalCAF[nGlobalAnimID].m_arrController.size());
+			//CRY_ASSERT(g_AnimationManager.m_arrGlobalCAF[nGlobalAnimID].m_arrController.size());
 		}
 		else
 		{
-			//assert(g_AnimationManager.m_arrGlobalCAF[nGlobalAnimID].m_arrController.size()==0);
-			//assert(g_AnimationManager.m_arrGlobalCAF[nGlobalAnimID].m_arrController);
+			//CRY_ASSERT(g_AnimationManager.m_arrGlobalCAF[nGlobalAnimID].m_arrController.size()==0);
+			//CRY_ASSERT(g_AnimationManager.m_arrGlobalCAF[nGlobalAnimID].m_arrController);
 			g_AnimationManager.LoadAnimationTCB(nGlobalAnimID, m_LoadCurrAnimation, pCGA, pIDefaultSkeleton);
 		}
 
@@ -488,7 +488,7 @@ uint32 CAnimationSet::GetFilePathCRCByAnimID(int nAnimationId) const
 	if (anim->m_nAssetType == LMG_File)
 		return g_AnimationManager.m_arrGlobalLMG[GlobalAnimationID].GetFilePathCRC32();
 
-	assert(0);
+	CRY_ASSERT(0);
 	return 0;
 }
 
@@ -701,8 +701,9 @@ f32 CAnimationSet::GetDuration_sec(int nAnimationId) const
 	{
 		uint32 GlobalAnimationID = anim->m_nGlobalAnimId;
 		GlobalAnimationHeaderLMG& rGlobalAnimHeader = g_AnimationManager.m_arrGlobalLMG[GlobalAnimationID];
-		uint32 lmg = rGlobalAnimHeader.IsAssetLMG();
-		assert(lmg);
+
+		CRY_ASSERT(rGlobalAnimHeader.IsAssetLMG());
+
 		if (rGlobalAnimHeader.IsAssetLMGValid() == 0)
 			return 0;
 		if (rGlobalAnimHeader.IsAssetInternalType())
@@ -724,7 +725,7 @@ f32 CAnimationSet::GetDuration_sec(int nAnimationId) const
 				for (uint32 e = 0; e < numBS; e++)
 				{
 					int32 aid = GetAnimIDByCRC(rGlobalAnimHeaderBS.m_arrParameter[e].m_animName.m_CRC32);
-					assert(aid >= 0);
+					CRY_ASSERT(aid >= 0);
 					fDuration += GetDuration_sec(aid);
 					totalExamples += 1.0f;
 				}
@@ -740,14 +741,14 @@ f32 CAnimationSet::GetDuration_sec(int nAnimationId) const
 			for (uint32 i = 0; i < numBS; i++)
 			{
 				int32 aid = GetAnimIDByCRC(rGlobalAnimHeader.m_arrParameter[i].m_animName.m_CRC32);
-				assert(aid >= 0);
+				CRY_ASSERT(aid >= 0);
 				fDuration += GetDuration_sec(aid);
 			}
 			return fDuration / numBS;
 		}
 	}
 
-	assert(0);
+	CRY_ASSERT(0);
 	return INVALID_DURATION;
 }
 
@@ -777,7 +778,7 @@ uint32 CAnimationSet::GetAnimationFlags(int nAnimationId) const
 	if (pAnimHeader->m_nAssetType == LMG_File)
 		return g_AnimationManager.m_arrGlobalLMG[nGlobalAnimationID].m_nFlags;
 
-	assert(0);
+	CRY_ASSERT(0);
 	return 0;
 }
 
@@ -803,7 +804,7 @@ const char* CAnimationSet::GetAnimationStatus(int nAnimationId) const
 	if (pAnimHeader->m_nAssetType == LMG_File)
 		return g_AnimationManager.m_arrGlobalLMG[nGlobalAnimationID].m_Status.c_str();
 
-	assert(0);
+	CRY_ASSERT(0);
 	return 0;
 }
 
@@ -845,8 +846,6 @@ void CAnimationSet::AddRef(const int32 nAnimationId) const
 		}
 		else
 		{
-			uint32 totalExamples = 0;
-
 			uint32 numBlendSpaces = rLMG.m_arrCombinedBlendSpaces.size();
 			for (uint32 bs = 0; bs < numBlendSpaces; bs++)
 			{
@@ -907,8 +906,6 @@ void CAnimationSet::Release(const int32 nAnimationId) const
 		}
 		else
 		{
-			uint32 totalExamples = 0;
-
 			uint32 numBlendSpaces = rLMG.m_arrCombinedBlendSpaces.size();
 			for (uint32 bs = 0; bs < numBlendSpaces; bs++)
 			{
@@ -987,8 +984,7 @@ bool CAnimationSet::GetAnimationDCCWorldSpaceLocation(const CAnimation* pAnim, Q
 		return true; // the startLocation is already valid at this point
 
 	const IController* pController = rCAF.GetControllerByJointCRC32(nControllerID);
-	assert(pController);
-	if (!pController)
+	if (!CRY_VERIFY(pController))
 		return true;
 
 	QuatT key0(IDENTITY);
@@ -1101,8 +1097,8 @@ int32 CAnimationSet::GetGlobalIDByAnimID(int nAnimationId) const
 
 uint32 CAnimationSet::GetAnimationSize(const uint32 nAnimationId) const
 {
-	assert(nAnimationId >= 0);
-	assert((int)nAnimationId < m_arrAnimations.size());
+	CRY_ASSERT(nAnimationId >= 0);
+	CRY_ASSERT((int)nAnimationId < m_arrAnimations.size());
 	const ModelAnimationHeader& header = m_arrAnimations[nAnimationId];
 
 	int32 globalID = header.m_nGlobalAnimId;
@@ -1123,15 +1119,16 @@ uint32 CAnimationSet::GetAnimationSize(const uint32 nAnimationId) const
 #ifdef EDITOR_PCDEBUGCODE
 const char* CAnimationSet::GetDBAFilePath(const uint32 nAnimationId) const
 {
-	assert(nAnimationId >= 0);
-	assert((int)nAnimationId < m_arrAnimations.size());
+	CRY_ASSERT(nAnimationId >= 0);
+	CRY_ASSERT((int)nAnimationId < m_arrAnimations.size());
 	const ModelAnimationHeader& header = m_arrAnimations[nAnimationId];
 
 	int32 globalID = header.m_nGlobalAnimId;
 	if (header.m_nAssetType == CAF_File)
 	{
-		assert(globalID >= 0);
-		assert(globalID < g_AnimationManager.m_arrGlobalCAF.size());
+		const CAnimationManager& animationManager = g_pCharacterManager->GetAnimationManager();
+		CRY_ASSERT(globalID >= 0);
+		CRY_ASSERT(globalID < animationManager.m_arrGlobalCAF.size());
 		return g_pCharacterManager->GetDBAFilePathByGlobalID(globalID);
 	}
 	else
@@ -1142,34 +1139,36 @@ const char* CAnimationSet::GetDBAFilePath(const uint32 nAnimationId) const
 #ifdef EDITOR_PCDEBUGCODE
 uint32 CAnimationSet::GetTotalPosKeys(const uint32 nAnimationId) const
 {
-	assert(nAnimationId >= 0);
-	assert((int)nAnimationId < m_arrAnimations.size());
+	CRY_ASSERT(nAnimationId >= 0);
+	CRY_ASSERT((int)nAnimationId < m_arrAnimations.size());
 	const ModelAnimationHeader& header = m_arrAnimations[nAnimationId];
 
 	int32 globalID = header.m_nGlobalAnimId;
 
 	if (header.m_nAssetType == CAF_File)
 	{
-		assert(globalID >= 0);
-		assert(globalID < g_AnimationManager.m_arrGlobalCAF.size());
-		return g_AnimationManager.m_arrGlobalCAF[globalID].GetTotalPosKeys();
+		const CAnimationManager& animationManager = g_pCharacterManager->GetAnimationManager();
+		CRY_ASSERT(globalID >= 0);
+		CRY_ASSERT(globalID < animationManager.m_arrGlobalCAF.size());
+		return animationManager.m_arrGlobalCAF[globalID].GetTotalPosKeys();
 	}
 	return 0;
 }
 
 uint32 CAnimationSet::GetTotalRotKeys(const uint32 nAnimationId) const
 {
-	assert(nAnimationId >= 0);
-	assert((int)nAnimationId < m_arrAnimations.size());
+	CRY_ASSERT(nAnimationId >= 0);
+	CRY_ASSERT((int)nAnimationId < m_arrAnimations.size());
 	const ModelAnimationHeader& header = m_arrAnimations[nAnimationId];
 
 	int32 globalID = header.m_nGlobalAnimId;
 
 	if (header.m_nAssetType == CAF_File)
 	{
-		assert(globalID >= 0);
-		assert(globalID < g_AnimationManager.m_arrGlobalCAF.size());
-		return g_AnimationManager.m_arrGlobalCAF[globalID].GetTotalRotKeys();
+		const CAnimationManager& animationManager = g_pCharacterManager->GetAnimationManager();
+		CRY_ASSERT(globalID >= 0);
+		CRY_ASSERT(globalID < animationManager.m_arrGlobalCAF.size());
+		return animationManager.m_arrGlobalCAF[globalID].GetTotalRotKeys();
 	}
 	return 0;
 }
@@ -1406,7 +1405,7 @@ void CAnimationSet::GetSubAnimations(DynArray<int>& animIdsOut, const int animId
 		return;
 
 	const GlobalAnimationHeaderLMG& bspaceHeader = g_AnimationManager.m_arrGlobalLMG[pHeader->m_nGlobalAnimId];
-	assert(bspaceHeader.IsAssetLMG());
+	CRY_ASSERT(bspaceHeader.IsAssetLMG());
 
 	for (uint32 i = 0; i < bspaceHeader.m_numExamples; ++i)
 	{

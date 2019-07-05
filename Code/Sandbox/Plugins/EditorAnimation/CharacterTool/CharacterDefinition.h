@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include <CryMath/Cry_Math.h>
-#include <CryAnimation/ICryAnimation.h>
 #include <CryAnimation/IAttachment.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryMath/Cry_Math.h>
+#include <CryPhysics/physinterface.h>
+#include <CrySerialization/Forward.h>
 #include <vector>
 #include <array>
-#include <CrySerialization/Forward.h>
 
 struct ICharacterInstance;
 
@@ -91,6 +92,7 @@ struct CharacterAttachment
 	bool                 m_updateMirror;
 	QuatT                m_boneTrans, m_boneTransMirror;
 	Vec3                 m_dirChild;
+	int                  m_submtlId;
 
 	struct ProxySource
 	{
@@ -139,6 +141,7 @@ struct CharacterAttachment
 		, m_boneTrans(IDENTITY)
 		, m_boneTransMirror(IDENTITY)
 		, m_dirChild(ZERO)
+		, m_submtlId(0)
 	{
 	}
 
@@ -148,6 +151,16 @@ struct CharacterAttachment
 	void       ChangeProxyType();
 	void       GenerateMesh();
 	void       UpdateMirrorInfo(int idBone, const IDefaultSkeleton& skel);
+
+private:
+
+	void SerializeBone(Serialization::IArchive& ar);
+	void SerializeFace(Serialization::IArchive& ar);
+	void SerializeSkin(Serialization::IArchive& ar);
+	void SerializeProxy(Serialization::IArchive& ar);
+	void SerializePRow(Serialization::IArchive& ar);
+	void SerializeVCloth(Serialization::IArchive& ar);
+
 };
 
 struct ICryAnimation;
@@ -156,6 +169,7 @@ struct CharacterDefinition
 {
 	bool                        m_initialized;
 	bool                        m_physEdit, m_physNeedsApply;
+	int                         m_physLod;
 	string                      skeleton;
 	string                      materialPath;
 	string                      physics;
@@ -172,6 +186,7 @@ struct CharacterDefinition
 	CharacterDefinition()
 	{
 		m_initialized = m_physEdit = m_physNeedsApply = false;
+		m_physLod = 0;
 		++g_meshArchiveUsed;
 	}
 	~CharacterDefinition()
@@ -215,4 +230,3 @@ struct CharacterDefinition
 };
 
 }
-

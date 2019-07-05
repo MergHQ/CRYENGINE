@@ -9,43 +9,6 @@
 #include <CryAISystem/IMovementSystem.h>
 #include <CryAISystem/MovementRequest.h>
 
-namespace
-{
-struct ShootOpDictionary
-{
-	ShootOpDictionary();
-	CXMLAttrReader<ShootOp::ShootAt> shootAt;
-	CXMLAttrReader<EFireMode>        fireMode;
-};
-
-ShootOpDictionary::ShootOpDictionary()
-{
-	shootAt.Reserve(3);
-	shootAt.Add("Target", ShootOp::AttentionTarget);
-	shootAt.Add("RefPoint", ShootOp::ReferencePoint);
-	shootAt.Add("LocalSpacePosition", ShootOp::LocalSpacePosition);
-
-	fireMode.Add("Off", FIREMODE_OFF);
-	fireMode.Add("Burst", FIREMODE_BURST);
-	fireMode.Add("Continuous", FIREMODE_CONTINUOUS);
-	fireMode.Add("Forced", FIREMODE_FORCED);
-	fireMode.Add("Aim", FIREMODE_AIM);
-	fireMode.Add("Secondary", FIREMODE_SECONDARY);
-	fireMode.Add("SecondarySmoke", FIREMODE_SECONDARY_SMOKE);
-	fireMode.Add("Melee", FIREMODE_MELEE);
-	fireMode.Add("Kill", FIREMODE_KILL);
-	fireMode.Add("BurstWhileMoving", FIREMODE_BURST_WHILE_MOVING);
-	fireMode.Add("PanicSpread", FIREMODE_PANIC_SPREAD);
-	fireMode.Add("BurstDrawFire", FIREMODE_BURST_DRAWFIRE);
-	fireMode.Add("MeleeForced", FIREMODE_MELEE_FORCED);
-	fireMode.Add("BurstSnipe", FIREMODE_BURST_SNIPE);
-	fireMode.Add("AimSweep", FIREMODE_AIM_SWEEP);
-	fireMode.Add("BurstOnce", FIREMODE_BURST_ONCE);
-}
-
-ShootOpDictionary g_shootOpDictionary;
-}
-
 ShootOp::ShootOp()
 	: m_position(ZERO)
 	, m_duration(0.0f)
@@ -62,8 +25,11 @@ ShootOp::ShootOp(const XmlNodeRef& node)
 	, m_fireMode(FIREMODE_OFF)
 	, m_stance(STANCE_NULL)
 {
-	g_shootOpDictionary.shootAt.Get(node, "at", m_shootAt, true);
-	g_shootOpDictionary.fireMode.Get(node, "fireMode", m_fireMode, true);
+	const ShootOpDictionary shootOpDictionary;
+	const AgentDictionary agentDictionary;
+
+	shootOpDictionary.shootAtXml.Get(node, "at", m_shootAt, true);
+	agentDictionary.fireModeXml.Get(node, "fireMode", m_fireMode, true);
 	node->getAttr("position", m_position);
 	node->getAttr("duration", m_duration);
 	s_xml.GetStance(node, "stance", m_stance);
@@ -95,7 +61,7 @@ void ShootOp::Enter(CPipeUser& pipeUser)
 	movementRequest.type = MovementRequest::Stop;
 	gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 
-	m_timeWhenShootingShouldEnd = gEnv->pTimer->GetFrameStartTime() + CTimeValue(m_duration);
+	m_timeWhenShootingShouldEnd = GetAISystem()->GetFrameStartTime() + CTimeValue(m_duration);
 }
 
 void ShootOp::Leave(CPipeUser& pipeUser)
@@ -113,7 +79,7 @@ void ShootOp::Update(CPipeUser& pipeUser)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	const CTimeValue& now = gEnv->pTimer->GetFrameStartTime();
+	const CTimeValue& now = GetAISystem()->GetFrameStartTime();
 
 	if (now >= m_timeWhenShootingShouldEnd)
 		GoalOpSucceeded();

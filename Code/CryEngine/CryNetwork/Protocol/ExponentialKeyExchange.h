@@ -10,9 +10,6 @@
    - 13/03/2007   : Created by Lin Luo
 *************************************************************************/
 
-#ifndef __EXPONENTIALKEYEXCHANGE_H__
-#define __EXPONENTIALKEYEXCHANGE_H__
-
 #pragma once
 
 #include <CrySystem/IConsole.h>
@@ -52,4 +49,3 @@ private:
 	KEY_TYPE m_k;
 };
 
-#endif

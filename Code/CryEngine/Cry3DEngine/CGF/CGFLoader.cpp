@@ -16,12 +16,12 @@
 #include <CryCore/TypeInfo_impl.h>
 #include <CryCore/Common_TypeInfo2.h>
 #include <CryString/StringUtils.h>
-#include <CrySystem/InplaceFactory.h>
 #include <CryString/CryPath.h>
 #include "ReadOnlyChunkFile.h"
 #include <CryCore/CryCustomTypes.h>
 
 #include <Cry3DEngine/IStatObj.h>
+#include <CryPhysics/physinterface.h>
 
 // #define DEBUG_DUMP_RBATCHES
 #define VERTEX_SCALE 0.01f
@@ -33,44 +33,15 @@ enum { MAX_NUMBER_OF_BONES = 65534 };
 
 namespace
 {
-// Templated construct helper function using an inplace factory
-//
-// Called from the templated New<T, Expr> function below. Returns a typed
-// pointer to the inplace constructed object.
-template<typename T, typename InPlaceFactory>
-T* Construct(
-  const InPlaceFactory& factory,
-  void* (*pAllocFnc)(size_t))
-{
-	return reinterpret_cast<T*>(factory.template apply<T>(pAllocFnc(sizeof(T))));
-}
-
-// Templated construct helper function using an inplace factory
-//
-// Called from the templated New<T, Expr> function below. Returns a typed
-// pointer to the inplace constructed object.
-template<typename T>
-T* Construct(void* (*pAllocFnc)(size_t))
-{
-	return new(pAllocFnc(sizeof(T)))T;
-}
-
-// Templated destruct helper function
-//
-// Calls the object's destructor and returns a void pointer to the storage
-template<typename T>
-void Destruct(T* obj, void (* pDestructFnc)(void*))
-{
-	obj->~T();
-	pDestructFnc(reinterpret_cast<void*>(obj));
-}
+	template<typename T, typename... TConstructorParams>
+	T* Construct(void* (*pAllocFnc)(size_t), TConstructorParams&&... params)
+	{
+		return new (pAllocFnc(sizeof(T))) T(std::forward<TConstructorParams>(params)...);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CLoaderCGF::CLoaderCGF(
-  AllocFncPtr pAllocFnc,
-  DestructFncPtr pDestructFnc,
-  bool bAllowStreamSharing)
+CLoaderCGF::CLoaderCGF(AllocFncPtr pAllocFnc, DestructFncPtr pDestructFnc, bool bAllowStreamSharing)
 	: m_pAllocFnc(pAllocFnc)
 	, m_pDestructFnc(pDestructFnc)
 {
@@ -93,18 +64,17 @@ CLoaderCGF::CLoaderCGF(
 
 //////////////////////////////////////////////////////////////////////////
 CLoaderCGF::~CLoaderCGF()
-{
-}
+{}
 
 //////////////////////////////////////////////////////////////////////////
-CContentCGF* CLoaderCGF::LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+CContentCGF* CLoaderCGF::LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	CContentCGF* const pContentCGF = new CContentCGF(filename);
 	if (!pContentCGF)
 	{
 		return NULL;
 	}
-	if (!LoadCGF(pContentCGF, filename, chunkFile, pListener, nLoadingFlags))
+	if (!LoadCGF(pContentCGF, filename, chunkFile, pListener, loadingFlags))
 	{
 		delete pContentCGF;
 		return NULL;
@@ -113,7 +83,7 @@ CContentCGF* CLoaderCGF::LoadCGF(const char* filename, IChunkFile& chunkFile, IL
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CLoaderCGF::LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+bool CLoaderCGF::LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -132,10 +102,10 @@ bool CLoaderCGF::LoadCGF(CContentCGF* pContentCGF, const char* filename, IChunkF
 		SYNCHRONOUS_LOADING_TICK();
 	}
 
-	return LoadCGF_Int(pContentCGF, filename, chunkFile, pListener, nLoadingFlags);
+	return LoadCGF_Int(pContentCGF, filename, chunkFile, pListener, loadingFlags);
 }
 
-bool CLoaderCGF::LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+bool CLoaderCGF::LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, size_t nDataLen, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -154,10 +124,10 @@ bool CLoaderCGF::LoadCGFFromMem(CContentCGF* pContentCGF, const void* pData, siz
 		SYNCHRONOUS_LOADING_TICK();
 	}
 
-	return LoadCGF_Int(pContentCGF, pContentCGF->GetFilename(), chunkFile, pListener, nLoadingFlags);
+	return LoadCGF_Int(pContentCGF, pContentCGF->GetFilename(), chunkFile, pListener, loadingFlags);
 }
 
-bool CLoaderCGF::LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, unsigned long nLoadingFlags)
+bool CLoaderCGF::LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
 {
 	m_pListener = pListener;
 	m_bUseReadOnlyMesh = chunkFile.IsReadOnly();
@@ -186,7 +156,7 @@ bool CLoaderCGF::LoadCGF_Int(CContentCGF* pContentCGF, const char* filename, ICh
 		  !stricmp(pExt, "skel");
 	}
 
-	const bool bJustGeometry = (nLoadingFlags& IStatObj::ELoadingFlagsJustGeometry) != 0;
+	const bool bJustGeometry = (loadingFlags& IStatObj::ELoadingFlagsJustGeometry) != 0;
 
 	if (!LoadChunks(bJustGeometry))
 	{
@@ -1465,8 +1435,7 @@ bool SplitIntoRBatches(
 				if (vmax < i1) vmax = i1;
 				if (vmax < i2) vmax = i2;
 			}
-			uint32 a = pMesh->m_subsets[m].nFirstVertId;
-			uint32 b = pMesh->m_subsets[m].nNumVerts;
+
 			if (pMesh->m_subsets[m].nFirstVertId != vmin ||
 			    pMesh->m_subsets[m].nNumVerts != vmax - vmin + 1)
 			{
@@ -2153,7 +2122,9 @@ bool CLoaderCGF::ProcessSkinning()
 		//init internal morph-targets
 		MorphTargets* pMorphtarget = pSkinningInfo->m_arrMorphTargets[it];
 		uint32 numMorphVerts = pMorphtarget->m_arrIntMorph.size();
+#if !defined(_RELEASE)
 		uint32 intVertexCount = pSkinningInfo->m_arrIntVertices.size();
+#endif
 		for (uint32 i = 0; i < numMorphVerts; i++)
 		{
 			uint32 idx = pMorphtarget->m_arrIntMorph[i].nVertexId;
@@ -2358,7 +2329,7 @@ bool CLoaderCGF::LoadNodeChunk(IChunkFile::ChunkDesc* pChunkDesc, bool bJustGeom
 	SwapEndian(*nodeChunk, pChunkDesc->bSwapEndian);
 	pChunkDesc->bSwapEndian = false;
 
-	CNodeCGF* pNodeCGF = Construct<CNodeCGF>(InplaceFactory(m_pDestructFnc), m_pAllocFnc);
+	CNodeCGF* pNodeCGF = Construct<CNodeCGF>(m_pAllocFnc, m_pDestructFnc);
 	m_pCGF->AddNode(pNodeCGF);
 
 	cry_strcpy(pNodeCGF->name, nodeChunk->name);
@@ -2674,7 +2645,7 @@ bool CLoaderCGF::LoadGeomChunk(CNodeCGF* pNode, IChunkFile::ChunkDesc* pChunkDes
 
 				int32* pNumLinks;
 				StepData(pNumLinks, pMeshChunkData, 1, bSwapEndianness);
-				if (pNumLinks <= 0)
+				if (!pNumLinks)
 				{
 					m_LastError.Format("%s: Number of links for vertex is invalid: %i", __FUNCTION__, pNumLinks);
 					return false;
@@ -3064,7 +3035,6 @@ bool CLoaderCGF::LoadBoneMappingStreamChunk(CMesh& mesh, const MESH_CHUNK_DESC_0
 		const SMeshBoneMapping_uint8* const pSrcBoneMapping = (const SMeshBoneMapping_uint8*)pStreamData;
 
 		const int vertexCount = mesh.GetVertexCount();
-		const int indexCount = mesh.GetIndexCount();
 
 		for (int subset = 0; subset < mesh.m_subsets.size(); ++subset)
 		{
@@ -3894,7 +3864,7 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 		memcpy(&chunk, pChunkDesc->data, sizeof(chunk));
 		SwapEndian(chunk, bSwapEndianness);
 
-		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(InplaceFactory(m_pDestructFnc), m_pAllocFnc);
+		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(m_pAllocFnc, m_pDestructFnc);
 		pMtlCGF->nChunkId = pChunkDesc->chunkId;
 		m_pCGF->AddMaterial(pMtlCGF);
 
@@ -3979,7 +3949,7 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 			}
 		}
 
-		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(InplaceFactory(m_pDestructFnc), m_pAllocFnc);
+		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(m_pAllocFnc, m_pDestructFnc);
 		pMtlCGF->nChunkId = pChunkDesc->chunkId;
 		m_pCGF->AddMaterial(pMtlCGF);
 		cry_strcpy(pMtlCGF->name, chunk.name);

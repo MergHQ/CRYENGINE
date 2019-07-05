@@ -151,7 +151,7 @@ bool CRadio::OnAction(const ActionId& actionId, int activationMode, float value)
 	if(m_TeamName.empty())
 		return false;
 
-	const CGameActions& actions = g_pGame->Actions();
+	//const CGameActions& actions = g_pGame->Actions();
 
 	m_requestedGroup = -1;
 
@@ -287,7 +287,7 @@ bool CRadio::OnInputEvent( const SInputEvent &event )
 
 	//PlayVoice(pSoundName);
 
-	int id=(m_currentGroup*RADIO_GROUP_SIZE+iKey)-1;
+	//int id=(m_currentGroup*RADIO_GROUP_SIZE+iKey)-1;
 	//m_pGameRules->SendRadioMessage(gEnv->pGameFramework->GetClientActor()->GetEntityId(),id);
 
 	CancelRadio();
@@ -307,9 +307,12 @@ void CRadio::OnRadioMessage(int id, EntityId fromId)
 
 	char *pSoundName,*pSoundText;
 	int variations = 1;
+#if defined(USE_CRY_ASSERT)
 	bool result=GetRadioSoundName(m_pGameRules,m_TeamName,groupId+1,keyId+1,&pSoundName,&pSoundText, &variations);
-
 	assert(result);
+#else
+	GetRadioSoundName(m_pGameRules,m_TeamName,groupId+1,keyId+1,&pSoundName,&pSoundText, &variations);
+#endif
 
 	if(g_pGame->GetGameRules())
 	{		

@@ -11,7 +11,7 @@
 #include <CrySerialization/Enum.h>
 
 class QVBoxLayout;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class CTrackViewSequenceTabWidget;
 
 namespace
@@ -58,14 +58,14 @@ protected:
 	virtual void OnNodeChanged(CTrackViewNode* pNode, ENodeChangeType type) override;
 	// ~CTrackViewCoreComponent
 
-private slots:
-	void OnPropertiesUndoPush();
+private:
+	void OnPropertiesBeginUndo();
 	void OnPropertiesChanged();
+	void OnPropertiesEndUndo(bool undoAccepted);
 
 private:
-	bool                     m_bUndoPush;
+	bool                                  m_bUndoPush;
 	//bool m_bDontUpdateProperties;
-	QPropertyTree*           m_pPropertyTree;
+	QPropertyTreeLegacy*                        m_pPropertyTree;
 	std::vector<STrackViewPropertiesRoot> m_properties;
 };
-

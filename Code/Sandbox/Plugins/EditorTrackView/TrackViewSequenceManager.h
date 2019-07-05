@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine HeaderFile.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 #include "Nodes/TrackViewSequence.h"
@@ -10,6 +7,7 @@
 
 struct ITrackViewSequenceManagerListener
 {
+	virtual ~ITrackViewSequenceManagerListener()                  {}
 	virtual void OnSequenceAdded(CTrackViewSequence* pSequence)   {}
 	virtual void OnSequenceRemoved(CTrackViewSequence* pSequence) {}
 };
@@ -64,14 +62,10 @@ private:
 	IAnimSequence* OnCreateSequenceObject(const string& name);
 	void           OnDeleteSequenceObject(const string& name);
 
-	void           OnObjectEvent(CObjectEvent& event);
-	void           OnBeforeObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform);
-	void           OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void           OnBeforeObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform);
-	void           OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void           HandleObjectRename(CBaseObject* pObject);
-	void           HandleObjectDelete(CBaseObject* pObject);
-	void           HandleAttachmentChange(CBaseObject* pObject, EAttachmentChangeType event);
+	void           OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
+	void           HandleObjectRename(const CBaseObject* pObject);
+	void           HandleObjectDelete(const CBaseObject* pObject);
+	void           HandleAttachmentChange(const CBaseObject* pObject, EAttachmentChangeType event);
 
 	std::vector<ITrackViewSequenceManagerListener*>  m_listeners;
 	std::vector<std::unique_ptr<CTrackViewSequence>> m_sequences;
@@ -85,4 +79,3 @@ private:
 	// Used to handle object attach/detach
 	std::unordered_map<CTrackViewNode*, Matrix34> m_prevTransforms;
 };
-

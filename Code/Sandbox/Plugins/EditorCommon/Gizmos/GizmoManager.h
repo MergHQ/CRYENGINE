@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-
+#include "EditorCommonAPI.h"
 #include "IEditor.h"
 #include "IGizmoManager.h"
 #include <EditorFramework/Preferences.h>
@@ -22,8 +22,6 @@ struct EDITOR_COMMON_API SGizmoPreferences : public SPreferencePage
 		: SPreferencePage("Gizmo", "Viewport/Gizmo")
 		, axisGizmoSize(0.15f)
 		, helperScale(1.0f)
-		, axisConstraint(AXIS_XY)
-		, referenceCoordSys(COORDS_LOCAL)
 		, enabled(true)
 		, axisGizmoText(false)
 		, rotationInteraction(eRotationDial)
@@ -34,8 +32,6 @@ struct EDITOR_COMMON_API SGizmoPreferences : public SPreferencePage
 
 	float                         axisGizmoSize;
 	float                         helperScale;
-	AxisConstrains                axisConstraint;
-	RefCoordSys                   referenceCoordSys;
 	bool                          enabled;
 	bool                          axisGizmoText;
 	enum ERotationInteractionMode rotationInteraction;
@@ -51,23 +47,22 @@ public:
 	ITransformManipulator* AddManipulator(ITransformManipulatorOwner* pOwner);
 	void                   RemoveManipulator(ITransformManipulator* pManipulator);
 
-	void    AddGizmo(CGizmo* gizmo);
-	void    RemoveGizmo(CGizmo* gizmo);
+	void                   AddGizmo(CGizmo* gizmo);
+	void                   RemoveGizmo(CGizmo* gizmo);
 
-	int     GetGizmoCount() const override;
-	CGizmo* GetGizmoByIndex(int nIndex) const override;
+	int                    GetGizmoCount() const override;
+	CGizmo*                GetGizmoByIndex(int nIndex) const override;
 
-	CGizmo* GetHighlightedGizmo() const override;
+	CGizmo*                GetHighlightedGizmo() const override;
 
-	void    Display(DisplayContext& dc) override;
-	bool    HitTest(HitContext& hc);
+	void                   Display(SDisplayContext& dc) override;
+	bool                   HitTest(HitContext& hc);
 
-	bool    HandleMouseInput(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags) override;
+	bool                   HandleMouseInput(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 
 private:
 	typedef std::set<CGizmoPtr> Gizmos;
-	Gizmos m_gizmos;
+	Gizmos    m_gizmos;
 	//! gizmo that cursor is over. It receives input events and may start interaction
 	CGizmoPtr m_highlighted;
 };
-

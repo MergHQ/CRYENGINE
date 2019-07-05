@@ -5,7 +5,7 @@
 
 #include "NodeGraphView.h"
 #include "NodeInfoWidget.h"
-#include "NodeHeaderWidget.h"
+#include "HeaderWidget.h"
 #include "NodeWidgetStyle.h"
 
 #include "AbstractNodeContentWidget.h"
@@ -45,7 +45,7 @@ CNodeWidget::CNodeWidget(CAbstractNodeItem& item, CNodeGraphView& view)
 	m_pContentLayout->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
 	m_pInfoBar = new CNodeInfoWidget(*this);
-	m_pHeader = new CNodeHeader(*this);
+	m_pHeader = new CHeaderWidget(*this);
 
 	pLayout->addItem(m_pHeader);
 	pLayout->setAlignment(m_pHeader, Qt::AlignVCenter);
@@ -331,7 +331,7 @@ void CNodeWidget::EditName()
 	m_pHeader->EditName();
 }
 
-void CNodeWidget::AddHeaderIcon(CNodeHeaderIcon* pHeaderIcon, CNodeHeader::EIconSlot slot)
+void CNodeWidget::AddHeaderIcon(CHeaderIconWidget* pHeaderIcon, CHeaderWidget::EIconSlot slot)
 {
 	m_pHeader->AddIcon(pHeaderIcon, slot);
 }
@@ -342,4 +342,3 @@ void CNodeWidget::SetHeaderNameWidth(int32 width)
 }
 
 }
-

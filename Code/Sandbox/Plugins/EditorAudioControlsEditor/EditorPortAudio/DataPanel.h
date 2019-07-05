@@ -2,8 +2,8 @@
 
 #pragma once
 
+#include "../Common/SharedData.h"
 #include <QWidget>
-#include <SharedData.h>
 
 class QFilteringPanel;
 class QPushButton;
@@ -23,22 +23,31 @@ class CDataPanel final : public QWidget
 {
 public:
 
-	explicit CDataPanel(CImpl const& impl);
-
 	CDataPanel() = delete;
+	CDataPanel(CDataPanel const&) = delete;
+	CDataPanel(CDataPanel&&) = delete;
+	CDataPanel& operator=(CDataPanel const&) = delete;
+	CDataPanel& operator=(CDataPanel&&) = delete;
+
+	explicit CDataPanel(CImpl const& impl);
+	virtual ~CDataPanel() override;
 
 	void Reset();
-	void OnAboutToReload();
-	void OnReloaded();
-	void OnConnectionAdded() const;
-	void OnConnectionRemoved() const;
+	void OnBeforeReload();
+	void OnAfterReload();
 	void OnSelectConnectedItem(ControlId const id);
 	void OnFileImporterOpened();
 	void OnFileImporterClosed();
 
 private:
 
+	// QObject
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
+	// ~QObject
+
 	void OnContextMenu(QPoint const& pos);
+	void PlayEvent();
+	void StopEvent();
 	void OnImportFiles();
 	void ClearFilters();
 
@@ -48,7 +57,6 @@ private:
 	CTreeView* const         m_pTreeView;
 	QPushButton* const       m_pImportButton;
 	QFilteringPanel*         m_pFilteringPanel;
-	int const                m_nameColumn;
 };
 } // namespace PortAudio
 } // namespace Impl

@@ -9,10 +9,12 @@
 #include "GameParameters.h"
 #include <CryAnimation/ICryAnimation.h>
 #include <CryCore/TypeInfo_impl.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #include "GameXmlParamReader.h"
 
 #include "WeaponSystem.h"
+#include "Game.h"
 
 SCollisionParams::SCollisionParams(const XmlNodeRef&  collisionParamsNode)
 : damageScale(0.2f)
@@ -112,7 +114,7 @@ SExplosionParams::SExplosionParams(const XmlNodeRef& explosionParamsNode)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Unrecognised friendly_fire type");
+		CRY_ASSERT(false, "Unrecognised friendly_fire type");
 	}
 }
 
@@ -834,7 +836,7 @@ SExplosionParams*	SAmmoParams::GetExplosionParams(int index) const
 {
 	if(pExplosions)
 	{
-		CRY_ASSERT_MESSAGE(m_explosion_count > index, "SAmmoParams::GetExplosionParams - Rerquesting explosion with index > size of the array");
+		CRY_ASSERT(m_explosion_count > index, "SAmmoParams::GetExplosionParams - Rerquesting explosion with index > size of the array");
 		return pExplosions[index];
 	}
 

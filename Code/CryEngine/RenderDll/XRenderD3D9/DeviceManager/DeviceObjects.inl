@@ -130,15 +130,12 @@ inline void CDeviceObjectFactory::ExtractBasePointer(D3DBuffer* buffer, D3D11_MA
 #if BUFFER_ENABLE_DIRECT_ACCESS
 	#if CRY_RENDERER_GNM
 		base_ptr = buffer->GnmGetBaseAddress();
-	#elif CRY_PLATFORM_ORBIS
-		base_ptr = (uint8*)buffer->GetData();
 	#elif CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		// Note: temporary solution, this should be removed as soon as the device
 		// layer for Durango is available
 		void* data;
 		unsigned size = sizeof(data);
-		HRESULT hr = buffer->GetPrivateData(BufferPointerGuid, &size, &data);
-		assert(hr == S_OK);
+		CRY_VERIFY(buffer->GetPrivateData(BufferPointerGuid, &size, &data) == S_OK);
 		base_ptr = reinterpret_cast<uint8*>(data);
 	#elif (CRY_RENDERER_DIRECT3D >= 120)
 		base_ptr = CDeviceObjectFactory::Map(buffer, 0, 0, 0, mode /* MAP_DISCARD could affect the ptr */);
@@ -233,6 +230,8 @@ inline void EraseExpiredEntriesFromCache(TCache& cache, int currentFrame, int er
 
 inline void CDeviceObjectFactory::OnEndFrame(int frameID)
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	// Garbage collect native API resources and objects
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	m_pDX11Scheduler->EndOfFrame(false);
@@ -244,6 +243,9 @@ inline void CDeviceObjectFactory::OnEndFrame(int frameID)
 
 	// Garbage collect device layer resources and objects
 	TrimPipelineStates(frameID, frameID - UnusedPsoKeepAliveFrames);
+
+	// kill all dangling references to resources (defragmentation may have run after the frame)
+	GetCoreCommandList().GetGraphicsInterface()->ClearState(false);
 }
 
 inline void CDeviceObjectFactory::OnBeginFrame(int frameID)
@@ -251,4 +253,7 @@ inline void CDeviceObjectFactory::OnBeginFrame(int frameID)
 #if CRY_RENDERER_VULKAN
 	UpdateDeferredUploads();
 #endif
+
+	// kill all dangling references to resources (defragmentation may have run before the frame)
+	GetCoreCommandList().GetGraphicsInterface()->ClearState(false);
 }

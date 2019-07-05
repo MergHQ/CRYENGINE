@@ -1,25 +1,25 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Noise.h"
-#include "Layer.h"
-#include "CryEditDoc.h"
-#include "TerrainFormulaDlg.h"
-#include "Vegetation/VegetationMap.h"
-#include "TerrainGrid.h"
-#include "Util/DynamicArray2D.h"
-#include "GameEngine.h"
+#include "Heightmap.h"
 
+#include "Terrain/Noise.h"
+#include "Terrain/SurfaceType.h"
 #include "Terrain/TerrainManager.h"
-#include "SurfaceType.h"
+#include "Util/DynamicArray2D.h"
 #include "Util/ImagePainter.h"
+#include "Vegetation/VegetationMap.h"
+#include "CryEditDoc.h"
+#include "GameEngine.h"
+#include "LogFile.h"
+#include "TerrainFormulaDlg.h"
+
+#include <Controls/QuestionDialog.h>
+#include <IUndoObject.h>
+#include <QT/Widgets/QWaitProgress.h>
+#include <Util/ImageUtil.h>
 
 #include <Cry3DEngine/I3DEngine.h>
-
-#include "QT/Widgets/QWaitProgress.h"
-
-#include "Controls/QuestionDialog.h"
-
 #include <CryMath/Random.h>
 
 #define DEFAULT_TEXTURE_SIZE 4096
@@ -35,14 +35,14 @@
 #define NOISE_RANGE      255.0f
 
 //! Filename used when Holding/Fetching heightmap.
-#define HEIGHTMAP_HOLD_FETCH_FILE       "Heightmap.hld"
+#define HEIGHTMAP_HOLD_FETCH_FILE "Heightmap.hld"
 
 //! Archive block names
-#define HEIGHTMAP_LAYERINFO_BLOCK_NAME      "HeightmapLayerIdBitmap_ver3"
-#define HEIGHTMAP_LAYERINFO_BLOCK_NAME_OLD  "HeightmapLayerIdBitmap_ver2"
-#define HEIGHTMAP_RGB_BLOCK_NAME            "HeightmapRgbBitmap"
+#define HEIGHTMAP_LAYERINFO_BLOCK_NAME     "HeightmapLayerIdBitmap_ver3"
+#define HEIGHTMAP_LAYERINFO_BLOCK_NAME_OLD "HeightmapLayerIdBitmap_ver2"
+#define HEIGHTMAP_RGB_BLOCK_NAME           "HeightmapRgbBitmap"
 
-#define OVVERIDE_LAYER_SURFACETYPE_FROM 128
+#define OVVERIDE_LAYER_SURFACETYPE_FROM    128
 
 const int CHeightmap::kInitHeight = 32;
 
@@ -54,7 +54,7 @@ enum ERegionRotation
 	eRR_270,
 };
 
-namespace Private_Heightmap
+namespace
 {
 CRect GetRectMargin(const CRect& rc, const CRect& rcCrop, int nRot)
 {
@@ -82,7 +82,7 @@ struct SRgbRegion
 	int32 width;
 	int32 height;
 
-	bool IsEmpty() const
+	bool  IsEmpty() const
 	{
 		return !width || !height;
 	}
@@ -90,7 +90,7 @@ struct SRgbRegion
 
 SRgbRegion MapToRgbRegion(const CRect& rc, CHeightmap& heightmap)
 {
-	SRgbRegion region{};
+	SRgbRegion region {};
 	MAKE_SURE(heightmap.GetRGBLayer(), return region);
 
 	region.left = crymath::clamp(0.0f, 1.0f, (float)rc.left / heightmap.GetWidth());
@@ -115,7 +115,7 @@ SRgbRegion MapToRgbRegion(const CRect& rc, CHeightmap& heightmap)
 	return region;
 }
 
-}
+} // unnamed namespace
 
 //////////////////////////////////////////////////////////////////////////
 //! Undo object for heightmap modifications.
@@ -139,8 +139,8 @@ public:
 		m_hmap.GetSubImage(m_rc.left, m_rc.top, m_rc.Width(), m_rc.Height(), m_undo);
 	}
 protected:
-	virtual void        Release()        { delete this; };
-	virtual const char* GetDescription() { return "Heightmap Modify"; };
+	virtual void        Release()        { delete this; }
+	virtual const char* GetDescription() { return "Heightmap Modify"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -156,7 +156,6 @@ protected:
 		if (w < m_rc.Height()) w = m_rc.Height();
 
 		GetIEditorImpl()->GetHeightmap()->UpdateEngineTerrain(m_rc.left, m_rc.top, w, w, CHeightmap::ETerrainUpdateType::Elevation);
-		//GetIEditorImpl()->GetHeightmap()->UpdateEngineTerrain( m_rc.left,m_rc.top,m_rc.Width(),m_rc.Height(),true,false );
 
 		if (bUndo)
 		{
@@ -219,7 +218,7 @@ protected:
 		m_pHeightmap->SetWaterLevel(m_newWaterLevel);
 	}
 
-	virtual const char* GetDescription() { return "Water Level Modify"; };
+	virtual const char* GetDescription() { return "Water Level Modify"; }
 
 private:
 	CHeightmap* m_pHeightmap;
@@ -234,14 +233,14 @@ class CUndoHeightmapInfo : public IUndoObject
 public:
 	CUndoHeightmapInfo(int x1, int y1, int width, int height, CHeightmap* heightmap)
 	{
-		m_hmap.Attach(heightmap->m_LayerIdBitmap.GetData(), heightmap->GetWidth(), heightmap->GetHeight());
+		m_hmap.Attach(heightmap->m_layerIdBitmap.GetData(), heightmap->GetWidth(), heightmap->GetHeight());
 		// Store heightmap block.
 		m_hmap.GetSubImage(x1, y1, width, height, m_undo);
 		m_rc = CRect(x1, y1, x1 + width, y1 + height);
 	}
-protected:
-	virtual void        Release()        { delete this; };
-	virtual const char* GetDescription() { return "Heightmap Hole"; };
+private:
+	virtual void        Release()        { delete this; }
+	virtual const char* GetDescription() { return "Heightmap Hole"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -254,6 +253,7 @@ protected:
 		m_hmap.SetSubImage(m_rc.left, m_rc.top, m_undo);
 		GetIEditorImpl()->GetHeightmap()->UpdateEngineHole(m_rc.left, m_rc.top, m_rc.Width(), m_rc.Height());
 	}
+
 	virtual void Redo()
 	{
 		if (m_redo.IsValid())
@@ -264,25 +264,19 @@ protected:
 		}
 	}
 
-private:
 	CRect          m_rc;
 	CSurfTypeImage m_undo;
 	CSurfTypeImage m_redo;
 	CSurfTypeImage m_hmap;
 };
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 CHeightmap::CHeightmap()
-	: m_kfBrMultiplier(8.0f)
-	, m_TerrainRGBTexture("TerrainTexture.pak")
+	: m_terrainRGBTexture("TerrainTexture.pak")
 {
 	m_fMaxHeight = HEIGHTMAP_MAX_HEIGHT;
 
-	m_pNoise = NULL;
-	m_pHeightmap = NULL;
+	m_pNoise = nullptr;
+	m_pHeightmap = nullptr;
 
 	m_iWidth = 0;
 	m_iHeight = 0;
@@ -292,16 +286,12 @@ CHeightmap::CHeightmap()
 	m_updateModSectors = false;
 
 	m_textureSize = DEFAULT_TEXTURE_SIZE;
-
-	m_terrainGrid = new CTerrainGrid();
 }
 
 CHeightmap::~CHeightmap()
 {
 	// Reset the heightmap
 	CleanUp();
-
-	delete m_terrainGrid;
 
 	// Remove the noise array
 	if (m_pNoise)
@@ -311,7 +301,6 @@ CHeightmap::~CHeightmap()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::CleanUp()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -324,13 +313,12 @@ void CHeightmap::CleanUp()
 		m_pHeightmap = NULL;
 	}
 
-	m_TerrainRGBTexture.FreeData();
+	m_terrainRGBTexture.FreeData();
 
 	m_iWidth = 0;
 	m_iHeight = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld, bool bForceKeepVegetation /*=false*/)
 {
 	////////////////////////////////////////////////////////////////////////
@@ -361,10 +349,10 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 			prevHeightmap = m_pHeightmap;
 			m_pHeightmap = 0;
 		}
-		if (m_LayerIdBitmap.IsValid())
+		if (m_layerIdBitmap.IsValid())
 		{
 			prevLayerIdBitmap.Allocate(m_iWidth, m_iHeight);
-			memcpy(prevLayerIdBitmap.GetData(), m_LayerIdBitmap.GetData(), prevLayerIdBitmap.GetSize());
+			memcpy(prevLayerIdBitmap.GetData(), m_layerIdBitmap.GetData(), prevLayerIdBitmap.GetSize());
 		}
 	}
 
@@ -385,14 +373,14 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 
 	uint32 dwTileResolution = 512;      // to avoid having too many tiles we try to get big ones
 
-										// As dwTileCount must be at least 1, dwTerrainTextureResolution must be at most equals to
-										// dwTerrainTextureResolution.
+	// As dwTileCount must be at least 1, dwTerrainTextureResolution must be at most equals to
+	// dwTerrainTextureResolution.
 	if (dwTerrainTextureResolution <= dwTileResolution)
 		dwTileResolution = dwTerrainTextureResolution;
 
 	uint32 dwTileCount = dwTerrainTextureResolution / dwTileResolution;
 
-	m_TerrainRGBTexture.AllocateTiles(dwTileCount, dwTileCount, dwTileResolution);
+	m_terrainRGBTexture.AllocateTiles(dwTileCount, dwTileCount, dwTileResolution);
 
 	// Allocate new data
 	if (m_pHeightmap)
@@ -403,7 +391,7 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 
 	Verify();
 
-	m_LayerIdBitmap.Allocate(iWidth, iHeight);
+	m_layerIdBitmap.Allocate(iWidth, iHeight);
 
 	if (prevWidth < m_iWidth || prevHeight < m_iHeight || prevUnitSize < m_unitSize)
 		Clear();
@@ -429,8 +417,8 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 	if (prevHeightmap)
 		delete[] prevHeightmap;
 
-	m_terrainGrid->InitSectorGrid(m_numSectors);
-	m_terrainGrid->SetResolution(m_textureSize);
+	m_terrainGrid.InitSectorGrid(m_numSectors);
+	m_terrainGrid.SetResolution(m_textureSize);
 
 	// This must run only when creating a new terrain.
 	if (!boChangedTerrainDimensions || !pTerrain)
@@ -467,26 +455,40 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 				int numObjects = gEnv->p3DEngine->GetObjectsInBox(aabbAll, 0);
 				std::vector<IRenderNode*> lstInstances;
 				lstInstances.resize(numObjects);
-				IRenderNode ** pFirst = &lstInstances[0];
+				IRenderNode** pFirst = &lstInstances[0];
 				gEnv->p3DEngine->GetObjectsInBox(aabbAll, pFirst);
+
+				for (int i = 0; i < lstInstances.size(); i++)
+				{
+					if (lstInstances[i]->GetRndFlags() & ERF_PROCEDURAL)
+					{
+						lstInstances[i] = nullptr;
+					}
+				}
 
 				// unregister all objects from scene graph
 				for (int i = 0; i < lstInstances.size(); i++)
 				{
-					gEnv->p3DEngine->UnRegisterEntityDirect(lstInstances[i]);
+					if (lstInstances[i])
+					{
+					  gEnv->p3DEngine->UnRegisterEntityDirect(lstInstances[i]);
+				  }
 				}
 
 				// recreate terrain in the engine
 				GetIEditorImpl()->GetHeightmap()->InitTerrain();
 				GetIEditorImpl()->GetHeightmap()->UpdateEngineTerrain();
-				
+
 				// update vegetation object types (lost in terrain re-creation)
 				GetIEditorImpl()->GetVegetationMap()->SetEngineObjectsParams();
 
 				// register all objects back into scene graph
 				for (int i = 0; i < lstInstances.size(); i++)
 				{
-					gEnv->p3DEngine->RegisterEntity(lstInstances[i]);
+					if (lstInstances[i])
+					{
+					  gEnv->p3DEngine->RegisterEntity(lstInstances[i]);
+				  }
 				}
 
 				// restore level rendering
@@ -501,11 +503,10 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 	GetIEditorImpl()->GetTerrainManager()->SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::PaintLayerId(const float fpx, const float fpy, const SEditorPaintBrush& brush, const uint32 dwLayerId)
 {
-	assert(dwLayerId <= CLayer::e_hole);
-	uint8 ucLayerInfoData = dwLayerId & (CLayer::e_hole | CLayer::e_undefined);
+	assert(dwLayerId <= e_layerIdHole);
+	uint8 ucLayerInfoData = dwLayerId & (e_layerIdHole | e_layerIdUndefined);
 
 	SEditorPaintBrush cpyBrush = brush;
 
@@ -514,28 +515,28 @@ void CHeightmap::PaintLayerId(const float fpx, const float fpy, const SEditorPai
 
 	CImagePainter painter;
 
-	painter.PaintBrush(fpx, fpy, m_LayerIdBitmap, cpyBrush);
+	painter.PaintBrush(fpx, fpy, m_layerIdBitmap, cpyBrush);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::EraseLayerID(uchar id)
 {
 	for (uint32 y = 0; y < m_iHeight; ++y)
+	{
 		for (uint32 x = 0; x < m_iWidth; ++x)
 		{
-			SSurfaceTypeItem& st = m_LayerIdBitmap.ValueAt(x, y);
+			SSurfaceTypeItem& st = m_layerIdBitmap.ValueAt(x, y);
 
 			if (st.GetDominatingSurfaceType() == id)
 			{
 				bool hole = st.GetHole();
-				st = CLayer::e_undefined;
+				st = e_layerIdUndefined;
 				st.SetHole(hole);
 			}
 		}
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CHeightmap::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
+void CHeightmap::MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const
 {
 	for (uint32 dwY = 0; dwY < m_iHeight; ++dwY)
 	{
@@ -545,7 +546,7 @@ void CHeightmap::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
 
 			for (int s = 0; s < SSurfaceTypeItem::kMaxSurfaceTypesNum; s++)
 			{
-				if (st.we[s] && st.ty[s] < CLayer::e_undefined)
+				if (st.we[s] && st.ty[s] < e_layerIdUndefined)
 				{
 					bFree[st.ty[s]] = false; // it's possible to have undefined layers here
 				}
@@ -554,20 +555,17 @@ void CHeightmap::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CPoint CHeightmap::WorldToHmap(const Vec3& wp)
 {
 	//swap x/y.
 	return CPoint(wp.y / m_unitSize, wp.x / m_unitSize);
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CHeightmap::HmapToWorld(CPoint hpos)
 {
 	return Vec3(hpos.y * m_unitSize, hpos.x * m_unitSize, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CRect CHeightmap::WorldBoundsToRect(const AABB& worldBounds)
 {
 	CPoint p1 = WorldToHmap(worldBounds.min);
@@ -593,7 +591,7 @@ void CHeightmap::Clear(bool bClearLayerBitmap)
 
 		if (bClearLayerBitmap)
 		{
-			m_LayerIdBitmap.Clear();
+			m_layerIdBitmap.Clear();
 		}
 	}
 }
@@ -604,10 +602,12 @@ void CHeightmap::InitHeight(float fHeight)
 		fHeight = m_fMaxHeight;
 
 	for (int i = 0; i < m_iWidth; ++i)
+	{
 		for (int j = 0; j < m_iHeight; ++j)
 		{
 			SetXY(i, j, fHeight);
 		}
+	}
 }
 
 void CHeightmap::SetMaxHeight(float fMaxHeight)
@@ -633,16 +633,15 @@ void CHeightmap::LoadImage(LPCSTR pszFileName)
 	////////////////////////////////////////////////////////////////////////
 	// Load a BMP file as current heightmap
 	////////////////////////////////////////////////////////////////////////
-	CImageEx image;
 	CImageEx tmpImage;
-	CImageEx hmap;
-
 	if (!CImageUtil::LoadImage(pszFileName, tmpImage))
 	{
 		CQuestionDialog::SCritical(QObject::tr(""), QObject::tr("Load image failed."));
 		return;
 	}
 
+	CImageEx image;
+	CImageEx hmap;
 	image.RotateOrt(tmpImage, 3);
 
 	if (image.GetWidth() != m_iWidth || image.GetHeight() != m_iHeight)
@@ -675,31 +674,27 @@ void CHeightmap::LoadImage(LPCSTR pszFileName)
 
 void CHeightmap::SaveImage(LPCSTR pszFileName)
 {
-	uint32* pImageData = NULL;
-	unsigned int i, j;
-	uint8 iColor;
-	t_hmap* pHeightmap = NULL;
-	UINT iWidth = GetWidth();
-	UINT iHeight = GetHeight();
+	const UINT iWidth = GetWidth();
+	const UINT iHeight = GetHeight();
 
 	// Allocate memory to export the heightmap
 	CImageEx image;
 	image.Allocate(iWidth, iHeight);
-	pImageData = image.GetData();
+	uint32* pImageData = image.GetData();
 
 	// Get a pointer to the heightmap data
-	pHeightmap = GetData();
+	t_hmap* pHeightmap = GetData();
 
 	float fPrecisionScale = GetBytePrecisionScale();
 
 	// BMP
 	// Write heightmap into the image data array
-	for (j = 0; j < iHeight; j++)
+	for (unsigned int j = 0; j < iHeight; j++)
 	{
-		for (i = 0; i < iWidth; i++)
+		for (unsigned int i = 0; i < iWidth; i++)
 		{
-			// Get a normalized grayscale value from the heigthmap
-			iColor = (uint8)__min((pHeightmap[i + j * iWidth] * fPrecisionScale + 0.5f), 255.0f);
+			// Get a normalized grayscale value from the heightmap
+			uint8 iColor = (uint8)__min((pHeightmap[i + j * iWidth] * fPrecisionScale + 0.5f), 255.0f);
 
 			// Create a BGR grayscale value and store it in the image
 			// data array
@@ -746,7 +741,7 @@ void CHeightmap::LoadPGM(const string& pgmFile)
 	if (image.GetWidth() != m_iWidth || image.GetHeight() != m_iHeight)
 	{
 		string str;
-		str.Format("PGM dimensions do not match dimensions of heighmap.\nPGM size is %dx%d,\nHeightmap size is %dx%d.\nProcceed with clipping?",
+		str.Format("PGM dimensions do not match dimensions of heightmap.\nPGM size is %dx%d,\nHeightmap size is %dx%d.\nProcceed with clipping?",
 		           image.GetWidth(), image.GetHeight(), m_iWidth, m_iHeight);
 
 		if (QDialogButtonBox::StandardButton::Yes != CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr(str)), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No)
@@ -823,7 +818,7 @@ void CHeightmap::LoadRAW(const string& rawFile)
 	if (fileSize != m_iWidth * m_iHeight * 2)
 	{
 		str.Format("Bad RAW file, RAW file must be %dxd 16bit image", m_iWidth, m_iHeight);
-		CryMessageBox( str, "Warning", eMB_Error);
+		CryMessageBox(str, "Warning", eMB_Error);
 		fclose(file);
 		return;
 	}
@@ -860,7 +855,7 @@ void CHeightmap::Noise()
 	const float fInfluence = 10.0f;
 
 	// Calculate the way we have to swap the noise. We do this to avoid
-	// singularities when a noise array is aplied more than once
+	// singularities when a noise array is applied more than once
 	srand(clock());
 	UINT iNoiseSwapMode = rand() % 5;
 
@@ -880,7 +875,7 @@ void CHeightmap::Noise()
 			// Next pixel
 			iCurPos++;
 
-			// Skip amnything below the water level
+			// Skip anything below the water level
 			if (m_pHeightmap[iCurPos] > 0.0f && m_pHeightmap[iCurPos] >= m_fWaterLevel)
 			{
 				// Swap the noise
@@ -924,7 +919,6 @@ void CHeightmap::Noise()
 	GetIEditorImpl()->GetTerrainManager()->SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::Smooth(CFloatImage& hmap, const CRect& rect)
 {
 	int w = hmap.GetWidth();
@@ -1226,7 +1220,6 @@ bool CHeightmap::GetDataEx(t_hmap* pData, UINT iDestWidth, bool bSmooth, bool bN
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHeightmap::GetData(const CRect& srcRect, const int resolution, const CPoint& vTexOffset, CFloatImage& hmap, bool bSmooth, bool bNoise)
 {
 	////////////////////////////////////////////////////////////////////////
@@ -1362,7 +1355,6 @@ bool CHeightmap::GetData(const CRect& srcRect, const int resolution, const CPoin
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHeightmap::GetPreviewBitmap(DWORD* pBitmapData, int width, bool bSmooth, bool bNoise, CRect* pUpdateRect, bool bShowWater)
 {
 	if (!m_pHeightmap)
@@ -1519,25 +1511,21 @@ void CHeightmap::SmoothSlope()
 	if (CUndo::IsRecording())
 		CUndo::Record(new CUndoHeightmapModify(this));
 
-	UINT iCurPos;
-	float fAverage;
-	unsigned int i, j;
-
 	CLogFile::WriteLine("Smoothing the slope of the heightmap...");
 
 	// Remove the high slope areas (horizontal)
-	for (j = 1; j < m_iHeight - 1; j++)
+	for (uint64 j = 1; j < m_iHeight - 1; j++)
 	{
 		// Precalculate for better speed
-		iCurPos = j * m_iWidth + 1;
+		uint64 iCurPos = j * m_iWidth + 1;
 
-		for (i = 1; i < m_iWidth - 1; i++)
+		for (uint64 i = 1; i < m_iWidth - 1; i++)
 		{
 			// Next pixel
 			iCurPos++;
 
 			// Get the average value for this area
-			fAverage =
+			float fAverage =
 			  (m_pHeightmap[iCurPos] + m_pHeightmap[iCurPos + 1] + m_pHeightmap[iCurPos + m_iWidth] +
 			   m_pHeightmap[iCurPos + m_iWidth + 1] + m_pHeightmap[iCurPos - 1] + m_pHeightmap[iCurPos - m_iWidth] +
 			   m_pHeightmap[iCurPos - m_iWidth - 1] + m_pHeightmap[iCurPos - m_iWidth + 1] + m_pHeightmap[iCurPos + m_iWidth - 1])
@@ -1557,18 +1545,18 @@ void CHeightmap::SmoothSlope()
 	}
 
 	// Remove the high slope areas (vertical)
-	for (i = 1; i < m_iWidth - 1; i++)
+	for (uint64 i = 1; i < m_iWidth - 1; i++)
 	{
 		// Precalculate for better speed
-		iCurPos = i;
+		uint64 iCurPos = i;
 
-		for (j = 1; j < m_iHeight - 1; j++)
+		for (uint64 j = 1; j < m_iHeight - 1; j++)
 		{
 			// Next pixel
 			iCurPos += m_iWidth;
 
 			// Get the average value for this area
-			fAverage =
+			float fAverage =
 			  (m_pHeightmap[iCurPos] + m_pHeightmap[iCurPos + 1] + m_pHeightmap[iCurPos + m_iWidth] +
 			   m_pHeightmap[iCurPos + m_iWidth + 1] + m_pHeightmap[iCurPos - 1] + m_pHeightmap[iCurPos - m_iWidth] +
 			   m_pHeightmap[iCurPos - m_iWidth - 1] + m_pHeightmap[iCurPos - m_iWidth + 1] + m_pHeightmap[iCurPos + m_iWidth - 1])
@@ -1600,10 +1588,10 @@ void CHeightmap::ClampToAverage(t_hmap* pValue, float fAverage)
 
 	float fClampedVal;
 
-	// Does the heightvalue differ heavily from the average value ?
+	// Does the height value differ heavily from the average value ?
 	if (fabs(*pValue - fAverage) > fAverage * 0.001f)
 	{
-		// Negativ / Positiv ?
+		// Negative / Positive ?
 		if (*pValue < fAverage)
 			fClampedVal = fAverage - (fAverage * 0.001f);
 		else
@@ -1621,28 +1609,22 @@ void CHeightmap::MakeIsle()
 	//////////////////////////////////////////////////////////////////////
 	// Convert any terrain into an isle
 	//////////////////////////////////////////////////////////////////////
+	CLogFile::WriteLine("Modifying heightmap to an isle...");
 
-	int i, j;
+	if (CUndo::IsRecording())
+		CUndo::Record(new CUndoHeightmapModify(this));
+
 	t_hmap* pHeightmapData = m_pHeightmap;
-	//	UINT m_iHeightmapDiag;
 	float fDeltaX, fDeltaY;
 	float fDistance;
 	float fCurHeight, fFade;
 
-	CLogFile::WriteLine("Modifying heightmap to an isle...");
-	if (CUndo::IsRecording())
-		CUndo::Record(new CUndoHeightmapModify(this));
-	// Calculate the length of the diagonale trough the heightmap
-	//	m_iHeightmapDiag = (UINT) sqrt(GetWidth() * GetWidth() +
-	//		GetHeight() * GetHeight());
-	float fMaxDistance = sqrtf((GetWidth() / 2) * (GetWidth() / 2) + (GetHeight() / 2) * (GetHeight() / 2));
-
-	for (j = 0; j < m_iHeight; j++)
+	for (int j = 0; j < m_iHeight; j++)
 	{
 		// Calculate the distance delta
 		fDeltaY = (float)abs((int)(j - m_iHeight / 2));
 
-		for (i = 0; i < m_iWidth; i++)
+		for (int i = 0; i < m_iWidth; i++)
 		{
 			// Calculate the distance delta
 			fDeltaX = (float)abs((int)(i - m_iWidth / 2));
@@ -1663,7 +1645,7 @@ void CHeightmap::MakeIsle()
 			// Clamp
 			ClampHeight(fCurHeight);
 
-			// Write the value back and andvance
+			// Write the value back and advance
 			*pHeightmapData++ = fCurHeight;
 		}
 	}
@@ -1720,10 +1702,7 @@ float CHeightmap::ExpCurve(float v, float fCover, float fSharpness)
 	//////////////////////////////////////////////////////////////////////
 	// Exponential function
 	//////////////////////////////////////////////////////////////////////
-
-	float c;
-
-	c = v - fCover;
+	float c = v - fCover;
 
 	if (c < 0)
 		c = 0;
@@ -1756,13 +1735,10 @@ void CHeightmap::Copy(const AABB& srcBox, int targetRot, const Vec3& targetPos, 
 		hmapPosStart = WorldToHmap(targetPos - Vec3(dym.y / 2, dym.x / 2, dym.z)) - CPoint(cx1, cy1);
 	}
 
-#if CRY_PLATFORM_64BIT
-	LONG blocksize = 4096;
-#else
-	LONG blocksize = 512;
-#endif
+	const LONG blocksize = 4096;
 
 	for (LONG by = by1; by < by2; by += blocksize)
+	{
 		for (LONG bx = bx1; bx < bx2; bx += blocksize)
 		{
 			LONG cx = bx;
@@ -1790,7 +1766,6 @@ void CHeightmap::Copy(const AABB& srcBox, int targetRot, const Vec3& targetPos, 
 			}
 
 			// Move terrain heightmap block.
-
 			CRect rcHeightmap(0, 0, GetWidth(), GetHeight());
 
 			// left-top position of destination rectangle in Heightmap space
@@ -1798,8 +1773,10 @@ void CHeightmap::Copy(const AABB& srcBox, int targetRot, const Vec3& targetPos, 
 
 			// source rectangle in Heightmap space
 			CRect rcSrc(bx, by, min(bx + blocksize + 1, bx2), min(by + blocksize + 1, by2));
+
 			// destination rectangle in Heightmap space
 			CRect rcDst(posDst.x, posDst.y, posDst.x + rcSrc.Width(), posDst.y + rcSrc.Height());
+
 			if (targetRot == eRR_90 || targetRot == eRR_270)
 			{
 				rcDst.right = posDst.x + rcSrc.Height();
@@ -1808,28 +1785,27 @@ void CHeightmap::Copy(const AABB& srcBox, int targetRot, const Vec3& targetPos, 
 
 			// Crop destination region by terrain outside
 			CRect rcCropDst(rcDst & rcHeightmap);
-			CRect rcMar = Private_Heightmap::GetRectMargin(rcDst, rcCropDst, 4 - targetRot);
-			CRect rcCropSrc = Private_Heightmap::CropRect(rcSrc, rcMar); // sync src with dst
+			CRect rcMar = GetRectMargin(rcDst, rcCropDst, 4 - targetRot);
+			CRect rcCropSrc = CropRect(rcSrc, rcMar); // sync src with dst
 
 			if (!rcCropSrc.IsRectEmpty())
 			{
-				CXmlArchive* archive = new CXmlArchive("Root");
-
-				// don't need crop by source outside for Heightmap moving (only destination crop)
+				// No need to crop by source outside for Heightmap moving (only destination crop)
 				// data (height values) from source outside will be filled by 0
-				archive->bLoading = false;
-				ExportBlock(rcCropSrc, *archive, false);
 
-				archive->bLoading = true;
-				ImportBlock(*archive, CPoint(rcCropDst.left, rcCropDst.top), true, (targetPos - sourcePos).z, bOnlyVegetation && !bOnlyTerrain, targetRot);
+				CXmlArchive archive("Root");
 
-				delete archive;
+				archive.bLoading = false;
+				ExportBlock(rcCropSrc, archive, false);
+
+				archive.bLoading = true;
+				ImportBlock(archive, CPoint(rcCropDst.left, rcCropDst.top), true, (targetPos - sourcePos).z, bOnlyVegetation && !bOnlyTerrain, targetRot);
 			}
 
 			// Crop source region by terrain outside
 			rcCropSrc &= rcHeightmap;
-			rcMar = Private_Heightmap::GetRectMargin(rcSrc, rcCropSrc, targetRot);
-			rcCropDst = Private_Heightmap::CropRect(rcDst, rcMar); // sync dst with src
+			rcMar = GetRectMargin(rcSrc, rcCropSrc, targetRot);
+			rcCropDst = CropRect(rcDst, rcMar); // sync dst with src
 
 			if (!rcCropSrc.IsRectEmpty() && (!bOnlyVegetation || bOnlyTerrain))
 			{
@@ -1852,23 +1828,10 @@ void CHeightmap::Copy(const AABB& srcBox, int targetRot, const Vec3& targetPos, 
 					  ((float)rcCropDst.right) / GetWidth(), ((float)rcCropDst.bottom) / GetHeight(), targetRot ? tmpImage : image);
 				}
 
-				for (int x = 0; x <= rcCropSrc.Width(); x++)
-					for (int y = 0; y <= rcCropSrc.Height(); y++)
-					{
-						SSurfaceTypeItem lid = GetLayerInfoAt(x + rcCropSrc.left, y + rcCropSrc.top);
-						if (targetRot == eRR_90)
-							SetLayerIdAt(rcCropDst.right - y, x, lid);
-						else if (targetRot == eRR_180)
-							SetLayerIdAt(rcCropDst.right - x, rcCropDst.bottom - y, lid);
-						else if (targetRot == eRR_270)
-							SetLayerIdAt(y, rcCropDst.bottom - x, lid);
-						else
-							SetLayerIdAt(x + rcCropDst.left, y + rcCropDst.top, lid);
-					}
-
 				UpdateLayerTexture(rcCropDst);
 			}
 		}
+	}
 }
 
 void CHeightmap::MakeBeaches()
@@ -1891,20 +1854,15 @@ void CHeightmap::MakeBeaches()
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoHeightmapModify(this));
 
-	unsigned int i, j;
-	t_hmap* pHeightmapData = NULL;
-	t_hmap* pHeightmapDataStart = NULL;
-	double dCurHeight;
-
 	// Get the water level
 	double dWaterLevel = m_fWaterLevel;
 
 	// Make the beaches
-	for (j = 0; j < m_iHeight; j++)
+	for (uint64 j = 0; j < m_iHeight; j++)
 	{
-		for (i = 0; i < m_iWidth; i++)
+		for (uint64 i = 0; i < m_iWidth; i++)
 		{
-			dCurHeight = m_pHeightmap[i + j * m_iWidth];
+			double dCurHeight = m_pHeightmap[i + j * m_iWidth];
 
 			// Center water level at zero
 			dCurHeight -= dWaterLevel;
@@ -1927,7 +1885,7 @@ void CHeightmap::MakeBeaches()
 			else if (dCurHeight < 0)
 				dCurHeight = 0;
 
-			// Write the value back and andvance to the next pixel
+			// Write the value back and advance to the next pixel
 			m_pHeightmap[i + j * m_iWidth] = dCurHeight;
 		}
 	}
@@ -1945,12 +1903,8 @@ void CHeightmap::MakeBeaches()
 void CHeightmap::LowerRange(float fFactor)
 {
 	//////////////////////////////////////////////////////////////////////
-	// Lower the value range of the heightmap, effectively making it
-	// more flat
+	// Lower the value range of the heightmap, effectively making it more flat
 	//////////////////////////////////////////////////////////////////////
-
-	unsigned int i;
-	float fWaterHeight = m_fWaterLevel;
 
 	CLogFile::WriteLine("Lowering range...");
 
@@ -1958,8 +1912,8 @@ void CHeightmap::LowerRange(float fFactor)
 		CUndo::Record(new CUndoHeightmapModify(this));
 
 	// Lower the range, make sure we don't put anything below the water level
-	for (i = 0; i < m_iWidth * m_iHeight; i++)
-		m_pHeightmap[i] = ((m_pHeightmap[i] - fWaterHeight) * fFactor) + fWaterHeight;
+	for (uint64 i = 0; i < m_iWidth * m_iHeight; i++)
+		m_pHeightmap[i] = ((m_pHeightmap[i] - m_fWaterLevel) * fFactor) + m_fWaterLevel;
 
 	// We modified the heightmap.
 	GetIEditorImpl()->GetTerrainManager()->SetModified();
@@ -1971,12 +1925,10 @@ void CHeightmap::Randomize()
 	// Add a small amount of random noise
 	////////////////////////////////////////////////////////////////////////
 
-	unsigned int i;
-
 	CLogFile::WriteLine("Lowering range...");
 
 	// Add the noise
-	for (i = 0; i < m_iWidth * m_iHeight; i++)
+	for (uint64 i = 0; i < m_iWidth * m_iHeight; i++)
 		m_pHeightmap[i] += cry_random(-4.0f, 4.0f);
 
 	// Normalize because we might have valid the valid range
@@ -1991,7 +1943,6 @@ void CHeightmap::DrawSpot(int iX, int iY, int radius, float insideRadius, float 
 	////////////////////////////////////////////////////////////////////////
 	// Draw an attenuated spot on the map
 	////////////////////////////////////////////////////////////////////////
-	int i, j;
 	int iPosX, iPosY, iIndex;
 	float fMaxDist, fAttenuation, fYSquared;
 	float fCurHeight;
@@ -2002,13 +1953,13 @@ void CHeightmap::DrawSpot(int iX, int iY, int radius, float insideRadius, float 
 	// Calculate the maximum distance
 	fMaxDist = radius;
 
-	for (j = (long) -radius; j < radius; j++)
+	for (int j = -radius; j < radius; j++)
 	{
 		// Precalculate
 		iPosY = iY + j;
 		fYSquared = (float) (j * j);
 
-		for (i = (long) -radius; i < radius; i++)
+		for (int i = -radius; i < radius; i++)
 		{
 			// Calculate the position
 			iPosX = iX + i;
@@ -2051,7 +2002,7 @@ void CHeightmap::DrawSpot(int iX, int iY, int radius, float insideRadius, float 
 				dh = (fHeight + displacementScale * displacementValue) - fCurHeight;
 			}
 
-			float h = fCurHeight + (fAttenuation)* dh * fHardness;
+			float h = fCurHeight + (fAttenuation) * dh * fHardness;
 
 			// Clamp
 			ClampHeight(h);
@@ -2068,7 +2019,6 @@ void CHeightmap::RiseLowerSpot(int iX, int iY, int radius, float insideRadius, f
 	////////////////////////////////////////////////////////////////////////
 	// Draw an attenuated spot on the map
 	////////////////////////////////////////////////////////////////////////
-	int i, j;
 	int iPosX, iPosY, iIndex;
 	float fMaxDist, fAttenuation, fYSquared;
 	float fCurHeight;
@@ -2079,13 +2029,13 @@ void CHeightmap::RiseLowerSpot(int iX, int iY, int radius, float insideRadius, f
 	// Calculate the maximum distance
 	fMaxDist = radius;
 
-	for (j = (long) -radius; j < radius; j++)
+	for (int j = -radius; j < radius; j++)
 	{
 		// Precalculate
 		iPosY = iY + j;
 		fYSquared = (float) (j * j);
 
-		for (i = (long) -radius; i < radius; i++)
+		for (int i = -radius; i < radius; i++)
 		{
 			// Calculate the position
 			iPosX = iX + i;
@@ -2146,7 +2096,6 @@ void CHeightmap::SmoothSpot(int iX, int iY, int radius, float fHeight, float fHa
 	////////////////////////////////////////////////////////////////////////
 	// Draw an attenuated spot on the map
 	////////////////////////////////////////////////////////////////////////
-	int i, j;
 	int iPosX, iPosY;
 	float fMaxDist, fYSquared;
 
@@ -2156,7 +2105,7 @@ void CHeightmap::SmoothSpot(int iX, int iY, int radius, float fHeight, float fHa
 	// Calculate the maximum distance
 	fMaxDist = radius;
 
-	for (j = (long) -radius; j < radius; j++)
+	for (int j = -radius; j < radius; j++)
 	{
 		// Precalculate
 		iPosY = iY + j;
@@ -2166,7 +2115,7 @@ void CHeightmap::SmoothSpot(int iX, int iY, int radius, float fHeight, float fHa
 		if (iPosY < 1 || iPosY > m_iHeight - 2)
 			continue;
 
-		for (i = (long) -radius; i < radius; i++)
+		for (int i = -radius; i < radius; i++)
 		{
 			// Calculate the position
 			iPosX = iX + i;
@@ -2336,14 +2285,12 @@ void CHeightmap::Hold()
 	if (!IsAllocated())
 		return;
 
-	FILE* hFile = NULL;
-
 	CLogFile::WriteLine("Saving temporary copy of the heightmap");
 
 	AfxGetMainWnd()->BeginWaitCursor();
 
 	// Open the hold / fetch file
-	hFile = fopen(HEIGHTMAP_HOLD_FETCH_FILE, "wb");
+	FILE* hFile = fopen(HEIGHTMAP_HOLD_FETCH_FILE, "wb");
 	ASSERT(hFile);
 	if (hFile)
 	{
@@ -2355,7 +2302,7 @@ void CHeightmap::Hold()
 		VERIFY(fwrite(m_pHeightmap, sizeof(t_hmap), m_iWidth * m_iHeight, hFile));
 
 		//! Write the info.
-		VERIFY(fwrite(m_LayerIdBitmap.GetData(), sizeof(unsigned char), m_LayerIdBitmap.GetSize(), hFile));
+		VERIFY(fwrite(m_layerIdBitmap.GetData(), sizeof(unsigned char), m_layerIdBitmap.GetSize(), hFile));
 
 		fclose(hFile);
 	}
@@ -2388,20 +2335,16 @@ bool CHeightmap::Read(string strFileName)
 	////////////////////////////////////////////////////////////////////////
 	// Load a heightmap from a file
 	////////////////////////////////////////////////////////////////////////
-
-	FILE* hFile = NULL;
-	uint64 iWidth, iHeight;
-
 	if (strFileName.IsEmpty())
 		return false;
 
 	// Open the hold / fetch file
-	hFile = fopen(strFileName.GetString(), "rb");
-
+	FILE* hFile = fopen(strFileName.GetString(), "rb");
 	if (!hFile)
 		return false;
 
 	// Read the dimensions
+	uint64 iWidth, iHeight;
 	VERIFY(fread(&iWidth, sizeof(iWidth), 1, hFile));
 	VERIFY(fread(&iHeight, sizeof(iHeight), 1, hFile));
 
@@ -2411,9 +2354,8 @@ bool CHeightmap::Read(string strFileName)
 	// Load the data
 	VERIFY(fread(m_pHeightmap, sizeof(t_hmap), m_iWidth * m_iHeight, hFile));
 
-	//! Write the info.
-	m_LayerIdBitmap.Allocate(m_iWidth, m_iHeight);
-	VERIFY(fread(m_LayerIdBitmap.GetData(), sizeof(unsigned char), m_LayerIdBitmap.GetSize(), hFile));
+	m_layerIdBitmap.Allocate(m_iWidth, m_iHeight);
+	VERIFY(fread(m_layerIdBitmap.GetData(), sizeof(unsigned char), m_layerIdBitmap.GetSize(), hFile));
 
 	fclose(hFile);
 
@@ -2475,25 +2417,22 @@ void CHeightmap::InitNoise()
 		}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::CalcSurfaceTypes(const CRect* rect)
 {
-	int i;
-	bool first = true;
-
-	CRect rc;
-
 	CFloatImage hmap;
 	hmap.Attach(m_pHeightmap, m_iWidth, m_iHeight);
 
+	CRect rc;
 	if (rect)
 		rc = *rect;
 	else
 		rc.SetRect(0, 0, m_iWidth, m_iHeight);
 
 	// Generate the masks
-	int numLayers = GetIEditorImpl()->GetTerrainManager()->GetLayerCount();
-	for (i = 0; i < numLayers; i++)
+	bool first = true;
+	const int numLayers = GetIEditorImpl()->GetTerrainManager()->GetLayerCount();
+
+	for (int i = 0; i < numLayers; i++)
 	{
 		CLayer* pLayer = GetIEditorImpl()->GetTerrainManager()->GetLayer(i);
 
@@ -2509,7 +2448,6 @@ void CHeightmap::CalcSurfaceTypes(const CRect* rect)
 			// For every pixel of layer update surface type.
 			for (uint32 y = rc.top; y < rc.bottom; y++)
 			{
-				int yp = y * m_iWidth;
 				for (uint32 x = rc.left; x < rc.right; x++)
 				{
 					SSurfaceTypeItem st;
@@ -2552,7 +2490,7 @@ void CHeightmap::CalcSurfaceTypes(const CRect* rect)
 
 void CHeightmap::UpdateEngineTerrain(bool bOnlyElevation, bool boUpdateReloadSurfacertypes)
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	if (boUpdateReloadSurfacertypes)
 	{
@@ -2562,10 +2500,9 @@ void CHeightmap::UpdateEngineTerrain(bool bOnlyElevation, bool boUpdateReloadSur
 	UpdateEngineTerrain(0, 0, m_iWidth, m_iHeight, ETerrainUpdateType::Elevation | (bOnlyElevation ? 0 : ETerrainUpdateType::InfoBits));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, TerrainUpdateFlags updateFlags)
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	I3DEngine* p3DEngine = GetIEditorImpl()->Get3DEngine();
 	const int nHeightMapUnitSize = p3DEngine->GetHeightMapUnitSize();
@@ -2610,7 +2547,7 @@ void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, 
 		uint8 LayerIdToDetailId[256];
 
 		// to speed up the following loops
-		for (uint32 dwI = 0; dwI < CLayer::e_hole; ++dwI)
+		for (uint32 dwI = 0; dwI < e_layerIdHole; ++dwI)
 			LayerIdToDetailId[dwI] = GetIEditorImpl()->GetTerrainManager()->GetDetailIdLayerFromLayerId(dwI);
 
 		for (int y = y1; y < y2; y++)
@@ -2621,7 +2558,7 @@ void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, 
 				assert(ncell >= 0 && ncell < w * h);
 				SSurfaceTypeItem* p = &terrainBlock[ncell];
 
-				*p = m_LayerIdBitmap.ValueAt(x, y);
+				*p = m_layerIdBitmap.ValueAt(x, y);
 
 				for (int s = 0; s < SSurfaceTypeItem::kMaxSurfaceTypesNum; s++)
 				{
@@ -2634,12 +2571,12 @@ void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, 
 
 	if (updateFlags != 0)
 	{
-		uint32 nSizeX = m_TerrainRGBTexture.GetTileCountX();
-		uint32 nSizeY = m_TerrainRGBTexture.GetTileCountY();
+		uint32 nSizeX = m_terrainRGBTexture.GetTileCountX();
+		uint32 nSizeY = m_terrainRGBTexture.GetTileCountY();
 		uint32* pResolutions = new uint32[nSizeX * nSizeY];
 		for (int x = 0; x < nSizeX; x++)
 			for (int y = 0; y < nSizeY; y++)
-				pResolutions[x + y * nSizeX] = m_TerrainRGBTexture.GetTileResolution(x, y);
+				pResolutions[x + y * nSizeX] = m_terrainRGBTexture.GetTileResolution(x, y);
 
 		p3DEngine->SetHeightMapMaxHeight(m_fMaxHeight);
 		p3DEngine->GetITerrain()->SetTerrainElevation(y1, x1, w, h, m_pHeightmap, terrainBlock,
@@ -2650,10 +2587,11 @@ void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, 
 	}
 
 	const Vec2 worldModPosition(originalInputY1 * nHeightMapUnitSize + originalInputAreaSize * nHeightMapUnitSize / 2,
-		originalInputX1 * nHeightMapUnitSize + originalInputAreaSize * nHeightMapUnitSize / 2);
+	                            originalInputX1 * nHeightMapUnitSize + originalInputAreaSize * nHeightMapUnitSize / 2);
 	const float areaRadius = originalInputAreaSize * nHeightMapUnitSize / 2;
 
 	GetIEditorImpl()->GetGameEngine()->OnTerrainModified(worldModPosition, areaRadius, (originalInputAreaSize == m_iWidth), updateFlags & (ETerrainUpdateType::Elevation | ETerrainUpdateType::InfoBits));
+	GetIEditorImpl()->GetTerrainManager()->SetModified();
 }
 
 void CHeightmap::Serialize(CXmlArchive& xmlAr)
@@ -2673,13 +2611,13 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 		uint32 nWidth(m_iWidth);
 		uint32 nHeight(m_iHeight);
 
-		// To remain compatible.
+		// To remain compatible
 		if (heightmap->getAttr("Width", nWidth))
 		{
 			m_iWidth = nWidth;
 		}
 
-		// To remain compatible.
+		// To remain compatible
 		if (heightmap->getAttr("Height", nHeight))
 		{
 			m_iHeight = nHeight;
@@ -2695,14 +2633,13 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 			SetSurfaceTextureSize(textureSize, textureSize);
 		}
 
-		void* pData;
-		int size1, size2;
-
 		ClearModSectors();
 
-		if (xmlAr.pNamedData->GetDataBlock("HeightmapModSectors", pData, size1))
+		void* pData;
+		int size;
+		if (xmlAr.pNamedData->GetDataBlock("HeightmapModSectors", pData, size))
 		{
-			int nSize = size1 / (sizeof(int) * 2);
+			int nSize = size / (sizeof(int) * 2);
 			int* data = (int*)pData;
 			for (int i = 0; i < nSize; i++)
 				AddModSector(data[i * 2], data[i * 2 + 1]);
@@ -2713,11 +2650,11 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 		Resize(m_iWidth, m_iHeight, m_unitSize);
 
 		// Load heightmap data.
-		if (xmlAr.pNamedData->GetDataBlock("HeightmapDataW", pData, size1))
+		if (xmlAr.pNamedData->GetDataBlock("HeightmapDataW", pData, size))
 		{
 			const int dataSize = m_iWidth * m_iHeight * sizeof(uint16);
-			if (size1 != dataSize)
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of HeightmapDataW: %d (expected %d)", size1, dataSize);
+			if (size != dataSize)
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of HeightmapDataW: %d (expected %d)", size, dataSize);
 			else
 			{
 				float fInvPrecision = 1.0f / GetShortPrecisionScale();
@@ -2728,35 +2665,35 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 				}
 			}
 		}
-		else if (xmlAr.pNamedData->GetDataBlock("HeightmapData", pData, size1))
+		else if (xmlAr.pNamedData->GetDataBlock("HeightmapData", pData, size))
 		{
-			// Backward compatability for float heigthmap data.
+			// Backward compatibility for float heightmap data.
 			const int dataSize = m_iWidth * m_iHeight * sizeof(t_hmap);
-			if (size1 != dataSize)
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of HeightmapData: %d (expected %d)", size1, dataSize);
+			if (size != dataSize)
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of HeightmapData: %d (expected %d)", size, dataSize);
 			else
 				memcpy(m_pHeightmap, pData, dataSize);
 		}
 
-		if (xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, pData, size2))
+		if (xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, pData, size))
 		{
-			const int dataSize = m_LayerIdBitmap.GetSize();
+			const int dataSize = m_layerIdBitmap.GetSize();
 			// new version
-			if (size2 != dataSize)
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of %s: %d (expected %d)", HEIGHTMAP_LAYERINFO_BLOCK_NAME, size2, dataSize);
+			if (size != dataSize)
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of %s: %d (expected %d)", HEIGHTMAP_LAYERINFO_BLOCK_NAME, size, dataSize);
 			else
-				memcpy(m_LayerIdBitmap.GetData(), pData, dataSize);
+				memcpy(m_layerIdBitmap.GetData(), pData, dataSize);
 		}
 		else
 		{
 			// old version - to be backward compatible
-			if (xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME_OLD, pData, size2)) // older version are not supported any longer
+			if (xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME_OLD, pData, size)) // older version are not supported any longer
 			{
 				std::vector<byte> oldLayerIdBitmap;
 				const size_t dataSize = m_iWidth * m_iHeight;
 				oldLayerIdBitmap.resize(dataSize);
-				if (size2 != dataSize)
-					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of %s: %d (expected %d)", HEIGHTMAP_LAYERINFO_BLOCK_NAME_OLD, size2, dataSize);
+				if (size != dataSize)
+					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "ERROR: Unexpected size of %s: %d (expected %d)", HEIGHTMAP_LAYERINFO_BLOCK_NAME_OLD, size, dataSize);
 				else
 					memcpy(&oldLayerIdBitmap[0], pData, dataSize);
 
@@ -2769,9 +2706,9 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 						unsigned char ucVal = oldLayerIdBitmap[dwX + dwY * m_iWidth];
 
 						SSurfaceTypeItem st;
-						st = ucVal & CLayer::e_undefined;
+						st = ucVal & e_layerIdUndefined;
 						SetLayerIdAt(dwX, dwY, st);
-						SetHoleAt(dwX, dwY, ucVal & CLayer::e_hole);
+						SetHoleAt(dwX, dwY, ucVal & e_layerIdHole);
 					}
 				}
 			}
@@ -2802,7 +2739,6 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 		}
 
 		// Save heightmap data as words.
-		//xmlAr.pNamedData->AddDataBlock( "HeightmapData",m_pHeightmap,m_iWidth * m_iHeight * sizeof(t_hmap) );
 		{
 			CWordImage hdata;
 			hdata.Allocate(m_iWidth, m_iHeight);
@@ -2819,34 +2755,13 @@ void CHeightmap::Serialize(CXmlArchive& xmlAr)
 		}
 
 		// Save surface type info
-		xmlAr.pNamedData->AddDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, m_LayerIdBitmap.GetData(), m_LayerIdBitmap.GetSize());
-
-		// Save surface type also in old format (for back compatibility, only dominating type is saved, weighted blending is lost)
-		{
-			CByteImage oldFormatLayerIds;
-			oldFormatLayerIds.Allocate(m_iWidth, m_iHeight);
-
-			for (int y = 0; y < m_LayerIdBitmap.GetHeight(); y++)
-			{
-				for (int x = 0; x < m_LayerIdBitmap.GetWidth(); x++)
-				{
-					oldFormatLayerIds.ValueAt(x, y) = m_LayerIdBitmap.ValueAt(x, y).GetDominatingSurfaceType();
-
-					if (m_LayerIdBitmap.ValueAt(x, y).GetHole())
-					{
-						oldFormatLayerIds.ValueAt(x, y) |= CLayer::e_hole;
-					}
-				}
-			}
-
-			xmlAr.pNamedData->AddDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME_OLD, oldFormatLayerIds.GetData(), oldFormatLayerIds.GetSize());
-		}
+		xmlAr.pNamedData->AddDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, m_layerIdBitmap.GetData(), m_layerIdBitmap.GetSize());
 	}
 }
 
 void CHeightmap::SerializeTerrain(CXmlArchive& xmlAr)
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	if (xmlAr.bLoading)
 	{
@@ -2857,18 +2772,18 @@ void CHeightmap::SerializeTerrain(CXmlArchive& xmlAr)
 		{
 			if (xmlAr.pNamedData->GetDataBlock("TerrainCompiledData", pData, nSize))
 			{
-				STerrainChunkHeader* pHeader = (STerrainChunkHeader*)pData;
-				/*if ((pHeader->nVersion == TERRAIN_CHUNK_VERSION) && (pHeader->TerrainInfo.sectorSize_InMeters == pHeader->TerrainInfo.unitSize_InMeters * SECTOR_SIZE_IN_UNITS))
-				{
-					SSectorInfo si;
-					GetSectorsInfo(si);
+				/*STerrainChunkHeader* pHeader = (STerrainChunkHeader*)pData;
+				if ((pHeader->nVersion == TERRAIN_CHUNK_VERSION) && (pHeader->TerrainInfo.sectorSize_InMeters == pHeader->TerrainInfo.unitSize_InMeters * SECTOR_SIZE_IN_UNITS))
+				   {
+				   SSectorInfo si;
+				   GetSectorsInfo(si);
 
-					ITerrain* pTerrain = GetIEditorImpl()->Get3DEngine()->CreateTerrain(pHeader->TerrainInfo);
-					// check if size of terrain in compile data match
-					if (pHeader->TerrainInfo.unitSize_InMeters)
-						if (!pTerrain->SetCompiledData((uint8*)pData, nSize, NULL, NULL))
-							GetIEditorImpl()->Get3DEngine()->DeleteTerrain();
-				}*/
+				   ITerrain* pTerrain = GetIEditorImpl()->Get3DEngine()->CreateTerrain(pHeader->TerrainInfo);
+				   // check if size of terrain in compile data match
+				   if (pHeader->TerrainInfo.unitSize_InMeters)
+				    if (!pTerrain->SetCompiledData((uint8*)pData, nSize, NULL, NULL))
+				      GetIEditorImpl()->Get3DEngine()->DeleteTerrain();
+				   }*/
 			}
 		}
 	}
@@ -2889,7 +2804,6 @@ void CHeightmap::SerializeTerrain(CXmlArchive& xmlAr)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::SetWaterLevel(float waterLevel)
 {
 	// We modified the heightmap.
@@ -2905,21 +2819,18 @@ void CHeightmap::SetWaterLevel(float waterLevel)
 			GetIEditorImpl()->GetSystem()->GetI3DEngine()->GetITerrain()->SetOceanWaterLevel(waterLevel);
 
 	signalWaterLevelChanged();
-};
+}
 
 void CHeightmap::SetHoleAt(const int x, const int y, const bool bHole)
 {
-  m_LayerIdBitmap.ValueAt(x, y).SetHole(bHole);
+	m_layerIdBitmap.ValueAt(x, y).SetHole(bHole);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Make hole.
 void CHeightmap::MakeHole(int x1, int y1, int width, int height, bool bMake)
 {
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoHeightmapInfo(x1, y1, width + 1, height + 1, this));
 
-	I3DEngine* engine = GetIEditorImpl()->Get3DEngine();
 	int x2 = x1 + width;
 	int y2 = y1 + height;
 	for (int x = x1; x <= x2; x++)
@@ -2933,21 +2844,19 @@ void CHeightmap::MakeHole(int x1, int y1, int width, int height, bool bMake)
 	UpdateEngineTerrain(x1, y1, x2 - x1, y2 - y1, ETerrainUpdateType::InfoBits);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHeightmap::IsHoleAt(const int x, const int y) const
 {
-	return m_LayerIdBitmap.ValueAt(x, y).GetHole();
+	return m_layerIdBitmap.ValueAt(x, y).GetHole();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::SetLayerIdAt(const int x, const int y, const SSurfaceTypeItem& st)
 {
-	if (0 <= x && x < m_LayerIdBitmap.GetWidth() && 0 <= y && y < m_LayerIdBitmap.GetHeight())
+	if (0 <= x && x < m_layerIdBitmap.GetWidth() && 0 <= y && y < m_layerIdBitmap.GetHeight())
 	{
-		SSurfaceTypeItem& ucRef = (SSurfaceTypeItem&)m_LayerIdBitmap.ValueAt(x, y);
+		SSurfaceTypeItem& ucRef = (SSurfaceTypeItem&)m_layerIdBitmap.ValueAt(x, y);
 
 		bool hole = ucRef.GetHole();
-		
+
 		assert(!st.GetHole());
 
 		ucRef = st;
@@ -2956,37 +2865,33 @@ void CHeightmap::SetLayerIdAt(const int x, const int y, const SSurfaceTypeItem& 
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 uint32 CHeightmap::GetDominatingSurfaceTypeIdAtPosition(const int x, const int y) const
 {
-	uint32 dwLayerId = m_LayerIdBitmap.ValueAt(x, y).GetDominatingSurfaceType();
+	uint32 dwLayerId = m_layerIdBitmap.ValueAt(x, y).GetDominatingSurfaceType();
 
 	return GetIEditorImpl()->GetTerrainManager()->GetDetailIdLayerFromLayerId(dwLayerId);
 }
 
-//////////////////////////////////////////////////////////////////////////
 SSurfaceTypeItem CHeightmap::GetLayerInfoAt(const int x, const int y) const
 {
 	SSurfaceTypeItem ucValue;
 
-	if (x >= 0 && y >= 0 && x < m_LayerIdBitmap.GetWidth() && y < m_LayerIdBitmap.GetHeight())
-		ucValue = m_LayerIdBitmap.ValueAt(x, y);
+	if (x >= 0 && y >= 0 && x < m_layerIdBitmap.GetWidth() && y < m_layerIdBitmap.GetHeight())
+		ucValue = m_layerIdBitmap.ValueAt(x, y);
 
 	return ucValue;
 }
 
-//////////////////////////////////////////////////////////////////////////
 uint32 CHeightmap::GetLayerIdAt(const int x, const int y) const
 {
 	uint32 ucValue;
 
-	if (x >= 0 && y >= 0 && x < m_LayerIdBitmap.GetWidth() && y < m_LayerIdBitmap.GetHeight())
-		ucValue = m_LayerIdBitmap.ValueAt(x, y).GetDominatingSurfaceType();
+	if (x >= 0 && y >= 0 && x < m_layerIdBitmap.GetWidth() && y < m_layerIdBitmap.GetHeight())
+		ucValue = m_layerIdBitmap.ValueAt(x, y).GetDominatingSurfaceType();
 
 	return ucValue;
 }
 
-//////////////////////////////////////////////////////////////////////////
 ColorB CHeightmap::GetColorAtPosition(const float x, const float y, ColorB* colors, const int colorsNum, const float xStep)
 {
 	float fLevelSize = GetIEditorImpl()->GetSystem()->GetI3DEngine()->GetTerrainSize();
@@ -2998,7 +2903,7 @@ ColorB CHeightmap::GetColorAtPosition(const float x, const float y, ColorB* colo
 
 	if (colors)
 	{
-		float texelSize = 1.f / m_TerrainRGBTexture.CalcMaxLocalResolution(cx, cy, cx + FLT_EPSILON, cy + FLT_EPSILON);
+		float texelSize = 1.f / m_terrainRGBTexture.CalcMaxLocalResolution(cx, cy, cx + FLT_EPSILON, cy + FLT_EPSILON);
 		float cs = xStep / fLevelSize;
 
 		uint32* ptr = (uint32*)colors;
@@ -3009,7 +2914,7 @@ ColorB CHeightmap::GetColorAtPosition(const float x, const float y, ColorB* colo
 		{
 			while (ptr < ptrEnd)
 			{
-				*ptr++ = m_TerrainRGBTexture.GetFilteredValueAt(cx, cy);
+				*ptr++ = m_terrainRGBTexture.GetFilteredValueAt(cx, cy);
 				cx += cs;
 			}
 		}
@@ -3017,25 +2922,19 @@ ColorB CHeightmap::GetColorAtPosition(const float x, const float y, ColorB* colo
 		{
 			while (ptr < ptrEnd)
 			{
-				*ptr++ = m_TerrainRGBTexture.GetValueAt(cx, cy);
+				*ptr++ = m_terrainRGBTexture.GetValueAt(cx, cy);
 				cx += cs;
 			}
 		}
 	}
 	else
 	{
-		res = (ColorB)m_TerrainRGBTexture.GetFilteredValueAt(cx, cy);
+		res = (ColorB)m_terrainRGBTexture.GetFilteredValueAt(cx, cy);
 	}
 
 	return res;
 }
 
-float CHeightmap::GetRGBMultiplier()
-{
-	return m_kfBrMultiplier;
-}
-
-//////////////////////////////////////////////////////////////////////////
 float CHeightmap::GetZInterpolated(const float x, const float y)
 {
 	if (x <= 0 || y <= 0 || x >= m_iWidth - 1 || y >= m_iHeight - 1)
@@ -3063,11 +2962,8 @@ float CHeightmap::GetZInterpolated(const float x, const float y)
 	return dDownLandZ;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CHeightmap::GetAccurateSlope(const float x, const float y)
 {
-	uint32 iHeightmapWidth = GetWidth();
-
 	if (x <= 0 || y <= 0 || x >= m_iWidth - 1 || y >= m_iHeight - 1)
 		return 0;
 
@@ -3101,13 +2997,11 @@ float CHeightmap::GetAccurateSlope(const float x, const float y)
 	return (fMax - fMin) * 0.5f / GetUnitSize();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::UpdateEngineHole(int x1, int y1, int width, int height)
 {
 	UpdateEngineTerrain(x1, y1, width, height, ETerrainUpdateType::InfoBits);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::GetSectorsInfo(SSectorInfo& si)
 {
 	ZeroStruct(si);
@@ -3119,7 +3013,6 @@ void CHeightmap::GetSectorsInfo(SSectorInfo& si)
 	si.surfaceTextureSize = m_textureSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::SetSurfaceTextureSize(int width, int height)
 {
 	assert(width == height);
@@ -3128,67 +3021,12 @@ void CHeightmap::SetSurfaceTextureSize(int width, int height)
 	{
 		m_textureSize = width;
 	}
-	m_terrainGrid->SetResolution(m_textureSize);
+	m_terrainGrid.SetResolution(m_textureSize);
 }
 
-/*
-   //////////////////////////////////////////////////////////////////////////
-   void CHeightmap::MoveBlock( const CRect &rc,CPoint offset )
-   {
-   CRect hrc(0,0,m_iWidth,m_iHeight );
-   CRect subRc = rc & hrc;
-   CRect trgRc = rc;
-   trgRc.OffsetRect(offset);
-   trgRc &= hrc;
-
-   if (subRc.IsRectEmpty() || trgRc.IsRectEmpty())
-    return;
-
-   if (CUndo::IsRecording())
-   {
-    // Must be square.
-    int size = (trgRc.Width() > trgRc.Height()) ? trgRc.Width() : trgRc.Height();
-    CUndo::Record( new CUndoHeightmapModify(trgRc.left,trgRc.top,size,size,this) );
-   }
-
-   CFloatImage hmap;
-   CFloatImage hmapSubImage;
-   hmap.Attach( m_pHeightmap,m_iWidth,m_iHeight );
-   hmapSubImage.Allocate( subRc.Width(),subRc.Height() );
-
-   hmap.GetSubImage( subRc.left,subRc.top,subRc.Width(),subRc.Height(),hmapSubImage );
-   hmap.SetSubImage( trgRc.left,trgRc.top,hmapSubImage );
-
-   CByteImage infoMap;
-   CByteImage infoSubImage;
-   infoMap.Attach( &m_info[0],m_iWidth,m_iHeight );
-   infoSubImage.Allocate( subRc.Width(),subRc.Height() );
-
-   infoMap.GetSubImage( subRc.left,subRc.top,subRc.Width(),subRc.Height(),infoSubImage );
-   infoMap.SetSubImage( trgRc.left,trgRc.top,infoSubImage );
-
-   // Move Vegetation.
-   if (m_vegetationMap)
-   {
-    Vec3 p1 = HmapToWorld(CPoint(subRc.left,subRc.top));
-    Vec3 p2 = HmapToWorld(CPoint(subRc.right,subRc.bottom));
-    Vec3 ofs = HmapToWorld(offset);
-    CRect worldRC( p1.x,p1.y,p2.x,p2.y );
-    // Export and import to block.
-    CXmlArchive ar("Root");
-    ar.bLoading = false;
-    m_vegetationMap->ExportBlock( worldRC,ar );
-    ar.bLoading = true;
-    m_vegetationMap->ImportBlock( ar,CPoint(ofs.x,ofs.y) );
-   }
-   }
- */
-
-//////////////////////////////////////////////////////////////////////////
 int CHeightmap::LogLayerSizes()
 {
 	int totalSize = 0;
-	CCryEditDoc* doc = GetIEditorImpl()->GetDocument();
 	int numLayers = GetIEditorImpl()->GetTerrainManager()->GetLayerCount();
 	for (int i = 0; i < numLayers; i++)
 	{
@@ -3201,39 +3039,51 @@ int CHeightmap::LogLayerSizes()
 	return totalSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::ExportBlock(const CRect& inrect, CXmlArchive& xmlAr, bool exportVegetation, bool exportRgbLayer)
 {
-	using namespace Private_Heightmap;
-
-	// Storing
 	CLogFile::WriteLine("Exporting Heightmap settings...");
 
-	XmlNodeRef heightmap = xmlAr.root->newChild("Heightmap");
-
-	CRect subRc(inrect);
-
-	heightmap->setAttr("Width", (uint32)m_iWidth);
-	heightmap->setAttr("Height", (uint32)m_iHeight);
-
 	// Save rectangle dimensions to root of terrain block.
+	const CRect subRc(inrect);
 	xmlAr.root->setAttr("X1", subRc.left);
 	xmlAr.root->setAttr("Y1", subRc.top);
 	xmlAr.root->setAttr("X2", subRc.right);
 	xmlAr.root->setAttr("Y2", subRc.bottom);
 
-	// Rectangle.
-	heightmap->setAttr("X1", subRc.left);
-	heightmap->setAttr("Y1", subRc.top);
-	heightmap->setAttr("X2", subRc.right);
-	heightmap->setAttr("Y2", subRc.bottom);
+	{
+		// Heightmap
+		XmlNodeRef heightmap = xmlAr.root->newChild("Heightmap");
 
-	heightmap->setAttr("UnitSize", m_unitSize);
+		heightmap->setAttr("X1", subRc.left);
+		heightmap->setAttr("Y1", subRc.top);
+		heightmap->setAttr("X2", subRc.right);
+		heightmap->setAttr("Y2", subRc.bottom);
+		heightmap->setAttr("Width", (uint32)m_iWidth);
+		heightmap->setAttr("Height", (uint32)m_iHeight);
+		heightmap->setAttr("UnitSize", m_unitSize);
 
-	SRgbRegion rgbRegion{};
+		CFloatImage hmap;
+		CFloatImage hmapSubImage;
+		hmap.Attach(m_pHeightmap, m_iWidth, m_iHeight);
+		hmapSubImage.Allocate(subRc.Width(), subRc.Height());
+
+		hmap.GetSubImage(subRc.left, subRc.top, subRc.Width(), subRc.Height(), hmapSubImage);
+
+		xmlAr.pNamedData->AddDataBlock("HeightmapData", hmapSubImage.GetData(), hmapSubImage.GetSize());
+	}
+
+	{
+		//Layer ID bitmap
+		CSurfTypeImage layerIdBitmapImage;
+		layerIdBitmapImage.Allocate(subRc.Width(), subRc.Height());
+		m_layerIdBitmap.GetSubImage(subRc.left, subRc.top, subRc.Width(), subRc.Height(), layerIdBitmapImage);
+
+		xmlAr.pNamedData->AddDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, layerIdBitmapImage.GetData(), layerIdBitmapImage.GetSize());
+	}
+
 	if (exportRgbLayer)
 	{
-		rgbRegion = MapToRgbRegion(subRc, *this);
+		SRgbRegion rgbRegion = MapToRgbRegion(subRc, *this);
 		if (!rgbRegion.IsEmpty())
 		{
 			XmlNodeRef rgbLayer = xmlAr.root->newChild("rgbLayer");
@@ -3243,32 +3093,10 @@ void CHeightmap::ExportBlock(const CRect& inrect, CXmlArchive& xmlAr, bool expor
 			rgbLayer->setAttr("Y2", rgbRegion.bottom);
 			rgbLayer->setAttr("Width", rgbRegion.width);
 			rgbLayer->setAttr("Height", rgbRegion.height);
-		}
-	}
 
-	CFloatImage hmap;
-	CFloatImage hmapSubImage;
-	hmap.Attach(m_pHeightmap, m_iWidth, m_iHeight);
-	hmapSubImage.Allocate(subRc.Width(), subRc.Height());
-
-	hmap.GetSubImage(subRc.left, subRc.top, subRc.Width(), subRc.Height(), hmapSubImage);
-
-	CSurfTypeImage LayerIdBitmapImage;
-	LayerIdBitmapImage.Allocate(subRc.Width(), subRc.Height());
-
-	m_LayerIdBitmap.GetSubImage(subRc.left, subRc.top, subRc.Width(), subRc.Height(), LayerIdBitmapImage);
-
-	// Save heightmap.
-	xmlAr.pNamedData->AddDataBlock("HeightmapData", hmapSubImage.GetData(), hmapSubImage.GetSize());
-	xmlAr.pNamedData->AddDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, LayerIdBitmapImage.GetData(), LayerIdBitmapImage.GetSize());
-
-	// Save rgb map.
-	if (!rgbRegion.IsEmpty())
-	{
-		CImageEx image;
-		if (image.Allocate(rgbRegion.width, rgbRegion.height))
-		{
-			m_TerrainRGBTexture.GetSubImageStretched(rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom, image);
+			CImageEx image;
+			image.Allocate(rgbRegion.width, rgbRegion.height);
+			m_terrainRGBTexture.GetSubImageStretched(rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom, image);
 			xmlAr.pNamedData->AddDataBlock(HEIGHTMAP_RGB_BLOCK_NAME, image.GetData(), image.GetSize());
 		}
 	}
@@ -3285,28 +3113,23 @@ void CHeightmap::ExportBlock(const CRect& inrect, CXmlArchive& xmlAr, bool expor
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-CPoint CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos, float heightOffset, bool importOnlyVegetation, int nRot)
+void CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos, float heightOffset, bool importOnlyVegetation, int nRot)
 {
-	using namespace Private_Heightmap;
-
-	CLogFile::WriteLine("Importing Heightmap settings...");
+	CLogFile::WriteLine("Importing Heightmap ...");
 
 	XmlNodeRef heightmap = xmlAr.root->findChild("Heightmap");
 	if (!heightmap)
-		return CPoint(0, 0);
+		return;
 
 	uint32 width, height;
 
 	heightmap->getAttr("Width", width);
 	heightmap->getAttr("Height", height);
 
-	CPoint offset(0, 0);
-
 	if (width != m_iWidth || height != m_iHeight)
 	{
-		CryMessageBox(_T("Terrain Block dimensions differ from current terrain."), _T("Warning"), eMB_Error);
-		return CPoint(0, 0);
+		CryMessageBox("Terrain Block dimensions differ from current terrain.", "Warning", eMB_Error);
+		return;
 	}
 
 	CRect subRc;
@@ -3330,107 +3153,11 @@ CPoint CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos
 		srcHeight = subRc.bottom - subRc.top;
 	}
 
+	CPoint offset(0, 0);
 	if (useNewPos)
 	{
 		offset = CPoint(newPos.x - subRc.left, newPos.y - subRc.top);
 		subRc.OffsetRect(offset);
-	}
-
-	if (!importOnlyVegetation)
-	{
-		void* pData;
-		int size;
-
-		// Load heightmap data.
-		if (xmlAr.pNamedData->GetDataBlock("HeightmapData", pData, size))
-		{
-			// Backward compatability for float heigthmap data.
-			CFloatImage hmap;
-			CFloatImage hmapSubImage;
-			hmap.Attach(m_pHeightmap, m_iWidth, m_iHeight);
-			hmapSubImage.Attach((float*)pData, srcWidth, srcHeight);
-
-			if (nRot)
-			{
-				CFloatImage hmapSubImageRot;
-				hmapSubImageRot.RotateOrt(hmapSubImage, nRot);
-				hmap.SetSubImage(subRc.left, subRc.top, hmapSubImageRot, heightOffset, m_fMaxHeight);
-			}
-			else
-				hmap.SetSubImage(subRc.left, subRc.top, hmapSubImage, heightOffset, m_fMaxHeight);
-		}
-
-		if (xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, pData, size))
-		{
-			CSurfTypeImage LayerIdBitmapImage;
-			LayerIdBitmapImage.Attach((SSurfaceTypeItem*)pData, srcWidth, srcHeight);
-
-			if (nRot)
-			{
-				CSurfTypeImage LayerIdBitmapImageRot;
-				LayerIdBitmapImageRot.RotateOrt(LayerIdBitmapImage, nRot);
-				m_LayerIdBitmap.SetSubImage(subRc.left, subRc.top, LayerIdBitmapImageRot);
-			}
-			else
-			{
-				m_LayerIdBitmap.SetSubImage(subRc.left, subRc.top, LayerIdBitmapImage);
-			}
-		}
-
-		XmlNodeRef rgbLayer = xmlAr.root->findChild("rgbLayer");
-		if (rgbLayer && xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_RGB_BLOCK_NAME, pData, size))
-		{
-			CRY_ASSERT_MESSAGE(!useNewPos, "Not implemented");
-
-			SRgbRegion rgbRegion{};
-			rgbLayer->getAttr("X1", rgbRegion.left);
-			rgbLayer->getAttr("Y1", rgbRegion.top);
-			rgbLayer->getAttr("X2", rgbRegion.right);
-			rgbLayer->getAttr("Y2", rgbRegion.bottom);
-			rgbLayer->getAttr("Width", rgbRegion.width);
-			rgbLayer->getAttr("Height", rgbRegion.height);
-			if (!rgbRegion.IsEmpty())
-			{
-				CImageEx image;
-				image.Attach((uint32*)pData, rgbRegion.width, rgbRegion.height);
-
-				if (nRot)
-				{
-					CImageEx imageRot;
-					imageRot.RotateOrt(image, nRot);
-					m_TerrainRGBTexture.SetSubImageStretched(rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom, imageRot);
-				}
-				else
-				{
-					m_TerrainRGBTexture.SetSubImageStretched(rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom, image);
-				}
-
-				const int32 sectorCount = m_terrainGrid->GetNumSectors();
-				const int32 minSecX = (int32)floor(rgbRegion.left * sectorCount);
-				const int32 minSecY = (int32)floor(rgbRegion.top * sectorCount);
-				const int32 maxSecX = (int32)ceil(rgbRegion.right * sectorCount);
-				const int32 maxSecY = (int32)ceil(rgbRegion.bottom * sectorCount);
-				for (int y = minSecY; y < maxSecY; ++y)
-				{
-					for (int x = minSecX; x < maxSecX; ++x)
-					{
-						UpdateSectorTexture(CPoint(x, y), rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom);
-					}
-				}
-			}
-		}
-
-		// After heightmap serialization, update terrain in 3D Engine.
-		int wid = subRc.Width() + 2;
-		if (wid < subRc.Height() + 2)
-		{
-			wid = subRc.Height() + 2;
-		}
-
-		auto updateFlags = (rgbLayer != nullptr)
-			? ETerrainUpdateType::Elevation | ETerrainUpdateType::InfoBits | ETerrainUpdateType::Paint
-			: ETerrainUpdateType::Elevation | ETerrainUpdateType::InfoBits;
-		UpdateEngineTerrain(subRc.left - 1, subRc.top - 1, wid, wid, updateFlags);
 	}
 
 	if (GetIEditorImpl()->GetVegetationMap())
@@ -3439,41 +3166,139 @@ CPoint CHeightmap::ImportBlock(CXmlArchive& xmlAr, CPoint newPos, bool useNewPos
 		GetIEditorImpl()->GetVegetationMap()->ImportBlock(xmlAr, CPoint(ofs.x, ofs.y));
 	}
 
-	if (!importOnlyVegetation)
+	if (importOnlyVegetation)
 	{
-		// Import layers.
-		XmlNodeRef layers = xmlAr.root->findChild("Layers");
-		if (layers)
+		return;
+	}
+
+	void* pData;
+	int size;
+	// Load heightmap data.
+	if (xmlAr.pNamedData->GetDataBlock("HeightmapData", pData, size))
+	{
+		// Backward compatibility for float heightmap data.
+		CFloatImage hmap;
+		CFloatImage hmapSubImage;
+		hmap.Attach(m_pHeightmap, m_iWidth, m_iHeight);
+		hmapSubImage.Attach((float*)pData, srcWidth, srcHeight);
+
+		if (nRot)
 		{
-			SSectorInfo si;
-			GetSectorsInfo(si);
-			float pixelsPerMeter = ((float)si.sectorTexSize) / si.sectorSize;
+			CFloatImage hmapSubImageRot;
+			hmapSubImageRot.RotateOrt(hmapSubImage, nRot);
+			hmap.SetSubImage(subRc.left, subRc.top, hmapSubImageRot, heightOffset, m_fMaxHeight);
+		}
+		else
+			hmap.SetSubImage(subRc.left, subRc.top, hmapSubImage, heightOffset, m_fMaxHeight);
 
-			CPoint layerOffset;
-			layerOffset.x = offset.x * si.unitSize * pixelsPerMeter;
-			layerOffset.y = offset.y * si.unitSize * pixelsPerMeter;
+		GetIEditorImpl()->GetTerrainManager()->signalTerrainChanged();
+	}
 
-			// Export layers settings.
-			for (int i = 0; i < layers->getChildCount(); i++)
+	if (xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_LAYERINFO_BLOCK_NAME, pData, size))
+	{
+		CSurfTypeImage LayerIdBitmapImage;
+		LayerIdBitmapImage.Attach((SSurfaceTypeItem*)pData, srcWidth, srcHeight);
+
+		if (nRot)
+		{
+			CSurfTypeImage LayerIdBitmapImageRot;
+			LayerIdBitmapImageRot.RotateOrt(LayerIdBitmapImage, nRot);
+			m_layerIdBitmap.SetSubImage(subRc.left, subRc.top, LayerIdBitmapImageRot);
+		}
+		else
+		{
+			m_layerIdBitmap.SetSubImage(subRc.left, subRc.top, LayerIdBitmapImage);
+		}
+
+		GetIEditorImpl()->GetTerrainManager()->signalLayersChanged();
+	}
+
+	XmlNodeRef rgbLayer = xmlAr.root->findChild("rgbLayer");
+	if (rgbLayer && xmlAr.pNamedData->GetDataBlock(HEIGHTMAP_RGB_BLOCK_NAME, pData, size))
+	{
+		CRY_ASSERT_MESSAGE(!useNewPos, "Not implemented");
+
+		SRgbRegion rgbRegion {};
+		rgbLayer->getAttr("X1", rgbRegion.left);
+		rgbLayer->getAttr("Y1", rgbRegion.top);
+		rgbLayer->getAttr("X2", rgbRegion.right);
+		rgbLayer->getAttr("Y2", rgbRegion.bottom);
+		rgbLayer->getAttr("Width", rgbRegion.width);
+		rgbLayer->getAttr("Height", rgbRegion.height);
+		if (!rgbRegion.IsEmpty())
+		{
+			CImageEx image;
+			image.Attach((uint32*)pData, rgbRegion.width, rgbRegion.height);
+
+			if (nRot)
 			{
-				CXmlArchive ar(xmlAr);
-				ar.root = layers->getChild(i);
-				string layerName;
-				if (!ar.root->getAttr("Name", layerName))
-					continue;
-				CLayer* layer = GetIEditorImpl()->GetTerrainManager()->FindLayer(layerName);
-				if (!layer)
-					continue;
-
-				layer->ImportBlock(ar, layerOffset, nRot);
+				CImageEx imageRot;
+				imageRot.RotateOrt(image, nRot);
+				m_terrainRGBTexture.SetSubImageStretched(rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom, imageRot);
 			}
+			else
+			{
+				m_terrainRGBTexture.SetSubImageStretched(rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom, image);
+			}
+
+			const int32 sectorCount = m_terrainGrid.GetNumSectors();
+			const int32 minSecX = (int32)floor(rgbRegion.left * sectorCount);
+			const int32 minSecY = (int32)floor(rgbRegion.top * sectorCount);
+			const int32 maxSecX = (int32)ceil(rgbRegion.right * sectorCount);
+			const int32 maxSecY = (int32)ceil(rgbRegion.bottom * sectorCount);
+			for (int y = minSecY; y < maxSecY; ++y)
+			{
+				for (int x = minSecX; x < maxSecX; ++x)
+				{
+					UpdateSectorTexture(CPoint(x, y), rgbRegion.left, rgbRegion.top, rgbRegion.right, rgbRegion.bottom);
+				}
+			}
+
+			GetIEditorImpl()->GetTerrainManager()->signalTerrainChanged();
 		}
 	}
 
-	return offset;
+	// After heightmap serialization, update terrain in 3D Engine.
+	int wid = subRc.Width() + 2;
+	if (wid < subRc.Height() + 2)
+	{
+		wid = subRc.Height() + 2;
+	}
+
+	auto updateFlags = (rgbLayer != nullptr)
+	                   ? ETerrainUpdateType::Elevation | ETerrainUpdateType::InfoBits | ETerrainUpdateType::Paint
+	                   : ETerrainUpdateType::Elevation | ETerrainUpdateType::InfoBits;
+	UpdateEngineTerrain(subRc.left - 1, subRc.top - 1, wid, wid, updateFlags);
+
+	// Import layers.
+	XmlNodeRef layers = xmlAr.root->findChild("Layers");
+	if (layers)
+	{
+		SSectorInfo si;
+		GetSectorsInfo(si);
+		float pixelsPerMeter = ((float)si.sectorTexSize) / si.sectorSize;
+
+		CPoint layerOffset;
+		layerOffset.x = offset.x * si.unitSize * pixelsPerMeter;
+		layerOffset.y = offset.y * si.unitSize * pixelsPerMeter;
+
+		// Export layers settings.
+		for (int i = 0; i < layers->getChildCount(); i++)
+		{
+			CXmlArchive ar(xmlAr);
+			ar.root = layers->getChild(i);
+			string layerName;
+			if (!ar.root->getAttr("Name", layerName))
+				continue;
+			CLayer* layer = GetIEditorImpl()->GetTerrainManager()->FindLayer(layerName);
+			if (!layer)
+				continue;
+
+			layer->ImportBlock(ar, layerOffset, nRot);
+		}
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::ClearSegmentHeights(const CRect& rc)
 {
 	int w = rc.Width() * sizeof(t_hmap);
@@ -3483,7 +3308,6 @@ void CHeightmap::ClearSegmentHeights(const CRect& rc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::ImportSegmentHeights(CMemoryBlock& mem, const CRect& rc)
 {
 	CFloatImage hmapSubImage;
@@ -3495,7 +3319,6 @@ void CHeightmap::ImportSegmentHeights(CMemoryBlock& mem, const CRect& rc)
 	hmap.SetSubImage(rc.left, rc.top, hmapSubImage);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::ExportSegmentHeights(CMemoryBlock& mem, const CRect& rc)
 {
 	CFloatImage hmap;
@@ -3507,26 +3330,24 @@ void CHeightmap::ExportSegmentHeights(CMemoryBlock& mem, const CRect& rc)
 	hmapSubImage.Compress(mem);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::ClearSegmentLayerIDs(const CRect& rc)
 {
 	int w = rc.Width() * sizeof(SSurfaceTypeItem);
-	SSurfaceTypeItem* pLayerIDs = m_LayerIdBitmap.GetData();
+	SSurfaceTypeItem* pLayerIDs = m_layerIdBitmap.GetData();
 	for (int y = rc.top; y < rc.bottom; ++y)
 	{
 		memset(pLayerIDs + y * m_iWidth + rc.left, 0, w);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::ImportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 {
-	//TODO: load layers info, update terrain layers, remap indicies
-	typedef std::map<uint32, CryGUID>    TUIntGuidMap;
-	typedef std::pair<uint32, CryGUID>   TUIntGuidPair;
+	//TODO: load layers info, update terrain layers, remap indices
+	typedef std::map<uint32, CryGUID>  TUIntGuidMap;
+	typedef std::pair<uint32, CryGUID> TUIntGuidPair;
 
-	typedef std::map<uint32, uint32>  TUIntUIntMap;
-	typedef std::pair<uint32, uint32> TUIntUIntPair;
+	typedef std::map<uint32, uint32>   TUIntUIntMap;
+	typedef std::pair<uint32, uint32>  TUIntUIntPair;
 
 	int nImageMemSize = sizeof(SSurfaceTypeItem) * rc.Width() * rc.Height();
 	bool isLayerIDsInfoStored = (mem.GetSize() != nImageMemSize);
@@ -3540,7 +3361,6 @@ void CHeightmap::ImportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 
 	if (isLayerIDsInfoStored)
 	{
-
 		TUIntGuidMap tMap;
 
 		int nSavedLayersCount;
@@ -3565,18 +3385,17 @@ void CHeightmap::ImportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 			isNeedToReindex = true;
 		}
 
-		TUIntGuidMap::const_iterator it;
-		for (it = tMap.begin(); it != tMap.end(); ++it)
+		for (const auto& it : tMap)
 		{
 			TUIntUIntPair tUIntPair;
-			tUIntPair.first = it->first;
+			tUIntPair.first = it.first;
 			tUIntPair.second = 0;
 			bool bFound = false;
 			for (int i = 0; i < nLayersCount; i++)
 			{
 				CLayer* pLayer = GetIEditorImpl()->GetTerrainManager()->GetLayer(i);
 
-				if (it->second == pLayer->GetGUID())
+				if (it.second == pLayer->GetGUID())
 				{
 					tUIntPair.second = pLayer->GetCurrentLayerId();
 					if (tUIntPair.first != tUIntPair.second)
@@ -3614,21 +3433,20 @@ void CHeightmap::ImportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 				for (int x = 0; x < LayerIdBitmapImage.GetWidth(); ++x)
 				{
 					SSurfaceTypeItem& rValue = (SSurfaceTypeItem&)LayerIdBitmapImage.ValueAt(x, y);
-					int lidOld = rValue.GetDominatingSurfaceType() & CLayer::e_undefined;
+					int lidOld = rValue.GetDominatingSurfaceType() & e_layerIdUndefined;
 					TUIntUIntMap::const_iterator itNew = tLayerIDMap.find(lidOld);
 					if (itNew == tLayerIDMap.end())
 						continue;
 					int lidNew = itNew->second;
-					rValue = (rValue.GetDominatingSurfaceType()& CLayer::e_hole) | (lidNew & CLayer::e_undefined);
+					rValue = (rValue.GetDominatingSurfaceType() & e_layerIdHole) | (lidNew & e_layerIdUndefined);
 				}
 			}
 		}
 	}
 
-	m_LayerIdBitmap.SetSubImage(rc.left, rc.top, LayerIdBitmapImage);
+	m_layerIdBitmap.SetSubImage(rc.left, rc.top, LayerIdBitmapImage);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::ExportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 {
 	//TODO: save layers info with number of "instances" per layer
@@ -3686,7 +3504,7 @@ void CHeightmap::ExportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 	CMemoryBlock tempMem;
 
 	CSurfTypeImage LayerIdBitmapImage;
-	m_LayerIdBitmap.GetSubImage(rc.left, rc.top, rc.Width(), rc.Height(), LayerIdBitmapImage);
+	m_layerIdBitmap.GetSubImage(rc.left, rc.top, rc.Width(), rc.Height(), LayerIdBitmapImage);
 	LayerIdBitmapImage.Compress(tempMem);
 	tempMem.Uncompress(memImgData);
 
@@ -3696,22 +3514,19 @@ void CHeightmap::ExportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 	memAggregated.Compress(mem);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::CopyFrom(t_hmap* pHmap, unsigned char* pLayerIdBitmap, int resolution)
 {
-	int x, y;
 	int res = min(resolution, (int)m_iWidth);
-	for (y = 0; y < res; y++)
+	for (int y = 0; y < res; y++)
 	{
-		for (x = 0; x < res; x++)
+		for (int x = 0; x < res; x++)
 		{
 			SetXY(x, y, pHmap[x + y * resolution]);
-			m_LayerIdBitmap.ValueAt(x, y) = pLayerIdBitmap[x + y * resolution];
+			m_layerIdBitmap.ValueAt(x, y) = pLayerIdBitmap[x + y * resolution];
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitmap, int resolution, int prevUnitSize)
 {
 	float fKof = float(prevUnitSize) / m_unitSize;
@@ -3727,6 +3542,7 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 
 		int kof = (int) fKof;
 		for (int y = 0, y2 = 0; y < iHeight; y += kof, y2++)
+		{
 			for (int x = 0, x2 = 0; x < iWidth; x += kof, x2++)
 			{
 				for (int y1 = 0; y1 < kof; y1++)
@@ -3734,25 +3550,25 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 					{
 						if (x + x1 < iWidth && y + y1 < iHeight && x2 < resolution && y2 < resolution)
 						{
-							float kofx = (float) x1 / kof;
-							float kofy = (float) y1 / kof;
+							float kofx = (float)x1 / kof;
+							float kofy = (float)y1 / kof;
 
 							int x3 = x2 + 1;
 							int y3 = y2 + 1;
 							/*
-							            if(x2>0 && y2>0 && x3+1<resolution && y3+1<resolution)
-							            {
-							              t_hmap p1xy2 = pHmap[x2 + y2*resolution] + (pHmap[x2 + y2*resolution] - pHmap[x2-1 + y2*resolution])/3;
-							              t_hmap p2xy2 = pHmap[x3 + y2*resolution] + (pHmap[x3 + y2*resolution] - pHmap[x3+1 + y2*resolution])/3;
+							      if(x2>0 && y2>0 && x3+1<resolution && y3+1<resolution)
+							      {
+							        t_hmap p1xy2 = pHmap[x2 + y2*resolution] + (pHmap[x2 + y2*resolution] - pHmap[x2-1 + y2*resolution])/3;
+							        t_hmap p2xy2 = pHmap[x3 + y2*resolution] + (pHmap[x3 + y2*resolution] - pHmap[x3+1 + y2*resolution])/3;
 
-							              t_hmap p1xy3 = pHmap[x2 + y3*resolution] + (pHmap[x2 + y3*resolution] - pHmap[x2-1 + y3*resolution])/3;
-							              t_hmap p2xy3 = pHmap[x3 + y3*resolution] + (pHmap[x3 + y3*resolution] - pHmap[x3+1 + y3*resolution])/3;
+							        t_hmap p1xy3 = pHmap[x2 + y3*resolution] + (pHmap[x2 + y3*resolution] - pHmap[x2-1 + y3*resolution])/3;
+							        t_hmap p2xy3 = pHmap[x3 + y3*resolution] + (pHmap[x3 + y3*resolution] - pHmap[x3+1 + y3*resolution])/3;
 
 
-							              t_hmap pxy2 = p1xy2
-							            }
-							            else
-							            {
+							        t_hmap pxy2 = p1xy2
+							      }
+							      else
+							      {
 							 */
 							if (x3 >= resolution)
 								x3 = x2;
@@ -3763,9 +3579,8 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 							      (1.0f - kofy) * ((1.0f - kofx) * pHmap[x2 + y2 * resolution] + kofx * pHmap[x3 + y2 * resolution]) +
 							      kofy * ((1.0f - kofx) * pHmap[x2 + y3 * resolution] + kofx * pHmap[x3 + y3 * resolution])
 							      );
-							//						}
 
-							m_LayerIdBitmap.ValueAt(x + x1, y + y1) = pLayerIdBitmap[x2 + y2 * resolution];
+							m_layerIdBitmap.ValueAt(x + x1, y + y1) = pLayerIdBitmap[x2 + y2 * resolution];
 						}
 					}
 				unsigned char val = pLayerIdBitmap[x2 + y2 * resolution];
@@ -3774,19 +3589,19 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 				{
 					unsigned char val1 = pLayerIdBitmap[x2 + (y2 + 1) * resolution];
 					if (val1 > val)
-						m_LayerIdBitmap.ValueAt(x, y + kof - 1) = val1;
+						m_layerIdBitmap.ValueAt(x, y + kof - 1) = val1;
 				}
 
 				if (x2 < resolution - 1)
 				{
 					unsigned char val1 = pLayerIdBitmap[x2 + 1 + y2 * resolution];
 					if (val1 > val)
-						m_LayerIdBitmap.ValueAt(x + kof - 1, y) = val1;
+						m_layerIdBitmap.ValueAt(x + kof - 1, y) = val1;
 				}
 
 				if (x2 < resolution - 1 && y2 < resolution - 1)
 				{
-					// choose max occured value or max value between several max occured.
+					// Choose max occurred value or max value between several max occurred
 					unsigned char valu[4];
 					int bal[4];
 					valu[0] = val;
@@ -3825,14 +3640,16 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 						}
 					}
 
-					m_LayerIdBitmap.ValueAt(x + kof - 1, y + kof - 1) = val;
+					m_layerIdBitmap.ValueAt(x + kof - 1, y + kof - 1) = val;
 				}
 			}
+		}
 	}
 	else if (0.1f < fKof && fKof < 1.0f)
 	{
 		int kof = int(1.0f / fKof + 0.5f);
 		for (int y = 0; y < m_iHeight; y++)
+		{
 			for (int x = 0; x < m_iWidth; x++)
 			{
 				int x2 = x * kof;
@@ -3840,13 +3657,13 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 				if (x2 < resolution && y2 < resolution)
 				{
 					SetXY(x, y, pHmap[x2 + y2 * resolution]);
-					m_LayerIdBitmap.ValueAt(x, y) = pLayerIdBitmap[x2 + y2 * resolution];
+					m_layerIdBitmap.ValueAt(x, y) = pLayerIdBitmap[x2 + y2 * resolution];
 				}
 			}
+		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::InitSectorGrid()
 {
 	SSectorInfo si;
@@ -3871,13 +3688,10 @@ void CHeightmap::GetMemoryUsage(ICrySizer* pSizer)
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "LayerId 2D Array");
-		pSizer->Add((char*)m_LayerIdBitmap.GetData(), m_LayerIdBitmap.GetSize());
+		pSizer->Add((char*)m_layerIdBitmap.GetData(), m_layerIdBitmap.GetSize());
 	}
 
-	if (m_terrainGrid)
-	{
-		m_terrainGrid->GetMemoryUsage(pSizer);
-	}
+	m_terrainGrid.GetMemoryUsage(pSizer);
 }
 
 t_hmap CHeightmap::GetSafeXY(const uint32 dwX, const uint32 dwY) const
@@ -3929,7 +3743,7 @@ void CHeightmap::UpdateLayerTexture(const CRect& rect)
 	int iTerrainSize = GetIEditorImpl()->Get3DEngine()->GetTerrainSize();
 	int iTexSectorsNum = iTerrainSize / iTexSectorSize;
 
-	uint32 dwFullResolution = m_TerrainRGBTexture.CalcMaxLocalResolution((float)rect.left / GetWidth(), (float)rect.top / GetHeight(), (float)rect.right / GetWidth(), (float)rect.bottom / GetHeight());
+	uint32 dwFullResolution = m_terrainRGBTexture.CalcMaxLocalResolution((float)rect.left / GetWidth(), (float)rect.top / GetHeight(), (float)rect.right / GetWidth(), (float)rect.bottom / GetHeight());
 	uint32 dwNeededResolution = dwFullResolution / iTexSectorsNum;
 
 	int iSectMinX = (int)floor(y1 / iTexSectorSize);
@@ -3973,14 +3787,14 @@ void CHeightmap::UpdateLayerTexture(const CRect& rect)
 				CImageEx image;
 				image.Allocate(iLocalOutMaxX - iLocalOutMinX, iLocalOutMaxY - iLocalOutMinY);
 
-				m_TerrainRGBTexture.GetSubImageStretched(
-					(iSectX + (float)iLocalOutMinX / dwNeededResolution) / iTexSectorsNum,
-					(iSectY + (float)iLocalOutMinY / dwNeededResolution) / iTexSectorsNum,
-					(iSectX + (float)iLocalOutMaxX / dwNeededResolution) / iTexSectorsNum,
-					(iSectY + (float)iLocalOutMaxY / dwNeededResolution) / iTexSectorsNum,
-					image);
+				m_terrainRGBTexture.GetSubImageStretched(
+				  (iSectX + (float)iLocalOutMinX / dwNeededResolution) / iTexSectorsNum,
+				  (iSectY + (float)iLocalOutMinY / dwNeededResolution) / iTexSectorsNum,
+				  (iSectX + (float)iLocalOutMaxX / dwNeededResolution) / iTexSectorsNum,
+				  (iSectY + (float)iLocalOutMaxY / dwNeededResolution) / iTexSectorsNum,
+				  image);
 
-				// convert RGB colour into format that has less compression artefacts for brightness variations
+				// convert RGB colour into format that has less compression artifacts for brightness variations
 				{
 					bool bRGBA = GetIEditorImpl()->GetRenderer()->GetRenderType() == ERenderType::Direct3D11;      // i would be cleaner if renderer would ensure the behave the same but that can be slower
 
@@ -4025,19 +3839,18 @@ void CHeightmap::UpdateLayerTexture(const CRect& rect)
 				}
 
 				GetIEditorImpl()->GetRenderer()->UpdateTextureInVideoMemory(texId, (unsigned char*)image.GetData(),
-					iLocalOutMinX, iLocalOutMinY, image.GetWidth(), image.GetHeight(), eTF_R8G8B8A8);
+				                                                            iLocalOutMinX, iLocalOutMinY, image.GetWidth(), image.GetHeight(), eTF_R8G8B8A8);
 				AddModSector(iSectX, iSectY);
 			}
 		}
 	}
 }
 
-/////////////////////////////////////////////////////////
 void CHeightmap::GetLayerInfoBlock(int x, int y, int width, int height, CSurfTypeImage& map)
 {
-	if (m_LayerIdBitmap.IsValid())
+	if (m_layerIdBitmap.IsValid())
 	{
-		m_LayerIdBitmap.GetSubImage(x, y, width, height, map);
+		m_layerIdBitmap.GetSubImage(x, y, width, height, map);
 	}
 }
 
@@ -4048,9 +3861,9 @@ void CHeightmap::GetLayerIdBlock(int x, int y, int width, int height, CByteImage
 	CSurfTypeImage surfTypeImage;
 	surfTypeImage.Allocate(width, height);
 
-	if (m_LayerIdBitmap.IsValid())
+	if (m_layerIdBitmap.IsValid())
 	{
-		m_LayerIdBitmap.GetSubImage(x, y, width, height, surfTypeImage);
+		m_layerIdBitmap.GetSubImage(x, y, width, height, surfTypeImage);
 	}
 
 	for (int y = 0; y < height; y++)
@@ -4062,16 +3875,14 @@ void CHeightmap::GetLayerIdBlock(int x, int y, int width, int height, CByteImage
 	}
 }
 
-/////////////////////////////////////////////////////////
 void CHeightmap::SetLayerIdBlock(int x, int y, const CSurfTypeImage& map)
 {
-	if (m_LayerIdBitmap.IsValid())
+	if (m_layerIdBitmap.IsValid())
 	{
-		m_LayerIdBitmap.SetSubImage(x, y, map);
+		m_layerIdBitmap.SetSubImage(x, y, map);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::UpdateSectorTexture(CPoint texsector,
                                      const float fGlobalMinX, const float fGlobalMinY, const float fGlobalMaxX, const float fGlobalMaxY)
 {
@@ -4094,7 +3905,7 @@ void CHeightmap::UpdateSectorTexture(CPoint texsector,
 	float fMinX = texsector.x * fInvSectorCnt;
 	float fMinY = texsector.y * fInvSectorCnt;
 
-	uint32 dwFullResolution = m_TerrainRGBTexture.CalcMaxLocalResolution(fMinX, fMinY, fMinX + fInvSectorCnt, fMinY + fInvSectorCnt);
+	uint32 dwFullResolution = m_terrainRGBTexture.CalcMaxLocalResolution(fMinX, fMinY, fMinX + fInvSectorCnt, fMinY + fInvSectorCnt);
 
 	GetIEditorImpl()->Get3DEngine()->SetEditorHeightmapCallback(this);
 
@@ -4102,7 +3913,7 @@ void CHeightmap::UpdateSectorTexture(CPoint texsector,
 	{
 		uint32 dwNeededResolution = dwFullResolution / texSectorCount;
 
-		CTerrainSector* st = m_terrainGrid->GetSector(texsector);
+		m_terrainGrid.GetSector(texsector);
 
 		bool bFullRefreshRequired = true;
 
@@ -4110,7 +3921,7 @@ void CHeightmap::UpdateSectorTexture(CPoint texsector,
 
 		bool bRecreated;
 
-		int texId = m_terrainGrid->LockSectorTexture(texsector, dwNeededResolution, bRecreated);
+		int texId = m_terrainGrid.LockSectorTexture(texsector, dwNeededResolution, bRecreated);
 
 		if (bRecreated)
 		{
@@ -4136,7 +3947,7 @@ void CHeightmap::UpdateSectorTexture(CPoint texsector,
 
 			image.Allocate(iLocalOutMaxX - iLocalOutMinX, iLocalOutMaxY - iLocalOutMinY);
 
-			m_TerrainRGBTexture.GetSubImageStretched(
+			m_terrainRGBTexture.GetSubImageStretched(
 			  fMinX + fInvSectorCnt / dwNeededResolution * iLocalOutMinX,
 			  fMinY + fInvSectorCnt / dwNeededResolution * iLocalOutMinY,
 			  fMinX + fInvSectorCnt / dwNeededResolution * iLocalOutMaxX,
@@ -4210,7 +4021,6 @@ void CHeightmap::UpdateSectorTexture(CPoint texsector,
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHeightmap::InitTerrain()
 {
 	InitSectorGrid();
@@ -4251,57 +4061,41 @@ void CHeightmap::InitTerrain()
 	}
 }
 
-/////////////////////////////////////////////////////////
 void CHeightmap::AddModSector(int x, int y)
 {
-	//	std::vector<Vec2i>::iterator linkIt;
-
-	bool isExist = false;
-
-	for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end(); ++it)
+	for (const auto& sector : m_modSectors)
 	{
-		if (it->x == x && it->y == y)
+		if (sector.x == x && sector.y == y)
 		{
-			isExist = true;
-			break;
+			return; //Already recorded as modified
 		}
 	}
 
-	if (!isExist)
-	{
-		m_modSectors.push_back(Vec2(x, y));
-	}
+	m_modSectors.push_back(Vec2(x, y));
 }
 
-/////////////////////////////////////////////////////////
 void CHeightmap::ClearModSectors()
 {
 	m_modSectors.clear();
 }
 
-/////////////////////////////////////////////////////////
 void CHeightmap::UnlockSectorsTexture(const CRect& rc)
 {
-	if (m_modSectors.size())
+	for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end(); )
 	{
-		for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end(); )
+		CPoint pointSector(it->x, it->y);
+		if (rc.PtInRect(pointSector))
 		{
-			CPoint pointSector(it->x, it->y);
-			if (rc.PtInRect(pointSector))
-			{
-				GetTerrainGrid()->UnlockSectorTexture(CPoint(pointSector));
-				it = m_modSectors.erase(it);
-			}
-			else
-			{
-				++it;
-			}
+			GetTerrainGrid()->UnlockSectorTexture(CPoint(pointSector));
+			it = m_modSectors.erase(it);
+		}
+		else
+		{
+			++it;
 		}
 	}
-
 }
 
-/////////////////////////////////////////////////////////
 void CHeightmap::ImportSegmentModSectors(CMemoryBlock& mem, const CRect& rc)
 {
 	unsigned char* p = (unsigned char*)mem.GetBuffer();
@@ -4326,23 +4120,19 @@ void CHeightmap::ImportSegmentModSectors(CMemoryBlock& mem, const CRect& rc)
 	m_updateModSectors = true;
 }
 
-/////////////////////////////////////////////////////////
 void CHeightmap::ExportSegmentModSectors(CMemoryBlock& mem, const CRect& rc)
 {
 	std::vector<CPoint> modSectorsInRect;
 	int nSizeOfMem = 0;
 	nSizeOfMem += sizeof(int); // number of mod_sectors in rect
-	if (m_modSectors.size())
+	for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end(); ++it)
 	{
-		for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end(); ++it)
+		CPoint pointSector(it->x, it->y);
+		if (rc.PtInRect(pointSector))
 		{
-			CPoint pointSector(it->x, it->y);
-			if (rc.PtInRect(pointSector))
-			{
-				modSectorsInRect.push_back(CPoint(pointSector.x - rc.left, pointSector.y - rc.top));
-				nSizeOfMem += sizeof(int); // x
-				nSizeOfMem += sizeof(int); // y
-			}
+			modSectorsInRect.push_back(CPoint(pointSector.x - rc.left, pointSector.y - rc.top));
+			nSizeOfMem += sizeof(int); // x
+			nSizeOfMem += sizeof(int); // y
 		}
 	}
 
@@ -4394,7 +4184,6 @@ void CHeightmap::UpdateModSectors()
 	m_updateModSectors = false;
 }
 
-/////////////////////////////////////////////////////////
 bool CHeightmap::IsAllocated()
 {
 	return m_pHeightmap ? true : false;
@@ -4497,6 +4286,8 @@ float CHeightmap::GetNoise(int x, int y) const
 	return m_pNoise->m_Array[x][y];
 }
 
+//#Sandbox: move to Image.h
+//Note: only "unsigned int SampleImage(const CImageEx* pImage, float x, float y)" is in use
 float SampleImage(const CFloatImage* pImage, float x, float y)
 {
 	float w = (float)pImage->GetWidth();
@@ -4512,7 +4303,6 @@ float SampleImage(const CFloatImage* pImage, float x, float y)
 	float v1 = pImage->ValueAt(x1, y1);
 	float v2 = pImage->ValueAt(x2, y1);
 	float v3 = pImage->ValueAt(x1, y2);
-	float v4 = pImage->ValueAt(x2, y2);
 	return (v1 * (1 - tx) + v2 * tx) * (1 - ty) + (v3 * (1 - tx) + v2 * tx) * ty;
 }
 
@@ -4590,4 +4380,3 @@ void BlitImage(TImage<T>* pDest, TImage<T>* pSrc, const Matrix34& mat, T delta)
 		}
 	}
 }
-

@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Util/BoostPythonHelpers.h"
 #include "BasicScripts.h"
 #include "Objects/DesignerObject.h"
 #include "Tools/Edit/WeldTool.h"
@@ -154,4 +153,3 @@ void PyDesignerWeld()
                        "Puts the first selected vertex together into the second selected vertex.",
                        "designer.weld()" );
  */
-

@@ -1,7 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _SMART_PTR_H_
-#define _SMART_PTR_H_
+#pragma once
+
+#include <CryThreading/CryAtomics.h>
 
 void CryFatalError(const char*, ...) PRINTF_PARAMS(1, 2);
 #if CRY_PLATFORM_APPLE
@@ -55,12 +56,15 @@ public:
 	_I*         get() const { return p; }
 	_smart_ptr& operator=(_I* newp)
 	{
-		_I* oldp = p;
-		p = newp;
-		if (p)
-			p->AddRef();
-		if (oldp)
-			oldp->Release();
+		if (newp != this->p)
+		{
+			_I* oldp = p;
+			p = newp;
+			if (p)
+				p->AddRef();
+			if (oldp)
+				oldp->Release();
+		}
 		return *this;
 	}
 
@@ -79,11 +83,14 @@ public:
 
 	_smart_ptr& operator=(const _smart_ptr& newp)
 	{
-		if (newp.p)
-			newp.p->AddRef();
-		if (p)
-			p->Release();
-		p = newp.p;
+		if (newp.p != this->p)
+		{
+			if (newp.p)
+				newp.p->AddRef();
+			if (p)
+				p->Release();
+			p = newp.p;
+		}
 		return *this;
 	}
 
@@ -103,11 +110,14 @@ public:
 	_smart_ptr& operator=(const _smart_ptr<_Y>& newp)
 	{
 		_I* const p2 = newp.get();
-		if (p2)
-			p2->AddRef();
-		if (p)
-			p->Release();
-		p = p2;
+		if (p2 != this->p)
+		{
+			if (p2)
+				p2->AddRef();
+			if (p)
+				p->Release();
+			p = p2;
+		}
 		return *this;
 	}
 
@@ -119,7 +129,7 @@ public:
 	//! Assigns a pointer without increasing ref count.
 	void Assign_NoAddRef(_I* ptr)
 	{
-		CRY_ASSERT_MESSAGE(!p, "Assign_NoAddRef should only be used on a default-constructed, not-yet-assigned smart_ptr instance");
+		CRY_ASSERT(!p, "Assign_NoAddRef should only be used on a default-constructed, not-yet-assigned smart_ptr instance");
 		p = ptr;
 	}
 
@@ -175,7 +185,7 @@ public:
 		CHECK_REFCOUNT_CRASH(m_nRefCounter > 0);
 		if (--m_nRefCounter == 0)
 		{
-			delete static_cast<TDerived*>(this);
+			delete static_cast<const TDerived*>(this);
 		}
 		else if (m_nRefCounter < 0)
 		{
@@ -495,5 +505,3 @@ typedef _i_multithread_reference_target<int> _i_multithread_reference_target_t;
 #else
 #define TYPEDEF_AUTOPTR(T) typedef _smart_ptr<T> T ##                                                   _AutoPtr; typedef std::vector<T ## _AutoPtr> T ##_AutoArray;
 #endif
-
-#endif //_SMART_PTR_H_

@@ -1,0 +1,8 @@
+def build(bld): 
+	bld.CryEditorPlugin(
+		target     = 'EditorCSharp',
+		vs_filter  = 'Sandbox/Plugins',
+		file_list  = 'csharpeditor.waf_files',
+		pch        = 'StdAfx.cpp'
+	)
+	

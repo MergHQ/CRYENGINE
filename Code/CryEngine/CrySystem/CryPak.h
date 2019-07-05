@@ -1,32 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File:CryPak.h
-//
-//	History:
-//	-Feb 2,2001:Created by Honich Andrey
-//  -June 12, 2003: Taken over by Sergiy Migdalskiy.
-//     Got rid of unzip usage, now using ZipDir for much more effective
-//     memory usage (~3-6 times less memory, and no allocator overhead)
-//     to keep the directory of the zip file; better overall effectiveness and
-//     more readable and manageable code, made the connection to Streaming Engine
-//
-//////////////////////////////////////////////////////////////////////
+#pragma once
 
-#ifndef CRYPAK_H
-#define CRYPAK_H
-
-#include <CrySystem/File/ICryPak.h>
-#include <CrySystem/IMiniLog.h>
-#include "ZipDir.h"
 #include "MTSafeAllocator.h"
-#include <CryCore/StlUtils.h>
 #include "PakVars.h"
-#include "FileIOWrapper.h"
+#include "ZipDir.h"
+
 #include <CryCore/Containers/VectorMap.h>
+#include <CryCore/StlUtils.h>
+#include <CryMemory/STLGlobalAllocator.h>
+#include <CrySystem/File/ICryPak.h>
 #include <CrySystem/Profilers/IPerfHud.h>
 
+#include <atomic>
+
 class CCryPak;
+struct IMiniLog;
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
 struct AAsset;
@@ -55,7 +44,7 @@ struct CCachedFileData : public _i_reference_target_t
 	   // the memory needs to be allocated out of a MT-safe heap here
 	   void * __cdecl operator new   (size_t size) { return g_pPakHeap->Alloc(size, "CCachedFileData::new"); }
 	   void * __cdecl operator new   (size_t size, const std::nothrow_t &nothrow) { return g_pPakHeap->Alloc(size, "CCachedFileData::new(std::nothrow)"); }
-	   void __cdecl operator delete  (void *p) { g_pPakHeap->Free(p); };
+	   void __cdecl operator delete  (void *p) { g_pPakHeap->Free(p); }
 	 */
 
 	unsigned GetFileDataOffset()
@@ -68,11 +57,7 @@ struct CCachedFileData : public _i_reference_target_t
 		return sizeof(*this) + (m_pFileData && m_pFileEntry ? m_pFileEntry->desc.lSizeUncompressed : 0);
 	}
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(m_pZip);
-		pSizer->AddObject(m_pFileEntry);
-	}
+	void GetMemoryUsage(ICrySizer* pSizer) const;
 
 	// override addref and release to prevent a race condition
 	virtual void AddRef() const override;
@@ -115,26 +100,32 @@ struct CCachedFileRawData : public CMultiThreadRefCount
 	~CCachedFileRawData();
 };
 
-// an (inside zip) emultated open file
+// an (inside zip) emulated open file
 struct CZipPseudoFile
 {
 	CZipPseudoFile()
+		: m_nCurSeek(0)
+		, m_pFileData(nullptr)
+		, m_nFlags(0)
+		, m_fileSlotInUse(false)
 	{
-		Construct();
 	}
-	~CZipPseudoFile()
-	{
-	}
+	~CZipPseudoFile() = default;
+
+	CZipPseudoFile(const CZipPseudoFile&) = delete;
+	CZipPseudoFile& operator=(const CZipPseudoFile&) = delete;
+
+	CZipPseudoFile(CZipPseudoFile&&);
+	CZipPseudoFile& operator=(CZipPseudoFile&&);
 
 	enum
 	{
 		_O_COMMIT_FLUSH_MODE = 1 << 31,
-		_O_DIRECT_OPERATION  = 1 << 30
 	};
 
 	// this object must be constructed before usage
 	// nFlags is a combination of _O_... flags
-	void             Construct(CCachedFileData* pFileData = NULL, unsigned nFlags = 0);
+	bool             TryConstruct(CCachedFileData* pFileData, unsigned nFlags);
 	// this object needs to be freed manually when the CryPak shuts down..
 	void             Destruct();
 
@@ -157,15 +148,15 @@ struct CZipPseudoFile
 	uint64           GetModificationTime() { return m_pFileData->GetFileEntry()->GetModificationTime(); }
 	const char*      GetArchivePath()      { return m_pFileData->GetZip()->GetFilePath(); }
 
-	void             GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(m_pFileData);
-	}
+	void             GetMemoryUsage(ICrySizer* pSizer) const;
+
 protected:
 	unsigned long      m_nCurSeek;
 	CCachedFileDataPtr m_pFileData;
 	// nFlags is a combination of _O_... flags
 	unsigned           m_nFlags;
+
+	std::atomic_bool   m_fileSlotInUse;
 };
 
 struct CIStringOrder
@@ -279,14 +270,7 @@ class CCryPak : public ICryPak, public ISystemEventListener
 			return strBindRoot.capacity() + strFileName.capacity() + pZip->GetSize();
 		}
 
-		void GetMemoryUsage(ICrySizer* pSizer) const
-		{
-			pSizer->AddObject(strBindRoot);
-			pSizer->AddObject(strFileName);
-			pSizer->AddObject(pArchive);
-			pSizer->AddObject(pZip);
-
-		}
+		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
 	typedef std::vector<PackDesc, stl::STLGlobalAllocator<PackDesc>> ZipArray;
 	CryReadModifyLock m_csZips;
@@ -307,12 +291,17 @@ private:
 
 	bool   m_bInstalledToHDD;
 
-	char m_szEngineRootDir[_MAX_PATH];
-	uint m_szEngineRootDirStrLen;
+	char m_szEngineRootDir[_MAX_PATH] = {};
+	size_t m_szEngineRootDirStrLen = 0;
 
 	// this is the list of MOD subdirectories that will be prepended to the actual relative file path
 	// they all have trailing forward slash. "" means the root dir
-	std::vector<string> m_arrMods;
+	struct SModFolder
+	{
+		EModAccessPriority priority = EModAccessPriority::BeforeSource;
+		string             path;
+	};
+	std::vector<SModFolder> m_arrMods;
 
 	// this is the list of aliases, used to replace certain folder(s) or file name(s).
 	typedef std::vector<tNameAlias*> TAliasList;
@@ -354,8 +343,8 @@ private:
 	bool InitPack(const char* szBasePath, unsigned nFlags = FLAGS_PATH_REAL);
 
 	// Return true if alias was adjusted
-	bool        AdjustAliases(char* dst);
-	const char* AdjustFileNameInternal(const char* src, char dst[g_nMaxPath], unsigned nFlags);
+	bool AdjustAliases(char* dst);
+	void AdjustFileNameInternal(const char* src, CryPathString& dst, unsigned nFlags);
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
 	static FILE*          m_pMainObbExpFile;  /// Reference to main expansion file.
@@ -366,7 +355,7 @@ private:
 
 public:
 	// given the source relative path, constructs the full path to the file according to the flags
-	virtual const char* AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags) override;
+	virtual void AdjustFileName(const char* src, CryPathString& dst, unsigned nFlags) override;
 
 	// this is the start of indexation of pseudofiles:
 	// to the actual index , this offset is added to get the valid handle
@@ -387,6 +376,9 @@ public:
 
 	CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes);
 	~CCryPak();
+
+	CCryPak(const CCryPak&) = delete;
+	CCryPak& operator=(const CCryPak&) = delete;
 
 	const PakVars* GetPakVars() const { return m_pPakVars; }
 
@@ -415,7 +407,7 @@ public: // ---------------------------------------------------------------------
 	void SetLog(IMiniLog* pLog);
 
 	//! adds a mod to the list of mods
-	virtual void        AddMod(const char* szMod) override;
+	virtual void        AddMod(const char* szMod, EModAccessPriority modAccessPriority=EModAccessPriority::BeforeSource) override;
 	//! removes a mod from the list of mods
 	virtual void        RemoveMod(const char* szMod) override;
 	//! returns indexed mod path, or NULL if out of range
@@ -494,15 +486,15 @@ public: // ---------------------------------------------------------------------
 	virtual bool IsInstalledToHDD(const char* acFilePath = 0) const override;
 	void         SetInstalledToHDD(bool bValue);
 
-	virtual bool OpenPack(const char* pName, unsigned nFlags = 0, IMemoryBlock* pData = 0, CryFixedStringT<ICryPak::g_nMaxPath>* pFullPath = NULL) override;
-	virtual bool OpenPack(const char* szBindRoot, const char* pName, unsigned nFlags = 0, IMemoryBlock* pData = 0, CryFixedStringT<ICryPak::g_nMaxPath>* pFullPath = NULL) override;
+	virtual bool OpenPack(const char* pName, unsigned nFlags = 0, IMemoryBlock* pData = 0, CryPathString* pFullPath = NULL) override;
+	virtual bool OpenPack(const char* szBindRoot, const char* pName, unsigned nFlags = 0, IMemoryBlock* pData = 0, CryPathString* pFullPath = NULL) override;
 	// after this call, the file will be unlocked and closed, and its contents won't be used to search for files
 	virtual bool ClosePack(const char* pName, unsigned nFlags = 0) override;
-	virtual bool OpenPacks(const char* pWildcard, unsigned nFlags = 0, std::vector<CryFixedStringT<ICryPak::g_nMaxPath>>* pFullPaths = NULL) override;
-	virtual bool OpenPacks(const char* szBindRoot, const char* pWildcard, unsigned nFlags = 0, std::vector<CryFixedStringT<ICryPak::g_nMaxPath>>* pFullPaths = NULL) override;
+	virtual bool OpenPacks(const char* pWildcard, unsigned nFlags = 0, std::vector<CryPathString>* pFullPaths = NULL) override;
+	virtual bool OpenPacks(const char* szBindRoot, const char* pWildcard, unsigned nFlags = 0, std::vector<CryPathString>* pFullPaths = NULL) override;
 
 	bool         OpenPackCommon(const char* szBindRoot, const char* pName, unsigned int nPakFlags, IMemoryBlock* pData = 0);
-	bool         OpenPacksCommon(const char* szDir, const char* pWildcardIn, char* cWork, int nPakFlags, std::vector<CryFixedStringT<ICryPak::g_nMaxPath>>* pFullPaths = NULL);
+	bool         OpenPacksCommon(const char* szDir, const char* pWildcardIn, CryPathString& wildcardPath, int nPakFlags, std::vector<CryPathString>* pFullPaths = NULL);
 
 	// closes pack files by the path and wildcard
 	virtual bool ClosePacks(const char* pWildcard, unsigned nFlags = 0) override;
@@ -621,7 +613,6 @@ public: // ---------------------------------------------------------------------
 	virtual uint32                       ComputeCRC(const char* szPath, uint32 nFileOpenFlags = 0) override;
 	virtual bool                         ComputeMD5(const char* szPath, unsigned char* md5, uint32 nFileOpenFlags = 0) override;
 
-	int                                  ComputeCachedPakCDR_CRC(ZipDir::CachePtr pInZip);
 	virtual int                          ComputeCachedPakCDR_CRC(const char* filename, bool useCryFile /*=true*/, IMemoryBlock* pData /*=NULL*/) override;
 
 	void                                 OnMissingFile(const char* szPath);
@@ -661,6 +652,9 @@ public: // ---------------------------------------------------------------------
 
 	virtual void                   CreatePerfHUDWidget() override;
 
+	//! Return true if szPath is one of the Mod paths (Paths added with iCryPak::AddMod)
+	bool                           IsModPath(const char* szPath);
+
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 private:
 	intptr_t                             m_HandleSource;
@@ -687,9 +681,7 @@ private:
 		CCryPak*             m_pPak;
 	};
 
-	CPakFileWidget* m_pWidget;
+	_smart_ptr<CPakFileWidget> m_pWidget;
 
 	virtual bool ForEachArchiveFolderEntry(const char* szArchivePath, const char* szFolderPath, const ArchiveEntrySinkFunction& callback) override;
 };
-
-#endif

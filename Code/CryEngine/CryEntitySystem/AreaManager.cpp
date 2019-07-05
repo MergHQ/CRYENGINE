@@ -5,6 +5,243 @@
 #include "Area.h"
 #include "Entity.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/Profilers/SamplesHistory.h>
+
+#define PROFILE_AREA_FUNC_ARG(arg) CRY_PROFILE_FUNCTION_ARG(PROFILE_ENTITY, arg)
+#define PROFILE_AREA_SECTION(name) CRY_PROFILE_SECTION(PROFILE_ENTITY, name)
+
+struct SDebugLogDrawer
+{
+	SDebugLogDrawer(bool drawOnScreen, bool printToLog)
+		: drawOnScreen(drawOnScreen)
+		, printToLog(printToLog)
+	{}
+
+	bool IsEnabled() const { return drawOnScreen || printToLog; }
+
+	void operator()(float posX, float posY, float fontSize, const IRenderAuxText::AColor& color, bool isCenter, const char* szFormat, ...)
+	{
+		if (IsEnabled())
+		{
+			va_list args;
+			va_start(args, szFormat);
+			stack_string outputBuf;
+			outputBuf.FormatV(szFormat, args);
+
+			if (drawOnScreen)
+			{
+				IRenderAuxText::Draw2dLabel(posX, posY, fontSize, color, isCenter, outputBuf.c_str());
+			}
+			if (printToLog)
+			{
+				CryLog(outputBuf.c_str());
+			}
+
+			va_end(args);
+		}
+	};
+
+	bool drawOnScreen;
+	bool printToLog;
+	
+};
+
+
+struct SUpdateEntityAreaDebug
+{
+	struct SAreaInfo
+	{
+		int64 totalInvalidateTicks = 0;
+		int64 totalProcessTicks = 0;
+		int64 totalSendEventTicks = 0;
+		int processCount = 0;
+
+		int64 GetSumTicks() const
+		{
+			return totalInvalidateTicks + totalProcessTicks + totalSendEventTicks;
+		}
+
+		SAreaInfo& operator+=(const SAreaInfo& other)
+		{
+			totalInvalidateTicks += other.totalInvalidateTicks;
+			totalProcessTicks += other.totalProcessTicks;
+			totalSendEventTicks += other.totalSendEventTicks;
+			processCount += other.processCount;
+			return *this;
+		}
+	};
+
+	struct SScope
+	{
+		SScope(int64& totalTicks)
+			: totalTicks(totalTicks)
+			, start(CryGetTicks())
+		{}
+
+		~SScope()
+		{
+			const int64 end = CryGetTicks();
+			totalTicks += (end - start);
+		}
+
+		int64& totalTicks;
+		const int64 start;
+	};
+
+	SScope StartInvalidate(CArea* const pArea)
+	{
+		SAreaInfo& info = m_areas[pArea];
+		return SScope(info.totalInvalidateTicks);
+	}
+
+	SScope StartProcess(CArea* const pArea)
+	{
+		SAreaInfo& info = m_areas[pArea];
+		info.processCount++;
+		return SScope(info.totalProcessTicks);
+	}
+
+	SScope StartSendEvents(CArea* const pArea)
+	{
+		SAreaInfo& info = m_areas[pArea];
+		return SScope(info.totalSendEventTicks);
+	}
+
+	void ResetEntityStats()
+	{
+		for (auto& areaInfoPair : m_areas)
+		{
+			m_totalAreas[areaInfoPair.first] += areaInfoPair.second;
+		}
+		m_areas.clear();
+	}
+
+	void ResetStats()
+	{
+		m_areas.clear();
+		m_totalAreas.clear();
+	}
+
+	std::map<CArea* const, SAreaInfo> m_areas;
+	std::map<CArea* const, SAreaInfo> m_totalAreas;
+};
+
+class CUpdateAreaProfileHistory
+{
+public:
+	typedef CSamplesHistory<size_t, 64> TSamplesHistoryCount;
+	typedef CSamplesHistory<float, 64> TSamplesHistoryTime;
+
+	struct SAreaHistory
+	{
+		TSamplesHistoryCount entityProcessCount;
+		TSamplesHistoryTime entityUpdateTime;
+
+		CTimeValue lastUpdated;
+	};
+
+public:
+
+	void Add(const SUpdateEntityAreaDebug& updateInfo)
+	{
+		ITimer* pTimer = gEnv->pTimer;
+		const CTimeValue now = pTimer->GetFrameStartTime();
+		auto ticksToMs = [pTimer](int64 ticks) { return pTimer->TicksToSeconds(ticks) * 1000.0f; };
+		
+		auto addToHistory = [&](const SUpdateEntityAreaDebug::SAreaInfo& info, SAreaHistory& history)
+		{
+			history.lastUpdated = now;
+			history.entityProcessCount.Add(info.processCount);
+			history.entityUpdateTime.Add(ticksToMs(info.GetSumTicks()));
+		};
+
+		SUpdateEntityAreaDebug::SAreaInfo totalInfo;
+
+		for (const auto& areaInfoPair : updateInfo.m_totalAreas)
+		{
+			SAreaHistory& areaHistory = m_areas[areaInfoPair.first];
+
+			addToHistory(areaInfoPair.second, areaHistory);
+
+			totalInfo += areaInfoPair.second;
+		}
+
+		addToHistory(totalInfo, m_totalHistory);
+
+		RemoveOldRecords(now);
+	}
+
+	void OnAreaDeleted(CArea const* pArea)
+	{
+		m_areas.erase(pArea);
+	}
+
+	void Draw(SDebugLogDrawer& draw, float posX, float& posY)
+	{
+		const CTimeValue now = gEnv->pTimer->GetFrameStartTime();
+		float const fColor[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
+
+		auto drawHistory = [&](const char* szPrefix, const char* szAreaName, SAreaHistory& history)
+		{
+			const float avgUpdateTime = history.entityUpdateTime.GetAverage();
+			const float minUpdateTime = history.entityUpdateTime.GetMin();
+			const float maxUpdateTime = history.entityUpdateTime.GetMax();
+
+			const size_t avgUpdated = history.entityProcessCount.GetAverage();
+			const size_t minUpdated = history.entityProcessCount.GetMin();
+			const size_t maxUpdated = history.entityProcessCount.GetMax();
+
+			draw(posX, posY, 1.3f, fColor, false,
+				"%s %s: "
+				"time %.4f [%.3f..%.3f] ms; "
+				"updated %" PRISIZE_T " [%" PRISIZE_T "..%" PRISIZE_T "]; "
+				"lastUpdated %.2f",
+				szPrefix, szAreaName,
+				avgUpdateTime, minUpdateTime, maxUpdateTime,
+				avgUpdated, minUpdated, maxUpdated,
+				(now - history.lastUpdated).GetSeconds()
+			);
+			posY += 12.0f;
+		};
+
+		drawHistory("Total area", "processing", m_totalHistory);
+
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+		for (auto& areaHistoryPair : m_areas)
+		{
+			CArea const* pArea = areaHistoryPair.first;
+			SAreaHistory& history = areaHistoryPair.second;
+			drawHistory("Area", pArea->GetAreaEntityName(), history);
+		}
+#endif
+	}
+
+private:
+	void RemoveOldRecords(CTimeValue now)
+	{
+		const CTimeValue ageThreshold = 10.0f;
+		auto removeFunc = [=](const SAreaHistory& history)
+		{
+			return (now - history.lastUpdated) > ageThreshold;
+		};
+		for (auto it = m_areas.begin(); it != m_areas.end(); )
+		{
+			if (removeFunc(it->second))
+			{
+				it = m_areas.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+
+private:
+	std::map<CArea const*, SAreaHistory> m_areas;
+	SAreaHistory m_totalHistory;
+};
+
 
 //////////////////////////////////////////////////////////////////////////
 CAreaManager::CAreaManager()
@@ -19,6 +256,8 @@ CAreaManager::CAreaManager()
 	{
 		pSystemEventDispatcher->RegisterListener(this, "CAreaManager");
 	}
+
+	m_pProfileHistory = stl::make_unique<CUpdateAreaProfileHistory>();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -71,6 +310,11 @@ void CAreaManager::Unregister(CArea const* const pArea)
 
 	m_areaGrid.Reset();
 	m_bAreasDirty = true;
+
+	if (m_pProfileHistory)
+	{
+		m_pProfileHistory->OnAreaDeleted(pArea);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -109,21 +353,20 @@ bool CAreaManager::GetLinkedAreas(EntityId linkedId, EntityId* pOutArray, int& o
 	{
 		if (CArea* pArea = m_areas[aIdx])
 		{
-			const std::vector<EntityId>& ids = *pArea->GetEntities();
+			const CArea::EntityIdVector& ids = pArea->GetEntityIdentifiers();
 
 			if (!ids.empty())
 			{
-				size_t const nidCount = ids.size();
-
-				for (size_t eIdx = 0; eIdx < nidCount; eIdx++)
+				for(const std::pair<EntityId, EntityGUID>& identifierPair : ids)
 				{
-					if (ids[eIdx] == linkedId)
+					if (identifierPair.first == linkedId)
 					{
 						if (nArrayIndex < nMaxResults)
 						{
 							EntityId areaId = pArea->GetEntityID();
 							pOutArray[nArrayIndex] = areaId;
 							nArrayIndex++;
+							break;
 						}
 						else
 						{
@@ -149,18 +392,18 @@ size_t CAreaManager::GetLinkedAreas(EntityId linkedId, int areaId, std::vector<C
 	{
 		if (CArea* pArea = m_areas[aIdx])
 		{
-			const std::vector<EntityId>& ids = *pArea->GetEntities();
+			const CArea::EntityIdVector& ids = pArea->GetEntityIdentifiers();
 
 			if (!ids.empty())
 			{
-				size_t const nidCount = ids.size();
-
-				for (size_t eIdx = 0; eIdx < nidCount; eIdx++)
+				for (const std::pair<EntityId, EntityGUID>& identifierPair : ids)
 				{
-					if (ids[eIdx] == linkedId)
+					if (identifierPair.first == linkedId)
 					{
 						if (areaId == -1 || areaId == pArea->GetID())
 							areas.push_back(pArea);
+
+						break;
 					}
 				}
 			}
@@ -209,7 +452,10 @@ void CAreaManager::TriggerAudioListenerUpdate(IArea const* const _pArea)
 //////////////////////////////////////////////////////////////////////////
 void CAreaManager::Update()
 {
-	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+	PROFILE_AREA_FUNC_ARG("");
+
+	if (CVar::pUpdateAreas->GetIVal() == 0)
+		return;
 
 	// Update the area grid data structure.
 	UpdateDirtyAreas();
@@ -221,13 +467,18 @@ void CAreaManager::Update()
 		float debugPosY = 500.0f;
 		float const fColor[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
 		bool const bDrawDebug = CVar::pDrawAreaDebug->GetIVal() != 0;
+		bool const bLogDebug = CVar::pLogAreaDebug->GetIVal() != 0;
 
-		if (bDrawDebug)
+		SDebugLogDrawer drawLog(bDrawDebug, bLogDebug);
+		if (drawLog.IsEnabled())
 		{
-			IRenderAuxText::Draw2dLabel(debugPosX, debugPosY, 1.35f, fColor, false, "Entities to update: %d\n", static_cast<int>(m_mapEntitiesToUpdate.size()));
+			drawLog(debugPosX, debugPosY, 1.35f, fColor, false, "<AreaManager> Entities to update: %" PRISIZE_T "\n", m_mapEntitiesToUpdate.size());
 			debugPosY += 12.0f;
 		}
+
+		auto ticksToMs = [](int64 ticks) { return gEnv->pTimer->TicksToSeconds(ticks) * 1000.0f; };
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
+		SUpdateEntityAreaDebug updateEntityDebug;
 
 		// We need to swap here as UpdateEntity could recursively
 		// add to the container that we are iterating over.
@@ -243,28 +494,94 @@ void CAreaManager::Update()
 
 			if (pIEntity != nullptr)
 			{
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+				const uint64 updateTicksStart = drawLog.IsEnabled() ? CryGetTicks() : 0;
+#endif
+
 				// Add a Z offset of at least 0.11 to be slightly above the offset of 0.1 set through "CShapeObject::GetShapeZOffset".
 				Vec3 const position(pIEntity->GetWorldPos() + Vec3(0.0f, 0.0f, 0.11f));
-				UpdateEntity(position, pIEntity);
+				UpdateEntity(position, pIEntity, updateEntityDebug);
 
 #if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
-				if (bDrawDebug)
+				if (drawLog.IsEnabled())
 				{
-					IRenderAuxText::Draw2dLabel(debugPosX + 10.0f, debugPosY, 1.35f, fColor, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f)\n", entityIdPair.first, pIEntity ? pIEntity->GetName() : "nullptr", position.x, position.y, position.z);
+					const uint64 updateTicksEnd = CryGetTicks();
+					drawLog(debugPosX + 10.0f, debugPosY, 1.35f, fColor, false, 
+						"Entity: %u (%s) Pos: (%.2f, %.2f, %.2f) Time: %.4f ms\n", 
+						entityIdPair.first, pIEntity ? pIEntity->GetName() : "nullptr", 
+						position.x, position.y, position.z,
+						ticksToMs(updateTicksEnd - updateTicksStart));
 					debugPosY += 12.0f;
+
+					if (false)
+					{
+						if (m_bAreasDirty)
+						{
+							updateEntityDebug.ResetStats();
+						}
+
+						for (auto& areaInfoPair : updateEntityDebug.m_areas)
+						{
+							CArea const* pArea = areaInfoPair.first;
+							auto& info = areaInfoPair.second;
+							drawLog(debugPosX + 15.0f, debugPosY, 1.35f, fColor, false,
+								"Area %s id %d: proc %d time %.4f ms; events %.4f ms; invalidate %.4f ms",
+								pArea->GetAreaEntityName(), pArea->GetID(), 
+								info.processCount, ticksToMs(info.totalProcessTicks),
+								ticksToMs(info.totalSendEventTicks), 
+								ticksToMs(info.totalInvalidateTicks)
+							);
+							debugPosY += 12.0f;
+						}
+					}
 				}
 #endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
+
+				updateEntityDebug.ResetEntityStats();
 			}
 		}
 
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+		if (drawLog.IsEnabled())
+		{
+			if (m_bAreasDirty)
+			{
+				updateEntityDebug.ResetStats();
+			}
+
+			debugPosY = 100.0f;
+			drawLog(debugPosX, debugPosY, 1.35f, fColor, false, "<AreaManager> Areas updated on entity update: %" PRISIZE_T "\n", updateEntityDebug.m_totalAreas.size());
+			debugPosY += 12.0f;
+			for (auto& areaInfoPair : updateEntityDebug.m_totalAreas)
+			{
+				CArea const* pArea = areaInfoPair.first;
+				auto& info = areaInfoPair.second;
+				drawLog(debugPosX + 15.0f, debugPosY, 1.35f, fColor, false,
+					"Area %s id %d: proc %d time %.4f ms; events %.4f ms; invalidate %.4f ms",
+					pArea->GetAreaEntityName(), pArea->GetID(), 
+					info.processCount, ticksToMs(info.totalProcessTicks),
+					ticksToMs(info.totalSendEventTicks),
+					ticksToMs(info.totalInvalidateTicks)
+				);
+				debugPosY += 12.0f;
+			}
+		}
+#endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 		mapEntitiesToUpdate.erase_if(IsDoneUpdating);
 		m_mapEntitiesToUpdate.insert(mapEntitiesToUpdate.begin(), mapEntitiesToUpdate.end());
+
+		if (m_pProfileHistory)
+		{
+			m_pProfileHistory->Add(updateEntityDebug);
+		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaManager::UpdateEntity(Vec3 const& position, CEntity* const pIEntity)
+void CAreaManager::UpdateEntity(Vec3 const& position, CEntity* const pIEntity, SUpdateEntityAreaDebug& debug)
 {
+	PROFILE_AREA_FUNC_ARG(pIEntity->GetName());
+
 	EntityId const entityId = pIEntity->GetId();
 	SAreasCache* pAreaCache = GetAreaCache(entityId);
 
@@ -288,26 +605,32 @@ void CAreaManager::UpdateEntity(Vec3 const& position, CEntity* const pIEntity)
 	{
 		pAreaCache->lastUpdatePos = position;
 
-		// First mark all cache entries that as if they are not in the grid.
-		for (SAreaCacheEntry& areaCacheEntry : pAreaCache->entries)
 		{
-			CArea* const pArea = areaCacheEntry.pArea;
+			PROFILE_AREA_SECTION("InvalidateCache");
+			// First mark all cache entries that as if they are not in the grid.
+			for (SAreaCacheEntry& areaCacheEntry : pAreaCache->entries)
+			{
+				CArea* const pArea = areaCacheEntry.pArea;
+
+				auto debugScope = debug.StartInvalidate(pArea);
 
 #if defined(DEBUG_AREAMANAGER)
-			CheckArea(pArea);
+				CheckArea(pArea);
 #endif // DEBUG_AREAMANAGER
 
-			areaCacheEntry.bInGrid = false;
+				areaCacheEntry.bInGrid = false;
 
-			// Now pre-calculate position data.
-			pArea->InvalidateCachedAreaData(entityId);
-			pArea->CalcPosType(entityId, position);
+				// Now pre-calculate position data.
+				pArea->InvalidateCachedAreaData(entityId);
+				pArea->CalcPosType(entityId, position);
+			}
 		}
 
 		CRY_ASSERT(m_areasAtPos[Threads::Main].empty());
 
 		if (m_areaGrid.GetAreas(position, m_areasAtPos[Threads::Main]))
 		{
+			PROFILE_AREA_SECTION("AddToCache");
 			for (CArea* const pArea : m_areasAtPos[Threads::Main])
 			{
 				// Mark cache entries as if they are in the grid.
@@ -335,61 +658,76 @@ void CAreaManager::UpdateEntity(Vec3 const& position, CEntity* const pIEntity)
 
 		AreaEnvironments areaEnvironments;
 
-		// Go through all cache entries and process the areas.
-		for (SAreaCacheEntry& areaCacheEntry : pAreaCache->entries)
+		if (!pAreaCache->entries.empty())
 		{
-			CArea* const pArea = areaCacheEntry.pArea;
+			PROFILE_AREA_SECTION("Process");
+			// Go through all cache entries and process the areas.
+			for (SAreaCacheEntry& areaCacheEntry : pAreaCache->entries)
+			{
+				CArea* const pArea = areaCacheEntry.pArea;
+
+				auto debugScope = debug.StartProcess(pArea);
 
 #if defined(DEBUG_AREAMANAGER)
-			CheckArea(pArea);
+				CheckArea(pArea);
 #endif // DEBUG_AREAMANAGER
 
-			// check if Area is hidden
-			CEntity const* const pAreaEntity = g_pIEntitySystem->GetEntityFromID(pArea->GetEntityID());
-			bool const bIsHidden = (pAreaEntity && pAreaEntity->IsHidden());
+				// check if Area is hidden
+				CEntity const* const pAreaEntity = g_pIEntitySystem->GetEntityFromID(pArea->GetEntityID());
+				bool const bIsHidden = (pAreaEntity && pAreaEntity->IsHidden());
 
-			// area was just hidden
-			if (bIsHidden && (pArea->GetState() & Cry::AreaManager::EAreaState::Hidden) == 0)
-			{
-				pArea->LeaveArea(entityId);
-				pArea->LeaveNearArea(entityId);
-				areaCacheEntry.bNear = false;
-				areaCacheEntry.bInside = false;
-				pArea->AddState(Cry::AreaManager::EAreaState::Hidden);
-				continue;
-			}
+				
 
-			// area was just unhidden
-			if (!bIsHidden && (pArea->GetState() & Cry::AreaManager::EAreaState::Hidden) != 0)
-			{
-				// ProcessArea will take care of properly setting cache entry data.
-				areaCacheEntry.bNear = false;
-				areaCacheEntry.bInside = false;
-				pArea->RemoveState(Cry::AreaManager::EAreaState::Hidden);
-			}
+				// area was just hidden
+				if (bIsHidden && (pArea->GetState() & Cry::AreaManager::EAreaState::Hidden) == 0)
+				{
+					pArea->LeaveArea(entityId);
+					pArea->LeaveNearArea(entityId);
+					areaCacheEntry.bNear = false;
+					areaCacheEntry.bInside = false;
+					pArea->AddState(Cry::AreaManager::EAreaState::Hidden);
+					continue;
+				}
 
-			// We process only for active areas in which grid we are.
-			// Areas in our cache in which grid we are not get removed down below anyhow.
-			if (!bIsHidden)
-			{
-				ProcessArea(pArea, areaCacheEntry, pAreaCache, position, pIEntity, areaEnvironments);
+				// area was just unhidden
+				if (!bIsHidden && (pArea->GetState() & Cry::AreaManager::EAreaState::Hidden) != 0)
+				{
+					// ProcessArea will take care of properly setting cache entry data.
+					areaCacheEntry.bNear = false;
+					areaCacheEntry.bInside = false;
+					pArea->RemoveState(Cry::AreaManager::EAreaState::Hidden);
+				}
+
+				// We process only for active areas in which grid we are.
+				// Areas in our cache in which grid we are not get removed down below anyhow.
+				if (!bIsHidden)
+				{
+					ProcessArea(pArea, areaCacheEntry, pAreaCache, position, pIEntity, areaEnvironments);
+				}
 			}
 		}
 
-		// Go through all areas again and send accumulated events. (needs to be done in a separate step)
-		for (SAreaCacheEntry& areaCacheEntry : pAreaCache->entries)
+		if (!pAreaCache->entries.empty())
 		{
+			CRY_PROFILE_SECTION(PROFILE_ENTITY, "SendCachedEvents");
+			// Go through all areas again and send accumulated events. (needs to be done in a separate step)
+			for (SAreaCacheEntry& areaCacheEntry : pAreaCache->entries)
+			{
+				auto debugScope = debug.StartSendEvents(areaCacheEntry.pArea);
+
 #if defined(DEBUG_AREAMANAGER)
-			CheckArea(areaCacheEntry.pArea);
+				CheckArea(areaCacheEntry.pArea);
 #endif // DEBUG_AREAMANAGER
 
-			areaCacheEntry.pArea->SendCachedEventsFor(entityId);
+				areaCacheEntry.pArea->SendCachedEventsFor(entityId);
+			}
 		}
 
 		auto pIEntityAudioComponent = pIEntity->GetComponent<IEntityAudioComponent>();
 
 		if (pIEntityAudioComponent != nullptr)
 		{
+			PROFILE_AREA_SECTION("SetAudioEnv");
 			for (auto const& areaEnvironment : areaEnvironments)
 			{
 				pIEntityAudioComponent->SetEnvironmentAmount(areaEnvironment.audioEnvironmentId, areaEnvironment.amount, CryAudio::InvalidAuxObjectId);
@@ -399,11 +737,13 @@ void CAreaManager::UpdateEntity(Vec3 const& position, CEntity* const pIEntity)
 		// Remove all entries in the cache which are no longer in the grid.
 		if (!pAreaCache->entries.empty())
 		{
+			PROFILE_AREA_SECTION("Remove");
 			pAreaCache->entries.erase(std::remove_if(pAreaCache->entries.begin(), pAreaCache->entries.end(), SIsNotInGrid(entityId, m_areas, m_areas.size())), pAreaCache->entries.end());
 		}
 
 		if (pAreaCache->entries.empty())
 		{
+			PROFILE_AREA_SECTION("DeleteFromCache");
 			DeleteAreaCache(entityId);
 		}
 	}
@@ -421,7 +761,6 @@ bool CAreaManager::QueryAudioAreas(Vec3 const& pos, SAudioAreaInfo* const pResul
 		// Add a Z offset of at least 0.11 to be slightly above the offset of 0.1 set through "CShapeObject::GetShapeZOffset".
 		Vec3 const position(pos + Vec3(0.0f, 0.0f, 0.11f));
 
-		uint32 numAreas = 0;
 		CRY_ASSERT(m_areasAtPos[Threads::Audio].empty());
 
 		if (m_areaGrid.GetAreas(position, m_areasAtPos[Threads::Audio]))
@@ -489,6 +828,11 @@ void CAreaManager::ProcessArea(
   CEntity const* const pIEntity,
   AreaEnvironments& areaEnvironments)
 {
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+	PROFILE_AREA_FUNC_ARG(pArea->GetAreaEntityName());
+#else
+	PROFILE_AREA_FUNC_ARG("");
+#endif
 	Vec3 Closest3d(ZERO);
 	bool bExclusiveUpdate = false;
 	EntityId const entityId = pIEntity->GetId();
@@ -1053,16 +1397,25 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 	}
 
 	int const drawDebugValue = CVar::pDrawAreaDebug->GetIVal();
-	bDraw = drawDebugValue != 0;
+	int const logDebugValue = CVar::pLogAreaDebug->GetIVal();
+	bDraw = drawDebugValue != 0 && gEnv->pRenderer;
 	float const color[4] = { 0.0f, 1.0f, 0.0f, 0.7f };
 
-	if (bDraw)
+	if (bDraw || logDebugValue != 0)
 	{
+		SDebugLogDrawer drawLog(bDraw, logDebugValue != 0);
+
 		float posY = 10.0f;
-		IRenderAuxText::Draw2dLabel(10.0f, posY, 1.5f, color, false, "<AreaManager>");
+		drawLog(10.0f, posY, 1.5f, color, false, "<AreaManager>");
 		posY += 20.0f;
-		IRenderAuxText::Draw2dLabel(30.0f, posY, 1.3f, color, false, "Entities: %d | Areas in Grid: %d", static_cast<int>(m_mapAreaCache.size()), static_cast<int>(m_areaGrid.GetNumAreas()));
+		drawLog(30.0f, posY, 1.3f, color, false, "Entities: %d | Areas in Grid: %d", static_cast<int>(m_mapAreaCache.size()), static_cast<int>(m_areaGrid.GetNumAreas()));
 		posY += 20.0f;
+
+		if (m_pProfileHistory)
+		{
+			m_pProfileHistory->Draw(drawLog, 30.0f, posY);
+			posY += 20.0f;
+		}
 
 		for (auto const& areaCachePair : m_mapAreaCache)
 		{
@@ -1072,12 +1425,13 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 			{
 				EntityId const entityId = pIEntity->GetId();
 
+				if (false)
 				if (drawDebugValue == 1 || drawDebugValue == 2 || entityId == static_cast<EntityId>(drawDebugValue))
 				{
 					SAreasCache const& areaCache(areaCachePair.second);
 					Vec3 const& pos(areaCache.lastUpdatePos);
 
-					IRenderAuxText::Draw2dLabel(30.0f, posY, 1.3f, color, false, "Entity: %d (%s) Pos: (%.2f, %.2f, %.2f) Areas in AreaCache: %d", entityId, pIEntity->GetName(), pos.x, pos.y, pos.z, static_cast<int>(areaCache.entries.size()));
+					drawLog(30.0f, posY, 1.3f, color, false, "Entity: %u (%s) Pos: (%.2f, %.2f, %.2f) Areas in AreaCache: %d", entityId, pIEntity->GetName(), pos.x, pos.y, pos.z, static_cast<int>(areaCache.entries.size()));
 					posY += 12.0f;
 
 					// Invalidate grid flag in area cache
@@ -1116,7 +1470,7 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 						}
 
 						CryFixedStringT<16> const state(bIsPointWithin ? "Inside" : (areaCacheEntry.bNear ? "Near" : "Far"));
-						IRenderAuxText::Draw2dLabel(30.0f, posY, 1.3f, color, false, "Name: %s AreaID: %d GroupID: %d Priority: %d Type: %s Distance: %.2f State: %s Entities: %d", pArea->GetAreaEntityName(), pArea->GetID(), pArea->GetGroup(), pArea->GetPriority(), areaTypeName.c_str(), sqrt_tpl(distanceSq > 0.0f ? distanceSq : 0.0f), state.c_str(), static_cast<int>(pArea->GetCacheEntityCount()));
+						drawLog(30.0f, posY, 1.3f, color, false, "Name: %s AreaID: %d GroupID: %d Priority: %d Type: %s Distance: %.2f State: %s Entities: %d", pArea->GetAreaEntityName(), pArea->GetID(), pArea->GetGroup(), pArea->GetPriority(), areaTypeName.c_str(), sqrt_tpl(distanceSq > 0.0f ? distanceSq : 0.0f), state.c_str(), static_cast<int>(pArea->GetCacheEntityCount()));
 						posY += 12.0f;
 					}
 
@@ -1125,6 +1479,11 @@ void CAreaManager::DrawAreas(ISystem const* const pSystem)
 				}
 			}
 		}
+	}
+
+	if (logDebugValue == 1)
+	{
+		CVar::pLogAreaDebug->Set(0);
 	}
 #endif // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
 }
@@ -1350,7 +1709,7 @@ void CAreaManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	{
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CAreaManager::OnSystemEvent ESYSTEM_EVENT_LEVEL_LOAD_END");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CAreaManager::OnSystemEvent ESYSTEM_EVENT_LEVEL_LOAD_END");
 			for (auto const pArea : m_areas)
 			{
 				pArea->ResolveEntityIds();

@@ -1,6 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include "StdAfx.h"
+#include "stdafx.h"
 #include <assert.h>                         // assert()
 
 #include "../ImageCompiler.h"               // CImageCompiler
@@ -16,7 +16,9 @@ void ImageObject::ValidateFloatAlpha() const
 
 	for (uint32 mip = 0; mip < GetMipCount(); ++mip)
 	{
+#if !defined(_RELEASE)
 		const Color4<float>* const pPixels = GetPixelsPointer<Color4<float> >(mip);
+#endif
 
 		const uint32 pixelCount = GetPixelCount(mip);
 

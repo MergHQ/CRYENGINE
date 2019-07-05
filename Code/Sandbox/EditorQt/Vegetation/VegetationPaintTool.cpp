@@ -11,11 +11,12 @@
 #include "Dialogs/ToolbarDialog.h"
 #include "Material/Material.h"
 #include "Gizmos/ITransformManipulator.h"
+#include "IEditorImpl.h"
+#include "Util/BoostPythonHelpers.h"
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryPhysics/IPhysics.h>
-
-#include "Util/BoostPythonHelpers.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Class description.
@@ -26,18 +27,16 @@ class CVegetationPaintTool_ClassDesc : public IClassDesc
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.VegetationPaint"; };
+	virtual const char* ClassName() { return "EditTool.VegetationPaint"; }
 
 	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Terrain"; };
+	virtual const char*    Category()        { return "Terrain"; }
 
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVegetationPaintTool); }
 };
 
 REGISTER_CLASS_DESC(CVegetationPaintTool_ClassDesc);
-
-//////////////////////////////////////////////////////////////////////////
 REGISTER_PYTHON_COMMAND(CVegetationPaintTool::Command_Activate, edit_mode, vegetation, "Activates vegetation editing mode");
 
 //////////////////////////////////////////////////////////////////////////
@@ -46,7 +45,6 @@ IMPLEMENT_DYNCREATE(CVegetationPaintTool, CEditTool)
 const float CVegetationPaintTool::s_minBrushRadius = 1.0f;
 const float CVegetationPaintTool::s_maxBrushRadius = 200.0f;
 
-//////////////////////////////////////////////////////////////////////////
 CVegetationPaintTool::CVegetationPaintTool()
 	: m_eraseMode(false)
 	, m_isEraseTool(false)
@@ -58,8 +56,6 @@ CVegetationPaintTool::CVegetationPaintTool()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Specific mouse events handlers.
 void CVegetationPaintTool::OnLButtonDown(CViewport* pView, int flags, const CPoint& point)
 {
 	GetIEditorImpl()->GetIUndoManager()->Begin();
@@ -75,7 +71,6 @@ void CVegetationPaintTool::OnLButtonDown(CViewport* pView, int flags, const CPoi
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::OnLButtonUp()
 {
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
@@ -84,7 +79,6 @@ void CVegetationPaintTool::OnLButtonUp()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::OnMouseMove(CViewport* pView, int flags, const CPoint& point)
 {
 	if (flags & MK_LBUTTON)
@@ -107,7 +101,6 @@ void CVegetationPaintTool::OnMouseMove(CViewport* pView, int flags, const CPoint
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationPaintTool::MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags)
 {
 	if (eMouseWheel == event)
@@ -157,11 +150,10 @@ bool CVegetationPaintTool::MouseCallback(CViewport* pView, EMouseEvent event, CP
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CVegetationPaintTool::Display(DisplayContext& dc)
+void CVegetationPaintTool::Display(SDisplayContext& dc)
 {
 	// Brush paint mode.
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		CPoint p1 = dc.view->WorldToView(m_pointerPos);
 		CPoint p2 = dc.view->WorldToView(m_pointerPos + Vec3(m_brushRadius, 0, 0));
@@ -197,7 +189,6 @@ void CVegetationPaintTool::Display(DisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationPaintTool::OnKeyDown(CViewport* pView, uint32 key, uint32 repCnt, uint32 flags)
 {
 	bool processed = false;
@@ -225,7 +216,6 @@ bool CVegetationPaintTool::OnKeyDown(CViewport* pView, uint32 key, uint32 repCnt
 	return processed;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationPaintTool::OnKeyUp(CViewport* pView, uint32 key, uint32 repCnt, uint32 flags)
 {
 	bool processed = false;
@@ -238,14 +228,12 @@ bool CVegetationPaintTool::OnKeyUp(CViewport* pView, uint32 key, uint32 repCnt, 
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::SetBrushRadiusWithSignal(float radius)
 {
 	SetBrushRadius(radius);
 	signalBrushRadiusChanged();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::PaintBrush()
 {
 	auto selectedObjects = m_vegetationMap->GetSelectedObjects();
@@ -276,7 +264,6 @@ void CVegetationPaintTool::PaintBrush()
 	SetModified(updateRegion);
 }
 
-//////////////////////////////////////////////////////////////////////////
 QEditToolButtonPanel::SButtonInfo CVegetationPaintTool::CreatePaintToolButtonInfo()
 {
 	QEditToolButtonPanel::SButtonInfo paintToolButtonInfo;
@@ -287,19 +274,16 @@ QEditToolButtonPanel::SButtonInfo CVegetationPaintTool::CreatePaintToolButtonInf
 	return paintToolButtonInfo;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CVegetationPaintTool::GetMinBrushRadius()
 {
 	return s_minBrushRadius;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CVegetationPaintTool::GetMaxBrushRadius()
 {
 	return s_maxBrushRadius;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::PlaceThing(CViewport* pView, const CPoint& point)
 {
 	auto selectedObjects = m_vegetationMap->GetSelectedObjects();
@@ -331,10 +315,9 @@ void CVegetationPaintTool::SetBrushRadius(float r)
 	m_brushRadius = clamp_tpl(r, s_minBrushRadius, s_maxBrushRadius);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::Command_Activate(bool activateEraseMode)
 {
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
 	{
 		// Already active.
@@ -342,12 +325,10 @@ void CVegetationPaintTool::Command_Activate(bool activateEraseMode)
 	}
 	auto pPaintTool = new CVegetationPaintTool();
 	pPaintTool->m_eraseMode = activateEraseMode;
-	GetIEditorImpl()->SetEditTool(pPaintTool);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pPaintTool);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationPaintTool::SetModified(AABB& bounds, bool notifySW)
 {
 	GetIEditorImpl()->UpdateViews(eUpdateStatObj, &bounds);
 }
-

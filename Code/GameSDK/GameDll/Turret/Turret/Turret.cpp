@@ -377,7 +377,6 @@ ISerializableInfoPtr CTurret::GetSpawnInfo()
 
 void CTurret::Update( SEntityUpdateContext& context, int updateSlot )
 {
-	const float frameTimeSeconds = context.fFrameTime;
 }
 
 
@@ -500,7 +499,7 @@ void CTurret::Reset( const bool enteringGameMode )
 	UnPhysicalize();
 
 	const char* const modelFilename = GetModelName();
-	const int loadCharacterStatus = pEntity->LoadCharacter( DEFAULT_TURRET_MODEL_SLOT, modelFilename );
+	pEntity->LoadCharacter( DEFAULT_TURRET_MODEL_SLOT, modelFilename );
 
 	SetAllowFire( true );
 
@@ -586,8 +585,6 @@ void CTurret::InitAiRepresentation( const EInitAiRepresentationMode mode )
 void CTurret::RemoveAiRepresentation()
 {
 	NotifyAiThatTurretIsRemoved();
-
-	IEntity* const pEntity = GetEntity();
 
 	RemoveRateOfDeathHelper();
 
@@ -918,8 +915,13 @@ void CTurret::NotifyDestroyed( const bool hasBeenDestroyedByPlayer /* = false */
 	{
 		IEntity* const pTurretEntity = GetEntity();
 		const float notificationRadius = 50.0f;
-		const stack_string signalName = hasBeenDestroyedByPlayer ? "OnTurretHasBeenDestroyedByThePlayer" : "OnTurretHasBeenDestroyed";
-		pAISystem->SendAnonymousSignal( 1, signalName.c_str(), pTurretEntity->GetWorldPos(), notificationRadius, pTurretEntity->GetAI() );
+		const AISignals::ISignalDescription& signalDescription = hasBeenDestroyedByPlayer ?  gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTurretHasBeenDestroyedByThePlayer() : gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTurretHasBeenDestroyed();
+		
+		const EntityId entityId = pTurretEntity->GetAI() ? pTurretEntity->GetAI()->GetEntityID() : INVALID_ENTITYID;
+		pAISystem->SendAnonymousSignal(
+			pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, entityId), 
+			pTurretEntity->GetWorldPos(), notificationRadius
+		);
 	}
 }
 
@@ -1185,7 +1187,7 @@ void CTurret::InitWeapons()
 
 	SEntitySpawnParams entitySpawnParams;
 	entitySpawnParams.sName = itemName;
-	entitySpawnParams.nFlags |= ( ENTITY_FLAG_NO_PROXIMITY | ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_NO_SAVE );
+	entitySpawnParams.nFlags |= ENTITY_FLAG_NO_PROXIMITY | ENTITY_FLAG_NO_SAVE;
 
 	IEntitySystem* const pEntitySystem = GetEntitySystem();
 	assert( pEntitySystem != NULL );
@@ -1507,7 +1509,6 @@ bool CTurret::IsEntityHostileAndThreatening( IEntity* pTargetEntity ) const
 
 	IEntity* const pTurretEntity = GetEntity();
 
-	bool isAlive = true;
 	bool isHostileAndThreatening = false;
 	IAIObject* const pTurretAiObject = pTurretEntity->GetAI();
 	IAIObject* pTargetAiObject = pTargetEntity->GetAI();
@@ -1630,10 +1631,12 @@ void CTurret::NotifySelectedTarget( IEntity* pTargetEntity )
 	assert( pTargetEntity != NULL );
 	if ( IAIObject* const pTargetAiObject = pTargetEntity->GetAI() )
 	{
-		IAISignalExtraData* const pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* const pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->nID = GetEntityId();
 		pData->point = GetEntity()->GetWorldPos();
-		gEnv->pAISystem->SendSignal( SIGNALFILTER_SENDER, 1, "OnTargetedByTurret", pTargetAiObject, pData );
+
+		AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetedByTurret(), pTargetAiObject->GetEntityID(), pData);
+		gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, signal);
 	}
 }
 
@@ -2749,9 +2752,8 @@ void CTurret::NotifyGroupTargetSpotted( const IEntity* pTargetEntity )
 	assert( pTargetTrackManager );
 	pTargetTrackManager->HandleStimulusEventInRange( groupMemberAiObjectId, "TurretSpottedTarget", stimulusEventInfo, radius );
 
-	const char* const signalName = "GroupMemberEnteredCombat";
-	const uint32 signalNameCrc32 = CCrc32::Compute( signalName );
-	gEnv->pAISystem->SendSignal( SIGNALFILTER_GROUPONLY, 1, signalName, pGroupMemeberAiObject, NULL, signalNameCrc32 );
+	AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberEnteredCombat(), pGroupMemeberAiObject->GetEntityID());
+	gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY, signal);
 }
 
 

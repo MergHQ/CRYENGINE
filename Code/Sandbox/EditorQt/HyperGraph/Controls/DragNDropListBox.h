@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryCore/functor.h>
 
 class CDragNDropListBox : public CListBox
 {
@@ -41,4 +42,3 @@ protected:
 
 	DragNDropCallback m_dropCb;
 };
-

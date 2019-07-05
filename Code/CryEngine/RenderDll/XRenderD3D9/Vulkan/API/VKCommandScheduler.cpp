@@ -140,7 +140,7 @@ void CCommandScheduler::SubmitAllCommands(bool bWait, const FVAL64(&fenceValues)
 
 void CCommandScheduler::GarbageCollect()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "FLUSH GPU HEAPS");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "FLUSH GPU HEAPS");
 
 	// Ring buffer for the _completed_ fences of past number of frames
 	m_CmdFenceSet.AdvanceCompletion();
@@ -154,7 +154,7 @@ void CCommandScheduler::GarbageCollect()
 void CCommandScheduler::SyncFrame()
 {
 	// Stall render thread until GPU has finished processing previous frame (in case max frame latency is 1)
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "SYNC TO FRAME FENCE");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "SYNC TO FRAME FENCE");
 
 	// Block when more than N frames have not been rendered yet
 	m_CmdFenceSet.GetSubmittedValues(
@@ -171,10 +171,12 @@ void CCommandScheduler::EndOfFrame(bool bWait)
 	if (CRendererCVars::CV_r_SyncToFrameFence)
 		SyncFrame();
 
-	GarbageCollect();
-
-	// TODO: Move this into GetDevice(), currently it is only allowed to be called once per frame!
+	// Function needs to be called on frame-boundaries, not more frequent! It
+	// implements untracked decaying resource-tracking (after N frames resource X
+	// can't be in use anymore because we don't buffer more than X frames.)
 	GetDevice()->TickDestruction();
+
+	GarbageCollect();
 
 	++m_FrameFenceCursor;
 	m_FrameFenceCursor %= FRAME_FENCES;

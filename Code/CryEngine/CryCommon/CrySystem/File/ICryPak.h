@@ -35,55 +35,55 @@ struct ICryArchive : public _reference_target_t
 		LEVEL_DEFAULT = -1
 	};
 
-	enum EPakFlags
+	enum EPakFlags : uint32
 	{
 		//! Support for absolute and other complex path specifications.
 		//! All paths will be treated relatively to the current directory (normally MasterCD).
-		FLAGS_ABSOLUTE_PATHS = 1,
+		FLAGS_ABSOLUTE_PATHS = BIT32(0),
 
 		//! If this is set, the object will only understand relative to the zip file paths.
 		//! However, this can give an opportunity to optimize for frequent quick accesses.
 		//! FLAGS_SIMPLE_RELATIVE_PATHS and FLAGS_ABSOLUTE_PATHS are mutually exclusive.
-		FLAGS_RELATIVE_PATHS_ONLY = 1 << 1,
+		FLAGS_RELATIVE_PATHS_ONLY = BIT32(1),
 
 		//! If this flag is set, the archive update/remove operations will not work.
 		//! This is useful when you open a read-only or already opened for reading files.
 		//! If FLAGS_OPEN_READ_ONLY | FLAGS_SIMPLE_RELATIVE_PATHS are set, ICryPak
 		//! will try to return an object optimized for memory, with long life cycle.
-		FLAGS_READ_ONLY = 1 << 2,
+		FLAGS_READ_ONLY = BIT32(2),
 
 		//! If this flag is set, FLAGS_OPEN_READ_ONLY flags are also implied.
 		//! The returned object will be optimized for quick access and memory footprint.
-		FLAGS_OPTIMIZED_READ_ONLY = (1 << 3),
+		FLAGS_OPTIMIZED_READ_ONLY = BIT32(3),
 
 		//! If this is set, the existing file (if any) will be overwritten.
-		FLAGS_CREATE_NEW = 1 << 4,
+		FLAGS_CREATE_NEW = BIT32(4),
 
 		//! If this flag is set, and the file is opened for writing, and some files were updated
 		//! so that the archive is no more continuous, the archive will nevertheless NOT be compacted
 		//! upon closing the archive file. This can be faster if you open/close the archive for writing
 		//! multiple times.
-		FLAGS_DONT_COMPACT = 1 << 5,
+		FLAGS_DONT_COMPACT = BIT32(5),
 
 		//! Flag is set when complete pak has been loaded into memory.
-		FLAGS_IN_MEMORY      = BIT(6),
-		FLAGS_IN_MEMORY_CPU  = BIT(7),
+		FLAGS_IN_MEMORY      = BIT32(6),
+		FLAGS_IN_MEMORY_CPU  = BIT32(7),
 		FLAGS_IN_MEMORY_MASK = FLAGS_IN_MEMORY | FLAGS_IN_MEMORY_CPU,
 
 		//! Store all file names as crc32 in a flat directory structure.
-		FLAGS_FILENAMES_AS_CRC32 = BIT(8),
+		FLAGS_FILENAMES_AS_CRC32 = BIT32(8),
 
 		//! Flag is set when pak is stored on HDD.
-		FLAGS_ON_HDD = BIT(9),
+		FLAGS_ON_HDD = BIT32(9),
 
 		//! Override pak - paks opened with this flag go at the end of the list and contents will be found before other paks.
 		//! Used for patching.
-		FLAGS_OVERRIDE_PAK = BIT(10),
+		FLAGS_OVERRIDE_PAK = BIT32(10),
 
 		//! Disable a pak file without unloading it, this flag is used in combination with patches and multiplayer
 		//! to ensure that specific paks stay in the position(to keep the same priority) but being disabled
 		//! when running multiplayer.
-		FLAGS_DISABLE_PAK = BIT(11),
+		FLAGS_DISABLE_PAK = BIT32(11),
 	};
 
 	typedef void* Handle;
@@ -94,7 +94,7 @@ struct ICryArchive : public _reference_target_t
 	struct IEnumerateArchiveEntries
 	{
 		virtual bool OnEnumArchiveEntry(const char* pFilename, Handle hEntry, bool bIsFolder, int aSize, int64 aModifiedTime) = 0;
-		virtual ~IEnumerateArchiveEntries(){};
+		virtual ~IEnumerateArchiveEntries(){}
 	};
 
 	//! Enumerate the file entries found in the specified folder.
@@ -199,69 +199,66 @@ struct ICryPak
 {
 	typedef uint64 FileTime;
 	//! Flags used in file path resolution rules.
-	enum EPathResolutionRules
+	enum EPathResolutionRules : uint32
 	{
 		//! If used, the source path will be treated as the destination path and no transformations will be done.
 		//! Pass this flag when the path is to be the actual path on the disk/in the packs and doesn't need adjustment
 		//! (or after it has come through adjustments already). If this is set, AdjustFileName will not map the input
 		//! path into the master folder (Ex: Shaders will not be converted to Game\Shaders).
-		FLAGS_PATH_REAL = 1L << 16,
+		FLAGS_PATH_REAL = BIT32(16),
 
 		//! AdjustFileName will always copy the file path to the destination path: regardless of the returned value, szDestpath can be used.
-		FLAGS_COPY_DEST_ALWAYS = 1L << 17,
+		FLAGS_COPY_DEST_ALWAYS = BIT32(17),
 
 		//! Adds trailing slash to the path.
-		FLAGS_ADD_TRAILING_SLASH = 1L << 18,
+		FLAGS_ADD_TRAILING_SLASH = BIT32(18),
 
 		//! If this is set, AdjustFileName will not make relative paths into full paths.
-		FLAGS_NO_FULL_PATH = 1L << 21,
+		FLAGS_NO_FULL_PATH = BIT32(21),
 
 		//! If this is set, AdjustFileName will redirect path to disc.
-		FLAGS_REDIRECT_TO_DISC = 1L << 22,
+		FLAGS_REDIRECT_TO_DISC = BIT32(22),
 
 		//! If this is set, AdjustFileName will not adjust path for writing files.
-		FLAGS_FOR_WRITING = 1L << 23,
+		FLAGS_FOR_WRITING = BIT32(23),
 
 		//! If this is set, AdjustFileName will not convert the path to low case.
-		FLAGS_NO_LOWCASE = 1L << 24,
+		FLAGS_NO_LOWCASE = BIT32(24),
 
 		//! If this is set, the pak would be stored in memory (gpu).
-		FLAGS_PAK_IN_MEMORY = BIT(25),
+		FLAGS_PAK_IN_MEMORY = BIT32(25),
 
 		//! Store all file names as crc32 in a flat directory structure.
-		FLAGS_FILENAMES_AS_CRC32 = BIT(26),
+		FLAGS_FILENAMES_AS_CRC32 = BIT32(26),
 
 		//! If this is set, AdjustFileName will try to find the file under any mod paths we know about.
-		FLAGS_CHECK_MOD_PATHS = BIT(27),
+		FLAGS_CHECK_MOD_PATHS = BIT32(27),
 
 		//! If this is set, AdjustFileName will always check the filesystem/disk and not check inside open paks.
-		FLAGS_NEVER_IN_PAK = BIT(28),
+		FLAGS_NEVER_IN_PAK = BIT32(28),
 
 		//! Used by the resource compiler to pass the real file name.
 		//! \return Existing file name from the local data or existing cache file name.
-		FLAGS_RESOLVE_TO_CACHE = BIT(29),
+		FLAGS_RESOLVE_TO_CACHE = BIT32(29),
 
 		//! If this is set, the pak would be stored in memory (cpu).
-		FLAGS_PAK_IN_MEMORY_CPU = BIT(30),
+		FLAGS_PAK_IN_MEMORY_CPU = BIT32(30),
 	};
 
 	//! Used for widening FOpen functionality. They're ignored for the regular File System files.
-	enum EFOpenFlags
+	enum EFOpenFlags : uint32
 	{
-		//! If possible, will prevent the file from being read from memory.
-		FOPEN_HINT_DIRECT_OPERATION = BIT(0),
-
 		//! Will prevent a "missing file" warnings to be created.
-		FOPEN_HINT_QUIET = BIT(1),
+		FOPEN_HINT_QUIET = BIT32(1),
 
 		//! File should be on disk.
-		FOPEN_ONDISK = BIT(2),
+		FOPEN_ONDISK = BIT32(2),
 
 		//! Open is done by the streaming thread.
-		FOPEN_FORSTREAMING = BIT(3),
+		FOPEN_FORSTREAMING = BIT32(3),
 
 		//! On supported platforms, file is open in 'locked' mode.
-		FOPEN_LOCKED_OPEN = BIT(4),
+		FOPEN_LOCKED_OPEN = BIT32(4),
 	};
 
 	enum ERecordFileOpenList
@@ -271,10 +268,7 @@ struct ICryPak
 		RFOM_Level,                 //!< During level loading till export2game -> resourcelist.txt, used to generate the list for level2level loading.
 		RFOM_NextLevel              //!< Used for level2level loading.
 	};
-
-	//! The size of the buffer that receives the full path to the file.
-	enum {g_nMaxPath = 0x800};
-
+	
 	//! File location enum used in isFileExist to control where the pak system looks for the file.
 	enum EFileSearchLocation
 	{
@@ -288,6 +282,12 @@ struct ICryPak
 		eInMemoryPakLocale_Unload = 0,
 		eInMemoryPakLocale_CPU,
 		eInMemoryPakLocale_GPU,
+	};
+
+	enum class EModAccessPriority
+	{
+		BeforeSource = 0,           //!< Files in Mod folder will be looked at before accessing file in the original source location (Used for the source asset override folders)
+		AfterSource                 //!< Files in Mod folder will be looked at after accessing file in the original source location (Used for the compiled asset cache folder)
 	};
 
 	struct PakInfo
@@ -312,8 +312,7 @@ struct ICryPak
 	virtual ~ICryPak(){}
 
 	//! Given the source relative path, constructs the full path to the file according to the flags.
-	//! \return Pointer to the constructed path (can be either szSourcePath, or szDestPath, or NULL in case of error.
-	virtual const char* AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags) = 0;
+	virtual void        AdjustFileName(const char* src, CryPathString& dst, unsigned nFlags) = 0;
 
 	virtual bool        Init(const char* szBasePath) = 0;
 	virtual void        Release() = 0;
@@ -324,19 +323,19 @@ struct ICryPak
 
 	//! After this call, the pak file will be searched for files when they aren't on the OS file system.
 	//! \param pName Must not be 0.
-	virtual bool OpenPack(const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryFixedStringT<ICryPak::g_nMaxPath>* pFullPath = 0) = 0;
+	virtual bool OpenPack(const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryPathString* pFullPath = 0) = 0;
 
 	//! After this call, the pak file will be searched for files when they aren't on the OS file system.
-	virtual bool OpenPack(const char* pBindingRoot, const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryFixedStringT<ICryPak::g_nMaxPath>* pFullPath = 0) = 0;
+	virtual bool OpenPack(const char* pBindingRoot, const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryPathString* pFullPath = 0) = 0;
 
 	//! After this call, the file will be unlocked and closed, and its contents won't be used to search for files.
 	virtual bool ClosePack(const char* pName, unsigned nFlags = FLAGS_PATH_REAL) = 0;
 
 	//! Opens pack files by the path and wildcard.
-	virtual bool OpenPacks(const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryFixedStringT<ICryPak::g_nMaxPath>>* pFullPaths = NULL) = 0;
+	virtual bool OpenPacks(const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryPathString>* pFullPaths = NULL) = 0;
 
 	//! Opens pack files by the path and wildcard.
-	virtual bool OpenPacks(const char* pBindingRoot, const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryFixedStringT<ICryPak::g_nMaxPath>>* pFullPaths = NULL) = 0;
+	virtual bool OpenPacks(const char* pBindingRoot, const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryPathString>* pFullPaths = NULL) = 0;
 
 	//! Closes pack files by the path and wildcard.
 	virtual bool ClosePacks(const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL) = 0;
@@ -358,8 +357,10 @@ struct ICryPak
 	virtual bool LoadPakToMemory(const char* pName, EInMemoryPakLocation eLoadToMemory, IMemoryBlock* pMemoryBlock = NULL) = 0;
 	virtual void LoadPaksToMemory(int nMaxPakSize, bool bLoadToMemory) = 0;
 
-	//! Adds a mod to the list.
-	virtual void AddMod(const char* szMod) = 0;
+	//! Adds a path modification folder.
+	//! MOD folders will be used to lookup files in the additional OS directories besides normal asset folder.
+	//! Depending on the value of the modAccessPriority parameter, the order for file lookup relative to the source asset folder will be different.
+	virtual void AddMod(const char* szMod, EModAccessPriority modAccessPriority=EModAccessPriority::BeforeSource) = 0;
 
 	//! Removes a mod from the list.
 	virtual void RemoveMod(const char* szMod) = 0;
@@ -400,10 +401,9 @@ struct ICryPak
 	virtual void              FreePakInfo(PakInfo*) = 0;
 
 	//! Open file handle, file can be on disk or in PAK file.
-	//! Possible mode is r,b,x.
+	//! Possible mode is r,b.
 	//! Example:
-	//! FILE *f = FOpen( "test.txt","rbx" );.
-	//! Mode x is a direct access mode, when used file reads will go directly into the low level file system without any internal data caching.
+	//! FILE *f = FOpen( "test.txt","rb" );
 	//! Text mode is not supported for files in PAKs.
 	//! \see ICryPak::EFOpenFlags.
 	virtual FILE* FOpen(const char* pName, const char* mode, unsigned nFlags = 0) = 0;
@@ -641,10 +641,13 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 	}
 
 	bool hasWriteAccess = false;
+
+#if CRY_PLATFORM_WINDOWS
 	bool hasReadAccess = false;
 	bool isAppend = false;
 	bool isTextMode = false;
 	bool isBinaryMode = false;
+#endif
 
 	for (const char* s = mode; *s; s++)
 	{
@@ -652,6 +655,8 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		{
 			hasWriteAccess = true;
 		}
+
+#if CRY_PLATFORM_WINDOWS
 		if (*s == 'r' || *s == 'R' || *s == '+')
 		{
 			hasReadAccess = true;
@@ -670,6 +675,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 			isBinaryMode = true;
 			isTextMode = false;
 		}
+#endif
 	}
 
 	// This is on windows/xbox/Linux/Mac
@@ -684,14 +690,15 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		{
 			nAdjustFlags |= ICryPak::FLAGS_FOR_WRITING;
 		}
-		char path[_MAX_PATH];
-		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(file, path, nAdjustFlags);
+		
+		CryPathString adjustedPath;
+		gEnv->pCryPak->AdjustFileName(file, adjustedPath, nAdjustFlags);
 
 #if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE
 		if (hasWriteAccess)
 		{
 			// Make sure folder is created.
-			gEnv->pCryPak->MakeDir(PathUtil::GetParentDirectory(szAdjustedPath).c_str());
+			gEnv->pCryPak->MakeDir(PathUtil::GetParentDirectory(adjustedPath).c_str());
 		}
 #endif
 
@@ -731,7 +738,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 			cOpenFlags |= O_APPEND;
 		}
 
-		HANDLE winFile = CreateFile(szAdjustedPath, winAccessFlags, FILE_SHARE_READ, 0, winCreationMode, FILE_ATTRIBUTE_NORMAL, 0);
+		HANDLE winFile = CreateFile(adjustedPath, winAccessFlags, FILE_SHARE_READ, 0, winCreationMode, FILE_ATTRIBUTE_NORMAL, 0);
 		if (winFile == INVALID_HANDLE_VALUE)
 		{
 			return 0;
@@ -744,7 +751,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		}
 		return _fdopen(cHandle, mode);
 #else
-		return fopen(szAdjustedPath, mode);
+		return fopen(adjustedPath, mode);
 #endif
 	}
 	else
@@ -756,7 +763,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 class CScopedAllowFileAccessFromThisThread
 {
 public:
-#if defined(_RELEASE)
+#if defined(_RELEASE) && !defined(ENABLE_PROFILING_CODE)
 	CScopedAllowFileAccessFromThisThread() = default;
 	~CScopedAllowFileAccessFromThisThread()	{}
 	void End() {}
@@ -789,171 +796,11 @@ protected:
 #endif
 };
 
-#if defined(_RELEASE)
+#if defined(_RELEASE) && !defined(ENABLE_PROFILING_CODE)
 	#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD()
 #else
 	#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD() CScopedAllowFileAccessFromThisThread allowFileAccess
 #endif
-
-//////////////////////////////////////////////////////////////////////////
-
-class CInMemoryFileLoader
-{
-public:
-	CInMemoryFileLoader(ICryPak* pCryPak) : m_pPak(pCryPak), m_pFile(0), m_pBuffer(0), m_pCursor(0), m_nFileSize(0) {}
-	~CInMemoryFileLoader()
-	{
-		Close();
-	}
-
-	bool IsFileExists() const
-	{
-		return m_pFile != 0;
-	}
-
-	FILE* GetFileHandle() const
-	{
-		return m_pFile;
-	}
-
-	bool FOpen(const char* name, const char* mode, bool bImmediateCloseFile = false)
-	{
-		if (m_pPak)
-		{
-			assert(!m_pFile);
-			m_pFile = m_pPak->FOpen(name, mode);
-			if (!m_pFile)
-				return false;
-
-			m_nFileSize = m_pPak->FGetSize(m_pFile);
-			if (m_nFileSize == 0)
-			{
-				Close();
-				return false;
-			}
-
-			m_pCursor = m_pBuffer = (char*)m_pPak->PoolMalloc(m_nFileSize);
-
-			size_t nReaded = m_pPak->FReadRawAll(m_pBuffer, m_nFileSize, m_pFile);
-			if (nReaded != m_nFileSize)
-			{
-				Close();
-				return false;
-			}
-
-			if (bImmediateCloseFile)
-			{
-				m_pPak->FClose(m_pFile);
-				m_pFile = 0;
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-	void FClose()
-	{
-		Close();
-	}
-
-	size_t FReadRaw(void* data, size_t length, size_t elems)
-	{
-		ptrdiff_t dist = m_pCursor - m_pBuffer;
-
-		size_t count = length;
-		if (dist + count * elems > m_nFileSize)
-			count = (m_nFileSize - dist) / elems;
-
-		memmove(data, m_pCursor, count * elems);
-		m_pCursor += count * elems;
-
-		return count;
-	}
-
-	template<class T>
-	size_t FRead(T* data, size_t elems, bool bSwapEndian = eLittleEndian)
-	{
-		ptrdiff_t dist = m_pCursor - m_pBuffer;
-
-		size_t count = elems;
-		if (dist + count * sizeof(T) > m_nFileSize)
-			count = (m_nFileSize - dist) / sizeof(T);
-
-		memmove(data, m_pCursor, count * sizeof(T));
-		m_pCursor += count * sizeof(T);
-
-		SwapEndian(data, count, bSwapEndian);
-		return count;
-	}
-
-	size_t FTell()
-	{
-		ptrdiff_t dist = m_pCursor - m_pBuffer;
-		return dist;
-	}
-
-	int FSeek(int64 origin, int command)
-	{
-		int retCode = -1;
-		int64 newPos;
-		char* newPosBuf;
-		switch (command)
-		{
-		case SEEK_SET:
-			newPos = origin;
-			if (newPos <= (int64)m_nFileSize)
-			{
-				m_pCursor = m_pBuffer + newPos;
-				retCode = 0;
-			}
-			break;
-		case SEEK_CUR:
-			newPosBuf = m_pCursor + origin;
-			if (newPosBuf <= m_pBuffer + m_nFileSize)
-			{
-				m_pCursor = newPosBuf;
-				retCode = 0;
-			}
-			break;
-		case SEEK_END:
-			newPos = m_nFileSize - origin;
-			if (newPos <= (int64)m_nFileSize)
-			{
-				m_pCursor = m_pBuffer + newPos;
-				retCode = 0;
-			}
-			break;
-		default:
-			// Not valid disk operation!
-			assert(0);
-		}
-		return retCode;
-	}
-
-private:
-
-	void Close()
-	{
-		if (m_pFile)
-			m_pPak->FClose(m_pFile);
-
-		if (m_pBuffer)
-			m_pPak->PoolFree(m_pBuffer);
-
-		m_pBuffer = m_pCursor = 0;
-		m_nFileSize = 0;
-		m_pFile = 0;
-	}
-
-private:
-	FILE*    m_pFile;
-	char*    m_pBuffer;
-	ICryPak* m_pPak;
-	char*    m_pCursor;
-	size_t   m_nFileSize;
-};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -968,7 +815,6 @@ struct SDirectoryEnumeratorHelper
 public:
 	void ScanDirectoryRecursive(const string& root, const string& pathIn, const string& fileSpec, std::vector<string>& files)
 	{
-		bool anyFound = false;
 		string path = PathUtil::AddSlash(pathIn);
 		string dir = PathUtil::AddSlash(PathUtil::AddSlash(root) + path);
 

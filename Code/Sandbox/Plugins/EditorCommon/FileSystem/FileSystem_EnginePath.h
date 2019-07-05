@@ -6,9 +6,9 @@
 namespace FileSystem
 {
 
-/// \brief key and full version of the filesystem engine pathes
+/// \brief key and full version of the filesystem engine paths
 /// \note root directory has empty string()
-/// \note except root directory all pathes start with '/'
+/// \note except root directory all paths start with '/'
 struct SEnginePath
 {
 	QString key;  ///< key version of the path (all lowercase if filesystem is case insensitive)
@@ -26,4 +26,3 @@ public:
 };
 
 } // namespace FileSystem
-

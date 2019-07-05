@@ -22,24 +22,23 @@ static CryIcon s_pakFileFolderIcon;
 static CryIcon s_pakFileIcon;
 static CryIcon s_pakFolderIcon;
 
-enum class ERoles
+static CryIcon s_contextActiveIcon;
+
+enum class ERoles : CryAudio::EnumFlagsType
 {
 	Id = Qt::UserRole + 1,
-	Name,
 	InternalPointer,
 	IsDefaultControl,
 	IsPlaceholder,
-	SortPriority,
-};
+	SortPriority, };
 
-enum class EItemStatus
+enum class EItemStatus : CryAudio::EnumFlagsType
 {
 	Placeholder,
 	NoConnection,
 	NoControl,
 	Localized,
-	NotificationHeader,
-};
+	NotificationHeader, };
 
 //////////////////////////////////////////////////////////////////////////
 inline void InitIcons()
@@ -55,6 +54,8 @@ inline void InitIcons()
 	s_pakFileFolderIcon = CryIcon("icons:General/Pakfile_Folder.ico");
 	s_pakFileIcon = CryIcon("icons:General/Pakfile.ico");
 	s_pakFolderIcon = CryIcon("icons:General/Folder.ico");
+
+	s_contextActiveIcon = CryIcon("icons:General/colour_green.ico");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -63,23 +64,29 @@ inline CryIcon const& GetItemNotificationIcon(EItemStatus const status)
 	switch (status)
 	{
 	case EItemStatus::Placeholder:
-		return s_placeholderIcon;
-		break;
+		{
+			return s_placeholderIcon;
+		}
 	case EItemStatus::NoConnection:
-		return s_noConnectionIcon;
-		break;
+		{
+			return s_noConnectionIcon;
+		}
 	case EItemStatus::NoControl:
-		return s_noControlIcon;
-		break;
+		{
+			return s_noControlIcon;
+		}
 	case EItemStatus::Localized:
-		return s_localizedIcon;
-		break;
+		{
+			return s_localizedIcon;
+		}
 	case EItemStatus::NotificationHeader:
-		return s_notificationHeaderIcon;
-		break;
+		{
+			return s_notificationHeaderIcon;
+		}
 	default:
-		return s_errorIcon;
-		break;
+		{
+			return s_errorIcon;
+		}
 	}
 }
 
@@ -105,14 +112,14 @@ inline CryIcon const& GetPakStatusIcon(EPakStatus const pakStatus)
 static char const* const s_szSystemMimeType = "AudioSystemItems";
 static char const* const s_szImplMimeType = "AudioImplItems";
 
-static CItemModelAttribute s_notificationAttribute("Notification", eAttributeType_String, CItemModelAttribute::Visible, false);
-static CItemModelAttribute s_placeholderAttribute("Valid Connection", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked);
-static CItemModelAttribute s_connectedAttribute("Connected", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked);
-static CItemModelAttribute s_localizedAttribute("Localized", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
-static CItemModelAttribute s_noControlAttribute("Empty", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
-static CItemModelAttribute s_pakStatus("Pak ", eAttributeType_String, CItemModelAttribute::StartHidden, false);
-static CItemModelAttribute s_inPakAttribute("In pak", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
-static CItemModelAttribute s_onDiskAttribute("On disk", eAttributeType_Boolean, CItemModelAttribute::AlwaysHidden, true, Qt::Checked);
-static CItemModelAttribute s_pathAttribute("Path", eAttributeType_String, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_notificationAttribute("Notification", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
+static CItemModelAttribute s_placeholderAttribute("Valid Connection", &Attributes::s_booleanAttributeType, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked, Qt::CheckStateRole);
+static CItemModelAttribute s_connectedAttribute("Connected", &Attributes::s_booleanAttributeType, CItemModelAttribute::AlwaysHidden, true, Qt::Unchecked, Qt::CheckStateRole);
+static CItemModelAttribute s_localizedAttribute("Localized", &Attributes::s_booleanAttributeType, CItemModelAttribute::AlwaysHidden, true, Qt::Checked, Qt::CheckStateRole);
+static CItemModelAttribute s_noControlAttribute("Empty", &Attributes::s_booleanAttributeType, CItemModelAttribute::AlwaysHidden, true, Qt::Checked, Qt::CheckStateRole);
+static CItemModelAttribute s_pakStatus("Pak ", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden, false);
+static CItemModelAttribute s_inPakAttribute("In pak", &Attributes::s_booleanAttributeType, CItemModelAttribute::AlwaysHidden, true, Qt::Checked, Qt::CheckStateRole);
+static CItemModelAttribute s_onDiskAttribute("On disk", &Attributes::s_booleanAttributeType, CItemModelAttribute::AlwaysHidden, true, Qt::Checked, Qt::CheckStateRole);
+static CItemModelAttribute s_pathAttribute("Path", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
 } // namespace ModelUtils
 } // namespace ACE

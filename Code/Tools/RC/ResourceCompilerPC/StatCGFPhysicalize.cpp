@@ -17,6 +17,7 @@
 #include "StatCGFPhysicalize.h"
 #include "../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.h"
 #include "Util.h"
+#include "FileUtil.h"
 
 #define SMALL_MESH_NUM_INDEX 30	
 
@@ -471,7 +472,7 @@ void CPhysicsInterface::ProcessBreakablePhysics( CContentCGF *pCompiledCGF,CCont
 		return;
 
 	char path[1024];
-	GetModuleFileName(GetModuleHandle(NULL),path, 1024);
+	CryGetModuleFileName(CryGetCurrentModule(), path, sizeof(path));
 	char * ch = strrchr(path, '\\');
 	if(!ch)
 		return;
@@ -490,7 +491,7 @@ void CPhysicsInterface::ProcessBreakablePhysics( CContentCGF *pCompiledCGF,CCont
 		// Remove read only attribute of ng.ini
 		char ngIni[1024];
 		cry_sprintf(ngIni, "%sng.ini", path);
-		SetFileAttributes( ngIni,FILE_ATTRIBUTE_ARCHIVE );
+		FileUtil::MakeWritable(ngIni);
 	}
 
 	CNodeCGF * pNode = 0;

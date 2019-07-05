@@ -5,6 +5,7 @@
 
 #include "NodeWidgetStyle.h"
 #include "NodePinWidgetStyle.h"
+#include <CryCore/CryCrc32.h>
 
 namespace CryGraphEditor {
 
@@ -57,4 +58,3 @@ const CNodePinWidgetStyle* CNodeContentWidgetStyle::GetPinWidgetStyle(const char
 }
 
 }
-

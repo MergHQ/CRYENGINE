@@ -5,6 +5,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "SkeletonAnim.h"
 #include "CharacterInstance.h"
+#include <CryThreading/IJobManager.h>
 
 class CAttachmentBONE;
 class CAttachmentManager;
@@ -36,24 +37,24 @@ struct SContext
 {
 	SContext()
 		: pInstance(nullptr)
-		, pBone(nullptr)
+		, attachmentNameCRC(0)
 		, pParent(nullptr)
 		, numChildren(0)
 		, slot(-1)
 		, pCommandBuffer(nullptr)
 		, job(nullptr)
-		, state(EState::Unstarted) 
+		, state(EState::Unstarted)
 	{
 	}
 
-	void Initialize(CCharInstance* pInst, const CAttachmentBONE* pBone, const CCharInstance* pParent, int numChildren);
+	void Initialize(CCharInstance* pInst, const IAttachment* pAttachment, const CCharInstance* pParent, int numChildren);
 
 	//! Checks if computation of this processing context is currently in progress.
 	//! \return True if computation is still in progress. False if computation did not yet start or already finished for the current frame.
 	bool IsInProgress() const;
 
 	_smart_ptr<CCharInstance> pInstance;
-	const CAttachmentBONE*    pBone;
+	uint32                    attachmentNameCRC;
 	const CCharInstance*      pParent;
 
 	int                       numChildren;

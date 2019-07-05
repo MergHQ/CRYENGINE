@@ -5,4 +5,3 @@
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.inl>
 #include <CryCore/ToolsHelpers/SettingsManagerHelpers.inl>
 #include <CryCore/ToolsHelpers/EngineSettingsManager.inl>
-

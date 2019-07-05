@@ -2,38 +2,59 @@
 
 #include "StdAfx.h"
 #include "AIMoveSimulation.h"
-#include "Objects\EntityObject.h"
+
+#include "Objects/EntityObject.h"
+#include "Objects/SelectionGroup.h"
 #include "GameEngine.h"
+
+#include <Viewport.h>
+
 #include <CryAISystem/IAIObject.h>
-#include "Viewport.h"
 #include <CryAISystem/IAIActorProxy.h>
 #include <CryAISystem/IMovementSystem.h>
 #include <CryAISystem/MovementRequest.h>
 
-//////////////////////////////////////////////////////////////////////////
-CAIMoveSimulation::CAIMoveSimulation()
+namespace
 {
+	CAIMoveSimulation gAIMoveSimulation;
+	REGISTER_OBJECT_MODE_SUB_TOOL_PTR(CAIMoveSimulation, &gAIMoveSimulation);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CAIMoveSimulation::~CAIMoveSimulation()
 {
 	CancelMove();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CAIMoveSimulation::CancelMove()
+bool CAIMoveSimulation::HandleMouseEvent(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
-	CRY_ASSERT(gEnv && gEnv->pAISystem && gEnv->pAISystem->GetMovementSystem());
+	if (!GetIEditor()->GetGameEngine()->GetSimulationMode())
+		return false;
 
-	for (const SMovingAI& movingAI : m_movingAIs)
-	{
-		gEnv->pAISystem->GetMovementSystem()->CancelRequest(movingAI.m_movementRequestID);
-	}
-	m_movingAIs.clear();
+	// This tool only cares about pressing middle mouse button
+	if (event != eMouseMDown)
+		return false;
+
+	// Update AI move simulation when not holding Ctrl down.
+	if (flags & MK_CONTROL)
+		return false;
+
+	return UpdateAIMoveSimulation(view, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CAIMoveSimulation::CancelMove()
+{
+	if (!m_movingAIs.empty())
+	{
+		CRY_ASSERT(gEnv && gEnv->pAISystem && gEnv->pAISystem->GetMovementSystem());
+
+		for (const SMovingAI& movingAI : m_movingAIs)
+		{
+			gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(movingAI.m_movementRequestID);
+		}
+		m_movingAIs.clear();
+	}
+}
+
 bool CAIMoveSimulation::UpdateAIMoveSimulation(CViewport* pView, const CPoint& point)
 {
 	CGameEngine* pGameEngine = GetIEditorImpl()->GetGameEngine();
@@ -81,31 +102,23 @@ bool CAIMoveSimulation::UpdateAIMoveSimulation(CViewport* pView, const CPoint& p
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CAIMoveSimulation::GetAIMoveSimulationDestination(CViewport* pView, const CPoint& point, Vec3& outGotoPoint) const
 {
-	HitContext hitInfo;
+	HitContext hitInfo(pView);
 	pView->HitTest(point, hitInfo);
 
-	// TODO Get point or projected point on hit object's bounds
 	CBaseObject* pHitObj = hitInfo.object;
 	if (pHitObj)
 	{
-		AABB bbox;
-		pHitObj->GetBoundBox(bbox);
-
-		// TODO Get closest approachable point to bounds
-		outGotoPoint = pView->SnapToGrid(pView->ViewToWorld(point));
+		outGotoPoint = hitInfo.raySrc + hitInfo.dist * hitInfo.rayDir;
 	}
 	else
 	{
 		outGotoPoint = pView->SnapToGrid(pView->ViewToWorld(point));
 	}
-
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 MovementStyle::Speed GetSpeedToUseForSimulation()
 {
 	MovementStyle::Speed speedToUse = MovementStyle::Run;
@@ -152,4 +165,3 @@ MovementRequestID CAIMoveSimulation::SendAIMoveSimulation(IEntity* pEntity, cons
 	
 	return gEnv->pAISystem->GetMovementSystem()->QueueRequest(request);
 }
-

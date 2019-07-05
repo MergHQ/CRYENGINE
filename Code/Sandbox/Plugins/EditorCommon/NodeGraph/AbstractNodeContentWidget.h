@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 // TODO: Replace when CConnectionPoint has it's own header.
 #include "ICryGraphEditor.h"
 // ~TODO
@@ -61,4 +63,3 @@ private:
 };
 
 }
-

@@ -149,6 +149,8 @@ public:
 	// outBuffer must be at least inputLen bytes long
 	// Returns the decrypted buffer length in BYTES and an error code < 0 in case of error
 	int  padDecrypt(const UINT8* input, int inputOctets, UINT8* outBuffer);
+
+	static int GetBlockSize() { return 16; }
 protected:
 	void keySched(UINT8 key[_MAX_KEY_COLUMNS][4]);
 	void keyEncToDec();

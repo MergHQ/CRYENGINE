@@ -75,9 +75,35 @@ namespace Schematyc2
 
 	DECLARE_SHARED_POINTERS(IObjectPreviewProperties)
 
+	struct SExecutionHistoryItem
+	{
+		enum class EExecutionHistoryType
+		{
+			Node = 0,
+			Input,
+			FunctionBegin,
+			FunctionEnd,
+			Signal,
+
+			Count
+		};
+
+		SExecutionHistoryItem(const SGUID& guid, const string& value, const string& data, const float time, EExecutionHistoryType type)
+			: guid(guid), value(value), data(data), time(time), type(type)
+		{
+		}
+
+		SGUID                 guid;
+		string                value;
+		string                data;
+		float                 time;
+		EExecutionHistoryType type;
+	};
+
 	typedef TemplateUtils::CDelegate<EVisitStatus (size_t)> ObjectActiveTimerVisitor;
 	typedef TemplateUtils::CDelegate<EVisitStatus (size_t)> ObjectActiveActionInstanceVisitor;
 	typedef TemplateUtils::CRingBuffer<SGUID, 8>            ObjectSignalHistory;
+	typedef std::vector<SExecutionHistoryItem>              ObjectNodeHistory;
 
 	struct IObject
 	{
@@ -113,5 +139,9 @@ namespace Schematyc2
 		virtual void VisitActiveTimers(const ObjectActiveTimerVisitor& visitor) const = 0;
 		virtual void VisitActiveActionInstances(const ObjectActiveActionInstanceVisitor& visitor) const = 0;
 		virtual const ObjectSignalHistory& GetSignalHistory() const = 0;
+		virtual const ObjectNodeHistory& GetNodeHistory() const = 0;
+		virtual void ClearNodeHistory() = 0;
+		virtual void SetDebuggingActive(const bool active) = 0;
+		virtual bool IsDebuggingActive() const  = 0;
 	};
 }

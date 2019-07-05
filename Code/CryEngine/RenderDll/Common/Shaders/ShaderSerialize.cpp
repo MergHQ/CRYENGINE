@@ -467,7 +467,7 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 
 	int nLen = Data.Num();
 	char sName[128];
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(sName, "(%llx)", pSH->m_nMaskGenFX);
 	#else
 	cry_sprintf(sName, "(%I64x)", pSH->m_nMaskGenFX);
@@ -482,8 +482,6 @@ bool CShaderSerialize::ExportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	pOpenDir->nSize = de.GetSize();
 
 	//Preserve modification time
-	uint64 modTime = pSR->m_pRes[static_cast<int>(cacheSource::user)]->mfGetModifTime();
-
 	pSR->m_pRes[static_cast<int>(cacheSource::user)]->mfFlush();
 
 	return bRes;
@@ -500,7 +498,7 @@ bool CShaderSerialize::CheckFXBExists(CShader* pSH)
 		return false;
 
 	char sName[128];
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(sName, "(%llx)", pSH->m_nMaskGenFX);
 	#else
 	cry_sprintf(sName, "(%I64x)", pSH->m_nMaskGenFX);
@@ -539,7 +537,7 @@ bool CShaderSerialize::ImportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	uint32 i;
 	int j;
 	char sName[128];
-	#if defined(__GNUC__)
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(sName, "(%llx)", pSH->m_nMaskGenFX);
 	#else
 	cry_sprintf(sName, "(%I64x)", pSH->m_nMaskGenFX);
@@ -581,7 +579,7 @@ bool CShaderSerialize::ImportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 
 	assert(pSH != nullptr);
 
-	int nSize = pRes->mfFileRead(pDE);
+	pRes->mfFileRead(pDE);
 	byte* pData = (byte*)pRes->mfFileGetBuf(pDE);
 	if (!pData)
 	{
@@ -739,9 +737,9 @@ bool CShaderSerialize::ImportShader(CShader* pSH, CShaderManBin& binShaderMgr)
 	//TODO |= on flags? will we lose flags at runtime
 	pSH->m_Flags = SC.SSR.m_Flags;
 	pSH->m_Flags2 = SC.SSR.m_Flags2;
-	pSH->m_nMDV = SC.SSR.m_nMDV;
+	pSH->m_nMDV = EVertexModifier(SC.SSR.m_nMDV);
 	pSH->m_eVertexFormat = SC.SSR.m_eVertexFormat;
-	pSH->m_eCull = SC.SSR.m_eCull;
+	pSH->m_eCull = ECull(SC.SSR.m_eCull);
 	pSH->m_eShaderType = SC.SSR.m_eShaderType;
 	pSH->m_nMaskGenFX = SC.SSR.m_nMaskGenFX;
 

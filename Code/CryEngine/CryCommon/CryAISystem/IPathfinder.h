@@ -4,16 +4,14 @@
 
 #pragma once
 
-class CAIActor;
-
-
 #include <CryMemory/IMemory.h> // <> required for Interfuscator
 #include <CryAISystem/INavigationSystem.h>
 #include <CryCore/functor.h>
-#include <CryAISystem/IMNM.h>
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/NavigationSystem/MNMTile.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/INavMeshQueryFilter.h>
+
+class CAIActor;
 
 /* WARNING: These interfaces and structures are soon to be deprecated.
             Use at your own risk of having to change your code later!
@@ -46,7 +44,7 @@ struct PathPointDescriptor
 		: vPos(_vPos)
 		, navType(_navType)
 		, navTypeCustomId(0)
-		, iTriId(0)
+		, iTriId()
 		, navSOMethod(nSOmNone)
 	{}
 
@@ -54,7 +52,7 @@ struct PathPointDescriptor
 		: vPos(_vPos)
 		, navType(IAISystem::NAV_UNSET)
 		, navTypeCustomId(0)
-		, iTriId(0)
+		, iTriId()
 		, navSOMethod(nSOmNone)
 	{}
 
@@ -75,7 +73,7 @@ struct PathPointDescriptor
 	IAISystem::ENavigationType navType;
 	uint16                     navTypeCustomId;
 
-	uint32                     iTriId;
+	MNM::TriangleID            iTriId;
 	OffMeshLinkData            offMeshLinkData;
 
 	ENavSOMethod               navSOMethod;
@@ -197,12 +195,12 @@ struct IAIPathAgent
 	virtual void         SetPathToFollow(const char* pathName) = 0;
 	virtual void         SetPathAttributeToFollow(bool bSpline) = 0;
 
-	virtual bool                 GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const = 0;
-	virtual bool                 GetTeleportPosition(Vec3& teleportPos) const = 0;
+	virtual bool           GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const = 0;
+	virtual bool           GetTeleportPosition(Vec3& teleportPos) const = 0;
 
-	virtual class IPathFollower* GetPathFollower() const = 0;
+	virtual IPathFollower* GetPathFollower() const = 0;
 
-	virtual bool                 IsPointValidForAgent(const Vec3& pos, uint32 flags) const = 0;
+	virtual bool           IsPointValidForAgent(const Vec3& pos, uint32 flags) const = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -290,9 +288,8 @@ struct SNavPathParams
 	}
 };
 
-class INavPath
+struct INavPath
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~INavPath(){}
 	virtual void                                       Release() = 0;
@@ -344,10 +341,9 @@ public:
 	virtual bool        UpdateAndSteerAlongPath(Vec3& dirOut, float& distToEndOut, float& distToPathOut, bool& isResolvingSticking, Vec3& pathDirOut, Vec3& pathAheadDirOut, Vec3& pathAheadPosOut, Vec3 currentPos, const Vec3& currentVel, float lookAhead, float pathRadius, float dt, bool resolveSticking, bool twoD) = 0;
 
 	virtual bool        AdjustPathAroundObstacles(const Vec3& currentpos, const AgentMovementAbility& movementAbility, const INavMeshQueryFilter* pFilter) = 0;
-	virtual bool        CanPassFilter(size_t fromPointIndex, const INavMeshQueryFilter* pFilter) = 0;
+	virtual bool        CanPassFilter(size_t fromPointIndex, const INavMeshQueryFilter* pFilter) const = 0;
 
 	virtual void        TrimPath(float length, bool twoD) = 0;
-	;
 	virtual float       GetDiscardedPathLength() const = 0;
 	//virtual bool AdjustPathAroundObstacles(const CPathObstacles &obstacles, IAISystem::tNavCapMask navCapMask) = 0;
 	//virtual void AddObjectAdjustedFor(const class CAIObject *pObject) = 0;
@@ -382,10 +378,16 @@ public:
 
 DECLARE_SHARED_POINTERS(INavPath);
 
-enum EMNMPathResult
+enum class EMNMPathResult
 {
-	eMNMPR_NoPathFound = 0,
-	eMNMPR_Success,
+	Success = 0,
+	FailedNoPathFound,
+	FailedUnknown,
+	FailedToConstructPath,
+	FailedAgentOutsideNavigationVolume,
+	FailedToSnapStartPoint,
+	FailedToSnapEndPoint,
+	PathfinderReset,
 };
 
 struct MNMPathRequestResult
@@ -393,12 +395,12 @@ struct MNMPathRequestResult
 	MNMPathRequestResult()
 		: cost(0.f)
 		, id(0)
-		, result(eMNMPR_NoPathFound)
+		, result(EMNMPathResult::FailedUnknown)
 	{}
 
 	ILINE bool HasPathBeenFound() const
 	{
-		return result == eMNMPR_Success;
+		return result == EMNMPathResult::Success;
 	}
 
 	INavPathPtr    pPath;
@@ -416,9 +418,8 @@ struct IPathObstacles
 	virtual bool IsLineSegmentIntersectingObstaclesOrCloseToThem(const Lineseg& linesegToTest, float maxDistanceToConsiderClose) const = 0;
 };
 
-class IPathFollower
+struct IPathFollower
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IPathFollower(){}
 
@@ -511,10 +512,10 @@ class IMNMCustomPathCostComputer
 {
 public:
 
-	enum class EComputationType
+	enum class EComputationType : uint32
 	{
-		Cost,                   // compute the cost it takes to move along the path-segment (-> SComputationOutput::cost)
-		StringPullingAllowed    // compute whether string-pulling is still allowed on given path-segment (-> SComputationOutput::bStringPullingAllowed)
+		Cost                  = BIT32(0),  // compute the cost it takes to move along the path-segment (-> SComputationOutput::cost)
+		StringPullingAllowed  = BIT32(1)   // compute whether string-pulling is still allowed on given path-segment (-> SComputationOutput::bStringPullingAllowed)
 	};
 	
 	typedef CEnumFlags<EComputationType> ComputationFlags;
@@ -568,7 +569,7 @@ protected:
 	IMNMCustomPathCostComputer()
 	{
 #if !defined(_RELEASE)
-		CRY_ASSERT_MESSAGE(BeingConstructedViaMakeSharedFunction(), "IMNMCustomPathCostComputer: you should have used MakeShared() to instantiate your class (since it injects the built-in custom deleter to guarantee safe cross-DLL deletion).");
+		CRY_ASSERT(BeingConstructedViaMakeSharedFunction(), "IMNMCustomPathCostComputer: you should have used MakeShared() to instantiate your class (since it injects the built-in custom deleter to guarantee safe cross-DLL deletion).");
 		BeingConstructedViaMakeSharedFunction() = false;
 #endif
 	}
@@ -599,33 +600,15 @@ private:
 };
 
 
-enum EMNMDangers
+enum EMNMDangers : uint32
 {
 	eMNMDangers_None            = 0,
-	eMNMDangers_AttentionTarget = BIT(0),
-	eMNMDangers_Explosive       = BIT(1),
-	eMNMDangers_GroupMates      = BIT(2),
+	eMNMDangers_AttentionTarget = BIT32(0),
+	eMNMDangers_Explosive       = BIT32(1),
+	eMNMDangers_GroupMates      = BIT32(2),
 };
 
 typedef uint32 MNMDangersFlags;
-
-//! Parameters for snapping of the path's start/end positions onto the NavMesh.
-struct SSnapToNavMeshRulesInfo
-{
-	SSnapToNavMeshRulesInfo()
-		: bVerticalSearch(true)
-		, bBoxSearch(true)
-	{}
-
-	SSnapToNavMeshRulesInfo(const bool verticalSearch, const bool boxSearch)
-		: bVerticalSearch(verticalSearch)
-		, bBoxSearch(boxSearch)
-	{}
-
-	//<! Rules will be checked/applied in this order:
-	bool bVerticalSearch;   //!< Tries to snap vertically
-	bool bBoxSearch;	//!< Tries to snap using a box horizontally+vertically.
-};
 
 struct MNMPathRequest
 {
@@ -643,7 +626,7 @@ struct MNMPathRequest
 		, allowDangerousDestination(false)
 		, dangersToAvoidFlags(eMNMDangers_None)
 		, beautify(true)
-		, pRequesterEntity(nullptr)
+		, requesterEntityId(INVALID_ENTITYID)
 		, pCustomPathCostComputer(nullptr)
 		, pFilter(nullptr)
 	{
@@ -664,7 +647,7 @@ struct MNMPathRequest
 		, allowDangerousDestination(false)
 		, dangersToAvoidFlags(dangersFlags)
 		, beautify(true)
-		, pRequesterEntity(nullptr)
+		, requesterEntityId(INVALID_ENTITYID)
 		, pCustomPathCostComputer(nullptr)
 		, pFilter(nullptr)
 	{
@@ -683,13 +666,13 @@ struct MNMPathRequest
 	int                   forceTargetBuildingId;
 	float                 endTolerance;
 	float                 endDistance;
-	SSnapToNavMeshRulesInfo	  snappingRules;
+	MNM::SOrderedSnappingMetrics snappingMetrics;
 	bool                  allowDangerousDestination;
 	MNMDangersFlags       dangersToAvoidFlags;
 	const INavMeshQueryFilter* pFilter;
 
 	MNMCustomPathCostComputerSharedPtr pCustomPathCostComputer;  // can be provided by the game code to allow for computing path-finding costs in more ways than just through the built-in "danger areas" (see MNMDangersFlags)
-	IEntity*              pRequesterEntity;
+	EntityId              requesterEntityId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -698,7 +681,7 @@ struct MNMPathRequest
 struct IMNMPathfinder
 {
 	// <interfuscator:shuffle>
-	virtual ~IMNMPathfinder() {};
+	virtual ~IMNMPathfinder() {}
 
 	//! Request a path (look at MNMPathRequest for relevant request info).
 	//! This request is queued and processed in a separate thread.
@@ -706,8 +689,14 @@ struct IMNMPathfinder
 	//! Returns an ID so that you can cancel the request.
 	virtual MNM::QueuedPathID RequestPathTo(const EntityId requesterEntityId, const MNMPathRequest& request) = 0;
 
+	//! Request a path (look at MNMPathRequest for relevant request info).
+	//! This request is queued and processed in a separate thread.
+	//! The path result is sent to the callback function specified in the request.
+	//! Returns an ID so that you can cancel the request.
+	virtual MNM::QueuedPathID RequestPathTo(const MNMPathRequest& request) = 0;
+
 	//! Cancel a requested path by ID.
-	virtual void CancelPathRequest(MNM::QueuedPathID requestId) = 0;
+	virtual void CancelPathRequest(const MNM::QueuedPathID requestId) = 0;
 
 	virtual bool CheckIfPointsAreOnStraightWalkableLine(const NavigationMeshID& meshID, const Vec3& source, const Vec3& destination, float heightOffset = 0.2f) const = 0;
 	virtual bool CheckIfPointsAreOnStraightWalkableLine(const NavigationMeshID& meshID, const Vec3& source, const Vec3& destination, const INavMeshQueryFilter* pFilter, float heightOffset = 0.2f) const = 0;

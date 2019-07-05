@@ -218,13 +218,13 @@ CREWaterOcean* COcean::m_pOceanRE = 0;
 uint32 COcean::m_nVisiblePixelsCount = ~0;
 
 COcean::COcean(IMaterial* pMat)
+	: m_pMaterial(pMat)
 {
 	m_pBottomCapRenderMesh = 0;
 
 	memset(m_fRECustomData, 0, sizeof(m_fRECustomData));
 	memset(m_fREOceanBottomCustomData, 0, sizeof(m_fREOceanBottomCustomData));
 
-	m_pMaterial = pMat;
 	m_fLastFov = 0;
 	m_fLastVisibleFrameTime = 0.0f;
 
@@ -302,7 +302,7 @@ void COcean::Update(const SRenderingPassInfo& passInfo)
 		return;
 
 	const CCamera& rCamera = passInfo.GetCamera();
-	int32 nFillThreadID = passInfo.ThreadID();
+	//int32 nFillThreadID = passInfo.ThreadID();
 	uint32 nBufID = passInfo.GetFrameID() % CYCLE_BUFFERS_NUM;
 
 	Vec3 vCamPos = rCamera.GetPosition();
@@ -333,7 +333,7 @@ void COcean::Update(const SRenderingPassInfo& passInfo)
 		}
 	}
 
-	bool bWaterVisible = IsVisible(passInfo);
+	bool bWaterVisible = IsVisible(AABB(), 0.0f, passInfo);
 	float _fWaterPlaneSize = rCamera.GetFarPlane();
 
 	// Check if water surface occluded
@@ -466,13 +466,12 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	// if reaches render stage - means ocean is visible
 
 	C3DEngine* p3DEngine = (C3DEngine*)Get3DEngine();
-	IRenderer* pRenderer(GetRenderer());
 
-	int32 nBufID = (passInfo.GetFrameID() & 1);
-	Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	float fWaterLevel = p3DEngine->GetWaterLevel();
 
 	const int fillThreadID = passInfo.ThreadID();
@@ -480,15 +479,12 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 	CRenderObject* pObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	if (!pObject)
 		return;
-	pObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+	pObject->SetMatrix(Matrix34::CreateIdentity());
 	pObject->m_pRenderNode = this;
 
 	m_fLastFov = passInfo.GetCamera().GetFov();
 
 	// test for multiple lights and shadows support
-
-	SRenderObjData* pOD = pObject->GetObjData();
-
 	m_Camera = passInfo.GetCamera();
 	pObject->m_fAlpha = 1.f;//m_fWaterTranspRatio;
 
@@ -552,8 +548,6 @@ void COcean::Render(const SRenderingPassInfo& passInfo)
 
 void COcean::RenderBottomCap(const SRenderingPassInfo& passInfo)
 {
-	C3DEngine* p3DEngine = (C3DEngine*)Get3DEngine();
-
 	const CCamera& pCam = passInfo.GetCamera();
 	Vec3 vCamPos = pCam.GetPosition();
 
@@ -622,7 +616,7 @@ void COcean::RenderBottomCap(const SRenderingPassInfo& passInfo)
 	CRenderObject* pObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	if (!pObject)
 		return;
-	pObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+	pObject->SetMatrix(Matrix34::CreateIdentity());
 	pObject->m_pRenderNode = this;
 
 	// make distance to water level near to zero
@@ -639,7 +633,6 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 	if (!GetCVars()->e_Fog || !GetCVars()->e_FogVolumes)
 		return;
 
-	IRenderer* pRenderer(GetRenderer());
 	C3DEngine* p3DEngine(Get3DEngine());
 
 	const int fillThreadID = passInfo.ThreadID();
@@ -742,7 +735,7 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 			}
 
 			// fill in data for render object
-			pROVol->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+			pROVol->SetMatrix(Matrix34::CreateIdentity());
 			pROVol->m_fSort = 0;
 
 			auto pMaterial =
@@ -761,12 +754,11 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 	}
 }
 
-bool COcean::IsVisible(const SRenderingPassInfo& passInfo)
+bool COcean::IsVisible(const AABB& nodeBox, const float nodeDistance, const SRenderingPassInfo& passInfo) const
 {
 	if (abs(m_nLastVisibleFrameId - passInfo.GetFrameID()) <= 2)
 		m_fLastVisibleFrameTime = 0.0f;
 
-	ITimer* pTimer(gEnv->pTimer);
 	m_fLastVisibleFrameTime += gEnv->pTimer->GetFrameTime();
 
 	if (m_fLastVisibleFrameTime > 2.0f)                                 // at least 2 seconds
@@ -894,16 +886,6 @@ uint32 COcean::GetVisiblePixelsCount()
 
 void COcean::OffsetPosition(const Vec3& delta)
 {
-}
-
-void COcean::FillBBox(AABB& aabb)
-{
-	aabb = COcean::GetBBox();
-}
-
-EERType COcean::GetRenderNodeType()
-{
-	return eERType_WaterVolume;
 }
 
 Vec3 COcean::GetPos(bool) const

@@ -4,6 +4,7 @@
 
 // Includes
 #include "StdAfx.h"
+#include <CryRenderer/IRenderer.h>
 #include "MenuRender3DModelMgr.h"
 #include "FrontEndModelCache.h"
 #include "Graphics/2DRenderUtils.h"
@@ -11,6 +12,7 @@
 #include <CryString/StringUtils.h>
 #include "GameCVars.h"
 #include "UI/UIManager.h"
+#include <CryAnimation/IAttachment.h>
 
 // Defines
 #if MP_FE_CACHE_LOG_FILE_ACCESSES
@@ -43,7 +45,7 @@ uint8										CMenuRender3DModelMgr::s_instanceCount = 0;
 //--------------------------------------------------------------------------------------------------
 CMenuRender3DModelMgr::CMenuRender3DModelMgr()
 {
-	CRY_ASSERT_MESSAGE( IsMenu3dModelEngineSupportActive(), 
+	CRY_ASSERT( IsMenu3dModelEngineSupportActive(), 
 											"No 3d model engine support - Must have a FrontEndModelCache in the front end, check FrontEndModelCache.xml");
 
 	CMenuRender3DModelMgr::Release();
@@ -54,7 +56,7 @@ CMenuRender3DModelMgr::CMenuRender3DModelMgr()
 		gEnv->p3DEngine->SetPostEffectParam("Post3DRenderer_Active",1.0f,true);
 	}
 
-	CRY_ASSERT_MESSAGE(s_pInstance==NULL,"Some how there's still an instance of CMenuRender3DModelMgr");
+	CRY_ASSERT(s_pInstance==NULL,"Some how there's still an instance of CMenuRender3DModelMgr");
 	s_pInstance = this;
 
 	m_groupCount = 0;
@@ -74,8 +76,8 @@ CMenuRender3DModelMgr::CMenuRender3DModelMgr()
 //--------------------------------------------------------------------------------------------------
 CMenuRender3DModelMgr::~CMenuRender3DModelMgr()
 {
-	CRY_ASSERT_MESSAGE(s_instanceCount,"No instances left to delete in destructor");
-	CRY_ASSERT_MESSAGE(m_bReleaseMe,"Deleting an instance which isn't marked for release");
+	CRY_ASSERT(s_instanceCount,"No instances left to delete in destructor");
+	CRY_ASSERT(m_bReleaseMe,"Deleting an instance which isn't marked for release");
 
 	s_instanceCount--;
 	if(s_instanceCount == 0)
@@ -203,7 +205,7 @@ CMenuRender3DModelMgr::TAddedModelIndex CMenuRender3DModelMgr::AddModel(const SM
 
 		const uint renderEntityCount = m_renderEntityData.size();
 		CRY_ASSERT(modelParams.pFilename);
-		CRY_ASSERT_MESSAGE((renderEntityCount < kAddedModelIndex_MaxEntities),"CMenuRender3DModelMgr has no free slots left for new models, failed to add one");
+		CRY_ASSERT((renderEntityCount < kAddedModelIndex_MaxEntities),"CMenuRender3DModelMgr has no free slots left for new models, failed to add one");
 
 		if((CFrontEndModelCache::Exists()==false) && (g_pGame->GetGameRules()==NULL))
 		{
@@ -237,7 +239,7 @@ CMenuRender3DModelMgr::TAddedModelIndex CMenuRender3DModelMgr::AddModel(const SM
 			entitySpawnParams.vPosition = ZERO;
 			entitySpawnParams.qRotation = rotQuat;
 			IEntity* pNewEntity = gEnv->pEntitySystem->SpawnEntity(entitySpawnParams);
-			CRY_ASSERT_MESSAGE(pNewEntity,"Failed to create entity");
+			CRY_ASSERT(pNewEntity,"Failed to create entity");
 
 			if(pNewEntity)
 			{
@@ -410,7 +412,7 @@ void CMenuRender3DModelMgr::SwapIfMinBiggerThanMax(float& minValue,float& maxVal
 //--------------------------------------------------------------------------------------------------
 void CMenuRender3DModelMgr::GetPostRenderCamera(CCamera& postRenderCamera)
 {
-	CRY_ASSERT_MESSAGE(m_sceneSettings.fovScale!=0.0f,"Scene Settings FOV hasn't been set yet - must SetSceneSettings before adding models");
+	CRY_ASSERT(m_sceneSettings.fovScale!=0.0f,"Scene Settings FOV hasn't been set yet - must SetSceneSettings before adding models");
 
 	Matrix34 newCameraMatrix;
 	newCameraMatrix.SetIdentity();
@@ -723,10 +725,6 @@ bool CMenuRender3DModelMgr::HasEntityStreamedIn(SRenderSingleEntityData& rd, IEn
 void CMenuRender3DModelMgr::PreCacheMaterial(SRenderSingleEntityData& rd, IEntity* pEntity,bool bIsCharacter) 
 {
 	// Precache material -> This forces the material to have a high streaming priority
-	const float distance = 0.0f;
-	IRenderMesh* pRenderMesh = NULL;
-	const bool bFullUpdate = true;
-	const bool bDrawNear = true;
 
 	IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
 	if (pIEntityRender && pIEntityRender->GetRenderNode())
@@ -889,7 +887,6 @@ void CMenuRender3DModelMgr::UpdateModel(TAddedModelIndex modelIndex,const char* 
 					const int slotIndex = 0;
 					float animNormalizedTime = 0.0f;
 					const bool bHasNewModel = (pFilename && pFilename[0]) ? true : false;
-					const bool bIsOldModelCharacter = (renderEntityData.flags & eRSE_IsCharacter) ? true : false;
 
 					// If previous model wasn't streamed in, then it can't rely on previous model pos
 					if(!(renderEntityData.flags & eRSE_StreamedIn) && !(renderEntityData.flags & eRSE_Attached))
@@ -1553,7 +1550,7 @@ void CMenuRender3DModelMgr::UpdateEntities()
 		{
 			{
 				// Set silhouettes
-				const Vec3& silhouetteColor = renderEntityData.silhouetteColor;
+				//const Vec3& silhouetteColor = renderEntityData.silhouetteColor;
 				//pIEntityRender->SetHUDSilhouettesParams(silhouetteColor.x,silhouetteColor.y,silhouetteColor.z,0.0f);
 			
 				// Update alpha
@@ -1607,7 +1604,6 @@ void CMenuRender3DModelMgr::OnPreRender()
 		UpdateStreaming();
 		UpdateEntities();
 
-		const bool bForceValue = true;
 		gEnv->p3DEngine->SetPostEffectParam("Post3DRenderer_EdgeFadeScale", m_sceneSettings.flashEdgeFadeScale, true);
 	}
 }//-------------------------------------------------------------------------------------------------

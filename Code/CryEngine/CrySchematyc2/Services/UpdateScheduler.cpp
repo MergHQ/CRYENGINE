@@ -7,16 +7,19 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
+#include <numeric>
+
 #if DEBUG_RELEVANCE_GRID
 //#define DEBUG_RELEVANCE_GRID_EXTRA_LOG (1)
 #endif
+#define DEBUG_CHECK_SLOW (0)
 
 namespace Schematyc2
 {
 	namespace
 	{
 		static const size_t s_defaultBucketSize      = 128;
-		static const uint32 s_invalidBucketIdx       = ~0;
+		static const size_t s_gridCellReserveSize    = 0;
 	}
 
 	////////////////////////////////////////////////////////////////
@@ -33,16 +36,17 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	CRelevanceGrid::~CRelevanceGrid()
 	{
-		gEnv->pGameFramework->GetILevelSystem()->RemoveListener(this);
 		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 
 	////////////////////////////////////////////////////////////////
 	void CRelevanceGrid::Construct()
 	{
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc2::CRelevanceGrid::Construct");
+
 		const float terrainSize = static_cast<float>(gEnv->p3DEngine->GetTerrainSize());
 
-		m_gridSize = int(terrainSize / CVars::sc_RelevanceGridCellSize);
+		m_gridSize = int(terrainSize / CVars::sc2_RelevanceGridCellSize);
 		m_gridSizeMinusOne = m_gridSize - 1;
 		m_updateHalfDistance = 0;
 
@@ -51,10 +55,13 @@ namespace Schematyc2
 		m_grid.clear();
 
 		m_grid.resize(m_gridSize * m_gridSize);
-		for (SGridCell& cell : m_grid)
+		if (s_gridCellReserveSize > 0)
 		{
-			cell.globalUpdateCallbacks.reserve(16);
-			cell.localGridUpdateCallbacks.reserve(16);
+			for (SGridCell& cell : m_grid)
+			{
+				cell.globalUpdateCallbacks.reserve(s_gridCellReserveSize);
+				cell.localGridUpdateCallbacks.reserve(s_gridCellReserveSize);
+			}
 		}
 	}
 
@@ -65,7 +72,7 @@ namespace Schematyc2
 		{
 		case ESYSTEM_EVENT_LEVEL_LOAD_START:
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("ESYSTEM_EVENT_LEVEL_LOAD_START");
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "ESYSTEM_EVENT_LEVEL_LOAD_START");
 				if (gEnv->IsEditor())
 				{
 					Construct();
@@ -87,6 +94,11 @@ namespace Schematyc2
 		case ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE:
 			gEnv->pGameFramework->GetILevelSystem()->AddListener(this);
 			break;
+
+		case ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN:
+			gEnv->pGameFramework->GetILevelSystem()->RemoveListener(this);
+			break;
+
 		default:
 			break;
 		}
@@ -104,12 +116,19 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	bool CRelevanceGrid::Register(CUpdateScope* pScope, const UpdateCallback& callback, UpdateFrequency frequency, UpdatePriority priority, const UpdateFilter& filter)
 	{
-		if (pScope->GetEntity())
+		CRY_ASSERT(!pScope->m_bInStaticRelevanceGrid);
+		CRY_ASSERT(!pScope->m_bInDynamicRelevanceGrid);
+		if (pScope->m_bInStaticRelevanceGrid)
+		{
+			return false;
+		}
+
+		if (const IEntity* pEntity = pScope->GetEntity())
 		{
 			ushort x = 0;
 			ushort y = 0;
 			ushort cellIdx = 0;
-			GetCellCoordinates(pScope->GetEntity()->GetWorldPos(), x, y, cellIdx);
+			GetCellCoordinates(pEntity->GetWorldPos(), x, y, cellIdx);
 			
 			CRelevanceGrid::TUpdateCallbacks* pUpdateSlots = nullptr;
 			if (pScope->IsOnlyLocalGrid())
@@ -121,8 +140,9 @@ namespace Schematyc2
 				pUpdateSlots = &m_grid[cellIdx].globalUpdateCallbacks;
 			}
 
-			m_entityToGridCellIndexLookup.insert(std::make_pair(pScope->GetEntity()->GetId(), cellIdx));
 			pUpdateSlots->emplace_back(pScope, callback, frequency, priority, filter); 
+			pScope->m_bInStaticRelevanceGrid = true;
+			pScope->m_relevanceGridIndex = cellIdx;
 
 			if (m_grid[cellIdx].relevanceCounter > 0)
 			{
@@ -138,30 +158,32 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	void CRelevanceGrid::Unregister(CUpdateScope* pScope)
 	{
-		if (pScope->GetEntity())
+		CRY_ASSERT(!pScope->m_bInDynamicRelevanceGrid);
+		CRY_ASSERT(pScope->m_bInStaticRelevanceGrid);
+	
+		pScope->m_bInStaticRelevanceGrid = false;
+		const uint16 cellIdx = pScope->m_relevanceGridIndex;
+		pScope->m_relevanceGridIndex = -1;
+
+		CRY_ASSERT(cellIdx < m_grid.size());
+		if (cellIdx < m_grid.size())
 		{
-			TEntityToGridCell::iterator it = m_entityToGridCellIndexLookup.find(pScope->GetEntity()->GetId());
-
-			if (it != m_entityToGridCellIndexLookup.end())
+			CRelevanceGrid::TUpdateCallbacks* pUpdateSlots = nullptr;
+			if (pScope->IsOnlyLocalGrid())
 			{
-				ushort cellIdx = it->second;
-
-				CRelevanceGrid::TUpdateCallbacks* pUpdateSlots = nullptr;
-				if (pScope->IsOnlyLocalGrid())
-				{
-					pUpdateSlots = &m_grid[cellIdx].localGridUpdateCallbacks;
-				}
-				else
-				{
-					pUpdateSlots = &m_grid[cellIdx].globalUpdateCallbacks;
-				}
-
-				CRelevanceGrid::TUpdateCallbacks::iterator it = std::find_if(pUpdateSlots->begin(), pUpdateSlots->end(), [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
-				if (it != pUpdateSlots->end())
-				{
-					pUpdateSlots->erase(it);
-				}
+				pUpdateSlots = &m_grid[cellIdx].localGridUpdateCallbacks;
 			}
+			else
+			{
+				pUpdateSlots = &m_grid[cellIdx].globalUpdateCallbacks;
+			}
+
+#if DEBUG_RELEVANCE_GRID
+			const bool erased = stl::find_and_erase_if(*pUpdateSlots, [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
+			CRY_ASSERT(erased, "Unable to find scope for entity %x at cell %u", pScope->GetEntity() ? pScope->GetEntity()->GetId() : INVALID_ENTITYID, cellIdx);
+#else
+			stl::find_and_erase_if(*pUpdateSlots, [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
+#endif
 		}
 	}
 
@@ -173,10 +195,15 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	bool CRelevanceGrid::RegisterDynamicObject(CUpdateScope* pScope, const UpdateCallback& callback, UpdateFrequency frequency, UpdatePriority priority, const UpdateFilter& filter)
 	{
-		CRelevanceGrid::TDynamicObjects::iterator it = std::find_if(m_dynamicObjects.begin(), m_dynamicObjects.end(), [&pScope](const CRelevanceGrid::SDynamicObject& dynObj) { return pScope == dynObj.updateCallback.pScope; });
-		if (it == m_dynamicObjects.end())
+		CRY_ASSERT(!pScope->m_bInStaticRelevanceGrid);
+		CRY_ASSERT(!pScope->m_bInDynamicRelevanceGrid);
+		if (!pScope->m_bInDynamicRelevanceGrid)
 		{
+#if DEBUG_CHECK_SLOW
+			CRY_ASSERT(m_dynamicObjects.end() == std::find_if(m_dynamicObjects.begin(), m_dynamicObjects.end(), [&pScope](const CRelevanceGrid::SDynamicObject& dynObj) { return pScope == dynObj.updateCallback.pScope; }));
+#endif
 			m_dynamicObjects.emplace_back(pScope, callback, frequency, priority, filter);
+			pScope->m_bInDynamicRelevanceGrid = true;
 			return true;
 		}
 		return false;
@@ -185,11 +212,16 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	void CRelevanceGrid::UnregisterDynamicObject(CUpdateScope* pScope)
 	{
-		CRelevanceGrid::TDynamicObjects::iterator it = std::find_if(m_dynamicObjects.begin(), m_dynamicObjects.end(), [&pScope](const CRelevanceGrid::SDynamicObject& dynObj) { return pScope == dynObj.updateCallback.pScope; });
-		if (it != m_dynamicObjects.end())
-		{
-			m_dynamicObjects.erase(it);
-		}
+		CRY_ASSERT(!pScope->m_bInStaticRelevanceGrid);
+		CRY_ASSERT(pScope->m_bInDynamicRelevanceGrid);
+		pScope->m_bInDynamicRelevanceGrid = false;
+
+#if defined(USE_CRY_ASSERT)
+		const bool erased = stl::find_and_erase_if(m_dynamicObjects, [&pScope](const CRelevanceGrid::SDynamicObject& dynObj) { return pScope == dynObj.updateCallback.pScope; });
+		CRY_ASSERT(erased);
+#else
+		stl::find_and_erase_if(m_dynamicObjects, [&pScope](const CRelevanceGrid::SDynamicObject& dynObj) { return pScope == dynObj.updateCallback.pScope; });
+#endif
 	}
 
 	////////////////////////////////////////////////////////////////
@@ -202,7 +234,7 @@ namespace Schematyc2
 
 		if (!m_updateHalfDistance)
 		{
-			m_updateHalfDistance = int(pRelevanceContext->GetDefaultGridDistanceUpdate() / Schematyc2::CVars::sc_RelevanceGridCellSize);
+			m_updateHalfDistance = int(pRelevanceContext->GetDefaultGridDistanceUpdate() / Schematyc2::CVars::sc2_RelevanceGridCellSize);
 		}
 
 		size_t relevantEntitiesCount(0);
@@ -303,7 +335,7 @@ namespace Schematyc2
 
 #if DEBUG_RELEVANCE_GRID
 		// TODO pavloi 2017.10.02: add debug draw of m_dynamicObjects
-		if (CVars::sc_RelevanceGridDebugStatic)
+		if (CVars::sc2_RelevanceGridDebugStatic)
 		{
 			DebugDrawStatic(pRelevanceContext);
 		}
@@ -410,8 +442,8 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	void CRelevanceGrid::GetCellCoordinates(const Vec3 worldPos, ushort &x, ushort& y, ushort& cellIdx) const
 	{
-		x = (ushort)clamp_tpl(int(worldPos.x / CVars::sc_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
-		y = (ushort)clamp_tpl(int(worldPos.y / CVars::sc_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
+		x = (ushort)clamp_tpl(int(worldPos.x / CVars::sc2_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
+		y = (ushort)clamp_tpl(int(worldPos.y / CVars::sc2_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
 		cellIdx = y * m_gridSize + x;
 	}
 
@@ -442,9 +474,6 @@ namespace Schematyc2
 		}
 		m_debugUpdateFrame = gEnv->pRenderer->GetFrameID();
 
-		size_t relevantEntitiesCount(0);
-		const SRelevantEntity* relevantEntities = pRelevanceContext->GetRelevantEntities(relevantEntitiesCount);
-
 		IRenderAuxGeom* pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		if (pRenderAuxGeom == nullptr)
 		{
@@ -456,7 +485,7 @@ namespace Schematyc2
 		flags.SetDepthTestFlag(e_DepthTestOff);
 		pRenderAuxGeom->SetRenderFlags(flags);
 
-		const float cellSize = CVars::sc_RelevanceGridCellSize;
+		const float cellSize = CVars::sc2_RelevanceGridCellSize;
 		const float halfCellSize = cellSize * 0.5f - 0.05f;
 		auto buildCellAabb = [cellSize, halfCellSize](int cellX, int cellY)
 		{
@@ -479,7 +508,7 @@ namespace Schematyc2
 		ti.color[1] = textColor.rgba[1];
 		ti.color[2] = textColor.rgba[2];
 		ti.color[3] = textColor.rgba[3];
-		ti.flags = eDrawText_FixedSize | eDrawText_Center | eDrawText_800x600;
+		ti.flags = eDrawText_FixedSize | eDrawText_Center;
 		ti.scale = IRenderAuxText::ASize(1.25f).val;
 
 		auto printCallback = [](const SUpdateCallback& callback, string& textBuf)
@@ -494,14 +523,20 @@ namespace Schematyc2
 			}
 		};
 
-		const bool isDrawAllCells = CVars::sc_RelevanceGridDebugStatic > 1;
-		const bool isPrintExtraInfo = CVars::sc_RelevanceGridDebugStatic > 2;
+		const bool isDrawAllCells = (CVars::sc2_RelevanceGridDebugStatic & 2) != 0;
+		const bool isPrintExtraInfo = (CVars::sc2_RelevanceGridDebugStatic & 4) != 0;
+		const bool isLogMemoryStats = (CVars::sc2_RelevanceGridDebugStatic & 8) != 0;
+		CVars::sc2_RelevanceGridDebugStatic &= ~8;
+
+		if (isLogMemoryStats)
+		{
+			DebugLogStaticMemoryStats();
+		}
 
 		for (const SRelevantCell& relevantCell : m_relevantCells)
 		{
 			ushort cellX = relevantCell.x;
 			ushort cellY = relevantCell.y;
-			ushort cellIdx = relevantCell.cellIdx;
 			{
 				AABB aabb = buildCellAabb(cellX, cellY);
 				aabb.Expand(Vec3(0.02f));
@@ -556,6 +591,57 @@ namespace Schematyc2
 			}
 		}
 	}
+
+	void CRelevanceGrid::DebugLogStaticMemoryStats()
+	{
+		CryLogAlways("gridSize %d", m_gridSize);
+		CryLogAlways("grid size %zu, capacity %zu, mem %zu", m_grid.size(), m_grid.capacity(), m_grid.capacity() * sizeof(m_grid[0]));
+
+		struct SMemStat
+		{
+			size_t capVecMem = 0;
+			size_t useVecMem = 0;
+			size_t minCap = -1, maxCap = 0, avgCap = 0;
+			size_t minSize = -1, maxSize = 0, avgSize = 0;
+
+			void Update(const TUpdateCallbacks& v)
+			{
+				const size_t cap = v.capacity();
+				const size_t size = v.size();
+
+				minCap = std::min(cap, minCap);
+				maxCap = std::max(cap, maxCap);
+				avgCap += cap;
+
+				minSize = std::min(size, minSize);
+				maxSize = std::max(size, maxSize);
+				avgSize += size;
+
+				capVecMem += cap * sizeof(v[0]);
+				useVecMem += size * sizeof(v[0]);
+			}
+
+			void Log(const size_t count)
+			{
+				CryLogAlways("capacity min %zu max %zu avg %.2lf", minCap, maxCap, double(avgCap) / count);
+				CryLogAlways("size     min %zu max %zu avg %.2lf", minSize, maxSize, double(avgSize) / count);
+				CryLogAlways("capacity mem %zu", capVecMem);
+				CryLogAlways("used mem     %zu", useVecMem);
+				CryLogAlways("diff mem     %zu", capVecMem - useVecMem);
+			}
+		};
+
+		SMemStat global, local;
+		for (const SGridCell& cell : m_grid)
+		{
+			global.Update(cell.globalUpdateCallbacks);
+			local.Update(cell.localGridUpdateCallbacks);
+		}
+		CryLogAlways("global");
+		global.Log(m_grid.size());
+		CryLogAlways("local");
+		local.Log(m_grid.size());
+	}
 #endif // DEBUG_RELEVANCE_GRID
 
 	////////////////////////////////////////////////////////////////
@@ -569,22 +655,27 @@ namespace Schematyc2
 
 	////////////////////////////////////////////////////////////////
 	CUpdateScheduler::CUpdateScheduler()
-		: m_currentBucketIdx(0)
+		: m_updatePosition(0)
+		, m_frameIdx(0)
 		, m_bInFrame(false)
 	{
 		m_relevanceGrid.SetUpdateScheduler(this);
-		for(size_t bucketIdx = 0; bucketIdx < s_bucketCount; ++ bucketIdx)
+		for (size_t bucketIdx = 0; bucketIdx < EUpdateFrequency::Count; ++bucketIdx)
 		{
-			m_frameTimes[bucketIdx] = 0.0f;
+			m_buckets[bucketIdx].SetFrequency(bucketIdx);
+		}
+		for (float& t : m_frameTimes)
+		{
+			t = 0.0f;
 		}
 	}
 
 	////////////////////////////////////////////////////////////////
 	CUpdateScheduler::~CUpdateScheduler()
 	{
-		for(SSlot& slot : m_slots)
+		for (int i = 0; i < EUpdateFrequency::Count; ++i)
 		{
-			slot.pScope->m_bIsBound = false;
+			m_buckets[i].CleanUp();
 		}
 	}
 
@@ -607,7 +698,6 @@ namespace Schematyc2
 					return m_relevanceGrid.Register(&scope, callback, frequency, priority, filter);
 				}
 			}
-
 		}
 
 		return ConnectInternal(scope, callback, frequency, priority, filter);
@@ -616,55 +706,39 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::Disconnect(CUpdateScope& scope)
 	{
-		ScopeDestroyed(scope);
+		UnregisterFromRelevanceGrid(scope);
 		DisconnectInternal(scope);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	bool CUpdateScheduler::ScopeDestroyed(CUpdateScope& scope)
+	void CUpdateScheduler::UnregisterFromRelevanceGrid(CUpdateScope& scope)
 	{
-		if (scope.GetSchematycObj())
+		if (scope.m_bInDynamicRelevanceGrid)
 		{
-			const bool shouldUseGrid = m_useRelevanceGrid && m_useRelevanceGrid(*scope.GetSchematycObj());
-			const bool isDynamicObject = m_isDynamicObject && m_isDynamicObject(*scope.GetSchematycObj());
-
-			if (shouldUseGrid)
-			{
-				if (isDynamicObject)
-				{
-					m_relevanceGrid.UnregisterDynamicObject(&scope);
-					return true;
-				}
-				else
-				{
-					m_relevanceGrid.Unregister(&scope);
-					return true;
-				}
-			}
+			m_relevanceGrid.UnregisterDynamicObject(&scope);
 		}
-
-		return false;
+		else if (scope.m_bInStaticRelevanceGrid)
+		{
+			m_relevanceGrid.Unregister(&scope);
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::DisconnectInternal(CUpdateScope &scope)
 	{
-		if (scope.m_bIsBound == true)
+		if (scope.m_bIsBound)
 		{
-			SlotVector::iterator itSlot = std::find_if(m_slots.begin(), m_slots.end(), SFindSlot(&scope));
-			CRY_ASSERT(itSlot != m_slots.end());
-			if (itSlot != m_slots.end())
-			{
-				// Disconnect from appropriate buckets.
-				const size_t         bucketStride = size_t(1) << itSlot->frequency;
-				const UpdatePriority priority = itSlot->priority;
-				for (CBucket* pBucket = m_buckets + itSlot->firstBucketIdx, *pEndBucket = m_buckets + s_bucketCount; pBucket < pEndBucket; pBucket += bucketStride)
-				{
-					pBucket->Disconnect(scope, priority);
-				}
-				m_slots.erase(itSlot);
-			}
+			const int64 startTicks = CryGetTicks();
+
+			m_buckets[scope.m_frequency].Disconnect(scope, scope.m_priority);
+
 			scope.m_bIsBound = false;
+			scope.m_bucketIndex = -1;
+			scope.m_priority = 0;
+			scope.m_frequency = 0;
+
+			const int64 endTicks = CryGetTicks();
+			m_stats.AddDisconnected(endTicks - startTicks);
 		}
 	}
 
@@ -681,12 +755,40 @@ namespace Schematyc2
 		CRY_ASSERT(!m_bInFrame);
 		if(!m_bInFrame)
 		{
-			m_buckets[m_currentBucketIdx].BeginUpdate();
-			m_frameTimes[m_currentBucketIdx] = frameTime;
-			m_bInFrame                       = true;
+			bool updateOrderDirty = false;
+
+			for (size_t frequency = 0; frequency < EUpdateFrequency::Count; ++frequency)
+			{
+				CRY_ASSERT(m_pendingPriorities.empty());
+				m_buckets[frequency].BeginUpdate(m_pendingPriorities);
+
+				if (!m_pendingPriorities.empty())
+				{
+					for (UpdatePriority priority : m_pendingPriorities)
+					{
+						m_updateOrder.emplace_back(priority, frequency);
+					}
+					updateOrderDirty = true;
+					m_pendingPriorities.clear();
+				}
+			}
+
+			if (updateOrderDirty)
+			{
+				std::sort(m_updateOrder.begin(), m_updateOrder.end());
+			}
+
+			m_updatePosition = 0;
+
+			{
+				m_frameIdx = gEnv->nMainFrameID;
+				const uint32 idx = m_frameIdx % s_maxFrameStride;
+				m_frameTimes[idx] = frameTime;
+			}
 
 			m_stats.Reset();
 
+			m_bInFrame = true;
 			return true;
 		}
 		return false;
@@ -696,35 +798,70 @@ namespace Schematyc2
 	bool CUpdateScheduler::Update(UpdatePriority beginPriority, UpdatePriority endPriority, CUpdateRelevanceContext* pRelevanceContext)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_GAME);
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc2::CUpdateScheduler::Update");
+
 		if(m_bInFrame)
 		{
 			m_relevanceGrid.Update(pRelevanceContext);
 
-			UpdateSchedulerStats::SUpdateStageStats updateStats(beginPriority, endPriority);
+			static_assert(CRY_ARRAY_COUNT(m_stats.bucketStats) == CRY_ARRAY_COUNT(m_buckets), "Bucket count mismatch");
+			UpdateSchedulerStats::SUpdateBucketStats* bucketUpdateStats = m_stats.bucketStats;
+			
+			UpdateSchedulerStats::SUpdateStageStats stageUpdateStats(beginPriority, endPriority);
 			const int64 startTimeTicks = CryGetTicks();
 
 			// Calculate cumulative frame times.
+			const uint32 curFrameId = m_frameIdx;
+
 			SUpdateContext frequencyUpdateContexts[EUpdateFrequency::Count];
-			for(UpdateFrequency frequency = EUpdateFrequency::EveryFrame; frequency < EUpdateFrequency::Count; ++ frequency)
+			for (UpdateFrequency frequency = EUpdateFrequency::EveryFrame; frequency < EUpdateFrequency::Count; ++frequency)
 			{
 				const size_t frameCount = size_t(1) << frequency;
-				for(size_t frameIdx = 0; frameIdx < frameCount; ++ frameIdx)
+				for (size_t frameIdx = 0; frameIdx < frameCount; ++frameIdx)
 				{
-					frequencyUpdateContexts[frequency].cumulativeFrameTime += m_frameTimes[(m_currentBucketIdx - frameIdx) % s_bucketCount];
+					frequencyUpdateContexts[frequency].cumulativeFrameTime += m_frameTimes[(curFrameId - frameIdx) % s_maxFrameStride];
 				}
-				frequencyUpdateContexts[frequency].frameTime = m_frameTimes[m_currentBucketIdx];
+				frequencyUpdateContexts[frequency].frameTime = m_frameTimes[curFrameId % s_maxFrameStride];
 			}
-			// Update contents of current bucket.
-			m_buckets[m_currentBucketIdx].Update(frequencyUpdateContexts, beginPriority, endPriority, updateStats);
 
-			const int64 endTimeTicks = CryGetTicks();
-
-			if (gEnv->pTimer)
+			for (size_t updateSize = m_updateOrder.size(); m_updatePosition < updateSize; ++m_updatePosition)
 			{
-				updateStats.updateTime = CTimeValue(gEnv->pTimer->TicksToSeconds(endTimeTicks - startTimeTicks));
+				SUpdateSlot& slot = m_updateOrder[m_updatePosition];
+				if (slot.priority <= endPriority)
+				{
+					break;
+				}
+				else if (slot.priority <= beginPriority)
+				{
+					UpdateSchedulerStats::SUpdateBucketStats& stats = bucketUpdateStats[slot.bucketIndex];
+					CBucket& bucket = m_buckets[slot.bucketIndex];
+					SUpdateContext& context = frequencyUpdateContexts[slot.bucketIndex];
+					if (slot.bucketIndex == EUpdateFrequency::EveryFrame)
+					{
+						bucket.Update<false>(context, slot.priority, curFrameId, stats, m_debugNameMap);
+					}
+					else
+					{
+						bucket.Update<true>(context, slot.priority, curFrameId, stats, m_debugNameMap);
+					}
+				}
 			}
 
-			m_stats.Add(updateStats);
+			// Finish update stats
+			{
+				const int64 endTimeTicks = CryGetTicks();
+				stageUpdateStats.updateTime = CTimeValue(gEnv->pTimer->TicksToSeconds(endTimeTicks - startTimeTicks));
+
+				for (int index = 0; index < EUpdateFrequency::Count; ++index)
+				{
+					UpdateSchedulerStats::SUpdateBucketStats& stats = bucketUpdateStats[index];
+					stats.frequency = index;
+					stageUpdateStats.itemsToUpdateCount += stats.itemsToUpdateCount;
+					stageUpdateStats.updatedItemsCount += stats.updatedItemsCount;
+				}
+
+				m_stats.Add(stageUpdateStats);
+			}
 			return true;
 		}
 		return false;
@@ -736,9 +873,7 @@ namespace Schematyc2
 		CRY_ASSERT(m_bInFrame);
 		if(m_bInFrame)
 		{
-			m_buckets[m_currentBucketIdx].EndUpdate();
-			m_currentBucketIdx = (m_currentBucketIdx + 1) % s_bucketCount;
-			m_bInFrame         = false;
+			m_bInFrame = false;
 			return true;
 		}
 		return false;
@@ -750,13 +885,11 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::Reset()
 	{
-		for(size_t bucketIdx = 0; bucketIdx < s_bucketCount; ++ bucketIdx)
+		for(size_t bucketIdx = 0; bucketIdx < EUpdateFrequency::Count; ++ bucketIdx)
 		{
 			m_buckets[bucketIdx].Reset();
-			m_frameTimes[bucketIdx] = 0.0f;
 		}
-		m_currentBucketIdx = 0;
-		m_bInFrame         = false;
+		m_bInFrame = false;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -776,223 +909,425 @@ namespace Schematyc2
 		m_isDynamicObject = isDynamicObject;
 	}
 
+	void CUpdateScheduler::SetDebugPriorityNames(const DebugPriorityNameArray& debugNames)
+	{
+		DebugPriorityNameArray::const_iterator it = debugNames.begin();
+
+		for (; it < debugNames.end(); ++it)
+		{
+			m_debugNameMap.insert(*it);
+		}
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	bool CUpdateScheduler::ConnectInternal(CUpdateScope& scope, const UpdateCallback& callback, UpdateFrequency frequency /*= EUpdateFrequency::EveryFrame*/, UpdatePriority priority /*= EUpdatePriority::Default*/, const UpdateFilter& filter /*= UpdateFilter()*/)
 	{
+		CRY_PROFILE_FUNCTION(PROFILE_GAME);
 		DisconnectInternal(scope);
 		if ((frequency >= EUpdateFrequency::EveryFrame) && (frequency < EUpdateFrequency::Count))
 		{
-			// Find group of buckets containing least observers. 
-			const size_t bucketStride = size_t(1) << frequency;
-			size_t       firstBucketIdx = 0;
-			if (frequency > EUpdateFrequency::EveryFrame)
-			{
-				size_t bucketGroupSize[s_bucketCount] = {};
-				for (size_t bucketIdx = 0; bucketIdx < s_bucketCount; ++bucketIdx)
-				{
-					bucketGroupSize[bucketIdx % bucketStride] += m_buckets[bucketIdx].GetSize();
-				}
-				for (size_t bucketGroupIdx = 1; bucketGroupIdx < bucketStride; ++bucketGroupIdx)
-				{
-					if (bucketGroupSize[bucketGroupIdx] < bucketGroupSize[firstBucketIdx])
-					{
-						firstBucketIdx = bucketGroupIdx;
-					}
-				}
-			}
-			// Connect to slot and to appropriate buckets.
-			m_slots.push_back(SSlot(&scope, static_cast<uint32>(firstBucketIdx), frequency, priority));
-			for (CBucket* pBucket = m_buckets + firstBucketIdx, *pEndBucket = m_buckets + s_bucketCount; pBucket < pEndBucket; pBucket += bucketStride)
-			{
-				//CryLogAlways("Entity name %s: Pos:%f, %f, %f", filter.)
-				pBucket->Connect(scope, callback, frequency, priority, filter);
-			}
+			const int64 startTicks = CryGetTicks();
+
+			m_buckets[frequency].Connect(scope, callback, frequency, priority, filter);
+
 			scope.m_bIsBound = true;
+			scope.m_priority = priority;
+			scope.m_frequency = frequency;
+
+			const int64 endTicks = CryGetTicks();
+			m_stats.AddConnected(endTicks - startTicks);
+
 			return true;
 		}
 		return false;
 	}
 
 	////////////////////////////////////////////////////////////////
-	CUpdateScheduler::SSlot::SSlot()
-		: pScope(NULL)
-		, firstBucketIdx(s_invalidBucketIdx)
-		, frequency(EUpdateFrequency::Invalid)
-		, priority(EUpdatePriority::Default)
+	CUpdateScheduler::SUpdateSlot::SUpdateSlot()
+		: priority(0)
+		, bucketIndex(0)
+	{ }
+
+	CUpdateScheduler::SUpdateSlot::SUpdateSlot(const UpdatePriority priority, const UpdateFrequency frequency)
+		: priority(priority)
+		, bucketIndex(frequency)
 	{}
 
 	////////////////////////////////////////////////////////////////
-	CUpdateScheduler::SSlot::SSlot(CUpdateScope* _pScope, uint32 _firstBucketIdx, UpdateFrequency _frequency, UpdatePriority _priority)
-		: pScope(_pScope)
-		, firstBucketIdx(_firstBucketIdx)
-		, frequency(_frequency)
-		, priority(_priority)
+	CUpdateScheduler::SObserver::SObserver()
+		: pScope(nullptr)
+		, frequency(0)
+		, stride(0)
 	{}
 
-	////////////////////////////////////////////////////////////////
-	CUpdateScheduler::SObserver::SObserver(const CUpdateScope* _pScope, const UpdateCallback& _callback, UpdateFrequency _frequency, UpdatePriority _priority, const UpdateFilter& _filter)
-		: pScope(_pScope)
-		, callback(_callback)
-		, frequency(_frequency)
-		, currentPriority(_priority)
-		, newPriority(_priority)
-		, filter(_filter)
+	CUpdateScheduler::SObserver::SObserver(CUpdateScope& scope, const UpdateCallback& callback, const UpdateFilter& filter, UpdateFrequency frequency, UpdateFrequency stride)
+		: pScope(&scope)
+		, callback(callback)
+		, filter(filter)
+		, frequency(frequency)
+		, stride(stride)
+	{}
+
+
+	CUpdateScheduler::SPendingObserver::SPendingObserver()
+		: priority(0)
+	{}
+
+	CUpdateScheduler::SPendingObserver::SPendingObserver(CUpdateScope& scope, const UpdateCallback& callback, const UpdateFilter& filter, UpdateFrequency frequency, UpdateFrequency stride, UpdatePriority priority)
+		: SObserver(scope, callback, filter, frequency, stride)
+		, priority(priority)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
 	CUpdateScheduler::SFrameUpdateStats::SFrameUpdateStats()
-		: count(0)
+		: stagesCount(0)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::SFrameUpdateStats::Add(const UpdateSchedulerStats::SUpdateStageStats& stats)
 	{
-		if (count < k_maxStagesCount)
+		if (stagesCount < k_maxStagesCount)
 		{
-			stagesStats[count] = stats;
-			++count;
+			stagesStats[stagesCount] = stats;
+			++stagesCount;
 		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CUpdateScheduler::SFrameUpdateStats::AddConnected(int64 timeTicks)
+	{
+		changeStats.connectedCount++;
+		changeStats.connectionTimeTicks += timeTicks;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CUpdateScheduler::SFrameUpdateStats::AddDisconnected(int64 timeTicks)
+	{
+		changeStats.disconnectedCount++;
+		changeStats.disconnectionTimeTicks += timeTicks;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::SFrameUpdateStats::Reset()
 	{
-		count = 0;
+		stagesCount = 0;
+		::memset(bucketStats, 0, sizeof(bucketStats[0]) * k_maxBucketsCount);
+		::memset(&changeStats, 0, sizeof(changeStats));
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	const UpdateSchedulerStats::SUpdateStageStats* CUpdateScheduler::SFrameUpdateStats::Get(size_t& outCount) const
+	const UpdateSchedulerStats::SUpdateStageStats* CUpdateScheduler::SFrameUpdateStats::GetStageStats(size_t& outCount) const
 	{
-		outCount = count;
+		outCount = stagesCount;
 		return stagesStats;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	const UpdateSchedulerStats::SUpdateBucketStats* CUpdateScheduler::SFrameUpdateStats::GetBucketStats(size_t& outCount) const
+	{
+		outCount = k_maxBucketsCount;
+		return bucketStats;
+	}
+
+	////////////////////////////////////////////////////////////////
+	CUpdateScheduler::SObserverGroup::SObserverGroup()
+	{
+		observers.reserve(s_defaultBucketSize);
 	}
 
 	////////////////////////////////////////////////////////////////
 	CUpdateScheduler::CBucket::CBucket()
-		: m_dirtyCount(0)
-		, m_garbageCount(0)
-		, m_pos(0)
+		: m_totalObserverCount(0)
+		, m_totalDirtyCount(0)
+		, m_frequency(0)
 	{
-		m_observers.reserve(s_defaultBucketSize);
 	}
 
 	////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::CBucket::Connect(CUpdateScope& scope, const UpdateCallback& callback, UpdateFrequency frequency, UpdatePriority priority, const UpdateFilter& filter)
 	{
-		m_observers.push_back(SObserver(&scope, callback, frequency, priority, filter));
-		++ m_dirtyCount;
+		CRY_PROFILE_FUNCTION(PROFILE_GAME);
+		CRY_ASSERT(frequency == m_frequency);
+
+		TObserverMap::iterator it = m_observers.find(priority);
+		if (it == m_observers.end())
+		{
+			const UpdateFrequency stride = 0;
+			m_pendingNewPriorityObservers.emplace_back(scope, callback, filter, frequency, stride, priority);
+			scope.m_bUpdateBindPending = true;
+		}
+		else
+		{
+			AddObserver(it->second.observers, scope, callback, filter);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CUpdateScheduler::CBucket::AddObserver(TObserverVector& observers, CUpdateScope& scope, const UpdateCallback& callback, const UpdateFilter& filter)
+	{
+		const UpdateFrequency stride = SelectNewStride();
+		observers.emplace_back(scope, callback, filter, m_frequency, stride);
+		scope.m_bucketIndex = observers.size() - 1;
+
+		m_frameStrideBuckets[stride]++;
+		m_totalObserverCount++;
 	}
 
 	////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::CBucket::Disconnect(CUpdateScope& scope, UpdatePriority priority)
 	{
-		SObserver* pObserver = FindObserver(scope, priority);
-		CRY_ASSERT(pObserver);
-		if(pObserver)
+		CRY_PROFILE_FUNCTION(PROFILE_GAME);
+
+		if (scope.m_bUpdateBindPending)
 		{
-			pObserver->pScope      = nullptr;
-			pObserver->callback    = UpdateCallback();
-			pObserver->frequency   = EUpdateFrequency::Invalid;
-			pObserver->newPriority = EUpdatePriority::Dirty;
-			pObserver->filter      = UpdateFilter();
-			++ m_garbageCount;
+			scope.m_bUpdateBindPending = false;
+#if defined(USE_CRY_ASSERT)
+			bool erased = stl::find_and_erase_if(m_pendingNewPriorityObservers,
+				[&scope](SPendingObserver& observer) { return observer.pScope == &scope; });
+			CRY_ASSERT(erased);
+#else
+			stl::find_and_erase_if(m_pendingNewPriorityObservers,
+				[&scope](SPendingObserver& observer) { return observer.pScope == &scope; });
+#endif
+		}
+		else
+		{
+			TObserverMap::iterator it = m_observers.find(priority);
+			CRY_ASSERT(it != m_observers.end());
+			if (it != m_observers.end())
+			{
+#if defined(USE_CRY_ASSERT)
+				bool res = stl::push_back_unique(it->second.dirtyIndices, scope.m_bucketIndex);
+				CRY_ASSERT(res);
+#else
+				stl::push_back_unique(it->second.dirtyIndices, scope.m_bucketIndex);
+#endif
+
+				SObserver& observer = it->second.observers[scope.m_bucketIndex];
+				observer.pScope = nullptr;
+				observer.callback = UpdateCallback();
+				observer.filter = UpdateFilter();
+				m_frameStrideBuckets[observer.stride]--;
+			}
 		}
 	}
 
 	////////////////////////////////////////////////////////////////
-	void CUpdateScheduler::CBucket::BeginUpdate()
+	void CUpdateScheduler::CBucket::BeginUpdate(TPendingPriorities& pendingPriorities)
 	{
-		// Sort observer bindings in order of priority and memory address.
-		// The sort process automatically pushes dirty observer bindings to the back so they can be erased in a single block.
-		if((m_dirtyCount > 0) || (m_garbageCount > 0))
+		DeleteDirtyObservers();
+		AddPendingObservers(pendingPriorities);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CUpdateScheduler::CBucket::DeleteDirtyObservers()
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_GAME);
+		for (auto& prioObserverPair : m_observers)
 		{
-			ObserverVector::iterator itBeginObserver = m_observers.begin();
-			ObserverVector::iterator itEndObserver = m_observers.end();
-			for(ObserverVector::iterator itObserver = itBeginObserver; itObserver != itEndObserver; ++ itObserver)
+			SObserverGroup& group = prioObserverPair.second;
+			const size_t dirtyIndicesSize = group.dirtyIndices.size();
+
+			// Delete disconnected observers in reverse to guarantee correct order
+			if (dirtyIndicesSize > 0)
 			{
-				SObserver &observer = *itObserver;
-				observer.currentPriority = observer.newPriority;
+				if (group.dirtyIndices.size() == group.observers.size())
+				{
+					group.observers.clear();
+				}
+				else
+				{
+					std::sort(group.dirtyIndices.begin(), group.dirtyIndices.end());
+
+					for (TDirtyIndicesVector::reverse_iterator it = group.dirtyIndices.rbegin(), itEnd = group.dirtyIndices.rend(); it != itEnd; ++it)
+					{
+						//Remove swap
+						const size_t index = *it;
+						const size_t observerSize = group.observers.size();
+
+						CRY_ASSERT(observerSize > 1);
+						if (index != (observerSize - 1))
+						{
+							TObserverVector::iterator newPos = group.observers.begin() + index;
+							std::iter_swap(newPos, group.observers.end() - 1);
+
+							newPos->pScope->m_bucketIndex = index;
+						}
+
+						group.observers.pop_back();
+					}
+				}
+
+				m_totalObserverCount -= dirtyIndicesSize;
+				group.dirtyIndices.clear();
 			}
-			std::sort(itBeginObserver, itEndObserver, SSortObservers());
-			if(m_garbageCount > 0)
+
+#if DEBUG_CHECK_SLOW
+			for (size_t i = 0; i < group.observers.size(); ++i)
 			{
-				m_observers.erase(itEndObserver - m_garbageCount, itEndObserver);
+				CRY_ASSERT(group.observers[i].pScope);
+				CRY_ASSERT(group.observers[i].pScope->m_bucketIndex == i);
 			}
-			m_dirtyCount   = 0;
-			m_garbageCount = 0;
+#endif
+		}
+		m_totalDirtyCount = 0;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CUpdateScheduler::CBucket::AddPendingObservers(TPendingPriorities& pendingPriorities)
+	{
+		if (!m_pendingNewPriorityObservers.empty())
+		{
+			CRY_PROFILE_FUNCTION(PROFILE_GAME);
+
+			for (SPendingObserver& newObserver : m_pendingNewPriorityObservers)
+			{
+				TObserverVector& observers = m_observers[newObserver.priority].observers;
+
+#if defined(USE_CRY_ASSERT)
+				bool res = stl::push_back_unique(pendingPriorities, newObserver.priority);
+				CRY_ASSERT(!res || observers.empty());
+#else
+				stl::push_back_unique(pendingPriorities, newObserver.priority);
+#endif
+
+				AddObserver(observers, *newObserver.pScope, newObserver.callback, newObserver.filter);
+				newObserver.pScope->m_bUpdateBindPending = false;
+			}
+
+			m_pendingNewPriorityObservers.clear();
+
+			CRY_ASSERT(std::accumulate(m_frameStrideBuckets.begin(), m_frameStrideBuckets.end(), 0) == m_totalObserverCount);
 		}
 	}
 
 	////////////////////////////////////////////////////////////////
-	void CUpdateScheduler::CBucket::Update(const SUpdateContext (&frequencyUpdateContexts)[EUpdateFrequency::Count], UpdatePriority beginPriority, UpdatePriority endPriority, UpdateSchedulerStats::SUpdateStageStats& outUpdateStats)
+	const char* CUpdateScheduler::CBucket::GetDebugName(UpdatePriority priority, const TPriorityDebugNameMap& debugNames)
 	{
-		const size_t startPos = m_pos;
+		stack_string debugName;
+
+		TPriorityDebugNameMap::const_iterator it = debugNames.find(priority);
+		if (it != debugNames.end())
+		{
+			debugName.Format("Priority: %s", it->second);
+		}
+		else
+		{
+			debugName = "Priority: Unknown";
+		}
+
+		switch (m_frequency)
+		{
+		case EUpdateFrequency::EveryFrame:
+			debugName += ", Update Freq: Every Frame";
+			break;
+		case EUpdateFrequency::EveryTwoFrames:
+			debugName += ", Update Freq: Every Two Frames";
+			break;
+		case EUpdateFrequency::EveryFourFrames:
+			debugName += ", Update Freq: Every Four Frames";
+			break;
+		case EUpdateFrequency::EveryEightFrames:
+			debugName += ", Update Freq: Every Eight Frames";
+			break;
+		default:
+			debugName += ", Update Freq: Unknown";
+			break;
+		}
+
+		static_assert((int)EUpdateFrequency::Count == 4, "Unexpected Update Frequency Enum Count");
+
+		return debugName.c_str();
+	}
+
+	////////////////////////////////////////////////////////////////
+	template <bool UseStride>
+	void CUpdateScheduler::CBucket::Update(const SUpdateContext context, UpdatePriority priority, uint32 frameId, UpdateSchedulerStats::SUpdateBucketStats& outUpdateStats, const TPriorityDebugNameMap& debugNames)
+	{
+#if DEBUG_BUCKETS_NAMES
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_GAME, GetDebugName(priority, debugNames));
+#else
+		CRY_PROFILE_FUNCTION(PROFILE_GAME);
+#endif
+
 		size_t updatedCount = 0;
 
-		// Update all remaining observers if valid and not filtered.
-		const size_t endPos = m_observers.size() - m_dirtyCount;
-		for( ; m_pos != endPos; ++ m_pos)
+		const UpdateFrequency strideMask = (UpdateFrequency(1) << m_frequency) - 1;
+		const UpdateFrequency currentStride = frameId & strideMask;
+
+		const int64 startTicks = CryGetTicks();
+		
+		TObserverMap::iterator it = m_observers.find(priority);
+		if (it != m_observers.end())
 		{
-			const SObserver &observer = m_observers[m_pos];
-			if(observer.currentPriority <= endPriority)
+			SObserverGroup& observerGroup = it->second;
+			const size_t observerSize = observerGroup.observers.size();
+
+			for (size_t k = 0; k < observerSize; ++k)
 			{
-				break;
-			}
-			else if(observer.currentPriority <= beginPriority)
-			{
-				if(observer.callback && (!observer.filter || observer.filter()))
+				SObserver& observer = observerGroup.observers[k];
+				if (!UseStride || observer.stride == currentStride)
 				{
-					observer.callback(frequencyUpdateContexts[observer.frequency]);
-					updatedCount++;
+					if (observer.callback && (!observer.filter || observer.filter()))
+					{
+						observer.callback(context);
+						updatedCount++;
+					}
 				}
 			}
+
+			outUpdateStats.itemsToUpdateCount += observerSize;
+			outUpdateStats.updatedItemsCount += updatedCount;
 		}
 
-		outUpdateStats.itemsToUpdateCount += (m_pos - startPos);
-		outUpdateStats.updatedItemsCount += updatedCount;
-	}
-
-	////////////////////////////////////////////////////////////////
-	void CUpdateScheduler::CBucket::EndUpdate()
-	{
-		m_pos = 0;
+		const int64 endTicks = CryGetTicks();
+		outUpdateStats.updateTimeTicks += endTicks - startTicks;
 	}
 
 	////////////////////////////////////////////////////////////////
 	void CUpdateScheduler::CBucket::Reset()
 	{
-		m_observers.clear();
-		m_dirtyCount   = 0;
-		m_garbageCount = 0;
-		m_pos          = 0;
+		for (TObserverMap::iterator it = m_observers.begin(), itEnd = m_observers.end(); it != itEnd; ++it)
+		{
+			it->second.observers.clear();
+			it->second.dirtyIndices.clear();
+		}
 	}
 
 	////////////////////////////////////////////////////////////////
-	CUpdateScheduler::SObserver* CUpdateScheduler::CBucket::FindObserver(CUpdateScope& scope, UpdatePriority priority)
+	void CUpdateScheduler::CBucket::CleanUp()
 	{
-		ObserverVector::iterator itBeginObserver = m_observers.begin();
-		ObserverVector::iterator itEndObserver = m_observers.end();
-		ObserverVector::iterator itFirstDirtyObserver = itEndObserver - m_dirtyCount;
-		ObserverVector::iterator itObserver = std::lower_bound(itBeginObserver, itFirstDirtyObserver, priority, SLowerBoundObserver());
-		if(itObserver != itFirstDirtyObserver)
+		DeleteDirtyObservers();
+
+		for (TObserverMap::iterator it = m_observers.begin(), itEnd = m_observers.end(); it != itEnd; ++it)
 		{
-			for( ; itObserver->currentPriority == priority; ++ itObserver)
+			for (SObserver& observer : it->second.observers)
 			{
-				SObserver &observer = *itObserver;
-				if(observer.pScope == &scope)
-				{
-					return &observer;
-				}
+				observer.pScope->m_bIsBound = false;
 			}
+			it->second.observers.clear();
 		}
-		for(itObserver = itFirstDirtyObserver; itObserver != itEndObserver; ++ itObserver)
+		
+		for (SPendingObserver& observer : m_pendingNewPriorityObservers)
 		{
-			SObserver &observer = *itObserver;
-			if(observer.pScope == &scope)
-			{
-				return &observer;
-			}
+			observer.pScope->m_bUpdateBindPending = false;
+			observer.pScope->m_bIsBound = false;
 		}
-		return nullptr;
+		m_pendingNewPriorityObservers.clear();
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CUpdateScheduler::CBucket::SetFrequency(UpdateFrequency frequency)
+	{
+		m_frequency = frequency;
+		m_frameStrideBuckets.resize(size_t(1) << frequency);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	UpdateFrequency CUpdateScheduler::CBucket::SelectNewStride() const
+	{
+		auto iter = std::min_element(m_frameStrideBuckets.begin(), m_frameStrideBuckets.end());
+		return UpdateFrequency(iter - m_frameStrideBuckets.begin());
+	}
+
 }

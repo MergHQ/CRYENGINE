@@ -2,15 +2,15 @@
 
 #include "StdAfx.h"
 #include "ExportTool.h"
-#include "DesignerEditor.h"
-#include "CryEdit.h"
-#include "GameEngine.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "Export/ExportManager.h"
-#include "Objects/ObjectLoader.h"
 
-#include <QFileDialog>
+#include "Core/ModelCompiler.h"
+#include "Export/ExportManager.h"
+#include "DesignerEditor.h"
+
+#include <FileDialogs/SystemFileDialog.h>
+#include <Objects/ObjectLoader.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <GameEngine.h>
 
 using Serialization::ActionButton;
 
@@ -93,4 +93,3 @@ void ExportTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Export, eToolGroup_Misc, "Export", ExportTool,
                                                            export, "runs export tool", "designer.export")
-

@@ -28,6 +28,8 @@ Plays sounds for nearby actors
 #include "GameRulesModules/GameRulesObjective_Predator.h"
 #include "GameRulesModules/IGameRulesRoundsModule.h"
 
+#include <CrySystem/ConsoleRegistration.h>
+
 #define DbgLog(...) CRY_DEBUG_LOG(BATTLECHATTER, __VA_ARGS__)
 #define DbgLogAlways(...) CRY_DEBUG_LOG_ALWAYS(BATTLECHATTER, __VA_ARGS__)
 
@@ -158,8 +160,8 @@ void CBattlechatter::InitData()
 			XmlNodeRef chatterNode = xmlData->getChild(i);
 			if(chatterNode)
 			{
-				CRY_ASSERT_MESSAGE(strcmpi(chatterNode->getTag(), s_battlechatterName[i]) == 0, ("Expected %s, not %s", s_battlechatterName[i], chatterNode->getTag()));
-				CRY_ASSERT_MESSAGE(m_data.size() == i, "mismatch of battlechatter inserting into our m_data array");
+				CRY_ASSERT(strcmpi(chatterNode->getTag(), s_battlechatterName[i]) == 0, ("Expected %s, not %s", s_battlechatterName[i], chatterNode->getTag()));
+				CRY_ASSERT(m_data.size() == i, "mismatch of battlechatter inserting into our m_data array");
 
 				SBattlechatterData newData;
 
@@ -246,7 +248,7 @@ EBattlechatter CBattlechatter::ReadChatterFromNode(const char* chatterName, XmlN
 		{
 			return (EBattlechatter) chatterType;
 		}
-		CRY_ASSERT_MESSAGE(false, ("Unknown chatter found in tag '%s'", chatterName));
+		CRY_ASSERT(false, ("Unknown chatter found in tag '%s'", chatterName));
 	}
 	return BC_Null;
 }
@@ -368,7 +370,7 @@ void CBattlechatter::NearestActorEvent(EBattlechatter chatter)
 //-------------------------------------------------------
 void CBattlechatter::Event(EBattlechatter requestedChatter, EntityId actorId)
 {
-	CRY_ASSERT_MESSAGE(requestedChatter > BC_Null && requestedChatter < BC_Last, "invalid chatter index");
+	CRY_ASSERT(requestedChatter > BC_Null && requestedChatter < BC_Last, "invalid chatter index");
 
 	CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
 	if(pActor && UpdateEvent(requestedChatter, actorId, pActor))
@@ -420,8 +422,6 @@ bool CBattlechatter::UpdateEvent(EBattlechatter& chatter, EntityId &actorId, IAc
 
 	if(pActor->IsPlayer() && m_clientPlayer)
 	{
-		CPlayer* pPlayer = static_cast<CPlayer*>(pActor);
-
 		EBattlechatter inChatter = chatter;	// cache chatter so tests are always done against original "parent" chatter rather than any new stealth/armour variants
 		CGameRules* pGameRules = g_pGame->GetGameRules();
 		

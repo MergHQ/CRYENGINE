@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __centityprototype_h__
-#define __centityprototype_h__
 #pragma once
 
 #include "BaseLibraryItem.h"
 #include "Objects/EntityScript.h"
+#include "Util/Variable.h"
 
 class CEntityPrototypeLibrary;
 class CEntityScript;
@@ -20,14 +19,13 @@ public:
 	typedef Functor0 UpdateCallback;
 
 	CEntityPrototype();
-	~CEntityPrototype();
 
-	virtual EDataBaseItemType GetType() const { return EDB_TYPE_ENTITY_ARCHETYPE; };
+	virtual EDataBaseItemType GetType() const { return EDB_TYPE_ENTITY_ARCHETYPE; }
 
 	//! Set prototype description.
-	void          SetDescription(const string& description) { m_description = description; };
+	void          SetDescription(const string& description) { m_description = description; }
 	//! Get prototype description.
-	const string& GetDescription() const                    { return m_description; };
+	const string& GetDescription() const                    { return m_description; }
 
 	//! Set class name of entity.
 	void              SetEntityClassName(const string& className);
@@ -44,7 +42,7 @@ public:
 	//! Get entity script of this prototype.
 	CEntityScript* GetScript();
 
-	CVarBlock*     GetObjectVarBlock() { return m_pObjectVarBlock; };
+	CVarBlock*     GetObjectVarBlock() { return m_pObjectVarBlock; }
 
 	QString        GetMaterial() const;
 	QString        GetVisualObject() const;
@@ -84,6 +82,3 @@ private:
 };
 
 TYPEDEF_AUTOPTR(CEntityPrototype);
-
-#endif // __centityprototype_h__
-

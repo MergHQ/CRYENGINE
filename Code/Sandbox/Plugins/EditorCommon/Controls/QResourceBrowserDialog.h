@@ -25,4 +25,3 @@ protected:
 	QString            m_SelectedResource;
 	QLabel*            m_pPreview;
 };
-

@@ -36,4 +36,3 @@ void EDITOR_COMMON_API SerializeFromMemory(const SStruct& obj, const DynArray<ch
 }
 
 }
-

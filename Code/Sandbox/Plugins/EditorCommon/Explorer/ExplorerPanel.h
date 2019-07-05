@@ -2,27 +2,27 @@
 
 #pragma once
 
-#include <memory>
-#include <QWidget>
-#include <QItemSelection>
-#include <QAdvancedTreeView.h>
-#include <QMetaObject>
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/NameGeneration.h>
-#include "Serialization/QPropertyTree/QPropertyTree.h"
+#include "Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h"
 #include "Explorer.h"
 
-class QToolButton;
-class QLineEdit;
-class QPushButton;
-class QString;
-class QItemSelection;
-class QModelIndex;
+#include <CrySerialization/IArchive.h>
+#include <CrySerialization/NameGeneration.h>
+
+#include <QAdvancedTreeView.h>
+#include <QItemSelection>
+#include <QMetaObject>
+#include <QWidget>
+
+#include <memory>
+
 class QAbstractItemModel;
-class QMenu;
 class QDockWidget;
-class QMainWindow;
+class QItemSelection;
+class QMenu;
+class QModelIndex;
+class QPushButton;
 class QSearchBox;
+class QToolButton;
 
 namespace Explorer
 {
@@ -95,7 +95,6 @@ public slots:
 	void           OnEntryLoaded(ExplorerEntry* entry);
 	void           OnRootButtonPressed();
 	void           OnRootSelected(bool);
-	void           OnExplorerEndReset();
 	void           OnExplorerBeginBatchChange(int subtree);
 	void           OnExplorerEndBatchChange(int subtree);
 	void           OnExplorerEntryModified(ExplorerEntryModifyEvent& ev);
@@ -113,6 +112,7 @@ protected:
 private:
 	void           SetTreeViewModel(QAbstractItemModel* model);
 	void           UpdateRootMenu();
+	void           ExpandToDepthDefault();
 	void           SetExpanded(const QModelIndex& index, bool bExpand, uint depth = 0);
 	QModelIndex    FindIndexByEntry(ExplorerEntry* entry) const;
 	ExplorerEntry* GetEntryByIndex(const QModelIndex& index) const;
@@ -132,8 +132,7 @@ private:
 	int                       m_explorerRootIndex;
 	bool                      m_filterMode;
 	uint                      m_batchChangesRunning;
-	QPropertyTree*            m_filterOptionsTree;
+	QPropertyTreeLegacy*            m_filterOptionsTree;
 };
 
 }
-

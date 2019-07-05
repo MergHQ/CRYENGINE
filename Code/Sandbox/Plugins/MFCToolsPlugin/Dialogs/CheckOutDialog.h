@@ -1,11 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
-//////////////////////////////////////////////////////////////////////////
-// CCheckOutDialog dialog
-
-class PLUGIN_API CCheckOutDialog : public CDialog
+class MFC_TOOLS_PLUGIN_API CCheckOutDialog : public CDialog
 {
 	DECLARE_DYNAMIC(CCheckOutDialog)
 
@@ -19,11 +17,11 @@ class PLUGIN_API CCheckOutDialog : public CDialog
 	};
 
 public:
-	CCheckOutDialog(const CString& file, CWnd* pParent = NULL);   // standard constructor
+	CCheckOutDialog(const CString& file, CWnd* pParent = NULL);
 	virtual ~CCheckOutDialog();
 
 	virtual BOOL OnInitDialog();
-	EResult      GetResult() const { return m_result; };
+	EResult      GetResult() const { return m_result; }
 
 	// Enable functionality For All. In the end call with false to return it in init state.
 	// Returns previous enable state
@@ -64,4 +62,3 @@ public:
 private:
 	bool m_bPrevState;
 };
-

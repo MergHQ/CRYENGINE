@@ -916,7 +916,7 @@ struct SBinder<void (OBJECT::*)(PARAM1, PARAM2, PARAM3) const>
 		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param2);
+		(static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3);
 	}
 
 	static const bool IsSupported = true;
@@ -1022,7 +1022,7 @@ struct SBinder<PARAM0 (OBJECT::*)(PARAM1, PARAM2, PARAM3) const>
 		typename SParamTraits<PARAM3>::ProxyType param3 = ReadParam<PARAM3>(binding, 3, params);
 
 		FunctionPtr pFunction = *reinterpret_cast<const FunctionPtr*>(binding.pFunction);
-		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param2));
+		WriteParam<PARAM0>(binding, 0, params, (static_cast<const OBJECT*>(pObject)->*pFunction)(param1, param2, param3));
 	}
 
 	static const bool IsSupported = true;

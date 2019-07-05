@@ -3,9 +3,10 @@
 #include "StdAfx.h"
 #include "FileMonitorMiddleware.h"
 
-#include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
+#include "Common.h"
+#include "Common/IImpl.h"
 
+#include <IEditor.h>
 #include <CryString/CryPath.h>
 
 namespace ACE
@@ -26,12 +27,12 @@ void CFileMonitorMiddleware::Enable()
 		m_monitorFolders.clear();
 		GetIEditor()->GetFileMonitor()->UnregisterListener(this);
 
-		m_monitorFolders.push_back(g_pIImpl->GetAssetsPath());
-		m_monitorFolders.push_back(PathUtil::GetLocalizationFolder().c_str());
+		m_monitorFolders.push_back(g_implInfo.assetsPath.c_str());
+		m_monitorFolders.push_back(g_implInfo.localizedAssetsPath.c_str());
 
-		if (g_pIImpl->SupportsProjects())
+		if ((g_implInfo.flags & EImplInfoFlags::SupportsProjects) != EImplInfoFlags::None)
 		{
-			m_monitorFolders.push_back(g_pIImpl->GetProjectPath());
+			m_monitorFolders.push_back(g_implInfo.projectPath.c_str());
 		}
 
 		for (auto const& folder : m_monitorFolders)

@@ -208,7 +208,7 @@ namespace UQS
 
 		void CSchematycUqsComponentEnvFunctionBase::Execute(Schematyc::CRuntimeParamMap& params, void* pObject) const
 		{
-			assert(pObject != nullptr);
+			CRY_ASSERT(pObject != nullptr);
 			ExecuteOnSchematycUqsComponent(params, *static_cast<CSchematycUqsComponent*>(pObject));
 		}
 
@@ -235,7 +235,7 @@ namespace UQS
 
 		void CSchematycUqsComponentEnvFunctionBase::AddInputParam(const char* szParamName, uint32 id, const Schematyc::CTypeName* pTypeName, const Schematyc::CCommonTypeDesc* pTypeDesc)
 		{
-			assert(m_functionBinding.totalParamsCount < Schematyc::EnvFunctionUtils::MaxParams);
+			CRY_ASSERT(m_functionBinding.totalParamsCount < Schematyc::EnvFunctionUtils::MaxParams);
 
 			m_functionBinding.params[m_functionBinding.totalParamsCount] = CreateParam(szParamName, id, pTypeName, pTypeDesc, Schematyc::EnvFunctionUtils::EParamFlags::BoundToInput);
 			m_functionBinding.inputs[m_functionBinding.inputCount++] = m_functionBinding.totalParamsCount++;
@@ -253,7 +253,7 @@ namespace UQS
 
 		void CSchematycUqsComponentEnvFunctionBase::AddOutputParam(const char* szParamName, uint32 id, const Schematyc::CTypeName* pTypeName, const Schematyc::CCommonTypeDesc* pTypeDesc)
 		{
-			assert(m_functionBinding.totalParamsCount < Schematyc::EnvFunctionUtils::MaxParams);
+			CRY_ASSERT(m_functionBinding.totalParamsCount < Schematyc::EnvFunctionUtils::MaxParams);
 
 			m_functionBinding.params[m_functionBinding.totalParamsCount] = CreateParam(szParamName, id, pTypeName, pTypeDesc, Schematyc::EnvFunctionUtils::EParamFlags::BoundToOutput);
 			m_functionBinding.outputs[m_functionBinding.outputCount++] = m_functionBinding.totalParamsCount++;
@@ -261,7 +261,7 @@ namespace UQS
 
 		Schematyc::CAnyConstRef CSchematycUqsComponentEnvFunctionBase::GetUntypedInputParam(const Schematyc::CRuntimeParamMap& params, uint32 inputIdx) const
 		{
-			assert(inputIdx < m_functionBinding.inputCount);
+			CRY_ASSERT(inputIdx < m_functionBinding.inputCount);
 
 			const uint32 paramIdx = m_functionBinding.inputs[inputIdx];
 			const SMyParamBinding& paramBinding = m_functionBinding.params[paramIdx];
@@ -272,7 +272,7 @@ namespace UQS
 			if (!ptr)
 			{
 				ptr = paramBinding.pData;
-				assert(ptr);
+				CRY_ASSERT(ptr);
 			}
 
 			return *ptr;
@@ -280,7 +280,7 @@ namespace UQS
 
 		Schematyc::CAnyRef CSchematycUqsComponentEnvFunctionBase::GetUntypedOutputParam(Schematyc::CRuntimeParamMap& params, uint32 outputIdx) const
 		{
-			assert(outputIdx < m_functionBinding.outputCount);
+			CRY_ASSERT(outputIdx < m_functionBinding.outputCount);
 
 			const uint32 paramIdx = m_functionBinding.outputs[outputIdx];
 			const SMyParamBinding& paramBinding = m_functionBinding.params[paramIdx];
@@ -291,7 +291,7 @@ namespace UQS
 			if (!ptr)
 			{
 				ptr = paramBinding.pData;
-				assert(ptr);
+				CRY_ASSERT(ptr);
 			}
 
 			return *ptr;
@@ -312,7 +312,7 @@ namespace UQS
 
 		CSchematycUqsComponentEnvFunctionBase::SMyParamBinding CSchematycUqsComponentEnvFunctionBase::CreateParam(const char* szParamName, uint32 id, const Schematyc::CTypeName* pTypeName, const Schematyc::CCommonTypeDesc* pTypeDesc, Schematyc::EnvFunctionUtils::EParamFlags paramFlags) const
 		{
-			assert(pTypeName || pTypeDesc);
+			CRY_ASSERT(pTypeName || pTypeDesc);
 
 			// TODO: ensure each param ends up with a unique id
 
@@ -395,8 +395,8 @@ namespace UQS
 			{
 				if (const Client::IItemConverter* pItemConverter = m_itemConvertersFromSchematycToUqs.FindItemConverterByTypeInfo(targetTypeInfo))
 				{
-					assert(pItemConverter->GetToItemType() == targetTypeInfo);
-					assert(pItemConverter->GetFromItemType().GetSchematycTypeName() == sourceTypeName);
+					CRY_ASSERT(pItemConverter->GetToItemType() == targetTypeInfo);
+					CRY_ASSERT(pItemConverter->GetFromItemType().GetSchematycTypeName() == sourceTypeName);
 
 					void* pConvertedItem = pItemFactoryOfRuntimeParam->CreateItems(1, Client::IItemFactory::EItemInitMode::UseDefaultConstructor);
 					pItemConverter->ConvertItem(value.GetValue(), pConvertedItem);
@@ -477,8 +477,8 @@ namespace UQS
 			{
 				if (const Client::IItemConverter* pItemConverter = m_itemConvertersFromUqsToSchematyc.FindItemConverterByTypeInfo(sourceTypeInfo))
 				{
-					assert(pItemConverter->GetFromItemType() == sourceTypeInfo);
-					assert(pItemConverter->GetToItemType().GetSchematycTypeName() == targetTypeName);
+					CRY_ASSERT(pItemConverter->GetFromItemType() == sourceTypeInfo);
+					CRY_ASSERT(pItemConverter->GetToItemType().GetSchematycTypeName() == targetTypeName);
 
 					pItemConverter->ConvertItem(entry.pItem, item.GetValue());
 					score = entry.score;
@@ -920,7 +920,7 @@ namespace UQS
 				return;
 			}
 
-			const Client::SQueryRequest request(m_upcomingQueryInfo.queryBlueprintID, m_upcomingQueryInfo.runtimeParams, m_upcomingQueryInfo.querierName.c_str(), functor(*this, &CSchematycUqsComponent::OnQueryResult));
+			const Client::SQueryRequest request(m_upcomingQueryInfo.queryBlueprintID, m_upcomingQueryInfo.runtimeParams, m_upcomingQueryInfo.querierName.c_str(), functor(*this, &CSchematycUqsComponent::OnQueryResult), Client::SQueryRequest::kDefaultPriority);
 			Shared::CUqsString errorMessage;
 
 			const CQueryID queryID = pHub->GetQueryManager().StartQuery(request, errorMessage);
@@ -1006,7 +1006,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 			}
 		}
 

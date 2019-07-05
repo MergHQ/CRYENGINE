@@ -9,7 +9,6 @@
    =============================================================================*/
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/IRenderNode.h>
 #include "../Common/Shadow_Renderer.h"
 #include "../Common/ReverseDepth.h"
@@ -48,9 +47,10 @@ namespace
 CryCriticalSection g_cDynTexLock;
 }
 
-void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& passInfo)
+void CD3D9Renderer::EF_PrepareShadowTasksForRenderView(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_RENDERER();
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CD3D9Renderer::EF_PrepareShadowGenRenderList");
 
 	CRenderView* pRenderView = passInfo.GetRenderView();
 
@@ -99,11 +99,11 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 		for (uint32 i = 0; i < nFrustumCount; ++i)
 		{
 			ShadowMapFrustum* pCurFrustum = arrCustomFrustums[i];
-			IRenderViewPtr pShadowView = pCurFrustum->pOnePassShadowView;
+			IRenderViewPtr pShadowView = std::move(pCurFrustum->pOnePassShadowView);
 
-			CRY_ASSERT(pCurFrustum && pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_PerObject);
+			CRY_ASSERT(pCurFrustum && !pCurFrustum->bRestrictToRT && pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_PerObject);
 
-			if (PrepareShadowGenForFrustum(pRenderView, pCurFrustum, pSun, nSunID, 0))
+			if (PrepareShadowGenForFrustum(pRenderView, reinterpret_cast<CRenderView*>(pShadowView.get()), pCurFrustum, pSun, nSunID))
 			{
 				ShadowMapFrustumPtr pFrustumForRenderer = pCurFrustum->Clone();
 
@@ -114,13 +114,17 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 					pShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 				}
 
-				pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pSun, nSunID, std::move(pShadowView)));
+				pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(std::move(pFrustumForRenderer), pSun, nSunID, std::move(pShadowView)));
 			}
+
+			if (pShadowView)
+				pShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 		}
 	}
 
 #if defined(ENABLE_PROFILING_CODE)
-	m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolFrustums += CDeferredShading::Instance().m_shadowPoolAlloc.Num();
+	CDeferredShading* pDeferredShading = pRenderView->GetGraphicsPipeline()->GetDeferredShading();
+	m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolFrustums += pDeferredShading->m_shadowPoolAlloc.Num();
 #endif
 
 	// Prepare frustums for tiled shading
@@ -139,7 +143,7 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 	}
 
 	// Render All frustums.
-	SShadowRenderer::FinishRenderFrustumsToView(pRenderView);
+	pRenderView->PostWriteShadowViews();
 }
 
 bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRenderLight* pLight, int nLightID)
@@ -159,14 +163,14 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 	if (!ppSMFrustumList)
 		return false;
 
-	int32 nCurLOD = 0;//max(nFrustumLOD, nCaster);
-
 	for (int nCaster = 0; *ppSMFrustumList && nCaster != MAX_GSM_LODS_NUM; ++ppSMFrustumList, ++nCaster)
 	{
 		ShadowMapFrustum* pCurFrustum = (*ppSMFrustumList);
-		IRenderViewPtr pShadowView = pCurFrustum->pOnePassShadowView;
+		IRenderViewPtr pShadowView = std::move(pCurFrustum->pOnePassShadowView);
 
-		if (PrepareShadowGenForFrustum(pRenderView, pCurFrustum, pLight, nLightID, nCurLOD))
+		CRY_ASSERT(pCurFrustum && !pCurFrustum->bRestrictToRT);
+
+		if (PrepareShadowGenForFrustum(pRenderView, reinterpret_cast<CRenderView*>(pShadowView.get()), pCurFrustum, pLight, nLightID))
 		{
 			ShadowMapFrustumPtr pFrustumForRenderer = pCurFrustum->Clone();
 
@@ -177,9 +181,11 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 				pShadowView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 			}
 
-			pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(pFrustumForRenderer, pLight, nLightID, std::move(pShadowView)));
-			nCurLOD++;
+			pRenderView->AddShadowFrustumToRender(SShadowFrustumToRender(std::move(pFrustumForRenderer), pLight, nLightID, std::move(pShadowView)));
 		}
+		
+		if (pShadowView)
+			pShadowView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 	}
 
 	return true;
@@ -187,13 +193,12 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 
 void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	int nDLights = pRenderView->GetDynamicLightsCount();
+	CDeferredShading* pDeferredShading = pRenderView->GetGraphicsPipeline()->GetDeferredShading();
 
 	const auto nRequestedPoolSize = iConsole->GetCVar("e_ShadowsPoolSize")->GetIVal();
-	auto& shadowPoolSize = CDeferredShading::Instance().m_nShadowPoolSize;
-	auto& blockPack = CDeferredShading::Instance().m_blockPack;
-	auto& shadowPoolAlloc = CDeferredShading::Instance().m_shadowPoolAlloc;
+	auto& shadowPoolSize = pDeferredShading->m_nShadowPoolSize;
+	auto& blockPack = pDeferredShading->m_blockPack;
+	auto& shadowPoolAlloc = pDeferredShading->m_shadowPoolAlloc;
 
 	RenderLightsList& arrLights = pRenderView->GetLightsArray(eDLT_DeferredLight);
 
@@ -245,38 +250,58 @@ void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 	}
 }
 
-bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowMapFrustum* pCurFrustum, const SRenderLight* pLight, int nLightID, int nLOD)
+bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, CRenderView* pShadowView, ShadowMapFrustum* pCurFrustum, const SRenderLight* pLight, int nLightID)
 {
-	const auto nThreadID = gRenDev->GetMainThreadID();
 	const auto frameID = pRenderView->GetFrameId();
 	const auto nSides = pCurFrustum->GetNumSides();
-	const auto allSidesMask = std::bitset<OMNI_SIDES_NUM>((1 << nSides) - 1);
 
 	PROFILE_FRAME(PrepareShadowGenForFrustum);
 
 	//validate shadow frustum
-	assert(pCurFrustum);
-	assert(pLight);
+	CRY_ASSERT(pCurFrustum);
+	CRY_ASSERT(!pCurFrustum->bRestrictToRT);
+	CRY_ASSERT(pLight);
 
 	if (!pCurFrustum)
 		return false;
 	if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest)
 		return true;
-	if (pCurFrustum->GetCasterNum() <= 0 && pCurFrustum->nSideCacheMask.none() && !pCurFrustum->IsCached() && pCurFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamicDistance)
-		return false;
 	if (pCurFrustum->IsCached() && pCurFrustum->nTexSize == 0)
 		return false;
-	if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && pCurFrustum->nOmniFrustumMask.none())
-		return false;
-	if (pRenderView->GetFrustumsToRender().size() > kMaxShadowPassesNum)
-		return false;
-	//////////////////////////////////////////////////////////////////////////
 
-	//regenerate on reset device
-	if (pCurFrustum->nResetID != m_nFrameReset)
+	// Static shadow map might not have any active casters, so don't reset nSideSampleMask every frame
+	if (!pCurFrustum->IsCached())
 	{
-		pCurFrustum->nResetID = m_nFrameReset;
-		pCurFrustum->RequestUpdate();
+		if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance)
+			pCurFrustum->RequestSamples((1U << pCurFrustum->GetNumSides()) - 1U);
+		else
+		{
+			for (int nSide = 0; nSide < pCurFrustum->GetNumSides(); ++nSide)
+			{
+				if (pCurFrustum->ShouldUpdate(nSide))
+				{
+					if (pShadowView && pShadowView->HasAddedItems(ERenderListID(nSide)))
+					{
+						pCurFrustum->RequestSample(nSide);
+					}
+#if 0
+					// It is empty now, remove the sample-and the update request
+					else
+					{
+						pCurFrustum->ClearUpdates(BIT(nSide));   // TODO: allow update-masking for update-rate frusta
+						pCurFrustum->ClearSampleFromSide(nSide); // TODO: find out why sampling can not be deactivated for empty frusta/shadowmaps
+					}
+#endif
+				}
+#if 0
+				// It was empty the last time it was updated, remove the sample-request
+				else if (!pCurFrustum->nSideDrawnWithN[nSide])
+				{
+					pCurFrustum->ClearSampleFromSide(nSide);     // TODO: find out why sampling can not be deactivated for empty frusta/shadowmaps
+				}
+#endif
+			}
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -312,36 +337,20 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 	pCurFrustum->pFrustumOwner = pCurFrustum;
 
 	//////////////////////////////////////////////////////////////////////////
-	// Enforce invalidation
-	pCurFrustum->nSideCacheMask &= ~pCurFrustum->nSideInvalidatedMask;
-	// Early bail
-	if ((pCurFrustum->nSideCacheMask | ~allSidesMask).all())
-		return true;
-	if (pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic)
+
 	{
-		const auto invalidatedOrOutdatedMask = pCurFrustum->nSideInvalidatedMask | pCurFrustum->nOutdatedSideMask;
-		if ((invalidatedOrOutdatedMask & pCurFrustum->nOmniFrustumMask).none())
+		// Group early outs
+		if ((pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic) & !pCurFrustum->ShouldProcess())
+			return false;
+		if ((pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic) & !pCurFrustum->ShouldUpdate())
 			return true;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	//actual view camera position
-	Vec3 vCamOrigin = iSystem->GetViewCamera().GetPosition();
-
 	CCamera tmpCamera;
-
-	// Static shadow map might not have any active casters, so don't reset nSideSampleMask every frame
-	if (!pCurFrustum->IsCached() && pCurFrustum->onePassCastersNum <= 0)
-		pCurFrustum->GetSideSampleMask().store(pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ? 1 : 0);
-
 	for (int nS = 0; nS < nSides; nS++)
 	{
-		// Update check for shadow frustums:
-		// We update if the side is invalidated, or if it out-of-date and isn't cached (in case of time-sliced updates).
-		const bool shouldRenderSide = (pCurFrustum->m_eFrustumType != ShadowMapFrustum::e_GsmDynamic || pCurFrustum->nOmniFrustumMask[nS]) &&
-		                              (pCurFrustum->isSideInvalidated(nS) ||
-		                               (pCurFrustum->isSideOutdated(nS) && !pCurFrustum->nSideCacheMask[nS]));
-		if (!shouldRenderSide)
+		// Symmetric to RT-code, see: CShadowMapStage::PrepareShadowPasses
+		if ((pCurFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic) & !pCurFrustum->ShouldUpdate(nS))
 			continue;
 
 		//////////////////////////////////////////////////////////////////////////
@@ -349,19 +358,9 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		//////////////////////////////////////////////////////////////////////////
 		if (!pCurFrustum->bOmniDirectionalShadow)
 		{
-			if (pCurFrustum->m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT))
+			if (pCurFrustum->m_Flags & DLF_PROJECT)
 			{
 				SRenderLight instLight = *pLight;
-				if (pLight->m_Flags & DLF_AREA_LIGHT)
-				{
-					// Pull the shadow frustum back to encompas the area of the light source.
-					float fMaxSize = max(pLight->m_fAreaWidth, pLight->m_fAreaHeight);
-					float fScale = fMaxSize / max(tanf(DEG2RAD(pLight->m_fLightFrustumAngle)), 0.0001f);
-
-					Vec3 vOffsetDir = fScale * pLight->m_ObjMatrix.GetColumn0().GetNormalized();
-					instLight.SetPosition(instLight.m_Origin - vOffsetDir);
-					instLight.m_fProjectorNearPlane = fScale;
-				}
 
 				// Frustum angle is clamped to prevent projection matrix problems.
 				// We clamp here because area lights and non-shadow casting lights can cast 180 degree light.
@@ -392,13 +391,8 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 			pCurFrustum->mLightProjMatrix.SetIdentity();
 		}
 
-		//////////////////////////////////////////////////////////////////////////
-		// Invoke IRenderNode::Render Jobs
-		//////////////////////////////////////////////////////////////////////////
-
 		// Mark this side of frustum needs rendering.
-		const auto frameID8 = static_cast<uint8>(frameID & 255);
-		pCurFrustum->MarkSideAsRendered(nS, frameID8);
+		pCurFrustum->MarkSideAsRendered(nS, frameID, pShadowView ? pShadowView->NumAddedItems(ERenderListID(nS)) : 0);
 	}//nSides
 
 	return true;
@@ -468,10 +462,10 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance)
 		{
 			Matrix44 mCropView(IDENTITY);
-			mCropView.m00 = (float)pFr->shadowPoolPack[0].GetDim().x / pFr->pDepthTex->GetWidth();
-			mCropView.m11 = (float)pFr->shadowPoolPack[0].GetDim().y / pFr->pDepthTex->GetHeight();
-			mCropView.m30 = (float)pFr->shadowPoolPack[0].Min.x / pFr->pDepthTex->GetWidth();
-			mCropView.m31 = (float)pFr->shadowPoolPack[0].Min.y / pFr->pDepthTex->GetHeight();
+			mCropView.m00 = pFr->shadowCascade.GetDim().x / pFr->pDepthTex->GetWidth();
+			mCropView.m11 = pFr->shadowCascade.GetDim().y / pFr->pDepthTex->GetHeight();
+			mCropView.m30 = pFr->shadowCascade.Min.x / pFr->pDepthTex->GetWidth();
+			mCropView.m31 = pFr->shadowCascade.Min.y / pFr->pDepthTex->GetHeight();
 
 			mTexScaleBiasMat = mTexScaleBiasMat * mCropView;
 		}
@@ -494,15 +488,14 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 	if (bScreenToLocalBasis && CRenderer::CV_r_FogShadowsMode == 1)
 	{
 		Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
-		bool bVPosSM30 = (GetFeatures() & (RFT_HW_SM30 | RFT_HW_SM40)) != 0;
-		const SRenderViewport& viewport = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->GetViewport();
+		const SRenderViewport& viewport = pRenderView->GetGraphicsPipeline()->GetCurrentRenderView()->GetViewport();
 
 		CCamera Cam = pRenderView->GetCamera(CCamera::eEye_Left);
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest && m_drawNearFov > 1.0f && m_drawNearFov < 179.0f)
 			Cam.SetFrustum(Cam.GetViewSurfaceX(), Cam.GetViewSurfaceZ(), DEG2RAD(m_drawNearFov), Cam.GetNearPlane(), Cam.GetFarPlane(), Cam.GetPixelAspectRatio());
 
 		CShadowUtils::ProjectScreenToWorldExpansionBasis(Data.ShadowMat, Cam, pRenderView->m_vProjMatrixSubPixoffset,
-		                                                 static_cast<float>(viewport.width), static_cast<float>(viewport.height), vWBasisX, vWBasisY, vWBasisZ, vCamPos, bVPosSM30);
+		                                                 static_cast<float>(viewport.width), static_cast<float>(viewport.height), vWBasisX, vWBasisY, vWBasisZ, vCamPos, true);
 
 	#pragma warning(push)
 	#pragma warning(disable: 4244)

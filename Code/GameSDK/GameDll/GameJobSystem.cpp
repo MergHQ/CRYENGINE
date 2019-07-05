@@ -22,7 +22,7 @@ const AABB CLightningRenderNode::GetBBox() const
 			const CSegment& segment = m_segments[i];
 			for (int j = 0; j < segment.GetNumPoints(); ++j)
 			{
-				if(m_pLightningDesc)
+				if (m_pLightningDesc)
 					box.Add(segment.GetPoint(*m_pLightningDesc, m_pointData, j, m_deviationMult));
 			}
 		}
@@ -50,48 +50,28 @@ Vec3 CLightningRenderNode::CSegment::GetPoint(const SLightningParams& desc, cons
 
 	int idx[4] =
 	{
-		max(i-1, 0),
+		max(i - 1, 0),
 		i,
-		min(i+1, numSegs),
-		min(i+2, numSegs)
+		min(i + 1, numSegs),
+		min(i + 2, numSegs)
 	};
 
 	Vec3 positions[4];
 	for (int l = 0; l < 4; ++l)
 	{
 		positions[l] = LERP(m_origin, m_destany, idx[l] / float(numSegs));
-		positions[l] += pointData.m_points[m_firstPoint+idx[l]] * deviation * deviationMult;
-		positions[l] += pointData.m_velocity[m_firstPoint+idx[l]] * desc.m_lightningVelocity * m_time * deviationMult;
+		positions[l] += pointData.m_points[m_firstPoint + idx[l]] * deviation * deviationMult;
+		positions[l] += pointData.m_velocity[m_firstPoint + idx[l]] * desc.m_lightningVelocity * m_time * deviationMult;
 	}
 
 	float x = j / float(numSubSegs);
-	int k = i*numSubSegs + j;
+	int k = i * numSubSegs + j;
 	Vec3 result = CatmullRom(
 		positions[0], positions[1],
 		positions[2], positions[3], x);
-	result = result + pointData.m_fuzzyPoints[m_firstFuzzyPoint+k] * fuzzyness * deviationMult;
+	result = result + pointData.m_fuzzyPoints[m_firstFuzzyPoint + k] * fuzzyness * deviationMult;
 
 	return result;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-void CLightningRenderNode::FillBBox(AABB &aabb) 
-{ 
-	aabb = CLightningRenderNode::GetBBox();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-EERType CLightningRenderNode::GetRenderNodeType()
-{
-	return eERType_GameEffect;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CLightningRenderNode::GetMaxViewDist()
-{
-	// TODO : needs to use standard view distance ratio calculation used by other render nodes
-	const float maxViewDistance = 2000.0f;
-	return maxViewDistance;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -101,7 +81,9 @@ Vec3 CLightningRenderNode::GetPos(bool bWorldOnly) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-IMaterial* CLightningRenderNode::GetMaterial(Vec3* pHitPos) const
+float CLightningRenderNode::GetMaxViewDist() const
 {
-	return m_pMaterial;
+	// TODO : needs to use standard view distance ratio calculation used by other render nodes
+	const float maxViewDistance = 2000.0f;
+	return maxViewDistance;
 }

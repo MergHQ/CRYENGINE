@@ -280,7 +280,6 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			pController->m_arrTimes.resize(numKeys);
 
 			const int startTime = (numKeys > 0) ? pCryKey[0].nTime : 0;
-			int lastTime = INT_MIN;
 			for (size_t i = 0; i < numKeys; ++i)
 			{
 				pController->m_arrTimes[i] = (pCryKey[i].nTime - startTime) / TICKS_CONVERT;
@@ -427,18 +426,20 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			if (controllerChunk.numRotationKeys > 0)
 			{
 				const size_t rotationStorageSize = ControllerHelper::GetRotationFormatSizeOf(controllerChunk.rotationFormat) * controllerChunk.numRotationKeys;
-				pTrackRotStorage = ControllerHelper::GetRotationControllerPtr(controllerChunk.rotationFormat, consumeData(rotationStorageSize), controllerChunk.numRotationKeys);
+				pTrackRotStorage = ControllerHelper::GetRotationControllerPtr(controllerChunk.rotationFormat);
 				if (!pTrackRotStorage)
 				{
 					return false;
 				}
+				pTrackRotStorage->AssignData(consumeData(rotationStorageSize), controllerChunk.numRotationKeys);
 
 				const size_t timeStorageSize = ControllerHelper::GetKeyTimesFormatSizeOf(controllerChunk.rotationTimeFormat) * controllerChunk.numRotationKeys;
-				pRotTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.rotationTimeFormat, consumeData(timeStorageSize), controllerChunk.numRotationKeys);
+				pRotTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.rotationTimeFormat);
 				if (!pRotTimeKeys)
 				{
 					return false;
 				}
+				pRotTimeKeys->AssignKeyTime(consumeData(timeStorageSize), controllerChunk.numRotationKeys);
 			}
 
 			ITrackPositionStorage* pTrackPosStorage = nullptr;
@@ -446,20 +447,22 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			if (controllerChunk.numPositionKeys > 0)
 			{
 				const size_t positionStorageSize = ControllerHelper::GetPositionsFormatSizeOf(controllerChunk.positionFormat) * controllerChunk.numPositionKeys;
-				pTrackPosStorage = ControllerHelper::GetPositionControllerPtr(controllerChunk.positionFormat, consumeData(positionStorageSize), controllerChunk.numPositionKeys);
+				pTrackPosStorage = ControllerHelper::GetPositionControllerPtr(controllerChunk.positionFormat);
 				if (!pTrackPosStorage)
 				{
 					return false;
 				}
+				pTrackPosStorage->AssignData(consumeData(positionStorageSize), controllerChunk.numPositionKeys);
 
 				if (controllerChunk.positionKeysInfo == CONTROLLER_CHUNK_DESC_0832::eKeyTimePosition)
 				{
 					const size_t timeStorageSize = ControllerHelper::GetKeyTimesFormatSizeOf(controllerChunk.positionTimeFormat) * controllerChunk.numPositionKeys;
-					pPosTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.positionTimeFormat, consumeData(timeStorageSize), controllerChunk.numPositionKeys);
+					pPosTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.positionTimeFormat);
 					if (!pPosTimeKeys)
 					{
 						return false;
 					}
+					pPosTimeKeys->AssignKeyTime(consumeData(timeStorageSize), controllerChunk.numPositionKeys);
 				}
 			}
 
@@ -468,20 +471,22 @@ bool GlobalAnimationHeaderAIM::ReadController(IChunkFile::ChunkDesc* pChunkDesc,
 			if (controllerChunk.numScaleKeys > 0)
 			{
 				const size_t scalingStorageSize = ControllerHelper::GetScalingFormatSizeOf(controllerChunk.scaleFormat) * controllerChunk.numScaleKeys;
-				pTrackSclStorage = ControllerHelper::GetScalingControllerPtr(controllerChunk.scaleFormat, consumeData(scalingStorageSize), controllerChunk.numScaleKeys);
+				pTrackSclStorage = ControllerHelper::GetScalingControllerPtr(controllerChunk.scaleFormat);
 				if (!pTrackSclStorage)
 				{
 					return false;
 				}
+				pTrackSclStorage->AssignData(consumeData(scalingStorageSize), controllerChunk.numScaleKeys);
 
 				if (controllerChunk.scaleKeysInfo == CONTROLLER_CHUNK_DESC_0832::eKeyTimeScale)
 				{
 					const size_t timeStorageSize = ControllerHelper::GetKeyTimesFormatSizeOf(controllerChunk.scaleTimeFormat) * controllerChunk.numScaleKeys;
-					pSclTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.scaleTimeFormat, consumeData(timeStorageSize), controllerChunk.numScaleKeys);
+					pSclTimeKeys = ControllerHelper::GetKeyTimesControllerPtr(controllerChunk.scaleTimeFormat);
 					if (!pSclTimeKeys)
 					{
 						return false;
 					}
+					pSclTimeKeys->AssignKeyTime(consumeData(timeStorageSize), controllerChunk.numScaleKeys);
 				}
 			}
 
@@ -841,7 +846,7 @@ void GlobalAnimationHeaderAIM::Debug_Blend4AimPose(const CDefaultSkeleton* pDefa
 Vec3 GlobalAnimationHeaderAIM::Debug_PolarCoordinate(const Quat& q) const
 {
 	Matrix33 m = Matrix33(q);
-	assert(m.IsOrthonormal());
+	CRY_ASSERT(m.IsOrthonormal());
 	f32 l = sqrtf(m.m01 * m.m01 + m.m11 * m.m11);
 	if (l > 0.0001)
 		return Vec3(atan2f(-m.m01 / l, m.m11 / l), -atan2f(m.m21, l), atan2f(-m.m20 / l, m.m22 / l));
@@ -880,9 +885,6 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	if (numPoses != 9)
 		return q * 2;
 
-	uint32 i = -1;
-	f32 t = 0;
-
 	f32 diag = 1.70f;
 
 	f32 eup = 1.60f;
@@ -894,25 +896,25 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	f32 edown = 1.6f;
 	f32 mdown = 1.20f;
 
-	i = 4;
+	uint32 i = 4;
 	arrQuat[i].i0 = 3;
-	t = eup;
+	f32 t = eup;
 	arrQuat[i].w0 = Vec4(1 - t, 0, 0, t);                           //3-mirrored 0-scaled
 	arrQuat[i].i1 = 4;
 	t = mup;
 	arrQuat[i].w1 = Vec4(0, 1 - t, t, 0);                           //4-mirrored 1-scaled
 	arrQuat[i].i2 = 1;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 0;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 
 	i = 5;
 	arrQuat[i].i0 = 3;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 4;
 	t = mside;
@@ -921,7 +923,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = eside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                           //1-mirrored 0-scaled
 	arrQuat[i].i3 = 0;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -934,7 +936,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = eup;
 	arrQuat[i].w1 = Vec4(0, 1 - t, t, 0);                           //3-mirrored 0-scaled
 	arrQuat[i].i2 = 0;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 1;
 	t = eside;
@@ -944,7 +946,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 
 	i = 7;
 	arrQuat[i].i0 = 2;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 1;
 	t = eside;
@@ -953,7 +955,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = mside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                           //4-mirrored 5-scaled
 	arrQuat[i].i3 = 5;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -966,10 +968,10 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = eup;
 	arrQuat[i].w1 = Vec4(0, 1 - t, t, 0);                           //5-mirrored 2-scaled
 	arrQuat[i].i2 = 2;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 1;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -985,7 +987,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = eside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                           //1-mirrored 2-scaled
 	arrQuat[i].i3 = 2;
-	t = 1.0f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -995,10 +997,10 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = mside;
 	arrQuat[i].w0 = Vec4(1 - t, t, 0, 0);                           //4-mirrored 3-scaled
 	arrQuat[i].i1 = 3;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 6;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 7;
 	t = eside;
@@ -1007,10 +1009,10 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 	i = 11;
 	arrQuat[i].i0 = 6;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 7;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 4;
 	t = mdown;
@@ -1025,7 +1027,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = eside;
 	arrQuat[i].w0 = Vec4(1 - t, t, 0, 0);                           //7-mirrored 6-scaled
 	arrQuat[i].i1 = 6;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 3;
 	t = edown;
@@ -1038,7 +1040,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 
 	i = 13;
 	arrQuat[i].i0 = 5;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 4;
 	t = mside;
@@ -1047,16 +1049,16 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	t = eside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                            //7 mirrored 8-scaled
 	arrQuat[i].i3 = 8;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 	i = 14;
 	arrQuat[i].i0 = 7;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 8;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 5;
 	t = edown;
@@ -1068,7 +1070,7 @@ uint32 GlobalAnimationHeaderAIM::Debug_AnnotateExamples2(uint32 numPoses, QuadIn
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 	i = 15;
 	arrQuat[i].i0 = 8;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 7;
 	t = eside;
@@ -1134,11 +1136,10 @@ void VExampleInit::Init(const CDefaultSkeleton* pDefaultSkeleton, const DynArray
 
 	Quatd qDefaultMidAimPose = !m_arrAbsPose[nWeaponBoneIdx].q;
 	Quatd arrOriginalAimPoses[27];
-	uint32 numRotJoints = rRot.size();
+
 	for (uint32 ap = 0; ap < numAimPoses; ap++)
 	{
 		ComputeAimPose(rAIM, pDefaultSkeleton, rRot, rPos, m_arrAbsPose, ap);
-		Quat q = m_arrAbsPose[nWeaponBoneIdx].q;
 		arrOriginalAimPoses[ap] = qDefaultMidAimPose * m_arrAbsPose[nWeaponBoneIdx].q;
 	}
 
@@ -1525,8 +1526,6 @@ void VExampleInit::Init(const CDefaultSkeleton* pDefaultSkeleton, const DynArray
 				q0 = q1;
 				x0 = x1;
 			}
-
-			uint32 ddd = 0;
 		}
 
 		CHUNK_GAHAIM_INFO::VirtualExampleInit2 ve;
@@ -1593,9 +1592,8 @@ void VExampleInit::CopyPoses2(const DynArray<SJointsAimIK_Rot>& rRot, const DynA
 	uint32 numRot = rRot.size();
 	for (uint32 r = 0; r < numRot; r++)
 	{
-		const char* pJointName = rRot[r].m_strJointName;
 		int32 j = rRot[r].m_nJointIdx;
-		assert(j > 0);
+		CRY_ASSERT(j > 0);
 		rAIM.m_arrAimIKPosesAIM[skey].m_arrRotation[r] = m_arrDefaultRelPose[j].q;
 		IController* pFAimController = rAIM.GetControllerByJointCRC32(m_arrJointCRC32[j]);
 		if (pFAimController)
@@ -1621,9 +1619,8 @@ void VExampleInit::CopyPoses2(const DynArray<SJointsAimIK_Rot>& rRot, const DynA
 	uint32 numPos = rPos.size();
 	for (uint32 r = 0; r < numPos; r++)
 	{
-		const char* pJointName = rPos[r].m_strJointName;
 		int32 j = rPos[r].m_nJointIdx;
-		assert(j > 0);
+		CRY_ASSERT(j > 0);
 		rAIM.m_arrAimIKPosesAIM[skey].m_arrPosition[r] = m_arrDefaultRelPose[j].t;
 		IController* pFAimController = rAIM.GetControllerByJointCRC32(m_arrJointCRC32[j]);
 		if (pFAimController)
@@ -1740,14 +1737,16 @@ void VExampleInit::RecursiveTest(const Vec2d& ControlPoint, GlobalAnimationHeade
 #pragma warning(disable : 6262) // this is only run in RC which has enough stack space
 uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeaderAIM& rAIM, const DynArray<SJointsAimIK_Rot>& rRot, const DynArray<SJointsAimIK_Pos>& rPos, int nWBone, int i0, int i1, int i2, int i3, const Vec4d& w0, const Vec4d& w1, const Vec4d& w2, const Vec4d& w3)
 {
+#if defined(USE_CRY_ASSERT)
 	f64 sum0 = w0.x + w0.y + w0.z + w0.w;
-	assert(fabs(sum0 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum0 - 1.0f) < 0.00001);
 	f64 sum1 = w1.x + w1.y + w1.z + w1.w;
-	assert(fabs(sum1 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum1 - 1.0f) < 0.00001);
 	f64 sum2 = w2.x + w2.y + w2.z + w2.w;
-	assert(fabs(sum2 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum2 - 1.0f) < 0.00001);
 	f64 sum3 = w3.x + w3.y + w3.z + w3.w;
-	assert(fabs(sum3 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum3 - 1.0f) < 0.00001);
+#endif
 
 	Quatd mid;
 	mid.w = f32(rAIM.m_MiddleAimPose.w);
@@ -1764,21 +1763,23 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	Blend4AimPose(rAIM, rRot, rPos, i0, i1, i2, i3, w3, m_arrRelPose3, m_arrAbsPose3);
 	Quatd tq3 = mid * m_arrAbsPose3[nWBone].q;
 
+#if defined(USE_CRY_ASSERT)
 	Vec2d tp0 = Vec2d(PolarCoordinate(tq0));
-	assert(fabs(tp0.x) < 3.1416f);
-	assert(fabs(tp0.y) < 2.0f);
+	CRY_ASSERT(fabs(tp0.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp0.y) < 2.0f);
 
 	Vec2d tp1 = Vec2d(PolarCoordinate(tq1));
-	assert(fabs(tp1.x) < 3.1416f);
-	assert(fabs(tp1.y) < 2.0f);
+	CRY_ASSERT(fabs(tp1.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp1.y) < 2.0f);
 
 	Vec2d tp2 = Vec2d(PolarCoordinate(tq2));
-	assert(fabs(tp2.x) < 3.1416f);
-	assert(fabs(tp2.y) < 2.0f);
+	CRY_ASSERT(fabs(tp2.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp2.y) < 2.0f);
 
 	Vec2d tp3 = Vec2d(PolarCoordinate(tq3));
-	assert(fabs(tp3.x) < 3.1416f);
-	assert(fabs(tp3.y) < 2.0f);
+	CRY_ASSERT(fabs(tp3.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp3.y) < 2.0f);
+#endif
 
 	f64 t;
 	uint32 c = 0;
@@ -1789,7 +1790,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	f64 maxstep = 0.250f;
 
 	f64 angle0 = std::max(acos_tpl(tq1 | tq2), 0.01);
-	assert(angle0 >= 0.009);
+	CRY_ASSERT(angle0 >= 0.009);
 	f64 step0 = std::min((1.0 / (angle0 * angle0 * 30.0)), maxstep);
 	for (f64 i = step0; i < 3.0; i += step0)
 	{
@@ -1805,7 +1806,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	}
 
 	f64 angle1 = std::max(acos_tpl(tq1 | tq2), 0.01);
-	assert(angle1 >= 0.009);
+	CRY_ASSERT(angle1 >= 0.009);
 	f64 step1 = std::min((1.0 / (angle1 * angle1 * 30.0)), maxstep);
 	for (f64 i = step1; i < 3.0; i += step1)
 	{
@@ -1821,7 +1822,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	}
 
 	f64 angle2 = std::max(acos_tpl(tq2 | tq3), 0.01);
-	assert(angle2 >= 0.009);
+	CRY_ASSERT(angle2 >= 0.009);
 	f64 step2 = std::min((1.0 / (angle2 * angle2 * 30.0)), maxstep);
 	for (f64 i = step2; i < 3.0; i += step2)
 	{
@@ -1837,7 +1838,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	}
 
 	f64 angle3 = std::max(acos_tpl(tq3 | tq0), 0.01);
-	assert(angle3 >= 0.009);
+	CRY_ASSERT(angle3 >= 0.009);
 	f64 step3 = std::min((1.0 / (angle3 * angle3 * 30.0)), maxstep);
 	for (f64 i = step3; i < 3.0; i += step3)
 	{
@@ -1851,9 +1852,8 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 		;
 		if (t == 1.0) break;
 	}
-	assert(c);
-	assert(c < 1000);
-	f64 length = (polar[c] - polar[0]).GetLength();
+	CRY_ASSERT(c);
+	CRY_ASSERT(c < 1000);
 	polar[c] = polar[0];
 
 	Vec2d ControlPointEnd = ControlPoint + Vec2d(1, 0) * 10;
@@ -1893,7 +1893,6 @@ void VExampleInit::ComputeAimPose(GlobalAnimationHeaderAIM& rAIM, const CDefault
 		if (rRot[r].m_nPreEvaluate)
 		{
 			int32 j = rRot[r].m_nJointIdx;
-			const char* pName = rRot[r].m_strJointName;
 			QuatTd qtemp;
 			qtemp.q = rAIM.m_arrAimIKPosesAIM[nAimPoseMid].m_arrRotation[r];
 			qtemp.t = m_arrDefaultRelPose[j].t;
@@ -2097,9 +2096,6 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	if (numPoses != 9)
 		return q * 2;
 
-	uint32 i = -1;
-	f32 t = 0;
-
 	f32 diag = 1.70f;
 
 	f32 eup = 1.60f;
@@ -2111,25 +2107,25 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	f32 edown = 1.6f;
 	f32 mdown = 1.20f;
 
-	i = 4;
+	uint32 i = 4;
 	arrQuat[i].i0 = 3;
-	t = eup;
+	f32 t = eup;
 	arrQuat[i].w0 = Vec4(1 - t, 0, 0, t);                           //3-mirrored 0-scaled
 	arrQuat[i].i1 = 4;
 	t = mup;
 	arrQuat[i].w1 = Vec4(0, 1 - t, t, 0);                           //4-mirrored 1-scaled
 	arrQuat[i].i2 = 1;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 0;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 
 	i = 5;
 	arrQuat[i].i0 = 3;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 4;
 	t = mside;
@@ -2138,7 +2134,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = eside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                           //1-mirrored 0-scaled
 	arrQuat[i].i3 = 0;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -2151,7 +2147,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = eup;
 	arrQuat[i].w1 = Vec4(0, 1 - t, t, 0);                           //3-mirrored 0-scaled
 	arrQuat[i].i2 = 0;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 1;
 	t = eside;
@@ -2161,7 +2157,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 
 	i = 7;
 	arrQuat[i].i0 = 2;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 1;
 	t = eside;
@@ -2170,7 +2166,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = mside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                           //4-mirrored 5-scaled
 	arrQuat[i].i3 = 5;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -2183,10 +2179,10 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = eup;
 	arrQuat[i].w1 = Vec4(0, 1 - t, t, 0);                           //5-mirrored 2-scaled
 	arrQuat[i].i2 = 2;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 1;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -2202,7 +2198,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = eside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                           //1-mirrored 2-scaled
 	arrQuat[i].i3 = 2;
-	t = 1.0f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
@@ -2212,10 +2208,10 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = mside;
 	arrQuat[i].w0 = Vec4(1 - t, t, 0, 0);                           //4-mirrored 3-scaled
 	arrQuat[i].i1 = 3;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 6;
-	t = 1.00f;
+
 	arrQuat[i].w2 = Vec4(0, 0, 1, 0);
 	arrQuat[i].i3 = 7;
 	t = eside;
@@ -2224,10 +2220,10 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 	i = 11;
 	arrQuat[i].i0 = 6;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 7;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 4;
 	t = mdown;
@@ -2242,7 +2238,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = eside;
 	arrQuat[i].w0 = Vec4(1 - t, t, 0, 0);                           //7-mirrored 6-scaled
 	arrQuat[i].i1 = 6;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 3;
 	t = edown;
@@ -2255,7 +2251,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 
 	i = 13;
 	arrQuat[i].i0 = 5;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 4;
 	t = mside;
@@ -2264,16 +2260,16 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	t = eside;
 	arrQuat[i].w2 = Vec4(0, 0, 1 - t, t);                            //7 mirrored 8-scaled
 	arrQuat[i].i3 = 8;
-	t = 1.00f;
+
 	arrQuat[i].w3 = Vec4(0, 0, 0, 1);
 	arrQuat[i].col = RGBA8(0xff, 0x00, 0x00, 0xff);
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 	i = 14;
 	arrQuat[i].i0 = 7;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 8;
-	t = 1.00f;
+
 	arrQuat[i].w1 = Vec4(0, 1, 0, 0);
 	arrQuat[i].i2 = 5;
 	t = edown;
@@ -2285,7 +2281,7 @@ uint32 VExampleInit::AnnotateExamples(uint32 numPoses, QuadIndices* arrQuat)
 	arrQuat[i].height = Vec3(0, 0, 0.001f);
 	i = 15;
 	arrQuat[i].i0 = 8;
-	t = 1.00f;
+
 	arrQuat[i].w0 = Vec4(1, 0, 0, 0);
 	arrQuat[i].i1 = 7;
 	t = eside;

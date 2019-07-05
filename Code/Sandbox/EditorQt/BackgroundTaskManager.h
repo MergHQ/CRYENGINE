@@ -3,10 +3,13 @@
 #pragma once
 
 #include "IBackgroundTaskManager.h"
+#include <IEditor.h>
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/CryThread.h>
+#include <CryRenderer/IRenderer.h>
 
 namespace BackgroundTaskManager
 {
@@ -261,7 +264,7 @@ public:
 			tooltip += failTooltip;
 
 			std::set<string>::const_iterator walk;
-			for (walk = m_sFailures.begin(); walk != m_sFailures.end(); walk++)
+			for (walk = m_sFailures.begin(); walk != m_sFailures.end(); ++walk)
 			{
 				tooltip += *walk + "\n";
 			}
@@ -280,4 +283,3 @@ public:
 }
 
 //-----------------------------------------------------------------------------
-

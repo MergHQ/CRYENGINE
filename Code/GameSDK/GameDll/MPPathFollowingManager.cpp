@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MPPathFollowingManager.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 CMPPathFollowingManager::CMPPathFollowingManager()
 {
@@ -18,7 +19,7 @@ void CMPPathFollowingManager::RegisterClassFollower(uint16 classId, IMPPathFollo
 {
 #ifndef _RELEASE
 	PathFollowers::iterator iter = m_PathFollowers.find(classId);
-	CRY_ASSERT_MESSAGE(iter == m_PathFollowers.end(), "CMPPathFollowingManager::RegisterClassFollower - this class has already been registered!");
+	CRY_ASSERT(iter == m_PathFollowers.end(), "CMPPathFollowingManager::RegisterClassFollower - this class has already been registered!");
 #endif
 	m_PathFollowers[classId] = pFollower;
 }
@@ -32,7 +33,7 @@ void CMPPathFollowingManager::UnregisterClassFollower(uint16 classId)
 		return;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "CMPPathFollowingManager::UnregisterClassFollower - tried to unregister class but class not found");
+	CRY_ASSERT(false, "CMPPathFollowingManager::UnregisterClassFollower - tried to unregister class but class not found");
 }
 
 void CMPPathFollowingManager::RequestAttachEntityToPath( const SPathFollowingAttachToPathParameters& params )
@@ -40,7 +41,7 @@ void CMPPathFollowingManager::RequestAttachEntityToPath( const SPathFollowingAtt
 	PathFollowers::const_iterator iter = m_PathFollowers.find(params.classId);
 	if(iter != m_PathFollowers.end())
 	{
-		CRY_ASSERT_MESSAGE(params.pathIndex < m_Paths.size(), "CMPPathFollowingManager::RequestAttachEntityToPath - path index out of range");
+		CRY_ASSERT(params.pathIndex < m_Paths.size(), "CMPPathFollowingManager::RequestAttachEntityToPath - path index out of range");
 		iter->second->OnAttachRequest(params, &m_Paths[params.pathIndex].path);
 		if(gEnv->bServer)
 		{
@@ -72,7 +73,7 @@ bool CMPPathFollowingManager::RegisterPath(EntityId pathEntityId)
 		{
 			if(iter->pathId == pathEntityId)
 			{
-				CRY_ASSERT_MESSAGE(iter == m_Paths.end(), "CMPPathFollowingManager::RegisterPath - this path has already been registered!");
+				CRY_ASSERT(iter == m_Paths.end(), "CMPPathFollowingManager::RegisterPath - this path has already been registered!");
 				break;
 			}
 			++iter;
@@ -123,7 +124,7 @@ void CMPPathFollowingManager::RegisterListener(EntityId listenToEntityId, IMPPat
 {
 #ifndef _RELEASE
 	PathListeners::iterator iter = m_PathListeners.find(listenToEntityId);
-	CRY_ASSERT_MESSAGE(iter == m_PathListeners.end(), "CMPPathFollowingManager::RegisterListener - this listener has already been registered!");
+	CRY_ASSERT(iter == m_PathListeners.end(), "CMPPathFollowingManager::RegisterListener - this listener has already been registered!");
 #endif
 
 	m_PathListeners[listenToEntityId] = pListener;
@@ -138,7 +139,7 @@ void CMPPathFollowingManager::UnregisterListener(EntityId listenToEntityId)
 		return;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "CMPPathFollowingManager::UnregisterListener - tried to unregister listener but listener not found");
+	CRY_ASSERT(false, "CMPPathFollowingManager::UnregisterListener - tried to unregister listener but listener not found");
 }
 
 const CWaypointPath* CMPPathFollowingManager::GetPath(EntityId pathEntityId, IMPPathFollower::MPPathIndex& outIndex) const

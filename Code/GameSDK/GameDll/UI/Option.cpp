@@ -9,6 +9,7 @@
 #include "ScreenResolution.h"
 
 #include "UI/WarningsManager.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -168,7 +169,7 @@ void CCVarOption::InitializeFromProfile()
 		}
 		else
 		{
-			var->Set(m_currentValue.c_str());
+			var->SetFromString(m_currentValue.c_str());
 		}
 	}
 	else if(var)
@@ -217,7 +218,7 @@ void CCVarOption::Set(const char* param)
 		// Marcio: Let's not override *.cfg files if we're in Editor mode!
 
 		if (var != NULL && (!gEnv->IsEditor() || ((var->GetFlags() & VF_WASINCONFIG) == 0)))
-			var->Set(m_currentValue.c_str());
+			var->SetFromString(m_currentValue.c_str());
 	}
 }
 
@@ -227,7 +228,7 @@ void CCVarOption::GetWriteToConfigString(CryFixedStringT<128> &outString, ICVar*
 	if(!param || !pCVar)
 		return;
 
-	if(pCVar->GetType()==CVAR_STRING)
+	if(pCVar->GetType() == ECVarType::String)
 	{
 		outString.Format("%s = \"%s\"\r\n", m_cVar.c_str(), param);
 	}
@@ -470,7 +471,7 @@ void CSysSpecOption::InitializeFromProfile()
 			m_currentValue.Format("%d", pSysSpecCVar->GetIVal());//reset to what was specified by cfg's
 		}
 		ScopedConsoleLoadConfigType consoleType(GetISystem()->GetIConsole(), eLoadConfigGame);
-		var->Set(m_currentValue.c_str());
+		var->SetFromString(m_currentValue.c_str());
 	}
 }
 
@@ -535,7 +536,7 @@ void CSysSpecAllOption::InitializeFromProfile()
 			if(m_currentProfile)
 			{
 				m_currentProfile->GetAttribute(m_currentName, m_currentValue);
-				pCVar->Set(m_currentValue.c_str());
+				pCVar->SetFromString(m_currentValue.c_str());
 			}
 		}
 	}

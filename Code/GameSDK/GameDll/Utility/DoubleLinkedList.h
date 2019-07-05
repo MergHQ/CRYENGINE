@@ -57,7 +57,7 @@ class CDoubleLinkedElement
 		void							InsertAfter(
 											CDoubleLinkedElement	*inLinkMe)
 										{
-											CRY_ASSERT_MESSAGE(!inLinkMe->IsInList(),"Adding an element to a linked list that is already in a linked list - this will corrupt the lists - Unlink() before adding");
+											CRY_ASSERT(!inLinkMe->IsInList(),"Adding an element to a linked list that is already in a linked list - this will corrupt the lists - Unlink() before adding");
 
 											inLinkMe->m_next=m_next;
 											m_next->m_prev=inLinkMe;
@@ -68,10 +68,12 @@ class CDoubleLinkedElement
 
 		bool							IsInList() const
 										{
-											bool		linkPrev=(m_prev==this);
-											bool		linkNext=(m_next==this);
+											bool linkPrev=(m_prev==this);
 
-											CRY_ASSERT_MESSAGE(linkPrev==linkNext,"Linked list element in inconsistant state");
+#if defined(USE_CRY_ASSERT)
+											bool linkNext=(m_next==this);
+											CRY_ASSERT(linkPrev==linkNext,"Linked list element in inconsistant state");
+#endif
 
 											return !linkPrev;
 										}

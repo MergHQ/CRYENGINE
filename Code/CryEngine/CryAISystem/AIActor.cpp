@@ -11,7 +11,8 @@
 #include "Formation/FormationManager.h"
 #include <CryCore/CryCrc32.h>
 #include <CryEntitySystem/IEntity.h>
-
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryAISystem/BehaviorTree/BehaviorTreeDefines.h>
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/VisionMapTypes.h>
 
@@ -30,12 +31,22 @@ CActorCollisionAvoidance::CActorCollisionAvoidance(CAIActor* pActor)
 	: m_pActor(pActor)
 	, m_radiusIncrement(0.0f)
 {
-	gAIEnv.pCollisionAvoidanceSystem->RegisterAgent(this);
+	const bool agentRegisteredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
+	if (!agentRegisteredSuccessfully)
+	{
+		CRY_ASSERT(agentRegisteredSuccessfully, "Actor '%s' could not be registered to the Collision Avoidance System.", pActor->GetName());
+		gEnv->pLog->LogWarning("Actor '%s' could not be registered to the Collision Avoidance System.", pActor->GetName());
+	}
 }
 
 CActorCollisionAvoidance::~CActorCollisionAvoidance()
 {
-	gAIEnv.pCollisionAvoidanceSystem->UnregisterAgent(this);
+    const bool agentUnregisteredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
+	if (!agentUnregisteredSuccessfully)
+	{
+		CRY_ASSERT(agentUnregisteredSuccessfully, "Actor '%s' could not be unregistered from the Collision Avoidance System.", m_pActor->GetName());
+		gEnv->pLog->LogWarning("Actor '%s' could not be unregistered from the Collision Avoidance System.", m_pActor->GetName());
+	}
 }
 
 void CActorCollisionAvoidance::Reset()
@@ -62,71 +73,83 @@ const INavMeshQueryFilter* CActorCollisionAvoidance::GetNavigationQueryFilter() 
 	return nullptr;
 }
 
-const char* CActorCollisionAvoidance::GetName() const
+const char* CActorCollisionAvoidance::GetDebugName() const
 {
 	return m_pActor->GetName();
 }
 
-ICollisionAvoidanceAgent::TreatType CActorCollisionAvoidance::GetTreatmentType() const
+Cry::AI::CollisionAvoidance::ETreatType CActorCollisionAvoidance::GetTreatmentDuringUpdateTick(Cry::AI::CollisionAvoidance::SAgentParams& outAgent, Cry::AI::CollisionAvoidance::SObstacleParams& outObstacle) const
 {
 	if (!m_pActor->IsEnabled() || !m_pActor->GetMovementAbility().collisionAvoidanceParticipation)
-		return ICollisionAvoidanceAgent::TreatType::None;
+		return Cry::AI::CollisionAvoidance::ETreatType::None;
+
+    Cry::AI::CollisionAvoidance::ETreatType treatType = Cry::AI::CollisionAvoidance::ETreatType::None;
 
 	uint16 aiType = m_pActor->GetAIType();
 	if (aiType == AIOBJECT_PLAYER)
 	{
 		// player is always treated only as obstacle
-		return ICollisionAvoidanceAgent::TreatType::Obstacle;
+		treatType = Cry::AI::CollisionAvoidance::ETreatType::Obstacle;
 	}
-
-	if ((aiType == AIOBJECT_ALIENTICK) || (aiType == AIOBJECT_ACTOR) || (aiType == AIOBJECT_INFECTED))
+	else if ((aiType == AIOBJECT_ALIENTICK) || (aiType == AIOBJECT_ACTOR) || (aiType == AIOBJECT_INFECTED))
 	{
-		const float targetCutoff = gAIEnv.CVars.CollisionAvoidanceTargetCutoffRange;
-		const float pathEndCutoff = gAIEnv.CVars.CollisionAvoidancePathEndCutoffRange;
-		const float smartObjectCutoff = gAIEnv.CVars.CollisionAvoidanceSmartObjectCutoffRange;
+		const float targetCutoff = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceTargetCutoffRange;
+		const float pathEndCutoff = gAIEnv.CVars.collisionAvoidance.CollisionAvoidancePathEndCutoffRange;
+		const float smartObjectCutoff = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceSmartObjectCutoffRange;
 
-		CPipeUser* pPipeUser = m_pActor->CastToCPipeUser();
+		const CPipeUser* pPipeUser = m_pActor->CastToCPipeUser();
 
-		bool bIsMoving = (fabs_tpl(m_pActor->m_State.fDesiredSpeed) > 0.0001f);
-		bool bCuttoff = (m_pActor->m_State.fDistanceFromTarget < targetCutoff)
+		const bool bIsMoving = (fabs_tpl(m_pActor->m_State.fDesiredSpeed) > 0.0001f);
+		const bool bCuttoff = (m_pActor->m_State.fDistanceFromTarget < targetCutoff)
 			|| (m_pActor->m_State.fDistanceToPathEnd < pathEndCutoff)
 			|| (pPipeUser && pPipeUser->GetPendingSmartObjectID() && (m_pActor->m_State.fDistanceToPathEnd < smartObjectCutoff));
 
-		return (bIsMoving && !bCuttoff) ? ICollisionAvoidanceAgent::TreatType::Agent : ICollisionAvoidanceAgent::TreatType::Obstacle;
+		treatType = (bIsMoving && !bCuttoff) ? Cry::AI::CollisionAvoidance::ETreatType::Agent : Cry::AI::CollisionAvoidance::ETreatType::Obstacle;
 	}
-	return ICollisionAvoidanceAgent::TreatType::None;
+
+	static_assert(int(Cry::AI::CollisionAvoidance::ETreatType::Count) == 3, "Unexpected enum count!");
+	switch (treatType)
+	{
+	case Cry::AI::CollisionAvoidance::ETreatType::Agent:
+	{
+		const float forcedSpeed = gAIEnv.CVars.collisionAvoidance.DebugCollisionAvoidanceForceSpeed;
+		const bool bUseForcedSpeed = fabs_tpl(forcedSpeed) > 0.0001f;
+
+		float minSpeed;
+		float maxSpeed;
+		float normalSpeed;
+
+		m_pActor->GetMovementSpeedRange(m_pActor->m_State.fMovementUrgency, false, normalSpeed, minSpeed, maxSpeed);
+
+		outAgent.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceAgentExtraFat;
+		if (gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceEnableRadiusIncrement)
+			outAgent.radius += m_radiusIncrement;
+		outAgent.height = m_pActor->GetBodyInfo().stanceSize.GetSize().z;
+		outAgent.maxSpeed = min(m_pActor->m_State.fDesiredSpeed, maxSpeed);
+		outAgent.maxAcceleration = min(outAgent.maxAcceleration, m_pActor->m_movementAbility.maxAccel);
+		outAgent.currentLocation = m_pActor->GetPhysicsPos();
+		outAgent.currentVelocity = m_pActor->GetVelocity();
+
+		outAgent.desiredVelocity = bUseForcedSpeed ? m_pActor->GetMoveDir() * forcedSpeed : m_pActor->m_State.vMoveDir * m_pActor->m_State.fDesiredSpeed;
+		break;
+	}
+	case Cry::AI::CollisionAvoidance::ETreatType::Obstacle:
+	{
+		outObstacle.currentLocation = m_pActor->GetPhysicsPos();
+		outObstacle.currentVelocity = m_pActor->GetVelocity();
+		outObstacle.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceAgentExtraFat;
+		outObstacle.height = m_pActor->GetBodyInfo().stanceSize.GetSize().z;
+		break;
+	}
+	case Cry::AI::CollisionAvoidance::ETreatType::None:
+		break;
+	default:
+		CRY_ASSERT(false);
+		break;
+	}
+
+	return treatType;
 }
-
-void CActorCollisionAvoidance::InitializeCollisionAgent(CCollisionAvoidanceSystem::SAgentParams& agent) const
-{
-	const float forcedSpeed = gAIEnv.CVars.DebugCollisionAvoidanceForceSpeed;
-	const bool bUseForcedSpeed = fabs_tpl(forcedSpeed) > 0.0001f;
-
-	float minSpeed;
-	float maxSpeed;
-	float normalSpeed;
-
-	m_pActor->GetMovementSpeedRange(m_pActor->m_State.fMovementUrgency, false, normalSpeed, minSpeed, maxSpeed);
-
-	agent.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
-	if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
-		agent.radius += m_radiusIncrement;
-	agent.maxSpeed = min(m_pActor->m_State.fDesiredSpeed, maxSpeed);
-	agent.maxAcceleration = min(agent.maxAcceleration, m_pActor->m_movementAbility.maxAccel);
-	agent.currentLocation = m_pActor->GetPhysicsPos();
-	agent.currentVelocity = Vec2(m_pActor->GetVelocity());
-
-	agent.desiredVelocity = bUseForcedSpeed ? Vec2(m_pActor->GetMoveDir() * forcedSpeed) : Vec2(m_pActor->m_State.vMoveDir * m_pActor->m_State.fDesiredSpeed);
-	agent.currentLookDirection = Vec2(agent.desiredVelocity);
-}
-
-void CActorCollisionAvoidance::InitializeCollisionObstacle(CCollisionAvoidanceSystem::SObstacleParams& obstacle) const
-{
-	obstacle.currentLocation = m_pActor->GetPhysicsPos();
-	obstacle.currentVelocity = Vec2(m_pActor->GetVelocity());
-	obstacle.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
-}
-	
 
 void CActorCollisionAvoidance::ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime)
 {
@@ -162,19 +185,19 @@ void CActorCollisionAvoidance::ApplyComputedVelocity(const Vec2& avoidanceVeloci
 		m_pActor->m_State.vMoveTarget.zero();
 	}
 
-	if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
+	if (gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceEnableRadiusIncrement)
 	{
 		if (m_pActor->m_State.fDesiredSpeed > 0.5f)
 		{
 			m_radiusIncrement = min(
-				m_radiusIncrement + (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.CollisionAvoidanceRadiusIncrementIncreaseRate * updateTime),
+				m_radiusIncrement + (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceRadiusIncrementIncreaseRate * updateTime),
 				m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement
 			);
 		}
 		else
 		{
 			m_radiusIncrement = max(
-				m_radiusIncrement - (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.CollisionAvoidanceRadiusIncrementDecreaseRate * updateTime),
+				m_radiusIncrement - (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceRadiusIncrementDecreaseRate * updateTime),
 				0.0f
 			);
 		}
@@ -301,7 +324,7 @@ void CAIActor::ResetModularBehaviorTree(EObjectResetType type)
 
 					if (properties->GetValue("esModularBehaviorTree", behaviorTreeName) && behaviorTreeName && behaviorTreeName[0])
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Modular Behavior Tree Runtime");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Modular Behavior Tree Runtime");
 
 						StartBehaviorTree(behaviorTreeName);
 					}
@@ -344,7 +367,7 @@ void CAIActor::SetPos(const Vec3& pos, const Vec3& dirFwrd)
 
 			vEyeDir = bodyInfo.GetEyeDir();
 
-			assert(vEyeDir.IsUnit());
+			CRY_ASSERT(vEyeDir.IsUnit(), "vEyeDir must be unit vector! vEyeDir = %f, %f, %f", vEyeDir.x, vEyeDir.y, vEyeDir.z);
 
 			SetViewDir(vEyeDir);
 			SetBodyDir(bodyInfo.GetBodyDir());
@@ -505,16 +528,16 @@ void CAIActor::OnObjectRemoved(CAIObject* pObject)
 	{
 		if (EntityId removedEntityID = pObject->GetEntityID())
 		{
-			DynArray<AISIGNAL>::iterator it = m_State.vSignals.begin();
-			DynArray<AISIGNAL>::iterator end = m_State.vSignals.end();
+			DynArray<AISignals::SignalSharedPtr>::iterator it = m_State.vSignals.begin();
+			DynArray<AISignals::SignalSharedPtr>::iterator end = m_State.vSignals.end();
 
 			for (; it != end; )
 			{
-				AISIGNAL& curSignal = *it;
+				AISignals::SignalSharedPtr curSignal = *it;
 
-				if (curSignal.senderID == removedEntityID)
+				if (curSignal->GetSenderID() == removedEntityID)
 				{
-					delete static_cast<AISignalExtraData*>(curSignal.pEData);
+					delete static_cast<AISignals::AISignalExtraData*>(curSignal->GetExtraData());
 					it = m_State.vSignals.erase(it);
 					end = m_State.vSignals.end();
 				}
@@ -804,29 +827,21 @@ void CAIActor::UpdateDamageParts(DamagePartVector& parts)
 	}
 }
 
-void CAIActor::OnAIHandlerSentSignal(const char* signalText, uint32 crc)
+void CAIActor::OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal)
 {
-	IF_UNLIKELY (crc == 0)
-	{
-		crc = CCrc32::Compute(signalText);
-	}
-	else
-	{
-		assert(crc == CCrc32::Compute(signalText));
-	}
+	CRY_ASSERT(!pSignal->GetSignalDescription().IsNone());
 
-	if (gAIEnv.CVars.LogSignals)
-		gEnv->pLog->Log("OnAIHandlerSentSignal: '%s' [%s].", signalText, GetName());
+	if (gAIEnv.CVars.LegacyLogSignals)
+		gEnv->pLog->Log("OnAIHandlerSentSignal: '%s' [%s].", pSignal->GetSignalDescription().GetName(), GetName());
 
 	if (IsRunningBehaviorTree())
 	{
 		BehaviorTree::Event event(
-		  crc
-#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
-		  , signalText
+			pSignal->GetSignalDescription().GetCrc()
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
+			, pSignal->GetSignalDescription().GetName()
 #endif
-		  );
-
+			);
 		GetAISystem()->GetIBehaviorTreeManager()->HandleEvent(GetEntityID(), event);
 	}
 }
@@ -835,115 +850,101 @@ void CAIActor::OnAIHandlerSentSignal(const char* signalText, uint32 crc)
 // nSignalID = 9 use the signal only to notify wait goal operations
 //
 //------------------------------------------------------------------------------------------------------------------------
-void CAIActor::SetSignal(int nSignalID, const char* szText, IEntity* pSender, IAISignalExtraData* pData, uint32 crcCode)
+void CAIActor::SetSignal(const AISignals::SignalSharedPtr& pSignal)
 {
 	CCCPOINT(SetSignal);
 
-	// Ensure we delete the pData object if we early out
+	AISignals::IAISignalExtraData* pData = pSignal->GetExtraData();
+
+	// This deletes the passed pSignal extra data if it wasn't set to NULL
 	struct DeleteBeforeReturning
 	{
-		IAISignalExtraData** _p;
-		DeleteBeforeReturning(IAISignalExtraData** p) : _p(p) {}
+		const AISignals::SignalSharedPtr& _pSignal;
+		AISignals::IAISignalExtraData** _pData;
+		DeleteBeforeReturning(const AISignals::SignalSharedPtr& pSignal, AISignals::IAISignalExtraData** pData) : _pSignal(pSignal), _pData(pData) {}
 		~DeleteBeforeReturning()
 		{
-			if (*_p)
-				GetAISystem()->FreeSignalExtraData((AISignalExtraData*)*_p);
+			if (*_pData)
+			{
+				GetAISystem()->FreeSignalExtraData(_pSignal->GetExtraData());
+				_pSignal->SetExtraData(nullptr);
+			}
 		}
-	} autoDelete(&pData);
+	} autoDelete(pSignal, &pData);
 
-#ifdef _DEBUG
-	if (strlen(szText) + 1 > sizeof(((AISIGNAL*)0)->strText))
-	{
-		AIWarning("####>CAIObject::SetSignal SIGNAL STRING IS TOO LONG for <%s> :: %s  sz-> %" PRISIZE_T, GetName(), szText, strlen(szText));
-		//		AILogEvent("####>CAIObject::SetSignal <%s> :: %s  sz-> %d",m_sName.c_str(),szText,strlen(szText));
-	}
-#endif // _DEBUG
-
-	// always process signals sent only to notify wait goal operation
-	if (crcCode == 0)
-		crcCode = CCrc32::Compute(szText);
-
-	// (MATT) This is the only place that the CRCs are used and their implementation is very clumsy {2008/08/09}
-	if (nSignalID != AISIGNAL_NOTIFY_ONLY)
+	if (pSignal->GetNSignal() != AISIGNAL_NOTIFY_ONLY)
 	{
 #ifdef _DEBUG
-		if (nSignalID != AISIGNAL_ALLOW_DUPLICATES)
+		if (pSignal->GetNSignal() != AISIGNAL_ALLOW_DUPLICATES)
 		{
-			DynArray<AISIGNAL>::iterator ai;
+			DynArray<AISignals::SignalSharedPtr>::iterator ai;
 			for (ai = m_State.vSignals.begin(); ai != m_State.vSignals.end(); ++ai)
 			{
-				//	if ((*ai).strText == szText)
-				//if (!stricmp((*ai).strText,szText))
-
-				if (!stricmp((*ai).strText, szText) && !(*ai).Compare(crcCode))
+				AISignals::SignalSharedPtr pAiSignal = *ai;
+				if (!stricmp(pAiSignal->GetSignalDescription().GetName(), pSignal->GetSignalDescription().GetName()) && pAiSignal->GetSignalDescription().GetCrc() != pSignal->GetSignalDescription().GetCrc())
 				{
-					AIWarning("Hash values are different, but strings are identical! %s - %s ", (*ai).strText, szText);
+					AIWarning("Hash values are different, but strings are identical! %s - %s ", pAiSignal->GetSignalDescription().GetName(), pSignal->GetSignalDescription().GetName());
 				}
 
-				if (stricmp((*ai).strText, szText) && (*ai).Compare(crcCode))
+				if (stricmp(pAiSignal->GetSignalDescription().GetName(), pSignal->GetSignalDescription().GetName()) && pAiSignal->GetSignalDescription().GetCrc() == pSignal->GetSignalDescription().GetCrc())
 				{
-					AIWarning("Please report to alexey@crytek.de! Hash values are identical, but strings are different! %s - %s ", (*ai).strText, szText);
+					AIWarning("Please report to alexey@crytek.de! Hash values are identical, but strings are different! %s - %s ", pAiSignal->GetSignalDescription().GetName(), pSignal->GetSignalDescription().GetName());
 				}
 			}
 		}
 #endif // _DEBUG
 
-		if (!m_bEnabled && nSignalID != AISIGNAL_INCLUDE_DISABLED)
+		if (!m_bEnabled && pSignal->GetNSignal() != AISIGNAL_INCLUDE_DISABLED)
 		{
 			// (Kevin) This seems like an odd assumption to be making. INCLUDE_DISABLED needs to be a bit or a separate passed-in value.
 			//	WarFace compatibility cannot have duplicate signals sent to disabled AI. (08/14/2009)
-			if (gAIEnv.configuration.eCompatibilityMode == ECCM_WARFACE || nSignalID != AISIGNAL_ALLOW_DUPLICATES)
+			if (gAIEnv.configuration.eCompatibilityMode == ECCM_WARFACE || pSignal->GetNSignal() != AISIGNAL_ALLOW_DUPLICATES)
 			{
-				AILogComment("AIActor %p %s dropped signal \'%s\' due to being disabled", this, GetName(), szText);
+				AILogComment("AIActor %p %s dropped signal \'%s\' due to being disabled", this, GetName(), pSignal->GetSignalDescription().GetName());
 				return;
 			}
 		}
 	}
 
 #ifdef CRYAISYSTEM_DEBUG
-	if (nSignalID != AISIGNAL_RECEIVED_PREV_UPDATE)// received last update
+	if (pSignal->GetNSignal() != AISIGNAL_RECEIVED_PREV_UPDATE)// received last update
 	{
-		IAIRecordable::RecorderEventData recorderEventData(szText);
+		IAIRecordable::RecorderEventData recorderEventData(pSignal->GetSignalDescription().GetName());
 		RecordEvent(IAIRecordable::E_SIGNALRECIEVED, &recorderEventData);
-		GetAISystem()->Record(this, IAIRecordable::E_SIGNALRECIEVED, szText);
+		GetAISystem()->Record(this, IAIRecordable::E_SIGNALRECIEVED, pSignal->GetSignalDescription().GetName());
 	}
 #endif
 
 	// don't let notify signals enter the queue
-	if (nSignalID == AISIGNAL_NOTIFY_ONLY)
+	if (pSignal->GetNSignal() == AISIGNAL_NOTIFY_ONLY)
 	{
-		OnAIHandlerSentSignal(szText, crcCode); // still a polymorphic call that ends up in the most derived class (which is intended)
+		OnAIHandlerSentSignal(pSignal); // still a polymorphic call that ends up in the most derived class (which is intended)
 		return;
 	}
-
-	AISIGNAL signal;
-	signal.nSignal = nSignalID;
-	cry_strcpy(signal.strText, szText);
-	signal.m_nCrcText = crcCode;
-	signal.senderID = pSender ? pSender->GetId() : 0;
-	signal.pEData = pData;
 
 	// If all our early-outs passed and it wasn't just a "notify" then actually enter the signal into the stack!
 
 	// cppcheck-suppress uselessAssignmentPtrArg
-	pData = NULL; // set to NULL to prevent autodeletion of pData on return
+	pData = nullptr; // set to NULL to prevent autodeletion of pData on return
 
 	// need to make sure constructor signal is always at the back - to be processed first
+	
 	if (!m_State.vSignals.empty())
 	{
-		AISIGNAL backSignal(m_State.vSignals.back());
+		const AISignals::SignalSharedPtr backSignal(m_State.vSignals.back());
 
-		if (!stricmp("Constructor", backSignal.strText))
+		if (!stricmp(backSignal->GetSignalDescription().GetName(), "Constructor"))
 		{
 			m_State.vSignals.pop_back();
-			m_State.vSignals.push_back(signal);
+			m_State.vSignals.push_back(pSignal);
 			m_State.vSignals.push_back(backSignal);
 		}
 		else
-			m_State.vSignals.push_back(signal);
+			m_State.vSignals.push_back(pSignal);
 	}
 	else
-		m_State.vSignals.push_back(signal);
+		m_State.vSignals.push_back(pSignal);
+	
 }
 
 //====================================================================
@@ -1362,11 +1363,11 @@ void CAIActor::Serialize(TSerialize ser)
 void CAIActor::SetAttentionTarget(CWeakRef<CAIObject> refTarget)
 {
 	CCCPOINT(CAIActor_SetAttentionTarget);
-	CAIObject* pAttTarget = refTarget.GetAIObject();
 
 	m_refAttentionTarget = refTarget;
 
 #ifdef CRYAISYSTEM_DEBUG
+	CAIObject* pAttTarget = refTarget.GetAIObject();
 	RecorderEventData recorderEventData(pAttTarget ? pAttTarget->GetName() : "<none>");
 	RecordEvent(IAIRecordable::E_ATTENTIONTARGET, &recorderEventData);
 #endif
@@ -1656,7 +1657,7 @@ void CAIActor::GetPhysicalSkipEntities(PhysSkipList& skipList) const
 	   }
 	   }*/
 
-	CRY_ASSERT_MESSAGE(skipList.size() <= 5, "Too many physical skipped entities determined. See SRwiRequest definition.");
+	CRY_ASSERT(skipList.size() <= 5, "Too many physical skipped entities determined. See SRwiRequest definition.");
 }
 
 void CAIActor::UpdateObserverSkipList()
@@ -1963,7 +1964,7 @@ void CAIActor::HandleVisualStimulus(SAIEVENT* pAIEvent)
 
 	const float fGlobalVisualPerceptionScale = gEnv->pAISystem->GetGlobalVisualScale(this);
 	const float fVisualPerceptionScale = m_Parameters.m_PerceptionParams.perceptionScale.visual * fGlobalVisualPerceptionScale;
-	if (gAIEnv.CVars.IgnoreVisualStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fVisualPerceptionScale <= 0.0f)
+	if (gAIEnv.CVars.legacyPerception.IgnoreVisualStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fVisualPerceptionScale <= 0.0f)
 		return;
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
@@ -2005,7 +2006,7 @@ void CAIActor::HandleSoundEvent(SAIEVENT* pAIEvent)
 
 	const float fGlobalAudioPerceptionScale = gEnv->pAISystem->GetGlobalAudioScale(this);
 	const float fAudioPerceptionScale = m_Parameters.m_PerceptionParams.perceptionScale.audio * fGlobalAudioPerceptionScale;
-	if (gAIEnv.CVars.IgnoreSoundStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fAudioPerceptionScale <= 0.0f)
+	if (gAIEnv.CVars.legacyPerception.IgnoreSoundStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fAudioPerceptionScale <= 0.0f)
 		return;
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
@@ -2047,16 +2048,16 @@ void CAIActor::HandleBulletRain(SAIEVENT* pAIEvent)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	if (gAIEnv.CVars.IgnoreBulletRainStimulus || m_Parameters.m_bAiIgnoreFgNode)
+	if (gAIEnv.CVars.legacyPerception.IgnoreBulletRainStimulus || m_Parameters.m_bAiIgnoreFgNode)
 		return;
 
-	IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 	pData->point = pAIEvent->vPosition;
 	pData->point2 = pAIEvent->vStimPos;
 	pData->nID = pAIEvent->sourceId;
 	pData->fValue = pAIEvent->fThreat; // pressureMultiplier
 
-	SetSignal(0, "OnBulletRain", GetEntity(), pData, gAIEnv.SignalCRCs.m_nOnBulletRain);
+	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnBulletRain(), GetEntityID(), pData));
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
 		gAIEnv.pTargetTrackManager->HandleStimulusFromAIEvent(GetAIObjectID(), pAIEvent, TargetTrackHelpers::eEST_BulletRain);
@@ -2089,8 +2090,6 @@ void CAIActor::GetMovementSpeedRange(float fUrgency, bool bSlowForStrafe, float&
 {
 	AgentMovementSpeeds::EAgentMovementUrgency urgency;
 	AgentMovementSpeeds::EAgentMovementStance stance;
-
-	bool vehicle = GetType() == AIOBJECT_VEHICLE;
 
 	if (fUrgency < 0.5f * (AISPEED_SLOW + AISPEED_WALK))
 		urgency = AgentMovementSpeeds::AMU_SLOW;
@@ -2405,8 +2404,9 @@ void CAIActor::CoordinationEntered(const char* signalName)
 	++m_activeCoordinationCount;
 	assert(m_activeCoordinationCount < 10);
 
-	SetSignal(AISIGNAL_ALLOW_DUPLICATES, signalName);
+	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_ALLOW_DUPLICATES, signalName));
 }
+
 
 void CAIActor::CoordinationExited(const char* signalName)
 {
@@ -2420,7 +2420,9 @@ void CAIActor::CoordinationExited(const char* signalName)
 	}
 
 	if (m_activeCoordinationCount == 0)
-		SetSignal(AISIGNAL_ALLOW_DUPLICATES, signalName);
+	{
+		SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_ALLOW_DUPLICATES, signalName));
+	}
 }
 
 bool CAIActor::GetInitialPosition(Vec3& initialPosition) const

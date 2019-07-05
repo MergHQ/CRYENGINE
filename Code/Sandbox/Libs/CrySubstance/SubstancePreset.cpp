@@ -92,7 +92,7 @@ bool ShouldSkipInput(SubstanceAir::string name)
 
 void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IArchive& ar)
 {
-	for each (SubstanceAir::InputInstanceBase* var in inputs)
+	for (SubstanceAir::InputInstanceBase* var : inputs)
 	{
 		const SubstanceAir::InputDescBase& desc = var->mDesc;
 		if (ShouldSkipInput(desc.mIdentifier))
@@ -117,10 +117,7 @@ void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IAr
 		}
 		else if (desc.mIdentifier == "$outputsize")
 		{
-
 			SubstanceAir::InputInstanceInt2* inst = static_cast<SubstanceAir::InputInstanceInt2*>(var);
-			const SubstanceAir::InputDescInt2& tDesc = inst->getDesc();
-
 	
 			if (ar.isEdit())
 			{
@@ -202,10 +199,16 @@ void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IAr
 				{
 					ar(Serialization::Range(value, 0.f, 1.f), desc.mIdentifier.c_str(), desc.mLabel.c_str());
 				}
-				else {
+				else if (tDesc.mGuiWidget == SubstanceAir::Input_Slider)
+				{
+					// mMinValue and mMaxValue are only relevant if widget is Input_Slider
 					ar(Serialization::Range(value, tDesc.mMinValue, tDesc.mMaxValue), desc.mIdentifier.c_str(), desc.mLabel.c_str());
-
 				}
+				else
+				{
+					ar(value, desc.mIdentifier.c_str(), desc.mLabel.c_str());
+				}
+
 				if (ar.isInput())
 				{
 					inst->setValue(value);
@@ -285,7 +288,7 @@ void CSubstancePreset::SSerializer::SInputCategory::Serialize(Serialization::IAr
 				{
 					Serialization::StringList stringList;
 					SubstanceAir::string current = "";
-					for each (auto var in tDesc.mEnumValues)
+					for (auto var : tDesc.mEnumValues)
 					{
 						if (var.first == value)
 							current = var.second;
@@ -384,7 +387,7 @@ void CSubstancePreset::SSerializer::Serialize(Serialization::IArchive& ar)
 		SubstanceAir::GraphInstance::Inputs instanceInputs = preset->m_pGraphInstance->getInputs();
 		SSerializer::SInputCategory root(preset, "", "");
 		categories.emplace("", std::move(root));
-		for each (SubstanceAir::InputInstanceBase* var in instanceInputs)
+		for (SubstanceAir::InputInstanceBase* var : instanceInputs)
 		{
 			if (ShouldSkipInput(var->mDesc.mIdentifier))
 			{
@@ -610,7 +613,7 @@ void CSubstancePreset::LoadGraphInstance()
 		return;
 	}
 
-	for each (SubstanceAir::InputInstanceBase* inputInstance in m_pGraphInstance->getInputs())
+	for (SubstanceAir::InputInstanceBase* inputInstance : m_pGraphInstance->getInputs())
 	{
 		if (inputInstance->mDesc.mIdentifier == "$outputsize")
 		{
@@ -618,14 +621,12 @@ void CSubstancePreset::LoadGraphInstance()
 
 		}
 		else if (inputInstance->mDesc.mType == Substance_IType_Image)
-		{			
-			SubstanceAir::InputInstanceImage* inst = static_cast<SubstanceAir::InputInstanceImage*>(inputInstance);
-			const SubstanceAir::InputDescImage& tDesc = inst->getDesc();
+		{
 			m_usedImages[inputInstance->mDesc.mUid] = string();
 		}
 	}
 
-	for each (SubstanceAir::OutputInstance* outputInstance in m_pGraphInstance->getOutputs())
+	for (SubstanceAir::OutputInstance* outputInstance : m_pGraphInstance->getOutputs())
 	{
 		string nameLow(outputInstance->mDesc.mIdentifier.c_str());
 		nameLow.MakeLower();

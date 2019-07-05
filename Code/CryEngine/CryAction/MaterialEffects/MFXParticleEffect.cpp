@@ -53,18 +53,28 @@ void CMFXParticleEffect::Execute(const SMFXRunTimeEffectParams& params)
 
 	Vec3 pos = params.pos;
 	Vec3 dir = ZERO;
-	Vec3 inDir = params.dir[0];
-	Vec3 reverso = inDir * -1.0f;
 	switch (m_particleParams.directionType)
 	{
 	case SMFXParticleParams::eDT_Normal:
 		dir = params.normal;
 		break;
 	case SMFXParticleParams::eDT_Ricochet:
-		dir = reverso.GetRotated(params.normal, gf_PI).normalize();
+		dir = (-params.dir[0]).GetRotated(params.normal, gf_PI).normalize();
 		break;
 	case SMFXParticleParams::eDT_ProjectileDir:
-		dir = -inDir;
+		dir = -params.dir[0];
+		break;
+	case SMFXParticleParams::eDT_ObjectDir:
+		dir = params.objectDir;
+		break;
+	case SMFXParticleParams::eDT_ObjectVelocityDir3D:
+		dir = params.objectVelocityDir;
+		break;
+	case SMFXParticleParams::eDT_ObjectVelocityDir2D:
+		dir = Vec2(params.objectVelocityDir);
+		break;
+	case SMFXParticleParams::eDT_JointDir:
+		dir = params.jointDir;
 		break;
 	default:
 		dir = params.normal;
@@ -272,6 +282,7 @@ void CMFXParticleEffect::LoadParamsFromXml(const XmlNodeRef& paramsNode)
 		{
 			SMFXParticleEntry entry;
 			entry.name = child->getContent();
+			entry.name.Trim();
 
 			if (child->haveAttr("userdata"))
 				entry.userdata = child->getAttr("userdata");
@@ -337,6 +348,22 @@ void CMFXParticleEffect::LoadParamsFromXml(const XmlNodeRef& paramsNode)
 		{
 			directionType = SMFXParticleParams::eDT_ProjectileDir;
 		}
+		else if (!strcmp(val, "ObjectDir"))
+		{
+			directionType = SMFXParticleParams::eDT_ObjectDir;
+		}
+		else if (!strcmp(val, "ObjectVelocityDir3D"))
+		{
+			directionType = SMFXParticleParams::eDT_ObjectVelocityDir3D;
+		}
+		else if (!strcmp(val, "ObjectVelocityDir2D"))
+		{
+			directionType = SMFXParticleParams::eDT_ObjectVelocityDir2D;
+		}
+		else if (!strcmp(val, "JointDir"))
+		{
+			directionType = SMFXParticleParams::eDT_JointDir;
+		}
 	}
 	m_particleParams.directionType = directionType;
 
@@ -369,7 +396,7 @@ void CMFXParticleEffect::GetResources(SMFXResourceList& resourceList) const
 
 void CMFXParticleEffect::PreLoadAssets()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SMFXParticleEntries::iterator it = m_particleParams.m_entries.begin();
 	while (it != m_particleParams.m_entries.end())

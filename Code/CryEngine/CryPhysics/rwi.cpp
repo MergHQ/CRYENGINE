@@ -167,10 +167,8 @@ struct entity_grid_checker {
 		}
 		//fetch some memory references to avoid reloads
 		primitives::grid& RESTRICT_REFERENCE entgrid = *pgrid;
-		const Vec3 entgrid_origin			= entgrid.origin;
 		const int icellX = icell.x, icellY = icell.y;
 		const Vec2 entgrid_step	= entgrid.step;
-		const Vec2 entgrid_stepr	= entgrid.stepr;
 		pe_entgrid pEntGrid = pgrid->cells;
 		pe_gridthunk *const __restrict pgthunks = pWorld->m_gthunks;
 		const int gridIdx = entgrid.getcell_safe(icellX,icellY);
@@ -185,6 +183,7 @@ struct entity_grid_checker {
 
 		for(; ithunk; pthunk=pgthunks+(ithunk=ithunk_next)) {
       const pe_gridthunk& thunk = *pthunk;
+			coord_block *coords;
       
 			ithunk_next = thunk.inext;
 			ithunk_prev = ithunk;
@@ -217,7 +216,8 @@ struct entity_grid_checker {
 					if (nEnts>=szList)
 						szList = pWorld->ReallocTmpEntList(pTmpEntList,iCaller,szList+1024); 
 					nEntsChecked++;	
-					CPhysicalEntity *pent,*pentLog,*pentFlags,*pentList;
+					CPhysicalEntity *pent,*pentFlags,*pentList;
+					IPhysicalEntity *pentLog;
 					bCallbackUsed=bRecheckOtherParts = 0;
 
 					if (thunk.pent->m_iSimClass==5) {
@@ -235,7 +235,7 @@ struct entity_grid_checker {
 							pcontacts->id[0] = pWorld_m_matWater;
 							pcontacts->iNode[0] = -1;
 							pentList = pent = (CPhysicalEntity*)(pGridEnt = thunk.pent);
-							i=0; j=1; nParts=0; pentLog=0; goto gotcontacts;
+							i=0; j=1; nParts=0; pentLog=pPhysArea; goto gotcontacts;
 						}
 						continue;
 					}
@@ -243,7 +243,7 @@ struct entity_grid_checker {
 					//This is causing a load hit store on the branch two lines down. Safe to remove? Suspect not due to GetEntity() doing phys on demand and causing a reposition
 					//	call that could set m_bGridThunksChanged. Damn. Could it be set earlier...?
 					pWorld->m_bGridThunksChanged = 0;	
-					pentList = pentLog = pentFlags = pent = (pGridEnt=thunk.pent)->GetEntity();
+					pentLog = pentList = pentFlags = pent = (pGridEnt=thunk.pent)->GetEntity();
 					if (pWorld->m_bGridThunksChanged) 
 						ithunk_next=pEntGrid[gridIdx], ithunk_prev=0;
 					pWorld->m_bGridThunksChanged = 0;
@@ -265,18 +265,24 @@ struct entity_grid_checker {
 							ipartSubst = -2-pGridEnt->m_id; ipartMask = -1;	nParts = 1;
 						pentList = (CPhysicalEntity*)pGridEnt;
 					}
+					coords = objtypes & ent_use_sync_coords ? pent->m_pSyncCoords : (coord_block*)&pent->m_pos;
 
 					for(i=ipartSubst; i<nParts+(ipartSubst+1-nParts & ipartMask); i++) {
 						if ((pent->m_parts[i].flags & flagsColliderAll)==flagsColliderAll && (pent->m_parts[i].flags & flagsColliderAny)) {
 							if (nParts>1) {
-								bbox.center = (pent->m_parts[i].BBox[0]+pent->m_parts[i].BBox[1])*0.5f;
+								bbox.center = (pent->m_parts[i].BBox[0]+pent->m_parts[i].BBox[1])*0.5f - aray.m_ray.origin;
 								bbox.size = (pent->m_parts[i].BBox[1]-pent->m_parts[i].BBox[0])*0.5f;
-								if (!box_ray_overlap_check(&bbox,&aray.m_ray))
+								ray rayloc; rayloc.origin.zero(); rayloc.dir=aray.m_ray.dir;
+								if (objtypes & ent_use_sync_coords && pent->m_pSyncCoords!=(coord_block*)&pent->m_pos) {
+									QuatT diff = QuatT(pent->m_qrot,pent->m_pos) * QuatT(pent->m_pSyncCoords->q,pent->m_pSyncCoords->pos).GetInverted();
+									rayloc.origin = diff.t;
+									rayloc.dir = diff.q*rayloc.dir;
+								}
+								if (!box_ray_overlap_check(&bbox,&rayloc))
 									continue;
 							}
-							gwd.offset = pent->m_pos + pent->m_qrot*pent->m_parts[i].pos;
-							//(pent->m_qrot*pent->m_parts[i].q).getmatrix(gwd.R);	//Q2M_IVO 
-							gwd.R = Matrix33(pent->m_qrot*pent->m_parts[i].q);
+							gwd.offset = coords->pos + coords->q*pent->m_parts[i].pos;
+							gwd.R = Matrix33(coords->q*pent->m_parts[i].q);
 							gwd.scale = pent->m_parts[i].scale;
 
 							pGeom = PrepGeom(pent->m_parts[i].pPhysGeom->pGeom,iCaller);
@@ -305,12 +311,14 @@ gotcontacts:
 
 							check_cell_contact(j,pcontacts,phits,flags,pentFlags,nThroughHits,nThroughHitsAux, imat,ilastcell,aray,iSolidNode,pentLog,i,ihit);
 						}	else if (pent->m_parts[i].flags & geom_mat_substitutor) {
-							for(int ihit=!phits[0].pCollider; ihit<=nThroughHits+nThroughHitsAux; ihit++) 
+							for(int idxhit=!phits[0].pCollider; idxhit<=nThroughHits+nThroughHitsAux; idxhit++) {
+								int ihit = idxhit<=nThroughHits ? idxhit : nMaxHits-(idxhit-nThroughHits); // aux hits are stored from nMaxHits-1 downwards
 								if (pent->m_parts[i].flagsCollider & (2<<((CPhysicalPlaceholder*)phits[ihit].pCollider)->m_iSimClass) - (((CPhysicalPlaceholder*)phits[ihit].pCollider)->m_id>>31) &&
 									pent->m_parts[i].pPhysGeom->pGeom->PointInsideStatus(((phits[ihit].pt-pent->m_pos)*pent->m_qrot-pent->m_parts[i].pos)*pent->m_parts[i].q)) 
 								{	phits[ihit].surface_idx = pent->GetMatId(pent->m_parts[i].pPhysGeom->surface_idx, i);
 									phits[ihit].idmatOrg = -1;
 								}
+							}
 							bRecheckOtherParts = -1;
 						}
 					}
@@ -334,11 +342,10 @@ gotcontacts:
 
 	ILINE void check_cell_contact(int& j,geom_contact *&pcontacts, ray_hit *phits, unsigned int flags,
 		CPhysicalEntity *pentFlags,int& nThroughHits, int& nThroughHitsAux, int& imat, int &ilastcell,CRayGeom& aray,
-		int& iSolidNode, CPhysicalEntity *pentLog,int i, int& ihit)
+		int& iSolidNode, IPhysicalEntity *pentLog,int i, int& ihit)
 	{ 
 		primitives::grid& RESTRICT_REFERENCE entgrid = *pgrid;
-		const Vec3 entgrid_origin	= entgrid.origin;
-		const Vec2 entgrid_stepr	= entgrid.stepr;
+		const Vec2 entgrid_stepr = entgrid.stepr;
 		
 		float facing;
 		for(j--; j>=0; j--) 
@@ -370,6 +377,10 @@ gotcontacts:
 					} else if (nThroughHits+nThroughHitsAux>=nMaxHits-1)
 						continue;
 					nThroughHitsAux = min(nThroughHitsAux+1, nMaxHits-1-nThroughHits);
+				}
+				if (nThroughHits+1==nMaxHits && flags & rwi_max_piercing)	{	// don't look after the last important pierceble hit's cell
+					Vec3 gpt = pgrid->vecToGrid(phits[nThroughHits].pt-pgrid->origin);
+					ilastcell = float2int(gpt.x*entgrid_stepr.x-0.5f) & 0xFFFF | float2int(gpt.y*entgrid_stepr.y-0.5f)<<16;
 				}
 			} else {
 				if ((flags & rwi_ignore_solid_back_faces)*facing>0)
@@ -450,7 +461,9 @@ void CPhysicalWorld::RayWater(const Vec3 &org,const Vec3 &dir, entity_grid_check
 	}
 
 	if (inrange(t.x, 0.0f,t.y)) {
-		if ((uint)(flags & rwi_pierceability_mask) < (m_SurfaceFlagsTable[m_matWater] & sf_pierceable_mask)+((uint)flags & rwi_force_pierceable_noncoll)) {
+		int rayPierceability = (flags & rwi_pierceability_mask)-(flags & rwi_max_piercing);
+		int surfPierceability = (m_SurfaceFlagsTable[m_matWater] & sf_pierceable_mask)+(flags & rwi_force_pierceable_noncoll);
+		if (rayPierceability < surfPierceability) {
 			if (nMaxHits<=1)
 				goto nowater;
 			if ((m_SurfaceFlagsTable[m_matWater]|(flags^rwi_separate_important_hits)) & sf_important)
@@ -479,8 +492,10 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
 
-	IF (rp.dir.len2()<=0, 0)
+	IF (rp.dir.len2()<=0 || rp.flags & rwi_max_piercing && rp.nMaxHits<2, 0)
 		return 0;
+	extern thread_local int tls_isMainThread;
+	m_vars.bMultithreaded |= 1^tls_isMainThread;
 
 	IF (rp.flags & rwi_queue, 0) {
 		WriteLock lockQ(m_lockRwiQueue);
@@ -535,8 +550,10 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 		inodeLastHit = rp.phitLast->iNode;
 	}
 
-	assert(iCaller<=MAX_PHYS_THREADS);
-	WriteLockCond lock(m_lockCaller[iCaller], iCaller==MAX_PHYS_THREADS && rp.iForeignData!=FD_RWI_RECURSIVE);
+	assert(iCaller<MAX_TOT_THREADS);
+	if (iCaller==MAX_PHYS_THREADS && rp.iForeignData!=FD_RWI_RECURSIVE)
+		iCaller += alloc_extCaller();
+	WriteLockCond lock(m_lockCaller[iCaller], iCaller>=MAX_PHYS_THREADS && rp.iForeignData!=FD_RWI_RECURSIVE);
 
 	if (rp.iForeignData==FD_RWI_RECURSIVE) {
 		egc.nEnts = ((entity_grid_checker*)rp.pForeignData)->nEnts;
@@ -556,9 +573,14 @@ int CPhysicalWorld::RayWorldIntersection(const IPhysicalWorld::SRWIParams &rp, c
 		egc.pPortals = rp.pPortals;	egc.nMaxPortals = rp.nMaxPortals;
 	}
 	egc.nPortals = 0;
-	if ((objtypes & ent_terrain) && m_pHeightfield[iCaller]) {
-    RayHeightfield(rp.org,dir,rp.hits,rp.flags,iCaller);
-  }
+	if ((objtypes & ent_terrain) && m_pHeightfield[iCaller]) 
+		if (!(rp.flags & rwi_max_piercing))
+			RayHeightfield(rp.org,dir,rp.hits,rp.flags,iCaller);
+		else {
+			Vec3 dir1 = dir; // prevent dir from being modified by RayHeightfield
+			RayHeightfield(rp.org,dir1,rp.hits+1,rp.flags,iCaller);
+			egc.nThroughHits += rp.hits[1].bTerrain;
+		}
 	egc.aray.CreateRay(rp.org,dir);
 
 	IF (objtypes & m_bCheckWaterHits & ent_water, 0) {

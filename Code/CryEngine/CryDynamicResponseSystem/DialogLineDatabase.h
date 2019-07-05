@@ -27,7 +27,6 @@ public:
 	virtual const string& GetStartAudioTrigger() const override                        { return m_audioStartTrigger; }
 	virtual const string& GetEndAudioTrigger() const override                          { return m_audioStopTrigger; }
 	virtual const string& GetLipsyncAnimation() const override                         { return m_lipsyncAnimation; }
-	virtual const string& GetStandaloneFile() const override                           { return m_standaloneFile; }
 	virtual const string& GetCustomData() const override                               { return m_customData; }
 	virtual float         GetPauseLength() const override                              { return m_pauseLength; }
 	
@@ -35,7 +34,6 @@ public:
 	virtual void          SetStartAudioTrigger(const string& trigger) override         { m_audioStartTrigger = trigger; }
 	virtual void          SetEndAudioTrigger(const string& trigger) override           { m_audioStopTrigger = trigger; }
 	virtual void          SetLipsyncAnimation(const string& lipsyncAnimation) override { m_lipsyncAnimation = lipsyncAnimation; }
-	virtual void          SetStandaloneFile(const string& value) override              { m_standaloneFile = value; }
 	virtual void          SetCustomData(const string& customData) override             { m_customData = customData; }
 	virtual void          SetPauseLength(float length) override                        { m_pauseLength = length; }
 	
@@ -47,7 +45,6 @@ private:
 	string m_audioStartTrigger; //todo: optimize by storing directly the TAudioControlID, problems occur, when ID can not be obtained because the bank is not loaded, and when saving the data to file
 	string m_audioStopTrigger;
 	string m_lipsyncAnimation;
-	string m_standaloneFile;
 	string m_customData;
 	float  m_pauseLength;
 };

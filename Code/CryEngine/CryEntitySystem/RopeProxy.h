@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryEntitySystem/IEntityComponent.h>
 
 // forward declarations.
 struct SEntityEvent;
@@ -24,14 +25,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void   Initialize() final;
 	virtual void   ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_ROPE; }
-	virtual void         Release() final            { delete this; };
+	virtual void         Release() final            { delete this; }
 	virtual void         Update(SEntityUpdateContext& ctx) final;
 	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override final;
 	virtual bool         NeedGameSerialize() final;
@@ -41,7 +42,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	/// IEntityRopeComponent
 	//////////////////////////////////////////////////////////////////////////
-	virtual IRopeRenderNode* GetRopeRenderNode() final { return m_pRopeRenderNode; };
+	virtual IRopeRenderNode* GetRopeRenderNode() final { return m_pRopeRenderNode; }
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const final

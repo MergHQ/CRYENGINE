@@ -1,16 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
-#include "Material\Material.h"
-
 #include "DataBaseDialog.h"
+
+#include "GameTokens/GameTokenDialog.h"
+#include "Material/Material.h"
+#include "Particles/ParticleDialog.h"
 #include "EntityProtLibDialog.h"
-#include "Particles\ParticleDialog.h"
-#include "Prefabs\PrefabDialog.h"
-#include "GameTokens\GameTokenDialog.h"
-#include "Controls/SharedFonts.h"
-#include "QtViewPane.h"
+
+#include <Controls/SharedFonts.h>
+
+#include <QtViewPane.h>
 
 #define IDC_TABCTRL 1
 
@@ -19,33 +19,25 @@ IMPLEMENT_DYNCREATE(CDataBaseDialog, CToolbarDialog)
 
 class CDataBaseViewPaneClass : public IViewPaneClass
 {
-	//////////////////////////////////////////////////////////////////////////
-	// IClassDesc
-	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return DATABASE_VIEW_NAME; };
-	virtual const char*    Category()        override { return "Editor"; };
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CDataBaseDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T(DATABASE_VIEW_NAME); };
-	virtual bool           SinglePane()      override { return true; };
+	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return DATABASE_VIEW_NAME; }
+	virtual const char*    Category()        override { return "Editor"; }
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CDataBaseDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T(DATABASE_VIEW_NAME); }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CDataBaseViewPaneClass)
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 CDataBaseDialog::CDataBaseDialog(CWnd* pParent)
 	: CToolbarDialog(IDD, pParent)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_selectedCtrl = -1;
 
 	Create(IDD, pParent);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialog::~CDataBaseDialog()
 {
 	for (int i = 0; i < m_windows.size(); i++)
@@ -62,13 +54,11 @@ ON_WM_SIZE()
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::PostNcDestroy()
 {
 	delete this;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::DoDataExchange(CDataExchange* pDX)
 {
 	CToolbarDialog::DoDataExchange(pDX);
@@ -90,7 +80,6 @@ BOOL CDataBaseDialog::OnInitDialog()
 	m_tabCtrl.SetFont(CFont::FromHandle((HFONT)SMFCFonts::GetInstance().hSystemFont));
 
 	AddTab(_T("Entity Library"), new CEntityProtLibDialog(&m_tabCtrl));
-	AddTab(_T("Prefabs Library"), new CPrefabDialog(&m_tabCtrl));
 	AddTab(_T("Particles"), new CParticleDialog(&m_tabCtrl));
 	AddTab(_T("GameTokens"), new CGameTokenDialog(&m_tabCtrl));    // deactivated for now
 
@@ -127,13 +116,8 @@ void CDataBaseDialog::Activate(CDataBaseDialogPage* dlg, bool bActive)
 	dlg->SetActive(bActive);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::OnSize(UINT nType, int cx, int cy)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Resize
-	////////////////////////////////////////////////////////////////////////
-
 	RECT rcRollUp;
 
 	CToolbarDialog::OnSize(nType, cx, cy);
@@ -173,14 +157,12 @@ void CDataBaseDialog::OnSize(UINT nType, int cx, int cy)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::OnTabSelect(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	int sel = m_tabCtrl.GetCurSel();
 	Select(sel);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialogPage* CDataBaseDialog::SelectDialog(EDataBaseItemType type, IDataBaseItem* pItem)
 {
 	switch (type)
@@ -191,14 +173,11 @@ CDataBaseDialogPage* CDataBaseDialog::SelectDialog(EDataBaseItemType type, IData
 	case EDB_TYPE_ENTITY_ARCHETYPE:
 		Select(0);
 		break;
-	case EDB_TYPE_PREFAB:
+	case EDB_TYPE_PARTICLE:
 		Select(1);
 		break;
-	case EDB_TYPE_PARTICLE:
-		Select(2);
-		break;
 	case EDB_TYPE_GAMETOKEN:
-		Select(3);
+		Select(2);
 		break;
 	default:
 		return 0;
@@ -215,7 +194,6 @@ CDataBaseDialogPage* CDataBaseDialog::SelectDialog(EDataBaseItemType type, IData
 	return pPage;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::Select(int num)
 {
 	if (num == m_selectedCtrl)
@@ -240,14 +218,12 @@ void CDataBaseDialog::Select(int num)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialogPage* CDataBaseDialog::GetPage(int num)
 {
 	assert(num >= 0 && num < m_windows.size());
 	return m_windows[num];
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::AddTab(const char* szTitle, CDataBaseDialogPage* wnd)
 {
 	wnd->ModifyStyle(0, WS_CLIPCHILDREN);
@@ -260,14 +236,12 @@ void CDataBaseDialog::AddTab(const char* szTitle, CDataBaseDialogPage* wnd)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CDataBaseDialogPage* CDataBaseDialog::GetCurrent()
 {
 	ASSERT(m_selectedCtrl < m_windows.size());
 	return m_windows[m_selectedCtrl];
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CDataBaseDialog::Update()
 {
 	if (GetCurrent())
@@ -284,4 +258,3 @@ BOOL CDataBaseDialog::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLER
 	}
 	return CToolbarDialog::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 }
-

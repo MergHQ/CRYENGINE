@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
 
-if (NOT WIN32)
-	MESSAGE( FATAL_ERROR "Expects Windows target system." )
-endif()
-
 enable_language(C)
 enable_language(CXX)
 
@@ -14,18 +10,14 @@ set(CMAKE_SYSTEM_VERSION 10.0.10586.0)
 set(CMAKE_CONFIGURATION_TYPES Debug Release)
 set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "Reset the configurations to what we need" FORCE)
 
-if (NOT CMAKE_CL_64)
-	MESSAGE( FATAL_ERROR "Expects 64-bit cl compiler from Microsoft." )
-endif()
-
 set(BUILD_CPU_ARCHITECTURE x64)
 set(BUILD_PLATFORM Win64)
-set(WIN64 1)
+set(WINDOWS 1)
 
 set(CRYENGINE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../../..") 
 set(OUTPUT_DIRECTORY "${CRYENGINE_SOURCE_DIR}/Tools/rc")
 
-set(CMAKE_CXX_FLAGS "/W3 /fp:fast /MP /GF /Gy /DWIN32 /D_WINDOWS /W3 /GR- /Gd /Zm250 /Zc:forScope /wd4251 /wd4275 /Gd /utf-8 /Wv:18" CACHE STRING "C++ Flags" FORCE)
+set(CMAKE_CXX_FLAGS "/W3 /fp:precise /MP /GF /Gy /DWIN32 /D_WINDOWS /GR- /Gd /Zm250 /Zc:forScope /wd4251 /wd4275 /utf-8 /Wv:18" CACHE STRING "C++ Flags" FORCE)
 set(CMAKE_CXX_FLAGS_DEBUG "/Zi /MTd /Od /Ob0 /Oy- /RTC1 /GS /bigobj /DFORCE_STANDARD_ASSERT /D_DEBUG" CACHE STRING "C++ Flags" FORCE)
 set(CMAKE_CXX_FLAGS_RELEASE "/MT /Ox /Oi /Ot /Ob2 /Oy- /GS- /D NDEBUG /D_RELEASE /D PURE_CLIENT" CACHE STRING "C++ Flags" FORCE)
 
@@ -34,8 +26,6 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "C Flags" FORCE)
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "C Flags" FORCE)
 
 project(ResourceCompiler${BUILD_PLATFORM} CXX C)
-
-set(WINDOWS TRUE)
 
 # SDK Directory
 set(SDK_DIR "${CRYENGINE_SOURCE_DIR}/Code/SDKs")
@@ -114,6 +104,7 @@ add_subdirectory("${CRY_LIBS_DIR}/ilmbase" "${CMAKE_CURRENT_BINARY_DIR}/ilmbase"
 add_subdirectory("${CRY_LIBS_DIR}/alembic" "${CMAKE_CURRENT_BINARY_DIR}/alembic")
 add_subdirectory("${CRY_LIBS_DIR}/hdf5" "${CMAKE_CURRENT_BINARY_DIR}/hdf5")
 add_subdirectory("${CRY_LIBS_DIR}/vco" "${CMAKE_CURRENT_BINARY_DIR}/vco")
+add_subdirectory("${CRY_LIBS_DIR}/qpOASES" "${CMAKE_CURRENT_BINARY_DIR}/qpOASES")
 
 add_subdirectory("${CRYENGINE_SOURCE_DIR}/Code/Tools/CryXML" "${CMAKE_CURRENT_BINARY_DIR}/CryXML")
 add_subdirectory("${CRYENGINE_SOURCE_DIR}/Code/CryEngine/CryPhysics" "${CMAKE_CURRENT_BINARY_DIR}/CryPhysics")

@@ -18,6 +18,7 @@
 #include "AIRecorder.h"
 #include "PipeUser.h"
 #include <CryString/StringUtils.h>
+#include <CrySystem/CryVersion.h>
 #include <CryGame/IGameFramework.h>
 
 #ifdef CRYAISYSTEM_DEBUG
@@ -1069,7 +1070,7 @@ void CAIRecorder::OnReset(IAISystem::EResetReason reason)
 	//if (!gEnv->IsEditor())
 	//	return;
 
-	if (gAIEnv.CVars.DebugRecordAuto == 0)
+	if (gAIEnv.CVars.LegacyDebugRecordAuto == 0)
 		return;
 
 	const bool bIsSerializingFile = 0 != gEnv->pSystem->IsSerializingFile();
@@ -1145,7 +1146,7 @@ void CAIRecorder::Start(EAIRecorderMode mode, const char* filename)
 			}
 
 			// File is closed, so we have the chance to adjust buffer size
-			int newBufferSize = gAIEnv.CVars.DebugRecordBuffer;
+			int newBufferSize = gAIEnv.CVars.LegacyDebugRecordBuffer;
 			newBufferSize = clamp_tpl(newBufferSize, 128, 1024000);
 			if (newBufferSize != m_lowLevelFileBufferSize)
 			{
@@ -1426,7 +1427,7 @@ bool CAIRecorder::Read(FILE* pFile)
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "Recorder has streamded data. This code needs to be readded.");
+				CRY_ASSERT(false, "Recorder has streamded data. This code needs to be readded.");
 
 				//int liveID = idMap[header.unitID];
 				//if (!liveID)
@@ -1554,7 +1555,7 @@ void CAIRecorder::Reset(void)
 {
 	DestroyDummyObjects();
 
-	const CTimeValue frameStartTime = gEnv->pTimer->GetFrameStartTime();
+	const CTimeValue frameStartTime = GetAISystem()->GetFrameStartTime();
 	for (TUnits::iterator unitIter = m_Units.begin(); unitIter != m_Units.end(); ++unitIter)
 	{
 		unitIter->second->ResetStreams(frameStartTime);

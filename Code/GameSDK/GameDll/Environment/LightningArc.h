@@ -5,10 +5,8 @@
 
 #pragma once
 
-
 #include "Effects/GameEffects/LightningGameEffect.h"
-
-
+#include <IGameObject.h>
 
 class CLightningArc : public CGameObjectExtensionHelper<CLightningArc, IGameObjectExtension>
 {
@@ -32,7 +30,7 @@ public:
 	virtual void Update( SEntityUpdateContext& ctx, int updateSlot );
 	virtual void HandleEvent( const SGameObjectEvent& event );
 	virtual void ProcessEvent( const SEntityEvent& event );	
-	virtual uint64 GetEventMask() const;
+	virtual Cry::Entity::EventFlags GetEventMask() const;
 	virtual void SetChannelId(uint16 id);
 	virtual const void * GetRMIBase() const;
 	virtual void PostUpdate( float frameTime );

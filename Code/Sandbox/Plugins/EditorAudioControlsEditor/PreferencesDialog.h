@@ -12,14 +12,14 @@ class CPreferencesDialog final : public CEditorDialog
 
 public:
 
-	explicit CPreferencesDialog(QWidget* const pParent);
+	explicit CPreferencesDialog(QWidget* pParent);
 
 	CPreferencesDialog() = delete;
 
 signals:
 
-	void SignalImplementationSettingsAboutToChange();
-	void SignalImplementationSettingsChanged();
+	void SignalOnBeforeImplSettingsChange();
+	void SignalOnAfterImplSettingsChanged();
 	void SignalEnableSaveButton(bool);
 
 private:

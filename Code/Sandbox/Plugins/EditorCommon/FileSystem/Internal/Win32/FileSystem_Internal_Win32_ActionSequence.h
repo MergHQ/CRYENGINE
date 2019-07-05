@@ -34,4 +34,3 @@ struct SActionSequence
 
 // allow to use with signal & slots
 Q_DECLARE_METATYPE(FileSystem::Internal::Win32::SActionSequence)
-

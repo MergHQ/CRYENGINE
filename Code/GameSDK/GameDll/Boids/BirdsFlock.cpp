@@ -17,6 +17,7 @@
 
 #include <CryAISystem/IAIObject.h>
 #include <IPerceptionManager.h>
+#include <IActorSystem.h>
 
 #define START_LANDING_TIME 3
 

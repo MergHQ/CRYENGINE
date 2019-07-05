@@ -2,11 +2,12 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "qwinwidget.h"
 
 class CViewport;
 
-class PLUGIN_API QMfcViewportHost
+class MFC_TOOLS_PLUGIN_API QMfcViewportHost
 {
 public:
 	QMfcViewportHost(CWnd* pParent, CViewport* pViewport, const CRect& rect);
@@ -22,7 +23,7 @@ private:
 	QWinWidget* m_pHost;
 };
 
-class PLUGIN_API QMfcContainer : public CWnd
+class MFC_TOOLS_PLUGIN_API QMfcContainer : public CWnd
 {
 public:
 	QMfcContainer() : m_pWidgetHost(nullptr) {}
@@ -37,4 +38,3 @@ protected:
 private:
 	QWidget* m_pWidgetHost;
 };
-

@@ -255,17 +255,29 @@ NET_IMPLEMENT_SIMPLE_ATSYNC_MESSAGE(CGameClientChannel, SetGameType, eNRT_Reliab
 {
 	string rulesClass;
 	string levelName = param.levelName;
-	if (!GetGameContext()->ClassNameFromId(rulesClass, param.rulesClass))
+	const uint16 invalidClassId = ~uint16(0);
+	bool hasGameRules = !GetGameContext()->HasContextFlag(eGSF_NoGameRules) && (param.rulesClass != invalidClassId);
+
+	if (hasGameRules && !GetGameContext()->ClassNameFromId(rulesClass, param.rulesClass))
 	{
+		hasGameRules = false;
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "No GameRules");
+	}
+
+	if (!hasGameRules)
+	{
+		GetGameContext()->SetContextFlag(eGSF_NoGameRules);
 	}
 
 	bool ok = true;
 	if (!GetGameContext()->SetImmersive(param.immersive))
 		return false;
+
 	if (!bFromDemoSystem)
 	{
-		CryLogAlways("Game rules class: %s", rulesClass.c_str());
+		if (hasGameRules)
+			CryLogAlways("Game rules class: %s", rulesClass.c_str());
+
 		SGameContextParams params;
 		params.levelName = levelName.c_str();
 		params.gameRules = rulesClass.c_str();
@@ -347,6 +359,10 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	esp.id = GetGameContext()->GetNetContext()->RemoveReservedUnboundEntityMapEntry(netMID);
 #endif
 	esp.nFlags = (param.flags & ~ENTITY_FLAG_TRIGGER_AREAS);
+	if (param.bClientActor)
+	{
+		esp.nFlags = (param.flags | ENTITY_FLAG_LOCAL_PLAYER);
+	}
 	esp.pClass = pEntitySystem->GetClassRegistry()->FindClass(actorClass);
 	if (!esp.pClass)
 		return false;

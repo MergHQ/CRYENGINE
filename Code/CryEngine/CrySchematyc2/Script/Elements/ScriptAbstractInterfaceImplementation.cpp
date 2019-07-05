@@ -104,7 +104,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CScriptAbstractInterfaceImplementation::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CScriptElementBase::Serialize(archive);
 
@@ -238,7 +238,7 @@ namespace Schematyc2
 
 		auto visitStateMachine = [&taskStateMachines] (IScriptStateMachine& stateMachine) -> EVisitStatus
 		{
-			if(stateMachine.GetLifetime() == EScriptStateMachineLifetime::Task)
+			if(stateMachine.GetLifetime() == EStateMachineLifetime::Task)
 			{
 				taskStateMachines.insert(TaskStateMachines::value_type(stateMachine.GetContextGUID(), &stateMachine));
 			}
@@ -252,7 +252,7 @@ namespace Schematyc2
 			TaskStateMachines::iterator itTaskStateMachine = taskStateMachines.find(taskGUID);
 			if(itTaskStateMachine == taskStateMachines.end())
 			{
-				file.AddStateMachine(m_guid, task.GetName(), EScriptStateMachineLifetime::Task, taskGUID, SGUID());
+				file.AddStateMachine(m_guid, task.GetName(), EStateMachineLifetime::Task, taskGUID, SGUID());
 			}
 			else
 			{

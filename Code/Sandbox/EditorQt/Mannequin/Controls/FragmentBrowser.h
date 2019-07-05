@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FRAGMENT_BROWSER__H__
-#define __FRAGMENT_BROWSER__H__
+#pragma once
 
 #include <ICryMannequin.h>
 #include "afxwin.h"
@@ -9,6 +8,7 @@
 
 class CMannFragmentEditor;
 struct SMannequinContexts;
+class CFragmentBrowser;
 
 class CFragmentTreeCtrl : public CXTTreeCtrl
 {
@@ -16,9 +16,26 @@ protected:
 	BOOL PreTranslateMessage(MSG* pMsg);
 };
 
+
 class CFragmentBrowser
 	: public CXTResizeFormView
 {
+	class CTreeCtrlExpansionStateSaver
+	{
+	public:
+		explicit CTreeCtrlExpansionStateSaver(CFragmentBrowser& fragmentBrowser);
+		CTreeCtrlExpansionStateSaver(CFragmentBrowser& fragmentBrowser, HTREEITEM parent);
+		void Save();
+		void Restore();
+	private:
+		template<typename TFunc>
+		void TraverseHierarchy(TFunc func);
+
+		CFragmentBrowser & m_fragmentBrowser;
+		HTREEITEM m_parent;
+		std::vector<CString> m_savedExpandedNodesPaths;
+	};
+
 	typedef CXTResizeFormView PARENT;
 
 	DECLARE_DYNAMIC(CFragmentBrowser)
@@ -39,12 +56,12 @@ public:
 	void SaveLayout(const XmlNodeRef& xmlLayout);
 	void LoadLayout(const XmlNodeRef& xmlLayout);
 
-	void Update(void);
+	void Update();
 
 	void SetContext(SMannequinContexts& context);
 
 	void SetScopeContext(int scopeContextID);
-	bool SelectFragments(const std::vector<FragmentID> fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options);
+	bool SelectFragments(const std::vector<FragmentID>& fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options);
 	bool SelectFragment(FragmentID fragmentID, const SFragTagState& tagState, uint32 option = 0);
 	bool SetTagState(const std::vector<SFragTagState>& newTagsVec);
 
@@ -88,7 +105,8 @@ protected:
 	void         CleanFragmentID(FragmentID fragID);
 	void         CleanFragment(FragmentID fragID);
 	void         BuildFragment(FragmentID fragID);
-	HTREEITEM    FindInChildren(const char* szTagStr, HTREEITEM parent);
+	void         RebuildFragment(FragmentID fragID);
+	HTREEITEM    FindInChildren(const char* szTagStr, HTREEITEM hParent);
 
 	// Drag / drop helpers
 	friend class CFragmentBrowserBaseDropTarget;
@@ -153,45 +171,45 @@ private:
 	void         KeepCorrectData();
 
 private:
-	UINT                   m_nFragmentClipboardFormat;
+	UINT                       m_nFragmentClipboardFormat;
 
-	CFragmentTreeCtrl      m_TreeCtrl;
-	CComboBox              m_cbContext;
+	CFragmentTreeCtrl          m_treeCtrl;
+	CComboBox                  m_cbContext;
 	CEditWithSelectAllOnLClick m_editFilterTags;
 	CEditWithSelectAllOnLClick m_editFilterFragmentIDs;
 	CEditWithSelectAllOnLClick m_editAnimClipFilter;
-	CButton                m_chkShowSubFolders;
+	CButton                    m_chkShowSubFolders;
 
-	CButton                m_chkShowEmptyFolders;
-	CImageButton           m_newEntry;
-	CImageButton           m_deleteEntry;
-	CImageButton           m_editEntry;
-	CImageButton           m_newID;
-	CImageButton           m_deleteID;
-	CImageButton           m_renameID;
-	CImageButton           m_tagDefEditor;
-	CImageList             m_buttonImages;
-	CToolTipCtrl           m_toolTip;
+	CButton                    m_chkShowEmptyFolders;
+	CImageButton               m_newEntry;
+	CImageButton               m_deleteEntry;
+	CImageButton               m_editEntry;
+	CImageButton               m_newID;
+	CImageButton               m_deleteID;
+	CImageButton               m_renameID;
+	CImageButton               m_tagDefEditor;
+	CImageList                 m_buttonImages;
+	CToolTipCtrl               m_toolTip;
 
-	bool                   m_showSubFolders;
-	bool                   m_showEmptyFolders;
+	bool                       m_showSubFolders;
+	bool                       m_showEmptyFolders;
 
-	CString                m_filterText;
-	std::vector<CString>   m_filters;
+	CString                    m_filterText;
+	std::vector<CString>       m_filters;
 
-	CString                m_filterFragmentIDText;
+	CString                    m_filterFragmentIDText;
 
-	CString                m_filterAnimClipText;
+	CString                    m_filterAnimClipText;
 
-	IAnimationDatabase*    m_animDB;
-	CMannFragmentEditor&   m_fragEditor;
+	IAnimationDatabase*        m_animDB;
+	CMannFragmentEditor&       m_fragEditor;
 
-	std::vector<HTREEITEM> m_boldItems;
+	std::vector<HTREEITEM>     m_boldItems;
 
-	bool                   m_rightDrag;
+	bool                       m_rightDrag;
 
-	CImageList*            m_draggingImage;
-	HTREEITEM              m_dragItem;
+	CImageList*                m_draggingImage;
+	HTREEITEM                  m_dragItem;
 
 	struct SCopyItem
 	{
@@ -243,5 +261,28 @@ private:
 	OnScopeContextChangedCallback m_onScopeContextChangedCallback;
 };
 
-#endif
 
+template<typename TFunc>
+void CFragmentBrowser::CTreeCtrlExpansionStateSaver::TraverseHierarchy(TFunc func)
+{
+	CTreeCtrl& treeCtrl = m_fragmentBrowser.m_treeCtrl;
+
+	std::vector<HTREEITEM> parentStack;
+	parentStack.reserve(64); //should be enough to avoid unnecessary allocations
+	parentStack.push_back(m_parent);
+	while (!parentStack.empty())
+	{
+		HTREEITEM hCurrentParent = parentStack.back();
+		parentStack.pop_back();
+		if (treeCtrl.ItemHasChildren(hCurrentParent))
+		{
+			HTREEITEM hCurrentChild = treeCtrl.GetChildItem(hCurrentParent);
+			while (hCurrentChild != NULL)
+			{
+				func(hCurrentChild);
+				parentStack.push_back(hCurrentChild);
+				hCurrentChild = treeCtrl.GetNextItem(hCurrentChild, TVGN_NEXT);
+			}
+		}
+	}
+}

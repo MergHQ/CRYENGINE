@@ -12,9 +12,14 @@ class CCreateFolderDialog final : public CEditorDialog
 
 public:
 
-	explicit CCreateFolderDialog(QWidget* const pParent);
-
 	CCreateFolderDialog() = delete;
+	CCreateFolderDialog(CCreateFolderDialog const&) = delete;
+	CCreateFolderDialog(CCreateFolderDialog&&) = delete;
+	CCreateFolderDialog& operator=(CCreateFolderDialog const&) = delete;
+	CCreateFolderDialog& operator=(CCreateFolderDialog&&) = delete;
+
+	explicit CCreateFolderDialog(QWidget* pParent);
+	virtual ~CCreateFolderDialog() override = default;
 
 signals:
 

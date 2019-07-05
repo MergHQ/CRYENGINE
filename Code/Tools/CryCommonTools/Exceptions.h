@@ -10,7 +10,7 @@ class BaseException : public std::exception
 {
 public:
 	explicit BaseException(const string& msg): msg(msg) {}
-	virtual const char* what() const {return msg.c_str();}
+	virtual const char* what() const noexcept {return msg.c_str();}
 
 private:
 	string msg;

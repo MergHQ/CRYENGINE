@@ -2,13 +2,16 @@
 
 #include "StdAfx.h"
 #include "FlowGraphMigrationHelper.h"
+#include "LogFile.h"
+#include <CrySystem/File/ICryPak.h>
+#include <Util/EditorUtils.h>
 
 #define DEPRECATIONS_FILE_PATH "Libs/FlowNodes/Substitutions.XML"
 
 namespace
 {
 const CString& DISCARD = "__discard__";
-};
+}
 
 struct CInputValueCondition : public CFlowGraphMigrationHelper::ICondition
 {
@@ -414,7 +417,7 @@ void CFlowGraphMigrationHelper::AddEntry(XmlNodeRef node)
 				CString func;
 				CString funcName;
 				// FIXME: messing up global lua namespace with __fg_tx_%d functions
-				funcName.Format("__fg_tx_%d", m_transformFuncs.size());
+				funcName.Format("__fg_tx_%zu", m_transformFuncs.size());
 				func.AppendFormat("function %s (val) %s end", funcName.GetString(), transformer.GetString());
 				IScriptSystem* pScriptSystem = gEnv->pScriptSystem;
 				if (pScriptSystem->ExecuteBuffer(func.GetString(), func.GetLength(), "FlowGraph MG-Helper LUA Transformer") == true)
@@ -504,4 +507,3 @@ const std::vector<CFlowGraphMigrationHelper::ReportEntry>& CFlowGraphMigrationHe
 {
 	return m_report;
 }
-

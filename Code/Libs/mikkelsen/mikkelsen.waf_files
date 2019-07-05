@@ -1,0 +1,8 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.cpp",
+            "../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.h"
+        ]
+    }
+}

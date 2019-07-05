@@ -4,6 +4,8 @@
 
 #include "DeviceResourceSet.h"
 
+class CDeviceResource;
+
 ////////////////////////////////////////////////////////////////////////////
 
 template<class Impl>
@@ -55,7 +57,8 @@ protected:
 	struct SCachedResourceState
 	{
 		SCachedValue<const CDeviceResourceLayout*> pResourceLayout;
-		SCachedValue<const void*>                  pResources[EResourceLayoutSlot_Max + 1];
+		SCachedValue<const CDeviceResourceSet*>    pResourceSets   [EResourceLayoutSlot_Num];
+		SCachedValue<const CDeviceResource*>       pInlineResources[EResourceLayoutSlot_Num];
 
 		UsedBindSlotSet                            requiredResourceBindings;
 		UsedBindSlotSet                            validResourceBindings;
@@ -107,12 +110,14 @@ class CDeviceGraphicsCommandInterface : public CDeviceGraphicsCommandInterfaceIm
 public:
 	void ClearState(bool bOutputMergerOnly) const;
 
-	void PrepareUAVsForUse(uint32 viewCount, CGpuBuffer** pViews, bool bCompute) const;
+	void PrepareUAVsForUse(uint32 viewCount, CDeviceBuffer** pViews, bool bCompute) const;
 	void PrepareRenderPassForUse(CDeviceRenderPass& renderPass) const;
 	void PrepareResourceForUse(uint32 bindSlot, CTexture* pTexture, const ResourceViewHandle TextureView, ::EShaderStage srvUsage) const;
 	void PrepareResourcesForUse(uint32 bindSlot, CDeviceResourceSet* pResources) const;
 	void PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
 	void PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages) const;
+	void PrepareInlineShaderResourceForUse(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
+	void PrepareInlineShaderResourceForUse(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages) const;
 	void PrepareVertexBuffersForUse(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams) const;
 	void PrepareIndexBufferForUse(const CDeviceInputStream* indexStream) const;
 	void BeginResourceTransitions(uint32 numTextures, CTexture** pTextures, EResourceTransitionType type);
@@ -128,6 +133,8 @@ public:
 	void SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources);
 	void SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass);
 	void SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages);
+	void SetInlineShaderResource(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass, ResourceViewHandle resourceViewID = EDefaultResourceViews::Default);
+	void SetInlineShaderResource(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages, ResourceViewHandle resourceViewID = EDefaultResourceViews::Default);
 	void SetVertexBuffers(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams);
 	void SetIndexBuffer(const CDeviceInputStream* indexStream); // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
 	void SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
@@ -145,6 +152,9 @@ public:
 	void ClearSurface(D3DSurface* pView, const ColorF& color, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 	void ClearSurface(D3DDepthSurface* pView, int clearFlags, float depth = 0, uint8 stencil = 0, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 
+	void DiscardContents(D3DResource* pResource, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+	void DiscardContents(D3DBaseView* pView, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+
 	void BeginOcclusionQuery(D3DOcclusionQuery* pQuery);
 	void EndOcclusionQuery(D3DOcclusionQuery* pQuery);
 };
@@ -154,20 +164,25 @@ static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandLi
 class CDeviceComputeCommandInterface : public CDeviceComputeCommandInterfaceImpl
 {
 public:
-	void PrepareUAVsForUse(uint32 viewCount, CGpuBuffer** pViews) const;
+	void PrepareUAVsForUse(uint32 viewCount, CDeviceBuffer** pViews) const;
 	void PrepareResourcesForUse(uint32 bindSlot, CDeviceResourceSet* pResources) const;
-	void PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlots, ::EShaderStage shaderStages) const;
+	void PrepareInlineConstantBufferForUse(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot) const;
+	void PrepareInlineShaderResourceForUse(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot) const;
 
 	void SetPipelineState(const CDeviceComputePSO* pDevicePSO);
 	void SetResourceLayout(const CDeviceResourceLayout* pResourceLayout);
 	void SetResources(uint32 bindSlot, const CDeviceResourceSet* pResources);
 	void SetInlineConstantBuffer(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot);
+	void SetInlineShaderResource(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ResourceViewHandle resourceViewID = EDefaultResourceViews::Default);
 	void SetInlineConstants(uint32 bindSlot, uint32 constantCount, float* pConstants);
 
 	void Dispatch(uint32 X, uint32 Y, uint32 Z);
 
 	void ClearUAV(D3DUAV* pView, const ColorF& Values, UINT NumRects = 0, const D3D11_RECT* pRects = nullptr);
 	void ClearUAV(D3DUAV* pView, const ColorI& Values, UINT NumRects = 0, const D3D11_RECT* pRects = nullptr);
+
+	void DiscardUAVContents(D3DResource* pResource, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
+	void DiscardUAVContents(D3DBaseView* pView, uint32 numRects = 0, const D3D11_RECT* pRects = nullptr);
 };
 
 static_assert(sizeof(CDeviceGraphicsCommandInterface) == sizeof(CDeviceCommandListImpl), "CDeviceComputeCommandInterface cannot contain data members");
@@ -187,6 +202,8 @@ class CDeviceCopyCommandInterface : public CDeviceCopyCommandInterfaceImpl
 	// TODO: CopyResourceOvercross (MultiGPU, copy-queue)
 
 public:
+	void Copy(D3DResource*    pSrc, D3DResource*    pDst);
+
 	void Copy(CDeviceBuffer*  pSrc, CDeviceBuffer*  pDst);
 	void Copy(D3DBuffer*      pSrc, D3DBuffer*      pDst);
 	void Copy(CDeviceTexture* pSrc, CDeviceTexture* pDst);

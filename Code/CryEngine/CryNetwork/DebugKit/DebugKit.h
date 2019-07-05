@@ -74,6 +74,7 @@ public:
 	void SetKey(uint32 key)          { m_curDataEnt.key = key; }
 
 	void AddDataEnt(const Vec3& v);
+	void AddDataEnt(const Vec2& v)       { AddDataEnt(Vec3(v)); }
 	void AddDataEnt(const Ang3& v)       { AddDataEnt(Vec3(v)); }
 	void AddDataEnt(SNetObjectID id)     { AddDataEnt(Vec3(id.id, id.salt, 0.0f)); }
 	void AddDataEnt(float x)             { AddDataEnt(Vec3(x, 0.0f, 0.0f));    }
@@ -87,8 +88,8 @@ public:
 	void AddDataEnt(uint64 x)            { AddDataEnt(float(x)); }
 
 	// Only present to allow template instantiation for all SerializationTypes (see CryCommon)
-	void AddDataEnt(const XmlNodeRef& x)     { __debugbreak(); }
-	void AddDataEnt(const ScriptAnyValue& x) { __debugbreak(); }
+	void AddDataEnt(const XmlNodeRef& x)     { CRY_FUNCTION_NOT_IMPLEMENTED; }
+	void AddDataEnt(const ScriptAnyValue& x) { CRY_FUNCTION_NOT_IMPLEMENTED; }
 
 	void LogSnapping(const Vec3& witnessPos, const Vec3& witnessDir, const Vec3& entityPos0, const Vec3& entityPos1, const string& entityCls);
 

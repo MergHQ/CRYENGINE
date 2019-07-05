@@ -17,6 +17,8 @@
 #include <CrySerialization/Color.h>
 #include <CrySerialization/CryStrings.h>
 #include <CrySerialization/IArchiveHost.h>
+#include <CryThreading/CryThread.h>
+#include <CryThreading/IJobManager.h>
 
 // - redirects to g_pHub->HaveConsistencyChecksBeenDoneAlready()
 // - CFactoryDatabase<>::RegisterFactory() doesn't know about the global g_pHub variable yet due to the way the headers need to be included, so it uses this function instead
@@ -35,6 +37,7 @@ namespace UQS
 #include "ItemFactoryDatabase.h"
 #include "DebugRenderPrimitives.h"
 #include "DebugRenderWorld.h"
+#include "DebugMessageCollection.h"
 #include "ItemList.h"
 #include "ItemSerializationSupport.h"
 #include "LeafFunctionReturnValue.h"

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "AboutDialog.h"
+#include "IEditorImpl.h"
 
 #include <QLayout>
 #include <QLabel>
@@ -19,7 +20,7 @@ CAboutDialog::CAboutDialog()
 	SetVersion(m_version);
 
 	m_miscInfoLabel = new QLabel();
-	m_miscInfoLabel->setText(tr("CRYENGINE(R) Sandbox(TM) Editor\nCopyright(c) 2018, Crytek GmbH\n\nCrytek, Crytek logo, CRYENGINE, Sandbox are trademarks of Crytek.\n"));
+	m_miscInfoLabel->setText(tr("CRYENGINE(R) Sandbox(TM) Editor\nCopyright(c) 2019, Crytek GmbH\n\nCrytek, Crytek logo, CRYENGINE, Sandbox are trademarks of Crytek.\n"));
 
 	QPixmap* logo = new QPixmap(":/about.png");
 	QLabel* logoImg = new QLabel();
@@ -55,4 +56,3 @@ void CAboutDialog::SetVersion(const Version& version)
 	cry_sprintf(versionText, "Version %d.%d.%d - Build %d", version[3], version[2], version[1], version[0]);
 	m_versionText->setText(versionText);
 }
-

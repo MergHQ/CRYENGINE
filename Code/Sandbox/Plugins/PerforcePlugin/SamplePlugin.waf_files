@@ -1,0 +1,28 @@
+{
+    "NoUberFile": {
+        "Plugin": [
+            "StdAfx.cpp",
+            "StdAfx.h",
+            "PerforcePlugin.cpp",
+            "PerforcePlugin.h"
+        ],
+        "Root": [
+            "IPerforceConflictsResolver.h",
+            "IPerforceExecutor.h",
+            "IPerforceOutputParser.h",
+            "PerforceApiExecutor.cpp",
+            "PerforceApiExecutor.h",
+            "PerforceApiOutputParser.cpp",
+            "PerforceApiOutputParser.h",
+            "PerforceConflictsResolver.cpp",
+            "PerforceConflictsResolver.h",
+            "PerforceFilePathUtil.cpp",
+            "PerforceFilePathUtil.h",
+            "PerforceFileStatFilter.h",
+            "PerforceVCSAdapter.cpp",
+            "PerforceVCSAdapter.h",
+            "Md5Generator.cpp",
+            "Md5Generator.h"
+        ]
+    }
+}

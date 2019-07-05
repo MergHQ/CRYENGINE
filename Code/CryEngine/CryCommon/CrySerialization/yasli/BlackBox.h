@@ -1,6 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#pragma once 
+#pragma once
 #include <stdlib.h> // for malloc and free
 
 #include <CrySerialization/yasli/Config.h>
@@ -19,40 +19,28 @@ namespace yasli
 // across DLLs with different memory allocators.
 struct BlackBox
 {
-	const char* format;
-	void* data;
-	size_t size;
-	int xmlVersion;
-	typedef void* (*Allocator)(size_t, const void*);
-	Allocator allocator;
+	const char* format = "";
+	void*       data = nullptr;
+	size_t      size = 0;
+	int         xmlVersion = 0;
+	typedef void* (* Allocator)(size_t, const void*);
+	Allocator   allocator = nullptr;
 
-	BlackBox()
-	: format("")
-	, data(0)
-	, size(0)
-	, allocator(0)
-	, xmlVersion(0)
-	{
-	}
+	BlackBox() = default;
 
 	BlackBox(const BlackBox& rhs)
-	: format("")
-	, data(0)
-	, size(0)
-	, allocator(0)
-	, xmlVersion(rhs.xmlVersion)
 	{
 		*this = rhs;
 	}
 
-	void set(const char* format, const void* data, size_t size, Allocator allocator = &defaultAllocator)
+	void set(const char* format, const void* data, size_t size, Allocator allocator = & defaultAllocator)
 	{
 		YASLI_ASSERT(data != this->data);
-		if(data != this->data)
+		if (data != this->data)
 		{
 			release();
 			this->format = format;
-			if (data && size) 
+			if (data && size)
 			{
 				this->data = allocator(size, data);
 				this->size = size;
@@ -64,12 +52,13 @@ struct BlackBox
 	template<typename Type>
 	void set(const char* format, const Type& data)
 	{
-		this->set(format, &data, sizeof(Type), &templateAllocator<Type>);
+		this->set(format, &data, sizeof(Type), &templateAllocator<Type> );
 	}
 
 	void release()
 	{
-		if (data && allocator) {
+		if (data && allocator)
+		{
 			allocator(0, data);
 		}
 		format = 0;
@@ -93,10 +82,12 @@ struct BlackBox
 
 	static void* defaultAllocator(size_t size, const void* ptr)
 	{
-		if (size) {
+		if (size)
+		{
 			return memcpy(malloc(size), ptr, size);
 		}
-		else {
+		else
+		{
 			free(const_cast<void*>(ptr));
 			return 0;
 		}
@@ -105,15 +96,16 @@ struct BlackBox
 	template<typename Type>
 	static void* templateAllocator(size_t size, const void* ptr)
 	{
-		if (size) {
+		if (size)
+		{
 			return new Type(*static_cast<const Type*>(ptr));
 		}
-		else {
+		else
+		{
 			delete static_cast<const Type*>(ptr);
 			return 0;
 		}
 	}
 };
-
 
 }

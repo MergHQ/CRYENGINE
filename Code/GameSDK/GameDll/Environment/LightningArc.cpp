@@ -6,7 +6,7 @@
 #include "Effects/GameEffects/LightningGameEffect.h"
 #include "Effects/RenderNodes/LightningNode.h"
 #include "EntityUtility/EntityScriptCalls.h"
-
+#include <CryMath/Random.h>
 
 
 void CLightningArc::GetMemoryUsage(ICrySizer *pSizer) const {}
@@ -67,9 +67,9 @@ void CLightningArc::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CLightningArc::GetEventMask() const
+Cry::Entity::EventFlags CLightningArc::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET;
 }
 
 void CLightningArc::Update(SEntityUpdateContext& ctx, int updateSlot)

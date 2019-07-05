@@ -1,29 +1,30 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "QFilteringPanel.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
-#include <QToolButton>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QTimer>
-#include <QScrollArea>
-#include <QLabel>
-#include <QSplitter>
-#include <QAbstractItemView>
-#include <QListView>
-#include <QHeaderView>
 
-#include "QControls.h"
-#include "QSearchBox.h"
+#include "EditorFramework/PersonalizationManager.h"
 #include "Controls/QMenuComboBox.h"
 #include "Controls/QPopupWidget.h"
-#include "QAdvancedTreeView.h"
-#include "CryIcon.h"
+#include "Menu/MenuWidgetBuilders.h"
 #include "ProxyModels/FavoritesHelper.h"
+#include "QAdvancedTreeView.h"
+#include "QSearchBox.h"
 #include "QtUtil.h"
+#include "QControls.h"
+
+#include <IEditor.h>
+#include <CryIcon.h>
+
+#include <QAbstractItemView>
+#include <QCheckBox>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QSplitter>
+#include <QTimer>
+#include <QToolButton>
+#include <QVBoxLayout>
 
 class QFilteringPanel::CSavedFiltersModel : public QAbstractListModel
 {
@@ -33,7 +34,6 @@ public:
 	{
 		Update();
 	}
-
 
 	void Update()
 	{
@@ -108,7 +108,6 @@ public:
 	void Update() { m_model->Update(); }
 
 private:
-	void OnIndexClicked(const QModelIndex& index);
 	void OnSaveCurrentFilter();
 	void OnLoadSelectedFilter();
 	void OnDeleteSelectedFilter();
@@ -141,21 +140,18 @@ QFilteringPanel::CSavedFiltersWidget::CSavedFiltersWidget(QFilteringPanel* paren
 	auto saveButton = new QToolButton();
 	saveButton->setIcon(CryIcon("icons:General/Save_as.ico"));
 	saveButton->setText(tr("Save Filter"));
-	saveButton->setToolTip(tr("Save Filter"));
 	saveButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	connect(saveButton, &QToolButton::clicked, [this]() { OnSaveCurrentFilter(); });
 
 	auto loadButton = new QToolButton();
 	loadButton->setIcon(CryIcon("icons:General/Save_To_Disc.ico"));
 	loadButton->setText(tr("Load Filter"));
-	loadButton->setToolTip(tr("Load Filter"));
 	loadButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	connect(loadButton, &QToolButton::clicked, [this]() { OnLoadSelectedFilter(); });
 
 	auto deleteButton = new QToolButton();
 	deleteButton->setIcon(CryIcon("icons:General/Close.ico"));
 	deleteButton->setText(tr("Delete Filter"));
-	deleteButton->setToolTip(tr("Delete Filter"));
 	deleteButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	connect(deleteButton, &QToolButton::clicked, [this]() { OnDeleteSelectedFilter(); });
 
@@ -238,6 +234,8 @@ public:
 	void        OnSelectAttribute(int index);
 	void        OnSelectOperator(Attributes::IAttributeFilterOperator* op);
 	void        UpdateAttributesComboBox();
+
+	bool        HasSameState(const QVariantMap& state) const;
 
 	void        SetState(const QVariantMap& state);
 	QVariantMap GetState() const;
@@ -369,30 +367,27 @@ void QFilteringPanel::CFilterWidget::OnSelectAttribute(int index)
 		m_pFilter->SetAttribute(attribute);
 		m_pFilter->SetFilterValue(attribute->GetDefaultFilterValue());
 
-		const EAttributeType type = attribute->GetType();
+		const IAttributeType* pType = attribute->GetType();
 
-		std::vector<Attributes::IAttributeFilterOperator*> types;
-		Attributes::GetOperatorsForType(type, types);
+		std::vector<Attributes::IAttributeFilterOperator*> operators = pType->GetOperators();
 
-		CRY_ASSERT(types.size() > 0);
+		CRY_ASSERT(operators.size() > 0);
 
-		if (types.size() == 1)
+		if (operators.size() == 1)
 		{
 			m_pOperatorsComboBox->setVisible(false);
 		}
 		else
 		{
 			m_pOperatorsComboBox->Clear();
-			int i = 0;
-			for (Attributes::IAttributeFilterOperator* type : types)
+			for (Attributes::IAttributeFilterOperator* pOperator : operators)
 			{
-				m_pOperatorsComboBox->AddItem(type->GetName(), reinterpret_cast<intptr_t>(type));
-				i++;
+				m_pOperatorsComboBox->AddItem(pOperator->GetName(), reinterpret_cast<intptr_t>(pOperator));
 			}
 			m_pOperatorsComboBox->setVisible(true);
 		}
 
-		if (attribute->GetType() == eAttributeType_Boolean)
+		if (attribute->GetType() == &Attributes::s_booleanAttributeType)
 		{
 			m_pInvertButton->setChecked(false);
 			m_pInvertButton->setVisible(false);
@@ -402,7 +397,8 @@ void QFilteringPanel::CFilterWidget::OnSelectAttribute(int index)
 			m_pInvertButton->setVisible(true);
 		}
 
-		OnSelectOperator(types[0]);
+		m_pFilter->SetOperator(nullptr);
+		OnSelectOperator(operators[0]);
 	}
 }
 
@@ -412,15 +408,41 @@ void QFilteringPanel::CFilterWidget::OnSelectOperator(Attributes::IAttributeFilt
 	{
 		m_pFilter->SetOperator(op);
 
-		QWidget* editWidget = op->CreateEditWidget(m_pFilter);
-		editWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-		m_pEditWidgetContainer->SetChild(editWidget);
+		QWidget* pEditWidget = op->CreateEditWidget(m_pFilter, m_pParent->GetAttributeEnumEntries(m_pFilter->GetAttribute()->GetName()));
+		pEditWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+		m_pEditWidgetContainer->SetChild(pEditWidget);
 	}
 }
 
 void QFilteringPanel::CFilterWidget::Remove()
 {
 	deleteLater();
+}
+
+bool QFilteringPanel::CFilterWidget::HasSameState(const QVariantMap& state) const
+{
+	QVariant enabled = state.value("enabled");
+	QVariant attributeName = state.value("attributeName");
+	QVariant operatorName = state.value("operator");
+	QVariant filterValue = state.value("filterValue");
+	QVariant inverted = state.value("inverted");
+
+	if (!attributeName.isValid() || m_pFilter->GetAttribute()->GetName() != attributeName.toString())
+		return false;
+
+	if (!operatorName.isValid() || m_pFilter->GetOperator()->GetName() != operatorName.toString())
+		return false;
+
+	if (!filterValue.isValid() || m_pFilter->GetFilterValue() != filterValue)
+		return false;
+
+	if (!enabled.isValid() || m_pFilter->IsEnabled() != enabled.toBool())
+		return false;
+
+	if (!inverted.isValid() || m_pFilter->IsInverted() != inverted.toBool())
+		return false;
+
+	return true;
 }
 
 void QFilteringPanel::CFilterWidget::SetState(const QVariantMap& state)
@@ -483,20 +505,25 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 
 	m_addFilterButton = new QToolButton();
 	m_addFilterButton->setIcon(CryIcon("icons:General/Element_Add.ico"));
-	m_addFilterButton->setText(tr("Add Filter"));
-	m_addFilterButton->setToolTip(tr("Add Filter"));
+	m_addFilterButton->setText(tr("Add Criterion"));
 	m_addFilterButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	connect(m_addFilterButton, &QToolButton::clicked, [this](){ AddFilter(); });
 
 	m_saveLoadButton = new QToolButton();
 	m_saveLoadButton->setIcon(CryIcon("icons:General/Save_as.ico"));
-	m_saveLoadButton->setToolTip(tr("Save/Load Filters"));
+	m_saveLoadButton->setText(tr("Save/Load Filter"));
+	m_saveLoadButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	connect(m_saveLoadButton, &QToolButton::clicked, [this]() { ShowSavedFilters(); });
+
+	QToolButton* pClearCriteria = new QToolButton();
+	pClearCriteria->setIcon(CryIcon("icons:General/Element_Clear.ico"));
+	pClearCriteria->setText(tr("Clear Criteria"));
+	pClearCriteria->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+	connect(pClearCriteria, &QToolButton::clicked, this, &QFilteringPanel::Clear);
 
 	m_favoritesButton = new QToolButton();
 	m_favoritesButton->setIcon(FavoritesHelper::GetFavoriteIcon(false));
 	m_favoritesButton->setCheckable(true);
-	m_favoritesButton->setMaximumSize(QSize(20, 20));
 	m_favoritesButton->setToolTip(tr("Show favorites"));
 	connect(m_favoritesButton, &QToolButton::toggled, [=](bool checked)
 	{
@@ -508,34 +535,59 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 	m_optionsButton = new QToolButton();
 	m_optionsButton->setIcon(CryIcon("icons:General/Filter.ico"));
 	m_optionsButton->setCheckable(true);
-	m_optionsButton->setMaximumSize(QSize(20, 20));
 	connect(m_optionsButton, &QToolButton::clicked, [=]()
 	{
 		SetExpanded(!IsExpanded());
 		UpdateOptionsIcon();
 	});
+
+	//Quick filters on right click on filter button
+	{
+		QMenu* const pMenu = new QMenu(this);
+		m_optionsButton->setMenu(pMenu);
+		m_optionsButton->setContextMenuPolicy(Qt::CustomContextMenu);
+		m_optionsButton->setObjectName("Filter");
+		connect(m_optionsButton, &QToolButton::customContextMenuRequested, [this]() 
+		{
+			CAbstractMenu abstractMenu;
+			FillMenu(&abstractMenu);
+			abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(m_optionsButton->menu()));
+			m_optionsButton->showMenu();
+		});
+	}
 	
 	m_optionsLayout = new QGridLayout();
 	m_optionsLayout->setContentsMargins(0, 0, 0, 0);
+	m_optionsLayout->setMargin(0);
+	m_optionsLayout->setSpacing(0);
 	m_optionsLayout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 	m_optionsLayout->setSizeConstraint(QLayout::SetMinAndMaxSize);
 	m_optionsLayout->addWidget(m_addFilterButton, 0, 0, Qt::AlignLeft);
-	m_optionsLayout->addWidget(m_saveLoadButton, 0, 1, Qt::AlignLeft);
+	m_optionsLayout->addWidget(pClearCriteria, 0, 1, Qt::AlignLeft);
+	m_optionsLayout->addWidget(m_saveLoadButton, 0, 2, Qt::AlignLeft);
 
 	m_pFiltersLayout = new QVBoxLayout();
 	m_pFiltersLayout->setContentsMargins(0, 0, 0, 0);
 	m_pFiltersLayout->setSpacing(0);
+	m_pFiltersLayout->setMargin(0);
 	m_pFiltersLayout->addLayout(m_optionsLayout);
 	m_pFiltersLayout->addStretch();
 
 	m_pFiltersWidget = QtUtil::MakeScrollable(m_pFiltersLayout);
 	m_pFiltersWidget->setHidden(true);
 
-	QHBoxLayout* topBar = new QHBoxLayout();
-	topBar->setContentsMargins(0, 0, 0, 0);
-	topBar->addWidget(m_favoritesButton);
-	topBar->addWidget(m_pSearchBox);
-	topBar->addWidget(m_optionsButton);
+	QWidget* pTopBarContainer = new QWidget();
+	pTopBarContainer->setObjectName("SearchBoxContainer");
+
+	QHBoxLayout* pTopBarLayout = new QHBoxLayout();
+	pTopBarLayout->setSpacing(0);
+	pTopBarLayout->setMargin(0);
+	pTopBarLayout->setAlignment(Qt::AlignTop);
+	pTopBarLayout->addWidget(m_favoritesButton);
+	pTopBarLayout->addWidget(m_pSearchBox);
+	pTopBarLayout->addWidget(m_optionsButton);
+
+	pTopBarContainer->setLayout(pTopBarLayout);
 
 	m_splitter = new QSplitter();
 	m_splitter->setOrientation(Qt::Vertical);
@@ -543,8 +595,9 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 	m_splitter->addWidget(m_pFiltersWidget);
 
 	QVBoxLayout* vbox = new QVBoxLayout();
-	vbox->setContentsMargins(0, 0, 0, 0);
-	vbox->addLayout(topBar);
+	vbox->setSpacing(0);
+	vbox->setMargin(0);
+	vbox->addWidget(pTopBarContainer);
 	vbox->addWidget(m_splitter);
 	setLayout(vbox);
 
@@ -611,31 +664,95 @@ bool QFilteringPanel::HasActiveFilters() const
 	return false;
 }
 
-void QFilteringPanel::FillMenu(CAbstractMenu* pMenu, QString& submenuName)
+void QFilteringPanel::CreateMenu(CAbstractMenu* pParentMenu)
+{
+	const QString filterMenuName(tr("Apply Filter"));
+
+	// Make sure a menu with this name doesn't already exist, if so clear it
+	string menuName = QtUtil::ToString(filterMenuName);
+	CAbstractMenu* pFilterMenu = pParentMenu->FindMenu(menuName);
+
+	if (!pFilterMenu)
+	{
+		pFilterMenu = pParentMenu->CreateMenu(menuName);
+	}
+
+	pFilterMenu->signalAboutToShow.Connect(this, &QFilteringPanel::FillMenu);
+}
+
+void QFilteringPanel::FillMenu(CAbstractMenu* pMenu)
 {
 	if (!pMenu)
 	{
 		return;
 	}
 
-	pMenu = submenuName.isEmpty() ? pMenu : pMenu->CreateMenu(submenuName);
-	int section = pMenu->IsEmpty() ? CAbstractMenu::eSections_Default : pMenu->GetNextEmptySection();
+	pMenu->Clear();
 
 	const QVector<QString> filters = GetSavedFilters();
 	for (QString filterName : filters)
 	{
-		QAction* const pAction = pMenu->CreateAction(filterName, section);
-		connect(pAction, &QAction::triggered, [this, filterName]()
+		QAction* const pAction = pMenu->CreateAction(filterName);
+		pAction->setCheckable(true);
+		pAction->setChecked(IsFilterSet(filterName));
+		connect(pAction, &QAction::triggered, [this, filterName](bool checked)
 		{
-			LoadFilter(filterName);
+			if (checked)
+			{
+				LoadFilter(filterName);
+			}
+			else
+			{
+				Clear();
+			}
 		});
 	}
 
-	if (!submenuName.isEmpty() && pMenu->IsEmpty())
-	{ 
-		QAction* const pAction = pMenu->CreateAction(tr("No Saved Filters"), section);
+	// If there are filters then add a section for clearing the current criteria
+	if (filters.empty())
+	{
+		QAction* const pAction = pMenu->CreateAction(tr("No Saved Filters"));
 		pAction->setEnabled(false);
 	}
+
+	int section = pMenu->GetNextEmptySection();
+
+	QAction* pClearCriteria = pMenu->CreateAction("Clear Criteria", section);
+	pClearCriteria->setIcon(CryIcon("icons:General/Element_Clear.ico"));
+	connect(pClearCriteria, &QAction::triggered, this, &QFilteringPanel::Clear);
+}
+
+bool QFilteringPanel::IsFilterSet(const QString& filterName) const
+{
+	auto savedFiltersVariant = GetIEditor()->GetPersonalizationManager()->GetProjectProperty("QFilteringPanel", m_uniqueName);
+	if (!savedFiltersVariant.isValid() || savedFiltersVariant.type() != QVariant::Map)
+		return false;
+
+	QVariantMap map = savedFiltersVariant.toMap();
+	QVariant state = map[filterName];
+	if (!state.isValid() || state.type() != QVariant::List)
+		return false;
+
+	QVariantList filtersList = state.value<QVariantList>();
+
+	if (m_filters.size() != filtersList.size())
+		return false;
+
+	int idx = 0;
+	for (QVariant& var : filtersList)
+	{
+		if (var.isValid() && var.type() == QVariant::Map)
+		{
+			if (!m_filters[idx++]->HasSameState(var.value<QVariantMap>()))
+				return false;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 QVector<QString> QFilteringPanel::GetSavedFilters() const
@@ -669,10 +786,7 @@ void QFilteringPanel::ShowFavoriteFilter(bool show, bool isFiltering)
 	if (show && !m_favoritesFilter)
 	{
 		m_favoritesFilter = std::make_shared<CAttributeFilter>(&Attributes::s_favoriteAttribute);
-
-		std::vector<Attributes::IAttributeFilterOperator*> operators;
-		Attributes::GetOperatorsForType(eAttributeType_Boolean, operators);
-		m_favoritesFilter->SetOperator(operators[0]);
+		m_favoritesFilter->SetOperator(Attributes::s_booleanAttributeType.GetDefaultOperator());
 		m_favoritesFilter->SetFilterValue(Qt::Checked);//value is not changed, we just enable or disable the filter
 		m_favoritesFilter->SetEnabled(m_favoritesButton->isChecked());
 		m_pModel->AddFilter(m_favoritesFilter);
@@ -778,7 +892,7 @@ QVariantMap QFilteringPanel::GetState() const
 	//Getting filter state should be reused for save and load filters
 	if (!m_filters.empty())
 	{
-		state.insert("filterState", GetFilterState());
+		state.insert("filters", GetFilterState());
 	}
 
 	state.insert("expanded", IsExpanded());
@@ -872,6 +986,24 @@ QFilteringPanel::CFilterWidget* QFilteringPanel::AddFilter()
 	return pFilterWidget;
 }
 
+void QFilteringPanel::AddFilter(const QString& attributeName, const QString& operatorName, const QString& filterValue)
+{
+	QVariantMap state;
+	state.insert("enabled", true);
+	state.insert("inverted", false);
+	state.insert("attributeName", attributeName);
+	state.insert("operator", operatorName);
+	state.insert("filterValue", filterValue);
+
+	auto filter = AddFilter();
+	filter->SetState(state);
+}
+
+void QFilteringPanel::OverrideAttributeEnumEntries(const QString& attributeName, const QStringList& values)
+{
+	m_attributeValues[attributeName] = values;
+}
+
 void QFilteringPanel::SaveFilter(const char* filterName)
 {
 	auto savedFiltersVariant = GetIEditor()->GetPersonalizationManager()->GetProjectProperty("QFilteringPanel", m_uniqueName);
@@ -935,6 +1067,10 @@ QVariant QFilteringPanel::GetFilterState() const
 
 void QFilteringPanel::SetFilterState(const QVariant& state)
 {
+	if (m_attributes.empty())
+	{
+		return;
+	}
 	if (state.isValid() && state.type() == QVariant::List)
 	{
 		QVariantList filtersList = state.value<QVariantList>();
@@ -947,6 +1083,16 @@ void QFilteringPanel::SetFilterState(const QVariant& state)
 			}
 		}
 	}
+}
+
+const QStringList* QFilteringPanel::GetAttributeEnumEntries(const QString& attributeName)
+{
+	auto it = m_attributeValues.find(attributeName);
+	if (it == m_attributeValues.end())
+	{
+		return nullptr;
+	}
+	return &it->second;
 }
 
 void QFilteringPanel::OnFilterChanged()
@@ -972,3 +1118,10 @@ void QFilteringPanel::OnSearch()
 	signalOnFiltered();
 }
 
+void QFilteringPanel::paintEvent(QPaintEvent* pEvent)
+{
+	QStyleOption opt;
+	opt.init(this);
+	QPainter p(this);
+	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
+}

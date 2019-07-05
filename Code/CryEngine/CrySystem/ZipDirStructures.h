@@ -179,10 +179,10 @@ struct Error
 {
 	Error(ErrorEnum _nError, const char* _szDescription, const char* _szFunction, const char* _szFile, unsigned _nLine) :
 		nError(_nError),
-		m_szDescription(_szDescription),
 		szFunction(_szFunction),
 		szFile(_szFile),
-		nLine(_nLine)
+		nLine(_nLine),
+		m_szDescription(_szDescription)
 	{
 	}
 
@@ -224,8 +224,7 @@ template<class _Heap>
 struct TSmartHeapPtr
 {
 	TSmartHeapPtr(_Heap* pHeap) :
-		m_pHeap(pHeap),
-		m_pAddress(NULL)
+		m_pHeap(pHeap)
 	{
 	}
 	~TSmartHeapPtr()
@@ -242,7 +241,7 @@ struct TSmartHeapPtr
 	void* Detach()
 	{
 		void* p = m_pAddress;
-		m_pAddress = NULL;
+		m_pAddress = nullptr;
 		return p;
 	}
 
@@ -251,12 +250,12 @@ struct TSmartHeapPtr
 		if (m_pAddress)
 		{
 			m_pHeap->FreeTemporary(m_pAddress);
-			m_pAddress = NULL;
+			m_pAddress = nullptr;
 		}
 	}
 protected:
 	// the pointer to free
-	void*  m_pAddress;
+	void*  m_pAddress = nullptr;
 	_Heap* m_pHeap;
 };
 

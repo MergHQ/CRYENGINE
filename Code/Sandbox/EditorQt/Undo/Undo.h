@@ -7,8 +7,8 @@
 #include "IUndoManager.h"
 
 struct IUndoObject;
-class CUndoStep;
 class CSuperUndoStep;
+class CUndoStep;
 
 /*!
  *	CUndoManager is keeping and operating on CUndo class instances.
@@ -50,10 +50,9 @@ public:
 	void Redo(int numSteps = 1);
 
 	//! Check if undo information is recording now.
-	bool IsUndoRecording() const { return (m_bRecording || m_bSuperRecording) && m_suspendCount == 0; };
+	bool IsUndoRecording() const { return (m_bRecording || m_bSuperRecording) && m_suspendCount == 0; }
 
-	//////////////////////////////////////////////////////////////////////////
-	bool IsUndoSuspended() const   { return m_suspendCount != 0; };
+	bool IsUndoSuspended() const   { return m_suspendCount != 0; }
 	bool IsUndoTransaction() const { return m_bUndoing || m_bRedoing; }
 
 	//! Put new undo object, must be called between Begin and Accept/Cancel methods.
@@ -88,7 +87,7 @@ public:
 	void ClearRedoStack(int num);
 
 	//! Clears num undo objects in undo stack
-	void ClearUndoStack(int num);
+	void                         ClearUndoStack(int num);
 
 	void                         AddListener(IUndoManagerListener* pListener);
 	void                         RemoveListener(IUndoManagerListener* pListener);
@@ -96,7 +95,7 @@ public:
 	const std::list<CUndoStep*>& GetUndoStack() const { return m_undoStack; }
 	const std::list<CUndoStep*>& GetRedoStack() const { return m_redoStack; }
 
-private: // ---------------------------------------------------------------
+private:
 
 	void BeginUndoTransaction();
 	void EndUndoTransaction();
@@ -118,5 +117,3 @@ private: // ---------------------------------------------------------------
 
 	std::vector<IUndoManagerListener*> m_listeners;
 };
-
-

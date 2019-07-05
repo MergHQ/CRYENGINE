@@ -2,10 +2,6 @@
 
 #include "StdAfx.h"
 #include "PrimitiveShape.h"
-#include "SurfaceInfoPicker.h"
-#include "ViewManager.h"
-#include "Core/Helper.h"
-#include "Core/PolygonDecomposer.h"
 
 namespace Designer
 {
@@ -365,4 +361,3 @@ void PrimitiveShape::CreateCircle(const BrushVec3& mins, const BrushVec3& maxs, 
 	}
 }
 }
-

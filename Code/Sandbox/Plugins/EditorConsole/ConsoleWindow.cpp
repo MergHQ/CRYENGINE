@@ -3,22 +3,25 @@
 #include "StdAfx.h"
 #include "ConsoleWindow.h"
 #include "ConsolePlugin.h"
-#include <QTimer>
-#include <QKeyEvent>
-#include <QScrollBar>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QtUtil.h>
-#include <QClipboard>
-#include <QMenu>
-#include "FileDialogs/SystemFileDialog.h"
-#include <QDir>
+#include "TabLineEdit.h"
+
+#include <Commands/QCommandAction.h>
+#include <EditorFramework/Events.h>
 #include <EditorStyleHelper.h>
-#include <CryIcon.h>
-#include <QToolButton>
-#include <QTime>
+#include <FileDialogs/SystemFileDialog.h>
 #include <Preferences/GeneralPreferences.h>
-#include <Menu/AbstractMenu.h>
+
+#include <QDir>
+#include <QHBoxLayout>
+#include <QKeyEvent>
+#include <QMenu>
+#include <QPushButton>
+#include <QTextEdit>
+#include <QTime>
+#include <QTimer>
+#include <QToolButton>
+#include <QVBoxLayout>
+#include <QWidget>
 
 //timer interval, in ms, for forcing the popup window in place
 //once this is no longer necessary, set this to 0 to save some cycles
@@ -34,6 +37,7 @@ CConsoleWindow::CConsoleWindow(QWidget* pParent /*= nullptr*/)
 {
 	//set up UI
 	SetupUI();
+	RegisterActions();
 
 	//attach event handlers
 	connect(m_pInput, &QLineEdit::textEdited, this, &CConsoleWindow::HandleInput);
@@ -42,9 +46,11 @@ CConsoleWindow::CConsoleWindow(QWidget* pParent /*= nullptr*/)
 	connect(&m_popup, &CAutoCompletePopup::selectionChanged, this, &CConsoleWindow::HandleAutoCompleteSelection);
 	connect(&m_searchBox, &QSearchBox::textChanged, this, &CConsoleWindow::SearchBox);
 	connect(&m_searchBox, &QSearchBox::returnPressed, this, &CConsoleWindow::OnFindNext);
+	m_pHistory->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(m_pHistory, &QTextEdit::customContextMenuRequested, this, &CConsoleWindow::HandleContextMenu);
 
 	m_pInput->installEventFilter(this);
-	
+
 	layout()->setContentsMargins(1, 1, 1, 1);
 
 	gEnv->pLog->AddCallback(this);
@@ -54,8 +60,19 @@ CConsoleWindow::CConsoleWindow(QWidget* pParent /*= nullptr*/)
 	m_searchWidget->hide();
 
 	m_searchBackwards = false;
+}
+
+void CConsoleWindow::Initialize()
+{
+	CDockableEditor::Initialize();
 
 	InitMenu();
+}
+
+void CConsoleWindow::RegisterActions()
+{
+	RegisterAction("general.save", &CConsoleWindow::OnSave);
+	RegisterAction("general.clear", &CConsoleWindow::ClearConsole);
 }
 
 void CConsoleWindow::InitMenu()
@@ -63,23 +80,20 @@ void CConsoleWindow::InitMenu()
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu,
 		CEditor::MenuItems::EditMenu,
-		CEditor::MenuItems::Save
-	};
+		CEditor::MenuItems::Save };
 	AddToMenu(&items[0], CRY_ARRAY_COUNT(items));
 
 	auto pEditMenu = GetMenu(MenuItems::EditMenu);
-	pEditMenu->AddAction(GetAction("general.consoleClearLog"), -1, -1);
+	pEditMenu->AddCommandAction(GetAction("general.clear"), -1, -1);
 
 	const CEditor::MenuItems items2[] = {
 		CEditor::MenuItems::Find,
 		CEditor::MenuItems::FindNext,
-		CEditor::MenuItems::FindPrevious
-	};
+		CEditor::MenuItems::FindPrevious };
 	AddToMenu(&items2[0], CRY_ARRAY_COUNT(items2));
 
 	const CEditor::MenuItems itemsHelp[] = {
-		CEditor::MenuItems::HelpMenu,
-	};
+		CEditor::MenuItems::HelpMenu, };
 
 	AddToMenu(&itemsHelp[0], CRY_ARRAY_COUNT(itemsHelp));
 
@@ -167,15 +181,11 @@ void CConsoleWindow::SetupUI()
 {
 	QWidget* m_pCentralWidget = new QWidget();
 
-	setObjectName(QStringLiteral("ConsoleWindow"));
-	resize(551, 386);
 	m_pCentralWidget->setObjectName(QStringLiteral("m_pCentralWidget"));
 	QVBoxLayout* verticalLayout = new QVBoxLayout(m_pCentralWidget);
 	verticalLayout->setSpacing(2);
 	verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
 	verticalLayout->setContentsMargins(1, 2, 2, 2);
-
-	layout()->addWidget(m_pMenuBar);
 
 	m_pHistory = new QTextEdit();
 	m_pHistory->setReadOnly(true);
@@ -247,10 +257,7 @@ void CConsoleWindow::SetupUI()
 
 	verticalLayout->addWidget(m_pInput, Qt::AlignBottom);
 
-	setLayout(verticalLayout);
-
-	layout()->addWidget(m_pCentralWidget);
-
+	SetContent(verticalLayout);
 } // setupUi
 
 //handle new incoming log lines
@@ -346,7 +353,7 @@ void CConsoleWindow::HandleTab()
 			}
 
 		}
-		else if (!completion.isEmpty() && m_pInput->text().simplified().compare(completion, Qt::CaseInsensitive)==0 )
+		else if (!completion.isEmpty() && m_pInput->text().simplified().compare(completion, Qt::CaseInsensitive) == 0)
 		{
 			m_pInput->setText(m_popup.SelectNext().append(QStringLiteral(" ")));
 		}
@@ -385,21 +392,6 @@ void CConsoleWindow::HandleEnter()
 		value = current;
 		value.replace(name, QStringLiteral(""));
 		value = value.simplified();
-	}
-
-	// SHIP HACK: ToolTabManager immediately deletes all panels(and child widgets) before they can finish
-	// execution. Any layout commands that are executed through the console window will very likely cause 
-	// the application to crash. In this case QLineEdit hasn't finished handling of the ENTER key press,
-	// when it gets destroyed and continues execution. As a solution, we will defer the handling of layout
-	// commands until the next frame
-	if (current.startsWith("layout."))
-	{
-		m_pInput->clearFocus();
-		QTimer::singleShot(0, [current]()
-		{
-			GetIEditor()->GetICommandManager()->Execute(current.toStdString().c_str());
-		});
-		return;
 	}
 
 	string logString = GetIEditor()->GetICommandManager()->Execute(current.toStdString().c_str());
@@ -475,12 +467,12 @@ void CConsoleWindow::MovePopup(bool force)
 		// Resize Popup Height
 		int cutSizeY = -(globalYpos.y() - defaultPopupHeight - topMarginSize - inputEditBorderSize);
 
-		if (cutSizeY>0)
+		if (cutSizeY > 0)
 		{
 			m_popup.setMinimumHeight(defaultPopupHeight - cutSizeY);
 			m_popup.setMaximumHeight(defaultPopupHeight - cutSizeY);
 		}
-		else if (cutSizeY<=0)
+		else if (cutSizeY <= 0)
 		{
 			m_popup.setMinimumHeight(defaultPopupHeight);
 			m_popup.setMaximumHeight(defaultPopupHeight);
@@ -614,21 +606,9 @@ bool CConsoleWindow::event(QEvent* pEvent)
 		switch (pEvent->type())
 		{
 		case QEvent::WindowDeactivate:
-		    {
+			{
 				m_popup.hide();
-		    }
-		}
-	}
-
-	if (pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* commandEvent = static_cast<CommandEvent*>(pEvent);
-
-		const string& command = commandEvent->GetCommand();
-		if (command == "general.consoleClearLog")
-		{
-			pEvent->setAccepted(ClearConsole());
-			return true;
+			}
 		}
 	}
 
@@ -773,7 +753,7 @@ bool CConsoleWindow::ClearConsole()
 
 bool CConsoleWindow::eventFilter(QObject* o, QEvent* ev)
 {
-	if (o == m_pInput && ev->type() == QEvent::FocusOut)		
+	if (o == m_pInput && ev->type() == QEvent::FocusOut)
 	{
 		m_popup.hide();
 	}
@@ -781,16 +761,10 @@ bool CConsoleWindow::eventFilter(QObject* o, QEvent* ev)
 	return CDockableEditor::eventFilter(o, ev);
 }
 
-namespace
+void CConsoleWindow::HandleContextMenu(const QPoint& pt)
 {
-namespace Private_EditorConsoleCommands
-{
-void PyConsoleClearLog()
-{
-	CommandEvent("general.consoleClearLog").SendToKeyboardFocus();
+	QMenu* menu = m_pHistory->createStandardContextMenu();
+	menu->insertAction(menu->actions()[0], GetAction("general.clear"));
+	menu->exec(m_pHistory->mapToGlobal(pt));
+	delete menu;
 }
-}
-}
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorConsoleCommands::PyConsoleClearLog, general, consoleClearLog, "Clear", "general.consoleClearLog()");
-

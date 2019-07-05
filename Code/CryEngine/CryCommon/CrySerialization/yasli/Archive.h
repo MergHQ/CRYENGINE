@@ -15,6 +15,7 @@
 #include <CrySerialization/yasli/Helpers.h>
 #include <CrySerialization/yasli/Serializer.h>
 #include <CrySerialization/yasli/KeyValue.h>
+#include <CrySerialization/yasli/KeyValueDictionary.h>
 #include <CrySerialization/yasli/TypeID.h>
 
 #define YASLI_HELPERS_DECLARE_DEFAULT_SERIALIZEABLE_TYPE(type) template <> struct IsDefaultSerializaeble<type> { static const bool value = true; };
@@ -26,6 +27,7 @@ struct CallbackInterface;
 
 class Object;
 class KeyValueInterface;
+class KeyValueDictionaryInterface;
 class EnumDescription;
 template <class Enum>
 EnumDescription& getEnumDescription();
@@ -56,7 +58,7 @@ struct Context {
 	Context* previousContext;
 	Archive* archive;
 
-	Context() : archive(0), object(0), previousContext(0) {}
+	Context() :  object(0), previousContext(0), archive(0) {}
 	template<class T>
 	void set(T* object);
 	template<class T>
@@ -86,10 +88,10 @@ public:
 	};
 
 	Archive(int caps)
-	: lastContext_(0)
-	, caps_(caps)
+	: caps_(caps)
 	, filter_(YASLI_DEFAULT_FILTER)
 	, modifiedRow_(nullptr)
+	, lastContext_(0)
 	{
 	}
 	virtual ~Archive() {}
@@ -141,6 +143,7 @@ public:
 	virtual bool operator()(PointerInterface& ptr, const char* name = "", const char* label = 0);
 	virtual bool operator()(Object& obj, const char* name = "", const char* label = 0) { return false; }
 	virtual bool operator()(KeyValueInterface& keyValue, const char* name = "", const char* label = 0) { return operator()(Serializer(keyValue), name, label); }
+	virtual bool operator()(KeyValueDictionaryInterface& container, const char* name = "", const char* label = 0);
 	virtual bool operator()(CallbackInterface& callback, const char* name = "", const char* label = 0) { return false; }
 
 	// No point in supporting long double since it is represented as double on MSVC
@@ -160,7 +163,7 @@ public:
 	// Used to add tooltips in PropertyTree
 	void doc(const char* docString);
 
-	// block call are osbolete, please do not use
+	// block call are obsolete, please do not use
 	virtual bool openBlock(const char* name, const char* label,const char* icon=0) { return true; }
 	virtual void closeBlock() {}
 
@@ -201,7 +204,7 @@ struct SerializeStruct{
 	static bool invoke(Archive& ar, T& value, const char* name, const char* label){
 		Serializer serializer(value);
 		return ar(serializer, name, label);
-	};
+	}
 };
 
 //Enum classes may define an enum type that is not sizeof(int), therefore reinterpret_cast is dangerous and leads to bugs.
@@ -214,7 +217,7 @@ struct SerializeEnum{
 		bool ret = serializeEnum(enumDescription, ar, valueHolder, name, label);
 		value = (Enum)valueHolder;
 		return ret;
-	};
+	}
 };
 
 template<class Enum>
@@ -222,7 +225,7 @@ struct SerializeEnum<Enum, sizeof(int)>{
 	static bool invoke(Archive& ar, Enum& value, const char* name, const char* label) {
 		const EnumDescription& enumDescription = getEnumDescription<Enum>();
 		return serializeEnum(enumDescription, ar, reinterpret_cast<int&>(value), name, label);
-	};
+	}
 };
 
 template<class T>
@@ -329,6 +332,11 @@ inline bool Archive::operator()(PointerInterface& ptr, const char* name, const c
 {
 	Serializer ser(ptr);
 	return operator()(ser, name, label);
+}
+
+inline bool Archive::operator()(KeyValueDictionaryInterface& container, const char* name, const char* label)
+{
+	return container.serializeAsVector(*this, name, label);
 }
 
 template<class T, int Size>

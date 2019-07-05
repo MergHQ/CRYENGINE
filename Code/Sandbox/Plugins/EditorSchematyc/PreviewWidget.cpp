@@ -11,7 +11,7 @@
 #include <QViewportConsumer.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySerialization/IArchiveHost.h>
-#include <QAdvancedPropertyTree.h>
+#include <QAdvancedPropertyTreeLegacy.h>
 
 #include "Objects/DisplayContext.h"
 #include "QViewportEvents.h"
@@ -25,7 +25,7 @@ CPreviewSettingsWidget::CPreviewSettingsWidget(CPreviewWidget& previewWidget)
 {
 	QVBoxLayout* pLayout = new QVBoxLayout(this);
 
-	m_pPropertyTree = new QAdvancedPropertyTree("Preview Settings");
+	m_pPropertyTree = new QAdvancedPropertyTreeLegacy("Preview Settings");
 	m_pPropertyTree->setExpandLevels(4);
 	m_pPropertyTree->setValueColumnWidth(0.6f);
 	m_pPropertyTree->setAutoRevert(false);
@@ -77,8 +77,12 @@ void CGizmoTranslateOp::OnRelease()
 CPreviewWidget::CPreviewWidget(QWidget* pParent)
 	: QWidget(pParent)
 {
+	IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc;
+	graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+	graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+
 	m_pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom);
-	m_pViewport = new QViewport(gEnv, this);
+	m_pViewport = new QViewport(gEnv, graphicsPipelineDesc, this);
 
 	m_viewportSettings.rendering.fps = false;
 	m_viewportSettings.grid.showGrid = true;
@@ -199,7 +203,7 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 
 			auto onBeginDrag = [this](IDisplayViewport*, ITransformManipulator*, const Vec2i&, int)
 			{
-				if (GetIEditor()->GetEditMode() == eEditModeMove)
+				if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 				{
 					IScriptComponentInstance* pComponentInstance = DynamicCast<IScriptComponentInstance>(gEnv->pSchematyc->GetScriptRegistry().GetElement(m_componentInstanceGUID));
 					if (pComponentInstance)
@@ -301,7 +305,7 @@ void CPreviewWidget::Serialize(Serialization::IArchive& archive)
 	}
 }
 
-bool CPreviewWidget::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm)
+bool CPreviewWidget::GetManipulatorMatrix(Matrix34& tm)
 {
 	return false;
 }
@@ -367,4 +371,3 @@ const Vec3 CPreviewWidget::ms_defaultOrbitTarget = Vec3(0.0f, 0.0f, 1.0f);
 const float CPreviewWidget::ms_defaultOrbitRadius = 2.0f;
 
 } // Schematyc
-

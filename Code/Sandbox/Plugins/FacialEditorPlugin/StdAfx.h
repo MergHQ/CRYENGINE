@@ -10,8 +10,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "EditorCommon.h"
 
-#include "PluginAPI.h"
-
 #include "Resource.h"
 
 #include "Util/Variable.h"

@@ -8,10 +8,15 @@
 //////////////////////////////////////////////////////////////////////////
 void SRenderNodeTempData::Free()
 {
+	DBG_LOCK_TO_THREAD(userData.pOwnerNode);
+
 	if (hasValidRenderObjects)
 	{
 		FreeRenderObjects();
 	}
+
+	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
+		CRY_ASSERT(!userData.arrPermanentRenderObjects[lod]);
 
 	if (userData.m_pFoliage)
 	{
@@ -25,10 +30,9 @@ void SRenderNodeTempData::Free()
 //////////////////////////////////////////////////////////////////////////
 CRenderObject* SRenderNodeTempData::GetRenderObject(int lod)
 {
-	CRY_ASSERT(!invalidRenderObjects);
+	DBG_LOCK_TO_THREAD(userData.pOwnerNode);
 
-	// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-	arrPermanentObjectLock[lod].WLock();
+	CRY_ASSERT(!invalidRenderObjects);
 
 	// Do we have to create a new permanent render object?
 	if (userData.arrPermanentRenderObjects[lod] == nullptr)
@@ -37,15 +41,32 @@ CRenderObject* SRenderNodeTempData::GetRenderObject(int lod)
 		hasValidRenderObjects = true;
 	}
 
-	CRenderObject* pRenderObject = userData.arrPermanentRenderObjects[lod];
-	arrPermanentObjectLock[lod].WUnlock();
+	return userData.arrPermanentRenderObjects[lod];
+}
 
-	return pRenderObject;
+//////////////////////////////////////////////////////////////////////////
+CRenderObject* SRenderNodeTempData::RefreshRenderObject(int lod)
+{
+	DBG_LOCK_TO_THREAD(userData.pOwnerNode);
+
+	CRY_ASSERT(!invalidRenderObjects);
+
+	if (userData.arrPermanentRenderObjects[lod] != nullptr)
+	{
+		gEnv->pRenderer->EF_FreeObject(userData.arrPermanentRenderObjects[lod]);
+	}
+
+	userData.arrPermanentRenderObjects[lod] = gEnv->pRenderer->EF_GetObject();
+
+	return userData.arrPermanentRenderObjects[lod];
 }
 
 void SRenderNodeTempData::FreeRenderObjects()
 {
-	CRY_ASSERT(hasValidRenderObjects);
+	if (!hasValidRenderObjects)
+		return;
+
+	DBG_LOCK_TO_THREAD(userData.pOwnerNode);
 
 	// Release permanent CRenderObject(s)
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
@@ -63,26 +84,25 @@ void SRenderNodeTempData::FreeRenderObjects()
 
 void SRenderNodeTempData::InvalidateRenderObjectsInstanceData()
 {
+	DBG_LOCK_TO_THREAD(userData.pOwnerNode);
+
 	if (!hasValidRenderObjects)
 		return;
 
-	// Release permanent CRenderObject(s)
+	// Invalidate permanent CRenderObject(s) instance-data
 	for (int lod = 0; lod < MAX_STATOBJ_LODS_NUM; ++lod)
 	{
-		// Object creation must be locked because CheckCreateRenderObject can be called on same node from different threads
-		arrPermanentObjectLock[lod].RLock();
-
 		if (userData.arrPermanentRenderObjects[lod])
 		{
-			userData.arrPermanentRenderObjects[lod]->SetInstanceDataDirty();
+			userData.arrPermanentRenderObjects[lod]->SetInstanceDataDirty(true);
 		}
-
-		arrPermanentObjectLock[lod].RUnlock();
 	}
 }
 
 void SRenderNodeTempData::SetClipVolume(IClipVolume* pClipVolume, const Vec3& pos)
 {
+	DBG_LOCK_TO_THREAD(userData.pOwnerNode);
+
 	userData.m_pClipVolume = pClipVolume;
 	userData.lastClipVolumePosition = pos;
 	userData.bClipVolumeAssigned = true;
@@ -90,6 +110,8 @@ void SRenderNodeTempData::SetClipVolume(IClipVolume* pClipVolume, const Vec3& po
 
 void SRenderNodeTempData::ResetClipVolume()
 {
+	DBG_LOCK_TO_THREAD(userData.pOwnerNode);
+
 	userData.m_pClipVolume = nullptr;
 	userData.bClipVolumeAssigned = false;
 }
@@ -100,9 +122,7 @@ CVisibleRenderNodesManager::CVisibleRenderNodesManager()
 	, m_currentNodesToDelete(0)
 	, m_lastUpdateFrame(0)
 	, m_firstAddedNode(-1)
-{
-
-}
+{}
 
 CVisibleRenderNodesManager::~CVisibleRenderNodesManager()
 {
@@ -166,8 +186,10 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 	m_currentNodesToDelete = (m_currentNodesToDelete) % MAX_DELETE_BUFFERS; // Always cycle delete buffers.
 	for (auto* node : m_toDeleteNodes[m_currentNodesToDelete])
 	{
+		DBG_LOCK_TO_THREAD(node->userData.pOwnerNode);
 		m_pool.Delete(node);
 	}
+
 	m_toDeleteNodes[m_currentNodesToDelete].clear();
 
 	{
@@ -180,65 +202,64 @@ void CVisibleRenderNodesManager::UpdateVisibleNodes(int currentFrame, int maxNod
 			for (size_t i = m_firstAddedNode, num = m_visibleNodes.size(); i < num; ++i)
 			{
 				SRenderNodeTempData* pTempData = m_visibleNodes[i];
-				if (pTempData->userData.pOwnerNode->m_pTempData.load() == pTempData)
+
+				if (IRenderNode* pOwnerNode = pTempData->userData.pOwnerNode)
 				{
-					OnRenderNodeVisibilityChange(pTempData->userData.pOwnerNode, true);
+					DBG_LOCK_TO_THREAD(pOwnerNode);
+					OnRenderNodeVisibilityChange(pOwnerNode, true);
 				}
 			}
 			m_firstAddedNode = -1;
 		}
 
-		int numNodes = m_visibleNodes.size();
-		int start = m_lastStartUpdateNode;
-		if (start >= numNodes)
+		auto b = m_visibleNodes.begin() + m_lastStartUpdateNode;
+		if (b >= m_visibleNodes.end())
 		{
-			start = 0;
+			b = m_visibleNodes.begin();
 			m_lastStartUpdateNode = 0;
 		}
-		int end = start + maxNodesToCheck;
-		if (end > numNodes)
-			end = numNodes;
 
-		int lastNode = numNodes - 1;
-
-		int maxFrames = (uint32)C3DEngine::GetCVars()->e_RNTmpDataPoolMaxFrames;
-		int numItemsToDelete = 0;
-		for (int i = start; i < end && i <= lastNode; ++i)
+		const auto maxFrames = (uint32)C3DEngine::GetCVars()->e_RNTmpDataPoolMaxFrames;
+		for (int i=0; i<maxNodesToCheck && b!=m_visibleNodes.end(); ++i)
 		{
-			SRenderNodeTempData* pTempData = m_visibleNodes[i];
+			auto pTempData = *b;
 
-			int lastSeenFrame = std::max(pTempData->userData.lastSeenFrame[0], pTempData->userData.lastSeenFrame[1]);
+			auto lastSeenFrame = std::max(pTempData->userData.lastSeenFrame[0], pTempData->userData.lastSeenFrame[1]);
 			lastSeenFrame = std::max(lastSeenFrame, pTempData->userData.lastSeenShadowFrame);
-			int diff = std::abs(currentFrame - lastSeenFrame);
-			if (diff > maxFrames)
+			auto diff = (uint32)std::abs(currentFrame - lastSeenFrame);
+			if (diff > maxFrames || !pTempData->userData.pOwnerNode)
 			{
-				// clear reference to use from owning render node.
-				SRenderNodeTempData* pOldData = pTempData;
-				if (pTempData->userData.pOwnerNode->m_pTempData.compare_exchange_strong(pOldData, nullptr))
+				if (IRenderNode* pOwnerNode = pTempData->userData.pOwnerNode)
 				{
-					OnRenderNodeVisibilityChange(pTempData->userData.pOwnerNode, false);
+					DBG_LOCK_TO_THREAD(pOwnerNode);
+
+					// clear reference to use from owning render node.
+					OnRenderNodeVisibilityChange(pOwnerNode, false);
+
+					pOwnerNode->m_pTempData = nullptr;
+					pTempData->userData.pOwnerNode = nullptr;
 				}
 
 				m_toDeleteNodes[m_currentNodesToDelete].push_back(pTempData);
-				if (i < lastNode)
+
+				// Swap and erase
+				auto penultimate = std::prev(m_visibleNodes.end());
+				if (b == penultimate)
 				{
-					// move item from the end of the array to this spot, and repeat check on same index.
-					m_visibleNodes[i] = m_visibleNodes[lastNode];
-					lastNode--;
-					i--;
+					b = m_visibleNodes.erase(penultimate);
 				}
-				numItemsToDelete++;
+				else
+				{
+					*b = *penultimate;
+					m_visibleNodes.erase(penultimate);
+				}
 			}
-			m_lastStartUpdateNode = i + 1;
+			else
+				++b;
 		}
-		// delete not relevant items at the end.
-		if (numItemsToDelete > 0)
-		{
-			m_visibleNodes.resize(m_visibleNodes.size() - numItemsToDelete);
-		}
+		m_lastStartUpdateNode = (int)std::distance(m_visibleNodes.begin(), b);
 		// LOCK END
 	}
-	return;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -247,12 +268,12 @@ void CVisibleRenderNodesManager::InvalidateAll()
 	// LOCK START
 	CryAutoCriticalSectionNoRecursive lock(m_accessLock);
 
-	for (auto* node : m_visibleNodes)
+	for (auto* pNode : m_visibleNodes)
 	{
-		SRenderNodeTempData* oldnode = node;
-		if (node->userData.pOwnerNode->m_pTempData.compare_exchange_strong(oldnode, nullptr))
+		if (IRenderNode* pOwnerNode = pNode->userData.pOwnerNode)
 		{
-			node->MarkForAutoDelete();
+			pNode->MarkForAutoDelete();
+			pOwnerNode->m_pTempData = nullptr;
 		}
 	}
 	// LOCK END
@@ -283,16 +304,7 @@ void CVisibleRenderNodesManager::ClearAll()
 //////////////////////////////////////////////////////////////////////////
 void CVisibleRenderNodesManager::OnRenderNodeVisibilityChange(IRenderNode* pRenderNode, bool bVisible)
 {
-	//if (!passInfo.IsCachedShadowPass())
-	{
-		pRenderNode->OnRenderNodeVisible(bVisible);
-
-		if (pRenderNode->GetOwnerEntity() && (pRenderNode->GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
-		{
-			// When render node becomes visible notify our owner render node that it is now visible.
-			pRenderNode->GetOwnerEntity()->OnRenderNodeVisibilityChange(bVisible);
-		}
-	}
+	pRenderNode->OnRenderNodeAndEntityVisibilityChanged(bVisible);
 }
 
 CVisibleRenderNodesManager::Statistics CVisibleRenderNodesManager::GetStatistics() const
@@ -305,21 +317,28 @@ CVisibleRenderNodesManager::Statistics CVisibleRenderNodesManager::GetStatistics
 
 void CVisibleRenderNodesManager::OnRenderNodeDeleted(IRenderNode* pRenderNode)
 {
-	// Remove pointer atomically
-	SRenderNodeTempData* pNodeTempData = pRenderNode->m_pTempData.exchange(nullptr);
+	SRenderNodeTempData* pNodeTempData = pRenderNode->m_pTempData;
 
 	if (pNodeTempData)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
-		auto iter = std::partition(m_visibleNodes.begin(), m_visibleNodes.end(),
-			[pNodeTempData](SRenderNodeTempData* pTempData) { return pTempData != pNodeTempData; });
+		CryAutoCriticalSectionNoRecursive lock(m_accessLock);
 
-		// Erase all duplicates, but only add it once (N:1 reduction)
+		auto iter = std::find(m_visibleNodes.begin(), m_visibleNodes.end(), pNodeTempData);
 		if (iter != m_visibleNodes.end())
 		{
-			m_visibleNodes.erase(iter, m_visibleNodes.end());
+			// Erase by swapping with back
+			auto penultimate = std::prev(m_visibleNodes.end());
+			*iter = *penultimate;
+			m_visibleNodes.erase(penultimate);
+
 			m_toDeleteNodes[m_currentNodesToDelete].push_back(pNodeTempData);
 		}
+
+		if (pNodeTempData->userData.pOwnerNode == pRenderNode)
+			pNodeTempData->userData.pOwnerNode = nullptr;
 	}
+
+	pRenderNode->m_pTempData = nullptr;
 }

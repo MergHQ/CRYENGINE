@@ -15,8 +15,6 @@
 #include <QApplication>
 #include <QPixmap>
 
-
-
 enum class EColumns
 {
 	ID = 0,
@@ -26,7 +24,6 @@ enum class EColumns
 	END_TRIGGER,
 	SUBTITLE,
 	LIPSYNC_ANIMATION,
-	STANDALONE_FILE,
 	PAUSE,
 	CUSTOM_DATA,
 	MAX_QUEUING_DURATION,
@@ -108,7 +105,7 @@ bool QDialogLineDatabaseModel::CanEdit(const QModelIndex& index) const
 	}
 	else if (itemType == EItemType::DIALOG_LINE)
 	{
-		return (column == EColumns::SUBTITLE || column == EColumns::START_TRIGGER || column == EColumns::END_TRIGGER || column == EColumns::LIPSYNC_ANIMATION || column == EColumns::STANDALONE_FILE || column == EColumns::PAUSE || column == EColumns::CUSTOM_DATA || column == EColumns::MAX_QUEUING_DURATION);
+		return (column == EColumns::SUBTITLE || column == EColumns::START_TRIGGER || column == EColumns::END_TRIGGER || column == EColumns::LIPSYNC_ANIMATION || column == EColumns::PAUSE || column == EColumns::CUSTOM_DATA || column == EColumns::MAX_QUEUING_DURATION);
 	}
 	return false;
 }
@@ -150,8 +147,6 @@ QVariant QDialogLineDatabaseModel::data(const QModelIndex& index, int role) cons
 				return tr("ATL audio trigger executed if the line is interrupted.");
 			case EColumns::LIPSYNC_ANIMATION:
 				return tr("Lipsync animation that will be played when the line is started.");
-			case EColumns::STANDALONE_FILE:
-				return tr("The standalone file played for this file.");
 			case EColumns::PAUSE:
 				return tr("The length of the additional pause after the line has finished (in seconds).");
 			case EColumns::CUSTOM_DATA:
@@ -193,8 +188,6 @@ QVariant QDialogLineDatabaseModel::data(const QModelIndex& index, int role) cons
 								return QtUtil::ToQStringSafe(pLine->GetEndAudioTrigger());
 							case EColumns::LIPSYNC_ANIMATION:
 								return QtUtil::ToQStringSafe(pLine->GetLipsyncAnimation());
-							case EColumns::STANDALONE_FILE:
-								return QtUtil::ToQStringSafe(pLine->GetStandaloneFile());
 							case EColumns::PAUSE:
 								return QtUtil::ToQStringSafe(CryStringUtils::toString(pLine->GetPauseLength()));
 							case EColumns::CUSTOM_DATA:
@@ -255,12 +248,6 @@ QVariant QDialogLineDatabaseModel::data(const QModelIndex& index, int role) cons
 								return QtUtil::ToQStringSafe(pDialogLineSet->GetLineByIndex(0)->GetLipsyncAnimation());
 							}
 							break;
-						case EColumns::STANDALONE_FILE:
-							if (pDialogLineSet->GetLineCount() > 0)
-							{
-								return QtUtil::ToQStringSafe(pDialogLineSet->GetLineByIndex(0)->GetStandaloneFile());
-							}
-							break;
 						case EColumns::PAUSE:
 							if (pDialogLineSet->GetLineCount() > 0)
 							{
@@ -310,9 +297,6 @@ bool QDialogLineDatabaseModel::setData(const QModelIndex& index, const QVariant&
 						break;
 					case EColumns::LIPSYNC_ANIMATION:
 						pLine->SetLipsyncAnimation(QtUtil::ToString(value.toString()));
-						break;
-					case EColumns::STANDALONE_FILE:
-						pLine->SetStandaloneFile(QtUtil::ToString(value.toString()));
 						break;
 					case EColumns::PAUSE:
 						pLine->SetPauseLength(value.toFloat());
@@ -397,12 +381,6 @@ bool QDialogLineDatabaseModel::setData(const QModelIndex& index, const QVariant&
 						pDialogLineSet->GetLineByIndex(0)->SetLipsyncAnimation(QtUtil::ToString(value.toString()));
 					}
 					break;
-				case EColumns::STANDALONE_FILE:
-					if (pDialogLineSet->GetLineCount() > 0)
-					{
-						pDialogLineSet->GetLineByIndex(0)->SetStandaloneFile(QtUtil::ToString(value.toString()));
-					}
-					break;
 				case EColumns::PAUSE:
 					if (pDialogLineSet->GetLineCount() > 0)
 					{
@@ -445,8 +423,6 @@ QVariant QDialogLineDatabaseModel::headerData(int section, Qt::Orientation orien
 			return tr("Line Interrupted Trigger");
 		case EColumns::LIPSYNC_ANIMATION:
 			return tr("Lipsync animation");
-		case EColumns::STANDALONE_FILE:
-			return tr("Standalone file");
 		case EColumns::PAUSE:
 			return tr("After line Pause");
 		case EColumns::CUSTOM_DATA:
@@ -699,8 +675,8 @@ bool QDialogLineDelegate::editorEvent(QEvent* pEvent, QAbstractItemModel* pModel
 				if (pEvent->type() == QEvent::MouseButtonDblClick)
 				{
 					QString previous = index.data(Qt::DisplayRole).toString();
-					dll_string control = GetIEditor()->GetResourceSelectorHost()->SelectResource("AudioTrigger", QtUtil::ToString(previous), m_pParent);
-					pModel->setData(index, QtUtil::ToQStringSafe(control.c_str()));
+					SResourceSelectionResult result = GetIEditor()->GetResourceSelectorHost()->SelectResource("AudioTrigger", QtUtil::ToString(previous), m_pParent);
+					pModel->setData(index, QtUtil::ToQStringSafe(result.selectedResource.c_str()));
 					return true;
 				}
 				return false;
@@ -745,4 +721,3 @@ void QDialogLineDelegate::paint(QPainter* painter, const QStyleOptionViewItem& o
 
 	QStyledItemDelegate::paint(painter, opt, index);
 }
-

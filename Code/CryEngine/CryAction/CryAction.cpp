@@ -1,17 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 20:7:2004   11:07 : Created by Marco Koegler
-   - 3:8:2004		16:00 : Taken-ver by Marcio Martins
-   - 2005              : Changed by everyone
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "CryAction.h"
 
@@ -27,7 +14,6 @@
 #include <CryCore/Platform/CryLibrary.h>
 #include <CryCore/Platform/platform_impl.inl>
 
-#include "AIDebugRenderer.h"
 #include "GameRulesSystem.h"
 #include "ScriptBind_ActorSystem.h"
 #include "ScriptBind_ItemSystem.h"
@@ -48,15 +34,16 @@
 #include "Network/GameStatsConfig.h"
 #include "Network/NetworkStallTicker.h"
 
-#include "AI/AIProxyManager.h"
-#include "AI/BehaviorTreeNodes_Action.h"
 #include <CryAISystem/ICommunicationManager.h>
 #include <CryAISystem/IFactionMap.h>
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CrySandbox/IEditorGame.h>
+#include <CrySystem/SystemInitParams.h>
+#include <CrySystem/CryVersion.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CrySystem/IStreamEngine.h>
+#include <Cry3DEngine/IColorGradingCtrl.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryGame/IGameStartup.h>
 
@@ -71,9 +58,6 @@
 
 #include "DevMode.h"
 #include "ActionGame.h"
-
-#include "AIHandler.h"
-#include "AIProxy.h"
 
 #include "CryActionCVars.h"
 
@@ -101,17 +85,12 @@
 
 #include "Network/GameClientNub.h"
 
-#include "DialogSystem/DialogSystem.h"
-#include "DialogSystem/ScriptBind_DialogSystem.h"
-#include "SubtitleManager.h"
-
 #include "LevelSystem.h"
 #include "ActorSystem.h"
 #include "ItemSystem.h"
 #include "VehicleSystem.h"
 #include "SharedParams/SharedParamsManager.h"
 #include "ActionMapManager.h"
-#include "ColorGradientManager.h"
 
 #include "Statistics/GameStatistics.h"
 #include "UIDraw/UIDraw.h"
@@ -127,6 +106,9 @@
 #include "Network/BreakReplicator.h"
 #include "CheckPoint/CheckPointSystem.h"
 #include "GameSession/GameSessionHandler.h"
+
+#include "AI/BehaviorTreeNodes_Action.h"
+#include "AIDebugRenderer.h"
 
 #include "AnimationGraph/DebugHistory.h"
 
@@ -145,9 +127,6 @@
 
 #include "SimpleHttpServer/SimpleHttpServerListener.h"
 #include "SimpleHttpServer/SimpleHttpServerWebsocketEchoListener.h"
-
-#include "SignalTimers/SignalTimers.h"
-#include "RangeSignalingSystem/RangeSignaling.h"
 
 #include "LivePreview/RealtimeRemoteUpdate.h"
 
@@ -182,10 +161,11 @@
 #include "LipSync/LipSync_FacialInstance.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CrySystem/ConsoleRegistration.h>
 
-#if defined(_LIB) && !defined(DISABLE_LEGACY_GAME_DLL)
-extern "C" IGameStartup* CreateGameStartup();
-#endif //_LIB
+#if !CrySharedLibrarySupported
+extern "C" IGameStartup * CreateGameStartup();
+#endif //!CrySharedLibrarySupported
 
 #define DEFAULT_BAN_TIMEOUT     (30.0f)
 
@@ -198,11 +178,9 @@ extern "C" IGameStartup* CreateGameStartup();
 #include "EntityContainers/EntityContainerMgr.h"
 #include "FlowSystem/Nodes/FlowEntityCustomNodes.h"
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
-
 CCryAction* CCryAction::m_pThis = 0;
 
-static const int s_saveGameFrameDelay = 3; // enough to render enough frames to display the save warning icon before the save generation
+static const int s_saveGameFrameDelay = 3; // Enough to render enough frames to display the save warning icon before the save generation.
 
 static const float s_loadSaveDelay = 0.5f;  // Delay between load/save operations.
 
@@ -251,7 +229,7 @@ void CCryAction::DumpMemInfo(const char* format, ...)
 	gEnv->pLog->LogWithType(ILog::eAlways, "Alloc=%" PRIu64 "d kb  String=%" PRIu64 " kb  STL-alloc=%" PRIu64 " kb  STL-wasted=%" PRIu64 " kb", (memInfo.allocated - memInfo.freed) >> 10, memInfo.CryString_allocated >> 10, memInfo.STL_allocated >> 10, memInfo.STL_wasted >> 10);
 }
 
-// no dot use iterators in first part because of calls of some listners may modify array of listeners (add new)
+// Do not use iterators in the first part. The array of listeners can be modified by calls to other listeners (they might add new listeners for example).
 #define CALL_FRAMEWORK_LISTENERS(func)                                  \
   {                                                                     \
     for (size_t n = 0; n < m_pGFListeners->size(); n++)                 \
@@ -306,14 +284,13 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pBreakableGlassSystem(0),
 	m_pForceFeedBackSystem(0),
 	m_pPlayerProfileManager(0),
-	m_pDialogSystem(0),
-	m_pSubtitleManager(0),
 	m_pEffectSystem(0),
 	m_pGameSerialize(0),
 	m_pCallbackTimer(0),
 	m_pLanQueryListener(0),
 	m_pDevMode(0),
-	m_pTimeDemoRecorder(0),
+	m_pTimeDemoRecorder(nullptr),
+	m_pDefaultTimeDemoRecorder(nullptr),
 	m_pGameQueryListener(0),
 	m_pRuntimeAreaManager(NULL),
 	m_pScriptA(0),
@@ -325,11 +302,9 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pScriptBindVehicle(0),
 	m_pScriptBindVehicleSeat(0),
 	m_pScriptInventory(0),
-	m_pScriptBindDS(0),
 	m_pScriptBindMFX(0),
 	m_pScriptBindUIAction(0),
 	m_pPersistantDebug(0),
-	m_pColorGradientManager(nullptr),
 #ifdef USE_NETWORK_STALL_TICKER_THREAD
 	m_pNetworkStallTickerThread(nullptr),
 	m_networkStallTickerReferences(0),
@@ -337,9 +312,7 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pMaterialEffectsCVars(0),
 	m_pEnableLoadingScreen(0),
 	m_pShowLanBrowserCVAR(0),
-	m_pDebugSignalTimers(0),
 	m_pAsyncLevelLoad(0),
-	m_pDebugRangeSignaling(0),
 	m_bShowLanBrowser(false),
 	m_isEditing(false),
 	m_bScheduleLevelEnd(false),
@@ -360,7 +333,6 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pAINetworkDebugRenderer(0),
 	m_pCooperativeAnimationManager(NULL),
 	m_pGameSessionHandler(0),
-	m_pAIProxyManager(0),
 	m_pCustomActionManager(0),
 	m_pCustomEventManager(0),
 	m_pPhysicsQueues(0),
@@ -368,25 +340,28 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pGameVolumesManager(NULL),
 	m_pNetMsgDispatcher(nullptr),
 	m_pEntityContainerMgr(nullptr),
-	m_pEntityAttachmentExNodeRegistry(nullptr)
+	m_pEntityAttachmentExNodeRegistry(nullptr),
+	m_pAnimateFragmentNodeCreator(new BehaviorTree::NodeCreator<BehaviorTree::AnimateFragment>("AnimateFragment")),
+	m_gameGUID("{00000000-0000-0000-0000-000000000000}")
 {
 	CRY_ASSERT(!m_pThis);
 	m_pThis = this;
 
 	m_editorLevelName[0] = 0;
 	m_editorLevelFolder[0] = 0;
-	cry_strcpy(m_gameGUID, "{00000000-0000-0000-0000-000000000000}");
 
 	Initialize(initParams);
 }
 
 CCryAction::~CCryAction()
 {
+	gEnv->pGameFramework = nullptr;
 }
 
 //------------------------------------------------------------------------
 void CCryAction::DumpMapsCmd(IConsoleCmdArgs* args)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int nlevels = GetCryAction()->GetILevelSystem()->GetLevelCount();
 	if (!nlevels)
 		CryLogAlways("$3No levels found!");
@@ -401,12 +376,7 @@ void CCryAction::DumpMapsCmd(IConsoleCmdArgs* args)
 
 		CryLogAlways("  %s [$9%s$o] Scan:%.4s Level:%.4s", level->GetName(), level->GetPath(), (char*)&scanTag, (char*)&levelTag);
 	}
-}
-//------------------------------------------------------------------------
-
-void CCryAction::ReloadReadabilityXML(IConsoleCmdArgs*)
-{
-	CAIFaceManager::LoadStatic();
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -482,8 +452,8 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 {
 	SLICE_SCOPE_DEFINE();
 
-	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "MapCmd");
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "MapCmd");
 
 	uint32 flags = eGSF_NonBlockingConnect;
 
@@ -826,8 +796,6 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 //------------------------------------------------------------------------
 void CCryAction::PlayCmd(IConsoleCmdArgs* args)
 {
-	IConsole* pConsole = gEnv->pConsole;
-
 	if (GetCryAction()->StartedGameContext())
 	{
 		GameWarning("Must stop the game before commencing playback");
@@ -900,11 +868,6 @@ void CCryAction::ConnectCmd(IConsoleCmdArgs* args)
 	params.hostname = tempHost.c_str();
 	params.pContextParams = NULL;
 	params.port = (gEnv->pLobby && gEnv->bMultiplayer) ? gEnv->pLobby->GetLobbyParameters().m_connectPort : pConsole->GetCVar("cl_serverport")->GetIVal();
-
-	if (!CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules())
-	{
-		params.flags |= eGSF_NoGameRules;
-	}
 
 	GetCryAction()->StartGameContext(&params);
 }
@@ -1052,7 +1015,7 @@ void CCryAction::LegacyStatusCmd(IConsoleCmdArgs* args)
 				name = pActor->GetEntity()->GetName();
 				entId = pActor->GetEntity()->GetId();
 			}
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 			INetChannel* pNetChannel = iter->second->GetNetChannel();
 			const char* ip = pNetChannel->GetName();
 			int ping = (int)(pNetChannel->GetPing(true) * 1000);
@@ -1060,6 +1023,7 @@ void CCryAction::LegacyStatusCmd(IConsoleCmdArgs* args)
 			int profileId = pNetChannel->GetProfileId();
 
 			CryLogAlways("name: %s  entID:%u id: %u  ip: %s  ping: %d  state: %d profile: %d", name, entId, iter->first, ip, ping, state, profileId);
+#endif
 		}
 	}
 }
@@ -1776,7 +1740,7 @@ static inline void InlineInitializationProcessing(const char* sDescription)
 //------------------------------------------------------------------------
 bool CCryAction::Initialize(SSystemInitParams& startupParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CryAction Init");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CryAction Init");
 
 	gEnv->pGameFramework = this;
 	m_pSystem = startupParams.pSystem;
@@ -1788,12 +1752,12 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pGFListeners->reserve(20);
 	m_validListeners.reserve(m_pGFListeners->capacity());
 
-	ModuleInitISystem(m_pSystem, "CryAction");  // Needed by GetISystem();
+	ModuleInitISystem(m_pSystem, "CryAction"); // Needed by GetISystem();
 
 	// Flow nodes are registered only when compiled as dynamic library
 	CryRegisterFlowNodes();
 
-	LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() after system");
+	CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CCryAction::Init() after system");
 
 	InlineInitializationProcessing("CCryAction::Init CrySystem and CryAction init");
 
@@ -1803,7 +1767,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 
 	if (gEnv->pRenderer)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() pFlashUI");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CCryAction::Init() pFlashUI");
 
 		IFlashUIPtr pFlashUI = GetIFlashUIPtr();
 		m_pSystem->SetIFlashUI(pFlashUI ? pFlashUI.get() : NULL);
@@ -1860,7 +1824,8 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	if (m_pSystem->IsDevMode())
 		m_pDevMode = new CDevMode();
 
-	m_pTimeDemoRecorder = new CTimeDemoRecorder();
+	m_pDefaultTimeDemoRecorder = stl::make_unique<CTimeDemoRecorder>();
+	SetITimeDemoRecorder(m_pDefaultTimeDemoRecorder.get());
 
 	CScriptRMI::RegisterCVars();
 	CGameObject::CreateCVars();
@@ -1874,8 +1839,14 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 
 	InlineInitializationProcessing("CCryAction::Init CLevelSystem");
 
+	m_pNetworkCVars = new CNetworkCVars();
+	m_pCryActionCVars = new CCryActionCVars();
+
 	m_pActorSystem = new CActorSystem(m_pSystem, m_pEntitySystem);
-	m_pItemSystem = new CItemSystem(this, m_pSystem);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		m_pItemSystem = new CItemSystem(this, m_pSystem);
+	}
 	m_pActionMapManager = new CActionMapManager(gEnv->pInput);
 
 	InlineInitializationProcessing("CCryAction::Init CActionMapManager");
@@ -1888,9 +1859,6 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pVehicleSystem = new CVehicleSystem(m_pSystem, m_pEntitySystem);
 
 	m_pSharedParamsManager = new CSharedParamsManager;
-
-	m_pNetworkCVars = new CNetworkCVars();
-	m_pCryActionCVars = new CCryActionCVars();
 
 	if (m_pCryActionCVars->g_gameplayAnalyst)
 		m_pGameplayAnalyst = new CGameplayAnalyst();
@@ -1927,33 +1895,30 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 		m_pCallbackTimer = new CallbackTimer();
 	m_pPersistantDebug = new CPersistantDebug();
 	m_pPersistantDebug->Init();
+	if (CCryActionCVars::Get().g_useProfileManager)
+	{
 #if !CRY_PLATFORM_DESKTOP
 	#if PROFILE_CONSOLE_NO_SAVE
-	// Used for demos
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplNoSave());
+		// Used for demos
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplNoSave());
 	#else
 		#if CRY_PLATFORM_DURANGO
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplDurango());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplDurango());
 		#elif CRY_PLATFORM_ORBIS
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplOrbis());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplOrbis());
 		#else
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplConsole());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplConsole());
 		#endif
 	#endif
 #else
-	m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplFSDir());
+		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplFSDir());
 #endif
-	m_pDialogSystem = new CDialogSystem();
-	m_pDialogSystem->Init();
+	}
 
 	m_pTimeOfDayScheduler = new CTimeOfDayScheduler();
-	m_pSubtitleManager = new CSubtitleManager();
 
 	m_pCustomActionManager = new CCustomActionManager();
 	m_pCustomEventManager = new CCustomEventManager();
-
-	CRangeSignaling::Create();
-	CSignalTimer::Create();
 
 	IMovieSystem* movieSys = gEnv->pMovieSystem;
 	if (movieSys != NULL)
@@ -1964,7 +1929,10 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 		m_pVehicleSystem->Init();
 	}
 
-	REGISTER_FACTORY((IGameFramework*)this, "Inventory", CInventory, false);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		REGISTER_FACTORY((IGameFramework*)this, "Inventory", CInventory, false);
+	}
 
 	if (m_pLevelSystem && m_pItemSystem)
 	{
@@ -1972,10 +1940,6 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	}
 
 	InitScriptBinds();
-
-	///Disabled as we now use the communication manager exclusively for readabilities
-	//CAIHandler::s_ReadabilityManager.Reload();
-	CAIFaceManager::LoadStatic();
 
 	// m_pGameRulesSystem = new CGameRulesSystem(m_pSystem, this);
 
@@ -2031,11 +1995,6 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pEntityContainerMgr = new CEntityContainerMgr();
 	m_pEntityAttachmentExNodeRegistry = new CEntityAttachmentExNodeRegistry();
 	
-	if (gEnv->pRenderer)
-	{
-		m_pColorGradientManager = new CColorGradientManager();
-	}
-
 	InitGame(startupParams);
 
 	if (m_pVehicleSystem)
@@ -2064,17 +2023,26 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 
 bool CCryAction::InitGame(SSystemInitParams& startupParams)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+
+	string gameDLLName;
 	if (ICVar* pCVarGameDir = gEnv->pConsole->GetCVar("sys_dll_game"))
 	{
-		const char* gameDLLName = pCVarGameDir->GetString();
-		if (strlen(gameDLLName) == 0)
+		gameDLLName = pCVarGameDir->GetString();
+	}
+
+	HMODULE hGameDll = 0;
+
+#if CrySharedLibrarySupported
+	IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(CryGetCurrentModule(), "CreateGameStartup");
+	if (!CreateGameStartup)
+	{
+		if (gameDLLName.IsEmpty())
+		{
 			return false;
+		}
 
-		HMODULE hGameDll = 0;
-
-#if !defined(_LIB)
-		hGameDll = CryLoadLibrary(gameDLLName);
+		hGameDll = CryLoadLibrary(gameDLLName.c_str());
 
 		if (!hGameDll)
 		{
@@ -2092,37 +2060,35 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 
 			if (!hGameDll)
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName);
+				CryMessageBox("Failed to load specified Game DLL!", gameDLLName.c_str(), eMB_Error);
 				return false;
 			}
 		}
 
-		IGameStartup::TEntryFunction CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(hGameDll, "CreateGameStartup");
+		CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(hGameDll, "CreateGameStartup");
 		if (!CreateGameStartup)
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName);
+			CryMessageBox("Failed to find the GameStartup Interface!", gameDLLName.c_str(), eMB_Error);
 			CryFreeLibrary(hGameDll);
 			return false;
 		}
+	}
 #endif
 
-#if !defined(_LIB) || !defined(DISABLE_LEGACY_GAME_DLL)
-		// create the game startup interface
-		IGameStartup* pGameStartup = CreateGameStartup();
-		if (!pGameStartup)
-		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName);
-			CryFreeLibrary(hGameDll);
-			return false;
-		}
+	// create the game startup interface
+	IGameStartup* pGameStartup = CreateGameStartup();
+	if (!pGameStartup)
+	{
+		CryMessageBox("Failed to find the GameStartup Interface!", gameDLLName.c_str(), eMB_Error);
+		CryFreeLibrary(hGameDll);
+		return false;
+	}
 
-		if (m_externalGameLibrary.pGame = pGameStartup->Init(startupParams))
-		{
-			m_externalGameLibrary.dllName = gameDLLName;
-			m_externalGameLibrary.dllHandle = hGameDll;
-			m_externalGameLibrary.pGameStartup = pGameStartup;
-		}
-#endif
+	if (m_externalGameLibrary.pGame = pGameStartup->Init(startupParams))
+	{
+		m_externalGameLibrary.dllName = gameDLLName;
+		m_externalGameLibrary.dllHandle = hGameDll;
+		m_externalGameLibrary.pGameStartup = pGameStartup;
 	}
 
 	return m_externalGameLibrary.IsValid();
@@ -2131,7 +2097,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 //------------------------------------------------------------------------
 void CCryAction::InitForceFeedbackSystem()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	SAFE_DELETE(m_pForceFeedBackSystem);
 	m_pForceFeedBackSystem = new CForceFeedBackSystem();
 	m_pForceFeedBackSystem->Initialize();
@@ -2141,7 +2107,7 @@ void CCryAction::InitForceFeedbackSystem()
 
 void CCryAction::InitGameVolumesManager()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (m_pGameVolumesManager == NULL)
 	{
@@ -2165,25 +2131,7 @@ void CCryAction::InitGameType(bool multiplayer, bool fromInit)
 		if (m_pGameSerialize)
 			m_pGameSerialize->RegisterFactories(this);
 	}
-
-	ICVar* pEnableAI = gEnv->pConsole->GetCVar("sv_AISystem");
-	if (!multiplayer || (pEnableAI && pEnableAI->GetIVal()))
-	{
-		if (!m_pAIProxyManager)
-		{
-			m_pAIProxyManager = new CAIProxyManager;
-			m_pAIProxyManager->Init();
-		}
-	}
-	else
 #endif
-	{
-		if (m_pAIProxyManager)
-		{
-			m_pAIProxyManager->Shutdown();
-			SAFE_DELETE(m_pAIProxyManager);
-		}
-	}
 }
 
 static std::vector<const char*> gs_lipSyncExtensionNamesForExposureToEditor;
@@ -2191,7 +2139,7 @@ static std::vector<const char*> gs_lipSyncExtensionNamesForExposureToEditor;
 //------------------------------------------------------------------------
 bool CCryAction::CompleteInit()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 #ifdef CRYACTION_DEBUG_MEM
 	DumpMemInfo("CryAction::CompleteInit Start");
 #endif
@@ -2211,15 +2159,9 @@ bool CCryAction::CompleteInit()
 	if (gEnv->pFlashUI)
 		gEnv->pFlashUI->Init();
 
-	m_pSystem->SetIDialogSystem(m_pDialogSystem);
-
-	InlineInitializationProcessing("CCryAction::CompleteInit SetDialogSystem");
-
 	if (m_pGameplayAnalyst)
 		m_pGameplayRecorder->RegisterListener(m_pGameplayAnalyst);
 
-	CRangeSignaling::ref().Init();
-	CSignalTimer::ref().Init();
 	// ---------------------------
 
 	m_pMaterialEffects = new CMaterialEffects();
@@ -2232,18 +2174,11 @@ bool CCryAction::CompleteInit()
 
 	InitForceFeedbackSystem();
 
-	ICVar* pEnableAI = gEnv->pConsole->GetCVar("sv_AISystem");
-	if (!gEnv->bMultiplayer || (pEnableAI && pEnableAI->GetIVal()))
-	{
-		m_pAIProxyManager = new CAIProxyManager;
-		m_pAIProxyManager->Init();
-	}
-
 	// in pure game mode we load the equipment packs from disk
 	// in editor mode, this is done in GameEngine.cpp
 	if ((m_pItemSystem) && (gEnv->IsEditor() == false))
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::CompleteInit(): EquipmentPacks");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CCryAction::CompleteInit(): EquipmentPacks");
 		m_pItemSystem->GetIEquipmentManager()->DeleteAllEquipmentPacks();
 		m_pItemSystem->GetIEquipmentManager()->LoadEquipmentPacksFromPath("Libs/EquipmentPacks");
 	}
@@ -2301,20 +2236,26 @@ bool CCryAction::CompleteInit()
 		m_pRuntimeAreaManager = new CRuntimeAreaManager();
 	}
 
-#if defined(CRY_UNIT_TESTING)
+	InitCommands();
+
+#if defined(CRY_TESTING)
+	// Flag is set when testing is specified from command line arguments
+	// This means testing is started by running the testing target or automation, instead of the console command "crytest".
+	// In this case we run all tests and quit afterwards.
 	if (gEnv->bTesting)
 	{
-		//in local unit tests we pass in -unit_test_open_failed to notify the user, in automated tests we don't pass in.
-		CryUnitTest::EReporterType reporterType = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "unit_test_open_failed") ? 
-			CryUnitTest::EReporterType::ExcelWithNotification : CryUnitTest::EReporterType::Excel;
-		ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
+		CryTest::ITestSystem* pTestSystem = m_pSystem->GetITestSystem();
 		CRY_ASSERT(pTestSystem != nullptr);
-		pTestSystem->GetIUnitTestManager()->RunAllTests(reporterType);
-		pTestSystem->QuitInNSeconds(1.f);
+
+		pTestSystem->SetQuitAfterTests(true);
+
+		// For manual testing we pass in -crytest_open_report to open the test report for the user, 
+		// in automated tests we don't. See Build.cmake.
+		pTestSystem->SetOpenReport(m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "crytest_open_report") != nullptr);
+
+		pTestSystem->Run();
 	}
 #endif
-
-	InitCommands();
 
 	InlineInitializationProcessing("CCryAction::CompleteInit End");
 	return true;
@@ -2323,11 +2264,14 @@ bool CCryAction::CompleteInit()
 //------------------------------------------------------------------------
 void CCryAction::InitScriptBinds()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	m_pScriptNet = new CScriptBind_Network(m_pSystem, this);
 	m_pScriptA = new CScriptBind_Action(this);
-	m_pScriptIS = new CScriptBind_ItemSystem(m_pSystem, m_pItemSystem, this);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		m_pScriptIS = new CScriptBind_ItemSystem(m_pSystem, m_pItemSystem, this);
+	}
 	m_pScriptAS = new CScriptBind_ActorSystem(m_pSystem, this);
 	m_pScriptAMM = new CScriptBind_ActionMapManager(m_pSystem, m_pActionMapManager);
 
@@ -2335,8 +2279,10 @@ void CCryAction::InitScriptBinds()
 	m_pScriptBindVehicle = new CScriptBind_Vehicle(m_pSystem, this);
 	m_pScriptBindVehicleSeat = new CScriptBind_VehicleSeat(m_pSystem, this);
 
-	m_pScriptInventory = new CScriptBind_Inventory(m_pSystem, this);
-	m_pScriptBindDS = new CScriptBind_DialogSystem(m_pSystem, m_pDialogSystem);
+	if (CCryActionCVars::Get().g_legacyItemSystem)
+	{
+		m_pScriptInventory = new CScriptBind_Inventory(m_pSystem, this);
+	}
 	m_pScriptBindUIAction = new CScriptBind_UIAction();
 }
 
@@ -2359,9 +2305,14 @@ void CCryAction::ReleaseScriptBinds()
 	SAFE_RELEASE(m_pScriptBindVehicle);
 	SAFE_RELEASE(m_pScriptBindVehicleSeat);
 	SAFE_RELEASE(m_pScriptInventory);
-	SAFE_RELEASE(m_pScriptBindDS);
 	SAFE_RELEASE(m_pScriptBindMFX);
 	SAFE_RELEASE(m_pScriptBindUIAction);
+}
+
+//------------------------------------------------------------------------
+IScriptTable* CCryAction::GetActionScriptBindTable()
+{ 
+	return m_pScriptA ? m_pScriptA->GetMethodsTable() : nullptr; 
 }
 
 //------------------------------------------------------------------------
@@ -2452,9 +2403,6 @@ void CCryAction::ShutDown()
 	if (m_pPlayerProfileManager)
 		m_pPlayerProfileManager->Shutdown();
 
-	if (m_pDialogSystem)
-		m_pDialogSystem->Shutdown();
-
 	SAFE_RELEASE(m_pActionMapManager);
 	SAFE_RELEASE(m_pItemSystem);
 	SAFE_RELEASE(m_pLevelSystem);
@@ -2468,18 +2416,17 @@ void CCryAction::ShutDown()
 	SAFE_DELETE(m_pBreakableGlassSystem);
 	SAFE_RELEASE(m_pActorSystem);
 	SAFE_DELETE(m_pForceFeedBackSystem);
-	SAFE_DELETE(m_pSubtitleManager);
 	SAFE_DELETE(m_pUIDraw);
 	SAFE_DELETE(m_pScriptRMI);
 	SAFE_DELETE(m_pEffectSystem);
 	SAFE_DELETE(m_pAnimationGraphCvars);
 	SAFE_DELETE(m_pGameObjectSystem);
 	SAFE_DELETE(m_pMannequin);
-	SAFE_DELETE(m_pTimeDemoRecorder);
+	SetITimeDemoRecorder(nullptr);
+	m_pDefaultTimeDemoRecorder.reset();
 	SAFE_DELETE(m_pGameSerialize);
 	SAFE_DELETE(m_pPersistantDebug);
 	SAFE_DELETE(m_pPlayerProfileManager);
-	SAFE_DELETE(m_pDialogSystem); // maybe delete before
 	SAFE_DELETE(m_pTimeOfDayScheduler);
 	SAFE_DELETE(m_pLocalAllocs);
 	SAFE_DELETE(m_pCooperativeAnimationManager);
@@ -2494,19 +2441,8 @@ void CCryAction::ShutDown()
 	ReleaseScriptBinds();
 	ReleaseCVars();
 
-	SAFE_DELETE(m_pColorGradientManager);
-
 	SAFE_DELETE(m_pDevMode);
 	SAFE_DELETE(m_pCallbackTimer);
-
-	CSignalTimer::Shutdown();
-	CRangeSignaling::Shutdown();
-
-	if (m_pAIProxyManager)
-	{
-		m_pAIProxyManager->Shutdown();
-		SAFE_DELETE(m_pAIProxyManager);
-	}
 
 	SAFE_DELETE(m_pNetMsgDispatcher);
 	SAFE_DELETE(m_pEntityContainerMgr);
@@ -2561,8 +2497,7 @@ void CCryAction::PrePhysicsUpdate()
 
 void CCryAction::PreSystemUpdate()
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRenderUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreRenderUpdate");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PreRenderUpdate");
 
 	if (!m_nextFrameCommand->empty())
 	{
@@ -2576,8 +2511,8 @@ void CCryAction::PreSystemUpdate()
 	CheckConnectRepeatedly();   // handle repeated connect mode - mainly for autotests to not get broken by timeouts on initial connect
 #endif
 
-	bool bGameIsPaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
-	if (m_pTimeDemoRecorder && !IsGamePaused())
+	bool bGameIsPaused = !gEnv->pGameFramework->IsGameStarted() || gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	if (m_pTimeDemoRecorder && !gEnv->pGameFramework->IsGamePaused())
 		m_pTimeDemoRecorder->PreUpdate();
 
 	// update the callback system
@@ -2597,8 +2532,7 @@ uint32 CCryAction::GetPreUpdateTicks()
 
 bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostSystemUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostSystemUpdate");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PostSystemUpdate");
 
 	float frameTime = gEnv->pTimer->GetFrameTime();
 
@@ -2606,8 +2540,8 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 	updateStart.QuadPart = 0;
 	updateEnd.QuadPart = 0;
 
-	bool isGamePaused = !IsGameStarted() || IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
-	bool isGameRunning = IsGameStarted();
+	bool isGamePaused = !gEnv->pGameFramework->IsGameStarted() || gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	bool isGameRunning = gEnv->pGameFramework->IsGameStarted();
 
 	// when we are updated by the editor, we should not update the system
 	if (!(updateFlags & ESYSUPDATE_EDITOR))
@@ -2622,8 +2556,15 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 		OnActionEvent(SActionEvent(eAE_earlyPreUpdate));
 
 		// during m_pSystem->Update call the Game might have been paused or un-paused
-		isGameRunning = IsGameStarted() && m_pGame && m_pGame->IsInited();
-		isGamePaused = !isGameRunning || IsGamePaused();
+		if (m_pCryActionCVars->g_enableActionGame)
+		{
+			isGameRunning = gEnv->pGameFramework->IsGameStarted() && m_pGame && m_pGame->IsInited();
+		}
+		else
+		{
+			isGameRunning = gEnv->pGameFramework->IsGameStarted();
+		}
+		isGamePaused = !isGameRunning || gEnv->pGameFramework->IsGamePaused();
 
 		if (!isGamePaused && !wasGamePaused) // don't update gameplayrecorder if paused
 			if (m_pGameplayRecorder)
@@ -2685,19 +2626,11 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 		if (m_pBreakableGlassSystem)
 			m_pBreakableGlassSystem->Update(frameTime);
 
-		if (m_pDialogSystem)
-			m_pDialogSystem->Update(frameTime);
-
 		if (m_pVehicleSystem)
 			m_pVehicleSystem->Update(frameTime);
 
 		if (m_pCooperativeAnimationManager)
 			m_pCooperativeAnimationManager->Update(frameTime);
-	}
-
-	if (gEnv->pRenderer)
-	{
-		m_pColorGradientManager->UpdateForThisFrame(gEnv->pTimer->GetFrameTime());
 	}
 
 	CRConServerListener::GetSingleton().Update();
@@ -2719,17 +2652,8 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 
 	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "UpdateLegacyGame");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "UpdateLegacyGame");
 		continueRunning = pGame->Update(haveFocus, updateFlags.UnderlyingValue()) > 0;
-	}
-
-	if (!updateFlags.Check(ESYSUPDATE_EDITOR_ONLY)  && updateFlags.Check(ESYSUPDATE_EDITOR_AI_PHYSICS) && !gEnv->bMultiplayer)
-	{
-		CRangeSignaling::ref().SetDebug(m_pDebugRangeSignaling->GetIVal() == 1);
-		CRangeSignaling::ref().Update(frameTime);
-
-		CSignalTimer::ref().SetDebug(m_pDebugSignalTimers->GetIVal() == 1);
-		CSignalTimer::ref().Update(frameTime);
 	}
 
 	return continueRunning;
@@ -2737,8 +2661,7 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 
 void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreFinalizeCamera");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreFinalizeCamera");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PreFinalizeCamera");
 
 	if (m_pShowLanBrowserCVAR->GetIVal() == 0)
 	{
@@ -2759,7 +2682,7 @@ void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	}
 
 	float delta = gEnv->pTimer->GetFrameTime();
-	const bool bGameIsPaused = IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
+	const bool bGameIsPaused = gEnv->pGameFramework->IsGamePaused(); // slightly different from m_paused (check's gEnv->pTimer as well)
 
 	if (!bGameIsPaused)
 	{
@@ -2777,16 +2700,14 @@ void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 
 void CCryAction::PreRender()
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRender");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PreRender");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PreRender");
 
 	CALL_FRAMEWORK_LISTENERS(OnPreRender());
 }
 
 void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRender");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostRender");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PostRender");
 
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
 	{
@@ -2825,18 +2746,12 @@ void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
 	const bool bInLevelLoad = IsInLevelLoad();
 	if (!bInLevelLoad)
 		m_pGameObjectSystem->PostUpdate(delta);
-
-	CRangeSignaling::ref().SetDebug(m_pDebugRangeSignaling->GetIVal() == 1);
-	CRangeSignaling::ref().Update(delta);
-
-	CSignalTimer::ref().SetDebug(m_pDebugSignalTimers->GetIVal() == 1);
-	CSignalTimer::ref().Update(delta);
 }
 
 void CCryAction::PostRenderSubmit()
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRenderSubmit");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("CCryAction::PostRenderSubmit");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PostRenderSubmit");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CCryAction::PostRenderSubmit");
 
 	if (m_pGame)
 	{
@@ -2861,7 +2776,7 @@ void CCryAction::PostRenderSubmit()
 	if (CGameServerNub* pServerNub = GetGameServerNub())
 		pServerNub->Update();
 
-	if (m_pTimeDemoRecorder && !IsGamePaused())
+	if (m_pTimeDemoRecorder && !gEnv->pGameFramework->IsGamePaused())
 		m_pTimeDemoRecorder->PostUpdate();
 
 	if (m_delayedSaveCountDown)
@@ -2965,8 +2880,8 @@ bool CCryAction::IsGameStarted()
 
 bool CCryAction::StartGameContext(const SGameStartParams* pGameStartParams)
 {
-	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "StartGameContext");
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "StartGameContext");
 
 	if (gEnv->IsEditor())
 	{
@@ -3068,7 +2983,7 @@ bool CCryAction::ChangeGameContext(const SGameContextParams* pGameContextParams)
 
 void CCryAction::EndGameContext()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!gEnv) // SCA fix
 		return;
 
@@ -3111,8 +3026,10 @@ void CCryAction::EndGameContext()
 		m_pScriptRMI->UnloadLevel();
 	}
 
-	if (gEnv && gEnv->IsEditor())
+	if (gEnv && gEnv->IsEditor() && m_pCryActionCVars->g_enableActionGame)
+	{
 		m_pGame = new CActionGame(m_pScriptRMI);
+	}
 
 	if (m_pActorSystem)
 	{
@@ -3191,21 +3108,25 @@ void CCryAction::ReleaseGameStats()
 
 void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_isEditing = true;
 
 	m_pGameToEditor = pGameToEditor;
 
-	uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
-	if (commConfigCount)
+	const ICommunicationManager* pCommunicationManager = gEnv->pAISystem->GetCommunicationManager();
+	if (pCommunicationManager)
 	{
-		std::vector<const char*> configNames;
-		configNames.resize(commConfigCount);
+		uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
+		if (commConfigCount)
+		{
+			std::vector<const char*> configNames;
+			configNames.resize(commConfigCount);
 
-		for (uint i = 0; i < commConfigCount; ++i)
-			configNames[i] = gEnv->pAISystem->GetCommunicationManager()->GetConfigName(i);
+			for (uint i = 0; i < commConfigCount; ++i)
+				configNames[i] = gEnv->pAISystem->GetCommunicationManager()->GetConfigName(i);
 
-		pGameToEditor->SetUIEnums("CommConfig", &configNames.front(), commConfigCount);
+			pGameToEditor->SetUIEnums("CommConfig", &configNames.front(), commConfigCount);
+		}
 	}
 
 	uint32 factionCount = gEnv->pAISystem->GetFactionMap().GetFactionCount();
@@ -3317,9 +3238,9 @@ bool CCryAction::SaveGame(const char* path, bool bQuick, bool bForceImmediate, E
 	CryLog("[SAVE GAME] %s to '%s'%s%s - checkpoint=\"%s\"", bQuick ? "Quick-saving" : "Saving", path, bForceImmediate ? " immediately" : "Delayed", ignoreDelay ? " ignoring delay" : "", checkPointName);
 	INDENT_LOG_DURING_SCOPE();
 
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Saving game");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Saving game");
 
 	if (gEnv->bMultiplayer)
 		return false;
@@ -3475,7 +3396,7 @@ ELoadGameResult CCryAction::LoadGame(const char* path, bool quick, bool ignoreDe
 	CryLog("[LOAD GAME] %s saved game '%s'%s", quick ? "Quick-loading" : "Loading", path, ignoreDelay ? " ignoring delay" : "");
 	INDENT_LOG_DURING_SCOPE();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Loading game");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Loading game");
 
 	if (gEnv->bMultiplayer)
 		return eLGR_Failed;
@@ -3579,12 +3500,12 @@ ELoadGameResult CCryAction::LoadGame(const char* path, bool quick, bool ignoreDe
 IGameFramework::TSaveGameName CCryAction::CreateSaveGameName()
 {
 	//design wants to have different, more readable names for the savegames generated
-	int id = 0;
 
 	TSaveGameName saveGameName;
 #if CRY_PLATFORM_DURANGO
 	saveGameName = CRY_SAVEGAME_FILENAME;
 #else
+	int id = 0;
 	//saves a running savegame id which is displayed with the savegame name
 	if (IPlayerProfileManager* m_pPlayerProfileManager = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{
@@ -3631,7 +3552,7 @@ IGameFramework::TSaveGameName CCryAction::CreateSaveGameName()
 //------------------------------------------------------------------------
 void CCryAction::OnEditorSetGameMode(int iMode)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (m_externalGameLibrary.pGame && iMode < 2)
 	{
@@ -3681,9 +3602,6 @@ void CCryAction::OnEditorSetGameMode(int iMode)
 	if (GetIForceFeedbackSystem())
 		GetIForceFeedbackSystem()->StopAllEffects();
 
-	CRangeSignaling::ref().OnEditorSetGameMode(iMode != 0);
-	CSignalTimer::ref().OnEditorSetGameMode(iMode != 0);
-
 	if (m_pCooperativeAnimationManager)
 	{
 		m_pCooperativeAnimationManager->Reset();
@@ -3728,8 +3646,6 @@ void CCryAction::EndCurrentQuery()
 //------------------------------------------------------------------------
 void CCryAction::InitCVars()
 {
-	IConsole* pC = ::gEnv->pConsole;
-	assert(pC);
 	m_pEnableLoadingScreen = REGISTER_INT("g_enableloadingscreen", 1, VF_DUMPTODISK, "Enable/disable the loading screen");
 	REGISTER_INT("g_enableitems", 1, 0, "Enable/disable the item system");
 	m_pShowLanBrowserCVAR = REGISTER_INT("net_lanbrowser", 0, VF_CHEAT, "enable lan games browser");
@@ -3739,10 +3655,8 @@ void CCryAction::InitCVars()
 	REGISTER_INT("g_breakage_particles_limit", 200, 0, "Imposes a limit on particles generated during 2d surfaces breaking");
 	REGISTER_FLOAT("c_shakeMult", 1.0f, VF_CHEAT, "");
 
-	m_pDebugSignalTimers = REGISTER_INT("ai_DebugSignalTimers", 0, VF_CHEAT, "Enable Signal Timers Debug Screen");
-	m_pDebugRangeSignaling = REGISTER_INT("ai_DebugRangeSignaling", 0, VF_CHEAT, "Enable Range Signaling Debug Screen");
-
 	m_pAsyncLevelLoad = REGISTER_INT("g_asynclevelload", 0, VF_CONST_CVAR, "Enable asynchronous level loading");
+	REGISTER_INT("g_levelLoadTimeSliced", 0, VF_NULL, "Enable time-sliced level loading");
 
 	REGISTER_INT("cl_packetRate", 30, 0, "Packet rate on client");
 	REGISTER_INT("sv_packetRate", 30, 0, "Packet rate on server");
@@ -3825,9 +3739,14 @@ void CCryAction::ReleaseCVars()
 void CCryAction::InitCommands()
 {
 	// create built-in commands
+	if (!m_pCryActionCVars->g_enableActionGame)
+	{
+		return;
+	}
+		
 	REGISTER_COMMAND("map", MapCmd, VF_BLOCKFRAME, "Load a map");
+	
 	// for testing purposes
-	REGISTER_COMMAND("readabilityReload", ReloadReadabilityXML, 0, "Reloads readability xml files.");
 	REGISTER_COMMAND("unload", UnloadCmd, 0, "Unload current map");
 	REGISTER_COMMAND("dump_maps", DumpMapsCmd, 0, "Dumps currently scanned maps");
 	REGISTER_COMMAND("play", PlayCmd, 0, "Play back a recorded game");
@@ -4225,11 +4144,6 @@ IBreakableGlassSystem* CCryAction::GetIBreakableGlassSystem()
 	return m_pBreakableGlassSystem;
 }
 
-IDialogSystem* CCryAction::GetIDialogSystem()
-{
-	return m_pDialogSystem;
-}
-
 IRealtimeRemoteUpdate* CCryAction::GetIRealTimeRemoteUpdate()
 {
 	return &CRealtimeRemoteUpdateListener::GetRealtimeRemoteUpdateListener();
@@ -4238,6 +4152,25 @@ IRealtimeRemoteUpdate* CCryAction::GetIRealTimeRemoteUpdate()
 ITimeDemoRecorder* CCryAction::GetITimeDemoRecorder() const
 {
 	return m_pTimeDemoRecorder;
+}
+
+ITimeDemoRecorder* CCryAction::SetITimeDemoRecorder(ITimeDemoRecorder* pRecorder)
+{
+	if (m_pTimeDemoRecorder != pRecorder)
+	{
+		if (m_pTimeDemoRecorder)
+		{
+			m_pTimeDemoRecorder->OnUnregistered();
+		}
+
+		std::swap(m_pTimeDemoRecorder, pRecorder);
+
+		if (m_pTimeDemoRecorder)
+		{
+			m_pTimeDemoRecorder->OnRegistered();
+		}
+	}
+	return pRecorder;
 }
 
 IPlayerProfileManager* CCryAction::GetIPlayerProfileManager()
@@ -4451,13 +4384,13 @@ void CCryAction::DumpStatsCmd(IConsoleCmdArgs* args)
 
 void CCryAction::AddBreakEventListener(IBreakEventListener* pListener)
 {
-	assert(m_pBreakEventListener == NULL);
+	CRY_ASSERT(m_pBreakEventListener == NULL);
 	m_pBreakEventListener = pListener;
 }
 
 void CCryAction::RemoveBreakEventListener(IBreakEventListener* pListener)
 {
-	assert(m_pBreakEventListener == pListener);
+	CRY_ASSERT(m_pBreakEventListener == pListener);
 	m_pBreakEventListener = NULL;
 }
 
@@ -4571,14 +4504,21 @@ void CCryAction::ScheduleEndLevelNow(const char* nextLevel)
 #endif
 }
 
+void CCryAction::RegisterActionBehaviorTreeNodes()
+{
+	CRY_ASSERT(gEnv->pAISystem->GetIBehaviorTreeManager());
+
+	BehaviorTree::IBehaviorTreeManager& manager = *gEnv->pAISystem->GetIBehaviorTreeManager();
+  manager.GetNodeFactory().RegisterNodeCreator(m_pAnimateFragmentNodeCreator.get());
+}
+
 void CCryAction::CheckEndLevelSchedule()
 {
 	if (!m_bScheduleLevelEnd)
 		return;
 	m_bScheduleLevelEnd = false;
-	if (m_pLocalAllocs == 0)
+	if (!CRY_VERIFY(m_pLocalAllocs != 0))
 	{
-		assert(false);
 		return;
 	}
 
@@ -4700,10 +4640,13 @@ void CCryAction::PrefetchLevelAssets(const bool bEnforceAll)
 		m_pItemSystem->PrecacheLevel();
 }
 
-void CCryAction::ShowPageInBrowser(const char* URL)
+void CCryAction::ShowPageInBrowser(const char* szUrl)
 {
 #if CRY_PLATFORM_WINDOWS
-	ShellExecute(0, 0, URL, 0, 0, SW_SHOWNORMAL);
+	if (szUrl != nullptr && szUrl[0] != '\0')
+		ShellExecute(nullptr, nullptr, szUrl, nullptr, nullptr, SW_SHOWNORMAL);
+#else
+	CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR_DBGBRK, "CCryAction::ShowPageInBrowser is not implemented for this platform");
 #endif
 }
 
@@ -4770,7 +4713,7 @@ bool CCryAction::SaveServerConfig(const char* path)
 
 			string szLine = pV->GetName();
 
-			if (pV->GetType() == CVAR_STRING)
+			if (pV->GetType() == ECVarType::String)
 				szLine += " = \"" + szValue + "\"\r\n";
 			else
 				szLine += " = " + szValue + "\r\n";
@@ -4808,9 +4751,9 @@ void CCryAction::OnActionEvent(const SActionEvent& ev)
 
 	case eAE_unloadLevel:
 		{
-			if (gEnv->pRenderer)
+			if (gEnv->p3DEngine)
 			{
-				m_pColorGradientManager->Reset();
+				gEnv->p3DEngine->GetColorGradingCtrl()->SetColorGradingLut("", 0);
 			}
 		}
 		break;
@@ -4893,17 +4836,7 @@ void CCryAction::SetGameGUID(const char* gameGUID)
 
 INetContext* CCryAction::GetNetContext()
 {
-	//return GetGameContext()->GetNetContext();
-
-	// Julien: This was crashing sometimes when exiting game!
-	// I've replaced with a safe pointer access and an assert so that anyone who
-	// knows why we were accessing this unsafe pointer->func() can fix it the correct way
-
-	CGameContext* pGameContext = GetGameContext();
-	//CRY_ASSERT(pGameContext); - GameContext can be NULL when the game is exiting
-	if (!pGameContext)
-		return NULL;
-	return pGameContext->GetNetContext();
+	return gEnv->pNetContext;
 }
 
 void CCryAction::EnableVoiceRecording(const bool enable)
@@ -4913,7 +4846,7 @@ void CCryAction::EnableVoiceRecording(const bool enable)
 
 IDebugHistoryManager* CCryAction::CreateDebugHistoryManager()
 {
-	return new CDebugHistoryManager();
+	return gEnv->pRenderer ? new CDebugHistoryManager() : nullptr;
 }
 
 void CCryAction::GetMemoryUsage(ICrySizer* s) const
@@ -4954,7 +4887,6 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	s->AddObject(m_pMaterialEffects);
 	s->AddObject(m_pBreakableGlassSystem);
 	CHILD_STATISTICS(m_pPlayerProfileManager);
-	CHILD_STATISTICS(m_pDialogSystem);
 	CHILD_STATISTICS(m_pEffectSystem);
 	CHILD_STATISTICS(m_pGameSerialize);
 	CHILD_STATISTICS(m_pCallbackTimer);
@@ -4976,17 +4908,11 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	s->Add(*m_pScriptBindVehicle);
 	s->Add(*m_pScriptBindVehicleSeat);
 	s->Add(*m_pScriptInventory);
-	s->Add(*m_pScriptBindDS);
 	s->Add(*m_pScriptBindMFX);
 	s->Add(*m_pScriptBindUIAction);
 	s->Add(*m_pMaterialEffectsCVars);
 	s->AddObject(*m_pGFListeners);
 	s->Add(*m_nextFrameCommand);
-}
-
-ISubtitleManager* CCryAction::GetISubtitleManager()
-{
-	return m_pSubtitleManager;
 }
 
 void CCryAction::MutePlayer(IConsoleCmdArgs* pArgs)
@@ -5045,8 +4971,10 @@ bool CCryAction::IsImmersiveMPEnabled()
 //////////////////////////////////////////////////////////////////////////
 bool CCryAction::IsInTimeDemo()
 {
-	if (m_pTimeDemoRecorder && m_pTimeDemoRecorder->IsTimeDemoActive())
-		return true;
+	if (m_pTimeDemoRecorder)
+	{
+		 return m_pTimeDemoRecorder->IsChainLoading() || m_pTimeDemoRecorder->IsPlaying() || m_pTimeDemoRecorder->IsRecording();
+	}
 	return false;
 }
 
@@ -5087,11 +5015,6 @@ ISerializeHelper* CCryAction::GetSerializeHelper() const
 	return new CXmlSerializeHelper();
 }
 
-CSignalTimer* CCryAction::GetSignalTimer()
-{
-	return (&(CSignalTimer::ref()));
-}
-
 ICooperativeAnimationManager* CCryAction::GetICooperativeAnimationManager()
 {
 	return m_pCooperativeAnimationManager;
@@ -5125,17 +5048,6 @@ IGameSessionHandler* CCryAction::GetIGameSessionHandler()
 		m_pGameSessionHandler = new CGameSessionHandler();
 	}
 	return m_pGameSessionHandler;
-}
-
-CRangeSignaling* CCryAction::GetRangeSignaling()
-{
-	return (&(CRangeSignaling::ref()));
-}
-
-IAIActorProxy* CCryAction::GetAIActorProxy(EntityId id) const
-{
-	assert(m_pAIProxyManager);
-	return m_pAIProxyManager->GetAIActorProxy(id);
 }
 
 void CCryAction::OnBreakageSpawnedEntity(IEntity* pEntity, IPhysicalEntity* pPhysEntity, IPhysicalEntity* pSrcPhysEntity)
@@ -5229,12 +5141,9 @@ void CCryAction::StartNetworkStallTicker(bool includeMinimalUpdate)
 void CCryAction::StopNetworkStallTicker()
 {
 #ifdef USE_NETWORK_STALL_TICKER_THREAD
-	if (gEnv->bMultiplayer)
+	if (m_networkStallTickerReferences > 0)
 	{
-		if (m_networkStallTickerReferences > 0)
-		{
-			m_networkStallTickerReferences--;
-		}
+		m_networkStallTickerReferences--;
 
 		if (m_networkStallTickerReferences == 0)
 		{

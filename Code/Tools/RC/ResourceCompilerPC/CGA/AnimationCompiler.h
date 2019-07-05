@@ -76,7 +76,7 @@ struct AnimationJob
 };
 
 
-class ICryXML;
+struct ICryXML;
 
 class CAnimationConverter : public IConverter
 {
@@ -127,7 +127,7 @@ private:
 	bool RebuildDatabases();
 
 	void InitDbaTableEnumerator();
-	void InitSkeletonManager(const std::set<string>& usedSkeletons);
+	void InitSkeletonManager();
 
 
 	int m_platform;

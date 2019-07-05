@@ -36,7 +36,7 @@ namespace BehaviorTree
 			{
 				if (this->movementRequestID)
 				{
-					gAIEnv.pMovementSystem->CancelRequest(this->movementRequestID);
+					gAIEnv.pMovementSystem->UnsuscribeFromRequestCallback(this->movementRequestID);
 					this->movementRequestID = MovementRequestID();
 				}
 			}
@@ -60,9 +60,9 @@ namespace BehaviorTree
 
 	public:
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
-			if (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			if (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 			{
 				return LoadFailure;
 			}
@@ -156,7 +156,7 @@ namespace BehaviorTree
 			{
 				if (this->movementRequestID)
 				{
-					gEnv->pAISystem->GetMovementSystem()->CancelRequest(this->movementRequestID);
+					gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(this->movementRequestID);
 					this->movementRequestID = MovementRequestID();
 				}
 			}
@@ -182,9 +182,9 @@ namespace BehaviorTree
 		{
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
-			if(BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			if(BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 				return LoadFailure;
 
 			const char* szBBCoverId;

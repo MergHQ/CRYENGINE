@@ -11,9 +11,15 @@
 
 #include "DomainContext.h"
 
-SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc2, EScriptStateMachineLifetime, "Schematyc Script State Machine Lifetime")
-	SERIALIZATION_ENUM(Schematyc2::EScriptStateMachineLifetime::Persistent, "persistent", "Persistent")
-	SERIALIZATION_ENUM(Schematyc2::EScriptStateMachineLifetime::Task, "task", "Task")
+SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc2, EStateMachineNetAuthority, "Schematyc Script State Machine Net Type")
+	SERIALIZATION_ENUM(Schematyc2::EStateMachineNetAuthority::Local, "local", "Local")
+	SERIALIZATION_ENUM(Schematyc2::EStateMachineNetAuthority::Server, "server", "Server")
+SERIALIZATION_ENUM_END()
+
+SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc2, EStateMachineLifetime, "Schematyc Script State Machine Lifetime")
+	SERIALIZATION_ENUM(Schematyc2::EStateMachineLifetime::Persistent, "persistent", "Persistent")
+	SERIALIZATION_ENUM(Schematyc2::EStateMachineLifetime::Task, "task", "Task")
+	SERIALIZATION_ENUM(Schematyc2::EStateMachineLifetime::Unknown, "unknown", "Unknown")
 SERIALIZATION_ENUM_END()
 
 namespace Schematyc2
@@ -23,16 +29,18 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	CScriptStateMachine::CScriptStateMachine(IScriptFile& file)
 		: CScriptElementBase(EScriptElementType::StateMachine, file)
-		, m_lifetime(EScriptStateMachineLifetime::Persistent)
+		, m_lifetime(EStateMachineLifetime::Persistent)
+		, m_netAuthority(EStateMachineNetAuthority::Local)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
-	CScriptStateMachine::CScriptStateMachine(IScriptFile& file, const SGUID& guid, const SGUID& scopeGUID, const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID)
+	CScriptStateMachine::CScriptStateMachine(IScriptFile& file, const SGUID& guid, const SGUID& scopeGUID, const char* szName, EStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID)
 		: CScriptElementBase(EScriptElementType::StateMachine, file)
 		, m_guid(guid)
 		, m_scopeGUID(scopeGUID)
 		, m_name(szName)
 		, m_lifetime(lifetime)
+		, m_netAuthority(EStateMachineNetAuthority::Local)
 		, m_contextGUID(contextGUID)
 		, m_partnerGUID(partnerGUID)
 	{}
@@ -89,7 +97,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CScriptStateMachine::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		
 		CScriptElementBase::Serialize(archive);
 
@@ -107,6 +115,7 @@ namespace Schematyc2
 				archive(m_lifetime, "lifetime", "!Lifetime");
 				archive(m_contextGUID, "contextGUID");
 				archive(m_transitionGraphGUID, "transition_graph_guid");
+				archive(m_netAuthority, "netType");
 
 				SerializePartner(archive);
 				break;
@@ -114,6 +123,8 @@ namespace Schematyc2
 		case ESerializationPass::Edit:
 			{
 				SerializePartner(archive);
+				archive(m_netAuthority, "netAuthority", "Net Authority");
+				archive.doc("Indicates if the state machine will have authority locally(server or authorized client) or on the server.");
 				break;
 			}
 		}
@@ -130,9 +141,14 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	EScriptStateMachineLifetime CScriptStateMachine::GetLifetime() const
+	EStateMachineLifetime CScriptStateMachine::GetLifetime() const
 	{
 		return m_lifetime;
+	}
+
+	EStateMachineNetAuthority CScriptStateMachine::GetNetAuthority() const
+	{
+		return m_netAuthority;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -160,7 +176,7 @@ namespace Schematyc2
 				if(pTransitionGraph)
 				{
 					IScriptGraphNode* pBeginNode = pTransitionGraph->AddNode(EScriptGraphNodeType::BeginState, SGUID(), SGUID(), Vec2(0.0f, 0.0f));
-					if(m_lifetime == EScriptStateMachineLifetime::Task)
+					if(m_lifetime == EStateMachineLifetime::Task)
 					{
 						IScriptGraphNode* pEndNode = pTransitionGraph->AddNode(EScriptGraphNodeType::EndState, SGUID(), SGUID(), Vec2(200.0f, 0.0f));
 						pTransitionGraph->AddLink(pBeginNode->GetGUID(), pBeginNode->GetOutputName(0), pEndNode->GetGUID(), pEndNode->GetInputName(0));
@@ -185,7 +201,7 @@ namespace Schematyc2
 
 			auto visitStateMachine = [this, &partnerGUIDs, &partnerNames] (const IScriptStateMachine& stateMachine) -> EVisitStatus
 			{
-				if(stateMachine.GetLifetime() == EScriptStateMachineLifetime::Persistent)
+				if(stateMachine.GetLifetime() == EStateMachineLifetime::Persistent)
 				{
 					const SGUID	stateMachineGUID = stateMachine.GetGUID();
 					if(stateMachineGUID != m_guid)

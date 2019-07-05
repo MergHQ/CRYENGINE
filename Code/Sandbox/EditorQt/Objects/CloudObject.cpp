@@ -48,7 +48,7 @@ CCloudObject::CCloudObject()
 	m_pVarObject->AddVariable(mv_randomSizeValue, "SizeVariation", "Size Variation", functor(*this, &CCloudObject::OnSizeChange));
 	mv_randomSizeValue.SetLimits(0, 99999);
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -84,7 +84,7 @@ void CCloudObject::GetLocalBounds(AABB& box)
 //////////////////////////////////////////////////////////////////////////
 void CCloudObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	const Matrix34& wtm = GetWorldTM();
 	Vec3 wp = wtm.GetTranslation();
@@ -127,4 +127,3 @@ bool CCloudObject::HitTest(HitContext& hc)
 	}
 	return false;
 }
-

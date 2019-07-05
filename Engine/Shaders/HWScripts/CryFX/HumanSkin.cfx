@@ -40,7 +40,6 @@ SUBSURFACEMAP
 DECALMAP
 OPACITYMAP
 ENVIRONMENTCUBEMAP
-DISSOLVE_NOISE_MAP
 
 CUSTOMMAP;
 CUSTOMSECONDARYMAP; 
@@ -307,8 +306,16 @@ void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightPar
 	float3 viewVec = normalize(-attribs.worldPos);
 	float NdotL = saturate(dot(attribs.normal, light.lightVec));
 
-	diffuseAcc.x = DiffuseBRDF(attribs.normal, viewVec, light.lightVec, attribs.smoothness, NdotL);
-	specularAcc = SpecularBRDF(attribs.normal, viewVec, light.lightVec, attribs.smoothness, attribs.reflectance) * NdotL;
+    if (light.type == LIGHT_TYPE_REGULAR_AREA)
+    {
+        AreaLightLTC_GGX(attribs.normal, -normalize(attribs.areaAttribs.position), attribs.smoothness, attribs.reflectance, attribs.areaAttribs.position,
+		                 attribs.areaAttribs.lightPos, attribs.areaAttribs.lightArrayIdx, attribs.areaAttribs.transform, Fwd_SpotTexArray, diffuseAcc, specularAcc);
+    }
+    else
+    {
+        diffuseAcc.x = DiffuseBRDF(attribs.normal, viewVec, light.lightVec, attribs.smoothness, NdotL);
+        specularAcc  = SpecularBRDF(attribs.normal, viewVec, light.lightVec, attribs.smoothness, attribs.reflectance) * NdotL;
+    }
 	
 	diffuseAcc = diffuseAcc.x * light.illuminance;
 	specularAcc = specularAcc * light.illuminance;
@@ -347,9 +354,7 @@ technique General
 <
   string Script = 
         "TechniqueZ=ZPass;"
-#if !ENABLE_TESSELLATION
-				"TechniqueZPrepass=ZPrepass;"
-#endif
+        "TechniqueZPrepass=ZPrePass;"
         "TechniqueMotionBlur=MotionBlurPass;" 
         "TechniqueCustomRender=CustomRenderPass;"
         "TechniqueShadowGen=ShadowGen;"
@@ -446,15 +451,8 @@ pixout_gbuffer SkinZPassPS(vert2fragZ_C IN)
 	clip(fDiffuseAlpha - IN.baseTC.w);
 #endif
 
-#if %_RT_DISSOLVE
-	half2 noiseTC = IN.WPos.xy/(100.0f*CV_HPosScale.xy);
+	ApplyDissolve(IN.baseTC.z, (int2)IN.WPos.xy, 33);
 
-	half fNoise = GetDissolveTex(dissolveNoiseTex, noiseTC).g;
-
-	clip((fNoise-IN.baseTC.z));
-#endif
-	
-	
 	////////////////////////////////////////////////////////////////////////////////////////////////
   // Gather material attributes
 	

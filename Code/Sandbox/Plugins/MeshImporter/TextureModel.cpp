@@ -79,7 +79,6 @@ QVariant CTextureModel::data(const QModelIndex& index, int role) const
 		default:
 			CRY_ASSERT(0 && "invalid index column");
 		}
-		;
 	}
 	else if (role == Qt::ToolTipRole && index.column() == eColumn_Filename)
 	{
@@ -176,7 +175,6 @@ QVariant CTextureModel::headerData(int column, Qt::Orientation orientation, int 
 			CRY_ASSERT(0 && "unkown column");
 			return QVariant();
 		}
-		;
 	}
 	return QVariant();
 }
@@ -192,4 +190,3 @@ void CTextureModel::Reset()
 	beginResetModel();
 	endResetModel();
 }
-

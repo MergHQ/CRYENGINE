@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include "IAudioInterfacesCommonData.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
 /**
  * @namespace CryAudio
  * @brief Most parent audio namespace used throughout the entire engine.
@@ -12,6 +15,8 @@ namespace CryAudio
  * @struct CryAudio::IObject
  * @brief A struct exposing public methods to interact with audio objects.
  */
+struct STriggerCallbackData;
+
 struct IObject
 {
 	// <interfuscator:shuffle>
@@ -22,11 +27,22 @@ struct IObject
 	/**
 	 * Executes the passed trigger ID on this audio object.
 	 * @param triggerId - ID of the trigger to execute.
+	 * @param entityId - ID of the entity that will receive the started/stopped callback depending on what it registered to.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 * @see StopTrigger
 	 */
-	virtual void ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ExecuteTrigger(ControlId const triggerId, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Executes the passed trigger ID on this audio object and registers the trigger for callbacks to get received.
+	 * @param callbackData - struct to pass data for callbacks to the request.
+	 * @param entityId - ID of the entity that will receive the started/stopped callback depending on what it registered to.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 * @see StopTrigger
+	 */
+	virtual void ExecuteTriggerWithCallbacks(STriggerCallbackData const& callbackData, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Stops all instances of the passed trigger ID or all instances of all active triggers if CryAudio::InvalidControlId (default) is passed on this audio object.
@@ -43,7 +59,7 @@ struct IObject
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void SetTransformation(CObjectTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void SetTransformation(CTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Sets a parameter to a given value on this audio object.
@@ -81,13 +97,6 @@ struct IObject
 	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Removes all of the environments currently set to this audio object from this audio object.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 */
-	virtual void ResetEnvironments(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
 	 * Sets the occlusion type to be used by this audio object.
 	 * @param occlusionType - occlusion type to apply.
 	 * @param userData - optional struct used to pass additional data to the internal request.
@@ -96,22 +105,12 @@ struct IObject
 	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	 * Plays the given file on this audio object.
-	 * @param playFileInfo - reference to a struct that holds data necessary for playback.
+	 * Sets the occlusion ray offset to be used by this audio object.
+	 * @param offset - occlusion ray offset to apply.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
-	 * @see StopFile
 	 */
-	virtual void PlayFile(SPlayFileInfo const& playFileInfo, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Stops the given file on this audio object.
-	 * @param szFile - name of the file in question.
-	 * @param userData - optional struct used to pass additional data to the internal request.
-	 * @return void
-	 * @see PlayFile
-	 */
-	virtual void StopFile(char const* const szFile, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Sets this audio object's name.
@@ -123,10 +122,32 @@ struct IObject
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
-	* Gets the entityId linked with this object (or INVALID_ENTITYID if not linked to an entity)
-	* @return EntityId
-	*/
-	virtual EntityId GetEntityId() const = 0;
+	 * Adds a listener with the given id to the audio object.
+	 * @param id - id of the listener to add.
+	 * @return void
+	 */
+	virtual void AddListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Removes a listener with the given id from the audio object.
+	 * @param id - id of the listener to remove.
+	 * @return void
+	 */
+	virtual void RemoveListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Toggles whether this audio object should track and update its absolute velocity.
+	 * @param enable - if true enables absolute velocity tracking otherwise disables it.
+	 * @return void
+	 */
+	virtual void ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Toggles whether this audio object should track and update its relative velocity (against the listener).
+	 * @param enable - if true enables relative velocity tracking otherwise disables it.
+	 * @return void
+	 */
+	virtual void ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 	// </interfuscator:shuffle>
 };
 } // namespace CryAudio

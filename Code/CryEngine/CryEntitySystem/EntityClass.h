@@ -19,20 +19,20 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityClass interface implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void                      Release() override                { delete this; };
+	virtual void                      Release() override                { delete this; }
 
-	virtual uint32                    GetFlags() const override         { return m_nFlags; };
-	virtual void                      SetFlags(uint32 nFlags) override  { m_nFlags = nFlags; };
+	virtual uint32                    GetFlags() const override         { return m_nFlags; }
+	virtual void                      SetFlags(uint32 nFlags) override  { m_nFlags = nFlags; }
 
 	virtual const char*               GetName() const override          { return m_sName.c_str(); }
-	virtual CryGUID                   GetGUID() const final             { return m_guid; };
+	virtual CryGUID                   GetGUID() const final             { return m_guid; }
 	virtual const char*               GetScriptFile() const override    { return m_sScriptFile.c_str(); }
 
 	virtual IEntityScript*            GetIEntityScript() const override { return m_pEntityScript; }
 	virtual IScriptTable*             GetScriptTable() const override;
 	virtual bool                      LoadScript(bool bForceReload) override;
-	virtual UserProxyCreateFunc       GetUserProxyCreateFunc() const override { return m_pfnUserProxyCreate; };
-	virtual void*                     GetUserProxyData() const override       { return m_pUserProxyUserData; };
+	virtual UserProxyCreateFunc       GetUserProxyCreateFunc() const override { return m_pfnUserProxyCreate; }
+	virtual void*                     GetUserProxyData() const override       { return m_pUserProxyUserData; }
 
 	virtual IEntityEventHandler*      GetEventHandler() const override;
 	virtual IEntityScriptFileHandler* GetScriptFileHandler() const override;
@@ -44,7 +44,7 @@ public:
 	virtual IEntityClass::SEventInfo GetEventInfo(int nIndex) override;
 	virtual bool                     FindEventInfo(const char* sEvent, SEventInfo& event) override;
 
-	virtual const OnSpawnCallback&   GetOnSpawnCallback() const override { return m_onSpawnCallback; };
+	virtual const OnSpawnCallback&   GetOnSpawnCallback() const override { return m_onSpawnCallback; }
 
 	//////////////////////////////////////////////////////////////////////////
 

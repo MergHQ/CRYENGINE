@@ -21,13 +21,6 @@
 	#undef min
 	#undef max
 
-static float Clamp(float x, float mn, float mx)
-{
-	if (x < mn) return mn;
-	if (x > mx) return mx;
-	return x;
-}
-
 static void CalculateDesiredMinMax(float desired, float tolLow, float tolHigh, float& des, float& mn, float& mx)
 {
 	des = desired;
@@ -75,7 +68,7 @@ float CPacketRateCalculator::GetBandwidthUsage(CTimeValue nTime, CPacketRateCalc
 
 	uint32 total = m_bandwidthUsedAmount[direction].GetTotal();
 	float time = m_bandwidthUsedTime[direction].Empty() ? 1.0f :
-	             (nTime - m_bandwidthUsedTime[direction].GetFirst()).GetSeconds();
+		nTime.GetDifferenceInSeconds(m_bandwidthUsedTime[direction].GetFirst());
 	// ensure time >= 1
 	if (time < 1.0f)
 		time = 1.0f;
@@ -250,7 +243,7 @@ CTimeValue CPacketRateCalculator::GetRemoteTime() const
 					const float maxVel = 20.0f;
 					const float minVel = 1.0f / maxVel;
 
-					const float rawVelocity = Clamp(targetVel + (targetPos - m_remoteTimeEstimate).GetSeconds(), minVel, maxVel);
+					const float rawVelocity = crymath::clamp(targetVel + (targetPos - m_remoteTimeEstimate).GetSeconds(), minVel, maxVel);
 					m_timeVelocityBuffer.AddSample(rawVelocity);
 
 					m_remoteTimeEstimate += m_timeVelocityBuffer.GetTotal() / m_timeVelocityBuffer.Size() * step;
@@ -314,7 +307,8 @@ TPacketSize CPacketRateCalculator::GetIdealPacketSize(const CTimeValue time, boo
 		packetRate = std::min(static_cast<float>(m_metrics.m_packetRateIdle), packetsPerSecond);
 	}
 
-	TPacketSize idealPacketSize = static_cast<TPacketSize>(Clamp(availableBandwidth / packetRate, 0, static_cast<float>(maxPacketSize)) + 0.5f);
+	TPacketSize idealPacketSize = static_cast<TPacketSize>((availableBandwidth / packetRate) + 0.5f);
+	idealPacketSize = crymath::clamp(idealPacketSize, 0u, maxPacketSize);
 	return idealPacketSize;
 }
 
@@ -330,7 +324,8 @@ TPacketSize CPacketRateCalculator::GetSparePacketSize(const CTimeValue time, TPa
 
 	CalculateCurrentBandwidth(time, packetsPerSecond, bytesPerSecond);
 
-	TPacketSize spareCapacity = static_cast<TPacketSize>(Clamp(availableBandwidth - bytesPerSecond, 0, static_cast<float>(maxPacketSize - idealPacketSize)));
+	TPacketSize spareCapacity = static_cast<TPacketSize>(availableBandwidth - bytesPerSecond);
+	spareCapacity = crymath::clamp(spareCapacity, 0u, maxPacketSize - idealPacketSize);
 
 	#if LOG_BANDWIDTH_SHAPING
 	if (!isLocal && (bytesPerSecond > availableBandwidth))
@@ -347,30 +342,33 @@ void CPacketRateCalculator::CalculateCurrentBandwidth(const CTimeValue time, flo
 {
 	const size_t numSamples = m_bandwidthUsedTime[eIO_Outgoing].Size();
 	uint32 index = 0;
-	float bytesSent = 0.0f;
-	float packetsSent = 0.0f;
+	uint32 bytesSent = 0;
+	uint32 packetsSent = 0;
 
 	// Walk back through the sample timestamps for the last second
-	const float desiredTimePeriod = 1.0f;
-	float actualTimePeriod = 0.0f;
-	float timeDiff = 0.0f;
+	const CTimeValue desiredTimePeriod = 1.0f;
+	CTimeValue actualTimePeriod;
+	CTimeValue timeDiff;
 	while ((index < numSamples) && (timeDiff < desiredTimePeriod))
 	{
-		const CTimeValue& sampleTime = m_bandwidthUsedTime[eIO_Outgoing][numSamples - index];
-		timeDiff = time.GetDifferenceInSeconds(sampleTime);
+		const size_t revIndex = numSamples - 1 - index;
+		const CTimeValue& sampleTime = m_bandwidthUsedTime[eIO_Outgoing][revIndex];
+		const uint32 sampleValue = m_bandwidthUsedAmount[eIO_Outgoing][revIndex];
+		timeDiff = time - sampleTime;
 		if (timeDiff < desiredTimePeriod)
 		{
-			bytesSent += m_bandwidthUsedAmount[eIO_Outgoing][numSamples - index];
+			bytesSent += sampleValue;
 			++packetsSent;
 			actualTimePeriod = timeDiff;
 		}
 		++index;
 	}
 
-	if (actualTimePeriod > 0.0f)
+	if (actualTimePeriod > CTimeValue())
 	{
-		packetsPerSecond = packetsSent / actualTimePeriod;
-		bytesPerSecond = bytesSent / actualTimePeriod;
+		const float actualTimePeriodSec = actualTimePeriod.GetSeconds();
+		packetsPerSecond = packetsSent / actualTimePeriodSec;
+		bytesPerSecond = bytesSent / actualTimePeriodSec;
 	}
 	else
 	{

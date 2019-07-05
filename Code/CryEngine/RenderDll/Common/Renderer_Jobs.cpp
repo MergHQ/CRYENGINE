@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File:Renderer.cpp
-//  Description: Abstract renderer API
-//
-//	History:
-//	-Feb 05,2001:Originally Created by Marco Corbetta
-//	-: taken over by Andrey Honich
-//.
-//////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 
 #include "Shadow_Renderer.h"
@@ -105,7 +95,7 @@ static inline void AddEf_HandleForceFlags(int& nList, int& nAW, uint32& nBatchFl
 		nBatchFlags |= FB_Z;
 
 	{
-		// below branchlessw version of:
+		// below branchless version of:
 		//if      (nShaderFlags2 & EF2_FORCE_TRANSPASS  ) nList = EFSLIST_TRANSP;
 		//else if (nShaderFlags2 & EF2_FORCE_GENERALPASS) nList = EFSLIST_GENERAL;
 		//else if (nShaderFlags2 & EF2_FORCE_WATERPASS  ) nList = EFSLIST_WATER;
@@ -416,10 +406,10 @@ void CRenderer::GetFogVolumeContribution(uint16 idx, ColorF& rColor) const
 //////////////////////////////////////////////////////////////////////////
 uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderElement* re, const SRenderingPassInfo& passInfo, int nAboveWater)
 {
-
 	uint32 nFlags = SH.m_nPreprocessFlags & FB_MASK;
 	if (SH.m_nPreprocessFlags & FSPR_GENSPRITES)
 		nFlags |= FB_PREPROCESS;
+
 	SShaderTechnique* const __restrict pTech = SH.GetTechnique();
 	CShaderResources* const __restrict pR = (CShaderResources*)SH.m_pShaderResources;
 	CShader* const __restrict pS = (CShader*)SH.m_pShader;
@@ -439,7 +429,7 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderEle
 		if (!((nFlags & FB_Z) && (!(pObj->m_RState & OS_NODEPTH_WRITE) || (pS->m_Flags2 & EF2_FORCE_ZPASS))))
 			nFlags &= ~FB_Z;
 
-		if ((ObjFlags & FOB_DISSOLVE) || (ObjFlags & FOB_DECAL) || CRenderer::CV_r_usezpass != 2 || pObj->m_fDistance > CRenderer::CV_r_ZPrepassMaxDist)
+		if (ObjFlags & FOB_DECAL)
 			nFlags &= ~FB_ZPREPASS;
 
 		pObj->m_ObjFlags |= (nFlags & FB_ZPREPASS) ? FOB_ZPREPASS : 0;
@@ -519,7 +509,8 @@ uint32 CRenderer::EF_BatchFlags(SShaderItem& SH, CRenderObject* pObj, CRenderEle
 	else if (passInfo.IsRecursivePass() && pTech && m_RP.m_TI[passInfo.ThreadID()].m_PersFlags & RBPF_MIRRORCAMERA)
 	{
 		nFlags &= (FB_TRANSPARENT | FB_GENERAL);
-		nFlags |= FB_TRANSPARENT * uTransparent;                                      // if (pObj->m_fAlpha < 1.0f)                   nFlags |= FB_TRANSPARENT;
+		nFlags |= FB_TRANSPARENT * uTransparent;
+		// if (pObj->m_fAlpha < 1.0f) nFlags |= FB_TRANSPARENT;
 	}
 
 	{
@@ -602,7 +593,6 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 			WriteLock lock(pObjSrc->m_accessLock);
 			pObjNew->m_pNextPermanent = pObjSrc->m_pNextPermanent;
 			pObjSrc->m_pNextPermanent = pObjNew;
-			;
 		}
 
 		return pObjNew;
@@ -624,11 +614,11 @@ struct CShaderPublicParams : public IShaderPublicParams
 		m_nRefCount = 0;
 	}
 
-	virtual void          AddRef()                  { m_nRefCount++; };
-	virtual void          Release()                 { if (--m_nRefCount <= 0) delete this; };
+	virtual void          AddRef()                  { m_nRefCount++; }
+	virtual void          Release()                 { if (--m_nRefCount <= 0) delete this; }
 
 	virtual void          SetParamCount(int nParam) { m_shaderParams.resize(nParam); }
-	virtual int           GetParamCount() const     { return m_shaderParams.size(); };
+	virtual int           GetParamCount() const     { return m_shaderParams.size(); }
 
 	virtual SShaderParam& GetParam(int nIndex)
 	{

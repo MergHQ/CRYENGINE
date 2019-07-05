@@ -23,8 +23,8 @@ public:
 	bool Serialize(Serialization::IArchive& archive);
 
 	const char*                GetName() const { return m_name.c_str(); }
-	UQS::Client::IItemFactory& GetItemFactory() const { assert(m_pItemFactory); return *m_pItemFactory; }
-	void*                      GetItem() const { assert(m_pItem); return m_pItem; }
+	UQS::Client::IItemFactory& GetItemFactory() const { CRY_ASSERT(m_pItemFactory); return *m_pItemFactory; }
+	void*                      GetItem() const { CRY_ASSERT(m_pItem); return m_pItem; }
 
 private:
 

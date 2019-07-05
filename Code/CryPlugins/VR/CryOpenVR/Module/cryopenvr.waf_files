@@ -1,32 +1,26 @@
 {
-	"NoUberFile" :
-	{
-		"Root" :
-		[
-		  "StdAfx.cpp"
-		]
-	},
-	"CryOpenVR_uber_0.cpp" :
-	{
-		"Interface" :
-		[
-		  "../Interface/IHmdOpenVRDevice.h",
-		  "../Interface/IOpenVRPlugin.h"
-		],
-
-		"Root" :
-		[
-		  "PluginDll.cpp",
-		  "PluginDll.h",
-		  "OpenVRController.cpp",
-		  "OpenVRController.h",
-		  "OpenVRDevice.cpp",
-		  "OpenVRDevice.h",
-		  "OpenVRResources.cpp",
-		  "OpenVRResources.h",
-		  "resource.h",
-		  "StdAfx.cpp",
-		  "StdAfx.h"
-		]
-	}
+    "CryOpenVR_uber_0.cpp": {
+        "Interface": [
+            "../Interface/IHmdOpenVRDevice.h",
+            "../Interface/IOpenVRPlugin.h"
+        ],
+        "Root": [
+            "PluginDll.cpp",
+            "PluginDll.h",
+            "OpenVRController.cpp",
+            "OpenVRController.h",
+            "OpenVRDevice.cpp",
+            "OpenVRDevice.h",
+            "OpenVRResources.cpp",
+            "OpenVRResources.h",
+            "resource.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp"
+        ]
+    }
 }

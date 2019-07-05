@@ -1,6 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryCore/BitMask.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <CryMemory/PoolAllocator.h>
 
 // forward declaration.
 class CEntity;
@@ -12,6 +16,9 @@ struct IMaterial;
 struct SEntityUpdateContext;
 struct IRenderNode;
 struct IGeomCacheRenderNode;
+struct SEntitySlotInfo;
+struct SRenderLight;
+struct SEntityPreviewContext;
 
 typedef Matrix34 CWorldTransform;
 typedef Vec3     CWorldPosition;
@@ -44,9 +51,9 @@ public:
 	bool GetLocalBounds(AABB& bounds);
 
 	// Get local transformation matrix of entity object.
-	const Matrix34& GetLocalTM() const { return m_localTM; };
+	const Matrix34& GetLocalTM() const { return m_localTM; }
 	// Get world transformation matrix of entity object.
-	const Matrix34& GetWorldTM() const { return m_worldTM; };
+	const Matrix34& GetWorldTM() const { return m_worldTM; }
 
 	// Clear all contents of the slot.
 	void Clear();
@@ -58,7 +65,7 @@ public:
 	bool GetBoundsChanged() const;
 
 	// XForm slot.
-	void OnXForm(int nWhyFlags);
+	void OnXForm(EntityTransformationFlagsMask transformReasons);
 
 	//////////////////////////////////////////////////////////////////////////
 	// @see EEntitySlotFlags
@@ -68,16 +75,18 @@ public:
 	void       SetRenderFlag(bool bEnable);
 
 	void       SetHidemask(hidemask& mask);
-	hidemask   GetHidemask() const { return m_nSubObjHideMask; };
+	hidemask   GetHidemask() const { return m_nSubObjHideMask; }
 
 	void       SetMaterial(IMaterial* pMtl);
-	IMaterial* GetMaterial() const { return m_pMaterial; };
+	IMaterial* GetMaterial() const { return m_pMaterial; }
 
 	//! Fill SEntitySlotInfo structure with contents of the Entity Slot
 	void GetSlotInfo(SEntitySlotInfo& slotInfo) const;
 
 	//////////////////////////////////////////////////////////////////////////
 	void                  UpdateRenderNode(bool bForceRecreateNode = false);
+
+	void                  UpdateViewDistRatio(const IEntity::SRenderNodeParams& renderNodeParams);
 
 	void                  SetAsLight(const SRenderLight& lightData, uint16 layerId = 0);
 
@@ -109,7 +118,7 @@ public:
 	}
 
 	//! Assign parent slot index
-	void SetParent(int parent) { m_parent = parent; };
+	void SetParent(int parent) { m_parent = parent; }
 	//! Get parent slot index
 	int  GetParent() const     { return m_parent; }
 
@@ -121,7 +130,7 @@ public:
 	//! Render this slot fo previewing in Editor.
 	void PreviewRender(SEntityPreviewContext& context);
 
-	void SetNeedSerialize(bool bNeedSerialize) { m_bNeedSerialize = bNeedSerialize; };
+	void SetNeedSerialize(bool bNeedSerialize) { m_bNeedSerialize = bNeedSerialize; }
 	bool NeedSerialize() const                 { return m_bNeedSerialize; }
 
 private:

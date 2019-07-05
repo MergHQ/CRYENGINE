@@ -86,12 +86,8 @@ public:
 
 	//ILevelSystemListener
 	virtual void OnLevelNotFound(const char* levelName);
-	virtual void OnLoadingStart(ILevelInfo* pLevel);
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel);
-	virtual void OnLoadingComplete(ILevelInfo* pLevel);
+	virtual bool OnLoadingStart(ILevelInfo* pLevel);
 	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error);
-	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount);
-	virtual void OnUnloadComplete(ILevelInfo* pLevel);
 	//
 
 	//IGameFrameworkListener

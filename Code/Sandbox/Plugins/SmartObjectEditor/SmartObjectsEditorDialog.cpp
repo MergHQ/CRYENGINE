@@ -1,32 +1,32 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CryAISystem/IAIAction.h>
-#include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IAgent.h>
+#include "SmartObjectsEditorDialog.h"
 
-#include "QtViewPane.h"
-#include "Objects/EntityObject.h"
-#include "Objects/SelectionGroup.h"
-#include "SmartObject.h"
-#include "GameEngine.h"
-#include "Util/MFCUtil.h"
-
-#include "AI\AIManager.h"
 #include "ItemDescriptionDlg.h"
+#include "SmartObject.h"
 #include "SmartObjectClassDialog.h"
 #include "SmartObjectHelperDialog.h"
+#include "SmartObjectHelperObject.h"
 #include "SmartObjectTemplateDialog.h"
 
-#include "HyperGraph\FlowGraphManager.h"
-#include "HyperGraph\FlowGraph.h"
-#include "SmartObjectHelperObject.h"
-#include "SmartObjectsEditorDialog.h"
-#include "Controls/QuestionDialog.h"
-#include "Controls/SharedFonts.h"
-#include "ClassFactory.h"
-#include "Objects/ObjectManager.h"
-#include "Util/FileUtil.h"
+// EditorQt
+#include <AI/AIManager.h>
+#include <HyperGraph/FlowGraphManager.h>
+#include <HyperGraph/FlowGraph.h>
+#include <Objects/EntityObject.h>
+#include <Objects/ObjectManager.h>
+#include <Objects/SelectionGroup.h>
+#include <GameEngine.h>
+
+// MFC
+#include <Controls/SharedFonts.h>
+#include <Util/FileUtil.h>
+#include <Util/MFCUtil.h>
+
+// Engine
+#include <CryAISystem/IAgent.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define SOED_DIALOGFRAME_CLASSNAME "SmartObjectsEditorDialog"
 #define CLASS_TEMPLATES_FOLDER     "Libs/SmartObjects/ClassTemplates/"
@@ -65,7 +65,7 @@ CSOLibrary* CSOLibrary::m_pInstance = NULL;
 
 // functor used for comparing and ordering data structures by name
 template<class T>
-struct less_name : public std::binary_function<const T&, const T&, bool>
+struct less_name
 {
 	bool operator()(const T& _Left, const T& _Right) const
 	{
@@ -75,7 +75,7 @@ struct less_name : public std::binary_function<const T&, const T&, bool>
 
 // functor used for comparing and ordering data structures by name (case insensitive)
 template<class T>
-struct less_name_no_case : public std::binary_function<const T&, const T&, bool>
+struct less_name_no_case
 {
 	bool operator()(const T& _Left, const T& _Right) const
 	{
@@ -116,21 +116,6 @@ void CSOLibrary::OnEditorNotifyEvent(EEditorNotifyEvent event)
 
 	case eNotify_OnInit:                    // Sent after editor fully initialized.
 		REGISTER_COMMAND("so_reload", ReloadSmartObjects, VF_NULL, "");
-		break;
-
-	case eNotify_OnEndSceneOpen:            // Sent after document have been opened.
-	case eNotify_OnEndSceneSave:            // Sent after document have been saved.
-	case eNotify_OnEndNewScene:             // Sent after the document have been cleared.
-	case eNotify_OnMissionChange:           // Send when the current mission changes.
-	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
-	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
-	case eNotify_OnEndGameMode:             // Send when editor goes out of game mode.
-	case eNotify_OnUpdateViewports:         // Sent when editor needs to update data in the viewports.
-	case eNotify_OnInvalidateControls:      // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
-	case eNotify_OnSelectionChange:         // Sent when object selection change.
-	case eNotify_OnPlaySequence:            // Sent when editor start playing animation sequence.
-	case eNotify_OnStopSequence:            // Sent when editor stop playing animation sequence.
 		break;
 	}
 }
@@ -202,7 +187,7 @@ void CSOLibrary::LoadClassTemplates()
 	ICryPak* pack = gEnv->pCryPak;
 	_finddata_t fd;
 	intptr_t handle = pack->FindFirst(sLibPath, &fd);
-	int nCount = 0;
+
 	if (handle < 0)
 		return;
 
@@ -348,7 +333,6 @@ public:
 	CVarBlockPtr             m_vars;
 	IVariable::OnSetCallback m_onSetCallback;
 
-	//////////////////////////////////////////////////////////////////////////
 	CVarBlock* CreateVars()
 	{
 		m_vars = new CVarBlock;
@@ -607,7 +591,6 @@ public:
 		return result;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	void SetConditionToUI(const SmartObjectCondition& condition, CPropertyCtrl* pPropertyCtrl)
 	{
 		const MapTemplates& mapTemplates = GetIEditor()->GetAIManager()->GetMapTemplates();
@@ -704,7 +687,6 @@ public:
 
 	IVariable* ResolveVariable(const CSOParam* pParam)
 	{
-		IVariable* pVar = NULL;
 		if (pParam->sName == "bNavigationRule")
 			return &bNavigationRule;
 		else if (pParam->sName == "sEvent")
@@ -832,7 +814,7 @@ private:
 			param = param->pNext;
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////
+	
 	void AddVariablesFromTemplate(IVariable* var, CSOParamBase* param)
 	{
 		while (param)
@@ -870,7 +852,7 @@ private:
 			param = param->pNext;
 		}
 	}
-	//////////////////////////////////////////////////////////////////////////
+	
 	void AddVariable(CVariableArray& varArray, CVariableBase& var, const char* varName, unsigned char dataType = IVariable::DT_SIMPLE, const char* description = NULL)
 	{
 		var.AddRef(); // Variables are local and must not be released by CVarBlock.
@@ -883,7 +865,7 @@ private:
 			var.AddOnSetCallback(m_onSetCallback);
 		varArray.AddVariable(&var);
 	}
-	//////////////////////////////////////////////////////////////////////////
+	
 	void AddVariable(CVarBlock* vars, CVariableBase& var, const char* varName, unsigned char dataType = IVariable::DT_SIMPLE, const char* description = NULL)
 	{
 		var.AddRef(); // Variables are local and must not be released by CVarBlock.
@@ -900,7 +882,6 @@ private:
 
 static CSmartObjectsUIDefinition gSmartObjectsUI;
 
-//////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 class CSmartObjectEntry : public CXTPReportRecord
 {
@@ -1300,13 +1281,13 @@ class CSmartObjectsEditorViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return "Smart Objects Editor"; };
-	virtual const char*    Category()        override { return "Game"; };
+	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return "Smart Objects Editor"; }
+	virtual const char*    Category()        override { return "Game"; }
 	virtual const char*    GetMenuPath()     override { return "Deprecated"; }
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CSmartObjectsEditorDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T("Smart Objects Editor"); };
-	virtual bool           SinglePane()      override { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CSmartObjectsEditorDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T("Smart Objects Editor"); }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CSmartObjectsEditorViewClass)
@@ -1318,8 +1299,8 @@ CSmartObjectsEditorDialog::CSmartObjectsEditorDialog()
 {
 	GetIEditor()->RegisterNotifyListener(this);
 	++CSOLibrary::m_iNumEditors;
-	GetIEditor()->GetObjectManager()->signalObjectChanged.Connect(this, &CSmartObjectsEditorDialog::OnObjectEvent);
 
+	GetIEditor()->GetObjectManager()->signalObjectsChanged.Connect(this, &CSmartObjectsEditorDialog::OnObjectsChanged);
 	GetIEditor()->GetObjectManager()->signalSelectionChanged.Connect(this, &CSmartObjectsEditorDialog::OnSelectionChanged);
 	m_bSinkNeeded = true;
 
@@ -1353,7 +1334,6 @@ CSmartObjectsEditorDialog::CSmartObjectsEditorDialog()
 	OnInitDialog();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSmartObjectsEditorDialog::~CSmartObjectsEditorDialog()
 {
 	if (CSOLibrary::m_bSaveNeeded && SaveSOLibrary())
@@ -1363,18 +1343,16 @@ CSmartObjectsEditorDialog::~CSmartObjectsEditorDialog()
 	}
 
 	--CSOLibrary::m_iNumEditors;
-	GetIEditor()->GetObjectManager()->signalObjectChanged.DisconnectObject(this);
+	GetIEditor()->GetObjectManager()->signalObjectsChanged.DisconnectObject(this);
 	GetIEditor()->GetObjectManager()->signalSelectionChanged.DisconnectObject(this);
 	GetIEditor()->UnregisterNotifyListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSmartObjectsEditorDialog::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd)
 {
 	return __super::Create(SOED_DIALOGFRAME_CLASSNAME, "", dwStyle, rect, pParentWnd);
 }
 
-//////////////////////////////////////////////////////////////////////////
 SmartObjectConditions::iterator CSmartObjectsEditorDialog::FindRuleByPtr(const SmartObjectCondition* pRule)
 {
 	SmartObjectConditions::iterator it, itEnd = CSOLibrary::m_Conditions.end();
@@ -1387,19 +1365,15 @@ SmartObjectConditions::iterator CSmartObjectsEditorDialog::FindRuleByPtr(const S
 	return itEnd;
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSmartObjectsEditorDialog::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
-	BOOL res = FALSE;
-
-	res = m_View.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
+	BOOL res = m_View.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 	if (res)
 		return res;
 
 	return __super::OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSmartObjectsEditorDialog::OnInitDialog()
 {
 	m_bFilterCanceled = false;
@@ -1532,7 +1506,6 @@ BOOL CSmartObjectsEditorDialog::OnInitDialog()
 	return TRUE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::CreatePanes()
 {
 	CRect rc;
@@ -1674,7 +1647,6 @@ void CSmartObjectsEditorDialog::CreatePanes()
 	m_Tree.SetImageList(&m_imageList, TVSIL_NORMAL);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CSmartObjectsEditorDialog::GetFolderPath(HTREEITEM item) const
 {
 	CString folder;
@@ -1688,13 +1660,11 @@ CString CSmartObjectsEditorDialog::GetFolderPath(HTREEITEM item) const
 	return folder;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CString CSmartObjectsEditorDialog::GetCurrentFolderPath() const
 {
 	return GetFolderPath(m_Tree.GetSelectedItem());
 }
 
-//////////////////////////////////////////////////////////////////////////
 HTREEITEM CSmartObjectsEditorDialog::ForceFolder(const CString& folder)
 {
 	HTREEITEM root = m_Tree.GetRootItem();
@@ -1718,7 +1688,6 @@ HTREEITEM CSmartObjectsEditorDialog::ForceFolder(const CString& folder)
 	return item;
 }
 
-//////////////////////////////////////////////////////////////////////////
 HTREEITEM CSmartObjectsEditorDialog::SetCurrentFolder(const CString& folder)
 {
 	HTREEITEM item = ForceFolder(folder);
@@ -1729,7 +1698,6 @@ HTREEITEM CSmartObjectsEditorDialog::SetCurrentFolder(const CString& folder)
 	return item;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::ReloadEntries(bool bFromFile)
 {
 	// remember the selected rule
@@ -1802,7 +1770,6 @@ void CSmartObjectsEditorDialog::ReloadEntries(bool bFromFile)
 	m_bSinkNeeded = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSmartObjectsEditorDialog::ChangeTemplate(SmartObjectCondition* pRule, const CSOParamBase* pParam) const
 {
 	CString msg;
@@ -1825,7 +1792,6 @@ bool CSmartObjectsEditorDialog::ChangeTemplate(SmartObjectCondition* pRule, cons
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnUpdateProperties(IVariable* pVar)
 {
 	if (m_pEditedEntry)
@@ -2000,7 +1966,7 @@ void CSmartObjectsEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	if (event == eNotify_OnIdleUpdate)      // Sent every frame while editor is idle.
 	{
 		if (m_bSinkNeeded)
-			SinkSelection();
+			SyncSelection();
 		return;
 	}
 
@@ -2019,42 +1985,6 @@ void CSmartObjectsEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			CSOLibrary::m_bSaveNeeded = false;
 			CSOLibrary::m_bLoadNeeded = false;
 		}
-		break;
-
-	case eNotify_OnInit:                    // Sent after editor fully initialized.
-	case eNotify_OnEndSceneOpen:            // Sent after document have been opened.
-		//		ReloadEntries();
-		break;
-
-	case eNotify_OnEndSceneSave:            // Sent after document have been saved.
-	case eNotify_OnEndNewScene:             // Sent after the document have been cleared.
-	case eNotify_OnMissionChange:           // Send when the current mission changes.
-		break;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Editing events.
-	//////////////////////////////////////////////////////////////////////////
-	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
-	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
-		break;
-
-	// Game related events.
-	case eNotify_OnEndGameMode:             // Send when editor goes out of game mode.
-		break;
-
-	// UI events.
-	case eNotify_OnUpdateViewports:         // Sent when editor needs to update data in the viewports.
-	case eNotify_OnInvalidateControls:      // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
-		break;
-
-	// Object events.
-	case eNotify_OnSelectionChange:         // Sent when object selection change.
-		// Unfortunately I have never received this notification!!!
-		// SinkSelection();
-		break;
-	case eNotify_OnPlaySequence:            // Sent when editor start playing animation sequence.
-	case eNotify_OnStopSequence:            // Sent when editor stop playing animation sequence.
 		break;
 	}
 }
@@ -2081,7 +2011,6 @@ void CSOLibrary::String2Classes(const string& sClass, SetStrings& classes)
 
 		start = end + 1;
 	}
-	;
 }
 
 void CSmartObjectsEditorDialog::ParseClassesFromProperties(CBaseObject* pObject, SetStrings& classes)
@@ -2119,7 +2048,7 @@ void CSmartObjectsEditorDialog::ParseClassesFromProperties(CBaseObject* pObject,
 	}
 }
 
-void CSmartObjectsEditorDialog::SinkSelection()
+void CSmartObjectsEditorDialog::SyncSelection()
 {
 	m_bSinkNeeded = false;
 
@@ -2157,7 +2086,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 		for (it = m_mapHelperObjects.begin(); it != itEnd; ++it)
 		{
 			CSmartObjectHelperObject* pHelperObject = it->second;
-			pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+			pHelperObject->signalChanged.DisconnectObject(this);
 			pHelperObject->DetachThis();
 			pHelperObject->Release();
 			GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);
@@ -2198,7 +2127,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 			{
 				// remove all helpers for this entity
 				it->second = NULL;
-				pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+				pHelperObject->signalChanged.DisconnectObject(this);
 				pHelperObject->DetachThis();
 				pHelperObject->Release();
 				GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);
@@ -2209,7 +2138,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 				if (CSOLibrary::FindHelper(m_sEditedClass, pHelperObject->GetName().GetString()) == CSOLibrary::m_vHelpers.end())
 				{
 					it->second = NULL;
-					pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+					pHelperObject->signalChanged.DisconnectObject(this);
 					pHelperObject->DetachThis();
 					pHelperObject->Release();
 					GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);
@@ -2222,7 +2151,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 		while (it != itEnd)
 		{
 			next = it;
-			next++;
+			++next;
 			if (!it->second)
 				m_mapHelperObjects.erase(it);
 			it = next;
@@ -2264,7 +2193,7 @@ void CSmartObjectsEditorDialog::SinkSelection()
 						pHelperObject->AddRef();
 						pEntity->AttachChild(pHelperObject);
 						m_mapHelperObjects.insert(std::make_pair(pEntity, pHelperObject));
-						pHelperObject->AddEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+						pHelperObject->signalChanged.Connect(this, &CSmartObjectsEditorDialog::OnObjectChanged);
 					}
 				}
 
@@ -2369,7 +2298,6 @@ void CSmartObjectsEditorDialog::SinkSelection()
 	m_View.EndUpdate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::DeleteHelper(const CString& className, const CString& helperName)
 {
 	m_bSinkNeeded = true;
@@ -2392,7 +2320,6 @@ CSOLibrary::VectorHelperData::iterator CSOLibrary::FindHelper(const CString& cla
 	return itEnd;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSOLibrary::VectorHelperData::iterator CSOLibrary::HelpersLowerBound(const CString& className)
 {
 	Load();
@@ -2404,7 +2331,6 @@ CSOLibrary::VectorHelperData::iterator CSOLibrary::HelpersLowerBound(const CStri
 	return itEnd;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSOLibrary::VectorHelperData::iterator CSOLibrary::HelpersUpperBound(const CString& className)
 {
 	Load();
@@ -2416,7 +2342,6 @@ CSOLibrary::VectorHelperData::iterator CSOLibrary::HelpersUpperBound(const CStri
 	return itEnd;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSOLibrary::VectorEventData::iterator CSOLibrary::FindEvent(const char* name)
 {
 	Load();
@@ -2428,7 +2353,6 @@ CSOLibrary::VectorEventData::iterator CSOLibrary::FindEvent(const char* name)
 	return itEnd;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSOLibrary::AddEvent(const char* name, const char* description)
 {
 	Load();
@@ -2445,7 +2369,6 @@ void CSOLibrary::AddEvent(const char* name, const char* description)
 	m_vEvents.insert(it, event);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSOLibrary::VectorStateData::iterator CSOLibrary::FindState(const char* name)
 {
 	Load();
@@ -2460,7 +2383,6 @@ CSOLibrary::VectorStateData::iterator CSOLibrary::FindState(const char* name)
 		return m_vStates.end();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSOLibrary::AddState(const char* name, const char* description, const char* location)
 {
 	Load();
@@ -2477,7 +2399,6 @@ void CSOLibrary::AddState(const char* name, const char* description, const char*
 		m_vStates.insert(it, stateData);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSOLibrary::VectorClassData::iterator CSOLibrary::FindClass(const char* name)
 {
 	Load();
@@ -2492,7 +2413,6 @@ CSOLibrary::VectorClassData::iterator CSOLibrary::FindClass(const char* name)
 		return m_vClasses.end();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSOLibrary::AddClass(const char* name, const char* description, const char* location, const char* templateName)
 {
 	Load();
@@ -2512,7 +2432,6 @@ void CSOLibrary::AddClass(const char* name, const char* description, const char*
 		m_vClasses.insert(it, classData);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSOLibrary::CClassTemplateData const* CSOLibrary::FindClassTemplate(const char* name)
 {
 	if (!name || !*name)
@@ -2534,44 +2453,45 @@ CSOLibrary::CClassTemplateData const* CSOLibrary::FindClassTemplate(const char* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSmartObjectsEditorDialog::OnObjectEvent(CObjectEvent& event)
+void CSmartObjectsEditorDialog::OnObjectChanged(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (!m_bIgnoreNotifications)
+	switch (event.m_type)
 	{
-		switch (event.m_type)
+	case OBJECT_ON_DELETE:     // Sent after object was deleted from object manager.
+		if (!m_sEditedClass.IsEmpty() && pObject->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
 		{
-			case OBJECT_ON_DELETE:     // Sent after object was deleted from object manager.
-				if (!m_sEditedClass.IsEmpty() && event.m_pObj->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
-				{
-					CSmartObjectHelperObject* pHelperObject = (CSmartObjectHelperObject*)event.m_pObj;
-					DeleteHelper(m_sEditedClass, event.m_pObj->GetName().GetString());
-				}
-				m_bSinkNeeded = true;
-				break;
-			case OBJECT_ON_SELECT:     // Sent when objects becomes selected.
-			case OBJECT_ON_UNSELECT:   // Sent when objects unselected.
-				m_bSinkNeeded = true;
-				m_bFilterCanceled = false;
-				break;
-			case OBJECT_ON_TRANSFORM:  // Sent when object transformed.
-				if (event.m_pObj->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
-				{
-					CSmartObjectHelperObject* pHelperObject = (CSmartObjectHelperObject*)event.m_pObj;
-					CSOLibrary::VectorHelperData::iterator it = CSOLibrary::FindHelper(m_sEditedClass, pHelperObject->GetName().GetString());
-					if (it != CSOLibrary::m_vHelpers.end())
-					{
-						it->qt.t = event.m_pObj->GetPos();
-						it->qt.q = event.m_pObj->GetRotation();
-						m_bSinkNeeded = true;
-						CSOLibrary::m_bSaveNeeded = true;
-					}
-				}
-				break;
+			DeleteHelper(m_sEditedClass, pObject->GetName().GetString());
 		}
+		m_bSinkNeeded = true;
+		break;
+	case OBJECT_ON_TRANSFORM:  // Sent when object transformed.
+		if (pObject->IsKindOf(RUNTIME_CLASS(CSmartObjectHelperObject)))
+		{
+			const CSmartObjectHelperObject* pHelperObject = (const CSmartObjectHelperObject*)pObject;
+			CSOLibrary::VectorHelperData::iterator it = CSOLibrary::FindHelper(m_sEditedClass, pHelperObject->GetName().GetString());
+			if (it != CSOLibrary::m_vHelpers.end())
+			{
+				it->qt.t = pObject->GetPos();
+				it->qt.q = pObject->GetRotation();
+				m_bSinkNeeded = true;
+				CSOLibrary::m_bSaveNeeded = true;
+			}
+		}
+		break;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CSmartObjectsEditorDialog::OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event)
+{
+	if (m_bIgnoreNotifications)
+		return;
+
+	for (const CBaseObject* pObject : objects)
+	{
+		OnObjectChanged(pObject, event);
+	}
+}
+
 void CSmartObjectsEditorDialog::OnSelectionChanged()
 {
 	if (!m_bIgnoreNotifications)
@@ -2581,7 +2501,6 @@ void CSmartObjectsEditorDialog::OnSelectionChanged()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::ModifyRuleOrder(int from, int to)
 {
 	SmartObjectConditions::iterator it = CSOLibrary::m_Conditions.begin(), itEnd = CSOLibrary::m_Conditions.end();
@@ -2589,7 +2508,6 @@ void CSmartObjectsEditorDialog::ModifyRuleOrder(int from, int to)
 	{
 		for (; it != itEnd; ++it)
 		{
-			int order = it->iOrder;
 			if (it->iOrder == from)
 				it->iOrder = to;
 			else if (from < it->iOrder && it->iOrder <= to)
@@ -2608,7 +2526,6 @@ void CSmartObjectsEditorDialog::ModifyRuleOrder(int from, int to)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnAddEntry()
 {
 	if (!GetISystem()->GetIFlowSystem())
@@ -2729,14 +2646,12 @@ void CSmartObjectsEditorDialog::OnAddEntry()
 	CSOLibrary::m_bSaveNeeded = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnEditEntry()
 {
 	//	ReloadEntries();
 	CSOLibrary::m_bSaveNeeded = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnRemoveEntry()
 {
 	if (!GetISystem()->GetIFlowSystem())
@@ -2764,7 +2679,6 @@ void CSmartObjectsEditorDialog::OnRemoveEntry()
 	OnReportSelChanged(NULL, NULL);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnDuplicateEntry()
 {
 	if (!GetISystem()->GetIFlowSystem())
@@ -2822,7 +2736,6 @@ void CSmartObjectsEditorDialog::OnDuplicateEntry()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnHelpersEdit()
 {
 	if (!CheckOutLibrary())
@@ -2879,7 +2792,7 @@ void CSmartObjectsEditorDialog::OnHelpersEdit()
 			{
 				if (it->second->GetName() == sSelectedHelper.GetString())
 				{
-					GetIEditor()->SelectObject(it->second);
+					GetIEditor()->GetObjectManager()->AddObjectToSelection(it->second);
 					GetIEditor()->GetObjectManager()->UnselectObject(pSelectedObject);
 					break;
 				}
@@ -2888,7 +2801,6 @@ void CSmartObjectsEditorDialog::OnHelpersEdit()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnHelpersNew()
 {
 	if (!m_sEditedClass.IsEmpty())
@@ -2916,7 +2828,7 @@ void CSmartObjectsEditorDialog::OnHelpersNew()
 
 			// this will eventually show the new helper
 			m_bSinkNeeded = true;
-			SinkSelection();
+			SyncSelection();
 
 			// try to select the newly created helper
 			CBaseObject* pSelected = GetIEditor()->GetSelectedObject();
@@ -2931,8 +2843,7 @@ void CSmartObjectsEditorDialog::OnHelpersNew()
 					CBaseObject* pChild = pSelected->GetChild(i);
 					if (pChild->GetName() == helper.name.GetString())
 					{
-						GetIEditor()->ClearSelection();
-						GetIEditor()->SelectObject(pChild);
+						GetIEditor()->GetObjectManager()->SelectObject(pChild);
 						break;
 					}
 				}
@@ -2941,7 +2852,6 @@ void CSmartObjectsEditorDialog::OnHelpersNew()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnHelpersDelete()
 {
 	const CSelectionGroup* pSelection = GetIEditor()->GetObjectManager()->GetSelection();
@@ -2959,7 +2869,6 @@ void CSmartObjectsEditorDialog::OnHelpersDelete()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnHelpersDone()
 {
 	if (!m_sEditedClass.IsEmpty())
@@ -2969,7 +2878,7 @@ void CSmartObjectsEditorDialog::OnHelpersDone()
 		for (it = m_mapHelperObjects.begin(); it != itEnd; ++it)
 		{
 			CSmartObjectHelperObject* pHelperObject = it->second;
-			pHelperObject->RemoveEventListener(functor(*this, &CSmartObjectsEditorDialog::OnObjectEventLegacy));
+			pHelperObject->signalChanged.DisconnectObject(this);
 			pHelperObject->DetachThis();
 			pHelperObject->Release();
 			GetIEditor()->GetObjectManager()->DeleteObject(pHelperObject);
@@ -2990,7 +2899,6 @@ void CSmartObjectsEditorDialog::OnHelpersDone()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::EnableIfOneSelected(CCmdUI* target)
 {
 	CXTPReportSelectedRows* pRows = m_View.GetSelectedRows();
@@ -3003,13 +2911,11 @@ void CSmartObjectsEditorDialog::EnableIfOneSelected(CCmdUI* target)
 		target->Enable(FALSE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::EnableIfSelected(CCmdUI* target)
 {
 	target->Enable(m_View.GetSelectedRows()->GetCount());
 }
 
-//////////////////////////////////////////////////////////////////////////
 LRESULT CSmartObjectsEditorDialog::OnDockingPaneNotify(WPARAM wParam, LPARAM lParam)
 {
 	if (wParam == XTP_DPN_SHOWWINDOW)
@@ -3065,7 +2971,6 @@ LRESULT CSmartObjectsEditorDialog::OnDockingPaneNotify(WPARAM wParam, LPARAM lPa
 	return FALSE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSmartObjectsEditorDialog::PreTranslateMessage(MSG* pMsg)
 {
 	// allow tooltip messages to be filtered
@@ -3085,7 +2990,6 @@ BOOL CSmartObjectsEditorDialog::PreTranslateMessage(MSG* pMsg)
 	return FALSE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 LRESULT CSmartObjectsEditorDialog::OnTaskPanelNotify(WPARAM wParam, LPARAM lParam)
 {
 	switch (wParam)
@@ -3104,7 +3008,6 @@ LRESULT CSmartObjectsEditorDialog::OnTaskPanelNotify(WPARAM wParam, LPARAM lPara
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnClose()
 {
 	// This will call CSmartObjectsEditorDialog::OnUpdateProperties if needed.
@@ -3114,19 +3017,16 @@ void CSmartObjectsEditorDialog::OnClose()
 	__super::OnClose();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::PostNcDestroy()
 {
 	delete this;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::DoDataExchange(CDataExchange* pDX)
 {
 	__super::DoDataExchange(pDX);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::RecalcLayout(BOOL bNotify)
 {
 	__super::RecalcLayout(bNotify);
@@ -3180,7 +3080,6 @@ void CSmartObjectsEditorDialog::OnLButtonUp(UINT flags, CPoint pt)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CSmartObjectsEditorDialog::OnEraseBkgnd(CDC* pDC)
 {
 	__super::OnEraseBkgnd(pDC);
@@ -3221,13 +3120,11 @@ BOOL CSmartObjectsEditorDialog::OnEraseBkgnd(CDC* pDC)
 	return TRUE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnSetFocus(CWnd* pOldWnd)
 {
 	__super::OnSetFocus(pOldWnd);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObjectsEditorDialog::OnDestroy()
 {
 	CXTPDockingPaneLayout layout(GetDockingPaneManager());
@@ -3478,8 +3375,6 @@ void CSmartObjectsEditorDialog::OnTreeEndEdit(NMHDR* pNotifyStruct, LRESULT* res
 	if (res)
 	{
 		CSOLibrary::m_bSaveNeeded = true;
-
-		bool bRemove = false;
 		CString txt(pItemNotify->item.pszText);
 		res = txt.FindOneOf(_T("/\\")) < 0;
 
@@ -3666,7 +3561,7 @@ bool CSOLibrary::Save()
 	return true;
 }
 
-struct less_ptr : public std::binary_function<const SmartObjectCondition*, const SmartObjectCondition*, bool>
+struct less_ptr
 {
 	bool operator()(const SmartObjectCondition* _Left, const SmartObjectCondition* _Right) const
 	{
@@ -4212,4 +4107,3 @@ void CSmartObjectsEditorDialog::SetTemplateDefaults(SmartObjectCondition& condit
 
 	SetTemplateDefaults(condition, param->pNext, message);
 }
-

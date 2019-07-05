@@ -65,7 +65,7 @@ public:
 
 	// IEntityComponent
 	virtual	void ProcessEvent( const SEntityEvent &event );
-	virtual uint64 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	// ~IEntityComponent
 
 	virtual void PostInit(IGameObject *pGameObject);
@@ -74,7 +74,7 @@ public:
 	void OnRemove();
 
 	void SetupActionController(const char *controllerDef, const char *animDB1P, const char *animDB3P);
-	class IActionController *GetActionController() 
+	struct IActionController *GetActionController() 
 	{
 		return m_pActionController;
 	}
@@ -177,9 +177,9 @@ private:
 	EntityId m_gunId;
 
 	struct SAnimationContext *m_pAnimContext;
-	class IActionController *m_pActionController;
-	const class IAnimationDatabase *m_pAnimDatabase1P;
-	const class IAnimationDatabase *m_pAnimDatabase3P;
+	struct IActionController *m_pActionController;
+	const struct IAnimationDatabase *m_pAnimDatabase1P;
+	const struct IAnimationDatabase *m_pAnimDatabase3P;
 
 	int m_lastFrameUpdated;
 	int m_healthPercentage;

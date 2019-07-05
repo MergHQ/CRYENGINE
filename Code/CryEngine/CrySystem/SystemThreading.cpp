@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "System.h"
 #include "ThreadConfigManager.h"
+#include "Profiling/CryProfilingSystemSharedImpl.h"
 #include <CryThreading/IThreadManager.h>
 #include <CryCore/CryCustomTypes.h>
 
@@ -164,18 +165,16 @@ unsigned __stdcall CThreadManager::RunThread(void* thisPtr)
 		CryFatalError("[Error]: CThreadManager::RunThread requires gEnv->pSystem to be initialized.");
 	}
 
-	CRY_PROFILE_MARKER("Thread_Run");
-
 	IThreadConfigManager* pThreadConfigMngr = gEnv->pThreadManager->GetThreadConfigManager();
 
 	SThreadMetaData* pThreadData = reinterpret_cast<SThreadMetaData*>(thisPtr);
 	pThreadData->m_threadId = CryThreadUtil::CryGetCurrentThreadId();
 
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Thread \"%s\" (%" PRI_THREADID ")", pThreadData->m_threadName.c_str(), pThreadData->m_threadId);
+
 	// Apply config
 	const SThreadConfig* pThreadConfig = pThreadConfigMngr->GetThreadConfig(pThreadData->m_threadName.c_str());
 	ApplyThreadConfig(pThreadData->m_threadHandle, *pThreadConfig);
-
-	CRY_PROFILE_THREADNAME(pThreadData->m_threadName.c_str());
 
 	// Config not found, append thread name with no config tag
 	if (pThreadConfig == pThreadConfigMngr->GetDefaultThreadConfig())
@@ -206,14 +205,17 @@ unsigned __stdcall CThreadManager::RunThread(void* thisPtr)
 
 		// Rename Thread
 		CryThreadUtil::CrySetThreadName(pThreadData->m_threadHandle, tmpString.c_str());
-		CRY_PROFILE_THREADNAME(tmpString.c_str());
 	}
 
 	// Enable FPEs
 	gEnv->pThreadManager->EnableFloatExceptions((EFPE_Severity)g_cvars.sys_float_exceptions);
 
+
+	Cry::ProfilerRegistry::ExecuteOnThreadEntryCallbacks();
 	// Execute thread code
 	pThreadData->m_pThreadTask->ThreadEntry();
+	Cry::ProfilerRegistry::ExecuteOnThreadExitCallbacks();
+
 
 	// Disable FPEs
 	gEnv->pThreadManager->EnableFloatExceptions(eFPE_None);
@@ -228,7 +230,6 @@ unsigned __stdcall CThreadManager::RunThread(void* thisPtr)
 	// Note: Unregister after m_threadExitCondition.Notify() to ensure pThreadData is still valid
 	pThreadData->m_pThreadMngr->UnregisterThread(pThreadData->m_pThreadTask);
 
-	CRY_PROFILE_MARKER("Thread_Stop");
 	CryThreadUtil::CryThreadExitCall();
 
 	return NULL;
@@ -261,12 +262,23 @@ bool CThreadManager::JoinThread(IThread* pThreadTask, EJoinMode eJoinMode)
 	}
 
 	// Wait for completion of the target thread exit condition
-	pThreadImpl->m_threadExitMutex.Lock();
+	AUTO_LOCK_T(decltype(pThreadImpl->m_threadExitMutex), pThreadImpl->m_threadExitMutex);
 	while (pThreadImpl->m_isRunning)
 	{
+#if !CRY_PLATFORM_ORBIS
+		// Ensure thread is still alive.
+		// Handle special case where engine shutdown is using exit(1) e.g. CrashHandler.
+		// Exit(1) force terminates all threads so they don't reach the cleanup code at the end of the RunThread() function.		
+		// 1) Thread must be running as we hold the m_threadExitMutex and pThreadImpl->m_isRunning == true. 
+		// 2) If pThreadImpl->m_isRunning == false we would not be in this loop. Hence there is no double call of UnregisterThread()
+		if (!CryThreadUtil::CryIsThreadAlive(pThreadImpl->m_threadHandle))
+		{
+			pThreadImpl->m_pThreadMngr->UnregisterThread(pThreadImpl->m_pThreadTask);
+			break;
+		}
+#endif
 		pThreadImpl->m_threadExitCondition.Wait(pThreadImpl->m_threadExitMutex);
 	}
-	pThreadImpl->m_threadExitMutex.Unlock();
 
 	return true;
 }
@@ -517,6 +529,8 @@ bool CThreadManager::RegisterThirdPartyThreadImpl(CryThreadUtil::TThreadHandle t
 		CryThreadUtil::EnableFloatExceptions(pThreadMetaData->m_threadId, (EFPE_Severity)g_cvars.sys_float_exceptions);
 	}
 
+	Cry::ProfilerRegistry::ExecuteOnThreadEntryCallbacks();
+
 	return true;
 }
 
@@ -544,6 +558,8 @@ bool CThreadManager::UnRegisterThirdPartyThread(const char* sThreadName, ...)
 bool CThreadManager::UnRegisterThirdPartyThreadImpl(const char* sThreadName)
 {
 	AUTO_LOCK(m_spawnedThirdPartyThreadsLock);
+
+	Cry::ProfilerRegistry::ExecuteOnThreadExitCallbacks();
 
 	SpawnedThirdPartyThreadMapIter res = m_spawnedThirdPartyThread.find(sThreadName);
 	if (res == m_spawnedThirdPartyThread.end())
@@ -654,12 +670,18 @@ void CThreadManager::SetFloatingPointExceptionMask(uint nMask)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::InitThreadSystem()
 {
-	m_pThreadManager = new CThreadManager();
-	m_env.pThreadManager = m_pThreadManager;
+	m_env.pThreadManager = CreateThreadManager();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ShutDownThreadSystem()
 {
-	SAFE_DELETE(m_pThreadManager);
+	SAFE_DELETE(m_env.pThreadManager);
 }
+
+//////////////////////////////////////////////////////////////////////////
+IThreadManager* CreateThreadManager()
+{
+	return new CThreadManager();
+}
+

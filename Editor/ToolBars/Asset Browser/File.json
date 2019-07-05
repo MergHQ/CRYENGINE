@@ -1,0 +1,19 @@
+{
+    "toolBar": [
+        {
+            "command": "general.import",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "import",
+            "type": 0
+        },
+        {
+            "command": "asset.save_all",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "save_all",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

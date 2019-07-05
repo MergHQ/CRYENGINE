@@ -2,9 +2,9 @@
 
 def build(bld):	
 
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target          = 'EditorCryAudioImplFmod',
 		vs_filter       = 'Sandbox/Plugins/EditorAudioControlsEditor/Impl',
 		file_list       = 'editorfmod.waf_files',
-		includes        = '../common/'
+		includes        = ['../common/', Path('Code/CryEngine/CryAudioSystem/implementations')]
 	)

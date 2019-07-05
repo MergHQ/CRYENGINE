@@ -4,6 +4,8 @@
 #include "AIWave.h"
 
 #include "AI/AIManager.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
 
 REGISTER_CLASS_DESC(CAIWaveObjectClassDesc);
 
@@ -26,4 +28,3 @@ void CAIWaveObject::SetName(const string& newName)
 
 	GetObjectManager()->FindAndRenameProperty2("aiwave_Wave", oldName, newName);
 }
-

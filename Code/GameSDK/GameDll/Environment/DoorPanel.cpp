@@ -17,6 +17,7 @@ History:
 #include "../AutoAimManager.h"
 #include "../TacticalManager.h"
 #include "EntityUtility/EntityScriptCalls.h"
+#include "GameConstantCVars.h"
 #include "UI/HUD/HUDUtils.h"
 #include <GameObjects/GameObject.h>
 
@@ -127,14 +128,14 @@ bool CDoorPanel::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 	ResetGameObject();
 	DP::RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE(false, "CDoorPanel::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CDoorPanel::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CDoorPanel::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CDoorPanel::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CDoorPanel::GetEntityPoolSignature not implemented");
 
 	return true;
 }
@@ -318,9 +319,9 @@ void CDoorPanel::ProcessEvent( const SEntityEvent& entityEvent )
 	}
 }
 
-uint64 CDoorPanel::GetEventMask() const
+Cry::Entity::EventFlags CDoorPanel::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_LINK) | ENTITY_EVENT_BIT(ENTITY_EVENT_DELINK);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_UNHIDE | ENTITY_EVENT_HIDE | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK;
 }
 
 void CDoorPanel::GetMemoryUsage( ICrySizer *pSizer ) const
@@ -346,8 +347,6 @@ void CDoorPanel::HandleFSCommand(const char* pCommand, const char* pArgs, void* 
 EDoorPanelBehaviorState CDoorPanel::GetInitialBehaviorStateId() const
 {
 	EDoorPanelBehaviorState doorPanelState = eDoorPanelBehaviorState_Invalid;
-
-	IEntity* pEntity = GetEntity();
 
 	char* szDoorPanelStateName = NULL;
 	bool bResult = EntityScripts::GetEntityProperty(GetEntity(), "esDoorPanelState", szDoorPanelStateName);

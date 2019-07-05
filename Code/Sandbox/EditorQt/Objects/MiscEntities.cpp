@@ -4,10 +4,17 @@
 #include "MiscEntities.h"
 #include "GameEngine.h"
 #include "Objects/DisplayContext.h"
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryMath/Cry_Camera.h>
 
 REGISTER_CLASS_DESC(CWindAreaEntityClassDesc);
 REGISTER_CLASS_DESC(CConstraintEntityClassDesc);
+#if defined(USE_GEOM_CACHES)
 REGISTER_CLASS_DESC(CGeomCacheEntityClassDesc);
+#endif
 REGISTER_CLASS_DESC(CJointGenEntityClassDesc);
 
 IMPLEMENT_DYNCREATE(CConstraintEntity, CEntityObject)
@@ -20,7 +27,7 @@ IMPLEMENT_DYNCREATE(CJointGenEntity, CEntityObject)
 //////////////////////////////////////////////////////////////////////////
 // CConstraintEntity
 //////////////////////////////////////////////////////////////////////////
-static inline void DrawHingeQuad(DisplayContext& dc, float angle)
+static inline void DrawHingeQuad(SDisplayContext& dc, float angle)
 {
 	const float len = 1.0f;
 	Vec3 zero(0, 0, 0);
@@ -44,7 +51,7 @@ void CConstraintEntity::Display(CObjectRenderHelper& objRenderHelper)
 	if (GetIEditorImpl()->GetGameEngine()->GetSimulationMode())
 		return;
 
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	// The pre-allocated array is used as an optimization, trying to avoid the physics system from allocating an entity list.
 	const int nPreAllocatedListSize(1024);                            //Magic number, probably big enough for the list.
@@ -225,7 +232,7 @@ void CConstraintEntity::Display(CObjectRenderHelper& objRenderHelper)
 //////////////////////////////////////////////////////////////////////////
 void CWindAreaEntity::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	CEntityObject::Display(objRenderHelper);
 
@@ -250,8 +257,6 @@ void CWindAreaEntity::Display(CObjectRenderHelper& objRenderHelper)
 	Vec3 samples[8][8][8];
 	QuatT transform(pos.pos, pos.q);
 	AABB bbox = AABB(pos.BBox[0], pos.BBox[1]);
-	float frameTime = gEnv->pTimer->GetCurrTime();
-	float theta = frameTime - floor(frameTime);
 
 	float len[3] =
 	{
@@ -290,7 +295,7 @@ void CWindAreaEntity::Display(CObjectRenderHelper& objRenderHelper)
 
 void AlignCutTemplate(const IStatObj* pSrcObj, const IStatObj* pObjTpl, int align, const Vec3& tplOffs, float tplScale, Matrix33& R, Vec3& offset, float& scale);
 
-void DrawCutTemplate(DisplayContext& dc, IStatObj* pObj, const Matrix34& tmWorld, const Vec3& campos)
+void DrawCutTemplate(SDisplayContext& dc, IStatObj* pObj, const Matrix34& tmWorld, const Vec3& campos)
 {
 	for (int i = 0; i < pObj->GetSubObjectCount(); i++)
 	{
@@ -331,9 +336,15 @@ void DrawCutTemplate(DisplayContext& dc, IStatObj* pObj, const Matrix34& tmWorld
 	}
 }
 
+// Necessary to support forward declared smart pointers
+CJointGenEntity::CJointGenEntity()
+{
+
+}
+
 void CJointGenEntity::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	CEntityObject::Display(objRenderHelper);
 
@@ -433,4 +444,28 @@ void CJointGenEntity::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 }
+#if defined(USE_GEOM_CACHES)
+//////////////////////////////////////////////////////////////////////////
+bool CGeomCacheEntity::HitTestEntity(HitContext& hc, bool& bHavePhysics)
+{
+	IGeomCacheRenderNode* pGeomCacheRenderNode = m_pEntity->GetGeomCacheRenderNode(0);
+	if (pGeomCacheRenderNode)
+	{
+		SRayHitInfo hitInfo;
+		ZeroStruct(hitInfo);
+		hitInfo.inReferencePoint = hc.raySrc;
+		hitInfo.inRay = Ray(hitInfo.inReferencePoint, hc.rayDir.GetNormalized());
+		hitInfo.bInFirstHit = false;
+		hitInfo.bUseCache = false;
 
+		if (pGeomCacheRenderNode->RayIntersection(hitInfo))
+		{
+			hc.object = this;
+			hc.dist = hitInfo.fDistance;
+			return true;
+		}
+	}
+
+	return false;
+}
+#endif

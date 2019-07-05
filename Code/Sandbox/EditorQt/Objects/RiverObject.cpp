@@ -8,6 +8,7 @@
 #include "Objects/ObjectLoader.h"
 #include "Objects/InspectorWidgetCreator.h"
 #include "Util/MFCUtil.h"
+#include "IEditorImpl.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CRiverObject implementation.
@@ -17,7 +18,7 @@ IMPLEMENT_DYNCREATE(CRiverObject, CRoadObject)
 //////////////////////////////////////////////////////////////////////////
 CRiverObject::CRiverObject()
 {
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0, 0, 1)));
+	SetColor(ColorB(0, 0, 255));
 
 	m_waterVolumeID = -1;
 	m_fogPlane = Plane(Vec3(0, 0, 1), 0);
@@ -193,7 +194,6 @@ void CRiverObject::SetMaterial(IEditorMaterial* mtl)
 //////////////////////////////////////////////////////////////////////////
 void CRiverObject::UpdateSectors()
 {
-	IWaterVolumeRenderNode* pOriginatorProxy(0);
 	if (!m_sectors.empty())
 	{
 		const Matrix34& wtm(GetWorldTM());
@@ -246,6 +246,7 @@ void CRiverObject::UpdateSector(CRoadSector& sector)
 		int renderFlags = 0;
 		if (isHidden || IsHiddenBySpec())
 			renderFlags = ERF_HIDABLE | ERF_HIDDEN;
+
 		pWaterVolumeRN->SetRndFlags(renderFlags);
 
 		pWaterVolumeRN->SetFogDensity(mv_waterFogDensity);
@@ -364,11 +365,10 @@ XmlNodeRef CRiverObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 class CRiverObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_ROAD; };
-	const char*    ClassName()         { return "River"; };
-	const char*    Category()          { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CRiverObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; }
+	const char*    ClassName()       { return "River"; }
+	const char*    Category()        { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CRiverObject); }
 };
 
 REGISTER_CLASS_DESC(CRiverObjectClassDesc);
-

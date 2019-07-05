@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "Command_Buffer.h"
-
 #include "Command_Commands.h"
 #include "CharacterInstance.h"
 #include "SkeletonAnim.h"
@@ -353,7 +353,6 @@ void CBuffer::DebugDraw()
 
 		case UpdateRedirectedJoint::ID:
 			{
-				const UpdateRedirectedJoint* pCommand = reinterpret_cast<const UpdateRedirectedJoint*>(&pCommands[commandOffset]);
 				g_pAuxGeom->Draw2dLabel(1, g_YLine, charsize, fColor2, false, "UpdateRedirectedJoint");
 				g_YLine += yscan;
 				commandOffset += sizeof(UpdateRedirectedJoint);
@@ -362,7 +361,6 @@ void CBuffer::DebugDraw()
 
 		case UpdatePendulumRow::ID:
 			{
-				const UpdatePendulumRow* pCommand = reinterpret_cast<const UpdatePendulumRow*>(&pCommands[commandOffset]);
 				g_pAuxGeom->Draw2dLabel(1, g_YLine, charsize, fColor2, false, "UpdatePendulumRow");
 				g_YLine += yscan;
 				commandOffset += sizeof(UpdatePendulumRow);
@@ -371,7 +369,6 @@ void CBuffer::DebugDraw()
 
 		case PrepareAllRedirectedTransformations::ID:
 			{
-				const PrepareAllRedirectedTransformations* pCommand = reinterpret_cast<const PrepareAllRedirectedTransformations*>(&pCommands[commandOffset]);
 				g_pAuxGeom->Draw2dLabel(1, g_YLine, charsize, fColor2, false, "PrepareAllRedirectedTransformations");
 				g_YLine += yscan;
 				commandOffset += sizeof(PrepareAllRedirectedTransformations);
@@ -380,7 +377,6 @@ void CBuffer::DebugDraw()
 
 		case GenerateProxyModelRelativeTransformations::ID:
 			{
-				const GenerateProxyModelRelativeTransformations* pCommand = reinterpret_cast<const GenerateProxyModelRelativeTransformations*>(&pCommands[commandOffset]);
 				g_pAuxGeom->Draw2dLabel(1, g_YLine, charsize, fColor2, false, "GenerateProxyModelRelativeTransformations");
 				g_YLine += yscan;
 				commandOffset += sizeof(GenerateProxyModelRelativeTransformations);
@@ -389,7 +385,6 @@ void CBuffer::DebugDraw()
 
 		case ComputeAbsolutePose::ID:
 			{
-				const ComputeAbsolutePose* pCommand = reinterpret_cast<const ComputeAbsolutePose*>(&pCommands[commandOffset]);
 				g_pAuxGeom->Draw2dLabel(1, g_YLine, charsize, fColor2, false, "ComputeAbsolutePose");
 				g_YLine += yscan;
 				commandOffset += sizeof(ComputeAbsolutePose);
@@ -398,7 +393,6 @@ void CBuffer::DebugDraw()
 
 		case ProcessAnimationDrivenIk::ID:
 			{
-				const ProcessAnimationDrivenIk* pCommand = reinterpret_cast<const ProcessAnimationDrivenIk*>(&pCommands[commandOffset]);
 				g_pAuxGeom->Draw2dLabel(1, g_YLine, charsize, fColor2, false, "ProcessAnimationDrivenIk");
 				g_YLine += yscan;
 				commandOffset += sizeof(ProcessAnimationDrivenIk);
@@ -407,7 +401,6 @@ void CBuffer::DebugDraw()
 
 		case PhysicsSync::ID:
 			{
-				const PhysicsSync* pCommand = reinterpret_cast<const PhysicsSync*>(&pCommands[commandOffset]);
 				g_pAuxGeom->Draw2dLabel(1, g_YLine, charsize, fColor2, false, "PhysicsSync");
 				g_YLine += yscan;
 				commandOffset += sizeof(PhysicsSync);

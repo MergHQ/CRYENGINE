@@ -2,21 +2,20 @@
 
 #include "StdAfx.h"
 #include "TerrainTexturePainter.h"
-#include "Viewport.h"
-#include "Objects/DisplayContext.h"
 
-#include "CryEditDoc.h"
-#include "Terrain/Layer.h"
-
-#include "QtUtil.h"
-#include "Util/ImagePainter.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-
-#include "Terrain/TerrainManager.h"
 #include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainManager.h"
+#include "Util/ImagePainter.h"
+#include "CryEditDoc.h"
+#include "LogFile.h"
 
-#include "BoostPythonMacros.h"
+#include <BoostPythonMacros.h>
+#include <IEditorClassFactory.h>
+#include <IObjectManager.h>
+#include <IUndoObject.h>
+#include <Objects/DisplayContext.h>
+#include <QtUtil.h>
+#include <Viewport.h>
 
 struct CUndoTPSector
 {
@@ -201,7 +200,6 @@ struct CUndoTPElement
 		CHeightmap* heightmap = GetIEditorImpl()->GetHeightmap();
 		CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
 
-		bool bFirst = true;
 		CPoint gminp;
 		CPoint gmaxp;
 
@@ -322,14 +320,14 @@ public:
 		pTool->m_pTPElem = 0;
 	}
 
-protected:
+private:
 	virtual void Release()
 	{
 		delete m_pUndo;
 		delete this;
-	};
+	}
 
-	virtual const char* GetDescription() { return "Terrain Painter Modify"; };
+	virtual const char* GetDescription() { return "Terrain Painter Modify"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -345,20 +343,17 @@ protected:
 			m_pUndo->Paste(true);
 	}
 
-private:
 	CUndoTPElement* m_pUndo;
 };
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CTerrainTexturePainter, CEditTool)
 
 CTextureBrush CTerrainTexturePainter::m_brush;
 
 namespace {
 int s_toolPanelId = 0;
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainTexturePainter::CTerrainTexturePainter()
 {
 	m_brush.maxRadius = 1000.0f;
@@ -374,7 +369,7 @@ CTerrainTexturePainter::CTerrainTexturePainter()
 
 	m_pointerPos(0, 0, 0);
 	m_lastMousePoint = QPoint(0, 0);
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Initialize sectors.
@@ -386,7 +381,6 @@ CTerrainTexturePainter::CTerrainTexturePainter()
 	m_pTPElem = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainTexturePainter::~CTerrainTexturePainter()
 {
 	m_pointerPos(0, 0, 0);
@@ -395,13 +389,11 @@ CTerrainTexturePainter::~CTerrainTexturePainter()
 		GetIEditorImpl()->GetIUndoManager()->Cancel();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainTexturePainter::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (eMouseWheel == event)
 		return false;
 
-	bool bPainting = false;
 	bool bHitTerrain = false;
 	Vec3 pointerPos = view->ViewToWorld(point, &bHitTerrain, true);
 
@@ -446,8 +438,7 @@ bool CTerrainTexturePainter::MouseCallback(CViewport* view, EMouseEvent event, C
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTexturePainter::Display(DisplayContext& dc)
+void CTerrainTexturePainter::Display(SDisplayContext& dc)
 {
 	dc.SetColor(0, 1, 0, 1);
 
@@ -459,7 +450,6 @@ void CTerrainTexturePainter::Display(DisplayContext& dc)
 	dc.DepthTestOn();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainTexturePainter::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	bool bProcessed = false;
@@ -485,7 +475,6 @@ bool CTerrainTexturePainter::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRe
 	return bProcessed;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::SelectLayer(const CLayer* pLayer)
 {
 	for (int i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetLayerCount(); i++)
@@ -501,7 +490,6 @@ void CTerrainTexturePainter::SelectLayer(const CLayer* pLayer)
 	ReloadLayers();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::ReloadLayers()
 {
 	CLayer* pSelectedLayer = 0;
@@ -520,111 +508,31 @@ void CTerrainTexturePainter::ReloadLayers()
 
 	if (pSelectedLayer)
 	{
-		m_brush.m_cFilterColor = pSelectedLayer->m_cLayerFilterColor;
+		m_brush.m_cFilterColor = pSelectedLayer->GetLayerFilterColor();
 	}
 	signalPropertiesChanged(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::Action_PickLayerId()
 {
-	int iTerrainSize = m_3DEngine->GetTerrainSize();                                      // in m
+	int iTerrainSize = m_3DEngine->GetTerrainSize();              // in m
 	int hmapWidth = m_heightmap->GetWidth();
 	int hmapHeight = m_heightmap->GetHeight();
 
-	int iX = (int)((m_pointerPos.y * hmapWidth) / iTerrainSize);      // maybe +0.5f is needed
-	int iY = (int)((m_pointerPos.x * hmapHeight) / iTerrainSize);     // maybe +0.5f is needed
+	int iX = (int)((m_pointerPos.y * hmapWidth) / iTerrainSize);  // maybe +0.5f is needed
+	int iY = (int)((m_pointerPos.x * hmapHeight) / iTerrainSize); // maybe +0.5f is needed
 
 	if (iX >= 0 && iX < iTerrainSize)
+	{
 		if (iY >= 0 && iY < iTerrainSize)
 		{
 			uint32 dwLayerid = m_heightmap->GetLayerIdAt(iX, iY);
 			CLayer* pLayer = GetIEditorImpl()->GetTerrainManager()->FindLayerByLayerId(dwLayerid);
 			SelectLayer(pLayer);
 		}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTexturePainter::Action_FixMaterialCount()
-{
-	CCryEditDoc* pDoc = GetIEditorImpl()->GetDocument();
-	if (!pDoc)
-		return;
-
-	// Find the boundaries of the engine terrain sector:
-	int nSectorSize = m_3DEngine->GetTerrainSectorSize();
-
-	int nTerrainSize = m_3DEngine->GetTerrainSize();  // in m
-	int hmapWidth = m_heightmap->GetWidth();
-	int hmapHeight = m_heightmap->GetHeight();
-
-	int iX = (int)((m_pointerPos.y * hmapWidth) / nTerrainSize);
-	int iY = (int)((m_pointerPos.x * hmapHeight) / nTerrainSize);
-
-	int iMinX = (iX / nSectorSize) * nSectorSize;
-	int iMinY = (iY / nSectorSize) * nSectorSize;
-	int iMaxX = iMinX + nSectorSize;
-	int iMaxY = iMinY + nSectorSize;
-
-	int UsageCounters[MAX_SURFACE_TYPE_ID_COUNT + 1];
-	int iUsedSurfaceIDs = 0;
-	ZeroMemory(UsageCounters, sizeof(UsageCounters));
-	for (int y = iMinY; y <= iMaxY; y++)
-		for (int x = iMinX; x <= iMaxX; x++)
-		{
-			SSurfaceTypeItem& st = m_heightmap->GetLayerInfoAt(x, y);
-
-			for (int s = 0; s < SSurfaceTypeItem::kMaxSurfaceTypesNum; s++)
-			{
-				if (st.we[s])
-				{
-					if (UsageCounters[st.ty[s]] == 0)
-					{
-						iUsedSurfaceIDs++;
-					}
-
-					UsageCounters[st.ty[s]] += st.we[s];
-				}
-			}
-		}
-
-	// The layer currently selected in the GUI won't be removed even if it is the least used one.
-	CLayer* pSelectedLayer = GetSelectedLayer();
-	int iSelected = pSelectedLayer ? pSelectedLayer->GetCurrentLayerId() : -1;
-
-	// While the layers are too many, we take the least used one and overwrite it with the most used one.
-	while (iUsedSurfaceIDs >= 15)
-	{
-		int iLeastUsed = -1;
-		int iMostUsed = -1;
-
-		for (int i = 0; i < MAX_SURFACE_TYPE_ID_COUNT + 1; i++)
-			if ((iLeastUsed < 0 || UsageCounters[i] && UsageCounters[i] < UsageCounters[iLeastUsed]) && i != iSelected)
-				iLeastUsed = i;
-
-		for (int i = 0; i < MAX_SURFACE_TYPE_ID_COUNT + 1; i++)
-			if (iMostUsed < 0 || i != iLeastUsed && UsageCounters[i] > UsageCounters[iMostUsed])
-				iMostUsed = i;
-
-		for (int y = iMinY; y <= iMaxY; y++)
-			for (int x = iMinX; x <= iMaxX; x++)
-				if (m_heightmap->GetLayerIdAt(x, y) == iLeastUsed)
-				{
-					SSurfaceTypeItem st;
-					st = iMostUsed;
-					m_heightmap->SetLayerIdAt(x, y, st);
-				}
-
-		UsageCounters[iMostUsed] += UsageCounters[iLeastUsed];
-		UsageCounters[iLeastUsed] = 0;
-
-		iUsedSurfaceIDs--;
 	}
-
-	m_heightmap->UpdateEngineTerrain(iMinX, iMinY, nSectorSize - 1, nSectorSize - 1, CHeightmap::ETerrainUpdateType::Paint);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::Action_Paint()
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -652,7 +560,6 @@ void CTerrainTexturePainter::Action_Paint()
 	bPaintLock = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::Action_Flood()
 {
 	//////////////////////////////////////////////////////////////////////////
@@ -688,7 +595,6 @@ void CTerrainTexturePainter::Action_Flood()
 	bPaintLock = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainTexturePainter::CheckSectorPalette(CLayer* pLayer, const Vec3& center)
 {
 	////////////////////////////////////////////////////////////////////////////////////
@@ -718,10 +624,10 @@ void CTerrainTexturePainter::Serialize(Serialization::IArchive& ar)
 	{
 		ar(Serialization::Range(m_brush.radius, m_brush.minRadius, m_brush.maxRadius), "range", "Range");
 		ar(Serialization::Range(m_brush.hardness, 0.0f, 1.0f), "hardness", "Hardness");
-		ar(m_brush.bDetailLayer, "detailLayer", "Paint Layer ID");
-		ar(m_brush.bMaskByLayerSettings, "altitudeAndSlope", "Mask by Altitude and Slope");
+		ar(m_brush.bDetailLayer, "detailLayer", "Paint with Material");
+		ar(m_brush.bMaskByLayerSettings, "altitudeAndSlope", "Mask by Height/Angle");
 
-		string selectedLayer("<none>");
+		string selectedLayer("<None>");
 		Serialization::StringList layers;
 		layers.push_back(selectedLayer.GetBuffer());
 
@@ -743,7 +649,7 @@ void CTerrainTexturePainter::Serialize(Serialization::IArchive& ar)
 			}
 
 			Serialization::StringListValue layersValue(layers, selectedLayer);
-			ar(layersValue, "maskedLayer", "Mask by");
+			ar(layersValue, "maskedLayer", "Mask by Layer");
 
 			if (ar.isInput())
 			{
@@ -767,7 +673,6 @@ void CTerrainTexturePainter::Serialize(Serialization::IArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::PaintLayer(CLayer* pLayer, const Vec3& center, bool bFlood)
 {
 	float fTerrainSize = (float)m_3DEngine->GetTerrainSize();
@@ -804,10 +709,10 @@ void CTerrainTexturePainter::PaintLayer(CLayer* pLayer, const Vec3& center, bool
 			// load m_texture is needed/possible
 			pLayer->PrecacheTexture();
 
-			if (pLayer->m_texture.IsValid())
+			if (pLayer->GetTexture().IsValid())
 			{
 				Action_CollectUndo(fX, fY, br.fRadius);
-				pRGBLayer->PaintBrushWithPatternTiled(fX, fY, br, pLayer->m_texture);
+				pRGBLayer->PaintBrushWithPatternTiled(fX, fY, br, pLayer->GetTexture());
 			}
 		}
 	}
@@ -845,10 +750,12 @@ void CTerrainTexturePainter::PaintLayer(CLayer* pLayer, const Vec3& center, bool
 		float fGlobalMaxX = vMax.x / fTerrainSize, fGlobalMaxY = vMax.y / fTerrainSize;
 
 		for (int iY = iMinSecY; iY < iMaxSecY; ++iY)
+		{
 			for (int iX = iMinSecX; iX < iMaxSecX; ++iX)
 			{
 				m_heightmap->UpdateSectorTexture(CPoint(iY, iX), fGlobalMinY, fGlobalMinX, fGlobalMaxY, fGlobalMaxX);
 			}
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -878,7 +785,6 @@ void CTerrainTexturePainter::PaintLayer(CLayer* pLayer, const Vec3& center, bool
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CLayer* CTerrainTexturePainter::GetSelectedLayer() const
 {
 	for (int i = 0; i < GetIEditorImpl()->GetTerrainManager()->GetLayerCount(); i++)
@@ -889,10 +795,9 @@ CLayer* CTerrainTexturePainter::GetSelectedLayer() const
 			return pLayer;
 		}
 	}
-	return 0;
+	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::Action_StartUndo()
 {
 	if (m_bIsPainting)
@@ -903,7 +808,6 @@ void CTerrainTexturePainter::Action_StartUndo()
 	m_bIsPainting = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::Action_CollectUndo(float x, float y, float radius)
 {
 	if (!m_bIsPainting)
@@ -912,7 +816,6 @@ void CTerrainTexturePainter::Action_CollectUndo(float x, float y, float radius)
 	m_pTPElem->AddSector(x, y, radius);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainTexturePainter::Action_StopUndo()
 {
 	if (!m_bIsPainting)
@@ -929,37 +832,19 @@ void CTerrainTexturePainter::Action_StopUndo()
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Class description.
-//////////////////////////////////////////////////////////////////////////
 class CTerrainTexturePainter_ClassDesc : public IClassDesc
 {
 	//! This method returns an Editor defined GUID describing the class this plugin class is associated with.
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.TerainPainter"; };
+	virtual const char* ClassName() { return "EditTool.TerainPainter"; }
 
-	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
+	//! This method returns Category of this class, Category is specifying where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Terrain"; };
+	virtual const char*    Category()        { return "Terrain"; }
 
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CTerrainTexturePainter); }
 };
 
 REGISTER_CLASS_DESC(CTerrainTexturePainter_ClassDesc);
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainTexturePainter::Command_Activate()
-{
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
-	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CTerrainTexturePainter)))
-	{
-		// Already active.
-		return;
-	}
-	pTool = new CTerrainTexturePainter();
-	GetIEditorImpl()->SetEditTool(pTool);
-}
-
-REGISTER_PYTHON_COMMAND(CTerrainTexturePainter::Command_Activate, edit_mode, terrain_painter, "Activates terrain texture painting mode");
-

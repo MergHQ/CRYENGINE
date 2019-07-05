@@ -11,6 +11,9 @@
 #define __ANIM_ACTION_TRI_STATE_H__
 #pragma once
 
+#include "IAnimatedCharacter.h"
+#include <CryAnimation/ICryMannequin.h>
+
 //---------------------------------------------------------------------------------------------------
 
 struct IAnimActionTriStateListener

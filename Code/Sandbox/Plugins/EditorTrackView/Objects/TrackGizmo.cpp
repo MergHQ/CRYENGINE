@@ -1,17 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
-#include "TrackGizmo.h"
-#include "Objects/DisplayContext.h"
 #include "Nodes/TrackViewAnimNode.h"
+#include "Objects/TrackGizmo.h"
 #include "AnimationContext.h"
 #include "TrackViewPlugin.h"
 
-#include "Viewport.h"
+#include <Objects/DisplayContext.h>
+#include <Viewport.h>
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMovie/IMovieSystem.h>
 
 namespace
@@ -30,10 +28,6 @@ CTrackGizmo::CTrackGizmo()
 	m_matrix.SetIdentity();
 }
 
-CTrackGizmo::~CTrackGizmo()
-{
-}
-
 void CTrackGizmo::SetMatrix(const Matrix34& tm)
 {
 	m_matrix = tm;
@@ -41,9 +35,9 @@ void CTrackGizmo::SetMatrix(const Matrix34& tm)
 	m_worldBbox.max = Vec3(10000, 10000, 10000);
 }
 
-void CTrackGizmo::Display(DisplayContext& dc)
+void CTrackGizmo::Display(SDisplayContext& dc)
 {
-	if (!(dc.flags & DISPLAY_TRACKS))
+	if (!dc.showAnimationTracks)
 	{
 		return;
 	}
@@ -54,7 +48,6 @@ void CTrackGizmo::Display(DisplayContext& dc)
 	}
 
 #pragma message("TODO")
-	uint32 hideMask = 0; //gSettings.objectHideMask;
 
 	CAnimationContext* ac = CTrackViewPlugin::GetAnimationContext();
 
@@ -82,8 +75,6 @@ void CTrackGizmo::Display(DisplayContext& dc)
 	TRange<SAnimTime> range = ac->GetTimeRange();
 	SAnimTime step(0.1f);
 
-	bool bTicks = (dc.flags & DISPLAY_TRACKTICKS) == DISPLAY_TRACKTICKS;
-
 	// Get Spline color.
 	ColorF splineCol(0.5f, 0.3f, 1, 1);
 	ColorF timeCol(0, 1, 0, 1);
@@ -109,10 +100,7 @@ void CTrackGizmo::Display(DisplayContext& dc)
 		// Update bounding box.
 		m_worldBbox.Add(p1);
 
-		if (bTicks)
-		{
-			dc.DrawLine(p0 - tick, p0 + tick, timeCol, timeCol);
-		}
+		dc.DrawLine(p0 - tick, p0 + tick, timeCol, timeCol);
 
 		dc.DrawLine(p0, p1, splineCol, splineCol);
 		p0 = p1;
@@ -143,7 +131,7 @@ void CTrackGizmo::GetWorldBounds(AABB& bbox)
 	bbox = m_worldBbox;
 }
 
-void CTrackGizmo::DrawAxis(DisplayContext& dc, const Vec3& org)
+void CTrackGizmo::DrawAxis(SDisplayContext& dc, const Vec3& org)
 {
 	float size = kAxisSize;
 
@@ -208,14 +196,12 @@ bool CTrackGizmo::HitTest(HitContext& hc)
 	return false;
 }
 
-void CTrackGizmo::DrawKeys(DisplayContext& dc, CTrackViewTrack* pTrack, CTrackViewTrack* pKeysTrack)
+void CTrackGizmo::DrawKeys(SDisplayContext& dc, CTrackViewTrack* pTrack, CTrackViewTrack* pKeysTrack)
 {
 	// Get Key color.
 	dc.SetColor(1, 0, 0, 1);
 
 	float zOffset = kTrackDrawZOffset;
-
-	float sz = 0.2f;
 	int nkeys = pKeysTrack->GetKeyCount();
 
 	for (int i = 0; i < nkeys; i++)
@@ -239,4 +225,3 @@ void CTrackGizmo::DrawKeys(DisplayContext& dc, CTrackViewTrack* pTrack, CTrackVi
 		}
 	}
 }
-

@@ -27,10 +27,10 @@ struct CNodeCGF : public _cfg_reference_target<CNodeCGF>
 		NODE_LIGHT,
 		NODE_HELPER,
 	};
-	enum EPhysicalizeFlags
+	enum EPhysicalizeFlags : uint32
 	{
-		ePhysicsalizeFlag_MeshNotNeeded = BIT(2), //!< When set physics data doesn't need additional Mesh indices or vertices.
-		ePhysicsalizeFlag_NoBreaking    = BIT(3), //!< node is unsuitable for procedural 3d breaking
+		ePhysicsalizeFlag_MeshNotNeeded = BIT32(2), //!< When set physics data doesn't need additional Mesh indices or vertices.
+		ePhysicsalizeFlag_NoBreaking    = BIT32(3), //!< node is unsuitable for procedural 3d breaking
 	};
 
 	ENodeType     type;
@@ -429,13 +429,12 @@ struct SVClothNndcNotAttachedOrderedIdx
 struct SVClothBendTrianglePair
 {
 	// Params
-	f32    angle;      //!< initial angle between triangles
-	uint32 p0, p1;     //!< shared edge
-	uint32 p2;         //!< first triangle // oriented 0,1,2
-	uint32 p3;         //!< second triangle // reverse oriented 1,0,3
-	uint32 idxNormal0; //!< idx of BendTriangle for first triangle
-	uint32 idxNormal1; //!< idx of BendTriangle for second triangle
-	SVClothBendTrianglePair() : p0(-1), p1(-1), p2(-1), p3(-1), idxNormal0(-1), idxNormal1(-1), angle(0) {}
+	f32    angle = 0;         //!< initial angle between triangles
+	uint32 p0 = -1, p1 = -1;  //!< shared edge
+	uint32 p2 = -1;           //!< first triangle // oriented 0,1,2
+	uint32 p3 = -1;           //!< second triangle // reverse oriented 1,0,3
+	uint32 idxNormal0 = -1;   //!< idx of BendTriangle for first triangle
+	uint32 idxNormal1 = -1;   //!< idx of BendTriangle for second triangle
 
 	AUTO_STRUCT_INFO;
 };
@@ -493,20 +492,17 @@ struct CMaterialCGF : public _cfg_reference_target<CMaterialCGF>
 //! Info about physicalization of the CGF.
 struct CPhysicalizeInfoCGF
 {
-	bool  bWeldVertices;
-	float fWeldTolerance; //!< Min Distance between vertices when they collapse to single vertex if bWeldVertices enabled.
+	bool  bWeldVertices = true;
+	float fWeldTolerance = 0.01f; //!< Min Distance between vertices when they collapse to single vertex if bWeldVertices enabled.
 
 	// breakable physics
-	int   nGranularity;
-	int   nMode;
+	int   nGranularity = -1;
+	int   nMode = -1;
 
-	Vec3* pRetVtx;
-	int   nRetVtx;
-	int*  pRetTets;
-	int   nRetTets;
-
-	CPhysicalizeInfoCGF() : bWeldVertices(true), fWeldTolerance(0.01f), nMode(-1), nGranularity(-1), pRetVtx(0),
-		nRetVtx(0), pRetTets(0), nRetTets(0){}
+	Vec3* pRetVtx = nullptr;
+	int   nRetVtx = 0;
+	int*  pRetTets = nullptr;
+	int   nRetTets = 0;
 
 	~CPhysicalizeInfoCGF()
 	{

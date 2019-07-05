@@ -73,7 +73,7 @@ bool CInteractor::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CInteractor::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CInteractor::ReloadExtension not implemented");
 
 	return false;
 }
@@ -181,7 +181,6 @@ void CInteractor::PerformQueries(EntityId& id, int& idx)
 
 bool CInteractor::PerformDotFilteredProximityQuery(SQueryResult& r, float minDot)
 {
-	float minDistanceToCenterSq(999.9f);
 	IEntity* pNearestEntityToViewCenter(NULL);
 	float maxDot = -1.0f;
 

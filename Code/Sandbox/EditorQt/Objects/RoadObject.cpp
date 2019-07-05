@@ -2,24 +2,26 @@
 
 #include "StdAfx.h"
 #include "RoadObject.h"
-#include "Viewport.h"
-#include "Terrain/Heightmap.h"
+
 #include "Material/Material.h"
-#include "../Vegetation/VegetationMap.h"
-#include "../Vegetation/VegetationObject.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
+#include "Terrain/Heightmap.h"
+#include "Vegetation/VegetationMap.h"
+#include "Vegetation/VegetationObject.h"
+#include "CryEditDoc.h"
+
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <Util/MFCUtil.h>
+#include <Util/Math.h>
+#include <Viewport.h>
+
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryCore/Containers/CryArray.h>
-#include "Util/MFCUtil.h"
-#include "Serialization/Decorators/EditorActionButton.h"
-#include <Preferences/ViewportPreferences.h>
-
-#include "CryEditDoc.h"
 
 //////////////////////////////////////////////////////////////////////////
 // class CRoadSector
-
 void CRoadSector::Release()
 {
 	if (m_pRoadSector)
@@ -50,18 +52,16 @@ CRoadObject::CRoadObject()
 
 	m_bIgnoreParamUpdate = false;
 
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0, 0.8f, 1)));
+	SetColor(ColorB(0, 204, 255));
 	mv_ratioViewDist = 100;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::Done()
 {
 	m_sectors.clear();
 	__super::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::InitBaseVariables()
 {
 	if (m_pVarObject == nullptr)
@@ -93,14 +93,12 @@ void CRoadObject::InitVariables()
 	m_pVarObject->AddVariable(m_physicalize, "Physicalize", functor(*this, &CRoadObject::OnParamChange));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::InvalidateTM(int nWhyFlags)
 {
 	__super::InvalidateTM(nWhyFlags);
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CSplineObject::CreateInspectorWidgets(creator);
@@ -117,14 +115,13 @@ void CRoadObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 
 		if (ar.openBlock("operators", "<operators"))
 		{
-			ar(Serialization::ActionButton(std::bind(&CRoadObject::AlignHeightMap, pObject)), "align_heightmap", "^Align Height Map");
-			ar(Serialization::ActionButton(std::bind(&CRoadObject::EraseVegetation, pObject)), "erase_vegetation", "^Erase Vegetation");
-			ar.closeBlock();
+		  ar(Serialization::ActionButton(std::bind(&CRoadObject::AlignHeightMap, pObject)), "align_heightmap", "^Align Height Map");
+		  ar(Serialization::ActionButton(std::bind(&CRoadObject::EraseVegetation, pObject)), "erase_vegetation", "^Erase Vegetation");
+		  ar.closeBlock();
 		}
 	});
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CRoadObject::GetLocalWidth(int index, float t)
 {
 	float kof = t;
@@ -148,20 +145,16 @@ float CRoadObject::GetLocalWidth(int index, float t)
 	float ed = 1.0f;
 	if (af < 0.0f)
 		ed = -1.0f;
-	//af = ed-af;
-	af = af;
-	//af = ed-af;
+
 	af = (af + 1.0f) / 2;
 	return ((1.0f - af) * an1 + af * an2);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::OnUpdate()
 {
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetRoadSectors()
 {
 	const Matrix34& wtm = GetWorldTM();
@@ -237,7 +230,6 @@ void CRoadObject::SetRoadSectors()
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CRoadObject::GetRoadSectorCount(int index)
 {
 	int kn = int((GetBezierSegmentLength(index) + 0.5f) / GetStepSize());
@@ -246,7 +238,6 @@ int CRoadObject::GetRoadSectorCount(int index)
 	return kn;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::UpdateSectors()
 {
 	if (!m_bNeedUpdateSectors)
@@ -288,6 +279,7 @@ void CRoadObject::UpdateSectors()
 		int renderFlags = 0;
 		if (CheckFlags(OBJFLAG_INVISIBLE) || IsHiddenBySpec())
 			renderFlags = ERF_HIDDEN;
+
 		sectorFirst.m_pRoadSector->SetRndFlags(renderFlags);
 		sectorFirst.m_pRoadSector->SetViewDistRatio(mv_ratioViewDist);
 		sectorFirst.m_pRoadSector->SetMinSpec(GetMinSpec());
@@ -345,14 +337,12 @@ void CRoadObject::OnEvent(ObjectEvent event)
 	__super::OnEvent(event);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetHidden(bool bHidden)
 {
 	__super::SetHidden(bHidden);
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::UpdateVisibility(bool visible)
 {
 	if (visible == CheckFlags(OBJFLAG_INVISIBLE))
@@ -361,8 +351,6 @@ void CRoadObject::UpdateVisibility(bool visible)
 		UpdateSectors();
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 void CRoadObject::RegisterOnEngine()
 {
@@ -375,8 +363,6 @@ void CRoadObject::RegisterOnEngine()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 void CRoadObject::UnRegisterFromEngine()
 {
 	for (CRoadSectorVector::size_type i = 0; i < m_sectors.size(); ++i)
@@ -388,7 +374,6 @@ void CRoadObject::UnRegisterFromEngine()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetMaterial(IEditorMaterial* pMaterial)
 {
 	CMaterial* pPrevMaterial = (CMaterial*)GetMaterial();
@@ -398,12 +383,8 @@ void CRoadObject::SetMaterial(IEditorMaterial* pMaterial)
 		UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRoadObject::DrawSectorLines(DisplayContext& dc)
+void CRoadObject::DrawSectorLines(SDisplayContext& dc)
 {
-	const Matrix34& wtm = GetWorldTM();
-	float fPointSize = 0.5f;
-
 	dc.SetColor(RGB(127, 127, 255));
 	for (size_t i = 0; i < m_sectors.size(); ++i)
 	{
@@ -420,8 +401,7 @@ void CRoadObject::DrawSectorLines(DisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CRoadObject::DrawRoadObject(DisplayContext& dc, COLORREF col)
+void CRoadObject::DrawRoadObject(SDisplayContext& dc, COLORREF col)
 {
 	if (IsSelected())
 	{
@@ -429,18 +409,18 @@ void CRoadObject::DrawRoadObject(DisplayContext& dc, COLORREF col)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-
-	if (!gViewportDebugPreferences.showRoadObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showRoadHelper)
+	{
 		return;
-
-	COLORREF col = 0;
+	}
 
 	if (m_points.size() > 1)
 	{
+		COLORREF col = 0;
+
 		if ((IsSelected() || IsHighlighted()))
 		{
 			col = dc.GetSelectedColor();
@@ -452,7 +432,7 @@ void CRoadObject::Display(CObjectRenderHelper& objRenderHelper)
 				dc.SetFreezeColor();
 			else
 				dc.SetColor(GetColor());
-			col = GetColor();
+			col = CMFCUtils::ColorBToColorRef(GetColor());
 		}
 
 		DrawRoadObject(dc, col);
@@ -460,7 +440,6 @@ void CRoadObject::Display(CObjectRenderHelper& objRenderHelper)
 	__super::Display(objRenderHelper);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::Serialize(CObjectArchive& ar)
 {
 	m_bIgnoreParamUpdate = true;
@@ -472,7 +451,6 @@ void CRoadObject::Serialize(CObjectArchive& ar)
 		UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CRoadObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	//XmlNodeRef objNode = __super::Export( levelPath,xmlNode );
@@ -480,28 +458,25 @@ XmlNodeRef CRoadObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::OnParamChange(IVariable* var)
 {
 	if (!m_bIgnoreParamUpdate)
 		SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetSelected(bool bSelect)
 {
 	__super::SetSelected(bSelect);
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::AlignHeightMap()
 {
 	if (!GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->Begin();
 
 	CHeightmap* heightmap = GetIEditorImpl()->GetHeightmap();
-	float unitSize = heightmap->GetUnitSize();
+	const float unitSize = heightmap->GetUnitSize();
 	const Matrix34& wtm = GetWorldTM();
 
 	int minx = 0, miny = 0, maxx = 0, maxy = 0;
@@ -513,13 +488,11 @@ void CRoadObject::AlignHeightMap()
 	{
 		float fminx = 0, fminy = 0, fmaxx = 0, fmaxy = 0;
 		bool bIsInitminmax = false;
-		int kn = int (0.5f + (GetBezierSegmentLength(i) + 1) * 4);
-
-		Vec3 tmp;
+		const int kn = int (0.5f + (GetBezierSegmentLength(i) + 1) * 4);
 
 		for (int k = 0; k <= kn; ++k)
 		{
-			float t = float(k) / kn;
+			const float t = float(k) / kn;
 			Vec3 p = GetBezierPos(i, t);
 			Vec3 n = GetLocalBezierNormal(i, t);
 
@@ -532,8 +505,6 @@ void CRoadObject::AlignHeightMap()
 
 			p1 = wtm.TransformPoint(p1);
 			p2 = wtm.TransformPoint(p2);
-
-			tmp = p1;
 
 			if (!bIsInitminmax)
 			{
@@ -553,9 +524,15 @@ void CRoadObject::AlignHeightMap()
 			fmaxy = max(fmaxy, p2.y);
 		}
 
+		fminx = max(fminx, 0.f);
+		fminy = max(fminy, 0.f);
+		fmaxx = min(fmaxx, static_cast<float>(heightmap->GetWidth() - 2));
+		fmaxy = min(fmaxy, static_cast<float>(heightmap->GetHeight() - 2));
+
 		heightmap->RecordUndo(int(fminy / unitSize) - 1, int(fminx / unitSize) - 1, int(fmaxy / unitSize) + unitSize - int(fminy / unitSize) + 1, int(fmaxx / unitSize) + unitSize - int(fminx / unitSize) + 1);
 
 		for (int ty = int(fminx / unitSize); ty <= int(fmaxx / unitSize) + unitSize; ++ty)
+		{
 			for (int tx = int(fminy / unitSize); tx <= int(fmaxy / unitSize) + unitSize; ++tx)
 			{
 				int x = ty * unitSize;
@@ -600,7 +577,6 @@ void CRoadObject::AlignHeightMap()
 					for (int tt = 0; tt < 24; ++tt)
 					{
 						Vec3 p0 = wtm.TransformPoint(GetBezierPos(i, t));
-						;
 						p0.z = 0.0f;
 
 						Vec3 ploc = GetBezierPos(i, t);
@@ -639,29 +615,20 @@ void CRoadObject::AlignHeightMap()
 					Vec3 nproj = n;
 					nproj.z = 0.0f;
 
-					float kof = nproj.GetLength();
+					const float length = (p1_0 - p).GetLength() / nproj.GetLength();
 
-					float length = (p1_0 - p).GetLength() / kof;
-
-					Vec3 pos;
-
-					if (e.z < 0.0f)
-						pos = p1 - length * n;
-					else
-						pos = p1 + length * n;
-
-					float fWidth = GetLocalWidth(i, t);
+					const float fWidth = GetLocalWidth(i, t);
 					if (length <= fWidth / 2 + mv_borderWidth + 0.5 * unitSize)
 					{
-						//int tx = pos_directed_rounding(y / unitSize);
-						//int ty = pos_directed_rounding(x / unitSize);
+						const Vec3 pos = e.z < 0.f ? p1 - length * n: p1 + length * n;
 
 						float z;
 						if (length <= fWidth / 2 + 0.5 * unitSize)
+						{
 							z = pos.z;
+						}
 						else
 						{
-							//continue;
 							float kof = (length - (fWidth / 2 + 0.5 * unitSize)) / mv_borderWidth;
 							kof = 1.0f - (cos(kof * 3.141593f) + 1.0f) / 2;
 							float z1 = heightmap->GetXY(tx, ty);
@@ -685,6 +652,7 @@ void CRoadObject::AlignHeightMap()
 					}
 				}
 			}
+		}
 		//break;
 	}
 
@@ -698,7 +666,6 @@ void CRoadObject::AlignHeightMap()
 	SetRoadSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::EraseVegetation()
 {
 	if (CVegetationMap* vegetationMap = GetIEditorImpl()->GetVegetationMap())
@@ -803,21 +770,18 @@ void CRoadObject::EraseVegetation()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetMinSpec(uint32 nSpec, bool bSetChildren)
 {
 	__super::SetMinSpec(nSpec, bSetChildren);
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetMaterialLayersMask(uint32 nLayersMask)
 {
 	__super::SetMaterialLayersMask(nLayersMask);
 	UpdateSectors();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetLayerId(uint16 nLayerId)
 {
 	for (size_t i = 0; i < m_sectors.size(); ++i)
@@ -836,8 +800,6 @@ void CRoadObject::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
 	}
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 void CRoadObject::SetPhysics(bool isPhysics)
 {
 	for (size_t i = 0; i < m_sectors.size(); ++i)
@@ -845,26 +807,19 @@ void CRoadObject::SetPhysics(bool isPhysics)
 		IRenderNode* pRenderNode = m_sectors[i].m_pRoadSector;
 		if (pRenderNode)
 		{
-			if (isPhysics)
-				pRenderNode->SetRndFlags(pRenderNode->GetRndFlags() & ~ERF_NO_PHYSICS);
-			else
-				pRenderNode->SetRndFlags(pRenderNode->GetRndFlags() | ERF_NO_PHYSICS);
+			pRenderNode->SetRndFlags(ERF_NO_PHYSICS, !isPhysics);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Class Description of RoadObject.
-
-//////////////////////////////////////////////////////////////////////////
 class CRoadObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_ROAD; };
-	const char*    ClassName()         { return "Road"; };
-	const char*    Category()          { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CRoadObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_ROAD; }
+	const char*    ClassName()       { return "Road"; }
+	const char*    Category()        { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CRoadObject); }
 };
 
 REGISTER_CLASS_DESC(CRoadObjectClassDesc);
-

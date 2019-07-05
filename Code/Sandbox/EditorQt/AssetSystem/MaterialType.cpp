@@ -2,19 +2,21 @@
 
 #include "StdAfx.h"
 #include "MaterialType.h"
+#include "IEditorImpl.h"
 
-#include <AssetSystem/Asset.h>
-#include <FilePathUtil.h>
-#include <ThreadingUtils.h>
-#include "QT/Widgets/QPreviewWidget.h"
 #include "Material/MaterialManager.h"
+#include "QT/Widgets/QPreviewWidget.h"
+#include <AssetSystem/Asset.h>
+#include <AssetSystem/AssetEditor.h>
 #include <Cry3DEngine/I3DEngine.h>
+#include <PathUtils.h>
+#include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CMaterialType)
 
 // Detail attributes.
-CItemModelAttribute CMaterialType::s_subMaterialCountAttribute("Sub Mtl count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CMaterialType::s_textureCountAttribute("Texture count", eAttributeType_Int, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMaterialType::s_subMaterialCountAttribute("Sub Mtl count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMaterialType::s_textureCountAttribute("Texture count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 CryIcon CMaterialType::GetIconInternal() const
 {
@@ -68,7 +70,7 @@ std::vector<CItemModelAttribute*> CMaterialType::GetDetails() const
 	};
 }
 
-QVariant CMaterialType::GetDetailValue(const CAsset * pAsset, const CItemModelAttribute * pDetail) const
+QVariant CMaterialType::GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const
 {
 	if (pDetail == &s_subMaterialCountAttribute)
 	{
@@ -91,15 +93,46 @@ CAssetEditor* CMaterialType::Edit(CAsset* pAsset) const
 	return CAssetEditor::OpenAssetForEdit("Material Editor", pAsset);
 }
 
-bool CMaterialType::OnCreate(CEditableAsset& editAsset, const void* pTypeSpecificParameter) const
+bool CMaterialType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	string materialName;
-	materialName.Format("%s%s", editAsset.GetAsset().GetFolder(), editAsset.GetAsset().GetName());
+	materialName.Format("%s%s", asset.GetFolder(), asset.GetName());
 	CMaterial* newMaterial = GetIEditor()->GetMaterialManager()->CreateMaterial(materialName);
 	CRY_ASSERT(newMaterial->Save());
 
-	editAsset.AddFile(newMaterial->GetFilename(true));
+	asset.AddFile( newMaterial->GetFilename(true).c_str() );
 
 	return true;
 }
 
+bool CMaterialType::RenameAsset(CAsset* pAsset, const char* szNewName) const
+{
+	CMaterialManager* const pMaterialManager = GetIEditor()->GetMaterialManager();
+	CRY_ASSERT(pMaterialManager);
+
+	const string materialName = pMaterialManager->FilenameToMaterial(pAsset->GetFile(0));
+	CMaterial* const pMaterial = static_cast<CMaterial*>(pMaterialManager->FindItemByName(materialName));
+
+	if (!CAssetType::RenameAsset(pAsset, szNewName))
+	{
+		return false;
+	}
+
+	// Material is not loaded into the material manager.
+	if (!pMaterial)
+	{
+		return true;
+	}
+
+	// The material manager is not case sensitive, so we need to manually handle cases when only the register has been changed.
+	// Otherwise, the material editor will show the name of the old material until the editor is restarted.
+	const string newMaterialName = pMaterialManager->FilenameToMaterial(pAsset->GetFile(0));
+	if (materialName.CompareNoCase(newMaterialName) == 0)
+	{
+		const bool isModified = pAsset->IsModified();
+		pMaterial->SetName(newMaterialName);
+		pAsset->SetModified(isModified);
+	}
+
+	return true;
+}

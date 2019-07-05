@@ -9,7 +9,7 @@
 #include "ResponseSystem.h"
 
 #include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 using namespace CryDRS;
 
@@ -244,7 +244,7 @@ bool CResponseSystemDebugDataProvider::AddActionStarted(const string& actionDesc
 	}
 
 	SExecutedAction newAction;
-	newAction.actorName = (pActor) ? pActor->GetName() : "NoActor";
+	newAction.actorName = (pActor) ? pActor->GetName() : string("NoActor");
 	newAction.actionDesc = actionDesc;
 	newAction.pInstance = pInstance;
 	newAction.bEnded = false;
@@ -365,19 +365,19 @@ void CResponseSystemDebugDataProvider::SStartedResponses::Serialize(Serializatio
 			}
 		}
 
-		ar(currentState, "status", "!^^>200>Status:");
-		ar(CryStringUtils::toString(numStartedResponses), "responses", "!^^ StartedResponses:");
+		ar(currentState, "status", "!^^<");
+		ar(CryStringUtils::toString(numStartedResponses), "responses", "!^^> ");
 		ar.closeBlock();
 	}
 
-	ar(timeOfEvent, "time", "!^>80>Time:");
+	ar(timeOfEvent, "time", "!^<Time:");
 	ar(signalName, "signal", "!^< Signal:");
 
 	if (ar.openBlock("signalInfos2", "!- "))
 	{
-		ar(senderName, "sender", "!^^>200> Actor:");
-		ar(contextVariables, "ContextVariables", "!^^ ContextVariables");
-		ar(drsUserName, "source", "!Source:");
+		ar(senderName, "sender", "!^^<");
+		ar(contextVariables, "ContextVariables", "!<ContextVariables");
+		ar(drsUserName, "source", "!<Source:");
 		ar.closeBlock();
 	}
 
@@ -440,7 +440,7 @@ void CResponseSystemDebugDataProvider::SStartedResponsesSegment::Serialize(Seria
 
 		if (bConditionsMet)
 		{
-			ar(bConditionsMet, "conditionsMet", "!>85>^ ConditionsMet");
+			ar(bConditionsMet, "conditionsMet", "!^ ConditionsMet");
 		}
 		ar(checkedConditions, "checkedConditions", "!+  CheckedConditions");
 	}
@@ -521,7 +521,7 @@ void CResponseSystemDebugDataProvider::VariableChangeInfo::Serialize(Serializati
 //////////////////////////////////////////////////////////////////////////
 void CResponseSystemDebugDataProvider::OnLineEvent(const DRS::IResponseActor* pSpeaker, const CHashedString& lineID, eLineEvent lineEvent, const DRS::IDialogLine* pLine)
 {
-	string speakerName = (pSpeaker) ? pSpeaker->GetName() : "Missing Speaker";
+	string speakerName = (pSpeaker) ? pSpeaker->GetName() : string("Missing Speaker");
 	string lineText = (pLine) ? pLine->GetText() : "Missing: " + lineID.GetText();
 
 	switch (lineEvent)

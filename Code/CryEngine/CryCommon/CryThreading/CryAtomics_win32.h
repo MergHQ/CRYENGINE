@@ -89,6 +89,12 @@ ILINE LONG CryInterlockedExchangeAdd(volatile LONG* pDst, LONG value)
 }
 
 // Returns initial value prior exchange
+ILINE int64 CryInterlockedExchange64(volatile int64* pDst, int64 value)
+{
+	return _InterlockedExchange64(pDst, value);
+}
+
+// Returns initial value prior exchange
 ILINE size_t CryInterlockedExchangeAdd(volatile size_t* pDst, size_t add)
 {
 #if CRY_PLATFORM_X64
@@ -147,15 +153,13 @@ ILINE int64 CryInterlockedCompareExchange64(volatile int64* pDst, int64 exchange
 	return _InterlockedCompareExchange64(pDst, exchange, compare);
 }
 
-#if CRY_PLATFORM_64BIT
 // Returns initial value prior exchange
 ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64 exchangeHigh, int64 exchangeLow, int64* pComparandResult)
 {
 	static_assert(sizeof(int64) == sizeof(__int64), "Unsecured cast. int64 is not same size as __int64.");
-	CRY_ASSERT_MESSAGE((((int64)pDst) & 15) == 0, "The destination data must be 16-byte aligned to avoid a general protection fault.");
+	CRY_ASSERT((((int64)pDst) & 15) == 0, "The destination data must be 16-byte aligned to avoid a general protection fault.");
 	return _InterlockedCompareExchange128(pDst, exchangeHigh, exchangeLow, pComparandResult);
 }
-#endif
 //////////////////////////////////////////////////////////////////////////
 // Helper
 //////////////////////////////////////////////////////////////////////////
@@ -163,23 +167,15 @@ ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64
 class CSimpleThreadBackOff
 {
 public:
-	static const uint32 kSoftYieldInterval = 0x3FF;
-	static const uint32 kHardYieldInterval = 0x1FFF;
+	static const uint32 kSoftYieldInterval = 0x3F; // after 63 tries follow soft yield strategy
+	static const uint32 kHardYieldInterval = 0x1FFF; // after 8191 tries follow hard yield strategy
 
 public:
 	CSimpleThreadBackOff() : m_counter(0) {}
 
-	void reset() { m_counter = 0; }
+	void Reset() { m_counter = 0; }
 
-	void backoff()
-	{
-		// Note: Not using Sleep(x) and SwitchToThread()
-		// Sleep(0): Give OS the CPU ... something none game related could block the core for a while (same for SwitchToThread())
-		// Sleep(1): System timer resolution dependent. Usual default is 1/64sec. So the worst case is we have to wait 15.6ms.
-
-		// Simply yield processor (good for hyper threaded systems. Allows the logical core to run)
-		_mm_pause();
-	}
+	void Backoff();
 
 private:
 	int m_counter;

@@ -14,9 +14,11 @@
 #include "Helper/MannequinFileChangeWriter.h"
 
 #include "Controls/InPlaceButton.h"
+#include <Controls/QuestionDialog.h>
 
 #include <ISourceControl.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
+#include <Util/FileUtil.h>
 
 //////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CMannFileManager, CXTResizeDialog)
@@ -751,8 +753,8 @@ void CMannFileManager::OnReportKeyDown(NMHDR* pNotifyStruct, LRESULT* /*result*/
 
 	if (lpNMKey->nVKey == VK_RETURN)
 	{
-		CXTPMannFileRecord* pRecord = DYNAMIC_DOWNCAST(CXTPMannFileRecord, m_wndReport.GetFocusedRow()->GetRecord());
-		/*
+		/*CXTPMannFileRecord* pRecord = DYNAMIC_DOWNCAST(CXTPMannFileRecord, m_wndReport.GetFocusedRow()->GetRecord());
+		
 		   if (pRecord)
 		   {
 		   if (pRecord->SetRead())
@@ -774,7 +776,7 @@ void CMannFileManager::OnReportItemDblClick(NMHDR* pNotifyStruct, LRESULT* resul
 	CXTPMannFileRecord* pRecord = DYNAMIC_DOWNCAST(CXTPMannFileRecord, pItemNotify->pRow->GetRecord());
 	if (pRecord)
 	{
-		bool bDone = false;
+		//bool bDone = false;
 		//CMannFileRecord *pFileRecord = pRecord->m_pRecord;
 		//if (pFileRecord)
 		//{
@@ -852,7 +854,7 @@ void CMannFileManager::OnReportHyperlink(NMHDR* pNotifyStruct, LRESULT* result)
 		CXTPMannFileRecord* pRecord = DYNAMIC_DOWNCAST(CXTPMannFileRecord, pItemNotify->pRow->GetRecord());
 		if (pRecord)
 		{
-			bool bDone = false;
+			//bool bDone = false;
 			//CMannFileRecord *pFileRecord = pRecord->m_pRecord;
 			//if (pFileRecord && pFileRecord->pObject != NULL)
 			//{
@@ -895,4 +897,3 @@ void CMannFileManager::OnDisplayOnlyCurrentPreviewClicked()
 
 	UpdateFileRecords();
 }
-

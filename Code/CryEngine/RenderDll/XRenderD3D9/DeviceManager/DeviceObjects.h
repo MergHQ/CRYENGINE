@@ -8,17 +8,16 @@
 #include <array>
 #include <bitset>
 #include <atomic>
+#include <queue>
 
 #include "DeviceResources.h"                // CDeviceBuffer, CDeviceTexture, CDeviceInputStream
-#include "Common/CommonRender.h"            // SResourceView, SSamplerState, SInputLayout
-#include "Common/Shaders/ShaderCache.h"     // UPipelineState
+#include "DeviceObjectValidation.h"
 
 class CRendererCVars;
 class CHWShader_D3D;
 class CShader;
 class CTexture;
 class CCryNameTSCRC;
-class CCryDeviceWrapper;
 class CConstantBuffer;
 class CDeviceBuffer;
 class CDeviceTexture;
@@ -50,24 +49,25 @@ typedef uintptr_t DeviceFenceHandle;
 struct SInputLayoutCompositionDescriptor
 {
 	const InputLayoutHandle VertexFormat;
-	const uint8_t StreamMask;
-	const bool bInstanced;
+	const uint8_t StreamMask; // EStreamMasks
 	const uint8_t ShaderMask;
+	const bool bInstanced;
 
-	static uint8_t GenerateShaderMask(const InputLayoutHandle VertexFormat, ID3D11ShaderReflection* pShaderReflection);
+	static uint8_t GenerateShaderMask(const InputLayoutHandle VertexFormat, D3DShaderReflection* pShaderReflection);
 
-	SInputLayoutCompositionDescriptor(InputLayoutHandle VertexFormat, int Stream, ID3D11ShaderReflection* pShaderReflection) noexcept
-		: VertexFormat(VertexFormat), StreamMask(static_cast<uint8_t>(Stream % MASK(VSF_NUM))), bInstanced((StreamMask & VSM_INSTANCED) != 0), ShaderMask(GenerateShaderMask(VertexFormat, pShaderReflection))
+	SInputLayoutCompositionDescriptor(InputLayoutHandle VertexFormat, EStreamMasks Stream, D3DShaderReflection* pShaderReflection) noexcept
+		: VertexFormat(VertexFormat)
+		, StreamMask(static_cast<uint8_t>(Stream & VSM_MASK))
+		, ShaderMask(GenerateShaderMask(VertexFormat, pShaderReflection))
+		, bInstanced((StreamMask & VSM_INSTANCED) != 0)
 	{}
 
 	SInputLayoutCompositionDescriptor(SInputLayoutCompositionDescriptor&&) = default;
-	SInputLayoutCompositionDescriptor &operator=(SInputLayoutCompositionDescriptor&&) = default;
 	SInputLayoutCompositionDescriptor(const SInputLayoutCompositionDescriptor&) = default;
-	SInputLayoutCompositionDescriptor &operator=(const SInputLayoutCompositionDescriptor&) = default;
 
 	bool operator==(const SInputLayoutCompositionDescriptor &rhs) const noexcept
 	{
-		return VertexFormat == rhs.VertexFormat && StreamMask == rhs.StreamMask && ShaderMask == rhs.ShaderMask;
+		return static_cast<size_t>(*this) == static_cast<size_t>(rhs);
 	}
 	bool operator!=(const SInputLayoutCompositionDescriptor &rhs) const noexcept { return !(*this == rhs); }
 
@@ -75,10 +75,16 @@ struct SInputLayoutCompositionDescriptor
 	{
 		size_t operator()(const SInputLayoutCompositionDescriptor &d) const noexcept
 		{
-			const auto x = static_cast<size_t>(d.StreamMask) | (static_cast<size_t>(d.ShaderMask) << 8) | (static_cast<size_t>(d.VertexFormat.value) << 16) | (static_cast<size_t>(d.bInstanced) << 24);
+			const auto x = static_cast<size_t>(d);
 			return std::hash<size_t>()(x);
 		}
 	};
+
+private:
+	explicit operator size_t() const
+	{
+		return static_cast<size_t>(StreamMask) | (static_cast<size_t>(ShaderMask) << 8) | (static_cast<size_t>(VertexFormat.value) << 16) | (static_cast<size_t>(bInstanced) << 24);
+	}
 };
 
 class CDeviceObjectFactory
@@ -90,7 +96,6 @@ class CDeviceObjectFactory
 
 public:
 	void AssignDevice(D3DDevice* pDevice);
-
 	static ILINE CDeviceObjectFactory& GetInstance()
 	{
 		return m_singleton;
@@ -154,8 +159,8 @@ public:
 	static const SInputLayout* GetInputLayoutDescriptor(const InputLayoutHandle VertexFormat);
 
 	// Higher level input-layout composition / / / / / / / / / / / / / / / / / /
-	static SInputLayout            CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, int StreamMask, const InputLayoutHandle VertexFormat);
-	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, int StreamMask, const InputLayoutHandle VertexFormat);
+	static SInputLayout            CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat);
+	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat);
 	static const SInputLayoutPair* GetOrCreateInputLayout(const SShaderBlob* pVS, const InputLayoutHandle VertexFormat);
 	static InputLayoutHandle       CreateCustomVertexFormat(size_t numDescs, const D3D11_INPUT_ELEMENT_DESC* inputLayout);
 
@@ -197,6 +202,12 @@ public:
 	void                         EraseRenderPass(CDeviceRenderPass* pPass, bool bRemoveInvalidateCallbacks=true);
 	void                         TrimRenderPasses();
 	////////////////////////////////////////////////////////////////////////////
+
+	////////////////////////////////////////////////////////////////////////////
+	// Object validation API
+	const CDeviceObjectValidator& GetObjectValidator() { return m_objectValidator; }
+	////////////////////////////////////////////////////////////////////////////
+
 
 	// Low-level resource management API (TODO: remove D3D-dependency by abstraction)
 	enum EResourceAllocationFlags : uint32
@@ -268,8 +279,8 @@ public:
 	void           ReleaseResource(D3DResource* pResource);
 	void           RecycleResource(D3DResource* pResource);
 
-#define SKIP_ESRAM	-1
-	HRESULT        Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr, int32 nESRAMOffset = SKIP_ESRAM);
+#define SKIP_ESRAM	~0
+	HRESULT        Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 	HRESULT        CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 	HRESULT        CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 	HRESULT        CreateBuffer(buffer_size_t nSize, buffer_size_t elemSize, uint32 nUsage, uint32 nBindFlags, D3DBuffer** ppBuff, const void* pData = nullptr);
@@ -333,6 +344,9 @@ public:
 #elif (CRY_RENDERER_DIRECT3D >= 110)
 	NCryDX11::CDevice*             GetDX11Device() const { return m_pDX11Device; }
 	NCryDX11::CCommandScheduler*   GetDX11Scheduler() const { return m_pDX11Scheduler; }
+
+	std::queue<ID3D11DeviceContext*>    m_deferredContexts;
+	std::vector<CDeviceCommandListUPtr> m_pendingCommandLists;
 #elif (CRY_RENDERER_VULKAN >= 10)
 	NCryVulkan::CDevice*           GetVKDevice   () const { return m_pVKDevice; }
 	NCryVulkan::CCommandScheduler* GetVKScheduler() const { return m_pVKScheduler; }
@@ -481,8 +495,6 @@ private:
 #endif
 
 #if defined(BUFFER_ENABLE_DIRECT_ACCESS) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && !CRY_RENDERER_GNM
-	friend class CSubmissionQueue_DX11;
-
 	// The buffer invalidations
 	struct SBufferInvalidation
 	{
@@ -522,6 +534,8 @@ private:
 	// Renderpass API
 	std::unordered_map<CDeviceRenderPassDesc, CDeviceRenderPassPtr, CDeviceRenderPassDesc::SHash, CDeviceRenderPassDesc::SEqual>  m_RenderPassCache; 
 	CryCriticalSectionNonRecursive m_RenderPassCacheLock;
+
+	CDeviceObjectValidator m_objectValidator;
 
 public:
 	////////////////////////////////////////////////////////////////////////////
@@ -566,13 +580,16 @@ public:
 	HRESULT BeginTileFromLinear2D(CDeviceTexture* pDst, const STileRequest* pSubresources, size_t nSubresources, UINT64& fenceOut);
 
 //private:
-	typedef std::map<SMinimisedTexture2DDesc, SDeviceTextureDesc, std::less<SMinimisedTexture2DDesc>, stl::STLGlobalAllocator<std::pair<SMinimisedTexture2DDesc, SDeviceTextureDesc>>> TLayoutTableMap;
+	typedef std::map<SMinimisedTexture2DDesc, SDeviceTextureDesc, std::less<SMinimisedTexture2DDesc>, stl::STLGlobalAllocator<std::pair<const SMinimisedTexture2DDesc, SDeviceTextureDesc>>> TLayoutTableMap;
 
 	static bool               InPlaceConstructable(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags);
 	HRESULT                   CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, const STexturePayload* pTI, CDeviceTexture*& pDevTexOut);
 	const SDeviceTextureDesc* Find2DResourceLayout(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, ETEX_TileMode tileMode);
 
 	CDurangoGPUMemoryManager       m_texturePool;
+#if DURANGO_USE_ESRAM
+	CDurangoESRAMManager           m_ESRAMManager;
+#endif
 	CDurangoGPURingMemAllocator    m_textureStagingRing;
 	CryCriticalSectionNonRecursive m_layoutTableLock;
 	TLayoutTableMap                m_layoutTable;

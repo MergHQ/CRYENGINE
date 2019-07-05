@@ -1,8 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include <CryMath/Cry_Math.h>
+#include "SandboxAPI.h"
 #include <CryMath/Cry_Color.h>
+#include <CryMath/Cry_Geo.h>
 
 #define CrossDist (0.05f)
 #define AxisDist  (0.05f)
@@ -23,7 +24,7 @@ public:
 	CArcBall3D()
 	{
 		InitArcBall();
-	};
+	}
 
 	void InitArcBall()
 	{
@@ -43,7 +44,6 @@ public:
 	//---------------------------------------------------------------
 	bool          ArcControl(const Matrix34& reference, const Ray& ray, uint32 mouseleft);
 	void          ArcRotation();
-	void          DrawSphere(const Matrix34& reference, const CCamera& cam, struct IRenderAuxGeom* pRenderer);
+	void          DrawSphere(const Matrix34& reference, const CCamera& cam, IRenderAuxGeom* pRenderer);
 	static uint32 IntersectSphereLineSegment(const Sphere& s, const Vec3& LineStart, const Vec3& LineEnd, Vec3& I);
 };
-

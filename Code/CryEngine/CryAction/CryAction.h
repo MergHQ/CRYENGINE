@@ -28,7 +28,6 @@ class CScriptBind_VehicleSystem;
 class CScriptBind_Vehicle;
 class CScriptBind_VehicleSeat;
 class CScriptBind_Inventory;
-class CScriptBind_DialogSystem;
 class CScriptBind_MaterialEffects;
 class CScriptBind_UIAction;
 
@@ -56,20 +55,14 @@ class CViewSystem;
 class CGameplayRecorder;
 class CPersistantDebug;
 class CPlayerProfileManager;
-class CDialogSystem;
-class CSubtitleManager;
 class CGameplayAnalyst;
 class CTimeOfDayScheduler;
 class CNetworkCVars;
 class CCryActionCVars;
 class CGameStatsConfig;
-class CSignalTimer;
-class CRangeSignaling;
-class CAIProxy;
 class CommunicationVoiceLibrary;
 class CCustomActionManager;
 class CCustomEventManager;
-class CAIProxyManager;
 class CForceFeedBackSystem;
 class CCryActionPhysicQueues;
 class CNetworkStallTickerThread;
@@ -77,7 +70,6 @@ class CSharedParamsManager;
 struct ICooperativeAnimationManager;
 struct IGameSessionHandler;
 class CRuntimeAreaManager;
-class CColorGradientManager;
 
 struct CAnimationGraphCVars;
 struct IRealtimeRemoteUpdate;
@@ -87,6 +79,12 @@ struct ITimeDemoRecorder;
 class CNetMessageDistpatcher;
 class CEntityContainerMgr;
 class CEntityAttachmentExNodeRegistry;
+
+namespace BehaviorTree
+{
+	struct INodeCreator;
+}
+
 
 class CCryAction :
 	public IGameFramework
@@ -155,8 +153,6 @@ public:
 	virtual IMaterialEffects*             GetIMaterialEffects();
 	virtual IBreakableGlassSystem*        GetIBreakableGlassSystem();
 	virtual IPlayerProfileManager*        GetIPlayerProfileManager();
-	virtual ISubtitleManager*             GetISubtitleManager();
-	virtual IDialogSystem*                GetIDialogSystem();
 	virtual ICooperativeAnimationManager* GetICooperativeAnimationManager();
 	virtual ICheckpointSystem*            GetICheckpointSystem();
 	virtual IForceFeedbackSystem*         GetIForceFeedbackSystem() const;
@@ -164,6 +160,7 @@ public:
 	virtual ICustomEventManager*          GetICustomEventManager() const;
 	virtual IRealtimeRemoteUpdate*        GetIRealTimeRemoteUpdate();
 	virtual ITimeDemoRecorder*            GetITimeDemoRecorder() const;
+	virtual ITimeDemoRecorder*            SetITimeDemoRecorder(ITimeDemoRecorder* pRecorder);
 
 	virtual bool                          StartGameContext(const SGameStartParams* pGameStartParams);
 	virtual bool                          ChangeGameContext(const SGameContextParams* pGameContextParams);
@@ -274,6 +271,8 @@ public:
 	void DefineProtocolRMI(IProtocolBuilder* pBuilder);
 	virtual void DoInvokeRMI(_smart_ptr<IRMIMessageBody> pBody, unsigned where, int channel, const bool isGameObjectRmi);
 
+	virtual IScriptTable* GetActionScriptBindTable();
+
 protected:
 	virtual ICryUnknownPtr        QueryExtensionInterfaceById(const CryInterfaceID& interfaceID) const;
 	// ~IGameFramework
@@ -289,11 +288,8 @@ public:
 	CScriptBind_VehicleSeat*    GetVehicleSeatScriptBind() { return m_pScriptBindVehicleSeat; }
 	CScriptBind_Inventory*      GetInventoryScriptBind()   { return m_pScriptInventory; }
 	CPersistantDebug*           GetPersistantDebug()       { return m_pPersistantDebug; }
-	CSignalTimer*               GetSignalTimer();
-	CRangeSignaling*            GetRangeSignaling();
 	virtual IPersistantDebug*   GetIPersistantDebug();
 	virtual IGameStatsConfig*   GetIGameStatsConfig();
-	CColorGradientManager*      GetColorGradientManager() const { return m_pColorGradientManager; }
 
 	virtual void                AddBreakEventListener(IBreakEventListener* pListener);
 	virtual void                RemoveBreakEventListener(IBreakEventListener* pListener);
@@ -304,7 +300,6 @@ public:
 	virtual void                RegisterListener(IGameFrameworkListener* pGameFrameworkListener, const char* name, EFRAMEWORKLISTENERPRIORITY eFrameworkListenerPriority);
 	virtual void                UnregisterListener(IGameFrameworkListener* pGameFrameworkListener);
 
-	CDialogSystem*              GetDialogSystem()             { return m_pDialogSystem; }
 	CTimeOfDayScheduler*        GetTimeOfDayScheduler() const { return m_pTimeOfDayScheduler; }
 
 	CGameStatsConfig*           GetGameStatsConfig();
@@ -334,11 +329,11 @@ public:
 	virtual void                  ClearNextFrameCommand();
 	virtual void                  PrefetchLevelAssets(const bool bEnforceAll);
 
-	virtual void                  ShowPageInBrowser(const char* URL);
+	virtual void                  ShowPageInBrowser(const char* szUrl);
 	virtual bool                  StartProcess(const char* cmd_line);
 	virtual bool                  SaveServerConfig(const char* path);
 
-	void                          OnActionEvent(const SActionEvent& ev);
+	virtual void                  OnActionEvent(const SActionEvent& ev);
 
 	bool                          IsPbSvEnabled() const { return m_pbSvEnabled; }
 	bool                          IsPbClEnabled() const { return m_pbClEnabled; }
@@ -346,10 +341,6 @@ public:
 	void                          DumpMemInfo(const char* format, ...) PRINTF_PARAMS(2, 3);
 
 	const char*                   GetStartLevelSaveGameName();
-
-	virtual IAIActorProxy*        GetAIActorProxy(EntityId entityid) const;
-	CAIProxyManager*              GetAIProxyManager()       { return m_pAIProxyManager; }
-	const CAIProxyManager*        GetAIProxyManager() const { return m_pAIProxyManager; }
 
 	void                          CreatePhysicsQueues();
 	void                          ClearPhysicsQueues();
@@ -360,6 +351,8 @@ public:
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
 
+	void SetGameLevelLoadListener(IGameLevelLoadListener* pLoader) { m_pGameLevelLoadListener = pLoader; }
+	IGameLevelLoadListener* GetGameLevelLoadListener() const { return m_pGameLevelLoadListener; }
 	const std::vector<INetworkedClientListener*>& GetNetworkClientListeners() const { return m_networkClientListeners; }
 	void FastShutdown();
 
@@ -383,7 +376,6 @@ private:
 	// console commands provided by CryAction
 	static void DumpMapsCmd(IConsoleCmdArgs* args);
 	static void MapCmd(IConsoleCmdArgs* args);
-	static void ReloadReadabilityXML(IConsoleCmdArgs* args);
 	static void UnloadCmd(IConsoleCmdArgs* args);
 	static void PlayCmd(IConsoleCmdArgs* args);
 	static void ConnectCmd(IConsoleCmdArgs* args);
@@ -450,6 +442,7 @@ private:
 	// change the game query (better than setting it explicitly)
 	void SetGameQueryListener(CGameQueryListener*);
 
+	void RegisterActionBehaviorTreeNodes();
 	void CheckEndLevelSchedule();
 
 #if !defined(_RELEASE)
@@ -482,8 +475,6 @@ private:
 	ILog*                         m_pLog;
 	IGameToEditorInterface*       m_pGameToEditor;
 
-	_smart_ptr<CActionGame>       m_pGame;
-
 	char                          m_editorLevelName[512]; // to avoid having to call string constructor, or allocating memory.
 	char                          m_editorLevelFolder[512];
 	char                          m_gameGUID[128];
@@ -506,8 +497,6 @@ private:
 	CMaterialEffects*             m_pMaterialEffects;
 	IBreakableGlassSystem*        m_pBreakableGlassSystem;
 	CPlayerProfileManager*        m_pPlayerProfileManager;
-	CDialogSystem*                m_pDialogSystem;
-	CSubtitleManager*             m_pSubtitleManager;
 
 	IEffectSystem*                m_pEffectSystem;
 	CGameSerialize*               m_pGameSerialize;
@@ -526,15 +515,14 @@ private:
 	ICooperativeAnimationManager* m_pCooperativeAnimationManager;
 	IGameSessionHandler*          m_pGameSessionHandler;
 
-	CAIProxyManager*              m_pAIProxyManager;
-
 	IGameVolumes*                 m_pGameVolumesManager;
 
 	// developer mode
 	CDevMode* m_pDevMode;
 
 	// TimeDemo recorder.
-	CTimeDemoRecorder* m_pTimeDemoRecorder;
+	ITimeDemoRecorder* m_pTimeDemoRecorder;
+	std::unique_ptr<CTimeDemoRecorder> m_pDefaultTimeDemoRecorder;
 
 	// game queries
 	CGameQueryListener* m_pGameQueryListener;
@@ -552,7 +540,6 @@ private:
 	CScriptBind_Vehicle*          m_pScriptBindVehicle;
 	CScriptBind_VehicleSeat*      m_pScriptBindVehicleSeat;
 	CScriptBind_Inventory*        m_pScriptInventory;
-	CScriptBind_DialogSystem*     m_pScriptBindDS;
 	CScriptBind_MaterialEffects*  m_pScriptBindMFX;
 	CScriptBind_UIAction*         m_pScriptBindUIAction;
 	CTimeOfDayScheduler*          m_pTimeOfDayScheduler;
@@ -563,8 +550,6 @@ private:
 
 	CNetworkCVars*                m_pNetworkCVars;
 	CCryActionCVars*              m_pCryActionCVars;
-
-	CColorGradientManager*        m_pColorGradientManager;
 
 	//-- Network Stall ticker thread
 #ifdef USE_NETWORK_STALL_TICKER_THREAD
@@ -584,8 +569,6 @@ private:
 	ICVar* m_pEnableLoadingScreen;
 	ICVar* m_pCheats;
 	ICVar* m_pShowLanBrowserCVAR;
-	ICVar* m_pDebugSignalTimers;
-	ICVar* m_pDebugRangeSignaling;
 	ICVar* m_pAsyncLevelLoad;
 
 	bool   m_bShowLanBrowser;
@@ -672,5 +655,9 @@ private:
 
 	CTimeValue                             m_levelStartTime;
 
+	IGameLevelLoadListener*                      m_pGameLevelLoadListener = nullptr;
 	std::vector<INetworkedClientListener*> m_networkClientListeners;
+
+	std::unique_ptr<BehaviorTree::INodeCreator> m_pAnimateFragmentNodeCreator;
+	_smart_ptr<CActionGame>                m_pGame;
 };

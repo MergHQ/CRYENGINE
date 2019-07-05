@@ -64,7 +64,7 @@ void CAudioTriggerSpotEntity::ProcessEvent(const SEntityEvent& event)
 
 				if (m_behavior == ePlayBehavior_TriggerRate)
 				{
-					GetEntity()->SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+					SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 				}
 			}
 
@@ -85,7 +85,7 @@ void CAudioTriggerSpotEntity::TriggerFinished(const CryAudio::ControlId trigger)
 	// playing, that instance we need to ignore.
 	if (m_bEnabled && trigger == m_playTriggerId && m_behavior == ePlayBehavior_Delay)
 	{
-		GetEntity()->SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 	}
 }
 
@@ -108,6 +108,7 @@ void CAudioTriggerSpotEntity::OnResetState()
 	// Reset values to their default
 	audioProxy.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
 	audioProxy.SetCurrentEnvironments(CryAudio::InvalidAuxObjectId);
+	audioProxy.SetObstructionCalcType(m_occlusionType);
 	entity.SetFlags(entity.GetFlags() | ENTITY_FLAG_CLIENT_ONLY);
 
 	if (m_bTriggerAreasOnMove)
@@ -120,9 +121,6 @@ void CAudioTriggerSpotEntity::OnResetState()
 		entity.SetFlags(entity.GetFlags() & (~ENTITY_FLAG_TRIGGER_AREAS));
 		entity.SetFlagsExtended(entity.GetFlagsExtended() & (~ENTITY_FLAG_EXTENDED_NEEDS_MOVEINSIDE));
 	}
-
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
 
 	if (m_bEnabled)
 	{
@@ -153,14 +151,13 @@ void CAudioTriggerSpotEntity::OnResetState()
 
 void CAudioTriggerSpotEntity::StartPlayingBehaviour()
 {
-	IEntity& entity = *GetEntity();
-	entity.KillTimer(DELAY_TIMER_ID);
+	KillTimer(DELAY_TIMER_ID);
 
 	Play();
 
 	if (m_behavior == ePlayBehavior_TriggerRate)
 	{
-		entity.SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		SetTimer(DELAY_TIMER_ID, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 	}
 }
 
@@ -179,7 +176,7 @@ void CAudioTriggerSpotEntity::Play()
 			pAudioProxy->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
 			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::None, this);
-			pAudioProxy->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, userData);
+			pAudioProxy->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, INVALID_ENTITYID, userData);
 		}
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
@@ -189,7 +186,7 @@ void CAudioTriggerSpotEntity::Play()
 void CAudioTriggerSpotEntity::Stop()
 {
 	IEntity& entity = *GetEntity();
-	entity.KillTimer(DELAY_TIMER_ID);
+	KillTimer(DELAY_TIMER_ID);
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{

@@ -16,6 +16,7 @@
 
 #include <CryMemory/IDefragAllocator.h>   // <> required for Interfuscator
 #include <CryMemory/IGeneralMemoryHeap.h> // <> required for Interfuscator
+#include <CryCore/smartptr.h>
 
 struct IMemoryBlock : public CMultiThreadRefCount
 {

@@ -19,7 +19,7 @@
 
 #include "StdAfx.h"
 
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryInput/IInput.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>
@@ -42,28 +42,78 @@ void ReleaseCursor()
 #endif
 }
 
+void SetMouseCursorIconCVar(ICVar* pVar)
+{
+	gEnv->pHardwareMouse->SetCursor(pVar->GetString());
+}
+
+#if CRY_PLATFORM_WINDOWS
+void SetMouseUseSystemCursorCVar(ICVar* pVar)
+{
+	gEnv->pHardwareMouse->UseSystemCursor(pVar->GetIVal() != 0);
+}
+#endif //CRY_PLATFORM_WINDOWS
+
+float CHardwareMouse::s_MouseCursorSoftwareOffsetX = 0.0f;
+float CHardwareMouse::s_MouseCursorSoftwareOffsetY = 0.0f;
+int CHardwareMouse::s_MouseControllerEmulation = 1;
+
 //-----------------------------------------------------------------------------------------------------
 
 CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
-	: m_debugHardwareMouse(0)
-	, m_pExclusiveEventListener(nullptr)
-	, m_pCursorTexture(nullptr)
-	, m_bPrevShowState(true)
+	: m_bPrevShowState(true)
 #if !defined(_RELEASE)
-	, m_allowConfine(GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == nullptr)
+	, m_allowConfine((gEnv->pConsole->GetCVar("sys_NoMouse")) && (gEnv->pConsole->GetCVar("sys_NoMouse")->GetIVal() == 0))
 #else
 	, m_allowConfine(true)
 #endif // !defined(_RELEASE)
-	, m_shouldUseSystemCursor(gEnv->IsEditor())
+	, m_shouldUseSystemCursor(false)
+#if CRY_PLATFORM_DESKTOP
 	, m_usingSystemCursor(true)
+#else
+	, m_usingSystemCursor(false)
+#endif
 	, m_confinedWnd(nullptr)
 #if CRY_PLATFORM_WINDOWS
 	, m_hCursor(nullptr)
 	, m_nCurIDCCursorId(~0)
 #endif
 {
+	REGISTER_STRING_CB("r_MouseCursorTexture", "%ENGINE%/EngineAssets/Textures/Cursor_Green.dds", VF_NULL,
+		"Sets the image (dds file) to be displayed as the mouse cursor",
+		SetMouseCursorIconCVar);
+
+	REGISTER_CVAR2("r_MouseCursorSoftwareOffsetX", &s_MouseCursorSoftwareOffsetX, 0.0f, VF_NULL, "X offset for the mouse cursor to render at (Software cursor only)");
+	REGISTER_CVAR2("r_MouseCursorSoftwareOffsetY", &s_MouseCursorSoftwareOffsetY, 0.0f, VF_NULL, "Y offset for the mouse cursor to render at (Software cursor only)");
+	REGISTER_CVAR2("r_MouseControllerEmulation", &s_MouseControllerEmulation, 1, VF_NULL, "Should the controller be used to emulate mouse input?");
+
+#if CRY_PLATFORM_WINDOWS
+
+	REGISTER_INT_CB("r_MouseUseSystemCursor", 0, VF_NULL,
+		"Should the application use the hardware mouse cursor?",
+		SetMouseUseSystemCursorCVar);
+#endif // CRY_PLATFORM_WINDOWS
+
+	if (gEnv->pSystem)
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CHardwareMouse");
+	}
+
 #if CRY_PLATFORM_WINDOWS
 	atexit(ReleaseCursor);
+
+	if (gEnv->IsEditor())
+	{
+		m_shouldUseSystemCursor = true;
+	}
+	else if (gEnv->pConsole)
+	{
+		ICVar* pUseSystemCursorCVar = gEnv->pConsole->GetCVar("r_MouseUseSystemCursor");
+		if (pUseSystemCursorCVar)
+		{
+			m_shouldUseSystemCursor = pUseSystemCursorCVar->GetIVal() != 0;
+		}
+	}
 #endif
 
 	if (gEnv->pConsole)
@@ -71,13 +121,17 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 		ICVar* pCursorTexturePath = gEnv->pConsole->GetCVar("r_MouseCursorTexture");
 		if (pCursorTexturePath)
 		{
-			SetCursor(pCursorTexturePath->GetString());
+			const char* szCursorTexturePath = pCursorTexturePath->GetString();
+			if (szCursorTexturePath && *szCursorTexturePath)
+			{
+				SetCursor(pCursorTexturePath->GetString());
+			}
 		}
 	}
 
 #if !CRY_PLATFORM_WINDOWS
 	if (gEnv->pRenderer)
-		SetHardwareMousePosition(gEnv->pRenderer->GetWidth() * 0.5f, gEnv->pRenderer->GetHeight() * 0.5f);
+		SetHardwareMousePosition(gEnv->pRenderer->GetOverlayWidth() * 0.5f, gEnv->pRenderer->GetOverlayHeight() * 0.5f);
 	else
 		SetHardwareMousePosition(0.0f, 0.0f);
 #endif
@@ -91,9 +145,6 @@ CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 
 	m_hide = false;
 	m_calledShowHWMouse = false;
-
-	if (IsFullscreen())
-		ConfineCursor(true);
 
 #if CRY_PLATFORM_WINDOWS
 	CryLog("Initialized hardware mouse (game is %s to confine mouse to window)", m_allowConfine ? "allowed" : "not allowed");
@@ -131,13 +182,6 @@ CHardwareMouse::~CHardwareMouse()
 
 void CHardwareMouse::ShowHardwareMouse(bool bShow)
 {
-	// Only manage mouse visibility if the application actually has focus.
-	// We don't want to mess around with the cursor otherwise
-	if (!m_bFocus)
-	{
-		return;
-	}
-
 	// Apply overrides here. Needless to say if any override changes value, then ShowHardwareMouse
 	// should be called with the reference counted value
 	bShow = m_shouldUseSystemCursor && ((bShow && !m_hide) || (m_allowConfine == false));
@@ -160,11 +204,7 @@ void CHardwareMouse::ShowHardwareMouse(bool bShow)
 		CryLogAlways("HM: ShowHardwareMouse = %d", bShow);
 	}
 
-	if (bShow)
-	{
-		SetHardwareMousePosition(m_fCursorX, m_fCursorY);
-	}
-	else
+	if (!bShow)
 	{
 		GetHardwareMousePosition(&m_fCursorX, &m_fCursorY);
 	}
@@ -172,8 +212,19 @@ void CHardwareMouse::ShowHardwareMouse(bool bShow)
 	IInput* const pInput = gEnv->pInput;
 	if (pInput)
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
+		const int count = pInput->ShowCursor(bShow);
+#else
 		pInput->ShowCursor(bShow);
+#endif
 		pInput->SetExclusiveMode(eIDT_Mouse, false);
+
+		if (m_debugHardwareMouse)
+			CryLogAlways("HM: ShowHardwareMouse - Windows cursor counter = %i", count);
+	}
+	else
+	{
+		m_bPrevShowState = !m_bPrevShowState; // reset to previous state as we did not succeed
 	}
 
 	m_calledShowHWMouse = true;
@@ -190,8 +241,7 @@ void CHardwareMouse::ConfineCursor(bool confine)
 		return;
 
 #if CRY_PLATFORM_WINDOWS
-	HWND hWnd = GetConfinedWindowHandle();
-
+	HWND hWnd = (HWND)GetConfinedWindowHandle();
 	if (hWnd)
 	{
 		RECT rcClient;
@@ -254,26 +304,29 @@ bool CHardwareMouse::OnInputEvent(const SInputEvent& rInputEvent)
 	}
 	else if (eIDT_Gamepad == rInputEvent.deviceType)
 	{
-		if (rInputEvent.keyId == thumbX)
+		if (s_MouseControllerEmulation)
 		{
-			m_fIncX = rInputEvent.value;
-		}
-		else if (rInputEvent.keyId == thumbY)
-		{
-			m_fIncY = -rInputEvent.value;
-		}
-		else if (rInputEvent.keyId == XButton)
-		{
-			// This emulation was just not right, A-s meaning is context sensitive
-			/*if(eIS_Pressed == rInputEvent.state)
-			   {
-			   Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONDOWN);
-			   }
-			   else if(eIS_Released == rInputEvent.state)
-			   {
-			   Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONUP);
-			   }*/
-			// TODO: do we simulate double-click?
+			if (rInputEvent.keyId == thumbX)
+			{
+				m_fIncX = rInputEvent.value;
+			}
+			else if (rInputEvent.keyId == thumbY)
+			{
+				m_fIncY = -rInputEvent.value;
+			}
+			else if (rInputEvent.keyId == XButton)
+			{
+				// This emulation was just not right, A-s meaning is context sensitive
+				/*if(eIS_Pressed == rInputEvent.state)
+					 {
+					 Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONDOWN);
+					 }
+					 else if(eIS_Released == rInputEvent.state)
+					 {
+					 Event((int)m_fCursorX,(int)m_fCursorY,HARDWAREMOUSEEVENT_LBUTTONUP);
+					 }*/
+					 // TODO: do we simulate double-click?
+			}
 		}
 	}
 #if !CRY_PLATFORM_WINDOWS
@@ -314,25 +367,28 @@ bool CHardwareMouse::OnInputEvent(const SInputEvent& rInputEvent)
 #endif
 	else if (rInputEvent.keyId == eKI_SYS_Commit)
 	{
-		const float fSensitivity = 100.0f;
-		const float fDeadZone = 0.3f;
+		if (s_MouseControllerEmulation)
+		{
+			const float fSensitivity = 100.0f;
+			const float fDeadZone = 0.3f;
 
-		if (m_fIncX < -fDeadZone || m_fIncX > +fDeadZone ||
-		    m_fIncY < -fDeadZone || m_fIncY > +fDeadZone)
-		{
-			float fFrameTime = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI);
-			if (s_fAcceleration < 10.0f)
+			if (m_fIncX < -fDeadZone || m_fIncX > +fDeadZone ||
+				m_fIncY < -fDeadZone || m_fIncY > +fDeadZone)
 			{
-				s_fAcceleration += fFrameTime * 5.0f;
+				float fFrameTime = gEnv->pTimer->GetFrameTime(ITimer::ETIMER_UI);
+				if (s_fAcceleration < 10.0f)
+				{
+					s_fAcceleration += fFrameTime * 5.0f;
+				}
+				m_fCursorX += m_fIncX * fSensitivity * s_fAcceleration * fFrameTime;
+				m_fCursorY += m_fIncY * fSensitivity * s_fAcceleration * fFrameTime;
+				SetHardwareMousePosition(m_fCursorX, m_fCursorY);
 			}
-			m_fCursorX += m_fIncX * fSensitivity * s_fAcceleration * fFrameTime;
-			m_fCursorY += m_fIncY * fSensitivity * s_fAcceleration * fFrameTime;
-			SetHardwareMousePosition(m_fCursorX, m_fCursorY);
-		}
-		else
-		{
-			GetHardwareMousePosition(&m_fCursorX, &m_fCursorY);
-			s_fAcceleration = 1.0f;
+			else
+			{
+				GetHardwareMousePosition(&m_fCursorX, &m_fCursorY);
+				s_fAcceleration = 1.0f;
+			}
 		}
 	}
 
@@ -348,7 +404,7 @@ void CHardwareMouse::HandleFocusEvent(bool bFocus)
 		// set focus first so the calls below work
 		m_bFocus = true;
 
-		ShowHardwareMouse(m_iReferenceCounter >= 1);
+		ShowHardwareMouse(m_iReferenceCounter > 0);
 		EvaluateCursorConfinement();
 	}
 	else
@@ -381,6 +437,10 @@ void CHardwareMouse::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		bool bFocus = (wparam != 0);
 		HandleFocusEvent(bFocus);
 	}
+	else if (event == ESYSTEM_EVENT_POS_CHANGED)
+	{
+		EvaluateCursorConfinement();
+	}
 	else if (event == ESYSTEM_EVENT_MOVE)
 	{
 		EvaluateCursorConfinement();
@@ -412,8 +472,14 @@ void CHardwareMouse::Release()
 
 //-----------------------------------------------------------------------------------------------------
 
-void CHardwareMouse::OnPreInitRenderer()
+void CHardwareMouse::OnPostInitRenderer()
 {
+	CRY_ASSERT(gEnv->pRenderer);
+
+	if (gEnv->pConsole && !m_shouldUseSystemCursor && !m_pCursorTexture)
+	{
+		SetCursor(gEnv->pConsole->GetCVar("r_MouseCursorTexture")->GetString());
+	}
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -425,8 +491,6 @@ void CHardwareMouse::OnPostInitInput()
 	if (gEnv->pInput)
 		gEnv->pInput->AddEventListener(this);
 
-	if (gEnv->pSystem)
-		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CHardwareMouse");
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -467,17 +531,17 @@ void CHardwareMouse::RemoveListener(IHardwareMouseEventListener* pHardwareMouseE
 
 //-----------------------------------------------------------------------------------------------------
 
-void CHardwareMouse::SetConfinedWnd(HWND wnd)
+void CHardwareMouse::SetConfinedWnd(CRY_HWND wnd)
 {
 	m_confinedWnd = wnd;
 }
 
 //-----------------------------------------------------------------------------------------------------
 
-HWND CHardwareMouse::GetConfinedWindowHandle() const
+CRY_HWND CHardwareMouse::GetConfinedWindowHandle() const
 {
 	if (m_confinedWnd == nullptr)
-		return (HWND) gEnv->pRenderer->GetHWND();
+		return gEnv->pRenderer->GetHWND();
 	else
 		return m_confinedWnd;
 }
@@ -524,6 +588,11 @@ void CHardwareMouse::DecrementCounter()
 	EvaluateCursorConfinement();
 }
 
+bool CHardwareMouse::IsCursorVisible() const
+{
+	return m_iReferenceCounter > 0;
+}
+
 //-----------------------------------------------------------------------------------------------------
 
 void CHardwareMouse::GetHardwareMousePosition(float* pfX, float* pfY)
@@ -546,7 +615,7 @@ void CHardwareMouse::SetHardwareMousePosition(float fX, float fY)
 #if CRY_PLATFORM_WINDOWS
 	if (gEnv->pRenderer)
 	{
-		HWND hWnd = GetConfinedWindowHandle();
+		HWND hWnd =(HWND)GetConfinedWindowHandle();
 		if (hWnd == ::GetFocus() && m_allowConfine)
 		{
 			// Move cursor position only if our window is focused.
@@ -591,8 +660,8 @@ void CHardwareMouse::GetHardwareMouseClientPosition(float* pfX, float* pfY)
 	if (gEnv == NULL || gEnv->pRenderer == NULL)
 		return;
 
-	HWND hWnd = GetConfinedWindowHandle();
-	CRY_ASSERT_MESSAGE(hWnd, "Impossible to get client coordinates from a non existing window!");
+	HWND hWnd = (HWND)GetConfinedWindowHandle();
+	CRY_ASSERT(hWnd, "Impossible to get client coordinates from a non existing window!");
 
 	if (hWnd)
 	{
@@ -618,8 +687,8 @@ void CHardwareMouse::GetHardwareMouseClientPosition(float* pfX, float* pfY)
 void CHardwareMouse::SetHardwareMouseClientPosition(float fX, float fY)
 {
 #if CRY_PLATFORM_WINDOWS
-	HWND hWnd = GetConfinedWindowHandle();
-	CRY_ASSERT_MESSAGE(hWnd, "Impossible to set position of the mouse relative to client coordinates from a non existing window!");
+	HWND hWnd = (HWND)GetConfinedWindowHandle();
+	CRY_ASSERT(hWnd, "Impossible to set position of the mouse relative to client coordinates from a non existing window!");
 
 	if (hWnd)
 	{
@@ -656,11 +725,9 @@ bool CHardwareMouse::SetCursor(int idc_cursor_id)
 
 		if (m_hCursor)
 		{
-			if (HCURSOR ret = ::SetCursor(m_hCursor))
-			{
-				m_nCurIDCCursorId = idc_cursor_id;
-				m_curCursorPath.clear();
-			}
+			::SetCursor(m_hCursor);
+			m_nCurIDCCursorId = idc_cursor_id;
+			m_curCursorPath.clear();
 		}
 	}
 	else // SW cursor
@@ -689,6 +756,12 @@ bool CHardwareMouse::SetCursor(const char* path)
 	// Update the CVar value to match, in case this function was not called through CVar-change-callback
 	gEnv->pConsole->GetCVar("r_MouseCursorTexture")->Set(path);
 
+	if (strlen(path) == 0)
+	{
+		// Empty cursor texture disables custom image cursor.
+		return true;
+	}
+
 	// Load cursor
 	if (m_shouldUseSystemCursor)
 	{
@@ -710,11 +783,9 @@ bool CHardwareMouse::SetCursor(const char* path)
 		// Set cursor
 		if (m_hCursor)
 		{
-			if (HCURSOR ret = ::SetCursor(m_hCursor))
-			{
-				m_nCurIDCCursorId = 0;
-				m_curCursorPath.assign(path);
-			}
+			::SetCursor(m_hCursor);
+			m_nCurIDCCursorId = 0;
+			m_curCursorPath.assign(path);
 		}
 		return m_hCursor != nullptr;
 #else
@@ -785,6 +856,8 @@ void CHardwareMouse::Render()
 		const float fSizeY = float(m_pCursorTexture->GetHeight());
 		float fPosX, fPosY;
 		GetHardwareMouseClientPosition(&fPosX, &fPosY);
+		fPosX += s_MouseCursorSoftwareOffsetX;
+		fPosY += s_MouseCursorSoftwareOffsetY;
 		IRenderAuxImage::Draw2dImage(fPosX * fScalerX, fPosY * fScalerY, fSizeX * fScalerX, fSizeY * fScalerY, m_pCursorTexture->GetTextureID(), 0, 1, 1, 0, 0, 1, 1, 1, 1, 0);
 	}
 }
@@ -801,6 +874,7 @@ bool CHardwareMouse::IsFullscreen()
 	{
 		gEnv->pRenderer->EF_Query(EFQ_Fullscreen, bFullScreen);
 	}
+
 	return bFullScreen;
 }
 
@@ -826,6 +900,11 @@ void CHardwareMouse::Hide(bool hide)
 void CHardwareMouse::UseSystemCursor(bool useSystemCursor)
 {
 	m_shouldUseSystemCursor = useSystemCursor;
+
+	ICVar* cvMouseCursor = gEnv->pConsole->GetCVar("r_MouseCursorTexture");
+	m_curCursorPath = (cvMouseCursor && !useSystemCursor) ? cvMouseCursor->GetString() : "";
+	SetCursor(m_curCursorPath);
+
 }
 
 //-----------------------------------------------------------------------------------------------------

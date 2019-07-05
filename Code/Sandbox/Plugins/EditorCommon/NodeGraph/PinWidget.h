@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "ICryGraphEditor.h"
 
 #include "NodeGraphViewGraphicsWidget.h"
@@ -58,6 +59,7 @@ public:
 	virtual void                             DeleteLater() override;
 	virtual int32                            GetType() const override         { return Type; }
 	virtual CAbstractNodeGraphViewModelItem* GetAbstractItem() const override { return &m_item; }
+	virtual const CNodeGraphViewStyleItem&   GetStyle() const override;
 	// ~CNodeGraphViewGraphicsWidget
 
 	void              SetIconOffset(float x, float y);
@@ -119,4 +121,3 @@ private:
 };
 
 }
-

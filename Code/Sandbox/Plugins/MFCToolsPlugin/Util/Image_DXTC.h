@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __image_dxtc_h__
-#define __image_dxtc_h__
 #pragma once
 
 #include <Cry3DEngine/ImageExtensionHelper.h>
@@ -71,6 +69,3 @@ private:
 	  int destinationDataSize,
 	  int destinationPageOffset);
 };
-
-#endif // __image_dxtc_h__
-

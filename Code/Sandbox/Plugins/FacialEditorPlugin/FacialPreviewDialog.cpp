@@ -6,9 +6,12 @@
 #include "ModelViewport.h"
 #include "QMfcApp/qmfcviewporthost.h"
 #include "Resource.h"
-#include <CryAnimation/ICryAnimation.h>
 #include "Util/Variable.h"
 #include "IUndoObject.h"
+
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryCore/ScopeGuard.h>
 
 IMPLEMENT_DYNAMIC(CFacialPreviewDialog, CToolbarDialog)
 
@@ -246,8 +249,13 @@ static const char* eyeBones[2] = { "eye_left_bone", "eye_right_bone" };
 void CModelViewportFE::Update()
 {
 	if (m_bPaused)
+	{
 		return;
+	}
 
+	CCamera cameraStoreRestore = gEnv->pSystem->GetViewCamera();
+	ScopeGuard cameraRestore{ [&cameraStoreRestore]() {gEnv->pSystem->SetViewCamera(cameraStoreRestore); } };
+	
 	if (m_bAnimateCamera)
 	{
 		IFacialAnimSequence* pSequence = (m_pContext ? m_pContext->GetSequence() : 0);
@@ -467,4 +475,3 @@ void CModelViewportFE::HandleAnimationSettingsSwitch()
 	if (m_storedCamerasInitialized[cameraIndex])
 		m_Camera.SetMatrix(m_storedCameras[cameraIndex]);
 }
-

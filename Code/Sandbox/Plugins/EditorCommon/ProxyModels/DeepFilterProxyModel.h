@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include <QSortFilterProxyModel>
-
 #include "EditorCommonAPI.h"
 
+#include <QSortFilterProxyModel>
+
 #include <memory>
-#include <functional>
 
 /**
  * @brief allows to filter even nested trees
@@ -69,10 +68,9 @@ public slots:
 	void invalidateFilter();
 
 protected:
-	/// \note Derived classes should implement another method, this one provides the "deep filtering functionnality"
+	/// \note Derived classes should implement another method, this one provides the "deep filtering functionality"
 	virtual bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const final;
 
-protected:
 	/// \returns true only if the row's own data matches the filter, regardless of children or other factors
 	/// \note Override to customize the filter's behavior as you would usually with filterAcceptsRow
 	virtual bool rowMatchesFilter(int sourceRow, const QModelIndex& sourceParent) const;
@@ -81,4 +79,3 @@ private:
 	struct Implementation;
 	std::unique_ptr<Implementation> p;
 };
-

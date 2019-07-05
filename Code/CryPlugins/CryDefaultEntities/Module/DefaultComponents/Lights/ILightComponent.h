@@ -1,6 +1,7 @@
 #pragma once
 #include "DefaultComponents/Geometry/BaseMeshComponent.h"
 #include <CrySchematyc/Utils/SharedString.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 namespace Cry
 {
@@ -26,6 +27,24 @@ namespace DefaultComponents
 		desc.AddConstant(ELightGIMode::StaticLight, "StaticLight", "Static");
 		desc.AddConstant(ELightGIMode::DynamicLight, "DynamicLight", "Dynamic");
 		desc.AddConstant(ELightGIMode::ExcludeForGI, "ExcludeForGI", "Hide if GI is Active");
+	}
+
+	enum class ELightShape
+	{
+		Point = 0,
+		Rectangle,
+		Disk,
+	};
+
+	static void ReflectType(Schematyc::CTypeDesc<ELightShape>& desc)
+	{
+		desc.SetGUID("{7C7D8B40-E53A-4732-AB5A-C20B5C4AD87E}"_cry_guid);
+		desc.SetLabel("Area Light Shape");
+		desc.SetDescription("Sets the shape of the light source");
+		desc.SetDefaultValue(ELightShape::Point);
+		desc.AddConstant(ELightShape::Point, "Point", "Point");
+		desc.AddConstant(ELightShape::Rectangle, "Rectangle", "Rectangle");
+		desc.AddConstant(ELightShape::Disk, "Disk", "Disk");
 	}
 
 	struct ILightComponent : public IEntityComponent
@@ -87,6 +106,17 @@ namespace DefaultComponents
 			float m_speed = 1.f;
 		};
 
+		struct SShape
+		{
+			inline bool operator==(const SShape &rhs) const { return 0 == memcmp(this, &rhs, sizeof(rhs)); }
+
+			ELightShape m_areaShape = ELightShape::Point;
+			bool   m_twoSided = false;
+			Schematyc::TextureFileName m_texturePath;
+			Schematyc::Range<0, 10> m_width = 1.0f;
+			Schematyc::Range<0, 10> m_height = 1.0f;
+		};
+
 	public:
 		virtual void SetOptics(const char* szFullOpticsName) = 0;
 
@@ -105,6 +135,9 @@ namespace DefaultComponents
 		virtual SAnimations& GetAnimationParameters() { return m_animations; }
 		virtual const SAnimations& GetAnimationParameters() const { return m_animations; }
 
+		virtual SShape& GetShapeParameters() { return m_shape; }
+		virtual const SShape& GetShapeParameters() const { return m_shape; }
+
 		virtual SOptics& GetOpticParameters() { return m_optics; }
 		virtual const SOptics& GetOpticParameters() const { return m_optics; }
 
@@ -115,6 +148,7 @@ namespace DefaultComponents
 		SShadows m_shadows;
 		SOptics m_optics;
 		SAnimations m_animations;
+		SShape m_shape;
 	};
 
 	static void ReflectType(Schematyc::CTypeDesc<ILightComponent::SOptions>& desc)
@@ -136,7 +170,7 @@ namespace DefaultComponents
 		desc.SetGUID("{DBD843BC-E4E7-4950-B54D-4FD507B223FD}"_cry_guid);
 		desc.AddMember(&ILightComponent::SOptics::m_flareEnable, 'ena', "Enable", "Enable", "Decides if the fare should be able", true);
 		desc.AddMember(&ILightComponent::SOptics::m_lensFlareName, 'lens', "LensFlare", "Lens Flare Name", "Name of the lens flare", "");
-		desc.AddMember(&ILightComponent::SOptics::m_attachToSun, 'atta', "AttachToSun", "Attach To Sun", "When enabled, sets the Sun to use the Flare properties for this light", false);
+		desc.AddMember(&ILightComponent::SOptics::m_attachToSun, 'atta', "AttachtToSun", "Attacht To Sun", "When enabled, sets the Sun to use the Flare properties for this light", false);
 		desc.AddMember(&ILightComponent::SOptics::m_flareFOV, 'fov', "FlareFOV", "Flare Field of View", "FOV for the flare", 360);
 	}
 
@@ -170,6 +204,16 @@ namespace DefaultComponents
 		desc.SetGUID("{95F6EF06-2101-427C-9E55-481042117504}"_cry_guid);
 		desc.AddMember(&ILightComponent::SAnimations::m_style, 'styl', "Style", "Style", "Determines the light style to load, see Shaders/HWScripts/CryFX/Light.cfx for the full list", 0u);
 		desc.AddMember(&ILightComponent::SAnimations::m_speed, 'sped', "Speed", "Speed", "Speed at which we animate", 1.f);
+	}
+	
+	static void ReflectType(Schematyc::CTypeDesc<ILightComponent::SShape>& desc)
+	{
+		desc.SetGUID("{0FA93C18-ECB3-42EE-9D5A-B33C2736EECF}"_cry_guid);
+		desc.AddMember(&ILightComponent::SShape::m_areaShape, 'ashp', "Shape", "Shape", "Shape of the light source", ELightShape::Point);
+		desc.AddMember(&ILightComponent::SShape::m_twoSided, 'twos', "TwoSided", "TwoSided", "Two sided light contribution", false);
+		desc.AddMember(&ILightComponent::SShape::m_texturePath, 'texP', "TexturePath", "Texture:", "Texture path", "");
+		desc.AddMember(&ILightComponent::SShape::m_width, 'widt', "Width", "Width", "Width of the area shape", 1.0f);
+		desc.AddMember(&ILightComponent::SShape::m_height, 'heig', "Height", "Height", "Height of the area shape", 1.0f);		
 	}
 }
 }

@@ -1,26 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   Messages.h
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
-#include <CryCore/Platform/platform.h>
-#include <CryString/CryString.h>
-#include <vector>
+
 #include <CrySerialization/IArchive.h>
-#include <CrySerialization/STL.h>
 #include <CrySerialization/Enum.h>
+#include <CrySerialization/STL.h>
 
 //this is the address that the engine-side will be listening on
 #define CONSOLE_ENGINE_CHANNEL "Console/Engine"
@@ -322,4 +306,3 @@ struct SExecuteRequest
 	}
 };
 }
-

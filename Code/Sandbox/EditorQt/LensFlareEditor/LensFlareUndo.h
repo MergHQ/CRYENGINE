@@ -1,13 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareUndo.h
-//  Created:     12/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
+#include <IUndoObject.h>
 
 class CLensFlareItem;
 
@@ -18,7 +12,7 @@ public:
 	~CUndoLensFlareItem();
 
 protected:
-	const char* GetDescription() { return m_undoDescription; };
+	const char* GetDescription() { return m_undoDescription; }
 	void        Undo(bool bUndo);
 	void        Redo();
 
@@ -33,14 +27,14 @@ private:
 			m_pOptics = NULL;
 		}
 
-		string               m_selectedFlareItemName;
+		string                m_selectedFlareItemName;
 		bool                  m_bRestoreSelectInfo;
 		IOpticsElementBasePtr m_pOptics;
 	};
 
 	string m_flarePathName;
-	SData   m_Undo;
-	SData   m_Redo;
+	SData  m_Undo;
+	SData  m_Redo;
 
 	void Restore(const SData& data);
 };
@@ -52,7 +46,7 @@ public:
 	CUndoRenameLensFlareItem(const char* oldFullName, const char* newFullName, bool bRefreshItemTreeWhenUndo = false, bool bRefreshItemTreeWhenRedo = false);
 
 protected:
-	const char* GetDescription() { return m_undoDescription; };
+	const char* GetDescription() { return m_undoDescription; }
 	void        Undo(bool bUndo);
 	void        Redo();
 
@@ -64,8 +58,8 @@ private:
 	{
 		string m_oldFullItemName;
 		string m_newFullItemName;
-		bool    m_bRefreshItemTreeWhenUndo;
-		bool    m_bRefreshItemTreeWhenRedo;
+		bool   m_bRefreshItemTreeWhenUndo;
+		bool   m_bRefreshItemTreeWhenRedo;
 	};
 
 	void Rename(const SUndoDataStruct& data, bool bRefreshItemTree);
@@ -81,7 +75,7 @@ public:
 	~CUndoLensFlareElementSelection(){}
 
 protected:
-	const char* GetDescription() { return m_undoDescription; };
+	const char* GetDescription() { return m_undoDescription; }
 	void        Undo(bool bUndo);
 	void        Redo();
 
@@ -103,7 +97,7 @@ public:
 	~CUndoLensFlareItemSelectionChange(){}
 
 protected:
-	const char* GetDescription() { return m_undoDescription; };
+	const char* GetDescription() { return m_undoDescription; }
 
 	void        Undo(bool bUndo);
 	void        Redo();
@@ -113,4 +107,3 @@ private:
 	string m_FullLensFlareItemNameForUndo;
 	string m_FullLensFlareItemNameForRedo;
 };
-

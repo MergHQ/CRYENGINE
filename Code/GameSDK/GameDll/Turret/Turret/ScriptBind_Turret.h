@@ -4,8 +4,6 @@
 #define __SCRIPT_BIND__TURRET__H__
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
-
 
 class CTurret;
 

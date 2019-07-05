@@ -17,6 +17,7 @@
 	#define STORE_PROCCLIP_STRINGS 1
 	#define STORE_SCOPE_STRINGS    1
 #endif
+#include <CryString/CryName.h>
 
 typedef int32 TagID; // should be uint32, but it's too scary because we regularly check (tagID >= 0) instead of (tagID != TAG_ID_INVALID)
 static const TagID TAG_ID_INVALID = ~TagID(0);
@@ -127,7 +128,7 @@ struct SCRCRef<0, THash>
 		return "STRIPPED_CRC_NAMES";
 	}
 
-	ILINE SCRCRef<0>& operator=(const char* const s)
+	ILINE SCRCRef& operator=(const char* const s)
 	{
 		SetByString(s);
 		return *this;
@@ -178,14 +179,14 @@ struct SCRCRef<1, THash>
 		SetByString(nameString);
 	}
 
-	SCRCRef(const SCRCRef<1>& other)
+	SCRCRef(const SCRCRef& other)
 		: crc(INVALID)
 		, stringValue()
 	{
 		SetByString(other.c_str());
 	}
 
-	SCRCRef<1>& operator=(const SCRCRef<1>& other)
+	SCRCRef& operator=(const SCRCRef& other)
 	{
 		if (&other != this)
 		{
@@ -220,7 +221,7 @@ struct SCRCRef<1, THash>
 		return stringValue.empty() ? "" : stringValue.data();
 	}
 
-	ILINE SCRCRef<1>& operator=(const char* const s)
+	ILINE SCRCRef& operator=(const char* const s)
 	{
 		SetByString(s);
 		return *this;
@@ -268,11 +269,11 @@ typedef SCRCRef<1>                      TProcClipTypeName;
 
 typedef CCryName                        TProcClipString;
 
-enum eSequenceFlags
+enum eSequenceFlags : uint32
 {
-	eSF_Fragment        = BIT(0),
-	eSF_TransitionOutro = BIT(1),
-	eSF_Transition      = BIT(2)
+	eSF_Fragment        = BIT32(0),
+	eSF_TransitionOutro = BIT32(1),
+	eSF_Transition      = BIT32(2)
 };
 
 struct SWeightData

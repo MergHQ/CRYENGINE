@@ -1,19 +1,16 @@
 {
-  "NoUberFile":{
-    "CryCore":[
-      {
-        "Platform":[
-          "CryCore/Platform/WinBase_posix.inl"
+    "NoUberFile": {
+        "CryCore": [], 
+        "CryCore/Platform": [
+            "CryCore/Platform/WinBase_posix.inl"
+        ], 
+        "CryNetwork": [
+            "CryNetwork/CrySocks_posix.h"
+        ], 
+        "CryThreading": [
+            "CryThreading/CryAtomics_posix.h", 
+            "CryThreading/CryThread_posix.h", 
+            "CryThreading/CryThreadImpl_posix.h"
         ]
-      }
-    ],
-    "CryThreading":[
-      "CryThreading/CryAtomics_posix.h",
-      "CryThreading/CryThread_posix.h",
-      "CryThreading/CryThreadImpl_posix.h"
-    ],
-    "CryNetwork":[
-      "CryNetwork/CrySocks_posix.h"
-    ]
-  }
+    }
 }

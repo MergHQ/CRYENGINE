@@ -1,8 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ISEQUENCER_SYSTEM__H__
-#define __ISEQUENCER_SYSTEM__H__
 #pragma once
+#include <CryString/CryPath.h>
+#include <CryMath/Cry_Color.h>
+#include <CryMath/Range.h>
 
 class CSequencerTrack;
 class CSequencerNode;
@@ -56,6 +57,8 @@ struct CSequencerKey
 	{
 	}
 
+	virtual ~CSequencerKey() {}
+
 	virtual bool IsFileInsidePak() const { return m_fileState & eIsInsidePak; }
 	virtual bool IsFileInsideDB() const  { return m_fileState & eIsInsideDB; }
 	virtual bool IsFileOnDisk() const    { return m_fileState & eIsOnDisk; }
@@ -95,7 +98,7 @@ struct CSequencerKey
 	virtual void UpdateFlags()
 	{
 		m_fileState = eNone;
-	};
+	}
 
 	float m_time;
 	int   flags;
@@ -116,7 +119,7 @@ protected:
 	{
 		extensions.clear();
 		editableExtension.Empty();
-	};
+	}
 
 	enum ESequencerKeyFileState
 	{
@@ -345,6 +348,3 @@ private:
 	uint32              m_changeCount;
 	bool                m_muted;
 };
-
-#endif // __ISequencerSystem_h__
-

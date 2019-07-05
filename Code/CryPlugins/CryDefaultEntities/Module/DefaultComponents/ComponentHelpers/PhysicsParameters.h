@@ -54,8 +54,8 @@ struct SPhysicsParameters
 		{
 		case EWeightType::Mass:
 			{
-				archive(m_mass, "Mass", "Mass");
-				archive.doc("Mass of the object in kg.");
+				archive(m_mass, "Mass", "Mass(pre-scale)");
+				archive.doc("Pre-scale mass of the object in kg.");
 			}
 			break;
 		case EWeightType::Density:

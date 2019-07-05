@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "VisAreaShapeObject.h"
+#include "IEditorImpl.h"
 #include "Objects/InspectorWidgetCreator.h"
 
 #include <Cry3DEngine/I3DEngine.h>
@@ -90,7 +91,7 @@ CVisAreaShapeObject::CVisAreaShapeObject()
 	mv_bOceanIsVisible = false;
 	mv_bIgnoreGI = false;
 
-	SetColor(RGB(255, 128, 0));
+	SetColor(ColorB(255, 128, 0));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -198,7 +199,7 @@ void CVisAreaShapeObject::UpdateGameArea()
 CPortalShapeObject::CPortalShapeObject()
 {
 	m_bDisplayFilledWhenSelected = true;
-	SetColor(RGB(100, 250, 60));
+	SetColor(ColorB(100, 250, 60));
 
 	mv_bUseDeepness = true;
 	mv_bDoubleSide = true;
@@ -271,7 +272,7 @@ void CPortalShapeObject::UpdateGameArea()
 COccluderPlaneObject::COccluderPlaneObject()
 {
 	m_bDisplayFilledWhenSelected = true;
-	SetColor(RGB(200, 128, 60));
+	SetColor(ColorB(200, 128, 60));
 
 	mv_height = 5;
 	mv_displayFilled = true;
@@ -347,7 +348,7 @@ COccluderAreaObject::COccluderAreaObject()
 	m_bDisplayFilledWhenSelected = true;
 	m_bForce2D = true;
 	m_bNoCulling = true;
-	SetColor(RGB(200, 128, 60));
+	SetColor(ColorB(200, 128, 60));
 
 	mv_displayFilled = true;
 

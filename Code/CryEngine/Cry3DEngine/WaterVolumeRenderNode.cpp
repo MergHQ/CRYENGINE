@@ -6,6 +6,7 @@
 #include "MatMan.h"
 #include "TimeOfDay.h"
 #include <CryMath/Cry_Geo.h>
+#include <CryMath/Cry_GeoOverlap.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
 
 DECLARE_JOB("CWaterVolume_Render", TCWaterVolume_Render, CWaterVolumeRenderNode::Render_JobEntry);
@@ -629,7 +630,7 @@ inline void TransformPosition(Vec3& pos, const Vec3& localOrigin, const Matrix34
 
 void CWaterVolumeRenderNode::Transform(const Vec3& localOrigin, const Matrix34& l2w)
 {
-	CRY_ASSERT_MESSAGE(!IsAttachedToEntity(), "FIXME: Don't currently support transforming attached water volumes");
+	CRY_ASSERT(!IsAttachedToEntity(), "FIXME: Don't currently support transforming attached water volumes");
 
 	if (m_pPhysAreaInput != NULL)
 	{
@@ -681,6 +682,8 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	// hack: special case for when inside amphibious vehicle
 	if (Get3DEngine()->GetOceanRenderFlags() & OCR_NO_DRAW)
 		return;
@@ -692,8 +695,6 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 
 	if (m_fogDensity == 0)
 		return;
-
-	IRenderer* pRenderer(GetRenderer());
 
 	const int fillThreadID = passInfo.ThreadID();
 
@@ -751,11 +752,11 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 			// fill in data for render object
 			if (!IsAttachedToEntity())
 			{
-				pROVol->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+				pROVol->SetMatrix(Matrix34::CreateIdentity());
 			}
 			else
 			{
-				pROVol->SetMatrix(m_parentEntityWorldTM, passInfo);
+				pROVol->SetMatrix(m_parentEntityWorldTM);
 				pROVol->m_ObjFlags |= FOB_TRANS_MASK;
 			}
 			pROVol->m_fSort = 0;
@@ -778,11 +779,11 @@ void CWaterVolumeRenderNode::Render_JobEntry(SRendParams rParam, SRenderingPassI
 		// fill in data for render object
 		if (!IsAttachedToEntity())
 		{
-			pROSurf->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+			pROSurf->SetMatrix(Matrix34::CreateIdentity());
 		}
 		else
 		{
-			pROSurf->SetMatrix(m_parentEntityWorldTM, passInfo);
+			pROSurf->SetMatrix(m_parentEntityWorldTM);
 			pROSurf->m_ObjFlags |= FOB_TRANS_MASK;
 		}
 		pROSurf->m_fSort = 0;
@@ -848,6 +849,8 @@ void CWaterVolumeRenderNode::Physicalize(bool bInstant)
 		m_pPhysArea->GetStatus(&sp);
 
 		pe_params_buoyancy pb;
+		pb.waterDensity = m_density;
+		pb.waterResistance = m_resistance;
 		pb.waterPlane.n = sp.q * Vec3(0, 0, 1);
 		pb.waterPlane.origin = m_pPhysAreaInput->m_contour[0];
 		//pb.waterFlow = sp.q * Vec3( m_streamSpeed, 0, 0 );
@@ -887,21 +890,6 @@ float CWaterVolumeRenderNode::GetCameraDistSqToWaterVolumeAABB(const SRenderingP
 	return m_WSBBox.GetDistanceSqr(camPos);
 }
 
-namespace
-{
-
-	// aabb check - only for xy-axis
-	bool IsPointInsideAABB_2d(const AABB& aabb, const Vec3& pos)
-	{
-		if (pos.x < aabb.min.x) return false;
-		if (pos.y < aabb.min.y) return false;
-		if (pos.x > aabb.max.x) return false;
-		if (pos.y > aabb.max.y) return false;
-		return true;
-	}
-
-}
-
 bool CWaterVolumeRenderNode::IsCameraInsideWaterVolumeSurface2D(const SRenderingPassInfo& passInfo) const
 {
 	const CCamera& cam(passInfo.GetCamera());
@@ -918,7 +906,7 @@ bool CWaterVolumeRenderNode::IsCameraInsideWaterVolumeSurface2D(const SRendering
 	}
 
 	// bounding box test in world space to abort early
-	if (!IsPointInsideAABB_2d(m_WSBBox, camPosWS)) return false;
+	if (!Overlap::Point_AABB2D(camPosWS, m_WSBBox)) return false;
 
 	// check triangles in entity space (i.e., water volume space), to avoid transformation of each single water volume vertex - thus, transform camera pos into entity space
 	const Vec3 camPos_entitySpace = m_parentEntityWorldTM.GetInvertedFast() * camPosWS;
@@ -1098,7 +1086,7 @@ void CWaterVolumeRenderNode::SyncToPhysMesh(const QuatT& qtSurface, IGeometry* p
 
 void CWaterVolumeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_vOffset += delta;
 	m_center += delta;
 	m_WSBBox.Move(delta);
@@ -1123,17 +1111,7 @@ void CWaterVolumeRenderNode::OffsetPosition(const Vec3& delta)
 	}
 }
 
-void CWaterVolumeRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CWaterVolumeRenderNode::GetBBox();
-}
-
-EERType CWaterVolumeRenderNode::GetRenderNodeType()
-{
-	return eERType_WaterVolume;
-}
-
-float CWaterVolumeRenderNode::GetMaxViewDist()
+float CWaterVolumeRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CWaterVolumeRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
@@ -1151,7 +1129,7 @@ IMaterial* CWaterVolumeRenderNode::GetMaterial(Vec3* pHitPos) const
 	return m_pMaterial;
 }
 
-bool CWaterVolumeRenderNode::CanExecuteRenderAsJob()
+bool CWaterVolumeRenderNode::CanExecuteRenderAsJob() const
 {
-	return !gEnv->IsEditor() && GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType());
+	return !gEnv->IsEditor() && GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType()) && (m_dwRndFlags & ERF_RENDER_ALWAYS) == 0;
 }

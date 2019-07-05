@@ -1,11 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _WATERVOLUME_RENDERNODE_
-#define _WATERVOLUME_RENDERNODE_
-
 #pragma once
 
 #include <CryRenderer/VertexFormats.h>
+#include <CryRenderer/RenderElements/CREWaterVolume.h>
 
 struct SWaterVolumeSerialize
 {
@@ -71,60 +69,61 @@ struct SWaterVolumePhysAreaInput
 	}
 };
 
-class CWaterVolumeRenderNode : public IWaterVolumeRenderNode, public Cry3DEngineBase
+class CWaterVolumeRenderNode final : public IWaterVolumeRenderNode, public Cry3DEngineBase
 {
 public:
 	// implements IWaterVolumeRenderNode
-	virtual void             SetAreaAttachedToEntity();
+	virtual void             SetAreaAttachedToEntity() override;
 
-	virtual void             SetFogDensity(float fogDensity);
-	virtual float            GetFogDensity() const;
-	virtual void             SetFogColor(const Vec3& fogColor);
-	virtual void             SetFogColorAffectedBySun(bool enable);
-	virtual void             SetFogShadowing(float fogShadowing);
+	virtual void             SetFogDensity(float fogDensity) override;
+	virtual float            GetFogDensity() const override;
+	virtual void             SetFogColor(const Vec3& fogColor) override;
+	virtual void             SetFogColorAffectedBySun(bool enable) override;
+	virtual void             SetFogShadowing(float fogShadowing) override;
 
-	virtual void             SetCapFogAtVolumeDepth(bool capFog);
-	virtual void             SetVolumeDepth(float volumeDepth);
-	virtual void             SetStreamSpeed(float streamSpeed);
+	virtual void             SetCapFogAtVolumeDepth(bool capFog) override;
+	virtual void             SetVolumeDepth(float volumeDepth) override;
+	virtual void             SetStreamSpeed(float streamSpeed) override;
 
-	virtual void             SetCaustics(bool caustics);
-	virtual void             SetCausticIntensity(float causticIntensity);
-	virtual void             SetCausticTiling(float causticTiling);
-	virtual void             SetCausticHeight(float causticHeight);
-	virtual void             SetAuxPhysParams(pe_params_area* pa) { m_auxPhysParams = *pa; if (m_pPhysArea) m_pPhysArea->SetParams(pa); }
+	virtual void             SetCaustics(bool caustics) override;
+	virtual void             SetCausticIntensity(float causticIntensity) override;
+	virtual void             SetCausticTiling(float causticTiling) override;
+	virtual void             SetCausticHeight(float causticHeight) override;
+	virtual void             SetPhysParams(float density, float resistance) override { m_density = density; m_resistance = resistance; }
+	virtual void             SetAuxPhysParams(pe_params_area* pa) override { m_auxPhysParams = *pa; if (m_pPhysArea) m_pPhysArea->SetParams(pa); }
 
-	virtual void             CreateOcean(uint64 volumeID, /* TBD */ bool keepSerializationParams = false);
-	virtual void             CreateArea(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false);
-	virtual void             CreateRiver(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, float uTexCoordBegin, float uTexCoordEnd, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false);
+	virtual void             CreateOcean(uint64 volumeID, /* TBD */ bool keepSerializationParams = false) override;
+	virtual void             CreateArea(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false) override;
+	virtual void             CreateRiver(uint64 volumeID, const Vec3* pVertices, unsigned int numVertices, float uTexCoordBegin, float uTexCoordEnd, const Vec2& surfUVScale, const Plane& fogPlane, bool keepSerializationParams = false) override;
 
-	virtual void             SetAreaPhysicsArea(const Vec3* pVertices, unsigned int numVertices, bool keepSerializationParams = false);
-	virtual void             SetRiverPhysicsArea(const Vec3* pVertices, unsigned int numVertices, bool keepSerializationParams = false);
+	virtual void             SetAreaPhysicsArea(const Vec3* pVertices, unsigned int numVertices, bool keepSerializationParams = false) override;
+	virtual void             SetRiverPhysicsArea(const Vec3* pVertices, unsigned int numVertices, bool keepSerializationParams = false) override;
 
-	virtual IPhysicalEntity* SetAndCreatePhysicsArea(const Vec3* pVertices, unsigned int numVertices);
+	virtual IPhysicalEntity* SetAndCreatePhysicsArea(const Vec3* pVertices, unsigned int numVertices) override;
 	void                     SyncToPhysMesh(const QuatT& qtSurface, IGeometry* pSurface, float depth);
 
 	// implements IRenderNode
-	virtual EERType          GetRenderNodeType();
-	virtual const char*      GetEntityClassName() const;
-	virtual const char*      GetName() const;
-	virtual void             SetMatrix(const Matrix34& mat);
-	virtual Vec3             GetPos(bool bWorldOnly = true) const;
-	virtual void             Render(const SRendParams& rParam, const SRenderingPassInfo& passInfo);
-	virtual void             SetMaterial(IMaterial* pMat);
-	virtual IMaterial*       GetMaterial(Vec3* pHitPos) const;
-	virtual IMaterial*       GetMaterialOverride() { return m_pMaterial; }
-	virtual float            GetMaxViewDist();
-	virtual void             GetMemoryUsage(ICrySizer* pSizer) const;
-	virtual void             Precache();
+	virtual EERType          GetRenderNodeType() const override { return eERType_WaterVolume; }
+	virtual const char*      GetEntityClassName() const override;
+	virtual const char*      GetName() const override;
+	virtual void             SetMatrix(const Matrix34& mat) override;
+	virtual Vec3             GetPos(bool bWorldOnly = true) const override;
+	virtual void             Render(const SRendParams& rParam, const SRenderingPassInfo& passInfo) override;
+	virtual void             SetMaterial(IMaterial* pMat) override;
+	virtual IMaterial*       GetMaterial(Vec3* pHitPos) const override;
+	virtual IMaterial*       GetMaterialOverride() const override { return m_pMaterial; }
+	virtual float            GetMaxViewDist() const override;
+	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
+	virtual void             Precache() override;
 
-	virtual IPhysicalEntity* GetPhysics() const;
-	virtual void             SetPhysics(IPhysicalEntity*);
+	virtual IPhysicalEntity* GetPhysics() const override;
+	virtual void             SetPhysics(IPhysicalEntity*) override;
 
-	virtual void             CheckPhysicalized();
-	virtual void             Physicalize(bool bInstant = false);
-	virtual void             Dephysicalize(bool bKeepIfReferenced = false);
+	virtual void             CheckPhysicalized() override;
+	virtual void             Physicalize(bool bInstant = false) override;
+	virtual void             Dephysicalize(bool bKeepIfReferenced = false) override;
 
-	virtual const AABB       GetBBox() const
+	virtual const AABB       GetBBox() const override
 	{
 		AABB WSBBox = m_WSBBox;
 		// Expand bounding box upwards while using caustics to avoid clipping the caustics when the volume goes out of view.
@@ -133,18 +132,18 @@ public:
 		return WSBBox;
 	}
 
-	virtual void         SetBBox(const AABB& WSBBox) { m_WSBBox = WSBBox; }
-	virtual void         FillBBox(AABB& aabb);
-	virtual void         OffsetPosition(const Vec3& delta);
+	virtual void         SetBBox(const AABB& WSBBox) override { m_WSBBox = WSBBox; }
+	virtual void         FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
+	virtual void         OffsetPosition(const Vec3& delta) override;
 
-	virtual void         SetLayerId(uint16 nLayerId) { m_nLayerId = nLayerId; Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this); }
-	virtual uint16       GetLayerId()                { return m_nLayerId; }
+	virtual void         SetLayerId(uint16 nLayerId) override { m_nLayerId = nLayerId; Get3DEngine()->C3DEngine::UpdateObjectsLayerAABB(this); }
+	virtual uint16       GetLayerId() const          override { return m_nLayerId; }
 
 	void                 Render_JobEntry(SRendParams rParam, SRenderingPassInfo passInfo);
-	virtual bool         CanExecuteRenderAsJob() final;
+	virtual bool         CanExecuteRenderAsJob() const override;
 
 	void                 Transform(const Vec3& localOrigin, const Matrix34& l2w);
-	virtual IRenderNode* Clone() const;
+	virtual IRenderNode* Clone() const override;
 
 public:
 	CWaterVolumeRenderNode();
@@ -152,7 +151,7 @@ public:
 	float*                       GetAuxSerializationDataPtr(int& count)
 	{
 		// TODO: 'pe_params_area' members between 'volume' and 'growthReserve' are not float only - a member (bConvexBorder) has int type, this should be investigated.
-		count = (offsetof(pe_params_area, growthReserve) - offsetof(pe_params_area, volume)) / sizeof(float) + 1;
+		count = (int)((&m_resistance + 1) - &m_auxPhysParams.volume);
 		return &m_auxPhysParams.volume;
 	}
 
@@ -225,6 +224,6 @@ private:
 	float                      m_causticShadow;
 	float                      m_causticHeight;
 	pe_params_area             m_auxPhysParams;
+	float                      m_density = 1000;
+	float                      m_resistance = 1000;
 };
-
-#endif // #ifndef _DECAL_RENDERNODE_

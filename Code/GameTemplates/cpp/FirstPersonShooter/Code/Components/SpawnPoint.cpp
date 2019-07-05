@@ -11,6 +11,7 @@
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Utils/SharedString.h>
+#include <CryCore/StaticInstanceList.h>
 
 static void RegisterSpawnPointComponent(Schematyc::IEnvRegistrar& registrar)
 {
@@ -24,8 +25,3 @@ static void RegisterSpawnPointComponent(Schematyc::IEnvRegistrar& registrar)
 }
 
 CRY_STATIC_AUTO_REGISTER_FUNCTION(&RegisterSpawnPointComponent)
-
-void CSpawnPointComponent::SpawnEntity(IEntity* otherEntity)
-{
-	otherEntity->SetWorldTM(m_pEntity->GetWorldTM());
-}

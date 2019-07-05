@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "VehicleComp.h"
-
+#include "Util/MFCUtil.h"
 #include "VehiclePrototype.h"
 #include "VehicleData.h"
 #include "Viewport.h"
@@ -36,20 +36,24 @@ void CVehicleComponent::Display(CObjectRenderHelper& objRenderHelper)
 		return;
 	}
 
-	float alpha = 0.4f;
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	uint8 alpha = 102;
 	COLORREF wireColor = dc.GetSelectedColor();
-	COLORREF solidColor = GetColor();
+
+	ColorB solidColor = GetColor();
+	solidColor.a = alpha;
 
 	dc.PushMatrix(GetWorldTM());
 
 	AABB box;
 	GetLocalBounds(box);
 
-	dc.SetColor(solidColor, alpha);
+	dc.SetColor(solidColor);
+
 	dc.DrawSolidBox(box.min, box.max);
 
 	dc.SetColor(wireColor, 1);
+
 	dc.SetLineWidth(3.0f);
 	dc.DrawWireBox(box.min, box.max);
 	dc.SetLineWidth(0);
@@ -470,4 +474,3 @@ void CVehicleComponent::UpdateScale(float scale)
 
 	UpdateObjectFromVar();
 }
-

@@ -79,15 +79,14 @@ private:
 		eHCS_FINAL  //Finalize has been called. Can no longer accept data, but can encode/decode.
 	};
 
-	HuffmanTreeNode*   m_TreeNodes;
-	HuffmanSymbolCode* m_Codes;
-	uint32*            m_Counts;
-	int                m_RootNode;
-	uint32             m_RefCount;
-	EHuffmanCoderState m_State;
+	HuffmanTreeNode*   m_TreeNodes =nullptr;
+	HuffmanSymbolCode* m_Codes     = nullptr;
+	uint32*            m_Counts    = nullptr;
+	int                m_RootNode  = 0;
+	uint32             m_RefCount  = 0;
+	EHuffmanCoderState m_State     = eHCS_NEW;
 
 public:
-	HuffmanCoder() : m_TreeNodes(NULL), m_Codes(NULL), m_Counts(NULL), m_State(eHCS_NEW), m_RootNode(0), m_RefCount(0) {}
 	~HuffmanCoder()
 	{
 		SAFE_DELETE_ARRAY(m_TreeNodes);
@@ -111,23 +110,7 @@ public:
 	void          CompressInput(const uint8* const pInput, const size_t numBytes, uint8* const pOutput, size_t* const outputSize);
 	size_t        UncompressInput(const uint8* const pInput, const size_t numBytes, uint8* const pOutput, const size_t maxOutputSize);
 
-	void          GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-
-		if (m_Counts != NULL)
-		{
-			pSizer->AddObject(m_Counts, sizeof(uint32), MAX_NUM_SYMBOLS);
-		}
-		if (m_TreeNodes != NULL)
-		{
-			pSizer->AddObject(m_TreeNodes, sizeof(HuffmanTreeNode), MAX_NUM_NODES);
-		}
-		if (m_Codes != NULL)
-		{
-			pSizer->AddObject(m_Codes, sizeof(HuffmanSymbolCode), MAX_NUM_CODES);
-		}
-	}
+	void          GetMemoryUsage(ICrySizer* pSizer) const;
 
 private:
 	void ScaleCountsAndUpdateNodes();

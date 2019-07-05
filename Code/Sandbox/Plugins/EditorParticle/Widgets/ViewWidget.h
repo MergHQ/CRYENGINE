@@ -2,18 +2,21 @@
 
 #pragma once
 
+#include "AsyncNodeGraphView.h"
+
 #include <NodeGraph/ICryGraphEditor.h>
-#include <NodeGraph/NodeGraphView.h>
 
 #include <QWidget>
 
-class QAdvancedPropertyTree;
+class QAdvancedPropertyTreeLegacy;
 
-namespace CryParticleEditor {
+namespace CryParticleEditor
+{
 
+class CFeatureItem;
 class CFeatureWidget;
 class CNodeItem;
-class CFeatureItem;
+class CParticleGraphModel;
 
 struct SFeatureMouseEventArgs : public CryGraphEditor::SMouseInputEventArgs
 {
@@ -45,24 +48,28 @@ public:
 
 	void Serialize(Serialization::IArchive& archive);
 
+	CCrySignal<void()> signalItemsChanged;
+
 protected:
 	virtual void showEvent(QShowEvent* pEvent) override;
 
-	void         OnPushUndo();
+	void         OnBeginUndo();
+	void         OnEndUndo(bool undoAccepted);
 	void         OnItemsChanged();
 	void         OnItemsDeletion();
 
 private:
-	QAdvancedPropertyTree*          m_pPropertyTree;
+	QAdvancedPropertyTreeLegacy*          m_pPropertyTree;
 	Serialization::SStructs         m_structs;
 
 	CNodeItem*                      m_pNodeItem;
 	std::vector<SFeatureSerializer> m_features;
 	bool                            m_isPushingUndo;
+	string                          m_latestUndoDescription;
 };
 // ~TODO
 
-class CGraphView : public CryGraphEditor::CNodeGraphView
+class CGraphView : public CAsyncNodeGraphView
 {
 	enum ECustomAction : uint32
 	{
@@ -71,7 +78,6 @@ class CGraphView : public CryGraphEditor::CNodeGraphView
 
 public:
 	CGraphView();
-	~CGraphView();
 
 	void OnFeatureMouseEvent(QGraphicsItem* pSender, SFeatureMouseEventArgs& args);
 
@@ -90,9 +96,9 @@ private:
 
 	bool MoveFeatureToIndex(CFeatureWidget& featureWidget, uint32 destIndex);
 
+	void OnItemsChanged();
 private:
 	CFeatureWidget* m_pMovingFeatureWidget;
 };
 
 }
-

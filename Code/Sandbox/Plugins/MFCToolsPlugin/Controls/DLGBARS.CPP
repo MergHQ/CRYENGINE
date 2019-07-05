@@ -113,7 +113,6 @@ BOOL CDlgToolBar::LoadToolBarDepth( UINT nIDResource,int nBtnWidth, UINT colorDe
 		return FALSE;
 
 	CSize		cSize(bmBitmap.bmWidth, bmBitmap.bmHeight); 
-	RGBTRIPLE*	rgb		= (RGBTRIPLE*)(bmBitmap.bmBits);
 
 	int	nCount	= cSize.cx/nBtnWidth;
 	if (!imageList.Create(nBtnWidth, cSize.cy, colorDepth|ILC_MASK, nCount, 0))

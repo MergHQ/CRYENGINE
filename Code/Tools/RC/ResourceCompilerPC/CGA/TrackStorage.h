@@ -14,6 +14,8 @@
 ////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <mutex>
+
 #include "AnimationLoader.h"
 
 struct DBStatistics
@@ -146,5 +148,5 @@ public:
 	bool m_bBigEndianOutput;
 
 	DBStatistics m_Statistics;
-	ThreadUtils::CriticalSection m_lock;
+	std::recursive_mutex m_lock;
 };

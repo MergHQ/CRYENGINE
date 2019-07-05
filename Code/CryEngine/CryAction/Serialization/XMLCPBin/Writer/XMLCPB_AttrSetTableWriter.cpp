@@ -51,8 +51,8 @@ AttrSetID CAttrSetTableWriter::GetSetID(const CAttrSet& set)
 
 AttrSetID CAttrSetTableWriter::AddSet(const CAttrSet& set)
 {
-	assert(m_setAddrs.size() < m_maxNumSets);
-	assert(set.m_numAttrs <= MAX_NUM_ATTRS);
+	CRY_ASSERT(m_setAddrs.size() < m_maxNumSets);
+	CRY_ASSERT(set.m_numAttrs <= MAX_NUM_ATTRS);
 
 	AttrSetID addedSetId = m_setAddrs.size();
 	m_setAddrs.push_back(CBufferWriter::SAddr());

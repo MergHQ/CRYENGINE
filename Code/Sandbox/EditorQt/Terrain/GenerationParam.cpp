@@ -3,15 +3,11 @@
 #include "stdafx.h"
 #include "GenerationParam.h"
 #include "Noise.h"
-
-/////////////////////////////////////////////////////////////////////////////
-// CGenerationParam dialog
+#include "LogFile.h"
 
 CGenerationParam::CGenerationParam(CWnd* pParent /*=NULL*/)
 	: CDialog(CGenerationParam::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(CGenerationParam)
-	//}}AFX_DATA_INIT
 }
 
 void CGenerationParam::DoDataExchange(CDataExchange* pDX)
@@ -34,9 +30,6 @@ BEGIN_MESSAGE_MAP(CGenerationParam, CDialog)
 ON_WM_HSCROLL()
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
-
-/////////////////////////////////////////////////////////////////////////////
-// CGenerationParam message handlers
 
 BOOL CGenerationParam::OnInitDialog()
 {
@@ -90,8 +83,6 @@ BOOL CGenerationParam::OnInitDialog()
 
 void CGenerationParam::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
-	// TODO: Add your message handler code here and/or call default
-
 	UpdateStaticNum();
 
 	CDialog::OnHScroll(nSBCode, nPos, pScrollBar);
@@ -155,7 +146,7 @@ void CGenerationParam::FillParam(SNoiseParams* pParam)
 	pParam->iWidth = 512;
 
 	CryLog("Retrieving parameters (fFade: %f, fFreq: %f, fFreqStep: %f) from dialog...",
-	                     pParam->fFade, pParam->fFrequency, pParam->fFrequencyStep);
+	       pParam->fFade, pParam->fFrequency, pParam->fFrequencyStep);
 }
 
 void CGenerationParam::LoadParam(SNoiseParams* pParam)
@@ -174,6 +165,5 @@ void CGenerationParam::LoadParam(SNoiseParams* pParam)
 	m_sldBlur = pParam->iSmoothness;
 
 	CryLog("Loading parameters (fFade: %f, fFreq: %f, fFreqStep: %f) to dialog...",
-	                     pParam->fFade, pParam->fFrequency, pParam->fFrequencyStep);
+	       pParam->fFade, pParam->fFrequency, pParam->fFrequencyStep);
 }
-

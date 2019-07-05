@@ -150,4 +150,3 @@ SFileMonitorUpdate CFileMonitors::FilterUpdate(const SEntry& entry, const SSnaps
 
 } // namespace Internal
 } // namespace FileSystem
-

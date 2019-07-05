@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 
 #if defined(USE_GEOM_CACHES)
@@ -14,7 +11,6 @@
 
 CTrackViewKeyHandle CTrackViewGeomCacheAnimationTrack::CreateKey(const SAnimTime time)
 {
-	CTrackViewSequence* pSequence = GetSequence();
 	CTrackViewSequenceNotificationContext context(GetSequence());
 
 	CTrackViewKeyHandle keyHandle = CTrackViewTrack::CreateKey(time);
@@ -92,4 +88,3 @@ bool CTrackViewGeomCacheAnimationTrack::IsKeyAnimLoopable(const uint index) cons
 }
 
 #endif
-

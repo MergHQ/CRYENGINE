@@ -3,6 +3,7 @@
 #include "FacialEditorPlugin.h"
 
 #include <CryCore/Platform/platform_impl.inl>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "Vicon/Vicon_ClientCodes.h"
 
@@ -49,4 +50,3 @@ namespace Commands
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(&Commands::ViconConnect, vicon, connect, "Connects Vicon", "");
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(&Commands::ViconDisconnect, vicon, disconnect,"Connects Vicon", "");
 #endif
-

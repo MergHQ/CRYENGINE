@@ -8,6 +8,7 @@
 #include "GameRules.h"
 #include "IAnimatedCharacter.h"
 #include "IActorSystem.h"
+#include <CryMath/Random.h>
 
 #define AI_IMMOBILIZED_TIME 4
 

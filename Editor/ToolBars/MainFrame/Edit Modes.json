@@ -1,0 +1,33 @@
+{
+    "toolBar": [
+        {
+            "command": "tools.select",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Select Mode",
+            "type": 0
+        },
+        {
+            "command": "tools.move",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Move",
+            "type": 0
+        },
+        {
+            "command": "tools.rotate",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Rotate",
+            "type": 0
+        },
+        {
+            "command": "tools.scale",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "Scale",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

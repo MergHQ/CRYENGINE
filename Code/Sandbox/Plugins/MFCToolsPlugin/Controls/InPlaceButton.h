@@ -1,14 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __inplacebutton_h__
-#define __inplacebutton_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-// CInPlaceButton
-
+#include "MFCToolsDefines.h"
 #include "ColorButton.h"
 
 /*
@@ -29,7 +23,7 @@
  */
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CInPlaceButton : public CXTPButton
+class MFC_TOOLS_PLUGIN_API CInPlaceButton : public CXTPButton
 {
 	DECLARE_DYNAMIC(CInPlaceButton)
 
@@ -42,11 +36,11 @@ public:
 	// Simulate on click.
 	void     Click()                    { OnBnClicked(); }
 
-	void     SetColorFace(int clr)      {};
+	void     SetColorFace(int clr)      {}
 
-	void     SetColor(COLORREF col)     {};
-	void     SetTextColor(COLORREF col) {};
-	COLORREF GetColor() const           { return 0; };
+	void     SetColor(COLORREF col)     {}
+	void     SetTextColor(COLORREF col) {}
+	COLORREF GetColor() const           { return 0; }
 
 protected:
 	DECLARE_MESSAGE_MAP()
@@ -62,14 +56,14 @@ public:
 	OnClick m_onClick;
 };
 
-class PLUGIN_API CInPlaceCheckBox : public CInPlaceButton
+class MFC_TOOLS_PLUGIN_API CInPlaceCheckBox : public CInPlaceButton
 {
 public:
-	CInPlaceCheckBox(CInPlaceButton::OnClick onClickFunctor) : CInPlaceButton(onClickFunctor, true) {};
+	CInPlaceCheckBox(CInPlaceButton::OnClick onClickFunctor) : CInPlaceButton(onClickFunctor, true) {}
 };
 
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CInPlaceColorButton : public CColorButton
+class MFC_TOOLS_PLUGIN_API CInPlaceColorButton : public CColorButton
 {
 	DECLARE_DYNAMIC(CInPlaceColorButton)
 
@@ -95,6 +89,3 @@ public:
 
 	OnClick m_onClick;
 };
-
-#endif // __inplacebutton_h__
-

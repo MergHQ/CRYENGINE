@@ -42,4 +42,3 @@ private:
 	RemoveDoubleParameter m_RemoveDoubleParameter;
 };
 }
-

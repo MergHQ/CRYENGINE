@@ -5,6 +5,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 class CPlugin_CryDefaultEntities;
 
@@ -71,7 +72,7 @@ protected:
 	// IEntityComponent
 	virtual void   Initialize() override;
 	virtual void   OnShutDown() override {}
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
 	// ~IEntityComponent
 

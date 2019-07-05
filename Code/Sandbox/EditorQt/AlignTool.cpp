@@ -5,8 +5,10 @@
 
 #include "Objects/BaseObject.h"
 #include "Objects/ShapeObject.h"
+#include "Objects/SelectionGroup.h"
 
 #include "QtUtil.h"
+#include "IEditorImpl.h"
 
 //////////////////////////////////////////////////////////////////////////
 bool CAlignPickCallback::m_bActive = false;
@@ -203,5 +205,4 @@ void CAlignPickCallback::OnCancelPick()
 bool CAlignPickCallback::OnPickFilter(CBaseObject* filterObject)
 {
 	return true;
-};
-
+}

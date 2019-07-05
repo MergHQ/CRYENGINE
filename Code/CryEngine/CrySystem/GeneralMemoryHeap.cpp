@@ -2,27 +2,12 @@
 
 #include "StdAfx.h"
 
+#include <CryMath/Cry_Math.h>
 #include "GeneralMemoryHeap.h"
 #include "PageMappingHeap.h"
 
-CGeneralMemoryHeap::CGeneralMemoryHeap()
-	: m_nRefCount(0)
-	, m_numAllocs(0)
-	, m_isResizable(false)
-	, m_mspace(0)
-	, m_pHeap(NULL)
-	, m_pBlock(NULL)
-	, m_blockSize(0)
-{
-}
-
 CGeneralMemoryHeap::CGeneralMemoryHeap(UINT_PTR base, size_t upperLimit, size_t reserveSize, const char* sUsage)
-	: m_nRefCount(0)
-	, m_numAllocs(0)
-	, m_isResizable(true)
-	, m_pHeap(NULL)
-	, m_pBlock(NULL)
-	, m_blockSize(0)
+	: m_isResizable(true)
 {
 	if (base)
 		m_pHeap = new CPageMappingHeap((char*)base, upperLimit / CMemoryAddressRange::GetSystemPageSize(), CMemoryAddressRange::GetSystemPageSize(), sUsage);
@@ -38,16 +23,9 @@ CGeneralMemoryHeap::CGeneralMemoryHeap(UINT_PTR base, size_t upperLimit, size_t 
 }
 
 CGeneralMemoryHeap::CGeneralMemoryHeap(void* base, size_t size, const char* sUsage)
-	: m_nRefCount(0)
-	, m_numAllocs(0)
-	, m_isResizable(false)
-	, m_pHeap(NULL)
-	, m_pBlock(NULL)
-	, m_blockSize(0)
+	: m_pBlock(base)
+	, m_blockSize(size)
 {
-	m_pBlock = base;
-	m_blockSize = size;
-
 	m_mspace = dlcreate_mspace_with_base(base, size, 1);
 
 #ifdef CRY_TRACE_HEAP
@@ -101,10 +79,7 @@ int CGeneralMemoryHeap::Release()
 {
 	int nRef = CryInterlockedDecrement(&m_nRefCount);
 
-#if !defined(_RELEASE)
-	//	IF (nRef < 0, 0)
-	//	  __debugbreak();
-#endif
+	CRY_ASSERT(nRef >= 0);
 	if (nRef == 0)
 		delete this;
 
@@ -129,7 +104,7 @@ bool CGeneralMemoryHeap::IsInAddressRange(void* ptr) const
 void* CGeneralMemoryHeap::Calloc(size_t nmemb, size_t size, const char* sUsage)
 {
 #if CAPTURE_REPLAY_LOG
-	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule) : 0;
+	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule) : 0;
 #endif
 
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_mspaceLock);
@@ -149,7 +124,7 @@ void* CGeneralMemoryHeap::Calloc(size_t nmemb, size_t size, const char* sUsage)
 
 #if CAPTURE_REPLAY_LOG
 	if (ms)
-		CryGetIMemReplay()->ExitScope_Alloc((UINT_PTR)ptr, (UINT_PTR)(nmemb * size));
+		CryGetIMemReplay()->ExitScope_Alloc(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule, (UINT_PTR)ptr, (UINT_PTR)(nmemb * size));
 #endif
 
 	return ptr;
@@ -158,7 +133,7 @@ void* CGeneralMemoryHeap::Calloc(size_t nmemb, size_t size, const char* sUsage)
 void* CGeneralMemoryHeap::Malloc(size_t sz, const char* sUsage)
 {
 #if CAPTURE_REPLAY_LOG
-	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule) : 0;
+	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule) : 0;
 #endif
 
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_mspaceLock);
@@ -178,7 +153,7 @@ void* CGeneralMemoryHeap::Malloc(size_t sz, const char* sUsage)
 
 #if CAPTURE_REPLAY_LOG
 	if (ms)
-		CryGetIMemReplay()->ExitScope_Alloc((UINT_PTR)ptr, (UINT_PTR)sz);
+		CryGetIMemReplay()->ExitScope_Alloc(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule, (UINT_PTR)ptr, (UINT_PTR)sz);
 #endif
 
 	return ptr;
@@ -186,12 +161,10 @@ void* CGeneralMemoryHeap::Malloc(size_t sz, const char* sUsage)
 
 size_t CGeneralMemoryHeap::Free(void* ptr)
 {
-	UINT_PTR ptri = reinterpret_cast<UINT_PTR>(ptr);
-
 	if (CGeneralMemoryHeap::IsInAddressRange(ptr))
 	{
 #if CAPTURE_REPLAY_LOG
-		bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule) : 0;
+		bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule) : 0;
 #endif
 
 		CryAutoLock<CryCriticalSectionNonRecursive> lock(m_mspaceLock);
@@ -209,7 +182,7 @@ size_t CGeneralMemoryHeap::Free(void* ptr)
 
 #if CAPTURE_REPLAY_LOG
 		if (ms)
-			CryGetIMemReplay()->ExitScope_Free((UINT_PTR)ptr);
+			CryGetIMemReplay()->ExitScope_Free(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule, (UINT_PTR)ptr);
 #endif
 
 		return sz;
@@ -232,7 +205,7 @@ void* CGeneralMemoryHeap::Realloc(void* ptr, size_t sz, const char* sUsage)
 	}
 
 #if CAPTURE_REPLAY_LOG
-	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule) : 0;
+	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule) : 0;
 #endif
 
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_mspaceLock);
@@ -258,7 +231,7 @@ void* CGeneralMemoryHeap::Realloc(void* ptr, size_t sz, const char* sUsage)
 	if (ms)
 	{
 		if (pNewPtr)
-			CryGetIMemReplay()->ExitScope_Realloc((UINT_PTR)ptr, (UINT_PTR)pNewPtr, (UINT_PTR)sz);
+			CryGetIMemReplay()->ExitScope_Realloc(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule, (UINT_PTR)ptr, (UINT_PTR)pNewPtr, (UINT_PTR)sz);
 		else
 			CryGetIMemReplay()->ExitScope();
 	}
@@ -281,7 +254,7 @@ void* CGeneralMemoryHeap::ReallocAlign(void* ptr, size_t size, size_t alignment,
 	}
 
 #if CAPTURE_REPLAY_LOG
-	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule) : 0;
+	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule) : 0;
 #endif
 
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_mspaceLock);
@@ -306,7 +279,7 @@ void* CGeneralMemoryHeap::ReallocAlign(void* ptr, size_t size, size_t alignment,
 
 #if CAPTURE_REPLAY_LOG
 	if (ms)
-		CryGetIMemReplay()->ExitScope_Realloc((UINT_PTR)ptr, (UINT_PTR)newPtr, (UINT_PTR)size, (UINT_PTR)alignment);
+		CryGetIMemReplay()->ExitScope_Realloc(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule, (UINT_PTR)ptr, (UINT_PTR)newPtr, (UINT_PTR)size, (UINT_PTR)alignment);
 #endif
 
 	return newPtr;
@@ -315,7 +288,7 @@ void* CGeneralMemoryHeap::ReallocAlign(void* ptr, size_t size, size_t alignment,
 void* CGeneralMemoryHeap::Memalign(size_t boundary, size_t size, const char* sUsage)
 {
 #if CAPTURE_REPLAY_LOG
-	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule) : 0;
+	bool ms = m_isResizable ? CryGetIMemReplay()->EnterScope(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule) : 0;
 #endif
 
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_mspaceLock);
@@ -335,7 +308,7 @@ void* CGeneralMemoryHeap::Memalign(size_t boundary, size_t size, const char* sUs
 
 #if CAPTURE_REPLAY_LOG
 	if (ms)
-		CryGetIMemReplay()->ExitScope_Alloc((UINT_PTR)ptr, (UINT_PTR)size, (UINT_PTR)boundary);
+		CryGetIMemReplay()->ExitScope_Alloc(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule, (UINT_PTR)ptr, (UINT_PTR)size, (UINT_PTR)boundary);
 #endif
 
 	return ptr;
@@ -343,8 +316,6 @@ void* CGeneralMemoryHeap::Memalign(size_t boundary, size_t size, const char* sUs
 
 size_t CGeneralMemoryHeap::UsableSize(void* ptr) const
 {
-	UINT_PTR ptri = reinterpret_cast<UINT_PTR>(ptr);
-
 	if (CGeneralMemoryHeap::IsInAddressRange(ptr))
 	{
 		CryAutoLock<CryCriticalSectionNonRecursive> lock(const_cast<CryCriticalSectionNonRecursive&>(m_mspaceLock));

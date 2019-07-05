@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "VertexAnimation.h"
 
 #include "Model.h"
@@ -208,7 +209,6 @@ bool CVertexAnimation::CompileCommands(CVertexCommandBuffer& commandBuffer)
 	if (!m_skinData.vertexTransformCount)
 		return false;
 
-	uint stateCount = uint(m_frameStates.size());
 	if (VertexCommandCopy* pCommand = commandBuffer.AddCommand<VertexCommandCopy>())
 	{
 		pCommand->pVertexPositions = m_skinData.pVertexPositions;
@@ -232,7 +232,6 @@ bool CVertexAnimation::CompileCommands(CVertexCommandBuffer& commandBuffer)
 
 		pCommand->pVertexPositions.data = NULL;
 		pCommand->pVertexPositions.iStride = 0;
-		pCommand->pVertexPositionsPrevious = m_skinData.pVertexPositionsPrevious;
 		pCommand->pVertexQTangents = m_skinData.pVertexQTangents;
 		pCommand->pVertexTransformIndices = m_skinData.pVertexTransformIndices;
 		pCommand->pVertexTransformWeights = m_skinData.pVertexTransformWeights;

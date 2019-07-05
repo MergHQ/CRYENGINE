@@ -5,10 +5,7 @@
 
 #define BUCKET_ALLOCATOR_DEFAULT_MAX_SEGMENTS 8
 
-#include <CryCore/Platform/CryWindows.h>
-#ifndef MEMORY_ALLOCATION_ALIGNMENT
-	#error MEMORY ALLOCATION_ALIGNMENT is not defined
-#endif
+#include <CryThreading/CryThread.h>
 
 namespace BucketAllocatorDetail
 {
@@ -121,7 +118,7 @@ struct DefaultTraits
 #ifdef BUCKET_ALLOCATOR_PACK_SMALL_SIZES
 		NumBuckets = 32 / 4 + (512 - 32) / 8,
 #else
-		NumBuckets = 512 / MEMORY_ALLOCATION_ALIGNMENT,
+		NumBuckets = 512 / CRY_MEMORY_ALLOCATION_ALIGNMENT,
 #endif
 
 		PageLength           = 64 * 1024,
@@ -155,7 +152,7 @@ struct DefaultTraits
 			return alignedSize / alignment + 7;
 		}
 #else
-		const int alignment = MEMORY_ALLOCATION_ALIGNMENT;
+		const int alignment = CRY_MEMORY_ALLOCATION_ALIGNMENT;
 		size_t alignedSize = (sz + (alignment - 1)) & ~(alignment - 1);
 		return static_cast<uint8>(alignedSize / alignment - 1);
 #endif
@@ -171,7 +168,7 @@ struct DefaultTraits
 		else
 			sz = (bucket - 7) * 8 + 32;
 #else
-		sz = (bucket + 1) * MEMORY_ALLOCATION_ALIGNMENT;
+		sz = (bucket + 1) * CRY_MEMORY_ALLOCATION_ALIGNMENT;
 #endif
 
 #ifdef BUCKET_ALLOCATOR_TRAP_DOUBLE_DELETES

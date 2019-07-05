@@ -40,7 +40,7 @@ public:
 #endif
 		else { data=new ftype[len]; flags=0; }
 	}
-#if defined(__GNUC__) && __GNUC__ >= 4
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	// Copy constructor to make GCC4 happy. The copy constructor is never
 	// really used, but GCC4 won't complile this if it is not there...
 	vectorn_tpl(const vectorn_tpl &src) { abort(); }
@@ -92,24 +92,24 @@ public:
 
 	vectorn_tpl& operator=(const vector_scalar_product_tpl<ftype> &src) {
 		for(int i=0;i<src.len;i++)
-			data[i] = src.data[i];
+			data[i] = src.data[i]*src.op;
 		return *this;
 	}
 	vectorn_tpl& operator+=(const vector_scalar_product_tpl<ftype> &src) {
 		for(int i=0;i<src.len;i++)
-			data[i] += src.data[i];
+			data[i] += src.data[i]*src.op;
 		return *this;
 	}
 	vectorn_tpl& operator-=(const vector_scalar_product_tpl<ftype> &src) {
 		for(int i=0;i<src.len;i++)
-			data[i] -= src.data[i];
+			data[i] -= src.data[i]*src.op;
 		return *this;
 	}
 
 	ftype len2() { ftype res=0; for(int i=0;i<len;i++) res += data[i]*data[i]; return res; }
 
 	ftype& operator[](int idx) const { return data[idx]; }
-	operator ftype*() { return data; }
+	//explicit operator ftype*() { return data; }
 	vectorn_tpl& zero() { for(int i=0;i<len;i++) data[i]=0; return *this; }
 	vectorn_tpl& allocate() { 
 		if (flags & mtx_foreign_data) {
@@ -167,6 +167,11 @@ vectorn_tpl<ftype1>& operator+=(vectorn_tpl<ftype1> &op1, const vectorn_tpl<ftyp
 	for(int i=0;i<op1.len;i++) op1.data[i] += op2.data[i];
 	return op1;
 }
+template<class ftype1,class ftype2>
+vectorn_tpl<ftype1>& operator+=(vectorn_tpl<ftype1> &&op1, const vectorn_tpl<ftype2> &op2) {
+	for(int i=0;i<op1.len;i++) op1.data[i] += op2.data[i];
+	return op1;
+}
 
 template<class ftype1,class ftype2>
 vectorn_tpl<ftype1>& operator-=(vectorn_tpl<ftype1> &op1, const vectorn_tpl<ftype2> &op2) {
@@ -208,7 +213,7 @@ vector_scalar_product_tpl<ftype> operator*(const vectorn_tpl<ftype> &vec, ftype 
 typedef vectorn_tpl<float> vectornf;
 typedef vectorn_tpl<real> vectorn;
 
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	#define DECLARE_VECTORN_POOL(ftype,sz) template<> ftype vectorn_tpl<ftype>::vecn_pool[sz] = {}; \
     template<> int vectorn_tpl<ftype>::vecn_pool_pos=0;                     \
 		template<> int vectorn_tpl<ftype>::vecn_pool_size=sz;

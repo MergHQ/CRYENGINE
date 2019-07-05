@@ -5,6 +5,7 @@
 #include "ObjectPhysicsManager.h"
 #include "GameEngine.h"
 
+#include <IObjectManager.h>
 #include <CrySandbox/IEditorGame.h>
 #include <CryGame/IGameFramework.h>
 
@@ -102,4 +103,3 @@ int CCollisionFilteringProperties::GetCollisionClassExportId()
 	// This should only be called during the export phase
 	return GetIEditorImpl()->GetObjectManager()->GetPhysicsManager()->RegisterCollisionClass(m_collisionClass);
 }
-

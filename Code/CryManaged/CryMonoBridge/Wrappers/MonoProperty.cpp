@@ -4,6 +4,7 @@
 #include "MonoProperty.h"
 #include "MonoMethod.h"
 #include "MonoRuntime.h"
+#include "MonoDomain.h"
 
 CMonoProperty::CMonoProperty(MonoInternals::MonoProperty* pProperty, const char* szName)
 	: m_pProperty(pProperty)

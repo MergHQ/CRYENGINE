@@ -8,7 +8,7 @@ typedef uint64 masktype;
 #define getmask(i) ((uint64)1<<(i))
 const int NMASKBITS = 64;
 
-enum constr_info_flags { constraint_limited_1axis=1, constraint_limited_2axes=2, constraint_rope=4, constraint_area=8, constraint_broken=0x10000 };
+enum constr_info_flags { constraint_limited_1axis=1, constraint_limited_2axes=2, constraint_rope=4, constraint_area=8, constraint_fixed_frame=16, constraint_broken=0x10000 };
 
 struct constraint_info {
 	int id;
@@ -23,6 +23,8 @@ struct constraint_info {
 	float limit;
 	float hardness;
 };
+
+inline int FrameOwner(const entity_contact &cnt) { return isneg(cnt.pbody[1]->Minv-cnt.pbody[0]->Minv) & cnt.pent[1]->m_iSimClass-3>>31; }
 
 struct checksum_item {
 	int iPhysTime;
@@ -136,6 +138,8 @@ class CRigidEntity : public CPhysicalEntity {
 	int ReadContacts(CStream &stm,int flags);
 	int WriteContacts(TSerialize ser);
 	int ReadContacts(TSerialize ser);
+	int WriteConstraints(TSerialize ser, unsigned int excludeMask = constraint_rope, int localFrames = 0);
+	int ReadConstraints(TSerialize ser);
 
 	virtual void StartStep(float time_interval);
 	virtual float GetMaxTimeStep(float time_interval);
@@ -167,7 +171,7 @@ class CRigidEntity : public CPhysicalEntity {
 	virtual void BreakableConstraintsUpdated();
 	entity_contact *RegisterContactPoint(int idx, const Vec3 &pt, const geom_contact *pcontacts, int iPrim0,int iFeature0, 
 		int iPrim1,int iFeature1, int flags=contact_new, float penetration=0, int iCaller=get_iCaller_int(), const Vec3 &nloc=Vec3(ZERO));
-	int CheckForNewContacts(geom_world_data *pgwd0,intersection_params *pip, int &itmax, Vec3 sweep=Vec3(0), int iStartPart=0,int nParts=-1, int *pFlagsAccum=0);
+	int CheckForNewContacts(geom_world_data *pgwd0,intersection_params *pip, int &itmax, Vec3 sweep=Vec3(0), int iStartPart=0,int nParts=-1, int *pFlagsAccum=0, int iCaller=get_iCaller_int());
 	virtual int GetPotentialColliders(CPhysicalEntity **&pentlist, float dt=0);
 	virtual int CheckSelfCollision(int ipart0,int ipart1) { return 0; }
 	void UpdatePenaltyContacts(float time_interval);
@@ -186,7 +190,17 @@ class CRigidEntity : public CPhysicalEntity {
 	masktype MaskIgnoredColliders(int iCaller, int bScheduleForStep=0);
 	void UnmaskIgnoredColliders(masktype constraint_mask, int iCaller);
 	void FakeRayCollision(CPhysicalEntity *pent, float dt);
-	int ExtractConstraintInfo(int i, masktype constraintMask, pe_action_add_constraint &aac);
+	int ExtractConstraintInfo(int i, masktype constraintMask, pe_action_add_constraint &aac, int localFrames=0);
+	QuatT& GetContactFrames(int i, QuatT* frames, int n=2)	{ 
+		float scale;
+		const entity_contact &cnt = m_pConstraints[i];
+		if (m_pConstraintInfos[i].flags & constraint_fixed_frame)	{
+			m_pConstraintInfos[i].pConstraintEnt->GetPartTransform(0,	frames[0].t,frames[0].q,scale, this);
+			frames[max(n-1,1)] = frames[0];
+		} else for (int i=0;i<n;i++) 
+			cnt.pent[i]->GetPartTransform(cnt.ipart[i], frames[i].t,frames[i].q,scale, this);
+		return frames[0];
+	}
 	EventPhysJointBroken &ReportConstraintBreak(EventPhysJointBroken &epjb, int i);
 	virtual bool IgnoreCollisionsWith(const CPhysicalEntity *pent, int bCheckConstraints=0) const;
 	virtual void OnNeighbourSplit(CPhysicalEntity *pentOrig, CPhysicalEntity *pentNew);

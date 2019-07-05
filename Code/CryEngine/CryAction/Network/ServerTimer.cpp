@@ -110,7 +110,7 @@ void CServerTimer::Serialize(TSerialize ser)
 
 bool CServerTimer::PauseTimer(ETimer /* which */, bool /*bPause*/)
 {
-	assert(false);
+	CRY_ASSERT(false);
 	return false;
 }
 

@@ -1,13 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AudioImpl.h"
-#include "AudioImplCVars.h"
-#include <Logger.h>
+#include "Impl.h"
+#include "CVars.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
+
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
+	#include <Logger.h>
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -39,9 +42,12 @@ class CEngineModule_CryAudioImplPortAudio : public IImplModule
 	{
 		gEnv->pAudioSystem->AddRequestListener(&CEngineModule_CryAudioImplPortAudio::OnEvent, nullptr, ESystemEvents::ImplSet);
 		SRequestUserData const data(ERequestFlags::ExecuteBlocking | ERequestFlags::CallbackOnExternalOrCallingThread);
+
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CImpl");
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplPortAudio::OnEvent, nullptr);
 
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 		if (m_bSuccess)
 		{
 			Cry::Audio::Log(ELogType::Always, "CryAudioImplPortAudio loaded");
@@ -50,6 +56,7 @@ class CEngineModule_CryAudioImplPortAudio : public IImplModule
 		{
 			Cry::Audio::Log(ELogType::Error, "CryAudioImplPortAudio failed to load");
 		}
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 		return m_bSuccess;
 	}

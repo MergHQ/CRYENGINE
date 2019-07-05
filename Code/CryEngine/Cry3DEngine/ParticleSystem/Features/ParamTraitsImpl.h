@@ -1,21 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  Created:     04/03/2015 by Filipe amim
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef PARAMTRAITSIMPL_H
-#define PARAMTRAITSIMPL_H
-
 #pragma once
 
 namespace pfx2
 {
 
-ILINE bool Serialize(Serialization::IArchive& ar, SEnable& val, const char* name, const char* label)
+ILINE bool Serialize(Serialization::IArchive& ar, SEnable& val, cstr name, cstr label)
 {
 	name = (name && *name != 0) ? name : "Enabled";
 	if (!ar.isEdit())
@@ -38,8 +27,8 @@ ILINE bool Serialize(Serialization::IArchive& ar, SEnable& val, const char* name
 	return true;
 }
 
-template<typename T, typename TTraits>
-bool TValue<T, TTraits>::Serialize(Serialization::IArchive& ar, const char* name, const char* label)
+template<typename TTraits>
+bool TValue<TTraits>::Serialize(Serialization::IArchive& ar, cstr name, cstr label)
 {
 	T v = TTraits::From(m_value);
 	if (TTraits::HideDefault() && ar.isEdit())
@@ -51,17 +40,17 @@ bool TValue<T, TTraits>::Serialize(Serialization::IArchive& ar, const char* name
 
 			void Serialize(Serialization::IArchive& ar)
 			{
-				bool enabled = m_value != Default();
+				bool enabled = m_value != TTraits::Default();
 				ar(enabled, "enabled", "^");
 				if (enabled)
 				{
-					ar(Serialization::Range(m_value, HardMin(), HardMax()), "value", "^");
-					if (m_value == Default())
-						m_value = Enabled();
+					ar(Range(m_value), "value", "^");
+					if (m_value == TTraits::Default())
+						m_value = TTraits::NonDefault();
 				}
 				else
 				{
-					m_value = Default();
+					m_value = TTraits::Default();
 					string display = TTraits::DefaultName();
 					ar(display, "value", "!^");
 				}
@@ -73,7 +62,7 @@ bool TValue<T, TTraits>::Serialize(Serialization::IArchive& ar, const char* name
 	}
 	else
 	{
-		if (!ar(Serialization::Range(v, HardMin(), HardMax()), name, label))
+		if (!ar(Range(v), name, label))
 			return false;
 	}
 	if (ar.isInput())
@@ -81,6 +70,15 @@ bool TValue<T, TTraits>::Serialize(Serialization::IArchive& ar, const char* name
 	return true;
 }
 
+template<>
+inline bool TValue<TColor>::Serialize(Serialization::IArchive& ar, cstr name, cstr label)
+{
+	ColorB color(m_value.r, m_value.g, m_value.b, m_value.a);
+	bool b = ar(color, name, label);
+	if (b && ar.isInput())
+		m_value.dcolor = color.pack_argb8888();
+	return b;
 }
 
-#endif // PARAMTRAITSIMPL_H
+
+}

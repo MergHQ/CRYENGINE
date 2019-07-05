@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ParticleEmitter.h
-//  Version:     v1.00
-//  Created:     18/7/2003 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __particleemitter_h__
-#define __particleemitter_h__
 #pragma once
 
 #include "ParticleEffect.h"
@@ -29,7 +16,7 @@ class CParticle;
 
 //////////////////////////////////////////////////////////////////////////
 // A top-level emitter system, interfacing to 3D engine
-class CParticleEmitter : public IParticleEmitter, public CParticleSource
+class CParticleEmitter /* could be final */ : public IParticleEmitter, public CParticleSource
 {
 public:
 
@@ -39,83 +26,83 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IRenderNode implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void        ReleaseNode(bool bImmediate) { CRY_ASSERT((m_dwRndFlags & ERF_PENDING_DELETE) == 0); Register(false, bImmediate); Kill(); }
-	virtual EERType     GetRenderNodeType()          { return eERType_ParticleEmitter; }
+	virtual void        ReleaseNode(bool bImmediate) final { CRY_ASSERT((m_dwRndFlags & ERF_PENDING_DELETE) == 0); Register(false, bImmediate); Kill(); }
+	virtual EERType     GetRenderNodeType()    const final { return eERType_ParticleEmitter; }
 
-	virtual char const* GetName() const              { return m_pTopEffect ? m_pTopEffect->GetName() : ""; }
-	virtual char const* GetEntityClassName() const   { return "ParticleEmitter"; }
-	virtual string      GetDebugString(char type = 0) const;
+	virtual char const* GetName() const              final { return m_pTopEffect ? m_pTopEffect->GetName() : ""; }
+	virtual char const* GetEntityClassName() const   final { return "ParticleEmitter"; }
+	virtual string      GetDebugString(char type = 0) const final;
 
-	virtual Vec3        GetPos(bool bWorldOnly = true) const { return GetLocation().t; }
+	virtual Vec3        GetPos(bool bWorldOnly = true) const  final { return GetLocation().t; }
 
-	virtual const AABB  GetBBox() const                      { return m_bbWorld; }
-	virtual void        SetBBox(const AABB& WSBBox)          { m_bbWorld = WSBBox; }
-	virtual void        FillBBox(AABB& aabb)                 { aabb = GetBBox(); }
+	virtual const AABB  GetBBox() const                final { return m_bbWorld; }
+	virtual void        SetBBox(const AABB& WSBBox)    final { m_bbWorld = WSBBox; }
+	virtual void        FillBBox(AABB& aabb) const     final { aabb = GetBBox(); }
 
-	virtual void        GetLocalBounds(AABB& bbox);
-	virtual void        SetViewDistRatio(int nViewDistRatio)
+	virtual void        GetLocalBounds(AABB& bbox) const final;
+	virtual void        SetViewDistRatio(int nViewDistRatio) final
 	{
 		// Override to cache normalized value.
 		IRenderNode::SetViewDistRatio(nViewDistRatio);
 		m_fViewDistRatio = GetViewDistRatioNormilized();
 	}
 	ILINE float              GetViewDistRatioFloat() const { return m_fViewDistRatio; }
-	virtual float            GetMaxViewDist();
-	virtual void             UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context);
+	virtual float            GetMaxViewDist() const final;
+	virtual void             UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context) final;
 
-	virtual void             SetMatrix(Matrix34 const& mat)    { if (mat.IsValid()) SetLocation(QuatTS(mat)); }
+	virtual void             SetMatrix(Matrix34 const& mat) final { if (mat.IsValid()) SetLocation(QuatTS(mat)); }
 
-	virtual void             SetMaterial(IMaterial* pMaterial) { m_pMaterial = pMaterial; }
-	virtual IMaterial*       GetMaterial(Vec3* pHitPos = NULL) const;
-	virtual IMaterial*       GetMaterialOverride()             { return m_pMaterial; }
+	virtual void             SetMaterial(IMaterial* pMaterial) final { m_pMaterial = pMaterial; }
+	virtual IMaterial*       GetMaterial(Vec3* pHitPos = NULL) const final;
+	virtual IMaterial*       GetMaterialOverride()             const final { return m_pMaterial; }
 
-	virtual IPhysicalEntity* GetPhysics() const                { return 0; }
-	virtual void             SetPhysics(IPhysicalEntity*)      {}
+	virtual IPhysicalEntity* GetPhysics() const                final { return 0; }
+	virtual void             SetPhysics(IPhysicalEntity*)      final {}
 
-	virtual void             Render(SRendParams const& rParam, const SRenderingPassInfo& passInfo);
+	virtual void             Render(SRendParams const& rParam, const SRenderingPassInfo& passInfo) final;
 
-	virtual void             Hide(bool bHide);
+	virtual void             Hide(bool bHide) final;
 
-	virtual void             GetMemoryUsage(ICrySizer* pSizer) const;
+	virtual void             GetMemoryUsage(ICrySizer* pSizer) const final;
 
 	//////////////////////////////////////////////////////////////////////////
 	// IParticleEmitter implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual int                    GetVersion() const { return 1; }
-	virtual void                   SetEffect(IParticleEffect const* pEffect);
-	virtual const IParticleEffect* GetEffect() const
-	{ return m_pTopEffect.get(); };
+	virtual int                    GetVersion() const final { return 1; }
+	virtual void                   SetEffect(IParticleEffect const* pEffect) final;
+	virtual const IParticleEffect* GetEffect() const final
+	{ return m_pTopEffect.get(); }
 
-	virtual QuatTS        GetLocation() const
+	virtual QuatTS        GetLocation() const final
 	{ return CParticleSource::GetLocation(); }
-	virtual void          SetLocation(const QuatTS& loc);
+	virtual void          SetLocation(const QuatTS& loc) final;
 
 	ParticleTarget const& GetTarget() const
 	{ return m_Target; }
-	virtual void          SetTarget(ParticleTarget const& target)
+	virtual void          SetTarget(ParticleTarget const& target) final
 	{
 		if ((int)target.bPriority >= (int)m_Target.bPriority)
 			m_Target = target;
 	}
-	virtual void                 SetEmitGeom(const GeomRef& geom);
-	virtual void                 SetSpawnParams(const SpawnParams& spawnParams);
-	virtual void                 GetSpawnParams(SpawnParams& sp) const { sp = m_SpawnParams; }
-	const SpawnParams&           GetSpawnParams() const                { return m_SpawnParams; }
+	virtual void                 SetEmitGeom(const GeomRef& geom) final;
+	virtual void                 SetSpawnParams(const SpawnParams& spawnParams) final;
+	virtual void                 GetSpawnParams(SpawnParams& sp) const final { sp = m_SpawnParams; }
+	const SpawnParams&           GetSpawnParams() const                     { return m_SpawnParams; }
 
-	virtual bool                 IsAlive() const;
-	virtual void                 Activate(bool bActive);
-	virtual void                 Kill();
-	virtual void                 Restart();
-	virtual void                 Update();
-	virtual void                 EmitParticle(const EmitParticleData* pData = NULL);
+	virtual bool                 IsAlive() const final;
+	virtual void                 Activate(bool bActive) final;
+	virtual void                 Kill() final;
+	virtual void                 Restart() final;
+	virtual void                 Update() final;
+	virtual void                 EmitParticle(const EmitParticleData* pData = NULL) final;
 
-	virtual void                 SetEntity(IEntity* pEntity, int nSlot);
+	virtual void                 SetEntity(IEntity* pEntity, int nSlot) final;
 	virtual void                 InvalidateCachedEntityData() final;
-	virtual void                 OffsetPosition(const Vec3& delta);
-	virtual EntityId             GetAttachedEntityId();
-	virtual int                  GetAttachedEntitySlot()
+	virtual void                 OffsetPosition(const Vec3& delta) final;
+	virtual EntityId             GetAttachedEntityId() final;
+	virtual int                  GetAttachedEntitySlot() final
 	{ return m_nEntitySlot; }
-	virtual IParticleAttributes& GetAttributes();
+	virtual IParticleAttributes& GetAttributes() final;
 
 	virtual void   SetOwnerEntity(IEntity* pEntity) final { m_pOwnerEntity = pEntity; }
 	virtual IEntity* GetOwnerEntity() const final         { return m_pOwnerEntity; }
@@ -333,5 +320,3 @@ private:
 	void                AddEffect(CParticleContainer* pParentContainer, CParticleEffect const* pEffect, bool bUpdate = true);
 	CParticleContainer* AddContainer(CParticleContainer* pParentContainer, const CParticleEffect* pEffect);
 };
-
-#endif // __particleemitter_h__

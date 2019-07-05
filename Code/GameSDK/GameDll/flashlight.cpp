@@ -4,6 +4,7 @@
 #include "flashlight.h"
 #include "ItemSharedParams.h"
 #include "GameActions.h"
+#include "GameCVars.h"
 #include "Weapon.h"
 #include "Player.h"
 #include "EntityUtility/EntityScriptCalls.h"

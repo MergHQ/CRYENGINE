@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-class QAction;
+class QCommandAction;
 
 namespace MenuDesc
 {
@@ -21,9 +21,10 @@ template<typename K> struct SMenuItem;
 template<typename K>
 struct SItemVisitor
 {
-	virtual void Visit(const SItem<K>&) {}
+	virtual ~SItemVisitor() {}
+	virtual void Visit(const SItem<K>&)       {}
 	virtual void Visit(const SActionItem<K>&) {}
-	virtual void Visit(const SMenuItem<K>&) {}
+	virtual void Visit(const SMenuItem<K>&)   {}
 };
 
 template<typename K>
@@ -36,6 +37,9 @@ struct SItem
 		, m_key(key)
 	{
 	}
+
+	virtual ~SItem() {}
+	virtual void   Accept(SItemVisitor<K>& visitor, const K& key) const = 0;
 
 	CAbstractMenu* FindMenu(CAbstractMenu* pRootMenu) const
 	{
@@ -57,51 +61,49 @@ struct SItem
 		return pMenu;
 	}
 
-	virtual void Accept(SItemVisitor<K>& visitor, const K& key) const = 0;
-
 	SMenuItem<K>* m_pParent;
-	int m_priority;
-	int m_section;
-	K m_key;
+	int           m_priority;
+	int           m_section;
+	K             m_key;
 };
 
 template<typename K>
 struct SActionItem : SItem<K>
 {
-	SActionItem(QAction* pAction, int priority, int section, const K& key)
+	SActionItem(std::function<QCommandAction*()> retrieveActionCallback, int priority, int section, const K& key)
 		: SItem<K>(priority, section, key)
-		, m_pAction(pAction)
+		, m_retrieveActionCallback(retrieveActionCallback)
 	{
 	}
 
 	virtual void Accept(SItemVisitor<K>& visitor, const K& key) const override
 	{
-		if (key == m_key)
+		if (key == this->m_key)
 		{
 			visitor.Visit(*this);
 		}
 	}
 
-	QAction* const m_pAction;
+	std::function<QCommandAction*()> m_retrieveActionCallback;
 };
 
 template<typename K>
 struct SMenuItem : SItem<K>
 {
-	template<typename... ARGS>
-	SMenuItem(const char* szName, int priority, int section, const K& key, ARGS... args)
+	template<typename ... ARGS>
+	SMenuItem(const char* szName, int priority, int section, const K& key, ARGS ... args)
 		: SItem<K>(priority, section, key)
 		, m_name(szName)
 	{
-		Init(std::forward<ARGS>(args)...);
+		Init(std::forward<ARGS>(args) ...);
 	}
 
-	template<typename... ARGS>
-	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&&... args)
+	template<typename ... ARGS>
+	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&& ... args)
 	{
 		m_items.emplace_back(std::move(item));
 		m_items.back()->m_pParent = this;
-		Init(std::forward<ARGS>(args)...);
+		Init(std::forward<ARGS>(args) ...);
 	}
 
 	void Init() // Recursion anchor.
@@ -110,7 +112,7 @@ struct SMenuItem : SItem<K>
 
 	virtual void Accept(SItemVisitor<K>& visitor, const K& key) const override
 	{
-		if (m_key == key)
+		if (this->m_key == key)
 		{
 			visitor.Visit(*this);
 		}
@@ -121,20 +123,20 @@ struct SMenuItem : SItem<K>
 		}
 	}
 
-	const string m_name;
+	const string                           m_name;
 	std::vector<std::unique_ptr<SItem<K>>> m_items;
 };
 
 template<typename K>
-std::unique_ptr<SActionItem<K>> AddAction(const K& key, int section, int priority, QAction* pAction)
+std::unique_ptr<SActionItem<K>> AddAction(const K& key, int section, int priority, std::function<QCommandAction*()> retrieveActionCallback)
 {
-	return std::unique_ptr<SActionItem<K>>(new SActionItem<K>(pAction, priority, section, key));
+	return std::make_unique<SActionItem<K>>(retrieveActionCallback, priority, section, key);
 }
 
-template<typename K, typename... ARGS>
-std::unique_ptr<SMenuItem<K>> AddMenu(const K& key, int section, int priority, const char* szName, ARGS... args)
+template<typename K, typename ... ARGS>
+std::unique_ptr<SMenuItem<K>> AddMenu(const K& key, int section, int priority, const char* szName, ARGS ... args)
 {
-	return std::unique_ptr<SMenuItem<K>>(new SMenuItem<K>(szName, priority, section, key, std::forward<ARGS>(args)...));
+	return std::make_unique<SMenuItem<K>>(szName, priority, section, key, std::forward<ARGS>(args) ...);
 }
 
 template<typename K>
@@ -145,12 +147,17 @@ struct SAddItemVisitor : SItemVisitor<K>
 	{
 	}
 
+	virtual void Visit(const SItem<K>&) override {}
+
 	virtual void Visit(const SActionItem<K>& actionItem) override
 	{
+		QCommandAction* pAction = actionItem.m_retrieveActionCallback();
+		CRY_ASSERT_MESSAGE(pAction, "Trying to add an unregistered action to editor menu. Make sure to call RegisterAction");
+
 		CAbstractMenu* const pMenu = actionItem.FindMenu(m_pRootMenu);
-		if (pMenu && !pMenu->ContainsAction(actionItem.m_pAction))
+		if (pMenu && !pMenu->ContainsAction(pAction))
 		{
-			pMenu->AddAction(actionItem.m_pAction, actionItem.m_section, actionItem.m_priority);
+			pMenu->AddAction(pAction, actionItem.m_section, actionItem.m_priority);
 		}
 	}
 
@@ -169,6 +176,9 @@ struct SAddItemVisitor : SItemVisitor<K>
 template<typename K>
 struct SGetMenuNameVisitor : SItemVisitor<K>
 {
+	virtual void Visit(const SItem<K>&) override       {}
+	virtual void Visit(const SActionItem<K>&) override {}
+
 	virtual void Visit(const SMenuItem<K>& menuItem) override
 	{
 		m_name = menuItem.m_name;
@@ -178,14 +188,28 @@ struct SGetMenuNameVisitor : SItemVisitor<K>
 };
 
 template<typename K>
+struct SGetMenuActionVisitor : SItemVisitor<K>
+{
+	virtual void Visit(const SItem<K>&) override {}
+	virtual void Visit(const SActionItem<K>& menuItem) override
+	{
+		m_pAction = menuItem.m_retrieveActionCallback();
+	}
+
+	virtual void Visit(const SMenuItem<K>&) override {}
+
+	QCommandAction* m_pAction{ nullptr };
+};
+
+template<typename K>
 class CDesc
 {
 public:
-	template<typename... ARGS>
-	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&&... args)
+	template<typename ... ARGS>
+	void Init(std::unique_ptr<SItem<K>>&& item, ARGS&& ... args)
 	{
 		m_items.emplace_back(std::move(item));
-		Init(std::forward<ARGS>(args)...);
+		Init(std::forward<ARGS>(args) ...);
 	}
 
 	void Init() // Recursion anchor.
@@ -203,6 +227,13 @@ public:
 		SGetMenuNameVisitor<K> v;
 		Accept(v, key);
 		return v.m_name.c_str();
+	}
+
+	QCommandAction* GetAction(const K& key) const
+	{
+		SGetMenuActionVisitor<K> v;
+		Accept(v, key);
+		return v.m_pAction;
 	}
 
 private:

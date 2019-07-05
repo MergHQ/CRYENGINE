@@ -13,7 +13,7 @@ static const size_t MAX_NODE_STACK_DEP = 40;
 CSerializeWriterXMLCPBin::CSerializeWriterXMLCPBin(const XMLCPB::CNodeLiveWriterRef& nodeRef, XMLCPB::CWriterInterface& binWriter)
 	: m_binWriter(binWriter)
 {
-	assert(nodeRef.IsValid());
+	CRY_ASSERT(nodeRef.IsValid());
 	m_curTime = gEnv->pTimer->GetFrameStartTime();
 	m_nodeStack.reserve(MAX_NODE_STACK_DEP);
 	m_nodeStack.push_back(nodeRef);
@@ -53,8 +53,7 @@ void CSerializeWriterXMLCPBin::RecursiveAddXmlNodeRef(XMLCPB::CNodeLiveWriterRef
 	{
 		const char* pKey = NULL;
 		const char* pVal = NULL;
-		bool ok = xmlNode->getAttributeByIndex(i, &pKey, &pVal);
-		assert(ok);
+		CRY_VERIFY(xmlNode->getAttributeByIndex(i, &pKey, &pVal));
 		BChild->AddAttr(pKey, pVal);
 	}
 
@@ -84,9 +83,8 @@ bool CSerializeWriterXMLCPBin::ValueByteArray(const char* name, const uint8* dat
 #ifndef _RELEASE
 	if (GetISystem()->IsDevMode() && curNode.IsValid())
 	{
-		if (curNode->HaveAttr(name))
+		if (!CRY_VERIFY(!curNode->HaveAttr(name)))
 		{
-			assert(0);
 			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "!Duplicate tag Value( \"%s\" ) in Group %s", name, GetStackInfo());
 		}
 	}
@@ -110,7 +108,7 @@ void CSerializeWriterXMLCPBin::ScriptValue(XMLCPB::CNodeLiveWriterRef addTo, con
 
 	m_luaSaveStack.push_back(name);
 
-	assert(tag || name);
+	CRY_ASSERT(tag || name);
 	XMLCPB::CNodeLiveWriterRef node = addTo->AddChildNode(tag ? tag : name);
 	if (tag && name)
 		node->AddAttr(TAG_SCRIPT_NAME, name);
@@ -152,7 +150,7 @@ void CSerializeWriterXMLCPBin::ScriptValue(XMLCPB::CNodeLiveWriterRef addTo, con
 		else
 		{
 			// Check for recursion.
-			if (std::find(m_savedTables.begin(), m_savedTables.end(), value.GetScriptTable()) == m_savedTables.end())
+			if (CRY_VERIFY(std::find(m_savedTables.begin(), m_savedTables.end(), value.GetScriptTable()) == m_savedTables.end(), "Writing script table recursively"))
 			{
 				m_savedTables.push_back(value.GetScriptTable());
 				WriteTable(node, value.GetScriptTable(), true);
@@ -161,7 +159,6 @@ void CSerializeWriterXMLCPBin::ScriptValue(XMLCPB::CNodeLiveWriterRef addTo, con
 			else
 			{
 				// Trying to write table recursively.
-				assert(0 && "Writing script table recursively");
 				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "!Writing script table recursively: %s", GetStackInfo());
 				bShouldAdd = false;
 			}
@@ -201,7 +198,7 @@ void CSerializeWriterXMLCPBin::EndGroup()
 	}
 	CurNode()->Done();   // this call is actually not needed. because the XMLCPBin will already detect when the node can be closed. But it does not hurt to do it explicitely.
 	m_nodeStack.pop_back();
-	assert(!m_nodeStack.empty());
+	CRY_ASSERT(!m_nodeStack.empty());
 }
 
 // TODO: need to re-look carefully at all this script management code. Right now it is esentially a copy paste from CSerializeXMLWriter

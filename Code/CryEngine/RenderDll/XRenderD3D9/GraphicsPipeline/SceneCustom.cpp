@@ -4,32 +4,63 @@
 #include "SceneCustom.h"
 #include "D3DPostProcess.h"
 #include "CompiledRenderObject.h"
-#include "DriverD3D.h"
 #include "Common/ReverseDepth.h"
 #include "Common/Include_HLSL_CPP_Shared.h"
 #include "Common/TypedConstantBuffer.h"
 
-CSceneCustomStage::CSceneCustomStage()
-	: m_perPassResources()
+CSceneCustomStage::CSceneCustomStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_perPassResources()
+	, m_highlightPass(&graphicsPipeline)
+	, m_resolvePass(&graphicsPipeline)
 {}
- 
+
 void CSceneCustomStage::Init()
 {
 	// Create per-pass resources
-	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);	
+	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_pPerPassConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerPassConstantBuffer_Custom));
-	
+
 	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 	cb.UploadZeros();
-	
-	bool bSuccess = SetAndBuildPerPassResources(true);
-	assert(bSuccess);
+	CRY_VERIFY(UpdatePerPassResources(true));
 
 	// Create resource layout
-	m_pResourceLayout = GetStdGraphicsPipeline().CreateScenePassLayout(m_perPassResources);
+	m_pResourceLayout = m_graphicsPipeline.CreateScenePassLayout(m_perPassResources);
 
 	// Freeze resource-set layout (assert will fire when violating the constraint)
 	m_perPassResources.AcceptChangedBindPoints();
+
+	_smart_ptr<CTexture> pDummyDepthTexture;
+	pDummyDepthTexture = CTexture::GetOrCreateTextureObject("SCENE_CUSTOM_Z_DUMMY", 0, 0, 1,
+	                                                        eTT_2D, 0, CRendererResources::GetDepthFormat());
+
+	_smart_ptr<CTexture> pDummyColorTexture;
+	pDummyColorTexture = CTexture::GetOrCreateTextureObject("SCENE_CUSTOM_COLOR_DUMMY", 0, 0, 1,
+	                                                        eTT_2D, 0, eTF_R8G8B8A8);
+
+	_smart_ptr<CTexture> pDummyHDRTexture;
+	pDummyHDRTexture = CTexture::GetOrCreateTextureObject("SCENE_CUSTOM_HDR_DUMMY", 0, 0, 1,
+	                                                      eTT_2D, 0, eTF_R11G11B10F);
+
+	_smart_ptr<CTexture> pDummySelectionIDTexture;
+	pDummySelectionIDTexture = CTexture::GetOrCreateTextureObject("SCENE_CUSTOM_SELECTION_ID_DUMMY", 0, 0, 1,
+	                                                              eTT_2D, 0, eTF_R32F);
+
+	m_debugViewPass.SetLabel("CUSTOM_DEBUGVIEW");
+	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
+	m_debugViewPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
+	m_debugViewPass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
+
+	m_silhouetteMaskPass.SetLabel("CUSTOM_SILHOUETTE");
+	m_silhouetteMaskPass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
+	m_silhouetteMaskPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
+	m_silhouetteMaskPass.SetRenderTargets(pDummyDepthTexture, pDummyColorTexture);
+
+	m_selectionIDPass.SetLabel("CUSTOM_HIGHLIGHTED_PASS");
+	m_selectionIDPass.SetFlags(CSceneRenderPass::ePassFlags_None);
+	m_selectionIDPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
+	m_selectionIDPass.SetRenderTargets(pDummyDepthTexture, pDummySelectionIDTexture);
 }
 
 bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO)
@@ -39,9 +70,9 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 	const auto shaderType = desc.shaderItem.m_pShader->GetShaderType();
 	const bool bIsCommonMesh = (shaderType != eST_Particle);
 	CDeviceGraphicsPSODesc psoDesc(m_pResourceLayout, desc);
-	if (bIsCommonMesh && !GetStdGraphicsPipeline().FillCommonScenePassStates(desc, psoDesc))
+	if (bIsCommonMesh && !CSceneRenderPass::FillCommonScenePassStates(desc, psoDesc, m_graphicsPipeline.GetVrProjectionManager()))
 		return true;
-
+	
 	CSceneRenderPass* pSceneRenderPass = nullptr;
 
 	if (passID == ePass_DebugViewSolid)
@@ -53,6 +84,11 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 	{
 		psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL | GS_DEPTHWRITE | GS_WIREFRAME;
 		psoDesc.m_CullMode = eCULL_None;
+		pSceneRenderPass = &m_debugViewPass;
+	}
+	else if (passID == ePass_DebugViewOverdraw)
+	{
+		psoDesc.m_RenderState = GS_NODEPTHTEST;
 		pSceneRenderPass = &m_debugViewPass;
 	}
 	else if (passID == ePass_DebugViewDrawModes)
@@ -67,7 +103,7 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 		psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL | GS_DEPTHWRITE;
 		pSceneRenderPass = &m_selectionIDPass;
 	}
-	else if(passID == ePass_Silhouette)
+	else if (passID == ePass_Silhouette)
 	{
 		// support only the mode of CRenderer::CV_r_customvisions=3.
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
@@ -104,7 +140,7 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 
 bool CSceneCustomStage::CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache)
 {
-	DevicePipelineStatesArray& stageStates = pStateArray[m_stageID];
+	DevicePipelineStatesArray& stageStates = pStateArray[StageID];
 
 	if (pStateCache->Find(stateDesc, stageStates))
 		return true;
@@ -116,6 +152,7 @@ bool CSceneCustomStage::CreatePipelineStates(DevicePipelineStatesArray* pStateAr
 	_stateDesc.technique = TTYPE_DEBUG;
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewSolid, stageStates[ePass_DebugViewSolid]);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewWireframe, stageStates[ePass_DebugViewWireframe]);
+	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewOverdraw , stageStates[ePass_DebugViewOverdraw ]);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewDrawModes, stageStates[ePass_DebugViewDrawModes]);
 	if (gcpRendD3D->IsEditorMode())
 		bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_SelectionIDs, stageStates[ePass_SelectionIDs]);
@@ -131,13 +168,13 @@ bool CSceneCustomStage::CreatePipelineStates(DevicePipelineStatesArray* pStateAr
 	return bFullyCompiled;
 }
 
-bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
+bool CSceneCustomStage::UpdatePerPassResources(bool bOnInit)
 {
 	assert(m_pPerPassConstantBuffer);
-	
+
 	// Samplers
 	{
-		auto materialSamplers = GetStdGraphicsPipeline().GetDefaultMaterialSamplers();
+		auto materialSamplers = m_graphicsPipeline.GetDefaultMaterialSamplers();
 		for (int i = 0; i < materialSamplers.size(); ++i)
 		{
 			m_perPassResources.SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
@@ -160,54 +197,41 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 
 		m_perPassResources.SetTexture(ePerPassTexture_PerlinNoiseMap, CRendererResources::s_ptexPerlinNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 		m_perPassResources.SetTexture(ePerPassTexture_WindGrid, CRendererResources::s_ptexWindGrid, EDefaultResourceViews::Default, EShaderStage_Vertex);
-		m_perPassResources.SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		m_perPassResources.SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		m_perPassResources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_AllWithoutCompute);
-		m_perPassResources.SetTexture(ePerPassTexture_NormalsFitting, CRendererResources::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		m_perPassResources.SetTexture(ePerPassTexture_DissolveNoise, CRendererResources::s_ptexDissolveNoiseMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
+		m_perPassResources.SetTexture(ePerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_Vertex);
+		m_perPassResources.SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_Pixel);
+		m_perPassResources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_Pixel);
+		m_perPassResources.SetTexture(ePerPassTexture_NormalsFitting, CRendererResources::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_Pixel);
+		m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, m_graphicsPipelineResources.m_pTexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_PaletteTexelsPerMeter, CRendererResources::s_ptexPaletteTexelsPerMeter, EDefaultResourceViews::Default, EShaderStage_Pixel);
 	}
 
-	// particle resources
+	// UA Buffers
+	if (bOnInit || (CRenderer::CV_r_OverdrawComplexity == 0) || !m_overdrawCount.IsAvailable())
 	{
-		if (bOnInit)
-		{
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticlePositionStream, CDeviceBufferManager::GetNullBufferStructured(),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticleAxesStream, CDeviceBufferManager::GetNullBufferStructured(),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticleColorSTStream, CDeviceBufferManager::GetNullBufferStructured(),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		}
-		else
-		{
-			const CParticleBufferSet& particleBuffer = GetStdGraphicsPipeline().GetParticleBufferSet();
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticlePositionStream,
-				const_cast<CGpuBuffer*>(&particleBuffer.GetPositionStream(RenderView()->GetFrameId())),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticleAxesStream,
-				const_cast<CGpuBuffer*>(&particleBuffer.GetAxesStream(RenderView()->GetFrameId())),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticleColorSTStream,
-				const_cast<CGpuBuffer*>(&particleBuffer.GetColorSTsStream(RenderView()->GetFrameId())),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		}
+		m_perPassResources.SetBuffer(2, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+		m_perPassResources.SetBuffer(3, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+		m_perPassResources.SetBuffer(4, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+		m_perPassResources.SetBuffer(5, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
 	}
-	
+	else
+	{
+		// A buffer the same dimension as the Depth-Target
+		m_perPassResources.SetBuffer(2, &m_overdrawCount, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+		m_perPassResources.SetBuffer(3, &m_overdrawDepth, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+		m_perPassResources.SetBuffer(4, &m_overdrawStats, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+		m_perPassResources.SetBuffer(5, &m_overdrawHisto, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+	}
+
+	// particle resources
+	m_graphicsPipeline.SetParticleBuffers(bOnInit, m_perPassResources, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+
 	// Constant buffers
 	{
 		CConstantBufferPtr pPerViewCB;
 		if (bOnInit)  // Handle case when no view is available in the initialization of the stage
 			pPerViewCB = CDeviceBufferManager::GetNullConstantBuffer();
 		else
-			pPerViewCB = GetStdGraphicsPipeline().GetMainViewConstantBuffer();
+			pPerViewCB = m_graphicsPipeline.GetMainViewConstantBuffer();
 
 		m_perPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
 		m_perPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerPass, m_pPerPassConstantBuffer.get(), EShaderStage_AllWithoutCompute);
@@ -216,13 +240,12 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 	if (bOnInit)
 		return true;
 
-	CRY_ASSERT(!m_perPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
-	return m_pPerPassResourceSet->Update(m_perPassResources);
+	return UpdatePerPassResourceSet();
 }
 
 struct CHighlightPredicate
 {
-	bool operator() (SRendItem& item)
+	bool operator()(SRendItem& item)
 	{
 		return (item.pCompiledObject->m_pRO->m_editorSelectionID & 0x2) == 0;
 	}
@@ -230,7 +253,7 @@ struct CHighlightPredicate
 
 struct CSelectionPredicate
 {
-	bool operator() (SRendItem& item)
+	bool operator()(SRendItem& item)
 	{
 		return (item.pCompiledObject->m_pRO->m_editorSelectionID & 0x1) == 0;
 	}
@@ -238,135 +261,316 @@ struct CSelectionPredicate
 
 void CSceneCustomStage::Update()
 {
-	CRenderView* pRenderView = RenderView();
+	const CRenderView* pRenderView = RenderView();
+	const SRenderViewport& viewport = pRenderView->GetViewport();
 
-//	CTexture* pColorTexture = pRenderView->GetColorTarget();
+	CTexture* pColorTexture = pRenderView->GetColorTarget();
 	CTexture* pDepthTexture = pRenderView->GetDepthTarget();
 
+	UpdatePerPassResources(false);
+
 	// Debug View Pass
-	m_debugViewPass.SetLabel("CUSTOM_DEBUGVIEW");
-	m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewSolid, TTYPE_DEBUG, FB_GENERAL);
-	m_debugViewPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
+	m_debugViewPass.SetViewport(viewport);
 	m_debugViewPass.SetRenderTargets(
 		// Depth
 		pDepthTexture,
 		// Color 0
-		CRendererResources::s_ptexHDRTarget
+		pColorTexture
 	);
 
 	// Silhouette Pass
-	m_silhouetteMaskPass.SetLabel("CUSTOM_SILHOUETTE");
-	m_silhouetteMaskPass.SetupPassContext(m_stageID, ePass_Silhouette, TTYPE_CUSTOMRENDERPASS, FB_CUSTOM_RENDER, EFSLIST_CUSTOM);
-	m_silhouetteMaskPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
+	m_silhouetteMaskPass.SetViewport(viewport);
 	m_silhouetteMaskPass.SetRenderTargets(
 		// Depth
 		pDepthTexture,
 		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap
+		m_graphicsPipelineResources.m_pTexSceneNormalsMap
 	);
 
 	if (gEnv->IsEditor())
 	{
 		// Highlighted ID Pass
-		m_selectionIDPass.SetLabel("CUSTOM_HIGHLIGHTED_PASS");
-		m_selectionIDPass.SetupPassContext(m_stageID, ePass_SelectionIDs, TTYPE_DEBUG, FB_GENERAL, EFSLIST_CUSTOM);
-		m_selectionIDPass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
+		m_selectionIDPass.SetViewport(viewport);
 		m_selectionIDPass.SetRenderTargets(
 			// Depth
 			pDepthTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneSelectionIDs
+			m_graphicsPipelineResources.m_pTexSceneSelectionIDs
 		);
 	}
 }
 
-bool CSceneCustomStage::DoDebugRendering()
+bool CSceneCustomStage::UpdatePerPassResourceSet()
+{
+	CRY_ASSERT(!m_perPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
+	return m_pPerPassResourceSet->Update(m_perPassResources);
+}
+
+bool CSceneCustomStage::UpdateRenderPasses()
+{
+	bool result = true;
+	result &= m_debugViewPass.UpdateDeviceRenderPass();
+	result &= m_silhouetteMaskPass.UpdateDeviceRenderPass();
+
+	if (gEnv->IsEditor())
+	{
+		result &= m_selectionIDPass.UpdateDeviceRenderPass();
+	}
+
+	return result;
+}
+
+void CSceneCustomStage::Resize(int renderWidth, int renderHeight)
+{
+	const uint32 numPixels = renderWidth * renderHeight;
+
+	if (m_overdrawCount.IsAvailable() && ((CRenderer::CV_r_OverdrawComplexity == 0) || (m_overdrawCount.GetElementCount() != numPixels)))
+		m_overdrawCount.Release();
+	if (m_overdrawDepth.IsAvailable() && ((CRenderer::CV_r_OverdrawComplexity == 0) || (m_overdrawDepth.GetElementCount() != numPixels)))
+		m_overdrawDepth.Release();
+
+	if (!m_overdrawCount.IsAvailable() && (CRenderer::CV_r_OverdrawComplexity != 0))
+		m_overdrawCount.Create(numPixels, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+	if (!m_overdrawDepth.IsAvailable() && (CRenderer::CV_r_OverdrawComplexity != 0))
+		m_overdrawDepth.Create(numPixels, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+}
+
+void CSceneCustomStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	if (cvarUpdater.GetCVar("r_OverdrawComplexity"))
+	{
+		if (!m_overdrawStats.IsAvailable())
+			m_overdrawStats.Create(  4, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+		if (!m_overdrawHisto.IsAvailable())
+			m_overdrawHisto.Create(256, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+
+		const CRenderView* pRenderView = RenderView();
+		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
+		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+
+		Resize(renderWidth, renderHeight);
+	}
+}
+
+bool CSceneCustomStage::IsDebuggerEnabled() const
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
-	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
+	bool bViewWireframe    = pRenderer->GetWireframeMode() != R_SOLID_MODE;
+	bool bViewOverdraw     = CRenderer::CV_r_OverdrawComplexity != 0;
+	bool bDebugDraw        = IsDebugOverlayEnabled();
 
-	return (bViewTexelDensity || bViewWireframe);
-}
-
-bool CSceneCustomStage::DoDebugOverlay()
-{
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw != 0;
-
-	return (bDebugDraw);
-}
-
-void CSceneCustomStage::Prepare()
-{
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
-	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
-	bool bViewWireframe = pRenderer->GetWireframeMode() != R_SOLID_MODE;
-	bool bDebugDraw = CRenderer::CV_e_DebugDraw != 0;
-	// should probably somehow allow some editor viewports to not use this pass
-	bool bSelectionIDPass = pRenderer->IsEditorMode() && !gEnv->IsEditorGameMode();
-
-	SetAndBuildPerPassResources(false);
-
-	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
-
-	if (bViewTexelDensity || bViewWireframe || bDebugDraw)
-		m_debugViewPass.PrepareRenderPassForUse(commandList);
-	else if (bSelectionIDPass)
-		m_selectionIDPass.PrepareRenderPassForUse(commandList);
+	return (bViewTexelDensity || bViewWireframe || bViewOverdraw || bDebugDraw);
 }
 
 void CSceneCustomStage::ExecuteDebugger()
 {
 	CRenderView* pRenderView = RenderView();
-	auto& renderItemDrawer = pRenderView->GetDrawer();
+	const SRenderViewport& rViewport = pRenderView->GetViewport();
 
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
-	bool bViewWireframe = gcpRendD3D->GetWireframeMode() != R_SOLID_MODE;
-	const bool bReverseDepth = true;
-
-	m_debugViewPass.SetLabel("DEBUG_VIEW");
-	m_debugViewPass.SetViewport(pRenderView->GetViewport());
+	bool bViewWireframe    = gcpRendD3D->GetWireframeMode() != R_SOLID_MODE;
+	bool bViewOverdraw     = CRenderer::CV_r_OverdrawComplexity != 0;
+	bool bViewODZPrePass   = CRenderer::CV_r_OverdrawComplexity < 0;
 
 	{
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
-		cb->CP_Custom_ViewMode = Vec4(bViewTexelDensity ? 1.f : 0.f, CRenderer::CV_r_TexelsPerMeter, 0.f, 0.f);
+		if (bViewTexelDensity)
+			cb->CP_Custom_ViewMode = Vec4(1,          CRenderer::CV_r_TexelsPerMeter     , float(rViewport.width), float(rViewport.height));
+		else if (bViewOverdraw && !bViewODZPrePass)
+			cb->CP_Custom_ViewMode = Vec4(2, std::abs(CRenderer::CV_r_OverdrawComplexity), float(rViewport.width), float(rViewport.height));
+		else if (bViewOverdraw && bViewODZPrePass)
+			cb->CP_Custom_ViewMode = Vec4(2,                   2 /* enable depth-write */, float(rViewport.width), float(rViewport.height));
 		cb.CopyToDevice();
 	}
 
 	CTexture* pTargetRT = pRenderView->GetColorTarget();
 	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
 
+	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 1);
+	CClearSurfacePass::Execute(pTargetRT, ColorF(0.2f, 0.2f, 0.2f, 1.0f));
+
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetRT);
 	m_debugViewPass.ExchangeDepthTarget(pTargetDS);
 
-	SetAndBuildPerPassResources(false);
-
-	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
-	CClearSurfacePass::Execute(pTargetRT, ColorF(0.2, 0.2, 0.2, 1));
-
-	if (!bViewWireframe)
-		m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewSolid, TTYPE_DEBUG, FB_GENERAL);
-	else
-		m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewWireframe, TTYPE_DEBUG, FB_GENERAL);
-
 	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
+
+	// Prepare ========================================================================
+	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+	m_debugViewPass.PrepareRenderPassForUse(commandList);
+
+	if (bViewOverdraw)
+	{
+		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
+		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+		const uint32 numPixels = renderWidth * renderHeight;
+
+		if (m_overdrawCount.IsAvailable() && ((CRenderer::CV_r_OverdrawComplexity == 0) || (m_overdrawCount.GetElementCount() != numPixels)))
+			m_overdrawCount.Release();
+		if (m_overdrawDepth.IsAvailable() && ((CRenderer::CV_r_OverdrawComplexity == 0) || (m_overdrawDepth.GetElementCount() != numPixels)))
+			m_overdrawDepth.Release();
+
+		if (!m_overdrawCount.IsAvailable() && (CRenderer::CV_r_OverdrawComplexity != 0))
+			m_overdrawCount.Create(numPixels, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+		if (!m_overdrawDepth.IsAvailable() && (CRenderer::CV_r_OverdrawComplexity != 0))
+			m_overdrawDepth.Create(numPixels, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+
+		if (!m_overdrawStats.IsAvailable())
+			m_overdrawStats.Create(  4, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+		if (!m_overdrawHisto.IsAvailable())
+			m_overdrawHisto.Create(256, 4, DXGI_FORMAT_R32_UINT, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_UNORDERED_ACCESS, nullptr);
+
+		{
+			// Full clear
+			const ColorI nulls = { 0, 0, 0, 0 };
+
+			commandList.GetComputeInterface()->ClearUAV(m_overdrawCount.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+			commandList.GetComputeInterface()->ClearUAV(m_overdrawDepth.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+			commandList.GetComputeInterface()->ClearUAV(m_overdrawStats.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+			commandList.GetComputeInterface()->ClearUAV(m_overdrawHisto.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+		}
+
+		if (bViewODZPrePass)
+		{
+			// Execute ========================================================================
+			auto& renderItemDrawer = pRenderView->GetDrawer();
+			renderItemDrawer.InitDrawSubmission();
+
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, ePass_DebugViewOverdraw, TTYPE_DEBUG, FB_ZPREPASS);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_ZPREPASS_NEAREST);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_ZPREPASS);
+			m_debugViewPass.EndExecution();
+
+			renderItemDrawer.JobifyDrawSubmission();
+			renderItemDrawer.WaitForDrawSubmission();
+
+			{
+				// Clear without dumping zprepass values
+				const ColorI nulls = { 0, 0, 0, 0 };
+
+				commandList.GetComputeInterface()->ClearUAV(m_overdrawCount.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+				commandList.GetComputeInterface()->ClearUAV(m_overdrawStats.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+				commandList.GetComputeInterface()->ClearUAV(m_overdrawHisto.GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), nulls, 0, nullptr);
+			}
+		}
+	}
 
 	// NOTE: no more external state changes in here, everything should have been setup
 	{
-		Prepare();
-
+		// Execute ========================================================================
+		auto& renderItemDrawer = pRenderView->GetDrawer();
 		renderItemDrawer.InitDrawSubmission();
+		
+		CMotionBlurPredicate mbPredicate;
+		CZPrePassPredicate zpPredicate;
 
-		m_debugViewPass.BeginExecution();
-		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
-		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_BW);
-		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_AW);
-		m_debugViewPass.EndExecution();
+		EPass passID;
+		if (bViewWireframe)
+			passID = ePass_DebugViewWireframe;
+		else if (bViewOverdraw)
+			passID = ePass_DebugViewOverdraw;
+		else
+			passID = ePass_DebugViewSolid;
+		
+		{
+			int nearestNum            = pRenderView->GetRenderItems(EFSLIST_NEAREST_OBJECTS).size();
+ 			int nearestVelocity       = pRenderView->FindRenderListSplit(mbPredicate, EFSLIST_NEAREST_OBJECTS, 0, nearestNum);
+			int nearestNoZPre         = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_NEAREST_OBJECTS, 0, nearestVelocity);
+			int nearestVelocityNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_NEAREST_OBJECTS, nearestVelocity, nearestNum);
+
+			int generalNum            = pRenderView->GetRenderItems(EFSLIST_GENERAL).size();
+			int generalVelocity       = pRenderView->FindRenderListSplit(mbPredicate, EFSLIST_GENERAL, 0, generalNum);
+			int generalNoZPre         = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_GENERAL, 0, generalVelocity);
+			int generalVelocityNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_GENERAL, generalVelocity, generalNum);
+
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_Z, FB_ZPREPASS);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, nearestNoZPre);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, 0, generalNoZPre);
+			m_debugViewPass.EndExecution();
+
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_Z | FB_ZPREPASS);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, nearestNoZPre, nearestVelocity);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, generalNoZPre, generalVelocity);
+			m_debugViewPass.EndExecution();
+
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_Z, FB_ZPREPASS);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, nearestVelocity, nearestVelocityNoZPre);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, generalVelocity, generalVelocityNoZPre);
+			m_debugViewPass.EndExecution();
+
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_Z | FB_ZPREPASS);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, nearestVelocityNoZPre, nearestNum);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, generalVelocityNoZPre, generalNum);
+			m_debugViewPass.EndExecution();
+		}
+		
+		{
+			int nearestFNum    = pRenderView->GetRenderItems(EFSLIST_FORWARD_OPAQUE_NEAREST).size();
+			int nearestFNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_FORWARD_OPAQUE_NEAREST, 0, nearestFNum);
+
+			int generalFNum    = pRenderView->GetRenderItems(EFSLIST_FORWARD_OPAQUE).size();
+			int generalFNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_FORWARD_OPAQUE, 0, generalFNum);
+
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_GENERAL | FB_TILED_FORWARD, FB_ZPREPASS);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, 0, nearestFNoZPre);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE, 0, generalFNoZPre);
+			m_debugViewPass.EndExecution();
+
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_GENERAL | FB_TILED_FORWARD | FB_ZPREPASS);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, nearestFNoZPre, nearestFNum);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE, generalFNoZPre, generalFNum);
+			m_debugViewPass.EndExecution();
+		}
+
+		if (0 /* TODO */)
+		{
+			m_debugViewPass.BeginExecution(m_graphicsPipeline);
+			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_GENERAL);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_BW);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_AW);
+			m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
+			m_debugViewPass.EndExecution();
+		}
 
 		renderItemDrawer.JobifyDrawSubmission();
 		renderItemDrawer.WaitForDrawSubmission();
+	}
+
+	if (bViewOverdraw)
+	{
+		static CCryNameTSCRC techOverdraw("OverdrawComplexity");
+
+		m_resolvePass.SetCustomViewport(rViewport);
+
+		if (m_resolvePass.IsDirty(pTargetRT->GetID()))
+		{
+			m_resolvePass.SetTechnique(CShaderMan::s_shPostEffects, techOverdraw, 0);
+			m_resolvePass.SetRenderTarget(0, pTargetRT);
+			m_resolvePass.SetState(GS_NODEPTHTEST);
+
+			// A buffer the same dimension as the Depth-Target
+			m_resolvePass.SetBuffer(2, &m_overdrawCount, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+			m_resolvePass.SetBuffer(3, &m_overdrawDepth, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+			m_resolvePass.SetBuffer(4, &m_overdrawStats, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+			m_resolvePass.SetBuffer(5, &m_overdrawHisto, EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
+		}
+
+		static CCryNameR overdrawViewMode("overdrawViewMode");
+		static CCryNameR overdrawViewParm("overdrawViewParm");
+
+		m_resolvePass.BeginConstantUpdate();
+		m_resolvePass.SetConstant(overdrawViewMode, Vec4(2, std::abs(CRenderer::CV_r_OverdrawComplexity), float(rViewport.width), float(rViewport.height)), eHWSC_Pixel);
+		m_resolvePass.SetConstant(overdrawViewParm, Vec4(CRenderer::CV_r_OverdrawComplexityBluePoint, CRenderer::CV_r_OverdrawComplexitySmoothness, CRenderer::CV_r_OverdrawComplexityCompression, 0), eHWSC_Pixel);
+
+		m_resolvePass.Execute();
 	}
 
 	SAFE_RELEASE(pTargetDS);
@@ -374,12 +578,9 @@ void CSceneCustomStage::ExecuteDebugger()
 
 void CSceneCustomStage::ExecuteDebugOverlay()
 {
-	CRenderView* pRenderView = RenderView();
-	auto& renderItemDrawer = pRenderView->GetDrawer();
-	const bool bReverseDepth = true;
+	FUNCTION_PROFILER_RENDERER();
 
-	m_debugViewPass.SetLabel("DEBUG_OVERLAY");
-	m_debugViewPass.SetViewport(pRenderView->GetViewport());
+	CRenderView* pRenderView = RenderView();
 
 	{
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
@@ -390,26 +591,26 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 	CTexture* pTargetRT = pRenderView->GetRenderOutput()->GetColorTarget();
 	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
 
+	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
+
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetRT);
 	m_debugViewPass.ExchangeDepthTarget(pTargetDS);
 
-	SetAndBuildPerPassResources(false);
-
-	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
-
-	m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewDrawModes, TTYPE_DEBUG, FB_DEBUG);
-	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
-
 	// NOTE: no more external state changes in here, everything should have been setup
 	{
-		Prepare();
+		// Prepare ========================================================================
+		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		m_debugViewPass.PrepareRenderPassForUse(commandList);
 
+		// Execute ========================================================================
+		auto& renderItemDrawer = pRenderView->GetDrawer();
 		renderItemDrawer.InitDrawSubmission();
 
-		m_debugViewPass.BeginExecution();
+		m_debugViewPass.BeginExecution(m_graphicsPipeline);
+		m_debugViewPass.SetupDrawContext(StageID, ePass_DebugViewDrawModes, TTYPE_DEBUG, FB_DEBUG);
 		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
-		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_BW);
-		m_debugViewPass.DrawTransparentRenderItems(pRenderView, EFSLIST_TRANSP_AW);
+		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_BW);
+		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_AW);
 		m_debugViewPass.EndExecution();
 
 		renderItemDrawer.JobifyDrawSubmission();
@@ -421,10 +622,10 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 
 void CSceneCustomStage::ExecuteSelectionHighlight()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
-	auto& renderItemDrawer = pRenderView->GetDrawer();
-	const bool bReverseDepth = true;
 
 	// first check if we actually have anything worth drawing
 	uint32 numItems = pRenderView->GetRenderItems(EFSLIST_HIGHLIGHT).size();
@@ -432,36 +633,23 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 		return;
 
 	// update our depth texture here
-	CTexture* pTargetRT = CRendererResources::s_ptexSceneSelectionIDs;
+	CTexture* pTargetRT = m_graphicsPipelineResources.m_pTexSceneSelectionIDs;
 	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
-
-	m_selectionIDPass.SetLabel("EDITOR_SELECTION_HIGHLIGHT");
-	m_selectionIDPass.SetViewport(D3DViewPort{
-		0.f,
-		0.f,
-		float(pTargetRT->GetWidth()),
-		float(pTargetRT->GetHeight()),
-		0.0f,
-		1.0f
-	});
-
-	SetAndBuildPerPassResources(false);
 
 	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
 	CClearSurfacePass::Execute(pTargetRT, ColorF(0.0f, 0.0f, 0.0f, 0.0f));
 
-	m_selectionIDPass.SetFlags(CSceneRenderPass::ePassFlags_None);
-	m_selectionIDPass.SetRenderTargets(
-		// Depth
-		pTargetDS,
-		// Color 0
-		pTargetRT
-	);
+	m_selectionIDPass.ExchangeRenderTarget(0, pTargetRT);
+	m_selectionIDPass.ExchangeDepthTarget(pTargetDS);
 
 	// NOTE: no more external state changes in here, everything should have been setup
 	{
-		Prepare();
+		// Prepare ========================================================================
+		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+		m_selectionIDPass.PrepareRenderPassForUse(commandList);
 
+		// Execute ========================================================================
+		auto& renderItemDrawer = pRenderView->GetDrawer();
 		renderItemDrawer.InitDrawSubmission();
 
 		CHighlightPredicate highlightPredicate;
@@ -471,7 +659,8 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 		uint32 startSelected  = pRenderView->FindRenderListSplit(selectionPredicate, EFSLIST_HIGHLIGHT, 0, startHighlight);
 
 		// First pass, draw selected object IDs
-		m_selectionIDPass.BeginExecution();
+		m_selectionIDPass.BeginExecution(m_graphicsPipeline);
+		m_selectionIDPass.SetupDrawContext(StageID, ePass_SelectionIDs, TTYPE_DEBUG, FB_GENERAL);
 		m_selectionIDPass.DrawRenderItems(pRenderView, EFSLIST_HIGHLIGHT, startSelected, numItems);
 		m_selectionIDPass.EndExecution();
 
@@ -510,33 +699,28 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 
 void CSceneCustomStage::ExecuteSilhouettePass()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
 
-	if (!(pRenderView->GetBatchFlags(EFSLIST_CUSTOM) & FB_CUSTOM_RENDER))
+	if (!pRenderView->HasRenderItems(EFSLIST_CUSTOM, FB_CUSTOM_RENDER))
 		return;
 
-	auto prevPipelineFlags = GetStdGraphicsPipeline().GetPipelineFlags();
+	auto prevPipelineFlags = m_graphicsPipeline.GetPipelineFlags();
 
 	{
-		auto& renderItemDrawer = pRenderView->GetDrawer();
+		CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneNormalsMap, Clr_Transparent);
 
-		CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsMap, Clr_Transparent);
-
-		SetAndBuildPerPassResources(false);
-
+		// Prepare ========================================================================
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 		m_silhouetteMaskPass.PrepareRenderPassForUse(commandList);
 
-		const bool bReverseDepth = true;
-		CSceneRenderPass::EPassFlags passFlags = CSceneRenderPass::ePassFlags_None;
-		passFlags |= bReverseDepth ? CSceneRenderPass::ePassFlags_ReverseDepth : CSceneRenderPass::ePassFlags_None;
-
-		m_silhouetteMaskPass.SetFlags(passFlags);
-		m_silhouetteMaskPass.SetViewport(pRenderView->GetViewport());
-
+		// Execute ========================================================================
+		auto& renderItemDrawer = pRenderView->GetDrawer();
 		renderItemDrawer.InitDrawSubmission();
 
-		m_silhouetteMaskPass.BeginExecution();
+		m_silhouetteMaskPass.BeginExecution(m_graphicsPipeline);
+		m_silhouetteMaskPass.SetupDrawContext(StageID, ePass_Silhouette, TTYPE_CUSTOMRENDERPASS, FB_CUSTOM_RENDER);
 		m_silhouetteMaskPass.DrawRenderItems(pRenderView, EFSLIST_CUSTOM);
 		m_silhouetteMaskPass.EndExecution();
 
@@ -544,47 +728,35 @@ void CSceneCustomStage::ExecuteSilhouettePass()
 		renderItemDrawer.WaitForDrawSubmission();
 	}
 
-	GetStdGraphicsPipeline().SetPipelineFlags(prevPipelineFlags);
+	m_graphicsPipeline.SetPipelineFlags(prevPipelineFlags);
 }
 
 void CSceneCustomStage::ExecuteHelpers()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	CRenderView* pRenderView = RenderView();
-	auto& renderItemDrawer = pRenderView->GetDrawer();
 
 	// first check if we actually have anything worth drawing
-	if (!pRenderView->GetRenderItems(EFSLIST_DEBUG_HELPER).size())
+	if (!pRenderView->HasRenderItems(EFSLIST_DEBUG_HELPER, FB_GENERAL))
 		return;
 
-	m_debugViewPass.SetLabel("DEBUG_HELPERS");
-
 	{
-		bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
-
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(0.f, 0.f, 0.f, 0.f);
 		cb.CopyToDevice();
 	}
 
-	CTexture* pTargetTex = pRenderView->GetColorTarget();
-	CTexture* pDepthTex  = pRenderView->GetDepthTarget();
-
-	m_debugViewPass.ExchangeRenderTarget(0, pTargetTex);
-	m_debugViewPass.ExchangeDepthTarget(pDepthTex);
-
-	SetAndBuildPerPassResources(false);
-
-	m_debugViewPass.SetupPassContext(m_stageID, ePass_DebugViewSolid, TTYPE_DEBUG, FB_GENERAL);
-
+	// Prepare ========================================================================
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 	m_debugViewPass.PrepareRenderPassForUse(commandList);
 
-	m_debugViewPass.SetFlags(CSceneRenderPass::ePassFlags_VrProjectionPass);
-	m_debugViewPass.SetViewport(pRenderView->GetViewport());
-
+	// Execute ========================================================================
+	auto& renderItemDrawer = pRenderView->GetDrawer();
 	renderItemDrawer.InitDrawSubmission();
 
-	m_debugViewPass.BeginExecution();
+	m_debugViewPass.BeginExecution(m_graphicsPipeline);
+	m_debugViewPass.SetupDrawContext(StageID, ePass_DebugViewSolid, TTYPE_DEBUG, FB_GENERAL);
 	m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_DEBUG_HELPER);
 	m_debugViewPass.EndExecution();
 

@@ -1,15 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __sequencerkeys_h__
-#define __sequencerkeys_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "ISequencerSystem.h"
-#include "Controls\PropertyCtrl.h"
+#include "Controls/PropertyCtrl.h"
 #include "SequencerNode.h"
+#include "IEditor.h"
 
 class CSequencerTrackPropsDialog;
 class CSequencerKeyPropertiesDlg;
@@ -112,7 +108,7 @@ public:
 
 	bool         IsDragging() const;
 
-	void         SetSequence(CSequencerSequence* pSequence) { m_pSequence = pSequence; };
+	void         SetSequence(CSequencerSequence* pSequence) { m_pSequence = pSequence; }
 	void         SetTimeScale(float timeScale, float fAnchorTime);
 	float        GetTimeScale()                             { return m_timeScale; }
 
@@ -158,7 +154,7 @@ public:
 	const Item&            GetItem(int item) const;
 	CSequencerTrack*       GetTrack(int item) const;
 	CSequencerNode*        GetNode(int item) const;
-	int                    GetHorizontalExtent() const { return m_itemWidth; };
+	int                    GetHorizontalExtent() const { return m_itemWidth; }
 
 	bool                   GetSelectedTracks(std::vector<CSequencerTrack*>& tracks) const;
 	bool                   GetSelectedNodes(std::vector<CSequencerNode*>& nodes) const;
@@ -270,7 +266,7 @@ protected:
 	virtual void RedrawItem(int item);
 
 	//////////////////////////////////////////////////////////////////////////
-	// Must be overriden.
+	// Must be overridden.
 	//////////////////////////////////////////////////////////////////////////
 	//! Find a key near this point.
 	virtual int  FirstKeyFromPoint(CPoint point, bool exact = false) const;
@@ -312,7 +308,7 @@ protected:
 
 	void UpdateAnimation(int item);
 	void UpdateAnimation(CSequencerTrack* animTrack);
-	void SetLeftOffset(int ofs) { m_leftOffset = ofs; };
+	void SetLeftOffset(int ofs) { m_leftOffset = ofs; }
 
 	void SetMouseCursor(HCURSOR crs);
 
@@ -449,8 +445,5 @@ protected:
 	EDSSourceControlResponse TryCheckoutFiles(const std::vector<CString>& paths, bool bPromptUser = TRUE) const;
 
 private:
-	int						 m_startDragMouseOverItemID; //!< Keeps item id, when dragging starts; is used as default item, if dropping is not allowed on current item.
+	int m_startDragMouseOverItemID;            //!< Keeps item id, when dragging starts; is used as default item, if dropping is not allowed on current item.
 };
-
-#endif // __sequencerkeys_h__
-

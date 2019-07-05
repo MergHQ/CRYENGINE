@@ -5,6 +5,9 @@
 
 #include "BaseLibrary.h"
 #include "BaseLibraryItem.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "Objects/EntityScript.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CBaseLibraryManager implementation.
@@ -66,8 +69,8 @@ IDataBaseItem* CBaseLibraryManager::FindItem(CryGUID guid) const
 	if (!m_bUniqGuidMap)
 		return nullptr;
 
-	CBaseLibraryItem* pMtl = stl::find_in_map(m_itemsGuidMap, guid, (CBaseLibraryItem*)0);
-	return pMtl;
+	CBaseLibraryItem* pItem = stl::find_in_map(m_itemsGuidMap, guid, (CBaseLibraryItem*) nullptr);
+	return pItem;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -145,27 +148,26 @@ void CBaseLibraryManager::DeleteItem(IDataBaseItem* pItem)
 //////////////////////////////////////////////////////////////////////////
 IDataBaseLibrary* CBaseLibraryManager::LoadLibrary(const string& inFilename, bool bReload)
 {
-	string filename = inFilename;
 	// If library is already loaded ignore it.
 	for (int i = 0; i < m_libs.size(); i++)
 	{
-		if (stricmp(filename, m_libs[i]->GetFilename()) == 0 || stricmp(inFilename, m_libs[i]->GetFilename()) == 0)
+		if (stricmp(inFilename, m_libs[i]->GetFilename()) == 0)
 		{
-			Error(_T("Loading Duplicate Library: %s"), (const char*)filename);
-			return 0;
+			Error(_T("Loading Duplicate Library: %s"), inFilename.c_str());
+			return nullptr;
 		}
 	}
 
 	TSmartPtr<CBaseLibrary> pLib = MakeNewLibrary();
-	if (!pLib->Load(filename))
+	if (!pLib->Load(inFilename))
 	{
-		Error(_T("Failed to Load Item Library: %s"), (const char*)filename);
-		return 0;
+		Error(_T("Failed to Load Item Library: %s"), inFilename.c_str());
+		return nullptr;
 	}
 	if (FindLibrary(pLib->GetName()) != 0)
 	{
-		Error(_T("Loading Duplicate Library: %s"), (const char*)pLib->GetName());
-		return 0;
+		Error(_T("Loading Duplicate Library: %s"), pLib->GetName().c_str());
+		return nullptr;
 	}
 	m_libs.push_back(pLib);
 	return pLib;
@@ -202,11 +204,11 @@ IDataBaseLibrary* CBaseLibraryManager::AddLibrary(const string& library, bool bS
 	// therefore it will be delayed later in order to get the proper game path when overriding.
 	if (bSetFullFilename)
 	{
-		filename = GetLibsPath() + filename + ".xml";
+		filename.Format("%s.%s", PathUtil::Make(GetLibsPath(), filename).c_str(), GetFileExtension());
 	}
 	else
 	{
-		filename = filename + ".xml";
+		filename.Format("%s.%s", CryPathString(filename).c_str(), GetFileExtension());
 	}
 	lib->SetFilename(filename);
 	lib->SetModified(false);
@@ -220,7 +222,8 @@ string CBaseLibraryManager::MakeFilename(const string& library)
 {
 	string filename = library;
 	filename.Replace(' ', '_');
-	return GetLibsPath() + filename + ".xml";
+	filename.Format("%s.%s", PathUtil::Make(GetLibsPath(), filename).c_str(), GetFileExtension());
+	return filename;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -293,7 +296,7 @@ void CBaseLibraryManager::SaveAllLibs()
 //////////////////////////////////////////////////////////////////////////
 void CBaseLibraryManager::Serialize(XmlNodeRef& node, bool bLoading)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	string rootNodeName = GetRootNodeName();
 	if (bLoading)
 	{
@@ -354,7 +357,9 @@ string CBaseLibraryManager::MakeUniqItemName(const string& srcName)
 	string typeName = srcName;
 	int len = typeName.GetLength();
 	while (len > 0 && isdigit(typeName[len - 1]))
+	{
 		len--;
+	}
 
 	typeName = typeName.Left(len);
 
@@ -379,7 +384,10 @@ string CBaseLibraryManager::MakeUniqItemName(const string& srcName)
 		return str;
 	}
 	else
+	{
+		// cppcheck-suppress memleak
 		return typeName;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -391,6 +399,7 @@ void CBaseLibraryManager::Validate()
 		pItem->Validate();
 	}
 	pEnum->Release();
+	// cppcheck-suppress memleak
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -570,6 +579,7 @@ void CBaseLibraryManager::GatherUsedResources(CUsedResources& resources)
 		pItem->GatherUsedResources(resources);
 	}
 	pEnum->Release();
+	// cppcheck-suppress memleak
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -694,4 +704,3 @@ IDataBaseItem* CBaseLibraryManager::GetSelectedParentItem() const
 {
 	return m_pSelectedParent;
 }
-

@@ -3,6 +3,8 @@
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryPhysics/physinterface.h>
+#include "PointConstraint.h"
 
 class CPlugin_CryDefaultEntities;
 
@@ -24,7 +26,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 
 			virtual void OnShutDown() final;
 			// ~IEntityComponent
@@ -57,6 +59,8 @@ namespace Cry
 				desc.AddMember(&CLineConstraintComponent::m_limitMin, 'lmin', "LimitMin", "Minimum Limit", nullptr, 0.f);
 				desc.AddMember(&CLineConstraintComponent::m_limitMax, 'lmax', "LimitMax", "Maximum Limit", nullptr, 1.f);
 				desc.AddMember(&CLineConstraintComponent::m_damping, 'damp', "Damping", "Damping", nullptr, 0.f);
+
+				desc.AddMember(&CLineConstraintComponent::m_attacher, 'atch', "Attacher", "Attachment Parameters", nullptr, SConstraintAttachment());
 			}
 
 			virtual void ConstrainToEntity(Schematyc::ExplicitEntityId targetEntityId, bool bDisableCollisionsWith, bool bAllowRotation)
@@ -78,7 +82,7 @@ namespace Cry
 				ConstrainTo(WORLD_ENTITY, false, bAllowRotation);
 			}
 
-			virtual void ConstrainTo(IPhysicalEntity* pOtherEntity, bool bDisableCollisionsWith = false, bool bAllowRotation = true)
+			virtual void ConstrainTo(IPhysicalEntity* pOtherEntity, bool bDisableCollisionsWith = false, bool bAllowRotation = true, IPhysicalEntity *pHelperEnt = nullptr)
 			{
 				if (m_constraintIds.size() > 0)
 				{
@@ -88,7 +92,7 @@ namespace Cry
 				if (IPhysicalEntity* pConstraintOwner = m_pEntity->GetPhysicalEntity())
 				{
 					// Constraints can only be added to rigid-based entities
-					if (pConstraintOwner->GetType() != PE_RIGID && pConstraintOwner->GetType() != PE_WHEELEDVEHICLE)
+					if (pConstraintOwner->GetType() != PE_RIGID && pConstraintOwner->GetType() != PE_WHEELEDVEHICLE && pConstraintOwner->GetType() != PE_ARTICULATED)
 					{
 						if (pOtherEntity == WORLD_ENTITY)
 						{
@@ -103,7 +107,7 @@ namespace Cry
 
 #ifndef RELEASE
 						// Validate the same check again
-						if (pConstraintOwner->GetType() != PE_RIGID && pConstraintOwner->GetType() != PE_WHEELEDVEHICLE)
+						if (pConstraintOwner->GetType() != PE_RIGID && pConstraintOwner->GetType() != PE_WHEELEDVEHICLE && pConstraintOwner->GetType() != PE_ARTICULATED)
 						{
 							CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Tried to add line constraint to non-rigid or vehicle entities!");
 							return;
@@ -114,31 +118,20 @@ namespace Cry
 					Matrix34 slotTransform = GetWorldTransformMatrix();
 
 					pe_action_add_constraint constraint;
-					constraint.flags = world_frames | constraint_no_tears | constraint_line;
+					constraint.flags = world_frames | constraint_no_tears | constraint_line | (bDisableCollisionsWith ? constraint_ignore_buddy : 0);
 					constraint.pt[0] = constraint.pt[1] = slotTransform.GetTranslation();
 					constraint.qframe[0] = constraint.qframe[1] = Quat(slotTransform) * Quat::CreateRotationV0V1(Vec3(1, 0, 0), m_axis);
 					constraint.xlimits[0] = m_limitMin;
 					constraint.xlimits[1] = m_limitMax;
 					constraint.yzlimits[0] = constraint.yzlimits[1] = 0;
 					constraint.damping = m_damping;
+					if (pHelperEnt) constraint.pConstraintEntity = pHelperEnt;
+					constraint.pBuddy = pOtherEntity;
 
 					if (!bAllowRotation)
 					{
 						constraint.flags |= constraint_no_rotation;
 					}
-
-					if (bDisableCollisionsWith && pOtherEntity != WORLD_ENTITY && pOtherEntity != pConstraintOwner)
-					{
-						constraint.flags |= constraint_ignore_buddy | constraint_inactive;
-
-						constraint.pBuddy = pConstraintOwner;
-						pOtherEntity->Action(&constraint);
-						m_constraintIds.emplace_back(gEnv->pPhysicalWorld->GetPhysicalEntityId(pOtherEntity), pConstraintOwner->Action(&constraint));
-
-						constraint.flags &= ~constraint_inactive;
-					}
-
-					constraint.pBuddy = pOtherEntity;
 
 					int ownerId = gEnv->pPhysicalWorld->GetPhysicalEntityId(pConstraintOwner);
 					m_constraintIds.emplace_back(ownerId, pConstraintOwner->Action(&constraint));
@@ -191,6 +184,8 @@ namespace Cry
 			Schematyc::Range<-10000, 10000> m_limitMax = 1.f;
 
 			Schematyc::Range<-10000, 10000> m_damping = 0.f;
+
+			SConstraintAttachment m_attacher;
 
 			std::vector<std::pair<int, int>> m_constraintIds;
 		};

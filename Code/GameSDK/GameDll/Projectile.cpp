@@ -11,6 +11,7 @@
 #include "Actor.h"
 #include "Player.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <IItemSystem.h>
 #include <CryAISystem/IAgent.h>
@@ -461,13 +462,13 @@ bool CProjectile::Init(IGameObject* pGameObject)
 
 	float lifetime = m_pAmmoParams->lifetime;
 	if (lifetime > 0.0f)
-		pEntity->SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
+		SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
 
 	float showtime = m_pAmmoParams->showtime;
 	if (showtime > 0.0f)
 	{
 		pEntity->SetSlotFlags(0, pEntity->GetSlotFlags(0) & (~ENTITY_SLOT_RENDER));
-		pEntity->SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
+		SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
 	}
 	else
 		pEntity->SetSlotFlags(0, pEntity->GetSlotFlags(0) | ENTITY_SLOT_RENDER);
@@ -505,13 +506,13 @@ void CProjectile::ReInitFromPool()
 
 	float lifetime = m_pAmmoParams->lifetime;
 	if (lifetime > 0.0f)
-		GetEntity()->SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
+		SetTimer(ePTIMER_LIFETIME, (int)(lifetime * 1000.0f));
 
 	float showtime = m_pAmmoParams->showtime;
 	if (showtime > 0.0f)
 	{
 		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0) & (~ENTITY_SLOT_RENDER));
-		GetEntity()->SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
+		SetTimer(ePTIMER_SHOWTIME, (int)(showtime * 1000.0f));
 	}
 	else
 		GetEntity()->SetSlotFlags(0, GetEntity()->GetSlotFlags(0) | ENTITY_SLOT_RENDER);
@@ -553,7 +554,7 @@ void CProjectile::ReInitFromPool()
 void CProjectile::SetLifeTime(float lifeTime)
 {
 	if (lifeTime > 0.0f)
-		GetEntity()->SetTimer(ePTIMER_LIFETIME, (int)(lifeTime * 1000.0f));
+		SetTimer(ePTIMER_LIFETIME, (int)(lifeTime * 1000.0f));
 }
 
 //------------------------------------------------------------------------
@@ -569,7 +570,7 @@ bool CProjectile::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 {
 	ResetGameObject();
 	Proj::RegisterEvents(*this, *pGameObject);
-	CRY_ASSERT_MESSAGE(false, "CProjectile::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CProjectile::ReloadExtension not implemented");
 
 	return false;
 }
@@ -577,7 +578,7 @@ bool CProjectile::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 //------------------------------------------------------------------------
 bool CProjectile::GetEntityPoolSignature(TSerialize signature)
 {
-	CRY_ASSERT_MESSAGE(false, "CProjectile::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CProjectile::GetEntityPoolSignature not implemented");
 
 	return true;
 }
@@ -636,7 +637,7 @@ void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
-	CRY_ASSERT_MESSAGE(!RequiresDelayedDestruct() || gEnv->bMultiplayer, "The mpProjectileDestructDelay ammo params should only ever be greater than zero in Multiplayer");
+	CRY_ASSERT(!RequiresDelayedDestruct() || gEnv->bMultiplayer, "The mpProjectileDestructDelay ammo params should only ever be greater than zero in Multiplayer");
 
 	// we need to destroy this projectile
 	if (CheckAnyProjectileFlags(ePFlag_needDestruction) && !GetEntity()->IsKeptAlive())
@@ -861,9 +862,9 @@ void CProjectile::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CProjectile::GetEventMask() const
+Cry::Entity::EventFlags CProjectile::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_TIMER);
+	return ENTITY_EVENT_TIMER;
 }
 
 //------------------------------------------------------------------------
@@ -1279,7 +1280,7 @@ void CProjectile::Explode(const SExplodeDesc& explodeDesc)
 				{
 					char msg[1024] = { 0 };
 					cry_sprintf(msg, "missing network safe class id for entity class %s", GetEntity()->GetClass()->GetName());
-					CRY_ASSERT_MESSAGE(false, msg);
+					CRY_ASSERT(false, msg);
 				}
 #endif
 			}
@@ -2036,8 +2037,6 @@ bool CProjectile::ProximityDetector_MP(float proxyRadius)
 	CActor* pOwnerActor = static_cast<CActor*>(pActorSystem->GetActor(m_ownerId));
 	if (!pOwnerActor || pOwnerActor->IsDead())
 		return false;
-
-	CGameRules* pGameRules = g_pGame->GetGameRules();
 
 	const static IEntityClass* sVTOLClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(CVTOLVehicleManager::s_VTOLClassName);
 

@@ -4,6 +4,7 @@
 #include "LensFlareManager.h"
 #include "LensFlareLibrary.h"
 #include "LensFlareItem.h"
+#include <Util/EditorUtils.h>
 #include <CryRenderer/IFlares.h>
 
 bool CLensFlareLibrary::Save()
@@ -71,4 +72,3 @@ IOpticsElementBasePtr CLensFlareLibrary::GetOpticsOfItem(const char* szflareName
 
 	return pOptics;
 }
-

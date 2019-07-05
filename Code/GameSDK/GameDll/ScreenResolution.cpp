@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ScreenResolution.h"
 #include <vector>
+#include <CryRenderer/IRenderer.h>
 
 namespace
 {

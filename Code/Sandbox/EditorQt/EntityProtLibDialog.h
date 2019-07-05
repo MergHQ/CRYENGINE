@@ -1,21 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __entityprotlibdialog_h__
-#define __entityprotlibdialog_h__
 #pragma once
 
+#include "Controls/SplitterCtrl.h"
+#include "Controls/PropertyCtrl.h"
+#include "Controls/PreviewModelCtrl.h"
 #include "BaseLibraryDialog.h"
-#include "Controls\SplitterCtrl.h"
-#include "Controls\TreeCtrlEx.h"
-#include "Controls\PropertyCtrl.h"
-#include "Controls\PreviewModelCtrl.h"
-#include "Controls\PropertyItem.h"
 #include "EntityScriptDialog.h"
+
+struct IEntitySystem;
+struct IEntity;
 
 class CEntityPrototypeManager;
 class CEntityPrototype;
-struct IEntitySystem;
-struct IEntity;
 class CMFCPropertyTree;
 
 /** Dialog which hosts entity prototype library.
@@ -82,23 +79,20 @@ protected:
 	CPreviewModelCtrl   m_previewCtrl;
 	CPropertyCtrl       m_propsCtrl;
 	CPropertyCtrl       m_objectPropsCtrl;
-	CMFCPropertyTree*   m_pArchetypeExtensionPropsCtrl;
+	CMFCPropertyTree*   m_pArchetypeExtensionPropsCtrl { nullptr };
 	CXTEdit             m_descriptionEditBox;
 	CImageList          m_imageList;
 	CXTCaption          m_wndCaptionEntityClass;
 
 	//! Selected Prototype.
-	IEntity*       m_entity;
-	IEntitySystem* m_pEntitySystem;
+	IEntity*       m_entity { nullptr };
+	IEntitySystem* m_pEntitySystem { nullptr };
 	string         m_visualObject;
 	string         m_PrototypeMaterial;
 
-	bool           m_bEntityPlaying;
-	bool           m_bShowDescription;
+	bool           m_bEntityPlaying { false };
+	bool           m_bShowDescription { false };
 
 	// Prototype manager.
 	CEntityPrototypeManager* m_pEntityManager;
 };
-
-#endif // __entityprotlibdialog_h__
-

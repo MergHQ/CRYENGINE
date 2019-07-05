@@ -87,7 +87,7 @@ bool CObject::Init(CryGUID classGUID, const IObjectPropertiesPtr& pProperties)
 	m_pProperties = pProperties;
 
 	CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(classGUID);
-	CRY_ASSERT_MESSAGE(pClass, "Schematyc class '%s' couldn't be found in class registry.");
+	CRY_ASSERT(pClass, "Schematyc class '%s' couldn't be found in class registry.");
 	if (!pClass)
 	{
 		return false;
@@ -105,18 +105,18 @@ ObjectId CObject::GetId() const
 
 const IRuntimeClass& CObject::GetClass() const
 {
-	CRY_ASSERT_MESSAGE(m_pClass, "Runtime class of Schematyc Object must be not null.");
+	CRY_ASSERT(m_pClass, "Runtime class of Schematyc Object must be not null.");
 	return *m_pClass;
 }
 
 const char* CObject::GetScriptFile() const
 {
 	const IScriptElement* pElement = CCore::GetInstance().GetScriptRegistry().GetElement(m_pClass->GetGUID());
-	CRY_ASSERT_MESSAGE(pElement, "Script Element not found!");
+	CRY_ASSERT(pElement, "Script Element not found!");
 	if (pElement && pElement->GetType() == EScriptElementType::Class || pElement->GetType() == EScriptElementType::Module)
 	{
 		const IScript* pScript = pElement->GetScript();
-		CRY_ASSERT_MESSAGE(pScript, "Script Element doesn't have a script.");
+		CRY_ASSERT(pScript, "Script Element doesn't have a script.");
 		if (pScript)
 		{
 			return pScript->GetFilePath() + sizeof("assets");
@@ -144,7 +144,7 @@ bool CObject::SetSimulationMode(ESimulationMode simulationMode, EObjectSimulatio
 		if (simulationMode != ESimulationMode::Idle)
 		{
 			CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(GetClass().GetGUID());
-			CRY_ASSERT_MESSAGE(pClass, "Schematyc class '%s' couldn't be found in class registry.");
+			CRY_ASSERT(pClass, "Schematyc class '%s' couldn't be found in class registry.");
 			if (pClass)
 			{
 				if (m_pClass->GetTimeStamp() < pClass->GetTimeStamp())
@@ -197,6 +197,11 @@ void CObject::ProcessSignal(const SObjectSignal& signal)
 	else
 	{
 		m_bQueueSignals = true;
+
+		for (IObjectSignalListener* pListener : m_signalListener)
+		{
+			pListener->ProcessSignal(signal);
+		}
 
 		ExecuteSignalReceivers(signal);
 
@@ -304,6 +309,19 @@ void CObject::Dump(IObjectDump& dump, const ObjectDumpFlags& flags) const
 			dump(dumpTimer);
 		}
 	}
+}
+
+void CObject::AddSignalListener(IObjectSignalListener& signalListener)
+{
+	if (!stl::find(m_signalListener, &signalListener))
+	{
+		m_signalListener.push_back(&signalListener);
+	}
+}
+
+void CObject::RemoveSignalListener(IObjectSignalListener& signalListener)
+{
+	stl::find_and_erase(m_signalListener, &signalListener);
 }
 
 CScratchpad& CObject::GetScratchpad()

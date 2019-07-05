@@ -233,8 +233,6 @@ void CSceneModelCommon::SetScene(FbxTool::CScene* pScene)
 
 	m_pFbxScene = pScene;
 
-	const FbxTool::SNode* const pFbxRootNode = m_pFbxScene->GetRootNode();
-
 	m_pRoot = CreateSceneFromSourceScene(*m_pScene, *m_pFbxScene);
 
 	beginResetModel();
@@ -345,4 +343,3 @@ void CSceneModelCommon::ClearSceneWithoutReset()
 	m_pRoot = nullptr;
 	m_pFbxScene = nullptr;
 }
-

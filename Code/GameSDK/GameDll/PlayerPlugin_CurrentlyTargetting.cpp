@@ -130,9 +130,7 @@ void CPlayerPlugin_CurrentlyTargetting::NetSerialize(TSerialize ser, EEntityAspe
 
 				m_currentTargetTime = 0.0f;
 
-				CGameRules *pGameRules = g_pGame->GetGameRules();
-
-				const EntityId clientActorId = gEnv->pGameFramework->GetClientActorId();
+				//const EntityId clientActorId = gEnv->pGameFramework->GetClientActorId();
 				if (m_bTargetingLocalPlayer)
 				{
 					SHUDEvent event (eHUDEvent_LocalPlayerTargeted);

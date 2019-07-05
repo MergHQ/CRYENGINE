@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __GameTokenManager_h__
-#define __GameTokenManager_h__
 #pragma once
 
 #include "BaseLibraryManager.h"
@@ -32,16 +30,15 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
 
+	const char* GetDataFilename() const;
+
 protected:
 	virtual CBaseLibraryItem* MakeNewItem();
 	virtual CBaseLibrary*     MakeNewLibrary();
 	//! Root node where this library will be saved.
-	virtual string           GetRootNodeName();
+	virtual string            GetRootNodeName();
 	//! Path to libraries in this manager.
-	virtual string           GetLibsPath();
+	virtual string            GetLibsPath();
 
 	string m_libsPath;
 };
-
-#endif // __GameTokenManager_h__
-

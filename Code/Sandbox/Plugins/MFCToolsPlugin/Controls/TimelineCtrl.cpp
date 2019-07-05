@@ -524,7 +524,6 @@ void CTimelineCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 /////////////////////////////////////////////////////////////////////////////
 BOOL CTimelineCtrl::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
-	BOOL b = FALSE;
 	HCURSOR hCursor = 0;
 	hCursor = AfxGetApp()->LoadCursor(IDC_ARRWHITE);
 
@@ -746,4 +745,3 @@ void CTimelineCtrl::SetPlayCallback(const std::function<void()>& callback)
 {
 	m_playCallback = callback;
 }
-

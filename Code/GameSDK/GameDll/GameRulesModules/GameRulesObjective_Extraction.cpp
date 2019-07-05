@@ -38,6 +38,8 @@
 #include "Audio/Announcer.h"
 #include "Weapon.h"
 #include "PlayerVisTable.h"
+#include "GameCVars.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 //#include "CryFixedString.h"
 
@@ -638,7 +640,6 @@ void CGameRulesObjective_Extraction::UpdateButtonPresses()
 
 	if (pClientPlayer && m_useButtonHeld && m_attemptPickup)
 	{
-		bool  keepPressing = false;
 		const SInteractionInfo& interaction = pClientPlayer->GetCurrentInteractionInfo();
 
 		if(interaction.interactionType == eInteraction_GameRulesPickup)
@@ -662,7 +663,7 @@ void CGameRulesObjective_Extraction::UpdateButtonPresses()
 			}
 
 			SPickup* pickup = GetPickupForPickupEntityId(interaction.interactiveEntityId);
-			CRY_ASSERT_MESSAGE(pickup, "UpdateButtonPresses() has failed to find a pickup for the ent pickupableByButton. this shouldn't happen!");
+			CRY_ASSERT(pickup, "UpdateButtonPresses() has failed to find a pickup for the ent pickupableByButton. this shouldn't happen!");
 
 			if (pickup)
 			{
@@ -776,7 +777,6 @@ void CGameRulesObjective_Extraction::Update(float frameTime)
 #endif
 
 	CGameRules *pGameRules = g_pGame->GetGameRules();
-	float serverTime = pGameRules->GetServerTime();
 	int numLeft = 0;
 	// update the timer on any dropped pickups, on clients and servers!
 	int numPickups = m_pickups.size();
@@ -981,7 +981,7 @@ CGameRulesObjective_Extraction::ERMITypes
 			rmiType=eRMITypeDoubleEntity_stealth_pickup_spawned;
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("GetSpawnedPickupRMITypeFromSuitMode() has encountered and unhandled suitmode=%d", suitMode));
+			CRY_ASSERT(0, string().Format("GetSpawnedPickupRMITypeFromSuitMode() has encountered and unhandled suitmode=%d", suitMode));
 			break;
 	}
 
@@ -993,19 +993,19 @@ void CGameRulesObjective_Extraction::NewFallbackGunForPickup(EntityId pickupEnti
 	DbgLog("CGameRulesObjective_Extraction::NewFallbackGunForPickup() pickupEntityId=%d; fallbackGunEntityId=%d", pickupEntityId, fallbackGunEntityId);
 
 	SPickup *pickup = GetPickupForPickupEntityId(pickupEntityId);
-	CRY_ASSERT_MESSAGE(pickup, "failed to find pickup for entity id");
+	CRY_ASSERT(pickup, "failed to find pickup for entity id");
 	if (pickup)
 	{
 		pickup->m_spawnedFallbackGunId = fallbackGunEntityId;
 
 		// tell lua about their new hammer to play with
 		IEntity *pickupEntity = gEnv->pEntitySystem->GetEntity(pickupEntityId);
-		CRY_ASSERT_MESSAGE(pickupEntity, "NewFallbackGunForPickup() failed to get the pickup entity");
+		CRY_ASSERT(pickupEntity, "NewFallbackGunForPickup() failed to get the pickup entity");
 
 		if (pickupEntity)
 		{
 			IEntity *spawnedFallbackGun = gEnv->pEntitySystem->GetEntity(fallbackGunEntityId);
-			CRY_ASSERT_MESSAGE(spawnedFallbackGun, "NewFallbackGunForPickup() failed to get the hammer entity");
+			CRY_ASSERT(spawnedFallbackGun, "NewFallbackGunForPickup() failed to get the hammer entity");
 
 			if (spawnedFallbackGun)
 			{
@@ -1088,9 +1088,9 @@ void CGameRulesObjective_Extraction::SpawnAllPickups()
 					params.sName = "MagicHammer"; 
 					params.vPosition = zeroVec;
 					params.qRotation = Quat(zeroAng);
-					params.nFlags = ENTITY_FLAG_NO_PROXIMITY|ENTITY_FLAG_NEVER_NETWORK_STATIC;	
+					params.nFlags = ENTITY_FLAG_NO_PROXIMITY;	
 					IEntity *spawnedMagicHammer = gEnv->pEntitySystem->SpawnEntity(params, true);
-					CRY_ASSERT_MESSAGE(spawnedMagicHammer, "failed to spawn magic hammer. This shouldn't happen");
+					CRY_ASSERT(spawnedMagicHammer, "failed to spawn magic hammer. This shouldn't happen");
 					if (spawnedMagicHammer)
 					{
 						NewFallbackGunForPickup(pickup->m_spawnedPickupEntityId, spawnedMagicHammer->GetId());
@@ -1112,16 +1112,16 @@ void CGameRulesObjective_Extraction::SpawnAllPickups()
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(0, "Failed to find and entityId to spawn at. Unable to spawn a pickup!!!");
+					CRY_ASSERT(0, "Failed to find and entityId to spawn at. Unable to spawn a pickup!!!");
 				}
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(0, "failed to try and spawn pickup. entityClass is invalid");
+				CRY_ASSERT(0, "failed to try and spawn pickup. entityClass is invalid");
 			}
 		}
 
-		CRY_ASSERT_MESSAGE(gEnv->bServer, "we're about to change aspects after spawning pickups, we better be on the server, and we aint!!");
+		CRY_ASSERT(gEnv->bServer, "we're about to change aspects after spawning pickups, we better be on the server, and we aint!!");
 		CHANGED_NETWORK_STATE(g_pGame->GetGameRules(), EXTRACTION_OBJECTIVE_STATE_ASPECT);
 	}
 }
@@ -1188,8 +1188,7 @@ void CGameRulesObjective_Extraction::OnStartGamePost()
 		CRY_ASSERT(pRoundsModule);
 		if (pRoundsModule)
 		{
-			int  primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
-			int secondaryTeam = (primaryTeam == 1) ? 2 : 1;			// defending
+			int primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
 			
 			pIt->MoveFirst();
 			while(pEntity = pIt->Next())
@@ -1281,7 +1280,7 @@ EntityId CGameRulesObjective_Extraction::FindNewEntityIdToSpawnAt()
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "Failed to find an entityId to spawn at. No available spawnAts left!");
+		CRY_ASSERT(0, "Failed to find an entityId to spawn at. No available spawnAts left!");
 	}
 
 	return ret;
@@ -1346,7 +1345,6 @@ IEntity *CGameRulesObjective_Extraction::SpawnEntity( EntityId spawnAt, IEntityC
 		//rotation.y += m_spawnRotation.y;
 		//rotation.z += m_spawnRotation.z;
 		params.qRotation = Quat(rotation);
-		params.nFlags = ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 		pSpawnedEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 		if (pSpawnedEntity)
@@ -1388,12 +1386,12 @@ IEntity *CGameRulesObjective_Extraction::SpawnEntity( EntityId spawnAt, IEntityC
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(0, "failed to spawn entity");
+			CRY_ASSERT(0, "failed to spawn entity");
 		}
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "failed to find entity to spawnAt");
+		CRY_ASSERT(0, "failed to find entity to spawnAt");
 	}
 
 	return pSpawnedEntity;
@@ -1427,7 +1425,7 @@ CGameRulesObjective_Extraction::SPickup *CGameRulesObjective_Extraction::GetPick
 {
 	SPickup *ret=NULL;
 	int numPickups=m_pickups.size();
-	CRY_ASSERT_MESSAGE(inEntityId, "GetPickupForPickupEntityId() doesn't really want to ever pass inEntityId=0");
+	CRY_ASSERT(inEntityId, "GetPickupForPickupEntityId() doesn't really want to ever pass inEntityId=0");
 	if (inEntityId)
 	{
 		for (int i=0; i<numPickups; i++)
@@ -1449,7 +1447,7 @@ CGameRulesObjective_Extraction::SPickup *CGameRulesObjective_Extraction::GetPick
 {
 	SPickup *ret=NULL;
 	int numPickups=m_pickups.size();
-	CRY_ASSERT_MESSAGE(inEntityId, "GetPickupForCarrierEntityId() doesn't really want to ever pass inEntityId=0");
+	CRY_ASSERT(inEntityId, "GetPickupForCarrierEntityId() doesn't really want to ever pass inEntityId=0");
 	if (inEntityId)
 	{
 		for (int i=0; i<numPickups; i++)
@@ -1498,7 +1496,7 @@ CGameRulesObjective_Extraction::SExtractAt *CGameRulesObjective_Extraction::GetE
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(outExtractAt, "failed to find extractAt for entityId");
+	CRY_ASSERT(outExtractAt, "failed to find extractAt for entityId");
 	return outExtractAt;
 }
 
@@ -1796,7 +1794,7 @@ void CGameRulesObjective_Extraction::PlayerDropsPickupCommon(EntityId playerId, 
 
 	DbgLog("CGameRulesObjective_Extraction::PlayerDropsPickupCommon() playerId=%d", playerId);
 
-	CRY_ASSERT_MESSAGE(playerId == pickup->m_carrierId, "PlayerDropsPickupCommon() requires the player doing the dropping to already be the carrier, and it isn't!!");
+	CRY_ASSERT(playerId == pickup->m_carrierId, "PlayerDropsPickupCommon() requires the player doing the dropping to already be the carrier, and it isn't!!");
 	if (pickup->m_state == ePickupState_Carried)	// new joining clients want to have their state updated but have no attachment to actually drop
 	{
 		g_pGame->GetGameRules()->OnPickupEntityDetached(pickup->m_spawnedPickupEntityId, pickup->m_carrierId, false, pickup->m_entityClass->GetName());
@@ -1891,8 +1889,6 @@ void CGameRulesObjective_Extraction::PlayerDropsPickupCommon(EntityId playerId, 
 			displayName = playerEntity ? playerEntity->GetName() : "NULL ENTITY";	
 		}
 
-		const bool  isLocalActor = (gEnv->IsClient() && (playerId == g_pGame->GetIGameFramework()->GetClientActorId()));
-
 		const char *pickupString = GetPickupString(pickup);	
 		string pickupStringCache = pickupString;
 
@@ -1968,11 +1964,8 @@ void CGameRulesObjective_Extraction::PickupReturnsCommon(SPickup *pickup, IEntit
 
 	if (!wasExtracted)
 	{
-		EntityId localActorId = g_pGame->GetIGameFramework()->GetClientActorId();
 		CGameRules *pGameRules = g_pGame->GetGameRules();
-		int localTeamId = pGameRules->GetTeam(localActorId);
 		int pickupTeamId = pGameRules->GetTeam(pickup->m_spawnedPickupEntityId); // pickup->m_teamAffected will be the defending team
-		bool localPlayerPickupSameTeam = (localTeamId == pickupTeamId);
 
 		const char *pickupString = GetPickupString(pickup);
 		string pickupStringCache = pickupString;
@@ -2003,7 +1996,7 @@ void CGameRulesObjective_Extraction::OnEntityEvent( IEntity *pEntity, const SEnt
 		if (pickup)
 		{
 			DbgLog("CGameRulesObjective_Extraction::OnEntityEvent() received ENTITY_EVENT_DONE for a pickup entity - removing the entity from pickup and resetting icon");
-			CRY_ASSERT_MESSAGE(pickup->m_spawnedPickupEntityId == pEntity->GetId(), "OnEntityEvent() EVENT_DONE trying to remove the hud icons for a removed pickup entity but the pickup's entityId and pEntity aren't the same");
+			CRY_ASSERT(pickup->m_spawnedPickupEntityId == pEntity->GetId(), "OnEntityEvent() EVENT_DONE trying to remove the hud icons for a removed pickup entity but the pickup's entityId and pEntity aren't the same");
 			
 			if(pickup->m_spawnedPickupEntityId && pickup->m_carrierId)
 			{
@@ -2021,9 +2014,10 @@ void CGameRulesObjective_Extraction::OnEntityEvent( IEntity *pEntity, const SEnt
 	{
 		// original proximity pickup collecting
 		EntityId entityEnteredId = (EntityId) event.nParam[0];
+#if CRY_DEBUG_LOG_ENABLED
 		IEntity *entityEntered = gEnv->pEntitySystem->GetEntity(entityEnteredId);
-
 		DbgLog("OnEntityEvent() Server - ENTERAREA entity=%p (%s) has entered pEntity=%p (%s);", entityEntered, entityEntered ? entityEntered->GetName() : "NULL", pEntity, pEntity ? pEntity->GetName() : "NULL");
+#endif
 
 		if (pEntity->GetClass() == m_extractAtEntityClass)
 		{
@@ -2207,7 +2201,7 @@ void CGameRulesObjective_Extraction::OnEntityKilled( const HitInfo &hitInfo )
 					else
 					{
 						DbgLog("CGameRulesObjective_Extraction::OnEntityKilled() but the shooter team=%d isn't the attacking=%d or defending team=%d", shooterTeamId, primaryTeam, secondaryTeam);
-						CRY_ASSERT_MESSAGE(0, string().Format("OnEntityKilled() but the shooter team=%d isn't the attacking=%d or defending team=%d", shooterTeamId, primaryTeam, secondaryTeam));
+						CRY_ASSERT(0, string().Format("OnEntityKilled() but the shooter team=%d isn't the attacking=%d or defending team=%d", shooterTeamId, primaryTeam, secondaryTeam));
 					}
 				}
 			}
@@ -2229,7 +2223,7 @@ void CGameRulesObjective_Extraction::OnClientEnteredGame(int channelId, bool isR
 	EntityId localActorId = g_pGame->GetIGameFramework()->GetClientActorId();
 	if (gEnv->bServer)
 	{
-		int  plyrTeam = g_pGame->GetGameRules()->GetTeam(playerId);
+		//int  plyrTeam = g_pGame->GetGameRules()->GetTeam(playerId);
 
 		int numPickups=m_pickups.size();
 		int numExtractAts=m_extractAtElements.size();
@@ -2360,14 +2354,14 @@ void CGameRulesObjective_Extraction::OnSingleEntityRMI(CGameRules::SModuleRMIEnt
 			break;
 		}
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("OnSingleEntityRMI() unknown rmitype=%d", params.m_data));
+			CRY_ASSERT(0, string().Format("OnSingleEntityRMI() unknown rmitype=%d", params.m_data));
 	}
 }
 
 void CGameRulesObjective_Extraction::OnPickupSpawned(EExtractionSuitMode suitMode, EntityId pickupEnt, EntityId spawnAtEnt)
 {
 	SPickup *pickup = GetPickupForSuitMode(suitMode);
-	CRY_ASSERT_TRACE(pickup, ("OnDoubleEntityRMI() failed to find pickup for suitmode %d", suitMode));
+	CRY_ASSERT(pickup, "OnDoubleEntityRMI() failed to find pickup for suitmode %d", suitMode);
 	if (pickup)
 	{
 		if (pickup->m_spawnedPickupEntityId)
@@ -2530,7 +2524,7 @@ void CGameRulesObjective_Extraction::OnDoubleEntityRMI(CGameRules::SModuleRMITwo
 			break;
 		}
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("OnDoubleEntityRMI() unknown rmitype=%d", params.m_data));
+			CRY_ASSERT(0, string().Format("OnDoubleEntityRMI() unknown rmitype=%d", params.m_data));
 	}
 }
 
@@ -2553,7 +2547,7 @@ void CGameRulesObjective_Extraction::OnSvClientActionRMI(CGameRules::SModuleRMIS
 		{
 			SPickup *pickup = GetPickupForCarrierEntityId(fromEid);
 			DbgLog("CGameRulesObjective_Extraction::OnSvClientActionRMI() helperCarry_drop action - dropping pickup");
-			CRY_ASSERT_MESSAGE(pickup, "OnSvClientActionRMI() dropping a pickup but no pickup found for carrier!!");
+			CRY_ASSERT(pickup, "OnSvClientActionRMI() dropping a pickup but no pickup found for carrier!!");
 			if (pickup)
 			{
 				CheckForAndDropItem(fromEid);
@@ -2577,10 +2571,10 @@ void CGameRulesObjective_Extraction::OnSvClientActionRMI(CGameRules::SModuleRMIS
 				DbgLog("CGameRulesObjective_Extraction::OnSvClientActionRMI() has found that the player picking up a pickup is alive");
 
 				SPickup *pickup = GetPickupForPickupEntityId(params.m_datau.helperCarryPickup.pickupEid);
-				CRY_ASSERT_MESSAGE(pickup, "OnSvClientActionRMI() collecting a pickup but failed to find a pickup for the item to be collected");
+				CRY_ASSERT(pickup, "OnSvClientActionRMI() collecting a pickup but failed to find a pickup for the item to be collected");
 				if (pickup)
 				{
-					CRY_ASSERT_MESSAGE(pickup->m_state != ePickupState_Carried, "OnSvClientActionRMI() trying to collect a pickup but the pickup is already in state carried.. can't pick it up again!!!");
+					CRY_ASSERT(pickup->m_state != ePickupState_Carried, "OnSvClientActionRMI() trying to collect a pickup but the pickup is already in state carried.. can't pick it up again!!!");
 					if (pickup->m_state == ePickupState_Carried)
 					{
 						DbgLog("CGameRulesObjective_Extraction::OnSvClientActionRMI() trying to collect a pickup but the pickup is already in state carried.. can't pick it up again!!!");
@@ -2632,8 +2626,6 @@ void CGameRulesObjective_Extraction::OnAction(const ActionId& action, int activa
 
 				if (action == g_pGame->Actions().use)
 				{
-					const float  curTime = gEnv->pTimer->GetAsyncCurTime();
-
 					switch (activationMode)
 					{
 						case eAAM_OnPress:
@@ -2693,7 +2685,6 @@ void CGameRulesObjective_Extraction::SetIconForExtractionPoint(EntityId extracti
 	IGameRulesRoundsModule*  pRoundsModule = g_pGame->GetGameRules()->GetRoundsModule();
 	SExtractAt *extractAt = GetExtractAtForEntityId(extractionPointEntityId);
 	int  primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
-	int secondaryTeam = (primaryTeam == 1) ? 2 : 1;			// defending
 	EntityId localActorId = g_pGame->GetIGameFramework()->GetClientActorId();
 	CGameRules *pGameRules=g_pGame->GetGameRules();
 	int localTeamId = pGameRules->GetTeam(localActorId);
@@ -2809,7 +2800,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 		switch(pickup->m_state)
 		{
 			case ePickupState_AtBase:
-				CRY_ASSERT_TRACE(localTeamId && pickupTeamId, ("SetIconForPickup() requires player and pickup to both have teams set"));
+				CRY_ASSERT(localTeamId && pickupTeamId, "SetIconForPickup() requires player and pickup to both have teams set");
 				if (localPlayerPickupSameTeam)
 				{
 					if (pickup->m_suitModeEffected == eExtractionSuitMode_Armour)
@@ -2822,7 +2813,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(0, "Extraction: unhandled pickup suitmode effected");
+						CRY_ASSERT(0, "Extraction: unhandled pickup suitmode effected");
 					}
 
 					newIconName=m_iconTextDefend;
@@ -2840,7 +2831,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(0, "Extraction: unhandled pickup suitmode effected");
+						CRY_ASSERT(0, "Extraction: unhandled pickup suitmode effected");
 					}
 					newIconName=m_iconTextSeize;
 					newIconColour=enemyColour;
@@ -2852,7 +2843,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 				IEntity *pickupEntity = gEnv->pEntitySystem->GetEntity(pickup->m_spawnedPickupEntityId);
 				int carrierTeamId=pGameRules->GetTeam(pickup->m_carrierId);
 				bool localPlayerPickupCarrierSameTeam = (localTeamId == carrierTeamId);
-				CRY_ASSERT_TRACE(localTeamId && carrierTeamId, ("SetIconForPickup() requires player and carrier to both have teams set"));
+				CRY_ASSERT(localTeamId && carrierTeamId, "SetIconForPickup() requires player and carrier to both have teams set");
 				// TODO - on clients perhaps detect a pickup gone into state extraction by virtue of the pickup entity not resolving anymore (its deleted when extracted)
 				// TODO - FIXME - this is not right test the team of the carrier with the local player to pick color
 				if (pickupEntity)
@@ -2875,7 +2866,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 							}
 							else
 							{
-								CRY_ASSERT_MESSAGE(0, "Extraction: unhandled pickup suitmode effected");
+								CRY_ASSERT(0, "Extraction: unhandled pickup suitmode effected");
 							}
 							newIconName=m_iconTextEscort;
 							newIconColour=friendlyColour;
@@ -2892,7 +2883,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 							}
 							else
 							{
-								CRY_ASSERT_MESSAGE(0, "Extraction: unhandled pickup suitmode effected");
+								CRY_ASSERT(0, "Extraction: unhandled pickup suitmode effected");
 							}
 							newIconName=m_iconTextKill;
 							newIconColour=enemyColour;
@@ -2912,7 +2903,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 				break;
 			}
 			case ePickupState_Dropped:
-				CRY_ASSERT_TRACE(localTeamId && pickupTeamId, ("SetIconForPickup() requires player and pickup to both have teams set"));
+				CRY_ASSERT(localTeamId && pickupTeamId, "SetIconForPickup() requires player and pickup to both have teams set");
 				if (localPlayerPickupSameTeam)
 				{
 					if (pickup->m_suitModeEffected == eExtractionSuitMode_Armour)
@@ -2925,7 +2916,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(0, "Extraction: unhandled pickup suitmode effected");
+						CRY_ASSERT(0, "Extraction: unhandled pickup suitmode effected");
 					}
 					newIconName=m_iconTextDefend;
 					newIconColour=friendlyColour;
@@ -2942,7 +2933,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(0, "Extraction: unhandled pickup suitmode effected");
+						CRY_ASSERT(0, "Extraction: unhandled pickup suitmode effected");
 					}
 					newIconName=m_iconTextSeize;
 					newIconColour=enemyColour;
@@ -2955,7 +2946,7 @@ void CGameRulesObjective_Extraction::SetIconForPickup(SPickup *pickup)
 				newObjectiveIcon=EGRMO_Unknown;
 				break;
 			default:
-				CRY_ASSERT_TRACE(0, ("SetIconForPickup() encountered unknown pickupstate=%d", pickup->m_state));
+				CRY_ASSERT(0, "SetIconForPickup() encountered unknown pickupstate=%d", pickup->m_state);
 				break;
 		}
 	}
@@ -3077,7 +3068,7 @@ void CGameRulesObjective_Extraction::UpdateGameStateText(EGameStateUpdate inUpda
 			}
 			break;
 		case eGameStateUpdate_TickCollected:
-			CRY_ASSERT_MESSAGE(inPickup, "UpdateGameStateText() tick collected update needs a valid inPickup");
+			CRY_ASSERT(inPickup, "UpdateGameStateText() tick collected update needs a valid inPickup");
 			if (localTeamId == primaryTeam)
 			{
 				if (inPickup && inPickup->m_carrierId == localActorId)
@@ -3091,7 +3082,7 @@ void CGameRulesObjective_Extraction::UpdateGameStateText(EGameStateUpdate inUpda
 			}
 			break;
 		case eGameStateUpdate_TickDropped:
-			CRY_ASSERT_MESSAGE(inPickup, "UpdateGameStateText() tick dropped update needs a valid inPickup");
+			CRY_ASSERT(inPickup, "UpdateGameStateText() tick dropped update needs a valid inPickup");
 			if (localTeamId == primaryTeam)
 			{
 				if (inPickup && inPickup->m_droppedBy == localActorId)
@@ -3101,7 +3092,7 @@ void CGameRulesObjective_Extraction::UpdateGameStateText(EGameStateUpdate inUpda
 			}
 			break;
 		case eGameStateUpdate_TickExtracted:
-			CRY_ASSERT_MESSAGE(inPickup, "UpdateGameStateText() tick extracted update needs a valid inPickup");
+			CRY_ASSERT(inPickup, "UpdateGameStateText() tick extracted update needs a valid inPickup");
 			if (localTeamId == primaryTeam)
 			{
 				if (inPickup && inPickup->m_extractedBy == localActorId)
@@ -3210,7 +3201,6 @@ void CGameRulesObjective_Extraction::CheckForInteractionWithEntity(EntityId inte
 
 bool CGameRulesObjective_Extraction::CheckIsPlayerEntityUsingObjective(EntityId playerId)
 {
-	int toBeExtracted = 0;
 	const size_t numPickups = m_pickups.size();
 	for (size_t i = 0; i < numPickups; i++)
 	{

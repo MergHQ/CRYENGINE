@@ -51,14 +51,12 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	ILINE XMLCPB::CNodeLiveWriterRef& CurNode()
 	{
-		assert(!m_nodeStack.empty());
-		if (m_nodeStack.empty())
-		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "CSerializeWriterXMLCPBin: !Trying to access a node from the nodeStack, but the stack is empty. Savegame will be corrupted");
-			static XMLCPB::CNodeLiveWriterRef temp = m_binWriter.GetRoot()->AddChildNode("Error");
-			return temp;
-		}
-		return m_nodeStack.back();
+		if (CRY_VERIFY(!m_nodeStack.empty()))
+			return m_nodeStack.back();
+
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "CSerializeWriterXMLCPBin: !Trying to access a node from the nodeStack, but the stack is empty. Savegame will be corrupted");
+		static XMLCPB::CNodeLiveWriterRef temp = m_binWriter.GetRoot()->AddChildNode("Error");
+		return temp;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -70,9 +68,8 @@ private:
 #ifndef _RELEASE
 		if (GetISystem()->IsDevMode() && curNode.IsValid())
 		{
-			if (curNode->HaveAttr(name))
+			if (!CRY_VERIFY(!curNode->HaveAttr(name)))
 			{
-				assert(0);
 				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "!Duplicate tag Value( \"%s\" ) in Group %s", name, GetStackInfo());
 			}
 		}
@@ -92,14 +89,14 @@ private:
 
 	void AddValue(const char* name, const SNetObjectID& value)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	template<class T>
 	void AddTypedValue(const char* name, const T& value, const char* type)
 	{
-		assert(false);    // not needed for savegames, apparently
+		CRY_ASSERT(false);    // not needed for savegames, apparently
 		//		if (!IsDefaultValue(value))
 		//		{
 		//			XMLCPB::CNodeLiveWriterRef newNode = CreateNodeNamed(name);

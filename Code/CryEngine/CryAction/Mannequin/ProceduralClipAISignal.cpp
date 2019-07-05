@@ -6,9 +6,7 @@
 #include "StdAfx.h"
 
 #include "ICryMannequin.h"
-#include <CryAISystem/IAIObject.h>
-#include <CryAISystem/IAIActor.h>
-
+#include <CryAISystem/ISignal.h>
 #include <Mannequin/Serialization.h>
 
 struct SProceduralClipAISignalParams
@@ -49,19 +47,15 @@ public:
 		CryFixedStringT<64> onEnterSignalName;
 		ExtractSignalNames(params.dataString.c_str(), &onEnterSignalName, &m_onExitSignalName);
 
-		IAIActor* aiActor = GetAIActor();
-		IF_UNLIKELY (aiActor == NULL)
+		const EntityId entityId = GetAIActorEntityId();
+		IF_UNLIKELY(entityId == INVALID_ENTITYID)
 		{
 			return;
 		}
 
 		if (!onEnterSignalName.empty())
 		{
-			aiActor->SetSignal(
-			  AISIGNAL_DEFAULT,
-			  onEnterSignalName.c_str(),
-			  NULL,  // Sender.
-			  NULL); // No additional data.
+			gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, onEnterSignalName, entityId));
 		}
 	}
 
@@ -72,42 +66,36 @@ public:
 			return;
 		}
 
-		IAIActor* aiActor = GetAIActor();
-		IF_UNLIKELY (aiActor == NULL)
+		const EntityId entityId = GetAIActorEntityId();
+		IF_UNLIKELY (entityId == INVALID_ENTITYID)
 		{
 			return;
 		}
-
-		aiActor->SetSignal(
-		  AISIGNAL_DEFAULT,
-		  m_onExitSignalName.c_str(),
-		  NULL,  // Sender.
-		  NULL); // No additional data.
+		gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, m_onExitSignalName, entityId));
 	}
 
 	virtual void Update(float timePassed) {}
 
 private:
 
-	IAIActor* GetAIActor() const
+	EntityId GetAIActorEntityId() const
 	{
 		IF_UNLIKELY (m_entity == NULL)
 		{
-			return NULL;
+			return INVALID_ENTITYID;
 		}
-		IAIObject* aiObject = m_entity->GetAI();
-		IF_UNLIKELY (aiObject == NULL)
+		IF_UNLIKELY (!m_entity->HasAI())
 		{
-			return NULL;
+			return INVALID_ENTITYID;
 		}
-		return aiObject->CastToIAIActor();
+		return m_entity->GetId();
 	}
 
 	// TODO: Create proper separate signal names in the procedural clip.
 	inline void ExtractSignalNames(const char* dataString, CryFixedStringT<64>* onEnterSignalString, CryFixedStringT<64>* onExitSignalString)
 	{
-		assert(onEnterSignalString != NULL);
-		assert(onExitSignalString != NULL);
+		CRY_ASSERT(onEnterSignalString != NULL);
+		CRY_ASSERT(onExitSignalString != NULL);
 
 		// It is allowed to omit any of the signal names in the data string.
 		onEnterSignalString->clear();
@@ -133,7 +121,7 @@ private:
 			dataString++;
 		}
 #if !defined(_RELEASE)
-		assert((dataString - dataStringStart) < onExitSignalString->MAX_SIZE);
+		CRY_ASSERT((dataString - dataStringStart) < onExitSignalString->MAX_SIZE);
 #endif
 		if (chr == '\0')
 		{
@@ -144,7 +132,7 @@ private:
 		dataString++; // Skip the separator character.
 
 #if !defined(_RELEASE)
-		assert(strlen(dataString) <= onExitSignalString->MAX_SIZE);
+		CRY_ASSERT(strlen(dataString) <= onExitSignalString->MAX_SIZE);
 #endif
 
 		*onExitSignalString = dataString;

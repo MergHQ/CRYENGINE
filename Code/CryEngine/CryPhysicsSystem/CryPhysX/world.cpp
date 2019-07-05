@@ -397,7 +397,7 @@ float PhysXWorld::PrimitiveWorldIntersection(const SPWIParams& pp, WriteLockCond
 		Vec3 dirNorm = pp.sweepDir.normalized();
 		SweepCallback res;
 		PxHitFlags flags(PxHitFlag::eDEFAULT | PxHitFlag::ePRECISE_SWEEP);
-		if (geom.CreateAndUse(pose,scale, [&](PxGeometry &pxGeom)	{
+		if (geom.CreateAndUse(pose,scale, [&](const PxGeometry &pxGeom)	{
 			if (pp.nSkipEnts>=0)
 				return g_cryPhysX.Scene()->sweep(pxGeom, T(pose), V(dirNorm), dirNorm*pp.sweepDir, res, flags, fd, &filter); 
 			else {
@@ -421,7 +421,7 @@ float PhysXWorld::PrimitiveWorldIntersection(const SPWIParams& pp, WriteLockCond
 	}	else {
 		PxOverlapHit hits[16];
 		OverlapCallback res(hits,16);
-		if (geom.CreateAndUse(pose,scale, [&](PxGeometry &pxGeom) {
+		if (geom.CreateAndUse(pose,scale, [&](const PxGeometry &pxGeom) {
 			return g_cryPhysX.Scene()->overlap(pxGeom, T(pose), res, fd, &filter); }))
 		{
 			for(int i=0; i<res.nbTouches; i++)
@@ -516,7 +516,8 @@ int PhysXWorld::GetEntitiesInBox(Vec3 ptmin, Vec3 ptmax, IPhysicalEntity**& pLis
 	BBoxFilter filter(ithread,ptmin,ptmax);
 
 	{ ReadLockScene lock;
-		g_cryPhysX.Scene()->overlap(PxBoxGeometry(V(ptmax-ptmin)*0.5f), PxTransform(V(ptmax+ptmin)*0.5f,PxQuat0), BBoxCallback(), 
+		BBoxCallback BBcb;
+		g_cryPhysX.Scene()->overlap(PxBoxGeometry(V(ptmax-ptmin)*0.5f), PxTransform(V(ptmax+ptmin)*0.5f,PxQuat0), BBcb, 
 			PxQueryFilterData(objtypesFilter(objtypes) | PxQueryFlag::ePREFILTER | PxQueryFlag::eANY_HIT), &filter);
 	}
 
@@ -756,8 +757,6 @@ void PhysXWorld::PumpLoggedEvents()
 				epsc.pEntity=pents[i]; epsc.pForeignData=pents[i]->m_pForeignData; epsc.iForeignData=pents[i]->m_iForeignData;
 				epsc.iSimClass[0] = i+1; epsc.iSimClass[1] = 2-j;
 				PxBounds3 bbox = pents[i]->m_actor->getWorldBounds();
-				epsc.BBoxNew[0]=epsc.BBoxOld[0] = V(bbox.minimum);
-				epsc.BBoxNew[1]=epsc.BBoxOld[1] = V(bbox.maximum);
 				SendEvent(epsc,1);
 			}
 			_InterlockedAnd((volatile long*)&pents[i]->m_mask,~3);

@@ -1,5 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+//! Development code for pool allocator, the code is not supposed to work in production, 
+//! but demonstrates the usage examples. See also example.h.
+#if 0 
+
 #define POOLALLOCTESTSUIT
 
 #if !defined(CRY_PLATFORM)
@@ -357,3 +361,5 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
+
+#endif // #if 0

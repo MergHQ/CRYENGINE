@@ -2,15 +2,13 @@
 
 #pragma once
 
+#include "HyperGraphNode.h"
+
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryFlowGraph/IFlowSystem.h>
 
-#include "HyperGraphNode.h"
-
-class CFlowNode;
 class CEntityObject;
 
-//////////////////////////////////////////////////////////////////////////
 class CFlowNode : public CHyperNode
 {
 	friend class CFlowGraphManager;
@@ -92,4 +90,3 @@ protected:
 	std::map<TFlowPortId, bool>   m_portActivationAdditionalDebugInformationMap;
 	std::vector<TFlowPortId>      m_debugPortActivations;
 };
-

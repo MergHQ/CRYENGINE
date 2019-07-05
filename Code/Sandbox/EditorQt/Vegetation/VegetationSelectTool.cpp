@@ -1,15 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "VegetationSelectTool.h"
-#include "CryMath/Random.h"
+#include "IEditorImpl.h"
 #include "VegetationMap.h"
 #include "VegetationObject.h"
 #include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Gizmos/IGizmoManager.h"
-#include <QtUtil.h>
-#include "IUndoManager.h"
 
+#include <Preferences/ViewportPreferences.h>
+#include <IObjectManager.h>
+#include <Gizmos/IGizmoManager.h>
+#include <Objects/DisplayContext.h>
+#include <IUndoManager.h>
+#include <IUndoObject.h>
+#include <QtUtil.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryMath/Random.h>
 #include <QVector>
 
 IMPLEMENT_DYNCREATE(CVegetationSelectTool, CEditTool)
@@ -20,11 +27,11 @@ class CVegetationSelectTool_ClassDesc : public IClassDesc
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.VegetationSelect"; };
+	virtual const char* ClassName() { return "EditTool.VegetationSelect"; }
 
 	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Terrain"; };
+	virtual const char*    Category()        { return "Terrain"; }
 
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVegetationSelectTool); }
 };
@@ -37,7 +44,7 @@ CVegetationSelectTool::CVegetationSelectTool()
 	, m_pVegetationMap(GetIEditorImpl()->GetVegetationMap())
 	, m_pManipulator(nullptr)
 {
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 }
 
 CVegetationSelectTool::~CVegetationSelectTool()
@@ -54,7 +61,7 @@ CVegetationSelectTool::~CVegetationSelectTool()
 	}
 }
 
-void CVegetationSelectTool::Display(DisplayContext& dc)
+void CVegetationSelectTool::Display(SDisplayContext& dc)
 {
 	const CViewport* const pActiveView = GetIEditorImpl()->GetActiveView();
 	if (pActiveView && pActiveView->GetAdvancedSelectModeFlag())
@@ -90,7 +97,7 @@ void CVegetationSelectTool::Display(DisplayContext& dc)
 		}
 	}
 
-	if (dc.flags & DISPLAY_2D)
+	if (dc.display2D)
 	{
 		return;
 	}
@@ -160,22 +167,20 @@ bool CVegetationSelectTool::MouseCallback(CViewport* pView, EMouseEvent event, C
 
 void CVegetationSelectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
 {
-	// get world/local coordinate system setting.
-	auto coordSys = GetIEditorImpl()->GetReferenceCoordSys();
-	auto editMode = GetIEditorImpl()->GetEditMode();
+	auto editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
 	// get current axis constrains.
 	switch (editMode)
 	{
-	case eEditModeMove:
+	case CLevelEditorSharedState::EditMode::Move:
 		GetIEditorImpl()->GetIUndoManager()->Restore();
 		MoveSelected(pView, value);
 		break;
-	case eEditModeRotate:
+	case CLevelEditorSharedState::EditMode::Rotate:
 		GetIEditorImpl()->GetIUndoManager()->Restore();
 		RotateSelected(value);
 		break;
-	case eEditModeScale:
+	case CLevelEditorSharedState::EditMode::Scale:
 		{
 			GetIEditorImpl()->GetIUndoManager()->Restore();
 
@@ -312,7 +317,7 @@ void CVegetationSelectTool::UpdateTransformManipulator()
 		}
 		tm.SetTranslation(pos / m_selectedThings.size());
 	}
-	
+
 	m_pManipulator->SetCustomTransform(true, tm);
 }
 
@@ -390,7 +395,6 @@ CVegetationInstance* CVegetationSelectTool::SelectThingAtPoint(CViewport* pView,
 		std::vector<CVegetationInstance*> instances;
 		m_pVegetationMap->GetAllInstances(instances);
 
-		int minimumDistanceIndex = -1;
 		float currentSquareDistance = FLT_MAX;
 		float nextSquareDistance = 0;
 		CVegetationInstance* pSelectedInstance(nullptr);
@@ -435,7 +439,7 @@ CVegetationInstance* CVegetationSelectTool::SelectThingAtPoint(CViewport* pView,
 		auto objTypes = ent_static;
 		auto flags = rwi_stop_at_pierceable | rwi_ignore_terrain_holes;
 		ray_hit hit;
-		auto col = pPhysics->RayWorldIntersection(raySrc, rayDir * 1000.0f, objTypes, flags, &hit, 1);
+		pPhysics->RayWorldIntersection(raySrc, rayDir * 1000.0f, objTypes, flags, &hit, 1);
 		if (hit.dist > 0 && !hit.bTerrain && hit.dist < terrainHitDistance)
 		{
 			pe_status_pos statusPos;
@@ -668,7 +672,7 @@ bool CVegetationSelectTool::OnLButtonDown(CViewport* pView, UINT flags, CPoint p
 		{
 			m_opMode = OPMODE_SCALE;
 		}
-		else if (GetIEditorImpl()->GetEditMode() == eEditModeMove)
+		else if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 		{
 			m_opMode = OPMODE_MOVE;
 			signalSelectionChanged();
@@ -792,4 +796,3 @@ QEditToolButtonPanel::SButtonInfo CVegetationSelectTool::CreateSelectToolButtonI
 	selectToolButtonInfo.icon = "icons:Vegetation/Vegetation_Select.ico";
 	return selectToolButtonInfo;
 }
-

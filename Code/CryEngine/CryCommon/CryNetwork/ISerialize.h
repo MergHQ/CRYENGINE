@@ -9,6 +9,7 @@
 #include <CryCore/Containers/VectorMap.h>
 #include <CryCore/StlUtils.h>
 #include <CrySystem/TimeValue.h>
+#include <CrySystem/XML/IXml.h>
 
 template<class T, class U>
 class InterpolatedValue_tpl;
@@ -824,9 +825,11 @@ public:
 	ILINE void EnumValue(const char* szName, T_Value& value,
 	                     T_Value first, T_Value last)
 	{
-		int32 nValue = int32(value) - first;
-		Value(szName, nValue, ISerialize::ENUM_POLICY_TAG | (last - first));
-		value = T_Value(nValue + first);
+		using TUnderlyingType = typename std::underlying_type<T_Value>::type;
+
+		TUnderlyingType nValue = TUnderlyingType(value) - TUnderlyingType(first);
+		Value(szName, nValue, ISerialize::ENUM_POLICY_TAG | (TUnderlyingType(last) - TUnderlyingType(first)));
+		value = T_Value(nValue + TUnderlyingType(first));
 	}
 	template<typename T_Value, class T_Class>
 	ILINE void EnumValue(const char* szName,
@@ -841,6 +844,16 @@ public:
 		if (!w)
 			(pClass->*SetValue)(T_Value(nValue + first));
 	}
+
+	// Ranged Integer, (Using similar to enum compression policy)
+	template<typename T_Value>
+	ILINE void IntegerWithRangeValue(const char* szName, T_Value& value,T_Value first, T_Value last)
+	{
+		int32 nValue = int32(value) - first;
+		Value(szName, nValue, ISerialize::ENUM_POLICY_TAG | (last - first));
+		value = T_Value(nValue + first);
+	}
+
 	/*
 	   //! We can request that a functor be called whenever our values are being updated by calling this function.
 	   template <class F_Update>

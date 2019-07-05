@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __GravityVolumeObject_h__
-#define __GravityVolumeObject_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "EntityObject.h"
 #include "SafeObjectsArray.h"
@@ -42,22 +36,22 @@ public:
 	DECLARE_DYNCREATE(CGravityVolumeObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
-	bool Init(CBaseObject* prev, const string& file);
-	void InitVariables();
-	void Done();
-	bool HasMeasurementAxis() const { return true;  }
+	bool         Init(CBaseObject* prev, const string& file);
+	void         InitVariables();
+	void         Done();
+	bool         HasMeasurementAxis() const { return true; }
 
-	void Display(CObjectRenderHelper& objRenderHelper) override;
-	void DrawBezierSpline(DisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume);
+	virtual void Display(CObjectRenderHelper& objRenderHelper) override;
+	void         DrawBezierSpline(SDisplayContext& dc, CGravityVolumePointVector& points, COLORREF col, bool isDrawJoints, bool isDrawGravityVolume);
 
-	bool CreateGameObject();
+	bool         CreateGameObject();
 
 	//////////////////////////////////////////////////////////////////////////
 	string GetUniqueName() const;
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void   CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	//! Called when object is being created.
 	int        MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags);
@@ -77,7 +71,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//void SetClosed( bool bClosed );
-	//bool IsClosed() { return mv_closed; };
+	//bool IsClosed() { return mv_closed; }
 
 	//! Insert new point to GravityVolume at given index.
 	//! @return index of newly inserted point.
@@ -86,14 +80,14 @@ public:
 	void RemovePoint(int index);
 
 	//! Get number of points in GravityVolume.
-	int         GetPointCount()           { return m_points.size(); };
+	int         GetPointCount()           { return m_points.size(); }
 	//! Get point at index.
-	const Vec3& GetPoint(int index) const { return m_points[index].pos; };
+	const Vec3& GetPoint(int index) const { return m_points[index].pos; }
 	//! Set point position at specified index.
 	void        SetPoint(int index, const Vec3& pos);
 
 	void        SelectPoint(int index);
-	int         GetSelectedPoint() const { return m_selectedPoint; };
+	int         GetSelectedPoint() const { return m_selectedPoint; }
 
 	//! Find GravityVolume point nearest to given point.
 	int GetNearestPoint(const Vec3& raySrc, const Vec3& rayDir, float& distance);
@@ -129,13 +123,13 @@ public:
 
 protected:
 	bool        RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt);
-	virtual int GetMaxPoints() const { return 1000; };
-	virtual int GetMinPoints() const { return 2; };
+	virtual int GetMaxPoints() const { return 1000; }
+	virtual int GetMinPoints() const { return 2; }
 
 	// Ignore default draw highlight.
-	void DrawHighlight(DisplayContext& dc) {};
+	void DrawHighlight(SDisplayContext& dc) {}
 
-	//overrided from CBaseObject.
+	//overrides from CBaseObject.
 	void InvalidateTM(int nWhyFlags);
 
 	//! Called when GravityVolume variable changes.
@@ -144,7 +138,7 @@ protected:
 	//! Dtor must be protected.
 	CGravityVolumeObject();
 
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 protected:
 	AABB                      m_bbox;
@@ -152,7 +146,7 @@ protected:
 	CGravityVolumePointVector m_points;
 	std::vector<Vec3>         m_bezierPoints;
 
-	string                   m_lastGameArea;
+	string                    m_lastGameArea;
 
 	//////////////////////////////////////////////////////////////////////////
 	// GravityVolume parameters.
@@ -177,12 +171,9 @@ protected:
 class CGravityVolumeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_OTHER; };
-	const char*    ClassName()         { return "GravityVolume"; };
-	const char*    Category()          { return "Misc"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CGravityVolumeObject); };
+	ObjectType     GetObjectType()              { return OBJTYPE_OTHER; }
+	const char*    ClassName()                  { return "GravityVolume"; }
+	const char*    Category()                   { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass()            { return RUNTIME_CLASS(CGravityVolumeObject); }
 	virtual bool   IsCreatable() const override { return gEnv->pEntitySystem->GetClassRegistry()->FindClass("AreaBezierVolume") != nullptr; }
 };
-
-#endif // __GravityVolumeObject_h__
-

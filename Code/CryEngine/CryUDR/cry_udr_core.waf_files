@@ -1,0 +1,33 @@
+{
+    "CryUDR_Uber_0.cpp": {
+        "Root": [
+            "Hub.cpp", 
+            "Hub.h", 
+            "Node.h", 
+            "Node.cpp", 
+            "NodeStack.h", 
+            "NodeStack.cpp", 
+            "RenderPrimitives.h", 
+            "RenderPrimitives.cpp", 
+            "RenderPrimitiveCollection.h", 
+            "RenderPrimitiveCollection.cpp", 
+            "CVars.h", 
+            "CVars.cpp", 
+            "Tree.h", 
+            "Tree.cpp", 
+            "TreeManager.h", 
+            "TreeManager.cpp", 
+            "RecursiveSyncObject.h",
+            "RecursiveSyncObject.cpp", 
+            "TimeMetadata.h",
+		    "TimeMetadata.cpp",
+            "CryUDR.cpp"
+        ]
+    }, 
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp", 
+            "StdAfx.h"
+        ]
+    }
+}

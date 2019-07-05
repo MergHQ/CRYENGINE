@@ -10,8 +10,10 @@
 #include "Objects/EntityObject.h"
 #include "Objects/GeomEntity.h"
 #include "Objects/Group.h"
+#include "Objects/PrefabObject.h"
 #include "Material/Material.h"
 #include "HyperGraph/FlowGraphHelpers.h"
+#include "VersionControl/UI/VersionControlUIHelper.h"
 
 #include <CrySystem/ISystem.h>
 #include <ProxyModels/ItemModelAttribute.h>
@@ -20,26 +22,36 @@
 #include "CryIcon.h"
 #include "QtUtil.h"
 #include "DragDrop.h"
+#include "IEditorImpl.h"
+#include "Objects/ObjectManager.h"
+#include <Cry3DEngine/ISurfaceType.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IRenderNode.h>
+#include <CryAnimation/ICryAnimation.h>
+
+#include <QApplication>
 
 namespace LevelModelsAttributes
 {
-CItemModelAttribute s_visibleAttribute("Visible", eAttributeType_Boolean, CItemModelAttribute::Visible, true, Qt::Checked);
-CItemModelAttribute s_frozenAttribute("Frozen", eAttributeType_Boolean);
-CItemModelAttribute s_layerNameAttribute("Layer", eAttributeType_String);
-CItemModelAttribute s_objectTypeDescAttribute("Type", eAttributeType_String);
-CItemModelAttribute s_defaultMaterialAttribute("Default Material", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_customMaterialAttribute("Custom Material", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_breakableAttribute("Breakable", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_smartObjectAttribute("Smart Object", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_flowGraphAttribute("Flow Graph", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_geometryAttribute("Geometry", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_geometryInstancesAttribute("Instances", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_lodCountAttribute("LOD Count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_specAttribute("Spec", eAttributeType_String, CItemModelAttribute::StartHidden);
-CItemModelAttribute s_aiGroupIdAttribute("AI GroupID", eAttributeType_String, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_visibleAttribute("Visible", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Checked, Qt::CheckStateRole);
+CItemModelAttribute s_frozenAttribute("Frozen", &Attributes::s_booleanAttributeType, CItemModelAttribute::Visible, true, Qt::Unchecked, Qt::CheckStateRole);
+CItemModelAttribute s_layerNameAttribute("Layer", &Attributes::s_stringAttributeType);
+CItemModelAttribute s_objectTypeDescAttribute("Type", &Attributes::s_stringAttributeType);
+CItemModelAttribute s_defaultMaterialAttribute("Default Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_customMaterialAttribute("Custom Material", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_breakableAttribute("Breakable", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_smartObjectAttribute("Smart Object", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_flowGraphAttribute("Flow Graph", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_geometryAttribute("Geometry", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_geometryInstancesAttribute("Instances", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_lodCountAttribute("LOD Count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_specAttribute("Spec", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute s_aiGroupIdAttribute("AI GroupID", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 CItemModelAttributeEnumT<ObjectType> s_objectTypeAttribute("Object Type", CItemModelAttribute::StartHidden);
-CItemModelAttribute s_LayerColorAttribute("Layer Color", eAttributeType_String, CItemModelAttribute::Visible, false);
+CItemModelAttribute s_LayerColorAttribute("Layer Color", &Attributes::s_stringAttributeType, CItemModelAttribute::Visible, false);
+CItemModelAttribute s_linkedToAttribute("Linked to", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 }
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // Temporary hot-fix to get ObjectType enum in Sandbox, since the enum registration works
 // only in the module where the enum was registered
@@ -66,7 +78,7 @@ SERIALIZATION_ENUM(OBJTYPE_GEOMCACHE, "geomcache", "Geometry Cache");
 SERIALIZATION_ENUM(OBJTYPE_VOLUMESOLID, "volumesolid", "Volume Solid");
 SERIALIZATION_ENUM_END()
 
-CItemModelAttribute* CLevelLayerModel::GetAttributeForColumn(EObjectColumns column)
+CItemModelAttribute * CLevelLayerModel::GetAttributeForColumn(EObjectColumns column)
 {
 	switch (column)
 	{
@@ -82,6 +94,8 @@ CItemModelAttribute* CLevelLayerModel::GetAttributeForColumn(EObjectColumns colu
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eObjectColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
+	case eObjectColumns_VCS:
+		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eObjectColumns_DefaultMaterial:
 		return &LevelModelsAttributes::s_defaultMaterialAttribute;
 	case eObjectColumns_CustomMaterial:
@@ -104,6 +118,8 @@ CItemModelAttribute* CLevelLayerModel::GetAttributeForColumn(EObjectColumns colu
 		return &LevelModelsAttributes::s_aiGroupIdAttribute;
 	case eObjectColumns_LayerColor:
 		return &LevelModelsAttributes::s_LayerColorAttribute;
+	case eObjectColumns_LinkedTo:
+		return &LevelModelsAttributes::s_linkedToAttribute;
 	default:
 		return nullptr;
 	}
@@ -125,14 +141,17 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 	if (role == Qt::DecorationRole)
 	{
 		if (section == eObjectColumns_Visible)
-			return CryIcon("icons:General/Visibility_True.ico");
+			return CryIcon("icons:General/Visibility_True.ico").pixmap(16,16);
 		if (section == eObjectColumns_Frozen)
-			return CryIcon("icons:Navigation/Basics_Select_False.ico");
+			return CryIcon("icons:general_lock_true.ico").pixmap(16, 16);
+		if (section == eObjectColumns_VCS)
+			return CryIcon("icons:VersionControl/icon.ico").pixmap(16, 16);
 	}
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible and Frozen we use Icons instead
-		if (section == eObjectColumns_Visible || section == eObjectColumns_Frozen || section == eObjectColumns_LayerColor)
+		if (section == eObjectColumns_Visible || section == eObjectColumns_Frozen || section == eObjectColumns_VCS
+		    || section == eObjectColumns_LayerColor)
 		{
 			return "";
 		}
@@ -153,6 +172,7 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 		case eObjectColumns_Name:
 		case eObjectColumns_Visible:
 		case eObjectColumns_Frozen:
+		case eObjectColumns_VCS:
 		case eObjectColumns_LayerColor:
 			return "";
 			break;
@@ -167,6 +187,12 @@ CLevelLayerModel::CLevelLayerModel(CObjectLayer* pLayer, QObject* parent)
 	: QAbstractItemModel(parent)
 	, m_pLayer(pLayer)
 	, m_pTopLevelNotificationObj(nullptr)
+	, m_iconVisibilityTrue("icons:General/Visibility_True.ico")
+	, m_iconVisibilityFalse("icons:General/Visibility_False.ico")
+	, m_iconGeneralLockFalse("icons:general_lock_false.ico")
+	, m_iconLink("icons:ObjectTypes/Link.ico")
+	, m_iconPlaceHolder("icons:General/Placeholder.ico")
+	, m_iconLevelExplorerLockTrue("icons:levelexplorer_lock_true.ico")
 {
 	Connect();
 	Rebuild();
@@ -179,30 +205,20 @@ CLevelLayerModel::~CLevelLayerModel()
 
 void CLevelLayerModel::Connect()
 {
+	m_isDisconnected = false;
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 
-	pObjManager->signalObjectChanged.Connect(this, &CLevelLayerModel::OnObjectEvent);
+	pObjManager->signalObjectsChanged.Connect(this, &CLevelLayerModel::OnObjectEvent);
 	pObjManager->signalSelectionChanged.Connect(this, &CLevelLayerModel::OnSelectionChanged);
-	pObjManager->signalBeforeObjectsAttached.Connect(this, &CLevelLayerModel::OnBeforeObjectsAttached);
-	pObjManager->signalObjectsAttached.Connect(this, &CLevelLayerModel::OnObjectsAttached);
-	pObjManager->signalBeforeObjectsDetached.Connect(this, &CLevelLayerModel::OnBeforeObjectsDetached);
-	pObjManager->signalObjectsDetached.Connect(this, &CLevelLayerModel::OnObjectsDetached);
-	pObjManager->signalBeforeObjectsDeleted.Connect(this, &CLevelLayerModel::OnBeforeObjectsDeleted);
-	pObjManager->signalObjectsDeleted.Connect(this, &CLevelLayerModel::OnObjectsDeleted);
 }
 
 void CLevelLayerModel::Disconnect()
 {
+	m_isDisconnected = true;
 	CObjectManager* pObjManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
 
-	pObjManager->signalObjectChanged.DisconnectObject(this);
+	pObjManager->signalObjectsChanged.DisconnectObject(this);
 	pObjManager->signalSelectionChanged.DisconnectObject(this);
-	pObjManager->signalBeforeObjectsAttached.DisconnectObject(this);
-	pObjManager->signalObjectsAttached.DisconnectObject(this);
-	pObjManager->signalBeforeObjectsDetached.DisconnectObject(this);
-	pObjManager->signalObjectsDetached.DisconnectObject(this);
-	pObjManager->signalBeforeObjectsDeleted.DisconnectObject(this);
-	pObjManager->signalObjectsDeleted.DisconnectObject(this);
 }
 
 int CLevelLayerModel::rowCount(const QModelIndex& parent) const
@@ -241,17 +257,19 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			{
 				switch (index.column())
 				{
+				case eObjectColumns_VCS:
+					return "-";
 				case eObjectColumns_Name:
 					return (const char*)pObject->GetName();
 				case eObjectColumns_Layer:
-				{
-					IObjectLayer* pLayer = pObject->GetLayer();
-					// There are cases where layers might not be set for certain objects yet the model will try and display it
-					// an example of this is when grouping. When grouping, the root object is not attached to any layer to avoid
-					// spamming with meaningless events. When the full group hierarchy is constructed the layer is changed
-					// and children layers are slowly set. At this point the object may have children than are on a null layer
-					return pLayer ? pLayer->GetName().c_str() : "";
-				}
+					{
+						IObjectLayer* pLayer = pObject->GetLayer();
+						// There are cases where layers might not be set for certain objects yet the model will try and display it
+						// an example of this is when grouping. When grouping, the root object is not attached to any layer to avoid
+						// spamming with meaningless events. When the full group hierarchy is constructed the layer is changed
+						// and children layers are slowly set. At this point the object may have children than are on a null layer
+						return pLayer ? pLayer->GetName().c_str() : "";
+					}
 				case eObjectColumns_Type:
 					return Serialization::getEnumDescription<ObjectType>().label(pObject->GetType());
 				case eObjectColumns_TypeDesc:
@@ -304,21 +322,26 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 						int group = GetAIGroupID(pObject);
 						return (group > 0) ? group : QVariant();
 					}
+				case eObjectColumns_LinkedTo:
+					{
+						return pObject->GetLinkedToName();
+					}
 				}
 			}
 		}
 		break;
+
 	case Qt::DecorationRole:
 		if (index.column() == eObjectColumns_Name)
 		{
 			CBaseObject* pObject = ObjectFromIndex(index);
 			CBaseObject* pLinkedObject = pObject->GetLinkedTo();
 			if (pLinkedObject)
-				return CryIcon("icons:ObjectTypes/Link.ico").pixmap(16, 16, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
+				return m_iconLink.pixmap(24, 24, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
 
 			CObjectClassDesc* const classDesc = pObject->GetClassDesc();
-			if(classDesc == nullptr)
-				return CryIcon("icons:General/Placeholder.ico").pixmap(16, 16, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
+			if (classDesc == nullptr)
+				return m_iconPlaceHolder.pixmap(24, 24, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
 
 			QString category = classDesc->Category();
 
@@ -328,9 +351,8 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 				category = "Brush";
 			else if (category == "Static Mesh Entity")
 				category = "Legacy_Entities";
-			
+
 			//Special Case 2: Use specific Group Icon
-			ObjectType objType = classDesc->GetObjectType();
 			if (classDesc->GetObjectType() == ObjectType::OBJTYPE_GROUP)
 			{
 				category = "Group";
@@ -350,8 +372,35 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 		}
 		if (index.column() == eObjectColumns_LayerColor)
 		{
-			COLORREF colorRef = m_pLayer->GetColor();
-			return QColor::fromRgb(GetRValue(colorRef), GetGValue(colorRef), GetBValue(colorRef));
+			ColorB colorToUse = m_pLayer->GetColor();
+			CBaseObject* pObject = ObjectFromIndex(index);
+			if (pObject->IsUsingColorOverride())
+			{
+				CBaseObject* pObject = ObjectFromIndex(index);
+				colorToUse = pObject->GetColor();
+			}
+			else
+			{
+				std::pair<bool, ColorB> foundColor = pObject->GetColorOverrideInAncestry();
+				if (foundColor.first)
+				{
+					colorToUse = foundColor.second;
+				}
+				else
+				{
+					CObjectLayer* pLayer = m_pLayer;
+					while (pLayer)
+					{
+						if (pLayer->IsUsingColorOverride())
+						{
+							colorToUse = pLayer->GetColor();
+							break;
+						}
+						pLayer = pLayer->GetParent();
+					}
+				}
+			}
+			return QColor::fromRgb(colorToUse.r, colorToUse.g, colorToUse.b);
 		}
 	case Qt::CheckStateRole:
 		{
@@ -363,45 +412,44 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			case eObjectColumns_Frozen:
 				return pObject->IsFrozen() ? Qt::Checked : Qt::Unchecked;
 			}
-			break;
 		}
+		break;
+	case Qt::TextAlignmentRole:
+		{
+			if (index.column() == eObjectColumns_VCS)
+				return Qt::AlignCenter;
+		}
+		break;
+
 	case QAdvancedItemDelegate::s_IconOverrideRole:
 		{
 			CBaseObject* pObject = ObjectFromIndex(index);
 			switch (index.column())
 			{
 			case eObjectColumns_Visible:
-				if (pObject->IsVisible())
-				{
-					return CryIcon("icons:General/Visibility_True.ico");
-				}
-				else
-					return CryIcon("icons:General/Visibility_False.ico");
+				return pObject->IsVisible() ? m_iconVisibilityTrue.pixmap(16, 16) : m_iconVisibilityFalse.pixmap(16, 16);
 			case eObjectColumns_Frozen:
-				if (pObject->IsFrozen())
-					return CryIcon("icons:General/editable_false.ico");
-				else
-					return CryIcon("icons:General/editable_true.ico");
+				return pObject->IsFrozen() ? m_iconLevelExplorerLockTrue.pixmap(16, 16) : m_iconGeneralLockFalse.pixmap(16, 16);
 			default:
 				break;
 			}
-			break;
 		}
+		break;
 	case QAdvancedItemDelegate::s_DrawRectOverrideRole:
 		{
 			switch (index.column())
 			{
 			case eObjectColumns_LayerColor:
-			{
-				// Force the layer color to take the full height of the item in the tree
-				QRect decorationRect;
-				decorationRect.setX(-3);
-				decorationRect.setY(-4);
-				decorationRect.setWidth(4);
-				decorationRect.setHeight(24);
+				{
+					// Force the layer color to take the full height of the item in the tree
+					QRect decorationRect;
+					decorationRect.setX(-3);
+					decorationRect.setY(-4);
+					decorationRect.setWidth(4);
+					decorationRect.setHeight(24);
 
-				return decorationRect;
-			}
+					return decorationRect;
+				}
 			default:
 				break;
 			}
@@ -516,7 +564,6 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 	}
 
 	CBaseObject* pTargetObject = ObjectFromIndex(parent);
-
 	if (pTargetObject)
 	{
 		// Check if our target is invalid
@@ -525,10 +572,26 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 			// Cannot drag onto self
 			if (object == pTargetObject)
 				return true;
-			
+
 			// If not a group check if it's a valid link target
-			if (!object->CanLinkTo(pTargetObject))
-				return true;
+			if (!GetIEditorImpl()->IsCGroup(pTargetObject) && !object->CanLinkTo(pTargetObject))
+			{
+			  return true;
+			}
+
+			//find if we have a prefab or a group in the hierarchy, if we do run the safety checks
+			CBaseObject* pFound = pTargetObject;
+
+			if (!pFound->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+			{
+			  pFound = pFound->GetPrefab();
+			}
+
+			if (pFound)
+			{
+			  //this needs to be inverted as true means not add
+			  return !(static_cast<CPrefabObject*>(pFound))->CanAddMember(object);
+			}
 
 			return false;
 		});
@@ -572,7 +635,7 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 	switch (parentLayer->GetLayerType())
 	{
 	case eObjectLayerType_Terrain:
-		// intentional fall through
+	// intentional fall through
 	case eObjectLayerType_Layer:
 		// layers cannot be dropped on other layers. So the parent has to be
 		// determined and the layers need to be added there
@@ -580,15 +643,15 @@ bool CLevelLayerModel::canDropMimeData(const QMimeData* pData, Qt::DropAction ac
 	// intentional fall through
 
 	case eObjectLayerType_Folder:
-	{
-		// do not drop an layer on a layer if it is already a child of it
-		if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return (parentLayer ? parentLayer->IsChildOf(layer) : false) || layer->GetParent() == parentLayer; }))
 		{
-			return false;
-		}
+			// do not drop an layer on a layer if it is already a child of it
+			if (std::any_of(layers.begin(), layers.end(), [&](CObjectLayer* layer) { return (parentLayer ? parentLayer->IsChildOf(layer) : false) || layer->GetParent() == parentLayer; }))
+			{
+				return false;
+			}
 
-		return QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
-	}
+			return QAbstractItemModel::canDropMimeData(pData, action, row, column, parent);
+		}
 	default:
 		return false;
 	}
@@ -643,11 +706,11 @@ bool CLevelLayerModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 
 		for (auto pObject : toBeAdded)
 			pAttachTo->AddMember(pObject);
-		
+
 		if (toBeLinked.size())
 			pObjectManager->Link(toBeLinked, pTargetObject);
 
-		if (pAttachTo) // if dropping into a group, select the group
+		if (pAttachTo && !pAttachTo->IsOpen()) // if dropping into a closed group, select the group instead
 			pObjectManager->SelectObject(pTargetObject);
 
 		GetIEditorImpl()->GetIUndoManager()->Accept("Level Explorer Move");
@@ -658,36 +721,8 @@ bool CLevelLayerModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 	switch (parentLayer->GetLayerType())
 	{
 	case eObjectLayerType_Folder:
-	{
-		CUndo undo("Move Layers");
-		for (auto layer : layers)
 		{
-			if (!parentLayer->IsChildOf(layer) && layer->GetParent() != parentLayer)
-			{
-				parentLayer->AddChild(layer);
-			}
-		}
-
-		return true;
-	}
-	case eObjectLayerType_Terrain:
-		// intentional fall through
-	case eObjectLayerType_Layer:
-	{
-		CUndo undo("Move Layers");
-		// layers cannot be dropped on other layers. So the parent has to be
-		// determined and the layers need to be added there
-		parentLayer = parentLayer->GetParent();
-
-		if (!parentLayer)
-		{
-			for (auto layer : layers)
-			{
-				layer->SetAsRootLayer();
-			}
-		}
-		else
-		{
+			CUndo undo("Move Layers");
 			for (auto layer : layers)
 			{
 				if (!parentLayer->IsChildOf(layer) && layer->GetParent() != parentLayer)
@@ -695,9 +730,37 @@ bool CLevelLayerModel::dropMimeData(const QMimeData* pData, Qt::DropAction actio
 					parentLayer->AddChild(layer);
 				}
 			}
+
+			return true;
 		}
-		return true;
-	}
+	case eObjectLayerType_Terrain:
+	// intentional fall through
+	case eObjectLayerType_Layer:
+		{
+			CUndo undo("Move Layers");
+			// layers cannot be dropped on other layers. So the parent has to be
+			// determined and the layers need to be added there
+			parentLayer = parentLayer->GetParent();
+
+			if (!parentLayer)
+			{
+				for (auto layer : layers)
+				{
+					layer->SetAsRootLayer();
+				}
+			}
+			else
+			{
+				for (auto layer : layers)
+				{
+					if (!parentLayer->IsChildOf(layer) && layer->GetParent() != parentLayer)
+					{
+						parentLayer->AddChild(layer);
+					}
+				}
+			}
+			return true;
+		}
 
 	default:
 		return false;
@@ -733,12 +796,14 @@ bool CLevelLayerModel::setData(const QModelIndex& index, const QVariant& value, 
 		case eObjectColumns_Visible:
 			if (role == Qt::CheckStateRole)
 			{
+				CUndo undoVisibility("Set Visibility");
 				pObject->SetVisible(value == Qt::Checked);
 			}
 			break;
 		case eObjectColumns_Frozen:
 			if (role == Qt::CheckStateRole)
 			{
+				CUndo undoFrozen("Set Frozen");
 				pObject->SetFrozen(value == Qt::Checked);
 			}
 			break;
@@ -882,10 +947,10 @@ void CLevelLayerModel::Clear()
 	endResetModel();
 }
 
-void CLevelLayerModel::AddObject(CBaseObject* pObject)
+void CLevelLayerModel::AddObject(const CBaseObject* pObject)
 {
 	// always assume new object is a root object.
-	m_rootObjects.push_back(pObject);
+	m_rootObjects.push_back(const_cast<CBaseObject*>(pObject)); // TODO: REMOVE CONST_CAST
 	UpdateCachedDataForObject(pObject);
 }
 
@@ -901,7 +966,7 @@ void CLevelLayerModel::AddObjects(const std::vector<CBaseObject*>& objects)
 	}
 }
 
-void CLevelLayerModel::RemoveObject(CBaseObject* pObject)
+void CLevelLayerModel::RemoveObject(const CBaseObject* pObject)
 {
 	int i = RowFromObject(pObject);
 	if (i >= 0)
@@ -946,12 +1011,12 @@ void CLevelLayerModel::RemoveObjects(const std::vector<CBaseObject*>& objects)
 	}), m_rootObjects.end());
 }
 
-void CLevelLayerModel::UpdateCachedDataForObject(CBaseObject* pObject)
+void CLevelLayerModel::UpdateCachedDataForObject(const CBaseObject* pObject)
 {
 	string flowGraphName = "";
 	if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 	{
-		CEntityObject* pEntity = static_cast<CEntityObject*>(pObject);
+		const CEntityObject* pEntity = static_cast<const CEntityObject*>(pObject);
 		std::vector<CHyperFlowGraph*> flowgraphs;
 		CHyperFlowGraph* pEntityFG = nullptr;
 		FlowGraphHelpers::FindGraphsForEntity(pEntity, flowgraphs, pEntityFG);
@@ -974,7 +1039,8 @@ void CLevelLayerModel::UpdateCachedDataForObject(CBaseObject* pObject)
 
 	if (!flowGraphName.empty())
 	{
-		m_flowGraphMap[pObject] = flowGraphName;
+		// TODO: Remove CONST_CAST
+		m_flowGraphMap[const_cast<CBaseObject*>(pObject)] = flowGraphName;
 	}
 
 	string geometryFile = GetGeometryFile(pObject);
@@ -984,23 +1050,31 @@ void CLevelLayerModel::UpdateCachedDataForObject(CBaseObject* pObject)
 	}
 }
 
-void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
+void CLevelLayerModel::OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& eventObj)
 {
-	CBaseObject* pObject = eventObj.m_pObj;
+	// TODO: Handle batch events here for certain event types
+	/*if (objects.size() != 1)
+	   return;*/
+
+	if (objects.empty())
+		return;
+
+	const CBaseObject* pObject = objects[0];
+	const IObjectLayer* pLayer = pObject->GetLayer();
 
 	if (!pObject)
 	{
 		return;
 	}
-	else if (pObject->GetLayer() != m_pLayer && !(eventObj.m_type == OBJECT_ON_LAYERCHANGE || eventObj.m_type == OBJECT_ON_PRELINKED || 
-		eventObj.m_type == OBJECT_ON_LINKED || eventObj.m_type == OBJECT_ON_PREUNLINKED || eventObj.m_type == OBJECT_ON_UNLINKED))
+	else if (pLayer != m_pLayer && !(eventObj.m_type == OBJECT_ON_LAYERCHANGE || eventObj.m_type == OBJECT_ON_PRELINKED ||
+	                                 eventObj.m_type == OBJECT_ON_LINKED || eventObj.m_type == OBJECT_ON_PREUNLINKED || eventObj.m_type == OBJECT_ON_UNLINKED))
 	{
 		return;
 	}
 
 	switch (eventObj.m_type)
 	{
-		case OBJECT_ON_ADD:
+	case OBJECT_ON_ADD:
 		{
 			// we need to be slightly careful here because objects get named before being added, so we might try to access an invalid index.
 			int irow = RowFromObject(pObject);
@@ -1021,16 +1095,57 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			}
 		}
 		break;
-		case OBJECT_ON_PRELINKED:
+	case OBJECT_ON_PREDELETE:
 		{
-			CObjectPreLinkEvent& evt = static_cast<CObjectPreLinkEvent&>(eventObj);
-			CBaseObject* pLinkedTo = evt.m_pLinkedTo;
+			const CObjectPreDeleteEvent& evt = static_cast<const CObjectPreDeleteEvent&>(eventObj);
+			if (evt.m_pLayer != m_pLayer)
+				return;
+
+			OnBeforeObjectsDeleted(objects);
+		}
+		break;
+	case OBJECT_ON_DELETE:
+		{
+			const CObjectDeleteEvent& evt = static_cast<const CObjectDeleteEvent&>(eventObj);
+			if (evt.m_pLayer != m_pLayer)
+				return;
+
+			OnObjectsDeleted(objects);
+		}
+	case OBJECT_ON_PREATTACHED:
+		{
+			const CObjectPreAttachedEvent& evt = static_cast<const CObjectPreAttachedEvent&>(eventObj);
+			OnBeforeObjectsAttached(evt.m_pParent, objects);
+		}
+		break;
+	case OBJECT_ON_ATTACHED:
+		{
+			const CObjectAttachedEvent& evt = static_cast<const CObjectAttachedEvent&>(eventObj);
+			OnObjectsAttached(evt.m_pParent, objects);
+		}
+		break;
+	case OBJECT_ON_PREDETACHED:
+		{
+			const CObjectPreDetachedEvent& evt = static_cast<const CObjectPreDetachedEvent&>(eventObj);
+			OnBeforeObjectsDetached(evt.m_pParent, objects);
+		}
+		break;
+	case OBJECT_ON_DETACHED:
+		{
+			const CObjectDetachedEvent& evt = static_cast<const CObjectDetachedEvent&>(eventObj);
+			OnObjectsDetached(evt.m_pParent, objects);
+		}
+		break;
+	case OBJECT_ON_PRELINKED:
+		{
+			const CObjectPreLinkEvent& evt = static_cast<const CObjectPreLinkEvent&>(eventObj);
+			const CBaseObject* pLinkedTo = evt.m_pLinkedTo;
 
 			// If the object we're linking to and all it's ancestors are not contained in this layer, then we'll reset the model later on, when handling
-			// OBJECT_ON_LINKED events. We perform a reset in those cases because linking between layers is the only event that will modify several layer 
+			// OBJECT_ON_LINKED events. We perform a reset in those cases because linking between layers is the only event that will modify several layer
 			// models ***at the same time*** which means we would need to *begin* modification of several models before calling *end*, this is unsupported
 			// by qt and our mounting/merging proxy models. So what we do is we defer the processing of the events until the object is linked.
-			if (m_isRuningBatchProcess || pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (m_isRuningBatchProcess || pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 				return;
 
 			QModelIndex objectIdx = IndexFromObject(pObject);
@@ -1039,18 +1154,18 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			beginMoveRows(objectIdx.parent(), objectIdx.row(), objectIdx.row(), linkedToIdx, rowCount(linkedToIdx));
 		}
 		break;
-		case OBJECT_ON_LINKED:
+	case OBJECT_ON_LINKED:
 		{
-			CBaseObject* pLinkedTo = pObject->GetLinkedTo();
+			const CBaseObject* pLinkedTo = pObject->GetLinkedTo();
 
-			if (pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 			{
 				// Make sure that there is at least a single point in the new hierarchy that belongs to this layer before resetting
 				if (!pObject->IsAnyLinkedAncestorInLayer(m_pLayer))
 					return;
 
-				// We perform a reset in those cases because linking between layers is the only event that will modify several layer models ***at the same time*** 
-				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging 
+				// We perform a reset in those cases because linking between layers is the only event that will modify several layer models ***at the same time***
+				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging
 				// proxy models. So what we do is we defer the processing of the events until the object is linked.
 				if (m_isRuningBatchProcess)
 				{
@@ -1072,14 +1187,21 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			}
 		}
 		break;
-		case OBJECT_ON_LAYERCHANGE:
+	case OBJECT_ON_LAYERCHANGE:
 		{
-			CObjectLayerChangeEvent& evt = static_cast<CObjectLayerChangeEvent&>(eventObj);
+			const CObjectLayerChangeEvent& evt = static_cast<const CObjectLayerChangeEvent&>(eventObj);
 
 			// We need to remove from old layer and add to new layer
-			if (pObject->GetLayer() == m_pLayer && Filter(*pObject, m_pLayer))
+			if (pLayer == m_pLayer && Filter(*pObject, m_pLayer))
 			{
 				int irow = m_rootObjects.size();
+
+				// If the batch process is still running, avoid inserting rows since we're already in the middle of a transaction
+				if (m_isRuningBatchProcess)
+				{
+					AddObject(pObject);
+					return;
+				}
 
 				beginInsertRows(QModelIndex(), irow, irow);
 				AddObject(pObject);
@@ -1089,8 +1211,11 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			else if (evt.m_poldLayer == m_pLayer)
 			{
 				int irow = RowFromObject(pObject);
-				if (irow == -1)
+
+				// If the batch process is still running, avoid removing rows since we're already in the middle of a transaction
+				if (m_isRuningBatchProcess || irow == -1)
 				{
+					RemoveObject(pObject);
 					return; //Object must be in another layer
 				}
 
@@ -1100,32 +1225,32 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			}
 			break;
 		}
-		case OBJECT_ON_PREUNLINKED:
+	case OBJECT_ON_PREUNLINKED:
 		{
 			CBaseObject* pLinkedTo = pObject->GetLinkedTo();
 			// If the object we're unlinking and all it's ancestors are not contained in this layer, then we'll reset the model later on, when handling
-			// OBJECT_ON_UNLINKED events. We perform a reset in those cases because unlinking between layers is the only event that will modify several layer 
+			// OBJECT_ON_UNLINKED events. We perform a reset in those cases because unlinking between layers is the only event that will modify several layer
 			// models ***at the same time*** which means we would need to *begin* modification of several models before calling *end*, this is unsupported
 			// by qt and our mounting/merging proxy models. So what we do is we defer the processing of the events until the object is linked.
-			if (m_isRuningBatchProcess || pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (m_isRuningBatchProcess || pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 				return;
 
 			QModelIndex objectIdx = IndexFromObject(pObject);
 			beginMoveRows(objectIdx.parent(), objectIdx.row(), objectIdx.row(), QModelIndex(), m_rootObjects.size());
 		}
 		break;
-		case OBJECT_ON_UNLINKED:
+	case OBJECT_ON_UNLINKED:
 		{
-			CBaseObject* pLinkedTo = static_cast<CObjectUnLinkEvent&>(eventObj).m_pLinkedTo;
+			const CBaseObject* pLinkedTo = static_cast<const CObjectUnLinkEvent&>(eventObj).m_pLinkedTo;
 
-			if (pObject->GetLayer() != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
+			if (pLayer != m_pLayer || !pLinkedTo->IsLinkedAncestryInLayer(m_pLayer))
 			{
 				// Make sure that there is at least a single point in the new hierarchy that belongs to this layer before resetting
-				if (pObject->GetLayer() != m_pLayer && !pLinkedTo->IsAnyLinkedAncestorInLayer(m_pLayer))
+				if (pLayer != m_pLayer && !pLinkedTo->IsAnyLinkedAncestorInLayer(m_pLayer))
 					return;
 
-				// We perform a reset in this case because unlinking between layers is the only event that will modify several layer models ***at the same time*** 
-				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging 
+				// We perform a reset in this case because unlinking between layers is the only event that will modify several layer models ***at the same time***
+				// which means we would need to *begin* modification of several models before calling *end*, this is unsupported by qt and our mounting/merging
 				// proxy models. So what we do is we defer the processing of the events until the object is unlinked.
 				if (m_isRuningBatchProcess)
 				{
@@ -1146,7 +1271,7 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 			}
 		}
 		break;
-		case OBJECT_ON_RENAME:
+	case OBJECT_ON_RENAME:
 		{
 			// we need to be slightly careful here because objects get named before being added, so we might try to access an invalid index.
 			QVector<int> updateRoles(1, Qt::DisplayRole);
@@ -1154,23 +1279,33 @@ void CLevelLayerModel::OnObjectEvent(CObjectEvent& eventObj)
 		}
 		break;
 
-		case OBJECT_ON_SELECT:
-		case OBJECT_ON_UNSELECT:
+	case OBJECT_ON_COLOR_CHANGED:
 		{
-			// If we're currently deleting this object (or an ancestor of this object) then ignore
-			if (m_pTopLevelNotificationObj == pObject || pObject->IsChildOf(m_pTopLevelNotificationObj))
-				break;
-
-			QVector<int> updateRoles(1, Qt::DecorationRole);
+			QVector<int> updateRoles(1, Qt::DisplayRole);
 			NotifyUpdateObject(pObject, updateRoles);
 		}
 		break;
-		default:
-			break;
+
+	case OBJECT_ON_VISIBILITY:
+		{
+			QVector<int> updateRoles(1, Qt::DisplayRole);
+			NotifyUpdateObject(pObject, updateRoles);
+		}
+		break;
+
+	case OBJECT_ON_FREEZE:
+		{
+			QVector<int> updateRoles(1, Qt::DisplayRole);
+			NotifyUpdateObject(pObject, updateRoles);
+		}
+		break;
+
+	default:
+		break;
 	}
 }
 
-void CLevelLayerModel::OnBeforeObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)
+void CLevelLayerModel::OnBeforeObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer || m_isRuningBatchProcess)
 	{
@@ -1198,7 +1333,7 @@ void CLevelLayerModel::OnBeforeObjectsAttached(CBaseObject* pParent, const std::
 	beginMoveRows(QModelIndex(), row, row, parentIdx, parentRow);
 }
 
-void CLevelLayerModel::OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer)
 	{
@@ -1216,13 +1351,13 @@ void CLevelLayerModel::OnObjectsAttached(CBaseObject* pParent, const std::vector
 		endResetModel();
 		return;
 	}
-	
+
 	CRY_ASSERT_MESSAGE(objects[0]->GetParent()->GetLayer() == m_pLayer, "Layer Model: Attaching children between layers is unsupported");
 
 	endMoveRows();
 }
 
-void CLevelLayerModel::OnBeforeObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool keepTransform)
+void CLevelLayerModel::OnBeforeObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer || m_isRuningBatchProcess)
 	{
@@ -1245,7 +1380,7 @@ void CLevelLayerModel::OnBeforeObjectsDetached(CBaseObject* pParent, const std::
 	beginMoveRows(parentIdx, index.row(), index.row(), QModelIndex(), m_rootObjects.size());
 }
 
-void CLevelLayerModel::OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects)
 {
 	if (pParent->GetLayer() != m_pLayer)
 	{
@@ -1267,9 +1402,9 @@ void CLevelLayerModel::OnObjectsDetached(CBaseObject* pParent, const std::vector
 	endMoveRows();
 }
 
-void CLevelLayerModel::OnBeforeObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnBeforeObjectsDeleted(const std::vector<CBaseObject*>& objects)
 {
-	if (m_isRuningBatchProcess || &layer != m_pLayer)
+	if (m_isRuningBatchProcess)
 	{
 		return;
 	}
@@ -1290,13 +1425,8 @@ void CLevelLayerModel::OnBeforeObjectsDeleted(const CObjectLayer& layer, const s
 	beginRemoveRows(QModelIndex(), row, row);
 }
 
-void CLevelLayerModel::OnObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects)
+void CLevelLayerModel::OnObjectsDeleted(const std::vector<CBaseObject*>& objects)
 {
-	if (&layer != m_pLayer)
-	{
-		return;
-	}
-
 	if (m_isRuningBatchProcess || objects.size() > 1)
 	{
 		RemoveObjects(objects);
@@ -1324,7 +1454,7 @@ void CLevelLayerModel::OnSelectionChanged()
 
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
 
-	for(int i = 0, count = pSelection->GetCount(); i < count; ++i)
+	for (int i = 0, count = pSelection->GetCount(); i < count; ++i)
 	{
 		CBaseObject* pObject = pSelection->GetObject(i);
 		if (pObject->GetLayer() != m_pLayer)
@@ -1339,7 +1469,7 @@ void CLevelLayerModel::OnSelectionChanged()
 	}
 }
 
-void CLevelLayerModel::OnLink(CBaseObject* pObject)
+void CLevelLayerModel::OnLink(const CBaseObject* pObject)
 {
 	// Make sure to remove any objects that are currently in the model that will eventually end up somewhere in our linked object's hierarchy
 	int row = RowFromObject(pObject);
@@ -1359,7 +1489,7 @@ void CLevelLayerModel::OnLink(CBaseObject* pObject)
 
 	if (pObject->GetLayer() != m_pLayer && pObject->GetLinkedTo()->GetLayer() != m_pLayer)
 		return;
-	
+
 	for (auto i = 0; i < pObject->GetLinkedObjectCount(); ++i)
 	{
 		CBaseObject* pLinkedObject = pObject->GetLinkedObject(i);
@@ -1370,7 +1500,7 @@ void CLevelLayerModel::OnLink(CBaseObject* pObject)
 	}
 }
 
-void CLevelLayerModel::OnUnLink(CBaseObject* pObject)
+void CLevelLayerModel::OnUnLink(const CBaseObject* pObject)
 {
 	// Insert children of this object that belong in the layer that were removed when removing it's parent
 	if (pObject->GetLayer() == m_pLayer)
@@ -1523,22 +1653,22 @@ const char* CLevelLayerModel::GetFlowGraphNames(CBaseObject* pObject) const
 	return "";
 }
 
-const char* CLevelLayerModel::GetGeometryFile(CBaseObject* pObject) const
+const char* CLevelLayerModel::GetGeometryFile(const CBaseObject* pObject) const
 {
 	if (pObject->IsKindOf(RUNTIME_CLASS(CBrushObject)))
 	{
-		CBrushObject* pObj = (CBrushObject*)pObject;
+		const CBrushObject* pObj = (const CBrushObject*)pObject;
 		return pObj->GetGeometryFile().c_str();
 	}
 	else if (pObject->IsKindOf(RUNTIME_CLASS(CGeomEntity)))
 	{
-		CGeomEntity* pObj = (CGeomEntity*)pObject;
+		const CGeomEntity* pObj = (const CGeomEntity*)pObject;
 		return pObj->GetGeometryFile().c_str();
 
 	}
 	else if (pObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 	{
-		CEntityObject* pEntity = static_cast<CEntityObject*>(pObject);
+		const CEntityObject* pEntity = static_cast<const CEntityObject*>(pObject);
 		IRenderNode* pEngineNode = pEntity->GetEngineNode();
 
 		if (pEngineNode)
@@ -1682,7 +1812,7 @@ int CLevelLayerModel::GetAIGroupID(CBaseObject* pObject) const
 	return -1;
 }
 
-void CLevelLayerModel::NotifyUpdateObject(CBaseObject* pObject, const QVector<int>& updateRoles)
+void CLevelLayerModel::NotifyUpdateObject(const CBaseObject* pObject, const QVector<int>& updateRoles)
 {
 	const QModelIndex leftIndex = IndexFromObject(pObject);
 	if (!leftIndex.isValid())
@@ -1694,13 +1824,17 @@ void CLevelLayerModel::NotifyUpdateObject(CBaseObject* pObject, const QVector<in
 	dataChanged(leftIndex, rightIndex, updateRoles);
 }
 
-bool CLevelLayerModel::IsRelatedToTopLevelObject(CBaseObject* pObject) const 
+bool CLevelLayerModel::IsRelatedToTopLevelObject(CBaseObject* pObject) const
 {
 	return (m_pTopLevelNotificationObj && (pObject == m_pTopLevelNotificationObj || pObject->IsChildOf(m_pTopLevelNotificationObj)));
 }
 
 void CLevelLayerModel::StartBatchProcess()
 {
+	// If we're not handling any object events, then don't handle batch changes either
+	if (m_isDisconnected)
+		return;
+
 	assert(!m_isRuningBatchProcess);
 	m_isRuningBatchProcess = true;
 	beginResetModel();
@@ -1708,8 +1842,11 @@ void CLevelLayerModel::StartBatchProcess()
 
 void CLevelLayerModel::FinishBatchProcess()
 {
+	// If we're not handling any object events, then don't handle batch changes either
+	if (m_isDisconnected)
+		return;
+
 	endResetModel();
 	assert(m_isRuningBatchProcess);
 	m_isRuningBatchProcess = false;
 }
-

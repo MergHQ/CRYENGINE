@@ -1,4 +1,4 @@
-// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -8,11 +8,11 @@ namespace pfx2
 //////////////////////////////////////////////////////////////////////////
 // CParticleContainer
 
-ILINE TParticleId CParticleContainer::GetRealId(TParticleId pId) const
+ILINE TParticleId CParticleContainer::RealId(TParticleId pId) const
 {
 	if (pId < m_lastId)
 		return pId;
-	const uint numSpawn = GetNumSpawnedParticles();
+	const uint numSpawn = NumSpawned();
 	const uint gapSize = m_firstSpawnId - m_lastId;
 	const uint movingId = m_lastSpawnId - min(gapSize, numSpawn);
 	const uint offset = movingId - m_lastId;
@@ -31,22 +31,6 @@ void CParticleContainer::FillData(TDataType<T> type, const T& data, SUpdateRange
 			auto stream = IOStream(type[e]);
 			stream.Fill(range, TDimInfo<T>::Elem(data, e));
 		}
-	}
-}
-
-inline void CParticleContainer::CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range)
-{
-	CRY_PFX2_ASSERT(dstType.info().type == srcType.info().type);
-	if (HasData(dstType) && HasData(srcType))
-	{
-		size_t stride = dstType.info().typeSize;
-		size_t count = SGroupRange(range).size();
-		uint dim = dstType.info().dimension;
-		for (uint i = 0; i < dim; ++i)
-			memcpy(
-			  (byte*)m_pData[dstType + i] + stride * range.m_begin,
-			  (byte*)m_pData[srcType + i] + stride * range.m_begin,
-			  stride * count);
 	}
 }
 

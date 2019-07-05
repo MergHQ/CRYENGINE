@@ -54,12 +54,12 @@ void CEnvironmentComponent::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEnvironmentComponent::GetEventMask() const
+Cry::Entity::EventFlags CEnvironmentComponent::GetEventMask() const
 {
-	uint64 eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
+	Cry::Entity::EventFlags eventMask = ENTITY_EVENT_DONE;
 
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	eventMask |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 #endif// INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 	
 	return eventMask;

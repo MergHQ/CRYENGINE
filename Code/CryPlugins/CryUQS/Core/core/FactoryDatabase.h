@@ -78,10 +78,10 @@ namespace UQS
 		template <class TFactory>
 		void CFactoryDatabase<TFactory>::RegisterFactory(TFactory* pFactoryToRegister, const char* szName, const CryGUID& guid)
 		{
-			assert(pFactoryToRegister);
+			CRY_ASSERT(pFactoryToRegister);
 
 			// assert that the consistency checks haven't been done yet (client code shall never register any factory afterwards, because inconsistencies/duplicates/etc. would go unnoticed)
-			assert(!Hub_HaveConsistencyChecksBeenDoneAlready());
+			CRY_ASSERT(!Hub_HaveConsistencyChecksBeenDoneAlready());
 
 			// see how many registration attempts for a factory with given name and GUID were done before already
 			int& registrationCountByNameSoFar = m_name2registrationCount[szName];
@@ -140,7 +140,7 @@ namespace UQS
 		template <class TFactory>
 		TFactory& CFactoryDatabase<TFactory>::GetFactory(size_t index) const
 		{
-			assert(index < m_list.size());
+			CRY_ASSERT(index < m_list.size());
 			return *m_list[index];
 		}
 

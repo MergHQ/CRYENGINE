@@ -38,8 +38,7 @@ CCSharpEditorPlugin::CCSharpEditorPlugin()
 	if (gEnv->pMonoRuntime != nullptr)
 	{
 		gEnv->pMonoRuntime->RegisterCompileListener(this);
-
-		m_compileMessage = gEnv->pMonoRuntime->GetLatestCompileMessage();
+		OnCompileFinished();
 	}
 
 	// Regenerate the plugins in case the files were changed when the Sandbox was closed
@@ -167,14 +166,13 @@ void CCSharpEditorPlugin::OnFileChange(const char* szFilename, EChangeType type)
 	}
 }
 
-void CCSharpEditorPlugin::OnCompileFinished(const char* szCompileMessage)
+void CCSharpEditorPlugin::OnCompileFinished()
 {
-	m_compileMessage = szCompileMessage;
-
 	for (CSharpMessageListeners::Notifier notifier(m_messageListeners); notifier.IsValid(); notifier.Next())
 	{
-		notifier->OnMessagesUpdated(m_compileMessage);
+		notifier->OnMessagesUpdated();
 	}
+	m_errorsUpdated = true;
 }
 
 void CCSharpEditorPlugin::OnEnvElementAdd(Schematyc::IEnvElementPtr pElement)
@@ -272,7 +270,6 @@ void CCSharpEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UIN
 		{
 			// Got focus back
 			m_isSandboxInFocus = true;
-			UpdatePluginsAndSolution();
 		}
 	}
 }
@@ -287,18 +284,20 @@ void CCSharpEditorPlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
 			SetDefaultTextEditor();
 		}
 
-		// If a compile message was sent during compilation, open when Editor is fully initialized
-		if (!m_compileMessage.empty())
-		{
-			GetIEditor()->OpenView("C# Output");
-			CryLogAlways(m_compileMessage);
-			m_compileMessage.clear();
-		}
-
 		if (m_isSandboxInFocus)
 		{
 			UpdatePluginsAndSolution();
 		}
+
+		if (gEnv->pMonoRuntime != nullptr && m_initialized && m_editorMainFrameInitialized && m_errorsUpdated && gEnv->pMonoRuntime->GetCompileErrorCount() > 0)
+		{
+			CTabPaneManager::GetInstance()->OpenOrCreatePane("C# Output");
+			m_errorsUpdated = false;
+		}
+	}
+	if (aEventId == eNotify_OnMainFrameInitialized)
+	{
+		m_editorMainFrameInitialized = true;
 	}
 }
 
@@ -319,7 +318,7 @@ void CCSharpEditorPlugin::UpdatePluginsAndSolution()
 
 void CCSharpEditorPlugin::RegenerateSolution() const
 {
-	IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
+	Cry::IProjectManager* pProjectManager = gEnv->pSystem->GetIProjectManager();
 	if (!pProjectManager)
 	{
 		return;
@@ -379,9 +378,9 @@ void CCSharpEditorPlugin::RegenerateSolution() const
 		{
 			string pluginName = PathUtil::GetFileName(pluginPath);
 			pluginReferences += "    <Reference Include=\"" + pluginName + "\">\n"
-			                    "      <HintPath>" + pluginPath + "</HintPath>\n"
-			                    "      <Private>False</Private>\n"
-			                    "    </Reference>\n";
+								"      <HintPath>" + pluginPath + "</HintPath>\n"
+								"      <Private>False</Private>\n"
+								"    </Reference>\n";
 		}
 	}
 
@@ -773,7 +772,6 @@ bool CCSharpEditorPlugin::HasExistingTextEditor() const
 			DWORD processId = GetProcessId(m_textEditorHandle);
 			// Invert the value because EnumWindows will return false if SetWindowToForeground found the window, and true if it didn't.
 			return !EnumWindows(&SetWindowToForeground, processId);
-
 		}
 	}
 	return false;
@@ -799,3 +797,5 @@ bool CCSharpEditorPlugin::OpenCSharpFileSafe(const string& filePath) const
 	}
 	return false;
 }
+
+REGISTER_PLUGIN(CCSharpEditorPlugin)

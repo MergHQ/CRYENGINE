@@ -2,14 +2,14 @@
 
 #include "StdAfx.h"
 #include "QWaitProgress.h"
-
+#include <IEditor.h>
 #include <QApplication>
 #include <QStatusBar>
 
 bool CWaitProgress::s_bInProgressNow = false;
 
-CWaitProgress::CWaitProgress(const char* text, bool bStart)
-	: m_strText(text)
+CWaitProgress::CWaitProgress(const char* szText, bool bStart)
+	: m_strText(szText)
 	, m_bStarted(false)
 {
 	m_bIgnore = false;
@@ -52,7 +52,6 @@ void CWaitProgress::Start()
 	m_percent = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CWaitProgress::Stop()
 {
 	if (!m_bStarted)
@@ -90,11 +89,10 @@ bool CWaitProgress::Step(int nPercentage, bool bProcessEvents)
 	return true;
 }
 
-void CWaitProgress::SetText(LPCTSTR lpszText)
+void CWaitProgress::SetText(const char* szText)
 {
 	if (m_bIgnore)
 		return;
 
-	m_strText = lpszText;
+	m_strText = szText;
 }
-

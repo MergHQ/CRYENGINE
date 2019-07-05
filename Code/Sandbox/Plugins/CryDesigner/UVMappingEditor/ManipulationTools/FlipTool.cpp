@@ -48,4 +48,3 @@ REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_FlipHori, eUVMappingToolGroup
                                     flip_hori, "runs flip hori tool", "designer.flip_hori")
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_FlipVert, eUVMappingToolGroup_Manipulation, "Flip Vertical", FlipVertTool,
                                     flip_vert, "runs flip vert tool", "designer.flip_vert")
-

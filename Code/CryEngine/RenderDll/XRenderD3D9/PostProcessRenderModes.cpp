@@ -13,7 +13,6 @@
    =============================================================================*/
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
 #include <CryAudio/IAudioSystem.h>
@@ -37,7 +36,7 @@ bool CNightVision::Preprocess(const SRenderViewInfo& viewInfo)
 	return false;
 }
 
-void CNightVision::Render()
+void CNightVision::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -195,7 +194,7 @@ REINST(Implement a ISoundSystemEventListener)
 
 bool CSonarVision::Preprocess(const SRenderViewInfo& viewInfo)
 {
-	CTexture* pPrevFrame = CRendererResources::s_ptexPrevFrameScaled;
+	CTexture* pPrevFrame = CRendererResources::s_ptexDisplayTargetScaledPrev;
 	if (!pPrevFrame)
 		return false;
 
@@ -273,7 +272,7 @@ void CSonarVision::SoundHintsPass()
 	//	-	scissor + depth bounds test for sonar hints
 	//	- could maybe also render at 1/4 lower res
 
-	Vec4 vParamsPS = Vec4(1, 1, 1.0f, 1.0f);
+	//Vec4 vParamsPS = Vec4(1, 1, 1.0f, 1.0f);
 
 	REINST(Iterate over the sonar hints)
 	//SSonarHintsLst pSonarHints = m_pSoundEventsListener->GetSonarHintsLst();
@@ -382,7 +381,7 @@ void CSonarVision::FinalComposePass()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CSonarVision::Render()
+void CSonarVision::Execute()
 {
 	gRenDev->m_cEF.mfRefreshSystemShader("PostEffectsRenderModes", CShaderMan::s_shPostEffectsRenderModes);
 
@@ -585,7 +584,7 @@ void CThermalVision::FinalComposePass()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CThermalVision::Render()
+void CThermalVision::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 }

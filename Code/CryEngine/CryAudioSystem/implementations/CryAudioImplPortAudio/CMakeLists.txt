@@ -6,29 +6,30 @@ start_sources()
 sources_platform(ALL)
 add_sources("CryAudioImpl_uber_0.cpp"
 	SOURCE_GROUP "Header Files"
-		"ATLEntities.h"
-		"AudioEvent.h"
-		"AudioImpl.h"
-		"AudioImplCVars.h"
-		"AudioObject.h"
-		"AudioTrigger.h"
 		"Common.h"
+		"CVars.h"
+		"Event.h"
+		"EventInstance.h"
 		"GlobalData.h"
+		"Impl.h"
+		"Listener.h"
+		"Object.h"
 		"resource.h"
-		"stdafx.h"
 	SOURCE_GROUP "Source Files"
-		"AudioEvent.cpp"
-		"AudioImpl.cpp"
-		"AudioImplCVars.cpp"
-		"AudioObject.cpp"
-		"AudioTrigger.cpp"
 		"Common.cpp"
 		"CryAudioImpl.cpp"
+		"CVars.cpp"
+		"Event.cpp"
+		"EventInstance.cpp"
+		"Impl.cpp"
+		"Listener.cpp"
+		"Object.cpp"
 )
 
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"stdafx.cpp"
+		"stdafx.h"
 )
 
 end_sources()
@@ -36,7 +37,7 @@ end_sources()
 
 if(AUDIO_PORTAUDIO)
 	CryEngineModule(CryAudioImplPortAudio FORCE_SHARED_WIN PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
-	target_compile_definitions(${THIS_PROJECT} PRIVATE -DPORTAUDIO_FOR_$<UPPER_CASE:$<CONFIG>>)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE>)
 	target_include_directories( ${THIS_PROJECT} PRIVATE ../../Common)
 	target_link_libraries(${THIS_PROJECT} PRIVATE libsndfile PortAudio)
 	copy_portaudio()

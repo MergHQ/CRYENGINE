@@ -313,7 +313,7 @@ float SSessionStats::GetDerivedStat(EDerivedFloatPersistantStats stat) const
 		return GetRatio(GetStat(EIPS_KillsSuitDefault), GetStat(EIPS_DeathsSuitDefault));
 
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("Failed to find EDerivedFloatPersistantStats %d", stat));
+		CRY_ASSERT(false, string().Format("Failed to find EDerivedFloatPersistantStats %d", stat));
 		return 0.0f;
 	}
 }
@@ -338,7 +338,7 @@ int SSessionStats::GetDerivedStat(const char* name, EDerivedIntMapPersistantStat
 
 
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("Failed to find EDerivedIntMapPersistantStats %d", stat));
+		CRY_ASSERT(false, string().Format("Failed to find EDerivedIntMapPersistantStats %d", stat));
 		return 0;
 	}
 }
@@ -360,7 +360,7 @@ float SSessionStats::GetDerivedStat(const char* name, EDerivedFloatMapPersistant
 		}
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("Failed to find EDerivedFloatMapPersistantStats %d", stat));
+		CRY_ASSERT(false, string().Format("Failed to find EDerivedFloatMapPersistantStats %d", stat));
 		return 0.0f;
 	}
 }
@@ -397,7 +397,7 @@ const char * SSessionStats::GetDerivedStat(EDerivedStringPersistantStats stat)
 		}
 
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("Failed to find EDerivedStringPersistantStats %d", stat));
+		CRY_ASSERT(false, string().Format("Failed to find EDerivedStringPersistantStats %d", stat));
 		return NULL;
 	}
 }
@@ -472,7 +472,7 @@ const char * SSessionStats::GetDerivedStat(EDerivedStringMapPersistantStats stat
 		}
 			
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("Failed to find EDerivedStringMapPersistantStats %d", stat));
+		CRY_ASSERT(false, string().Format("Failed to find EDerivedStringMapPersistantStats %d", stat));
 		return NULL;
 	}
 }

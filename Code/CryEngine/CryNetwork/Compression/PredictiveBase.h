@@ -115,9 +115,6 @@ public:
 		uint32 bitBucketSize = 2;
 		uint32 deltaPrecision = 5000;
 		uint32 continuityThreshold = 0;
-		uint32 orientationMode = 0;
-
-		int trackValues = 0;
 
 		if (gEnv->IsDedicated())
 		{
@@ -191,7 +188,7 @@ public:
 		//can be zero if we have no memento's so far
 		int32 timeDelta = (int32)(timeFraction32 - m_lastTime32);
 
-		T frac2 = ((m_delta * timeDelta) % m_deltaPrecision) * 2;
+		//T frac2 = ((m_delta * timeDelta) % m_deltaPrecision) * 2;
 
 		T prediction = m_lastValue + (m_delta * timeDelta / m_deltaPrecision);
 

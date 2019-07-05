@@ -7,6 +7,8 @@
 #include "AnimationGraphCVars.h"
 #include "PersistantDebug.h"
 #include <CryAnimation/IFacialAnimation.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/IPhysics.h>
 #include "AnimatedCharacterEventProxies.h"
 
 #include "CryActionCVars.h"
@@ -14,7 +16,6 @@
 #include "DebugHistory.h"
 
 #include <IViewSystem.h>
-#include <CryAISystem/IAIObject.h>
 
 #include "../Animation/PoseAligner/PoseAligner.h"
 
@@ -356,7 +357,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 	bool fallen = false;
 	bool isFirstPerson = false;
 	bool allowLandBob = false;
-	bool isMultiplayer = gEnv->bMultiplayer;
+
 	if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(pEntity->GetId()))
 	{
 		fallen = pActor->IsFallen();
@@ -445,7 +446,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 		{
 			float landingBobFactor = CAnimationGraphCVars::Get().m_landingBobTimeFactor;
 			float landingBobLandFactor = CAnimationGraphCVars::Get().m_landingBobLandTimeFactor;
-			CRY_ASSERT_MESSAGE((landingBobFactor >= 0.0f) && (landingBobFactor <= 1.0f), "Invalid value for m_landingBobTimeFactor cvar, must be 0..1");
+			CRY_ASSERT((landingBobFactor >= 0.0f) && (landingBobFactor <= 1.0f), "Invalid value for m_landingBobTimeFactor cvar, must be 0..1");
 			landingBobFactor = clamp_tpl(landingBobFactor, 0.0f, 1.0f);
 			landingBobLandFactor = clamp_tpl(landingBobLandFactor, 0.0f, landingBobFactor);
 
@@ -501,10 +502,6 @@ void CAnimatedCharacter::PostProcessingUpdate()
 QuatT CAnimatedCharacter::CalculateDesiredAnimMovement() const
 {
 	ANIMCHAR_PROFILE_DETAILED;
-
-	IEntity* pEntity = GetEntity();
-	CRY_ASSERT(pEntity);
-	IEntity* pParent = pEntity->GetParent();
 
 	QuatT desiredAnimMovement(IDENTITY);
 
@@ -664,7 +661,7 @@ QuatT CAnimatedCharacter::CalculateWantedEntityMovement(const QuatT& desiredAnim
 	{
 		EMovementControlMethod mcmh = GetMCMH();
 		EMovementControlMethod mcmv = GetMCMV();
-		char* szMcmH = "???";
+		const char* szMcmH = "???";
 		switch (mcmh)
 		{
 		case eMCM_Entity:
@@ -686,7 +683,7 @@ QuatT CAnimatedCharacter::CalculateWantedEntityMovement(const QuatT& desiredAnim
 			szMcmH = "ANM_HC";
 			break;
 		}
-		char* szMcmV = "???";
+		const char* szMcmV = "???";
 		switch (mcmv)
 		{
 		case eMCM_Entity:
@@ -921,16 +918,19 @@ void CAnimatedCharacter::RequestPhysicalEntityMovement(const QuatT& wantedEntMov
 			{
 				m_entLocation.q = newRotation;
 
-				pEntity->SetRotation(newRotation, { ENTITY_XFORM_USER, ENTITY_XFORM_NOT_REREGISTER });
+				// don't call SetRotation() no change required since this call dirties eEA_Physics network aspect and produces unneeded spikes in network traffic
+				if (pEntity->GetRotation() != newRotation)
+				{
+					pEntity->SetRotation(newRotation, { ENTITY_XFORM_USER, ENTITY_XFORM_NOT_REREGISTER });
+				}
 			}
 		}
 
 		// Send expected location to AI so pathfollowing which runs in parallel with physics becomes more accurate
 		{
-			IAIObject* pAIObject = GetEntity()->GetAI();
-			if (pAIObject)
+			if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(pEntity->GetId()))
 			{
-				pAIObject->SetExpectedPhysicsPos(m_entLocation.t + m_expectedEntMovement);
+				pActor->SetExpectedPhysicsPos(m_entLocation.t + m_expectedEntMovement);
 			}
 		}
 	}
@@ -1020,7 +1020,6 @@ void CAnimatedCharacter::UpdatePhysicalColliderMode()
 	}
 
 	m_forcedRefreshColliderMode = false;
-	EColliderMode prevColliderMode = m_colliderMode;
 	m_colliderMode = newColliderMode;
 
 	CRY_ASSERT(m_colliderMode != eColliderMode_Undefined);
@@ -1308,8 +1307,6 @@ void CAnimatedCharacter::GetCurrentEntityLocation()
 	m_actualEntSpeed = speed;
 
 	const float speed2D = Vec2(velocity).GetLength();
-
-	const float prevSpeed2D = m_actualEntSpeedHorizontal;
 	m_actualEntSpeedHorizontal = speed2D;
 
 	m_actualEntMovementDirHorizontal.x = (float)__fsel(-(speed2D - FLT_MIN), 0.0f, velocity.x / (speed2D + FLT_MIN));// approximates: (speed2D > FLT_MIN) ? (velocity2D / speed2D) : Vec2Constants<float>::fVec2_Zero;

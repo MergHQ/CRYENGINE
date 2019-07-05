@@ -15,8 +15,6 @@
 #include "MemReplay.h"
 #include "MemoryManager.h"
 
-volatile bool g_replayCleanedUp = false;
-
 #ifdef DANGLING_POINTER_DETECTOR
 	#if CRY_PLATFORM_ORBIS
 		#include "CryMemoryManager_sce.h"
@@ -32,11 +30,11 @@ const bool bProfileMemManager = 0;
 #ifdef CRYMM_SUPPORT_DEADLIST
 namespace
 {
-struct DeadHeadSize
-{
-	DeadHeadSize* pPrev;
-	UINT_PTR      nSize;
-};
+	struct DeadHeadSize
+	{
+		DeadHeadSize* pPrev;
+		UINT_PTR      nSize;
+	};
 }
 
 static CryCriticalSectionNonRecursive s_deadListLock;
@@ -50,10 +48,9 @@ static void DeadListValidate(const uint8* p, size_t sz, uint8 val)
 {
 	for (const uint8* pe = p + sz; p != pe; ++p)
 	{
-		if (*p != val)
+		if (!CRY_VERIFY_WITH_MESSAGE(*p == val, "Deadlist validation failed, there seems to have been a use after free"))
 		{
 			CryGetIMemReplay()->Stop();
-			__debugbreak();
 		}
 	}
 }
@@ -112,7 +109,8 @@ static void DeadListPush(void* p, size_t sz)
 //////////////////////////////////////////////////////////////////////////
 // Some globals for fast profiling.
 //////////////////////////////////////////////////////////////////////////
-LONG g_TotalAllocatedMemory = 0;
+int64 g_TotalAllocatedMemory = 0;
+thread_local int64 tls_allocatedMemory = 0;
 
 #ifndef CRYMEMORYMANAGER_API
 	#define CRYMEMORYMANAGER_API
@@ -140,6 +138,13 @@ BucketAllocator<BucketAllocatorDetail::DefaultTraits<BUCKET_ALLOCATOR_DEFAULT_SI
 node_alloc<eCryMallocCryFreeCRTCleanup, true, VIRTUAL_ALLOC_SIZE> g_GlobPageBucketAllocator;
 #endif // defined(USE_GLOBAL_BUCKET_ALLOCATOR)
 
+#ifndef RELEASE
+namespace BucketFull
+{
+	CryCriticalSectionNonRecursive mutex;
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alignment)
 {
@@ -149,12 +154,19 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		return 0;
 	}
 
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	if (size >= 256 * 1024 * 1024)
+	{
+		CryLogAlways("Allocation of size %" PRISIZE_T " requested!", size);
+		gEnv->pSystem->debug_LogCallStack();
+	}
 
-	uint8* p;
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
+
+	uint8* p = nullptr;
 	size_t sizePlus = size;
 
-	if (!alignment || g_GlobPageBucketAllocator.CanGuaranteeAlignment(sizePlus, alignment))
+	const bool useBucket = !alignment || g_GlobPageBucketAllocator.CanGuaranteeAlignment(sizePlus, alignment);
+	if (useBucket)
 	{
 		if (alignment)
 		{
@@ -173,21 +185,42 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		//
 		// We use getSize and not getSizeEx because in the case of an allocation with "alignment" == 0 and "size" bigger than the bucket size
 		// the bucket allocator will end up allocating memory using CryCrtMalloc which falls outside the address range of the bucket allocator
-		sizePlus = g_GlobPageBucketAllocator.getSize(p);
-	}
-	else
-	{
-		alignment = max(alignment, (size_t)16);
-
-		// emulate alignment
-		sizePlus += alignment;
-		p = (uint8*) CrySystemCrtMalloc(sizePlus);
-
-		if (alignment && p)
+		if (p)
 		{
-			uint32 offset = (uint32)(alignment - ((UINT_PTR)p & (alignment - 1)));
-			p += offset;
-			reinterpret_cast<uint32*>(p)[-1] = offset;
+			sizePlus = g_GlobPageBucketAllocator.getSize(p);
+		}
+	}
+
+	// shouldn't use bucket or failed -> go to CRT malloc
+	if (p == nullptr)
+	{
+#ifndef RELEASE
+		// we use the lock to ensure that we don't recurse into the assert while handling it (which is going to allocate memory, too)
+		if (useBucket && BucketFull::mutex.TryLock())
+		{
+			CRY_ASSERT(!useBucket, "BucketAllocator is full!");
+			BucketFull::mutex.Unlock();
+		}
+#endif
+
+		if (alignment)
+		{
+			alignment = max(alignment, (size_t)16);
+
+			// emulate alignment
+			sizePlus += alignment;
+			p = (uint8*) CrySystemCrtMalloc(sizePlus);
+			
+			if (p != nullptr)
+			{
+				uint32 offset = (uint32)(alignment - ((UINT_PTR)p & (alignment - 1)));
+				p += offset;
+				reinterpret_cast<uint32*>(p)[-1] = offset;
+			}
+		}
+		else
+		{
+			p = (uint8*)CrySystemCrtMalloc(sizePlus);
 		}
 	}
 
@@ -200,15 +233,13 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 	}
 #endif //!defined(USE_GLOBAL_BUCKET_ALLOCATOR)
 
-	if (!p)
-	{
-		allocated = 0;
-		gEnv->bIsOutOfMemory = true;
-		CryFatalError("**** Memory allocation for %" PRISIZE_T " bytes failed ****", sizePlus);
-		return 0;   // don't crash - allow caller to react
-	}
+// 	if (!p)
+// 	{
+// 		// both, bucket and CRT malloc failed -> going to crash anyway
+// 	}
 
-	CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, sizePlus);
+	CryInterlockedAdd(&g_TotalAllocatedMemory, int64(sizePlus));
+	tls_allocatedMemory += sizePlus;
 	allocated = sizePlus;
 
 	MEMREPLAY_SCOPE_ALLOC(p, sizePlus, 0);
@@ -252,7 +283,7 @@ CRYMEMORYMANAGER_API void* CryRealloc(void* memblock, size_t size, size_t& alloc
 	}
 	else
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CrtMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CrtMalloc);
 
 #ifdef DANGLING_POINTER_DETECTOR
 		memblock = DanglingPointerDetectorTransformFree(memblock);
@@ -296,8 +327,6 @@ CRYMEMORYMANAGER_API void* CryRealloc(void* memblock, size_t size, size_t& alloc
 #ifdef CRYMM_SUPPORT_DEADLIST
 static void CryFreeReal(void* p)
 {
-	UINT_PTR pid = (UINT_PTR)p;
-
 	if (p != NULL)
 	{
 		if (g_GlobPageBucketAllocator.IsInAddressRange(p))
@@ -321,11 +350,9 @@ size_t CryFree(void* p, size_t alignment)
 	{
 		size_t size = 0;
 
-		UINT_PTR pid = (UINT_PTR)p;
-
 		if (p != NULL)
 		{
-			MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 			if (g_GlobPageBucketAllocator.IsInAddressRange(p))
 			{
@@ -348,10 +375,11 @@ size_t CryFree(void* p, size_t alignment)
 				}
 			}
 
-			LONG lsize = size;
-			CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, -lsize);
+			int64 lsize = size;
+			CryInterlockedAdd(&g_TotalAllocatedMemory, -lsize);
+			tls_allocatedMemory -= lsize;
 
-			MEMREPLAY_SCOPE_FREE(pid);
+			MEMREPLAY_SCOPE_FREE(p);
 		}
 
 		return size;
@@ -360,11 +388,9 @@ size_t CryFree(void* p, size_t alignment)
 
 	size_t size = 0;
 
-	UINT_PTR pid = (UINT_PTR)p;
-
 	if (p != NULL)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		if (g_GlobPageBucketAllocator.IsInAddressRange(p))
 		{
@@ -384,10 +410,11 @@ size_t CryFree(void* p, size_t alignment)
 			}
 		}
 
-		LONG lsize = size;
-		CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, -lsize);
+		int64 lsize = size;
+		CryInterlockedAdd(&g_TotalAllocatedMemory, -lsize);
+		tls_allocatedMemory -= lsize;
 
-		MEMREPLAY_SCOPE_FREE(pid);
+		MEMREPLAY_SCOPE_FREE(UINT_PTR(p));
 	}
 
 	return size;
@@ -396,6 +423,7 @@ size_t CryFree(void* p, size_t alignment)
 CRYMEMORYMANAGER_API void CryFlushAll()  // releases/resets ALL memory... this is useful for restarting the game
 {
 	g_TotalAllocatedMemory = 0;
+	tls_allocatedMemory = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -403,7 +431,12 @@ CRYMEMORYMANAGER_API void CryFlushAll()  // releases/resets ALL memory... this i
 //////////////////////////////////////////////////////////////////////////
 CRYMEMORYMANAGER_API int CryMemoryGetAllocatedSize()
 {
-	return g_TotalAllocatedMemory;
+	return int(g_TotalAllocatedMemory);
+}
+
+int64 CryMemoryGetThreadAllocatedSize()
+{
+	return tls_allocatedMemory;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -595,10 +628,6 @@ size_t CrySystemCrtGetUsedSpace()
 	}
 #endif
 	return used;
-}
-
-CRYMEMORYMANAGER_API void CryResetStats(void)
-{
 }
 
 int GetPageBucketAlloc_wasted_in_allocation()

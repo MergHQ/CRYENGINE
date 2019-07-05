@@ -115,6 +115,7 @@ namespace Schematyc2
 	class CUpdateScope
 	{
 		friend class CUpdateScheduler;
+		friend class CRelevanceGrid;
 
 	public:
 
@@ -131,11 +132,17 @@ namespace Schematyc2
 		void SetExtraScopeInfo(const IEntity* pEntity, const Schematyc2::IObject* pSchematycObj, bool bOnlyLocalGrid);
 
 	private:
-
-		bool                            m_bIsBound;
+		bool                            m_bIsBound : 1;
+		bool                            m_bUpdateBindPending : 1;
+		bool                            m_bInStaticRelevanceGrid : 1;
+		bool                            m_bInDynamicRelevanceGrid : 1;
+		bool                            m_bOnlyLocalGrid : 1;
+		UpdateFrequency                 m_frequency;
+		UpdatePriority                  m_priority;
+		uint16                          m_relevanceGridIndex;
+		size_t                          m_bucketIndex;
 		const IEntity*                  m_pEntity;
-		const Schematyc2::IObject* m_pSchematycObject;
-		bool                            m_bOnlyLocalGrid;
+		const Schematyc2::IObject*      m_pSchematycObject;
 	};
 
 	// Update relevance
@@ -265,11 +272,31 @@ namespace Schematyc2
 			CTimeValue updateTime;
 		};
 
+		struct SUpdateBucketStats
+		{
+			UpdateFrequency frequency = 0;
+			size_t itemsToUpdateCount = 0;
+			size_t updatedItemsCount = 0;
+			int64 updateTimeTicks = 0;
+		};
+
+		struct SChangeStats
+		{
+			size_t connectedCount = 0;
+			int64 connectionTimeTicks = 0;
+
+			size_t disconnectedCount = 0;
+			int64 disconnectionTimeTicks = 0;
+		};
+
+
 		struct IFrameUpdateStats
 		{
 			virtual ~IFrameUpdateStats() {}
 
-			virtual const SUpdateStageStats* Get(size_t& outCount) const = 0;
+			virtual const SUpdateStageStats* GetStageStats(size_t& outCount) const = 0;
+			virtual const SUpdateBucketStats* GetBucketStats(size_t& outCount) const = 0;
+			virtual const SChangeStats* GetChangeStats() const = 0;
 		};
 	}
 
@@ -279,12 +306,12 @@ namespace Schematyc2
 	{
 		typedef std::function<bool(const Schematyc2::IObject& object)> UseRelevanceGridPredicate;
 		typedef std::function<bool(const Schematyc2::IObject& object)> IsDynamicObjectPredicate;
+		typedef Array<std::pair<UpdatePriority, const char*>> DebugPriorityNameArray;
 
 		virtual ~IUpdateScheduler() {}
 
 		virtual bool Connect(CUpdateScope& scope, const UpdateCallback& callback, UpdateFrequency frequency = EUpdateFrequency::EveryFrame, UpdatePriority priority = EUpdatePriority::Default, const UpdateFilter& filter = UpdateFilter()) = 0;
 		virtual void Disconnect(CUpdateScope& scope) = 0;
-		virtual bool ScopeDestroyed(CUpdateScope& scope) = 0;
 		virtual bool InFrame() const = 0;
 		virtual bool BeginFrame(float frameTime) = 0;
 		virtual bool Update(UpdatePriority beginPriority = EUpdateStage::PrePhysics | EUpdateDistribution::Earliest, UpdatePriority endPriority = EUpdateStage::Post | EUpdateDistribution::End, CUpdateRelevanceContext* pRelevanceContext = nullptr) = 0;
@@ -294,6 +321,7 @@ namespace Schematyc2
 		virtual const UpdateSchedulerStats::IFrameUpdateStats* GetFrameUpdateStats() const = 0;
 		virtual void SetShouldUseRelevanceGridCallback(UseRelevanceGridPredicate useRelevanceGrid) = 0;
 		virtual void SetIsDynamicObjectCallback(IsDynamicObjectPredicate isDynamicObject) = 0;
+		virtual void SetDebugPriorityNames(const DebugPriorityNameArray& debugNames) = 0;
 	};
 
 	// Update scope functions.
@@ -301,37 +329,54 @@ namespace Schematyc2
 
 	inline CUpdateScope::CUpdateScope()
 		: m_bIsBound(false)
+		, m_bUpdateBindPending(false)
+		, m_bInStaticRelevanceGrid(false)
+		, m_bInDynamicRelevanceGrid(false)
+		, m_bOnlyLocalGrid(false)
+		, m_frequency(0)
+		, m_priority(0)
+		, m_relevanceGridIndex(-1)
+		, m_bucketIndex(-1)
 		, m_pEntity(nullptr)
 		, m_pSchematycObject(nullptr)
-		, m_bOnlyLocalGrid(false)
 	{
 	}
 
 	inline CUpdateScope::CUpdateScope(const IEntity* pEntity)
 		: m_bIsBound(false)
+		, m_bUpdateBindPending(false)
+		, m_bInStaticRelevanceGrid(false)
+		, m_bInDynamicRelevanceGrid(false)
+		, m_bOnlyLocalGrid(false)
+		, m_frequency(0)
+		, m_priority(0)
+		, m_relevanceGridIndex(-1)
+		, m_bucketIndex(-1)
 		, m_pEntity(pEntity)
 		, m_pSchematycObject(nullptr)
-		, m_bOnlyLocalGrid(false)
 	{
 	}
 
 	inline CUpdateScope::CUpdateScope(const IEntity* pEntity, const Schematyc2::IObject* pSchematycObject)
 		: m_bIsBound(false)
+		, m_bUpdateBindPending(false)
+		, m_bInStaticRelevanceGrid(false)
+		, m_bInDynamicRelevanceGrid(false)
+		, m_bOnlyLocalGrid(false)
+		, m_frequency(0)
+		, m_priority(0)
+		, m_relevanceGridIndex(-1)
+		, m_bucketIndex(-1)
 		, m_pEntity(pEntity)
 		, m_pSchematycObject(pSchematycObject)
-		, m_bOnlyLocalGrid(false)
 	{
 	}
 
 	inline CUpdateScope::~CUpdateScope()
 	{
-		if (m_bIsBound)
+		if (m_bIsBound || m_bInStaticRelevanceGrid || m_bInDynamicRelevanceGrid)
 		{
 			gEnv->pSchematyc2->GetUpdateScheduler().Disconnect(*this);
-		}
-		else if (m_pSchematycObject)
-		{
-			gEnv->pSchematyc2->GetUpdateScheduler().ScopeDestroyed(*this);
 		}
 	}	
 

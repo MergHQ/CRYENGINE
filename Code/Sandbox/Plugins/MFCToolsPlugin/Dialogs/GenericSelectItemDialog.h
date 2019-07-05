@@ -1,12 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __GENERICSELECTITEMDIALOG_H__
-#define __GENERICSELECTITEMDIALOG_H__
 #pragma once
 
-// CGenericSelectItem dialog
+#include "MFCToolsDefines.h"
+#include <Util/Variable.h>
 
-class PLUGIN_API CGenericSelectItemDialog : public CXTResizeDialog
+class MFC_TOOLS_PLUGIN_API CGenericSelectItemDialog : public CXTResizeDialog
 {
 	DECLARE_DYNAMIC(CGenericSelectItemDialog)
 
@@ -14,7 +13,7 @@ public:
 	typedef enum { eMODE_LIST, eMODE_TREE }   TDialogMode;
 	typedef IVariable::IGetCustomItems::SItem SItem;
 
-	CGenericSelectItemDialog(CWnd* pParent = NULL);   // standard constructor
+	CGenericSelectItemDialog(CWnd* pParent = NULL);
 	virtual ~CGenericSelectItemDialog();
 
 	void SetTitle(const CString& title)
@@ -81,7 +80,7 @@ protected:
 	virtual void ItemSelected();
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 	afx_msg void OnTvnSelchangedTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnTvnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnLbnSelchangeList();
@@ -110,6 +109,3 @@ protected:
 	bool               m_bAllowNew;
 	bool               m_bShowDesc;
 };
-
-#endif // __GENERICSELECTITEMDIALOG_H__
-

@@ -1,15 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FragmentTrack_h__
-#define __FragmentTrack_h__
+#pragma once
 
 #include "ICryMannequin.h"
 #include "MannequinBase.h"
 #include "SequencerTrack.h"
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
 
 const float LOCK_TIME_DIFF = 0.1f;
 
@@ -697,10 +692,4 @@ public:
 	ColorB                    GetColor() const;
 	virtual const SKeyColour& GetKeyColour(int key) const;
 	virtual const SKeyColour& GetBlendColour(int key) const;
-
-private:
-
 };
-
-#endif // __FragmentTrack_h__
-

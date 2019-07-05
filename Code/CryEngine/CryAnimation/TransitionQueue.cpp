@@ -185,9 +185,6 @@ void CTransitionQueue::UnloadAnimationAssets(int index)
 	{
 		if (pAnim->m_nAssetType == CAF_File)
 		{
-#ifdef _DEBUG
-			const char* pname = pAnim->GetAnimName();
-#endif
 			GlobalAnimationHeaderCAF& rGAH = g_AnimationManager.m_arrGlobalCAF[nGlobalID];
 
 			if (rGAH.m_nRef_at_Runtime)
@@ -205,9 +202,6 @@ void CTransitionQueue::UnloadAnimationAssets(int index)
 			const ModelAnimationHeader* pSamplerAnim = m_pAnimationSet->GetModelAnimationHeader(nAnimID);
 			if (pSamplerAnim && pSamplerAnim->m_nAssetType == CAF_File)
 			{
-#ifdef _DEBUG
-				const char* pname = pSamplerAnim->GetAnimName();
-#endif
 				int32 nGlobalIDByAnimID = m_pAnimationSet->GetGlobalIDByAnimID_Fast(nAnimID);
 				GlobalAnimationHeaderCAF& rGAH = g_AnimationManager.m_arrGlobalCAF[nGlobalIDByAnimID];
 
@@ -282,12 +276,12 @@ void CTransitionQueue::ManualSeekAnimation(uint index, float time2, bool bTrigge
 		{
 			// this is a CAF file
 			int32 animID = animation.GetAnimationId();
-			assert(animID >= 0);
+			CRY_ASSERT(animID >= 0);
 			int32 globalID = m_pAnimationSet->GetGlobalIDByAnimID_Fast(animID);
-			assert(globalID >= 0);
+			CRY_ASSERT(globalID >= 0);
 
 			uint32 numCAFs = g_AnimationManager.m_arrGlobalCAF.size();
-			assert((uint32)globalID < numCAFs);
+			CRY_ASSERT((uint32)globalID < numCAFs);
 			if ((globalID >= 0) && (globalID < (int32)numCAFs))
 			{
 				const ModelAnimationHeader* pAnim = m_pAnimationSet->GetModelAnimationHeader(animID);
@@ -311,11 +305,10 @@ void CTransitionQueue::ManualSeekAnimation(uint index, float time2, bool bTrigge
 		else
 		{
 			const ModelAnimationHeader* pAnim = m_pAnimationSet->GetModelAnimationHeader(animation.GetAnimationId());
-			assert(pAnim->m_nAssetType == LMG_File);
+			CRY_ASSERT(pAnim->m_nAssetType == LMG_File);
 
 			int32 globalID = pAnim->m_nGlobalAnimId;
-			assert(globalID >= 0 && globalID < int(g_AnimationManager.m_arrGlobalLMG.size()));
-			if (globalID >= 0 && globalID < int(g_AnimationManager.m_arrGlobalLMG.size()))
+			if (CRY_VERIFY(globalID >= 0 && globalID < int(g_AnimationManager.m_arrGlobalLMG.size())))
 			{
 				const GlobalAnimationHeaderLMG& rGlobalAnimHeaderLMG = g_AnimationManager.m_arrGlobalLMG[globalID];
 
@@ -373,7 +366,7 @@ void CTransitionQueue::TransitionsBetweenSeveralAnimations(uint numAnims)
 		CAnimation& rPrevAnimation = m_animations[i - 1];
 		CAnimation& rCurAnimation = m_animations[i];
 
-		assert(rCurAnimation.IsActivated());  // = true;
+		CRY_ASSERT(rCurAnimation.IsActivated());  // = true;
 
 		//the new animation determines if we use time-warping or not
 		uint32 timewarp = rCurAnimation.m_nStaticFlags & CA_TRANSITION_TIMEWARPING;
@@ -396,7 +389,7 @@ void CTransitionQueue::TransitionsBetweenSeveralAnimations(uint numAnims)
 				rCurAnimation.m_fAnimTimePrev[0] = rPrevAnimation.m_fAnimTimePrev[0];
 				// copy the time from previous
 				rCurAnimation.m_fAnimTime[0] = rPrevAnimation.m_fAnimTime[0];
-				assert(rCurAnimation.GetCurrentSegmentNormalizedTime() >= 0.0f && rCurAnimation.GetCurrentSegmentNormalizedTime() <= 1.0f);
+				CRY_ASSERT(rCurAnimation.GetCurrentSegmentNormalizedTime() >= 0.0f && rCurAnimation.GetCurrentSegmentNormalizedTime() <= 1.0f);
 				// don't copy the segment from previous
 				//rCurAnimation.m_currentSegmentIndex[0]=0;
 			}

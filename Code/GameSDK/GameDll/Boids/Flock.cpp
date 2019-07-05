@@ -1,16 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-// -------------------------------------------------------------------------
-//  File name:   flock.cpp
-//  Version:     v1.00
-//  Created:     5/4/2002 by Timur.
-//  Compilers:   Visual C++ 7.0
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "Flock.h"
 #include "BugsFlock.h"
@@ -21,6 +9,7 @@
 
 #include <float.h>
 #include <limits.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/ITimer.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryAnimation/ICryAnimation.h>
@@ -57,6 +46,7 @@ int CFlock::m_e_flocks_hunt = 1;
 
 //////////////////////////////////////////////////////////////////////////
 CFlock::CFlock(IEntity* pEntity, EFlockType flockType)
+	: m_lastUpdatePosTimePassed(0)
 {
 	m_nViewDistRatio = 100;
 	m_pEntity = pEntity;
@@ -161,8 +151,6 @@ CFlock::~CFlock()
 //////////////////////////////////////////////////////////////////////////
 void CFlock::ClearBoids()
 {
-	I3DEngine* engine = gEnv->p3DEngine;
-
 	DeleteEntities(true);
 	for (Boids::iterator it = m_boids.begin(); it != m_boids.end(); ++it)
 	{
@@ -171,7 +159,6 @@ void CFlock::ClearBoids()
 	}
 	m_boids.clear();
 	m_BoidCollisionMap.clear();
-
 }
 
 void CFlock::DeleteEntities(bool bForceDeleteAll)
@@ -181,7 +168,6 @@ void CFlock::DeleteEntities(bool bForceDeleteAll)
 		m_pEntity->ClearSlots();
 	}
 
-	I3DEngine* engine = gEnv->p3DEngine;
 	for (Boids::iterator it = m_boids.begin(); it != m_boids.end(); ++it)
 	{
 		CBoidObject* boid = *it;
@@ -299,7 +285,7 @@ void CFlock::Update(CCamera* pCamera)
 		return;
 	}
 
-	if (GetISystem()->IsSerializingFile() == 1) //quickloading
+	if (GetISystem()->IsSerializingFile() == 1) //quick loading
 		return;
 
 	if (!m_bEntityCreated)
@@ -387,7 +373,6 @@ void CFlock::Update(CCamera* pCamera)
 
 	UpdateBoidCollisions();
 
-	Vec3 entityPos = m_pEntity->GetWorldPos();
 	Matrix34 boidTM;
 	int num = 0;
 	for (Boids::iterator it = m_boids.begin(); it != m_boids.end(); ++it, num++)

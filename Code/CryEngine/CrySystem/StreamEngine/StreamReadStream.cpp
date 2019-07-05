@@ -106,7 +106,7 @@ void CReadStream::AbortShutdown()
 		m_nIOError = ERROR_ABORTED_ON_SHUTDOWN;
 		m_bFileRequestComplete = true;
 
-		if (!m_pFileRequest)
+		if (m_pFileRequest)
 			CryFatalError("File request still exists");
 	}
 
@@ -323,11 +323,7 @@ int CReadStream::AddRef()
 int CReadStream::Release()
 {
 	int nRef = CryInterlockedDecrement(&m_nRefCount);
-
-#ifndef _RELEASE
-	if (nRef < 0)
-		__debugbreak();
-#endif
+	CRY_ASSERT(nRef >= 0);
 
 	if (nRef == 0)
 	{
@@ -360,7 +356,7 @@ void CReadStream::ExecuteAsyncCallback_CBLocked()
 	if (!m_bIsAsyncCallbackExecuted && m_pCallback)
 	{
 		m_bIsAsyncCallbackExecuted = true;
-		MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Streaming Callback %s", gEnv->pSystem->GetStreamEngine()->GetStreamTaskTypeName(m_Type));
+		MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Streaming Callback %s", gEnv->pSystem->GetStreamEngine()->GetStreamTaskTypeName(m_Type));
 
 		m_pCallback->StreamAsyncOnComplete(this, m_nIOError);
 	}

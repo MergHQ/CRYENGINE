@@ -44,6 +44,7 @@ public:
 	virtual void SetData(const primitives::primitive*) {}
 	virtual float GetVolume();
 	virtual Vec3 GetCenter() { return Vec3(0); }
+	virtual IGeometry *GetTriMesh(int bClone=1) { return 0; }
 	virtual int Subtract(IGeometry* pGeom, geom_world_data* pdata1, geom_world_data* pdata2, int bLogUpdates = 1) { return 0; }
 	virtual int GetSubtractionsCount() { return 0; }
 	virtual void* GetForeignData(int iForeignData = 0) { return nullptr; }
@@ -102,7 +103,8 @@ template<typename Func> auto PhysXGeom::CreateAndUse(QuatT& trans, const Diag33&
 		PxDefaultMemoryOutputStream buf;
 		PxConvexMeshCookingResult::Enum result;
 		cpx::g_cryPhysX.Cooking()->cookConvexMesh(cmd, buf, &result);
-		g_cylMesh = cpx::g_cryPhysX.Physics()->createConvexMesh(PxDefaultMemoryInputData(buf.getData(), buf.getSize()));
+		PxDefaultMemoryInputData mid(buf.getData(), buf.getSize());
+		g_cylMesh = cpx::g_cryPhysX.Physics()->createConvexMesh(mid);
 	}
 
 	switch (m_type) {
@@ -117,7 +119,7 @@ template<typename Func> auto PhysXGeom::CreateAndUse(QuatT& trans, const Diag33&
 			// non-uniform scaling is supported for axis-ligned Basis only (scale can be projected into the box's frame)
 			Vec3 sz = max(max(scale.x,scale.y),scale.z)-min(min(scale.x,scale.y),scale.z)>0.001f ? (m_geom.box.Basis*(scale*(m_geom.box.size*m_geom.box.Basis))).abs() : m_geom.box.size*scale.x;
 			trans = trans*QuatT(!Quat(m_geom.box.Basis), scale*m_geom.box.center);
-			return func(PxBoxGeometry(V(sz)));
+			return func(PxBoxGeometry(cpx::Helper::V(sz)));
 		}
 		case GEOM_SPHERE:
 			trans = trans*QuatT(Quat(IDENTITY), scale*m_geom.sph.center);
@@ -127,8 +129,8 @@ template<typename Func> auto PhysXGeom::CreateAndUse(QuatT& trans, const Diag33&
 			return func(PxHeightFieldGeometry(m_geom.hf.pHF,PxMeshGeometryFlags(),m_geom.hf.hscale,m_geom.hf.step.x,m_geom.hf.step.y));
 		case GEOM_TRIMESH:
 			return m_geom.mesh.pMesh ? 
-				func(PxTriangleMeshGeometry(m_geom.mesh.pMesh, PxMeshScale(V(scale),PxQuat0))) : 
-				func(PxConvexMeshGeometry(m_geom.mesh.pMeshConvex, PxMeshScale(V(scale),PxQuat0)));
+				func(PxTriangleMeshGeometry(m_geom.mesh.pMesh, PxMeshScale(cpx::Helper::V(scale),PxQuat0))) : 
+				func(PxConvexMeshGeometry(m_geom.mesh.pMeshConvex, PxMeshScale(cpx::Helper::V(scale),PxQuat0)));
 	}
 	return func(PxSphereGeometry(1));
 }

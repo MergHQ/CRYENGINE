@@ -114,6 +114,44 @@ public:
 
 	// CryGraphEditor::CAbstractDictionary
 
+	virtual void ResetEntries() override
+	{
+		m_rootEntries.clear();
+
+		const uint32 optionCount = m_pQuickSearchOptions->GetCount();
+		m_rootEntries.reserve(optionCount);
+
+		for (uint32 optionIdx = 0; optionIdx < optionCount; ++optionIdx)
+		{
+			QString fullName = m_pQuickSearchOptions->GetLabel(optionIdx);
+			QStringList names = fullName.split(m_pQuickSearchOptions->GetDelimiter());
+
+			CStringListDictionaryEntry* pParentEntry = nullptr;
+			for (uint32 nameIdx = 0, nameCount = names.size(); nameIdx < nameCount; ++nameIdx)
+			{
+				const QString& name = names[nameIdx];
+				CStringListDictionaryEntry* pEntry = FindStringListDictionaryEntry(pParentEntry ? pParentEntry->GetChildren() : m_rootEntries, name);
+				if (pEntry)
+				{
+					pParentEntry = pEntry;
+				}
+				else
+				{
+					const uint32 type = nameIdx < (nameCount - 1) ? CAbstractDictionaryEntry::Type_Folder : CAbstractDictionaryEntry::Type_Entry;
+					if (pParentEntry)
+					{
+						pParentEntry = pParentEntry->AddChild(type, name);
+					}
+					else
+					{
+						m_rootEntries.emplace_back(new CStringListDictionaryEntry(type, name));
+						pParentEntry = m_rootEntries.back().get();
+					}
+				}
+			}
+		}
+	}
+
 	virtual int32 GetNumEntries() const override
 	{
 		return m_rootEntries.size();
@@ -147,57 +185,29 @@ public:
 
 	void Load(const Schematyc::IQuickSearchOptions& quickSearchOptions)
 	{
-		m_rootEntries.clear();
-
-		const uint32 optionCount = quickSearchOptions.GetCount();
-		m_rootEntries.reserve(optionCount);
-
-		for (uint32 optionIdx = 0; optionIdx < optionCount; ++optionIdx)
-		{
-			QString fullName = quickSearchOptions.GetLabel(optionIdx);
-			QStringList names = fullName.split(quickSearchOptions.GetDelimiter());
-
-			CStringListDictionaryEntry* pParentEntry = nullptr;
-			for (uint32 nameIdx = 0, nameCount = names.size(); nameIdx < nameCount; ++nameIdx)
-			{
-				const QString& name = names[nameIdx];
-				CStringListDictionaryEntry* pEntry = FindStringListDictionaryEntry(pParentEntry ? pParentEntry->GetChildren() : m_rootEntries, name);
-				if (pEntry)
-				{
-					pParentEntry = pEntry;
-				}
-				else
-				{
-					const uint32 type = nameIdx < (nameCount - 1) ? CAbstractDictionaryEntry::Type_Folder : CAbstractDictionaryEntry::Type_Entry;
-					if (pParentEntry)
-					{
-						pParentEntry = pParentEntry->AddChild(type, name);
-					}
-					else
-					{
-						m_rootEntries.emplace_back(new CStringListDictionaryEntry(type, name));
-						pParentEntry = m_rootEntries.back().get();
-					}
-				}
-			}
-		}
+		m_pQuickSearchOptions = &quickSearchOptions;
+		Reset();
+		m_pQuickSearchOptions = nullptr;
 	}
 
 private:
 
-	static const uint32         s_invalidIdx = 0xffffffff;
+	static const uint32                   s_invalidIdx = 0xffffffff;
 
-	StringListDictionaryEntries m_rootEntries;
+	StringListDictionaryEntries           m_rootEntries;
+	const Schematyc::IQuickSearchOptions* m_pQuickSearchOptions;
 };
 
 namespace Schematyc
 {
 namespace SerializationUtils
 {
-dll_string StringListStaticQuickSearchSelector(const SResourceSelectorContext& context, const char*)
+SResourceSelectionResult StringListStaticQuickSearchSelector(const SResourceSelectorContext& context, const char*)
 {
 	const Private::CStringListStaticQuickSearchOptions* pOptions = static_cast<const Private::CStringListStaticQuickSearchOptions*>(context.pCustomParams.get());
 	SCHEMATYC_EDITOR_ASSERT(pOptions);
+	SResourceSelectionResult result{ false, "" };
+
 	if (pOptions)
 	{
 		static CStringListDictionary dictionary;
@@ -211,16 +221,20 @@ dll_string StringListStaticQuickSearchSelector(const SResourceSelectorContext& c
 		CStringListDictionaryEntry* pEntry = static_cast<CStringListDictionaryEntry*>(popup.GetResult());
 		if (pEntry)
 		{
-			return QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectionAccepted = true;
 		}
 	}
-	return "";
+
+	return result;
 }
 
-dll_string StringListQuickSearchSelector(const SResourceSelectorContext& context, const char*)
+SResourceSelectionResult StringListQuickSearchSelector(const SResourceSelectorContext& context, const char*)
 {
 	const Private::CStringListQuickSearchOptions* pOptions = static_cast<const Private::CStringListQuickSearchOptions*>(context.pCustomParams.get());
 	SCHEMATYC_EDITOR_ASSERT(pOptions);
+	SResourceSelectionResult result{ false, "" };
+
 	if (pOptions)
 	{
 		static CStringListDictionary dictionary;
@@ -234,14 +248,15 @@ dll_string StringListQuickSearchSelector(const SResourceSelectorContext& context
 		CStringListDictionaryEntry* pEntry = static_cast<CStringListDictionaryEntry*>(popup.GetResult());
 		if (pEntry)
 		{
-			return QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+			result.selectionAccepted = true;
 		}
 	}
-	return "";
+
+	return result;
 }
 
 REGISTER_RESOURCE_SELECTOR("StringListStaticSearch", StringListStaticQuickSearchSelector, "icons:General/Search.ico")
 REGISTER_RESOURCE_SELECTOR("StringListSearch", StringListQuickSearchSelector, "icons:General/Search.ico")
 } // SerializationUtils
 } // Schematyc
-

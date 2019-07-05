@@ -5,15 +5,15 @@
 #include "EditorCommonAPI.h"
 #include "RenderViewport.h"
 #include "IEditorMaterial.h"
-#include <CryAnimation/ICryAnimation.h>
-#include <CryInput/IInput.h>
-#include <CryEntitySystem/IEntitySystem.h>
 #include "Util/Variable.h"
 
+#include <CryAnimation/ICryAnimation.h>
+#include <CryInput/IInput.h>
+
 struct IPhysicalEntity;
-struct CryCharAnimationParams;
 struct ISkeletonAnim;
 class CAnimationSet;
+namespace CryAudio { struct IListener; }
 
 /////////////////////////////////////////////////////////////////////////////
 // CModelViewport window
@@ -26,7 +26,7 @@ public:
 	static bool           IsPreviewableFileType(const char* szPath);
 
 	virtual EViewportType GetType() const override             { return ET_ViewportModel; }
-	virtual void          SetType(EViewportType type) override { assert(type == ET_ViewportModel); };
+	virtual void          SetType(EViewportType type) override { assert(type == ET_ViewportModel); }
 
 	virtual void          LoadObject(const string& obj, float scale = 1.0f);
 
@@ -41,25 +41,17 @@ public:
 	void                OnShowNormals(IVariable* var);
 	void                OnShowTangents(IVariable* var);
 
-	void                OnShowPortals(IVariable* var);
-	void                OnShowShadowVolumes(IVariable* var);
-	void                OnShowTextureUsage(IVariable* var);
 	void                OnCharPhysics(IVariable* var);
-	void                OnShowOcclusion(IVariable* var);
 
 	void                OnLightColor(IVariable* var);
 	void                OnLightMultiplier(IVariable* var);
-	void                OnDisableVisibility(IVariable* var);
 
-	void                OnSubmeshSetChanged();
 	ICharacterInstance* GetCharacterBase()
 	{
 		return m_pCharacterBase;
 	}
 
 	IStatObj*         GetStaticObject() { return m_object; }
-
-	void              GetOnDisableVisibility(IVariable* var);
 
 	const CVarObject* GetVarObject() const { return &m_vars; }
 	CVarObject*       GetVarObject()       { return &m_vars; }
@@ -71,9 +63,9 @@ public:
 	// Set current material to render object.
 	void               SetCustomMaterial(IEditorMaterial* pMaterial);
 	// Get custom material that object is rendered with.
-	IEditorMaterial*   GetCustomMaterial()  { return m_pCurrentMaterial; };
+	IEditorMaterial*   GetCustomMaterial()  { return m_pCurrentMaterial; }
 
-	ICharacterManager* GetAnimationSystem() { return m_pAnimationSystem; };
+	ICharacterManager* GetAnimationSystem() { return m_pAnimationSystem; }
 
 	// Get material the object is actually rendered with.
 	IEditorMaterial* GetMaterial();
@@ -99,7 +91,7 @@ protected:
 	void LoadStaticObject(const string& file);
 
 	// Called to render stuff.
-	virtual void OnRender() override;
+	virtual void OnRender(SDisplayContext& context) override;
 
 	virtual void DrawFloorGrid(const Quat& tmRotation, const Vec3& MotionTranslation, const Matrix33& rGridRot, bool bInstantSubmit);
 	void         DrawCoordSystem(const QuatT& q, f32 length);
@@ -109,13 +101,10 @@ protected:
 
 	virtual void DrawModel(const SRenderingPassInfo& passInfo);
 	virtual void DrawLights(const SRenderingPassInfo& passInfo);
-	virtual void DrawSkyBox(const SRenderingPassInfo& passInfo);
 	virtual bool UseAnimationDrivenMotion() const;
 
 	//This implementation is dangerous. If we change or rename the specialized function, we use this as fallback and don't execute anything
 	virtual void DrawCharacter(ICharacterInstance* pInstance, const SRendParams& rp, const SRenderingPassInfo& pass) = 0;
-
-	void         SetConsoleVar(const char* var, int value);
 
 	void         OnEditorNotifyEvent(EEditorNotifyEvent event)
 	{
@@ -142,7 +131,7 @@ protected:
 
 	AABB                           m_AABB;
 
-	struct BBox { OBB obb; Vec3 pos; ColorB col;  };
+	struct BBox { OBB obb; Vec3 pos; ColorB col; };
 	std::vector<BBox> m_arrBBoxes;
 	std::vector<Vec3> m_gridLineVertices;
 
@@ -163,9 +152,6 @@ protected:
 
 	f32                         m_LightRotationRadian;
 
-	class CRESky*               m_pRESky;
-	struct ICVar*               m_pSkyboxName;
-	IShader*                    m_pSkyBoxShader;
 	_smart_ptr<IEditorMaterial> m_pCurrentMaterial;
 
 	CryAudio::IListener*        m_pIAudioListener;
@@ -230,8 +216,6 @@ protected:
 	virtual bool OnKeyDown(uint32 nChar, uint32 nRepCnt, uint32 nFlags) override;
 
 	// Generated message map functions
-	afx_msg int  OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
 	afx_msg void OnDestroy();
 };
-

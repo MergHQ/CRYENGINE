@@ -9,7 +9,7 @@ CSingleModifiedValue::~CSingleModifiedValue()
 #if ENABLE_PLAYER_MODIFIABLE_VALUES_DEBUGGING
 	for (int i = 0; i < MAX_MODIFIERS_PER_VALUE; ++ i)
 	{
-		CRY_ASSERT_MESSAGE (m_modifiers[i] == NULL, string().Format("%s: Sanity check failed! List of modifiers not cleared out but instance is being destroyed! Shouldn't cause any problems but, equally, should never happen!", m_dbgName));
+		CRY_ASSERT (m_modifiers[i] == NULL, string().Format("%s: Sanity check failed! List of modifiers not cleared out but instance is being destroyed! Shouldn't cause any problems but, equally, should never happen!", m_dbgName));
 	}
 #endif
 }
@@ -39,7 +39,7 @@ void CSingleModifiedValue::AddModifier(const float * thisModifier)
 #if ENABLE_PLAYER_MODIFIABLE_VALUES_DEBUGGING
 	for (int i = 0; i < MAX_MODIFIERS_PER_VALUE; ++ i)
 	{
-		CRY_ASSERT_MESSAGE (thisModifier != m_modifiers[i], string().Format("%s: Pointer already in list!", m_dbgName));
+		CRY_ASSERT (thisModifier != m_modifiers[i], string().Format("%s: Pointer already in list!", m_dbgName));
 	}
 #endif
 
@@ -61,7 +61,7 @@ void CSingleModifiedValue::AddModifier(const float * thisModifier)
 
 #if ENABLE_PLAYER_MODIFIABLE_VALUES_DEBUGGING
 	CryLog ("[PMV] %s value is now %f (just added a modifier)", m_dbgName, m_currentResult);
-	CRY_ASSERT_MESSAGE (thisModifier == NULL, string().Format("%s: New pointer not added to list (list already full)", m_dbgName));
+	CRY_ASSERT (thisModifier == NULL, string().Format("%s: New pointer not added to list (list already full)", m_dbgName));
 #endif
 }
 
@@ -80,7 +80,7 @@ void CSingleModifiedValue::RemoveModifier(const float * thisModifier)
 			m_modifiers[j] = NULL;
 
 #if ENABLE_PLAYER_MODIFIABLE_VALUES_DEBUGGING
-			CRY_ASSERT_MESSAGE (! doneIt, string().Format("%s: Same pointer found twice in list!", m_dbgName));
+			CRY_ASSERT (! doneIt, string().Format("%s: Same pointer found twice in list!", m_dbgName));
 			doneIt = true;
 #endif
 		}
@@ -93,7 +93,7 @@ void CSingleModifiedValue::RemoveModifier(const float * thisModifier)
 
 #if ENABLE_PLAYER_MODIFIABLE_VALUES_DEBUGGING
 	CryLog ("[PMV] %s value is now %f (just removed a modifier)", m_dbgName, m_currentResult);
-	CRY_ASSERT_MESSAGE (doneIt, string().Format("%s: Pointer not found in list!", m_dbgName));
+	CRY_ASSERT (doneIt, string().Format("%s: Pointer not found in list!", m_dbgName));
 #endif
 }
 

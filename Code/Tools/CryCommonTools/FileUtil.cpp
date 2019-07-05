@@ -7,8 +7,31 @@
 
 #include <io.h>
 #include <CryString/CryPath.h>
+#include <thread>
 
-//////////////////////////////////////////////////////////////////////////
+namespace Private_FileUtil
+{
+
+string GetLastErrorString()
+{
+	const char szMsgBuf[1024] = "";
+
+	FormatMessageA(
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,
+		GetLastError(),
+		0,
+		(LPSTR)&szMsgBuf,
+		1024,
+		NULL);
+
+	return string(szMsgBuf);
+}
+
+}
+
+
 // returns true if 'dir' is a subdirectory of 'baseDir' or same directory as 'baseDir' 
 // note: returns false in case of wrong names passed
 static bool IsSubdirOrSameDir( const char* dir, const char* baseDir )
@@ -65,8 +88,35 @@ static bool IsSubdirOrSameDir( const char* dir, const char* baseDir )
 	}
 }
 
+bool FileUtil::CopyFileAllowOverwrite(const string& existingFilename, const string& newFilename, string& errorString, int numberOfAdditionalAttempts /*= 0*/)
+{
+	wstring wideExistingFilename;
+	Unicode::Convert(wideExistingFilename, existingFilename);
 
-//////////////////////////////////////////////////////////////////////////
+	wstring wideNewFilename;
+	Unicode::Convert(wideNewFilename, newFilename);
+
+	for (int i = 0; i <= numberOfAdditionalAttempts; ++i)
+	{
+		FileUtil::MakeWritable(wideNewFilename.c_str());
+
+		if (::CopyFileW(wideExistingFilename.c_str(), wideNewFilename.c_str(), false) != 0)
+		{
+			return true;
+		}
+
+		if (!i)
+		{
+			errorString = Private_FileUtil::GetLastErrorString();
+		}
+
+		using namespace std::chrono_literals;
+		std::this_thread::sleep_for(300ms);
+	}
+
+	return false;
+}
+
 void FileUtil::FindFiles(
 	std::vector<string>& resultFiles,
 	const int maxFileCount,
@@ -143,7 +193,6 @@ void FileUtil::FindFiles(
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 // the paths must have trailing slash
 static bool ScanDirectoryRecursive( const string &root, const string &path, const string &file, std::vector<string> &files, bool recursive, const string &dirToIgnore )
 {
@@ -215,8 +264,6 @@ static bool ScanDirectoryRecursive( const string &root, const string &path, cons
 
 	return anyFound;
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 bool FileUtil::ScanDirectory(const string& path, const string& file, std::vector<string>& files, bool recursive, const string& dirToIgnore)
 {

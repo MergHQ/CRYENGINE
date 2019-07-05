@@ -5,7 +5,7 @@
 
 #include "GameActions.h"
 #include "FireMode.h"
-
+#include "Game.h"
 #include "GameRules.h"
 #include "CinematicInput.h"
 

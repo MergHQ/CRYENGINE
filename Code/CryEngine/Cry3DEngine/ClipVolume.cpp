@@ -36,8 +36,6 @@ const AABB& CClipVolume::GetClipVolumeBBox() const
 
 void CClipVolume::Update(_smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint8 viewDistRatio, uint32 flags)
 {
-	const bool bMeshUpdated = m_pRenderMesh != pRenderMesh;
-
 	m_pRenderMesh = std::move(pRenderMesh);
 	m_pBspTree = pBspTree;
 	m_WorldTM = worldTM;

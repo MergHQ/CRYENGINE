@@ -474,7 +474,7 @@ void CTeamBalancing::OnGameFinished(EUpdateTeamType updateType)
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(0, string().Format("CTeamBalancing::OnGameFinished: unknown update type %d", updateType).c_str());
+			CRY_ASSERT(0, string().Format("CTeamBalancing::OnGameFinished: unknown update type %d", updateType).c_str());
 		}
 		m_groups[i].m_bPresentAtGameStart = false;
 	}
@@ -912,8 +912,10 @@ void CTeamBalancing::ReadPlayerFromPacket(CCryLobbyPacket *pPacket, bool bBalanc
 //------------------------------------------------------------------------------
 void CTeamBalancing::WritePacket(CCryLobbyPacket *pPacket, GameUserPacketDefinitions packetType, SCryMatchMakingConnectionUID playerUID) 
 {
+#if defined(USE_CRY_ASSERT)
 	CGameLobby *pGameLobby = g_pGame->GetGameLobby();
 	CRY_ASSERT(pGameLobby->IsServer());
+#endif
 
 	switch(packetType)
 	{
@@ -983,7 +985,7 @@ void CTeamBalancing::WritePacket(CCryLobbyPacket *pPacket, GameUserPacketDefinit
 
 		default:
 		{
-			CRY_ASSERT_MESSAGE(0, string().Format("Unknown packet type %d passed to team balancing", packetType).c_str());
+			CRY_ASSERT(0, string().Format("Unknown packet type %d passed to team balancing", packetType).c_str());
 			break;
 		}
 	}
@@ -1030,7 +1032,7 @@ void CTeamBalancing::ReadPacket(CCryLobbyPacket *pPacket, uint32 packetType)
 
 		default:
 		{
-			CRY_ASSERT_MESSAGE(0, string().Format("Unknown packet %d in team balancing", packetType).c_str());
+			CRY_ASSERT(0, string().Format("Unknown packet %d in team balancing", packetType).c_str());
 			break;
 		}
 	}

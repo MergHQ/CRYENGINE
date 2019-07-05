@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "WaterRippleComponent.h"
 #include <CryMath/Random.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {
@@ -75,11 +76,11 @@ namespace Cry
 			}
 		}
 
-		uint64 CWaterRippleComponent::GetEventMask() const
+		Cry::Entity::EventFlags CWaterRippleComponent::GetEventMask() const
 		{
-			uint64 flags = ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
+			Cry::Entity::EventFlags flags = ENTITY_EVENT_RESET | ENTITY_EVENT_XFORM;
 			if (m_bEnabled)
-				flags |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+				flags |= ENTITY_EVENT_UPDATE;
 
 			return flags;
 		}

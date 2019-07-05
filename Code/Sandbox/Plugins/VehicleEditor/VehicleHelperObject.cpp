@@ -2,41 +2,31 @@
 
 #include "StdAfx.h"
 #include "VehicleHelperObject.h"
-#include "Viewport.h"
 
 #include "VehicleData.h"
 #include "VehiclePrototype.h"
 #include "VehiclePart.h"
 
-REGISTER_CLASS_DESC(CVehicleHelperClassDesc);
+#include <Util/MFCUtil.h>
+#include <Viewport.h>
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
+REGISTER_CLASS_DESC(CVehicleHelperClassDesc);
 IMPLEMENT_DYNCREATE(CVehicleHelper, CBaseObject)
 
-#define RADIUS                     0.05f
+#define RADIUS 0.05f
 
-#define VEHICLE_HELPER_COLOR       (RGB(255, 255, 120))
-#define VEHICLE_ASSET_HELPER_COLOR (RGB(120, 255, 120))
+const ColorB g_vehicleHelperColor(255, 255, 120);
+const ColorB g_vehicleAssetHelperColor(120, 255, 120);
 
-//////////////////////////////////////////////////////////////////////////
 CVehicleHelper::CVehicleHelper()
+	: m_fromGeometry(false)
+	, m_pVehicle(nullptr)
 {
-	m_pVar = 0;
-	m_fromGeometry = false;
-	m_pVehicle = 0;
-
-	ChangeColor(VEHICLE_HELPER_COLOR);
+	ChangeColor(g_vehicleHelperColor);
 
 	InitOnTransformCallback(this);
 }
 
-CVehicleHelper::~CVehicleHelper()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::SetVariable(IVariable* pVar)
 {
 	m_pVar = pVar;
@@ -53,7 +43,6 @@ void CVehicleHelper::SetVariable(IVariable* pVar)
 	EnableUpdateObjectOnVarChange("direction");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::UpdateVarFromObject()
 {
 	if (IsFromGeometry())
@@ -104,7 +93,6 @@ void CVehicleHelper::UpdateVarFromObject()
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::UpdateObjectFromVar()
 {
 	if (!m_pVar || !m_pVehicle)
@@ -120,23 +108,20 @@ void CVehicleHelper::UpdateObjectFromVar()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::Done()
 {
 	VeedLog("[CVehicleHelper:Done] <%s>", GetName());
 	CBaseObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVehicleHelper::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 	bool res = CBaseObject::Init(prev, file);
 
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	CBaseObject* pFromParent = pFromObject->GetParent();
@@ -156,7 +141,6 @@ void CVehicleHelper::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ct
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVehicleHelper::HitTest(HitContext& hc)
 {
 	Vec3 origin = GetWorldPos();
@@ -180,12 +164,11 @@ bool CVehicleHelper::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-	COLORREF color = GetColor();
-	float radius = RADIUS;
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
+	//float radius = RADIUS;
 
 	//dc.SetColor( color, 0.5f );
 	//dc.DrawBall( GetPos(), radius );
@@ -216,7 +199,7 @@ void CVehicleHelper::Display(CObjectRenderHelper& objRenderHelper)
 	dc.PopMatrix();
 
 	// draw label
-	if (dc.flags & DISPLAY_HIDENAMES)
+	if (dc.showTextLabels)
 	{
 		Vec3 p(GetWorldPos());
 		DrawLabel(dc, p, RGB(255, 255, 255));
@@ -225,7 +208,6 @@ void CVehicleHelper::Display(CObjectRenderHelper& objRenderHelper)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::GetBoundBox(AABB& box)
 {
 	// Transform local bounding box into world space.
@@ -233,7 +215,6 @@ void CVehicleHelper::GetBoundBox(AABB& box)
 	box.SetTransformedAABB(GetWorldTM(), box);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::GetLocalBounds(AABB& box)
 {
 	// return local bounds
@@ -242,14 +223,12 @@ void CVehicleHelper::GetLocalBounds(AABB& box)
 	box.max = Vec3(r, r, r);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::GetBoundSphere(Vec3& pos, float& radius)
 {
 	pos = GetPos();
 	radius = RADIUS;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::UpdateScale(float scale)
 {
 	if (IVariable* pPos = GetChildVar(m_pVar, "position"))
@@ -261,25 +240,22 @@ void CVehicleHelper::UpdateScale(float scale)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::SetIsFromGeometry(bool b)
 {
 	m_fromGeometry = b;
 	if (m_fromGeometry)
 	{
-		ChangeColor(VEHICLE_ASSET_HELPER_COLOR);
+		ChangeColor(g_vehicleAssetHelperColor);
 		SetFrozen(true);
 	}
 	else
 	{
-		ChangeColor(VEHICLE_HELPER_COLOR);
+		ChangeColor(g_vehicleHelperColor);
 		SetFrozen(false);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVehicleHelper::OnTransform()
 {
 	UpdateVarFromObject();
 }
-

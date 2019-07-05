@@ -77,7 +77,6 @@ bool CGameRulesStandardScoring::NetSerialize( TSerialize ser, EEntityAspects asp
 {
 	if (aspect == STANDARD_SCORING_STATE_ASPECT)
 	{
-		int deathScoringModifierWas=m_deathScoringModifier;
 		ser.Value("deathScoreModifier", m_deathScoringModifier, 'ui10'); // max 1023
 	}
 
@@ -156,7 +155,7 @@ TGameRulesScoreInt CGameRulesStandardScoring::GetTeamPointsByType(EGRST pointsTy
 //-------------------------------------------------------------------------
 TGameRulesScoreInt CGameRulesStandardScoring::GetPointsByType(const TGameRulesScoreInt *scoringData, EGRST pointsType) const
 {
-	CRY_ASSERT_MESSAGE(pointsType > EGRST_Unknown && pointsType < EGRST_Num, "Out of range parameter passed into CGameRulesStandardScoring::GetPointsByType");
+	CRY_ASSERT(pointsType > EGRST_Unknown && pointsType < EGRST_Num, "Out of range parameter passed into CGameRulesStandardScoring::GetPointsByType");
 	const TGameRulesScoreInt &scoreData = scoringData[pointsType];
 
 	if(scoreData == 0)
@@ -367,7 +366,7 @@ void CGameRulesStandardScoring::SvResetTeamScore(int teamId)
 	if(ShouldScore(pGameRules))
 	{
 		bool bTeamGame = (pGameRules->GetTeamCount() > 1);
-		CRY_ASSERT_MESSAGE(bTeamGame, "we can't reset team score in a non-team game");
+		CRY_ASSERT(bTeamGame, "we can't reset team score in a non-team game");
 		if (bTeamGame)
 		{
 			pGameRules->SetTeamsScore(teamId, 0);

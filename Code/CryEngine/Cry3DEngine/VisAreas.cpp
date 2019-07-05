@@ -50,10 +50,11 @@ void CVisArea::Update(const Vec3* pPoints, int nCount, const char* szName, const
 	m_bIgnoreOutdoorAO = info.bIgnoreOutdoorAO;
 	m_fPortalBlending = info.fPortalBlending;
 
-	m_lstShapePoints.PreAllocate(nCount, nCount);
-
-	if (nCount)
-		memcpy(&m_lstShapePoints[0], pPoints, sizeof(Vec3) * nCount);
+	if (nCount > 0)
+	{
+		m_lstShapePoints.PreAllocate(nCount, nCount);
+		memcpy(&m_lstShapePoints.front(), pPoints, sizeof(Vec3) * nCount);
+	}
 
 	// update bbox
 	m_boxArea.max = SetMinBB();
@@ -679,7 +680,7 @@ void        CVisArea::PreRender(int nReqursionLevel,
 }
 
 //! return list of visareas connected to specified visarea (can return portals and sectors)
-int CVisArea::GetRealConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals)
+int CVisArea::GetRealConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals) const
 {
 	int nOut = 0;
 	for (int nArea = 0; nArea < m_lstConnections.Count(); nArea++)
@@ -693,7 +694,7 @@ int CVisArea::GetRealConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipD
 
 //! return list of sectors conected to specified sector or portal (returns sectors only)
 // todo: change the way it returns data
-int CVisArea::GetVisAreaConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals)
+int CVisArea::GetVisAreaConnections(IVisArea** pAreas, int nMaxConnNum, bool bSkipDisabledPortals) const
 {
 	int nOut = 0;
 	if (IsPortal())
@@ -729,7 +730,7 @@ int CVisArea::GetVisAreaConnections(IVisArea** pAreas, int nMaxConnNum, bool bSk
 	return min(nMaxConnNum, nOut);
 }
 
-bool CVisArea::IsPortalValid()
+bool CVisArea::IsPortalValid() const
 {
 	int nCount = m_lstConnections.Count();
 	if (nCount > 2 || nCount == 0)
@@ -748,7 +749,7 @@ bool CVisArea::IsPortalValid()
 	return true;
 }
 
-bool CVisArea::IsPortalIntersectAreaInValidWay(CVisArea* pPortal)
+bool CVisArea::IsPortalIntersectAreaInValidWay(CVisArea* pPortal) const
 {
 	const Vec3& v1Min = pPortal->m_boxArea.min;
 	const Vec3& v1Max = pPortal->m_boxArea.max;
@@ -815,7 +816,7 @@ bool CVisArea::IsPortalIntersectAreaInValidWay(CVisArea* pPortal)
     m_lstConnections[p]->SetTreeId(nTreeId);
    }
  */
-bool CVisArea::IsShapeClockwise()
+bool CVisArea::IsShapeClockwise() const
 {
 	float fClockWise =
 	  (m_lstShapePoints[0].x - m_lstShapePoints[1].x) * (m_lstShapePoints[2].y - m_lstShapePoints[1].y) -
@@ -1205,20 +1206,15 @@ bool CVisAreaManager::IsOccludedByOcclVolumes(const AABB& objBox, const SRenderi
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-IVisArea* CVisAreaManager::GetVisAreaFromPos(const Vec3& vPos)
+IVisArea* CVisAreaManager::GetVisAreaFromPos(const Vec3& vPos) const
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	if (!m_pAABBTree)
-	{
-		UpdateAABBTree();
-	}
-
-	return m_pAABBTree->FindVisarea(vPos);
+	return m_pAABBTree ? m_pAABBTree->FindVisarea(vPos) : nullptr;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool CVisArea::IsBoxOverlapVisArea(const AABB& objBox)
+bool CVisArea::IsBoxOverlapVisArea(const AABB& objBox) const
 {
 	if (!Overlap::AABB_AABB(objBox, m_boxArea))
 		return false;
@@ -1254,9 +1250,7 @@ void CVisArea::UpdateGeometryBBox()
 
 		for (int i = 0; i < lstObjects.Count(); i++)
 		{
-			AABB aabb;
-			lstObjects[i]->FillBBox(aabb);
-			m_boxStatics.Add(aabb);
+			m_boxStatics.Add(lstObjects[i]->GetBBox());
 		}
 	}
 }
@@ -1468,10 +1462,9 @@ bool CVisAreaManager::SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const
 		}
 	}
 
-	if (!pVisArea && pEnt->m_dwRndFlags & ERF_REGISTER_BY_BBOX)
+	if (!pVisArea && pEnt->GetRndFlags() & ERF_REGISTER_BY_BBOX)
 	{
-		AABB aabb;
-		pEnt->FillBBox(aabb);
+		const AABB aabb = pEnt->GetBBox();
 
 		for (int v = 0; v < kNumPortals; v++)
 		{
@@ -1539,7 +1532,7 @@ CVisArea* SAABBTreeNode::FindVisarea(const Vec3& vPos)
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 // Current scheme: Will never move sphere center, just clip radius, even to 0.
-bool CVisArea::ClipToVisArea(bool bInside, Sphere& sphere, Vec3 const& vNormal)
+bool CVisArea::ClipToVisArea(bool bInside, Sphere& sphere, Vec3 const& vNormal) const
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -1658,7 +1651,7 @@ bool CVisArea::IsPointInsideVisArea(const Vec3& vPos) const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-bool CVisArea::IsSphereInsideVisArea(const Vec3& vPos, const f32 fRadius)
+bool CVisArea::IsSphereInsideVisArea(const Vec3& vPos, const f32 fRadius) const
 {
 	Sphere S(vPos, fRadius);
 	if (Overlap::Sphere_AABB(S, m_boxArea))
@@ -1675,7 +1668,7 @@ const AABB* CVisArea::GetAABBox() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-const Vec3 CVisArea::GetFinalAmbientColor()
+const Vec3 CVisArea::GetFinalAmbientColor() const
 {
 	float fHDRMultiplier = ((CTimeOfDay*)Get3DEngine()->GetTimeOfDay())->GetHDRMultiplier();
 

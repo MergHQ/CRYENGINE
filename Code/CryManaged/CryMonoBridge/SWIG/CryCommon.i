@@ -8,6 +8,7 @@
 #include <CryAudio/Dialog/IDialogSystem.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
 #include <CrySystem/Scaleform/IFlashUI.h>
+#include <CrySystem/CryVersion.h>
 #include <CryAISystem/IPathfinder.h>
 #include <CryAction/IMaterialEffects.h>
 #include <CryCore/CryTypeInfo.h>
@@ -84,7 +85,7 @@
 %ignore NODE_CHUNK_DESC_0824; // until it's tm is properly swigged
 %include "../../../../CryEngine/CryCommon/Cry3DEngine/CGF/CryHeaders.h"
 
-%include "../../../../CryEngine/CryCommon/CryThreading/CryThreadSafeRendererContainer.h"
+%include "../../../../CryEngine/CryCommon/CryThreading/CryThreadSafePushContainer.h"
 
 %include "../../../../CryEngine/CryCommon/CryMath/CryHalf.inl"
 %include "../../../../CryEngine/CryCommon/CryMath/Cry_Math.h"

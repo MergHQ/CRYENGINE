@@ -26,10 +26,12 @@ add_sources("Cry3DEngine_main_0_uber.cpp"
 		"SkyLightNishita.h"
 		"SkyLightNishita_info.h"
 	SOURCE_GROUP "Environment"
-		"TimeOfDay.cpp"
-		"TimeOfDay.h"
 		"EnvironmentPreset.cpp"
 		"EnvironmentPreset.h"
+		"TimeOfDay.cpp"
+		"TimeOfDay.h"
+		"TimeOfDayConstants.cpp"
+		"TimeOfDayConstants.h"
 	SOURCE_GROUP "Light Entity"
 		"LightEntity.cpp"
 		"LightEntity.h"
@@ -43,6 +45,8 @@ add_sources("Cry3DEngine_main_0_uber.cpp"
 		"SurfaceTypeManager.cpp"
 		"SurfaceTypeManager.h"
 	SOURCE_GROUP "PostProcess"
+		"ColorGradingCtrl.cpp"
+		"ColorGradingCtrl.h"
 		"PostProcessEffects.cpp"
 	SOURCE_GROUP "RenderMeshUtils"
 		"MergedMeshGeometry.cpp"
@@ -65,6 +69,7 @@ add_sources("Cry3DEngine_main_1_uber.cpp"
 		"3dEngine.cpp"
 		"3DEngineLight.cpp"
 		"3dEngineLoad.cpp"
+		"3dEngineLoad.h"
 		"3DEngineRender.cpp"
 		"PhysCallbacks.cpp"
 		"BreezeGenerator.h"
@@ -139,8 +144,6 @@ add_sources("Cry3DEngine_main_2_uber.cpp"
 		"MeshCompiler/MeshCompiler.h"
 		"MeshCompiler/TangentSpaceCalculation.h"
 		"MeshCompiler/TransformHelpers.h"
-		"../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.cpp"
-		"../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.h"
 )
 
 add_sources("Cry3DEngine_main_3_uber.cpp"
@@ -187,9 +190,7 @@ add_sources("Cry3DEngine_objects_uber.cpp"
 		"ObjManFar.cpp"
 		"ObjManShadows.cpp"
 		"ObjManStreaming.cpp"
-		"ObjManCullQueue.cpp"
 		"ObjMan.h"
-		"ObjManCullQueue.h"
 	SOURCE_GROUP "Objects Tree"
 		"ObjectsTree.cpp"
 		"ObjectsTree_MT.cpp"
@@ -204,8 +205,10 @@ add_sources("Cry3DEngine_objects_uber.cpp"
 		"StatObjConstr.cpp"
 		"StatObjFar.cpp"
 		"StatObjLoad.cpp"
+		"StatObjFoliage.cpp"
 		"IndexedMesh.h"
 		"StatObj.h"
+		"StatObjFoliage.h"
 )
 
 add_sources("Cry3DEngine_particles_uber.cpp"
@@ -214,8 +217,6 @@ add_sources("Cry3DEngine_particles_uber.cpp"
 		"ParticleEffect.cpp"
 		"ParticleEmitter.cpp"
 		"ParticleEnviron.cpp"
-		"ParticleMemory.cpp"
-		"ParticleFixedSizeElementPool.cpp"
 		"ParticleContainer.cpp"
 		"ParticleSubEmitter.cpp"
 		"Particle.h"
@@ -223,7 +224,6 @@ add_sources("Cry3DEngine_particles_uber.cpp"
 		"ParticleEffect.h"
 		"ParticleEmitter.h"
 		"ParticleEnviron.h"
-		"ParticleFixedSizeElementPool.h"
 		"ParticleList.h"
 		"ParticleMemory.h"
 		"ParticleSubEmitter.h"
@@ -384,5 +384,60 @@ add_sources("ParticleSystem_uber.cpp"
 end_sources()
 #END-FILE-LIST
 
+MACRO(setup_Cry3DEngine)
+	target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 mikkelsen)
+	target_include_directories(${THIS_PROJECT} PRIVATE "${SDK_DIR}/TangentBasisComputation")
+
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-reorder
+			-Wno-unknown-pragmas
+			-Wno-undefined-var-template
+			-Wno-parentheses
+			-Wno-unused-private-field
+			-Wno-switch
+			-Wno-empty-body
+			-Wno-format
+			-Wno-logical-op-parentheses
+			-Wno-multichar
+			-Wno-invalid-offsetof
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-sometimes-uninitialized
+			-Wno-tautological-constant-out-of-range-compare
+		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-strict-overflow
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-invalid-offsetof
+			-Wno-aligned-new
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-strict-aliasing
+			-Wno-maybe-uninitialized
+			-Wno-unknown-pragmas
+			-Wno-multichar
+			-Wno-char-subscripts
+			-Wno-conversion-null
+			-Wno-parentheses
+			-Wno-stringop-overflow
+			-Wno-comment
+			-Wno-reorder
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
+    endif()
+ENDMACRO()
+
 CryEngineModule(Cry3DEngine PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
-target_link_libraries( ${THIS_PROJECT} PRIVATE lz4 )
+setup_Cry3DEngine()
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(Cry3DEngineLib PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
+	setup_Cry3DEngine()
+endif()

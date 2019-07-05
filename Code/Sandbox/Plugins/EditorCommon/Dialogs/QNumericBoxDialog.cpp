@@ -6,6 +6,7 @@
 #include <Controls/QNumericBox.h>
 #include <QVBoxLayout>
 #include <QDialogButtonBox>
+#include <QApplication>
 
 QNumericBoxDialog::QNumericBoxDialog(const QString& title, QWidget* pParent /*= NULL*/)
 	: CEditorDialog(QStringLiteral("QNumericBoxDialog"), pParent ? pParent : QApplication::widgetAt(QCursor::pos()), false)
@@ -86,5 +87,3 @@ void QNumericBoxDialog::accept()
 
 	CEditorDialog::accept();
 }
-
-

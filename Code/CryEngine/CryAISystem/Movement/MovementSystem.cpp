@@ -8,10 +8,52 @@
 #include "AIConsoleVariables.h"
 
 #include "MovementBlock_DefaultEmpty.h"
+#include "MovementBlock_FollowPath.h"
+#include "MovementBlock_UseExactPositioning.h"
+#include "MovementBlock_UseSmartObject.h"
+#include "MovementBlock_HarshStop.h"
+#include "MovementBlock_TurnTowardsPosition.h"
+#include "MovementPlan.h"
 
 #if defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
 	#include <CryAISystem/IAIDebugRenderer.h>
 #endif
+
+//#pragma optimize("", off)
+//#pragma inline_depth(0)
+
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateFollowPathBlock(Movement::IPlan& plan, NavigationAgentTypeID navigationAgentTypeID, const INavPath& path, const float endDistance, const MovementStyle& style, const bool endsInCover) const
+{
+	return std::make_shared<Movement::MovementBlocks::FollowPath>(plan, navigationAgentTypeID, static_cast<const CNavPath&>(path), endDistance, style, endsInCover);
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateUseExactPositioningBlock(const INavPath& path, const MovementStyle& style) const
+{
+	return std::make_shared<Movement::MovementBlocks::UseExactPositioning>(static_cast<const CNavPath&>(path), style);
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateUseSmartObjectBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style, IUseSmartObjectAdapter* & pOutUseSmartObjectAdapter) const
+{
+	std::shared_ptr<Movement::MovementBlocks::UseSmartObject> pUseSmartObjectBlock = std::make_shared<Movement::MovementBlocks::UseSmartObject>(static_cast<const CNavPath&>(path), mnmData, style);
+	pOutUseSmartObjectAdapter = pUseSmartObjectBlock.get();
+	return pUseSmartObjectBlock;
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateHarshStopBlock() const
+{
+	return std::make_shared<Movement::MovementBlocks::HarshStop>();
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateTurnTowardsPosition(const Vec3& positionToTurnTowards) const
+{
+	return std::make_shared<Movement::MovementBlocks::TurnTowardsPosition>(positionToTurnTowards);
+}
+
+Movement::BlockPtr StandardMovementBlocksFactory::CreateCustomBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style) const
+{
+	return static_cast<MovementSystem*>(gAIEnv.pMovementSystem)->CreateCustomBlock(static_cast<const CNavPath&>(path), mnmData, style);
+}
 
 bool IsActorValidForMovementUpdateContextCreation(MovementActor& actor)
 {
@@ -28,7 +70,7 @@ bool IsActorValidForMovementUpdateContextCreation(MovementActor& actor)
 }
 
 MovementUpdateContext CreateMovementUpdateContextFrom(
-  MovementActor& actor, MovementSystem& system, const float updateTime)
+  MovementActor& actor, MovementSystem& system, const CTimeValue frameStartTime, const float updateTime)
 {
 	IPathFollower* pathFollower = actor.callbacks.getPathFollowerFunction();
 
@@ -39,7 +81,8 @@ MovementUpdateContext CreateMovementUpdateContextFrom(
 	  system,
 	  *pathFollower,
 	  *actor.planner.get(),
-	  updateTime);
+	  updateTime,
+      frameStartTime);
 }
 
 class ActorMatchesIdPredicate
@@ -59,13 +102,16 @@ private:
 	EntityId m_entityID;
 };
 
-MovementSystem::MovementSystem() : m_nextUniqueRequestID(0)
+MovementSystem::MovementSystem()
+	: m_nextUniqueRequestID(0)
+	, m_frameStartTime(0.0f)
+	, m_frameDeltaTime(0.0f)
 {
 }
 
 void MovementSystem::RegisterEntity(const EntityId entityId, MovementActorCallbacks callbacksConfiguration, IMovementActorAdapter& adapter)
 {
-	MovementActor& actor = MovementSystem::GetExistingActorOrCreateNewOne(entityId, adapter);
+	MovementActor& actor = MovementSystem::GetExistingActorOrCreateNewOne(entityId, adapter, callbacksConfiguration);
 
 	actor.callbacks = callbacksConfiguration;
 }
@@ -118,7 +164,7 @@ private:
 	MovementRequestID m_id;
 };
 
-void MovementSystem::CancelRequest(const MovementRequestID& requestID)
+void MovementSystem::UnsuscribeFromRequestCallback(const MovementRequestID& requestID)
 {
 	const Requests::iterator requestIt = std::find_if(m_requests.begin(), m_requests.end(), RequestMatchesIdPredicate(requestID));
 
@@ -178,18 +224,21 @@ void MovementSystem::GetRequestStatus(const MovementRequestID& requestID, Moveme
 	}
 }
 
-void MovementSystem::Update(float updateTime)
+void MovementSystem::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
 {
-	UpdateActors(updateTime);
+	m_frameStartTime = frameDeltaTime;
+	m_frameDeltaTime = frameDeltaTime;
+
+	UpdateActors();
 
 #if defined(COMPILE_WITH_MOVEMENT_SYSTEM_DEBUG)
-	if (gAIEnv.CVars.DebugMovementSystem)
+	if (gAIEnv.CVars.movement.DebugMovementSystem)
 	{
 		DrawDebugInformation();
 	}
-	if (gAIEnv.CVars.DebugMovementSystemActorRequests)
+	if (gAIEnv.CVars.movement.DebugMovementSystemActorRequests)
 	{
-		if (gAIEnv.CVars.DebugMovementSystemActorRequests == 1)
+		if (gAIEnv.CVars.movement.DebugMovementSystemActorRequests == 1)
 		{
 			Actors::const_iterator itActor = std::find_if(m_actors.begin(), m_actors.end(), ActorMatchesIdPredicate(GetAISystem()->GetAgentDebugTarget()));
 			if (itActor != m_actors.end())
@@ -197,7 +246,7 @@ void MovementSystem::Update(float updateTime)
 				DrawMovementRequestsForActor(*itActor);
 			}
 		}
-		else if (gAIEnv.CVars.DebugMovementSystemActorRequests == 2)
+		else if (gAIEnv.CVars.movement.DebugMovementSystemActorRequests == 2)
 		{
 			for (Actors::const_iterator itActor = m_actors.begin(); itActor != m_actors.end(); ++itActor)
 			{
@@ -239,6 +288,17 @@ bool MovementSystem::RemoveActionAbilityCallbacks(const EntityId entityId, const
 
 	return pActor->RemoveActionAbilityCallbacks(ability);
 }
+
+const IStandardMovementBlocksFactory& MovementSystem::GetStandardMovementBlocksFactory() const
+{
+	return m_builtinMovementBlocksFactory;
+}
+
+std::shared_ptr<Movement::IPlan> MovementSystem::CreateAndReturnDefaultPlan()
+{
+	return std::make_shared<Movement::Plan>();
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 Movement::BlockPtr MovementSystem::CreateCustomBlock(const CNavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style)
@@ -328,7 +388,7 @@ MovementRequest& MovementSystem::GetActiveRequest(MovementActor& actor, Movement
 	}
 }
 
-MovementActor& MovementSystem::GetExistingActorOrCreateNewOne(const EntityId entityId, IMovementActorAdapter& adapter)
+MovementActor& MovementSystem::GetExistingActorOrCreateNewOne(const EntityId entityId, IMovementActorAdapter& adapter, const MovementActorCallbacks& callbacks)
 {
 	Actors::iterator actorIt = std::find_if(m_actors.begin(), m_actors.end(), ActorMatchesIdPredicate(entityId));
 
@@ -340,8 +400,16 @@ MovementActor& MovementSystem::GetExistingActorOrCreateNewOne(const EntityId ent
 	else
 	{
 		// Create new actor
-		MovementActor actor(entityId, &adapter);
-		actor.planner.reset(new Movement::GenericPlanner(adapter.GetNavigationAgentTypeID()));
+		MovementActor actor(entityId, &adapter, callbacks);
+		if (actor.callbacks.getMovementPlanner)
+		{
+			actor.planner = actor.callbacks.getMovementPlanner(adapter.GetNavigationAgentTypeID());
+		}
+
+		if (!actor.planner)
+		{
+			actor.planner.reset(new Movement::GenericPlanner(adapter.GetNavigationAgentTypeID()));
+		}
 		m_actors.push_back(actor);
 		return m_actors.back();
 	}
@@ -365,7 +433,7 @@ bool MovementSystem::IsPlannerWorkingOnRequestID(const MovementActor& actor, con
 	return (actor.requestIdCurrentlyInPlanner == id) && (id != MovementRequestID::Invalid());
 }
 
-void MovementSystem::UpdateActors(float updateTime)
+void MovementSystem::UpdateActors()
 {
 	using namespace Movement;
 
@@ -375,13 +443,13 @@ void MovementSystem::UpdateActors(float updateTime)
 	{
 		MovementActor& actor = *actorIt;
 
-		const ActorUpdateStatus status = UpdateActor(actor, updateTime);
+		UpdateActor(actor);
 
 		++actorIt;
 	}
 }
 
-MovementSystem::ActorUpdateStatus MovementSystem::UpdateActor(MovementActor& actor, float updateTime)
+MovementSystem::ActorUpdateStatus MovementSystem::UpdateActor(MovementActor& actor)
 {
 	// Construct a movement context which contains everything needed for
 	// updating the passed in actor. Everything is validated once, here,
@@ -392,7 +460,7 @@ MovementSystem::ActorUpdateStatus MovementSystem::UpdateActor(MovementActor& act
 		return ActorCanBeRemoved;
 	}
 
-	MovementUpdateContext context = CreateMovementUpdateContextFrom(actor, *this, updateTime);
+	MovementUpdateContext context = CreateMovementUpdateContextFrom(actor, *this, m_frameStartTime, m_frameDeltaTime);
 
 	StartWorkingOnNewRequestIfPossible(context);
 

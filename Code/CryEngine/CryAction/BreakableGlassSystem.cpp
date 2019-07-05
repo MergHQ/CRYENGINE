@@ -8,6 +8,8 @@
 #include "CryAction.h"
 #include "ActionGame.h"
 #include <Cry3DEngine/IIndexedMesh.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // Defines
 #define PHYSEVENT_COLLIDER 0
@@ -83,7 +85,7 @@ CBreakableGlassSystem::CBreakableGlassSystem()
 	if (pSysEnabledCvar)
 	{
 		m_enabled = (pSysEnabledCvar->GetIVal() != 0);
-		pSysEnabledCvar->SetOnChangeCallback(OnEnabledCVarChange);
+		m_enableCallbackIndex = pSysEnabledCvar->AddOnChange(OnEnabledCVarChange);
 	}
 }//-------------------------------------------------------------------------------------------------
 
@@ -128,13 +130,12 @@ CBreakableGlassSystem::~CBreakableGlassSystem()
 
 	SAFE_DELETE(m_pGlassCVars);
 
-	// Remove system enabled cvar callback
-	IConsole* pConsole = gEnv->pConsole;
-	ICVar* pSysEnabledCVar = pConsole ? pConsole->GetCVar("g_glassSystemEnable") : NULL;
-
-	if (pSysEnabledCVar)
+	if (m_enableCallbackIndex != -1)
 	{
-		pSysEnabledCVar->SetOnChangeCallback(NULL);
+		if (ICVar* pSysEnabledCvar = gEnv->pConsole->GetCVar("g_glassSystemEnable"))
+		{
+			pSysEnabledCvar->RemoveOnChangeFunctor(m_enableCallbackIndex);
+		}
 	}
 
 	// Remove physics callback
@@ -603,7 +604,6 @@ bool CBreakableGlassSystem::ExtractPhysMesh(mesh_data* pPhysMesh, const int thin
 	{
 		// Pre-size outline buffer
 		const uint fragTriCount = min(fragTris.size(), fragOutline.max_size() - 2);
-		const uint vertCount = min(fragTriCount + 2, fragOutline.max_size());
 
 		for (int i = 0; i < fragTriCount + 2; ++i)
 		{
@@ -1259,8 +1259,7 @@ IBreakableGlassRenderNode* CBreakableGlassSystem::InitGlassNode(const SBreakable
 
 		// Basic initialisation
 		pRenderNode->SetId(id);
-		pRenderNode->SetRndFlags(physData.renderFlags);
-		pRenderNode->SetRndFlags(ERF_HIDDEN, false);
+		pRenderNode->SetRndFlags(physData.renderFlags & ~ERF_HIDDEN);
 
 		// By default, anchor to four corner points
 		// Note: This should read artist-placed data
@@ -1331,6 +1330,6 @@ void CBreakableGlassSystem::ModifyEventToForceBreak(EventPhysCollision* pPhysEve
 void CBreakableGlassSystem::AssertUnusedIfDisabled()
 {
 #ifndef RELEASE
-	CRY_ASSERT_MESSAGE(m_enabled || m_glassPlanes.Count() == 0, "Breakable glass system is disabled, should not have any active planes.");
+	CRY_ASSERT(m_enabled || m_glassPlanes.Count() == 0, "Breakable glass system is disabled, should not have any active planes.");
 #endif
 }//-------------------------------------------------------------------------------------------------

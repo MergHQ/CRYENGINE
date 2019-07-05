@@ -78,7 +78,7 @@ namespace cry_variant
 template<> \
 ILINE bool ConvertVariant<T, stl::variant_size<TUIDataVariant>::value>(const TUIDataVariant&, T&) \
 { \
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index."); \
+	CRY_ASSERT(false, "Invalid variant index."); \
 	return false; \
 }
 	FLASHUI_CONVERTVARIANT_SPECIALIZATION(int);
@@ -514,7 +514,7 @@ template<> struct SUIParamTypeHelper<TUIData>
 
 struct SUIArguments
 {
-	SUIArguments() : m_cDelimiter(UIARGS_DEFAULT_DELIMITER), m_Dirty(eBDF_Delimiter) {};
+	SUIArguments() : m_cDelimiter(UIARGS_DEFAULT_DELIMITER), m_Dirty(eBDF_Delimiter) {}
 	template<class T>
 	SUIArguments(const T* argStringList, bool bufferStr = false) : m_cDelimiter(UIARGS_DEFAULT_DELIMITER) { SetArguments(argStringList, bufferStr); }
 	SUIArguments(const SFlashVarValue* vArgs, int iNumArgs) : m_cDelimiter(UIARGS_DEFAULT_DELIMITER) { SetArguments(vArgs, iNumArgs); }
@@ -662,13 +662,13 @@ struct SUIArguments
 
 	inline const TUIData& GetArg(int index) const
 	{
-		assert(index >= 0 && index < m_ArgList.size());
+		CRY_ASSERT(index >= 0 && index < m_ArgList.size());
 		return m_ArgList[index].Data;
 	}
 
 	inline EUIDataTypes GetArgType(int index) const
 	{
-		assert(index >= 0 && index < m_ArgList.size());
+		CRY_ASSERT(index >= 0 && index < m_ArgList.size());
 		return m_ArgList[index].Type;
 	}
 
@@ -683,9 +683,9 @@ struct SUIArguments
 	template<class T>
 	inline void GetArgNoConversation(int index, T& val) const
 	{
-		assert(index >= 0 && index < m_ArgList.size());
+		CRY_ASSERT(index >= 0 && index < m_ArgList.size());
 		const T* valPtr = m_ArgList[index].Data.GetPtr<T>();
-		assert(valPtr);
+		CRY_ASSERT(valPtr);
 		val = *valPtr;
 	}
 
@@ -742,7 +742,6 @@ private:
 			m_FlashValueBuffer.clear();
 			for (DynArray<SUIData>::const_iterator it = m_ArgList.begin(); it != m_ArgList.end(); ++it)
 			{
-				bool bConverted = false;
 				switch (it->Type)
 				{
 				case eUIDT_Bool:
@@ -765,15 +764,22 @@ private:
 					break;
 				case eUIDT_Any:
 					{
+#if defined(USE_CRY_ASSERT)
 						bool bRes = TryAddValue<int>(it->Data)
 						            || TryAddValue<float>(it->Data)
 						            || (it->Data.GetType() == eUIDT_String && AddValue<string>(it->Data))
 						            || (it->Data.GetType() == eUIDT_WString && AddValue<wstring>(it->Data));
-						assert(bRes);
+						CRY_ASSERT(bRes);
+#else
+					TryAddValue<int>(it->Data)
+						|| TryAddValue<float>(it->Data)
+						|| (it->Data.GetType() == eUIDT_String && AddValue<string>(it->Data))
+						|| (it->Data.GetType() == eUIDT_WString && AddValue<wstring>(it->Data));
+#endif
 					}
 					break;
 				default:
-					assert(false);
+					CRY_ASSERT(false);
 					break;
 				}
 			}
@@ -785,7 +791,7 @@ private:
 	inline bool AddValue(const TUIData& data) const
 	{
 		const T* val = data.GetPtr<T>();
-		assert(val);
+		CRY_ASSERT(val);
 		m_FlashValueBuffer.push_back(SFlashVarValue(*val));
 		return true;
 	}
@@ -814,8 +820,12 @@ private:
 			{
 				if (buffer.size() > 0) buffer += delimiter_str;
 				CryStringT<T> val;
+#if defined(USE_CRY_ASSERT)
 				bool bRes = it->Data.GetValueWithConversion(val);
-				assert(bRes && "try to convert to char* string list but some of the values are unsupported wchar_t*");
+				CRY_ASSERT(bRes && "try to convert to char* string list but some of the values are unsupported wchar_t*");
+#else
+				it->Data.GetValueWithConversion(val);
+#endif
 				buffer += val;
 			}
 		}
@@ -836,7 +846,7 @@ private:
 	}
 
 	template<class T>
-	inline void setStringBuffer(const T* str) { assert(false); }
+	inline void setStringBuffer(const T* str) { CRY_ASSERT(false); }
 };
 
 //! Specialize in global scope.
@@ -894,7 +904,7 @@ template<class T> struct SUIItemLookupIDD
 {
 	static inline const char* GetId(const T* p)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return "";
 	}
 };
@@ -941,7 +951,7 @@ struct SUIItemLookupSet_Impl
 
 	void push_back(Base* item)
 	{
-		assert(m_Lookup[CCryName(SUIItemLookupIDD < Base > ::GetId(item))] == 0);
+		CRY_ASSERT(m_Lookup[CCryName(SUIItemLookupIDD < Base > ::GetId(item))] == 0);
 		m_Lookup[CCryName(SUIItemLookupIDD < Base > ::GetId(item))] = m_Items.size();
 		m_Items.push_back(item);
 	}
@@ -963,7 +973,7 @@ struct SUIItemLookupSet_Impl
 				}
 			}
 		}
-		assert(false);
+		CRY_ASSERT(false);
 	}
 
 	void clear()
@@ -989,6 +999,7 @@ protected:
 	TLookup m_Lookup;
 };
 
+struct IDynTextureSource;
 struct IUIElement;
 struct IUIAction;
 struct SUIParameterDesc;
@@ -1034,7 +1045,7 @@ struct SUIItemLookupSet_DllSafeImpl
 	inline size_type      capacity() const                     { return m_pImpl->capacity(); }
 
 protected:
-	inline SUIItemLookupSet_Impl<Base>* CreateLookupImpl() { assert(false); return NULL; }
+	inline SUIItemLookupSet_Impl<Base>* CreateLookupImpl() { CRY_ASSERT(false); return NULL; }
 
 protected:
 	SUIItemLookupSet_Impl<Base>* m_pImpl;
@@ -1072,8 +1083,8 @@ struct SUIParameterDesc
 		eUIPT_WString
 	};
 
-	SUIParameterDesc() : sName("undefined"), sDisplayName("undefined"), sDesc("undefined"), eType(eUIPT_Any), pParent(NULL) {}
-	SUIParameterDesc(const char* name, const char* displ, const char* desc, EUIParameterType type = eUIPT_Any, const SUIParameterDesc* parent = NULL) : sName(name), sDisplayName(displ), sDesc(desc), eType(type), pParent(parent) { CRY_ASSERT_MESSAGE(strstr(sName, " ") == NULL, "Name with whitespaces not allowed! Use display name for descriptive names!"); }
+	SUIParameterDesc() : sName("undefined"), sDisplayName("undefined"), sDesc("undefined"), pParent(NULL), eType(eUIPT_Any) {}
+	SUIParameterDesc(const char* name, const char* displ, const char* desc, EUIParameterType type = eUIPT_Any, const SUIParameterDesc* parent = NULL) : sName(name), sDisplayName(displ), sDesc(desc), pParent(parent), eType(type) { CRY_ASSERT(strstr(sName, " ") == NULL, "Name with whitespaces not allowed! Use display name for descriptive names!"); }
 	const char*             sName;
 	const char*             sDisplayName;
 	const char*             sDesc;
@@ -1113,7 +1124,7 @@ struct SUIEventDesc : public SUIParameterDesc
 	{
 		SEvtParamsDesc(bool isDyn = false, const char* dynName = "Array", const char* dynDesc = "") : IsDynamic(isDyn), sDynamicName(dynName), sDynamicDesc(dynDesc)
 		{
-			CRY_ASSERT_MESSAGE(strstr(sDynamicName, " ") == NULL, "DynamicName with whitespaces not allowed!");
+			CRY_ASSERT(strstr(sDynamicName, " ") == NULL, "DynamicName with whitespaces not allowed!");
 		}
 
 		bool        IsDynamic;
@@ -1148,7 +1159,7 @@ struct SUIEventDesc : public SUIParameterDesc
 
 		inline void SetDynamic(const char* name, const char* desc)
 		{
-			CRY_ASSERT_MESSAGE(strstr(name, " ") == NULL, "DynamicName with whitespaces not allowed!");
+			CRY_ASSERT(strstr(name, " ") == NULL, "DynamicName with whitespaces not allowed!");
 			IsDynamic = true;
 			sDynamicName = name;
 			sDynamicDesc = desc;
@@ -1246,7 +1257,7 @@ struct IUIElementEventListener
 	virtual void OnInstanceCreated(IUIElement* pSender, IUIElement* pNewInstance)                                   {}
 	virtual void OnInstanceDestroyed(IUIElement* pSender, IUIElement* pDeletedInstance)                             {}
 protected:
-	virtual ~IUIElementEventListener() {};
+	virtual ~IUIElementEventListener() {}
 };
 
 struct IUIElementIterator
@@ -1517,7 +1528,7 @@ struct IUIElement
 			if (out.GetValueWithConversion(res))
 				return res;
 		}
-		assert(false);
+		CRY_ASSERT(false);
 		return T();
 	}
 
@@ -1673,22 +1684,22 @@ struct IVirtualKeyboardEvents;
 
 struct IUIModule
 {
-	virtual ~IUIModule() {};
+	virtual ~IUIModule() {}
 
 	//! Called once on initialization of the UISystem.
-	virtual void Init() {};
+	virtual void Init() {}
 
 	//! Called once on shutdown of the UISystem.
-	virtual void Shutdown() {};
+	virtual void Shutdown() {}
 
 	//! Called if gfx_reload_all command was issued.
-	virtual void Reload() {};
+	virtual void Reload() {}
 
 	//! Called on FlashUI reset (unload level etc.)
-	virtual void Reset() {};
+	virtual void Reset() {}
 
 	//! Called on FlashUI update.
-	virtual void UpdateModule(float fDelta) {};
+	virtual void UpdateModule(float fDelta) {}
 
 	/////////////////////////////////////////////////////////
 	// Sandbox only.
@@ -1696,7 +1707,7 @@ struct IUIModule
 	virtual bool EditorAllowReload() { return true; }
 
 	//! Called on reload all.
-	virtual void EditorReload() {};
+	virtual void EditorReload() {}
 	/////////////////////////////////////////////////////////
 };
 
@@ -1817,9 +1828,9 @@ public:
 };
 
 #if !defined(_LIB)
-inline SUIItemLookupSet_Impl<SUIParameterDesc>* SUIItemLookupSetFactory::CreateLookupParameter() { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupParameter(); }
-inline SUIItemLookupSet_Impl<SUIMovieClipDesc>* SUIItemLookupSetFactory::CreateLookupMovieClip() { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupMovieClip(); }
-inline SUIItemLookupSet_Impl<SUIEventDesc>*     SUIItemLookupSetFactory::CreateLookupEvent()     { assert(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupEvent(); }
+inline SUIItemLookupSet_Impl<SUIParameterDesc>* SUIItemLookupSetFactory::CreateLookupParameter() { CRY_ASSERT(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupParameter(); }
+inline SUIItemLookupSet_Impl<SUIMovieClipDesc>* SUIItemLookupSetFactory::CreateLookupMovieClip() { CRY_ASSERT(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupMovieClip(); }
+inline SUIItemLookupSet_Impl<SUIEventDesc>*     SUIItemLookupSetFactory::CreateLookupEvent()     { CRY_ASSERT(gEnv->pFlashUI); return gEnv->pFlashUI->CreateLookupEvent(); }
 #endif
 
 DECLARE_SHARED_POINTERS(IFlashUI);
@@ -1878,11 +1889,11 @@ template<EUIObjectType type, class Item, class Idx> struct SUIGetDesc
 {
 	static const typename SUIDescTypeOf<type>::TType * GetDesc(Item * pItem, Idx i)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return NULL;
 	} static int GetCount(Item* pItem)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return 0;
 	}
 };
@@ -2034,13 +2045,13 @@ template<> struct SUIGetTypeStr<eUOT_Events>
 #if defined(_DEBUG) || !defined(NDEBUG)
 	#define UIEVENT_CHECK_RETURN_VALUE(type) \
 	  case SUIParameterDesc::eUIPT_ ## type: \
-	    CRY_ASSERT_MESSAGE(r.GetArg(i).GetType() == eUIDT_ ## type, "Argument not compatible!"); break;
+	    CRY_ASSERT(r.GetArg(i).GetType() == eUIDT_ ## type, "Argument not compatible!"); break;
 
 	#define UIEVENT_RETURN_DISPATCH_SAFE                                                                                                                     \
 	  SUIArguments r = it->second->Dispatch((void*) pThis, event);                                                                                           \
 	  const SUIEventDesc* pEventDesc = m_pEventSystem->GetEventDesc(it->first);                                                                              \
-	  CRY_ASSERT_MESSAGE(pEventDesc, "No matching event registered!");                                                                                       \
-	  CRY_ASSERT_MESSAGE(pEventDesc->OutputParams.IsDynamic || pEventDesc->OutputParams.Params.size() == r.GetArgCount(), "Wrong number of return values!"); \
+	  CRY_ASSERT(pEventDesc, "No matching event registered!");                                                                                       \
+	  CRY_ASSERT(pEventDesc->OutputParams.IsDynamic || pEventDesc->OutputParams.Params.size() == r.GetArgCount(), "Wrong number of return values!"); \
 	  if (!pEventDesc->OutputParams.IsDynamic) {                                                                                                             \
 	    for (int i = 0; i < r.GetArgCount(); ++i) {                                                                                                          \
 	      switch (pEventDesc->OutputParams.Params[i].eType) {                                                                                                \
@@ -2050,6 +2061,7 @@ template<> struct SUIGetTypeStr<eUOT_Events>
 	        UIEVENT_CHECK_RETURN_VALUE(Vec3)                                                                                                                 \
 	        UIEVENT_CHECK_RETURN_VALUE(String)                                                                                                               \
 	        UIEVENT_CHECK_RETURN_VALUE(WString)                                                                                                              \
+	        default: break;                                                                                                                                  \
 	      }                                                                                                                                                  \
 	    }                                                                                                                                                    \
 	  }                                                                                                                                                      \
@@ -2059,19 +2071,25 @@ template<> struct SUIGetTypeStr<eUOT_Events>
 	#define UIEVENT_RETURN_DISPATCH_SAFE return it->second->Dispatch((void*) pThis, event);
 #endif
 
+#if defined(USE_CRY_ASSERT)
 #define UIEVENT_GETARGSAVE(index)                             \
   deref_t<T ## index> arg ## index;                           \
   { const bool ok = event.args.GetArg(index, arg ## index.v); \
-    CRY_ASSERT_MESSAGE(ok, "Value is not compatible for arg " # index); }
+    CRY_ASSERT(ok, "Value is not compatible for arg " # index); }
+#else
+#define UIEVENT_GETARGSAVE(index)                             \
+  deref_t<T ## index> arg ## index;                           \
+  { event.args.GetArg(index, arg ## index.v); }
+#endif
 
 #define UIEVENT_CHECKARGCOUNT(count) \
-  CRY_ASSERT_MESSAGE(event.args.GetArgCount() == count, "Wrong argument count, expected " # count);
+  CRY_ASSERT(event.args.GetArgCount() == count, "Wrong argument count, expected " # count);
 
 #define UIEVENT_ASSERT_COUNT(count) \
-  CRY_ASSERT_MESSAGE(event.InputParams.Params.size() == count, "Wrong argument count, expected " # count);
+  CRY_ASSERT(event.InputParams.Params.size() == count, "Wrong argument count, expected " # count);
 
 #define UIEVENT_ASSERT_ARG(index) \
-  CRY_ASSERT_MESSAGE(SUIEventArgumentCheck<T ## index>::Check(event.InputParams.Params[index].eType), "Template argument not compatible! Index: " # index);
+  CRY_ASSERT(SUIEventArgumentCheck<T ## index>::Check(event.InputParams.Params[index].eType), "Template argument not compatible! Index: " # index);
 
 //! \cond INTERNAL
 //! Deref for T&, const T& and special case for const char* and const wchar_t*.
@@ -2151,7 +2169,7 @@ template<> inline bool SUIEventArgumentCheck<TUIData       >::Check(SUIParameter
 //! Dispatcher function interface.
 struct IUIEventDispatchFct
 {
-	virtual ~IUIEventDispatchFct() {};
+	virtual ~IUIEventDispatchFct() {}
 	virtual SUIArgumentsRet Dispatch(void* pThis, const SUIEvent& event) = 0;
 };
 
@@ -2178,7 +2196,7 @@ template<class R, class C>
 struct SUIEventDispatchFctImpl : public IUIEventDispatchFct
 {
 	SUIEventDispatchFctImpl(typename C::TFct fct) : Impl(fct) {}
-	virtual ~SUIEventDispatchFctImpl() {};
+	virtual ~SUIEventDispatchFctImpl() {}
 	virtual SUIArgumentsRet Dispatch(void* pThis, const SUIEvent& event) { return SUIEventDispatchFctReturn<R, C>::Dispatch(Impl, pThis, event); }
 	C Impl;
 };
@@ -2383,7 +2401,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	//! If init with valid pThis pointer the using class don't need to implement IUIEventListener, the dispatcher will auto dispatch!
 	void Init(IUIEventSystem* pEventSystem, C* pThis = NULL, const char* listenerName = "SUIEventReceiverDispatcher")
 	{
-		CRY_ASSERT_MESSAGE(!m_pEventSystem, "Already initialized!");
+		CRY_ASSERT(!m_pEventSystem, "Already initialized!");
 		m_pEventSystem = pEventSystem;
 		m_pThis = pThis;
 		if (pThis)
@@ -2393,7 +2411,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(void))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(0);
 		mFunctionMap[m_pEventSystem->RegisterEvent(event)] = new SUIEventDispatchFctImpl<R, SUIEventDispatchFct0<C, R>>(fct);
 	}
@@ -2401,7 +2419,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(1);
 		UIEVENT_ASSERT_ARG(0);
 		mFunctionMap[m_pEventSystem->RegisterEvent(event)] = new SUIEventDispatchFctImpl<R, SUIEventDispatchFct1<C, R, T0>>(fct);
@@ -2410,7 +2428,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(2);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2420,7 +2438,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1, class T2>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1, T2))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(3);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2431,7 +2449,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1, class T2, class T3>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1, T2, T3))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(4);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2443,7 +2461,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1, class T2, class T3, class T4>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1, T2, T3, T4))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(5);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2456,7 +2474,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1, class T2, class T3, class T4, class T5>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1, T2, T3, T4, T5))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(6);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2470,7 +2488,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1, class T2, class T3, class T4, class T5, class T6>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1, T2, T3, T4, T5, T6))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(7);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2485,7 +2503,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1, T2, T3, T4, T5, T6, T7))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(8);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2501,7 +2519,7 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R, class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(T0, T1, T2, T3, T4, T5, T6, T7, T8))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		UIEVENT_ASSERT_COUNT(9);
 		UIEVENT_ASSERT_ARG(0);
 		UIEVENT_ASSERT_ARG(1);
@@ -2519,20 +2537,20 @@ struct SUIEventReceiverDispatcher : public IUIEventListener
 	template<class R>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(const SUIEvent&))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		mFunctionMap[m_pEventSystem->RegisterEvent(event)] = new SUIEventDispatchFctImpl<R, SUIEventDispatchFct1<C, R, const SUIEvent&>>(fct);
 	}
 
 	template<class R>
 	inline void RegisterEvent(const SUIEventDesc& event, R (C::* fct)(const SUIArguments&))
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventReceiver not initialized!");
+		CRY_ASSERT(m_pEventSystem, "EventReceiver not initialized!");
 		mFunctionMap[m_pEventSystem->RegisterEvent(event)] = new SUIEventDispatchFctImpl<R, SUIEventDispatchFct1<C, R, const SUIArguments&>>(fct);
 	}
 
 	inline SUIArgumentsRet Dispatch(C* pThis, const SUIEvent& event)
 	{
-		CRY_ASSERT_MESSAGE(pThis, "pThis pointer not valid!");
+		CRY_ASSERT(pThis, "pThis pointer not valid!");
 		TFunctionMapIter it = mFunctionMap.find(event.event);
 		if (it != mFunctionMap.end())
 		{
@@ -2574,18 +2592,18 @@ private:
 #if defined(_DEBUG) || !defined(NDEBUG)
 	#define UIEVENT_GETINFO                                                       \
 	  const SUIEventDesc * pEventDesc = m_pEventSystem->GetEventDesc(it->second); \
-	  CRY_ASSERT_MESSAGE(pEventDesc, "No matching event registered!");
+	  CRY_ASSERT(pEventDesc, "No matching event registered!");
 
 	#define UIEVENT_CHECKARGCOUNT_SEND(count)                                                           \
-	  CRY_ASSERT_MESSAGE(pEventDesc->InputParams.Params.size() == count, "Wrong number of arguments!"); \
-	  CRY_ASSERT_MESSAGE(pEventDesc->OutputParams.Params.size() == 0, "Output params not allowed!");
+	  CRY_ASSERT(pEventDesc->InputParams.Params.size() == count, "Wrong number of arguments!"); \
+	  CRY_ASSERT(pEventDesc->OutputParams.Params.size() == 0, "Output params not allowed!");
 
 	#define UIEVENT_ADDARGSAFE(index)                                                                                                                        \
-	  CRY_ASSERT_MESSAGE(SUIEventArgumentCheck<T ## index>::Check(pEventDesc->InputParams.Params[index].eType), "Argument not compatible! Index: " # index); \
+	  CRY_ASSERT(SUIEventArgumentCheck<T ## index>::Check(pEventDesc->InputParams.Params[index].eType), "Argument not compatible! Index: " # index); \
 	  event.args.AddArgument(arg ## index);
 
 	#define UIEVENT_CHECKDYNARGS \
-	  CRY_ASSERT_MESSAGE(pEventDesc->InputParams.IsDynamic || pEventDesc->InputParams.Params.size() == args.GetArgCount(), "Wrong number of arguments!");
+	  CRY_ASSERT(pEventDesc->InputParams.IsDynamic || pEventDesc->InputParams.Params.size() == args.GetArgCount(), "Wrong number of arguments!");
 
 #else
 	#define UIEVENT_GETINFO
@@ -2595,16 +2613,16 @@ private:
 #endif
 
 #define UIEVENT_GETEVENT                                              \
-  CRY_ASSERT_MESSAGE(m_pEventSystem, "EventSender not initialized!"); \
+  CRY_ASSERT(m_pEventSystem, "EventSender not initialized!"); \
   TEventMapIter it = m_EventMap.find(type);                           \
-  CRY_ASSERT_MESSAGE(it != m_EventMap.end(), "Unknown event!");       \
+  CRY_ASSERT(it != m_EventMap.end(), "Unknown event!");       \
   UIEVENT_GETINFO;                                                    \
   SUIEvent event(it->second);
 
 #define UIEVENT_GETEVENT_DYN                                          \
-  CRY_ASSERT_MESSAGE(m_pEventSystem, "EventSender not initialized!"); \
+  CRY_ASSERT(m_pEventSystem, "EventSender not initialized!"); \
   TEventMapIter it = m_EventMap.find(type);                           \
-  CRY_ASSERT_MESSAGE(it != m_EventMap.end(), "Unknown event!");       \
+  CRY_ASSERT(it != m_EventMap.end(), "Unknown event!");       \
   UIEVENT_GETINFO;                                                    \
   SUIEvent event(it->second, args);
 
@@ -2616,15 +2634,15 @@ struct SUIEventSenderDispatcher
 
 	void Init(IUIEventSystem* pEventSystem)
 	{
-		CRY_ASSERT_MESSAGE(!m_pEventSystem && m_EventMap.size() == 0, "Already initialized!");
+		CRY_ASSERT(!m_pEventSystem && m_EventMap.size() == 0, "Already initialized!");
 		m_pEventSystem = pEventSystem;
 	}
 
 	template<T type>
 	inline void RegisterEvent(const SUIEventDesc& event)
 	{
-		CRY_ASSERT_MESSAGE(m_pEventSystem, "EventSender not initialized!");
-		CRY_ASSERT_MESSAGE(m_EventMap.find(type) == m_EventMap.end(), "Event already registered for this type!");
+		CRY_ASSERT(m_pEventSystem, "EventSender not initialized!");
+		CRY_ASSERT(m_EventMap.find(type) == m_EventMap.end(), "Event already registered for this type!");
 		m_EventMap[type] = m_pEventSystem->RegisterEvent(event);
 	}
 
@@ -2777,12 +2795,12 @@ struct SPerInstanceCallBase
 
 	bool Execute(IUIElement* pBaseElement, int instanceId, const TCallback& cb, T data, bool bAllowMultiInstances = true)
 	{
-		CRY_ASSERT_MESSAGE(pBaseElement, "NULL pointer passed!");
+		CRY_ASSERT(pBaseElement, "NULL pointer passed!");
 		if (pBaseElement)
 		{
 			if (instanceId < 0)
 			{
-				CRY_ASSERT_MESSAGE(bAllowMultiInstances, "SPerInstanceCallBase is used on multiple instances, but bAllowMultiInstances is set to false!");
+				CRY_ASSERT(bAllowMultiInstances, "SPerInstanceCallBase is used on multiple instances, but bAllowMultiInstances is set to false!");
 				if (!bAllowMultiInstances)
 					return false;
 

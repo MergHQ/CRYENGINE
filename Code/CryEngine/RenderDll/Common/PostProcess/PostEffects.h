@@ -1,19 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   PostEffects.h : Post process effects
-
-   Revision history:
-* 18/06/2005: Re-organized (to minimize code dependencies/less annoying compiling times)
-* Created by Tiago Sousa
-   =============================================================================*/
-
-#ifndef _POSTEFFECTS_H_
-#define _POSTEFFECTS_H_
+#pragma once
 
 #include "PostProcessUtils.h"
+#include <CryThreading/CryThreadSafePushContainer.h>
 
-struct SColorGradingMergeParams;
 class CSoundEventsListener;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,25 +80,25 @@ public:
 		Release();
 	}
 
-	virtual int             Initialize();
-	virtual int             CreateResources();
-	virtual void            Release();
+	virtual int         Init();
+	virtual int         CreateResources();
+	virtual void        Release();
 
-	virtual void            Render();
-	void                    RenderObjectsVelocity();
+	virtual void        Execute();
+	void                RenderObjectsVelocity();
 
-	virtual void            Reset(bool bOnSpecChange = false);
-	virtual bool            Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void            OnBeginFrame(const SRenderingPassInfo& passInfo);
+	virtual void        Reset(bool bOnSpecChange = false);
+	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
+	virtual void        OnBeginFrame(const SRenderingPassInfo& passInfo);
 
-	static void             SetupObject(CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	static bool             GetPrevObjToWorldMat(CRenderObject* pObj, Matrix44A& res);
-	static void             InsertNewElements();
-	static void             FreeData();
+	static void         SetupObject(CRenderObject* pObj, const SRenderingPassInfo& passInfo);
+	static bool         GetPrevObjToWorldMat(CRenderObject* pObj, uint64 objFlags, Matrix44A& res);
+	static void         InsertNewElements();
+	static void         FreeData();
 
-	virtual const char*     GetName() const
+	virtual const char* GetName() const
 	{
-		return CRenderer::CV_r_UseMergedPosts ? "MotionBlur and Dof" : "MotionBlur";
+		return "MotionBlur";
 	}
 
 private:
@@ -143,7 +134,8 @@ private:
 	typedef VectorMap<uintptr_t, SObjMotionBlurParams> OMBParamsMap;
 	typedef OMBParamsMap::iterator                     OMBParamsMapItor;
 	static OMBParamsMap m_pOMBData[3]; // triple buffering: t0: being written, t-1: current render frame, t-2: previous render frame
-	static CThreadSafeRendererContainer<OMBParamsMap::value_type> m_FillData[RT_COMMAND_BUF_COUNT];
+
+	static CryMT::CThreadSafePushContainer<OMBParamsMap::value_type> m_FillData[RT_COMMAND_BUF_COUNT];
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -151,7 +143,7 @@ private:
 
 struct SDepthOfFieldParams
 {
-	SDepthOfFieldParams() : pMaskTex(0), fMaskBlendAmount(0.0f), bGameMode(false)
+	SDepthOfFieldParams() : bGameMode(false), pMaskTex(0), fMaskBlendAmount(0.0f)
 	{
 	};
 
@@ -216,7 +208,7 @@ public:
 
 	virtual int         CreateResources();
 	virtual void        Release();
-	virtual void        Render();
+	virtual void        Execute();
 
 	SDepthOfFieldParams GetParams();
 
@@ -283,11 +275,11 @@ public:
 		m_nVisSampleCount = 0;
 	}
 
-	virtual int  Initialize();
+	virtual int  Init();
 	virtual void Release();
 	virtual void OnLostDevice();
 	virtual bool Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void Render();
+	virtual void Execute();
 	virtual void Reset(bool bOnSpecChange = false);
 
 	bool         IsVisible();
@@ -330,7 +322,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -359,7 +351,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -422,7 +414,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -461,6 +453,15 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct SColorGradingMergeParams
+{
+	Vec4   pColorMatrix[3];
+	Vec4   pLevels[2];
+	Vec4   pFilterColor;
+	Vec4   pSelectiveColor[2];
+	uint64 nFlagsShaderRT;
+};
 
 class CColorGrading : public CPostEffect
 {
@@ -505,9 +506,9 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
-	bool                UpdateParams(SColorGradingMergeParams& pMergeParams, bool bUpdateChart = true);
+	void                UpdateParams(SColorGradingMergeParams& pMergeParams);
 
 	virtual const char* GetName() const
 	{
@@ -566,7 +567,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -600,7 +601,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -630,7 +631,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -660,7 +661,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -688,7 +689,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -719,7 +720,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -767,7 +768,7 @@ public:
 
 	virtual int         CreateResources();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual void        Release();
 
@@ -865,7 +866,7 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -917,7 +918,7 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	void                UpdateSoundEvents();
@@ -984,7 +985,7 @@ public:
 	virtual int  CreateResources();
 	virtual void Release();
 	virtual bool Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void Render();
+	virtual void Execute();
 	virtual void Reset(bool bOnSpecChange = false);
 
 	void         AmbientPass();
@@ -1078,7 +1079,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1140,7 +1141,7 @@ public:
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
 	virtual void        Release();
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1170,11 +1171,11 @@ public:
 		m_nID = EPostEffectID::PostAA;
 	}
 
-	virtual int         CreateResources() { return 1; }
-	virtual void        Release() {}
+	virtual int         CreateResources()                                                                                        { return 1; }
+	virtual void        Release()                                                                                                {}
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo) { return true; }
-	virtual void        Render();
-	virtual void        Reset(bool bOnSpecChange = false) {}
+	virtual void        Execute();
+	virtual void        Reset(bool bOnSpecChange = false)                                                                        {}
 
 	virtual const char* GetName() const
 	{
@@ -1197,7 +1198,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1222,7 +1223,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1240,36 +1241,33 @@ private:
 struct SHudData
 {
 public:
-	SHudData() : pRE(0), pShaderItem(0), pShaderResources(0), pRO(0), pDiffuse(0), pFlashPlayer(0), nSortVal(0), nFlashWidth(0), nFlashHeight(0)
+	SHudData() : pShaderItem(0), pShaderResources(0), pDiffuse(0), pFlashPlayer(0)
 	{
 	}
 
 	SHudData(const CRenderElement* pInRE, const SShaderItem* pInShaderItem, const CShaderResources* pInShaderResources, CRenderObject* pInRO) :
 		pRE(pInRE),
+		pRO(pInRO),
 		pShaderItem(pInShaderItem),
 		pShaderResources(pInShaderResources),
-		pRO(pInRO),
 		pDiffuse(0),
-		pFlashPlayer(0),
-		nSortVal(0),
-		nFlashWidth(0),
-		nFlashHeight(0)
+		pFlashPlayer(0)
 	{
 	}
 
 public:
-	const CRenderElement* pRE;
-	CRenderObject*          pRO;
+	const CRenderElement*   pRE = nullptr;
+	CRenderObject*          pRO = nullptr;
 	const SShaderItem*      pShaderItem; // to be removed after Alpha MS
 	const CShaderResources* pShaderResources;
 
 	SEfResTexture*          pDiffuse;
 	IFlashPlayer*           pFlashPlayer;
 
-	uint32                  nSortVal;
+	uint32                  nSortVal = 0;
 
-	int16                   nFlashWidth;
-	int16                   nFlashHeight;
+	int16                   nFlashWidth = 0;
+	int16                   nFlashHeight = 0;
 
 	static int16            s_nFlashWidthMax;
 	static int16            s_nFlashHeightMax;
@@ -1295,7 +1293,7 @@ class CHud3D : public CPostEffect
 
 public:
 
-	typedef CThreadSafeRendererContainer<SHudData> SHudDataVec;
+	typedef CryMT::CThreadSafePushContainer<SHudData> SHudDataVec;
 
 public:
 
@@ -1364,13 +1362,14 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
+	virtual bool        IsActive() const;
 
 	virtual void        Update();
 	virtual void        OnBeginFrame(const SRenderingPassInfo& passInfo);
 
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual void        AddRE(const CRenderElement* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	virtual void        Render();
+	virtual void        Execute();
 
 	void                FlashUpdateRT();
 	void                UpdateBloomRT(CTexture* pDstRT, CTexture* pBlurDst);
@@ -1473,9 +1472,9 @@ public:
 		m_lastMode = 0;
 	}
 
-	virtual int         Initialize();
+	virtual int         Init();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1514,7 +1513,7 @@ public:
 		}
 
 		const CRenderElement* pRenderElement;
-		const CRenderObject*    pRenderObject;
+		const CRenderObject*  pRenderObject;
 	};
 
 	CNanoGlass()
@@ -1555,7 +1554,7 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1624,7 +1623,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1633,7 +1632,7 @@ public:
 
 private:
 
-	CEffectParam * m_pAmount;
+	CEffectParam* m_pAmount;
 	CEffectParam* m_pBorder;
 };
 
@@ -1651,7 +1650,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1660,7 +1659,7 @@ public:
 
 private:
 
-	CEffectParam * m_pColor;
+	CEffectParam* m_pColor;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1720,7 +1719,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1729,19 +1728,17 @@ public:
 	}
 
 private:
-	bool HasModelsToRender() const;
+	void   ClearFlashRT();
 
-	void ClearFlashRT();
-
-	void RenderGroup(uint8 groupId);
-	void RenderMeshes(uint8 groupId, float screenRect[4], ERenderMeshMode renderMeshMode = eRMM_Default);
-	void RenderDepth(uint8 groupId, float screenRect[4], bool bCustomRender = false);
-	void AlphaCorrection();
-	void GammaCorrection(float screenRect[4]);
-	void RenderSilhouettes(uint8 groupId, float screenRect[4]);
-	void SilhouetteOutlines(CTexture* pOutlineTex, CTexture* pGlowTex);
-	void SilhouetteGlow(CTexture* pOutlineTex, CTexture* pGlowTex);
-	void SilhouetteCombineBlurAndOutline(CTexture* pOutlineTex, CTexture* pGlowTex);
+	void   RenderGroup(uint8 groupId);
+	void   RenderMeshes(uint8 groupId, float screenRect[4], ERenderMeshMode renderMeshMode = eRMM_Default);
+	void   RenderDepth(uint8 groupId, float screenRect[4], bool bCustomRender = false);
+	void   AlphaCorrection();
+	void   GammaCorrection(float screenRect[4]);
+	void   RenderSilhouettes(uint8 groupId, float screenRect[4]);
+	void   SilhouetteOutlines(CTexture* pOutlineTex, CTexture* pGlowTex);
+	void   SilhouetteGlow(CTexture* pOutlineTex, CTexture* pGlowTex);
+	void   SilhouetteCombineBlurAndOutline(CTexture* pOutlineTex, CTexture* pGlowTex);
 	uint64 ApplyShaderQuality(EShaderType shaderType = eST_General);
 
 	CCryNameTSCRC m_gammaCorrectionTechName;
@@ -1770,8 +1767,3 @@ private:
 	uint8         m_post3DRendererflags;
 	uint8         m_deferDisableFrameCountDown;
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#endif

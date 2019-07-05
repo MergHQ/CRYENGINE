@@ -1,12 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CImageListCtrl_h__
-#define __CImageListCtrl_h__
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "Util/Image.h"
 
-struct PLUGIN_API CImageListCtrlItem : public _i_reference_target_t
+struct MFC_TOOLS_PLUGIN_API CImageListCtrlItem : public _i_reference_target_t
 {
 	// Where to draw item.
 	CString   text;
@@ -36,7 +35,7 @@ enum EImageListCtrl
 //////////////////////////////////////////////////////////////////////////
 // Custom control to display list of images.
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CImageListCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CImageListCtrl : public CWnd
 {
 public:
 	typedef std::vector<_smart_ptr<CImageListCtrlItem>> Items;
@@ -119,6 +118,3 @@ protected:
 	CPoint                         m_scrollOffset;
 	CPen                           m_selectedPen;
 };
-
-#endif //__CImageListCtrl_h__
-

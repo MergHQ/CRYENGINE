@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <QIcon>
 #include <QWidget>
-#include <QPushButton>
 
 #include "EditorCommonAPI.h"
 
@@ -49,11 +49,11 @@ signals:
 	void shown();
 
 protected:
-	virtual void paintEvent(QPaintEvent* e) override;
-	virtual void wheelEvent(QWheelEvent* e) override;
-	virtual void showEvent(QShowEvent* event) override;
-	virtual void resizeEvent(QResizeEvent* event) override;
-	virtual void focusInEvent(QFocusEvent* e) override;
+	virtual void paintEvent(QPaintEvent* pEvent) override;
+	virtual void wheelEvent(QWheelEvent* pEvent) override;
+	virtual void showEvent(QShowEvent* pEvent) override;
+	virtual void resizeEvent(QResizeEvent* pEvent) override;
+	virtual void focusInEvent(QFocusEvent* pEvent) override;
 
 	void setText(const QString& text);
 	QString text() const;
@@ -67,6 +67,7 @@ private:
 	double          m_min;
 	double          m_max;
 	double          m_step;
+	double          m_value;
 	QColor          m_sliderColor;
 };
 
@@ -77,8 +78,6 @@ class QNumericButton : public QWidget
 public:
 	QNumericButton(QWidget* parent = nullptr);
 
-	virtual ~QNumericButton() override {}
-
 	void setIcon(const QIcon& icon)       { m_icon = icon; }
 	void setAccelerated(bool accelerated) { m_accelerated = accelerated; }
 
@@ -87,12 +86,12 @@ signals:
 	void clicked();
 
 protected:
-	virtual void paintEvent(QPaintEvent* e) override;
-	virtual void mousePressEvent(QMouseEvent* e) override;
-	virtual void mouseReleaseEvent(QMouseEvent* e) override;
-	virtual void focusOutEvent(QFocusEvent* e) override;
-	virtual void timerEvent(QTimerEvent* e) override;
-	virtual void changeEvent(QEvent* e) override;
+	virtual void paintEvent(QPaintEvent* pEvent) override;
+	virtual void mousePressEvent(QMouseEvent* pEvent) override;
+	virtual void mouseReleaseEvent(QMouseEvent* pEvent) override;
+	virtual void focusOutEvent(QFocusEvent* pEvent) override;
+	virtual void timerEvent(QTimerEvent* pEvent) override;
+	virtual void changeEvent(QEvent* pEvent) override;
 
 private:
 	void reset();
@@ -106,4 +105,3 @@ private:
 	int   m_acceleration;
 	bool  m_accelerated;
 };
-

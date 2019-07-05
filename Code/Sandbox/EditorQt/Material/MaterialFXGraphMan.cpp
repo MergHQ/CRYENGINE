@@ -3,9 +3,11 @@
 #include "StdAfx.h"
 #include "MaterialFXGraphMan.h"
 
+#include "IEditorImpl.h"
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/Controls/HyperGraphEditorWnd.h"
+#include <Util/FileUtil.h>
 
 #include <CryAction/IMaterialEffects.h>
 
@@ -175,4 +177,3 @@ void CMaterialFXGraphMan::ClearEditorGraphs()
 
 	m_matFxGraphs.clear();
 }
-

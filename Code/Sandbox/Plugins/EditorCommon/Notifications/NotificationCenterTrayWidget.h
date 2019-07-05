@@ -1,15 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QToolButton>
-#include "NotificationCenter.h"
-
+#include "Notifications/NotificationCenter.h"
 #include "EditorCommonAPI.h"
 #include "QtViewPane.h"
 
-class QVBoxLayout;
+#include <QToolButton>
+
+class CNotificationPopupManager;
 class CNotificationWidget;
 class QPopupWidget;
+class QVBoxLayout;
 
 //! Dockable for whole notification center to be used as a tool window
 
@@ -22,7 +23,7 @@ public:
 	//////////////////////////////////////////////////////////
 	// CDockableWidget implementation
 	virtual const char* GetPaneTitle() const override { return "Notification Center"; }
-	virtual QRect       GetPaneRect() override { return QRect(0, 0, 640, 400); }
+	virtual QRect       GetPaneRect() override        { return QRect(0, 0, 640, 400); }
 	//////////////////////////////////////////////////////////
 };
 
@@ -61,9 +62,8 @@ protected:
 	virtual bool eventFilter(QObject* pWatched, QEvent* pEvent) override;
 
 protected:
-	QPopupWidget*                  m_pPopUpMenu;
-	class CNotificationPopupManager* m_pPopUpManager;
+	QPopupWidget*              m_pPopUpMenu;
+	CNotificationPopupManager* m_pPopUpManager;
 	// Set to the maximum warning type emitted. Resets when acknowledged by user.
-	int                              m_notificationType;
+	int                        m_notificationType;
 };
-

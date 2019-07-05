@@ -19,6 +19,8 @@
 #endif
 
 #include <CryScriptSystem/IScriptSystem.h>
+#include <CryMemory/CrySizer.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // forward declarations.
 class CFlock;

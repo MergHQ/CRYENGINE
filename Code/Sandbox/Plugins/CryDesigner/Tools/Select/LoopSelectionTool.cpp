@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "LoopSelectionTool.h"
-#include "DesignerEditor.h"
-#include "Util/ElementSet.h"
+
 #include "Core/LoopPolygons.h"
+#include "Core/Model.h"
+#include "Util/ElementSet.h"
+#include "DesignerEditor.h"
 #include "DesignerSession.h"
 
 namespace Designer
@@ -129,7 +131,6 @@ bool LoopSelectionTool::SelectLoop(MainContext& mc, const BrushEdge3D& initialEd
 	BrushEdge3D edge = initialEdge;
 	ElementSet edgeElements;
 
-	int nCount = 0;
 	bool bLoop = false;
 
 	for (int i = 0; i < 2; ++i)
@@ -385,4 +386,3 @@ PolygonPtr LoopSelectionTool::FindAdjacentNextPolygon(MainContext& mc, PolygonPt
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Loop, eToolGroup_Selection, "Loop", LoopSelectionTool,
                                    loopselection, "runs loop selection tool", "designer.loopselection")
-

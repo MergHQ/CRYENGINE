@@ -18,6 +18,8 @@
 
 #include "IGameObject.h"
 #include <CryParticleSystem/IParticles.h>
+#include <CryPhysics/physinterface.h>
+#include "IVehicleSystem.h"
 
 // Summary
 //   Types for the different kind of messages.
@@ -426,7 +428,7 @@ struct ExplosionInfo
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(angle == 0.0f, "Non zero explosion angles are not supported in multiplayer");
+			CRY_ASSERT(angle == 0.0f, "Non zero explosion angles are not supported in multiplayer");
 		}
 
 		ser.Value("pressure", pressure, 'hPrs');
@@ -559,7 +561,7 @@ struct IGameRules : public IGameObjectExtension
 	//   type - indicated the message type
 	//   msg - the message to be sent
 	virtual void SendTextMessage(ETextMessageType type, const char* msg, uint32 to = eRMI_ToAllClients, int channelId = -1,
-	                             const char* p0 = 0, const char* p1 = 0, const char* p2 = 0, const char* p3 = 0) = 0;
+		const char* p0 = 0, const char* p1 = 0, const char* p2 = 0, const char* p3 = 0) = 0;
 
 	// Summary
 	//   Broadcasts a chat message to the clients in the game which are part of the target
@@ -620,6 +622,10 @@ struct IGameRules : public IGameObjectExtension
 	// Parameters
 	//   playerId - Id of the player attempting to enter a vehicle
 	virtual bool CanEnterVehicle(EntityId playerId) = 0;
+
+	// Summary
+	//   Resolves Vehicle event
+	virtual void OnVehicleEvent(IVehicle* pVehicle, EVehicleEvent event, const SVehicleEventParams& params) {}
 
 	// Summary
 	//   Prepares an entity to be allowed to respawn

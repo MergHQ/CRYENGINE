@@ -808,9 +808,6 @@ void CAIGroup::Update()
 {
 	CCCPOINT(CAIGroup_Update);
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	CAISystem* pAISystem(GetAISystem());
-
 	UpdateReinforcementLogic();
 }
 
@@ -1087,10 +1084,12 @@ void CAIGroup::UpdateReinforcementLogic()
 
 				// Tell the agent to call reinforcements.
 				CAIActor* const pUnit = CastToCAIActorSafe(pNearestCallerImg->m_refUnit.GetAIObject());
-				AISignalExtraData* pData = new AISignalExtraData;
+				AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 				pData->nID = nearestSpot->pAI->GetEntityID();
 				pData->iValue = nearestSpot->type;
-				pUnit->SetSignal(1, "OnCallReinforcements", pUnit->GetEntity(), pData);
+
+				AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCallReinforcements_DEPRECATED(), pUnit->GetEntityID(), pData);
+				pUnit->SetSignal(signal);
 				pNearestCallerImg->m_lastReinforcementTime = GetAISystem()->GetFrameStartTime();
 
 #ifdef CRYAISYSTEM_DEBUG
@@ -1320,7 +1319,7 @@ void CAIGroup::Serialize(TSerialize ser)
 void CAIGroup::DebugDraw()
 {
 	// Debug draw reinforcement logic.
-	if (gAIEnv.CVars.DebugDrawReinforcements == m_groupID)
+	if (gAIEnv.CVars.legacyGroupSystem.DebugDrawReinforcements == m_groupID)
 	{
 
 		int totalCount = 0;

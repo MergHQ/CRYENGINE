@@ -80,4 +80,3 @@ int QScrollableBox::indexOf(QWidget* w)
 {
 	return m_layout->indexOf(w);
 }
-

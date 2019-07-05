@@ -3,23 +3,22 @@
 #include "StdAfx.h"
 #include "TrackViewWindow.h"
 
+#include "Controls/SequenceTabWidget.h"
 #include "TrackViewComponentsManager.h"
 #include "TrackViewBatchRenderDlg.h"
 #include "TrackViewSequenceDialog.h"
 #include "TrackViewEventsDialog.h"
 #include "TrackViewExporter.h"
 #include "TrackViewPlugin.h"
-#include "Controls/SequenceTabWidget.h"
-#include "Timeline.h"
 
-#include "Menu/AbstractMenu.h"
-#include "QControls.h"
+#include <EditorFramework/Events.h>
+#include <Menu/AbstractMenu.h>
+#include <QControls.h>
+#include <Timeline.h>
 
-#include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QKeyEvent>
-#include <QToolBar>
 #include <QSplitter>
+#include <QVBoxLayout>
 
 std::vector<CTrackViewWindow*> CTrackViewWindow::ms_trackViewWindows;
 
@@ -41,13 +40,7 @@ CTrackViewWindow::CTrackViewWindow(QWidget* pParent)
 		pToolBarsFrame->addToolBar(Qt::ToolBarArea::TopToolBarArea, pComponentsManager->GetTrackViewSequenceToolbar());
 		pToolBarsFrame->addToolBar(Qt::ToolBarArea::TopToolBarArea, pComponentsManager->GetTrackViewKeysToolbar());
 
-		QToolBar* pCurveEditorToolbar = new QToolBar("Curve Controls");
-		pToolBarsFrame->addToolBar(Qt::ToolBarArea::TopToolBarArea, pCurveEditorToolbar);
-
 		pWindowLayout->addWidget(pToolBarsFrame);
-
-		CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget();
-		pSequenceTabWidget->SetToolbar(pCurveEditorToolbar);
 
 		QSplitter* pContentLayout = new QSplitter(Qt::Horizontal);
 		pContentLayout->setContentsMargins(0, 0, 0, 0);
@@ -72,8 +65,95 @@ CTrackViewWindow::CTrackViewWindow(QWidget* pParent)
 
 	stl::push_back_unique(ms_trackViewWindows, this);
 
+	RegisterActions();
 	InitMenu();
- 	InstallReleaseMouseFilter(this);
+}
+
+void CTrackViewWindow::RegisterActions()
+{
+	RegisterAction("general.new", &CTrackViewWindow::OnNew);
+	RegisterAction("general.open", &CTrackViewWindow::OnOpen);
+	RegisterAction("general.close", &CTrackViewWindow::OnClose);
+	RegisterAction("general.undo", &CTrackViewWindow::OnUndo);
+	RegisterAction("general.redo", &CTrackViewWindow::OnRedo);
+	RegisterAction("general.copy", &CTrackViewWindow::OnCopy);
+	RegisterAction("general.cut", &CTrackViewWindow::OnCut);
+	RegisterAction("general.paste", &CTrackViewWindow::OnPaste);
+	RegisterAction("general.delete", &CTrackViewWindow::OnDelete);
+	RegisterAction("general.duplicate", &CTrackViewWindow::OnDuplicate);
+	RegisterAction("general.zoom_in", &CTrackViewWindow::OnZoomIn);
+	RegisterAction("general.zoom_out", &CTrackViewWindow::OnZoomOut);
+	RegisterAction("general.toggle_sync_selection", &CTrackViewWindow::OnToggleSyncSelection);
+
+	RegisterAction("trackview.delete_sequence", &CTrackViewWindow::OnDeleteSequence);
+	RegisterAction("trackview.import_from_fbx", &CTrackViewWindow::OnImportSequence);
+	RegisterAction("trackview.export_to_fbx", &CTrackViewWindow::OnExportSequence);
+	RegisterAction("trackview.new_event", &CTrackViewWindow::OnNewEvent);
+	RegisterAction("trackview.show_events", &CTrackViewWindow::OnShowAllEvents);
+	RegisterAction("trackview.toggle_show_dopesheet", &CTrackViewWindow::OnToggleShowDopesheet);
+	RegisterAction("trackview.toggle_show_curve_editor", &CTrackViewWindow::OnToggleShowCurveEditor);
+	RegisterAction("trackview.show_sequence_properties", &CTrackViewWindow::OnSequenceProperties);
+	RegisterAction("trackview.toggle_link_timelines", &CTrackViewWindow::OnToggleLinkTimelines);
+	RegisterAction("trackview.set_units_ticks", &CTrackViewWindow::OnSetUnitsTicks);
+	RegisterAction("trackview.set_units_framecode", &CTrackViewWindow::OnSetUnitsFramecode);
+	RegisterAction("trackview.set_units_time", &CTrackViewWindow::OnSetUnitsTime);
+	RegisterAction("trackview.set_units_frames", &CTrackViewWindow::OnSetUnitsFrames);
+	RegisterAction("trackview.go_to_start", &CTrackViewWindow::OnGoToStart);
+	RegisterAction("trackview.go_to_end", &CTrackViewWindow::OnGoToEnd);
+	RegisterAction("trackview.pause_play", &CTrackViewWindow::OnPlayPause);
+	RegisterAction("trackview.stop", &CTrackViewWindow::OnStop);
+	RegisterAction("trackview.record", &CTrackViewWindow::OnRecord);
+	RegisterAction("trackview.go_to_next_key", &CTrackViewWindow::OnGoToNextKey);
+	RegisterAction("trackview.go_to_prev_key", &CTrackViewWindow::OnGoToPrevKey);
+	RegisterAction("trackview.toogle_loop", &CTrackViewWindow::OnToggleLoop);
+	RegisterAction("trackview.set_playback_start", &CTrackViewWindow::OnSetPlaybackStart);
+	RegisterAction("trackview.set_playback_end", &CTrackViewWindow::OnSetPlaybackEnd);
+	RegisterAction("trackview.reset_playback_start_end", &CTrackViewWindow::OnResetPlaybackStartEnd);
+	RegisterAction("trackview.render_sequence", &CTrackViewWindow::OnRender);
+	RegisterAction("trackview.create_light_animation_set", &CTrackViewWindow::OnLightAnimationSet);
+	RegisterAction("trackview.sync_selected_tracks_to_base_position", &CTrackViewWindow::OnSyncSelectedTracksToBasePosition);
+	RegisterAction("trackview.sync_selected_tracks_from_base_position", &CTrackViewWindow::OnSyncSelectedTracksFromBasePosition);
+	RegisterAction("trackview.no_snap", &CTrackViewWindow::OnNoSnap);
+	RegisterAction("trackview.magnet_snap", &CTrackViewWindow::OnMagnetSnap);
+	RegisterAction("trackview.frame_snap", &CTrackViewWindow::OnFrameSnap);
+	RegisterAction("trackview.grid_snap", &CTrackViewWindow::OnGridSnap);
+	RegisterAction("trackview.delete_selected_tracks", &CTrackViewWindow::OnDeleteSelectedTracks);
+	RegisterAction("trackview.disable_selected_tracks", &CTrackViewWindow::OnDisableSelectedTracks);
+	RegisterAction("trackview.mute_selected_tracks", &CTrackViewWindow::OnMuteSelectedTracks);
+	RegisterAction("trackview.enable_selected_tracks", &CTrackViewWindow::OnEnableSelectedTracks);
+	RegisterAction("trackview.select_move_keys_tool", &CTrackViewWindow::OnSelectMoveKeysTool);
+	RegisterAction("trackview.select_slide_keys_tool", &CTrackViewWindow::OnSelectSlideKeysTool);
+	RegisterAction("trackview.select_scale_keys_tool", &CTrackViewWindow::OnSelectScaleKeysTools);
+	RegisterAction("trackview.set_tangent_auto", &CTrackViewWindow::OnSetTangentAuto);
+	RegisterAction("trackview.set_tangent_in_zero", &CTrackViewWindow::OnSetTangentInZero);
+	RegisterAction("trackview.set_tangent_in_step", &CTrackViewWindow::OnSetTangentInStep);
+	RegisterAction("trackview.set_tangent_in_linear", &CTrackViewWindow::OnSetTangentInLinear);
+	RegisterAction("trackview.set_tangent_out_zero", &CTrackViewWindow::OnSetTangentOutZero);
+	RegisterAction("trackview.set_tangent_out_step", &CTrackViewWindow::OnSetTangentOutStep);
+	RegisterAction("trackview.set_tangent_out_linear", &CTrackViewWindow::OnSetTangentOutLinear);
+	RegisterAction("trackview.break_tangents", &CTrackViewWindow::OnBreakTangents);
+	RegisterAction("trackview.unify_tangents", &CTrackViewWindow::OnUnifyTangents);
+	RegisterAction("trackview.fit_view_horizontal", &CTrackViewWindow::OnFitViewHorizontal);
+	RegisterAction("trackview.fit_view_vertical", &CTrackViewWindow::OnFitViewVertical);
+	RegisterAction("trackview.add_track_position", &CTrackViewWindow::OnAddTrackPosition);
+	RegisterAction("trackview.add_track_rotation", &CTrackViewWindow::OnAddTrackRotation);
+	RegisterAction("trackview.add_track_scale", &CTrackViewWindow::OnAddTrackScale);
+	RegisterAction("trackview.add_track_visibility", &CTrackViewWindow::OnAddTrackVisibility);
+	RegisterAction("trackview.add_track_animation", &CTrackViewWindow::OnAddTrackAnimation);
+	RegisterAction("trackview.add_track_mannequin", &CTrackViewWindow::OnAddTrackMannequin);
+	RegisterAction("trackview.add_track_noise", &CTrackViewWindow::OnAddTrackNoise);
+	RegisterAction("trackview.add_track_audio_file", &CTrackViewWindow::OnAddTrackAudioFile);
+	RegisterAction("trackview.add_track_audio_parameter", &CTrackViewWindow::OnAddTrackAudioParameter);
+	RegisterAction("trackview.add_track_audio_switch", &CTrackViewWindow::OnAddTrackAudioSwitch);
+	RegisterAction("trackview.add_track_audio_trigger", &CTrackViewWindow::OnAddTrackAudioTrigger);
+	RegisterAction("trackview.add_track_drs_signal", &CTrackViewWindow::OnAddTrackDRSSignal);
+	RegisterAction("trackview.add_track_event", &CTrackViewWindow::OnAddTrackEvent);
+	RegisterAction("trackview.add_track_expression", &CTrackViewWindow::OnAddTrackExpression);
+	RegisterAction("trackview.add_track_facial_sequence", &CTrackViewWindow::OnAddTrackFacialSequence);
+	RegisterAction("trackview.add_track_look_at", &CTrackViewWindow::OnAddTrackLookAt);
+	RegisterAction("trackview.add_track_physicalize", &CTrackViewWindow::OnAddTrackPhysicalize);
+	RegisterAction("trackview.add_track_physics_driven", &CTrackViewWindow::OnAddTrackPhysicsDriven);
+	RegisterAction("trackview.add_track_procedural_eyes", &CTrackViewWindow::OnAddTrackProceduralEyes);
 }
 
 CTrackViewWindow::~CTrackViewWindow()
@@ -121,6 +201,12 @@ void CTrackViewWindow::SetLayout(const QVariantMap& state)
 		tabWidget->ShowKeyText(keyTextVar.toBool());
 	}
 
+	QVariant syncSelectionVar = state.value("syncSelection");
+	if (syncSelectionVar.isValid())
+	{
+		tabWidget->SyncSelection(syncSelectionVar.toBool());
+	}
+
 	QVariant snapModeVar = state.value("snapMode");
 	if (snapModeVar.isValid())
 	{
@@ -141,21 +227,19 @@ QVariantMap CTrackViewWindow::GetLayout() const
 	state.insert("dopesheetVisible", tabWidget->IsDopeSheetVisible());
 	state.insert("curveVisible", tabWidget->IsCurveEditorVisible());
 	state.insert("keyText", tabWidget->IsShowingKeyText());
+	state.insert("syncSelection", tabWidget->IsSyncSelectionEnabled());
 	state.insert("snapMode", m_pTrackViewCore->GetCurrentSnapMode());
 	return state;
 }
 
 void CTrackViewWindow::InitMenu()
 {
-	CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager();
-
 	const CEditor::MenuItems items[] = {
 		CEditor::MenuItems::FileMenu,
 		CEditor::MenuItems::EditMenu,CEditor::MenuItems::ViewMenu,  CEditor::MenuItems::New,
 		CEditor::MenuItems::Open,    CEditor::MenuItems::Close,     CEditor::MenuItems::Undo,
 		CEditor::MenuItems::Redo,    CEditor::MenuItems::Copy,      CEditor::MenuItems::Cut,
-		CEditor::MenuItems::Paste,   CEditor::MenuItems::Delete,    CEditor::MenuItems::Duplicate
-	};
+		CEditor::MenuItems::Paste,   CEditor::MenuItems::Delete,    CEditor::MenuItems::Duplicate };
 	AddToMenu(&items[0], CRY_ARRAY_COUNT(items));
 
 	{
@@ -187,7 +271,7 @@ void CTrackViewWindow::InitMenu()
 		connect(action, &QAction::triggered, this, &CTrackViewWindow::OnShowAllEvents);
 	}
 
-	CAbstractMenu* const pPlaybackMenu = GetMenu(tr("Playback"));
+	CAbstractMenu* const pPlaybackMenu = GetRootMenu()->CreateMenu(tr("Playback"), 0);
 	pPlaybackMenu->signalAboutToShow.Connect([pPlaybackMenu, this]()
 	{
 		pPlaybackMenu->Clear();
@@ -209,12 +293,12 @@ void CTrackViewWindow::InitMenu()
 		auto action = pViewMenu->CreateAction(tr("Show Dopesheet"), sec);
 		action->setCheckable(true);
 		action->setChecked(pComponentsManager->GetTrackViewSequenceTabWidget()->IsDopeSheetVisible());
-		connect(action, &QAction::triggered, pComponentsManager->GetTrackViewSequenceTabWidget(), &CTrackViewSequenceTabWidget::ShowDopeSheet);
+		connect(action, &QAction::triggered, this, &CTrackViewWindow::OnToggleShowDopesheet);
 
 		action = pViewMenu->CreateAction(tr("Show Curve Editor"), sec);
 		action->setCheckable(true);
 		action->setChecked(pComponentsManager->GetTrackViewSequenceTabWidget()->IsCurveEditorVisible());
-		connect(action, &QAction::triggered, pComponentsManager->GetTrackViewSequenceTabWidget(), &CTrackViewSequenceTabWidget::ShowCurveEditor);
+		connect(action, &QAction::triggered, this, &CTrackViewWindow::OnToggleShowCurveEditor);
 
 		action = pViewMenu->CreateAction(tr("Sequence Properties"), sec);
 		connect(action, &QAction::triggered, this, &CTrackViewWindow::OnSequenceProperties);
@@ -224,12 +308,22 @@ void CTrackViewWindow::InitMenu()
 		action = pViewMenu->CreateAction(tr("Link Timelines"), sec);
 		action->setCheckable(true);
 		action->setChecked(pComponentsManager->GetTrackViewSequenceTabWidget()->IsTimelineLinkEnabled());
-		connect(action, &QAction::triggered, pComponentsManager->GetTrackViewSequenceTabWidget(), &CTrackViewSequenceTabWidget::EnableTimelineLink);
+		connect(action, &QAction::triggered, this, &CTrackViewWindow::OnToggleLinkTimelines);
 
 		action = pViewMenu->CreateAction(tr("Show Key Text"), sec);
 		action->setCheckable(true);
 		action->setChecked(pComponentsManager->GetTrackViewSequenceTabWidget()->IsShowingKeyText());
 		connect(action, &QAction::triggered, pComponentsManager->GetTrackViewSequenceTabWidget(), &CTrackViewSequenceTabWidget::ShowKeyText);
+
+		action = pViewMenu->CreateAction(tr("Sync Selection"), sec);
+		action->setCheckable(true);
+		action->setChecked(pComponentsManager->GetTrackViewSequenceTabWidget()->IsSyncSelectionEnabled());
+		connect(action, &QAction::triggered, pComponentsManager->GetTrackViewSequenceTabWidget(), &CTrackViewSequenceTabWidget::SyncSelection);
+
+		action = pViewMenu->CreateAction(tr("Invert Scrubber Snapping Behavior"), sec);
+		action->setCheckable(true);
+		action->setChecked(pComponentsManager->GetTrackViewSequenceTabWidget()->IsScrubberSnappingBehaviorInverted());
+		connect(action, &QAction::triggered, pComponentsManager->GetTrackViewSequenceTabWidget(), &CTrackViewSequenceTabWidget::InvertScrubberSnappingBehavior);
 
 		sec = pViewMenu->GetNextEmptySection();
 		pViewMenu->SetSectionName(sec, "Units");
@@ -237,25 +331,25 @@ void CTrackViewWindow::InitMenu()
 		action = pViewMenu->CreateAction(tr("Ticks"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_pTrackViewCore->GetCurrentDisplayMode() == SAnimTime::EDisplayMode::Ticks);
-		action->connect(action, &QAction::triggered, [this]() { OnUnitsChanged(SAnimTime::EDisplayMode::Ticks); });
+		action->connect(action, &QAction::triggered, this, &CTrackViewWindow::OnSetUnitsTicks);
 
 		action = pViewMenu->CreateAction(tr("Time"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_pTrackViewCore->GetCurrentDisplayMode() == SAnimTime::EDisplayMode::Time);
-		action->connect(action, &QAction::triggered, [this]() { OnUnitsChanged(SAnimTime::EDisplayMode::Time); });
+		action->connect(action, &QAction::triggered, this, &CTrackViewWindow::OnSetUnitsTime);
 
 		action = pViewMenu->CreateAction(tr("Timecode"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_pTrackViewCore->GetCurrentDisplayMode() == SAnimTime::EDisplayMode::Timecode);
-		action->connect(action, &QAction::triggered, [this]() { OnUnitsChanged(SAnimTime::EDisplayMode::Timecode); });
+		action->connect(action, &QAction::triggered, this, &CTrackViewWindow::OnSetUnitsFramecode);
 
 		action = pViewMenu->CreateAction(tr("Frames"), sec);
 		action->setCheckable(true);
 		action->setChecked(m_pTrackViewCore->GetCurrentDisplayMode() == SAnimTime::EDisplayMode::Frames);
-		action->connect(action, &QAction::triggered, [this]() { OnUnitsChanged(SAnimTime::EDisplayMode::Frames); });
+		action->connect(action, &QAction::triggered, this, &CTrackViewWindow::OnSetUnitsFrames);
 	});
 
-	CAbstractMenu* const pToolsMenu = GetMenu(tr("Tools"));
+	CAbstractMenu* const pToolsMenu = GetRootMenu()->CreateMenu(tr("Tools"), 0);
 	pToolsMenu->signalAboutToShow.Connect([pToolsMenu, this]()
 	{
 		pToolsMenu->Clear();
@@ -265,7 +359,7 @@ void CTrackViewWindow::InitMenu()
 		int sec = pToolsMenu->GetNextEmptySection();
 
 		action = pToolsMenu->CreateAction(tr(gEnv->pMovieSystem->FindSequence("_LightAnimationSet") != nullptr ? "Open Light Animation Set" : "Create Light Animation Set"), sec);
-		action->connect(action, &QAction::triggered, [this]() { OnLightAnimationSet(); });
+		action->connect(action, &QAction::triggered, this, &CTrackViewWindow::OnLightAnimationSet);
 	});
 }
 
@@ -324,7 +418,6 @@ bool CTrackViewWindow::OnUndo()
 
 bool CTrackViewWindow::OnRedo()
 {
-
 	auto pTabWidget = m_pTrackViewCore->GetComponentsManager()->GetTrackViewSequenceTabWidget();
 	if (pTabWidget)
 	{
@@ -442,35 +535,43 @@ bool CTrackViewWindow::OnZoomOut()
 	return true;
 }
 
-void CTrackViewWindow::OnExportSequence()
+bool CTrackViewWindow::OnExportSequence()
 {
 	CTrackViewPlugin::GetExporter()->ExportToFile(true);
+	return true;
 }
 
-void CTrackViewWindow::OnImportSequence()
+bool CTrackViewWindow::OnImportSequence()
 {
 	CTrackViewPlugin::GetExporter()->ImportFromFile();
+	return true;
 }
 
-void CTrackViewWindow::OnUnitsChanged(SAnimTime::EDisplayMode mode)
+bool CTrackViewWindow::OnUnitsChanged(SAnimTime::EDisplayMode mode)
 {
 	m_pTrackViewCore->SetDisplayMode(mode);
 	m_pTrackViewCore->UpdateProperties();
+
+	return true;
 }
 
-void CTrackViewWindow::OnRender()
+bool CTrackViewWindow::OnRender()
 {
 	CTrackViewBatchRenderDlg dlg;
 	dlg.exec();
+
+	return true;
 }
 
-void CTrackViewWindow::OnDeleteSequence()
+bool CTrackViewWindow::OnDeleteSequence()
 {
 	CTrackViewSequenceDialog dialog(CTrackViewSequenceDialog::DeleteSequences);
 	dialog.exec();
+
+	return true;
 }
 
-void CTrackViewWindow::OnSequenceProperties()
+bool CTrackViewWindow::OnSequenceProperties()
 {
 	if (CTrackViewComponentsManager* pManager = m_pTrackViewCore->GetComponentsManager())
 	{
@@ -482,9 +583,11 @@ void CTrackViewWindow::OnSequenceProperties()
 			}
 		}
 	}
+
+	return true;
 }
 
-void CTrackViewWindow::OnNewEvent()
+bool CTrackViewWindow::OnNewEvent()
 {
 	if (CTrackViewComponentsManager* pManager = m_pTrackViewCore->GetComponentsManager())
 	{
@@ -500,9 +603,11 @@ void CTrackViewWindow::OnNewEvent()
 			}
 		}
 	}
+
+	return true;
 }
 
-void CTrackViewWindow::OnShowAllEvents()
+bool CTrackViewWindow::OnShowAllEvents()
 {
 	if (CTrackViewComponentsManager* pManager = m_pTrackViewCore->GetComponentsManager())
 	{
@@ -515,9 +620,11 @@ void CTrackViewWindow::OnShowAllEvents()
 			}
 		}
 	}
+
+	return true;
 }
 
-void CTrackViewWindow::OnLightAnimationSet()
+bool CTrackViewWindow::OnLightAnimationSet()
 {
 	CTrackViewSequence* pLightAnimSeq = CTrackViewPlugin::GetSequenceManager()->GetSequenceByName("_LightAnimationSet");
 	if (!pLightAnimSeq)
@@ -527,6 +634,737 @@ void CTrackViewWindow::OnLightAnimationSet()
 	}
 
 	m_pTrackViewCore->OpenSequence(pLightAnimSeq->GetGUID());
+	return true;
+}
+
+bool CTrackViewWindow::OnToggleShowDopesheet()
+{
+	CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager();
+	if (pComponentsManager)
+	{
+		CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget();
+		if (pSequenceTabWidget)
+		{
+			pSequenceTabWidget->ShowDopeSheet(!pSequenceTabWidget->IsDopeSheetVisible());
+		}
+	}
+
+	return true;
+}
+
+bool CTrackViewWindow::OnToggleShowCurveEditor()
+{
+	CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager();
+	if (pComponentsManager)
+	{
+		CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget();
+		if (pSequenceTabWidget)
+		{
+			pSequenceTabWidget->ShowCurveEditor(!pSequenceTabWidget->IsCurveEditorVisible());
+		}
+	}
+
+	return true;
+}
+
+bool CTrackViewWindow::OnToggleLinkTimelines()
+{
+	CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager();
+	if (pComponentsManager)
+	{
+		CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget();
+		if (pSequenceTabWidget)
+		{
+			pSequenceTabWidget->EnableTimelineLink(!pSequenceTabWidget->IsTimelineLinkEnabled());
+		}
+	}
+
+	return true;
+}
+
+bool CTrackViewWindow::OnToggleSyncSelection()
+{
+	CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager();
+	if (pComponentsManager)
+	{
+		CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget();
+		if (pSequenceTabWidget)
+		{
+			pSequenceTabWidget->SyncSelection(!pSequenceTabWidget->IsSyncSelectionEnabled());
+		}
+	}
+
+	return true;
+}
+
+bool CTrackViewWindow::OnSetUnitsTicks()
+{
+	return OnUnitsChanged(SAnimTime::EDisplayMode::Ticks);
+}
+
+bool CTrackViewWindow::OnSetUnitsTime()
+{
+	return OnUnitsChanged(SAnimTime::EDisplayMode::Time);
+}
+
+bool CTrackViewWindow::OnSetUnitsFramecode()
+{
+	return OnUnitsChanged(SAnimTime::EDisplayMode::Timecode);
+}
+
+bool CTrackViewWindow::OnSetUnitsFrames()
+{
+	return OnUnitsChanged(SAnimTime::EDisplayMode::Frames);
+}
+
+bool CTrackViewWindow::OnGoToStart()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnGoToStart();
+		}
+	}
+
+	return true;
+}
+
+bool CTrackViewWindow::OnGoToEnd()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnGoToEnd();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnPlayPause()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnPlayPause(!m_pTrackViewCore->IsPlaying() || m_pTrackViewCore->IsPaused());
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnStop()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnStop();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnRecord()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnRecord(!m_pTrackViewCore->IsRecording());
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnGoToNextKey()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewKeysToolbar* pKeysToolbar = pComponentsManager->GetTrackViewKeysToolbar())
+		{
+			pKeysToolbar->OnGoToNextKey();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnGoToPrevKey()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewKeysToolbar* pKeysToolbar = pComponentsManager->GetTrackViewKeysToolbar())
+		{
+			pKeysToolbar->OnGoToPreviousKey();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnToggleLoop()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnLoop(!m_pTrackViewCore->IsLooping());
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetPlaybackStart()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnSetStartMarker();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetPlaybackEnd()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnSetEndMarker();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnResetPlaybackStartEnd()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewPlaybackControlsToolbar* pPlaybackControlsToolbar = pComponentsManager->GetTrackViewPlaybackToolbar())
+		{
+			pPlaybackControlsToolbar->OnResetMarkers();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSyncSelectedTracksToBasePosition()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewKeysToolbar* pKeysToolbar = pComponentsManager->GetTrackViewKeysToolbar())
+		{
+			pKeysToolbar->OnSyncSelectedTracksToBase();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSyncSelectedTracksFromBasePosition()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewKeysToolbar* pKeysToolbar = pComponentsManager->GetTrackViewKeysToolbar())
+		{
+			pKeysToolbar->OnSyncSelectedTracksFromBase();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnNoSnap()
+{
+	m_pTrackViewCore->SetSnapMode(eSnapMode_NoSnapping);
+	return true;
+}
+
+bool CTrackViewWindow::OnMagnetSnap()
+{
+	m_pTrackViewCore->SetSnapMode(eSnapMode_KeySnapping);
+	return true;
+}
+
+bool CTrackViewWindow::OnFrameSnap()
+{
+	m_pTrackViewCore->SetSnapMode(eSnapMode_TimeSnapping);
+	return true;
+}
+
+bool CTrackViewWindow::OnGridSnap()
+{
+	return true;
+}
+
+bool CTrackViewWindow::OnDeleteSelectedTracks()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnDeleteNodes();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnDisableSelectedTracks()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->DisableSelectedNodesAndTracks(true);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnMuteSelectedTracks()
+{
+	return true;
+}
+
+bool CTrackViewWindow::OnEnableSelectedTracks()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->DisableSelectedNodesAndTracks(false);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSelectMoveKeysTool()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewKeysToolbar* pKeysToolbar = pComponentsManager->GetTrackViewKeysToolbar())
+		{
+			pKeysToolbar->OnMoveKeys();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSelectSlideKeysTool()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewKeysToolbar* pKeysToolbar = pComponentsManager->GetTrackViewKeysToolbar())
+		{
+			pKeysToolbar->OnSlideKeys();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSelectScaleKeysTools()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewKeysToolbar* pKeysToolbar = pComponentsManager->GetTrackViewKeysToolbar())
+		{
+			pKeysToolbar->OnScaleKeys();
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetTangentAuto()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnSetSelectedKeysTangentAuto();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetTangentInZero()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnSetSelectedKeysInTangentZero();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetTangentInStep()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnSetSelectedKeysInTangentStep();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetTangentInLinear()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnSetSelectedKeysInTangentLinear();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetTangentOutZero()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnSetSelectedKeysOutTangentZero();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetTangentOutStep()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnSetSelectedKeysOutTangentStep();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnSetTangentOutLinear()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnSetSelectedKeysOutTangentLinear();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnBreakTangents()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnBreakTangents();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnUnifyTangents()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnUnifyTangents();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnFitViewHorizontal()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnFitCurvesHorizontally();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnFitViewVertical()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			if (CCurveEditor* pCurveEditor = pSequenceTabWidget->GetActiveCurveEditor())
+			{
+				pCurveEditor->OnFitCurvesVertically();
+			}
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackPosition()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Position);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackRotation()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Rotation);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackScale()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Scale);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackVisibility()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Visibility);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackAnimation()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Animation);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackMannequin()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Mannequin);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackNoise()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrack(eAnimParamType_TransformNoise);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackAudioFile()
+{
+	//if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	//{
+	//	if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+	//	{
+	//		pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_AudioFile);
+	//	}
+	//}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackAudioParameter()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_AudioParameter);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackAudioSwitch()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_AudioSwitch);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackAudioTrigger()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_AudioTrigger);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackDRSSignal()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_DynamicResponseSignal);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackEvent()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Event);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackExpression()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Expression);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackFacialSequence()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_FaceSequence);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackLookAt()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_LookAt);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackPhysicalize()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_Physicalize);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackPhysicsDriven()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_PhysicsDriven);
+		}
+	}
+	return true;
+}
+
+bool CTrackViewWindow::OnAddTrackProceduralEyes()
+{
+	if (CTrackViewComponentsManager* pComponentsManager = m_pTrackViewCore->GetComponentsManager())
+	{
+		if (CTrackViewSequenceTabWidget* pSequenceTabWidget = pComponentsManager->GetTrackViewSequenceTabWidget())
+		{
+			pSequenceTabWidget->OnAddTrackToSelectedNode(eAnimParamType_ProceduralEyes);
+		}
+	}
+	return true;
 }
 
 void CTrackViewWindow::keyPressEvent(QKeyEvent* e)
@@ -539,4 +1377,3 @@ void CTrackViewWindow::keyPressEvent(QKeyEvent* e)
 			m_pTrackViewCore->OnPlayPause(m_pTrackViewCore->IsPaused());
 	}
 }
-

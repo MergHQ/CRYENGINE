@@ -7,9 +7,11 @@
 # pragma once
 #endif
 
+#include "IGameObject.h"
 
 
 class CProjectile;
+struct EventPhysCollision;
 
 
 class CDeflectorShield : public CGameObjectExtensionHelper<CDeflectorShield, IGameObjectExtension>
@@ -55,7 +57,7 @@ public:
 	virtual void Update(SEntityUpdateContext& ctx, int updateSlot);
 	virtual void HandleEvent(const SGameObjectEvent& event);
 	virtual void ProcessEvent(const SEntityEvent& event);	
-	virtual uint64 GetEventMask() const { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const { return Cry::Entity::EventFlags(); }
 	virtual void SetChannelId(uint16 id);
 	virtual const void * GetRMIBase() const;
 	virtual void PostUpdate(float frameTime);

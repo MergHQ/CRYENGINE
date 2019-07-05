@@ -28,7 +28,7 @@ void CEntityUtilsComponent::Register(IEnvRegistrar& registrar)
 {
 	CEnvRegistrationScope scope = registrar.Scope(IEntity::GetEntityScopeGUID());
 	{
-		CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityUtilsComponent));
+		scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(CEntityUtilsComponent));
 	}
 }
 

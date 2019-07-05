@@ -2,10 +2,13 @@
 #pragma once
 
 #include <CryCore/BaseTypes.h>
+#include <CryCore/smartptr.h>
 #include <CryNetwork/SerializeFwd.h>
 
 #include <CryEntitySystem/IEntityBasicTypes.h>
 #include <CrySchematyc/Utils/EnumFlags.h>
+#include <CryCore/smartptr.h>
+#include "ISerialize.h"
 
 struct IEntityComponent;
 

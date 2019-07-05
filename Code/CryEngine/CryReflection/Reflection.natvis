@@ -1,0 +1,205 @@
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+ <Type Name="Cry::Reflection::CAny">
+  <DisplayString Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == false">{*(CryStringT&lt;wchar_t&gt;*)&amp;m_data} (wstring)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == true">{(CryStringT&lt;wchar_t&gt;*)&amp;m_data} (wstring*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == false">{*(CryStringT&lt;char&gt;*)&amp;m_data} (string)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == true">{(CryStringT&lt;char&gt;*)&amp;m_data} (string*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == false">{*(Quat_tpl&lt;float&gt;*)m_data} (Quat)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == true">{(Quat_tpl&lt;float&gt;*)m_data} (Quat*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == false">{*(Matrix44H&lt;float&gt;*)m_data} (Matrix44)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == true">{(Matrix44H&lt;float&gt;*)m_data} (Matrix44*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == false">{*(Matrix34H&lt;float&gt;*)m_data} (Matrix34)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == true">{(Matrix34H&lt;float&gt;*)m_data} (Matrix34*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == false">{*(Matrix33_tpl&lt;float&gt;*)m_data} (Matrix33)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == true">{(Matrix33_tpl&lt;float&gt;*)m_data} (Matrix33*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == false">{*(CryTransform::CAngle*)&amp;m_data} (Angle)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == true">{(CryTransform::CAngle*)&amp;m_data} (Angle*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == false">{*(CryTransform::CAngles3*)m_data} (Angle3)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == true">{(CryTransform::CAngles3*)m_data} (Angle3*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == false">{*(Vec3_tpl&lt;float&gt;*)m_data} (Vec3)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == true">{(Vec3_tpl&lt;float&gt;*)m_data} (Vec3*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == false">{*(Vec3_tpl&lt;int&gt;*)m_data} (Vec3i)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == true">{(Vec3_tpl&lt;int&gt;*)m_data} (Vec3i*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == false">{*(Vec2_tpl&lt;float&gt;*)&amp;m_data} (Vec2)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == true">{(Vec2_tpl&lt;float&gt;*)&amp;m_data} (Vec2*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == false">{*(Vec2_tpl&lt;int&gt;*)&amp;m_data} (Vec2i)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == true">{(Vec2_tpl&lt;int&gt;*)&amp;m_data} (Vec2i*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == false">{(char)m_data} (int8)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == true">{(char*)m_data} (int8*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == false">{(short)m_data} (int16)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == true">{(short*)m_data} (int16*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == false">{(int)m_data} (int32)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == true">{(int*)m_data} (int32*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == false">{(__int64)m_data} (int64)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == true">{(__int64*)m_data} (int64*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == false">{(unsigned char)m_data} (uint8)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == true">{(unsigned char*)m_data} (uint8*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == false">{(unsigned short)m_data} (uint16)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == true">{(unsigned short*)m_data} (uint16*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == false">{(unsigned int)m_data} (uint32)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == true">{(unsigned int*)m_data} (uint32*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == false">{(unsigned __int64)m_data} (uint64)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == true">{(unsigned __int64*)m_data} (uint64*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == false">{*(float*)&amp;m_data} (float)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == true">{(float*)&amp;m_data} (float*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == false">{(char)m_data} (char)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == true">{(char*)m_data} (char*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == false">{(bool)m_data} (bool)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == true">{(bool*)m_data} (bool*)</DisplayString>
+  <Expand>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == false">*(CryStringT&lt;wchar_t&gt;*)&amp;m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == true">(CryStringT&lt;wchar_t&gt;*)&amp;m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == false">*(CryStringT&lt;char&gt;*)&amp;m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == true">(CryStringT&lt;char&gt;*)&amp;m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == false">*(Quat_tpl&lt;float&gt;*)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == true">(Quat_tpl&lt;float&gt;*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == false">*(Matrix44H&lt;float&gt;*)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == true">(Matrix44H&lt;float&gt;*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == false">*(Matrix34H&lt;float&gt;*)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == true">(Matrix34H&lt;float&gt;*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == false">*(Matrix33_tpl&lt;float&gt;*)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == true">(Matrix33_tpl&lt;float&gt;*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == false">*(CryTransform::CAngle*)&amp;m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == true">(CryTransform::CAngle*)&amp;m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == false">*(CryTransform::CAngles3*)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == true">(CryTransform::CAngles3*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == false">*(Vec3_tpl&lt;float&gt;*)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == true">(Vec3_tpl&lt;float&gt;*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == false">*(Vec3_tpl&lt;int&gt;*)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == true">(Vec3_tpl&lt;int&gt;*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == false">*(Vec2_tpl&lt;float&gt;*)&amp;m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == true">(Vec2_tpl&lt;float&gt;*)&amp;m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == false">*(Vec2_tpl&lt;int&gt;*)&amp;m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == true">(Vec2_tpl&lt;int&gt;*)&amp;m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == false">(char)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == true">(char*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == false">(short)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == true">(short*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == false">(int)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == true">(int*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == false">(__int64)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == true">(__int64*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == false">(unsigned char)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == true">(unsigned char*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == false">(unsigned short)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == true">(unsigned short*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == false">(unsigned int)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == true">(unsigned int*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == false">(unsigned __int64)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == true">(unsigned __int64*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == false">*(float*)&amp;m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == true">(float*)&amp;m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == false">(char)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == true">(char*)m_data</Item>
+   <Item Name="Value" Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == false">(bool)m_data</Item>
+   <Item Name="Pointer" Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == true">(bool*)m_data</Item>
+   <Synthetic Name="GUID">
+    <DisplayString>{((CryReflection.dll!Cry::Reflection::CModule*)gEnv-&gt;pReflection)-&gt;m_coreRegistry.m_typesByIndex[m_typeIndex.m_value].m_guid}</DisplayString>
+   </Synthetic>
+   <Item Name="TypeDesc">((CryReflection.dll!Cry::Reflection::CModule*)gEnv-&gt;pReflection)-&gt;m_coreRegistry.m_typesByIndex[m_typeIndex.m_value]</Item>
+  </Expand>
+ </Type>
+ <Type Name="Cry::Reflection::CAnyArray">
+  <DisplayString Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (wstring)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (wstring*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (string)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (string*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Quat)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Quat*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Matrix44)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Matrix44*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Matrix34)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Matrix34*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Matrix33)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Matrix33*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Angle)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Angle*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Angle3)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Angle3*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Vec3)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Vec3*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Vec3i)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Vec3i*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Vec2)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Vec2*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (Vec2i)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (Vec2i*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (int8)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (int8*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (int16)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (int16*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (int32)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (int32*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (int64)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (int64*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (uint8)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (uint8*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (uint16)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (uint16*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (uint32)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (uint32*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (uint64)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (uint64*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (float)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (float*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (char)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (char*)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == false">{{ size = {m_size}, capacity = {m_capacity} }} (bool)</DisplayString>
+  <DisplayString Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == true">{{ size = {m_size}, capacity = {m_capacity} }} (bool*)</DisplayString>
+  <Expand>
+   <Synthetic Name="GUID">
+    <DisplayString>{((CryReflection.dll!Cry::Reflection::CModule*)gEnv-&gt;pReflection)-&gt;m_coreRegistry.m_typesByIndex[m_typeIndex.m_value].m_guid}</DisplayString>
+   </Synthetic>
+   <Item Name="TypeDesc">((CryReflection.dll!Cry::Reflection::CModule*)gEnv-&gt;pReflection)-&gt;m_coreRegistry.m_typesByIndex[m_typeIndex.m_value]</Item>
+   <ArrayItems>
+    <Size>m_size</Size>
+    <ValuePointer Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == false">(CryStringT&lt;wchar_t&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 0 &amp;&amp; m_isPointer == true">(CryStringT&lt;wchar_t&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == false">(CryStringT&lt;char&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 1 &amp;&amp; m_isPointer == true">(CryStringT&lt;char&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == false">(Quat_tpl&lt;float&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 2 &amp;&amp; m_isPointer == true">(Quat_tpl&lt;float&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == false">(Matrix44H&lt;float&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 3 &amp;&amp; m_isPointer == true">(Matrix44H&lt;float&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == false">(Matrix34H&lt;float&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 4 &amp;&amp; m_isPointer == true">(Matrix34H&lt;float&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == false">(Matrix33_tpl&lt;float&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 5 &amp;&amp; m_isPointer == true">(Matrix33_tpl&lt;float&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == false">(CryTransform::CAngle*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 6 &amp;&amp; m_isPointer == true">(CryTransform::CAngle**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == false">(CryTransform::CAngles3*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 7 &amp;&amp; m_isPointer == true">(CryTransform::CAngles3**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == false">(Vec3_tpl&lt;float&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 8 &amp;&amp; m_isPointer == true">(Vec3_tpl&lt;float&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == false">(Vec3_tpl&lt;int&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 9 &amp;&amp; m_isPointer == true">(Vec3_tpl&lt;int&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == false">(Vec2_tpl&lt;float&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 10 &amp;&amp; m_isPointer == true">(Vec2_tpl&lt;float&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == false">(Vec2_tpl&lt;int&gt;*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 11 &amp;&amp; m_isPointer == true">(Vec2_tpl&lt;int&gt;**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == false">(signed char*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 12 &amp;&amp; m_isPointer == true">(signed char**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == false">(short*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 13 &amp;&amp; m_isPointer == true">(short**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == false">(int*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 14 &amp;&amp; m_isPointer == true">(int**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == false">(__int64*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 15 &amp;&amp; m_isPointer == true">(__int64**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == false">(unsigned char*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 16 &amp;&amp; m_isPointer == true">(unsigned char**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == false">(unsigned short*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 17 &amp;&amp; m_isPointer == true">(unsigned short**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == false">(unsigned int*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 18 &amp;&amp; m_isPointer == true">(unsigned int**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == false">(unsigned __int64*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 19 &amp;&amp; m_isPointer == true">(unsigned __int64**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == false">(float*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 20 &amp;&amp; m_isPointer == true">(float**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == false">(char*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 21 &amp;&amp; m_isPointer == true">(char**)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == false">(bool*)m_pData</ValuePointer>
+    <ValuePointer Condition="m_typeIndex.m_value == 22 &amp;&amp; m_isPointer == true">(bool**)m_pData</ValuePointer>
+   </ArrayItems>
+  </Expand>
+ </Type>
+</AutoVisualizer>

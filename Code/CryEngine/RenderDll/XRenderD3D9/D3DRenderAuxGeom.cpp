@@ -1,14 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include "D3DRenderAuxGeom.h"
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
 #include <climits>
 
 #include "Common/RenderDisplayContext.h"
-
 #include "Common/ReverseDepth.h"
+
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 
@@ -437,17 +437,6 @@ HRESULT CRenderAuxGeomD3D::CreateMesh(SDrawObjMesh& mesh, TMeshFunc meshFunc)
 	gcpRendD3D->m_DevBufMan.UpdateBuffer(mesh.m_pVB, &vb[0], vb.size() * sizeof(SAuxObjVertex));
 	gcpRendD3D->m_DevBufMan.UpdateBuffer(mesh.m_pIB, &ib[0], ib.size() * sizeof(vtx_idx));
 
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-	{
-		buffer_size_t vbOffset = 0, ibOffset = 0;
-		D3DVertexBuffer* vbAux = gcpRendD3D->m_DevBufMan.GetD3DVB(mesh.m_pVB, &vbOffset);
-		D3DIndexBuffer * ibAux = gcpRendD3D->m_DevBufMan.GetD3DIB(mesh.m_pIB, &ibOffset);
-
-		vbAux->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
-		ibAux->SetPrivateData(WKPDID_D3DDebugObjectName, strlen("Aux Geom Mesh"), "Aux Geom Mesh");
-	}
-#endif
-
 	// write mesh info
 	mesh.m_numVertices = vb.size();
 	mesh.m_numFaces = ib.size() / 3;
@@ -538,7 +527,8 @@ bool CRenderAuxGeomD3D::PreparePass(const CCamera& camera, const SDisplayContext
 	*getViewport = vp;
 
 	CTexture* pTargetTexture = displayContext->GetCurrentColorOutput();
-	CTexture* pDepthTexture = displayContext->GetCurrentDepthOutput();
+	CTexture* pDepthTexture  = displayContext->GetCurrentDepthOutput();
+	
 	pass.SetRenderTarget(0, pTargetTexture);
 	pass.SetDepthTarget(pDepthTexture);
 	pass.SetViewport(viewport);
@@ -556,7 +546,7 @@ CDeviceGraphicsPSOPtr CRenderAuxGeomD3D::GetGraphicsPSO(const SAuxGeomRenderFlag
 	psoDesc.m_technique = techique;
 	psoDesc.m_ShaderFlags_RT = 0;
 	psoDesc.m_ShaderFlags_MD = 0;
-	psoDesc.m_ShaderFlags_MDV = 0;
+	psoDesc.m_ShaderFlags_MDV = MDV_NONE;
 	psoDesc.m_PrimitiveType = topology;
 	psoDesc.m_VertexFormat = format;
 	psoDesc.m_RenderState = 0;
@@ -680,6 +670,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 			cbPrimObj->invScreenDim.x = 1.f / static_cast<float>(vp.width);
 			cbPrimObj->invScreenDim.y = 1.f / static_cast<float>(vp.height);
 			pCB->UpdateBuffer(cbPrimObj, cbPrimObjSize);
+			pCB->SetDebugName("Aux Per-Draw CB");
 		}
 	}
 
@@ -798,7 +789,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 				{
 					Matrix44A& matWorldViewProjT = matWorldViewProj;
 					matWorldViewProjT = m_matrices.m_pCurTransMat->GetTransposed();
-					matWorldViewProjT = matWorldViewProjT *matWorld;
+					matWorldViewProjT = matWorldViewProjT * matWorld;
 				}
 
 				// set color
@@ -817,6 +808,7 @@ void CRenderAuxGeomD3D::DrawAuxPrimitives(const CAuxGeomCB::SAuxGeomCBRawData& r
 					cbObj->globalLightLocal = lightLocalSpace;  // normalize light vector (matWorld could contain non-uniform scaling)
 					cbObj->auxGeomObjShading = Vec2(drawParams.m_shaded ? 0.4f : 0, drawParams.m_shaded ? 0.6f : 1); // set shading flag
 					pCB->UpdateBuffer(cbObj, cbObjSize);
+					pCB->SetDebugName("Aux Per-Draw CB");
 				}
 			}
 
@@ -841,9 +833,7 @@ bool CRenderAuxGeomD3D::PrepareRendering(const CAuxGeomCB::SAuxGeomCBRawData *pA
 	m_curPrimType = CAuxGeomCB::e_PrimTypeInvalid;
 
 	if (!PreparePass(pAuxGeomData->m_camera, pAuxGeomData->displayContextKey, m_geomPass, viewportOut))
-	{
 		return false;
-	}
 
 	m_geomPass.BeginAddingPrimitives();
 
@@ -915,7 +905,6 @@ void CRenderAuxGeomD3D::Prepare(const SAuxGeomRenderFlags& renderFlags, Matrix44
 
 	m_curPointSize = (CAuxGeomCB::e_PtList == CAuxGeomCB::GetPrimType(renderFlags)) ? CAuxGeomCB::GetPointSize(renderFlags) : 1;
 
-	EAuxGeomPublicRenderflags_DrawInFrontMode newDrawInFrontMode(renderFlags.GetDrawInFrontMode());
 	CAuxGeomCB::EPrimType newPrimType(CAuxGeomCB::GetPrimType(renderFlags));
 
 	m_curDrawInFrontMode = (e_DrawInFrontOn == renderFlags.GetDrawInFrontMode() && e_Mode3D == eMode) ? e_DrawInFrontOn : e_DrawInFrontOff;
@@ -964,9 +953,6 @@ void CRenderAuxGeomD3D::RT_Flush(const SAuxGeomCBRawDataPackagedConst& data)
 	if (!CV_r_auxGeom)
 		return;
 
-	if (m_renderer.IsDeviceLost())
-		return;
-
 	PROFILE_LABEL_SCOPE("AuxGeom_Flush");
 
 	// should only be called from render thread
@@ -1002,10 +988,6 @@ void CRenderAuxGeomD3D::RT_Flush(const SAuxGeomCBRawDataPackagedConst& data)
 	SRenderViewport vp;
 	if (PrepareRendering(data.m_pData, &vp))
 	{
-		CD3DStereoRenderer& stereoRenderer = gcpRendD3D->GetS3DRend();
-		const bool bStereoEnabled = stereoRenderer.IsStereoEnabled();
-		const bool bStereoSequentialMode = stereoRenderer.RequiresSequentialSubmission();
-
 		// process push buffer
 		for (CAuxGeomCB::AuxSortedPushBuffer::const_iterator it(m_auxSortedPushBuffer.begin()), itEnd(m_auxSortedPushBuffer.end()); it != itEnd; )
 		{
@@ -1159,11 +1141,6 @@ void CRenderAuxGeomD3D::SMatrices::UpdateMatrices(const CCamera& camera)
 	const Vec2i resolution = { camera.GetViewSurfaceX(), camera.GetViewSurfaceZ() };
 	const bool depthreversed = true;
 
-	//float depth = depthreversed ? 1.0f : -1.0f;
-	//float depth = depthreversed ? 1.0f : -1.0f;
-	float depth = -1e10f;
-	//mathMatrixOrthoOffCenter(&m_matProj, 0.0f, (float)resolution.x, (float)resolution.y,0.0f, depth, -depth);
-
 	/*
 	float xScale = 1.0f / (float)resolution.x;
 	float yScale = 1.0f / (float)resolution.y;
@@ -1309,9 +1286,18 @@ CDeviceResourceSetPtr CRenderAuxGeomD3D::CAuxDeviceResourceSetCacheForTexture::G
 	if (it != m_cache.end())
 		return (it->second).first;
 
+	// Fall-back (without creating a cache-entry pointing to the requested missing texture)
 	CTexture *pTexture = CTexture::GetByID(textureId);
 	if (!pTexture || !CTexture::IsTextureExist(pTexture))
+	{
 		pTexture = CRendererResources::s_ptexWhite;
+		textureId = pTexture->GetID();
+
+		CDeviceResourceSetPtr pResourceSet = GetOrCreateResourceSet(textureId);
+		if (!m_pDefaultWhite)
+			m_pDefaultWhite = pResourceSet;
+		return pResourceSet;
+	}
 
 	CDeviceResourceSetDesc auxResourcesSetDesc;
 	auxResourcesSetDesc.SetTexture(0, pTexture, EDefaultResourceViews::Default, EShaderStage_Pixel);
@@ -1322,10 +1308,6 @@ CDeviceResourceSetPtr CRenderAuxGeomD3D::CAuxDeviceResourceSetCacheForTexture::G
 	{
 		m_cache[textureId] = std::make_pair(pResourceSet, _smart_ptr<CTexture>(pTexture));
 		pTexture->AddInvalidateCallback(this, SResourceBindPoint(), OnTextureInvalidated);
-		
-		if (!m_pDefaultWhite && pTexture == CRendererResources::s_ptexWhite)
-			m_pDefaultWhite = pResourceSet;
-
 	}
 	
 	return pResourceSet;
@@ -1352,6 +1334,7 @@ void CAuxGeomCBCollector::GetMemoryUsage(ICrySizer* pSizer) const
 CAuxGeomCBCollector::AUXJobs CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRendering()
 {
 	FUNCTION_PROFILER_RENDERER();
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRendering");
 
 	CAuxGeomCBCollector::AUXJobs auxJobs;
 	std::vector<SThread*>    tmpThreads;	

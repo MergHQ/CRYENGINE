@@ -4,7 +4,7 @@
 
    An Interface for actions that can be executed by Response Segments
 
-   /************************************************************************/
+************************************************************************/
 
 #ifndef _DYNAMICRESPONSEACTION_H_
 #define _DYNAMICRESPONSEACTION_H_

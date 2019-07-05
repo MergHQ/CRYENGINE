@@ -7,7 +7,7 @@
 #include "RenderDisplayContext.h"
 #include "RenderOutput.h"
 
-std::string GenerateUniqueTextureName(const std::string prefix, uint32 id, const std::string name)
+std::string GenerateUniqueTextureName(const std::string& prefix, uint32 id, const std::string& name)
 {
 	return prefix + "-" + std::to_string(id) + (name.empty() ? "" : "-" + name);
 }
@@ -100,7 +100,7 @@ void CRenderDisplayContext::AllocateDepthTarget()
 	const ETEX_Format eZFormat = GetDepthFormat();
 	const float  clearDepth   = 0.f;
 	const uint   clearStencil = 0;
-	const ColorF clearValues = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
+	const ColorF clearValues  = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
 
 	// Create the native resolution depth stencil buffer for overlay rendering if needed
 	const uint32 renderTargetFlags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL;
@@ -119,25 +119,21 @@ void CRenderDisplayContext::ReleaseResources()
 
 //////////////////////////////////////////////////////////////////////////
 
-void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync)
+void CSwapChainBackedRenderDisplayContext::CreateSwapChain(CRY_HWND hWnd, bool isFullscreen, bool vsync)
 {
 	CRY_ASSERT(hWnd);
+
 	m_hWnd = hWnd;
+	m_fullscreen = isFullscreen;
+
+	// TODO: make m_desc a function parameter
+	m_nSSSamplesX = m_desc.superSamplingFactor.x;
+	m_nSSSamplesY = m_desc.superSamplingFactor.y;
 
 #if !CRY_PLATFORM_CONSOLE
-	CreateOutput();
-	CreateSwapChain(GetWindowHandle(),
-		m_pOutput,
-		GetDisplayResolution().x,
-		GetDisplayResolution().y,
-		IsMainContext(),
-		IsFullscreen(),
-		vsync);
-	m_bVSync = vsync;
-#endif
+	auto w = m_desc.screenResolution.x,
+	     h = m_desc.screenResolution.y;
 
-	auto w = m_DisplayWidth,
-	     h = m_DisplayHeight;
 #if CRY_PLATFORM_WINDOWS
 	if (TRUE == ::IsWindow((HWND)hWnd))
 	{
@@ -151,8 +147,22 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(HWND hWnd, bool vsync
 	}
 #endif
 
+	CreateOutput();
+	CreateSwapChain(GetWindowHandle(),
+		m_pOutput,
+		w,
+		h,
+		IsMainContext(),
+		IsFullscreen(),
+		vsync);
+
+#if (CRY_RENDERER_VULKAN >= 10)
+	m_bVSync = vsync;
+#endif
+#endif
+
 	// Create the output
-	ChangeOutputIfNecessary(m_fullscreen, vsync);
+	ChangeOutputIfNecessary(IsFullscreen(), vsync);
 }
 
 void CSwapChainBackedRenderDisplayContext::ShutDown()
@@ -171,7 +181,7 @@ void CSwapChainBackedRenderDisplayContext::ShutDown()
 
 void CSwapChainBackedRenderDisplayContext::ReleaseResources()
 {
-	if (gcpRendD3D.GetDeviceContext().IsValid())
+	if (gcpRendD3D.GetDeviceContext())
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
 	CRenderDisplayContext::ReleaseResources();
@@ -186,7 +196,7 @@ void CSwapChainBackedRenderDisplayContext::ReleaseResources()
 
 	for (auto &t : m_backBuffersArray)
 	{
-		if (!t)
+		if (!t) 
 			continue;
 		t->SetDevTexture(nullptr);
 		t = nullptr;
@@ -194,6 +204,27 @@ void CSwapChainBackedRenderDisplayContext::ReleaseResources()
 
 	m_bSwapProxy = true;
 }
+
+uint32 CSwapChainBackedRenderDisplayContext::ComputePresentInterval(uint32 presentInterval)
+{
+	if (presentInterval && GetRefreshRateNumerator() != 0 && GetRefreshRateDenominator() != 0)
+	{
+		static ICVar* pSysMaxFPS = gEnv && gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_MaxFPS") : 0;
+		if (pSysMaxFPS)
+		{
+			const int32 maxFPS = pSysMaxFPS->GetIVal();
+			if (maxFPS > 0)
+			{
+				const float refreshRate = float(GetRefreshRateNumerator()) / GetRefreshRateDenominator();
+				const float lockedFPS = float(maxFPS);
+
+				presentInterval = (uint32)clamp_tpl((int)floorf(refreshRate / lockedFPS + 0.1f), 1, 4);
+			}
+		}
+	}
+
+	return presentInterval;
+};
 
 ETEX_Format CSwapChainBackedRenderDisplayContext::GetBackBufferFormat() const
 {
@@ -267,11 +298,11 @@ void CSwapChainBackedRenderDisplayContext::AllocateBackBuffers()
 	// ------------------------------------------------------------------------------
 	for (int i = 0, n = indices; i < n; ++i)
 	{
+		sprintf(str, "$SwapChainBackBuffer %d:Buffer %d", m_uniqueId, i);
+
 		// Prepare back-buffer texture(s)
 		if (!m_backBuffersArray[i])
 		{
-			sprintf(str, "$SwapChainBackBuffer %d:Buffer %d", m_uniqueId, i);
-
 			m_backBuffersArray[i] = nullptr;
 			m_backBuffersArray[i].Assign_NoAddRef(CTexture::GetOrCreateTextureObject(str, displayWidth, displayHeight, 1, eTT_2D, renderTargetFlags, displayFormat));
 			m_backBuffersArray[i]->SRGBRead(DeviceFormats::ConvertToSRGB(DeviceFormats::ConvertFromTexFormat(displayFormat)) == m_swapChain.GetSurfaceDesc().Format);
@@ -287,12 +318,14 @@ void CSwapChainBackedRenderDisplayContext::AllocateBackBuffers()
 #else
 			D3DTexture* pBackBuffer = nullptr;
 			HRESULT hr = m_swapChain.GetSwapChain()->GetBuffer(i, IID_GFX_ARGS(&pBackBuffer));
-			CRY_ASSERT(SUCCEEDED(hr) && pBackBuffer != nullptr);
+			CRY_VERIFY(SUCCEEDED(hr) && pBackBuffer != nullptr);
 #endif
 
 			const auto &layout = m_backBuffersArray[i]->GetLayout();
 			m_backBuffersArray[i]->Invalidate(displayWidth, displayHeight, displayFormat);
 			m_backBuffersArray[i]->SetDevTexture(CDeviceTexture::Associate(layout, pBackBuffer));
+
+			SetDebugName(pBackBuffer, str);
 
 			// Guarantee that the back-buffers are cleared on first use (e.g. Flash alpha-blends onto the back-buffer)
 			// NOTE: GNM requires shaders to be initialized before issuing any draws/clears/copies/resolves. This is not yet the case here.
@@ -316,12 +349,24 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 {
 #if CRY_PLATFORM_WINDOWS
 	CRY_ASSERT(m_hWnd);
-	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+	
+	HMONITOR hMonitor{ 0 };
+	if (IsEditorDisplay())
+	{
+		hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+	}
+	else
+	{
+		DXGI_OUTPUT_DESC outDesc;
+		if (m_pOutput && SUCCEEDED(m_pOutput->GetDesc(&outDesc)))
+		{
+			hMonitor = outDesc.Monitor;
+		}
+	}
 
 	if (m_pOutput != nullptr)
 	{
-		unsigned long numRemainingReferences = m_pOutput->Release();
-		CRY_ASSERT(numRemainingReferences == 0);
+		CRY_VERIFY(m_pOutput->Release() == 0);
 		m_pOutput = nullptr;
 	}
 
@@ -364,61 +409,67 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 
 void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullscreen, bool vsync)
 {
-	bool recreatedSwapChain = false;
-
+	bool isWindowOnExistingOutputMonitor{ true };
 #if CRY_PLATFORM_WINDOWS
-	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
+	DXGI_OUTPUT_DESC desc;
+	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&desc)))
+	{
+		if (IsEditorDisplay())
+		{
+			// compare agains recommended output device
+			isWindowOnExistingOutputMonitor = (desc.Monitor == MonitorFromWindow(static_cast<HWND>(m_hWnd), MONITOR_DEFAULTTONEAREST));
+		}
+		else
+		{
+			// Default to main output device
+			isWindowOnExistingOutputMonitor = true;
+		}
+	}
+#endif //CRY_PLATFORM_WINDOWS
 
-	bool isWindowOnExistingOutputMonitor = false;
-	DXGI_OUTPUT_DESC outputDesc;
-	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&outputDesc)))
-		isWindowOnExistingOutputMonitor = outputDesc.Monitor == hMonitor;
+#if CRY_PLATFORM_ANDROID
+	isWindowOnExistingOutputMonitor = true;
+#endif
+
+	// Recreate output only if the window has been moved to another monitor
+	if (!isWindowOnExistingOutputMonitor)
+		CreateOutput();
 
 #if !CRY_PLATFORM_CONSOLE
+	bool recreateSwapChain = (!isWindowOnExistingOutputMonitor && isFullscreen);
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	recreateSwapChain |= ((m_swapChain.GetDesc().Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) && isFullscreen);
+#elif CRY_RENDERER_VULKAN
+	recreateSwapChain |= (m_bVSync != vsync);
+#endif
+
 	// Output will need to be recreated if we switched to fullscreen on a different monitor
-	if (!isWindowOnExistingOutputMonitor && isFullscreen)
+	if (recreateSwapChain)
 	{
+		auto w = m_swapChain.GetSurfaceDesc().Width,
+		     h = m_swapChain.GetSurfaceDesc().Height;
+
 		ReleaseBackBuffers();
 
 		// Swap chain needs to be recreated with the new output in mind
-		CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync);
-		recreatedSwapChain = true;
+		CreateSwapChain(GetWindowHandle(), m_pOutput, w, h, isFullscreen, IsMainContext(), vsync);
 
 		if (m_pOutput != nullptr)
 		{
-			unsigned long numRemainingReferences = m_pOutput->Release();
-			CRY_ASSERT(numRemainingReferences == 0);
+			CRY_VERIFY(m_pOutput->Release() == 0);
 			m_pOutput = nullptr;
 		}
 	}
+
+#if (CRY_RENDERER_VULKAN >= 10)
+	m_bVSync = vsync;
+#endif
 #endif
 
-	CreateOutput();
-#endif
-
-	// Handle vSync changes
-	if (vsync != m_bVSync)
-	{
-#if CRY_RENDERER_VULKAN
-		if (!recreatedSwapChain)
-		{
-			// For Vulkan only: Recreate swapchain when vsync flag changes
-			CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, IsMainContext(), isFullscreen, vsync);
-			recreatedSwapChain = true;
-		}
-#endif
-
-		m_bVSync = vsync;
-	}
-
-#ifdef SUPPORT_DEVICE_INFO
-	// Disable automatic DXGI alt + enter behavior
-	gcpRendD3D->DevInfo().Factory()->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
-#endif
-
-	if (m_fullscreen)
-		SetFullscreenState(isFullscreen);
+	SetFullscreenState(isFullscreen);
 }
+
 void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp)
 {
 	SetDisplayResolutionAndRecreateTargets(displayWidth, displayHeight, vp);
@@ -427,9 +478,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 	{
 		ReleaseBackBuffers();
 
-		m_swapChain.ResizeSwapChain(CRendererCVars::CV_r_MaxFrameLatency + 1, m_DisplayWidth, m_DisplayHeight, IsMainContext());
-		// NOTE: Going full-screen doesn't require freeing the back-buffers
-		SetFullscreenState(m_fullscreen);
+		m_swapChain.ResizeSwapChain(CRendererCVars::CV_r_MaxFrameLatency + 1, m_DisplayWidth, m_DisplayHeight, m_fullscreen, IsMainContext());
 
 		AllocateBackBuffers();
 
@@ -439,8 +488,6 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 		desc.width = displayWidth;
 		desc.height = displayHeight;
 		GetSwapChain().GetSwapChain()->GnmSetDesc(desc);
-#elif CRY_PLATFORM_ORBIS
-		GetSwapChain().GetSwapChain()->UpdateBackbufferDimensions(displayWidth, displayHeight);
 #endif
 
 		m_pRenderOutput->InitializeDisplayContext();
@@ -451,7 +498,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 #if CRY_PLATFORM_WINDOWS && CRY_RENDERER_DIRECT3D
 		{
 			DXGIDevice* pDXGIDevice = nullptr;
-			if (SUCCEEDED(gcpRendD3D->GetDevice().GetRealDevice()->QueryInterface(IID_GFX_ARGS(&pDXGIDevice))) && pDXGIDevice)
+			if (SUCCEEDED(gcpRendD3D->GetDevice()->QueryInterface(IID_GFX_ARGS(&pDXGIDevice))) && pDXGIDevice)
 				pDXGIDevice->SetMaximumFrameLatency(CRendererCVars::CV_r_MaxFrameLatency);
 			SAFE_RELEASE(pDXGIDevice);
 		}
@@ -461,34 +508,21 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 
 void CSwapChainBackedRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 {
-	if (!m_swapChain.GetSwapChain())
-		return;
-
-	m_fullscreen = isFullscreen;
-#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
-	if (isFullscreen)
+	if (m_fullscreen != isFullscreen)
 	{
-		DXGI_SWAP_CHAIN_DESC scDesc = m_swapChain.GetDesc();
+		m_fullscreen = isFullscreen;
 
-#if !CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 120)
-		CRY_ASSERT_MESSAGE((scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) == 0, "Fullscreen does not work with Waitable SwapChain");
-#endif
+		if (m_swapChain.GetSwapChain())
+		{
+			ReleaseBackBuffers();
 
-		scDesc.BufferDesc.Width = m_DisplayWidth;
-		scDesc.BufferDesc.Height = m_DisplayHeight;
+			m_swapChain.ResizeSwapChain(CRendererCVars::CV_r_MaxFrameLatency + 1, m_DisplayWidth, m_DisplayHeight, m_fullscreen, IsMainContext(), true);
 
-#if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
-		CSwapChain::UserOverrideDisplayProperties(scDesc.BufferDesc);
-#endif
-
-		HRESULT rr = m_swapChain.GetSwapChain()->ResizeTarget(&scDesc.BufferDesc);
-		CRY_ASSERT(SUCCEEDED(rr));
+			AllocateBackBuffers();
+		}
 	}
-
-#if !CRY_PLATFORM_CONSOLE
-	m_swapChain.SetFullscreenState(isFullscreen, isFullscreen ? m_pOutput : nullptr);
-#endif
-#endif
+	// Trigger a fullscreen toggle event
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, isFullscreen ? 1 : 0, 0);
 }
 
 Vec2_tpl<uint32_t> CSwapChainBackedRenderDisplayContext::FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const
@@ -512,26 +546,20 @@ Vec2_tpl<uint32_t> CSwapChainBackedRenderDisplayContext::FindClosestMatchingScre
 	return resolution;
 }
 
-#if CRY_PLATFORM_WINDOWS
-void CSwapChainBackedRenderDisplayContext::EnforceFullscreenPreemption()
-{
-	if (IsMainContext() && CRenderer::CV_r_FullscreenPreemption && gcpRendD3D->IsFullscreen())
-	{
-		HRESULT hr = m_swapChain.Present(0, DXGI_PRESENT_TEST);
-		if (hr == DXGI_STATUS_OCCLUDED)
-		{
-			if (::GetFocus() == m_hWnd)
-				::BringWindowToTop(m_hWnd);
-		}
-	}
-}
-#endif // #if CRY_PLATFORM_WINDOWS
-
 RectI CSwapChainBackedRenderDisplayContext::GetCurrentMonitorBounds() const
 {
 #ifdef CRY_PLATFORM_WINDOWS
 	// When moving the window, update the preferred monitor dimensions so full-screen will pick the closest monitor
-	HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST); 
+
+	// MonitorFromWindow can give incorrect results in multi-monitor setups with variable resolutions.
+	// Use the currently associated output device. Otherwise, resolution-independent window/screen intersection
+	// logic is required to find the correct outout device/monitor.
+	HMONITOR hMonitor;// = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+	DXGI_OUTPUT_DESC outDesc;
+	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&outDesc)))
+	{
+		hMonitor = outDesc.Monitor;
+	}
 
 	MONITORINFO monitorInfo;
 	monitorInfo.cbSize = sizeof(MONITORINFO);
@@ -539,7 +567,7 @@ RectI CSwapChainBackedRenderDisplayContext::GetCurrentMonitorBounds() const
 
 	return RectI{ monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top, monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top };
 #else
-	CRY_ASSERT_MESSAGE(false, "Not implemented for platform!");
+	CRY_ASSERT(false, "Not implemented for platform!");
 	return RectI();
 #endif
 }
@@ -638,13 +666,14 @@ CCustomRenderDisplayContext::CCustomRenderDisplayContext(IRenderer::SDisplayCont
 	CRY_ASSERT(m_pBackBufferProxy->GetSrcFormat() == displayFormat);
 	// ------------------------------------------------------------------------------
 
-	this->m_backBuffersArray = std::move(backBuffersArray);
+	m_backBuffersArray = std::move(backBuffersArray);
 
 	// Assign first back-buffer on initialization
 	m_pBackBufferProxy->RefDevTexture(GetCurrentBackBuffer()->GetDevTexture());
 	m_bSwapProxy = false;
 
-	this->ChangeDisplayResolution(displayWidth, displayHeight);
+	// Create the targets
+	ChangeDisplayResolution(displayWidth, displayHeight);
 }
 
 void CCustomRenderDisplayContext::ShutDown()
@@ -654,7 +683,7 @@ void CCustomRenderDisplayContext::ShutDown()
 
 void CCustomRenderDisplayContext::ReleaseResources()
 {
-	if (gcpRendD3D.GetDeviceContext().IsValid())
+	if (gcpRendD3D.GetDeviceContext())
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
 	CRenderDisplayContext::ReleaseResources();

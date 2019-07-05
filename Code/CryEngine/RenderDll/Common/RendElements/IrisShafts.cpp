@@ -33,21 +33,24 @@ void IrisShafts::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 
 IrisShafts::IrisShafts(const char* name)
 	: COpticsElement(name, 0.5f)
-	, m_fThickness(0.3f)
-	, m_fSpread(0.2f)
-	, m_nSmoothLevel(2)
-	, m_nNoiseSeed(81)
 	, m_pBaseTex(0)
-	, m_fSizeNoiseStrength(0.8f)
-	, m_fThicknessNoiseStrength(0.6f)
-	, m_fSpacingNoiseStrength(0.2f)
-	, m_fSpreadNoiseStrength(0.0f)
 	, m_bUseSpectrumTex(false)
+
+	, m_nSmoothLevel(2)
+	, m_fPrevOcc(-1.f)
 	, m_fPrimaryDir(0)
 	, m_fAngleRange(1)
 	, m_fConcentrationBoost(0)
-	, m_fPrevOcc(-1.f)
 	, m_fBrightnessBoost(0)
+
+	, m_fSizeNoiseStrength(0.8f)
+	, m_fThicknessNoiseStrength(0.6f)
+	, m_fSpreadNoiseStrength(0.0f)
+	, m_fSpacingNoiseStrength(0.2f)
+	
+	, m_fSpread(0.2f)
+	, m_fThickness(0.3f)
+	, m_nNoiseSeed(81)
 	, m_MaxNumberOfPolygon(0)
 {
 	m_vMovement.x = 1.f;
@@ -81,8 +84,9 @@ void IrisShafts::Load(IXmlNode* pNode)
 		{
 			if (baseTextureName && baseTextureName[0])
 			{
-				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(baseTextureName));
-				SetBaseTex((CTexture*)pTexture);
+				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(baseTextureName);
+				m_pBaseTex.reset();
+				m_pBaseTex.Assign_NoAddRef(static_cast<CTexture*>(pTexture));
 			}
 		}
 
@@ -91,8 +95,9 @@ void IrisShafts::Load(IXmlNode* pNode)
 		{
 			if (gradientTexName && gradientTexName[0])
 			{
-				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(gradientTexName));
-				SetSpectrumTex((CTexture*)pTexture);
+				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(gradientTexName);
+				m_pSpectrumTex.reset();
+				m_pSpectrumTex.Assign_NoAddRef(static_cast<CTexture*>(pTexture));
 			}
 		}
 

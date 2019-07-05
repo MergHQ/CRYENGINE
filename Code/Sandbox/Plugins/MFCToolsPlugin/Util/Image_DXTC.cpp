@@ -253,9 +253,6 @@ bool CImage_DXTC::Load(const char* filename, CImageEx& outImage, bool* pQualityL
 
 	BYTE* pDecompBytes;
 
-	// Does texture have mipmaps?
-	bool bMipTexture = pImage->mfGet_numMips() > 1;
-
 	ETEX_Format eFormat = pImage->mfGetFormat();
 	int imageFlags = pImage->mfGet_Flags();
 
@@ -285,9 +282,6 @@ bool CImage_DXTC::Load(const char* filename, CImageEx& outImage, bool* pQualityL
 
 	int nHorizontalFaces(1);
 	int nVerticalFaces(1);
-	int nNumFaces(1);
-	int nMipMapsSize(0);
-	int nMipMapCount(numMips);
 	int nTargetPitch(imageWidth * 4);
 	int nTargetPageSize(nTargetPitch * imageHeight);
 
@@ -767,4 +761,3 @@ CImage_DXTC::COMPRESSOR_ERROR CImage_DXTC::CheckParameters(
 
 	return COMPRESSOR_ERROR_NONE;
 }
-

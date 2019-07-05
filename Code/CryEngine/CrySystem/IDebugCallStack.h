@@ -45,11 +45,7 @@ public:
 		filename = "[unknown]";
 		line = 0;
 		baseAddr = addr;
-#if CRY_PLATFORM_64BIT
 		procName.Format("[%016llX]", (uint64) addr);
-#else
-		procName.Format("[%08X]", (uint32) addr);
-#endif
 		return false;
 	}
 

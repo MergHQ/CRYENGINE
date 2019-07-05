@@ -22,16 +22,16 @@
 #define TRACK_NODE_ALLOC_WITH_MEMREPLAY 1
 #define CRY_STL_ALLOC
 
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 	#include <sys/mman.h>
 #endif
 
-#include <string.h>   // memset
+#include <cstring> // memset
 
 //! Don't use _MAX_BYTES as identifier for Max Bytes, STLPORT defines the same enum.
 //! This leads to situation where the wrong enum is choosen in different compilation units,
 //! which in case leads to errors(The stlport one is defined as 128).
-#if defined(__OS400__) || CRY_PLATFORM_DURANGO || (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_MAC || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if defined(__OS400__) || CRY_PLATFORM_DURANGO || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_MAC || CRY_PLATFORM_LINUX
 enum {_ALIGNMENT = 16, _ALIGN_SHIFT = 4, __MAX_BYTES = 512, NFREELISTS = 32, ADDRESSSPACE = 2 * 1024 * 1024, ADDRESS_SHIFT = 40};
 #else
 enum {_ALIGNMENT = 8, _ALIGN_SHIFT = 3, __MAX_BYTES = 512, NFREELISTS = 64, ADDRESSSPACE = 2 * 1024 * 1024, ADDRESS_SHIFT = 20};
@@ -47,7 +47,7 @@ public:
 	_Node_alloc_obj* _M_next;
 };
 
-#if CRY_PLATFORM_DURANGO || (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX
 	#define MASK_COUNT 0x000000FFFFFFFFFF
 	#define MASK_VALUE 0xFFFFFF
 	#define MASK_NEXT  0xFFFFFFFFFF000000
@@ -226,7 +226,7 @@ struct Node_Allocator<eCryMallocCryFreeCRTCleanup>
 
 };
 
-#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_APPLE
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 template<>
 struct Node_Allocator<eCryLinuxMalloc>
 {
@@ -238,12 +238,7 @@ struct Node_Allocator<eCryLinuxMalloc>
 
 	inline void* pool_alloc(size_t size)
 	{
-	#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
-		char* p = (char*)mmap(NULL, size + sizeof(_MemHead), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_32BIT | MAP_ANONYMOUS, -1, 0);
-	#else
-		// Mac OS X does not have the MAP_32BIT since it's BSD based, compiling with -fPIC should solve the issue
 		char* p = (char*)mmap(NULL, size + sizeof(_MemHead), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	#endif
 		_MemHead* pH = (_MemHead*)p;
 		pH->ptr = p;
 		pH->size = size;
@@ -252,12 +247,7 @@ struct Node_Allocator<eCryLinuxMalloc>
 	};
 	inline void* cleanup_alloc(size_t size)
 	{
-	#if (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
-		char* p = (char*)mmap(NULL, size + sizeof(_MemHead), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_32BIT | MAP_ANONYMOUS, -1, 0);
-	#else
-		// Mac OS X does not have the MAP_32BIT since it's BSD based, compiling with -fPIC should solve the issue
 		char* p = (char*)mmap(NULL, size + sizeof(_MemHead), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	#endif
 		_MemHead* pH = (_MemHead*)p;
 		pH->ptr = p;
 		pH->size = size;
@@ -672,11 +662,6 @@ private:
 		pBlock->_M_allocations_list[pBlock->_M_allocations_count].SetNext((char*)pObj - (char*)pBlock);
 		pBlock->_M_allocations_list[pBlock->_M_allocations_count++].SetCount(count);
 		pBlock->_M_allocations_list[pBlock->_M_allocations_count].SetNext((char*)pObj + count * _n - (char*)pBlock);
-
-		if (count >= NTREESCOUNT + 1)
-		{
-			int b = 0;
-		}
 	}
 
 public:
@@ -693,13 +678,13 @@ public:
 	/* __n must be > 0      */
 	static void* allocate(size_t __n)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		void* ret;
 
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -805,14 +790,14 @@ public:
 	/* __p may not be 0 */
 	static size_t deallocate(void* __p) //, size_t __n)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		size_t ret;
 
 		size_t __n = _Find_right_size(__p);
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -831,13 +816,13 @@ public:
 
 	static size_t deallocate(void* __p, size_t __n)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		size_t ret;
 
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -883,7 +868,7 @@ public:
 		size_t __n = _Find_right_size(__p);
 		if (__n > (size_t)__MAX_BYTES)
 		{
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 			Node_Allocator<_alloc> all;
 #else
 			Node_Allocator<eCryLinuxMalloc> all;
@@ -1111,7 +1096,7 @@ char* node_alloc<_alloc, __threads, _Size >::_S_chunk_alloc(size_t _p_size,
 {
 	char* __result = 0;
 	size_t __total_bytes = _p_size * __nobjs;
-#if !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_APPLE
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_APPLE
 	Node_Allocator<_alloc> allocator;
 #else
 	Node_Allocator<eCryLinuxMalloc> allocator;
@@ -1157,22 +1142,6 @@ char* node_alloc<_alloc, __threads, _Size >::_S_chunk_alloc(size_t _p_size,
 				__pnew_block->_M_end = __pblock->_M_end;
 				__cas_new_head<_Node_alloc_Mem_block<_Size>, __threads, _Size>(&_S_free_mem_blocks, __pnew_block);
 				//__pCurrentHugeBlock->_M_count += __nobjs;
-			}
-			else
-			{
-				if (__result != 0)
-					int a = 0;
-				//A too small block, we put it in the main free list elements:
-				/*
-
-				   _Obj* volatile* __my_free_list = _S_free_list + S_FREELIST_INDEX(__bytes_left);
-				   _Obj* __pobj = __REINTERPRET_CAST(_Obj*, __new_buf_pos);
-				   ++_S_freelist_counter[S_FREELIST_INDEX(__bytes_left)];
-				   __cas_new_head(__my_free_list, __pobj);
-				   if (__result == 0)
-				   __pCurrentHugeBlock->_M_count +=  1;
-
-				 */
 			}
 		}
 
@@ -1369,7 +1338,7 @@ void node_alloc<_alloc, __threads, _Size >::_S_freelist_delete_inside(int num, _
 {
 
 	_Obj* volatile* __pList = _S_free_list + num;
-	_Obj* __pnext, * __pfirst, * __plast, * __r;
+	_Obj* __pnext, * __pfirst, * __r;
 
 	do
 	{
@@ -1630,37 +1599,17 @@ void node_alloc<_alloc, __threads, _Size >::cleanup()
 				tmp_low[i] = low;
 				tmp_high[i] = high;
 
-				if (low == high && ((void*)low < (void*)__pcur || (void*) high > (void*)__pcur->_M_end))
-				{
-					//size_t ttt = _S_freelist_count_inside(i, (_Obj*)__pcur, (_Obj*)__pcur->_M_end);// + sizeof(_Node_alloc_Mem_block_Huge));
-					//if (ttt != tmp_count[i])
-					//	int a = 0;
-
-					//For testing purposes
-					int b = 0;
-				}
-				else
+				if (low != high || ((void*)low >= (void*)__pcur && (void*) high <= (void*)__pcur->_M_end))
 				{
 					tmp_count[i] = high - low;// + 1;
 					freelistsize += tmp_count[i];//  * (i + 1) << _ALIGN_SHIFT;
-					//For testing purposes
-					//#ifdef _DEBUG
-					//size_t ttt = _S_freelist_count_inside(i, (_Obj*)__pcur, (_Obj*)__pcur->_M_end);// + sizeof(_Node_alloc_Mem_block_Huge));
-					//if (ttt != tmp_count[i])
-					//	int a = 0;
-					//#endif
 				}
 			}
 		}
 
 		if (freelistsize)
 		{
-
-			if (cursize != freelistsize)
-			{
-				int a = freelistsize - cursize;
-			}
-			else
+			if (cursize == freelistsize)
 			{
 				bdelete = true;
 

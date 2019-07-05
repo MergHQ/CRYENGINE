@@ -12,4 +12,3 @@ enum class ESceneElementType : int
 
 	Skin, // Each node of type SourceNode that has a mesh with a skin has a child node of type Skin.
 };
-

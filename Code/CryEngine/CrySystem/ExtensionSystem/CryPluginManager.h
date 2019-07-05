@@ -6,6 +6,7 @@
 
 #include <CrySystem/ICryPluginManager.h>
 #include <CrySystem/ICryPlugin.h>
+#include <CrySystem/SystemInitParams.h>
 #include <array>
 
 #include <CryCore/Platform/CryLibrary.h>
@@ -57,28 +58,32 @@ public:
 
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
-	using TDefaultPluginPair = std::pair<uint8 /* version with which the plug-in was made default */, SPluginDefinition>;
+	using TDefaultPluginPair = std::pair<uint8 /* version with which the plug-in was made default */, Cry::SPluginDefinition>;
+
 	// Gets the plug-ins, along with the version that they were made default in
 	// This is called in order to update the default plug-ins for projects on upgrade
 	// These are also built with the engine, thus will be statically linked in for monolithic builds.
-	static std::array<TDefaultPluginPair, 4> GetDefaultPlugins()
+	static std::array<TDefaultPluginPair, 5> GetDefaultPlugins()
 	{
 		return 
 		{
 			{ 
 				// Plug-ins made default with version 1
-				{ 1, SPluginDefinition { EType::Native, "CryDefaultEntities" } },
-				{ 1, SPluginDefinition { EType::Native, "CrySensorSystem" } },
-				{ 1, SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
+				{ 1, Cry::SPluginDefinition { EType::Native, "CryDefaultEntities" } },
+				{ 1, Cry::SPluginDefinition { EType::Native, "CrySensorSystem" } },
+				{ 1, Cry::SPluginDefinition { EType::Native, "CryPerceptionSystem" } },
 				// Plug-ins made default with version 3
-				{ 3, SPluginDefinition{ EType::Native, "CryGamePlatform",{ EPlatform::PS4 } } }
+				{ 3, Cry::SPluginDefinition { EType::Native, "CryGamePlatform", { EPlatform::PS4 } } },
+				{ 3, Cry::SPluginDefinition { EType::Native, "CryGamePlatformPSN", { EPlatform::PS4 } } },
 			}
 		};
 	}
 
 protected:
 #if CrySharedLibrarySupported
-	bool LoadPluginFromDisk(EType type, const char* path, bool notifyUserOnFailure = true);
+	bool LoadPluginBinary(EType type, const char* szBinaryPath, bool notifyUserOnFailure = true);
+	bool LoadPluginFromFile(const char* szPluginFile, bool notifyUserOnFailure = true);
+	bool LoadPluginByGUID(CryGUID guid, bool notifyUserOnFailure = true);
 #endif
 
 	bool OnPluginLoaded(bool notifyUserOnFailure = true);
@@ -87,8 +92,15 @@ protected:
 	std::vector<Cry::IEnginePlugin*>& GetUpdatedPluginsForStep(Cry::IEnginePlugin::EUpdateStep step) { return m_updatedPlugins[IntegerLog2(static_cast<uint8>(step))]; }
 
 private:
-	bool                    UnloadAllPlugins();
-	void                    NotifyEventListeners(const CryClassID& classID, IEventListener::EEvent event);
+	bool UnloadAllPlugins();
+	void NotifyEventListeners(const CryClassID& classID, IEventListener::EEvent event);
+
+	bool ParsePluginRegistry();
+
+
+	struct SRegisteredPlugin;
+	using TRegisteredPluginList = std::map<CryGUID, SRegisteredPlugin>;
+	TRegisteredPluginList m_registedPlugins;
 
 	std::vector<SPluginContainer> m_pluginContainer;
 	std::map<IEventListener*, std::vector<CryClassID>> m_pluginListenerMap;
@@ -97,4 +109,16 @@ private:
 	bool                    m_bLoadedProjectPlugins;
 
 	std::array<std::vector<Cry::IEnginePlugin*>, static_cast<size_t>(Cry::IEnginePlugin::EUpdateStep::Count)> m_updatedPlugins;
+};
+
+struct CCryPluginManager::SRegisteredPlugin
+{
+	string name;
+	string uri;
+
+	void Serialize(Serialization::IArchive& ar)
+	{
+		ar(name, "name");
+		ar(uri, "uri");
+	}
 };

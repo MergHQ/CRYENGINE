@@ -4,7 +4,10 @@
 #include "ModelMesh.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
+
+#include "DrawHelper.h"
 #include "Model.h"
+
 
 #ifdef EDITOR_PCDEBUGCODE
 extern float g_YLine;
@@ -63,7 +66,7 @@ void CModelMesh::ExportModel(IRenderMesh* pIRenderMesh)
 		arrSrcPositions[i] = wpos;
 
 		arrSrcQTangents[i] = QTangent.GetQ();
-		assert(m_arrSrcQTangents[i].IsUnit());
+		CRY_ASSERT(m_arrSrcQTangents[i].IsUnit());
 
 		arrSrcVWeights[i].w0 = weights[0] / 255.0f;
 		arrSrcVWeights[i].w1 = weights[1] / 255.0f;
@@ -154,50 +157,15 @@ void CModelMesh::ExportModel(IRenderMesh* pIRenderMesh)
 	#endif
 }
 
-void CModelMesh::DrawWireframeStatic(const Matrix34& rRenderMat34, uint32 color)
+void CModelMesh::DrawWireframeStatic(const Matrix34& renderMatrix, const ColorB& color)
 {
-	if (m_pIRenderMesh == 0)
-		return;
-
-	uint32 numExtIndices = m_pIRenderMesh->GetIndicesCount();
-	uint32 numExtVertices = m_pIRenderMesh->GetVerticesCount();
-	assert(numExtVertices);
-
-	static std::vector<Vec3> arrExtSkinnedStream;
-	uint32 vsize = arrExtSkinnedStream.size();
-	if (vsize < numExtVertices)
-		arrExtSkinnedStream.resize(numExtVertices);
-
-	m_pIRenderMesh->LockForThreadAccess();
-	uint32 numIndices = m_pIRenderMesh->GetIndicesCount();
-	vtx_idx* pIndices = m_pIRenderMesh->GetIndexPtr(FSL_READ);
-	int32 nPositionStride;
-	uint8* pPositions = m_pIRenderMesh->GetPosPtr(nPositionStride, FSL_READ);
-	if (pPositions == 0)
-		return;
-	++m_iThreadMeshAccessCounter;
-
-	for (uint32 e = 0; e < numExtVertices; e++)
+	if (m_pIRenderMesh)
 	{
-		Vec3 v = *(Vec3*)(pPositions + e * nPositionStride);
-		arrExtSkinnedStream[e] = rRenderMat34 * (v + m_vRenderMeshOffset);
-	}
+		Matrix34 adjustedRenderMatrix = renderMatrix;
+		adjustedRenderMatrix.AddTranslation(renderMatrix.TransformVector(m_vRenderMeshOffset));
 
-	m_pIRenderMesh->UnLockForThreadAccess();
-	--m_iThreadMeshAccessCounter;
-	if (m_iThreadMeshAccessCounter == 0)
-	{
-		m_pIRenderMesh->UnlockStream(VSF_GENERAL);
-		m_pIRenderMesh->UnlockStream(VSF_TANGENTS);
-		m_pIRenderMesh->UnlockStream(VSF_HWSKIN_INFO);
+		DrawHelper::Wireframe(*m_pIRenderMesh, adjustedRenderMatrix, color);
 	}
-
-	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
-	renderFlags.SetFillMode(e_FillModeWireframe);
-	renderFlags.SetDrawInFrontMode(e_DrawInFrontOn);
-	renderFlags.SetAlphaBlendMode(e_AlphaAdditive);
-	g_pAuxGeom->SetRenderFlags(renderFlags);
-	g_pAuxGeom->DrawTriangles(&arrExtSkinnedStream[0], numExtVertices, pIndices, numExtIndices, color);
 }
 
 #endif
@@ -216,7 +184,6 @@ void CModelMesh::DrawDebugInfo(CDefaultSkeleton* pCSkel, int nLOD, const Matrix3
 	const SFrameLodInfo frameLodInfo = gEnv->p3DEngine->GetFrameLodInfo();
 
 	int32 numLODs = frameLodInfo.nMaxLod;
-	int index = 0;
 	float color[4] = { 1, 1, 1, 1 };
 
 	int nTris = m_pIRenderMesh->GetVerticesCount();
@@ -255,8 +222,6 @@ void CModelMesh::DrawDebugInfo(CDefaultSkeleton* pCSkel, int nLOD, const Matrix3
 		break;
 	case 2:
 		{
-
-			IMaterialManager* pMatMan = g_pI3DEngine->GetMaterialManager();
 			int fMult = 1;
 			//int nTris = m_pDefaultSkeleton->GetRenderMesh(nLOD)->GetSysVertCount();
 			ColorB clr = ColorB(255, 255, 255, 255);

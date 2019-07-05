@@ -5,7 +5,7 @@
 #include <memory>
 #include <QWidget>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 
 namespace Explorer
 {
@@ -37,10 +37,9 @@ protected slots:
 	void  OnBlendShapeOptionsChanged();
 private:
 
-	QPropertyTree* m_propertyTree;
+	QPropertyTreeLegacy* m_propertyTree;
 	System*        m_system;
 	bool           m_ignoreSubselectionChange;
 };
 
 }
-

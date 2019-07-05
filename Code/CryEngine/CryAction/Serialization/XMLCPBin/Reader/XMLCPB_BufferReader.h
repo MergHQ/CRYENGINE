@@ -32,14 +32,14 @@ struct SBufferReader
 
 	inline const uint8* GetPointer(FlatAddr addr) const
 	{
-		assert(addr < m_bufferSize);
+		CRY_ASSERT(addr < m_bufferSize);
 		return &(m_pBuffer[addr]);
 	}
 
 	inline void CopyTo(uint8* pDst, FlatAddr srcAddr, uint32 bytesToCopy) const
 	{
-		assert(srcAddr < m_bufferSize);
-		assert(srcAddr + bytesToCopy <= m_bufferSize);
+		CRY_ASSERT(srcAddr < m_bufferSize);
+		CRY_ASSERT(srcAddr + bytesToCopy <= m_bufferSize);
 
 		memcpy(pDst, GetPointer(srcAddr), bytesToCopy);
 	}

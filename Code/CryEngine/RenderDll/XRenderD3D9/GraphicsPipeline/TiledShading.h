@@ -9,10 +9,25 @@
 class CTiledShadingStage : public CGraphicsPipelineStage
 {
 public:
-	CTiledShadingStage();
+	enum EExecutionMode
+	{
+		eDeferredMode_Off      = 0,
+		eDeferredMode_Enabled  = 2,
+		eDeferredMode_1Pass    = 2,
+		eDeferredMode_2Pass    = 3,
+		eDeferredMode_Disabled = 4
+	};
+	static const EGraphicsPipelineStage StageID = eStage_TiledShading;
+
+	CTiledShadingStage(CGraphicsPipeline& graphicsPipeline);
 	~CTiledShadingStage();
 
-	void Init();
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRendererCVars::CV_r_DeferredShadingTiled >= CTiledShadingStage::eDeferredMode_1Pass;
+	}
+
+	void Init() final;
 	void Execute();
 
 private:
@@ -24,7 +39,7 @@ private:
 
 		eVolumeType_Count
 	};
-	
+
 	struct SVolumeGeometry
 	{
 		CGpuBuffer       vertexDataBuf;

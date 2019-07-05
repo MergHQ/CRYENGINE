@@ -19,8 +19,8 @@ IMPLEMENT_DYNCREATE(ClipVolumeTool, DesignerEditor)
 class ClipVolumeTool_ClassDesc : public IClassDesc
 {
 	ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
-	const char*    ClassName()       { return "EditTool.ClipVolumeTool"; };
-	const char*    Category()        { return "Brush"; };
+	const char*    ClassName()       { return "EditTool.ClipVolumeTool"; }
+	const char*    Category()        { return "Brush"; }
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(ClipVolumeTool); }
 };
 
@@ -75,8 +75,8 @@ IMPLEMENT_DYNCREATE(CreateClipVolumeTool, ClipVolumeTool)
 class CreateClipVolumeTool_ClassDesc : public IClassDesc
 {
 	ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
-	const char*    ClassName() { return "EditTool.CreateClipVolumeTool"; };
-	const char*    Category() { return "Object"; };
+	const char*    ClassName() { return "EditTool.CreateClipVolumeTool"; }
+	const char*    Category() { return "Object"; }
 
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CreateClipVolumeTool); }
 };
@@ -89,4 +89,3 @@ CreateClipVolumeTool::CreateClipVolumeTool()
 }
 
 }
-

@@ -66,15 +66,16 @@ bool CPlayerStateSwim::OnPrePhysicsUpdate(CPlayer& player, const SActorFrameMove
 
 	CPlayerStateUtil::PhySetFly(player);
 
-	const SPlayerStats& stats = player.m_stats;
-
 #ifdef STATE_DEBUG
 	const bool debug = (g_pGameCVars->cl_debugSwimming != 0);
 #endif
 
 	const Vec3 entityPos = player.GetEntity()->GetWorldPos();
+
+#ifdef STATE_DEBUG
 	const Quat baseQuat = player.GetBaseQuat();
 	const Vec3 vRight(baseQuat.GetColumn0());
+#endif
 
 	Vec3 velocity = player.GetActorPhysics().velocity;
 
@@ -420,7 +421,7 @@ void CPlayerStateSwim::UpdateAudio(CPlayer const& player)
 		if (fabs_tpl(submersionDepth - m_previousSubmersionDepth) > 0.1f || submersionDepth == 0.0f)
 		{
 			m_previousSubmersionDepth = submersionDepth;
-			gEnv->pAudioSystem->SetParameter(m_submersionDepthParam, submersionDepth);
+			gEnv->pAudioSystem->SetParameterGlobally(m_submersionDepthParam, submersionDepth);
 		}
 	}
 }

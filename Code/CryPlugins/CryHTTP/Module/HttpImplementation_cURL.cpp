@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "HttpImplementation_cURL.h"
 
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>
+#include <CrySystem/ConsoleRegistration.h>
+
+#include "HttpImplementation_cURL.h"
 
 namespace Cry
 {
@@ -66,6 +68,9 @@ namespace Cry
 						break;
 					case ERequestType::PUT:
 						curl_easy_setopt(request.pHandle, CURLOPT_CUSTOMREQUEST, "PUT");
+						break;
+					case ERequestType::GET:
+						curl_easy_setopt(request.pHandle, CURLOPT_CUSTOMREQUEST, "GET");
 						break;
 					default:
 						curl_easy_setopt(request.pHandle, CURLOPT_CUSTOMREQUEST, nullptr);

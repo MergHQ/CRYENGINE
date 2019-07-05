@@ -1,9 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Util/BoostPythonHelpers.h"
 #include "Objects/DesignerObject.h"
-#include "DesignerEditor.h"
 #include "Tools/Select/SelectTool.h"
 #include "Tools/Select/SelectGrowTool.h"
 #include "Tools/Select/InvertSelectionTool.h"
@@ -14,13 +12,14 @@
 #include "Tools/Select/SelectAllNoneTool.h"
 #include "Util/ElementSet.h"
 #include "BasicScripts.h"
+#include "DesignerEditor.h"
 
 namespace Designer {
 namespace Script
 {
 DesignerEditor* GetDesignerEditTool()
 {
-	CEditTool* pEditor = GetIEditor()->GetEditTool();
+	CEditTool* pEditor = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 	if (pEditor->IsKindOf(RUNTIME_CLASS(DesignerEditor)))
 		return (DesignerEditor*)pEditor;
 	return NULL;
@@ -287,4 +286,3 @@ void PyDesignerSelectPivotMode()
                        "Select Pivot Mode of CryDesigner",
                        "designer.select_pivotmode()");
  */
-

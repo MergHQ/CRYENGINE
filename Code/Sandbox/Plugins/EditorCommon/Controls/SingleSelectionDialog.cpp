@@ -6,6 +6,7 @@
 
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QDialogButtonBox>
 
 CSingleSelectionDialog::CSingleSelectionDialog(QWidget* pParent)
 	: CEditorDialog("SingleSelectionDialog", pParent)
@@ -49,4 +50,3 @@ void CSingleSelectionDialog::Rebuild()
 
 	setLayout(pMainLayout);
 }
-

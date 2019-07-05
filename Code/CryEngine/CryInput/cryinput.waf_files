@@ -1,30 +1,30 @@
 {
-  "NoUberFile":{
-    "Root":[
-      "StdAfx.cpp",
-      "StdAfx.h"
-    ]
-  },
-  "CryInput_uber.cpp":{
-    "Root":[
-      "CryInput.cpp",
-      "CryInput.h",
-      "InputCVars.cpp",
-      "InputCVars.h",
-      "resource.h"
-    ],
-    "Shared":[
-      "BaseInput.cpp",
-      "InputDevice.cpp",
-      "BaseInput.h",
-      "InputDevice.h"
-    ],
-    "TrackIR":[
-      "NaturalPointInputNULL.h"
-    ],
-    "EyeTracker":[
-      "EyeTrackerInput.cpp",
-      "EyeTrackerInput.h"
-    ]
-  }
+    "CryInput_uber.cpp": {
+        "EyeTracker": [
+            "EyeTrackerInput.cpp",
+            "EyeTrackerInput.h"
+        ],
+        "Root": [
+            "CryInput.cpp",
+            "CryInput.h",
+            "InputCVars.cpp",
+            "InputCVars.h",
+            "resource.h"
+        ],
+        "Shared": [
+            "BaseInput.cpp",
+            "InputDevice.cpp",
+            "BaseInput.h",
+            "InputDevice.h"
+        ],
+        "TrackIR": [
+            "NaturalPointInputNULL.h"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
 }

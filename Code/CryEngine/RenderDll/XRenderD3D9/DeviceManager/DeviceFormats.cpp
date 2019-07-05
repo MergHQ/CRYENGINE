@@ -5,12 +5,10 @@
 
 #include <CryRenderer/ITexture.h> // ETEX_Format
 
-#include "DriverD3D.h"
 
 bool SPixFormat::CheckSupport(D3DFormat Format, const char* szDescr)
 {
 	bool bRes = false;
-	CD3D9Renderer* rd = gcpRendD3D;
 
 	Init();
 	if ((Options = GetDeviceObjectFactory().QueryFormatSupport(Format)) & (FMTSUPPORT_TEXTURE2D | FMTSUPPORT_TEXTURECUBE))
@@ -123,9 +121,7 @@ void SPixFormatSupport::CheckFormatSupport()
 	// Depth/Stencil formats
 	m_FormatD32FS8.CheckSupport(DXGI_FORMAT_R32G8X24_TYPELESS, "D32FS8 (R32G8T)");
 	m_FormatD32F.CheckSupport(DXGI_FORMAT_R32_TYPELESS, "D32F (R32T)");
-#if CRY_PLATFORM_DURANGO
-	m_FormatD24S8.CheckSupport(DXGI_FORMAT_UNKNOWN, "D24S8 (R24G8T)");
-#else
+#if !CRY_PLATFORM_DURANGO
 	m_FormatD24S8.CheckSupport(DXGI_FORMAT_R24G8_TYPELESS, "D24S8 (R24G8T)");
 #endif
 
@@ -154,7 +150,7 @@ void SPixFormatSupport::CheckFormatSupport()
 	m_FormatB8G8R8A8.CheckSupport(DXGI_FORMAT_B8G8R8A8_UNORM, "B8G8R8A8");
 	m_FormatB8G8R8X8.CheckSupport(DXGI_FORMAT_B8G8R8X8_UNORM, "B8G8R8X8");
 
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_OPENGL
+#if CRY_RENDERER_VULKAN
 	m_FormatEAC_R11.CheckSupport(DXGI_FORMAT_EAC_R11_UNORM, "EAC_R11");
 	m_FormatEAC_R11S.CheckSupport(DXGI_FORMAT_EAC_R11_SNORM, "EAC_R11S");
 	m_FormatEAC_RG11.CheckSupport(DXGI_FORMAT_EAC_RG11_UNORM, "EAC_RG11");
@@ -164,7 +160,7 @@ void SPixFormatSupport::CheckFormatSupport()
 
 	m_FormatASTC_LDR.CheckSupport(DXGI_FORMAT_ASTC_4x4_UNORM, "ASTC_LDR");
 //	m_FormatASTC_HDR.CheckSupport(DXGI_FORMAT_ASTC_4x4_UINT, "ASTC_HDR");
-#endif //CRY_RENDERER_OPENGL
+#endif //CRY_RENDERER_VULKAN
 
 	// Pre-calculate all possible queries
 	for (ETEX_Format eQueryable = eTF_Unknown; eQueryable != eTF_MaxFormat; eQueryable = ETEX_Format(eQueryable + 1))
@@ -679,7 +675,7 @@ ETEX_Format SPixFormatSupport::_GetClosestFormatSupported(ETEX_Format eTFDst, co
 		}
 		break;
 
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_OPENGL
+#if CRY_RENDERER_VULKAN
 	case eTF_EAC_R11:
 		if (m_FormatEAC_R11.IsValid())
 		{
@@ -905,14 +901,14 @@ bool DeviceFormats::IsSRGBReadable(D3DFormat nFormat)
 	case DXGI_FORMAT_BC7_UNORM:
 		return true;
 
-#if CRY_RENDERER_VULKAN || (CRY_RENDERER_OPENGL >= 430)
+#if CRY_RENDERER_VULKAN
 	case DXGI_FORMAT_ETC2_UNORM:
 		return true;
 	case DXGI_FORMAT_ETC2A_UNORM:
 		return true;
 	case DXGI_FORMAT_ASTC_4x4_UNORM:
 		return true;
-#endif //CRY_RENDERER_OPENGL
+#endif //CRY_RENDERER_VULKAN
 
 	default:
 		break;
@@ -1029,9 +1025,6 @@ D3DFormat DeviceFormats::ConvertFromTexFormat(ETEX_Format eTF)
 		return DXGI_FORMAT_R4G4_UNORM;
 	case eTF_R4G4B4A4:
 		return DXGI_FORMAT_R4G4B4A4_UNORM;
-#endif
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_OPENGL
-		// only available as hardware format under OpenGL/
 	case eTF_EAC_R11:
 		return DXGI_FORMAT_EAC_R11_UNORM;
 	case eTF_EAC_R11S:
@@ -1046,7 +1039,7 @@ D3DFormat DeviceFormats::ConvertFromTexFormat(ETEX_Format eTF)
 		return DXGI_FORMAT_ETC2A_UNORM;
 	case eTF_ASTC_LDR_4x4:
 		return DXGI_FORMAT_ASTC_4x4_UNORM;
-#endif //CRY_RENDERER_OPENGL
+#endif //CRY_RENDERER_VULKAN
 
 		// only available as hardware format under DX9
 	case eTF_A8L8:
@@ -1155,13 +1148,11 @@ uint32 DeviceFormats::GetWriteMask(ETEX_Format eTF)
 		return D3D11_COLOR_WRITE_ENABLE_ALL;
 
 #if CRY_RENDERER_VULKAN
+	// only available as hardware format under Vulkan
 	case eTF_R4G4:
 		return D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN;
 	case eTF_R4G4B4A4:
 		return D3D11_COLOR_WRITE_ENABLE_ALL;
-#endif
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_OPENGL
-		// only available as hardware format under OpenGL
 	case eTF_EAC_R11:
 	case eTF_EAC_R11S:
 		return D3D11_COLOR_WRITE_ENABLE_RED;
@@ -1174,7 +1165,7 @@ uint32 DeviceFormats::GetWriteMask(ETEX_Format eTF)
 		return D3D11_COLOR_WRITE_ENABLE_ALL;
 	case eTF_ASTC_LDR_4x4:
 		return D3D11_COLOR_WRITE_ENABLE_ALL;
-#endif //CRY_RENDERER_OPENGL
+#endif //CRY_RENDERER_VULKAN
 
 		// only available as hardware format under DX9
 	case eTF_A8L8:
@@ -1368,9 +1359,6 @@ ETEX_Format DeviceFormats::ConvertToTexFormat(D3DFormat nFormat)
 		return eTF_R4G4;
 	case DXGI_FORMAT_R4G4B4A4_UNORM:
 		return eTF_R4G4B4A4;
-#endif
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_OPENGL
-		// only available as hardware format under OpenGL
 	case DXGI_FORMAT_EAC_R11_UNORM:
 		return eTF_EAC_R11;
 	case DXGI_FORMAT_EAC_R11_SNORM:
@@ -1571,7 +1559,7 @@ D3DFormat DeviceFormats::ConvertToSRGB(D3DFormat nFormat)
 	case DXGI_FORMAT_BC7_UNORM:
 		return DXGI_FORMAT_BC7_UNORM_SRGB;
 
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_OPENGL
+#if CRY_RENDERER_VULKAN
 	case DXGI_FORMAT_ETC2_UNORM:
 		return DXGI_FORMAT_ETC2_UNORM_SRGB;
 	case DXGI_FORMAT_ETC2A_UNORM:
@@ -1591,7 +1579,7 @@ D3DFormat DeviceFormats::ConvertToSRGB(D3DFormat nFormat)
 	case DXGI_FORMAT_BC2_UNORM_SRGB:
 	case DXGI_FORMAT_BC3_UNORM_SRGB:
 	case DXGI_FORMAT_BC7_UNORM_SRGB:
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_OPENGL
+#if CRY_RENDERER_VULKAN
 	case DXGI_FORMAT_ETC2_UNORM_SRGB:
 	case DXGI_FORMAT_ETC2A_UNORM_SRGB:
 	case DXGI_FORMAT_ASTC_4x4_UNORM_SRGB:

@@ -139,9 +139,9 @@ inline CRadianAngleDecorator<TRangeMin_X, TRangeMax_X> RadianAngleDecorator(Ang3
 	return CRadianAngleDecorator<TRangeMin_X, TRangeMax_X>(value);
 }
 
-inline SGameResourceFile GeometryPath(string& value)
+inline SGameResourceFileWithType GeometryPath(string& value)
 {
-	return SGameResourceFile(value, "Geometry (cgf)|*.cgf");
+	return SGameResourceFileWithType(value, "Model", "Geometry (cgf)|*.cgf");
 }
 
 inline SGameResourceFile GeometryPath(string& value, const char* szFilter, const char* szStartFolder)
@@ -661,7 +661,7 @@ struct SAudioSwitchStateName
 
 inline bool Serialize(Serialization::IArchive& archive, SAudioSwitchStateName& value, const char* szName, const char* szLabel)
 {
-	archive(Serialization::AudioSwitchState(value.value), szName, szLabel);
+	archive(Serialization::AudioState(value.value), szName, szLabel);
 	return true;
 }
 
@@ -683,7 +683,7 @@ struct SRtpcName
 
 inline bool Serialize(Serialization::IArchive& archive, SRtpcName& value, const char* szName, const char* szLabel)
 {
-	archive(Serialization::AudioRTPC(value.value), szName, szLabel);
+	archive(Serialization::AudioParameter(value.value), szName, szLabel);
 	return true;
 }
 
@@ -722,7 +722,7 @@ struct SLogStreamVisitor
 inline bool Serialize(Serialization::IArchive& archive, SLogStreamName& value, const char* szName, const char* szLabel)
 {
 	Private::SLogStreamVisitor logStreamVisitor;
-	gEnv->pSchematyc2->GetLog().VisitStreams(LogStreamVisitor::FromMemberFunction<Private::SLogStreamVisitor, & Private::SLogStreamVisitor::VisitLogStream>(logStreamVisitor));
+	gEnv->pSchematyc2->GetLog().VisitStreams(LogStreamVisitor::FromMemberFunction<Private::SLogStreamVisitor, &Private::SLogStreamVisitor::VisitLogStream>(logStreamVisitor));
 	if (archive.isInput())
 	{
 		Serialization::StringListValue temp(logStreamVisitor.streamNames, 0);

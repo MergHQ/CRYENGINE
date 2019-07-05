@@ -1,21 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SmartObjectsEditorDialog_h__
-#define __SmartObjectsEditorDialog_h__
 #pragma once
 
 #include <list>
 
-//#include <uxtheme.h>
-
 #include <CryAISystem/IAISystem.h>
-#include "Controls\PropertyCtrl.h"
-#include "Controls\ColorCtrl.h"
+#include "Controls/ColorCtrl.h"
+#include "Controls/PropertyCtrl.h"
 #include "Objects/BaseObject.h"
 
+class CEntityObject;
 class CSmartObjectEntry;
 class CSmartObjectHelperObject;
-class CEntityObject;
 class CSOParamBase;
 
 class CDragReportCtrl : public CXTPReportControl
@@ -239,26 +235,26 @@ public:
 	BOOL           Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd);
 	CXTPTaskPanel& GetTaskPanel() { return m_taskPanel; }
 
-	void      OnObjectEvent(CObjectEvent& event);
-	void      OnObjectEventLegacy(CBaseObject* pObject, int eventType) { OnObjectEvent(CObjectEvent(static_cast<EObjectListenerEvent>(eventType), pObject)); }
-	void      OnSelectionChanged();
-	void      RecalcLayout(BOOL bNotify = TRUE);
+	void           OnObjectChanged(const CBaseObject* pObject, const CObjectEvent& event);
+	void           OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
+	void           OnSelectionChanged();
+	void           RecalcLayout(BOOL bNotify = TRUE);
 
-	CString   GetFolderPath(HTREEITEM item) const;
-	CString   GetCurrentFolderPath() const;
-	HTREEITEM ForceFolder(const CString& folder);
-	HTREEITEM SetCurrentFolder(const CString& folder);
-	void      ModifyRuleOrder(int from, int to);
+	CString        GetFolderPath(HTREEITEM item) const;
+	CString        GetCurrentFolderPath() const;
+	HTREEITEM      ForceFolder(const CString& folder);
+	HTREEITEM      SetCurrentFolder(const CString& folder);
+	void           ModifyRuleOrder(int from, int to);
 
-	void      SetTemplateDefaults(SmartObjectCondition& condition, const CSOParamBase* param, CString* message = NULL) const;
+	void           SetTemplateDefaults(SmartObjectCondition& condition, const CSOParamBase* param, CString* message = NULL) const;
 
 protected:
 	void DeleteHelper(const CString& className, const CString& helperName);
 
 protected:
 	DECLARE_MESSAGE_MAP()
-	virtual void    OnOK()     {};
-	virtual void    OnCancel() {};
+	virtual void    OnOK()     {}
+	virtual void    OnCancel() {}
 
 	virtual BOOL    PreTranslateMessage(MSG* pMsg);
 	virtual BOOL    OnInitDialog();
@@ -312,7 +308,7 @@ protected:
 	void                    CreatePanes();
 	CXTPDockingPaneManager* GetDockingPaneManager() { return &m_paneManager; }
 
-	void                    SinkSelection();
+	void                    SyncSelection();
 	void                    UpdatePropertyTables();
 
 	// Called by the editor to notify the listener about the specified event.
@@ -384,6 +380,3 @@ private:
 	bool                            SaveSOLibrary();
 	void                            MoveAllRules(const CString& from, const CString& to);
 };
-
-#endif // __VehicleEditorDialog_h__
-

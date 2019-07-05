@@ -4,6 +4,8 @@
 #include "EntityLayer.h"
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
+#include <CryPhysics/physinterface.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CEntityLayer::CEntityLayer(const char* name, uint16 id, bool havePhysics, int specs, bool defaultLoaded, TGarbageHeaps& garbageHeaps)
 	: m_name(name)
@@ -52,7 +54,13 @@ void CEntityLayer::AddObject(EntityId id)
 			bEnableScriptUpdate = pComponent->IsUpdateEnabled();
 		}
 
-		m_entities[id] = EntityProp(id, false, pEntity->IsHidden(), bEnableScriptUpdate);
+		EntityProp& property = m_entities.emplace(id, EntityProp(id, false, pEntity->IsHidden(), bEnableScriptUpdate)).first->second;
+
+		if (!m_isEnabled)
+		{
+			// Entity layer was hidden, make sure the entity is hidden and the ENTITY_EVENT_LAYER_HIDE is sent correctly
+			EnableEntity(*pEntity, property, false);
+		}
 	}
 	m_wasReEnabled = false;
 }
@@ -91,7 +99,6 @@ bool CEntityLayer::IsSkippedBySpec() const
 	case ERenderType::Direct3D11:
 	case ERenderType::Direct3D12:
 #endif
-	case ERenderType::OpenGL:
 	case ERenderType::Vulkan:
 	default:
 		if (m_specs & eSpecType_PC)
@@ -118,7 +125,7 @@ void CEntityLayer::Enable(bool bEnable, bool bSerialize /*=true*/, bool bAllowRe
 		return;
 
 	MEMSTAT_LABEL_FMT("Layer '%s' %s", m_name.c_str(), (bEnable ? "Activating" : "Deactivating"));
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Layer '%s' %s", m_name.c_str(), (bEnable ? "Activating" : "Deactivating"));
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Entity, "Layer '%s' %s", m_name.c_str(), (bEnable ? "Activating" : "Deactivating"));
 
 	if (bEnable)
 	{
@@ -202,87 +209,16 @@ void CEntityLayer::EnableEntities(bool isEnable)
 		// activate static lights but not brushes
 		gEnv->p3DEngine->ActivateObjectsLayer(m_id, isEnable, m_havePhysics, false, true, m_name.c_str(), m_pHeap);
 
-		pe_action_awake noAwake;
-		noAwake.bAwake = false;
-
 		for (TEntityProps::iterator it = m_entities.begin(); it != m_entities.end(); ++it)
 		{
 			EntityProp& prop = it->second;
 
 			CEntity* pEntity = g_pIEntitySystem->GetEntityFromID(prop.m_id);
 
-			if (!pEntity)
+			if (pEntity == nullptr)
 				continue;
 
-			pEntity->SendEvent(SEntityEvent(isEnable ? ENTITY_EVENT_LAYER_UNHIDE : ENTITY_EVENT_LAYER_HIDE));
-
-			// when is serializing (reading, as we never call this on writing), we dont want to change those values. we just use the values that come directly from serialization.
-			if (!isEnable && !gEnv->pSystem->IsSerializingFile())
-			{
-				prop.m_bIsHidden = pEntity->IsHidden();
-
-				if (auto* pComponent = static_cast<CEntityComponentLuaScript*>(pEntity->GetComponent<IEntityScriptComponent>()))
-				{
-					prop.m_bEnableScriptUpdate = pComponent->IsUpdateEnabled();
-				}
-				else
-				{
-					prop.m_bEnableScriptUpdate = false;
-				}
-			}
-
-			if (prop.m_bIsHidden)
-				continue;
-
-			if (isEnable)
-			{
-				pEntity->Hide(!isEnable);
-
-				if (auto* pComponent = static_cast<CEntityComponentLuaScript*>(pEntity->GetComponent<IEntityScriptComponent>()))
-				{
-					pComponent->EnableScriptUpdate(prop.m_bEnableScriptUpdate);
-				}
-
-				if (prop.m_bIsNoAwake && pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
-					pEntity->GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
-
-				prop.m_bIsNoAwake = false;
-
-				SEntityEvent event;
-				event.nParam[0] = 1;
-				static IEntityClass* pConstraintClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Constraint");
-				if (pConstraintClass && pEntity->GetClass() == pConstraintClass)
-				{
-					event.event = ENTITY_EVENT_RESET;
-					pEntity->SendEvent(event);
-					event.event = ENTITY_EVENT_LEVEL_LOADED;
-					pEntity->SendEvent(event);
-				}
-				if (!m_wasReEnabled && pEntity->GetPhysics() && pEntity->GetPhysics()->GetType() == PE_ROPE)
-				{
-					event.event = ENTITY_EVENT_LEVEL_LOADED;
-					pEntity->SendEvent(event);
-				}
-			}
-			else
-			{
-				prop.m_bIsNoAwake = false;
-				CEntityPhysics* pPhProxy = pEntity->GetPhysicalProxy();
-				if (pPhProxy)
-				{
-					pe_status_awake isawake;
-					IPhysicalEntity* pPhEnt = pPhProxy->GetPhysicalEntity();
-					if (pPhEnt && pPhEnt->GetStatus(&isawake) == 0)
-						prop.m_bIsNoAwake = true;
-				}
-				pEntity->Hide(!isEnable);
-				if (auto* pComponent = static_cast<CEntityComponentLuaScript*>(pEntity->GetComponent<IEntityScriptComponent>()))
-				{
-					pComponent->EnableScriptUpdate(isEnable);
-				}
-				if (prop.m_bIsNoAwake && pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
-					pEntity->GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
-			}
+			EnableEntity(*pEntity, prop, isEnable);
 		}
 
 		if (!isEnable)
@@ -298,6 +234,87 @@ void CEntityLayer::EnableEntities(bool isEnable)
 	}
 
 	ReEvalNeedForHeap();
+}
+
+void CEntityLayer::EnableEntity(CEntity& entity, EntityProp& property, bool isEnable)
+{
+	entity.SendEvent(SEntityEvent(isEnable ? ENTITY_EVENT_LAYER_UNHIDE : ENTITY_EVENT_LAYER_HIDE));
+
+	// when is serializing (reading, as we never call this on writing), we don't want to change those values. we just use the values that come directly from serialization.
+	if (!isEnable && !gEnv->pSystem->IsSerializingFile())
+	{
+		property.m_bIsHidden = entity.IsHidden();
+
+		if (CEntityComponentLuaScript* pScriptComponent = static_cast<CEntityComponentLuaScript*>(entity.GetComponent<IEntityScriptComponent>()))
+		{
+			property.m_bEnableScriptUpdate = pScriptComponent->IsUpdateEnabled();
+		}
+		else
+		{
+			property.m_bEnableScriptUpdate = false;
+		}
+	}
+
+	if (property.m_bIsHidden)
+		return;
+
+	if (isEnable)
+	{
+		entity.Hide(!isEnable);
+
+		if (CEntityComponentLuaScript* pScriptComponent = static_cast<CEntityComponentLuaScript*>(entity.GetComponent<IEntityScriptComponent>()))
+		{
+			pScriptComponent->EnableScriptUpdate(property.m_bEnableScriptUpdate);
+		}
+
+		if (property.m_bIsNoAwake && entity.GetPhysicalProxy() && entity.GetPhysicalProxy()->GetPhysicalEntity())
+		{
+			pe_action_awake noAwake;
+			noAwake.bAwake = false;
+			entity.GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
+		}
+
+		property.m_bIsNoAwake = false;
+
+		SEntityEvent event;
+		event.nParam[0] = 1;
+		static IEntityClass* pConstraintClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Constraint");
+		if (pConstraintClass && entity.GetClass() == pConstraintClass)
+		{
+			event.event = ENTITY_EVENT_RESET;
+			entity.SendEvent(event);
+			event.event = ENTITY_EVENT_LEVEL_LOADED;
+			entity.SendEvent(event);
+		}
+		if (!m_wasReEnabled && entity.GetPhysics() && entity.GetPhysics()->GetType() == PE_ROPE)
+		{
+			event.event = ENTITY_EVENT_LEVEL_LOADED;
+			entity.SendEvent(event);
+		}
+	}
+	else
+	{
+		property.m_bIsNoAwake = false;
+		CEntityPhysics* pPhProxy = entity.GetPhysicalProxy();
+		if (pPhProxy)
+		{
+			pe_status_awake isawake;
+			IPhysicalEntity* pPhEnt = pPhProxy->GetPhysicalEntity();
+			if (pPhEnt && pPhEnt->GetStatus(&isawake) == 0)
+				property.m_bIsNoAwake = true;
+		}
+		entity.Hide(!isEnable);
+		if (CEntityComponentLuaScript* pScriptComponent = static_cast<CEntityComponentLuaScript*>(entity.GetComponent<IEntityScriptComponent>()))
+		{
+			pScriptComponent->EnableScriptUpdate(isEnable);
+		}
+		if (property.m_bIsNoAwake && entity.GetPhysicalProxy() && entity.GetPhysicalProxy()->GetPhysicalEntity())
+		{
+			pe_action_awake noAwake;
+			noAwake.bAwake = false;
+			entity.GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
+		}
+	}
 }
 
 void CEntityLayer::ReEvalNeedForHeap()

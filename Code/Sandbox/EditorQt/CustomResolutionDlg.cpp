@@ -4,6 +4,7 @@
 #include "CustomResolutionDlg.h"
 
 #include "Controls/QMenuComboBox.h"
+#include <Util/Math.h>
 
 #include <QGridLayout>
 #include <QPushButton>
@@ -196,4 +197,3 @@ void QCustomResolutionDialog::AspectOptionChanged(int index)
 		break;
 	}
 }
-

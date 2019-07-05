@@ -7,4 +7,3 @@ class CImageHDR
 public:
 	bool Load(const string& fileName, CImageEx& outImage);
 };
-

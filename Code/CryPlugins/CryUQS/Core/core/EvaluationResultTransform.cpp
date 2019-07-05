@@ -73,7 +73,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 				break;
 			}
 

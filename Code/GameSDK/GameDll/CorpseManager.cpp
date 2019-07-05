@@ -14,6 +14,7 @@ History:
 #include "StdAfx.h"
 #include "CorpseManager.h"
 #include "GameCVars.h"
+#include "Game.h"
 #include "GameRules.h"
 #include "RecordingSystem.h"
 
@@ -184,8 +185,8 @@ void CCorpseManager::UpdateCorpses(float frameTime)
 		return;
 	}
 
-	float minHeatValue = g_pGameCVars->g_corpseManager_thermalHeatMinValue;
-	float heatFadeDuration = g_pGameCVars->g_corpseManager_thermalHeatFadeDuration;
+	//float minHeatValue = g_pGameCVars->g_corpseManager_thermalHeatMinValue;
+	//float heatFadeDuration = g_pGameCVars->g_corpseManager_thermalHeatFadeDuration;
 	
 	int deleteIdx = -1;
 	IEntity* pCorpseEntities[MAX_CORPSES];
@@ -203,7 +204,6 @@ void CCorpseManager::UpdateCorpses(float frameTime)
 	for(int i = 0; i < numCorpses; i++)
 	{
 		// Update age counting up
-		float corpseAgePrevFrame = m_activeCorpses[i].age;
 		m_activeCorpses[i].age += frameTime;
 
 		IEntity* pCorpseEntity = pCorpseEntities[i];
@@ -211,6 +211,7 @@ void CCorpseManager::UpdateCorpses(float frameTime)
 		if(pCorpseEntity)
 		{
 			// Update thermal vision heat for corpse
+			/*float corpseAgePrevFrame = m_activeCorpses[i].age;
 			if(m_bThermalVisionOn && (corpseAgePrevFrame < heatFadeDuration))
 			{
 				IEntityRender *pCorpseRenderProxy = (pCorpseEntity->GetRenderInterface());
@@ -220,14 +221,14 @@ void CCorpseManager::UpdateCorpses(float frameTime)
 					{
 						float heatFadeRatio = m_activeCorpses[i].age / heatFadeDuration;
 						float heatValue = LERP(m_activeCorpses[i].thermalVisionHeat,minHeatValue,heatFadeRatio);
-						//pCorpseRenderProxy->SetVisionParams(heatValue, heatValue, heatValue, heatValue);
+						pCorpseRenderProxy->SetVisionParams(heatValue, heatValue, heatValue, heatValue);
 					}
 					else
 					{
-						//pCorpseRenderProxy->SetVisionParams(minHeatValue, minHeatValue, minHeatValue, minHeatValue);
+						pCorpseRenderProxy->SetVisionParams(minHeatValue, minHeatValue, minHeatValue, minHeatValue);
 					}
 				}
-			}
+			}*/
 
 			//  Sleep checking
 			IPhysicalEntity* pPhysEnt = pCorpseEntity->GetPhysics();

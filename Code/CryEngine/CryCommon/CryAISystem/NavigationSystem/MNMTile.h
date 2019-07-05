@@ -16,6 +16,16 @@ typedef FixedVec2<int, 16> vector2_t;
 typedef FixedVec3<int, 16> vector3_t;
 typedef FixedAABB<int, 16> aabb_t;
 
+namespace Constants
+{
+	enum TileLimits 
+	{ 
+		TileTrianglesMaxCount = 1024,
+		TileLinksMaxCount = TileTrianglesMaxCount * 6,
+		TileOffmeshLinksMaxCount = TileTrianglesMaxCount,
+	};
+}
+
 namespace Tile
 {
 
@@ -44,10 +54,8 @@ struct SLink
 	uint16 edge     : 2; //!< Local edge index of the triangle this link is on [0..2]
 	// (NOTE: 'edge' is not used for off-mesh links)
 	uint16 triangle : 10;   //!< Index into Tile::triangles
-	// (NOTE: This bit count makes our max triangle count 1024)
+	// (NOTE: This bit count shouldn't be less then TileTrianglesMaxCount. Now it makes our max triangle count 1024)
 	// (NOTE: 'triangle' is re-purposed to be the index of the off-mesh index for off-mesh links)
-	// #MNM_TODO pavloi 2016.07.26: gather all places, where max triangle count is implied and tie them to one variable, or
-	// at least cover them with COMPILE_TIME_ASSERT's.
 
 	// This enumeration can be assigned to the 'side' variable
 	// which generally would index the 14 element array

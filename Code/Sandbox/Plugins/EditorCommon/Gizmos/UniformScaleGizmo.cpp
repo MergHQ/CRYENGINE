@@ -2,19 +2,16 @@
 
 #include "StdAfx.h"
 #include "UniformScaleGizmo.h"
-#include "IDisplayViewport.h"
+
 #include "Gizmos/AxisHelper.h"
-#include "Grid.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 
 #define HIT_RADIUS (8)
 
 CUniformScaleGizmo::CUniformScaleGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
 	, m_scale(1.0f)
-{
-}
-
-CUniformScaleGizmo::~CUniformScaleGizmo()
 {
 }
 
@@ -45,7 +42,7 @@ void CUniformScaleGizmo::SetYVector(Vec3 dir)
 	m_yAxis.Normalize();
 }
 
-void CUniformScaleGizmo::Display(DisplayContext& dc)
+void CUniformScaleGizmo::Display(SDisplayContext& dc)
 {
 	IDisplayViewport* view = dc.view;
 	Vec3 position;
@@ -61,7 +58,7 @@ void CUniformScaleGizmo::Display(DisplayContext& dc)
 		string msg;
 		msg.Format("Scale %.1f", m_interactionScale);
 		dc.SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, (LPCSTR)msg, true);
+		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, (LPCSTR)msg, true);
 	}
 
 	if (GetFlag(EGIZMO_HIGHLIGHTED))
@@ -186,4 +183,3 @@ bool CUniformScaleGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

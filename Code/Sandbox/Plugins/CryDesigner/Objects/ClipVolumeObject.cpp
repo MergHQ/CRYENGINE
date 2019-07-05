@@ -2,19 +2,23 @@
 
 #include "StdAfx.h"
 #include "ClipVolumeObject.h"
-#include "Objects/ShapeObject.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
+
 #include "Core/Model.h"
 #include "Core/Helper.h"
 #include "Tools/ClipVolumeTool.h"
 #include "Util/Converter.h"
 #include "Util/Display.h"
 #include "ToolFactory.h"
-#include "Viewport.h"
+
+#include <Objects/ShapeObject.h>
+
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/GlobalHelperPreferences.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <Viewport.h>
+
 #include <Cry3DEngine/CGF/IChunkFile.h>
-#include "Serialization/Decorators/EditorActionButton.h"
-#include "Preferences/ViewportPreferences.h"
 
 namespace Designer
 {
@@ -42,10 +46,13 @@ ClipVolumeObject::ClipVolumeObject()
 	m_pVarObject->AddVariable(mv_filled, "Filled", functor(*this, &ClipVolumeObject::OnPropertyChanged));
 	m_pVarObject->AddVariable(mv_ignoreOutdoorAO, "IgnoreOutdoorAO", functor(*this, &ClipVolumeObject::OnPropertyChanged));
 	m_pVarObject->AddVariable(mv_ratioViewDist, "ViewDistRatio", functor(*this, &ClipVolumeObject::OnPropertyChanged));
+
+	gGlobalHelperPreferences.designerVolumesChanged.Connect(this, &ClipVolumeObject::UpdateHiddenIStatObjState);
 }
 
 ClipVolumeObject::~ClipVolumeObject()
 {
+	gGlobalHelperPreferences.designerVolumesChanged.DisconnectObject(this);
 }
 
 void ClipVolumeObject::PostLoad(CObjectArchive& ar)
@@ -115,7 +122,7 @@ bool ClipVolumeObject::CreateGameObject()
 		UpdateGameResource();
 	}
 
-	return m_pEntity != NULL;
+	return m_pEntity != nullptr;
 }
 
 void ClipVolumeObject::GetLocalBounds(AABB& bbox)
@@ -128,7 +135,12 @@ void ClipVolumeObject::GetLocalBounds(AABB& bbox)
 
 void ClipVolumeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showAreaHelper)
+	{
+		return;
+	}
+
 	DrawDefault(dc);
 
 	if (!GetDesigner())
@@ -141,7 +153,7 @@ void ClipVolumeObject::Display(CObjectRenderHelper& objRenderHelper)
 
 void ClipVolumeObject::UpdateGameResource()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	DynArray<Vec3> meshFaces;
 
 	if (m_pEntity)
@@ -328,7 +340,7 @@ bool ClipVolumeObject::HitTest(HitContext& hc)
 bool ClipVolumeObject::Init(CBaseObject* prev, const string& file)
 {
 	bool res = __super::Init(prev, file);
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 
 	if (m_pEntity)
 		m_pEntity->CreateProxy(ENTITY_PROXY_CLIPVOLUME);
@@ -400,29 +412,29 @@ void ClipVolumeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	CEntityObject::CreateInspectorWidgets(creator);
 
 	creator.AddPropertyTree<ClipVolumeObject>("Clip Volume", [](ClipVolumeObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
-	{
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_filled, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreOutdoorAO, ar);
-		pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioViewDist, ar);
-
-		if (ar.openBlock("operators", "Operators"))
 		{
-			if (ar.openBlock("volume", "Volume"))
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_filled, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_ignoreOutdoorAO, ar);
+			pObject->m_pVarObject->SerializeVariable(&pObject->mv_ratioViewDist, ar);
+
+			if (ar.openBlock("operators", "Operators"))
 			{
-				ar(Serialization::ActionButton([=]
-				{
-					GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
+			  if (ar.openBlock("volume", "Volume"))
+			  {
+			    ar(Serialization::ActionButton([ = ]
+					{
+						GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
 
-					GetIEditor()->SetEditTool("EditTool.ClipVolumeTool", false);
-				}),
-					"edit", "^Edit");
+						GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.ClipVolumeTool", false);
+			    }),
+			       "edit", "^Edit");
 
-				ar(Serialization::ActionButton(std::bind(&ClipVolumeObject::LoadFromCGF, pObject)), "load_cgf", "^Load CGF");
-				ar.closeBlock();
+			    ar(Serialization::ActionButton(std::bind(&ClipVolumeObject::LoadFromCGF, pObject)), "load_cgf", "^Load CGF");
+			    ar.closeBlock();
+			  }
+			  ar.closeBlock();
 			}
-			ar.closeBlock();
-		}
-	});
+	  });
 }
 
 void ClipVolumeObject::OnPropertyChanged(IVariable* var)
@@ -456,7 +468,6 @@ std::vector<EDesignerTool> ClipVolumeObject::GetIncompatibleSubtools()
 
 	return toolList;
 }
-
 
 string ClipVolumeObject::GenerateGameFilename()
 {
@@ -497,13 +508,11 @@ void ClipVolumeObject::OnEvent(ObjectEvent event)
 	case EVENT_INGAME:
 		if (GetDesigner())
 			GetDesigner()->LeaveCurrentTool();
-	case EVENT_HIDE_HELPER:
 	case EVENT_OUTOFGAME:
-	case EVENT_SHOW_HELPER:
-	{
-		UpdateHiddenIStatObjState();
-		break;
-	}
+		{
+			UpdateHiddenIStatObjState();
+			break;
+		}
 	}
 }
 
@@ -511,7 +520,7 @@ bool ClipVolumeObject::IsHiddenByOption()
 {
 	bool visible = false;
 	mv_filled.Get(visible);
-	return !(visible && GetIEditor()->IsHelpersDisplayed());
+	return !(visible && gGlobalHelperPreferences.showDesignerVolumes);
 }
 
 void ClipVolumeObject::SetHidden(bool bHidden, bool bAnimated)
@@ -528,4 +537,3 @@ void ClipVolumeObject::InvalidateTM(int nWhyFlags)
 }
 
 }
-

@@ -3,29 +3,30 @@
 #include "StdAfx.h"
 #include "GraphicsPipelineStateSet.h"
 #include "GraphicsPipelineStage.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 
 SGraphicsPipelineStateDescription::SGraphicsPipelineStateDescription(
   CRenderObject* pObj,
-  CRenderElement* pRE,
+  uint64 objFlags,
+  ERenderElementFlags elmFlags,
   const SShaderItem& _shaderItem,
   EShaderTechniqueID _technique,
   InputLayoutHandle _vertexFormat,
-  uint32 _streamMask,
+  EStreamMasks _streamMask,
   ERenderPrimitiveType _primitiveType)
 {
 	shaderItem = _shaderItem;
 	technique = _technique;
-	objectFlags = pObj->m_ObjFlags;
+	objectFlags = objFlags;
 	objectFlags_MDV = pObj->m_nMDV;
 	objectRuntimeMask = pObj->m_nRTMask;
 	vertexFormat = _vertexFormat;
 	streamMask = _streamMask;
 	primitiveType = _primitiveType;
 	renderState = pObj->m_RState;
+	padding = 0;
 
-	if ((pObj->m_ObjFlags & FOB_SKINNED) && (pRE->m_Flags & FCEF_SKINNED) && CRenderer::CV_r_usehwskinning && !CRenderer::CV_r_character_nodeform)
+	if ((objFlags & FOB_SKINNED) && (elmFlags & FCEF_SKINNED) && CRenderer::CV_r_usehwskinning && !CRenderer::CV_r_character_nodeform)
 	{
 		SSkinningData* pSkinningData = NULL;
 		SRenderObjData* pOD = pObj->GetObjData();
@@ -84,6 +85,13 @@ void CGraphicsPipelineStateLocalCache::Put(const SGraphicsPipelineStateDescripti
 	cache.description = desc;
 	cache.m_pipelineStates = states;
 	m_states.push_back(cache);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CGraphicsPipelineStage::CGraphicsPipelineStage(CGraphicsPipeline& graphicsPipeline) 
+	: m_graphicsPipeline(graphicsPipeline)
+	, m_graphicsPipelineResources(graphicsPipeline.GetPipelineResources())
+{
 }
 
 //////////////////////////////////////////////////////////////////////////

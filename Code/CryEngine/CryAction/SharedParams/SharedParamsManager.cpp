@@ -245,7 +245,7 @@ void CSharedParamsManager::Reset()
 	{
 		long use_count = iRecord->second.use_count();
 
-		CRY_ASSERT_TRACE(use_count == 1, ("Shared params structure '%s' is still referenced in %d place%s", m_names[iRecord->first].c_str(), use_count - 1, (use_count == 2) ? "" : "s"));
+		CRY_ASSERT(use_count == 1, ("Shared params structure '%s' is still referenced in %d place%s", m_names[iRecord->first].c_str(), use_count - 1, use_count == 2) ? "" : "s");
 	}
 #endif //_DEBUG
 

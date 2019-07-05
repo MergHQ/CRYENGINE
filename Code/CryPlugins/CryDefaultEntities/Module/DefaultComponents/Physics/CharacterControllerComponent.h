@@ -3,6 +3,7 @@
 #include "DefaultComponents/Geometry/AdvancedAnimationComponent.h"
 #include "DefaultComponents/Physics/RigidBodyComponent.h"
 #include "DefaultComponents/Physics/AreaComponent.h"
+#include "DefaultComponents/Physics/Vehicles/VehicleComponent.h"
 
 class CPlugin_CryDefaultEntities;
 
@@ -24,7 +25,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 
 #ifndef RELEASE
 			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }

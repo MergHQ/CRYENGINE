@@ -3,13 +3,14 @@
 #include "StdAfx.h"
 #include "BehaviorTreeNodes_Core.h"
 
+#include "CryAISystem/BehaviorTree/BehaviorTreeDefines.h"
+#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/BehaviorTree/Composite.h>
 #include <CryAISystem/BehaviorTree/Decorator.h>
 #include <CryAISystem/BehaviorTree/Action.h>
-#include <CryAISystem/BehaviorTree/SerializationSupport.h>
 #include <CrySystem/Timer.h>
+#include <CryCore/Containers/VariableCollection.h>
 #include "BehaviorTreeManager.h"
-#include "BehaviorTreeGraft.h"
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	#include <CrySerialization/Enum.h>
@@ -40,19 +41,18 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const size_t maxChildCount = std::numeric_limits<IndexType>::max();
-		IF_UNLIKELY ((size_t)xml->getChildCount() > maxChildCount)
+		IF_UNLIKELY ((size_t) xml->getChildCount() > maxChildCount)
 		{
-			ErrorReporter(*this, context).LogError("Too many children. Max %d children are supported.", maxChildCount);
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren(xml->getTag(), xml->getChildCount(), maxChildCount).c_str());  
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -70,7 +70,7 @@ public:
 		BaseClass::Serialize(archive);
 
 		if (m_children.empty())
-			archive.error(m_children, "Must contain a node");
+			archive.error(m_children, SerializationUtils::Messages::ErrorEmptyHierachy("Node"));
 
 		if (m_children.size() == 1)
 			archive.warning(m_children, "Sequence with only one node is superfluous");
@@ -169,7 +169,7 @@ public:
 		BaseClass::Serialize(archive);
 
 		if (m_children.empty())
-			archive.error(m_children, "Must contain a node");
+			archive.error(m_children, SerializationUtils::Messages::ErrorEmptyHierachy("Node"));
 
 		if (m_children.size() == 1)
 			archive.warning(m_children, "Selector with only one node is superfluous");
@@ -257,18 +257,20 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& node, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (node->getChildCount() > 32)
+		LoadResult result = LoadSuccess;
+
+		IF_UNLIKELY (xml->getChildCount() > 32)
 		{
-			ErrorReporter(*this, context).LogError("Too many children. Max 32 children allowed.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren(xml->getTag(), xml->getChildCount(), 32).c_str());  
+			result = LoadFailure;
 		}
 
 		m_successMode = SuccessMode_All;
 		m_failureMode = FailureMode_Any;
 
-		stack_string failureMode = node->getAttr("failureMode");
+		stack_string failureMode = xml->getAttr("failureMode");
 		if (!failureMode.empty())
 		{
 			if (!failureMode.compare("all"))
@@ -281,11 +283,12 @@ public:
 			}
 			else
 			{
-				gEnv->pLog->LogError("Error in the %s behavior tree : the parallel node at %d has an invalid value for the attribute failureMode.", context.treeName, node->getLine());
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Parallel", "failureMode", failureMode, "Valid values are 'all' or 'any'").c_str());
+				result = LoadFailure;
 			}
 		}
 
-		stack_string successMode = node->getAttr("successMode");
+		stack_string successMode = xml->getAttr("successMode");
 		if (!successMode.empty())
 		{
 			if (!successMode.compare("any"))
@@ -298,11 +301,20 @@ public:
 			}
 			else
 			{
-				gEnv->pLog->LogError("Error in the %s behavior tree : the parallel node at %d has an invalid value for the attribute successMode.", context.treeName, node->getLine());
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Parallel", "successMode", successMode, "Valid values are 'all' or 'any'").c_str());
+				result = LoadFailure;
 			}
 		}
 
-		return CompositeWithChildLoader::LoadFromXml(node, context);
+		const LoadResult childLoaderResult = CompositeWithChildLoader::LoadFromXml(xml, context, isLoadingFromEditor);
+		if (result == LoadSuccess && childLoaderResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -324,12 +336,15 @@ public:
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
 		archive(m_successMode, "successMode", "^Success Mode");
+		archive.doc("Specifies the Success policy based on the children's result");
+
 		archive(m_failureMode, "failureMode", "^Failure Mode");
+		archive.doc("Specifies the Failure policy based on the children's result");
 
 		BaseClass::Serialize(archive);
 
 		if (m_children.empty())
-			archive.error(m_children, "Must contain a node");
+			archive.error(m_children, SerializationUtils::Messages::ErrorEmptyHierachy("Node"));
 
 		if (m_children.size() == 1)
 			archive.warning(m_children, "Parallel with only one node is superfluous");
@@ -511,15 +526,14 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		m_desiredRepeatCount = 0;     // 0 means infinite
 		xml->getAttr("count", m_desiredRepeatCount);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -537,6 +551,8 @@ public:
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
 		archive(m_desiredRepeatCount, "repeatCount", "Repeat count (0 means infinite)");
+		archive.doc("Number of times the loop will run. If 0, loops runs forever");
+
 		BaseClass::Serialize(archive);
 	}
 #endif
@@ -610,15 +626,14 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		m_maxAttemptCount = 0;     // 0 means infinite
 		xml->getAttr("attemptCount", m_maxAttemptCount);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -638,6 +653,8 @@ public:
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
 		archive(m_maxAttemptCount, "repeatCount", "Attempt count (0 means infinite)");
+		archive.doc("Number of times the loop will run. If 0, loops runs forever");
+
 		BaseClass::Serialize(archive);
 	}
 #endif
@@ -683,15 +700,16 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-
 struct Case
 {
-	LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
+	LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool isLoadingFromEditor = true)
 	{
+		LoadResult result = LoadSuccess;
+
 		if (!xml->isTag("Case"))
 		{
-			gEnv->pLog->LogError("Priority node must only contain childs nodes of the type 'Case', and there is a child of the '%s' at line '%d'.", xml->getTag(), xml->getLine());
-			return LoadFailure;
+			gEnv->pLog->LogError("Case(%d) [Tree='%s'] Priority node must only contain children nodes of the type 'Case' and there is a child of type '%s'", xml->getLine(), context.treeName, xml->getTag());
+			result = LoadFailure;
 		}
 
 		string conditionString = xml->getAttr("condition");
@@ -701,8 +719,8 @@ struct Case
 		condition.Reset(conditionString, context.variableDeclarations);
 		if (!condition.Valid())
 		{
-			gEnv->pLog->LogError("Priority case condition '%s' couldn't be parsed.", conditionString.c_str());
-			return LoadFailure;
+			gEnv->pLog->LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Case", "condition", conditionString, "Could not be parsed").c_str());
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -711,19 +729,19 @@ struct Case
 
 		if (!xml->getChildCount() == 1)
 		{
-			gEnv->pLog->LogError("Priority case must have exactly one child.");
-			return LoadFailure;
+			gEnv->pLog->LogError("Case(%d) [Tree='%s'] Priority case must have exactly one child", xml->getLine(), context.treeName);
+			result = LoadFailure;
 		}
 
 		XmlNodeRef childXml = xml->getChild(0);
-		node = context.nodeFactory.CreateNodeFromXml(childXml, context);
+		node = context.nodeFactory.CreateNodeFromXml(childXml, context, isLoadingFromEditor);
 		if (!node)
 		{
-			gEnv->pLog->LogError("Priority case failed to load child.");
-			return LoadFailure;
+			gEnv->pLog->LogError("Case(%d) [Tree='%s'] Priority case failed to load child", xml->getLine(), context.treeName);
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -744,13 +762,30 @@ struct Case
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	void Serialize(Serialization::IArchive& archive)
 	{
+		const Variables::Declarations* variablesDeclaration = archive.context<Variables::Declarations>();
+		if (!variablesDeclaration)
+		{
+			return;
+		}
+
 		archive(m_conditionString, "condition", "^Condition");
+		archive.doc("Condition to evaluate to True. If empty, always evaluates to True");
 		if (m_conditionString.empty())
-			archive.error(m_conditionString, "Condition must be specified");
+		{
+			archive.warning(m_conditionString, "Case condition is empty. It will be always evaluated to True");
+		}
+
+		condition.Reset(m_conditionString, *variablesDeclaration);
+		if (!m_conditionString.empty() && !condition.Valid())
+		{
+			archive.error(m_conditionString, SerializationUtils::Messages::ErrorInvalidValueWithReason("Condition", m_conditionString, "Could not be parsed. Did you declare all variables?"));
+		}
 
 		archive(node, "node", "+<>" NODE_COMBOBOX_FIXED_WIDTH ">");
 		if (!node)
-			archive.error(node, "Node must be specified");
+		{
+			archive.error(node, SerializationUtils::Messages::ErrorEmptyValue("Node"));
+		}
 	}
 #endif
 
@@ -783,41 +818,40 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const int childCount = xml->getChildCount();
 		IF_UNLIKELY (childCount < 1)
 		{
 			ErrorReporter(*this, context).LogError("A priority node must have at least one case childs.");
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		const size_t maxChildCount = std::numeric_limits<CaseIndexType>::max();
 		IF_UNLIKELY ((size_t)childCount >= maxChildCount)
 		{
-			ErrorReporter(*this, context).LogError("Max %d children allowed.", maxChildCount);
-			return LoadFailure;
+			
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren("Priority", childCount, maxChildCount).c_str());
+			result = LoadFailure;
 		}
 
-		const int defaultChildIndex = childCount - 1;
 		for (int i = 0; i < childCount; ++i)
 		{
 			Case priorityCase;
 			XmlNodeRef caseXml = xml->getChild(i);
 
-			IF_UNLIKELY (priorityCase.LoadFromXml(caseXml, context) == LoadFailure)
+			IF_UNLIKELY (priorityCase.LoadFromXml(caseXml, context, isLoadingFromEditor) == LoadFailure)
 			{
 				ErrorReporter(*this, context).LogError("Failed to load Case.");
-				return LoadFailure;
+				result = LoadFailure;
 			}
 
 			m_cases.push_back(priorityCase);
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -840,10 +874,12 @@ public:
 		archive(m_cases, "cases", "^[<>]");
 
 		if (m_cases.empty())
-			archive.error(m_cases, "Must contain a case");
+		{
+			archive.error(m_cases, SerializationUtils::Messages::ErrorEmptyHierachy("Case"));
+		}
 
 		if (m_cases.size() == 1)
-			archive.warning(m_cases, "Priority with only one case is superfluous");
+			archive.warning(m_cases, "Priority selector with only one case is superfluous");
 
 		BaseClass::Serialize(archive);
 	}
@@ -930,17 +966,24 @@ struct Transition
 {
 	LoadResult LoadFromXml(const XmlNodeRef& transitionXml)
 	{
+		LoadResult result = LoadSuccess;
+
 		destinationStateCRC32 = 0;
 		destinationStateIndex = StateIndexInvalid;
 #ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
 		xmlLine = transitionXml->getLine();
 #endif
-
-		string to = transitionXml->getAttr("to");
-		if (to.empty())
+		string to;
+		if (transitionXml->haveAttr("to"))
 		{
-			gEnv->pLog->LogError("Transition is missing 'to' attribute.");
-			return LoadFailure;
+			to = transitionXml->getAttr("to");
+		}
+		else
+		{
+			const string errorMessage = string().Format("Transition(%d) Unknown event '%s' used. Event will be declared automatically.", transitionXml->getLine()) + ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Transition", "to");
+			gEnv->pLog->LogError("%s", errorMessage.c_str());
+
+			result = LoadFailure;
 		}
 
 		destinationStateCRC32 = CCrc32::ComputeLowercase(to);
@@ -948,12 +991,15 @@ struct Transition
 #ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
 		destinationStateName = to;
 #endif
-
-		string onEvent = transitionXml->getAttr("onEvent");
-		if (onEvent.empty())
+		string onEvent;
+		if (transitionXml->haveAttr("onEvent"))
 		{
-			gEnv->pLog->LogError("Transition is missing 'onEvent' attribute.");
-			return LoadFailure;
+			onEvent = transitionXml->getAttr("onEvent");
+		}
+		else
+		{
+			gEnv->pLog->LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Transition", "onEvent").c_str());
+			result = LoadFailure;
 		}
 
 		triggerEvent = Event(onEvent);
@@ -962,7 +1008,7 @@ struct Transition
 		triggerEventName = onEvent;
 #endif
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -976,15 +1022,24 @@ struct Transition
 #endif
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
-	void Serialize(Serialization::IArchive& archive)
-	{
-		archive(triggerEventName, "triggerEventName", "^>" STATE_TRANSITION_EVENT_FIXED_WIDTH ">Trigger event");
-		if (triggerEventName.empty())
-			archive.error(triggerEventName, "Must specify a trigger event");
+	void Transition::Serialize(Serialization::IArchive& archive);
 
-		archive(destinationStateName, "destinationState", "^Destination state");
-		if (destinationStateName.empty())
-			archive.error(destinationStateName, "Must specify a destination state");
+	const string& SerializeToString() const
+	{
+		return triggerEventName;
+	}
+#endif
+
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION) && defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE)
+	bool operator < (const Transition &rhs) const
+	{
+		return (triggerEventName < rhs.triggerEventName);
+	}
+
+	bool operator ==(const Transition &rhs) const
+	{
+		return destinationStateName == rhs.destinationStateName &&
+			triggerEventName == rhs.triggerEventName;
 	}
 #endif
 
@@ -1016,12 +1071,14 @@ struct State
 	{
 	}
 
-	LoadResult LoadFromXml(const XmlNodeRef& stateXml, const LoadContext& context)
+	LoadResult LoadFromXml(const XmlNodeRef& stateXml, const LoadContext& context, const bool isLoadingFromEditor = true)
 	{
+		LoadResult result = LoadSuccess;
+
 		if (!stateXml->isTag("State"))
 		{
-			gEnv->pLog->LogError("StateMachine node must contain child nodes of the type 'State', and there is a child of the '%s' at line '%d'.", stateXml->getTag(), stateXml->getLine());
-			return LoadFailure;
+			gEnv->pLog->LogError("StateMachine(%d) [Tree='%s'] StateMachine node must contain children nodes of type 'State' and there is a child of type '%s'", stateXml->getLine(), context.treeName, stateXml->getTag());
+			result = LoadFailure;
 		}
 
 		const char* stateName;
@@ -1040,8 +1097,10 @@ struct State
 		}
 		else
 		{
-			gEnv->pLog->LogError("A state node must contain a valid 'name' attribute. The state node at the line %d does not.", stateXml->getLine());
-			return LoadFailure;
+			const string errorMessage = string().Format("State(%d) [Tree='%s'] ", stateXml->getLine(), context.treeName) +
+				ErrorReporter::ErrorMessageInvalidAttribute("State", "name", stateName, "Missing or invalid value");
+			gEnv->pLog->LogError("%s", errorMessage.c_str());
+			result = LoadFailure;
 		}
 
 		const XmlNodeRef transitionsXml = stateXml->findChild("Transitions");
@@ -1052,9 +1111,18 @@ struct State
 				Transition transition;
 				if (transition.LoadFromXml(transitionsXml->getChild(i)) == LoadFailure)
 				{
-					gEnv->pLog->LogError("Failed to load transition.");
-					return LoadFailure;
+					gEnv->pLog->LogError("State(%d) [Tree='%s'] Failed to load transition.", stateXml->getLine(), context.treeName);
+					result = LoadFailure;
 				}
+
+#if defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE) && defined(USING_BEHAVIOR_TREE_SERIALIZATION)
+				// Automatically declare game-defined signals
+				if (!context.eventsDeclaration.IsDeclared(transition.triggerEventName.c_str(), isLoadingFromEditor))
+				{
+					context.eventsDeclaration.DeclareGameEvent(transition.triggerEventName.c_str());
+					gEnv->pLog->LogWarning("State(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", stateXml->getLine(), context.treeName, transition.triggerEventName.c_str());
+				}
+#endif // STORE_INFORMATION_FOR_STATE_MACHINE_NODE && USING_BEHAVIOR_TREE_SERIALIZATION
 
 				transitions.push_back(transition);
 			}
@@ -1064,27 +1132,27 @@ struct State
 		if (!behaviorTreeXml)
 		{
 #ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
-			gEnv->pLog->LogError("A state node must contain a 'BehaviorTree' child. The state node '%s' at %d does not.", name.c_str(), stateXml->getLine());
+			gEnv->pLog->LogError("State(%d) [Tree='%s'] A state node must contain a 'BehaviorTree' child. The state node '%s' does not.", stateXml->getLine(), context.treeName, name.c_str());
 #else
-			gEnv->pLog->LogError("A state node must contain a 'BehaviorTree' child. The state node at the line %d does not.", stateXml->getLine());
+			gEnv->pLog->LogError("State(%d) [Tree='%s'] A state node must contain a 'BehaviorTree' child", stateXml->getLine(), context.treeName);
 #endif
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		if (behaviorTreeXml->getChildCount() != 1)
 		{
-			gEnv->pLog->LogError("A state node must contain a 'BehaviorTree' child, which in turn must have exactly one child.");
-			return LoadFailure;
+			gEnv->pLog->LogError("State(%d) [Tree='%s'] A state node must contain a 'BehaviorTree' child, which in turn must have exactly one child.", stateXml->getLine(), context.treeName);
+			result = LoadFailure;
 		}
 
-		node = context.nodeFactory.CreateNodeFromXml(behaviorTreeXml->getChild(0), context);
+		node = context.nodeFactory.CreateNodeFromXml(behaviorTreeXml->getChild(0), context, isLoadingFromEditor);
 		if (!node)
 		{
-			gEnv->pLog->LogError("State failed to load child.");
-			return LoadFailure;
+			gEnv->pLog->LogError("State(%d) [Tree='%s'] State failed to load child.", stateXml->getLine(), context.treeName);
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1121,15 +1189,37 @@ struct State
 		HandleXmlLineNumberSerialization(archive, xmlLine);
 	#endif
 
+		Serialization::SContext context(archive, this);
+
 		archive(name, "name", "^State Name");
+		nameCRC32 = CCrc32::ComputeLowercase(name);
+		archive.doc("State name");
+
 		if (name.empty())
-			archive.error(name, "State name must be specified");
+		{
+			archive.error(name, SerializationUtils::Messages::ErrorEmptyValue("State name"));
+		}
 
 		archive(transitions, "transitions", "+[<>]Transitions");
+		archive.doc("List of transitions for this state. Each transition specifies a Destination State when a specific Event is triggered");
 
-		archive(node, "node", "+<>" NODE_COMBOBOX_FIXED_WIDTH ">");
+		const std::vector<size_t> duplicatedIndices = Variables::GetIndicesOfDuplicatedEntries(transitions);
+		for (const size_t i : duplicatedIndices)
+		{
+			archive.error(transitions[i].triggerEventName, SerializationUtils::Messages::ErrorDuplicatedValue("Transition event", transitions[i].triggerEventName));
+		}
+
+		archive(node, "node", "+<>" NODE_COMBOBOX_FIXED_WIDTH "> Root");
+		archive.doc("Defines the root node of the state machine");
 		if (!node)
-			archive.error(node, "Node must be specified");
+		{
+			archive.error(node, SerializationUtils::Messages::ErrorEmptyValue("Root"));
+		}
+	}
+
+	const string& SerializeToString() const
+	{
+		return name;
 	}
 #endif
 
@@ -1148,6 +1238,19 @@ struct State
 		return NULL;
 	}
 
+
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION) && defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE)
+	bool operator < (const State &rhs) const
+	{
+		return name < rhs.name;
+	}
+
+	bool operator ==(const State& rhs) const
+	{
+		return nameCRC32 == rhs.nameCRC32;
+	}
+#endif
+
 	Transitions transitions;
 	uint32      nameCRC32;
 
@@ -1161,6 +1264,33 @@ struct State
 
 	INodePtr node;
 };
+
+typedef std::vector<State> States;
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+void Transition::Serialize(Serialization::IArchive& archive)
+{
+	const Variables::EventsDeclaration* eventsDeclaration = archive.context<Variables::EventsDeclaration>();
+	if (!eventsDeclaration)
+	{
+		return;
+	}
+
+	SerializeContainerAsSortedStringList(archive, "triggerEventName", "^>" STATE_TRANSITION_EVENT_FIXED_WIDTH ">Trigger event", eventsDeclaration->GetEventsWithFlags(), "Event", triggerEventName);
+	archive.doc("Event that triggers the transition to the Destination State");
+
+	const States* states = archive.context<States>();
+	if (!states)
+	{
+		return;
+	}
+
+	SerializeContainerAsSortedStringList(archive, "destinationState", "^Destination state", *states, "State", destinationStateName);
+	archive.doc("Destination State of the State Machine after the given Event has been received");
+}
+#endif
+
+
 
 // A state machine is a composite node that holds one or more children.
 // There is one selected child at any given time. Default is the first.
@@ -1196,20 +1326,22 @@ public:
 		}
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const size_t maxChildCount = std::numeric_limits<StateIndexType>::max();
 
 		IF_UNLIKELY ((size_t)xml->getChildCount() >= maxChildCount)
 		{
-			ErrorReporter(*this, context).LogError("Too many children. Max %d allowed.", maxChildCount);
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren("StateMachine", xml->getChildCount(), maxChildCount).c_str());
+			result = LoadFailure;
 		}
 
 		IF_UNLIKELY (xml->getChildCount() <= 0)
 		{
 			ErrorReporter(*this, context).LogError("A state machine node must contain at least one child state node.");
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		for (int i = 0; i < xml->getChildCount(); ++i)
@@ -1217,16 +1349,25 @@ public:
 			State state;
 			XmlNodeRef stateXml = xml->getChild(i);
 
-			if (state.LoadFromXml(stateXml, context) == LoadFailure)
+			if (state.LoadFromXml(stateXml, context, isLoadingFromEditor) == LoadFailure)
 			{
+				result = LoadFailure;
 				ErrorReporter(*this, context).LogError("Failed to load State.");
-				return LoadFailure;
 			}
 
 			m_states.push_back(state);
 		}
 
-		return LinkAllTransitions();
+		const LoadResult loadResultLinkTransitions = LinkAllTransitions();
+
+		if (result == LoadSuccess && loadResultLinkTransitions == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1243,22 +1384,32 @@ public:
 	}
 #endif
 
-#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION) && defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE)
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
+		Serialization::SContext context(archive, &m_states);
 		archive(m_states, "states", "^[+<>]States");
+		archive.doc("List of states for the state machine");
 
 		if (m_states.empty())
-			archive.error(m_states, "Must contain a state.");
-
+		{
+			archive.error(m_states, SerializationUtils::Messages::ErrorEmptyHierachy("State"));
+		}
+	
 		if (m_states.size() == 1)
 			archive.warning(m_states, "State machine with only one state is superfluous");
+
+		const std::vector<size_t> duplicatedIndices = Variables::GetIndicesOfDuplicatedEntries(m_states);
+		for (const size_t i : duplicatedIndices)
+		{
+			archive.error(m_states[i].name, SerializationUtils::Messages::ErrorDuplicatedValue("State name", m_states[i].name));
+		}
 
 		BaseClass::Serialize(archive);
 	}
 #endif
 
-#if defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE) && defined(USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT)
+#if defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE) && defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		const RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(updateContext);
@@ -1325,6 +1476,8 @@ private:
 
 	LoadResult LinkAllTransitions()
 	{
+		LoadResult result = LoadSuccess;
+
 		for (States::iterator stateIt = m_states.begin(), end = m_states.end(); stateIt != end; ++stateIt)
 		{
 			State& state = *stateIt;
@@ -1333,20 +1486,35 @@ private:
 			{
 				Transition& transition = *transitionIt;
 
+#ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
+				if (transition.triggerEventName.empty())
+				{
+					gEnv->pLog->LogError("SendTransitionEvent(%d) Unknown trigger event '%s' in transition '%s' in state '%s'", transition.xmlLine, transition.triggerEventName, state.name, transition.destinationStateName);
+				}
+
+				if (transition.destinationStateName.empty())
+				{
+					gEnv->pLog->LogError("SendTransitionEvent(%d) Unknown destination state '%s'", transition.xmlLine, transition.destinationStateName);
+				}
+#endif		
 				StateIndex stateIndex = GetIndexOfState(transition.destinationStateCRC32);
 				if (stateIndex == StateIndexInvalid)
 				{
+					transition.destinationStateIndex = 0;
 #ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
-					gEnv->pLog->LogError("Cannot transition to unknown state '%s' at line %d.", transition.destinationStateName, transition.xmlLine);
-#endif
-					return LoadFailure;
-				}
 
-				transition.destinationStateIndex = stateIndex;
+					gEnv->pLog->LogError("SendTransitionEvent(%d) Cannot transition to unknown state '%s'", transition.xmlLine, transition.destinationStateName);
+#endif
+					result = LoadFailure;
+				}
+				else
+				{
+					transition.destinationStateIndex = stateIndex;
+				}
 			}
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 	StateIndex GetIndexOfState(uint32 stateNameLowerCaseCRC32)
@@ -1362,7 +1530,6 @@ private:
 		return StateIndexInvalid;
 	}
 
-	typedef std::vector<State> States;
 	States m_states;
 };
 
@@ -1379,21 +1546,29 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string eventName = xml->getAttr("name");
 		IF_UNLIKELY (eventName.empty())
 		{
-			ErrorReporter(*this, context).LogError("Could not find the 'name' attribute.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("SendEvent","name").c_str());
+			result = LoadFailure;
 		}
 
 		m_eventToSend = Event(eventName);
+	
+#if defined(STORE_EVENT_NAME) && defined(USING_BEHAVIOR_TREE_SERIALIZATION)
+		// Automatically declare game-defined signals
+		if (!context.eventsDeclaration.IsDeclared(eventName.c_str(), isLoadingFromEditor))
+		{
+			context.eventsDeclaration.DeclareGameEvent(eventName.c_str());
+			gEnv->pLog->LogWarning("SendEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, m_eventToSend.GetName().c_str());
+		}
+#endif // STORE_EVENT_NAME && USING_BEHAVIOR_TREE_SERIALIZATION
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1401,6 +1576,97 @@ public:
 	{
 		XmlNodeRef xml = BaseClass::CreateXmlDescription();
 		xml->setTag("SendEvent");
+		xml->setAttr("name", m_eventToSend.GetName().c_str());
+		return xml;
+	}
+#endif
+
+#ifdef USING_BEHAVIOR_TREE_SERIALIZATION
+	virtual void Serialize(Serialization::IArchive& archive) override
+	{
+		const Variables::EventsDeclaration* eventsDeclaration = archive.context<Variables::EventsDeclaration>();
+		if (!eventsDeclaration)
+		{
+			return;
+		}
+
+		string& eventName = m_eventToSend.GetName();
+		SerializeContainerAsSortedStringList(archive, "event", "^Event", eventsDeclaration->GetEventsWithFlags(), "Event",  eventName);
+		m_eventToSend = Event(eventName.c_str());
+		archive.doc("Event to be sent");
+
+		BaseClass::Serialize(archive);
+	}
+#endif
+
+protected:
+	virtual void OnInitialize(const UpdateContext& context) override
+	{
+
+#ifdef STORE_EVENT_NAME
+		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName().c_str()))
+		{
+			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it?", m_eventToSend.GetName().c_str());
+			return;
+		}
+#endif // #ifdef STORE_EVENT_NAME
+
+		m_eventWasSent = true;
+		gAIEnv.pBehaviorTreeManager->HandleEvent(context.entityId, m_eventToSend);
+	}
+
+	virtual Status Update(const UpdateContext& context) override
+	{
+		if (m_eventWasSent)
+		{
+			return Success;
+		}
+		else
+		{
+			return Failure;
+		}
+	}
+
+private:
+	Event m_eventToSend;
+	bool m_eventWasSent;
+};
+
+
+//////////////////////////////////////////////////////////////////////////
+
+// Same as SendEvent with the exception that this node never finishes.
+// Usually used for transitions in state machines etc.
+class SendTransitionEvent : public Action
+{
+	typedef Action BaseClass;
+
+public:
+	struct RuntimeData
+	{
+	};
+
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
+	{
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
+
+		const stack_string eventName = xml->getAttr("name");
+		IF_UNLIKELY (eventName.empty())
+		{
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("SendTransitionEvent", "name").c_str());
+			result = LoadFailure;
+		}
+
+		m_eventToSend = Event(eventName);
+
+		return result;
+	}
+
+#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
+	virtual XmlNodeRef CreateXmlDescription() override
+	{
+		XmlNodeRef xml = BaseClass::CreateXmlDescription();
+		xml->setTag("SendTransitionEvent");
 		xml->setAttr("name", m_eventToSend.GetName());
 		return xml;
 	}
@@ -1409,22 +1675,44 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		archive(m_eventToSend, "event", "^");
-		if (strlen(m_eventToSend.GetName()) == 0)
-			archive.error(m_eventToSend, "Event must be specified");
+		State* state = archive.context<State>();
+
+		if (!state)
+		{
+			archive.error(*this, "To send a transition event node must belong to a State");
+		}
+#ifdef STORE_EVENT_NAME
+		else
+		{
+			string& eventName = m_eventToSend.GetName();
+			SerializeContainerAsSortedStringList(archive, "event", "^Event", state->transitions, "Transition event", eventName);
+			m_eventToSend = Event(eventName.c_str());
+
+			archive.doc("Transition event to be sent. Must be previously defined in the Transitions section of the State");
+		}
+#endif // #ifdef STORE_EVENT_NAME
+
 		BaseClass::Serialize(archive);
 	}
 #endif
-
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
 	{
+
+#ifdef STORE_EVENT_NAME
+		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName().c_str()))
+		{
+			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it?", m_eventToSend.GetName().c_str());
+			return;
+		}
+#endif // #ifdef STORE_EVENT_NAME
+
 		gAIEnv.pBehaviorTreeManager->HandleEvent(context.entityId, m_eventToSend);
 	}
 
 	virtual Status Update(const UpdateContext& context) override
 	{
-		return Success;
+		return Running;
 	}
 
 private:
@@ -1433,32 +1721,7 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-// Same as SendEvent with the exception that this node never finishes.
-// Usually used for transitions in state machines etc.
-class SendTransitionEvent : public SendEvent
-{
-	typedef SendEvent BaseClass;
-
-public:
-	virtual Status Update(const UpdateContext& context) override
-	{
-		return Running;
-	}
-
-#ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
-	virtual XmlNodeRef CreateXmlDescription() override
-	{
-		XmlNodeRef xml = BaseClass::CreateXmlDescription();
-		xml->setTag("SendTransitionEvent");
-		return xml;
-	}
-#endif
-
-};
-
-//////////////////////////////////////////////////////////////////////////
-
-#if defined(USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT) || defined(USING_BEHAVIOR_TREE_EDITOR)
+#if defined(DEBUG_MODULAR_BEHAVIOR_TREE) || defined(USING_BEHAVIOR_TREE_EDITOR)
 	#define STORE_CONDITION_STRING
 #endif
 
@@ -1478,37 +1741,39 @@ public:
 	};
 
 	IfCondition()
-		: m_valueToCheck(false)
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
 		{
-			ErrorReporter(*this, context).LogError("Attribute 'condition' is missing or empty.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfCondition", "condition").c_str());
 		}
 
 #ifdef STORE_CONDITION_STRING
 		m_conditionString = conditionString.c_str();
 #endif
-
-		m_valueToCheck = true;
-		if (xml->getAttr("equalTo", m_valueToCheck))
-		{
-			ErrorReporter(*this, context).LogWarning("Deprecated attribute 'equalTo' was used. Please change the expression.");
-		}
-
 		m_condition = Variables::Expression(conditionString, context.variableDeclarations);
 		if (!m_condition.Valid())
 		{
-			ErrorReporter(*this, context).LogError("Failed to parse condition '%s'.", conditionString.c_str());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("IfCondition", "value", conditionString, "Could not parse condition").c_str());
+			result = LoadFailure;
 		}
 
-		return LoadChildFromXml(xml, context);
+		const LoadResult childResult =  LoadChildFromXml(xml, context, isLoadingFromEditor);
+
+		if (result == LoadSuccess && childResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1517,6 +1782,7 @@ public:
 		XmlNodeRef xml = BaseClass::CreateXmlDescription();
 		xml->setTag("IfCondition");
 		xml->setAttr("condition", m_conditionString);
+
 		return xml;
 	}
 #endif
@@ -1524,20 +1790,37 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
+		const Variables::Declarations* variablesDeclaration = archive.context<Variables::Declarations>();
+		if (!variablesDeclaration)
+		{
+			return;
+		}
+
 		archive(m_conditionString, "condition", "^Condition");
+		archive.doc("Condition to evaluate");
+		archive.doc("Specifies if the condition should be evaluated to True or False");
+
 		if (m_conditionString.empty())
-			archive.error(m_conditionString, "Condition must be specified");
+		{
+			archive.error(m_conditionString, SerializationUtils::Messages::ErrorEmptyValue("Condition"));
+		}
+
+		m_condition.Reset(m_conditionString, *variablesDeclaration);
+		if (!m_conditionString.empty() && !m_condition.Valid())
+		{
+			archive.error(m_conditionString, SerializationUtils::Messages::ErrorInvalidValueWithReason("Condition", m_conditionString, "Could not be parsed. Did you declare all variables?"));
+		}
 
 		BaseClass::Serialize(archive);
 	}
 #endif
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
-		debugText.Format("(%s) == %s", m_conditionString.c_str(), m_valueToCheck ? "true" : "false");
+		debugText.Format("(%s)", m_conditionString.c_str());
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual void OnInitialize(const UpdateContext& context) override
@@ -1546,7 +1829,7 @@ protected:
 
 		runtimeData.gateIsOpen = false;
 
-		if (m_condition.Evaluate(context.variables.collection) == m_valueToCheck)
+		if (m_condition.Evaluate(context.variables.collection))
 		{
 			runtimeData.gateIsOpen = true;
 		}
@@ -1567,7 +1850,6 @@ private:
 	string m_conditionString;
 #endif
 	Variables::Expression m_condition;
-	bool m_valueToCheck;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -1581,30 +1863,29 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'condition' attribute.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AssertCondition", "condition").c_str());
+			result = LoadFailure;
 		}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_conditionString = conditionString.c_str();
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 		m_condition = Variables::Expression(conditionString, context.variableDeclarations);
 		if (!m_condition.Valid())
 		{
-			ErrorReporter(*this, context).LogError("Failed to parse condition '%s'.", conditionString.c_str());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("AssertCondition", "condition", conditionString, "Could not parse condition").c_str());
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1620,20 +1901,38 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
+		BaseClass::Serialize(archive);
+
+		const Variables::Declarations* variablesDeclaration = archive.context<Variables::Declarations>();
+		if (!variablesDeclaration)
+		{
+			return;
+		}
+
 		archive(m_conditionString, "condition", "^Condition");
+		archive.doc("Condition to evaluate to True");
+
 		if (m_conditionString.empty())
-			archive.error(m_conditionString, "Condition must be specified");
+		{
+			archive.error(m_conditionString, SerializationUtils::Messages::ErrorEmptyValue("Condition"));
+		}
+
+		m_condition.Reset(m_conditionString, *variablesDeclaration);
+		if (!m_conditionString.empty() && !m_condition.Valid())
+		{
+			archive.error(m_conditionString, SerializationUtils::Messages::ErrorInvalidValueWithReason("Condition", m_conditionString, "Could not be parsed. Did you declare all variables?"));
+		}
 
 		BaseClass::Serialize(archive);
 	}
 #endif
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		debugText.Format("%s", m_conditionString.c_str());
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual Status Update(const UpdateContext& context) override
@@ -1664,38 +1963,37 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
 		{
-			ErrorReporter(*this, context).LogError("Expected 'condition' attribute.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("MonitorCondition", "condition").c_str());
+			result = LoadFailure;
 		}
 
 		m_condition = Variables::Expression(conditionString, context.variableDeclarations);
 		IF_UNLIKELY (!m_condition.Valid())
 		{
-			ErrorReporter(*this, context).LogError("Couldn't get behavior variables.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("MonitorCondition", "condition", conditionString, "Could not parse condition").c_str());
+			result = LoadFailure;
 		}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_conditionString = conditionString.c_str();
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
-		return LoadSuccess;
+		return result;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const override
 	{
 		debugText.Format("(%s)", m_conditionString.c_str());
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 	virtual Status Update(const UpdateContext& context) override
 	{
@@ -1722,9 +2020,25 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
+		const Variables::Declarations* variablesDeclaration = archive.context<Variables::Declarations>();
+		if (!variablesDeclaration)
+		{
+			return;
+		}
+
 		archive(m_conditionString, "condition", "^Condition");
+		archive.doc("Condition to evaluate to True");
+
 		if (m_conditionString.empty())
-			archive.error(m_conditionString, "Condition must be specified");
+		{
+			archive.error(m_conditionString, SerializationUtils::Messages::ErrorEmptyValue("Condition"));
+		}
+
+		m_condition.Reset(m_conditionString, *variablesDeclaration);
+		if (!m_conditionString.empty() && !m_condition.Valid())
+		{
+			archive.error(m_conditionString, SerializationUtils::Messages::ErrorInvalidValueWithReason("Condition", m_conditionString, "Could not be parsed. Did you declare all variables?"));
+		}
 
 		BaseClass::Serialize(archive);
 	}
@@ -1762,17 +2076,16 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 		if (!xml->getAttr("opensWithChance", m_opensWithChance))
 		{
-			gEnv->pLog->LogError("RandomGate expected the 'opensWithChance' attribute at line %d.", xml->getLine());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("RandomGate", "opensWithChance").c_str());
 		}
 
 		m_opensWithChance = clamp_tpl(m_opensWithChance, .0f, 1.0f);
 
-		return LoadChildFromXml(xml, context);
+		return LoadChildFromXml(xml, context, isLoadingFromEditor);
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1789,6 +2102,13 @@ public:
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
 		archive(m_opensWithChance, "opensWithChance", "^Chance to open");
+		archive.doc("Chance to open the gate. From 0.0 and 1.0");
+
+		if (m_opensWithChance > 1.0f || m_opensWithChance < 0.0f)
+		{
+			archive.error(m_opensWithChance, SerializationUtils::Messages::ErrorInvalidValueWithReason("Change to open", ToString(m_opensWithChance), "Valid range is between 0.0 and 1.0"));
+		}
+
 		BaseClass::Serialize(archive);
 	}
 #endif
@@ -1837,21 +2157,18 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		if (Action::LoadFromXml(xml, context) == LoadFailure)
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
+
+		xml->getAttr("duration", m_duration);
+
+		if (m_duration < 0)
 		{
-			// TODO: Report error
-			return LoadFailure;
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Timeout", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
 		}
 
-		if (!xml->getAttr("duration", m_duration))
-		{
-			// TODO: Report error
-			return LoadFailure;
-		}
-
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1868,6 +2185,13 @@ public:
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
 		archive(m_duration, "duration", "^Duration");
+		archive.doc("Time in seconds before the node exits yielding a Failure");
+
+		if (m_duration < 0)
+		{
+			archive.error(m_duration, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_duration), "Value must be greater or equals than 0"));
+		}
+
 		BaseClass::Serialize(archive);
 	}
 #endif
@@ -1884,13 +2208,13 @@ public:
 		return runtimeData.timer.Elapsed() ? Failure : Running;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		const RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(updateContext);
 		debugText.Format("%0.1f (%0.1f)", runtimeData.timer.GetSecondsLeft(), m_duration);
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 private:
 	float m_duration;
@@ -1915,23 +2239,24 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor)
 	{
-		if (Action::LoadFromXml(xml, context) == LoadFailure)
-		{
-			// TODO: Report error
-			return LoadFailure;
-		}
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
-		if (!xml->getAttr("duration", m_duration))
-		{
-			// TODO: Report error
-			return LoadFailure;
-		}
-
+		xml->getAttr("duration", m_duration);
 		xml->getAttr("variation", m_variation);
 
-		return LoadSuccess;
+		if (m_duration < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Wait", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
+		}
+
+		if (m_variation < 0)
+		{
+			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Wait", "variation", ToString(m_variation), "Value must be greater or equal than 0").c_str());
+		}
+
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1948,8 +2273,17 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		archive(m_duration, "duration", "^<Duration");
-		archive(m_variation, "variation", "^<Variation");
+		archive(m_duration, "duration", "^Duration");
+		archive.doc("Time in seconds before the node exits yielding a Success");
+
+		if (m_duration < 0)
+		{
+			archive.error(m_duration, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_duration), "Value must be greater or equals than 0"));
+		}
+
+		archive(m_variation, "variation", "^Variation");
+		archive.doc("Maximum variation time in seconds applied to the duration parameter. Effectively modifies the duration to be in the range [duration, duration + variation]");
+
 		BaseClass::Serialize(archive);
 	}
 #endif
@@ -1969,13 +2303,13 @@ public:
 		return runtimeData.timer.Elapsed() ? Success : Running;
 	}
 
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
 	{
 		const RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(updateContext);
 		debugText.Format("%0.1f (%0.1f)", runtimeData.timer.GetSecondsLeft(), m_duration);
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 private:
 	float m_duration;
@@ -2006,17 +2340,25 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string eventName = xml->getAttr("name");
 		IF_UNLIKELY (eventName.empty())
 		{
-			gEnv->pLog->LogError("WaitForEvent could not find the 'name' attribute at line %d.", xml->getLine());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitForEvent", "name").c_str());
+			result = LoadFailure;
 		}
+
+#if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
+		// Automatically declare game-defined signals
+		if (!context.eventsDeclaration.IsDeclared(eventName.c_str(), isLoadingFromEditor))
+		{
+			context.eventsDeclaration.DeclareGameEvent(eventName.c_str());
+			gEnv->pLog->LogWarning("WaitForEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, eventName.c_str());
+		}
+#endif // USING_BEHAVIOR_TREE_SERIALIZATION
 
 		m_eventToWaitFor = Event(eventName);
 
@@ -2029,12 +2371,12 @@ public:
 				m_statusToReturn = Failure;
 			else
 			{
-				ErrorReporter(*this, context).LogError("Invalid 'result' attribute. Expected 'Success' or 'Failure'.");
-				return LoadFailure;
+				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("WaitForEvent", "result", resultString, "Valid value are 'Success' or 'Failure'").c_str());
+				result = LoadFailure;
 			}
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2042,7 +2384,7 @@ public:
 	{
 		XmlNodeRef xml = BaseClass::CreateXmlDescription();
 		xml->setTag("WaitForEvent");
-		xml->setAttr("name", m_eventToWaitFor.GetName());
+		xml->setAttr("name", m_eventToWaitFor.GetName().c_str());
 		return xml;
 	}
 #endif
@@ -2050,9 +2392,18 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		archive(m_eventToWaitFor, "event", "^");
-		if (strlen(m_eventToWaitFor.GetName()) == 0)
-			archive.error(m_eventToWaitFor, "Event must be specified");
+		const Variables::EventsDeclaration* eventsDeclaration = archive.context<Variables::EventsDeclaration>();
+		if (!eventsDeclaration)
+		{
+			return;
+		}
+
+		string& eventName = m_eventToWaitFor.GetName();
+		SerializeContainerAsSortedStringList(archive, "event", "^Event", eventsDeclaration->GetEventsWithFlags(), "Event", eventName);
+		m_eventToWaitFor = Event(eventName.c_str());
+
+		archive.doc("Event to wait for");
+
 		BaseClass::Serialize(archive);
 	}
 #endif
@@ -2066,12 +2417,12 @@ public:
 		}
 	}
 
-#if defined(USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT) && defined(USING_BEHAVIOR_TREE_EVENT_DEBUGGING)
+#if defined(DEBUG_MODULAR_BEHAVIOR_TREE)
 	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const override
 	{
 		debugText = m_eventToWaitFor.GetName();
 	}
-#endif
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 protected:
 	virtual Status Update(const UpdateContext& context) override
@@ -2119,13 +2470,15 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const char* timestampName = xml->getAttr("since");
 		if (!timestampName)
 		{
-			gEnv->pLog->LogError("%s: Missing attribute 'since' on line %d.", context.treeName, xml->getLine());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfTime", "since").c_str());
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -2142,15 +2495,24 @@ public:
 		}
 		else
 		{
-			gEnv->pLog->LogError("%s: Missing attribute 'isMoreThan' or 'isLessThan' on line %d.", context.treeName, xml->getLine());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfTime", "isMoreThan or isLessThan").c_str());
+			result = LoadFailure;
 		}
 
 		xml->getAttr("orNeverBeenSet", m_openGateIfTimestampWasNeverSet);
 
 		m_timestampID = TimestampID(timestampName);
 
-		return LoadChildFromXml(xml, context);
+		const LoadResult childResult = LoadChildFromXml(xml, context, isLoadingFromEditor);
+
+		if (result == LoadSuccess && childResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2177,15 +2539,29 @@ public:
 
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
-	{
-		archive(m_timeStampName, "name", "^");
-		if (m_timeStampName.empty())
-			archive.error(m_timeStampName, "Timestamp must be specified");
+	{	
+		const TimestampCollection* timestampCollection = archive.context<TimestampCollection>();
+		if (!timestampCollection)
+		{
+			return;
+		}
+		
+		SerializeContainerAsSortedStringList(archive,  "name", "^Timestamp", timestampCollection->GetTimestamps(), "Timestamp", m_timeStampName);
+		archive.doc("Timestamp to track");
 
-		archive(m_compareOp, "compareOp", "^");
-		archive(m_timeThreshold, "timeThreshold", "^");
+		archive(m_compareOp, "compareOp", "^Comparator");
+		archive.doc("Comparator to use to compare the elapsed time in the Timestamp and the duration time. Can be either More Than or Less Than");
+
+		archive(m_timeThreshold, "timeThreshold", "^Duration");
+		archive.doc("Time in seconds to compare against");
+
+		if (m_timeThreshold < 0)
+		{
+			archive.error(m_timeThreshold, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_timeThreshold), "Value must be greater or equals than 0"));
+		}
 
 		archive(m_openGateIfTimestampWasNeverSet, "openGateIfTimestampWasNeverSet", "^Open if it was never set");
+		archive.doc("Forces the node to succeed if the given Timestamp was never set");
 
 		BaseClass::Serialize(archive);
 	}
@@ -2248,7 +2624,7 @@ private:
 	bool        m_openGateIfTimestampWasNeverSet;
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
-	string m_timeStampName;
+	string      m_timeStampName;
 #endif
 };
 
@@ -2283,13 +2659,15 @@ public:
 		LessThan,
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const char* timestampName = xml->getAttr("since");
 		if (!timestampName)
 		{
-			gEnv->pLog->LogError("%s: Failed to find 'since' attribute on line %d.", context.treeName, xml->getLine());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitUntilTime", "since").c_str());
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -2306,15 +2684,15 @@ public:
 		}
 		else
 		{
-			gEnv->pLog->LogError("%s: Missing attribute 'isMoreThan' or 'isLessThan' on line %d.", context.treeName, xml->getLine());
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitUntilTime", "isMoreThan or isLessThan").c_str());
+			result = LoadFailure;
 		}
 
 		xml->getAttr("succeedIfNeverBeenSet", m_succeedIfTimestampWasNeverSet);
 
 		m_timestampID = TimestampID(timestampName);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2342,14 +2720,28 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		archive(m_timeStampName, "name", "^");
-		if (m_timeStampName.empty())
-			archive.error(m_timeStampName, "Timestamp must be specified");
+		const TimestampCollection* timestampCollection = archive.context<TimestampCollection>();
+		if (!timestampCollection)
+		{
+			return;
+		}
 
-		archive(m_compareOp, "compareOp", "^");
-		archive(m_timeThreshold, "timeThreshold", "^");
+		SerializeContainerAsSortedStringList(archive,  "name", "^Timestamp", timestampCollection->GetTimestamps(), "Timestamp", m_timeStampName);
+		archive.doc("Timestamp to track");
+
+		archive(m_compareOp, "compareOp", "^Comparator");
+		archive.doc("Comparator to use to compare the elapsed time in the Timestamp and the duration time. Can be either More Than or Less Than");
+
+		archive(m_timeThreshold, "timeThreshold", "^Duration");
+		archive.doc("Time in seconds to compare against");
+
+		if (m_timeThreshold < 0)
+		{
+			archive.error(m_timeThreshold, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_timeThreshold), "Value must be greater or equals than 0"));
+		}
 
 		archive(m_succeedIfTimestampWasNeverSet, "succeedIfTimestampWasNeverSet", "^Succeed if it was never set");
+		archive.doc("Forces the node to succeed if the given Timestamp was never set");
 
 		BaseClass::Serialize(archive);
 	}
@@ -2386,7 +2778,7 @@ private:
 	bool        m_succeedIfTimestampWasNeverSet;
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
-	string m_timeStampName;
+	string      m_timeStampName;
 #endif
 };
 
@@ -2415,13 +2807,15 @@ public:
 	{
 	}
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const stack_string timestampName = xml->getAttr("since");
 		IF_UNLIKELY (timestampName.empty())
 		{
-			ErrorReporter(*this, context).LogError("Missing or invalid 'since' attribute.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AssertTime", "since").c_str());
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -2438,15 +2832,15 @@ public:
 		}
 		else
 		{
-			ErrorReporter(*this, context).LogError("Missing attribute 'isMoreThan' or 'isLessThan'.");
-			return LoadFailure;
+			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitUntilTime", "isMoreThan or isLessThan").c_str());
+			result = LoadFailure;
 		}
 
 		xml->getAttr("orNeverBeenSet", m_succeedIfTimestampWasNeverSet);
 
 		m_timestampID = TimestampID(timestampName);
 
-		return LoadSuccess;
+		return result;
 	}
 
 	enum CompareOp
@@ -2480,14 +2874,28 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		archive(m_timeStampName, "name", "^");
-		if (m_timeStampName.empty())
-			archive.error(m_timeStampName, "Timestamp must be specified");
+		const TimestampCollection* timestampCollection = archive.context<TimestampCollection>();
+		if (!timestampCollection)
+		{
+			return;
+		}
 
-		archive(m_compareOp, "compareOp", "^");
-		archive(m_timeThreshold, "timeThreshold", "^");
+		SerializeContainerAsSortedStringList(archive,  "name", "^Timestamp", timestampCollection->GetTimestamps(), "Timestamp", m_timeStampName);
+		archive.doc("Timestamp to check");
+
+		archive(m_compareOp, "compareOp", "^Comparator");
+		archive.doc("Comparator to use to compare the elapsed time in the Timestamp and the duration time. Can be either More Than or Less Than");
+
+		archive(m_timeThreshold, "timeThreshold", "^Duration");
+		archive.doc("Time in seconds to compare against");
+
+		if (m_timeThreshold < 0)
+		{
+			archive.error(m_timeThreshold, SerializationUtils::Messages::ErrorInvalidValueWithReason("Duration", ToString(m_timeThreshold), "Value must be greater or equals than 0"));
+		}
 
 		archive(m_succeedIfTimestampWasNeverSet, "succeedIfTimestampWasNeverSet", "^Succeed if it was never set");
+		archive.doc("Forces the node to succeed if the given Timestamp was never set");
 
 		BaseClass::Serialize(archive);
 	}
@@ -2598,7 +3006,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-#if defined(USING_BEHAVIOR_TREE_LOG) || defined(USING_BEHAVIOR_TREE_EDITOR)
+#if defined(DEBUG_MODULAR_BEHAVIOR_TREE) || defined(USING_BEHAVIOR_TREE_EDITOR)
 	#define STORE_LOG_MESSAGE
 #endif
 
@@ -2611,10 +3019,10 @@ public:
 	{
 	};
 
-	virtual LoadResult LoadFromXml(const XmlNodeRef& node, const LoadContext& context) override
+	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
 #ifdef STORE_LOG_MESSAGE
-		m_message = node->getAttr("message");
+		m_message = xml->getAttr("message");
 #endif
 
 		return LoadSuccess;
@@ -2633,9 +3041,13 @@ public:
 #ifdef USING_BEHAVIOR_TREE_SERIALIZATION
 	virtual void Serialize(Serialization::IArchive& archive) override
 	{
-		archive(m_message, "message", "^");
+		archive(m_message, "message", "^Message");
+		archive.doc("Message to log");
+
 		if (m_message.empty())
-			archive.error(m_message, "Log message is empty");
+		{
+			archive.error(m_message, SerializationUtils::Messages::ErrorEmptyValue("Log message"));
+		}
 
 		BaseClass::Serialize(archive);
 	}
@@ -2646,7 +3058,7 @@ protected:
 	{
 #ifdef STORE_LOG_MESSAGE
 		stack_string textBuffer;
-		textBuffer.Format("%s (%d)", m_message ? m_message : "", GetXmlLine());
+		textBuffer.Format("%s (%d)", !m_message.empty() ? m_message.c_str() : "", GetXmlLine());
 		context.behaviorLog.AddMessage(m_message);
 #endif
 
@@ -2706,132 +3118,6 @@ protected:
 };
 
 //////////////////////////////////////////////////////////////////////////
-
-class Graft : public Action
-{
-public:
-	typedef Action BaseClass;
-
-	struct RuntimeData final : public IGraftNode
-	{
-		virtual bool RunBehavior(EntityId entityId, const char* behaviorName, XmlNodeRef behaviorXmlNode) override
-		{
-			if (behaviorTreeInstance.get() != NULL)
-			{
-				BehaviorVariablesContext variables(
-				  behaviorTreeInstance->variables,
-				  behaviorTreeInstance->behaviorTreeTemplate->variableDeclarations,
-				  behaviorTreeInstance->variables.Changed());
-
-				IEntity* entity = gEnv->pEntitySystem->GetEntity(entityId);
-				assert(entity);
-
-				UpdateContext context(
-				  entityId,
-				  *entity,
-				  variables,
-				  behaviorTreeInstance->timestampCollection,
-				  behaviorTreeInstance->blackboard
-#ifdef USING_BEHAVIOR_TREE_LOG
-				  ,
-				  behaviorTreeInstance->behaviorLog
-#endif
-				  );
-
-				behaviorTreeInstance->behaviorTreeTemplate->rootNode->Terminate(context);
-			}
-
-			behaviorTreeInstance = gAIEnv.pBehaviorTreeManager->CreateBehaviorTreeInstanceFromXml(behaviorName, behaviorXmlNode);
-			if (behaviorTreeInstance.get() != NULL)
-			{
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
-				behaviorTreeName = behaviorName;
-#endif
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-
-		BehaviorTreeInstancePtr behaviorTreeInstance;
-
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
-		string behaviorTreeName;
-#endif
-	};
-
-	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
-	{
-		if (BaseClass::LoadFromXml(xml, context) == LoadFailure)
-			return LoadFailure;
-
-		return LoadSuccess;
-	}
-
-	virtual void OnInitialize(const UpdateContext& context) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-		gAIEnv.pGraftManager->GraftNodeReady(context.entityId, &runtimeData);
-	}
-
-	virtual Status Update(const UpdateContext& context) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-
-		if (!runtimeData.behaviorTreeInstance.get())
-			return Running;
-
-		Status behaviorStatus = runtimeData.behaviorTreeInstance->behaviorTreeTemplate->rootNode->Tick(context);
-		if (behaviorStatus == Failure)
-		{
-			ErrorReporter(*this, context).LogError("Graft behavior failed to execute.");
-			return Failure;
-		}
-
-		if (behaviorStatus == Success)
-		{
-			gAIEnv.pGraftManager->GraftBehaviorComplete(context.entityId);
-			runtimeData.behaviorTreeInstance.reset();
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
-			runtimeData.behaviorTreeName.clear();
-#endif
-		}
-
-		return Running;
-	}
-
-	virtual void OnTerminate(const UpdateContext& context) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-		if (runtimeData.behaviorTreeInstance.get())
-			runtimeData.behaviorTreeInstance->behaviorTreeTemplate->rootNode->Terminate(context);
-
-		gAIEnv.pGraftManager->GraftNodeTerminated(context.entityId);
-	}
-
-	virtual void HandleEvent(const EventContext& context, const Event& event) override
-	{
-		RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(context);
-		if (runtimeData.behaviorTreeInstance.get())
-		{
-			runtimeData.behaviorTreeInstance->behaviorTreeTemplate->signalHandler.ProcessSignal(event.GetCRC(), runtimeData.behaviorTreeInstance->variables);
-			runtimeData.behaviorTreeInstance->timestampCollection.HandleEvent(event.GetCRC());
-			runtimeData.behaviorTreeInstance->behaviorTreeTemplate->rootNode->SendEvent(context, event);
-		}
-	}
-
-#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
-	virtual void GetCustomDebugText(const UpdateContext& updateContext, stack_string& debugText) const
-	{
-		const RuntimeData& runtimeData = GetRuntimeData<RuntimeData>(updateContext);
-		debugText.Format("%s", runtimeData.behaviorTreeName.c_str());
-	}
-#endif
-};
-
-//////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
 void RegisterBehaviorTreeNodes_Core()
@@ -2840,41 +3126,43 @@ void RegisterBehaviorTreeNodes_Core()
 
 	IBehaviorTreeManager& manager = *gAIEnv.pBehaviorTreeManager;
 
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	const char* COLOR_FLOW = "00ff00";
+	const char* COLOR_CONDITION = "00ffff";
+	const char* COLOR_FAIL = "ff0000";
+	const char* COLOR_TIME = "ffffff";
+	const char* COLOR_CORE = "0000ff";
+	const char* COLOR_DEBUG = "000000";
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
+	
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Sequence, "Flow\\Sequence", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Selector, "Flow\\Selector", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Priority, "Flow\\Priority Case", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Parallel, "Flow\\Parallel", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Loop, "Flow\\Loop", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, LoopUntilSuccess, "Flow\\Loop until success", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Priority, "Flow\\Priority", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StateMachine, "Flow\\State Machine\\State machine", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendTransitionEvent, "Flow\\State Machine\\Send transition event", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, LoopUntilSuccess, "Flow\\Loop Until Success", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StateMachine, "Flow\\State Machine\\State Sachine", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendTransitionEvent, "Flow\\State Machine\\Send Transition Event", COLOR_FLOW);
 
-	const char* COLOR_CONDITION = "00ffff";
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfCondition, "Conditions\\Condition gate", COLOR_CONDITION);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertCondition, "Conditions\\Assert condition", COLOR_CONDITION);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfCondition, "Conditions\\Condition Gate", COLOR_CONDITION);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertCondition, "Conditions\\Check Condition", COLOR_CONDITION);
 
-	const char* COLOR_FAIL = "ff0000";
-	const char* COLOR_DEBUG = "000000";
-	const char* COLOR_TIME = "ffffff";
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Timeout, "Time\\Timeout", COLOR_FAIL);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfTime, "Time\\Timestamp Gate", COLOR_TIME);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Wait, "Time\\Wait", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, MonitorCondition, "Time\\Wait for condition", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitForEvent, "Time\\Wait for event", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitUntilTime, "Time\\Wait for timestamp", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfTime, "Time\\Timestamp gate", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertTime, "Time\\Assert timestamp", COLOR_DEBUG);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, MonitorCondition, "Time\\Wait for Condition", COLOR_TIME);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitForEvent, "Time\\Wait for Event", COLOR_TIME);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitUntilTime, "Time\\Wait for Timestamp", COLOR_TIME);
 
-	const char* COLOR_CORE = "0000ff";
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendEvent, "Core\\Send Event", COLOR_CORE);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, RandomGate, "Core\\Random gate", COLOR_CORE);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Fail, "Core\\Fail", COLOR_FAIL);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SuppressFailure, "Core\\Suppress failure", COLOR_FAIL);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Log, "Core\\Log message", COLOR_DEBUG);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Halt, "Core\\Halt", COLOR_DEBUG);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, RandomGate, "Core\\Random Gate", COLOR_CORE);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendEvent, "Core\\Send Event", COLOR_CORE);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SuppressFailure, "Core\\Suppress Failure", COLOR_FAIL);
+
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertTime, "Debug\\Check Timestamp", COLOR_DEBUG);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Halt, "Debug\\Halt", COLOR_DEBUG);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Log, "Debug\\Log Message", COLOR_DEBUG);
 
 	REGISTER_BEHAVIOR_TREE_NODE(manager, Breakpoint);
-
-	REGISTER_BEHAVIOR_TREE_NODE(manager, Graft);
 }
 }

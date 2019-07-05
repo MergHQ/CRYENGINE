@@ -1,18 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "PreferencesDialog.h"
-#include "Preferences.h"
 
 #include "Controls/QObjectTreeWidget.h"
-#include "QAdvancedTreeView.h"
-#include "QtUtil.h"
-
-#include <QAdvancedPropertyTree.h>
+#include "EditorFramework/Preferences.h"
+#include "QAdvancedPropertyTreeLegacy.h"
+#include "QControls.h"
+#include <IEditor.h>
 
 #include <QHBoxLayout>
-#include <QVBoxLayout>
 #include <QPushButton>
 #include <QSplitter>
+#include <QVBoxLayout>
 
 struct SPreferencePagesContainer
 {
@@ -23,7 +22,7 @@ struct SPreferencePagesContainer
 
 	virtual ~SPreferencePagesContainer() {}
 
-	virtual bool  Serialize(yasli::Archive& ar)
+	virtual bool Serialize(yasli::Archive& ar)
 	{
 		for (SPreferencePage* pPreferencePage : m_preferences)
 			pPreferencePage->Serialize(ar);
@@ -35,21 +34,45 @@ private:
 	std::vector<SPreferencePage*> m_preferences;
 };
 
-QPreferencePage::QPreferencePage(std::vector<SPreferencePage*> preferences, const char* path, QWidget* pParent/* = nullptr*/)
+QPreferencePage::QPreferencePage(std::vector<SPreferencePage*> preferencesPages, const char* path, QWidget* pParent /* = nullptr*/)
 	: QWidget(pParent)
+	, m_preferencePages(preferencesPages)
 	, m_path(path)
+{
+	InitUI();
+
+	SPreferencePagesContainer* pContainer = new SPreferencePagesContainer(preferencesPages);
+	m_pPropertyTree->attach(yasli::Serializer(*pContainer));
+	m_pPropertyTree->expandAll();
+}
+
+QPreferencePage::QPreferencePage(SPreferencePage* pPreferencePage, QWidget* pParent /*= nullptr*/)
+	: QWidget(pParent)
+	, m_preferencePages({ pPreferencePage })
+	, m_path(pPreferencePage->GetPath())
+{
+	InitUI();
+
+	m_pPropertyTree->attach(yasli::Serializer(*pPreferencePage));
+	m_pPropertyTree->expandAll();
+}
+
+QPreferencePage::~QPreferencePage()
+{
+	DisconnectPreferences();
+}
+
+void QPreferencePage::InitUI()
 {
 	QVBoxLayout* pMainLayout = new QVBoxLayout();
 	pMainLayout->setMargin(0);
 	pMainLayout->setSpacing(0);
 
-	QAdvancedPropertyTree* pPropertyTree = new QAdvancedPropertyTree("Properties", pParent);
-	pPropertyTree->setShowContainerIndices(true);
-	SPreferencePagesContainer* pContainer = new SPreferencePagesContainer(preferences);
-	pPropertyTree->attach(yasli::Serializer(*pContainer));
-	pPropertyTree->expandAll();
-	connect(pPropertyTree, &QPropertyTree::signalChanged, this, &QPreferencePage::OnPropertyChanged);
-	pMainLayout->addWidget(pPropertyTree);
+	m_pPropertyTree = new QAdvancedPropertyTreeLegacy("Properties", this);
+	m_pPropertyTree->setShowContainerIndices(true);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &QPreferencePage::OnPropertyChanged);
+	pMainLayout->addWidget(m_pPropertyTree);
+	ConnectPreferences();
 
 	QHBoxLayout* pActionLayout = new QHBoxLayout();
 	pActionLayout->setSpacing(0);
@@ -63,32 +86,25 @@ QPreferencePage::QPreferencePage(std::vector<SPreferencePage*> preferences, cons
 	setLayout(pMainLayout);
 }
 
-QPreferencePage::QPreferencePage(SPreferencePage* pPreferencePage, QWidget* pParent /*= nullptr*/)
-	: QWidget(pParent)
-	, m_pPreferencePage(pPreferencePage)
-	, m_path(pPreferencePage->GetPath())
+void QPreferencePage::OnPreferenceChanged()
 {
-	QVBoxLayout* pMainLayout = new QVBoxLayout();
-	pMainLayout->setMargin(0);
-	pMainLayout->setSpacing(0);
+	m_pPropertyTree->revertNoninterrupting();
+}
 
-	QAdvancedPropertyTree* pPropertyTree = new QAdvancedPropertyTree("Properties", pParent);
-	pPropertyTree->setShowContainerIndices(true);
-	pPropertyTree->attach(yasli::Serializer(*pPreferencePage));
-	pPropertyTree->expandAll();
-	connect(pPropertyTree, &QPropertyTree::signalChanged, this, &QPreferencePage::OnPropertyChanged);
-	pMainLayout->addWidget(pPropertyTree);
+void QPreferencePage::ConnectPreferences()
+{
+	for (SPreferencePage* pPreferencePage : m_preferencePages)
+	{
+		pPreferencePage->signalSettingsChanged.Connect(this, &QPreferencePage::OnPreferenceChanged);
+	}
+}
 
-	QHBoxLayout* pActionLayout = new QHBoxLayout();
-	pActionLayout->setSpacing(0);
-	pActionLayout->setContentsMargins(0, 5, 0, 0);
-	pActionLayout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
-	QPushButton* pResetButton = new QPushButton("Reset to Default");
-	connect(pResetButton, &QPushButton::clicked, this, &QPreferencePage::OnResetToDefault);
-	pActionLayout->addWidget(pResetButton);
-	pMainLayout->addLayout(pActionLayout);
-
-	setLayout(pMainLayout);
+void QPreferencePage::DisconnectPreferences()
+{
+	for (SPreferencePage* pPreferencePage : m_preferencePages)
+	{
+		pPreferencePage->signalSettingsChanged.DisconnectObject(this);
+	}
 }
 
 void QPreferencePage::OnPropertyChanged()
@@ -115,7 +131,7 @@ QPreferencesDialog::QPreferencesDialog(QWidget* pParent /*= nullptr*/)
 	for (auto ite = preferences.begin(); ite != preferences.end(); ++ite)
 	{
 		auto moduleIdx = ite->first.find_last_of("/");
-		string module = ite->first.Mid(moduleIdx +1, ite->first.size() - moduleIdx);
+		string module = ite->first.Mid(moduleIdx + 1, ite->first.size() - moduleIdx);
 		m_pTreeView->AddEntry(ite->first, ite->first, module == szGeneral ? "aGeneral" : "z" + module);
 	}
 	m_pTreeView->ExpandAll();
@@ -151,4 +167,3 @@ void QPreferencesDialog::OnPreferencesReset()
 {
 	m_pContainer->SetChild(GetIEditor()->GetPreferences()->GetPageWidget(m_currPath));
 }
-

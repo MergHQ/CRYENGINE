@@ -38,18 +38,14 @@ add_sources("CryInput_durango_uber.cpp"
 		"KinectInputWinRT.h"
 		"KinectInputWinRT.cpp"
 	SOURCE_GROUP "Kinect"
-		"KinectInput.cpp"
-		"KinectXboxSyncThread.cpp"
-		"KinectInput.h"
 		"KinectInputNULL.h"
-		"KinectXboxSyncThread.h"
 	SOURCE_GROUP "Kinect\\\\Filters"
 		"Filters/JointFilter.cpp"
 		"Filters/JointFilter.h"
 )
 
 # -- cryinput_orbis_shared.waf_files --
-sources_platform(ORBIS WIN32 AND HAS_ORBISPAD)
+sources_platform(ORBIS WINDOWS AND HAS_ORBISPAD)
 add_sources("CryInput_orbis_shared_uber.cpp"
 	PROJECTS CryInput
 	SOURCE_GROUP "Orbis"
@@ -118,7 +114,7 @@ add_sources("NoUberFile"
 )
 
 # -- cryinput_dx.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("CryInput_dx_uber.cpp"
 	PROJECTS CryInput
 	SOURCE_GROUP "DX"
@@ -140,7 +136,7 @@ end_sources()
 CryEngineModule(CryInput PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 
 if (DURANGO)
-	target_link_libraries( ${THIS_PROJECT} PRIVATE uuid ws2_32 )
+	target_link_libraries( ${THIS_PROJECT} PRIVATE uuid ws2_32 xi)
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /ZW)
 elseif(APPLE)
 	target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/SDL2/include/mac" "${SDK_DIR}/SDL2/include/SDL" "${SDK_DIR}/SDL2/SDL@8112/include" )
@@ -149,13 +145,46 @@ elseif(ANDROID)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
 elseif(LINUX)
 	target_link_libraries(${THIS_PROJECT} PRIVATE SDL2)
-elseif (WIN64 OR WIN32)
+elseif (WINDOWS)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE dinput8 dxguid )
 	if(HAS_ORBISPAD)
 		target_compile_definitions( ${THIS_PROJECT} PRIVATE -DWANT_ORBISPAD_WIN )
 		#TODO: Exclude files from CryInput_orbis_shared_uber.cpp
 	endif()
 endif()	
-if (WIN64)
+if (WINDOWS)
 	 target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/OrbisPad/include" )
+endif()
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-parentheses
+		-Wno-unknown-pragmas
+		-Wno-format
+		-Wno-empty-body
+		-Wno-unused-private-field
+		-Wno-unused-value
+		-Wno-multichar
+		-Wno-unused-function
+	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-sign-compare
+		-Wno-ignored-attributes
+		-Wno-int-in-bool-context
+		-Wno-unused-but-set-variable
+		-Wno-misleading-indentation
+		-Wno-unknown-pragmas
+		-Wno-strict-aliasing
+		-Wno-maybe-uninitialized
+		-Wno-unused-const-variable
+		-Wno-multichar
+		-Wno-char-subscripts
+		-Wno-parentheses
+		-Wno-comment
+		-Wno-address
+		-Wno-format
+		-Wno-switch
+	)
 endif()

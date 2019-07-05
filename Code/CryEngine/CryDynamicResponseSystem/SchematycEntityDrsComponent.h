@@ -4,6 +4,7 @@
 
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Utils/GUID.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 class CSchematycEntityDrsComponent final : public IEntityComponent, DRS::IResponseManager::IListener, DRS::ISpeakerManager::IListener
 {

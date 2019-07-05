@@ -16,7 +16,7 @@ enum EZInflateState
 struct IZLibInflateStream
 {
 protected:
-	virtual ~IZLibInflateStream() {}; //!< Use Release().
+	virtual ~IZLibInflateStream() {} //!< Use Release().
 
 public:
 	struct SStats
@@ -58,7 +58,7 @@ public:
 struct IZLibDecompressor
 {
 protected:
-	virtual ~IZLibDecompressor()  {};   //!< Use Release().
+	virtual ~IZLibDecompressor() {}   //!< Use Release().
 
 public:
 	//! Creates a inflate stream to decompress data using zlib.

@@ -2,17 +2,19 @@
 
 #include "stdafx.h"
 #include "EditorDialog.h"
-#include "SandboxWindowing.h"
 
-#include <QApplication>
+#include "Controls/SandboxWindowing.h"
+#include "EditorFramework/PersonalizationManager.h"
+
+#include <IEditor.h>
+
 #include <QDesktopWidget>
 #include <QGridLayout>
+#include <QKeyEvent>
 #include <QPointer>
 #include <QTimer>
-#include <QKeyEvent>
 
 QVariantMap CEditorDialog::s_config = QVariantMap();
-
 
 CEditorDialog::CEditorDialog(const QString& moduleName, QWidget* parent /*= nullptr*/, bool saveSize)
 	: QDialog(parent ? parent : QApplication::activeWindow(), Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint | Qt::FramelessWindowHint)
@@ -183,6 +185,7 @@ void CEditorDialog::showEvent(QShowEvent* event)
 		// setLayout() assigns the layout to the editor.
 		m_grid = new QGridLayout();
 		m_grid->setSpacing(0);
+		m_grid->setMargin(0);
 		m_grid->setContentsMargins(0, 0, 0, 0);
 		m_titleBar = new QSandboxTitleBar(this, s_config);
 		m_grid->addWidget(m_titleBar, 0, 0, 1, 3);
@@ -196,7 +199,6 @@ void CEditorDialog::showEvent(QShowEvent* event)
 		m_grid->addWidget(w, 1, 1);
 	#if defined(WIN32) || defined(WIN64)
 		//Ensure titlebar has a HWND so it can receive native events
-		HWND h = (HWND)m_titleBar->winId();
 		SetWindowLong((HWND)winId(), GWL_STYLE, WS_OVERLAPPED | WS_MAXIMIZEBOX | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
 	#endif
 		setLayout(m_grid);
@@ -428,4 +430,3 @@ void CEditorDialog::SetTitle(const QString& title)
 {
 	setWindowTitle(title);
 }
-

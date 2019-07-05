@@ -3,14 +3,18 @@
 #include "StdAfx.h"
 #include "AudioControlsEditorPlugin.h"
 
+#include "AssetsManager.h"
+#include "ContextManager.h"
 #include "MainWindow.h"
 #include "AudioControlsLoader.h"
 #include "FileWriter.h"
 #include "FileLoader.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
+#include "ListenerManager.h"
+#include "NameValidator.h"
 #include "AssetIcons.h"
+#include "Common/IImpl.h"
 
-#include <CryAudio/IObject.h>
 #include <CryMath/Cry_Camera.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <IUndoManager.h>
@@ -21,53 +25,45 @@ REGISTER_PLUGIN(ACE::CAudioControlsEditorPlugin);
 
 namespace ACE
 {
-CAssetsManager g_assetsManager;
-CImplementationManager g_implementationManager;
-Platforms g_platforms;
 FileNames CAudioControlsEditorPlugin::s_currentFilenames;
-CryAudio::IObject* CAudioControlsEditorPlugin::s_pIAudioObject = nullptr;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
-EErrorCode CAudioControlsEditorPlugin::s_loadingErrorMask;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToLoad;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalLoaded;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalAboutToSave;
-CCrySignal<void()> CAudioControlsEditorPlugin::SignalSaved;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnBeforeLoad;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnAfterLoad;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnBeforeSave;
+CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnAfterSave;
 
-REGISTER_VIEWPANE_FACTORY(CMainWindow, "Audio Controls Editor", "Tools", true)
+REGISTER_VIEWPANE_FACTORY(CMainWindow, g_szEditorName, "Tools", true)
 
 //////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 {
-	CryAudio::SCreateObjectData const objectData("Audio trigger preview", CryAudio::EOcclusionType::Ignore);
-	s_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
-
-	InitPlatforms();
 	InitAssetIcons();
 
+	g_nameValidator.Initialize(s_regexInvalidFileName);
 	g_assetsManager.Initialize();
-	g_implementationManager.LoadImplementation();
-
-	ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::SendSignals);
+	g_contextManager.Initialize();
+	g_implManager.LoadImpl();
+	g_listenerManager.Initialize();
 
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorPlugin");
+
+	CryAudio::ESystemEvents const events = CryAudio::ESystemEvents::ContextActivated | CryAudio::ESystemEvents::ContextDeactivated;
+	gEnv->pAudioSystem->AddRequestListener(&CAudioControlsEditorPlugin::OnAudioCallback, nullptr, events);
 }
 
 //////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()
 {
-	g_implementationManager.Release();
-
-	if (s_pIAudioObject != nullptr)
-	{
-		StopTriggerExecution();
-		gEnv->pAudioSystem->ReleaseObject(s_pIAudioObject);
-	}
+	g_implManager.Release();
+	StopTriggerExecution();
+	gEnv->pAudioSystem->RemoveRequestListener(nullptr, this);
+	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::SaveData()
 {
-	SignalAboutToSave();
+	SignalOnBeforeSave();
 
 	if (g_pIImpl != nullptr)
 	{
@@ -75,28 +71,28 @@ void CAudioControlsEditorPlugin::SaveData()
 		writer.WriteAll();
 	}
 
-	s_loadingErrorMask = EErrorCode::None;
-	SignalSaved();
+	SignalOnAfterSave();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 {
-	if ((flags& EReloadFlags::SendSignals) != 0)
+	if ((flags& EReloadFlags::SendSignals) != EReloadFlags::None)
 	{
-		SignalAboutToLoad();
+		SignalOnBeforeLoad();
 	}
 
-	if ((flags& EReloadFlags::ReloadSystemControls) != 0)
+	if ((flags& EReloadFlags::ReloadSystemControls) != EReloadFlags::None)
 	{
 		GetIEditor()->GetIUndoManager()->Suspend();
 
-		g_assetsManager.UpdateFolderPaths();
+		g_assetsManager.UpdateConfigFolderPath();
 		g_assetsManager.Clear();
+		g_contextManager.Clear();
 
 		if (g_pIImpl != nullptr)
 		{
-			if ((flags& EReloadFlags::ReloadImplData) != 0)
+			if ((flags& EReloadFlags::ReloadImplData) != EReloadFlags::None)
 			{
 				ReloadImplData(flags);
 			}
@@ -104,16 +100,19 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 			CFileLoader loader;
 			loader.CreateInternalControls();
 
-			// CAudioControlsLoader is deprecated and only used for backwards compatibility. It will be removed before March 2019.
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+			// CAudioControlsLoader is deprecated and only used for backwards compatibility.  It will be removed with CE 5.7.
 			CAudioControlsLoader loaderForBackwardsCompatibility;
 			loaderForBackwardsCompatibility.LoadAll(true);
+#endif  //  USE_BACKWARDS_COMPATIBILITY
 
-			loader.LoadAll();
+			loader.Load();
 			s_currentFilenames = loader.GetLoadedFilenamesList();
-			s_loadingErrorMask = loader.GetErrorCodeMask();
 
+#if defined (USE_BACKWARDS_COMPATIBILITY)
 			loaderForBackwardsCompatibility.LoadAll(false);
 			auto const& fileNames = loaderForBackwardsCompatibility.GetLoadedFilenamesList();
+#endif  //  USE_BACKWARDS_COMPATIBILITY
 
 			for (auto const& name : fileNames)
 			{
@@ -123,26 +122,14 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 
 		GetIEditor()->GetIUndoManager()->Resume();
 	}
-	else if ((flags& EReloadFlags::ReloadImplData) != 0)
+	else if ((flags& EReloadFlags::ReloadImplData) != EReloadFlags::None)
 	{
 		ReloadImplData(flags);
 	}
 
-	if ((flags& EReloadFlags::ReloadScopes) != 0)
+	if ((flags& EReloadFlags::SendSignals) != EReloadFlags::None)
 	{
-		g_assetsManager.ClearScopes();
-
-		CFileLoader loader;
-		loader.LoadScopes();
-
-		// CAudioControlsLoader is deprecated and only used for backwards compatibility. It will be removed before March 2019.
-		CAudioControlsLoader loaderForBackwardsCompatibility;
-		loaderForBackwardsCompatibility.LoadScopes();
-	}
-
-	if ((flags& EReloadFlags::SendSignals) != 0)
-	{
-		SignalLoaded();
+		SignalOnAfterLoad();
 	}
 }
 
@@ -151,20 +138,15 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 {
 	if (g_pIImpl != nullptr)
 	{
-		if ((flags& EReloadFlags::BackupConnections) != 0)
+		if ((flags& EReloadFlags::BackupConnections) != EReloadFlags::None)
 		{
 			g_assetsManager.BackupAndClearAllConnections();
 		}
 
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
-		g_pIImpl->Reload();
+		g_pIImpl->Reload(g_implInfo);
 
-		if ((flags& EReloadFlags::SetPlatforms) != 0)
-		{
-			g_pIImpl->SetPlatforms(g_platforms);
-		}
-
-		if ((flags& EReloadFlags::BackupConnections) != 0)
+		if ((flags& EReloadFlags::BackupConnections) != EReloadFlags::None)
 		{
 			g_assetsManager.ReloadAllConnections();
 		}
@@ -176,26 +158,60 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorPlugin::ExecuteTrigger(string const& sTriggerName)
+void CAudioControlsEditorPlugin::ExecuteTrigger(string const& triggerName)
 {
-	if (!sTriggerName.empty() && (s_pIAudioObject != nullptr))
+	if (!triggerName.empty())
 	{
 		StopTriggerExecution();
-		CCamera const& camera = GetIEditor()->GetSystem()->GetViewCamera();
-		Matrix34 const& cameraMatrix = camera.GetMatrix();
-		s_pIAudioObject->SetTransformation(cameraMatrix);
-		s_audioTriggerId = CryAudio::StringToId(sTriggerName.c_str());
-		s_pIAudioObject->ExecuteTrigger(s_audioTriggerId);
+		s_audioTriggerId = CryAudio::StringToId(triggerName.c_str());
+		gEnv->pAudioSystem->ExecutePreviewTrigger(s_audioTriggerId);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsEditorPlugin::ExecuteTriggerEx(string const& triggerName, XmlNodeRef const& node)
+{
+	if (node.isValid())
+	{
+		StopTriggerExecution();
+		s_audioTriggerId = CryAudio::StringToId(triggerName.c_str());
+		gEnv->pAudioSystem->ExecutePreviewTriggerEx(node);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::StopTriggerExecution()
 {
-	if (s_pIAudioObject && (s_audioTriggerId != CryAudio::InvalidControlId))
+	if (s_audioTriggerId != CryAudio::InvalidControlId)
 	{
-		s_pIAudioObject->StopTrigger(s_audioTriggerId);
+		gEnv->pAudioSystem->StopPreviewTrigger();
 		s_audioTriggerId = CryAudio::InvalidControlId;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsEditorPlugin::OnAudioCallback(CryAudio::SRequestInfo const* const pRequestInfo)
+{
+	switch (pRequestInfo->systemEvent)
+	{
+	case CryAudio::ESystemEvents::ContextActivated:
+		{
+			auto const contextId = static_cast<CryAudio::ContextId>(reinterpret_cast<uintptr_t>(pRequestInfo->pUserData));
+			g_contextManager.SetContextActive(contextId);
+
+			break;
+		}
+	case CryAudio::ESystemEvents::ContextDeactivated:
+		{
+			auto const contextId = static_cast<CryAudio::ContextId>(reinterpret_cast<uintptr_t>(pRequestInfo->pUserData));
+			g_contextManager.SetContextInactive(contextId);
+
+			break;
+		}
+	default:
+		{
+			break;
+		}
 	}
 }
 
@@ -205,21 +221,14 @@ void CAudioControlsEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 	switch (event)
 	{
 	case ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED:
-		g_implementationManager.LoadImplementation();
-		break;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorPlugin::InitPlatforms()
-{
-	g_platforms.clear();
-	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-
-	for (auto const& platform : platforms)
-	{
-		g_platforms.push_back(platform.c_str());
+		{
+			g_implManager.LoadImpl();
+			break;
+		}
+	default:
+		{
+			break;
+		}
 	}
 }
 } // namespace ACE
-

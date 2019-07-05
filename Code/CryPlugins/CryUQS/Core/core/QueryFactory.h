@@ -19,14 +19,6 @@ namespace UQS
 
 		//===================================================================================
 		//
-		// QueryBaseUniquePtr
-		//
-		//===================================================================================
-
-		typedef std::unique_ptr<CQueryBase> QueryBaseUniquePtr;
-
-		//===================================================================================
-		//
 		// CQueryFactoryBase
 		//
 		//===================================================================================
@@ -55,7 +47,7 @@ namespace UQS
 			const Shared::CTypeInfo*            GetTypeOfShuttledItemsToExpect(const CQueryBlueprint& queryBlueprintAskingForThis) const;
 
 			static void                         InstantiateFactories();
-			static const CQueryFactoryBase&     GetDefaultQueryFactory();  // this may only be called after InstantiateFactories(); will assert() and crash otherwise
+			static const CQueryFactoryBase&     GetDefaultQueryFactory();  // this may only be called after InstantiateFactories(); will CRY_ASSERT() and crash otherwise
 
 		protected:
 			explicit                            CQueryFactoryBase(const char* szName, const CryGUID& guid, const char* szDescription, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren);
@@ -94,7 +86,7 @@ namespace UQS
 		CQueryFactory<TQuery>::CQueryFactory(const char* szName, const CryGUID& guid, const char* szDescription, bool bSupportsParameters, bool bRequiresGenerator, bool bSupportsEvaluators, size_t minRequiredChildren, size_t maxAllowedChildren)
 			: CQueryFactoryBase(szName, guid, szDescription, bSupportsParameters, bRequiresGenerator, bSupportsEvaluators, minRequiredChildren, maxAllowedChildren)
 		{
-			assert(minRequiredChildren <= maxAllowedChildren);
+			CRY_ASSERT(minRequiredChildren <= maxAllowedChildren);
 		}
 
 		template <class TQuery>

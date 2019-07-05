@@ -130,7 +130,7 @@ int32 CWaveFileReader::GetSample(uint32 nPos)
 f32 CWaveFileReader::GetSampleNormalized(uint32 nPos)
 {
 
-	int32 nData = GetSample(nPos);
+	//int32 nData = GetSample(nPos);
 	f32 fData = 0;
 
 	/*switch(m_pSoundbufferInfo.nBitsPerSample)
@@ -222,4 +222,3 @@ void CWaveFileReader::DestroyData()
 	m_nVolume = 0;
 	m_bLoaded = 0;
 }
-

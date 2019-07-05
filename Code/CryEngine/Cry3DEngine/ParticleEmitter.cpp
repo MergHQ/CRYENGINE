@@ -18,6 +18,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "Particle.h"
 #include "FogVolumeRenderNode.h"
+#include <CryEntitySystem/IEntitySystem.h>
 #include <CryMemory/STLGlobalAllocator.h>
 #include <CryString/StringUtils.h>
 
@@ -106,7 +107,7 @@ IMaterial* CParticleEmitter::GetMaterial(Vec3*) const
 	return NULL;
 }
 
-float CParticleEmitter::GetMaxViewDist()
+float CParticleEmitter::GetMaxViewDist() const
 {
 	// Max particles/radian, modified by emitter settings.
 	return CParticleManager::Instance()->GetMaxAngularDensity(gEnv->pSystem->GetViewCamera())
@@ -155,7 +156,7 @@ void CParticleEmitter::UpdateState()
 			Get3DEngine()->GetVisAreaFromPos(vPos) != NULL, nEnvFlags, true, this);
 	}
 
-	bool bUpdateState = (GetRndFlags()&ERF_HIDDEN)==0 && (bUpdateBounds || m_fAge >= m_fStateChangeAge);
+	bool bUpdateState = !IsHidden() && (bUpdateBounds || m_fAge >= m_fStateChangeAge);
 	if (bUpdateState)
 	{
 		m_fStateChangeAge = fHUGE;
@@ -329,6 +330,8 @@ void CParticleEmitter::Register(bool b, bool bImmediate)
 				SetRndFlags(ERF_REGISTER_BY_POSITION, m_bbWorld.IsContainPoint(GetPos()));
 				SetRndFlags(ERF_REGISTER_BY_BBOX, m_SpawnParams.bRegisterByBBox);
 				SetRndFlags(ERF_RENDER_ALWAYS, m_SpawnParams.bIgnoreVisAreas);
+				SetRndFlags(ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !m_SpawnParams.bIgnoreTerrainLayerBlend);
+				SetRndFlags(ERF_FOB_ALLOW_DECAL_BLEND, !m_SpawnParams.bIgnoreDecalBlend);
 				m_p3DEngine->RegisterEntity(this);
 				m_nEmitterFlags |= ePEF_Registered;
 			}
@@ -621,74 +624,23 @@ void CParticleEmitter::SetSpawnParams(SpawnParams const& spawnParams)
 	m_SpawnParams = spawnParams;
 }
 
-bool GetPhysicalVelocity(Velocity3& Vel, IEntity* pEnt, const Vec3& vPos)
-{
-	if (pEnt)
-	{
-		if (IPhysicalEntity* pPhysEnt = pEnt->GetPhysics())
-		{
-			pe_status_dynamics dyn;
-			if (pPhysEnt->GetStatus(&dyn))
-			{
-				Vel.vLin = dyn.v;
-				Vel.vRot = dyn.w;
-				Vel.vLin = Vel.VelocityAt(vPos - dyn.centerOfMass);
-				return true;
-			}
-		}
-		if (pEnt = pEnt->GetParent())
-			return GetPhysicalVelocity(Vel, pEnt, vPos);
-	}
-	return false;
-}
-
 void CParticleEmitter::UpdateFromEntity()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	m_nEmitterFlags &= ~(ePEF_HasPhysics | ePEF_HasTarget | ePEF_HasAttachment);
 
-	// Get emitter entity.
-	IEntity* pEntity = m_pOwnerEntity;
-
-	// Set external target.
-	if (!m_Target.bPriority)
+	if (UpdateTarget(m_Target, m_pOwnerEntity, GetLocation().t))
 	{
-		ParticleTarget target;
-		if (pEntity)
-		{
-			for (IEntityLink* pLink = pEntity->GetEntityLinks(); pLink; pLink = pLink->next)
-			{
-				if (!stricmp(pLink->name, "Target") || !strnicmp(pLink->name, "Target-", 7))
-				{
-					if (IEntity* pTarget = gEnv->pEntitySystem->GetEntity(pLink->entityId))
-					{
-						target.bTarget = true;
-						target.vTarget = pTarget->GetPos();
-
-						Velocity3 Vel(ZERO);
-						GetPhysicalVelocity(Vel, pTarget, GetLocation().t);
-						target.vVelocity = Vel.vLin;
-
-						AABB bb;
-						pTarget->GetLocalBounds(bb);
-						target.fRadius = max(bb.min.len(), bb.max.len());
-						m_nEmitterFlags |= ePEF_HasTarget;
-						break;
-					}
-				}
-			}
-		}
-
-		if (target.bTarget != m_Target.bTarget || target.vTarget != m_Target.vTarget)
-			InvalidateStaticBounds();
-		m_Target = target;
+		InvalidateStaticBounds();
+		if (m_Target.bTarget)
+			m_nEmitterFlags |= ePEF_HasTarget;
 	}
 
 	bool bShadows = (GetEnvFlags() & REN_CAST_SHADOWS) != 0;
 
 	// Get entity of attached parent.
-	if (pEntity)
+	if (IEntity* pEntity = m_pOwnerEntity)
 	{
 		if (!(pEntity->GetFlags() & ENTITY_FLAG_CASTSHADOW))
 			bShadows = false;
@@ -722,7 +674,7 @@ void CParticleEmitter::UpdateFromEntity()
 		SetRndFlags(ERF_CASTSHADOWMAPS, false);
 }
 
-void CParticleEmitter::GetLocalBounds(AABB& bbox)
+void CParticleEmitter::GetLocalBounds(AABB& bbox) const
 {
 	if (!m_bbWorld.IsReset())
 	{
@@ -797,7 +749,7 @@ void CParticleEmitter::UpdateEffects()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	if (!(GetRndFlags() & ERF_HIDDEN))
+	if (!IsHidden())
 	{
 		for (auto& c : m_Containers)
 		{
@@ -841,6 +793,8 @@ void CParticleEmitter::Render(SRendParams const& RenParams, const SRenderingPass
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
+
+	DBG_LOCK_TO_THREAD(this);
 
 	IF (!passInfo.RenderParticles(), 0)
 		return;
@@ -1016,13 +970,9 @@ float CParticleEmitter::GetNearestDistance(const Vec3& vPos, float fBoundsScale)
 }
 
 // Disable printf argument verification since it is generated at runtime
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic ignored "-Wformat-security"
-	#else
-		#pragma GCC diagnostic push
-		#pragma GCC diagnostic ignored "-Wformat-security"
-	#endif
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat-security"
 #endif
 
 void CParticleEmitter::RenderDebugInfo()
@@ -1195,12 +1145,8 @@ void CParticleEmitter::RenderDebugInfo()
 		}
 	}
 }
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic error "-Wformat-security"
-	#else
-		#pragma GCC diagnostic pop
-	#endif
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic pop
 #endif
 
 void CParticleEmitter::SerializeState(TSerialize ser)
@@ -1267,7 +1213,7 @@ void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityCon
 
 		if (CStatObj* pStatObj = static_cast<CStatObj*>(params.pStatObj.get()))
 		{
-			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, Matrix34A(m_Loc), pStatObj->GetMaterial(),
+			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, pStatObj->GetMaterial(),
 				context.importance, normalizedDist, context.bFullUpdate, params.bDrawNear);
 		}
 	}
@@ -1288,7 +1234,7 @@ IParticleAttributes& CParticleEmitter::GetAttributes()
 void CParticleEmitter::OffsetPosition(const Vec3& delta)
 {
 	SMoveState::OffsetPosition(delta);
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_Target.vTarget += delta;
 	m_bbWorld.Move(delta);
 

@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-class IImeManager
+
+struct IWindowMessageHandler;
+
+struct IImeManager
 {
-public:
-	virtual ~IImeManager() {};
+	virtual ~IImeManager() {}
 	// Check if IME is supported
 	virtual bool IsImeSupported() = 0;
 

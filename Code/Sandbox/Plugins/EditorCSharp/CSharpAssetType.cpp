@@ -10,6 +10,7 @@
 
 #include <cctype> 
 #include <clocale>
+#include "CSharpEditorPlugin.h"
 
 REGISTER_ASSET_TYPE(CSharpSourcefileAssetType)
 
@@ -49,16 +50,15 @@ CAssetEditor* CSharpSourcefileAssetType::Edit(CAsset* pAsset) const
 	return nullptr;
 }
 
-bool CSharpSourcefileAssetType::OnCreate(CEditableAsset& editAsset, const void* pCreateParams) const
+bool CSharpSourcefileAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
+	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(asset.GetMetadataFile()));
 	const string csFilePath = basePath + ".cs";
-	const string assetName = PathUtil::GetFileName(basePath);
 
 	string projectName = gEnv->pSystem->GetIProjectManager()->GetCurrentProjectName();
 
 	string cleanProjectName = GetCleanName(projectName);
-	string cleanAssetName = GetCleanName(assetName);
+	string cleanAssetName = GetCleanName(asset.GetName());
 	CryGUID guid = CryGUID::Create();
 
 	CCryFile assetFile(csFilePath.c_str(), "wb", ICryPak::FLAGS_NO_LOWCASE);
@@ -85,10 +85,9 @@ bool CSharpSourcefileAssetType::OnCreate(CEditableAsset& editAsset, const void* 
 
 		if (assetFile.Write(assetContents.data(), assetContents.size()))
 		{
-			editAsset.SetFiles("", { csFilePath });
+			asset.SetFiles({ csFilePath });
 		}
 	}
 
 	return true;
 }
-

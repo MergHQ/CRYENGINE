@@ -230,4 +230,3 @@ void CNodeNameWidget::SetSelectionStyle(bool isSelected)
 }
 
 }
-

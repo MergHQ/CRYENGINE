@@ -9,6 +9,18 @@
 	#include <CryAISystem/MovementRequest.h>
 	#include "MovementActor.h"
 
+
+class StandardMovementBlocksFactory : public IStandardMovementBlocksFactory
+{
+public:
+	virtual Movement::BlockPtr CreateFollowPathBlock(Movement::IPlan& plan, NavigationAgentTypeID navigationAgentTypeID, const INavPath& path, const float endDistance, const MovementStyle& style, const bool endsInCover) const override;
+	virtual Movement::BlockPtr CreateUseExactPositioningBlock(const INavPath& path, const MovementStyle& style) const override;
+	virtual Movement::BlockPtr CreateUseSmartObjectBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style, IUseSmartObjectAdapter* & pOutUseSmartObjectAdapter) const override;
+	virtual Movement::BlockPtr CreateHarshStopBlock() const override;
+	virtual Movement::BlockPtr CreateTurnTowardsPosition(const Vec3& positionToTurnTowards) const override;
+	virtual Movement::BlockPtr CreateCustomBlock(const INavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style) const override;
+};
+
 struct MovementUpdateContext;
 
 class MovementSystem : public IMovementSystem
@@ -21,13 +33,15 @@ public:
 	virtual void              UnregisterEntity(const EntityId entityId) override;
 	virtual bool              IsEntityRegistered(const EntityId entityId) override;
 	virtual MovementRequestID QueueRequest(const MovementRequest& request) override;
-	virtual void              CancelRequest(const MovementRequestID& id) override;
+	virtual void              UnsuscribeFromRequestCallback(const MovementRequestID& id) override;
 	virtual void              GetRequestStatus(const MovementRequestID& id, MovementRequestStatus& status) const override;
-	virtual void              Update(float updateTime) override;
+	virtual void              Update(const CTimeValue frameStartTime, const float frameDeltaTime) override;
 	virtual void              Reset() override;
 	virtual void              RegisterFunctionToConstructMovementBlockForCustomNavigationType(Movement::CustomNavigationBlockCreatorFunction blockFactoryFunction) override;
 	virtual bool              AddActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability) override;
 	virtual bool              RemoveActionAbilityCallbacks(const EntityId entityId, const SMovementActionAbilityCallbacks& ability) override;
+	virtual const IStandardMovementBlocksFactory& GetStandardMovementBlocksFactory() const override;
+	virtual std::shared_ptr<Movement::IPlan> CreateAndReturnDefaultPlan() override;
 	// ~IMovementSystem
 
 	Movement::BlockPtr CreateCustomBlock(const CNavPath& path, const PathPointDescriptor::OffMeshLinkData& mnmData, const MovementStyle& style);
@@ -46,11 +60,11 @@ private:
 	                                MovementRequestResult::FailureReason failureReason = MovementRequestResult::NoReason);
 	void              CleanUpAfterFinishedRequest(MovementActor& actor, MovementRequestID activeRequestID);
 	MovementRequest&  GetActiveRequest(MovementActor& actor, MovementRequestID* outRequestID = NULL);
-	MovementActor&    GetExistingActorOrCreateNewOne(const EntityId entityId, IMovementActorAdapter& adapter);
+	MovementActor&    GetExistingActorOrCreateNewOne(const EntityId entityId, IMovementActorAdapter& adapter, const MovementActorCallbacks& callbacks);
 	MovementActor*    GetExistingActor(const EntityId entityId);
 	bool              IsPlannerWorkingOnRequestID(const MovementActor& actor, const MovementRequestID& id) const;
-	void              UpdateActors(float updateTime);
-	ActorUpdateStatus UpdateActor(MovementActor& actor, float updateTime);
+	void              UpdateActors();
+	ActorUpdateStatus UpdateActor(MovementActor& actor);
 	void              UpdatePlannerAndDealWithResult(const MovementUpdateContext& context);
 	void              StartWorkingOnNewRequestIfPossible(const MovementUpdateContext& context);
 
@@ -70,6 +84,11 @@ private:
 
 	MovementRequestID                              m_nextUniqueRequestID;
 	Movement::CustomNavigationBlockCreatorFunction m_createMovementBlockToHandleCustomNavigationType;
+
+	StandardMovementBlocksFactory                  m_builtinMovementBlocksFactory;
+
+	CTimeValue                                     m_frameStartTime;
+	float                                          m_frameDeltaTime;
 };
 
 #endif // MovementSystem_h

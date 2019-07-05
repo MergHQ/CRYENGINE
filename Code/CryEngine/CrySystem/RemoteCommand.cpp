@@ -12,6 +12,8 @@
 #include <CryNetwork/IServiceNetwork.h>
 #include "RemoteCommand.h"
 #include "RemoteCommandHelpers.h"
+#include <CrySystem/ConsoleRegistration.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 //-----------------------------------------------------------------------------
 
@@ -32,12 +34,7 @@ CRemoteCommandManager::CRemoteCommandManager()
 
 CRemoteCommandManager::~CRemoteCommandManager()
 {
-	// Release the CVar
-	if (NULL != m_pVerboseLevel)
-	{
-		m_pVerboseLevel->Release();
-		m_pVerboseLevel = NULL;
-	}
+	SAFE_UNREGISTER_CVAR(m_pVerboseLevel);
 }
 
 IRemoteCommandServer* CRemoteCommandManager::CreateServer(uint16 localPort)

@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <string.h>
+#include <cstring>
 #include <math.h>
 #include <tchar.h>
 
@@ -37,13 +37,13 @@
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Debug functions / macros
 ///////////////////////////////////////////////////////////////////////////////////////////
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX
 	#define _TinyVerify(x) { if (!(x)) assert(0); }
 #else
 	#define _TinyVerify(x) { if (!(x)) { __debugbreak(); }; }
 #endif
 
-#if defined(_DEBUG) && !(CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) && !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#if defined(_DEBUG) && !CRY_PLATFORM_WINDOWS && !CRY_PLATFORM_LINUX
 	#define _TinyAssert(x) { if (!(x)) { __debugbreak(); }; }
 #else
 	#define _TinyAssert(x) __noop(x);
@@ -70,19 +70,10 @@ __inline void _TinyCheckLastError(const char* pszFile, int iLine)
 	{
 		// Format an error message
 		char szMessageBuf[2048];
+		cry_strcpy(szMessageBuf, CryGetLastSystemErrorMessage());
+		
 		char szLineFileInfo[_MAX_PATH + 256];
-		FormatMessage(
-		  FORMAT_MESSAGE_ARGUMENT_ARRAY |
-		  FORMAT_MESSAGE_FROM_SYSTEM |
-		  FORMAT_MESSAGE_IGNORE_INSERTS,
-		  NULL,
-		  GetLastError(),
-		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		  szMessageBuf,
-		  2048,
-		  NULL
-		  );
-		cry_sprintf(szLineFileInfo, "Error catched in file %s line %i", pszFile, iLine);
+		cry_sprintf(szLineFileInfo, "Error caught in file %s line %i", pszFile, iLine);
 		cry_strcat(szMessageBuf, szLineFileInfo);
 
 #ifdef _DEBUG

@@ -5,7 +5,7 @@
 #ifdef INCLUDE_SCALEFORM_SDK
 
 	#include "GFxVideoSoundCrySound.h"
-	#include <CrySystem/IConsole.h>
+	#include <CrySystem/ConsoleRegistration.h>
 
 static float s_sys_flash_video_soundvolume = 1.0f;
 static float s_sys_flash_video_subaudiovolume = 1.0f;
@@ -760,8 +760,8 @@ float GFxVideoCrySound::Update(bool muteMainTrack)
 		}
 		else
 		{
-			const float t = 0.015f;
 		#if defined(ENABLE_VIDEOSOUND_UPDATE_LOGGING)
+			const float t = 0.015f;
 			gEnv->pLog->Log("%s. %d bytes to refill pos. Wait %.2f ms...", prevStarved ? "Still starving" : "Nothing received", distToRefill, t * 1000.0f);
 		#endif
 			return 0.015f;

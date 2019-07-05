@@ -4,12 +4,10 @@
 #include "ItemDescriptionDlg.h"
 #include "SmartObjectsEditorDialog.h"
 #include "SmartObjectClassDialog.h"
-#include "AI\AIManager.h"
+#include "AI/AIManager.h"
 
 #include "IResourceSelectorHost.h"
 #include "Controls/QuestionDialog.h"
-
-// CSmartObjectClassDialog dialog
 
 IMPLEMENT_DYNAMIC(CSmartObjectClassDialog, CDialog)
 CSmartObjectClassDialog::CSmartObjectClassDialog(CWnd* pParent /*=NULL*/, bool multi /*=false*/)
@@ -67,10 +65,8 @@ HTREEITEM CSmartObjectClassDialog::ForcePath(const CString& location)
 
 void CSmartObjectClassDialog::RemoveItemAndDummyParents(HTREEITEM item)
 {
-	assert(item && !m_TreeCtrl.ItemHasChildren(item));
-
-	unsigned count = m_mapStringToItem.erase(m_TreeCtrl.GetItemText(item));
-	assert(count == 1);
+	CRY_ASSERT(item && !m_TreeCtrl.ItemHasChildren(item));
+	CRY_VERIFY(m_mapStringToItem.erase(m_TreeCtrl.GetItemText(item)) == 1);
 
 	while (item && !m_TreeCtrl.ItemHasChildren(item))
 	{
@@ -419,18 +415,22 @@ void CSmartObjectClassDialog::OnNewBtn()
 }
 namespace
 {
-dll_string ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
+SResourceSelectionResult ShowDialog(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	CSmartObjectClassDialog soDlg(nullptr, true);
 	soDlg.SetSOClass(szPreviousValue);
-	if (soDlg.DoModal() == IDOK)
+
+	bool accepted = soDlg.DoModal() == IDOK;
+	SResourceSelectionResult result{ accepted, szPreviousValue };
+
+	if (accepted)
 	{
-		CString result = soDlg.GetSOClass();
-		return (LPCSTR)result;
+		CString dialogResult = soDlg.GetSOClass();
+		result.selectedResource = (LPCSTR)dialogResult;
 	}
-	return szPreviousValue;
+
+	return result;
 }
 
 REGISTER_RESOURCE_SELECTOR("SmartObjectClasses", ShowDialog, "")
 }
-

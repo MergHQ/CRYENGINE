@@ -12,11 +12,6 @@ struct lockfree_add_vector
 	enum { safety_preallocated_items = 128 }; // if array size grows to the capacity - safety_preallocated_items array is locked and resized
 
 	lockfree_add_vector()
-		: m_lastIndex(0)
-		, m_new_capacity(0)
-		, m_capacity(0)
-		, m_pCurrentBuffer(0)
-		, m_safe_capacity(0)
 	{
 		//static_assert(std::is_trivially_copyable<T>::value, "Item type must be a Trivial Copyabale type.");
 		reserve(safety_preallocated_items * 2);
@@ -29,7 +24,9 @@ struct lockfree_add_vector
 		//CryAutoLock<CryCriticalSectionNonRecursive> lock_temp(m_temp_lock);
 
 		int newIndex = CryInterlockedIncrement(&m_lastIndex);
+#if defined(USE_CRY_ASSERT)
 		int lastCapacity = m_capacity;
+#endif
 
 		// When new index gets close to the end of the capacity meaning vector will soon need to be reallocated, we start really locking access
 		if (newIndex < m_safe_capacity)
@@ -96,8 +93,8 @@ struct lockfree_add_vector
 		}
 		m_freeList.clear();
 	}
-	void Init()                          { CoalesceMemory(); };
-	void SetNoneWorkerThreadID(uint64 t) {};
+	void Init()                          { CoalesceMemory(); }
+	void SetNoneWorkerThreadID(uint64 t) {}
 
 	//////////////////////////////////////////////////////////////////////////
 	// std::vector like interface.
@@ -109,8 +106,8 @@ struct lockfree_add_vector
 	T*       end()                          { return m_pCurrentBuffer + m_lastIndex; }
 	const T* end() const                    { return m_pCurrentBuffer + m_lastIndex; }
 
-	T&       operator[](size_t index)       { return m_pCurrentBuffer[index]; };
-	const T& operator[](size_t index) const { return m_pCurrentBuffer[index]; };
+	T&       operator[](size_t index)       { return m_pCurrentBuffer[index]; }
+	const T& operator[](size_t index) const { return m_pCurrentBuffer[index]; }
 
 	void     clear()                        { m_lastIndex = 0; }
 	bool     empty() const                  { return m_lastIndex == 0; }
@@ -141,11 +138,11 @@ private:
 	};
 	typedef std::shared_ptr<SMemoryBuffer> SMemoryBufferPtr;
 private:
-	volatile int                   m_capacity;
-	volatile int                   m_safe_capacity;
-	volatile int                   m_lastIndex;
-	volatile int                   m_new_capacity;
-	T*                             m_pCurrentBuffer;
+	volatile int                   m_capacity = 0;
+	volatile int                   m_safe_capacity = 0;
+	volatile int                   m_lastIndex = 0;
+	volatile int                   m_new_capacity = 0;
+	T*                             m_pCurrentBuffer = nullptr;
 
 	SMemoryBufferPtr               m_pMemoryBuffer;
 	std::vector<SMemoryBufferPtr>  m_freeList;

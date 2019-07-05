@@ -60,7 +60,7 @@ namespace UQS
 
 		bool CQueryBlueprintLoader_XML::ParseQueryElement(const XmlNodeRef& queryElement, Shared::IUqsString& error)
 		{
-			assert(queryElement->isTag("Query"));
+			CRY_ASSERT(queryElement->isTag("Query"));
 
 			m_pQuery->SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(queryElement->getLine(), m_pDataErrorCollector));
 
@@ -119,6 +119,7 @@ namespace UQS
 
 					Core::ITextualQueryBlueprint* pParentQuery = m_pQuery;
 					m_pQuery = &m_pQuery->AddChild();
+					m_pQuery->SetName(m_queryName.c_str());
 					const bool bSucceeded = ParseQueryElement(child, error);
 					m_pQuery = pParentQuery;
 
@@ -138,7 +139,7 @@ namespace UQS
 
 		bool CQueryBlueprintLoader_XML::ParseGlobalParamsElement(const XmlNodeRef& globalParamsElement, Shared::IUqsString& error)
 		{
-			assert(globalParamsElement->isTag("GlobalParams"));
+			CRY_ASSERT(globalParamsElement->isTag("GlobalParams"));
 
 			// <ConstantParam> and <RuntimeParam> elements
 			for (int i = 0; i < globalParamsElement->getChildCount(); ++i)
@@ -241,7 +242,7 @@ namespace UQS
 
 		bool CQueryBlueprintLoader_XML::ParseGeneratorElement(const XmlNodeRef& generatorElement, Shared::IUqsString& error)
 		{
-			assert(generatorElement->isTag("Generator"));
+			CRY_ASSERT(generatorElement->isTag("Generator"));
 
 			Core::ITextualGeneratorBlueprint& textualGeneratorBP = m_pQuery->SetGenerator();
 			textualGeneratorBP.SetSyntaxErrorCollector(MakeNewSyntaxErrorCollectorUniquePtr(generatorElement->getLine(), m_pDataErrorCollector));
@@ -292,7 +293,7 @@ namespace UQS
 
 		bool CQueryBlueprintLoader_XML::ParseInstantEvaluatorElement(const XmlNodeRef& instantEvaluatorElement, Shared::IUqsString& error)
 		{
-			assert(instantEvaluatorElement->isTag("InstantEvaluator"));
+			CRY_ASSERT(instantEvaluatorElement->isTag("InstantEvaluator"));
 
 			Core::ITextualEvaluatorBlueprint& textualInstantEvaluatorBP = m_pQuery->AddInstantEvaluator();
 
@@ -301,7 +302,7 @@ namespace UQS
 
 		bool CQueryBlueprintLoader_XML::ParseDeferredEvaluatorElement(const XmlNodeRef& deferredEvaluatorElement, Shared::IUqsString& error)
 		{
-			assert(deferredEvaluatorElement->isTag("DeferredEvaluator"));
+			CRY_ASSERT(deferredEvaluatorElement->isTag("DeferredEvaluator"));
 
 			Core::ITextualEvaluatorBlueprint& textualDeferredEvaluatorBP = m_pQuery->AddDeferredEvaluator();
 
@@ -310,7 +311,7 @@ namespace UQS
 
 		bool CQueryBlueprintLoader_XML::ParseFunctionElement(const XmlNodeRef& functionElement, Core::ITextualInputBlueprint& parentInput, Shared::IUqsString& error)
 		{
-			assert(functionElement->isTag("Function"));
+			CRY_ASSERT(functionElement->isTag("Function"));
 
 			// whether the "returnValue" attribute is present specifies whether it's a leaf- or non-leaf function
 
@@ -344,7 +345,7 @@ namespace UQS
 
 		bool CQueryBlueprintLoader_XML::ParseInputElement(const XmlNodeRef& inputElement, Core::ITextualInputBlueprint& parentInput, Shared::IUqsString& error)
 		{
-			assert(inputElement->isTag("Input"));
+			CRY_ASSERT(inputElement->isTag("Input"));
 
 			// "name" attribute (name of the parameter)
 			const char* szParamName;

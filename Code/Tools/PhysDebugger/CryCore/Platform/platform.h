@@ -4,18 +4,22 @@
 #define NOT_USE_CRY_MEMORY_MANAGER
 
 #include "CryCore/Platform/CryPlatformDefines.h"
-#include <CryCore/Platform/Win64Specific.h>
+#include <CryCore/Platform/WindowsSpecific.h>
 #include <CryCore/Platform/CryWindows.h>
 
 #pragma warning (disable : 4390 4996)
 #define ILINE inline
 #define assert(X)
-#define CRY_ASSERT_MESSAGE(X,M)
+#define CRY_ASSERT_TRACE(condition, parenthese_message) ((void)0)
+#define CRY_ASSERT_MESSAGE(condition, ...)              ((void)0)
+#define CRY_ASSERT(condition, ...)                      ((void)0)
+#define CRY_FUNCTION_NOT_IMPLEMENTED                    ((void)0)
 #define CRY_ASSERT_H_INCLUDED
 #define AUTO_STRUCT_INFO
 #define AUTO_STRUCT_INFO_LOCAL
 #define AUTO_TYPE_INFO(T)
 #define BIT(x) (1u << (x))
+#define BIT32(x) (1u << (x))
 typedef UINT_PTR TRUNCATE_PTR,EXPAND_PTR;
 #define DLL_EXPORT __declspec(dllexport)
 #define DLL_IMPORT 
@@ -78,12 +82,19 @@ struct Init##var { \
 	Init##var() { var##idx = TlsAlloc(); } \
 }; \
 Init##var g_init##var;
+#define TLS_DEFINE_DEFAULT_VALUE(type, var, value)                                    \
+int var ## idx;                                                                       \
+struct Init ## var {                                                                  \
+	Init ## var() { var ## idx = TlsAlloc(); TlsSetValue(var ## idx, (void*)(value)); } \
+};                                                                                    \
+Init ## var g_init ## var;
 #define TLS_GET(type,var) (type)TlsGetValue(var##idx)
 #define TLS_SET(var,val) TlsSetValue(var##idx,(void*)(val))
 inline threadID CryGetCurrentThreadId() { return GetCurrentThreadId();}
 inline uint64 CryGetTicks() { return __rdtsc(); }
 
-struct IGeneralMemoryHeap {
+class IGeneralMemoryHeap {
+public:
 	static char* Malloc(size_t sz, const char*) { return new char[sz]; }
 	static void Free(void* ptr) { delete (char*)ptr; }
 };
@@ -116,11 +127,11 @@ extern SEnv *gEnv;
 
 extern int g_iLastProfilerId;
 struct CFrameProfiler {
-	CFrameProfiler(char *name) {
+	CFrameProfiler(const char *name) {
 		m_name = name;
 		m_id = ++g_iLastProfilerId;
 	}
-	char *m_name;
+	const char *m_name;
 	int m_id;
 };
 
@@ -192,7 +203,8 @@ struct CFrameProfilerSection : CFrameProfilerSectionBase {
 #define CRY_PROFILE_FUNCTION( subsystem ) \
 	static CFrameProfiler staticFrameProfiler( __FUNCTION__ ); \
 	CFrameProfilerSection frameProfilerSection( &staticFrameProfiler,get_iCaller() );	
-#define CRY_PROFILE_REGION( subsystem, szName ) \
+#define CRY_PROFILE_SECTION( subsystem, szName ) \
 	static CFrameProfiler staticFrameProfiler( szName ); \
 	CFrameProfilerSection frameProfilerSection( &staticFrameProfiler,get_iCaller() );
 
+#define RESTRICT_REFERENCE __restrict

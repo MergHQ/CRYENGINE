@@ -24,6 +24,8 @@ History:
 #include <CryExtension/ICryFactoryRegistryImpl.h>
 #include <CryExtension/RegFactoryNode.h>
 
+struct IActor;
+
 class CProceduralContextRagdoll
 	: public IProceduralContext
 {

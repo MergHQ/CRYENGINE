@@ -1,13 +1,28 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+//If encrypting do the following:
+//1: Generate the 16 twofish keys (possibly deterministically).
+//2: Go through the files in the archive and encrypt them with one of the keys, then write to the destination
+//3: Sign the hash of the CDR + filename using our private RSA key
+//4: Encrypt the CDR using the first twofish cipher, then write to the destination
+//5: Write the CDREnd to the destination
+//6: Encrypt the 16 twofish keys and append them to the comment field of the archive
+
+//If decrypting do the following:
+//1: Read the 16 twofish keys
+//2: Decrypt the CDR using our public RSA key
+//3: Go through the files in the archive and decrypt them using their twofish key, then write to the destination
+//4: Write the unencrypted CDR to the destination
+//5: Write the CDREnd to the destination with no comment
+
+//Expects the following arguments:
+//input - path to a source zip archive
+//output - path to a destination zip archive
+
 #include "stdafx.h"
-#include <time.h>
 #include <vector>
 #include <algorithm>
-#include <errno.h>
-
-#pragma warning( push )
-#pragma warning( disable : 4477 ) // 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'const wchar_t *'
+#include <memory>
 
 //Keys
 static unsigned char g_rsa_private_key_data[EAAS_PRIV_SIZE]; 
@@ -22,6 +37,16 @@ const char* g_szProgramName = "PakDecrypt";
 //#elif defined(_VERIFY)	//Will implement verify later if I have time
 //const char* g_szProgramName = "PakVerify";
 #endif	//_VERIFY
+
+void usage()
+{
+	fprintf(stderr, "%s.exe - Usage:\n", g_szProgramName);
+	fprintf(stderr, "%s.exe source destination key_source_string\n", g_szProgramName);
+	fprintf(stderr, "Where source is the input pak file and destination is the resulting pak file; They can be the same file.\n");
+	fprintf(stderr, "e.g.\n");
+	fprintf(stderr, "%s.exe \"c:\\pakFiles\\Animations.pak\" \"c:\\encryptedPakFiles\\Animations.pak\"\n", g_szProgramName);
+	fprintf(stderr, "The key_source string must be >= 16 characters, and provides a base for deterministic keys (or is ignored, if equal to '-')");
+}
 
 //////////////////////////////////////////////////////////////////
 // TCHAR stuff
@@ -56,19 +81,22 @@ int custom_rsa_encrypt_key_ex(const unsigned char *in,     unsigned long inlen,
 	LTC_ARGCHK(key    != NULL);
 
 	/* valid padding? */
-	if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-		(padding != LTC_LTC_PKCS_1_OAEP)) {
+	if ((padding != LTC_LTC_PKCS_1_V1_5) && (padding != LTC_LTC_PKCS_1_OAEP))
+	{
 			return CRYPT_PK_INVALID_PADDING;
 	}
 
 	/* valid prng? */
-	if ((err = prng_is_valid(prng_idx)) != CRYPT_OK) {
+	if ((err = prng_is_valid(prng_idx)) != CRYPT_OK)
+	{
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP) {
+	if (padding == LTC_LTC_PKCS_1_OAEP)
+	{
 		/* valid hash? */
-		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK) {
+		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
+		{
 			return err;
 		}
 	}
@@ -78,25 +106,27 @@ int custom_rsa_encrypt_key_ex(const unsigned char *in,     unsigned long inlen,
 
 	/* outlen must be at least the size of the modulus */
 	modulus_bytelen = mp_unsigned_bin_size( (key->N));
-	if (modulus_bytelen > *outlen) {
+	if (modulus_bytelen > *outlen)
+	{
 		*outlen = modulus_bytelen;
 		return CRYPT_BUFFER_OVERFLOW;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP) {
+	if (padding == LTC_LTC_PKCS_1_OAEP)
+	{
 		/* OAEP pad the key */
 		x = *outlen;
-		if ((err = pkcs_1_oaep_encode(in, inlen, lparam,
-			lparamlen, modulus_bitlen, prng, prng_idx, hash_idx,
-			out, &x)) != CRYPT_OK) {
+		if ((err = pkcs_1_oaep_encode(in, inlen, lparam, lparamlen, modulus_bitlen, prng, prng_idx, hash_idx, out, &x)) != CRYPT_OK)
+		{
 				return err;
 		}
-	} else {
+	}
+	else
+	{
 		/* LTC_PKCS #1 v1.5 pad the key */
 		x = *outlen;
-		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_LTC_PKCS_1_EME,
-			modulus_bitlen, prng, prng_idx,
-			out, &x)) != CRYPT_OK) {
+		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_LTC_PKCS_1_EME, modulus_bitlen, prng, prng_idx, out, &x)) != CRYPT_OK)
+		{
 				return err;
 		}
 	}
@@ -126,14 +156,16 @@ int custom_rsa_decrypt_key_ex(const unsigned char *in,       unsigned long  inle
 
 	/* valid padding? */
 
-	if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-		(padding != LTC_LTC_PKCS_1_OAEP)) {
+	if ((padding != LTC_LTC_PKCS_1_V1_5) && (padding != LTC_LTC_PKCS_1_OAEP))
+	{
 			return CRYPT_PK_INVALID_PADDING;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP) {
+	if (padding == LTC_LTC_PKCS_1_OAEP)
+	{
 		/* valid hash ? */
-		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK) {
+		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
+		{
 			return err;
 		}
 	}
@@ -143,28 +175,33 @@ int custom_rsa_decrypt_key_ex(const unsigned char *in,       unsigned long  inle
 
 	/* outlen must be at least the size of the modulus */
 	modulus_bytelen = mp_unsigned_bin_size( (key->N));
-	if (modulus_bytelen != inlen) {
+	if (modulus_bytelen != inlen)
+	{
 		return CRYPT_INVALID_PACKET;
 	}
 
 	/* allocate ram */
 	tmp = (unsigned char*)XMALLOC(inlen);
-	if (tmp == NULL) {
+	if (tmp == NULL)
+	{
 		return CRYPT_MEM;
 	}
 
 	/* rsa decode the packet */
 	x = inlen;
-	if ((err = ltc_mp.rsa_me(in, inlen, tmp, &x, PK_PUBLIC, key)) != CRYPT_OK) {
+	if ((err = ltc_mp.rsa_me(in, inlen, tmp, &x, PK_PUBLIC, key)) != CRYPT_OK)
+	{
 		XFREE(tmp);
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP) {
+	if (padding == LTC_LTC_PKCS_1_OAEP)
+	{
 		/* now OAEP decode the packet */
-		err = pkcs_1_oaep_decode(tmp, x, lparam, lparamlen, modulus_bitlen, hash_idx,
-			out, outlen, stat);
-	} else {
+		err = pkcs_1_oaep_decode(tmp, x, lparam, lparamlen, modulus_bitlen, hash_idx, out, outlen, stat);
+	}
+	else
+	{
 		/* now LTC_PKCS #1 v1.5 depad the packet */
 		err = pkcs_1_v1_5_decode(tmp, x, LTC_LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
 	}
@@ -267,7 +304,7 @@ bool FindCDREnd(FILE *pArchiveFile, ZipFile::CDREnd* pCDREnd, size_t* pCommentSt
 {
 	fseek(pArchiveFile,0,SEEK_END);
 	long fLength = ftell(pArchiveFile);
-	if(fLength < sizeof(ZipFile::CDREnd))
+	if(sizeof(ZipFile::CDREnd) > (unsigned long)fLength)
 	{
 		printf("File isn't big enough to contain a CDREnd structure");
 		return false;
@@ -283,12 +320,12 @@ bool FindCDREnd(FILE *pArchiveFile, ZipFile::CDREnd* pCDREnd, size_t* pCommentSt
 	{
 		uint32 signature;
 		fseek(pArchiveFile,nScanPos,SEEK_SET);
-		fread((void*)&signature,1,sizeof(uint32),pArchiveFile);
+		fread(&signature,1,sizeof(uint32),pArchiveFile);
 		if(signature == ZipFile::CDREnd::SIGNATURE)
 		{
 			//Found the CDREnd signature. Extract the CDREnd and test it.
 			fseek(pArchiveFile,nScanPos,SEEK_SET);
-			size_t sizeRead = fread((void*)pCDREnd,1,sizeof(ZipFile::CDREnd),pArchiveFile);
+			size_t sizeRead = fread(pCDREnd,1,sizeof(ZipFile::CDREnd),pArchiveFile);
 			if(sizeRead == sizeof(ZipFile::CDREnd))
 			{
 				//Test the CDREnd by examining the length of the comment
@@ -313,8 +350,9 @@ bool FindCDREnd(FILE *pArchiveFile, ZipFile::CDREnd* pCDREnd, size_t* pCommentSt
 
 void FillRandomData( unsigned char *buf, size_t size )
 {
-	yarrow_read(buf,size,&g_yarrow_prng_state);
+	yarrow_read(buf, size, &g_yarrow_prng_state);
 }
+
 
 bool ProcessFileSection(FILE *in, FILE *out, unsigned long length, bool needsDecrypting, bool needsEncrypting, unsigned char *key, unsigned char *IV)
 {
@@ -322,11 +360,11 @@ bool ProcessFileSection(FILE *in, FILE *out, unsigned long length, bool needsDec
 	unsigned char *dataBuffer = new unsigned char[length];
 	if(!dataBuffer)
 	{
-		printf("Failed to allocate %d of buffer to encrypt an entry. Is the entry too large?\n",length);
+		printf("Failed to allocate %lu of buffer to encrypt an entry. Is the entry too large?\n", length);
 		return false;
 	}
 
-	fread(dataBuffer,1,length,in);
+	fread(dataBuffer, 1, length, in);
 
 	if(needsDecrypting)
 	{
@@ -374,44 +412,108 @@ bool LoadKeysFromFile(unsigned long &pubLength, unsigned long &privLength)
 	return bPrivKey && bPubKey && bEndOfFile;
 }
 
-//If encrypting do the following:
-//1: Generate the 16 twofish keys
-//2: Go through the files in the archive and encrypt them with one of the keys, then write to the destination
-//3: Sign the hash of the CDR + filename using our private RSA key
-//4: Encrypt the CDR using the first twofish cipher, then write to the destination
-//5: Write the CDREnd to the destination
-//6: Encrypt the 16 twofish keys and append them to the comment field of the archive
-
-//If decrypting do the following:
-//1: Read the 16 twofish keys
-//2: Decrypt the CDR using our public RSA key
-//3: Go through the files in the archive and decrypt them using their twofish key, then write to the destination
-//4: Write the unencrypted CDR to the destination
-//5: Write the CDREnd to the destination with no comment
-
-//Expects the following arguments:
-//input - path to a source zip archive
-//output - path to a destination zip archive
-
-void usage()
+bool ReadEncryptionHeader(FILE * pSourceArchive,
+	bool &bEncryptedSourceArchive,
+	ZipFile::CryCustomEncryptionHeader &encryptionHeader,
+	int sha256,
+	rsa_key rsa_public_key,
+	unsigned char block_cipher_keys_table[ZipFile::BLOCK_CIPHER_NUM_KEYS][ZipFile::BLOCK_CIPHER_KEY_LENGTH],
+	unsigned char * CDR_initial_vector)
 {
-	fprintf(stderr, "%s.exe - Usage:\n", g_szProgramName);
-	fprintf(stderr, "%s.exe source destination\n", g_szProgramName);
-	fprintf(stderr, "Where source is the input pak file and destination is the resulting pak file; They can be the same file.\n");
-	fprintf(stderr, "e.g.\n");
-	fprintf(stderr, "%s.exe \"c:\\pakFiles\\Animations.pak\" \"c:\\encryptedPakFiles\\Animations.pak\"\n", g_szProgramName);
+	//Read the required data for decryption from the custom headers in the comment section of the archive.
+	//Ignore the ZipFile::CrySignedCDRHeader
+	fseek(pSourceArchive, sizeof(ZipFile::CrySignedCDRHeader), SEEK_CUR);
+	//Read the encryption header
+	bEncryptedSourceArchive = true;
+	fread(&encryptionHeader, 1, sizeof(ZipFile::CryCustomEncryptionHeader), pSourceArchive);
+	if (encryptionHeader.nHeaderSize != sizeof(ZipFile::CryCustomEncryptionHeader))
+	{
+		//Probably corrupt
+		printf("Failed to read encryption information from source archive - Possibly corrupt.\n");
+		return false;
+	}
+
+	// Decrypt the keys table.
+	for (int i = 0; i < ZipFile::BLOCK_CIPHER_NUM_KEYS; i++)
+	{
+		unsigned char decryptBuffer[ZipFile::RSA_KEY_MESSAGE_LENGTH] = { 0 };
+		unsigned long len = ZipFile::RSA_KEY_MESSAGE_LENGTH;
+		int stat = 0;
+		int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.keys_table[i], len, decryptBuffer, &len, NULL, 0, sha256, LTC_LTC_PKCS_1_OAEP, &stat, &rsa_public_key);
+		if (decryptResult != CRYPT_OK || stat != 1)
+		{
+			printf("Failed to decrypt twofish key in table from archive\n");
+			return false;
+		}
+		memcpy(block_cipher_keys_table[i], decryptBuffer, ZipFile::BLOCK_CIPHER_KEY_LENGTH);
+	}
+
+	// Decrypt the initial vector.
+	unsigned char decryptBuffer[ZipFile::RSA_KEY_MESSAGE_LENGTH] = { 0 };
+	unsigned long len = ZipFile::RSA_KEY_MESSAGE_LENGTH;
+	int stat = 0;
+	int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.CDR_IV, len, decryptBuffer, &len, NULL, 0, sha256, LTC_LTC_PKCS_1_OAEP, &stat, &rsa_public_key);
+	if (decryptResult != CRYPT_OK || stat != 1)
+	{
+		printf("Failed to decrypt initial vector from archive\n");
+		return false;
+	}
+	memcpy(CDR_initial_vector, decryptBuffer, ZipFile::BLOCK_CIPHER_KEY_LENGTH);
+
+	return true;
+}
+
+int GenerateDeterministicKeys(_TCHAR* tchar_key_source,
+	int md5,
+	unsigned char *CDR_initial_vector,
+	unsigned char block_cipher_keys_table[ZipFile::BLOCK_CIPHER_NUM_KEYS][ZipFile::BLOCK_CIPHER_KEY_LENGTH])
+{
+	size_t keysrc_len = _tcslen(tchar_key_source);
+	std::unique_ptr<char[]> keysrc{ new char[keysrc_len + 1] { 0 } };
+
+	size_t numCharsConverted;
+	wcstombs_s(&numCharsConverted, keysrc.get(), keysrc_len + 1, tchar_key_source, keysrc_len);
+
+	unsigned long keylength = (unsigned long)ZipFile::BLOCK_CIPHER_KEY_LENGTH;     // hash function needs to be passed this as a pointer.
+
+	if (CRYPT_OK != hash_memory(md5, (unsigned char*)keysrc.get(), keysrc_len, CDR_initial_vector, &keylength))
+	{
+		fprintf(stderr, "Unable to use md5 hash on '%s' for CDR_initial_vector.\n", keysrc.get());
+		return false;
+	}
+
+	for (int i = 0; i < ZipFile::BLOCK_CIPHER_NUM_KEYS; i++)
+	{
+		if (CRYPT_OK != hash_memory(md5, (unsigned char*)keysrc.get(), keysrc_len, block_cipher_keys_table[i], &keylength))
+		{
+			fprintf(stderr, "Unable to use md5 hash on '%s'.\n", keysrc.get());
+			return false;
+		}
+	}
+	return true;
 }
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//Argument IDs
-	const static int SOURCE_PATH = 1;
-	const static int DEST_PATH = 2;
-	const static int OPTIONAL_PARAMS = 3;
+	enum {
 
-	if( argc < 3 )
+		SOURCE_PATH = 1,
+		DEST_PATH = 2,
+		TWOFISH_KEY_SOURCE = 3,		// 14 character string (max), given an index to create 16-byte twofish keys (allows for incremental updates of encrypted paks).
+		OPTIONAL_PARAMS = 4,
+	};
+	if (argc < 3)
 	{
 		usage();
+		return 1;
+	}
+
+	// Read key base. If it is '-', then don't use deterministic keys.
+	bool useDeterministicKeys = (TWOFISH_KEY_SOURCE < argc) && _tcscmp(argv[TWOFISH_KEY_SOURCE], _T("-"));
+	if (useDeterministicKeys && _tcslen(argv[TWOFISH_KEY_SOURCE]) < 16)
+	{
+		fprintf(stderr, "The 'key_source' string must be at least 16 characters long (or '-' to skip deterministic generation).\n");
 		return 1;
 	}
 
@@ -423,8 +525,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	ltc_mp = ltm_desc;
-	register_hash (&sha1_desc);
-	register_hash (&sha256_desc);
+	register_hash(&sha1_desc);
+	register_hash(&sha256_desc);
+	register_hash(&md5_desc);
 
 	register_cipher (&twofish_desc);
 
@@ -436,8 +539,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	int make_prng_result = rng_make_prng(128, prng_idx, &g_yarrow_prng_state, NULL);
 	//fprintf(stderr, "rng_make_prng returned %d\n", make_prng_result);
 
+	int md5 = find_hash("md5");
 	int sha256 = find_hash ("sha256");
 	int prngIndex = find_prng("yarrow");
+	//fprintf(stderr, "prngIndex = %d\n", prngIndex);
 
 	rsa_key rsa_public_key;
 	if (CRYPT_OK != rsa_import(g_rsa_public_key_data, pubLength, &rsa_public_key ))
@@ -457,7 +562,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	FILE *pSourceArchive;
 	{
-		errno_t fopenRet = _tfopen_s(&pSourceArchive,argv[SOURCE_PATH], _T("rb"));
+		int fopenRet = _tfopen_s(&pSourceArchive, argv[SOURCE_PATH], _T("rb"));
 		if(pSourceArchive == NULL)
 		{
 			printf("Failed to open source archive\n");
@@ -525,7 +630,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	FILE *pDestArchive;
 	{
-		errno_t fopenRet = _tfopen_s(&pDestArchive,destArchiveTempName.c_str(), _T("wb"));
+		int fopenRet = _tfopen_s(&pDestArchive, destArchiveTempName.c_str(), _T("wb"));
 		if(pDestArchive == NULL)
 		{
 			printf("Failed to open destination archive\n");
@@ -536,9 +641,9 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	bool bEncryptedSourceArchive = false;
 
-	unsigned char block_cipher_keys_table[ZipFile::BLOCK_CIPHER_NUM_KEYS][ZipFile::BLOCK_CIPHER_KEY_LENGTH];
+	unsigned char block_cipher_keys_table[ZipFile::BLOCK_CIPHER_NUM_KEYS][ZipFile::BLOCK_CIPHER_KEY_LENGTH] = { {0} };
 	//unsigned char block_cipher_keys_buffer[BLOCK_CIPHER_NUM_KEYS*BLOCK_CIPHER_KEY_LEN];
-	unsigned char CDR_initial_vector[ZipFile::BLOCK_CIPHER_KEY_LENGTH];
+	unsigned char CDR_initial_vector[ZipFile::BLOCK_CIPHER_KEY_LENGTH] = { 0 };
 
 	//Found the Central Directory End structure and the comment
 	//Is the file encrypted?
@@ -547,7 +652,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		ZipFile::CryCustomExtendedHeader extendedHeader;
 		ZipFile::CryCustomEncryptionHeader encryptionHeader;
 		fseek(pSourceArchive, commentStart, SEEK_SET);
-		fread((void*)&extendedHeader,1,sizeof(ZipFile::CryCustomExtendedHeader),pSourceArchive);
+		fread(&extendedHeader,1,sizeof(ZipFile::CryCustomExtendedHeader),pSourceArchive);
 		if(extendedHeader.nHeaderSize != sizeof(ZipFile::CryCustomExtendedHeader))
 		{
 			//Might have been signed with old plain text signing technique; just ignore it
@@ -558,55 +663,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		switch(extendedHeader.nEncryption)
 		{
 		case ZipFile::HEADERS_ENCRYPTED_STREAMCIPHER_KEYTABLE:
-			//Read the required data for decryption from the custom headers in the comment section of the archive.
-			//Ignore the ZipFile::CrySignedCDRHeader
-			fseek(pSourceArchive,sizeof(ZipFile::CrySignedCDRHeader),SEEK_CUR);
-			//Read the encryption header
-			bEncryptedSourceArchive = true;
-			fread((void*)&encryptionHeader,1,sizeof(ZipFile::CryCustomEncryptionHeader),pSourceArchive);
-			if(encryptionHeader.nHeaderSize != sizeof(ZipFile::CryCustomEncryptionHeader))
+			if(!ReadEncryptionHeader(pSourceArchive, bEncryptedSourceArchive, encryptionHeader, sha256, rsa_public_key, block_cipher_keys_table, CDR_initial_vector))
 			{
-				//Probably corrupt
-				printf("Failed to read encryption information from source archive - Possibly corrupt.\n");
 				fclose(pSourceArchive);
 				fclose(pDestArchive);
 				return 1;
 			}
-			//Decrypt the keys table and initial vector
-#if 1
-			for (int i = 0; i < ZipFile::BLOCK_CIPHER_NUM_KEYS; i++)
-			{
-				unsigned char decryptBuffer[ZipFile::RSA_KEY_MESSAGE_LENGTH];
-				unsigned long len = ZipFile::RSA_KEY_MESSAGE_LENGTH;
-				int stat = 0;
-				int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.keys_table[i],len, decryptBuffer, &len, NULL, 0, sha256, LTC_LTC_PKCS_1_OAEP, &stat, &rsa_public_key );
-				if( decryptResult != CRYPT_OK || stat != 1 )
-				{
-					printf("Failed to decrypt twofish key in table from archive\n");
-					fclose(pSourceArchive);
-					fclose(pDestArchive);
-					return 1;
-				}
-				memcpy( block_cipher_keys_table[i], decryptBuffer, ZipFile::BLOCK_CIPHER_KEY_LENGTH );
-			}
-			{
-				unsigned char decryptBuffer[ZipFile::RSA_KEY_MESSAGE_LENGTH];
-				unsigned long len = ZipFile::RSA_KEY_MESSAGE_LENGTH;
-				int stat = 0;
-				int decryptResult = custom_rsa_decrypt_key_ex(encryptionHeader.CDR_IV, len, decryptBuffer, &len, NULL, 0, sha256, LTC_LTC_PKCS_1_OAEP, &stat, &rsa_public_key );
-				if( decryptResult != CRYPT_OK || stat != 1 )
-				{
-					printf("Failed to decrypt initial vector from archive\n");
-					fclose(pSourceArchive);
-					fclose(pDestArchive);
-					return 1;
-				}
-				memcpy( CDR_initial_vector, decryptBuffer, ZipFile::BLOCK_CIPHER_KEY_LENGTH );
-			}
-#else
-			memcpy(block_cipher_keys_table, encryptionHeader.keys_table, sizeof(block_cipher_keys_table));
-			memcpy(CDR_initial_vector, encryptionHeader.CDR_IV, sizeof(CDR_initial_vector));
-#endif
 			break;
 		case ZipFile::HEADERS_NOT_ENCRYPTED:
 			//Do nothing
@@ -621,19 +683,32 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	if(!bEncryptedSourceArchive)
 	{
-		//File not already encrypted. Generate encryption data for stream cipher.
-		//Generate an initial vector (IV) for stream cipher.
-		FillRandomData(CDR_initial_vector, ZipFile::BLOCK_CIPHER_KEY_LENGTH);
-		//Generate the 16 twofish cipher keys to encrypt the archive CDR and contents.
-		for (int i = 0; i < ZipFile::BLOCK_CIPHER_NUM_KEYS; i++)
+		if (useDeterministicKeys)
 		{
-			FillRandomData(block_cipher_keys_table[i],ZipFile::BLOCK_CIPHER_KEY_LENGTH);
+			if (!GenerateDeterministicKeys(argv[TWOFISH_KEY_SOURCE], md5, CDR_initial_vector, block_cipher_keys_table))
+			{
+				fprintf(stderr, "Unable to generate deterministic keys, exiting.\n");
+				return 1;
+			}
+		}
+		else
+		{
+			//File not already encrypted. Generate encryption data for stream cipher.
+			//Generate an initial vector (IV) for stream cipher.
+			FillRandomData(CDR_initial_vector, ZipFile::BLOCK_CIPHER_KEY_LENGTH);
+
+			//Generate the 16 twofish cipher keys to encrypt the archive CDR and contents.
+			for (int i = 0; i < ZipFile::BLOCK_CIPHER_NUM_KEYS; i++)
+			{
+				FillRandomData(block_cipher_keys_table[i], ZipFile::BLOCK_CIPHER_KEY_LENGTH);
+			}
 		}
 	}
 
 	//CDR signature
-	unsigned char signature[1024];
+	unsigned char signature[1024] = { 0 };
 	unsigned long signatureLen = 1024;
+	
 	//Start by reading the entire CDR into memory if it exists
 	if(fileCDREnd.lCDRSize > 0)
 	{
@@ -976,18 +1051,18 @@ int _tmain(int argc, _TCHAR* argv[])
 		_get_errno(&error_no);
 		if( error_no != ENOENT )	//Can ignore 'file not found'
 		{
-			printf("Failed to delete old destination pak. _tunlink returned %d",error_no);
+			printf("Failed to delete old destination pak. _tunlink returned %d", error_no);
 			return error_no;
 		}
 	}
 	error_no = _trename(destArchiveTempName.c_str(),destArchiveName.c_str());
 	if(error_no != 0)
 	{
-		printf( "Failed to rename temp file (%ls) to destination file (%ls), _trename returned %d", destArchiveName.c_str(), destArchiveTempName.c_str(), error_no );
+		tstring errmsg = _T("Failed to rename temp file (") + destArchiveName + _T(") ") +
+				         _T("to destination file (") + destArchiveTempName + _T(", error code: %d");
+		_tprintf(errmsg.c_str(), error_no);
 		return error_no;
 	}
 
 	return 0;
 }
-
-#pragma warning( pop )

@@ -39,7 +39,7 @@ namespace UQS
 
 		void CLeafFunctionReturnValue::SetLiteral(Client::IItemFactory& itemFactory, const void* pItemToClone)
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
 
 			m_returnValue.literal.pItemFactory = &itemFactory;
 			m_returnValue.literal.pValue = itemFactory.CloneItem(pItemToClone);
@@ -49,7 +49,7 @@ namespace UQS
 
 		void CLeafFunctionReturnValue::SetGlobalParam(const char* szNameOfGlobalParam)
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
 
 			m_returnValue.globalParam.pNameOfGlobalParam = new Shared::CUqsString(szNameOfGlobalParam);
 
@@ -58,13 +58,13 @@ namespace UQS
 
 		void CLeafFunctionReturnValue::SetItemIteration()
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
 			m_leafFunctionKind = Client::IFunctionFactory::ELeafFunctionKind::IteratedItem;
 		}
 
 		void CLeafFunctionReturnValue::SetShuttledItems()
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None);
 			m_leafFunctionKind = Client::IFunctionFactory::ELeafFunctionKind::ShuttledItems;
 		}
 
@@ -73,9 +73,9 @@ namespace UQS
 			return (m_leafFunctionKind != Client::IFunctionFactory::ELeafFunctionKind::None);
 		}
 
-		CLeafFunctionReturnValue::SLiteralInfo CLeafFunctionReturnValue::GetLiteral(const SQueryBlackboard& blackboard) const
+		CLeafFunctionReturnValue::SLiteralInfo CLeafFunctionReturnValue::GetLiteral(const SQueryContext& queryContext) const
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::Literal);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::Literal);
 
 			const Shared::CTypeInfo& type = m_returnValue.literal.pItemFactory->GetItemType();
 			const void* pValue = m_returnValue.literal.pValue;
@@ -83,33 +83,33 @@ namespace UQS
 			return SLiteralInfo(type, pValue);
 		}
 
-		CLeafFunctionReturnValue::SGlobalParamInfo CLeafFunctionReturnValue::GetGlobalParam(const SQueryBlackboard& blackboard) const
+		CLeafFunctionReturnValue::SGlobalParamInfo CLeafFunctionReturnValue::GetGlobalParam(const SQueryContext& queryContext) const
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::GlobalParam);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::GlobalParam);
 
 			Client::IItemFactory* pItemFactory = nullptr;
 			/*const*/ void* pValue = nullptr;
 			const char* szNameOfGlobalParam = m_returnValue.globalParam.pNameOfGlobalParam->c_str();
-			const bool bGlobalParamExists = blackboard.globalParams.FindItemFactoryAndObject(szNameOfGlobalParam, pItemFactory, pValue);
+			const bool bGlobalParamExists = queryContext.globalParams.FindItemFactoryAndObject(szNameOfGlobalParam, pItemFactory, pValue);
 			const Shared::CTypeInfo* pType = bGlobalParamExists ? &pItemFactory->GetItemType() : nullptr;
 
 			return SGlobalParamInfo(bGlobalParamExists, pType, pValue, szNameOfGlobalParam);
 		}
 
-		CLeafFunctionReturnValue::SItemIterationInfo CLeafFunctionReturnValue::GetItemIteration(const SQueryBlackboard& blackboard) const
+		CLeafFunctionReturnValue::SItemIterationInfo CLeafFunctionReturnValue::GetItemIteration(const SQueryContext& queryContext) const
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::IteratedItem);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::IteratedItem);
 
-			const IItemList* pGeneratedItems = blackboard.pItemIterationContext ? &blackboard.pItemIterationContext->generatedItems : nullptr;
+			const IItemList* pGeneratedItems = queryContext.pItemIterationContext ? &queryContext.pItemIterationContext->generatedItems : nullptr;
 
 			return SItemIterationInfo(pGeneratedItems);
 		}
 
-		CLeafFunctionReturnValue::SShuttledItemsInfo CLeafFunctionReturnValue::GetShuttledItems(const SQueryBlackboard& blackboard) const
+		CLeafFunctionReturnValue::SShuttledItemsInfo CLeafFunctionReturnValue::GetShuttledItems(const SQueryContext& queryContext) const
 		{
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::ShuttledItems);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::ShuttledItems);
 
-			return SShuttledItemsInfo(blackboard.pShuttledItems);  // might be a nullptr, which is OK here (it means that there was no previous query in the chain that put its result-set on the blackboard)
+			return SShuttledItemsInfo(queryContext.pShuttledItems);  // might be a nullptr, which is OK here (it means that there was no previous query in the chain that put its result-set into the QueryContext)
 		}
 
 		void CLeafFunctionReturnValue::Clear()
@@ -137,7 +137,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 			}
 
 			memset(&m_returnValue, 0, sizeof m_returnValue);  // not necessary, but may help pinpoint bugs easier
@@ -147,8 +147,8 @@ namespace UQS
 
 		void CLeafFunctionReturnValue::CopyOtherToSelf(const CLeafFunctionReturnValue& other)
 		{
-			assert(&other != this);
-			assert(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None); // should always Clear() beforehand
+			CRY_ASSERT(&other != this);
+			CRY_ASSERT(m_leafFunctionKind == Client::IFunctionFactory::ELeafFunctionKind::None); // should always Clear() beforehand
 
 			switch (other.m_leafFunctionKind)
 			{
@@ -174,7 +174,7 @@ namespace UQS
 				break;
 
 			default:
-				assert(0);
+				CRY_ASSERT(0);
 			}
 
 			m_leafFunctionKind = other.m_leafFunctionKind;

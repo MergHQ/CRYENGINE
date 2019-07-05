@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "VKCommandListFence.hpp"
-#include "DriverD3D.h"
 
 namespace NCryVulkan
 {

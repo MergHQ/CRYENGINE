@@ -18,21 +18,21 @@ public:
 
 	const char* getTag() const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		return m_xmlNode->getTag();
 	}
 
 	bool haveAttr(const char* name) const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		return m_xmlNode->haveAttr(name);
 	}
 
 	const char* getAttr(const char* name) const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		const char* attributeValue = m_xmlNode->getAttr(name);
 		const char** attributeValueAddress = &attributeValue;
@@ -68,14 +68,14 @@ public:
 
 	int getChildCount() const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		return m_xmlNode->getChildCount();
 	}
 
 	CVehicleParams getChild(int i) const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		XmlNodeRef childNode = m_xmlNode->getChild(i);
 		return CVehicleParams(childNode, m_modificationParams);
@@ -83,7 +83,7 @@ public:
 
 	CVehicleParams findChild(const char* id) const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		XmlNodeRef childNode = m_xmlNode->findChild(id);
 		return CVehicleParams(childNode, m_modificationParams);
@@ -97,7 +97,7 @@ private:
 	template<typename T>
 	bool GetAttrImpl(const char* name, T& valueOut) const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		bool attributeGetSuccess = m_xmlNode->getAttr(name, valueOut);
 		ApplyModification(name, valueOut);
@@ -108,7 +108,7 @@ private:
 	template<typename T>
 	void ApplyModification(const char* name, T& valueOut) const
 	{
-		assert(IsValid());
+		CRY_ASSERT(IsValid());
 
 		const char* id;
 		bool hasId = m_xmlNode->getAttr("id", &id);

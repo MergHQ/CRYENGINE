@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __IVisionMap_h__
-#define __IVisionMap_h__
-
 #pragma once
 
 #include <CryPhysics/physinterface.h>
+#include <CryEntitySystem/IEntity.h>
+#include <CryCore/functor.h>
 
 //! This pierceability level (10) will still allow AI to see through leaves and such.
 #define AI_VISION_RAY_CAST_PIERCEABILITY (10)
@@ -67,7 +66,7 @@ struct PriorityMapEntry
 		, fromFactionMask(VISION_MAP_ALL_FACTIONS)
 		, toTypeMask(VISION_MAP_ALL_TYPES)
 		, toFactionMask(VISION_MAP_ALL_FACTIONS)
-		, priority(eMediumPriority) {};
+		, priority(eMediumPriority) {}
 
 	uint32          fromTypeMask;
 	uint32          fromFactionMask;
@@ -83,7 +82,7 @@ struct PriorityMapEntry
 struct VisionID
 {
 	VisionID()
-		: m_id(0) {};
+		: m_id(0) {}
 
 	operator uint32() const
 	{
@@ -97,11 +96,11 @@ private:
 
 #ifndef VISION_MAP_STORE_DEBUG_NAMES_FOR_VISION_ID
 	VisionID(uint32 id, const char* name)
-		: m_id(id) {};
+		: m_id(id) {}
 #else
 	VisionID(uint32 id, const char* name)
 		: m_id(id)
-		, m_debugName(name) {};
+		, m_debugName(name) {}
 
 	string m_debugName;
 #endif
@@ -230,9 +229,8 @@ struct ObservableParams
 typedef VisionID ObserverID;
 typedef VisionID ObservableID;
 
-class IVisionMap
+struct IVisionMap
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IVisionMap() {}
 
@@ -257,7 +255,7 @@ public:
 	virtual const ObserverParams*   GetObserverParams(const ObserverID& observerID) const = 0;
 	virtual const ObservableParams* GetObservableParams(const ObservableID& observableID) const = 0;
 
-	virtual void                    Update(float frameTime) = 0;
+	virtual void                    Update(const CTimeValue frameStartTime, const float frameTime) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -296,5 +294,3 @@ struct VisionMapHelpers
 		return true;
 	}
 };
-
-#endif // __IVisionMap_h__

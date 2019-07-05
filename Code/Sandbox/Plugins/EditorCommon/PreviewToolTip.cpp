@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "PreviewToolTip.h"
+#include <IEditor.h>
 
 bool CPreviewToolTip::ShowTrackingToolTip(const char* szAssetPath, QWidget* parent/* = nullptr*/)
 {

@@ -194,8 +194,6 @@ void CVehicleDamageBehaviorSpawnDebris::OnVehicleEvent(EVehicleEvent event, cons
 //------------------------------------------------------------------------
 void CVehicleDamageBehaviorSpawnDebris::Update(const float deltaTime)
 {
-	const Matrix34& worldTM = m_pVehicle->GetEntity()->GetWorldTM();
-
 	TDebrisInfoList::iterator debrisIte = m_debris.begin();
 	TDebrisInfoList::iterator debrisEnd = m_debris.end();
 
@@ -224,11 +222,7 @@ void CVehicleDamageBehaviorSpawnDebris::Update(const float deltaTime)
 //------------------------------------------------------------------------
 IEntity* CVehicleDamageBehaviorSpawnDebris::SpawnDebris(IStatObj* pStatObj, Matrix34 vehicleTM, float force)
 {
-	IEntity* pVehicleEntity = m_pVehicle->GetEntity();
-	CRY_ASSERT(pVehicleEntity);
-
 	// spawn the detached entity
-
 	char buffer[128];
 	cry_sprintf(buffer, "%s_DetachedPart_%s", m_pVehicle->GetEntity()->GetName(), pStatObj->GetGeoName());
 
@@ -247,14 +241,12 @@ IEntity* CVehicleDamageBehaviorSpawnDebris::SpawnDebris(IStatObj* pStatObj, Matr
 		return NULL;
 
 	// place the geometry on the new entity
-	int slot = pSpawnedDebris->SetStatObj(pStatObj, -1, true, 200.0f);
-
 	pSpawnedDebris->SetWorldTM(m_pVehicle->GetEntity()->GetWorldTM() * vehicleTM);
 
 #if ENABLE_VEHICLE_DEBUG
 	if (VehicleCVars().v_debugdraw == eVDB_Parts)
 	{
-		CryLog("VehicleDamageBehaviorSpawnDebris[%s]: spawned debris part %s (offfset %i %i %i)", m_pVehicle->GetEntity()->GetName(), pStatObj->GetGeoName(), (int)vehicleTM.GetTranslation().x, (int)vehicleTM.GetTranslation().y, (int)vehicleTM.GetTranslation().z);
+		CryLog("VehicleDamageBehaviorSpawnDebris[%s]: spawned debris part %s (offset %i %i %i)", m_pVehicle->GetEntity()->GetName(), pStatObj->GetGeoName(), (int)vehicleTM.GetTranslation().x, (int)vehicleTM.GetTranslation().y, (int)vehicleTM.GetTranslation().z);
 	}
 #endif
 

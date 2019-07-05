@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   RenderThread.h : Render thread commands processing.
-
-   Revision history:
-* Created by Honitch Andrey
-
-   =============================================================================*/
-
-#ifndef __RENDERTHREAD_H__
-#define __RENDERTHREAD_H__
+#pragma once
 
 #include <CryCore/AlignmentTools.h>
 
@@ -18,21 +9,26 @@
 
 #include <CryThreading/IThreadManager.h>
 
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
+
 //====================================================================
 
+class CDeviceResourceSet;
+class CRenderMesh;
+
+struct IColorGradingControllerInt;
+struct IDynTextureSourceImpl;
 struct IFlashPlayer;
 struct IFlashPlayer_RenderProxy;
 struct IRenderAuxGeomImpl;
 struct SAuxGeomCBRawDataPackagedConst;
-struct IColorGradingControllerInt;
 struct SColorChartLayer;
-class CRenderMesh;
-struct IDynTextureSourceImpl;
 struct SDynTexture;
 struct STexStreamInState;
-class CDeviceResourceSet;
 
-#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_MOBILE
+#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_MOBILE || CRY_PLATFORM_WINDOWS
 	#define USE_LOCKS_FOR_FLUSH_SYNC
 #endif
 
@@ -59,7 +55,7 @@ enum ERenderCommand
 
 enum class ERenderCommandFlags : uint32
 {
-	None = 0,                                  // RenderThread and RenderLoadingThread: execute command directly
+	None                             = 0,      // RenderThread and RenderLoadingThread: execute command directly
 	                                           // LevelLoadingThread and Main thread: push command to renderthread
 	FlushAndWait                     = BIT(1),
 	SkipDuringLoading                = BIT(2),
@@ -102,23 +98,21 @@ struct CRY_ALIGN(128) SRenderThread
 	CRenderThreadLoading* m_pThreadLoading;
 	ILoadtimeCallback* m_pLoadtimeCallback;
 	CryMutex m_rdldLock;
-	bool m_bQuit;
+	std::atomic<bool> m_bQuit;
 	bool m_bQuitLoading;
 	bool m_bSuccessful;
 	SDisplayContextKey m_displayContextKey;
+	SGraphicsPipelineKey m_graphicsPipelineKey;
 	bool m_bBeginFrameCalled;
 	bool m_bEndFrameCalled;
 #ifndef STRIP_RENDER_THREAD
 	int m_nCurThreadProcess;
 	int m_nCurThreadFill;
 #endif
-#ifdef USE_LOCKS_FOR_FLUSH_SYNC
-	int m_nFlush;
-	CryMutex m_LockFlushNotify;
-	CryConditionVariable m_FlushCondition;
-	CryConditionVariable m_FlushFinishedCondition;
-#else
-	volatile int m_nFlush;
+	std::atomic<bool> m_nFlush;
+#if defined(USE_LOCKS_FOR_FLUSH_SYNC)
+	std::mutex m_LockFlushStore;
+	std::condition_variable m_FlushCondition;
 #endif
 	threadID m_nRenderThread;
 	threadID m_nRenderThreadLoading;
@@ -129,14 +123,6 @@ struct CRY_ALIGN(128) SRenderThread
 	CryEvent m_suspendWhileLoadingEvent;
 #endif
 	HRESULT m_hResult;
-#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-	#if !OGL_SINGLE_CONTEXT
-	SDXGLContextThreadLocalHandle m_kDXGLContextHandle;
-	#endif
-	SDXGLDeviceContextThreadLocalHandle m_kDXGLDeviceContextHandle;
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-	float m_fTimeIdleDuringLoading;
-	float m_fTimeBusyDuringLoading;
 	TArray<byte> m_Commands[RT_COMMAND_BUF_COUNT]; // m_nCurThreadFill shows which commands are filled by main thread
 
 	// The below loading queue contains all commands that were submitted and require full device access during loading.
@@ -156,83 +142,68 @@ struct CRY_ALIGN(128) SRenderThread
 
 	struct PoolSyncCriticalSection
 	{
-		void Lock() { m_cs.Lock(); }
+		void Lock()   { m_cs.Lock(); }
 		void Unlock() { m_cs.Unlock(); }
 		CryCriticalSectionNonRecursive m_cs;
 	};
 	// Pool for lambda callbacks.
 	stl::TPoolAllocator<SRenderThreadLambdaCallback, PoolSyncCriticalSection> m_lambdaCallbacksPool;
 
-
 	SRenderThread();
 	~SRenderThread();
-
-	static int GetLocalThreadCommandBufferId();
 
 	inline void SignalFlushFinishedCond()
 	{
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Lock();
+		std::lock_guard<std::mutex> lk(m_LockFlushStore);
 #endif
-		m_nFlush = 0;
+		m_nFlush.store(false);
+
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Unlock();
-		m_FlushFinishedCondition.Notify();
-#else
-		READ_WRITE_BARRIER
+		m_FlushCondition.notify_all();
 #endif
 	}
 
 	inline void SignalFlushCond()
 	{
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Lock();
+		std::lock_guard<std::mutex> lk(m_LockFlushStore);
 #endif
-		m_nFlush = 1;
+		m_nFlush.store(true);
+
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Unlock();
-		m_FlushCondition.Notify();
-#else
-		READ_WRITE_BARRIER
+		m_FlushCondition.notify_all();
 #endif
 	}
 
 	inline void SignalQuitCond()
 	{
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_LockFlushNotify.Lock();
+		std::lock_guard<std::mutex> lk(m_LockFlushStore);
 #endif
-		m_bQuit = 1;
+		m_bQuit.store(true);
+
 #ifdef USE_LOCKS_FOR_FLUSH_SYNC
-		m_FlushCondition.Notify();
-		m_LockFlushNotify.Unlock();
-#else
-		READ_WRITE_BARRIER
+		m_FlushCondition.notify_all();
 #endif
 	}
 
 	void WaitFlushCond();
 
 #if CRY_PLATFORM_WINDOWS
-	HWND GetRenderWindowHandle();
+	CRY_HWND GetRenderWindowHandle();
 #endif
 
 	void WaitFlushFinishedCond();
 
 	inline void InitFlushCond()
 	{
-		m_nFlush = 0;
-#if !defined(USE_LOCKS_FOR_FLUSH_SYNC)
-		READ_WRITE_BARRIER
-#endif
+		m_nFlush.store(false);
 	}
 
 	inline bool CheckFlushCond()
 	{
-#if !defined(USE_LOCKS_FOR_FLUSH_SYNC)
-		READ_WRITE_BARRIER
-#endif
-		return *(int*)&m_nFlush != 0;
+		return m_nFlush.load() != false;
 	}
 
 	void StartRenderThread();
@@ -250,8 +221,7 @@ struct CRY_ALIGN(128) SRenderThread
 	//! If Render thread doesn't exist it will be executed on the Main thread
 	//! @see ERenderCommandFlags
 	template<typename RenderThreadCallback>
-	void ExecuteRenderThreadCommand(RenderThreadCallback&& callback, ERenderCommandFlags flags);
-
+	void ExecuteRenderThreadCommand(RenderThreadCallback && callback, ERenderCommandFlags flags);
 
 	inline byte* AddCommandTo(ERenderCommand eRC, size_t nParamBytes, TArray<byte>& queue)
 	{
@@ -353,18 +323,18 @@ struct CRY_ALIGN(128) SRenderThread
 	void Init();
 	void QuitRenderThread();
 	void QuitRenderLoadingThread();
-	void SyncMainWithRender();
+	void SyncMainWithRender(bool bFrameToFrame = false);
 	void FlushAndWait();
 	void ProcessCommands();
 	void Process();         // Render thread
 	void ProcessLoading();  // Loading thread
-	int GetThreadList() const;
+	int  GetThreadList() const;
 	bool IsRenderThread(bool bAlwaysCheck = false) const;
 	bool IsRenderLoadingThread(bool bAlwaysCheck = false);
-	bool IsLevelLoadingThread(bool bAlwaysCheck=false) const;
+	bool IsLevelLoadingThread(bool bAlwaysCheck = false) const;
 	bool IsMainThread(bool bAlwaysCheck = false) const;
 	bool IsMultithreaded();
-	int CurThreadFill() const;
+	int  CurThreadFill() const;
 
 	bool RC_CreateDevice();
 	void RC_ResetDevice();
@@ -373,13 +343,13 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_ResumeDevice();
 #endif
 
-	void RC_PrecacheResource(ITexture * pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1);
+	void RC_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId);
 
-	void RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer);
-	void RC_FlashRenderPlayer(std::shared_ptr<IFlashPlayer> &&pPlayer);
-	void RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback);
+	void RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> && pPlayer);
+	void RC_FlashRenderPlayer(std::shared_ptr<IFlashPlayer> && pPlayer);
+	void RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> && pPlayer, int cbIdx, bool finalPlayback);
 
-	void RC_BeginFrame(const SDisplayContextKey& displayContextKey);
+	void RC_BeginFrame(const SDisplayContextKey &displayContextKey, const SGraphicsPipelineKey &graphicsPipelineKey);
 	void RC_EndFrame(bool bWait);
 	void RC_TryFlush();
 	void RC_StartVideoThread();
@@ -499,7 +469,7 @@ inline void SRenderThread::ExecuteRenderThreadCommand(RenderThreadCallback&& cal
 	{
 		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLoadingLock);
 		byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_CommandsLoading);
-		void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate())SRenderThreadLambdaCallback{callback,flags};
+		void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate())SRenderThreadLambdaCallback{ callback, flags };
 		AddPointer(p, pCallbackPtr);
 		EndCommandTo(p, m_CommandsLoading);
 
@@ -507,10 +477,10 @@ inline void SRenderThread::ExecuteRenderThreadCommand(RenderThreadCallback&& cal
 	}
 	else
 	{
-		CRY_ASSERT(!IsLevelLoadingThread());
+		CRY_ASSERT(IsMainThread());
 //		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLock);
 		byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_Commands[m_nCurThreadFill]);
-		void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate())SRenderThreadLambdaCallback{callback,flags};
+		void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate())SRenderThreadLambdaCallback{ callback, flags };
 		AddPointer(p, pCallbackPtr);
 		EndCommandTo(p, m_Commands[m_nCurThreadFill]);
 	}
@@ -521,6 +491,3 @@ inline void SRenderThread::ExecuteRenderThreadCommand(RenderThreadCallback&& cal
 	}
 #endif
 }
-
-
-#endif  // __RENDERTHREAD_H__

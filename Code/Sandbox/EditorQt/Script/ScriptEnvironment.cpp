@@ -5,6 +5,8 @@
 
 #include "IEditorImpl.h"
 #include "Objects/EntityObject.h"
+#include "Objects/SelectionGroup.h"
+#include "Commands/CommandManager.h"
 
 EditorScriptEnvironment::EditorScriptEnvironment()
 {
@@ -70,4 +72,3 @@ int EditorScriptEnvironment::Command(IFunctionHandler* pH, const char* commandNa
 
 	return pH->EndFunction();
 }
-

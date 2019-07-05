@@ -5,6 +5,8 @@
 #include "Material/MaterialHelpers.h"
 #include "Util/BoostPythonHelpers.h"
 #include "Util/MFCUtil.h"
+#include <IUndoObject.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace
 {
@@ -1145,9 +1147,9 @@ SPyWrappedProperty PyGetProperty(const char* pPathAndMaterialName, const char* p
 		{
 			value.type = SPyWrappedProperty::eType_Color;
 			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Diffuse.r,
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Diffuse.g,
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Diffuse.b));
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Diffuse.r,
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Diffuse.g,
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Diffuse.b));
 			value.property.colorValue.r = (int)GetRValue(col);
 			value.property.colorValue.g = (int)GetGValue(col);
 			value.property.colorValue.b = (int)GetBValue(col);
@@ -1156,9 +1158,9 @@ SPyWrappedProperty PyGetProperty(const char* pPathAndMaterialName, const char* p
 		{
 			value.type = SPyWrappedProperty::eType_Color;
 			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Specular.r / pMaterial->GetShaderResources().m_LMaterial.m_Specular.a,
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Specular.g / pMaterial->GetShaderResources().m_LMaterial.m_Specular.a,
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Specular.b / pMaterial->GetShaderResources().m_LMaterial.m_Specular.a));
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Specular.r / pMaterial->GetShaderResources().m_LMaterial.m_Specular.a,
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Specular.g / pMaterial->GetShaderResources().m_LMaterial.m_Specular.a,
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Specular.b / pMaterial->GetShaderResources().m_LMaterial.m_Specular.a));
 			value.property.colorValue.r = (int)GetRValue(col);
 			value.property.colorValue.g = (int)GetGValue(col);
 			value.property.colorValue.b = (int)GetBValue(col);
@@ -1178,9 +1180,9 @@ SPyWrappedProperty PyGetProperty(const char* pPathAndMaterialName, const char* p
 		{
 			value.type = SPyWrappedProperty::eType_Color;
 			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Emittance.r,
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Emittance.g,
-			                                    pMaterial->GetShaderResources().m_LMaterial.m_Emittance.b));
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Emittance.r,
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Emittance.g,
+			                                               pMaterial->GetShaderResources().m_LMaterial.m_Emittance.b));
 			value.property.colorValue.r = (int)GetRValue(col);
 			value.property.colorValue.g = (int)GetGValue(col);
 			value.property.colorValue.b = (int)GetBValue(col);
@@ -1514,9 +1516,9 @@ SPyWrappedProperty PyGetProperty(const char* pPathAndMaterialName, const char* p
 				{
 					value.type = SPyWrappedProperty::eType_Color;
 					COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(
-					                                    shaderParams[i].m_Value.m_Vector[0],
-					                                    shaderParams[i].m_Value.m_Vector[1],
-					                                    shaderParams[i].m_Value.m_Vector[2]));
+					                                               shaderParams[i].m_Value.m_Vector[0],
+					                                               shaderParams[i].m_Value.m_Vector[1],
+					                                               shaderParams[i].m_Value.m_Vector[2]));
 					value.property.colorValue.r = (int)GetRValue(col);
 					value.property.colorValue.g = (int)GetGValue(col);
 					value.property.colorValue.b = (int)GetBValue(col);
@@ -1841,9 +1843,6 @@ void PySetProperty(const char* pPathAndMaterialName, const char* pPathAndPropert
 		}
 		else if (propertyName == "Specular Level")
 		{
-			float tempFloat = pMaterial->GetShaderResources().m_LMaterial.m_Specular.a;
-			float tempFloat2 = value.property.floatValue;
-
 			ColorF colorFloat = pMaterial->GetShaderResources().m_LMaterial.m_Specular;
 			colorFloat.a = value.property.floatValue;
 			colorFloat.r *= colorFloat.a;
@@ -2362,18 +2361,25 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMaterialDeleteCurrent, material, delete_c
                                      "Deletes the current material.",
                                      "material.delete_current()");
 REGISTER_PYTHON_COMMAND(PyCreateTerrainLayer, material, create_terrain_layer, "");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMaterialAssignCurrentToSelection, material, assign_current_to_selection,
-                                     "Assigns the current material to the selection.",
-                                     "material.assign_current_to_selection()");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMaterialResetSelection, material, reset_selection,
-                                     "Resets the materials of the selection.",
-                                     "material.reset_selection()");
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyMaterialAssignCurrentToSelection, material, assign_current_to_selection,
+                                   CCommandDescription("Assigns the current material to the selection."))
+REGISTER_EDITOR_UI_COMMAND_DESC(material, assign_current_to_selection, "Assign Current", "", "icons:MaterialEditor/Material_Editor_Assign_To_Object.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionMaterial_Assign_Current, material, assign_current_to_selection)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyMaterialResetSelection, material, reset_selection,
+                                   CCommandDescription("Resets the materials of the selection."))
+REGISTER_EDITOR_UI_COMMAND_DESC(material, reset_selection, "Reset to Default", "", "icons:MaterialEditor/Material_Editor_Reset_Material.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionMaterial_Reset_to_Default, material, reset_selection)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyMaterialSetCurrentFromObject, material, set_current_from_object,
+                                   CCommandDescription("Sets the current material to the material of a selected object."))
+REGISTER_EDITOR_UI_COMMAND_DESC(material, set_current_from_object, "Get from Selected", "", "icons:MaterialEditor/Material_Editor_Pick_From_Object.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionMaterial_Get_from_Selected, material, set_current_from_object)
+
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMaterialSelectObjectsWithCurrent, material, select_objects_with_current,
                                      "Selects the objects which have the current material.",
                                      "material.select_objects_with_current()");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMaterialSetCurrentFromObject, material, set_current_from_object,
-                                     "Sets the current material to the material of a selected object.",
-                                     "material.set_current_from_object()");
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyGetSubMaterial, material, get_submaterial,
                                      "Gets sub materials of an material.",
                                      "material.get_submaterial()");
@@ -2383,4 +2389,3 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyGetProperty, material, get_property,
 REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PySetProperty, material, set_property,
                                           "Sets a property of a material.",
                                           "material.set_property(str materialPath/materialName, str propertyPath/propertyName, [ str | (int, int, int) | (float, float, float) | int | float | bool ] value)");
-

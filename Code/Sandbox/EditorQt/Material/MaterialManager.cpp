@@ -1,31 +1,51 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "MaterialManager.h"
+#include "Material/MaterialManager.h"
 
-#include "Material.h"
-#include "MaterialLibrary.h"
-
-#include "Viewport.h"
-#include "ModelViewport.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "Material/Material.h"
+#include "Material/MaterialLibrary.h"
+#include "Objects/SelectionGroup.h"
+#include "QT/QToolTabManager.h"
+#include "QT/QtMainFrame.h"
+#include "Terrain/Layer.h"
+#include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainManager.h"
+#include "Util/BoostPythonHelpers.h"
 #include "MaterialSender.h"
 
-#include <CryAnimation/ICryAnimation.h>
-#include "ISourceControl.h"
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <IObjectManager.h>
+#include <ISourceControl.h>
+#include <ModelViewport.h>
+#include <Objects/BaseObject.h>
+#include <PathUtils.h>
+#include <Preferences/GlobalHelperPreferences.h>
+#include <UsedResources.h>
+#include <Util/FileUtil.h>
+#include <Viewport.h>
 
-#include "Util/BoostPythonHelpers.h"
-
-#include "Terrain/Layer.h"
-#include "Terrain/TerrainManager.h"
-#include "Terrain/SurfaceType.h"
-
-#include "QT/QtMainFrame.h"
-
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryString/CryPath.h>
-#include <FilePathUtil.h>
-#include <Preferences/ViewportPreferences.h>
+
 #include <QAbstractNativeEventFilter>
 #include <QApplication>
+
+namespace Private_MaterialManager 
+{ 
+
+// Returns the path relative to the assets root directory or just the file name if the path does not belong to the root.
+string ResolveToGamePath(string maxFile)
+{
+	maxFile = PathUtil::ToUnixPath(maxFile);
+	const string maxFileRelative = PathUtil::ToGamePath(maxFile);
+	return maxFileRelative != maxFile ? maxFileRelative : PathUtil::GetFile(maxFileRelative);
+}
+
+}
 
 static const char* MATERIALS_LIBS_PATH = "Materials/";
 static unsigned int s_highlightUpdateCounter = 0;
@@ -50,7 +70,7 @@ public:
 	void Stop(CMaterial* pMaterial, int modeFlag);
 	void GetHighlightColor(ColorF* color, float* intensity, int flags);
 
-	void ClearMaterials() { m_materials.clear(); };
+	void ClearMaterials() { m_materials.clear(); }
 	void RestoreMaterials();
 	void Update();
 private:
@@ -193,9 +213,6 @@ REGISTER_PYTHON_OVERLOAD_COMMAND(PyGetMaterials, general, get_materials, pyGetMa
                                  "Get all, subgroup, or selected materials in the material editor.",
                                  "general.get_materials(str materialName=\'\', selectedOnly=False, levelOnly=False)");
 
-//////////////////////////////////////////////////////////////////////////
-// CMaterialManager implementation.
-//////////////////////////////////////////////////////////////////////////
 CMaterialManager::CMaterialManager()
 	: m_pHighlighter(new CMaterialHighlighter)
 	, m_highlightMask(eHighlight_All & ~(eHighlight_Breakable | eHighlight_NoSurfaceType))
@@ -213,13 +230,13 @@ CMaterialManager::CMaterialManager()
 
 	if (gEnv->p3DEngine)
 		gEnv->p3DEngine->GetMaterialManager()->SetListener(this);
-	gViewportDebugPreferences.debugFlagsChanged.Connect(this, &CMaterialManager::OnDebugFlagsChanged);
+
+	gGlobalHelperPreferences.materialSettingsChanged.Connect(this, &CMaterialManager::OnDebugFlagsChanged);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterialManager::~CMaterialManager()
 {
-	gViewportDebugPreferences.debugFlagsChanged.DisconnectObject(this);
+	gGlobalHelperPreferences.materialSettingsChanged.DisconnectObject(this);
 
 	delete m_pHighlighter;
 	m_pHighlighter = 0;
@@ -234,7 +251,6 @@ CMaterialManager::~CMaterialManager()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::ClearAll()
 {
 	SetCurrentMaterial(NULL);
@@ -244,7 +260,6 @@ void CMaterialManager::ClearAll()
 	m_pLevelLibrary->SetLevelLibrary(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::CreateMaterial(const string& sMaterialName, XmlNodeRef& node, int nMtlFlags, unsigned long nLoadingFlags)
 {
 	CMaterial* pMaterial = new CMaterial(sMaterialName, nMtlFlags);
@@ -263,13 +278,11 @@ CMaterial* CMaterialManager::CreateMaterial(const string& sMaterialName, XmlNode
 	return pMaterial;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::CreateMaterial(const char* sMaterialName, XmlNodeRef& node, int nMtlFlags, unsigned long nLoadingFlags)
 {
 	return CreateMaterial(string(sMaterialName), node, nMtlFlags, nLoadingFlags);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Export(XmlNodeRef& node)
 {
 	XmlNodeRef libs = node->newChild("MaterialsLibrary");
@@ -284,7 +297,6 @@ void CMaterialManager::Export(XmlNodeRef& node)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CMaterialManager::ExportLib(CMaterialLibrary* pLib, XmlNodeRef& libNode)
 {
 	int num = 0;
@@ -308,14 +320,12 @@ int CMaterialManager::ExportLib(CMaterialLibrary* pLib, XmlNodeRef& libNode)
 	return num;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SetSelectedItem(IDataBaseItem* pItem)
 {
 	m_pSelectedItem = (CBaseLibraryItem*)pItem;
 	SetCurrentMaterial((CMaterial*)pItem);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SetCurrentMaterial(CMaterial* pMtl)
 {
 	if (m_pCurrentMaterial)
@@ -342,13 +352,11 @@ void CMaterialManager::SetCurrentMaterial(CMaterial* pMtl)
 	NotifyItemEvent(m_pCurrentMaterial, EDB_ITEM_EVENT_SELECTED);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SetCurrentFolder(const string& folder)
 {
 	m_currentFolder = folder;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SetMarkedMaterials(const std::vector<_smart_ptr<CMaterial>>& markedMaterials)
 {
 	m_markedMaterials = markedMaterials;
@@ -360,29 +368,27 @@ void CMaterialManager::OnLoadShader(CMaterial* pMaterial)
 	AddForHighlighting(pMaterial);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::GetCurrentMaterial() const
 {
 	return m_pCurrentMaterial;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseLibraryItem* CMaterialManager::MakeNewItem()
 {
 	CMaterial* pMaterial = new CMaterial("", 0);
 	return pMaterial;
 }
-//////////////////////////////////////////////////////////////////////////
+
 CBaseLibrary* CMaterialManager::MakeNewLibrary()
 {
 	return new CMaterialLibrary(this);
 }
-//////////////////////////////////////////////////////////////////////////
+
 string CMaterialManager::GetRootNodeName()
 {
 	return "MaterialsLibs";
 }
-//////////////////////////////////////////////////////////////////////////
+
 string CMaterialManager::GetLibsPath()
 {
 	if (m_libsPath.IsEmpty())
@@ -390,7 +396,6 @@ string CMaterialManager::GetLibsPath()
 	return m_libsPath;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::ReportDuplicateItem(CBaseLibraryItem* pItem, CBaseLibraryItem* pOldItem)
 {
 	string sLibName;
@@ -402,7 +407,6 @@ void CMaterialManager::ReportDuplicateItem(CBaseLibraryItem* pItem, CBaseLibrary
 	           (const char*)pItem->GetName(), (const char*)pOldItem->GetName());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Serialize(XmlNodeRef& node, bool bLoading)
 {
 	//CBaseLibraryManager::Serialize( node,bLoading );
@@ -437,8 +441,6 @@ void CMaterialManager::EnumerateShaders()
 		IRenderer* renderer = GetIEditor()->GetSystem()->GetIRenderer();
 		if (!renderer)
 			return;
-
-		int numShaders = 0;
 
 		m_shaderList.clear();
 		m_shaderList.reserve(100);
@@ -515,20 +517,14 @@ struct SMaterialManagerFilter : QAbstractNativeEventFilter
 			return false;
 		}
 
-		const CWnd* const pDlg = GetIEditorImpl()->OpenView("Material Editor Legacy");
-		if (pDlg)
+		GetIEditorImpl()->GetMaterialManager()->SyncMaterialEditor();
+
+		if (pResult)
 		{
-			GetIEditorImpl()->GetMaterialManager()->SyncMaterialEditor();
-
-			if (pResult)
-			{
-				*pResult = 0;
-			}
-
-			return true;
+			*pResult = 0;
 		}
 
-		return false;
+		return true;
 	}
 
 	static SMaterialManagerFilter& GetInstance()
@@ -540,13 +536,12 @@ struct SMaterialManagerFilter : QAbstractNativeEventFilter
 
 } // namespace
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	CBaseLibraryManager::OnEditorNotifyEvent(event);
 	switch (event)
 	{
-	case eNotify_OnMainFrameCreated:
+	case eNotify_OnMainFrameInitialized:
 		InitMatSender();
 		if (!GetIEditorImpl()->IsInMatEditMode())
 		{
@@ -580,10 +575,9 @@ void CMaterialManager::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::LoadMaterial(const string& sMaterialName, bool bMakeIfNotFound)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(GetISystem());
 
 	string sMaterialNameClear(sMaterialName);
 	int nExtLen = strlen(MATERIAL_FILE_EXT);
@@ -638,13 +632,11 @@ CMaterial* CMaterialManager::LoadMaterial(const string& sMaterialName, bool bMak
 	return pMaterial;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::LoadMaterial(const char* sMaterialName, bool bMakeIfNotFound)
 {
 	return LoadMaterial(string(sMaterialName), bMakeIfNotFound);
 }
 
-//////////////////////////////////////////////////////////////////////////
 static bool MaterialRequiresSurfaceType(CMaterial* pMaterial)
 {
 	// Do not enforce Surface Type...
@@ -679,7 +671,6 @@ static bool MaterialRequiresSurfaceType(CMaterial* pMaterial)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CMaterialManager::GetHighlightFlags(CMaterial* pMaterial) const
 {
 	if (pMaterial == NULL)
@@ -707,7 +698,6 @@ int CMaterialManager::GetHighlightFlags(CMaterial* pMaterial) const
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::AddForHighlighting(CMaterial* pMaterial)
 {
 	if (pMaterial == NULL)
@@ -732,7 +722,6 @@ void CMaterialManager::AddForHighlighting(CMaterial* pMaterial)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::RemoveFromHighlighting(CMaterial* pMaterial, int mask)
 {
 	if (pMaterial == NULL)
@@ -751,7 +740,6 @@ void CMaterialManager::RemoveFromHighlighting(CMaterial* pMaterial, int mask)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::UpdateHighlightedMaterials()
 {
 	IDataBaseItemEnumerator* pEnum = CBaseLibraryManager::GetItemEnumerator();
@@ -769,7 +757,6 @@ void CMaterialManager::UpdateHighlightedMaterials()
 	pEnum->Release();
 }
 
-//////////////////////////////////////////////////////////////////////////
 IMaterial* CMaterialManager::OnLoadMaterial(const char* sMtlName, bool bForceCreation, unsigned long nLoadingFlags)
 {
 	_smart_ptr<CMaterial> pMaterial = LoadMaterial(sMtlName, bForceCreation);
@@ -781,7 +768,6 @@ IMaterial* CMaterialManager::OnLoadMaterial(const char* sMtlName, bool bForceCre
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::OnRequestMaterial(IMaterial* pMatInfo)
 {
 	const char* pcName = pMatInfo->GetName();
@@ -795,7 +781,7 @@ void CMaterialManager::OnRequestMaterial(IMaterial* pMatInfo)
 	if (pMaterial)
 	{
 		IMaterial* pNewMatInfo = pMaterial->GetMatInfo(true);
-		assert(pNewMatInfo == pMatInfo);
+		CRY_ASSERT(pNewMatInfo == pMatInfo);
 
 		// RegisterItem() can be called through multiple request of the same materials or through a cascade
 		// of calls (see above), thus prevent warning messages by calling it conditionally.
@@ -805,7 +791,6 @@ void CMaterialManager::OnRequestMaterial(IMaterial* pMatInfo)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::OnCreateMaterial(IMaterial* pMatInfo)
 {
 	if (!(pMatInfo->GetFlags() & MTL_FLAG_PURE_CHILD) && !(pMatInfo->GetFlags() & MTL_FLAG_UIMATERIAL))
@@ -819,7 +804,6 @@ void CMaterialManager::OnCreateMaterial(IMaterial* pMatInfo)
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::OnDeleteMaterial(IMaterial* pMaterial)
 {
 	CMaterial* pMtl = (CMaterial*)pMaterial->GetUserData();
@@ -830,7 +814,6 @@ void CMaterialManager::OnDeleteMaterial(IMaterial* pMaterial)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::FromIMaterial(IMaterial* pMaterial)
 {
 	if (!pMaterial)
@@ -839,12 +822,10 @@ CMaterial* CMaterialManager::FromIMaterial(IMaterial* pMaterial)
 	return pMtl;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SaveAllLibs()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CMaterialManager::FilenameToMaterial(const string& filename)
 {
 	string name = PathUtil::RemoveExtension(filename.GetString()).c_str();
@@ -867,14 +848,12 @@ string CMaterialManager::FilenameToMaterial(const string& filename)
 	return name;
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CMaterialManager::MaterialToFilename(const string& sMaterialName, bool bForWriting)
 {
 	string filename = PathUtil::ReplaceExtension(sMaterialName.GetString(), MATERIAL_FILE_EXT).c_str();
 	return filename;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialManager::DeleteMaterial(CMaterial* pMtl)
 {
 	assert(pMtl);
@@ -923,7 +902,6 @@ bool CMaterialManager::DeleteMaterial(CMaterial* pMtl)
 	return bRes;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMaterialManager::SelectSaveMaterial(string& itemName, const char* defaultStartPath)
 {
 	string startPath;
@@ -952,7 +930,6 @@ bool CMaterialManager::SelectSaveMaterial(string& itemName, const char* defaultS
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::SelectNewMaterial(int nMtlFlags, const char* szStartPath)
 {
 	string path;
@@ -985,19 +962,16 @@ CMaterial* CMaterialManager::SelectNewMaterial(int nMtlFlags, const char* szStar
 	return mtl;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_Create()
 {
 	SelectNewMaterial(0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_CreateMulti()
 {
 	SelectNewMaterial(MTL_FLAG_MULTI_SUBMTL);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_ConvertToMulti()
 {
 	CMaterial* pMaterial = GetCurrentMaterial();
@@ -1015,7 +989,6 @@ void CMaterialManager::Command_ConvertToMulti()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_Duplicate()
 {
 	CMaterial* pSrcMtl = GetCurrentMaterial();
@@ -1050,7 +1023,6 @@ void CMaterialManager::Command_Duplicate()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMaterial* CMaterialManager::DuplicateMaterial(const char* newName, CMaterial* pOriginal)
 {
 	if (!newName)
@@ -1072,7 +1044,6 @@ CMaterial* CMaterialManager::DuplicateMaterial(const char* newName, CMaterial* p
 	return CreateMaterial(newName, node, pOriginal->GetFlags());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_Merge()
 {
 	string itemName;
@@ -1128,7 +1099,6 @@ void CMaterialManager::Command_Merge()
 	SetCurrentMaterial(pNewMaterial);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_Delete()
 {
 	CMaterial* pMtl = GetCurrentMaterial();
@@ -1155,7 +1125,6 @@ void CMaterialManager::Command_CreateTerrainLayer()
 
 	CLayer* pLayer = 0;
 	string sMaterialPath = pMaterial ? pMaterial->GetName() : "";
-	bool bFound = false;
 	CTerrainManager* terrainManager = GetIEditorImpl()->GetTerrainManager();
 
 	for (int i = 0, n = terrainManager->GetLayerCount(); i < n; ++i)
@@ -1192,7 +1161,6 @@ void CMaterialManager::Command_CreateTerrainLayer()
 	GetIEditorImpl()->Notify(eNotify_OnInvalidateControls);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_AssignToSelection()
 {
 	CMaterial* pMtl = GetCurrentMaterial();
@@ -1235,7 +1203,6 @@ void CMaterialManager::Command_AssignToSelection()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_ResetSelection()
 {
 	const CSelectionGroup* pSel = GetIEditorImpl()->GetSelection();
@@ -1256,7 +1223,6 @@ void CMaterialManager::Command_ResetSelection()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_SelectAssignedObjects()
 {
 	CMaterial* pMtl = GetCurrentMaterial();
@@ -1272,13 +1238,12 @@ void CMaterialManager::Command_SelectAssignedObjects()
 			{
 				if (pObject->IsHidden() || pObject->IsFrozen())
 					continue;
-				GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
+				GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pObject);
 			}
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::Command_SelectFromObject()
 {
 	if (GetIEditorImpl()->IsInPreviewMode())
@@ -1307,21 +1272,29 @@ void CMaterialManager::Command_SelectFromObject()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::PickPreviewMaterial(HWND hWndCaller)
 {
 	XmlNodeRef data = XmlHelpers::CreateXmlNode("ExportMaterial");
 	CMaterial* pMtl = GetCurrentMaterial();
 	if (!pMtl)
+	{
 		return;
+	}
 
 	if (pMtl->IsPureChild() && pMtl->GetParent())
+	{
 		pMtl = pMtl->GetParent();
+	}
 
 	if (pMtl->GetFlags() & MTL_FLAG_WIRE)
+	{
 		data->setAttr("Flag_Wire", 1);
+	}
+
 	if (pMtl->GetFlags() & MTL_FLAG_2SIDED)
+	{
 		data->setAttr("Flag_2Sided", 1);
+	}
 
 	data->setAttr("Name", pMtl->GetName());
 	data->setAttr("FileName", pMtl->GetFilename());
@@ -1399,7 +1372,6 @@ void CMaterialManager::PickPreviewMaterial(HWND hWndCaller)
 	m_MatSender->SendMessage(eMSM_GetSelectedMaterial, data);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SyncMaterialEditor()
 {
 	if (!m_MatSender)
@@ -1414,99 +1386,187 @@ void CMaterialManager::SyncMaterialEditor()
 		if (!node)
 			return;
 
-		string sMtlName;
-		string sMaxFile;
+		const CAssetType* pAssetType = GetIEditor()->GetAssetManager()->FindAssetType("Material");
+		if (!pAssetType)
+		{
+			return;
+		}
+
+		string materialName;
+		string maxFile; // 3ds Max file
 
 		XmlNodeRef root = m_MatSender->m_node;
-		root->getAttr("Name", sMtlName);
-		root->getAttr("MaxFile", sMaxFile);
+		root->getAttr("Name", materialName);
+		root->getAttr("MaxFile", maxFile);
 
-		int IsMulti = 0;
-		root->getAttr("IsMulti", IsMulti);
+		maxFile = Private_MaterialManager::ResolveToGamePath(maxFile);
+		string initialBasePath;
+		string maxFilename;
+		PathUtil::Split(maxFile.c_str(), initialBasePath, maxFilename);
+		if (initialBasePath.empty())
+		{
+			initialBasePath = "materials";
+		}
 
-		int nMtlFlags = 0;
-		if (IsMulti)
-			nMtlFlags |= MTL_FLAG_MULTI_SUBMTL;
+		const string initialAssetPath = pAssetType->MakeMetadataFilename(PathUtil::Make(initialBasePath, materialName).c_str());
 
-		if (root->haveAttr("Flag_Wire"))
-			nMtlFlags |= MTL_FLAG_WIRE;
-		if (root->haveAttr("Flag_2Sided"))
-			nMtlFlags |= MTL_FLAG_2SIDED;
+		CAssetBrowserDialog dialog({ pAssetType->GetTypeName() }, CAssetBrowserDialog::Mode::Create);
+		dialog.SetOverwriteMode(CAssetBrowserDialog::OverwriteMode::AllowOverwrite);
+		dialog.SelectAsset(initialAssetPath);
+		if (!dialog.Execute())
+		{
+			return;
+		}
+		const string assetBasePath = dialog.GetSelectedAssetPath();
+		if (assetBasePath.empty())
+		{
+			return;
+		}
 
-		_smart_ptr<CMaterial> pMtl = SelectNewMaterial(nMtlFlags, PathUtil::GetPathWithoutFilename(sMaxFile));
+		const string assetPath = pAssetType->MakeMetadataFilename(assetBasePath.c_str());
+		pAssetType->Create(assetPath);
+
+		_smart_ptr<CMaterial> pMtl = LoadMaterial(FilenameToMaterial(PathUtil::RemoveExtension(assetPath)));
+		if (!pMtl)
+		{
+			return;
+		}
+
+		InitMaterial(pMtl.get());
+		pMtl->Save();
+
+		SetCurrentMaterial(nullptr);
+		SetCurrentMaterial(pMtl);
+
+		GetIEditor()->ExecuteCommand("asset.show_in_browser '%s'", assetPath.c_str());
+		CAsset* const pAsset = GetIEditor()->GetAssetManager()->FindAssetForMetadata(assetPath.c_str());
+		if (pAsset)
+		{
+			pAsset->Edit();
+		}
+	}
+
+	if (m_MatSender->m_h.msg == eMSM_GetSelectedMaterial)
+	{
+		CMaterial* const pMtl = GetCurrentMaterial();
+		if (!pMtl)
+		{
+			const CAssetType* const pMaterialType = GetIEditor()->GetAssetManager()->FindAssetType("Material");
+
+			GetIEditor()->GetAssetManager()->ForeachAsset([pMaterialType, this](CAsset* pAsset)
+			{
+				if (!GetCurrentMaterial() && pAsset->GetType() == pMaterialType && pAsset->IsBeingEdited())
+				{
+					const string name(FilenameToMaterial(pAsset->GetFile(0)));
+					CMaterial* const pMaterial = LoadMaterial(name, false);
+					SetCurrentMaterial(pMaterial);
+				}
+			});
+		}
+
+		PickPreviewMaterial(m_MatSender->m_h.GetMaxHWND());
 
 		if (!pMtl)
-			return;
-
-		if (!IsMulti)
 		{
-			node->delAttr("Shader");   // Remove shader attribute.
-			XmlNodeRef texturesNode = node->findChild("Textures");
-			if (texturesNode)
+			SetCurrentMaterial(nullptr);
+		}
+	}
+}
+
+void CMaterialManager::InitMaterial(CMaterial* pMtl)
+{
+	using namespace Private_MaterialManager;
+
+	XmlNodeRef root = m_MatSender->m_node;
+
+	XmlNodeRef node = root->findChild("Material");
+	if (!node)
+		return;
+
+	int nMtlFlags = 0;
+
+	int IsMulti = 0;
+	root->getAttr("IsMulti", IsMulti);
+
+	if (IsMulti)
+	{
+		nMtlFlags |= MTL_FLAG_MULTI_SUBMTL;
+	}
+
+	if (root->haveAttr("Flag_Wire"))
+	{
+		nMtlFlags |= MTL_FLAG_WIRE;
+	}
+
+	if (root->haveAttr("Flag_2Sided"))
+	{
+		nMtlFlags |= MTL_FLAG_2SIDED;
+	}
+
+	pMtl->SetFlags(nMtlFlags);
+
+	if (!IsMulti)
+	{
+		node->delAttr("Shader");   // Remove shader attribute.
+		XmlNodeRef texturesNode = node->findChild("Textures");
+		if (texturesNode)
+		{
+			for (int i = 0; i < texturesNode->getChildCount(); i++)
 			{
-				for (int i = 0; i < texturesNode->getChildCount(); i++)
+				XmlNodeRef texNode = texturesNode->getChild(i);
+				string file;
+				if (texNode->getAttr("File", file))
 				{
-					XmlNodeRef texNode = texturesNode->getChild(i);
-					string file;
-					if (texNode->getAttr("File", file))
+					//make path relative to the project specific game folder
+					string newfile = ResolveToGamePath(file.GetString()).c_str();
+					if (newfile.GetLength() > 0)
 					{
-						//make path relative to the project specific game folder
-						string newfile = PathUtil::AbsolutePathToGamePath(file.GetString()).c_str();
-						if (newfile.GetLength() > 0)
-							file = newfile;
-						texNode->setAttr("File", file);
+						file = newfile;
 					}
+					texNode->setAttr("File", file);
 				}
 			}
 		}
-		else
+	}
+	else
+	{
+		XmlNodeRef childsNode = node->findChild("SubMaterials");
+		if (childsNode)
 		{
-			XmlNodeRef childsNode = node->findChild("SubMaterials");
-			if (childsNode)
+			int nSubMtls = childsNode->getChildCount();
+			for (int i = 0; i < nSubMtls; i++)
 			{
-				int nSubMtls = childsNode->getChildCount();
-				for (int i = 0; i < nSubMtls; i++)
+				XmlNodeRef node = childsNode->getChild(i);
+				node->delAttr("Shader");   // Remove shader attribute.
+				XmlNodeRef texturesNode = node->findChild("Textures");
+				if (texturesNode)
 				{
-					XmlNodeRef node = childsNode->getChild(i);
-					node->delAttr("Shader");   // Remove shader attribute.
-					XmlNodeRef texturesNode = node->findChild("Textures");
-					if (texturesNode)
+					for (int i = 0; i < texturesNode->getChildCount(); i++)
 					{
-						for (int i = 0; i < texturesNode->getChildCount(); i++)
+						XmlNodeRef texNode = texturesNode->getChild(i);
+						string file;
+						if (texNode->getAttr("File", file))
 						{
-							XmlNodeRef texNode = texturesNode->getChild(i);
-							string file;
-							if (texNode->getAttr("File", file))
+							//make path relative to the project specific game folder
+							string newfile = ResolveToGamePath(file.GetString()).c_str();
+							if (newfile.GetLength() > 0)
 							{
-								//make path relative to the project specific game folder
-								string newfile = PathUtil::AbsolutePathToGamePath(file.GetString()).c_str();
-								if (newfile.GetLength() > 0)
-									file = newfile;
-								texNode->setAttr("File", file);
+								file = newfile;
 							}
+							texNode->setAttr("File", file);
 						}
 					}
 				}
 			}
 		}
-
-		CBaseLibraryItem::SerializeContext ctx(node, true);
-		ctx.bUndo = true;
-		pMtl->Serialize(ctx);
-
-		pMtl->Update();
-
-		SetCurrentMaterial(0);
-		SetCurrentMaterial(pMtl);
 	}
 
-	if (m_MatSender->m_h.msg == eMSM_GetSelectedMaterial)
-	{
-		PickPreviewMaterial(m_MatSender->m_h.GetMaxHWND());
-	}
+	CBaseLibraryItem::SerializeContext ctx(node, true);
+	ctx.bUndo = true;
+	pMtl->Serialize(ctx);
+	pMtl->Update();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::InitMatSender()
 {
 	//MatSend(true);
@@ -1522,15 +1582,13 @@ void CMaterialManager::InitMatSender()
 
 void CMaterialManager::OnDebugFlagsChanged()
 {
-	int debugFlags = gViewportDebugPreferences.GetDebugFlags();
-
 	int mask = GetHighlightMask();
-	if (debugFlags & DBG_HIGHLIGHT_BREAKABLE)
+	if (gGlobalHelperPreferences.highlightBreakableMaterial)
 		mask |= eHighlight_Breakable;
 	else
 		mask &= ~eHighlight_Breakable;
 
-	if (debugFlags & DBG_HIGHLIGHT_MISSING_SURFACE_TYPE)
+	if (gGlobalHelperPreferences.highlightMissingSurfaceTypes)
 		mask |= eHighlight_NoSurfaceType;
 	else
 		mask &= ~eHighlight_NoSurfaceType;
@@ -1538,14 +1596,12 @@ void CMaterialManager::OnDebugFlagsChanged()
 	SetHighlightMask(mask);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::GotoMaterial(CMaterial* pMaterial)
 {
 	if (pMaterial)
 		GetIEditorImpl()->OpenDataBaseLibrary(EDB_TYPE_MATERIAL, pMaterial);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::GotoMaterial(IMaterial* pMtl)
 {
 	if (pMtl)
@@ -1556,7 +1612,6 @@ void CMaterialManager::GotoMaterial(IMaterial* pMtl)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SetHighlightedMaterial(CMaterial* pMtl)
 {
 	if (m_pHighlightMaterial)
@@ -1567,7 +1622,6 @@ void CMaterialManager::SetHighlightedMaterial(CMaterial* pMtl)
 		AddForHighlighting(m_pHighlightMaterial);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::HighlightedMaterialChanged(CMaterial* pMtl)
 {
 	if (!pMtl)
@@ -1577,7 +1631,6 @@ void CMaterialManager::HighlightedMaterialChanged(CMaterial* pMtl)
 	AddForHighlighting(pMtl);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::SetHighlightMask(int highlightMask)
 {
 	if (m_highlightMask != highlightMask)
@@ -1588,7 +1641,6 @@ void CMaterialManager::SetHighlightMask(int highlightMask)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMaterialManager::GatherResources(IMaterial* pMaterial, CUsedResources& resources)
 {
 	if (!pMaterial)
@@ -1621,7 +1673,6 @@ void CMaterialManager::GatherResources(IMaterial* pMaterial, CUsedResources& res
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////
 void CMaterialManager::GetHighlightColor(ColorF* color, float* intensity, int flags)
 {
 	MAKE_SURE(m_pHighlighter, return );
@@ -1635,7 +1686,6 @@ void CMaterialManager::CreateTerrainLayerFromMaterial(CMaterial* pMaterial)
 
 	CLayer* pLayer = 0;
 	string sMaterialPath = pMaterial ? pMaterial->GetName() : "";
-	bool bFound = false;
 	CTerrainManager* terrainManager = GetIEditorImpl()->GetTerrainManager();
 
 	for (int i = 0, n = terrainManager->GetLayerCount(); i < n; ++i)
@@ -1667,4 +1717,3 @@ void CMaterialManager::CreateTerrainLayerFromMaterial(CMaterial* pMaterial)
 	pLayer->SetSelected(true);
 	GetIEditorImpl()->Notify(eNotify_OnInvalidateControls);
 }
-

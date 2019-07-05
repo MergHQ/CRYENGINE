@@ -2,74 +2,85 @@
 
 #include "StdAfx.h"
 #include "GameEngine.h"
-#include "IEditorImpl.h"
-#include "CryEditDoc.h"
-#include "Objects/EntityScript.h"
-#include "Objects/AIWave.h"
-#include "Geometry/EdMesh.h"
-#include "Mission.h"
-#include "Terrain/SurfaceType.h"
-#include "Terrain/Heightmap.h"
-#include "Terrain/TerrainGrid.h"
-#include "TerrainLighting.h"
-#include "ViewManager.h"
-#include "SplashScreen.h"
+
 #include "AI/AIManager.h"
 #include "AI/CoverSurfaceManager.h"
-#include "Objects/ObjectLayerManager.h"
-#include "Objects/AICoverSurface.h"
 #include "AI/NavDataGeneration/Navigation.h"
-#include "Material/MaterialManager.h"
-#include "Particles/ParticleManager.h"
+#include "CustomActions/CustomActionsEditorManager.h"
+#include "Geometry/EdMesh.h"
+#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraphModuleManager.h"
-#include "HyperGraph/Controls/FlowGraphDebuggerEditor.h"
-#include "UIEnumsDatabase.h"
-#include "Util/Ruler.h"
-#include "CustomActions/CustomActionsEditorManager.h"
 #include "Material/MaterialFXGraphMan.h"
-#include <CryAISystem/IAgent.h>
+#include "Material/MaterialManager.h"
+#include "Objects/AICoverSurface.h"
+#include "Objects/AIWave.h"
+#include "Objects/EntityScript.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Particles/ParticleManager.h"
+#include "Prefabs/PrefabEvents.h"
+#include "Prefabs/PrefabManager.h"
+#include "ProjectManagement/Utils.h"
+#include "Terrain/Heightmap.h"
+#include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainGrid.h"
+#include "TerrainLighting.h"
+#include "UI/UIManager.h"
+#include "Util/Ruler.h"
+#include "CryEditDoc.h"
+#include "GameExporter.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "Mission.h"
+#include "SplashScreen.h"
+#include "ViewManager.h"
+
+// EditorCommon
+#include <IObjectManager.h>
+#include <Controls/QuestionDialog.h>
+#include <Notifications/NotificationCenter.h>
+#include <Preferences/ViewportPreferences.h>
+#include <QT/Widgets/QWaitProgress.h>
+#include <Commands/ICommandManager.h>
+#include <RenderViewport.h>
+#include <UIEnumsDatabase.h>
+
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ITimeOfDay.h>
+#include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAISystem.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryMovie/IMovieSystem.h>
-#include <CryInput/IInput.h>
-#include <CryScriptSystem/IScriptSystem.h>
-#include <CrySystem/File/ICryPak.h>
-#include <CryPhysics/IPhysics.h>
-#include <CrySandbox/IEditorGame.h>
-#include <CrySystem/ITimer.h>
-#include <CryFlowGraph/IFlowSystem.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryCore/Platform/platform_impl.inl>
+#include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryFlowGraph/IFlowSystem.h>
 #include <CryGame/IGameFramework.h>
 #include <CryInput/IHardwareMouse.h>
-#include <CryAudio/Dialog/IDialogSystem.h>
-#include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
+#include <CryInput/IInput.h>
+#include <CryMovie/IMovieSystem.h>
 #include <CryPhysics/IDeferredCollisionEvent.h>
-#include <CryCore/Platform/platform_impl.inl>
-#include "Prefabs/PrefabManager.h"
-#include "Prefabs/PrefabEvents.h"
-#include "UI\UIManager.h"
-#include <Cry3DEngine/ITimeOfDay.h>
-#include "QT/Widgets/QWaitProgress.h"
-#include "Controls/QuestionDialog.h"
-#include "Notifications/NotificationCenter.h"
-#include "ICommandManager.h"
-#include "Preferences/ViewportPreferences.h"
-#include "GameExporter.h"
-#include <RenderViewport.h>
+#include <CryPhysics/IPhysics.h>
+#include <CrySandbox/IEditorGame.h>
+#include <CryScriptSystem/IScriptSystem.h>
+#include <CrySystem/SystemInitParams.h>
+#include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ICryPluginManager.h>
+#include <CrySystem/ConsoleRegistration.h>
+#include <CrySystem/ITimer.h>
+#include <CryThreading/IJobManager.h>
+#include <CryUDR/IUDRSystem.h>
+#include <IGameRulesSystem.h>
+#include <ILevelSystem.h>
 
 // added just because of the suspending/resuming of engine update, should be removed once we have msgboxes in a separate process
 #include "CryEdit.h"
 
-#include <../CryAction/IGameRulesSystem.h>
-#include <../CryAction/ILevelSystem.h>
+#include <QApplication>
 
 // Implementation of System Callback structure.
 struct SSystemUserCallback : public ISystemUserCallback
 {
-	SSystemUserCallback(IInitializeUIInfo* logo) { m_pLogo = logo; };
+	SSystemUserCallback(IInitializeUIInfo* logo) { m_pLogo = logo; }
 	virtual void OnSystemConnect(ISystem* pSystem)
 	{
 		ModuleInitISystem(pSystem, "Editor");
@@ -141,72 +152,6 @@ private:
 	IInitializeUIInfo* m_pLogo;
 };
 
-// Implements EntitySystemSink for InGame mode.
-struct SInGameEntitySystemListener : public IEntitySystemSink
-{
-	SInGameEntitySystemListener()
-	{
-	}
-
-	~SInGameEntitySystemListener()
-	{
-		// Remove all remaining entities from entity system.
-		IEntitySystem* pEntitySystem = GetIEditorImpl()->GetSystem()->GetIEntitySystem();
-
-		for (std::set<int>::iterator it = m_entities.begin(); it != m_entities.end(); ++it)
-		{
-			EntityId entityId = *it;
-			IEntity* pEntity = pEntitySystem->GetEntity(entityId);
-			if (pEntity)
-			{
-				IEntity* pParent = pEntity->GetParent();
-				if (pParent)
-				{
-					// Childs of irremovable entity are also not deleted (Needed for vehicles weapons for example)
-					if (pParent->GetFlags() & ENTITY_FLAG_UNREMOVABLE)
-						continue;
-				}
-			}
-			pEntitySystem->RemoveEntity(*it, true);
-		}
-	}
-
-	virtual bool OnBeforeSpawn(SEntitySpawnParams& params)
-	{
-		return true;
-	}
-
-	virtual void OnSpawn(IEntity* e, SEntitySpawnParams& params)
-	{
-		//if (params.ed.ClassId!=0 && ed.ClassId!=PLAYER_CLASS_ID) // Ignore MainPlayer
-		if (!(e->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
-		{
-			m_entities.insert(e->GetId());
-		}
-	}
-
-	virtual bool OnRemove(IEntity* e)
-	{
-		if (!(e->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
-			m_entities.erase(e->GetId());
-		return true;
-	}
-
-	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params)
-	{
-		CRY_ASSERT_MESSAGE(false, "Editor should not be receiving entity reused events from IEntitySystemSink, investigate this.");
-	}
-
-private:
-	// Ids of all spawned entities.
-	std::set<int> m_entities;
-};
-
-namespace
-{
-SInGameEntitySystemListener* s_InGameEntityListener = 0;
-};
-
 // Timur.
 // This is FarCry.exe authentication function, this code is not for public release!!
 static void GameSystemAuthCheckFunction(void* data)
@@ -225,7 +170,7 @@ static void GameSystemAuthCheckFunction(void* data)
 }
 
 	// src and trg can be the same pointer (in place decryption)
-	// len must be in bytes and must be multiple of 8 byts (64bits).
+	// len must be in bytes and must be multiple of 8 bytes (64bits).
 	// key is 128bit: int key[4] = {n1,n2,n3,n4};
 	// void decipher(unsigned int *const v,unsigned int *const w,const unsigned int *const k)
 #define TEA_DECODE(src, trg, len, key) {                                                                                      \
@@ -268,9 +213,12 @@ class CGameToEditorInterface : public IGameToEditorInterface
 
 CGameEngine::CGameEngine()
 	: m_bIgnoreUpdates(false)
-	, m_pEditorGame(0)
+	, m_lastViewportRenderTime(0)
+	, m_pEditorGame(nullptr)
+	, m_pSystemUserCallback(nullptr)
 	, m_ePendingGameMode(ePGM_NotPending)
 	, m_listeners(0)
+	, m_keepEditorActive(0)
 {
 	m_pISystem = nullptr;
 	m_pNavigation = nullptr;
@@ -315,7 +263,7 @@ CGameEngine::~CGameEngine()
 
 	/*
 	   if (m_hSystemHandle)
-	    FreeLibrary(m_hSystemHandle);
+	   FreeLibrary(m_hSystemHandle);
 	 */
 	delete m_pGameToEditorInterface;
 	delete m_pSystemUserCallback;
@@ -341,7 +289,8 @@ void KillMemory(IConsoleCmdArgs* /* pArgs */)
 			size = size > kLimit ? kLimit : size;
 		}
 
-		uint8* alloc = new uint8[size];
+		new uint8[size];
+		// cppcheck-suppress memleak
 	}
 }
 
@@ -378,24 +327,13 @@ static void CmdGotoEditor(IConsoleCmdArgs* pArgs)
 	}
 }
 
-bool CGameEngine::Init(
-  bool bPreviewMode,
-  bool bTestMode,
-  bool bShaderCacheGen,
-  const char* sInCmdLine,
-  IInitializeUIInfo* logo)
+bool CGameEngine::Init(bool bTestMode, bool bShaderCacheGen, const char* sInCmdLine, IInitializeUIInfo* logo)
 {
 	m_pSystemUserCallback = new SSystemUserCallback(logo);
 
 	SSystemInitParams startupParams;
 
 	startupParams.bEditor = true;
-	startupParams.bPreview = bPreviewMode;
-
-	if (AfxGetMainWnd())
-	{
-		startupParams.hWnd = AfxGetMainWnd()->GetSafeHwnd();
-	}
 
 	startupParams.sLogFileName = "Editor.log";
 	startupParams.pUserCallback = m_pSystemUserCallback;
@@ -414,6 +352,42 @@ bool CGameEngine::Init(
 
 	// We do this manually in the Editor
 	startupParams.bExecuteCommandLine = false;
+
+	if (strstr(sInCmdLine, "-create_project"))
+	{
+		const string projectPath = AskUserToSpecifyProject(SplashScreen::GetSplashScreen(), true, CSelectProjectDialog::Tab::Create);
+		if (projectPath.empty())
+		{
+			// Exit Sandbox
+			return false;
+		}
+		AppendProjectPathToCommandLine(projectPath, startupParams);
+	}
+	else if (strstr(sInCmdLine, "-project") == 0)
+	{
+		const string engineFolder = FindCryEngineRootFolder();
+		if (IsProjectSpecifiedInSystemConfig(engineFolder))
+		{
+			//1. it is responsibility of a user to check correctness of system.cfg file
+			//2. It is engine responsibility to run itself with this information (it will parse and use system.cfg as game_launcher)
+		}
+		else
+		{
+			string projPath = FindProjectInFolder(engineFolder);
+			if (projPath.empty())
+			{
+				projPath = AskUserToSpecifyProject(SplashScreen::GetSplashScreen(), true, CSelectProjectDialog::Tab::Open);
+			}
+
+			if (projPath.empty())
+			{
+				// Exit Sandbox
+				return false;
+			}
+
+			AppendProjectPathToCommandLine(projPath, startupParams);
+		}
+	}
 
 	if (!CryInitializeEngine(startupParams, true))
 	{
@@ -458,8 +432,9 @@ bool CGameEngine::Init(
 	CLogFile::AboutSystem();
 	REGISTER_CVAR(ed_killmemory_size, -1, VF_DUMPTODISK, "Sets the testing allocation size. -1 for random");
 	REGISTER_CVAR(ed_indexfiles, 1, VF_DUMPTODISK, "Index game resource files, 0 - inactive, 1 - active");
-	REGISTER_CVAR2_CB("ed_keepEditorActive", &keepEditorActive, 0, VF_NULL, "Keep the editor active, even if no focus is set", KeepEditorActiveChanged);
+	REGISTER_CVAR2_CB("ed_keepEditorActive", &m_keepEditorActive, 0, VF_NULL, "Keep the editor active, even if no focus is set", KeepEditorActiveChanged);
 	REGISTER_INT("ed_useDevManager", 1, VF_INVISIBLE, "Use DevManager with sandbox editor");
+	REGISTER_INT("ed_exportLevelXmlBinary", 0, VF_NULL, "Select xml files format for the level.pak export. 0 - textual, 1 - binary");
 	REGISTER_COMMAND("ed_killmemory", KillMemory, VF_NULL, "");
 	REGISTER_COMMAND("ed_goto", CmdGotoEditor, VF_CHEAT, "Internal command, used by the 'GOTO' console command\n");
 	REGISTER_COMMAND("ed_disable_game_mode", DisableGameMode, VF_NULL, "Will go back to editor mode if in game mode.\n");
@@ -469,7 +444,7 @@ bool CGameEngine::Init(
 
 void CGameEngine::InitAdditionalEngineComponents()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (HMODULE hGameModule = (HMODULE)gEnv->pGameFramework->GetGameModuleHandle())
 	{
@@ -488,7 +463,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 	InitializeEditorGame();
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - lua entity scripts");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - lua entity scripts");
 		// Execute Editor.lua override file.
 		IScriptSystem* pScriptSystem = m_pISystem->GetIScriptSystem();
 		pScriptSystem->ExecuteFile("Editor.Lua", false);
@@ -501,28 +476,28 @@ void CGameEngine::InitAdditionalEngineComponents()
 
 	if (pEditor->GetFlowGraphManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - FG init");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - FG init");
 		SplashScreen::SetText("Loading Flowgraph...");
 		pEditor->GetFlowGraphManager()->Init();
 	}
 
 	if (pEditor->GetMatFxGraphManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Material FX init");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Material FX init");
 		SplashScreen::SetText("Loading Material Effects Flowgraphs...");
 		pEditor->GetMatFxGraphManager()->Init();
 	}
 
 	if (pEditor->GetFlowGraphDebuggerEditor())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init FG debugger");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init FG debugger");
 		SplashScreen::SetText("Initializing Flowgraph Debugger...");
 		pEditor->GetFlowGraphDebuggerEditor()->Init();
 	}
 
 	if (pEditor->GetFlowGraphModuleManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init FG modules");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init FG modules");
 		SplashScreen::SetText("Initializing Flowgraph Module Manager...");
 		pEditor->GetFlowGraphModuleManager()->Init();
 	}
@@ -531,7 +506,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 	CPrefabManager* const pPrefabManager = pEditor->GetPrefabManager();
 	if (pPrefabManager)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init Prefab events");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init Prefab events");
 		SplashScreen::SetText("Initializing Prefab Events...");
 		CPrefabEvents* pPrefabEvents = pPrefabManager->GetPrefabEvents();
 		CRY_ASSERT(pPrefabEvents != NULL);
@@ -544,14 +519,14 @@ void CGameEngine::InitAdditionalEngineComponents()
 
 	if (pEditor->GetAI())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init AI Actions, behaviours, smart objects");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init AI Actions, behaviours, smart objects");
 		SplashScreen::SetText("Initializing AI Actions and Smart Objects...");
 		pEditor->GetAI()->Init(m_pISystem);
 	}
 
 	if (pEditor->GetUIManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
 		SplashScreen::SetText("Loading UI Actions...");
 		pEditor->GetUIManager()->Init();
 	}
@@ -559,7 +534,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 	CCustomActionsEditorManager* const pCustomActionsManager = pEditor->GetCustomActionManager();
 	if (pCustomActionsManager)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
 		SplashScreen::SetText("Loading Custom Actions...");
 		pCustomActionsManager->Init(m_pISystem);
 	}
@@ -570,7 +545,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 
 void CGameEngine::InitializeEditorGame()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (m_pEditorGame != nullptr)
 	{
 		m_pEditorGame->Init(m_pISystem, m_pGameToEditorInterface);
@@ -590,7 +565,7 @@ void CGameEngine::InitializeEditorGame()
 
 bool CGameEngine::StartGameContext()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (gEnv->pGameFramework->StartedGameContext())
 		return true;
 
@@ -661,7 +636,7 @@ bool CGameEngine::LoadLevel(
   bool bDeleteAIGraph,
   bool bReleaseResources)
 {
-	LOADING_TIME_PROFILE_SECTION(GetIEditorImpl()->GetSystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(GetIEditorImpl()->GetSystem());
 	m_bLevelLoaded = false;
 	m_missionName = mission;
 	CryLog("Loading map '%s' into engine...", (const char*)m_levelPath);
@@ -924,21 +899,19 @@ void CGameEngine::SwitchToInGame()
 	// triggered.
 	gEnv->pEntitySystem->ResetAreas();
 
-	// Register in game entitysystem listener.
-	if (!s_InGameEntityListener)
-	{
-		s_InGameEntityListener = new SInGameEntitySystemListener;
-		gEnv->pEntitySystem->AddSink(s_InGameEntityListener, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
-	}
-
 	gEnv->pEntitySystem->OnEditorSimulationModeChanged(IEntitySystem::EEditorSimulationMode::InGame);
 
 	m_pISystem->GetIMovieSystem()->Reset(true, false);
 
 	INotificationCenter* pNotificationCenter = GetIEditorImpl()->GetNotificationCenter();
-	QAction* suspendAction = GetIEditorImpl()->GetICommandManager()->GetAction("general.suspend_game_input");
+	QAction* suspendAction = GetIEditorImpl()->GetICommandManager()->GetAction("game.toggle_suspend_input");
 	QString shortcut = suspendAction->shortcut().toString();
 	pNotificationCenter->ShowInfo("Starting Game", QString("Press ") + shortcut + " for mouse control");
+
+	if (m_pISystem->GetIUDR())
+	{
+		m_pISystem->GetIUDR()->Reset();
+	}	
 }
 
 void CGameEngine::SwitchToInEditor()
@@ -976,13 +949,7 @@ void CGameEngine::SwitchToInEditor()
 
 	// this has to be done before the RemoveSink() call, or else some entities may not be removed
 	gEnv->p3DEngine->GetDeferredPhysicsEventManager()->ClearDeferredEvents();
-	if (s_InGameEntityListener)
-	{
-		// Unregister ingame entitysystem listener, and kill all remaining entities.
-		gEnv->pEntitySystem->RemoveSink(s_InGameEntityListener);
-		delete s_InGameEntityListener;
-		s_InGameEntityListener = 0;
-	}
+
 	// Enable accelerators.
 	GetIEditorImpl()->EnableAcceleratos(true);
 	// Reset mission script.
@@ -1037,7 +1004,7 @@ void CGameEngine::SetGameMode(bool bInGame)
 		return;
 
 	LOADING_TIME_PROFILE_AUTO_SESSION(bInGame ? "SetGameModeGame" : "SetGameModeEditor");
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Enables engine to know about that.
 	gEnv->SetIsEditorGameMode(bInGame);
@@ -1066,6 +1033,9 @@ void CGameEngine::SetGameMode(bool bInGame)
 	{
 		SwitchToInEditor();
 	}
+
+	if (QAction *pAction = GetIEditorImpl()->GetICommandManager()->GetAction("game.toggle_game_mode"))
+		pAction->setChecked(bInGame);
 
 	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
 
@@ -1167,13 +1137,6 @@ void CGameEngine::SetSimulationMode(bool enabled, bool bOnlyPhysics)
 			// When turning physics on, emulate out of game event.
 			m_pISystem->GetAISystem()->Reset(IAISystem::RESET_ENTER_GAME);
 		}
-
-		if (!s_InGameEntityListener)
-		{
-			// Register in game entitysystem listener.
-			s_InGameEntityListener = new SInGameEntitySystemListener;
-			gEnv->pEntitySystem->AddSink(s_InGameEntityListener, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
-		}
 	}
 	else
 	{
@@ -1195,14 +1158,6 @@ void CGameEngine::SetSimulationMode(bool enabled, bool bOnlyPhysics)
 		}
 
 		GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_OUTOFGAME);
-
-		if (s_InGameEntityListener)
-		{
-			// Unregister ingame entitysystem listener, and kill all remaining entities.
-			gEnv->pEntitySystem->RemoveSink(s_InGameEntityListener);
-			delete s_InGameEntityListener;
-			s_InGameEntityListener = 0;
-		}
 	}
 
 	if (!m_bSimulationMode && !bOnlyPhysics)
@@ -1212,12 +1167,12 @@ void CGameEngine::SetSimulationMode(bool enabled, bool bOnlyPhysics)
 			m_pISystem->GetAISystem()->Reset(IAISystem::RESET_EXIT_GAME);
 	}
 
-	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
-
 	if (!bOnlyPhysics)
 	{
 		gEnv->pEntitySystem->OnEditorSimulationModeChanged(enabled ? IEntitySystem::EEditorSimulationMode::Simulation : IEntitySystem::EEditorSimulationMode::Editing);
 	}
+
+	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
 
 	if (gEnv->pGameFramework)
 	{
@@ -1277,40 +1232,6 @@ void CGameEngine::GenerateAiAll(uint32 flags)
 	{
 		GenerateAINavigationMesh();
 	}
-
-	wait.Step(95);
-	CryLog("Validating SmartObjects");
-
-	// quick temp code to validate smart objects on level export
-	{
-		static CObjectClassDesc* pClass = GetIEditorImpl()->GetObjectManager()->FindClass("SmartObject");
-		CRY_ASSERT_MESSAGE(pClass != nullptr, "SmartObject class desc not found");
-		//this code now assumes SmartObjects are declared and are inherited from CEntityObject.h.
-		//See SmartObject.h in the SmartObjectsEditor plugin where it will now reside.
-
-		string error;
-		CBaseObjectsArray objects;
-		GetIEditorImpl()->GetObjectManager()->GetObjects(objects);
-
-		CBaseObjectsArray::iterator it, itEnd = objects.end();
-		for (it = objects.begin(); it != itEnd; ++it)
-		{
-			CBaseObject* pBaseObject = *it;
-			if (pBaseObject->GetClassDesc() == pClass)
-			{
-				CEntityObject* pSOEntity = (CEntityObject*)pBaseObject;
-
-				if (!gEnv->pAISystem->GetSmartObjectManager()->ValidateSOClassTemplate(pSOEntity->GetIEntity()))
-				{
-					const Vec3 pos = pSOEntity->GetWorldPos();
-
-					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "SmartObject '%s' at (%.2f, %.2f, %.2f) is invalid!",
-					           (const char*)pSOEntity->GetName(), pos.x, pos.y, pos.z);
-				}
-			}
-		}
-	}
-
 	wait.Step(100);
 }
 
@@ -1363,7 +1284,7 @@ void CGameEngine::ClearAllAINavigation()
 
 void CGameEngine::GenerateAICoverSurfaces()
 {
-	if (!gEnv->pAISystem)
+	if (!gEnv->pAISystem || !gEnv->pAISystem->GetCoverSystem())
 		return;
 
 	CCoverSurfaceManager* coverSurfaceManager = GetIEditorImpl()->GetAI()->GetCoverSurfaceManager();
@@ -1424,12 +1345,12 @@ void CGameEngine::GenerateAICoverSurfaces()
 }
 
 void CGameEngine::ExportAiData(
-  const char* navFileName,
-  const char* areasFileName,
-  const char* roadsFileName,
-  const char* vertsFileName,
-  const char* volumeFileName,
-  const char* flightFileName)
+	const char* navFileName,
+	const char* areasFileName,
+	const char* roadsFileName,
+	const char* vertsFileName,
+	const char* volumeFileName,
+	const char* flightFileName)
 {
 	m_pNavigation->ExportData(
 	  navFileName,
@@ -1442,7 +1363,7 @@ void CGameEngine::ExportAiData(
 
 void CGameEngine::ResetResources()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (gEnv->pEntitySystem)
 	{
 		/// Delete all entities.
@@ -1536,8 +1457,6 @@ void CGameEngine::Update()
 		return;
 	}
 
-	GetIEditorImpl()->GetAI()->EarlyUpdate();
-
 	switch (m_ePendingGameMode)
 	{
 	case ePGM_SwitchToInGame:
@@ -1553,13 +1472,14 @@ void CGameEngine::Update()
 
 	if (m_bInGameMode)
 	{
+		GetIEditorImpl()->GetAI()->EarlyUpdate();
+
 		QWidget* pFocusWidget = QApplication::focusWidget();
 		CViewport* pRenderViewport = GetIEditorImpl()->GetViewManager()->GetGameViewport();
 
 		bool bReadOnlyConsole = pRenderViewport ? pFocusWidget != pRenderViewport->GetViewWidget() : true;
 		gEnv->pConsole->SetReadOnly(bReadOnlyConsole);
-
-		gEnv->pSystem->DoFrame((static_cast<CRenderViewport*>(pRenderViewport))->GetDisplayContext().GetDisplayContextKey());
+		gEnv->pSystem->DoFrame((static_cast<CRenderViewport*>(pRenderViewport))->GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
 
 		// TODO: still necessary after AVI recording removal?
 		if (pRenderViewport)
@@ -1568,10 +1488,34 @@ void CGameEngine::Update()
 			pRenderViewport->Update();
 		}
 
-		GetIEditorImpl()->GetAI()->Update(0);
+		UpdateAIManagerFromEditor(0);
+
+		GetIEditorImpl()->GetAI()->LateUpdate();
 	}
 	else
 	{
+		const ICVar* pSysMaxFPS = gEnv->pConsole->GetCVar("sys_MaxFPS");
+		const int maxFPS = pSysMaxFPS->GetIVal();
+		if (maxFPS > 0)
+		{
+			const ITimer* pTimer = gEnv->pTimer;
+			if (!m_lastViewportRenderTime)
+			{
+				m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+			}
+			const int64 currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+			const int64 microSecPassed = currentTime - m_lastViewportRenderTime;
+			const int64 targetMicroSecPassed = static_cast<int64>((1.0f / maxFPS) * 1000000.0f);
+
+			if (microSecPassed < targetMicroSecPassed)
+			{
+				return;
+			}
+			m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		}
+
+		GetIEditorImpl()->GetAI()->EarlyUpdate();
+
 		for (CListenerSet<IGameEngineListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 		{
 			notifier->OnPreEditorUpdate();
@@ -1605,13 +1549,9 @@ void CGameEngine::Update()
 				pFlowSystem->Update();
 			}
 
-			if (IDialogSystem* pDialogSystem = gEnv->pGameFramework->GetIDialogSystem())
-			{
-				pDialogSystem->Update(gEnv->pTimer->GetFrameTime());
-			}
 			const CRenderViewport* gameViewport = static_cast<CRenderViewport*>(GetIEditorImpl()->GetViewManager()->GetGameViewport());
 			CRY_ASSERT(gameViewport);
-			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContext().GetDisplayContextKey(), updateFlags);
+			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey, updateFlags);
 		}
 
 		pPluginManager->UpdateAfterSystem();
@@ -1620,15 +1560,14 @@ void CGameEngine::Update()
 		pPluginManager->UpdateAfterRender();
 		pPluginManager->UpdateAfterRenderSubmit();
 
-		GetIEditorImpl()->GetAI()->Update(updateFlags.UnderlyingValue());
+		UpdateAIManagerFromEditor(updateFlags.UnderlyingValue());
 
 		for (CListenerSet<IGameEngineListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 		{
 			notifier->OnPostEditorUpdate();
 		}
+		GetIEditorImpl()->GetAI()->LateUpdate();
 	}
-
-	GetIEditorImpl()->GetAI()->LateUpdate();
 }
 
 void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
@@ -1638,7 +1577,7 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnBeginNewScene:
 	case eNotify_OnBeginSceneOpen:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnBeginNewScene/SceneOpen");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnBeginNewScene/SceneOpen");
 
 			StartGameContext();
 
@@ -1647,7 +1586,10 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 
 			auto* pGameRulesVar = gEnv->pConsole->GetCVar("sv_gamerules");
 
-			gEnv->pGameFramework->GetIGameRulesSystem()->CreateGameRules(pGameRulesVar->GetString());
+			if (gEnv->pGameFramework->GetIGameRulesSystem())
+			{
+				gEnv->pGameFramework->GetIGameRulesSystem()->CreateGameRules(pGameRulesVar->GetString());
+			}
 			gEnv->pGameFramework->GetILevelSystem()->OnLoadingStart(0);
 
 			if (!gEnv->pGameFramework->BlockingSpawnPlayer())
@@ -1658,14 +1600,14 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	case eNotify_OnEndSceneOpen:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnEndSceneOpen");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnEndSceneOpen");
 			if (m_pEditorGame)
 			{
 				// This method must be called so we will have a player to start game mode later.
 				m_pEditorGame->OnAfterLevelLoad(m_levelName, m_levelPath);
 			}
 
-			gEnv->pGameFramework->GetILevelSystem()->Rescan("levels", ILevelSystem::TAG_MAIN);
+			gEnv->pGameFramework->GetILevelSystem()->Rescan("", ILevelSystem::TAG_MAIN);
 
 			ILevelInfo* pLevel = gEnv->pGameFramework->GetILevelSystem()->SetEditorLoadedLevel(m_levelName);
 			if (pLevel)
@@ -1675,7 +1617,7 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		}
 	case eNotify_OnEndNewScene: // intentional fall-through?
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnEndNewScene");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnEndNewScene");
 
 			if (m_pEditorGame)
 			{
@@ -1693,19 +1635,13 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	case eNotify_OnClearLevelContents:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnClearLevelContents");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnClearLevelContents");
 
 			SetGameMode(false);
 
 			if (m_pEditorGame)
 				m_pEditorGame->OnCloseLevel();
 		}
-		break;
-	case eNotify_OnDisplayRenderUpdate:
-		//Note: this seems to be only useful for helpers and only for GameSDK specific helpers,
-		//probably not necessary as each game DLL could simply listen to editor events in its editor plyugin
-		if (GetIEditorGame())
-			GetIEditorGame()->OnDisplayRenderUpdated(GetIEditor()->IsHelpersDisplayed());
 		break;
 	}
 }
@@ -1855,3 +1791,145 @@ bool CGameEngine::IsGameInputSuspended()
 	return m_bGameModeSuspended;
 }
 
+// Updates the AI Manager using the global timer
+// Can be executed by the Sandbox Editor to force an Update on some AI subsystems
+// Even if the AI system is disabled (ie: NavMeshUpdates should still work in Sandbox)
+void CGameEngine::UpdateAIManagerFromEditor(const uint32 updateFlags)
+{
+	CEditorImpl* pEditorImpl = GetIEditorImpl();
+	if (!pEditorImpl)
+	{
+		CRY_ASSERT(pEditorImpl);
+		return;
+	}
+	CAIManager* pAiManager = pEditorImpl->GetAI();
+	if (!pAiManager)
+	{
+		CRY_ASSERT(pAiManager);
+		return;
+	}
+
+	pAiManager->Update(gEnv->pTimer->GetFrameStartTime(), gEnv->pTimer->GetFrameTime(), updateFlags);
+}
+
+namespace Private_EditorCommands
+{
+void EnterGameMode()
+{
+	if (GetIEditorImpl()->GetGameEngine())
+		GetIEditorImpl()->GetGameEngine()->RequestSetGameMode(true);
+}
+
+void ExitGameMode()
+{
+	if (GetIEditorImpl()->GetGameEngine())
+		GetIEditorImpl()->GetGameEngine()->RequestSetGameMode(false);
+}
+
+bool IsInGameMode()
+{
+	return GetIEditorImpl()->IsInGameMode();
+}
+
+void ToggleGameMode()
+{
+	static bool bWasInSimulationMode(false);
+	if (GetIEditor()->IsInPreviewMode())
+		return;
+
+	if (!GetIEditor()->GetViewManager()->GetViewport(ET_ViewportCamera))
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Cannot switch to game without opened viewport.");
+		return;
+	}
+
+	if (!GetIEditor()->GetDocument()->IsDocumentReady())
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "Please load a level before going into game");
+		return;
+	}
+
+	bool inGame = !GetIEditorImpl()->IsInGameMode();
+
+	if (inGame)
+	{
+		bWasInSimulationMode = GetIEditorImpl()->GetGameEngine()->GetSimulationMode();
+		GetIEditorImpl()->GetGameEngine()->SetSimulationMode(false);
+		EnterGameMode();
+	}
+	else
+	{
+		ExitGameMode();
+		GetIEditorImpl()->GetGameEngine()->SetSimulationMode(bWasInSimulationMode);
+		GetIEditorImpl()->SetInGameMode(inGame);
+	}
+}
+
+void ToggleSuspendGameInput()
+{
+	if (GetIEditorImpl()->GetGameEngine() && GetIEditorImpl()->IsInGameMode())
+		GetIEditorImpl()->GetGameEngine()->ToggleGameInputSuspended();
+}
+
+void ToggleSimulatePhysicsAndAI()
+{
+	CWaitCursor wait;
+	bool bSimulationEnabled = !GetIEditorImpl()->GetGameEngine()->GetSimulationMode();
+
+	QAction* pAction = GetIEditorImpl()->GetICommandManager()->GetAction("game.toggle_simulate_physics_ai");
+	if (bSimulationEnabled)
+		pAction->setIcon(CryIcon("icons:common/general_physics_stop.ico"));
+	else
+		pAction->setIcon(CryIcon("icons:common/general_physics_play.ico"));
+
+	GetIEditorImpl()->GetGameEngine()->SetSimulationMode(bSimulationEnabled);
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_EDITOR_SIMULATION_MODE_CHANGED, bSimulationEnabled, 0);
+}
+
+void SyncPlayerWithCamera()
+{
+	GetIEditorImpl()->GetGameEngine()->SyncPlayerPosition(!GetIEditorImpl()->GetGameEngine()->IsSyncPlayerPosition());
+}
+
+void ReloadItemScripts()
+{
+	gEnv->pConsole->ExecuteString("i_reload");
+}
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EnterGameMode, game, enter,
+                                   CCommandDescription("Enters the editor game mode."))
+REGISTER_COMMAND_REMAPPING(general, enter_game_mode, game, enter)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ExitGameMode, game, exit,
+                                   CCommandDescription("Exits the editor game mode."))
+REGISTER_COMMAND_REMAPPING(general, exit_game_mode, game, exit)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::IsInGameMode, game, is_in_game_mode,
+                                   CCommandDescription("Queries if it's in the game mode or not"))
+REGISTER_COMMAND_REMAPPING(general, is_in_game_mode, game, is_in_game_mode)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ToggleGameMode, game, toggle_game_mode,
+                                   CCommandDescription("Toggles game mode"))
+REGISTER_EDITOR_UI_COMMAND_DESC(game, toggle_game_mode, "Game Mode", "F5; Ctrl+G", "icons:Game/Game_Play.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionSwitch_to_Game, game, toggle_game_mode)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ToggleSuspendGameInput, game, toggle_suspend_input,
+                                   CCommandDescription("Suspend game input and allow editor to tweak properties"))
+REGISTER_EDITOR_UI_COMMAND_DESC(game, toggle_suspend_input, "Suspend Game Input", "Pause", "icons:Game/Game_Play.ico", true)
+REGISTER_COMMAND_REMAPPING(general, suspend_game_input, game, toggle_suspend_input)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ToggleSimulatePhysicsAndAI, game, toggle_simulate_physics_ai,
+                                   CCommandDescription("Toggle simulation of physics and AI"))
+REGISTER_EDITOR_UI_COMMAND_DESC(game, toggle_simulate_physics_ai, "Enable Physics/AI", "Ctrl+P", "icons:common/general_physics_play.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionEnable_Physics_AI, game, toggle_simulate_physics_ai)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::SyncPlayerWithCamera, game, sync_player_with_camera,
+                                   CCommandDescription("Synchronizes player with the camera"))
+REGISTER_EDITOR_UI_COMMAND_DESC(game, sync_player_with_camera, "Synchronize Player", "", "", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionSynchronize_Player_with_Camera, game, sync_player_with_camera)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ReloadItemScripts, game, reload_item_scripts,
+                                   CCommandDescription("Reloads all item scripts"))
+REGISTER_EDITOR_UI_COMMAND_DESC(game, reload_item_scripts, "Reload Item Scripts", "", "", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionReload_Item_Scripts, game, reload_item_scripts)

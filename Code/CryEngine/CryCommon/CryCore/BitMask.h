@@ -1,15 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   BitMask.h
-//  Created:     2015-7-31 by Anton.
 //  Description: BitMask with templatized max length and either fixed or allocatable storage
 // -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _BITMASK_H
-#define _BITMASK_H
 
 #include <CryCore/BaseTypes.h>
 
@@ -26,7 +21,7 @@ struct bitmaskPtr
 	int         getsize() const         { return size; }
 	bitmaskPtr& setsize(int newSize)
 	{
-		if (size != newSize || refCounted && size > 0 && newSize > 0 && data[-1] > 1)
+		if (size != newSize || (refCounted && size > 0 && newSize > 0 && data[-1] > 1))
 		{
 			uint* newData = 0;
 			if (newSize)
@@ -106,7 +101,7 @@ template<class Data, int MaxSize> struct bitmask_t
 	template<class Data1> bitmask_t(bitmask_t<Data1, MaxSize>&& src) { bmcopy(src.data, data); }
 	template<class Data1> bitmask_t& operator=(const bitmask_t<Data1, MaxSize>& src) { bmcopy(src.data, data); return *this; }
 
-	bool                             operator!() const                               { int i, j; for (i = j = 0; i < data.getsize(); j |= data[i++]) ; return !j; }
+	bool                             operator!() const                               { int j=0; for (int i = 0; i < data.getsize();) j |= data[i++]; return !j; }
 	bool                             operator!=(int) const                           { return !!*this; } //!< Should only be used to compare with 0.
 	bitmask_t&                       operator<<=(int shift)                          { return *this = *this << shift; }
 	bitmask_t&                       operator<<=(uint shift)                         { return *this = *this << (int)shift; }
@@ -301,6 +296,4 @@ typedef bitmask_t<bitmaskPtr, 8>    hidemask;
 typedef bitmask_t<bitmaskBuf<8>, 8> hidemaskLoc;
 typedef bitmask_t<bitmaskOneBit, 8> hidemaskOneBit;
 	#define hidemask1 hidemaskOneBit(1)
-#endif
-
 #endif

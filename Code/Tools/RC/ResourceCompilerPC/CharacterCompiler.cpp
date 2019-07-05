@@ -33,7 +33,7 @@
 #include "FileUtil.h"
 #include "UpToDateFileHelpers.h"
 #include <CryAnimation/IAttachment.h>
-#include "CGF\CGFNodeMerger.h"
+#include "CGF/CGFNodeMerger.h"
 #include "RcFile.h"
 #include "../CryEngine/CryAnimation/AttachmentVClothPreProcess.h"
 
@@ -574,15 +574,15 @@ bool CharacterCompiler::ProcessInternal(CLoaderCGF* cgfLoader, CContentCGF* pCGF
 
 	if (pCContentCGF)
 	{
-		pCContentCGF->GetExportInfo()->rc_version[0] = fv.v[0];
-		pCContentCGF->GetExportInfo()->rc_version[1] = fv.v[1];
-		pCContentCGF->GetExportInfo()->rc_version[2] = fv.v[2];
-		pCContentCGF->GetExportInfo()->rc_version[3] = fv.v[3];
+		pCContentCGF->GetExportInfo()->rc_version[0] = fv[0];
+		pCContentCGF->GetExportInfo()->rc_version[1] = fv[1];
+		pCContentCGF->GetExportInfo()->rc_version[2] = fv[2];
+		pCContentCGF->GetExportInfo()->rc_version[3] = fv[3];
 
 		StringHelpers::SafeCopyPadZeros(
 			pCContentCGF->GetExportInfo()->rc_version_string,
 			sizeof(pCContentCGF->GetExportInfo()->rc_version_string),
-			StringHelpers::Format(" RCVer:%d.%d ", fv.v[2], fv.v[1]).c_str());
+			StringHelpers::Format(" RCVer:%d.%d ", fv[2], fv[1]).c_str());
 
 		cgfSaver.SetContent(pCContentCGF);
 	}
@@ -922,7 +922,7 @@ bool CharacterCompiler::LoadCDFAssets(const char * sourceFile, const char * fina
 			string newext;
 			newext.Format("_lod%d.skin", item->first);
 			PathUtil::RemoveExtension(fullpath);
-			newlodpath.Format("%s%s", fullpath, newext);
+			newlodpath.Format("%s%s", fullpath.c_str(), newext.c_str());
 		}
 
 		pContent = MakeMergedCGF(newlodpath.c_str(), pMaterial, item->second, config, item->first != 0, basematerial);
@@ -997,13 +997,6 @@ CharacterCompiler::ECdfLoadResult CharacterCompiler::FindAllAttachmentModels(con
 
 		XmlNodeRef attachmentNode = attachmentList->getChild(idx);
 		if (!attachmentNode)
-			continue;
-
-		int flags = 0;
-		if (!attachmentNode->getAttr("Flags", flags))
-			continue;
-
-		if (!(flags & FLAGS_ATTACH_COMBINEATTACHMENT))
 			continue;
 
 		//once we know were an attachment if anything else fails bail from the function and the job

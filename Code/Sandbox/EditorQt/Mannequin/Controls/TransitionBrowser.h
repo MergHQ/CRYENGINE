@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TRANSITION_BROWSER__H__
-#define __TRANSITION_BROWSER__H__
+#pragma once
 
 #include <ICryMannequin.h>
 #include "Controls/TreeCtrlReport.h"
@@ -141,9 +140,9 @@ public:
 	struct SPresentationState
 	{
 	private:
-		TTransitionBrowserRecordDataCollection               expandedRecordDataCollection;
-		TTransitionBrowserRecordDataCollection               selectedRecordDataCollection;
-		std::auto_ptr<CTransitionBrowserRecord::SRecordData> pFocusedRecordData;
+		TTransitionBrowserRecordDataCollection                 expandedRecordDataCollection;
+		TTransitionBrowserRecordDataCollection                 selectedRecordDataCollection;
+		std::unique_ptr<CTransitionBrowserRecord::SRecordData> pFocusedRecordData;
 
 		friend class CTransitionBrowserTreeCtrl;
 	};
@@ -316,6 +315,3 @@ private:
 	// m_openedTransitionID is the blend actually opened, the blend the user
 	// picked in the transition picker.
 };
-
-#endif
-

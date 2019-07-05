@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File: SystemCfg.h
-//
-//	History:
-//	-Jan 22,2004:Created
-//
-//////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <math.h>
@@ -20,7 +12,7 @@ typedef string SysConfigValue;
 class CSystemConfiguration
 {
 public:
-	CSystemConfiguration(const string& strSysConfigFilePath, CSystem* pSystem, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType);
+	CSystemConfiguration(const string& strSysConfigFilePath, CSystem* pSystem, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType, ELoadConfigurationFlags flags);
 	~CSystemConfiguration();
 
 	string RemoveWhiteSpaces(string& s)
@@ -44,4 +36,5 @@ private: // ----------------------------------------
 	bool                         m_bError;
 	ILoadConfigurationEntrySink* m_pSink;                       // never 0
 	ELoadConfigurationType       m_configType;
+	ELoadConfigurationFlags      m_flags = ELoadConfigurationFlags::None;
 };

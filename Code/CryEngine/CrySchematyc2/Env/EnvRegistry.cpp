@@ -507,7 +507,8 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CEnvRegistry::LoadAllSettings()
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load All Settings");
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		const char* szSettingsFolder = gEnv->pSchematyc2->GetSettingsFolder();
 		const char* szSettingsExtension = gEnv->pSchematyc2->GetSettingsExtension();
 		for(TSettingsMap::const_iterator iSettings = m_settings.begin(), iEndSettings = m_settings.end(); iSettings != iEndSettings; ++ iSettings)
@@ -526,6 +527,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CEnvRegistry::SaveAllSettings()
 	{
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Save All Settings");
 		const char* szSttingsFolder = gEnv->pSchematyc2->GetSettingsFolder();
 		const char* szSettingsExtension = gEnv->pSchematyc2->GetSettingsExtension();
 		for(TSettingsMap::const_iterator iSettings = m_settings.begin(), iEndSettings = m_settings.end(); iSettings != iEndSettings; ++ iSettings)

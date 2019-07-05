@@ -2,13 +2,16 @@
 #include "StdAfx.h"
 #include "SubMaterialView.h"
 
-#include "Cry3DEngine/IMaterial.h"
-
 #include "MaterialEditor.h"
-#include <QAbstractItemModel>
 
-#include "Menu/MenuWidgetBuilders.h"
-#include "QT/Widgets/QPreviewWidget.h"
+#include <EditorFramework/Events.h>
+#include <Menu/MenuWidgetBuilders.h>
+#include <QT/Widgets/QPreviewWidget.h>
+
+#include <Cry3DEngine/IMaterial.h>
+
+#include <QAbstractItemModel>
+#include <QCloseEvent>
 
 class CSubMaterialView::Model : public QAbstractListModel
 {
@@ -281,13 +284,6 @@ CSubMaterialView::CSubMaterialView(CMaterialEditor* pMatEd)
 	m_previewWidget->setVisible(false); // hide this widget, it is just used to render to a pixmap
 }
 
-CSubMaterialView::~CSubMaterialView()
-{
-	m_pMatEd->signalMaterialLoaded.DisconnectObject(this);
-	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
-	m_pMatEd->signalMaterialPropertiesChanged.DisconnectObject(this);
-}
-
 void CSubMaterialView::OnMaterialChanged(CMaterial* pEditorMaterial)
 {
 	m_pModel->SetMaterial(pEditorMaterial);
@@ -413,7 +409,8 @@ void CSubMaterialView::OnContextMenu(const QPoint& pos)
 	//Abstract menu must not go out of scope for actions to be visible in the menu
 	CAbstractMenu materialMenu;
 
-	const bool isReadOnly = m_pMatEd->IsReadOnly();
+	CRY_ASSERT(m_pMatEd->GetAssetBeingEdited());
+	const bool isReadOnly = m_pMatEd->GetAssetBeingEdited()->IsImmutable();
 	if(!isReadOnly)
 	{
 		if (row != -1 && bIsMultiMtl)
@@ -463,4 +460,11 @@ void CSubMaterialView::customEvent(QEvent* event)
 	}
 }
 
+void CSubMaterialView::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
 
+	m_pMatEd->signalMaterialLoaded.DisconnectObject(this);
+	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
+	m_pMatEd->signalMaterialPropertiesChanged.DisconnectObject(this);
+}

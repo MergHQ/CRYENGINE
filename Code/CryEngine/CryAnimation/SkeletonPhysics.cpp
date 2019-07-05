@@ -9,6 +9,31 @@
 #include "CharacterInstanceProcessing.h"
 #include "DrawHelper.h"
 
+CryBonePhysicsLinked CryBonePhysicsLinked::g_empty = {};
+
+struct SBatchUpdateValidator : pe_action_batch_parts_update::Validator
+{
+	SBatchUpdateValidator()
+		: bValid(1)
+		, nRefCount(1)
+		, lock(0)
+	{}
+
+	int          bValid;
+	int          nRefCount;
+	volatile int lock;
+
+	virtual bool Lock()
+	{
+		if (!bValid) { Release(); return false; }
+		CryReadLock(&lock);
+		return true;
+	}
+	virtual void Unlock()  { CryReleaseReadLock(&lock); Release(); }
+	int          AddRef()  { return CryInterlockedIncrement(&nRefCount); }
+	void         Release() { if (CryInterlockedDecrement(&nRefCount) <= 0) delete this; }
+};
+
 CSkeletonPhysics::CSkeletonPhysics()
 	: m_pCharPhysics(nullptr)
 	, m_ppBonePhysics(nullptr)
@@ -29,7 +54,7 @@ CSkeletonPhysics::CSkeletonPhysics()
 	, m_pPhysAuxBuffer(nullptr)
 	, m_bPhysicsSynchronizeAux(false)
 	, m_pPhysImpactBuffer(nullptr)
-	, m_vOffset(ZERO)
+	, m_offset(IDENTITY)
 	, m_nSpineBones(0)
 	, m_nAuxPhys(0)
 	, m_iSurfaceIdx(0)
@@ -37,7 +62,6 @@ CSkeletonPhysics::CSkeletonPhysics()
 	, m_fPhysBlendMaxTime(0.0f)
 	, m_frPhysBlendMaxTime(0.0f)
 	, m_stiffnessScale(0.0f)
-	, m_fScale(0.0f)
 	, m_fMass(0.0f)
 	, m_prevPosPivot(ZERO)
 	, m_velPivot(ZERO)
@@ -51,6 +75,7 @@ CSkeletonPhysics::CSkeletonPhysics()
 	, m_bFullSkeletonUpdate(false)
 	, m_bForcePostSynchronization(false)
 	, m_arrCGAJoints(nullptr)
+	, m_physLod(0)
 {
 	ZeroArray(m_iSpineBone);
 }
@@ -92,7 +117,7 @@ bool CSkeletonPhysics::Initialize(CSkeletonPose& skeletonPose)
 
 	m_pPhysImpactBuffer = NULL;
 
-	m_vOffset = Vec3(0.0f, 0.0f, 0.0f);
+	m_offset = QuatTS(IDENTITY);
 	//	m_iSpineBone[3];
 	m_nSpineBones = 0;
 	m_nAuxPhys = 0;
@@ -101,7 +126,6 @@ bool CSkeletonPhysics::Initialize(CSkeletonPose& skeletonPose)
 	m_fPhysBlendMaxTime = 1.0f;
 	m_frPhysBlendMaxTime = 1.0f;
 	m_stiffnessScale = 0.0f;
-	m_fScale = 0.01f;
 	m_fMass = 0.0f;
 	m_prevPosPivot.zero();
 	m_velPivot.zero();
@@ -116,6 +140,7 @@ bool CSkeletonPhysics::Initialize(CSkeletonPose& skeletonPose)
 	m_bPhysicsWasAwake = 1;
 	m_bLimpRagdoll = false;
 	m_bSetDefaultPoseExecute = false;
+	m_physLod = 0;
 
 	m_bFullSkeletonUpdate = true;
 	m_bForcePostSynchronization = false;
@@ -156,10 +181,11 @@ void CSkeletonPhysics::InitPhysicsSkeleton()
 		m_arrPhysicsJoints[j].m_qRelPhysParent.SetIdentity();
 	}
 
+	const int nLod = 1;
 	for (uint32 i = 1; i < numJoints; ++i)
 	{
 		int32 p, pp;
-		for (p = pp = parrModelJoints[i].m_idxParent; pp > -1 && parrModelJoints[pp].m_PhysInfo.pPhysGeom == 0; pp = parrModelJoints[pp].m_idxParent)
+		for (p = pp = parrModelJoints[i].m_idxParent; pp > -1 && parrModelJoints[pp].m_PhysInfoRef[nLod].pPhysGeom == 0; pp = parrModelJoints[pp].m_idxParent)
 			;
 		if (pp > -1)
 			m_arrPhysicsJoints[i].m_qRelPhysParent = !rDefaultSkeleton.GetDefaultAbsJointByID(p).q * rDefaultSkeleton.GetDefaultAbsJointByID(pp).q;
@@ -169,9 +195,8 @@ void CSkeletonPhysics::InitPhysicsSkeleton()
 
 void CSkeletonPhysics::SetPhysEntOnJoint(int32 nId, IPhysicalEntity* pPhysEnt)
 {
-	if (nId < 0 || nId >= (int)GetPoseDataDefault().GetJointCount())
+	if (!CRY_VERIFY(nId >= 0 && nId < (int)GetPoseDataDefault().GetJointCount()))
 	{
-		assert(0);
 		return;
 	}
 	if (!m_ppBonePhysics)
@@ -186,9 +211,8 @@ void CSkeletonPhysics::SetPhysEntOnJoint(int32 nId, IPhysicalEntity* pPhysEnt)
 
 int CSkeletonPhysics::GetPhysIdOnJoint(int32 nId) const
 {
-	if (nId < 0 || nId >= (int)GetPoseDataDefault().GetJointCount())
+	if (!CRY_VERIFY(nId >= 0 && nId < (int)GetPoseDataDefault().GetJointCount()))
 	{
-		assert(0);
 		return -1;
 	}
 
@@ -261,7 +285,7 @@ int CSkeletonPhysics::getBonePhysParentOrSelfIndex(int iBoneIndex, int nLod) con
 	if (iBoneIndex >= m_pInstance->m_pDefaultSkeleton->m_arrModelJoints.size())
 		return -1;
 	int iNextBoneIndex;
-	for (; !GetModelJointPointer(iBoneIndex)->m_PhysInfo.pPhysGeom; iBoneIndex = iNextBoneIndex)
+	for (; !GetModelJointPointer(iBoneIndex)->m_PhysInfoRef[nLod].pPhysGeom; iBoneIndex = iNextBoneIndex)
 		if ((iNextBoneIndex = getBoneParentIndex(iBoneIndex)) == iBoneIndex)
 			return -1;
 	return iBoneIndex;
@@ -285,7 +309,7 @@ CDefaultSkeleton::SJoint* CSkeletonPhysics::GetModelJointPointer(int nBone)
 int CSkeletonPhysics::getBonePhysChildIndex(int iBoneIndex, int nLod) const
 {
 	const CDefaultSkeleton::SJoint* pBoneInfo = GetModelJointPointer(iBoneIndex);
-	if (pBoneInfo->m_PhysInfo.pPhysGeom)
+	if (pBoneInfo->m_PhysInfoRef[nLod].pPhysGeom)
 		return iBoneIndex;
 	unsigned numChildren = pBoneInfo->m_numChildren;
 	unsigned nFirstChild = pBoneInfo->m_nOffsetChildren + iBoneIndex;
@@ -300,16 +324,16 @@ int CSkeletonPhysics::getBonePhysChildIndex(int iBoneIndex, int nLod) const
 	return -1;
 }
 
-int CSkeletonPhysics::GetPhysRoot() const 
+int CSkeletonPhysics::GetPhysRoot(int nLod) const 
 {
 	int i, n = m_pInstance->m_pDefaultSkeleton->GetJointCount();
-	for(i = 0; i < n && !GetModelJointPointer(i)->m_PhysInfo.pPhysGeom; i++);
+	for(i = 0; i < n && !GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom; i++);
 	return i < n ? i : -1;
 }
 
 int CSkeletonPhysics::GetBoneSurfaceTypeId(int nBoneIndex, int nLod) const
 {
-	const phys_geometry* pGeom = GetModelJointPointer(nBoneIndex)->m_PhysInfo.pPhysGeom;
+	const phys_geometry* pGeom = GetModelJointPointer(nBoneIndex)->m_PhysInfoRef[nLod].pPhysGeom;
 	if (pGeom)
 		return pGeom->pMatMapping[pGeom->surface_idx];
 	else
@@ -324,7 +348,7 @@ int CSkeletonPhysics::TranslatePartIdToDeadBody(int partid)
 		return -1;
 
 	int nLod = GetPhysicsLod();
-	if (GetModelJointPointer(partid)->m_PhysInfo.pPhysGeom)
+	if (GetModelJointPointer(partid)->m_PhysInfoRef[nLod].pPhysGeom)
 		return partid;
 
 	return getBonePhysParentIndex(partid, nLod);
@@ -339,22 +363,21 @@ void CSkeletonPhysics::BuildPhysicalEntity(
   int partid0,
   const Matrix34& mtxloc)
 {
+	if (m_pSkeletonPose->m_bSetDefaultPoseExecute)
+	{
+		m_pSkeletonAnim->FinishAnimationComputations();
+		m_pSkeletonPose->SetDefaultPoseExecute(false);
+		m_pSkeletonPose->m_bSetDefaultPoseExecute = false;
+	}
 	const Skeleton::CPoseData& poseData = GetPoseData();
 	CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	partid0 = partid0 < 0 ? 0 : EntityPhysicsUtils::AllocPartIdRange(partid0, EntityPhysicsUtils::PARTID_MAX_SLOTS);
 
-	float scaleOrg = mtxloc.GetColumn(0).GetLength();
-	float scale = scaleOrg;// / m_pInstance->m_location.s;
-
-	//scale = m_pInstance->GetUniformScale();
-
-	Vec3 offset = mtxloc.GetTranslation();
-	if (fabs_tpl(scale - 1.0f) < 0.01f)
-		scale = 1.0f;
+	QuatTS offset = QuatTS(mtxloc);
 
 	if (rDefaultSkeleton.m_ObjectType == CGA)
 	{
-		assert(pent);
+		CRY_ASSERT(pent);
 
 		m_pCharPhysics = pent;
 
@@ -362,7 +385,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 		float totalVolume = 0;
 
 		uint32 numJoints = m_arrCGAJoints->size();
-		assert(numJoints);
+		CRY_ASSERT(numJoints);
 		for (i = 0; i < numJoints; i++)
 		{
 			CCGAJoint* joint = &(*m_arrCGAJoints)[i];
@@ -378,7 +401,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 
 		pe_articgeomparams params;
 		//	uint32 numJoints = m_arrJoints.size();
-		//	assert(numJoints);
+		//	CRY_ASSERT(numJoints);
 		for (i = 0; i < numJoints; i++)
 		{
 			CCGAJoint* joint = &(*m_arrCGAJoints)[i];
@@ -411,9 +434,9 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 				params.flags = geom_colltype_ray;
 			if (!geom)
 				geom = geomProxy, geomProxy = 0;
-			params.pos = poseData.GetJointAbsolute(i).t * scale;
-			params.q = poseData.GetJointAbsolute(i).q;
-			params.scale = scaleOrg;
+			params.pos = offset * poseData.GetJointAbsolute(i).t;
+			params.q = offset.q * poseData.GetJointAbsolute(i).q;
+			params.scale = offset.s;
 			params.idbody = i;
 			if (geom)
 				joint->m_qqqhasPhysics = rDefaultSkeleton.m_arrModelJoints[i].m_NodeID = m_pCharPhysics->AddGeometry(geom, &params, partid0 + i);
@@ -432,7 +455,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 				if ((*m_arrCGAJoints)[i].m_CGAObjectInstance && (*m_arrCGAJoints)[i].m_CGAObjectInstance->GetPhysGeom())
 				{
 					pj.op[1] = i;
-					pj.pivot = poseData.GetJointAbsolute(i).t;
+					pj.pivot = offset * poseData.GetJointAbsolute(i).t;
 					pent->SetParams(&pj);
 				}
 
@@ -471,9 +494,9 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 		const int nJointCount = (int)rDefaultSkeleton.GetJointCount();
 		for (i = pab.nJointsAlloc = 0; i < nJointCount; ++i)
 		{
-			if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+			if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 			{
-				volume[GetModelJointPointer(i)->m_fMass > 0.0f] += GetModelJointPointer(i)->m_PhysInfo.pPhysGeom->V * cube(scale);
+				volume[GetModelJointPointer(i)->m_fMass > 0.0f] += GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom->V * cube(offset.s);
 				M += GetModelJointPointer(i)->m_fMass;
 				pab.nJointsAlloc++;
 			}
@@ -482,7 +505,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 		density = volume[1] > 0.0f ? M / volume[1] : 1.0f;
 		k = M + volume[0] > 0.0f ? mass / (M + volume[0] * density) : 1.0f;
 
-		pgp->scale = scaleOrg;
+		pgp->scale = offset.s;
 
 		if (surface_idx >= 0)
 			pgp->surface_idx = surface_idx;
@@ -493,31 +516,31 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 
 		for (i = 0; i < nJointCount; i++)
 		{
-			if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+			if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 			{
 				rDefaultSkeleton.m_arrModelJoints[i].m_NodeID = ~0;
-				pgp->pos = poseData.GetJointAbsolute(i).t * scale + offset;
-				pgp->q = poseData.GetJointAbsolute(i).q;
+				pgp->pos = offset * poseData.GetJointAbsolute(i).t;
+				pgp->q = offset.q * poseData.GetJointAbsolute(i).q;
 				pgp->flags = /*strstr(GetModelJointIdx(i)->m_strJointName,"Hand") ? geom_no_raytrace :*/ geom_collides | geom_floats;
-				if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom->pForeignData)
+				if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom->pForeignData)
 					pgp->flags &= ~geom_colltype6;
 
 				agp.idbody = i;
 				while ((j = getBonePhysParentIndex(agp.idbody, nLod)) >= 0 &&
-				       (GetModelJointPointer(agp.idbody)->m_PhysInfo.flags & all_angles_locked) == all_angles_locked)
+				       (GetModelJointPointer(agp.idbody)->m_PhysInfoRef[nLod].flags & all_angles_locked) == all_angles_locked)
 				{
 					agp.idbody = j;
 				}
 
 				if (!(pgp->mass = GetModelJointPointer(i)->m_fMass))
-					pgp->mass = GetModelJointPointer(i)->m_PhysInfo.pPhysGeom->V * density;
+					pgp->mass = GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom->V * density;
 				pgp->mass *= k;
-				rDefaultSkeleton.m_arrModelJoints[i].m_NodeID = pent->AddGeometry(GetModelJointPointer(i)->m_PhysInfo.pPhysGeom, pgp, partid0 + i);
-				if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom->pForeignData)
+				rDefaultSkeleton.m_arrModelJoints[i].m_NodeID = pent->AddGeometry(GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom, pgp, partid0 + i);
+				if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom->pForeignData)
 				{
 					pgp->mass = 0.0f;
 					pgp->flags = geom_colltype6;
-					pent->AddGeometry((phys_geometry*)GetModelJointPointer(i)->m_PhysInfo.pPhysGeom->pForeignData, pgp, i + 200);
+					pent->AddGeometry((phys_geometry*)GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom->pForeignData, pgp, i + 200);
 				}
 			}
 			else
@@ -532,7 +555,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 			CDefaultSkeleton::SJoint* pBoneInfo;
 			for (i = 0; i < nJointCount; i++)
 			{
-				if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+				if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 				{
 					pe_params_joint pj;
 					int iParts[16];
@@ -540,18 +563,18 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 					pBoneInfo = GetModelJointPointer(i);
 
 					pj.pSelfCollidingParts = iParts;
-					if ((pj.flags = pBoneInfo->m_PhysInfo.flags) != ~0)
+					if ((pj.flags = pBoneInfo->m_PhysInfoRef[nLod].flags) != ~0)
 						pj.flags |= angle0_auto_kd * 7;
 					else
 						pj.flags = angle0_locked;
 
 					if (nLod)
-						pj.flags &= ~(angle0_auto_kd * 7);
+						pj.flags &= ~(angle0_auto_kd * 7 | joint_no_gravity | joint_isolated_accelerations);
 
 					int iParent0;
 					if ((iParent0 = pj.op[0] = getBonePhysParentIndex(i, nLod)) >= 0)
 					{
-						while ((j = getBonePhysParentIndex(pj.op[0], nLod)) >= 0 && (GetModelJointPointer(pj.op[0])->m_PhysInfo.flags & all_angles_locked) == all_angles_locked)
+						while ((j = getBonePhysParentIndex(pj.op[0], nLod)) >= 0 && (GetModelJointPointer(pj.op[0])->m_PhysInfoRef[nLod].flags & all_angles_locked) == all_angles_locked)
 							pj.op[0] = j;
 					}
 
@@ -560,9 +583,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 
 					pj.op[1] = i;
 
-					pj.pivot = poseData.GetJointAbsolute(i).t;
-
-					pj.pivot = pj.pivot * scale + offset;
+					pj.pivot = offset * poseData.GetJointAbsolute(i).t;
 
 					pj.nSelfCollidingParts = 0;
 					if (pBoneInfo->m_flags & eJointFlag_NameHasForearm)
@@ -570,7 +591,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 						for (j = 0; j < nJointCount && pj.nSelfCollidingParts < CRY_ARRAY_COUNT(iParts); j++)
 						{
 							const CDefaultSkeleton::SJoint& modelJoint = *GetModelJointPointer(j);
-							if (modelJoint.m_PhysInfo.pPhysGeom &&
+							if (modelJoint.m_PhysInfoRef[nLod].pPhysGeom &&
 							    ((modelJoint.m_flags & eJointFlag_NameHasPelvisOrHeadOrSpineOrThigh) ||
 							     (modelJoint.m_flags & eJointFlag_NameHasForearm) && i > j))
 							{
@@ -584,7 +605,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 						for (j = 0; j < (int)numJoints && pj.nSelfCollidingParts < CRY_ARRAY_COUNT(iParts); j++)
 						{
 							const CDefaultSkeleton::SJoint& modelJoint = *GetModelJointPointer(j);
-							if (modelJoint.m_PhysInfo.pPhysGeom &&
+							if (modelJoint.m_PhysInfoRef[nLod].pPhysGeom &&
 							    (modelJoint.m_flags & eJointFlag_NameHasCalf) && i > j)
 							{
 								pj.pSelfCollidingParts[pj.nSelfCollidingParts++] = j;
@@ -592,17 +613,17 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 						}
 					}
 
-					if (pBoneInfo->m_PhysInfo.flags != -1)
+					if (pBoneInfo->m_PhysInfoRef[nLod].flags != -1)
 					{
 						for (j = 0; j < 3; j++)
 						{
-							pj.limits[0][j] = pBoneInfo->m_PhysInfo.min[j];
-							pj.limits[1][j] = pBoneInfo->m_PhysInfo.max[j];
+							pj.limits[0][j] = pBoneInfo->m_PhysInfoRef[nLod].min[j];
+							pj.limits[1][j] = pBoneInfo->m_PhysInfoRef[nLod].max[j];
 							pj.bounciness[j] = 0;
-							pj.ks[j] = pBoneInfo->m_PhysInfo.spring_tension[j] * stiffness_scale;
+							pj.ks[j] = pBoneInfo->m_PhysInfoRef[nLod].spring_tension[j] * stiffness_scale;
 							if (pj.ks[j] < 0)
 								pj.ks[j] = -pj.ks[j], pj.flags |= all_angles_locked;
-							pj.kd[j] = pBoneInfo->m_PhysInfo.damping[j];
+							pj.kd[j] = pBoneInfo->m_PhysInfoRef[nLod].damping[j];
 							if (fabsf(pj.limits[0][j]) < 3)
 							{
 								pj.qdashpot[j] = 0.3f;
@@ -630,14 +651,14 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 
 					pj.pMtx0 = 0;
 					Matrix33 mtx0;
-					if (pBoneInfo->m_PhysInfo.framemtx[0][0] < 10 && pBoneInfo->m_PhysInfo.flags != -1)
+					if (pBoneInfo->m_PhysInfoRef[nLod].framemtx[0][0] < 10 && pBoneInfo->m_PhysInfoRef[nLod].flags != -1)
 					{
 						union
 						{
 							float*    pF;
 							Matrix33* pM;
 						} u;
-						u.pF = (float*)&pBoneInfo->m_PhysInfo.framemtx[0];
+						u.pF = (float*)&pBoneInfo->m_PhysInfoRef[nLod].framemtx[0];
 						pj.pMtx0 = &(mtx0 = *u.pM);
 					}
 					else
@@ -657,15 +678,16 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 			}
 		}
 
-		//m_vOffset = offset;
-		//m_fScale = scale;
 		m_fMass = mass;
 		m_iSurfaceIdx = surface_idx;
 		m_bPhysicsRelinquished = (nLod > 0);
+		m_physLod = nLod;
+		m_nPhysJoints = -1;
+		InitializeAnimToPhysIndexArray();
 	}
 
 	for (int i = m_pInstance->m_AttachmentManager.GetAttachmentCount() - 1; i >= 0; i--)
-		m_pInstance->m_AttachmentManager.PhysicalizeAttachment(i, nLod, pent, offset);
+		m_pInstance->m_AttachmentManager.PhysicalizeAttachment(i, nLod, pent, offset.t);
 }
 
 IPhysicalEntity* CSkeletonPhysics::GetCharacterPhysics(const char* pRootBoneName) const
@@ -691,12 +713,12 @@ IPhysicalEntity* CSkeletonPhysics::GetCharacterPhysics(int iAuxPhys) const
 	return m_auxPhys[iAuxPhys].pPhysEnt;
 }
 
-void CSkeletonPhysics::DestroyCharacterPhysics(int iMode)
+void CSkeletonPhysics::DestroyCharacterPhysics(int iModeOrg)
 {
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	m_pSkeletonAnim->FinishAnimationComputations();
 
-	int i;
+	int i, iMode = iModeOrg & 3;
 	for (i = 0; i < m_nAuxPhys; i++)
 	{
 		g_pIPhysicalWorld->DestroyPhysicalEntity(m_auxPhys[i].pPhysEnt, iMode);
@@ -715,7 +737,25 @@ void CSkeletonPhysics::DestroyCharacterPhysics(int iMode)
 		m_nAuxPhys = 0;
 
 	if (m_pCharPhysics)
-		g_pIPhysicalWorld->DestroyPhysicalEntity(m_pCharPhysics, iMode);
+	{
+		m_pCharPhysics->AddRef();	// since currently skeleton doesn't keep the physics addref'ed
+		if (!g_pIPhysicalWorld->DestroyPhysicalEntity(m_pCharPhysics, iModeOrg))
+		{	// if the entity wasn't deleted due to still being referenced (in mode 4), just clear the parts
+			pe_action_move_parts amp;
+			amp.idStart = -1;
+			amp.idEnd = 0;
+			for(i = 0; i<(int)rDefaultSkeleton.GetJointCount(); i++)
+			{
+				int id = rDefaultSkeleton.m_arrModelJoints[i].m_NodeID, valid = ~(id>>31);
+				amp.idStart += id + 1 & amp.idStart>>31 & valid;
+				amp.idEnd += id - amp.idEnd & valid;
+			}
+			m_pCharPhysics->Action(&amp);
+		}
+		else // ..if not released by DestroyPhysicalEntity
+			m_pCharPhysics->Release();
+	}
+
 	if (iMode == 0)
 	{
 		m_pCharPhysics = 0;
@@ -774,18 +814,13 @@ IPhysicalEntity* CSkeletonPhysics::CreateCharacterPhysics(
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	if (m_pSkeletonPose->m_bSetDefaultPoseExecute)
 	{
+		m_pSkeletonAnim->FinishAnimationComputations();
 		m_pSkeletonPose->SetDefaultPoseExecute(false);
 		m_pSkeletonPose->m_bSetDefaultPoseExecute = false;
 	}
-	m_pSkeletonAnim->FinishAnimationComputations();
 
-	float scale = mtxloc.GetColumn(0).GetLength();
+	m_offset = QuatTS(mtxloc);
 
-	//scale = m_pInstance->GetUniformScale();
-
-	Vec3 offset = mtxloc.GetTranslation();
-	if (fabs_tpl(scale - 1.0f) < 0.01f)
-		scale = 1.0f;
 	//
 	//
 	if (m_pCharPhysics)
@@ -817,7 +852,7 @@ IPhysicalEntity* CSkeletonPhysics::CreateCharacterPhysics(
 		}
 	}
 
-	int iRoot = GetPhysRoot();
+	int iRoot = GetPhysRoot(nLod);
 	if (iRoot >= 0)
 	{
 		pe_params_foreign_data pfd;
@@ -840,13 +875,11 @@ IPhysicalEntity* CSkeletonPhysics::CreateCharacterPhysics(
 		pab.bGrounded = 1;
 		pab.scaleBounceResponse = 0.6f;
 		pab.bAwake = 0;
-
-		//IVO_x
-		pab.pivot = GetPoseData().GetJointAbsolute(iRoot).t;
+		pab.pivot = GetPoseData().GetJointAbsolute(iRoot).t * m_offset.s;
 
 		m_pCharPhysics->SetParams(&pab);
 
-		BuildPhysicalEntity(m_pCharPhysics, mass, surface_idx, stiffness_scale, 0, -1, mtxloc);
+		BuildPhysicalEntity(m_pCharPhysics, mass, surface_idx, stiffness_scale, nLod, -1, pHost ? Matrix34::CreateScale(Vec3(m_offset.s)) : mtxloc);
 
 		pe_params_joint pj;
 		pj.op[0] = -1;
@@ -857,10 +890,10 @@ IPhysicalEntity* CSkeletonPhysics::CreateCharacterPhysics(
 		if (pHost)
 		{
 			pe_params_articulated_body pab1;
-			pab1.pivot.zero();
+			//pab1.pivot.zero();
 			pab1.pHost = pHost;
-			pab1.posHostPivot =	GetPoseData().GetJointAbsolute(iRoot).t * scale + offset;
-			pab1.qHostPivot.SetIdentity();
+			pab1.posHostPivot =	m_offset * GetPoseData().GetJointAbsolute(iRoot).t;
+			pab1.qHostPivot = m_offset.q;
 			pab1.bAwake = 0;
 
 			m_pCharPhysics->SetParams(&pab1);
@@ -873,8 +906,6 @@ IPhysicalEntity* CSkeletonPhysics::CreateCharacterPhysics(
 		m_pCharPhysics->SetParams(&poe);
 	}
 
-	m_vOffset = offset;
-	m_fScale = scale;
 	m_fMass = mass;
 	m_iSurfaceIdx = surface_idx;
 	m_stiffnessScale = stiffness_scale;
@@ -892,7 +923,7 @@ IPhysicalEntity* CSkeletonPhysics::CreateCharacterPhysics(
 
 int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, int nLod)
 {
-	return CreateAuxilaryPhysics(pHost, mtx, mtx.GetColumn(0).len(), m_vOffset, nLod);
+	return CreateAuxilaryPhysics(pHost, mtx, m_offset, nLod);
 }
 
 void CSkeletonPhysics::SetJointPhysInfo(uint32 iJoint, const CryBonePhysics& pi, int nLod)
@@ -913,11 +944,11 @@ void CSkeletonPhysics::SetJointPhysInfo(uint32 iJoint, const CryBonePhysics& pi,
 const CryBonePhysics& CSkeletonPhysics::GetJointPhysInfo(uint32 iJoint, int nLod) const
 {
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
-	const CryBonePhysics& piModel = rDefaultSkeleton.m_arrModelJoints[iJoint].m_PhysInfo;
+	const CryBonePhysics& piModel = rDefaultSkeleton.m_arrModelJoints[iJoint].m_PhysInfoRef[nLod];
 	for (int i = m_extraPhysInfo.size() - 1; i >= 0; i--)
 		if (m_extraPhysInfo[i].iJoint == iJoint && m_extraPhysInfo[i].nLod == nLod)
 		{
-			*(int*)(m_extraPhysInfo[i].info.spring_angle + 1) = *(int*)(piModel.spring_angle + 1);
+			*(int*)(m_extraPhysInfo[i].info.spring_angle + 1) = max(*(int*)(m_extraPhysInfo[i].info.spring_angle + 1), *(int*)(piModel.spring_angle + 1));
 			return m_extraPhysInfo[i].info;
 		}
 	return piModel;
@@ -964,7 +995,7 @@ DynArray<SJointProperty> CSkeletonPhysics::GetJointPhysProperties_ROPE(uint32 jo
 		}
 	}
 	const CryBonePhysics& pi = GetJointPhysInfo(jointIndex, nLod);
-	if (&pi != &rDefaultSkeleton.m_arrModelJoints[jointIndex].m_PhysInfo)
+	if (&pi != &rDefaultSkeleton.m_arrModelJoints[jointIndex].m_PhysInfoRef[nLod])
 		return rDefaultSkeleton.GetPhysInfoProperties_ROPE(pi, (pi.flags & joint_isolated_accelerations) != 0);
 	return DynArray<SJointProperty>();
 }
@@ -1056,15 +1087,15 @@ void ParsePhysInfoPropsCloth(const CryBonePhysics& physInfo, int nLod, pe_params
 	simp.minEnergy = nLod ? 0.1f : 0.0f;
 }
 
-int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, float scale, Vec3 offset, int nLod)
+int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, const QuatTS& offset, int nLod)
 //float *pForcedRopeLen,int *piForcedRopeIdx,int nForcedRopes)
 {
 	if (m_pSkeletonPose->m_bSetDefaultPoseExecute)
 	{
+		m_pSkeletonAnim->FinishAnimationComputations();
 		m_pSkeletonPose->SetDefaultPoseExecute(false);
 		m_pSkeletonPose->m_bSetDefaultPoseExecute = false;
 	}
-	m_pSkeletonAnim->FinishAnimationComputations();
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 
 	int i, j, k, nchars;
@@ -1099,7 +1130,7 @@ int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix
 		CDefaultSkeleton::SJoint* pBoneInfo = GetModelJointPointer(i);
 		const char* szBoneName = pBoneInfo->m_strJointName.c_str();
 
-		if (!strnicmp(szBoneName, "rope", 4) && pBoneInfo->m_numChildren > 0 || &GetJointPhysInfo(i, nLod) != &m_pInstance->m_pDefaultSkeleton->m_arrModelJoints[i].m_PhysInfo)
+		if (!strnicmp(szBoneName, "rope", 4) && pBoneInfo->m_numChildren > 0 || &GetJointPhysInfo(i, nLod) != &m_pInstance->m_pDefaultSkeleton->m_arrModelJoints[i].m_PhysInfoRef[nLod])
 		{
 			if ((pspace = strchr(szBoneName, ' ')) || (pspace = strchr(szBoneName, '_')))
 				nchars = (int)(pspace - szBoneName);
@@ -1118,8 +1149,8 @@ int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix
 			}
 
 		}
-		else if (!pBoneInfo->m_PhysInfo.pPhysGeom)
-			pBoneInfo->m_PhysInfo.flags = -1;
+		else if (!pBoneInfo->m_PhysInfoRef[nLod].pPhysGeom)
+			pBoneInfo->m_PhysInfoRef[nLod].flags = -1;
 		else
 			nPhysGeoms++;
 	}
@@ -1219,9 +1250,9 @@ int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix
 					continue;
 				}
 
-				pr.pPoints[k] = GetPoseData().GetJointAbsolute(i).t * scale + offset;
-				pr.pPoints[k + 1] = GetPoseData().GetJointAbsolute(GetModelJointChildIndex(i, 0)).t * scale + offset;
-				((GetModelJointPointer(i)->m_PhysInfo.flags) &= 0xFFFF) |= 0x30000;
+				pr.pPoints[k] = offset * GetPoseData().GetJointAbsolute(i).t ;
+				pr.pPoints[k + 1] = offset * GetPoseData().GetJointAbsolute(GetModelJointChildIndex(i, 0)).t;
+				((GetModelJointPointer(i)->m_PhysInfoRef[nLod].flags) &= 0xFFFF) |= 0x30000;
 
 				m_auxPhys[j].pauxBoneInfo[k].iBone = i;
 				m_auxPhys[j].pauxBoneInfo[k].dir0 = pr.pPoints[k + 1] - pr.pPoints[k];
@@ -1513,8 +1544,14 @@ cloth_aux:
 				k = m_auxPhys[j].pauxBoneInfo[i].iBone;
 				atv.points[i] = qBase * GetPoseData().GetJointAbsolute(k).t;
 			}
-			atv.points[i] = qBase * GetPoseData().GetJointAbsolute(GetModelJointChildIndex(k, 0)).t;
+			atv.points[i] = qBase * GetPoseData().GetJointAbsolute(GetModelJointChildIndex(k, 0)).t * m_offset.s;
 			m_auxPhys[j].pPhysEnt->Action(&atv);
+		}
+		if (!(m_pInstance->m_rpFlags & CS_FLAG_UPDATE_ALWAYS))
+		{	// if character updates on render, set ropes to initially disabled; they will be enabled when the node becomes visible
+			new(&pf) pe_params_flags;
+			pf.flagsOR = pef_disabled;
+			m_auxPhys[j].pPhysEnt->SetParams(&pf);
 		}
 	}
 
@@ -1523,7 +1560,7 @@ cloth_aux:
 	   int nAuxPhys;
 	   for(i=nAuxPhys=0;i<m_nAuxPhys;i++)
 	   {
-	    for(j=0;j<m_auxPhys[i].nBones && !GetModelJointPointer(m_auxPhys[i].pauxBoneInfo[j].iBone)->m_PhysInfo.pPhysGeom;j++);
+	    for(j=0;j<m_auxPhys[i].nBones && !GetModelJointPointer(m_auxPhys[i].pauxBoneInfo[j].iBone)->m_PhysInfoRef[nLod].pPhysGeom;j++);
 	    if (j<m_auxPhys[i].nBones)
 	    {
 	      g_pIPhysicalWorld->DestroyPhysicalEntity(m_auxPhys[i].pPhysEnt);
@@ -1535,8 +1572,7 @@ cloth_aux:
 	   m_nAuxPhys = nAuxPhys;
 	   }*/
 
-	m_vOffset = offset;
-	m_fScale = scale;
+	m_offset = offset;
 	/* IZF temp
 	   //if (pForcedRopeLen)
 	   //	*piForcedRopeIdx += j;
@@ -1568,10 +1604,9 @@ int CSkeletonPhysics::FillRopeLenArray(float* len, int i0, int sz)
 	for (i = 0; i < m_nAuxPhys && i + i0 < sz; i++)
 	{
 		int32 status = m_auxPhys[i].pPhysEnt->GetParams(&pr);
-		if (status == 0)
+		if (!CRY_VERIFY(status != 0))
 		{
 			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, rDefaultSkeleton.GetModelFilePath(), "GetParams() returned 0");
-			assert(0);
 		}
 		len[i0 + i] = pr.length;
 	}
@@ -1596,10 +1631,11 @@ void CSkeletonPhysics::InitializeAnimToPhysIndexArray()
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	uint32 jointCount = rDefaultSkeleton.GetJointCount();
 	m_nPhysJoints = 0;
+	const int nLod = 0;
 
 	for (uint32 i = 0; i < jointCount; ++i)
 	{
-		if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+		if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 			m_nPhysJoints++;
 	}
 
@@ -1611,7 +1647,7 @@ void CSkeletonPhysics::InitializeAnimToPhysIndexArray()
 	uint32 j = 0;
 	for (uint32 i = 0; i < jointCount; ++i)
 	{
-		if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+		if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 			m_physJointsIdx[j++] = i;
 	}
 }
@@ -1639,7 +1675,7 @@ void CSkeletonPhysics::SynchronizeWithPhysicalEntity(IPhysicalEntity* pent, cons
 
 	SetLocation(IDENTITY);
 	uint mode = m_pInstance->m_CharEditMode;
-	m_pInstance->m_CharEditMode |= CA_CharacterTool; // force synchronization
+	m_pInstance->m_CharEditMode |= CA_CharacterAuxEditor; // force synchronization
 	Job_SynchronizeWithPhysicsPrepare(*CharacterInstanceProcessing::GetMemoryPool());
 	if (pent)
 		SynchronizeWithPhysicalEntity(poseDataWriteable, pent, posMaster, qMaster, QuatT(IDENTITY));
@@ -1650,9 +1686,9 @@ void CSkeletonPhysics::SynchronizeWithPhysicalEntity(IPhysicalEntity* pent, cons
 
 void CSkeletonPhysics::CreateRagdollDefaultPose(Skeleton::CPoseData& poseData)
 {
-	const QuatT* const __restrict pJointRelative = poseData.GetJointsRelative();
 	const QuatT* const __restrict pJointAbsolute = poseData.GetJointsAbsolute();
 	uint32 numJoints = poseData.GetJointCount();
+	const int nLod = 1;
 
 	CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	CDefaultSkeleton::SJoint* parrModelJoints = &rDefaultSkeleton.m_arrModelJoints[0];
@@ -1667,7 +1703,7 @@ void CSkeletonPhysics::CreateRagdollDefaultPose(Skeleton::CPoseData& poseData)
 			if (ParentIdx >= 0)
 				m_arrPhysicsJoints[i].m_DefaultRelativeQuat = pJointAbsolute[ParentIdx].GetInverted() * pJointAbsolute[i];
 			int32 p, pp;
-			for (p = pp = parrModelJoints[i].m_idxParent; pp > -1 && parrModelJoints[pp].m_PhysInfo.pPhysGeom == 0; pp = parrModelJoints[pp].m_idxParent)
+			for (p = pp = parrModelJoints[i].m_idxParent; pp > -1 && parrModelJoints[pp].m_PhysInfoRef[nLod].pPhysGeom == 0; pp = parrModelJoints[pp].m_idxParent)
 				;
 			if (pp > -1)
 				m_arrPhysicsJoints[i].m_qRelPhysParent = !pJointAbsolute[p].q * pJointAbsolute[pp].q;
@@ -1677,7 +1713,7 @@ void CSkeletonPhysics::CreateRagdollDefaultPose(Skeleton::CPoseData& poseData)
 	}
 }
 
-IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mtx, float stiffness, bool bCopyJointVelocities, const Vec3& velHost)
+IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mtxloc, float stiffness, bool bCopyJointVelocities, const Vec3& velHost)
 {
 	Skeleton::CPoseData& poseDataWriteable = GetPoseDataForceWriteable();
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
@@ -1685,7 +1721,7 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 	poseDataWriteable.ValidateRelative(rDefaultSkeleton);
 
 	int nLod = 1;
-	int iRoot = GetPhysRoot(), numJoints = rDefaultSkeleton.GetJointCount();
+	int iRoot = GetPhysRoot(nLod), numJoints = rDefaultSkeleton.GetJointCount();
 	if (iRoot < 0)
 		return nullptr;
 	m_bPhysicsRelinquished = true;
@@ -1713,8 +1749,7 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 	pe_simulation_params sp;
 	sp.iSimClass = 6; // to make sure the entity is not processed until it's ready (multithreaded)
 	res->SetParams(&sp);
-	m_vOffset.zero();
-	BuildPhysicalEntity(res, m_fMass, m_iSurfaceIdx, stiffness, nLod, -1, Matrix34(Vec3(m_fScale), Quat(IDENTITY), Vec3(ZERO)));
+	BuildPhysicalEntity(res, m_fMass, m_iSurfaceIdx, stiffness, nLod, -1, mtxloc);
 
 	pe_params_joint pj;
 	pj.bNoUpdate = 1;
@@ -1723,7 +1758,7 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 			pj.kd[i] = 0.1f;
 	for (int i = numJoints - 1; i >= 0; i--)
 	{
-		if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+		if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 		{
 			pj.op[1] = i;
 			if (i == iRoot)
@@ -1749,11 +1784,10 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 	ResetNonphysicalBoneRotations(poseDataWriteable, nLod, 0.0f);        // restore death pose matRel from m_pqTransform
 	UnconvertBoneGlobalFromRelativeForm(poseDataWriteable, false, nLod); // build matGlobals from matRelativeToParents
 
-	m_vOffset.zero();
+	m_offset.SetIdentity();
+	m_offset.s = mtxloc.GetScale().x;
 	m_bPhysicsAwake = m_bPhysicsWasAwake = 1;
 	pe_params_pos pp;
-	pp.pos = mtx.GetTranslation();
-	pp.q = Quat(Matrix33(mtx) / mtx.GetColumn(0).len());
 	int bSkelQueued = res->SetParams(&pp) - 1;
 
 	pe_params_rope pr;
@@ -1768,7 +1802,7 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 	for (int i = 0; i < m_nAuxPhys; i++)
 	{
 		int j = 0;
-		for (j = 0; j < m_auxPhys[i].nBones && !GetModelJointPointer(m_auxPhys[i].pauxBoneInfo[j].iBone)->m_PhysInfo.pPhysGeom; j++)
+		for (j = 0; j < m_auxPhys[i].nBones && !GetModelJointPointer(m_auxPhys[i].pauxBoneInfo[j].iBone)->m_PhysInfoRef[nLod].pPhysGeom; j++)
 			;
 		if (j < m_auxPhys[i].nBones)
 		{
@@ -1815,7 +1849,7 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 					pt =
 					  poseDataWriteable.GetJointAbsolute(aap.partid).GetInverted() *
 					  poseDataWriteable.GetJointAbsolute(getBoneParentIndex(m_auxPhys[i].pauxBoneInfo[j].iBone)) *
-					  m_arrPhysicsJoints[m_auxPhys[i].pauxBoneInfo[j].iBone].m_DefaultRelativeQuat.t * m_fScale;
+					  m_arrPhysicsJoints[m_auxPhys[i].pauxBoneInfo[j].iBone].m_DefaultRelativeQuat.t * m_offset.s;
 					m_auxPhys[i].pPhysEnt->Action(&aap, -bSkelQueued >> 31);
 					for (j++; j < m_auxPhys[i].nBones && !strncmp(GetModelJointPointer(getBoneParentIndex(m_auxPhys[i].pauxBoneInfo[j].iBone))->m_strJointName.c_str(), m_auxPhys[i].strName, m_auxPhys[i].nChars); j++)
 						;
@@ -1841,9 +1875,9 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 				{
 					pr.pEntTiedTo[0] = res;
 					pr.idPartTiedTo[0] = getBonePhysParentIndex(j = m_auxPhys[i].iBoneTiedTo[0], nLod);
-					Vec3 ptTiedTo =
+					Vec3 ptTiedTo =	m_offset * 
 					  poseDataWriteable.GetJointAbsolute(getBoneParentIndex(j)) *
-					  m_arrPhysicsJoints[j].m_DefaultRelativeQuat.t * m_fScale;
+					  m_arrPhysicsJoints[j].m_DefaultRelativeQuat.t;
 					ptTiedTo = poseDataWriteable.GetJointAbsolute(pr.idPartTiedTo[0]).GetInverted() * ptTiedTo;
 					if (ptTiedTo.len2() < 1.0f)
 						pr.ptTiedTo[0] = ptTiedTo;
@@ -1911,7 +1945,7 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 					pe_action_set_velocity asv;
 					for (int i = numJoints - 1; i >= 0; i--)
 					{
-						if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+						if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 						{
 							partStatusSource.partid = i;
 							if (!m_pCharPhysics->GetStatus(&partStatusSource))
@@ -2034,7 +2068,6 @@ void CSkeletonPhysics::Physics_SynchronizeToAux(const Skeleton::CPoseData& poseD
 	int nLod = m_bPhysicsRelinquished ? GetPhysicsLod() : 0;
 
 	pe_action_target_vtx atv;
-	Matrix34 mtx = Matrix34(m_location);
 	int bRopesAwake = 0;
 	for (int j = 0; j < m_nAuxPhys; ++j)
 	{
@@ -2133,7 +2166,7 @@ void CSkeletonPhysics::Physics_SynchronizeToAux(const Skeleton::CPoseData& poseD
 				else if (angle >= 100.0f || angle < -90.0f)
 					angle = 0.0f;
 
-				CryBonePhysics& physInfo = GetModelJointPointer(m_auxPhys[j].iBoneTiedTo[0])->m_PhysInfo;
+				CryBonePhysics& physInfo = GetModelJointPointer(m_auxPhys[j].iBoneTiedTo[0])->m_PhysInfoRef[nLod];
 				pr.stiffnessAnim = RAD2DEG(physInfo.max[0]) * angle * 0.01f;
 				pr.dampingAnim = RAD2DEG(physInfo.max[2]) * angle * 0.01f;
 			}
@@ -2210,7 +2243,7 @@ void CSkeletonPhysics::Physics_SynchronizeToAux(const Skeleton::CPoseData& poseD
 
 		}
 
-		assert(sr.pPoints);
+		CRY_ASSERT(sr.pPoints);
 		atv.points = sr.pPoints;
 		for (int i = 0; i < m_auxPhys[j].nBones; ++i)
 		{
@@ -2258,7 +2291,7 @@ void CSkeletonPhysics::Physics_SynchronizeToImpact(float timeDelta)
 		physicsParamsJoint.ranimationTimeStep = 1.0f / timeDelta;
 	}
 
-	int physicsLod = m_bPhysicsRelinquished ? GetPhysicsLod() : 0;
+	const int nLod = m_physLod;
 
 	pe_params_flags physicsParamsFlags;
 	pe_status_joint physicsStatusJoint;
@@ -2275,7 +2308,7 @@ void CSkeletonPhysics::Physics_SynchronizeToImpact(float timeDelta)
 			if (!m_pPhysImpactBuffer[i].bSet)
 				continue;
 
-			int parentIndex = getBonePhysParentIndex(i, physicsLod);
+			int parentIndex = getBonePhysParentIndex(i, nLod);
 			if (parentIndex < 0)
 				continue;
 
@@ -2285,8 +2318,8 @@ void CSkeletonPhysics::Physics_SynchronizeToImpact(float timeDelta)
 
 			int j;
 			while (
-			  (GetModelJointPointer(parentIndex)->m_PhysInfo.flags & all_angles_locked) == all_angles_locked &&
-			  (j = getBonePhysParentIndex(parentIndex, physicsLod)) >= 0)
+			  (GetModelJointPointer(parentIndex)->m_PhysInfoRef[nLod].flags & all_angles_locked) == all_angles_locked &&
+			  (j = getBonePhysParentIndex(parentIndex, nLod)) >= 0)
 			{
 				parentIndex = j;
 			}
@@ -2332,7 +2365,6 @@ void CSkeletonPhysics::ProcessPhysics(Skeleton::CPoseData& poseData, float timeD
 		return;
 
 	m_bPhysicsAwake = 0;
-	m_vOffset = ZERO;
 
 	if (m_pCharPhysics)
 	{
@@ -2430,9 +2462,6 @@ void CSkeletonPhysics::SynchronizeWithPhysics(Skeleton::CPoseData& poseData)
 
 // SynchronizeTo
 
-SBatchUpdateValidator SBatchUpdateValidator::g_firstValidator;
-volatile int SBatchUpdateValidator::g_lockList;
-
 void CSkeletonPhysics::Physics_SynchronizeToEntity(IPhysicalEntity& physicalEntity, QuatT offset)
 {
 	DEFINE_PROFILER_FUNCTION();
@@ -2442,16 +2471,17 @@ void CSkeletonPhysics::Physics_SynchronizeToEntity(IPhysicalEntity& physicalEnti
 	const Skeleton::CPoseData& poseData = GetPoseData();
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 
-	const int physicsChildIndex = GetPhysRoot();
+	const int nLod = m_physLod;
+	const int physicsChildIndex = GetPhysRoot(nLod);
 
 	if (pent->GetType() == PE_ARTICULATED && physicsChildIndex > -1)
 	{
 		struct pe_status_awake statAwake;
-		offset.t = -poseData.GetJointAbsolute(physicsChildIndex).t * m_fScale;
+		offset.t = -poseData.GetJointAbsolute(physicsChildIndex).t * m_offset.s;
 		if (!pent->GetStatus(&statAwake))
 		{
 			for (uint32 i = 0; i < (unsigned)m_nPhysJoints; ++i)
-				(m_physJoints[i] = poseData.GetJointAbsolute(m_physJointsIdx[i])).t *= m_fScale;
+				(m_physJoints[i] = poseData.GetJointAbsolute(m_physJointsIdx[i])).t *= m_offset.s;
 
 			pe_action_batch_parts_update abpu;
 			abpu.numParts = m_nPhysJoints;
@@ -2476,7 +2506,7 @@ void CSkeletonPhysics::Physics_SynchronizeToEntity(IPhysicalEntity& physicalEnti
 		uint32 j = 0;
 		for (uint32 i = 0; i < jointCount; ++i)
 		{
-			if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+			if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 				j = i;
 		}
 
@@ -2484,7 +2514,7 @@ void CSkeletonPhysics::Physics_SynchronizeToEntity(IPhysicalEntity& physicalEnti
 		partpos.invTimeStep = 1.0f / max(0.001f, m_pInstance->m_fOriginalDeltaTime);
 		for (uint32 i = 0; i < jointCount; ++i)
 		{
-			if (GetModelJointPointer(i)->m_PhysInfo.pPhysGeom)
+			if (GetModelJointPointer(i)->m_PhysInfoRef[nLod].pPhysGeom)
 			{
 				partpos.partid = i;
 				partpos.bRecalcBBox = i == j;
@@ -2520,16 +2550,12 @@ void CSkeletonPhysics::Physics_SynchronizeToEntityArticulated(float timeDelta)
 	{
 		const Skeleton::CPoseData& poseData = GetPoseData();
 
-		//this is the relative orientation & translation of the animated character for this frame
-		QuatT KinematicMovement = IDENTITY;
-
-		if (m_pCharPhysics)
-			Physics_SynchronizeToEntity(*m_pCharPhysics, KinematicMovement);
+		Physics_SynchronizeToEntity(*m_pCharPhysics, QuatT(IDENTITY)); // IDENTITY here since offset is handled via pos/qHostPivot
 
 		pe_params_articulated_body pab;
 		pab.pivot.zero();
-		pab.posHostPivot = KinematicMovement.t + poseData.GetJointAbsolute(GetPhysRoot()).t * m_fScale;
-		pab.qHostPivot = KinematicMovement.q;
+		pab.posHostPivot = m_offset * poseData.GetJointAbsolute(GetPhysRoot(m_physLod)).t;
+		pab.qHostPivot = m_offset.q;
 		pab.bRecalcJoints = m_bPhysicsAwake;
 		m_velPivot = (pab.posHostPivot - m_prevPosPivot) / max(0.001f, m_pInstance->m_fOriginalDeltaTime);
 		m_velPivot *= (float)isneg(m_velPivot.len2() - sqr(30.0f));
@@ -2597,7 +2623,7 @@ int CSkeletonPhysics::GetFallingDir() const
 	const QuatT* pJointsAbsolute = poseData.GetJointsAbsolute();
 
 	pe_status_dynamics sd;
-	int status = m_pCharPhysics->GetStatus(&sd);
+	m_pCharPhysics->GetStatus(&sd);
 
 	Vec3 n(ZERO);
 	for (uint32 i = 0; i < m_nSpineBones; ++i)
@@ -2699,7 +2725,7 @@ bool CSkeletonPhysics::BlendFromRagdoll(QuatTS& location, IPhysicalEntity*& pPhy
 	if (m_pPrevCharHost)
 		g_pIPhysicalWorld->DestroyPhysicalEntity(m_pPrevCharHost, 2);
 
-	Matrix34 mtxChar = Matrix34(Vec3(m_fScale), Quat(IDENTITY), m_vOffset);
+	Matrix34 mtxChar(m_offset);
 	CreateCharacterPhysics(m_pPrevCharHost, m_fMass, m_iSurfaceIdx, m_stiffnessScale, 0, mtxChar);
 	CreateAuxilaryPhysics(m_pCharPhysics, mtxChar);
 	if (m_pCharPhysics)
@@ -2707,7 +2733,7 @@ bool CSkeletonPhysics::BlendFromRagdoll(QuatTS& location, IPhysicalEntity*& pPhy
 		pe_params_articulated_body pab;
 		pab.bAwake = 0;
 		pab.pivot.zero();
-		pab.posHostPivot = m_vOffset + joints[rootJointIndex].t * m_fScale;
+		pab.posHostPivot = m_offset * joints[rootJointIndex].t;
 		pab.qHostPivot.SetIdentity();
 		pab.bRecalcJoints = 0;
 		m_pCharPhysics->SetParams(&pab);
@@ -2728,9 +2754,9 @@ bool CSkeletonPhysics::BlendFromRagdoll(QuatTS& location, IPhysicalEntity*& pPhy
 
 	location.t =
 	  previousLocation * poseData.GetJointAbsolute(rootJointIndex).t -
-	  location.q * joints[rootJointIndex].t * m_fScale;
+	  location.q * joints[rootJointIndex].t * m_offset.s;
 
-	location.s = m_fScale;
+	location.s = m_offset.s;
 
 	//
 

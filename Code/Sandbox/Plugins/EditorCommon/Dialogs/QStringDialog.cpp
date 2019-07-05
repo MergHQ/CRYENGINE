@@ -5,7 +5,9 @@
 #include "QStringDialog.h"
 #include <QLineEdit>
 #include <QVBoxLayout>
+#include <QApplication>
 #include <QDialogButtonBox>
+#include <CrySystem/ISystem.h>
 
 QStringDialog::QStringDialog(const QString& title, QWidget* pParent /*= NULL*/, bool bFileNameLimitation /*= false*/, bool bFileNameAsciiOnly /*= false*/)
 	: CEditorDialog(QStringLiteral("QStringDialog"), pParent ? pParent : QApplication::widgetAt(QCursor::pos()), false)
@@ -79,5 +81,3 @@ void QStringDialog::accept()
 
 	CEditorDialog::accept();
 }
-
-

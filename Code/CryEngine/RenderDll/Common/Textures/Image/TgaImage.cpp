@@ -18,7 +18,7 @@ string OutputPath(const char* filename)
 	if (strstr(filename, ":\\") == NULL)
 	{
 		// construct path with current folder - otherwise path would start at mastercd/game
-		char szCurrDir[ICryPak::g_nMaxPath];
+		char szCurrDir[MAX_PATH];
 		CryGetCurrentDirectory(sizeof(szCurrDir), szCurrDir);
 
 		fullPath = string(szCurrDir) + "/" + filename;
@@ -86,7 +86,7 @@ static void WritePixel(int depth, unsigned long a, unsigned long r, unsigned lon
 	}
 }
 
-static void GetPixel(unsigned char* data, int depth, unsigned long& a, unsigned long& r, unsigned long& g, unsigned long& b)
+static void GetPixel(const unsigned char* data, int depth, unsigned long& a, unsigned long& r, unsigned long& g, unsigned long& b)
 {
 	switch (depth)
 	{
@@ -110,7 +110,7 @@ static void GetPixel(unsigned char* data, int depth, unsigned long& a, unsigned 
 	}
 }
 
-bool WriteTGA(byte* data, int width, int height, const char* filename, int src_bits_per_pixel, int dest_bits_per_pixel)
+bool WriteTGA(const byte* data, int width, int height, const char* filename, int src_bits_per_pixel, int dest_bits_per_pixel)
 {
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	return false;
@@ -159,17 +159,8 @@ bool WriteTGA(byte* data, int width, int height, const char* filename, int src_b
 	bwrite(desc);
 
 	int hxw = height * width;
-
-	int right = 0;
-	//  int top   = 1;
-
-	DWORD* temp_dp = (DWORD*) data;     // data = input pointer
-
 	DWORD* swap = 0;
-
 	UINT src_bytes_per_pixel = src_bits_per_pixel / 8;
-
-	UINT size_in_bytes = hxw * src_bytes_per_pixel;
 
 	if (src_bits_per_pixel == dest_bits_per_pixel)
 	{

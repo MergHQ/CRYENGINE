@@ -3,7 +3,10 @@
 #pragma once
 
 #include "RenderViewport.h"
+#include <CryRenderer/IRenderer.h>
+#include <DragDrop.h>
 
+class CObjectRenderHelper;
 class QViewportHeader;
 
 //! LevelEditorViewport is a specialization of RenderViewport for the Level editor
@@ -16,44 +19,47 @@ public:
 	CLevelEditorViewport();
 	~CLevelEditorViewport();
 
-	bool        CreateRenderContext(HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::eViewportType_Default) override;
+	bool  CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportType viewportType = IRenderer::eViewportType_Default) override;
 
-	void		SetHeaderWidget(QViewportHeader* headerWidget) { m_headerWidget = headerWidget; }
+	void  SetHeaderWidget(QViewportHeader* headerWidget) { m_headerWidget = headerWidget; }
 
-	bool		DragEvent(EDragEvent eventId, QEvent* event, int flags) override;
-	void		PopulateMenu(CPopupMenuItem& menu);
+	bool  DragEvent(EDragEvent eventId, QEvent* event, int flags) override;
+	void  PopulateMenu(CPopupMenuItem& menu);
 
-	void        SetFOV(float fov);
-	void        SetFOVDeg(float fov);
-	float       GetFOV() const;
+	void  SetFOV(float fov);
+	void  SetFOVDeg(float fov);
+	float GetFOV() const;
 
-	void        SetSelectedCamera();
-	bool        IsSelectedCamera() const;
+	void  SetSelectedCamera();
+	bool  IsSelectedCamera() const;
 
 	//! This switches the active camera to the next one in the list of (default, all custom cams).
-	void        CycleCamera();
+	void CycleCamera();
 
-	void        CenterOnSelection() override;
-	void		CenterOnAABB(AABB* const aabb) override;
+	void CenterOnSelection() override;
+	void CenterOnAABB(AABB* const aabb) override;
 
-	void		OnEditorNotifyEvent(EEditorNotifyEvent event) override;
+	void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
-	Vec3		ViewToWorld(POINT vp, bool* collideWithTerrain = 0, bool onlyTerrain = false, bool bSkipVegetation = false, bool bTestRenderMesh = false) const override;
-	Vec3        ViewToWorldNormal(POINT vp, bool onlyTerrain, bool bTestRenderMesh = false) override;
-	bool		MouseCallback(EMouseEvent event, CPoint& point, int flags) override;
+	Vec3 ViewToWorld(POINT vp, bool* collideWithTerrain = 0, bool onlyTerrain = false, bool bSkipVegetation = false, bool bTestRenderMesh = false) const override;
+	Vec3 ViewToWorldNormal(POINT vp, bool onlyTerrain, bool bTestRenderMesh = false) override;
+	bool MouseCallback(EMouseEvent event, CPoint& point, int flags) override;
 private:
 
+	void OnCameraSpeedChanged() override;
+	void OnMenuCreateCameraFromCurrentView();
+	void OnMenuSelectCurrentCamera();
+	void OnRender(SDisplayContext& context) override;
+	void RenderAll(CObjectRenderHelper& displayInfo);
+	void RenderSnappingGrid(SDisplayContext& context);
+	void AddCameraMenuItems(CPopupMenuItem& menu);
+	//Get the drag event and use type to either create a new object or apply an asset
+	bool HandleDragEvent(EDragEvent eventId, QEvent* event, int flags);
+	//This CDragDropData contains an asset that can be used in the viewport
+	bool DropHasAsset(const CDragDropData& dragDropData);
+	//If possible applies the asset in dragDropData to an object
+	bool ApplyAsset(const CDragDropData& dragDropData, QDropEvent* pDropEvent, EDragEvent eventId);
 
-	void		OnCameraSpeedChanged() override;
-	void        OnMenuCreateCameraFromCurrentView();
-	void        OnMenuSelectCurrentCamera();
-	void		OnRender() override;
-	void        RenderAll(const SRenderingPassInfo& passInfo);
-	void        RenderSnappingGrid();
-	void        AddCameraMenuItems(CPopupMenuItem& menu);
-
-	bool AssetDragCreate(EDragEvent eventId, QEvent* event, int flags);
-
-	float                m_camFOV;
+	float            m_camFOV;
 	QViewportHeader* m_headerWidget;
 };

@@ -4,11 +4,11 @@
 
 #include "VehicleEditorDialog.h"
 #include "QtViewPane.h"
-#include "Objects\EntityObject.h"
-#include "Controls\PropertyCtrl.h"
-#include "Controls\PropertyItem.h"
-#include "Util\PakFile.h"
-#include "Objects\SelectionGroup.h"
+#include "Objects/EntityObject.h"
+#include "Controls/PropertyCtrl.h"
+#include "Controls/PropertyItem.h"
+#include "Util/PakFile.h"
+#include "Objects/SelectionGroup.h"
 
 #include "VehiclePrototype.h"
 #include "VehicleData.h"
@@ -23,7 +23,7 @@
 #include "VehiclePaintsPanel.h"
 #include "VehicleXMLHelper.h"
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "Util/MFCUtil.h"
 #include "Util/FileUtil.h"
 #include "IUndoObject.h"
@@ -85,15 +85,15 @@ class CVehicleEditorViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       { return "Vehicle Editor"; };
-	virtual const char*    Category()        { return "Game"; };
+	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       { return "Vehicle Editor"; }
+	virtual const char*    Category()        { return "Game"; }
 	//////////////////////////////////////////////////////////////////////////
-	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleEditorDialog); };
-	virtual const char*    GetPaneTitle()    { return _T("Vehicle Editor"); };
-	virtual QRect          GetPaneRect()     { return QRect(200, 200, 600, 500); };
-	virtual bool           SinglePane()      { return false; };
-	virtual bool           WantIdleUpdate()  { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleEditorDialog); }
+	virtual const char*    GetPaneTitle()    { return _T("Vehicle Editor"); }
+	virtual QRect          GetPaneRect()     { return QRect(200, 200, 600, 500); }
+	virtual bool           SinglePane()      { return false; }
+	virtual bool           WantIdleUpdate()  { return true; }
 	virtual const char* GetMenuPath() override { return "Deprecated"; }
 };
 
@@ -338,11 +338,11 @@ void CVehicleEditorDialog::SetVehiclePrototype(CVehiclePrototype* pProt)
 	assert(pProt && pProt->GetVariable());
 	m_pVehicle = pProt;
 
-	m_pVehicle->AddEventListener(functor(*this, &CVehicleEditorDialog::OnPrototypeEvent));
+	m_pVehicle->signalChanged.Connect(this, &CVehicleEditorDialog::OnPrototypeEvent);
 
 	if (m_pVehicle->GetCEntity())
 	{
-		m_pVehicle->GetCEntity()->AddEventListener(functor(*this, &CVehicleEditorDialog::OnEntityEvent));
+		m_pVehicle->GetCEntity()->signalChanged.Connect(this, &CVehicleEditorDialog::OnEntityEvent);
 	}
 
 	for (TVeedComponent::iterator it = m_panels.begin(); it != m_panels.end(); ++it)
@@ -363,10 +363,10 @@ void CVehicleEditorDialog::SetVehiclePrototype(CVehiclePrototype* pProt)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleEditorDialog::OnPrototypeEvent(CBaseObject* object, int event)
+void CVehicleEditorDialog::OnPrototypeEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
 	// called upon prototype deletion
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
 		m_pVehicle = 0;
 		EnableEditingLinks(false);
@@ -374,10 +374,10 @@ void CVehicleEditorDialog::OnPrototypeEvent(CBaseObject* object, int event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehicleEditorDialog::OnEntityEvent(CBaseObject* object, int event)
+void CVehicleEditorDialog::OnEntityEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
 	// called upon deletion of the entity the prototype points to
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
 		// delete prototype
 		if (m_pVehicle)
@@ -778,11 +778,11 @@ void CVehicleEditorDialog::DestroyVehiclePrototype()
 
 	VehicleXml::CleanUp(m_pVehicle->GetVariable());
 
-	m_pVehicle->RemoveEventListener(functor(*this, &CVehicleEditorDialog::OnPrototypeEvent));
+	m_pVehicle->signalChanged.DisconnectObject(this);
 
 	if (m_pVehicle->GetCEntity() != NULL)
 	{
-		m_pVehicle->GetCEntity()->RemoveEventListener(functor(*this, &CVehicleEditorDialog::OnEntityEvent));
+		m_pVehicle->GetCEntity()->signalChanged.DisconnectObject(this);
 	}
 
 	GetIEditor()->DeleteObject(m_pVehicle);
@@ -1006,7 +1006,6 @@ bool CVehicleEditorDialog::OpenVehicle(bool silent /*=false*/)
 		return false;
 	}
 
-	bool ok = false;
 	string sFile, sClass;
 
 	CBaseObject* obj = group->GetObject(0);
@@ -1098,5 +1097,3 @@ void CVehicleEditorDialog::OnPaintsEdit()
 
 	GetDockingPaneManager()->ShowPane(IDW_VEED_PAINTS_PANE);
 }
-
-

@@ -103,7 +103,9 @@ void CCryAction::DoInvokeRMI(_smart_ptr<IRMIMessageBody> pBody, unsigned where,
 					send = false;
 			if (send)
 			{
+#if NET_PROFILE_ENABLE
 				const IEntity *pEntity = gEnv->pEntitySystem->GetEntity(pBody->objId);
+#endif
 				NET_PROFILE_SCOPE_RMI(pEntity->GetClass()->GetName(), false);
 				NET_PROFILE_SCOPE_RMI(pEntity->GetName(), false);
 				pNetChannel->DispatchRMI(&*pBody);
@@ -135,7 +137,9 @@ void CCryAction::DoInvokeRMI(_smart_ptr<IRMIMessageBody> pBody, unsigned where,
 					continue;
 				if (!isLocal && (where & eRMI_NoRemoteCalls) != 0)
 					continue;
+#if NET_PROFILE_ENABLE
 				const IEntity *pEntity = gEnv->pEntitySystem->GetEntity(pBody->objId);
+#endif
 				NET_PROFILE_SCOPE_RMI(pEntity->GetClass()->GetName(), false);
 				NET_PROFILE_SCOPE_RMI(pEntity->GetName(), false);
 				pNetChannel->DispatchRMI(&*pBody);

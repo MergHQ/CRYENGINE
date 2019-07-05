@@ -1,12 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "CommentNodeAnimator.h"
 #include "Nodes/TrackViewAnimNode.h"
 #include "Nodes/TrackViewTrack.h"
+#include <CryFont/IFont.h>
 
 CCommentNodeAnimator::CCommentNodeAnimator(CTrackViewAnimNode* pCommentNode)
 {
@@ -189,4 +187,3 @@ void CCommentNodeAnimator::DrawText(const char* szFontName, float fSize, const V
 		pFont->DrawString(pos.x, pos.y, szText, true, ctx);
 	}
 }
-

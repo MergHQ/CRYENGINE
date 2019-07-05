@@ -25,4 +25,3 @@ struct SDBATable
 	bool Load(const char* dbaTablePath);
 	bool Save(const char* dbaTablePath);
 };
-

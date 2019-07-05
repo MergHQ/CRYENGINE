@@ -2,19 +2,28 @@
 #include <StdAfx.h>
 #include "QAdvancedTreeView.h"
 
-#include <QItemSelectionModel>
-#include <QAbstractProxyModel>
-#include <QHeaderView>
-#include <QAction>
-#include <QMenu>
-#include <QDrag>
-#include <QEvent>
-#include <QHoverEvent>
-
 #include "QtUtil.h"
 #include "QAdvancedItemDelegate.h"
 #include "DragDrop.h"
 #include "EditorStyleHelper.h"
+
+#include <IEditor.h>
+#include <CryIcon.h>
+
+#include <CrySystem/IValidator.h>
+#include <CrySystem/ISystem.h>
+
+#include <QAbstractProxyModel>
+#include <QAction>
+#include <QApplication>
+#include <QDrag>
+#include <QEvent>
+#include <QHeaderView>
+#include <QHoverEvent>
+#include <QItemSelectionModel>
+#include <QMenu>
+#include <QPainter>
+#include <QTimer>
 
 namespace Private_QAdvancedTreeView
 {
@@ -61,20 +70,26 @@ QPixmap CreateDefaultPixmap(QModelIndexList indices)
 		QPixmap icon = GetPixmapFromDecoration(index.data(Qt::DecorationRole), fm.height(), fm.height());
 
 		// Text and icon are aligned to bottom of cell.
-		const int cellHeight = std::max(icon.height(), fm.height());
-		const int textX = pStyleHelper->toolTipMarginLeft() + icon.width() + spacing;
-		const int posY = pStyleHelper->toolTipMarginTop() + yOff + cellHeight - icon.height();
+		QRect textRect = fm.boundingRect(name);
+		// We set the font to be 12 pixels in Qss, font metrics returns 13
+		textRect.setHeight(textRect.height() - 1);
+		int fontDescent = fm.descent();
+		const int cellHeight = std::max(icon.height(), textRect.height());
+		const int iconMargin = icon.width() == 0 ? 0 : pStyleHelper->toolTipIconMargin();
+		const int textX = icon.width() + iconMargin;
+		const int iconPosY = yOff + cellHeight - icon.height();
+		const int textPosY = yOff + cellHeight - fontDescent;
+		
+		canvasPainter.drawPixmap(0, iconPosY, icon, 0, 0, icon.width(), icon.height());
+		canvasPainter.drawText(textX, textPosY, name);
 
-		canvasPainter.drawPixmap(pStyleHelper->toolTipMarginLeft(), posY, icon, 0, 0, icon.width(), icon.height());
-		canvasPainter.drawText(textX, posY + fm.height(), name);
-
-		const int cellWidth = textX + fm.width(name) + pStyleHelper->toolTipMarginRight();
+		const int cellWidth = textX + textRect.width();
 
 		width = std::max(width, cellWidth);
 		yOff += cellHeight + cellSpacing;
 	}
 
-	int height = pStyleHelper->toolTipMarginTop() + pStyleHelper->toolTipMarginBottom() + yOff - cellSpacing;
+	int height = yOff - cellSpacing;
 
 	QPixmap clipped(std::min(width, canvas.width()), std::min(height, canvas.height()));
 	QPainter clippedPainter(&clipped);
@@ -90,6 +105,7 @@ QAdvancedTreeView::QAdvancedTreeView(BehaviorFlags flags /*= PreserveExpanded | 
 	, m_attributeRole(Attributes::s_getAttributeRole)
 	, m_attributeMenuPathRole(Attributes::s_attributeMenuPathRole)
 	, m_layoutVersion(1)
+	, m_pExpandOnDragTimer(new QTimer())
 {
 	if (m_behavior & PreserveExpandedAfterReset)
 	{
@@ -107,6 +123,17 @@ QAdvancedTreeView::QAdvancedTreeView(BehaviorFlags flags /*= PreserveExpanded | 
 
 	//Make sure we can capture mouse movement
 	setMouseTracking(true);
+
+	m_pExpandOnDragTimer->setSingleShot(true);
+	m_pExpandOnDragTimer->setInterval(qApp->startDragTime());
+
+	connect(m_pExpandOnDragTimer, &QTimer::timeout, [this]
+	{
+		if (m_hoveredIndex.isValid())
+		{
+		  expand(m_hoveredIndex);
+		}
+	});
 
 	header()->setStretchLastSection(true);
 }
@@ -234,7 +261,6 @@ void QAdvancedTreeView::OnContextMenu(const QPoint& point)
 					pAction->setChecked(IsColumnVisible(i));
 					connect(pAction, &QAction::toggled, [=](bool bChecked)
 					{
-						int column = pAction->data().toInt();
 						SetColumnVisible(i, bChecked);
 					});
 
@@ -252,7 +278,6 @@ void QAdvancedTreeView::OnContextMenu(const QPoint& point)
 
 				connect(pAction, &QAction::toggled, [=](bool bChecked)
 				{
-					int column = pAction->data().toInt();
 					SetColumnVisible(i, bChecked);
 				});
 
@@ -476,9 +501,9 @@ QVariantMap QAdvancedTreeView::GetState() const
 
 	QVariantMap columnStateMapCopy(m_columnStateMap);
 
-	QHeaderView *pHeader = header();
+	QHeaderView* pHeader = header();
 	auto itemModel = pHeader->model();
-	
+
 	const int count = GetColumnCount();
 	for (int i = 0; i < count; i++)
 	{
@@ -519,7 +544,6 @@ QVariantMap QAdvancedTreeView::GetState() const
 
 void QAdvancedTreeView::SetState(const QVariantMap& state)
 {
-	QHeaderView *pHeader = header();
 	auto itemModel = header()->model();
 
 	QVariant columnDataVar = state.value("columnData");
@@ -590,8 +614,8 @@ void QAdvancedTreeView::SetState(const QVariantMap& state)
 				}
 			}
 			if (!columnVisibilityWasSet &&
-				pAttribute &&
-				pAttribute->GetVisibility() == CItemModelAttribute::AlwaysHidden)
+			    pAttribute &&
+			    pAttribute->GetVisibility() == CItemModelAttribute::AlwaysHidden)
 			{
 				SetColumnVisible(i, false);
 			}
@@ -603,14 +627,13 @@ void QAdvancedTreeView::SetState(const QVariantMap& state)
 
 	QVariant sortingVar = state.value("headerSortingOrder");
 	if (sortingVar.isValid() && sortingVar.type() == QVariant::Map)
-	{	
+	{
 		QVariantMap sortingVarMap = sortingVar.toMap();
 		QVariant sortedSectionVar = sortingVarMap["sortedSection"];
 		QVariant sortOrderVar = sortingVarMap["sortOrder"];
 
 		if (sortedSectionVar.isValid() && sortOrderVar.isValid())
 		{
-			auto h = header();
 			header()->setSortIndicator(sortedSectionVar.toInt(), static_cast<Qt::SortOrder>(sortOrderVar.toInt()));
 		}
 	}
@@ -662,9 +685,8 @@ void QAdvancedTreeView::startDrag(Qt::DropActions supportedActions)
 	}
 }
 
-void QAdvancedTreeView::drawBranches(QPainter *painter, const QRect &rect,
-	const QModelIndex &index) const
-
+void QAdvancedTreeView::drawBranches(QPainter* painter, const QRect& rect,
+                                     const QModelIndex& index) const
 {
 	QTreeView::drawBranches(painter, rect, index);
 	const bool reverse = isRightToLeft();
@@ -674,7 +696,6 @@ void QAdvancedTreeView::drawBranches(QPainter *painter, const QRect &rect,
 	int level = index.column();
 
 	QRect primitive(reverse ? rect.left() : rect.right() + 1, rect.top(), indent, rect.height());
-	int branchAreaLeft = rect.left();
 
 	QModelIndex parent = index.parent();
 	QModelIndex current = parent;
@@ -690,13 +711,14 @@ void QAdvancedTreeView::drawBranches(QPainter *painter, const QRect &rect,
 	if (verticalScrollMode() == QAbstractItemView::ScrollPerPixel)
 		painter->setBrushOrigin(QPoint(0, verticalOffset()));
 
-	if (alternatingRowColors()) 
+	if (alternatingRowColors())
 	{
-		if (currentIndex().row() & 1) 
+		if (currentIndex().row() & 1)
 		{
 			opt.features |= QStyleOptionViewItem::Alternate;
 		}
-		else {
+		else
+		{
 			opt.features &= ~QStyleOptionViewItem::Alternate;
 		}
 	}
@@ -704,8 +726,7 @@ void QAdvancedTreeView::drawBranches(QPainter *painter, const QRect &rect,
 	if (selectionModel()->isSelected(index))
 		extraFlags |= QStyle::State_Selected;
 
-
-	if (level >= outer) 
+	if (level >= outer)
 	{
 		// start with the innermost branch
 		primitive.moveLeft(reverse ? primitive.left() : primitive.left() - indent);
@@ -719,9 +740,9 @@ void QAdvancedTreeView::drawBranches(QPainter *painter, const QRect &rect,
 		bool moreSiblings = current.sibling(current.row(), current.column()).isValid(); //Makes sense with own row/coll?
 
 		opt.state = QStyle::State_Item | extraFlags
-			| (moreSiblings ? QStyle::State_Sibling : QStyle::State_None)
-			| (children ? QStyle::State_Children : QStyle::State_None)
-			| (expanded ? QStyle::State_Open : QStyle::State_None);
+		            | (moreSiblings ? QStyle::State_Sibling : QStyle::State_None)
+		            | (children ? QStyle::State_Children : QStyle::State_None)
+		            | (expanded ? QStyle::State_Open : QStyle::State_None);
 		if (m_hoveredOver.isValid() && index.row() == m_hoveredOver.row() && index.parent() == m_hoveredOver.parent())
 		{
 			opt.state |= QStyle::State_MouseOver;
@@ -733,17 +754,16 @@ void QAdvancedTreeView::drawBranches(QPainter *painter, const QRect &rect,
 	painter->setBrushOrigin(oldBO);
 }
 
-
-void QAdvancedTreeView::drawBranchIndicator(QPainter *painter, const QStyleOptionViewItem *opt) const
+void QAdvancedTreeView::drawBranchIndicator(QPainter* painter, const QStyleOptionViewItem* opt) const
 {
 	//Make sure the icon is placed in the middle
 	QRect rect = opt->rect;
-	int heightDiff = (rect.height()) /2;
+	int heightDiff = (rect.height()) / 2;
 
 	rect.moveCenter(QPoint(rect.center().x(), rect.center().y() + heightDiff / 2));
 	rect.setHeight(m_BranchIconSize);
 	rect.setWidth(m_BranchIconSize);
-	
+
 	CryIcon icon;
 	if (opt->state & QStyle::State_Children)
 	{
@@ -753,7 +773,6 @@ void QAdvancedTreeView::drawBranchIndicator(QPainter *painter, const QStyleOptio
 			icon = CryIcon("icons:General/Pointer_Down_Expanded.ico");
 		}
 	}
-
 	else
 	{
 		//Don't draw an Icon
@@ -784,6 +803,38 @@ void QAdvancedTreeView::mousePressEvent(QMouseEvent* pEvent)
 	setAutoScroll(false);
 	QTreeView::mousePressEvent(pEvent);
 	setAutoScroll(true);
+}
+
+void QAdvancedTreeView::dragLeaveEvent(QDragLeaveEvent* pEvent)
+{
+	ClearDragHandlerData();
+
+	QTreeView::dragLeaveEvent(pEvent);
+}
+
+void QAdvancedTreeView::dragMoveEvent(QDragMoveEvent* pEvent)
+{
+	QModelIndex index = indexAt(pEvent->pos());
+	if (index.isValid() && m_hoveredIndex != index)
+	{
+		m_hoveredIndex = index;
+		m_pExpandOnDragTimer->start();
+	}
+
+	QTreeView::dragMoveEvent(pEvent);
+}
+
+void QAdvancedTreeView::dropEvent(QDropEvent* pEvent)
+{
+	ClearDragHandlerData();
+
+	QTreeView::dropEvent(pEvent);
+}
+
+void QAdvancedTreeView::ClearDragHandlerData()
+{
+	m_pExpandOnDragTimer->stop();
+	m_hoveredIndex = QModelIndex();
 }
 
 QModelIndex QAdvancedTreeView::ToOriginal(const QModelIndex& index, QAbstractItemModel* viewModel)
@@ -820,23 +871,26 @@ QModelIndex QAdvancedTreeView::FromOriginal(const QModelIndex& index, QAbstractI
 	return localIndex;
 }
 
-bool QAdvancedTreeView::viewportEvent(QEvent *event)
+bool QAdvancedTreeView::viewportEvent(QEvent* event)
 {
-	switch (event->type()) {
+	switch (event->type())
+	{
 	case QEvent::HoverEnter:
 	case QEvent::HoverLeave:
-	case QEvent::HoverMove: {
-		QHoverEvent *he = static_cast<QHoverEvent*>(event);
-		QPersistentModelIndex oldHoveredOver = m_hoveredOver;
-		m_hoveredOver = indexAt(he->pos());
-		if (m_hoveredOver != oldHoveredOver || m_hoveredOver.row() != oldHoveredOver.row()) 
+	case QEvent::HoverMove:
 		{
-			QRect rect = visualRect(oldHoveredOver);
-			rect.setX(0);
-			rect.setWidth(viewport()->width());
-			viewport()->update(rect);
+			QHoverEvent* he = static_cast<QHoverEvent*>(event);
+			QPersistentModelIndex oldHoveredOver = m_hoveredOver;
+			m_hoveredOver = indexAt(he->pos());
+			if (m_hoveredOver != oldHoveredOver || m_hoveredOver.row() != oldHoveredOver.row())
+			{
+				QRect rect = visualRect(oldHoveredOver);
+				rect.setX(0);
+				rect.setWidth(viewport()->width());
+				viewport()->update(rect);
+			}
+			break;
 		}
-		break; }
 	default:
 		break;
 	}

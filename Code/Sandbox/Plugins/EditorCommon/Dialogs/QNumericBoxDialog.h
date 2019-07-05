@@ -37,5 +37,3 @@ private:
 	QNumericBox* m_numBox{ nullptr };
 	std::function<bool(float num)> m_check;
 };
-
-

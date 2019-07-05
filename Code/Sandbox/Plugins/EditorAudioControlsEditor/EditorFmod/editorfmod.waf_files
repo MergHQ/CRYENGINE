@@ -1,13 +1,49 @@
 {
-	"EditorFmod_uber_0.cpp":
-	{
-		"Root":
-		[
-			"AudioSystemEditor_fmod.cpp",
-			"AudioSystemEditor_fmod.h",
-			"main.cpp",
-			"StdAfx.h",
-			"StdAfx.cpp"
-		]
-	}
+    "EditorFmod_uber_0.cpp": {
+        "Connections": [
+            "BankConnection.cpp",
+            "BankConnection.h",
+            "BaseConnection.cpp",
+            "BaseConnection.h",
+            "EventConnection.cpp",
+            "EventConnection.h",
+            "KeyConnection.cpp",
+            "KeyConnection.h",
+            "ParameterConnection.cpp",
+            "ParameterConnection.h",
+            "ParameterToStateConnection.cpp",
+            "ParameterToStateConnection.h",
+            "SnapshotConnection.cpp",
+            "SnapshotConnection.h"
+        ],
+        "DataPanel": [
+            "DataPanel.cpp",
+            "DataPanel.h",
+            "FilterProxyModel.cpp",
+            "FilterProxyModel.h",
+            "ItemModel.cpp",
+            "ItemModel.h",
+            "TreeView.cpp",
+            "TreeView.h"
+        ],
+        "Root": [
+            "Common.h",
+            "Impl.cpp",
+            "Impl.h",
+            "Item.cpp",
+            "Item.h",
+            "Utils.cpp",
+            "Utils.h",
+            "main.cpp",
+            "ProjectLoader.cpp",
+            "ProjectLoader.h",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    },
+    "NoUberFile": {
+        "Resources": [
+            "EditorFmodUI.qrc"
+        ]
+    }
 }

@@ -5,6 +5,7 @@
 
 #include "SchematycUtils.h"
 
+#include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <AssetSystem/EditableAsset.h>
 #include <Controls/QuestionDialog.h>
@@ -74,29 +75,27 @@ public:
 	}
 };
 
-bool CEntityAssetType::OnCreate(CEditableAsset& editAsset, const void* /*pTypeSpecificParameter*/) const
+bool CEntityAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
-	const string szFilePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
-	const QString basePath = szFilePath.c_str();
-	const QString assetName = basePath.section('/', -1);
+	const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+	const string assetName = asset.GetName();
 
 	CBaseClassDialog baseClassDialog;
 	const Schematyc::SElementId baseClassId = baseClassDialog.GetResult();
 	if (baseClassId.guid != CryGUID::Null() && baseClassId.domain != Schematyc::EDomain::Unknown)
 	{
 		// TODO: Actually the backend should ensure that the name is valid!
-		Schematyc::CStackString uniqueAssetName = QtUtil::ToString(assetName).c_str();
+		Schematyc::CStackString uniqueAssetName(assetName.c_str());
 		MakeScriptElementNameUnique(uniqueAssetName);
 		// ~TODO
 
 		Schematyc::IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
-		Schematyc::IScriptClass* pClass = scriptRegistry.AddClass(uniqueAssetName.c_str(), baseClassId, szFilePath.c_str());
+		Schematyc::IScriptClass* pClass = scriptRegistry.AddClass(uniqueAssetName.c_str(), baseClassId, PathUtil::RemoveExtension(dataFilePath).c_str());
 		if (pClass)
 		{
 			if (Schematyc::IScript* pScript = pClass->GetScript())
 			{
-				const QString assetFilePath = basePath + "." + GetFileExtension();
-				editAsset.AddFile(QtUtil::ToString(assetFilePath).c_str());
+				asset.AddFile(dataFilePath.c_str());
 
 				scriptRegistry.SaveScript(*pScript);
 				gEnv->pSchematyc->GetCompiler().CompileDependencies(pScript->GetRoot()->GetGUID());
@@ -140,19 +139,13 @@ bool CEntityAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 	return false;
 }
 
-bool CEntityAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+void CEntityAssetType::PreDeleteAssetFiles(const CAsset& asset) const
 {
-	if (CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted))
+	Schematyc::IScript* pScript = GetScript(asset);
+	if (pScript)
 	{
-		Schematyc::IScript* pScript = GetScript(asset);
-		if (pScript)
-		{
-			gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
-		}
-
-		return true;
+		gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
 	}
-	return false;
 }
 
 string CEntityAssetType::GetObjectFilePath(const CAsset* pAsset) const
@@ -195,4 +188,3 @@ Schematyc::IScript* CEntityAssetType::GetScript(const CAsset& asset) const
 }
 
 }
-

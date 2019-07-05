@@ -213,4 +213,3 @@ public:
 		m_columns.remove(proxyColumn, columnCount);
 	}
 };
-

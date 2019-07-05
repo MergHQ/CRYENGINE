@@ -225,15 +225,15 @@ struct IHmdController
 {
 	typedef uint32 TLightColor;
 
-	enum ECaps
+	enum ECaps : uint32
 	{
-		eCaps_Buttons       = BIT(0),
-		eCaps_Tracking      = BIT(1),
-		eCaps_Sticks        = BIT(2),
-		eCaps_Capacitors    = BIT(3),
-		eCaps_Gestures      = BIT(4),
-		eCaps_ForceFeedback = BIT(5),
-		eCaps_Color         = BIT(6),
+		eCaps_Buttons       = BIT32(0),
+		eCaps_Tracking      = BIT32(1),
+		eCaps_Sticks        = BIT32(2),
+		eCaps_Capacitors    = BIT32(3),
+		eCaps_Gestures      = BIT32(4),
+		eCaps_ForceFeedback = BIT32(5),
+		eCaps_Color         = BIT32(6),
 	};
 
 	virtual bool IsConnected(EHmdController id) const = 0;

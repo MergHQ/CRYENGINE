@@ -6,6 +6,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorPortAudio_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"Common.cpp"
 		"Common.h"
 		"Impl.cpp"
 		"Impl.h"
@@ -16,6 +17,8 @@ add_sources("EditorPortAudio_uber_0.cpp"
 		"ProjectLoader.h"
 		"StdAfx.cpp"
 		"StdAfx.h"
+		"Utils.cpp"
+		"Utils.h"
 	SOURCE_GROUP "Connections"
 		"EventConnection.cpp"
 		"EventConnection.h"
@@ -39,6 +42,6 @@ end_sources()
 #END-FILE-LIST
 
 CryEditorPlugin(EditorCryAudioImplPortAudio SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
-target_include_directories(${THIS_PROJECT} PRIVATE ../common "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
-target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DPLUGIN_EXPORTS -DUSE_BACKWARDS_COMPATIBILITY)
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
+target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DACE_PLUGIN_EXPORTS -DUSE_BACKWARDS_COMPATIBILITY)
 

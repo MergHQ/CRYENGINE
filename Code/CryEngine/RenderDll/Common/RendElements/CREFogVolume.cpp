@@ -122,9 +122,9 @@ CREFogVolume::CREFogVolume()
 	, m_reserved(0)
 	, m_localAABB(Vec3(-1, -1, -1), Vec3(1, 1, 1))
 	, m_matWSInv()
-	, m_fogColor(1, 1, 1, 1)
 	, m_globalDensity(1)
 	, m_softEdgesLerp(1, 0)
+	, m_fogColor(1, 1, 1, 1)
 	, m_heightFallOffDirScaled(0, 0, 1)
 	, m_heightFallOffBasePoint(0, 0, 0)
 	, m_eyePosInWS(0, 0, 0)
@@ -158,7 +158,7 @@ CREFogVolume::~CREFogVolume()
 	}
 }
 
-bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pCompiledObject)
 	{
@@ -168,8 +168,7 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 	auto& compiledObj = *(m_pCompiledObject);
 	compiledObj.m_bValid = false;
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	auto* pForwardStage = rd->GetGraphicsPipeline().GetSceneForwardStage();
+	auto* pForwardStage = pRenderView->GetGraphicsPipeline()->GetStage<CSceneForwardStage>();
 
 	if (!pObj
 	    || !pObj->m_pCurrMaterial
@@ -193,14 +192,15 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 
 	// create PSOs which match to specific material.
 	SGraphicsPipelineStateDescription psoDescription(
-	  pObj,
-	  this,
-	  shaderItem,
-	  TTYPE_GENERAL, // set as default, this may be overwritten in CreatePipelineStates().
-	  vertexFormat,
-	  0 /*geomInfo.CalcStreamMask()*/,
-	  eptTriangleList
-	  );
+		pObj,
+		objFlags,
+		elmFlags,
+		shaderItem,
+		TTYPE_GENERAL, // set as default, this may be overwritten in CreatePipelineStates().
+		vertexFormat,
+		VSM_NONE /*geomInfo.CalcStreamMask()*/,
+		eptTriangleList
+		);
 
 	compiledObj.m_bViewerInsideVolume = m_viewerInsideVolume ? true : false;
 	compiledObj.m_bNearCutoff = m_nearCutoff ? true : false;
@@ -228,15 +228,15 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 		if (!compiledObj.m_pMaterialResourceSet)
 		{
 			CDeviceResourceSetDesc materialResources;
-			for (const auto& res : rd->GetGraphicsPipeline().GetDefaultMaterialBindPoints().GetResources())
+			for (const auto& res : CSceneRenderPass::GetDefaultMaterialBindPoints().GetResources())
 			{
 				const SResourceBindPoint& bindPoint = res.first;
-				const SResourceBinding&   binding   = res.second;
+				const SResourceBinding& binding = res.second;
 
 				switch (binding.type)
 				{
 				case SResourceBinding::EResourceType::ConstantBuffer:
-					materialResources.SetConstantBuffer(bindPoint.slotNumber, rd->m_DevBufMan.GetNullConstantBuffer(), bindPoint.stages);
+					materialResources.SetConstantBuffer(bindPoint.slotNumber, gcpRendD3D->m_DevBufMan.GetNullConstantBuffer(), bindPoint.stages);
 					break;
 				case SResourceBinding::EResourceType::Texture:
 					materialResources.SetTexture(bindPoint.slotNumber, CRendererResources::s_ptexBlack, binding.view, bindPoint.stages);
@@ -252,7 +252,7 @@ bool CREFogVolume::Compile(CRenderObject* pObj,CRenderView *pRenderView, bool up
 
 		if (!compiledObj.m_pPerDrawRS)
 		{
-			compiledObj.m_pPerDrawRS = rd->GetGraphicsPipeline().GetDefaulDrawExtraResourceSet();
+			compiledObj.m_pPerDrawRS = CSceneRenderPass::GetDefaulDrawExtraResourceSet();
 		}
 	}
 
@@ -277,7 +277,6 @@ void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphics
 	}
 
 	auto& RESTRICT_REFERENCE compiledObj = *m_pCompiledObject;
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 #if defined(ENABLE_PROFILING_CODE)
 	if (!compiledObj.m_bValid)
@@ -348,6 +347,7 @@ void CREFogVolume::UpdatePerDrawCB(render_element::fogvolume::SCompiledFogVolume
 	if (!compiledObj.m_pPerDrawCB)
 	{
 		compiledObj.m_pPerDrawCB = rd->m_DevBufMan.CreateConstantBuffer(sizeof(render_element::fogvolume::SPerDrawConstantBuffer));
+		if (compiledObj.m_pPerDrawCB) compiledObj.m_pPerDrawCB->SetDebugName("FogVolume Per-Draw CB");
 	}
 
 	if (!compiledObj.m_pPerDrawCB)
@@ -357,7 +357,7 @@ void CREFogVolume::UpdatePerDrawCB(render_element::fogvolume::SCompiledFogVolume
 
 	CryStackAllocWithSize(render_element::fogvolume::SPerDrawConstantBuffer, cb, CDeviceBufferManager::AlignBufferSizeForStreaming);
 
-	cb->objMatrix = renderObj.GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
+	cb->objMatrix = renderObj.GetMatrix();
 	cb->invObjSpaceMatrix = m_matWSInv;
 	cb->globalDensity = Vec4(m_globalDensity, 1.44269502f * m_globalDensity, 0, 0);
 	cb->densityOffset = Vec4(m_densityOffset, m_densityOffset, m_densityOffset, m_densityOffset);

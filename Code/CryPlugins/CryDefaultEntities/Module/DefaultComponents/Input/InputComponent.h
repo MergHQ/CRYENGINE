@@ -119,7 +119,7 @@ namespace Cry
 				{
 					if (m_actions.size() > 0)
 					{
-						gEnv->pGameFramework->GetIActionMapManager()->AddExtraActionListener(this, m_szName);
+						gEnv->pGameFramework->GetIActionMapManager()->AddExtraActionListener(this);
 					}
 				}
 
@@ -127,7 +127,7 @@ namespace Cry
 				{
 					if (m_actions.size() > 0)
 					{
-						gEnv->pGameFramework->GetIActionMapManager()->RemoveExtraActionListener(this, m_szName);
+						gEnv->pGameFramework->GetIActionMapManager()->RemoveExtraActionListener(this);
 					}
 				}
 
@@ -145,7 +145,7 @@ namespace Cry
 
 					if (m_actions.size() == 0)
 					{
-						gEnv->pGameFramework->GetIActionMapManager()->AddExtraActionListener(this, m_szName);
+						gEnv->pGameFramework->GetIActionMapManager()->AddExtraActionListener(this);
 					}
 
 					m_actions.emplace_back(SGroup::SAction{ szName, callback });

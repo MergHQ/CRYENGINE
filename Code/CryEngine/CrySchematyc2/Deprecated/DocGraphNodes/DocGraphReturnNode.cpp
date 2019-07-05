@@ -40,14 +40,13 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphReturnNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::EndSequence | EScriptGraphPortFlags::Execute);
 
-		const IScriptFile& file = CDocGraphNodeBase::GetFile();
-		const IDocGraph&   graph = CDocGraphNodeBase::GetGraph();
-		const size_t       graphOutputCount = graph.GetOutputCount();
+		const IDocGraph& graph = CDocGraphNodeBase::GetGraph();
+		const size_t graphOutputCount = graph.GetOutputCount();
 		for(size_t graphOutputIdx = 0; graphOutputIdx < graphOutputCount; ++ graphOutputIdx)
 		{
 			IAnyConstPtr pGraphOutputValue = graph.GetOutputValue(graphOutputIdx);
@@ -61,7 +60,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphReturnNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Serialize(archive);
 
@@ -152,11 +151,11 @@ namespace Schematyc2
 				const size_t stackPos = compiler.FindInputOnStack(*this, EInput::FirstParam + outputIdx);
 				if(stackPos != INVALID_INDEX)
 				{
-					compiler.Copy(stackPos, pos, *pOutputValue);
+					compiler.Copy(stackPos, pos, *pOutputValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::FirstParam + outputIdx));
 				}
 				else
 				{
-					compiler.Set(pos, *pOutputValue);
+					compiler.Set(pos, *pOutputValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::FirstParam + outputIdx));
 				}
 
 				TVariantVector              variants;
@@ -167,6 +166,6 @@ namespace Schematyc2
 			}
 		}
 
-		compiler.Return();
+		compiler.Return(CDocGraphNodeBase::GetGUID());
 	}
 }

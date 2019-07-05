@@ -9,10 +9,13 @@
 #include "AssetSystem/Browser/AssetBrowserDialog.h"
 
 #include "DragDrop.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
+#include <QCloseEvent>
+#include <QDragEnterEvent>
+#include <QFileInfo>
 #include <QToolBar>
-#include <QEvent.h>
+#include <QVBoxLayout>
 
 CMaterialPreviewWidget::CMaterialPreviewWidget(CMaterialEditor* pMatEd)
 	: m_pMatEd(pMatEd)
@@ -50,11 +53,6 @@ CMaterialPreviewWidget::CMaterialPreviewWidget(CMaterialEditor* pMatEd)
 	connect(this, &CMaterialPreviewWidget::customContextMenuRequested, this, &CMaterialPreviewWidget::OnContextMenu);
 
 	setAcceptDrops(true);
-}
-
-CMaterialPreviewWidget::~CMaterialPreviewWidget()
-{
-	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
 }
 
 void CMaterialPreviewWidget::OnContextMenu()
@@ -227,3 +225,8 @@ void CMaterialPreviewWidget::dropEvent(QDropEvent* pEvent)
 	}
 }
 
+void CMaterialPreviewWidget::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
+}

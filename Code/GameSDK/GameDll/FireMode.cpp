@@ -58,8 +58,8 @@ CFireMode::~CFireMode()
 
 void CFireMode::InitFireMode( IWeapon* pWeapon, const SParentFireModeParams* pParams)
 {
-	CRY_ASSERT_MESSAGE(pParams, "Fire Mode Params NULL! Have you set up the weapon xml correctly?");
-	CRY_ASSERT_MESSAGE(pParams->pBaseFireMode, "Fire Mode Base Params NULL!");
+	CRY_ASSERT(pParams, "Fire Mode Params NULL! Have you set up the weapon xml correctly?");
+	CRY_ASSERT(pParams->pBaseFireMode, "Fire Mode Base Params NULL!");
 
 	m_pWeapon = static_cast<CWeapon *>(pWeapon);
 	m_fireParams = pParams->pBaseFireMode;

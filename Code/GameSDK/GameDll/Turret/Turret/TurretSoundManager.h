@@ -101,8 +101,8 @@ public:
 	void SetSoundParam( const size_t soundId, const char* const paramName, const float value )
 	{
 		assert( soundId < eTS_SoundCount );
-		const STurretSoundInfo& soundInfo = m_sounds[ soundId ];
-		/*_smart_ptr< ISound > pSound = m_pIEntityAudioComponent->GetSound( soundInfo.soundId );
+		/*const STurretSoundInfo& soundInfo = m_sounds[ soundId ];
+		_smart_ptr< ISound > pSound = m_pIEntityAudioComponent->GetSound( soundInfo.soundId );
 		if ( pSound )
 		{
 			const bool logError = false;
@@ -174,6 +174,11 @@ public:
 	~CTurretSoundManager()
 	{
 		ReleaseResources();
+	}
+
+	Cry::Entity::EventFlags GetEventMask() const
+	{
+		return ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE | ENTITY_EVENT_DEACTIVATED | ENTITY_EVENT_ACTIVATED;
 	}
 
 	void ProcessEvent( const SEntityEvent& event )

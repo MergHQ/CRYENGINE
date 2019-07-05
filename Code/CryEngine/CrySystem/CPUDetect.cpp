@@ -11,6 +11,7 @@
 #include "StdAfx.h"
 #include "System.h"
 #include "AutoDetectSpec.h"
+#include "CPUDetect.h"
 
 #if CRY_PLATFORM_WINDOWS
 	#include <intrin.h>
@@ -38,7 +39,7 @@
 #define MMX_FLAG    0x800000
 #define ISSE_FLAG   0x2000000
 
-#ifdef __GNUC__
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	#define cpuid(op, eax, ebx, ecx, edx) __asm__("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (op) : "cc");
 #endif
 
@@ -102,24 +103,7 @@ struct SAutoMaxPriority
 
 bool HasCPUID()
 {
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT)
-	_asm
-	{
-		pushfd                // save EFLAGS
-		pop eax               // store EFLAGS in EAX
-		mov ebx, eax          // save in EBX for later testing
-		xor eax, 00200000h    // toggle bit 21
-		push eax              // push to stack
-		popfd                 // save changed EAX to EFLAGS
-		pushfd                // push EFLAGS to TOS
-		pop eax               // store EFLAGS in EAX
-		cmp eax, ebx          // see if bit 21 has changed
-		mov eax, 0            // clear eax to return "false"
-		jz QUIT               // if no change, no CPUID
-		mov eax, 1            // set eax to return "true"
-QUIT:
-	}
-#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_MAC || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_MAC || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 	// we can safely assume CPUID exists on these 64-bit platforms
 	return true;
 #else
@@ -172,14 +156,14 @@ bool IsIntel()
 
 bool Has64bitExtension()
 {
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT) || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 	int CPUInfo[4];
 	__cpuid(CPUInfo, 0x80000001);   // Argument "Processor Signature and AMD Features"
 	if (CPUInfo[3] & 0x20000000)    // Bit 29 in edx is set if 64-bit address extension is supported
 		return true;
 	else
 		return false;
-#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) || CRY_PLATFORM_MAC
+#elif CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_MAC
 	return true;
 #else
 	return false;
@@ -378,11 +362,6 @@ static unsigned long __stdcall DetectProcessor(void* arg)
 	unsigned long cache_ebx = 0;
 	unsigned long cache_ecx = 0;
 	unsigned long cache_edx = 0;
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_X86
-	unsigned long features_ebx = 0;
-	unsigned long features_ecx = 0;
-	unsigned char cyrix_flag = 0;
-	#endif
 	unsigned long features_edx = 0;
 	unsigned long serial_number[3];
 	unsigned char cpu_type;
@@ -449,253 +428,12 @@ static unsigned long __stdcall DetectProcessor(void* arg)
 		}
 	}
 
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_X86
-	// *INDENT-OFF* - do not attempt to format inline assembly!
-	unsigned char  v86_flag;
-	unsigned short fp_status;
-	__asm
-	{
-		/*
-		 * 8086 processor check
-		 * Bits 12-15 of the FLAGS register are always set on the
-		 * 8086 processor.
-		 */
-		pushf                /* push original FLAGS */
-		pop ax               /* get original FLAGS */
-		mov cx, ax           /* save original FLAGS */
-		and ax, 0fffh        /* clear bits 12-15 in FLAGS */
-		push ax              /* save new FLAGS value on stack */
-		popf                 /* replace current FLAGS value */
-		pushf                /* get new FLAGS */
-		pop ax               /* store new FLAGS in AX */
-		and ax, 0f000h       /* if bits 12-15 are set, then */
-		cmp ax, 0f000h       /* processor is an 8086/8088 */
-		mov cpu_type, 0      /* turn on 8086/8088 flag */
-		jne check_80286      /* go check for 80286 */
-		push sp              /* double check with push sp */
-		pop dx               /* if value pushed was different */
-		cmp dx, sp           /* means it's really an 8086 */
-		jne end_cpu_type     /* jump if processor is 8086/8088 */
-		mov cpu_type, 010h   /* indicate unknown processor */
-		jmp end_cpu_type
-
-		/*
-		 * 286 processor check
-		 * Bits 12-15 of the FLAGS register are always clear on the
-		 * Intel 286 processor in real-address mode.
-		 */
-check_80286:
-		smsw ax              /* save machine status word */
-		and ax, 1            /* isolate PE bit of MSW */
-		mov v86_flag, al     /* save PE bit to indicate V86 */
-		or cx, 0f000h        /* try to set bits 12-15 */
-		push cx              /* save new FLAGS value on stack */
-		popf                 /* replace current FLAGS value */
-		pushf                /* get new FLAGS */
-		pop ax               /* store new FLAGS in AX */
-		and ax, 0f000h       /* if bits 12-15 are clear */
-		mov cpu_type, 2      /* processor=80286, turn on 80286 flag */
-		jz end_cpu_type      /* jump if processor is 80286 */
-
-		/*
-		 * 386 processor check
-		 * The AC bit, bit #18, is a new bit introduced in the EFLAGS
-		 * register on the 486 processor to generate alignment
-		 * faults.
-		 * This bit cannot be set on the 386 processor.
-		 */
-		mov cpu_type, 3      /* turn on 80386 processor flag */
-		pushfd               /* push original EFLAGS */
-		pop eax              /* get original EFLAGS */
-		mov ebx, eax         /* save original EFLAGS */
-		xor eax, 040000h     /* flip AC bit in EFLAGS */
-		push eax             /* save new EFLAGS value on stack */
-		popfd                /* replace current EFLAGS value */
-		pushfd               /* get new EFLAGS */
-		pop eax              /* store new EFLAGS in EAX */
-		cmp eax, ebx         /* can't toggle AC bit, processor=80386 */
-		jz end_cpu_type      /* jump if 80386 processor */
-		push ebx
-		popfd                /* restore AC bit in EFLAGS */
-
-		/*
-		 * Checking for ability to set/clear ID flag (Bit 21) in EFLAGS
-		 * which indicates the presence of a processor with the CPUID
-		 * instruction.
-		 */
-		mov cpu_type, 4      /* turn on 80486 processor flag */
-		pushfd               /* save EFLAGS to stack */
-		pop eax              /* store EFLAGS in EAX */
-		mov ebx, eax         /* save in EBX for testing later */
-		xor eax, 0200000h    /* flip bit 21 in EFLAGS */
-		push eax             /* save new EFLAGS value on stack */
-		popfd                /* replace current EFLAGS value */
-		pushfd               /* get new EFLAGS */
-		pop eax              /* store new EFLAGS in EAX */
-		cmp eax, ebx         /* see if bit 21 has changed */
-		jne yes_CPUID        /* CPUID present */
-		/* Cyrix processor check */
-		xor ax, ax           /* clear ax */
-		sahf                 /* clear flags, bit 1 is always 1 in flags */
-		mov ax, 5            /* move 5 into the dividend */
-		mov bx, 2            /* move 2 into the divisor */
-		div bl               /* do an operation that does not change flags */
-		lahf                 /* get flags */
-		cmp ah, 2            /* check for change in flags */
-		jne not_cyrix        /* flags changed, not a Cyrix CPU */
-		mov cyrix_flag, 1
-		/* TODO: identify cyrix processor */
-not_cyrix:
-		jmp end_cpu_type
-yes_CPUID:
-		push ebx
-		popfd
-		mov CPUID_flag, 1    /* flag indicating use of CPUID instruction */
-
-		/*
-		 * Execute CPUID instruction to determine vendor, family,
-		 * model, stepping and features.
-		 */
-		push ebx             /* save registers */
-		push esi
-		push edi
-		xor eax, eax         /* set up for CPUID instruction */
-		cpuid                /* get and save vendor ID */
-		mov byte ptr[vendor], bl
-		mov byte ptr[vendor + 1], bh
-		ror ebx, 16
-		mov byte ptr[vendor + 2], bl
-		mov byte ptr[vendor + 3], bh
-		mov byte ptr[vendor + 4], dl
-		mov byte ptr[vendor + 5], dh
-		ror edx, 16
-		mov byte ptr[vendor + 6], dl
-		mov byte ptr[vendor + 7], dh
-		mov byte ptr[vendor + 8], cl
-		mov byte ptr[vendor + 9], ch
-		ror ecx, 16
-		mov byte ptr[vendor + 10], cl
-		mov byte ptr[vendor + 11], ch
-		mov byte ptr[vendor + 12], 0
-		cmp eax, 1           /* make sure 1 is valid input for CPUID */
-		jl end_CPUID_type    /* if not, jump to end */
-		mov eax, 1
-		cpuid                /* get family/model/stepping/features */
-		mov signature, eax
-		mov features_ebx, ebx
-		mov features_ecx, ecx
-		mov features_edx, edx
-		shr eax, 8           /* isolate family */
-		and eax, 0fh
-		mov cpu_type, al     /* set cpu_type with family */
-
-		/*
-		 * Execute CPUID instruction to determine the cache descriptor
-		 * information.
-		 */
-		xor eax, eax         /* set up to check the EAX value */
-		cpuid
-		cmp ax, 2            /* are cache descriptors supported? */
-		jl end_CPUID_type
-		mov eax, 2           /* set up to read cache descriptor */
-		cpuid
-		cmp al, 1            /* is one iteration enough to obtain */
-		jne end_CPUID_type   /* cache information? */
-
-		/* this code supports one iteration only. */
-		mov cache_eax, eax   /* store cache information */
-		mov cache_ebx, ebx   /* NOTE: for future processors, CPUID */
-		mov cache_ecx, ecx   /* instruction may need to be run more */
-		mov cache_edx, edx   /* than once to get complete cache information */
-end_CPUID_type:
-		pop edi              /* restore registers */
-		pop esi
-		pop ebx
-
-		/* check for 3DNow! */
-		mov eax, 080000000h  /* query for extended functions */
-		cpuid                /* get extended function limit */
-		cmp eax, 080000001h  /* functions up to 80000001h must be present */
-		jb no_extended       /* 80000001h is not available */
-		mov eax, 080000001h  /* setup extended function 1 */
-		cpuid                /* call the function */
-		test edx, 080000000h /* test bit 31 */
-		jz end_3dnow
-		mov amd3d_flag, 1    /* 3DNow! supported */
-end_3dnow:
-
-		/* get CPU name */
-		mov eax, 080000000h
-		cpuid
-		cmp eax, 080000004h
-		jb end_name          /* functions up to 80000004h must be present */
-		mov name_flag, 1
-		mov eax, 080000002h
-		cpuid
-		mov dword ptr[name], eax
-		mov dword ptr[name + 4], ebx
-		mov dword ptr[name + 8], ecx
-		mov dword ptr[name + 12], edx
-		mov eax, 080000003h
-		cpuid
-		mov dword ptr[name + 16], eax
-		mov dword ptr[name + 20], ebx
-		mov dword ptr[name + 24], ecx
-		mov dword ptr[name + 28], edx
-		mov eax, 080000004h
-		cpuid
-		mov dword ptr[name + 32], eax
-		mov dword ptr[name + 36], ebx
-		mov dword ptr[name + 40], ecx
-		mov dword ptr[name + 44], edx
-end_name:
-
-no_extended:
-
-end_cpu_type:
-
-		/* detect FPU */
-		fninit                      /* reset FP status word */
-		mov fp_status, 05a5ah       /* initialize temp word to non-zero */
-		fnstsw fp_status            /* save FP status word */
-		mov ax, fp_status           /* check FP status word */
-		cmp al, 0                   /* was correct status written */
-		mov fpu_type, 0             /* no FPU present */
-		jne end_fpu_type
-		/* check control word */
-		fnstcw fp_status            /* save FP control word */
-		mov ax, fp_status           /* check FP control word */
-		and ax, 103fh               /* selected parts to examine */
-		cmp ax, 3fh                 /* was control word correct */
-		mov fpu_type, 0
-		jne end_fpu_type            /* incorrect control word, no FPU */
-		mov fpu_type, 1
-		/* 80287/80387 check for the Intel386 processor */
-		cmp cpu_type, 3
-		jne end_fpu_type
-		fld1                        /* must use default control from FNINIT */
-		fldz                        /* form infinity */
-		fdiv                        /* 8087/Intel287 NDP say +inf = -inf */
-		fld st                      /* form negative infinity */
-		fchs                        /* Intel387 NDP says +inf <> -inf */
-		fcompp                      /* see if they are the same */
-		fstsw fp_status             /* look at status from FCOMPP */
-		mov ax, fp_status
-		mov fpu_type, 2             /* store Intel287 NDP for FPU type */
-		sahf                        /* see if infinities matched */
-		jz end_fpu_type             /* jump if 8087 or Intel287 is present */
-		mov fpu_type, 3             /* store Intel387 NDP for FPU type */
-end_fpu_type:
-	}
-	// *INDENT-ON* - do not attempt to format inline assembly!
-	#else // CRY_PLATFORM_WINDOWS && CRY_PLATFORM_X86
 	cpu_type = 0xF;
 	fpu_type = 3;
-	signature = 0;
-	#endif // CRY_PLATFORM_WINDOWS && CRY_PLATFORM_X86
+
 	p->mFamily = cpu_type;
-	p->mModel = (signature >> 4) & 0xf;
-	p->mStepping = signature & 0xf;
+	p->mModel = 0;
+	p->mStepping = 0;
 
 	p->mFeatures = 0;
 
@@ -706,21 +444,7 @@ end_fpu_type:
 
 	if (features_edx & SERIAL_FLAG)
 	{
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_X86
-		/* read serial number */
-		__asm
-		{
-			mov eax, 1
-			cpuid
-			mov serial_number[2], eax /* top 32 bits are the processor signature bits */
-			mov eax, 3
-			cpuid
-			mov serial_number[1], edx
-			mov serial_number[0], ecx
-		}
-	#else
 		serial_number[0] = serial_number[1] = serial_number[2] = 0;
-	#endif
 
 		/* format number */
 		serial = p->mSerialNumber;
@@ -1233,7 +957,7 @@ static void* DetectProcessorThreadProc(void* pData)
 #endif
 
 /*
-   #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+   #if CRY_PLATFORM_WINDOWS
    typedef BOOL (WINAPI *LPFN_GLPI)( PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD);
 
    int GetPhysicalCpuCount()
@@ -1304,12 +1028,12 @@ static void* DetectProcessorThreadProc(void* pData)
 
    return procCoreCount;
    }
-   #else // CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+   #else // CRY_PLATFORM_WINDOWS
    int GetPhysicalCpuCount()
    {
    return 1;
    }
-   #endif // CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+   #endif // CRY_PLATFORM_WINDOWS
  */
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
@@ -1370,7 +1094,6 @@ void CCpuFeatures::Detect(void)
 	CryLogAlways("");
 
 	DWORD_PTR process_affinity_mask;
-	uint32 thread_processor_mask = 1;
 	process_affinity_mask = 1;
 
 	/* get the system info to derive the number of processors within the system. */
@@ -1445,6 +1168,11 @@ void CCpuFeatures::Detect(void)
 			if (strncmp("processor", buffer, (index = strlen("processor"))) == 0)
 			{
 				++nCpu;
+				if (nCpu >= MAX_CPU)
+				{
+					assert(0);
+					break;
+				}
 			}
 			else if (strncmp("vendor_id", buffer, (index = strlen("vendor_id"))) == 0)
 			{

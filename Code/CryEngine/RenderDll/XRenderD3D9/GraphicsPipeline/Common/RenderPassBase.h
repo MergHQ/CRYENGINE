@@ -36,8 +36,6 @@ public:
 	void SetLabel(const char* label)  { m_label = label; }
 	const char* GetLabel() const      { return m_label.c_str(); }
 
-	CGraphicsPipeline& GetGraphicsPipeline() const;
-
 	virtual bool IsDirty() const { return false; }
 	// Take a variadic list of trivial parameters. Returns true if and only if IsDirty() is set or the serialized data is different from the input. 
 	// Note: Comparison is done as with memcmp on serialized blobs. Types are ignored.
@@ -56,7 +54,7 @@ public:
 		static_assert(ComputeRenderPassIsDirtyDetail::is_tuple_trivial<std::tuple_size<Tuple>::value, 0, Tuple>::value, "All input types must be trivial non-pointer types");
 
 		// Check if input tuple equals the serialized one
-		if (size == m_inputVars.size() * sizeof(decltype(m_inputVars)::value_type) &&
+		if (size == m_inputVars.size() * sizeof(typename decltype(m_inputVars)::value_type) &&
 			*reinterpret_cast<const Tuple*>(m_inputVars.data()) == tuple)
 		{
 			// Nothing changed

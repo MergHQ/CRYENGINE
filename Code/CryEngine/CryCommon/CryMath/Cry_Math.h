@@ -32,7 +32,7 @@
 
 //! Only enable math asserts in debug builds
 #if defined(_DEBUG)
-	#define CRY_MATH_ASSERT(x) CRY_ASSERT_MESSAGE(x, "CRY_MATH_ASSERT")
+	#define CRY_MATH_ASSERT(x) CRY_ASSERT(x, "CRY_MATH_ASSERT")
 #else
 	#define CRY_MATH_ASSERT(x)
 #endif
@@ -167,8 +167,9 @@ using std::floor;
 using std::ceil;
 using std::trunc;
 
-template<typename T> ILINE T clamp(T val, T lo, T hi) { return min(max(val, lo), hi); }
-template<typename T> ILINE T saturate(T val)          { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }
+template<typename T>             ILINE T clamp   (T val, T lo, T hi) { return min(max(val, lo), hi); }
+template<typename R, typename T> ILINE R clamp_to(T val, T lo, T hi) { return R(clamp(val, lo, hi)); }
+template<typename T>             ILINE T saturate(T val)             { return clamp(val, convert<T>(0.0f), convert<T>(1.0f)); }
 
 //
 // Mathematical functions
@@ -530,13 +531,13 @@ ILINE int32 iszero(f64 x)
 	return -((u.i >> 31) ^ (u.i - 1) >> 31);
 }
 ILINE int32 iszero(int32 x)   { return -(x >> 31 ^ (x - 1) >> 31); }
-#if CRY_PLATFORM_64BIT && !defined(__clang__)
+#if !CRY_COMPILER_CLANG
 ILINE int64 iszero(__int64 x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
-#if CRY_PLATFORM_64BIT && defined(__clang__) && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
+#if CRY_COMPILER_CLANG && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
 ILINE int64 iszero(int64_t x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
-#if CRY_PLATFORM_64BIT && (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE)
+#if (CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE)
 ILINE int64 iszero(long int x) { return -(x >> 63 ^ (x - 1) >> 63); }
 #endif
 
@@ -639,7 +640,7 @@ template<typename T> ILINE void SmoothCD(
 	else
 	{
 		val = to;
-		valRate -= valRate; // zero it...
+		valRate = (T)(valRate - valRate); // zero it...
 	}
 }
 
@@ -679,7 +680,7 @@ template<typename T> ILINE void SmoothCDWithMaxRate(
 	else
 	{
 		val = to;
-		valRate -= valRate; // zero it...
+		valRate = (T)(valRate - valRate); // zero it...
 	}
 }
 #pragma warning(pop)

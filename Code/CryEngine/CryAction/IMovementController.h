@@ -741,7 +741,7 @@ public:
 
 	const Vec3& GetDesiredBodyDirectionAtTarget() const
 	{
-		assert(HasDesiredBodyDirectionAtTarget());
+		CRY_ASSERT(HasDesiredBodyDirectionAtTarget());
 		return m_desiredBodyDirectionAtTarget;
 	}
 

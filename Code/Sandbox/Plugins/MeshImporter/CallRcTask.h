@@ -38,4 +38,3 @@ private:
 	QString  m_message;
 	bool     m_bSucceeded;
 };
-

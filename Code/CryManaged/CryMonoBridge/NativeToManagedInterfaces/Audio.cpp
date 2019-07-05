@@ -14,26 +14,16 @@
 
 typedef void (* AudioRequestListener)(const CryAudio::SRequestInfo* const);
 
-static void LoadTrigger(uint triggerId)
-{
-	gEnv->pAudioSystem->LoadTrigger(triggerId);
-}
-
-static void UnloadTrigger(uint triggerId)
-{
-	gEnv->pAudioSystem->UnloadTrigger(triggerId);
-}
-
 static void ExecuteTrigger(uint triggerId, bool bExecuteSync)
 {
 	if (bExecuteSync)
 	{
-		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
+		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId, data);
 	}
 	else
 	{
-		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
+		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId, data);
 	}
 }
@@ -97,25 +87,15 @@ static MonoInternals::MonoString* GetConfigPath()
 	return pAudioConfigPathObject->GetManagedObject();
 }
 
-static void PlayFile(CryAudio::SPlayFileInfo* pPlayFileInfo)
-{
-	gEnv->pAudioSystem->PlayFile(*pPlayFileInfo);
-}
-
-static void StopFile(CryAudio::SPlayFileInfo* pPlayFileInfo)
-{
-	gEnv->pAudioSystem->StopFile(pPlayFileInfo->szFile);
-}
-
 static void EnableAllSound(bool bIsEnabled)
 {
 	if (bIsEnabled)
 	{
-		gEnv->pAudioSystem->ExecuteTrigger(CryAudio::UnmuteAllTriggerId);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_UNMUTE, 0, 0);
 	}
 	else
 	{
-		gEnv->pAudioSystem->ExecuteTrigger(CryAudio::MuteAllTriggerId);
+		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_MUTE, 0, 0);
 	}
 }
 
@@ -126,21 +106,21 @@ static CryAudio::IObject* CreateAudioObject()
 	return pAudioObject;
 }
 
-static CryAudio::CObjectTransformation* CreateAudioTransformation(float m00, float m01, float m02, float m03,
-                                                                  float m10, float m11, float m12, float m13,
-                                                                  float m20, float m21, float m22, float m23)
+static CryAudio::CTransformation* CreateAudioTransformation(float m00, float m01, float m02, float m03,
+                                                            float m10, float m11, float m12, float m13,
+                                                            float m20, float m21, float m22, float m23)
 {
 	Matrix34_tpl<float> m34 = Matrix34_tpl<float>(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23);
-	CryAudio::CObjectTransformation* pAudioTransformation = new CryAudio::CObjectTransformation(m34);
+	CryAudio::CTransformation* pAudioTransformation = new CryAudio::CTransformation(m34);
 	return pAudioTransformation;
 }
 
-static void SetAudioTransformation(CryAudio::IObject* pAudioObject, CryAudio::CObjectTransformation* pObjectTransformation)
+static void SetAudioTransformation(CryAudio::IObject* pAudioObject, CryAudio::CTransformation* pObjectTransformation)
 {
 	pAudioObject->SetTransformation(*pObjectTransformation);
 }
 
-static void ReleaseAudioTransformation(CryAudio::CObjectTransformation* pObjectTransformation)
+static void ReleaseAudioTransformation(CryAudio::CTransformation* pObjectTransformation)
 {
 	delete pObjectTransformation;
 }
@@ -150,17 +130,17 @@ static void ReleaseAudioObject(CryAudio::IObject* pAudioObject)
 	gEnv->pAudioSystem->ReleaseObject(pAudioObject);
 }
 
-static void ExecuteAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint triggerId, bool bExecuteSync)
+static void ExecuteAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint triggerId, bool bExecuteSync, EntityId entityId = INVALID_ENTITYID)
 {
 	if (bExecuteSync)
 	{
-		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
-		pAudioObject->ExecuteTrigger(triggerId, data);
+		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
+		pAudioObject->ExecuteTrigger(triggerId, entityId, data);
 	}
 	else
 	{
-		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
-		pAudioObject->ExecuteTrigger(triggerId, data);
+		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
+		pAudioObject->ExecuteTrigger(triggerId, entityId, data);
 	}
 
 }
@@ -178,23 +158,9 @@ static void StopAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint trigger
 	}
 }
 
-static CryAudio::SPlayFileInfo* CreateSPlayFileInfo(MonoInternals::MonoString* pFilePath)
+static CryAudio::SRequestInfo* CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, EntityId entityId)
 {
-	std::shared_ptr<CMonoString> pFilePathObject = CMonoDomain::CreateString(pFilePath);
-
-	CryAudio::SPlayFileInfo* pPlayFileInfo = new CryAudio::SPlayFileInfo(pFilePathObject->GetString());
-
-	return pPlayFileInfo;
-}
-
-static void ReleaseSPlayFileInfo(CryAudio::SPlayFileInfo* pPlayFileInfo)
-{
-	delete pPlayFileInfo;
-}
-
-static CryAudio::SRequestInfo* CreateSRequestInfo(uint eRequestResult, uint audioSystemEvent, uint CtrlId, CryAudio::IObject* pAudioObject)
-{
-	CryAudio::SRequestInfo* pRequestInfo = new CryAudio::SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (CryAudio::ControlId)CtrlId, pAudioObject, nullptr, nullptr);
+	CryAudio::SRequestInfo* pRequestInfo = new CryAudio::SRequestInfo(static_cast<CryAudio::ERequestResult>(eRequestResult), nullptr, nullptr, nullptr, static_cast<CryAudio::ESystemEvents>(audioSystemEvent), (CryAudio::ControlId)CtrlId, entityId);
 	return pRequestInfo;
 }
 
@@ -218,9 +184,9 @@ static uint SRIGetControlId(CryAudio::SRequestInfo* pRequestInfo)
 	return static_cast<uint>(pRequestInfo->audioControlId);
 }
 
-static CryAudio::IObject* SRIGetAudioObject(CryAudio::SRequestInfo* pRequestInfo)
+static EntityId SRIGetEntityId(CryAudio::SRequestInfo* pRequestInfo)
 {
-	return pRequestInfo->pAudioObject;
+	return pRequestInfo->entityId;
 }
 
 static void AddAudioRequestListener(AudioRequestListener listener)
@@ -233,12 +199,12 @@ static void RemoveAudioRequestListener(AudioRequestListener listener)
 	gEnv->pAudioSystem->RemoveRequestListener(listener, nullptr);
 }
 
-static CryAudio::IListener* CreateAudioListener()
+static CryAudio::IListener* CreateAudioListener(CryAudio::CTransformation const& transformation, const char* szName)
 {
-	return gEnv->pAudioSystem->CreateListener();
+	return gEnv->pAudioSystem->CreateListener(transformation, szName);
 }
 
-static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, CryAudio::CObjectTransformation* pCObjectTransformation)
+static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, CryAudio::CTransformation* pCObjectTransformation)
 {
 	pAudioListener->SetTransformation(*pCObjectTransformation);
 }
@@ -246,8 +212,6 @@ static void SetAudioListenerTransformation(CryAudio::IListener* pAudioListener, 
 void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, const char* szMethodName)> func)
 {
 	// IAudioSystem
-	func(LoadTrigger, "LoadTrigger");
-	func(UnloadTrigger, "UnloadTrigger");
 	func(ExecuteTrigger, "ExecuteTrigger");
 	func(StopTrigger, "StopTrigger");
 	func(GetAudioTriggerId, "GetAudioTriggerId");
@@ -259,8 +223,6 @@ void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, 
 	func(CreateAudioObject, "CreateAudioObject");
 	func(StopAllSounds, "StopAllSounds");
 	func(GetConfigPath, "GetConfigPath");
-	func(PlayFile, "PlayFile");
-	func(StopFile, "StopFile");
 	func(EnableAllSound, "EnableAllSound");
 	func(AddAudioRequestListener, "AddAudioRequestListener");
 	func(RemoveAudioRequestListener, "RemoveAudioRequestListener");
@@ -275,17 +237,13 @@ void CAudioInterface::RegisterFunctions(std::function<void(const void* pMethod, 
 	func(ExecuteAudioObjectTrigger, "ExecuteAudioObjectTrigger");
 	func(StopAudioObjectTrigger, "StopAudioObjectTrigger");
 
-	//SPlayFileInfo
-	func(CreateSPlayFileInfo, "CreateSPlayFileInfo");
-	func(ReleaseSPlayFileInfo, "ReleaseSPlayFileInfo");
-
 	//SRequestInfo
 	func(CreateSRequestInfo, "CreateSRequestInfo");
 	func(ReleaseSRequestInfo, "ReleaseSRequestInfo");
 	func(SRIGetRequestResult, "SRIGetRequestResult");
 	func(SRIGetSystemEvent, "SRIGetEnumFlagsType");
 	func(SRIGetControlId, "SRIGetControlId");
-	func(SRIGetAudioObject, "SRIGetAudioObject");
+	func(SRIGetEntityId, "SRIGetEntityId");
 
 	//IListener
 	func(SetAudioListenerTransformation, "SetAudioListenerTransformation");

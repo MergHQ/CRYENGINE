@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Cryselect is distributed with the web launcher - there exists only one copy of the application on the system.
-It is intended to called by the web launcher and Windows file extension integration.
-Cryselect is responsible for maintaining the project registry, and forwarding engine commands to cryrun.
+Cryselect is distributed with the web launcher - there exists only one
+copy of the application on the system. It is intended to called by the
+web launcher and Windows file extension integration. Cryselect is
+responsible for maintaining the project registry, and forwarding engine
+commands to cryrun.
 """
 
 import argparse
@@ -18,7 +20,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 
+import crygui
+import cryplugin
 import cryproject
+import crypath
 import cryregistry
 import backup_project
 
@@ -33,27 +38,42 @@ try:
 except ImportError:
     HAS_WIN_MODULES = False
 
+
+def load_engine_file(path):
+    try:
+        file = open(path, 'r')
+        proj = json.loads(file.read())
+        file.close()
+    except ValueError:
+        proj = None
+
+    return proj
+
+
 def command_title(args):
     """
     Checks the specified args and returns the command that was run.
     Returns an empty string if no command is in the args.
     """
     return {
-        'upgrade': 'Upgrade project',
-        'projgen': 'Generate solution',
+        'upgrade': 'Upgrade Project',
+        'projgen': 'Generate Solution',
         'cmake-gui': 'Open CMake GUI',
-        'edit': 'Launch editor',
-        'open': 'Launch game',
-        'server': 'Launch server',
-        'package': 'Package for release',
-        'switch': 'Switch engine version',
-        'metagen': 'Generate/repair metadata',
-        'backup': 'Create a backup of the project'
+        'edit': 'Launch Editor',
+        'open': 'Launch Game',
+        'server': 'Launch Server',
+        'package': 'Package for Release',
+        'switch': 'Switch Engine Version',
+        'metagen': 'Generate/Repair Metadata',
+        'backup': 'Create a Backup of the Project'
     }.get(args.command, '')
 
-#--- errors
+# --- errors
 
-SUBPROCESS_NO_STDERR = 'An unexpected error occurred. Press OK to review the output log.'
+
+SUBPROCESS_NO_STDERR = 'An unexpected error occurred. Press OK to review ' \
+                       'the output log.'
+
 
 def error_project_not_found(args):
     """
@@ -61,10 +81,12 @@ def error_project_not_found(args):
     """
     message = "'{}' not found.\n".format(args.project_file)
     if not args.silent and HAS_WIN_MODULES:
-        MESSAGEBOX(None, message, command_title(args), win32con.MB_OK | win32con.MB_ICONERROR)
+        MESSAGEBOX(None, message, command_title(args),
+                   win32con.MB_OK | win32con.MB_ICONERROR)
     else:
         sys.stderr.write(message)
     sys.exit(600)
+
 
 def error_engine_not_found(args):
     """
@@ -72,10 +94,12 @@ def error_engine_not_found(args):
     """
     message = "'{}' not found.\n".format(args.engine_file)
     if not args.silent and HAS_WIN_MODULES:
-        MESSAGEBOX(None, message, command_title(args), win32con.MB_OK | win32con.MB_ICONERROR)
+        MESSAGEBOX(None, message, command_title(args),
+                   win32con.MB_OK | win32con.MB_ICONERROR)
     else:
         sys.stderr.write(message)
     sys.exit(600)
+
 
 def error_project_json_decode(args):
     """
@@ -83,10 +107,12 @@ def error_project_json_decode(args):
     """
     message = "Unable to parse '{}'.\n".format(args.project_file)
     if not args.silent and HAS_WIN_MODULES:
-        MESSAGEBOX(None, message, command_title(args), win32con.MB_OK | win32con.MB_ICONERROR)
+        MESSAGEBOX(None, message, command_title(args),
+                   win32con.MB_OK | win32con.MB_ICONERROR)
     else:
         sys.stderr.write(message)
     sys.exit(601)
+
 
 def error_engine_json_decode(engine_file, silent):
     """
@@ -94,45 +120,68 @@ def error_engine_json_decode(engine_file, silent):
     """
     message = "Unable to parse '{}'.\n".format(engine_file)
     if not silent and HAS_WIN_MODULES:
-        MESSAGEBOX(None, message, 'Unable to parse cryengine file', win32con.MB_OK | win32con.MB_ICONERROR)
+        MESSAGEBOX(None, message, 'Unable to parse cryengine file',
+                   win32con.MB_OK | win32con.MB_ICONERROR)
     else:
         sys.stderr.write(message)
     sys.exit(604)
 
-def error_engine_path_not_found(args, engine_version):
+
+def error_engine_path_not_found(args, engine_id):
     """
     Error to specify that the engine path could not be found,
     because the engine was not registered.
     """
-    message = "CryEngine '{}' has not been registered locally.\n".format(engine_version)
+    message = "CryEngine '{}' has not been registered locally.\n".format(
+        engine_id)
     if not args.silent and HAS_WIN_MODULES:
-        MESSAGEBOX(None, message, command_title(args), win32con.MB_OK | win32con.MB_ICONERROR)
+        MESSAGEBOX(None, message, command_title(args),
+                   win32con.MB_OK | win32con.MB_ICONERROR)
     else:
         sys.stderr.write(message)
     sys.exit(602)
 
+
 def error_missing_windows_modules(args, command):
     """
-    Error to specify that a command is not supported on other platforms than Windows.
+    Error to specify that a command is not supported on other platforms
+    than Windows.
     """
-    message = "Missing windows modules! The command '{}' is not supported on non-windows platforms.".format(command)
+    message = "Missing windows modules! The command '{}' is not supported " \
+              "on non-windows platforms.".format(command)
     if not args.silent and HAS_WIN_MODULES:
-        MESSAGEBOX(None, message, command_title(args), win32con.MB_OK | win32con.MB_ICONERROR)
+        MESSAGEBOX(None, message, command_title(args),
+                   win32con.MB_OK | win32con.MB_ICONERROR)
     else:
         sys.stderr.write(message)
     sys.exit(603)
+
 
 def error_engine_tool_not_found(args, path):
     """
     Error to specify that a specific engine tool couldn't be found.
     For example cryrun.exe.
     """
-    message = "'{}' not found. Please re-register CRYENGINE version that includes the required tool.\n".format(path)
+    message = "'{}' not found. Please re-register CRYENGINE version that " \
+              "includes the required tool.\n".format(path)
     if not args.silent and HAS_WIN_MODULES:
-        MESSAGEBOX(None, message, command_title(args), win32con.MB_OK | win32con.MB_ICONERROR)
+        MESSAGEBOX(None, message, command_title(args),
+                   win32con.MB_OK | win32con.MB_ICONERROR)
     else:
         sys.stderr.write(message)
     sys.exit(620)
+
+def get_cryrun_path(engine_path):
+    """
+    For backward compatibility, when using the frozen version we search both 
+    Tools/CryVersionSelect/bin/cryselect and Tools/CryVersionSelect/
+    """
+    if getattr(sys, 'frozen', False):
+        path = os.path.join(engine_path, 'Tools/CryVersionSelector/bin/cryrun/cryrun.exe')
+        return path if os.path.isfile(path) else os.path.join(engine_path, 'Tools/CryVersionSelector/cryrun.exe')
+    else:
+        return os.path.join(engine_path, 'Tools/CryVersionSelector/cryrun.py')
+
 
 def print_subprocess(cmd):
     """
@@ -140,7 +189,6 @@ def print_subprocess(cmd):
     """
     print(' '.join(map(lambda a: '"%s"' % a, cmd)))
 
-#---
 
 def get_python_path():
     """
@@ -155,7 +203,8 @@ def get_python_path():
         return path
 
     path = 'C:\\'
-    folders = [name for name in os.listdir(path) if name.lower().startswith('python3') and os.path.isdir(os.path.join(path, name))]
+    folders = [name for name in os.listdir(path) if name.lower().startswith(
+        'python3') and os.path.isdir(os.path.join(path, name))]
     if not folders:
         return program
 
@@ -163,7 +212,8 @@ def get_python_path():
     folders.reverse()
     return os.path.join(path, folders[0], program)
 
-#--- UNINSTALL ---
+# --- UNINSTALL ---
+
 
 def uninstall_integration():
     """
@@ -172,7 +222,10 @@ def uninstall_integration():
     if not HAS_WIN_MODULES:
         return
 
-    for subkey in (os.path.join('Software', 'Classes', 'CrySelect.engine'), os.path.join('Software', 'Classes', 'CrySelect.project')):
+    for subkey in (
+            os.path.join('Software', 'Classes', 'CrySelect.engine'),
+            os.path.join('Software', 'Classes', 'CrySelect.project'),
+            os.path.join('Software', 'Classes', 'CrySelect.plugin')):
         try:
             win32api.RegDeleteTree(win32con.HKEY_CURRENT_USER, subkey)
         except pywintypes.error:
@@ -181,6 +234,7 @@ def uninstall_integration():
             win32api.RegDeleteTree(win32con.HKEY_LOCAL_MACHINE, subkey)
         except pywintypes.error:
             pass
+
 
 def cmd_uninstall(args):
     """
@@ -191,10 +245,11 @@ def cmd_uninstall(args):
         uninstall_integration()
     cryregistry.delete()
 
-#--- INSTALL ---
-#http://stackoverflow.com/questions/2123762/add-menu-item-to-windows-context-menu-only-for-specific-filetype
-#http://sbirch.net/tidbits/context_menu.html
-#http://code.activestate.com/recipes/286159-using-ctypes-to-manipulate-windows-registry-and-to/
+# --- INSTALL ---
+# http://stackoverflow.com/questions/2123762/add-menu-item-to-windows-context-menu-only-for-specific-filetype
+# http://sbirch.net/tidbits/context_menu.html
+# http://code.activestate.com/recipes/286159-using-ctypes-to-manipulate-windows-registry-and-to/
+
 
 def cmd_install(args):
     """
@@ -205,70 +260,106 @@ def cmd_install(args):
 
     uninstall_integration()
 
-    #---
-
     if getattr(sys, 'frozen', False):
-        script_path = os.path.abspath(sys.executable)
+        # when the current module is executable, we use it directly
+        # otherwise we have to call python in the cmd line
+        curr_module_path = os.path.abspath(sys.executable)
         engine_commands = [
-            ('add', 'Register engine', '"%s" add "%%1"' % script_path),
-            ('1engine_gen', 'Generate engine solution', '"%s" engine_gen "%%1"' % script_path)
+            ('add', 'Register Engine', '"%s" add "%%1"' % curr_module_path),
+            ('1engine_gen', 'Generate Engine Solution',
+             '"%s" engine_gen "%%1"' % curr_module_path)
         ]
 
         # --- extended, action, title, command
-        # The first collumn defines extended action. The associated commands will be
-        # displayed only when the user right-clicks an object while also pressing the SHIFT key.
+        # The first collumn defines extended action. The associated
+        # commands will be displayed only when the user right-clicks an
+        # object while also pressing the SHIFT key.
         # https://msdn.microsoft.com/en-us/library/cc144171(VS.85).aspx
         project_commands = [
-            (False, 'edit', 'Launch editor', '"%s" edit "%%1"' % script_path),
-            (False, '1open', 'Launch game', '"%s" open "%%1"' % script_path),
-            (False, '2dedicated', 'Launch dedicated server', '"%s" server "%%1"' % script_path),
-            (False, '3package', 'Package Build', '"%s" package "%%1"' % script_path),
-            (False, '4metagen', 'Generate/repair metadata', '"%s" metagen "%%1"' % script_path),
-            (False, '5projgen', 'Generate solution', '"%s" projgen "%%1"' % script_path),
-            (False, '6cmake-gui', 'Open CMake GUI', '"%s" cmake-gui "%%1"' % script_path),
-            (False, '7switch', 'Switch engine version', '"%s" switch "%%1"' % script_path),
-            (False, '8backup', 'Backup project', '"%s" backup "%%1"' % script_path)
+            (False, 'edit', 'Launch Editor', '"%s" edit "%%1"' % curr_module_path),
+            (False, '1open', 'Launch Game', '"%s" open "%%1"' % curr_module_path),
+            (False, '2dedicated', 'Launch Dedicated Server',
+             '"%s" server "%%1"' % curr_module_path),
+            (False, '3package', 'Package Build',
+             '"%s" package "%%1"' % curr_module_path),
+            (False, '4metagen', 'Generate/Repair Metadata',
+             '"%s" metagen "%%1"' % curr_module_path),
+            (False, '5projgen', 'Generate Solution',
+             '"%s" projgen "%%1"' % curr_module_path),
+            (False, '6cmake-gui', 'Open CMake GUI',
+             '"%s" cmake-gui "%%1"' % curr_module_path),
+            (False, '7switch', 'Switch Engine Version',
+             '"%s" switch "%%1"' % curr_module_path),
+            (False, '8backup', 'Backup Project',
+             '"%s" backup "%%1"' % curr_module_path)
+        ]
+
+        plugin_commands = [
+            (False, 'register', 'Register Plugin',
+                '"%s" add_plugin_gui "%%1"' % curr_module_path),
+            (False, '1unregister', 'Unregister Plugin',
+                '"%s" remove_plugin_gui "%%1"' % curr_module_path),
         ]
     else:
-        script_path = os.path.abspath(__file__)
+        curr_module_path = os.path.abspath(__file__)
         python_path = get_python_path()
         engine_commands = [
-            ('add', 'Register engine', '"%s" "%s" add "%%1"' % (python_path, script_path)),
-            ('1engine_gen', 'Generate engine solution', '"%s" "%s" engine_gen "%%1"' % (python_path, script_path))
+            ('add', 'Register Engine', '"%s" "%s" add "%%1"' %
+             (python_path, curr_module_path)),
+            ('1engine_gen', 'Generate Engine Solution',
+             '"%s" "%s" engine_gen "%%1"' % (python_path, curr_module_path))
         ]
 
         project_commands = [
-            (False, 'edit', 'Launch editor', '"%s" "%s" edit "%%1"' % (python_path, script_path)),
-            (False, '1open', 'Launch game', '"%s" "%s" open "%%1"' % (python_path, script_path)),
-            (False, '2dedicated', 'Launch dedicated server', '"%s" "%s" server "%%1"' % (python_path, script_path)),
-            (False, '3package', 'Package Build', '"%s" "%s" package "%%1"' % (python_path, script_path)),
-            (False, '4metagen', 'Generate/repair metadata', '"%s" "%s" metagen "%%1"' % (python_path, script_path)),
-            (False, '5projgen', 'Generate solution', '"%s" "%s" projgen "%%1"' % (python_path, script_path)),
-            (False, '6cmake-gui', 'Open CMake GUI', '"%s" "%s" cmake-gui "%%1"' % (python_path, script_path)),
-            (False, '7switch', 'Switch engine version', '"%s" "%s" switch "%%1"' % (python_path, script_path)),
-            (False, '8backup', 'Backup project', '"%s" "%s" backup "%%1"' % (python_path, script_path))
+            (False, 'edit', 'Launch Editor', '"%s" "%s" edit "%%1"' %
+             (python_path, curr_module_path)),
+            (False, '1open', 'Launch Game', '"%s" "%s" open "%%1"' %
+             (python_path, curr_module_path)),
+            (False, '2dedicated', 'Launch Dedicated Server',
+             '"%s" "%s" server "%%1"' % (python_path, curr_module_path)),
+            (False, '3package', 'Package Build', '"%s" "%s" package "%%1"' %
+             (python_path, curr_module_path)),
+            (False, '4metagen', 'Generate/Repair Metadata',
+             '"%s" "%s" metagen "%%1"' % (python_path, curr_module_path)),
+            (False, '5projgen', 'Generate Solution',
+             '"%s" "%s" projgen "%%1"' % (python_path, curr_module_path)),
+            (False, '6cmake-gui', 'Open CMake GUI',
+             '"%s" "%s" cmake-gui "%%1"' % (python_path, curr_module_path)),
+            (False, '7switch', 'Switch Engine Version',
+             '"%s" "%s" switch "%%1"' % (python_path, curr_module_path)),
+            (False, '8backup', 'Backup Project', '"%s" "%s" backup "%%1"' %
+             (python_path, curr_module_path))
         ]
 
-    #---
+        plugin_commands = [
+            (False, 'register', 'Register Plugin',
+                '"%s" "%s" add_plugin_gui "%%1"' % (python_path, curr_module_path)),
+            (False, '1unregister', 'Unregister Plugin',
+                '"%s" "%s" remove_plugin_gui "%%1"'
+                % (python_path, curr_module_path)),
+        ]
 
     key = False and win32con.HKEY_LOCAL_MACHINE or win32con.HKEY_CURRENT_USER
     hClassesRoot = win32api.RegOpenKeyEx(key, 'Software\\Classes')
-    #https://msdn.microsoft.com/en-us/library/windows/desktop/cc144152(v=vs.85).aspx
+    # https://msdn.microsoft.com/en-us/library/windows/desktop/cc144152(v=vs.85).aspx
 
-    #--- .cryengine
+    # .cryengine
 
     FriendlyTypeName = 'CryEngine version'
     ProgID = 'CrySelect.engine'
     AppUserModelID = 'CrySelect.engine'
-    DefaultIcon = os.path.abspath(os.path.join(os.path.dirname(script_path), 'editor_icon.ico'))
+    DefaultIcon = os.path.join(crypath.get_exec_dir(), 'editor_icon.ico')
 
     hProgID = win32api.RegCreateKey(hClassesRoot, ProgID)
-    win32api.RegSetValueEx(hProgID, None, None, win32con.REG_SZ, FriendlyTypeName)
-    win32api.RegSetValueEx(hProgID, 'AppUserModelID', None, win32con.REG_SZ, AppUserModelID)
-    win32api.RegSetValueEx(hProgID, 'FriendlyTypeName', None, win32con.REG_SZ, FriendlyTypeName)
+    win32api.RegSetValueEx(hProgID, None, None,
+                           win32con.REG_SZ, FriendlyTypeName)
+    win32api.RegSetValueEx(hProgID, 'AppUserModelID',
+                           None, win32con.REG_SZ, AppUserModelID)
+    win32api.RegSetValueEx(hProgID, 'FriendlyTypeName',
+                           None, win32con.REG_SZ, FriendlyTypeName)
     win32api.RegSetValue(hProgID, 'DefaultIcon', win32con.REG_SZ, DefaultIcon)
 
-    #---
+    # ---
 
     hShell = win32api.RegCreateKey(hProgID, 'shell')
     win32api.RegCloseKey(hProgID)
@@ -276,7 +367,8 @@ def cmd_install(args):
     for action, title, command in engine_commands:
         hAction = win32api.RegCreateKey(hShell, action)
         win32api.RegSetValueEx(hAction, None, None, win32con.REG_SZ, title)
-        win32api.RegSetValueEx(hAction, 'Icon', None, win32con.REG_SZ, DefaultIcon)
+        win32api.RegSetValueEx(hAction, 'Icon', None,
+                               win32con.REG_SZ, DefaultIcon)
         win32api.RegSetValue(hAction, 'command', win32con.REG_SZ, command)
         win32api.RegCloseKey(hAction)
 
@@ -284,26 +376,30 @@ def cmd_install(args):
     win32api.RegSetValueEx(hShell, None, None, win32con.REG_SZ, action)
     win32api.RegCloseKey(hShell)
 
-    #---
+    # ---
 
-    hCryProj = win32api.RegCreateKey(hClassesRoot, cryregistry.ENGINE_EXTENSION)
+    hCryProj = win32api.RegCreateKey(
+        hClassesRoot, cryregistry.ENGINE_EXTENSION)
     win32api.RegSetValueEx(hCryProj, None, None, win32con.REG_SZ, ProgID)
     win32api.RegCloseKey(hCryProj)
 
-    #--- .cryproject
+    # .cryproject
 
     FriendlyTypeName = 'CryEngine project'
     ProgID = 'CrySelect.project'
     AppUserModelID = 'CrySelect.project'
-    DefaultIcon = os.path.abspath(os.path.join(os.path.dirname(script_path), 'editor_icon16.ico'))
+    DefaultIcon = os.path.join(crypath.get_exec_dir(), 'editor_icon16.ico')
 
     hProgID = win32api.RegCreateKey(hClassesRoot, ProgID)
-    win32api.RegSetValueEx(hProgID, None, None, win32con.REG_SZ, FriendlyTypeName)
-    win32api.RegSetValueEx(hProgID, 'AppUserModelID', None, win32con.REG_SZ, AppUserModelID)
-    win32api.RegSetValueEx(hProgID, 'FriendlyTypeName', None, win32con.REG_SZ, FriendlyTypeName)
+    win32api.RegSetValueEx(hProgID, None, None,
+                           win32con.REG_SZ, FriendlyTypeName)
+    win32api.RegSetValueEx(hProgID, 'AppUserModelID',
+                           None, win32con.REG_SZ, AppUserModelID)
+    win32api.RegSetValueEx(hProgID, 'FriendlyTypeName',
+                           None, win32con.REG_SZ, FriendlyTypeName)
     win32api.RegSetValue(hProgID, 'DefaultIcon', win32con.REG_SZ, DefaultIcon)
 
-    #---
+    # ---
 
     hShell = win32api.RegCreateKey(hProgID, 'shell')
     win32api.RegCloseKey(hProgID)
@@ -311,10 +407,12 @@ def cmd_install(args):
     for extended, action, title, command in project_commands:
         hAction = win32api.RegCreateKey(hShell, action)
         win32api.RegSetValueEx(hAction, None, None, win32con.REG_SZ, title)
-        win32api.RegSetValueEx(hAction, 'Icon', None, win32con.REG_SZ, DefaultIcon)
+        win32api.RegSetValueEx(hAction, 'Icon', None,
+                               win32con.REG_SZ, DefaultIcon)
         win32api.RegSetValue(hAction, 'command', win32con.REG_SZ, command)
         if extended:
-            win32api.RegSetValueEx(hAction, 'extended', None, win32con.REG_SZ, '')
+            win32api.RegSetValueEx(hAction, 'extended',
+                                   None, win32con.REG_SZ, '')
 
         win32api.RegCloseKey(hAction)
 
@@ -322,26 +420,73 @@ def cmd_install(args):
     win32api.RegSetValueEx(hShell, None, None, win32con.REG_SZ, action)
     win32api.RegCloseKey(hShell)
 
-    #---
+    # ---
 
     hCryProj = win32api.RegCreateKey(hClassesRoot, '.cryproject')
     win32api.RegSetValueEx(hCryProj, None, None, win32con.REG_SZ, ProgID)
     win32api.RegCloseKey(hCryProj)
 
-#--- ADD ---
+    # --- .cryplugin
 
-def add_engines(*engine_files, silent):
+    FriendlyTypeName = 'CryEngine plugin'
+    ProgID = 'CrySelect.plugin'
+    AppUserModelID = 'CrySelect.plugin'
+    DefaultIcon = os.path.join(crypath.get_exec_dir(), 'editor_icon16.ico')
+
+    hProgID = win32api.RegCreateKey(hClassesRoot, ProgID)
+    win32api.RegSetValueEx(
+        hProgID, None, None, win32con.REG_SZ, FriendlyTypeName)
+    win32api.RegSetValueEx(
+        hProgID, 'AppUserModelID', None, win32con.REG_SZ, AppUserModelID)
+    win32api.RegSetValueEx(
+        hProgID, 'FriendlyTypeName', None, win32con.REG_SZ, FriendlyTypeName)
+    win32api.RegSetValue(hProgID, 'DefaultIcon', win32con.REG_SZ, DefaultIcon)
+
+    # ---
+
+    hShell = win32api.RegCreateKey(hProgID, 'shell')
+    win32api.RegCloseKey(hProgID)
+
+    for extended, action, title, command, in plugin_commands:
+        hAction = win32api.RegCreateKey(hShell, action)
+        win32api.RegSetValueEx(hAction, None, None, win32con.REG_SZ, title)
+        win32api.RegSetValueEx(
+            hAction, 'Icon', None, win32con.REG_SZ, DefaultIcon)
+        win32api.RegSetValue(hAction, 'command', win32con.REG_SZ, command)
+        if extended:
+            win32api.RegSetValueEx(
+                hAction, 'extended', None, win32con.REG_SZ, '')
+
+        win32api.RegCloseKey(hAction)
+
+    action = 'register'
+    win32api.RegSetValueEx(hShell, None, None, win32con.REG_SZ, action)
+    win32api.RegCloseKey(hShell)
+
+    # ---
+
+    hCryProj = win32api.RegCreateKey(hClassesRoot, '.cryplugin')
+    win32api.RegSetValueEx(hCryProj, None, None, win32con.REG_SZ, ProgID)
+    win32api.RegCloseKey(hCryProj)
+
+# --- ADD ---
+
+
+def add_engines(*engine_files, silent=False):
     """
     Adds the collection of engines to the registered engines.
     """
     engine_registry = cryregistry.load_engines()
+
+    # Delete orphaned engines first
+    clean_engines()
 
     added = []
     for engine_file in engine_files:
         if os.path.splitext(engine_file)[1] != cryregistry.ENGINE_EXTENSION:
             continue
 
-        engine = cryproject.load(engine_file)
+        engine = load_engine_file(engine_file)
         if not engine:
             error_engine_json_decode(engine_file, silent)
 
@@ -355,8 +500,10 @@ def add_engines(*engine_files, silent):
             added.append(engine_id)
 
     if added:
-        return cryregistry.save_engines(engine_registry, register_action=True, silent=silent)
+        return cryregistry.save_engines(
+            engine_registry, register_action=True, silent=silent)
     return 0
+
 
 def cmd_add(args):
     """
@@ -364,7 +511,53 @@ def cmd_add(args):
     """
     sys.exit(add_engines(*args.engine_files, silent=args.silent))
 
-#--- REMOVE ---
+
+def add_plugins(engine_id, plugin_files):
+    """
+    Adds the collection of plugins to the registered engine.
+    """
+    engine_registry = cryregistry.load_engines()
+
+    engine = engine_registry[engine_id]
+    plugins = engine.get('plugins', {})
+
+    for plugin_file in plugin_files:
+        plugin = cryplugin.CryPlugin()
+
+        try:
+            plugin.load(plugin_file)
+        except Exception:
+            print("Unable to read plugin file %s" % (plugin_file))
+            sys.excepthook(*sys.exc_info())
+            continue
+
+        serialized_plugin = {}
+        serialized_plugin['uri'] = plugin_file
+        serialized_plugin['name'] = plugin.name()
+
+        plugins[plugin.guid()] = serialized_plugin
+
+        engine['plugins'] = plugins
+
+    cryregistry.save_engines(engine_registry)
+
+
+def cmd_add_plugins(args):
+    """
+    Adds the plugins to the registered engine.
+    """
+    sys.exit(add_plugins(args.engine_id, args.plugin_files))
+
+
+def cmd_add_plugin_gui(args):
+    """
+    Adds the plugins to a registered engine picked from a GUI.
+    """
+    app = crygui.CryWindowAddPlugin(args.plugin_file)
+    app.mainloop()
+
+
+# --- REMOVE ---
 
 def cmd_remove(args):
     """
@@ -374,16 +567,93 @@ def cmd_remove(args):
 
     removed = []
     for engine_file in args.engine_files:
-        engine = cryproject.load(engine_file)
+        engine = load_engine_file(engine_file)
         engine_id = engine['info']['id']
         if engine_id in engine_registry:
             del engine_registry[engine_id]
             removed.append(engine_id)
 
     if removed:
-        sys.exit(cryregistry.save_engines(engine_registry, register_action=False, silent=args.silent))
+        sys.exit(cryregistry.save_engines(
+            engine_registry, register_action=False, silent=args.silent))
 
-#--- SWITCH ---
+
+def remove_plugins(engine_id, plugin_files):
+    """
+    Removes the plugins from the registered engine.
+    """
+    for plugin_file in plugin_files:
+        plugin = cryplugin.CryPlugin()
+        try:
+            plugin.load(plugin_file)
+        except Exception:
+            print("Unable to read plugin file %s" % (plugin_file))
+            sys.excepthook(*sys.exc_info())
+            return
+
+        remove_plugin_by_guid(engine_id, plugin.guid())
+
+
+def remove_plugin_by_guid(engine_id, guid):
+    """
+    Removes the plugin from the registered engine.
+    """
+    engine_registry = cryregistry.load_engines()
+
+    engine = engine_registry[engine_id]
+    plugins = engine.get('plugins', {})
+
+    del plugins[guid]
+
+    if not plugins:
+        del engine['plugins']
+    cryregistry.save_engines(engine_registry)
+
+
+def cmd_remove_plugins(args):
+    """
+    Removes the plugins from the registered engine.
+    """
+    sys.exit(remove_plugins(args.engine_id, args.plugin_files))
+
+
+def cmd_remove_plugin_gui(args):
+    """
+    Removes the plugins from a registered engine picked from a GUI.
+    """
+    app = crygui.CryWindowRemovePlugin(args.plugin_file)
+    app.mainloop()
+
+
+# --- CLEAN ---
+
+
+def clean_engines():
+    """
+    Removes all engines that no longer exist
+    """
+    engine_registry = cryregistry.load_engines()
+    orphaned_engine_ids = []
+
+    for engine_id in engine_registry.keys():
+        engine_file = cryregistry.engine_file(engine_registry, engine_id)
+        if not os.path.exists(engine_file) or not os.path.isfile(engine_file):
+            orphaned_engine_ids.append(engine_id)
+
+    if orphaned_engine_ids:
+        for orphan_id in orphaned_engine_ids:
+            del engine_registry[orphan_id]
+        cryregistry.save_engines(engine_registry)
+
+
+def cmd_clean_engines(args):
+    """
+    Removes all engines that no longer exist
+    """
+    clean_engines()
+
+# --- SWITCH ---
+
 
 def cryswitch_enginenames(engines):
     """
@@ -391,10 +661,12 @@ def cryswitch_enginenames(engines):
     """
     return list(map(lambda a: (a[1]), engines))
 
+
 class CrySwitch(tk.Frame):
     """
     Handles the GUI used to switch engine version of a project.
     """
+
     def __init__(self, project_file, engine_list, found):
         root = tk.Tk()
         super().__init__(root)
@@ -429,34 +701,33 @@ class CrySwitch(tk.Frame):
         root.resizable(width=False, height=False)
         self.center_window()
 
-        iconfile = "editor_icon16.ico"
-        if not hasattr(sys, "frozen"):
-            iconfile = os.path.join(os.path.dirname(__file__), iconfile)
-        else:
-            iconfile = os.path.join(sys.prefix, iconfile)
-
+        iconfile = os.path.join(crypath.get_exec_dir(), 'editor_icon16.ico')
         root.iconbitmap(iconfile)
 
-        #---
+        # ---
 
         top = tk.Frame(root)
         top.pack(side='top', fill='both', expand=True, padx=5, pady=5)
 
-        self.open = tk.Button(top, text="...", width=3, command=self.command_browse)
+        self.open = tk.Button(top, text="...", width=3,
+                              command=self.command_browse)
         self.open.pack(side='right', padx=2)
 
-        self.combo = ttk.Combobox(top, values=cryswitch_enginenames(self.engine_list), state='readonly')
+        self.combo = ttk.Combobox(top, values=cryswitch_enginenames(
+            self.engine_list), state='readonly')
         self.combo.pack(fill='x', expand=True, side='right', padx=2)
 
-        #---
+        # ---
 
         bottom = tk.Frame(root)
         bottom.pack(side='bottom', fill='both', expand=True, padx=5, pady=5)
 
-        self.cancel = tk.Button(bottom, text='Cancel', width=10, command=self.close)
+        self.cancel = tk.Button(bottom, text='Cancel',
+                                width=10, command=self.close)
         self.cancel.pack(side='right', padx=2)
 
-        self.ok_button = tk.Button(bottom, text='OK', width=10, command=self.command_ok)
+        self.ok_button = tk.Button(
+            bottom, text='OK', width=10, command=self.command_ok)
         self.ok_button.pack(side='right', padx=2)
 
     def close(self):
@@ -475,25 +746,36 @@ class CrySwitch(tk.Frame):
             engine_dirname = name
 
             listdir = os.listdir(engine_dirname)
-            engine_files = list(filter(lambda filename: os.path.isfile(os.path.join(engine_dirname, filename)) and os.path.splitext(filename)[1] == cryregistry.ENGINE_EXTENSION, listdir))
+            engine_files = list(filter(
+                lambda filename: os.path.isfile(os.path.join(
+                    engine_dirname, filename)) and os.path.splitext(
+                    filename)[1] == cryregistry.ENGINE_EXTENSION, listdir))
             engine_files.sort()
             if not engine_files:
                 if HAS_WIN_MODULES:
-                    message = 'Folder is not a previously registered CRYENGINE folder. Would you like to add the folder as a custom engine?'
-                    if MESSAGEBOX(None, message, 'Switch engine version', win32con.MB_OKCANCEL | win32con.MB_ICONWARNING) == win32con.IDCANCEL:
+                    message = 'Folder is not a previously registered ' \
+                              'CRYENGINE folder. Would you like to add the ' \
+                              'folder as a custom engine?'
+                    mb_kind = win32con.MB_OKCANCEL | win32con.MB_ICONWARNING
+                    if MESSAGEBOX(
+                            None, message, 'Switch engine version',
+                            mb_kind) == win32con.IDCANCEL:
                         return
 
                 engine_id = "{%s}" % uuid.uuid4()
-                engine_path = os.path.join(engine_dirname, os.path.basename(engine_dirname) + cryregistry.ENGINE_EXTENSION)
+                engine_path = os.path.join(engine_dirname, os.path.basename(
+                    engine_dirname) + cryregistry.ENGINE_EXTENSION)
                 file = open(engine_path, 'w')
-                file.write(json.dumps({'info': {'id': engine_id}}, indent=4, sort_keys=True))
+                file.write(json.dumps(
+                    {'info': {'id': engine_id}}, indent=4, sort_keys=True))
                 file.close()
             else:
                 engine_path = os.path.join(engine_dirname, engine_files[0])
-                engine = cryproject.load(engine_path)
+                engine = load_engine_file(engine_path)
                 engine_id = engine['info']['id']
 
-            # When using the switch engine UI we don't need to be silent anymore.
+            # When using the switch engine UI we don't need to be
+            # silent anymore.
             error_code = add_engines(engine_path, silent=False)
             if error_code != 0:
                 self.close()
@@ -507,12 +789,13 @@ class CrySwitch(tk.Frame):
         """
         Called if the browse button is pressed.
         """
-        #http://tkinter.unpythonic.net/wiki/tkFileDialog
+        # http://tkinter.unpythonic.net/wiki/tkFileDialog
         file = filedialog.askdirectory(mustexist=True)
         if file:
             self.engine_list.append((None, os.path.abspath(file)))
             self.combo['values'] = cryswitch_enginenames(self.engine_list)
             self.combo.current(len(self.engine_list) - 1)
+
 
 def cmd_switch(args):
     """
@@ -523,13 +806,15 @@ def cmd_switch(args):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args)
 
-    #--- If the engine version is already specified than set it and return early.
-    if args.engine_version != None:
-        sys.exit(switch_engine(args.project_file, args.engine_version, args.silent))
+    # If the engine version is already specified than set it and return early.
+    if args.engine_id is not None:
+        sys.exit(switch_engine(args.project_file, args.engine_id, args.silent))
 
     engine_list = []
     engine_version = []
@@ -550,9 +835,11 @@ def cmd_switch(args):
     engine_version.reverse()
     engine_list.sort()
 
-    engine_list = list(map(lambda a: (a[2], a[1]), engine_version)) + list(map(lambda a: (a[1], a[0]), engine_list))
+    engine_list = list(map(lambda a: (
+        a[2], a[1]), engine_version)) + list(map(
+            lambda a: (a[1], a[0]), engine_list))
 
-    engine_id = cryproject.engine_id(project)
+    engine_id = project.engine_id()
 
     found = 0
     for i in range(len(engine_list)):
@@ -564,54 +851,74 @@ def cmd_switch(args):
     app = CrySwitch(args.project_file, engine_list, found)
     app.mainloop()
 
+
 def switch_engine(project_file, engine_id, silent):
     """
     Switch the engine of the selected project to the specified engine.
     By setting silent to True, no permissions will be asked from the user
     and warnings are not given.
     """
-    project = cryproject.load(project_file)
-    if cryproject.engine_id(project) != engine_id:
+    project = cryproject.CryProject()
+    try:
+        project.load(project_file)
+    except Exception:
+        print("Unable to read project file %s" % (project_file))
+        raise
+
+    if project.engine_id() != engine_id:
         if not silent and HAS_WIN_MODULES:
-            message = ('Changing the version of the engine can cause the project to become unstable. '
-                       'Do you want to create a backup before switching the engine?')
-            result = MESSAGEBOX(None, message, 'Changing engine version', win32con.MB_YESNOCANCEL | win32con.MB_ICONWARNING)
+            message = ('Changing the version of the engine can cause the '
+                       'project to become unstable. Do you want to create a '
+                       'backup before switching the engine?')
+            result = MESSAGEBOX(
+                None, message, 'Changing engine version',
+                win32con.MB_YESNOCANCEL | win32con.MB_ICONWARNING)
 
             if result == win32con.IDCANCEL:
-                return 1 # Return 1 to indicate that changing the engine is canceled by the user.
+                # Return 1 to indicate that changing the engine is
+                # canceled by the user.
+                return 1
 
             if result == win32con.IDYES:
                 create_backup(project_file)
 
         try:
-            project['require']['engine'] = engine_id
-            cryproject.save(project, project_file)
-        except:
+            project.set_engine_id(engine_id)
+            project.save(project_file)
+        except Exception:
             # Catch every exception and print it to the console.
-            # This way the command can be debugged in the console but the normal user will not be overwhelmed with technical stuff.
+            # This way the command can be debugged in the console but
+            # the normal user will not be overwhelmed with technical stuff.
             exception_info = sys.exc_info()[0]
             print(repr(exception_info))
-            message = 'An error occurred while changing the engine version. Is the project file read-only?'
+            message = 'An error occurred while changing the engine version. ' \
+                      'Is the project file read-only?'
             if not silent and HAS_WIN_MODULES:
-                MESSAGEBOX(None, message, 'An error occurred', win32con.MB_OK | win32con.MB_ICONERROR)
+                MESSAGEBOX(None, message, 'An error occurred',
+                           win32con.MB_OK | win32con.MB_ICONERROR)
             else:
                 sys.stderr.write(message)
             return 1
 
         if not silent and HAS_WIN_MODULES:
-            message = ('The engine version has changed and this has caused the code to become incompatible. '
-                       'Please generate the solution, fix any errors in the code and rebuild the project before launching it.')
-            MESSAGEBOX(None, message, 'Rebuild required', win32con.MB_OK | win32con.MB_ICONWARNING)
+            message = 'The engine version has changed and this has caused ' \
+                      'the code to become incompatible. Please generate the ' \
+                      'solution, fix any errors in the code and rebuild the ' \
+                      'project before launching it.'
+            MESSAGEBOX(None, message, 'Rebuild required',
+                       win32con.MB_OK | win32con.MB_ICONWARNING)
 
     return 0
 
-#--- BACKUP ---
+# --- BACKUP ---
+
 
 def cmd_backup(args):
     """
     Command for creating a backup of a project.
     """
     create_backup(args.project_file, args.backup_location, args.silent)
+
 
 def create_backup(project_file, backup_location=None, silent=False):
     """
@@ -624,25 +931,24 @@ def create_backup(project_file, backup_location=None, silent=False):
 
     backup_project.run(project_file, backup_location, silent)
 
-#--- UPGRADE ---
+# --- UPGRADE ---
+
 
 def cmd_upgrade(args):
     """
     Upgrades the project by calling it's engines cryrun.exe.
     """
     registry = cryregistry.load_engines()
-    engine_path = cryregistry.engine_path(registry, args.engine_version)
+    engine_path = cryregistry.engine_path(registry, args.engine_id)
     if engine_path is None:
-        error_engine_path_not_found(args, args.engine_version)
+        error_engine_path_not_found(args, args.engine_id)
 
     if getattr(sys, 'frozen', False):
-        subcmd = [
-            os.path.join(engine_path, 'Tools', 'CryVersionSelector', 'cryrun.exe')
-        ]
+        subcmd = [get_cryrun_path(engine_path)]
     else:
         subcmd = [
             get_python_path(),
-            os.path.join(engine_path, 'Tools', 'CryVersionSelector', 'cryrun.py')
+            get_cryrun_path(engine_path)
         ]
 
     if not os.path.isfile(subcmd[-1]):
@@ -654,7 +960,8 @@ def cmd_upgrade(args):
     print_subprocess(subcmd)
     sys.exit(subprocess.call(subcmd))
 
-#--- RUN ----
+# --- RUN ----
+
 
 def cmd_run_project(args, sys_argv=sys.argv[1:]):
     """
@@ -664,11 +971,13 @@ def cmd_run_project(args, sys_argv=sys.argv[1:]):
     if not os.path.isfile(args.project_file):
         error_project_not_found(args)
 
-    project = cryproject.load(args.project_file)
-    if project is None:
+    project = cryproject.CryProject()
+    try:
+        project.load(args.project_file)
+    except Exception:
         error_project_json_decode(args)
 
-    engine_id = cryproject.engine_id(project)
+    engine_id = project.engine_id()
     engine_path = ""
 
     # Start by checking for the ability to specifying use of the local engine
@@ -682,13 +991,11 @@ def cmd_run_project(args, sys_argv=sys.argv[1:]):
             error_engine_path_not_found(args, engine_id)
 
     if getattr(sys, 'frozen', False):
-        subcmd = [
-            os.path.join(engine_path, 'Tools', 'CryVersionSelector', 'cryrun.exe')
-        ]
+        subcmd = [get_cryrun_path(engine_path)]
     else:
         subcmd = [
             get_python_path(),
-            os.path.join(engine_path, 'Tools', 'CryVersionSelector', 'cryrun.py')
+            get_cryrun_path(engine_path)
         ]
 
     if not os.path.isfile(subcmd[-1]):
@@ -706,14 +1013,16 @@ def cmd_run_project(args, sys_argv=sys.argv[1:]):
         if not text:
             text = SUBPROCESS_NO_STDERR
         if HAS_WIN_MODULES:
-            result = MESSAGEBOX(None, text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
+            result = MESSAGEBOX(None, text, title,
+                                win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
             if result == win32con.IDOK:
-                input() # Keeps the window from closing
+                input()  # Keeps the window from closing
         else:
             sys.stderr.write(text)
 
     if returncode != 0:
         sys.exit(returncode)
+
 
 def cmd_run_engine(args, sys_argv=sys.argv[1:]):
     """
@@ -726,13 +1035,11 @@ def cmd_run_engine(args, sys_argv=sys.argv[1:]):
     engine_path = os.path.dirname(args.engine_file)
 
     if getattr(sys, 'frozen', False):
-        subcmd = [
-            os.path.join(engine_path, 'Tools', 'CryVersionSelector', 'cryrun.exe')
-        ]
+        subcmd = [get_cryrun_path(engine_path)]
     else:
         subcmd = [
             get_python_path(),
-            os.path.join(engine_path, 'Tools', 'CryVersionSelector', 'cryrun.py')
+            get_cryrun_path(engine_path)
         ]
 
     if not os.path.isfile(subcmd[-1]):
@@ -751,16 +1058,19 @@ def cmd_run_engine(args, sys_argv=sys.argv[1:]):
         if not text:
             text = SUBPROCESS_NO_STDERR
         if HAS_WIN_MODULES:
-            result = MESSAGEBOX(None, text, title, win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
+            result = MESSAGEBOX(None, text, title,
+                                win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
             if result == win32con.IDOK:
-                input() # Keeps the window from closing
+                input()  # Keeps the window from closing
         else:
             sys.stderr.write(text)
 
     if returncode != 0:
         sys.exit(returncode)
 
-#--- MAIN ---
+# --- MAIN ---
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--pause', action='store_true')
@@ -776,13 +1086,34 @@ def main():
     parser_add.add_argument('engine_files', nargs='+')
     parser_add.set_defaults(func=cmd_add)
 
+    parser_add_plugins = subparsers.add_parser('add_plugins')
+    parser_add_plugins.add_argument('engine_id')
+    parser_add_plugins.add_argument('plugin_files', nargs='+')
+    parser_add_plugins.set_defaults(func=cmd_add_plugins)
+
+    parser_add_plugin_gui = subparsers.add_parser('add_plugin_gui')
+    parser_add_plugin_gui.add_argument('plugin_file')
+    parser_add_plugin_gui.set_defaults(func=cmd_add_plugin_gui)
+
     parser_remove = subparsers.add_parser('remove')
     parser_remove.add_argument('engine_files', nargs='+')
     parser_remove.set_defaults(func=cmd_remove)
 
+    parser_remove_plugins = subparsers.add_parser('remove_plugins')
+    parser_remove_plugins.add_argument('engine_id')
+    parser_remove_plugins.add_argument('plugin_files', nargs='+')
+    parser_remove_plugins.set_defaults(func=cmd_remove_plugins)
+
+    parser_remove_plugin_gui = subparsers.add_parser('remove_plugin_gui')
+    parser_remove_plugin_gui.add_argument('plugin_file')
+    parser_remove_plugin_gui.set_defaults(func=cmd_remove_plugin_gui)
+
+    parser_clean_engines = subparsers.add_parser('clean_engines')
+    parser_clean_engines.set_defaults(func=cmd_clean_engines)
+
     parser_switch = subparsers.add_parser('switch')
     parser_switch.add_argument('project_file')
-    parser_switch.add_argument('engine_version', nargs='?')
+    parser_switch.add_argument('engine_id', nargs='?')
     parser_switch.set_defaults(func=cmd_switch)
 
     parser_backup = subparsers.add_parser('backup')
@@ -790,10 +1121,10 @@ def main():
     parser_backup.add_argument('backup_location', nargs='?')
     parser_backup.set_defaults(func=cmd_backup)
 
-    #---
+    # ---
 
     parser_upgrade = subparsers.add_parser('upgrade')
-    parser_upgrade.add_argument('--engine_version', default='')
+    parser_upgrade.add_argument('--engine_id', default='')
     parser_upgrade.add_argument('project_file')
     parser_upgrade.set_defaults(func=cmd_upgrade)
 
@@ -842,17 +1173,13 @@ def main():
     parser_engine_gen.add_argument('remainder', nargs=argparse.REMAINDER)
     parser_engine_gen.set_defaults(func=cmd_run_engine)
 
-    #---
+    # ---
 
     args = parser.parse_args()
     args.func(args)
     if args.pause:
         input('Press Enter to continue...')
 
+
 if __name__ == '__main__':
-    """
-    Cryselect is distributed with the web launcher - there exists only one copy of the application on the system.
-    It is intended to called by the web launcher and Windows file extension integration.
-    Cryselect is responsible for maintaining the project registry, and forwarding engine commands to cryrun.
-    """
     main()

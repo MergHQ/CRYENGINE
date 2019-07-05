@@ -6,6 +6,8 @@ start_sources()
 sources_platform(ALL)
 add_sources("EditorFmod_uber_0.cpp"
 	SOURCE_GROUP "Root"
+		"AudioTableInfo.h"
+		"Common.cpp"
 		"Common.h"
 		"Impl.cpp"
 		"Impl.h"
@@ -19,12 +21,11 @@ add_sources("EditorFmod_uber_0.cpp"
 		"StdAfx.cpp"
 		"StdAfx.h"
 	SOURCE_GROUP "Connections"
-		"BankConnection.cpp"
-		"BankConnection.h"
-		"BaseConnection.cpp"
-		"BaseConnection.h"
 		"EventConnection.cpp"
 		"EventConnection.h"
+		"GenericConnection.h"
+		"KeyConnection.cpp"
+		"KeyConnection.h"
 		"ParameterConnection.cpp"
 		"ParameterConnection.h"
 		"ParameterToStateConnection.cpp"
@@ -51,6 +52,6 @@ end_sources()
 #END-FILE-LIST
 
 CryEditorPlugin(EditorCryAudioImplFmod SOLUTION_FOLDER "Sandbox/Plugins/EditorAudioControlsEditor/Impl" OUTDIR EditorPlugins/ace)
-target_include_directories(${THIS_PROJECT} PRIVATE ../common "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
-target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DPLUGIN_EXPORTS -DUSE_BACKWARDS_COMPATIBILITY)
+target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/Common" "${CRYENGINE_DIR}/Code/CryEngine/CryAudioSystem/implementations")
+target_compile_definitions(${THIS_PROJECT} PRIVATE -DNOT_USE_CRY_MEMORY_MANAGER -DACE_PLUGIN_EXPORTS -DUSE_BACKWARDS_COMPATIBILITY)
 

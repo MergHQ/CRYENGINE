@@ -15,7 +15,6 @@
 #include "ActionMap.h"
 #include "ActionMapManager.h"
 #include <CrySystem/IConsole.h>
-#include "GameObjects/GameObject.h"
 #include <CryCore/CryCrc32.h>
 
 #define ACTIONINPUT_NAME_STR                               "name"
@@ -60,8 +59,8 @@ struct CryNameSorter
 	//------------------------------------------------------------------------
 	bool operator()(const CCryName& lhs, const CCryName& rhs) const
 	{
-		assert(lhs.c_str() != 0);
-		assert(rhs.c_str() != 0);
+		CRY_ASSERT(lhs.c_str() != 0);
+		CRY_ASSERT(rhs.c_str() != 0);
 		return strcmp(lhs.c_str(), rhs.c_str()) < 0;
 	}
 };
@@ -1109,8 +1108,12 @@ void CActionMap::InputProcessed()
 	IActionListener* pEntityListener = NULL;
 
 	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
-		if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+	{
+		if (IGameObject* pGameObject = static_cast<IGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER)))
+		{
 			pEntityListener = pGameObject;
+		}
+	}
 
 	if (pEntityListener)
 		pEntityListener->AfterAction();
@@ -1139,12 +1142,14 @@ void CActionMap::ReleaseFilteredActions()
 	IActionListener* pEntityListener = NULL;
 
 	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
-		if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+	{
+		if (IGameObject* pGameObject = static_cast<IGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER)))
+		{
 			pEntityListener = pGameObject;
+		}
+	}
 
 	IActionListener* pListener = pEntityListener;
-	if (!pListener)
-		return;
 
 	for (TActionMap::iterator it = m_actions.begin(), eit = m_actions.end(); it != eit; ++it)
 	{
@@ -1167,7 +1172,10 @@ void CActionMap::ReleaseFilteredActions()
 			int currentMode = pActionInput->activationMode & eIS_Released;
 			if (currentMode || isChanged)
 			{
-				pListener->OnAction(it->first, currentMode, 0);
+				if (pListener)
+				{
+					pListener->OnAction(it->first, currentMode, 0);
+				}
 
 				const TActionListeners& extraActionListeners = m_pActionMapManager->GetExtraActionListeners();
 				for (TActionListeners::const_iterator extraListener = extraActionListeners.begin(); extraListener != extraActionListeners.end(); ++extraListener)
@@ -1485,8 +1493,6 @@ bool CActionMap::LoadRebindingDataFromXML(const XmlNodeRef& actionMapNode)
 
 bool CActionMap::SaveRebindingDataToXML(XmlNodeRef& actionMapNode) const
 {
-	const int iNumDeviceData = m_pActionMapManager->GetNumInputDeviceData();
-
 #if 0
 	// for debug reasons, we sort the ActionMap alphabetically
 	// CryName normally sorts by pointer address
@@ -1830,7 +1836,6 @@ bool CActionMap::SaveActionInputAttributesToXML(XmlNodeRef& actionInputNode, con
 
 			// Now save the blocked inputs
 			string blockedInputsStr("");
-			bool bBlockAllDeviceIndices = true;
 			for (size_t i = 0; i < inputBlockData.inputs.size(); i++)
 			{
 				const SActionInputBlocker& inputBlocker = inputBlockData.inputs[i];
@@ -1929,7 +1934,6 @@ IActionMapActionIteratorPtr CActionMap::CreateActionIterator()
 		{
 			if (m_cur == m_end)
 				return NULL;
-			const ActionId& actionId = m_cur->first;
 			const CActionMapAction& action = m_cur->second;
 
 			++m_cur;
@@ -2024,19 +2028,19 @@ void CActionMap::ReleaseActionIfActiveInternal(CActionMapAction& action)
 
 	if (bFireOnActionRelease)
 	{
-		IActionListener* pEntityListener = NULL;
+		IActionListener* pEntityListener = nullptr;
 
 		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
 		{
-			if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+			if (IGameObject* pGameObject = static_cast<IGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER)))
 			{
 				pEntityListener = pGameObject;
 			}
 		}
-		IActionListener* pListener = pEntityListener;
-		if (pListener)
+
+		if (pEntityListener)
 		{
-			pListener->OnAction(action.GetActionId(), eAAM_OnRelease, 0.0f);
+			pEntityListener->OnAction(action.GetActionId(), eAAM_OnRelease, 0.0f);
 		}
 
 		NotifyExtraActionListeners(action.GetActionId(), eAAM_OnRelease, 0.0f);
@@ -2044,19 +2048,17 @@ void CActionMap::ReleaseActionIfActiveInternal(CActionMapAction& action)
 
 	if (bFireOnActionAlways)
 	{
-		IActionListener* pEntityListener = NULL;
+		IActionListener* pEntityListener = nullptr;
 
 		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
 		{
-			if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
-			{
+			if (IGameObject* pGameObject = static_cast<IGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER)))
 				pEntityListener = pGameObject;
-			}
 		}
-		IActionListener* pListener = pEntityListener;
-		if (pListener)
+
+		if (pEntityListener)
 		{
-			pListener->OnAction(action.GetActionId(), eAAM_Always, 0.0f);
+			pEntityListener->OnAction(action.GetActionId(), eAAM_Always, 0.0f);
 		}
 
 		NotifyExtraActionListeners(action.GetActionId(), eAAM_Always, 0.0f);

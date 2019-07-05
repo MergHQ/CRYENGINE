@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "DangerousRigidBody.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 int CDangerousRigidBody::sDangerousRigidBodyHitTypeId	= -1;
 
@@ -101,9 +102,9 @@ void CDangerousRigidBody::ProcessEvent( const SEntityEvent& event )
 	}
 }
 
-uint64 CDangerousRigidBody::GetEventMask() const
+Cry::Entity::EventFlags CDangerousRigidBody::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_COLLISION | ENTITY_EVENT_RESET;
 }
 
 void CDangerousRigidBody::GetMemoryUsage( ICrySizer *pSizer ) const
@@ -115,14 +116,14 @@ bool CDangerousRigidBody::ReloadExtension( IGameObject * pGameObject, const SEnt
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CDangerousRigidBody::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CDangerousRigidBody::ReloadExtension not implemented");
 
 	return true;
 }
 
 bool CDangerousRigidBody::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CDangerousRigidBody::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CDangerousRigidBody::GetEntityPoolSignature not implemented");
 
 	return true;
 }

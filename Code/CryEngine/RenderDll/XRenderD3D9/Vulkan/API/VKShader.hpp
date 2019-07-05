@@ -14,7 +14,8 @@ namespace NCryVulkan
 
 		VkResult Init(const void* pShaderCode, size_t shaderCodeSize);
 		VkShaderModule GetVulkanShader() const { return m_shaderHandle; }
-		void DebugSetName(const char* szName) { /*TODO*/ }
+		void SetDebugName(const char* szName) { /*TODO*/ }
+		const char* GetDebugName() { /*TODO*/ return ""; }
 
 	private:
 		VkShaderModule m_shaderHandle;

@@ -2,7 +2,7 @@
 PySide2_dir = 'Code/SDKs/Qt/5.6/msvc2015_64/PySide/PySide2/'
 
 def build(bld): 
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target = 'SandboxPythonBridge',
 		vs_filter = 'Sandbox/Plugins',
 		file_list = 'sandboxpythonbridge.waf_files',

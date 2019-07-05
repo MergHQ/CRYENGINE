@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <iostream>
 #include <list>
@@ -56,18 +56,18 @@ public:
 
 		ResultPerNode()
 			: nextNodeIdOnShortestPath(std::numeric_limits<uint32>::max())
-			, weightToNextNodeOnShortestPath(std::numeric_limits<T>::max())
 			, weightTotal(std::numeric_limits<T>::max())
+			, weightToNextNodeOnShortestPath(std::numeric_limits<T>::max())
 		{}
 		ResultPerNode(uint32 nextNodeIdOnShortestPath, T weightToNextNodeOnShortestPath, T weightTotal)
 			: nextNodeIdOnShortestPath(nextNodeIdOnShortestPath)
-			, weightToNextNodeOnShortestPath(weightToNextNodeOnShortestPath)
 			, weightTotal(weightTotal)
+			, weightToNextNodeOnShortestPath(weightToNextNodeOnShortestPath)
 		{}
 	};
 
 	std::vector<ResultPerNode> const& Results() const { return m_results; }
-	ResultPerNode const& Results(uint32 idx) const    { assert(idx < m_nNodes); return m_results[idx]; }
+	ResultPerNode const& Results(uint32 idx) const    { CRY_ASSERT(idx < m_nNodes); return m_results[idx]; }
 
 private:
 
@@ -106,8 +106,8 @@ GraphDijkstra<T>::GraphDijkstra(
 template<class T>
 void GraphDijkstra<T>::AddEdge(uint32 nodeId0, uint32 nodeId1, T weight)
 {
-	assert(nodeId0 < m_nNodes);
-	assert(nodeId1 < m_nNodes);
+	CRY_ASSERT(nodeId0 < m_nNodes);
+	CRY_ASSERT(nodeId1 < m_nNodes);
 	m_edges[nodeId0].push_back(std::make_pair(nodeId1, weight));
 	m_edges[nodeId1].push_back(std::make_pair(nodeId0, weight));
 }
@@ -115,7 +115,7 @@ void GraphDijkstra<T>::AddEdge(uint32 nodeId0, uint32 nodeId1, T weight)
 template<class T>
 void GraphDijkstra<T>::FindShortestPaths(uint32 targetNodeId)
 {
-	assert(targetNodeId < m_nNodes);
+	CRY_ASSERT(targetNodeId < m_nNodes);
 
 	// Priority queue to store indices; first: weight, second: nodeId - thus, sorting is ensured
 	typedef std::pair<T, uint32> tPair;
@@ -199,14 +199,14 @@ void GraphDijkstra<T>::FindShortestPaths(std::vector<uint32> const& listTargetNo
 template<class T>
 bool GraphDijkstra<T>::IsTargetNode(uint32 idx) const
 {
-	assert(idx < GraphDijkstra<T>::m_nNodes);
+	CRY_ASSERT(idx < GraphDijkstra<T>::m_nNodes);
 	return GraphDijkstra<T>::Results(idx).nextNodeIdOnShortestPath == m_targetNodeLinkId;
 }
 
 template<class T>
 bool GraphDijkstra<T>::IsIslandNode(uint32 idx) const
 {
-	assert(idx < GraphDijkstra<T>::m_nNodes);
+	CRY_ASSERT(idx < GraphDijkstra<T>::m_nNodes);
 	return GraphDijkstra<T>::Results(idx).nextNodeIdOnShortestPath == m_islandNodeLinkId;
 }
 
@@ -271,7 +271,7 @@ int main()
 	return 0;
 }
 
-/* */
+*/
 
 // OUTPUT:
 //  0 -> 6  (8.1)   9.2

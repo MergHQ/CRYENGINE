@@ -141,7 +141,7 @@ void CGameRulesMPSpawningBase::Init(XmlNodeRef xml)
 
 	if (!xml->getAttr("teamGame", m_teamGame))
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpawningBase failed to find valid teamGame param");
+		CRY_ASSERT(0, "CGameRulesMPSpawningBase failed to find valid teamGame param");
 	}
 
 	bool  typeOk = false;
@@ -154,7 +154,7 @@ void CGameRulesMPSpawningBase::Init(XmlNodeRef xml)
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(typeOk, "CGameRulesMPSpawningBase failed to find valid teamSpawnsType param");
+	CRY_ASSERT(typeOk, "CGameRulesMPSpawningBase failed to find valid teamSpawnsType param");
 
 	if (!xml->getAttr("midRoundJoining", m_allowMidRoundJoining))
 	{
@@ -327,10 +327,6 @@ void CGameRulesMPSpawningBase::Update(float frameTime)
 	{
 		if (!pObjectivesModule || pObjectivesModule->CanPlayerRevive(localActorEntityId))
 		{
-			const int  actorTeam = m_pGameRules->GetTeam(localActorEntityId);
-
-			bool preGameDone = g_pGame->GetUI()->IsPreGameDone();
-
 			float timeTillAutoRevive = GetTimeFromDeathTillAutoReviveForTeam(static_cast<CPlayer*>(pLocalActorImpl)->GetTeamWhenKilled());
 			timeTillAutoRevive += GetPlayerAutoReviveAdditionalTime(pLocalActorImpl);
 			
@@ -577,7 +573,7 @@ void CGameRulesMPSpawningBase::ClRequestRevive(EntityId playerId)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpawningBase::ClRequestRevive() failed to find a playerEntity for player that died");
+		CRY_ASSERT(0, "CGameRulesMPSpawningBase::ClRequestRevive() failed to find a playerEntity for player that died");
 	}
 }
 
@@ -678,7 +674,7 @@ void CGameRulesMPSpawningBase::PerformRevive(EntityId playerId, int teamId, Enti
 	// no inherited call - not implemented in CGameRulesSpawningBase
 	CActor *pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId));
 
-	CRY_ASSERT_MESSAGE(gEnv->bServer, "CGameRulesMPSpawningBase::PerformRevive() being called when NOT a server. This is wrong!");
+	CRY_ASSERT(gEnv->bServer, "CGameRulesMPSpawningBase::PerformRevive() being called when NOT a server. This is wrong!");
 
 	if (pActor)
 	{
@@ -688,7 +684,7 @@ void CGameRulesMPSpawningBase::PerformRevive(EntityId playerId, int teamId, Enti
 		// Check if the player can revive
 		if (( ( pActor->IsDead() || pActor->GetSpectatorMode() != CActor::eASM_None/*Spectating*/ ) && (!preferredSpawnId || SpawnIsValid(preferredSpawnId, playerId))) || pActor->IsMigrating())
 		{
-			CRY_ASSERT_MESSAGE(m_playerValues.find(playerId) != m_playerValues.end(), string().Format("CGameRulesMPSpawningBase::PerformRevive() failed to find a playervalue for player %s. This should not happen", pActor->GetEntity()->GetName()));
+			CRY_ASSERT(m_playerValues.find(playerId) != m_playerValues.end(), string().Format("CGameRulesMPSpawningBase::PerformRevive() failed to find a playervalue for player %s. This should not happen", pActor->GetEntity()->GetName()));
 
 			if (CheckMidRoundJoining(pActor, playerId))
 			{
@@ -833,9 +829,12 @@ bool CGameRulesMPSpawningBase::SpawnIsValid(EntityId spawnId, EntityId playerId)
 	
 		if(fDistSq < fAcceptableDistanceSq)
 		{
+#if VERBOSE_DEBUG_SPAWNING_VISTABLE
 			float gameTime = GetTime();
 			VerboseDebugLog("ABORTING SPAWN: selected spawn is too close to recent spawn at game time %f\n        Previous spawn from team %d, player %s, at game time %f [%f seconds ago]\n        request from team %d, distance %f\n",
 						gameTime, rSpawnHistory.nTeamSpawned, pSpawnEnt->GetName(), rSpawnHistory.fGameTime, gameTime - rSpawnHistory.fGameTime, iTeamNum, sqrt_tpl(fDistSq) );
+#endif
+
 			return false;
 		}
 	}
@@ -900,7 +899,7 @@ EntityId CGameRulesMPSpawningBase::GetSpawnLocation(EntityId playerId)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, string().Format("CGameRulesMPSpawningBase::GetSpawnLocation() failed to find a playervalue for player %s. This should not happen", playerEntity->GetName()));
+		CRY_ASSERT(0, string().Format("CGameRulesMPSpawningBase::GetSpawnLocation() failed to find a playervalue for player %s. This should not happen", playerEntity->GetName()));
 	}
 
 	if (m_teamGame)
@@ -1151,9 +1150,9 @@ bool CGameRulesMPSpawningBase::DoesSpawnLocationRespectPOIs(EntityId spawnLocati
 						break;
 					default:
 #if DEBUG_NEW_SPAWNING
-						CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::DoesSpawnLocationRespectPOIs() found a POI (entity=%s) with unhandled state %d", pPOI->GetName(), poi.m_state));
+						CRY_ASSERT(0, "CGameRulesSpawningBase::DoesSpawnLocationRespectPOIs() found a POI (entity=%s) with unhandled state %d", pPOI->GetName(), poi.m_state);
 #else
-						CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::DoesSpawnLocationRespectPOIs() found a POI (entity=%d) with unhandled state %d", poi.m_entityId, poi.m_state));
+						CRY_ASSERT(0, "CGameRulesSpawningBase::DoesSpawnLocationRespectPOIs() found a POI (entity=%d) with unhandled state %d", poi.m_entityId, poi.m_state);
 #endif
 						break;
 				}
@@ -1222,7 +1221,7 @@ void CGameRulesMPSpawningBase::ReviveAllPlayers(bool isReset, bool bOnlyIfDead)
 								numPoints = GetTeamSpawnLocations(teamId, false, spawnPoints);		// Run out of initial spawns, switch to regular spawns
 								if (!numPoints)
 								{
-									CRY_ASSERT_MESSAGE(false, "Designer ASSERT: No team spawn points");
+									CRY_ASSERT(false, "Designer ASSERT: No team spawn points");
 									return;
 								}
 							}
@@ -1245,7 +1244,7 @@ void CGameRulesMPSpawningBase::ReviveAllPlayers(bool isReset, bool bOnlyIfDead)
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(!m_pGameRules->GetRoundsModule(), "TODO! At the time of writing there are no rounds-based non-team gamemodes. If there ever are any, then this needs implementing... (Shouldn't be hard.)");
+			CRY_ASSERT(!m_pGameRules->GetRoundsModule(), "TODO! At the time of writing there are no rounds-based non-team gamemodes. If there ever are any, then this needs implementing... (Shouldn't be hard.)");
 
 			ReviveAllPlayers_NoTeam(isReset, bOnlyIfDead);
 		}

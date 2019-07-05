@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "UtilityPasses.h"
 #include "FullscreenPass.h"
-#include "DriverD3D.h"
 
 ResourceViewHandle s_RTVDefaults[] =
 {
@@ -22,28 +21,11 @@ ResourceViewHandle s_RTVDefaults[] =
 // CStretchRectPass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CStretchRectPass *CStretchRectPass::s_pPass = nullptr;
-
-CStretchRectPass &CStretchRectPass::GetPass()
-{
-	if (!s_pPass)
-		s_pPass = new CStretchRectPass;
-	return *s_pPass;
-}
-void CStretchRectPass::Shutdown()
-{
-	if (s_pPass)
-		delete s_pPass;
-	s_pPass = NULL;
-}
-
 void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 {
 	//Check if the required shader is loaded
 	if (CShaderMan::s_shPostEffects == nullptr)
 		return;
-
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	if (pSrcRT == NULL || pDestRT == NULL)
 		return;
@@ -91,14 +73,14 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 		if (bBigDownsample)
 		{
 			// Use rotated grid + middle sample (~Quincunx)
-			params0 = Vec4(s1 * 0.96f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);
-			params1 = Vec4(-s1 * 0.96f, -t1 * 0.25f, s1 * 0.25f, -t1 * 0.96f);
+			params0 = Vec4( s1 * 0.96f,  t1 * 0.25f, -s1 * 0.25f,  t1 * 0.96f);
+			params1 = Vec4(-s1 * 0.96f, -t1 * 0.25f,  s1 * 0.25f, -t1 * 0.96f);
 		}
 		else
 		{
 			// Use box filtering (faster - can skip bilinear filtering, only 4 taps)
-			params0 = Vec4(-s1, -t1, s1, -t1);
-			params1 = Vec4(s1, t1, -s1, t1);
+			params0 = Vec4(-s1, -t1,  s1, -t1);
+			params1 = Vec4( s1,  t1, -s1,  t1);
 		}
 
 		m_pass.BeginConstantUpdate();
@@ -113,25 +95,8 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 // CStretchRegionPass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CStretchRegionPass *CStretchRegionPass::s_pPass = nullptr;
-
-CStretchRegionPass &CStretchRegionPass::GetPass()
+void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT* pSrcRect, const RECT* pDstRect, bool bBigDownsample, const ColorF& color, const int renderStateFlags)
 {
-	if (!s_pPass)
-		s_pPass = new CStretchRegionPass;
-	return *s_pPass;
-}
-void CStretchRegionPass::Shutdown()
-{
-	if (s_pPass)
-		delete s_pPass;
-	s_pPass = NULL;
-}
-
-void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect, const RECT *pDstRect, bool bBigDownsample, const ColorF& color, const int renderStateFlags)
-{
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	if (pSrcRT == NULL || pDestRT == NULL)
 		return;
 
@@ -142,13 +107,19 @@ void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT
 		rcS = *pSrcRect;
 	else
 	{
-		rcS.left = 0; rcS.right = pSrcRT->GetWidth(); rcS.top = 0; rcS.bottom = pSrcRT->GetHeight();
+		rcS.left = 0;
+		rcS.right = pSrcRT->GetWidth();
+		rcS.top = 0;
+		rcS.bottom = pSrcRT->GetHeight();
 	}
 	if (pDstRect)
 		rcD = *pDstRect;
 	else
 	{
-		rcD.left = 0; rcD.right = pDestRT->GetWidth(); rcD.top = 0; rcS.bottom = pDestRT->GetHeight();
+		rcD.left = 0;
+		rcD.right = pDestRT->GetWidth();
+		rcD.top = 0;
+		rcD.bottom = pDestRT->GetHeight();
 	}
 	const D3DFormat destFormat = DeviceFormats::ConvertFromTexFormat(pDestRT->GetDstFormat());
 	const D3DFormat srcFormat = DeviceFormats::ConvertFromTexFormat(pSrcRT->GetDstFormat());
@@ -167,7 +138,8 @@ void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT
 	m_pass.SetRenderTarget(0, pDestRT);
 
 	D3DViewPort viewport;
-	viewport.TopLeftX = (float)rcD.left; viewport.TopLeftY = (float)rcD.top;
+	viewport.TopLeftX = (float)rcD.left;
+	viewport.TopLeftY = (float)rcD.top;
 	viewport.Width = (float)(rcD.right - rcD.left);
 	viewport.Height = (float)(rcD.bottom - rcD.top);
 	viewport.MinDepth = 0.0f;
@@ -189,7 +161,7 @@ void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT
 	}
 }
 
-bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture *pSrcRT, CTexture *pDestRT, const ColorF& color)
+bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRenderPass& targetPass, const RECT& rcS, int renderState, const D3DViewPort& targetViewport, bool bResample, bool bBigDownsample, CTexture* pSrcRT, CTexture* pDestRT, const ColorF& color)
 {
 	static CCryNameTSCRC techTexToTex("TextureToTextureTinted");
 	static CCryNameTSCRC techTexToTexResampled("TextureToTextureTintedResampledReg");
@@ -230,7 +202,6 @@ bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRend
 	paramsTC.y = (float)rcS.top / (float)pSrcRT->GetHeight();
 	paramsTC.w = (float)(rcS.bottom - rcS.top) / (float)pSrcRT->GetHeight();
 
-
 	prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);
 	prim.SetPrimitiveType(bResample ? CRenderPrimitive::ePrim_FullscreenQuadCentered : CRenderPrimitive::ePrim_ProceduralTriangle);
 
@@ -249,7 +220,8 @@ bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRend
 		constantManager.SetNamedConstant(param2Name, params2, eHWSC_Pixel);
 		constantManager.SetNamedConstant(paramTCName, paramsTC, eHWSC_Vertex);
 
-		constantManager.EndNamedConstantUpdate(&targetPass.GetViewport());
+		CRY_ASSERT(m_pGraphicsPipeline);
+		constantManager.EndNamedConstantUpdate(&targetPass.GetViewport(), m_pGraphicsPipeline->GetCurrentRenderView());
 
 		return true;
 	}
@@ -478,17 +450,86 @@ void CStableDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bK
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CDepthLinearizationPass
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CDepthLinearizationPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
+{
+	PROFILE_LABEL_SCOPE("LINEARIZE_DEPTH");
+
+	if (m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID()))
+	{
+		static CCryNameTSCRC techLinearizeDepth("LinearizeDepth");
+
+		m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
+		m_pass.SetTechnique(CShaderMan::s_shPostEffects, techLinearizeDepth, 0);
+		m_pass.SetRenderTarget(0, pDestRT);
+		m_pass.SetState(GS_NODEPTHTEST);
+		m_pass.SetRequirePerViewConstantBuffer(true);
+		m_pass.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
+
+		m_pass.SetTexture(0, pSrcRT);
+	}
+
+	static CCryNameR paramName("NearProjection");
+
+	m_pass.BeginConstantUpdate();
+
+	float zn = DRAW_NEAREST_MIN;
+	float zf = CRenderer::CV_r_DrawNearFarPlane;
+	float nearZRange = CRenderer::CV_r_DrawNearZRange;
+	float camScale = (zf / gEnv->p3DEngine->GetMaxViewDistance());
+
+	const bool bReverseDepth = true;
+
+	Vec4 nearProjParams;
+	nearProjParams.x = bReverseDepth ? 1.0f - zf / (zf - zn) * nearZRange : zf / (zf - zn) * nearZRange;
+	nearProjParams.y = bReverseDepth ? zn / (zf - zn) * nearZRange * camScale : zn / (zn - zf) * nearZRange * camScale;
+	nearProjParams.z = bReverseDepth ? 1.0f - (nearZRange - 0.001f) : nearZRange - 0.001f;
+	nearProjParams.w = 1.0f - nearZRange;
+	m_pass.SetConstant(paramName, nearProjParams, eHWSC_Pixel);
+
+	m_pass.Execute();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// CDepthDelinearizationPass
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CDepthDelinearizationPass::Execute(CTexture* pSrcRT, CTexture* pDestDS)
+{
+	PROFILE_LABEL_SCOPE("DELINEARIZE_DEPTH");
+
+	if (m_pass.IsDirty(pSrcRT->GetTextureID(), pDestDS->GetTextureID()))
+	{
+		static CCryNameTSCRC techCopy("CopyToDeviceDepth");
+
+		m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
+		m_pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
+		m_pass.SetTechnique(CShaderMan::s_shPostEffects, techCopy, 0);
+		m_pass.SetRequirePerViewConstantBuffer(true);
+		m_pass.SetDepthTarget(pDestDS);
+		m_pass.SetState(GS_NODEPTHTEST | GS_DEPTHWRITE);
+		m_pass.SetTexture(0, pSrcRT);
+	}
+
+	m_pass.BeginConstantUpdate();
+	m_pass.Execute();
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CDepthDownsamplePass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLinearizeSrcDepth, bool bFromSingleChannel)
+void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, CTexture* pDestDS, bool bLinearizeSrcDepth, bool bFromSingleChannel)
 {
 	PROFILE_LABEL_SCOPE("DOWNSAMPLE_DEPTH");
 
 	if (!pSrcRT || !pDestRT)
 		return;
 
-	if (!m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), bLinearizeSrcDepth, bFromSingleChannel))
+	if (!m_pass.IsDirty(pSrcRT->GetTextureID(), pDestRT->GetTextureID(), pDestDS ? pDestDS->GetTextureID() : 0, bLinearizeSrcDepth, bFromSingleChannel))
 	{
 		m_pass.Execute();
 		return;
@@ -499,12 +540,14 @@ void CDepthDownsamplePass::Execute(CTexture* pSrcRT, CTexture* pDestRT, bool bLi
 	uint64 rtMask = 0;
 	rtMask |= bLinearizeSrcDepth ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 	rtMask |= bFromSingleChannel ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+	rtMask |= pDestDS            ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 
 	m_pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 	m_pass.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	m_pass.SetRenderTarget(0, pDestRT);
+	m_pass.SetDepthTarget(pDestDS);
 	m_pass.SetTechnique(CShaderMan::s_shPostEffects, techName, rtMask);
-	m_pass.SetState(GS_NODEPTHTEST);
+	m_pass.SetState(GS_NODEPTHTEST | (pDestDS ? GS_DEPTHWRITE : 0));
 	m_pass.SetRequirePerViewConstantBuffer(true);
 	m_pass.SetTextureSamplerPair(0, pSrcRT, EDefaultSamplerStates::PointClamp);
 
@@ -577,8 +620,6 @@ void CGaussianBlurPass::ComputeParams(int texWidth, int texHeight, int numSample
 
 void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution, bool bAlphaOnly)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	if (pScrDestRT == NULL || pTempRT == NULL)
 		return;
 
@@ -716,7 +757,7 @@ void CClearSurfacePass::Execute(const CGpuBuffer* pBuf, const ColorF& cClear)
 {
 	// Full buffer clear, no need to do custom pass
 	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-	CRY_ASSERT_MESSAGE(!(pBuf->GetFlags() & CDeviceObjectFactory::USAGE_STRUCTURED), "Unsupported UAV-clear of a structured buffer!");
+	CRY_ASSERT(!(pBuf->GetFlags() & CDeviceObjectFactory::USAGE_STRUCTURED), "Unsupported UAV-clear of a structured buffer!");
 	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear);
 }
 
@@ -724,7 +765,7 @@ void CClearSurfacePass::Execute(const CGpuBuffer* pBuf, const ColorI& cClear)
 {
 	// Full buffer clear, no need to do custom pass
 	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
-	CRY_ASSERT_MESSAGE(!(pBuf->GetFlags() & CDeviceObjectFactory::USAGE_STRUCTURED), "Unsupported UAV-clear of a structured buffer!");
+	CRY_ASSERT(!(pBuf->GetFlags() & CDeviceObjectFactory::USAGE_STRUCTURED), "Unsupported UAV-clear of a structured buffer!");
 	commandList.GetComputeInterface()->ClearUAV(pBuf->GetDevBuffer()->LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear);
 }
 
@@ -732,7 +773,7 @@ void CClearSurfacePass::Execute(const CGpuBuffer* pBuf, const ColorI& cClear)
 // CClearRegionPass
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CClearRegionPass::CClearRegionPass()
+CClearRegionPass::CClearRegionPass(CGraphicsPipeline* pGraphicsPipeline) : m_pGraphicsPipeline(pGraphicsPipeline)
 {
 	CryStackAllocWithSizeVector(SVF_P3F, 6, quadVertices, CDeviceBufferManager::AlignBufferSizeForStreaming);
 	quadVertices[0].xyz = Vec3(-1,  1, 0);
@@ -791,11 +832,11 @@ void CClearRegionPass::Execute(CTexture* pDepthTex, const int nFlags, const floa
 	for (int i = 0; i < numRects; ++i)
 	{
 		auto& prim = m_clearPrimitives[i];
-		PreparePrimitive(prim, renderState, stencilState, Col_Black, cDepth, cStencil, pRects[i], viewport);
+		PreparePrimitive(prim, renderState, stencilState, Col_Black, cDepth, cStencil, pRects[i], viewport, 0);
 
 		m_clearPass.AddPrimitive(&prim);
 	}
-	
+
 	m_clearPass.Execute();
 #endif
 }
@@ -833,7 +874,7 @@ void CClearRegionPass::Execute(CTexture* pTex, const ColorF& cClear, const uint 
 	for (int i = 0; i < numRects; ++i)
 	{
 		auto& prim = m_clearPrimitives[i];
-		if (PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport))
+		if (PreparePrimitive(prim, renderState, stencilState, cClear, 0, 0, pRects[i], viewport, 1))
 		{
 			m_clearPass.AddPrimitive(&prim);
 		}
@@ -856,7 +897,7 @@ void CClearRegionPass::Execute(CGpuBuffer* pBuf, const ColorF& cClear, const uin
 	}
 
 	// TODO: implement as a Dispatch(), same way it is implemented as a Draw() for Surfaces
-	__debugbreak();
+	CRY_ASSERT_MESSAGE(false, "Partial buffer clearing not implemented yet");
 #endif
 }
 
@@ -873,16 +914,23 @@ void CClearRegionPass::Execute(CGpuBuffer* pBuf, const ColorI& cClear, const uin
 	}
 
 	// TODO: implement as a Dispatch(), same way it is implemented as a Draw() for Surfaces
-	__debugbreak();
+	CRY_ASSERT_MESSAGE(false, "Partial buffer clearing not implemented yet");
 #endif
 }
 
-bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport)
+bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState, int stencilState, const ColorF& cClear, float cDepth, int stencilRef, const RECT& rect, const D3DViewPort& targetViewport, int numRTVs)
 {
 	static CCryNameTSCRC techClear("Clear");
 
-	prim.SetFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);
-	prim.SetTechnique(CShaderMan::s_ShaderCommon, techClear, 0);
+	uint64 rtFlags = 0;
+
+	if (numRTVs > 0) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE0];
+	if (numRTVs > 1) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE1];
+	if (numRTVs > 2) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE2];
+	if (numRTVs > 3) rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE3];
+
+	prim.SetFlags(numRTVs > 0 ? CRenderPrimitive::eFlags_ReflectShaderConstants : CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
+	prim.SetTechnique(CShaderMan::s_ShaderCommon, techClear, rtFlags);
 	prim.SetRenderState(renderState);
 	prim.SetStencilState(stencilState, stencilRef);
 	prim.SetCustomVertexStream(m_quadVertices, EDefaultInputLayouts::P3F, sizeof(SVF_P3F));
@@ -893,9 +941,9 @@ bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState,
 		auto& constantManager = prim.GetConstantManager();
 		constantManager.BeginNamedConstantUpdate();
 
-		float clipSpaceL = rect.left / targetViewport.Width  *  2.0f - 1.0f;
-		float clipSpaceT = rect.top / targetViewport.Height * -2.0f + 1.0f;
-		float clipSpaceR = rect.right / targetViewport.Width  *  2.0f - 1.0f;
+		float clipSpaceL = rect.left   / targetViewport.Width  * 2.0f  - 1.0f;
+		float clipSpaceT = rect.top    / targetViewport.Height * -2.0f + 1.0f;
+		float clipSpaceR = rect.right  / targetViewport.Width  * 2.0f  - 1.0f;
 		float clipSpaceB = rect.bottom / targetViewport.Height * -2.0f + 1.0f;
 
 		Vec4 vClearRect;
@@ -910,9 +958,11 @@ bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState,
 
 		constantManager.SetNamedConstant(paramClearRect, vClearRect, eHWSC_Vertex);
 		constantManager.SetNamedConstant(paramClearDepth, Vec4(cDepth, 0, 0, 0), eHWSC_Vertex);
-		constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
+		if (numRTVs > 0)
+			constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
 
-		constantManager.EndNamedConstantUpdate(&m_clearPass.GetViewport());
+		CRY_ASSERT(m_pGraphicsPipeline);
+		constantManager.EndNamedConstantUpdate(&m_clearPass.GetViewport(), m_pGraphicsPipeline->GetCurrentRenderView());
 
 		return true;
 	}
@@ -949,7 +999,6 @@ void CAnisotropicVerticalBlurPass::Execute(CTexture* pTex, int nAmount, float fS
 	static CCryNameR paramName("blurParams0");
 
 	// setup texture offsets, for texture sampling
-	float s1 = 1.0f / (float)pTex->GetWidth();
 	float t1 = 1.0f / (float)pTex->GetHeight();
 
 	Vec4 pWeightsPS;

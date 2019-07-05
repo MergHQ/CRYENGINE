@@ -17,8 +17,10 @@ protected:
 	virtual void        OnTrackViewEditorEvent(ETrackViewEditorEvent event) override {}
 	virtual const char* GetComponentTitle() const override                           { return "Sequence Toolbar"; }
 
+private:
+	void                OnAddSelectedEntitiesContextMenu();
+
 private slots:
 	void OnAddSelectedEntities();
 	void OnShowProperties();
 };
-

@@ -164,10 +164,9 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 {
 #ifndef _RELEASE
 
-	//LOADING_TIME_PROFILE_SECTION;
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	FUNCTION_PROFILER_3DENGINE;
 
-	float fStartTime = GetCurAsyncTimeSec();
 	float unitSize = CTerrain::GetHeightMapUnitSize();
 	int nHmapSize = int(CTerrain::GetTerrainSize() / unitSize);
 
@@ -372,7 +371,6 @@ void CTerrain::SetTerrainElevation(int X1, int Y1, int nSizeX, int nSizeY, float
 					pNode->m_geomError = kGeomErrorNotSet;
 
 					pNode->ReleaseHeightMapGeometry();
-					pNode->RemoveProcObjects(false, false);
 					pNode->UpdateDetailLayersInfo(false);
 
 					// propagate bounding boxes and error metrics to parents
@@ -537,7 +535,7 @@ ILINE bool CTerrain::IsRenderNodeIncluded(IRenderNode* pNode, const AABB& region
 		break;
 
 	default:
-		CRY_ASSERT_TRACE(0, ("Need to support cloning terrain object type %d", type));
+		CRY_ASSERT(0, "Need to support cloning terrain object type %d", type);
 		return false;
 	}
 
@@ -606,7 +604,7 @@ void CTerrain::MarkAndOffsetCloneRegion(const AABB& region, const Vec3& offset)
 
 		if (IsRenderNodeIncluded(pNode, region, NULL, 0))
 		{
-			CRY_ASSERT_MESSAGE((pNode->GetRndFlags() & ERF_CLONE_SOURCE) == 0, "Marking already marked node, is an object overlapping multiple regions?");
+			CRY_ASSERT((pNode->GetRndFlags() & ERF_CLONE_SOURCE) == 0, "Marking already marked node, is an object overlapping multiple regions?");
 
 			pNode->SetRndFlags(ERF_CLONE_SOURCE, true);
 
@@ -657,8 +655,6 @@ void CTerrain::CloneRegion(const AABB& region, const Vec3& offset, float zRotati
 			pBrush->m_Matrix = l2w * pBrush->m_Matrix;
 
 			pBrush->CalcBBox();
-
-			pBrush->m_pOcNode = NULL;
 
 			// to get correct indirect lighting the registration must be done before checking if this object is inside a VisArea
 			Get3DEngine()->RegisterEntity(pBrush);
@@ -740,8 +736,8 @@ void CTerrain::CloneRegion(const AABB& region, const Vec3& offset, float zRotati
 
 			// Get the merged mesh node for this coordinate.
 			CMergedMeshRenderNode* pDstMergedMesh = m_pMergedMeshesManager->GetNode(dstPos);
-			CRY_ASSERT_MESSAGE(pDstMergedMesh->m_pos == dstPos, "Cloned destination position isn't on grid");
-			CRY_ASSERT_MESSAGE(pDstMergedMesh->m_nGroups == 0, "Cloning into a used chunk");
+			CRY_ASSERT(pDstMergedMesh->m_pos == dstPos, "Cloned destination position isn't on grid");
+			CRY_ASSERT(pDstMergedMesh->m_nGroups == 0, "Cloning into a used chunk");
 
 			if (pDstMergedMesh->m_nGroups == 0)
 			{

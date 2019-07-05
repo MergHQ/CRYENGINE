@@ -32,7 +32,6 @@ CSmartObjectHelperObject::~CSmartObjectHelperObject()
 {
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 void CSmartObjectHelperObject::UpdateVarFromObject()
 {
@@ -72,7 +71,7 @@ void CSmartObjectHelperObject::Done()
 //////////////////////////////////////////////////////////////////////////
 bool CSmartObjectHelperObject::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 	return CBaseObject::Init(prev, file);
 }
 
@@ -104,9 +103,9 @@ bool CSmartObjectHelperObject::HitTest(HitContext& hc)
 //////////////////////////////////////////////////////////////////////////
 void CSmartObjectHelperObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	COLORREF color = GetColor();
-	float radius = RADIUS;
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	COLORREF color = CMFCUtils::ColorBToColorRef(GetColor());
+	//float radius = RADIUS;
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	//dc.SetColor( color, 0.5f );
 	//dc.DrawBall( GetPos(), radius );
@@ -117,7 +116,7 @@ void CSmartObjectHelperObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	if (!IsHighlighted())
 	{
-		//if (dc.flags & DISPLAY_2D)
+		//if (dc.display2D)
 		{
 			AABB box;
 			GetLocalBounds(box);
@@ -156,4 +155,3 @@ void CSmartObjectHelperObject::GetBoundSphere(Vec3& pos, float& radius)
 	pos = GetPos();
 	radius = RADIUS;
 }
-

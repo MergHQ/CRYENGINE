@@ -63,7 +63,6 @@ extern IRenderer* g_pIRenderer;
 extern IPhysicalWorld* g_pIPhysicalWorld;
 extern I3DEngine* g_pI3DEngine;
 
-extern bool g_bProfilerOn;
 extern f32 g_fCurrTime;
 extern f32 g_AverageFrameTime;
 extern CAnimation g_DefaultAnim;
@@ -84,7 +83,7 @@ extern uint32 g_DefaultTransitionInterpolationType;
 // CharacterManager instance). Also initializes the console variables
 ILINE void g_InitInterfaces()
 {
-	assert(g_pISystem);
+	CRY_ASSERT(g_pISystem);
 	g_pIConsole = gEnv->pConsole;
 	g_pITimer = gEnv->pTimer;
 	g_pILog = g_pISystem->GetILog();
@@ -134,13 +133,5 @@ extern AnimStatisticsInfo g_AnimStatisticsInfo;
 
 #define ENABLE_GET_MEMORY_USAGE 1
 
-#ifndef AUTO_PROFILE_SECTION
-	#pragma message ("Warning: ITimer not included")
-#else
-	#undef AUTO_PROFILE_SECTION
-#endif
-
-#define AUTO_PROFILE_SECTION(g_fTimer) CITimerAutoProfiler<double> __section_auto_profiler(g_pITimer, g_fTimer)
-
 #define DEFINE_PROFILER_FUNCTION()     CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
-#define DEFINE_PROFILER_SECTION(NAME)  CRY_PROFILE_REGION(PROFILE_ANIMATION, NAME)
+#define DEFINE_PROFILER_SECTION(NAME)  CRY_PROFILE_SECTION(PROFILE_ANIMATION, NAME)

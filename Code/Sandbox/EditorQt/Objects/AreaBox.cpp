@@ -2,18 +2,23 @@
 
 #include "StdAfx.h"
 #include "AreaBox.h"
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Controls/PropertiesPanel.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include <CryEntitySystem/IEntity.h>
+#include "IEditorImpl.h"
 
-#include <Serialization/Decorators/EntityLink.h>
+#include "Serialization/Decorators/EntityLink.h"
+
+#include <Util/MFCUtil.h>
+
+#include <IObjectManager.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/ViewportPreferences.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 #include <Serialization/Decorators/EditToolButton.h>
+#include <Util/Math.h>
+#include <Viewport.h>
 
-#include "PickObjectTool.h"
+#include <CryEntitySystem/IEntity.h>
 
 REGISTER_CLASS_DESC(CAreaBoxClassDesc);
 
@@ -49,6 +54,11 @@ public:
 	{
 	}
 
+	~AreaTargetTool()
+	{
+		m_picker.OnCancelPick();
+	}
+
 	virtual void SetUserData(const char* key, void* userData) override
 	{
 		m_picker.m_owner = static_cast<CAreaObjectBase*>(userData);
@@ -60,19 +70,16 @@ private:
 
 IMPLEMENT_DYNCREATE(AreaTargetTool, CPickObjectTool)
 
-//////////////////////////////////////////////////////////////////////////
 CAreaObjectBase::CAreaObjectBase()
 {
 	m_entities.RegisterEventCallback(functor(*this, &CAreaObjectBase::OnObjectEvent));
 }
 
-//////////////////////////////////////////////////////////////////////////
 CAreaObjectBase::~CAreaObjectBase()
 {
 	m_entities.UnregisterEventCallback(functor(*this, &CAreaObjectBase::OnObjectEvent));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaObjectBase::SerializeEntityTargets(Serialization::IArchive& ar, bool bMultiEdit)
 {
 	std::vector<Serialization::EntityTarget> links;
@@ -124,7 +131,8 @@ void CAreaObjectBase::SerializeEntityTargets(Serialization::IArchive& ar, bool b
 			pickToolButton.SetToolClass(RUNTIME_CLASS(AreaTargetTool), nullptr, this);
 
 			ar(pickToolButton, "picker", "^Pick");
-			ar(Serialization::ActionButton([ = ] {
+			ar(Serialization::ActionButton([=]
+			{
 				CUndo undo("Clear entity links");
 				while (!m_entities.IsEmpty())
 				{
@@ -144,13 +152,16 @@ void CAreaObjectBase::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	creator.AddPropertyTree<CAreaObjectBase>("Area", &CAreaObjectBase::SerializeEntityTargets);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaObjectBase::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	__super::PostClone(pFromObject, ctx);
 
 	CAreaObjectBase const* const pFrom = static_cast<CAreaObjectBase*>(pFromObject);
 	// Clone event targets.
+
+	// Make sure that the area has no entities in it.
+	ClearArea();
+
 	if (!pFrom->m_entities.IsEmpty())
 	{
 		size_t const numEntities = pFrom->m_entities.GetCount();
@@ -172,7 +183,6 @@ void CAreaObjectBase::PostClone(CBaseObject* pFromObject, CObjectCloneContext& c
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaObjectBase::OnObjectEvent(CBaseObject* const pBaseObject, int const event)
 {
 	if (event == OBJECT_ON_PREDELETE)
@@ -189,7 +199,6 @@ void CAreaObjectBase::OnObjectEvent(CBaseObject* const pBaseObject, int const ev
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaObjectBase::AddEntity(CBaseObject* const pBaseObject)
 {
 	CRY_ASSERT(pBaseObject != nullptr);
@@ -204,7 +213,6 @@ void CAreaObjectBase::AddEntity(CBaseObject* const pBaseObject)
 	UpdateUIVars();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaObjectBase::RemoveEntity(size_t const index)
 {
 	CRY_ASSERT(index >= 0 && index < m_entities.GetCount());
@@ -226,7 +234,6 @@ void CAreaObjectBase::RemoveEntity(size_t const index)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEntityObject* CAreaObjectBase::GetEntity(size_t const index)
 {
 	CRY_ASSERT(index >= 0 && index < m_entities.GetCount());
@@ -240,7 +247,6 @@ CEntityObject* CAreaObjectBase::GetEntity(size_t const index)
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaObjectBase::Serialize(CObjectArchive& ar)
 {
 	__super::Serialize(ar);
@@ -287,8 +293,7 @@ void CAreaObjectBase::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CAreaObjectBase::DrawEntityLinks(DisplayContext& dc)
+void CAreaObjectBase::DrawEntityLinks(SDisplayContext& dc)
 {
 	if (!m_entities.IsEmpty())
 	{
@@ -308,11 +313,8 @@ void CAreaObjectBase::DrawEntityLinks(DisplayContext& dc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CAreaBox, CEntityObject)
 
-//////////////////////////////////////////////////////////////////////////
 CAreaBox::CAreaBox()
 	: m_innerFadeDistance(0.0f)
 {
@@ -338,7 +340,6 @@ CAreaBox::CAreaBox()
 	m_pOwnSoundVarBlock = new CVarBlock;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::InitVariables()
 {
 	if (m_pVarObject == nullptr)
@@ -358,7 +359,6 @@ void CAreaBox::InitVariables()
 	m_pVarObject->AddVariable(mv_displaySoundInfo, "DisplaySoundInfo", functor(*this, &CAreaBox::OnSoundParamsChange));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::Done()
 {
 	m_pOwnSoundVarBlock->DeleteAllVariables();
@@ -366,12 +366,11 @@ void CAreaBox::Done()
 	CEntityObject::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CAreaBox::Init(CBaseObject* prev, const string& file)
 {
 	m_bIgnoreGameUpdate = 1;
 
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 	bool res = CEntityObject::Init(prev, file);
 
 	if (m_pEntity != nullptr)
@@ -390,13 +389,11 @@ bool CAreaBox::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::GetLocalBounds(AABB& box)
 {
 	box = m_box;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CAreaBox::HitTest(HitContext& hc)
 {
 	Vec3 p;
@@ -438,7 +435,6 @@ bool CAreaBox::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CAreaObjectBase::CreateInspectorWidgets(creator);
@@ -486,7 +482,6 @@ void CAreaBox::SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::Reload(bool bReloadScript /* = false */)
 {
 	__super::Reload(bReloadScript);
@@ -496,7 +491,6 @@ void CAreaBox::Reload(bool bReloadScript /* = false */)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::OnAreaChange(IVariable* pVariable)
 {
 	if (m_bIgnoreGameUpdate == 0 && m_pEntity != nullptr)
@@ -513,7 +507,6 @@ void CAreaBox::OnAreaChange(IVariable* pVariable)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::OnSizeChange(IVariable* pVariable)
 {
 	Vec3 size(0, 0, 0);
@@ -541,12 +534,14 @@ void CAreaBox::OnSizeChange(IVariable* pVariable)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-	if (!gViewportDebugPreferences.showAreaObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
+	if (!dc.showAreaHelper)
+	{
 		return;
+	}
 
 	if (!mv_displaySoundInfo)
 	{
@@ -556,13 +551,13 @@ void CAreaBox::Display(CObjectRenderHelper& objRenderHelper)
 		if (IsSelected())
 		{
 			wireColor = dc.GetSelectedColor();
-			solidColor = GetColor();
+			solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 			wireOffset = -0.1f;
 		}
 		else
 		{
-			wireColor = GetColor();
-			solidColor = GetColor();
+			wireColor = CMFCUtils::ColorBToColorRef(GetColor());
+			solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 		}
 
 		//dc.renderer->SetCullMode( R_CULL_DISABLE );
@@ -573,10 +568,13 @@ void CAreaBox::Display(CObjectRenderHelper& objRenderHelper)
 		bool bFrozen = IsFrozen();
 
 		if (bFrozen)
+		{
 			dc.SetFreezeColor();
-		//////////////////////////////////////////////////////////////////////////
-		if (!bFrozen)
+		}
+		else
+		{
 			dc.SetColor(solidColor, alpha);
+		}
 
 		if (IsSelected())
 		{
@@ -634,7 +632,7 @@ void CAreaBox::Display(CObjectRenderHelper& objRenderHelper)
 		if (IsSelected())
 			oWireColor = dc.GetSelectedColor();
 		else
-			oWireColor = GetColor();
+			oWireColor = CMFCUtils::ColorBToColorRef(GetColor());
 
 		dc.SetColor(oWireColor);
 
@@ -668,8 +666,7 @@ void CAreaBox::Display(CObjectRenderHelper& objRenderHelper)
 			SBoxFace(&v2, &v6, &v7, &v3),
 			SBoxFace(&v3, &v7, &v4, &v0),
 			SBoxFace(&v4, &v5, &v6, &v7),
-			SBoxFace(&v0, &v1, &v2, &v3)
-		};
+			SBoxFace(&v0, &v1, &v2, &v3) };
 
 		// Draw each side
 		unsigned int const nSideCount = ((mv_height > 0.0f) ? 6 : 4);
@@ -693,7 +690,7 @@ void CAreaBox::Display(CObjectRenderHelper& objRenderHelper)
 			if (mv_height > 0.0f)
 			{
 				// Manipulate the color so it looks a little thicker and redder
-				if (mv_filled || gViewportPreferences.fillSelectedShapes)
+				if (mv_filled || dc.fillSelectedShapes)
 				{
 					ColorB const nColor = dc.GetColor();
 
@@ -740,13 +737,11 @@ void CAreaBox::Display(CObjectRenderHelper& objRenderHelper)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::InvalidateTM(int nWhyFlags)
 {
 	CEntityObject::InvalidateTM(nWhyFlags);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::Serialize(CObjectArchive& ar)
 {
 	m_bIgnoreGameUpdate = 1;
@@ -883,14 +878,12 @@ void CAreaBox::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CAreaBox::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	XmlNodeRef objNode = CEntityObject::Export(levelPath, xmlNode);
 	return objNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::SetAreaId(int nAreaId)
 {
 	m_areaId = nAreaId;
@@ -906,13 +899,11 @@ void CAreaBox::SetAreaId(int nAreaId)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CAreaBox::GetAreaId()
 {
 	return m_areaId;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::SetBox(AABB box)
 {
 	m_box = box;
@@ -928,13 +919,11 @@ void CAreaBox::SetBox(AABB box)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 AABB CAreaBox::GetBox()
 {
 	return m_box;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::PostLoad(CObjectArchive& ar)
 {
 	__super::PostLoad(ar);
@@ -942,7 +931,6 @@ void CAreaBox::PostLoad(CObjectArchive& ar)
 	UpdateAttachedEntities();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CAreaBox::CreateGameObject()
 {
 	bool const bSuccess = __super::CreateGameObject();
@@ -955,7 +943,6 @@ bool CAreaBox::CreateGameObject()
 	return bSuccess;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::OnEntityAdded(IEntity const* const pIEntity)
 {
 	if (m_bIgnoreGameUpdate == 0 && m_pEntity != nullptr)
@@ -969,7 +956,6 @@ void CAreaBox::OnEntityAdded(IEntity const* const pIEntity)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::OnEntityRemoved(IEntity const* const pIEntity)
 {
 	if (m_bIgnoreGameUpdate == 0 && m_pEntity != nullptr)
@@ -983,7 +969,15 @@ void CAreaBox::OnEntityRemoved(IEntity const* const pIEntity)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CAreaBox::ClearArea()
+{
+	IEntityAreaComponent* const pArea = m_pEntity->GetComponent<IEntityAreaComponent>();
+	if (pArea)
+	{
+		pArea->RemoveEntities();
+	}
+}
+
 void CAreaBox::UpdateGameArea()
 {
 	if (m_bIgnoreGameUpdate == 0 && m_pEntity != nullptr)
@@ -1017,7 +1011,6 @@ void CAreaBox::UpdateGameArea()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::UpdateAttachedEntities()
 {
 	if (m_bIgnoreGameUpdate == 0 && m_pEntity != nullptr)
@@ -1042,7 +1035,6 @@ void CAreaBox::UpdateAttachedEntities()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::OnSoundParamsChange(IVariable* var)
 {
 	if (!m_bIgnoreGameUpdate && mv_displaySoundInfo)
@@ -1052,7 +1044,6 @@ void CAreaBox::OnSoundParamsChange(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::OnPointChange(IVariable* var)
 {
 	CRY_ASSERT(m_abObstructSound.size() == 6);
@@ -1080,7 +1071,6 @@ void CAreaBox::OnPointChange(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAreaBox::UpdateSoundPanelParams()
 {
 	if (!m_bIgnoreGameUpdate && mv_displaySoundInfo)
@@ -1088,4 +1078,3 @@ void CAreaBox::UpdateSoundPanelParams()
 		UpdateUIVars();
 	}
 }
-

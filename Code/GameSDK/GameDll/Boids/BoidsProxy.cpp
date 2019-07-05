@@ -16,6 +16,7 @@
 #include "BoidsProxy.h"
 #include "Flock.h"
 #include <CryNetwork/ISerialize.h>
+#include <CryMath/Cry_Camera.h>
 
 CRYREGISTER_CLASS(CBoidsProxy)
 CRYREGISTER_CLASS(CBoidObjectProxy)
@@ -89,17 +90,17 @@ void CBoidsProxy::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CBoidsProxy::GetEventMask() const
+Cry::Entity::EventFlags CBoidsProxy::GetEventMask() const
 {
-	uint64 eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_PRE_SERIALIZE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERAREA) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVEAREA) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	Cry::Entity::EventFlags eventMask = ENTITY_EVENT_XFORM |
+		ENTITY_EVENT_PRE_SERIALIZE |
+		ENTITY_EVENT_ENTERAREA |
+		ENTITY_EVENT_LEAVEAREA |
+		ENTITY_EVENT_RESET;
 
 	if (m_playersInCount > 0)
 	{
-		eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+		eventMask |= ENTITY_EVENT_UPDATE;
 	}
 
 	return eventMask;
@@ -195,11 +196,11 @@ void CBoidObjectProxy::ProcessEvent(const SEntityEvent& event)
 		m_pBoid->OnEntityEvent(event);
 }
 
-uint64 CBoidObjectProxy::GetEventMask() const
+Cry::Entity::EventFlags CBoidObjectProxy::GetEventMask() const
 {
 	return
-		ENTITY_EVENT_BIT(ENTITY_EVENT_DONE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
+		ENTITY_EVENT_DONE |
+		ENTITY_EVENT_COLLISION;
 }
 
 //////////////////////////////////////////////////////////////////////////

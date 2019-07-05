@@ -10,16 +10,24 @@
 namespace pfx2
 {
 
+template<typename Types>
+struct SConeDistributor: SDiskDistributor<Types>
+{
+	using SDiskDistributor<Types>::SDiskDistributor;
+
+	Vec3 operator()()
+	{
+		auto vals = this->m_base();
+		Vec2 circle = CirclePoint(vals[0]);
+		return Vec3(circle.x, circle.y, sqrt(vals[1]));
+	}
+};
+
+
 class CFeatureVelocityCone : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
-	CFeatureVelocityCone()
-		: m_velocity(0.0f)
-		, m_angle(0.0f)
-		, m_axis(0.0f, 0.0f, 1.0f)
-	{}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
@@ -32,9 +40,11 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_angle, "Angle", "Angle");
-		ar(m_velocity, "Velocity", "Velocity");
-		ar(m_axis, "Axis", "Axis");
+		SERIALIZE_VAR(ar, m_axis);
+		SERIALIZE_VAR(ar, m_angle);
+		SERIALIZE_VAR(ar, m_innerFraction);
+		SERIALIZE_VAR(ar, m_velocity);
+		m_distribution.Serialize(ar);
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -48,22 +58,22 @@ public:
 		const IQuatStream parentQuats = parentContainer.GetIQuatStream(EPQF_Orientation, defaultQuat);
 		const Quat axisQuat = Quat::CreateRotationV0V1(Vec3(0.0f, 0.0f, 1.0f), m_axis.GetNormalizedSafe());
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
-		const float baseAngle = m_angle.GetBaseValue();
-		const float invBaseAngle = rcp_fast(max(FLT_EPSILON, baseAngle));
 
 		STempInitBuffer<float> angles(runtime, m_angle);
 		STempInitBuffer<float> velocityMults(runtime, m_velocity);
+
+		SConeDistributor<DistributorTypes> distributor(m_distribution, runtime);
+		distributor.SetRadiusRange({m_innerFraction, 1.0f});
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
-			const float angleMult = angles.SafeLoad(particleId);
 			const float velocity = velocityMults.SafeLoad(particleId);
 
-			const Vec2 disc = runtime.Chaos().RandCircle();
-			const float angle = sqrtf(angleMult * invBaseAngle) * baseAngle;
+			const Vec3 disc = distributor();
+			const float angle = angles.SafeLoad(particleId) * disc.z;
 
 			float as, ac;
 			sincos(angle, &as, &ac);
@@ -82,9 +92,11 @@ public:
 	}
 
 private:
-	CParamMod<EDD_PerParticle, UAngle180> m_angle;
-	CParamMod<EDD_PerParticle, UFloat10>  m_velocity;
-	Vec3                                  m_axis;
+	Vec3                               m_axis {0, 0, 1};
+	CParamMod<EDD_Particle, UAngle180> m_angle;
+	UUnitFloat                         m_innerFraction = 1;
+	CParamMod<EDD_Particle, UFloat10>  m_velocity = 1;
+	SDistribution<2>                   m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCone, "Velocity", "Cone", colorVelocity);
@@ -96,11 +108,6 @@ class CFeatureVelocityDirectional : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureVelocityDirectional()
-		: m_direction(ZERO)
-		, m_scale(1.0f)
-	{}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
@@ -111,8 +118,8 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_direction, "Velocity", "Velocity");
-		ar(m_scale, "Scale", "Scale");
+		SERIALIZE_VAR(ar, m_velocity);
+		SERIALIZE_VAR(ar, m_scale);
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -133,7 +140,7 @@ public:
 			const Quat wQuat = parentQuats.SafeLoad(parentId);
 			const float scale = scales.SafeLoad(particleId);
 			const Vec3 wVelocity0 = velocities.Load(particleId);
-			const Vec3 oVelocity = m_direction * scale;
+			const Vec3 oVelocity = m_velocity * scale;
 			const Vec3 wVelocity1 = wVelocity0 + wQuat * oVelocity;
 			velocities.Store(particleId, wVelocity1);
 		}
@@ -141,14 +148,14 @@ public:
 
 	virtual void UpdateGPUParams(CParticleComponentRuntime& runtime, gpu_pfx2::SUpdateParams& params) override
 	{
-		params.direction = m_direction;
+		params.direction = m_velocity;
 		params.directionScale = m_scale.GetValueRange(runtime)(0.5f);
 		params.initFlags |= gpu_pfx2::eFeatureInitializationFlags_VelocityDirectional;
 	}
 
 private:
-	Vec3                                 m_direction;
-	CParamMod<EDD_PerParticle, UFloat10> m_scale;
+	Vec3                              m_velocity {0,0,1};
+	CParamMod<EDD_Particle, UFloat10> m_scale = 1;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityDirectional, "Velocity", "Directional", colorVelocity);
@@ -160,10 +167,6 @@ class CFeatureVelocityOmniDirectional : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureVelocityOmniDirectional()
-		: m_velocity(0.0f)
-	{}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
@@ -174,7 +177,8 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_velocity, "Velocity", "Velocity");
+		SERIALIZE_VAR(ar, m_velocity);
+		m_distribution.Serialize(ar);
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -185,12 +189,13 @@ public:
 		IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 
 		STempInitBuffer<float> velocityMults(runtime, m_velocity);
+		SSphereDistributor<DistributorTypes> distributor(m_distribution, runtime);
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
 			const Vec3 wVelocity0 = velocities.Load(particleId);
 			const float velocity = velocityMults.SafeLoad(particleId);
-			const Vec3 oVelocity = runtime.Chaos().RandSphere() * velocity;
+			const Vec3 oVelocity = distributor() * velocity;
 			const Vec3 wVelocity1 = wVelocity0 + oVelocity;
 			velocities.Store(particleId, wVelocity1);
 		}
@@ -203,7 +208,8 @@ public:
 	}
 
 private:
-	CParamMod<EDD_PerParticle, UFloat10> m_velocity;
+	CParamMod<EDD_Particle, UFloat10> m_velocity = 1;
+	SDistribution<2>                  m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityOmniDirectional, "Velocity", "OmniDirectional", colorVelocity);
@@ -215,10 +221,6 @@ class CFeatureVelocityInherit : public CParticleFeature
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureVelocityInherit()
-		: m_scale(1.0f)
-	{}
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->InitParticles.add(this);
@@ -229,7 +231,7 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_scale, "Scale", "Scale");
+		SERIALIZE_VAR(ar, m_scale);
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -282,7 +284,7 @@ public:
 	}
 
 private:
-	CParamMod<EDD_PerParticle, SFloat> m_scale;
+	CParamMod<EDD_Particle, SFloat> m_scale = 1;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityInherit, "Velocity", "Inherit", colorVelocity);
@@ -293,11 +295,6 @@ class CFeatureVelocityCompass : public CParticleFeature
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
-
-	CFeatureVelocityCompass()
-		: m_azimuth(0.0f)
-		, m_angle(0.0f)
-		, m_velocity(0.0f) {}
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
@@ -310,9 +307,9 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(m_azimuth, "Azimuth", "Azimuth");
-		ar(m_angle, "Angle", "Angle");
-		ar(m_velocity, "Velocity", "Velocity");
+		SERIALIZE_VAR(ar, m_azimuth);
+		SERIALIZE_VAR(ar, m_angle);
+		SERIALIZE_VAR(ar, m_velocity);
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
@@ -345,9 +342,9 @@ public:
 	}
 
 private:
-	CParamMod<EDD_PerParticle, SAngle360> m_azimuth;
-	CParamMod<EDD_PerParticle, UAngle180> m_angle;
-	CParamMod<EDD_PerParticle, SFloat10>  m_velocity;
+	CParamMod<EDD_Particle, SAngle360> m_azimuth;
+	CParamMod<EDD_Particle, UAngle180> m_angle;
+	CParamMod<EDD_Particle, SFloat10>  m_velocity;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureVelocityCompass, "Velocity", "Compass", colorVelocity);

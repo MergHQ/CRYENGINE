@@ -5,6 +5,8 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h> // <> required for Interfuscator
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryMemory/CrySizer.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -187,7 +189,7 @@ struct SStatAnyValue
 			str = value.GetString();
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(false, "Invalid type for stat value");
+			CRY_ASSERT(false, "Invalid type for stat value");
 			type = eSAT_NONE;
 		}
 	}

@@ -21,6 +21,8 @@ History:
 #include "Projectile.h"
 #include "Utility/CryWatch.h"
 #include <CryMath/Cry_Geo.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //------------------------------------------------------------------------
 

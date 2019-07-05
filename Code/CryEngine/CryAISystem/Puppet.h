@@ -39,8 +39,6 @@ struct CSpeedControl
 	float      fPrevDistance;
 	CTimeValue fLastTime;
 	Vec3       vLastPos;
-	//	CAIPIDController PIDController;
-	//	static const float	m_CMaxDist;
 
 	CSpeedControl() : vLastPos(0.0f, 0.0f, 0.0f), fPrevDistance(0.0f){}
 	void Reset(const Vec3 vPos, CTimeValue fTime)
@@ -51,7 +49,6 @@ struct CSpeedControl
 	}
 };
 
-typedef std::multimap<float, SHideSpot>                    MultimapRangeHideSpots;
 typedef std::map<CWeakRef<CAIObject>, float>               DevaluedMap;
 typedef std::map<CWeakRef<CAIObject>, CWeakRef<CAIObject>> ObjectObjectMap;
 
@@ -86,14 +83,6 @@ struct SSoundPerceptionDescriptor
 		fLinStepMin = _fLinStepMin;
 		fLinStepMax = _fLinStepMax;
 	}
-};
-
-struct SSortedHideSpot
-{
-	SSortedHideSpot(float weight, SHideSpot* pHideSpot) : weight(weight), pHideSpot(pHideSpot) {}
-	inline bool operator<(const SSortedHideSpot& rhs) const { return weight > rhs.weight; } // highest weight first.
-	float      weight;
-	SHideSpot* pHideSpot;
 };
 
 class CPuppet

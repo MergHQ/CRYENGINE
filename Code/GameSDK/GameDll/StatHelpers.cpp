@@ -423,8 +423,6 @@ XmlNodeRef CScoreIncEvent::GetXML(IGameStatistics* pGS)
 
 	static_assert(EGRST_Num==CRY_ARRAY_COUNT(k_ScoreIncTypeStrs), "Unexpected array size!");
 
-	EGameRulesScoreType type=m_type;
-
 	const char *pStr = "Unknown";
 	if (m_type>=0 && m_type<CRY_ARRAY_COUNT(k_ScoreIncTypeStrs))
 	{

@@ -10,7 +10,7 @@ class CAppDomain final : public CMonoDomain
 	friend class CMonoRuntime;
 
 public:
-	CAppDomain(char *name, bool bActivate = false);
+	CAppDomain(const char *name, bool bActivate = false);
 	CAppDomain(MonoInternals::MonoDomain* pMonoDomain);
 	virtual ~CAppDomain();
 
@@ -41,7 +41,7 @@ public:
 	CMonoClass* GetColorClass() const { return m_pColorClass; }
 
 protected:
-	void CreateDomain(char *name, bool bActivate);
+	void CreateDomain(const char *name, bool bActivate);
 
 	void SerializeDomainData(std::vector<char>& bufferOut);
 	std::shared_ptr<CMonoObject> CreateDeserializer(const std::vector<char>& serializedData);
@@ -53,6 +53,7 @@ protected:
 	uint64 m_serializationTicks;
 
 	CMonoLibrary* m_pLibCore;
+	CMonoLibrary* m_pLibCoreUI;
 	CMonoLibrary* m_pLibCommon;
 
 	CMonoClass* m_pVector2Class;

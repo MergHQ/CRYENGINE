@@ -35,6 +35,12 @@
 #include "Deprecated/DocGraphNodes/DocGraphSetNode.h"
 #include "Deprecated/DocGraphNodes/DocGraphSwitchNode.h"
 
+SERIALIZATION_ENUM_BEGIN_NESTED(Schematyc2, EGraphExecutionFilter, "Graph Execution Filter")
+	SERIALIZATION_ENUM(Schematyc2::EGraphExecutionFilter::Always, "Always", "Always")
+	SERIALIZATION_ENUM(Schematyc2::EGraphExecutionFilter::DevModeOrLoggingEnabled, "DevModeOrLoggingEnabled", "Dev Mode Or Logging Enabled")
+	SERIALIZATION_ENUM(Schematyc2::EGraphExecutionFilter::DevModeOnly, "DevModeOnly", "Dev Mode Only")
+SERIALIZATION_ENUM_END()
+
 namespace Schematyc2
 {
 	namespace DocLogicGraphUtils
@@ -175,6 +181,7 @@ namespace Schematyc2
 	CDocLogicGraph::CDocLogicGraph(IScriptFile& file, const SGUID& guid, const SGUID& scopeGUID, const char* szName, EScriptGraphType type, const SGUID& contextGUID)
 		: CDocGraphBase(file, guid, scopeGUID, szName, type, contextGUID)
 		, m_accessor(EAccessor::Private)
+		, m_executionFilter(EGraphExecutionFilter::Always)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -205,7 +212,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocLogicGraph::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		RefreshInputsAndOutputs();
 		CDocGraphBase::Refresh(params);
@@ -214,7 +221,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocLogicGraph::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		switch(SerializationContext::GetPass(archive))
 		{
@@ -225,6 +232,7 @@ namespace Schematyc2
 				if((type == EScriptGraphType::Function) || (type == EScriptGraphType::Condition))
 				{
 					archive(m_accessor, "accessor", "Accessor");
+					archive(m_executionFilter, "executionFilter", "Execution Filter");
 				}
 				break;
 			}
@@ -345,6 +353,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	IScriptGraphNodePtr CDocLogicGraph::CreateNode(const SGUID& guid, EScriptGraphNodeType type, const SGUID& contextGUID, const SGUID& refGUID, Vec2 pos)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Create Node(Doc Logic Graph)");
 		switch(type)
 		{
 		case EScriptGraphNodeType::Begin:
@@ -490,13 +499,14 @@ namespace Schematyc2
 		if((type == EScriptGraphType::Function) || (type == EScriptGraphType::Condition))
 		{
 			archive(graph.m_accessor, "accessor", "Accessor");
+			archive(graph.m_executionFilter, "executionFilter", "Execution Filter");
 		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	bool CDocLogicGraph::RefreshInputsAndOutputs()
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		// #SchematycTODO : Clean up this function, there's a lot of duplicated code here.
 		switch(CDocGraphBase::GetType())
 		{
@@ -818,3 +828,4 @@ namespace Schematyc2
 		domainContext.VisitDocGraphs(DocGraphConstVisitor::FromLambdaFunction(visitGraph), EDomainScope::Derived);
 	}
 }
+

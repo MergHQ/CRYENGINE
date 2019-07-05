@@ -430,7 +430,7 @@ void CMannTagDefEditorDialog::OnNewTagButton()
 //////////////////////////////////////////////////////////////////////////
 void CMannTagDefEditorDialog::OnEditTagButton()
 {
-	const CEdit* pEdit = m_tagsTree->EditLabel(m_tagsTree->GetSelectedItem());
+	m_tagsTree->EditLabel(m_tagsTree->GetSelectedItem());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -451,9 +451,9 @@ void CMannTagDefEditorDialog::OnDeleteTagButton()
 		}
 	}
 
-	char* buffer[4096];
+	char buffer[4096];
 	IMannequinEditorManager* pMgr = gEnv->pGameFramework->GetMannequinInterface().GetMannequinEditorManager();
-	pMgr->GetAffectedFragmentsString(pTagDefPair->m_pOriginal, tagID, (char*)buffer, sizeof(buffer));
+	pMgr->GetAffectedFragmentsString(pTagDefPair->m_pOriginal, tagID, buffer, sizeof(buffer));
 	message.Format("Deleting tag '%s' will affect:%s\nAre you sure?", itemText, buffer);
 
 	if (ConfirmDelete(message))
@@ -534,7 +534,7 @@ void CMannTagDefEditorDialog::PopulateTagDefListRec(const CString& baseDir)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMannTagDefEditorDialog::RemoveUnmodifiedTagDefs(void)
+void CMannTagDefEditorDialog::RemoveUnmodifiedTagDefs()
 {
 	for (int index = m_tagDefList.GetItemCount() - 1; index >= 0; --index)
 	{
@@ -1007,4 +1007,3 @@ void CMannTagDefEditorDialog::OnFilterTagsButton()
 	PopulateTagDefList();
 	EnableControls();
 }
-

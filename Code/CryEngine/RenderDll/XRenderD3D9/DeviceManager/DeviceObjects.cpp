@@ -2,19 +2,17 @@
 
 #include "StdAfx.h"
 #include "DeviceObjects.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 #include "Common/ReverseDepth.h"
 #include "Common/Textures/TextureHelpers.h"
 #include "../GraphicsPipeline/Common/GraphicsPipelineStateSet.h"
-#include "D3D11/DeviceObjects_D3D11.h"
 
 
-uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutHandle VertexFormat, ID3D11ShaderReflection* pShaderReflection)
+uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutHandle VertexFormat, D3DShaderReflection* pShaderReflection)
 {
 	uint8_t shaderMask = 0;
 
-	D3D11_SHADER_DESC Desc;
+	D3D_SHADER_DESC Desc;
 	pShaderReflection->GetDesc(&Desc);
 
 	// layoutDescriptor's names will be ordered in lexicographical ascending order
@@ -27,7 +25,7 @@ uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutH
 	reflectedNames.reserve(Desc.InputParameters);
 	for (uint32 i=0; i<Desc.InputParameters; i++)
 	{
-		D3D11_SIGNATURE_PARAMETER_DESC Sig;
+		D3D_SIGNATURE_PARAMETER_DESC Sig;
 		pShaderReflection->GetInputParameterDesc(i, &Sig);
 		if (!Sig.SemanticName)
 			continue;
@@ -35,7 +33,7 @@ uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutH
 		// Insert ordered by element name
 		auto it = std::lower_bound(reflectedNames.begin(), reflectedNames.end(), Sig.SemanticName, [](const char* const lhs, const char* const rhs)
 		{
-			return std::strcmp(lhs, rhs) <= 0;
+			return ::strcmp(lhs, rhs) <= 0;
 		});
 		reflectedNames.insert(it, Sig.SemanticName);
 	}
@@ -46,7 +44,7 @@ uint8_t SInputLayoutCompositionDescriptor::GenerateShaderMask(const InputLayoutH
 	for (int i = 0; layout_it != layoutDescriptor->m_Declaration.cend() && vs_it != reflectedNames.cend(); ++i, ++layout_it)
 	{
 		int compResult;
-		while (vs_it != reflectedNames.cend() && (compResult = std::strcmp(*vs_it, layout_it->SemanticName)) < 0)
+		while (vs_it != reflectedNames.cend() && (compResult = ::strcmp(*vs_it, layout_it->SemanticName)) < 0)
 		{
 			++vs_it;
 		}
@@ -119,23 +117,23 @@ void CDeviceObjectFactory::AllocatePredefinedSamplerStates()
 	ReserveSamplerStates(300); // this likes to expand, so it'd be nice if it didn't; 300 => ~6Kb, there were 171 after one level
 
 	// *INDENT-OFF*
-	SamplerStateHandle a = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )); assert(a == EDefaultSamplerStates::PointClamp           );
-	SamplerStateHandle b = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )); assert(b == EDefaultSamplerStates::PointWrap            );
-	SamplerStateHandle c = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )); assert(c == EDefaultSamplerStates::PointBorder_Black    );
-	SamplerStateHandle d = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border, ~0      )); assert(d == EDefaultSamplerStates::PointBorder_White    );
-	SamplerStateHandle e = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0, true)); assert(e == EDefaultSamplerStates::PointCompare         );
-	SamplerStateHandle f = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )); assert(f == EDefaultSamplerStates::LinearClamp          );
-	SamplerStateHandle g = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )); assert(g == EDefaultSamplerStates::LinearWrap           );
-	SamplerStateHandle h = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )); assert(h == EDefaultSamplerStates::LinearBorder_Black   );
-	SamplerStateHandle i = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0, true)); assert(i == EDefaultSamplerStates::LinearCompare        );
-	SamplerStateHandle j = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )); assert(j == EDefaultSamplerStates::BilinearClamp        );
-	SamplerStateHandle k = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )); assert(k == EDefaultSamplerStates::BilinearWrap         );
-	SamplerStateHandle l = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )); assert(l == EDefaultSamplerStates::BilinearBorder_Black );
-	SamplerStateHandle m = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0, true)); assert(m == EDefaultSamplerStates::BilinearCompare      );
-	SamplerStateHandle n = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )); assert(n == EDefaultSamplerStates::TrilinearClamp       );
-	SamplerStateHandle o = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )); assert(o == EDefaultSamplerStates::TrilinearWrap        );
-	SamplerStateHandle p = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )); assert(p == EDefaultSamplerStates::TrilinearBorder_Black);
-	SamplerStateHandle q = GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border, ~0      )); assert(q == EDefaultSamplerStates::TrilinearBorder_White);
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )) == EDefaultSamplerStates::PointClamp           );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )) == EDefaultSamplerStates::PointWrap            );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )) == EDefaultSamplerStates::PointBorder_Black    );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border, ~0      )) == EDefaultSamplerStates::PointBorder_White    );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_POINT,     eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0, true)) == EDefaultSamplerStates::PointCompare         );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )) == EDefaultSamplerStates::LinearClamp          );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )) == EDefaultSamplerStates::LinearWrap           );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )) == EDefaultSamplerStates::LinearBorder_Black   );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR,    eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0, true)) == EDefaultSamplerStates::LinearCompare        );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )) == EDefaultSamplerStates::BilinearClamp        );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )) == EDefaultSamplerStates::BilinearWrap         );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )) == EDefaultSamplerStates::BilinearBorder_Black );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_BILINEAR,  eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0, true)) == EDefaultSamplerStates::BilinearCompare      );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,  eSamplerAddressMode_Clamp,   0      )) == EDefaultSamplerStates::TrilinearClamp       );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,   eSamplerAddressMode_Wrap,    0      )) == EDefaultSamplerStates::TrilinearWrap        );
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border,  0      )) == EDefaultSamplerStates::TrilinearBorder_Black);
+	CRY_VERIFY(GetOrCreateSamplerStateHandle(SSamplerState(FILTER_TRILINEAR, eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border, ~0      )) == EDefaultSamplerStates::TrilinearBorder_White);
 	// *INDENT-ON*
 }
 
@@ -347,29 +345,27 @@ const SInputLayout* CDeviceObjectFactory::GetInputLayoutDescriptor(const InputLa
 	return &m_vertexFormatToInputLayoutCache[static_cast<size_t>(idx)];
 }
 
-const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVertexShader, int StreamMask, const InputLayoutHandle VertexFormat)
+const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVertexShader, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat)
 {
 	CRY_ASSERT(pVertexShader);
 	if (!pVertexShader)
 		return nullptr;
-
-	bool bInstanced = (StreamMask & VSM_INSTANCED) != 0;
 
 	// Reflect
 	void* pShaderReflBuf;
 
 	{
 		CRY_PROFILE_SECTION(PROFILE_RENDERER, "D3DReflect");
-		HRESULT hr = D3DReflect(pVertexShader->m_pShaderData, pVertexShader->m_nDataSize, IID_ID3D11ShaderReflection, &pShaderReflBuf);
-		CRY_ASSERT(SUCCEEDED(hr) && pShaderReflBuf);
+		HRESULT hr = D3DReflection(pVertexShader->m_pShaderData, pVertexShader->m_nDataSize, IID_D3DShaderReflection, &pShaderReflBuf);
+		CRY_VERIFY(SUCCEEDED(hr) && pShaderReflBuf);
 	}
 
-	ID3D11ShaderReflection* pShaderReflection = (ID3D11ShaderReflection*)pShaderReflBuf;
+	D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pShaderReflBuf;
 
 	// Create the composition descriptor
 	SInputLayoutCompositionDescriptor compositionDescriptor(VertexFormat, StreamMask, pShaderReflection);
 
-	auto it = s_InputLayoutCompositions.lower_bound(compositionDescriptor);
+	auto it = s_InputLayoutCompositions.find(compositionDescriptor);
 	if (it == s_InputLayoutCompositions.end() || it->first != compositionDescriptor)
 	{
 		// Create the input layout for the current permutation
@@ -388,10 +384,10 @@ const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateI
 
 const CDeviceObjectFactory::SInputLayoutPair* CDeviceObjectFactory::GetOrCreateInputLayout(const SShaderBlob* pVS, const InputLayoutHandle VertexFormat)
 {
-	return GetOrCreateInputLayout(pVS, 0, VertexFormat);
+	return GetOrCreateInputLayout(pVS, VSM_NONE, VertexFormat);
 }
 
-SInputLayout CDeviceObjectFactory::CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, int StreamMask, const InputLayoutHandle VertexFormat)
+SInputLayout CDeviceObjectFactory::CreateInputLayoutForPermutation(const SShaderBlob* m_pConsumingVertexShader, const SInputLayoutCompositionDescriptor &compositionDescription, EStreamMasks StreamMask, const InputLayoutHandle VertexFormat)
 {
 	bool bInstanced = (StreamMask & VSM_INSTANCED) != 0;
 
@@ -459,14 +455,18 @@ InputLayoutHandle CDeviceObjectFactory::CreateCustomVertexFormat(size_t numDescs
 		// Insert ordered by element name
 		auto it = std::lower_bound(decs.begin(), decs.end(), inputLayout[n], [](const D3D11_INPUT_ELEMENT_DESC& lhs, const D3D11_INPUT_ELEMENT_DESC& rhs)
 		{
-			return std::strcmp(lhs.SemanticName, rhs.SemanticName) <= 0;
+			return ::strcmp(lhs.SemanticName, rhs.SemanticName) <= 0;
 		});
 		decs.insert(it, inputLayout[n]);
 	}
 
-	// Store
-	auto idx = m_vertexFormatToInputLayoutCache.size();
-	m_vertexFormatToInputLayoutCache.emplace_back(std::move(decs));
+	// Find existing vertex format or store a new one
+	auto it = std::find(m_vertexFormatToInputLayoutCache.begin(), m_vertexFormatToInputLayoutCache.end(), decs);
+	auto idx = it - m_vertexFormatToInputLayoutCache.begin();
+	if (it == m_vertexFormatToInputLayoutCache.end())
+	{
+		m_vertexFormatToInputLayoutCache.emplace_back(std::move(decs));
+	}
 
 	return InputLayoutHandle(static_cast<uint8_t>(idx));
 }
@@ -513,7 +513,7 @@ bool CDeviceObjectFactory::OnRenderPassInvalidated(void* pRenderPass, SResourceB
 
 	if (flags)
 	{
-		if (auto pDesc = GetDeviceObjectFactory().GetRenderPassDesc(pPass))
+		if (GetDeviceObjectFactory().GetRenderPassDesc(pPass) != nullptr)
 		{
 			pPass->Invalidate();
 		}
@@ -626,6 +626,8 @@ void CDeviceObjectFactory::ReloadPipelineStates(int currentFrameID)
 
 void CDeviceObjectFactory::UpdatePipelineStates()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER)
+
 	for (auto it = m_InvalidGraphicsPsos.begin(), itEnd = m_InvalidGraphicsPsos.end(); it != itEnd; )
 	{
 		auto itCurrentPSO = it++;
@@ -671,8 +673,4 @@ void CDeviceObjectFactory::TrimPipelineStates(int currentFrameID, int trimBefore
 
 	EraseExpiredEntriesFromCache(m_InvalidGraphicsPsos);
 	EraseExpiredEntriesFromCache(m_InvalidComputePsos);
-	// Free Blend, Depth, and Rasterizer State(s)
-#if (CRY_RENDERER_DIRECT3D < 120) &&  defined(CRY_RENDERER_DIRECT3D)
-	CDeviceStatesManagerDX11::GetInstance()->ReleaseUnusedStates(0 /* kill them all */);
-#endif
 }

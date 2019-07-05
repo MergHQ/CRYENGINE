@@ -5,6 +5,7 @@
 #include "PlayerEntityInteraction.h"
 #include "IInteractor.h"
 #include "GameActions.h"
+#include "GameCVars.h"
 #include "UI/HUD/HUDEventWrapper.h"
 #include "UI/HUD/HUDEventDispatcher.h"
 #include "PlayerPlugin_Interaction.h"
@@ -36,9 +37,6 @@ namespace
 
 	bool PlayerCanInteract(CPlayer* pPlayer)
 	{
-		const SPlayerStats* pPlayerStats = static_cast<const SPlayerStats*>(pPlayer->GetActorStats());
-		CRY_ASSERT(pPlayerStats);
-
 		// During Stealth kill.
 		if (pPlayer->GetStealthKill().IsBusy())
 			return false;

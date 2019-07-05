@@ -12,9 +12,6 @@
 class EDITOR_COMMON_API CFileCollectionModel : public QAbstractProxyModel
 {
 public:
-	CFileCollectionModel();
-	~CFileCollectionModel();
-
 	void AddEntry(const QString& file);
 	void AddEntries(const QStringList& entries);
 	void InsertEntry(const QString& file, uint index);

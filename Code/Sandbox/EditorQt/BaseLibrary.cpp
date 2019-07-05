@@ -6,6 +6,9 @@
 #include "BaseLibraryManager.h"
 #include "ISourceControl.h"
 #include "Dialogs/SourceControlAddDlg.h"
+#include "IUndoObject.h"
+#include "IEditorImpl.h"
+#include <Util/EditorUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Undo functionality for libraries.
@@ -24,7 +27,7 @@ public:
 	}
 
 protected:
-	virtual const char* GetDescription() { return m_description; };
+	virtual const char* GetDescription() { return m_description; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -239,4 +242,3 @@ bool CBaseLibrary::SaveLibrary(const char* name)
 	}
 	return bRes;
 }
-

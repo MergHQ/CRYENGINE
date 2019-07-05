@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 2:8:2004   15:20 : Created by Márcio Martins
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "CmdLine.h"
 
@@ -36,9 +26,8 @@ void CCmdLine::PushCommand(const string& sCommand, const string& sParameter)
 }
 
 CCmdLine::CCmdLine(const char* commandLine)
+	: m_sCmdLine(commandLine)
 {
-	m_sCmdLine = commandLine;
-
 	char* src = (char*)commandLine;
 
 	string command, parameter;
@@ -85,10 +74,6 @@ CCmdLine::CCmdLine(const char* commandLine)
 	PushCommand(command, parameter);
 }
 
-CCmdLine::~CCmdLine()
-{
-}
-
 const ICmdLineArg* CCmdLine::GetArg(int n) const
 {
 	if ((n >= 0) && (n < (int)m_args.size()))
@@ -96,7 +81,7 @@ const ICmdLineArg* CCmdLine::GetArg(int n) const
 		return &m_args[n];
 	}
 
-	return 0;
+	return nullptr;
 }
 
 int CCmdLine::GetArgCount() const
@@ -125,7 +110,7 @@ const ICmdLineArg* CCmdLine::FindArg(const ECmdLineArgType ArgType, const char* 
 		}
 	}
 
-	return 0;
+	return nullptr;
 }
 
 string CCmdLine::Next(char*& src)
@@ -133,7 +118,7 @@ string CCmdLine::Next(char*& src)
 	char ch = 0;
 	char* org = src;
 
-	while (ch = *src++)
+	while ((ch = *src++))
 	{
 		switch (ch)
 		{

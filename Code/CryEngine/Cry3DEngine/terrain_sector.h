@@ -1,18 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   terrain_sector.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef SECINFO_H
-#define SECINFO_H
+#pragma once
 
 #define ARR_TEX_OFFSETS_SIZE 4
 
@@ -58,7 +46,7 @@ struct SSurfaceTypeLocal
 	const SSurfaceTypeLocal& operator=(int nSurfType)
 	{
 		ZeroStruct(*this);
-		assert(nSurfType >= 0 && nSurfType <= kMaxSurfaceTypeId);
+		CRY_MATH_ASSERT(nSurfType >= 0 && nSurfType <= kMaxSurfaceTypeId);
 		we[0] = kMaxVal;
 		ty[0] = nSurfType;
 		return *this;
@@ -80,15 +68,15 @@ struct SSurfaceTypeLocal
 
 		for (int i = 0; i < kMaxSurfaceTypesNum; i++)
 		{
-			assert(si.we[i] <= kMaxVal);
-			assert(si.ty[i] <= kMaxVal);
+			CRY_MATH_ASSERT(si.we[i] <= kMaxVal);
+			CRY_MATH_ASSERT(si.ty[i] <= kMaxVal);
 		}
 
 		p[0] = (si.ty[0] & kMaxVal) | ((si.ty[1] & kMaxVal) << 4);
 		p[1] = (si.ty[2] & kMaxVal) | ((si.we[1] & kMaxVal) << 4);
 		p[2] = (si.we[2] & kMaxVal) | (p[2] & (kMaxVal << 4));
 
-		assert((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
+		CRY_MATH_ASSERT((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
 	}
 
 	static void DecodeFromUint32(const uint32& rTypes, SSurfaceTypeLocal& si)
@@ -102,7 +90,7 @@ struct SSurfaceTypeLocal
 		si.we[2] = (((int)p[2])) & kMaxVal;
 		si.we[0] = CLAMP(kMaxVal - si.we[1] - si.we[2], 0, kMaxVal);
 
-		assert((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
+		CRY_MATH_ASSERT((si.we[0] + si.we[1] + si.we[2]) == kMaxVal);
 	}
 
 	uint8 ty[kMaxSurfaceTypesNum] = { 0 };
@@ -110,27 +98,30 @@ struct SSurfaceTypeLocal
 };
 
 // heightmap item containing packed surface types and elevation
-struct SHeightMapItem
+union SHeightMapItem
 {
+	static const uint SurfaceBits = 20;
+	static const uint HeightBits =  12;
+
+	uint32 raw;
+	struct
+	{
+		uint32 surface : SurfaceBits;
+		uint32 height  : HeightBits;
+	};
+
 	SHeightMapItem()
+		: raw(0) {}
+	SHeightMapItem(uint32 height, uint32 surface)
+		: surface(surface), height(height) {}
+
+	bool operator==(const SHeightMapItem& other)
 	{
-		SetRaw(0);
+		return raw == other.raw;
 	}
-
-	uint32 surface : 20;
-	uint32 height  : 12;
-
-	uint32 GetRaw()           { return *(uint32*) this; }
-	void   SetRaw(uint32 raw) { *(uint32*) this = raw; }
-
-	bool   operator==(const SHeightMapItem& other)
-	{
-		return memcmp(this, &other, sizeof(SHeightMapItem)) == 0;
-	}
-
 	bool operator!=(const SHeightMapItem& other)
 	{
-		return memcmp(this, &other, sizeof(SHeightMapItem)) != 0;
+		return raw != other.raw;
 	}
 
 	AUTO_STRUCT_INFO;
@@ -163,17 +154,17 @@ struct SRangeInfo
 
 	inline SHeightMapItem GetRawDataByIndex(uint32 i) const
 	{
-		//		assert(i < nSize*nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(i < uint32(nSize*nSize));
+		CRY_MATH_ASSERT(pHMData);
 
 		return pHMData[i];
 	}
 
 	inline SHeightMapItem GetRawData(uint32 x, uint32 y) const
 	{
-		assert(x < nSize);
-		assert(y < nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(x < nSize);
+		CRY_MATH_ASSERT(y < nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return GetRawDataByIndex(x * nSize + y);
 	}
@@ -182,28 +173,34 @@ struct SRangeInfo
 	{
 		return fOffset + float(data.height) * fRange;
 	}
+#ifdef CRY_PLATFORM_SSE2
+	inline f32v4 RawDataToHeight(u32v4 data) const
+	{
+		return convert<f32v4>(data >> Scalar(SHeightMapItem::SurfaceBits)) * to_v4(fRange) + to_v4(fOffset);
+	}
+#endif
 
 	inline float GetHeightByIndex(uint32 i) const
 	{
-		//		assert(i < nSize*nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(i < uint32(nSize*nSize));
+		CRY_MATH_ASSERT(pHMData);
 
 		return RawDataToHeight(pHMData[i]);
 	}
 
 	inline float GetHeight(uint32 x, uint32 y) const
 	{
-		assert(x < nSize);
-		assert(y < nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(x < nSize);
+		CRY_MATH_ASSERT(y < nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return GetHeightByIndex(x * nSize + y);
 	}
 
 	inline uint32 GetSurfaceTypeByIndex(uint32 i) const
 	{
-		//		assert(i < nSize*nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(i < uint32(nSize*nSize));
+		CRY_MATH_ASSERT(pHMData);
 
 		SSurfaceTypeLocal si;
 		SSurfaceTypeLocal::DecodeFromUint32(pHMData[i].surface, si);
@@ -213,18 +210,18 @@ struct SRangeInfo
 
 	inline uint32 GetSurfaceType(uint32 x, uint32 y) const
 	{
-		assert(x < nSize);
-		assert(y < nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(x < nSize);
+		CRY_MATH_ASSERT(y < nSize);
+		CRY_MATH_ASSERT(pHMData);
 
 		return GetSurfaceTypeByIndex(x * nSize + y);
 	}
 
 	inline void SetDataLocal(int nX, int nY, SHeightMapItem usValue)
 	{
-		assert(nX >= 0 && nX < (int)nSize);
-		assert(nY >= 0 && nY < (int)nSize);
-		assert(pHMData);
+		CRY_MATH_ASSERT(nX >= 0 && nX < (int)nSize);
+		CRY_MATH_ASSERT(nY >= 0 && nY < (int)nSize);
+		CRY_MATH_ASSERT(pHMData);
 		pHMData[nX * nSize + nY] = usValue;
 	}
 
@@ -320,37 +317,6 @@ public:
 	int          m_nPoolSize;
 };
 
-#define MAX_PROC_OBJ_CHUNKS_NUM (GetCVars()->e_ProcVegetationMaxChunksInCache * GetCVars()->e_ProcVegetationMaxCacheLevels)
-#define MAX_PROC_SECTORS_NUM    (GetCVars()->e_ProcVegetationMaxSectorsInCache * GetCVars()->e_ProcVegetationMaxCacheLevels)
-
-struct SProcObjChunk : public Cry3DEngineBase
-{
-	CVegetation* m_pInstances;
-	int          nAllocatedItems;
-	SProcObjChunk();
-	~SProcObjChunk();
-	void GetMemoryUsage(class ICrySizer* pSizer) const;
-};
-
-typedef TPool<SProcObjChunk> SProcObjChunkPool;
-
-class CProcObjSector : public Cry3DEngineBase
-{
-public:
-	CProcObjSector() { m_nProcVegetNum = 0; m_ProcVegetChunks.PreAllocate(32); }
-	~CProcObjSector();
-	CVegetation* AllocateProcObject();
-	void         ReleaseAllObjects();
-	int          GetUsedInstancesCount(int& nAll) { nAll = m_ProcVegetChunks.Count(); return m_nProcVegetNum; }
-	void         GetMemoryUsage(ICrySizer* pSizer) const;
-
-protected:
-	PodArray<SProcObjChunk*> m_ProcVegetChunks;
-	int                      m_nProcVegetNum;
-};
-
-typedef TPool<CProcObjSector> CProcVegetPoolMan;
-
 struct STerrainNodeLeafData
 {
 	STerrainNodeLeafData() { memset(this, 0, sizeof(*this)); }
@@ -369,63 +335,49 @@ enum ETextureEditingState : unsigned int
 
 const float kGeomErrorNotSet = -1;
 
-struct CTerrainNode : public Cry3DEngineBase, public IRenderNode, public IStreamCallback
+struct CTerrainNode final : public Cry3DEngineBase, public IRenderNode, public IStreamCallback
 {
 public:
 
 	// IRenderNode implementation
-	virtual const char*             GetName() const                         { return "TerrainNode"; }
-	virtual const char*             GetEntityClassName() const              { return "TerrainNodeClass"; }
-	virtual Vec3                    GetPos(bool bWorldOnly = true) const    { return Vec3(m_nOriginX, m_nOriginY, 0); }
-	virtual void                    SetBBox(const AABB& WSBBox)             {}
-	virtual struct IPhysicalEntity* GetPhysics() const                      { return NULL; }
-	virtual void                    SetPhysics(IPhysicalEntity* pPhys)      {}
-	virtual void                    SetMaterial(IMaterial* pMat)            {}
-	virtual IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const { return NULL; }
-	virtual IMaterial*              GetMaterialOverride()                   { return NULL; }
-	virtual float                   GetMaxViewDist()                        { return 1000000.f; }
-	virtual EERType                 GetRenderNodeType()                     { return eERType_TerrainSector;  }
+	virtual const char*             GetName() const                         override { return "TerrainNode"; }
+	virtual const char*             GetEntityClassName() const              override { return "TerrainNodeClass"; }
+	virtual Vec3                    GetPos(bool bWorldOnly = true) const    override { return Vec3(m_nOriginX, m_nOriginY, 0); }
+	virtual void                    SetBBox(const AABB& WSBBox)             override {}
+	virtual struct IPhysicalEntity* GetPhysics() const                      override { return NULL; }
+	virtual void                    SetPhysics(IPhysicalEntity* pPhys)      override {}
+	virtual void                    SetMaterial(IMaterial* pMat)            override {}
+	virtual IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const override { return NULL; }
+	virtual IMaterial*              GetMaterialOverride() const             override { return NULL; }
+	virtual float                   GetMaxViewDist() const                  override { return 1000000.f; }
+	virtual EERType                 GetRenderNodeType() const               override { return eERType_TerrainSector;  }
 
 	friend class CTerrain;
 	friend class CTerrainUpdateDispatcher;
 
-	virtual void                       Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo);
-	const AABB                         GetBBox() const;
-	virtual const AABB                 GetBBoxVirtual()                                                               { return GetBBox(); }
-	virtual void                       FillBBox(AABB& aabb);
-	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) { return NULL; };
+	virtual void                       Render(const SRendParams& RendParams, const SRenderingPassInfo& passInfo) override;
+	virtual const AABB                 GetBBox() const override { return AABB(m_boxHeigtmapLocal.min, m_boxHeigtmapLocal.max + Vec3(0, 0, m_fBBoxExtentionByObjectsIntegration)); }
+	virtual void                       FillBBox(AABB& aabb) const override { aabb = GetBBox(); }
+	virtual struct ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) override { return NULL; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// IStreamCallback
 	//////////////////////////////////////////////////////////////////////////
 	// streaming
-	virtual void StreamOnComplete(IReadStream* pStream, unsigned nError);
-	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError);
+	virtual void StreamOnComplete(IReadStream* pStream, unsigned nError) override;
+	virtual void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError) override;
 	//////////////////////////////////////////////////////////////////////////
 	void         StartSectorTexturesStreaming(bool bFinishNow);
 
 	void         Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bool bBuildErrorsTable);
-	CTerrainNode() :
-		m_nNodeTexSet(),
-		m_nTexSet(),
-		m_nNodeTextureOffset(-1),
-		m_nNodeHMDataOffset(-1),
-		m_pParent(),
-		m_pLeafData(NULL),
-		m_pUpdateTerrainTempData(NULL),
-		m_pChilds(0),
-		m_nLastTimeUsed(0),
-		m_nSetLodFrameId(0),
-		m_pProcObjPoolPtr(0),
-		m_bHMDataIsModified(0)
+	CTerrainNode()
 	{
-		memset(&m_arrfDistance, 0, sizeof(m_arrfDistance));
-		m_nNodesCounter++;
+		s_nodesCounter++;
 	}
 	virtual ~CTerrainNode();
 
 	static void   ResetStaticData();
-	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, uint32 passCullMask);
+	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask);
 	void          SetupTexturing(bool bMakeUncompressedForEditing, const SRenderingPassInfo& passInfo);
 	void          RequestTextures(const SRenderingPassInfo& passInfo);
 	void          EnableTextureEditingMode(unsigned int textureId);
@@ -433,11 +385,11 @@ public:
 	void          UpdateNodeNormalMapFromHeightMap();
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
-	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo, uint32 passCullMask);
-	bool          CheckUpdateProcObjects(const SRenderingPassInfo& passInfo);
+	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask);
+	bool          CheckUpdateProcObjects();
 	void          IntersectTerrainAABB(const AABB& aabbBox, PodArray<CTerrainNode*>& lstResult);
 	void          UpdateDetailLayersInfo(bool bRecursive);
-	void          RemoveProcObjects(bool bRecursive = false, bool bReleaseAllObjects = true);
+	void          RemoveProcObjects(bool bRecursive = false);
 	void          IntersectWithShadowFrustum(bool bAllIn, PodArray<IShadowCaster*>* plstResult, ShadowMapFrustum* pFrustum, const float fHalfGSMBoxSize, const SRenderingPassInfo& passInfo);
 	void          IntersectWithBox(const AABB& aabbBox, PodArray<CTerrainNode*>* plstResult);
 	CTerrainNode* FindMinNodeContainingBox(const AABB& aabbBox);
@@ -457,7 +409,7 @@ public:
 
 	void                         UnloadNodeTexture(bool bRecursive);
 	float                        GetSurfaceTypeAmount(Vec3 vPos, int nSurfType);
-	void                         GetMemoryUsage(ICrySizer* pSizer) const;
+	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const override;
 	void                         GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& cstAABB);
 
 	void                         SetLOD(const SRenderingPassInfo& passInfo);
@@ -493,10 +445,6 @@ public:
 
 	bool                         CheckUpdateDiffuseMap();
 	bool                         AssignTextureFileOffset(int16*& pIndices, int16& nElementsNum);
-	static CProcVegetPoolMan*    GetProcObjPoolMan()                                       { return m_pProcObjPoolMan; }
-	static SProcObjChunkPool*    GetProcObjChunkPool()                                     { return m_pProcObjChunkPool; }
-	static void                  SetProcObjPoolMan(CProcVegetPoolMan* pProcObjPoolMan)     { m_pProcObjPoolMan = pProcObjPoolMan; }
-	static void                  SetProcObjChunkPool(SProcObjChunkPool* pProcObjChunkPool) { m_pProcObjChunkPool = pProcObjChunkPool; }
 	void                         UpdateDistance(const SRenderingPassInfo& passInfo);
 	const float                  GetDistance(const SRenderingPassInfo& passInfo);
 	bool                         IsProcObjectsReady() { return m_bProcObjectsReady != 0; }
@@ -504,7 +452,7 @@ public:
 	int                          GetSectorSizeInHeightmapUnits() const;
 	void                         CheckLeafData();
 	inline STerrainNodeLeafData* GetLeafData() { return m_pLeafData; }
-	void                         OffsetPosition(const Vec3& delta);
+	virtual void                 OffsetPosition(const Vec3& delta) override;
 	_smart_ptr<IRenderMesh>      GetSharedRenderMesh();
 	uint32                       GetMaterialsModificationId();
 	void                         SetTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod);
@@ -518,7 +466,7 @@ public:
 	IReadStreamPtr       m_pReadStream;
 	EFileStreamingStatus m_eTexStreamingStatus;
 
-	CTerrainNode*        m_pChilds; // 4 childs or NULL
+	CTerrainNode*        m_pChilds = nullptr; // 4 childs or NULL
 
 	// flags
 	uint8 m_bProcObjectsReady : 1;
@@ -534,47 +482,36 @@ public:
 	uint8  m_nTreeLevel;
 
 	uint16 m_nOriginX, m_nOriginY;             // sector origin
-	int    m_nLastTimeUsed;                    // basically last time rendered
-	int    m_nSetLodFrameId;
-	float  m_geomError = kGeomErrorNotSet;             // maximum height difference comparing to next more detailed lod
+	int    m_nLastTimeUsed = 0;                // basically last time rendered
+	int    m_nSetLodFrameId = 0;
+	float  m_geomError = kGeomErrorNotSet;     // maximum height difference comparing to next more detailed lod
 
 protected:
 
 	// temp data for terrain generation
-	CUpdateTerrainTempData* m_pUpdateTerrainTempData;
+	CUpdateTerrainTempData* m_pUpdateTerrainTempData = nullptr;
 
 public:
 
 	PodArray<SSurfaceTypeInfo> m_lstSurfaceTypeInfo;
-
 	SRangeInfo                 m_rangeInfo;
-
-	STerrainNodeLeafData*      m_pLeafData;
-
-	CProcObjSector*            m_pProcObjPoolPtr;
-
+	STerrainNodeLeafData*      m_pLeafData = nullptr;
+	PodArray<CVegetation*>     m_arrProcObjects;
 	SSectorTextureSet          m_nNodeTexSet, m_nTexSet; // texture id's
-
 	uint16                     m_nNodeTextureLastUsedSec4;
-
 	AABB                       m_boxHeigtmapLocal;
 	float                      m_fBBoxExtentionByObjectsIntegration;
-	struct CTerrainNode*       m_pParent;
-
-	float                      m_arrfDistance[MAX_RECURSION_LEVELS];
-	int                        m_nNodeTextureOffset;
-	int                        m_nNodeHMDataOffset;
+	struct CTerrainNode*       m_pParent = nullptr;
+	float                      m_arrfDistance[MAX_RECURSION_LEVELS] = {};
+	int                        m_nNodeTextureOffset = -1;
+	int                        m_nNodeHMDataOffset = -1;
 	int FTell(uint8*& f);
 	int FTell(FILE*& f);
-
-	static PodArray<vtx_idx>       m_arrIndices[SRangeInfo::e_max_surface_types][4];
-	static PodArray<SSurfaceType*> m_lstReadyTypes;
-	static CProcVegetPoolMan*      m_pProcObjPoolMan;
-	static SProcObjChunkPool*      m_pProcObjChunkPool;
-	static int                     m_nNodesCounter;
-
+	static PodArray<vtx_idx>       s_arrIndices[SRangeInfo::e_max_surface_types][4];
+	static PodArray<SSurfaceType*> s_lstReadyTypes;
+	static int                     s_nodesCounter;
 	OcclusionTestClient            m_occlusionTestClient;
-	bool                           m_bHMDataIsModified;
+	bool                           m_bHMDataIsModified = false;
 };
 
 // Container to manager temp memory as well as running update jobs
@@ -587,7 +524,7 @@ public:
 	void QueueJob(CTerrainNode*, const SRenderingPassInfo& passInfo);
 	void SyncAllJobs(bool bForceAll, const SRenderingPassInfo& passInfo);
 	bool Contains(CTerrainNode* pNode)
-	{ return (m_queuedJobs.Find(pNode) != -1 || m_arrRunningJobs.Find(pNode) != -1); };
+	{ return (m_queuedJobs.Find(pNode) != -1 || m_arrRunningJobs.Find(pNode) != -1); }
 
 	void GetMemoryUsage(ICrySizer* pSizer) const;
 
@@ -623,10 +560,3 @@ struct STerrainNodeChunk
 #pragma pack(pop)
 
 #include "terrain.h"
-
-inline const AABB CTerrainNode::GetBBox() const
-{
-	return AABB(m_boxHeigtmapLocal.min, m_boxHeigtmapLocal.max + Vec3(0, 0, m_fBBoxExtentionByObjectsIntegration));
-}
-
-#endif

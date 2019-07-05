@@ -1,11 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CryMemory/MemoryAccess.h>
+#include <CryThreading/IJobManager.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
+#include <CrySystem/ISystem.h>
 
 namespace
 {
-static void cryAsyncMemcpy_Int(
+void cryAsyncMemcpy_Int(
   void* dst
   , const void* src
   , size_t size

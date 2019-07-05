@@ -55,9 +55,9 @@ public:
 	virtual void               HideInShadow(uint32 x);
 	virtual uint32             IsAttachmentHiddenInShadow() const     { return m_AttFlags & FLAGS_ATTACH_HIDE_SHADOW_PASS; }
 
-	virtual void               SetAttAbsoluteDefault(const QuatT& qt) { m_AttAbsoluteDefault = qt;  m_AttFlags &= (~FLAGS_ATTACH_PROJECTED);  assert(m_AttAbsoluteDefault.q.IsValid()); };
+	virtual void              SetAttAbsoluteDefault(const QuatT& qt) { m_AttAbsoluteDefault = qt;  m_AttFlags &= (~FLAGS_ATTACH_PROJECTED);  CRY_ASSERT(m_AttAbsoluteDefault.q.IsValid()); };
 	virtual const QuatT&      GetAttAbsoluteDefault() const          { return m_AttAbsoluteDefault;  };
-	virtual void              SetAttRelativeDefault(const QuatT& qt) { m_AttRelativeDefault = qt; m_AttFlags |= FLAGS_ATTACH_PROJECTED;  assert(m_AttRelativeDefault.q.IsValid()); };
+	virtual void              SetAttRelativeDefault(const QuatT& qt) { m_AttRelativeDefault = qt; m_AttFlags |= FLAGS_ATTACH_PROJECTED;  CRY_ASSERT(m_AttRelativeDefault.q.IsValid()); };
 	virtual const QuatT&      GetAttRelativeDefault() const          { return m_AttRelativeDefault; };
 	virtual const QuatT&      GetAttModelRelative() const            { return m_AttModelRelative;  };//this is relative to the animated bone
 	virtual const QuatTS      GetAttWorldAbsolute() const;
@@ -71,11 +71,9 @@ public:
 	virtual SimulationParams& GetSimulationParams()  { return m_Simulation;  };
 	virtual void              PostUpdateSimulationParams(bool bAttachmentSortingRequired, const char* pJointName = 0);
 
-	uint32                    ProjectAttachment(const Skeleton::CPoseData* pPoseData);
+	bool                      ProjectAttachment(const Skeleton::CPoseData* pPoseData);
 	void                      ComputeTriMat();
-	void                      Update_Empty(Skeleton::CPoseData& pPoseData);
-	void                      Update_Static(Skeleton::CPoseData& pPoseData);
-	void                      Update_Execute(Skeleton::CPoseData& pPoseData);
+	void                      Update(Skeleton::CPoseData& poseData);
 
 	virtual void              Serialize(TSerialize ser);
 	virtual size_t            SizeOfThis() const;

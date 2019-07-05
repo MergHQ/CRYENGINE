@@ -2,12 +2,10 @@
 
 #include "StdAfx.h"
 #include "Bloom.h"
-#include "DriverD3D.h"
 
 void CBloomStage::Execute()
 {
-	if (!CRenderer::CV_r_HDRBloom || !CRenderer::CV_r_PostProcess)
-		return;
+	FUNCTION_PROFILER_RENDERER();
 
 	// Approximate function (1 - r)^4 by a sum of Gaussians: 0.0174*G(0.008,r) + 0.192*G(0.0576,r)
 	const float sigma1 = sqrtf(0.008f);
@@ -18,17 +16,20 @@ void CBloomStage::Execute()
 	static CCryNameTSCRC techBloomGaussian("HDRBloomGaussian");
 	static CCryNameR hdrParams0Name("HDRParams0");
 
-	int width = CRendererResources::s_ptexHDRFinalBloom->GetWidth();
-	int height = CRendererResources::s_ptexHDRFinalBloom->GetHeight();
+	int width = m_graphicsPipelineResources.m_pTexHDRFinalBloom->GetWidth();
+	int height = m_graphicsPipelineResources.m_pTexHDRFinalBloom->GetHeight();
 
 	// Note: Just scaling the sampling offsets depending on the resolution is not very accurate but works acceptably
-	int widthHalfRes = (CRendererResources::s_ptexHDRTarget->GetWidth() + 1) / 2;
+#if defined(USE_CRY_ASSERT)
+	int widthHalfRes = (m_graphicsPipelineResources.m_pTexHDRTarget->GetWidth() + 1) / 2;
 	int widthQuarterRes = (widthHalfRes + 1) / 2;
-	assert(CRendererResources::s_ptexHDRFinalBloom->GetWidth() == widthQuarterRes);
+	CRY_ASSERT(m_graphicsPipelineResources.m_pTexHDRFinalBloom->GetWidth() == widthQuarterRes);
+#endif
 	float scaleW = ((float)width / 400.0f) / (float)width;
 	float scaleH = ((float)height / 225.0f) / (float)height;
 
-	SamplerStateHandle samplerBloom = (CRendererResources::s_ptexHDRFinalBloom->GetWidth() == 400 && CRendererResources::s_ptexHDRFinalBloom->GetHeight() == 225) ? EDefaultSamplerStates::PointClamp : EDefaultSamplerStates::LinearClamp;
+	// TODO: Compute shader! because the targets are not compressed / able anyway, and we can half resource allocation)
+	SamplerStateHandle samplerBloom = (m_graphicsPipelineResources.m_pTexHDRFinalBloom->GetWidth() == 400 && m_graphicsPipelineResources.m_pTexHDRFinalBloom->GetHeight() == 225) ? EDefaultSamplerStates::PointClamp : EDefaultSamplerStates::LinearClamp;
 
 	// Pass 1 Horizontal
 	if (m_pass1H.IsDirty())
@@ -36,10 +37,9 @@ void CBloomStage::Execute()
 		m_pass1H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass1H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass1H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
-		m_pass1H.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[1]);
-		m_pass1H.SetState(GS_NODEPTHTEST);
-		m_pass1H.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1]);
-		m_pass1H.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass1H.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
+		m_pass1H.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
+		m_pass1H.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
 		m_pass1H.SetSampler(0, samplerBloom);
 	}
 
@@ -53,10 +53,9 @@ void CBloomStage::Execute()
 		m_pass1V.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass1V.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass1V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
-		m_pass1V.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[0]);
-		m_pass1V.SetState(GS_NODEPTHTEST);
-		m_pass1V.SetTexture(0, CRendererResources::s_ptexHDRTempBloom[1]);
-		m_pass1V.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass1V.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
+		m_pass1V.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
+		m_pass1V.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
 		m_pass1V.SetSampler(0, samplerBloom);
 	}
 
@@ -70,10 +69,9 @@ void CBloomStage::Execute()
 		m_pass2H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass2H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass2H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
-		m_pass2H.SetRenderTarget(0, CRendererResources::s_ptexHDRTempBloom[1]);
-		m_pass2H.SetState(GS_NODEPTHTEST);
-		m_pass2H.SetTexture(0, CRendererResources::s_ptexHDRTempBloom[0]);
-		m_pass2H.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass2H.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
+		m_pass2H.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
+		m_pass2H.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
 		m_pass2H.SetSampler(0, samplerBloom);
 	}
 
@@ -87,11 +85,10 @@ void CBloomStage::Execute()
 		m_pass2V.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass2V.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass2V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, g_HWSR_MaskBit[HWSR_SAMPLE0]);
-		m_pass2V.SetRenderTarget(0, CRendererResources::s_ptexHDRFinalBloom);
-		m_pass2V.SetState(GS_NODEPTHTEST);
-		m_pass2V.SetTexture(0, CRendererResources::s_ptexHDRTempBloom[1]);
-		m_pass2V.SetTexture(1, CRendererResources::s_ptexHDRTempBloom[0]);
-		m_pass2V.SetTexture(2, CRendererResources::s_ptexHDRToneMaps[0]);
+		m_pass2V.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRFinalBloom);
+		m_pass2V.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
+		m_pass2V.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
+		m_pass2V.SetTexture(1, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
 		m_pass2V.SetSampler(0, samplerBloom);
 	}
 

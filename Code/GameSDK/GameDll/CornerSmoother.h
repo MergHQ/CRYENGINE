@@ -1,16 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 /*************************************************************************
--------------------------------------------------------------------------
 Description: 
   Responsible for going smoothly into and around corners
 *************************************************************************/
-#ifndef __CORNER_SMOOTHER_H__
-#define __CORNER_SMOOTHER_H__
 
-#if _MSC_VER > 1000
 # pragma once
-#endif
 
 #include <CryAISystem/IAgent.h> // for SSpeedRange & AgentMovementAbility
 
@@ -20,7 +15,8 @@ Description:
 #define INCLUDE_CORNERSMOOTHER_DEBUGGING() 1
 #endif
 
-class IPathFollower;
+struct IActor;
+struct IPathFollower;
 
 namespace CornerSmoothing
 {
@@ -169,4 +165,3 @@ namespace CornerSmoothing
 	};
 
 } // namespace CornerSmoothing
-#endif // __CORNER_SMOOTHER_H__

@@ -15,12 +15,18 @@
 #include "CryPak.h"
 #include "ZipEncrypt.h"
 #include "System.h"
+#include "FileIOWrapper.h"
 
 using namespace ZipFile;
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
 CryCriticalSection ZipDir::Cache::CacheData::m_csCacheIOLock;
 #endif
+
+void ZipDir::Cache::CacheData::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(this, sizeof(*this));
+}
 
 // initializes the instance structure
 void ZipDir::Cache::Construct(CZipFile& fNew, CMTSafeHeap* pHeap, size_t nDataSizeIn, unsigned int nFactoryFlags, size_t nAllocatedSize)
@@ -63,7 +69,7 @@ void ZipDir::Cache::Delete()
 
 void ZipDir::Cache::PreloadToMemory(IMemoryBlock* pMemoryBlock)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "In-Memory Pak %s", GetFilePath());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "In-Memory Pak %s", GetFilePath());
 
 	// Make sure that fseek/fread by LoadToMemory is atomic (and reads from other threads don't conflict)
 	CryAutoCriticalSection lock(m_pCacheData->m_csCacheIOLock);
@@ -213,7 +219,7 @@ ZipDir::ErrorEnum ZipDir::Cache::ReadFile(FileEntry* pFileEntry, void* pCompress
 
 	{
 		CryAutoCriticalSection lock(m_pCacheData->m_csCacheIOLock); // guarantees that fseek() and fread() will be executed together
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "ZipDir_Cache_ReadFile");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "ZipDir_Cache_ReadFile");
 
 		{
 			int64 nSeekRes = ZipDir::FSeek(&m_zipFile, nFileOffset + pFileEntry->nFileDataOffset, SEEK_SET);
@@ -379,7 +385,7 @@ ZipDir::ErrorEnum ZipDir::Cache::ReadFileStreaming(FileEntry* pFileEntry, void* 
 	if (!m_zipFile.IsInMemory() && g_cvars.pakVars.nUncachedStreamReads)
 	{
 		CryAutoCriticalSection lock(m_pCacheData->m_csCacheIOLock); // guarantees that fseek() and fread() will be executed together
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "ZipDir_Cache_ReadFile");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "ZipDir_Cache_ReadFile");
 
 		if (m_zipFile.m_unbufferedFile != INVALID_HANDLE_VALUE)
 		{
@@ -410,7 +416,6 @@ ZipDir::ErrorEnum ZipDir::Cache::ReadFileStreaming(FileEntry* pFileEntry, void* 
 				}
 
 				ptrdiff_t srcLeft = 0;
-				ptrdiff_t srcRight = nRead;
 				ptrdiff_t dstLeft = nBufferOffs;
 				ptrdiff_t dstRight = (ptrdiff_t)(nBufferOffs + nRead);
 
@@ -565,6 +570,13 @@ bool ZipDir::Cache::ReOpen(const char* filePath)
 	}
 
 	return false;
+}
+
+void ZipDir::Cache::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	// to account for the full memory, see ZipDir::CacheFactory::MakeCache for this cause of this calculation
+	pSizer->AddObject(this, m_pCacheData->m_pHeap->PersistentAllocSize(m_nAllocatedSize));
+	pSizer->AddObject(m_pCacheData);
 }
 
 //////////////////////////////////////////////////////////////////////////

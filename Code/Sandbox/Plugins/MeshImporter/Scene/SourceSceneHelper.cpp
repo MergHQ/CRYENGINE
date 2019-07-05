@@ -114,4 +114,3 @@ void SelectSceneElementWithNode(CSceneModelCommon* pSceneModel, CSceneViewCommon
 		pSceneView->scrollTo(modelIndex);
 	}
 }
-

@@ -23,7 +23,7 @@ void CGameAIInstanceBase::Init(EntityId entityID)
 #endif
 }
 
-void CGameAIInstanceBase::SendSignal(const char* signal, IAISignalExtraData* data)
+void CGameAIInstanceBase::SendSignal(const AISignals::ISignalDescription& signalDescription, AISignals::IAISignalExtraData* data)
 {
 	IEntity* entity = gEnv->pEntitySystem->GetEntity(GetEntityID());
 	assert(entity);
@@ -31,7 +31,7 @@ void CGameAIInstanceBase::SendSignal(const char* signal, IAISignalExtraData* dat
 	{
 		if (IAIObject* aiObject = entity->GetAI())
 			if (IAIActor* aiActor = aiObject->CastToIAIActor())
-				aiActor->SetSignal(1, signal, NULL, data, 0);
+				aiActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, 0, data));
 	}
 }
 
@@ -45,8 +45,7 @@ void CGameAIInstanceBase::SendSignal(const char* signal, IAISignalExtraData* dat
 //	In:		Option signal ID (or mode really). Should be a AISIGNAL_xxx
 //			value.
 //
-void CGameAIInstanceBase::SendSignal(
-	const char* signal, IAISignalExtraData* data, int nSignalID)
+void CGameAIInstanceBase::SendSignal(const AISignals::ISignalDescription& signalDescription, AISignals::IAISignalExtraData* data, int nSignalID)
 {
 	IEntity* entity = gEnv->pEntitySystem->GetEntity(GetEntityID());
 	assert(entity != NULL);
@@ -58,7 +57,7 @@ void CGameAIInstanceBase::SendSignal(
 			IAIActor* aiActor = aiObject->CastToIAIActor();
 			if (aiActor != NULL)
 			{
-				aiActor->SetSignal(nSignalID, signal, NULL, data, 0);
+				aiActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(nSignalID, signalDescription, 0, data));
 			}
 		}
 	}

@@ -2,40 +2,32 @@
 
 #include "StdAfx.h"
 #include "ObjectCreateTool.h"
-#include "Viewport.h"
-#include "ViewManager.h"
 
-#include "EditMode/ObjectMode.h"
-#include "Objects/ObjectLayerManager.h"
+#include "IEditorImpl.h"
 
-#include "DragDrop.h"
+#include <DragDrop.h>
+#include <IObjectManager.h>
+#include <IUndoManager.h>
+#include <Viewport.h>
 
-#include "QEvent.h"
+#include <QDragEnterEvent>
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CObjectCreateTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
-// Class description.
-//////////////////////////////////////////////////////////////////////////
 class CObjectCreateTool_ClassDesc : public IClassDesc
 {
 	//! This method returns an Editor defined GUID describing the class this plugin class is associated with.
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.ObjectCreate2"; };
+	virtual const char* ClassName() { return "EditTool.ObjectCreate2"; }
 
-	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
-	//! create panel.
-	virtual const char*    Category()        { return "Object"; };
+	//! This method returns Category of this class, Category is specifing where this plugin class fits best in create panel.
+	virtual const char*    Category()        { return "Object"; }
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CObjectCreateTool); }
-	//////////////////////////////////////////////////////////////////////////
 };
 
 REGISTER_CLASS_DESC(CObjectCreateTool_ClassDesc)
-
-//////////////////////////////////////////////////////////////////////////
 
 CObjectCreateTool::CObjectCreateTool()
 	: m_objectFile(nullptr)
@@ -154,13 +146,13 @@ bool CObjectCreateTool::OnDragEvent(CViewport* view, EDragEvent eventId, QEvent*
 		break;
 	case eDragMove:
 		{
-			if(IsCreating())
+			if(IsCreating() && m_createdObject)
 			{
 				QDragMoveEvent* dragMove = static_cast<QDragMoveEvent*>(event);
 				CRY_ASSERT(m_createdObject);
 				GetIEditorImpl()->GetIUndoManager()->Suspend();
 				CPoint point(dragMove->pos().x(), dragMove->pos().y());
-				int res = m_createdObject->MouseCreateCallback(view, eMouseMove, point, flags);
+				m_createdObject->MouseCreateCallback(view, eMouseMove, point, flags);
 				GetIEditorImpl()->GetIUndoManager()->Resume();
 				dragMove->accept();
 				return true;
@@ -170,10 +162,11 @@ bool CObjectCreateTool::OnDragEvent(CViewport* view, EDragEvent eventId, QEvent*
 	case eDrop:
 		{
 			QDropEvent* drop = static_cast<QDropEvent*>(event);
-			if (IsValidDragData(drop->mimeData(), false))
+			if (IsValidDragData(drop->mimeData(), false) && m_createdObject)
 			{
-				auto action = drop->proposedAction();
 				drop->acceptProposedAction();
+				CPoint point(drop->pos().x(), drop->pos().y());
+				m_createdObject->MouseCreateCallback(view, eMouseLDown, point, flags);
 				FinishCreation(flags & MK_CONTROL);
 				drop->accept();
 				return true;
@@ -193,6 +186,7 @@ bool CObjectCreateTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt,
 	if (nChar == Qt::Key_Escape || nChar == Qt::Key_Delete)
 	{
 		CancelCreation();
+		Abort();
 	}
 	return false;
 }
@@ -277,4 +271,3 @@ bool CObjectCreateTool::CanStartCreation()
 {
 	return GetIEditorImpl()->GetObjectManager()->GetLayersManager() && GetIEditorImpl()->GetObjectManager()->CanCreateObject();
 }
-

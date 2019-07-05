@@ -429,11 +429,9 @@ protected:
 
 	static const SGameObjectExtensionRMI* Helper_AddMessage(SGameObjectExtensionRMI::DecoderFunction decoder, const char* description, ERMIAttachmentType attach, bool isServerCall, ENetReliabilityType reliability, bool lowDelay)
 	{
-		if (ms_statics.m_nMessages >= MAX_STATIC_MESSAGES)
+		if (!CRY_VERIFY(ms_statics.m_nMessages < MAX_STATIC_MESSAGES))
 		{
-			// Assert or CryFatalError here uses gEnv, which is not yet initialized.
-			__debugbreak();
-			((void (*)())NULL)();
+			CryFatalError("Maximum number of remote messages exceeded.");
 			return NULL;
 		}
 		SGameObjectExtensionRMI& rmi = ms_statics.m_vMessages[ms_statics.m_nMessages++];
@@ -613,8 +611,8 @@ struct IGameObjectExtension : public IEntityComponent
 
 	// IEntityComponent
 	//! GetEventMask implementation is now required for the legacy game object extensions, as a valid value is now needed for performance reasons.
-	//! Return the mask (e.g. ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) of all events you expect to process in ProcessEvent.
-	virtual uint64 GetEventMask() const override = 0;
+	//! Return the mask (e.g. ENTITY_EVENT_XFORM of all events you expect to process in ProcessEvent.
+	virtual Cry::Entity::EventFlags GetEventMask() const override = 0;
 	virtual void Initialize() override {};
 	virtual void NetReplicateSerialize(TSerialize ser) override
 	{

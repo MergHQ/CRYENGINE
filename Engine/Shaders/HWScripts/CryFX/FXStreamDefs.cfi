@@ -30,11 +30,11 @@
 
 #define ISOLATE
 
-#define OUT_P float4 HPosition : SV_POSITION;		
+#define OUT_P float4 HPosition : SV_POSITION;
 
-#define OUT_HPOS										\
-	#if !%_PS										\
-		float4 HPosition : SV_POSITION;							\
+#define OUT_HPOS														\
+	#if !%_PS															\
+		float4 HPosition : SV_POSITION;									\
 	#endif	
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
@@ -45,42 +45,51 @@
 
 #if %SILHOUETTE_PARALLAX_OCCLUSION_MAPPING
 
-#define OUT_HPOS_IN_WPOS									\
-	#if %_PS										            \
-		sample float4 WPos : SV_POSITION;			\
-	#else											              \
-		float4 HPosition : SV_POSITION;			  \
+#define OUT_HPOS_IN_WPOS												\
+	#if %_PS															\
+		sample float4 WPos : SV_POSITION;								\
+	#else																\
+		float4 HPosition : SV_POSITION;									\
 	#endif
 
 #else
 
-#define OUT_HPOS_IN_WPOS									\
-	#if %_PS										            \
-		float4 WPos : SV_POSITION;			      \
-	#else											              \
-		float4 HPosition : SV_POSITION;			  \
+#define OUT_HPOS_IN_WPOS												\
+	#if %_PS															\
+		float4 WPos : SV_POSITION;										\
+	#else																\
+		float4 HPosition : SV_POSITION;									\
 	#endif
-	
+
 #endif
+
+#define OUT_HPOS_IN_WPOS_SG												\
+	#if %_PS && %_RT_SAMPLE0											\
+		sample float4 WPos : SV_POSITION;								\
+	#elif %_PS															\
+		float4 WPos : SV_POSITION;										\
+	#else																\
+		float4 HPosition : SV_POSITION;									\
+	#endif
 
 // if %_PS could be used in global scope, could simplify this a bit
 
-#define FRONT_FACE_PS										\
-	#if %_PS										\
-		bool bIsFrontFace : SV_IsFrontFace;						\
+#define FRONT_FACE_PS													\
+	#if %_PS															\
+		bool bIsFrontFace : SV_IsFrontFace;								\
 	#endif
 
-#define MSAA_SAMPLE_INDEX_PS									\
-	#if %_PS										\
-		#if %_RT_MSAA_SAMPLEFREQ_PASS							\
-			uint uSample : SV_SampleIndex;						\
-		#endif										\
+#define MSAA_SAMPLE_INDEX_PS											\
+	#if %_PS															\
+		#if %_RT_MSAA_SAMPLEFREQ_PASS									\
+			uint uSample : SV_SampleIndex;								\
+		#endif															\
 	#endif
-	
-#define MSAA_COVERAGE_PS									\
-	#if %_PS										\
-		#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST			\
-			uint uCoverageMask : SV_Coverage;					\
+
+#define MSAA_COVERAGE_PS												\
+	#if %_PS															\
+		#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST	\
+			uint uCoverageMask : SV_Coverage;							\
 		#endif
 
 #define OUT_C0   half4 Color     : SV_Target0;
@@ -98,16 +107,23 @@ struct pixout_fp
   float4 Color  : SV_Target0;
 };
 
+struct pixout_zpre
+{
+#if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST
+	uint uCoverageMask	: SV_Coverage;
+#endif
+};
+
 struct pixout_gbuffer
 {
-  half4 GBufferA : SV_Target0;
+	half4 GBufferA : SV_Target0;
 	
 #if !%_RT_SAMPLE0
 	half4 GBufferB : SV_Target1;
 	half4 GBufferC : SV_Target2;
 	
 #if %_RT_MOTION_BLUR
-	half4 VelocityRT  : SV_Target3;
+	half2 VelocityRT  : SV_Target3;
 #endif
 
 #if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST

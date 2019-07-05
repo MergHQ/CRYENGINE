@@ -16,6 +16,7 @@
 #include "GameCVars.h"
 #include "Utility/CryWatch.h"
 #include <CryCore/TypeInfo_impl.h>
+#include "Game.h"
 
 // this define allows for structured 'newed' from allocators other than the circular buffer to be added to the stats system
 // we can allow this to ease the transition to the circular buffer system but it generally defeats the purpose
@@ -285,7 +286,7 @@ void CCircularBufferStatsContainer::GetEventInfo(size_t eventID, size_t idx, CTi
 					break;
 
 				default:
-					CRY_ASSERT_MESSAGE(0,"Found unrecognised timeline time in stats circular buffer - cannot return stats");
+					CRY_ASSERT(0,"Found unrecognised timeline time in stats circular buffer - cannot return stats");
 					break;
 			}
 			found=true;
@@ -295,7 +296,7 @@ void CCircularBufferStatsContainer::GetEventInfo(size_t eventID, size_t idx, CTi
 	}
 	maxEvents=i;
 
-	CRY_ASSERT_MESSAGE(found==true, string().Format("Failed to find event info index %d for event %u, max events on timeline is %d",idx,eventID,maxEvents));
+	CRY_ASSERT(found, "Failed to find event info index %d for event %u, max events on timeline is %d", idx, eventID, maxEvents);
 }
 
 void CCircularBufferStatsContainer::GetStateInfo(size_t stateID, SStatAnyValue& outValue) const
@@ -341,7 +342,7 @@ void CCircularBufferStatsContainer::Clear()
 					break;
 
 				default:
-					CRY_ASSERT_MESSAGE(0,"unknown data type found in timeline, cannot cleanly destruct it - possible memory leak");
+					CRY_ASSERT(0, "unknown data type found in timeline, cannot cleanly destruct it - possible memory leak");
 					break;
 			}
 		}
@@ -428,7 +429,7 @@ CCircularBufferStatsStorage::CCircularBufferStatsStorage(
 		m_circularBuffer.Init(inBufferSize,NULL);
 		m_circularBuffer.SetPacketDiscardCallback(DiscardCallback,this);
 	}
-	CRY_ASSERT_MESSAGE(!s_storage,"Creating multiple CCircularBufferStatsStorage instances isn't currently supported, would need to remove default 'new' operator for CCircularBufferTimelineEntry and force the specification of which CCircularBufferStatsStorage should be used");
+	CRY_ASSERT(!s_storage, "Creating multiple CCircularBufferStatsStorage instances isn't currently supported, would need to remove default 'new' operator for CCircularBufferTimelineEntry and force the specification of which CCircularBufferStatsStorage should be used");
 	s_storage=this;
 }
 
@@ -457,7 +458,7 @@ void CCircularBufferStatsStorage::Release()
 
 void CCircularBufferStatsStorage::LockForSerialization()
 {
-	CRY_ASSERT_MESSAGE(!m_serializeLocked,"Attempted to lock stats storage for serialization, but it is already locked??");
+	CRY_ASSERT(!m_serializeLocked, "Attempted to lock stats storage for serialization, but it is already locked??");
 	m_serializeLocked=true;
 }
 
@@ -496,7 +497,7 @@ void CCircularBufferStatsStorage::DebugUpdate()
 // static
 CCircularBufferStatsStorage	*CCircularBufferStatsStorage::GetDefaultStorage()
 {
-	CRY_ASSERT_MESSAGE(s_storage!=NULL,"Tried to access default circular buffer storage, but none exists");
+	CRY_ASSERT(s_storage!=NULL, "Tried to access default circular buffer storage, but none exists");
 	return s_storage;
 }
 
@@ -520,9 +521,9 @@ bool CCircularBufferStatsStorage::ContainsPtr(
 // allocates storage of the specified size
 void *CCircularBufferStatsStorage::Alloc(int inSize, uint8 inType)
 {
-	CRY_ASSERT_MESSAGE(!m_serializeLocked,"Shouldn't be trying to allocate currently, circular storage is locked for serialisation (may corrupt data)");
+	CRY_ASSERT(!m_serializeLocked, "Shouldn't be trying to allocate currently, circular storage is locked for serialisation (may corrupt data)");
 
-	CRY_ASSERT_MESSAGE(this==GetDefaultStorage(),"CCircularBufferStatsStorage Alloc and Free need to know which circular buffer allocations belong to if allowing more than one circular buffer");
+	CRY_ASSERT(this==GetDefaultStorage(), "CCircularBufferStatsStorage Alloc and Free need to know which circular buffer allocations belong to if allowing more than one circular buffer");
 
 	void		*result=NULL;
 	int			headerSize=sizeof(SRecording_Packet);
@@ -569,14 +570,14 @@ void CCircularBufferStatsStorage::Free(void *inPtr)
 
 	if (storage)
 	{
-		CRY_ASSERT_MESSAGE(!storage->m_serializeLocked,"Shouldn't be trying to free currently, circular storage is locked for serialisation (may corrupt data)");
+		CRY_ASSERT(!storage->m_serializeLocked,"Shouldn't be trying to free currently, circular storage is locked for serialisation (may corrupt data)");
 
 		int						headerSize=sizeof(SRecording_Packet);
 		SRecording_Packet		*header=(SRecording_Packet*)(((char*)inPtr)-headerSize);								// PTR ARITH
 
 		header->type=eRBPT_Free;
 		storage->m_totalBytesAlloced-=header->size;
-		CRY_ASSERT_MESSAGE(storage->m_totalBytesAlloced>=0,"CCircularBufferStatsStorage memory stats aren't adding up, total used is negative");
+		CRY_ASSERT(storage->m_totalBytesAlloced>=0, "CCircularBufferStatsStorage memory stats aren't adding up, total used is negative");
 
 		if (storage->IsUsingCircularBuffer())
 		{
@@ -587,7 +588,7 @@ void CCircularBufferStatsStorage::Free(void *inPtr)
 				for (CRecordingBuffer::iterator iter=storage->m_circularBuffer.begin(), end=storage->m_circularBuffer.end(); iter!=end; ++iter)
 				{
 					const SRecording_Packet	&packet=*iter;
-					CRY_ASSERT_TRACE(packet.type==eRBPT_Free,("CCircularBufferStatsStorage thinks there should be no allocations in the circular buffer, but one of type %d remains",packet.type));
+					CRY_ASSERT(packet.type==eRBPT_Free, "CCircularBufferStatsStorage thinks there should be no allocations in the circular buffer, but one of type %d remains", packet.type);
 				}
 #endif
 				storage->m_circularBuffer.Reset();
@@ -610,7 +611,7 @@ void CCircularBufferStatsStorage::ResetUsageCounters()
 // discard callback
 void CCircularBufferStatsStorage::DiscardCallback(SRecording_Packet *ps, float recordedTime, void *inUserData)
 {
-	CRY_ASSERT_MESSAGE(false, "This should never happen, we no longer add data to the circular buffer if it is full");
+	CRY_ASSERT(false, "This should never happen, we no longer add data to the circular buffer if it is full");
 	switch (ps->type)
 	{
 		case eRBPT_Free:
@@ -645,7 +646,7 @@ void CCircularBufferStatsStorage::DiscardCallback(SRecording_Packet *ps, float r
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0,"Unknown packet type in CCircularBufferStatsStorage discard callback");
+			CRY_ASSERT(0, "Unknown packet type in CCircularBufferStatsStorage discard callback");
 			break;
 	}
 }
@@ -695,7 +696,7 @@ void CCircularBufferTimelineEntry::ForceRelease()
 {
 	int			expectedRefcount=(m_timelineLink.IsInList()) ? 1 : 0;
 
-	CRY_ASSERT_MESSAGE(GetRefCount()==expectedRefcount,"Circular buffer stats entry is being purged due to lack of space, but some one some where is still holding a ref to it - this is very likely to crash! Code is not permitted to hold references to these objects");
+	CRY_ASSERT(GetRefCount()==expectedRefcount,"Circular buffer stats entry is being purged due to lack of space, but some one some where is still holding a ref to it - this is very likely to crash! Code is not permitted to hold references to these objects");
 
 	if (expectedRefcount==1)
 	{
@@ -905,7 +906,7 @@ void CCircularXMLSerializer::SerializeTimeline(
 					SCircularStatAnyValue					*pVal=SCircularStatAnyValue::EntryFromListElement(*m_eventIterator);
 					xml=pInStats->CreateStatXMLNode("val");
 					xml->setAttr("time",pVal->time.GetMilliSecondsAsInt64());
-					CRY_ASSERT_MESSAGE(pVal->val.type!=eSAT_TXML,"adding SStatAnyValue() with xmlnodes is no longer supported, add a data type derived from IXMLSerializable instead");
+					CRY_ASSERT(pVal->val.type!=eSAT_TXML,"adding SStatAnyValue() with xmlnodes is no longer supported, add a data type derived from IXMLSerializable instead");
 					stack_string strValue;
 					if(pVal->val.ToString(strValue))
 					{
@@ -915,7 +916,7 @@ void CCircularXMLSerializer::SerializeTimeline(
 				break;
 
 			default:
-				CRY_ASSERT_MESSAGE(0,"unknown data type found in timeline, cannot save data into telemetry");
+				CRY_ASSERT(0,"unknown data type found in timeline, cannot save data into telemetry");
 				break;
 		}
 

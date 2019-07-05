@@ -1,12 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/**********************************************************************/
-/************ HEADER FILE FOR TRIANGULATE.H ***************************/
-/**********************************************************************/
-
-#ifndef TRIANGULATE_H
-
-#define TRIANGULATE_H
+#pragma once
 
 /*****************************************************************/
 /** Static class to triangulate any contour/polygon efficiently **/
@@ -52,6 +46,3 @@ private:
 	static bool Snip(const Vector2dVector& contour, int u, int v, int w, int n, int* V);
 
 };
-
-#endif
-

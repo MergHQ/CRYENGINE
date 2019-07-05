@@ -5,13 +5,12 @@
 #include <CryString/StringUtils.h>
 #include <CryCore/Platform/platform.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/ITestSystem.h>
+#include <CrySystem/Testing/CryTest.h>
 #include <CryExtension/RegFactoryNode.h>
 #include <CryExtension/ICryFactoryRegistryImpl.h>
 #include <CryString/UnicodeFunctions.h>
 #include <CrySystem/CryUtils.h>
-#include <CryCore/Platform/CryWindows.h>
-
 #include <CryFlowGraph/IFlowBaseNode.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -44,11 +43,44 @@ STRUCT_INFO_T_INSTANTIATE(Color_tpl, <uint8>)
 #endif
 
 #if CRY_PLATFORM_WINAPI && defined(CRY_IS_APPLICATION) 
+
+template<typename T>
+struct LazyInstance
+{
+	using storage_t = typename std::aligned_storage<sizeof(T), alignof(T)>::type;
+	storage_t storage;
+	bool initialized = false;
+
+	~LazyInstance()
+	{
+		if(initialized)
+		{
+			reinterpret_cast<T*>(&storage)->~T();
+		}
+	}
+
+	T* operator->() 
+	{
+		return static_cast<T*>(*this);
+	}
+
+	operator T* ()
+	{
+		IF_UNLIKELY(!initialized)
+		{
+			new (&storage)T;
+			initialized = true;
+		}
+		return reinterpret_cast<T*>(&storage);
+	}
+};
+
 // This belongs to the ClassFactoryManager::the() singleton in ClassFactory.h and must only exist in executables, not in DLLs.
 #include <CrySerialization/yasli/ClassFactory.h>
+
+#if defined(NOT_USE_CRY_MEMORY_MANAGER)
 extern "C" DLL_EXPORT yasli::ClassFactoryManager* GetYasliClassFactoryManager()
 {
-#if defined(NOT_USE_CRY_MEMORY_MANAGER)
 	// Cannot be used by code that uses CryMemoryManager as it might not be initialized yet.
 	static yasli::ClassFactoryManager* g_classFactoryManager = nullptr;
 	if (g_classFactoryManager == nullptr)
@@ -56,13 +88,21 @@ extern "C" DLL_EXPORT yasli::ClassFactoryManager* GetYasliClassFactoryManager()
 		g_classFactoryManager = new yasli::ClassFactoryManager();
 	}
 	return g_classFactoryManager;
+}
 #else
-	// Cannot be used in Sandbox due as we would create a static while creating a static. MSVC doesn't like that.
-	static yasli::ClassFactoryManager classFactoryManager;
-	return &classFactoryManager;
-#endif
+// We cannot initialize g_pClassFactoryManager as a local static because during certain 
+// scenarios we cannot be sure that the mutex guarding the function local static is initialized. 
+// Also we cannot instantiate the ClassFactoryManager as a global static because this function 
+// is called during global initialization of other other objects and the initialization order 
+// of globals is undefined.
+static LazyInstance<yasli::ClassFactoryManager> g_pClassFactoryManager;
+extern "C" DLL_EXPORT yasli::ClassFactoryManager* GetYasliClassFactoryManager()
+{
+	return g_pClassFactoryManager;
 }
 #endif
+
+#endif // CRY_PLATFORM_WINAPI && defined(CRY_IS_APPLICATION)
 
 #if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
 //The reg factory is used for registering the different modules along the whole project
@@ -106,6 +146,10 @@ extern "C" DLL_EXPORT SRegFactoryNode* GetHeadToRegFactories()
 	#include <CryMath/ISplineSerialization_impl.h>
 
 	#include <CryCore/TypeInfo_impl.h>
+	#include <CryMemory/VirtualMemory_impl.h>
+	#if CRY_PLATFORM_ORBIS
+		#include <CryMemory/VirtualMemory_impl_sce.h>
+	#endif
 
 	#define CRY_PLATFORM_IMPL_H_FILE 1
 	#include <CryCore/CryTypeInfo.inl>
@@ -127,15 +171,14 @@ void CryInvalidParameterHandler(
   unsigned int line,
   uintptr_t pReserved)
 {
-	//size_t i;
-	//char sFunc[128];
-	//char sExpression[128];
-	//char sFile[128];
-	//wcstombs_s( &i,sFunc,sizeof(sFunc),function,_TRUNCATE );
-	//wcstombs_s( &i,sExpression,sizeof(sExpression),expression,_TRUNCATE );
-	//wcstombs_s( &i,sFile,sizeof(sFile),file,_TRUNCATE );
-	//CryFatalError( "Invalid parameter detected in function %s. File: %s Line: %d, Expression: %s",sFunc,sFile,line,sExpression );
-	CryFatalError("Invalid parameter detected in CRT function");
+	size_t i;
+	char sFunc[128];
+	char sExpression[128];
+	char sFile[128];
+	wcstombs_s(&i, sFunc, sizeof(sFunc), function, _TRUNCATE);
+	wcstombs_s(&i, sExpression, sizeof(sExpression), expression, _TRUNCATE);
+	wcstombs_s(&i, sFile, sizeof(sFile), file, _TRUNCATE);
+	CryFatalError("Invalid parameter detected in function %s. File: %s Line: %d, Expression: %s", sFunc, sFile, line, sExpression);
 }
 
 void InitCRTHandlers()
@@ -168,14 +211,23 @@ extern "C" DLL_EXPORT void ModuleInitISystem(ISystem* pSystem, const char* modul
 		pCryFactoryImpl->RegisterFactories(g_pHeadToRegFactories);
 	}
 	#endif
-	#ifdef CRY_UNIT_TESTING
+	#ifdef CRY_TESTING
 	// Register All unit tests of this module.
 	if (pSystem)
 	{
-		if (CryUnitTest::IUnitTestManager* pTestManager = pSystem->GetITestSystem()->GetIUnitTestManager())
-			pTestManager->CreateTests(moduleName);
+		auto pTestSystem = pSystem->GetITestSystem();
+		if (pTestSystem)
+		{
+			for (CryTest::CTestFactory* pFactory = CryTest::CTestFactory::GetFirstInstance();
+				pFactory != nullptr;
+				pFactory = pFactory->GetNextInstance())
+			{
+				pFactory->SetModuleName(moduleName);
+				pTestSystem->AddFactory(pFactory);
+			}
+		}
 	}
-	#endif //CRY_UNIT_TESTING
+	#endif //CRY_TESTING
 }
 
 int g_iTraceAllocations = 0;
@@ -213,7 +265,7 @@ bool CryInitializeEngine(SSystemInitParams& startupParams, bool bManualEngineLoo
 	}
 #endif
 
-	if (ISystem* pSystem = CreateSystemInterface(startupParams, bManualEngineLoop))
+	if (CreateSystemInterface(startupParams, bManualEngineLoop) != nullptr)
 	{
 #if !defined(CRY_IS_MONOLITHIC_BUILD)
 		if (bManualEngineLoop)
@@ -224,6 +276,10 @@ bool CryInitializeEngine(SSystemInitParams& startupParams, bool bManualEngineLoo
 			systemLibrary.ReleaseOwnership();
 		}
 #endif
+	}
+	else
+	{
+		return false;
 	}
 
 	return true;
@@ -280,16 +336,17 @@ threadID CryGetCurrentThreadId()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CryDebugBreak()
+// Just a simple wrapper. Without it we'd have to add the required headers to plaform.h and leak them everywhere.
+bool CryIsDebuggerPresent()
 {
-	#if CRY_PLATFORM_WINDOWS && !defined(RELEASE)
-	if (IsDebuggerPresent())
-	#endif
-	{
-		__debugbreak();
-	}
+#if CRY_PLATFORM_WINDOWS
+	return IsDebuggerPresent() != 0;
+#else
+	// On platforms where we cannot check, we must assume the debugger is present.
+	// Otherwise debugging would not work properly (e.g. CryDebugBreak would never break).
+	return true;
+#endif
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
@@ -374,6 +431,10 @@ int64 CryGetTicks()
 #include "platform_impl_mac.inl"
 #endif
 
+#if CRY_PLATFORM_POSIX
+#include "platform_impl_posix.inl"
+#endif
+
 // Functions that depend on the platform-specific includes below
 
 EQuestionResult CryMessageBox(const char* szText, const char* szCaption, EMessageBox type)
@@ -409,17 +470,11 @@ EQuestionResult CryMessageBox(const char* szText, const char* szCaption, EMessag
 
 EQuestionResult CryMessageBox(const wchar_t* szText, const wchar_t* szCaption, EMessageBox type)
 {
-#if CRY_PLATFORM_WINAPI
-	if (gEnv && gEnv->bUnattendedMode)
-	{
-		return eQR_None;
-	}
-
-	// Invoke platform-specific implementation
-	return CryMessageBoxImpl(szText, szCaption, type);
-#else
-	return eQR_None;
-#endif
+	string text;
+	Unicode::Convert(text, szText);
+	string caption;
+	Unicode::Convert(caption, szCaption);
+	return CryMessageBox(text, caption, type);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -428,9 +483,6 @@ EQuestionResult CryMessageBox(const wchar_t* szText, const wchar_t* szCaption, E
 CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::s_pFirst = nullptr;
 CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::s_pLast = nullptr;
 bool                  CAutoRegFlowNodeBase::s_bNodesRegistered = false;
-
-// load implementation of platform profile marker
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.h>
 
 CRY_ALIGN(64) uint32 BoxSides[0x40 * 8] = {
 	0, 0, 0, 0, 0, 0, 0, 0, //00

@@ -2,11 +2,12 @@
 
 #include "StdAfx.h"
 #include "PolylineTool.h"
-#include "DesignerEditor.h"
-#include "Core/Model.h"
+
 #include "Core/Helper.h"
-#include "ViewManager.h"
-#include "Objects/DisplayContext.h"
+#include "DesignerEditor.h"
+
+#include <Objects/DisplayContext.h>
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -488,7 +489,7 @@ bool PolylineTool::IntersectExisintingLines(const BrushVec3& v0, const BrushVec3
 	return false;
 }
 
-void PolylineTool::Display(DisplayContext& dc)
+void PolylineTool::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 
@@ -542,4 +543,3 @@ ELineState PolylineTool::GetLineState() const
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Polyline, eToolGroup_Shape, "Polyline", PolylineTool,
                                                            polyline, "runs polyline tool", "designer.polyline")
-

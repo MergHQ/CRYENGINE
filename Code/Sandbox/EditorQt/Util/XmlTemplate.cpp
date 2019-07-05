@@ -1,15 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "XmlTemplate.h"
-#include "FileEnum.h"
-
+#include <Util/FileUtil.h>
+#include <CryString/CryPath.h>
 #include <io.h>
-//////////////////////////////////////////////////////////////////////////
-// CXmlTemplate implementation
-//////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplate::GetValues(XmlNodeRef& node, const XmlNodeRef& fromNode)
 {
 	assert(node != 0 && fromNode != 0);
@@ -44,7 +40,6 @@ void CXmlTemplate::GetValues(XmlNodeRef& node, const XmlNodeRef& fromNode)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplate::SetValues(const XmlNodeRef& node, XmlNodeRef& toNode)
 {
 	assert(node != 0 && toNode != 0);
@@ -82,7 +77,6 @@ void CXmlTemplate::SetValues(const XmlNodeRef& node, XmlNodeRef& toNode)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CXmlTemplate::SetValues(const XmlNodeRef& node, XmlNodeRef& toNode, const XmlNodeRef& modifiedNode)
 {
 	assert(node != 0 && toNode != 0 && modifiedNode != 0);
@@ -115,7 +109,6 @@ bool CXmlTemplate::SetValues(const XmlNodeRef& node, XmlNodeRef& toNode, const X
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, bool value)
 {
 	XmlNodeRef param = templ->newChild(sName);
@@ -123,7 +116,6 @@ void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, bool value)
 	param->setAttr("value", value);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, int value, int min, int max)
 {
 	XmlNodeRef param = templ->newChild(sName);
@@ -133,7 +125,6 @@ void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, int value, int
 	param->setAttr("max", max);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, float value, float min, float max)
 {
 	XmlNodeRef param = templ->newChild(sName);
@@ -143,7 +134,6 @@ void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, float value, f
 	param->setAttr("max", max);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, const char* sValue)
 {
 	XmlNodeRef param = templ->newChild(sName);
@@ -151,17 +141,6 @@ void CXmlTemplate::AddParam(XmlNodeRef& templ, const char* sName, const char* sV
 	param->setAttr("value", sValue);
 }
 
-//////////////////////////////////////////////////////////////////////////
-//
-// CXmlTemplateRegistry implementation
-//
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-CXmlTemplateRegistry::CXmlTemplateRegistry()
-{}
-
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplateRegistry::LoadTemplates(const string& path)
 {
 	m_templates.clear();
@@ -188,13 +167,11 @@ void CXmlTemplateRegistry::LoadTemplates(const string& path)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlTemplateRegistry::AddTemplate(const string& name, XmlNodeRef& tmpl)
 {
 	m_templates[name] = tmpl;
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CXmlTemplateRegistry::FindTemplate(const string& name)
 {
 	auto it = m_templates.find(name);
@@ -205,4 +182,3 @@ XmlNodeRef CXmlTemplateRegistry::FindTemplate(const string& name)
 
 	return XmlNodeRef();
 }
-

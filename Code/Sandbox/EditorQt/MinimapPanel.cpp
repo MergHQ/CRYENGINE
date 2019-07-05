@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 
 #include <QVBoxLayout>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include "CryIcon.h"
 #include "MinimapPanel.h"
@@ -46,7 +46,7 @@ QMinimapPanel::QMinimapPanel(QWidget* parent)
 	localLayout->setAlignment(localLayout, Qt::AlignTop);
 
 	localLayout->addWidget(new QMinimapButtons());
-	m_pPropertyTree = new QPropertyTree();
+	m_pPropertyTree = new QPropertyTreeLegacy();
 	localLayout->addWidget(m_pPropertyTree);
 }
 
@@ -57,4 +57,3 @@ bool QMinimapPanel::CanEditTool(CEditTool* pTool)
 
 	return pTool->IsKindOf(RUNTIME_CLASS(CTerrainMiniMapTool));
 }
-

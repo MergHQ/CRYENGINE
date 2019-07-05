@@ -51,7 +51,7 @@ public:
 		desc.SetGUID("{B53A9A5F-F27A-42CB-82C7-B1E379C41A2A}"_cry_guid);
 	}
 
-	virtual uint64 GetEventMask() const override { return ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION); }
+	virtual Cry::Entity::EventFlags GetEventMask() const override { return ENTITY_EVENT_COLLISION; }
 	virtual void ProcessEvent(const SEntityEvent& event) override
 	{
 		// Handle the OnCollision event, in order to have the entity removed on collision

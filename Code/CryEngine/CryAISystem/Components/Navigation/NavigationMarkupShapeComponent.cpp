@@ -108,14 +108,14 @@ void CAINavigationMarkupShapeComponent::OnShutDown()
 	gEnv->pAISystem->GetNavigationSystem()->UnRegisterListener(this);
 }
 
-uint64 CAINavigationMarkupShapeComponent::GetEventMask() const
+Cry::Entity::EventFlags CAINavigationMarkupShapeComponent::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_XFORM | ENTITY_EVENT_RESET;
 }
 
 void CAINavigationMarkupShapeComponent::OnNavigationEvent(const INavigationSystem::ENavigationEvent event)
 {
-	if (event == INavigationSystem::NavigationCleared)
+	if (event == INavigationSystem::ENavigationEvent::NavigationCleared)
 	{
 		gEnv->pAISystem->GetNavigationSystem()->UnregisterEntityMarkups(*GetEntity());
 		m_runtimeData.clear();

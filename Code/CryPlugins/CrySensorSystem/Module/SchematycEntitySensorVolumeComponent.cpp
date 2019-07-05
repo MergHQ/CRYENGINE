@@ -6,6 +6,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IShader.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/physinterface.h>
 #include <CrySerialization/DynArray.h>
 
 #include "SensorMap.h"
@@ -281,9 +282,9 @@ namespace Cry
 			}
 		}
 
-		uint64 CSchematycEntitySensorVolumeComponent::GetEventMask() const
+		Cry::Entity::EventFlags CSchematycEntitySensorVolumeComponent::GetEventMask() const
 		{
-			return ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
+			return ENTITY_EVENT_XFORM;
 		}
 
 		void CSchematycEntitySensorVolumeComponent::ProcessEvent(const SEntityEvent& event)
@@ -307,19 +308,13 @@ namespace Cry
 			{
 				case ESensorEventType::Entering:
 				{
-					if (Schematyc::IObject* pSchematycObject = GetEntity()->GetSchematycObject())
-					{
-						pSchematycObject->ProcessSignal(SEnteringSignal(otherVolumeParams.entityId), GetGUID());
-					}
+					GetEntity()->GetSchematycObject()->ProcessSignal(SEnteringSignal(otherVolumeParams.entityId), GetGUID());
 					break;
 				}
 				case ESensorEventType::Leaving:
 				{
-					if (Schematyc::IObject* pSchematycObject = GetEntity()->GetSchematycObject())
-					{
-						pSchematycObject->ProcessSignal(SLeavingSignal(otherVolumeParams.entityId), GetGUID());
-						break;
-					}
+					GetEntity()->GetSchematycObject()->ProcessSignal(SLeavingSignal(otherVolumeParams.entityId), GetGUID());
+					break;
 				}
 			}
 		}

@@ -6,6 +6,7 @@
 #include "Player.h"
 #include "EnvironmentalWeapon.h"
 #include "PlayerPluginEventDistributor.h"
+#include "GameCVars.h"
 #include "GameXmlParamReader.h"
 
 #ifndef _RELEASE
@@ -66,7 +67,8 @@ void CPlayerPlugin_InteractiveEntityMonitor::Update( const float dt )
 				continue;
 			}
 
-			if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
+			IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+			if (pIEntityRender != nullptr)
 			{
 				const Vec3& entityPos = pEntity->GetWorldTM().GetColumn3();
 				const float distSq = entityPos.GetSquaredDistance2D(playerPos);
@@ -186,7 +188,8 @@ void CPlayerPlugin_InteractiveEntityMonitor::Register( IEntity* pEntity, uint8 i
 	//Check if it should already be on
 	if(m_bEnabled && GetOwnerPlayer()->GetEntity()->GetWorldPos().GetSquaredDistance2D(pEntity->GetWorldPos()) < g_pGameCVars->g_highlightingMovementDistanceToUpdateSquared)
 	{
-		if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
+		IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+		if(pIEntityRender != nullptr)
 		{
 			if( (initialFlags & EIES_ShootToInteract) == 0 )
 			{
@@ -212,7 +215,8 @@ void CPlayerPlugin_InteractiveEntityMonitor::Unregister( IEntity* pEntity )
 		{
 			if(it->second)
 			{
-				if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
+				IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+				if(pIEntityRender != nullptr)
 				{
 					//pIEntityRender->SetHUDSilhouettesParams(0.f, 0.f, 0.f, 0.0f);
 				}
@@ -246,7 +250,8 @@ void CPlayerPlugin_InteractiveEntityMonitor::EnableHighlighting(bool enable)
 			{
 				if(IEntity* pEntity = gEnv->pEntitySystem->GetEntity(iter->first))
 				{
-					if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
+					IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+					if(pIEntityRender != nullptr)
 					{
 						if( (iter->second & EIES_ShootToInteract) == 0 )
 						{
@@ -271,7 +276,8 @@ void CPlayerPlugin_InteractiveEntityMonitor::EnableHighlighting(bool enable)
 			{
 				if(IEntity* pEntity = gEnv->pEntitySystem->GetEntity(iter->first))
 				{
-					if(IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
+					IEntityRender* pIEntityRender = pEntity->GetRenderInterface();
+					if(pIEntityRender != nullptr)
 					{
 						//pIEntityRender->SetHUDSilhouettesParams(disableColor.r, disableColor.g, disableColor.b, disableColor.a);
 					}

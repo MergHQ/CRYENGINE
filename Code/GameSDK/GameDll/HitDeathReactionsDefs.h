@@ -12,10 +12,11 @@ History:
 #ifndef __HIT_DEATH_REACTIONS_DEFS_H
 #define __HIT_DEATH_REACTIONS_DEFS_H
 
-#include <CryScriptSystem/ScriptHelpers.h>							// SmartScriptTable
+#include <CryScriptSystem/IScriptSystem.h>							// SmartScriptTable
 #include <CryAISystem/IAgent.h>											// EStance enumeration
 #include <CryAnimation/CryCharAnimationParams.h>			// anim flags
 #include <CryAnimation/ICryAnimation.h>
+#include <CryGame/IGameFramework.h>
 #include "ICryMannequin.h"
 
 
@@ -81,10 +82,12 @@ struct SRandomGeneratorFunct
 {
 	SRandomGeneratorFunct(CMTRand_int32& pseudoRandomGenerator);
 
-	template <typename Distance>
-	Distance operator () (const Distance& n)
+	using result_type = uint32;
+	static constexpr result_type min() { return std::numeric_limits<result_type>::lowest(); }
+	static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
+	result_type operator()()
 	{
-		return static_cast<Distance>(m_pseudoRandomGenerator.GenerateUint32() % n);
+		return static_cast<result_type>(m_pseudoRandomGenerator.GenerateUint32());
 	}
 
 	CMTRand_int32& m_pseudoRandomGenerator;

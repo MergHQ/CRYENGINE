@@ -3,13 +3,17 @@
 #include "StdAfx.h"
 #include "WaterRipples.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 //////////////////////////////////////////////////////////////////////////
 
-CWaterRipplesStage::CWaterRipplesStage()
-	: m_vertexBuffer(~0u)
+CWaterRipplesStage::CWaterRipplesStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_passSnapToCenter(&graphicsPipeline)
+	, m_passCopy(&graphicsPipeline)
+	, m_passWaterWavePropagation(&graphicsPipeline)
+	, m_passMipmapGen(&graphicsPipeline)
+	, m_vertexBuffer(~0u)
 	, m_pCVarWaterRipplesDebug(nullptr)
 	, m_ripplesGenTechName("WaterRipplesGen")
 	, m_ripplesHitTechName("WaterRipplesHit")
@@ -22,6 +26,7 @@ CWaterRipplesStage::CWaterRipplesStage()
 	, m_shaderParam(0.0f)
 	, m_lookupParam(0.0f)
 	, m_bInitializeSim(true)
+	, m_bGenerateRipples(false)
 	, m_bSnapToCenter(false)
 {
 }
@@ -42,10 +47,12 @@ void CWaterRipplesStage::Init()
 	const int32 flags = FT_FORCE_MIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 
 	CRY_ASSERT(m_pTexWaterRipplesDDN == nullptr);
-	m_pTexWaterRipplesDDN = CTexture::GetOrCreateTextureObjectPtr("$WaterRipplesDDN_0", nGridSize, nGridSize, 1, eTT_2D, flags, eTF_R8G8B8A8S);
+	std::string texName = "$WaterRipplesDDN_0" + m_graphicsPipeline.GetUniqueIdentifierName();
+	m_pTexWaterRipplesDDN = CTexture::GetOrCreateTextureObjectPtr(texName.c_str(), nGridSize, nGridSize, 1, eTT_2D, flags, eTF_R8G8B8A8S);
 
 	CRY_ASSERT(m_pTempTexture == nullptr);
-	m_pTempTexture = CTexture::GetOrCreateTextureObjectPtr("$WaterRippleGenTemp", nGridSize, nGridSize, 1, eTT_2D, flags, eTF_R8G8B8A8);
+	texName = "$WaterRippleGenTemp" + m_graphicsPipeline.GetUniqueIdentifierName();
+	m_pTempTexture = CTexture::GetOrCreateTextureObjectPtr(texName.c_str(), nGridSize, nGridSize, 1, eTT_2D, flags, eTF_R8G8B8A8);
 
 	// Shared constant buffer
 	m_constants.CreateDeviceBuffer();
@@ -102,6 +109,12 @@ void CWaterRipplesStage::Update()
 	{
 		m_pCVarWaterRipplesDebug = gEnv->pConsole->GetCVar("e_WaterRipplesDebug");
 	}
+
+	m_bGenerateRipples = shouldApplyRipples && RefreshParameters();
+
+	// update shared constant buffer
+	m_constants->params = m_shaderParam;
+	m_constants.CopyToDevice();
 }
 
 bool CWaterRipplesStage::RefreshParameters()
@@ -129,8 +142,7 @@ bool CWaterRipplesStage::RefreshParameters()
 	UpdateAndDrawDebugInfo();
 #endif
 
-	const uint32 nThreadID = gRenDev->GetRenderThreadID();
-	const float fTime = GetGraphicsPipeline().GetAnimationTime().GetSeconds();
+	const float fTime = m_graphicsPipeline.GetAnimationTime().GetSeconds();
 	const uint32 gpuCount = gRenDev->GetActiveGPUCount();
 
 	const float simGridSize = static_cast<float>(SWaterRippleInfo::WaveSimulationGridSize);
@@ -217,16 +229,8 @@ void CWaterRipplesStage::Execute()
 		return;
 	}
 
-	if (!CTexture::IsTextureExist(m_pTexWaterRipplesDDN)
-	    || !CTexture::IsTextureExist(m_pTempTexture))
-	{
+	if (!m_bGenerateRipples)
 		return;
-	}
-
-	if (!RefreshParameters())
-	{
-		return;
-	}
 
 	{
 		PROFILE_LABEL_SCOPE("WATER RIPPLES GEN");
@@ -249,10 +253,6 @@ void CWaterRipplesStage::Execute()
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 
-		// update shared constant buffer
-		m_constants->params = m_shaderParam;
-		m_constants.CopyToDevice();
-
 		// Snapping occurred - update simulation to new offset
 		if (m_bSnapToCenter)
 		{
@@ -272,7 +272,7 @@ void CWaterRipplesStage::Execute()
 
 				pass.SetState(GS_NODEPTHTEST);
 			}
-			
+
 			pass.Execute();
 		}
 		else
@@ -339,8 +339,6 @@ void CWaterRipplesStage::ExecuteWaterRipples(CTexture* pTargetTex, const D3DView
 		return;
 	}
 
-	const float z = 1.0f;
-
 	const float fWidth = viewport.Width;
 	const float fHeight = viewport.Height;
 	const float fWidthRcp = 1.0f / fWidth;
@@ -356,7 +354,6 @@ void CWaterRipplesStage::ExecuteWaterRipples(CTexture* pTargetTex, const D3DView
 		pass.SetViewport(viewport);
 		pass.BeginAddingPrimitives();
 
-		Vec4 param = m_shaderParam;
 		int32 vertexOffset = 0;
 
 		CRY_ASSERT(waterRipples.size() <= SWaterRippleInfo::MaxWaterRipplesInScene);

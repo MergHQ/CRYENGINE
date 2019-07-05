@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   Particle.cpp
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Modified:    11/3/2005 by Scott Peter
-//  Compilers:   Visual Studio.NET
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 
 #include "ParticleSystem/ParticleCommon.h"
@@ -493,7 +483,7 @@ void CParticle::Init(SParticleUpdateContext const& context, float fAge, CParticl
 	m_aPosHistory = 0;
 	if (int nSteps = rContainer.GetHistorySteps())
 	{
-		if ((m_aPosHistory = (SParticleHistory*) ParticleObjectAllocator().Allocate(sizeof(SParticleHistory) * nSteps)))
+		if (ParticleAllocator::Allocate(m_aPosHistory, nSteps))
 		{
 			for (int n = 0; n < nSteps; n++)
 				m_aPosHistory[n].SetUnused();
@@ -512,7 +502,7 @@ void CParticle::Init(SParticleUpdateContext const& context, float fAge, CParticl
 
 		if (bCollide)
 		{
-			if ((m_pCollisionInfo = (SCollisionInfo*) ParticleObjectAllocator().Allocate(sizeof(SCollisionInfo))))
+			if (ParticleAllocator::Allocate(m_pCollisionInfo))
 			{
 				new(m_pCollisionInfo) SCollisionInfo(params.nMaxCollisionEvents);
 			}
@@ -617,7 +607,6 @@ void CParticle::InitPos(SParticleUpdateContext const& context, QuatTS const& loc
 {
 	ResourceParticleParams const& params = GetParams();
 	SpawnParams const& spawnParams = GetMain().GetSpawnParams();
-	SPhysEnviron const& PhysEnv = GetMain().GetPhysEnviron();
 	const CParticleSource& rSource = GetSource();
 
 	// Position and orientation.
@@ -664,7 +653,7 @@ void CParticle::InitPos(SParticleUpdateContext const& context, QuatTS const& loc
 		//
 		//		density distribution d(phi) = sin phi
 		//		cumulative density c(phi) = Int(0,phi) sin x dx = 1 - cos phi
-		//		normalised cn(phi) = (1 - cos phi) / (1 - cos phiMax)
+		//		normalized cn(phi) = (1 - cos phi) / (1 - cos phiMax)
 		//		reverse function phi(cn) = acos_tpl(1 + cn(cos phiMax - 1))
 		//
 
@@ -822,7 +811,7 @@ void CParticle::UpdateAllocations(int nPrevHistorySteps)
 	SParticleHistory* aPrevHist = m_aPosHistory;
 	if (int nNewSteps = GetContainer().GetHistorySteps())
 	{
-		if ((m_aPosHistory = (SParticleHistory*) ParticleObjectAllocator().Allocate(sizeof(SParticleHistory) * nNewSteps)))
+		if (ParticleAllocator::Allocate(m_aPosHistory, nNewSteps))
 		{
 			if (aPrevHist)
 				memcpy(m_aPosHistory, aPrevHist, min(nPrevHistorySteps, nNewSteps) * sizeof(*aPrevHist));
@@ -833,11 +822,11 @@ void CParticle::UpdateAllocations(int nPrevHistorySteps)
 	else
 		m_aPosHistory = 0;
 
-	ParticleObjectAllocator().Deallocate(aPrevHist, nPrevHistorySteps * sizeof(SParticleHistory));
+	ParticleAllocator::Deallocate(aPrevHist, nPrevHistorySteps);
 
 	if (GetContainer().NeedsCollisionInfo() && !m_pCollisionInfo)
 	{
-		if ((m_pCollisionInfo = (SCollisionInfo*) ParticleObjectAllocator().Allocate(sizeof(SCollisionInfo))))
+		if (ParticleAllocator::Allocate(m_pCollisionInfo))
 		{
 			new(m_pCollisionInfo) SCollisionInfo(GetParams().nMaxCollisionEvents);
 		}
@@ -1523,10 +1512,10 @@ CParticle::~CParticle()
 	IF (m_pCollisionInfo, 0)
 	{
 		m_pCollisionInfo->Clear();
-		ParticleObjectAllocator().Deallocate(m_pCollisionInfo, sizeof(SCollisionInfo));
+		ParticleAllocator::Deallocate(m_pCollisionInfo);
 	}
 
-	ParticleObjectAllocator().Deallocate(m_aPosHistory, sizeof(SParticleHistory) * m_pContainer->GetHistorySteps());
+	ParticleAllocator::Deallocate(m_aPosHistory, m_pContainer->GetHistorySteps());
 }
 
 char GetMinAxis(Vec3 const& vVec)

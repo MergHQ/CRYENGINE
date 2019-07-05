@@ -1,33 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SurfaceInfoPicker_h__
-#define __SurfaceInfoPicker_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#include "SandboxAPI.h"
+#include <Objects/BaseObject.h>
+#include <IObjectManager.h>
 
-#include "Objects/BaseObject.h"
-#include "IObjectManager.h"
-
-//////////////////////////////////////////////////////////////////////////
 class SANDBOX_API CSurfaceInfoPicker
 {
 public:
-
 	CSurfaceInfoPicker();
 
 	class CExcludedObjects
 	{
 	public:
-
-		CExcludedObjects(){}
-		~CExcludedObjects(){}
-		CExcludedObjects(const CExcludedObjects& excluded)
-		{
-			objects = excluded.objects;
-		}
-
 		void Add(CBaseObject* pObject)
 		{
 			objects.insert(pObject);
@@ -251,8 +237,4 @@ private:
 	CBaseObjectsArray      m_objects;
 	CExcludedObjects       m_ExcludedObjects;
 	mutable CBaseObjectPtr m_pPickedObject;
-
 };
-
-#endif __SurfaceInfoPicker_h__
-

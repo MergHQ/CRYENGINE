@@ -8,7 +8,13 @@
 
 namespace ACE
 {
-enum class EAssetType
+using ControlId = CryAudio::ControlId;
+using ControlIds = std::vector<ControlId>;
+
+constexpr ControlId g_invalidControlId = 0;
+constexpr float g_precision = 0.0001f;
+
+enum class EAssetType : CryAudio::EnumFlagsType
 {
 	None,
 	Trigger,
@@ -17,64 +23,48 @@ enum class EAssetType
 	State,
 	Environment,
 	Preload,
+	Setting,
 	Folder,
 	Library,
-	NumTypes
-};
+	NumTypes };
 
-enum class EPakStatus
+enum class EPakStatus : CryAudio::EnumFlagsType
 {
-	None   = 0,
-	InPak  = BIT(0),
-	OnDisk = BIT(1),
-};
+	None = 0,
+	InPak = BIT(0),
+	OnDisk = BIT(1), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EPakStatus);
 
-enum class EItemFlags
+enum class EItemFlags : CryAudio::EnumFlagsType
 {
-	None          = 0,
+	None = 0,
 	IsPlaceHolder = BIT(0),
-	IsLocalized   = BIT(1),
-	IsConnected   = BIT(2),
-	IsContainer   = BIT(3),
-};
+	IsLocalized = BIT(1),
+	IsConnected = BIT(2),
+	IsContainer = BIT(3), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EItemFlags);
 
-enum class EErrorCode
+enum class EImplInfoFlags : CryAudio::EnumFlagsType
 {
-	None                     = 0,
-	UnkownPlatform           = BIT(0),
-	NonMatchedActivityRadius = BIT(1),
+	None = 0,
+	SupportsProjects = BIT(0),
+	SupportsFileImport = BIT(1),
+	SupportsTriggers = BIT(2),
+	SupportsParameters = BIT(3),
+	SupportsSwitches = BIT(4),
+	SupportsStates = BIT(5),
+	SupportsEnvironments = BIT(6),
+	SupportsPreloads = BIT(7),
+	SupportsSettings = BIT(8), };
+CRY_CREATE_ENUM_FLAG_OPERATORS(EImplInfoFlags);
+
+struct SImplInfo final
+{
+	CryFixedStringT<CryAudio::MaxInfoStringLength> name;
+	CryFixedStringT<CryAudio::MaxInfoStringLength> folderName;
+	CryFixedStringT<CryAudio::MaxFilePathLength>   projectPath;
+	CryFixedStringT<CryAudio::MaxFilePathLength>   assetsPath;
+	CryFixedStringT<CryAudio::MaxFilePathLength>   localizedAssetsPath;
+	EImplInfoFlags flags;
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
-
-using ControlId = CryAudio::IdType;
-static ControlId const s_aceInvalidId = 0;
-using ControlIds = std::vector<ControlId>;
-
-struct IConnection;
-using ConnectionPtr = std::shared_ptr<IConnection>;
-
-class CAsset;
-using Assets = std::vector<CAsset*>;
-
-class CControl;
-using Controls = std::vector<CControl*>;
-
-class CLibrary;
-using Libraries = std::vector<CLibrary*>;
-
-class CFolder;
-using Folders = std::vector<CFolder*>;
-
-using Platforms = std::vector<char const*>;
-using FileNames = std::set<string>;
-using AssetNames = std::vector<string>;
-
-using Scope = uint32;
-static constexpr char const* const s_szGlobalScopeName = "global";
-static constexpr Scope GlobalScopeId = CryAudio::StringToId(s_szGlobalScopeName);
-
-using PlatformIndexType = uint16;
 } // namespace ACE
-

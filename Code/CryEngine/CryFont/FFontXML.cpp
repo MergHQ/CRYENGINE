@@ -144,9 +144,8 @@ private:
 					m_FontTexSize.set(512, 512);
 				}
 
-				bool fontLoaded = m_pFont->Load(m_strFontPath.c_str(), m_FontTexSize.x, m_FontTexSize.y, TTFFLAG_CREATE(m_FontSmoothMethod, m_FontSmoothAmount));
-	#if CRY_PLATFORM_WINDOWS
-				if (!fontLoaded)
+#if CRY_PLATFORM_WINDOWS
+				if (!m_pFont->Load(m_strFontPath.c_str(), m_FontTexSize.x, m_FontTexSize.y, TTFFLAG_CREATE(m_FontSmoothMethod, m_FontSmoothAmount)))
 				{
 					TCHAR sysFontPath[MAX_PATH];
 					if (SUCCEEDED(SHGetFolderPath(0, CSIDL_FONTS, 0, SHGFP_TYPE_DEFAULT, sysFontPath)))
@@ -160,7 +159,9 @@ private:
 						m_pFont->Load(newFontPath, m_FontTexSize.x, m_FontTexSize.y, TTFFLAG_CREATE(m_FontSmoothMethod, m_FontSmoothAmount));
 					}
 				}
-	#endif
+#else
+				m_pFont->Load(m_strFontPath.c_str(), m_FontTexSize.x, m_FontTexSize.y, TTFFLAG_CREATE(m_FontSmoothMethod, m_FontSmoothAmount));
+#endif
 			}
 			break;
 
@@ -336,7 +337,7 @@ public:
 // Main loading function
 bool CFFont::Load(const char* pXMLFile)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Font %s", pXMLFile);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Font %s", pXMLFile);
 
 	m_curPath = "";
 	if (pXMLFile)

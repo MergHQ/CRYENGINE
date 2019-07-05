@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "PlayerStateEvents.h"
 #include "GameConstantCVars.h"
+#include <CryGame/GameUtils.h>
 
 
 // ===========================================================================
@@ -37,7 +38,7 @@ CPlayerEnslavementForButtonMashing::CPlayerEnslavementForButtonMashing() :
 
 CPlayerEnslavementForButtonMashing::~CPlayerEnslavementForButtonMashing()
 {
-	CRY_ASSERT_MESSAGE(!m_enslaved, "Player animation is still synched with an other entity?!");	
+	CRY_ASSERT(!m_enslaved, "Player animation is still synched with an other entity?!");	
 }
 
 
@@ -76,8 +77,6 @@ void CPlayerEnslavementForButtonMashing::EnslavePlayer(IActionController* pMaste
 		return;
 
 	IMannequin &mannequinInterface = gEnv->pGameFramework->GetMannequinInterface();
-	CMannequinUserParamsManager& mannequinUserParams = mannequinInterface.GetMannequinUserParamsManager();
-
 	const IAnimationDatabase *pSlaveAnimationDB = mannequinInterface.GetAnimationDatabaseManager().Load( m_ADBFileName.c_str() );
 
 	IF_UNLIKELY(pSlaveAnimationDB == NULL)
@@ -86,7 +85,7 @@ void CPlayerEnslavementForButtonMashing::EnslavePlayer(IActionController* pMaste
 	const TagID tagID = pMasterActionController->GetContext().controllerDef.m_scopeContexts.Find( s_slaveContextName );
 	IF_UNLIKELY (tagID == TAG_ID_INVALID)
 	{
-		CRY_ASSERT_MESSAGE(false, "Unable to enslave player because scope context is missing?!");
+		CRY_ASSERT(false, "Unable to enslave player because scope context is missing?!");
 		return;
 	}
 	const uint32 contextID = (uint32)tagID; // (The tag ID is a universal 'interface' for mannequin).

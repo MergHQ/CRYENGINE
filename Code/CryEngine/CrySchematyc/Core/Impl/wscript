@@ -3,16 +3,8 @@
 def build(bld):
 	bld.CryEngineModule(
 		target = 'CrySchematyc',
-		vs_filter = 'CryEngine/CrySchematyc',
+		vs_filter = 'CryEngine',
 		file_list = 'core.waf_files',
 		pch = 'StdAfx.cpp',
 		defines = 'SCHEMATYC_EXPORTS',
-
-		includes = [ 
-			'.', 
-			Path('Code/CryEngine/CrySchematyc/Core/Interface') ],
-		module_provides = dict(
-			includes = [ Path('Code/CryEngine/CrySchematyc/Core/Interface') ],
-			defines = [ 'USE_SCHEMATYC_CORE' ] ),
-		linux_cxxflags = '-fPIC',
-	)	
+)

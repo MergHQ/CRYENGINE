@@ -1,12 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "GenerateHeightmapUi.h"
 
 #include "Controls/QMenuComboBox.h"
 
-#include <QLabel>
 #include <QFormLayout>
+#include <QLabel>
 
 namespace Private_GenerateHeightmapUi
 {
@@ -166,4 +166,3 @@ void CGenerateHeightmapUi::SetupTerrainSize()
 	auto label = m_ui.m_pSizeValueLabel;
 	label->setText(labelText);
 }
-

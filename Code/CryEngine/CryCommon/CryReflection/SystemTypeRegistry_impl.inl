@@ -13,7 +13,7 @@ bool CSystemTypeRegistry<REGISTRY_INTERFACE_TYPE >::UseType(const ITypeDesc& typ
 	const TypeIndex index = typeDesc.GetIndex();
 
 	const ITypeDesc* pTypeDesc = GetReflectionRegistry().FindTypeByIndex(index);
-	CRY_ASSERT_MESSAGE(pTypeDesc, "Type '%s' not found in global registry.", typeDesc.GetRawName());
+	CRY_ASSERT(pTypeDesc, "Type '%s' not found in global registry.", typeDesc.GetRawName());
 	if (pTypeDesc)
 	{
 		m_typesByIndex.emplace_back(index);
@@ -48,7 +48,7 @@ const ITypeDesc* CSystemTypeRegistry<REGISTRY_INTERFACE_TYPE >::FindTypeByGuid(c
 	if (result != m_typeIndicesByGuid.end())
 	{
 		const size_t index = result->second;
-		CRY_ASSERT_MESSAGE(index < m_typesByIndex.size(), "Type Registry is corrupted.");
+		CRY_ASSERT(index < m_typesByIndex.size(), "Type Registry is corrupted.");
 		if (index < m_typesByIndex.size())
 		{
 			return GetReflectionRegistry().FindTypeByIndex(index);
@@ -64,7 +64,7 @@ const ITypeDesc* CSystemTypeRegistry<REGISTRY_INTERFACE_TYPE >::FindTypeById(Cry
 	if (result != m_typeIndicesByTypeId.end())
 	{
 		const size_t index = result->second;
-		CRY_ASSERT_MESSAGE(index < m_typesByIndex.size(), "Type Registry is corrupted.");
+		CRY_ASSERT(index < m_typesByIndex.size(), "Type Registry is corrupted.");
 		if (index < m_typesByIndex.size())
 		{
 			return GetReflectionRegistry().FindTypeByIndex(index);

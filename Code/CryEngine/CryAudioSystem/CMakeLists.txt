@@ -6,42 +6,83 @@ start_sources()
 sources_platform(ALL)
 add_sources("CryAudioSystem_uber_0.cpp"
 	SOURCE_GROUP "Header Files"
-		"ATL.h"
-		"ATLAudioObject.h"
-		"AudioEventManager.h"
-		"ATLEntities.h"
-		"ATLUtils.h"
-		"AudioInternalInterfaces.h"
-		"AudioSystem.h"
-		"AudioImpl.h"
+		"CallbackRequestData.h"
+		"Common.h"
+		"CVars.h"
+		"Debug.h"
+		"Entity.h"
+		"EventListenerManager.h"
+		"File.h"
 		"FileCacheManager.h"
-		"resource.h"
-		"AudioCVars.h"
+		"Impl.h"
+		"Listener.h"
+		"ListenerManager.h"
+		"ListenerRequestData.h"
+		"MainThread.h"
+		"Managers.h"
+		"Object.h"
+		"ObjectRequestData.h"
+		"OcclusionInfo.h"
 		"PropagationProcessor.h"
-		"AudioStandaloneFileManager.h"
-		"AudioObjectManager.h"
-		"AudioListenerManager.h"
-		"AudioEventListenerManager.h"
-		"AudioXMLProcessor.h"
-		"InternalEntities.h"
+		"RayInfo.h"
+		"Request.h"
+		"RequestData.h"
+		"resource.h"
+		"System.h"
+		"SystemRequestData.h"
+		"XMLProcessor.h"
+	SOURCE_GROUP "Header Files\\\\Controls"
+		"Environment.h"
+		"Parameter.h"
+		"PreloadRequest.h"
+		"Setting.h"
+		"Switch.h"
+		"SwitchState.h"
+		"Trigger.h"
+		"TriggerInstance.h"
+		"TriggerUtils.h"
+	SOURCE_GROUP "Header Files\\\\DefaultControls"
+		"GetFocusTrigger.h"
+		"LoseFocusTrigger.h"
+		"MuteAllTrigger.h"
+		"PauseAllTrigger.h"
+		"PreviewTrigger.h"
+		"ResumeAllTrigger.h"
+		"UnmuteAllTrigger.h"
 	SOURCE_GROUP "Source Files"
-		"ATL.cpp"
-		"ATLAudioObject.cpp"
-		"AudioEventManager.cpp"
-		"ATLEntities.cpp"
-		"AudioRequests.cpp"
-		"AudioSystem.cpp"
-		"AudioImpl.cpp"
+		"Common.cpp"
 		"CryAudioSystem.cpp"
+		"CVars.cpp"
+		"EventListenerManager.cpp"
 		"FileCacheManager.cpp"
-		"AudioCVars.cpp"
+		"Impl.cpp"
+		"Listener.cpp"
+		"ListenerManager.cpp"
+		"MainThread.cpp"
+		"Managers.cpp"
+		"Object.cpp"
 		"PropagationProcessor.cpp"
-		"AudioStandaloneFileManager.cpp"
-		"AudioObjectManager.cpp"
-		"AudioListenerManager.cpp"
-		"AudioEventListenerManager.cpp"
-		"AudioXMLProcessor.cpp"
-		"InternalEntities.cpp"
+		"RequestData.cpp"
+		"System.cpp"
+		"XMLProcessor.cpp"
+	SOURCE_GROUP "Source Files\\\\Controls"
+		"Environment.cpp"
+		"Parameter.cpp"
+		"PreloadRequest.cpp"
+		"Setting.cpp"
+		"Switch.cpp"
+		"SwitchState.cpp"
+		"Trigger.cpp"
+		"TriggerInstance.cpp"
+		"TriggerUtils.cpp"
+	SOURCE_GROUP "Source Files\\\\DefaultControls"
+		"GetFocusTrigger.cpp"
+		"LoseFocusTrigger.cpp"
+		"MuteAllTrigger.cpp"
+		"PauseAllTrigger.cpp"
+		"PreviewTrigger.cpp"
+		"ResumeAllTrigger.cpp"
+		"UnmuteAllTrigger.cpp"
 )
 
 add_sources("NoUberFile"
@@ -53,8 +94,45 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
+MACRO(setup_cryaudio)
+	target_include_directories(${THIS_PROJECT} PRIVATE Common)
+	if(DURANGO)
+		target_link_libraries(${THIS_PROJECT} PRIVATE acphal)
+	endif()
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-format
+			-Wno-multichar
+			-Wno-parentheses
+			-Wno-unknown-pragmas
+			-Wno-unused-function
+			-Wno-unused-private-field
+		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-format
+			-Wno-maybe-uninitialized
+			-Wno-misleading-indentation
+			-Wno-multichar
+			-Wno-parentheses
+			-Wno-sign-compare
+			-Wno-strict-aliasing
+			-Wno-unknown-pragmas
+			-Wno-unused-but-set-variable
+			-Wno-unused-function
+		)
+    endif()
+
+		target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_USE_DEBUG_CODE>)
+
+		IF(AUDIO_USE_OCCLUSION)
+			target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_AUDIO_USE_OCCLUSION)
+		ENDIF()
+ENDMACRO()
+
 CryEngineModule(CryAudioSystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio")
-target_include_directories(${THIS_PROJECT} PRIVATE Common)
-if(DURANGO)
-	target_link_libraries(${THIS_PROJECT} PRIVATE acphal)
+setup_cryaudio()
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(CryAudioSystemLib PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio" FORCE_STATIC)
+	setup_cryaudio()
 endif()

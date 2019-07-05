@@ -9,18 +9,14 @@
 #endif
 
 #if !defined(NET_ASSERT_LOGGING) && !defined(NET_ASSERT)
-#define NET_ASSERT assert
+	#define NET_ASSERT assert
 #endif
 
 #include <CryCore/Platform/platform.h>
-#include <CryNetwork/ISerialize.h> // <> required for Interfuscator
+#include <CryNetwork/ISerialize.h>
 #include <CrySystem/TimeValue.h>
-#include <CrySystem/ITimer.h>           // <> required for Interfuscator
-#include <CryLobby/CommonICryLobby.h>       // <> required for Interfuscator
-#include <CryLobby/CommonICryMatchMaking.h> // <> required for Interfuscator
+#include <CryLobby/CommonICryMatchMaking.h>
 #include <CryNetwork/INetworkService.h>
-
-#include <CryEntitySystem/IEntity.h>
 
 #define SERVER_DEFAULT_PORT        64087
 #define SERVER_DEFAULT_PORT_STRING "64087"
@@ -221,8 +217,8 @@ ILINE EMessageSendResult WorstMessageSendResult(EMessageSendResult r1, EMessageS
 typedef uint8       ChannelMaskType;
 
 typedef uint32 TNetChannelID;
-static const char* LOCAL_CONNECTION_STRING = "<local>";
-static const char* NULL_CONNECTION_STRING = "<null>";
+#define LOCAL_CONNECTION_STRING "<local>"
+#define NULL_CONNECTION_STRING  "<null>"
 static const size_t MaxProfilesPerAspect = 8;
 
 //! \cond INTERNAL
@@ -757,9 +753,9 @@ struct INetwork
 		NETWORK_MT_PRIORITY_HIGH,
 	};
 
-	enum ENetContextCreationFlags
+	enum ENetContextCreationFlags : uint32
 	{
-		eNCCF_Multiplayer = BIT(0)
+		eNCCF_Multiplayer = BIT32(0)
 	};
 
 	// <interfuscator:shuffle>
@@ -1064,6 +1060,9 @@ struct INetContext
 	//! \note Destroy all objects, and cause all channels to load a new level, and reinitialize state.
 	virtual bool ChangeContext() = 0;
 
+	//! Context establishment has started
+	virtual void StartedEstablishingContext(int establishToken) = 0;
+
 	//! The level has finished loading
 	//! Example: The slow part of context establishment is complete.
 	//! \note Call this after a call to IGameContext::EstablishContext.
@@ -1246,9 +1245,8 @@ typedef _smart_ptr<CPriorityPulseState> CPriorityPulseStatePtr;
 
 struct SMessagePositionInfo
 {
-	SMessagePositionInfo() : havePosition(false), haveDrawDistance(false) {}
-	bool         haveDrawDistance;
-	bool         havePosition;
+	bool         haveDrawDistance = false;
+	bool         havePosition = false;
 	float        drawDistance;
 	Vec3         position;
 	SNetObjectID obj;
@@ -1276,7 +1274,7 @@ public:
 struct INetSendable : public INetBaseSendable
 {
 public:
-	INetSendable(uint32 flags, ENetReliabilityType reliability) : m_flags(flags), m_group(0), m_priorityDelta(0.0f), m_reliability(reliability) {}
+	INetSendable(uint32 flags, ENetReliabilityType reliability) : m_reliability(reliability), m_group(0), m_flags(flags), m_priorityDelta(0.0f) {}
 
 	// <interfuscator:shuffle>
 	virtual const char* GetDescription() = 0;
@@ -1563,15 +1561,15 @@ enum ERMIBenchmarkLogPoint
 struct SRMIBenchmarkParams
 {
 	SRMIBenchmarkParams()
-		: message(eRMIBM_InvalidMessage),
-		entity(RMI_BENCHMARK_INVALID_ENTITY),
-		seq(RMI_BENCHMARK_INVALID_SEQ)
+		: entity(RMI_BENCHMARK_INVALID_ENTITY),
+		  message(eRMIBM_InvalidMessage),
+		  seq(RMI_BENCHMARK_INVALID_SEQ)
 	{
 	}
 
 	SRMIBenchmarkParams(ERMIBenchmarkMessage msg, EntityId ent, uint8 seq, bool two)
-		: message(msg),
-		entity(ent),
+		: entity(ent),
+		message(msg),
 		seq(seq),
 		twoRoundTrips(two)
 	{
@@ -1900,7 +1898,6 @@ struct IRMIMessageBody
 	  IRMIListener* pListener_,
 	  int userId_,
 	  EntityId dependentId_) :
-		m_cnt(0),
 		reliability(reliability_),
 		attachment(attachment_),
 		objId(objId_),
@@ -1908,7 +1905,8 @@ struct IRMIMessageBody
 		funcId(funcId_),
 		pMessageDef(0),
 		userId(userId_),
-		pListener(pListener_)
+		pListener(pListener_),
+		m_cnt(0)
 	{
 	}
 	IRMIMessageBody(
@@ -1919,7 +1917,6 @@ struct IRMIMessageBody
 	  IRMIListener* pListener_,
 	  int userId_,
 	  EntityId dependentId_) :
-		m_cnt(0),
 		reliability(reliability_),
 		attachment(attachment_),
 		objId(objId_),
@@ -1927,7 +1924,8 @@ struct IRMIMessageBody
 		funcId(0),
 		pMessageDef(pMessageDef_),
 		userId(userId_),
-		pListener(pListener_)
+		pListener(pListener_),
+		m_cnt(0)
 	{
 	}
 	// <interfuscator:shuffle>
@@ -2110,12 +2108,11 @@ template<class T, int N>
 class CCyclicStatsBuffer
 {
 public:
-	CCyclicStatsBuffer() : m_count(0), m_total(T())
+	CCyclicStatsBuffer()
+		: m_count(0)
+		, m_index(N - 1)
+		, m_total(T())
 	{
-		for (size_t index = 0; index < N; ++index)
-		{
-			m_values[index] = T();
-		}
 	}
 
 	void Clear()
@@ -2124,6 +2121,7 @@ public:
 		m_index = N - 1;
 	}
 
+	//! Adds a new sample value to the back of the queue and removes value from the front
 	void AddSample(T x)
 	{
 		m_index = (m_index + 1) % N;
@@ -2160,28 +2158,35 @@ public:
 		return static_cast<float>(m_total) / static_cast<float>(m_count);
 	}
 
+	//! Returns oldest sample value, front of the queue
 	T GetFirst() const
 	{
 		NET_ASSERT(!Empty());
-		return m_values[m_index];
+		return m_values[IndexFirst() % N];
 	}
 
+	//! Returns newest sample value, back of the queue
 	T GetLast() const
 	{
 		NET_ASSERT(!Empty());
-		return m_values[(m_index - 1) % N];
+		return m_values[IndexLast()];
 	}
 
+	//! Get sample by index.
+	//! 0 is the first sample (\see GetFirst()), N-1 is last sample (\see GetLast())
 	T operator[](size_t index) const
 	{
 		NET_ASSERT(!Empty());
-		return m_values[(m_index + index) % N];
+		return m_values[(IndexFirst() + index) % N];
 	}
 
 private:
+	const size_t IndexFirst() const { return m_index + 1; }
+	const size_t IndexLast() const { return m_index; }
+
 	size_t m_count;
-	size_t m_index;
-	T      m_values[N];
+	size_t m_index;           //!< Index of the latest sample at the back of the queue
+	T      m_values[N]{};
 	T      m_total;
 };
 #else

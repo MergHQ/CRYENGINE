@@ -68,4 +68,3 @@ private:
 	struct SImplementation;
 	std::unique_ptr<SImplementation> p;
 };
-

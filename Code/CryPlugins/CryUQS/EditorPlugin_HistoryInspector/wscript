@@ -7,17 +7,11 @@
 ## Description: WAF  based build system
 #############################################################################
 def build(bld):
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target = 'EditorUQS_HistoryInspector',
 		vs_filter = 'CryPlugins/CryUQS',
 		file_list = 'editorplugin_historyinspector.waf_files',
 		pch = 'StdAfx.cpp',
-		features = 'qt',
-		includes = [ 
-			'.', 
-			'..', 
-			'GeneratedFiles', 
-			Path('Code/GameUQS')],
-		use = [ 'Editor', 'EditorCommon' ],
+		includes = [ Path('Code/GameUQS')],
 		use_module    = [ 'CryUQS_Interfaces', 'CryUQS_Shared' ]
 	)

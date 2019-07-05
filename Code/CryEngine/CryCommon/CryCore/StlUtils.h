@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <CryMath/Range.h>
+#include <CryString/CryString.h>
 
 #include <map>
 #include <set>
@@ -250,8 +250,8 @@ template<class CONTAINER, class PREDICATE> inline bool find_and_erase_if(CONTAIN
 //! Find and erase all elements matching value from container.
 //! Assume that this will invalidate any exiting iterators.
 //! Commonly used for removing NULL pointers from collections.
-template<class Container>
-inline void find_and_erase_all(Container& container, const typename Container::value_type& value)
+template<class Container, class ValueType>
+inline void find_and_erase_all(Container& container, const ValueType& value)
 {
 	// Shuffles all elements == value to the end and returns the start of the removed elements.
 	typename Container::iterator endIter(container.end());
@@ -856,21 +856,31 @@ namespace stl {
 	template <typename T> struct always_false : std::false_type {};
 
 
-	// conjuction and negation helpers
+	// conjunction and negation helpers
 	//! Remove once we move to C++17
 	template <typename T>
 	struct negation {
 		static constexpr bool value = !T::value;
 	};
 	template <typename... Ts>
-	struct conjuction : std::true_type {};
+	struct conjunction : std::true_type {};
 	template <typename T, typename... Ts>
-	struct conjuction<T, Ts...> {
-		static constexpr bool value = T::value && conjuction<Ts...>::value;
+	struct conjunction<T, Ts...> {
+		static constexpr bool value = T::value && conjunction<Ts...>::value;
 	};
 	template <typename T>
-	struct conjuction<T> {
+	struct conjunction<T> {
 		static constexpr bool value = T::value;
 	};
+
+	template<typename... Ts>
+	struct disjunction : std::false_type {};
+
+	template<typename T, typename... Ts>
+	struct disjunction<T, Ts...>
+		: std::conditional<bool(T::value), T, disjunction<Ts...>>::type
+	{};
+
+	template<typename T> struct disjunction<T> : T {};
 
 }

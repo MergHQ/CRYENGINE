@@ -3,6 +3,8 @@
 
 #include "QFullScreenWidget.h"
 
+#include <IEditor.h>
+
 #include <QWidget.h>
 #include <QVBoxLayout>
 #include <QEvent>
@@ -22,7 +24,7 @@ bool QFullScreenWidget::eventFilter(QObject* obj, QEvent* event)
 	}
 	else if (event->type() == QEvent::ChildAdded)
 	{
-		QChildEvent* evt = static_cast<QChildEvent*> (event);
+		QChildEvent* evt = static_cast<QChildEvent*>(event);
 		QObject* child = evt->child();
 
 		if (child->isWidgetType())
@@ -41,7 +43,7 @@ bool QFullScreenWidget::eventFilter(QObject* obj, QEvent* event)
 	// Don't forget to clean ourselves up!
 	else if (event->type() == QEvent::ChildRemoved)
 	{
-		QChildEvent* evt = static_cast<QChildEvent*> (event);
+		QChildEvent* evt = static_cast<QChildEvent*>(event);
 		QObject* child = evt->child();
 
 		if (child->isWidgetType())
@@ -70,7 +72,6 @@ public:
 	bool event(QEvent* event) override;
 	void closeEvent(QCloseEvent*) override;
 	void changeEvent(QEvent* event) override;
-
 
 private:
 	QFullScreenWidget* m_widget;
@@ -122,25 +123,26 @@ bool QFullScreenWidgetWindow::event(QEvent* ev)
 	switch (ev->type())
 	{
 	case QEvent::KeyPress:
-	{
-		bool res = QWidget::event(ev);
-		if (!m_widget)
-			// widget has been destroyed; do not forward
-			return res;
-		
-		if(!ev->isAccepted())
 		{
-			//forward events not consumed are sent to the window of the original widget so local shortcuts should still work
-			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(ev);
+			bool res = QWidget::event(ev);
+			if (!m_widget)
+				// widget has been destroyed; do not forward
+				return res;
 
-			const auto key = keyEvent->key();
-			if (key != Qt::Key_unknown && !(key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta)) {
-				MissedShortcutEvent* event = new MissedShortcutEvent(QKeySequence(key | keyEvent->modifiers()));
-				return QApplication::sendEvent(m_widget->window(), keyEvent);
+			if (!ev->isAccepted())
+			{
+				//forward events not consumed are sent to the window of the original widget so local shortcuts should still work
+				QKeyEvent* keyEvent = static_cast<QKeyEvent*>(ev);
+
+				const auto key = keyEvent->key();
+				if (key != Qt::Key_unknown && !(key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta))
+				{
+					//MissedShortcutEvent* event = new MissedShortcutEvent(QKeySequence(key | keyEvent->modifiers()));
+					return QApplication::sendEvent(m_widget->window(), keyEvent);
+				}
 			}
+			return true;
 		}
-		return true;
-	}
 
 	default:
 		return QWidget::event(ev);
@@ -210,7 +212,7 @@ void QFullScreenWidget::Restore()
 	m_maximizable->show();
 	if (GetIEditor()->IsInGameMode())
 	{
-		GetIEditor()->ExecuteCommand("general.suspend_game_input");
+		GetIEditor()->ExecuteCommand("game.toggle_suspend_input");
 	}
 }
 
@@ -226,7 +228,7 @@ bool QFullScreenWidget::IsFullScreenWindowActive()
 
 namespace
 {
-void PyMaximize()
+void PyFullScreen()
 {
 	QFullScreenWidgetWindow* w = QFullScreenWidget::GetCurrentFullScreenWindow();
 	if (!w)
@@ -243,7 +245,6 @@ void PyMaximize()
 }
 }
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyMaximize, general, fullscreen,
-                                     "Maximizes the focused widget",
-                                     "general.fullscreen()");
-
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(PyFullScreen, general, fullscreen,
+                                   CCommandDescription("The focused widget is shown full screen"))
+REGISTER_EDITOR_UI_COMMAND_DESC(general, fullscreen, "Full Screen", "F11", "", false)

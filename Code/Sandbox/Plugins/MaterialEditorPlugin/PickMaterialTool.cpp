@@ -3,6 +3,7 @@
 #include "PickMaterialTool.h"
 
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 #include "Material/MaterialManager.h"
 #include "SurfaceInfoPicker.h"
@@ -50,7 +51,7 @@ bool CPickMaterialTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPickMaterialTool::Display(DisplayContext& dc)
+void CPickMaterialTool::Display(SDisplayContext& dc)
 {
 	CPoint mousePoint;
 	::GetCursorPos(&mousePoint);
@@ -100,7 +101,6 @@ bool CPickMaterialTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 	view->SetCurrentCursor(STD_CURSOR_HIT, "");
 
 	IMaterial* pNearestMaterial(NULL);
-	IEntity* pNearnestEntity(NULL);
 
 	CSurfaceInfoPicker surfacePicker;
 	int nPickObjectGroupFlag = CSurfaceInfoPicker::ePOG_All;
@@ -121,9 +121,9 @@ bool CPickMaterialTool::OnMouseMove(CViewport* view, UINT nFlags, CPoint point)
 //////////////////////////////////////////////////////////////////////////
 class CMaterialPickTool_ClassDesc : public IClassDesc
 {
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
-	virtual const char*    ClassName()       { return "Material.PickTool"; };
-	virtual const char*    Category()        { return "Material"; };
+	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
+	virtual const char*    ClassName()       { return "Material.PickTool"; }
+	virtual const char*    Category()        { return "Material"; }
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CPickMaterialTool); }
 };
 
@@ -164,12 +164,19 @@ void CPickMaterialTool::OnPicked(IMaterial* pEditorMaterial)
 		{
 			//Opens the material for edit in the relevant editor if specified
 			asset->Edit(m_pMaterialEditor);
+			
+			auto pEditor = asset->GetCurrentEditor();
 
-			auto editor = asset->GetCurrentEditor();
-			CRY_ASSERT(editor->GetEditorName() == "Material Editor");
-			m_pMaterialEditor = static_cast<CMaterialEditor*>(editor);
+			// this will be the case if the user cancel picking up of another material
+			if (!pEditor)
+			{
+				return;
+			}
 
-			//Select the submaterial if possible
+			CRY_ASSERT(pEditor->GetEditorName() == "Material Editor");
+			m_pMaterialEditor = static_cast<CMaterialEditor*>(pEditor);
+
+			//Select the sub-material if possible
 			if (m_pMaterialEditor && pMtl->IsPureChild() && pMtl->GetParent() == m_pMaterialEditor->GetLoadedMaterial())
 			{
 				m_pMaterialEditor->SelectMaterialForEdit(pMtl);
@@ -181,4 +188,3 @@ void CPickMaterialTool::OnPicked(IMaterial* pEditorMaterial)
 		}
 	}
 }
-

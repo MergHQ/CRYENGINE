@@ -2,8 +2,10 @@
 
 #include "StdAfx.h"
 #include "ExtrusionSnappingHelper.h"
-#include "ViewManager.h"
+
 #include "DesignerEditor.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -163,4 +165,3 @@ PolygonPtr ExtrusionSnappingHelper::FindAlignedPolygon(PolygonPtr pCapPolygon, c
 	return NULL;
 }
 }
-

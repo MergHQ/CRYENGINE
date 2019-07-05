@@ -6,6 +6,7 @@
 #include "AssetModel.h"
 #include "QtUtil.h"
 
+#include <QAbstractItemView>
 #include <QLineEdit>
 #include <QKeyEvent>
 
@@ -36,11 +37,6 @@ public:
 	CCrySignal<void()> signalEditingAborted;
 
 protected:
-	virtual void focusOutEvent(QFocusEvent* pEvent) override
-	{
-		signalEditingAborted();
-	}
-
 	virtual void keyPressEvent(QKeyEvent* pEvent) override
 	{
 		if (pEvent->key() == Qt::Key_Escape)
@@ -49,7 +45,11 @@ protected:
 		}
 		else
 		{
-			return QLineEdit::keyPressEvent(pEvent);
+			QLineEdit::keyPressEvent(pEvent);
+			if (pEvent->key() == Qt::Key_Enter || pEvent->key() == Qt::Key_Return)
+			{
+				pEvent->accept();
+			}
 		}
 	}
 
@@ -80,10 +80,10 @@ void FinishEditing(const CLineEditDelegate* pLineEditDelegate, CLineEdit* pEdito
 
 CLineEditDelegate::CLineEditDelegate(QAbstractItemView* pParentView)
 	: m_pParentView(pParentView)
+	, m_validateNameFunc([](const string& s) { return s; }) // Identity.
 	, m_editRole(Qt::EditRole)
 	, m_pDelegate(pParentView->itemDelegate())
 {
-	m_validateNameFunc = [](const string& s) { return s; }; // Identity.
 }
 
 QWidget* CLineEditDelegate::createEditor(QWidget* pParent, const QStyleOptionViewItem& option, const QModelIndex& modelIndex) const
@@ -97,6 +97,8 @@ QWidget* CLineEditDelegate::createEditor(QWidget* pParent, const QStyleOptionVie
 
 	CLineEdit* const pEditor = new CLineEdit(pParent);
 
+	pEditor->activateWindow();
+	
 	pEditor->signalEditingAborted.Connect(std::function<void()>([this, pEditor, modelIndex]()
 	{
 		FinishEditing(this, pEditor, [this, modelIndex]()
@@ -117,4 +119,3 @@ QWidget* CLineEditDelegate::createEditor(QWidget* pParent, const QStyleOptionVie
 
 	return pEditor;
 }
-

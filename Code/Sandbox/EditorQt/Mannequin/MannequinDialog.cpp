@@ -2,37 +2,25 @@
 
 #include "StdAfx.h"
 #include "MannequinDialog.h"
-#include "SequencerNode.h"
-#include "Dialogs/ToolbarDialog.h"
-#include "MannequinModelViewport.h"
-#include "GameEngine.h"
 
-#include "FragmentEditor.h"
-#include "FragmentTrack.h"
-
-#include "MannErrorReportDialog.h"
-#include "MannPreferences.h"
-#include "Helper/MannequinFileChangeWriter.h"
-#include "SequencerSequence.h"
-#include "SequenceAnalyzerNodes.h"
-#include "MannTagDefEditorDialog.h"
-#include "MannContextEditorDialog.h"
-#include "MannAnimDBEditorDialog.h"
-
-#include "Controls/FragmentBrowser.h"
-#include "Controls/SequenceBrowser.h"
-#include "Controls/FragmentEditorPage.h"
-#include "Controls/TransitionEditorPage.h"
-#include "Controls/PreviewerPage.h"
+#include "Mannequin/FragmentTrack.h"
+#include "Mannequin/Helper/MannequinFileChangeWriter.h"
+#include "Mannequin/MannAnimDBEditorDialog.h"
+#include "Mannequin/MannContextEditorDialog.h"
+#include "Mannequin/MannequinModelViewport.h"
+#include "Mannequin/MannPreferences.h"
+#include "Mannequin/MannTagDefEditorDialog.h"
 #include "Objects/EntityObject.h"
 #include "Objects/ObjectLoader.h"
-#include "QT/Widgets/QWaitProgress.h"
+#include "GameEngine.h"
+
+#include <IObjectManager.h>
+#include <PathUtils.h>
+#include <QT/Widgets/QWaitProgress.h>
+#include <Util/FileUtil.h>
 
 #include <CryGame/IGameFramework.h>
-#include <ICryMannequinEditor.h>
-#include <FilePathUtil.h>
-
-//////////////////////////////////////////////////////////////////////////
+#include <CrySystem/ConsoleRegistration.h>
 
 #define MANNEQUIN_EDITOR_VERSION   "1.00"
 #define MANNEQUIN_EDITOR_TOOL_NAME "Mannequin Editor"
@@ -41,49 +29,67 @@
 const int CMannequinDialog::s_minPanelSize = 5;
 static const char* kMannequin_setkeyproperty = "e_mannequin_setkeyproperty";
 
-//////////////////////////////////////////////////////////////////////////
-void SetMannequinDialogKeyPropertyCmd(IConsoleCmdArgs* pArgs)
+namespace
 {
-	if (pArgs->GetArgCount() < 3)
+	void SetMannequinDialogKeyPropertyCmd(IConsoleCmdArgs* pArgs)
 	{
-		return;
+		if (pArgs->GetArgCount() < 3)
+		{
+			return;
+		}
+
+		const char* propertyName = pArgs->GetArg(1);
+		const char* propertyValue = pArgs->GetArg(2);
+
+		CMannequinDialog* pMannequinDialog = CMannequinDialog::GetCurrentInstance();
+
+		assert(pMannequinDialog != NULL);
+		pMannequinDialog->SetKeyProperty(propertyName, propertyValue);
 	}
 
-	const char* propertyName = pArgs->GetArg(1);
-	const char* propertyValue = pArgs->GetArg(2);
+	//! A simple RAII helper class to avoid issues occurring from Qt -> MFC -> Qt-Dialogs
+	//! Before calling Qt-Dialogs from MFC, focus is taken from the actual Qt-Window (containing MFC-Widgets).
+	//! Thus, all actual states of the window are preserved and messing up with MFC is avoided.
+	//! This is only a temporary solution and only needed, as long as Mannequin is powered by MFC.
+	class HelperQtWindowSetInactiveRAII
+	{
+	public:
+		HelperQtWindowSetInactiveRAII() : m_pActiveWindow(QApplication::activeWindow())
+		{
+			QApplication::setActiveWindow(nullptr);
+		}
 
-	CMannequinDialog* pMannequinDialog = CMannequinDialog::GetCurrentInstance();
-
-	assert(pMannequinDialog != NULL);
-	pMannequinDialog->SetKeyProperty(propertyName, propertyValue);
+		~HelperQtWindowSetInactiveRAII()
+		{
+			if (m_pActiveWindow)
+			{
+				QApplication::setActiveWindow(m_pActiveWindow);
+			}
+		}
+	private:
+		QWidget* m_pActiveWindow;
+	};
 }
 
-//////////////////////////////////////////////////////////////////////////
 class CMannequinPaneClass : public IViewPaneClass
 {
-	//////////////////////////////////////////////////////////////////////////
-	// IClassDesc
-	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       { return MANNEQUIN_EDITOR_TOOL_NAME; };
-	virtual const char*    Category()        { return "Animation"; };
+	virtual ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       { return MANNEQUIN_EDITOR_TOOL_NAME; }
+	virtual const char*    Category()        { return "Animation"; }
 	virtual const char*    GetMenuPath()     { return "Animation"; }
-	//////////////////////////////////////////////////////////////////////////
-	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMannequinDialog); };
-	virtual const char*    GetPaneTitle()    { return _T(MANNEQUIN_EDITOR_TOOL_NAME); };
-	virtual QRect          GetPaneRect()     { return QRect(0, 0, 500, 300); };
-	virtual bool           SinglePane()      { return true; };
-	virtual bool           WantIdleUpdate()  { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CMannequinDialog); }
+	virtual const char*    GetPaneTitle()    { return _T(MANNEQUIN_EDITOR_TOOL_NAME); }
+	virtual QRect          GetPaneRect()     { return QRect(0, 0, 500, 300); }
+	virtual bool           SinglePane()      { return true; }
+	virtual bool           WantIdleUpdate()  { return true; }
 };
 
 REGISTER_CLASS_DESC(CMannequinPaneClass);
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CMannequinDialog, CBaseFrameWnd)
 
 CMannequinDialog * CMannequinDialog::s_pMannequinDialog = NULL;
 
-//////////////////////////////////////////////////////////////////////////
 CMannequinDialog::CMannequinDialog(CWnd* pParent /*=NULL*/)
 	: CBaseFrameWnd()
 	, m_pFileChangeWriter(new CMannequinFileChangeWriter())
@@ -112,7 +118,6 @@ CMannequinDialog::~CMannequinDialog()
 	ClearContextViewData();
 }
 
-//////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CMannequinDialog, CBaseFrameWnd)
 ON_COMMAND(ID_FILE_LOADPREVIEWSETUP, OnMenuLoadPreviewFile)
 ON_COMMAND(ID_FILE_CONTEXTEDITOR, OnContexteditor)
@@ -145,7 +150,6 @@ ON_WM_SIZE()
 ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-//////////////////////////////////////////////////////////////////////////
 bool CMannequinDialog::LoadPreviewFile(const char* filename, XmlNodeRef& xmlSequenceNode)
 {
 	XmlNodeRef xmlData = GetISystem()->LoadXmlFromFile(filename);
@@ -421,10 +425,8 @@ void CMannequinDialog::ResavePreviewFile()
 	SavePreviewFile(m_contexts.previewFilename);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMannequinDialog::SavePreviewFile(const char* filename)
 {
-	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	const SControllerDef* pControllerDef = m_contexts.m_controllerDef;
 	if (pControllerDef == NULL)
 	{
@@ -786,7 +788,7 @@ bool CMannequinDialog::InitialiseToPreviewFile(const char* previewFile)
 				params.sName = name;
 				params.vPosition.Set(0.0f, 0.0f, 0.0f);
 				params.qRotation.SetIdentity();
-				params.nFlags |= (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+				params.nFlags |= ENTITY_FLAG_CLIENT_ONLY;
 
 				context.viewData[em].entity = gEnv->pEntitySystem->SpawnEntity(params, true);
 				assert(context.viewData[em].entity);
@@ -954,7 +956,6 @@ void CMannequinDialog::LoadNewPreviewFile(const char* previewFile)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CMannequinDialog::OnInitDialog()
 {
 	__super::OnInitDialog();
@@ -1078,7 +1079,6 @@ BOOL CMannequinDialog::OnInitDialog()
 	return TRUE;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::LoadLayoutFromXML()
 {
 	string xmlLocation = gEnv->pCryPak->GetAlias("%USER%");
@@ -1087,7 +1087,6 @@ void CMannequinDialog::LoadLayoutFromXML()
 	m_LayoutFromXML = GetISystem()->LoadXmlFromFile(xmlLocation);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::SaveLayoutToXML()
 {
 	XmlNodeRef xmlLayout = GetISystem()->CreateXmlNode("MannequinLayout");
@@ -1114,7 +1113,6 @@ void CMannequinDialog::SaveLayoutToXML()
 	xmlLayout->saveToFile(xmlLocation);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::LoadPanels()
 {
 	if (!m_LayoutFromXML)
@@ -1132,7 +1130,6 @@ void CMannequinDialog::LoadPanels()
 	MannUtils::LoadDockingPaneFromXml(m_LayoutFromXML, "FragmentPane", *fragmentsPane, GetDockingPaneManager());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::LoadCheckboxes()
 {
 	if (!m_LayoutFromXML)
@@ -1143,7 +1140,6 @@ void CMannequinDialog::LoadCheckboxes()
 	m_wndFragmentBrowser->LoadLayout(m_LayoutFromXML);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	if (m_wndFragmentEditorPage.TrackPanel())
@@ -1213,10 +1209,9 @@ void CMannequinDialog::OnRender()
 
 void CMannequinDialog::Update()
 {
-	m_wndFragmentBrowser->Update();
-
 	if (m_bPreviewFileLoaded)
 	{
+		m_wndFragmentBrowser->Update();
 		m_wndFragmentEditorPage.Update();
 		m_wndPreviewerPage.Update();
 		m_wndTransitionEditorPage.Update();
@@ -1401,6 +1396,8 @@ void CMannequinDialog::OnNewSequence()
 
 void CMannequinDialog::OnLoadSequence()
 {
+	HelperQtWindowSetInactiveRAII qt_window;
+
 	m_wndPreviewerPage.OnLoadSequence();
 	GetDockingPaneManager()->ShowPane(CMannequinDialog::IDW_PREVIEWER_PANE);
 }
@@ -1551,7 +1548,6 @@ void CMannequinDialog::Validate(const SScopeContextData& contextDef)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnSize(UINT nType, int cx, int cy)
 {
 	if (m_bShallTryLoadingPanels)
@@ -1579,20 +1575,17 @@ void CMannequinDialog::OnSize(UINT nType, int cx, int cy)
 	__super::OnSize(nType, cx, cy);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnDestroy()
 {
 	SaveLayoutToXML();
 	__super::OnDestroy();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMannequinDialog::CanClose()
 {
 	return CheckChangedData();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::StopEditingFragment()
 {
 	CXTPDockingPaneManager* pDockingPaneManager = GetDockingPaneManager();
@@ -1607,7 +1600,6 @@ void CMannequinDialog::StopEditingFragment()
 	m_wndFragmentEditorPage.Reset();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::FindFragmentReferences(const CString& fragmentName)
 {
 	CXTPDockingPaneManager* pDockingPaneManager = GetDockingPaneManager();
@@ -1625,7 +1617,6 @@ void CMannequinDialog::FindFragmentReferences(const CString& fragmentName)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::FindTagReferences(const CString& tagName)
 {
 	CXTPDockingPaneManager* pDockingPaneManager = GetDockingPaneManager();
@@ -1646,7 +1637,6 @@ void CMannequinDialog::FindTagReferences(const CString& tagName)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::FindClipReferences(const CClipKey& key)
 {
 	CString icafName = key.GetFileName();
@@ -1668,7 +1658,6 @@ void CMannequinDialog::FindClipReferences(const CClipKey& key)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::UpdateForFragment()
 {
 	CXTPDockingPaneManager* pDockingPaneManager = GetDockingPaneManager();
@@ -1721,9 +1710,10 @@ void CMannequinDialog::UpdateForFragment()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnMenuLoadPreviewFile()
 {
+	HelperQtWindowSetInactiveRAII qt_window;
+
 	const bool canDiscardChanges = CheckChangedData();
 	if (!canDiscardChanges)
 	{
@@ -1750,7 +1740,6 @@ void CMannequinDialog::OnMenuLoadPreviewFile()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnContexteditor()
 {
 	CMannContextEditorDialog dialog;
@@ -1760,7 +1749,6 @@ void CMannequinDialog::OnContexteditor()
 	SavePreviewFile(m_contexts.previewFilename);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnAnimDBEditor()
 {
 	CRY_ASSERT(FragmentBrowser());
@@ -1780,7 +1768,6 @@ void CMannequinDialog::OnAnimDBEditor()
 	dialog.DoModal();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnTagDefinitionEditor()
 {
 	const CString filename(m_contexts.previewFilename);
@@ -1791,14 +1778,12 @@ void CMannequinDialog::OnTagDefinitionEditor()
 	FragmentBrowser()->RebuildAll();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::ReloadContextEntities()
 {
 	// Brute force approach for the time being.
 	LoadNewPreviewFile(m_contexts.previewFilename);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::ClearContextEntities()
 {
 	for (uint32 editorModeId = 0; editorModeId < eMEM_Max; ++editorModeId)
@@ -1821,7 +1806,6 @@ void CMannequinDialog::ClearContextEntities()
 	m_contexts.backgroundProps.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::ClearContextViewData()
 {
 	for (uint32 em = 0; em < eMEM_Max; em++)
@@ -1855,7 +1839,6 @@ void CMannequinDialog::ClearContextViewData()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::SetKeyProperty(const char* propertyName, const char* propertyValue)
 {
 	if (m_wndFragmentEditorPage.KeyProperties())
@@ -1864,7 +1847,6 @@ void CMannequinDialog::SetKeyProperty(const char* propertyName, const char* prop
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::PopulateTagList()
 {
 	const std::vector<FragmentID>& fragmentIDs = FragmentBrowser()->GetFragmentIDs();
@@ -1933,7 +1915,6 @@ void CMannequinDialog::PopulateTagList()
 	SetTagStateOnCtrl();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::OnInternalVariableChange(IVariable* pVar)
 {
 	if (!m_bRefreshingTagCtrl)
@@ -1953,7 +1934,6 @@ void CMannequinDialog::OnInternalVariableChange(IVariable* pVar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::SetTagStateOnCtrl()
 {
 	m_bRefreshingTagCtrl = true;
@@ -1975,7 +1955,6 @@ void CMannequinDialog::SetTagStateOnCtrl()
 	m_bRefreshingTagCtrl = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinDialog::GetTagStateFromCtrl(std::vector<SFragTagState>& outFragTagStates) const
 {
 	const std::vector<FragmentID>& fragmentIDs = FragmentBrowser()->GetFragmentIDs();
@@ -2268,4 +2247,3 @@ void CMannequinDialog::EnableMenuCommand(uint32 commandId, bool enable)
 		pContextEditorCommand->SetEnabled(enable);
 	}
 }
-

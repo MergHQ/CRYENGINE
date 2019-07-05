@@ -54,7 +54,7 @@ public:
 	virtual bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 	bool         OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) override;
 	void         OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 	virtual void OnChangeParameter(bool continuous) override;
 	bool         IsPhaseFirstStepOnPrimitiveCreation() const override;
 
@@ -75,4 +75,3 @@ protected:
 	DiscParameter  m_DiscParameter;
 };
 }
-

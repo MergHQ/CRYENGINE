@@ -48,7 +48,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBranchNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
 		CDocGraphNodeBase::AddInput("Value", EScriptGraphPortFlags::None, GetAggregateTypeId<bool>());
@@ -59,7 +59,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBranchNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Serialize(archive);
 		archive(m_bValue, "value", "Value");
 	}
@@ -114,12 +114,16 @@ namespace Schematyc2
 		{
 			if(stackPos != (compiler.GetStackSize() - 1))
 			{
-				compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_bValue));
+				compiler.Copy(stackPos, INVALID_INDEX, MakeAny(m_bValue), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
+			}
+			else
+			{
+				compiler.SetDebugInput(CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 		}
 		else
 		{
-			compiler.Push(MakeAny(m_bValue));
+			compiler.Push(MakeAny(m_bValue), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 		}
 	}
 

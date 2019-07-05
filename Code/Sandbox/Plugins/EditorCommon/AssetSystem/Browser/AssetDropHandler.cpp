@@ -16,6 +16,7 @@
 #include <CrySandbox/ScopedVariableSetter.h>
 #include <CryString/StringUtils.h>
 #include <CryString/CryPath.h>
+#include <IEditor.h>
 
 namespace Private_AssetDropHandler
 {
@@ -112,7 +113,6 @@ std::vector<CAsset*> CAssetDropHandler::Import(const std::vector<string>& filePa
 	}).get();
 
 	const float inc = 1.0f / filePaths.size();
-	float fileProgress = 0.0f;
 
 	importParamsEx.beginImportingFile = [pShared](const string& filename)
 	{
@@ -170,6 +170,21 @@ std::vector<CAsset*> CAssetDropHandler::Import(const QStringList& filePaths, con
 {
 	using namespace Private_AssetDropHandler;
 	return Import(ToStringVector(filePaths), importParams);
+}
+
+std::future<std::vector<CAsset*>> CAssetDropHandler::ImportAsync(const QStringList& filePaths, const SImportParams& importParams)
+{
+	// The current limitation of the FBX importer is that it is asynchronous, but not thread safe.
+	// Therefore, all import requests must be processed in order, one after the other.
+	return ThreadingUtils::AsyncQueue([filePaths, importParams]()
+	{
+		std::vector<CAsset*> assets = Import(filePaths, importParams);
+		ThreadingUtils::PostOnMainThread([](std::vector<CAsset*>&& assets) 
+		{ 
+			GetIEditor()->GetAssetManager()->MergeAssets(assets); 
+		}, assets);
+		return assets;
+	});
 }
 
 //! Precondition: pAssetImporter->GetAssetTypes() is a sub-set of assetTypes.
@@ -326,4 +341,3 @@ std::vector<CAsset*> CAssetDropHandler::ImportExt(const string& ext, const std::
 
 	return assets;
 }
-

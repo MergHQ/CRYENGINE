@@ -25,8 +25,8 @@ CAnimLightNode::CAnimLightNode(const int id)
 	m_fDiffuseMultiplier(1),
 	m_fHDRDynamic(0),
 	m_fSpecularMultiplier(1),
-	m_clrDiffuseColor(255.0f, 255.0f, 255.0f),
 	m_fSpecularPercentage(100.0f),
+	m_clrDiffuseColor(255.0f, 255.0f, 255.0f),
 	m_bJustActivated(false)
 {
 	CAnimLightNode::Initialize();

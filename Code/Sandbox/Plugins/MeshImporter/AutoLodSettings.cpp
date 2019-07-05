@@ -73,4 +73,3 @@ void CAutoLodSettings::Serialize(yasli::Archive& ar)
 	ar(m_globalParams, "globalparams", "GlobalParams");
 	ar(m_nodeParams, "nodeparams", "NodeParams");
 }
-

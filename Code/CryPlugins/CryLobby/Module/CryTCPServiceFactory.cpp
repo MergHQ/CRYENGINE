@@ -445,7 +445,7 @@ CCryTCPServiceFactory::Recv(
 
 		FD_ZERO(&sockets);
 		FD_SET(m_pSockets[sockIdx], &sockets);
-		int sr = CrySock::select((int)m_pSockets[sockIdx] + 1, &sockets, 0, 0, &timeout); // SOCKET->int is bad, may lose upper 32 bits
+		CrySock::select((int)m_pSockets[sockIdx] + 1, &sockets, 0, 0, &timeout); // SOCKET->int is bad, may lose upper 32 bits
 
 		if (FD_ISSET(m_pSockets[sockIdx], &sockets))
 		{

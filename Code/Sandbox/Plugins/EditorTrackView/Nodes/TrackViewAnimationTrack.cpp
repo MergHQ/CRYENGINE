@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright 2001-2016 Crytek GmbH. All rights reserved.
-
 #include "StdAfx.h"
 #include "TrackViewAnimationTrack.h"
 #include "TrackViewAnimNode.h"
@@ -55,6 +52,18 @@ SAnimTime CTrackViewAnimationTrack::GetKeyAnimEnd(const uint index) const
 	return key.m_endTime;
 }
 
+_smart_ptr<IAnimKeyWrapper> CTrackViewAnimationTrack::GetWrappedKey(int key)
+{
+	_smart_ptr<IAnimKeyWrapper> pWrappedKey = CTrackViewTrack::GetWrappedKey(key);
+	if (pWrappedKey && (strcmp(pWrappedKey->GetInstanceType(), "Character") == 0))
+	{
+		SAnimKeyWrapper<SCharacterKey>* pCharacterKey = static_cast<SAnimKeyWrapper<SCharacterKey>*>(pWrappedKey.get());
+		pCharacterKey->m_key.m_defaultAnimDuration = GetKeyAnimDuration(key);
+	}
+
+	return pWrappedKey;
+}
+
 float CTrackViewAnimationTrack::GetKeyDurationFromAnimationData(const SCharacterKey& key) const
 {
 	float duration = 0.0f;
@@ -73,7 +82,7 @@ float CTrackViewAnimationTrack::GetKeyDurationFromAnimationData(const SCharacter
 
 	CTrackViewAnimNode* animNode = static_cast<CTrackViewAnimNode*>(pParent);
 	EAnimNodeType animNodeType = animNode->GetType();
-	if (nodeType != eAnimNodeType_Entity)
+	if (animNodeType != eAnimNodeType_Entity)
 	{
 		return duration;
 	}

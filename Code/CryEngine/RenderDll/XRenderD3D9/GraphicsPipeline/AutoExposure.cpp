@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "AutoExposure.h"
 
-#include "DriverD3D.h"
 
 void GetSampleOffsets_Downscale4x4Bilinear(uint32 width, uint32 height, Vec4 avSampleOffsets[])
 {
@@ -29,8 +28,6 @@ void GetSampleOffsets_Downscale4x4Bilinear(uint32 width, uint32 height, Vec4 avS
 void CAutoExposureStage::MeasureLuminance()
 {
 	PROFILE_LABEL_SCOPE("MEASURE_LUMINANCE");
-
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	int32 curTexture = NUM_HDR_TONEMAP_TEXTURES - 1;
 
@@ -65,10 +62,10 @@ void CAutoExposureStage::MeasureLuminance()
 			m_passLuminanceInitial.SetState(GS_NODEPTHTEST);
 			m_passLuminanceInitial.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 
-			m_passLuminanceInitial.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1]);
-			m_passLuminanceInitial.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
-			m_passLuminanceInitial.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
-			m_passLuminanceInitial.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
+			m_passLuminanceInitial.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
+			m_passLuminanceInitial.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
+			m_passLuminanceInitial.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneDiffuse);
+			m_passLuminanceInitial.SetTexture(3, m_graphicsPipelineResources.m_pTexSceneSpecular);
 			m_passLuminanceInitial.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		}
 
@@ -77,8 +74,8 @@ void CAutoExposureStage::MeasureLuminance()
 
 		m_passLuminanceInitial.BeginConstantUpdate();
 
-		float s1 = 1.0f / (float) CRendererResources::s_ptexHDRTargetScaled[1]->GetWidth();
-		float t1 = 1.0f / (float) CRendererResources::s_ptexHDRTargetScaled[1]->GetHeight();
+		float s1 = 1.0f / (float)m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]->GetWidth();
+		float t1 = 1.0f / (float)m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]->GetHeight();
 
 		// Use rotated grid
 		Vec4 sampleLumOffsets0 = Vec4(s1 * 0.95f, t1 * 0.25f, -s1 * 0.25f, t1 * 0.96f);
@@ -125,7 +122,7 @@ void CAutoExposureStage::MeasureLuminance()
 
 	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
 		CRendererResources::s_ptexHDRToneMaps[0]->GetDevTexture(),
-		CRendererResources::s_ptexHDRMeasuredLuminance[gcpRendD3D->RT_GetCurrGpuID()]->GetDevTexture()
+		m_graphicsPipelineResources.m_pTexHDRMeasuredLuminance[gcpRendD3D->RT_GetCurrGpuID()]->GetDevTexture()
 	);
 }
 
@@ -158,7 +155,6 @@ void CAutoExposureStage::AdjustExposure()
 
 		m_passAutoExposure.SetTexture(0, pTexPrev);
 		m_passAutoExposure.SetTexture(1, CRendererResources::s_ptexHDRToneMaps[0]);
-		m_passAutoExposure.SetSampler(0, EDefaultSamplerStates::PointClamp);
 	}
 
 	static CCryNameR param0Name("ElapsedTime");
@@ -178,6 +174,8 @@ void CAutoExposureStage::AdjustExposure()
 
 void CAutoExposureStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
+
 	MeasureLuminance();
 	AdjustExposure();
 }

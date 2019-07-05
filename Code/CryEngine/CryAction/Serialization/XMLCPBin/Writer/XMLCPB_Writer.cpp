@@ -74,8 +74,12 @@ void CWriter::Init(const char* pNameRootNode, const char* pFileName)
 		}
 	}
 
+#if defined(USE_CRY_ASSERT)
 	CNodeLiveWriter* pRoot = CreateAndAddLiveNode(pNameRootNode);
-	assert(pRoot->GetID() == XMLCPB_ROOTNODE_ID);
+	CRY_ASSERT(pRoot->GetID() == XMLCPB_ROOTNODE_ID);
+#else
+	CreateAndAddLiveNode(pNameRootNode);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -109,7 +113,7 @@ CNodeLiveWriterRef CWriter::GetRoot()
 
 CNodeLiveWriter* CWriter::CreateAndAddLiveNode(const char* pName)
 {
-	assert(m_firstFreeLiveNode < m_liveNodes.size());
+	CRY_ASSERT(m_firstFreeLiveNode < m_liveNodes.size());
 
 	// create and place in vector
 	NodeLiveID ID = m_firstFreeLiveNode;
@@ -138,7 +142,7 @@ CNodeLiveWriter* CWriter::CreateAndAddLiveNode(const char* pName)
 		}
 	}
 
-	assert(found);
+	CRY_ASSERT(found);
 
 	return pNode;
 }
@@ -147,7 +151,7 @@ CNodeLiveWriter* CWriter::CreateAndAddLiveNode(const char* pName)
 
 CNodeLiveWriter* CWriter::GetNodeLive(NodeLiveID nodeId)
 {
-	assert(nodeId < m_liveNodes.size());
+	CRY_ASSERT(nodeId < m_liveNodes.size());
 
 	return m_liveNodes[nodeId];
 }
@@ -173,7 +177,7 @@ void CWriter::Done()
 
 void CWriter::NotifyRootNodeStartCompact()
 {
-	assert(!m_rootAddr.IsValid());    // can only be one
+	CRY_ASSERT(!m_rootAddr.IsValid());    // can only be one
 
 	m_mainBuffer.GetCurrentAddr(m_rootAddr);
 }
@@ -196,7 +200,7 @@ void CWriter::LogStatistics()
 			CNodeLiveWriter* pNode = m_liveNodes[i];
 			if (pNode)
 			{
-				assert(!pNode->IsValid());
+				CRY_ASSERT(!pNode->IsValid());
 				nodesCreated++;
 				children += pNode->m_children.capacity();
 				attrs += pNode->m_attrs.capacity();
@@ -238,10 +242,10 @@ void CWriter::WriteDataIntoFile(void* pSrc, uint32 numBytes)
 
 void CWriter::WriteDataIntoMemory(uint8*& rpData, void* pSrc, uint32 numBytes, uint32& outWriteLoc)
 {
-	assert(!m_isSavingIntoFile);
-	assert(rpData);
-	assert(pSrc);
-	assert(numBytes > 0);
+	CRY_ASSERT(!m_isSavingIntoFile);
+	CRY_ASSERT(rpData);
+	CRY_ASSERT(pSrc);
+	CRY_ASSERT(numBytes > 0);
 
 	if (rpData && pSrc && numBytes > 0)
 	{
@@ -270,7 +274,7 @@ bool CWriter::FinishWritingFile()
 		if (!m_rootAddr.IsValid())
 			Done();
 
-		assert(m_rootAddr.IsValid());
+		CRY_ASSERT(m_rootAddr.IsValid());
 
 		m_mainBuffer.WriteToFile(); // this actually writes only the last data remains, because it has been writing all along the process.
 		m_tableTags.WriteToFile();
@@ -327,7 +331,7 @@ bool CWriter::WriteAllIntoMemory(uint8*& rpData, uint32& outSize)
 
 void CWriter::CreateFileHeader(SFileHeader& fileHeader)
 {
-	assert(m_rootAddr.IsValid());
+	CRY_ASSERT(m_rootAddr.IsValid());
 
 	m_tableTags.FillFileHeaderInfo(fileHeader.m_tags);
 	m_tableAttrNames.FillFileHeaderInfo(fileHeader.m_attrNames);

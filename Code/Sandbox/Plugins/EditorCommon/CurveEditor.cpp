@@ -1,21 +1,23 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
-#include "QtUtil.h"
-#include "Util/Math.h"
+#include "StdAfx.h"
 #include "CurveEditor.h"
+
 #include "DrawingPrimitives/TimeSlider.h"
 #include "DrawingPrimitives/Ruler.h"
+#include "EditorFramework/Events.h"
+#include "EditorStyleHelper.h"
+#include "Util/Math.h"
+#include "QtUtil.h"
+
+#include <CryIcon.h>
+
 #include <CryMath/Bezier_impl.h>
 
-#include <QPainter>
-#include <QMouseEvent>
 #include <QColor>
+#include <QMouseEvent>
+#include <QPainter>
 #include <QToolBar>
-#include "CryIcon.h"
-#include "EditorStyleHelper.h"
-
-#include <EditorFramework/Events.h>
 
 #pragma warning (push)
 #pragma warning (disable : 4554)
@@ -25,7 +27,6 @@
 #include <CryPhysics/polynomial.h>
 
 #pragma warning (pop)
-
 
 namespace Private_CurveEditor
 {
@@ -203,8 +204,7 @@ void DrawArrow(QPainter& painter, QPointF point, QPointF dir, const QColor& colo
 	{
 		point + dir * (kHitDistance * 0.5f),
 		point + (-dir + trans) * (kHitDistance * 0.5f),
-		point + (-dir - trans) * (kHitDistance * 0.5f),
-	};
+		point + (-dir - trans) * (kHitDistance * 0.5f), };
 	painter.drawPolygon(points, 3);
 }
 
@@ -354,7 +354,7 @@ Vec2 ClosestPointOn2DBezierSegment(const Vec2 point, const Vec2 p0, const Vec2 p
 			minDistanceSq = distSq;
 		}
 	}
-	
+
 	return closestPoint;
 }
 
@@ -443,6 +443,7 @@ bool ArePointsAligned(const Vec2& p0, const Vec2& p1, const Vec2& p2, const Vec2
 
 struct CCurveEditor::SMouseHandler
 {
+	virtual ~SMouseHandler() {}
 	virtual void mousePressEvent(QMouseEvent* pEvent)       {}
 	virtual void mouseDoubleClickEvent(QMouseEvent* pEvent) {}
 	virtual void mouseMoveEvent(QMouseEvent* pEvent)        {}
@@ -743,8 +744,6 @@ struct CCurveEditor::SMoveHandler : public CCurveEditor::SMouseHandler
 
 	void RestoreKeyPositions()
 	{
-		SCurveEditorContent* pContent = m_pCurveEditor->m_pContent;
-
 		auto timeIter = m_keyTimes.begin();
 		auto valueIter = m_keyValues.begin();
 
@@ -812,8 +811,8 @@ struct CCurveEditor::SHandleMoveHandler : public CCurveEditor::SMouseHandler
 		using namespace Private_CurveEditor;
 		const Vec2 currentPos = PointToVec2(pEvent->pos());
 		m_startPoint = TransformPointFromScreen(
-		  m_pCurveEditor->m_zoom, m_pCurveEditor->m_translation,
-		  m_pCurveEditor->GetCurveArea(), currentPos);
+			m_pCurveEditor->m_zoom, m_pCurveEditor->m_translation,
+			m_pCurveEditor->GetCurveArea(), currentPos);
 
 		m_inTangentStartPosition = m_appliedHandlesKey.m_controlPoint.m_inTangent;
 		m_inTangentStartType = m_appliedHandlesKey.m_controlPoint.m_inTangentType;
@@ -826,8 +825,8 @@ struct CCurveEditor::SHandleMoveHandler : public CCurveEditor::SMouseHandler
 		using namespace Private_CurveEditor;
 		const Vec2 currentPos = PointToVec2(pEvent->pos());
 		const Vec2 transformedPos = TransformPointFromScreen(
-		  m_pCurveEditor->m_zoom, m_pCurveEditor->m_translation,
-		  m_pCurveEditor->GetCurveArea(), currentPos);
+			m_pCurveEditor->m_zoom, m_pCurveEditor->m_translation,
+			m_pCurveEditor->GetCurveArea(), currentPos);
 
 		if (m_tangent == CCurveEditor::ETangent::In)
 		{
@@ -855,6 +854,8 @@ struct CCurveEditor::SHandleMoveHandler : public CCurveEditor::SMouseHandler
 		}
 
 		m_pKey->m_bModified = true;
+
+		m_pCurveEditor->ContentUpdate();
 	}
 
 	void focusOutEvent(QFocusEvent* pEvent) override
@@ -873,7 +874,7 @@ struct CCurveEditor::SHandleMoveHandler : public CCurveEditor::SMouseHandler
 };
 
 CCurveEditor::CCurveEditor(QWidget* parent)
-	: QWidget(parent)
+	: CEditorWidget(parent)
 	, m_pContent(nullptr)
 	, m_pMouseHandler(nullptr)
 	, m_frameRate(SAnimTime::eFrameRate_30fps)
@@ -897,6 +898,7 @@ CCurveEditor::CCurveEditor(QWidget* parent)
 	, m_curveFocusIndex(0)
 {
 	setMouseTracking(true);
+	RegisterAction("general.delete", [this]() { OnDeleteSelectedKeys(); update(); });
 }
 
 CCurveEditor::~CCurveEditor()
@@ -922,6 +924,32 @@ void CCurveEditor::SetTime(const SAnimTime time)
 {
 	m_timeRange.ClipValue(m_time = time);
 	update();
+}
+
+void CCurveEditor::SelectKeysWidthTimes(const std::set<SAnimTime>& times)
+{
+	using namespace Private_CurveEditor;
+
+	ForEachKey(*m_pContent, [](SCurveEditorCurve& curve, SCurveEditorKey& key)
+	{
+		key.m_bSelected = false;
+	});
+
+	m_bKeysSelected = false;
+
+	ForEachKey(*m_pContent, [&times, this](SCurveEditorCurve& curve, SCurveEditorKey& key)
+	{
+		for (const SAnimTime& time : times)
+		{
+			if (time == key.m_time)
+			{
+				key.m_bSelected = true;
+				m_bKeysSelected = true;
+
+				break;
+			}
+		}
+	});
 }
 
 void CCurveEditor::SetTimeRange(const SAnimTime start, const SAnimTime end, ELimit limit)
@@ -1276,30 +1304,6 @@ void CCurveEditor::MiddleButtonMousePressEvent(QMouseEvent* pEvent)
 
 	m_pMouseHandler->mousePressEvent(pEvent);
 	update();
-}
-
-void CCurveEditor::customEvent(QEvent* pEvent)
-{
-	if (pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* commandEvent = static_cast<CommandEvent*>(pEvent);
-		const string& command = commandEvent->GetCommand();
-
-		if (command == "general.delete")
-		{
-			OnDeleteSelectedKeys();
-			pEvent->accept();
-			update();
-		}
-		else
-		{
-			pEvent->ignore();
-		}
-	}
-	else
-	{
-		QWidget::customEvent(pEvent);
-	}
 }
 
 void CCurveEditor::mouseMoveEvent(QMouseEvent* pEvent)
@@ -1672,7 +1676,7 @@ Vec2 CCurveEditor::ClosestPointOnCurve(const Vec2 point, const SCurveEditorCurve
 		const SCurveEditorKey segmentEndKey = curve.ApplyInTangent(*(iter + 1), true);
 
 		if ((segmentStartKey.m_controlPoint.m_outTangentType == SBezierControlPoint::ETangentType::Linear
-		    && segmentEndKey.m_controlPoint.m_inTangentType == SBezierControlPoint::ETangentType::Linear)
+		     && segmentEndKey.m_controlPoint.m_inTangentType == SBezierControlPoint::ETangentType::Linear)
 		    || (segmentStartKey.m_controlPoint.m_outTangentType == SBezierControlPoint::ETangentType::Smooth
 		        && segmentEndKey.m_controlPoint.m_inTangentType == SBezierControlPoint::ETangentType::Smooth
 		        && (segmentStartKey.m_controlPoint.m_outTangent + segmentEndKey.m_controlPoint.m_inTangent).GetLengthSquared() < 0.0001f))
@@ -1688,7 +1692,7 @@ Vec2 CCurveEditor::ClosestPointOnCurve(const Vec2 point, const SCurveEditorCurve
 			                                   segmentStartKey.m_controlPoint.m_value + segmentStartKey.m_controlPoint.m_outTangent.y));
 			const Vec2 p2 = transformFunc(Vec2(segmentEndKey.m_time.ToFloat() + segmentEndKey.m_controlPoint.m_inTangent.x,
 			                                   segmentEndKey.m_controlPoint.m_value + segmentEndKey.m_controlPoint.m_inTangent.y));
-			
+
 			if (ArePointsAligned(p0, p1, p2, p3))
 			{
 				auto newClosestPointData = ClosestPointOnSimpleSegment(point, segmentStartKey, segmentEndKey, transformFunc);
@@ -1745,7 +1749,7 @@ void CCurveEditor::DeleteMarkedKeys()
 	{
 		for (auto& curve : m_pContent->m_curves)
 		{
-			for (auto keyIter = curve.m_keys.begin(); keyIter != curve.m_keys.end(); )
+			for (auto keyIter = curve.m_keys.begin(); keyIter != curve.m_keys.end();)
 			{
 				if (keyIter->m_bDeleted)
 				{
@@ -2024,4 +2028,3 @@ void CCurveEditor::FillWithCurveToolsAndConnect(QToolBar* pToolBar)
 	pToolBar->addAction(CryIcon("icons:CurveEditor/break.ico"), "Break tangents", this, SLOT(OnBreakTangents()));
 	pToolBar->addAction(CryIcon("icons:CurveEditor/unify.ico"), "Unify tangents", this, SLOT(OnUnifyTangents()));
 }
-

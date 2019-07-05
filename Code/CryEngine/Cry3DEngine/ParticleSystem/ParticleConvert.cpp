@@ -11,8 +11,6 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/yasli/JSONOArchive.h>
 
-CRY_PFX2_DBG
-
 namespace pfx2
 {
 
@@ -227,7 +225,8 @@ void AddParamMods(XmlNodeRef mods, TVarEParam<T>& param)
 	if (param.GetStrengthCurve()(VMIN) != T(1.f))
 	{
 		XmlNodeRef data = AddPtrElement(mods, SerializeNames<T>::curve());
-		AddValue(data, "TimeSource", "ParentTime");
+		AddValue(data, "Domain", "Age");
+		AddValue(data, "Owner", "Parent");
 		AddValue(data, "SpawnOnly", "true");
 		AddCurve(data, param.GetStrengthCurve());
 	}
@@ -240,7 +239,8 @@ void AddParamMods(XmlNodeRef mods, TVarEPParam<T>& param)
 	if (param.GetAgeCurve()(VMIN) != T(1.f))
 	{
 		XmlNodeRef data = AddPtrElement(mods, SerializeNames<T>::curve());
-		AddValue(data, "TimeSource", "SelfTime");
+		AddValue(data, "Domain", "Age");
+		AddValue(data, "Owner", "Self");
 		AddCurve(data, param.GetAgeCurve());
 	}
 }
@@ -378,7 +378,7 @@ void AddFeature(IParticleComponent& component, XmlNodeRef params, bool force)
 
 static const Vec2 NodePositionIncrement(256, 0);
 
-IParticleComponent* AddComponent(IParticleEffectPfx2& effect, cstr name)
+IParticleComponent* AddComponent(IParticleEffect& effect, cstr name)
 {
 	uint index = effect.GetNumComponents();
 	IParticleComponent* component = effect.AddComponent();
@@ -687,7 +687,7 @@ void ConvertLocation(IParticleComponent& component, ParticleParams& params)
 	if (ResetValue(params.bSpaceLoop))
 	{
 		XmlNodeRef omni = MakeFeature("LocationOmni");
-		TVarParam<UFloat> vis(max<float>(params.fCameraMaxDistance, params.vPositionOffset.y + params.vRandomOffset.y));
+		TVarParam<::UFloat> vis(max<float>(params.fCameraMaxDistance, params.vPositionOffset.y + params.vRandomOffset.y));
 		ResetValue(params.fCameraMaxDistance);
 		ResetValue(params.vPositionOffset);
 		ResetValue(params.vRandomOffset);
@@ -761,7 +761,7 @@ void ConvertMotion(IParticleComponent& component, ParticleParams& params)
 	{
 		hasMotion = true;
 		XmlNodeRef vel = MakeFeature("VelocityInherit");
-		TVarParam<SFloat> scale(ResetValue(params.fInheritVelocity));
+		TVarParam<::SFloat> scale(ResetValue(params.fInheritVelocity));
 		ConvertParam(vel, "Scale", scale);
 		AddFeature(component, vel);
 	}
@@ -925,7 +925,7 @@ void ConvertLightSource(IParticleComponent& component, ParticleParams& params)
 	}
 }
 
-void ConvertAudioSource(IParticleComponent& component, ParticleParams& params, const ParticleParams& paramsOrig, IParticleEffectPfx2& newEffect, IParticleComponent* parent)
+void ConvertAudioSource(IParticleComponent& component, ParticleParams& params, const ParticleParams& paramsOrig, IParticleEffect& newEffect, IParticleComponent* parent)
 {
 	if (!params.sStartTrigger.empty() || !params.sStopTrigger.empty())
 	{
@@ -991,13 +991,14 @@ void ConvertConfigSpec(IParticleComponent& component, ParticleParams& params)
 	XmlNodeRef spec = MakeFeature("ComponentEnableByConfig");
 	ConvertValueString(spec, "Minimum", params.eConfigMin, ParticleParams::EConfigSpecBrief::Low);
 	ConvertValueString(spec, "Maximum", params.eConfigMax, ParticleParams::EConfigSpecBrief::VeryHigh);
-	ConvertValue(spec, "PC", params.Platforms.PCDX11);
+	ConvertValue(spec, "PC", params.Platforms.PCDX);
 	ConvertValue(spec, "XBoxOne", params.Platforms.XBoxOne);
+	ConvertValue(spec, "XBoxOneX", params.Platforms.XBoxOneX);
 	ConvertValue(spec, "PS4", params.Platforms.PS4);
 	AddFeature(component, spec);
 }
  
-IParticleComponent* ConvertTail(IParticleComponent& component, ParticleParams& params, IParticleEffectPfx2& newEffect)
+IParticleComponent* ConvertTail(IParticleComponent& component, ParticleParams& params, IParticleEffect& newEffect)
 {
 	if (!params.GetTailSteps())
 		return nullptr;
@@ -1052,7 +1053,7 @@ IParticleComponent* ConvertTail(IParticleComponent& component, ParticleParams& p
 }
 
 // Convert all features
-void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams& paramsOrig, IParticleEffectPfx2& newEffect, IParticleComponent* parent = nullptr)
+void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams& paramsOrig, IParticleEffect& newEffect, IParticleComponent* parent = nullptr)
 {
 	ParticleParams params = paramsOrig;
 
@@ -1096,7 +1097,7 @@ void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams
 	}
 }
 
-void ConvertSubEffects(IParticleEffectPfx2& newEffect, const ::IParticleEffect& oldSubEffect, IParticleComponent* parent = nullptr)
+void ConvertSubEffects(IParticleEffect& newEffect, const ::IParticleEffect& oldSubEffect, IParticleComponent* parent = nullptr)
 {
 	IParticleComponent* component = nullptr;
 	if (oldSubEffect.IsEnabled(IParticleEffect::eCheckFeatures | IParticleEffect::eCheckChildren))

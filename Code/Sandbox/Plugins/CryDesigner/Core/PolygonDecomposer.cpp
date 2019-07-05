@@ -6,6 +6,7 @@
 #include "Core/SmoothingGroup.h"
 #include "Convexes.h"
 #include "LoopPolygons.h"
+#include <stack>
 
 namespace Designer
 {
@@ -46,7 +47,6 @@ bool PolygonDecomposer::TriangulatePolygon(PolygonPtr pPolygon, FlexibleMesh& ou
 
 	m_pPolygon = pPolygon;
 	m_Plane = pPolygon->GetPlane();
-	m_SubMatID = pPolygon->GetSubMatID();
 	m_nBasedVertexIndex = 0;
 
 	m_pOutData = &outMesh;
@@ -118,7 +118,6 @@ void PolygonDecomposer::DecomposeToConvexes(PolygonPtr pPolygon, Convexes& outCo
 
 		m_pPolygon = pPolygon;
 		m_Plane = pPolygon->GetPlane();
-		m_SubMatID = pPolygon->GetSubMatID();
 		m_nBasedVertexIndex = 0;
 		m_pBrushConvexes = &outConvexes;
 
@@ -416,8 +415,6 @@ bool PolygonDecomposer::TriangulateMonotonePolygon(const IndexList& indexList, s
 
 		if (topSide != currentSide)
 		{
-			int nBaseFaceIndex = outFaceList.size();
-
 			while (!vertexStack.empty())
 			{
 				top = vertexStack.top();
@@ -754,7 +751,6 @@ PolygonDecomposer::EDirection PolygonDecomposer::QueryPointSide(int nIndex, cons
 
 int PolygonDecomposer::FindDirectlyLeftEdge(int nBeginIndex, const IndexList& edgeSearchList, const IndexList& indexList) const
 {
-	int nIndexCount = indexList.size();
 	const BrushVec2& point = m_PointList[nBeginIndex].pos;
 	const BrushVec2 leftDir(-1.0f, 0);
 	BrushFloat nearestDist = 3e10f;
@@ -846,8 +842,6 @@ void PolygonDecomposer::AddDiagonalEdge(int i0, int i1, EdgeSet& diagonalSet) co
 
 bool PolygonDecomposer::DecomposePolygonIntoMonotonePieces(const IndexList& indexList, std::vector<IndexList>& outMonatonePieces)
 {
-	int nIndexCount(indexList.size());
-
 	std::vector<EPointType> pointTypeList;
 	IndexList helperList;
 	IndexList edgeSearchList;
@@ -868,7 +862,6 @@ bool PolygonDecomposer::DecomposePolygonIntoMonotonePieces(const IndexList& inde
 	auto yIter = yMap.begin();
 	for (; yIter != yMap.end(); ++yIter)
 	{
-		const PointComp& top = yIter->first;
 		int index = yIter->second;
 		int prev = m_PointList[index].prev;
 
@@ -1057,8 +1050,6 @@ void PolygonDecomposer::SearchMonotoneLoops(EdgeSet& diagonalSet, const IndexLis
 
 PolygonDecomposer::EPointType PolygonDecomposer::QueryPointType(int nIndex, const IndexList& indexList) const
 {
-	int iIndexCount(indexList.size());
-
 	int nCurrIndex = indexList[nIndex];
 	int nPrevIndex = m_PointList[nCurrIndex].prev;
 	int nNextIndex = m_PointList[nCurrIndex].next;
@@ -1124,8 +1115,6 @@ PolygonDecomposer::EPointType PolygonDecomposer::QueryPointType(int nIndex, cons
 
 PolygonDecomposer::EDirection PolygonDecomposer::QueryInteriorDirection(int nIndex, const IndexList& indexList) const
 {
-	int nIndexSize = indexList.size();
-
 	int nCurrIndex = indexList[nIndex];
 	int nPrevIndex = m_PointList[nCurrIndex].prev;
 	int nNextIndex = m_PointList[nCurrIndex].next;
@@ -1271,10 +1260,9 @@ void PolygonDecomposer::CreateConvexes()
 
 BrushVec2 PolygonDecomposer::Convert3DTo2D(const BrushVec3& pos) const
 {
-	static BrushMatrix33 tmRot = Matrix33::CreateRotationZ(PI * 0.09f);
+	static BrushMatrix33 tmRot = Matrix33::CreateRotationZ(static_cast<float>(PI * 0.09));
 	BrushVec3 rotatedPos = tmRot.TransformVector(m_Plane.W2P(pos));
 	return BrushVec2(rotatedPos.x, rotatedPos.y);
 }
 
 }
-

@@ -118,7 +118,7 @@ void CDebugUtils::RecursiveCopyAttrAndChildsIntoXmlNode(XmlNodeRef xmlNode, cons
 			}
 
 		default:
-			assert(false);
+			CRY_ASSERT(false);
 			break;
 		}
 	}

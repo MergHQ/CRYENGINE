@@ -1,8 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SubObjSelection_h__
-#define __SubObjSelection_h__
 #pragma once
+#include <CryMath/Cry_Math.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Sub Object element type.
@@ -59,6 +58,7 @@ struct SSubObjSelOptions
 };
 
 extern SSubObjSelOptions g_SubObjSelOptions;
+class CViewport;
 
 //////////////////////////////////////////////////////////////////////////
 enum ESubObjSelectionModifyType
@@ -79,6 +79,3 @@ struct SSubObjSelectionModifyContext
 	Vec3                       vValue;
 	Matrix34                   worldRefFrame;
 };
-
-#endif //__SubObjSelection_h__
-

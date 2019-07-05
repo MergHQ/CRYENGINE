@@ -6,6 +6,10 @@
 
 	#include <CryAnimation/ICryAnimation.h>
 	#include <CryMath/GeomQuery.h>
+	#include <CryPhysics/physinterface.h>
+	#include <Cry3DEngine/IStatObj.h>
+	#include <CryEntitySystem/IEntitySystem.h>
+	#include "GeomRef.h"
 
 //////////////////////////////////////////////////////////////////////////
 // GeomRef implementation
@@ -138,7 +142,7 @@ void GeomRef::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomType eAt
 
 	if (eAttachType == GeomType_Physics)
 	{
-		if (IPhysicalEntity* pPhysEnt = GetPhysicalEntity())
+		if (GetPhysicalEntity() != nullptr)
 		{
 			pe_status_random sr;
 			sr.points = points;

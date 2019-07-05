@@ -1,16 +1,13 @@
 {
-	"NoUberFile":
-	{
-		"Root":
-		[
-			"DLLMain.cpp",
-			"StdAfx.cpp",
-			"StdAfx.h"
-		],
-		"Editor":
-		[
-			"Editor/MainEditorWindow.cpp",
-			"Editor/MainEditorWindow.h"
-		]
-	}
+    "NoUberFile": {
+        "Editor": [
+            "Editor/MainEditorWindow.cpp",
+            "Editor/MainEditorWindow.h"
+        ],
+        "Root": [
+            "DLLMain.cpp",
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
 }

@@ -2,11 +2,15 @@
 
 #include "StdAfx.h"
 #include "AlembicCompiler.h"
+
 #include "AlembicCompileDialog.h"
 #include "Dialogs/ResourceCompilerDialog.h"
-#include "FilePathUtil.h"
+#include "FileUtils.h"
+#include "PathUtils.h"
+#include "Util/FileUtil.h"
+#include "Util/EditorUtils.h"
 
-namespace AlembicCompiler_Private
+namespace Private_AlembicCompiler
 {
 
 // RAII handler of temporary asset data. Based on RenderDll::TextureCompiler::CTemporaryAsset. 
@@ -62,10 +66,11 @@ public:
 	}
 
 private:
-	static string GetTemporaryDirectoryPath()
+	static CryPathString GetTemporaryDirectoryPath()
 	{
-		char path[ICryPak::g_nMaxPath] = {};
-		return GetISystem()->GetIPak()->AdjustFileName("%USER%/temp/AlembicCompiler", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		CryPathString path;
+		GetISystem()->GetIPak()->AdjustFileName("%USER%/temp/AlembicCompiler", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		return path;
 	}
 
 	// Create a temp directory to store asset files during processing.
@@ -74,7 +79,7 @@ private:
 		// Temporary files are created outside the asset directory primarily to avoid interference with the editor asset system.
 		// Right now, when creating a temporary folder, we copy the folder hierarchy of the asset folder to avoid naming conflicts.
 		// In the future, this should be replaced by some central system that creates temporary folders.
-		static const string tempPrefix = GetTemporaryDirectoryPath();
+		static const CryPathString tempPrefix = GetTemporaryDirectoryPath();
 
 		string drive;
 		string dir;
@@ -201,7 +206,7 @@ bool CAlembicCompiler::CompileAlembic(string& fileName, const string& fullPath, 
 	const CString rcFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), fullPath.GetString());
 
 	const string configPath = PathUtil::ReplaceExtension(rcFilePath.GetString(), "cbc");
-	XmlNodeRef config = PathUtil::FileExists(configPath) ? XmlHelpers::LoadXmlFromFile(configPath) : XmlNodeRef();
+	XmlNodeRef config = FileUtils::FileExists(configPath) ? XmlHelpers::LoadXmlFromFile(configPath) : XmlNodeRef();
 	CAlembicCompileDialog dialog(config);
 
 	if (!showDialog || dialog.DoModal() == IDOK)
@@ -217,7 +222,7 @@ bool CAlembicCompiler::CompileAlembic(string& fileName, const string& fullPath, 
 		const CString vertexIndexFormat = (sizeof(vtx_idx) == sizeof(uint16)) ? "u16" : "u32";
 
 		string targetPath = PathUtil::ReplaceExtension(rcFilePath.GetString(), CRY_GEOM_CACHE_FILE_EXT);
-		AlembicCompiler_Private::CTemporaryAsset tmpAsset(targetPath);
+		Private_AlembicCompiler::CTemporaryAsset tmpAsset(targetPath);
 		const string tmpDir = PathUtil::GetPathWithoutFilename(tmpAsset.GetTmpPath());
 
 		CString additionalSettings;
@@ -246,4 +251,3 @@ bool CAlembicCompiler::CompileAlembic(string& fileName, const string& fullPath, 
 
 	return false;
 }
-

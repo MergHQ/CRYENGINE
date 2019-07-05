@@ -1,15 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareLightEntityTree.h
-//  Created:     18/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include "ILensFlareListener.h"
+#include <CryCore/smartptr.h>
+
+struct CObjectEvent;
+class CBaseObject;
+class CEntityObject;
 
 class CLensFlareLightEntityTree : public CXTTreeCtrl, public ILensFlareChangeItemListener
 {
@@ -19,12 +17,12 @@ public:
 
 	void OnLensFlareDeleteItem(CLensFlareItem* pLensFlareItem);
 	void OnLensFlareChangeItem(CLensFlareItem* pLensFlareItem);
-	void OnObjectEvent(CBaseObject* pObject, int nEvent);
+	void OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
 
 protected:
 
-	HTREEITEM FindItem(HTREEITEM hStartItem, CBaseObject* pObject) const;
-	void      AddLightEntity(CEntityObject* pEntity);
+	HTREEITEM FindItem(HTREEITEM hStartItem, const CBaseObject* pObject) const;
+	void      AddLightEntity(const CEntityObject* pEntity);
 
 	_smart_ptr<CLensFlareItem> m_pLensFlareItem;
 
@@ -32,4 +30,3 @@ protected:
 
 	void OnTvnItemDoubleClicked(NMHDR* pNMHDR, LRESULT* pResult);
 };
-

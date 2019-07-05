@@ -11,9 +11,14 @@ class  CActor;
 class  CPlayer;
 struct EventPhysCollision; 
 struct HitInfo;
+struct AnimEventInstance;
 
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryCore/Containers/CryFixedArray.h>
+#include <Cry3DEngine/IStatObj.h>
 #include "GameRulesModules/IGameRulesRevivedListener.h"
 #include "IntersectionAssistanceUnit.h"
+#include "IGameObject.h"
 
 struct IEnvironmentalWeaponEventListener
 {
@@ -52,7 +57,7 @@ public:
 	virtual void PostUpdate(float frameTime) {}
 	virtual void PostRemoteSpawn() {}
 	virtual void HandleEvent(const SGameObjectEvent& event);
-	virtual uint64 GetEventMask() const;
+	virtual Cry::Entity::EventFlags GetEventMask() const;
 	virtual void ProcessEvent(const SEntityEvent& event);
 	virtual void SetChannelId(uint16 id) {}
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;

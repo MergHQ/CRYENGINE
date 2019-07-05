@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_NEW_SUBADB_FILTER_DIALOG_H__
-#define __MANN_NEW_SUBADB_FILTER_DIALOG_H__
 #pragma once
 
 #include "MannequinBase.h"
 #include "Controls/PropertiesPanel.h"
+#include "Objects/EntityScript.h"
 
 class CMannNewSubADBFilterDialog : public CXTResizeDialog
 {
@@ -61,6 +60,3 @@ private:
 	TSmartPtr<CVarBlock>      m_tagVars;
 	CTagControl               m_tagControls;
 };
-
-#endif
-

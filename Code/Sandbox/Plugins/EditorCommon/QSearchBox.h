@@ -1,14 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QLineEdit>
-
 #include "EditorCommonAPI.h"
 #include <CrySandbox/CryFunction.h>
 #include <CrySandbox/CrySignal.h>
 
-class QSortFilterProxyModel;
+#include <QLineEdit>
+
 class QDeepFilterProxyModel;
+class QSortFilterProxyModel;
 class QTreeView;
 
 class EDITOR_COMMON_API QSearchBox : public QLineEdit
@@ -25,7 +25,6 @@ public:
 
 public:
 	QSearchBox(QWidget* parent = 0);
-	virtual ~QSearchBox();
 
 	void SetSearchFunction(std::function<void(const QString&)> function);
 
@@ -48,7 +47,7 @@ public:
 	//! Returns true if there is an active search text in the searchBox
 	bool IsEmpty() const;
 
-	CCrySignal<void()> signalOnFiltered;
+	CCrySignal<void(bool /*isNewSearch*/)> signalOnSearch;
 
 private:
 
@@ -75,4 +74,3 @@ void QSearchBox::SetSearchFunction(Function function)
 {
 	SetSearchFunction(function_cast<void(const QString&)>(function));
 }
-

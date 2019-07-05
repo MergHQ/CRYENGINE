@@ -2,16 +2,22 @@
 
 #include "StdAfx.h"
 #include "Util/EditorUtils.h"
-#include "IDisplayViewport.h"
-#include <malloc.h>
+
 #include "Controls/QuestionDialog.h"
 #include "FileDialogs/SystemFileDialog.h"
+#include "LevelEditor/LevelEditorSharedState.h"
+#include "IDisplayViewport.h"
+#include <CrySystem/ISystem.h>
 
 #include <QDesktopServices>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QVariant>
+#include <QUrl>
 
-#include <cctype>  // std::isspace
-#include <cstring> // std::strspn
+#include <cctype>
+#include <cstring>
+#include <malloc.h>
 
 namespace EditorUtils
 {
@@ -67,7 +73,6 @@ CArchive& operator>>(CArchive& ar, string& str)
 	return ar;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void HeapCheck::Check(const char* file, int line)
 {
 #ifdef _DEBUG
@@ -101,7 +106,7 @@ void HeapCheck::Check(const char* file, int line)
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////-
+
 static int TrimTrailingZeros(char* pBuf)
 {
 	for (int pos = strlen(pBuf) - 1; pos >= 0; --pos)
@@ -176,22 +181,12 @@ void FormatFloatForUI(string& str, int significantDigits, double value)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////-
 Vec3 ConvertToTextPos(const Vec3& pos, const Matrix34& tm, IDisplayViewport* view, bool bDisplay2D)
 {
 	if (bDisplay2D)
 	{
 		Vec3 world_pos = tm.TransformPoint(pos);
-		int width = 0;
-		int height = 0;
-		view->GetDimensions(&width, &height);
-
 		POINT screen_pos = view->WorldToView(world_pos);
-
-		IDisplayViewport::EAxis axis = IDisplayViewport::AXIS_NONE;
-		bool b2D;
-		view->GetPerpendicularAxis(&axis, &b2D);
-
 		return Vec3((float)screen_pos.x, (float)screen_pos.y, 0);
 	}
 	else
@@ -200,7 +195,6 @@ Vec3 ConvertToTextPos(const Vec3& pos, const Matrix34& tm, IDisplayViewport* vie
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void ParsePropertyString(const char* szProperties, const char* szDelim, const std::function<void(const char* pKey, size_t keyLength, const char* pValue, size_t valueLength)>& fn)
 {
 	auto trimLeft = [](const char* pBegin, const char* pEnd) -> const char*
@@ -254,5 +248,24 @@ void ParsePropertyString(const char* szProperties, const char* szDelim, const st
 		pEnd += std::strspn(pEnd, szDelim);
 		pBegin = pEnd;
 	}
-};
+}
 
+XmlNodeRef XmlHelpers::CreateXmlNode(const char* sTag)
+{
+	return GetISystem()->CreateXmlNode(sTag);
+}
+
+bool XmlHelpers::SaveXmlNode(XmlNodeRef node, const char* filename)
+{
+	return node->saveToFile(filename);
+}
+
+XmlNodeRef XmlHelpers::LoadXmlFromFile(const char* fileName)
+{
+	return GetISystem()->LoadXmlFromFile(fileName);
+}
+
+XmlNodeRef XmlHelpers::LoadXmlFromBuffer(const char* buffer, size_t size)
+{
+	return GetISystem()->LoadXmlFromBuffer(buffer, size);
+}

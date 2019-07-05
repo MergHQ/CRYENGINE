@@ -63,7 +63,7 @@ void CEntityAINavigationComponent::ReflectType(Schematyc::CTypeDesc<CEntityAINav
 	desc.AddMember(&CEntityAINavigationComponent::m_movementProperties, 'move', "movement", "Movement", nullptr, SMovementProperties());
 	desc.AddMember(&CEntityAINavigationComponent::m_collisionAvoidanceProperties, 'cola', "colavoid", "Collision Avoidance", nullptr, SCollisionAvoidanceProperties());
 
-	desc.AddMember(&CEntityAINavigationComponent::m_navigationQueryFilter, 'nqft', "queryFilter", "Navigation Query Filter", nullptr, SNavMeshQueryFilterDefault());
+	desc.AddMember(&CEntityAINavigationComponent::m_navigationQueryFilter, 'nqft', "queryFilter", "Navigation Query Filter", nullptr, SNavMeshQueryFilterDefaultWithCosts());
 }
 
 void CEntityAINavigationComponent::Register(Schematyc::IEnvRegistrar& registrar)
@@ -171,7 +171,8 @@ void CEntityAINavigationComponent::Start()
 	callbacks.getPathFollowerFunction = functor(*this, &CEntityAINavigationComponent::GetPathfollower);
 
 	gEnv->pAISystem->GetMovementSystem()->RegisterEntity(GetEntity()->GetId(), callbacks, m_movementAdapter);
-	m_collisionAgent.Initialize((m_collisionAvoidanceProperties.type == SCollisionAvoidanceProperties::EType::None) ? nullptr : GetEntity());
+
+	RegisterEntityIfRequired();
 }
 
 void CEntityAINavigationComponent::Stop()
@@ -184,7 +185,7 @@ void CEntityAINavigationComponent::Stop()
 	CancelCurrentMovementRequest();
 	
 	gEnv->pAISystem->GetMovementSystem()->UnregisterEntity(GetEntity()->GetId());
-	m_collisionAgent.Release();
+	m_collisionAgent.Unregister();
 
 	m_pNavigationPath = nullptr;
 }
@@ -194,20 +195,20 @@ bool CEntityAINavigationComponent::IsGameOrSimulation() const
 	return gEnv->IsGameOrSimulation();
 }
 
-uint64 CEntityAINavigationComponent::GetEventMask() const 
+Cry::Entity::EventFlags CEntityAINavigationComponent::GetEventMask() const
 { 
-	uint64 eventMask = kDefaultEntityEventMask;
+	Cry::Entity::EventFlags eventMask = kDefaultEntityEventMask;
 
 	IEntity* pEntity = GetEntity();
 	if (IsGameOrSimulation())
 	{
 		if (m_bUpdateTransformation)
 		{
-			eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+			eventMask |= ENTITY_EVENT_UPDATE;
 		}
 		if (!pEntity->GetPhysics())
 		{
-			eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE);
+			eventMask |= ENTITY_EVENT_PREPHYSICSUPDATE;
 		}
 	}
 	return eventMask;
@@ -232,7 +233,7 @@ void CEntityAINavigationComponent::ProcessEvent(const SEntityEvent& event)
 		{
 			if (IsGameOrSimulation())
 			{
-				m_collisionAgent.Initialize((m_collisionAvoidanceProperties.type == SCollisionAvoidanceProperties::EType::None) ? nullptr : GetEntity());
+				RegisterEntityIfRequired();
 			}
 			GetEntity()->UpdateComponentEventMask(this);
 			break;
@@ -392,7 +393,7 @@ void CEntityAINavigationComponent::SetCollisionAvoidanceProperties(const SCollis
 {
 	if (IsGameOrSimulation() && properties.type != m_collisionAvoidanceProperties.type)
 	{
-		m_collisionAgent.Initialize((m_collisionAvoidanceProperties.type == SCollisionAvoidanceProperties::EType::None) ? nullptr : GetEntity());
+		RegisterEntityIfRequired();
 	}
 	m_collisionAvoidanceProperties = properties;
 }
@@ -412,7 +413,7 @@ bool CEntityAINavigationComponent::TestRaycastHit(const Vec3& toPositon, Vec3& h
 	MNM::SRayHitOutput rayHit;
 	const Vec3& startPos = GetPosition();
 
-	if (gEnv->pAISystem->GetNavigationSystem()->NavMeshTestRaycastHit(m_agentTypeId, startPos, toPositon, &m_navigationQueryFilter, &rayHit))
+	if (gEnv->pAISystem->GetNavigationSystem()->NavMeshRayCast(m_agentTypeId, startPos, toPositon, &m_navigationQueryFilter, &rayHit) == MNM::ERayCastResult::Hit)
 	{
 		hitPos = rayHit.position;
 		hitNorm = rayHit.normal2D;
@@ -481,7 +482,7 @@ void CEntityAINavigationComponent::CancelCurrentMovementRequest()
 
 	if (m_movementRequestId != MovementRequestID::Invalid())
 	{
-		gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_movementRequestId);
+		gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestId);
 		m_movementRequestId = MovementRequestID::Invalid();
 	}
 }
@@ -621,4 +622,26 @@ Vec3 CEntityAINavigationComponent::GetVelocity() const
 		}
 	}
 	return velocity;
+}
+
+void CEntityAINavigationComponent::RegisterEntityIfRequired()
+{
+	if (m_collisionAvoidanceProperties.type == SCollisionAvoidanceProperties::EType::None)
+	{
+		const bool agentSucessfullyUnregistered = m_collisionAgent.Unregister();
+		if (!agentSucessfullyUnregistered)
+		{
+			CRY_ASSERT(agentSucessfullyUnregistered, "Entity '%s' could not be unregistered from the Collision Avoidance System.", GetEntity()->GetName());
+			gEnv->pLog->LogWarning("Entity '%s' could not be unregistered from the Collision Avoidance System.", GetEntity()->GetName());
+		}
+	}
+	else
+	{
+		const bool agentSucessfullyRegistered = m_collisionAgent.Register(GetEntity());
+		if (!agentSucessfullyRegistered)
+		{
+			CRY_ASSERT(agentSucessfullyRegistered, "Entity '%s' could not be registered to the Collision Avoidance System.", GetEntity()->GetName());
+			gEnv->pLog->LogWarning("Entity '%s' could not be registered to the Collision Avoidance System.", GetEntity()->GetName());
+		}
+	}
 }

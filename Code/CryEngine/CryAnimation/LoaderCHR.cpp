@@ -53,11 +53,11 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 {
 	const char* szFilePath = pSkel->GetModelFilePath();
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
@@ -73,7 +73,7 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 	//--------------------------------------------------------------------------------------------
 
 	CModelMesh* pModelMesh = pSkel->GetModelMesh();
-	assert(pModelMesh);
+	CRY_ASSERT(pModelMesh);
 
 	const stack_string filename = stack_string(m_strGeomFileNameNoExt.c_str()) + "." + szExt;
 	const stack_string lodName = (pModelMesh->m_stream.bHasMeshFile) ? (filename + "m") : (filename);
@@ -137,40 +137,40 @@ void CryCHRLoader::EndStreamSkel(IReadStream* pStream)
 		return;
 
 	CModelMesh* pModelMesh = m_pModelSkel->GetModelMesh();
-	assert(pModelMesh);
+	CRY_ASSERT(pModelMesh);
 
 	m_pNewRenderMesh = pModelMesh->InitRenderMeshAsync(pMesh, m_pModelSkel->GetModelFilePath(), 0, m_arrNewRenderChunks);
 }
 
 void CryCHRLoader::StreamOnComplete(IReadStream* pStream, unsigned nError)
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::CHR, "CryCHRLoader::StreamOnComplete");
+
 	if (m_pModelSkel)
 	{
 		CModelMesh* pModelMesh = m_pModelSkel->GetModelMesh();
-		assert(pModelMesh);
+		CRY_ASSERT(pModelMesh);
 
 		pModelMesh->InitRenderMeshSync(m_arrNewRenderChunks, m_pNewRenderMesh);
 		m_pNewRenderMesh = nullptr;
 		m_arrNewRenderChunks.clear();
-
-		pModelMesh->m_stream.pStreamer = nullptr;
 	}
 	else if (m_pModelSkin)
 	{
 		EndStreamSkinSync(pStream);
-
-		int nRenderLod = (int)pStream->GetParams().dwUserData;
-		m_pModelSkin->m_arrModelMeshes[nRenderLod].m_stream.pStreamer = NULL;
 	}
-	m_pStream = NULL;
-	delete this;
+
+	ClearModel();
 }
 
 // cleans up the resources allocated during load
 void CryCHRLoader::ClearModel()
 {
 	m_strGeomFileNameNoExt = "";
-	//	m_animListIDs.clear();
+	m_pStream = nullptr;
+	m_arrNewRenderChunks.clear();
+	m_pNewRenderMesh = nullptr;
+	m_RefByInstances.clear();
 }
 
 //----------------------------------------------------------------------------------
@@ -207,7 +207,7 @@ static bool InitializeBones(CDefaultSkeleton* pDefaultSkeleton, CSkinningInfo* p
 {
 	const int lod = 0;
 	uint32 numBones = pSkinningInfo->m_arrBonesDesc.size();
-	assert(numBones);
+	CRY_ASSERT(numBones);
 	if (numBones >= MAX_JOINT_AMOUNT)
 	{
 		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "Too many Joints in model. Current Limit is: %d", MAX_JOINT_AMOUNT);
@@ -226,7 +226,7 @@ static bool InitializeBones(CDefaultSkeleton* pDefaultSkeleton, CSkinningInfo* p
 	for (uint32 nBone = 0; nBone < numBones; ++nBone)
 	{
 		const CryBoneDescData& boneDesc = pSkinningInfo->m_arrBonesDesc[nBone];
-		assert(boneDesc.m_DefaultB2W.IsOrthonormalRH());
+		CRY_ASSERT(boneDesc.m_DefaultB2W.IsOrthonormalRH());
 		if (!boneDesc.m_DefaultB2W.IsOrthonormalRH())
 		{
 			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "Bone %d: B2W is not orthonormal RH in lod %d", nBone, lod);
@@ -242,7 +242,7 @@ static bool InitializeBones(CDefaultSkeleton* pDefaultSkeleton, CSkinningInfo* p
 		joint.m_strJointName = &boneDesc.m_arrBoneName[0];
 		joint.m_nJointCRC32Lower = CCrc32::ComputeLowercase(&boneDesc.m_arrBoneName[0]);
 		joint.m_nJointCRC32 = boneDesc.m_nControllerID;
-		joint.m_PhysInfo = boneDesc.m_PhysInfo[0];
+		joint.m_PhysInfoRef = boneDesc.m_PhysInfo[0];
 		joint.m_fMass = boneDesc.m_fMass;
 
 		pDefaultSkeleton->m_poseDefaultData.GetJointsAbsolute()[nBone] = QuatT(boneDesc.m_DefaultB2W);
@@ -264,7 +264,7 @@ static bool InitializeBones(CDefaultSkeleton* pDefaultSkeleton, CSkinningInfo* p
 	{
 		//something went wrong. this model has multiple roots
 		for (uint32 j = 0; j < numBones; j++)
-			pDefaultSkeleton->m_arrModelJoints[j].m_PhysInfo.pPhysGeom = 0; //delete all "Chunk-IDs" to prevent the FatalError in the destructor.
+			pDefaultSkeleton->m_arrModelJoints[j].m_PhysInfoRef[0].pPhysGeom = 0; //delete all "Chunk-IDs" to prevent the FatalError in the destructor.
 		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "CryAnimation: multiple root in skeleton. Please fix the model.");
 		return false;
 	}
@@ -376,11 +376,11 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 {
 	using namespace SkelLoader_Helpers;
 
-	LOADING_TIME_PROFILE_SECTION_ARGS(szFilePath);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szFilePath);
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
@@ -468,10 +468,10 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 		uint32 numJoints = m_arrModelJoints.size();
 		m_arrBackupPhysInfo.resize(numJoints);
 		for (uint32 j = 0; j < numJoints; j++)
-			m_arrBackupPhysInfo[j] = m_arrModelJoints[j].m_PhysInfo;
+			m_arrBackupPhysInfo[j] = m_arrModelJoints[j].m_PhysInfoRef[0];
 		m_arrBackupPhyBoneMeshes = pSkinningInfo->m_arrPhyBoneMeshes;
 		m_arrBackupBoneEntities = pSkinningInfo->m_arrBoneEntities;
-		if (!SetupPhysicalProxies(m_arrBackupPhyBoneMeshes, m_arrBackupBoneEntities, pMaterial, szFilePath))
+		if (!SetupPhysicalProxies(m_arrBackupPhyBoneMeshes, m_arrBackupBoneEntities, pMaterial, szFilePath, CA_None))
 			return 0;
 	}
 	if (isSkeletonValid == 0)
@@ -503,7 +503,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 			m_ModelMeshEnabled = true;
 
 			CModelMesh* pModelMesh = GetModelMesh();
-			assert(pModelMesh);
+			CRY_ASSERT(pModelMesh);
 
 			uint32 success = pModelMesh->InitMesh(pMesh, pMeshNode, pMaterial, pSkinningInfo, m_strFilePath.c_str(), 0);
 			if (success == 0)
@@ -529,7 +529,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 
 void CDefaultSkeleton::LoadCHRPARAMS(const char* paramFileName)
 {
-	CParamLoader& paramLoader = g_pCharacterManager->GetParamLoader();
+	CChrParamLoader& paramLoader = g_pCharacterManager->GetParamLoader();
 #ifdef EDITOR_PCDEBUGCODE
 	bool hasInjectedParams = paramLoader.HasInjectedCHRPARAMS(paramFileName);
 #else
@@ -541,7 +541,7 @@ void CDefaultSkeleton::LoadCHRPARAMS(const char* paramFileName)
 		// this will be refilled by LoadXML
 		m_animListIDs.clear();
 
-		bool ok = paramLoader.LoadXML(this, GetDefaultAnimDir(), paramFileName, m_animListIDs);
+		bool ok = paramLoader.LoadFromXml(this, GetDefaultAnimDir(), paramFileName, m_animListIDs);
 		if (ok)
 			LoadAnimations(paramLoader);
 	}
@@ -550,9 +550,9 @@ void CDefaultSkeleton::LoadCHRPARAMS(const char* paramFileName)
 //------------------------------------------------------------------------------------------------------------
 // loads animations for a model by composing a complete animation list and loading it into an AnimationSet
 //------------------------------------------------------------------------------------------------------------
-bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
+bool CDefaultSkeleton::LoadAnimations(CChrParamLoader& paramLoader)
 {
-	//LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	// the number of animations loaded
 	uint32 numAnimAssets = 0;
@@ -628,20 +628,20 @@ bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
 
 	for (int32 i = nListIDs - 1; i >= 0; --i)
 	{
-		const SAnimListInfo& animList = paramLoader.GetParsedList(m_animListIDs[i]);
-		uint32 numAnimNames = animList.arrAnimFiles.size();
+		int32 currentListID = m_animListIDs[i];
+		const SAnimListInfo& animList = paramLoader.GetParsedList(currentListID);
 
 		// this is where the Animation List Cache kicks in
 		if (!animList.headersLoaded)
 		{
-			paramLoader.ExpandWildcards(m_animListIDs[i]);
-			numAnimAssets += LoadAnimationFiles(paramLoader, m_animListIDs[i]);
-			// this list has been processed, dont do it again!
-			paramLoader.SetHeadersLoaded(m_animListIDs[i]);
+			paramLoader.ExpandWildcards(currentListID);
+			numAnimAssets += LoadAnimationFiles(paramLoader, currentListID);
+			// this list has been processed, don't do it again!
+			paramLoader.SetHeadersLoaded(currentListID);
 		}
 		else
 		{
-			numAnimAssets += ReuseAnimationFiles(paramLoader, m_animListIDs[i]);
+			numAnimAssets += ReuseAnimationFiles(paramLoader, currentListID);
 		}
 
 		if (!animList.facialAnimations.empty())
@@ -653,8 +653,6 @@ bool CDefaultSkeleton::LoadAnimations(CParamLoader& paramLoader)
 		m_pAnimationSet->GetFacialAnimations().SwapElementsWithVector(facialAnimations);
 
 	AnimEventLoader::LoadAnimationEventDatabase(this, GetModelAnimEventDatabaseCStr());
-
-	uint32 dddd = g_AnimationManager.m_arrGlobalCAF.size();
 
 	if (numAnimAssets > 1)
 	{
@@ -722,7 +720,7 @@ void CDefaultSkeleton::LoadFaceLib(const char* faceLibFile, const char* animDirN
 	stack_string strGeomFileNameNoExt;
 	strGeomFileNameNoExt.assign(pFilePath, *szExt ? szExt - 1 : szExt);
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 	// Facial expressions library.
 	_smart_ptr<IFacialEffectorsLibrary> pLib;
 
@@ -755,9 +753,9 @@ void CDefaultSkeleton::LoadFaceLib(const char* faceLibFile, const char* animDirN
 //-------------------------------------------------------------------------------------------------
 #define MAX_STRING_LENGTH (256)
 
-uint32 CDefaultSkeleton::ReuseAnimationFiles(CParamLoader& paramLoader, uint32 listID)
+uint32 CDefaultSkeleton::ReuseAnimationFiles(CChrParamLoader& paramLoader, uint32 listID)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	const SAnimListInfo& animList = paramLoader.GetParsedList(listID);
 	int32 numAnims = animList.arrLoadedAnimFiles.size();
@@ -776,17 +774,16 @@ uint32 CDefaultSkeleton::ReuseAnimationFiles(CParamLoader& paramLoader, uint32 l
 	return result;
 }
 
-uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 listID)
+uint32 CDefaultSkeleton::LoadAnimationFiles(CChrParamLoader& paramLoader, uint32 listID)
 {
-	const char* pFullFilePath = GetModelFilePath();
-	const char* szExt = PathUtil::GetExt(pFullFilePath);
+	const char* szFullModelFilePath = GetModelFilePath();
+	const char* szModelExtension = PathUtil::GetExt(szFullModelFilePath);
 	stack_string strGeomFileNameNoExt;
-	strGeomFileNameNoExt.assign(pFullFilePath, *szExt ? szExt - 1 : szExt);
+	strGeomFileNameNoExt.assign(szFullModelFilePath, *szModelExtension ? szModelExtension - 1 : szModelExtension);
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 	// go through all Anims on stack and load them
 	uint32 nAnimID = 0;
-	int32 numAnims = 0;
 
 	const SAnimListInfo& animList = paramLoader.GetParsedList(listID);
 
@@ -801,7 +798,7 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 		int nAnimID0 = m_pAnimationSet->GetAnimIDByName(strInternalType_Para1D);
 		if (nAnimID0 >= 0)
 		{
-			ModelAnimationHeader* pAnim = (ModelAnimationHeader*)m_pAnimationSet->GetModelAnimationHeader(nAnimID0);
+			ModelAnimationHeader* pAnim = (ModelAnimationHeader*) m_pAnimationSet->GetModelAnimationHeader(nAnimID0);
 			if (pAnim)
 			{
 				nAnimID++;
@@ -811,60 +808,64 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 	}
 #endif
 
-	numAnims = animList.arrAnimFiles.size();
-	for (int i = 0; i < numAnims; i++)
+	for (const SAnimFile& animFile : animList.arrAnimFiles)
 	{
-		const char* pFilePath = animList.arrAnimFiles[i].m_FilePathQ;
-		const char* pAnimName = animList.arrAnimFiles[i].m_AnimNameQ;
-		const char* fileExt = PathUtil::GetExt(pFilePath);
+		const char* szAnimFilePath = animFile.m_FilePathQ;
+		const char* szAnimName = animFile.m_AnimNameQ;
+		const char* szAnimFileExt = PathUtil::GetExt(szAnimFilePath);
 
-		bool IsBAD = (0 == stricmp(fileExt, ""));
-		if (IsBAD)
-			continue;
-
-		bool IsCHR = (0 == stricmp(fileExt, CRY_SKEL_FILE_EXT));
-		if (IsCHR)
-			continue;
-		bool IsSKIN = (0 == stricmp(fileExt, CRY_SKIN_FILE_EXT));
-		if (IsSKIN)
-			continue;
-		bool IsCDF = (0 == stricmp(fileExt, "cdf"));
-		if (IsCDF)
-			continue;
-		bool IsCGA = (0 == stricmp(fileExt, "cga"));
-		if (IsCGA)
+		bool bIsBAD = (0 == stricmp(szAnimFileExt, ""));
+		if (bIsBAD)
 			continue;
 
-		uint32 IsCAF = (stricmp(fileExt, "caf") == 0);
-		uint32 IsLMG = (stricmp(fileExt, "lmg") == 0) || (stricmp(fileExt, "bspace") == 0) || (stricmp(fileExt, "comb") == 0);
-		assert(IsCAF + IsLMG);
+		bool bIsCHR = (0 == stricmp(szAnimFileExt, CRY_SKEL_FILE_EXT));
+		if (bIsCHR)
+			continue;
+		bool bIsSKIN = (0 == stricmp(szAnimFileExt, CRY_SKIN_FILE_EXT));
+		if (bIsSKIN)
+			continue;
+		bool bIsCDF = (0 == stricmp(szAnimFileExt, "cdf"));
+		if (bIsCDF)
+			continue;
+		bool bIsCGA = (0 == stricmp(szAnimFileExt, "cga"));
+		if (bIsCGA)
+			continue;
 
-		bool IsAimPose = 0;
-		bool IsLookPose = 0;
-		if (IsCAF)
+		bool bIsCaf = (stricmp(szAnimFileExt, "caf") == 0);
+		bool bIsI_Caf = (stricmp(szAnimFileExt, "i_caf") == 0);
+
+		bIsCaf = bIsCaf || bIsI_Caf; // The LoadCHR function is able to process i_caf files, if the RC has created an appropriate .caf file in the cache 
+		
+		
+		bool bIsLmg = (stricmp(szAnimFileExt, "lmg") == 0) || (stricmp(szAnimFileExt, "bspace") == 0) || (stricmp(szAnimFileExt, "comb") == 0);
+		if (!bIsCaf && !bIsLmg)
 		{
-			uint32 numAimDB = m_poseBlenderAimDesc.m_blends.size();
-			for (uint32 d = 0; d < numAimDB; d++)
+			gEnv->pLog->LogError("CryAnimation: Animation file \"%s\" could not be read (it's an animation of \"%s.%s\"). "
+				"File extension not recognized.",
+				szAnimFilePath, strGeomFileNameNoExt.c_str(), CRY_SKEL_FILE_EXT);
+			continue;
+		}
+
+		bool bIsAimPose = false;
+		bool bIsLookPose = false;
+		if (bIsCaf)
+		{
+			for (const DirectionalBlends& curAimDirectionalBlends : m_poseBlenderAimDesc.m_blends)
 			{
-				const char* strAimIK_Token = m_poseBlenderAimDesc.m_blends[d].m_AnimToken;
-				IsAimPose = (CryStringUtils::stristr(pAnimName, strAimIK_Token) != 0);
-				if (IsAimPose)
+				const char* strAimIK_Token = curAimDirectionalBlends.m_AnimToken;
+				bIsAimPose = (CryStringUtils::stristr(szAnimName, strAimIK_Token) != 0);
+				if (bIsAimPose)
 					break;
 			}
-			uint32 numLookDB = m_poseBlenderLookDesc.m_blends.size();
-			for (uint32 d = 0; d < numLookDB; d++)
+			for (const DirectionalBlends& curLookDirectionalBlends : m_poseBlenderLookDesc.m_blends)
 			{
-				const char* strLookIK_Token = m_poseBlenderLookDesc.m_blends[d].m_AnimToken;
-				IsLookPose = (CryStringUtils::stristr(pAnimName, strLookIK_Token) != 0);
-				if (IsLookPose)
+				const char* strLookIK_Token = curLookDirectionalBlends.m_AnimToken;
+				bIsLookPose = (CryStringUtils::stristr(szAnimName, strLookIK_Token) != 0);
+				if (bIsLookPose)
 					break;
 			}
 		}
-
-		if (IsCAF && IsAimPose)
-			IsCAF = 0;
-		if (IsCAF && IsLookPose)
-			IsCAF = 0;
+		bool bIsAimOrLookPose = bIsAimPose || bIsLookPose;
 
 		// ben: it can happen that a AnimID is defined in a list and in one of its dependencies that
 		// was included after the definition of that animation, this is a different behavior than
@@ -872,22 +873,22 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 		CryFixedStringT<256> standupAnimType;
 
 		int32 nGlobalAnimID = -1;
-		if (IsCAF)
+		if (bIsCaf && !bIsAimOrLookPose)
 		{
-			nGlobalAnimID = m_pAnimationSet->LoadFileCAF(pFilePath, pAnimName);
+			nGlobalAnimID = m_pAnimationSet->LoadFileCAF(szAnimFilePath, szAnimName);
 		}
 
-		if (IsAimPose || IsLookPose)
+		if (bIsAimOrLookPose)
 		{
-			nGlobalAnimID = m_pAnimationSet->LoadFileAIM(pFilePath, pAnimName, this);
+			nGlobalAnimID = m_pAnimationSet->LoadFileAIM(szAnimFilePath, szAnimName, this);
 		}
 
-		if (IsLMG)
+		if (bIsLmg)
 		{
-			nGlobalAnimID = m_pAnimationSet->LoadFileLMG(pFilePath, pAnimName);
+			nGlobalAnimID = m_pAnimationSet->LoadFileLMG(szAnimFilePath, szAnimName);
 		}
 
-		int nAnimID0 = m_pAnimationSet->GetAnimIDByName(pAnimName);
+		int nAnimID0 = m_pAnimationSet->GetAnimIDByName(szAnimName);
 		if (nAnimID0 >= 0)
 		{
 			ModelAnimationHeader* pAnim = (ModelAnimationHeader*)m_pAnimationSet->GetModelAnimationHeader(nAnimID0);
@@ -900,7 +901,7 @@ uint32 CDefaultSkeleton::LoadAnimationFiles(CParamLoader& paramLoader, uint32 li
 		}
 		else
 		{
-			gEnv->pLog->LogError("CryAnimation: Animation (caf) file \"%s\" could not be read (it's an animation of \"%s.%s\")", animList.arrAnimFiles[i].m_FilePathQ, strGeomFileNameNoExt.c_str(), CRY_SKEL_FILE_EXT);
+			gEnv->pLog->LogError("CryAnimation: Animation (caf) file \"%s\" could not be read (it's an animation of \"%s.%s\")", szAnimFilePath, strGeomFileNameNoExt.c_str(), CRY_SKEL_FILE_EXT);
 		}
 	}
 

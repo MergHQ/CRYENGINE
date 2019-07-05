@@ -12,7 +12,8 @@ History:
 #ifdef GAME_PHYS_DEBUG
 #include "Utility/CryWatch.h"
 #include <CryRenderer/IRenderAuxGeom.h>
-#include <CryRenderer/IRenderer.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryMath/Cry_Camera.h>
 #endif //GAME_PHYS_DEBUG
 
 AUTOENUM_BUILDNAMEARRAY(s_collision_class_names, COLLISION_CLASSES);
@@ -161,7 +162,6 @@ void CGamePhysicsSettings::Debug( const IPhysicalEntity& physEnt, const bool dra
 	{
 		// NAME:
 		const int iForeign = physEnt.GetiForeignData();
-		void * const pForeign = physEnt.GetForeignData(iForeign);
 		static const int bufLen = 256;
 		char buf[bufLen] = "Unknown";
 		switch(iForeign)

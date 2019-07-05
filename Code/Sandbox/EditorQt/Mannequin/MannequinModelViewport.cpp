@@ -4,30 +4,32 @@
 
 #include "MannPreferences.h"
 #include "MannequinModelViewport.h"
+#include "IEditorImpl.h"
 #include "ICryMannequin.h"
 #include <CryGame/IGameFramework.h>
 
 #include "MannequinDialog.h"
 #include "Util/MFCUtil.h"
 #include "../../CryEngine/CryEntitySystem/RenderProxy.h"
-#include "../objects/EntityObject.h"
+#include "Objects/EntityObject.h"
 
 #include "Dialogs/StringInputDialog.h"
 #include "Preferences/ViewportPreferences.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryCore/ScopeGuard.h>
+
 const float CMannequinModelViewport::s_maxTweenTime = 0.5f;
 
-/*
-   The following code was in OnRender, commented out:
-
-   static bool DEBUG_DRAW = true;
-
-   if (DEBUG_DRAW && m_sequencePlayback)
-   {
-    m_sequencePlayback->DebugDraw();
-   }
-
- */
+namespace
+{
+bool IsLevelLoading()
+{
+	ESystemGlobalState state = GetISystem()->GetSystemGlobalState();
+	bool isLevelLoading = state != ESYSTEM_GLOBAL_STATE_RUNNING && state != ESYSTEM_GLOBAL_STATE_INIT;
+	return isLevelLoading;
+}
 
 CString GetUserOptionsRegKeyName(EMannequinEditorMode editorMode)
 {
@@ -46,31 +48,32 @@ CString GetUserOptionsRegKeyName(EMannequinEditorMode editorMode)
 	}
 	return keyName + "UserOptions";
 }
+}
 
 //////////////////////////////////////////////////////////////////////////
 CMannequinModelViewport::CMannequinModelViewport(EMannequinEditorMode editorMode)
-	:
-	CModelViewport(GetUserOptionsRegKeyName(editorMode)),
-	m_locMode(LM_Translate),
-	m_selectedLocator(0xffffffff),
-	m_viewmode(eVM_Unknown),
-	m_draggingLocator(false),
-	m_dragStartPoint(0, 0),
-	m_LeftButtonDown(false),
-	m_lookAtCamera(false),
-	m_showSceneRoots(false),
-	m_cameraKeyDown(false),
-	m_playbackMultiplier(1.0f),
-	m_tweenToFocusStart(ZERO),
-	m_tweenToFocusDelta(ZERO),
-	m_tweenToFocusTime(0.0f),
-	m_editorMode(editorMode),
-	m_pActionController(NULL),
-	m_piGroundPlanePhysicalEntity(NULL),
-	m_TickerMode(SEQTICK_INFRAMES),
-	m_attachCameraToEntity(NULL),
-	m_lastEntityPos(ZERO),
-	m_pHoverBaseObject(NULL)
+	: CModelViewport(GetUserOptionsRegKeyName(editorMode))
+	, m_locMode(LM_Translate)
+	, m_selectedLocator(0xffffffff)
+	, m_viewmode(eVM_Unknown)
+	, m_draggingLocator(false)
+	, m_dragStartPoint(0, 0)
+	, m_LeftButtonDown(false)
+	, m_lookAtCamera(false)
+	, m_showSceneRoots(false)
+	, m_cameraKeyDown(false)
+	, m_playbackMultiplier(1.0f)
+	, m_tweenToFocusStart(ZERO)
+	, m_tweenToFocusDelta(ZERO)
+	, m_tweenToFocusTime(0.0f)
+	, m_editorMode(editorMode)
+	, m_pActionController(nullptr)
+	, m_piGroundPlanePhysicalEntity(nullptr)
+	, m_TickerMode(SEQTICK_INFRAMES)
+	, m_attachCameraToEntity(nullptr)
+	, m_lastEntityPos(ZERO)
+	, m_pHoverBaseObject(nullptr)
+	, m_HitContext(this)
 {
 	m_camFOV = gViewportPreferences.defaultFOV;
 	m_PhysicalLocation.SetIdentity();
@@ -109,7 +112,6 @@ CMannequinModelViewport::CMannequinModelViewport(EMannequinEditorMode editorMode
 	m_bCanDrawWithoutLevelLoaded = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMannequinModelViewport::~CMannequinModelViewport()
 {
 	gEnv->pParticleManager->RemoveEventListener(this);
@@ -118,7 +120,6 @@ CMannequinModelViewport::~CMannequinModelViewport()
 	gEnv->pGameFramework->GetMannequinInterface().RemoveMannequinGameListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CMannequinModelViewport::OnPostStepLogged(const EventPhys* pEvent)
 {
 	const EventPhysPostStep* pPostStep = static_cast<const EventPhysPostStep*>(pEvent);
@@ -127,7 +128,6 @@ int CMannequinModelViewport::OnPostStepLogged(const EventPhys* pEvent)
 	return 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMannequinModelViewport::UseAnimationDrivenMotionForEntity(const IEntity* piEntity)
 {
 	static bool addedClientEvent = false;
@@ -150,9 +150,13 @@ bool CMannequinModelViewport::UseAnimationDrivenMotionForEntity(const IEntity* p
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinModelViewport::Update()
 {
+	if (IsLevelLoading()) return; // avoid update during level loading time, since QT-MFC-coupling might crash in rare cases
+
+	CCamera cameraStoreRestore = gEnv->pSystem->GetViewCamera();
+	ScopeGuard cameraRestore{ [&cameraStoreRestore]() {gEnv->pSystem->SetViewCamera(cameraStoreRestore); } };
+
 	__super::Update();
 
 	if (Deprecated::CheckVirtualKey('E'))
@@ -206,7 +210,7 @@ void CMannequinModelViewport::OnLButtonDown(UINT nFlags, CPoint point)
 
 			SetConstructionMatrix(m34);
 
-			if (locator.m_AxisHelper.HitTest(m34, gGizmoPreferences, m_HitContext))
+			if (locator.m_AxisHelper.HitTest(m34, m_HitContext))
 			{
 				m_draggingLocator = true;
 				m_selectedLocator = i;
@@ -223,8 +227,7 @@ void CMannequinModelViewport::OnLButtonUp(UINT nFlags, CPoint point)
 		CPoint mousePoint;
 		GetCursorPos(&mousePoint);
 		ScreenToClient(&mousePoint);
-		HitContext hc;
-		hc.view = this;
+		HitContext hc(this);
 		hc.point2d = mousePoint;
 		hc.camera = &m_Camera;
 		Vec3 raySrc(0, 0, 0), rayDir(1, 0, 0);
@@ -278,7 +281,7 @@ void CMannequinModelViewport::OnMouseMove(UINT nFlags, CPoint point)
 		{
 			SLocator& locator = m_locators[m_selectedLocator];
 
-			int axis = locator.m_AxisHelper.GetHighlightAxis();
+			CLevelEditorSharedState::Axis axis = locator.m_AxisHelper.GetHighlightAxis();
 
 			if (m_locMode == LM_Translate)
 			{
@@ -309,8 +312,7 @@ void CMannequinModelViewport::OnMouseMove(UINT nFlags, CPoint point)
 			CPoint mousePoint;
 			GetCursorPos(&mousePoint);
 			ScreenToClient(&mousePoint);
-			HitContext hc;
-			hc.view = this;
+			HitContext hc(this);
 			hc.point2d = mousePoint;
 			hc.camera = &m_Camera;
 			Vec3 raySrc(0, 0, 0), rayDir(1, 0, 0);
@@ -440,8 +442,13 @@ bool CMannequinModelViewport::HitTest(HitContext& hc, const bool bIsClick)
 	return false;
 }
 
-void CMannequinModelViewport::OnRender()
+void CMannequinModelViewport::OnRender(SDisplayContext& context)
 {
+	if (IsLevelLoading()) return; // avoid render-update during level loading time, since QT-MFC-coupling might crash in rare cases
+
+	CCamera cameraStoreRestore = gEnv->pSystem->GetViewCamera();
+	ScopeGuard cameraRestore{ [&cameraStoreRestore]() {gEnv->pSystem->SetViewCamera(cameraStoreRestore); } };
+
 	if (CMannequinDialog::GetCurrentInstance())
 	{
 		CMannequinDialog::GetCurrentInstance()->OnRender();
@@ -465,8 +472,8 @@ void CMannequinModelViewport::OnRender()
 			pAuxGeom->DrawSphere(locator.m_pEntity->GetWorldTM().GetTranslation(), 0.1f, ColorB());
 		}
 
-		if (locator.m_AxisHelper.GetHighlightAxis() == 0)
-			locator.m_AxisHelper.SetHighlightAxis(GetAxisConstrain());
+		if (locator.m_AxisHelper.GetHighlightAxis() == CLevelEditorSharedState::Axis::None)
+			locator.m_AxisHelper.SetHighlightAxis(GetIEditorImpl()->GetLevelEditorSharedState()->GetAxisConstraint());
 
 		locator.m_AxisHelper.SetMode(mode);
 
@@ -478,7 +485,7 @@ void CMannequinModelViewport::OnRender()
 		{
 			Matrix34 m34 = GetLocatorWorldMatrix(locator);
 
-			if (GetIEditorImpl()->GetReferenceCoordSys() == COORDS_WORLD)
+			if (GetIEditorImpl()->GetLevelEditorSharedState()->GetCoordSystem() == CLevelEditorSharedState::CoordSystem::World)
 			{
 				m34.SetRotation33(IDENTITY);
 			}
@@ -489,13 +496,13 @@ void CMannequinModelViewport::OnRender()
 			pAuxGeom->DrawLine(groundProj - Vec3(0.2f, 0.0f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00), groundProj + Vec3(0.2f, 0.0f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00));
 			pAuxGeom->DrawLine(groundProj - Vec3(0.0f, 0.2f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00), groundProj + Vec3(0.0f, 0.2f, 0.0f), RGBA8(0xff, 0x00, 0x00, 0x00));
 
-			locator.m_AxisHelper.DrawAxis(m34, gGizmoPreferences, m_displayContext);
+			locator.m_AxisHelper.DrawAxis(m34, context);
 		}
 	}
 
 	if (mv_AttachCamera)
 	{
-		const int screenWidth  = std::max(pAuxGeom->GetCamera().GetViewSurfaceX(), 1);
+		const int screenWidth = std::max(pAuxGeom->GetCamera().GetViewSurfaceX(), 1);
 		const int screenHeight = std::max(pAuxGeom->GetCamera().GetViewSurfaceZ(), 1);
 		static bool showCrosshair = true;
 		static bool showSafeZone = true;
@@ -515,11 +522,11 @@ void CMannequinModelViewport::OnRender()
 			float adjustedWidth = crossHairLen / (float)screenWidth;
 
 			pAuxGeom->DrawLine(
-			  Vec3(0.5f - adjustedWidth, 0.5f, 0.0f), crosshairColour,
-			  Vec3(0.5f + adjustedWidth, 0.5f, 0.0f), crosshairColour);
+				Vec3(0.5f - adjustedWidth, 0.5f, 0.0f), crosshairColour,
+				Vec3(0.5f + adjustedWidth, 0.5f, 0.0f), crosshairColour);
 			pAuxGeom->DrawLine(
-			  Vec3(0.5f, 0.5f - adjustedHeight, 0.0f), crosshairColour,
-			  Vec3(0.5f, 0.5f + adjustedHeight, 0.0f), crosshairColour);
+				Vec3(0.5f, 0.5f - adjustedHeight, 0.0f), crosshairColour,
+				Vec3(0.5f, 0.5f + adjustedHeight, 0.0f), crosshairColour);
 		}
 
 		if (showSafeZone)
@@ -533,11 +540,11 @@ void CMannequinModelViewport::OnRender()
 				float innerX = edgePercent;
 				float upperX = 1.0f - edgePercent;
 				pAuxGeom->DrawLine(
-				  Vec3(innerX, 0.0f, 0.0f), crosshairColour,
-				  Vec3(innerX, 1.0f, 0.0f), crosshairColour);
+					Vec3(innerX, 0.0f, 0.0f), crosshairColour,
+					Vec3(innerX, 1.0f, 0.0f), crosshairColour);
 				pAuxGeom->DrawLine(
-				  Vec3(upperX, 0.0f, 0.0f), crosshairColour,
-				  Vec3(upperX, 1.0f, 0.0f), crosshairColour);
+					Vec3(upperX, 0.0f, 0.0f), crosshairColour,
+					Vec3(upperX, 1.0f, 0.0f), crosshairColour);
 
 				renderFlags.SetAlphaBlendMode(e_AlphaBlended);
 				pAuxGeom->SetRenderFlags(renderFlags);
@@ -614,7 +621,7 @@ void CMannequinModelViewport::OnRender()
 
 	UpdateAnimation(m_playbackMultiplier * gEnv->pTimer->GetFrameTime());
 
-	__super::OnRender();
+	__super::OnRender(context);
 }
 
 void CMannequinModelViewport::SetTimelineUnits(ESequencerTickMode mode)
@@ -820,7 +827,6 @@ Matrix34 CMannequinModelViewport::GetLocatorReferenceMatrix(const SLocator& loca
 				IStatObj* pStatObj = pEntity->GetStatObj(0);
 
 				return pEntity->GetWorldTM() * pStatObj->GetHelperTM(locator.m_helperName);
-				;
 			}
 		}
 
@@ -850,7 +856,7 @@ void CMannequinModelViewport::UpdateCharacter(IEntity* pEntity, ICharacterInstan
 	ISkeletonAnim& skeletonAnimation = *pInstance->GetISkeletonAnim();
 	ISkeletonPose& skeletonPose = *pInstance->GetISkeletonPose();
 
-	pInstance->SetCharEditMode(CA_CharacterTool);
+	pInstance->SetCharEditMode(CA_CharacterAuxEditor);
 	skeletonPose.SetForceSkeletonUpdate(1);
 
 	//int AnimEventCallback(ICharacterInstance* pInstance,void* pPlayer);
@@ -892,6 +898,8 @@ void CMannequinModelViewport::UpdateCharacter(IEntity* pEntity, ICharacterInstan
 
 void CMannequinModelViewport::UpdateAnimation(float timePassed)
 {
+	if (IsLevelLoading()) return; // avoid update during level loading time, since QT-MFC-coupling might crash in rare cases
+
 	gEnv->pGameFramework->GetMannequinInterface().SetSilentPlaybackMode(m_bPaused);
 	if (m_pActionController)
 	{
@@ -1016,7 +1024,6 @@ void CMannequinModelViewport::SetFirstperson(IAttachmentManager* pAttachmentMana
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMannequinModelViewport::DrawEntityAndChildren(CEntityObject* pEntityObject, const SRendParams& rp, const SRenderingPassInfo& passInfo)
 {
 	IEntity* pEntity = pEntityObject->GetIEntity();
@@ -1067,7 +1074,6 @@ void CMannequinModelViewport::DrawEntityAndChildren(CEntityObject* pEntityObject
 
 void CMannequinModelViewport::DrawCharacter(ICharacterInstance* pInstance, const SRendParams& rRP, const SRenderingPassInfo& passInfo)
 {
-	f32 FrameTime = GetIEditorImpl()->GetSystem()->GetITimer()->GetFrameTime();
 	m_AverageFrameTime = pInstance->GetAverageFrameTime();
 
 	GetIEditorImpl()->GetSystem()->GetIConsole()->GetCVar("ca_DrawLocator")->Set(mv_showLocator);
@@ -1112,7 +1118,7 @@ void CMannequinModelViewport::DrawCharacter(ICharacterInstance* pInstance, const
 
 	if (m_particleEmitters.empty() == false)
 	{
-		for (std::vector<IParticleEmitter*>::iterator itEmitters = m_particleEmitters.begin(); itEmitters != m_particleEmitters.end(); )
+		for (std::vector<IParticleEmitter*>::iterator itEmitters = m_particleEmitters.begin(); itEmitters != m_particleEmitters.end();)
 		{
 			IParticleEmitter* pEmitter = *itEmitters;
 			if (pEmitter->IsAlive())
@@ -1127,7 +1133,6 @@ void CMannequinModelViewport::DrawCharacter(ICharacterInstance* pInstance, const
 			}
 		}
 	}
-
 }
 
 uint32 g_ypos;
@@ -1165,7 +1170,7 @@ void CMannequinModelViewport::DrawCharacter(IEntity* pEntity, ICharacterInstance
 
 	Matrix34 localEntityMat = Matrix34(physicalLocation);
 	SRendParams rp = rRP;
-	rp.pRenderNode = pEntity->GetRenderInterface() ? pEntity->GetRenderInterface()->GetRenderNode() :  nullptr;
+	rp.pRenderNode = pEntity->GetRenderInterface() ? pEntity->GetRenderInterface()->GetRenderNode() : nullptr;
 	assert(rp.pRenderNode != NULL);
 	rp.pMatrix = &localEntityMat;
 	rp.pPrevMatrix = &localEntityMat;
@@ -1371,7 +1376,6 @@ void CMannequinModelViewport::UpdateDebugParams()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 BOOL CMannequinModelViewport::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
@@ -1394,4 +1398,3 @@ BOOL CMannequinModelViewport::PreTranslateMessage(MSG* pMsg)
 
 	return TRUE;
 }
-

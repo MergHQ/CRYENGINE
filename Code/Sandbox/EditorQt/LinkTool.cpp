@@ -1,15 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "LinkTool.h"
-#include "Viewport.h"
+
+#include "IEditorImpl.h"
+#include "IObjectManager.h"
 #include "Objects/EntityObject.h"
 #include "Objects/MiscEntities.h"
-#include <Objects/IObjectLayer.h>
-#include "Controls/QuestionDialog.h"
+#include "Objects/SelectionGroup.h"
 
-#include "QtUtil.h"
+#include <Controls/QuestionDialog.h>
+#include <Objects/IObjectLayer.h>
+#include <QtUtil.h>
+#include <Viewport.h>
+
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include <QMenu>
 
 class CLinkToPicker : public IPickObjectCallback
@@ -57,7 +63,6 @@ namespace
 const float kGeomCacheNodePivotSizeScale = 0.0025f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CLinkTool::CLinkTool()
 	: m_pChild(nullptr)
 	, m_nodeName(nullptr)
@@ -68,12 +73,6 @@ CLinkTool::CLinkTool()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
-CLinkTool::~CLinkTool()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	view->SetCursorString("");
@@ -81,7 +80,7 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 	m_hCurrCursor = m_hLinkCursor;
 	if (event == eMouseLDown)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		m_pChild = hitInfo.object;
 
@@ -90,11 +89,11 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 	}
 	else if (event == eMouseLUp)
 	{
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		view->HitTest(point, hitInfo);
 		CBaseObject* pLinkTo = hitInfo.object;
 		GetIEditorImpl()->GetObjectManager()->Link(m_pChild, pLinkTo, hitInfo.name);
-		
+
 		m_pChild = nullptr;
 	}
 	else if (event == eMouseMove)
@@ -107,7 +106,7 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 		m_nodeName = nullptr;
 		m_pGeomCacheRenderNode = nullptr;
 
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		if (view->HitTest(point, hitInfo))
 			m_EndDrag = hitInfo.raySrc + hitInfo.rayDir * hitInfo.dist;
 
@@ -129,19 +128,17 @@ bool CLinkTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point,
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CLinkTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
 	{
 		// Cancel selection.
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CLinkTool::Display(DisplayContext& dc)
+void CLinkTool::Display(SDisplayContext& dc)
 {
 	if (m_pChild && m_EndDrag != Vec3(ZERO))
 	{
@@ -150,8 +147,7 @@ void CLinkTool::Display(DisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CLinkTool::DrawObjectHelpers(CBaseObject* pObject, DisplayContext& dc)
+void CLinkTool::DrawObjectHelpers(CBaseObject* pObject, SDisplayContext& dc)
 {
 	if (!m_pChild)
 	{
@@ -220,10 +216,9 @@ void CLinkTool::DrawObjectHelpers(CBaseObject* pObject, DisplayContext& dc)
 void CLinkTool::PickObject()
 {
 	CLinkToPicker* pCallback = new CLinkToPicker;
-	GetIEditorImpl()->PickObject(pCallback);
+	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(pCallback);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CLinkTool::HitTest(CBaseObject* pObject, HitContext& hc)
 {
 	if (!m_pChild)
@@ -316,3 +311,43 @@ bool CLinkTool::HitTest(CBaseObject* pObject, HitContext& hc)
 	return bHit;
 }
 
+namespace Private_LinkToolCommands
+{
+void Link()
+{
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool() && GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CLinkTool)))
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
+	else
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(new CLinkTool());
+}
+
+void LinkTo()
+{
+	CLinkTool::PickObject();
+}
+
+void UnLink()
+{
+	CUndo undo("Unlink Object(s)");
+	const CSelectionGroup* pSelection = GetIEditorImpl()->GetObjectManager()->GetSelection();
+	for (int i = 0; i < pSelection->GetCount(); i++)
+	{
+		CBaseObject* pBaseObj = pSelection->GetObject(i);
+		pBaseObj->UnLink();
+	}
+}
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LinkToolCommands::Link, tools, link,
+                                   CCommandDescription("Starts object linking process"));
+REGISTER_EDITOR_UI_COMMAND_DESC(tools, link, "Link", "", "icons:Navigation/Tools_Link.ico", true)
+REGISTER_COMMAND_REMAPPING(ui_action, actionLink, tools, link)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LinkToolCommands::LinkTo, tools, link_to_pick,
+                                   CCommandDescription("Links the current selected object to the next one that is picked"));
+REGISTER_EDITOR_UI_COMMAND_DESC(tools, link_to_pick, "Link To...", "", "icons:Navigation/Tools_Link.ico", false)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LinkToolCommands::UnLink, tools, unlink,
+                                   CCommandDescription("Unlinks selected objects"));
+REGISTER_EDITOR_UI_COMMAND_DESC(tools, unlink, "Unlink", "", "icons:Navigation/Tools_Link_Unlink.ico", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionUnlink, tools, unlink)

@@ -7,6 +7,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 class CPlugin_CryDefaultEntities;
 
@@ -24,11 +25,11 @@ protected:
 	static void Register(Schematyc::CEnvRegistrationScope& componentScope);
 
 	// IEntityComponent
-	virtual void   Initialize() override;
-	virtual void   OnShutDown() override;
-	virtual uint64 GetEventMask() const override;
-	virtual void   ProcessEvent(const SEntityEvent& event) override;
-	virtual void   OnTransformChanged() override;
+	virtual void                    Initialize() override;
+	virtual void                    OnShutDown() override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
+	virtual void                    ProcessEvent(const SEntityEvent& event) override;
+	virtual void                    OnTransformChanged() override;
 	// ~IEntityComponent
 
 public:
@@ -46,7 +47,7 @@ public:
 	}
 
 	inline void SetActive(bool const bValue)
-	{ 
+	{
 		m_bActive = bValue;
 
 		if (!m_bActive)
@@ -57,9 +58,9 @@ public:
 
 private:
 
-	CryAudio::IListener*            m_pIListener = nullptr;
-	CryAudio::CObjectTransformation m_previousTransformation;
-	bool                            m_bActive = true;
+	CryAudio::IListener*      m_pIListener = nullptr;
+	CryAudio::CTransformation m_previousTransformation;
+	bool                      m_bActive = true;
 };
 } // namespace DefaultComponents
 } // namespace Audio

@@ -4,15 +4,15 @@
 
 #include "utils.h"
 
-Vec2 g_BoolPtBufThread[MAX_PHYS_THREADS+1][4096];
-int g_BoolIdBufThread[MAX_PHYS_THREADS+1][4096];
-int g_BoolGridThread[MAX_PHYS_THREADS+1][4096];
-unsigned int g_BoolHashThread[MAX_PHYS_THREADS+1][8192];
+Vec2 g_BoolPtBufThread[MAX_TOT_THREADS][4096];
+int g_BoolIdBufThread[MAX_TOT_THREADS][4096];
+int g_BoolGridThread[MAX_TOT_THREADS][4096];
+unsigned int g_BoolHashThread[MAX_TOT_THREADS][8192];
 struct inters2d {
 	Vec2 pt;
 	int iedge[2];
 };
-inters2d g_BoolIntersThread[MAX_PHYS_THREADS+1][256];
+inters2d g_BoolIntersThread[MAX_TOT_THREADS][256];
 
 #undef S
 
@@ -113,7 +113,7 @@ int boolean2d(booltype type, Vec2 *ptbuf1,int npt1, Vec2 *ptbuf2,int npt2,int bC
 	ptbox[1].x = min(ptmax[0].x,ptmax[1].x); ptbox[1].y = min(ptmax[0].y,ptmax[1].y);
 	sz = ptbox[1]-ptbox[0];
 	sz.x += fabs_tpl(sz.y)*1E-5f;	sz.y += fabs_tpl(sz.x)*1E-5f;
-	if (min(sz.x,sz.y) <  max(1e-8f,min(max(ptmax[0].x-ptmin[0].x,ptmax[0].y-ptmin[0].y),max(ptmax[1].x-ptmin[1].x,ptmax[1].y-ptmin[1].y))*0.001f))
+	if (min(sz.x,sz.y) <  max(1e-6f,min(max(ptmax[0].x-ptmin[0].x,ptmax[0].y-ptmin[0].y),max(ptmax[1].x-ptmin[1].x,ptmax[1].y-ptmin[1].y))*0.001f))
 		return 0;
 	ptbox[0] -= sz*0.01f; ptbox[1] += sz*0.01f;	sz = ptbox[1]-ptbox[0];
 	sz.x += fabs_tpl(sz.y)*0.01f;	sz.y += fabs_tpl(sz.x)*0.01f;

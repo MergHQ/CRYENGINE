@@ -11,10 +11,6 @@
 
 #define STORE_CRCNAME_STRINGS (1)
 
-#if !defined(USE_STATIC_NAME_TABLE)
-	#define USE_STATIC_NAME_TABLE
-#endif
-
 namespace NameCRCHelper
 {
 
@@ -32,9 +28,9 @@ ILINE uint32 GetCRC(const char* name)
 struct CNameCRCHelper
 {
 public:
-	CNameCRCHelper() : m_CRC32Name(~0) {};
+	CNameCRCHelper() : m_CRC32Name(~0) {}
 
-	uint32 GetCRC32() const { return m_CRC32Name; };
+	uint32 GetCRC32() const { return m_CRC32Name; }
 
 	void   GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -45,8 +41,7 @@ protected:
 	// CCryName m_Name;
 	uint32      m_CRC32Name; //!< Hash value for searching animations.
 
-	const char* GetName() const { return m_Name.c_str(); };
-	//	const string& GetNameString() const { return m_Name; };
+	const char* GetName() const { return m_Name.c_str(); }
 
 	// Set name and compute CRC value for it.
 	void SetName(const string& name)

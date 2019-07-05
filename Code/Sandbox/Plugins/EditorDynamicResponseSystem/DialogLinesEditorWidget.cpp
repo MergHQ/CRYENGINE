@@ -47,7 +47,7 @@ CDialogLinesEditorWidget::CDialogLinesEditorWidget(QWidget* pParent)
 		m_pTree->resizeColumnToContents(3);
 		m_pTree->resizeColumnToContents(4);
 		m_pTree->setSelectionBehavior(QAbstractItemView::SelectItems);
-		m_pTree->setEditTriggers(QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
+		m_pTree->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed | QAbstractItemView::SelectedClicked);
 
 		m_pTree->setItemDelegate(new QDialogLineDelegate(this));
 
@@ -337,7 +337,6 @@ bool CDialogLinesDatabaseImportExportHelper::ImportFromFile(const char* szSource
 					pLine->SetStartAudioTrigger(CryStringUtils::WStrToUTF8(currentLineData[(int)eDataColumns::audioStart]).c_str());
 					pLine->SetEndAudioTrigger(CryStringUtils::WStrToUTF8(currentLineData[(int)eDataColumns::audioStop]).c_str());
 					pLine->SetLipsyncAnimation(CryStringUtils::WStrToUTF8(currentLineData[(int)eDataColumns::lipsyncAnimation]).c_str());
-					pLine->SetStandaloneFile(CryStringUtils::WStrToUTF8(currentLineData[(int)eDataColumns::standaloneFile]).c_str());
 					pLine->SetCustomData(CryStringUtils::WStrToUTF8(currentLineData[(int)eDataColumns::customData]).c_str());
 					if (!currentLineData[(int)eDataColumns::pauseLength].empty())
 						pLine->SetPauseLength(std::stof(currentLineData[(int)eDataColumns::pauseLength].c_str()));
@@ -398,8 +397,6 @@ bool CDialogLinesDatabaseImportExportHelper::ExportToFile(const char* szTargetTs
 				currentLineData += CryStringUtils::UTF8ToWStrSafe(pLine->GetEndAudioTrigger());
 				currentLineData += L'\t';
 				currentLineData += CryStringUtils::UTF8ToWStrSafe(pLine->GetLipsyncAnimation());
-				currentLineData += L'\t';
-				currentLineData += CryStringUtils::UTF8ToWStrSafe(pLine->GetStandaloneFile());
 				currentLineData += L'\t';
 				currentLineData += CryStringUtils::UTF8ToWStrSafe(CryStringUtils::toString(pLine->GetPauseLength()));
 				currentLineData += L'\t';

@@ -32,7 +32,7 @@ public:
 	virtual ~CSmartObjectClassDialog();
 
 	void    SetSOClass(const CString& sSOClass) { m_sSOClass = sSOClass; }
-	CString GetSOClass()                        { return m_sSOClass; };
+	CString GetSOClass()                        { return m_sSOClass; }
 	void    EnableOK()                          { m_bEnableOK = true; }
 
 	// Dialog Data
@@ -57,4 +57,3 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 };
-

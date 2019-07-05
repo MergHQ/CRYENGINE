@@ -19,7 +19,7 @@ public:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	void SetView(CHyperGraphView* pView) { m_pView = pView; };
+	void SetView(CHyperGraphView* pView) { m_pView = pView; }
 
 protected:
 	afx_msg UINT OnGetDlgCode() { return CEdit::OnGetDlgCode() | DLGC_WANTALLKEYS | DLGC_WANTMESSAGE; }
@@ -34,7 +34,7 @@ protected:
 class CEditPropertyCtrl : public CPropertyCtrl
 {
 public:
-	void SetView(CHyperGraphView* pView) { m_pView = pView; };
+	void SetView(CHyperGraphView* pView) { m_pView = pView; }
 	void SelectItem(CPropertyItem* item);
 	void Expand(CPropertyItem* item, bool bExpand, bool bRedraw);
 
@@ -52,7 +52,7 @@ public:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	void SetView(CHyperGraphView* pView) { m_pView = pView; };
+	void SetView(CHyperGraphView* pView) { m_pView = pView; }
 
 protected:
 	afx_msg UINT OnGetDlgCode() { return CEdit::OnGetDlgCode() | DLGC_WANTALLKEYS | DLGC_WANTMESSAGE; }
@@ -366,7 +366,7 @@ private:
 
 	uint32       m_componentViewMask;
 
-	// used when draging the border of a node
+	// used when dragging the border of a node
 	struct TDraggingBorderNodeInfo
 	{
 		THyperNodePtr   m_pNode;
@@ -400,4 +400,3 @@ private:
 
 	static TFlowNodeId s_quickSearchNodeId;
 };
-

@@ -10,6 +10,7 @@
 #include <CrySerialization/BlackBox.h>
 #include <CrySerialization/ClassFactory.h>
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace Serialization
 {
@@ -53,12 +54,12 @@ public:
 
 	bool SaveJsonFile(const char* gameFilename, const SStruct& obj) override
 	{
-		char buffer[ICryPak::g_nMaxPath];
-		const char* filename = gEnv->pCryPak->AdjustFileName(gameFilename, buffer, ICryPak::FLAGS_FOR_WRITING);
+		CryPathString adjustedName;
+		gEnv->pCryPak->AdjustFileName(gameFilename, adjustedName, ICryPak::FLAGS_FOR_WRITING);
 		yasli::JSONOArchive oa;
 		if (!oa(obj))
 			return false;
-		return oa.save(filename);
+		return oa.save(adjustedName);
 	}
 
 	bool LoadJsonBuffer(const SStruct& obj, const char* buffer, size_t bufferLength) override
@@ -93,11 +94,11 @@ public:
 
 	bool SaveBinaryFile(const char* gameFilename, const SStruct& obj) override
 	{
-		char buffer[ICryPak::g_nMaxPath];
-		const char* filename = gEnv->pCryPak->AdjustFileName(gameFilename, buffer, ICryPak::FLAGS_FOR_WRITING);
+		CryPathString adjustedName;
+		gEnv->pCryPak->AdjustFileName(gameFilename, adjustedName, ICryPak::FLAGS_FOR_WRITING);
 		yasli::BinOArchive oa;
 		obj(oa);
-		return oa.save(filename);
+		return oa.save(adjustedName);
 	}
 
 	bool LoadBinaryBuffer(const SStruct& obj, const char* buffer, size_t bufferLength) override
@@ -175,10 +176,11 @@ public:
 		const ECryXmlVersion version = SelectCryXmlVersionToSave(forceVersion);
 		switch (version)
 		{
+		case ECryXmlVersion::Auto: return XmlNodeRef();
 		case ECryXmlVersion::Version1: return SaveXmlNodeVer1(obj, nodeName);
 		case ECryXmlVersion::Version2: return SaveXmlNodeVer2(obj, nodeName);
+		default: return XmlNodeRef();
 		}
-		return XmlNodeRef();
 	}
 
 	bool SaveXmlNode(XmlNodeRef& node, const SStruct& obj, ECryXmlVersion forceVersion = ECryXmlVersion::Auto) override
@@ -186,12 +188,12 @@ public:
 		const ECryXmlVersion version = SelectCryXmlVersionToSave(forceVersion);
 		switch (version)
 		{
+		case ECryXmlVersion::Auto: return false;
 		case ECryXmlVersion::Version1: return SaveXmlNodeVer1(node, obj);
 		case ECryXmlVersion::Version2: return SaveXmlNodeVer2(node, obj);
+		default: return false;
 		}
-		return false;
 	}
-
 
 	XmlNodeRef SaveXmlNodeVer2(const SStruct& obj, const char* nodeName)
 	{
@@ -258,10 +260,11 @@ public:
 		const ECryXmlVersion version = SelectCryXmlVersionToLoad(node, forceVersion);
 		switch (version)
 		{
+		case ECryXmlVersion::Auto: return false;
 		case ECryXmlVersion::Version1: return LoadXmlNodeVer1(obj, node);
 		case ECryXmlVersion::Version2: return LoadXmlNodeVer2(obj, node);
+		default: return false;
 		}
-		return false;
 	}
 
 	bool LoadXmlNodeVer1(const SStruct& obj, const XmlNodeRef& node)

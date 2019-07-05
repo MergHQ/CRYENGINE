@@ -1,28 +1,31 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "IEditorImpl.h"
-#include "IObjectManager.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "IBackgroundScheduleManager.h"
 #include "EnvironmentProbeObject.h"
+
 #include "Util/CubemapUtils.h"
-#include "Util/Variable.h"
-#include "FilePathUtil.h"
-#include <Preferences/ViewportPreferences.h>
 #include "GameEngine.h"
-#include "../Cry3DEngine/StatObj.h"
-#include "../Cry3DEngine/Material.h"
-#include "../Cry3DEngine/MatMan.h"
-#include <CryRenderer/IShader.h> // <> required for Interfuscator
-#include <Cry3DEngine/ITimeOfDay.h>
+#include "IEditorImpl.h"
+#include "IBackgroundScheduleManager.h"
+
+#include <Gizmos/AxisHelper.h>
+#include <IObjectManager.h>
+#include <Objects/DisplayContext.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <PathUtils.h>
+#include <Preferences/ViewportPreferences.h>
+#include <RenderLock.h>
 #include <Serialization/Decorators/EditorActionButton.h>
+#include <Util/Variable.h>
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/ITimeOfDay.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
-#include "Gizmos/AxisHelper.h"
-#include "RenderLock.h"
-#include "CrySystem/ISystem.h"
-#include "CrySystem/File/ICryPak.h"
+#include <CryRenderer/IShader.h>
+#include <CryRenderer/RenderObject.h>
+#include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ISystem.h>
 
 class CubeMapGenerationSchedule : public IBackgroundScheduleItemWork, public IAsyncTextureCompileListener
 {
@@ -105,7 +108,7 @@ public:
 				// our object could very well have been deleted in the meantime
 				if (!pObj)
 				{
-					// return finished, we don't want to interrupt the whole scheduleitem
+					// return finished, we don't want to interrupt the whole schedule item
 					return eScheduleWorkItemStatus_Finished;
 				}
 
@@ -122,7 +125,7 @@ public:
 				IVariable* pVar = probeProperties->FindVariable("texture_deferred_cubemap", true);
 				if (!pVar)
 				{
-					// return finished, we don't want to interrupt the whole scheduleitem
+					// return finished, we don't want to interrupt the whole schedule item
 					return eScheduleWorkItemStatus_Finished;
 				}
 
@@ -185,8 +188,8 @@ public:
 
 protected:
 	CryGUID      m_cubemapguid;
-	string      m_filepath;
-	string      m_relFilepath;
+	string       m_filepath;
+	string       m_relFilepath;
 	volatile int m_texdone;
 	volatile int m_refCount;
 	bool         m_bResult;
@@ -195,26 +198,20 @@ protected:
 
 REGISTER_CLASS_DESC(CEnvironmentProbeObjectClassDesc);
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CEnvironementProbeObject, CEntityObject)
 
-//////////////////////////////////////////////////////////////////////////
 CEnvironementProbeObject::CEnvironementProbeObject()
 {
 	m_entityClass = "EnvironmentLight";
 	UseMaterialLayersMask(false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CEnvironementProbeObject::Init(CBaseObject* prev, const string& file)
 {
 	bool res = CEntityObject::Init(prev, file);
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEnvironementProbeObject::InitVariables()
 {
 	CVarEnumList<int>* enumList = new CVarEnumList<int>;
@@ -231,7 +228,7 @@ void CEnvironementProbeObject::InitVariables()
 
 	if (m_pVarObject == nullptr)
 	{
-		m_pVarObject = stl::make_unique<CVarObject>();
+		m_pVarObject = std::make_unique<CVarObject>();
 	}
 
 	m_pVarObject->AddVariable(m_cubemap_resolution, string("cubemap_resolution"));
@@ -242,7 +239,6 @@ void CEnvironementProbeObject::InitVariables()
 	CEntityObject::InitVariables();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEnvironementProbeObject::Serialize(CObjectArchive& ar)
 {
 	m_preview_cubemap->Set(false);
@@ -259,7 +255,6 @@ void CEnvironementProbeObject::SetScriptName(const string& file, CBaseObject* pP
 	m_bLight = 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEnvironementProbeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CEntityObject::CreateInspectorWidgets(creator);
@@ -277,13 +272,13 @@ void CEnvironementProbeObject::CreateInspectorWidgets(CInspectorWidgetCreator& c
 	});
 }
 
-/////////////////////////////////////////////////////////////////////////
 void CEnvironementProbeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-
-	if (!gViewportDebugPreferences.showEnviromentProbeObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showEnviromentProbeHelper)
+	{
 		return;
+	}
 
 	Matrix34 wtm = GetWorldTM();
 	Vec3 wp = wtm.GetTranslation();
@@ -307,14 +302,14 @@ void CEnvironementProbeObject::Display(CObjectRenderHelper& objRenderHelper)
 		dc.SetColor(GetColor());
 	}
 
-	if (!m_visualObject)
+	if (!m_pHelperMesh)
 	{
 		dc.PushMatrix(wtm);
 		Vec3 sz(fScale * 0.5f, fScale * 0.5f, fScale * 0.5f);
 		dc.DrawWireBox(-sz, sz);
 
 		// Draw radiuses if present and object selected.
-		if (gViewportPreferences.alwaysShowRadiuses || IsSelected())
+		if (dc.showRadii || IsSelected())
 		{
 			if (m_bBoxProjectedCM)
 			{
@@ -344,12 +339,12 @@ void CEnvironementProbeObject::Display(CObjectRenderHelper& objRenderHelper)
 		dc.SetLineWidth(0);
 	}
 
-	if (!m_visualObject)
+	if (!m_pHelperMesh)
 	{
 		DrawDefault(dc);
 	}
 
-	if (m_visualObject)
+	if (m_pHelperMesh)
 	{
 		Matrix34 tm(wtm);
 		float sz = m_helperScale * gGizmoPreferences.helperScale;
@@ -360,10 +355,10 @@ void CEnvironementProbeObject::Display(CObjectRenderHelper& objRenderHelper)
 		rp.dwFObjFlags |= FOB_TRANS_MASK;
 		rp.fAlpha = 1;
 		rp.pMatrix = &tm;
-		rp.pMaterial = m_visualObject->GetMaterial();
+		rp.pMaterial = m_pHelperMesh->GetMaterial();
 
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
-		m_visualObject->Render(rp, passInfo);
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(objRenderHelper.GetPassInfo().GetGraphicsPipelineKey(), gEnv->p3DEngine->GetRenderingCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
+		m_pHelperMesh->Render(rp, passInfo);
 	}
 }
 
@@ -405,7 +400,6 @@ void CEnvironementProbeObject::GetLocalBounds(AABB& aabb)
 	aabb.min = -halfsize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IBackgroundScheduleItemWork* CEnvironementProbeObject::GenerateCubemapTask()
 {
 	const string levelfolder(GetIEditorImpl()->GetGameEngine()->GetLevelPath());
@@ -436,17 +430,17 @@ void CEnvironementProbeObject::GenerateCubemap()
 
 	GetIEditorImpl()->GetBackgroundScheduleManager()->SubmitSchedule(envmapTexSchedule);
 }
-//////////////////////////////////////////////////////////////////////////
+
 IMaterial* CEnvironementProbeObject::CreateMaterial()
 {
 	string deferredCubemapPath;
 	string matName;
 	if (!GetProperties())
-		return NULL;
+		return nullptr;
 
 	IVariable* pVar = GetProperties()->FindVariable("texture_deferred_cubemap", true);
 	if (!pVar)
-		return NULL;
+		return nullptr;
 
 	pVar->Get(deferredCubemapPath);
 
@@ -466,9 +460,9 @@ IMaterial* CEnvironementProbeObject::CreateMaterial()
 			return pMatDst;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CEnvironementProbeObject::OnPreviewCubemap(IVariable* piVariable)
 {
 	if (!m_pEntity)
@@ -478,15 +472,16 @@ void CEnvironementProbeObject::OnPreviewCubemap(IVariable* piVariable)
 	piVariable->Get(preview);
 	if (preview)
 	{
-		m_visualObject = GetIEditorImpl()->Get3DEngine()->LoadStatObj("%EDITOR%/Objects/envcube.cgf", nullptr, nullptr, false);
-		m_visualObject->SetMaterial(CreateMaterial());
-		m_visualObject->AddRef();
+		CRY_ASSERT(!m_pHelperMesh);
+		m_pHelperMesh = GetIEditorImpl()->Get3DEngine()->LoadStatObj("%EDITOR%/Objects/envcube.cgf", nullptr, nullptr, false);
+		m_pHelperMesh->SetMaterial(CreateMaterial());
+		m_pHelperMesh->AddRef();
 	}
 	else
 	{
-		if (m_visualObject)
-			m_visualObject->Release();
-		m_visualObject = nullptr;
+		CRY_ASSERT(m_pHelperMesh);
+		m_pHelperMesh->Release();
+		m_pHelperMesh = nullptr;
 	}
 }
 
@@ -546,7 +541,6 @@ void CEnvironementProbeObject::UpdateLinks()
 		if (!pDstDeferredCubemap || !pDeferredCubemap)
 			continue;
 
-		bool bDeferred = false;
 		string strCubemap;
 
 		pDeferredCubemap->Get(strCubemap);
@@ -576,4 +570,3 @@ void CEnvironementProbeObject::OnMultiSelPropertyChanged(IVariable* pVar)
 	UpdateLinks();
 	CBaseObject::OnMultiSelPropertyChanged(pVar);
 }
-

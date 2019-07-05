@@ -18,7 +18,9 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryEntitySystem/IBreakableManager.h>
 #include <CryEntitySystem/IEntityComponent.h>
+#include <CryPhysics/IPhysics.h>
 #include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryExtension/CryCreateClassInstance.h>
 #include <CryExtension/CryGUID.h>
@@ -29,11 +31,27 @@
 
 %ignore IEntitySystemEngineModule;
 
+
+%typemap(csbase) IEntitySystem::SinkEventSubscriptions "uint"
+%typemap(csbase) EEntityAspects "uint"
+%typemap(csbase) EEntityFlags "uint"
+%typemap(csbase) EEntityXFormFlags "uint"
+%typemap(csbase) EEntitySlotFlags "ushort"
+%typemap(csbase) EEntityComponentFlags "uint"
+%typemap(csbase) IEntityAreaComponent::EAreaComponentFlags "uint"
+%typemap(csbase) EEntityClassFlags "uint"
+%typemap(csbase) EEntityHideFlags "uint"
+%typemap(csbase) EEntityFlagsExtended "byte"
+%typemap(csbase) EEntitySerializeFlags "uint"
+%typemap(csbase) IEntity::EAttachmentFlags "uint"
+%typemap(csbase) ESpecType "uint"
+%typemap(csbase) Cry::Entity::EEvent "ulong"
+
 %include "../../../CryEngine/CryCommon/CryEntitySystem/IEntityBasicTypes.h"
 %import "../../../../CryEngine/CryCommon/CryNetwork/INetwork.h"
 
 %csconstvalue("0xFFFFFFFF") eEA_All;
-%typemap(csbase) EEntityAspects "uint"
+
 %ignore GameWarning;
 
 %ignore GetType;
@@ -100,8 +118,9 @@
 //(maybe) TODO: %include "../../../CryEngine/CryCommon/IEntityRenderState.h"
 //(maybe) TODO: %include "../../../CryEngine/CryCommon/IEntityRenderState_info.h"
 //TODO: %include "../../../CryEngine/CryCommon/IEntitySerialize.h"
-%typemap(csbase) IEntitySystem::SinkEventSubscriptions "uint"
+
 %ignore CreateEntitySystem;
+%ignore IEntitySystem::GetStaticEntityNetworkId;
 %feature("director") IEntityEventListener;
 %feature("director") IEntitySystemSink;
 %feature("director") IAreaManagerEventListener;

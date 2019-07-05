@@ -92,7 +92,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(WIN64)
+if(WINDOWS)
 	CryEngineStaticModule(prt SOLUTION_FOLDER "Libs")
 
 	target_include_directories(${THIS_PROJECT}

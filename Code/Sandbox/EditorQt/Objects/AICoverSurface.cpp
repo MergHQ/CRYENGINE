@@ -1,17 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "GameEngine.h"
 #include "AICoverSurface.h"
+
 #include "AI/AIManager.h"
 #include "AI/CoverSurfaceManager.h"
 #include "AI/NavDataGeneration/Navigation.h"
-#include "IIconManager.h"
+#include "GameEngine.h"
 #include "Gizmos/AxisHelper.h"
-#include "Viewport.h"
+#include "IIconManager.h"
 #include "Objects/InspectorWidgetCreator.h"
+#include "SelectionGroup.h"
+#include "Viewport.h"
 
 #include <CrySystem/ICryLink.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 IMPLEMENT_DYNCREATE(CAICoverSurface, CBaseObject);
 
@@ -27,7 +30,7 @@ CAICoverSurface::CAICoverSurface()
 {
 	m_aabbLocal.Reset();
 	UseMaterialLayersMask(false);
-	SetColor(RGB(70, 130, 180));
+	SetColor(ColorB(70, 130, 180));
 }
 
 CAICoverSurface::~CAICoverSurface()
@@ -68,7 +71,7 @@ bool CAICoverSurface::CreateGameObject()
 
 void CAICoverSurface::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	if (m_sampler)
 	{
 		m_sampler->Release();
@@ -92,7 +95,7 @@ void CAICoverSurface::DeleteThis()
 
 void CAICoverSurface::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& disp = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& disp = objRenderHelper.GetDisplayContextRef();
 	if (IsFrozen())
 		disp.SetFreezeColor();
 	else
@@ -228,12 +231,12 @@ void CAICoverSurface::ValidateGenerated()
 {
 	ICoverSystem::SurfaceInfo surfaceInfo;
 	// Check surface is not empty
-	if (!m_surfaceID ||	!gEnv->pAISystem->GetCoverSystem()->GetSurfaceInfo(m_surfaceID, &surfaceInfo) || (surfaceInfo.sampleCount < 2))
+	if (!m_surfaceID || !gEnv->pAISystem->GetCoverSystem()->GetSurfaceInfo(m_surfaceID, &surfaceInfo) || (surfaceInfo.sampleCount < 2))
 	{
 		Vec3 pos = GetWorldPos();
 
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "AI Cover Surface '%s' at (%.2f, %.2f, %.2f) is empty! %s", (const char*)GetName(), pos.x, pos.y, pos.z,
-			CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", GetName()));
+		           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 	}
 }
 
@@ -444,7 +447,7 @@ void CAICoverSurface::CreatePropertyVars()
 	m_propertyVars->AddOnSetCallback(functor(*this, &CAICoverSurface::OnPropertyVarChange));
 }
 
-void CAICoverSurface::DisplayBadCoverSurfaceObject(DisplayContext& disp)
+void CAICoverSurface::DisplayBadCoverSurfaceObject(SDisplayContext& disp)
 {
 	IRenderAuxGeom* pRenderAux = gEnv->pRenderer->GetIRenderAuxGeom();
 
@@ -461,10 +464,8 @@ void CAICoverSurface::DisplayBadCoverSurfaceObject(DisplayContext& disp)
 	GetLocalBounds(objectLocalBBox);
 	objectLocalBBox.Expand(Vec3(0.15f, 0.15f, 0.15f));
 
-	bool bDisplay2D = ((disp.flags & DISPLAY_2D) != 0);
 	float alpha;
-
-	if (bDisplay2D)
+	if (disp.display2D)
 	{
 		// 2D viewport is not animated, therefore always show fully opaque
 		alpha = 1.0f;
@@ -500,4 +501,3 @@ void CAICoverSurface::DisplayBadCoverSurfaceObject(DisplayContext& disp)
 
 	pRenderAux->SetRenderFlags(oldFlags);
 }
-

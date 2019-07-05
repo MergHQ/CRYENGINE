@@ -39,4 +39,3 @@ private:
 	ResetXFormParams m_Params;
 };
 }
-

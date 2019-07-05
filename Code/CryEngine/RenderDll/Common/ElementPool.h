@@ -34,7 +34,7 @@ struct SElementPool
 		AUTO_LOCK(availableFreeElementsLock);
 		if (!availableFreeElements.dequeue(pElement))
 		{
-			CRY_ASSERT_MESSAGE(allocElementFunction, "Allocate element function is not provided.");
+			CRY_ASSERT(allocElementFunction, "Allocate element function is not provided.");
 			pElement = allocElementFunction();
 			allocatedElements.emplace_back(pElement);
 		}
@@ -47,7 +47,7 @@ struct SElementPool
 		if (pElement)
 		{
 			AUTO_LOCK(availableFreeElementsLock);
-			CRY_ASSERT_MESSAGE(freeElementFunction, "Free element function is not provided.");
+			CRY_ASSERT(freeElementFunction, "Free element function is not provided.");
 			if (freeElementFunction != nullptr)
 			{
 				freeElementFunction(pElement);
@@ -58,7 +58,7 @@ struct SElementPool
 
 	void ShutDown()
 	{
-		CRY_ASSERT_MESSAGE(freeElementFunction, "Free element function is not provided.");
+		CRY_ASSERT(freeElementFunction, "Free element function is not provided.");
 
 		// Release all elements
 		T* pElement;

@@ -75,6 +75,7 @@ class CActor;
 struct IEntity;
 struct IScriptTable;
 class SmartScriptTable;
+struct IItemSystem;
 
 class CPlayerPlugin_Interaction : public CPlayerPlugin
 {

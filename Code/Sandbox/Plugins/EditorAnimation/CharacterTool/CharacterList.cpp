@@ -64,7 +64,7 @@ bool CHRParamsLoader::Save(EntryBase* entryBase, const char* filename)
 	if (!root)
 		return false;
 
-	char path[ICryPak::g_nMaxPath] = "";
+	CryPathString path;
 	gEnv->pCryPak->AdjustFileName(filename, path, 0);
 	if (!root->saveToFile(path))
 		return false;
@@ -160,19 +160,25 @@ void CharacterContent::Serialize(Serialization::IArchive& ar)
 }
 
 // ---------------------------------------------------------------------------
-dll_string AttachmentNameSelector(const SResourceSelectorContext& x, const char* previousValue, ICharacterInstance* characterInstance)
+SResourceSelectionResult AttachmentNameSelector(const SResourceSelectorContext& context, const char* previousValue, ICharacterInstance* characterInstance)
 {
-	if (!characterInstance)
-		return previousValue;
+	SResourceSelectionResult result{ false, previousValue };
 
-	ListSelectionDialog dialog("CTAttachmentSelection", x.parentWidget);
+	if (!characterInstance)
+	{
+		return result;
+	}
+
+	ListSelectionDialog dialog("CTAttachmentSelection", context.parentWidget);
 	dialog.setWindowTitle("Attachment Selection");
-	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(x.typeName)->GetIconPath()));
+	dialog.setWindowIcon(CryIcon(GetIEditor()->GetResourceSelectorHost()->GetSelector(context.typeName)->GetIconPath()));
 	dialog.setModal(true);
 
 	IAttachmentManager* attachmentManager = characterInstance->GetIAttachmentManager();
 	if (!attachmentManager)
-		return previousValue;
+	{
+		return result;
+	}
 
 	dialog.SetColumnText(0, "Name");
 	dialog.SetColumnText(1, "Type");
@@ -191,9 +197,12 @@ dll_string AttachmentNameSelector(const SResourceSelectorContext& x, const char*
 		dialog.AddRowColumn(typeString);
 	}
 
-	return dialog.ChooseItem(previousValue);
+	ListSelectionDialog::SSelectionResult selectionResult = dialog.ChooseItem(previousValue);
+	result.selectedResource = selectionResult.selectedItem.c_str();
+	result.selectionAccepted = true;
+
+	return result;
 }
 REGISTER_RESOURCE_SELECTOR("Attachment", AttachmentNameSelector, "icons:common/animation_attachement.ico")
 
 }
-

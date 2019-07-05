@@ -6,6 +6,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include <CryString/CryString.h>
 
 class CPlugin_CryDefaultEntities;
@@ -24,15 +25,16 @@ protected:
 	static void Register(Schematyc::CEnvRegistrationScope& componentScope);
 
 	// IEntityComponent
-	virtual void   Initialize() override;
-	virtual void   OnShutDown() override;
-	virtual uint64 GetEventMask() const override;
-	virtual void   ProcessEvent(const SEntityEvent& event) override;
+	virtual void                    Initialize() override;
+	virtual void                    OnShutDown() override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
+	virtual void                    ProcessEvent(SEntityEvent const& event) override;
 	// ~IEntityComponent
 
 public:
 
 	CryAudio::EOcclusionType m_occlusionType = CryAudio::EOcclusionType::None;
+	float                    m_occlusionRayOffset;
 
 public:
 
@@ -40,6 +42,7 @@ public:
 
 	static void ReflectType(Schematyc::CTypeDesc<COcclusionComponent>& desc);
 	void        SetOcclusionType(CryAudio::EOcclusionType const occlusionType);
+	void        SetOcclusionRayOffset(float const offset);
 
 private:
 

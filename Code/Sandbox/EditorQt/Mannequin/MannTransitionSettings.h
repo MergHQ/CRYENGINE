@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_TAG_TRANSITION_SETTINGS_H__
-#define __MANN_TAG_TRANSITION_SETTINGS_H__
 #pragma once
 
 #include "MannequinBase.h"
 #include "Controls/PropertiesPanel.h"
+#include "Objects/EntityScript.h"
 
 // fwd decl'
 struct SScopeContextData;
@@ -59,6 +58,3 @@ private:
 	CTagControl          m_tagToControls;
 	CTagControl          m_tagToFragControls;
 };
-
-#endif
-

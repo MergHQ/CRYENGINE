@@ -31,6 +31,8 @@ float4 volFogShadowDarkeningSunAmb;
 
 struct SPerPassWaterParams
 {
+	float4x4 viewProjPrev;
+	float4x4 reprojectToPrev;
 	float4x4 causticViewProjMatr;
 	float4   waterRippleLookup;
 	float4   ssrParams;
@@ -46,6 +48,8 @@ cbuffer CBPerPassWater : register(b5)
 {
 	struct
 	{
+		float4x4 viewProjPrev;
+		float4x4 reprojectToPrev;
 		float4x4 causticViewProjMatr;
 		float4   waterRippleLookup;
 		float4   ssrParams;
@@ -84,8 +88,10 @@ cbuffer CBPerPassWater : register(b5)
 		float4 vfHeightDensityParams; // PB_VolumetricFogHeightDensityParams
 		float4 vfHeightDensityRampParams; // PB_VolumetricFogHeightDensityRampParams
 		float4 vfDistanceParams; // PB_VolumetricFogDistanceParams
+#if %_RT_VOLUMETRIC_FOG
 		float4 vfGlobalEnvProbeParams0; // PB_VolumetricFogGlobalEnvProbe0
 		float4 vfGlobalEnvProbeParams1; // PB_VolumetricFogGlobalEnvProbe1
+#endif
 	} cbVoxVolFog;
 
 	// forward shadow map sampling parameters.
@@ -112,15 +118,11 @@ SPerPassWaterParams GetPerPassWaterParams()
 {
 	SPerPassWaterParams params;
 
-#if %_RT_COMPUTE_SKINNING
+	params.viewProjPrev = cbPerPassWater.viewProjPrev;
+	params.reprojectToPrev = cbPerPassWater.reprojectToPrev;
 	params.causticViewProjMatr = cbPerPassWater.causticViewProjMatr;
 	params.waterRippleLookup = cbPerPassWater.waterRippleLookup;
 	params.ssrParams = cbPerPassWater.ssrParams;
-#else
-	params.causticViewProjMatr = CV_ViewProjMatr;
-	params.waterRippleLookup = WaterRipplesLookupParams;
-	params.ssrParams = float4(1, 1, 1, 28);
-#endif
 
 	return params;
 }
@@ -129,7 +131,6 @@ SFogParams GetFogParams()
 {
 	SFogParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.viewPos.xyz = g_VS_WorldViewPos.xyz;
 	params.padding0 = 0.0f;
 
@@ -156,34 +157,6 @@ SFogParams GetFogParams()
 
 	params.radialColor = cbFog.vfColGradRadial.xyz;
 	params.invZFar = cbFog.vfColGradRadial.w;
-#else
-	params.viewPos.xyz = PS_WorldViewPos.xyz;
-	params.padding0 = 0.0f;
-
-	params.heightDensityScale = vfParams.x;
-	params.heightDensityAtBaseHeight = vfParams.y;
-	params.heightDiffFromBase = vfParams.z;
-	params.expHeightDiffFromBase = vfParams.w;
-
-	params.rampParams = vfRampParams;
-
-	params.sunDir = vfSunDir.xyz;
-	params.densityClamp = vfSunDir.w;
-
-	params.colGradBase = vfColGradBase;
-	params.padding1 = 0.0f;
-
-	params.colGradDelta = vfColGradDelta;
-	params.padding2 = 0.0f;
-
-	params.heightColGradScale = vfColGradParams.x;
-	params.heightColGradOffset = vfColGradParams.y;
-	params.radialSizeCtrl = vfColGradParams.z;
-	params.radialLobeCtrl = vfColGradParams.w;
-
-	params.radialColor = vfColGradRadial.xyz;
-	params.invZFar = vfColGradRadial.w;
-#endif
 
 	return params;
 }
@@ -192,13 +165,8 @@ SVolumetricFogShadowParams GetVolumetricFogShadowParams()
 {
 	SVolumetricFogShadowParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.volFogShadowDarkening = cbVolFogShadow.volFogShadowDarkening;
 	params.volFogShadowDarkeningSunAmb = cbVolFogShadow.volFogShadowDarkeningSunAmb;
-#else
-	params.volFogShadowDarkening = volFogShadowDarkening;
-	params.volFogShadowDarkeningSunAmb = volFogShadowDarkeningSunAmb;
-#endif
 
 	return params;
 }
@@ -207,7 +175,6 @@ SVolumetricFogParams GetVolumetricFogParams()
 {
 	SVolumetricFogParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.sunDir = CV_SunLightDir.xyz;
 	params.padding0 = 0.0f;
 
@@ -254,71 +221,18 @@ SVolumetricFogParams GetVolumetricFogParams()
 	params.farDistCenterLeft = cbVoxVolFog.vfDistanceParams.z;
 	params.farDistCenter = cbVoxVolFog.vfDistanceParams.w;
 
+#if %_RT_VOLUMETRIC_FOG
 	params.globalProbeColor0 = cbVoxVolFog.vfGlobalEnvProbeParams0.xyz;
 	params.globalProbeAttenuation0 = cbVoxVolFog.vfGlobalEnvProbeParams0.w;
 
 	params.globalProbeColor1 = cbVoxVolFog.vfGlobalEnvProbeParams1.xyz;
 	params.globalProbeAttenuation1 = cbVoxVolFog.vfGlobalEnvProbeParams1.w;
+#endif
 
 	params.timeParams.x = CV_AnimGenParams.z;
 	params.timeParams.y = CV_AnimGenParams.z * 0.5f;
 	params.timeParams.z = CV_AnimGenParams.y;
 	params.timeParams.w = CV_AnimGenParams.w;
-#else
-	params.sunDir = vfSunDir.xyz;
-	params.padding0 = 0.0f;
-
-	params.nearDist = vfSamplingParams.x;
-	params.invFarMinusNearDist = vfSamplingParams.y;
-	params.maxIndex = vfSamplingParams.z;
-	params.invMaxIndex = vfSamplingParams.w;
-
-	params.screenSize = PS_ScreenSize.xy;
-	params.farMinusNearDist = vfDistributionParams.y;
-	params.invMaxIndexMinusOne = vfDistributionParams.z;
-
-	params.viewPos = PS_WorldViewPos.xyz;
-	params.framwCountJitter = vfDistributionParams.w;
-
-	params.scatterCoefficient = vfScatteringParams.x;
-	params.extinctionCoefficient = vfScatteringParams.y;
-	params.blendFactor = vfScatteringBlendParams.x;
-	params.blendMode = vfScatteringBlendParams.y;
-
-	params.cDiffuse1 = vfScatteringColor.xyz;
-	params.padding1 = 0.0f;
-
-	params.cDiffuse2 = vfScatteringSecondaryColor.xyz;
-	params.padding2 = 0.0f;
-
-	params.anisotropy1.x = vfScatteringParams.z;
-	params.anisotropy1.y = vfScatteringParams.w;
-	params.anisotropy2.x = vfScatteringColor.w;
-	params.anisotropy2.y = vfScatteringSecondaryColor.w;
-
-	params.heightDensityScale = vfHeightDensityParams.x;
-	params.densityAtViewer = vfHeightDensityParams.y;
-	params.fogVisibility = vfHeightDensityParams.z;
-	params.clampTransmittance = vfHeightDensityParams.w;
-
-	params.rampStart = vfHeightDensityRampParams.x;
-	params.rampEnd = vfHeightDensityRampParams.y;
-	params.oneOverRampDiff = vfHeightDensityRampParams.z;
-	params.rampStartOverRampDiff = vfHeightDensityRampParams.w;
-
-	params.farDistTopLeft = vfDistanceParams.x;
-	params.farDistTopCenter = vfDistanceParams.y;
-	params.farDistCenterLeft = vfDistanceParams.z;
-	params.farDistCenter = vfDistanceParams.w;
-
-	params.globalProbeColor0 = vfGlobalEnvProbeParams0.xyz;
-	params.globalProbeAttenuation0 = vfGlobalEnvProbeParams0.w;
-
-	params.globalProbeColor1 = vfGlobalEnvProbeParams1.xyz;
-	params.globalProbeAttenuation1 = vfGlobalEnvProbeParams1.w;
-
-	params.timeParams = vfTimeParams;
-#endif
 
 	return params;
 }
@@ -365,7 +279,7 @@ Texture2D oceanReflectionTex : register(t16);
 // per pass textures
 
 // volumetric fog shadow
-Texture2D volFogShadowTex : register(t21) = TS_VolumetricFogShadow0;
+Texture2D<float2> volFogShadowTex : register(t21) = TS_VolumetricFogShadow0;
 Texture2D interleaveSampleTex : register(t26) = "%ENGINE%/EngineAssets/Textures/FogVolShadowJitter.tif";
 
 // voxel-based volumetric fog
@@ -380,9 +294,9 @@ Texture2D WaterDynRipplesTex : register(t27);
 Texture2D WaterNormalTex : register(t28) = TS_WaterVolumeDDN;
 Texture2D waterGlossTex : register(29) = "%ENGINE%/EngineAssets/Textures/water_gloss.tif";
 
-Texture2D refractionTex : register(t30) = TS_SceneTarget;
-Texture2D reflectionTex : register(t31) = TS_WaterVolumeRefl;
-Texture2D sceneDepthTex : register(t32) = TS_ZTarget;
+Texture2D refractionTex  : register(t30) = TS_SceneTarget;
+Texture2D reflectionTex  : register(t31) = TS_WaterVolumeRefl;
+Texture2D linearDepthTex : register(t32) = TS_ZTarget;
 
 // forward sun shadow
 Texture2D<float4> shadowMapTex0 : register(t33) = TS_Shadow0;
@@ -398,9 +312,9 @@ SamplerState ssLinearMirrorX                 : register(s11);
 //////////////////////////////////////////////////////////////////////////
 // per pass textures for water volume reflection gen pass
 
-Texture2D refractionHalfResTex : register(t30) = TS_HDR_TargetPrev;
-Texture2D reflectionPrevTex : register(t31) = TS_WaterVolumeReflPrev;
-Texture2D sceneDepthScaledTex : register(t32) = TS_ZTargetScaled_d2;
+Texture2D refractionHalfResTex : register(t30);// = TS_SceneTargetScaled_d2;
+Texture2D reflectionPrevTex    : register(t31) = TS_HDR_TargetPrev;
+Texture2D linearDepthScaledTex : register(t32) = TS_ZTargetScaled_d2;
 
 //////////////////////////////////////////////////////////////////////////
 // per pass textures for water fog volume pass
@@ -413,33 +327,26 @@ VolumetricFogSampling GetVolumetricFogSampling()
 {
 	VolumetricFogSampling vfs;
 
-#if %_RT_COMPUTE_SKINNING
 	vfs.volumetricFogTex = volFogSamplingTex;
 	vfs.globalEnvProbeTex0 = volFogGlobalEnvProbeTex0;
 	vfs.globalEnvProbeTex1 = volFogGlobalEnvProbeTex1;
 	vfs.trilinearClampSState = ssMaterialTrilinearClamp;
-#else
-	vfs.volumetricFogTex = VolumetricFogTexture;
-	vfs.globalEnvProbeTex0 = vfGlobalEnvProbeTexture0;
-	vfs.globalEnvProbeTex1 = vfGlobalEnvProbeTexture1;
-	vfs.trilinearClampSState = vfTrilinearClampSState;
-#endif
 
 	return vfs;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-float wvGetScaneDepth(float2 screenTC)
+float wvGetSceneDepth(float2 screenTC)
 {
 	int3 pixcoord = int3(screenTC.xy * CV_ScreenSize.xy, 0);
-	float depth = sceneDepthTex.Load(pixcoord).x;
+	float depth = linearDepthTex.Load(pixcoord).x;
 	return depth;
 }
 
 float wvGetLinearDepthScaled(float2 screenTC)
 {
-	return wvGetScaneDepth(screenTC) * CV_NearFarClipDist.y;
+	return wvGetSceneDepth(screenTC) * CV_NearFarClipDist.y;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -523,7 +430,6 @@ SWaterVolumeParams GetWaterVolumeParams()
 {
 	SWaterVolumeParams params;
 
-#if %_RT_COMPUTE_SKINNING
 	params.WorldMatrix = cbWaterVolume.WorldMatrix;
 	params.OceanParams0 = cbWaterVolume.OceanParams0;
 	params.OceanParams1 = cbWaterVolume.OceanParams1;
@@ -537,21 +443,6 @@ SWaterVolumeParams GetWaterVolumeParams()
 	params.cUnderWaterInScatterConst = cbWaterVolume.cUnderWaterInScatterConst;
 	params.volFogShadowRange = cbWaterVolume.volFogShadowRange;
 	params.vCausticParams = cbWaterVolume.vCausticParams;
-#else
-	params.WorldMatrix = float4x4(Get_SPI_ObjWorldMat(0), float4(0.0f, 0.0f, 0.0f, 1.0f));
-	params.OceanParams0 = OceanParams0;
-	params.OceanParams1 = OceanParams1;
-	params.vBBoxMin = vBBoxMin;
-	params.vBBoxMax = vBBoxMax;
-	params.cFogColorDensity = cFogColorDensity;
-	params.cViewerColorToWaterPlane = cViewerColorToWaterPlane;
-	params.cFogPlane = cFogPlane;
-	params.cPerpDist = cPerpDist;
-	params.cFogColorShallowWaterLevel = cFogColorShallowWaterLevel;
-	params.cUnderWaterInScatterConst = cUnderWaterInScatterConst;
-	params.volFogShadowRange = volFogShadowRange;
-	params.vCausticParams = vCausticParams;
-#endif
 
 	return params;
 }

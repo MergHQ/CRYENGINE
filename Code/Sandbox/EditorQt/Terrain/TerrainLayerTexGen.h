@@ -1,11 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terrainlayertexgen_h__
-#define __terrainlayertexgen_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
+#include <Util/Image.h>
 
 class CLayer;
 struct LightingSettings;
@@ -28,8 +24,6 @@ private:
 		CByteImage* m_pLayerMask;             // Layer mask for this layer.
 	};
 
-	// ------------------------
-
 	class CTexSectorInfo
 	{
 	public:
@@ -40,13 +34,9 @@ private:
 		int m_Flags;                        // eSectorLayersValid
 	};
 
-public: // -----------------------------------------------------------------------
-
-	// default constructor
+public:
 	CTerrainLayerTexGen();
-	// constructor
 	CTerrainLayerTexGen(const int resolution);
-	// destructor
 	~CTerrainLayerTexGen();
 
 	// Generate terrain surface texture.
@@ -67,7 +57,7 @@ public: // ---------------------------------------------------------------------
 	//
 	void Init(const int resolution);
 
-private: // ---------------------------------------------------------------------
+private:
 
 	bool                        m_bLog;                           // true if ETTG_QUIET was not specified
 	unsigned int                m_resolution;                     // target texture resolution
@@ -80,8 +70,6 @@ private: // --------------------------------------------------------------------
 	CLayer*                     m_waterLayer;                     // If have water layer
 
 	std::vector<CTexSectorInfo> m_sectorGrid;                     // Sector grid.
-
-	// ------------------------------------------------------------------------------
 
 	//////////////////////////////////////////////////////////////////////////
 	// Sectors.
@@ -116,6 +104,3 @@ private: // --------------------------------------------------------------------
 
 	friend class CTerrainTexGen;
 };
-
-#endif // __terrainlayertexgen_h__
-

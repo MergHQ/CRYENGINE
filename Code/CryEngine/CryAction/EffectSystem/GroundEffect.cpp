@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "GroundEffect.h"
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryAction/IMaterialEffects.h>
 #include "CryAction.h"
 
@@ -200,13 +202,14 @@ void CGroundEffect::Update()
 					pEffectName = pList->m_particleList->m_particleParams.name;
 				}
 			}
-
+#if !defined(EXCLUDE_NORMAL_LOG)
 			if (DebugOutput())
 			{
 				const char* pMaterialName = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceType(m_rayWorldIntersectSurfaceIdx)->GetName();
 
 				CryLog("[GroundEffect] <%s> GetEffectString for matId %i (%s) returned <%s>", m_pEntity->GetName(), m_rayWorldIntersectSurfaceIdx, pMaterialName, pEffectName ? pEffectName : "null");
 			}
+#endif
 
 			newEffect = SetParticleEffect(pEffectName);
 			m_surfaceIdx = m_rayWorldIntersectSurfaceIdx;
@@ -284,7 +287,7 @@ void CGroundEffect::Stop(bool stop)
 
 void CGroundEffect::OnRayCastDataReceived(const QueuedRayID& rayID, const RayCastResult& result)
 {
-	CRY_ASSERT_MESSAGE(rayID == m_raycastID, "CGroundEffect: Received raycast data with mismatching id");
+	CRY_ASSERT(rayID == m_raycastID, "CGroundEffect: Received raycast data with mismatching id");
 
 	m_validRayWorldIntersect = result.hitCount > 0;
 

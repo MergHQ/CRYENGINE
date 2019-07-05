@@ -199,6 +199,7 @@ void SResourceBinding::AddInvalidateCallback(void* pCallbackOwner, SResourceBind
 	switch (type)
 	{
 		case EResourceType::ConstantBuffer:                                                                       break;
+		case EResourceType::ShaderResource:                                                                       break;
 		case EResourceType::Texture:        pTexture->AddInvalidateCallback(pCallbackOwner, bindPoint, callback); break;
 		case EResourceType::Buffer:         pBuffer ->AddInvalidateCallback(pCallbackOwner, bindPoint, callback); break;
 		case EResourceType::Sampler:                                                                              break;
@@ -211,6 +212,7 @@ void SResourceBinding::RemoveInvalidateCallback(void* pCallbackOwner, SResourceB
 	switch (type)
 	{
 		case EResourceType::ConstantBuffer:                                                                       break;
+		case EResourceType::ShaderResource:                                                                       break;
 		case EResourceType::Texture:        pTexture->RemoveInvalidateCallbacks(pCallbackOwner, bindPoint);       break;
 		case EResourceType::Buffer:         pBuffer ->RemoveInvalidateCallbacks(pCallbackOwner, bindPoint);       break;
 		case EResourceType::Sampler:                                                                              break;
@@ -229,7 +231,7 @@ size_t CResourceBindingInvalidator::CountInvalidateCallbacks() threadsafe
 
 void CResourceBindingInvalidator::AddInvalidateCallback(void* listener, const SResourceBindPoint bindPoint, const SResourceBinding::InvalidateCallbackFunction& callback) threadsafe
 {
-#if !CRY_PLATFORM_ORBIS || defined(__GXX_RTTI)
+#if !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_LINUX && (!CRY_PLATFORM_ORBIS || defined(__GXX_RTTI))
 	CRY_ASSERT(callback.target<SResourceBinding::InvalidateCallbackSignature*>() != nullptr);
 #endif
 
@@ -255,7 +257,7 @@ void CResourceBindingInvalidator::AddInvalidateCallback(void* listener, const SR
 	m_invalidationLock.WUnlock();
 
 	// We only allow one callback function per listener
-#if !CRY_PLATFORM_ORBIS || defined(__GXX_RTTI)
+#if !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_LINUX && (!CRY_PLATFORM_ORBIS || defined(__GXX_RTTI))
 	CRY_ASSERT(*callback.target<SResourceBinding::InvalidateCallbackSignature*>() == *bindpoint_it->callback.target<SResourceBinding::InvalidateCallbackSignature*>());
 #endif
 }
@@ -295,7 +297,7 @@ void CResourceBindingInvalidator::InvalidateDeviceResource(CGpuBuffer* pBuffer, 
 {
 //	pBuffer->AddRef();
 	InvalidateDeviceResource(UResourceReference(pBuffer), dirtyFlags);
-	CRY_ASSERT_MESSAGE(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CGpuBuffer %s is destroyd but the invalidation callbacks haven't been removed!", "Unknown" /*pBuffer->GetName()*/);
+	CRY_ASSERT(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CGpuBuffer %s is destroyd but the invalidation callbacks haven't been removed!", "Unknown" /*pBuffer->GetName()*/);
 //	pBuffer->Release();
 }
 
@@ -303,7 +305,7 @@ void CResourceBindingInvalidator::InvalidateDeviceResource(CTexture* pTexture, u
 {
 	pTexture->AddRef();
 	InvalidateDeviceResource(UResourceReference(pTexture), dirtyFlags);
-	CRY_ASSERT_MESSAGE(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CTexture %s is destroyd but the invalidation callbacks haven't been removed!", pTexture->GetName());
+	CRY_ASSERT(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CTexture %s is destroyd but the invalidation callbacks haven't been removed!", pTexture->GetName());
 	pTexture->Release();
 }
 

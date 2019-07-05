@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "GameTokenLibrary.h"
 #include "GameTokenItem.h"
+#include <Util/EditorUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CGameTokenLibrary implementation.
@@ -64,4 +65,3 @@ void CGameTokenLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 		}
 	}
 }
-

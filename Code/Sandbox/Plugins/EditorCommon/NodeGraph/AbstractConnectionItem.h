@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 #include "AbstractNodeGraphViewModelItem.h"
 
 #include <CrySandbox/CrySignal.h>
@@ -22,7 +24,8 @@ public:
 	enum : int32 { Type = eItemType_Connection };
 
 public:
-	CAbstractConnectionItem(CNodeGraphViewModel& viewModel);
+	CAbstractConnectionItem(CNodeGraphViewModel& viewModel); //[[deprecated("Use new constructor that requires to set source and target pin.")]]
+	CAbstractConnectionItem(CAbstractPinItem& sourcePin, CAbstractPinItem& targetPin, CNodeGraphViewModel& viewModel);
 	virtual ~CAbstractConnectionItem();
 
 	// CAbstractNodeGraphViewModelItem
@@ -38,15 +41,25 @@ public:
 	virtual CConnectionWidget* CreateWidget(CNodeGraphView& view) = 0;
 	virtual const char*        GetStyleId() const { return "Connection"; }
 
-	virtual CAbstractPinItem& GetSourcePinItem() const = 0;
-	virtual CAbstractPinItem& GetTargetPinItem() const = 0;
+	virtual CAbstractPinItem&  GetSourcePinItem() const
+	{
+		CRY_ASSERT_MESSAGE(m_pSourcePin, "Source pin not set. Application about to crash.");
+		return *m_pSourcePin;
+	}
+	virtual CAbstractPinItem& GetTargetPinItem() const
+	{
+		CRY_ASSERT_MESSAGE(m_pTargetPin, "Target pin not set. Application about to crash.");
+		return *m_pTargetPin;
+	}
 
 public:
 	CCrySignal<void()> SignalDeactivatedChanged;
 
 private:
-	bool m_isDeactivated : 1;
+	CAbstractPinItem* m_pSourcePin;
+	CAbstractPinItem* m_pTargetPin;
+
+	bool              m_isDeactivated : 1;
 };
 
 }
-

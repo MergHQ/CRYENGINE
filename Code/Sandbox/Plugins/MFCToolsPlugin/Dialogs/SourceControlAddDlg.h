@@ -1,18 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 #define IDD_SOURCECONTROL_ADD                                                                74
 #define ID_ADD_DEFAULT                                                                       33909        
 #define IDC_FILENAME_SCADD                                                                   2226
 #define IDC_EDIT1                                                                            1738
 
-/////////////////////////////////////////////////////////////////////////////
-// CSourceControlAddDlg dialog
-
-class PLUGIN_API CSourceControlAddDlg : public CDialog
+class MFC_TOOLS_PLUGIN_API CSourceControlAddDlg : public CDialog
 {
+	DECLARE_MESSAGE_MAP()
+
 public:
+	enum { IDD = IDD_SOURCECONTROL_ADD };
 
 	enum ESCDialogResult
 	{
@@ -21,32 +22,13 @@ public:
 		NO_OP,
 	};
 
-	// Construction
-	CSourceControlAddDlg(const string& sFilename, CWnd* pParent = NULL);   // standard constructor
+	CSourceControlAddDlg(const string& sFilename, CWnd* pParent = NULL);
+
 	// Return the state of the dialog
-	ESCDialogResult GetResult() const { return m_result; };
+	ESCDialogResult GetResult() const { return m_result; }
 
-	// Dialog Data
-	//{{AFX_DATA(CSourceControlAddDlg)
-	enum { IDD = IDD_SOURCECONTROL_ADD };
-	// NOTE: the ClassWizard will add data members here
-	//}}AFX_DATA
-
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CSourceControlAddDlg)
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
-
-	// Implementation
-protected:
-
-	// Generated message map functions
-	//{{AFX_MSG(CSourceControlAddDlg)
-	// NOTE: the ClassWizard will add member functions here
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+	virtual void DoDataExchange(CDataExchange* pDX);
 
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedAddDefault();

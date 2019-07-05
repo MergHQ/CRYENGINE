@@ -10,16 +10,7 @@
 	#endif
 #endif
 
-#include <CryMath/Cry_Math.h>
-#include <CryMath/Cry_Geo.h>
-
-#include <CryRenderer/IRenderer.h>
-#include <CryPhysics/IPhysics.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryRenderer/IRenderAuxGeom.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryExtension/ICryUnknown.h>
-
+#include <Cry3DEngine/IMeshObj.h>
 #include "CryCharAnimationParams.h"
 
 typedef int32 TJointId;
@@ -54,16 +45,21 @@ enum ECharRenderFlags
 	CS_FLAG_RENDER_NODE_VISIBLE  = 1 << 13, //!< Set by 3DEngine when render node owning character is potentially visible and needs rendering
 };
 
-enum CHRLOADINGFLAGS
+enum CHRLOADINGFLAGS : uint32
 {
-	CA_IGNORE_LOD               = BIT(0),
-	CA_CharEditModel            = BIT(1),
-	CA_PreviewMode              = BIT(2),
-	CA_DoNotStreamStaticObjects = BIT(3),
-	CA_SkipSkelRecreation       = BIT(4),
-	CA_DisableLogWarnings       = BIT(5),
-	CA_SkipBoneRemapping        = BIT(6),
-	CA_ImmediateMode            = BIT(7)
+	CA_None                        = 0,
+	CA_IGNORE_LOD                  = BIT32(0),
+	CA_CharEditModel               = BIT32(1),
+	CA_PreviewMode                 = BIT32(2),
+	CA_DoNotStreamStaticObjects    = BIT32(3),
+	CA_SkipSkelRecreation          = BIT32(4),
+	CA_DisableLogWarnings          = BIT32(5),
+	CA_SkipBoneRemapping           = BIT32(6),
+	CA_ImmediateMode               = BIT32(7),
+	CA_ExcludeChrProxies           = BIT32(8),
+	CA_ExcludeChrCgfProxies        = BIT32(9),
+	CA_ExcludeChrRagdollCgfProxies = BIT32(10),
+	CA_CacheSkinDataInCpuMemory    = BIT32(11),
 };
 
 enum EReloadCAFResult
@@ -75,14 +71,14 @@ enum EReloadCAFResult
 
 enum CharacterToolFlags
 {
-	CA_CharacterTool      = 0x01,
+	CA_CharacterAuxEditor = 0x01, //!< Set from any auxiliary editor or viewport, i.e. Character Tool, Mannequin and Mesh Importer
 	CA_DrawSocketLocation = 0x02,
 	CA_BindPose           = 0x04,
-	CA_AllowRedirection   = 0x08,  //!< Allow redirection in bindpose.
+	CA_AllowRedirection   = 0x08, //!< Allow redirection in bindpose.
 };
 
-#define CHR            (0x11223344)
-#define CGA            (0x55aa55aa)
+static constexpr uint32 CHR = (0x11223344);
+static constexpr uint32 CGA = (0x55aa55aa);
 
 #define NULL_ANIM      "null"
 #define NULL_ANIM_FILE "null"
@@ -93,6 +89,7 @@ struct  SRendParams;
 struct CryEngineDecalInfo;
 struct ParticleParams;
 struct CryCharMorphParams;
+struct ICharacterRenderNode;
 struct IMaterial;
 struct IStatObj;
 struct IRenderMesh;
@@ -116,12 +113,18 @@ struct IAnimEvents;
 struct TFace;
 struct IFacialInstance;
 struct IFacialAnimation;
-struct IAttachmentMerger;
 
 class ICrySizer;
 struct CryCharAnimationParams;
 
 struct IAnimationPoseModifier;
+struct SAnimMemoryTracker;
+struct SMotionParameterDetails;
+struct SRenderingPassInfo;
+struct phys_geometry;
+struct CryBonePhysics;
+struct IPhysicalEntity;
+struct SMeshLodInfo;
 typedef int (* CallBackFuncType)(ICharacterInstance*, void*);
 
 struct IAnimationStreamingListener;
@@ -301,8 +304,6 @@ struct ICharacterManager
 
 	virtual void                     UpdateRendererFrame() = 0;
 	virtual void                     PostInit() = 0;
-
-	virtual const IAttachmentMerger& GetIAttachmentMerger() const = 0;
 	
 	//! Extends the default skeleton of a character instance with skin attachments
 	virtual void ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstance* pCharInstance, const char* szFilepathSKEL, const char** szSkinAttachments, const uint32 skinCount, const uint32 nLoadingFlags) = 0;
@@ -391,10 +392,6 @@ struct IDefaultSkeleton
 	virtual uint32       GetJointCRC32ByID(int32 id) const = 0;
 
 	virtual const char*  GetJointNameByID(int32 id) const = 0;
-	//! Gets the identifier of a joint from the name specified in DCC
-	//! \return A non-positive number on failure.
-	//! \par Example
-	//! \include CryAnimation/Examples/GetJointOrientation.cpp
 	virtual int32        GetJointIDByName(const char* name) const = 0;
 
 	virtual const QuatT& GetDefaultAbsJointByID(uint32 nJointIdx) const = 0;
@@ -405,8 +402,8 @@ struct IDefaultSkeleton
 
 	// All render-meshes will be removed from the CDefaultSkeleton-class.
 	// The following functions will become deprecated.
-	virtual const phys_geometry* GetJointPhysGeom(uint32 jointIndex) const = 0;                 //!< just for statistics of physics proxies.
-	virtual CryBonePhysics*      GetJointPhysInfo(uint32 jointIndex) = 0;
+	virtual const phys_geometry* GetJointPhysGeom(uint32 jointIndex, int nLod = 0) const = 0;                 //!< just for statistics of physics proxies.
+	virtual CryBonePhysics*      GetJointPhysInfo(uint32 jointIndex, int nLod = 0, bool allocIfLodAbsent = true) = 0;
 	virtual int32                GetLimbDefinitionIdx(LimbIKDefinitionHandle handle) const = 0;
 	virtual void                 PrecacheMesh(bool bFullUpdate, int nRoundId, int nLod) = 0;
 	virtual IRenderMesh*         GetIRenderMesh() const = 0;
@@ -458,19 +455,26 @@ struct SCharUpdateFeedback
 
 struct SAnimationProcessParams
 {
-	QuatTS locationAnimation;
-	bool   bOnRender;
-	float  zoomAdjustedDistanceFromCamera;
-	float  overrideDeltaTime;
-
-	SAnimationProcessParams() :
-		locationAnimation(IDENTITY),
-		bOnRender(false),
-		zoomAdjustedDistanceFromCamera(0.0f),
-		overrideDeltaTime(-1.0f)
-	{
-	}
+	QuatTS locationAnimation = IDENTITY;
+	float  zoomAdjustedDistanceFromCamera = 0.f;
+	bool   bOnRender = false;
+	float  overrideDeltaTime = -1.f;
 };
+
+namespace Cry
+{
+namespace Anim
+{
+//!< The staticity of this character instance.
+//!< This information may be used for additional optimizations.
+enum class ECharacterStaticity
+{
+	Dynamic, // Default
+	QuasiStaticLooping, // This character instance usually stays in a short looping animation, unless other animations are queued
+	QuasiStaticFixed // This character instance usually stays in a fixed pose, unless other animations are queued
+};
+}
+}
 
 //! Interface to character animation.
 //! This interface contains methods for manipulating and querying an animated character
@@ -587,11 +591,27 @@ struct ICharacterInstance : IMeshObj
 	//! ensure all computations have finished when necessary.
 	virtual void FinishAnimationComputations() = 0;
 
+	//! Sets up a non-owning reference to the parent IRenderNode instance.
+	//! Reference set through this method is used for propagating state to IRenderNodes controlled by this character instance (e.g. character attachments).
+	//! This method has been introduced as a temporary measure and should not be relied upon by any system apart from 3DEngine.
+	virtual void SetParentRenderNode(ICharacterRenderNode* pRenderNode) = 0;
+
+	//! Accesses the parent IRenderNode instance that has been previously set by a call to SetParentRenderNode().
+	virtual ICharacterRenderNode* GetParentRenderNode() const = 0;
+
 	// This is a hack to keep entity attachments in synch.
 	virtual void SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) = 0;
 
+	//! Sets character offset inside its owner entity (mostly used to update physics)
+	virtual void SetCharacterOffset(const QuatTS& offs) = 0;
+
 	//! Called when the character is detached (if it was an attachment).
 	virtual void OnDetach() = 0;
+
+	//! Sets the staticity level for this character instance.
+	//! See definition of Cry::Anim::ECharacterStaticity
+	virtual Cry::Anim::ECharacterStaticity GetStaticity() const = 0;
+	virtual void SetStaticity(Cry::Anim::ECharacterStaticity staticity) = 0;
 
 	//! Disable rendering of this render this instance.
 	virtual void HideMaster(uint32 h) = 0;
@@ -795,8 +815,6 @@ struct ISkeletonPose : public ISkeletonPhysics
 	 * @see ISkeletonPose::SetPostProcessCallback
 	 * @see ISkeletonPose::GetRelJointByID
 	 * @see ICharacterInstance::FinishAnimationComputations
-	 * @par Example
-	 * @include CryAnimation/Examples/GetJointOrientation.cpp
 	 */
 	virtual const QuatT& GetAbsJointByID(int32 nJointID) const = 0;
 
@@ -985,8 +1003,6 @@ struct IAnimationSetListener
 	virtual void OnAnimationSetAboutToBeReloaded()                                                {}
 	virtual void OnAnimationSetReloaded()                                                         {}
 };
-
-#include <CryAnimation/IAttachment.h>
 
 struct SAnimationStatistics
 {

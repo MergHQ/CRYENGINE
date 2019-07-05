@@ -1,9 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QWidget>
 #include "EditToolPanel.h"
 
+class CEditTool;
 class CLayer;
 
 struct STexturePainterSerializer
@@ -37,16 +37,17 @@ public:
 	QTerrainLayerPanel(QWidget* parent = nullptr);
 	virtual ~QTerrainLayerPanel() override;
 
-	void SetLayer(CLayer* pLayer);
-	void UndoPush();
-
-protected:
+private:
 	virtual bool CanEditTool(CEditTool* pTool) override;
 	virtual void SetTool(CEditTool* pTool) override;
+	void         SetLayer(CLayer* pLayer);
+	void         OnLayerAboutToDelete(CLayer* pLayer);
 	void         LayerChanged(CLayer* pLayer);
 	void         BrushChanged(CEditTool* pTool);
 	void         AttachProperties();
 
+	void         OnBeginUndo();
+	void         OnEndUndo(bool acceptUndo);
+
 	STexturePainterSerializer m_layerSerializer;
 };
-

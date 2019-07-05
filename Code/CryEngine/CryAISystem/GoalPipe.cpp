@@ -704,7 +704,7 @@ void CGoalPipe::PushGoal(EGoalOperations op, bool bBlocking, EGroupType eGroupin
 		break;
 	case eGO_SIGNAL:
 		{
-			newgoal.pGoalOp = new COPSignal(params.nValueAux, params.str, static_cast<ESignalFilter>(params.nValue), (int)params.fValueAux);
+			newgoal.pGoalOp = new COPSignal(params.nValueAux, params.str, static_cast<AISignals::ESignalFilter>(params.nValue), (int)params.fValueAux);
 		}
 		break;
 	case eGO_SCRIPT:

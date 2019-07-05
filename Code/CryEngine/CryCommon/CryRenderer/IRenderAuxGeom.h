@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _IRENDERAUXGEOM_H_
-#define _IRENDERAUXGEOM_H_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
+#pragma once
 
 struct SAuxGeomRenderFlags;
 struct SRender2DImageDescription;
@@ -1062,5 +1057,3 @@ public:
 		}
 	}
 };
-
-#endif // #ifndef _IRENDERAUXGEOM_H_

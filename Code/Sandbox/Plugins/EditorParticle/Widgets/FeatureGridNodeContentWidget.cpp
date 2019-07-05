@@ -278,9 +278,9 @@ void CFeatureWidget::OnNodeDeactivatedChanged(bool isDeactivated)
 
 CFeatureSlotWidget::CFeatureSlotWidget()
 	: m_index(~0)
+	, m_pFeatureWidget(nullptr)
 	, m_pAnimation(nullptr)
 {
-
 }
 
 CFeatureSlotWidget::CFeatureSlotWidget(const CFeatureSlotWidget& other)
@@ -290,11 +290,6 @@ CFeatureSlotWidget::CFeatureSlotWidget(const CFeatureSlotWidget& other)
 	m_geometry = other.m_geometry;
 	m_boundingRect = other.m_boundingRect;
 	m_index = other.m_index;
-}
-
-CFeatureSlotWidget::~CFeatureSlotWidget()
-{
-
 }
 
 void CFeatureSlotWidget::InitFromFeature(CFeatureWidget& featureWidget)
@@ -559,4 +554,3 @@ void CFeatureGridNodeContentWidget::OnFeatureMoved(CFeatureItem& feature)
 }
 
 }
-

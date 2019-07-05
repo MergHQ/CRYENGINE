@@ -253,9 +253,6 @@ void CSplineCtrl::DrawGrid(CDC* pDC)
 //////////////////////////////////////////////////////////////////////////
 void CSplineCtrl::DrawSpline(CDC* pDC)
 {
-	int cx = m_rcSpline.Width();
-	int cy = m_rcSpline.Height();
-
 	//Draw Curve
 	// create and select a thick, white pen
 	CPen pen;
@@ -863,4 +860,3 @@ void CSplineCtrl::SetTimelineCtrl(CTimelineCtrl* pTimelineCtrl)
 	if (m_pTimelineCtrl)
 		m_pTimelineCtrl->SetParent(this);
 }
-

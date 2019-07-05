@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SequencerDialogToolbar_h__
-#define __SequencerDialogToolbar_h__
 #pragma once
 
 class CSequencerDopeSheetToolbar;
@@ -23,6 +21,3 @@ protected:
 	float   m_lastTime;
 
 };
-
-#endif // __SequencerDialogToolbar_h__
-

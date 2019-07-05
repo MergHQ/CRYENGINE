@@ -110,7 +110,7 @@ ESocketError CInternetSimulatorSocket::Send(const uint8* pBuffer, size_t nLength
 		pPS->nLength = nLength;
 		pPS->to = to;
 		pPS->pThis = this;
-		NetTimerId timer = ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::Send() timer");
+		ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::Send() timer");
 		return eSE_Ok;
 	}
 }
@@ -155,7 +155,7 @@ ESocketError CInternetSimulatorSocket::SendVoice(const uint8* pBuffer, size_t nL
 		pPS->nLength = nLength;
 		pPS->to = to;
 		pPS->pThis = this;
-		NetTimerId timer = ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::SendVoice() timer");
+		ACCURATE_NET_TIMER.ADDTIMER(sendTime, SimulatorUpdate, pPS, "CInternetSimulatorSocket::SendVoice() timer");
 		return eSE_Ok;
 	}
 }
@@ -215,7 +215,7 @@ void CInternetSimulatorSocket::SetProfile(EProfile profile)
 				CNetCVars::Get().net_PacketLossRate = fLoss;
 				CNetCVars::Get().net_PacketLagMin = pEntry->fLagMin;
 				CNetCVars::Get().net_PacketLagMax = pEntry->fLagMax;
-				CryLog("[LagProfiles] Using Profile %d settings. (%.2f%% chance of packet loss, %.2f-%.2f sec variable lag)", profile, fLoss, pEntry->fLagMin, pEntry->fLagMax);
+				CryLog("[LagProfiles] Profile %d: (%.2f%% chance of packet loss, %.2f-%.2fs variable lag) (%s)", profile, fLoss, pEntry->fLagMin, pEntry->fLagMax, pEntry->description.c_str());
 			}
 			else
 			{
@@ -269,6 +269,7 @@ void CInternetSimulatorSocket::LoadXMLProfiles(const char* pFileName)
 						profileNode->getAttr("maxPacketLoss", pProfile->fLossMax);
 						profileNode->getAttr("minPacketLag", pProfile->fLagMin);
 						profileNode->getAttr("maxPacketLag", pProfile->fLagMax);
+						pProfile->description = profileNode->getAttr("description");
 
 						pProfile++;
 					}

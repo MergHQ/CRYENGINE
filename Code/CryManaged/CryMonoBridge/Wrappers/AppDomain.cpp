@@ -13,7 +13,7 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IProjectManager.h>
 
-CAppDomain::CAppDomain(char *name, bool bActivate)
+CAppDomain::CAppDomain(const char *name, bool bActivate)
 	: m_name(name)
 {
 	CreateDomain(name, bActivate);
@@ -38,6 +38,14 @@ CAppDomain::CAppDomain(char *name, bool bActivate)
 	if (m_pLibCore == nullptr)
 	{
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed core library!");
+		return;
+	}
+
+	libraryPath = PathUtil::Make(executableFolder, "CryEngine.Core.UI");
+	m_pLibCoreUI = LoadLibrary(libraryPath);
+	if (m_pLibCoreUI == nullptr)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed core ui library!");
 		return;
 	}
 
@@ -94,9 +102,9 @@ void CAppDomain::Initialize()
 	}
 }
 
-void CAppDomain::CreateDomain(char *name, bool bActivate)
+void CAppDomain::CreateDomain(const char *name, bool bActivate)
 {
-	m_pDomain = MonoInternals::mono_domain_create_appdomain(name, nullptr);
+	m_pDomain = MonoInternals::mono_domain_create_appdomain(const_cast<char*>(name), nullptr);
 
 	char baseDirectory[_MAX_PATH];
 	CryGetExecutableFolder(CRY_ARRAY_COUNT(baseDirectory), baseDirectory);

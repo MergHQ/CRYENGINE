@@ -38,7 +38,7 @@ public:
 	virtual void UpdateCoverEyes() override;
 	virtual const DynArray<Vec3>& GetCoverEyes() const override { return m_eyes; }
 
-	void Update(float timeDelta);
+	void Update(const CTimeValue frameStartTime, const float timeDelta);
 
 	void          DebugDraw() const;
 

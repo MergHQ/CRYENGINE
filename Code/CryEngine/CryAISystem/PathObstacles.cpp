@@ -22,7 +22,6 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 
-#include "Navigation/MNM/MNM.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 
 #include <numeric>
@@ -150,7 +149,7 @@ static bool ObstacleDrawingIsOnForActor(const CAIActor* pAIActor)
 {
 	if (gAIEnv.CVars.DebugDraw > 0)
 	{
-		const char* pathName = gAIEnv.CVars.DrawPathAdjustment;
+		const char* pathName = gAIEnv.CVars.legacyDebugDraw.DrawPathAdjustment;
 		if (*pathName && (!strcmp(pathName, "all") || (pAIActor && !strcmp(pAIActor->GetName(), pathName))))
 			return true;
 	}
@@ -290,7 +289,6 @@ SCachedObstacle* CPathObstacles::GetOrClearCachedObstacle(IPhysicalEntity* entit
 	unsigned entityHash = GetHashFromEntities(&entity, 1);
 
 	const TCachedObstacles::reverse_iterator itEnd = s_cachedObstacles.rend();
-	const TCachedObstacles::reverse_iterator itBegin = s_cachedObstacles.rbegin();
 	for (TCachedObstacles::reverse_iterator it = s_cachedObstacles.rbegin(); it != itEnd; ++it)
 	{
 		SCachedObstacle& cachedObstacle = **it;
@@ -653,7 +651,7 @@ bool IsInNavigationMesh(const NavigationMeshID meshID, const Vec3& point, const 
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	return gAIEnv.pNavigationSystem->IsLocationInMesh(meshID, point);
+	return gAIEnv.pNavigationSystem->IsLocationInMeshVolume(meshID, point);
 }
 
 //===================================================================
@@ -675,7 +673,6 @@ void CPathObstacles::GetPathObstacles_AIObject(CAIObject* pObject, SPathObstacle
 			if (pObject->GetVelocity().GetLengthSquared() <= maxSpeedSq)
 			{
 				const NavigationMeshID meshID = pathObstaclesInfo.pNavPath->GetMeshID();
-				const bool usingMNM = (meshID != NavigationMeshID(0));
 				const Vec3 objectPos = pObject->GetPhysicsPos();
 
 				const bool considerObject = IsInNavigationMesh(meshID, objectPos, 2.0f, pathObstaclesInfo.minAvRadius + 0.5f);
@@ -788,10 +785,10 @@ void CPathObstacles::GetPathObstacles_PhysicalEntity(IPhysicalEntity* pPhysicalE
 				const float distToPath = pathObstaclesInfo.pNavPath->GetDistToPath(pathPos, distAlongPath, testPosition, pathObstaclesInfo.maxDistToCheckAhead, true);
 				if (distToPath >= 0.0f && distToPath <= pathObstaclesInfo.maxPathDeviation)
 				{
-					const bool obstacleIsSmall = boxRadius < gAIEnv.CVars.ObstacleSizeThreshold;
+					const bool obstacleIsSmall = boxRadius < gAIEnv.CVars.legacyPathObstacles.ObstacleSizeThreshold;
 					const int actorType = pathObstaclesInfo.pAIActor ? pathObstaclesInfo.pAIActor->GetType() : AIOBJECT_ACTOR;
 
-					float extraRadius = (actorType == AIOBJECT_VEHICLE && obstacleIsSmall ? gAIEnv.CVars.ExtraVehicleAvoidanceRadiusSmall : pathObstaclesInfo.minAvRadius);
+					float extraRadius = (actorType == AIOBJECT_VEHICLE && obstacleIsSmall ? gAIEnv.CVars.legacyPathObstacles.ExtraVehicleAvoidanceRadiusSmall : pathObstaclesInfo.minAvRadius);
 					if (bIsPushable && pathObstaclesInfo.movementAbility.pushableObstacleWeakAvoidance)
 					{
 						// Partial avoidance - scale down radius
@@ -937,7 +934,7 @@ void CPathObstacles::GetPathObstacles(TPathObstacles& obstacles, const AgentMove
 
 	ClearObstacles(obstacles);
 
-	if (gAIEnv.CVars.AdjustPathsAroundDynamicObstacles == 0)
+	if (gAIEnv.CVars.LegacyAdjustPathsAroundDynamicObstacles == 0)
 		return;
 
 	if (pNavPath->Empty())
@@ -960,8 +957,8 @@ void CPathObstacles::GetPathObstacles(TPathObstacles& obstacles, const AgentMove
 		m_debugPathAdjustmentBoxes.resize(0);
 #endif
 
-	const float minActorAvRadius = gAIEnv.CVars.MinActorDynamicObstacleAvoidanceRadius;
-	const float minVehicleAvRadius = gAIEnv.CVars.ExtraVehicleAvoidanceRadiusBig;
+	const float minActorAvRadius = gAIEnv.CVars.legacyPathObstacles.MinActorDynamicObstacleAvoidanceRadius;
+	const float minVehicleAvRadius = gAIEnv.CVars.legacyPathObstacles.ExtraVehicleAvoidanceRadiusBig;
 
 	const int actorType = pAIActor ? pAIActor->GetType() : AIOBJECT_ACTOR;
 	pathObstaclesInfo.minAvRadius = 0.125f + max((actorType != AIOBJECT_ACTOR ? minVehicleAvRadius : minActorAvRadius), movementAbility.pathRadius);

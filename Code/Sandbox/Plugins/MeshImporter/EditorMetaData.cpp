@@ -171,4 +171,3 @@ std::unique_ptr<FbxMetaData::IEditorMetaData> SEditorMetaData::Clone() const
 {
 	return std::make_unique<SEditorMetaData>(*this);
 }
-

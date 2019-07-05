@@ -2,6 +2,7 @@
 #include "VirtualRealityInteractionComponent.h"
 
 #include <Cry3DEngine/IIndexedMesh.h>
+#include <CryPhysics/IPhysics.h>
 
 namespace Cry
 {
@@ -100,8 +101,6 @@ namespace Cry
 					if (pDevice == nullptr)
 						return;
 
-					SEntityUpdateContext* pUpdateContext = reinterpret_cast<SEntityUpdateContext*>(event.nParam[0]);
-
 					for (SHand& hand : m_hands)
 					{
 						EKeyId triggerKeyId;
@@ -169,7 +168,7 @@ namespace Cry
 						}
 						else if (hand.heldEntityId != INVALID_ENTITYID)
 						{
-							if (IEntity* pHeldEntity = gEnv->pEntitySystem->GetEntity(hand.heldEntityId))
+							if (gEnv->pEntitySystem->GetEntity(hand.heldEntityId) != nullptr)
 							{
 								pe_params_pos pp;
 								pp.pos = m_pEntity->GetSlotWorldTM(hand.slotId).GetTranslation();
@@ -190,9 +189,9 @@ namespace Cry
 				}
 			}
 
-			uint64 CInteractionComponent::GetEventMask() const
+			Cry::Entity::EventFlags CInteractionComponent::GetEventMask() const
 			{
-				return ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+				return ENTITY_EVENT_UPDATE;
 			}
 
 			void CInteractionComponent::ReleaseObject(SHand& hand, const Vec3& linearVelocity, const Vec3& angularVelocity)

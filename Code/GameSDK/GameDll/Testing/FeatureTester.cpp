@@ -13,6 +13,7 @@
 #include "Testing/AutoTester.h"
 #include "IWorldQuery.h"
 #include "Weapon.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #if ENABLE_FEATURE_TESTER
 
@@ -84,13 +85,13 @@
 		if (m_type != enumVal)		     																	                       \
 		{																									                                     \
 		  string contents;                                                                     \
-			CRY_ASSERT_TRACE(0, ("Expected next item to be a '%s' but it's a '%s' value=%s",     \
+			CRY_ASSERT(0, ("Expected next item to be a '%s' but it's a '%s' value=%s",     \
 				s_featureTestValTypeNames[enumVal], s_featureTestValTypeNames[m_type],             \
 				GetContentsAsString(contents)));                                                   \
 		}                                                                                      \
 		else if (! (isValid))                                                                  \
 		{																									                                     \
-			CRY_ASSERT_TRACE(0, ("Next item is right type (%s) but value is invalid!",           \
+			CRY_ASSERT(0, ("Next item is right type (%s) but value is invalid!",           \
 				s_featureTestValTypeNames[enumVal]));                                              \
 		}                                                                                      \
 		else                                                                                   \
@@ -842,7 +843,7 @@ void CFeatureTester::LoadTestData(const char * filenameNoPathOrExtension) PREFAS
 		{
 			const char * oldBuffer = m_checkpointsWhichAlwaysFailATest.m_checkpointName[i];
 			const char * newBuffer = m_singleAllocTextBlock.StoreText(oldBuffer);
-			CRY_ASSERT_TRACE (m_checkpointsWhichAlwaysFailATest.m_checkpointName[i] && 0 == strcmp(oldBuffer, newBuffer), ("Old string %p '%s' doesn't match new string %p '%s'", oldBuffer, oldBuffer, newBuffer, newBuffer));
+			CRY_ASSERT (m_checkpointsWhichAlwaysFailATest.m_checkpointName[i] && 0 == strcmp(oldBuffer, newBuffer), ("Old string %p '%s' doesn't match new string %p '%s'", oldBuffer, oldBuffer, newBuffer, newBuffer));
 			m_checkpointsWhichAlwaysFailATest.m_checkpointName[i] = newBuffer;
 		}
 
@@ -2632,8 +2633,8 @@ void CFeatureTester::DoneWithTest(const SFeatureTest * doneWithThisTest, const c
 //-------------------------------------------------------------------------------
 void CFeatureTester::StopTest(const char * failureMessage)
 {
-	CRY_ASSERT_TRACE (m_currentTest, ("Should only call StopTest function when there's a test running!"));
-	CRY_ASSERT_TRACE (m_currentTestNextInstruction, ("Should only call StopTest function when there's a test running!"));
+	CRY_ASSERT (m_currentTest, ("Should only call StopTest function when there's a test running!"));
+	CRY_ASSERT (m_currentTestNextInstruction, ("Should only call StopTest function when there's a test running!"));
 
 	if (failureMessage)
 	{
@@ -2690,7 +2691,7 @@ void CFeatureTester::StopTest(const char * failureMessage)
 
 			EActionActivationMode currentMode = overriddenInput.m_mode;
 			FeatureTesterSpam("Test finished while '%s' is still being overridden (mode 0x%x) - reverting it now!", overriddenInput.m_inputName, currentMode);
-			CRY_ASSERT_TRACE(currentMode == eAAM_OnPress || currentMode == eAAM_Always, ("Unexpected mode 0x%x", currentMode));
+			CRY_ASSERT(currentMode == eAAM_OnPress || currentMode == eAAM_Always, "Unexpected mode 0x%x", currentMode);
 
 			EActionActivationMode stopMode = (currentMode == eAAM_OnPress) ? eAAM_OnRelease : eAAM_Always;
 			const char * releaseName = overriddenInput.m_inputName;
@@ -2905,7 +2906,7 @@ string CFeatureTester::GetListOfCheckpointsExpected()
 
 	assert (countFound == m_waitUntilCCCPointHit_numStillToHit);
 
-	return reply.empty() ? "none" : reply;
+	return reply.empty() ? string("none") : reply;
 }
 
 #if ENABLE_GAME_CODE_COVERAGE
@@ -2998,7 +2999,7 @@ void CFeatureTester::InformWatchedCheckpointHit(SCheckpointCount * watchedCheckp
 			break;
 
 			case kFTCHR_failTest:
-			CRY_ASSERT_TRACE (watchedCheckpoint->m_customMessage != NULL, ("Custom failure message for hitting checkpoint '%s' is NULL", watchedCheckpoint->m_checkpointName));
+			CRY_ASSERT (watchedCheckpoint->m_customMessage != NULL, ("Custom failure message for hitting checkpoint '%s' is NULL", watchedCheckpoint->m_checkpointName));
 			if (watchedCheckpoint->m_customMessage[0] == '\0')
 			{
 				FeatureTestFailure ("Checkpoint '%s' was hit while it was flagged as a reason for failing the test", watchedCheckpoint->m_checkpointName);

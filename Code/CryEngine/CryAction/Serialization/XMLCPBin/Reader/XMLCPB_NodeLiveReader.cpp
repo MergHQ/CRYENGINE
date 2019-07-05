@@ -17,11 +17,9 @@ void CNodeLiveReaderRef::FreeRef()
 	{
 		CNodeLiveReader* pNode = m_Reader.GetNodeLive(m_nodeId);
 
-		assert(pNode->IsValid());
-
-		if (pNode->IsValid())
+		if (CRY_VERIFY(pNode->IsValid()))
 		{
-			assert(pNode->m_refCounter > 0);
+			CRY_ASSERT(pNode->m_refCounter > 0);
 			pNode->m_refCounter--;
 			if (pNode->m_refCounter == 0)
 				m_Reader.FreeNodeLive(m_nodeId);
@@ -34,14 +32,13 @@ void CNodeLiveReaderRef::FreeRef()
 /////////////////
 void CNodeLiveReaderRef::CopyFrom(const CNodeLiveReaderRef& other)
 {
-	assert(m_nodeId == XMLCPB_INVALID_ID);
 	m_nodeId = other.m_nodeId;
 	m_pNode_Debug = NULL;
-	if (m_nodeId != XMLCPB_INVALID_ID)
+	if (!CRY_VERIFY(m_nodeId == XMLCPB_INVALID_ID))
 	{
 		CNodeLiveReader* pNode = m_Reader.GetNodeLive(m_nodeId);
 		m_pNode_Debug = pNode;
-		assert(pNode->IsValid());
+		CRY_ASSERT(pNode->IsValid());
 		pNode->m_refCounter++;
 	}
 }
@@ -54,12 +51,10 @@ CNodeLiveReader* CNodeLiveReaderRef::GetNode() const
 
 	CNodeLiveReader* pNode = m_Reader.GetNodeLive(m_nodeId);
 
-	assert(pNode->IsValid());
+	if (CRY_VERIFY(pNode->IsValid()))
+		return pNode;
 
-	if (!pNode->IsValid())
-		return NULL;
-
-	return pNode;
+	return NULL;
 }
 
 /////////////////
@@ -139,7 +134,7 @@ CNodeLiveReaderRef CNodeLiveReader::GetChildNode(const char* pChildName)
 
 CNodeLiveReaderRef CNodeLiveReader::GetChildNode(uint32 index)
 {
-	assert(index < m_numChildren);
+	CRY_ASSERT(index < m_numChildren);
 
 	// create the reference object
 	const CNodeLiveReader& child = m_Reader.ActivateLiveNodeFromCompact(GetChildGlobalId(index));
@@ -182,7 +177,7 @@ uint32 CNodeLiveReader::GetSizeWithoutChilds() const
 
 void CNodeLiveReader::ActivateFromCompact(NodeLiveID liveId, NodeGlobalID globalId)
 {
-	assert(!IsValid());
+	CRY_ASSERT(!IsValid());
 
 	Reset();
 
@@ -404,7 +399,7 @@ bool CNodeLiveReader::FindAttr(const char* pAttrName, CAttrReader& attr) const
 
 void CNodeLiveReader::GetAttr(uint index, CAttrReader& attr) const
 {
-	assert(index < m_numAttrs);
+	CRY_ASSERT(index < m_numAttrs);
 
 	FlatAddr nextAddr = m_addrFirstAttr;
 
@@ -420,10 +415,7 @@ void CNodeLiveReader::GetAttr(uint index, CAttrReader& attr) const
 CAttrReader CNodeLiveReader::ObtainAttr(const char* pAttrName) const
 {
 	CAttrReader attr(m_Reader);
-
-	bool found = FindAttr(pAttrName, attr);
-	assert(found);
-
+	CRY_VERIFY(FindAttr(pAttrName, attr));
 	return attr;
 }
 

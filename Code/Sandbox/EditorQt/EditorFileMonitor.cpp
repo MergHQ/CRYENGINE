@@ -2,28 +2,26 @@
 
 #include "StdAfx.h"
 #include "EditorFileMonitor.h"
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
-#include "CrySystem/IProjectManager.h"
-#include "GameEngine.h"
-#include "Include/IAnimationCompressionManager.h"
-#include <CryString/StringUtils.h>
-#include <CrySystem/IProjectManager.h>
-#include "CryEdit.h"
-#include "FilePathUtil.h"
 
-//////////////////////////////////////////////////////////////////////////
+#include "CryEdit.h"
+#include "GameEngine.h"
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
+#include <CrySystem/IProjectManager.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <QDir>
+
 CEditorFileMonitor::CEditorFileMonitor()
 {
 	GetIEditorImpl()->RegisterNotifyListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEditorFileMonitor::~CEditorFileMonitor()
 {
 	CFileChangeMonitor::DeleteInstance();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorFileMonitor::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 {
 	if (ev == eNotify_OnInit)
@@ -46,13 +44,11 @@ void CEditorFileMonitor::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CEditorFileMonitor::RegisterListener(IFileChangeListener* pListener, const char* sMonitorItem)
 {
 	return RegisterListener(pListener, sMonitorItem, "*");
 }
 
-//////////////////////////////////////////////////////////////////////////
 static string CanonicalizePath(const char* szPath)
 {
 	std::vector<char> canonicalizedPath(strlen(szPath) + 1, '\0');
@@ -62,7 +58,6 @@ static string CanonicalizePath(const char* szPath)
 	return string(szPath);
 }
 
-//////////////////////////////////////////////////////////////////////////
 static string GetAbsolutePathOfProjectFolder(const char* szPath)
 {
 	const char* szProjectRoot = GetISystem()->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute();
@@ -72,7 +67,6 @@ static string GetAbsolutePathOfProjectFolder(const char* szPath)
 	return CanonicalizePath(path.c_str());
 }
 
-//////////////////////////////////////////////////////////////////////////
 // TODO: Change the initialization order to call MonitorDirectories() before any of CEditorFileMonitor::RegisterListener
 void CEditorFileMonitor::MonitorDirectories()
 {
@@ -98,7 +92,6 @@ void CEditorFileMonitor::MonitorDirectories()
 	CFileChangeMonitor::Instance()->MonitorItem(GetAbsolutePathOfProjectFolder("Engine/Shaders"));
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CEditorFileMonitor::RegisterListener(IFileChangeListener* pListener, const char* szFolderRelativeToGame, const char* sExtension)
 {
 	m_vecFileChangeCallbacks.push_back(SFileChangeCallback(pListener, PathUtil::ToUnixPath(szFolderRelativeToGame), sExtension));
@@ -124,13 +117,14 @@ bool CEditorFileMonitor::UnregisterListener(IFileChangeListener* pListener)
 			bRet = true;
 		}
 		else
-			iter++;
+		{
+			++iter;
+		}
 	}
 
 	return bRet;
 }
 
-//////////////////////////////////////////////////////////////////////////
 static bool IsFilenameEndsWithDotDaeDotZip(const char* fln)
 {
 	size_t len = strlen(fln);
@@ -143,7 +137,6 @@ static bool IsFilenameEndsWithDotDaeDotZip(const char* fln)
 		return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 static bool RecompileColladaFile(const char* path)
 {
 	string pathWithGameFolder = PathUtil::ToUnixPath(PathUtil::AddSlash(PathUtil::GetGameFolder())) + string(path);
@@ -155,7 +148,6 @@ static bool RecompileColladaFile(const char* path)
 		return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 static const char* AbsoluteToProjectPath(const char* szAbsolutePath)
 {
 	if (!GetISystem()->GetIPak()->IsAbsPath(szAbsolutePath))
@@ -173,16 +165,15 @@ static const char* AbsoluteToProjectPath(const char* szAbsolutePath)
 	return "";
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* GetPathRelativeToModFolder(const char* szAbsolutePath)
 {
 	if (szAbsolutePath[0] == '\0')
 		return szAbsolutePath;
 
+	szAbsolutePath = AbsoluteToProjectPath(szAbsolutePath);
+
 	if (_strnicmp("engine", szAbsolutePath, 6) == 0 && (szAbsolutePath[6] == '\\' || szAbsolutePath[6] == '/'))
 		return szAbsolutePath;
-
-	szAbsolutePath = AbsoluteToProjectPath(szAbsolutePath);
 	
 	string gameFolder = PathUtil::GetGameFolder();
 	string modLocation;
@@ -205,8 +196,6 @@ const char* GetPathRelativeToModFolder(const char* szAbsolutePath)
 
 	return "";
 }
-
-///////////////////////////////////////////////////////////////////////////
 
 // Called when file monitor message is received
 void CEditorFileMonitor::OnFileMonitorChange(const SFileChangeInfo& rChange)
@@ -340,4 +329,3 @@ void CEditorFileMonitor::OnFileMonitorChange(const SFileChangeInfo& rChange)
 		CCryEditApp::GetInstance()->ForceNextIdleProcessing();
 	}
 }
-

@@ -14,8 +14,8 @@
 #include <CryString/CryPath.h>
 
 #ifdef RESOURCE_COMPILER
-	#include "../../../Tools/CryXml/ICryXML.h"
-	#include "../../../Tools/CryXml/IXMLSerializer.h"
+	#include "../../../Tools/CryXML/ICryXML.h"
+	#include "../../../Tools/CryXML/IXMLSerializer.h"
 	#include "../../../Tools/CryCommonTools/PakXmlFileBufferSource.h"
 #endif
 
@@ -80,7 +80,7 @@ string SAnimSettings::GetIntermediateFilename(const char* animationPath)
 
 bool SAnimSettings::Save(const char* filename) const
 {
-	string outputFilename = string(gEnv->pCryPak->GetGameFolder()) + "\\" + filename;
+	string outputFilename = string(gEnv->pCryPak->GetGameFolder()) + "/" + filename;
 	return SaveOutsideBuild(outputFilename.c_str());
 }
 
@@ -200,7 +200,6 @@ bool SAnimSettings::LoadXMLFromMemory(const char* data, size_t length, const vec
 	SCompressionSettings& compression = build.compression;
 
 	ReadValueFromXmlChildNode(xmlRoot, "AdditiveAnimation", build.additive);
-	ReadValueFromXmlChildNode(xmlRoot, "Skeleton", build.skeletonAlias);
 
 	XmlNodeRef xmlCompressionSettings = xmlRoot->findChild("CompressionSettings");
 	if (xmlCompressionSettings)
@@ -312,7 +311,6 @@ bool SAnimSettings::LoadXMLFromMemory(const char* data, size_t length, const vec
 void SAnimationBuildSettings::Serialize(Serialization::IArchive& ar)
 {
 	ar(additive, "additive", "Additive");
-	ar(SkeletonAlias(skeletonAlias), "skeletonAlias", "Skeleton Alias");
 	ar(compression, "compression", "Compression");
 	ar(tags, "tags", "Tags");
 }
@@ -344,7 +342,6 @@ void SCompressionSettings::InitializeForCharacter(ICharacterInstance* pCharacter
 		return;
 	}
 
-	ISkeletonPose& skeletonPose = *pCharacter->GetISkeletonPose();
 	IDefaultSkeleton& rIDefaultSkeleton = pCharacter->GetIDefaultSkeleton();
 
 	const uint32 jointCount = rIDefaultSkeleton.GetJointCount();
@@ -565,4 +562,3 @@ void SCompressionSettings::Serialize(Serialization::IArchive& ar)
 		ar(m_controllerCompressionSettings, "perJointSettings");
 	}
 }
-

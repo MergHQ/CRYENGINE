@@ -9,10 +9,13 @@
 #include "ParticleManager.h"
 #include "ParticleLibrary.h"
 #include "ParticleItem.h"
+#include "LogFile.h"
 
 #include "Objects/BrushObject.h"
 #include "Objects/EntityObject.h"
+#include "Objects/EntityScript.h"
 #include "Objects/ParticleEffectObject.h"
+#include "Objects/SelectionGroup.h"
 #include "ViewManager.h"
 #include "CryEditDoc.h"
 #include "Util/Clipboard.h"
@@ -28,9 +31,9 @@
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetResourceSelector.h>
 #include <Controls/EditorDialog.h>
-#include <FilePathUtil.h>
-#include <QtUtil.h>
 #include <FileDialogs/EngineFileDialog.h>
+#include <PathUtils.h>
+#include <QtUtil.h>
 
 #include "FileSystem/FileSystem_Enumerator.h"
 #include "FileSystem/FileSystem_FileFilter.h"
@@ -172,7 +175,7 @@ private:
 class CParticlePickCallback : public IPickObjectCallback
 {
 public:
-	CParticlePickCallback() { m_bActive = true; };
+	CParticlePickCallback() { m_bActive = true; }
 	//! Called when object picked.
 	virtual void OnPick(CBaseObject* picked)
 	{
@@ -200,7 +203,7 @@ public:
 		 */
 		return false;
 	}
-	static bool IsActive() { return m_bActive; };
+	static bool IsActive() { return m_bActive; }
 private:
 	static bool m_bActive;
 };
@@ -220,7 +223,6 @@ CParticleDialog::CParticleDialog(CWnd* pParent)
 
 	m_sortRecursionType = SORT_RECURSION_ITEM;
 
-	m_dragImage = 0;
 	m_hDropItem = 0;
 
 	m_bRealtimePreviewUpdate = true;
@@ -233,7 +235,7 @@ CParticleDialog::CParticleDialog(CWnd* pParent)
 
 	pParticleUI = new CParticleUIDefinition;
 
-	// Immidiatly create dialog.
+	// Immediately create dialog.
 	Create(IDD_DATABASE, pParent);
 }
 
@@ -728,7 +730,6 @@ CBaseObject* CParticleDialog::CreateParticleEntity(CParticleItem* pItem, Vec3 co
 	if (!GetIEditorImpl()->GetDocument()->IsDocumentReady())
 		return nullptr;
 
-	GetIEditorImpl()->ClearSelection();
 	CBaseObject* pObject = GetIEditorImpl()->NewObject("ParticleEntity");
 	if (pObject)
 	{
@@ -741,7 +742,6 @@ CBaseObject* CParticleDialog::CreateParticleEntity(CParticleItem* pItem, Vec3 co
 		if (pParent)
 			pParent->AttachChild(pObject);
 		AssignToEntity(pItem, pObject);
-		GetIEditorImpl()->SelectObject(pObject);
 	}
 	return pObject;
 }
@@ -797,7 +797,7 @@ void CParticleDialog::OnBeginDrag(NMHDR* pNMHDR, LRESULT* pResult)
 	if (!pParticles)
 		return;
 
-	m_pDraggedItem = pParticles;
+	m_pDraggedParticleItem = pParticles;
 
 	m_treeCtrl.Select(hItem, TVGN_CARET);
 
@@ -871,7 +871,7 @@ void CParticleDialog::OnMouseMove(UINT nFlags, CPoint point)
 			{
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
-				HitContext hit;
+				HitContext hit(viewport);
 				if (viewport->HitTest(vp, hit))
 				{
 					if (hit.object && DYNAMIC_DOWNCAST(CEntityObject, hit.object))
@@ -886,7 +886,6 @@ void CParticleDialog::OnMouseMove(UINT nFlags, CPoint point)
 	CBaseLibraryDialog::OnMouseMove(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CParticleDialog::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	//CXTResizeDialog::OnLButtonUp(nFlags, point);
@@ -925,19 +924,16 @@ void CParticleDialog::OnLButtonUp(UINT nFlags, CPoint point)
 			HTREEITEM hHitItem = m_treeCtrl.HitTest(&hit);
 			if (hHitItem)
 			{
-				DropToItem(hHitItem, m_hDraggedItem, m_pDraggedItem);
+				DropToItem(hHitItem, m_hDraggedItem, m_pDraggedParticleItem);
 				m_hDraggedItem = 0;
-				m_pDraggedItem = 0;
+				m_pDraggedParticleItem = 0;
 				return;
 			}
-			DropToItem(0, m_hDraggedItem, m_pDraggedItem);
+			DropToItem(0, m_hDraggedItem, m_pDraggedParticleItem);
 		}
 		else
 		{
 			// Not dropped inside tree.
-
-			CWnd* wnd = WindowFromPoint(p);
-
 			CUndo undo("Assign ParticleEffect");
 
 			CViewport* viewport = GetIEditorImpl()->GetViewManager()->GetViewportAtPoint(p);
@@ -945,10 +941,10 @@ void CParticleDialog::OnLButtonUp(UINT nFlags, CPoint point)
 			{
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
-				CParticleItem* pParticles = m_pDraggedItem;
+				CParticleItem* pParticles = m_pDraggedParticleItem;
 
 				// Drag and drop into one of views.
-				HitContext hit;
+				HitContext hit(viewport);
 				if (viewport->HitTest(vp, hit))
 				{
 					Vec3 hitpos = hit.raySrc + hit.rayDir * hit.dist;
@@ -975,9 +971,9 @@ void CParticleDialog::OnLButtonUp(UINT nFlags, CPoint point)
 				}
 			}
 		}
-		m_pDraggedItem = 0;
+		m_pDraggedParticleItem = 0;
 	}
-	m_pDraggedItem = 0;
+	m_pDraggedParticleItem = 0;
 	m_hDraggedItem = 0;
 
 	CBaseLibraryDialog::OnLButtonUp(nFlags, point);
@@ -1060,9 +1056,9 @@ void CParticleDialog::OnTvnSelchangedTree(NMHDR* pNMHDR, LRESULT* pResult)
 void CParticleDialog::OnPick()
 {
 	if (!CParticlePickCallback::IsActive())
-		GetIEditorImpl()->PickObject(new CParticlePickCallback);
+		GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(new CParticlePickCallback);
 	else
-		GetIEditorImpl()->CancelPick();
+		GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1230,9 +1226,11 @@ CParticleDialog* CParticleDialog::GetCurrentInstance()
 }
 
 //////////////////////////////////////////////////////////////////////////
-dll_string ParticleResourceSelector(const SResourceSelectorContext& x, const char* szPreviousValue)
+SResourceSelectionResult ParticleResourceSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
-	if (x.useLegacyPicker)
+	SResourceSelectionResult result{ false, szPreviousValue };
+
+	if (context.useLegacyPicker)
 	{
 		std::vector<CString> items;
 		const char* openLibraryText = "[ Open Particle Database (might crash with empty DB!) ]";
@@ -1248,31 +1246,35 @@ dll_string ParticleResourceSelector(const SResourceSelectorContext& x, const cha
 			pEnumerator->Release();
 		}
 
-		CRY_ASSERT(x.parentWidget);
-		CGenericSelectItemDialog dialog(CWnd::FromHandle((HWND)x.parentWidget->winId()));
+		CRY_ASSERT(context.parentWidget);
+		CGenericSelectItemDialog dialog(CWnd::FromHandle((HWND)context.parentWidget->winId()));
 		dialog.SetMode(CGenericSelectItemDialog::eMODE_TREE);
 		dialog.SetItems(items);
 		dialog.SetTreeSeparator(".");
 
 		dialog.PreSelectItem(szPreviousValue);
-		if (dialog.DoModal() == IDOK)
+		bool accepted = dialog.DoModal() == IDOK;
+		result.selectionAccepted = accepted;
+		if (accepted)
 		{
 			if (dialog.GetSelectedItem() == openLibraryText)
 			{
 				GetIEditorImpl()->OpenDataBaseLibrary(EDB_TYPE_PARTICLE);
+				result.selectedResource = "";
 			}
 			else
 			{
-				return dialog.GetSelectedItem().GetBuffer();
+				result.selectedResource = dialog.GetSelectedItem().GetBuffer();
 			}
 		}
+
 	}
 	else
 	{
 		QString relativeFilename(szPreviousValue);
 
 		CEngineFileDialog::OpenParams dialogParams(CEngineFileDialog::OpenFile);
-		dialogParams.initialDir = QtUtil::ToQString(PathUtil::GetPathWithoutFilename(relativeFilename.toLocal8Bit()));
+		dialogParams.initialDir = QtUtil::ToQString(PathUtil::GetPathWithoutFilename(relativeFilename.toLocal8Bit().constData()));
 		if (!relativeFilename.isEmpty())
 		{
 			dialogParams.initialFile = szPreviousValue;
@@ -1280,22 +1282,25 @@ dll_string ParticleResourceSelector(const SResourceSelectorContext& x, const cha
 
 		dialogParams.extensionFilters = CExtensionFilter::Parse("Particle Files (*.pfx)|*.pfx||");
 		CEngineFileDialog fileDialog(dialogParams);
-		if (fileDialog.exec() == QDialog::Accepted)
+		bool accepted = fileDialog.exec() == QDialog::Accepted;
+		result.selectionAccepted = accepted;
+		if (accepted)
 		{
 			auto files = fileDialog.GetSelectedFiles();
 			CRY_ASSERT(!files.empty());
-			return files.front().toLocal8Bit().constData();
+			result.selectedResource = files.front().toLocal8Bit().constData();
 		}
 	}
-	return szPreviousValue;
+
+	return result;
 }
 
-dll_string ParticleAssetSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
+SResourceSelectionResult ParticleAssetSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	return SStaticAssetSelectorEntry::SelectFromAsset(context, { "Particles" }, szPreviousValue);
 }
 
-dll_string ParticleSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
+SResourceSelectionResult ParticleSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	const auto pickerState = (EAssetResourcePickerState)GetIEditor()->GetSystem()->GetIConsole()->GetCVar("ed_enableAssetPickers")->GetIVal();
 	if (!context.useLegacyPicker && pickerState == EAssetResourcePickerState::EnableRecommended || pickerState == EAssetResourcePickerState::EnableAll)
@@ -1308,10 +1313,15 @@ dll_string ParticleSelector(const SResourceSelectorContext& context, const char*
 	}
 }
 
-dll_string ValidateParticlePath(const SResourceSelectorContext& context, const char* szNewValue, const char* szPreviousValue)
+SResourceValidationResult ValidateParticlePath(const SResourceSelectorContext& context, const char* szNewValue, const char* szPreviousValue)
 {
+	SResourceValidationResult result{ true, szNewValue };
 	if (!szNewValue || !*szNewValue)
-		return dll_string();
+	{
+		result.validatedResource = "";
+		result.isValid = false;
+		return result;
+	}
 
 	QString newPath(szNewValue);
 	if (newPath.indexOf(".pfx") != -1)
@@ -1321,7 +1331,10 @@ dll_string ValidateParticlePath(const SResourceSelectorContext& context, const c
 		if (!snapshot->GetFileByEnginePath(newPath))
 		{
 			if (!snapshot->GetFileByEnginePath(PathUtil::GetGameFolder() + "/" + QString(newPath)))
-				return szPreviousValue;
+			{
+				result.validatedResource = szPreviousValue;
+				result.isValid = false;
+			}
 		}
 	}
 	else
@@ -1330,10 +1343,13 @@ dll_string ValidateParticlePath(const SResourceSelectorContext& context, const c
 		IDataBaseItem* pDBItem = pParticleManager->FindItemByName(szPreviousValue);
 
 		if (!pDBItem)
-			return szPreviousValue;
+		{
+			result.validatedResource = szPreviousValue;
+			result.isValid = false;
+		}
 	}
 
-	return szNewValue;
+	return result;
 }
 
 void EditParticle(const SResourceSelectorContext& context, const char* szAssetPath)
@@ -1354,10 +1370,9 @@ void EditParticle(const SResourceSelectorContext& context, const char* szAssetPa
 	}
 	else
 	{
-		GetIEditorImpl()->ExecuteCommand(QString("particle.show_effect '%1'").arg(szAssetPath).toLocal8Bit());
+		GetIEditorImpl()->ExecuteCommand(QString("particle.show_effect '%1'").arg(szAssetPath).toLocal8Bit().constData());
 	}
 }
 
 REGISTER_RESOURCE_EDITING_SELECTOR_WITH_LEGACY_SUPPORT("ParticleLegacy", ParticleSelector, ValidateParticlePath, EditParticle, "")
 REGISTER_RESOURCE_EDITING_SELECTOR("Particle", ParticleSelector, ValidateParticlePath, EditParticle, "")
-

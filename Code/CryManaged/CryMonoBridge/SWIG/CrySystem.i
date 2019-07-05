@@ -22,7 +22,6 @@
 %{
 #include <CrySystem/File/IFileChangeMonitor.h>
 #include <CrySystem/Profilers/IStatoscope.h>
-#include <CrySystem/Profilers/ProfileLog.h>
 #include <CrySystem/Profilers/IPerfHud.h>
 #include <CryMemory/ILocalMemoryUsage.h>
 #include <CrySystem/ICodeCheckpointMgr.h>
@@ -40,7 +39,6 @@
 #include <CrySystem/ZLib/ILZ4Decompressor.h>
 #include <CryNetwork/INotificationNetwork.h>
 #include <CrySystem/XML/IReadWriteXMLSink.h>
-#include <CrySystem/ITestSystem.h>
 #include <CrySystem/ITextModeConsole.h>
 #include <CrySystem/IValidator.h>
 #include <CrySystem/ZLib/IZLibCompressor.h>
@@ -52,20 +50,33 @@
 
 namespace minigui { class CDrawContext{ public: virtual ~CDrawContext() {} }; }
 
-using JobManager::SJobStateBase;
+using JobManager::SJobState;
 %}
+
+%typemap(csbase) ICryPak::EPathResolutionRules "uint"
+%typemap(csbase) ICryPak::EFOpenFlags "uint"
+%typemap(csbase) ICryArchive::EPakFlags "uint"
+%typemap(csbase) ELoadConfigurationFlags "uint"
+%typemap(csbase) EVRComponent "uint"
+%typemap(csbase) ELogMode "ushort"
+%typemap(csbase) ESystemUpdateFlags "ushort"
+%typemap(csbase) EVarFlags "uint"
+%typemap(csbase) IHmdController::ECaps "uint"
+%typemap(csbase) IPlatformOS::ECreateFlags "uint"
+%typemap(csbase) minigui::EMiniCtrlStatus "uint"
+%typemap(csbase) minigui::EMiniCtrlEvent "uint"
+
 %feature("director") ILogCallback;
 %include "../../../../CryEngine/CryCommon/CrySystem/ILog.h"
 %feature("director") ISystemEventListener;
 %feature("director") ILoadingProgressListener;
 %ignore CreateSystemInterface;
 %include "../../../../CryEngine/CryCommon/CrySystem/ISystem.h"
-%typemap(csbase) ICryPak::EPathResolutionRules "long"
+
 %include "../../../../CryEngine/CryCommon/CrySystem/File/ICryPak.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ICmdLine.h"
-%typemap(csbase) EVarFlags "uint"
+
 %feature("director") IRemoteConsoleListener;
-%include "../../../../CryEngine/CryCommon/CryCore/SFunctor.h"
 %typemap(cscode) ICVar %{
 	public static System.IntPtr GetIntPtr(ICVar icvar)
 	{
@@ -84,9 +95,8 @@ using JobManager::SJobStateBase;
 %include "../../../../CryEngine/CryCommon/CrySystem/ITimer.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/File/IFileChangeMonitor.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/Profilers/IStatoscope.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/Profilers/ProfileLog.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/Profilers/IPerfHud.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/Profilers/FrameProfiler/FrameProfiler.h"
+%include "../../../../CryEngine/CryCommon/CrySystem/Profilers/ICryProfilingSystem.h"
 %include "../../../../CryEngine/CryCommon/CryMemory/ILocalMemoryUsage.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ICodeCheckpointMgr.h"
 %ignore JobManager::SInfoBlock;
@@ -110,7 +120,6 @@ using JobManager::SJobStateBase;
 %include "../../../../CryEngine/CryCommon/CrySystem/ZLib/ILZ4Decompressor.h"
 %include "../../../../CryEngine/CryCommon/CryNetwork/INotificationNetwork.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/XML/IReadWriteXMLSink.h"
-%include "../../../../CryEngine/CryCommon/CrySystem/ITestSystem.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/ITextModeConsole.h"
 %include "../../../../CryEngine/CryCommon/CryThreading/IThreadManager.h"
 %include "../../../../CryEngine/CryCommon/CrySystem/IValidator.h"

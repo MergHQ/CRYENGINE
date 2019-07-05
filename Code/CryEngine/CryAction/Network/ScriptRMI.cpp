@@ -20,7 +20,7 @@
 #include "GameClientChannel.h"
 #include "GameServerChannel.h"
 #include "CryAction.h"
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define FLAGS_FIELD           "__sendto"
 #define ID_FIELD              "__id"
@@ -176,8 +176,8 @@ void CScriptRMI::RegisterCVars()
 
 void CScriptRMI::UnregisterCVars()
 {
-	SAFE_RELEASE(pLogRMIEvents);
-	SAFE_RELEASE(pDisconnectOnError);
+	SAFE_UNREGISTER_CVAR(pLogRMIEvents);
+	SAFE_UNREGISTER_CVAR(pDisconnectOnError);
 }
 
 // implementation of Net.Expose() - exposes a class
@@ -459,7 +459,6 @@ void CScriptRMI::SetupEntity(EntityId eid, IEntity* pEntity, bool client, bool s
 	stack_string className = pClass->GetName();
 
 	IScriptTable* pEntityTable = pEntity->GetScriptTable();
-	IScriptSystem* pSS = pEntityTable->GetScriptSystem();
 
 	SmartScriptTable clientDispatchTable, serverDispatchTable, serverSynchedTable;
 	pEntityTable->GetValue(CLIENT_DISPATCH_FIELD, clientDispatchTable);
@@ -1003,7 +1002,6 @@ int CScriptRMI::ProxyFunction(IFunctionHandler* pH, void* pBuffer, int nSize)
 	if (gatherDebugInfo)
 		funcInfo = pMsg->DebugInfo();
 
-	INetContext* pNetContext = m_pThis->m_pParent->GetNetContext();
 	CCryAction* pFramework = m_pThis->m_pParent->GetFramework();
 
 	if (flags.n & eDF_ToServer)

@@ -16,6 +16,7 @@ def build(bld) :
 	  
 	  includes  = Path('Code/SDKs/OSVR/include'),
 	  libpath  = Path('Code/SDKs/OSVR/lib/'),
+	  module_extensions = ['sdl2'],
 	  
 	  lib = [ 'osvrClientKit', 'osvrRenderManager' ],
 	  features = [ 'feature_copy_osvr_binaries' ]
@@ -32,7 +33,7 @@ def feature_copy_osvr_binaries(self):
 	if platform  == 'project_generator':
 		return
 
-	files_to_copy_from_osvr_sdk = ['osvrClient.dll', 'osvrClientKit.dll', 'osvrCommon.dll', 'osvrUtil.dll', 'osvrRenderManager.dll', 'glew32.dll', 'SDL2.dll']
+	files_to_copy_from_osvr_sdk = ['osvrClient.dll', 'osvrClientKit.dll', 'osvrCommon.dll', 'osvrUtil.dll', 'osvrRenderManager.dll', 'glew32.dll']
 	if not platform in ['win_x64']:
 		Logs.error('[ERROR] Osvr is not supported for plaform %s by WAF' % platform)
 

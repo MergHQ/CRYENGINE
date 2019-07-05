@@ -43,9 +43,6 @@ CTargetTrackGroup::CTargetTrackGroup(TargetTrackHelpers::ITargetTrackPoolProxy* 
 	assert(m_aiObjectId > 0);
 	assert(m_uConfigHash > 0);
 
-	CAISystem* pAISystem = GetAISystem();
-	assert(pAISystem);
-
 	CWeakRef<CAIObject> refAIObject = gAIEnv.pObjectContainer->GetWeakRef(aiObjectId);
 	const bool bAIObjectValid = refAIObject.IsValid();
 
@@ -62,7 +59,6 @@ CTargetTrackGroup::CTargetTrackGroup(TargetTrackHelpers::ITargetTrackPoolProxy* 
 #ifdef TARGET_TRACK_DEBUG
 	m_fLastGraphUpdate = 0.0f;
 	m_pDebugHistoryManager = gEnv->pGameFramework->CreateDebugHistoryManager();
-	assert(m_pDebugHistoryManager);
 
 	memset(m_bDebugGraphOccupied, 0, sizeof(m_bDebugGraphOccupied));
 #endif //TARGET_TRACK_DEBUG
@@ -99,7 +95,8 @@ void CTargetTrackGroup::Reset()
 	m_bNeedSort = false;
 
 #ifdef TARGET_TRACK_DEBUG
-	m_pDebugHistoryManager->Clear();
+	if (m_pDebugHistoryManager)
+		m_pDebugHistoryManager->Clear();
 #endif //TARGET_TRACK_DEBUG
 }
 
@@ -117,7 +114,7 @@ void CTargetTrackGroup::Serialize_Write(TSerialize ser)
 	{
 		tAIObjectID targetId = itTrack->first;
 		CTargetTrack* pTrack = itTrack->second;
-		assert(targetId > 0 && pTrack);
+		assert(pTrack);
 
 		ser.BeginGroup("Track");
 		{
@@ -148,7 +145,6 @@ void CTargetTrackGroup::Serialize_Read(TSerialize ser)
 		ser.BeginGroup("Track");
 		{
 			ser.Value("targetId", targetId);
-			assert(targetId != INVALID_AIOBJECTID);
 
 			CTargetTrack* pTrack = GetTargetTrack(targetId);
 			assert(pTrack);
@@ -259,11 +255,13 @@ CTargetTrack* CTargetTrackGroup::GetTargetTrack(tAIObjectID aiTargetId)
 				m_bDebugGraphOccupied[uDebugGraphIndex] = true;
 				pTrack->SetDebugGraphIndex(uDebugGraphIndex);
 
-				IDebugHistory* pDebugHistory = m_pDebugHistoryManager->CreateHistory(pTarget->GetName());
-				if (pDebugHistory)
+				if (m_pDebugHistoryManager)
 				{
-					pDebugHistory->SetVisibility(false);
-					pDebugHistory->SetupScopeExtent(-360.0f, 360.0f, 0.0f, 200.0f);
+					if (IDebugHistory* pDebugHistory = m_pDebugHistoryManager->CreateHistory(pTarget->GetName()))
+					{
+						pDebugHistory->SetVisibility(false);
+						pDebugHistory->SetupScopeExtent(-360.0f, 360.0f, 0.0f, 200.0f);
+					}
 				}
 			}
 		}
@@ -433,7 +431,7 @@ uint32 CTargetTrackGroup::GetBestTrack(TargetTrackHelpers::EDesiredTargetMethod 
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "CTargetTrackGroup::GetBestTrack Unhandled desired target method");
+		CRY_ASSERT(false, "CTargetTrackGroup::GetBestTrack Unhandled desired target method");
 		break;
 	}
 
@@ -448,8 +446,8 @@ bool CTargetTrackGroup::TestTrackAgainstFilters(CTargetTrack* pTrack, TargetTrac
 	bool bResult = true;
 
 	// [Kevin:26.02.2010] Need a better method than using the track manager here...
-	CTargetTrackManager* pManager = gAIEnv.pTargetTrackManager;
-	assert(pManager);
+	//CTargetTrackManager* pManager = gAIEnv.pTargetTrackManager;
+	//assert(pManager);
 
 	const uint32 uFilterBitmask = eMethod & TargetTrackHelpers::eDTM_FILTER_MASK;
 
@@ -559,7 +557,7 @@ void CTargetTrackGroup::UpdateTargetRepresentation(const CTargetTrack* pBestTrac
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(0, "CTargetTrackGroup::UpdateDummyTargetRep Unhandled AI target type");
+		CRY_ASSERT(0, "CTargetTrackGroup::UpdateDummyTargetRep Unhandled AI target type");
 		break;
 	}
 
@@ -649,12 +647,14 @@ void CTargetTrackGroup::DebugDrawTracks(TargetTrackHelpers::ITargetTrackConfigPr
 				const uint32 uGraphY = uDebugGraphIndex / 4;
 
 				// Debug graph update
-				IDebugHistory* pDebugHistory = m_pDebugHistoryManager->GetHistory(pTarget->GetName());
-				if (pDebugHistory)
+				if (m_pDebugHistoryManager)
 				{
-					pDebugHistory->SetupLayoutAbs(fColumnGraphX + (fGraphWidth + fGraphMargin) * uGraphX, fColumnGraphY + (fGraphHeight + fGraphMargin) * uGraphY, fGraphWidth, fGraphHeight, fGraphMargin);
-					pDebugHistory->AddValue(pTrack->GetTrackValue());
-					pDebugHistory->SetVisibility(!bLastDraw);
+					if (IDebugHistory* pDebugHistory = m_pDebugHistoryManager->GetHistory(pTarget->GetName()))
+					{
+						pDebugHistory->SetupLayoutAbs(fColumnGraphX + (fGraphWidth + fGraphMargin) * uGraphX, fColumnGraphY + (fGraphHeight + fGraphMargin) * uGraphY, fGraphWidth, fGraphHeight, fGraphMargin);
+						pDebugHistory->AddValue(pTrack->GetTrackValue());
+						pDebugHistory->SetVisibility(!bLastDraw);
+					}
 				}
 			}
 		}
@@ -700,7 +700,6 @@ void CTargetTrackGroup::DebugDrawTargets(int nMode, int nTargetedCount, bool bEx
 
 		CWeakRef<CAIObject> refTarget = pTrack->GetAIObject();
 		assert(refTarget.IsValid());
-		CAIObject* pTarget = refTarget.GetAIObject();
 
 		switch (eType)
 		{
@@ -729,7 +728,7 @@ void CTargetTrackGroup::DebugDrawTargets(int nMode, int nTargetedCount, bool bEx
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0, "CTargetTrackGroup::DebugDrawTargets Unhandled target type");
+			CRY_ASSERT(0, "CTargetTrackGroup::DebugDrawTargets Unhandled target type");
 			break;
 		}
 		if (!bFirst)

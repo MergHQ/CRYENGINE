@@ -2,31 +2,27 @@
 
 #include "StdAfx.h"
 
-#include <Cry3DEngine/ITimeOfDay.h>
 #include "EnvironmentPreset.h"
 
+#include <Cry3DEngine/ITimeOfDay.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/ClassFactory.h>
+#include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Enum.h>
 #include <CryMath/Bezier_impl.h>
 
 namespace
 {
-static const unsigned int sCurrentPresetVersion = 2;
-static const float sAnimTimeSecondsIn24h = 24.0f;   // 24 hours = (sAnimTimeSecondsIn24h * SAnimTime::numTicksPerSecond) ticks
+const unsigned int sCurrentPresetVersion = 4;
+const float sAnimTimeSecondsIn24h = 24.0f;   // 24 hours = (sAnimTimeSecondsIn24h * SAnimTime::numTicksPerSecond) ticks
 
-static const float sBezierSplineKeyValueEpsilon = 0.001f;
+const float sBezierSplineKeyValueEpsilon = 0.001f;
 }
 
 CBezierSpline::CBezierSpline()
 {
 	m_keys.reserve(2);
-}
-
-CBezierSpline::~CBezierSpline()
-{
-
 }
 
 void CBezierSpline::Init(float fDefaultValue)
@@ -134,14 +130,7 @@ void CBezierSpline::Serialize(Serialization::IArchive& ar)
 CTimeOfDayVariable::CTimeOfDayVariable() : m_id(ITimeOfDay::PARAM_TOTAL), m_type(ITimeOfDay::TYPE_FLOAT),
 	m_name(NULL), m_displayName(NULL), m_group(NULL),
 	m_minValue(0.0f), m_maxValue(0.0f), m_value(ZERO)
-{
-
-}
-
-CTimeOfDayVariable::~CTimeOfDayVariable()
-{
-
-}
+{}
 
 void CTimeOfDayVariable::Init(const char* group, const char* displayName, const char* name, ITimeOfDay::ETimeOfDayParamID nParamId, ITimeOfDay::EVariableType type, float defVal0, float defVal1, float defVal2)
 {
@@ -242,19 +231,26 @@ void CTimeOfDayVariable::Serialize(Serialization::IArchive& ar)
 	ar(m_spline[2], "spline2");
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-CEnvironmentPreset::CEnvironmentPreset()
+void CTimeOfDayVariable::SetValuesFrom(const CTimeOfDayVariable& var)
 {
-	ResetVariables();
+	CRY_ASSERT(m_id == var.m_id);
+
+	m_type = var.m_type;
+
+	m_minValue = var.m_minValue;
+	m_maxValue = var.m_maxValue;
+
+	m_spline[0] = var.m_spline[0];
+	m_spline[1] = var.m_spline[1];
+	m_spline[2] = var.m_spline[2];
 }
 
-CEnvironmentPreset::~CEnvironmentPreset()
+CTimeOfDayVariables::CTimeOfDayVariables()
 {
-
+	Reset();
 }
 
-void CEnvironmentPreset::ResetVariables()
+void CTimeOfDayVariables::Reset()
 {
 	const float fRecip255 = 1.0f / 255.0f;
 
@@ -289,26 +285,33 @@ void CEnvironmentPreset::ResetVariables()
 	AddVar("Fog", "Shadow darkening ambient", "Volumetric fog: Shadow darkening ambient", ITimeOfDay::PARAM_VOLFOG_SHADOW_DARKENING_AMBIENT, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
 	AddVar("Fog", "Shadow range", "Volumetric fog: Shadow range", ITimeOfDay::PARAM_VOLFOG_SHADOW_RANGE, ITimeOfDay::TYPE_FLOAT, 0.1f, 0.0f, 1.0f);
 
-	AddVar("Volumetric fog", "Height (bottom)", "Volumetric fog 2: Fog height (bottom)", ITimeOfDay::PARAM_VOLFOG2_HEIGHT, ITimeOfDay::TYPE_FLOAT, 0.0f, -5000.0f, 30000.0f);
-	AddVar("Volumetric fog", "Density (bottom)", "Volumetric fog 2: Fog layer density (bottom)", ITimeOfDay::PARAM_VOLFOG2_DENSITY, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
-	AddVar("Volumetric fog", "Height (top)", "Volumetric fog 2: Fog height (top)", ITimeOfDay::PARAM_VOLFOG2_HEIGHT2, ITimeOfDay::TYPE_FLOAT, 4000.0f, -5000.0f, 30000.0f);
-	AddVar("Volumetric fog", "Density (top)", "Volumetric fog 2: Fog layer density (top)", ITimeOfDay::PARAM_VOLFOG2_DENSITY2, ITimeOfDay::TYPE_FLOAT, 0.0001f, 0.0f, 1.0f);
-	AddVar("Volumetric fog", "Global density", "Volumetric fog 2: Global fog density", ITimeOfDay::PARAM_VOLFOG2_GLOBAL_DENSITY, ITimeOfDay::TYPE_FLOAT, 0.1f, 0.0f, 100.0f);
-	AddVar("Volumetric fog", "Ramp start", "Volumetric fog 2: Ramp start", ITimeOfDay::PARAM_VOLFOG2_RAMP_START, ITimeOfDay::TYPE_FLOAT, 0.0f, 0.0f, 30000.0f);
-	AddVar("Volumetric fog", "Ramp end", "Volumetric fog 2: Ramp end", ITimeOfDay::PARAM_VOLFOG2_RAMP_END, ITimeOfDay::TYPE_FLOAT, 0.0f, 0.0f, 30000.0f);
-	AddVar("Volumetric fog", "Color (atmosphere)", "Volumetric fog 2: Fog albedo color (atmosphere)", ITimeOfDay::PARAM_VOLFOG2_COLOR1, ITimeOfDay::TYPE_COLOR, 0.244f, 0.446f, 1.0f);
-	AddVar("Volumetric fog", "Anisotropy (atmosphere)", "Volumetric fog 2: Anisotropy factor (atmosphere)", ITimeOfDay::PARAM_VOLFOG2_ANISOTROPIC1, ITimeOfDay::TYPE_FLOAT, 0.2f, -1.0f, 1.0f);
-	AddVar("Volumetric fog", "Color (sun radial)", "Volumetric fog 2: Fog albedo color (sun radial)", ITimeOfDay::PARAM_VOLFOG2_COLOR2, ITimeOfDay::TYPE_COLOR, 1.0f, 1.0f, 1.0f);
-	AddVar("Volumetric fog", "Anisotropy (sun radial)", "Volumetric fog 2: Anisotropy factor (sun radial)", ITimeOfDay::PARAM_VOLFOG2_ANISOTROPIC2, ITimeOfDay::TYPE_FLOAT, 0.95f, -1.0f, 1.0f);
-	AddVar("Volumetric fog", "Radial blend factor", "Volumetric fog 2: Blend factor for sun scattering", ITimeOfDay::PARAM_VOLFOG2_BLEND_FACTOR, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
-	AddVar("Volumetric fog", "Radial blend mode", "Volumetric fog 2: Blend mode for sun scattering", ITimeOfDay::PARAM_VOLFOG2_BLEND_MODE, ITimeOfDay::TYPE_FLOAT, 0.0f, 0.0f, 1.0f);
-	AddVar("Volumetric fog", "Range", "Volumetric fog 2: Maximum range of ray-marching", ITimeOfDay::PARAM_VOLFOG2_RANGE, ITimeOfDay::TYPE_FLOAT, 64.0f, 0.0f, 8192.0f);
-	AddVar("Volumetric fog", "In-scattering", "Volumetric fog 2: In-scattering factor", ITimeOfDay::PARAM_VOLFOG2_INSCATTER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 100.0f);
-	AddVar("Volumetric fog", "Extinction", "Volumetric fog 2: Extinction factor", ITimeOfDay::PARAM_VOLFOG2_EXTINCTION, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 100.0f);
-	AddVar("Volumetric fog", "Color (entities)", "Volumetric fog 2: Fog albedo color (entities)", ITimeOfDay::PARAM_VOLFOG2_COLOR, ITimeOfDay::TYPE_COLOR, 1.0f, 1.0f, 1.0f);
-	AddVar("Volumetric fog", "Anisotropy (entities)", "Volumetric fog 2: Anisotropy factor (entities)", ITimeOfDay::PARAM_VOLFOG2_ANISOTROPIC, ITimeOfDay::TYPE_FLOAT, 0.6f, -1.0f, 1.0f);
-	AddVar("Volumetric fog", "Analytical fog visibility", "Volumetric fog 2: Analytical volumetric fog visibility", ITimeOfDay::PARAM_VOLFOG2_GLOBAL_FOG_VISIBILITY, ITimeOfDay::TYPE_FLOAT, 0.5f, 0.0f, 1.0f);
-	AddVar("Volumetric fog", "Final density clamp", "Volumetric fog 2: Final density clamp", ITimeOfDay::PARAM_VOLFOG2_FINAL_DENSITY_CLAMP, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
+	AddVar("Volumetric Fog", "Height (bottom)", "Volumetric fog 2: Fog height (bottom)", ITimeOfDay::PARAM_VOLFOG2_HEIGHT, ITimeOfDay::TYPE_FLOAT, 0.0f, -5000.0f, 30000.0f);
+	AddVar("Volumetric Fog", "Density (bottom)", "Volumetric fog 2: Fog layer density (bottom)", ITimeOfDay::PARAM_VOLFOG2_DENSITY, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
+	AddVar("Volumetric Fog", "Height (top)", "Volumetric fog 2: Fog height (top)", ITimeOfDay::PARAM_VOLFOG2_HEIGHT2, ITimeOfDay::TYPE_FLOAT, 4000.0f, -5000.0f, 30000.0f);
+	AddVar("Volumetric Fog", "Density (top)", "Volumetric fog 2: Fog layer density (top)", ITimeOfDay::PARAM_VOLFOG2_DENSITY2, ITimeOfDay::TYPE_FLOAT, 0.0001f, 0.0f, 1.0f);
+	AddVar("Volumetric Fog", "Global density", "Volumetric fog 2: Global fog density", ITimeOfDay::PARAM_VOLFOG2_GLOBAL_DENSITY, ITimeOfDay::TYPE_FLOAT, 0.1f, 0.0f, 100.0f);
+	AddVar("Volumetric Fog", "Ramp start", "Volumetric fog 2: Ramp start", ITimeOfDay::PARAM_VOLFOG2_RAMP_START, ITimeOfDay::TYPE_FLOAT, 0.0f, 0.0f, 30000.0f);
+	AddVar("Volumetric Fog", "Ramp end", "Volumetric fog 2: Ramp end", ITimeOfDay::PARAM_VOLFOG2_RAMP_END, ITimeOfDay::TYPE_FLOAT, 0.0f, 0.0f, 30000.0f);
+	AddVar("Volumetric Fog", "Color (atmosphere)", "Volumetric fog 2: Fog albedo color (atmosphere)", ITimeOfDay::PARAM_VOLFOG2_COLOR1, ITimeOfDay::TYPE_COLOR, 0.244f, 0.446f, 1.0f);
+	AddVar("Volumetric Fog", "Anisotropy (atmosphere)", "Volumetric fog 2: Anisotropy factor (atmosphere)", ITimeOfDay::PARAM_VOLFOG2_ANISOTROPIC1, ITimeOfDay::TYPE_FLOAT, 0.2f, -1.0f, 1.0f);
+	AddVar("Volumetric Fog", "Color (sun radial)", "Volumetric fog 2: Fog albedo color (sun radial)", ITimeOfDay::PARAM_VOLFOG2_COLOR2, ITimeOfDay::TYPE_COLOR, 1.0f, 1.0f, 1.0f);
+	AddVar("Volumetric Fog", "Anisotropy (sun radial)", "Volumetric fog 2: Anisotropy factor (sun radial)", ITimeOfDay::PARAM_VOLFOG2_ANISOTROPIC2, ITimeOfDay::TYPE_FLOAT, 0.95f, -1.0f, 1.0f);
+	AddVar("Volumetric Fog", "Radial blend factor", "Volumetric fog 2: Blend factor for sun scattering", ITimeOfDay::PARAM_VOLFOG2_BLEND_FACTOR, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
+	AddVar("Volumetric Fog", "Radial blend mode", "Volumetric fog 2: Blend mode for sun scattering", ITimeOfDay::PARAM_VOLFOG2_BLEND_MODE, ITimeOfDay::TYPE_FLOAT, 0.0f, 0.0f, 1.0f);
+	AddVar("Volumetric Fog", "Range", "Volumetric fog 2: Maximum range of ray-marching", ITimeOfDay::PARAM_VOLFOG2_RANGE, ITimeOfDay::TYPE_FLOAT, 64.0f, 0.0f, 8192.0f);
+	AddVar("Volumetric Fog", "In-scattering", "Volumetric fog 2: In-scattering factor", ITimeOfDay::PARAM_VOLFOG2_INSCATTER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 100.0f);
+	AddVar("Volumetric Fog", "Extinction", "Volumetric fog 2: Extinction factor", ITimeOfDay::PARAM_VOLFOG2_EXTINCTION, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 100.0f);
+	AddVar("Volumetric Fog", "Color (entities)", "Volumetric fog 2: Fog albedo color (entities)", ITimeOfDay::PARAM_VOLFOG2_COLOR, ITimeOfDay::TYPE_COLOR, 1.0f, 1.0f, 1.0f);
+	AddVar("Volumetric Fog", "Anisotropy (entities)", "Volumetric fog 2: Anisotropy factor (entities)", ITimeOfDay::PARAM_VOLFOG2_ANISOTROPIC, ITimeOfDay::TYPE_FLOAT, 0.6f, -1.0f, 1.0f);
+	AddVar("Volumetric Fog", "Analytical fog visibility", "Volumetric fog 2: Analytical volumetric fog visibility", ITimeOfDay::PARAM_VOLFOG2_GLOBAL_FOG_VISIBILITY, ITimeOfDay::TYPE_FLOAT, 0.5f, 0.0f, 1.0f);
+	AddVar("Volumetric Fog", "Final density clamp", "Volumetric fog 2: Final density clamp", ITimeOfDay::PARAM_VOLFOG2_FINAL_DENSITY_CLAMP, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
+
+	AddVar("Skybox", "Rotation", "Skybox rotation", ITimeOfDay::PARAM_SKYBOX_ANGLE, ITimeOfDay::TYPE_FLOAT, 0.0f, 0.0f, 360.0f);
+	AddVar("Skybox", "Vertical stretch", "Skybox vertical stretch", ITimeOfDay::PARAM_SKYBOX_STRETCHING, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 4.0f);
+	AddVar("Skybox", "Color", "Skybox color", ITimeOfDay::PARAM_SKYBOX_COLOR, ITimeOfDay::TYPE_COLOR, 255.0f * fRecip255, 248.0f * fRecip255, 248.0f * fRecip255);
+	AddVar("Skybox", "Intensity (lux)", "Skybox intensity", ITimeOfDay::PARAM_SKYBOX_INTENSITY, ITimeOfDay::TYPE_FLOAT, 19800.0f, 0.0f, 20000.0f);
+	AddVar("Skybox", "Filter", "Skybox filter", ITimeOfDay::PARAM_SKYBOX_FILTER, ITimeOfDay::TYPE_COLOR, 255.0f * fRecip255, 255.0f * fRecip255, 255.0f * fRecip255);
+	AddVar("Skybox", "Opacity", "Skybox opacity", ITimeOfDay::PARAM_SKYBOX_OPACITY, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
 
 	AddVar("Sky Light", "Sun intensity", "Sky light: Sun intensity", ITimeOfDay::PARAM_SKYLIGHT_SUN_INTENSITY, ITimeOfDay::TYPE_COLOR, 1.0f, 1.0f, 1.0f);
 	AddVar("Sky Light", "Sun intensity multiplier", "Sky light: Sun intensity multiplier", ITimeOfDay::PARAM_SKYLIGHT_SUN_INTENSITY_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 50.0f, 0.0f, 1000.0f);
@@ -373,9 +376,6 @@ void CEnvironmentPreset::ResetVariables()
 	AddVar("HDR", "", "Film curve whitepoint", ITimeOfDay::PARAM_HDR_FILMCURVE_WHITEPOINT, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 10.0f);
 	AddVar("HDR", "", "Saturation", ITimeOfDay::PARAM_HDR_COLORGRADING_COLOR_SATURATION, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 2.0f);
 	AddVar("HDR", "", "Color balance", ITimeOfDay::PARAM_HDR_COLORGRADING_COLOR_BALANCE, ITimeOfDay::TYPE_COLOR, 1.0f, 1.0f, 1.0f);
-	AddVar("HDR", "(Dep) Scene key", "Scene key", ITimeOfDay::PARAM_HDR_EYEADAPTATION_SCENEKEY, ITimeOfDay::TYPE_FLOAT, 0.18f, 0.0f, 1.0f);
-	AddVar("HDR", "(Dep) Min exposure", "Min exposure", ITimeOfDay::PARAM_HDR_EYEADAPTATION_MIN_EXPOSURE, ITimeOfDay::TYPE_FLOAT, 0.36f, 0.0f, 10.0f);
-	AddVar("HDR", "(Dep) Max exposure", "Max exposure", ITimeOfDay::PARAM_HDR_EYEADAPTATION_MAX_EXPOSURE, ITimeOfDay::TYPE_FLOAT, 2.8f, 0.0f, 10.0f);
 	AddVar("HDR", "", "EV Min", ITimeOfDay::PARAM_HDR_EYEADAPTATION_EV_MIN, ITimeOfDay::TYPE_FLOAT, 4.5f, -10.0f, 20.0f);
 	AddVar("HDR", "", "EV Max", ITimeOfDay::PARAM_HDR_EYEADAPTATION_EV_MAX, ITimeOfDay::TYPE_FLOAT, 17.0f, -10.0f, 20.0f);
 	AddVar("HDR", "", "EV Auto compensation", ITimeOfDay::PARAM_HDR_EYEADAPTATION_EV_AUTO_COMPENSATION, ITimeOfDay::TYPE_FLOAT, 1.5f, -5.0f, 5.0f);
@@ -391,8 +391,6 @@ void CEnvironmentPreset::ResetVariables()
 	AddVar("Advanced", "", "Ocean fog color", ITimeOfDay::PARAM_OCEANFOG_COLOR, ITimeOfDay::TYPE_COLOR, 29.0f * fRecip255, 102.0f * fRecip255, 141.0f * fRecip255);
 	AddVar("Advanced", "", "Ocean fog color multiplier", ITimeOfDay::PARAM_OCEANFOG_COLOR_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
 	AddVar("Advanced", "", "Ocean fog density", ITimeOfDay::PARAM_OCEANFOG_DENSITY, ITimeOfDay::TYPE_FLOAT, 0.2f, 0.0f, 1.0f);
-
-	AddVar("Advanced", "", "Skybox multiplier", ITimeOfDay::PARAM_SKYBOX_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 1.0f);
 
 	const float arrDepthConstBias[] = { 1.0f, 1.0f, 1.9f, 3.0f, 2.0f, 2.0f, 2.0f, 2.0f };
 	const float arrDepthSlopeBias[] = { 4.0f, 2.0f, 0.24f, 0.24f, 0.5f, 0.5f, 0.5f, 0.5f };
@@ -415,85 +413,103 @@ void CEnvironmentPreset::ResetVariables()
 
 	AddVar("Shadows", "", "Shadow jittering", ITimeOfDay::PARAM_SHADOW_JITTERING, ITimeOfDay::TYPE_FLOAT, 2.5f, 0.f, 10.f);
 
-	AddVar("Obsolete", "", "HDR dynamic power factor", ITimeOfDay::PARAM_HDR_DYNAMIC_POWER_FACTOR, ITimeOfDay::TYPE_FLOAT, 0.0f, -4.0f, 4.0f);
-	AddVar("Obsolete", "", "Global illumination multiplier", ITimeOfDay::PARAM_GI_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.f, 0.f, 100.f);
+	// will convert to Sun intensity
+	AddVar("Deprecated", "", "HDR dynamic power factor", ITimeOfDay::PARAM_HDR_DYNAMIC_POWER_FACTOR, ITimeOfDay::TYPE_FLOAT, 0.0f, -4.0f, 4.0f);
+	AddVar("Deprecated", "", "Sun color multiplier", ITimeOfDay::PARAM_SUN_COLOR_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 16.0f);
+	// still works
+	AddVar("Deprecated", "", "Global illumination multiplier", ITimeOfDay::PARAM_GI_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.f, 0.f, 100.f);
+
+	// Without effect
 	AddVar("Obsolete", "", "Sky brightening (terrain occlusion)", ITimeOfDay::PARAM_TERRAIN_OCCL_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 0.3f, 0.f, 1.f);
-	AddVar("Obsolete", "", "Sun color multiplier", ITimeOfDay::PARAM_SUN_COLOR_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 16.0f);
+	AddVar("Obsolete", "", "Skybox multiplier", ITimeOfDay::PARAM_SKYBOX_MULTIPLIER, ITimeOfDay::TYPE_FLOAT, 1.0f, 0.0f, 10.0f);
+
+	AddVar("Obsolete", "", "Scene key", ITimeOfDay::PARAM_HDR_EYEADAPTATION_SCENEKEY, ITimeOfDay::TYPE_FLOAT, 0.18f, 0.0f, 1.0f);
+	AddVar("Obsolete", "", "Min exposure", ITimeOfDay::PARAM_HDR_EYEADAPTATION_MIN_EXPOSURE, ITimeOfDay::TYPE_FLOAT, 0.36f, 0.0f, 10.0f);
+	AddVar("Obsolete", "", "Max exposure", ITimeOfDay::PARAM_HDR_EYEADAPTATION_MAX_EXPOSURE, ITimeOfDay::TYPE_FLOAT, 2.8f, 0.0f, 10.0f);
 }
 
-void CEnvironmentPreset::Serialize(Serialization::IArchive& ar)
+int CTimeOfDayVariables::GetVariableCount()
 {
-	if (ar.isInput())
-	{
-		unsigned int version = 0;
-		const bool bReadResult = ar(version, "version");
-		if (bReadResult && (sCurrentPresetVersion == version))
-		{
-			// read directly
-			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-			{
-				ar(m_vars[i], "var");
-			}
-		}
-		else
-		{
-			// convert to current version
-			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-			{
-				const CTimeOfDayVariable& var = m_vars[i];
-				CTimeOfDayVariable tempVar = var;
-				ar(tempVar, "var");
-
-				if (!bReadResult)
-				{
-					//converting from initial version.
-					//rescale time from [0..1] to [0..sAnimTimeSecondsIn24h]
-					for (unsigned int i = 0; i < 3; ++i)
-					{
-						CBezierSpline* pSpline = tempVar.GetSpline(i);
-						const size_t nKeyCount = pSpline->GetKeyCount();
-
-						if (!nKeyCount)
-							continue;
-
-						std::vector<SBezierKey> tempKeys;
-						tempKeys.resize(nKeyCount);
-						pSpline->GetKeys(&tempKeys[0]);
-						for (unsigned int j = 0; j < nKeyCount; ++j)
-						{
-							SBezierKey& key = tempKeys[j];
-							key.m_time *= sAnimTimeSecondsIn24h;
-						}
-						pSpline->SetKeys(&tempKeys[0], nKeyCount);
-					}
-				}
-
-				const ITimeOfDay::ETimeOfDayParamID id = tempVar.GetId();
-				if (id < ITimeOfDay::PARAM_TOTAL)
-					m_vars[id] = tempVar; //update the actual var
-			}
-		}
-	}
-	else
-	{
-		ar(sCurrentPresetVersion, "version");
-		for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-		{
-			ar(m_vars[i], "var");
-		}
-	}
+	return ITimeOfDay::PARAM_TOTAL;
 }
 
-void CEnvironmentPreset::Update(float t)
+bool CTimeOfDayVariables::GetVariableInfo(int nIndex, ITimeOfDay::SVariableInfo& varInfo)
 {
-	t *= sAnimTimeSecondsIn24h;
-	for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+	if (nIndex < 0 || nIndex >= GetVariableCount())
+		return false;
+
+	const CTimeOfDayVariable& var = m_vars[nIndex];
+
+	varInfo.szName = var.GetName();
+	varInfo.szDisplayName = var.GetDisplayName();
+	varInfo.szGroup = var.GetGroupName();
+	varInfo.nParamId = nIndex;
+
+	varInfo.fValue[0] = var.GetValue().x;
+	if (var.GetType() == ITimeOfDay::TYPE_FLOAT)
 	{
-		m_vars[i].Update(t);
+		varInfo.type = ITimeOfDay::TYPE_FLOAT;
+		varInfo.fValue[1] = var.GetMinValue();
+		varInfo.fValue[2] = var.GetMaxValue();
 	}
+	else if (var.GetType() == ITimeOfDay::TYPE_COLOR)
+	{
+		varInfo.type = ITimeOfDay::TYPE_COLOR;
+		varInfo.fValue[1] = var.GetValue().y;
+		varInfo.fValue[2] = var.GetValue().z;
+	}
+	return true;
 }
 
-CTimeOfDayVariable* CEnvironmentPreset::GetVar(const char* varName)
+bool CTimeOfDayVariables::InterpolateVarInRange(int nIndex, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		InterpolateVarInRange((ITimeOfDay::ETimeOfDayParamID)nIndex, fMin, fMax, nCount, resultArray);
+		return true;
+	}
+
+	return false;
+}
+
+uint CTimeOfDayVariables::GetSplineKeysCount(int nIndex, int nSpline) const
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].GetSplineKeyCount(nSpline);
+	}
+	return 0;
+}
+
+bool CTimeOfDayVariables::GetSplineKeysForVar(int nIndex, int nSpline, SBezierKey* keysArray, unsigned int keysArraySize) const
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].GetSplineKeys(nSpline, keysArray, keysArraySize);
+	}
+
+	return false;
+}
+
+bool CTimeOfDayVariables::SetSplineKeysForVar(int nIndex, int nSpline, const SBezierKey* keysArray, unsigned int keysArraySize)
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].SetSplineKeys(nSpline, keysArray, keysArraySize);
+	}
+	return false;
+}
+
+bool CTimeOfDayVariables::UpdateSplineKeyForVar(int nIndex, int nSpline, float fTime, float newValue)
+{
+	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL)
+	{
+		return m_vars[nIndex].UpdateSplineKeyForTime(nSpline, fTime, newValue);
+	}
+	return false;
+}
+
+CTimeOfDayVariable* CTimeOfDayVariables::GetVar(const char* varName)
 {
 	for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
 	{
@@ -502,10 +518,20 @@ CTimeOfDayVariable* CEnvironmentPreset::GetVar(const char* varName)
 			return &m_vars[i];
 		}
 	}
-	return NULL;
+	return nullptr;
+
 }
 
-bool CEnvironmentPreset::InterpolateVarInRange(ITimeOfDay::ETimeOfDayParamID id, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const
+void CTimeOfDayVariables::Update(float t)
+{
+	t *= sAnimTimeSecondsIn24h;
+	for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+	{
+		m_vars[i].Update(t);
+	}
+}
+
+bool CTimeOfDayVariables::InterpolateVarInRange(ITimeOfDay::ETimeOfDayParamID id, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const
 {
 	const float fdx = 1.0f / float(nCount);
 	float normX = 0.0f;
@@ -519,13 +545,116 @@ bool CEnvironmentPreset::InterpolateVarInRange(ITimeOfDay::ETimeOfDayParamID id,
 	return true;
 }
 
-float CEnvironmentPreset::GetAnimTimeSecondsIn24h()
-{
-	return sAnimTimeSecondsIn24h;
-}
-
-void CEnvironmentPreset::AddVar(const char* group, const char* displayName, const char* name, ITimeOfDay::ETimeOfDayParamID nParamId, ITimeOfDay::EVariableType type, float defVal0, float defVal1, float defVal2)
+void CTimeOfDayVariables::AddVar(const char* group, const char* displayName, const char* name, ITimeOfDay::ETimeOfDayParamID nParamId, ITimeOfDay::EVariableType type, float defVal0, float defVal1, float defVal2)
 {
 	CTimeOfDayVariable& var = m_vars[nParamId];
 	var.Init(group, displayName, name, nParamId, type, defVal0, defVal1, defVal2);
+}
+
+ITimeOfDay::IVariables& CEnvironmentPreset::GetVariables()
+{
+	return m_variables;
+}
+
+ITimeOfDay::IConstants& CEnvironmentPreset::GetConstants()
+{
+	return m_constants;
+}
+
+void CEnvironmentPreset::Update(float normalizedTime)
+{
+	m_variables.Update(normalizedTime);
+}
+
+void CEnvironmentPreset::Reset()
+{
+	m_variables.Reset();
+	m_constants.Reset();
+}
+
+void CEnvironmentPreset::ReadVariablesFromXML(Serialization::IArchive& ar, CTimeOfDayVariables& variables, const bool bConvertLegacyVersion)
+{
+	CTimeOfDayVariable var, firstVar;
+	ar(var, "var");
+	firstVar = var;
+
+	// read until we reach the beginning of the archive again
+	while (true)
+	{
+		if (bConvertLegacyVersion)
+		{
+			//converting from initial version.
+			//rescale time from [0..1] to [0..sAnimTimeSecondsIn24h]
+			for (unsigned int j = 0; j < 3; ++j)
+			{
+				CBezierSpline* pSpline = var.GetSpline(j);
+				const size_t nKeyCount = pSpline->GetKeyCount();
+				if (!nKeyCount)
+				{
+					continue;
+				}
+
+				std::vector<SBezierKey> tempKeys;
+				tempKeys.resize(nKeyCount);
+				pSpline->GetKeys(&tempKeys[0]);
+				for (unsigned int k = 0; k < nKeyCount; ++k)
+				{
+					SBezierKey& key = tempKeys[k];
+					key.m_time *= sAnimTimeSecondsIn24h;
+				}
+				pSpline->SetKeys(&tempKeys[0], nKeyCount);
+			}
+		}
+
+		if (auto dest = variables.GetVar(var.GetId()))
+		{
+			dest->SetValuesFrom(var);
+		}
+
+		ar(var, "var");
+		if (var.GetId() == firstVar.GetId()) break;
+	}
+}
+
+void CEnvironmentPreset::Serialize(Serialization::IArchive& ar)
+{
+	if (ar.isInput())
+	{
+		unsigned int version = 0;
+		const bool bConvertLegacyVersion = !ar(version, "version");
+
+		CRY_ASSERT(version <= sCurrentPresetVersion);
+		if (!bConvertLegacyVersion && (sCurrentPresetVersion == version))
+		{
+			// read directly
+			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+			{
+				CTimeOfDayVariable& var = *m_variables.GetVar(static_cast<ITimeOfDay::ETimeOfDayParamID>(i));
+				ar(var, "var");
+			}
+			//Root node is for XML-header only. PropertyTree will have no root node
+			ar(m_constants, "Constants");
+		}
+		else
+		{
+			// convert to current version
+			ReadVariablesFromXML(ar, m_variables, bConvertLegacyVersion);
+			m_constants.Reset();
+		}
+	}
+	else
+	{
+		ar(sCurrentPresetVersion, "version");
+		for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
+		{
+			CTimeOfDayVariable& var = *m_variables.GetVar(static_cast<ITimeOfDay::ETimeOfDayParamID>(i));
+			ar(var, "var");
+		}
+		ar(m_constants, "Constants");
+	}
+}
+
+const float CEnvironmentPreset::GetAnimTimeSecondsIn24h()
+{
+	return sAnimTimeSecondsIn24h;
 }

@@ -5,11 +5,10 @@
 #include "ControlInfo.h"
 #include "FileImportInfo.h"
 
-#include <CrySystem/XML/IXml.h>
 #include <CrySandbox/CrySignal.h>
 #include <FileDialogs/ExtensionFilter.h>
 
-#ifdef PLUGIN_EXPORTS
+#ifdef ACE_PLUGIN_EXPORTS
 	#define ACE_API DLL_EXPORT
 #else
 	#define ACE_API DLL_IMPORT
@@ -18,9 +17,13 @@
 class QWidget;
 class CryIcon;
 class QString;
+class QMimeData;
+class XmlNodeRef;
 
 namespace ACE
 {
+struct IConnection;
+
 namespace Impl
 {
 struct IItem;
@@ -31,6 +34,12 @@ struct IImpl
 	virtual ~IImpl() = default;
 	//! \endcond
 
+	//! Initializes the middleware implementation.
+	//! \param implInfo - Info struct to be filled by the middleware implementation.
+	//! \param extensionFilters - File extension filters used for file import.
+	//! \param supportedFileTypes - Supported file types used for file import.
+	virtual void Initialize(SImplInfo& implInfo, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) = 0;
+
 	//! Creates a new widget that is used for displaying middleware data in the middleware data panel.
 	//! \return A pointer to the data panel.
 	virtual QWidget* CreateDataPanel() = 0;
@@ -39,15 +48,8 @@ struct IImpl
 	virtual void DestroyDataPanel() = 0;
 
 	//! Reloads all the middleware control data.
-	//! \param preserveConnectionStatus - Keep the connection status of the controls. If true, when
-	//! reloading the controls it will try to map the connected status they had previously
-	//! (if they existed before the reload).
-	virtual void Reload(bool const preserveConnectionStatus = true) = 0;
-
-	//! Provides platform names to the middleware implementation.
-	//! \param platforms - Platform names of the current project.
-	//! Used for platform specific preload requests.
-	virtual void SetPlatforms(Platforms const& platforms) = 0;
+	//! \param implInfo - Info struct to be filled by the middleware implementation.
+	virtual void Reload(SImplInfo& implInfo) = 0;
 
 	//! Gets the middleware control given its unique id.
 	//! \param id - Unique ID of the control.
@@ -64,32 +66,9 @@ struct IImpl
 	//! \return A string with the type name corresponding to the control type.
 	virtual QString const& GetItemTypeName(IItem const* const pIItem) const = 0;
 
-	//! Gets the name of the implementation which might be used in the ACE UI.
-	//! \return A string with the name of the implementation.
-	virtual string const& GetName() const = 0;
-
-	//! Gets the name of the implementation folder which might be used to construct paths to audio assets and ACE files.
-	//! \return A string with the name of the implementation folder.
-	virtual string const& GetFolderName() const = 0;
-
-	//! Returns path to the folder that contains soundbanks and/or audio files.
-	virtual char const* GetAssetsPath() const = 0;
-
-	//! Returns path to the folder that contains the middleware project.
-	//! If the selected middleware doesn't support projects, the asset path is returned.
-	virtual char const* GetProjectPath() const = 0;
-
 	//! Sets the path to the middleware project.
 	//! \param szPath - Folder path to the middleware project.
 	virtual void SetProjectPath(char const* const szPath) = 0;
-
-	//! Checks if the selected middleware supports projects or not.
-	virtual bool SupportsProjects() const = 0;
-
-	//! Checks if the given audio system control type is supported by the middleware implementation.
-	//! \param assetType - An audio system control type.
-	//! \return A bool if the type is supported or not.
-	virtual bool IsSystemTypeSupported(EAssetType const assetType) const = 0;
 
 	//! Checks if the given audio system control type and middleware control are compatible.
 	//! \param assetType - An audio system control type.
@@ -104,42 +83,59 @@ struct IImpl
 	virtual EAssetType ImplTypeToAssetType(IItem const* const pIItem) const = 0;
 
 	//! Creates and returns a connection to a middleware control. The connection object is owned by this class.
-	//! \param assetType - The type of the audio system control you are connecting to pMiddlewareControl.
+	//! \param assetType - The type of the audio system control you are connecting to the middleware control.
 	//! \param pIItem - Middleware control for which to make the connection.
 	// \return A pointer to the newly created connection.
-	virtual ConnectionPtr CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) = 0;
+	virtual IConnection* CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) = 0;
 
 	//! Creates and returns a connection defined in an XML node.
 	//! The format of the XML node should be in sync with the CreateXMLNodeFromConnection function which is in charge of writing the node during serialization.
 	//! If the XML node is unknown to the system NULL should be returned.
 	//! If the middleware control referenced in the XML node does not exist it should be created and marked as "placeholder".
-	//! \param pNode - XML node where the connection is defined.
+	//! \param node - XML node where the connection is defined.
 	//! \param assetType - The type of the audio system control you are connecting to.
 	//! \return A pointer to the newly created connection.
-	virtual ConnectionPtr CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) = 0;
+	virtual IConnection* CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType) = 0;
 
 	//! When serializing connections between controls this function will be called once per connection to serialize its properties.
 	//! This function should be in sync with CreateConnectionToControl as whatever it's written here will have to be read there.
-	//! \param pConnection - Connection to serialize.
+	//! \param pIConnection - Connection to serialize.
 	//! \param assetType - Type of the audio system control that has this connection.
 	//! \return An XML node with the connection serialized.
-	virtual XmlNodeRef CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType) = 0;
+	virtual XmlNodeRef CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType, CryAudio::ContextId const contextId) = 0;
+
+	//! The middleware implementation can provide an XML node that contains the amount of controls of the current library as attributes.
+	//! \param szTag - Tag of the node.
+	//! \param contextId - id of the context of the library that will contain the node.
+	//! \return An XML node that contains the amount of controls. Return nullptr if the node should not get written to the file.
+	virtual XmlNodeRef SetDataNode(char const* const szTag, CryAudio::ContextId const contextId) = 0;
+
+	//! Signal the middleware implemementation that a library file will be written.
+	virtual void OnBeforeWriteLibrary() = 0;
+
+	//! Signal the middleware implemementation that a library file has been written.
+	virtual void OnAfterWriteLibrary() = 0;
 
 	//! Whenever a connection is added to an audio system control this function should be called to keep the system informed of which connections are being used.
-	//! \param pConnection - Connection that has been enabled.
+	//! \param pIConnection - Connection that has been enabled.
 	//! \param isLoading - Is data currently being loaded or not.
-	virtual void EnableConnection(ConnectionPtr const pConnection, bool const isLoading) = 0;
+	virtual void EnableConnection(IConnection const* const pIConnection, bool const isLoading) = 0;
 
 	//! Whenever a connection is removed from an audio system control this function should be called to keep the system informed of which connections are being used.
-	//! \param pConnection - Connection that has been disabled.
+	//! \param pIConnection - Connection that has been disabled.
 	//! \param isLoading - Is data currently being loaded or not.
-	virtual void DisableConnection(ConnectionPtr const pConnection, bool const isLoading) = 0;
+	virtual void DisableConnection(IConnection const* const pIConnection, bool const isLoading) = 0;
+
+	//! Free the memory and potentially other resources used by the supplied IConnection
+	//! \param pIConnection - pointer to the connection to be discarded
+	//! \return void
+	virtual void DestructConnection(IConnection const* const pIConnection) = 0;
 
 	//! Executed before data gets reloaded.
-	virtual void OnAboutToReload() = 0;
+	virtual void OnBeforeReload() = 0;
 
 	//! Executed after data has been reloaded.
-	virtual void OnReloaded() = 0;
+	virtual void OnAfterReload() = 0;
 
 	//! Request to select a middleware control which is connected to the selected audio system control.
 	//! \param id - Id of the middleware control to select.
@@ -150,6 +146,19 @@ struct IImpl
 
 	//! Executed when file importer gets closed.
 	virtual void OnFileImporterClosed() = 0;
+
+	//! Check if external data is allowed to drop. Used for file import outside the middleware data panel.
+	virtual bool CanDropExternalData(QMimeData const* const pData) const = 0;
+
+	//! Drops external data.  Used for file import outside the middleware data panel.
+	virtual bool DropExternalData(QMimeData const* const pData, FileImportInfos& fileImportInfos) const = 0;
+
+	//! Generates an item id based on the given parameters. Used for file import.
+	//! \param name - name of the file.
+	//! \param path - path of the file inside the audio/assets folder.
+	//! \param isLocalized - bool if the item is localized or not.
+	//! \return the id of the item.
+	virtual ControlId GenerateItemId(QString const& name, QString const& path, bool const isLocalized) = 0;
 
 	//! Signal to get infos of audio system controls that are connected to the selected middleware control.
 	//! Used for context menu action to select a connected system control.
@@ -163,15 +172,15 @@ struct IImpl
 	CCrySignal<void(ControlId const, ControlId const)> SignalSelectConnectedSystemControl;
 
 	//! Signal to open a file selection dialog to import files.
-	//! \param ExtensionFilterVector - List of supported file extensions and their descriptions.
-	//! \param QStringList - List of supported file types.
 	//! \param QString - Name of the target folder.
-	CCrySignal<void(ExtensionFilterVector const&, QStringList const&, QString const&)> SignalImportFiles;
+	//! \param bool - Is true when files to import are localized, otherwise false.
+	CCrySignal<void(QString const&, bool const)> SignalImportFiles;
 
 	//! Signal when files got dropped into the middleware data panel. Will open the file importer.
 	//! \param FileImportInfos - Info struct of the files to import.
 	//! \param QString - Name of the target folder.
-	CCrySignal<void(FileImportInfos const&, QString const&)> SignalFilesDropped;
+	//! \param bool - Is true when files to import are localized, otherwise false.
+	CCrySignal<void(FileImportInfos const&, QString const&, bool const)> SignalFilesDropped;
 };
 } // namespace Impl
 } // namespace ACE

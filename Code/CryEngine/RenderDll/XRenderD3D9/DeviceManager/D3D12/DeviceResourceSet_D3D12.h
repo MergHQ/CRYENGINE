@@ -5,7 +5,6 @@
 #include "StdAfx.h"
 #include <CryCore/CryCustomTypes.h>
 #include "../../DeviceManager/DeviceObjects.h"
-#include "DriverD3D.h"
 #include "../../DX12/API/DX12DescriptorHeap.hpp"
 #include "../../DeviceManager/DeviceResourceSet.h"
 

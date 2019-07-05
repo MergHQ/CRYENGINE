@@ -2,61 +2,79 @@
 
 #pragma once
 
-#include <CryPhysics/RayCastQueue.h>
+#include <CrySystem/IEngineModule.h>
 #include <CryPhysics/IntersectionTestQueue.h>
+#include <CryAISystem/AIRayCastQueue.h>
 
 #include <CryNetwork/SerializeFwd.h>
 #include <CryAISystem/IAIRecorder.h>  // <> required for Interfuscator
-#include <CryThreading/IJobManager.h> // <> required for Interfuscator
-#include <CryPhysics/IPhysics.h>
 #include <CryCore/Containers/CryFixedArray.h>
-#include <CryEntitySystem/IEntity.h>
+
+#if !defined(_RELEASE)
+#define AIRAYCAST_EXTENDED_STATS 1
+#else
+#define AIRAYCAST_EXTENDED_STATS 0
+#endif
+
+class IAISystemComponent;
+class ICentralInterestManager;
+class ICrySizer;
 
 struct AgentPathfindingProperties;
-struct INavigation;
-struct IAIPathFinder;
-struct IMNMPathfinder;
-class ICrySizer;
-struct IEntity;
+struct AIObjectParams;
+struct IActorLookUp;
+struct IAIActionManager;
+struct IAIActor;
+struct IAIActorProxyFactory;
+struct IAIBubblesSystem;
 struct IAIDebugRenderer;
+struct IAIGroupManager;
+struct IAIGroupProxy;
+struct IAIGroupProxyFactory;
 struct IAIObject;
-struct IAISignalExtraData;
-struct ICoordinationManager;
+struct IAIObjectManager;
+struct IAIPathFinder;
+struct IAuditionMap;
+struct IClusterDetector;
 struct ICommunicationManager;
+struct ICoordinationManager;
 struct ICoverSystem;
+struct IEntity;
+struct IFactionMap;
+struct IFunctionHandler;
+struct IMNMPathfinder;
+struct INavigation;
 struct INavigationSystem;
+struct INavPath;
+struct IPathFollower;
+struct IPathObstacles;
+struct IPhysicalEntity;
+struct ISmartObjectManager;
+struct ITacticalPointSystem;
+struct ITargetTrackManager;
+struct IVisionMap;
+struct PathFollowerParams;
+struct SAIDetectionLevels;
+struct Sphere;
+
+namespace Cry { namespace AI { namespace CollisionAvoidance {
+struct ISystem;
+}}}
+
 namespace BehaviorTree
 {
 struct IBehaviorTreeManager;
 }
-struct IFunctionHandler;
-class ICentralInterestManager;
-struct ITacticalPointSystem;
-struct ITargetTrackManager;
-struct Sphere;
-struct IAIActionManager;
-struct ISmartObjectManager;
-struct HidespotQueryContext;
-struct IAuditionMap;
-class IVisionMap;
-struct IFactionMap;
-class IAISystemComponent;
-struct IAIObjectManager;
-struct IAIActorProxyFactory;
-struct IAIGroupProxyFactory;
-struct IAIGroupProxy;
-struct IAIGroupManager;
-struct SAIDetectionLevels;
-struct IAIActor;
-struct IClusterDetector;
-class IPathFollower;
-struct IPathObstacles;
-struct PathFollowerParams;
-struct IAIBubblesSystem;
-struct IActorLookUp;
+
 namespace AIActionSequence {
 struct ISequenceManager;
 }
+namespace AISignals {
+	struct IAISignalExtraData;
+	class ISignalManager;
+	class ISignal;
+}
+
 
 //! Define the oldest AI Area file version that can still be read.
 #define BAI_AREA_FILE_VERSION_READ 19
@@ -70,7 +88,6 @@ struct ISequenceManager;
 typedef CryFixedArray<IPhysicalEntity*, 32> PhysSkipList;
 
 //! \cond INTERNAL
-//! If this is changed be sure to change the table aiCollisionEntitiesTable in AICollision.cpp.
 enum EAICollisionEntities
 {
 	AICE_STATIC                        = ent_static | ent_terrain | ent_ignore_noncolliding,
@@ -175,12 +192,12 @@ typedef uint16 EAILoadDataFlags;
 enum EAILoadDataFlag : EAILoadDataFlags
 {
 	eAILoadDataFlag_None          = 0,
-	eAILoadDataFlag_MNM           = BIT(0),
-	eAILoadDataFlag_DesignedAreas = BIT(1),
-	eAILoadDataFlag_Covers        = BIT(2),
+	eAILoadDataFlag_MNM           = BIT16(0),
+	eAILoadDataFlag_DesignedAreas = BIT16(1),
+	eAILoadDataFlag_Covers        = BIT16(2),
 
-	eAILoadDataFlag_AfterExport   = BIT(14),
-	eAILoadDataFlag_QuickLoad     = BIT(15),
+	eAILoadDataFlag_AfterExport   = BIT16(14),
+	eAILoadDataFlag_QuickLoad     = BIT16(15),
 
 	eAILoadDataFlag_Navigation    = eAILoadDataFlag_MNM | eAILoadDataFlag_DesignedAreas,
 	eAILoadDataFlag_AllSystems    = 0xFFFF & ~(eAILoadDataFlag_AfterExport | eAILoadDataFlag_QuickLoad),
@@ -201,9 +218,9 @@ struct SNavigationShapeParams
 		, fHeight(fHeight)
 		, nNavType(nNavType)
 		, nAuxType(nAuxType)
+		, lightLevel(lightLevel)
 		, fReductionPerMetre(fReductionPerMetre)
 		, fReductionMax(fReductionMax)
-		, lightLevel(lightLevel)
 	{}
 
 	const char*          szPathName;
@@ -430,6 +447,7 @@ struct IAIEngineModule : public Cry::IDefaultModule
 
 struct IAISystemCallbacks
 {
+	virtual ~IAISystemCallbacks() {}
 	virtual CFunctorsList<Functor1<IAIObject*>>& ObjectCreated() = 0;
 	virtual CFunctorsList<Functor1<IAIObject*>>& ObjectRemoved() = 0;
 	virtual CFunctorsList<Functor2<tAIObjectID, bool>>& EnabledStateChanged() = 0;
@@ -439,7 +457,12 @@ struct IAISystemCallbacks
 //! Interface to AI system. Defines functions to control the AI system.
 struct IAISystem
 {
-	typedef RayCastQueue<41>                    GlobalRayCaster;
+#if AIRAYCAST_EXTENDED_STATS
+	typedef AIRayCast::CQueue<41, true>         GlobalRayCaster;
+#else
+	typedef AIRayCast::CQueue<41>               GlobalRayCaster;
+#endif
+	
 	typedef IntersectionTestQueue<43>           GlobalIntersectionTester;
 	
 	//! Flags used by the GetGroupCount.
@@ -468,7 +491,7 @@ struct IAISystem
 	};
 	enum {NAV_TYPE_COUNT = 10};
 
-	//! Two masks that summarise the basic abilities.
+	//! Two masks that summarize the basic abilities.
 	enum
 	{
 		NAVMASK_SURFACE = NAV_TRIANGULAR | NAV_WAYPOINT_HUMAN | NAV_ROAD | NAV_SMARTOBJECT,
@@ -486,6 +509,23 @@ struct IAISystem
 		RESET_UNLOAD_LEVEL
 	};
 
+	//! SubsystemUpdateFlags are used to let client code customize the update order of IA subsystems
+	//! To do so client code has to call GetOverrideUpdateFlags() and specify which subsystems wants to override
+	//! This action will prevent CE code to Update the subsystem automatically (avoiding updating a subsystem twice)
+	//! After this, the client code can call UpdateSubsystem providing the right flag to update the subsystem when necessary
+	enum class ESubsystemUpdateFlag
+	{
+		AuditionMap              = BIT(0),
+		BehaviorTreeManager      = BIT(1),
+		ClusterDetector          = BIT(2),
+		CoverSystem              = BIT(3),
+		MovementSystem           = BIT(4),
+		NavigationSystem         = BIT(5),
+		GlobalIntersectionTester = BIT(6),
+		GlobalRaycaster          = BIT(7),
+		VisionMap                = BIT(8),
+	};
+
 	//! Bit mask using ENavigationType.
 	//! \note NavCapMask is no longer a primitive type.  This
 	//! thin wrapper around primitive unsigned is necessary to transparently support
@@ -493,7 +533,7 @@ struct IAISystem
 	//! producing meshes tailored to various agent type capabilities.  While the
 	//! question "can triangulation be used" was well-formed it doesn't make sense
 	//! in the context of the LNM where there's multiple meshes, out of which some
-	//! might be useable and some not.
+	//! might be usable and some not.
 	//!
 	//! To narrow the choice down to a single mesh, still making the rest of
 	//! the system work as it did before, 's_lnmBits' are set aside to be used
@@ -561,6 +601,12 @@ struct IAISystem
 	virtual IAISystem::GlobalRayCaster*          GetGlobalRaycaster() = 0;
 	virtual IAISystem::GlobalIntersectionTester* GetGlobalIntersectionTester() = 0;
 
+	//! Gets the override update flags
+	//! Flags indicate which subsystems are updated automatically by the AI system (0) or manually by client code (1)
+	//! This is required to avoid updating a subsystem twice
+	//! If a subsystem update is overridden (1) client code should call UpdateSubsystem providing the right flag when desired
+	virtual CEnumFlags<ESubsystemUpdateFlag>&    GetOverrideUpdateFlags() = 0;
+
 	//If disabled most things early out
 	virtual void Enable(bool enable = true) = 0;
 	virtual bool IsEnabled() const = 0;
@@ -568,16 +614,24 @@ struct IAISystem
 	//! Every frame (multiple time steps per frame possible?)
 	//! \param currentTime AI time since game start in seconds (GetCurrentTime).
 	//! \param frameTime AI time since last update (GetFrameTime).
-	virtual void                Update(CTimeValue currentTime, float frameTime) = 0;
+	virtual void                                  Update(const CTimeValue currentTime, const float frameTime) = 0;
 
-	virtual bool                RegisterSystemComponent(IAISystemComponent* pComponent) = 0;
-	virtual bool                UnregisterSystemComponent(IAISystemComponent* pComponent) = 0;
+	//! Updates only a specific subsystem specified by the provided flag
+	//! Such subsystem MUST be enabled by setting the right flag calling GetUpdateOverrideFlags() before executing of this function
+	//! Otherwise the system will not execute the subsystem update (it will simply ignore this call)
+	//! This function is not meant to be used internally by the IAISystem.
+	//! \param currentTime AI time since game start in seconds (GetCurrentTime).
+	//! \param frameTime AI time since last update (GetFrameTime).
+	//! \param subsystemUpdateFlag Subsystem to update
+	virtual void                                  UpdateSubsystem(const CTimeValue currentTime, const float frameTime, const ESubsystemUpdateFlag subsystemUpdateFlag) = 0;
 
-	virtual void                SendAnonymousSignal(int nSignalId, const char* szText, const Vec3& pos, float fRadius, IAIObject* pSenderObject, IAISignalExtraData* pData = NULL) = 0;
-	virtual void                SendSignal(unsigned char cFilter, int nSignalId, const char* szText, IAIObject* pSenderObject, IAISignalExtraData* pData = NULL, uint32 crcCode = 0) = 0;
-	virtual void                FreeSignalExtraData(IAISignalExtraData* pData) const = 0;
-	virtual IAISignalExtraData* CreateSignalExtraData() const = 0;
-	virtual void                Event(int eventT, const char*) = 0;
+	virtual bool                                  RegisterSystemComponent(IAISystemComponent* pComponent) = 0;
+	virtual bool                                  UnregisterSystemComponent(IAISystemComponent* pComponent) = 0;
+	virtual void                                  SendAnonymousSignal(const std::shared_ptr<AISignals::ISignal>& pSignal, const Vec3& pos, float radius) = 0;
+	virtual void                                  SendSignal(unsigned char cFilter, const std::shared_ptr<AISignals::ISignal>& pSignal) = 0;
+	virtual AISignals::IAISignalExtraData*        CreateSignalExtraData() const = 0;
+	virtual void                                  FreeSignalExtraData(AISignals::IAISignalExtraData* pData) const = 0;
+	virtual void                                  Event(int eventT, const char*) = 0;
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -653,9 +707,6 @@ struct IAISystem
 	virtual void LogEvent(const char* id, const char* format, ...) PRINTF_PARAMS(3, 4) = 0;
 	virtual void LogComment(const char* id, const char* format, ...) PRINTF_PARAMS(3, 4) = 0;
 
-	//! Draws a fake tracer around the player.
-	virtual void DebugDrawFakeTracer(const Vec3& pos, const Vec3& dir) = 0;
-
 	virtual void GetMemoryStatistics(ICrySizer* pSizer) = 0;
 
 	// debug members ============= DO NOT USE
@@ -671,15 +722,18 @@ struct IAISystem
 	virtual BehaviorTree::IBehaviorTreeManager* GetIBehaviorTreeManager() const = 0;
 	virtual ICoverSystem*                       GetCoverSystem() const = 0;
 	virtual INavigationSystem*                  GetNavigationSystem() const = 0;
+    virtual Cry::AI::CollisionAvoidance::ISystem* GetCollisionAvoidanceSystem() const = 0;
 	virtual IMNMPathfinder*                     GetMNMPathfinder() const = 0;
 	virtual ICommunicationManager*              GetCommunicationManager() const = 0;
 	virtual ITacticalPointSystem*               GetTacticalPointSystem(void) = 0;
 	virtual ICentralInterestManager*            GetCentralInterestManager(void) = 0;
+	virtual ICentralInterestManager const *     GetCentralInterestManager(void) const = 0;
 	virtual INavigation*                        GetINavigation() = 0;
 	virtual IAIRecorder*                        GetIAIRecorder() = 0;
 	virtual struct IMovementSystem*             GetMovementSystem() const = 0;
 	virtual AIActionSequence::ISequenceManager* GetSequenceManager() const = 0;
 	virtual IClusterDetector*                   GetClusterDetector() const = 0;
+	virtual AISignals::ISignalManager*          GetSignalManager() const = 0;
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -779,6 +833,7 @@ struct IAISystem
 	virtual void                           NotifyTargetDead(IAIObject* pDeadObject) = 0;
 
 	virtual std::shared_ptr<IPathFollower> CreateAndReturnNewDefaultPathFollower(const PathFollowerParams& params, const IPathObstacles& pathObstacleObject) = 0;
+	virtual std::shared_ptr<INavPath>      CreateAndReturnNewNavPath() = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -792,7 +847,7 @@ public:
 	{
 	}
 
-	//! Need to force as no_inline, else on xbox(if cstr and dstr are inlined), we get totaly wrong numbers.
+	//! Need to force as no_inline, else on xbox(if cstr and dstr are inlined), we get totally wrong numbers.
 	NO_INLINE ~CAILightProfileSection()
 	{
 		IAISystem* pAISystem = gEnv->pAISystem;

@@ -471,7 +471,7 @@ template<bool TBlocking> IEntity* CFlowNode_AIBase<TBlocking >::GetEntity(SActiv
 
 //
 //-------------------------------------------------------------------------------------------------------------
-template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::Execute(SActivationInfo* pActInfo, const char* pSignalText, IAISignalExtraData* pData, int senderId)
+template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::Execute(SActivationInfo* pActInfo, const char* szSignalText, AISignals::IAISignalExtraData* pData, int senderId)
 {
 	UnregisterEvents();
 
@@ -489,10 +489,10 @@ template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::Execute(SActivationI
 
 	bool result = false;
 	if (pEntity->HasAI())
-		result = ExecuteOnAI(pActInfo, pSignalText, pData, pEntity, pSender);
+		result = ExecuteOnAI(pActInfo, szSignalText, pData, pEntity, pSender);
 
 	if (!result)
-		result = ExecuteOnEntity(pActInfo, pSignalText, pData, pEntity, pSender);
+		result = ExecuteOnEntity(pActInfo, szSignalText, pData, pEntity, pSender);
 
 	if (!result)
 	{
@@ -506,12 +506,14 @@ template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::Execute(SActivationI
 //
 //-------------------------------------------------------------------------------------------------------------
 template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::ExecuteOnAI(SActivationInfo* pActInfo, const char* pSignalText,
-                                                                        IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender)
+                                                                        AISignals::IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender)
 {
 	IAIObject* pAI = pEntity->GetAI();
 	CRY_ASSERT(pAI);
 	if (!pAI)
 		return false;
+
+	const EntityId senderId = pSender ? pSender->GetId() : INVALID_ENTITYID;
 
 	switch (pAI->GetAIType())
 	{
@@ -541,7 +543,7 @@ template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::ExecuteOnAI(SActivat
 
 			IAIActor* pAIActor = pAI->CastToIAIActor();
 			if (pAIActor)
-				pAIActor->SetSignal(10, pSignalText, pSender, pData);   // 10 means this signal must be sent (but sent[!], not set)
+				pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_ALLOW_DUPLICATES, pSignalText, senderId, pData));
 			else
 				gEnv->pAISystem->FreeSignalExtraData(pData);
 
@@ -566,7 +568,7 @@ template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::ExecuteOnAI(SActivat
 			if (!pData)
 				pData = gEnv->pAISystem->CreateSignalExtraData();
 			pData->iValue = m_GoalPipeId;
-			pAIActor->SetSignal(10, pSignalText, pSender, pData);   // 10 means this signal must be sent (but sent[!], not set)
+			pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_ALLOW_DUPLICATES, pSignalText, senderId, pData));
 		}
 		else
 			gEnv->pAISystem->FreeSignalExtraData(pData);
@@ -577,11 +579,11 @@ template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::ExecuteOnAI(SActivat
 		IAIActor* pAIActor = pAI->CastToIAIActor();
 		if (pAIActor)
 		{
-			IAISignalExtraData* pExtraData = gEnv->pAISystem->CreateSignalExtraData();
+			AISignals::IAISignalExtraData* pExtraData = gEnv->pAISystem->CreateSignalExtraData();
 			CRY_ASSERT(pExtraData);
 			pExtraData->iValue = m_GoalPipeId;
-			pAIActor->SetSignal(10, pSignalText, pSender, pData);   // 10 means this signal must be sent (but sent[!], not set)
-			pAIActor->SetSignal(10, "ACT_DUMMY", pEntity, pExtraData);
+			pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_ALLOW_DUPLICATES, pSignalText, senderId, pData));
+			pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActDummy_DEPRECATED(), m_EntityId, pExtraData));
 		}
 		else
 			gEnv->pAISystem->FreeSignalExtraData(pData);
@@ -593,7 +595,7 @@ template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::ExecuteOnAI(SActivat
 //
 //-------------------------------------------------------------------------------------------------------------
 template<bool TBlocking> bool CFlowNode_AIBase<TBlocking >::ExecuteOnEntity(SActivationInfo* pActInfo, const char* pSignalText,
-                                                                            IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender)
+                                                                            AISignals::IAISignalExtraData* pData, IEntity* pEntity, IEntity* pSender)
 {
 	// sorry, not implemented :(
 	//	CRY_ASSERT( 0 );
@@ -668,9 +670,11 @@ template<bool TBlocking> void CFlowNode_AIBase<TBlocking >::SetStance(IAIObject*
 
 	if (pAI->HasFormation())
 	{
-		IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->iValue = stance;
-		gEnv->pAISystem->SendSignal(SIGNALFILTER_FORMATION_EXCEPT, 1, "OnChangeStance", pAI, pData);
+		
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChangeStance_DEPRECATED(), pAI->GetEntityID(), pData);
+		gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_FORMATION_EXCEPT, pSignal);
 	}
 }
 
@@ -831,8 +835,8 @@ void CFlowNode_AISignalBase<TDerivedFromSignalBase >::DoProcessEvent(IFlowNode::
 	//if ( pAI->GetType() == AIOBJECT_VEHICLE )
 	//	pAI->Event( AIEVENT_ENABLE, NULL );
 
-	IAISignalExtraData* pExtraData = GetExtraData(pActInfo);
-	pAIActor->SetSignal(10, m_SignalText, pEntity, pExtraData);
+	AISignals::IAISignalExtraData* pExtraData = GetExtraData(pActInfo);
+	pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, *m_pSignalDescription, pEntity->GetId(), pExtraData));
 
 	// allow using the node more than once
 	this->m_bExecuted = false;
@@ -947,7 +951,7 @@ DEF_CLONE(CFlowNode_AISignal)
 //-------------------------------------------------------------------------------------------------------------
 void CFlowNode_AISignal::DoProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
-	IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 	pData->point = GetPortVec3(pActInfo, 2);
 	pData->point2 = GetPortVec3(pActInfo, 3);
 	pData->iValue = GetPortInt(pActInfo, 4);
@@ -1023,7 +1027,7 @@ void CFlowNode_AIExecute::DoProcessEvent(EFlowEvent event, SActivationInfo* pAct
 	IEntity* pEntity = GetEntity(pActInfo);
 	SetForceMethod(pEntity ? pEntity->GetAI() : 0, GetForceMethod(pActInfo));
 
-	IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 	pData->SetObjectName(GetPortString(pActInfo, 3));
 	pData->nID = GetPortEntityId(pActInfo, 2);
 	pData->fValue = (float)GetPortInt(pActInfo, 4);
@@ -1031,7 +1035,7 @@ void CFlowNode_AIExecute::DoProcessEvent(EFlowEvent event, SActivationInfo* pAct
 	if (GetPortBool(pActInfo, 5))
 		pData->fValue += 100.0f;
 
-	Execute(pActInfo, "ACT_EXECUTE", pData, GetPortEntityId(pActInfo, 2));
+	Execute(pActInfo, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActExecute_DEPRECATED().GetName(), pData, GetPortEntityId(pActInfo, 2));
 }
 
 //
@@ -1503,9 +1507,10 @@ void CFlowNode_AIStance::DoProcessEvent(EFlowEvent event, SActivationInfo* pActI
 
 	if (pAI->HasFormation())
 	{
-		IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->iValue = stance;
-		gEnv->pAISystem->SendSignal(SIGNALFILTER_FORMATION_EXCEPT, 1, "OnChangeStance", pAI, pData);
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChangeStance_DEPRECATED(), pAI->GetEntityID(), pData);
+		gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_FORMATION_EXCEPT, pSignal);
 	}
 
 	ActivateOutput(pActInfo, 0, m_EntityId);
@@ -1559,9 +1564,9 @@ void CFlowNode_AIDropObject::DoProcessEvent(EFlowEvent event, SActivationInfo* p
 	IEntity* pEntity = GetEntity(pActInfo);
 	SetForceMethod(pEntity ? pEntity->GetAI() : 0, GetForceMethod(pActInfo));
 
-	IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 	pData->point = GetPortVec3(pActInfo, 2);
-	Execute(pActInfo, "ACT_DROP_OBJECT", pData);
+	Execute(pActInfo, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActDropObject_DEPRECATED().GetName(), pData);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1608,7 +1613,7 @@ void CFlowNode_AIUseObject::DoProcessEvent(EFlowEvent event, SActivationInfo* pA
 	IEntity* pEntity = GetEntity(pActInfo);
 	SetForceMethod(pEntity ? pEntity->GetAI() : 0, GetForceMethod(pActInfo));
 
-	Execute(pActInfo, "ACT_USEOBJECT", NULL, GetPortEntityId(pActInfo, 2));
+	Execute(pActInfo, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActUseObject_DEPRECATED().GetName(), NULL, GetPortEntityId(pActInfo, 2));
 }
 
 //-------------------------------------------------------------------------------------------------------------

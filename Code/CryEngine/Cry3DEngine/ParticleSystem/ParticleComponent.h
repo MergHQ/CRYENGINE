@@ -22,7 +22,7 @@ SERIALIZATION_ENUM_DECLARE(EAnimationCycle, : uint8,
 struct STextureAnimation
 {
 	UFloat                              m_frameRate;     //!< Anim framerate; 0 = 1 cycle / particle life.
-	TValue<uint16, THardLimits<1, 256>> m_frameCount;    //!< Number of tiles (frames) of animation
+	TValue<THardLimits<uint16, 1, 256>> m_frameCount;    //!< Number of tiles (frames) of animation
 	EAnimationCycle                     m_cycleMode;     //!< How animation cycles.
 	bool                                m_frameBlending; //!< Blend textures between frames.
 
@@ -73,17 +73,17 @@ private:
 	void  Update();
 };
 
-SERIALIZATION_ENUM_DEFINE(EIndoorVisibility, ,
+SERIALIZATION_ENUM_DECLARE(EIndoorVisibility, ,
 	IndoorOnly,
 	OutdoorOnly,
 	Both
-	)
+)
 
-SERIALIZATION_ENUM_DEFINE(EWaterVisibility, ,
+SERIALIZATION_ENUM_DECLARE(EWaterVisibility, ,
 	AboveWaterOnly,
 	BelowWaterOnly,
 	Both
-	)
+)
 
 struct SVisibilityParams
 {
@@ -103,59 +103,39 @@ struct SVisibilityParams
 
 struct STimingParams
 {
-	float m_maxParticleLife = 0;  // Max time a particle can live
-	float m_maxTotalLIfe    = 0;  // Max time an emitter can live
+	float m_maxTotalLife    = 0;  // Max time an emitter can live
 	float m_stableTime      = 0;  // Max time for particles, including children, to die
 	float m_equilibriumTime = 0;  // Time for emitter to reach equilibrium after activation
-
-	bool  IsImmortal() const { return !std::isfinite(m_maxTotalLIfe); }
 };
 
-struct SComponentParams: STimingParams
+struct SComponentParams
 {
-	SComponentParams();
-
-	void  Serialize(Serialization::IArchive& ar);
-
-	bool                      m_usesGPU;
+	bool                      m_usesGPU              = false;
+	bool                      m_isPreAged            = false;
+	bool                      m_isImmortal           = false;
+	bool                      m_keepParentAlive      = false;
+	bool                      m_childKeepsAlive      = false;
 	SParticleShaderData       m_shaderData;
 	_smart_ptr<IMaterial>     m_pMaterial;
+	EShaderType               m_requiredShaderType   = eST_All;
+	ERenderObjectFlags        m_renderObjectFlags;
+	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
+	uint                      m_environFlags         = 0;
 	_smart_ptr<IMeshObj>      m_pMesh;
-	bool                      m_meshCentered;
-	EShaderType               m_requiredShaderType;
-	string                    m_diffuseMap;
-	uint64                    m_renderObjectFlags;
-	size_t                    m_instanceDataStride;
+	bool                      m_meshCentered         = false;
 	STextureAnimation         m_textureAnimation;
-	uint32                    m_maxParticlesBurst;
-	uint32                    m_maxParticlesPerFrame;
-	float                     m_maxParticleRate;
-	float                     m_scaleParticleCount;
-	float                     m_maxParticleSize;
-	Slope<float>              m_physicalSizeSlope;
-	float                     m_renderObjectSortBias;
-	float                     m_maxParticleAlpha;
+	float                     m_scaleParticleCount   = 1;
+	float                     m_maxParticleSize      = 0;
+	float                     m_scaleParticleSize    = 1;
 	SVisibilityParams         m_visibility;
-	int                       m_renderStateFlags;
-	uint8                     m_particleObjFlags;
 
-	void GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
+	void Serialize(Serialization::IArchive& ar);
 };
 
-template<typename T> struct TDataOffset
-{
-	TDataOffset(uint offset = 0) : m_offset(offset) {}
-	operator uint() const { return m_offset; }
-
-private:
-	uint m_offset;
-};
-
-class CParticleComponent : public IParticleComponent, public SFeatureDispatchers
+class CParticleComponent final : public IParticleComponent, public SFeatureDispatchers
 {
 public:
-	typedef _smart_ptr<CParticleComponent> TComponentPtr;
-	typedef std::vector<TComponentPtr>     TComponents;
+	using TComponents = TSmartArray<CParticleComponent>;
 
 	CParticleComponent();
 
@@ -174,7 +154,9 @@ public:
 	virtual void                RemoveFeature(uint featureIdx) override;
 	virtual void                SwapFeatures(const uint* swapIds, uint numSwapIds) override;
 	virtual IParticleComponent* GetParent() const override                                { return m_parent; }
-	virtual void                SetParent(IParticleComponent* pParentComponent) override;
+	virtual bool                SetParent(IParticleComponent* pParent, int position = -1) override;
+	virtual bool                CanBeParent(IParticleComponent* child = nullptr) const override;
+	virtual uint                GetIndex(bool fromParent = false) override;
 	virtual Vec2                GetNodePosition() const override;
 	virtual void                SetNodePosition(Vec2 position) override;
 	// ~IParticleComponent
@@ -182,40 +164,45 @@ public:
 	void                                  ClearFeatures()                       { m_features.clear(); }
 	void                                  AddFeature(uint placeIdx, CParticleFeature* pFeature);
 	void                                  AddFeature(CParticleFeature* pFeature);
+
 	void                                  PreCompile();
 	void                                  ResolveDependencies();
 	void                                  Compile();
 	void                                  FinalizeCompile();
-	IMaterial*                            MakeMaterial();
 
 	uint                                  GetComponentId() const                { return m_componentId; }
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
 	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
-	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
+	void                                  AddEnvironFlags(uint flags)           { m_params.m_environFlags |= flags; }
 
-	bool                                  UsesGPU() const                       { return m_Params.m_usesGPU; }
+	bool                                  UsesGPU() const                       { return m_params.m_usesGPU; }
 	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUParams; };
 	void                                  AddGPUFeature(gpu_pfx2::IParticleFeature* gpuInterface) { if (gpuInterface) m_gpuFeatures.push_back(gpuInterface); }
 	TConstArray<gpu_pfx2::IParticleFeature*> GetGpuFeatures() const             { return TConstArray<gpu_pfx2::IParticleFeature*>(m_gpuFeatures.data(), m_gpuFeatures.size()); }
 
-	const SComponentParams& GetComponentParams() const                          { return m_Params; }
-	SComponentParams&       ComponentParams()                                   { return m_Params; }
-	bool                    UseParticleData(EParticleDataType type) const       { return m_useParticleData[type]; }
+	string                  GetFullName() const;
+	const SComponentParams& GetComponentParams() const                          { return m_params; }
+	SComponentParams&       ComponentParams()                                   { return m_params; }
+	bool                    UseParticleData(EParticleDataType type) const       { return m_pUseData->Used(type); }
+	const PUseData&         GetUseData() const                                  { return m_pUseData; }
 
 	CParticleComponent*     GetParentComponent() const                          { return m_parent; }
 	const TComponents&      GetChildComponents() const                          { return m_children; }
 	void                    ClearChildren()                                     { m_children.resize(0); }
 
-	void                    GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
-	void                    UpdateTimings();
+	bool                    IsActive() const                                    { return m_enabled && (!m_parent || m_parent->IsActive()); }
+	bool                    CanMakeRuntime(CParticleEmitter* pEmitter = nullptr) const;
 
-	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
+	CParticleFeature*       FindFeature(const SParticleFeatureParams& params, const CParticleFeature* pSkip = nullptr) const;
+
+	template<typename Feature> Feature* FindDuplicateFeature(const Feature* pFeature) const
+	{
+		return static_cast<Feature*>(FindFeature(pFeature->GetFeatureParams(), pFeature));
+	}
 
 private:
-	uint AddInstanceData(uint size);
-
 	friend class CParticleEffect;
 
 	string                                   m_name;
@@ -224,20 +211,22 @@ private:
 	CParticleComponent*                      m_parent;
 	TComponents                              m_children;
 	Vec2                                     m_nodePosition;
-	SComponentParams                         m_Params;
+	SComponentParams                         m_params;
 	TSmartArray<CParticleFeature>            m_features;
 	TSmartArray<CParticleFeature>            m_defaultFeatures;
-	StaticEnumArray<bool, EParticleDataType> m_useParticleData;
+	PUseData                                 m_pUseData;
 	SEnable                                  m_enabled;
 	SEnable                                  m_visible;
 	bool                                     m_dirty;
 
 	gpu_pfx2::SComponentParams               m_GPUParams;
-	std::vector<gpu_pfx2::IParticleFeature*> m_gpuFeatures;
+	TSmallArray<gpu_pfx2::IParticleFeature*> m_gpuFeatures;
+
+	const TComponents& GetParentChildren() const;
+	TComponents&       GetParentChildren();
 };
 
-typedef _smart_ptr<CParticleComponent> TComponentPtr;
-typedef std::vector<TComponentPtr>     TComponents;
+using TComponents = CParticleComponent::TComponents;
 
 }
 

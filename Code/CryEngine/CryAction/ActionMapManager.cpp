@@ -16,8 +16,11 @@
 #include "ActionMap.h"
 #include "ActionFilter.h"
 #include <CryCore/CryCrc32.h>
+#include <CryFont/IFont.h>
 #include "GameObjects/GameObject.h"
 #include <CryCore/Platform/IPlatformOS.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 CActionMapManager* CActionMapManager::s_pThis = nullptr;
 
@@ -52,6 +55,11 @@ CActionMapManager::CActionMapManager(IInput* pInput)
 //------------------------------------------------------------------------
 CActionMapManager::~CActionMapManager()
 {
+#ifndef _RELEASE
+	gEnv->pConsole->UnregisterVariable("i_listActionMaps");
+	gEnv->pConsole->RemoveCommand("i_reloadActionMaps");
+#endif
+
 	if (m_pInput)
 	{
 		m_pInput->RemoveEventListener(this);
@@ -866,7 +874,6 @@ bool CActionMapManager::CreateEventPriorityList(const SInputEvent& inputEvent, T
 	TInputCRCToBind::const_iterator itCRCBoundEnd = m_inputCRCToBind.end();
 
 	// Create priority listing for which processes should be fired
-	float fLongestHeldTime = 0.0f;
 	for (; itCRCBound != itCRCBoundEnd && itCRCBound->first == inputCRC; ++itCRCBound)
 	{
 		SBindData& bindData = itCRCBound->second;
@@ -1757,7 +1764,6 @@ bool CActionMapManager::CreateRefiredEventPriorityList(SRefireData* pRefireData,
 {
 	bool bRes = false;
 
-	uint32 inputCRC = pRefireData->m_inputCRC;
 	SInputEvent& inputEvent = pRefireData->m_inputEvent;
 	TRefireBindData& refireBindData = pRefireData->m_refireBindData;
 
@@ -1773,7 +1779,6 @@ bool CActionMapManager::CreateRefiredEventPriorityList(SRefireData* pRefireData,
 	}
 
 	// Create priority listing for which processes should be fired
-	float fLongestHeldTime = 0.0f;
 	for (; it != itEnd; ++it)
 	{
 		SRefireBindData& singleRefireBindData = *it;
@@ -1816,7 +1821,7 @@ bool CActionMapManager::CreateRefiredEventPriorityList(SRefireData* pRefireData,
 		}
 
 #ifdef _DEBUG
-
+		uint32 inputCRC = pRefireData->m_inputCRC;
 		CRY_ASSERT((pActionInput->inputCRC == inputCRC) && (strcmp(pActionInput->input.c_str(), inputEvent.keyName.c_str()) == 0)); \
 
 		if ((pActionInput->inputCRC == inputCRC) && (strcmp(pActionInput->input.c_str(), inputEvent.keyName.c_str()) != 0))

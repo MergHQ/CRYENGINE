@@ -94,8 +94,6 @@ void SelectTool::OnLButtonDown(const SMouseEvent& me)
 	CUndo undo("UVMapping Editor : Selection");
 	CUndo::Record(new UVSelectionUndo);
 
-	bool bEmptyBefore = pElements->IsEmpty();
-
 	if (m_SelectionFlag == eSelectionFlag_Island)
 	{
 		std::vector<UVIslandPtr> uvIslands;
@@ -166,7 +164,7 @@ void SelectTool::OnMouseMove(const SMouseEvent& me)
 	}
 }
 
-void SelectTool::Display(DisplayContext& dc)
+void SelectTool::Display(SDisplayContext& dc)
 {
 	if (m_pRectangleSelectionContext)
 		m_pRectangleSelectionContext->Draw(dc);
@@ -177,7 +175,7 @@ RectangleSelectionContext::RectangleSelectionContext(bool multipleselection, con
 	m_pSelectedElements = multipleselection ? GetUVEditor()->GetElementSet()->Clone() : new UVElementSet;
 }
 
-void RectangleSelectionContext::Draw(DisplayContext& dc)
+void RectangleSelectionContext::Draw(SDisplayContext& dc)
 {
 	float z = 0.001f;
 
@@ -200,7 +198,6 @@ void RectangleSelectionContext::Select(ESelectionFlag flag, const SMouseEvent& m
 	aabb.Add(end);
 	aabb.Expand(Vec3(0.001f));
 
-	UVIslandManager* pUVIslandMgr = GetUVEditor()->GetUVIslandMgr();
 	UVElementSetPtr pElements = GetUVEditor()->GetElementSet();
 
 	*pElements = *m_pSelectedElements;
@@ -236,4 +233,3 @@ void RectangleSelectionContext::Select(ESelectionFlag flag, const SMouseEvent& m
 }
 }
 }
-

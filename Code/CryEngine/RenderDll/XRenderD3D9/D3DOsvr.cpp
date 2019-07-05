@@ -34,8 +34,8 @@ CD3DOsvrRenderer::~CD3DOsvrRenderer()
 
 bool CD3DOsvrRenderer::Initialize(int initialWidth, int initialHeight)
 {
-	D3DDevice* d3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
-	D3DDeviceContext* d3d11DeviceContext = m_pRenderer->GetDeviceContext_Unsynchronized().GetRealDeviceContext();
+	D3DDevice* d3d11Device = m_pRenderer->GetDevice();
+	D3DDeviceContext* d3d11DeviceContext = m_pRenderer->GetDeviceContext();
 
 	m_eyeWidth  = initialWidth;
 	m_eyeHeight = initialHeight;
@@ -80,7 +80,7 @@ void CD3DOsvrRenderer::CreateTextureSwapSets(uint32 width, uint32 height, uint32
 	TArray<Texture> textures;
 
 	TextureSet* texSetsptr = texSets.Grow(swapSetCount);
-	Texture* texptr = textures.Grow(swapSetCount * EyeCount);
+	textures.Grow(swapSetCount * EyeCount);
 
 	swapSets.numTextureSets = swapSetCount;
 	swapSets.pTextureSets = texSetsptr;

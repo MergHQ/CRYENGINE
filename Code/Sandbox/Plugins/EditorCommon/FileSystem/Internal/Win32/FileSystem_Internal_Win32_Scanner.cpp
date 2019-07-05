@@ -252,4 +252,3 @@ void CScanner::timerEvent(QTimerEvent* event)
 } // namespace Win32
 } // namespace Internal
 } // namespace FileSystem
-

@@ -2,29 +2,38 @@
 
 #pragma once
 
-#include <SharedData.h>
+#include "Common.h"
 
 #include <CryString/CryString.h>
 #include <CrySerialization/Forward.h>
 
 namespace ACE
 {
-enum class EAssetFlags
+enum class EAssetFlags : CryAudio::EnumFlagsType
 {
-	None                     = 0,
-	IsDefaultControl         = BIT(0),
-	IsInternalControl        = BIT(1),
-	IsModified               = BIT(2),
-	HasPlaceholderConnection = BIT(3),
-	HasConnection            = BIT(4),
-	HasControl               = BIT(5),
-};
+	None = 0,
+	IsDefaultControl = BIT(0),
+	IsInternalControl = BIT(1),
+	IsHiddenInResourceSelector = BIT(2),
+	IsModified = BIT(3),
+	HasPlaceholderConnection = BIT(4),
+	HasConnection = BIT(5),
+	HasControl = BIT(6), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EAssetFlags);
 
 class CAsset
 {
 public:
 
+	CAsset() = delete;
+	CAsset(CAsset const&) = delete;
+	CAsset(CAsset&&) = delete;
+	CAsset& operator=(CAsset const&) = delete;
+	CAsset& operator=(CAsset&&) = delete;
+
+	virtual ~CAsset() {}
+
+	ControlId     GetId() const     { return m_id; }
 	EAssetType    GetType() const   { return m_type; }
 
 	CAsset*       GetParent() const { return m_pParent; }
@@ -56,14 +65,20 @@ public:
 
 protected:
 
-	explicit CAsset(string const& name, EAssetType const type);
+	explicit CAsset(string const& name, ControlId const id, EAssetType const type)
+		: m_id(id)
+		, m_pParent(nullptr)
+		, m_name(name)
+		, m_description("")
+		, m_type(type)
+		, m_flags(EAssetFlags::None)
+	{}
 
-	CAsset() = delete;
-
-	CAsset*          m_pParent = nullptr;
+	ControlId        m_id;
+	CAsset*          m_pParent;
 	Assets           m_children;
 	string           m_name;
-	string           m_description = "";
+	string           m_description;
 	EAssetType const m_type;
 	EAssetFlags      m_flags;
 };

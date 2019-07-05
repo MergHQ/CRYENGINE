@@ -196,7 +196,6 @@ EMovementTransitionState STransition::Update(
 				Vec3 realEndPoint = jukePoint + Quat::CreateRotationZ(transParams.m_jukeAngle) * oldMoveDirection * distanceAfterJuke;
 
 				Vec3 desiredBodyDirection = Quat::CreateRotationZ(-this->desiredTravelAngle) * oldMoveDirection;
-				Vec3 currentBodyDirection = Quat::CreateRotationZ(-transParams.m_travelAngle) * oldMoveDirection;
 
 				pDc->DrawSphere(jukePoint + 8.00f*up, 0.1f, debugColor);
 				pDc->DrawArrow(startPoint + 8.00f*up, (jukePoint - startPoint), 0.1f, debugColor);
@@ -223,7 +222,7 @@ bool STransition::ReadParams( ETransitionType _transitionType, const struct IIte
 	transitionType = _transitionType;
 
 	animGraphSignal = pParams->GetAttribute("animGraphSignal");
-	CRY_ASSERT_TRACE(animGraphSignal.length() > 0, ("animGraphSignal not found or empty"));
+	CRY_ASSERT(animGraphSignal.length() > 0, "animGraphSignal not found or empty");
 	if (!(animGraphSignal.length() > 0)) return false;
 
 	pseudoSpeed = 0.0f;
@@ -276,24 +275,30 @@ bool STransition::ReadParams( ETransitionType _transitionType, const struct IIte
 	if (transitionType == eTT_Stop)
 	{
 		desiredArrivalAngle = 0.0f;
-		bool hasDesiredArrivalAngle = ReadAngleParam("arrivalAngle", false, -gf_PI2, gf_PI2, pParams, &desiredArrivalAngle);
-
 		arrivalAngleTolerance = FLT_MAX;
+#if defined(USE_CRY_ASSERT)
+		bool hasDesiredArrivalAngle = ReadAngleParam("arrivalAngle", false, -gf_PI2, gf_PI2, pParams, &desiredArrivalAngle);
 		bool hasArrivalAngleTolerance = ReadAngleParam("arrivalAngleTolerance", false, 0.0f, gf_PI2, pParams, &arrivalAngleTolerance);
-
-		CRY_ASSERT_MESSAGE(!hasDesiredArrivalAngle ||  hasArrivalAngleTolerance, "Transition has arrivalAngle but no arrivalAngleTolerance");
-		CRY_ASSERT_MESSAGE( hasDesiredArrivalAngle || !hasArrivalAngleTolerance, "Transition has arrivalAngleTolerance but no arrivalAngle");
+		CRY_ASSERT(!hasDesiredArrivalAngle ||  hasArrivalAngleTolerance, "Transition has arrivalAngle but no arrivalAngleTolerance");
+		CRY_ASSERT( hasDesiredArrivalAngle || !hasArrivalAngleTolerance, "Transition has arrivalAngleTolerance but no arrivalAngle");
+#else
+		ReadAngleParam("arrivalAngle", false, -gf_PI2, gf_PI2, pParams, &desiredArrivalAngle);
+		ReadAngleParam("arrivalAngleTolerance", false, 0.0f, gf_PI2, pParams, &arrivalAngleTolerance);
+#endif
 	}
 	else
 	{
 		desiredTargetTravelAngle = 0.0f;
-		bool hasDesiredTargetTravelAngle = ReadAngleParam("targetTravelAngle", false, -gf_PI2, gf_PI2, pParams, &desiredTargetTravelAngle);
-
 		targetTravelAngleTolerance = FLT_MAX;
+#if defined(USE_CRY_ASSERT)
+		bool hasDesiredTargetTravelAngle = ReadAngleParam("targetTravelAngle", false, -gf_PI2, gf_PI2, pParams, &desiredTargetTravelAngle);
 		bool hasTargetTravelAngleTolerance = ReadAngleParam("targetTravelAngleTolerance", false, 0.0f, gf_PI2, pParams, &targetTravelAngleTolerance);
-
-		CRY_ASSERT_MESSAGE(!hasDesiredTargetTravelAngle ||  hasTargetTravelAngleTolerance, "Transition has targetTravelAngle but no targetTravelAngleTolerance");
-		CRY_ASSERT_MESSAGE( hasDesiredTargetTravelAngle || !hasTargetTravelAngleTolerance, "Transition has targetTravelAngleTolerance but no targetTravelAngle");
+		CRY_ASSERT(!hasDesiredTargetTravelAngle ||  hasTargetTravelAngleTolerance, "Transition has targetTravelAngle but no targetTravelAngleTolerance");
+		CRY_ASSERT( hasDesiredTargetTravelAngle || !hasTargetTravelAngleTolerance, "Transition has targetTravelAngleTolerance but no targetTravelAngle");
+#else
+		ReadAngleParam("targetTravelAngle", false, -gf_PI2, gf_PI2, pParams, &desiredTargetTravelAngle);
+		ReadAngleParam("targetTravelAngleTolerance", false, 0.0f, gf_PI2, pParams, &targetTravelAngleTolerance);
+#endif
 
 		if (transitionType == eTT_DirectionChange)
 		{
@@ -322,7 +327,7 @@ bool STransition::ReadPseudoSpeedParam( const char* name, bool required, const s
 	if (!szPseudoSpeed && !required)
 		return false;
 
-	CRY_ASSERT_TRACE(szPseudoSpeed, ("%s not found", name));
+	CRY_ASSERT(szPseudoSpeed, "%s not found", name);
 	if (!szPseudoSpeed)
 		return false;
 
@@ -340,7 +345,7 @@ bool STransition::ReadPseudoSpeedParam( const char* name, bool required, const s
 
 	if (pseudoSpeed == -1.0f)
 	{
-		CRY_ASSERT_TRACE(false, ("Invalid pseudospeed '%s'", szPseudoSpeed));
+		CRY_ASSERT(false, "Invalid pseudospeed '%s'", szPseudoSpeed);
 		return false;
 	}
 
@@ -356,7 +361,7 @@ bool STransition::ReadStanceParam( const char* name, bool required, const struct
 	if (!szStance && !required)
 		return false;
 
-	CRY_ASSERT_TRACE(szStance, ("%s not found", name));
+	CRY_ASSERT(szStance, "%s not found", name);
 	if (!szStance)
 		return false;
 
@@ -370,7 +375,7 @@ bool STransition::ReadStanceParam( const char* name, bool required, const struct
 
 	if (((EStance)stance == STANCE_LAST) && (strlen(szStance) > 0))
 	{
-		CRY_ASSERT_TRACE(false, ("Invalid stance '%s'", szStance));
+		CRY_ASSERT(false, "Invalid stance '%s'", szStance);
 		return false;
 	}
 
@@ -392,11 +397,11 @@ bool STransition::ReadIntParam( const char* name, bool required, int min, int ma
 	if (!success && !required)
 		return false;
 
-	CRY_ASSERT_TRACE(success, ("%s not found", name));
+	CRY_ASSERT(success, "%s not found", name);
 	if (!success) return false;
-	CRY_ASSERT_TRACE(i >= min, ("%s (%d) too small (should be > %d)", name, i, min));
+	CRY_ASSERT(i >= min, "%s (%d) too small (should be > %d)", name, i, min);
 	if (!(i >= min)) return false;
-	CRY_ASSERT_TRACE(i <= max, ("%s (%d) too big (should be < %d)", name, i, max));
+	CRY_ASSERT(i <= max, "%s (%d) too big (should be < %d)", name, i, max);
 	if (!(i <= max)) return false;
 
 	*pI = i;
@@ -414,11 +419,11 @@ bool STransition::ReadFloatParam( const char* name, bool required, float min, fl
 	if (!success && !required)
 		return false;
 
-	CRY_ASSERT_TRACE(success, ("%s not found", name));
+	CRY_ASSERT(success, "%s not found", name);
 	if (!success) return false;
-	CRY_ASSERT_TRACE(f >= min, ("%s (%f) too small (should be > %f)", name, f, min));
+	CRY_ASSERT(f >= min, "%s (%f) too small (should be > %f)", name, f, min);
 	if (!(f >= min)) return false;
-	CRY_ASSERT_TRACE(f <= max, ("%s (%f) too big (should be < %f)", name, f, max));
+	CRY_ASSERT(f <= max, "%s (%f) too big (should be < %f)", name, f, max);
 	if (!(f <= max)) return false;
 
 	*pF = f;

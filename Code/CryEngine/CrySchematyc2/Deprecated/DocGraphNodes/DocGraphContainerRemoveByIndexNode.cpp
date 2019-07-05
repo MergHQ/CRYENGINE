@@ -47,7 +47,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerRemoveByIndexNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
@@ -67,7 +67,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerRemoveByIndexNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CDocGraphNodeBase::Serialize(archive);
 		archive(m_index, "index", "Index");
 	}
@@ -122,14 +122,23 @@ namespace Schematyc2
 
 		if (indexStackPos != INVALID_INDEX)
 		{
-			compiler.Copy(indexStackPos, INVALID_INDEX, MakeAny(m_index));
+			compiler.Copy(indexStackPos, INVALID_INDEX, MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 		}
 		else
 		{
-			compiler.Push(MakeAny(m_index));
+			compiler.Push(MakeAny(m_index), CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Index));
 		}
 
-		compiler.ContainerRemoveByIndex(CDocGraphNodeBase::GetRefGUID());
+		const IScriptContainer* pContainer = CDocGraphNodeBase::GetFile().GetContainer(CDocGraphNodeBase::GetRefGUID());
+		if (pContainer)
+		{
+			const IEnvTypeDesc* pTypeDesc = gEnv->pSchematyc2->GetEnvRegistry().GetTypeDesc(pContainer->GetTypeGUID());
+			if (pTypeDesc)
+			{
+				IAnyPtr pDummyValue = pTypeDesc->Create();
+				compiler.ContainerRemoveByIndex(CDocGraphNodeBase::GetRefGUID(), *pDummyValue);
+			}
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////

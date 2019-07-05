@@ -1,14 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CryCore/smartptr.h>
 
+struct IAIAction;
+struct ICustomAction;
 struct IHyperGraph;
 struct IHyperNode;
 struct IVariable;
-struct IAIAction;
-struct ICustomAction;
+
 class CHyperEdge;
 class CObjectArchive;
+class XmlNodeRef;
 
 enum EHyperGraphEvent
 {
@@ -45,26 +48,26 @@ typedef uint32 HyperNodeID;
 //! Callback class to intercept item creation and deletion events.
 struct IHyperGraphListener
 {
+	virtual ~IHyperGraphListener() {}
 	virtual void OnHyperGraphEvent(IHyperNode* pNode, EHyperGraphEvent event) = 0;
 	virtual void OnLinkEdit(CHyperEdge* pEdge) {}
 };
 
-
 //! Callback class to receive hyper graph manager notification event.
 struct IHyperGraphManagerListener
 {
+	virtual ~IHyperGraphManagerListener() {}
 	virtual void OnHyperGraphManagerEvent(EHyperGraphEvent event, IHyperGraph* pGraph, IHyperNode* pNode) = 0;
 };
-
 
 //! Interface to enumerate all items registered to the database manager.
 struct IHyperGraphEnumerator
 {
+	virtual ~IHyperGraphEnumerator() {}
 	virtual void        Release() = 0;
 	virtual IHyperNode* GetFirst() = 0;
 	virtual IHyperNode* GetNext() = 0;
 };
-
 
 //! IHyperGraph is the main interface to the hyper graph subsystem
 struct IHyperGraph : public _i_reference_target_t
@@ -84,7 +87,7 @@ struct IHyperGraph : public _i_reference_target_t
 
 	//! Migrate needed because not every serialize should migrate.
 	//! \return false if nothing has been changed, true otherwise
-	virtual bool           Migrate(XmlNodeRef& node) = 0;
+	virtual bool Migrate(XmlNodeRef& node) = 0;
 
 	//! Return current hyper graph name.
 	virtual const char*    GetName() const = 0;
@@ -94,7 +97,6 @@ struct IHyperGraph : public _i_reference_target_t
 	virtual IAIAction*     GetAIAction() const = 0;
 	virtual ICustomAction* GetCustomAction() const = 0;
 };
-
 
 //! IHyperNode is an interface to the single hyper graph node.
 struct IHyperNode : public _i_reference_target_t
@@ -110,4 +112,3 @@ struct IHyperNode : public _i_reference_target_t
 	//! Get node id.
 	virtual HyperNodeID GetId() const = 0;
 };
-

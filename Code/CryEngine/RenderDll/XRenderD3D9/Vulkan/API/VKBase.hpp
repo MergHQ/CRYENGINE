@@ -6,39 +6,11 @@
 #include <fasthash/fasthash.inl>
 #include <concqueue/concqueue.hpp>
 
-#ifndef _RELEASE // TODO: Make this #ifdef _DEBUG?
-
-	#define VK_LOG(cond, ...) \
-	  do { if (cond) CryLog("Vulkan Log: " __VA_ARGS__); } while (0)
-	#define VK_ERROR(...) \
-	  do { CryLog("Vulkan Error: " __VA_ARGS__); } while (0)
-	#define VK_WARNING(...) \
-	  do { CryLog("Vulkan Warning: " __VA_ARGS__); } while (0)
-	#define VK_FUNC_LOG() \
-	  do { if (VK_FUNCTION_LOGGING) CryLog("Vulkan function call: %s", __FUNC__); } while (0)
-
-	#define VK_ASSERT(cond, ...) \
-	  CRY_ASSERT_MESSAGE(cond, "VK_ASSERT " __VA_ARGS__)
-
-	#define VK_NOT_IMPLEMENTED //VK_ASSERT(0, "Not implemented!");
-
-#else
-
-	#define VK_LOG(cond, ...)     do {} while (0)
-	#define VK_ERROR(...)         do {} while (0)
-	#define VK_WARNING(cond, ...) do {} while (0)
-	#define VK_FUNC_LOG()         do {} while (0)
-
-	#define VK_ASSERT(cond, ...)
-
-	#define VK_NOT_IMPLEMENTED
-#endif
-
 // TODO: remove once legacy pipeline is gone
 #define DX12_MAP_DISCARD_MARKER       BIT(3)
 #define DX12_COPY_REVERTSTATE_MARKER  BIT(2)
 #define DX12_COPY_PIXELSTATE_MARKER   BIT(3)
-#define DX12_COPY_CONCURRENT_MARKER   BIT(4)
+#define DX12_COPY_CONCURRENT_MARKER   DX12_COPY_REVERTSTATE_MARKER // equal implementations on Vulkan
 #define DX12_RESOURCE_FLAG_OVERLAP    BIT(1)
 
 //Should the VK objects be reference counted? For now use raw types
@@ -49,7 +21,6 @@
 #define VK_CONCURRENCY_ANALYZER false
 #define VK_FENCE_ANALYZER       false
 #define VK_BARRIER_ANALYZER     false
-#define VK_FUNCTION_LOGGING     false
 
 namespace NCryVulkan
 {
@@ -65,11 +36,15 @@ struct SSurfaceCreationInfo
 #ifdef CRY_PLATFORM_WINDOWS
 	HWND      windowHandle;
 	HINSTANCE appHandle;
-#elif USE_SDL2_VIDEO && CRY_PLATFORM_ANDROID
+#elif USE_SDL2_VIDEO
 	SDL_Window* pWindow;
-	ANativeWindow* pNativeWindow;
+	#if CRY_PLATFORM_ANDROID
+		ANativeWindow* pNativeWindow;
+	#elif CRY_PLATFORM_LINUX
+		xcb_window_t window;
+	#endif  //CRY_PLATFORM_ANDROID
 #else
-	#error  "Not implemented!""
+	#error  "Not implemented!"
 #endif
 };
 
@@ -176,7 +151,7 @@ public:
 	void CheckEmpty()
 	{
 		// If this triggers, you failed to clean up the handle, and you probably leaked the contents.
-		VK_ASSERT(value == VK_NULL_HANDLE && "Attempt to overwrite or destroy non-empty handle, contained object has been leaked!");
+		VK_ASSERT(value == VK_NULL_HANDLE, "Attempt to overwrite or destroy non-empty handle, contained object has been leaked!");
 	}
 
 	// Cast to handle-type allowed

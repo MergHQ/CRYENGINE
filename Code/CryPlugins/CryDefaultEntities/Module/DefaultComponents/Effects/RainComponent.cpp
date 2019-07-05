@@ -79,12 +79,12 @@ namespace Cry
 			}
 		}
 
-		uint64 CRainComponent::GetEventMask() const
+		Cry::Entity::EventFlags CRainComponent::GetEventMask() const
 		{
-			uint64 flags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
+			Cry::Entity::EventFlags flags = ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_HIDE | ENTITY_EVENT_DONE;
 			
 			if (m_bEnable)
-				flags |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+				flags |= ENTITY_EVENT_UPDATE;
 
 			return flags;
 		}

@@ -9,6 +9,7 @@
 #include <CryMemory/CrySizer.h>
 #include <CryCore/CryCrc32.h>
 #include <CryMemory/STLGlobalAllocator.h>
+#include <CryThreading/CryAtomics.h>
 
 class CNameTable;
 
@@ -58,31 +59,50 @@ struct INameTable
 class CNameTable : public INameTable
 {
 private:
+	
 	typedef std::unordered_map<const char*, SNameEntry*, stl::hash_stricmp<const char*>, stl::hash_stricmp<const char*>, stl::STLGlobalAllocator<std::pair<const char* const, SNameEntry*>>> NameMap;
+	
 	NameMap m_nameMap;
+	mutable volatile int m_lock = 0;
+
+	void Lock() const
+	{
+		CrySpinLock(&m_lock, 0, 1);
+	}
+
+	void Unlock() const
+	{
+		CrySpinLock(&m_lock, 1, 0);
+	}
 
 public:
+
 	CNameTable() {}
 
 	~CNameTable()
 	{
+		Lock();
 		for (NameMap::iterator it = m_nameMap.begin(); it != m_nameMap.end(); ++it)
 		{
 			free(it->second);
 		}
+		Unlock();
 	}
 
 	//! Only finds an existing name table entry
 	//! \return 0 if not found.
-	virtual INameTable::SNameEntry* FindEntry(const char* str)
+	virtual INameTable::SNameEntry* FindEntry(const char* str) override
 	{
+		Lock();
 		SNameEntry* pEntry = stl::find_in_map(m_nameMap, str, 0);
+		Unlock();
 		return pEntry;
 	}
 
 	//! Finds an existing name table entry, or creates a new one if not found.
-	virtual INameTable::SNameEntry* GetEntry(const char* str)
+	virtual INameTable::SNameEntry* GetEntry(const char* str) override
 	{
+		Lock();
 		SNameEntry* pEntry = stl::find_in_map(m_nameMap, str, 0);
 		if (!pEntry)
 		{
@@ -90,7 +110,7 @@ public:
 			unsigned int nLen = strlen(str);
 			unsigned int allocLen = sizeof(SNameEntry) + (nLen + 1) * sizeof(char);
 			pEntry = (SNameEntry*)malloc(allocLen);
-			assert(pEntry != NULL);
+			CRY_ASSERT(pEntry);
 			pEntry->nRefCount = 0;
 			pEntry->nLength = nLen;
 			pEntry->nAllocSize = allocLen;
@@ -99,55 +119,66 @@ public:
 			char* pEntryStr = const_cast<char*>(pEntry->GetStr());
 			memcpy(pEntryStr, str, nLen + 1);
 			// put in map.
-			//m_nameMap.insert( NameMap::value_type(pEntry->GetStr(),pEntry) );
 			m_nameMap[pEntry->GetStr()] = pEntry;
 		}
+		Unlock();
 		return pEntry;
 	}
 
 	//! Release existing name table entry.
-	virtual void Release(SNameEntry* pEntry)
+	virtual void Release(SNameEntry* pEntry) override
 	{
-		assert(pEntry);
+		CRY_ASSERT(pEntry);
+		Lock();
 		m_nameMap.erase(pEntry->GetStr());
+		Unlock();
 		free(pEntry);
 	}
-	virtual int GetMemoryUsage()
+
+	virtual int GetMemoryUsage() override
 	{
 		int nSize = 0;
-		NameMap::iterator it;
 		int n = 0;
-		for (it = m_nameMap.begin(); it != m_nameMap.end(); it++)
+		Lock();
+		for (auto it = m_nameMap.begin(); it != m_nameMap.end(); it++)
 		{
 			nSize += strlen(it->first);
 			nSize += it->second->GetMemoryUsage();
 			n++;
 		}
+		Unlock();
 		nSize += n * 8;
 
 		return nSize;
 	}
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));
+		Lock();
 		pSizer->AddObject(m_nameMap);
+		Unlock();
 	}
-	virtual int GetNumberOfEntries()
+	virtual int GetNumberOfEntries() override
 	{
-		return m_nameMap.size();
+		Lock();
+		int size = m_nameMap.size();
+		Unlock();
+		return size;
 	}
 
 	//! Log all names inside CryName table.
-	virtual void LogNames()
+	virtual void LogNames() override
 	{
-		NameMap::iterator it;
-		for (it = m_nameMap.begin(); it != m_nameMap.end(); ++it)
+#if !defined(EXCLUDE_NORMAL_LOG)
+		Lock();
+		for (auto it = m_nameMap.begin(); it != m_nameMap.end(); ++it)
 		{
 			SNameEntry* pNameEntry = it->second;
 			CryLog("[%4d] %s", pNameEntry->nLength, pNameEntry->GetStr());
 		}
+		Unlock();
+#endif
 	}
-
 };
 
 class CCryName
@@ -189,20 +220,12 @@ public:
 	}
 	static int GetMemoryUsage()
 	{
-#ifdef USE_STATIC_NAME_TABLE
-		CNameTable* pTable = GetNameTable();
-#else
 		INameTable* pTable = GetNameTable();
-#endif
 		return pTable->GetMemoryUsage();
 	}
 	static int GetNumberOfEntries()
 	{
-#ifdef USE_STATIC_NAME_TABLE
-		CNameTable* pTable = GetNameTable();
-#else
 		INameTable* pTable = GetNameTable();
-#endif
 		return pTable->GetNumberOfEntries();
 	}
 
@@ -218,26 +241,11 @@ public:
 private:
 	typedef INameTable::SNameEntry SNameEntry;
 
-#ifdef USE_STATIC_NAME_TABLE
-	static CNameTable* GetNameTable()
-	{
-		//! \note We cannot use a 'static CNameTable sTable' here, because that
-		//! implies a static destruction order depenency - the name table is
-		//! accessed from static destructor calls.
-		static CNameTable* table = NULL;
-
-		if (table == NULL)
-			table = new CNameTable();
-		return table;
-	}
-#else
-	//static INameTable* GetNameTable() { return GetISystem()->GetINameTable(); }
 	static INameTable* GetNameTable()
 	{
 		assert(gEnv && gEnv->pNameTable);
 		return gEnv->pNameTable;
 	}
-#endif
 
 	SNameEntry* _entry(const char* pBuffer) const { assert(pBuffer); return ((SNameEntry*)pBuffer) - 1; }
 	void        _release(const char* pBuffer)

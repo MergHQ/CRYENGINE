@@ -4,6 +4,7 @@
 #include "CentralInterestManager.h"
 #include "PersonalInterestManager.h"
 #include "Puppet.h"
+#include "SmartObjects.h"
 
 // For persistent debugging
 #include <CryGame/IGameFramework.h>
@@ -303,7 +304,6 @@ bool CCentralInterestManager::GatherData(IEntity* pEntity, SActorInterestSetting
 bool CCentralInterestManager::RegisterInterestingEntity(IEntity* pEntity, float fRadius, float fBaseInterest, const char* szActionName, const Vec3& vOffset, float fPause, int nbShared)
 {
 	SEntityInterest* pInterest = NULL;
-	bool bOnlyUpdate = false;
 	bool bSomethingChanged = false;
 
 	TVecInteresting::iterator itI = m_InterestingEntities.begin();
@@ -421,7 +421,6 @@ bool CCentralInterestManager::RegisterInterestedAIActor(IEntity* pEntity, bool b
 	TVecPIMs::iterator itEnd = m_PIMs.end();
 	for (; it != itEnd; ++it)
 	{
-		CPersonalInterestManager* p0 = &(*it);
 		if (it->IsReset())
 		{
 			it->Assign(pAIActor);
@@ -802,6 +801,17 @@ bool SEntityInterest::Set(EntityId entityId, float fRadius, float fInterest, con
 	}
 
 	return bChanged;
+}
+
+void SEntityInterest::Invalidate()
+{
+	IEntity* pEntity = GetEntity();
+	if (pEntity && gAIEnv.pSmartObjectManager)
+	{
+		gAIEnv.pSmartObjectManager->RemoveSmartObjectState(pEntity, "Registered");
+	}
+	m_entityId = 0;
+	m_sActionName = string();
 }
 
 void SEntityInterest::SetAction(const char* szActionName)

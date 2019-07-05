@@ -21,7 +21,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final { return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED); }
+			virtual Cry::Entity::EventFlags GetEventMask() const final { return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED; }
 			// ~IEntityComponent
 
 		public:

@@ -2,6 +2,12 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+#include <CrySandbox/CrySignal.h>
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Color.h>
+#include <QPushButton>
+
+class QColor;
 
 class EDITOR_COMMON_API CColorButton : public QPushButton
 {

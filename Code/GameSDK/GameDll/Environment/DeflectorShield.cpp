@@ -5,7 +5,8 @@
 #include "Projectile.h"
 #include "WeaponSystem.h"
 #include <CryAISystem/IAIObjectManager.h>
-
+#include <CryPhysics/IPhysics.h>
+#include <CryMath/Random.h>
 
 void CDeflectorShield::GetMemoryUsage(ICrySizer *pSizer) const {}
 void CDeflectorShield::InitClient(int channelId) {}
@@ -352,8 +353,6 @@ void CDeflectorShield::ShootDeflectedEnergy(const CDeflectorShield::SDeflectedEn
 
 	const Vec3 worldSpreadU = worldReflectDir.GetOrthogonal();
 	const Vec3 worldSpreadV = worldReflectDir.Cross(worldSpreadU);
-
-	const float spreadOffset = cry_random(0.0f, m_spread);
 	
 	const Vec3 position = worldReflectPos + worldReflectDir * positionBias;
 	Vec3 direction = 

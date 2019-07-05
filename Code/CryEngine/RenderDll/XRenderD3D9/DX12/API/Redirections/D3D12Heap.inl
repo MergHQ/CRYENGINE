@@ -3,11 +3,11 @@
 #include <array>
 #include <d3d12.h>
 
-template<const int numTargets>
+template<int numTargets>
 class BroadcastableD3D12Heap : public ID3D12Heap
 {
-	template<const int numTargets> friend class BroadcastableD3D12CommandQueue;
-	template<const int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
+	template<int numTargets> friend class BroadcastableD3D12CommandQueue;
+	template<int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
 
 	int m_RefCount;
 	std::array<ID3D12Heap*, numTargets> m_Targets;
@@ -25,9 +25,8 @@ public:
 		DX12_ASSERT(~0, "0 is not allowed in the broadcaster!");
 		for (int i = 0; i < numTargets; ++i)
 		{
-			HRESULT ret = pDevice->CreateHeap(
-			  &Desc, riid, (void**)&m_Targets[i]);
-			DX12_ASSERT(ret == S_OK, "Failed to create heap!");
+			if (pDevice->CreateHeap(&Desc, riid, (void**)&m_Targets[i]) != S_OK)
+				DX12_ERROR("Failed to create heap!");
 		}
 	}
 

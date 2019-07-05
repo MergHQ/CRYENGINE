@@ -11,7 +11,7 @@
 namespace Schematyc
 {
 struct IRuntimeClass;
-};
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
@@ -19,7 +19,7 @@ struct IRuntimeClass;
 //////////////////////////////////////////////////////////////////////////
 class CEntityClassRegistry final
 	: public IEntityClassRegistry
-	  , public INetworkedClientListener
+	, public INetworkedClientListener
 {
 public:
 	CEntityClassRegistry();
@@ -49,7 +49,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	void          IteratorMoveFirst() override;
 	IEntityClass* IteratorNext() override;
-	int           GetClassCount() const override { return m_mapClassName.size(); };
+	int           GetClassCount() const override { return m_mapClassName.size(); }
 
 	void          OnGameFrameworkInitialized();
 	void          InitializeDefaultClasses();

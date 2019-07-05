@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <Objects/BaseObject.h>
 
 const float kSplinePointSelectionRadius = 0.8f;
 
@@ -75,7 +76,7 @@ protected:
 	DECLARE_DYNAMIC(CSplineObject);
 	void          OnUpdateUI();
 
-	void          DrawJoints(DisplayContext& dc);
+	void          DrawJoints(SDisplayContext& dc);
 	bool          RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt);
 
 	virtual int   GetMaxPoints() const { return 1000; }
@@ -90,7 +91,7 @@ protected:
 	bool         Init(CBaseObject* prev, const string& file) override;
 	void         Done() override;
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void         CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	void         GetBoundBox(AABB& box) override;
 	void         GetLocalBounds(AABB& box) override;
@@ -105,7 +106,7 @@ protected:
 	void         EditSpline();
 
 protected:
-	void         SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit);
+	void SerializeProperties(Serialization::IArchive& ar, bool bMultiEdit);
 
 protected:
 	std::vector<CSplinePoint>  m_points;
@@ -119,4 +120,3 @@ protected:
 	static class CSplinePanel* m_pSplinePanel;
 	static int                 m_splineRollupID;
 };
-

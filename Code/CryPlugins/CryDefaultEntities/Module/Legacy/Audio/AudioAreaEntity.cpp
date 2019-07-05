@@ -171,9 +171,7 @@ void CAudioAreaEntity::OnResetState()
 	// Get properties
 	CryAudio::EnvironmentId const environmentId = CryAudio::StringToId(m_environmentName.c_str());
 
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	m_pProxy->SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
-
+	m_pProxy->SetObstructionCalcType(m_occlusionType);
 	m_pProxy->SetFadeDistance(m_fadeDistance);
 	m_pProxy->SetEnvironmentFadeDistance(m_environmentFadeDistance);
 
@@ -201,13 +199,8 @@ void CAudioAreaEntity::OnResetState()
 
 void CAudioAreaEntity::SetEnvironmentId(const CryAudio::ControlId environmentId)
 {
-	const CryAudio::EnvironmentId oldEnvironmentId = m_pProxy->GetEnvironmentId();
-	m_pProxy->SetEnvironmentId(environmentId);
-
-	//
 	// TODO: The audio environment is being tampered with, we need to inform all entities affected by the area.
-	//
-
+	m_pProxy->SetEnvironmentId(environmentId);
 }
 
 void CAudioAreaEntity::UpdateFadeValue(const float distance)

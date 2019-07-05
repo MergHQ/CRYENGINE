@@ -12,28 +12,21 @@ DECLARE_JOB("TexStrmUpdate", TTexStrmUpdateJob, CPlanningTextureStreamer::Job_Up
 	#pragma optimize("",off)
 #endif
 
-static int GetTexReqStreamSizePreClamped(const SPlanningTextureOrderKey& key, int reqMip)
+static uint32 GetTexReqStreamSizePreClamped(const SPlanningTextureOrderKey& key, int8 reqMip)
 {
-	int nTotalSize = 0;
+	uint32 nTotalSize = 0;
 
 	uint8 nFormatCode = key.nFormatCode;
 	if (nFormatCode)
 	{
 		const SStreamFormatCode& code = CTexture::s_formatCodes[nFormatCode];
 
-		uint32 nCodeMip = reqMip + (SStreamFormatCode::MaxMips - key.nMips);
-		uint32 nSlices = key.nSlicesMinus1 + 1;
-		uint32 nPoTSlices = key.nSlicesPotMinus1 + 1;
-
-		uint32 n1SliceSize = code.sizes[nCodeMip].size;
-		uint32 nFormatSlices = code.sizes[nCodeMip].alignSlices ? nPoTSlices : nSlices;
-		nTotalSize = n1SliceSize * nFormatSlices;
+		int8 nCodeMip = reqMip + (SStreamFormatCode::MaxMips - key.nMips);
+		nTotalSize = code.sizes[key.nSlicesMinus1][nCodeMip];
 
 #if defined(PLAN_TEXSTRM_DEBUG)
-		int nTotalSizeTest = key.pTexture->StreamComputeSysDataSize(reqMip);
-
-		if (nTotalSizeTest != nTotalSize)
-			__debugbreak();
+		uint32 nTotalSizeTest = key.pTexture->StreamComputeSysDataSize(reqMip);
+		CRY_ASSERT(nTotalSizeTest == nTotalSize);
 #endif
 	}
 	else
@@ -41,28 +34,32 @@ static int GetTexReqStreamSizePreClamped(const SPlanningTextureOrderKey& key, in
 		nTotalSize = key.pTexture->StreamComputeSysDataSize(reqMip);
 	}
 
+	CRY_ASSERT(nTotalSize >= key.nPersistentSize);
 	return nTotalSize - key.nPersistentSize;
 }
 
 struct CTextureStreamSize
 {
-	CTextureStreamSize(int nMinMip, int nBias)
-		: m_nMinMip(nMinMip)
-		, m_nBias(nBias)
+	CTextureStreamSize(int8 nMinMip, int16 nBias)
+		: m_nBias(nBias)
+		, m_nMinMip(nMinMip)
 	{
 	}
 
-	ptrdiff_t operator()(const SPlanningTextureOrderKey& key) const
+	uint32 operator()(const SPlanningTextureOrderKey& key) const
 	{
-		int numMips = key.nMips;
-		int numPersMips = key.nMipsPersistent;
-		int persMip = numMips - numPersMips;
-		int reqMip = min(max(static_cast<int>(key.GetFpMinMipCur() + m_nBias) >> 8, m_nMinMip), persMip);
+		const int8 numMips = key.nMips;
+		const int8 numPersMips = key.nMipsPersistent;
+		const int8 persMip = numMips - numPersMips;
+
+		const int16 fpReqMip = key.GetFpMinMipCur() + m_nBias;
+		const int8 reqMip = crymath::clamp_to<int8, int>(fpReqMip >> 8, m_nMinMip, persMip);
+
 		return GetTexReqStreamSizePreClamped(key, reqMip);
 	}
 
-	int m_nMinMip;
-	int m_nBias;
+	int16 m_nBias;
+	int8  m_nMinMip;
 };
 
 struct CTexturePrecachedPred
@@ -285,34 +282,37 @@ void CPlanningTextureStreamer::Job_UpdateMip(CTexture* pTexture, const float fMi
 	}
 }
 
-int CPlanningTextureStreamer::Job_Bias(SPlanningSortState& sortState, SPlanningTextureOrderKey* pKeys, size_t nNumPrecachedTexs, size_t nStreamLimit)
+int16 CPlanningTextureStreamer::Job_Bias(SPlanningSortState& sortState, SPlanningTextureOrderKey* pKeys, size_t nNumPrecachedTexs, size_t nStreamLimit)
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	int fpSortStateBias = sortState.nBias;
-	const int fpSortStateMinBias = sortState.fpMinBias;
-	const int fpSortStateMaxBias = sortState.fpMaxBias;
-	const int fpSortStateMinMip = sortState.fpMinMip;
+	const int16 fpSortStateMinBias = sortState.fpMinBias;
+	const int16 fpSortStateMaxBias = sortState.fpMaxBias;
+	const int16 fpSortStateMinMip  = sortState.fpMinMip;
 
-	fpSortStateBias = clamp_tpl(fpSortStateBias, fpSortStateMinBias, fpSortStateMaxBias);
+	int16 fpSortStateBias = sortState.nBias;
+	int16 fpMipBiasLow = fpSortStateMinBias;
+	int16 fpMipBiasHigh = std::max<int16>(fpSortStateMinBias, fpSortStateMaxBias);
 
-	int fpMipBiasLow = fpSortStateMinBias;
-	int fpMipBiasHigh = max(fpSortStateMinBias, fpSortStateMaxBias);
+	fpSortStateBias = clamp_tpl(fpSortStateBias, fpMipBiasLow, fpMipBiasHigh);
 
 	const int nMaxBiasSteps = 8;
 
 	for (int nBiasStep = 0; nBiasStep < nMaxBiasSteps && (fpMipBiasHigh - fpMipBiasLow) > 1; ++nBiasStep)
 	{
-		int nMipBiasTest = (fpMipBiasLow + fpMipBiasHigh) / 2;
+		int16 nMipBiasTest = (fpMipBiasLow + fpMipBiasHigh) / 2;
 
 		size_t nBiasedListStreamSize = 0;
 		for (size_t texIdx = 0, texCount = nNumPrecachedTexs; texIdx != texCount && nBiasedListStreamSize < nStreamLimit; ++texIdx)
 		{
 			const SPlanningTextureOrderKey& key = pKeys[texIdx];
 
-			int nMips = key.nMips;
-			int fpReqMip = max(fpSortStateMinMip, key.GetFpMinMipCur() + nMipBiasTest);
-			int nReqMip = min(fpReqMip >> 8, nMips - 1);
+			const int8 numMips = key.nMips;
+			const int8 numPersMips = key.nMipsPersistent;
+			const int8 persMip = numMips - numPersMips;
+
+			const int16 fpReqMip = std::max<int16>(fpSortStateMinMip, key.GetFpMinMipCur() + nMipBiasTest);
+			const int8 nReqMip = crymath::clamp_to<int8, int8>(fpReqMip >> 8, numMips - 1, persMip);
 
 			nBiasedListStreamSize += GetTexReqStreamSizePreClamped(key, nReqMip);
 		}
@@ -321,16 +321,22 @@ int CPlanningTextureStreamer::Job_Bias(SPlanningSortState& sortState, SPlanningT
 			fpMipBiasHigh = nMipBiasTest;
 		else
 			fpMipBiasLow = nMipBiasTest;
+
+		if (CRenderer::CV_r_TexturesStreamingDebug == 2)
+			iLog->Log("Bias %d for %" PRISIZE_T " bytes: 0x%08x (%" PRISIZE_T " bytes)", nBiasStep, nStreamLimit, nMipBiasTest, nBiasedListStreamSize);
 	}
 
 	int nProspBias = (fpMipBiasLow + fpMipBiasHigh) / 2;
 	if (abs(fpSortStateBias - nProspBias) > 8)
 		fpSortStateBias = nProspBias;
 
+	if (CRenderer::CV_r_TexturesStreamingDebug == 2)
+		iLog->Log("Final bias for %" PRISIZE_T " bytes: 0x%08x", nStreamLimit, fpSortStateBias);
+
 	return fpSortStateBias;
 }
 
-size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const SPlanningTextureOrderKey* pKeys, size_t nTextures, size_t nNumPrecachedTexs, size_t nBalancePoint, int nMinMip, int fpSortStateBias)
+size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const SPlanningTextureOrderKey* pKeys, size_t nTextures, size_t nNumPrecachedTexs, size_t nBalancePoint, int8 nMinMip, int16 fpSortStateBias)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -347,30 +353,28 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 	{
 		const SPlanningTextureOrderKey& key = pKeys[texIdx];
 
-		int nMips = key.nMips;
-		int haveMip = key.nCurMip;
-		int persMip = nMips - key.nMipsPersistent;
-		int wantKey;
+		int8 nMips = key.nMips;
+		int8 haveMip = key.nCurMip;
+		int8 persMip = nMips - key.nMipsPersistent;
+		int16 wantKey;
 
 		if (texIdx < nNumPrecachedTexs)
 		{
 			int16 fpMinMipCur = key.GetFpMinMipCur();
 
-			wantKey = max(fpMinMipCur + fpSortStateBias, nMinMip << 8);
-			wantKey = min(wantKey, persMip << 8);
+			wantKey = crymath::clamp_to<int16, int>(fpMinMipCur + fpSortStateBias, nMinMip << 8, persMip << 8);
 		}
 		else
 		{
 			wantKey = persMip << 8;
 		}
 
-		int deltaMip = (wantKey >> 8) - haveMip;
-		int deltaKey = wantKey - (haveMip << 8);
-		int wantMip  = haveMip + max(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
-		int reqstMip = haveMip + deltaMip;
-		int prevMipSize = GetTexReqStreamSizePreClamped(key, haveMip);
-		int cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip);
-		int transferSize = cacheMipSize - prevMipSize;
+		int8 deltaMip = (wantKey >> 8) - haveMip;
+		int8 wantMip  = haveMip + std::max<int8>(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
+		int8 reqstMip = haveMip + deltaMip;
+		uint32 prevMipSize  = GetTexReqStreamSizePreClamped(key, haveMip);
+		uint32 cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip);
+		uint32 transferSize = cacheMipSize - prevMipSize;
 
 		while ((transferSize < minTransferSize) && (reqstMip < wantMip))
 		{
@@ -381,7 +385,7 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		}
 
 		// more priority for streaming requests which are very far away from their target
-		int sortKey = key.GetFpMinMipCur() - (haveMip << 8) + SPlanningTextureOrderKey::PackedFpBias;
+		uint16 sortKey = key.GetFpMinMipCur() - (haveMip << 8) + SPlanningTextureOrderKey::PackedFpBias;
 
 		nListSize += cacheMipSize;
 
@@ -399,7 +403,7 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 
 					uint32 nSortKey =
 					  (1 << 31)
-					  | ((int)(haveMip < (max(0, key.GetFpMinMipCur()) >> 8)) << 30)
+					  | ((int)(haveMip < (std::max<int16>(0, key.GetFpMinMipCur()) >> 8)) << 30)
 					  | ((int)!key.IsHighPriority() << 29)
 					  | ((int)bOnlyNeedsTopMip << 28)
 					  | ((int)!key.IsVisible() << 27)
@@ -433,30 +437,28 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		PREFAST_ASSUME(nBalancePoint < nTextures);
 		const SPlanningTextureOrderKey& key = pKeys[texIdx];
 
-		int nMips = key.nMips;
-		int haveMip = key.nCurMip;
-		int persMip = nMips - key.nMipsPersistent;
-		int wantKey;
+		int8 nMips = key.nMips;
+		int8 haveMip = key.nCurMip;
+		int8 persMip = nMips - key.nMipsPersistent;
+		int16 wantKey;
 
 		if (texIdx < nNumPrecachedTexs)
 		{
 			int16 fpMinMipCur = key.GetFpMinMipCur();
 
-			wantKey = max(fpMinMipCur + fpSortStateBias, nMinMip << 8);
-			wantKey = min(wantKey, persMip << 8);
+			wantKey = crymath::clamp_to<int16, int>(fpMinMipCur + fpSortStateBias, nMinMip << 8, persMip << 8);
 		}
 		else
 		{
 			wantKey = persMip << 8;
 		}
 
-		int deltaMip = (wantKey >> 8) - haveMip;
-		int deltaKey = wantKey - (haveMip << 8);
-		int wantMip = haveMip + max(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
-		int reqstMip = haveMip + deltaMip;
-		int prevMipSize = GetTexReqStreamSizePreClamped(key, haveMip);
-		int cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip);
-		int transferSize = cacheMipSize - prevMipSize;
+		int8 deltaMip = (wantKey >> 8) - haveMip;
+		int8 wantMip  = haveMip + std::max<int8>(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
+		int8 reqstMip = haveMip + deltaMip;
+		uint32 prevMipSize = GetTexReqStreamSizePreClamped(key, haveMip);
+		uint32 cacheMipSize = GetTexReqStreamSizePreClamped(key, wantMip);
+		uint32 transferSize = cacheMipSize - prevMipSize;
 
 		while ((transferSize < minTransferSize) && (reqstMip < wantMip))
 		{
@@ -467,7 +469,7 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		}
 
 		// more priority for streaming requests which are very far away from their target
-		int sortKey = key.GetFpMinMipCur() - (haveMip << 8) + SPlanningTextureOrderKey::PackedFpBias;
+		uint16 sortKey = key.GetFpMinMipCur() - (haveMip << 8) + SPlanningTextureOrderKey::PackedFpBias;
 
 		nListSize += cacheMipSize;
 
@@ -483,7 +485,7 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 				{
 					uint32 nSortKey =
 					  (1 << 31)
-					  | ((int)(haveMip < (max(0, key.GetFpMinMipCur()) >> 8)) << 30)
+					  | ((int)(haveMip < (std::max<int16>(0, key.GetFpMinMipCur()) >> 8)) << 30)
 					  | ((int)!key.IsHighPriority() << 29)
 					  | ((int)!key.IsVisible() << 27)
 					  | ((int)(7 - key.nStreamPrio) << 19)
@@ -512,6 +514,10 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		{
 			int nRequestMip = requests[iRequest].nMip;
 			sortState.pRequestList->push_back(std::make_pair(pKeys[requests[iRequest].nKey].pTexture, nRequestMip));
+
+			if (CRenderer::CV_r_TexturesStreamingDebug == 2)
+				iLog->Log("Requesting mip: %s - Level: %i",
+					pKeys[requests[iRequest].nKey].pTexture->m_SrcName.c_str(), nRequestMip);
 		}
 	}
 
@@ -527,10 +533,9 @@ void CPlanningTextureStreamer::Job_Sort()
 	CTexture** pTextures = &(*sortState.pTextures)[0];
 	size_t nTextures = sortState.nTextures;
 
-	int nOnScreenFrameId = sortState.nFrameId - 8;
-	int nMinMip = sortState.fpMinMip >> 8;
+	int8 nMinMip = sortState.fpMinMip >> 8;
 
-	int const nStreamLimit = sortState.nStreamLimit;
+	size_t const nStreamLimit = sortState.nStreamLimit;
 
 	m_keys.resize(nTextures);
 	SPlanningTextureOrderKey* pKeys = &m_keys[0];
@@ -542,11 +547,10 @@ void CPlanningTextureStreamer::Job_Sort()
 	SPlanningTextureOrderKey* pLastPrecachedKey = std::partition(pKeys, pKeys + nTextures, CTexturePrecachedPred());
 	size_t nNumPrecachedTexs = std::distance(pKeys, pLastPrecachedKey);
 
-	int fpSortStateBias = Job_Bias(sortState, pKeys, nNumPrecachedTexs, nStreamLimit);
+	int16 fpSortStateBias = Job_Bias(sortState, pKeys, nNumPrecachedTexs, nStreamLimit);
 
 	// Don't allow greedy grab of the texture pool memory (negative bias over-commits!)
-	if (fpSortStateBias < CRenderer::CV_r_TexturesStreamingLowestPrefetchBias)
-		fpSortStateBias = CRenderer::CV_r_TexturesStreamingLowestPrefetchBias;
+	fpSortStateBias = std::max<int16>(fpSortStateBias, CRenderer::CV_r_TexturesStreamingLowestPrefetchBias);
 
 	SPlanningTextureOrderKey* pBalanceKey = pKeys + nNumPrecachedTexs;
 	if (fpSortStateBias >= 0 && nNumPrecachedTexs > 0)
@@ -577,7 +581,7 @@ void CPlanningTextureStreamer::Job_InitKeys(SPlanningTextureOrderKey* pKeys, CTe
 
 	for (size_t i = 0; i < nTextures; ++i)
 	{
-#if CRY_PLATFORM_DURANGO || (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS
 		if ((i + 32) < nTextures)
 			_mm_prefetch((char*)(pTexs[i + 32]) + 0x40, 0);
 #endif
@@ -593,23 +597,21 @@ void CPlanningTextureStreamer::Job_CommitKeys(CTexture** pTextures, SPlanningTex
 
 void CPlanningTextureStreamer::Job_CheckEnqueueForStreaming(CTexture* pTexture, const float fMipFactor, bool bHighPriority)
 {
-	STexStreamingInfo* pStrmInfo = pTexture->m_pFileTexMips;
-
 	// calculate the new lod value
-	int fpMipIdSigned = pTexture->StreamCalculateMipsSignedFP(fMipFactor);
-	const int fpNewMip = max(0, fpMipIdSigned);
-	const int nNewMip = fpNewMip >> 8;
-	const int nMipIdSigned = fpMipIdSigned >> 8;
+	const int16 fpMipIdSigned = pTexture->StreamCalculateMipsSignedFP(fMipFactor);
+	const int16 fpNewMip = std::max<int16>(0, fpMipIdSigned);
+
+	const int8 nNewMip = fpNewMip >> 8;
 
 	if ((CRenderer::CV_r_TexturesStreamingDebug == 2) && (pTexture->GetRequiredMip() != nNewMip))
-		iLog->Log("Updating mips: %s - Current: %i, Previous: %i", pTexture->m_SrcName.c_str(), pTexture->GetRequiredMip(), nNewMip);
+		iLog->Log("Updating mips: %s - Previous: %i, Current: %i", pTexture->m_SrcName.c_str(), pTexture->GetRequiredMip(), nNewMip);
 
 #if defined(ENABLE_TEXTURE_STREAM_LISTENER)
 	if (pTexture->GetRequiredMip() != nNewMip)
 	{
 		ITextureStreamListener* pListener = CTexture::s_pStreamListener;
 		if (pListener)
-			pListener->OnTextureWantsMip(pTexture, min(nNewMip, (int)pTexture->m_nMips));
+			pListener->OnTextureWantsMip(pTexture, std::min(nNewMip, pTexture->m_nMips));
 	}
 #endif
 

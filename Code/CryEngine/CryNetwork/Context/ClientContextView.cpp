@@ -20,6 +20,7 @@
 #include "History/History.h"
 #include "VoiceContext.h"
 #include "SyncedFileSet.h"
+#include <CryEntitySystem/IEntitySystem.h>
 
 #if ENABLE_DEBUG_KIT
 	#pragma warning(disable:4355)
@@ -261,20 +262,20 @@ NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CClientContextView, AuthenticateChallenge
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, BeginBindObject, eNRT_ReliableUnordered, eMPF_BlocksStateChange | eMPF_DecodeInSync)
 {
-	return DoBeginBind(ser, 0);
+	return DoBeginBind(ser, {});
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, BeginBindStaticObject, eNRT_ReliableUnordered, eMPF_BlocksStateChange | eMPF_DecodeInSync)
 {
-	return DoBeginBind(ser, eBBF_ReadObjectID | eBBF_FlagStatic);
+	return DoBeginBind(ser, EBeginBindFlags::Static);
 }
 
 NET_IMPLEMENT_IMMEDIATE_MESSAGE(CClientContextView, BeginBindPredictedObject, eNRT_ReliableUnordered, eMPF_BlocksStateChange | eMPF_DecodeInSync)
 {
-	return DoBeginBind(ser, eBBF_ReadObjectID);
+	return DoBeginBind(ser, EBeginBindFlags::ReadEntityID);
 }
 
-bool CClientContextView::DoBeginBind(TSerialize ser, uint32 flags)
+bool CClientContextView::DoBeginBind(TSerialize ser, CEnumFlags<EBeginBindFlags> flags)
 {
 	if (IsBeforeState(eCVS_SpawnEntities))
 	{
@@ -293,7 +294,24 @@ bool CClientContextView::DoBeginBind(TSerialize ser, uint32 flags)
 			NetWarning("Attempt to bind an already allocated object");
 			return false;
 		}
-		if (flags & eBBF_ReadObjectID)
+		if (flags & EBeginBindFlags::Static)
+		{
+			IEntitySystem::StaticEntityNetworkIdentifier id;
+			ser.Value("userID", id);
+
+			nUserID = gEnv->pEntitySystem->GetEntityIdFromStaticEntityNetworkId(id);
+			CRY_ASSERT(nUserID != INVALID_ENTITYID);
+			if (nUserID != INVALID_ENTITYID)
+			{
+				ContextState()->SpawnedObject(nUserID);
+			}
+			else
+			{
+				NetWarning("Probable level mismatch, static entity identifier sent from server was not valid on the local client state!");
+				return false;
+			}
+		}
+		else if (flags & EBeginBindFlags::ReadEntityID)
 		{
 			ser.Value("userID", nUserID);
 			ContextState()->SpawnedObject(nUserID);
@@ -313,7 +331,7 @@ bool CClientContextView::DoBeginBind(TSerialize ser, uint32 flags)
 			NetLog("BIND OBJECT: netID=%s entityID=%d aspects=%.2x", CurrentObjectID().GetText(), nUserID, nAspectsEnabled);
 #endif
 
-		if (ContextState()->AllocateObject(ContextState()->GetSpawnedObjectId(true), CurrentObjectID(), nAspectsEnabled, false, (flags & eBBF_FlagStatic) ? eST_Static : eST_Normal, this))
+		if (ContextState()->AllocateObject(ContextState()->GetSpawnedObjectId(true), CurrentObjectID(), nAspectsEnabled, false, (flags & EBeginBindFlags::Static) ? eST_Static : eST_Normal, this))
 		{
 			ContextState()->GC_BoundObject(ContextState()->GetContextObject(CurrentObjectID()).main->userID);
 			ContextState()->SetDelegatableMask(CurrentObjectID(), delegatableMask);
@@ -330,13 +348,13 @@ NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CClientContextView, BeginUnbindObject, eN
 
 NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CClientContextView, RemoveStaticObject, eNRT_ReliableUnordered, eMPF_BlocksStateChange)
 {
-	ContextState()->UnbindStaticObject(param.id);
+	ContextState()->UnbindStaticObject(param.staticId);
 	return true;
 }
 
 NET_IMPLEMENT_SIMPLE_IMMEDIATE_MESSAGE(CClientContextView, UnbindPredictedObject, eNRT_ReliableUnordered, eMPF_BlocksStateChange)
 {
-	ContextState()->UnbindStaticObject(param.id);
+	ContextState()->UnbindPredictedObject(param.id);
 	return true;
 }
 

@@ -47,13 +47,15 @@ namespace EditorSubstance
 			virtual void SetName(const QString& name) override;
 
 		protected:
-
-		protected:
 			CSubstanceNodeContentWidget::EOutputType m_outputType;
 			SSubstanceOutput m_pOutput;
 			std::shared_ptr<QImage> m_originalImage;
 			CSubstanceNodeContentWidget* m_pNodeContentWidget;
 			CryGraphEditor::PinItemArray m_pins;
+
+		private:
+			CryGraphEditor::CNodeEditorData* m_pData;
+			
 		};
 
 	}

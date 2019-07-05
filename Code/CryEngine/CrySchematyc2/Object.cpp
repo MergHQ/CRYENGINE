@@ -124,6 +124,18 @@ namespace Schematyc2
 
 	namespace ObjectUtils
 	{
+        //////////////////////////////////////////////////////////////////////////
+        bool HasStateMachineNetAuthority(const ILibStateMachine& libStateMachine, bool hasObjectLocalAuthority)
+        {
+            if (hasObjectLocalAuthority && libStateMachine.GetNetAuthority() == EStateMachineNetAuthority::Local)
+                return true;
+
+            if (libStateMachine.GetNetAuthority() == EStateMachineNetAuthority::Server && gEnv->bServer)
+                return true;
+
+            return false;
+        }
+
 		bool ShouldStartAction(EActionFlags flags, bool bHaveNetworkAuthority)
 		{
 			const bool bIsServer = gEnv->bServer;
@@ -165,6 +177,7 @@ namespace Schematyc2
 		, m_clientAspect(params.clientAspect)
 		, m_flags(params.flags)
 		, m_simulationMode(ESimulationMode::NotSet)
+		, m_debuggingActive(false)
 	{
 		// Register network serializer?
 		if(m_pNetworkObject)
@@ -201,7 +214,7 @@ namespace Schematyc2
 			STimer&				timer = m_timers.back();
 			STimerParams	timerParams = libTimer.GetParams();
 			timerParams.flags &= ~ETimerFlags::AutoStart;	// We're hijacking this flag and therefore don't want to pass it on to the timer system.
-			timer.timerId = timerSystem.CreateTimer(timerParams, TimerCallback::FromMemberFunction<STimer, &STimer::OnTimer>(timer));
+			timerSystem.CreateTimer(timerParams, TimerCallback::FromMemberFunction<STimer, &STimer::OnTimer>(timer), timer.timerId);
 		}
 		// Create and initialize components.
 		CreateAndInitComponents(params.pNetworkSpawnParams);
@@ -282,7 +295,7 @@ namespace Schematyc2
 				ITimerSystem& timerSystem = gEnv->pSchematyc2->GetTimerSystem();
 				for(size_t persistentTimerIdx = 0, persistentTimerCount = m_pLibClass->GetPersistentTimerCount(); persistentTimerIdx < persistentTimerCount; ++ persistentTimerIdx)
 				{
-					const size_t     timerIdx = m_pLibClass->GetPersistentTimer(persistentTimerIdx);
+					const size_t timerIdx = m_pLibClass->GetPersistentTimer(persistentTimerIdx);
 					const ILibTimer& libTimer = *m_pLibClass->GetTimer(timerIdx); 
 					if((libTimer.GetParams().flags & ETimerFlags::AutoStart) != 0)
 					{
@@ -290,42 +303,43 @@ namespace Schematyc2
 					}
 				}
 				TVariantConstArray inputs;
-				TVariantArray      outputs;
+				TVariantArray outputs;
 				// Call persistent constructors.
 				for(size_t persistentConstructorIdx = 0, persistentConstructorCount = m_pLibClass->GetPersistentConstructorCount(); persistentConstructorIdx < persistentConstructorCount; ++ persistentConstructorIdx)
 				{
 					const ILibConstructor& libConstructor = *m_pLibClass->GetConstructor(m_pLibClass->GetPersistentConstructor(persistentConstructorIdx));
 					ProcessFunction(libConstructor.GetFunctionId(), inputs, outputs);
 				}
-				// Call begin function for each persistent state machine.
-				for(size_t stateMachineIdx = 0, stateMachineCount = m_pLibClass->GetStateMachineCount(); stateMachineIdx < stateMachineCount; ++ stateMachineIdx)
+			}
+
+			// Call begin function for each persistent state machine.
+			for (size_t stateMachineIdx = 0, stateMachineCount = m_pLibClass->GetStateMachineCount(); stateMachineIdx < stateMachineCount; ++stateMachineIdx)
+			{
+				const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(stateMachineIdx);
+				if (ObjectUtils::HasStateMachineNetAuthority(libStateMachine, bHaveNetworkAuthority))
 				{
-					const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(stateMachineIdx);
-					if(libStateMachine.GetLifetime() == ELibStateMachineLifetime::Persistent)
+					if (libStateMachine.GetLifetime() == EStateMachineLifetime::Persistent)
 					{
 						CVariant beginOutputs[2];
 						ProcessFunction(libStateMachine.GetBeginFunction(), TVariantConstArray(), beginOutputs);
-						if(static_cast<ELibTransitionResult>(beginOutputs[0].AsInt32()) == ELibTransitionResult::ChangeState)
+						if (static_cast<ELibTransitionResult>(beginOutputs[0].AsInt32()) == ELibTransitionResult::ChangeState)
 						{
 							ChangeState(stateMachineIdx, beginOutputs[1].AsInt32(), SEvent(), TVariantConstArray());
 						}
 					}
 				}
-			}
-			else
-			{
-				// Set initial states.
-				if((m_flags & EObjectFlags::NetworkReplicateActions) != 0)
+				else
 				{
-					for(size_t stateMachineIdx = 0, stateMachineCount = m_stateMachines.size(); stateMachineIdx < stateMachineCount; ++ stateMachineIdx)
+					if ((m_flags & EObjectFlags::NetworkReplicateActions) != 0)
 					{
 						SStateMachine& stateMachine = m_stateMachines[stateMachineIdx];
-						if((stateMachine.iCurrentState != stateMachine.iRequestedState))
+						if (stateMachine.iCurrentState != stateMachine.iRequestedState)
 						{
 							ChangeState(stateMachineIdx, stateMachine.iRequestedState, SEvent(), TVariantConstArray());
 						}
 					}
 				}
+
 			}
 		}
 	}
@@ -345,20 +359,41 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CObject::ProcessSignal(const SGUID& signalGUID, const TVariantConstArray& inputs)
 	{
-		if((m_simulationMode == ESimulationMode::Game) && HaveNetworkAuthority())
+		if((m_simulationMode == ESimulationMode::Game))
 		{
-			CRY_PROFILE_FUNCTION(PROFILE_GAME);
+			CRY_PROFILE_FUNCTION_ARG(PROFILE_GAME, m_pLibClass->GetName());
 
+#if SCHEMATYC2_DEBUGGING
+			size_t currentSignalIdx = SIZE_MAX;
+			const int64	signalStartTicks = CryGetTicks();
+
+			if (IsDebuggingActive())
+			{
+				m_nodeHistory.push_back(SExecutionHistoryItem(signalGUID, "", "", 0, SExecutionHistoryItem::EExecutionHistoryType::Signal));
+				currentSignalIdx = m_nodeHistory.size() - 1;
+			}
+#endif
+
+			const bool bHaveNetworkAuthority = HaveNetworkAuthority();
+			
 			m_signalHistory.PushBack(signalGUID);
-			SSignalObserverConnectionProcessor signalObserverConnectionProcessor(signalGUID, inputs);
-			m_signalObservers.Process(signalObserverConnectionProcessor);
+			if (bHaveNetworkAuthority)
+			{
+				SSignalObserverConnectionProcessor signalObserverConnectionProcessor(signalGUID, inputs);
+				m_signalObservers.Process(signalObserverConnectionProcessor);
+			}
+
 			// Iterate through hierarchy of each state machine from current state to root to process signal receivers and evaluate transitions.
-			SEvent        event(SEvent::SIGNAL, signalGUID);
+			SEvent event(SEvent::SIGNAL, signalGUID);
 			TVariantArray outputs;
 			for(size_t iStateMachine = 0, stateMachineCount = m_stateMachines.size(); iStateMachine < stateMachineCount; ++ iStateMachine)
 			{
+				const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(iStateMachine);
+				if(!ObjectUtils::HasStateMachineNetAuthority(libStateMachine, bHaveNetworkAuthority))
+					continue;
+
 				SStateMachine& stateMachine = m_stateMachines[iStateMachine];
-				const size_t   initStateIdx = stateMachine.iCurrentState;
+				const size_t initStateIdx = stateMachine.iCurrentState;
 				// Process signal receivers.
 				for(size_t stateIdx = initStateIdx; stateIdx != INVALID_INDEX; stateIdx = m_pLibClass->GetState(stateIdx)->GetParent())
 				{
@@ -374,29 +409,43 @@ namespace Schematyc2
 							}
 						}
 					}
-
 				}
+
 				// Evaluate transitions if we haven't already changed state as a result of incoming signal
-				if(stateMachine.iCurrentState == initStateIdx)
+				if (stateMachine.iCurrentState == initStateIdx)
 				{
-					for(size_t stateIdx = stateMachine.iCurrentState; stateIdx != INVALID_INDEX; stateIdx = m_pLibClass->GetState(stateIdx)->GetParent())
+					for (size_t stateIdx = stateMachine.iCurrentState; stateIdx != INVALID_INDEX; stateIdx = m_pLibClass->GetState(stateIdx)->GetParent())
 					{
-						if(EvaluateTransitions(iStateMachine, stateIdx, event, inputs))
+						if (EvaluateTransitions(iStateMachine, stateIdx, event, inputs))
 						{
 							break;
 						}
 					}
 				}
 			}
-			// Process persistent signal receivers.
-			for(size_t iPersistentSignalReceiver = 0, persistentSignalReceiverCount = m_pLibClass->GetPersistentSignalReceiverCount(); iPersistentSignalReceiver < persistentSignalReceiverCount; ++ iPersistentSignalReceiver)
+
+			if (bHaveNetworkAuthority)
 			{
-				const ILibSignalReceiver&	libSignalReceiver = *m_pLibClass->GetSignalReceiver(m_pLibClass->GetPersistentSignalReceiver(iPersistentSignalReceiver));
-				if(libSignalReceiver.GetContextGUID() == signalGUID)
+				// Process persistent signal receivers.
+				for (size_t iPersistentSignalReceiver = 0, persistentSignalReceiverCount = m_pLibClass->GetPersistentSignalReceiverCount(); iPersistentSignalReceiver < persistentSignalReceiverCount; ++iPersistentSignalReceiver)
 				{
-					ProcessFunction(libSignalReceiver.GetFunctionId(), inputs, outputs);
+					const ILibSignalReceiver&	libSignalReceiver = *m_pLibClass->GetSignalReceiver(m_pLibClass->GetPersistentSignalReceiver(iPersistentSignalReceiver));
+					if (libSignalReceiver.GetContextGUID() == signalGUID)
+					{
+						ProcessFunction(libSignalReceiver.GetFunctionId(), inputs, outputs);
+					}
 				}
 			}
+
+#if SCHEMATYC2_DEBUGGING
+			if (currentSignalIdx != SIZE_MAX)
+			{
+				const int64	endTicks = CryGetTicks();
+				const float	time = gEnv->pTimer->TicksToSeconds(endTicks - signalStartTicks);
+
+				m_nodeHistory[currentSignalIdx].time = time;
+			}
+#endif
 		}
 	}
 
@@ -428,7 +477,7 @@ namespace Schematyc2
 			if(iStateMachine != INVALID_INDEX)
 			{
 				const ILibStateMachine&	libStateMachine = *m_pLibClass->GetStateMachine(iStateMachine);
-				if((libStateMachine.GetLifetime() == ELibStateMachineLifetime::Task) && (m_stateMachines[iStateMachine].iCurrentState == INVALID_INDEX))
+				if((libStateMachine.GetLifetime() == EStateMachineLifetime::Task) && (m_stateMachines[iStateMachine].iCurrentState == INVALID_INDEX))
 				{
 					// Store and task properties.
 					m_stateMachines[iStateMachine].taskCallbackConnection = callbackConnection;
@@ -457,7 +506,7 @@ namespace Schematyc2
 			if(iStateMachine != INVALID_INDEX)
 			{
 				const ILibStateMachine&	libStateMachine = *m_pLibClass->GetStateMachine(iStateMachine);
-				if((libStateMachine.GetLifetime() == ELibStateMachineLifetime::Task) && (m_stateMachines[iStateMachine].iCurrentState != INVALID_INDEX))
+				if((libStateMachine.GetLifetime() == EStateMachineLifetime::Task) && (m_stateMachines[iStateMachine].iCurrentState != INVALID_INDEX))
 				{
 					ChangeState(iStateMachine, INVALID_INDEX, SEvent(), TVariantConstArray());
 				}
@@ -751,6 +800,34 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	const ObjectNodeHistory& CObject::GetNodeHistory() const
+	{
+		return m_nodeHistory;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CObject::ClearNodeHistory()
+	{
+		m_nodeHistory.clear();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CObject::SetDebuggingActive(const bool active)
+	{
+		m_debuggingActive = active;
+		if (active)
+		{
+			m_nodeHistory.reserve(256);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	bool CObject::IsDebuggingActive() const
+	{
+		return m_debuggingActive;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	CObject::SStateMachine::SStateMachine()
 		: iCurrentState(INVALID_INDEX)
 		, iRequestedState(INVALID_INDEX)
@@ -799,20 +876,25 @@ namespace Schematyc2
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
-	int32 CObject::GetNetworkAspect() const
+	int32 CObject::GetStateMachineNetworkAspect(const ILibStateMachine& libStateMachine) const
 	{
-		const bool bClientAuthority = m_pNetworkObject ? m_pNetworkObject->ClientAuthority() : false;
-		return bClientAuthority ? m_clientAspect : m_serverAspect;
+		return (libStateMachine.GetNetAuthority() == EStateMachineNetAuthority::Local)
+			? m_clientAspect
+			: m_serverAspect;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CObject::MarkAspectDirtyForStateMachine(size_t iStateMachine)
 	{
-		if (m_pNetworkObject && HaveNetworkAuthority() && (m_flags & EObjectFlags::NetworkReplicateActions) != 0)
+		if (m_pNetworkObject && (m_flags & EObjectFlags::NetworkReplicateActions) != 0)
 		{
-			if (m_stateNetIdxMapper.GetStateCount(iStateMachine) != 0)
+			const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(iStateMachine);
+			if (ObjectUtils::HasStateMachineNetAuthority(libStateMachine, HaveNetworkAuthority()))
 			{
-				m_pNetworkObject->MarkAspectsDirty(GetNetworkAspect());
+				if (m_stateNetIdxMapper.GetStateCount(iStateMachine) != 0)
+				{
+					m_pNetworkObject->MarkAspectsDirty(GetStateMachineNetworkAspect(libStateMachine));
+				}
 			}
 		}
 	}
@@ -859,8 +941,8 @@ namespace Schematyc2
 		bool	stateChanged = false;
 		if(iState != INVALID_INDEX)
 		{
-			SStateMachine&		stateMachine = m_stateMachines[iStateMachine];
-			const ILibState&	libState = *m_pLibClass->GetState(iState);
+			SStateMachine& stateMachine = m_stateMachines[iStateMachine];
+			const ILibState& libState = *m_pLibClass->GetState(iState);
 			for(size_t iTransition = 0, transitionCount = libState.GetTransitionCount(); iTransition < transitionCount; ++ iTransition)
 			{
 				const ILibTransition&	libTransition = *m_pLibClass->GetTransition(libState.GetTransition(iTransition));
@@ -924,7 +1006,7 @@ namespace Schematyc2
 		std::reverse(newStateStack.begin(), newStateStack.end());
 		const int32	currentDepth = static_cast<int32>(currentStateStack.size());
 		const int32	newDepth = static_cast<int32>(newStateStack.size());
-		int32				firstCommonAncestor = -1;
+		int32 firstCommonAncestor = -1;
 		for(int32 depth = /*std::*/min(currentDepth, newDepth); (firstCommonAncestor + 1) < depth; ++ firstCommonAncestor)
 		{
 			if(currentStateStack[firstCommonAncestor + 1] != newStateStack[firstCommonAncestor + 1])
@@ -949,22 +1031,25 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CObject::EnterState(size_t iStateMachine, size_t iState, const TVariantConstArray& inputs)
 	{
-		const bool				bHaveNetworkAuthority = HaveNetworkAuthority();
-		const ILibState&	libState = *m_pLibClass->GetState(iState);
-		bool							stateChanged = false;
-		if(bHaveNetworkAuthority)
+		const bool bObjectHasNetworkAuthority = HaveNetworkAuthority();
+		const ILibState& libState = *m_pLibClass->GetState(iState);
+		bool stateChanged = false;
+		const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(iStateMachine);
+		const bool bStateMachineNetworkAuthority = ObjectUtils::HasStateMachineNetAuthority(libStateMachine, bObjectHasNetworkAuthority);
+
+		if(bStateMachineNetworkAuthority)
 		{
 			// Request partner state?
-			const size_t	iPartnerState = libState.GetPartner();
+			const size_t iPartnerState = libState.GetPartner();
 			if(const ILibState* pPartnerLibState = m_pLibClass->GetState(iPartnerState))
 			{
-				const size_t		iPartnerStateMachine = m_pLibClass->GetStateMachine(iStateMachine)->GetPartner();
+				const size_t iPartnerStateMachine = m_pLibClass->GetStateMachine(iStateMachine)->GetPartner();
 				SCHEMATYC2_SYSTEM_ASSERT_FATAL_MESSAGE(iPartnerStateMachine != INVALID_INDEX,
 					"StateMachine %s in class %s is not partnered, but has partnered state %s",
 					m_pLibClass->GetStateMachine(iStateMachine)->GetName(),
 					m_pLibClass->GetName(),
 					libState.GetName());
-				SStateMachine&	partnerStateMachine = m_stateMachines[iPartnerStateMachine];
+				SStateMachine& partnerStateMachine = m_stateMachines[iPartnerStateMachine];
 				for(size_t iRequestState = partnerStateMachine.iCurrentState; iRequestState != INVALID_INDEX; iRequestState = m_pLibClass->GetState(iRequestState)->GetParent())
 				{
 					EvaluateTransitions(iPartnerStateMachine, iRequestState, SEvent(SEvent::REQUEST_STATE, pPartnerLibState->GetGUID()), TVariantConstArray());
@@ -985,28 +1070,28 @@ namespace Schematyc2
 			// Start actions.
 			for(size_t iStateActionInstance = 0, stateActionInstanceCount = libState.GetActionInstanceCount(); iStateActionInstance < stateActionInstanceCount; ++ iStateActionInstance)
 			{
-				SActionInstance&	actionInstance = m_actionInstances[libState.GetActionInstance(iStateActionInstance)];
-				if(ObjectUtils::ShouldStartAction(actionInstance.flags, bHaveNetworkAuthority))
+				SActionInstance& actionInstance = m_actionInstances[libState.GetActionInstance(iStateActionInstance)];
+				if(ObjectUtils::ShouldStartAction(actionInstance.flags, bObjectHasNetworkAuthority))
 				{
 					actionInstance.pAction->Start();
 					actionInstance.active = true;
 				}
 			}
-			if(bHaveNetworkAuthority)
+			if(bStateMachineNetworkAuthority)
 			{
 				// Start timers.
-				ITimerSystem&	timerSystem = gEnv->pSchematyc2->GetTimerSystem();
+				ITimerSystem& timerSystem = gEnv->pSchematyc2->GetTimerSystem();
 				for(size_t iStateTimer = 0, stateTimerCount = libState.GetTimerCount(); iStateTimer < stateTimerCount; ++ iStateTimer)
 				{
-					const size_t			iTimer = libState.GetTimer(iStateTimer);
-					const ILibTimer&	libTimer = *m_pLibClass->GetTimer(iTimer); 
+					const size_t iTimer = libState.GetTimer(iStateTimer);
+					const ILibTimer& libTimer = *m_pLibClass->GetTimer(iTimer); 
 					if((libTimer.GetParams().flags & ETimerFlags::AutoStart) != 0)
 					{
 						timerSystem.StartTimer(m_timers[iTimer].timerId);
 					}
 				}
 				// Call constructors.
-				TVariantArray	outputs;
+				TVariantArray outputs;
 				for(size_t iStateConstructor = 0, statConstructorCount = libState.GetConstructorCount(); iStateConstructor < statConstructorCount; ++ iStateConstructor)
 				{
 					ProcessFunction(m_pLibClass->GetConstructor(libState.GetConstructor(iStateConstructor))->GetFunctionId(), inputs, outputs);
@@ -1018,10 +1103,12 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CObject::ExitState(size_t iStateMachine, size_t iState, const SEvent& event, const TVariantConstArray& inputs)
 	{
-		const bool              bHaveNetworkAuthority = HaveNetworkAuthority();
+		const bool bObjectHasNetworkAuthority = HaveNetworkAuthority();
 		const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(iStateMachine);
-		const ILibState&        libState = *m_pLibClass->GetState(iState);
-		if (bHaveNetworkAuthority)
+		const ILibState& libState = *m_pLibClass->GetState(iState);
+		const bool bStateMachineNetworkAuthority = ObjectUtils::HasStateMachineNetAuthority(libStateMachine, bObjectHasNetworkAuthority);
+
+		if (bStateMachineNetworkAuthority)
 		{
 			// Call destructors.
 			for (size_t iStateDestructor = 0, statDestructorCount = libState.GetDestructorCount(); iStateDestructor < statDestructorCount; ++iStateDestructor)
@@ -1029,7 +1116,7 @@ namespace Schematyc2
 				ProcessFunction(m_pLibClass->GetDestructor(libState.GetDestructor(iStateDestructor))->GetFunctionId(), inputs, TVariantArray());
 			}
 			// Stop timers.
-			ITimerSystem&	timerSystem = gEnv->pSchematyc2->GetTimerSystem();
+			ITimerSystem& timerSystem = gEnv->pSchematyc2->GetTimerSystem();
 			for (size_t iStateTimer = 0, stateTimerCount = libState.GetTimerCount(); iStateTimer < stateTimerCount; ++iStateTimer)
 			{
 				timerSystem.StopTimer(m_timers[libState.GetTimer(iStateTimer)].timerId);
@@ -1038,7 +1125,7 @@ namespace Schematyc2
 		// Stop actions.
 		for(size_t iStateActionInstance = 0, stateActionInstanceCount = libState.GetActionInstanceCount(); iStateActionInstance < stateActionInstanceCount; ++ iStateActionInstance)
 		{
-			SActionInstance&	actionInstance = m_actionInstances[libState.GetActionInstance(iStateActionInstance)];
+			SActionInstance& actionInstance = m_actionInstances[libState.GetActionInstance(iStateActionInstance)];
 			if(actionInstance.active)
 			{
 				actionInstance.pAction->Stop();
@@ -1046,7 +1133,7 @@ namespace Schematyc2
 			}
 		}
 		// Reset variables.
-		TVariantConstArray	libVariants = m_pLibClass->GetVariants();
+		TVariantConstArray libVariants = m_pLibClass->GetVariants();
 		for(size_t iStateVariable = 0, stateVariableCount = libState.GetVariableCount(); iStateVariable < stateVariableCount; ++ iStateVariable)
 		{
 			const ILibVariable&	libVariable = *m_pLibClass->GetVariable(libState.GetVariable(iStateVariable));
@@ -1055,11 +1142,11 @@ namespace Schematyc2
 				m_variants[iVariant] = libVariants[iVariant];
 			}
 		}
-		if (bHaveNetworkAuthority)
+		if (bStateMachineNetworkAuthority)
 		{
 			// Release partner state?
-			const size_t	iPartnerStateMachine = libStateMachine.GetPartner();
-			const size_t	iPartnerState = libState.GetPartner();
+			const size_t iPartnerStateMachine = libStateMachine.GetPartner();
+			const size_t iPartnerState = libState.GetPartner();
 			if (const ILibState* pPartnerLibState = m_pLibClass->GetState(iPartnerState))
 			{
 				SStateMachine&	partnerStateMachine = m_stateMachines[iPartnerStateMachine];
@@ -1086,7 +1173,7 @@ namespace Schematyc2
 		// #SchematycTODO : Create and use a LibUtils::FindTimer() function?
 		for(size_t iTimer = 0, timerCount = m_timers.size(); iTimer < timerCount; ++ iTimer)
 		{
-			const ILibTimer&	libTimer = *m_pLibClass->GetTimer(iTimer);
+			const ILibTimer& libTimer = *m_pLibClass->GetTimer(iTimer);
 			if(libTimer.GetGUID() == guid)
 			{
 				gEnv->pSchematyc2->GetTimerSystem().StartTimer(m_timers[iTimer].timerId);
@@ -1101,7 +1188,7 @@ namespace Schematyc2
 		// #SchematycTODO : Create and use a LibUtils::FindTimer() function?
 		for(size_t iTimer = 0, timerCount = m_timers.size(); iTimer < timerCount; ++ iTimer)
 		{
-			const ILibTimer&	libTimer = *m_pLibClass->GetTimer(iTimer);
+			const ILibTimer& libTimer = *m_pLibClass->GetTimer(iTimer);
 			if(libTimer.GetGUID() == guid)
 			{
 				gEnv->pSchematyc2->GetTimerSystem().StopTimer(m_timers[iTimer].timerId);
@@ -1116,7 +1203,7 @@ namespace Schematyc2
 		// #SchematycTODO : Create and use a LibUtils::FindTimer() function?
 		for(size_t iTimer = 0, timerCount = m_timers.size(); iTimer < timerCount; ++ iTimer)
 		{
-			const ILibTimer&	libTimer = *m_pLibClass->GetTimer(iTimer);
+			const ILibTimer& libTimer = *m_pLibClass->GetTimer(iTimer);
 			if(libTimer.GetGUID() == guid)
 			{
 				gEnv->pSchematyc2->GetTimerSystem().ResetTimer(m_timers[iTimer].timerId);
@@ -1129,13 +1216,13 @@ namespace Schematyc2
 	void CObject::InitStateMachineVariables(size_t iStateMachine, CStack& stack)
 	{
 		const ILibStateMachine&	libStateMachine = *m_pLibClass->GetStateMachine(iStateMachine);
-		TVariantConstArray			libVariants = m_pLibClass->GetVariants();
+		TVariantConstArray libVariants = m_pLibClass->GetVariants();
 		for(int32 iVariable = libStateMachine.GetVariableCount() - 1; iVariable >= 0; -- iVariable)
 		{
 			const ILibVariable&	libVariable = *m_pLibClass->GetVariable(libStateMachine.GetVariable(iVariable));
 			for(int32 iFirstVariant = libVariable.GetVariantPos(), iVariant = iFirstVariant + libVariable.GetVariantCount() - 1; iVariant >= iFirstVariant; -- iVariant)
 			{
-				bool	useDefaultValue = true;
+				bool useDefaultValue = true;
 				if((libVariable.GetFlags() & ELibVariableFlags::StateMachineProperty) != 0)
 				{
 					SCHEMATYC2_SYSTEM_ASSERT(!stack.Empty());
@@ -1164,12 +1251,13 @@ namespace Schematyc2
 	{
 		CRY_PROFILE_FUNCTION_ARG(PROFILE_GAME, m_pLibClass->GetName());
 		const ILibFunction*	pFunction = m_pLibClass->GetFunction(functionId);
-		CRY_ASSERT(pFunction);
+
+		CRY_ASSERT(pFunction, "Function %s not found in class %s", pFunction->GetName(), m_pLibClass->GetName());
 		if(pFunction)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("ProcessFunction", pFunction->GetName());
+			CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "ProcessFunction", pFunction->GetName());
 			static uint32 s_recursionDepth = 0;
-			if(s_recursionDepth >= CVars::sc_MaxRecursionDepth)
+			if(s_recursionDepth >= CVars::sc2_MaxRecursionDepth)
 			{
 				SCHEMATYC2_SYSTEM_METAINFO_CRITICAL_ERROR(
 					SCHEMATYC2_LOG_METAINFO(ECryLinkCommand::Show, SLogMetaItemGUID(pFunction->GetGUID())), 
@@ -1182,16 +1270,17 @@ namespace Schematyc2
 			++ s_recursionDepth;
 
 			const int64	startTicks = CryGetTicks();
+			
 			// Verify inputs and outputs.
-			TVariantConstArray	defaultInputs = pFunction->GetVariantInputs();
-			const size_t				inputCount = defaultInputs.size();
-			TVariantConstArray	defaultOutputs = pFunction->GetVariantOutputs();
-			const size_t				outputCount = defaultOutputs.size();
-			CRY_ASSERT((inputs.size() >= inputCount) && (outputs.size() >= outputCount));
+			TVariantConstArray defaultInputs = pFunction->GetVariantInputs();
+			const size_t inputCount = defaultInputs.size();
+			TVariantConstArray defaultOutputs = pFunction->GetVariantOutputs();
+			const size_t outputCount = defaultOutputs.size();
+			CRY_ASSERT((inputs.size() >= inputCount) && (outputs.size() >= outputCount), "Input or output mismatch. In function %s in class %s", pFunction->GetName(), m_pLibClass->GetName());
 			if((inputs.size() >= inputCount) && (outputs.size() >= outputCount))
 			{
 				// Initialize stack.
-				CFunctionStack	stack;
+				CFunctionStack stack;
 				stack.Reserve(inputCount + outputCount);
 				for(size_t iOutput = 0; iOutput < outputCount; ++ iOutput)
 				{
@@ -1202,39 +1291,135 @@ namespace Schematyc2
 					stack.Push(inputs[iInput]);
 				}
 				// Process operations.
-				const IEnvRegistry&								envRegistry = gEnv->pSchematyc2->GetEnvRegistry();
-				const ILibRegistry&								libRegistry = gEnv->pSchematyc2->GetLibRegistry();
-				GlobalFunctionConstTable					globalFunctionTable = pFunction->GetGlobalFunctionTable();
-				ComponentMemberFunctionConstTable	componentMemberFunctionTable = pFunction->GetComponentMemberFunctionTable();
-				ActionMemberFunctionConstTable		actionMemberFunctionTable = pFunction->GetActionMemberFunctionTable();
+				const IEnvRegistry&	envRegistry = gEnv->pSchematyc2->GetEnvRegistry();
+				const ILibRegistry&	libRegistry = gEnv->pSchematyc2->GetLibRegistry();
+				GlobalFunctionConstTable globalFunctionTable = pFunction->GetGlobalFunctionTable();
+				ComponentMemberFunctionConstTable componentMemberFunctionTable = pFunction->GetComponentMemberFunctionTable();
+				ActionMemberFunctionConstTable actionMemberFunctionTable = pFunction->GetActionMemberFunctionTable();
+
+#if SCHEMATYC2_DEBUGGING
+				if (IsDebuggingActive())
+				{
+					// Check if we need to mark the beginning of a function
+					if (pFunction->GetDebugOperationsSize() != 0)
+					{
+						m_nodeHistory.push_back(SExecutionHistoryItem(pFunction->GetGUID(), "", "", 0, SExecutionHistoryItem::EExecutionHistoryType::FunctionBegin));
+					}
+				}
+#endif
+				//int64 ticksSinceLastNode = CryGetTicks();
+
+				CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Doing operations", pFunction->GetName());
 				for(size_t pos = 0, size = pFunction->GetSize(); pos < size; )
 				{
-					const SVMOp*	pOp = pFunction->GetOp(pos);
+#if SCHEMATYC2_DEBUGGING
+					size_t currentNodeItemIndex = SIZE_MAX;
+
+					if (IsDebuggingActive())
+					{
+						const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+						if (pDebugSymbol)
+						{
+							if (pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Node || pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput)
+							{
+								CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+								m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, "", "", 0, SExecutionHistoryItem::EExecutionHistoryType::Node));
+
+								if (pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput)
+								{
+									string value;
+									StringUtils::VariantToString(stack.Peek(), value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, 0, SExecutionHistoryItem::EExecutionHistoryType::Input));
+								}
+
+								currentNodeItemIndex = m_nodeHistory.size() - 1;
+							}
+						}
+					}
+
+					const int64	nodeStartTicks = CryGetTicks();
+#endif
+					const SVMOp* pOp = pFunction->GetOp(pos);
+
 					switch(pOp->opCode)
 					{
 					case SVMOp::PUSH:
 						{
-							const SVMPushOp*	pPushOp = static_cast<const SVMPushOp*>(pOp);
+							const SVMPushOp* pPushOp = static_cast<const SVMPushOp*>(pOp);
+
+#if SCHEMATYC2_DEBUGGING
+							if (IsDebuggingActive())
+							{
+								const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+								{
+									CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in PUSH operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									string value;
+									StringUtils::VariantToString(pFunction->GetVariantConsts()[pPushOp->iConstValue], value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, 0, SExecutionHistoryItem::EExecutionHistoryType::Input));
+								}
+							}
+#endif
+
 							stack.Push(pFunction->GetVariantConsts()[pPushOp->iConstValue]);
 							pos += pOp->size;
+
 							break;
 						}
 					case SVMOp::SET:
 						{
 							const SVMSetOp*	pSetOp = static_cast<const SVMSetOp*>(pOp);
+
+#if SCHEMATYC2_DEBUGGING
+							if (IsDebuggingActive())
+							{
+								const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+								{
+									CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in SET operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									string value;
+									StringUtils::VariantToString(pFunction->GetVariantConsts()[pSetOp->iConstValue], value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, 0, SExecutionHistoryItem::EExecutionHistoryType::Input));
+								}
+							}
+#endif
+
 							stack[pSetOp->pos] = pFunction->GetVariantConsts()[pSetOp->iConstValue];
 							pos += pOp->size;
 							break;
 						}
 					case SVMOp::COPY:
 						{
-							const SVMCopyOp*	pCopyOp = static_cast<const SVMCopyOp*>(pOp);
+							const SVMCopyOp* pCopyOp = static_cast<const SVMCopyOp*>(pOp);
 #if SCHEMATYC2_OBJECT_VM_DEBUG
 							if(!stack.ValidateCopy(pCopyOp->srcPos, pCopyOp->dstPos))
 							{
 								SCHEMATYC2_SYSTEM_CRITICAL_ERROR("Invalid copy operation: class = %s, function = %s, pos = %d", m_pLibClass->GetName(), pFunction->GetName(), pos);
 							}
 #endif
+
+#if SCHEMATYC2_DEBUGGING
+							if (IsDebuggingActive())
+							{
+								const ILibFunction::SDebugSymbol* pDebugSymbol = pFunction->GetDebugOperationSymbol(pos);
+
+								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+								{
+									CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in COPY operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									string value;
+									StringUtils::VariantToString(stack[pCopyOp->srcPos], value);
+
+									m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, value, pDebugSymbol->data, 0, SExecutionHistoryItem::EExecutionHistoryType::Input));
+								}
+							}
+#endif
+
 							stack.Copy(pCopyOp->srcPos, pCopyOp->dstPos);
 							pos += pOp->size;
 							break;
@@ -1248,14 +1433,14 @@ namespace Schematyc2
 						}
 					case SVMOp::COLLAPSE:
 						{
-							const SVMCollapseOp*	pCollapseOp = static_cast<const SVMCollapseOp*>(pOp);
+							const SVMCollapseOp* pCollapseOp = static_cast<const SVMCollapseOp*>(pOp);
 							stack.Resize(pCollapseOp->pos);
 							pos += pOp->size;
 							break;
 						}
 					case SVMOp::LOAD:
 						{
-							const SVMLoadOp*	pLoadOp = static_cast<const SVMLoadOp*>(pOp);
+							const SVMLoadOp* pLoadOp = static_cast<const SVMLoadOp*>(pOp);
 							for(size_t variantPos = pLoadOp->pos, variantEnd = variantPos + pLoadOp->count; variantPos < variantEnd; ++ variantPos)
 							{
 								stack.Push(m_variants[variantPos]);
@@ -1265,7 +1450,7 @@ namespace Schematyc2
 						}
 					case SVMOp::STORE:
 						{
-							const SVMStoreOp*	pStoreOp = static_cast<const SVMStoreOp*>(pOp);
+							const SVMStoreOp* pStoreOp = static_cast<const SVMStoreOp*>(pOp);
 							for(size_t variantPos = pStoreOp->pos, variantEnd = variantPos + pStoreOp->count, stackPos = stack.GetSize() - pStoreOp->count; variantPos < variantEnd; ++ variantPos, ++ stackPos)
 							{
 								m_variants[variantPos] = stack[stackPos];
@@ -1275,51 +1460,53 @@ namespace Schematyc2
 						}
 					case SVMOp::CONTAINER_ADD:
 						{
-							const SVMContainerAddOp*	pContainerAddOp = static_cast<const SVMContainerAddOp*>(pOp);
-							CVariantContainer&				container = m_containers[pContainerAddOp->iContainer];
+							const SVMContainerAddOp* pContainerAddOp = static_cast<const SVMContainerAddOp*>(pOp);
+							CVariantContainer& container = m_containers[pContainerAddOp->iContainer];
 							container.Add(TVariantConstArray(&stack[stack.GetSize() - pContainerAddOp->count], pContainerAddOp->count));
 							pos += pOp->size;
 							break;
 						}
 					case SVMOp::CONTAINER_REMOVE_BY_INDEX:
 						{
-							const SVMContainerRemoveByIndexOp*	pContainerRemoveByIndexOp = static_cast<const SVMContainerRemoveByIndexOp*>(pOp);
-							CVariantContainer&									container = m_containers[pContainerRemoveByIndexOp->iContainer];
-							const size_t												containerPos = stack.Peek().AsInt32();
-							const bool													result = container.RemoveByIndex(containerPos);
+							const SVMContainerRemoveByIndexOp* pContainerRemoveByIndexOp = static_cast<const SVMContainerRemoveByIndexOp*>(pOp);
+							CVariantContainer& container = m_containers[pContainerRemoveByIndexOp->iContainer];
+							const size_t containerPos = stack.Peek().AsInt32();
+							const size_t stride = pContainerRemoveByIndexOp->count;
+							const bool result = container.RemoveByIndex(containerPos, stride);
 							stack.Push(CVariant(result));
 							pos += pOp->size;
 							break;
 						}
 					case SVMOp::CONTAINER_REMOVE_BY_VALUE:
 						{
-							const SVMContainerRemoveByValueOp*	pContainerRemoveByValueOp = static_cast<const SVMContainerRemoveByValueOp*>(pOp);
-							CVariantContainer&									container = m_containers[pContainerRemoveByValueOp->iContainer];
-							const bool													result = container.RemoveByValue(TVariantConstArray(&stack[stack.GetSize() - pContainerRemoveByValueOp->count], pContainerRemoveByValueOp->count));
+							const SVMContainerRemoveByValueOp* pContainerRemoveByValueOp = static_cast<const SVMContainerRemoveByValueOp*>(pOp);
+							CVariantContainer& container = m_containers[pContainerRemoveByValueOp->iContainer];
+							const bool result = container.RemoveByValue(TVariantConstArray(&stack[stack.GetSize() - pContainerRemoveByValueOp->count], pContainerRemoveByValueOp->count));
 							stack.Push(CVariant(result));
 							pos += pOp->size;
 							break;
 						}
 					case SVMOp::CONTAINER_CLEAR:
 						{
-							const SVMContainerClearOp*	pContainerClearOp = static_cast<const SVMContainerClearOp*>(pOp);
+							const SVMContainerClearOp* pContainerClearOp = static_cast<const SVMContainerClearOp*>(pOp);
 							m_containers[pContainerClearOp->iContainer].Clear();
 							pos += pOp->size;
 							break;
 						}
 					case SVMOp::CONTAINER_SIZE:
 						{
-							const SVMContainerSizeOp*	pContainerSizeOp = static_cast<const SVMContainerSizeOp*>(pOp);
+							const SVMContainerSizeOp* pContainerSizeOp = static_cast<const SVMContainerSizeOp*>(pOp);
 							stack.Push(CVariant(static_cast<int32>(m_containers[pContainerSizeOp->iContainer].Size() / pContainerSizeOp->divisor)));
 							pos += pOp->size;
 							break;
 						}
 					case SVMOp::CONTAINER_GET:
 						{
-							const SVMContainerGetOp*	pContainerGetOp = static_cast<const SVMContainerGetOp*>(pOp);
-							CVariantContainer&				container = m_containers[pContainerGetOp->iContainer];
-							const size_t							containerPos = stack.Peek().AsInt32() * pContainerGetOp->count;
-							if((containerPos + pContainerGetOp->count) <= container.Size())
+							const SVMContainerGetOp* pContainerGetOp = static_cast<const SVMContainerGetOp*>(pOp);
+							CVariantContainer& container = m_containers[pContainerGetOp->iContainer];
+							const int32 containerIndex = stack.Peek().AsInt32();
+							const size_t containerPos = containerIndex * pContainerGetOp->count;
+							if(containerIndex >= 0 && (containerPos + pContainerGetOp->count) <= container.Size())
 							{
 								for(size_t offset = 0; offset < pContainerGetOp->count; ++ offset)
 								{
@@ -1340,10 +1527,11 @@ namespace Schematyc2
 							CVariantContainer&				container = m_containers[pContainerSetOp->iContainer];
 
 							// stack: ..., index, value[count]
+							const int32 containerIndex = stack[stack.GetSize() - pContainerSetOp->count - 1].AsInt32();
 							const TVariantConstArray	valuesView(&stack[stack.GetSize() - pContainerSetOp->count], pContainerSetOp->count);
-							const size_t							containerPos = stack[stack.GetSize() - pContainerSetOp->count - 1].AsInt32();
+							const size_t							containerPos = containerIndex;
 
-							if ((containerPos + pContainerSetOp->count) <= container.Size())
+							if (containerIndex >= 0 && (containerPos + pContainerSetOp->count) <= container.Size())
 							{
 								for (size_t offset = 0; offset < pContainerSetOp->count; ++offset)
 								{
@@ -1483,7 +1671,7 @@ namespace Schematyc2
 							{
 								pSignal = libRegistry.GetSignal(pSendSignalOp->guid);
 							}
-							CRY_ASSERT(pSignal != NULL);
+							CRY_ASSERT(pSignal != NULL, "Invalid signal found  in SEND_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pSignal != NULL)
 							{
 								const size_t	stackSize = stack.GetSize();
@@ -1514,7 +1702,7 @@ namespace Schematyc2
 							{
 								pSignal = libRegistry.GetSignal(pBroadcastSignalOp->guid);
 							}
-							CRY_ASSERT(pSignal != NULL);
+							CRY_ASSERT(pSignal != NULL, "Invalid signal found  in BROADCAST_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pSignal != NULL)
 							{
 								const size_t	stackSize = stack.GetSize();
@@ -1544,6 +1732,8 @@ namespace Schematyc2
 								stack.Resize(stackSize);
 								TVariantConstArray	functionInputs(functionInputSize ? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 								TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
+
+								CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pGlobalFunction->GetName());
 								pGlobalFunction->Call(functionInputs, functionOutputs);
 							}
 							pos += pOp->size;
@@ -1553,7 +1743,7 @@ namespace Schematyc2
 						{
 							const SVMCallEnvAbstractInterfaceFunctionOp*	pCallEnvAbstractInterfaceFunctionOp = static_cast<const SVMCallEnvAbstractInterfaceFunctionOp*>(pOp);
 							IAbstractInterfaceFunctionConstPtr						pAbstractInterfaceFunction = gEnv->pSchematyc2->GetEnvRegistry().GetAbstractInterfaceFunction(pCallEnvAbstractInterfaceFunctionOp->functionGUID);
-							CRY_ASSERT(pAbstractInterfaceFunction);
+							CRY_ASSERT(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_ENV_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pAbstractInterfaceFunction)
 							{
 								size_t				prevStackSize = stack.GetSize();
@@ -1572,6 +1762,7 @@ namespace Schematyc2
 									{
 										TVariantConstArray	functionInputs(variantInputSize ? &stack[prevStackSize - variantInputSize] : NULL, variantInputSize);
 										TVariantArray				functionOutputs(variantOutputSize ? &stack[prevStackSize] : NULL, variantOutputSize);
+										CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Interface call", pAbstractInterfaceFunction->GetName());
 										const bool					result = pObject->CallAbstractInterfaceFunction(pCallEnvAbstractInterfaceFunctionOp->abstractInterfaceGUID, pCallEnvAbstractInterfaceFunctionOp->functionGUID, functionInputs, functionOutputs);
 										stack.Push(CVariant(result));
 									}
@@ -1588,7 +1779,7 @@ namespace Schematyc2
 						{
 							const SVMCallLibAbstractInterfaceFunctionOp*	pCallLibAbstractInterfaceFunctionOp = static_cast<const SVMCallLibAbstractInterfaceFunctionOp*>(pOp);
 							ILibAbstractInterfaceFunctionConstPtr					pAbstractInterfaceFunction = gEnv->pSchematyc2->GetLibRegistry().GetAbstractInterfaceFunction(pCallLibAbstractInterfaceFunctionOp->functionGUID);
-							CRY_ASSERT(pAbstractInterfaceFunction);
+							CRY_ASSERT(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_LIB_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pAbstractInterfaceFunction)
 							{
 								size_t				prevStackSize = stack.GetSize();
@@ -1607,6 +1798,7 @@ namespace Schematyc2
 									{
 										TVariantConstArray	functionInputs(variantInputSize ? &stack[prevStackSize - variantInputSize] : NULL, variantInputSize);
 										TVariantArray				functionOutputs(variantOutputSize ? &stack[prevStackSize] : NULL, variantOutputSize);
+										CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Interface call", pAbstractInterfaceFunction->GetName());
 										const bool					result = pObject->CallAbstractInterfaceFunction(pCallLibAbstractInterfaceFunctionOp->abstractInterfaceGUID, pCallLibAbstractInterfaceFunctionOp->functionGUID, functionInputs, functionOutputs);
 										stack.Push(CVariant(result));
 									}
@@ -1638,6 +1830,7 @@ namespace Schematyc2
 									stack.Resize(stackSize);
 									TVariantConstArray	functionInputs(functionInputSize ? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 									TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
+									CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pComponentMemberFunction->GetName());
 									pComponentMemberFunction->Call(*m_componentInstances[iComponentInstance].pComponent, functionInputs, functionOutputs);
 								}
 							}
@@ -1663,6 +1856,7 @@ namespace Schematyc2
 									stack.Resize(stackSize);
 									TVariantConstArray	functionInputs(functionInputSize ? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 									TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
+									CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pActionMemberFunction->GetName());
 									pActionMemberFunction->Call(*m_actionInstances[iActionInstance].pAction, functionInputs, functionOutputs);
 								}
 							}
@@ -1673,8 +1867,8 @@ namespace Schematyc2
 						{
 							const SVMCallLibFunctionOp*	pCallLibFunctionOp = static_cast<const SVMCallLibFunctionOp*>(pOp);
 							const ILibFunction*					pLibFunction = m_pLibClass->GetFunction(pCallLibFunctionOp->functionId);
-							CRY_ASSERT(pLibFunction != NULL);
-							if(pLibFunction != NULL)
+							CRY_ASSERT(pLibFunction != nullptr);
+							if(pLibFunction != nullptr && pLibFunction->IsGraphExecutionAllowed())
 							{
 								size_t				stackSize = stack.GetSize();
 								const size_t	functionInputSize = pLibFunction->GetVariantInputs().size();
@@ -1686,6 +1880,7 @@ namespace Schematyc2
 									stack.Resize(stackSize);
 									TVariantConstArray	functionInputs(functionInputSize? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 									TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
+									CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pLibFunction->GetName());
 									ProcessFunction(pCallLibFunctionOp->functionId, functionInputs, functionOutputs);
 								}
 							}
@@ -1704,6 +1899,16 @@ namespace Schematyc2
 							break;
 						}
 					}
+
+#if SCHEMATYC2_DEBUGGING
+					if (currentNodeItemIndex != SIZE_MAX)
+					{
+						const int64	endTicks = CryGetTicks();
+						const float	time = gEnv->pTimer->TicksToSeconds(endTicks - nodeStartTicks);
+
+						m_nodeHistory[currentNodeItemIndex].time = time;
+					}
+#endif
 				}
 				// Copy outputs from stack.
 				for(size_t iOutput = 0; iOutput < outputCount; ++ iOutput)
@@ -1711,15 +1916,30 @@ namespace Schematyc2
 					outputs[iOutput] = stack[iOutput];
 				}
 			}
-			if(CVars::sc_FunctionTimeLimit)
+			if(CVars::sc2_FunctionTimeLimit)
 			{
 				const int64	endTicks = CryGetTicks();
 				const float	time = gEnv->pTimer->TicksToSeconds(endTicks - startTicks);
-				if(time > CVars::sc_FunctionTimeLimit)
+				if(time > CVars::sc2_FunctionTimeLimit)
 				{
-					SCHEMATYC2_SYSTEM_ERROR("Function took more than %f(s) to process: class = %s, function = %s, time = %f(s)", CVars::sc_FunctionTimeLimit, m_pLibClass->GetName(), pFunction->GetName(), time);
+					SCHEMATYC2_SYSTEM_ERROR("Function took more than %f(s) to process: class = %s, function = %s, time = %f(s)", CVars::sc2_FunctionTimeLimit, m_pLibClass->GetName(), pFunction->GetName(), time);
 				}
 			}
+
+#if SCHEMATYC2_DEBUGGING
+			if (IsDebuggingActive())
+			{
+				// Check if we need to mark the end of a function
+				if (pFunction->GetDebugOperationsSize() != 0)
+				{
+					const int64	endTicks = CryGetTicks();
+					const float	time = gEnv->pTimer->TicksToSeconds(endTicks - startTicks);
+
+					m_nodeHistory.push_back(SExecutionHistoryItem(pFunction->GetGUID(), "", "", time, SExecutionHistoryItem::EExecutionHistoryType::FunctionEnd));
+				}
+			}
+#endif
+
 			-- s_recursionDepth;
 		}
 	}
@@ -1727,13 +1947,19 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CObject::NetworkSerialize(TSerialize serialize, int32 aspects, uint8 profile, int flags)
 	{
-		if((m_flags & EObjectFlags::NetworkReplicateActions) != 0)
+		if ((m_flags & EObjectFlags::NetworkReplicateActions) != 0)
 		{
 			const bool isReading = serialize.IsReading();
 
-			for(size_t stateMachineIdx = 0, stateMachineCount = m_stateMachines.size(); stateMachineIdx < stateMachineCount; ++ stateMachineIdx)
+			for (size_t stateMachineIdx = 0, stateMachineCount = m_stateMachines.size(); stateMachineIdx < stateMachineCount; ++stateMachineIdx)
 			{
 				SStateMachine& stateMachine = m_stateMachines[stateMachineIdx];
+				const ILibStateMachine& libStateMachine = *m_pLibClass->GetStateMachine(stateMachineIdx);
+
+				if (GetStateMachineNetworkAspect(libStateMachine) != aspects)
+				{
+					continue;
+				}
 
 				const CStateNetIdxMapper::StateNetIdx invalidStateIdx = CStateNetIdxMapper::INVALID_NET_IDX;
 				const CStateNetIdxMapper::StateNetIdx statesCount = m_stateNetIdxMapper.GetStateCount(stateMachineIdx);
@@ -1748,13 +1974,13 @@ namespace Schematyc2
 					serializedStateIdx = m_stateNetIdxMapper.Encode(stateMachine.iCurrentState);
 				}
 
-				serialize.EnumValue(m_pLibClass->GetStateMachine(stateMachineIdx)->GetName(), serializedStateIdx, invalidStateIdx, statesCount);
+				serialize.IntegerWithRangeValue(m_pLibClass->GetStateMachine(stateMachineIdx)->GetName(), serializedStateIdx, invalidStateIdx, statesCount);
 
-				if(isReading)
+				if (isReading)
 				{
 					stateMachine.iRequestedState = m_stateNetIdxMapper.Decode(stateMachineIdx, serializedStateIdx);
 
-					if((m_simulationMode == ESimulationMode::Game) && (stateMachine.iRequestedState != stateMachine.iCurrentState))
+					if ((m_simulationMode == ESimulationMode::Game) && (stateMachine.iRequestedState != stateMachine.iCurrentState))
 					{
 						ChangeState(stateMachineIdx, stateMachine.iRequestedState, SEvent(), TVariantConstArray());
 					}

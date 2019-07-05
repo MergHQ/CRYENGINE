@@ -5,6 +5,7 @@
 
 #include "ParticleLibrary.h"
 #include "BaseLibraryManager.h"
+#include <UsedResources.h>
 
 #include <CryParticleSystem/ParticleParams.h>
 
@@ -262,5 +263,3 @@ void CParticleItem::GatherUsedResources(CUsedResources& resources)
 	if (m_pEffect->GetParticleParams().sStopTrigger.length())
 		resources.Add(m_pEffect->GetParticleParams().sStopTrigger.c_str());
 }
-
-

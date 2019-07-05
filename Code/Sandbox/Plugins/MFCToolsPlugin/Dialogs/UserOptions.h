@@ -1,21 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// These are helper classes for containing the data from the generic overwrite dialog.
-
-#ifndef UserOptions_h__
-#define UserOptions_h__
-
 #pragma once
+
+// These are helper classes for containing the data from the generic overwrite dialog.
 
 // Small helper class.
 // Hint: have one for files and other for directories.
 // Hint: used a CUserOptionsReferenceCountHelper to automatically control the reference counts
-// of any CUserOptions variable: usefull for recursion when you don't want to use
+// of any CUserOptions variable: useful for recursion when you don't want to use
 // only static variables. See example in FileUtill.cpp, function CopyTree.
 class CUserOptions
 {
-	//////////////////////////////////////////////////////////////////////////
-	// Types & typedefs
 public:
 	enum EOption
 	{
@@ -29,16 +24,10 @@ public:
 	{
 	public:
 		CUserOptionsReferenceCountHelper(CUserOptions& roUserOptions);
-		virtual ~CUserOptionsReferenceCountHelper();
+		~CUserOptionsReferenceCountHelper();
 	protected:
 		CUserOptions& m_roReferencedUserOptionsObject;
 	};
-protected:
-private:
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// Methods
 public:
 	CUserOptions();
 
@@ -53,18 +42,7 @@ public:
 	int  DecRef();
 	int  IncRef();
 protected:
-private:
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// Data
-public:
-protected:
 	int  m_nCurrentOption;
 	bool m_boToAll;
 	int  m_nNumberOfReferences;
-private:
-	//////////////////////////////////////////////////////////////////////////
 };
-#endif // UserOptions_h__
-

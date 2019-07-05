@@ -1,12 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  Created:     13/11/2015 by Benjamin Block
-//  Description:
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <CryRenderer/IGpuParticles.h>
@@ -24,7 +17,6 @@ struct SUpdateContext
 	CGpuBuffer*                pReadbackBuffer;
 	CGpuBuffer*                pCounterBuffer;
 	CGpuBuffer*                pScratchBuffer;
-	float                      deltaTime;
 };
 
 // this is the renderer-internal interface for GPU features

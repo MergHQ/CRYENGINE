@@ -30,12 +30,12 @@ CBufferWriter::CBufferWriter(int bufferSize)
 	, m_usingStreaming(false)
 	, m_pWriter(NULL)
 {
-	assert(bufferSize <= 64 * 1024); // because SAddr is using 16 bits to offset inside buffers
+	CRY_ASSERT(bufferSize <= 64 * 1024); // because SAddr is using 16 bits to offset inside buffers
 }
 
 void CBufferWriter::Init(CWriter* pWriter, bool useStreaming)
 {
-	assert(pWriter);
+	CRY_ASSERT(pWriter);
 	m_pWriter = pWriter;
 	m_usingStreaming = useStreaming;
 	AddBuffer();

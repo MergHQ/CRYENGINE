@@ -7,7 +7,6 @@
 #include "IGameRulesSystem.h"
 #include "ILevelSystem.h"
 #include "CryAction.h"
-#include <CryAudio/Dialog/IDialogSystem.h>
 #include <CryAction/IMaterialEffects.h>
 #include "ActionGame.h"
 
@@ -89,9 +88,14 @@ public:
 		gEnv->pGameFramework->ResetBrokenGameObjects();
 		gEnv->pPhysicalWorld->ResetDynamicEntities();
 		gEnv->pFlowSystem->Reset(false);
-		gEnv->pGameFramework->GetIItemSystem()->Reset();
-		gEnv->pDialogSystem->Reset(false);
-		gEnv->pGameFramework->GetIMaterialEffects()->Reset(false);
+		if (gEnv->pGameFramework->GetIItemSystem())
+		{
+			gEnv->pGameFramework->GetIItemSystem()->Reset();
+		}
+		if (gEnv->pGameFramework->GetIMaterialEffects())
+		{
+			gEnv->pGameFramework->GetIMaterialEffects()->Reset(false);
+		}
 
 		if (gEnv->pAISystem)
 		{

@@ -4,30 +4,32 @@
 
 #include "MainEditorWindow.h"
 
-#include "Models/EffectAsset.h"
 #include "Models/EffectAssetModel.h"
 
 #include "Widgets/EffectViewWidget.h"
+#include "Widgets/EffectPanel.h"
 
 #include "Objects/SelectionGroup.h"
 #include "Objects/ParticleEffectObject.h"
 #include "Particles/ParticleManager.h"
 #include "Particles/ParticleItem.h"
-
 #include "ParticleAssetType.h"
 
 #include "ViewManager.h"
 #include "IUndoObject.h"
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/EditableAsset.h>
-#include <FileDialogs/EngineFileDialog.h>
+#include <Commands/QCommandAction.h>
+#include <Controls/CurveEditorPanel.h>
 #include <Controls/QuestionDialog.h>
 #include <Controls/CurveEditorPanel.h>
 #include <DragDrop.h>
-#include <FilePathUtil.h>
+#include <EditorFramework/BroadcastManager.h>
+#include <FileDialogs/EngineFileDialog.h>
+#include <PathUtils.h>
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
@@ -54,15 +56,26 @@
 #include <QTabWidget>
 #include <QDir>
 
-#include <QAdvancedPropertyTree.h>
+#include <QAdvancedPropertyTreeLegacy.h>
 #include <QCollapsibleFrame.h>
 
 #define APPLICATION_USER_DIRECTORY      "/CryEngine"
 #define APPLICATION_USER_STATE_FILENAME "EditorState.json"
 
-namespace CryParticleEditor {
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(particle, show_options, CCommandDescription("Shows effect options"))
+REGISTER_EDITOR_UI_COMMAND_DESC(particle, show_options, "Show Effect Options", "", "icons:General/Options.ico", false)
 
-static const char* const s_szEffectAssetName = "Effect";
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(particle, get_from_selection, CCommandDescription("Loads effect from selected entity"))
+REGISTER_EDITOR_UI_COMMAND_DESC(particle, get_from_selection, "Load from Selected Entity", "", "icons:General/Get_From_Selection.ico", false)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(particle, assign_to_selection, CCommandDescription("Applies effect to selected entity"))
+REGISTER_EDITOR_UI_COMMAND_DESC(particle, assign_to_selection, "Apply to Selected Entity", "", "icons:General/Assign_To_Selection.ico", false)
+
+namespace CryParticleEditor
+{
+
+static const char* const s_szEffectGraphName = "Effect Graph";
+static const char* const s_szEffectTreeName = "Effect Tree";
 static const char* const s_szCurveEditorPanelName = "Curve Editor";
 static const char* const s_szInspectorName = "Inspector";
 
@@ -79,131 +92,71 @@ static CCurveEditorPanel* CreateCurveEditorPanel(QWidget* pParent = nullptr)
 	return pCurveEditorPanel;
 }
 
-///////////////////////////////////////////////////////////////////////
 CParticleEditor::CParticleEditor()
 	: CAssetEditor("Particles")
 	, m_pEffectAssetModel(new CEffectAssetModel())
 {
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
+	RegisterActions();
+}
 
-	QVBoxLayout* pMainLayout = new QVBoxLayout();
-	pMainLayout->setContentsMargins(1, 1, 1, 1);
-	SetContent(pMainLayout);
+void CParticleEditor::RegisterActions()
+{
+	RegisterAction("general.copy", &CParticleEditor::OnCopy);
+	RegisterAction("general.paste", &CParticleEditor::OnPaste);
+	RegisterAction("general.delete", &CParticleEditor::OnDelete);
+	RegisterAction("general.import", &CParticleEditor::OnImport);
+	RegisterAction("general.undo", &CParticleEditor::OnUndo);
+	RegisterAction("general.redo", &CParticleEditor::OnRedo);
+	m_pReloadEffectMenuAction = RegisterAction("general.reload", &CParticleEditor::OnReload);
 
-	InitMenu();
-	InitToolbar(pMainLayout);
+	m_pShowEffectOptionsMenuAction = RegisterAction("particle.show_options", &CParticleEditor::OnShowEffectOptions);
+	RegisterAction("particle.get_from_selection", &CParticleEditor::OnLoadFromSelectedEntity);
+	RegisterAction("particle.assign_to_selection", &CParticleEditor::OnApplyToSelectedEntity);
 
-	RegisterDockingWidgets();
+	m_pReloadEffectMenuAction->setEnabled(false);
+	m_pShowEffectOptionsMenuAction->setEnabled(false);
 }
 
 void CParticleEditor::InitMenu()
 {
 	const CEditor::MenuItems items[] = {
-		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save, CEditor::MenuItems::SaveAs,
+		CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save,  CEditor::MenuItems::SaveAs,
 		CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo,  CEditor::MenuItems::Redo,
-		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste, CEditor::MenuItems::Delete
-	};
+		CEditor::MenuItems::Copy,     CEditor::MenuItems::Paste, CEditor::MenuItems::Delete };
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
 
 	{
 		CAbstractMenu* const pFileMenu = GetMenu(CEditor::MenuItems::FileMenu);
 
 		int sec;
+		sec = pFileMenu->GetNextEmptySection();
+		pFileMenu->AddAction(m_pReloadEffectMenuAction, sec);
+		pFileMenu->AddAction(m_pShowEffectOptionsMenuAction, sec);
 
 		sec = pFileMenu->GetNextEmptySection();
-
-		m_pReloadEffectMenuAction = pFileMenu->CreateAction(CryIcon("icons:General/Reload.ico"), tr("Reload Effect"), sec);
-		connect(m_pReloadEffectMenuAction, &QAction::triggered, this, &CParticleEditor::OnReloadEffect);
-		m_pReloadEffectMenuAction->setEnabled(false);
-
-		m_pShowEffectOptionsMenuAction = pFileMenu->CreateAction(CryIcon("icons:General/Options.ico"), tr("Show Effect Options"), sec);
-		connect(m_pShowEffectOptionsMenuAction, &QAction::triggered, this, &CParticleEditor::OnShowEffectOptions);
-		m_pShowEffectOptionsMenuAction->setEnabled(false);
+		pFileMenu->AddAction(GetAction("particle.get_from_selection"), sec);
+		pFileMenu->AddAction(GetAction("particle.assign_to_selection"), sec);
 
 		sec = pFileMenu->GetNextEmptySection();
-
-		auto action = pFileMenu->CreateAction(CryIcon("icons:General/Get_From_Selection.ico"), tr("Load from Selected Entity"), sec);
-		connect(action, &QAction::triggered, this, &CParticleEditor::OnLoadFromSelectedEntity);
-
-		action = pFileMenu->CreateAction(CryIcon("icons:General/Assign_To_Selection.ico"), tr("Apply to Selected Entity"), sec);
-		connect(action, &QAction::triggered, this, &CParticleEditor::OnApplyToSelectedEntity);
-
-		sec = pFileMenu->GetNextEmptySection();
-
-		action = pFileMenu->CreateAction(CryIcon("icons:General/File_Import.ico"), tr("Import Selected Pfx1 Effect"), sec);
-		connect(action, &QAction::triggered, this, &CParticleEditor::OnImportPfx1);
+		pFileMenu->AddAction(GetAction("general.import"), sec);
 	}
 }
 
-void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
+void CParticleEditor::OnInitialize()
 {
-#define ADD_BUTTON(slot, name, shortcut, icon)                           \
-  { QAction* pAction = pToolBar->addAction(CryIcon(icon), QString());    \
-    pAction->setToolTip(name);                                           \
-    if (shortcut) pAction->setShortcut(tr(shortcut));                    \
-    connect(pAction, &QAction::triggered, this, &CParticleEditor::slot); \
-  }
-
-	// TODO: make this better, the toolbars should behave like the main frame
-	//			 toolbars, where you can move them around in dedicated areas!
-	QHBoxLayout* pToolBarsLayout = new QHBoxLayout();
-	pToolBarsLayout->setDirection(QBoxLayout::LeftToRight);
-	pToolBarsLayout->setSizeConstraint(QLayout::SetMaximumSize);
-
-	// Add Library Toolbar
-	{
-		QToolBar* pToolBar = new QToolBar("Library");
-
-		pToolBar->addAction(GetAction("general.save"));
-
-		pToolBar->addSeparator();
-		ADD_BUTTON(OnLoadFromSelectedEntity, "Load from Selected Entity", 0, "icons:General/Get_From_Selection.ico");
-		ADD_BUTTON(OnApplyToSelectedEntity, "Apply to Selected Entity", 0, "icons:General/Assign_To_Selection.ico");
-		ADD_BUTTON(OnImportPfx1, "Import Selected Pfx1 Effect", 0, "icons:General/File_Import.ico");
-
-		pToolBarsLayout->addWidget(pToolBar, 0, Qt::AlignLeft);
-	}
-
-	// Add Effect Toolbar
-	{
-		QToolBar* pToolBar = new QToolBar("Effect");
-
-		QMenu* pTemplatesMenu = new QMenu();
-
-		pToolBar->addSeparator();
-		ADD_BUTTON(OnReloadEffect, "Reload Effect", 0, "icons:General/Reload.ico")
-		ADD_BUTTON(OnShowEffectOptions, "Show Effect Options", 0, "icons:General/Options.ico")
-
-		pToolBarsLayout->addWidget(pToolBar, 0, Qt::AlignLeft);
-		QSpacerItem* pSpacer = new QSpacerItem(20, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
-		pToolBarsLayout->addSpacerItem(pSpacer);
-
-		m_pEffectToolBar = pToolBar;
-		m_pEffectToolBar->hide();
-	}
-
-	pWindowLayout->addLayout(pToolBarsLayout);
-}
-
-void CParticleEditor::RegisterDockingWidgets()
-{
-	EnableDockingSystem();
-
-	RegisterDockableWidget(s_szEffectAssetName, [&]() { return CreateEffectAssetWidget(); }, false, false);
-	RegisterDockableWidget(s_szCurveEditorPanelName, [&]() { return CreateCurveEditorPanel(this); }, false, false);
+	RegisterDockableWidget(s_szEffectGraphName, [=]() { return new CEffectAssetWidget(m_pEffectAssetModel.get(), this); }, false, false);
+	RegisterDockableWidget(s_szEffectTreeName, [=]() { return new CEffectPanel(m_pEffectAssetModel.get(), this); }, false, false);
+	RegisterDockableWidget(s_szCurveEditorPanelName, [=]() { return CreateCurveEditorPanel(this); }, false, false);
 
 	// #TODO: The inspector is a unique panel for practical reasons. Right now, there is not code
 	// to keep two instances of the inspector in sync when either one of them changes.
 	// Similar to the object properties, the property trees should be reverted when a feature item
 	// signals SignalInvalidated.
-	RegisterDockableWidget(s_szInspectorName, [&]() { return new CInspector(this); }, true, false);
-}
+	RegisterDockableWidget(s_szInspectorName, [&]() { return new CInspectorLegacy(this); }, true, false);
 
-CEffectAssetWidget* CParticleEditor::CreateEffectAssetWidget()
-{
-	CEffectAssetWidget* const pEffectAssetWidget = new CEffectAssetWidget(m_pEffectAssetModel, this);
-	return pEffectAssetWidget;
+	InitMenu();
 }
 
 bool CParticleEditor::OnUndo()
@@ -218,17 +171,6 @@ bool CParticleEditor::OnRedo()
 	return true;
 }
 
-void CParticleEditor::SetLayout(const QVariantMap& state)
-{
-	CEditor::SetLayout(state);
-}
-
-QVariantMap CParticleEditor::GetLayout() const
-{
-	QVariantMap state = CEditor::GetLayout();
-	return state;
-}
-
 void CParticleEditor::Serialize(Serialization::IArchive& archive)
 {
 	// TODO: Remove this?
@@ -240,7 +182,6 @@ bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 
 	if (m_pEffectAssetModel->OpenAsset(pAsset))
 	{
-		m_pEffectToolBar->show();
 		m_pReloadEffectMenuAction->setEnabled(true);
 		m_pShowEffectOptionsMenuAction->setEnabled(true);
 
@@ -249,24 +190,30 @@ bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 	return false;
 }
 
-bool CParticleEditor::OnSaveAsset(CEditableAsset& editAsset)
+void CParticleEditor::OnDiscardAssetChanges(CEditableAsset& editAsset)
 {
-	SaveEffect(editAsset);
+	CRY_ASSERT(GetAssetBeingEdited());
+	CRY_ASSERT(GetAssetBeingEdited()->GetEditingSession());
 
-	return true;
-}
-
-void CParticleEditor::OnDiscardAssetChanges()
-{
-	// Reload from file
-	if (auto* pAffectAsset = m_pEffectAssetModel->GetEffectAsset())
-		if (auto* pAsset = pAffectAsset->GetAsset())
-			m_pEffectAssetModel->OpenAsset(pAsset);
+	CAsset* const pAsset = GetAssetBeingEdited();
+	OnCloseAsset();
+	GetAssetBeingEdited()->GetEditingSession()->DiscardChanges(editAsset);
+	OnOpenAsset(pAsset);
 }
 
 void CParticleEditor::OnCloseAsset()
 {
 	m_pEffectAssetModel->ClearAsset();
+}
+
+std::unique_ptr<IAssetEditingSession> CParticleEditor::CreateEditingSession()
+{
+	if (!m_pEffectAssetModel)
+	{
+		return nullptr;
+	}
+
+	return m_pEffectAssetModel->CreateEditingSession();
 }
 
 bool LoadFile(std::vector<char>& content, const char* filename)
@@ -287,18 +234,15 @@ bool LoadFile(std::vector<char>& content, const char* filename)
 
 bool CParticleEditor::OnAboutToCloseAsset(string& reason) const
 {
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
+	pfx2::IParticleEffect* const pEffect = m_pEffectAssetModel->GetEffect();
+	if (!pEffect)
 		return true;
-	}
 
-	pfx2::IParticleEffectPfx2* const pEffect = pEffectAsset->GetEffect();
 	DynArray<char> newPfx;
 	Serialization::SaveJsonBuffer(newPfx, *pEffect);
 
 	std::vector<char> oldPfx;
-	if (!LoadFile(oldPfx, pEffectAsset->GetAsset()->GetFile(0)))
+	if (!LoadFile(oldPfx, GetAssetBeingEdited()->GetFile(0)))
 	{
 		return true;
 	}
@@ -311,11 +255,11 @@ bool CParticleEditor::OnAboutToCloseAsset(string& reason) const
 	return !strncmp(&newPfx[0], &oldPfx[0], newPfx.size());
 }
 
-void CParticleEditor::CreateDefaultLayout(CDockableContainer* pSender)
+void CParticleEditor::OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser)
 {
 	CRY_ASSERT(pSender);
-	pSender->SpawnWidget(s_szCurveEditorPanelName);
-	pSender->SpawnWidget(s_szEffectAssetName, QToolWindowAreaReference::HSplitTop);
+	pSender->SpawnWidget(s_szCurveEditorPanelName, pAssetBrowser, QToolWindowAreaReference::VSplitRight);
+	pSender->SpawnWidget(s_szEffectGraphName, QToolWindowAreaReference::HSplitTop);
 	pSender->SpawnWidget(s_szInspectorName, QToolWindowAreaReference::VSplitRight);
 }
 
@@ -360,88 +304,30 @@ bool CParticleEditor::AssetSaveDialog(string* pOutputName)
 		*pOutputName = filename.toLocal8Bit().data();
 		return true;
 	}
+
 	return false;
 }
 
-///////////////////////////////////////////////////////////////////////
-// Actions
-
-void CParticleEditor::SaveEffect(CEditableAsset& editAsset)
+bool CParticleEditor::OnReload()
 {
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
+	CAsset* const pAsset = GetAssetBeingEdited();
+	if (!pAsset)
 	{
-		return;
+		return false;
 	}
 
-	CRY_ASSERT(pEffectAsset->GetAsset() && pEffectAsset->GetAsset()->GetFilesCount());
+	const char* szFxFilePath = pAsset->GetFile(0);
 
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
-	const string pfxFilePath = PathUtil::ReplaceExtension(basePath, "pfx"); // Relative to asset directory.
-
-	pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
-	Serialization::SaveJsonFile(pfxFilePath.c_str(), *pEffect);
-
-	// Get effect dependency
+	const QString questionText = tr("Reload effect %1 and lose all changes?").arg(szFxFilePath);
+	if (CQuestionDialog::SQuestion(tr("Revert Effect"), questionText) == QDialogButtonBox::Yes)
 	{
-		std::vector<SAssetDependencyInfo> dependencies;
-		for (size_t component = 0, componentsCount = pEffect->GetNumComponents(); component < componentsCount; ++component)
-		{
-			const pfx2::IParticleComponent* pComponent = pEffect->GetComponent(component);
-			for (size_t feature = 0, featuresCount = pComponent->GetNumFeatures(); feature < featuresCount; ++feature)
-			{
-				const pfx2::IParticleFeature* pFeature = pComponent->GetFeature(feature);
-				for (size_t resource = 0, resourcesCount = pFeature->GetNumResources(); resource < resourcesCount; ++resource)
-				{
-					const char* szResourceFilename = pFeature->GetResourceName(resource);
-					auto it = std::find_if(dependencies.begin(), dependencies.end(), [szResourceFilename](const auto& x)
-					{
-						return x.path.CompareNoCase(szResourceFilename);
-					});
-
-					if (it == dependencies.end())
-					{
-						dependencies.emplace_back(szResourceFilename, 1);
-					}
-					else // increment instance count
-					{
-						++(it->usageCount);
-					}
-				}
-			}
-		}
-		editAsset.SetDependencies(dependencies);
+		DiscardAssetChanges();
 	}
 
-	editAsset.SetFiles("", { pfxFilePath });
+	return true;
 }
 
-void CParticleEditor::OnReloadEffect()
-{
-	if (!m_pEffectAssetModel->GetEffectAsset())
-	{
-		return;
-	}
-
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-
-	CAsset* const pAsset = pEffectAsset->GetAsset();
-	CRY_ASSERT(pAsset && pAsset->GetFilesCount());
-
-	const string pfxFilePath = pAsset->GetFile(0);
-
-	const QString questionText = QString("Reload effect ") + pfxFilePath + " and lose all changes?";
-	if (CQuestionDialog::SQuestion("Revert Effect", questionText) == QDialogButtonBox::Yes)
-	{
-		pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
-		if (pAsset)
-		{
-			OpenAsset(pAsset);
-		}
-	}
-}
-
-void CParticleEditor::OnImportPfx1()
+bool CParticleEditor::OnImport()
 {
 	// Find selected Pfx1 effect
 	IDataBaseManager* particleMgr = static_cast<CParticleManager*>(GetIEditor()->GetDBItemManager(EDB_TYPE_PARTICLE));
@@ -477,6 +363,8 @@ void CParticleEditor::OnImportPfx1()
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "No particle selected for import in database view");
 		}
 	}
+
+	return true;
 }
 
 void CParticleEditor::OnLoadFromSelectedEntity()
@@ -514,16 +402,17 @@ void CParticleEditor::OnApplyToSelectedEntity()
 {
 	const ISelectionGroup* pSelection = GetIEditor()->GetISelectionGroup();
 	if (0 == pSelection->GetCount())
-		return;
-
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
 	{
 		return;
 	}
 
-	const CAsset* const pAsset = pEffectAsset->GetAsset();
-	CRY_ASSERT(pAsset && pAsset->GetFilesCount());
+	if (!GetAssetBeingEdited())
+	{
+		return;
+	}
+
+	const CAsset* const pAsset = GetAssetBeingEdited();
+	CRY_ASSERT(pAsset->GetFilesCount());
 
 	const string& effectName = pAsset->GetFile(0);
 
@@ -543,62 +432,54 @@ void CParticleEditor::OnNewComponent()
 	if (templateFile.isEmpty())
 		return;
 
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
-		return;
-	}
-
 	auto templateFileStd = templateFile.toStdString();
-	pEffectAsset->MakeNewComponent(templateFileStd.c_str());
+	m_pEffectAssetModel->MakeNewComponent(templateFileStd.c_str());
 }
 
 void CParticleEditor::OnShowEffectOptions()
 {
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
-	{
+	pfx2::IParticleEffect* const pEffect = m_pEffectAssetModel->GetEffect();
+	if (!pEffect)
 		return;
-	}
 
-	pfx2::IParticleEffectPfx2* const pEffect = pEffectAsset->GetEffect();
+	PopulateLegacyInspectorEvent popEvent([this, pEffect](CInspectorLegacy& inspector)
+	    {
+	                                      QAdvancedPropertyTreeLegacy* pPropertyTree = new QAdvancedPropertyTreeLegacy(pEffect->GetName());
+	                                      // WORKAROUND: Serialization of features doesn't work with the default style.
+	                                      //						 We either need to fix serialization or property tree. As soon as it's
+	                                      //						 done use the commented out code below.
+	                                      PropertyTreeStyle treeStyle(pPropertyTree->treeStyle());
+	                                      treeStyle.propertySplitter = false;
+	                                      pPropertyTree->setTreeStyle(treeStyle);
+	                                      pPropertyTree->setSizeToContent(true);
+	                                      // ~WORKAROUND
+	                                      //pPropertyTree->setExpandLevels(2);
+	                                      //pPropertyTree->setValueColumnWidth(0.6f);
+	                                      //pPropertyTree->setAutoRevert(false);
+	                                      //pPropertyTree->setAggregateMouseEvents(false);
+	                                      //pPropertyTree->setFullRowContainers(true);
+	                                      pPropertyTree->attach(pEffect->GetEffectOptionsSerializer());
+	                                      QObject::connect(pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &CParticleEditor::OnEffectOptionsChanged);
 
-		PopulateInspectorEvent popEvent([this, pEffect](CInspector& inspector)
-		{
-			QAdvancedPropertyTree* pPropertyTree = new QAdvancedPropertyTree(pEffect->GetName());
-			// WORKAROUND: Serialization of features doesn't work with the default style.
-			//						 We either need to fix serialization or property tree. As soon as it's
-			//						 done use the commented out code below.
-			PropertyTreeStyle treeStyle(pPropertyTree->treeStyle());
-			treeStyle.propertySplitter = false;
-			pPropertyTree->setTreeStyle(treeStyle);
-			pPropertyTree->setSizeToContent(true);
-			// ~WORKAROUND
-			//pPropertyTree->setExpandLevels(2);
-			//pPropertyTree->setValueColumnWidth(0.6f);
-			//pPropertyTree->setAutoRevert(false);
-			//pPropertyTree->setAggregateMouseEvents(false);
-			//pPropertyTree->setFullRowContainers(true);
-			pPropertyTree->attach(pEffect->GetEffectOptionsSerializer());
-			QObject::connect(pPropertyTree, &QPropertyTree::signalChanged, this, &CParticleEditor::OnEffectOptionsChanged);
+	                                      QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Particle Effect");
+	                                      pInspectorWidget->SetWidget(pPropertyTree);
+	                                      inspector.AddWidget(pInspectorWidget);
+			});
 
-			QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Particle Effect");
-			pInspectorWidget->SetWidget(pPropertyTree);
-			inspector.AddWidget(pInspectorWidget);
-		});
-
-		GetBroadcastManager().Broadcast(popEvent);
-	}
+	GetBroadcastManager().Broadcast(popEvent);
+}
 
 void CParticleEditor::OnEffectOptionsChanged()
 {
-	CEffectAsset* const pEffectAsset = m_pEffectAssetModel->GetEffectAsset();
-	if (!pEffectAsset)
+	if (!GetAssetBeingEdited())
 		return;
-	pfx2::IParticleEffectPfx2* pEffect = pEffectAsset->GetEffect();
-	pEffectAsset->SetModified(true);
+
+	pfx2::IParticleEffect* pEffect = m_pEffectAssetModel->GetEffect();
+	if (!pEffect)
+		return;
+
 	pEffect->SetChanged();
+	GetAssetBeingEdited()->SetModified(true);
 }
 
 }
-

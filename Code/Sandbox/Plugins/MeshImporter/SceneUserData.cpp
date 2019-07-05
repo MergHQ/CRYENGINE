@@ -35,4 +35,3 @@ FbxTool::ENodeExportSetting GetDefaultNodeExportSetting(const FbxTool::SNode* pN
 
 	return FbxTool::eNodeExportSetting_Include;
 }
-

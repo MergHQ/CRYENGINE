@@ -1,9 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TimelineCtrl_h__
-#define __TimelineCtrl_h__
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include <CryMath/Range.h>
 #include "SplineCtrlEx.h"
 #include "Controls/WndGridHelper.h"
@@ -23,7 +22,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Timeline control.
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CTimelineCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CTimelineCtrl : public CWnd
 {
 public:
 	DECLARE_DYNAMIC(CTimelineCtrl)
@@ -102,7 +101,7 @@ protected:
 
 	CString TimeToString(float time);
 	// Convert time in seconds into the milliseconds.
-	int     ToMillis(float time)      { return pos_directed_rounding(time * 1000.0f); };
+	int     ToMillis(float time)      { return pos_directed_rounding(time * 1000.0f); }
 	float   MillisToTime(int nMillis) { return nMillis / 1000.0f; }
 	float   SnapTime(float time);
 
@@ -148,6 +147,3 @@ private:
 	bool                  m_bTrackingSnapToFrames;
 	std::function<void()> m_playCallback;
 };
-
-#endif // __TimelineCtrl_h__
-

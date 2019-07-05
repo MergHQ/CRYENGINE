@@ -279,7 +279,6 @@ IEntity* CVehicleSeatActionWeapons::SpawnWeapon(SVehicleWeapon& weapon, IEntity*
 
 		spawnParams.sName = pWeaponName;
 		spawnParams.vPosition.zero();
-		spawnParams.nFlags = ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 		if (bClientOnly)
 		{
@@ -385,7 +384,7 @@ void CVehicleSeatActionWeapons::StartUsing(EntityId passengerId)
 {
 
 	IEntity* ent = gEnv->pEntitySystem->GetEntity(passengerId);
-	m_Forced = m_Forced && (!ent || !ent->GetAI());
+	m_Forced = m_Forced && (!ent || !ent->HasAI());
 
 	if (!passengerId && !m_Forced)
 		return;
@@ -797,7 +796,6 @@ void CVehicleSeatActionWeapons::StopFire()
 				}
 				else if (m_attackInput == eAI_Secondary)
 				{
-					IFireMode* const pFireMode = pWeapon->GetFireMode(pWeapon->GetCurrentFireMode());
 					audioControlID = pMovement->GetSecondaryWeaponAudioStopTrigger();
 				}
 
@@ -1062,7 +1060,7 @@ bool CVehicleSeatActionWeapons::GetFiringDir(EntityId weaponId, const IFireMode*
 
 		if (weapon.weaponEntityId == weaponId)
 		{
-			if (IEntity* pWeaponEntity = GetEntity(weapon))
+			if (GetEntity(weapon) != nullptr)
 			{
 				dir = probableHit - firingPos;
 				dir.NormalizeSafe();
@@ -1188,17 +1186,10 @@ void CVehicleSeatActionWeapons::OnVehicleEvent(EVehicleEvent event, const SVehic
 			StopFire();
 		}
 
-		// set AI state
-		IAISystem* pAISystem = gEnv->pAISystem;
-
 		for (TVehicleWeaponVector::iterator ite = m_weapons.begin(); ite != m_weapons.end(); ++ite)
 		{
 			if (IEntity* pEntity = GetEntity(*ite))
 			{
-				if (pAISystem && pAISystem->IsEnabled())
-				{
-					pAISystem->GetSmartObjectManager()->SetSmartObjectState(pEntity, "Busy");
-				}
 				pEntity->Hide(true);
 			}
 		}
@@ -1340,7 +1331,7 @@ Vec3 CVehicleSeatActionWeapons::GetAverageFiringPos()
 
 void CVehicleSeatActionWeapons::OnWeaponRespawned(int weaponIndex, EntityId newWeaponEntityId)
 {
-	CRY_ASSERT_MESSAGE(weaponIndex < m_weapons.size(), "CVehicleSeatActionWeapons::WeaponRespawned - Invalid weaponIndex!");
+	CRY_ASSERT(weaponIndex < m_weapons.size(), "CVehicleSeatActionWeapons::WeaponRespawned - Invalid weaponIndex!");
 
 	ClSetupWeapon(weaponIndex, newWeaponEntityId);
 	m_pSeat->SetLocked(eVSLS_Unlocked);

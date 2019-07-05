@@ -9,12 +9,11 @@
 #include "Common/UtilityPasses.h"
 #include "SceneGBuffer.h"
 
-class CRESky;
-class CREHDRSky;
-
 class CSceneForwardStage : public CGraphicsPipelineStage
 {
 public:
+	static const EGraphicsPipelineStage StageID = eStage_SceneForward;
+
 	struct SCloudShadingParams
 	{
 		Vec4 CloudShadingColorSun;
@@ -29,28 +28,38 @@ public:
 		ePerPassTexture_TerrainNormMap   = CSceneGBufferStage::ePerPassTexture_TerrainNormMap,
 		ePerPassTexture_TerrainBaseMap   = CSceneGBufferStage::ePerPassTexture_TerrainBaseMap,
 		ePerPassTexture_NormalsFitting   = CSceneGBufferStage::ePerPassTexture_NormalsFitting,
-		ePerPassTexture_DissolveNoise    = CSceneGBufferStage::ePerPassTexture_DissolveNoise,
+
 		ePerPassTexture_SceneLinearDepth = CSceneGBufferStage::ePerPassTexture_SceneLinearDepth,
 	};
 
 public:
-	enum EPass
+	enum EPass : uint8
 	{
-		ePass_Forward = 0,
-		ePass_ForwardRecursive,
+		// limit: MAX_PIPELINE_SCENE_STAGE_PASSES
+		ePass_Forward          = 0,
+		ePass_ForwardPrepassed = 1,
+		ePass_ForwardRecursive = 2,
+		ePass_ForwardMobile    = 3,
+
+		ePass_Count
 	};
 
+	static_assert(ePass_Count <= MAX_PIPELINE_SCENE_STAGE_PASSES,
+		"The pipeline-state array is unable to carry as much pass-permutation as defined here!");
+
 public:
-	CSceneForwardStage();
+	CSceneForwardStage(CGraphicsPipeline& graphicsPipeline);
 
 	void Init() final;
 	void Update() final;
+	bool UpdatePerPassResourceSet() final;
+	bool UpdateRenderPasses() final;
 
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool         CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
 	                                 CDeviceGraphicsPSOPtr& outPSO,
 	                                 EPass passId = ePass_Forward,
-	                                 std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> customState = nullptr);
+	                                 const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)>&customState = nullptr);
 
 	void         ExecuteOpaque();
 	void         ExecuteTransparentBelowWater();
@@ -59,42 +68,68 @@ public:
 	void         ExecuteTransparentLoRes(int subRes);
 	void         ExecuteAfterPostProcessHDR();
 	void         ExecuteAfterPostProcessLDR();
+	void         ExecuteMobile();
 	void         ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
-	void         SetSkyRE(CRESky* pSkyRE, CREHDRSky* pHDRSkyRE);
+	bool IsTransparentLoResEnabled()      const { return CRendererCVars::CV_r_ParticlesHalfRes > 0; }
+	bool IsTransparentDepthFixupEnabled() const { return CRendererCVars::CV_r_TranspDepthFixup > 0; }
 
 	void FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable = true) const;
 
 private:
-	bool PreparePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);
+	bool UpdatePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);
 	void ExecuteTransparent(bool bBelowWater);
 
-	void SetHDRSkyParameters();
-	void ExecuteSky(CTexture* pColorTex, CTexture* pDepthTex);
-
-
 private:
-	_smart_ptr<CTexture> m_pSkyDomeTextureMie;
-	_smart_ptr<CTexture> m_pSkyDomeTextureRayleigh;
-	_smart_ptr<CTexture> m_pSkyMoonTex;
+	enum EResourcesSubset
+	{
+		eResSubset_General = BIT(0),
+		eResSubset_TiledShadingOpaque = BIT(1),
+		eResSubset_TiledShadingTransparent = BIT(2),
+		eResSubset_Particles = BIT(3),
+		eResSubset_EyeOverlay = BIT(4),
+		eResSubset_ForwardShadows = BIT(5),
+
+		eResSubset_All = eResSubset_General | eResSubset_TiledShadingOpaque | eResSubset_TiledShadingTransparent |
+		eResSubset_Particles | eResSubset_EyeOverlay | eResSubset_ForwardShadows,
+		eResSubset_None = ~eResSubset_All
+	};
+
+	struct ResourceSetToBuild
+	{
+		std::reference_wrapper<CDeviceResourceSetDesc> resourceDesc;
+		CDeviceResourceSet*  pResourceSet;
+		uint32_t flags;
+	};
+
+	std::vector<ResourceSetToBuild> GetResourceSetsToBuild();
 
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayout;
+	CDeviceResourceLayoutPtr m_pOpaqueResourceLayoutMobile;
 	CDeviceResourceLayoutPtr m_pTransparentResourceLayout;
+	CDeviceResourceLayoutPtr m_pTransparentResourceLayoutMobile;
 	CDeviceResourceLayoutPtr m_pEyeOverlayResourceLayout;
 
 	CDeviceResourceSetDesc   m_opaquePassResources;
 	CDeviceResourceSetPtr    m_pOpaquePassResourceSet;
+	CDeviceResourceSetDesc   m_opaquePassResourcesMobile;
+	CDeviceResourceSetPtr    m_pOpaquePassResourceSetMobile;
 	CDeviceResourceSetDesc   m_transparentPassResources;
 	CDeviceResourceSetPtr    m_pTransparentPassResourceSet;
+	CDeviceResourceSetDesc   m_transparentPassResourcesMobile;
+	CDeviceResourceSetPtr    m_pTransparentPassResourceSetMobile;
 	CDeviceResourceSetDesc   m_eyeOverlayPassResources;
 	CDeviceResourceSetPtr    m_pEyeOverlayPassResourceSet;
 	CConstantBufferPtr       m_pPerPassCB;
 
 	CSceneRenderPass         m_forwardOpaquePass;
+	CSceneRenderPass         m_forwardOpaquePassMobile;
 	CSceneRenderPass         m_forwardOverlayPass;
+	CSceneRenderPass         m_forwardOverlayPassMobile;
 	CSceneRenderPass         m_forwardTransparentBWPass;
 	CSceneRenderPass         m_forwardTransparentAWPass;
 	CSceneRenderPass         m_forwardTransparentLoResPass;
+	CSceneRenderPass         m_forwardTransparentPassMobile;
 	CSceneRenderPass         m_forwardHDRPass;
 	CSceneRenderPass         m_forwardLDRPass;
 	CSceneRenderPass         m_forwardEyeOverlayPass;
@@ -109,12 +144,4 @@ private:
 	CFullscreenPass           m_depthFixupPass;
 	CFullscreenPass           m_depthCopyPass;
 	CNearestDepthUpsamplePass m_depthUpscalePass;
-	CFullscreenPass           m_skyPass;
-	CRenderPrimitive          m_starsPrimitive;
-	CPrimitiveRenderPass      m_starsPass;
-	CRESky*                   m_pSkyRE = nullptr;
-	CREHDRSky*                m_pHDRSkyRE = nullptr;
-	Vec4                      m_paramMoonTexGenRight;
-	Vec4                      m_paramMoonTexGenUp;
-	Vec4                      m_paramMoonDirSize;
 };

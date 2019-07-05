@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryEndian.h
-//  Version:     v1.00
-//  Created:     16/2/2006 by Scott,Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:		 19/3/2007: Separated Endian support from basic TypeInfo declarations.
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __CryEndian_h__
-#define __CryEndian_h__
 #pragma once
 
 //////////////////////////////////////////////////////////////////////////
@@ -168,7 +155,6 @@ ILINE void SwapEndian(T* t, int nCount, bool bSwapEndian = eLittleEndian)
 		SwapEndianBase(t, nCount);
 }
 
-#if CRY_PLATFORM_64BIT
 //! \param bSwapEndian Optional, defaults to swapping from LittleEndian format.
 template<class T>
 ILINE void SwapEndian(T* t, unsigned int nCount, bool bSwapEndian = eLittleEndian)
@@ -176,7 +162,6 @@ ILINE void SwapEndian(T* t, unsigned int nCount, bool bSwapEndian = eLittleEndia
 	if (bSwapEndian)
 		SwapEndianBase(t, nCount);
 }
-#endif
 
 //! \param bSwapEndian Optional, defaults to swapping from LittleEndian format.
 template<class T>
@@ -241,5 +226,3 @@ inline void StepDataWrite(D*& pDest, const T& Src, bool bSwapEndian)
 {
 	StepDataWrite(pDest, &Src, 1, bSwapEndian);
 }
-
-#endif // __CryEndian_h__

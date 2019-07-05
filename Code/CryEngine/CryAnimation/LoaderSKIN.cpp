@@ -56,12 +56,12 @@ bool CryCHRLoader::BeginLoadSkinRenderMesh(CSkin* pSkin, int nRenderLod, EStream
 {
 	using namespace CryCHRLoader_LoadNewSKIN_Helpers;
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
 	const char* szFilePath = pSkin->GetModelFilePath();
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	const char* szExt = PathUtil::GetExt(szFilePath);
 	m_strGeomFileNameNoExt.assign(szFilePath, *szExt ? szExt - 1 : szExt);
@@ -165,8 +165,6 @@ void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)
 				{
 					pRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentSkin->m_arrRemapTable, guid, pAttachmentSkin);
 				}
-
-				pAttachmentSkin->m_pAttachmentManager->RequestMergeCharacterAttachments();
 			}
 
 			for (int i = 0; i < nVClothInstances; i++)
@@ -193,8 +191,6 @@ void CryCHRLoader::EndStreamSkinSync(IReadStream* pStream)
 							pVCRenderMesh->CreateRemappedBoneIndicesPair(pAttachmentVCloth->m_arrRemapTable, guid, pAttachmentVCloth);
 						}
 					}
-
-					pAttachmentVCloth->m_pAttachmentManager->RequestMergeCharacterAttachments();
 				}
 			}
 		}
@@ -451,11 +447,11 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 	using namespace SkinLoader_Helpers;
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
@@ -491,7 +487,14 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 		const bool lodExists = gEnv->pCryPak->IsFileExist(lodName);
 		if (!lodExists)
-			continue; //continue until we find the first valid LOD
+		{
+			if (lodCount == 0)
+				continue; //continue until we find the first valid LOD
+
+			// Some lower LODs are loaded, but higher LOD is not available.
+			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "CryAnimation (%s): Failed to load SKIN (File doesn't exist) '%s'", __FUNCTION__, lodName.c_str());
+			return 0;
+		}
 
 		CContentCGF* pChunkFile = g_pI3DEngine->CreateChunkfileContent(lodName);
 
@@ -617,7 +620,11 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 	//----------------------------------------------------------------------------------------------------------------------
 
 	m_arrModelMeshes.resize(lodCount, CModelMesh());
+
+#ifdef EDITOR_PCDEBUGCODE
 	CContentCGF* pBaseContent = cgfs.m_arrContentCGF[0];
+#endif
+
 	for (uint32 lod = 0; lod < lodCount; lod++)
 	{
 		CContentCGF* pLodContent = cgfs.m_arrContentCGF[lod];
@@ -669,6 +676,49 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 		string meshFilename = cgfs.m_cgfNames[lod] + 'm';
 		pModelMesh->m_stream.bHasMeshFile = gEnv->pCryPak->IsFileExist(meshFilename.c_str());
+
+		// Store mesh data in cache, if requested
+		if (nLoadingFlags & CA_CacheSkinDataInCpuMemory)
+		{
+			const int nVtx = pMesh->GetVertexCount();
+			const int nIndices = pMesh->GetIndexCount();
+			CRY_ASSERT(nVtx == pMesh->GetTexCoordCount());
+
+			CModelMesh::sModelCache& cache = pModelMesh->CreateModelCache();
+			cache.vertices.resize(nVtx);
+			cache.UVs.resize(nVtx);
+			cache.indices.resize(nIndices);
+
+			int cnt;
+			Vec3* pos = pMesh->GetStreamPtr<Vec3>(CMesh::POSITIONS, &cnt);
+			if (cnt == nVtx && pos)
+			{
+				memcpy(&cache.vertices.front(), pos, nVtx * sizeof(Vec3));
+			}
+			else
+			{
+				Vec3f16* pos_f16 = pMesh->GetStreamPtr<Vec3f16>(CMesh::POSITIONSF16, &cnt);
+				if (cnt == nVtx && pos_f16)
+				{
+					for (int i = 0; i < cnt; ++i)
+					{
+						cache.vertices[i] = pos_f16[i].ToVec3();
+					}
+				}
+			}
+
+			Vec2* tex = pMesh->GetStreamPtr<Vec2>(CMesh::TEXCOORDS, &cnt);
+			if (cnt == nVtx && tex)
+			{
+				memcpy(&cache.UVs.front(), tex, nVtx * sizeof(Vec2));
+			}
+
+			vtx_idx* idx = pMesh->GetStreamPtr<vtx_idx>(CMesh::INDICES, &cnt);
+			if (cnt == nIndices && idx)
+			{
+				memcpy(&cache.indices.front(), idx, nIndices * sizeof(vtx_idx));
+			}
+		}
 	} //loop over all LODs
 
 	return 1; //success

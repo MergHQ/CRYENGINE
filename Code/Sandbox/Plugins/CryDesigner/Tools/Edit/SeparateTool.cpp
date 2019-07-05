@@ -77,7 +77,7 @@ DesignerObject* SeparateTool::Separate(MainContext& mc)
 
 	pNewObj->SetMaterial(mc.pObject->GetMaterial());
 
-	GetIEditor()->SelectObject(pNewObj);
+	GetIEditor()->GetObjectManager()->AddObjectToSelection(pNewObj);
 	GetIEditor()->GetObjectManager()->UnselectObject(mc.pObject);
 
 	return pNewObj;
@@ -86,4 +86,3 @@ DesignerObject* SeparateTool::Separate(MainContext& mc)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Separate, eToolGroup_Edit, "Separate", SeparateTool,
                                    separate, "runs separate tool", "designer.separate")
-

@@ -75,15 +75,11 @@ const char* CDistanceCloudRenderNode::GetName() const
 	return "DistanceCloud";
 }
 
-static inline uint16 HalfFlip(uint16 h)
-{
-	uint16 mask = -int16(h >> 15) | 0x8000;
-	return h ^ mask;
-}
-
 void CDistanceCloudRenderNode::Render(const SRendParams& rParam, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
+
+	DBG_LOCK_TO_THREAD(this);
 
 	IMaterial* pMaterial(GetMaterial());
 
@@ -144,8 +140,7 @@ void CDistanceCloudRenderNode::Render(const SRendParams& rParam, const SRenderin
 	pIndices[4] = 2;
 	pIndices[5] = 3;
 
-	int afterWater(GetObjManager()->IsAfterWater(m_pos, passInfo.GetCamera().GetPosition(), passInfo, Get3DEngine()->GetWaterLevel()) ? 1 : 0);
-	SRenderPolygonDescription poly(pRenderObject, pMaterial->GetShaderItem(), 4, pVerts, pTangents, pIndices, 6, EFSLIST_SKY, afterWater);
+	SRenderPolygonDescription poly(pRenderObject, pMaterial->GetShaderItem(), 4, pVerts, pTangents, pIndices, 6, EFSLIST_SKY, false);
 	passInfo.GetIRenderView()->AddPolygon(poly, passInfo);
 }
 
@@ -175,22 +170,12 @@ void CDistanceCloudRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CDistanceCloudRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_WSBBox.Move(delta);
 }
 
-void CDistanceCloudRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CDistanceCloudRenderNode::GetBBox();
-}
-
-EERType CDistanceCloudRenderNode::GetRenderNodeType()
-{
-	return eERType_DistanceCloud;
-}
-
-float CDistanceCloudRenderNode::GetMaxViewDist()
+float CDistanceCloudRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CDistanceCloudRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());

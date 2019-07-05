@@ -12,10 +12,10 @@
 #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
 
 #include <SDL.h>
-#include <SDL_Extension.h>
 
 #include <CryEntitySystem/IEntity.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/SystemInitParams.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <sys/resource.h>
@@ -152,7 +152,7 @@ int _main(int argc, char **argv)
 
 	// Try to figure out where the PAK files are stored
 	const char* paths[] = {
-		SDLExt_AndroidGetExternalStorageDirectory(),
+		Cry::JNI::JNI_GetExternalStorageDirectory(),
 		SDL_AndroidGetExternalStoragePath(),
 		SDL_AndroidGetInternalStoragePath()  // user folder files e.g. "/data/user/0/com.crytek.cryengine/files"
 	};
@@ -193,8 +193,6 @@ int _main(int argc, char **argv)
 
 	SSystemInitParams startupParams;
 	memset(&startupParams, 0, sizeof(SSystemInitParams));
-
-	startupParams.szSystemCmdLine = "";
 
 #if CAPTURE_REPLAY_LOG
 	// Since Android doesn't support native command line argument, please

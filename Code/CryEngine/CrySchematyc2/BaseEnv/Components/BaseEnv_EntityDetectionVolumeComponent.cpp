@@ -116,7 +116,6 @@ namespace SchematycBaseEnv
 			m_bEnabled    = m_pProperties->bEnabled;
 
 			const EntityId entityId = CEntityComponentBase::GetEntityId();
-			IEntity&       entity = CEntityComponentBase::GetEntity();
 			const Matrix34 worldTM = CEntityComponentBase::GetEntity().GetWorldTM();
 				
 			CSpatialIndex&           spatialIndex = CBaseEnv::GetInstance().GetSpatialIndex();

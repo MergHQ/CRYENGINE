@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FIXED_POINT_H
-#define __FIXED_POINT_H
-
 #pragma once
 
 #include <CryCore/BitFiddling.h>
@@ -72,7 +69,7 @@ enum ERoundingModes
 template<ERoundingModes roundingMode>
 struct SelectorRoundingMode
 {
-	SelectorRoundingMode(){};
+	SelectorRoundingMode(){}
 };
 
 template<typename Ty>
@@ -278,7 +275,7 @@ struct fixed_t
 
 	inline fixed_t& operator/=(const fixed_t& other)
 	{
-		CRY_ASSERT_MESSAGE(other.v != 0, "ERROR: Divide by ZERO!");
+		CRY_ASSERT(other.v != 0, "ERROR: Divide by ZERO!");
 
 		v = rounded_division(v, other.v);
 		return *this;
@@ -585,7 +582,7 @@ protected:
 
 	inline value_type general_rounded_division(const value_type& a, const value_type& b, const CryFixedPoint::ERoundingModes roundingMode)
 	{
-		CRY_ASSERT_MESSAGE(b != 0, "ERROR: Divide by ZERO!");
+		CRY_ASSERT(b != 0, "ERROR: Divide by ZERO!");
 
 		overflow_type quotient = (overflow_type(a) << fractional_bitcount) / b;
 
@@ -610,7 +607,7 @@ protected:
 
 	inline value_type rounded_division(const value_type& a, const value_type& b, const CryFixedPoint::SelectorRoundingMode<CryFixedPoint::eRM_Nearest>&)
 	{
-		CRY_ASSERT_MESSAGE(b != 0, "ERROR: Divide by ZERO!");
+		CRY_ASSERT(b != 0, "ERROR: Divide by ZERO!");
 
 		overflow_type dividend = overflow_type(a);
 		overflow_type divisor = overflow_type(b);
@@ -769,9 +766,9 @@ protected:
 		fixed_t product_from_alt;
 		product_from_alt.set(static_cast<value_type>(product2));
 
-		CRY_ASSERT_TRACE(expectedResult == product_from_alt, ("ERROR: %.6f / %.6f should equal %.6f, but instead it is %.6f",
+		CRY_ASSERT(expectedResult == product_from_alt, "ERROR: %.6f / %.6f should equal %.6f, but instead it is %.6f",
 		                                                      a / (double)integer_scale, b / (double)integer_scale,
-		                                                      product_from_alt.as_double(), expectedResult.as_double()));
+		                                                      product_from_alt.as_double(), expectedResult.as_double());
 	}
 
 	void CheckIfDivisionIsCorrect(const value_type& dividend, const value_type& divisor, const fixed_t& expectedResult, const CryFixedPoint::ERoundingModes roundingMode)
@@ -807,10 +804,10 @@ protected:
 		fixed_t quotient_from_alt;
 		quotient_from_alt.set(static_cast<value_type>(quotient2));
 
-		CRY_ASSERT_TRACE(expectedResult == quotient_from_alt,
-		                 ("ERROR: %.6f / %.6f should equal %.6f, but instead it is %.6f",
+		CRY_ASSERT(expectedResult == quotient_from_alt,
+		                  "ERROR: %.6f / %.6f should equal %.6f, but instead it is %.6f",
 		                  dividend / (double)integer_scale, divisor / (double)integer_scale,
-		                  quotient_from_alt.as_double(), expectedResult.as_double()));
+		                  quotient_from_alt.as_double(), expectedResult.as_double());
 	}
 
 #endif
@@ -963,5 +960,3 @@ inline fixed_t<BaseType, IntegerBitCount> powf(const fixed_t<BaseType, IntegerBi
 	else
 		return expf(y * logf(x));
 }
-
-#endif  // #ifndef __FIXED_POINT_H

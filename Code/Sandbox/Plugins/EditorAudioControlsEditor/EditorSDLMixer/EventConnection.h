@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include "BaseConnection.h"
+#include "../Common/IConnection.h"
 
+#include <PoolObject.h>
 #include <CryAudioImplSDLMixer/GlobalData.h>
 
 namespace ACE
@@ -12,36 +13,43 @@ namespace Impl
 {
 namespace SDLMixer
 {
-class CEventConnection final : public CBaseConnection
+class CEventConnection final : public IConnection, public CryAudio::CPoolObject<CEventConnection, stl::PSyncNone>
 {
 public:
 
-	enum class EActionType
+	enum class EActionType : CryAudio::EnumFlagsType
 	{
 		Start,
 		Stop,
 		Pause,
-		Resume,
-	};
+		Resume, };
+
+	CEventConnection() = delete;
+	CEventConnection(CEventConnection const&) = delete;
+	CEventConnection(CEventConnection&&) = delete;
+	CEventConnection& operator=(CEventConnection const&) = delete;
+	CEventConnection& operator=(CEventConnection&&) = delete;
 
 	explicit CEventConnection(ControlId const id)
-		: CBaseConnection(id)
+		: m_id(id)
 		, m_actionType(EActionType::Start)
 		, m_volume(-14.0f)
-		, m_fadeInTime(CryAudio::Impl::SDL_mixer::s_defaultFadeInTime)
-		, m_fadeOutTime(CryAudio::Impl::SDL_mixer::s_defaultFadeOutTime)
-		, m_minAttenuation(CryAudio::Impl::SDL_mixer::s_defaultMinAttenuationDist)
-		, m_maxAttenuation(CryAudio::Impl::SDL_mixer::s_defaultMaxAttenuationDist)
+		, m_fadeInTime(CryAudio::Impl::SDL_mixer::g_defaultFadeInTime)
+		, m_fadeOutTime(CryAudio::Impl::SDL_mixer::g_defaultFadeOutTime)
+		, m_minAttenuation(CryAudio::Impl::SDL_mixer::g_defaultMinAttenuationDist)
+		, m_maxAttenuation(CryAudio::Impl::SDL_mixer::g_defaultMaxAttenuationDist)
 		, m_isPanningEnabled(true)
 		, m_isAttenuationEnabled(true)
 		, m_isInfiniteLoop(false)
 		, m_loopCount(1)
 	{}
 
-	CEventConnection() = delete;
+	virtual ~CEventConnection() override = default;
 
 	// CBaseConnection
-	virtual void Serialize(Serialization::IArchive& ar) override;
+	virtual ControlId GetID() const override final         { return m_id; }
+	virtual bool      HasProperties() const override final { return true; }
+	virtual void      Serialize(Serialization::IArchive& ar) override;
 	// ~CBaseConnection
 
 	void        SetActionType(EActionType const type)         { m_actionType = type; }
@@ -74,16 +82,17 @@ public:
 
 private:
 
-	EActionType m_actionType;
-	float       m_volume;
-	float       m_fadeInTime;
-	float       m_fadeOutTime;
-	float       m_minAttenuation;
-	float       m_maxAttenuation;
-	bool        m_isPanningEnabled;
-	bool        m_isAttenuationEnabled;
-	bool        m_isInfiniteLoop;
-	uint32      m_loopCount;
+	ControlId const m_id;
+	EActionType     m_actionType;
+	float           m_volume;
+	float           m_fadeInTime;
+	float           m_fadeOutTime;
+	float           m_minAttenuation;
+	float           m_maxAttenuation;
+	bool            m_isPanningEnabled;
+	bool            m_isAttenuationEnabled;
+	bool            m_isInfiniteLoop;
+	uint32          m_loopCount;
 };
 } // namespace SDLMixer
 } // namespace Impl

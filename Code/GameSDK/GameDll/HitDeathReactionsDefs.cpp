@@ -167,7 +167,7 @@ int	SReactionParams::SReactionAnim::GetNextReactionAnimId(const IAnimationSet* p
 	if (iNextAnimIndex >= 0)
 	{
 		const bool bIsAnimLoaded = gEnv->pCharacterManager->CAF_IsLoaded(m_nextAnimCRC);
-		CRY_ASSERT_MESSAGE(bIsAnimLoaded, "This anim was expected to have finished streaming!!");
+		CRY_ASSERT(bIsAnimLoaded, "This anim was expected to have finished streaming!!");
 		if (!bIsAnimLoaded)
 			CHitDeathReactionsSystem::Warning("%s was expected to have finished streaming!!", pAnimSet->GetNameByAnimID(pAnimSet->GetAnimIDByCRC(animCRCs[iNextAnimIndex])));
 	}
@@ -227,7 +227,7 @@ void SReactionParams::SReactionAnim::RequestNextAnim(const IAnimationSet* pAnimS
 				// the random generator. Should be deterministic across the network.
 				// This shuffling avoids playing the same animation twice in sequence
 				SRandomGeneratorFunct randomFunctor(g_pGame->GetHitDeathReactionsSystem().GetRandomGenerator());
-				std::random_shuffle(animCRCs.begin(), animCRCs.end() - 1, randomFunctor);
+				std::shuffle(animCRCs.begin(), animCRCs.end() - 1, randomFunctor);
 				std::iter_swap(animCRCs.begin(), animCRCs.end() - 1);
 
 				m_iNextAnimIndex = 0;
@@ -348,7 +348,6 @@ void SReactionParams::SMannequinData::Initialize( const IActionController* piAct
 {
 	CRY_ASSERT( piActionController );
 
-	const TagState globalTags = piActionController->GetContext().state.GetMask();
 	const FragmentID fragID = CHitDeathReactions::GetHitDeathFragmentID( piActionController );
 	const SFragTagState fragTagState( TAG_STATE_FULL, tagState );
 	SFragmentQuery query( fragID, fragTagState, 0 );
@@ -484,11 +483,6 @@ void SReactionParams::SMannequinData::RequestNextAnim( const IActionController* 
 		const uint32 optionIdx = m_pCurrentFragment->GetCurrentOption();
 		if( (optionIdx != OPTION_IDX_RANDOM) && (optionIdx != m_iNextOptionIndex) )
 		{
-			ICharacterInstance* piCharacterInstance = piActionController->GetEntity().GetCharacter(0);
-			const IAnimationSet* piAnimationSet = piCharacterInstance->GetIAnimationSet();
-
-			const TagState globalTags = piActionController->GetContext().state.GetMask();
-			const FragmentID fragID = CHitDeathReactions::GetHitDeathFragmentID( piActionController );
 			m_pRequestedFragment.reset( new CFragmentCache( *m_pCurrentFragment, piActionController, m_iNextOptionIndex ) );
 
 			// Create a timer to poll when the asset ends streaming

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FacialEditorDialog_h__
-#define __FacialEditorDialog_h__
 #pragma once
 
 #include "Dialogs/ToolbarDialog.h"
@@ -27,12 +25,12 @@ public:
 	// Creates view window.
 	BOOL         Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
 	virtual void OnDraw(CDC* pDC);
-	virtual void PostNcDestroy() {};
+	virtual void PostNcDestroy() {}
 };
 
-class IFacialEditor
+struct IFacialEditor
 {
-public:
+	virtual ~IFacialEditor() {}
 
 	virtual int         GetNumMorphTargets() const = 0;
 	virtual const char* GetMorphTargetName(int index) const = 0;
@@ -92,8 +90,8 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
 
-	virtual void            OnOK()     {};
-	virtual void            OnCancel() {};
+	virtual void            OnOK()     {}
+	virtual void            OnCancel() {}
 
 	virtual BOOL            PreTranslateMessage(MSG* pMsg);
 	virtual BOOL            OnInitDialog();
@@ -233,6 +231,3 @@ private:
 	CReportDialog               m_morphCheckReportDialog;
 	CReport                     m_morphCheckReport;
 };
-
-#endif // __FacialEditorDialog_h__
-

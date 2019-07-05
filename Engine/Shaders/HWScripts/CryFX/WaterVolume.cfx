@@ -306,9 +306,9 @@ half ssrBorderSizeY
   string UIName = "SSR border Y";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 0.5;
+  float UIMax = 1.0;
   float UIStep = 0.01;
-> = 0.05;
+> = 0.5;
 
 half ssrBorderSizeZ
 <
@@ -328,7 +328,7 @@ half ssrBorderFadeExponent
   string UIName = "SSR transition exp.";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 8.0;
+  float UIMax = 2.0;
   float UIStep = 0.01;
 > = 1.0;
 
@@ -339,7 +339,7 @@ half ssrDistanceAtt
   string UIName = "SSR distance vs. default";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 1.0;
+  float UIMax = 2.0;
   float UIStep = 0.01;
 > = 1.0;
 
@@ -350,7 +350,7 @@ half ssrSamplingAtt
   string UIName = "SSR samples vs. default";
   string UIWidget = "slider";
   float UIMin = 0.0;
-  float UIMax = 1.0;
+  float UIMax = 2.0;
   float UIStep = 0.01;
 > = 1.0;
 
@@ -571,7 +571,7 @@ v2f WaterVS(a2v IN)
 	// Output projected refraction texture coordinates
 #if !%WATER_TESSELLATION_DX11 || %_RT_NO_TESSELLATION
 	// Avoid near clipping
-	//if( dot(OUT.vView.xyz, OUT.vView.xyz) < params.cViewerColorToWaterPlane.y ) // this causes surface tearing near camera.
+	if( dot(OUT.vView.xyz, OUT.vView.xyz) < params.cViewerColorToWaterPlane.y ) // this causes surface tearing near camera.
 	{
 #if %_RT_REVERSE_DEPTH
 		OUT.Position.z = ( abs(vView.z) > 0.2 ) ? OUT.Position.z : OUT.Position.w;
@@ -1017,12 +1017,12 @@ float3 GatherCubemapSpecular(float2 screenTC, float3 worldPos, float3 normal, fl
 		if (lightIndex < 0)
 			break;
 			
-		if (Water_TiledLightsShadeInfo[lightIndex].lightType == TILEDLIGHT_TYPE_PROBE && probeWeightSum < 1)
+		if (Water_TiledLightsShadeInfo[lightIndex].lightType == LIGHT_TYPE_PROBE && probeWeightSum < 1)
 		{
 			STiledLightShadeInfo light = Water_TiledLightsShadeInfo[lightIndex];
 			
 			// Compute attenuation for box
-			float3 lightVec = (light.posRad.xyz - GetWorldViewPos()) - worldPos;
+			float3 lightVec = light.posRad.xyz - (worldPos + GetWorldViewPos());
 			float3 tmpLightVec;
 			tmpLightVec.x = dot(light.projectorMatrix[0].xyz, lightVec);
 			tmpLightVec.y = dot(light.projectorMatrix[1].xyz, lightVec);
@@ -1031,6 +1031,7 @@ float3 GatherCubemapSpecular(float2 screenTC, float3 worldPos, float3 normal, fl
 			[branch] if (abs(tmpLightVec.x) < 1 && abs(tmpLightVec.y) < 1 && abs(tmpLightVec.z) < 1)  // Required for correctness and performance
 			{
 				tmpLightVec = MapCubeToSphere(tmpLightVec);
+
 				float attenuation = GetAttenuation(tmpLightVec, 1, true, light.attenuationParams.y) * light.attenuationParams.x;
 				float probeWeight = (1 - probeWeightSum) * attenuation;
 				uint4 resIndexClamps = GetResourceIndexAndMipClamps(light.resIndex);
@@ -1038,14 +1039,14 @@ float3 GatherCubemapSpecular(float2 screenTC, float3 worldPos, float3 normal, fl
 				// Specular
 				float tmpGloss = 0;
 				float3 tmpReflVec = reflect(-viewVec, normal);
-				CubemapBoxParallaxCorrection(tmpReflVec, worldPos, (light.posRad.xyz - GetWorldViewPos()), light.shadowMatrix[0].xyz, light.shadowMatrix[1].xyz, tmpGloss);
+				CubemapBoxParallaxCorrection(tmpReflVec, lightVec, light.shadowMatrix[0].xyz, light.shadowMatrix[1].xyz, tmpGloss);
 				float4 specularProbe = Water_SpecCubeArray.SampleLevel(ssMaterialTrilinearClamp, float4(tmpReflVec, resIndexClamps.x), max(resIndexClamps.z, specCubeLod) );
 				specularAcc += specularProbe.rgb * light.color.rgb * light.color.a * probeWeight;
 				
 				probeWeightSum += probeWeight;
 			}
 		}
-		else if (Water_TiledLightsShadeInfo[lightIndex].lightType > TILEDLIGHT_TYPE_PROBE)
+		else if (Water_TiledLightsShadeInfo[lightIndex].lightType > LIGHT_TYPE_PROBE)
 		{
 			break;
 		}
@@ -1167,7 +1168,7 @@ pixout WaterPS(v2f_hs IN)
 	half3 vRefl = reflect(vDir, vReflN );
 	half3 vReflNorm = normalize( vRefl );
 	
-#if %SSREFL
+#if %SSREFL && %PBR
 	float2 reflNewst = screenTC.xy;
 	float2 reflTC = (vNormal.xy) * ReflectionBumpScale * softIntersect * IN.screenProj.z;
 	float depthRefl = wvGetLinearDepthScaled(reflNewst + reflTC.xy).x;
@@ -1202,44 +1203,81 @@ pixout WaterPS(v2f_hs IN)
 	half3 cSpecularAcc = reflectionTex.SampleLevel(aniso16xClampSState, reflNewst + reflTC * fReflectionMask, fGlossinessLOD);
 	// TODO_VR
 	//half3 cSpecularAcc = tex2Dgrad(ReflSampler, NVMultiRes_MapLinearToMultiRes(reflNewst + reflTC * fReflectionMask) * MultiResUVScaleBias.xy + MultiResUVScaleBias.zw, rayStart.xy * fGlossinessLOD * PS_ScreenSize.w * 64, float2(0,0));
+#elif %SSREFL
+	// Add screenspace reflections
+	half fGlossParams = log2( CV_ScreenSize.y * 0.5 ) - 4.0;
+	half fGlossinessLod = (fGlossParams -  cSmoothness * MatSpecColor.w * fGlossParams);
+
+	float2 reflNewst = screenTC.xy;
+	float2 reflTC = (vNormal.xy) * ReflectionBumpScale * 0.5* softIntersect * IN.screenProj.z;
+	float depthRefl = wvGetLinearDepthScaled(reflNewst + GetScaledScreenTC(reflTC.xy)).x;
+	// TODO_VR
+	//float depthRefl = GetLinearDepthScaled( sceneDepthSampler, NVMultiRes_MapLinearToMultiRes(reflNewst + GetScaledScreenTC(reflTC.xy)) * MultiResUVScaleBias.xy + MultiResUVScaleBias.zw).x;
+
+	// TODO: maybe m_CurDownscaleFactor isn't needed any more. Can I remove this? 
+	reflTC *= float2(CV_HPosScale.x, 1);
+	reflTC.y = 1.0 - (1.0 - reflTC.y)*CV_HPosScale.y;
+
+	// Apply ssrefl mask to bump offsets
+	half fReflMask =  (IN.screenProj.w <depthRefl );
+
+	float4 rayStart = mul( CV_ViewProjMatr, float4( IN.vPosWS.xyz, 1 ) ); 
+	rayStart /= rayStart.w;
+	float4 rayEnd = mul( CV_ViewProjMatr, float4( IN.vPosWS.xyz + vReflNorm, 1 ) );
+	rayEnd /= rayEnd.w;
+
+	rayStart.xy = GetScaledScreenTC(normalize(rayEnd.xy - rayStart.xy));
+
+	half3 cSpecularAcc = reflectionTex.SampleGrad(aniso16xClampSState, reflNewst + reflTC * fReflMask, rayStart.xy * fGlossinessLod * CV_ScreenSize.w * 32, float2(0,0)).rgb;
+	// TODO_VR
+	//half3 cSpecularAcc = tex2Dgrad(ReflSampler, NVMultiRes_MapLinearToMultiRes(reflNewst + reflTC * fReflMask) * MultiResUVScaleBias.xy + MultiResUVScaleBias.zw, rayStart.xy * fGlossinessLod * PS_ScreenSize.w * 64, float2(0,0)).rgb;
+
+	cSpecularAcc /= PS_HDR_RANGE_ADAPT_MAX;
 #else
 	half3 cSpecularAcc = GatherCubemapSpecular(screenTC, IN.vPosWS.xyz - GetWorldViewPos(), vNormal, cSmoothness);
 #endif
 
+#if %PBR
 	// Apply Fresnel (NOTE: prevent smoothness texture to affect the fresnel curve, as this attenuates flat angle reflectivity)
 	cSmoothness = MatSpecColor.w;
+#endif
 
 #if 0
 	// Fresnel for rough materials, it's not really working for water
 	float2 envBRDF = Water_EnvironmentBRDF.SampleLevel(ssMaterialTrilinear, float2(fNdotE, cSmoothness), 0).xy;
 	float3 envFresnel = lerp(envBRDF.xxx, envBRDF.yyy, cReflectance);
-#else
+#elif %PBR
 	float3 envFresnel = GetEnvmapFresnel(cReflectance, cSmoothness, fNdotE);
+#else
+	float  envFresnel = GetFresnel(fNdotE, 0.05, 5.0);
 #endif
 
-	cSpecularAcc *= envFresnel;
-	
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// Analytical Sun
 
 	half fNdotL = (dot(vNormal.xyz, g_PS_SunLightDir.xyz) );
-
-#if %SUN_SPECULAR  
+	
+	// TODO: support lights with TiledForward+ instead of just the sun
+	half3 cSunDiffuse = 0.0f;
+	half3 cSunSpecular = 0.0f;
+	
+#if %SUN_SPECULAR && %PBR
 	{
 		float3 lightVec = g_PS_SunLightDir.xyz;
 		float3 lightVecAreaSpec = g_PS_SunLightDir.xyz * g_PS_SunLightDir.w;
 		
 		float3 specTerm = AreaLightGGX( vNormal, -normalize(IN.vPosWS.xyz - GetWorldViewPos()), lightVecAreaSpec, cSmoothness, cReflectance, (float4x4)0, AREA_LIGHT_SPHERE);
 		
-		cSpecularAcc += g_PS_SunColor.a * specTerm * fNdotL * g_PS_SunColor.rgb;
+		cSunSpecular = g_PS_SunColor.a * specTerm * fNdotL * g_PS_SunColor.rgb;
 	}
+#elif %SUN_SPECULAR
+	SunSpecular(saturate(fNdotL), vNormal, vView, cSmoothness, cSunSpecular);
 #endif
 	
-	// TODO: support lights with TiledForward+ instead of just the sun
-	half3 cDiffuseAcc = 0.0f;
-	
-	SunDiffuse(fNdotL, cDiffuseAcc);
+	SunDiffuse(fNdotL, cSunDiffuse);
 
+	cSpecularAcc += cSunSpecular;
+	
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// Compute ocean fog
 
@@ -1253,8 +1291,12 @@ pixout WaterPS(v2f_hs IN)
 	// Set world soft intersection * camera soft intersection (looks nice but disabled, since costs 0.2 ms)
 	half fCameraSoftIsec = saturate((IN.screenProj.w - 0.33) );
 	half fA = softIntersect * fCameraSoftIsec;
-
+	
+#if !%PBR
+	half3 cFinal = lerp(refractColor, cSpecularAcc, envFresnel * fA );
+#else
 	half3 cFinal = refractColor;
+#endif
 
 #if %FOAM 
 	half  cFoamThreshold = cSmoothness * 2 - 1;  // reuse gloss for masking edges
@@ -1265,27 +1307,42 @@ pixout WaterPS(v2f_hs IN)
 	// Blend out edges in interesting way
 	cFoam = cFoam * saturate( -fFoamSoftIntersect*(1+cFoamThreshold)+cFoam );	
 	cFoam = cFoam * saturate(fFoamSoftIntersect -  fFoamSoftIntersect* fFoamSoftIntersect );
+	cFoam *= saturate(FoamAmount);
+
+#if !%PBR
+	cFoam *= cSunDiffuse;
+#endif
 	
 #if %DECAL_MAP
 	// Apply blended color to foam for consistency.
 	cFoam *= cAlbedo.xyz;
 #endif
 
-	cFoam *= saturate(FoamAmount);
 	cFinal += cFoam;
 #endif
 
 #if %DECAL_MAP
+#if !%PBR
+	cAlbedo.xyz = (cAlbedo.xyz * cSunDiffuse + cSpecularAcc) * MatDifColor;
+#endif
+	
 	// light diffuse and apply.
 	cFinal.xyz = lerp(cFinal, cAlbedo, cAlbedo.w * softIntersect);
 #endif
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	// BRDF
+
+#if %PBR
 	// Apply albedo
 	float3 surfAlbedo = cFinal.rgb;
 	surfAlbedo *= saturate( 1 - GetLuminance( cReflectance ) );  // Simple energy conservation between specular and diffuse
 	
-	float3 finalCol = cDiffuseAcc * surfAlbedo + cSpecularAcc;
+	float3 finalCol = cSunDiffuse * surfAlbedo + cSpecularAcc * envFresnel;
 	finalCol = lerp(refractColor, finalCol, fA);
+#else
+	float3 finalCol = cFinal;
+#endif
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// Compute above-ocean/air fog
@@ -1295,7 +1352,7 @@ pixout WaterPS(v2f_hs IN)
 	#if %_RT_SAMPLE5
 		// Read volumetric shadows and apply to the global fog.
 		SVolumetricFogShadowParams volFogShadow = GetVolumetricFogShadowParams();
-		const float volFogShadowContrib = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC).a;
+		const float volFogShadowContrib = volFogShadowTex.Sample(ssMaterialTrilinear, screenTC).g;
 		const float2 volFogShadowContribSunAmb = saturate(volFogShadowContrib * volFogShadow.volFogShadowDarkeningSunAmb.xz + volFogShadow.volFogShadowDarkeningSunAmb.yw);
 		half4 localFogColor = GetVolumetricFogColor(fogParams, IN.vPosWS.xyz, -IN.vView, volFogShadowContribSunAmb.x, volFogShadowContribSunAmb.y);
 		localFogColor.rgb = lerp(localFogColor.rgb * volFogShadow.volFogShadowDarkening.x, localFogColor.rgb, volFogShadowContrib);

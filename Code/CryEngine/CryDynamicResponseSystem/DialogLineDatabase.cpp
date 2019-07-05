@@ -8,6 +8,7 @@
 #include <CrySerialization/CryStrings.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CryMath/Random.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(DRS_COLLECT_DEBUG_DATA)
 	#include "ResponseSystem.h"
@@ -231,14 +232,13 @@ bool CDialogLineDatabase::ExecuteScript(uint32 index)
 				}
 
 				char szBuffer[1024];
-				cry_sprintf(szBuffer, "@SET LINE_ID=%s&SET LINE_ID_HASH=%s&SET SUBTITLE=%s&SET AUDIO_TRIGGER=%s&SET AUDIO_TRIGGER_CLEANED=%s&SET ANIMATION_NAME=%s&SET STANDALONE_FILE=%s&SET CUSTOM_DATA=%s&SET VARIATION_INDEX=%s&%s%s",
+				cry_sprintf(szBuffer, "@SET LINE_ID=%s&SET LINE_ID_HASH=%s&SET SUBTITLE=%s&SET AUDIO_TRIGGER=%s&SET AUDIO_TRIGGER_CLEANED=%s&SET ANIMATION_NAME=%s&SET CUSTOM_DATA=%s&SET VARIATION_INDEX=%s&%s%s",
 					pLineSet->GetLineId().GetText().c_str(),
 					CryStringUtils::toString(pLineSet->GetLineId().GetHash()),
 					pCurrentLine->GetText().c_str(),
 					pCurrentLine->GetStartAudioTrigger().c_str(),
 					szStartTriggerWithoutPrefix,
 					pCurrentLine->GetLipsyncAnimation().c_str(),
-					pCurrentLine->GetStandaloneFile().c_str(),
 					pCurrentLine->GetCustomData().c_str(),
 					CryStringUtils::toString(i),
 					(++counter % maxParallelCmds == 0) ? "" : "start cmd /c ",
@@ -483,13 +483,12 @@ void CDialogLine::Serialize(Serialization::IArchive& ar)
 	ar(m_audioStartTrigger, "audioStartTrigger", "AudioStartTrigger");
 	ar(m_audioStopTrigger, "audioStopTrigger", "AudioStopTrigger");
 	ar(m_lipsyncAnimation, "lipsyncAnim", "LipsyncAnim");
-	ar(m_standaloneFile, "standaloneFile", "StandaloneFile");
 	ar(m_pauseLength, "pauseLength", "PauseLength");
 	ar(m_customData, "customData", "CustomData");
 
 	if (ar.isEdit())
 	{
-		if (m_text.empty() && m_audioStopTrigger.empty() && m_audioStartTrigger.empty() && m_standaloneFile.empty())
+		if (m_text.empty() && m_audioStopTrigger.empty() && m_audioStartTrigger.empty())
 		{
 			ar.warning(m_text, "DialogLine without any data found");
 		}

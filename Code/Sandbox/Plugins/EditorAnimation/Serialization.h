@@ -6,9 +6,6 @@
 
 #include <CrySerialization/Forward.h>
 
-struct SkeletonAlias;
-bool Serialize(Serialization::IArchive& ar, SkeletonAlias& value, const char* name, const char* label);
-
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Decorators/ResourceFilePath.h>
 #include <CrySerialization/Decorators/ResourceFolderPath.h>
@@ -40,4 +37,3 @@ using Serialization::SerializeToMemory;
 using Serialization::SerializeToMemory;
 using Serialization::SerializeFromMemory;
 using Serialization::SerializeFromMemory;
-

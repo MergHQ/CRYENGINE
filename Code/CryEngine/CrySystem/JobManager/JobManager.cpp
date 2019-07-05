@@ -10,7 +10,6 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryThreading/IJobManager.h>
 
-#include "FallbackBackend/FallBackBackend.h"
 #include "PCBackEnd/ThreadBackEnd.h"
 #include "BlockingBackend/BlockingBackEnd.h"
 
@@ -98,51 +97,43 @@ void JobManager::CWorkerBackEndProfiler::Update(const uint32 curTimeSample)
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::GetFrameStats(JobManager::CWorkerFrameStats& rStats) const
 {
-	uint8 nTailIndex = (m_nCurBufIndex + 1);
-	nTailIndex = (nTailIndex > (JobManager::detail::eJOB_FRAME_STATS - 1)) ? 0 : nTailIndex;
-
-	// Get worker stats from tail
-	GetWorkerStats(nTailIndex, rStats);
+	// Get info from previous frame
+	uint8 index = m_nCurBufIndex == 0 ? JobManager::detail::eJOB_FRAME_STATS - 1 : m_nCurBufIndex - 1;
+	GetWorkerStats(index, rStats);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::GetFrameStats(TJobFrameStatsContainer& rJobStats, IWorkerBackEndProfiler::EJobSortOrder jobSortOrder) const
 {
-	uint8 nTailIndex = (m_nCurBufIndex + 1);
-	nTailIndex = (nTailIndex > (JobManager::detail::eJOB_FRAME_STATS - 1)) ? 0 : nTailIndex;
-
-	// Get job info from tail
-	GetJobStats(nTailIndex, rJobStats, jobSortOrder);
+	// Get info from previous frame
+	uint8 index = m_nCurBufIndex == 0 ? JobManager::detail::eJOB_FRAME_STATS - 1 : m_nCurBufIndex - 1;
+	GetJobStats(index, rJobStats, jobSortOrder);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::GetFrameStats(JobManager::CWorkerFrameStats& rStats, TJobFrameStatsContainer& rJobStats, IWorkerBackEndProfiler::EJobSortOrder jobSortOrder) const
 {
-	uint8 nTailIndex = (m_nCurBufIndex + 1);
-	nTailIndex = (nTailIndex > (JobManager::detail::eJOB_FRAME_STATS - 1)) ? 0 : nTailIndex;
-
-	// Get worker stats from tail
-	GetWorkerStats(nTailIndex, rStats);
-
-	// Get job info from tail
-	GetJobStats(nTailIndex, rJobStats, jobSortOrder);
+	// Get info from previous frame
+	uint8 index = m_nCurBufIndex == 0 ? JobManager::detail::eJOB_FRAME_STATS - 1 : m_nCurBufIndex - 1;
+	GetWorkerStats(index, rStats);
+	GetJobStats(index, rJobStats, jobSortOrder);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::GetFrameStatsSummary(SWorkerFrameStatsSummary& rStats) const
 {
-	uint8 nTailIndex = (m_nCurBufIndex + 1);
-	nTailIndex = (nTailIndex > (JobManager::detail::eJOB_FRAME_STATS - 1)) ? 0 : nTailIndex;
-
+	// Get info from previous frame
+	uint8 index = m_nCurBufIndex == 0 ? JobManager::detail::eJOB_FRAME_STATS - 1 : m_nCurBufIndex - 1;
+	
 	// Calculate percentage range multiplier for this frame
 	// Take absolute time delta to handle microsecond time sample counter overfilling
-	int32 nSamplePeriod = abs((int)m_WorkerStatsInfo.m_nEndTime[nTailIndex] - (int)m_WorkerStatsInfo.m_nStartTime[nTailIndex]);
+	int32 nSamplePeriod = abs((int)m_WorkerStatsInfo.m_nEndTime[index] - (int)m_WorkerStatsInfo.m_nStartTime[index]);
 	const float nMultiplier = (1.0f / (float)nSamplePeriod) * 100.0f;
 
 	// Accumulate stats
 	uint32 totalExecutionTime = 0;
 	uint32 totalNumJobsExecuted = 0;
-	const JobManager::SWorkerStats* pWorkerStatsOffset = &m_WorkerStatsInfo.m_pWorkerStats[nTailIndex * m_WorkerStatsInfo.m_nNumWorkers];
+	const JobManager::SWorkerStats* pWorkerStatsOffset = &m_WorkerStatsInfo.m_pWorkerStats[index * m_WorkerStatsInfo.m_nNumWorkers];
 
 	for (uint8 i = 0; i < m_WorkerStatsInfo.m_nNumWorkers; ++i)
 	{
@@ -161,10 +152,10 @@ void JobManager::CWorkerBackEndProfiler::GetFrameStatsSummary(SWorkerFrameStatsS
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::GetFrameStatsSummary(SJobFrameStatsSummary& rStats) const
 {
-	uint8 nTailIndex = (m_nCurBufIndex + 1);
-	nTailIndex = (nTailIndex > (JobManager::detail::eJOB_FRAME_STATS - 1)) ? 0 : nTailIndex;
-
-	const JobManager::SJobFrameStats* pJobStatsToCopyFrom = &m_JobStatsInfo.m_pJobStats[nTailIndex * JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS];
+	// Get info from previous frame
+	uint8 index = m_nCurBufIndex == 0 ? JobManager::detail::eJOB_FRAME_STATS - 1 : m_nCurBufIndex - 1;
+	
+	const JobManager::SJobFrameStats* pJobStatsToCopyFrom = &m_JobStatsInfo.m_pJobStats[index * JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS];
 
 	// Accumulate job stats
 	uint16 totalIndividualJobCount = 0;
@@ -189,7 +180,7 @@ void JobManager::CWorkerBackEndProfiler::GetFrameStatsSummary(SJobFrameStatsSumm
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::RegisterJob(const uint32 jobId, const char* jobName)
 {
-	CRY_ASSERT_MESSAGE(jobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS,
+	CRY_ASSERT(jobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS,
 	                   string().Format("JobManager::CWorkerBackEndProfiler::RegisterJob: Limit for current max supported jobs reached. Current limit: %u. Increase JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS limit."
 	                                   , JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS));
 
@@ -200,41 +191,18 @@ void JobManager::CWorkerBackEndProfiler::RegisterJob(const uint32 jobId, const c
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::RecordJob(const uint16 profileIndex, const uint8 workerId, const uint32 jobId, const uint32 runTimeMicroSec)
 {
-	CRY_ASSERT_MESSAGE(workerId < m_WorkerStatsInfo.m_nNumWorkers, string().Format("JobManager::CWorkerBackEndProfiler::RecordJob: workerId is out of scope. workerId:%u , scope:%u"
+	CRY_ASSERT(workerId < m_WorkerStatsInfo.m_nNumWorkers, string().Format("JobManager::CWorkerBackEndProfiler::RecordJob: workerId is out of scope. workerId:%u , scope:%u"
 	                                                                               , workerId, m_WorkerStatsInfo.m_nNumWorkers));
 
 	JobManager::SJobFrameStats& jobStats = m_JobStatsInfo.m_pJobStats[(profileIndex* JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS) +jobId];
 	JobManager::SWorkerStats& workerStats = m_WorkerStatsInfo.m_pWorkerStats[profileIndex * m_WorkerStatsInfo.m_nNumWorkers + workerId];
 
 	// Update job stats
-	uint32 nCount = ~0;
-	do
-	{
-		nCount = *const_cast<volatile uint32*>(&jobStats.count);
-	}
-	while (CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&jobStats.count), nCount + 1, nCount) != nCount);
-
-	uint32 nUsec = ~0;
-	do
-	{
-		nUsec = *const_cast<volatile uint32*>(&jobStats.usec);
-	}
-	while (CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&jobStats.usec), nUsec + runTimeMicroSec, nUsec) != nUsec);
-
+	CryInterlockedIncrement(alias_cast<volatile int*>(&jobStats.count));
+	CryInterlockedAdd(alias_cast<volatile int*>(&jobStats.usec), runTimeMicroSec);
 	// Update worker stats
-	uint32 threadExcutionTime = ~0;
-	do
-	{
-		threadExcutionTime = *const_cast<volatile uint32*>(&workerStats.nExecutionPeriod);
-	}
-	while (CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&workerStats.nExecutionPeriod), threadExcutionTime + runTimeMicroSec, threadExcutionTime) != threadExcutionTime);
-
-	uint32 numJobsExecuted = ~0;
-	do
-	{
-		numJobsExecuted = *const_cast<volatile uint32*>(&workerStats.nNumJobsExecuted);
-	}
-	while (CryInterlockedCompareExchange(alias_cast<volatile LONG*>(&workerStats.nNumJobsExecuted), numJobsExecuted + 1, numJobsExecuted) != numJobsExecuted);
+	CryInterlockedIncrement(alias_cast<volatile int*>(&workerStats.nNumJobsExecuted));
+	CryInterlockedAdd(alias_cast<volatile int*>(&workerStats.nExecutionPeriod), runTimeMicroSec);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,7 +258,6 @@ void JobManager::CWorkerBackEndProfiler::GetJobStats(const uint8 nBufferIndex, T
 	rJobStatsContainer.reserve(JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS);
 
 	// Copy job stats
-	uint16 curCount = 0;
 	for (uint16 i = 0; i < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS; ++i)
 	{
 		const JobManager::SJobFrameStats& rJobStats = pJobStatsToCopyFrom[i];
@@ -315,7 +282,7 @@ void JobManager::CWorkerBackEndProfiler::GetJobStats(const uint8 nBufferIndex, T
 	case JobManager::IWorkerBackEndProfiler::eJobSortOrder_NoSort:
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, "Unsupported type");
+		CRY_ASSERT(false, "Unsupported type");
 	}
 	;
 }
@@ -333,7 +300,6 @@ void JobManager::CWorkerBackEndProfiler::ResetJobStats(const uint8 nBufferIndex)
 	JobManager::SJobFrameStats* pJobStatsToReset = &m_JobStatsInfo.m_pJobStats[nBufferIndex * JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS];
 
 	// Reset job stats
-	uint16 curCount = 0;
 	for (uint16 i = 0; i < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS; ++i)
 	{
 		JobManager::SJobFrameStats& rJobStats = pJobStatsToReset[i];
@@ -357,17 +323,6 @@ extern "C"
 }
 
 JobManager::CJobManager::CJobManager()
-	: m_Initialized(false),
-	m_pFallBackBackEnd(NULL),
-	m_pThreadBackEnd(NULL),
-	m_pBlockingBackEnd(NULL),
-	m_nJobIdCounter(0),
-	m_nJobSystemEnabled(1),
-	m_bJobSystemProfilerPaused(0),
-	m_bJobSystemProfilerEnabled(false),
-	m_nJobsRunCounter(0),
-	m_nFallbackJobsRunCounter(0),
-	m_bSuspendWorkerForMP(false)
 {
 	// create backends
 	m_pThreadBackEnd = new ThreadBackEnd::CThreadBackEnd();
@@ -389,7 +344,6 @@ JobManager::CJobManager::CJobManager()
 	memset(m_pRegularWorkerFallbacks, 0, sizeof(JobManager::SInfoBlock*) * m_nRegularWorkerThreads);
 
 	m_pBlockingBackEnd = CryAlignedNew<BlockingBackEnd::CBlockingBackEnd>(m_pRegularWorkerFallbacks, m_nRegularWorkerThreads);
-	m_pFallBackBackEnd = new FallBackBackEnd::CFallBackBackEnd();
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	m_profilingData.nFrameIdx = 0;
@@ -397,28 +351,63 @@ JobManager::CJobManager::CJobManager()
 
 	memset(m_arrJobInvokers, 0, sizeof(m_arrJobInvokers));
 	m_nJobInvokerIdx = 0;
-
-	// init fallback backend early to be able to handle jobs before jobmanager is initialized
-	if (m_pFallBackBackEnd)  m_pFallBackBackEnd->Init(-1 /*not used for fallback*/);
 }
 
 const bool JobManager::CJobManager::WaitForJob(JobManager::SJobState& rJobState) const
 {
+	static ICVar* isActiveWaitEnableCVar = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_job_system_worker_boost_enabled") : nullptr;
+	if (!rJobState.GetSyncVar().NeedsToWait())
+	{
+		return true;
+	}
+
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
-	SJobProfilingData* pJobProfilingData = gEnv->GetJobManager()->GetProfilingData(rJobState.nProfilerIndex);
-	pJobProfilingData->nWaitBegin = gEnv->pTimer->GetAsyncTime();
+	SJobProfilingData* pJobProfilingData = gEnv->GetJobManager()->GetProfilingData(rJobState.GetProfilerIndex());
+	pJobProfilingData->startTime = gEnv->pTimer->GetAsyncTime();
+	pJobProfilingData->isWaiting = true;
 	pJobProfilingData->nThreadId = CryGetCurrentThreadId();
 #endif
 
-	rJobState.syncVar.Wait();
+	// Allow Main and Render Thread to process work if they hit a wait call
+	const threadID curThreadId = CryGetCurrentThreadId();
+	bool processJobsWhileWaiting = false;
+
+	if (isActiveWaitEnableCVar && isActiveWaitEnableCVar->GetIVal() == 1)
+	{
+		if (gEnv->pRenderer)
+		{
+			threadID mainThreadID = 0;
+			threadID renderThreadID = 0;
+			gEnv->pRenderer->GetThreadIDs(mainThreadID, renderThreadID);
+			processJobsWhileWaiting = (curThreadId == mainThreadID) || (curThreadId == renderThreadID);
+		}
+		else
+		{
+			processJobsWhileWaiting = (curThreadId == gEnv->mMainThreadId);
+		}
+	}	
+
+	if (processJobsWhileWaiting)
+	{		
+		KickTempWorker();
+	}
+
+	rJobState.GetSyncVar().Wait();
+
+	if (processJobsWhileWaiting)
+	{
+		StopTempWorker();
+	}
+
 
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
-	pJobProfilingData->nWaitEnd = gEnv->pTimer->GetAsyncTime();
+	pJobProfilingData->endTime = gEnv->pTimer->GetAsyncTime();
 	pJobProfilingData = NULL;
 #endif
 
 	return true;
 }
+
 
 ColorB JobManager::CJobManager::GenerateColorBasedOnName(const char* name)
 {
@@ -503,35 +492,23 @@ const char* JobManager::CJobManager::GetJobName(JobManager::Invoker invoker)
 
 void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle)
 {
-	char job_info[128];
-	cry_sprintf(job_info, "AddJob_%s", cJobHandle->cpString);
-	CryProfile::detail::SetProfilingEvent(0, job_info);
+	CRY_PROFILE_FUNCTION(EProfiledSubsystem::PROFILE_SYSTEM);
 
 	JobManager::SInfoBlock infoBlock;
-
-	// Test if the job should be invoked
-	bool bUseJobSystem = m_nJobSystemEnabled ? CJobManager::InvokeAsJob(cJobHandle) : false;
-
-	// get producer/consumer queue settings
-	JobManager::SProdConsQueueBase* cpQueue = crJob.GetQueue();
-	const bool cNoQueue = (cpQueue == NULL);
 
 	const uint32 cOrigParamSize = crJob.GetParamDataSize();
 	const uint8 cParamSize = cOrigParamSize >> 4;
 
 	//reset info block
-	unsigned int flagSet = cNoQueue ? 0 : (unsigned int)JobManager::SInfoBlock::scHasQueue;
-
-	infoBlock.pQueue = cpQueue;
-	infoBlock.nflags = (unsigned char)(flagSet);
+	infoBlock.pJobState = nullptr;
+	infoBlock.nflags = 0;
 	infoBlock.paramSize = cParamSize;
 	infoBlock.jobInvoker = crJob.GetGenericDelegator();
-	infoBlock.jobLambdaInvoker = crJob.GetLambda();
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	infoBlock.profilerIndex = crJob.GetProfilingDataIndex();
 #endif
 
-	if (cNoQueue && crJob.GetJobState())
+	if (crJob.GetJobState())
 	{
 		infoBlock.SetJobState(crJob.GetJobState());
 		crJob.SetRunning();
@@ -542,35 +519,41 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	pJobProfilingData->jobHandle = cJobHandle;
 #endif
 
+	// == When the job is filtered or job system is disabled, execute directly == //
+	if (!InvokeAsJob(cJobHandle))
+	{
+		CRY_PROFILE_SECTION_ARG(EProfiledSubsystem::PROFILE_SYSTEM, "Execute Job directly", cJobHandle->cpString);
+		Invoker delegator = crJob.GetGenericDelegator();
+		const void* pParamMem = crJob.GetJobParamData();
+		{
+			MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Job: %s", cJobHandle->cpString);
+			// execute job function
+			(*delegator)((void*)pParamMem);
+		}
+
+		IF(infoBlock.GetJobState(), 1)
+		{
+			infoBlock.GetJobState()->SetStopped();
+		}
+	}
 	// == dispatch to the right BackEnd == //
-	IF (crJob.IsBlocking() == false && (bUseJobSystem == false || m_Initialized == false), 0)
-		return static_cast<FallBackBackEnd::CFallBackBackEnd*>(m_pFallBackBackEnd)->FallBackBackEnd::CFallBackBackEnd::AddJob(crJob, cJobHandle, infoBlock);
-
-	IF (m_pBlockingBackEnd && crJob.IsBlocking(), 0)
-		return static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->BlockingBackEnd::CBlockingBackEnd::AddJob(crJob, cJobHandle, infoBlock);
-
-	// default case is the threadbackend
-	if (m_pThreadBackEnd)
-		return static_cast<ThreadBackEnd::CThreadBackEnd*>(m_pThreadBackEnd)->ThreadBackEnd::CThreadBackEnd::AddJob(crJob, cJobHandle, infoBlock);
-
-	// last resort - fallback backend
-	return static_cast<FallBackBackEnd::CFallBackBackEnd*>(m_pFallBackBackEnd)->FallBackBackEnd::CFallBackBackEnd::AddJob(crJob, cJobHandle, infoBlock);
-}
-
-void JobManager::CJobManager::AddLambdaJob(const char* jobName, const std::function<void()>& callback, TPriorityLevel priority, SJobState* pJobState)
-{
-	CJobLambda job(jobName, callback);
-	job.SetPriorityLevel(priority);
-	if (pJobState)
-		job.RegisterJobState(pJobState);
-	job.Run();
+	// thread backend is preferred
+	else if (m_pThreadBackEnd && !crJob.IsBlocking())
+	{
+		m_pThreadBackEnd->AddJob(crJob, cJobHandle, infoBlock);
+	}
+	else
+	{
+		CRY_ASSERT(m_pBlockingBackEnd);
+		m_pBlockingBackEnd->AddJob(crJob, cJobHandle, infoBlock);
+	}
 }
 
 void JobManager::CJobManager::ShutDown()
 {
-	if (m_pFallBackBackEnd) m_pFallBackBackEnd->ShutDown();
 	if (m_pThreadBackEnd) m_pThreadBackEnd->ShutDown();
 	if (m_pBlockingBackEnd) m_pBlockingBackEnd->ShutDown();
+	m_Initialized = false;
 }
 
 void JobManager::CJobManager::Init(uint32 nSysMaxWorker)
@@ -601,10 +584,7 @@ bool JobManager::CJobManager::InvokeAsJob(const JobManager::TJobHandle cJobHandl
 
 bool JobManager::CJobManager::InvokeAsJob(const char* cpJobName) const
 {
-#if defined(_RELEASE)
-	return true; // no support for fallback interface in release
-#endif
-
+#if !defined(_RELEASE) // job filtering is only supported in non-release builds
 	// try to find the jobname in the job filter list
 	IF (m_pJobFilter, 0)
 	{
@@ -616,6 +596,7 @@ bool JobManager::CJobManager::InvokeAsJob(const char* cpJobName) const
 					return false;
 			}
 	}
+#endif
 
 	return m_nJobSystemEnabled != 0;
 }
@@ -842,32 +823,6 @@ struct SWorkerProfilingRenderData
 	CTimeValue runTime;
 };
 
-struct SRegionTime
-{
-	JobManager::CJobManager::SMarker::TMarkerString pName;
-	ColorB     color;
-	CTimeValue executionTime;
-	bool       bIsMainThread;
-
-	bool operator==(const SRegionTime& rOther) const
-	{
-		return strcmp(pName.c_str(), rOther.pName.c_str()) == 0;
-	}
-	bool operator<(const SRegionTime& rOther) const
-	{
-		return strcmp(pName.c_str(), rOther.pName.c_str()) < 0;
-	}
-};
-
-struct SRegionLexicalSorter
-{
-	bool operator()(const SRegionTime& rA, const SRegionTime& rB) const
-	{
-		// sort highest times first
-		return strcmp(rA.pName.c_str(), rB.pName.c_str()) < 0;
-	}
-};
-
 struct SThreadProflingRenderData
 {
 	CTimeValue executionTime;
@@ -876,13 +831,6 @@ struct SThreadProflingRenderData
 
 void JobManager::CJobManager::Update(int nJobSystemProfiler)
 {
-#if 0 // integrate into profiler after fixing it's memory issues
-	float fColorGreen[4] = { 0, 1, 0, 1 };
-	float fColorRed[4] = { 1, 0, 0, 1 };
-	uint32 nJobsRunCounter = m_nJobsRunCounter;
-	uint32 nFallbackJobsRunCounter = m_nFallbackJobsRunCounter;
-	IRenderAuxText::Draw2dLabel(1, 5.0f, 1.3f, nFallbackJobsRunCounter ? fColorRed : fColorGreen, false, "Jobs Submitted %d, FallbackJobs %d", nJobsRunCounter, nFallbackJobsRunCounter);
-#endif
 	m_nJobsRunCounter = 0;
 	m_nFallbackJobsRunCounter = 0;
 
@@ -896,6 +844,11 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 
 		m_bJobSystemProfilerEnabled = nJobSystemProfiler;
 	}
+
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
+	m_pThreadBackEnd->GetBackEndWorkerProfiler()->Update();
+	m_pBlockingBackEnd->GetBackEndWorkerProfiler()->Update();
+#endif
 
 	// profiler disabled
 	if (nJobSystemProfiler == 0)
@@ -915,6 +868,8 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 
 	// compute how long the displayed frame took
 	CTimeValue diffTime = frameEndTime - frameStartTime;
+	// round up to 5ms and convert to seconds
+	diffTime = CTimeValue(5 * crymath::ceil(diffTime.GetMilliSeconds() / 5) / 1000);
 
 	// get used thread ids
 	threadID nMainThreadId, nRenderThreadId;
@@ -924,90 +879,45 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 	int nScreenHeight = gEnv->pRenderer->GetOverlayHeight();
 	int nScreenWidth  = gEnv->pRenderer->GetOverlayWidth();
 
-	float fScreenHeight = (float)nScreenHeight;
-	float fScreenWidth = (float)nScreenWidth;
+	const float fScreenHeight = (float)nScreenHeight;
+	const float fScreenWidth = (float)nScreenWidth;
 
-	float fTextSize = 1.1f;
-	float fTextSizePixel = 8.0f * fTextSize;
-	float fTextCharWidth = 6.0f * fTextSize;
+	const float fTextSize = 1.1f;
+	const float fTextSizePixel = 8.0f * fTextSize;
+	const float fTextCharWidth = 6.0f * fTextSize;
 
-	float fTopOffset = fScreenHeight * 0.01f;                       // keep 0.1% screenspace at top
-	float fTextSideOffset = fScreenWidth * 0.01f;                   // start text rendering after 0.1% of screen width
-	float fGraphSideOffset = fTextSideOffset + 15 * fTextCharWidth; // leave enough space for 15 characters before drawing the graphs
+	const float fTopOffset = fScreenHeight * 0.01f;                       // keep 1% screen space at top
+	const float fTextSideOffset = fScreenWidth * 0.01f;                   // start text rendering after 1% of screen width
+	const float fGraphSideOffset = fTextSideOffset + 15 * fTextCharWidth; // leave enough space for 15 characters before drawing the graphs
 
-	float fInfoBoxSize = fTextCharWidth * 35;
-	float fGraphHeight = fTextSizePixel;
-	float fGraphWidth = (fScreenWidth - fInfoBoxSize) * 0.70f; // 70%
+	const float fInfoBoxSize = fTextCharWidth * 35;
+	const float fGraphHeight = fTextSizePixel;
+	const float fGraphWidth = (fScreenWidth - fInfoBoxSize) * 0.70f; // 70%
 
-	float pixelPerTime = (float)fGraphWidth / diffTime.GetValue();
+	const float pixelPerTime = (float)fGraphWidth / diffTime.GetValue();
 
 	const int nNumWorker = m_pThreadBackEnd->GetNumWorkerThreads();
+	const int numBlockingWorkers = m_pBlockingBackEnd->GetNumWorkerThreads();
 	const int nNumJobs = m_registeredJobs.size();
 	const int nGraphSize = (int)fGraphWidth;
-	int nNumRegions = m_nMainThreadMarkerIndex[nFrameId] + m_nRenderThreadMarkerIndex[nFrameId];
 
 	ColorB boxBorderColor(128, 128, 128, 0);
 	float fTextColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 	// allocate structure on the stack to prevent too many costly memory allocations
-	//first structures to represent the graph data, we just use (0,0,0) as not set
+	// first structures to represent the graph data, we just use (0,0,0) as not set
 	// and set each field with the needed color, then we render the resulting boxes
 	// in one pass
-	PREFAST_SUPPRESS_WARNING(6255)
-	ColorB * arrMainThreadRegion = (ColorB*)alloca(nGraphSize * sizeof(ColorB));
-	memset(arrMainThreadRegion, 0, nGraphSize * sizeof(ColorB));
-	PREFAST_SUPPRESS_WARNING(6255)
-	ColorB * arrRenderThreadRegion = (ColorB*)alloca(nGraphSize * sizeof(ColorB));
-	memset(arrRenderThreadRegion, 0, nGraphSize * sizeof(ColorB));
 	PREFAST_SUPPRESS_WARNING(6255)
 	ColorB * arrMainThreadWaitRegion = (ColorB*)alloca(nGraphSize * sizeof(ColorB));
 	memset(arrMainThreadWaitRegion, 0, nGraphSize * sizeof(ColorB));
 	PREFAST_SUPPRESS_WARNING(6255)
 	ColorB * arrRenderThreadWaitRegion = (ColorB*)alloca(nGraphSize * sizeof(ColorB));
 	memset(arrRenderThreadWaitRegion, 0, nGraphSize * sizeof(ColorB));
-
-	PREFAST_SUPPRESS_WARNING(6255)
-	SRegionTime * arrRegionProfilingData = (SRegionTime*)alloca(nNumRegions * sizeof(SRegionTime));
-	memset(arrRegionProfilingData, 0, nNumRegions * sizeof(SRegionTime));
-
-	// accumulate region time for overview
-	int nRegionCounter = 0;
-	for (uint32 i = 0; i < m_nMainThreadMarkerIndex[nFrameId]; ++i)
-	{
-		if (m_arrMainThreadMarker[nFrameId][i].type == SMarker::POP_MARKER)
-			continue;
-
-		arrRegionProfilingData[nRegionCounter].pName = m_arrMainThreadMarker[nFrameId][i].marker;
-		arrRegionProfilingData[nRegionCounter].color = ColorB();
-		arrRegionProfilingData[nRegionCounter].bIsMainThread = m_arrMainThreadMarker[nFrameId][i].bIsMainThread;
-		++nRegionCounter;
-	}
-	for (uint32 i = 0; i < m_nRenderThreadMarkerIndex[nFrameId]; ++i)
-	{
-		if (m_arrRenderThreadMarker[nFrameId][i].type == SMarker::POP_MARKER)
-			continue;
-
-		arrRegionProfilingData[nRegionCounter].pName = m_arrRenderThreadMarker[nFrameId][i].marker;
-		arrRegionProfilingData[nRegionCounter].color = ColorB();
-		arrRegionProfilingData[nRegionCounter].bIsMainThread = m_arrRenderThreadMarker[nFrameId][i].bIsMainThread;
-		++nRegionCounter;
-	}
-
-	// remove duplicates of region entries
-	std::sort(arrRegionProfilingData, arrRegionProfilingData + nRegionCounter, SRegionLexicalSorter());
-	SRegionTime* pEnd = std::unique(arrRegionProfilingData, arrRegionProfilingData + nRegionCounter);
-	nNumRegions = (int)(pEnd - arrRegionProfilingData);
-
-	// get region colors
-	for (int i = 0; i < nNumRegions; ++i)
-	{
-		SRegionTime& rRegionData = arrRegionProfilingData[i];
-		rRegionData.color = GetRegionColor(rRegionData.pName);
-	}
-
+	
+	// allocate graphs for worker threads
 	PREFAST_SUPPRESS_WARNING(6255)
 	ColorB * *arrWorkerThreadsRegions = (ColorB**)alloca(nNumWorker * sizeof(ColorB * *));
-
 	for (int i = 0; i < nNumWorker; ++i)
 	{
 		PREFAST_SUPPRESS_WARNING(6263) PREFAST_SUPPRESS_WARNING(6255)
@@ -1015,11 +925,24 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 		memset(arrWorkerThreadsRegions[i], 0, nGraphSize * sizeof(ColorB));
 	}
 
+	PREFAST_SUPPRESS_WARNING(6255)
+	ColorB * *arrBlockingWorkerThreadsRegions = (ColorB**)alloca(numBlockingWorkers * sizeof(ColorB * *));
+	for (int i = 0; i < numBlockingWorkers; ++i)
+	{
+		PREFAST_SUPPRESS_WARNING(6263) PREFAST_SUPPRESS_WARNING(6255)
+		arrBlockingWorkerThreadsRegions[i] = (ColorB*)alloca(nGraphSize * sizeof(ColorB));
+		memset(arrBlockingWorkerThreadsRegions[i], 0, nGraphSize * sizeof(ColorB));
+	}
+
 	// allocate per worker data
 	PREFAST_SUPPRESS_WARNING(6255)
 	SWorkerProfilingRenderData * arrWorkerProfilingRenderData = (SWorkerProfilingRenderData*)alloca(nNumWorker * sizeof(SWorkerProfilingRenderData));
 	memset(arrWorkerProfilingRenderData, 0, nNumWorker * sizeof(SWorkerProfilingRenderData));
 
+	PREFAST_SUPPRESS_WARNING(6255)
+	SWorkerProfilingRenderData * arrBlockingWorkerProfilingRenderData = (SWorkerProfilingRenderData*)alloca(numBlockingWorkers * sizeof(SWorkerProfilingRenderData));
+	memset(arrBlockingWorkerProfilingRenderData, 0, numBlockingWorkers * sizeof(SWorkerProfilingRenderData));
+	
 	// allocate per job informations
 	PREFAST_SUPPRESS_WARNING(6255)
 	SJobProflingRenderData * arrJobProfilingRenderData = (SJobProflingRenderData*)alloca(nNumJobs * sizeof(SJobProflingRenderData));
@@ -1053,188 +976,69 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 				continue;
 
 			// skip jobs which did never run
-			IF (profilingData.nEndTime.GetValue() == 0 || profilingData.nStartTime.GetValue() == 0, 0)
+			IF (profilingData.endTime.GetValue() == 0 || profilingData.startTime.GetValue() == 0, 0)
 				continue;
 
 			// get the job profiling rendering data structure
 			SJobProflingRenderData* pJobProfilingRenderingData =
 			  std::lower_bound(arrJobProfilingRenderData, arrJobProfilingRenderData + nNumJobs, profilingData.jobHandle->cpString, SJobProflingRenderDataCmp());
 
-			// did part of the job run during this frame
-			if ((profilingData.nEndTime <= frameEndTime && profilingData.nStartTime >= frameStartTime) ||                                            // in this frame
-			    (profilingData.nEndTime >= frameStartTime && profilingData.nEndTime <= frameEndTime && profilingData.nStartTime < frameStartTime) || // from the last frame into this
-			    (profilingData.nStartTime >= frameStartTime && profilingData.nStartTime <= frameEndTime && profilingData.nEndTime > frameEndTime))   // goes into the next frame
+			// did part of the job run during this frame?
+			// i.e. did not start after this frame or ended before it
+			if (!(profilingData.startTime >= frameEndTime || profilingData.endTime <= frameStartTime))
 			{
 				// clamp frame start/end into this frame
-				profilingData.nEndTime = (profilingData.nEndTime > frameEndTime ? frameEndTime : profilingData.nEndTime);
-				profilingData.nStartTime = (profilingData.nStartTime < frameStartTime ? frameStartTime : profilingData.nStartTime);
-
-				// compute integer offset in the graph for start and stop position
-				CTimeValue startOffset = profilingData.nStartTime - frameStartTime;
-				CTimeValue endOffset = profilingData.nEndTime - frameStartTime;
-
-				int nGraphOffsetStart = (int)(startOffset.GetValue() * pixelPerTime);
-				int nGraphOffsetEnd = (int)(endOffset.GetValue() * pixelPerTime);
-
-				// get the correct worker id
-				uint32 nWorkerIdx = profilingData.nWorkerThread;
-
-				// accumulate the time spend in dispatch(time the job waited to run)
-				pJobProfilingRenderingData->runTime += (profilingData.nEndTime - profilingData.nStartTime);
-
-				// count job invocations
-				pJobProfilingRenderingData->invocations += 1;
-
-				// accumulate time per worker thread
-				arrWorkerProfilingRenderData[nWorkerIdx].runTime += (profilingData.nEndTime - profilingData.nStartTime);
-				if (nGraphOffsetEnd < nGraphSize)
-					DrawUtils::AddToGraph(arrWorkerThreadsRegions[nWorkerIdx], SOrderedProfilingData(pJobProfilingRenderingData->color, nGraphOffsetStart, nGraphOffsetEnd));
-			}
-
-			// did this job have wait time in this frame
-			if (((profilingData.nWaitEnd.GetValue() - profilingData.nWaitBegin.GetValue()) > 1) &&
-			    ((profilingData.nWaitEnd <= frameEndTime && profilingData.nWaitBegin >= frameStartTime) ||                                            // in this frame
-			     (profilingData.nWaitEnd >= frameStartTime && profilingData.nWaitEnd <= frameEndTime && profilingData.nWaitBegin < frameStartTime) || // from the last frame into this
-			     (profilingData.nWaitBegin >= frameStartTime && profilingData.nWaitBegin <= frameEndTime && profilingData.nWaitEnd > frameEndTime)))  // goes into the next frame
-			{
-				// clamp frame start/end into this frame
-				profilingData.nWaitEnd = (profilingData.nWaitEnd > frameEndTime ? frameEndTime : profilingData.nWaitEnd);
-				profilingData.nWaitBegin = (profilingData.nWaitBegin < frameStartTime ? frameStartTime : profilingData.nWaitBegin);
+				profilingData.endTime = (profilingData.endTime > frameEndTime ? frameEndTime : profilingData.endTime);
+				profilingData.startTime = (profilingData.startTime < frameStartTime ? frameStartTime : profilingData.startTime);
 
 				// accumulate wait time
-				pJobProfilingRenderingData->waitTime += (profilingData.nWaitEnd - profilingData.nWaitBegin);
-
-				// compute graph offsets
-				CTimeValue startOffset = profilingData.nWaitBegin - frameStartTime;
-				CTimeValue endOffset = profilingData.nWaitEnd - frameStartTime;
+				if(profilingData.isWaiting)
+					pJobProfilingRenderingData->waitTime += (profilingData.endTime - profilingData.startTime);
+				
+				// compute integer offset in the graph for start and stop position
+				CTimeValue startOffset = profilingData.startTime - frameStartTime;
+				CTimeValue endOffset = profilingData.endTime - frameStartTime;
 
 				int nGraphOffsetStart = (int)(startOffset.GetValue() * pixelPerTime);
 				int nGraphOffsetEnd = (int)(endOffset.GetValue() * pixelPerTime);
 
-				// add to the right thread(we care only for main and renderthread)
-				if (profilingData.nThreadId == nMainThreadId)
+				if(profilingData.isWaiting)
 				{
+					// add to the right thread(we care only for main and render thread)
+					if (profilingData.nThreadId == nMainThreadId)
+					{
+						if (nGraphOffsetEnd < nGraphSize)
+							DrawUtils::AddToGraph(arrMainThreadWaitRegion, SOrderedProfilingData(pJobProfilingRenderingData->color, nGraphOffsetStart, nGraphOffsetEnd));
+						waitTimeMainThread += (profilingData.endTime - profilingData.startTime);
+					}
+					else if (profilingData.nThreadId == nRenderThreadId)
+					{
+						if (nGraphOffsetEnd < nGraphSize)
+							DrawUtils::AddToGraph(arrRenderThreadWaitRegion, SOrderedProfilingData(pJobProfilingRenderingData->color, nGraphOffsetStart, nGraphOffsetEnd));
+						waitTimeRenderThread += (profilingData.endTime - profilingData.startTime);
+					}
+				}
+				else
+				{
+					// accumulate the time spend in dispatch(time the job waited to run)
+					pJobProfilingRenderingData->runTime += (profilingData.endTime - profilingData.startTime);
+
+					// count job invocations
+					pJobProfilingRenderingData->invocations += 1;
+
+					SWorkerProfilingRenderData& renderData = BlockingBackEnd::IsBlockingWorkerId(profilingData.nWorkerThread)
+						? arrBlockingWorkerProfilingRenderData[BlockingBackEnd::GetIndexFromWorkerId(profilingData.nWorkerThread)]
+						: arrWorkerProfilingRenderData[profilingData.nWorkerThread];
+
+					ColorB* graph = BlockingBackEnd::IsBlockingWorkerId(profilingData.nWorkerThread)
+						? arrBlockingWorkerThreadsRegions[BlockingBackEnd::GetIndexFromWorkerId(profilingData.nWorkerThread)]
+						: arrWorkerThreadsRegions[profilingData.nWorkerThread];
+
+					// accumulate time per worker thread
+					renderData.runTime += (profilingData.endTime - profilingData.startTime);
 					if (nGraphOffsetEnd < nGraphSize)
-						DrawUtils::AddToGraph(arrMainThreadWaitRegion, SOrderedProfilingData(pJobProfilingRenderingData->color, nGraphOffsetStart, nGraphOffsetEnd));
-					waitTimeMainThread += (profilingData.nWaitEnd - profilingData.nWaitBegin);
+						DrawUtils::AddToGraph(graph, SOrderedProfilingData(pJobProfilingRenderingData->color, nGraphOffsetStart, nGraphOffsetEnd));
 				}
-				else if (profilingData.nThreadId == nRenderThreadId)
-				{
-					if (nGraphOffsetEnd < nGraphSize)
-						DrawUtils::AddToGraph(arrRenderThreadWaitRegion, SOrderedProfilingData(pJobProfilingRenderingData->color, nGraphOffsetStart, nGraphOffsetEnd));
-					waitTimeRenderThread += (profilingData.nWaitEnd - profilingData.nWaitBegin);
-				}
-			}
-		}
-	}
-
-	// ==== collect mainthread regions ==== //
-	if (m_nMainThreadMarkerIndex[nFrameId])
-	{
-		uint32 nStackPos = 0;
-		PREFAST_SUPPRESS_WARNING(6255)
-		SMarker * pStack = (SMarker*)alloca(m_nMainThreadMarkerIndex[nFrameId] * sizeof(SMarker));
-		for (uint32 i = 0; i < m_nMainThreadMarkerIndex[nFrameId]; ++i)
-			new(&pStack[i])SMarker();
-
-		for (uint32 nInputPos = 0; nInputPos < m_nMainThreadMarkerIndex[nFrameId]; ++nInputPos)
-		{
-			SMarker& rCurrentMarker = m_arrMainThreadMarker[nFrameId][nInputPos];
-			if (rCurrentMarker.type == SMarker::POP_MARKER && nStackPos > 0) // end of marker, pop it from the stack
-			{
-				CTimeValue startOffset = pStack[nStackPos - 1].time - frameStartTime;
-				CTimeValue endOffset = rCurrentMarker.time - frameStartTime;
-
-				int GraphOffsetStart = (int)(startOffset.GetValue() * pixelPerTime);
-				int GraphOffsetEnd = (int)(endOffset.GetValue() * pixelPerTime);
-				if (GraphOffsetEnd < nGraphSize)
-					DrawUtils::AddToGraph(arrMainThreadRegion, SOrderedProfilingData(GetRegionColor(pStack[nStackPos - 1].marker), GraphOffsetStart, GraphOffsetEnd));
-
-				// accumulate global time
-				SRegionTime cmp = { pStack[nStackPos - 1].marker, ColorB(), CTimeValue(), false };
-				SRegionTime* pRegionProfilingData = std::lower_bound(arrRegionProfilingData, arrRegionProfilingData + nNumRegions, cmp);
-				pRegionProfilingData->executionTime += (rCurrentMarker.time - pStack[nStackPos - 1].time);
-
-				// pop last elemnt from stack, and update parent time
-				nStackPos -= 1;
-				if (nStackPos > 0)
-					pStack[nStackPos - 1].time = rCurrentMarker.time;
-			}
-			if (rCurrentMarker.type == SMarker::PUSH_MARKER)
-			{
-				if (nStackPos > 0) // only draw last segment if there was one
-				{
-					CTimeValue startOffset = pStack[nStackPos - 1].time - frameStartTime;
-					CTimeValue endOffset = rCurrentMarker.time - frameStartTime;
-
-					int GraphOffsetStart = (int)(startOffset.GetValue() * pixelPerTime);
-					int GraphOffsetEnd = (int)(endOffset.GetValue() * pixelPerTime);
-					if (GraphOffsetEnd < nGraphSize)
-						DrawUtils::AddToGraph(arrMainThreadRegion, SOrderedProfilingData(GetRegionColor(pStack[nStackPos - 1].marker), GraphOffsetStart, GraphOffsetEnd));
-
-					// accumulate global time
-					SRegionTime cmp = { pStack[nStackPos - 1].marker, ColorB(), CTimeValue(), false };
-					SRegionTime* pRegionProfilingData = std::lower_bound(arrRegionProfilingData, arrRegionProfilingData + nNumRegions, cmp);
-					pRegionProfilingData->executionTime += (rCurrentMarker.time - pStack[nStackPos - 1].time);
-				}
-
-				// push marker to stack
-				pStack[nStackPos++] = rCurrentMarker;
-			}
-		}
-	}
-	// ==== collect renderthread regions ==== //
-	if (m_nRenderThreadMarkerIndex[nFrameId])
-	{
-		uint32 nStackPos = 0;
-		PREFAST_SUPPRESS_WARNING(6255)
-		SMarker * pStack = (SMarker*)alloca(m_nRenderThreadMarkerIndex[nFrameId] * sizeof(SMarker));
-		for (uint32 i = 0; i < m_nRenderThreadMarkerIndex[nFrameId]; ++i)
-			new(&pStack[i])SMarker();
-
-		for (uint32 nInputPos = 0; nInputPos < m_nRenderThreadMarkerIndex[nFrameId]; ++nInputPos)
-		{
-			SMarker& rCurrentMarker = m_arrRenderThreadMarker[nFrameId][nInputPos];
-			if (rCurrentMarker.type == SMarker::POP_MARKER && nStackPos > 0) // end of marker, pop it from the stack
-			{
-				CTimeValue startOffset = pStack[nStackPos - 1].time - frameStartTime;
-				CTimeValue endOffset = rCurrentMarker.time - frameStartTime;
-
-				int GraphOffsetStart = (int)(startOffset.GetValue() * pixelPerTime);
-				int GraphOffsetEnd = (int)(endOffset.GetValue() * pixelPerTime);
-				if (GraphOffsetEnd < nGraphSize)
-					DrawUtils::AddToGraph(arrRenderThreadRegion, SOrderedProfilingData(GetRegionColor(pStack[nStackPos - 1].marker), GraphOffsetStart, GraphOffsetEnd));
-
-				// accumulate global time
-				SRegionTime cmp = { pStack[nStackPos - 1].marker, ColorB(), CTimeValue(), false };
-				SRegionTime* pRegionProfilingData = std::lower_bound(arrRegionProfilingData, arrRegionProfilingData + nNumRegions, cmp);
-				pRegionProfilingData->executionTime += (rCurrentMarker.time - pStack[nStackPos - 1].time);
-
-				// pop last elemnt from stack, and update parent time
-				nStackPos -= 1;
-				if (nStackPos > 0)
-					pStack[nStackPos - 1].time = rCurrentMarker.time;
-			}
-			if (rCurrentMarker.type == SMarker::PUSH_MARKER)
-			{
-				if (nStackPos > 0) // only draw last segment if there was one
-				{
-					CTimeValue startOffset = pStack[nStackPos - 1].time - frameStartTime;
-					CTimeValue endOffset = rCurrentMarker.time - frameStartTime;
-
-					int GraphOffsetStart = (int)(startOffset.GetValue() * pixelPerTime);
-					int GraphOffsetEnd = (int)(endOffset.GetValue() * pixelPerTime);
-					if (GraphOffsetEnd < nGraphSize)
-						DrawUtils::AddToGraph(arrRenderThreadRegion, SOrderedProfilingData(GetRegionColor(pStack[nStackPos - 1].marker), GraphOffsetStart, GraphOffsetEnd));
-
-					// accumulate global time
-					SRegionTime cmp = { pStack[nStackPos - 1].marker, ColorB(), CTimeValue(), false };
-					SRegionTime* pRegionProfilingData = std::lower_bound(arrRegionProfilingData, arrRegionProfilingData + nNumRegions, cmp);
-					pRegionProfilingData->executionTime += (rCurrentMarker.time - pStack[nStackPos - 1].time);
-				}
-
-				// push marker to stack
-				pStack[nStackPos++] = rCurrentMarker;
 			}
 		}
 	}
@@ -1251,37 +1055,80 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 	oFlags.SetAlphaBlendMode(e_AlphaNone);
 	pAuxGeomRenderer->SetRenderFlags(oFlags);
 
+
 	float fGraphTopOffset = fTopOffset;
+		
 	// == main thread == //
 	// draw main thread box and label
-	MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "MainThread");
+	MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "Main (Wait)");
 	DrawUtils::Draw2DBoxOutLine(fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fGraphWidth, boxBorderColor, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
-	DrawUtils::DrawGraph(arrMainThreadRegion, nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight / 2.0f, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
-	DrawUtils::DrawGraph(arrMainThreadWaitRegion, nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset + fGraphHeight / 2.0f, fGraphHeight / 2.0f, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+	DrawUtils::DrawGraph(arrMainThreadWaitRegion, nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+
+	{ // marker for the end of the main thread
+		ColorB red(255, 0, 0, 0);
+		const float markerOffset = (m_mainDoneTime[nFrameId] - frameStartTime).GetValue() * pixelPerTime;
+		Vec3 markerTop(fInfoBoxSize + fGraphSideOffset + markerOffset, fGraphTopOffset - 0.5f * fGraphHeight, 0);
+		Vec3 markerBottom(fInfoBoxSize + fGraphSideOffset + markerOffset, fGraphTopOffset + 1.5f * fGraphHeight, 0);
+		pAuxGeomRenderer->DrawLine(markerTop, red, markerBottom, red);
+	}
 	fGraphTopOffset += fGraphHeight + 2;
 
 	// == render thread == //
-	MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "RenderThread");
+	MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "Render (Wait)");
 	DrawUtils::Draw2DBoxOutLine(fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fGraphWidth, boxBorderColor, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
-	DrawUtils::DrawGraph(arrRenderThreadRegion, nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight / 2.0f, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
-	DrawUtils::DrawGraph(arrRenderThreadWaitRegion, nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset + fGraphHeight / 2.0f, fGraphHeight / 2.0f, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+	DrawUtils::DrawGraph(arrRenderThreadWaitRegion, nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+
+	{ // marker for the end of the render thread
+		ColorB red(255, 0, 0, 0);
+		const float markerOffset = (m_renderDoneTime[nFrameId] - frameStartTime).GetValue() * pixelPerTime;
+		Vec3 markerTop(fInfoBoxSize + fGraphSideOffset + markerOffset, fGraphTopOffset - 0.5f * fGraphHeight, 0);
+		Vec3 markerBottom(fInfoBoxSize + fGraphSideOffset + markerOffset, fGraphTopOffset + 1.5f * fGraphHeight, 0);
+		pAuxGeomRenderer->DrawLine(markerTop, red, markerBottom, red);
+	}
 
 	// == worker threads == //
 	fGraphTopOffset += 2.0f * fGraphHeight; // add a little bit more spacing between mainthreads and worker
-	for (int i = 0; i < nNumWorker; ++i)
+	for (int i = 0; i < nNumWorker - 2; ++i)
 	{
-		// draw worker box and label
-		char workerThreadName[128];
-		cry_sprintf(workerThreadName, "Worker %d", i);
-		MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "%s", workerThreadName);
+		MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "Worker %d", i);
 		DrawUtils::Draw2DBoxOutLine(fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fGraphWidth, boxBorderColor, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
 		DrawUtils::DrawGraph(arrWorkerThreadsRegions[i], nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
 
 		fGraphTopOffset += fGraphHeight + 2;
 	}
-	fGraphTopOffset += 2.0f * fGraphHeight; // add a little bit after the worker threads
 
-	// are we only interrested in the graph and not in the values?
+	fGraphTopOffset += fGraphHeight; 
+	// helper workers -- we're assuming that it's the last two!
+	for (int i = nNumWorker - 2; i < nNumWorker; ++i)
+	{
+		MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "Worker %d (H)", i);
+		DrawUtils::Draw2DBoxOutLine(fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fGraphWidth, boxBorderColor, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+		DrawUtils::DrawGraph(arrWorkerThreadsRegions[i], nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+
+		fGraphTopOffset += fGraphHeight + 2;
+	}
+
+	fGraphTopOffset += fGraphHeight;
+	for (int i = 0; i < numBlockingWorkers; ++i)
+	{
+		MyDraw2dLabel(fInfoBoxSize + fTextSideOffset, fGraphTopOffset, fTextSize, fTextColor, false, "Worker(B) %d", i);
+		DrawUtils::Draw2DBoxOutLine(fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fGraphWidth, boxBorderColor, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+		DrawUtils::DrawGraph(arrBlockingWorkerThreadsRegions[i], nGraphSize, fInfoBoxSize + fGraphSideOffset, fGraphTopOffset, fGraphHeight, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
+
+		fGraphTopOffset += fGraphHeight + 2;
+	}
+
+	// draw vertical line every 5ms
+	const int64 tickOf5Ms = CTimeValue(0.005f).GetValue();
+	const int64 markerCount = ((diffTime.GetMilliSecondsAsInt64() - 1) / 5);
+	for(int64 i = 1; i <= markerCount; ++i)
+	{
+		Vec3 markerTop(fInfoBoxSize + fGraphSideOffset + i * tickOf5Ms * pixelPerTime, fTopOffset - fGraphHeight, 0);
+		Vec3 markerBottom(fInfoBoxSize + fGraphSideOffset + i * tickOf5Ms * pixelPerTime, fGraphTopOffset + fGraphHeight, 0);
+		pAuxGeomRenderer->DrawLine(markerTop, boxBorderColor, markerBottom, boxBorderColor);
+	}
+
+	// are we only interested in the graph and not in the values?
 	if (nJobSystemProfiler == 2)
 	{
 		// Restore Aux Render setup
@@ -1294,15 +1141,22 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 	float fInfoBoxTextOffset = fTopOffset;
 
 	// draw worker data
-	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, "Workers", 27);
-
-	fInfoBoxTextOffset += fTextSizePixel;
 	CTimeValue accumulatedWorkerTime;
 	for (int i = 0; i < nNumWorker; ++i)
 	{
 		float runTimePercent = 100.0f / (frameEndTime - frameStartTime).GetValue() * arrWorkerProfilingRenderData[i].runTime.GetValue();
-		cry_sprintf(tmpBuffer, "  Worker %d: %05.2f ms %04.1f p", i, arrWorkerProfilingRenderData[i].runTime.GetMilliSeconds(), runTimePercent);
-		DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 27);
+		cry_sprintf(tmpBuffer, "Worker %d:    %5.2f ms %5.1f %%", i, arrWorkerProfilingRenderData[i].runTime.GetMilliSeconds(), runTimePercent);
+		DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 30);
+		fInfoBoxTextOffset += fTextSizePixel;
+
+		// accumulate times for all worker
+		accumulatedWorkerTime += arrWorkerProfilingRenderData[i].runTime;
+	}
+	for (int i = 0; i < numBlockingWorkers; ++i)
+	{
+		float runTimePercent = 100.0f / (frameEndTime - frameStartTime).GetValue() * arrBlockingWorkerProfilingRenderData[i].runTime.GetValue();
+		cry_sprintf(tmpBuffer, "Worker(B) %d: %5.2f ms %5.1f %%", i, arrBlockingWorkerProfilingRenderData[i].runTime.GetMilliSeconds(), runTimePercent);
+		DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 30);
 		fInfoBoxTextOffset += fTextSizePixel;
 
 		// accumulate times for all worker
@@ -1310,94 +1164,77 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 	}
 
 	// draw accumulated worker time and percentage
-	cry_sprintf(tmpBuffer, "-------------------------------");
-	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 27);
+	cry_sprintf(tmpBuffer, "--------------------------------");
+	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 30);
 	fInfoBoxTextOffset += fTextSizePixel;
 	float accRunTimePercentage = 100.0f / ((frameEndTime - frameStartTime).GetValue() * nNumWorker) * accumulatedWorkerTime.GetValue();
-	cry_sprintf(tmpBuffer, "Sum: %05.2f ms %04.1f p", accumulatedWorkerTime.GetMilliSeconds(), accRunTimePercentage);
-	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 27);
+	cry_sprintf(tmpBuffer, "Sum:         %5.2f ms %5.1f %%", accumulatedWorkerTime.GetMilliSeconds(), accRunTimePercentage);
+	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 30);
 	fInfoBoxTextOffset += fTextSizePixel;
 
-	// draw accumulated wait times of main and renderthread
+	// draw accumulated wait times of main and render thread
 	fInfoBoxTextOffset += 2.0f * fTextSizePixel;
-	cry_sprintf(tmpBuffer, "MainThread Wait %05.2f ms", waitTimeMainThread.GetMilliSeconds());
-	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 27);
+	cry_sprintf(tmpBuffer, "Frame Time  %5.2f ms", (frameEndTime - frameStartTime).GetMilliSeconds());
+	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 30);
 	fInfoBoxTextOffset += fTextSizePixel;
-	cry_sprintf(tmpBuffer, "RenderThread Wait %05.2f ms", waitTimeRenderThread.GetMilliSeconds());
-	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 27);
+	cry_sprintf(tmpBuffer, "Main Wait   %5.2f ms", waitTimeMainThread.GetMilliSeconds());
+	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 30);
 	fInfoBoxTextOffset += fTextSizePixel;
-	cry_sprintf(tmpBuffer, "MainThread %05.2f ms", (frameEndTime - frameStartTime).GetMilliSeconds());
-	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 27);
+	cry_sprintf(tmpBuffer, "Render Wait %5.2f ms", waitTimeRenderThread.GetMilliSeconds());
+	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 30);
 	fInfoBoxTextOffset += fTextSizePixel;
 	fInfoBoxTextOffset += fTextSizePixel;
 
-	// sort regions by time
-	std::sort(arrRegionProfilingData, arrRegionProfilingData + nNumRegions, SRegionLexicalSorter());
-
-	fTopOffset = fInfoBoxTextOffset += fTextSizePixel;
-	cry_sprintf(tmpBuffer, " Name                Time(MS)");
-	DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 80);
-	fInfoBoxTextOffset += 1.4f * fTextSizePixel;
-	for (int i = 0; i < nNumRegions; ++i)
-	{
-		if (!arrRegionProfilingData[i].bIsMainThread) // for now don't write names for RT regions
-			continue;
-
-		// do we need to restart a new colum
-		if (fInfoBoxTextOffset + (fTextSize * fTextSizePixel) > (fScreenHeight * 0.99f))
-		{
-			fInfoBoxTextOffset = fTopOffset;
-			fTextSideOffset += fTextSizePixel * 25; // keep a little space between the bars
-			cry_sprintf(tmpBuffer, " Name                Time(MS)");
-			DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 80);
-			fInfoBoxTextOffset += 1.4f * fTextSizePixel;
-		}
-
-		cry_sprintf(tmpBuffer, " %-21.21s %05.2f ", arrRegionProfilingData[i].pName.c_str(), arrRegionProfilingData[i].executionTime.GetMilliSeconds());
-		DrawUtils::WriteShortLabel(fTextSideOffset, fInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 28);
-		DrawUtils::Draw2DBox(fTextSideOffset, fInfoBoxTextOffset + 2.0f, fTextSizePixel * 1.25f, 30 * fTextCharWidth, arrRegionProfilingData[i].color, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
-
-		fInfoBoxTextOffset += fTextSizePixel * 1.5f;
-	}
-
-	// == render per job informations == //
-	float fJobInfoBoxTextOffset = fTopOffset;
-	float fJobInfoBoxSideOffset = max(fTextSideOffset += fTextSizePixel * 25, fScreenWidth * 0.5f);
-	float fJobInfoBoxTextWidth = fTextCharWidth * 80;
+	// == render per job information == //
+	float fJobInfoBoxTextOffset = fInfoBoxTextOffset + fTextSizePixel;
+	float fJobInfoBoxSideOffset = fTextSideOffset;
+	float fJobInfoBoxTextWidth  = fTextCharWidth * 80;
 
 	// sort jobs by their name
 	std::sort(arrJobProfilingRenderData, arrJobProfilingRenderData + nNumJobs, SJobProfilingLexicalSort());
 
-	cry_sprintf(tmpBuffer, " JobName                  (Num Invocations) TimeExecuted(MS) TimeWait(MS) AvG(MS)");
+	cry_sprintf(tmpBuffer, " JobName                  Num Invocations TimeExecuted(MS) TimeWait(MS) AvG(MS)");
 	DrawUtils::WriteShortLabel(fJobInfoBoxSideOffset, fJobInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 80);
 	fJobInfoBoxTextOffset += 1.4f * fTextSizePixel;
 
 	for (int i = 0; i < nNumJobs; ++i)
 	{
-		// do we need to restart a new colum
+		// do we need to start a new column
 		if (fJobInfoBoxTextOffset + (fTextSize * fTextSizePixel) > (fScreenHeight * 0.99f))
 		{
 			fJobInfoBoxTextOffset = fTopOffset;
 			fJobInfoBoxSideOffset += fTextCharWidth * 85; // keep a little space between the bars
-			cry_sprintf(tmpBuffer, " JobName                  (Num Invocations) TimeExecuted(MS) TimeWait(MS) AvG(MS)");
+			cry_sprintf(tmpBuffer, " JobName                  Num Invocations TimeExecuted(MS) TimeWait(MS) Avg(MS)");
 			DrawUtils::WriteShortLabel(fJobInfoBoxSideOffset, fJobInfoBoxTextOffset, fTextSize, fTextColor, tmpBuffer, 80);
 			fJobInfoBoxTextOffset += 1.4f * fTextSizePixel;
 		}
 
 		SJobProflingRenderData& rJobProfilingData = arrJobProfilingRenderData[i];
-		cry_sprintf(tmpBuffer, " %-35.35s (%3d):      %5.2f      %5.2f         %5.2f", rJobProfilingData.pName, rJobProfilingData.invocations,
+		cry_sprintf(tmpBuffer, " %-35.35s %3d      %5.2f          %5.2f     %5.2f", rJobProfilingData.pName, rJobProfilingData.invocations,
 		            rJobProfilingData.runTime.GetMilliSeconds(), rJobProfilingData.waitTime.GetMilliSeconds(),
 		            rJobProfilingData.invocations ? rJobProfilingData.runTime.GetMilliSeconds() / rJobProfilingData.invocations : 0.0f);
 
 		DrawUtils::WriteShortLabel(fJobInfoBoxSideOffset, fJobInfoBoxTextOffset - 1, fTextSize, fTextColor, tmpBuffer, 80);
 		DrawUtils::Draw2DBox(fJobInfoBoxSideOffset, fJobInfoBoxTextOffset + 2.0f, fTextSizePixel * 1.25f, fJobInfoBoxTextWidth, rJobProfilingData.color, fScreenHeight, fScreenWidth, pAuxGeomRenderer);
 		fJobInfoBoxTextOffset += fTextSizePixel * 1.5f;
-
 	}
 
 	// Restore Aux Render setup
 	pAuxGeomRenderer->SetRenderFlags(oOldFlags);
+#endif
+}
 
+void JobManager::CJobManager::SetMainDoneTime(const CTimeValue& time)
+{
+#if defined(JOBMANAGER_SUPPORT_PROFILING)
+	m_mainDoneTime[m_profilingData.GetFillFrameIdx()] = time;
+#endif
+}
+
+void JobManager::CJobManager::SetRenderDoneTime(const CTimeValue &time)
+{
+#if defined(JOBMANAGER_SUPPORT_PROFILING)
+	m_renderDoneTime[m_profilingData.GetFillFrameIdx()] = time;
 #endif
 }
 
@@ -1411,72 +1248,6 @@ void JobManager::CJobManager::SetFrameStartTime(const CTimeValue& rFrameStartTim
 	m_FrameStartTime[idx] = rFrameStartTime;
 	// reset profiling counter
 	m_profilingData.nProfilingDataCounter[idx] = 0;
-
-	// clear marker
-	m_nMainThreadMarkerIndex[idx] = 0;
-	m_nRenderThreadMarkerIndex[idx] = 0;
-#endif
-
-}
-
-void JobManager::CJobManager::PushProfilingMarker(const char* pName)
-{
-#if defined(JOBMANAGER_SUPPORT_PROFILING)
-	// get used thread ids
-	static threadID nMainThreadId = ~0;
-	static threadID nRenderThreadId = ~0;
-	static bool bInitialized = false;
-	IF (!bInitialized, 0)
-	{
-		if (!gEnv->pRenderer)
-			return;
-		gEnv->pRenderer->GetThreadIDs(nMainThreadId, nRenderThreadId);
-		bInitialized = true;
-	}
-
-	threadID nThreadID = CryGetCurrentThreadId();
-	uint32 nFrameIdx = m_profilingData.GetFillFrameIdx();
-	if (nThreadID == nMainThreadId && m_nMainThreadMarkerIndex[nFrameIdx] < nMarkerEntries)
-		m_arrMainThreadMarker[nFrameIdx][m_nMainThreadMarkerIndex[nFrameIdx]++] = SMarker(SMarker::PUSH_MARKER, pName, gEnv->pTimer->GetAsyncTime(), true);
-	if (nThreadID == nRenderThreadId && m_nRenderThreadMarkerIndex[nFrameIdx] < nMarkerEntries)
-		m_arrRenderThreadMarker[nFrameIdx][m_nRenderThreadMarkerIndex[nFrameIdx]++] = SMarker(SMarker::PUSH_MARKER, pName, gEnv->pTimer->GetAsyncTime(), false);
-#endif
-}
-
-void JobManager::CJobManager::PopProfilingMarker()
-{
-#if defined(JOBMANAGER_SUPPORT_PROFILING)
-	// get used thread ids
-	static threadID nMainThreadId = ~0;
-	static threadID nRenderThreadId = ~0;
-	static bool bInitialized = false;
-	IF (!bInitialized, 0)
-	{
-		if (!gEnv->pRenderer)
-			return;
-		gEnv->pRenderer->GetThreadIDs(nMainThreadId, nRenderThreadId);
-		bInitialized = true;
-	}
-
-	threadID nThreadID = CryGetCurrentThreadId();
-	uint32 nFrameIdx = m_profilingData.GetFillFrameIdx();
-	if (nThreadID == nMainThreadId && m_nMainThreadMarkerIndex[nFrameIdx] < nMarkerEntries)
-		m_arrMainThreadMarker[nFrameIdx][m_nMainThreadMarkerIndex[nFrameIdx]++] = SMarker(SMarker::POP_MARKER, gEnv->pTimer->GetAsyncTime(), true);
-	if (nThreadID == nRenderThreadId && m_nRenderThreadMarkerIndex[nFrameIdx] < nMarkerEntries)
-		m_arrRenderThreadMarker[nFrameIdx][m_nRenderThreadMarkerIndex[nFrameIdx]++] = SMarker(SMarker::POP_MARKER, gEnv->pTimer->GetAsyncTime(), false);
-#endif
-}
-
-ColorB JobManager::CJobManager::GetRegionColor(SMarker::TMarkerString marker)
-{
-#if defined(JOBMANAGER_SUPPORT_PROFILING)
-	if (m_RegionColors.find(marker) == m_RegionColors.end())
-	{
-		m_RegionColors[marker] = GenerateColorBasedOnName(marker.c_str());
-	}
-	return m_RegionColors[marker];
-#else
-	return ColorB();
 #endif
 }
 
@@ -1492,9 +1263,8 @@ JobManager::TSemaphoreHandle JobManager::CJobManager::AllocateSemaphore(volatile
 	int nSpinCount = 0;
 	for (;; ) // normally we should never spin here, if we do, increase the semaphore pool size
 	{
-		if (nSpinCount > 10)
-			__debugbreak(); // breaking here means that there is a logic flaw which causes not finished syncvars to be returned to the pool
-
+		CRY_ASSERT_MESSAGE(nSpinCount <= 10, "there is a logic flaw which causes not finished syncvars to be returned to the pool");
+		
 		uint32 nIndex = (++m_nCurrentSemaphoreIndex) % nSemaphorePoolSize;
 		SJobFinishedConditionVariable* pSemaphore = &m_JobSemaphorePool[nIndex];
 		if (pSemaphore->HasOwner())
@@ -1522,8 +1292,7 @@ void JobManager::CJobManager::DeallocateSemaphore(JobManager::TSemaphoreHandle n
 
 	if (pSemaphore->DecRef(pOwner) == 0)
 	{
-		if (pSemaphore->IsRunning())
-			__debugbreak();
+		CRY_ASSERT(!pSemaphore->IsRunning());
 		pSemaphore->ClearOwner(pOwner);
 	}
 }
@@ -1552,47 +1321,72 @@ SJobFinishedConditionVariable* JobManager::CJobManager::GetSemaphore(JobManager:
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CJobManager::DumpJobList()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int i = 1;
 	CryLogAlways("== JobManager registered Job List ==");
 	for (std::set<JobManager::SJobStringHandle>::iterator it = m_registeredJobs.begin(); it != m_registeredJobs.end(); ++it)
 	{
 		CryLogAlways("%3d. %s", i++, it->cpString);
 	}
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool JobManager::CJobManager::OnInputEvent(const SInputEvent& event)
 {
-	bool ret = false;
-
-	// Only process keyboard input
-	if (eIDT_Keyboard == event.deviceType)
+	// Pause/Continue profiler data collection with Scroll Lock key
+	if (event.deviceType == eIDT_Keyboard && event.state == eIS_Pressed && event.keyId == eKI_ScrollLock)
 	{
-		// Only if key was pressed
-		if (eIS_Pressed == event.state)
-		{
-			switch (event.keyId)
-			{
-			case eKI_ScrollLock: // Pause/Continue profiler data collection with Scroll Lock key
-				m_bJobSystemProfilerPaused = !m_bJobSystemProfilerPaused;
-				break;
-			}
-		}
+		m_bJobSystemProfilerPaused = !m_bJobSystemProfilerPaused;
 	}
 
-	return ret;
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void JobManager::CJobManager::AddBlockingFallbackJob(JobManager::SInfoBlock* pInfoBlock, uint32 nWorkerThreadID)
+void JobManager::CJobManager::KickTempWorker() const
 {
-	assert(m_pFallBackBackEnd);
-	static_cast<BlockingBackEnd::CBlockingBackEnd*>(m_pBlockingBackEnd)->AddBlockingFallbackJob(pInfoBlock, nWorkerThreadID);
+	CRY_ASSERT(m_pThreadBackEnd);
+	m_pThreadBackEnd->KickTempWorker();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void JobManager::CJobManager::StopTempWorker() const
+{
+	CRY_ASSERT(m_pThreadBackEnd);
+	m_pThreadBackEnd->StopTempWorker();
+}
+
+JobManager::CJobManager::~CJobManager()
+{
+	delete m_pThreadBackEnd;
+	CryAlignedDelete(m_pBlockingBackEnd);
+}
+
+JobManager::IBackend* JobManager::CJobManager::GetBackEnd(JobManager::EBackEndType backEndType)
+{
+	switch (backEndType)
+	{
+	case eBET_Thread:
+		return m_pThreadBackEnd;
+	case eBET_Blocking:
+		return m_pBlockingBackEnd;
+	default:
+		CRY_ASSERT(0, "Unsupported EBackEndType encountered.");
+		return nullptr;
+	}
+
+	return nullptr;
+}
+
+uint32 JobManager::CJobManager::GetNumWorkerThreads() const
+{
+	return m_pThreadBackEnd ? m_pThreadBackEnd->GetNumWorkerThreads() : 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-TLS_DEFINE(uint32, gWorkerThreadId);
+thread_local uint32 tls_workerThreadId = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace JobManager {
@@ -1608,27 +1402,11 @@ bool   is_marked_worker_thread_id(uint32 nWorkerThreadID) { return (nWorkerThrea
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::detail::SetWorkerThreadId(uint32 nWorkerThreadId)
 {
-	TLS_SET(gWorkerThreadId, (size_t)mark_worker_thread_id(nWorkerThreadId));
+	tls_workerThreadId = mark_worker_thread_id(nWorkerThreadId);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 uint32 JobManager::detail::GetWorkerThreadId()
 {
-	uint32 nID = (uint32)TLS_GET(uintptr_t, gWorkerThreadId);
-	return is_marked_worker_thread_id(nID) ? unmark_worker_thread_id(nID) : ~0;
-}
-
-static BoundMPMC<JobManager::SInfoBlock*> gFallbackInfoBlocks(JobManager::detail::GetFallbackJobListSize());
-
-///////////////////////////////////////////////////////////////////////////////
-void JobManager::detail::PushToFallbackJobList(JobManager::SInfoBlock* pInfoBlock)
-{
-	bool ret = gFallbackInfoBlocks.enqueue(pInfoBlock);
-	CRY_ASSERT_MESSAGE(ret, "JobSystem: Fallback info block limit reached");
-}
-
-JobManager::SInfoBlock* JobManager::detail::PopFromFallbackJobList()
-{
-	JobManager::SInfoBlock* pInfoBlock = nullptr;
-	return gFallbackInfoBlocks.dequeue(pInfoBlock) ? pInfoBlock : nullptr;
+	return is_marked_worker_thread_id(tls_workerThreadId) ? unmark_worker_thread_id(tls_workerThreadId) : s_nonWorkerThreadId;
 }

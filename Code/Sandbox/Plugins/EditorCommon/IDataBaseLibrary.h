@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __IDataBaseLibrary_h__
-#define __IDataBaseLibrary_h__
 #pragma once
 
-struct IDataBaseManager;
 struct IDataBaseItem;
+struct IDataBaseManager;
+class XmlNodeRef;
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
@@ -16,6 +15,8 @@ struct IDataBaseItem;
 //////////////////////////////////////////////////////////////////////////
 struct IDataBaseLibrary
 {
+	virtual ~IDataBaseLibrary() {}
+
 	// Description:
 	//		Return IDataBaseManager interface to the manager for items stored in this library.
 	virtual IDataBaseManager* GetManager() = 0;
@@ -78,25 +79,22 @@ struct IDataBaseLibrary
 
 	// Description:
 	//		Remove item from library, does not destroy item,
-	//		only unliks it from this library, to delete item use IDataBaseManager.
+	//		only unlinks it from this library, to delete item use IDataBaseManager.
 	// See Also:
 	//     AddItem
 	virtual void RemoveItem(IDataBaseItem* item) = 0;
 
 	// Description:
 	//		Remove all items from library, does not destroy items,
-	//		only unliks them from this library, to delete item use IDataBaseManager.
+	//		only unlinks them from this library, to delete item use IDataBaseManager.
 	// See Also:
 	//		RemoveItem,AddItem
 	virtual void RemoveAllItems() = 0;
 
 	// Description:
 	//		Find item in library by name.
-	//		This function usually uses linear search so it is not particularry fast.
+	//		This function usually uses linear search so it is not particularly fast.
 	// See Also:
 	//		GetItem
 	virtual IDataBaseItem* FindItem(const string& name) = 0;
 };
-
-#endif // __IDataBaseLibrary_h__
-

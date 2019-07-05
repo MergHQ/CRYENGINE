@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Tools/BaseTool.h"
-#include "Util/SpotManager.h"
 
 namespace Designer
 {
@@ -34,7 +33,7 @@ public:
 	bool            OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 	bool            OnMouseWheel(CViewport* view, UINT nFlags, CPoint point) override;
 
-	void            Display(DisplayContext& dc) override;
+	void            Display(SDisplayContext& dc) override;
 
 	ECubeEditorMode GetEditMode() const;
 	void SetEditMode(ECubeEditorMode);
@@ -51,7 +50,7 @@ private:
 	void                    SelectPrevBrush();
 	void                    SelectNextBrush();
 
-	void                    DisplayBrush(DisplayContext& dc);
+	void                    DisplayBrush(SDisplayContext& dc);
 	std::vector<PolygonPtr> GetBrushPolygons(const AABB& aabb) const;
 	void                    AddCube(const AABB& brushAABB);
 	void                    RemoveCube(const AABB& brushAABB);
@@ -88,4 +87,3 @@ private:
 	DrawStraight m_DS;
 };
 }
-

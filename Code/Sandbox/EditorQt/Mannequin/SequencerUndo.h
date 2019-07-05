@@ -1,11 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __sequencerundo_h__
-#define __sequencerundo_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
+#include <IUndoObject.h>
+#include "Objects/EntityScript.h"
 
 class CSequencerTrack;
 class CSequencerNode;
@@ -18,7 +15,7 @@ class CUndoSequencerSequenceModifyObject : public IUndoObject
 public:
 	CUndoSequencerSequenceModifyObject(CSequencerTrack* track, CSequencerSequence* pSequence);
 protected:
-	virtual const char* GetDescription() { return "Track Modify"; };
+	virtual const char* GetDescription() { return "Track Modify"; }
 
 	virtual void        Undo(bool bUndo);
 	virtual void        Redo();
@@ -40,6 +37,3 @@ public:
 		//	CUndo::Record( new CUndoSequencerAnimSequenceObject(pSeq) );
 	}
 };
-
-#endif // __sequencerundo_h__
-

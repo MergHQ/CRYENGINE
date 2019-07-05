@@ -6,25 +6,25 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
-		"../../SDKs/expat-2.1.0/lib/xmlparse.c"
-		"../../SDKs/expat-2.1.0/lib/xmlrole.c"
-		"../../SDKs/expat-2.1.0/lib/xmltok.c"
-		"../../SDKs/expat-2.1.0/lib/xmltok_impl.c"
-		"../../SDKs/expat-2.1.0/lib/xmltok_ns.c"
-		"../../SDKs/expat-2.1.0/lib/ascii.h"
-		"../../SDKs/expat-2.1.0/lib/asciitab.h"
-		"../../SDKs/expat-2.1.0/lib/expat.h"
-		"../../SDKs/expat-2.1.0/lib/expat_external.h"
-		"../../SDKs/expat-2.1.0/lib/amigaconfig.h"
-		"../../SDKs/expat-2.1.0/lib/iasciitab.h"
-		"../../SDKs/expat-2.1.0/lib/latin1tab.h"
-		"../../SDKs/expat-2.1.0/lib/macconfig.h"
-		"../../SDKs/expat-2.1.0/lib/nametab.h"
-		"../../SDKs/expat-2.1.0/lib/utf8tab.h"
-		"../../SDKs/expat-2.1.0/lib/winconfig.h"
-		"../../SDKs/expat-2.1.0/lib/xmlrole.h"
-		"../../SDKs/expat-2.1.0/lib/xmltok.h"
-		"../../SDKs/expat-2.1.0/lib/xmltok_impl.h"
+		"${SDK_DIR}/expat-2.1.0/lib/xmlparse.c"
+		"${SDK_DIR}/expat-2.1.0/lib/xmlrole.c"
+		"${SDK_DIR}/expat-2.1.0/lib/xmltok.c"
+		"${SDK_DIR}/expat-2.1.0/lib/xmltok_impl.c"
+		"${SDK_DIR}/expat-2.1.0/lib/xmltok_ns.c"
+		"${SDK_DIR}/expat-2.1.0/lib/ascii.h"
+		"${SDK_DIR}/expat-2.1.0/lib/asciitab.h"
+		"${SDK_DIR}/expat-2.1.0/lib/expat.h"
+		"${SDK_DIR}/expat-2.1.0/lib/expat_external.h"
+		"${SDK_DIR}/expat-2.1.0/lib/amigaconfig.h"
+		"${SDK_DIR}/expat-2.1.0/lib/iasciitab.h"
+		"${SDK_DIR}/expat-2.1.0/lib/latin1tab.h"
+		"${SDK_DIR}/expat-2.1.0/lib/macconfig.h"
+		"${SDK_DIR}/expat-2.1.0/lib/nametab.h"
+		"${SDK_DIR}/expat-2.1.0/lib/utf8tab.h"
+		"${SDK_DIR}/expat-2.1.0/lib/winconfig.h"
+		"${SDK_DIR}/expat-2.1.0/lib/xmlrole.h"
+		"${SDK_DIR}/expat-2.1.0/lib/xmltok.h"
+		"${SDK_DIR}/expat-2.1.0/lib/xmltok_impl.h"
 )
 
 end_sources()
@@ -35,6 +35,6 @@ CryEngineStaticModule(expat SOLUTION_FOLDER "Libs")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DXML_CONTEXT_BYTES=1024 -DHAVE_MEMMOVE -DBYTEORDER=1234 PUBLIC -DXML_STATIC)
 target_include_directories(${THIS_PROJECT} INTERFACE "${SDK_DIR}/expat-2.1.0/lib")
 
-if(WIN32 OR WIN64 OR DURANGO)
+if(WINDOWS OR DURANGO)
 	target_compile_options(${THIS_PROJECT} PRIVATE /wd4244)
 endif()

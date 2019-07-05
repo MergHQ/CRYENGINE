@@ -502,7 +502,6 @@ void CPathFollower::UseLookAheadPos(Vec3& velocity, bool& reachedEnd, const Vec3
 	if (curLASegmentIndex >= (int)m_pathControlPoints.size() - 2)
 	{
 		Vec3 segStart = GetPathControlPoint(m_pathControlPoints.size() - 2);
-		Vec3 segEnd = GetPathControlPoint(m_pathControlPoints.size() - 1);
 
 		float distSq = (curPos - segStart).GetLengthSquared2D();
 
@@ -644,7 +643,7 @@ bool CPathFollower::Update(PathFollowResult& result, const Vec3& curPos, const V
 	}
 
 #ifndef _RELEASE
-	if (gAIEnv.CVars.DrawPathFollower == 1)
+	if (gAIEnv.CVars.pathFollower.DrawPathFollower == 1)
 	{
 		Draw();
 	}

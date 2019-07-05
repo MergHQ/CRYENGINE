@@ -5,6 +5,7 @@
 
 #include "SchematycUtils.h"
 
+#include <AssetSystem/AssetEditor.h>
 #include <AssetSystem/EditableAsset.h>
 #include <QtUtil.h>
 
@@ -12,25 +13,23 @@ namespace CrySchematycEditor {
 
 REGISTER_ASSET_TYPE(CLibraryAssetType)
 
-bool CLibraryAssetType::OnCreate(CEditableAsset& editAsset, const void* /*pTypeSpecificParameter*/) const
+bool CLibraryAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
-	const string szFilePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
-	const QString basePath = szFilePath.c_str();
-	const QString assetName = basePath.section('/', -1);
+	const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
+	const string assetName = asset.GetName();
 
 	// TODO: Actually the backend should ensure that the name is valid!
-	Schematyc::CStackString uniqueAssetName = QtUtil::ToString(assetName).c_str();
+	Schematyc::CStackString uniqueAssetName(assetName.c_str());
 	MakeScriptElementNameUnique(uniqueAssetName);
 	// ~TODO
 
 	Schematyc::IScriptRegistry& scriptRegistry = gEnv->pSchematyc->GetScriptRegistry();
-	Schematyc::IScriptModule* pModule = scriptRegistry.AddModule(uniqueAssetName.c_str(), szFilePath.c_str());
+	Schematyc::IScriptModule* pModule = scriptRegistry.AddModule(uniqueAssetName.c_str(), PathUtil::RemoveExtension(dataFilePath));
 	if (pModule)
 	{
 		if (Schematyc::IScript* pScript = pModule->GetScript())
 		{
-			const QString assetFilePath = basePath + "." + GetFileExtension();
-			editAsset.AddFile(QtUtil::ToString(assetFilePath).c_str());
+			asset.AddFile(dataFilePath);
 
 			scriptRegistry.SaveScript(*pScript);
 			return true;
@@ -67,19 +66,13 @@ bool CLibraryAssetType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 	return false;
 }
 
-bool CLibraryAssetType::DeleteAssetFiles(const CAsset& asset, bool bDeleteSourceFile, size_t& numberOfFilesDeleted) const
+void CLibraryAssetType::PreDeleteAssetFiles(const CAsset& asset) const
 {
-	if (CAssetType::DeleteAssetFiles(asset, bDeleteSourceFile, numberOfFilesDeleted))
+	Schematyc::IScript* pScript = GetScript(asset);
+	if (pScript)
 	{
-		Schematyc::IScript* pScript = GetScript(asset);
-		if (pScript)
-		{
-			gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
-		}
-
-		return true;
+		gEnv->pSchematyc->GetScriptRegistry().RemoveElement(pScript->GetRoot()->GetGUID());
 	}
-	return false;
 }
 
 CryIcon CLibraryAssetType::GetIconInternal() const
@@ -104,4 +97,3 @@ Schematyc::IScript* CLibraryAssetType::GetScript(const CAsset& asset) const
 	return nullptr;
 }
 }
-

@@ -13,72 +13,81 @@ namespace pfx2
 {
 
 SERIALIZATION_ENUM_DECLARE(EDomain, ,
-                           Age,
-                           SpawnFraction,
-                           Speed,
-                           Field,
-                           Attribute,                           
-                           ViewAngle,
-	                       CameraDistance,
-	                       Global,
-                           Random,
+	Age,
+	SpawnFraction,
+	SpawnId,
+	Speed,
+	Field,
+	Attribute,
+	ViewAngle,
+	CameraDistance,
+	Global,
+	Random,
 
-                           // old version
-                           _ParentTime,
-                           _ParentOrder,
-                           _ParentSpeed,
-                           _ParentField,
+	// old version
+	_ParentTime,
+	_ParentOrder,
+	_ParentSpeed,
+	_ParentField,
 
-                           _SelfTime = Age,
-                           _SelfSpeed = Speed,
-	                       _LevelTime = Global
-                           )
+	_SelfTime = Age,
+	_SelfSpeed = Speed,
+	_LevelTime = Global
+)
 
 SERIALIZATION_ENUM_DECLARE(EDomainOwner, ,
-                           _None,
-                           Self,
-                           Parent
-                           )
+    _None,
+	Self,
+	Parent
+)
 
 SERIALIZATION_ENUM_DECLARE(EDomainGlobal, ,
-                           LevelTime,
-	                       TimeOfDay,
-	                       ExposureValue
-                           )
+	LevelTime,
+	TimeOfDay,
+	ExposureValue
+)
 
 typedef DynamicEnum<struct SDomainField> EDomainField;
 bool Serialize(Serialization::IArchive& ar, EDomainField& value, cstr name, cstr label);
 
-
-class CDomain
+struct CDomain
 {
-public:
-	CDomain();
-
-	void              AddToParam(CParticleComponent* pComponent);
-	template<typename TBase, typename TStream>
-	void              Dispatch(CParticleComponentRuntime& runtime, const SUpdateRange& range, TStream stream, EDataDomain domain) const;
-
-	EDataDomain       GetDomain() const;
-	TDataType<float>  GetDataType() const;
-	string            GetSourceDescription() const;
-	float             Adjust(float sample) const { return sample * m_domainScale + m_domainBias; }
-	void              SerializeInplace(Serialization::IArchive& ar);
+	void             Serialize(Serialization::IArchive& ar);
+	void             AddToParam(CParticleComponent* pComponent);
+	EDataDomain      GetDomain() const;
+	string           GetSourceDescription() const;
+	float            GetGlobalValue(EDomainGlobal source) const;
+	TDataType<float> GetDataType() const;
 
 protected:
-	float m_domainScale;
-	float m_domainBias;
-
-private:
-	float             GetGlobalValue(EDomainGlobal source) const;
-
-private:
 	CAttributeReference m_attribute;
-	EDomain             m_domain;
-	EDomainField        m_fieldSource;
-	EDomainOwner        m_sourceOwner;
-	EDomainGlobal       m_sourceGlobal;
-	bool                m_spawnOnly;
+	EDomain             m_domain       = EDomain::Age;
+	EDomainField        m_fieldSource  = EDomainField(EPDT_LifeTime);
+	EDomainOwner        m_sourceOwner  = EDomainOwner::Self;
+	EDomainGlobal       m_sourceGlobal = EDomainGlobal::LevelTime;
+	PosInt              m_idModulus;
+	bool                m_spawnOnly    = true;
+	float               m_domainScale  = 1;
+	float               m_domainBias   = 0;
+	floatv              m_scaleV;
+	floatv              m_biasV;
+
+	ILINE floatv AdjustDomain(floatv in) const { return MAdd(in, m_scaleV, m_biasV); }
+};
+
+template<typename TChild, typename T, typename TFrom = T>
+struct TModFunction: ITypeModifier<T, TFrom>, CDomain
+{
+	void        AddToParam(CParticleComponent* pComponent) override { CDomain::AddToParam(pComponent); }
+	EDataDomain GetDomain() const override { return CDomain::GetDomain(); }
+	void        Modify(const CParticleComponentRuntime& runtime, const SUpdateRange& range, TIOStream<T> stream, EDataDomain domain) const override;
+	void        Sample(TVarArray<TFrom> samples) const override;
+
+private:
+	TChild const& Child() const { return (TChild const&)*this; }
+
+	template<typename S, typename ...Args>
+	void ModifyFromSampler(const CParticleComponentRuntime& runtime, const SUpdateRange& range, TIOStream<T> stream, EDataDomain domain, Args ...args) const;
 };
 
 }

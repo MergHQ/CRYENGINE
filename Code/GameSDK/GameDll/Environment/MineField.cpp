@@ -69,14 +69,14 @@ bool CMineField::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 	ResetGameObject();
 	MF::RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE(false, "CMineField::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CMineField::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CMineField::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CMineField::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CMineField::GetEntityPoolSignature not implemented");
 
 	return true;
 }
@@ -297,9 +297,9 @@ void CMineField::ProcessEvent( const SEntityEvent& entityEvent )
 	}
 }
 
-uint64 CMineField::GetEventMask() const
+Cry::Entity::EventFlags CMineField::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED) | ENTITY_EVENT_BIT(ENTITY_EVENT_LINK) | ENTITY_EVENT_BIT(ENTITY_EVENT_DELINK);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK;
 }
 
 void CMineField::GetMemoryUsage( ICrySizer *pSizer ) const

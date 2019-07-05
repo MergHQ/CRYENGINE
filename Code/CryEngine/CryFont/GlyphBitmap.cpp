@@ -296,11 +296,6 @@ int CGlyphBitmap::BlitScaledTo8(unsigned char* pBuffer, int iSrcX, int iSrcY, in
 	return 1;
 }
 
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic ignored "-Woverflow"
-	#endif
-#endif
 //-------------------------------------------------------------------------------------------------
 int CGlyphBitmap::BlitScaledTo32(unsigned char* pBuffer, int iSrcX, int iSrcY, int iSrcWidth, int iSrcHeight, int iDestX, int iDestY, int iDestWidth, int iDestHeight, int iDestBufferWidth)
 {
@@ -369,9 +364,4 @@ int CGlyphBitmap::BlitScaledTo32(unsigned char* pBuffer, int iSrcX, int iSrcY, i
 
 	return 1;
 }
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic error  "-Woverflow"
-	#endif
-#endif
 //-------------------------------------------------------------------------------------------------

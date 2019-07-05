@@ -21,6 +21,8 @@ struct CVars
 
 	static int sc_allowFlowGraphNodes;
 
+	static int    sc_SettingsNotFoundWarning;
+
 	static void               Register();
 	static void               Unregister();
 

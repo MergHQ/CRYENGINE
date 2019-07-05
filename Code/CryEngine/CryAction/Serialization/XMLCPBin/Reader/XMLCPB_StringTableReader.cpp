@@ -19,7 +19,7 @@ CStringTableReader::CStringTableReader(IGeneralMemoryHeap* pHeap)
 //////////////////////////////////////////////////////////////////////////
 const char* CStringTableReader::GetString(StringID stringId) const
 {
-	assert(stringId < m_stringAddrs.size());
+	CRY_ASSERT(stringId < m_stringAddrs.size());
 	char* pString = (char*)(m_buffer.GetPointer(m_stringAddrs[stringId]));
 	return pString;
 }
@@ -28,7 +28,7 @@ const char* CStringTableReader::GetString(StringID stringId) const
 
 void CStringTableReader::ReadFromFile(CReader& Reader, IPlatformOS::ISaveReaderPtr pOSSaveReader, const SFileHeader::SStringTable& headerInfo)
 {
-	assert(m_stringAddrs.empty());
+	CRY_ASSERT(m_stringAddrs.empty());
 
 	m_stringAddrs.resize(headerInfo.m_numStrings);
 	FlatAddr* pstringAddrsTable = &(m_stringAddrs[0]);
@@ -43,7 +43,7 @@ void CStringTableReader::ReadFromFile(CReader& Reader, IPlatformOS::ISaveReaderP
 
 void CStringTableReader::ReadFromMemory(CReader& Reader, const uint8* pData, uint32 dataSize, const SFileHeader::SStringTable& headerInfo, uint32& outReadLoc)
 {
-	assert(m_stringAddrs.empty());
+	CRY_ASSERT(m_stringAddrs.empty());
 
 	m_stringAddrs.resize(headerInfo.m_numStrings);
 	FlatAddr* pstringAddrsTable = &(m_stringAddrs[0]);

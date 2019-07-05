@@ -128,7 +128,7 @@ private:
 		const int animID = m_charInstance->GetIAnimationSet()->GetAnimIDByCRC(params.animRef.crc);
 		if (animID >= 0)
 		{
-			assert(animID <= 65535);
+			CRY_ASSERT(animID <= 65535);
 
 			m_token = GetNextToken((uint16)animID);
 

@@ -11,12 +11,9 @@
 #include <CryCore/Project/ProjectDefines.h>
 
 
-/* *********************************************************************
-* ENABLE_GFX_VIDEO disabled by default
-* If needed, contact CryENGINE Support to get latest gfxvideo libs
-* and uncomment this line
-* ******************************************************************* */
-//#define ENABLE_GFX_VIDEO
+// Enable Scaleform Video playback implementation
+// Note: This requires linking against Scaleform Video library
+#define ENABLE_GFX_VIDEO
 
 // Enable Scaleform IME implementation
 // Note: This requires linking against Scaleform IME plugin library

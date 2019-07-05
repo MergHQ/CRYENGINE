@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "PolygonClipContext.h"
+#include "CryThreading/IJobManager.h"
 #include "RoadRenderNode.h"
 #include "Brush.h"
 #include "RenderMeshMerger.h"
@@ -10,16 +11,12 @@
 #include <CryAnimation/ICryAnimation.h>
 #include "LightEntity.h"
 
-#ifndef PI
-	#define PI 3.14159f
-#endif
-
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::PrepareCullbufferAsync(const CCamera& rCamera)
+void CObjManager::PrepareCullbufferAsync(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey)
 {
 	if (gEnv->pRenderer)
 	{
-		m_CullThread.PrepareCullbufferAsync(rCamera);
+		m_CullThread.PrepareCullbufferAsync(rCamera, cullGraphicsContextKey);
 	}
 }
 
@@ -42,23 +39,37 @@ void CObjManager::EndOcclusionCulling()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
+void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo, bool waitForLights)
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderNonJobObjects");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("RenderNonJobObjects");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "3DEngine: RenderNonJobObjects");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CObjManager::RenderNonJobObjects");
 
-	SCheckOcclusionOutput outputData;
+	bool hasWaited = false;
 	while (1)
 	{
-		// process till we know that no more procers are working
-		if (!GetObjManager()->PopFromCullOutputQueue(&outputData))
-			break;
+		// Optimization:
+		// First we work off all already queued occlusion job outputs.
+		// Once there is no more output in the queue, we wait on the occlusion jobs to finish which will spawn an extra worker.
+		// Lastly we work off all remaining occlusion job outputs
+		SCheckOcclusionOutput outputData;
+		if (!GetObjManager()->PopFromCullOutputQueue(outputData))
+		{
+			if (!hasWaited)
+			{
+				m_CullThread.WaitOnCheckOcclusionJobs(waitForLights);
+				hasWaited = true;
+				continue;
+			}
+			else if (!GetObjManager()->PopFromCullOutputQueue(outputData))
+			{
+				break;
+			}
+		}
 
 		switch (outputData.type)
 		{
 		case SCheckOcclusionOutput::ROAD_DECALS:
 			GetObjManager()->RenderDecalAndRoad(outputData.common.pObj,
-			                                    outputData.common.pAffectingLights,
 			                                    outputData.vAmbColor,
 			                                    outputData.objBox,
 			                                    outputData.common.fEntDistance,
@@ -73,7 +84,6 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 				case eERType_Brush:
 				case eERType_MovableBrush:
 					GetObjManager()->RenderBrush((CBrush*)outputData.common.pObj,
-					                             outputData.common.pAffectingLights,
 					                             outputData.common.pTerrainTexInfo,
 					                             outputData.objBox,
 					                             outputData.common.fEntDistance,
@@ -84,7 +94,6 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 
 				case eERType_Vegetation:
 					GetObjManager()->RenderVegetation((CVegetation*)outputData.common.pObj,
-					                                  outputData.common.pAffectingLights,
 					                                  outputData.objBox,
 					                                  outputData.common.fEntDistance,
 					                                  outputData.common.pTerrainTexInfo,
@@ -95,7 +104,6 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 
 				default:
 					GetObjManager()->RenderObject(outputData.common.pObj,
-					                              outputData.common.pAffectingLights,
 					                              outputData.vAmbColor,
 					                              outputData.objBox,
 					                              outputData.common.fEntDistance,
@@ -159,10 +167,4 @@ bool IsValidOccluder(IMaterial* pMat)
 			return false;
 	}
 	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObjManager::BeginCulling()
-{
-	m_CheckOcclusionOutputQueue.SetRunningState();
 }

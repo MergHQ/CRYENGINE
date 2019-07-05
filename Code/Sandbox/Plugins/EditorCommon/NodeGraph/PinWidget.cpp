@@ -34,11 +34,6 @@ public:
 		setAcceptHoverEvents(false);
 	}
 
-	~CProxyWidget()
-	{
-		return;
-	}
-
 	void hoverEnterEvent(QGraphicsSceneHoverEvent* pEvent) override
 	{
 		pEvent->setAccepted(false);
@@ -157,12 +152,16 @@ void CPinWidget::DeleteLater()
 	CNodeGraphViewGraphicsWidget::DeleteLater();
 }
 
+const CNodeGraphViewStyleItem& CPinWidget::GetStyle() const
+{
+	return *m_pStyle;
+}
+
 void CPinWidget::SetNameWidget(CPinName* pWidget)
 {
 	if (m_pContent == pWidget)
 		return;
 
-	QGraphicsScene* pScene = GetView().scene();
 	if (m_pContent)
 	{
 		m_pName = nullptr;
@@ -517,4 +516,3 @@ void CPinWidget::UpdateConnectionPoint()
 }
 
 }
-

@@ -116,7 +116,7 @@ struct IAIActorProxy :
 
 	virtual void        UpdateMeAlways(bool doUpdateMeAlways) = 0;
 
-	virtual void        SetBehaviour(const char* szBehavior, const IAISignalExtraData* pData = 0) = 0;
+	virtual void        SetBehaviour(const char* szBehavior, const AISignals::IAISignalExtraData* pData = 0) = 0;
 
 	virtual void        OnActorRemoved() {}
 

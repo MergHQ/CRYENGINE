@@ -117,7 +117,7 @@ struct SPixFormatSupport
 
 	SPixFormat  m_FormatR9G9B9E5;                    // Shared exponent RGB
 
-#if CRY_RENDERER_OPENGL || CRY_RENDERER_VULKAN
+#if CRY_RENDERER_VULKAN
 	SPixFormat  m_FormatEAC_R11;                     // EAC compressed single channel for mobile, unsigned
 	SPixFormat  m_FormatEAC_R11S;                    // EAC compressed single channel for mobile, signed
 	SPixFormat  m_FormatEAC_RG11;                    // EAC compressed dual channel for mobile, unsigned
@@ -229,14 +229,14 @@ namespace DeviceFormats
 	D3DFormat ConvertToFloat         (D3DFormat nFormat  );
 	D3DFormat ConvertToTypeless      (D3DFormat nFormat  );
 
-	inline ETEX_Format ConvertToDepthStencil(ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToDepthStencil  (ConvertFromTexFormat(nFormat))); };
-	inline ETEX_Format ConvertToStencilOnly (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToStencilOnly   (ConvertFromTexFormat(nFormat))); };
-	inline ETEX_Format ConvertToDepthOnly   (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToDepthOnly     (ConvertFromTexFormat(nFormat))); };
-	inline ETEX_Format ConvertToSRGB        (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToSRGB          (ConvertFromTexFormat(nFormat))); };
-	inline ETEX_Format ConvertToSigned      (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToSigned        (ConvertFromTexFormat(nFormat))); };
-	inline ETEX_Format ConvertToUnsigned    (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToUnsigned      (ConvertFromTexFormat(nFormat))); };
-	inline ETEX_Format ConvertToFloat       (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToFloat         (ConvertFromTexFormat(nFormat))); };
-	inline ETEX_Format ConvertToTypeless    (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToTypeless      (ConvertFromTexFormat(nFormat))); };
+	inline ETEX_Format ConvertToDepthStencil(ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToDepthStencil  (ConvertFromTexFormat(nFormat))); }
+	inline ETEX_Format ConvertToStencilOnly (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToStencilOnly   (ConvertFromTexFormat(nFormat))); }
+	inline ETEX_Format ConvertToDepthOnly   (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToDepthOnly     (ConvertFromTexFormat(nFormat))); }
+	inline ETEX_Format ConvertToSRGB        (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToSRGB          (ConvertFromTexFormat(nFormat))); }
+	inline ETEX_Format ConvertToSigned      (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToSigned        (ConvertFromTexFormat(nFormat))); }
+	inline ETEX_Format ConvertToUnsigned    (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToUnsigned      (ConvertFromTexFormat(nFormat))); }
+	inline ETEX_Format ConvertToFloat       (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToFloat         (ConvertFromTexFormat(nFormat))); }
+	inline ETEX_Format ConvertToTypeless    (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToTypeless      (ConvertFromTexFormat(nFormat))); }
 
 	UINT GetStride                   (D3DFormat format   );
 }

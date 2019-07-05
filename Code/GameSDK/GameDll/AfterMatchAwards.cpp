@@ -143,7 +143,7 @@ void CAfterMatchAwards::Update(const float dt)
 					DbgLog("CAfterMatchAwards::Update() timeOut has occurred waiting for clients to send results. haveReceived=%d; waitingForNum=%d. Continuing anyway", numReceived, numPresent);
 				}
 
-				CRY_ASSERT_MESSAGE(m_timeOutLeftWaitingForClients > 0.f, string().Format("AfterMatchAwards Update() - timeOut has occurred waiting for awards from clients. haveReceived=%d; waitingForNum=%d. Continuing anyways with incomplete results", numReceived, numPresent));
+				CRY_ASSERT(m_timeOutLeftWaitingForClients > 0.f, string().Format("AfterMatchAwards Update() - timeOut has occurred waiting for awards from clients. haveReceived=%d; waitingForNum=%d. Continuing anyways with incomplete results", numReceived, numPresent));
 
 				if (numReceived == (numPresent) || m_timeOutLeftWaitingForClients <= 0.f) 
 				{
@@ -182,7 +182,7 @@ CAfterMatchAwards::SAwardsForPlayer *CAfterMatchAwards::GetAwardsForActor(Entity
 	if(!pActor || !pActor->IsPlayer())
 		return NULL;
 
-	CRY_ASSERT_MESSAGE(actorId, "GetAwardsForActor() has been passed an invalid NULL entityID.");
+	CRY_ASSERT(actorId, "GetAwardsForActor() has been passed an invalid NULL entityID.");
 	if (actorId == 0)
 	{
 		DbgLog("CAfterMatchAwards::GetAwardsForActor() passed in actorId=0 returning rather than poluting map!!");
@@ -206,7 +206,7 @@ void CAfterMatchAwards::CalculateAwardForActor(EAfterMatchAwards inAward, Entity
 {
 	DbgLog("CAfterMatchAwards::CalculateAwardForActor() inAward=%d (%s) inActorId=%d (%s)", inAward, GetNameForAward(inAward), inActorId, GetEntityName(inActorId));
 	SAwardsForPlayer *awards=GetAwardsForActor(inActorId);
-	CRY_ASSERT_MESSAGE(awards, "CalculateAwardForActor() failed to get award for actor!!");
+	CRY_ASSERT(awards, "CalculateAwardForActor() failed to get award for actor!!");
 	if (awards)
 	{
 		SAwardsForPlayer::SWorkingEle &result = awards->m_working[inAward];
@@ -232,11 +232,11 @@ void CAfterMatchAwards::CalculateAwardForActor(EAfterMatchAwards inAward, Entity
 			{
 				CGameRules *pGameRules = g_pGame->GetGameRules();
 				IGameRulesPlayerStatsModule *playerStats = pGameRules ? pGameRules->GetPlayerStatsModule() : NULL;
-				CRY_ASSERT_MESSAGE(playerStats, "CalculateAwardForActor() MostMotivated award requires the playerStats");
+				CRY_ASSERT(playerStats, "CalculateAwardForActor() MostMotivated award requires the playerStats");
 				if (playerStats)
 				{
 					const SGameRulesPlayerStat* statsForPlayer=playerStats->GetPlayerStats(inActorId);
-					CRY_ASSERT_MESSAGE(statsForPlayer, string().Format("CalculateAwardForActor() MostMotivated award, failed to find stats for actor=%s", GetEntityName(inActorId)));
+					CRY_ASSERT(statsForPlayer, string().Format("CalculateAwardForActor() MostMotivated award, failed to find stats for actor=%s", GetEntityName(inActorId)));
 					if (statsForPlayer)
 					{
 						result.m_data.m_float = (float)statsForPlayer->points;
@@ -665,7 +665,7 @@ EntityId CAfterMatchAwards::GetMinimumFloatFromWorking(EAfterMatchAwards inAward
 			continue;
 		}
 
-		CRY_ASSERT_MESSAGE(it->second.m_working[inAward].m_calculated, string().Format("GetMinimumFloatFromWorking() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
+		CRY_ASSERT(it->second.m_working[inAward].m_calculated, string().Format("GetMinimumFloatFromWorking() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
 		if (!it->second.m_working[inAward].m_calculated)
 		{
 			DbgLog("CAfterMatchAwards::GetMinimumFloatFromWorking() has found award=%s hasn't been calculated for player=%s. This should NOT happen. Skipping", GetNameForAward(inAward), GetEntityName(it->first));
@@ -704,7 +704,7 @@ void CAfterMatchAwards::GetAllFromWorkingWithFloat(EAfterMatchAwards inAward, fl
 			continue;
 		}
 
-		CRY_ASSERT_MESSAGE(it->second.m_working[inAward].m_calculated, string().Format("GetAllFromWorkingWithFloat() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
+		CRY_ASSERT(it->second.m_working[inAward].m_calculated, string().Format("GetAllFromWorkingWithFloat() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
 		if (!it->second.m_working[inAward].m_calculated)
 		{
 			DbgLog("CAfterMatchAwards::GetAllFromWorkingWithFloat() has found award=%s hasn't been calculated for player=%s. This should NOT happen. Skipping", GetNameForAward(inAward), GetEntityName(it->first));
@@ -739,7 +739,7 @@ void CAfterMatchAwards::GetAllFromWorkingGreaterThanFloat(EAfterMatchAwards inAw
 			continue;
 		}
 
-		CRY_ASSERT_MESSAGE(it->second.m_working[inAward].m_calculated, string().Format("GetAllFromWorkingGreaterThanFloat() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
+		CRY_ASSERT(it->second.m_working[inAward].m_calculated, string().Format("GetAllFromWorkingGreaterThanFloat() has encountered an working value for player=%s award=%s that hasn't been calculated. This shouldn't happen!", GetEntityName(it->first), GetNameForAward(inAward)));
 		if (!it->second.m_working[inAward].m_calculated)
 		{
 			DbgLog("CAfterMatchAwards::GetAllFromWorkingGreaterThanFloat() has found award=%s hasn't been calculated for player=%s. This should NOT happen. Skipping", GetNameForAward(inAward), GetEntityName(it->first));
@@ -762,8 +762,8 @@ void CAfterMatchAwards::ClCalculateAward(EAfterMatchAwards inAward)
 {
 	DbgLog("CAfterMatchAwards::ClCalculateAward() inAward=%s", GetNameForAward(inAward));
 
-	CRY_ASSERT_MESSAGE(gEnv->IsClient(), "have to have a local client to try and calculate awards on clients");
-	CRY_ASSERT_MESSAGE(GetFlagsForAward(inAward) & eAF_LocalClients, "award has to be an award calculated by local clients");
+	CRY_ASSERT(gEnv->IsClient(), "have to have a local client to try and calculate awards on clients");
+	CRY_ASSERT(GetFlagsForAward(inAward) & eAF_LocalClients, "award has to be an award calculated by local clients");
 
 	if (GetFlagsForAward(inAward) & eAF_LocalClients)
 	{
@@ -914,7 +914,7 @@ int CAfterMatchAwards::SvCalculateAward(EAfterMatchAwards inAward)
 			int awardsLen=awards->m_awards.size();
 			for (int j=0; j<awardsLen; j++)
 			{
-				CRY_ASSERT_MESSAGE(awards->m_awards[j] != inAward, string().Format("CAfterMatchAwards::SvCalculateAward() found we are pushing back a duplicate award=%d (%s) this shouldn't happen", inAward, GetNameForAward(inAward)));
+				CRY_ASSERT(awards->m_awards[j] != inAward, string().Format("CAfterMatchAwards::SvCalculateAward() found we are pushing back a duplicate award=%d (%s) this shouldn't happen", inAward, GetNameForAward(inAward)));
 				if (awards->m_awards[j] == inAward)
 				{
 					duplicate=true;
@@ -998,7 +998,7 @@ int CAfterMatchAwards::CalculateAward(EAfterMatchAwards inAward)
 	else
 	{
 		DbgLog("CAfterMatchAwards::CalculateAward() unhandled state.. we're not a server or a client!!!");
-		CRY_ASSERT_MESSAGE(0, "CalculateAward() unhandled state.. we're not a server or a client!!!");
+		CRY_ASSERT(0, "CalculateAward() unhandled state.. we're not a server or a client!!!");
 	}
 
 	return ret;
@@ -1160,7 +1160,7 @@ void CAfterMatchAwards::ClSendAwardsToServer()
 	EntityId localClientId = gEnv->pGameFramework->GetClientActorId();
 	SAwardsForPlayer *awards = GetAwardsForActor(localClientId);
 
-	CRY_ASSERT_MESSAGE(awards, "ClSendAwardsToServer() has failed to find the awards for local client");
+	CRY_ASSERT(awards, "ClSendAwardsToServer() has failed to find the awards for local client");
 	if (awards)
 	{
 		CGameRules::SAfterMatchAwardWorkingsParams rmiParams;
@@ -1267,7 +1267,7 @@ void CAfterMatchAwards::ClientReceivedAwards(int numAwards, const uint8 awardsAr
 	CryLog("CAfterMatchAwards::ClientReceivedAwards() numAwards=%d; localactor=%s; awards=%p", numAwards, GetEntityName(m_localClientEntityIdWas), awards);
 #endif
 
-	CRY_ASSERT_MESSAGE(awards, "ClientReceivedAwards() requires us to find our awards for what was our local client!!");
+	CRY_ASSERT(awards, "ClientReceivedAwards() requires us to find our awards for what was our local client!!");
 	if (awards)
 	{
 		for (int i=0; i<numAwards; i++)
@@ -1283,7 +1283,7 @@ void CAfterMatchAwards::ClientReceivedAwards(int numAwards, const uint8 awardsAr
 			else
 			{
 				DbgLog("CAfterMatchAwards::ClientReceivedAwards() has received a bad out of range award=%d", awardsArray[i]);
-				CRY_ASSERT_MESSAGE(0, string().Format("CAfterMatchAwards::ClientReceivedAwards() has received a bad out of range award=%d", awardsArray[i]));
+				CRY_ASSERT(0, string().Format("CAfterMatchAwards::ClientReceivedAwards() has received a bad out of range award=%d", awardsArray[i]));
 			}
 		}
 	}
@@ -1301,7 +1301,7 @@ void CAfterMatchAwards::ServerReceivedAwardsWorkingFromPlayer(EntityId playerEnt
 	DbgLog("CAfterMatchAwards::ServerReceivedAwardsWorkingFromPlayer() player=%d (%s); numWorkingValues=%d", playerEntityId, GetEntityName(playerEntityId), numWorkingValues);
 
 	SAwardsForPlayer *awards = GetAwardsForActor(playerEntityId);
-	CRY_ASSERT_MESSAGE(awards, string().Format("ServerReceivedAwardsWorkingFromPlayer() failed to find awards for player=%d (%s)", playerEntityId, GetEntityName(playerEntityId)));
+	CRY_ASSERT(awards, string().Format("ServerReceivedAwardsWorkingFromPlayer() failed to find awards for player=%d (%s)", playerEntityId, GetEntityName(playerEntityId)));
 
 	if (awards)
 	{
@@ -1318,7 +1318,7 @@ void CAfterMatchAwards::ServerReceivedAwardsWorkingFromPlayer(EntityId playerEnt
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(0, string().Format("ServerRecevedAwardsWorkingFromPlayer() player=%s; recieved bad award out of range=%d", GetEntityName(playerEntityId), workingValues[i].m_award));
+				CRY_ASSERT(0, string().Format("ServerRecevedAwardsWorkingFromPlayer() player=%s; recieved bad award out of range=%d", GetEntityName(playerEntityId), workingValues[i].m_award));
 				DbgLog("ServerRecevedAwardsWorkingFromPlayer() player=%s; recieved bad award out of range=%d", GetEntityName(playerEntityId), workingValues[i].m_award);
 			}
 		}
@@ -1367,8 +1367,9 @@ void CAfterMatchAwards::FilterWinningAwards()
 			}
 
 		}
-
+#if CRY_DEBUG_LOG_ENABLED
 		int originalNumAwards=awards->m_awards.size();
+#endif
 
 		// filter out all awards already earned
 		CryFixedArray<EAfterMatchAwards, CAfterMatchAwards::kMaxLocalAwardsGiven> newlyWonAwards;
@@ -1376,7 +1377,6 @@ void CAfterMatchAwards::FilterWinningAwards()
 		len = awards->m_awards.size();
 		for( int i = 0; i < len; i++ )
 		{
-			int style = 0;
 			DbgLog("CAfterMatchAwards::FilterWinningAwards() has found that award=%s", GetNameForAward(awards->m_awards[i]));
 
 			if(IsAwardProhibited(awards->m_awards[i]))
@@ -1472,10 +1472,10 @@ void CAfterMatchAwards::HaveGotAwards()
 	m_state=k_state_game_ended_have_awards;
 	DebugMe();
 
-	CRY_ASSERT_MESSAGE(m_localClientEntityIdWas, "HaveGotAwards() failed, no local client entity set");
+	CRY_ASSERT(m_localClientEntityIdWas, "HaveGotAwards() failed, no local client entity set");
 
 	SAwardsForPlayer *awards = GetAwardsForActor(m_localClientEntityIdWas);
-	CRY_ASSERT_MESSAGE(awards, "HaveGotAwards() failed to find awards for localClient");
+	CRY_ASSERT(awards, "HaveGotAwards() failed to find awards for localClient");
 	if (awards)
 	{
 		FilterWinningAwards();

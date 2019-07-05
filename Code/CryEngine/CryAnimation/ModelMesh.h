@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include <Cry3DEngine/I3DEngine.h>
 #include <Cry3DEngine/CGF/CGFContent.h>
+#include <Cry3DEngine/IMaterial.h>
+#include <CryRenderer/IShader.h>
 #include "Vertex/VertexData.h"
 
 class CSkin;
@@ -41,9 +44,14 @@ struct RChunk
 
 struct MeshStreamInfo
 {
-	MeshStreamInfo()
+	MeshStreamInfo() : 
+		nRoundIds(),
+		nFrameId(0),
+		nKeepResidentRefs(0),
+		bHasMeshFile(false),
+		bIsUrgent(false),
+		pStreamer(nullptr)
 	{
-		memset(this, 0, sizeof(*this));
 	}
 
 	uint32        nRoundIds[MAX_STREAM_PREDICTION_ZONES];
@@ -51,7 +59,7 @@ struct MeshStreamInfo
 	uint32        nKeepResidentRefs;
 	bool          bHasMeshFile;
 	bool          bIsUrgent;
-	CryCHRLoader* pStreamer;
+	std::shared_ptr<CryCHRLoader> pStreamer;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -83,7 +91,7 @@ public:
 
 #ifdef EDITOR_PCDEBUGCODE
 	void ExportModel(IRenderMesh* pIRenderMesh);
-	void DrawWireframeStatic(const Matrix34& m34, uint32 color);
+	void DrawWireframeStatic(const Matrix34& renderMatrix, const ColorB& color);
 #endif
 
 	size_t SizeOfModelMesh() const;
@@ -113,4 +121,20 @@ public:
 	int           m_faceCount;
 
 	CSoftwareMesh m_softwareMesh;
+
+	struct sModelCache
+	{
+		std::vector<Vec3> vertices;
+		std::vector<Vec2> UVs;
+		std::vector<vtx_idx> indices;
+ 	};
+
+	sModelCache& CreateModelCache();
+	sModelCache const& GetModelCache() const;
+	bool HasModelCache() const;
+
+private:
+
+	std::shared_ptr<sModelCache> m_modelCache; //!< Mesh data storage - shared ownership, since CModelMesh is copied on different occasions
+
 };

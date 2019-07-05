@@ -19,7 +19,6 @@
 #include "IViewSystem.h"
 #include "CryAction.h"
 #include "IGameObject.h"
-#include <CryAISystem/IAgent.h>
 
 #include "Vehicle.h"
 #include "VehicleComponent.h"
@@ -455,13 +454,13 @@ void CVehicleComponent::Serialize(TSerialize ser, EEntityAspects aspects)
 	{
 		ser.Value("damage", m_damage);
 
-		if (ser.IsReading())
+		/*if (ser.IsReading())
 		{
 			float damageRatio = 1.0f;
 			if (m_pSharedParams->damageMax > 0.0f)
 				damageRatio = m_damage / m_pSharedParams->damageMax;
 			int damageLevel = int(min(damageRatio, 1.0f) / 0.25f);
-		}
+		}*/
 
 		for (TVehicleDamageBehaviorVector::iterator ite = m_damageBehaviors.begin(); ite != m_damageBehaviors.end(); ++ite)
 		{
@@ -730,7 +729,7 @@ CVehicleComponent::SSharedParamsConstPtr CVehicleComponent::GetSharedParams(cons
 			sharedParams.useDamageLevels = true;
 		}
 
-		assert(m_pVehicle->GetEntity());
+		CRY_ASSERT(m_pVehicle->GetEntity());
 		CVehicleDamages::ParseDamageMultipliers(sharedParams.damageMultipliersByHitType, sharedParams.damageMultipliersByProjectile, paramsTable, *m_pVehicle->GetEntity());
 
 		pSharedParams = CastSharedParamsPtr<SSharedParams>(pSharedParamsManager->Register(vehicleComponentName, sharedParams));

@@ -14,8 +14,7 @@
 
 #pragma once
 
-#ifndef _GAME_XML_PARAM_READER_H_
-	#define _GAME_XML_PARAM_READER_H_
+#include <CrySystem/XML/IXml.h>
 
 class CGameXmlParamReader
 {
@@ -199,10 +198,6 @@ private:
 
 		int devmodeFilter = 0;
 		xmlNode->getAttr("DEVMODE", devmodeFilter);
-		if (devmodeFilter != 0)
-		{
-			int i = 0;
-		}
 
 		const bool devmodeFiltered = devmodeFilter != 0 && m_devmodeFilter;
 		const bool gameModeFiltered = (gameAttribute != NULL) && gameAttribute[0] && (strcmp(gameAttribute, m_gameModeFilter.c_str()) != 0);
@@ -230,5 +225,3 @@ private:
 	CryFixedStringT<4> m_gameModeFilter;
 	bool               m_devmodeFilter;
 };
-
-#endif //_GAME_XML_PARAM_READER_H_

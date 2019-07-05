@@ -34,14 +34,18 @@ uint CFlashUIEventSystem::RegisterEvent(const SUIEventDesc& sEventDesc)
 //------------------------------------------------------------------------------------
 void CFlashUIEventSystem::RegisterListener(IUIEventListener* pListener, const char* name)
 {
+#if defined(USE_CRY_ASSERT)
 	const bool ok = m_listener.Add(pListener, name);
-	CRY_ASSERT_MESSAGE(ok, "Listener already registered!");
+	CRY_ASSERT(ok, "Listener already registered!");
+#else
+	m_listener.Add(pListener, name);
+#endif
 }
 
 //------------------------------------------------------------------------------------
 void CFlashUIEventSystem::UnregisterListener(IUIEventListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_listener.Contains(pListener), "Listener was never registered or already unregistered!");
+	CRY_ASSERT(m_listener.Contains(pListener), "Listener was never registered or already unregistered!");
 	m_listener.Remove(pListener);
 }
 

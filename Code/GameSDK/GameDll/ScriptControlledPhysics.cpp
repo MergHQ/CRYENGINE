@@ -133,7 +133,7 @@ void CScriptControlledPhysics::PostInit( IGameObject * pGameObject )
 bool CScriptControlledPhysics::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	if (IPhysicalEntity *pPE=GetEntity()->GetPhysics())
+	if (GetEntity()->GetPhysics() != nullptr)
 	{
 		SCP::RegisterEvents(*this,*pGameObject);
 	}
@@ -142,7 +142,7 @@ bool CScriptControlledPhysics::ReloadExtension( IGameObject * pGameObject, const
 		pGameObject->UnRegisterExtForEvents( this, NULL, 0 );
 	}
 
-	CRY_ASSERT_MESSAGE(false, "CScriptControlledPhysics::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CScriptControlledPhysics::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -150,7 +150,7 @@ bool CScriptControlledPhysics::ReloadExtension( IGameObject * pGameObject, const
 //------------------------------------------------------------------------
 bool CScriptControlledPhysics::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CScriptControlledPhysics::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CScriptControlledPhysics::GetEntityPoolSignature not implemented");
 	
 	return true;
 }

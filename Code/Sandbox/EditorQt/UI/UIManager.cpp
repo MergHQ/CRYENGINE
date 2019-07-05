@@ -2,12 +2,15 @@
 
 #include "StdAfx.h"
 #include "UIManager.h"
+#include "IEditorImpl.h"
 
-#include "../HyperGraph/FlowGraph.h"
-#include "../HyperGraph/FlowGraphManager.h"
+#include "HyperGraph/FlowGraph.h"
+#include "HyperGraph/FlowGraphManager.h"
 
-#include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include <Controls/QuestionDialog.h>
+#include <PathUtils.h>
+#include <Util/FileUtil.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define UI_ACTIONS_FOLDER "UIActions"
 #define GRAPH_FILE_FILTER "Graph XML Files (*.xml)|*.xml"
@@ -15,15 +18,11 @@
 float CUIManager::CV_gfx_FlashReloadTime = 0;
 int CUIManager::CV_gfx_FlashReloadEnabled = 0;
 
-////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////
 CUIManager::CUIManager()
-	: m_pEditor(NULL)
+	: m_pEditor(nullptr)
 {
 }
 
-////////////////////////////////////////////////////////////////////
 CUIManager::~CUIManager()
 {
 	GetIEditorImpl()->GetLevelIndependentFileMan()->UnregisterModule(this);
@@ -33,7 +32,6 @@ CUIManager::~CUIManager()
 		gEnv->pFlashUI->UnregisterModule(this);
 }
 
-////////////////////////////////////////////////////////////////////
 void CUIManager::Init()
 {
 	if (gEnv->pFlashUI)
@@ -46,13 +44,11 @@ void CUIManager::Init()
 	REGISTER_CVAR2("gfx_FlashReloadEnabled", &CV_gfx_FlashReloadEnabled, 0, VF_NULL, "Enable live reloading of changed flash assets. 0=Disabled, 1=Enabled");
 }
 
-////////////////////////////////////////////////////////////////////
 bool CUIManager::IsFlashEnabled() const
 {
 	return true;
 }
 
-////////////////////////////////////////////////////////////////////
 void CUIManager::ReloadActionGraphs(bool bReloadGraphs)
 {
 	if (!gEnv->pFlashUI)
@@ -85,7 +81,6 @@ void CUIManager::ReloadActionGraphs(bool bReloadGraphs)
 	}
 }
 
-////////////////////////////////////////////////////////////////////
 void CUIManager::SaveChangedGraphs()
 {
 	if (!gEnv->pFlashUI)
@@ -112,7 +107,6 @@ void CUIManager::SaveChangedGraphs()
 	}
 }
 
-////////////////////////////////////////////////////////////////////
 bool CUIManager::HasModifications()
 {
 	if (!gEnv->pFlashUI)
@@ -133,7 +127,6 @@ bool CUIManager::HasModifications()
 	return false;
 }
 
-////////////////////////////////////////////////////////////////////
 bool CUIManager::NewUIAction(CString& filename)
 {
 	if (!gEnv->pFlashUI)
@@ -181,13 +174,11 @@ bool CUIManager::NewUIAction(CString& filename)
 	return false;
 }
 
-////////////////////////////////////////////////////////////////////
 void CUIManager::ReloadScripts()
 {
 	gEnv->pFlashUI->Reload();
 }
 
-////////////////////////////////////////////////////////////////////
 bool CUIManager::PromptChanges()
 {
 	if (HasModifications())
@@ -206,7 +197,6 @@ bool CUIManager::PromptChanges()
 	return true;
 }
 
-////////////////////////////////////////////////////////////////////
 CString CUIManager::GetUIActionFolder()
 {
 	ICVar* pFolderVar = gEnv->pConsole->GetCVar("gfx_uiaction_folder");
@@ -216,15 +206,25 @@ CString CUIManager::GetUIActionFolder()
 	return folder;
 }
 
-////////////////////////////////////////////////////////////////////
 bool CUIManager::EditorAllowReload()
 {
 	return PromptChanges();
 }
 
-////////////////////////////////////////////////////////////////////
 void CUIManager::EditorReload()
 {
 	ReloadActionGraphs(true);
 }
 
+namespace Private_EditorCommands
+{
+void ReloadUIScripts()
+{
+	GetIEditorImpl()->GetUIManager()->ReloadScripts();
+}
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ReloadUIScripts, ui, reload_all_scripts,
+                                   CCommandDescription("Reloads all UI scripts"))
+REGISTER_EDITOR_UI_COMMAND_DESC(ui, reload_all_scripts, "Reload All UI Scripts", "", "", false)
+REGISTER_COMMAND_REMAPPING(ui_action, actionReload_UI_Scripts, ui, reload_all_scripts)

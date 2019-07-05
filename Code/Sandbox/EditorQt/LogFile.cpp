@@ -2,11 +2,13 @@
 
 #include "stdafx.h"
 #include "LogFile.h"
-#include "CryEdit.h"
 
+#include "CryEdit.h"
 #include "ProcessInfo.h"
 
+#include <Controls/QuestionDialog.h>
 #include <Preferences/GeneralPreferences.h>
+#include <CrySystem/IConsole.h>
 
 #define EDITOR_LOG_FILE "Editor.log"
 
@@ -17,7 +19,6 @@ bool CLogFile::m_bShowMemUsage = false;
 
 #define MAX_LOGBUFFER_SIZE 16384
 
-//////////////////////////////////////////////////////////////////////////
 void Error(const char* format, ...)
 {
 	va_list args;
@@ -39,7 +40,6 @@ void Error(const char* format, ...)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void Warning(const char* format, ...)
 {
 	va_list args;
@@ -64,7 +64,6 @@ void Warning(const char* format, ...)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void Log(const char* format, ...)
 {
 	va_list args;
@@ -77,7 +76,6 @@ void Log(const char* format, ...)
 	CLogFile::WriteLine(szBuffer);
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* CLogFile::GetLogFileName()
 {
 	// Return the path
@@ -106,7 +104,6 @@ void CLogFile::AboutSystem()
 	char szProfileBuffer[128];
 	char szLanguageBuffer[64];
 	//char szCPUModel[64];
-	char* pChar = 0;
 	MEMORYSTATUS MemoryStatus;
 	DEVMODE DisplayConfig;
 	RTL_OSVERSIONINFOEXW OSVerInfo = { 0 };
@@ -305,7 +302,6 @@ void CLogFile::AboutSystem()
 	CryLog("--------------------------------------------------------------------------------");
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CLogFile::GetMemUsage()
 {
 	ProcessMemInfo mi;
@@ -321,13 +317,11 @@ string CLogFile::GetMemUsage()
 	return str;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLogFile::WriteLine(const char* pszString)
 {
 	CryLog(pszString);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLogFile::WriteString(const char* pszString)
 {
 	gEnv->pLog->LogPlus(pszString);
@@ -359,7 +353,6 @@ static inline string CopyAndRemoveColorCode(const char* sText)
 	return ret.GetString();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLogFile::OnWriteToConsole(const char* sText, bool bNewLine)
 {
 	if (!gEnv)
@@ -398,7 +391,7 @@ void CLogFile::OnWriteToConsole(const char* sText, bool bNewLine)
 
 		// remember selection and the top row
 		int len = ::GetWindowTextLength(m_hWndEditBox);
-		int top, from, to;
+		int top = 0, from = 0, to = 0;
 		SendMessage(m_hWndEditBox, EM_GETSEL, (WPARAM)&from, (LPARAM)&to);
 		bool keepPos = false;
 		bool locking = false;
@@ -478,8 +471,6 @@ void CLogFile::OnWriteToConsole(const char* sText, bool bNewLine)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CLogFile::OnWriteToFile(const char* sText, bool bNewLine)
 {
 }
-

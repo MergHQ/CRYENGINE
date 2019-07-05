@@ -17,6 +17,7 @@ History:
 #include "Game.h"
 #include "GameRules.h"
 #include <CryParticleSystem/ParticleParams.h>
+#include <Cry3DEngine/GeomRef.h>
 #include "Actor.h"
 #include "Player.h"
 #include "Weapon.h"
@@ -79,7 +80,7 @@ void CDamageEffectController::Init(CActor* actor)
 		damageEffectParams->GetAttribute("allowSerialise", allowSerialise);
 		m_allowSerialise = allowSerialise ? true : false;
 
-		CRY_ASSERT_MESSAGE(numChildren <= MAX_NUM_DAMAGE_EFFECTS, "Too many damage effects found. Increase the MAX_NUM_DAMAGE_EFFECTS and size of activeEffects and effectsResetSwitch");
+		CRY_ASSERT(numChildren <= MAX_NUM_DAMAGE_EFFECTS, "Too many damage effects found. Increase the MAX_NUM_DAMAGE_EFFECTS and size of activeEffects and effectsResetSwitch");
 
 		for (int i = 0; i < numChildren; i++)
 		{
@@ -132,7 +133,7 @@ void CDamageEffectController::OnHit(const HitInfo *hitInfo)
 		if (m_associatedHitType[i] == hitInfo->type && m_minDamage[i] < hitInfo->damage)
 		{
 			netSync = true;
-			CRY_ASSERT_MESSAGE(m_effectList[i], "The effect should not be null if a hit type is associated with it");
+			CRY_ASSERT(m_effectList[i], "The effect should not be null if a hit type is associated with it");
 			if (m_activeEffectsBitfield & bitCheck)
 			{
 				m_effectList[i]->Reset();
@@ -168,7 +169,7 @@ void CDamageEffectController::OnKill(const HitInfo* hitInfo)
 		if (m_associatedHitType[i] == hitInfo->type)
 		{
 			netSync = true;
-			CRY_ASSERT_MESSAGE(m_effectList[i], "The effect should not be null if a hit type is associated with it");
+			CRY_ASSERT(m_effectList[i], "The effect should not be null if a hit type is associated with it");
 			if (!(m_activeEffectsBitfield & bitCheck))
 			{
 				m_effectList[i]->Enter();
@@ -199,7 +200,7 @@ void CDamageEffectController::OnRevive()
 		if (m_activeEffectsBitfield & bitCheck)
 		{
 			netSync = true;
-			CRY_ASSERT_MESSAGE(m_effectList[i], "The effect should not be null if it is active");
+			CRY_ASSERT(m_effectList[i], "The effect should not be null if it is active");
 			
 			m_effectList[i]->Leave();
 		}
@@ -225,7 +226,7 @@ void CDamageEffectController::UpdateEffects(float frameTime)
 	{
 		if (m_activeEffectsBitfield & bitCheck)
 		{
-			CRY_ASSERT_MESSAGE(m_effectList[i], "The effect should not be null if it is active");
+			CRY_ASSERT(m_effectList[i], "The effect should not be null if it is active");
 
 			if (!m_effectList[i]->Update(frameTime) && gEnv->bServer)
 			{
@@ -265,7 +266,7 @@ void CDamageEffectController::SetActiveEffects(uint8 active)
 		bool locallyActive = !((m_activeEffectsBitfield & bitCheck) == 0);
 		if ( serverActive != locallyActive )
 		{
-			CRY_ASSERT_MESSAGE(m_effectList[i], "The effect should not be null");
+			CRY_ASSERT(m_effectList[i], "The effect should not be null");
 			if (serverActive)
 			{
 				m_effectList[i]->Enter();
@@ -291,8 +292,8 @@ void CDamageEffectController::SetEffectResetSwitch(uint8 reset)
 	{
 		if ((reset & bitCheck) != (m_effectsResetSwitchBitfield & bitCheck))
 		{
-			CRY_ASSERT_MESSAGE((m_activeEffectsBitfield & bitCheck), "Might not leave the effect and shouldn't happen");
-			CRY_ASSERT_MESSAGE(m_effectList[i], "The effect should not be null");
+			CRY_ASSERT((m_activeEffectsBitfield & bitCheck), "Might not leave the effect and shouldn't happen");
+			CRY_ASSERT(m_effectList[i], "The effect should not be null");
 			m_effectList[i]->Reset();
 		}
 		bitCheck = bitCheck << 1;
@@ -309,7 +310,7 @@ void CDamageEffectController::SetEffectsKilled(uint8 killed)
 	{
 		if ((killed & bitCheck) && !(m_effectsKillBitfield & bitCheck))
 		{
-			CRY_ASSERT_MESSAGE(m_effectList[i], "The effect should not be null");
+			CRY_ASSERT(m_effectList[i], "The effect should not be null");
 			m_effectList[i]->OnKill();
 		}
 		bitCheck = bitCheck << 1;
@@ -558,7 +559,7 @@ void CEntityTimerEffect::Enter()
 
 	if(gEnv->bServer)
 	{
-		m_ownerActor->GetEntity()->SetTimer(m_entityTimerID, (int)(m_initialTime*1000.f));
+		m_ownerActor->SetTimer(m_entityTimerID, (int)(m_initialTime*1000.f));
 	}
 }
 

@@ -50,23 +50,28 @@ void CameraOrbs::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 
 CameraOrbs::CameraOrbs(const char* name, const int numOrbs)
 	: COpticsElement(name, 0.19f)
-	, m_fSizeNoise(0.8f)
-	, m_fBrightnessNoise(0.4f)
-	, m_fRotNoise(0.8f)
-	, m_fClrNoise(0.5f)
-	, m_fIllumRadius(1.f)
 	, m_bUseLensTex(0)
 	, m_bOrbDetailShading(0)
 	, m_bLensDetailShading(0)
+
 	, m_fLensTexStrength(1.f)
 	, m_fLensDetailShadingStrength(0.157f)
 	, m_fLensDetailBumpiness(0.073f)
+
 	, m_bAdvancedShading(false)
 	, m_cAmbientDiffuse(LensOpConst::_LO_DEF_CLR_BLK)
 	, m_fAbsorptance(4.0f)
 	, m_fTransparency(0.37f)
 	, m_fScatteringStrength(1.0f)
+
+	, m_fIllumRadius(1.f)
+	
 	, m_iNoiseSeed(0)
+	, m_fSizeNoise(0.8f)
+	, m_fBrightnessNoise(0.4f)
+	, m_fRotNoise(0.8f)
+	, m_fClrNoise(0.5f)
+
 	, m_spriteAspectRatio(1.0f)
 {
 	m_Color.a = 1.f;
@@ -77,6 +82,8 @@ CameraOrbs::CameraOrbs(const char* name, const int numOrbs)
 
 	// share one constant buffer between both primitives
 	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
+	if (pSharedCB) pSharedCB->SetDebugName("CameraOrbs Per-Primitive CB");
+
 	m_GlowPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive,       pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	m_CameraLensPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 }
@@ -255,9 +262,9 @@ void CameraOrbs::ApplyAdvancedShadingFlag(uint64& rtFlags) const
 		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE2];
 }
 
-void CameraOrbs::ApplyAdvancedShadingParams(SShaderParams& shaderParams, CRenderPrimitive& primitive, const ColorF& ambDiffuseRGBK, float absorptance, float transparency, float scattering) const
+void CameraOrbs::ApplyAdvancedShadingParams(CGraphicsPipeline* pGraphicsPipeline, SShaderParams& shaderParams, CRenderPrimitive& primitive, const ColorF& ambDiffuseRGBK, float absorptance, float transparency, float scattering) const
 {
-	CTexture* pAmbTex = CRendererResources::s_ptexSceneTarget;
+	CTexture* pAmbTex = pGraphicsPipeline->GetPipelineResources().m_pTexSceneTarget;
 
 	shaderParams.ambientDiffuseRGBK = Vec4(ambDiffuseRGBK.r, ambDiffuseRGBK.g, ambDiffuseRGBK.b, ambDiffuseRGBK.a);
 	shaderParams.advShadingParams = Vec4(absorptance, transparency, scattering, 0);
@@ -278,7 +285,7 @@ bool CameraOrbs::PreparePrimitives(const SPreparePrimitivesContext& context)
 	ApplyAdvancedShadingFlag(rtFlags);
 	ApplyOcclusionBokehFlag(rtFlags);
 	ApplyOrbFlags(rtFlags, m_bOrbDetailShading);
-
+	
 	m_GlowPrimitive.SetTechnique(CShaderMan::s_ShaderLensOptics, techCameraOrbs, rtFlags);
 	m_GlowPrimitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 
@@ -302,7 +309,7 @@ bool CameraOrbs::PreparePrimitives(const SPreparePrimitivesContext& context)
 		if (m_globalOcclusionBokeh)
 			ApplyOcclusionPattern(constants, m_GlowPrimitive);
 		if (m_bAdvancedShading)
-			ApplyAdvancedShadingParams(constants, m_GlowPrimitive, GetAmbientDiffuseRGBK(), GetAbsorptance(), GetTransparency(), GetScatteringStrength());
+			ApplyAdvancedShadingParams(context.pGraphicsPipeline, constants, m_GlowPrimitive, GetAmbientDiffuseRGBK(), GetAbsorptance(), GetTransparency(), GetScatteringStrength());
 
 		const ColorF lightColor = m_globalFlareBrightness * m_globalColor * m_globalColor.a;
 		constants->lightColorInfo[0] = lightColor.r;

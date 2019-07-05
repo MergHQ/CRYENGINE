@@ -3,6 +3,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "AnimationDatabase.h"
 
@@ -352,7 +353,6 @@ uint32 CAnimationDatabase::Query(SFragmentData& outFragmentData, const SBlendQue
 
 	float timeTally = 0.0f;
 	float timeOffset = 0.0f;
-	EClipType prevClipType = eCT_Normal;
 	int clipIdx = 0;
 	if (blend1.pFragmentBlend)
 	{
@@ -1194,7 +1194,6 @@ void CAnimationDatabase::DeleteBlend(FragmentID fragmentIDFrom, FragmentID fragm
 			TFragmentBlendDatabase::iterator iter = m_fragmentBlendDB.find(blendID);
 			SFragmentBlendEntry& blendEntry = iter->second;
 
-			const uint32 numVariants = blendEntry.variantList.size();
 			for (TFragmentVariantList::iterator _iter = blendEntry.variantList.begin(); _iter != blendEntry.variantList.end(); ++_iter)
 			{
 				SFragmentBlendVariant& variantDel = *_iter;

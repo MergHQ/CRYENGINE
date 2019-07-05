@@ -9,6 +9,7 @@ namespace yasli
 
 struct CallbackInterface
 {
+	virtual ~CallbackInterface() {}
 	virtual bool serializeValue(Archive& ar, const char* name, const char* value) = 0;
 	virtual CallbackInterface* clone() = 0;
 	virtual void release() = 0;

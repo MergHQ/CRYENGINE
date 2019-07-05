@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "NodeGraphStyleUtils.h"
+#include <CryIcon.h>
 
 namespace CryGraphEditor {
 
@@ -46,4 +47,3 @@ QColor ColorMuliply(QColor a, QColor b)
 }
 
 }
-

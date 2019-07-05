@@ -211,8 +211,6 @@ bool CBinocular::ShouldUseSoundAttenuation( const CActor& ownerActor ) const
 {
 	if ((ownerActor.GetActorClass() == CPlayer::GetActorClassType()))
 	{
-		const  CPlayer& ownerPlayer = static_cast<const CPlayer&>(ownerActor);
-
 		return gEnv->bMultiplayer;
 	}
 

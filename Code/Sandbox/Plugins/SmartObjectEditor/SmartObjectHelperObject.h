@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SmartObjectHelperObject_h__
-#define __SmartObjectHelperObject_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Objects/BaseObject.h"
 
@@ -21,7 +16,7 @@ public:
 	DECLARE_DYNCREATE(CSmartObjectHelperObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
 	bool Init(CBaseObject* prev, const string& file);
 	void Done();
@@ -59,7 +54,7 @@ protected:
 	CSmartObjectHelperObject();
 	~CSmartObjectHelperObject();
 
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	float      m_innerRadius;
 	float      m_outerRadius;
@@ -79,11 +74,8 @@ protected:
 class CSmartObjectHelperClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; };
-	const char*    ClassName()       { return "SmartObjectHelper"; };
-	const char*    Category()        { return ""; };
-	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CSmartObjectHelperObject); };
+	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; }
+	const char*    ClassName()       { return "SmartObjectHelper"; }
+	const char*    Category()        { return ""; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CSmartObjectHelperObject); }
 };
-
-#endif // __SmartObjectHelperObject_h__
-

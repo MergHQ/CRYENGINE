@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __databasedialog_h__
-#define __databasedialog_h__
 #pragma once
 
 #include "Dialogs/ToolbarDialog.h"
@@ -19,7 +17,7 @@ class CDataBaseDialogPage : public CToolbarDialog
 {
 	DECLARE_DYNAMIC(CDataBaseDialogPage)
 public:
-	CDataBaseDialogPage(UINT nIDTemplate, CWnd* pParentWnd = NULL) : CToolbarDialog(nIDTemplate, pParentWnd) {};
+	CDataBaseDialogPage(UINT nIDTemplate, CWnd* pParentWnd = NULL) : CToolbarDialog(nIDTemplate, pParentWnd) {}
 
 	//! This dialog is activated.
 	virtual void SetActive(bool bActive) = 0;
@@ -41,7 +39,7 @@ public:
 	CDataBaseDialogPage* SelectDialog(EDataBaseItemType type, IDataBaseItem* pItem = NULL);
 
 	CDataBaseDialogPage* GetPage(int num);
-	int                  GetSelection() { return m_selectedCtrl; };
+	int                  GetSelection() { return m_selectedCtrl; }
 
 	void                 AddTab(const char* szTitle, CDataBaseDialogPage* wnd);
 	CDataBaseDialogPage* GetCurrent();
@@ -50,8 +48,8 @@ public:
 	void Update();
 
 protected:
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 	virtual void PostNcDestroy();
 
 	void         DoDataExchange(CDataExchange* pDX);
@@ -73,13 +71,6 @@ protected:
 	int                               m_selectedCtrl;
 
 	//////////////////////////////////////////////////////////////////////////
-	// Database dialogs.
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
 	// Menu.
 	//CXTMenuBar m_menubar;
 };
-
-#endif // __databasedialog_h__
-

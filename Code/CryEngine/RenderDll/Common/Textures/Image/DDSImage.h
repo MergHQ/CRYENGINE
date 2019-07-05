@@ -29,12 +29,12 @@ struct DDSDesc
 	const char*   pName;
 	uint32        nBaseOffset;
 
-	uint32        nWidth;
-	uint32        nHeight;
-	uint32        nDepth;
-	uint32        nSides;
-	uint32        nMips;
-	uint32        nMipsPersistent;
+	uint16        nWidth;
+	uint16        nHeight;
+	uint16        nDepth;
+	uint16        nSides;
+	int8          nMips;
+	int8          nMipsPersistent;
 	ETEX_Format   eFormat;
 	ETEX_TileMode eTileMode;
 	uint32        nFlags;
@@ -47,7 +47,7 @@ struct ChunkInfo
 	TPath  fileName;
 	uint32 nOffsetInFile;
 	uint32 nSizeInFile;
-	uint32 nMipLevel;
+	int8   nMipLevel;
 	uint32 nSideDelta;
 };
 
@@ -135,15 +135,15 @@ typedef std::vector<ChunkInfo> Chunks;
 
 TPath& MakeName(TPath& sOut, const char* sOriginalName, const uint32 nChunk, const uint32 nFlags);
 
-size_t GetFilesToRead(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, uint32 nStartMip, uint32 nEndMip);
+size_t GetFilesToRead(ChunkInfo* pFiles, size_t nFilesCapacity, const DDSDesc& desc, int8 nStartMip, int8 nEndMip);
 
 bool   SeekToAttachedImage(FileWrapper& file);
 
-size_t LoadMipRequests(RequestInfo* pReqs, size_t nReqsCap, const DDSDesc& desc, byte* pBuffer, uint32 nStartMip, uint32 nEndMip);
+size_t LoadMipRequests(RequestInfo* pReqs, size_t nReqsCap, const DDSDesc& desc, byte* pBuffer, int8 nStartMip, uint32 nEndMip);
 size_t LoadMipsFromRequests(const RequestInfo* pReqs, size_t nReqs);
-size_t LoadMips(byte* pBuffer, const DDSDesc& desc, uint32 nStartMip, uint32 nEndMip);
+size_t LoadMips(byte* pBuffer, const DDSDesc& desc, int8 nStartMip, int8 nEndMip);
 
-int    GetNumLastMips(const int nWidth, const int nHeight, const int nNumMips, const int nSides, ETEX_Format eTF, const uint32 nFlags);
+int8   GetNumLastMips(const uint16 nWidth, const uint16 nHeight, const int8 nNumMips, const uint16 nSides, ETEX_Format eTF, const uint32 nFlags);
 };
 
 class CImageDDSFile : public CImageFile
@@ -167,7 +167,7 @@ private: // --------------------------------------------------------------------
 	void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError);
 
 	bool SetHeaderFromMemory(byte* pFileStart, byte* pFileAfterHeader, uint32 nFlags);
-	int  AdjustHeader();
+	int8  AdjustHeader();
 
 	bool PostLoad();
 

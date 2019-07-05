@@ -59,7 +59,7 @@ struct SSerialisePerformanceMetrics : public INetChannel::SPerformanceMetrics
 class CNetChannel : public CNetMessageSinkHelper<CNetChannel, INetChannel>, public INubMember, public ICTPEndpointListener
 {
 public:
-	CNetChannel(const TNetAddress& ipRemote, const CExponentialKeyExchange::KEY_TYPE& key, uint32 remoteSocketCaps, CrySessionHandle session);
+	CNetChannel(const TNetAddress& ipRemote, ChannelSecurity::SInitState&& securityInit, uint32 remoteSocketCaps, CrySessionHandle session);
 	~CNetChannel();
 
 	// INetChannel
@@ -208,17 +208,7 @@ public:
 				Disconnect(eDC_ICMPError, "Send failed");
 		}
 	}
-	// send a packet out of band (not via the channel) directly to some other network address
-	// like CNetNub::SendTo
-	void SendWithNubTo(const uint8* pData, size_t nLength, const TNetAddress& to)
-	{
-		if (m_pNub)
-		{
-			if (!m_pNub->SendTo(pData, nLength, to))
-				Disconnect(eDC_ICMPError, "Send failed");
-		}
-		return;
-	}
+
 	void                     GetMemoryStatistics(ICrySizer* pSizer, bool countingThis = false);
 	void                     SetEntityId(EntityId id)             { m_ctpEndpoint.SetEntityId(id); }
 	uint32                   GetMostRecentAckedSeq() const        { return m_ctpEndpoint.GetMostRecentAckedSeq(); }
@@ -228,6 +218,7 @@ public:
 	CTimeValue               GetIdleTime(bool realtime)           { return g_time - (realtime ? m_nKeepAliveTimer2 : m_nKeepAliveTimer); }
 	CTimeValue               GetInactivityTimeout(bool backingOff);
 
+	ChannelSecurity::CHMac&  GetHmac()         { return m_hmac; }
 	CMementoMemoryManagerPtr GetChannelMMM()   { return m_pMMM; }
 
 	void                     UnblockMessages() { m_ctpEndpoint.UnblockMessages(); }
@@ -342,7 +333,7 @@ public:
 	bool WriteUrgentMessages(void) const { return m_writeUrgentMessages; }
 #endif // ENABLE_URGENT_RMIS
 
-	const CExponentialKeyExchange::KEY_TYPE& GetPrivateKey() { return m_privateKey; }
+	const CNetProfileTokens::SToken& GetToken() const { return m_token; }
 
 	virtual bool                             HasGameRequestedUpdate()
 	{
@@ -480,7 +471,8 @@ private:
 
 	std::queue<TMemHdl>               m_queuedForSyncPackets;
 	std::priority_queue<CTimeValue, std::vector<CTimeValue>, std::greater<CTimeValue>> m_pings;
-	CExponentialKeyExchange::KEY_TYPE m_privateKey;
+	CNetProfileTokens::SToken         m_token;
+	ChannelSecurity::CHMac            m_hmac;
 	TNetAddress                       m_ip;
 	SStatistics                       m_statistics;
 	SSendableHandle                   m_pongHdl;
@@ -555,6 +547,9 @@ private:
 	bool            m_writeUrgentMessages;
 	bool            m_haveUrgentMessages;
 #endif // ENABLE_URGENT_RMIS
+
+	// Hold ciphers and other parameters until CCtpEndpoint::EndInit()
+	std::unique_ptr<CCTPEndpoint::SEndInitParams> m_pEndInitParams;
 
 #if ENABLE_RMI_BENCHMARK
 

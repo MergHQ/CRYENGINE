@@ -24,7 +24,7 @@ ILINE int min_fast(int op1,int op2) { return op2 + (op1-op2 & (op1-op2)>>31); }
 #ifdef min
  #undef min
 #endif
-#if !defined(__GNUC__)
+#if !defined(CRY_COMPILER_GCC) && !defined(CRY_COMPILER_CLANG)
 	ILINE double min(double op1,double op2) { return (op1+op2-fabs(op1-op2))*0.5; }
 	ILINE double max(double op1,double op2) { return (op1+op2+fabs(op1-op2))*0.5; }
 	ILINE float min(float op1,float op2) { return (op1+op2-fabsf(op1-op2))*0.5f; }
@@ -134,20 +134,6 @@ ILINE int float2int(float x)
 #endif
 	return _mm_cvtss_si32(_mm_load_ss(&x));
 }
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-const float fmag = (1.5f*(1<<23));
-const int imag = -((23+127)<<23 | 1<<22);
-// had to rewrite in assembly, since it's impossible to tell the compiler that in this case 
-// addition is not associative, i.e. (x+0.5)+fmag!=x+(fmag+0.5)
-__declspec(naked) ILINE int float2int(float x)
-{ __asm {
-	fld [esp+4]
-	fadd fmag
-	mov eax, imag
-	fstp [esp-4]
-	add eax, [esp-4]
-	ret
-}}
 #else 
 ILINE int float2int(float x)
 {
@@ -417,9 +403,9 @@ template<class dtype> dtype* ReallocateList(dtype *&plist, int szold,int sznew, 
 	return plist;
 }
 
-Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, struct phys_geometry **ppgeom=0,struct IGeomManager *pGeoman=0);
+Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, struct phys_geometry **ppgeom=0,struct IGeomManager *pGeoman=0, Matrix33 *pskewMtx=0);
 const int DATA_UNSCALED_GEOM = -999;
-int BakeScaleIntoGeometry(struct phys_geometry *&pgeom,struct IGeomManager *pGeoman, const Vec3& s, int bReleaseOld=0);
+int BakeScaleIntoGeometry(struct phys_geometry *&pgeom,struct IGeomManager *pGeoman, const Vec3& s, int bReleaseOld=0, const Matrix33 *pskewMtx=0);
 
 //int BreakPolygon(Vec2 *ptSrc,int nPt, int nCellx,int nCelly, int maxPatchTris, Vec2 *&ptout,int *&nPtOut, 
 //								 float jointhresh=0.5f,int seed=-1);
@@ -753,7 +739,7 @@ struct costab {
 	float operator[](int idx) const { return g_sintab[SINCOSTABSZ-idx]; }
 };
 
-#ifdef __clang__
+#if CRY_COMPILER_CLANG || CRY_COMPILER_GCC
 #define g_costab costab()	// WORKAROUND: For some reason gets confused and expects lambda function
 #else
 #define g_costab (costab())
@@ -772,29 +758,11 @@ struct subref {
 
 // spinlocks
 /*ILINE void SpinLock(volatile int *pLock,int checkVal,int setVal) { 
-#if CRY_PLATFORM_X86
-	__asm {
-	mov edx, setVal
-	mov ecx, pLock
-	Spin:
-		mov eax, checkVal
-		lock cmpxchg [ecx], edx
-	jnz Spin }
-#else
 	while(_InterlockedCompareExchange(pLock,setVal,checkVal)!=checkVal);
-#endif
 }
 
 ILINE void AtomicAdd(volatile int *pVal, int iAdd) {
-#if CRY_PLATFORM_X86
-	__asm {
-		mov edx, pVal
-		mov eax, iAdd
-		lock add [edx], eax
-	}
-#else
 	_InterlockedExchangeAdd(pVal,iAdd);
-#endif
 }*/
 
 
@@ -968,5 +936,11 @@ ILINE const char* numbered_tag(const char *s,unsigned int num)
 	cry_sprintf(str, "%s_%u", s, num);
 	return str;
 }
+
+struct ScopeExitCall {
+	std::function<void(void)> callback;
+	ScopeExitCall(std::function<void(void)> func) : callback(func) {}
+	~ScopeExitCall() { callback(); }
+};
 
 #endif

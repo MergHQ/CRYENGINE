@@ -35,9 +35,9 @@ namespace Cry
 			}
 		}
 
-		uint64 CFogComponent::GetEventMask() const
+		Cry::Entity::EventFlags CFogComponent::GetEventMask() const
 		{
-			return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 		}
 	}
 }

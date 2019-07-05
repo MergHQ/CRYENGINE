@@ -336,9 +336,7 @@ void CExplosionGameEffect::SpawnScreenExplosionEffect(const SExplosionContainer 
 
 					float time = explosionInfo.flashbangScale * timeScale *lookingAt;	// time is determined by distance to explosion		
 
-					CRY_ASSERT_MESSAGE(pClientActor->IsPlayer(),"Effect shouldn't be spawned if not a player");
-
-					SPlayerStats* pStats = static_cast<SPlayerStats*>(pPlayer->GetActorStats());
+					CRY_ASSERT(pClientActor->IsPlayer(),"Effect shouldn't be spawned if not a player");
 
 					NET_BATTLECHATTER(BC_Blinded, pPlayer);
 

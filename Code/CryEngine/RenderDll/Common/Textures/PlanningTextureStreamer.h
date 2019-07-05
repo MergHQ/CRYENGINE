@@ -10,12 +10,9 @@
 struct SPlanningMemoryState
 {
 	ptrdiff_t nMemStreamed;
-	ptrdiff_t nStaticTexUsage;
-	ptrdiff_t nPhysicalLimit;
-	ptrdiff_t nTargetPhysicalLimit;
+	ptrdiff_t nPoolLimit;
 	ptrdiff_t nMemLimit;
 	ptrdiff_t nMemFreeSlack;
-	ptrdiff_t nUnknownPoolUsage;
 	ptrdiff_t nMemBoundStreamed;
 	ptrdiff_t nMemBoundStreamedPers;
 	ptrdiff_t nMemTemp;
@@ -67,10 +64,10 @@ struct SPlanningSortState
 	size_t               nStreamLimit;
 	int32                arrRoundIds[MAX_PREDICTION_ZONES];
 	int                  nFrameId;
-	int                  nBias;
-	int                  fpMinBias;
-	int                  fpMaxBias;
-	int                  fpMinMip;
+	int16                nBias;
+	int16                fpMinBias;
+	int16                fpMaxBias;
+	int16                fpMinMip;
 	SPlanningMemoryState memState;
 
 	// In/Out
@@ -91,7 +88,7 @@ struct SPlanningScheduleState
 {
 	int                    nFrameId;
 
-	int                    nBias;
+	int16                  nBias;
 	SPlanningMemoryState   memState;
 
 	TPlanningTextureReqVec requestList;
@@ -136,7 +133,6 @@ struct SPlanningTextureOrderKey
 	uint32    bUnloaded        : 1;
 	uint32    nStreamPrio      : 3;
 	uint32    nSlicesMinus1    : 9;
-	uint32    nSlicesPotMinus1 : 9;
 
 	enum
 	{
@@ -150,7 +146,7 @@ struct SPlanningTextureOrderKey
 	bool   IsVisible() const            { return (nKey & (1 << 29)) == 0; }
 	bool   IsInZone(int z) const        { return (nKey & (1 << (28 - z))) == 0; }
 	bool   IsPrecached() const          { return (nKey & ((1 << 31) | (1 << 28) | (1 << 27))) != ((1 << 31) | (1 << 28) | (1 << 27)); }
-	int    GetFpMinMipCur() const       { return static_cast<int16>(static_cast<int>(nKey & 0xffff) - PackedFpBias); }
+	int16  GetFpMinMipCur() const       { return static_cast<int16>(static_cast<int>(nKey & 0xffff) - PackedFpBias); }
 	uint16 GetFpMinMipCurBiased() const { return (uint16)nKey; }
 
 	SPlanningTextureOrderKey() {}
@@ -164,31 +160,30 @@ struct SPlanningTextureOrderKey
 		  (pTex->GetStreamRoundInfo(1).nRoundUpdateId >= nZoneIds[1] ? 0 : (1 << 27)) |
 		  static_cast<uint16>(pTex->GetRequiredMipFP() + PackedFpBias);
 
-		pTexture = pTex;
+		pTexture         = pTex;
 
-		nWidth = pTex->GetWidth();
-		nHeight = pTex->GetHeight();
-		nMips = pTex->GetNumMips();
-		nMipsPersistent = pTex->IsForceStreamHighRes() ?  pTex->GetNumMips() : pTex->GetNumPersistentMips();
-		nFormatCode = pTex->StreamGetFormatCode();
+		nWidth           = pTex->GetWidth();
+		nHeight          = pTex->GetHeight();
+		nMips            = pTex->GetNumMips();
+		nMipsPersistent  = pTex->IsForceStreamHighRes() ?  pTex->GetNumMips() : pTex->GetNumPersistentMips();
+		nFormatCode      = pTex->StreamGetFormatCode();
 
-		uint32 nSlices = pTex->StreamGetNumSlices();
-		nSlicesMinus1 = nSlices - 1;
-		nSlicesPotMinus1 = (1u << (32 - (nSlices > 1 ? countLeadingZeros32(nSlices - 1) : 32))) - 1;
+		uint32 nSlices   = pTex->StreamGetNumSlices();
+		nSlicesMinus1    = nSlices - 1;
 
-		nCurMip = pTex->StreamGetLoadedMip();
-		eTF = pTex->GetDstFormat();
-		nPersistentSize = pTex->GetPersistentSize();
-		bIsStreaming = pTex->IsStreaming();
-		bUnloaded = pTex->IsUnloaded();
-		nStreamPrio = pTex->StreamGetPriority();
+		nCurMip          = pTex->StreamGetLoadedMip();
+		eTF              = pTex->GetDstFormat();
+		nPersistentSize  = pTex->GetPersistentSize();
+		bIsStreaming     = pTex->IsStreaming();
+		bUnloaded        = pTex->IsUnloaded();
+		nStreamPrio      = pTex->StreamGetPriority();
 	}
 };
 
 struct SPlanningRequestIdent
 {
 	SPlanningRequestIdent() {}
-	SPlanningRequestIdent(uint32 nSortKey, int nKey, int nMip)
+	SPlanningRequestIdent(uint32 nSortKey, int nKey, int8 nMip)
 		: nSortKey(nSortKey)
 		, nKey(nKey)
 		, nMip(nMip)
@@ -213,7 +208,7 @@ public:
 	virtual void  EndPrepare(STexStreamPrepState*& pState);
 
 	virtual void  Precache(CTexture* pTexture);
-	virtual void  UpdateMip(CTexture* pTexture, const float fMipFactor, const int nFlags, const int nUpdateId, const int nCounter);
+	virtual void  UpdateMip(CTexture* pTexture, const float fMipFactor, const int nFlags, const int nUpdateId);
 
 	virtual void  OnTextureDestroy(CTexture* pTexture);
 
@@ -246,8 +241,8 @@ private:
 
 	void                 Job_UpdateMip(CTexture* pTexture, const float fMipFactor, const int nFlags, const int nUpdateId);
 	void                 Job_Sort();
-	int                  Job_Bias(SPlanningSortState& sortState, SPlanningTextureOrderKey* pKeys, size_t nNumPrecachedTexs, size_t nStreamLimit);
-	size_t               Job_Plan(SPlanningSortState& sortState, const SPlanningTextureOrderKey* pKeys, size_t nTextures, size_t nNumPrecachedTexs, size_t nBalancePoint, int nMinMip, int fpSortStateBias);
+	int16                Job_Bias(SPlanningSortState& sortState, SPlanningTextureOrderKey* pKeys, size_t nNumPrecachedTexs, size_t nStreamLimit);
+	size_t               Job_Plan(SPlanningSortState& sortState, const SPlanningTextureOrderKey* pKeys, size_t nTextures, size_t nNumPrecachedTexs, size_t nBalancePoint, int8 nMinMip, int16 fpSortStateBias);
 	void                 Job_InitKeys(SPlanningTextureOrderKey* pKeys, CTexture** pTexs, size_t nTextures, int nFrameId, const int nZoneIds[]);
 	void                 Job_CommitKeys(CTexture** pTextures, SPlanningTextureOrderKey* pKeys, size_t nTextures);
 	void                 Job_ConfigureSchedule();
@@ -255,14 +250,14 @@ private:
 
 private:
 
-	bool TryBegin_FromDisk(CTexture* pTex, uint32 nTexPersMip, uint32 nTexWantedMip, uint32 nTexAvailMip, int nBias, int nBalancePoint,
+	bool TryBegin_FromDisk(CTexture* pTex, uint32 nTexPersMip, uint32 nTexWantedMip, uint32 nTexAvailMip, int16 nBias, int nBalancePoint,
 	                       TStreamerTextureVec& textures, TStreamerTextureVec& trimmable, ptrdiff_t& nMemFreeLower, ptrdiff_t& nMemFreeUpper, int& nKickIdx,
 	                       int& nNumSubmittedLoad, size_t& nAmtSubmittedLoad);
 
 #if defined(TEXSTRM_TEXTURECENTRIC_MEMORY)
 	bool      TrimTexture(int nBias, TStreamerTextureVec& trimmable, STexPool* pPrioritise);
 #endif
-	ptrdiff_t TrimTextures(ptrdiff_t nRequired, int nBias, TStreamerTextureVec& trimmable);
+	ptrdiff_t TrimTextures(ptrdiff_t nRequired, int16 nBias, TStreamerTextureVec& trimmable);
 	ptrdiff_t KickTextures(CTexture** pTextures, ptrdiff_t nRequired, int nBalancePoint, int& nKickIdx);
 	void      Job_CheckEnqueueForStreaming(CTexture* pTexture, const float fMipFactor, bool bHighPriority);
 
@@ -284,7 +279,7 @@ private:
 
 	SPlanningScheduleState m_schedule;
 
-	int                    m_nBias;
+	int16                  m_nBias;
 	int                    m_nStreamAllocFails;
 	bool                   m_bOverBudget;
 	size_t                 m_nPrevListSize;

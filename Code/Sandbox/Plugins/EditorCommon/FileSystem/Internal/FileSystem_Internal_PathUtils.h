@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <CryCore/Assert/CryAssert.h>
 #include <QString>
 
 namespace FileSystem
@@ -126,4 +127,3 @@ inline QString GetMountPath(const QString& keyPath, const QString& containerKeyP
 
 } // namespace Internal
 } // namespace FileSystem
-

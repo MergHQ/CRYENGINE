@@ -6,8 +6,8 @@
 #include <CryMath/ISplines.h>
 
 CAnimSplineTrack::CAnimSplineTrack(const CAnimParamType& paramType)
-	: m_paramType(paramType)
-	, m_defaultValue(ZERO)
+	: m_defaultValue(ZERO)
+	, m_paramType(paramType)
 {
 }
 

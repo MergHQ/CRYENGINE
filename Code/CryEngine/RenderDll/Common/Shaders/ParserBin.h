@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   ParserBin.h : Script parser declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef PARSERBIN_H
-#define PARSERBIN_H
+#pragma once
 
 #include "ShaderCache.h"
 #include "ShaderAllocator.h"
@@ -465,6 +456,7 @@ enum EToken
 	eT_ForceDrawFirst,
 	eT_ForceDrawAfterWater,
 	eT_DepthFixup,
+	eT_DepthFixupReplace,
 	eT_SingleLightPass,
 	eT_HWTessellation,
 	eT_WaterParticle,
@@ -485,7 +477,6 @@ enum EToken
 	eT_Hair,
 	eT_Compute,
 	eT_ForceGeneralPass,
-	eT_SkinPass,
 	eT_EyeOverlay,
 
 	eT_Metal,
@@ -642,7 +633,8 @@ enum EToken
 	eT_ORBIS,
 	eT_DURANGO,
 	eT_PCDX11,
-	eT_OPENGL,
+	eT_PCDX12,
+	eT_UNUSED,
 	eT_VULKAN,
 
 	eT_VT_DetailBendingGrass,
@@ -729,7 +721,7 @@ struct SFXTokenBin
 
 #define FX_REGISTER_TOKEN(id) fxTokenKey( # id, eT_ ## id);
 
-extern char* g_KeyTokens[];
+extern const char* g_KeyTokens[];
 
 struct SMacroBinFX
 {
@@ -817,13 +809,12 @@ struct SortByToken
 	}
 };
 
-#define SF_VULKAN   0x04000000
-#define SF_GLES3    0x08000000
-#define SF_D3D11    0x10000000
-#define SF_ORBIS    0x20000000
-#define SF_DURANGO  0x40000000
-#define SF_GL4      0x80000000
-#define SF_PLATFORM 0xfC000000
+#define SF_D3D12    0x02000000U // SM5.1, SM6.0, SM6.1, SM6.2
+#define SF_VULKAN   0x04000000U
+#define SF_D3D11    0x10000000U // SM5.0
+#define SF_ORBIS    0x20000000U
+#define SF_DURANGO  0x40000000U
+#define SF_PLATFORM 0xfC000000U
 
 class CParserBin
 {
@@ -895,8 +886,7 @@ public:
 		if (szStr[0] == '0' && szStr[1] == 'x')
 		{
 			int i = 0;
-			int res = sscanf(&szStr[2], "%x", &i);
-			assert(res != 0);
+			CRY_VERIFY(sscanf(&szStr[2], "%x", &i) != 0);
 			return i;
 		}
 		return atoi(szStr);
@@ -952,20 +942,12 @@ public:
 	int                CopyTokens(SCodeFragment* pCF, PodArray<uint32>& SHData, TArray<SCodeFragment>& Replaces, TArray<uint32>& NewTokens, uint32 nID);
 	static inline void AddDefineToken(uint32 dwToken, ShaderTokensVec& Tokens)
 	{
-		if (dwToken == 611)
-		{
-			int nnn = 0;
-		}
 		Tokens.push_back(eT_define);
 		Tokens.push_back(dwToken);
 		Tokens.push_back(0);
 	}
 	static inline void AddDefineToken(uint32 dwToken, uint32 dwToken2, ShaderTokensVec& Tokens)
 	{
-		if (dwToken == 611)
-		{
-			int nnn = 0;
-		}
 		Tokens.push_back(eT_define);
 		Tokens.push_back(dwToken);
 		Tokens.push_back(dwToken2);
@@ -974,22 +956,21 @@ public:
 	bool                 JumpSemicolumn(uint32& nStart, uint32 nEnd);
 
 	static uint32        fxToken(const char* szToken, bool* bKey = NULL);
-	static uint32        fxTokenKey(char* szToken, EToken eT = eT_unknown);
+	static uint32        fxTokenKey(const char* szToken, EToken eT = eT_unknown);
 	static uint32        GetCRC32(const char* szStr);
 	static uint32        NextToken(const char*& buf, char* com, bool& bKey);
 	static uint32        NextToken(char*& buf, char* com, bool& bKey);
 	static void          Init();
-	static void          RemovePlatformDefines();
 	static void          SetupForPlatform(uint32 nPlatform);
 	static void          SetupFeatureDefines();
 	static CCryNameTSCRC GetPlatformSpecName(CCryNameTSCRC orgName);
 	static const char*   GetPlatformShaderlistName();
-	static bool          PlatformSupportsConstantBuffers() { return (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN | SF_GLES3)) != 0; };
-	static bool          PlatformSupportsGeometryShaders() { return (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
-	static bool          PlatformSupportsHullShaders()     { return (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
-	static bool          PlatformSupportsDomainShaders()   { return (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
-	static bool          PlatformSupportsComputeShaders()  { return (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
-	static bool          PlatformIsConsole()               { return (CParserBin::m_nPlatform & (SF_ORBIS | SF_DURANGO)) != 0; };
+	static bool          PlatformSupportsConstantBuffers() { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN)) != 0; }
+	static bool          PlatformSupportsGeometryShaders() { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN)) != 0; }
+	static bool          PlatformSupportsHullShaders()     { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN)) != 0; }
+	static bool          PlatformSupportsDomainShaders()   { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN)) != 0; }
+	static bool          PlatformSupportsComputeShaders()  { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN)) != 0; }
+	static bool          PlatformIsConsole()               { return (CParserBin::m_nPlatform & (SF_ORBIS | SF_DURANGO)) != 0; }
 
 	static bool m_bEditable;
 	static uint32 m_nPlatform;
@@ -999,5 +980,3 @@ public:
 };
 
 char* fxFillPr(char** buf, char* dst);
-
-#endif

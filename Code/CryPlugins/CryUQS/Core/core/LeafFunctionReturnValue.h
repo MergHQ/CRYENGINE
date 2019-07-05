@@ -64,10 +64,10 @@ namespace UQS
 			bool                                           IsActuallyALeafFunction() const;
 
 			// ILeafFunctionReturnValue
-			virtual SLiteralInfo                           GetLiteral(const SQueryBlackboard& blackboard) const override;
-			virtual SGlobalParamInfo                       GetGlobalParam(const SQueryBlackboard& blackboard) const override;
-			virtual SItemIterationInfo                     GetItemIteration(const SQueryBlackboard& blackboard) const override;
-			virtual SShuttledItemsInfo                     GetShuttledItems(const SQueryBlackboard& blackboard) const override;
+			virtual SLiteralInfo                           GetLiteral(const SQueryContext& queryContext) const override;
+			virtual SGlobalParamInfo                       GetGlobalParam(const SQueryContext& queryContext) const override;
+			virtual SItemIterationInfo                     GetItemIteration(const SQueryContext& queryContext) const override;
+			virtual SShuttledItemsInfo                     GetShuttledItems(const SQueryContext& queryContext) const override;
 			// ~ILeafFunctionReturnValue
 
 		private:

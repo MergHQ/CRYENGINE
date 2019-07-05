@@ -12,6 +12,7 @@
 #include <CryNetwork/INetworkService.h>
 
 #include <CryInput/IHardwareMouse.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ILocalizationManager.h>
 #include "Editor/GameRealtimeRemoteUpdate.h"
@@ -57,267 +58,6 @@ TOGGLEKEYS g_StartupToggleKeys = {sizeof(TOGGLEKEYS), 0};
 FILTERKEYS g_StartupFilterKeys = {sizeof(FILTERKEYS), 0};
 
 #endif
-
-#if defined(CVARS_WHITELIST)
-CCVarsWhiteList g_CVarsWhiteList;
-
-bool IsCommandLiteral(const char* pLiteral, const char* pCommand)
-{ 
-	// Compare the command with the literal, for the length of the literal
-	while ((*pLiteral) && (tolower(*pLiteral++) == tolower(*pCommand++)));
-
-	// If they're the same, ensure the whole command was tested
-	return (!*(pLiteral) && (!(*pCommand) || isspace(*pCommand)));
-}
-
-#define WHITELIST(_stringliteral) if (IsCommandLiteral(_stringliteral, pCommandMod)) { return true; }
-bool CCVarsWhiteList::IsWhiteListed(const string& command, bool silent)
-{
-	const char * pCommandMod = command.c_str();
-	if(pCommandMod[0] == '+')
-	{
-		pCommandMod++;
-	}
-	
-	WHITELIST("sys_game_folder");
-	
-	WHITELIST("map");
-	WHITELIST("i_mouse_smooth");
-	WHITELIST("i_mouse_accel");
-	WHITELIST("i_mouse_accel_max");
-	WHITELIST("cl_sensitivity");
-	WHITELIST("pl_movement.power_sprint_targetFov");
-	WHITELIST("cl_fov");
-	WHITELIST("hud_canvas_width_adjustment");
-	WHITELIST("r_DrawNearFoV");
-	WHITELIST("g_skipIntro");
-	WHITELIST("hud_psychoPsycho");
-	WHITELIST("hud_hide");
-	WHITELIST("disconnect");
-
-	WHITELIST("hud_bobHud");
-  WHITELIST("e_CoverageBufferReproj");
-  WHITELIST("e_LodRatio");
-  WHITELIST("e_ViewDistRatio");
-  WHITELIST("e_ViewDistRatioVegetation");
-  WHITELIST("e_ViewDistRatioDetail");
-  WHITELIST("e_MergedMeshesInstanceDist");
-  WHITELIST("e_MergedMeshesViewDistRatio");
-  WHITELIST("e_ParticlesObjectCollisions");
-  WHITELIST("e_ParticlesMotionBlur");
-  WHITELIST("e_ParticlesForceSoftParticles");
-  WHITELIST("e_Tessellation");
-  WHITELIST("e_TessellationMaxDistance");
-  WHITELIST("r_TessellationTriangleSize");
-  WHITELIST("r_SilhouettePOM");
-	WHITELIST("e_GI");
-	WHITELIST("e_GICache");
-  WHITELIST("e_GIIterations");
-	WHITELIST("e_ShadowsPoolSize");
-	WHITELIST("e_ShadowsMaxTexRes");
-	WHITELIST("r_FogShadows");
-	WHITELIST("r_FogShadowsWater");
-	WHITELIST("e_ParticlesShadows");
-	WHITELIST("e_ShadowsTessellateCascades");
-  WHITELIST("e_ShadowsResScale");
-  WHITELIST("e_GsmCache");
-  WHITELIST("r_WaterTessellationHW");
-  WHITELIST("r_DepthOfField");
-	WHITELIST("r_MotionBlur");
-	WHITELIST("r_MotionBlurShutterSpeed");
-	WHITELIST("g_radialBlur");
-	WHITELIST("cl_zoomToggle");
-	WHITELIST("r_TexMinAnisotropy");
-	WHITELIST("r_TexMaxAnisotropy");
-  WHITELIST("r_TexturesStreamPoolSize");
-	WHITELIST("cl_crouchToggle");
-	WHITELIST("r_ColorGrading");
-	WHITELIST("r_SSAO");
-	WHITELIST("r_SSDO");
-	WHITELIST("r_SSReflections");
-	WHITELIST("r_VSync");
-	WHITELIST("r_DisplayInfo");
-	WHITELIST("r_displayinfoTargetFPS");
-  WHITELIST("r_ChromaticAberration");
-	WHITELIST("r_HDRChromaShift");
-	WHITELIST("r_HDRGrainAmount");
-	WHITELIST("r_GrainEnableExposureThreshold");
-	WHITELIST("r_HDRBloomRatio");
-	WHITELIST("r_HDRBrightLevel");
-  WHITELIST("r_Sharpening");
-	WHITELIST("r_Gamma");
-	WHITELIST("r_GetScreenShot");
-	WHITELIST("r_FullscreenWindow");
-	WHITELIST("r_Fullscreen");
-	WHITELIST("r_width");
-	WHITELIST("r_height");
-	WHITELIST("r_MultiGPU");
-	WHITELIST("r_overrideDXGIOutput");
-	WHITELIST("r_overrideDXGIAdapter");
-	WHITELIST("r_FullscreenPreemption");
-  WHITELIST("r_buffer_sli_workaround");
-	WHITELIST("r_DeferredShadingAmbientSClear");
-	WHITELIST("g_useHitSoundFeedback");
-	WHITELIST("sys_MaxFps");
-	WHITELIST("g_language");
-
-	WHITELIST("sys_spec_ObjectDetail");
-	WHITELIST("sys_spec_Shading");
-	WHITELIST("sys_spec_VolumetricEffects");
-	WHITELIST("sys_spec_Shadows");
-	WHITELIST("sys_spec_Texture");
-	WHITELIST("sys_spec_Physics");
-	WHITELIST("sys_spec_PostProcessing");
-	WHITELIST("sys_spec_Particles");
-	WHITELIST("sys_spec_Sound");
-	WHITELIST("sys_spec_Water");
-	WHITELIST("sys_spec_GameEffects");
-	WHITELIST("sys_spec_Light");
-
-	WHITELIST("g_dedi_email");
-	WHITELIST("g_dedi_password");
-
-	WHITELIST("root");
-	WHITELIST("logfile");
-	WHITELIST("ResetProfile");
-	WHITELIST("nodlc");
-
-	WHITELIST("rcon_connect");
-	WHITELIST("rcon_disconnect");
-	WHITELIST("rcon_command");
-
-	WHITELIST("quit");
-	WHITELIST("votekick");
-	WHITELIST("vote");
-
-	WHITELIST("net_blaze_voip_enable");
-
-	WHITELIST("sys_vr_support");
-
-#if defined(DEDICATED_SERVER)
-	WHITELIST("ban");
-	WHITELIST("ban_remove");
-	WHITELIST("ban_status");
-	WHITELIST("ban_timeout");
-	WHITELIST("kick"); 
-	WHITELIST("startPlaylist");
-	WHITELIST("status");
-	WHITELIST("gl_map");
-	WHITELIST("gl_gamerules");
-	WHITELIST("sv_gamerules");
-	WHITELIST("sv_password");
-	WHITELIST("maxplayers");
-	WHITELIST("sv_servername");
-
-	WHITELIST("sv_bind");
-	WHITELIST("g_scoreLimit");
-	WHITELIST("g_timelimit");
-	WHITELIST("g_minplayerlimit");
-	WHITELIST("g_autoReviveTime");
-	WHITELIST("g_numLives");
-	WHITELIST("g_maxHealthMultiplier");
-	WHITELIST("g_mpRegenerationRate");
-	WHITELIST("g_friendlyfireratio");
-	WHITELIST("g_mpHeadshotsOnly");
-	WHITELIST("g_mpNoVTOL");
-	WHITELIST("g_mpNoEnvironmentalWeapons");
-	WHITELIST("g_allowCustomLoadouts");
-	WHITELIST("g_allowFatalityBonus");
-	WHITELIST("g_modevarivar_proHud");
-	WHITELIST("g_modevarivar_disableKillCam");
-	WHITELIST("g_modevarivar_disableSpectatorCam");
-	WHITELIST("g_multiplayerDefault");
-	WHITELIST("g_allowExplosives");
-	WHITELIST("g_forceWeapon");
-	WHITELIST("g_allowWeaponCustomisation");
-	WHITELIST("g_infiniteCloak");
-	WHITELIST("g_infiniteAmmo");
-	WHITELIST("g_forceHeavyWeapon");
-	WHITELIST("g_forceLoadoutPackage");
-
-
-	WHITELIST("g_autoAssignTeams");
-	WHITELIST("gl_initialTime");
-	WHITELIST("gl_time");
-	WHITELIST("g_gameRules_startTimerLength");
-	WHITELIST("sv_maxPlayers");
-	WHITELIST("g_switchTeamAllowed");
-	WHITELIST("g_switchTeamRequiredPlayerDifference");
-	WHITELIST("g_switchTeamUnbalancedWarningDifference");
-	WHITELIST("g_switchTeamUnbalancedWarningTimer");
-
-	WHITELIST("http_startserver");
-	WHITELIST("http_stopserver");
-	WHITELIST("http_password");
-
-	WHITELIST("rcon_startserver");
-	WHITELIST("rcon_stopserver");
-	WHITELIST("rcon_password");
-
-	WHITELIST("gl_StartGame");
-	WHITELIST("g_messageOfTheDay");
-	WHITELIST("g_serverImageUrl");
-
-	WHITELIST("log_Verbosity");
-	WHITELIST("log_WriteToFile");
-	WHITELIST("log_WriteToFileVerbosity");
-	WHITELIST("log_IncludeTime");
-	WHITELIST("log_tick");
-	WHITELIST("net_log");
-
-	WHITELIST("g_pinglimit");
-	WHITELIST("g_pingLimitTimer");
-
-	WHITELIST("g_tk_punish");
-	WHITELIST("g_tk_punish_limit");
-	WHITELIST("g_idleKickTime");
-
-  WHITELIST("net_reserved_slot_system");
-	WHITELIST("net_add_reserved_slot");
-	WHITELIST("net_remove_reserved_slot");
-	WHITELIST("net_list_reserved_slot");
-	
-	WHITELIST("sv_votingCooldown");
-	WHITELIST("sv_votingRatio");
-	WHITELIST("sv_votingTimeout");
-	WHITELIST("sv_votingEnable");
-	WHITELIST("sv_votingBanTime");
-
-	WHITELIST("g_dataRefreshFrequency");
-	WHITELIST("g_quitOnNewDataFound");
-	WHITELIST("g_quitNumRoundsWarning");
-	WHITELIST("g_allowedDataPatchFailCount");
-	WHITELIST("g_shutdownMessageRepeatTime");
-	WHITELIST("g_shutdownMessage");
-	WHITELIST("g_patchPakDediServerMustPatch");
-
-	WHITELIST("g_server_region");
-
-	WHITELIST("net_log_dirtysock");
-#endif
-
-	WHITELIST("sys_user_folder");
-	WHITELIST("sys_screensaver_allowed");
-	WHITELIST("sys_UncachedStreamReads");
-
-	if (!silent)
-	{
-		string temp = command.Left(command.find(' '));
-		if (temp.empty())
-		{
-			temp = command;
-		}
-
-#if defined(DEDICATED_SERVER)
-		CryLogAlways("[Warning] Unknown command: %s", temp.c_str());
-#else
-		CryLog("[Warning] Unknown command: %s", temp.c_str());
-#endif
-	}
-
-	return false;
-}
-#endif // defined(CVARS_WHITELIST)
 
 static void RestoreStickyKeys();
 
@@ -386,7 +126,7 @@ void debugLogCallStack()
 
 void GameStartupErrorObserver::OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber)
 {
-	if(!g_pGameCVars)
+	if (!g_pGameCVars)
 		return;
 
 	if (g_pGameCVars->cl_logAsserts != 0)
@@ -440,20 +180,16 @@ static inline void InlineInitializationProcessing(const char *sDescription)
 
 IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Game startup initialisation");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Game startup initialisation");
 
 	IGameRef pOut = Reset(startupParams.pSystem);
 	CRY_ASSERT(gEnv && GetISystem());
 
 	m_pFramework = gEnv->pGameFramework;
 
-#if defined(CVARS_WHITELIST)
-	startupParams.pCVarsWhitelist = &g_CVarsWhiteList;
-#endif // defined(CVARS_WHITELIST)
-
 	InlineInitializationProcessing("CGameStartup::Init");
 
-  LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Load thread config
 	gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/game.thread_config");
@@ -465,13 +201,6 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 		string command = pSvBind->GetName() + string(" ") + pSvBind->GetValue();
 		pConsole->ExecuteString(command.c_str(), true, false);
 	}
-
-	// load the appropriate game/mod
-#if !defined(_RELEASE)
-	const ICmdLineArg *pModArg = GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre,"MOD");
-#else
-	const ICmdLineArg *pModArg = NULL;
-#endif // !defined(_RELEASE)
 
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CGameStartup");
 
@@ -727,7 +456,7 @@ void CGameStartup::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 
 //////////////////////////////////////////////////////////////////////////
 #if CRY_PLATFORM_WINDOWS
-bool CGameStartup::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, LRESULT *pResult)
+bool CGameStartup::HandleMessage(CRY_HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, LRESULT *pResult)
 {
 	switch(msg)
 	{

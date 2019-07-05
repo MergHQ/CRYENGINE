@@ -2,35 +2,37 @@
 
 #include "StdAfx.h"
 #include "BoostPythonHelpers.h"
-#include <CryCore/Containers/CryListenerSet.h>
+
 #include "Commands/PythonManager.h"
-#include "FilePathUtil.h"
-
-#include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
-
-#include "boost/python/object.hpp"
-#include "boost/python/tuple.hpp"
-#include "boost/python/dict.hpp"
-#include "boost/python/to_python_converter.hpp"
-#include "boost/python/converter/registry.hpp"
-#include "boost/python/suite/indexing/vector_indexing_suite.hpp"
-#include <CryCore/ToolsHelpers/GuidUtil.h>
-#include "Objects/ObjectLayer.h"
-#include "Objects/BaseObject.h"
+#include "Material/Material.h"
 #include "Objects/BrushObject.h"
 #include "Objects/CameraObject.h"
 #include "Objects/EntityObject.h"
-#include "Objects/PrefabObject.h"
+#include "Objects/GeomEntity.h"
 #include "Objects/Group.h"
+#include "Objects/ObjectLayer.h"
+#include "Objects/PrefabObject.h"
 #include "Prefabs/PrefabItem.h"
 #include "Prefabs/PrefabManager.h"
-#include "Material/Material.h"
-#include "Vegetation/VegetationObject.h"
+#include "Util/FileEnum.h"
 #include "Vegetation/VegetationMap.h"
-#include "Objects/GeomEntity.h"
-#include "Util/MFCUtil.h"
-#include "CryEditDoc.h"
+#include "Vegetation/VegetationObject.h"
+#include "LogFile.h"
+
+#include <Util/FileUtil.h>
+#include <Util/MFCUtil.h>
+#include <PathUtils.h>
+
+#include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
+
+#include <boost/python.hpp>
+#include <boost/python/converter/registry.hpp>
+#include <boost/python/dict.hpp>
+#include <boost/python/object.hpp>
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include <boost/python/to_python_converter.hpp>
+#include <boost/python/tuple.hpp>
 
 struct CryLogPythonOutput : public PyScript::IPyScriptListener
 {
@@ -101,7 +103,7 @@ PyGameLayer::PyGameLayer(void* layerPtr)
 {
 	m_layerPtr = layerPtr;
 
-	if (m_layerPtr == NULL)
+	if (m_layerPtr == nullptr)
 	{
 		m_layerName = "";
 		m_layerPath = "";
@@ -136,13 +138,13 @@ PyGameLayer::PyGameLayer(void* layerPtr)
 
 PyGameLayer::~PyGameLayer()
 {
-	m_layerPtr = NULL;
+	m_layerPtr = nullptr;
 	m_layerChildren.clear();
 }
 
 void PyGameLayer::UpdateLayer()
 {
-	if (m_layerPtr == NULL)
+	if (m_layerPtr == nullptr)
 	{
 		return;
 	}
@@ -189,7 +191,7 @@ PyGameMaterial::PyGameMaterial(void* pMat)
 {
 	m_matPtr = pMat;
 
-	if (m_matPtr == NULL)
+	if (m_matPtr == nullptr)
 	{
 		m_matName = "";
 		m_matPath = "";
@@ -210,13 +212,13 @@ PyGameMaterial::PyGameMaterial(void* pMat)
 
 PyGameMaterial::~PyGameMaterial()
 {
-	m_matPtr = NULL;
+	m_matPtr = nullptr;
 	m_matSubMaterials.clear();
 }
 
 void PyGameMaterial::UpdateMaterial()
 {
-	if (m_matPtr == NULL)
+	if (m_matPtr == nullptr)
 	{
 		return;
 	}
@@ -228,7 +230,7 @@ void PyGameMaterial::UpdateMaterial()
 		pMaterial->SetName(m_matName);
 	}
 
-	for (std::vector<pPyGameSubMaterial>::iterator iter = m_matSubMaterials.begin(); iter != m_matSubMaterials.end(); iter++)
+	for (std::vector<pPyGameSubMaterial>::iterator iter = m_matSubMaterials.begin(); iter != m_matSubMaterials.end(); ++iter)
 	{
 		iter->get()->UpdateSubMaterial();
 	}
@@ -238,7 +240,7 @@ PyGameSubMaterial::PyGameSubMaterial(void* pMat, int id)
 {
 	m_matPtr = pMat;
 
-	if (m_matPtr == NULL)
+	if (m_matPtr == nullptr)
 	{
 		m_matId = 0;
 		m_matName = "";
@@ -256,7 +258,7 @@ PyGameSubMaterial::PyGameSubMaterial(void* pMat, int id)
 
 	IRenderShaderResources* pResources = pMaterial->GetShaderItem().m_pShaderResources;
 
-	if (pResources == NULL)
+	if (pResources == nullptr)
 	{
 		return;
 	}
@@ -303,7 +305,7 @@ PyGameSubMaterial::PyGameSubMaterial(void* pMat, int id)
 	// Grab all Public Variables.
 	CVarBlock* varBlockPublic = pMaterial->GetPublicVars(pMaterial->GetShaderResources());
 
-	if (varBlockPublic != NULL && !varBlockPublic->IsEmpty())
+	if (varBlockPublic && !varBlockPublic->IsEmpty())
 	{
 		for (int i = 0; i < varBlockPublic->GetNumVariables(); i++)
 		{
@@ -318,7 +320,7 @@ PyGameSubMaterial::PyGameSubMaterial(void* pMat, int id)
 	// Grab all of the Shader Gen Params
 	CVarBlock* varBlockGen = pMaterial->GetShaderGenParamsVars();
 
-	if (varBlockPublic != NULL && !varBlockGen->IsEmpty())
+	if (varBlockPublic && !varBlockGen->IsEmpty())
 	{
 		for (int i = 0; i < varBlockGen->GetNumVariables(); i++)
 		{
@@ -333,7 +335,7 @@ PyGameSubMaterial::PyGameSubMaterial(void* pMat, int id)
 
 PyGameSubMaterial::~PyGameSubMaterial()
 {
-	m_matPtr = NULL;
+	m_matPtr = nullptr;
 	m_matTextures.clear();
 	m_matParams.clear();
 }
@@ -389,12 +391,12 @@ void PyGameSubMaterial::UpdateSubMaterial()
 	// Check for updates to all material public variables.
 	CVarBlock* varBlockPublic = pMaterial->GetPublicVars(shdResources);
 
-	if (varBlockPublic != NULL && !varBlockPublic->IsEmpty())
+	if (varBlockPublic && !varBlockPublic->IsEmpty())
 	{
 		for (int i = 0; i < varBlockPublic->GetNumVariables(); i++)
 		{
 			IVariable* pVar = varBlockPublic->GetVariable(i);
-			SShaderParam* pParam = NULL;
+			SShaderParam* pParam = nullptr;
 
 			for (int j = 0; j < shdResources.m_ShaderParams.size(); j++)
 			{
@@ -402,7 +404,7 @@ void PyGameSubMaterial::UpdateSubMaterial()
 				{
 					pParam = &shdResources.m_ShaderParams[j];
 
-					if (pParam != NULL)
+					if (pParam != nullptr)
 					{
 						break;
 					}
@@ -470,7 +472,7 @@ void PyGameSubMaterial::UpdateSubMaterial()
 	// Update all of the Shader Gen Params
 	CVarBlock* varBlockGen = pMaterial->GetShaderGenParamsVars();
 
-	if (varBlockPublic != NULL && !varBlockGen->IsEmpty())
+	if (varBlockPublic && !varBlockGen->IsEmpty())
 	{
 		for (int i = 0; i < varBlockGen->GetNumVariables(); i++)
 		{
@@ -531,7 +533,7 @@ PyGameTexture::PyGameTexture(void* pTex)
 {
 	m_texPtr = pTex;
 
-	if (m_texPtr == NULL)
+	if (m_texPtr == nullptr)
 	{
 		m_texName = "";
 		return;
@@ -543,7 +545,7 @@ PyGameTexture::PyGameTexture(void* pTex)
 
 PyGameTexture::~PyGameTexture()
 {
-	m_texPtr = NULL;
+	m_texPtr = nullptr;
 }
 
 void PyGameTexture::UpdateTexture()
@@ -561,7 +563,7 @@ PyGameObject::PyGameObject(void* objPtr)
 	m_objPtr = objPtr;
 	CBaseObject* pBaseObject = static_cast<CBaseObject*>(m_objPtr);
 
-	if (m_objPtr == NULL)
+	if (m_objPtr == nullptr)
 	{
 		m_objGUID = CryGUID::Null();
 		m_objName = "";
@@ -589,7 +591,7 @@ PyGameObject::PyGameObject(void* objPtr)
 	pBaseObject->GetBoundBox(bbox);
 	m_objBounds = bbox;
 
-	if (pBaseObject->GetGroup() != NULL)
+	if (pBaseObject->GetGroup() != nullptr)
 	{
 		m_objInGroup = true;
 	}
@@ -646,7 +648,7 @@ PyGameObject::PyGameObject(void* objPtr)
 
 pPyGameObject PyGameObject::GetParent()
 {
-	if (m_objParent != NULL)
+	if (m_objParent)
 	{
 		return m_objParent;
 	}
@@ -658,19 +660,19 @@ pPyGameObject PyGameObject::GetParent()
 
 void PyGameObject::SetParent(pPyGameObject pParent)
 {
-	if (pParent->GetPtr() != NULL)
+	if (pParent->GetPtr() != nullptr)
 	{
 		CBaseObject* pSrc = static_cast<CBaseObject*>(this->GetPtr());
 
-		if (pSrc != NULL)
+		if (pSrc != nullptr)
 		{
 			CBaseObject* pSrcParent = pSrc->GetParent();
 
-			if (pParent->GetClassObject() != NULL)
+			if (pParent->GetClassObject() != nullptr)
 			{
 				CBaseObject* pDstParent = static_cast<CBaseObject*>(pParent->GetPtr());
 
-				if (pSrcParent == NULL)
+				if (pSrcParent == nullptr)
 				{
 					if (static_cast<CGroup*>(pDstParent)->IsKindOf(RUNTIME_CLASS(CGroup)))
 					{
@@ -740,23 +742,23 @@ void PyGameObject::UpdateObject()
 	// Lets assume since an update was requested that it is desired to run on the subobject also.
 	if (pBaseObject->IsKindOf(RUNTIME_CLASS(CBrushObject)))
 	{
-		boost::static_pointer_cast<PyGameBrush>(m_objClass->ptr).get()->UpdateBrush();
+		std::static_pointer_cast<PyGameBrush>(m_objClass->ptr).get()->UpdateBrush();
 	}
 	else if (pBaseObject->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 	{
-		boost::static_pointer_cast<PyGameEntity>(m_objClass->ptr).get()->UpdateEntity();
+		std::static_pointer_cast<PyGameEntity>(m_objClass->ptr).get()->UpdateEntity();
 	}
 	else if (pBaseObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 	{
-		boost::static_pointer_cast<PyGamePrefab>(m_objClass->ptr).get()->UpdatePrefab();
+		std::static_pointer_cast<PyGamePrefab>(m_objClass->ptr).get()->UpdatePrefab();
 	}
 	else if (pBaseObject->IsKindOf(RUNTIME_CLASS(CGroup)))
 	{
-		boost::static_pointer_cast<PyGameGroup>(m_objClass->ptr).get()->UpdateGroup();
+		std::static_pointer_cast<PyGameGroup>(m_objClass->ptr).get()->UpdateGroup();
 	}
 	else if (pBaseObject->IsKindOf(RUNTIME_CLASS(CCameraObject)))
 	{
-		boost::static_pointer_cast<PyGameCamera>(m_objClass->ptr).get()->UpdateCamera();
+		std::static_pointer_cast<PyGameCamera>(m_objClass->ptr).get()->UpdateCamera();
 	}
 }
 
@@ -783,21 +785,20 @@ PyGamePrefab::PyGamePrefab(void* prefabPtr, pSPyWrappedClass sharedPtr)
 
 PyGamePrefab::~PyGamePrefab()
 {
-	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(m_prefabPtr);
 }
 
 std::vector<pPyGameObject> PyGamePrefab::GetChildren()
 {
 	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(m_prefabPtr);
 
-	if (pPrefab != NULL)
+	if (pPrefab)
 	{
-		// Return all of the Prefabs Children.
+		// Return all of the Prefabs descendants.
 		std::vector<_smart_ptr<CBaseObject>>::iterator iter;
-		std::vector<_smart_ptr<CBaseObject>> children;
-		pPrefab->GetAllChildren(children);
+		std::vector<_smart_ptr<CBaseObject>> descendants;
+		pPrefab->GetAllDescendants(descendants);
 
-		for (iter = children.begin(); iter != children.end(); ++iter)
+		for (iter = descendants.begin(); iter != descendants.end(); ++iter)
 		{
 			m_prefabChildren.push_back(PyScript::CreatePyGameObject(*iter));
 		}
@@ -811,7 +812,7 @@ void PyGamePrefab::AddChild(pPyGameObject pObj)
 	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(m_prefabPtr);
 	CBaseObject* pObject = static_cast<CBaseObject*>(pObj->GetPtr());
 
-	if (pPrefab != NULL && pObject != NULL)
+	if (pPrefab && pObject)
 	{
 		pPrefab->AddMember(pObject, true);
 	}
@@ -824,7 +825,7 @@ void PyGamePrefab::RemoveChild(pPyGameObject pObj)
 	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(m_prefabPtr);
 	CBaseObject* pObject = static_cast<CBaseObject*>(pObj->GetPtr());
 
-	if (pPrefab != NULL && pObject != NULL)
+	if (pPrefab && pObject)
 	{
 		pPrefab->RemoveMember(pObject);
 	}
@@ -862,7 +863,7 @@ void PyGamePrefab::UpdatePrefab()
 {
 	CPrefabObject* pPrefab = static_cast<CPrefabObject*>(m_prefabPtr);
 
-	if (pPrefab != NULL)
+	if (pPrefab)
 	{
 		if (strcmp(m_prefabName, "") != 0 && strcmp(m_prefabName, pPrefab->GetPrefabItem()->GetFullName()) != 0)
 		{
@@ -874,23 +875,18 @@ void PyGamePrefab::UpdatePrefab()
 PyGameGroup::PyGameGroup(void* groupPtr, pSPyWrappedClass sharedPtr)
 {
 	m_groupPtr = groupPtr;
-	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
-}
-
-PyGameGroup::~PyGameGroup()
-{
 }
 
 std::vector<pPyGameObject> PyGameGroup::GetChildren()
 {
 	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
 
-	// Return all of the Prefabs Children.
+	// Return all of the Prefabs descendants.
 	std::vector<_smart_ptr<CBaseObject>>::iterator iter;
-	std::vector<_smart_ptr<CBaseObject>> children;
-	pGroup->GetAllChildren(children);
+	std::vector<_smart_ptr<CBaseObject>> descendants;
+	pGroup->GetAllDescendants(descendants);
 
-	for (iter = children.begin(); iter != children.end(); ++iter)
+	for (iter = descendants.begin(); iter != descendants.end(); ++iter)
 	{
 		m_groupChildren.push_back(PyScript::CreatePyGameObject(*iter));
 	}
@@ -903,7 +899,7 @@ void PyGameGroup::AddChild(pPyGameObject pObj)
 	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
 	CBaseObject* pObject = static_cast<CBaseObject*>(pObj->GetPtr());
 
-	if (pGroup != NULL && pObject != NULL)
+	if (pGroup && pObject)
 	{
 		pGroup->AddMember(pObject, true);
 	}
@@ -916,7 +912,7 @@ void PyGameGroup::RemoveChild(pPyGameObject pObj)
 	CGroup* pGroup = static_cast<CGroup*>(m_groupPtr);
 	CBaseObject* pObject = static_cast<CBaseObject*>(pObj->GetPtr());
 
-	if (pGroup != NULL && pObject != NULL)
+	if (pGroup && pObject)
 	{
 		pGroup->RemoveMember(pObject, true);
 	}
@@ -949,12 +945,6 @@ void PyGameGroup::UpdateGroup()
 PyGameCamera::PyGameCamera(void* cameraPtr, pSPyWrappedClass sharedPtr)
 {
 	m_cameraPtr = cameraPtr;
-	CCameraObject* pCamera = static_cast<CCameraObject*>(m_cameraPtr);
-}
-
-PyGameCamera::~PyGameCamera()
-{
-
 }
 
 void PyGameCamera::UpdateCamera()
@@ -966,7 +956,7 @@ PyGameBrush::PyGameBrush(void* brushPtr, pSPyWrappedClass sharedPtr)
 	m_brushPtr = brushPtr;
 	CBrushObject* pBrush = static_cast<CBrushObject*>(m_brushPtr);
 
-	if (pBrush == NULL)
+	if (pBrush == nullptr)
 	{
 		return;
 	}
@@ -987,7 +977,7 @@ PyGameBrush::PyGameBrush(void* brushPtr, pSPyWrappedClass sharedPtr)
 	IStatObj* pStatObj = pBrush->GetIStatObj();
 	m_brushLodCount = 0;
 
-	if (pStatObj != NULL)
+	if (pStatObj)
 	{
 		IStatObj::SStatistics objectStats;
 		pStatObj->GetStatistics(objectStats);
@@ -1032,7 +1022,7 @@ PyGameEntity::PyGameEntity(void* entityPtr, pSPyWrappedClass sharedPtr)
 	m_entityPtr = entityPtr;
 	CEntityObject* pEntity = static_cast<CEntityObject*>(m_entityPtr);
 
-	if (pEntity == NULL)
+	if (pEntity == nullptr)
 	{
 		return;
 	}
@@ -1068,7 +1058,7 @@ PyGameEntity::PyGameEntity(void* entityPtr, pSPyWrappedClass sharedPtr)
 
 	CVarBlock* varBlockProps1 = pEntity->GetProperties();
 
-	if (varBlockProps1 != NULL && !varBlockProps1->IsEmpty())
+	if (varBlockProps1 && !varBlockProps1->IsEmpty())
 	{
 		for (int i = 0; i < varBlockProps1->GetNumVariables(); i++)
 		{
@@ -1091,7 +1081,7 @@ PyGameEntity::PyGameEntity(void* entityPtr, pSPyWrappedClass sharedPtr)
 	// Now the properties in Block 2.
 	CVarBlock* varBlockProps2 = pEntity->GetProperties2();
 
-	if (varBlockProps2 != NULL && !varBlockProps2->IsEmpty())
+	if (varBlockProps2 && !varBlockProps2->IsEmpty())
 	{
 		for (int i = 0; i < varBlockProps2->GetNumVariables(); i++)
 		{
@@ -1208,10 +1198,10 @@ void PyGameEntity::UpdateEntity()
 
 PyGameVegetationInstance::PyGameVegetationInstance(void* vegPtr)
 {
-	if (vegPtr == NULL)
+	if (vegPtr == nullptr)
 	{
-		m_vegPtr = NULL;
-		m_vegPosition = Vec3(NULL);
+		m_vegPtr = nullptr;
+		m_vegPosition = Vec3(0.0f);
 		m_vegAngle = 0.0f;
 		m_vegScale = 0.0f;
 		m_vegBrightness = 0.0f;
@@ -1227,13 +1217,9 @@ PyGameVegetationInstance::PyGameVegetationInstance(void* vegPtr)
 	m_vegBrightness = pVegInst->brightness;
 }
 
-PyGameVegetationInstance::~PyGameVegetationInstance()
-{
-}
-
 void PyGameVegetationInstance::UpdateVegetationInstance()
 {
-	if (m_vegPtr == NULL)
+	if (m_vegPtr == nullptr)
 	{
 		return;
 	}
@@ -1248,9 +1234,9 @@ void PyGameVegetationInstance::UpdateVegetationInstance()
 
 PyGameVegetation::PyGameVegetation(void* vegPtr)
 {
-	if (vegPtr == NULL)
+	if (vegPtr == nullptr)
 	{
-		m_vegPtr = NULL;
+		m_vegPtr = nullptr;
 		m_vegName = "";
 		m_vegGroup = "";
 		m_vegID = 0;
@@ -1296,10 +1282,6 @@ PyGameVegetation::PyGameVegetation(void* vegPtr)
 	}
 }
 
-PyGameVegetation::~PyGameVegetation()
-{
-}
-
 void PyGameVegetation::Load()
 {
 	CVegetationObject* pVegObject = static_cast<CVegetationObject*>(m_vegPtr);
@@ -1314,7 +1296,7 @@ void PyGameVegetation::Unload()
 
 void PyGameVegetation::UpdateVegetation()
 {
-	if (m_vegPtr == NULL)
+	if (m_vegPtr == nullptr)
 	{
 		return;
 	}
@@ -1410,9 +1392,9 @@ public:
 
 	static void* convertible(PyObject* pObject)
 	{
-		if (!PyString_Check(pObject))
+		if (!PyUnicode_Check(pObject))
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return pObject;
@@ -1420,7 +1402,7 @@ public:
 
 	static void construct(PyObject* pObject, boost::python::converter::rvalue_from_python_stage1_data* pData)
 	{
-		const char* pString = PyString_AsString(pObject);
+		const char* pString = PyBytes_AsString(pObject);
 		if (!pString)
 		{
 			boost::python::throw_error_already_set();
@@ -1487,7 +1469,7 @@ public:
 			throw std::logic_error("No registered converter found for SPyWrappedProperty.");
 		}
 
-		return NULL;
+		return nullptr;
 	}
 };
 
@@ -1498,7 +1480,7 @@ public:
 	{
 		try
 		{
-			if (PyString_Check(pObj) || PyInt_Check(pObj) || PyFloat_Check(pObj) || PyBool_Check(pObj) || PyTuple_Check(pObj))
+			if (PyUnicode_Check(pObj) || PyLong_Check(pObj) || PyFloat_Check(pObj) || PyBool_Check(pObj) || PyTuple_Check(pObj))
 			{
 				return pObj;
 			}
@@ -1508,7 +1490,7 @@ public:
 			throw std::logic_error("SPyWrappedProperty is not convertible.");
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	static void construct_obj(PyObject* pObj, boost::python::converter::rvalue_from_python_stage1_data* pData)
@@ -1550,12 +1532,12 @@ private:
 
 		if (PyBool_Check(pObj))
 		{
-			value.property.boolValue = (bool)PyInt_AS_LONG(pObj);
+			value.property.boolValue = (bool)PyLong_AsLong(pObj);
 			value.type = SPyWrappedProperty::eType_Bool;
 		}
-		else if (PyInt_Check(pObj))
+		else if (PyLong_Check(pObj))
 		{
-			value.property.intValue = (int)PyInt_AS_LONG(pObj);
+			value.property.intValue = (int)PyLong_AsLong(pObj);
 			value.type = SPyWrappedProperty::eType_Int;
 		}
 		else if (PyFloat_Check(pObj))
@@ -1563,9 +1545,9 @@ private:
 			value.property.floatValue = (float)PyFloat_AS_DOUBLE(pObj);
 			value.type = SPyWrappedProperty::eType_Float;
 		}
-		else if (PyString_Check(pObj))
+		else if (PyUnicode_Check(pObj))
 		{
-			value.stringValue = PyString_AsString(pObj);
+			value.stringValue = PyBytes_AsString(pObj);
 			value.type = SPyWrappedProperty::eType_String;
 		}
 		else if (PyTuple_Check(pObj))
@@ -1577,18 +1559,18 @@ private:
 				value.property.vecValue.y = (float)PyFloat_AS_DOUBLE(PyTuple_GetItem(pObj, 1));
 				value.property.vecValue.z = (float)PyFloat_AS_DOUBLE(PyTuple_GetItem(pObj, 2));
 			}
-			else if (PyTuple_Size(pObj) == 3 && PyInt_Check(PyTuple_GetItem(pObj, 0)) && PyInt_Check(PyTuple_GetItem(pObj, 1)) && PyInt_Check(PyTuple_GetItem(pObj, 2)))
+			else if (PyTuple_Size(pObj) == 3 && PyLong_Check(PyTuple_GetItem(pObj, 0)) && PyLong_Check(PyTuple_GetItem(pObj, 1)) && PyLong_Check(PyTuple_GetItem(pObj, 2)))
 			{
 				value.type = SPyWrappedProperty::eType_Color;
-				value.property.colorValue.r = (int)PyInt_AS_LONG(PyTuple_GetItem(pObj, 0));
-				value.property.colorValue.g = (int)PyInt_AS_LONG(PyTuple_GetItem(pObj, 1));
-				value.property.colorValue.b = (int)PyInt_AS_LONG(PyTuple_GetItem(pObj, 2));
+				value.property.colorValue.r = (int)PyLong_AsLong(PyTuple_GetItem(pObj, 0));
+				value.property.colorValue.g = (int)PyLong_AsLong(PyTuple_GetItem(pObj, 1));
+				value.property.colorValue.b = (int)PyLong_AsLong(PyTuple_GetItem(pObj, 2));
 			}
-			else if (PyTuple_Size(pObj) == 2 && PyInt_Check(PyTuple_GetItem(pObj, 0)) && PyInt_Check(PyTuple_GetItem(pObj, 1)))
+			else if (PyTuple_Size(pObj) == 2 && PyLong_Check(PyTuple_GetItem(pObj, 0)) && PyLong_Check(PyTuple_GetItem(pObj, 1)))
 			{
 				value.type = SPyWrappedProperty::eType_Time;
-				value.property.timeValue.hour = (int)PyInt_AS_LONG(PyTuple_GetItem(pObj, 0));
-				value.property.timeValue.min = (int)PyInt_AS_LONG(PyTuple_GetItem(pObj, 1));
+				value.property.timeValue.hour = (int)PyLong_AsLong(PyTuple_GetItem(pObj, 0));
+				value.property.timeValue.min = (int)PyLong_AsLong(PyTuple_GetItem(pObj, 1));
 			}
 		}
 		return value;
@@ -1607,9 +1589,9 @@ public:
 			const boost::python::converter::registration* reg = boost::python::converter::registry::query(info);
 
 			//BOOST NOTE: While registry conversion for shared_ptr's is automatic via from_python, to_python requires the raw pointer.
-			if (reg != NULL && reg->m_to_python != NULL)
+			if (reg != nullptr && reg->m_to_python != nullptr)
 			{
-				return boost::python::incref(reg->to_python(boost::static_pointer_cast<PyGameBrush>(wrappedClass->ptr).get()));
+				return boost::python::incref(reg->to_python(std::static_pointer_cast<PyGameBrush>(wrappedClass->ptr).get()));
 			}
 			else
 			{
@@ -1621,9 +1603,9 @@ public:
 			boost::python::type_info info = boost::python::type_id<PyGameCamera>();
 			const boost::python::converter::registration* reg = boost::python::converter::registry::query(info);
 
-			if (reg != NULL && reg->m_to_python != NULL)
+			if (reg != nullptr && reg->m_to_python != nullptr)
 			{
-				return boost::python::incref(reg->to_python(boost::static_pointer_cast<PyGameCamera>(wrappedClass->ptr).get()));
+				return boost::python::incref(reg->to_python(std::static_pointer_cast<PyGameCamera>(wrappedClass->ptr).get()));
 			}
 			else
 			{
@@ -1635,9 +1617,9 @@ public:
 			boost::python::type_info info = boost::python::type_id<PyGameEntity>();
 			const boost::python::converter::registration* reg = boost::python::converter::registry::query(info);
 
-			if (reg != NULL && reg->m_to_python != NULL)
+			if (reg != nullptr && reg->m_to_python != nullptr)
 			{
-				return boost::python::incref(reg->to_python(boost::static_pointer_cast<PyGameEntity>(wrappedClass->ptr).get()));
+				return boost::python::incref(reg->to_python(std::static_pointer_cast<PyGameEntity>(wrappedClass->ptr).get()));
 			}
 			else
 			{
@@ -1649,9 +1631,9 @@ public:
 			boost::python::type_info info = boost::python::type_id<PyGameGroup>();
 			const boost::python::converter::registration* reg = boost::python::converter::registry::query(info);
 
-			if (reg != NULL && reg->m_to_python != NULL)
+			if (reg != nullptr && reg->m_to_python != nullptr)
 			{
-				return boost::python::incref(reg->to_python(boost::static_pointer_cast<PyGameGroup>(wrappedClass->ptr).get()));
+				return boost::python::incref(reg->to_python(std::static_pointer_cast<PyGameGroup>(wrappedClass->ptr).get()));
 			}
 			else
 			{
@@ -1663,9 +1645,9 @@ public:
 			boost::python::type_info info = boost::python::type_id<PyGamePrefab>();
 			const boost::python::converter::registration* reg = boost::python::converter::registry::query(info);
 
-			if (reg != NULL && reg->m_to_python != NULL)
+			if (reg != nullptr && reg->m_to_python != nullptr)
 			{
-				return boost::python::incref(reg->to_python(boost::static_pointer_cast<PyGamePrefab>(wrappedClass->ptr).get()));
+				return boost::python::incref(reg->to_python(std::static_pointer_cast<PyGamePrefab>(wrappedClass->ptr).get()));
 			}
 			else
 			{
@@ -1673,7 +1655,7 @@ public:
 			}
 		}
 
-		return NULL;
+		return nullptr;
 	}
 };
 
@@ -1682,7 +1664,7 @@ class CPythonToClassConverter
 public:
 	static void* convertible(PyObject* pObjPtr)
 	{
-		if (PyClass_Check(pObjPtr))
+		if (PyObject_IsInstance(pObjPtr, (PyObject*)&PyType_Type))
 		{
 			if (PyObject_IsInstance(pObjPtr, boost::python::object(boost::python::type_id<PyGameBrush>()).ptr()) ||
 			    PyObject_IsInstance(pObjPtr, boost::python::object(boost::python::type_id<PyGameCamera>()).ptr()) ||
@@ -1731,11 +1713,12 @@ public:
 	{
 		if (!PyList_Check(pObjPtr))
 		{
-			for (int i = 0; i < PyList_GET_SIZE(pObjPtr); i++)
+			const int size = PyList_Size(pObjPtr);
+			for (int i = 0; i < size; ++i)
 			{
-				if (!PyString_Check(PyList_GetItem(pObjPtr, i)))
+				if (!PyUnicode_Check(PyList_GetItem(pObjPtr, i)))
 				{
-					return NULL;
+					return nullptr;
 				}
 			}
 		}
@@ -1749,15 +1732,16 @@ public:
 
 		if (PyList_Check(pObjPtr))
 		{
-			for (int i = 0; i < PyList_GET_SIZE(pObjPtr); i++)
+			const int size = PyList_Size(pObjPtr);
+			for (int i = 0; i < size; ++i)
 			{
-				value.push_back(PyString_AsString(PyList_GetItem(pObjPtr, i)));
+				value.push_back(PyBytes_AsString(PyList_GetItem(pObjPtr, i)));
 			}
 		}
 
 		void* storage = (
-		  (boost::python::converter::rvalue_from_python_storage<std::vector<std::string>>*)
-		  pData)->storage.bytes;
+			(boost::python::converter::rvalue_from_python_storage<std::vector<std::string>>*)
+			pData)->storage.bytes;
 
 		new(storage) std::vector<std::string>(value);
 
@@ -1789,11 +1773,12 @@ public:
 	{
 		if (!PyList_Check(pObjPtr))
 		{
-			for (int i = 0; i < PyList_GET_SIZE(pObjPtr); i++)
+			const int size = PyList_Size(pObjPtr);
+			for (int i = 0; i < size; ++i)
 			{
-				if (!PyString_Check(PyList_GetItem(pObjPtr, i)))
+				if (!PyUnicode_Check(PyList_GetItem(pObjPtr, i)))
 				{
-					return NULL;
+					return nullptr;
 				}
 			}
 		}
@@ -1807,15 +1792,16 @@ public:
 
 		if (PyList_Check(pObjPtr))
 		{
-			for (int i = 0; i < PyList_GET_SIZE(pObjPtr); i++)
+			const int size = PyList_Size(pObjPtr);
+			for (int i = 0; i < size; ++i)
 			{
-				value.push_back(PyString_AsString(PyList_GetItem(pObjPtr, i)));
+				value.push_back(PyBytes_AsString(PyList_GetItem(pObjPtr, i)));
 			}
 		}
 
 		void* storage = (
-		  (boost::python::converter::rvalue_from_python_storage<std::vector<string>>*)
-		  pData)->storage.bytes;
+			(boost::python::converter::rvalue_from_python_storage<std::vector<string>>*)
+			pData)->storage.bytes;
 
 		new(storage) std::vector<string>(value);
 
@@ -1830,8 +1816,8 @@ public:
 	static PyObject* convert(Vec3 vValue)
 	{
 		return boost::python::incref(
-		  boost::python::object(
-		    boost::python::make_tuple(vValue.x, vValue.y, vValue.z)).ptr());
+			boost::python::object(
+				boost::python::make_tuple(vValue.x, vValue.y, vValue.z)).ptr());
 	}
 };
 
@@ -1849,7 +1835,7 @@ public:
 			return pObjPtr;
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	static void construct(PyObject* pObjPtr, boost::python::converter::rvalue_from_python_stage1_data* pData)
@@ -1861,8 +1847,8 @@ public:
 		value.z = (float)PyFloat_AS_DOUBLE(PyTuple_GetItem(pObjPtr, 2));
 
 		void* storage = (
-		  (boost::python::converter::rvalue_from_python_storage<Vec3>*)
-		  pData)->storage.bytes;
+			(boost::python::converter::rvalue_from_python_storage<Vec3>*)
+			pData)->storage.bytes;
 
 		new(storage) Vec3(value);
 
@@ -1877,10 +1863,10 @@ public:
 	static PyObject* convert(AABB bounds)
 	{
 		return boost::python::incref(
-		  boost::python::object(
-		    boost::python::make_tuple(
-		      boost::python::make_tuple(bounds.min.x, bounds.min.y, bounds.min.z),
-		      boost::python::make_tuple(bounds.max.x, bounds.max.y, bounds.max.z))).ptr());
+			boost::python::object(
+				boost::python::make_tuple(
+					boost::python::make_tuple(bounds.min.x, bounds.min.y, bounds.min.z),
+					boost::python::make_tuple(bounds.max.x, bounds.max.y, bounds.max.z))).ptr());
 	}
 };
 
@@ -1899,7 +1885,7 @@ public:
 			return pObjPtr;
 		}
 
-		return NULL;
+		return nullptr;
 	}
 	static void construct(PyObject* pObjPtr, boost::python::converter::rvalue_from_python_stage1_data* pData)
 	{
@@ -1921,17 +1907,17 @@ public:
 			boost::python::tuple tMax = boost::python::extract<boost::python::tuple>(pObjPtr);
 
 			bound = AABB(
-			  Vec3(boost::python::extract<float>(tMin[0]),
-			       boost::python::extract<float>(tMin[1]),
-			       boost::python::extract<float>(tMin[2])),
-			  Vec3(boost::python::extract<float>(tMax[0]),
-			       boost::python::extract<float>(tMax[1]),
-			       boost::python::extract<float>(tMax[2])));
+				Vec3(boost::python::extract<float>(tMin[0]),
+				     boost::python::extract<float>(tMin[1]),
+				     boost::python::extract<float>(tMin[2])),
+				Vec3(boost::python::extract<float>(tMax[0]),
+				     boost::python::extract<float>(tMax[1]),
+				     boost::python::extract<float>(tMax[2])));
 		}
 
 		void* storage = (
-		  (boost::python::converter::rvalue_from_python_storage<AABB>*)
-		  pData)->storage.bytes;
+			(boost::python::converter::rvalue_from_python_storage<AABB>*)
+			pData)->storage.bytes;
 
 		new(storage) AABB(bound);
 
@@ -1953,19 +1939,19 @@ class CPythonToGUIDConverter
 public:
 	static void* convertible(PyObject* pObjPtr)
 	{
-		if (!PyString_Check(pObjPtr))
+		if (!PyUnicode_Check(pObjPtr))
 		{
-			return NULL;
+			return nullptr;
 		}
 
-		char* value = (char*)PyString_AsString(pObjPtr);
+		char* value = (char*)PyBytes_AsString(pObjPtr);
 
 		// Check for a standard GUID len of 38 and that the string starts and ends with curly braces.
 		if (strlen(value) != 38 ||
 		    strcmp((const char*)value[0], "{") != 0 ||
 		    strcmp((const char*)value[strlen(value) - 1], "}") != 0)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return pObjPtr;
@@ -1974,14 +1960,14 @@ public:
 	{
 		GUID guid;
 
-		if (PyString_Check(pObjPtr))
+		if (PyUnicode_Check(pObjPtr))
 		{
-			guid = static_cast<GUID>(GuidUtil::FromString((const char*)PyString_AsString));
+			guid = static_cast<GUID>(GuidUtil::FromString((const char*)PyBytes_AsString));
 		}
 
 		void* storage = (
-		  (boost::python::converter::rvalue_from_python_storage<GUID>*)
-		  pData)->storage.bytes;
+			(boost::python::converter::rvalue_from_python_storage<GUID>*)
+			pData)->storage.bytes;
 
 		new(storage) GUID(guid);
 
@@ -2006,147 +1992,99 @@ public:
 	}
 };
 
-class CPythonToStringVectorConverter
-{
-public:
-	static void* convertible(PyObject* pObjPtr)
-	{
-		if (!PyList_Check(pObjPtr))
-		{
-			return 0;
-		}
-
-		return pObjPtr;
-	}
-
-	static void construct(PyObject* pObjPtr, boost::python::converter::rvalue_from_python_stage1_data* pData)
-	{
-		std::vector<std::string> value;
-		bool checkvalue(false);
-
-		if (PyList_Check(pObjPtr))
-		{
-			for (int i = 0; i < PyList_GET_SIZE(pObjPtr); i++)
-			{
-				if (!PyString_Check(PyList_GetItem(pObjPtr, i)))
-				{
-					checkvalue = false;
-					break;
-				}
-
-				value.push_back(PyString_AsString(PyList_GetItem(pObjPtr, i)));
-				checkvalue = true;
-			}
-		}
-
-		if (!checkvalue)
-		{
-			throw std::logic_error("Invalid data type.");
-		}
-
-		void* storage = (
-		  (boost::python::converter::rvalue_from_python_storage<std::vector<std::string>>*)
-		  pData)->storage.bytes;
-
-		new(storage) std::vector<std::string>(value);
-
-		pData->convertible = storage;
-	}
-};
-
 // Initialize converters
 void InitializePyConverters()
 {
 	// Register CPP SPyWrappedProperty <-> Python type
 	boost::python::to_python_converter<
-	  pSPyWrappedProperty,
-	  CPropertyToPythonConverter>();
+		pSPyWrappedProperty,
+		CPropertyToPythonConverter>();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToPropertyConverter::convertible,
-	  &CPythonToPropertyConverter::construct_ptr,
-	  boost::python::type_id<pSPyWrappedProperty>());
+		&CPythonToPropertyConverter::convertible,
+		&CPythonToPropertyConverter::construct_ptr,
+		boost::python::type_id<pSPyWrappedProperty>());
 
 	boost::python::to_python_converter<
-	  SPyWrappedProperty,
-	  CPropertyToPythonConverter>();
+		SPyWrappedProperty,
+		CPropertyToPythonConverter>();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToPropertyConverter::convertible,
-	  &CPythonToPropertyConverter::construct_obj,
-	  boost::python::type_id<SPyWrappedProperty>());
+		&CPythonToPropertyConverter::convertible,
+		&CPythonToPropertyConverter::construct_obj,
+		boost::python::type_id<SPyWrappedProperty>());
 
 	// Register CPP SPyWrappedClass Casting Function for PreRegistered Converters
 	boost::python::to_python_converter<
-	  pSPyWrappedClass,
-	  CClassToPythonConverter>();
+		pSPyWrappedClass,
+		CClassToPythonConverter>();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToClassConverter::convertible,
-	  &CPythonToClassConverter::construct,
-	  boost::python::type_id<pSPyWrappedClass>());
+		&CPythonToClassConverter::convertible,
+		&CPythonToClassConverter::construct,
+		boost::python::type_id<pSPyWrappedClass>());
 
 	// Register CPP string <-> Python String
 	boost::python::to_python_converter<
-	  string,
-	  CCryStringToPythonConverter>();
+		string,
+		CCryStringToPythonConverter>();
 	// cppcheck-suppress unusedScopedObject
 	CPythonToStringConverter<string>();
 
 	// Register CPP std::vector<str::string> <-> Python string list
 	boost::python::to_python_converter<
-	  std::vector<std::string>,
-	  CStdStringVectorToPythonConverter>();
+		std::vector<std::string>,
+		CStdStringVectorToPythonConverter>();
 	CPythonToStdStringVectorConverter();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToStdStringVectorConverter::convertible,
-	  &CPythonToStdStringVectorConverter::construct,
-	  boost::python::type_id<std::vector<std::string>>());
+		&CPythonToStdStringVectorConverter::convertible,
+		&CPythonToStdStringVectorConverter::construct,
+		boost::python::type_id<std::vector<std::string>>());
 
 	// Register CPP std::vector<string> <-> Python string list
 	boost::python::to_python_converter<
-	  std::vector<string>,
-	  CCStringVectorToPythonConverter>();
+		std::vector<string>,
+		CCStringVectorToPythonConverter>();
 	CPythonToCStringVectorConverter();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToCStringVectorConverter::convertible,
-	  &CPythonToCStringVectorConverter::construct,
-	  boost::python::type_id<std::vector<string>>());
+		&CPythonToCStringVectorConverter::convertible,
+		&CPythonToCStringVectorConverter::construct,
+		boost::python::type_id<std::vector<string>>());
 
 	// Register CPP Vec3 <-> Python Tuple
 	boost::python::to_python_converter<
-	  Vec3,
-	  CVec3ToPythonConverter>();
+		Vec3,
+		CVec3ToPythonConverter>();
 	CPythonToVec3Converter();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToVec3Converter::convertible,
-	  &CPythonToVec3Converter::construct,
-	  boost::python::type_id<Vec3>());
+		&CPythonToVec3Converter::convertible,
+		&CPythonToVec3Converter::construct,
+		boost::python::type_id<Vec3>());
 
 	//Register Converter for CPP AABB <-> Python Tuple
 	boost::python::to_python_converter<
-	  AABB,
-	  CAABBToPythonConverter>();
+		AABB,
+		CAABBToPythonConverter>();
 	CPythonToAABBConverter();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToGUIDConverter::convertible,
-	  &CPythonToGUIDConverter::construct,
-	  boost::python::type_id<AABB>());
+		&CPythonToGUIDConverter::convertible,
+		&CPythonToGUIDConverter::construct,
+		boost::python::type_id<AABB>());
 
 	//Register Converter for CPP GUID <-> Python String
 	boost::python::to_python_converter<
-	  GUID,
-	  CGUIDToPythonConverter>();
+		GUID,
+		CGUIDToPythonConverter>();
 	CPythonToGUIDConverter();
 
 	boost::python::converter::registry::push_back(
-	  &CPythonToGUIDConverter::convertible,
-	  &CPythonToGUIDConverter::construct,
-	  boost::python::type_id<GUID>());
+		&CPythonToGUIDConverter::convertible,
+		&CPythonToGUIDConverter::construct,
+		boost::python::type_id<GUID>());
 }
 
 typedef std::function<void (const char* output)> TRedirectWriteFunc;
@@ -2200,8 +2138,7 @@ PyTypeObject s_redirectType =
 	0,                       0,                          0,  0, 0, 0, 0,                 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	Py_TPFLAGS_DEFAULT,      "redirect.Redirect objects",
 	0,                       0,                          0,  0, 0, 0, s_redirectMethods, 0, 0, 0,
-	0,                       0,                          0,  0, 0, 0, 0
-};
+	0,                       0,                          0,  0, 0, 0, 0 };
 
 // Internal state
 PyObject* s_pStdOut;
@@ -2209,27 +2146,38 @@ PyObject* s_pStdOutSaved;
 PyObject* s_pStdErr;
 PyObject* s_pStdErrSaved;
 
-PyMODINIT_FUNC PyInitRedirecting(void)
+PyMODINIT_FUNC PyInitRedirecting()
 {
-	s_pStdOut = NULL;
-	s_pStdOutSaved = NULL;
+	s_pStdOut = nullptr;
+	s_pStdOutSaved = nullptr;
 
 	s_redirectType.tp_new = PyType_GenericNew;
 
 	if (PyType_Ready(&s_redirectType) < 0)
 	{
-		return;
+		return nullptr;
 	}
+	
+	static PyModuleDef moduledef = {
+		PyModuleDef_HEAD_INIT,
+		"redirect", /* m_name */
+		nullptr,    /* m_doc */
+		-1,         /* m_size */
+		nullptr,    /* m_methods */
+		nullptr,    /* m_reload */
+		nullptr,    /* m_traverse */
+		nullptr,    /* m_clear */
+		nullptr,    /* m_free */
+	};
 
-	PyObject* pModule = Py_InitModule3("redirect", 0, 0);
-
+	PyObject* pModule = PyModule_Create(&moduledef);
 	if (pModule)
 	{
 		Py_INCREF(&s_redirectType);
 		PyModule_AddObject(pModule, "Redirect", reinterpret_cast<PyObject*>(&s_redirectType));
 	}
 
-	return;
+	return pModule;
 }
 
 void SetStdOutCallback(TRedirectWriteFunc func)
@@ -2237,7 +2185,7 @@ void SetStdOutCallback(TRedirectWriteFunc func)
 	if (!s_pStdOut)
 	{
 		s_pStdOutSaved = PySys_GetObject("stdout");
-		s_pStdOut = s_redirectType.tp_new(&s_redirectType, NULL, NULL);
+		s_pStdOut = s_redirectType.tp_new(&s_redirectType, nullptr, nullptr);
 	}
 
 	SRedirectFunc* pImpl = reinterpret_cast<SRedirectFunc*>(s_pStdOut);
@@ -2253,7 +2201,7 @@ void RemoveStdOutCallback()
 	}
 
 	Py_XDECREF(s_pStdOut);
-	s_pStdOut = NULL;
+	s_pStdOut = nullptr;
 }
 
 void SetStdErrCallback(TRedirectWriteFunc func)
@@ -2261,7 +2209,7 @@ void SetStdErrCallback(TRedirectWriteFunc func)
 	if (!s_pStdErr)
 	{
 		s_pStdErrSaved = PySys_GetObject("stderr");
-		s_pStdErr = s_redirectType.tp_new(&s_redirectType, NULL, NULL);
+		s_pStdErr = s_redirectType.tp_new(&s_redirectType, nullptr, nullptr);
 	}
 
 	SRedirectFunc* pImpl = reinterpret_cast<SRedirectFunc*>(s_pStdErr);
@@ -2280,33 +2228,55 @@ void RemoveStdErrCallback()
 	s_pStdErr = nullptr;
 }
 
-#ifdef USE_PYTHON_SCRIPTING
 BOOST_PYTHON_MODULE(sandbox)
 {
-	boost::python::object package = boost::python::scope();
-	package.attr("__path__") = "sandbox";
-	CAutoRegisterPythonModuleHelper::RegisterAll();
-}
-#endif
-void InitCppModules()
-{
-	CAutoRegisterPythonCommandHelper::RegisterAll();
-	//	CAutoRegisterPythonModuleHelper::RegisterAll();
-#ifdef USE_PYTHON_SCRIPTING
-	initsandbox();
-#endif
+	boost::python::object main_module = boost::python::import("__main__");
+	boost::python::dict dict = boost::python::extract<boost::python::dict>(main_module.attr("__dict__"));
+	dict["__path__"] = "sandbox";
+
+	PyImport_ImportModule("redirectstdout");
+	CRY_ASSERT(!PyErr_Occurred());
+
+	PyScript::SetStdOutCallback(&PrintMessage);
+	PyScript::SetStdErrCallback(&PrintError);
+
+	InitCppClasses();
+	InitializePyConverters();
+	CRY_ASSERT(!PyErr_Occurred());
 }
 
-// Registers all wrapped engine classes, and add them to the indexing suites to allow for them to be imbedded in vectors and maps.
+void InitSubmoduleSearchPath()
+{
+	// Custom import hook for handling "package.module" name
+	PyRun_SimpleString(
+		"import importlib.abc\n"                                 \
+		"import importlib.machinery\n"                           \
+		"import sys\n"                                           \
+		"\n"                                                     \
+		"\n"                                                     \
+		"class Finder(importlib.abc.MetaPathFinder):\n"          \
+		"    def find_spec(self, fullname, path, target=None):\n"\
+		"        if fullname in sys.builtin_module_names:\n"     \
+		"            return importlib.machinery.ModuleSpec(\n"   \
+		"                fullname,\n"                            \
+		"                importlib.machinery.BuiltinImporter,\n" \
+		"            )\n"                                        \
+		"\n"                                                     \
+		"\n"                                                     \
+		"sys.meta_path.append(Finder())\n"                       \
+	);
+}
+
+// Registers all wrapped engine classes, and add them to the indexing suites to allow for them to be embedded in vectors and maps.
 void InitCppClasses()
 {
 	using namespace boost::python;
 
 	// Register some common containers.
-	class_<std::vector<int>>("int_vector")
-	.def(vector_indexing_suite<std::vector<int>>());
-	class_<std::vector<float>>("float_vector")
-	.def(vector_indexing_suite<std::vector<float>>());
+ 	class_<std::vector<int>>("int_vector")
+ 	.def(vector_indexing_suite<std::vector<int>>());
+ 	class_<std::vector<float>>("float_vector")
+ 	.def(vector_indexing_suite<std::vector<float>>());
 	class_<std::vector<pPyGameObject>>("PyGameObjectVector")
 	.def(vector_indexing_suite<std::vector<pPyGameObject>, true>());
 	class_<std::vector<pPyGameLayer>>("PyGameLayerVector")
@@ -2491,7 +2461,7 @@ const char* GetAsString(const char* varName)
 	catch (boost::python::error_already_set)
 	{
 		PyErr_Print();
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -2642,14 +2612,14 @@ void InitializePython()
 
 	char szExecFilePath[_MAX_PATH];
 	CryGetExecutableFolder(CRY_ARRAY_COUNT(szExecFilePath), szExecFilePath);
-	// python27.zip or python27_d.zip has to exists
-	string zipPath;
+
 #ifdef _DEBUG
-	zipPath = PathUtil::Make(szExecFilePath, "python27_d.zip");
+	string zipPath = PathUtil::Make(szExecFilePath, "python37_d.zip");
 #else
-	zipPath = PathUtil::Make(szExecFilePath, "python27.zip");
+	string zipPath = PathUtil::Make(szExecFilePath, "python37.zip");
 #endif // _DEBUG
 	zipPath.replace('/', '\\');
+
 	if (!CFileUtil::FileExists(zipPath))
 	{
 		Error("Python standard library zip ( %s ) is missing. Cannot initialize Python. Sandbox will crash.", zipPath);
@@ -2657,24 +2627,24 @@ void InitializePython()
 	}
 
 	string binPath(PathUtil::RemoveSlash(szExecFilePath));
-	// need to add this and Editor/Python to path so python can find Qt dlls etc easilly
+	// need to add this and Editor/Python/Windows to path so python can find PYDs
 	string pythonPath = PathUtil::Make(GetSandboxPythonPath(), string(PathUtil::GetCurrentPlatformFolder()));
 	pythonPath.replace('/', '\\');
 	string currentEnvPath(getenv("PATH"));
 	currentEnvPath = binPath + ";" + pythonPath + ";" + currentEnvPath;
 	_putenv_s("PATH", currentEnvPath);
-	// and set python home to "Editor/Python" so everything works as it should
-	Py_SetPythonHome((char*)pythonPath.c_str());
+
+	// and set python home to "Editor/Python/Windows" so everything works as it should
+	// widePath should be in STATIC storage: python will access it through program execution
+	static wstring widePath;
+	Unicode::Convert(widePath, pythonPath);
+	Py_SetPythonHome(widePath.c_str());
 
 	Py_Initialize();
 
-	PyImport_ImportModule("redirectstdout");
-	InitCppClasses();
-	InitCppModules();
-	InitializePyConverters();
+	InitSubmoduleSearchPath();
 
-	PyScript::SetStdOutCallback(&PrintMessage);
-	PyScript::SetStdErrCallback(&PrintError);
+	init_module_sandbox();
 }
 
 void ShutdownPython()
@@ -2687,7 +2657,7 @@ void ShutdownPython()
 
 	RemoveListener(s_pLogOutput);
 	delete s_pLogOutput;
-	Py_Finalize();
+	// Py_Finilize() should not been called (see boost::python documentation)
 }
 
 void RegisterListener(IPyScriptListener* pListener)
@@ -2702,7 +2672,7 @@ void RemoveListener(IPyScriptListener* pListener)
 
 void LoadPluginFromPath(string path)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(path.c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, path.c_str());
 	CFileEnum fileEnum;
 	__finddata64_t fileData;
 	if (fileEnum.StartEnumeration(path, "startup.py", &fileData))
@@ -2715,11 +2685,7 @@ void LoadPluginFromPath(string path)
 
 void LoadPythonPlugins()
 {
-	LOADING_TIME_PROFILE_SECTION;
-	string userFolder(PathUtil::GetUserSandboxFolder());
-	boost::python::object mainModule(boost::python::handle<>(boost::python::borrowed(PyImport_ImportModule("sandbox"))));
-	boost::python::scope main_scope = mainModule;
-	main_scope.attr("user_folder") = userFolder;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	string pluginsPath = PathUtil::Make(GetSandboxPythonPath(), "plugins");
 	pluginsPath.replace('/', '\\');
@@ -2755,10 +2721,8 @@ sys.excepthook = __process_error
 				continue;
 			string pluginPath = PathUtil::Make(pluginsPath, fileName);
 			LoadPluginFromPath(pluginPath);
-
 		}
 	}
 }
 
 }
-

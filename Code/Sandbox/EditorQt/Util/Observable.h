@@ -1,17 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 1999-2010.
-// -------------------------------------------------------------------------
-//  File name:	Observable.h
-//  Version:	v1.00
-//  Created:	08.07.2010 by Nicusor Nedelcu
-//  Description:  This file declares templates to be used when a class can
-//								have a list of observers to feed
-////////////////////////////////////////////////////////////////////////////
 
 #include <vector>
 
@@ -90,8 +79,7 @@ protected:
 
 // Description:
 //		Implement the observable methods when the user class is inheriting from a virtual interface using the observable methods
-#define IMPLEMENT_OBSERVABLE_METHODS(observerClassName)                                                                                     \
-  virtual bool RegisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::RegisterObserver(pObserver); };     \
-  virtual bool UnregisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::UnregisterObserver(pObserver); }; \
-  virtual void UnregisterAllObservers() { CObservable<observerClassName>::UnregisterAllObservers(); };
-
+#define IMPLEMENT_OBSERVABLE_METHODS(observerClassName)                                                                                    \
+  virtual bool RegisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::RegisterObserver(pObserver); }     \
+  virtual bool UnregisterObserver(observerClassName * pObserver) { return CObservable<observerClassName>::UnregisterObserver(pObserver); } \
+  virtual void UnregisterAllObservers() { CObservable<observerClassName>::UnregisterAllObservers(); }

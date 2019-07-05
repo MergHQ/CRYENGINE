@@ -11,6 +11,8 @@
 #include <CrySchematyc2/Deprecated/IGlobalFunction.h>
 #include <CrySchematyc2/Env/IEnvRegistry.h>
 #include <CrySchematyc2/Utils/StringUtils.h>
+#include <CrySchematyc2/Serialization/Resources/IResourceCollectorArchive.h>
+#include "CVars.h"
 
 SERIALIZATION_ENUM_BEGIN_NESTED2(Schematyc2, CLibClassProperties, EInternalOverridePolicy, "Schematyc Library Class Property Override Policy")
 	SERIALIZATION_ENUM(Schematyc2::CLibClassProperties::EInternalOverridePolicy::UseDefault, "UseDefault", "Default")
@@ -111,10 +113,11 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	CLibStateMachine::CLibStateMachine(const SGUID& guid, const char* szName, ELibStateMachineLifetime lifetime)
+	CLibStateMachine::CLibStateMachine(const SGUID& guid, const char* szName, const EStateMachineLifetime lifetime, const EStateMachineNetAuthority netType)
 		: m_guid(guid)
 		, m_name(szName)
 		, m_lifetime(lifetime)
+		, m_netAuthority(netType)
 		, m_iPartner(INVALID_INDEX)
 	{}
 
@@ -131,9 +134,14 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	ELibStateMachineLifetime CLibStateMachine::GetLifetime() const
+	EStateMachineLifetime CLibStateMachine::GetLifetime() const
 	{
 		return m_lifetime;
+	}
+
+	Schematyc2::EStateMachineNetAuthority CLibStateMachine::GetNetAuthority() const
+	{
+		return m_netAuthority;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -213,6 +221,15 @@ namespace Schematyc2
 	{
 		m_containers.push_back(iContainer);
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CLibStateMachine::CompactMemory()
+	{
+		m_listeners.shrink_to_fit();
+		m_variables.shrink_to_fit();
+		m_containers.shrink_to_fit();
+	}
+
 
 	//////////////////////////////////////////////////////////////////////////
 	CLibState::CLibState(const SGUID& guid, const char* szName)
@@ -413,6 +430,19 @@ namespace Schematyc2
 	void CLibState::AddTransition(size_t iTransition)
 	{
 		m_transitions.push_back(iTransition);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CLibState::CompactMemory()
+	{
+		m_variables.shrink_to_fit();
+		m_containers.shrink_to_fit();
+		m_timers.shrink_to_fit();
+		m_actionInstances.shrink_to_fit();
+		m_constructors.shrink_to_fit();
+		m_destructors.shrink_to_fit();
+		m_signalReceivers.shrink_to_fit();
+		m_transitions.shrink_to_fit();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -756,6 +786,7 @@ namespace Schematyc2
 		, m_size(0)
 		, m_lastOpPos(INVALID_INDEX)
 		, m_pBegin(NULL)
+		, m_executionFilter(EGraphExecutionFilter::Always)
 	{}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1018,12 +1049,106 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	void CLibFunction::SetGraphExecutionFilter(EGraphExecutionFilter filter) 
+	{
+		m_executionFilter = filter;
+	}
+
+	void CLibFunction::AddDebugOperationSymbolNode(size_t pos, const SGUID& guid)
+	{
+		if (!guid.cryGUID.IsNull())
+		{
+			DebugSymbolTable::iterator result = m_debugSymbolTable.find(pos);
+
+			if (result == m_debugSymbolTable.end())
+			{
+				m_debugSymbolTable.emplace(pos, SDebugSymbol(guid, "", ILibFunction::SDebugSymbol::EDebugSymbolType::Node));
+			}
+			else
+			{
+				if (result->second.type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
+				{
+					result->second.type = ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput;
+				}
+				else
+				{
+					CRY_ASSERT(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Node) already registred.");
+				}
+			}
+		}
+	}
+
+	void CLibFunction::AddDebugOperationSymbolInput(size_t pos, const SGUID& guid, const char* input)
+	{
+		if (!guid.cryGUID.IsNull())
+		{
+			DebugSymbolTable::const_iterator result = m_debugSymbolTable.find(pos);
+
+			if (result == m_debugSymbolTable.end())
+			{
+				m_debugSymbolTable.emplace(pos, SDebugSymbol(guid, input, ILibFunction::SDebugSymbol::EDebugSymbolType::Input));
+			}
+
+			CRY_ASSERT(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Input) already registered.");
+		}
+	}
+
+	const Schematyc2::ILibFunction::SDebugSymbol* CLibFunction::GetDebugOperationSymbol(size_t pos) const
+	{
+		DebugSymbolTable::const_iterator result = m_debugSymbolTable.find(pos);
+		if (result != m_debugSymbolTable.end())
+		{
+			return &result->second;
+		}
+
+		return nullptr;
+	}
+
+	size_t CLibFunction::GetDebugOperationsSize() const
+	{
+		return m_debugSymbolTable.size();
+	}
+
+	void CLibFunction::ClearDebugOperationSymbols()
+	{
+		m_debugSymbolTable.clear();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	bool CLibFunction::IsGraphExecutionAllowed() const
+	{
+		switch (m_executionFilter)
+		{
+		case EGraphExecutionFilter::Always:
+			return true;
+
+		case EGraphExecutionFilter::DevModeOrLoggingEnabled:
+			return gEnv->pSystem->IsDevMode() || CVars::sc2_LogToFile != 0;
+
+		case EGraphExecutionFilter::DevModeOnly:
+			return gEnv->pSystem->IsDevMode();
+
+		default:
+			CRY_ASSERT(false, "Wrong execution filter value in schematyc function.");
+		}
+		return false;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	size_t CLibFunction::AddOp(const SVMOp& op)
 	{
-		if(op.size > (m_capacity - m_size))
+		if (op.size > (m_capacity - m_size))
 		{
-			m_capacity	= /*std::*/max(m_capacity * GROWTH_FACTOR, /*std::*/max(op.size, MIN_CAPACITY));
-			m_pBegin		= static_cast<uint8*>(realloc(m_pBegin, m_capacity));
+			const size_t capacity = /*std::*/max(m_capacity * GROWTH_FACTOR, /*std::*/max(op.size, MIN_CAPACITY));
+			if (uint8* pBegin = static_cast<uint8*>(realloc(m_pBegin, capacity)))
+			{
+				m_capacity = capacity;
+				m_pBegin = pBegin;
+			}
+			else
+			{
+				SCHEMATYC2_COMPILER_FATAL_ERROR("Unable to add operation");
+			}
 		}
 		memcpy(m_pBegin + m_size, &op, op.size);
 		m_lastOpPos = m_size;
@@ -1055,6 +1180,30 @@ namespace Schematyc2
 		m_size			= 0;
 		m_lastOpPos	= INVALID_INDEX;
 		m_pBegin		= NULL;
+
+		ClearDebugOperationSymbols();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CLibFunction::CompactMemory()
+	{
+		if (m_size < m_capacity)
+		{
+			if (uint8* pBegin = static_cast<uint8*>(realloc(m_pBegin, m_size)))
+			{
+				m_pBegin = pBegin;
+				m_capacity = m_size;
+			}
+		}
+
+		m_inputs.shrink_to_fit();
+		m_variantInputs.shrink_to_fit();
+		m_outputs.shrink_to_fit();
+		m_variantOutputs.shrink_to_fit();
+		m_variantConsts.shrink_to_fit();
+		m_globalFunctionTable.shrink_to_fit();
+		m_componentMemberFunctionTable.shrink_to_fit();
+		m_actionMemberFunctionTable.shrink_to_fit();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1085,7 +1234,8 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CLibClassProperties::SProperty::Serialize(Serialization::IArchive& archive)
 	{
-		if(archive.isEdit())
+		const bool isPrecaching = archive.caps(Schematyc2::IResourceCollectorArchive::ArchiveCaps);
+		if(archive.isEdit() || isPrecaching)
 		{
 			archive(overridePolicy, "overridePolicy", "Override");
 			if(overridePolicy == EInternalOverridePolicy::OverrideDefault)
@@ -1478,6 +1628,12 @@ namespace Schematyc2
 		return iFunction != m_functions.end() ? &iFunction->second.function : NULL;
 	}
 
+	const SGUID CLibClass::GetFunctionGUID(const LibFunctionId& functionId) const
+	{
+		TFunctionMap::const_iterator	iFunction = m_functions.find(functionId);
+		return iFunction != m_functions.end() ? iFunction->second.function.GetGUID() : SGUID();
+	}
+
 	//////////////////////////////////////////////////////////////////////////
 	const CRuntimeFunction* CLibClass::GetFunction_New(uint32 functionIdx) const
 	{
@@ -1490,7 +1646,7 @@ namespace Schematyc2
 		for(TFunctionMap::const_iterator iFunction = m_functions.begin(), iEndFunction = m_functions.end(); iFunction != iEndFunction; ++ iFunction)
 		{
 			const SFunction&	function = iFunction->second;
-			if(function.graphGUID == graphGUID)
+			if(function.function.GetGUID() == graphGUID)
 			{
 				PreviewFunction(function.function, stringStreamOutCallback);
 			}
@@ -1498,9 +1654,9 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	size_t CLibClass::AddStateMachine(const SGUID& guid, const char* name, ELibStateMachineLifetime lifetime)
+	size_t CLibClass::AddStateMachine(const SGUID& guid, const char* name, EStateMachineLifetime lifetime, EStateMachineNetAuthority netType)
 	{
-		m_stateMachines.push_back(CLibStateMachine(guid, name, lifetime));
+		m_stateMachines.push_back(CLibStateMachine(guid, name, lifetime, netType));
 		return m_stateMachines.size() - 1;
 	}
 
@@ -1797,7 +1953,7 @@ namespace Schematyc2
 	LibFunctionId CLibClass::AddFunction(const SGUID& graphGUID)
 	{
 		LibFunctionId functionId = m_nextFunctionId ++;
-		m_functions.insert(TFunctionMap::value_type(functionId, SFunction(functionId, graphGUID)));
+		m_functions.insert(TFunctionMap::value_type(functionId, SFunction(graphGUID)));
 		return functionId;
 	}
 
@@ -1830,6 +1986,51 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	void CLibClass::CompactMemory()
+	{
+		for (TFunctionMap::value_type& functionPair : m_functions)
+		{
+			functionPair.second.function.CompactMemory();
+		}
+
+		m_stateMachines.shrink_to_fit();
+		for (CLibStateMachine& stateMachine : m_stateMachines)
+		{
+			stateMachine.CompactMemory();
+		}
+
+		m_states.shrink_to_fit();
+		for (CLibState& state : m_states)
+		{
+			state.CompactMemory();
+		}
+
+		m_variables.shrink_to_fit();
+		m_containers.shrink_to_fit();
+		m_variants.shrink_to_fit();
+		m_timers.shrink_to_fit();
+		m_persistentTimers.shrink_to_fit();
+		m_abstractInterfaceImplementations.shrink_to_fit();
+		m_componentInstances.shrink_to_fit();
+		m_actionInstances.shrink_to_fit();
+		m_persistentActionInstances.shrink_to_fit();
+		m_constructors.shrink_to_fit();
+		m_persistentConstructors.shrink_to_fit();
+		m_destructors.shrink_to_fit();
+		m_persistentDestructors.shrink_to_fit();
+		m_signalReceivers.shrink_to_fit();
+		m_persistentSignalReceivers.shrink_to_fit();
+		m_transitions.shrink_to_fit();
+		m_functions_New.shrink_to_fit();
+		for (CRuntimeFunctionPtr& pFunction : m_functions_New)
+		{
+			pFunction->CompactMemory();
+		}
+
+		m_resourcesToPrecache.shrink_to_fit();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	void CLibClass::AddPrecacheResource(IAnyConstPtr resource)
 	{
 		m_resourcesToPrecache.emplace_back(resource);
@@ -1848,10 +2049,10 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	CLibClass::SFunction::SFunction(const LibFunctionId& _functionId, const SGUID& _graphGUID)
-		: functionId(_functionId)
-		, graphGUID(_graphGUID)
-	{}
+	CLibClass::SFunction::SFunction(const SGUID& _graphGUID)
+	{
+		function.SetGUID(_graphGUID);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CLibClass::PreviewFunction(const CLibFunction& function, StringStreamOutCallback stringStreamOutCallback) const
@@ -2014,7 +2215,6 @@ namespace Schematyc2
 				case SVMOp::CONTAINER_REMOVE_BY_INDEX:
 					{
 						const SVMContainerRemoveByIndexOp*	pContainerRemoveByIndexOp = static_cast<const SVMContainerRemoveByIndexOp*>(pOp);
-						char																stringBuffer[StringUtils::s_sizeTStringBufferSize] = "";
 						stringStreamOutCallback("\tCONTAINER_REMOVE_BY_INDEX ");
 						stringStreamOutCallback(GetContainer(pContainerRemoveByIndexOp->iContainer)->GetName());
 						stringStreamOutCallback("\n");
@@ -2034,7 +2234,6 @@ namespace Schematyc2
 				case SVMOp::CONTAINER_CLEAR:
 					{
 						const SVMContainerClearOp*	pContainerClearOp = static_cast<const SVMContainerClearOp*>(pOp);
-						char												stringBuffer[StringUtils::s_sizeTStringBufferSize] = "";
 						stringStreamOutCallback("\tCONTAINER_CLEAR ");
 						stringStreamOutCallback(GetContainer(pContainerClearOp->iContainer)->GetName());
 						stringStreamOutCallback("\n");
@@ -2054,7 +2253,6 @@ namespace Schematyc2
 				case SVMOp::CONTAINER_GET:
 					{
 						const SVMContainerGetOp*	pContainerGetOp = static_cast<const SVMContainerGetOp*>(pOp);
-						char											stringBuffer[StringUtils::s_sizeTStringBufferSize] = "";
 						stringStreamOutCallback("\tCONTAINER_GET ");
 						stringStreamOutCallback(GetContainer(pContainerGetOp->iContainer)->GetName());
 						stringStreamOutCallback("\n");
@@ -2496,5 +2694,14 @@ namespace Schematyc2
 	{
 		TClassMap::iterator	iClass = m_classes.find(guid);
 		return iClass != m_classes.end() ? iClass->second : CLibClassPtr();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CLib::CompactMemory()
+	{
+		for (TClassMap::value_type& classPair : m_classes)
+		{
+			classPair.second->CompactMemory();
+		}
 	}
 }

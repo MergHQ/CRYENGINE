@@ -93,8 +93,7 @@ BOOL CVehicleModificationDialog::OnInitDialog()
 	WINDOWPLACEMENT wp;
 	GetWindowPlacement(&wp);
 
-	int width = wp.rcNormalPosition.right - wp.rcNormalPosition.left;
-	int height = wp.rcNormalPosition.bottom - wp.rcNormalPosition.top;
+	//int width = wp.rcNormalPosition.right - wp.rcNormalPosition.left;
 
 	CWnd* wnd;
 
@@ -312,4 +311,3 @@ void CVehicleModificationDialog::OnSize(UINT nType, int cx, int cy)
 		}
 	}
 }
-

@@ -28,7 +28,7 @@ void WorldMonitor::Start()
 	{
 		if (m_callback)
 		{
-			gEnv->pPhysicalWorld->AddEventClient(EventPhysStateChange::id, StateChangeHandler, 1, 1.0f);
+			gEnv->pPhysicalWorld->AddEventClient(EventPhysBBoxChange::id, BBoxChangeHandler, 1, 1.0f);
 			gEnv->pPhysicalWorld->AddEventClient(EventPhysEntityDeleted::id, EntityRemovedHandler, 1, 1.0f);
 			gEnv->pPhysicalWorld->AddEventClient(EventPhysEntityDeleted::id, EntityRemovedHandlerAsync, 0, 1.0f);
 		}
@@ -43,7 +43,7 @@ void WorldMonitor::Stop()
 	{
 		if (m_callback)
 		{
-			gEnv->pPhysicalWorld->RemoveEventClient(EventPhysStateChange::id, StateChangeHandler, 1);
+			gEnv->pPhysicalWorld->RemoveEventClient(EventPhysBBoxChange::id, BBoxChangeHandler, 1);
 			gEnv->pPhysicalWorld->RemoveEventClient(EventPhysEntityDeleted::id, EntityRemovedHandler, 1);
 			gEnv->pPhysicalWorld->RemoveEventClient(EventPhysEntityDeleted::id, EntityRemovedHandlerAsync, 0);
 		}
@@ -55,7 +55,7 @@ bool WorldMonitor::IsEnabled() const
 	return m_enabled;
 }
 
-int WorldMonitor::StateChangeHandler(const EventPhys* pPhysEvent)
+int WorldMonitor::BBoxChangeHandler(const EventPhys* pPhysEvent)
 {
 	WorldMonitor* pthis = gAIEnv.pNavigationSystem->GetWorldMonitor();
 
@@ -63,18 +63,20 @@ int WorldMonitor::StateChangeHandler(const EventPhys* pPhysEvent)
 	assert(pthis->IsEnabled());
 
 	{
-		const EventPhysStateChange* event = (EventPhysStateChange*)pPhysEvent;
+		const EventPhysBBoxChange* event = (EventPhysBBoxChange*)pPhysEvent;
 
 		bool consider = false;
+		pe_status_pos sp;
+		event->pEntity->GetStatus(&sp);
 
-		if (event->iSimClass[1] == SC_STATIC)
+		if (sp.iSimClass == SC_STATIC)
 			consider = true;
 		else
 		{
 			IPhysicalEntity* physEnt = event->pEntity;
 
-			if ((event->iSimClass[1] == SC_SLEEPING_RIGID) ||
-			    (event->iSimClass[1] == SC_ACTIVE_RIGID) ||
+			if ((sp.iSimClass == SC_SLEEPING_RIGID) ||
+			    (sp.iSimClass == SC_ACTIVE_RIGID) ||
 			    (physEnt->GetType() == PE_RIGID))
 			{
 				consider = NavigationSystemUtils::IsDynamicObjectPartOfTheMNMGenerationProcess(physEnt);
@@ -93,7 +95,7 @@ int WorldMonitor::StateChangeHandler(const EventPhys* pPhysEvent)
 				pthis->m_callback(entityId, aabbOld);
 				pthis->m_callback(entityId, aabbNew);
 
-				if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
+				if (gAIEnv.CVars.navigation.DebugDrawNavigationWorldMonitor)
 				{
 					CDebugDrawContext dc;
 
@@ -117,10 +119,9 @@ int WorldMonitor::EntityRemovedHandler(const EventPhys* pPhysEvent)
 	EntityAABBChange change;
 	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, change))
 	{
-		const EventPhysEntityDeleted* event = static_cast<const EventPhysEntityDeleted*>(pPhysEvent);
 		pthis->m_callback(change.entityId, change.aabb);
 
-		if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
+		if (gAIEnv.CVars.navigation.DebugDrawNavigationWorldMonitor)
 		{
 			CDebugDrawContext dc;
 			dc->DrawAABB(change.aabb, IDENTITY, false, Col_White, eBBD_Faceted);
@@ -140,7 +141,6 @@ int WorldMonitor::EntityRemovedHandlerAsync(const EventPhys* pPhysEvent)
 	EntityAABBChange change;
 	if (ShallEventPhysEntityDeletedBeHandled(pPhysEvent, change))
 	{
-		const EventPhysEntityDeleted* event = static_cast<const EventPhysEntityDeleted*>(pPhysEvent);
 		pthis->m_queuedAABBChanges.push_back(change);
 	}
 
@@ -198,7 +198,7 @@ void WorldMonitor::FlushPendingAABBChanges()
 			m_callback(aabbChange.entityId, aabbChange.aabb);
 		}
 
-		if (gAIEnv.CVars.DebugDrawNavigationWorldMonitor)
+		if (gAIEnv.CVars.navigation.DebugDrawNavigationWorldMonitor)
 		{
 			CDebugDrawContext dc;
 			for (const EntityAABBChange& aabbChange : changesInTheWorld)

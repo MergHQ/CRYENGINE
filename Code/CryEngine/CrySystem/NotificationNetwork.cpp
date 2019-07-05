@@ -409,8 +409,10 @@ bool CConnectionBase::Validate()
 		int r = (int)::select(int(m_socket + 1), NULL, &stWriteSockets, &stExceptions, &timeOut); // Ian: CRYSOCKET possible truncation on x64
 		if (r < 0)
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			TErrorType nErrorType(GetLastError());
 			CryLog("CNotificationNetworkClient::Validate: Failed to select socket. Reason: %u ", nErrorType);
+#endif
 			CrySock::closesocket(m_socket);
 			m_socket = CRY_INVALID_SOCKET;
 			if (m_boIsConnected)
@@ -675,8 +677,10 @@ bool CConnectionBase::ReceiveNotification(CListeners& listeners)
 	{
 		m_dataLeft = 0;
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		TErrorType nCurrentError(GetLastError());
 		CryLog("CNotificationNetworkClient::ReceiveNotification: Failed to receive package. Reason: %u ", nCurrentError);
+#endif
 		CrySock::closesocket(m_socket);
 		m_socket = CRY_INVALID_SOCKET;
 		if (m_boIsConnected)
@@ -726,8 +730,10 @@ bool CConnectionBase::GetIsConnectedFlag()
 	int r = (int)::select(int(m_socket + 1), NULL, &stWriteSockets, &stExceptions, &timeOut); // Ian: CRYSOCKET possible truncation on x64
 	if (r < 0)
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		TErrorType nErrorType(GetLastError());
 		CryLog("CNotificationNetworkClient::GetIsConnectedFlag: Failed to select socket. Reason: %u ", nErrorType);
+#endif
 		CrySock::closesocket(m_socket);
 		m_socket = CRY_INVALID_SOCKET;
 		if (m_boIsConnected)
@@ -921,7 +927,7 @@ bool CClient::ListenerRemove(INotificationNetworkListener* pListener)
 bool CClient::Send(const char* channelName, const void* pBuffer, size_t length)
 {
 	CRY_ASSERT(CChannel::IsNameValid(channelName));
-	//	CRY_ASSERT_MESSAGE(channelLength <= NN_CHANNEL_NAME_LENGTH_MAX,
+	//	CRY_ASSERT(channelLength <= NN_CHANNEL_NAME_LENGTH_MAX,
 	//		"Channel name \"%s\" was passed to a Notification Network method, the name cannot be longer than %d chars.",
 	//		channel, NN_CHANNEL_NAME_LENGTH_MAX);
 
@@ -1001,6 +1007,9 @@ bool CNotificationNetwork::CConnection::OnMessage(EMessage eMessage, const CChan
 			return true;
 		}
 		return true;
+
+	default:
+		break;
 	}
 
 	return false;

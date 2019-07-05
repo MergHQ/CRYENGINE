@@ -1,25 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "PanelDisplayRender.h"
+#include "IEditorImpl.h"
+
+#include <IObjectManager.h>
 #include <Preferences/ViewportPreferences.h>
-#include "Grid.h"
-
-#include <QLayout>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-
-#include <CryRenderer/IStereoRenderer.h>
-
-#include <Serialization.h>
-#include <CrySerialization/Enum.h>
 #include <Serialization/Decorators/EditorActionButton.h>
-#include <CrySerialization/Decorators/Range.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
+#include <Serialization.h>
+#include <Viewport.h>
 
-#include <CryCore/SFunctor.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryRenderer/IStereoRenderer.h>
+#include <CrySerialization/Enum.h>
 
-#define LEAVE_FLAGS (RENDER_FLAG_BBOX)
-
-static CPanelDisplayRender* s_pPanelDisplayRender = 0;
+static CPanelDisplayRender* s_pPanelDisplayRender = nullptr;
 static bool s_bNoRecurseUpdate = false;
 
 enum ERenderMode
@@ -36,68 +32,53 @@ enum ERenderStatsDebugMode
 	eRenderStatsBudgets   = 3,
 };
 
-enum EDisplayStatsDebugMode
-{
-	eDisplayStatsOff     = 0,
-	eDisplayStatsMinimal = 1,
-	eDisplayStatsFull    = 2,
-};
-
-SERIALIZATION_ENUM_BEGIN(ERenderMode, LOCALIZE("Render Mode"))
-SERIALIZATION_ENUM(eSolidMode, "solid", LOCALIZE("Solid"))
-SERIALIZATION_ENUM(eWireframeMode, "wireframe", LOCALIZE("Wireframe"))
+SERIALIZATION_ENUM_BEGIN(ERenderMode, "Render Mode")
+SERIALIZATION_ENUM(eSolidMode, "solid", "Solid")
+SERIALIZATION_ENUM(eWireframeMode, "wireframe", "Wireframe")
 SERIALIZATION_ENUM_END()
 
 SERIALIZATION_ENUM_BEGIN(ERenderStatsDebugMode, "Display Stats")
-SERIALIZATION_ENUM(eRenderStatsOff, "off", LOCALIZE("None"))
-SERIALIZATION_ENUM(eRenderStatsResources, "resources", LOCALIZE("Render Resources"))
-SERIALIZATION_ENUM(eRenderStatsDrawCalls, "drawcalls", LOCALIZE("Draw Calls per Object"))
-SERIALIZATION_ENUM(eRenderStatsBudgets, "budgets", LOCALIZE("Render Budgets"))
-SERIALIZATION_ENUM_END()
-
-SERIALIZATION_ENUM_BEGIN(EDisplayStatsDebugMode, "Render Stats")
-SERIALIZATION_ENUM(eDisplayStatsOff, "off", LOCALIZE("None"))
-SERIALIZATION_ENUM(eDisplayStatsMinimal, "minimal", LOCALIZE("Minimal"))
-SERIALIZATION_ENUM(eDisplayStatsFull, "full", LOCALIZE("Full"))
+SERIALIZATION_ENUM(eRenderStatsOff, "off", "None")
+SERIALIZATION_ENUM(eRenderStatsResources, "resources", "Render Resources")
+SERIALIZATION_ENUM(eRenderStatsDrawCalls, "drawcalls", "Draw Calls per Object")
+SERIALIZATION_ENUM(eRenderStatsBudgets, "budgets", "Render Budgets")
 SERIALIZATION_ENUM_END()
 
 SERIALIZATION_ENUM_BEGIN(EStereoMode, "Stereo Mode")
-SERIALIZATION_ENUM(EStereoMode::STEREO_MODE_NO_STEREO, "off", LOCALIZE("No Stereo Output"))
-SERIALIZATION_ENUM(EStereoMode::STEREO_MODE_DUAL_RENDERING, "dual", LOCALIZE("Dual Rendering"))
-SERIALIZATION_ENUM(EStereoMode::STEREO_MODE_POST_STEREO, "post", LOCALIZE("Postprocess Stereo"))
+SERIALIZATION_ENUM(EStereoMode::STEREO_MODE_NO_STEREO, "off", "No Stereo Output")
+SERIALIZATION_ENUM(EStereoMode::STEREO_MODE_DUAL_RENDERING, "dual", "Dual Rendering")
+SERIALIZATION_ENUM(EStereoMode::STEREO_MODE_POST_STEREO, "post", "Postprocess Stereo")
 SERIALIZATION_ENUM_END()
 
 SERIALIZATION_ENUM_BEGIN(EStereoOutput, "Stereo Output")
-SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_STANDARD, "off", LOCALIZE("No Stereo Output (Emulation)"))
-SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_CHECKERBOARD, "Checkerboard", LOCALIZE("Checkerboard"))
-SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_ABOVE_AND_BELOW, "AboveAndBelow", LOCALIZE("Above and Below (not supported)"))
-SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_SIDE_BY_SIDE, "SideBySide", LOCALIZE("Side by Side"))
-SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_LINE_BY_LINE, "Interlaced", LOCALIZE("Interlaced (not supported)"))
-SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_ANAGLYPH, "Anaglyph", LOCALIZE("Anaglyph"))
-SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_HMD, "VR", LOCALIZE("VR Headset"))
+SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_STANDARD, "off", "No Stereo Output (Emulation)")
+SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_CHECKERBOARD, "Checkerboard", "Checkerboard")
+SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_ABOVE_AND_BELOW, "AboveAndBelow", "Above and Below (not supported)")
+SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_SIDE_BY_SIDE, "SideBySide", "Side by Side")
+SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_LINE_BY_LINE, "Interlaced", "Interlaced (not supported)")
+SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_ANAGLYPH, "Anaglyph", "Anaglyph")
+SERIALIZATION_ENUM(EStereoOutput::STEREO_OUTPUT_HMD, "VR", "VR Headset")
 SERIALIZATION_ENUM_END()
 
 namespace Private_PanelDisplayRenderer
 {
 const char* render_category_cvars[] =
 {
-	"e_roads",                  LOCALIZE("Roads"),
-	"e_Decals",                 LOCALIZE("Decals"),
-	"e_DetailTextures",         LOCALIZE("Detail Texture"),
-	"e_TerrainDetailMaterials", LOCALIZE("Terrain Detail Texture"),
-	"e_Fog",                    LOCALIZE("Fog"),
-	"e_Terrain",                LOCALIZE("Terrain"),
-	"e_SkyBox",                 LOCALIZE("Sky Box"),
-	"e_Shadows",                LOCALIZE("Shadows"),
-	"e_Vegetation",             LOCALIZE("Vegetation"),
-	"e_WaterOcean",             LOCALIZE("Ocean"),
-	"e_WaterVolumes",           LOCALIZE("Water Volumes"),
-	"e_ProcVegetation",         LOCALIZE("Procedural Vegetation"),
-	"e_Particles",              LOCALIZE("Particles"),
-	"e_Clouds",                 LOCALIZE("Clouds"),
-	"e_GeomCaches",             LOCALIZE("Geom Caches"),
-	"e_GI",                     LOCALIZE("Global Illumination"),
-};
+	"e_roads",                  "Roads",
+	"e_Decals",                 "Decals",
+	"e_DetailTextures",         "Detail Texture",
+	"e_TerrainDetailMaterials", "Terrain Detail Texture",
+	"e_Fog",                    "Fog",
+	"e_Terrain",                "Terrain",
+	"e_SkyBox",                 "Skybox",
+	"e_Shadows",                "Shadows",
+	"e_Vegetation",             "Vegetation",
+	"e_WaterOcean",             "Ocean",
+	"e_WaterVolumes",           "Water Volumes",
+	"e_ProcVegetation",         "Procedural Vegetation",
+	"e_Particles",              "Particles",
+	"e_Clouds",                 "Clouds",
+	"e_GeomCaches",             "Geom Caches",};
 
 void OnCVarChanged(ICVar* var)
 {
@@ -188,7 +169,6 @@ void SerializeMaskValue(Serialization::IArchive& ar, uint32& value, uint32 mask,
 }
 }
 
-//////////////////////////////////////////////////////////////////////////
 CPanelDisplayRender::CPanelDisplayRender(QWidget* parent, CViewport* viewport)
 	: CDockableWidgetT<QScrollableBox>(parent)
 	, m_pViewport(viewport)
@@ -197,7 +177,7 @@ CPanelDisplayRender::CPanelDisplayRender(QWidget* parent, CViewport* viewport)
 
 	SetupCallbacks();
 
-	m_propertyTree = new QPropertyTree(this);
+	m_propertyTree = new QPropertyTreeLegacy(this);
 
 	m_propertyTree->setValueColumnWidth(0.6f);
 	m_propertyTree->setAutoRevert(false);
@@ -212,7 +192,7 @@ CPanelDisplayRender::CPanelDisplayRender(QWidget* parent, CViewport* viewport)
 CPanelDisplayRender::~CPanelDisplayRender()
 {
 	RemoveCallbacks();
-	s_pPanelDisplayRender = 0;
+	s_pPanelDisplayRender = nullptr;
 }
 
 QSize CPanelDisplayRender::sizeHint() const
@@ -242,19 +222,19 @@ void CPanelDisplayRender::Serialize(Serialization::IArchive& ar)
 
 		uint32 m_mask = gViewportDebugPreferences.GetObjectHideMask();
 		uint32 prevMask = m_mask;
-		SerializeMaskValue(ar, m_mask, OBJTYPE_ENTITY, LOCALIZE("Entities"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_PREFAB, LOCALIZE("Prefabs"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_GROUP, LOCALIZE("Groups"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_TAGPOINT, LOCALIZE("Tag Points"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_AIPOINT, LOCALIZE("AI Points"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_SHAPE, LOCALIZE("Shapes/Paths"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_VOLUME, LOCALIZE("Volumes"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_BRUSH, LOCALIZE("Brushes"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_DECAL, LOCALIZE("Decals"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_SOLID, LOCALIZE("Solids"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_ROAD, LOCALIZE("Roads/Rivers"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_GEOMCACHE, LOCALIZE("GeomCaches"));
-		SerializeMaskValue(ar, m_mask, OBJTYPE_OTHER, LOCALIZE("Other"));
+		SerializeMaskValue(ar, m_mask, OBJTYPE_ENTITY, "Entities");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_PREFAB, "Prefabs");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_GROUP, "Groups");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_TAGPOINT, "Tag Points");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_AIPOINT, "AI Points");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_SHAPE, "Shapes/Paths");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_VOLUME, "Volumes");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_BRUSH, "Brushes");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_DECAL, "Decals");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_SOLID, "Solids");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_ROAD, "Roads/Rivers");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_GEOMCACHE, "GeomCaches");
+		SerializeMaskValue(ar, m_mask, OBJTYPE_OTHER, "Other");
 
 		if (ar.isInput() && m_mask != prevMask)
 		{
@@ -265,7 +245,7 @@ void CPanelDisplayRender::Serialize(Serialization::IArchive& ar)
 
 	if (ar.openBlock("categories", "Render Types"))
 	{
-		if (ar.openBlock("buttons", "<Enable"))
+		if (ar.openBlock("buttons", "<"))
 		{
 			using Serialization::ActionButton;
 			ar(ActionButton(std::bind(&CPanelDisplayRender::OnDisplayAll, this)), "all", "^All");
@@ -286,83 +266,35 @@ void CPanelDisplayRender::Serialize(Serialization::IArchive& ar)
 	if (ar.openBlock("profile", "Display Options"))
 	{
 		SerializeCVarEnum<ERenderMode>(ar, "r_wireframe", "Render Mode");
-		ar(gViewportPreferences.displayLabels, "Labels", "Labels");
-		ar(gViewportPreferences.displayLinks, "Links", "Links");
 		ar(gViewportPreferences.showSafeFrame, "Safe Frame", "Safe Frame");
-		ar(gViewportPreferences.showTriggerBounds, "Trigger Bounds", "Trigger Bounds");
-		ar(gViewportPreferences.showIcons, "Icons", "Icons");
-		ar(gViewportPreferences.showSizeBasedIcons, "Size-based Icons", "Size-based Icons");
-
-		ar(gViewportPreferences.showFrozenHelpers, "Frozen Object Helpers", "Frozen Object Helpers");
-
 		ar.closeBlock();
 	}
 
 	if (ar.openBlock("profileblock", "Profile Options"))
 	{
-		SerializeCVarBool(ar, "Profile", LOCALIZE("Frame Profiler"));
-		SerializeCVarBool(ar, "r_ProfileShaders", LOCALIZE("Profile Shaders"));
-		//SerializeCVarBool( ar,"sys_enable_budgetmonitoring", LOCALIZE("Budgets") );
-		SerializeCVarBool(ar, "r_MeasureOverdraw", LOCALIZE("Show Overdraw"));
-		ar.closeBlock();
-	}
-
-	if (ar.openBlock("debug", "Debug Options"))
-	{
-		SerializeCVarBool(ar, "MemStats", LOCALIZE("Memory Info"), 1000, 0);
-		//SerializeCVarBool( ar,"r_TexLog",                    LOCALIZE("") );
-		SerializeCVarBool(ar, "p_draw_helpers", LOCALIZE("Show Physics Proxies"));
-		SerializeCVarEnum<EDisplayStatsDebugMode>(ar, "r_displayInfo", "Display Debug");
+		SerializeCVarBool(ar, "Profile", "Frame Profiler");
+		SerializeCVarBool(ar, "r_ProfileShaders", "Profile Shaders");
+		SerializeCVarBool(ar, "r_MeasureOverdraw", "Show Overdraw");
+		SerializeCVarBool(ar, "MemStats", "Memory Info", 1000, 0);
 		SerializeCVarEnum<ERenderStatsDebugMode>(ar, "r_Stats", "Render Debug");
-		ar.closeBlock();
-	}
-
-	if (ar.openBlock("debug_ai", "AI/Game Options"))
-	{
-		SerializeCVarBool(ar, "ai_DebugDraw", LOCALIZE("AI Debug Info"), 1, -1);
-		SerializeCVarBool(ar, "ai_DebugDrawCover", LOCALIZE("AI Draw Cover"), 2, 0);
-		SerializeCVarBool(ar, "gt_show", LOCALIZE("Show Game Tokens"));
-		ar.closeBlock();
-	}
-
-	if (ar.openBlock("debug_highlight", "Highlight"))
-	{
-		uint32 flags = gViewportDebugPreferences.GetDebugFlags();
-		bool dbg_highlight_breakable = (flags & DBG_HIGHLIGHT_BREAKABLE) ? TRUE : FALSE;
-		bool dbg_highlight_missing_surface_type = (flags & DBG_HIGHLIGHT_MISSING_SURFACE_TYPE) ? TRUE : FALSE;
-		ar(dbg_highlight_breakable, "highlight_breakable_materials", LOCALIZE("Breakable Materials"));
-		ar(dbg_highlight_missing_surface_type, "highlight_missing_sftypes", LOCALIZE("Missing Surface Types"));
-		if (ar.isInput())
-		{
-			// turn both options off and reenable based on input
-			flags &= ~(DBG_HIGHLIGHT_BREAKABLE | DBG_HIGHLIGHT_MISSING_SURFACE_TYPE);
-
-			flags |= (dbg_highlight_breakable) ? DBG_HIGHLIGHT_BREAKABLE : 0;
-			flags |= (dbg_highlight_missing_surface_type) ? DBG_HIGHLIGHT_MISSING_SURFACE_TYPE : 0;
-
-			gViewportDebugPreferences.SetDebugFlags(flags);
-		}
 		ar.closeBlock();
 	}
 
 	SerializeStereo(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::OnHideObjectsAll()
 {
 	SetObjectHideMask(0xFFFFFFFF);
 	m_propertyTree->revert();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::OnHideObjectsNone()
 {
 	SetObjectHideMask(0);
 	m_propertyTree->revert();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::OnHideObjectsInvert()
 {
 	SetObjectHideMask(~gViewportDebugPreferences.GetObjectHideMask());
@@ -381,17 +313,13 @@ void CPanelDisplayRender::SetupCallbacks()
 
 	RegisterChangeCallback("r_wireframe", &OnCVarChanged);
 
-	// Debug variables.
-	RegisterChangeCallback("ai_DebugDraw", &OnCVarChanged);
-	RegisterChangeCallback("ai_DebugDrawCover", &OnCVarChanged);
+	// Debug variables
 	RegisterChangeCallback("r_TexLog", &OnCVarChanged);
 	RegisterChangeCallback("MemStats", &OnCVarChanged);
-	RegisterChangeCallback("p_draw_helpers", &OnCVarChanged);
 	RegisterChangeCallback("r_ProfileShaders", &OnCVarChanged);
 	RegisterChangeCallback("r_MeasureOverdraw", &OnCVarChanged);
 	RegisterChangeCallback("r_Stats", &OnCVarChanged);
 	RegisterChangeCallback("sys_enable_budgetmonitoring", &OnCVarChanged);
-	RegisterChangeCallback("gt_show", &OnCVarChanged);
 	RegisterChangeCallback("Profile", &OnCVarChanged);
 
 	// Stereo cvars
@@ -414,17 +342,13 @@ void CPanelDisplayRender::RemoveCallbacks()
 
 	UnregisterChangeCallback("r_wireframe");
 
-	// Debug variables.
-	UnregisterChangeCallback("ai_DebugDraw");
-	UnregisterChangeCallback("ai_DebugDrawCover");
+	// Debug variables
 	UnregisterChangeCallback("r_TexLog");
 	UnregisterChangeCallback("MemStats");
-	UnregisterChangeCallback("p_draw_helpers");
 	UnregisterChangeCallback("r_ProfileShaders");
 	UnregisterChangeCallback("r_MeasureOverdraw");
 	UnregisterChangeCallback("r_Stats");
 	UnregisterChangeCallback("sys_enable_budgetmonitoring");
-	UnregisterChangeCallback("gt_show");
 	UnregisterChangeCallback("Profile");
 
 	// Stereo cvars
@@ -435,7 +359,6 @@ void CPanelDisplayRender::RemoveCallbacks()
 	UnregisterChangeCallback("r_StereoFlipEyes");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::OnDisplayAll()
 {
 	using namespace Private_PanelDisplayRenderer;
@@ -469,7 +392,6 @@ void CPanelDisplayRender::OnDisplayInvert()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::RegisterChangeCallback(const char* szVariableName, ConsoleVarFunc fnCallbackFunction)
 {
 	ICVar* pVar = gEnv->pConsole->GetCVar(szVariableName);
@@ -477,10 +399,8 @@ void CPanelDisplayRender::RegisterChangeCallback(const char* szVariableName, Con
 	{
 		if (m_varCallbackMap.find(pVar) == m_varCallbackMap.end())
 		{
-			SFunctor onChangeFunctor;
-			onChangeFunctor.Set(fnCallbackFunction, pVar);
 			uint64 index = pVar->GetNumberOfOnChangeFunctors();
-			pVar->AddOnChangeFunctor(onChangeFunctor);
+			pVar->AddOnChange(fnCallbackFunction);
 			m_varCallbackMap[pVar] = index;
 		}
 		else
@@ -490,7 +410,6 @@ void CPanelDisplayRender::RegisterChangeCallback(const char* szVariableName, Con
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::UnregisterChangeCallback(const char* szVariableName)
 {
 	ICVar* pVar = gEnv->pConsole->GetCVar(szVariableName);
@@ -524,12 +443,11 @@ void CPanelDisplayRender::OnCVarChangedCallback()
 	gEnv->p3DEngine->OnObjectModified(NULL, ERF_CASTSHADOWMAPS);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::OnEditorNotifyEvent(EEditorNotifyEvent event)
 {
 	switch (event)
 	{
-	case eNotify_OnDisplayRenderUpdate:
+	case eNotify_OnObjectHideMaskChange:
 		m_propertyTree->revert();
 		break;
 	}
@@ -542,7 +460,6 @@ void CPanelDisplayRender::SetObjectHideMask(uint32 mask)
 	GetIEditorImpl()->UpdateViews(eUpdateObjects);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPanelDisplayRender::SerializeStereo(Serialization::IArchive& ar)
 {
 	using namespace Private_PanelDisplayRenderer;
@@ -554,7 +471,7 @@ void CPanelDisplayRender::SerializeStereo(Serialization::IArchive& ar)
 
 		SerializeCVarFloat(ar, "r_StereoEyeDist", "Eye Distance (m)", -1, 1);
 		SerializeCVarFloat(ar, "r_StereoScreenDist", "Screen Distance (m)", -1, 1);
-		SerializeCVarBool(ar, "r_StereoFlipEyes", LOCALIZE("Flip Eyes"));
+		SerializeCVarBool(ar, "r_StereoFlipEyes", "Flip Eyes");
 		ar.closeBlock();
 	}
 }
@@ -576,5 +493,4 @@ void CPanelDisplayRender::showEvent(QShowEvent* e)
 	}
 }
 
-REGISTER_VIEWPANE_FACTORY_AND_MENU(CPanelDisplayRender, "Display Settings", "Viewport", false, "Viewport")
-
+REGISTER_HIDDEN_VIEWPANE_FACTORY(CPanelDisplayRender, "Display Settings", "Viewport", true)

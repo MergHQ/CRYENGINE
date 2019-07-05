@@ -2,9 +2,12 @@
 
 #include "StdAfx.h"
 
+#include <CryMath/Cry_Math.h>
 #include "FlashPlayerInstance.h"
 #include "../System.h"
-#include <CrySystem/IConsole.h>
+#include <CryInput/IInput.h>
+#include <CryCore/AlignmentTools.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // flash player implementation via Scaleform's GFx
 #ifdef INCLUDE_SCALEFORM_SDK
@@ -1076,7 +1079,9 @@ public:
 	CFlashFunctionProfilerLight()
 		: m_startTick(FlashTimer::GetTicks())
 	{
-		CRY_PROFILE_PUSH_MARKER("Flash");
+		if(flashEvent == nullptr)
+			flashEvent = new SProfilingDescription(__FILE__, "Flash", 0, false, EProfiledSubsystem::PROFILE_RENDERER);
+		new (&flashSectionStorage) SProfilingSection(flashEvent, nullptr);
 	}
 
 	~CFlashFunctionProfilerLight()
@@ -1093,7 +1098,8 @@ public:
 		#else
 		ms_deltaTicksAccum += delta;
 		#endif
-		CRY_PROFILE_POP_MARKER("Flash");
+
+		((SProfilingSection*)&flashSectionStorage)->~SProfilingSection();
 	}
 
 	static void Update()
@@ -1123,6 +1129,9 @@ public:
 	}
 
 private:
+	static SProfilingDescription* flashEvent;
+	SAlignedStorage<sizeof(SProfilingSection), alignof(SProfilingSection)>::type flashSectionStorage;
+
 	static volatile uint32 ms_deltaTicksAccum;
 	static const uint32    HIST_SIZE = 32;
 	static uint32          ms_histIdx;
@@ -1132,6 +1141,7 @@ private:
 	uint64 m_startTick;
 };
 
+SProfilingDescription* CFlashFunctionProfilerLight::flashEvent = nullptr;
 volatile uint32 CFlashFunctionProfilerLight::ms_deltaTicksAccum = 0;
 uint32 CFlashFunctionProfilerLight::ms_histIdx = 0;
 float CFlashFunctionProfilerLight::ms_hist[HIST_SIZE] = { 0 };
@@ -2543,7 +2553,6 @@ CFlashPlayer::~CFlashPlayer()
 		if (extRefs > 0)
 		{
 			CryGFxLog::GetAccess().LogError("Releasing flash player object while still holding %d associated flash variable object reference(s)! Enforce breaking into the debugger...", (int) extRefs);
-			//__debugbreak();
 		}
 	#endif
 
@@ -2744,13 +2753,13 @@ bool CFlashPlayer::Load(const char* pFilePath, unsigned int options, unsigned in
 
 	FLASH_PROFILER_LIGHT;
 
-	//LOADING_TIME_PROFILE_SECTION;
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SYNC_THREADS;
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "FlashPlayer::Load(%s)", pFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "FlashPlayer::Load(%s)", pFilePath);
 
 	SET_LOG_CONTEXT_CSTR(pFilePath);
 
@@ -2840,7 +2849,7 @@ bool CFlashPlayer::Bootstrap(GFxMovieDef* pMovieDef, unsigned int options, unsig
 
 	FLASH_PROFILER_LIGHT;
 
-	//LOADING_TIME_PROFILE_SECTION;
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SYNC_THREADS;
 
@@ -2848,7 +2857,7 @@ bool CFlashPlayer::Bootstrap(GFxMovieDef* pMovieDef, unsigned int options, unsig
 
 	const char* pFilePath = pMovieDef->GetFileURL();
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "FlashPlayer::Bootstrap(%s)", pFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "FlashPlayer::Bootstrap(%s)", pFilePath);
 
 	SET_LOG_CONTEXT_CSTR(pFilePath);
 
@@ -3171,7 +3180,7 @@ void CFlashPlayer::Advance(float deltaTime)
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	FLASH_PROFILE_FUNC_1ARG(eFncAdvance, VOID_RETURN, "Advance", deltaTime);
 	SET_LOG_CONTEXT(m_filePath);
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Flash Advance %s", m_filePath->c_str());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Flash Advance %s", m_filePath->c_str());
 
 	if (m_pMovieView)
 	{
@@ -3199,7 +3208,7 @@ void CFlashPlayer::RenderCallback(EFrameType ft)
 {
 	FLASH_PROFILER_LIGHT;
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Flash RenderCallback %s", m_filePath->c_str());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Flash RenderCallback %s", m_filePath->c_str());
 
 	{
 		SYNC_THREADS;
@@ -3209,7 +3218,7 @@ void CFlashPlayer::RenderCallback(EFrameType ft)
 		//#endif
 		{
 			CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-			FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display");
+			//FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display");
 			SET_LOG_CONTEXT(m_filePath);
 			bool devLost = false;
 			gEnv->pRenderer->EF_Query(EFQ_DeviceLost, devLost);
@@ -3247,7 +3256,7 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 {
 	FLASH_PROFILER_LIGHT;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Flash RenderPlaybackLocklessCallback");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Flash RenderPlaybackLocklessCallback");
 
 	{
 		//#if defined(ENABLE_FLASH_INFO)
@@ -3256,7 +3265,7 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 		//#endif
 		{
 			CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-			FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display Lockless (Playback)");
+			//FLASH_PROFILE_FUNC(eFncDisplay, VOID_RETURN, "Display Lockless (Playback)");
 			SET_LOG_CONTEXT(m_filePath);
 
 			GRendererCommandBuffer& cmdBuf = m_cmdBuf[cbIdx];
@@ -4370,6 +4379,7 @@ public:
 			case eKI_Delete:
 				m_showStrippedPath = true;
 				break;
+			default: break;
 			}
 		}
 		return false;

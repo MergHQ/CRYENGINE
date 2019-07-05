@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryAnimation/IVertexAnimation.h>
+#include <CryCore/stridedptr.h>
 
 struct RChunk;
 
@@ -56,7 +57,7 @@ public:
 
 private:
 	DynArray<SSoftwareVertexFrame> m_frames;
-	uint                           m_numVertexDeltas;
+	uint                           m_numVertexDeltas = 0;
 };
 
 class CSoftwareMesh
@@ -133,6 +134,8 @@ public:
 	strided_pointer<SPipTangents> GetTangents()          { return pTangents; }
 	strided_pointer<Vec3>         GetVelocities()        { return pVelocities; }
 
+	strided_pointer<const Vec3>   GetPreviousPositions() { return pPreviousPositions; }
+
 	const uint                    GetIndexCount() const  { return m_indexCount; }
 
 	vtx_idx*                      GetIndices()           { return pIndices; }
@@ -143,6 +146,8 @@ public:
 	strided_pointer<Vec2>         pCoords;
 	strided_pointer<SPipTangents> pTangents;
 	strided_pointer<Vec3>         pVelocities;
+
+	strided_pointer<const Vec3>   pPreviousPositions;
 
 	uint                          m_vertexCount;
 

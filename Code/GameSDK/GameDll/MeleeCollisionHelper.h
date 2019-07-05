@@ -16,6 +16,9 @@ History:
 #ifndef _MELEE_COLLISION_HELPER_H_
 #define _MELEE_COLLISION_HELPER_H_
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+#include <CryPhysics/RayCastQueue.h>
+struct ray_hit;
 
 struct SCollisionTestParams
 {	

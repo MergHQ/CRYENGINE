@@ -50,6 +50,7 @@ void CSkeletonEffectManager::Update(ISkeletonAnim* pSkeleton, ISkeletonPose* pSk
 
 void CSkeletonEffectManager::KillAllEffects()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	if (Console::GetInst().ca_DebugSkeletonEffects)
 	{
 		for (int effectIndex = 0, effectCount = m_particlesEffects.size(); effectIndex < effectCount; ++effectIndex)
@@ -58,6 +59,7 @@ void CSkeletonEffectManager::KillAllEffects()
 			CryLogAlways("CSkeletonEffectManager::KillAllEffects(this=%p): Killing effect \"%s\" because animated character is in simplified movement.", this, (pEffect ? pEffect->GetName() : "<EFFECT NULL>"));
 		}
 	}
+#endif
 
 	for (int i = 0, count = m_particlesEffects.size(); i < count; ++i)
 	{
@@ -84,6 +86,10 @@ void CSkeletonEffectManager::SpawnEffect(CCharInstance* pCharInstance, const Ani
 
 void CSkeletonEffectManager::SpawnEffectAudio(CCharInstance* pCharInstance, const AnimEventInstance& animEvent, const QuatTS& entityLoc)
 {
+	// Historically, audio events have always been handled by the game logic.
+	// Nevertheless, using cvar 'ca_SkeletonEffectsPlayAudioInEngine', this behavior can be bypassed and skeleton audio effects are played directly within the engine.
+	if (!Console::GetInst().ca_SkeletonEffectsPlayAudioInEngine) return;
+
 	const char* triggerName = animEvent.m_CustomParameter;
 	const char* boneName = animEvent.m_BonePathName;
 	const Vec3& offset = animEvent.m_vOffset;
@@ -100,7 +106,7 @@ void CSkeletonEffectManager::SpawnEffectAudio(CCharInstance* pCharInstance, cons
 
 	// Spawn audio
 	CryAudio::ControlId const triggerId = CryAudio::StringToId(triggerName);
-	CryAudio::SExecuteTriggerData triggerData(triggerId, triggerName, CryAudio::EOcclusionType::Ignore, loc.t, INVALID_ENTITYID, true);
+	CryAudio::SExecuteTriggerData triggerData(triggerId, triggerName, CryAudio::EOcclusionType::Ignore, loc.t, true);
 	gEnv->pAudioSystem->ExecuteTriggerEx(triggerData);
 }
 

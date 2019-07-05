@@ -12,11 +12,12 @@
 	#include "NetContext.h"
 	#include "Protocol/NetChannel.h"
 	#include <CrySystem/ITimer.h>
+	#include <CrySystem/CryVersion.h>
 	#include <CryNetwork/SimpleSerialize.h>
 	#include <CryEntitySystem/IEntitySystem.h>
 	#include <CryString/StringUtils.h>
 	#include <CryString/StringUtils.h>
-	#include <CryGame/IGameFramework.h>     // LOCAL_PLAYER_ENTITY_ID
+	#include <CryGame/IGameFramework.h>
 
 static const uint32 Events =
   eNOE_ChangeContext |
@@ -250,13 +251,13 @@ CDemoPlaybackListener::CDemoPlaybackListener(CNetContext* pContext, const char* 
 	m_bInGame = false;
 	m_bIsDead = false;
 
-	std::auto_ptr<CCompressingInputStream> pComp;
+	std::unique_ptr<CCompressingInputStream> pComp;
 	pComp.reset(new CCompressingInputStream());
 	string path = string(NDemo::TopLevelDemoFilesFolder) + filename;
 	if (!pComp->Init(path.c_str()))
 		pComp.reset();
 	else
-		m_pInput = pComp;
+		m_pInput = std::move(pComp);
 
 	if (!m_pInput.get())
 	{
@@ -266,8 +267,8 @@ CDemoPlaybackListener::CDemoPlaybackListener(CNetContext* pContext, const char* 
 
 	char version[32];
 	gEnv->pSystem->GetProductVersion().ToString(version);
-	const SStreamRecord* pRecord = m_pInput->Next();
-	/*
+	/*const SStreamRecord* pRecord = m_pInput->Next();
+	
 	   if ( strcmp(pRecord->key, "version") != 0 || strcmp(pRecord->value, version) != 0 )
 	   {
 	   m_pInput.reset();
@@ -372,7 +373,7 @@ void CDemoPlaybackListener::DoUpdate()
 		}
 		InputHandler handler;
 		{
-			CRY_PROFILE_REGION(PROFILE_NETWORK, "DoUpdate:Select");
+			CRY_PROFILE_SECTION(PROFILE_NETWORK, "DoUpdate:Select");
 			TInputHandlerMap::const_iterator iter = m_pState->find(CONST_TEMP_STRING(m_buffer.key));
 			if (iter == m_pState->end())
 				handler = &CDemoPlaybackListener::SkipLineWithWarning;
@@ -380,7 +381,7 @@ void CDemoPlaybackListener::DoUpdate()
 				handler = iter->second;
 		}
 		{
-			CRY_PROFILE_REGION(PROFILE_NETWORK, "DoUpdate:Dispatch");
+			CRY_PROFILE_SECTION(PROFILE_NETWORK, "DoUpdate:Dispatch");
 
 			switch ((this->*handler)())
 			{

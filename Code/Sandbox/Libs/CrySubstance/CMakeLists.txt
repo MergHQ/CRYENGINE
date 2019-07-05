@@ -1,4 +1,6 @@
 start_sources()
+
+# -- crysubstance.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Code"
@@ -43,6 +45,7 @@ target_compile_options(${THIS_PROJECT} PRIVATE
 	/GR
 	/wd4251
 	/wd4275
+	/wd4996
 )
 
 

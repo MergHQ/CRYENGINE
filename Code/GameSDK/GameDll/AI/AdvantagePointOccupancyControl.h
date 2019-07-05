@@ -5,7 +5,7 @@
 #ifndef AdvantagePointOccupancyControl_h
 #define AdvantagePointOccupancyControl_h
 
-
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 #if defined(CRYAISYSTEM_DEBUG)
 struct IRenderAuxGeom;

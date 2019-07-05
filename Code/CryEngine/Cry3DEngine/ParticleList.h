@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CRY_PARTICLE_LIST_H_
-#define _CRY_PARTICLE_LIST_H_
 #pragma once
 
 #include "ParticleMemory.h"
@@ -15,9 +13,15 @@ class ParticleList
 public:
 
 	typedef T value_type;
+	typedef ParticleAllocator::TLock lock_type;
+
+	static lock_type lock()
+	{
+		return ParticleAllocator::Lock();
+	}
 
 	// Derived type with intrusive links after T, to preserve alignment
-	struct Node : T
+	struct Node final : T
 	{
 		Node* pNext;
 		Node* pPrev;
@@ -285,10 +289,17 @@ public:
 	void clear()
 	{
 		// Destroy all elements, in reverse order
-		for (Node* p = m_pTail; p != NULL; )
+		for (Node* p = m_pTail; p; p = p->pPrev)
+		{
+			p->~Node();
+		}
+
+		// Dealloc when finished (to batch locks, and avoid recursive locks in destructors)
+		lock_type clear_lock = lock();
+		for (Node* p = m_pTail; p; )
 		{
 			Node* pPrev = p->pPrev;
-			destroy(p);
+			ParticleAllocator::Deallocate(clear_lock, p);
 			p = pPrev;
 		}
 		reset();
@@ -343,16 +354,16 @@ protected:
 
 	void* allocate()
 	{
-		void* pNew = ParticleObjectAllocator().Allocate(sizeof(Node));
-		if (pNew)
+		Node* pNode;
+		if (ParticleAllocator::Allocate(pNode))
 			m_nSize++;
-		return pNew;
+		return pNode;
 	}
 	void destroy(Node* pNode)
 	{
 		assert(pNode);
 		pNode->~Node();
-		ParticleObjectAllocator().Deallocate(pNode, sizeof(Node));
+		ParticleAllocator::Deallocate(pNode);
 		m_nSize--;
 	}
 
@@ -424,5 +435,3 @@ protected:
 #endif // _DEBUG
 	}
 };
-
-#endif // _CRY_PARTICLE_LIST_H_

@@ -1,18 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __AI_MOVE_SIMULATION_H__
-#define __AI_MOVE_SIMULATION_H__
+#pragma once
 
+#include <LevelEditor/Tools/ObjectMode.h>
 #include <CryAISystem/MovementRequestID.h>
 
-class CAIMoveSimulation
+class CAIMoveSimulation : public CObjectMode::ISubTool
 {
 public:
-	CAIMoveSimulation();
 	virtual ~CAIMoveSimulation();
 
 	bool UpdateAIMoveSimulation(CViewport* pView, const CPoint& point);
-
+	bool HandleMouseEvent(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
 private:
 	void CancelMove();
 
@@ -24,8 +23,5 @@ private:
 		CryGUID           m_id;
 		MovementRequestID m_movementRequestID;
 	};
-	std::vector<SMovingAI>   m_movingAIs;
+	std::vector<SMovingAI> m_movingAIs;
 };
-
-#endif //__AI_MOVE_SIMULATION_H__
-

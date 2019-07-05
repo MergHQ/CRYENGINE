@@ -1,27 +1,27 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QWidget>
-
-#include <CrySandbox/CrySignal.h>
-
 #include "EditorCommonAPI.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
 #include "EditorFramework/StateSerializable.h"
 
+#include <CrySandbox/CrySignal.h>
+
+#include <QWidget>
+
 class CAbstractMenu;
-class QVBoxLayout;
-class QHBoxLayout;
 class CItemModelAttribute;
-class QLineEdit;
-class QToolButton;
-class QSplitter;
 class QGridLayout;
 class QSearchBox;
+class QSplitter;
+class QToolButton;
+class QVBoxLayout;
 
 class EDITOR_COMMON_API QFilteringPanel : public QWidget, public IStateSerializable
 {
+	Q_OBJECT
+
 public:
 	//! module name needs to be unique across the editor to save properly in personalization
 	QFilteringPanel(const char* uniqueName, QAttributeFilterProxyModel* pModel, QWidget* pParent = nullptr);
@@ -46,14 +46,28 @@ public:
 
 	bool                HasActiveFilters() const;
 
-	//! Fills the provided menu with the names of the saved filters, 
-	//! when user clicks on an element, the selected filter is applied.
-	//! \param pMenu An instance of menu to be filled in.
-	//! \param submenuName If not an empty string, the function will put all elements in a new submenu.
-	void FillMenu(CAbstractMenu* pMenu, QString& submenuName = QString());
+	//! Creates and fills the filter menu and attaches to the provided parent menu,
+	//! \param pParentMenu The menu where the filter menu will be placed.
+	void CreateMenu(CAbstractMenu* pParentMenu);
+
+	//! Adds a new filter with the provided parameters.
+	//! \sa CItemModelAttribute
+	void AddFilter(const QString& attributeName, const QString& operatorName, const QString& filterValue);
+
+	//! Overrides values provided by CItemModelAttributeEnum attributes for this instance of the filtering panel.
+	//! Allows you to define entries even for attributes of a non-enum type. This feature can be used with a custom implementation of the IAttributeFilterOperator.
+	//! \sa IAttributeFilterOperator::CreateEditWidget
+	//! \sa CItemModelAttributeEnum::GetEnumEntries
+	void OverrideAttributeEnumEntries(const QString& attributeName, const QStringList& values);
+
+	bool IsExpanded() const;
+	void SetExpanded(bool expanded);
 
 	//! Called when the models are updated, after the filters are changed
 	CCrySignal<void()> signalOnFiltered;
+protected:
+
+	void paintEvent(QPaintEvent* pEvent) override;
 
 private:
 
@@ -61,17 +75,18 @@ private:
 	class CSavedFiltersWidget;
 	class CSavedFiltersModel;
 
+	// Fills the provided menu with all the existing filters
+	void                                     FillMenu(CAbstractMenu* pMenu);
+
 	CFilterWidget*                           AddFilter();
 
 	const std::vector<CItemModelAttribute*>& GetAttributes() const { return m_attributes; }
+	const QStringList*                       GetAttributeEnumEntries(const QString& attributeName);
 
 	void                                     OnFilterChanged();
 	void                                     OnSearch();
 
 	void                                     OnModelUpdated();
-
-	bool                                     IsExpanded() const;
-	void                                     SetExpanded(bool expanded);
 
 	void                                     OnAddFilter(CFilterWidget* filter);
 	void                                     OnRemoveFilter(CFilterWidget* filter);
@@ -88,6 +103,7 @@ private:
 	void             RenameFilter(const char* filterName, const char* filterNewName);
 	QVector<QString> GetSavedFilters() const;
 
+	bool             IsFilterSet(const QString& filterName) const;
 	QVariant         GetFilterState() const;
 	void             SetFilterState(const QVariant& state);
 
@@ -108,5 +124,5 @@ private:
 	AttributeFilterSharedPtr          m_favoritesFilter;
 	const char*                       m_uniqueName;
 	CSavedFiltersWidget*              m_savedFiltersWidget;
+	std::map<QString, QStringList>    m_attributeValues;
 };
-

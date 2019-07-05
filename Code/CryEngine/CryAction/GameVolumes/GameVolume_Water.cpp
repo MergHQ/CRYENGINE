@@ -4,6 +4,8 @@
 #include "GameVolume_Water.h"
 
 #include <CryGame/IGameVolumes.h>
+#include <CryPhysics/IPhysics.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -95,7 +97,7 @@ bool CGameVolume_Water::ReloadExtension(IGameObject* pGameObject, const SEntityS
 
 	GVW::RegisterEvents(*this, *pGameObject);
 
-	CRY_ASSERT_MESSAGE(false, "CGameVolume_Water::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CGameVolume_Water::ReloadExtension not implemented");
 
 	return false;
 }
@@ -231,7 +233,7 @@ void CGameVolume_Water::ProcessEvent(const SEntityEvent& event)
 			{
 				if (iter->m_pWaterRenderNode)
 				{
-					iter->m_pWaterRenderNode->Hide(true);
+					iter->m_pWaterRenderNode->SetRndFlags(ERF_HIDDEN, true);
 				}
 
 				++iter;
@@ -250,7 +252,7 @@ void CGameVolume_Water::ProcessEvent(const SEntityEvent& event)
 					SWaterSegment& segment = m_segments[i];
 					if (segment.m_pWaterRenderNode)
 					{
-						segment.m_pWaterRenderNode->Hide(false);
+						segment.m_pWaterRenderNode->SetRndFlags(ERF_HIDDEN, false);
 
 						if (!m_isRiver)
 						{
@@ -277,14 +279,14 @@ void CGameVolume_Water::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CGameVolume_Water::GetEventMask() const
+Cry::Entity::EventFlags CGameVolume_Water::GetEventMask() const
 {
-	return 
-		ENTITY_EVENT_BIT(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE);
+	return
+	  ENTITY_EVENT_EDITOR_PROPERTY_CHANGED |
+	  ENTITY_EVENT_RESET |
+	  ENTITY_EVENT_XFORM |
+	  ENTITY_EVENT_HIDE |
+	  ENTITY_EVENT_UNHIDE;
 }
 
 void CGameVolume_Water::GetMemoryUsage(ICrySizer* pSizer) const
@@ -453,8 +455,6 @@ void CGameVolume_Water::CreatePhysicsArea(const uint32 segmentIndex, const Matri
 
 		if (isRiver)
 		{
-			int i = segmentIndex;
-			int j = vertexCount - 1 - segmentIndex;
 			pb.waterFlow = ((pVertices[1] - pVertices[0]).GetNormalized() + (pVertices[2] - pVertices[3]).GetNormalized()) / 2.f * streamSpeed;
 		}
 		pWaterArea->SetParams(&pb);

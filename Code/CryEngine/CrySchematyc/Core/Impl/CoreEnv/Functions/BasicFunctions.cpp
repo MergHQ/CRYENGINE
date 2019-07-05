@@ -5,6 +5,7 @@
 #include <CryMath/Random.h>
 
 #include <CrySchematyc/CoreAPI.h>
+#include <CryCore/StaticInstanceList.h>
 
 namespace Schematyc
 {

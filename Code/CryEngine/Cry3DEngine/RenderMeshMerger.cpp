@@ -35,11 +35,6 @@ int CRenderMeshMerger::Cmp_Materials(IMaterial* pMat1, IMaterial* pMat2)
 	SShaderItem& shaderItem1 = pMat1->GetShaderItem();
 	SShaderItem& shaderItem2 = pMat2->GetShaderItem();
 
-#ifdef _DEBUG
-	const char* pName1 = shaderItem1.m_pShader->GetName();
-	const char* pName2 = shaderItem2.m_pShader->GetName();
-#endif
-
 	// vert format
 	InputLayoutHandle nVertFormat1 = shaderItem1.m_pShader->GetVertexFormat();
 	InputLayoutHandle nVertFormat2 = shaderItem2.m_pShader->GetVertexFormat();
@@ -203,7 +198,7 @@ void CRenderMeshMerger::MakeListOfAllCRenderChunks(SMergeInfo& info)
 
 		// get vertices's
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "CRenderMeshMerger::MakeListOfAllCRenderChunks_GetPosPtr");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CRenderMeshMerger::MakeListOfAllCRenderChunks_GetPosPtr");
 
 			pPos = reinterpret_cast<Vec3*>(pRM->GetPosPtr(nPosStride, FSL_READ));
 			pTex = reinterpret_cast<Vec2*>(pRM->GetUVPtr(nTexStride, FSL_READ));
@@ -234,8 +229,6 @@ void CRenderMeshMerger::MakeListOfAllCRenderChunks(SMergeInfo& info)
 		Vec3 vMin, vMax;
 		pRM->GetBBox(vMin, vMax);
 
-		// get indices
-		uint32 nIndCount = pRM->GetIndicesCount();
 		vtx_idx* pSrcInds = pRM->GetIndexPtr(FSL_READ);
 
 		Vec3 vOSPos(0, 0, 0);
@@ -259,7 +252,7 @@ void CRenderMeshMerger::MakeListOfAllCRenderChunks(SMergeInfo& info)
 		CRenderChunk Ch = newMatInfo;
 		for (uint32 i = Ch.nFirstIndexId; i < Ch.nFirstIndexId + Ch.nNumIndices; i++)
 		{
-			assert(i >= 0 && i < nIndCount);
+			assert(i >= 0 && i < static_cast<uint32>(pRM->GetIndicesCount()));
 			assert(pSrcInds[i] >= Ch.nFirstVertId && pSrcInds[i] < Ch.nFirstVertId + Ch.nNumVerts);
 			assert((int)pSrcInds[i] < pRM->GetVerticesCount());
 		}
@@ -802,7 +795,7 @@ void CRenderMeshMerger::TryMergingChunks(SMergeInfo& info)
 	lstChunksMerged.clear();
 	lstChunksMerged.reserve(m_lstChunks.size());
 
-	InputLayoutHandle nCurrVertFormat = InputLayoutHandle::Unspecified;;
+	InputLayoutHandle nCurrVertFormat = InputLayoutHandle::Unspecified;
 	for (int nChunkId = 0; nChunkId < m_lstChunks.Count(); nChunkId++)
 	{
 		SMergedChunk& mergChunk = m_lstChunks[nChunkId];
@@ -1392,8 +1385,6 @@ void CRenderMeshMerger::MergeBuffersImpl(AABB* pBounds, SMergeBuffersData* _arrM
 			bMatrixHasRotation = false;
 		else
 			bMatrixHasRotation = true;
-
-		Vec3 vOffset = rMatrix.GetTranslation();
 
 		IRenderMesh* pRM = pRMI->pMesh;
 

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "Controls/EditorDialog.h"
 
 class QMenuComboBox;
@@ -46,4 +47,3 @@ private:
 	int               m_aspectNumerator;
 	int               m_aspectDenominator;
 };
-

@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2016.
-
 #pragma once
 
 #include "Controls/KeysToolbar.h"
@@ -15,7 +12,6 @@ class CTrackViewComponentsManager
 {
 public:
 	CTrackViewComponentsManager();
-	~CTrackViewComponentsManager();
 
 	void                               Init(CTrackViewCore* pTrackViewCore);
 	void                               BroadcastTrackViewEditorEvent(ETrackViewEditorEvent event);
@@ -52,4 +48,3 @@ private:
 		return component;
 	}
 };
-

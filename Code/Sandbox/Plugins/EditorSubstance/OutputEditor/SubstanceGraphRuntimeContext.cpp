@@ -4,7 +4,8 @@
 #include "SubstanceGraphRuntimeContext.h"
 
 #include "NodeGraph/NodeWidgetStyle.h"
-#include "NodeGraph/NodeHeaderWidgetStyle.h"
+#include "NodeGraph/TextWidgetStyle.h"
+#include "NodeGraph/HeaderWidgetStyle.h"
 #include "NodeGraph/NodeGraphViewStyle.h"
 #include "NodeGraph/ConnectionWidgetStyle.h"
 #include "NodeGraph/NodePinWidgetStyle.h"
@@ -54,12 +55,9 @@ namespace EditorSubstance
 		{
 			CryGraphEditor::CNodeWidgetStyle* pStyle = new CryGraphEditor::CNodeWidgetStyle(szStyleId, viewStyle);
 
-			CryGraphEditor::CNodeHeaderWidgetStyle& headerStyle = pStyle->GetHeaderWidgetStyle();
+			CryGraphEditor::CHeaderWidgetStyle& headerStyle = pStyle->GetHeaderWidgetStyle();
 
 			headerStyle.SetNodeIconMenuColor(color);
-
-
-			headerStyle.SetNameColor(color);
 			headerStyle.SetLeftColor(QColor(26, 26, 26));
 			headerStyle.SetRightColor(QColor(26, 26, 26));
 			headerStyle.SetNodeIconViewDefaultColor(color);
@@ -68,6 +66,9 @@ namespace EditorSubstance
 				{ QIcon::Mode::Normal, QColor(255, 255, 255) }
 			});
 			headerStyle.SetNodeIcon(icon);
+
+			CryGraphEditor::CTextWidgetStyle& textStyle = pStyle->GetHeaderTextStyle();
+			textStyle.SetTextColor(color);
 		}
 
 		void AddConnectionStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* szStyleId, float width)

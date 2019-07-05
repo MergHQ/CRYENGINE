@@ -16,6 +16,10 @@ namespace Schematyc2
 
 		// IScriptElement
 		virtual EAccessor GetAccessor() const override;
+		virtual EGraphExecutionFilter GetExecutionFilter() const override
+		{
+			return m_executionFilter;
+		}
 		virtual void EnumerateDependencies(const ScriptDependancyEnumerator& enumerator) const override;
 		virtual void Refresh(const SScriptRefreshParams& params) override;
 		virtual void Serialize(Serialization::IArchive& archive) override;
@@ -53,5 +57,6 @@ namespace Schematyc2
 		void VisitGraphs(const IDomainContext& domainContext);
 
 		EAccessor m_accessor;
+		EGraphExecutionFilter m_executionFilter;
 	};
 }

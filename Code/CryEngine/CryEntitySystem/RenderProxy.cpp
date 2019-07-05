@@ -10,6 +10,9 @@
 
 #include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryParticleSystem/IParticles.h>
 #include <CrySystem/ISystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryMemory/AddressHelpers.h>
@@ -47,16 +50,6 @@ void CEntityRender::PostInit()
 			pSlot->PostInit();
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityRender::RegisterEventListeners(IEntityComponent::ComponentEventPriority eventPriority)
-{
-	EntityEventMask events = ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) | ENTITY_EVENT_BIT(ENTITY_EVENT_ATTACH_THIS) | ENTITY_EVENT_BIT(ENTITY_EVENT_DETACH_THIS) | ENTITY_EVENT_BIT(ENTITY_EVENT_LINK)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_DELINK) | ENTITY_EVENT_BIT(ENTITY_EVENT_ENABLE_PHYSICS) | ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICS_CHANGE_STATE) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_INVISIBLE) | ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_VISIBLE) | ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT);
-
-	GetEntity()->AddSimpleEventListeners(events, this, eventPriority);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -106,6 +99,20 @@ void CEntityRender::AnimationEvent(ICharacterInstance* pCharacter, const AnimEve
 	if (animEvent.m_EventName != nullptr && stricmp(animEvent.m_EventName, "sound") == 0)
 	{
 		GetEntity()->GetOrCreateComponent<IEntityAudioComponent>();
+	}
+
+	ISkeletonAnim* pSkeletonAnim = (pCharacter ? pCharacter->GetISkeletonAnim() : 0);
+
+	// Spawn the event
+	if (!GetEntity()->IsInvisible() && !GetEntity()->IsHidden() && pSkeletonAnim && animEvent.m_EventName && animEvent.m_CustomParameter)
+	{
+		for (auto&& pSlot : m_slots)
+		{
+			if (pSlot && pSlot->GetCharacter() == pCharacter)
+			{
+				pSlot->GetCharacter()->SpawnSkeletonEffect(animEvent, QuatTS(pSlot->GetWorldTM()));
+			}
+		}
 	}
 
 	// Send an entity event.
@@ -389,79 +396,31 @@ void CEntityRender::GetWorldBounds(AABB& bbox) const
 	CheckIfBBoxValid(bbox, GetEntity());
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CEntityRender::ProcessEvent(const SEntityEvent& event)
+void CEntityRender::TryInvalidateParticleEmitters()
 {
-	// See AddSimpleEventListener calls in CEntityRender::PostInit
-	switch (event.event)
+	// Needs to inform particle system.
+	if (GetEntity()->HasInternalFlag(CEntity::EInternalFlag::HasParticles))
 	{
-	case ENTITY_EVENT_XFORM:
-		OnEntityXForm((int)event.nParam[0]);
-		break;
-
-	case ENTITY_EVENT_ATTACH_THIS:
-	case ENTITY_EVENT_DETACH_THIS:
-		OnEntityXForm(0);
-		break;
-
-	case ENTITY_EVENT_LINK:
-	case ENTITY_EVENT_DELINK:
-	case ENTITY_EVENT_ENABLE_PHYSICS:
-	case ENTITY_EVENT_PHYSICS_CHANGE_STATE:
-		// Needs to inform particle system.
-		if (GetEntity()->HasInternalFlag(CEntity::EInternalFlag::HasParticles))
+		// Only particles need this to be processed
+		for (CEntitySlot* pSlot : m_slots)
 		{
-			// Only particles need this to be processed
-			for (CEntitySlot* pSlot : m_slots)
+			if (pSlot && pSlot->GetRenderNodeType() == eERType_ParticleEmitter)
 			{
-				if (pSlot && pSlot->GetRenderNodeType() == eERType_ParticleEmitter)
-				{
-					pSlot->InvalidateParticleEmitter();
-				}
+				pSlot->InvalidateParticleEmitter();
 			}
 		}
-		break;
-
-	case ENTITY_EVENT_HIDE:
-	case ENTITY_EVENT_INVISIBLE:
-	case ENTITY_EVENT_UNHIDE:
-	case ENTITY_EVENT_VISIBLE:
-		UpdateRenderNodes();
-		break;
-	case ENTITY_EVENT_ANIM_EVENT:
-		{
-			const AnimEventInstance* pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
-			if (pAnimEvent)
-			{
-				ICharacterInstance* pCharacter = reinterpret_cast<ICharacterInstance*>(event.nParam[1]);
-				ISkeletonAnim* pSkeletonAnim = (pCharacter ? pCharacter->GetISkeletonAnim() : 0);
-
-				// Spawn the event
-				if (!GetEntity()->IsInvisible() && !GetEntity()->IsHidden() && pSkeletonAnim && pAnimEvent->m_EventName && pAnimEvent->m_CustomParameter)
-				{
-					for (auto && pSlot : m_slots)
-					{
-						if (pSlot && pSlot->GetCharacter() == pCharacter)
-						{
-							pSlot->GetCharacter()->SpawnSkeletonEffect(*pAnimEvent, QuatTS(pSlot->GetWorldTM()));
-						}
-					}
-				}
-			}
-		}
-		break;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityRender::OnEntityXForm(int nWhyFlags)
+void CEntityRender::OnEntityXForm(EntityTransformationFlagsMask transformReasons)
 {
 	// Invalidate cached world matrices for all slots.
 	for (CEntitySlot* pSlot : m_slots)
 	{
 		if (pSlot)
 		{
-			pSlot->OnXForm(nWhyFlags);
+			pSlot->OnXForm(transformReasons);
 		}
 	}
 }
@@ -832,7 +791,7 @@ int CEntityRender::LoadGeometry(int nSlot, const char* szFilename, const char* s
 		pStatObj = GetI3DEngine()->LoadStatObj(szFilename, nullptr, nullptr, (nLoadFlags& IEntity::EF_NO_STREAMING) == 0);
 	}
 
-	SetSlotGeometry(nSlot, pStatObj);
+	SetSlotGeometry(nSlot | ENTITY_SLOT_ACTUAL, pStatObj);
 
 	return nSlot;
 }

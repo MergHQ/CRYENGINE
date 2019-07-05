@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2015.
-
 #include "StdAfx.h"
 #include "TrackViewSplineTrack.h"
 #include "TrackViewSequence.h"
@@ -126,4 +123,3 @@ string CTrackViewSplineTrack::GetKeyDescription(const uint index) const
 	description.Format("%.3f", key.m_controlPoint.m_value);
 	return description;
 }
-

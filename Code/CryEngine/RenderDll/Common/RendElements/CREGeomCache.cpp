@@ -12,12 +12,12 @@
 
 #if defined(USE_GEOM_CACHES)
 
-#include <CryRenderer/RenderElements/RendElement.h>
-#include <Cry3DEngine/CREGeomCache.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include "../Renderer.h"
-#include "../Common/PostProcess/PostEffects.h"
-#include "XRenderD3D9/DriverD3D.h"
+	#include <CryRenderer/RenderElements/RendElement.h>
+	#include <Cry3DEngine/CREGeomCache.h>
+	#include <Cry3DEngine/I3DEngine.h>
+	#include "../Renderer.h"
+	#include "../Common/PostProcess/PostEffects.h"
+	#include "XRenderD3D9/DriverD3D.h"
 
 //#include "XRenderD3D9/DriverD3D.h"
 
@@ -80,7 +80,7 @@ void CREGeomCache::SetupMotionBlur(CRenderObject* pRenderObject, const SRenderin
 	}
 }
 
-bool CREGeomCache::Update(const int flags, const bool bTessellation)
+bool CREGeomCache::Update(const EStreamMasks StreamMask, const bool bTessellation)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 
@@ -112,7 +112,7 @@ bool CREGeomCache::Update(const int flags, const bool bTessellation)
 			pRenderMesh->SyncAsyncUpdate(threadId);
 
 			CRenderMesh* pVertexContainer = pRenderMesh->_GetVertexContainer();
-			bool bSucceed = pRenderMesh->RT_CheckUpdate(pVertexContainer, pRenderMesh->GetVertexFormat(), flags | VSM_MASK, bTessellation);
+			bool bSucceed = pRenderMesh->RT_CheckUpdate(pVertexContainer, pRenderMesh->GetVertexFormat(), StreamMask | VSM_MASK, bTessellation);
 			if (bSucceed)
 			{
 				AUTO_LOCK(CRenderMesh::m_sLinkLock);
@@ -140,13 +140,13 @@ void CREGeomCache::UpdateModified()
 	     iter != ms_updateList[threadId].end(); iter = ms_updateList[threadId].erase(iter))
 	{
 		CREGeomCache* pRenderElement = *iter;
-		pRenderElement->Update(0, false);
+		pRenderElement->Update(VSM_NONE, false);
 	}
 }
 
-bool CREGeomCache::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation)
+bool CREGeomCache::mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation)
 {
-	const bool bRet = Update(Flags, bTessellation);
+	const bool bRet = Update(StreamMask, bTessellation);
 
 	const int threadId = gRenDev->GetRenderThreadID();
 	CryAutoLock<CryCriticalSection> lock(ms_updateListCS[threadId]);
@@ -191,11 +191,7 @@ DynArray<CREGeomCache::SMeshRenderData>* CREGeomCache::GetRenderDataPtr()
 
 void CREGeomCache::DisplayFilledBuffer(const int threadId)
 {
-	if (m_bUpdateFrame[threadId])
-	{
-		// You need to call SetAsyncUpdateState before DisplayFilledBuffer
-		__debugbreak();
-	}
+	CRY_ASSERT_MESSAGE(!m_bUpdateFrame[threadId], "You need to call SetAsyncUpdateState before DisplayFilledBuffer");
 	m_bUpdateFrame[threadId] = true;
 }
 
@@ -219,20 +215,6 @@ void CREGeomCache::DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelin
 {
 	//mfUpdate(0, FCEF_TRANSFORM, false); //TODO: check if correct
 
-}
-
-inline static void getObjMatrix(UFloat4* sData, const register float* pData, const bool bRelativeToCamPos, const Vec3& vRelativeToCamPos)
-{
-	sData[0].Load(&pData[0]);
-	sData[1].Load(&pData[4]);
-	sData[2].Load(&pData[8]);
-
-	if (bRelativeToCamPos)
-	{
-		sData[0].f[3] -= vRelativeToCamPos.x;
-		sData[1].f[3] -= vRelativeToCamPos.y;
-		sData[2].f[3] -= vRelativeToCamPos.z;
-	}
 }
 
 #endif

@@ -66,7 +66,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	const char* CFoundation::GetNamespace(size_t namespaceIdx) const
 	{
-		return namespaceIdx < m_namespaces.size() ? m_namespaces[namespaceIdx] : "";
+		return namespaceIdx < m_namespaces.size() ? m_namespaces[namespaceIdx].c_str() : "";
 	}
 
 	//////////////////////////////////////////////////////////////////////////

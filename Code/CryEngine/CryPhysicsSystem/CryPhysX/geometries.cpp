@@ -130,7 +130,8 @@ IGeometry* CGeomManager::CreateMesh(strided_pointer<const Vec3> pVertices, strid
 		PxDefaultMemoryOutputStream buf;
 		PxConvexMeshCookingResult::Enum result;
 		g_cryPhysX.Cooking()->cookConvexMesh(cmd, buf, &result);
-		if (pGeom->m_geom.mesh.pMeshConvex = g_cryPhysX.Physics()->createConvexMesh(PxDefaultMemoryInputData(buf.getData(), buf.getSize())))
+		PxDefaultMemoryInputData stm(buf.getData(), buf.getSize());
+		if (pGeom->m_geom.mesh.pMeshConvex = g_cryPhysX.Physics()->createConvexMesh(stm))
 			FillMeshData(pGeom->m_geom.mesh.pMeshConvex, pGeom->m_geom.mesh.pdata);
 	}	else {
 		PxTriangleMeshDesc tmd;

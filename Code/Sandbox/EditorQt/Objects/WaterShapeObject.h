@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ShapeObject.h"
+#include <Cry3DEngine/IRenderNode.h>
 
 struct IWaterVolumeRenderNode;
 
@@ -66,6 +67,8 @@ protected:
 	CVariable<float>        mv_waterCausticTiling;
 	CVariable<float>        mv_waterCausticHeight;
 
+	CVariable<float>        mv_waterDensity;
+	CVariable<float>        mv_waterResistance;
 	CSmartVariableArray     mv_GroupAdv;
 	CVariable<float>        mv_waterVolume;
 	CVariable<float>        mv_accVolume;
@@ -94,9 +97,8 @@ protected:
 class CWaterShapeObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; };
-	const char*    ClassName()         { return "WaterVolume"; };
-	const char*    Category()          { return "Area"; };
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CWaterShapeObject); };
+	ObjectType     GetObjectType()     { return OBJTYPE_VOLUME; }
+	const char*    ClassName()         { return "WaterVolume"; }
+	const char*    Category()          { return "Area"; }
+	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CWaterShapeObject); }
 };
-

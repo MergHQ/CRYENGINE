@@ -5,6 +5,7 @@
 #include <CryMath/Cry_Camera.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryRenderer/IRenderView.h>
 #include <CrySystem/ITimer.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryPhysics/IPhysicsDebugRenderer.h>
@@ -75,10 +76,14 @@ void QViewport::CreateGridLine(ColorB col, const float alpha, const float alphaF
 
 	const uint32 cPacked = col.pack_argb8888();
 	const uint32 cEndPacked = colEnd.pack_argb8888();
-	m_gridLineVertices.push_back(points[0]); m_gridLineVerticesColor.push_back(cPacked);
-	m_gridLineVertices.push_back(points[1]); m_gridLineVerticesColor.push_back(cEndPacked);
-	m_gridLineVertices.push_back(points[0]); m_gridLineVerticesColor.push_back(cPacked);
-	m_gridLineVertices.push_back(points[2]); m_gridLineVerticesColor.push_back(cEndPacked);
+	m_gridLineVertices.push_back(points[0]);
+	m_gridLineVerticesColor.push_back(cPacked);
+	m_gridLineVertices.push_back(points[1]);
+	m_gridLineVerticesColor.push_back(cEndPacked);
+	m_gridLineVertices.push_back(points[0]);
+	m_gridLineVerticesColor.push_back(cPacked);
+	m_gridLineVertices.push_back(points[2]);
+	m_gridLineVerticesColor.push_back(cEndPacked);
 }
 
 void QViewport::CreateGridLines(const uint count, const uint interStepCount, const Vec3& stepDir, const float stepSize, const Vec3& orthoDir, const float offset)
@@ -96,7 +101,6 @@ void QViewport::CreateGridLines(const uint count, const uint interStepCount, con
 	const float alphaMulMain = (float)gridSettings.mainColor.a;
 	const float alphaMulInter = (float)gridSettings.middleColor.a;
 	const float alphaFalloff = 1.0f - (gridSettings.alphaFalloff / 100.0f);
-	float orthoWeight = 1.0f;
 
 	for (int i = 0; i < count + 2; i++)
 	{
@@ -120,13 +124,13 @@ void QViewport::DrawGrid()
 	const uint count = gridSettings.count * 2;
 	const float gridSize = gridSettings.spacing * gridSettings.count * 2.0f;
 	const float stepSize = gridSize / count;
-	
+
 	m_gridLineVertices.clear();
 	m_gridLineVerticesColor.clear();
 	CreateGridLines(count, gridSettings.interCount, Vec3(1.0f, 0.0f, 0.0f), stepSize, Vec3(0.0f, 1.0f, 0.0f), m_state->gridCellOffset.x);
 	CreateGridLines(count, gridSettings.interCount, Vec3(0.0f, 1.0f, 0.0f), stepSize, Vec3(1.0f, 0.0f, 0.0f), m_state->gridCellOffset.y);
-	
-	m_pAuxGeom->DrawLines( &m_gridLineVertices[0], &m_gridLineVerticesColor[0], (uint32)m_gridLineVertices.size() );
+
+	m_pAuxGeom->DrawLines(&m_gridLineVertices[0], &m_gridLineVerticesColor[0], (uint32)m_gridLineVertices.size());
 }
 
 void QViewport::DrawOrigin(const ColorB& col)
@@ -168,10 +172,10 @@ void QViewport::DrawOrigin(const int left, const int top, const float scale, con
 struct QViewport::SPrivate
 {
 	SRenderLight m_VPLight0;
-
+	SRenderLight m_VPEnvProbe0;
 };
 
-QViewport::QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersamplingFactor)
+QViewport::QViewport(SSystemGlobalEnvironment* env, IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc, QWidget* parent, int supersamplingFactor)
 	: QWidget(parent)
 	, m_renderContextCreated(false)
 	, m_updating(false)
@@ -213,6 +217,9 @@ QViewport::QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersa
 	m_LightRotationRadian = 0;
 
 	m_pViewportAdapter.reset(new CDisplayViewportAdapter(this));
+	m_graphicsPipelineDesc = graphicsPipelineDesc;
+
+	CreateRenderContext();
 }
 
 QViewport::~QViewport()
@@ -241,7 +248,7 @@ bool QViewport::ScreenToWorldRay(Ray* ray, int x, int y)
 	if (!m_env->pRenderer)
 		return false;
 
-	Vec3 pos0(0,0,0), pos1(0,0,0);
+	Vec3 pos0(0, 0, 0), pos1(0, 0, 0);
 	if (!Camera()->Unproject(Vec3(float(x), float(m_height - y), 0), pos0))
 	{
 		return false;
@@ -250,7 +257,7 @@ bool QViewport::ScreenToWorldRay(Ray* ray, int x, int y)
 	{
 		return false;
 	}
-	
+
 	Vec3 v = (pos1 - pos0);
 	v = v.GetNormalized();
 
@@ -264,7 +271,7 @@ QPoint QViewport::ProjectToScreen(const Vec3& wp)
 	Vec3 out(0, 0, 0);
 	if (Camera()->Project(wp, out))
 	{
-		return QPoint((int)out.x,(int)out.y);
+		return QPoint((int)out.x, (int)out.y);
 	}
 	RestorePreviousContext();
 
@@ -311,6 +318,7 @@ bool QViewport::CreateRenderContext()
 		desc.screenResolution.y = m_height;
 
 		m_displayContextKey = gEnv->pRenderer->CreateSwapChainBackedContext(desc);
+		m_graphicsPipelineKey = gEnv->pRenderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);	
 
 		m_renderContextCreated = true;
 		m_creatingRenderContext = false;
@@ -328,9 +336,8 @@ void QViewport::DestroyRenderContext()
 	// Destroy render context.
 	if (m_env->pRenderer && m_renderContextCreated)
 	{
-		// Do not delete primary context.
-		if (m_displayContextKey != static_cast<HWND>(m_env->pRenderer->GetHWND()))
-			m_env->pRenderer->DeleteContext(m_displayContextKey);
+		m_env->pRenderer->DeleteContext(m_displayContextKey);
+		m_env->pRenderer->DeleteGraphicsPipeline(m_graphicsPipelineKey);
 
 		m_renderContextCreated = false;
 	}
@@ -361,14 +368,11 @@ void QViewport::RestorePreviousContext()
 	m_env->pSystem->SetViewCamera(x.systemCamera);
 }
 
-void QViewport::InitDisplayContext(HWND hWnd)
+SDisplayContext QViewport::InitDisplayContext(const SDisplayContextKey& displayContextKey)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	// Draw all objects.
-	SDisplayContextKey displayContextKey;
-	displayContextKey.key.emplace<HWND>(hWnd);
-	DisplayContext& dctx = m_displayContext;
+	SDisplayContext dctx;
 	dctx.SetDisplayContext(displayContextKey);
 	dctx.SetView(m_pViewportAdapter.get());
 	dctx.SetCamera(m_camera.get());
@@ -376,7 +380,8 @@ void QViewport::InitDisplayContext(HWND hWnd)
 	dctx.engine = m_env->p3DEngine;
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
-	dctx.flags = 0;
+
+	return dctx;
 }
 
 void QViewport::Serialize(IArchive& ar)
@@ -757,31 +762,27 @@ struct ScopedBackup
 	{
 		ppDCAuxGeom = pDCAuxGeomPtr;
 		oldAuxGeom = *pDCAuxGeomPtr;
-		*pDCAuxGeomPtr = pNewAuxGeom;
+		* pDCAuxGeomPtr = pNewAuxGeom;
 	}
 	~ScopedBackup()
 	{
-		*ppDCAuxGeom = oldAuxGeom;
+		* ppDCAuxGeom = oldAuxGeom;
 	}
 
 	IRenderAuxGeom** ppDCAuxGeom;
-	IRenderAuxGeom* oldAuxGeom;
+	IRenderAuxGeom*  oldAuxGeom;
 };
 
-void QViewport::Render()
+void QViewport::Render(SDisplayContext& context)
 {
-	DisplayContext& dc = m_displayContext;
-	ScopedBackup(&m_displayContext.pRenderAuxGeom, m_pAuxGeom);
+	ScopedBackup(&context.pRenderAuxGeom, m_pAuxGeom);
 
 	IRenderAuxGeom* aux = m_pAuxGeom;
 	SAuxGeomRenderFlags oldFlags = aux->GetRenderFlags();
 
-	dc.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
+	context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
 
-	// wireframe mode
-	CScopedWireFrameMode scopedWireFrame(m_env->pRenderer, m_settings->rendering.wireframe ? R_WIREFRAME_MODE : R_SOLID_MODE);
-
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(*m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
+	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, *m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
 
 	if (m_settings->background.useGradient)
 	{
@@ -807,12 +808,80 @@ void QViewport::Render()
 		aux->DrawTriangle(lb, bottomColor, rb, bottomColor, lt, topColor);
 	}
 
+	// In EF_StartEf(), usage mode is switched to CRenderView::eUsageModeWriting. Thus, render item lists are added below.
 	m_env->pRenderer->EF_StartEf(passInfo);
 
-	SRendParams rp;
-	rp.AmbientColor.r = m_settings->lighting.m_ambientColor.r / 255.0f * m_settings->lighting.m_brightness;
-	rp.AmbientColor.g = m_settings->lighting.m_ambientColor.g / 255.0f * m_settings->lighting.m_brightness;
-	rp.AmbientColor.b = m_settings->lighting.m_ambientColor.b / 255.0f * m_settings->lighting.m_brightness;
+	//---------------------------------------------------------------------------------------
+	//---- Environment probe    -------------------------------------------------------------
+	//---------------------------------------------------------------------------------------
+
+	m_private->m_VPEnvProbe0.SetPosition(Vec3(0, 0, 0));
+	m_private->m_VPEnvProbe0.SetRadius(10000.0f, 0);
+	m_private->m_VPEnvProbe0.SetLightColor(ColorF(m_settings->lighting.m_cubemapColor.r / 255.0f * m_settings->lighting.m_cubemapMultiplier,
+		m_settings->lighting.m_cubemapColor.g / 255.0f * m_settings->lighting.m_cubemapMultiplier,
+		m_settings->lighting.m_cubemapColor.b / 255.0f * m_settings->lighting.m_cubemapMultiplier, 1));
+	m_private->m_VPEnvProbe0.m_ProbeExtents = Vec3(m_private->m_VPEnvProbe0.m_fRadius);
+	m_private->m_VPEnvProbe0.m_fBoxWidth = m_private->m_VPEnvProbe0.m_fRadius * 0.5f;
+	m_private->m_VPEnvProbe0.m_fBoxLength = m_private->m_VPEnvProbe0.m_fRadius * 0.5f;
+	m_private->m_VPEnvProbe0.m_fBoxHeight = m_private->m_VPEnvProbe0.m_fRadius * 0.5f;
+	m_private->m_VPEnvProbe0.m_Flags |= DLF_DEFERRED_CUBEMAPS;
+
+	Matrix34 mat = Matrix34::CreateIdentity();
+	m_private->m_VPEnvProbe0.SetMatrix(mat);
+
+	if (m_settings->lighting.m_cubemapName != m_prevCharacterToolCubemapName)
+	{
+		m_private->m_VPEnvProbe0.ReleaseCubemaps();
+	}
+
+	if (!m_settings->lighting.m_cubemapName.empty() && !m_private->m_VPEnvProbe0.GetDiffuseCubemap() && !m_private->m_VPEnvProbe0.GetSpecularCubemap())
+	{
+		bool bFailed = false;
+		const char* specularCubemap = m_settings->lighting.m_cubemapName;
+		string sSpecularName(specularCubemap);
+		int strIndex = sSpecularName.find("_diff");
+		if (strIndex >= 0)
+		{
+			sSpecularName = sSpecularName.substr(0, strIndex) + sSpecularName.substr(strIndex + 5, sSpecularName.length());
+			specularCubemap = sSpecularName.c_str();
+		}
+
+		CryPathString diffuseCubemap;
+		diffuseCubemap.Format("%s%s%s.%s", PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(specularCubemap)).c_str(),
+			PathUtil::GetFileName(specularCubemap).c_str(), "_diff", PathUtil::GetExt(specularCubemap));
+
+		// '\\' in filename causing texture duplication
+		string specularCubemapUnix = PathUtil::ToUnixPath(specularCubemap);
+		string diffuseCubemapUnix = PathUtil::ToUnixPath(diffuseCubemap);
+
+		m_private->m_VPEnvProbe0.SetSpecularCubemap(gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix.c_str(), 0));
+		m_private->m_VPEnvProbe0.SetDiffuseCubemap(gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix.c_str(), 0));
+
+		if (!m_private->m_VPEnvProbe0.GetSpecularCubemap() || !m_private->m_VPEnvProbe0.GetSpecularCubemap()->IsTextureLoaded())
+		{
+			GetISystem()->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, 0, specularCubemap,
+				"Deferred cubemap texture not found: %s", specularCubemap);
+
+			bFailed = true;
+		}
+		if (!m_private->m_VPEnvProbe0.GetDiffuseCubemap() || !m_private->m_VPEnvProbe0.GetDiffuseCubemap()->IsTextureLoaded())
+		{
+			GetISystem()->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, 0, diffuseCubemap,
+				"Deferred diffuse cubemap texture not found: %s", diffuseCubemap);
+
+			bFailed = true;
+		}
+
+		if (bFailed)
+		{
+			m_private->m_VPEnvProbe0.m_Flags |= DLF_DISABLED;
+			m_private->m_VPEnvProbe0.ReleaseCubemaps();
+		}
+
+		m_prevCharacterToolCubemapName = m_settings->lighting.m_cubemapName;
+	}
+
+	m_env->pRenderer->EF_AddDeferredLight(m_private->m_VPEnvProbe0, 1.0f, passInfo);
 
 	//---------------------------------------------------------------------------------------
 	//---- directional light    -------------------------------------------------------------
@@ -826,7 +895,6 @@ void QViewport::Render()
 	Matrix33 LightRot33 = Matrix33::CreateRotationZ(m_LightRotationRadian);
 
 	f32 lightMultiplier = m_settings->lighting.m_lightMultiplier;
-	f32 lightSpecMultiplier = m_settings->lighting.m_lightSpecMultiplier;
 	f32 lightRadius = 400;
 
 	f32 lightOrbit = 15.0f;
@@ -839,7 +907,6 @@ void QViewport::Render()
 	d0.z = f32(m_settings->lighting.m_directionalLightColor.b) / 255.0f;
 	m_private->m_VPLight0.m_Flags |= DLF_POINT;
 	m_private->m_VPLight0.SetLightColor(ColorF(d0.x * lightMultiplier, d0.y * lightMultiplier, d0.z * lightMultiplier, 0));
-	m_private->m_VPLight0.SetSpecularMult(lightSpecMultiplier);
 	m_private->m_VPLight0.SetRadius(lightRadius);
 
 	ColorB col;
@@ -855,11 +922,11 @@ void QViewport::Render()
 	//---------------------------------------------------------------------------------------
 
 	Matrix34 tm(IDENTITY);
+	SRendParams rp;
 	rp.pMatrix = &tm;
 	rp.pPrevMatrix = &tm;
 
-	rp.dwFObjFlags = 0;
-	rp.dwFObjFlags |= FOB_TRANS_MASK;
+	rp.dwFObjFlags = FOB_TRANS_MASK;
 
 	SRenderContext rc;
 	rc.camera = m_camera.get();
@@ -870,10 +937,15 @@ void QViewport::Render()
 
 	SignalRender(rc);
 
-	m_gizmoManager.Display(dc);
+	m_gizmoManager.Display(context);
 
 	m_env->pSystem->GetIPhysicsDebugRenderer()->Flush(m_lastFrameTime);
-	m_env->pRenderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+
+	for (size_t i = 0; i < m_consumers.size(); ++i)
+		m_consumers[i]->OnViewportRender(rc);
+
+	// In EF_EndEf3D(), usage mode is switched to CRenderView::eUsageModeWritingDone - indicating the end of adding render item lists.
+	m_env->pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
 
 	if (m_settings->grid.showGrid)
 	{
@@ -894,9 +966,6 @@ void QViewport::Render()
 		DrawOrigin(50, m_height - 50, 20.0f, m_camera->GetMatrix());
 		aux->SetOrthographicProjection(false);
 	}
-
-	for (size_t i = 0; i < m_consumers.size(); ++i)
-		m_consumers[i]->OnViewportRender(rc);
 
 	aux->Submit();
 	aux->SetRenderFlags(oldFlags);
@@ -920,23 +989,19 @@ void QViewport::RenderInternal()
 	// lock while we are rendering to prevent any recursive rendering across the application
 	if (CScopedRenderLock lock = CScopedRenderLock())
 	{
-		const HWND hWnd = reinterpret_cast<HWND>(QWidget::winId());
-		SDisplayContextKey displayContextKey;
-		displayContextKey.key.emplace<HWND>(hWnd);
-
 		SetCurrentContext();
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(hWnd);
+		SDisplayContext context = InitDisplayContext(m_displayContextKey);
 
 		// Request for a new aux geometry to capture aux commands in the current viewport
 		CCamera camera = *m_camera;
 		m_pAuxGeom = gEnv->pRenderer->GetOrCreateIRenderAuxGeom(&camera);
 
-		m_env->pSystem->RenderBegin(displayContextKey);
+		m_env->pSystem->RenderBegin(m_displayContextKey, m_graphicsPipelineKey);
 
 		// Sets the current viewport's aux geometry display context
-		m_pAuxGeom->SetCurrentDisplayContext(displayContextKey);
+		m_pAuxGeom->SetCurrentDisplayContext(m_displayContextKey);
 
 		// Do the pre-rendering. This call updates the member camera (applying transformation to the camera).
 		PreRender();
@@ -951,8 +1016,8 @@ void QViewport::RenderInternal()
 		gEnv->pRenderer->UpdateAuxDefaultCamera(*m_camera);
 
 		// Do the actual render call for the viewport.
-		Render();
-		
+		Render(context);
+
 		// Submit the current viewport's aux geometry and make it null to completely pass the ownership to renderer
 		gEnv->pRenderer->SubmitAuxGeom(m_pAuxGeom, false);
 		m_pAuxGeom = nullptr;
@@ -1153,7 +1218,7 @@ void QViewport::resizeEvent(QResizeEvent* ev)
 	m_height = cy;
 
 	m_env->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, cx, cy);
-	gEnv->pRenderer->ResizeContext(m_displayContextKey, m_width, m_height);
+	gEnv->pRenderer->ResizePipelineAndContext(m_graphicsPipelineKey, m_displayContextKey, m_width, m_height);
 
 	SignalUpdate();
 }
@@ -1168,11 +1233,6 @@ void QViewport::moveEvent(QMoveEvent* ev)
 bool QViewport::event(QEvent* ev)
 {
 	bool result = QWidget::event(ev);
-
-	if (ev->type() == QEvent::WinIdChange)
-	{
-		CreateRenderContext();
-	}
 
 	return result;
 }
@@ -1197,4 +1257,3 @@ void QViewport::RemoveConsumer(QViewportConsumer* consumer)
 {
 	m_consumers.erase(std::remove(m_consumers.begin(), m_consumers.end(), consumer), m_consumers.end());
 }
-

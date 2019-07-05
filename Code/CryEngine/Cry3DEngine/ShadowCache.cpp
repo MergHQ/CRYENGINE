@@ -110,7 +110,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 {
 	const auto frameID = passInfo.GetFrameID();
 
-	pFr->ResetCasterLists();
+	pFr->RequestUpdates(1);
 	pFr->nTexSize = nTexSize;
 
 	if (nUpdateStrategy != ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
@@ -118,7 +118,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 		CRY_ASSERT(cacheLod >= 0 && cacheLod < MAX_GSM_CACHED_LODS_NUM);
 
 		pFr->pShadowCacheData->Reset(GetNextGenerationID());
-		pFr->GetSideSampleMask().store(1);
+		pFr->RequestSamples(1);
 
 		assert(m_pLightEntity->GetLightProperties().m_pOwner);
 		pFr->pLightOwner = m_pLightEntity->GetLightProperties().m_pOwner;
@@ -175,12 +175,27 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 	                             ? GetCVars()->e_ShadowsCacheMaxNodesPerFrame * GetRenderer()->GetActiveGPUCount()
 	                             : std::numeric_limits<int>::max();
 
-	m_pObjManager->MakeStaticShadowCastersList(((CLightEntity*)m_pLightEntity->GetLightProperties().m_pOwner)->GetCastingException(), pFr,
-	                                           bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr,
-	                                           bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
-	AddTerrainCastersToFrustum(pFr, passInfo);
+	IRenderNode* pCastingException = static_cast<CLightEntity*>(m_pLightEntity->GetLightProperties().m_pOwner)->GetCastingException();
+	auto pCastersHull = bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr;
 
-	pFr->Invalidate();
+	auto jobLambda = [=]()
+	{
+		m_pObjManager->MakeStaticShadowCastersList(pCastingException, pFr, pCastersHull,
+			bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
+
+		AddTerrainCastersToFrustum(pFr, passInfo);
+	};
+	
+	if (GetCVars()->e_ShadowsCacheJobs)
+	{
+		DECLARE_LAMBDA_JOB("job:shadows:MakeStaticShadowCastersList", TMakeStaticShadowCastersListJob);
+		TMakeStaticShadowCastersListJob(jobLambda).Run(JobManager::eRegularPriority, &pFr->pShadowCacheData->mTraverseOctreeJobState);
+	}
+	else
+	{
+		jobLambda();
+	}
+
 	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && pFr->pShadowCacheData->mObjectsRendered != 0;
 }
 
@@ -316,8 +331,6 @@ void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, con
 		PodArray<CTerrainNode*> lstTerrainNodes;
 		GetTerrain()->IntersectWithBox(pFr->aabbCasters, &lstTerrainNodes);
 
-		bool bCastersFound = false;
-
 		for (int s = 0; s < lstTerrainNodes.Count(); s++)
 		{
 			CTerrainNode* pNode = lstTerrainNodes[s];
@@ -329,12 +342,7 @@ void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, con
 			if (!pFr->NodeRequiresShadowCacheUpdate(pNode))
 				continue;
 
-			bCastersFound = true;
-
 			pNode->SetTraversalFrameId(passInfo.GetMainFrameID(), pFr->nShadowMapLod);
 		}
-
-		if (bCastersFound)
-			pFr->RequestUpdate();
 	}
 }

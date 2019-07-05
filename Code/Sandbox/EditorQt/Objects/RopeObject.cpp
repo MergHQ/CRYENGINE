@@ -1,16 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "RopeObject.h"
-#include <Cry3DEngine/I3DEngine.h>
+#include "IEditorImpl.h"
+#include "SelectionGroup.h"
+
 #include "Material/Material.h"
-#include "Controls/PropertiesPanel.h"
-#include "Controls/PropertyCtrl.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
+#include "Material/MaterialManager.h"
+
+#include <Objects/DisplayContext.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/ObjectLoader.h>
+
+#include <Cry3DEngine/I3DEngine.h>
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Decorators/ResourcesAudio.h>
 
@@ -18,11 +20,10 @@ REGISTER_CLASS_DESC(CRopeObjectClassDesc);
 
 IMPLEMENT_DYNCREATE(CRopeObject, CShapeObject)
 
-//////////////////////////////////////////////////////////////////////////
+const ColorB g_lineConnectedColor(0, 255, 0);
+const ColorB g_lineDisconnectedColor(255, 255, 0);
 
-#define LINE_CONNECTED_COLOR    RGB(0, 255, 0)
-#define LINE_DISCONNECTED_COLOR RGB(255, 255, 0)
-#define ROPE_PHYS_SEGMENTS_MAX  100
+#define ROPE_PHYS_SEGMENTS_MAX 100
 
 SERIALIZATION_ENUM_BEGIN_NESTED(CryAudio, EOcclusionType, "OcclusionType")
 SERIALIZATION_ENUM(CryAudio::EOcclusionType::Ignore, "ignore_state_name", "Ignore");
@@ -30,6 +31,13 @@ SERIALIZATION_ENUM(CryAudio::EOcclusionType::Adaptive, "adaptive_state_name", "A
 SERIALIZATION_ENUM(CryAudio::EOcclusionType::Low, "low_state_name", "Low");
 SERIALIZATION_ENUM(CryAudio::EOcclusionType::Medium, "medium_state_name", "Medium");
 SERIALIZATION_ENUM(CryAudio::EOcclusionType::High, "high_state_name", "High");
+SERIALIZATION_ENUM_END();
+
+SERIALIZATION_ENUM_BEGIN_NESTED(IRopeRenderNode, ERopeSegAxis, "Axis")
+SERIALIZATION_ENUM(IRopeRenderNode::ERopeSegAxis::eRopeSeg_Auto, "auto", "Auto (longest)");
+SERIALIZATION_ENUM(IRopeRenderNode::ERopeSegAxis::eRopeSeg_X, "x", "X");
+SERIALIZATION_ENUM(IRopeRenderNode::ERopeSegAxis::eRopeSeg_Y, "y", "Y");
+SERIALIZATION_ENUM(IRopeRenderNode::ERopeSegAxis::eRopeSeg_Z, "z", "Z");
 SERIALIZATION_ENUM_END();
 
 inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, bool bLoad)
@@ -63,6 +71,13 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 		node->getAttr("hardness", rp.hardness);
 		node->getAttr("damping", rp.damping);
 		node->getAttr("sleepSpeed", rp.sleepSpeed);
+		node->getAttr("sizeChange", rp.sizeChange);
+		node->getAttr("smoothIters", rp.boneSmoothIters);
+		node->getAttr("segObjLen", rp.segObjLen);
+		node->getAttr("segObjRot", rp.segObjRot);
+		node->getAttr("segObjRot0", rp.segObjRot0);
+		node->getAttr("segObjAxis", (int&)rp.segObjAxis);
+		rp.segmentObj = node->getAttr("segmentObj");
 	}
 	else
 	{
@@ -93,10 +108,16 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 		node->setAttr("hardness", rp.hardness);
 		node->setAttr("damping", rp.damping);
 		node->setAttr("sleepSpeed", rp.sleepSpeed);
+		node->setAttr("sizeChange", rp.sizeChange);
+		node->setAttr("smoothIters", rp.boneSmoothIters);
+		node->setAttr("segObjLen", rp.segObjLen);
+		node->setAttr("segObjRot", rp.segObjRot);
+		node->setAttr("segObjRot0", rp.segObjRot0);
+		node->setAttr("segObjAxis", rp.segObjAxis);
+		node->setAttr("segmentObj", rp.segmentObj);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CRopeObject::CRopeObject()
 {
 	mv_closed = false;
@@ -106,36 +127,11 @@ CRopeObject::CRopeObject()
 	UseMaterialLayersMask(true);
 
 	m_bPerVertexHeight = false;
-	SetColor(LINE_DISCONNECTED_COLOR);
+	SetColor(g_lineDisconnectedColor);
 
 	m_entityClass = "RopeEntity";
 
-	ZeroStruct(m_ropeParams);
-
-	m_ropeParams.nFlags = IRopeRenderNode::eRope_BindEndPoints | IRopeRenderNode::eRope_CheckCollisinos;
-	m_ropeParams.fThickness = 0.02f;
-	m_ropeParams.fAnchorRadius = 0.1f;
-	m_ropeParams.nNumSegments = 8;
-	m_ropeParams.nNumSides = 4;
-	m_ropeParams.nMaxSubVtx = 3;
-	m_ropeParams.nPhysSegments = 8;
-	m_ropeParams.mass = 1.0f;
-	m_ropeParams.friction = 2;
-	m_ropeParams.frictionPull = 2;
-	m_ropeParams.wind.Set(0, 0, 0);
-	m_ropeParams.windVariance = 0;
-	m_ropeParams.waterResistance = 0;
-	m_ropeParams.jointLimit = 0;
-	m_ropeParams.maxForce = 0;
-	m_ropeParams.airResistance = 0;
-	m_ropeParams.fTextureTileU = 1.0f;
-	m_ropeParams.fTextureTileV = 10.0f;
-	m_ropeParams.nMaxIters = 650;
-	m_ropeParams.maxTimeStep = 0.02f;
-	m_ropeParams.stiffness = 10.0f;
-	m_ropeParams.hardness = 20.0f;
-	m_ropeParams.damping = 0.2f;
-	m_ropeParams.sleepSpeed = 0.04f;
+	m_ropeParams.nFlags |= IRopeRenderNode::eRope_BindEndPoints;
 
 	memset(&m_linkedObjects, 0, sizeof(m_linkedObjects));
 
@@ -143,34 +139,26 @@ CRopeObject::CRopeObject()
 	m_bskipInversionTools = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::InitVariables()
 {
 	//CEntity::InitVariables();
 }
 
-///////////////////////////////////////////////////////	///////////////////
 bool CRopeObject::Init(CBaseObject* prev, const string& file)
 {
-	bool bResult =
-	  __super::Init(prev, file);
+	bool bResult = __super::Init(prev, file);
 	if (bResult && prev)
 	{
 		m_ropeParams = ((CRopeObject*)prev)->m_ropeParams;
 	}
-	else
-	{
-	}
 	return bResult;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::Done()
 {
 	__super::Done();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CRopeObject::CreateGameObject()
 {
 	__super::CreateGameObject();
@@ -183,7 +171,6 @@ bool CRopeObject::CreateGameObject()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::InvalidateTM(int nWhyFlags)
 {
 	__super::InvalidateTM(nWhyFlags);
@@ -197,7 +184,6 @@ void CRopeObject::InvalidateTM(int nWhyFlags)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::SetMaterial(IEditorMaterial* mtl)
 {
 	__super::SetMaterial(mtl);
@@ -213,14 +199,11 @@ void CRopeObject::SetMaterial(IEditorMaterial* mtl)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-	bool bPrevShowIcons = gViewportPreferences.showIcons;
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	bool bPrevShowIcons = dc.showIcons;
 	const Matrix34& wtm = GetWorldTM();
-
-	bool bLineWidth = 0;
 
 	if (m_points.size() > 1)
 	{
@@ -236,8 +219,6 @@ void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 
 			IRopeRenderNode::SEndPointLink links[2];
 			pRopeNode->GetEndPointLinks(links);
-
-			float s = m_ropeParams.fAnchorRadius;
 
 			bool bCalcBBox = false;
 			for (int i = 0; i < 2; i++)
@@ -282,7 +263,7 @@ void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 
 		if (IsSelected())
 		{
-			gViewportPreferences.showIcons = false; // Selected Ropes hide icons.
+			dc.showIcons = false; // Selected Ropes hide icons.
 
 			Vec3 p0 = wtm.TransformPoint(m_points[0]);
 			Vec3 p1 = wtm.TransformPoint(m_points[m_points.size() - 1]);
@@ -303,16 +284,15 @@ void CRopeObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 
 		if ((nLinkedMask & 3) == 3)
-			SetColor(LINE_CONNECTED_COLOR);
+			SetColor(g_lineConnectedColor);
 		else
-			SetColor(LINE_DISCONNECTED_COLOR);
+			SetColor(g_lineDisconnectedColor);
 	}
 
 	__super::Display(objRenderHelper);
-	gViewportPreferences.showIcons = bPrevShowIcons;
+	dc.showIcons = bPrevShowIcons;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::UpdateGameArea()
 {
 	if (!m_bAreaModified)
@@ -324,7 +304,6 @@ void CRopeObject::UpdateGameArea()
 		std::vector<Vec3> points;
 		if (GetPointCount() > 1)
 		{
-			const Matrix34& wtm = GetWorldTM();
 			points.resize(GetPointCount());
 			for (int i = 0; i < GetPointCount(); i++)
 			{
@@ -335,6 +314,15 @@ void CRopeObject::UpdateGameArea()
 				pRopeNode->SetMatrix(GetWorldTM());
 
 				pRopeNode->SetName(GetName());
+
+				IMaterial* pCurMtl = pRopeNode->GetMaterial();
+				if (!m_ropeParams.segmentObj.empty() && (!pCurMtl || pCurMtl == gEnv->p3DEngine->GetMaterialManager()->GetDefaultMaterial()))
+				{
+					IStatObj* pSegObj = gEnv->p3DEngine->LoadStatObj(m_ropeParams.segmentObj, nullptr, nullptr, false);
+					if (pSegObj && pSegObj->GetMaterial() != pCurMtl)
+						SetMaterial(GetIEditorImpl()->GetMaterialManager()->FromIMaterial(pSegObj->GetMaterial()));
+				}
+
 				CMaterial* mtl = (CMaterial*)GetMaterial();
 				if (mtl)
 					mtl->AssignToEntity(pRopeNode);
@@ -348,6 +336,8 @@ void CRopeObject::UpdateGameArea()
 
 				UpdateRopeLinks();
 			}
+			if (m_pEntity && m_physicsState)
+				m_pEntity->SetPhysicsState(m_physicsState);
 		}
 
 		UpdateAudioData();
@@ -356,7 +346,6 @@ void CRopeObject::UpdateGameArea()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::UpdateRopeLinks()
 {
 	IRopeRenderNode::SEndPointLink links[2];
@@ -375,7 +364,6 @@ void CRopeObject::UpdateRopeLinks()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::OnParamChange(IVariable* var)
 {
 	if (!m_bIgnoreGameUpdate)
@@ -409,8 +397,6 @@ static void SerializeBitflag(Serialization::IArchive& ar, int& flag, int field, 
 
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 {
 	CShapeObject::CreateInspectorWidgets(creator);
@@ -422,10 +408,13 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 {
 	if (ar.openBlock("rope_properties", "Rope Properties"))
 	{
-		ar(Serialization::Range(m_ropeParams.fThickness, 0.0f, 10000.0f), "radius", "Radius");
+		ar(Serialization::Range(m_ropeParams.fThickness, 0.0f, 10000.0f, 0.0f, 0.5f, 0.01f), "radius", "Radius");
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_Smooth, "smooth", "Smooth");
-		ar(Serialization::Range(m_ropeParams.nNumSegments, 2, 1000), "num_segments", "Num Segments");
-		ar(Serialization::Range(m_ropeParams.nNumSides, 2, 100), "num_sides", "Num Sides");
+		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_UseBones, "boned", "Use Bones");
+		ar(Serialization::Range(m_ropeParams.nNumSegments, 1, 1000, 1, 100, 1), "num_segments", "Num Segments");
+		ar(Serialization::Range(m_ropeParams.nNumSides, 2, 100, 2, 32, 1), "num_sides", "Num Sides");
+		ar(Serialization::Range(m_ropeParams.sizeChange, -1.0f, 100.0f, -1.0f, 1.0f, 0.1f), "sizeChange", "Radius Change");
+		ar(Serialization::Range(m_ropeParams.boneSmoothIters, 0, 10), "smooth_iters", "Bone Smooth Iters");
 
 		ar(m_ropeParams.fTextureTileU, "tex_u_tile", "Texture U Tiling");
 		ar(m_ropeParams.fTextureTileV, "tex_v_tile", "Texture V Tiling");
@@ -435,18 +424,28 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 
 		ar(m_ropeParams.fAnchorRadius, "bind_radius", "Bind Radius");
 
+		if (ar.openBlock("seg_properties", "Custom Segment Mesh"))
+		{
+			ar(Serialization::ModelFilename(m_ropeParams.segmentObj), "segObj", "Mesh");
+			ar(m_ropeParams.segObjAxis, "segObjAxis", "Mesh Axis");
+			ar(Serialization::RadiansWithRangeAsDeg(m_ropeParams.segObjRot0, -180.0f, 180.0f), "segObjRot0", "Initial Rotation");
+			ar(m_ropeParams.segObjLen, "segObjLen", "Repeat Length");
+			ar(Serialization::RadiansWithRangeAsDeg(m_ropeParams.segObjRot, -180.0f, 180.0f), "segObjRot", "Repeat Rotation");
+			SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_SegObjBends, "bends", "Bendable");
+		}
+
 		ar.closeBlock();
 	}
 
 	if (ar.openBlock("physics", "Physics Properties"))
 	{
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_Subdivide, "subdivide", "Subdivide");
-		ar(Serialization::Range(m_ropeParams.nMaxSubVtx, 1, 100), "max_subd_verts", "Max Subdiv Verts");
+		ar(Serialization::Range(m_ropeParams.nMaxSubVtx, 1, 100, 1, 8, 1), "max_subd_verts", "Max Subdiv Verts");
 		ar(Serialization::Range(m_ropeParams.nPhysSegments, 1, ROPE_PHYS_SEGMENTS_MAX), "phys_segments", "Physical Segments");
-		ar(m_ropeParams.tension, "tension", "Tension");
-		ar(m_ropeParams.friction, "friction", "Friction");
+		ar(Serialization::Range(m_ropeParams.tension, -100.0f, 100.0f, -0.1f, 1.0f, 0.01f), "tension", "Tension");
+		ar(Serialization::Range(m_ropeParams.friction, 0.0f, 1000.0f, 0.0f, 2.0f, 0.1f), "friction", "Friction");
 		ar(m_ropeParams.wind, "wind", "Wind");
-		ar(m_ropeParams.windVariance, "wind_var", "Wind Variation");
+		ar(Serialization::Range(m_ropeParams.windVariance, 0.0f, 100.0f, 0.0f, 1.0f, 0.1f), "wind_var", "Wind Variation");
 		ar(m_ropeParams.airResistance, "air_res", "Air Resistance");
 		ar(m_ropeParams.waterResistance, "water_res", "Water Resistance");
 
@@ -465,16 +464,16 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 
 	if (ar.openBlock("physics_advanced", "Advanced Physics"))
 	{
-		ar(m_ropeParams.mass, "mass", "Mass");
-		ar(m_ropeParams.frictionPull, "friction_pull", "Friction Pull");
+		ar(Serialization::Range(m_ropeParams.mass, 0.0f, 10000.0f, 0.0f, 100.0f, 0.1f), "mass", "Mass");
+		ar(Serialization::Range(m_ropeParams.frictionPull, 0.0f, 1000.0f, 0.0f, 2.0f, 0.1f), "friction_pull", "Friction Pull");
 		ar(m_ropeParams.maxForce, "max_force", "Max Force");
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_Awake, "awake", "Awake");
-		ar(m_ropeParams.nMaxIters, "solver_iter", "Solver Iterations");
-		ar(m_ropeParams.maxTimeStep, "max_timestep", "Max Timestep");
-		ar(m_ropeParams.stiffness, "stiffness", "Stiffness");
-		ar(m_ropeParams.hardness, "hardness", "Contact Hardness");
-		ar(m_ropeParams.damping, "damping", "Damping");
-		ar(m_ropeParams.sleepSpeed, "sleep_speed", "Sleep Speed");
+		ar(Serialization::Range(m_ropeParams.nMaxIters, 0, 100000, 1, 1000, 100), "solver_iter", "Solver Iterations");
+		ar(Serialization::Range(m_ropeParams.maxTimeStep, 0.001f, 1.0f, 0.001f, 0.1f, 0.01f), "max_timestep", "Max Timestep");
+		ar(Serialization::Range(m_ropeParams.stiffness, 0.0f, 1000.0f, 0.0f, 100.0f, 1.0f), "stiffness", "Stiffness");
+		ar(Serialization::Range(m_ropeParams.hardness, 0.0f, 1000.0f, 0.0f, 100.0f, 1.0f), "hardness", "Contact Hardness");
+		ar(Serialization::Range(m_ropeParams.damping, 0.0f, 100.0f, 0.0f, 10.0f, 0.1f), "damping", "Damping");
+		ar(Serialization::Range(m_ropeParams.sleepSpeed, 0.0f, 100.0f, 0.0f, 0.5f, 0.01f), "sleep_speed", "Sleep Speed");
 
 		ar.closeBlock();
 	}
@@ -483,7 +482,7 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 	{
 		ar(Serialization::AudioTrigger(m_ropeAudioData.startTriggerName), "start_trigger_name", "Start Trigger");
 		ar(Serialization::AudioTrigger(m_ropeAudioData.stopTriggerName), "stop_trigger_name", "Stop Trigger");
-		ar(Serialization::AudioRTPC(m_ropeAudioData.angleParameterName), "angle_parameter_name", "Angle Parameter");
+		ar(Serialization::AudioParameter(m_ropeAudioData.angleParameterName), "angle_parameter_name", "Angle Parameter");
 		ar(m_ropeAudioData.occlusionType, "OcclusionType", "Occlusion Type");
 		ar(Serialization::Range(m_ropeAudioData.segementToAttachTo, 1, m_ropeParams.nPhysSegments), "segment", "Segment");
 		ar(Serialization::Range(m_ropeAudioData.offset, 0.0f, 1.0f), "pos_offset", "Position Offset");
@@ -512,7 +511,6 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::OnEvent(ObjectEvent event)
 {
 	__super::OnEvent(event);
@@ -538,6 +536,9 @@ void CRopeObject::OnEvent(ObjectEvent event)
 		m_bAreaModified = true;
 		UpdateGameArea();
 		break;
+	case EVENT_PHYSICS_GETSTATE: case EVENT_PHYSICS_RESETSTATE: case EVENT_PHYSICS_APPLYSTATE:
+		CEntityObject::OnEvent(event);
+		break;
 	}
 }
 
@@ -548,7 +549,6 @@ void CRopeObject::Reload(bool bReloadScript)
 	UpdateGameArea();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::Serialize(CObjectArchive& ar)
 {
 	if (ar.bLoading)
@@ -587,7 +587,7 @@ void CRopeObject::Serialize(CObjectArchive& ar)
 			xmlNodeAudio->setAttr("StartTrigger", m_ropeAudioData.startTriggerName);
 			xmlNodeAudio->setAttr("StopTrigger", m_ropeAudioData.stopTriggerName);
 			xmlNodeAudio->setAttr("AngleParameter", m_ropeAudioData.angleParameterName);
-			xmlNodeAudio->setAttr("OcclusionType", IntegralValue(m_ropeAudioData.occlusionType));
+			xmlNodeAudio->setAttr("OcclusionType", static_cast<std::underlying_type<CryAudio::EOcclusionType>::type>(m_ropeAudioData.occlusionType));
 			xmlNodeAudio->setAttr("SegmentToAttachTo", m_ropeAudioData.segementToAttachTo);
 			xmlNodeAudio->setAttr("Offset", m_ropeAudioData.offset);
 		}
@@ -596,13 +596,11 @@ void CRopeObject::Serialize(CObjectArchive& ar)
 	__super::Serialize(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::PostLoad(CObjectArchive& ar)
 {
 	__super::PostLoad(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	XmlNodeRef objNode = __super::Export(levelPath, xmlNode);
@@ -616,7 +614,6 @@ XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 		// Export Points
 		if (!m_points.empty())
 		{
-			const Matrix34& wtm = GetWorldTM();
 			XmlNodeRef points = xmlNodeRope->newChild("Points");
 
 			for (auto const& point : m_points)
@@ -632,7 +629,7 @@ XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 			xmlNodeAudio->setAttr("StartTrigger", m_ropeAudioData.startTriggerName);
 			xmlNodeAudio->setAttr("StopTrigger", m_ropeAudioData.stopTriggerName);
 			xmlNodeAudio->setAttr("AngleParameter", m_ropeAudioData.angleParameterName);
-			xmlNodeAudio->setAttr("OcclusionType", IntegralValue(m_ropeAudioData.occlusionType));
+			xmlNodeAudio->setAttr("OcclusionType", static_cast<std::underlying_type<CryAudio::EOcclusionType>::type>(m_ropeAudioData.occlusionType));
 			xmlNodeAudio->setAttr("SegmentToAttachTo", m_ropeAudioData.segementToAttachTo);
 			xmlNodeAudio->setAttr("Offset", m_ropeAudioData.offset);
 		}
@@ -641,7 +638,6 @@ XmlNodeRef CRopeObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 	return objNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IRopeRenderNode* CRopeObject::GetRenderNode() const
 {
 	if (m_pEntity != nullptr)
@@ -657,7 +653,6 @@ IRopeRenderNode* CRopeObject::GetRenderNode() const
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::CalcBBox()
 {
 	if (m_points.size() < 2)
@@ -706,7 +701,6 @@ void CRopeObject::CalcBBox()
 	m_lowestHeight = box.min.z;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::SetSelected(bool bSelect)
 {
 	if (IsSelected() && !bSelect && GetPointCount() > 1)
@@ -716,7 +710,6 @@ void CRopeObject::SetSelected(bool bSelect)
 	__super::SetSelected(bSelect);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CRopeObject::UpdateAudioData()
 {
 	IRopeRenderNode* const pIRopeRenderNode = GetRenderNode();
@@ -735,4 +728,3 @@ void CRopeObject::UpdateAudioData()
 		pIRopeRenderNode->SetAudioParams(audioParams);
 	}
 }
-

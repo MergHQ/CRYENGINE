@@ -97,9 +97,6 @@ void CExactPositioningTrigger::Update( float frameTime, Vec3 userPos, Quat userO
 			m_sideTime -= frameTime;
 	}
 
-	Vec3 curDir = userOrient.GetColumn1();
-	Vec3 wantDir = m_orient.GetColumn1();
-
 	if (m_state == eS_Before)
 	{
 		OBB triggerBox;
@@ -112,7 +109,7 @@ void CExactPositioningTrigger::Update( float frameTime, Vec3 userPos, Quat userO
 	{
 #ifdef INCLUDE_EXACTPOS_DEBUGGING
 		bool debug = (CAnimationGraphCVars::Get().m_debugExactPos != 0);
-		CPersistantDebug* pPD = CCryAction::GetCryAction()->GetPersistantDebug();
+		CPersistantDebug* pPD = gEnv->pGameFramework->GetPersistantDebug();
 #endif
 
 		Vec3 bump(0.0f, 0.0f, 0.1f);
@@ -122,10 +119,10 @@ void CExactPositioningTrigger::Update( float frameTime, Vec3 userPos, Quat userO
 			posDistanceError.z = 0;
 
 		Vec3 orientFwd = m_orient.GetColumn1(); orientFwd.z = 0.0f; orientFwd.Normalize();
-		Vec3 rotAnimMovementWanted = orientFwd * m_animMovementLength;
+		//Vec3 rotAnimMovementWanted = orientFwd * m_animMovementLength;
 
 		Vec3 userFwd = m_userOrient.GetColumn1(); userFwd.z = 0.0f; userFwd.Normalize();
-		Vec3 rotAnimMovementUser = userFwd * m_animMovementLength;
+		//Vec3 rotAnimMovementUser = userFwd * m_animMovementLength;
 
 		float cosRotError = orientFwd.Dot( userFwd );
 		float rotError = CLAMP(m_cosOrientTolerance - cosRotError, 0.0f, 1.0f);

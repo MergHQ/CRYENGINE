@@ -2,24 +2,19 @@
 
 #include "StdAfx.h"
 #include "Helper.h"
-#include "Objects/DesignerObject.h"
-#include "Objects/PrefabObject.h"
-#include "Model.h"
-#include "Polygon.h"
-#include "BSPTree2D.h"
+
+#include "Core/BSPTree2D.h"
+#include "Core/PolygonDecomposer.h"
+#include "Core/UVIslandManager.h"
 #include "Objects/AreaSolidObject.h"
 #include "Objects/ClipVolumeObject.h"
-#include "DesignerEditor.h"
-#include "Viewport.h"
-#include "Core/PolygonDecomposer.h"
-#include "Util/ElementSet.h"
-#include "Core/UVIslandManager.h"
-#include "Core/SmoothingGroupManager.h"
-#include "Material/Material.h"
-#include "DesignerSession.h"
-#include "DesignerEditor.h"
+#include "Objects/DesignerObject.h"
 #include "Tools/AreaSolidTool.h"
 #include "Tools/ClipVolumeTool.h"
+
+#include <Material/Material.h>
+
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -134,7 +129,7 @@ bool GenerateGameFilename(CBaseObject* pObj, string& outFileName)
 	return false;
 }
 
-bool GetRenderFlag(CBaseObject* pObj, int& outRenderFlag)
+bool GetRenderFlag(CBaseObject* pObj, uint64& outRenderFlag)
 {
 	if (pObj == NULL)
 		return false;
@@ -227,29 +222,31 @@ void RemovePolygonWithoutSpecificFlagsFromList(std::vector<PolygonPtr>& polygonL
 
 void SwitchToDesignerToolForObject(CBaseObject * pObj)
 {
-	if(pObj)
+	CLevelEditorSharedState* pLevelEditor = GetIEditor()->GetLevelEditorSharedState();
+
+	if (pObj)
 	{
-		CEditTool* pEditor = GetIEditor()->GetEditTool();
+		CEditTool* pEditTool = pLevelEditor->GetEditTool();
 
 		if (pObj->IsKindOf(RUNTIME_CLASS(DesignerObject)))
 		{
-			if (!pEditor || pEditor->GetRuntimeClass() != RUNTIME_CLASS(DesignerEditor))
-				GetIEditor()->SetEditTool("EditTool.DesignerEditor", false);
+			if (!pEditTool || pEditTool->GetRuntimeClass() != RUNTIME_CLASS(DesignerEditor))
+				pLevelEditor->SetEditTool("EditTool.DesignerEditor", false);
 		}
 		else if (pObj->IsKindOf(RUNTIME_CLASS(AreaSolidObject)))
 		{
-			if (!pEditor || pEditor->GetRuntimeClass() != RUNTIME_CLASS(AreaSolidTool))
-				GetIEditor()->SetEditTool("EditTool.AreaSolidTool", false);
+			if (!pEditTool || pEditTool->GetRuntimeClass() != RUNTIME_CLASS(AreaSolidTool))
+				GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.AreaSolidTool", false);
 		}
 		else if (pObj->IsKindOf(RUNTIME_CLASS(ClipVolumeObject)))
 		{
-			if (!pEditor || pEditor->GetRuntimeClass() != RUNTIME_CLASS(ClipVolumeTool))
-				GetIEditor()->SetEditTool("EditTool.ClipVolumeTool", false);
+			if (!pEditTool || pEditTool->GetRuntimeClass() != RUNTIME_CLASS(ClipVolumeTool))
+				pLevelEditor->SetEditTool("EditTool.ClipVolumeTool", false);
 		}
 	}
 	else
 	{
-		GetIEditor()->SetEditTool("EditTool.DesignerEditor", false);
+		pLevelEditor->SetEditTool("EditTool.DesignerEditor", false);
 	}
 }
 
@@ -904,4 +901,3 @@ int AddVertex(std::vector<Vertex>& vertices, const Vertex& newVertex)
 	return vertices.size() - 1;
 }
 }
-

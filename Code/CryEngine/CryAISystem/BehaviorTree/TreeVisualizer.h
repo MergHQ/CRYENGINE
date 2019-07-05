@@ -7,7 +7,7 @@
 
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 
-#ifdef USING_BEHAVIOR_TREE_VISUALIZER
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 namespace BehaviorTree
 {
 class TreeVisualizer
@@ -19,14 +19,10 @@ public:
 	  const DebugTree& tree
 	  , const char* behaviorTreeName
 	  , const char* agentName
-	#ifdef USING_BEHAVIOR_TREE_LOG
 	  , const MessageQueue& behaviorLog
-	#endif // USING_BEHAVIOR_TREE_LOG
 	  , const TimestampCollection& timestampCollection
 	  , const Blackboard& blackboard
-	#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
 	  , const MessageQueue& eventsLog
-	#endif // USING_BEHAVIOR_TREE_EVENT_DEBUGGING
 	  );
 
 private:
@@ -35,19 +31,11 @@ private:
 
 	void DrawNode(const DebugNode& node, const uint32 depth);
 
-	#ifdef USING_BEHAVIOR_TREE_LOG
 	void DrawBehaviorLog(const MessageQueue& behaviorLog);
-	#endif // USING_BEHAVIOR_TREE_LOG
 
-	#ifdef USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
 	void DrawTimestampCollection(const TimestampCollection& timestampCollection);
-	#endif // USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
-
 	void DrawBlackboard(const Blackboard& blackboard);
-
-	#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
 	void DrawEventLog(const MessageQueue& eventsLog);
-	#endif // USING_BEHAVIOR_TREE_EVENT_DEBUGGING
 
 	const UpdateContext& m_updateContext;
 	float                m_currentLinePositionX;
@@ -116,7 +104,7 @@ public:
 private:
 	void CollectTreeNodeInfo(const DebugNode& debugNode, const UpdateContext& updateContext, TreeNode& outNode);
 	void CollectVariablesInfo(const BehaviorTreeInstance& instance);
-	void CollectTimeStamps(const BehaviorTreeInstance& instance);
+	void CollectTimeStamps(const BehaviorTreeInstance& instance, const UpdateContext& updateContext);
 	void CollectEventsLog(const BehaviorTreeInstance& instance);
 	void CollectExecutionErrorInfo(const DebugTree& debugTree);
 
@@ -124,6 +112,6 @@ private:
 	Data m_data;
 };
 }
-#endif // USING_BEHAVIOR_TREE_VISUALIZER
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 #endif // TreeVisualizer_h

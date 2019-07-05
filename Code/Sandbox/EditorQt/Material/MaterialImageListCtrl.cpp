@@ -2,8 +2,10 @@
 
 #include "StdAfx.h"
 #include "MaterialImageListCtrl.h"
+
+#include "IEditorImpl.h"
 #include "MaterialManager.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 
 #define ME_BG_TEXTURE "%EDITOR%/Materials/Stripes.dds"
 
@@ -165,7 +167,7 @@ void CMaterialImageListCtrl::OnUpdateItem(CImageListCtrlItem* pItem)
 
 		if (!(pMtlItem->pMaterial->GetFlags() & MTL_FLAG_NOPREVIEW) || bTerrain)
 		{
-			if (!m_renderCtrl.GetObject())
+			if (!m_renderCtrl.GetObject_())
 				LoadModel();
 
 			m_renderCtrl.MoveWindow(pItem->rect);
@@ -468,4 +470,3 @@ void CMaterialImageListCtrl::CalcLayout(bool bUpdateScrollBar /*=true */)
 
 	bNoRecurse = false;
 }
-

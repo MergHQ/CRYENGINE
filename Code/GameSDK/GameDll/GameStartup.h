@@ -6,16 +6,6 @@
 #include <CryGame/IGameStartup.h>
 #include <CrySystem/IWindowMessageHandler.h>
 
-#if defined(CVARS_WHITELIST)
-class CCVarsWhiteList : public ICVarsWhitelist
-{
-public:
-	// ICVarsWhiteList
-	bool IsWhiteListed(const string& command, bool silent);
-	// ~ICVarsWhiteList
-};
-#endif // defined(CVARS_WHITELIST)
-
 class GameStartupErrorObserver : public IErrorObserver
 {
 public:
@@ -49,7 +39,7 @@ private:
 	static void FullScreenCVarChanged(ICVar* pVar);
 
 #if CRY_PLATFORM_WINDOWS
-	bool HandleMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
+	bool HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
 #endif
 
 	IGame*                   m_pGame;

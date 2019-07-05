@@ -30,7 +30,6 @@
 
 #include "IEditor.h"
 
-#include "Settings.h"
 #include "LogFile.h"
 
 #include "EditorCommon.h"
@@ -51,9 +50,8 @@
 #include "Objects/BaseObject.h"
 
 #include "IDisplayViewport.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 
 #include "Core/Declaration.h"
 #include "Core/Common.h"
 #include "Util/DesignerSettings.h"
-

@@ -17,6 +17,7 @@
 
 #include "MaterialEffects.h"
 #include "MaterialFGManager.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 CMaterialEffectsCVars* CMaterialEffectsCVars::s_pThis = 0;
 
@@ -46,7 +47,7 @@ void MFXReload(IConsoleCmdArgs* pArgs)
 
 CMaterialEffectsCVars::CMaterialEffectsCVars()
 {
-	assert(s_pThis == 0);
+	CRY_ASSERT(s_pThis == 0);
 	s_pThis = this;
 
 	REGISTER_CVAR(mfx_ParticleImpactThresh, 2.0f, VF_CHEAT, "Impact threshold for particle effects. Default: 2.0");
@@ -73,11 +74,12 @@ CMaterialEffectsCVars::CMaterialEffectsCVars()
 
 CMaterialEffectsCVars::~CMaterialEffectsCVars()
 {
-	assert(s_pThis != 0);
+	CRY_ASSERT(s_pThis != 0);
 	s_pThis = 0;
 
 	IConsole* pConsole = gEnv->pConsole;
 
+	pConsole->RemoveCommand("mfx_ReloadFGEffects");
 	pConsole->RemoveCommand("mfx_Reload");
 	pConsole->RemoveCommand("mfx_ReloadHUDEffects");
 
@@ -87,6 +89,7 @@ CMaterialEffectsCVars::~CMaterialEffectsCVars()
 	pConsole->UnregisterVariable("mfx_Debug", true);
 	pConsole->UnregisterVariable("mfx_DebugVisual", true);
 	pConsole->UnregisterVariable("mfx_DebugVisualFilter", true);
+	pConsole->UnregisterVariable("mfx_DebugFlowGraphFX", true);
 	pConsole->UnregisterVariable("mfx_Enable", true);
 	pConsole->UnregisterVariable("mfx_pfx_minScale", true);
 	pConsole->UnregisterVariable("mfx_pfx_maxScale", true);

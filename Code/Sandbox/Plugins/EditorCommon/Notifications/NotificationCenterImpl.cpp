@@ -4,8 +4,11 @@
 
 #include "NotificationCenterImpl.h"
 #include "QtUtil.h"
+#include <IEditor.h>
 
 #include <CrySystem/ICryLink.h>
+#include <CrySystem/ISystem.h>
+#include <QRegularExpression>
 
 SNotificationPreferences gNotificationPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SNotificationPreferences, &gNotificationPreferences)
@@ -99,7 +102,7 @@ int CNotificationCenter::AddNotification(Internal::CNotification* pNotification)
 		// for every command link
 		for (const QString& commandLink : regExpMatch.capturedTexts())
 		{
-			CryLinkService::CCryLink link(commandLink.toLocal8Bit());
+			CryLinkService::CCryLink link(commandLink.toLocal8Bit().constData());
 			for (auto query : link.GetQueries())
 				commands.push_back(QtUtil::ToQString(query.second));
 		}
@@ -128,4 +131,3 @@ int CNotificationCenter::AddNotification(Internal::CNotification::Type type, con
 {
 	return AddNotification(new Internal::CNotification(type, title, message));
 }
-

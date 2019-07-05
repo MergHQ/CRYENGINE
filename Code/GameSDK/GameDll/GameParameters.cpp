@@ -13,6 +13,7 @@
 #include "WeaponSharedParams.h"
 #include "ItemResourceCache.h"
 #include "FireModeParams.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 CGameSharedParametersStorage::CGameSharedParametersStorage()
 : m_pItemResourceCache(NULL)

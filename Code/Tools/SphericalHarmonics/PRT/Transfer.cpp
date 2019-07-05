@@ -73,8 +73,10 @@ void NSH::NTransfer::CInterreflectionTransfer::PrepareVectors
 
 void NSH::NTransfer::CInterreflectionTransfer::FreeMemory()
 {
-	m_IntersectionInfo.swap(TIntersectionsInfo());
-	m_HSVertexCounter.swap(THemisphereCountInfo());
+	TIntersectionsInfo intersectionsInfo;
+	THemisphereCountInfo countInfo;
+	m_IntersectionInfo.swap(intersectionsInfo);
+	m_HSVertexCounter.swap(countInfo);
 }
 
 void NSH::NTransfer::CInterreflectionTransfer::InitializeVISCache(const SDescriptor& crSHDescriptor)
@@ -403,7 +405,6 @@ void NSH::NTransfer::CInterreflectionTransfer::ComputeDirectPass
 		const CSimpleIndexedMesh& crMesh = *(crMeshes[mesh]);
 		TScalarCoeffVec& rCoeffsDirect		= m_DirectCoefficients[mesh];
 		THemispherePerMeshCountInfo& rMeshVertexCounter = m_HSVertexCounter[mesh];
-		TRayCacheVecVec& rIntersectionInfo = m_IntersectionInfo[mesh];
 
 		GetSHLog().LogTime();
 		GetSHLog().Log("computing direct pass: ");
@@ -583,7 +584,7 @@ void NSH::NTransfer::CInterreflectionTransfer::ComputeDirectPassMultipleThreadin
 	for(std::vector<TRayResultVec, CSHAllocator<TRayResultVec> >::iterator rayIter = threadRayResults.begin(); rayIter != cThreadEnd; ++rayIter)
 		(*rayIter).reserve(50);//reserve for 50 hits for each thread
 	//clone configurators for processing ray casting results
-	std::vector<ITransferConfiguratorPtr, CSHAllocator<> > threadConfigurators(crParameters.rayCastingThreads);	
+	std::vector<ITransferConfiguratorPtr, CSHAllocator<ITransferConfiguratorPtr> > threadConfigurators(crParameters.rayCastingThreads);	
 	for(int i=0; i<crParameters.rayCastingThreads; ++i)
 		threadConfigurators[i] = crConfigurator.Clone();
 
@@ -760,7 +761,8 @@ void NSH::NTransfer::CInterreflectionTransfer::ComputeDirectPassMultipleThreadin
 				m_State.overallVertexIndex++;
 			}//vertices
 			//free some memory
-			rRayQueries.swap(TThreadRayVertexQueryVec());
+			TThreadRayVertexQueryVec rayVertexQueryVec;
+			rRayQueries.swap(rayVertexQueryVec);
 		}//threads
 		Notify();//update observers 
 		m_State.meshIndex++;//next mesh
@@ -848,7 +850,6 @@ DWORD WINAPI NSH::NTransfer::CInterreflectionTransfer::RayCastingThread(LPVOID p
 			rContinueLoop = true;
 			rApplyTransparency = false;
 
-			bool firstElement = true;
 			if(cHasTransparentMats && crParameters.supportTransparency)
 			{
 				const TCartesianCoord& crSampleDir = crSample.GetCartesianPos();

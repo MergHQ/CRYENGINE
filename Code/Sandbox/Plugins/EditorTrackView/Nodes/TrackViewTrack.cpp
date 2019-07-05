@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "TrackViewTrack.h"
 #include "TrackViewAnimNode.h"
@@ -14,6 +11,41 @@
 
 namespace
 {
+using SAnimKeysIndicesByIndex = CTrackViewTrack::SAnimKeysIndicesByIndex;
+
+class CSelectedKeysSerializationTracker
+{
+	using AnimKeyWrapperByIndex = std::vector<_smart_ptr<IAnimKeyWrapper>>;
+
+public:
+	CSelectedKeysSerializationTracker(CTrackViewTrack& track, SAnimKeysIndicesByIndex& selectedKeysIndicesByIndex, bool bLoading)
+		: m_track(track)
+		, m_bLoading(bLoading)
+		, m_selectedKeysIndicesByIndex(selectedKeysIndicesByIndex)
+	{
+	}
+
+	~CSelectedKeysSerializationTracker()
+	{
+		if (m_bLoading)
+		{
+			CTrackViewKeyBundle bundle = m_track.GetAllKeys();
+			bundle.SelectKeys(false);
+
+			for (auto index : m_selectedKeysIndicesByIndex)
+			{
+				bundle.GetKey(index).Select(true);
+			}
+		}
+	}
+
+private:
+	bool                     m_bLoading;
+
+	CTrackViewTrack&         m_track;
+	SAnimKeysIndicesByIndex& m_selectedKeysIndicesByIndex;
+};
+
 float PreferShortestRotPath(float degree, float degree0)
 {
 	// Assumes the degree is in (-PI, PI).
@@ -150,7 +182,6 @@ CTrackViewKeyHandle CTrackViewTrack::GetNextKey(const SAnimTime time)
 
 	const SAnimTime startTime = time;
 	SAnimTime closestTime = SAnimTime::Max();
-	bool bFoundKey = false;
 
 	const int numKeys = m_pAnimTrack->GetNumKeys();
 	for (int i = 0; i < numKeys; ++i)
@@ -255,6 +286,13 @@ void CTrackViewTrack::ClearKeys()
 {
 	assert(CUndo::IsRecording());
 	m_pAnimTrack->ClearKeys();
+	
+	const size_t count = m_keySelectionStates.size();
+	for (size_t i = 0; i < count; ++i)
+	{
+		m_keySelectionStates[i] = false;
+	}
+
 	GetSequence()->OnNodeChanged(this, ITrackViewSequenceListener::eNodeChangeType_KeysChanged);
 }
 
@@ -432,90 +470,65 @@ void CTrackViewTrack::RemoveKey(const int index)
 	GetSequence()->OnNodeChanged(this, ITrackViewSequenceListener::eNodeChangeType_KeysChanged);
 }
 
-void CTrackViewTrack::GetSelectedKeysTimes(std::vector<SAnimTime>& selectedKeysTimes)
+void CTrackViewTrack::GetSelectedKeysIndices(SAnimKeysIndicesByIndex& selectedKeysIndices)
 {
 	const int keyCount = m_pAnimTrack->GetNumKeys();
 	for (int keyIndex = 0; keyIndex < keyCount; ++keyIndex)
 	{
-		const SAnimTime keyTime = m_pAnimTrack->GetKeyTime(keyIndex);
 		if (IsKeySelected(keyIndex))
 		{
-			selectedKeysTimes.push_back(keyTime);
+			selectedKeysIndices.push_back(keyIndex);
 		}
 	}
 }
 
-void CTrackViewTrack::SelectKeysByAnimTimes(const std::vector<SAnimTime>& selectedKeys)
-{
-	CTrackViewKeyBundle allKeys = GetAllKeys();
-	allKeys.SelectKeys(false);
-
-	for (size_t i = 0; i < allKeys.GetKeyCount(); i++)
-	{
-		CTrackViewKeyHandle keyHandle = allKeys.GetKey(i);
-		bool found = (std::find(selectedKeys.begin(), selectedKeys.end(), keyHandle.GetTime()) != selectedKeys.end());
-		if (found)
-		{
-			keyHandle.Select(true);
-		}
-	}
-}
-
-void CTrackViewTrack::SerializeSelectedKeys(XmlNodeRef& xmlNode, bool bLoading, SerializationCallback callback, const SAnimTime time, size_t index, SAnimTimeVector keysTimes)
+void CTrackViewTrack::SerializeSelectedKeys(XmlNodeRef& xmlNode, bool bLoading, const SAnimTime time, size_t index)
 {
 	if (m_bIsCompoundTrack)
 	{
 		for (auto& node : m_childNodes)
 		{
-			index++;
-			static_cast<CTrackViewTrack*>(node.get())->SerializeSelectedKeys(xmlNode, bLoading, callback, time, index, keysTimes);
+			CTrackViewTrack* pTrack = static_cast<CTrackViewTrack*>(node.get());
+			pTrack->SerializeSelectedKeys(xmlNode, bLoading, time, ++index);
 		}
-		
-		callback(keysTimes);
 	}
 	else
 	{
 		XmlNodeRef subTrackNode;
-		SAnimTimeVector selectedKeys;
+		SAnimKeysIndicesByIndex selectedKeysIndicesByIndex;
 
-		if (bLoading)
-		{
-			selectedKeys.reserve(xmlNode->getChildCount());
-		}
-		else
-		{
-			GetSelectedKeysTimes(selectedKeys);
-		}
+		if (bLoading == false)
+			GetSelectedKeysIndices(selectedKeysIndicesByIndex);
 
 		if (bLoading)
 		{
 			if (index)
-			{
 				subTrackNode = xmlNode->getChild(index-1);
-			}
 			else
-			{
 				subTrackNode = xmlNode;
-			}
 		}
 		else
 		{
 			if (index)
-			{
 				subTrackNode = xmlNode->newChild("NewSubTrack");
-			}
 			else
-			{
 				subTrackNode = xmlNode;
-			}
 		}
 
 		if (subTrackNode.isValid())
 		{
-			m_pAnimTrack->SerializeKeys(subTrackNode, bLoading, selectedKeys, time);
-		}		
-		
-		keysTimes.insert(keysTimes.end(), selectedKeys.begin(), selectedKeys.end());
+			// We need to "reserve" memory here, because m_pAnimTrack implementation is in the other DLL and m_pAnimTrack->SerializeKeys()
+			// it is changing the contents of the "selectedKeysIndicesByIndex". So we are getting a situation here when memory is allocated in one DLL and
+			// then deallocated in the other one.
+			if (bLoading)
+				selectedKeysIndicesByIndex.reserve(subTrackNode->getChildCount());
+
+			CSelectedKeysSerializationTracker tracker(*this, selectedKeysIndicesByIndex, bLoading);
+			m_pAnimTrack->SerializeKeys(subTrackNode, bLoading, selectedKeysIndicesByIndex, time);
+			
+			if (bLoading)
+				m_keySelectionStates.resize(m_pAnimTrack->GetNumKeys());
+		}
 	}
 }
 
@@ -609,7 +622,8 @@ void CTrackViewTrack::CopyKeysToClipboard(XmlNodeRef& xmlNode, const bool bOnlyS
 			return;
 		}
 
-		SerializeSelectedKeys(trackXML, false, [this](SAnimTimeVector&) { GetAllKeys().SelectKeys(false); });
+		SerializeSelectedKeys(trackXML, false);
+		GetAllKeys().SelectKeys(false);
 	}
 	else
 	{
@@ -625,8 +639,8 @@ void CTrackViewTrack::PasteKeys(XmlNodeRef xmlNode, const SAnimTime time)
 
 	CTrackViewSequence* pSequence = GetSequence();
 
-	CUndo::Record(new CUndoTrackObject(this, pSequence != nullptr));
-	SerializeSelectedKeys(xmlNode, true, [this](SAnimTimeVector& selectedKeysTimes) { SelectKeysByAnimTimes(selectedKeysTimes); }, time);
+	CUndo::Record(new CUndoTrackObject(this, pSequence != nullptr));	
+	SerializeSelectedKeys(xmlNode, true, time);
 	CUndo::Record(new CUndoAnimKeySelection(pSequence));
 
 	GetSequence()->OnNodeChanged(this, ITrackViewSequenceListener::eNodeChangeType_KeysChanged);

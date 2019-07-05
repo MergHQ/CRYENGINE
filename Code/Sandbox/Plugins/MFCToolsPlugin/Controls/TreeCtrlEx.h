@@ -1,13 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-
+#include "MFCToolsDefines.h"
 #define UTVN_ENDDRAG (TVN_FIRST - 70)
 
 /** CTreeCtrlEx is an extended version of CTreeCtrl,
     It allows Drag&Drop and copying of items.
  */
-class PLUGIN_API CTreeCtrlEx : public CTreeCtrl
+class MFC_TOOLS_PLUGIN_API CTreeCtrlEx : public CTreeCtrl
 {
 	DECLARE_DYNAMIC(CTreeCtrlEx)
 
@@ -83,4 +83,3 @@ protected:
 	bool        m_bNoDrag;
 	UINT        m_nDropHitTestFlags;
 };
-

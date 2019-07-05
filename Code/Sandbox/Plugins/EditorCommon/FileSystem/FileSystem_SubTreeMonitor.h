@@ -5,8 +5,6 @@
 #include "FileSystem_FileMonitor.h"
 #include "FileSystem_Directory.h"
 
-#include <QMetaType>
-
 #include <memory>
 
 namespace FileSystem
@@ -16,7 +14,8 @@ namespace Internal
 class CWorkerApi;
 } // namespace Internal
 
-class ISubTreeMonitor;
+struct ISubTreeMonitor;
+
 typedef std::shared_ptr<ISubTreeMonitor> SubTreeMonitorPtr;
 
 struct SSubTreeChange
@@ -44,10 +43,11 @@ struct SSubTreeMonitorUpdate
  * - you will receive removes for stuff you never got (ignore those)
  * - update of a directory will be followed by updates for all file and directories inside
  */
-class ISubTreeMonitor
+struct ISubTreeMonitor
 {
 	friend class Internal::CWorkerApi;
 protected:
+	virtual ~ISubTreeMonitor() {}
 	/// \brief called when the monitor is established
 	/// \param the initial snapshot where updates are applied to
 	virtual void Activated(const SnapshotPtr& initialSnapshot) = 0;
@@ -60,4 +60,3 @@ protected:
 
 Q_DECLARE_METATYPE(FileSystem::SubTreeMonitorPtr)
 Q_DECLARE_METATYPE(FileSystem::SSubTreeMonitorUpdate)
-

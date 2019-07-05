@@ -28,11 +28,10 @@
 #include <QPushButton>
 #include <QEvent.h>
 
-#include "ICommandManager.h"
+#include <Commands/ICommandManager.h>
 #include "GameEngine.h"
 #include "RenderViewport.h"
 #include "Viewmanager.h"
-
 
 Q_DECLARE_METATYPE(IAnimSequence*)
 
@@ -1293,8 +1292,7 @@ void CTrackViewBatchRenderDlg::InitializeRenderContext()
 		CRenderViewport* pGameViewport = (CRenderViewport*)GetIEditor()->GetViewManager()->GetGameViewport();
 		if (pGameViewport)
 		{
-			auto displayContext = pGameViewport->GetDisplayContext();
-			m_displayContextKey = displayContext.GetDisplayContextKey();
+			m_displayContextKey = pGameViewport->GetDisplayContextKey();
 			pGameViewport->GetResolution(m_viewPortResW, m_viewPortResH);
 		}
 		else
@@ -1343,9 +1341,7 @@ void CTrackViewBatchRenderDlg::BegCaptureItem()
 	m_renderContext.captureOptions.m_frameRate = renderItem.fps;
 	m_renderContext.captureOptions.m_timeStep = 1.0f / renderItem.fps;
 	m_renderContext.captureOptions.m_bufferToCapture = static_cast<SCaptureFormatInfo::ECaptureBuffer>(renderItem.bufferIndex);
-
-	cry_strcpy(m_renderContext.captureOptions.m_prefix, renderItem.prefix.c_str());
-
+	m_renderContext.captureOptions.m_prefix = renderItem.prefix;
 	m_renderContext.captureOptions.m_captureFormat = (SCaptureFormatInfo::ECaptureFileFormat)renderItem.formatIndex;
 	m_renderContext.captureOptions.m_time = renderItem.frameRange.start;
 	m_renderContext.captureOptions.m_duration = (renderItem.frameRange.end - renderItem.frameRange.start);
@@ -1376,7 +1372,7 @@ void CTrackViewBatchRenderDlg::BegCaptureItem()
 		finalFolder += suffix;
 		++i;
 	}
-	cry_strcpy(m_renderContext.captureOptions.m_folder, finalFolder.GetString());
+	m_renderContext.captureOptions.m_folder = finalFolder.GetString();
 
 	/// Change the resolution. NOT
 	ICVar* pCVarCustomResWidth = gEnv->pConsole->GetCVar("r_CustomResWidth");
@@ -1421,7 +1417,7 @@ void CTrackViewBatchRenderDlg::EndCaptureItem(IAnimSequence* pSequence)
 	pSequence->SetActiveDirector(m_renderContext.pActiveDirectorBU);
 
 	SRenderItem renderItem = m_renderItems[m_renderContext.currentItemIndex];
-	if(m_renderContext.currentItemIndex==m_renderItems.size()-1)  // after last item, reset viewport.
+	if (m_renderContext.currentItemIndex == m_renderItems.size() - 1)  // after last item, reset viewport.
 		gEnv->pRenderer->ResizeContext(m_displayContextKey, m_viewPortResW, m_viewPortResH);
 
 	if (renderItem.bCreateVideo)
@@ -1429,18 +1425,18 @@ void CTrackViewBatchRenderDlg::EndCaptureItem(IAnimSequence* pSequence)
 		// Create a video using the ffmpeg plug-in from captured images.
 		m_renderContext.bFFMPEGProcessing = true;
 
-		stack_string outputFolder = m_renderContext.captureOptions.m_folder;
+		CryPathString outputFolder = m_renderContext.captureOptions.m_folder;
 
 		Concurrency::single_assignment<bool> bDone;
 		Concurrency::task_group ffmpegTask;
 		ffmpegTask.run(
 		  [&renderItem, &outputFolder, &bDone]
 		{
-			stack_string outputFile = outputFolder;
-			outputFile += "\\";
+			CryPathString outputFile = outputFolder;
+			outputFile += '\\';
 			outputFile += renderItem.prefix;
 
-			stack_string inputFile;
+			CryPathString inputFile;
 			inputFile = outputFile;
 			inputFile += "%06d.jpg";
 
@@ -1649,4 +1645,3 @@ string CTrackViewBatchRenderDlg::GenerateCaptureItemString(const SRenderItem& it
 
 	return itemText;
 }
-

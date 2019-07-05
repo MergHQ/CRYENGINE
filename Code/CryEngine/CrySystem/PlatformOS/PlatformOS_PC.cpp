@@ -35,8 +35,8 @@ IPlatformOS* IPlatformOS::Create(const uint8 createParams)
 }
 
 CPlatformOS_PC::CPlatformOS_PC(const uint8 createParams)
-	: m_listeners(4)
-	, m_fpsWatcher(15.0f, 3.0f, 7.0f)
+	: m_fpsWatcher(15.0f, 3.0f, 7.0f)
+	, m_listeners(4)
 	, m_delayLevelStartIcon(0.0f)
 	, m_bSignedIn(false)
 	, m_bSaving(false)
@@ -92,6 +92,8 @@ void CPlatformOS_PC::OnPlatformEvent(const IPlatformOS::SPlatformEvent& _event)
 			}
 			break;
 		}
+	default:
+		break;
 	}
 }
 
@@ -162,7 +164,6 @@ bool CPlatformOS_PC::DecryptAndCheckSigning(const char* pInData, int inDataLen, 
 	IZLibCompressor* pZLib = GetISystem()->GetIZLibCompressor();
 	TCipher cipher = pNet->BeginCipher(key, 8);         // Use the first 8 bytes of the key as the decryption key
 	char* pOutput = NULL;
-	int outDataLen = 0;
 	bool valid = false;
 
 	if (inDataLen > 16)
@@ -227,7 +228,7 @@ void CPlatformOS_PC::MountDLCContent(IDLCListener* pCallback, unsigned int user,
 	else
 	{
 
-		CryFixedStringT<ICryPak::g_nMaxPath> findPath;
+		CryPathString findPath;
 		findPath.Format("%s/*", dlcDir);
 
 		CryLog("Passing %s to File Finder (dlcDir %s", findPath.c_str(), dlcDir);
@@ -301,7 +302,7 @@ bool CPlatformOS_PC::CanRestartTitle() const
 
 void CPlatformOS_PC::RestartTitle(const char* pTitle)
 {
-	CRY_ASSERT_MESSAGE(CanRestartTitle(), "Restart title not implemented (or previously needed)");
+	CRY_ASSERT(CanRestartTitle(), "Restart title not implemented (or previously needed)");
 }
 
 bool CPlatformOS_PC::UsePlatformSavingAPI() const
@@ -504,7 +505,7 @@ IPlatformOS::EZipExtractFail CPlatformOS_PC::ExtractZips(const char* path)
 
 	//get the path to the DLC install directory
 
-	char userPath[ICryPak::g_nMaxPath];
+	CryPathString userPath;
 	gEnv->pCryPak->AdjustFileName(path, userPath, 0);
 
 	//look for zips
@@ -515,8 +516,8 @@ IPlatformOS::EZipExtractFail CPlatformOS_PC::ExtractZips(const char* path)
 	{
 		do
 		{
-			stack_string filePath;
-			filePath.Format("%s/%s", userPath, fd.name);
+			CryPathString filePath;
+			filePath.Format("%s/%s", userPath.c_str(), fd.name);
 
 			// Skip dirs, only want files, and want them to be zips
 			if ((fd.attrib == _A_SUBDIR) || strstr(fd.name, ".zip") == 0)
@@ -558,7 +559,7 @@ IPlatformOS::EZipExtractFail CPlatformOS_PC::RecurseZipContents(ZipDir::FileEntr
 	ZipDir::FileEntryTree::FileMap::iterator fileEndIt = pSourceDir->GetFileEnd();
 
 	//look for files and output them to disk
-	CryFixedStringT<ICryPak::g_nMaxPath> filePath;
+	CryPathString filePath;
 	for (; fileIt != fileEndIt && retVal == eZEF_Success; ++fileIt)
 	{
 		ZipDir::FileEntry* pFileEntry = pSourceDir->GetFileEntry(fileIt);
@@ -587,7 +588,7 @@ IPlatformOS::EZipExtractFail CPlatformOS_PC::RecurseZipContents(ZipDir::FileEntr
 	ZipDir::FileEntryTree::SubdirMap::iterator dirEndIt = pSourceDir->GetDirEnd();
 
 	//look for deeper directories in the heirarchy
-	CryFixedStringT<ICryPak::g_nMaxPath> dirPath;
+	CryPathString dirPath;
 	for (; dirIt != dirEndIt && retVal == eZEF_Success; ++dirIt)
 	{
 		dirPath.Format("%s/%s", currentPath, pSourceDir->GetDirName(dirIt));
@@ -609,7 +610,7 @@ bool CPlatformOS_PC::SxmlMissingFromHDD(ZipDir::FileEntryTree* pZipRoot, const c
 
 	ZipDir::FileEntryTree::SubdirMap::iterator dirIt = pZipRoot->GetDirBegin();
 	ZipDir::FileEntryTree::SubdirMap::iterator dirEndIt = pZipRoot->GetDirEnd();
-	CryFixedStringT<ICryPak::g_nMaxPath> dirPath;
+	CryPathString dirPath;
 	for (; dirIt != dirEndIt; ++dirIt)
 	{
 		dirPath.Format("%s/%s", userPath, pZipRoot->GetDirName(dirIt));
@@ -621,10 +622,9 @@ bool CPlatformOS_PC::SxmlMissingFromHDD(ZipDir::FileEntryTree* pZipRoot, const c
 		ZipDir::FileEntryTree::FileMap::iterator fileEndIt = pSourceDir->GetFileEnd();
 
 		//look for files
-		CryFixedStringT<ICryPak::g_nMaxPath> filePath;
+		CryPathString filePath;
 		for (; fileIt != fileEndIt; ++fileIt)
 		{
-			ZipDir::FileEntry* pFileEntry = pSourceDir->GetFileEntry(fileIt);
 			const char* pFileName = pSourceDir->GetFileName(fileIt);
 
 			if (strstr(pFileName, ".sxml"))
@@ -655,6 +655,43 @@ bool CPlatformOS_PC::SxmlMissingFromHDD(ZipDir::FileEntryTree* pZipRoot, const c
 	}
 }
 
+void SetTimerResolution(bool setToBackgroundMode)
+	{
+#if CRY_PLATFORM_WINDOWS
+		// Handle system timer resolution
+		// The smaller the resolution, the more accurate a thread will wake up from a suspension 
+		// Example: 
+		// Timer Resolution(1 ms): Sleep(1) -> max thread suspention time 1.99ms
+		// Timer Resolution(15 ms): Sleep(1) -> max thread suspention time 15.99ms
+		//  
+		// This is due to the scheduler running more frequently.
+		// This is a system wide global though which is set to the smallest value requested by a process.
+		// When the process dies it is set back to its original value.
+		static UINT prevTimer = ~0;
+		ICVar* pSystemTimerResolution = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_system_timer_resolution") : NULL;
+		TIMECAPS tc;		
+		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR)
+		{
+			const UINT minTimerRes =  std::min(std::max((UINT)pSystemTimerResolution->GetIVal(), tc.wPeriodMin), tc.wPeriodMax);
+		UINT newTime = setToBackgroundMode ? tc.wPeriodMax : minTimerRes;
+
+		if (newTime != prevTimer)
+		{
+			if (prevTimer != (UINT)~0)
+			{
+				timeEndPeriod(prevTimer);
+			}
+			timeBeginPeriod(newTime);
+			prevTimer = newTime;
+		}
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Warning: System Timer Resolution could not be obtained.");
+		}
+#endif
+}
+
 void CPlatformOS_PC::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 {
 	switch (event)
@@ -667,35 +704,14 @@ void CPlatformOS_PC::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		m_bLevelLoad = false;
 		m_bSaveDuringLevelLoad = true;
 		break;
-	case ESYSTEM_EVENT_CHANGE_FOCUS:
-	{
-#if CRY_PLATFORM_WINDOWS
-		// Handle system timer resolution
-		// The smaller the resolution, the more accurate a thread will wake up from a suspension 
-		// Example: 
-		// Timer Resolution(1 ms): Sleep(1) -> max thread suspention time 1.99ms
-		// Timer Resolution(15 ms): Sleep(1) -> max thread suspention time 15.99ms
-		//  
-		// This is due to the scheduler running more frequently.
-		// This is a system wide global though which is set to the smallest value requested by a process.
-		// When the process dies it is set back to its original value.
-		ICVar* pSystemTimerResolution = gEnv->pConsole ? gEnv->pConsole->GetCVar("sys_system_timer_resolution") : NULL;
-		TIMECAPS tc;		
-		if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) == TIMERR_NOERROR)
-		{
-			const UINT minTimerRes =  std::min(std::max((UINT)pSystemTimerResolution->GetIVal(), tc.wPeriodMin), tc.wPeriodMax);
-
-			// wparam != 0 is focused, wparam == 0 is not focused
-			timeBeginPeriod(wparam != 0 ? minTimerRes : tc.wPeriodMax);
-		}
-		else
-		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Warning: System Timer Resolution could not be obtained.");
-		}
-
+	case ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE:
+		SetTimerResolution(false); // Set timer to minimum period
 		break;
-#endif
-	}
+	case ESYSTEM_EVENT_CHANGE_FOCUS:	
+		SetTimerResolution(wparam == 0);  // wparam != 0 is focused, wparam == 0 is not focused 
+		break;
+	default:
+		break;
 	}
 }
 
@@ -711,6 +727,9 @@ void CPlatformOS_PC::OnActionEvent(const SActionEvent& event)
 	case eAE_inGame:
 		m_bLevelLoad = false;
 		m_fpsWatcher.Reset();
+		break;
+
+	default:
 		break;
 	}
 }
@@ -811,7 +830,7 @@ IPlatformOS::ECDP_Open CPlatformOS_PC::DoesCachePakExist(const char* const filen
 	realFileName.Format("%%USER%%/cache/%s", filename);
 
 	const uint32 fileOpenFlags = ICryPak::FLAGS_NEVER_IN_PAK | ICryPak::FLAGS_PATH_REAL | ICryPak::FOPEN_ONDISK;
-	FILE* const file = gEnv->pCryPak->FOpen(realFileName.c_str(), "rbx", fileOpenFlags);
+	FILE* const file = gEnv->pCryPak->FOpen(realFileName.c_str(), "rb", fileOpenFlags);
 	if (file == NULL)
 	{
 		CryLog("DoesCachePakExist '%s' ERROR file not found '%s'", filename, realFileName.c_str());

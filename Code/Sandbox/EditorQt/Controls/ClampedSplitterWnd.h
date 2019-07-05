@@ -1,26 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __clampedsplitterwnd_h__
-#define __clampedsplitterwnd_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-// CClampedSplitterWnd
+#pragma once
 
 class CClampedSplitterWnd : public CXTSplitterWnd
 {
 	DECLARE_DYNAMIC(CClampedSplitterWnd)
 
 public:
-	CClampedSplitterWnd() {};
-	virtual ~CClampedSplitterWnd() {};
+	CClampedSplitterWnd() {}
+	virtual ~CClampedSplitterWnd() {}
 
 protected:
 	DECLARE_MESSAGE_MAP()
 
-	// Overrides for standard CSplitterWnd behaviour
+	// Overrides for standard CSplitterWnd behavior
 	virtual void TrackRowSize(int y, int row);
 	virtual void TrackColumnSize(int x, int col);
 	virtual void OnSize(UINT nType, int cx, int cy);
@@ -49,6 +42,3 @@ private:
 	// makeBigger: The panel to become bigger
 	void ResizePanels(const int resizeAmount, CRowColInfo& makeSmaller, CRowColInfo& makeBigger);
 };
-
-#endif // __clampedsplitterwnd_h__
-

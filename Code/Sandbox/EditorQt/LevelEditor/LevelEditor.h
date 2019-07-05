@@ -5,25 +5,27 @@
 #include "ILevelEditor.h"
 
 class QMenu;
-class CDockableDialog;
+class CEditorDialog;
+class CLevelExplorer;
+class CQuickAssetBrowser;
+class CTagLocations;
 
 // This is a stub class that is meant to encapsulate all editor logic for the level editor that is currently in CryEdit.
-// Ultimately the level editor will be just another window and all its logic should be encapsulated, while CryEdit should retain global functionnality
+// Ultimately the level editor will be just another window and all its logic should be encapsulated, while CryEdit should retain global functionality
 // Currently the transition will only happen for the parts of the code being changed
 class CLevelEditor : public CEditor, public ILevelEditor, public IAutoEditorNotifyListener
 {
 	Q_OBJECT
+
 public:
 	CLevelEditor();
 	~CLevelEditor();
-
-	virtual void        customEvent(QEvent* pEvent) override;
 
 	void                OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	void                CreateRecentFilesMenu(QMenu* pRecentFilesMenu);
 	virtual const char* GetEditorName() const override { return "Level Editor"; }
 
-	// snapping
+	// Snapping
 	void EnableVertexSnapping(bool bEnable);
 	void EnablePivotSnapping(bool bEnable);
 	void EnableGridSnapping(bool bEnable);
@@ -33,7 +35,6 @@ public:
 	void EnableTerrainSnapping(bool bEnable);
 	void EnableGeometrySnapping(bool bEnable);
 	void EnableSurfaceNormalSnapping(bool bEnable);
-	void EnableHelpersDisplay(bool bEnable);
 
 	bool IsVertexSnappingEnabled() const;
 	bool IsPivotSnappingEnabled() const;
@@ -44,33 +45,38 @@ public:
 	bool IsTerrainSnappingEnabled() const;
 	bool IsGeometrySnappingEnabled() const;
 	bool IsSurfaceNormalSnappingEnabled() const;
-	bool IsHelpersDisplayed() const;
 
 	bool ConvertEditorXmlToLevelAssetType(const string& levelFolder, const char* const szName) const;
 
-	//ILevelEditor.h interface
+	//ILevelEditor interface
 	virtual bool IsLevelLoaded() override;
-	//end ILevelEditor.h
+	//end ILevelEditor
 
 private:
+	void InitActions();
+
 	virtual bool IsOnlyBackend() const override { return true; }
 
-	virtual bool OnNew() override;
-	virtual bool OnOpen() override;
-	virtual bool OnSave() override;
-	virtual bool OnSaveAs() override;
-	virtual bool OnDelete() override;
-	virtual bool OnDuplicate() override;
-
 	virtual bool OnFind() override;
-	virtual bool OnCut() override;
-	virtual bool OnCopy() override;
-	virtual bool OnPaste() override;
 
-	void OnCopyInternal(bool isCut = false);
-	void OnToggleAssetBrowser();
+	bool OnNew();
+	bool OnOpen();
+	bool OnSave();
+	bool OnSaveAs();
+	bool OnDelete();
+	bool OnDuplicate();
 
-	void SaveCryassetFile(const string& levelPath);
+	bool OnCut();
+	bool OnCopy();
+	bool OnPaste();
+	bool OnSelectAll();
+
+	void         OnShowInAssetBrowser(const char* asset);
+
+	void         OnCopyInternal(bool isCut = false);
+	void         OnToggleAssetBrowser();
+
+	void         SaveCryassetFile(const string& levelPath);
 
 Q_SIGNALS:
 	void VertexSnappingEnabled(bool bEnable);
@@ -86,7 +92,9 @@ Q_SIGNALS:
 	void HelpersDisplayEnabled(bool bEnable);
 
 private:
-	CDockableDialog* m_findWindow;
-	CDockableDialog* m_assetBrowser;
+	CLevelExplorer*     m_pLevelExplorer;
+	CEditorDialog*      m_pFindDialog;
+	CQuickAssetBrowser* m_pQuickAssetBrowser;
+	CEditorDialog*      m_pQuickAssetBrowserDialog;
+	CTagLocations*      m_pTagLocations;
 };
-

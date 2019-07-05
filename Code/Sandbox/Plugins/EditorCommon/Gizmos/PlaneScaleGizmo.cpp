@@ -4,17 +4,13 @@
 #include "PlaneScaleGizmo.h"
 #include "IDisplayViewport.h"
 #include "Gizmos/AxisHelper.h"
-#include "Grid.h"
+#include "Preferences/SnappingPreferences.h"
 
 CPlaneScaleGizmo::CPlaneScaleGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
 	, m_scale(1.0f)
 	, m_offsetInner(0.0f)
 	, m_offsetFromCenter(0.0f)
-{
-}
-
-CPlaneScaleGizmo::~CPlaneScaleGizmo()
 {
 }
 
@@ -55,7 +51,7 @@ void CPlaneScaleGizmo::SetOffsetFromCenter(float offset)
 	m_offsetFromCenter = offset;
 }
 
-void CPlaneScaleGizmo::DrawPlane(DisplayContext& dc, Vec3 position)
+void CPlaneScaleGizmo::DrawPlane(SDisplayContext& dc, Vec3 position)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -93,7 +89,7 @@ void CPlaneScaleGizmo::DrawPlane(DisplayContext& dc, Vec3 position)
 	dc.SetState(prevflags);
 }
 
-void CPlaneScaleGizmo::Display(DisplayContext& dc)
+void CPlaneScaleGizmo::Display(SDisplayContext& dc)
 {
 	if (GetFlag(EGIZMO_INTERACTING))
 	{
@@ -110,7 +106,7 @@ void CPlaneScaleGizmo::Display(DisplayContext& dc)
 		string msg;
 		msg.Format("Scale %.1f", m_interactionScale);
 		dc.SetColor(1.0f, 1.0f, 1.0f, 1.0f);
-		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, (LPCSTR)msg, true);
+		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, (LPCSTR)msg, true);
 	}
 
 	if (GetFlag(EGIZMO_HIGHLIGHTED) && !GetFlag(EGIZMO_INTERACTING))
@@ -227,4 +223,3 @@ bool CPlaneScaleGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

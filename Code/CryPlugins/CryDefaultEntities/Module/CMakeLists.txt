@@ -100,6 +100,10 @@ add_sources("CryDefaultEntities_uber_0.cpp"
 		"DefaultComponents/Physics/CharacterControllerComponent.h"
 		"DefaultComponents/Physics/RigidBodyComponent.cpp"
 		"DefaultComponents/Physics/RigidBodyComponent.h"
+		"DefaultComponents/Physics/RagdollComponent.cpp"
+		"DefaultComponents/Physics/RagdollComponent.h"
+		"DefaultComponents/Physics/ParticleComponent.cpp"
+		"DefaultComponents/Physics/ParticleComponent.h"
 		"DefaultComponents/Physics/PhysicsPrimitiveComponent.cpp"
 		"DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
 		"DefaultComponents/Physics/BoxPrimitiveComponent.cpp"
@@ -116,6 +120,12 @@ add_sources("CryDefaultEntities_uber_0.cpp"
 		"DefaultComponents/Physics/AreaComponent.h"
 		"DefaultComponents/Physics/SampleRigidbodyActorComponent.cpp"
 		"DefaultComponents/Physics/SampleRigidbodyActorComponent.h"
+		"DefaultComponents/Physics/LocalGridComponent.cpp"
+		"DefaultComponents/Physics/LocalGridComponent.h"
+		"DefaultComponents/Physics/ClothComponent.cpp"
+		"DefaultComponents/Physics/ClothComponent.h"
+		"DefaultComponents/Physics/WaterVolumeComponent.cpp"
+		"DefaultComponents/Physics/WaterVolumeComponent.h"
 	SOURCE_GROUP "Physics\\\\Vehicles"
 		"DefaultComponents/Physics/Vehicles/VehicleComponent.cpp"
 		"DefaultComponents/Physics/Vehicles/VehicleComponent.h"
@@ -133,20 +143,30 @@ add_sources("CryDefaultEntities_uber_0.cpp"
 	SOURCE_GROUP "Audio"
 		"DefaultComponents/Audio/AreaComponent.cpp"
 		"DefaultComponents/Audio/AreaComponent.h"
+		"DefaultComponents/Audio/DefaultListenerComponent.cpp"
+		"DefaultComponents/Audio/DefaultListenerComponent.h"
+		"DefaultComponents/Audio/DefaultTriggerComponent.cpp"
+		"DefaultComponents/Audio/DefaultTriggerComponent.h"
 		"DefaultComponents/Audio/EnvironmentComponent.cpp"
 		"DefaultComponents/Audio/EnvironmentComponent.h"
 		"DefaultComponents/Audio/ListenerComponent.cpp"
 		"DefaultComponents/Audio/ListenerComponent.h"
+		"DefaultComponents/Audio/MultiListenerComponent.cpp"
+		"DefaultComponents/Audio/MultiListenerComponent.h"
 		"DefaultComponents/Audio/OcclusionComponent.cpp"
 		"DefaultComponents/Audio/OcclusionComponent.h"
 		"DefaultComponents/Audio/ParameterComponent.cpp"
 		"DefaultComponents/Audio/ParameterComponent.h"
 		"DefaultComponents/Audio/PreloadComponent.cpp"
 		"DefaultComponents/Audio/PreloadComponent.h"
-		"DefaultComponents/Audio/SwitchComponent.cpp"
-		"DefaultComponents/Audio/SwitchComponent.h"
+		"DefaultComponents/Audio/SettingComponent.cpp"
+		"DefaultComponents/Audio/SettingComponent.h"
+		"DefaultComponents/Audio/SwitchStateComponent.cpp"
+		"DefaultComponents/Audio/SwitchStateComponent.h"
 		"DefaultComponents/Audio/TriggerComponent.cpp"
 		"DefaultComponents/Audio/TriggerComponent.h"
+		"DefaultComponents/Audio/VelocityComponent.cpp"
+		"DefaultComponents/Audio/VelocityComponent.h"
 	SOURCE_GROUP "Utilities"
 		"DefaultComponents/Utilities/ChildEntityComponent.cpp"
 		"DefaultComponents/Utilities/ChildEntityComponent.h"
@@ -171,7 +191,7 @@ end_sources()
 
 CryEngineModule(CryDefaultEntities PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_options(${THIS_PROJECT} PRIVATE /Zc:inline-)
 endif()
 
@@ -183,3 +203,44 @@ PRIVATE
 PUBLIC
 	.
 )
+
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-parentheses
+		-Wno-switch
+		-Wno-format
+		-Wno-char-subscripts
+		-Wno-empty-body
+		-Wno-multichar
+		-Wno-unused-value
+		-Wno-null-conversion
+		-Wno-unused-value
+		-Wno-unused-private-field
+		-Wno-unused-function
+		-Wno-c++11-narrowing
+		-Wno-dynamic-class-memaccess
+		-Wno-sometimes-uninitialized
+	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-sign-compare
+		-Wno-unused-but-set-variable
+		-Wno-misleading-indentation
+		-Wno-unknown-pragmas
+		-Wno-maybe-uninitialized
+		-Wno-array-bounds
+		-Wno-unused-result
+		-Wno-strict-aliasing
+		-Wno-multichar
+		-Wno-char-subscripts
+		-Wno-conversion-null
+		-Wno-reorder
+		-Wno-parentheses
+		-Wno-format
+		-Wno-switch
+	)
+endif()

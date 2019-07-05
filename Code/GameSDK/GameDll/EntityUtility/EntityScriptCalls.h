@@ -17,6 +17,7 @@ History:
 #define _ENTITY_SCRIPT_CALLS_H_
 
 #include <CryScriptSystem/IScriptSystem.h>
+#include <CryEntitySystem/IEntity.h>
 
 struct IEntity;
 

@@ -15,6 +15,8 @@
 #ifndef __HUD_TACTICALOVERRIDE_ENTITY_H__
 #define __HUD_TACTICALOVERRIDE_ENTITY_H__
 
+#include <IGameObject.h>
+
 // CTacticalOverrideEntity
 
 class CTacticalOverrideEntity : public CGameObjectExtensionHelper<CTacticalOverrideEntity, IGameObjectExtension>

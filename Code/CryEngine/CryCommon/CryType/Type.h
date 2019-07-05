@@ -2,9 +2,14 @@
 
 #pragma once
 
-#include "TypeUtils.h"
-#include "TypeOperators.h"
-#include "TypeTraits.h"
+#include <CryType/TypeUtils.h>
+#include <CryType/TypeOperators.h>
+#include <CryType/TypeFunctions.h>
+#include <CryType/TypeTraits.h>
+
+// TODO: Move with CIdList
+#include <initializer_list>
+// ~TODO
 
 namespace Cry {
 namespace Type {
@@ -13,36 +18,29 @@ class CTypeId
 {
 public:
 	typedef uint32 ValueType;
-	static const ValueType Invalid = 0;
+	static constexpr ValueType Invalid = 0;
 
 	template<typename TYPE>
 	constexpr static CTypeId Create()
 	{
-		return CTypeId(Utils::Explicit<typename PureType<TYPE>::Type>());
+		return CTypeId(Utils::SExplicit<typename PureType<TYPE>::Type>());
 	}
 
-	constexpr CTypeId()
-		: m_typeNameCrc(0)
-	{}
+	constexpr CTypeId() = default;
 
-	CTypeId(const CTypeId& typeId)
-		: m_typeNameCrc(typeId.m_typeNameCrc)
-	{}
-
-	bool IsValid() const
+	constexpr bool IsValid() const
 	{
-		return m_typeNameCrc == Invalid;
+		return m_typeNameCrc != Invalid;
+	}
+
+	constexpr static CTypeId Empty()
+	{
+		return CTypeId(Invalid);
 	}
 
 	constexpr ValueType GetValue() const
 	{
 		return m_typeNameCrc;
-	}
-
-	CTypeId operator=(CTypeId rhs)
-	{
-		m_typeNameCrc = rhs.m_typeNameCrc;
-		return *this;
 	}
 
 	constexpr bool operator==(CTypeId rhs) const
@@ -52,7 +50,7 @@ public:
 
 	constexpr bool operator!=(CTypeId rhs) const
 	{
-		return m_typeNameCrc == rhs.m_typeNameCrc;
+		return m_typeNameCrc != rhs.m_typeNameCrc;
 	}
 
 	constexpr operator ValueType() const
@@ -64,27 +62,35 @@ protected:
 	friend class CTypeDesc;
 
 	template<typename TYPE>
-	constexpr CTypeId(Utils::Explicit<TYPE> )
+	friend constexpr inline CTypeId IdOf();
+
+	constexpr CTypeId(ValueType typeNameCrc)
+		: m_typeNameCrc(typeNameCrc)
+	{}
+
+	template<typename TYPE>
+	constexpr CTypeId(Utils::SExplicit<TYPE> )
 		: m_typeNameCrc(Utils::SCompileTime_TypeInfo<TYPE>::GetCrc32())
 	{}
 
 private:
-	ValueType m_typeNameCrc;
+	ValueType m_typeNameCrc = 0;
 };
 
+// TODO: Move to a separate file.
 class CTypeDesc
 {
 public:
 	template<typename TYPE>
 	static CTypeDesc Create()
 	{
-		return CTypeDesc(Utils::Explicit<typename PureType<TYPE>::Type>(), 0);
+		return CTypeDesc(Utils::SExplicit<typename PureType<TYPE>::Type>(), 0);
 	}
 
 	template<typename TYPE, size_t ARRAY_LENGTH>
 	static CTypeDesc Create()
 	{
-		return CTypeDesc(Utils::Explicit<typename PureType<TYPE>::Type>(), ARRAY_LENGTH);
+		return CTypeDesc(Utils::SExplicit<typename PureType<TYPE>::Type>(), ARRAY_LENGTH);
 	}
 
 	CTypeDesc()
@@ -101,7 +107,7 @@ public:
 	{}
 
 	CTypeDesc(const CTypeDesc& desc)
-		: m_rawName(desc.m_rawName)
+		: m_fullQualifiedName(desc.m_fullQualifiedName)
 		, m_typeId(desc.m_typeId)
 		, m_arrayLength(desc.m_arrayLength)
 		, m_size(desc.m_size)
@@ -116,8 +122,15 @@ public:
 		, m_constructorCopy(desc.m_constructorCopy)
 		, m_constructorMove(desc.m_constructorMove)
 		, m_destructor(desc.m_destructor)
+		, m_operatorDefaultNew(desc.m_operatorDefaultNew)
+		, m_operatorDelete(desc.m_operatorDelete)
+		, m_operatorNewArray(desc.m_operatorNewArray)
+		, m_operatorDeleteArray(desc.m_operatorDeleteArray)
 		, m_operatorCopyAssign(desc.m_operatorCopyAssign)
+		, m_operatorMoveAssign(desc.m_operatorMoveAssign)
 		, m_operatorEqual(desc.m_operatorEqual)
+		, m_functionSerialize(desc.m_functionSerialize)
+		, m_functionToString(desc.m_functionToString)
 	{}
 
 	~CTypeDesc()
@@ -125,31 +138,41 @@ public:
 
 	}
 
-	CTypeId             GetTypeId() const             { return m_typeId; }
-	const char*         GetRawName() const            { return m_rawName.c_str(); }
-	uint16              GetSize() const               { return m_size; }
-	uint16              GetAlignment() const          { return m_alignment; }
+	CTypeId              GetTypeId() const              { return m_typeId; }
+	const char*          GetRawName() const             { return m_fullQualifiedName.c_str(); }
+	uint16               GetSize() const                { return m_size; }
+	uint16               GetAlignment() const           { return m_alignment; }
 
-	bool                IsAbstract() const            { return m_isAbstract; }
-	bool                IsArray() const               { return m_isArray; }
-	bool                IsClass() const               { return m_isClass; }
-	bool                IsEnum() const                { return m_isEnum; }
-	bool                IsFundamental() const         { return m_isFundamental; }
-	bool                IsUnion() const               { return m_isUnion; }
+	bool                 IsAbstract() const             { return m_isAbstract; }
+	bool                 IsArray() const                { return m_isArray; }
+	bool                 IsClass() const                { return m_isClass; }
+	bool                 IsEnum() const                 { return m_isEnum; }
+	bool                 IsFundamental() const          { return m_isFundamental; }
+	bool                 IsUnion() const                { return m_isUnion; }
 
-	CDefaultConstructor GetDefaultConstructor() const { return m_constructorDefault; }
-	CCopyConstructor    GetCopyConstructor() const    { return m_constructorCopy; }
-	CMoveConstructor    GetMoveConstructor() const    { return m_constructorMove; }
+	CDefaultConstructor  GetDefaultConstructor() const  { return m_constructorDefault; }
+	CCopyConstructor     GetCopyConstructor() const     { return m_constructorCopy; }
+	CMoveConstructor     GetMoveConstructor() const     { return m_constructorMove; }
 
-	CDestructor         GetDestructor() const         { return m_destructor; }
+	CDestructor          GetDestructor() const          { return m_destructor; }
 
-	CCopyAssignOperator GetCopyAssignOperator() const { return m_operatorCopyAssign; }
-	CEqualOperator      GetEqualOperator() const      { return m_operatorEqual; }
+	CDefaultNewOperator  GetDefaultNewOperator() const  { return m_operatorDefaultNew; }
+	CDeleteOperator      GetDeleteOperator() const      { return m_operatorDelete; }
+
+	CNewArrayOperator    GetNewArrayOperator() const    { return m_operatorNewArray; }
+	CDeleteArrayOperator GetDeleteArrayOperator() const { return m_operatorDeleteArray; }
+
+	CCopyAssignOperator  GetCopyAssignOperator() const  { return m_operatorCopyAssign; }
+	CMoveAssignOperator  GetMoveAssignOperator() const  { return m_operatorMoveAssign; }
+	CEqualOperator       GetEqualOperator() const       { return m_operatorEqual; }
+
+	CSerializeFunction   GetSerializeFunction() const   { return m_functionSerialize; }
+	CToStringFunction    GetToStringFunction() const    { return m_functionToString; }
 
 private:
 	template<typename TYPE>
-	CTypeDesc(Utils::Explicit<TYPE>, size_t arrayLength)
-		: m_rawName(Utils::SCompileTime_TypeInfo<TYPE>::GetName().c_str(), Utils::SCompileTime_TypeInfo<TYPE>::GetName().length())
+	CTypeDesc(Utils::SExplicit<TYPE>, size_t arrayLength)
+		: m_fullQualifiedName(Utils::SCompileTime_TypeInfo<TYPE>::GetName().GetBegin(), Utils::SCompileTime_TypeInfo<TYPE>::GetName().GetLength())
 		, m_typeId(CTypeId::Create<TYPE>())
 		, m_arrayLength(arrayLength)
 		, m_size(sizeof(TYPE))
@@ -164,36 +187,54 @@ private:
 		, m_constructorCopy(CAdapater_CopyConstructor<TYPE>())
 		, m_constructorMove(CAdapter_MoveConstructor<TYPE>())
 		, m_destructor(CAdapter_Destructor<TYPE>())
+		, m_operatorDefaultNew(CAdapter_DefaultNew<TYPE>())
+		, m_operatorDelete(CAdapter_Delete<TYPE>())
+		, m_operatorNewArray(CAdapter_NewArray<TYPE>())
+		, m_operatorDeleteArray(CAdapter_DeleteArray<TYPE>())
 		, m_operatorCopyAssign(CAdapter_CopyAssign<TYPE>())
+		, m_operatorMoveAssign(CAdapter_MoveAssign<TYPE>())
 		, m_operatorEqual(CAdapter_Equal<TYPE>())
+		, m_functionSerialize(CAdapter_Serialize<TYPE>())
+		, m_functionToString(CAdapter_ToString<TYPE>())
 	{
-		static_assert(sizeof(TYPE) <= UINT16_MAX, "Size of type exceeds limit of uint16.");
+		static_assert(sizeof(TYPE) <= UINT32_MAX, "Size of type exceeds limit of uint32.");
 		static_assert(AlignOf<TYPE>::Value <= UINT16_MAX, "Alignment requirement of type exceeds limit of uint16.");
 	}
 
 private:
-	string              m_rawName;
-	CTypeId             m_typeId;
-	uint32              m_arrayLength;
-	uint16              m_size;
-	uint16              m_alignment;
+	string               m_fullQualifiedName;
+	CTypeId              m_typeId;
+	uint32               m_arrayLength;
+	uint32               m_size;
+	uint16               m_alignment;
 
-	bool                m_isAbstract;
-	bool                m_isArray;
-	bool                m_isClass;
-	bool                m_isEnum;
-	bool                m_isFundamental;
-	bool                m_isUnion;
+	bool                 m_isAbstract;
+	bool                 m_isArray;
+	bool                 m_isClass;
+	bool                 m_isEnum;
+	bool                 m_isFundamental;
+	bool                 m_isUnion;
 
-	CDefaultConstructor m_constructorDefault;
-	CCopyConstructor    m_constructorCopy;
-	CMoveConstructor    m_constructorMove;
+	CDefaultConstructor  m_constructorDefault;
+	CCopyConstructor     m_constructorCopy;
+	CMoveConstructor     m_constructorMove;
 
-	CDestructor         m_destructor;
+	CDestructor          m_destructor;
 
-	CCopyAssignOperator m_operatorCopyAssign;
-	CEqualOperator      m_operatorEqual;
+	CDefaultNewOperator  m_operatorDefaultNew;
+	CDeleteOperator      m_operatorDelete;
+
+	CNewArrayOperator    m_operatorNewArray;
+	CDeleteArrayOperator m_operatorDeleteArray;
+
+	CCopyAssignOperator  m_operatorCopyAssign;
+	CMoveAssignOperator  m_operatorMoveAssign;
+	CEqualOperator       m_operatorEqual;
+
+	CSerializeFunction   m_functionSerialize;
+	CToStringFunction    m_functionToString;
 };
+// ~TODO
 
 inline bool operator==(const CTypeDesc& lh, CTypeId rh)
 {
@@ -215,33 +256,49 @@ inline bool operator!=(CTypeId lh, const CTypeDesc& rh)
 	return lh != rh.GetTypeId();
 }
 
-} // ~Reflection namespace
+template<typename TYPE>
+constexpr CTypeId IdOf()
+{
+	typedef typename PureType<TYPE>::Type T;
+	return CTypeId(Utils::SCompileTime_TypeInfo<T>::GetCrc32());
+}
+
+template<typename TYPE>
+static const CTypeDesc& DescOf()
+{
+	static const CTypeDesc typeDesc = CTypeDesc::Create<TYPE>();
+	return typeDesc;
+}
+
+// TODO: Move to a separate file.
+class CIdList
+{
+public:
+	CIdList(std::initializer_list<CTypeId> typeIds)
+		: m_typeIds(typeIds)
+	{}
+
+	size_t  GetIdCount() const { return m_typeIds.size(); }
+	CTypeId GetIdByIndex(size_t index) const
+	{
+		if (index < m_typeIds.size())
+		{
+			return m_typeIds[index];
+		}
+		return CTypeId();
+	}
+
+private:
+	std::vector<CTypeId> m_typeIds;
+};
+// ~TODO
+
+} // ~Type namespace
 } // ~Cry namespace
 
 namespace Cry {
 
-template<typename TYPE>
-constexpr inline Cry::Type::CTypeId TypeIdOf()
-{
-	return Cry::Type::CTypeId::Create<TYPE>();
-}
-
-template<typename TYPE>
-constexpr inline Cry::Type::CTypeId::ValueType TypeIdValue()
-{
-	typedef typename Cry::Type::PureType<TYPE>::Type T;
-	//return Cry::Type::Utils::SCompileTime_TypeInfo<T>::GetCrc32();
-	return CCrc32::Compute_CompileTime(Cry::Type::Utils::SCompileTime_TypeInfo<T>::GetName().c_str(), Cry::Type::Utils::SCompileTime_TypeInfo<T>::GetName().length());
-}
-
-template<typename TYPE>
-static const Cry::Type::CTypeDesc& TypeDescOf()
-{
-	static Cry::Type::CTypeDesc typeDesc = Cry::Type::CTypeDesc::Create<TYPE>();
-	return typeDesc;
-}
+using CTypeId = Type::CTypeId;
+using CTypeDesc = Type::CTypeDesc;
 
 }
-
-using CryTypeId = Cry::Type::CTypeId;
-using CryTypeDesc = Cry::Type::CTypeDesc;

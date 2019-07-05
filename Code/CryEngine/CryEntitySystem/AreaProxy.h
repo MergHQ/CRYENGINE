@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryPhysics/physinterface.h>
 #include "Area.h"
 
 // forward declarations.
@@ -27,14 +28,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void   Initialize() override;
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_AREA; }
-	virtual void         Release() final               { delete this; };
+	virtual void         Release() final               { delete this; }
 	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override;
 	virtual void         GameSerialize(TSerialize ser) override;
 	virtual bool         NeedGameSerialize() override { return false; }
@@ -111,6 +112,10 @@ private:
 	void OnEnable(bool bIsEnable, bool bIsCallScript = true);
 
 	void ReadPolygonsForAreaSolid(CCryFile& file, int numberOfPolygons, bool bObstruction);
+
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+	bool IsValid(stack_string& errorMessageOut) const;
+#endif
 
 private:
 	static std::vector<Vec3> s_tmpWorldPoints;

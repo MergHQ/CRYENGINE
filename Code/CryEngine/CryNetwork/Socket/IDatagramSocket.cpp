@@ -140,7 +140,7 @@ public:
 template<>
 IDatagramSocketPtr SOpenSocketVisitor::CreateFromVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 	return nullptr;
 }
 

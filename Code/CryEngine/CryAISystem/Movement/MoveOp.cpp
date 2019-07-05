@@ -314,7 +314,7 @@ void MoveOp::ReleaseCurrentMovementRequest()
 {
 	if (m_movementRequestID)
 	{
-		gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_movementRequestID);
+		gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestID);
 		m_movementRequestID = 0;
 	}
 }

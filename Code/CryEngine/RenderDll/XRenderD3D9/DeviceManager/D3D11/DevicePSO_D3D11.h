@@ -12,23 +12,21 @@ public:
 	virtual EInitResult Init(const CDeviceGraphicsPSODesc& psoDesc) final;
 
 	_smart_ptr<ID3D11RasterizerState>                 m_pRasterizerState;
-	uint32                                            m_RasterizerStateIndex;
 	_smart_ptr<ID3D11BlendState>                      m_pBlendState;
 	_smart_ptr<ID3D11DepthStencilState>               m_pDepthStencilState;
 	_smart_ptr<ID3D11InputLayout>                     m_pInputLayout;
 
 	std::array<void*, eHWSC_Num>                      m_pDeviceShaders;
 
-	std::array<std::array<uint8, MAX_TMU>, eHWSC_Num> m_Samplers;
-	std::array<std::array<uint8, MAX_TMU>, eHWSC_Num> m_SRVs;
-
-	std::array<uint8, eHWSC_Num>                      m_NumSamplers;
-	std::array<uint8, eHWSC_Num>                      m_NumSRVs;
+	// Resources required by the PSO
+	std::array< std::bitset<ResourceSetMaxSrvCount>, eHWSC_Num> m_requiredSRVs;
+	std::array< std::bitset<ResourceSetMaxUavCount>, eHWSC_Num> m_requiredUAVs;
+	std::array< std::bitset<ResourceSetMaxSamplerCount>, eHWSC_Num> m_requiredSamplers;
 
 	// Do we still need these?
 	uint64           m_ShaderFlags_RT;
 	uint32           m_ShaderFlags_MD;
-	uint32           m_ShaderFlags_MDV;
+	EVertexModifier  m_ShaderFlags_MDV;
 
 	D3DPrimitiveType m_PrimitiveTopology;
 };
@@ -42,5 +40,5 @@ public:
 
 	virtual bool Init(const CDeviceComputePSODesc& psoDesc) final;
 
-	std::array<void*, eHWSC_Num> m_pDeviceShaders;
+	void* m_pDeviceShader;
 };

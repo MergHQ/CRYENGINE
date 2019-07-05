@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include <QMainWindow>
-#include "UVMappingEditorCommon.h"
+//#include "UVMappingEditorCommon.h"
 #include "Core/PolygonMesh.h"
 #include "Objects/DesignerObject.h"
 #include "BaseTool.h"
@@ -17,17 +16,15 @@
 #include "DisplayViewportAdapter.h"
 #include "QtViewPane.h"
 
-class QToolbar;
-class QToolButton;
-class QBoxLayout;
-class QGridLayout;
-class UVIslandManager;
-class CAxisHelper;
-struct SRenderContext;
 class CBaseObject;
+class QBoxLayout;
 class QCheckBox;
-
+class QGridLayout;
 class QMenuComboBox;
+class QToolButton;
+class UVIslandManager;
+
+struct SRenderContext;
 
 namespace Designer
 {
@@ -52,6 +49,7 @@ public:
 	UVMappingEditor();
 	~UVMappingEditor();
 
+	void              OnEditModeChanged(CLevelEditorSharedState::EditMode editMode);
 	void              OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	void              OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
 	void              OnDesignerNotifyHandler(EDesignerNotify notification, void* param);
@@ -93,7 +91,7 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// CDockableWindow implementation
-	virtual const char*                       GetPaneTitle() const override        { return "UV Mapping"; };
+	virtual const char*                       GetPaneTitle() const override        { return "UV Mapping"; }
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	//////////////////////////////////////////////////////////
 
@@ -119,9 +117,9 @@ public slots:
 
 private:
 
-	void RenderUnwrappedMesh(DisplayContext& dc);
-	void RenderUnwrappedPolygon(DisplayContext & dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB);
-	void RenderElements(DisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet);
+	void RenderUnwrappedMesh(SDisplayContext& dc);
+	void RenderUnwrappedPolygon(SDisplayContext & dc, UVIslandPtr pUVIsland, PolygonPtr pPolygon, ColorB);
+	void RenderElements(SDisplayContext& dc, ColorB color, UVElementSetPtr pUVElementSet);
 	void UpdateObject();
 	void OrganizeToolbar(QBoxLayout* pTopLayout);
 	void InitializeMaterialComboBox();
@@ -164,4 +162,3 @@ UVMappingEditor* GetUVEditor();
 
 }
 }
-

@@ -3,10 +3,9 @@
 #pragma once
 
 #define _USE_MATH_DEFINES // M_PI
-#include <math.h>         // sin()
-
-#include <vector>                     // STL vector<>
-#include <float.h>                    // FLT_MAX
+#include <float.h>
+#include <math.h>
+#include <vector>
 
 // helper class to calculated hemisphere accessibility of a 2d graph or more useful for a heightmap (apply the same algo. n times)
 // call Insert() 2d point on a graph (x coordiante has to advance for each point
@@ -17,7 +16,7 @@
 //
 // because of the cache locality this is a very fast way to calculate the accessibility
 //
-// Comparison with simple raycasting (other algothms are much more complex to code):
+// Comparison with simple raycasting (other algorithms are much more complex to code):
 //    result is noisy, O_avg(q*n*n), q>8 depending on quality, with more programming you can get cache locality almost like here
 //
 class CHorizonTracker
@@ -25,7 +24,7 @@ class CHorizonTracker
 public:
 
 	//! constructor (reinstance for every line you want to calculate)
-	CHorizonTracker(void)
+	CHorizonTracker()
 	{
 		m_vHorizon.reserve(1024);   // to avoid too many reallocations
 	}
@@ -109,4 +108,3 @@ inline DWORD GetIntLog2(const DWORD indwValue)
 	assert(0);              // input was not power of two
 	return(0xffffffff);
 }
-

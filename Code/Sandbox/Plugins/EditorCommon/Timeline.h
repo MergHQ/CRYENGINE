@@ -2,20 +2,22 @@
 
 #pragma once
 
+#include "DrawingPrimitives/Ruler.h"
+#include "EditorFramework/EditorWidget.h"
 #include "TimelineContent.h"
 
-#include <vector>
-#include <QWidget>
 #include <CryMath/Range.h>
+
 #include <QPoint>
 #include <QStaticText>
 #include <QStyleOptionViewItem>
+#include <QTimer>
 
-#include "DrawingPrimitives/Ruler.h"
+#include <vector>
 
+class QLineEdit;
 class QPainter;
 class QPaintEvent;
-class QLineEdit;
 class QScrollBar;
 
 struct STimelineLayout;
@@ -89,9 +91,23 @@ struct STreeRenderCache
 	std::vector<QRect>                descTrackBGRects;
 	std::vector<QRect>                compTrackBGRects;
 	std::vector<QRect>                seleTrackBGRects;
+	std::vector<QRect>                detaTrackBGRects;
 	std::vector<QRect>                disbTrackBGRects;
+	std::vector<QRect>                subTrackBGRects;
+	std::vector<QRect>                xSubTrackBGRects;
+	std::vector<QRect>                ySubTrackBGRects;
+	std::vector<QRect>                zSubTrackBGRects;
+	std::vector<QRect>                nodeTrackBGRects;
+	std::vector<QRect>                folderTrackBGRects;
 
 	std::vector<QRenderText>          text;
+	std::vector<QRenderText>          xSubTrackText;
+	std::vector<QRenderText>          ySubTrackText;
+	std::vector<QRenderText>          zSubTrackText;
+	std::vector<QRenderText>          nodeTrackText;
+	std::vector<QRenderText>          folderTrackText;
+	std::vector<QRenderText>          compoundTrackText;
+
 	std::vector<QRenderIcon>          icons;
 	std::vector<QLine>                trackLines;
 
@@ -109,7 +125,15 @@ struct STracksRenderCache
 	std::vector<QRect>                                   seleTrackBGRects;
 	std::vector<QRect>                                   disbTrackBGRects;
 	std::vector<QRect>                                   outsideTrackBGRects;
+	std::vector<QRect>                                   detachedTrackBGRects;
+	std::vector<QRect>                                   xSubTrackBGRects;
+	std::vector<QRect>                                   ySubTrackBGRects;
+	std::vector<QRect>                                   zSubTrackBGRects;
+	std::vector<QRect>                                   subTrackBGRects;
+	std::vector<QRect>                                   nodeTrackBGRects;
+	std::vector<QRect>                                   folderTrackBGRects;
 
+	std::vector<QRect>                                   camRects;
 	std::vector<QRect>                                   toggleRects;
 	std::vector<QLine>                                   bottomLines;
 	std::vector<QLine>                                   innerTickLines;
@@ -135,22 +159,35 @@ struct STracksRenderCache
 
 using SElementLayoutPtrs = std::vector<struct SElementLayout*>;
 
-class EDITOR_COMMON_API CTimeline : public QWidget
+class EDITOR_COMMON_API CTimeline : public CEditorWidget
 {
 	Q_OBJECT
 
 	friend class CTimelineTracks;
 
 public:
+	enum EKeysMoveMode
+	{
+		eKeysMoveMode_Move = 0,
+		eKeysMoveMode_Scale,
+		eKeysMoveMode_Slide,
+	};
+
+	enum EKeysSlideMode
+	{
+		eKeysSlideMode_Both = 0,
+		eKeysSlideMode_Left,
+		eKeysSlideMode_Right
+	};
+
+public:
 	explicit CTimeline(QWidget* parent = nullptr);
 	~CTimeline();
 
-	virtual void                 customEvent(QEvent* pEvent) override;
-
 	void                         SetContent(STimelineContent* pContent);
-	STimelineContent*            Content() const     { return m_pContent; }
+	STimelineContent*            Content() const        { return m_pContent; }
 
-	std::vector<SHeaderElement>& GetHeaderElements() { return m_headerElements; }
+	std::vector<SHeaderElement>& GetHeaderElements()    { return m_headerElements; }
 
 	std::vector<SAnimTime>&      GetTickTimePositions() { return m_tickTimePositions; }
 
@@ -165,14 +202,17 @@ public:
 	void            SetTime(SAnimTime time);
 	void            SetCycled(bool cycled);
 	void            SetSizeToContent(bool sizeToContent);
-	void            SetFrameRate(SAnimTime::EFrameRate frameRate) { m_frameRate = frameRate; }
-	void            SetTimeSnapping(bool snapTime)                { m_snapTime = snapTime; }
-	void            SetKeySnapping(bool snapKeys)                 { m_snapKeys = snapKeys; }
-	void            SetKeyScaling(bool scaling)                   { m_scaleKeys = scaling; }
-	void            SetKeySize(uint size)                         { m_keySize = size; UpdateLayout(); update(); }
-	void            SetTimelinePadding(uint padding)              { m_timelinePadding = padding; UpdateLayout(); update(); }
+	void            SetFrameRate(SAnimTime::EFrameRate frameRate)          { m_frameRate = frameRate; }
+	void            SetTimeSnapping(bool snapTime)                         { m_snapTime = snapTime; }
+	void            SetKeySnapping(bool snapKeys)                          { m_snapKeys = snapKeys; }
+	void            SetInvertScrubberSnapping(bool invertScrubberSnapping) { m_invertScrubberSnapping = invertScrubberSnapping; }
+	void            SetKeyMoving()                                         { m_keysMoveMode = eKeysMoveMode_Move; }
+	void            SetKeyScaling()                                        { m_keysMoveMode = eKeysMoveMode_Scale; }
+	void            SetKeySliding(EKeysSlideMode mode)                     { m_keysMoveMode = eKeysMoveMode_Slide; m_keysSlideMode = mode; }
+	void            SetKeySize(uint size)                                  { m_keySize = size; UpdateLayout(); update(); }
+	void            SetTimelinePadding(uint padding)                       { m_timelinePadding = padding; UpdateLayout(); update(); }
 	void            SetTreeVisible(bool visible);
-	void            SetDrawSelectionIndicators(bool visible)      { m_selIndicators = visible; update(); }
+	void            SetDrawSelectionIndicators(bool visible)               { m_selIndicators = visible; update(); }
 	void            SetCustomTreeCornerWidget(QWidget* pWidget, uint width);
 	void            SetVerticalScrollbarVisible(bool bVisible);
 	void            SetDrawTrackTimeMarkers(bool bDrawMarkers);
@@ -220,6 +260,7 @@ public:
 	void            OnTrackToggled(QPoint pos);
 	void            OnSplitterMoved(uint32 newTreeWidth);
 	void            OnLayoutChange();
+	void            OnPasteKeys();
 
 signals:
 	void SignalZoom();
@@ -248,7 +289,7 @@ signals:
 	void SignalRedo();//Note: this is triggered before the undo has been processed
 
 	void SignalCopy(SAnimTime time, STimelineTrack* pTrack);
-	void SignalPaste(SAnimTime time, STimelineTrack* pTrack);    
+	void SignalPaste(SAnimTime time, STimelineTrack* pTrack);
 
 public slots:
 	void OnMenuDuplicate();
@@ -276,16 +317,22 @@ private:
 	struct SMouseHandler;
 	struct SSelectionHandler;
 	struct SMoveHandler;
+	struct SSlideHandler;
 	struct SShiftHandler;
 	struct SScaleHandler;
 	struct SPanHandler;
+	struct SPasteHandler;
 	struct SScrubHandler;
 	struct SSplitterHandler;
 	struct STreeMouseHandler;
 	struct SBlendInSlideHandler;
 	struct SChangeDurationHandler;
 
+	void          RegisterActions();
+	void          CopyFromLastMouseMovePosition();
+	void          PasteFromLastMouseMovePosition();
 	void          ContentChanged(bool continuous);
+	void          InvalidateContent(bool continuous);
 	void          UpdateLayout(bool forceClamp = false);
 	void          UpdateCursor(QMouseEvent* ev, const SElementLayoutPtrs& hitElements);
 	void          UpdateHighligted(const SElementLayoutPtrs& hitElements);
@@ -316,8 +363,8 @@ private:
 	bool                    m_cycled                   : 1;
 	bool                    m_sizeToContent            : 1;
 	bool                    m_snapTime                 : 1;
-	bool                    m_scaleKeys                : 1;
 	bool                    m_snapKeys                 : 1;
+	bool                    m_invertScrubberSnapping   : 1;
 	bool                    m_treeVisible              : 1;
 	bool                    m_selIndicators            : 1;
 	bool                    m_verticalScrollbarVisible : 1;
@@ -329,6 +376,9 @@ private:
 	uint                    m_keySize;
 	uint                    m_cornerWidgetWidth;
 	uint                    m_timelinePadding;
+
+	EKeysMoveMode           m_keysMoveMode;
+	EKeysSlideMode          m_keysSlideMode;
 
 	// Widgets
 	QScrollBar* m_scrollBar;
@@ -348,7 +398,7 @@ private:
 
 	// Filtering
 	QLineEdit* m_pFilterLineEdit;
-	QWidget* m_searchWidget;
+	QWidget*   m_searchWidget;
 
 	// Track selection
 	STrackLayout* m_pLastSelectedTrack;
@@ -365,7 +415,7 @@ private:
 	STracksRenderCache        m_tracksRenderCache;
 	STreeRenderCache          m_treeRenderCache;
 	SElementLayoutPtrs        m_highlightedElements;
-	
+
 	DrawingPrimitives::CRuler m_timelineDrawer;
 
 	std::vector<SAnimTime>    m_tickTimePositions;
@@ -389,7 +439,7 @@ class CTimelineTracks : public QWidget
 {
 	Q_OBJECT
 public:
-	CTimelineTracks(QWidget* widget) : QWidget(widget) {}
+	CTimelineTracks(QWidget* widget) : QWidget(widget), m_timeline(nullptr) {}
 	void ConnectToTimeline(CTimeline* timeline) { m_timeline = timeline; }
 
 private:
@@ -415,8 +465,25 @@ inline STreeRenderCache::STreeRenderCache()
 	descTrackBGRects.reserve(10);
 	compTrackBGRects.reserve(10);
 	seleTrackBGRects.reserve(10);
+	detaTrackBGRects.reserve(10);
+
+	subTrackBGRects.reserve(10);
+	xSubTrackBGRects.reserve(10);
+	ySubTrackBGRects.reserve(10);
+	zSubTrackBGRects.reserve(10);
+
+	nodeTrackBGRects.reserve(10);
+	folderTrackBGRects.reserve(10);
 
 	text.reserve(10);
+	xSubTrackText.reserve(10);
+	ySubTrackText.reserve(10);
+	zSubTrackText.reserve(10);
+
+	nodeTrackText.reserve(10);
+	folderTrackText.reserve(10);
+	compoundTrackText.reserve(10);
+
 	icons.reserve(10);
 	trackLines.reserve(10);
 
@@ -428,8 +495,23 @@ inline void STreeRenderCache::Clear()
 	descTrackBGRects.clear();
 	compTrackBGRects.clear();
 	seleTrackBGRects.clear();
+	detaTrackBGRects.clear();
+	xSubTrackBGRects.clear();
+	ySubTrackBGRects.clear();
+	zSubTrackBGRects.clear();
+	subTrackBGRects.clear();
+	nodeTrackBGRects.clear();
+	folderTrackBGRects.clear();
 
 	text.clear();
+	xSubTrackText.clear();
+	ySubTrackText.clear();
+	zSubTrackText.clear();
+
+	nodeTrackText.clear();
+	folderTrackText.clear();
+	compoundTrackText.clear();
+
 	icons.clear();
 	trackLines.clear();
 
@@ -444,7 +526,15 @@ inline STracksRenderCache::STracksRenderCache()
 	seleTrackBGRects.reserve(10);
 	disbTrackBGRects.reserve(10);
 	outsideTrackBGRects.reserve(10);
+	detachedTrackBGRects.reserve(10);
+	subTrackBGRects.reserve(10);
+	xSubTrackBGRects.reserve(10);
+	ySubTrackBGRects.reserve(10);
+	zSubTrackBGRects.reserve(10);
+	nodeTrackBGRects.reserve(10);
+	folderTrackBGRects.reserve(10);
 
+	camRects.reserve(10);
 	toggleRects.reserve(10);
 	bottomLines.reserve(10);
 	innerTickLines.reserve(100);
@@ -465,7 +555,15 @@ inline void STracksRenderCache::Clear()
 	seleTrackBGRects.clear();
 	disbTrackBGRects.clear();
 	outsideTrackBGRects.clear();
+	detachedTrackBGRects.clear();
+	xSubTrackBGRects.clear();
+	ySubTrackBGRects.clear();
+	zSubTrackBGRects.clear();
+	subTrackBGRects.clear();
+	nodeTrackBGRects.clear();
+	folderTrackBGRects.clear();
 
+	camRects.clear();
 	toggleRects.clear();
 	bottomLines.clear();
 	innerTickLines.clear();
@@ -485,4 +583,3 @@ inline void STracksRenderCache::ClearTimeMarkers()
 	// zoomed/panned or the content changed.
 	timeMarkers.clear();
 }
-

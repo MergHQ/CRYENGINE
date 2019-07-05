@@ -1,16 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2001-2012
-// -------------------------------------------------------------------------
-//  File name:   ClassDesc.h
-//  Created:     8/11/2001 by Timur.
-//  Description: Class description of CBaseObject
-//
-////////////////////////////////////////////////////////////////////////////
+
+#include "EditorCommonAPI.h"
 #include "IDataBaseManager.h"
 #include "ObjectEvent.h"
 #include "IPlugin.h"
@@ -19,7 +11,7 @@
 #include <CryEntitySystem/IEntityClass.h>
 
 class CXmlArchive;
-class IObjectEnumerator;
+struct IObjectEnumerator;
 struct IParticleEffect;
 
 struct SPreviewDesc
@@ -42,8 +34,9 @@ class EDITOR_COMMON_API CObjectClassDesc : public IClassDesc, public IDataBaseMa
 {
 public:
 	CObjectClassDesc()
+		: m_nTextureIcon(0)
+		, bRegistered(false)
 	{
-		m_nTextureIcon = 0;
 	}
 
 	//! Release class description.
@@ -75,15 +68,15 @@ public:
 		}
 	}
 	virtual bool           IsCreatedByListEnumeration() { return true; }
-	// Get a class that will supercede the current class if this class is a legacy class
+	// Get a class that will supersede the current class if this class is a legacy class
 	virtual const char*    GetSuccessorClassName()      { return ""; }
 	virtual void           OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
 	virtual void           OnDataBaseLibraryEvent(IDataBaseLibrary* pLibrary, EDataBaseLibraryEvent event) override;
 	virtual void           OnDataBaseEvent(EDataBaseEvent event) override;
 
-	virtual ESystemClassID SystemClassID()            { return ESYSTEM_CLASS_OBJECT; };
-	virtual void           Serialize(CXmlArchive& ar) {};
-	virtual const char*    GetTextureIcon()           { return 0; };
+	virtual ESystemClassID SystemClassID()            { return ESYSTEM_CLASS_OBJECT; }
+	virtual void           Serialize(CXmlArchive& ar) {}
+	virtual const char*    GetTextureIcon()           { return nullptr; }
 	int                    GetTextureIconId();
 	virtual bool           RenderTextureOnTop() const { return false; }
 	//! For backward compatibility, we want to register some classes (so they are properly loaded)
@@ -92,14 +85,14 @@ public:
 
 	virtual const char*  GetToolClassName()                   { return "EditTool.ObjectCreate"; }
 
-	virtual const char*  UIName()                             { return ClassName(); };
+	virtual const char*  UIName()                             { return ClassName(); }
 
 	virtual bool         IsPreviewable() const                { return false; }
 	virtual SPreviewDesc GetPreviewDesc(const char* id) const { static SPreviewDesc empty; return empty; }
 
 	// Checks whether an entity class with this class name exists and is exposed to designers
 	// Defaults to checking what is returned by ClassName if szClassName is empty
-	bool                 IsEntityClassAvailable(const char* szClassName = "") const
+	bool IsEntityClassAvailable(const char* szClassName = "") const
 	{
 		if (IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(szClassName[0] != '\0' ? szClassName : const_cast<CObjectClassDesc*>(this)->ClassName()))
 		{
@@ -120,6 +113,5 @@ public:
 	CCrySignal<void(const char*, const char*, const char*)> m_itemChanged;
 	CCrySignal<void(const char*, const char*)>              m_itemRemoved;
 	CCrySignal<void(const char*)>                           m_libraryRemoved;
-	CCrySignal<void()>                                      m_databaseCleared;
+	CCrySignal<void()> m_databaseCleared;
 };
-

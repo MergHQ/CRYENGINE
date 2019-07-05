@@ -1,24 +1,16 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __animationserializer_h__
-#define __animationserializer_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-// forward declarations.
 struct IAnimSequence;
 class CPakFile;
+class XmlNodeRef;
 
 /** Used by Editor to serialize animation data.
  */
 class CAnimationSerializer
 {
 public:
-	CAnimationSerializer();
-	~CAnimationSerializer();
-
 	/** Save all animation sequences to files in given directory.
 	 */
 	void SerializeSequences(XmlNodeRef& xmlNode, bool bLoading);
@@ -39,6 +31,3 @@ public:
 	 */
 	void LoadAllSequences(const char* szPath);
 };
-
-#endif // __animationserializer_h__
-

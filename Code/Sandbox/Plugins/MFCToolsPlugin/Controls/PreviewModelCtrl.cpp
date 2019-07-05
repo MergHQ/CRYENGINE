@@ -10,6 +10,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryParticleSystem/IParticles.h>
+#include <CryPhysics/physinterface.h>
 
 #include "IIconManager.h"
 #include "ViewportInteraction.h"
@@ -130,7 +131,8 @@ bool CPreviewModelCtrl::CreateRenderContext()
 	// Create context.
 	if (m_pRenderer && !m_renderContextCreated)
 	{
-		CRect rc; GetClientRect(rc);
+		CRect rc;
+		GetClientRect(rc);
 		IRenderer::SDisplayContextDescription desc;
 
 		desc.handle = m_hWnd;
@@ -143,6 +145,12 @@ bool CPreviewModelCtrl::CreateRenderContext()
 		desc.screenResolution.y = rc.Height();
 
 		m_displayContextKey = m_pRenderer->CreateSwapChainBackedContext(desc);
+
+		m_graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+		m_graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+
+		m_graphicsPipelineKey = m_pRenderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
+
 		m_renderContextCreated = true;
 
 		return true;
@@ -160,27 +168,25 @@ void CPreviewModelCtrl::DestroyRenderContext()
 		if (m_displayContextKey != reinterpret_cast<HWND>(m_pRenderer->GetHWND()))
 			m_pRenderer->DeleteContext(m_displayContextKey);
 
+		m_pRenderer->DeleteGraphicsPipeline(m_graphicsPipelineKey);
 		m_renderContextCreated = false;
 	}
 }
 
-void CPreviewModelCtrl::InitDisplayContext(HWND hWnd)
+SDisplayContext CPreviewModelCtrl::InitDisplayContext(const SDisplayContextKey& displayContextKey)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
-	// Draw all objects.
-	SDisplayContextKey displayContextKey;
-	displayContextKey.key.emplace<HWND>(hWnd);
-
-	DisplayContext& dctx = m_displayContext;
+	SDisplayContext dctx;
 	dctx.SetDisplayContext(displayContextKey, IRenderer::eViewportType_Secondary);
-//	dctx.SetView(m_pViewportAdapter.get());
+	//	dctx.SetView(m_pViewportAdapter.get());
 	dctx.SetCamera(&m_camera);
 	dctx.renderer = m_pRenderer;
 	dctx.engine = nullptr;
 	dctx.box.min = Vec3(-100000, -100000, -100000);
 	dctx.box.max = Vec3(100000, 100000, 100000);
-	dctx.flags = 0;
+
+	return dctx;
 }
 
 void CPreviewModelCtrl::PreSubclassWindow()
@@ -475,11 +481,11 @@ bool CPreviewModelCtrl::Render()
 		}
 
 		// Configures Aux to draw to the current display-context
-		InitDisplayContext(m_hWnd);
+		SDisplayContext context = InitDisplayContext(m_displayContextKey);
 
-		m_pRenderer->BeginFrame(m_displayContextKey);
+		m_pRenderer->BeginFrame(m_displayContextKey, m_graphicsPipelineKey);
 
-		result = RenderInternal();
+		result = RenderInternal(context);
 
 		m_pRenderer->EndFrame();
 	}
@@ -487,10 +493,8 @@ bool CPreviewModelCtrl::Render()
 	return result;
 }
 
-bool CPreviewModelCtrl::RenderInternal()
+bool CPreviewModelCtrl::RenderInternal(SDisplayContext& context)
 {
-	DisplayContext& dc = m_displayContext;
-
 	CRect rc;
 	GetClientRect(rc);
 
@@ -515,73 +519,69 @@ bool CPreviewModelCtrl::RenderInternal()
 	gEnv->pConsole->GetCVar("r_displayInfo")->Set((int)m_bShowRenderInfo);
 
 	// Render object.
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
+	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
 	m_pRenderer->EF_StartEf(passInfo);
 
+	// Add lights.
+	for (size_t i = 0; i < m_lights.size(); i++)
 	{
-		CScopedWireFrameMode scopedWireFrame(m_pRenderer, m_bDrawWireFrame ? R_WIREFRAME_MODE : R_SOLID_MODE);
-
-		// Add lights.
-		for (size_t i = 0; i < m_lights.size(); i++)
-		{
-			m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
-		}
-
-		if (m_pCurrentMaterial)
-			m_pCurrentMaterial->DisableHighlight();
-
-		_smart_ptr<IMaterial> pMaterial;
-		if (m_pCurrentMaterial)
-			pMaterial = m_pCurrentMaterial->GetMatInfo();
-
-		if (m_bPrecacheMaterial)
-		{
-			IMaterial* pCurMat = pMaterial;
-			if (!pCurMat)
-			{
-				if (m_pObj)
-					pCurMat = m_pObj->GetMaterial();
-				else if (m_pEntity)
-					pCurMat = m_pEntity->GetMaterial();
-				else if (m_pCharacter)
-					pCurMat = m_pCharacter->GetIMaterial();
-				else if (m_pEmitter)
-					pCurMat = m_pEmitter->GetMaterial();
-			}
-			if (pCurMat)
-			{
-				pCurMat->PrecacheMaterial(0.0f, NULL, true, true);
-			}
-		}
-
-		{
-			// activate shader item
-			IMaterial* pCurMat = pMaterial;
-			if (!pCurMat)
-			{
-				if (m_pObj)
-					pCurMat = m_pObj->GetMaterial();
-				else if (m_pEntity)
-					pCurMat = m_pEntity->GetMaterial();
-				else if (m_pCharacter)
-					pCurMat = m_pCharacter->GetIMaterial();
-				else if (m_pEmitter)
-					pCurMat = m_pEmitter->GetMaterial();
-			}
-			/*if (pCurMat)
-			   {
-			   pCurMat->ActivateAllShaderItem();
-			   }*/
-		}
-
-		if (m_bShowObject)
-			RenderObject(pMaterial, passInfo);
-
-		m_pRenderer->EF_EndEf3D(SHDF_NOASYNC | SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
-
-		if (true)
-			RenderEffect(pMaterial, passInfo);
+		m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
 	}
+
+	if (m_pCurrentMaterial)
+		m_pCurrentMaterial->DisableHighlight();
+
+	_smart_ptr<IMaterial> pMaterial;
+	if (m_pCurrentMaterial)
+		pMaterial = m_pCurrentMaterial->GetMatInfo();
+
+	if (m_bPrecacheMaterial)
+	{
+		IMaterial* pCurMat = pMaterial;
+		if (!pCurMat)
+		{
+			if (m_pObj)
+				pCurMat = m_pObj->GetMaterial();
+			else if (m_pEntity)
+				pCurMat = m_pEntity->GetMaterial();
+			else if (m_pCharacter)
+				pCurMat = m_pCharacter->GetIMaterial();
+			else if (m_pEmitter)
+				pCurMat = m_pEmitter->GetMaterial();
+		}
+		if (pCurMat)
+		{
+			pCurMat->PrecacheMaterial(0.0f, NULL, true, true);
+		}
+	}
+
+	{
+		// activate shader item
+		IMaterial* pCurMat = pMaterial;
+		if (!pCurMat)
+		{
+			if (m_pObj)
+				pCurMat = m_pObj->GetMaterial();
+			else if (m_pEntity)
+				pCurMat = m_pEntity->GetMaterial();
+			else if (m_pCharacter)
+				pCurMat = m_pCharacter->GetIMaterial();
+			else if (m_pEmitter)
+				pCurMat = m_pEmitter->GetMaterial();
+		}
+		/*if (pCurMat)
+			  {
+			  pCurMat->ActivateAllShaderItem();
+			  }*/
+	}
+
+	if (m_bShowObject)
+		RenderObject(pMaterial, passInfo);
+
+	m_pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
+
+	if (true)
+		RenderEffect(pMaterial, passInfo);
 
 	m_pRenderer->RenderDebug(false);
 
@@ -595,9 +595,8 @@ bool CPreviewModelCtrl::RenderInternal()
 void CPreviewModelCtrl::RenderObject(IMaterial* pMaterial, const SRenderingPassInfo& passInfo)
 {
 	SRendParams rp;
-	rp.dwFObjFlags = 0;
 	rp.AmbientColor = m_ambientColor * m_ambientMultiplier;
-	rp.dwFObjFlags |= FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
+	rp.dwFObjFlags = FOB_TRANS_MASK /*| FOB_GLOBAL_ILLUMINATION*/ | FOB_NO_FOG /*| FOB_ZPREPASS*/;
 	rp.pMaterial = pMaterial;
 
 	Matrix34 tm;
@@ -998,7 +997,6 @@ void CPreviewModelCtrl::GetImage(CImageEx& image)
 	BITMAP bmpInfo;
 	bmp.GetBitmap(&bmpInfo);
 	bmp.GetBitmapBits(width * height * (bmpInfo.bmBitsPixel / 8), image.GetData());
-	int bpp = bmpInfo.bmBitsPixel / 8;
 
 	dcMemory.SelectObject(pOldBitmap);
 
@@ -1253,8 +1251,8 @@ void CPreviewModelCtrl::DrawBackground()
 	const uint32 color = 0xFFFFFFFF;
 	const float w = 1.0f;
 	const float h = 1.0f;
-	const float s[4] = {0.0f, 1.0f, 1.0f, 0.0f};
-	const float t[4] = {1.0f, 1.0f, 0.0f, 0.0f};
+	const float s[4] = { 0.0f, 1.0f, 1.0f, 0.0f };
+	const float t[4] = { 1.0f, 1.0f, 0.0f, 0.0f };
 
 	pVertex->xyz.x = xpos;
 	pVertex->xyz.y = ypos;
@@ -1321,4 +1319,3 @@ void CPreviewModelCtrl::DrawBackground()
 	aux->SetTexture(-1);
 	aux->SetRenderFlags(prevRenderFlags);
 }
-

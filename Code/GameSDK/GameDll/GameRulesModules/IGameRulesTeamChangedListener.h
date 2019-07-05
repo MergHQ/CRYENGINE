@@ -20,6 +20,8 @@
 # pragma once
 #endif
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
 class IGameRulesTeamChangedListener
 {
 public:

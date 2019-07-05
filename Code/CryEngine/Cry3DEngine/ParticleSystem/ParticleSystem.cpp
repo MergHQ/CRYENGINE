@@ -1,9 +1,10 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
 #include "ParticleEmitter.h"
+#include "ParticleDebug.h"
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include "CryExtension/CryCreateClassInstance.h"
@@ -56,12 +57,13 @@ PParticleEffect CParticleSystem::FindEffect(cstr name, bool bAllowLoad)
 
 PParticleEmitter CParticleSystem::CreateEmitter(PParticleEffect pEffect)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "pfx2::ParticleEmitter");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "pfx2::ParticleEmitter");
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
 	CRY_PFX2_ASSERT(pEffect.get());
 	CParticleEffect* pCEffect = static_cast<CParticleEffect*>(+pEffect);
-	pCEffect->Update();
+	pCEffect->Compile();
 
 	m_newEmitters.emplace_back(new CParticleEmitter(pCEffect, m_nextEmitterId++));
 	return m_newEmitters.back();
@@ -78,7 +80,9 @@ void CParticleSystem::OnFrameStart()
 
 void CParticleSystem::TrimEmitters(bool finished_only)
 {
-	stl::find_and_erase_all_if(m_emitters, [=](const _smart_ptr<CParticleEmitter>& emitter) -> bool
+	CRY_PFX2_PROFILE_DETAIL;
+
+	auto doTrim = [=](const _smart_ptr<CParticleEmitter>& emitter) -> bool
 	{
 		if (!emitter->IsIndependent())
 			return false;
@@ -88,33 +92,25 @@ void CParticleSystem::TrimEmitters(bool finished_only)
 				return false;
 		}
 		return true;
-	});
+	};
+
+	stl::find_and_erase_all_if(m_emitters, doTrim);
+	stl::find_and_erase_all_if(m_emittersPreUpdate, doTrim);
 }
 
 void CParticleSystem::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleLibrary, "CParticleSystem::Update");
 
 	if (!GetCVars()->e_Particles)
 		return;
 
 	m_numFrames++;
 
-	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
-	const QuatT currentCameraPose = QuatT(camera.GetMatrix());
-	if (m_cameraMotion.q.GetLength() == 0.0f)
-	{
-		m_cameraMotion = IDENTITY;
-	}
-	else
-	{
-		m_cameraMotion.t = currentCameraPose.t - m_lastCameraPose.t;
-		m_cameraMotion.q = currentCameraPose.q * m_lastCameraPose.q.GetInverted();
-	}
-
-	auto gpuMan = gEnv->pRenderer->GetGpuParticleManager();
-	gpuMan->BeginFrame();
+	if (auto gpuMan = gEnv->pRenderer->GetGpuParticleManager())
+		gpuMan->BeginFrame();
 
 	// Accumulate thread stats from last frame
 	auto& sumData = GetSumData();
@@ -140,33 +136,70 @@ void CParticleSystem::Update()
 	TrimEmitters(!m_bResetEmitters);
 	m_bResetEmitters = false;
 	m_emitters.append(m_newEmitters);
+	for (auto& pEmitter : m_newEmitters)
+	{
+		pEmitter->CheckUpdated();
+		if (pEmitter->GetRuntimesPreUpdate().size())
+			m_emittersPreUpdate.push_back(pEmitter);
+	}
 	m_newEmitters.clear();
-
-	// Detect changed sys spec
-	const ESystemConfigSpec sysSpec = gEnv->pSystem->GetConfigSpec();
-	const bool sys_spec_changed = m_lastSysSpec != END_CONFIG_SPEC_ENUM && m_lastSysSpec != sysSpec;
-	m_lastSysSpec = sysSpec;
 
 	// Init stats for current frame
 	auto& mainData = GetMainData();
 	mainData.statsCPU.emitters.alloc = m_emitters.size();
 
+	// Detect changed sys spec
+	const ESystemConfigSpec sysSpec = gEnv->pSystem->GetConfigSpec();
+	if (m_lastSysSpec != END_CONFIG_SPEC_ENUM && m_lastSysSpec != sysSpec)
+	{
+		if (GetCVars()->e_ParticlesPrecacheAssets)
+		{
+			for (auto& elem : m_effects)
+			{
+				if (auto& pEffect = elem.second)
+				{
+					pEffect->LoadResources();
+				}
+			}
+		}
+		for (auto& pEmitter : m_emitters)
+		{
+			pEmitter->UpdateRuntimes();
+		}
+	}
+	m_lastSysSpec = sysSpec;
+
+	// Check for edited effects
+	if (gEnv->IsEditing())
+	{
+		m_emittersPreUpdate.clear();
+		for (auto& pEmitter : m_emitters)
+		{
+			pEmitter->CheckUpdated();
+			if (pEmitter->GetRuntimesPreUpdate().size())
+				m_emittersPreUpdate.push_back(pEmitter);
+		}
+	}
+
+	// Execute PreUpdates, to update forces, etc
+	for (auto& pEmitter : m_emittersPreUpdate)
+	{
+		if (!pEmitter->IsAlive())
+			continue;
+		for (auto& pRuntime: pEmitter->GetRuntimesPreUpdate())
+		{
+			pRuntime->GetComponent()->MainPreUpdate(*pRuntime);
+		}
+	}
+
+	// Update remaining emitter state
 	for (auto& pEmitter : m_emitters)
 	{
-		if (sys_spec_changed)
-			pEmitter->ResetRenderObjects();
-		pEmitter->CheckUpdated();
-
 		mainData.statsCPU.components.alloc += pEmitter->GetRuntimes().size();
-		if (pEmitter->IsAlive())
+		if (pEmitter->UpdateState())
 		{
 			mainData.statsCPU.emitters.alive++;
-			pEmitter->Update();
 			m_jobManager.AddUpdateEmitter(pEmitter);
-		}
-		else
-		{
-			pEmitter->Unregister();
 		}
 	}
 
@@ -175,7 +208,7 @@ void CParticleSystem::Update()
 
 void CParticleSystem::SyncMainWithRender()
 {
-	if (ThreadMode() >= 1)
+	if (ThreadMode() != 0)
 		m_jobManager.SynchronizeUpdates();
 		
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();
@@ -187,8 +220,7 @@ void CParticleSystem::FinishRenderTasks(const SRenderingPassInfo& passInfo)
 	m_jobManager.DeferredRender();
 	DebugParticleSystem(m_emitters);
 
-	const bool debugBBox = (GetCVars()->e_ParticlesDebug & AlphaBit('b')) != 0;
-	if (debugBBox)
+	if (DebugMode('b'))
 	{
 		for (auto& pEmitter : m_emitters)
 			pEmitter->DebugRender(passInfo);
@@ -224,13 +256,14 @@ void DisplayParticleStats(Vec2& displayLocation, float lineHeight, cstr name, TS
 	DisplayStatsHeader(displayLocation, lineHeight, name);
 	DisplayElementStats(displayLocation, lineHeight, "Emitters", stats.emitters);
 	DisplayElementStats(displayLocation, lineHeight, "Components", stats.components);
+	DisplayElementStats(displayLocation, lineHeight, "Spawners", stats.spawners);
 	DisplayElementStats(displayLocation, lineHeight, "Particles", reinterpret_cast<const TElementCounts<float>&>(stats.particles));
 
 	if (!stats.pixels.IsZero())
 	{
 		auto screens = stats.pixels;
 		const float pixelsToScreens = 1.0f / (gEnv->pRenderer->GetWidth() * gEnv->pRenderer->GetHeight());
-		screens.alloc = C3DEngine::GetCVars()->e_ParticlesMaxScreenFill;
+		screens.alloc = GetCVars()->e_ParticlesMaxScreenFill;
 		screens.alive = 1;
 		screens.rendered *= pixelsToScreens;
 		screens.updated *= pixelsToScreens;
@@ -273,14 +306,14 @@ void CParticleSystem::DisplayStats(Vec2& location, float lineHeight)
 		if (!countsAvg.emitters.IsZero())
 			DisplayParticleStats(location, lineHeight, "Particles V1", countsAvg);
 			
-		if (GetCVars()->e_ParticlesDebug & AlphaBit('r'))
+		if (DebugMode('r'))
 		{
 			gEnv->p3DEngine->DrawTextRightAligned(location.x, location.y += lineHeight,
 			                     "Reiter %4.0f, Reject %4.0f, Clip %4.1f, Coll %4.1f / %4.1f",
 			                     countsAvg.particles.reiterate, countsAvg.particles.reject, countsAvg.particles.clip,
 			                     countsAvg.particles.collideHit, countsAvg.particles.collideTest);
 		}
-		if (GetCVars()->e_ParticlesDebug & AlphaBits('bx'))
+		if (DebugMode('bx'))
 		{
 			if (countsAvg.volume.stat + countsAvg.volume.dyn > 0.0f)
 			{
@@ -295,23 +328,51 @@ void CParticleSystem::DisplayStats(Vec2& location, float lineHeight)
 
 void CParticleSystem::ClearRenderResources()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 #if !defined(_RELEASE)
 	// All external references need to be released before this point to prevent leaks
 	for (const auto& pEmitter : m_emitters)
 	{
-		CRY_ASSERT_MESSAGE(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
-	}
-	for (const auto& pEmitter : m_newEmitters)
-	{
-		CRY_ASSERT_MESSAGE(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
+		CRY_ASSERT(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
 	}
 #endif
 
 	m_emitters.clear();
 	m_newEmitters.clear();
-	m_effects.clear();
+	m_emittersPreUpdate.clear();
+
+	for (auto it = m_effects.begin(); it != m_effects.end(); )
+	{
+		if (auto& pEffect = it->second)
+		{
+			if (m_numLevelLoads == 0)
+			{
+				// Preserve all effects loaded at startup
+				pEffect->AddRef();
+			}
+			else if (pEffect->Unique())
+			{
+				// Remove unreferenced effects loaded last level
+				it = m_effects.erase(it);
+				continue;
+			}
+			pEffect->UnloadResources();
+		}
+		++it;
+	}
+
+	m_materials.clear();
+
 	m_numFrames = 0;
-	m_numClears++;
+	m_numLevelLoads ++;
+
+	for (auto& data : m_threadData)
+		data.memHeap.FreeEmptyPages();
+}
+
+bool CParticleSystem::IsRuntime() const
+{
+	return !gEnv->IsEditing() && m_numFrames > 1;
 }
 
 void CParticleSystem::CheckFileAccess(cstr filename) const
@@ -325,19 +386,87 @@ float CParticleSystem::GetMaxAngularDensity(const CCamera& camera)
 	return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
 }
 
-IMaterial* CParticleSystem::GetFlareMaterial()
+IMaterial* CParticleSystem::GetTextureMaterial(cstr textureName, bool gpu, gpu_pfx2::EFacingMode facing)
 {
-	if (!m_pFlareMaterial)
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	if (!gEnv->pRenderer)
+		return nullptr;
+
+	enum EGpuParticlesVertexShaderFlags
 	{
-		const char* flareMaterialName = "%ENGINE%/EngineAssets/Materials/lens_optics";
-		m_pFlareMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(flareMaterialName);
+		FacingVelocity = 0x2000
+	};
+
+	string materialName = string(textureName);
+	cstr shaderName = "Particles";
+	uint32 shaderMask = 0;
+	if (gpu)
+	{
+		materialName += ":GPU";
+		shaderName = "Particles.ParticlesGpu";
+		if (facing == gpu_pfx2::EFacingMode::Velocity)
+		{
+			materialName += ":FacingVelocity";
+			shaderMask |= EGpuParticlesVertexShaderFlags::FacingVelocity;
+		}
 	}
-	return m_pFlareMaterial;
+
+	IMaterial* pMaterial = m_materials[materialName];
+	if (pMaterial)
+		return pMaterial;
+
+	pMaterial = gEnv->p3DEngine->GetMaterialManager()->CreateMaterial(materialName);
+	static uint32 preload = !!GetCVars()->e_ParticlesPrecacheAssets;
+	static uint32 textureLoadFlags = FT_DONT_STREAM * preload;
+	_smart_ptr<ITexture> pTexture;
+	if (GetPSystem()->IsRuntime())
+		pTexture = gEnv->pRenderer->EF_GetTextureByName(textureName, textureLoadFlags);
+	if (!pTexture.get())
+	{
+		GetPSystem()->CheckFileAccess(textureName);
+		pTexture.Assign_NoAddRef(gEnv->pRenderer->EF_LoadTexture(textureName, textureLoadFlags));
+	}
+	if (pTexture->GetTextureID() <= 0)
+		CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_WARNING, "Particle effect texture %s not found", textureName);
+
+	SInputShaderResourcesPtr pResources = gEnv->pRenderer->EF_CreateInputShaderResource();
+	pResources->m_Textures[EFTT_DIFFUSE].m_Name = textureName;
+	SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, EF_PRECACHESHADER * preload, pResources, shaderMask);
+	assert(shaderItem.m_pShader);
+	pMaterial->AssignShaderItem(shaderItem);
+
+	Vec3 white = Vec3(1.0f, 1.0f, 1.0f);
+	float defaultOpacity = 1.0f;
+	pMaterial->SetGetMaterialParamVec3("diffuse", white, false);
+	pMaterial->SetGetMaterialParamFloat("opacity", defaultOpacity, false);
+
+	m_materials[materialName] = pMaterial;
+
+	return pMaterial;
+}
+
+uint CParticleSystem::GetParticleSpec() const
+{
+	int quality = GetCVars()->e_ParticlesQuality;
+	if (quality != 0)
+		return quality;
+
+	const ESystemConfigSpec configSpec = gEnv->pSystem->GetConfigSpec();
+	return uint(configSpec);
 }
 
 void CParticleSystem::Reset()
 {
 	m_bResetEmitters = true;
+	m_numFrames = 0;
+	for (auto& elem : m_effects)
+	{
+		if (auto& pEffect = elem.second)
+		{
+			pEffect->LoadResources();
+		}
+	}
 }
 
 void CParticleSystem::Serialize(TSerialize ser)
@@ -346,8 +475,9 @@ void CParticleSystem::Serialize(TSerialize ser)
 
 PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "pfx2::LoadEffect");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ParticleLibrary, 0, "Particle effect (%s)", effectName);
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "pfx2::LoadEffect");
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleLibrary, effectName);
 
 	if (gEnv->pCryPak->IsFileExist(effectName))
 	{

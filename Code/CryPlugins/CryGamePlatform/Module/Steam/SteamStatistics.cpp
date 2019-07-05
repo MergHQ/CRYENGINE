@@ -1,10 +1,10 @@
-#include "StdAfx.h"
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <steam/steam_api.h>
+#include "StdAfx.h"
 
 #include "SteamStatistics.h"
 #include "SteamAchievement.h"
-#include "SteamPlatform.h"
+#include "SteamService.h"
 
 namespace Cry
 {
@@ -12,8 +12,9 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CStatistics::CStatistics()
-				: m_callbackUserStatsReceived(this, &CStatistics::OnUserStatsReceived)
+			CStatistics::CStatistics(CService& steamService)
+				: m_service(steamService)
+				, m_callbackUserStatsReceived(this, &CStatistics::OnUserStatsReceived)
 				, m_callbackUserStatsStored(this, &CStatistics::OnUserStatsStored)
 				, m_callbackAchievementStored(this, &CStatistics::OnAchievementStored)
 				, m_callbackStatsUnloaded(this, &CStatistics::OnStatsUnloaded)
@@ -58,9 +59,9 @@ namespace Cry
 
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 				{
-					int numAchievements = pUserStats->GetNumAchievements();
+					uint32 numAchievements = pUserStats->GetNumAchievements();
 
-					for (int i = 0; i < numAchievements; i++)
+					for (uint32 i = 0; i < numAchievements; i++)
 					{
 						pUserStats->ClearAchievement(pUserStats->GetAchievementName(i));
 					}
@@ -78,8 +79,6 @@ namespace Cry
 
 			bool CStatistics::Download()
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
-
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 					return pUserStats->RequestCurrentStats();
 
@@ -88,8 +87,6 @@ namespace Cry
 
 			bool CStatistics::Upload()
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
-
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 					return pUserStats->StoreStats();
 
@@ -142,41 +139,104 @@ namespace Cry
 				return false;
 			}
 
-			IAchievement* CStatistics::GetAchievement(const char* szName)
+			IAchievement* CStatistics::GetAchievement(const char* szName, const SAchievementDetails* pDetails)
 			{
 				CRY_ASSERT(m_bInitialized);
 
 				if (ISteamUserStats* pUserStats = SteamUserStats())
 				{
-					bool bAchieved;
-					if (pUserStats->GetAchievement(szName, &bAchieved))
+					return GetOrCreateAchievement(szName, pDetails);
+				}
+
+				return nullptr;
+			}
+
+			IAchievement* CStatistics::GetAchievement(int id, const SAchievementDetails* pDetails)
+			{
+				CRY_ASSERT(m_bInitialized);
+
+				if (ISteamUserStats* pUserStats = SteamUserStats())
+				{
+					const char* szName = pUserStats->GetAchievementName(static_cast<uint32>(id));
+					if (szName && *szName)
 					{
-						return TryGetAchievement(szName, bAchieved);
+						return GetOrCreateAchievement(szName, pDetails);
 					}
 				}
 
 				return nullptr;
 			}
 
-			IAchievement* CStatistics::TryGetAchievement(const char* name, bool bAchieved)
+			IAchievement* CStatistics::GetAchievementInternal(const char* szName)
 			{
 				for (const std::unique_ptr<IAchievement>& pAchievement : m_achievements)
 				{
-					if (!strcmp(pAchievement->GetName(), name))
+					if (strcmp(pAchievement->GetName(), szName) == 0)
 					{
 						return pAchievement.get();
 					}
 				}
 
-				m_achievements.emplace_back(stl::make_unique<CAchivement>(name, bAchieved));
-				return m_achievements.back().get();
+				return nullptr;
+			}
+
+			IAchievement* CStatistics::GetOrCreateAchievement(const char* szName, const SAchievementDetails* pDetails)
+			{
+				// Check if steam achievement was already created
+				if (IAchievement* pAchievement = GetAchievementInternal(szName))
+				{
+					return pAchievement;
+				}
+
+				ISteamUserStats* pUserStats = SteamUserStats();
+				CRY_ASSERT(pUserStats != nullptr);
+
+				// Check if steam achievement exists
+				CAchievement::Type achievementType;
+				int32 minProgress = 0;
+				int32 maxProgress = 1;
+				int32 curProgress;
+				bool hasAchievement = false;
+				bool achieved;
+				if (pUserStats->GetAchievement(szName, &achieved))
+				{
+					achievementType = CAchievement::Type::Regular;
+					hasAchievement = true;
+					curProgress = achieved ? maxProgress : minProgress;
+				}
+				else
+				{
+					// Steam achievement was not found with given name
+					// Check if steam stat exists for the given name which may be linked to a steam achievement as progress stat
+					if (pUserStats->GetStat(szName, &curProgress))
+					{
+						if (pDetails == nullptr)
+						{
+							stack_string str;
+							str.Format("[Steam] Achievement details for stat '%s' are missing", szName);
+							CRY_ASSERT(false, str.c_str());
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, str.c_str());
+							return nullptr;
+						}
+						achievementType = CAchievement::Type::Stat;
+						hasAchievement = true;
+						minProgress = pDetails->minProgress;
+						maxProgress = pDetails->maxProgress;
+					}
+				}
+
+				if (hasAchievement)
+				{
+					m_achievements.emplace_back(stl::make_unique<CAchievement>(*this, szName, achievementType, minProgress, maxProgress, curProgress));
+					return m_achievements.back().get();
+				}
+
+				return nullptr;
 			}
 
 			// Steam API callbacks
 			void CStatistics::OnUserStatsReceived(UserStatsReceived_t* pCallback)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
-
 				// we may get callbacks for other games' stats arriving, ignore them
 				if (m_appId != pCallback->m_nGameID)
 					return;
@@ -213,7 +273,7 @@ namespace Cry
 				// Check if the achievement was fully unlocked
 				if (pCallback->m_nCurProgress == 0 && pCallback->m_nMaxProgress == 0)
 				{
-					IAchievement* pAchievement = TryGetAchievement(pCallback->m_rgchAchievementName, true);
+					IAchievement* pAchievement = GetAchievementInternal(pCallback->m_rgchAchievementName);
 					CRY_ASSERT(pAchievement != nullptr);
 
 					if (pAchievement != nullptr)

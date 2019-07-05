@@ -153,7 +153,7 @@ private:
 	{
 		if (!m_filename.empty())
 		{
-			SetFileAttributesA(m_filename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+			FileUtil::MakeWritable(m_filename.c_str());
 			DeleteFile(m_filename.c_str());				
 		}
 	}
@@ -202,8 +202,6 @@ void CAnimationConverter::Init(const ConverterInitContext& context)
 		}
 	}
 
-	RCLog("Looking for used skeletons...");
-	std::set<string> usedSkeletons;
 	{
 		for (size_t i = 0; i < context.inputFileCount; ++i)
 		{
@@ -222,16 +220,6 @@ void CAnimationConverter::Init(const ConverterInitContext& context)
 				{
 					m_sourceGameFolderPath = PathHelpers::GetDirectory(PathHelpers::GetAbsolutePath(fullPath));
 				}
-
-				SAnimationDesc desc;
-				bool bErrorReported = false;
-				if (SAnimationDefinition::GetDescFromAnimationSettingsFile(&desc, &bErrorReported, 0, m_pPakSystem, m_pXMLParser, fullPath.c_str(), std::vector<string>()))
-				{
-					if (!desc.m_skeletonName.empty())
-					{
-						usedSkeletons.insert(desc.m_skeletonName.c_str());
-					}
-				}
 			}
 		}
 	}
@@ -247,7 +235,7 @@ void CAnimationConverter::Init(const ConverterInitContext& context)
 		RCLog("Source game folder path: %s", m_sourceGameFolderPath.c_str());
 	}
 
-	InitSkeletonManager(usedSkeletons);
+	InitSkeletonManager();
 
 	if (!InLocalUpdateMode())
 	{
@@ -255,12 +243,10 @@ void CAnimationConverter::Init(const ConverterInitContext& context)
 	}	
 }
 
-void CAnimationConverter::InitSkeletonManager(const std::set<string>& usedSkeletons)
+void CAnimationConverter::InitSkeletonManager()
 {
 	m_skeletonManager.reset(new SkeletonManager(m_pPakSystem, m_pXMLParser, m_rc));
-
-	string skeletonListPath = UnifiedPath(PathUtil::Make(PathUtil::Make(m_sourceGameFolderPath, m_configSubfolder), "SkeletonList.xml"));
-	m_skeletonManager->LoadSkeletonList(skeletonListPath, m_sourceGameFolderPath, usedSkeletons);
+	m_skeletonManager->Initialize(m_sourceGameFolderPath);
 }
 
 static string GetDbaTableFilename(const string& sourceGameFolderPath, const string& configSubfolder)
@@ -578,11 +564,11 @@ bool CAnimationConverter::RebuildDatabases()
 					}
 					continue;
 				}
-				const CSkeletonInfo* pSkeleton = m_skeletonManager->LoadSkeleton(animDesc.m_skeletonName);
+				const CSkeletonInfo* pSkeleton = m_skeletonManager->FindSkeletonByAnimFile(filePath, true);
 				if (!pSkeleton)
 				{
-					RCLogError("Failed to load skeleton with name '%s' for animation with name '%s'. If this animation is an aimpose or lookpose, it will not be correctly added to the .img files.", 
-						animDesc.m_skeletonName.c_str(), filePath.c_str());
+					RCLogError("Failed to find skeleton for animation with name '%s'. If this animation is an aimpose or lookpose, it will not be correctly added to the .img files.", 
+						filePath.c_str());
 					continue;
 				}
 				if (bUsesNameContains && !SAnimationDefinition::GetDescFromAnimationSettingsFile(&animDesc, &bErrorReported, 0, m_pPakSystem, m_pXMLParser, fullAnimationPath, GetJointNames(pSkeleton)))
@@ -628,7 +614,7 @@ bool CAnimationConverter::RebuildDatabases()
 
 					if (m_dbaTableEnumerator.get())
 					{
-						if (const char* dbaPathFound = m_dbaTableEnumerator->FindDBAPath(animationPath.c_str(), animDesc.m_skeletonName.c_str(), animDesc.m_tags))
+						if (const char* dbaPathFound = m_dbaTableEnumerator->FindDBAPath(animationPath.c_str(), animDesc.m_tags))
 						{
 							dbaPath = dbaPathFound;
 						}
@@ -655,8 +641,8 @@ bool CAnimationConverter::RebuildDatabases()
 	}
 
 
-	const string sAnimationsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations\\Animations.img");
-	RCLog("Saving %s...",sAnimationsImgFilename);
+	const string sAnimationsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations/Animations.img");
+	RCLog("Saving %s...", sAnimationsImgFilename.c_str());
 	const FILETIME latest = FileUtil::GetLastWriteFileTime(targetGameFolderPath);
 	if (!animationManager.SaveCAFImage( sAnimationsImgFilename, latest, bigEndianOutput))
 	{
@@ -672,8 +658,8 @@ bool CAnimationConverter::RebuildDatabases()
 	// Check if it can be skipped so it won't accidentally log errors.
 	if (!animationManager.CanBeSkipped())
 	{
-		const string sDirectionalBlendsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations\\DirectionalBlends.img");
-		RCLog("Saving %s...", sDirectionalBlendsImgFilename);
+		const string sDirectionalBlendsImgFilename = PathUtil::Make(targetGameFolderPath, "Animations/DirectionalBlends.img");
+		RCLog("Saving %s...", sDirectionalBlendsImgFilename.c_str());
 		if (!animationManager.SaveAIMImage(sDirectionalBlendsImgFilename, latest, bigEndianOutput))
 		{
 			RCLogError("Error saving DirectionalBlends.img");
@@ -866,17 +852,10 @@ static bool GetFromAnimSettings(SAnimationDesc* desc, const CSkeletonInfo** skel
 		return false;
 	}
 
-	if (desc->m_skeletonName.empty())
-	{
-		RCLogError("No skeleton alias specified for animation: '%s'", sourcePath);
-		*pbErrorReported = true;
-		return false;
-	}
-
-	*skeleton = skeletonManager->FindSkeleton(desc->m_skeletonName);
+	*skeleton = skeletonManager->FindSkeletonByAnimFile(sourcePath);
 	if (!*skeleton)
 	{
-		RCLogError("Missing skeleton alias '%s' for animation '%s'", desc->m_skeletonName.c_str(), sourcePath);
+		RCLogError("Missing skeleton with animation '%s' in its Animation List", sourcePath);
 		*pbErrorReported = true;
 		return false;
 	}
@@ -1087,7 +1066,7 @@ bool CAnimationCompiler::Process()
 		const char* dbaPathFromTable = 0;	
 		if (Converter()->m_dbaTableEnumerator.get())
 		{
-			dbaPathFromTable = Converter()->m_dbaTableEnumerator->FindDBAPath(animationName, animDesc.m_skeletonName.c_str(), animDesc.m_tags);
+			dbaPathFromTable = Converter()->m_dbaTableEnumerator->FindDBAPath(animationName, animDesc.m_tags);
 		}
 
 		if (dbaPathFromTable)
@@ -1118,7 +1097,7 @@ bool CAnimationCompiler::Process()
 	}
 	else if (Converter()->m_compressionPresetTable.get())
 	{
-		const SCompressionPresetEntry* const preset = Converter()->m_compressionPresetTable.get()->FindPresetForAnimation(animationName.c_str(), animDesc.m_tags, animDesc.m_skeletonName.c_str());
+		const SCompressionPresetEntry* const preset = Converter()->m_compressionPresetTable.get()->FindPresetForAnimation(animationName.c_str(), animDesc.m_tags);
 		if (preset)
 		{
 			const bool bDebugCompression = m_CC.config->GetAsBool("debugcompression", false, true);
@@ -1196,7 +1175,6 @@ static void ProcessAnimationJob(AnimationJob* job)
 	const string& sourcePath = job->m_sourcePath;
 	const string& intermediatePath = job->m_intermediatePath;
 	const string& destPath = job->m_destinationPath;
-	const string& reportFile = writeDest ? destPath : intermediatePath;
 
 	const bool isAIM = IsAimAnimation(job->m_skeleton->m_SkinningInfo, job->m_animationPath);
 	const bool isLook = IsLookAnimation(job->m_skeleton->m_SkinningInfo, job->m_animationPath);

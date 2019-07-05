@@ -1,12 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "ObjectCreateTreeWidget.h"
+#include "IEditorImpl.h"
 
 #include "Material/MaterialManager.h"
 #include "QT/Widgets/QPreviewWidget.h"
 #include "EditorFramework/PersonalizationManager.h"
 
 #include "CryIcon.h"
+#include <Objects/ClassDesc.h>
 
 #include <QToolButton>
 #include <QSplitter>
@@ -62,7 +64,7 @@ void CObjectCreateTreeWidget::UpdatePreviewWidget()
 	const auto idVariant = currentIndex.data(QObjectTreeView::Id);
 	if (idVariant.isValid())
 	{
-		const auto previewDesc = m_pClassDesc->GetPreviewDesc(idVariant.toString().toLocal8Bit());
+		const auto previewDesc = m_pClassDesc->GetPreviewDesc(QtUtil::ToString(idVariant.toString()).c_str());
 
 		if (m_pShowPreviewButton->isChecked())
 		{
@@ -98,4 +100,3 @@ void CObjectCreateTreeWidget::UpdatePreviewWidget()
 		}
 	}
 }
-

@@ -3,12 +3,12 @@
 #include "StdAfx.h"
 #include "AssetThumbnailsLoader.h"
 
-#include <AssetSystem/AssetType.h>
 #include <AssetSystem/AssetManager.h>
-#include <FilePathUtil.h>
+#include <AssetSystem/AssetType.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <QIcon>
 #include <QPixmap>
@@ -24,7 +24,7 @@ namespace Private_AssetThumbnailsLoader
 std::vector<char> LoadThumbnailData(const CAsset& asset)
 {
 	ICryPak* const pPak = GetISystem()->GetIPak();
-	FILE* pFile = pPak->FOpen(asset.GetThumbnailPath(), "rbx");
+	FILE* pFile = pPak->FOpen(asset.GetThumbnailPath(), "rb");
 	if (!pFile)
 	{
 		return{};
@@ -96,8 +96,12 @@ private:
 				pixmap.loadFromData((const uchar*)&thumbnailData[0], thumbnailData.size(), "PNG");
 				asset.SetThumbnail(QIcon(pixmap));
 			}
+			else
+			{
+				asset.SetThumbnail(asset.GetType()->GetIcon());
+			}
 
-			CAssetThumbnailsLoader::GetInstance().signalAssetThumbnailLoaded(asset);
+			CAssetThumbnailsLoader::GetInstance().NotifyThumbnailLoaded(asset);
 
 			m_frontBuffer.pop_back();
 			++i;
@@ -128,13 +132,10 @@ void CAssetThumbnailsLoader::PostAsset(CAsset* pAsset)
 	{
 		std::lock_guard<std::mutex> lock(m_assetsMutex);
 
-		if (pAsset->IsThumbnailLoaded())
+		if (pAsset->IsThumbnailLoaded() || m_activeRequests.find(pAsset) != m_activeRequests.end())
 		{
 			return;
 		}
-		// Mark as loaded immediately to ignore requests that have already been posted.
-		// CAssetThumbnailsLoader::signalAssetThumbnailLoaded will notify when the real thumbnail loading is completed.
-		pAsset->SetThumbnail(pAsset->GetType()->GetIcon());
 
 		if (!m_assets.Full())
 		{
@@ -143,9 +144,11 @@ void CAssetThumbnailsLoader::PostAsset(CAsset* pAsset)
 		else // Delete the request with the lowest priority. Notify the caller so that it can add it again, if it is still needed.
 		{
 			m_assets.Front()->InvalidateThumbnail();
-			signalAssetThumbnailLoaded(*m_assets.Front());
+			NotifyThumbnailLoaded(*m_assets.Front());
 			m_assets.CyclePush(pAsset);
 		}
+
+		m_activeRequests.insert(pAsset);
 	}
 	m_conditionVariable.notify_one();
 }
@@ -168,6 +171,7 @@ void CAssetThumbnailsLoader::TouchAsset(CAsset* pAsset)
 CAssetThumbnailsLoader::CAssetThumbnailsLoader()
 	: m_pFinalizer(new CAssetThumbnailsFinalizer())
 	, m_bGenerateThumbnais(false)
+	, m_activeRequests(m_queueSize)
 {
 	REGISTER_INT_CB("ed_generateThumbnails", 1, 0,
 		"When non-zero, enables lazy auto-generation of preview thumbnails for cryassets.", 
@@ -224,7 +228,7 @@ void CAssetThumbnailsLoader::ThreadFunc()
 void CAssetThumbnailsLoader::OnCVarChanged(ICVar* const pGenerateThumbnais)
 {
 	CRY_ASSERT(pGenerateThumbnais);
-	CRY_ASSERT(pGenerateThumbnais->GetType() == CVAR_INT);
+	CRY_ASSERT(pGenerateThumbnais->GetType() == ECVarType::Int);
 	CRY_ASSERT(strcmp(pGenerateThumbnais->GetName(), "ed_generateThumbnails") == 0);
 
 	GetInstance().SetGenerateThumbnais(pGenerateThumbnais->GetIVal() != 0);
@@ -241,3 +245,8 @@ void CAssetThumbnailsLoader::OnCVarChanged(ICVar* const pGenerateThumbnais)
 	}
 }
 
+void CAssetThumbnailsLoader::NotifyThumbnailLoaded(CAsset& asset)
+{
+	signalAssetThumbnailLoaded(asset);
+	m_activeRequests.erase(&asset);
+}

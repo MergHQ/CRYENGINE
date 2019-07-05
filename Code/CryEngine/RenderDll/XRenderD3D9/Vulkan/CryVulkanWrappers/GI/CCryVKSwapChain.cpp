@@ -163,7 +163,7 @@ HRESULT STDMETHODCALLTYPE CCryVKSwapChain::ResizeBuffers(
 		Desc.BufferCount, Desc.BufferDesc.Width, Desc.BufferDesc.Height, m_pVKSwapChain->GetKHRSurface(), NCryVulkan::DXGIFormatToVKFormat(Desc.BufferDesc.Format),
 		presentMode, NCryVulkan::DXGIUsagetoVkUsage((DXGI_USAGE)Desc.BufferUsage));
 
-	m_pDevice->FlushAndWaitForGPU();
+	m_pVKSwapChain->FlushAndWaitForBuffers();
 
 	if (pVKSwapChain)
 	{
@@ -217,6 +217,7 @@ VkPresentModeKHR CCryVKSwapChain::GetPresentMode(const VkPhysicalDevice& physica
 
 bool CCryVKSwapChain::ApplyFullscreenState(bool bFullscreen, uint32_t width, uint32_t height)
 {
+#if CRY_PLATFORM_WINDOWS
 	int result = DISP_CHANGE_FAILED;
 
 	if (bFullscreen)
@@ -241,6 +242,17 @@ bool CCryVKSwapChain::ApplyFullscreenState(bool bFullscreen, uint32_t width, uin
 	}
 
 	return result == DISP_CHANGE_SUCCESSFUL;
+#elif CRY_PLATFORM_LINUX
+	CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING,
+			   "CCryVKSwapChain::ApplyFullscreenState not implemented on Linux.");
+	return false;
+#elif CRY_PLATFORM_ANDROID
+	CryWarning(EValidatorModule::VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING,
+			   "CCryVKSwapChain::ApplyFullscreenState not implemented on Android.");
+	return false;
+#else
+	#error "Unknown platform in CCryVKSwapChain::ApplyFullscreenState."
+#endif
 }
 
 /* IDXGISwapChain1 implementation */

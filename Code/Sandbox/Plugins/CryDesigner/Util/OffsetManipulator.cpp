@@ -2,13 +2,15 @@
 
 #include "StdAfx.h"
 #include "OffsetManipulator.h"
-#include "Core/Model.h"
-#include "Grid.h"
-#include "Viewport.h"
-#include "DesignerEditor.h"
-#include "Util/Display.h"
+
+#include "Core/Helper.h"
 #include "Core/LoopPolygons.h"
-#include "Objects/DisplayContext.h"
+#include "Util/Display.h"
+#include "DesignerEditor.h"
+
+#include <Objects/DisplayContext.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -66,7 +68,7 @@ void OffsetManipulator::UpdateOffset(BrushFloat scale)
 	m_Scale = ApplyScaleCheckingBoundary(m_pScaledPolygon, scale);
 }
 
-void OffsetManipulator::Display(DisplayContext& dc, bool bDisplayDistanceLine)
+void OffsetManipulator::Display(SDisplayContext& dc, bool bDisplayDistanceLine)
 {
 	if (!m_bValid)
 		return;
@@ -88,4 +90,3 @@ void OffsetManipulator::Display(DisplayContext& dc, bool bDisplayDistanceLine)
 	dc.SetLineWidth(oldThickness);
 }
 }
-

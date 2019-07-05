@@ -20,6 +20,8 @@ not really a "weapon": is just the hands grabbing objects (barrels etc) and thro
 class CPlayer;
 class Agent;
 class CEnvironmentalWeapon;
+
+struct IActionController;
 struct SAutoaimTarget; 
 
 #if !defined(_RELEASE) && !defined(PERFORMANCE_BUILD)
@@ -77,7 +79,7 @@ public:
 	virtual void Update(SEntityUpdateContext& ctx, int val );
 	virtual bool Init(IGameObject * pGameObject);	
 	virtual bool UpdateAimAnims( SParams_WeaponFPAiming &aimAnimParams);
-	virtual void UpdateTags(const class IActionController *pActionController, class CTagState &tagState, bool selected) const;
+	virtual void UpdateTags(const IActionController *pActionController, class CTagState &tagState, bool selected) const;
 	virtual bool GetAnimGraphInputs(CItem::TempAGInputName &pose, CItem::TempAGInputName &suffix, CItem::TempAGInputName &itemClass);
 	virtual void Reset();
 	virtual float GetMeleeRange() const;

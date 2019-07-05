@@ -437,11 +437,13 @@ void CGameServerNub::BannedStatus()
 			m_banned.erase(m_banned.begin() + i);
 			--i;
 		}
+#if !defined(EXCLUDE_NORMAL_LOG)
 		else
 		{
 			int left = int((m_banned[i].time - gEnv->pTimer->GetFrameStartTime()).GetSeconds() + 0.5f);
 			CryLogAlways("profile : %d, time left : %d:%02d", m_banned[i].profileId, left / 60, left % 60);
 		}
+#endif
 	}
 	CryLogAlways("-----------------------------------------");
 }

@@ -2,13 +2,14 @@
 
 // ResourceCompiler.cpp: Defines the entry point for the console application.
 
-#include "stdafx.h"
+#include "StdAfx.h"
 
 // Must be included only once in DLL module.
 #include <CryCore/Assert/CryAssert_impl.h>
 #include <platform_implRC.inl>
 
-#include <time.h>
+#include <ctime>
+#include <mutex>
 
 #include <CryCore/Platform/CryWindows.h>   // needed for DbgHelp.h
 #include <DbgHelp.h>
@@ -28,7 +29,7 @@
 #include "ListFile.h"
 #include "Util.h"
 #include "ICryXML.h"
-#include "IXmlSerializer.h"
+#include "IXMLSerializer.h"
 #include "MathHelpers.h"
 #include "NameConverter.h"
 #include <CryCore/CryCrc32.h>
@@ -234,17 +235,17 @@ public:
 	std::vector<RcFile> m_convertedFiles;
 
 private:
-	ThreadUtils::CriticalSection m_lock;
+	std::recursive_mutex m_lock;
 
 public:
 	void lock()
 	{
-		m_lock.Lock();
+		m_lock.lock();
 	}
 
 	void unlock()
 	{
-		m_lock.Unlock();
+		m_lock.unlock();
 	}
 };
 
@@ -265,7 +266,7 @@ struct RcThreadData
 };
 
 unsigned int WINAPI ThreadFunc(void* threadDataMemory);
-	
+
 static void CompileFilesMultiThreaded(
 	ResourceCompiler* pRC,
 	unsigned long a_tlsIndex_pThreadData,
@@ -824,7 +825,7 @@ bool ResourceCompiler::CompileFiles(const std::vector<RcFile>& files, const ICon
 
 		if (!converter)
 		{
-			RCLogWarning("Cannot find converter for %s", filenameForConverterSearch);
+			RCLogWarning("Cannot find converter for %s", filenameForConverterSearch.c_str());
 			filesToConvert.m_allFiles.erase(filesToConvert.m_allFiles.begin() + i);
 			--i;
 			continue;
@@ -1077,7 +1078,7 @@ bool ResourceCompiler::CompileFile(
 		RCLog("  sourceFullFileName: '%s'", sourceFullFileName);
 		RCLog("  targetLeftPath: '%s'", targetLeftPath);
 		RCLog("  sourceInnerPath: '%s'", sourceInnerPath);
-		RCLog("targetPath: '%s'", targetPath);
+		RCLog("targetPath: '%s'", targetPath.c_str());
 	}
 
 	// Setup conversion context.
@@ -1130,7 +1131,7 @@ bool ResourceCompiler::CompileFile(
 	if (GetVerbosityLevel() >= 2)
 	{
 		RCLog("sourceFullFileName: '%s'", sourceFullFileName);
-		RCLog("outputFolder: '%s'", outputFolder);
+		RCLog("outputFolder: '%s'", outputFolder.c_str());
 		RCLog("Path='%s'", PathHelpers::CanonicalizePath(sourceInnerPath).c_str());
 		RCLog("File='%s'", sourceFileName.c_str());
 	}
@@ -1178,8 +1179,7 @@ void ResourceCompiler::AddInputOutputFilePair(const char* inputFilename, const c
 {
 	assert(outputFilename && outputFilename[0]);
 	assert(inputFilename && inputFilename[0]); 
-
-	ThreadUtils::AutoLock lock(m_inputOutputFilesLock);
+	std::lock_guard<std::recursive_mutex> lock(m_inputOutputFilesMutex);
 
 	m_inputOutputFileList.Add(inputFilename, outputFilename);
 }
@@ -1188,7 +1188,7 @@ void ResourceCompiler::MarkOutputFileForRemoval(const char* outputFilename)
 {
 	assert(outputFilename && outputFilename[0]);
 
-	ThreadUtils::AutoLock lock(m_inputOutputFilesLock);
+	std::lock_guard<std::recursive_mutex> lock(m_inputOutputFilesMutex);
 
 	// using empty input file name will force CleanTargetFolder(false) to delete the output file
 	m_inputOutputFileList.Add("", outputFilename);
@@ -1212,8 +1212,7 @@ void ResourceCompiler::InitializeThreadIds()
 
 void ResourceCompiler::LogLine(const IRCLog::EType eType, const char* szText)
 {
-	ThreadUtils::AutoLock lock(m_logLock);
-
+	std::lock_guard<std::recursive_mutex> lock(m_logMutex);
 	if (eType == IRCLog::eType_Warning)
 	{
 		++m_numWarnings;
@@ -1265,11 +1264,11 @@ void ResourceCompiler::LogLine(const IRCLog::EType eType, const char* szText)
 	switch(eType)
 	{
 	case IRCLog::eType_Info:
-		prefix = "   ";
+		prefix = "     ";
 		break;
 
 	case IRCLog::eType_Warning:
-		prefix = "W: ";
+		prefix = "[W]: ";
 		if (!m_warningLogFileName.empty())
 		{
 			additionalLogFileName = m_warningLogFileName.c_str();
@@ -1281,7 +1280,7 @@ void ResourceCompiler::LogLine(const IRCLog::EType eType, const char* szText)
 		break;
 
 	case IRCLog::eType_Error:
-		prefix = "E: ";
+		prefix = "[E]: ";
 		if (!m_errorLogFileName.empty())
 		{
 			additionalLogFileName = m_errorLogFileName.c_str();
@@ -1467,10 +1466,9 @@ bool ResourceCompiler::RegisterConverters()
 			RCLogError("Error code: 0x%x (%s)", errCode, messageBuffer);
 			return false;
 		}
-		
 		FnRegisterConverters fnRegister = 
 			hPlugin 
-			? (FnRegisterConverters)GetProcAddress(hPlugin, "RegisterConverters") 
+		    ? (FnRegisterConverters)CryGetProcAddress(hPlugin, "RegisterConverters")
 			: NULL;
 		if (!fnRegister)
 		{
@@ -1528,7 +1526,7 @@ static string GetResourceCompilerGenericInfo(const ResourceCompiler& rc, const s
 	string s;
 	const SFileVersion& v = rc.GetFileVersion();
 
-#if defined(_WIN64)
+#if CRY_PLATFORM_64BIT
 	s += "ResourceCompiler  64-bit";
 #else
 	s += "ResourceCompiler  32-bit";
@@ -1550,7 +1548,7 @@ static string GetResourceCompilerGenericInfo(const ResourceCompiler& rc, const s
 #endif
 	s += newline;
 
-	s += StringHelpers::Format("Version %d.%d.%d.%d  %s %s", v.v[3], v.v[2], v.v[1], v.v[0], __DATE__, __TIME__);
+	s += StringHelpers::Format("Version %d.%d.%d.%d  %s %s", v[3], v[2], v[1], v[0], __DATE__, __TIME__);
 	s += newline;
 
 	s += newline;
@@ -1677,7 +1675,6 @@ static void ShowWaitDialog(const ResourceCompiler& rc, const string& action, con
 	}
 }
 
-
 static string GetTimeAsString(const time_t tm)
 {
 	char buffer[40] = { 0 };
@@ -1701,7 +1698,7 @@ static void ShowResourceCompilerVersionInfo(const ResourceCompiler& rc)
 	StringHelpers::Split(info, newline, true, rows);
 	for (size_t i = 0; i < rows.size(); ++i)
 	{
-		RCLog("%s", rows[i]);
+		RCLog("%s", rows[i].c_str());
 	}
 }
 
@@ -1790,7 +1787,6 @@ static void EnableCrtMemoryChecks()
 	// Check heap every 
 	//_CrtSetBreakAlloc(2031);
 }
-
 
 static void GetCommandLineArguments(std::vector<string>& resArgs)
 {
@@ -2376,10 +2372,10 @@ void ResourceCompiler::QueryVersionInfo()
 		UINT len;
 		VerQueryValue(ver, "\\", (void**)&vinfo, &len);
 
-		m_fileVersion.v[0] = vinfo->dwFileVersionLS & 0xFFFF;
-		m_fileVersion.v[1] = vinfo->dwFileVersionLS >> 16;
-		m_fileVersion.v[2] = vinfo->dwFileVersionMS & 0xFFFF;
-		m_fileVersion.v[3] = vinfo->dwFileVersionMS >> 16;
+		m_fileVersion[0] = vinfo->dwFileVersionLS & 0xFFFF;
+		m_fileVersion[1] = vinfo->dwFileVersionLS >> 16;
+		m_fileVersion[2] = vinfo->dwFileVersionMS & 0xFFFF;
+		m_fileVersion[3] = vinfo->dwFileVersionMS >> 16;
 	}
 }
 
@@ -2388,7 +2384,7 @@ void ResourceCompiler::InitPaths()
 {
 	if (m_exePath.empty())
 	{
-		printf("RC InitPaths(): internal error");
+		printf("RC InitPaths(): internal error\n");
 		exit(eRcExitCode_FatalError);
 	}
 
@@ -2415,7 +2411,7 @@ void ResourceCompiler::InitPaths()
 	m_initialCurrentDir = PathHelpers::GetAbsolutePath(".");
 	if (m_initialCurrentDir.empty())
 	{
-		printf("RC InitPaths(): internal error");
+		printf("RC InitPaths(): internal error\n");
 		exit(eRcExitCode_FatalError);
 	}
 	m_initialCurrentDir = PathUtil::AddSlash(m_initialCurrentDir);
@@ -2491,7 +2487,7 @@ void ResourceCompiler::TryToGetFilesFromCache(FilesToConvert & files, IConverter
 	files.m_inputFiles.clear();
 
 	const string progressString("Getting files from the cache");
-	RCLog("%s %s.", progressString, m_cacheFolder);
+	RCLog("%s %s.", progressString.c_str(), m_cacheFolder.c_str());
 
 	StartProgress();
 
@@ -2510,7 +2506,7 @@ void ResourceCompiler::TryToGetFilesFromCache(FilesToConvert & files, IConverter
 
 		FileUtil::EnsureDirectoryExists(outputFolder);
 
-		const string key = string().Format("%s-%s", sourceFileName, computeFileDigest(sourceFullFileName).c_str()).replace(".", "-");
+		const string key = string().Format("%s-%s", sourceFileName.c_str(), computeFileDigest(sourceFullFileName).c_str()).replace(".", "-");
 
 		std::vector<string> cachedFiles;
 
@@ -2553,7 +2549,7 @@ void ResourceCompiler::AddFilesToTheCache(const FilesToConvert & files)
 
 	const string progressString("Adding files to the cache");
 
-	RCLog("%s %s.", progressString, m_cacheFolder);
+	RCLog("%s %s.", progressString.c_str(), m_cacheFolder.c_str());
 
 	StartProgress();
 
@@ -2587,13 +2583,13 @@ void ResourceCompiler::AddFilesToTheCache(const FilesToConvert & files)
 
 		if (GetVerbosityLevel() >= 1)
 		{
-			RCLog("file='%s'", file.m_sourceInnerPathAndName);
+			RCLog("file='%s'", file.m_sourceInnerPathAndName.c_str());
 		}
 		if (GetVerbosityLevel() >= 1)
 		{
 			for (const string& outputFile : outputFiles)
 			{
-				RCLog("\t""output file='%s'", outputFile);
+				RCLog("\t""output file='%s'", outputFile.c_str());
 			}
 		}
 
@@ -2965,7 +2961,7 @@ void ResourceCompiler::AddExitObserver(IResourceCompiler::IExitObserver* p)
 		return;
 	}
 
-	ThreadUtils::AutoLock lock(m_exitObserversLock);
+	std::lock_guard<std::recursive_mutex> lock(m_exitObserversMutex);
 
 	m_exitObservers.push_back(p);
 }
@@ -2977,7 +2973,7 @@ void ResourceCompiler::RemoveExitObserver(IResourceCompiler::IExitObserver* p)
 		return;
 	}
 
-	ThreadUtils::AutoLock lock(m_exitObserversLock);
+	std::lock_guard<std::recursive_mutex> lock(m_exitObserversMutex);
 
 	for (size_t i = 0; i < m_exitObservers.size(); ++i)
 	{
@@ -2991,7 +2987,7 @@ void ResourceCompiler::RemoveExitObserver(IResourceCompiler::IExitObserver* p)
 
 void ResourceCompiler::NotifyExitObservers()
 {
-	ThreadUtils::AutoLock lock(m_exitObserversLock);
+	std::lock_guard<std::recursive_mutex> lock(m_exitObserversMutex);
 
 	for (size_t i = 0; i < m_exitObservers.size(); ++i)
 	{
@@ -3193,7 +3189,7 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 			++numFilesMissing;
 			if (!bSkipMissing)
 			{
-				RCLog("Source file %s does not exist", srcFilename.c_str());
+				RCLogWarning("Source file %s does not exist", srcFilename.c_str());
 			}
 			continue;
 		}
@@ -3201,10 +3197,7 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 		{
 			if (!FileUtil::EnsureDirectoryExists(PathHelpers::GetDirectory(trgFilename).c_str()))
 			{
-				RCLog("Failed creating directory for %s", trgFilename.c_str());
-				++numFilesFailed;
-				RCLog("Failed to copy %s to %s", srcFilename.c_str(), trgFilename.c_str());
-				continue;
+				RCLogWarning("Failed creating directory for %s", trgFilename.c_str());
 			}
 
 			//////////////////////////////////////////////////////////////////////////
@@ -3235,19 +3228,24 @@ void ResourceCompiler::CopyFiles(const std::vector<RcFile>& files)
 				}
 			}
 
-			SetFileAttributes(trgFilename,FILE_ATTRIBUTE_ARCHIVE);
-			const bool bCopied = (::CopyFile( srcFilename,trgFilename,FALSE ) != 0);
-
-			if (bCopied)
+			string copyFileErrorString;
+			const int numberOfAdditionalAttempts = 2;
+			const bool copied = FileUtil::CopyFileAllowOverwrite(srcFilename, trgFilename, copyFileErrorString, numberOfAdditionalAttempts);
+			if (copied)
 			{
 				++numFilesCopied;
-				SetFileAttributes(trgFilename,FILE_ATTRIBUTE_ARCHIVE);
 				FileUtil::SetFileTimes(trgFilename,ftSource);
+
+				if (!copyFileErrorString.empty() && GetVerbosityLevel() >= 1)
+				{
+					RCLogWarning("The copy operation completed successfully after several attempts with the intermediate error: %s", copyFileErrorString.c_str());
+				}
 			}
 			else
 			{
 				++numFilesFailed;
-				RCLog("Failed to copy %s to %s", srcFilename.c_str(), trgFilename.c_str());
+				RCLogError("Failed to copy %s to %s: %s.", srcFilename.c_str(), trgFilename.c_str(), copyFileErrorString.c_str());
+				continue;
 			}
 		}
 
@@ -3690,7 +3688,7 @@ static ICryXML* LoadICryXML()
 		RCLogError("Unable to load xml library (CryXML.dll)");
 		return 0;
 	}
-	FnGetICryXML pfnGetICryXML = (FnGetICryXML)GetProcAddress(hXMLLibrary, "GetICryXML");
+	FnGetICryXML pfnGetICryXML = (FnGetICryXML)CryGetProcAddress(hXMLLibrary, "GetICryXML");
 	if (pfnGetICryXML == 0)
 	{
 		RCLogError("Unable to load xml library (CryXML.dll) - cannot find exported function GetICryXML().");
@@ -4176,7 +4174,7 @@ void ResourceCompiler::LogMemoryUsage(bool bReportProblemsOnly)
 
 	bool bReportProblem = false;
 	{
-		ThreadUtils::AutoLock lock(m_memorySizeLock);
+		std::lock_guard<std::recursive_mutex> lock(m_memorySizeMutex);
 		if (peakSizeMb > m_memorySizePeakMb)
 		{
 			m_memorySizePeakMb = peakSizeMb;

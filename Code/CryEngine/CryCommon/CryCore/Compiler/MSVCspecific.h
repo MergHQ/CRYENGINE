@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   MSVCSpecific.h
-//  Version:     v1.00
-//  Created:     5/4/2005 by Scott
-//  Compilers:   Visual Studio.NET 2003
 //  Description: Settings for all builds under MS Visual C++ compiler
 // -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#pragma once
 
 #ifndef _MSC_VER
 	#error This file should only be included on MSVC compiler
@@ -41,7 +34,7 @@
 #define __FUNC__               __FUNCTION__
 #define CRY_FUNC_HAS_SIGNATURE 0
 
-//! PREfast heleprs
+//! PREfast helpers
 #define PREFAST_SUPPRESS_WARNING(W) __pragma(warning(suppress: W))
 #ifdef _PREFAST_
 	#define PREFAST_ASSUME(cond)      __analysis_assume(cond)
@@ -50,7 +43,8 @@
 #endif
 
 #if _MSVC_LANG > 201402L
-#define CRY_DEPRECATED(message) [[deprecated(message)]]
+//#define CRY_DEPRECATED(message) [[deprecated(message)]] // This declaration still doesn't compile always on C++17
+#define CRY_DEPRECATED(message) __declspec(deprecated(message))
 #else
 #define CRY_DEPRECATED(message) __declspec(deprecated(message))
 #endif
@@ -58,9 +52,6 @@
 //! Portable alignment helper, can be placed after the struct/class/union keyword, or before the type of a declaration.
 //! Example: struct CRY_ALIGN(16) { ... }; CRY_ALIGN(16) char myAlignedChar;
 #define CRY_ALIGN(bytes) __declspec(align(bytes))
-
-//! Restricted reference (similar to restricted pointer), use like: SFoo& RESTRICT_REFERENCE myFoo = ...;
-#define RESTRICT_REFERENCE
 
 //! Compiler-supported type-checking helper
 #define PRINTF_PARAMS(...)
@@ -89,6 +80,13 @@
 //! Unreachable code marker for helping error handling and optimization
 #define UNREACHABLE() __assume(0)
 
+#if !defined(CRY_DISABLE_WARNING_UNUSED_VARIABLES)
+
+#define CRY_DISABLE_WARN_UNUSED_VARIABLES() __pragma(warning(push)) __pragma(warning(disable: 4189))
+#define CRY_RESTORE_WARN_UNUSED_VARIABLES() __pragma(warning(pop))
+
+#endif
+
 // Disable (and enable) specific compiler warnings.
 // MSVC compiler is very confusing in that some 4xxx warnings are shown even with warning level 3,
 // and some 4xxx warnings are NOT shown even with warning level 4.
@@ -107,9 +105,16 @@
 #pragma warning(disable: 4316)  // 'T' : object allocated on the heap may not be aligned X
 
 // Turn on the following very useful warnings.
-#pragma warning(3: 4264)        // no override available for virtual member function from base 'class'; function is hidden
-#pragma warning(3: 4266)        // no override available for virtual member function from base 'type'; function is hidden
+#pragma warning(3: 4264)     // no override available for virtual member function from base 'class'; function is hidden
+#pragma warning(3: 4266)     // no override available for virtual member function from base 'type'; function is hidden
+#pragma warning(error: 4189) // local variable is initialized but not referenced
+#pragma warning(error: 4101) // unreferenced local variable
 
 // Flag for enabling extended alignment for std::aligned_storage after VS 2017 15.8
 // Before VS 2017 15.8, the member type would non-conformingly have an alignment of only alignof(max_align_t). 
 #define _ENABLE_EXTENDED_ALIGNED_STORAGE
+
+// std::result_of and std::result_of_t are deprecated in C++17.
+// They are superseded by std::invoke_result and std::invoke_result_t.
+// You can define _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING or _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS to acknowledge that you have received this warning.
+#define _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING

@@ -6,6 +6,7 @@
 #include "Network/Lobby/GameBrowser.h"
 #include "UI/ProfileOptions.h"
 #include "GameLobbyData.h"
+#include "Game.h"
 
 #if IMPLEMENT_PC_BLADES
 /////////////////////////////////////////

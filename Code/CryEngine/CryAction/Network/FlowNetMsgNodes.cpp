@@ -67,7 +67,7 @@ public:
 				const string& value = GetPortString(pActInfo, IN_VALUE);
 				const int iTarget = GetPortInt(pActInfo, IN_TARGET);
 				SNetMsgData::ETarget target = SNetMsgData::ConvertTargetIntToEnum(iTarget);
-				CRY_ASSERT_MESSAGE(target != SNetMsgData::eT_Invalid, "CFlowNode_MsgSender: IN_TARGET input got converted to an invalid Enum");
+				CRY_ASSERT(target != SNetMsgData::eT_Invalid, "CFlowNode_MsgSender: IN_TARGET input got converted to an invalid Enum");
 
 				if (target != SNetMsgData::eT_Invalid)
 				{

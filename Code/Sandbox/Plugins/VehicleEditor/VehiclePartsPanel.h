@@ -1,13 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VehiclePartsPanel_h__
-#define __VehiclePartsPanel_h__
 #pragma once
 
 #include "PropertyCtrlExt.h"
 
-#include "Controls\TreeCtrlEx.h"
-#include "Controls\SplitterCtrl.h"
+#include "Controls/TreeCtrlEx.h"
+#include "Controls/SplitterCtrl.h"
 
 #include "VehicleDialogComponent.h"
 
@@ -15,8 +13,8 @@ class CVehicleEditorDialog;
 class CVehicleHelper;
 class CVehiclePart;
 class CVehiclePartsPanel;
-class CVehicleWeapon;
 class CVehicleSeat;
+class CVehicleWeapon;
 
 //! Tools panel
 class CPartsToolsPanel : public CDialog
@@ -44,7 +42,6 @@ protected:
 	afx_msg void OnDisplayVeedHelpers();
 	afx_msg void OnDisplayAssetHelpers();
 	afx_msg void OnDisplayComps();
-
 };
 
 //! CWheelMasterDialog
@@ -53,7 +50,7 @@ class CWheelMasterDialog : public CDialog
 	DECLARE_DYNAMIC(CWheelMasterDialog)
 
 public:
-	CWheelMasterDialog(CWnd* pParent = NULL);     // standard constructor
+	CWheelMasterDialog(CWnd* pParent = NULL);
 	virtual ~CWheelMasterDialog() {}
 
 	virtual BOOL OnInitDialog();
@@ -86,7 +83,6 @@ protected:
 	std::vector<CVehiclePart*>* m_pWheels;
 
 	BOOL                        m_toggleAll;
-
 };
 
 /*!
@@ -107,7 +103,7 @@ public:
 	void          UpdateVariables();
 	void          ReloadTreeCtrl();
 	void          OnApplyChanges(IVariable* pVar);
-	void          OnObjectEvent(CBaseObject* object, int event);
+	void          OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event);
 	void          DeleteTreeObjects(const CRuntimeClass* pClass);
 	CVehiclePart* GetPartForHelper(CVehicleHelper* pHelper);
 
@@ -209,6 +205,3 @@ protected:
 
 	BOOL         m_bSeats;
 };
-
-#endif // __VehiclePartsPanel_h__
-

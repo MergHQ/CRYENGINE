@@ -18,6 +18,7 @@
 #pragma once
 
 #include "NavPath.h"
+#include "Navigation/MNM/NavMesh.h"
 #include <CryAISystem/INavigationSystem.h>
 
 template<class T>
@@ -137,8 +138,6 @@ private:
 		if (m_path.size() < 3)
 			return;
 
-		const Vec3 gridOrigin = navMesh.GetGridParams().origin;
-
 		for (uint16 i = 0; i < iteration; ++i)
 		{
 			typename PathHolderPath::reverse_iterator it = m_path.rbegin();
@@ -152,8 +151,7 @@ private:
 				T& middlePoint = *(it + 1);
 				const T& endPoint = *(it + 2);
 				// Let's pull only the triplets that are fully not interacting with off-mesh links
-				if ((middlePoint.offMeshLinkData.offMeshLinkID == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID) &&
-					(endPoint.offMeshLinkData.offMeshLinkID == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID))
+				if (!middlePoint.offMeshLinkData.offMeshLinkID.IsValid() && !endPoint.offMeshLinkData.offMeshLinkID.IsValid())
 				{
 					const Vec3& from = startPoint.vPos;
 					const Vec3& to = endPoint.vPos;
@@ -163,12 +161,12 @@ private:
 					{
 						Vec3& middle = middlePoint.vPos;
 
-						MNM::vector3_t startLocation(from - gridOrigin);
-						MNM::vector3_t middleLocation(middle - gridOrigin);
-						MNM::vector3_t endLocation(to - gridOrigin);
+						MNM::vector3_t startLocation = navMesh.ToMeshSpace(from);
+						MNM::vector3_t middleLocation = navMesh.ToMeshSpace(middle);
+						MNM::vector3_t endLocation = navMesh.ToMeshSpace(to);
 
 						navMesh.PullString(startLocation, startPoint.iTriId, endLocation, middlePoint.iTriId, middleLocation);
-						middle = middleLocation.GetVec3() + gridOrigin;
+						middle = navMesh.ToWorldSpace(middleLocation).GetVec3();
 					}
 				}
 			}

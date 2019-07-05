@@ -64,8 +64,7 @@ protected:
 			entry.keySelectionFlags.push_back(pSpline->GetKeyFlags(i) & ESPLINE_KEY_UI_SELECTED_MASK);
 	}
 
-	virtual int         GetSize()        { return sizeof(*this); }
-	virtual const char* GetDescription() { return "UndoSplineCtrlEx"; };
+	virtual const char* GetDescription() { return "UndoSplineCtrlEx"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -567,7 +566,6 @@ BOOL CSplineCtrlEx::OnEraseBkgnd(CDC* pDC)
 void CSplineCtrlEx::OnSize(UINT nType, int cx, int cy)
 {
 	CRect oldRect = m_rcSpline;
-	;
 
 	__super::OnSize(nType, cx, cy);
 
@@ -636,7 +634,6 @@ CPoint CSplineCtrlEx::TimeToPoint(float time, ISplineInterpolator* pSpline)
 		pSpline->InterpolateFloat(time, val);
 
 	return WorldToClient(Vec2(time, val));
-	;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -894,9 +891,9 @@ void CSplineCtrlEx::DrawSpline(CDC* pDC, SSplineInfo& splineInfo, float startTim
 	nTotalNumberOfDimensions = pSpline->GetNumDimensions();
 	for (nCurrentDimension = 0; nCurrentDimension < nTotalNumberOfDimensions; nCurrentDimension++)
 	{
-		COLORREF splineColor = EDIT_SPLINE_COLOR;
+		COLORREF splineColor = splineInfo.anColorArray[nCurrentDimension];
+
 		CPen pen;
-		splineColor = splineInfo.anColorArray[nCurrentDimension];
 		pen.CreatePen(PS_SOLID, 2, splineColor);
 
 		if (p0.x > left && !pDetailSpline)
@@ -1015,8 +1012,6 @@ void CSplineCtrlEx::DrawKeys(CDC* pDC, int splineIndex, float startTime, float e
 	pen.CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
 	CPen* pOldPen = pDC->SelectObject(&pen);
 
-	int lastKeyX = m_rcSpline.left - 100;
-
 	int i;
 
 	int nTotalNumberOfDimensions(0);
@@ -1051,7 +1046,6 @@ void CSplineCtrlEx::DrawKeys(CDC* pDC, int splineIndex, float startTime, float e
 				value[nCurrentDimension] = value[nCurrentDimension] + value2[nCurrentDimension];
 			}
 			CPoint pt = WorldToClient(Vec2(time, value[nCurrentDimension]));
-			;
 
 			if (pt.x < m_rcSpline.left)
 			{
@@ -1179,9 +1173,7 @@ void CSplineCtrlEx::OnLButtonDown(UINT nFlags, CPoint point)
 	ISplineInterpolator* pSpline = HitSpline(point);
 
 	// Get control key status.
-	bool bAltClick = CheckVirtualKey(VK_MENU);
 	bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-	bool bShiftClick = CheckVirtualKey(VK_SHIFT);
 
 	switch (m_hitCode)
 	{
@@ -1398,8 +1390,6 @@ void CSplineCtrlEx::OnMouseMove(UINT nFlags, CPoint point)
 			StoreUndo();
 
 			bool bAltClick = CheckVirtualKey(VK_MENU);
-			bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-			bool bShiftClick = CheckVirtualKey(VK_SHIFT);
 
 			Vec2 v0 = ClientToWorld(m_cMouseDownPos);
 			Vec2 v1 = ClientToWorld(point);
@@ -1571,14 +1561,6 @@ void CSplineCtrlEx::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (!m_startedDragging)
 		{
-			// Get control key status.
-			bool bAltClick = CheckVirtualKey(VK_MENU);
-			bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-			bool bShiftClick = CheckVirtualKey(VK_SHIFT);
-
-			bool bAddSelect = bCtrlClick;
-			bool bUnselect = bAltClick;
-
 			HitSpline(m_cMouseDownPos);
 		}
 	}
@@ -1588,7 +1570,6 @@ void CSplineCtrlEx::OnLButtonUp(UINT nFlags, CPoint point)
 		// Get control key status.
 		bool bAltClick = CheckVirtualKey(VK_MENU);
 		bool bCtrlClick = CheckVirtualKey(VK_CONTROL);
-		bool bShiftClick = CheckVirtualKey(VK_SHIFT);
 
 		bool bAddSelect = bCtrlClick;
 		bool bUnselect = bAltClick;
@@ -2031,7 +2012,6 @@ CSplineCtrlEx::EHitCode CSplineCtrlEx::HitTest(CPoint point)
 			}
 
 			CPoint splinePt = WorldToClient(Vec2(time, stSplineValue[nCurrentDimension]));
-			;
 			bool bSplineHit = abs(splinePt.x - point.x) < 4 && abs(splinePt.y - point.y) < 4;
 
 			if (bSplineHit)
@@ -2796,7 +2776,6 @@ void CSplineCtrlEx::SelectAll()
 	for (int splineIndex = 0, splineCount = m_splines.size(); splineIndex < splineCount; ++splineIndex)
 	{
 		ISplineInterpolator* pSpline = m_splines[splineIndex].pSpline;
-		ISplineInterpolator* pDetailSpline = m_splines[splineIndex].pDetailSpline;
 
 		for (int i = 0; i < (int)pSpline->GetKeyCount(); i++)
 			pSpline->SelectKeyAllDimensions(i, true);
@@ -3409,4 +3388,3 @@ void CSplineCtrlEx::OnCaptureChanged(CWnd* pWnd)
 {
 	StopTracking();
 }
-

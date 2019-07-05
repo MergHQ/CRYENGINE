@@ -29,7 +29,7 @@ void QuatTBlender::Init( const QuatT& blendLocationStart, const QuatT& blendLoca
 	m_translationBlendRequired	= true; 
 
 	// Validity
-	CRY_ASSERT_MESSAGE( m_totalBlendPeriod >= 0.0f, "QuatTBlender::Init(...) < error param totalBlendPeriod is invalid");
+	CRY_ASSERT( m_totalBlendPeriod >= 0.0f, "QuatTBlender::Init(...) < error param totalBlendPeriod is invalid");
 }
 
 void QuatTBlender::Init( const Quat& blendLocationStart, const Quat& blendLocationEnd, const float totalBlendPeriod )
@@ -48,12 +48,12 @@ void QuatTBlender::Init( const Quat& blendLocationStart, const Quat& blendLocati
 	m_translationBlendRequired	= false; 
 
 	// Validity
-	CRY_ASSERT_MESSAGE( m_totalBlendPeriod >= 0.0f, "QuatTBlender::Init(...) < error param totalBlendPeriod is invalid");
+	CRY_ASSERT( m_totalBlendPeriod >= 0.0f, "QuatTBlender::Init(...) < error param totalBlendPeriod is invalid");
 }
 
 const bool QuatTBlender::UpdateBlendOverTime( const float dt )
 {
-	CRY_ASSERT_MESSAGE( m_totalBlendPeriod >= 0.0f, "QuatTBlender::UpdateBlendOverTime(...) < error param totalBlendPeriod is invalid");
+	CRY_ASSERT( m_totalBlendPeriod >= 0.0f, "QuatTBlender::UpdateBlendOverTime(...) < error param totalBlendPeriod is invalid");
 
 	// Calc new T val
 	m_blendTimeElapsed += dt;

@@ -17,6 +17,7 @@ History:
 #define __ScreenLayoutManager_H__
 
 #include "IUIDraw.h" // For alignment flags.
+#include <CryRenderer/IRenderer.h>
 
 typedef uint8 ScreenLayoutStates;
 

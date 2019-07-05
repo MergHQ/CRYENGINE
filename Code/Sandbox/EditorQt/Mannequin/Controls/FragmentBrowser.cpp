@@ -3,20 +3,20 @@
 #include "stdafx.h"
 #include "FragmentBrowser.h"
 
-#include "../FragmentEditor.h"
-#include "../MannequinBase.h"
+#include "Mannequin/FragmentEditor.h"
+#include "Mannequin/MannequinBase.h"
 
-#include "../MannTagEditorDialog.h"
-#include "../MannAdvancedPasteDialog.h"
-#include "../MannequinDialog.h"
-#include "../SequencerDopeSheetBase.h"
+#include "Mannequin/MannTagEditorDialog.h"
+#include "Mannequin/MannAdvancedPasteDialog.h"
+#include "Mannequin/MannequinDialog.h"
+#include "Mannequin/SequencerDopeSheetBase.h"
 #include "Dialogs/QStringDialog.h"
 #include <CryGame/IGameFramework.h>
 #include <ICryMannequinEditor.h>
 #include "Util/Clipboard.h"
 #include "Controls/QuestionDialog.h"
 #include "Util/MFCUtil.h"
-#include "../MannequinUtil.h"
+#include "Mannequin/MannequinUtil.h"
 
 #define FILTER_DELAY_SECONDS (0.5f)
 
@@ -94,7 +94,7 @@ public:
 
 	virtual void OnDragLeave(CWnd* pWnd)
 	{
-		m_pDlg->m_TreeCtrl.SelectDropTarget(0);
+		m_pDlg->m_treeCtrl.SelectDropTarget(0);
 		ReleaseCapture();
 	}
 
@@ -107,7 +107,7 @@ public:
 			return FALSE;
 		}
 
-		m_pDlg->m_TreeCtrl.SelectDropTarget(0);
+		m_pDlg->m_treeCtrl.SelectDropTarget(0);
 		ReleaseCapture();
 
 		// Add the animation to the animation database through the browser, and rebuild the ID entry
@@ -117,23 +117,23 @@ public:
 	virtual DROPEFFECT OnDragScroll(CWnd* pWnd, DWORD dwKeyState, CPoint point)
 	{
 		CRect rect;
-		m_pDlg->m_TreeCtrl.GetClientRect(&rect);
+		m_pDlg->m_treeCtrl.GetClientRect(&rect);
 		rect.NormalizeRect();
 
 		m_pDlg->ClientToScreen(&point);
-		m_pDlg->m_TreeCtrl.ScreenToClient(&point);
+		m_pDlg->m_treeCtrl.ScreenToClient(&point);
 
 		//determine if we are close to top or bottom of tree control
 		if (point.y > (rect.Height() - 5))
 		{
 			//close to bottom, scroll down 1 line
-			m_pDlg->m_TreeCtrl.SendMessage(WM_VSCROLL, SB_LINEDOWN, 0l);
+			m_pDlg->m_treeCtrl.SendMessage(WM_VSCROLL, SB_LINEDOWN, 0l);
 			return DROPEFFECT_SCROLL;
 		}
 		else if (point.y < 5)
 		{
 			//close to top, scroll up 1 line
-			m_pDlg->m_TreeCtrl.SendMessage(WM_VSCROLL, SB_LINEUP, 0l);
+			m_pDlg->m_treeCtrl.SendMessage(WM_VSCROLL, SB_LINEUP, 0l);
 			return DROPEFFECT_SCROLL;
 		}
 		return DROPEFFECT_MOVE;
@@ -213,7 +213,7 @@ void CFragmentBrowser::LoadLayout(const XmlNodeRef& xmlLayout)
 	OnToggleShowEmpty();
 }
 
-void CFragmentBrowser::Update(void)
+void CFragmentBrowser::Update()
 {
 	static CTimeValue timeLast = gEnv->pTimer->GetAsyncTime();
 
@@ -236,7 +236,7 @@ void CFragmentBrowser::Update(void)
 void CFragmentBrowser::DoDataExchange(CDataExchange* pDX)
 {
 	__super::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_TREE_FB, m_TreeCtrl);
+	DDX_Control(pDX, IDC_TREE_FB, m_treeCtrl);
 	DDX_Control(pDX, IDC_CONTEXT, m_cbContext);
 	DDX_Control(pDX, IDC_EDIT_ADBFILE, m_CurrFile);
 	DDX_Control(pDX, IDC_FILTER_TAGS, m_editFilterTags);
@@ -263,10 +263,10 @@ BOOL CFragmentBrowser::OnInitDialog()
 
 	SetWindowText("Fragment Browser");
 
-	m_TreeCtrl.EnableMultiSelect(TRUE);
+	m_treeCtrl.EnableMultiSelect(TRUE);
 	if (CMFCUtils::LoadTrueColorImageList(m_imageList, IDB_ANIMATIONS_TREE, 16, RGB(255, 0, 255)))
 	{
-		m_TreeCtrl.SetImageList(&m_imageList, TVSIL_NORMAL);
+		m_treeCtrl.SetImageList(&m_imageList, TVSIL_NORMAL);
 	}
 
 	CMFCUtils::LoadTrueColorImageList(m_buttonImages, IDB_MANN_TAGDEF_TOOLBAR, 16, RGB(255, 0, 255));
@@ -349,24 +349,24 @@ void CFragmentBrowser::UpdateControlEnabledStatus()
 {
 	int numSelectedItems = 0;
 	bool canEdit = false;
-	if (HTREEITEM item = m_TreeCtrl.GetFirstSelectedItem())
+	if (HTREEITEM item = m_treeCtrl.GetFirstSelectedItem())
 	{
 		canEdit = true;
 		do
 		{
-			if (m_TreeCtrl.ItemHasChildren(item) || !m_TreeCtrl.GetParentItem(item))
+			if (m_treeCtrl.ItemHasChildren(item) || !m_treeCtrl.GetParentItem(item))
 			{
 				canEdit = false;
 			}
 			++numSelectedItems;
 		}
-		while (item = m_TreeCtrl.GetNextSelectedItem(item));
+		while (item = m_treeCtrl.GetNextSelectedItem(item));
 	}
 
 	GetDlgItem(IDEDIT)->EnableWindow(canEdit ? TRUE : FALSE);
 
-	HTREEITEM item = m_TreeCtrl.GetSelectedItem();
-	if (!item || m_TreeCtrl.ItemHasChildren(item) || !m_TreeCtrl.GetParentItem(item) || numSelectedItems != 1)
+	HTREEITEM item = m_treeCtrl.GetSelectedItem();
+	if (!item || m_treeCtrl.ItemHasChildren(item) || !m_treeCtrl.GetParentItem(item) || numSelectedItems != 1)
 	{
 		GetDlgItem(IDDELETE)->EnableWindow(FALSE);
 	}
@@ -420,13 +420,13 @@ void CFragmentBrowser::RebuildAll()
 	std::vector<CString> previousSelected;
 	GetSelectedNodeFullTexts(previousSelected);
 
-	std::vector<CString> previousExpanded;
-	GetExpandedNodes(previousExpanded);
+	CTreeCtrlExpansionStateSaver expansionStateSaver(*this);
+	expansionStateSaver.Save();
 
 	SCROLLINFO previousScrollInfo{ 0 };
-	m_TreeCtrl.GetScrollInfo(SB_VERT, &previousScrollInfo);
+	m_treeCtrl.GetScrollInfo(SB_VERT, &previousScrollInfo);
 
-	m_TreeCtrl.SetRedraw(FALSE);
+	m_treeCtrl.SetRedraw(FALSE);
 
 	// Clear old data
 	m_fragEditor.FlushChanges();
@@ -438,7 +438,7 @@ void CFragmentBrowser::RebuildAll()
 	m_fragmentItems.clear();
 	m_boldItems.clear();
 
-	m_TreeCtrl.DeleteAllItems();
+	m_treeCtrl.DeleteAllItems();
 	for (uint32 i = 0; i < m_fragmentData.size(); i++)
 	{
 		delete(m_fragmentData[i]);
@@ -454,7 +454,7 @@ void CFragmentBrowser::RebuildAll()
 		for (uint32 i = 0; i < numFrags; i++)
 		{
 			const string fragTagName = fragDefs.GetTagName(i);
-			HTREEITEM item = m_TreeCtrl.InsertItem(fragTagName, IMAGE_FOLDER, IMAGE_FOLDER, 0, TVI_SORT);
+			HTREEITEM item = m_treeCtrl.InsertItem(fragTagName, IMAGE_FOLDER, IMAGE_FOLDER, 0, TVI_SORT);
 			m_fragmentItems.push_back(item);
 		}
 
@@ -467,9 +467,9 @@ void CFragmentBrowser::RebuildAll()
 		{
 			for (uint32 i = 0; i < numFrags; i++)
 			{
-				if (!m_TreeCtrl.ItemHasChildren(m_fragmentItems[i]))
+				if (!m_treeCtrl.ItemHasChildren(m_fragmentItems[i]))
 				{
-					m_TreeCtrl.DeleteItem(m_fragmentItems[i]);
+					m_treeCtrl.DeleteItem(m_fragmentItems[i]);
 					m_fragmentItems[i] = 0;
 				}
 			}
@@ -485,7 +485,7 @@ void CFragmentBrowser::RebuildAll()
 					fragTagName.MakeLower();
 					if (fragTagName.find(m_filterFragmentIDText) == string::npos)
 					{
-						m_TreeCtrl.DeleteItem(m_fragmentItems[i]);
+						m_treeCtrl.DeleteItem(m_fragmentItems[i]);
 						m_fragmentItems[i] = 0;
 					}
 				}
@@ -493,9 +493,8 @@ void CFragmentBrowser::RebuildAll()
 		}
 
 		int indexSelected = 0;
-		int indexExpanded = 0;
 
-		HTREEITEM currentItem = m_TreeCtrl.GetRootItem();
+		HTREEITEM currentItem = m_treeCtrl.GetRootItem();
 		while (currentItem)
 		{
 			const CString pathName = GetNodePathName(currentItem);
@@ -505,33 +504,25 @@ void CFragmentBrowser::RebuildAll()
 			{
 				if (previousSelected[indexSelected] == pathName)
 				{
-					m_TreeCtrl.SetItemState(currentItem, TVIS_SELECTED, TVIS_SELECTED);
+					m_treeCtrl.SetItemState(currentItem, TVIS_SELECTED, TVIS_SELECTED);
 					indexSelected++;
 				}
 			}
 
-			// Tries to re-expand all items
-			if (indexExpanded < previousExpanded.size())
-			{
-				if (previousExpanded[indexExpanded] == pathName)
-				{
-					m_TreeCtrl.SetItemState(currentItem, TVIS_EXPANDED, TVIS_EXPANDED);
-					indexExpanded++;
-				}
-			}
-
-			currentItem = m_TreeCtrl.GetNextItem(currentItem);
+			currentItem = m_treeCtrl.GetNextItem(currentItem);
 		}
+
+		expansionStateSaver.Restore();
 	}
 
 	OnSelectionChanged();
-	m_TreeCtrl.SetRedraw(TRUE);
+	m_treeCtrl.SetRedraw(TRUE);
 
 	// Tries to reset the scrollbar position
 	SCROLLINFO currentScrollInfo{ 0 };
-	m_TreeCtrl.GetScrollInfo(SB_VERT, &currentScrollInfo);
+	m_treeCtrl.GetScrollInfo(SB_VERT, &currentScrollInfo);
 	currentScrollInfo.nPos = crymath::clamp(previousScrollInfo.nPos, currentScrollInfo.nMin, currentScrollInfo.nMax);
-	m_TreeCtrl.SetScrollInfo(SB_VERT, &currentScrollInfo);
+	m_treeCtrl.SetScrollInfo(SB_VERT, &currentScrollInfo);
 }
 
 void CFragmentBrowser::SetDatabase(IAnimationDatabase* animDB)
@@ -571,7 +562,7 @@ HTREEITEM CFragmentBrowser::FindFragmentItem(FragmentID fragmentID, const SFragT
 	return NULL;
 }
 
-bool CFragmentBrowser::SelectFragments(const std::vector<FragmentID> fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options)
+bool CFragmentBrowser::SelectFragments(const std::vector<FragmentID>& fragmentIDs, const std::vector<SFragTagState>& tagStates, const std::vector<uint32>& options)
 {
 	bool bRet = false;
 	std::vector<HTREEITEM> newBoldItems;
@@ -579,7 +570,7 @@ bool CFragmentBrowser::SelectFragments(const std::vector<FragmentID> fragmentIDs
 	std::vector<SFragTagState> newTagStates;
 	std::vector<uint32> newOptions;
 
-	m_TreeCtrl.SelectAll(FALSE);
+	m_treeCtrl.SelectAll(FALSE);
 	for (size_t i = 0; i < fragmentIDs.size(); ++i)
 	{
 		SFragTagState bestTagState;
@@ -597,9 +588,9 @@ bool CFragmentBrowser::SelectFragments(const std::vector<FragmentID> fragmentIDs
 				newOptions.push_back(option);
 
 				//--- Found tag node
-				HTREEITEM fragItem = m_TreeCtrl.GetParentItem(selItem);
-				m_TreeCtrl.Expand(fragItem, TVE_EXPAND);
-				m_TreeCtrl.SelectItem(selItem);
+				HTREEITEM fragItem = m_treeCtrl.GetParentItem(selItem);
+				m_treeCtrl.Expand(fragItem, TVE_EXPAND);
+				m_treeCtrl.SelectItem(selItem);
 
 				bRet = true;
 			}
@@ -699,8 +690,7 @@ bool CFragmentBrowser::SetTagState(const std::vector<SFragTagState>& newTagsVec)
 				}
 			}
 
-			CleanFragment(fragmentID);
-			BuildFragment(fragmentID);
+			RebuildFragment(fragmentID);
 			isChanged = true;
 		}
 		newOptions.push_back(newOption);
@@ -747,13 +737,13 @@ void CFragmentBrowser::OnBeginDrag(NMHDR* pNMHdr, LRESULT* pResult)
 	HTREEITEM dragItem = nmtv->itemNew.hItem;
 	if (dragItem)
 	{
-		STreeFragmentData* fragmentData = (STreeFragmentData*)m_TreeCtrl.GetItemData(dragItem);
+		STreeFragmentData* fragmentData = (STreeFragmentData*)m_treeCtrl.GetItemData(dragItem);
 		if (fragmentData && !fragmentData->tagSet)
 		{
 			COleDataSource* dataSource = CreateFragmentDescriptionDataSource(fragmentData);
 			if (dataSource)
 			{
-				DROPEFFECT dropEffect = dataSource->DoDragDrop(DROPEFFECT_MOVE | DROPEFFECT_LINK);
+				dataSource->DoDragDrop(DROPEFFECT_MOVE | DROPEFFECT_LINK);
 			}
 		}
 	}
@@ -765,14 +755,14 @@ void CFragmentBrowser::OnBeginRDrag(NMHDR* pNMHdr, LRESULT* pResult)
 	m_dragItem = nmtv->itemNew.hItem;
 	if (m_dragItem)
 	{
-		STreeFragmentData* fragmentData = (STreeFragmentData*)m_TreeCtrl.GetItemData(m_dragItem);
+		STreeFragmentData* fragmentData = (STreeFragmentData*)m_treeCtrl.GetItemData(m_dragItem);
 		if (fragmentData && !fragmentData->tagSet)
 		{
 			RECT rcItem;        // bounding rectangle of item
-			m_draggingImage = m_TreeCtrl.CreateDragImage(m_dragItem);
+			m_draggingImage = m_treeCtrl.CreateDragImage(m_dragItem);
 
 			// Get the bounding rectangle of the item being dragged.
-			m_TreeCtrl.GetItemRect(m_dragItem, &rcItem, false);
+			m_treeCtrl.GetItemRect(m_dragItem, &rcItem, false);
 
 			if (m_draggingImage)
 			{
@@ -801,9 +791,9 @@ void CFragmentBrowser::OnMouseMove(UINT nFlags, CPoint point)
 	{
 		POINT dragPt = point;
 		ClientToScreen(&dragPt);
-		m_TreeCtrl.ScreenToClient(&dragPt);
+		m_treeCtrl.ScreenToClient(&dragPt);
 
-		HTREEITEM hitTarget = m_TreeCtrl.HitTest(dragPt);
+		HTREEITEM hitTarget = m_treeCtrl.HitTest(dragPt);
 
 		if (m_draggingImage)
 		{
@@ -817,21 +807,21 @@ void CFragmentBrowser::OnMouseMove(UINT nFlags, CPoint point)
 
 			if (hitTarget)
 			{
-				m_TreeCtrl.EnsureVisible(m_TreeCtrl.GetNextVisibleItem(hitTarget));
-				m_TreeCtrl.EnsureVisible(m_TreeCtrl.GetPrevVisibleItem(hitTarget));
+				m_treeCtrl.EnsureVisible(m_treeCtrl.GetNextVisibleItem(hitTarget));
+				m_treeCtrl.EnsureVisible(m_treeCtrl.GetPrevVisibleItem(hitTarget));
 			}
 		}
 
 		if (hitTarget)
 		{
-			HTREEITEM itemParent = m_TreeCtrl.GetParentItem(hitTarget);
+			HTREEITEM itemParent = m_treeCtrl.GetParentItem(hitTarget);
 
 			if (itemParent)
 			{
 				hitTarget = itemParent;
 			}
 
-			m_TreeCtrl.SelectDropTarget(hitTarget);
+			m_treeCtrl.SelectDropTarget(hitTarget);
 		}
 		if (m_draggingImage)
 		{
@@ -850,13 +840,13 @@ void CFragmentBrowser::OnRButtonUp(UINT nFlags, CPoint point)
 	if (m_rightDrag)
 	{
 		// Get destination item.
-		HTREEITEM hitDest = m_TreeCtrl.GetDropHilightItem();
+		HTREEITEM hitDest = m_treeCtrl.GetDropHilightItem();
 		if (hitDest != NULL)
 		{
-			STreeFragmentData* fragmentDataFrom = (STreeFragmentData*)m_TreeCtrl.GetItemData(m_dragItem);
+			STreeFragmentData* fragmentDataFrom = (STreeFragmentData*)m_treeCtrl.GetItemData(m_dragItem);
 			if (fragmentDataFrom)
 			{
-				STreeFragmentData* fragmentDataTo = (STreeFragmentData*)m_TreeCtrl.GetItemData(hitDest);
+				STreeFragmentData* fragmentDataTo = (STreeFragmentData*)m_treeCtrl.GetItemData(hitDest);
 				FragmentID fragID;
 				SFragTagState newTagState = fragmentDataFrom->tagState;
 				if (fragmentDataTo)
@@ -866,7 +856,7 @@ void CFragmentBrowser::OnRButtonUp(UINT nFlags, CPoint point)
 				}
 				else
 				{
-					CString szFragID = m_TreeCtrl.GetItemText(hitDest);
+					CString szFragID = m_treeCtrl.GetItemText(hitDest);
 					fragID = m_animDB->GetFragmentID(szFragID);
 
 					if (fragID == FRAGMENT_ID_INVALID)
@@ -880,8 +870,7 @@ void CFragmentBrowser::OnRButtonUp(UINT nFlags, CPoint point)
 				IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 				uint32 newOption = mannequinSys.GetMannequinEditorManager()->AddFragmentEntry(m_animDB, fragID, newTagState, *cloneFrag);
 
-				CleanFragment(fragID);
-				BuildFragment(fragID);
+				RebuildFragment(fragID);
 
 				SelectFragment(fragID, newTagState, newOption);
 			}
@@ -891,7 +880,7 @@ void CFragmentBrowser::OnRButtonUp(UINT nFlags, CPoint point)
 			m_draggingImage->EndDrag();
 		}
 
-		m_TreeCtrl.SelectDropTarget(NULL);
+		m_treeCtrl.SelectDropTarget(NULL);
 		ReleaseCapture();
 		gEnv->pInput->ShowCursor(true);
 		m_rightDrag = false;
@@ -914,19 +903,19 @@ enum
 
 void CFragmentBrowser::OnTVRightClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	HTREEITEM dropHilightItem = m_TreeCtrl.GetDropHilightItem();
+	HTREEITEM dropHilightItem = m_treeCtrl.GetDropHilightItem();
 	// make sure the item is actually selected
 	if (dropHilightItem)
-		m_TreeCtrl.SelectItem(dropHilightItem);
+		m_treeCtrl.SelectItem(dropHilightItem);
 
-	HTREEITEM item = m_TreeCtrl.GetFirstSelectedItem();
-	if (!item || m_TreeCtrl.GetNextSelectedItem(item))
+	HTREEITEM item = m_treeCtrl.GetFirstSelectedItem();
+	if (!item || m_treeCtrl.GetNextSelectedItem(item))
 		return;
 
 	CMenu menu;
 	menu.CreatePopupMenu();
 
-	CString selectedNodeText = m_TreeCtrl.GetItemText(item);
+	CString selectedNodeText = m_treeCtrl.GetItemText(item);
 
 	// Copy functionality
 	if (selectedNodeText.GetLength() > 0)
@@ -939,7 +928,7 @@ void CFragmentBrowser::OnTVRightClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	// Search functionality
-	HTREEITEM root = m_TreeCtrl.GetParentItem(item);
+	HTREEITEM root = m_treeCtrl.GetParentItem(item);
 	if (root != NULL)
 	{
 		menu.AppendMenu(MF_STRING, CMD_FIND_TAG_REFERENCES, "Find Tag Transitions");
@@ -966,10 +955,10 @@ void CFragmentBrowser::OnTVRightClick(NMHDR* pNMHDR, LRESULT* pResult)
 			while (root != NULL)
 			{
 				item = root;
-				root = m_TreeCtrl.GetParentItem(item);
+				root = m_treeCtrl.GetParentItem(item);
 			}
 
-			CString fragmentName = m_TreeCtrl.GetItemText(item);
+			CString fragmentName = m_treeCtrl.GetItemText(item);
 
 			if (pMannequinDialog != NULL)
 			{
@@ -979,7 +968,7 @@ void CFragmentBrowser::OnTVRightClick(NMHDR* pNMHDR, LRESULT* pResult)
 	case CMD_FIND_TAG_REFERENCES:
 		{
 			// GetSelectedNodeText (used earlier) doesn't actually get the text on the node...
-			CString tagName = m_TreeCtrl.GetItemText(item);
+			CString tagName = m_treeCtrl.GetItemText(item);
 
 			if (pMannequinDialog != NULL)
 			{
@@ -1001,7 +990,7 @@ void CFragmentBrowser::OnTVRightClick(NMHDR* pNMHDR, LRESULT* pResult)
 void CFragmentBrowser::OnTVEditSel(NMHDR*, LRESULT*)
 {
 	EditSelectedItem();
-	m_TreeCtrl.SetFocus();
+	m_treeCtrl.SetFocus();
 }
 
 void CFragmentBrowser::OnMenuCopy()
@@ -1009,9 +998,9 @@ void CFragmentBrowser::OnMenuCopy()
 	//--- Copy
 	m_fragEditor.FlushChanges();
 
-	const HTREEITEM copySourceItem = m_TreeCtrl.GetSelectedItem();
-	const STreeFragmentData* const pFragmentDataCopy = (STreeFragmentData*)m_TreeCtrl.GetItemData(copySourceItem);
-	const FragmentID fragmentID = pFragmentDataCopy ? pFragmentDataCopy->fragID : m_animDB->GetFragmentID(m_TreeCtrl.GetItemText(copySourceItem));
+	const HTREEITEM copySourceItem = m_treeCtrl.GetSelectedItem();
+	const STreeFragmentData* const pFragmentDataCopy = (STreeFragmentData*)m_treeCtrl.GetItemData(copySourceItem);
+	const FragmentID fragmentID = pFragmentDataCopy ? pFragmentDataCopy->fragID : m_animDB->GetFragmentID(m_treeCtrl.GetItemText(copySourceItem));
 
 	// Copy fragmentID data (if present) when selecting a fragmentID
 	m_copiedFragmentIDData.fragmentID = FRAGMENT_ID_INVALID;
@@ -1048,8 +1037,8 @@ void CFragmentBrowser::OnMenuCopy()
 			}
 
 			// Strip parent tags out
-			const HTREEITEM parentItem = m_TreeCtrl.GetParentItem(copySourceItem);
-			const STreeFragmentData* const pParentViewData = parentItem ? (STreeFragmentData*)m_TreeCtrl.GetItemData(parentItem) : 0;
+			const HTREEITEM parentItem = m_treeCtrl.GetParentItem(copySourceItem);
+			const STreeFragmentData* const pParentViewData = parentItem ? (STreeFragmentData*)m_treeCtrl.GetItemData(parentItem) : 0;
 			if (pParentViewData)
 			{
 				entryTagState.globalTags = globalTagDef.GetDifference(entryTagState.globalTags, pParentViewData->tagState.globalTags);
@@ -1081,8 +1070,8 @@ void CFragmentBrowser::OnMenuPaste(bool advancedPaste)
 {
 	if (m_copiedFragmentIDData.fragmentID != FRAGMENT_ID_INVALID)
 	{
-		const HTREEITEM targetItem = m_TreeCtrl.GetSelectedItem();
-		const STreeFragmentData* const pFragmentDataTo = (STreeFragmentData*)m_TreeCtrl.GetItemData(targetItem);
+		const HTREEITEM targetItem = m_treeCtrl.GetSelectedItem();
+		const STreeFragmentData* const pFragmentDataTo = (STreeFragmentData*)m_treeCtrl.GetItemData(targetItem);
 
 		if (!pFragmentDataTo && !advancedPaste)
 		{
@@ -1097,11 +1086,11 @@ void CFragmentBrowser::OnMenuPaste(bool advancedPaste)
 	{
 		m_fragEditor.FlushChanges();
 
-		const HTREEITEM targetItem = m_TreeCtrl.GetSelectedItem();
-		const STreeFragmentData* const pFragmentDataTo = (STreeFragmentData*)m_TreeCtrl.GetItemData(targetItem);
+		const HTREEITEM targetItem = m_treeCtrl.GetSelectedItem();
+		const STreeFragmentData* const pFragmentDataTo = (STreeFragmentData*)m_treeCtrl.GetItemData(targetItem);
 
 		IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
-		const FragmentID destFragmentID = pFragmentDataTo ? pFragmentDataTo->fragID : m_animDB->GetFragmentID(m_TreeCtrl.GetItemText(targetItem));
+		const FragmentID destFragmentID = pFragmentDataTo ? pFragmentDataTo->fragID : m_animDB->GetFragmentID(m_treeCtrl.GetItemText(targetItem));
 		SFragTagState copyBaseTagState = pFragmentDataTo ? pFragmentDataTo->tagState : SFragTagState();
 
 		if (advancedPaste)
@@ -1158,8 +1147,7 @@ void CFragmentBrowser::OnMenuPaste(bool advancedPaste)
 				const bool isLast = itCopiedItems + 1 == m_copiedItems.end();
 				if (isLast)
 				{
-					CleanFragment(destFragmentID);
-					BuildFragment(destFragmentID);
+					RebuildFragment(destFragmentID);
 					SelectFragment(destFragmentID, insertionTagState, newOption);
 				}
 			}
@@ -1204,7 +1192,7 @@ void CFragmentBrowser::SetEditItem(const std::vector<HTREEITEM>& boldItems, std:
 	{
 		for (auto it = m_boldItems.begin(); it != m_boldItems.end(); ++it)
 		{
-			m_TreeCtrl.SetItemState(*it, 0, TVIS_BOLD);
+			m_treeCtrl.SetItemState(*it, 0, TVIS_BOLD);
 		}
 	}
 
@@ -1213,7 +1201,7 @@ void CFragmentBrowser::SetEditItem(const std::vector<HTREEITEM>& boldItems, std:
 	{
 		for (auto it = m_boldItems.begin(); it != m_boldItems.end(); ++it)
 		{
-			m_TreeCtrl.SetItemState(*it, TVIS_BOLD, TVIS_BOLD);
+			m_treeCtrl.SetItemState(*it, TVIS_BOLD, TVIS_BOLD);
 		}
 	}
 	m_fragmentID = fragmentIDs.empty() ? FRAGMENT_ID_INVALID : fragmentIDs[0];
@@ -1227,13 +1215,13 @@ void CFragmentBrowser::SetEditItem(const std::vector<HTREEITEM>& boldItems, std:
 
 void CFragmentBrowser::SetADBFileNameTextToCurrent()
 {
-	HTREEITEM rootItem = m_TreeCtrl.GetSelectedItem();
+	HTREEITEM rootItem = m_treeCtrl.GetSelectedItem();
 	if (rootItem)
 	{
-		while (m_TreeCtrl.GetParentItem(rootItem) != NULL)
-			rootItem = m_TreeCtrl.GetParentItem(rootItem);
+		while (m_treeCtrl.GetParentItem(rootItem) != NULL)
+			rootItem = m_treeCtrl.GetParentItem(rootItem);
 
-		CString IDName = m_TreeCtrl.GetItemText(rootItem);
+		CString IDName = m_treeCtrl.GetItemText(rootItem);
 		const char* filename = m_animDB == NULL ? "" : m_animDB->FindSubADBFilenameForID(m_animDB->GetFragmentID(IDName.GetString()));
 
 		string adbName = PathUtil::GetFile(filename);
@@ -1352,13 +1340,13 @@ void CFragmentBrowser::OnTagDefEditorBtn()
 
 FragmentID CFragmentBrowser::GetSelectedFragmentId() const
 {
-	const HTREEITEM item = m_TreeCtrl.GetSelectedItem();
+	const HTREEITEM item = m_treeCtrl.GetSelectedItem();
 	if (!item)
 	{
 		return FRAGMENT_ID_INVALID;
 	}
 
-	const STreeFragmentData* pFragData = reinterpret_cast<STreeFragmentData*>(m_TreeCtrl.GetItemData(item));
+	const STreeFragmentData* pFragData = reinterpret_cast<STreeFragmentData*>(m_treeCtrl.GetItemData(item));
 	if (!pFragData)
 	{
 		const size_t fragmentItemsCount = m_fragmentItems.size();
@@ -1379,7 +1367,7 @@ FragmentID CFragmentBrowser::GetSelectedFragmentId() const
 
 CString CFragmentBrowser::GetSelectedNodeText() const
 {
-	if (HTREEITEM item = m_TreeCtrl.GetSelectedItem())
+	if (HTREEITEM item = m_treeCtrl.GetSelectedItem())
 		return GetItemText(item);
 	else
 		return "";
@@ -1388,49 +1376,49 @@ CString CFragmentBrowser::GetSelectedNodeText() const
 void CFragmentBrowser::GetSelectedNodeTexts(std::vector<CString>& outTexts) const
 {
 	outTexts.resize(0);
-	if (HTREEITEM item = m_TreeCtrl.GetFirstSelectedItem())
+	if (HTREEITEM item = m_treeCtrl.GetFirstSelectedItem())
 	{
 		do
 		{
 			outTexts.push_back(GetItemText(item));
 		}
-		while (item = m_TreeCtrl.GetNextSelectedItem(item));
+		while (item = m_treeCtrl.GetNextSelectedItem(item));
 	}
 }
 
 void CFragmentBrowser::GetSelectedNodeFullTexts(std::vector<CString>& outTexts) const
 {
-	HTREEITEM currentItem = m_TreeCtrl.GetFirstSelectedItem();
+	HTREEITEM currentItem = m_treeCtrl.GetFirstSelectedItem();
 	while (currentItem)
 	{
 		outTexts.push_back(GetNodePathName(currentItem));
-		currentItem = m_TreeCtrl.GetNextSelectedItem(currentItem);
+		currentItem = m_treeCtrl.GetNextSelectedItem(currentItem);
 	}
 }
 
 void CFragmentBrowser::GetExpandedNodes(std::vector<CString>& outExpanedNodes) const
 {
-	HTREEITEM currentItem = m_TreeCtrl.GetRootItem();
+	HTREEITEM currentItem = m_treeCtrl.GetRootItem();
 	while (currentItem)
 	{
-		if (m_TreeCtrl.GetItemState(currentItem, TVIS_EXPANDED) & TVIS_EXPANDED)
+		if (m_treeCtrl.GetItemState(currentItem, TVIS_EXPANDED) & TVIS_EXPANDED)
 		{
 			outExpanedNodes.push_back(GetNodePathName(currentItem));
 		}
 
-		currentItem = m_TreeCtrl.GetNextItem(currentItem);
+		currentItem = m_treeCtrl.GetNextItem(currentItem);
 	}
 }
 
 CString CFragmentBrowser::GetNodePathName(const HTREEITEM item) const
 {
-	CString pathName = m_TreeCtrl.GetItemText(item);
-	HTREEITEM parentItem = m_TreeCtrl.GetParentItem(item);
+	CString pathName = m_treeCtrl.GetItemText(item);
+	HTREEITEM parentItem = m_treeCtrl.GetParentItem(item);
 
 	while (parentItem)
 	{
-		pathName = m_TreeCtrl.GetItemText(parentItem) + '/' + pathName;
-		parentItem = m_TreeCtrl.GetParentItem(parentItem);
+		pathName = m_treeCtrl.GetItemText(parentItem) + '/' + pathName;
+		parentItem = m_treeCtrl.GetParentItem(parentItem);
 	}
 	
 	return pathName;
@@ -1476,7 +1464,7 @@ void CFragmentBrowser::OnDeleteBtn()
 	if (selectedFragmentId == FRAGMENT_ID_INVALID)
 		return;
 
-	if (HTREEITEM item = m_TreeCtrl.GetSelectedItem())
+	if (HTREEITEM item = m_treeCtrl.GetSelectedItem())
 	{
 		CString message;
 		const char* fragmentName = m_animDB->GetFragmentDefs().GetTagName(selectedFragmentId);
@@ -1484,21 +1472,24 @@ void CFragmentBrowser::OnDeleteBtn()
 
 		if (MessageBox(message.GetBuffer(), "CryMannequin", MB_YESNO | MB_ICONQUESTION) == IDYES)
 		{
-			STreeFragmentData* fragData = (STreeFragmentData*)m_TreeCtrl.GetItemData(item);
-			if (fragData && !fragData->tagSet)
+			STreeFragmentData* itemData = (STreeFragmentData*)m_treeCtrl.GetItemData(item);
+			if (itemData && !itemData->tagSet)
 			{
 				m_fragEditor.FlushChanges();
 
-				FragmentID fragID = fragData->fragID;
+				FragmentID fragID = itemData->fragID;
 				IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
-				mannequinSys.GetMannequinEditorManager()->DeleteFragmentEntry(m_animDB, fragID, fragData->tagState, fragData->option);
+				mannequinSys.GetMannequinEditorManager()->DeleteFragmentEntry(m_animDB, fragID, itemData->tagState, itemData->option);
 
-				CleanFragment(fragID);
-				BuildFragment(fragID);
+				RebuildFragment(fragID);
 
-				SelectFragment(m_fragmentID, m_tagState, m_option);
-
-				EditSelectedItem();
+				// Re-selects the current fragment with corrected tagState and option
+				// If nothing was selected, select nothing
+				if (m_fragmentID != -1)
+				{
+					SelectFragment(m_fragmentID, m_tagState, m_option);
+					EditSelectedItem();
+				}				
 			}
 		}
 	}
@@ -1508,14 +1499,14 @@ void CFragmentBrowser::EditSelectedItem()
 {
 	std::vector<HTREEITEM> boldItems;
 
-	if (HTREEITEM item = m_TreeCtrl.GetFirstSelectedItem())
+	if (HTREEITEM item = m_treeCtrl.GetFirstSelectedItem())
 	{
 		do
 		{
-			if (!m_TreeCtrl.ItemHasChildren(item) && m_TreeCtrl.GetParentItem(item))
+			if (!m_treeCtrl.ItemHasChildren(item) && m_treeCtrl.GetParentItem(item))
 				boldItems.push_back(item);
 		}
-		while (item = m_TreeCtrl.GetNextSelectedItem(item));
+		while (item = m_treeCtrl.GetNextSelectedItem(item));
 	}
 
 	std::vector<FragmentID> fragmentIDs;
@@ -1524,7 +1515,7 @@ void CFragmentBrowser::EditSelectedItem()
 	for (auto it = boldItems.begin(); it != boldItems.end(); ++it)
 	{
 		HTREEITEM item = *it;
-		STreeFragmentData* pFragData = (STreeFragmentData*)m_TreeCtrl.GetItemData(item);
+		STreeFragmentData* pFragData = (STreeFragmentData*)m_treeCtrl.GetItemData(item);
 		if (pFragData)
 		{
 			fragmentIDs.push_back(pFragData->fragID);
@@ -1537,7 +1528,7 @@ void CFragmentBrowser::EditSelectedItem()
 
 	if (!boldItems.empty())
 	{
-		STreeFragmentData* pFragData = (STreeFragmentData*)m_TreeCtrl.GetItemData(boldItems[0]);
+		STreeFragmentData* pFragData = (STreeFragmentData*)m_treeCtrl.GetItemData(boldItems[0]);
 		if (pFragData)
 		{
 			CMannequinDialog::GetCurrentInstance()->GetDockingPaneManager()->ShowPane(CMannequinDialog::IDW_FRAGMENT_EDITOR_PANE);
@@ -1554,18 +1545,18 @@ CString CFragmentBrowser::GetItemText(HTREEITEM item) const
 	if (m_showSubFolders)
 	{
 		// We don't want the "Option 1" bit...
-		item = m_TreeCtrl.GetParentItem(item);
+		item = m_treeCtrl.GetParentItem(item);
 	}
 
 	// Get the tag name
-	CString tags = m_TreeCtrl.GetItemText(item);
-	item = m_TreeCtrl.GetParentItem(item);
+	CString tags = m_treeCtrl.GetItemText(item);
+	item = m_treeCtrl.GetParentItem(item);
 
 	// Build a string of "+" separated tag names (omitting the root parent)
-	while (m_TreeCtrl.GetParentItem(item) != NULL)
+	while (m_treeCtrl.GetParentItem(item) != NULL)
 	{
-		tags = m_TreeCtrl.GetItemText(item) + "+" + tags;
-		item = m_TreeCtrl.GetParentItem(item);
+		tags = m_treeCtrl.GetItemText(item) + "+" + tags;
+		item = m_treeCtrl.GetParentItem(item);
 	}
 
 	return tags;
@@ -1583,7 +1574,7 @@ void CFragmentBrowser::CleanFragmentID(FragmentID fragID)
 
 	// Now the parent FragmentID
 	HTREEITEM fragmentDefItem = m_fragmentItems[fragID];
-	m_TreeCtrl.DeleteItem(fragmentDefItem);
+	m_treeCtrl.DeleteItem(fragmentDefItem);
 	stl::find_and_erase(m_fragmentItems, fragmentDefItem);
 	stl::find_and_erase(m_boldItems, fragmentDefItem);
 	if (m_fragmentID == fragID)
@@ -1608,7 +1599,7 @@ void CFragmentBrowser::CleanFragment(FragmentID fragID)
 		STreeFragmentData* treeFragData = m_fragmentData[i];
 		if (treeFragData->fragID == fragID)
 		{
-			m_TreeCtrl.DeleteItem(treeFragData->item);
+			m_treeCtrl.DeleteItem(treeFragData->item);
 			stl::find_and_erase(m_boldItems, treeFragData->item);
 
 			delete treeFragData;
@@ -1619,17 +1610,17 @@ void CFragmentBrowser::CleanFragment(FragmentID fragID)
 
 HTREEITEM CFragmentBrowser::FindInChildren(const char* szTagStr, HTREEITEM hCurrItem)
 {
-	if (m_TreeCtrl.ItemHasChildren(hCurrItem))
+	if (m_treeCtrl.ItemHasChildren(hCurrItem))
 	{
-		HTREEITEM hChildItem = m_TreeCtrl.GetChildItem(hCurrItem);
+		HTREEITEM hChildItem = m_treeCtrl.GetChildItem(hCurrItem);
 		while (hChildItem != NULL)
 		{
 
-			CString name = m_TreeCtrl.GetItemText(hChildItem);
+			CString name = m_treeCtrl.GetItemText(hChildItem);
 			if (!strcmp(name.GetString(), szTagStr))
 				return hChildItem;
 
-			hChildItem = m_TreeCtrl.GetNextItem(hChildItem, TVGN_NEXT);
+			hChildItem = m_treeCtrl.GetNextItem(hChildItem, TVGN_NEXT);
 		}
 	}
 	return NULL;
@@ -1779,9 +1770,9 @@ void CFragmentBrowser::BuildFragment(FragmentID fragID)
 				else
 				{
 					const HTREEITEM oldParent = parent;
-					parent = m_TreeCtrl.InsertItem(it->second.c_str(), IMAGE_FOLDER, IMAGE_FOLDER, parent);
+					parent = m_treeCtrl.InsertItem(it->second.c_str(), IMAGE_FOLDER, IMAGE_FOLDER, parent);
 
-					const STreeFragmentData* const pOldParentData = (STreeFragmentData*)m_TreeCtrl.GetItemData(oldParent);
+					const STreeFragmentData* const pOldParentData = (STreeFragmentData*)m_treeCtrl.GetItemData(oldParent);
 					SFragTagState itemTagState = pOldParentData ? pOldParentData->tagState : SFragTagState();
 
 					const string& tagName = it->second;
@@ -1804,26 +1795,24 @@ void CFragmentBrowser::BuildFragment(FragmentID fragID)
 					fragmentData->item = parent;
 					fragmentData->tagSet = true;
 					m_fragmentData.push_back(fragmentData);
-					m_TreeCtrl.SetItemData(parent, (DWORD_PTR)fragmentData);
+					m_treeCtrl.SetItemData(parent, (DWORD_PTR)fragmentData);
 				}
 			}
 		}
 		else if (!noFolderForOptions)
 		{
-			parent = m_TreeCtrl.InsertItem(MannUtils::GetEmptyTagString(), IMAGE_FOLDER, IMAGE_FOLDER, parent);
+			parent = m_treeCtrl.InsertItem(MannUtils::GetEmptyTagString(), IMAGE_FOLDER, IMAGE_FOLDER, parent);
 			STreeFragmentData* fragmentData = new STreeFragmentData();
 			fragmentData->fragID = fragID;
 			fragmentData->tagState = tagState;
 			fragmentData->item = parent;
 			fragmentData->tagSet = true;
 			m_fragmentData.push_back(fragmentData);
-			m_TreeCtrl.SetItemData(parent, (DWORD_PTR)fragmentData);
+			m_treeCtrl.SetItemData(parent, (DWORD_PTR)fragmentData);
 		}
 
 		for (uint32 o = 0; o < numOptions; o++)
 		{
-			const CFragment* fragment = m_animDB->GetEntry(fragID, t, o);
-
 			char subFragNameBuffer[128];
 			const char* nodeName;
 
@@ -1837,7 +1826,7 @@ void CFragmentBrowser::BuildFragment(FragmentID fragID)
 				nodeName = subFragNameBuffer;
 			}
 
-			HTREEITEM entry = m_TreeCtrl.InsertItem(nodeName, IMAGE_ANIM, IMAGE_ANIM, parent, TVI_LAST);
+			HTREEITEM entry = m_treeCtrl.InsertItem(nodeName, IMAGE_ANIM, IMAGE_ANIM, parent, TVI_LAST);
 
 			STreeFragmentData* fragmentData = new STreeFragmentData();
 			fragmentData->fragID = fragID;
@@ -1847,9 +1836,19 @@ void CFragmentBrowser::BuildFragment(FragmentID fragID)
 			fragmentData->tagSet = false;
 			m_fragmentData.push_back(fragmentData);
 
-			m_TreeCtrl.SetItemData(entry, (DWORD_PTR)fragmentData);
+			m_treeCtrl.SetItemData(entry, (DWORD_PTR)fragmentData);
 		}
 	}
+}
+
+void CFragmentBrowser::RebuildFragment(FragmentID fragID)
+{
+	// We collect the expanded sub tree items so we can expand them again at the end of the operation
+	CTreeCtrlExpansionStateSaver expandedStateSaver(*this, m_fragmentItems[fragID]);
+	expandedStateSaver.Save();
+	CleanFragment(fragID);
+	BuildFragment(fragID);
+	expandedStateSaver.Restore();
 }
 
 uint32 CFragmentBrowser::AddNewFragment(FragmentID fragID, const SFragTagState& newTagState, const string& sAnimName)
@@ -1891,8 +1890,7 @@ uint32 CFragmentBrowser::AddNewFragment(FragmentID fragID, const SFragTagState& 
 		}
 	}
 
-	CleanFragment(fragID);
-	BuildFragment(fragID);
+	RebuildFragment(fragID);
 
 	SelectFragment(fragID, newTagState, newOption);
 	return newOption;
@@ -1900,12 +1898,9 @@ uint32 CFragmentBrowser::AddNewFragment(FragmentID fragID, const SFragTagState& 
 
 void CFragmentBrowser::OnNewBtn()
 {
-	if (HTREEITEM item = m_TreeCtrl.GetSelectedItem())
+	if (HTREEITEM item = m_treeCtrl.GetSelectedItem())
 	{
-		STreeFragmentData* pFragData = (STreeFragmentData*)m_TreeCtrl.GetItemData(item);
-
-		HTREEITEM parentItemID = item;
-
+		STreeFragmentData* pFragData = (STreeFragmentData*)m_treeCtrl.GetItemData(item);
 		FragmentID fragID;
 		SFragTagState newTagState;
 		if (pFragData)
@@ -1915,7 +1910,7 @@ void CFragmentBrowser::OnNewBtn()
 		}
 		else
 		{
-			CString szFragID = m_TreeCtrl.GetItemText(item);
+			CString szFragID = m_treeCtrl.GetItemText(item);
 			fragID = m_animDB->GetFragmentID(szFragID);
 
 			if (fragID == FRAGMENT_ID_INVALID)
@@ -1924,8 +1919,7 @@ void CFragmentBrowser::OnNewBtn()
 		IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 		uint32 newOption = mannequinSys.GetMannequinEditorManager()->AddFragmentEntry(m_animDB, fragID, newTagState, CFragment());
 
-		CleanFragment(fragID);
-		BuildFragment(fragID);
+		RebuildFragment(fragID);
 
 		SelectFragment(fragID, newTagState, newOption);
 	}
@@ -2011,15 +2005,14 @@ bool CFragmentBrowser::AddNewDefinition(bool bPasteAction)
 		fragmentName = tagEditorDialog.FragmentName();
 	}
 
-	HTREEITEM item = m_TreeCtrl.InsertItem(fragmentName, 1, 1, 0, TVI_SORT);
+	HTREEITEM item = m_treeCtrl.InsertItem(fragmentName, 1, 1, 0, TVI_SORT);
 	m_fragmentItems.push_back(item);
 
-	CleanFragment(fragID);
-	BuildFragment(fragID);
+	RebuildFragment(fragID);
 
 	//--- Autoselect the new node
-	m_TreeCtrl.Expand(item, TVE_EXPAND);
-	m_TreeCtrl.SelectItem(item);
+	m_treeCtrl.Expand(item, TVE_EXPAND);
+	m_treeCtrl.SelectItem(item);
 
 	return true;
 }
@@ -2166,11 +2159,10 @@ void CFragmentBrowser::OnRenameDefinitionBtn()
 
 	const CString& fragmentName = tagEditorDialog.FragmentName();
 
-	const HTREEITEM item = m_TreeCtrl.GetSelectedItem();
-	m_TreeCtrl.SetItemText(item, fragmentName);
+	const HTREEITEM item = m_treeCtrl.GetSelectedItem();
+	m_treeCtrl.SetItemText(item, fragmentName);
 
-	CleanFragment(selectedFragmentId);
-	BuildFragment(selectedFragmentId);
+	RebuildFragment(selectedFragmentId);
 
 	OnSelectionChanged();
 }
@@ -2210,9 +2202,9 @@ FragmentID CFragmentBrowser::GetValidFragIDForAnim(const CPoint& point, COleData
 
 	POINT dragPt = point;
 	ClientToScreen(&dragPt);
-	m_TreeCtrl.ScreenToClient(&dragPt);
+	m_treeCtrl.ScreenToClient(&dragPt);
 
-	HTREEITEM hitTarget = m_TreeCtrl.HitTest(dragPt);
+	HTREEITEM hitTarget = m_treeCtrl.HitTest(dragPt);
 	if (nullptr == hitTarget)
 	{
 		return FRAGMENT_ID_INVALID;
@@ -2245,15 +2237,15 @@ FragmentID CFragmentBrowser::GetValidFragIDForAnim(const CPoint& point, COleData
 	// Find the root item (Fragment ID)
 	HTREEITEM rootItem = hitTarget;
 
-	while (nullptr != m_TreeCtrl.GetParentItem(rootItem))
+	while (nullptr != m_treeCtrl.GetParentItem(rootItem))
 	{
-		rootItem = m_TreeCtrl.GetParentItem(rootItem);
+		rootItem = m_treeCtrl.GetParentItem(rootItem);
 	}
-	CString IDName = m_TreeCtrl.GetItemText(rootItem);
+	CString IDName = m_treeCtrl.GetItemText(rootItem);
 	FragmentID fragID = m_animDB->GetFragmentID(IDName.GetString());
 
 	// HILITE MENU ITEM HERE
-	m_TreeCtrl.SelectDropTarget(rootItem);
+	m_treeCtrl.SelectDropTarget(rootItem);
 	return fragID;
 }
 
@@ -2300,3 +2292,38 @@ void CFragmentBrowser::ClearSelectedItemData()
 	KeepCorrectData();
 }
 
+CFragmentBrowser::CTreeCtrlExpansionStateSaver::CTreeCtrlExpansionStateSaver(CFragmentBrowser& fragmentBrowser, HTREEITEM parent)
+	: m_fragmentBrowser(fragmentBrowser), m_parent(parent)
+{
+
+}
+
+CFragmentBrowser::CTreeCtrlExpansionStateSaver::CTreeCtrlExpansionStateSaver(CFragmentBrowser& fragmentBrowser)
+	: m_fragmentBrowser(fragmentBrowser), m_parent(fragmentBrowser.m_treeCtrl.GetRootItem())
+{
+
+}
+
+void CFragmentBrowser::CTreeCtrlExpansionStateSaver::Save()
+{
+	m_savedExpandedNodesPaths.clear();
+	TraverseHierarchy([this](HTREEITEM hCurrentChild)
+	{
+		if (m_fragmentBrowser.m_treeCtrl.GetItemState(hCurrentChild, TVIS_EXPANDED))
+		{
+			m_savedExpandedNodesPaths.push_back(m_fragmentBrowser.GetNodePathName(hCurrentChild));
+		}
+	});
+}
+
+void CFragmentBrowser::CTreeCtrlExpansionStateSaver::Restore()
+{
+	TraverseHierarchy([this](HTREEITEM hCurrentChild)
+	{
+		CString currentNodeName = m_fragmentBrowser.GetNodePathName(hCurrentChild);
+		if (stl::find(m_savedExpandedNodesPaths, currentNodeName))
+		{
+			m_fragmentBrowser.m_treeCtrl.Expand(hCurrentChild, TVE_EXPAND);
+		}
+	});
+}

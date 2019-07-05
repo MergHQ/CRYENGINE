@@ -2,12 +2,16 @@
 
 #pragma once
 
+#include <CrySystem/XML/IXml.h>
+#include <CryMemory/CrySizer.h>
+
 typedef uint32 TAudioSignalID; // internally, this is now just the index into the audioSignals vector for SP ones, and 'index+amount_SP_signals' for MP ones.
 const TAudioSignalID INVALID_AUDIOSIGNAL_ID = -1;
 class CScriptbind_GameAudio;
 class CGameAudioUtils;
 
 #if !defined(_RELEASE)
+struct IConsoleCmdArgs;
 struct SSignalAutoComplete;
 #endif
 

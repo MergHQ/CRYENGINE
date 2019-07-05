@@ -18,6 +18,7 @@
 #include "GameRules.h"
 #include "Player.h"
 #include "IGameRulesRoundsModule.h"
+#include "GameCVars.h"
 
 #define STANDARDTWOTEAMS_AUTO_BALANCE_TIME				10.f
 #define STANDARDTWOTEAMS_AUTO_BALANCE_WARNING_TIME		5.f

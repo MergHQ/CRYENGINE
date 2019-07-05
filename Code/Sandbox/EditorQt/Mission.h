@@ -4,7 +4,7 @@
 
 #include "SandboxAPI.h"
 
-// forward declaratsion.
+// forward declaration.
 struct LightingSettings;
 class CMissionScript;
 class CCryEditDoc;
@@ -21,8 +21,8 @@ struct SMinimapInfo
 };
 
 /*!
-    CMission represent single Game Mission on same map.
-    Multiple Missions share same map, and stored in one .cry file.
+	CMission represent single Game Mission on same map.
+	Multiple Missions share same map, and stored in one .cry file.
 
  */
 class SANDBOX_API CMission
@@ -33,26 +33,30 @@ public:
 	//! Dtor of mission.
 	virtual ~CMission();
 
+	static const char* GetObjectivesFileName() { return "Objectives.xml"; }
+	static int GetDataFilesCount();
+	static const char* GetDataFilename(int i);
+
 	void           SetName(const CString& name)       { m_name = name; }
 	const CString& GetName() const                    { return m_name; }
 
 	void           SetDescription(const CString& dsc) { m_description = dsc; }
 	const CString& GetDescription() const             { return m_description; }
 
-	XmlNodeRef     GetEnvironemnt()                   { return m_environment; };
+	XmlNodeRef     GetEnvironemnt()                   { return m_environment; }
 
 	//! Return weapons ammo definitions for this mission.
-	XmlNodeRef GetWeaponsAmmo() { return m_weaponsAmmo; };
+	XmlNodeRef GetWeaponsAmmo() { return m_weaponsAmmo; }
 
 	//! Return lighting used for this mission.
-	LightingSettings* GetLighting() const { return m_lighting; };
+	LightingSettings* GetLighting() const { return m_lighting; }
 
 	//! Used weapons.
 	void            GetUsedWeapons(std::vector<CString>& weapons);
 	void            SetUsedWeapons(const std::vector<CString>& weapons);
 
-	void            SetTime(float time)                           { m_time = time; };
-	float           GetTime() const                               { return m_time; };
+	void            SetTime(float time)                           { m_time = time; }
+	float           GetTime() const                               { return m_time; }
 
 	void            SetPlayerEquipPack(const CString& sEquipPack) { m_sPlayerEquipPack = sEquipPack; }
 	const CString&  GetPlayerEquipPack()                          { return m_sPlayerEquipPack; }
@@ -62,7 +66,7 @@ public:
 	//! Call OnReset callback
 	void ResetScript();
 
-	//! Called when this mission must be synchonized with current data in Document.
+	//! Called when this mission must be synchronized with current data in Document.
 	//! if bRetrieve is true, data is retrieved from Mission to global structures.
 	void SyncContent(bool bRetrieve, bool bIgnoreObjects, bool bSkipLoadingAI = false);
 
@@ -95,7 +99,7 @@ public:
 	void SetLayersNode(XmlNodeRef& node);
 
 	void OnEnvironmentChange();
-	int  GetNumCGFObjects() const { return m_numCGFObjects; };
+	int  GetNumCGFObjects() const { return m_numCGFObjects; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Minimap.
@@ -132,7 +136,7 @@ private:
 	//! Weapons ammo definition.
 	XmlNodeRef m_weaponsAmmo;
 
-	XmlNodeRef m_Animations; // backward compatability.
+	XmlNodeRef m_Animations; // backward compatibility.
 
 	XmlNodeRef m_timeOfDay;
 
@@ -147,5 +151,3 @@ private:
 
 	SMinimapInfo    m_minimap;
 };
-
-

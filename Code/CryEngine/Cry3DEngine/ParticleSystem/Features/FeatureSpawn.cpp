@@ -1,75 +1,191 @@
 // Copyright 2015-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ParticleSystem/ParticleSystem.h"
-#include "ParticleSystem/ParticleComponentRuntime.h"
-#include "ParamMod.h"
+#include "FeatureCommon.h"
+#include "../ParticleEmitter.h"
 
 namespace pfx2
 {
 
-struct SSpawnData
+MakeDataType(ESDT_ParentId, uint,  EDD_Spawner);
+
+MakeDataType(ESDT_Amount,   float, EDD_SpawnerUpdate);
+
+MakeDataType(ESDT_Age,      float, EDD_Spawner);
+MakeDataType(ESDT_LifeTime, float, EDD_Spawner);
+MakeDataType(ESDT_Restart,  float, EDD_Spawner);
+MakeDataType(ESDT_Spawned,  float, EDD_Spawner);
+MakeDataType(ESDT_Fraction, float, EDD_Spawner);
+
+extern TDataType<SMaxParticleCounts> EEDT_ParticleCounts;
+extern TDataType<STimingParams>      EEDT_Timings;
+
+float StableTime(const CParticleComponentRuntime& runtime)
 {
-	float m_amount;
-	float m_spawned;
-	float m_duration;
-	float m_restart;
-	float m_timer;
+	const float dT = runtime.DeltaTime();
+	const float stableTime = dT > 0.25f ? runtime.GetDynamicData(EEDT_Timings).m_stableTime : dT;
+	return stableTime;
+}
 
-	float DeltaTime(float dT) const
-	{
-		const float startTime = max(m_timer, 0.0f);
-		const float endTime = min(m_timer + dT, m_duration);
-		return endTime - startTime;
-	}
-};
-
-// PFX2_TODO : not enough self documented code. Refactor!
+Range SpawnTimes(const CParticleComponentRuntime& runtime, float age, float lifetime, float stableTime)
+{
+	float dT = runtime.DeltaTime();
+	const float ageStart = age - dT;
+	const float endTime = min(dT, lifetime - ageStart);
+	const float startTime = max(max(0.0f, -ageStart), endTime - stableTime);
+	return Range(startTime, endTime);
+}
 
 class CParticleFeatureSpawnBase : public CParticleFeature
 {
 public:
-	virtual EFeatureType GetFeatureType() override
-	{
-		return EFT_Spawn;
-	}
+	virtual EFeatureType GetFeatureType() override { return EFT_Spawn; }
+
+	// Initialize after LifeTime and Child features, for timing
+	virtual int Priority() const override { return 1; }
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->InitSubInstances.add(this);
+		pComponent->RemoveSpawners.add(this);
+		pComponent->AddSpawners.add(this);
+		pComponent->InitSpawners.add(this);
+		pComponent->UpdateSpawners.add(this);
 		pComponent->SpawnParticles.add(this);
-		m_offsetSpawnData = pComponent->AddInstanceData<SSpawnData>();
-		m_amount.AddToComponent(pComponent, this);
-		m_delay.AddToComponent(pComponent, this);
-		m_duration.AddToComponent(pComponent, this);
-		m_restart.AddToComponent(pComponent, this);
-
-		// Compute equilibrium and full life times
-		CParticleComponent* pParent = pComponent->GetParentComponent();
-		const float parentParticleLife = pParent ? pParent->ComponentParams().m_maxParticleLife : gInfinity;
-
-		const float preDelay = pParams->m_maxTotalLIfe;
-		float delay = preDelay + m_delay.GetValueRange().end;
-		float stableTime = FiniteOr(pParams->m_maxParticleLife, 0.0f);
-		float equilibriumTime = delay + stableTime;
-		float emitterLife = min(delay + m_duration.GetValueRange().end, parentParticleLife);
-		float maxLife = emitterLife + pParams->m_maxParticleLife;
-
+		pComponent->GetDynamicData.add(this);
+		pComponent->OnEdit.add(this);
+		
+		m_amount.AddToComponent(pComponent, this, ESDT_Amount);
+		m_duration.AddToComponent(pComponent, this, ESDT_LifeTime);
+		m_delay.AddToComponent(pComponent, this, ESDT_Age);
 		if (m_restart.IsEnabled())
-		{
-			stableTime = maxLife;
-			equilibriumTime = maxLife;
-			maxLife = parentParticleLife + pParams->m_maxParticleLife;
-		}
+			pComponent->AddParticleData(ESDT_Restart);
 
-		SetMax(pParams->m_stableTime, stableTime);
-		SetMax(pParams->m_equilibriumTime, equilibriumTime);
-		SetMax(pParams->m_maxTotalLIfe, maxLife);
+		pComponent->AddParticleData(ESDT_Spawned);
+		if (m_duration.IsEnabled())
+			pComponent->AddParticleData(ESDT_Fraction);
+		pComponent->AddParticleData(ESDT_ParentId);
+
+		if (m_duration.GetBaseValue() == 0.0f)
+		{
+			// Particles all have same age, add Spawn fraction or Id to distinguish them
+			pComponent->AddParticleData(EPDT_SpawnFraction);
+			if (m_restart.IsEnabled())
+				pComponent->AddParticleData(EPDT_SpawnId);
+		}
+		if (!m_duration.IsEnabled())
+			pParams->m_isImmortal = true;
 	}
 
-	virtual void InitSubInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		StartInstances(runtime, instanceRange, {});
+		if (auto pTimings = EEDT_Timings.Cast(type, data, range))
+		{
+			const float parentParticleLife = runtime.Parent() ? runtime.Parent()->GetDynamicData(EPDT_LifeTime) : gInfinity;
+			const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
+			const float preDelay = pTimings[0].m_maxTotalLife;
+			const float delay = preDelay + m_delay.GetValueRange(runtime).end;
+
+			STimingParams timings;
+
+			timings.m_equilibriumTime = delay;
+			timings.m_maxTotalLife = min(delay + m_duration.GetValueRange(runtime).end, parentParticleLife);
+
+			timings.m_maxTotalLife += particleLife;
+			if (valueisfinite(particleLife))
+			{
+				timings.m_equilibriumTime += particleLife;
+				timings.m_stableTime += particleLife;
+			}
+
+			if (m_restart.IsEnabled())
+			{
+				timings.m_stableTime = timings.m_maxTotalLife;
+				timings.m_equilibriumTime = timings.m_maxTotalLife;
+				timings.m_maxTotalLife = parentParticleLife;
+			}
+			SetMax(pTimings[0].m_stableTime, timings.m_stableTime);
+			SetMax(pTimings[0].m_equilibriumTime, timings.m_equilibriumTime);
+			SetMax(pTimings[0].m_maxTotalLife, timings.m_maxTotalLife);
+		}
+	}
+
+	void RemoveSpawners(CParticleComponentRuntime& runtime) override
+	{
+		auto& container = runtime.Container(EDD_Spawner);
+		auto parentIds = runtime.IStream(ESDT_ParentId);
+		auto ages = runtime.IOStream(ESDT_Age);
+		auto lifetimes = runtime.IStream(ESDT_LifeTime);
+
+		const float dT = runtime.DeltaTime();
+		float extendedLife = 0.0f;
+		const auto& params = runtime.ComponentParams();
+		if (params.m_keepParentAlive)
+		{
+			const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
+			assert(valueisfinite(particleLife));
+			extendedLife += particleLife + dT;
+		}
+
+		TParticleIdArray removeIds(runtime.MemHeap());
+		removeIds.reserve(container.Size());
+
+		for (auto i : container.FullRange())
+		{
+			if (ages[i] > lifetimes[i] + extendedLife)
+				removeIds.push_back(i);
+			else if (parentIds[i] == gInvalidId)
+				removeIds.push_back(i);
+		}
+
+		runtime.RemoveSpawners(removeIds);
+	}
+
+	void AddSpawners(CParticleComponentRuntime& runtime) override
+	{
+		auto& container = runtime.Container(EDD_Spawner);
+
+		if (!runtime.IsChild() && runtime.GetEmitter()->IsActive() && container.TotalSpawned() == 0)
+		{
+			// Add first spawner if none ever added
+			SSpawnerDesc spawner;
+			TVarArray<SSpawnerDesc> spawners(&spawner, 1);
+			runtime.AddSpawners(spawners);
+			return;
+		}
+
+		// Disable restarts for independent top spawners
+		const bool isIndependent = runtime.GetEmitter()->IsIndependent() && !runtime.IsChild();
+		const bool doRestart = m_restart.IsEnabled() && !isIndependent;
+		if (doRestart)
+		{
+			THeapArray<SSpawnerDesc> spawners(runtime.MemHeap());
+			spawners.reserve(container.Size());
+
+			auto ages = runtime.IStream(ESDT_Age);
+			auto lifetimes = runtime.IStream(ESDT_LifeTime);
+			auto restarts = runtime.IStream(ESDT_Restart);
+			auto parentIds = runtime.IStream(ESDT_ParentId);
+			const float dT = runtime.DeltaTime();
+
+			for (auto i : container.FullRange())
+			{
+				// Add new spawner if this one will die next frame
+				if (ages[i] <= lifetimes[i] && ages[i] + dT > lifetimes[i])
+					spawners.push_back(SSpawnerDesc(parentIds[i], max(restarts[i] - ages[i], 0.0f)));
+			}
+			runtime.AddSpawners(spawners, false);
+		}
+	}
+
+	void UpdateSpawners(CParticleComponentRuntime& runtime) override
+	{
+		const floatv dT = ToFloatv(runtime.DeltaTime());
+		auto ages = runtime.IOStream(ESDT_Age);
+
+		for (auto i : runtime.FullRangeV(EDD_Spawner))
+		{
+			ages[i] += dT;
+		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -80,12 +196,30 @@ public:
 		SerializeEnabled(ar, m_delay, "Delay", 9, 0.0f);
 		SerializeEnabled(ar, m_duration, "Duration", 11, DefaultDuration());
 		if (m_duration.IsEnabled())
+		{
 			SerializeEnabled(ar, m_restart, "Restart", 11, gInfinity);
+			if (ar.isInput() && m_restart.GetBaseValue() == 0.0f)
+				m_restart = gInfinity;
+		}
+	}
+
+	virtual void OnEdit(CParticleComponentRuntime& runtime) override
+	{
+		// Re-init spawners
+		runtime.RemoveAllSpawners();
 	}
 
 	virtual float DefaultDuration() const { return gInfinity; }
 
 protected:
+
+	static float CountScale(const CParticleComponentRuntime& runtime)
+	{
+		float scale = runtime.ComponentParams().m_scaleParticleCount;
+		if (!runtime.IsChild())
+			scale *= runtime.GetEmitter()->GetSpawnParams().fCountScale;
+		return scale;
+	}
 
 	template<typename TParam>
 	void SerializeEnabled(Serialization::IArchive& ar, TParam& param, cstr name, uint newVersion, float disabledValue)
@@ -100,7 +234,7 @@ protected:
 			
 				void Serialize(Serialization::IArchive& ar)
 				{
-					typedef CParamMod<EDD_PerInstance, UFloat> TTimeParam;
+					typedef CParamMod<EDD_Spawner, UFloat> TTimeParam;
 
 					bool state = false;
 					ar(state, "State", "^");
@@ -117,149 +251,120 @@ protected:
 		ar(param, name, name);
 	}
 
-	// Convert amounts to spawn counts for frame
-	virtual void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> amounts) const = 0;
+	// Get amounts for this frame
+	virtual IFStream GetAmounts(const CParticleComponentRuntime& runtime, THeapArray<float>& tempBuffer, EDataDomain domain) const
+	{
+		float amountMax = m_amount.GetValueRange(runtime).end;
+		if (domain == EDD_Emitter)
+			return IFStream(nullptr, 1, amountMax);
+		else
+			return runtime.IStream(ESDT_Amount, amountMax);
+	}
 	
-	virtual void SpawnParticles(CParticleComponentRuntime& runtime, TDynArray<SSpawnEntry>& spawnEntries) override
+	// Get counts to spawn for this frame
+	virtual void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> counts) const = 0;
+
+	virtual void SpawnParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
-		const uint numInstances = runtime.GetNumInstances();
-		if (numInstances == 0)
-			return;
+		SUpdateRange range = runtime.FullRange(EDD_Spawner);
 
-		const CParticleEmitter* pEmitter = runtime.GetEmitter();
+		const float dT = runtime.DeltaTime();
+		const float stableTime = StableTime(runtime);
 		const bool isIndependent = runtime.GetEmitter()->IsIndependent() && !runtime.IsChild();
-		if (isIndependent)
+		if (isIndependent && runtime.ComponentParams().m_isImmortal)
 		{
 			// Skip spawning immortal independent effects
-			float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + runtime.ComponentParams().m_maxParticleLife;
-			if (!std::isfinite(maxLifetime))
-				return;
-		}
-		else if (m_restart.IsEnabled())
-		{
-			// Skip restarts on independent effects
-			THeapArray<uint> indicesArray(runtime.MemHeap());
-			indicesArray.reserve(numInstances);
-
-			for (uint i = 0; i < numInstances; ++i)
-			{
-				SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
-				if (std::isfinite(spawnData.m_restart))
-					runtime.SetAlive();
-				spawnData.m_restart -= runtime.DeltaTime();
-				if (spawnData.m_restart <= 0.0f)
-					indicesArray.push_back(i);
-			}
-
-			StartInstances(runtime, SUpdateRange(), indicesArray);
+			range = SUpdateRange();
 		}
 
-		float countScale = runtime.ComponentParams().m_scaleParticleCount;
-		if (!runtime.IsChild())
-			countScale *= runtime.GetEmitter()->GetSpawnParams().fCountScale;
-		const float dT = runtime.DeltaTime();
-		SUpdateRange range(0, numInstances);
+		float countScale = CountScale(runtime);
 
-		TFloatArray amounts(runtime.MemHeap(), numInstances);
-		IOFStream amountStream(amounts.data());
-		for (uint i = 0; i < numInstances; ++i)
+		m_amount.Update(runtime, ESDT_Amount);
+
+		THeapArray<float> counts(runtime.MemHeap(), range.size());
+		GetSpawnCounts(runtime, counts);
+
+		THeapArray<SSpawnEntry> spawnEntries(runtime.MemHeap());
+		spawnEntries.reserve(range.size());
+
+		auto ages = runtime.IStream(ESDT_Age);
+		auto lifetimes = runtime.IStream(ESDT_LifeTime);
+		auto parentIds = runtime.IStream(ESDT_ParentId);
+		auto spawned = runtime.IOStream(ESDT_Spawned);
+		auto fractions = runtime.IOStream(ESDT_Fraction);
+
+		const CParticleContainer& parentContainer = runtime.ParentContainer();
+
+		for (auto i : range)
 		{
-			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
-			amounts[i] = spawnData.m_amount;
-		}
-
-		// Pad end of array, for vectorized modifiers
-		std::fill(amounts.end(), amounts.begin() + amounts.capacity(), 0.0f);
-		m_amount.ModifyUpdate(runtime, amountStream, range);
-
-		GetSpawnCounts(runtime, amounts);
-
-		for (uint i = 0; i < numInstances; ++i)
-		{
-			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
-
-			const float startTime = max(spawnData.m_timer, 0.0f);
-			const float endTime = min(spawnData.m_timer + dT, spawnData.m_duration);
-			const float spawnTime = endTime - startTime;
-			const float spawned = amounts[i] * countScale;
-			
-			if (spawnData.m_timer <= spawnData.m_duration)
-				runtime.SetAlive();
-
-			if (spawnTime >= 0.0f && spawned > 0.0f)
+			const Range spawnTimes = SpawnTimes(runtime, ages[i], lifetimes[i], stableTime);
+			const float spawnTime = spawnTimes.Length();
+			const float count = counts[i] * countScale;
+			if (spawnTime >= 0.0f && count > 0.0f && parentContainer.IdIsAlive(parentIds[i]))
 			{
 				SSpawnEntry entry = {};
-				entry.m_count = uint32(ceil(spawnData.m_spawned + spawned) - ceil(spawnData.m_spawned));
+				entry.m_count = uint32(ceil(spawned[i] + count) - ceil(spawned[i]));
 				if (entry.m_count)
 				{
 					// Set parameters for absolute particle age and spawn fraction
-					entry.m_parentId = runtime.GetParentId(i);
-					entry.m_ageIncrement = -spawnTime * rcp(spawned);
-					entry.m_ageBegin = dT + min(spawnData.m_timer, 0.0f);
-					entry.m_ageBegin += (ceil(spawnData.m_spawned) - spawnData.m_spawned) * entry.m_ageIncrement;
+					entry.m_spawnerId = i;
+					entry.m_parentId = parentIds[i];
+					entry.m_ageIncrement = -spawnTime * rcp(count);
+					entry.m_ageBegin = dT - spawnTimes.start;
+					entry.m_ageBegin += (ceil(spawned[i]) - spawned[i]) * entry.m_ageIncrement;
+					if (entry.m_count == 1)
+						entry.m_ageIncrement = 0.0f;
 
-					if (std::isfinite(spawnData.m_duration))
+					if (valueisfinite(lifetimes[i]))
 					{
-						entry.m_fractionIncrement = rcp((float)entry.m_count - 1);
-						if (spawnData.m_duration > 0.0f)
-						{
-							const float invDuration = rcp(spawnData.m_duration);
-							entry.m_fractionBegin = startTime * invDuration;
-							const float fractionEnd = endTime * invDuration;
-							entry.m_fractionIncrement *= (fractionEnd - entry.m_fractionBegin);
-						}
+						float total = count;
+						if (lifetimes[i] * spawnTime > 0.0f)
+							total *= lifetimes[i] * rcp(spawnTime);
+						entry.m_fractionIncrement = total > 1.0f ? rcp(total - 1.0f) : 0.0f;
+						entry.m_fractionBegin = fractions[i];
+						fractions[i] += entry.m_fractionIncrement * entry.m_count;
 					}
 
 					spawnEntries.push_back(entry);
 				}
-				spawnData.m_spawned += spawned;
+				spawned[i] += count;
 			}
-
-			spawnData.m_timer += dT;
 		}
+
+		runtime.AddParticles(spawnEntries);
 	}
 
-	void StartInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange, TConstArray<uint> instanceIndices)
+	virtual void InitSpawners(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
-
-		const uint numStarts = instanceRange.size() + instanceIndices.size();
-		if (numStarts == 0)
+		auto range = runtime.SpawnedRange(EDD_Spawner);
+		if (range.size() == 0)
 			return;
 
-		SUpdateRange startRange(0, numStarts);
-
-		STempInitBuffer<float> amounts(runtime, m_amount, startRange);
-		STempInitBuffer<float> delays(runtime, m_delay, startRange);
-		STempInitBuffer<float> durations(runtime, m_duration, startRange);
-		STempInitBuffer<float> restarts(runtime, m_restart, startRange);
-
-		for (uint i = 0; i < numStarts; ++i)
+		if (m_delay.GetBaseValue() > 0.0f)
 		{
-			const uint idx = i < instanceRange.size() ?
-				instanceRange.m_begin + i
-				: instanceIndices[i - instanceRange.size()];
-			SSpawnData& spawnData = runtime.GetInstanceData(idx, m_offsetSpawnData);
-			const float delay = delays[i] + runtime.GetInstance(idx).m_startDelay;
-
-			spawnData.m_timer    = -delay;
-			spawnData.m_spawned  = 0.0f;
-			spawnData.m_amount   = amounts[i];
-			spawnData.m_duration = durations[i];
-			spawnData.m_restart  = max(restarts[i], delay + spawnData.m_duration);
+			STempInitBuffer<float> delays(runtime, m_delay);
+			auto ages = runtime.IOStream(ESDT_Age);
+			for (auto i : range)
+				ages[i] -= delays[i];
 		}
+
+		m_amount.Init(runtime, ESDT_Amount, range);
+		m_duration.Init(runtime, ESDT_LifeTime, range);
+		m_restart.Init(runtime, ESDT_Restart, range);
+
+		runtime.FillData(ESDT_Spawned, 0.0f, range);
+		runtime.FillData(ESDT_Fraction, 0.0f, range);
 	}
 
 protected:
 
-	CParamMod<EDD_InstanceUpdate, UFloat>  m_amount   = 1;
-	CParamMod<EDD_PerInstance, UFloat>     m_delay    = 0;
-	CParamMod<EDD_PerInstance, UInfFloat>  m_duration = gInfinity;
-	CParamMod<EDD_PerInstance, PInfFloat>  m_restart  = gInfinity;
-
-	TDataOffset<SSpawnData>                m_offsetSpawnData;
+	CParamMod<EDD_SpawnerUpdate, UFloat> m_amount   = 1;
+	CParamMod<EDD_Spawner, UFloat>       m_delay    = 0;
+	CParamMod<EDD_Spawner, UInfFloat>    m_duration = gInfinity;
+	CParamMod<EDD_Spawner, UInfFloat>    m_restart  = gInfinity;
 };
 
 SERIALIZATION_DECLARE_ENUM(ESpawnCountMode,
@@ -280,43 +385,60 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeatureSpawnBase::Serialize(ar);
-		if (m_duration.GetBaseValue())
+		if (m_duration.IsEnabled() && m_duration.GetBaseValue() > 0.0f)
 			ar(m_mode, "Mode", "Mode");
 	}
 
 	virtual float DefaultDuration() const override { return 0.0f; }
 
-	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		CParticleFeatureSpawnBase::AddToComponent(pComponent, pParams);
-
-		const float amount = m_amount.GetValueRange().end;
-		const float spawnTime = m_mode == ESpawnCountMode::TotalParticles ? m_duration.GetValueRange().start
-			: min(pParams->m_maxParticleLife, m_duration.GetValueRange().start);
-		if (spawnTime > 0.0f)
-			pParams->m_maxParticleRate += amount / spawnTime;
-		else
-			pParams->m_maxParticlesBurst += int_ceil(amount);
+		CParticleFeatureSpawnBase::GetDynamicData(runtime, type, data, domain, range);
+		if (auto counts = EEDT_ParticleCounts.Cast(type, data, range))
+		{
+			THeapArray<float> tempBuffer(runtime.MemHeap(), domain);
+			auto amounts = GetAmounts(runtime, tempBuffer, domain);
+			SSpawnerUpdateBuffer<float> durations(runtime, m_duration, domain);
+			const float scale = CountScale(runtime);
+			const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
+			for (auto i : range)
+			{
+				const float amount = amounts[i] * scale;
+				const float spawnTime = m_mode == ESpawnCountMode::TotalParticles ? durations[i].start
+					: min(particleLife, durations[i].start);
+				if (spawnTime > 0.0f)
+					counts[i].rate += amount / spawnTime;
+				else
+					counts[i].burst += int_ceil(amount);
+			}
+		}
 	}
 
-	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> amounts) const override
+	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> counts) const override
 	{
-		for (uint i = 0; i < amounts.size(); ++i)
+		THeapArray<float> tempBuffer(runtime.MemHeap());
+		auto amounts = GetAmounts(runtime, tempBuffer, EDD_Spawner);
+		auto ages = runtime.IStream(ESDT_Age);
+		auto lifetimes = runtime.IStream(ESDT_LifeTime);
+		auto spawned = runtime.IStream(ESDT_Spawned);
+		const float stableTime = StableTime(runtime);
+		const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
+
+		for (uint i = 0; i < counts.size(); ++i)
 		{
-			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
-			const float dt = spawnData.DeltaTime(runtime.DeltaTime());
-			if (dt < 0.0f)
+			const float dT = SpawnTimes(runtime, ages[i], lifetimes[i], stableTime).Length();
+			if (dT < 0.0f)
 				continue;
-			if (m_mode == ESpawnCountMode::TotalParticles || spawnData.m_duration <= runtime.ComponentParams().m_maxParticleLife)
+			if (m_mode == ESpawnCountMode::TotalParticles || lifetimes[i] <= particleLife)
 			{
-				if (spawnData.m_duration > dt)
-					amounts[i] *= dt * rcp(spawnData.m_duration);
+				if (lifetimes[i] > dT)
+					counts[i] = amounts[i] * dT * rcp(lifetimes[i]);
 				else
-					amounts[i] -= spawnData.m_spawned;
+					counts[i] = amounts[i] - spawned[i];
 			}
 			else
 			{
-				amounts[i] *= dt * rcp(runtime.ComponentParams().m_maxParticleLife);
+				counts[i] = amounts[i] * dT * rcp(particleLife);
 			}
 		}
 	}
@@ -342,15 +464,22 @@ public:
 
 	static uint DefaultForType() { return EFT_Spawn; }
 
-	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
-		CParticleFeatureSpawnBase::AddToComponent(pComponent, pParams);
-
-		const auto amount = m_amount.GetValueRange();
-		if (m_mode == ESpawnRateMode::ParticlesPerFrame)
-			pParams->m_maxParticlesPerFrame += int_ceil(amount.end);
-		else
-			pParams->m_maxParticleRate += (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount.end : rcp(amount.start));
+		CParticleFeatureSpawnBase::GetDynamicData(runtime, type, data, domain, range);
+		if (auto counts = EEDT_ParticleCounts.Cast(type, data, range))
+		{
+			SSpawnerUpdateBuffer<float> amounts(runtime, m_amount, domain);
+			const float scale = CountScale(runtime);
+			for (auto i : range)
+			{
+				const auto amount = amounts[i] * scale;
+				if (m_mode == ESpawnRateMode::ParticlesPerFrame)
+					counts[i].perFrame += int_ceil(amount.end);
+				else
+					counts[i].rate += (m_mode == ESpawnRateMode::ParticlesPerSecond ? amount.end : rcp(amount.start));
+			}
+		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override
@@ -359,17 +488,22 @@ public:
 		ar(m_mode, "Mode", "Mode");
 	}
 
-	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> amounts) const override
+	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> counts) const override
 	{
-		for (uint i = 0; i < amounts.size(); ++i)
+		THeapArray<float> tempBuffer(runtime.MemHeap());
+		auto amounts = GetAmounts(runtime, tempBuffer, EDD_Spawner);
+		auto ages = runtime.IStream(ESDT_Age);
+		auto lifetimes = runtime.IStream(ESDT_LifeTime);
+		const float stableTime = StableTime(runtime);
+
+		for (uint i = 0; i < counts.size(); ++i)
 		{
-			SSpawnData& spawnData = runtime.GetInstanceData(i, m_offsetSpawnData);
-			const float dt = spawnData.DeltaTime(runtime.DeltaTime());
-			if (dt < 0.0f)
+			const float dT = SpawnTimes(runtime, ages[i], lifetimes[i], stableTime).Length();
+			if (dT < 0.0f)
 				continue;
-			amounts[i] =
+			counts[i] =
 				m_mode == ESpawnRateMode::ParticlesPerFrame ? amounts[i]
-				: dt * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amounts[i] : rcp(amounts[i]));
+				: dT * (m_mode == ESpawnRateMode::ParticlesPerSecond ? amounts[i] : rcp(amounts[i]));
 		}
 	}
 
@@ -386,6 +520,8 @@ SERIALIZATION_DECLARE_ENUM(ESpawnDistanceMode,
     MetersPerParticle
 )
 
+MakeDataType(ESVT_EmitPos, Vec3, EDD_Spawner);
+
 class CFeatureSpawnDistance : public CParticleFeatureSpawnBase
 {
 public:
@@ -400,65 +536,74 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		CParticleFeatureSpawnBase::AddToComponent(pComponent, pParams);
-		m_offsetEmitPos = pComponent->AddInstanceData<Vec3>();
+		pComponent->AddParticleData(ESVT_EmitPos);
 	}
-	virtual void InitSubInstances(CParticleComponentRuntime& runtime, SUpdateRange instanceRange) override
+
+	virtual void InitSpawners(CParticleComponentRuntime& runtime) override
 	{
-		CParticleFeatureSpawnBase::InitSubInstances(runtime, instanceRange);
+		CParticleFeatureSpawnBase::InitSpawners(runtime);
 
-		THeapArray<QuatTS> locations(runtime.MemHeap(), instanceRange.size());
-		runtime.GetEmitLocations(locations);
+		auto range = runtime.SpawnedRange(EDD_Spawner);
+		auto emitPositions = runtime.IOStream(ESVT_EmitPos);
 
-		for (auto instanceId : instanceRange)
+		THeapArray<QuatTS> locations(runtime.MemHeap(), range.size());
+		runtime.GetEmitLocations(locations, range.m_begin);
+
+		for (auto i : range)
 		{
-			Vec3& emitPos = runtime.GetInstanceData(instanceId, m_offsetEmitPos);
-			emitPos = locations[instanceId].t;
+			emitPositions.Store(i, locations[i - range.m_begin].t);
 		}
 	}
 
-	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> amounts) const override
+	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> counts) const override
 	{
-		THeapArray<QuatTS> locations(runtime.MemHeap(), amounts.size());
-		runtime.GetEmitLocations(locations);
+		THeapArray<float> tempBuffer(runtime.MemHeap());
+		auto amounts = GetAmounts(runtime, tempBuffer, EDD_Spawner);
+		auto emitPositions = runtime.IOStream(ESVT_EmitPos);
 
-		for (uint i = 0; i < amounts.size(); ++i)
+		THeapArray<QuatTS> locations(runtime.MemHeap(), counts.size());
+		runtime.GetEmitLocations(locations, 0);
+
+		for (uint i = 0; i < counts.size(); ++i)
 		{
-			Vec3& emitPos = runtime.GetInstanceData(i, m_offsetEmitPos);
-			const Vec3 emitPos0 = emitPos;
-			const Vec3 emitPos1 = locations[i].t;
-			emitPos = emitPos1;
-
-			const float distance = (emitPos1 - emitPos0).GetLengthFast();
-			amounts[i] = distance * (m_mode == ESpawnDistanceMode::ParticlesPerMeter ? amounts[i] : rcp(amounts[i]));
+			const Vec3 emitPos = emitPositions.Load(i);
+			const float distance = (locations[i].t - emitPos).GetLengthFast();
+			counts[i] = distance * (m_mode == ESpawnDistanceMode::ParticlesPerMeter ? amounts[i] : rcp(amounts[i]));
+			emitPositions.Store(i, locations[i].t);
 		}
 	}
 
 private:
 	ESpawnDistanceMode m_mode = ESpawnDistanceMode::ParticlesPerMeter;
-	TDataOffset<Vec3>  m_offsetEmitPos;
-
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureSpawnDistance, "Spawn", "Distance", colorSpawn);
+
+extern TDataType<Vec4> ESDT_SpatialExtents;
 
 class CFeatureSpawnDensity : public CFeatureSpawnCount
 {
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	virtual void Serialize(Serialization::IArchive& ar) override
+	static float ApplyExtents(float amount, Vec4 const& extents)
 	{
-		CParticleFeatureSpawnBase::Serialize(ar);
+		return extents[0] + amount * extents[1] + sqr(amount) * extents[2] + cube(amount) * extents[3];
 	}
 
-	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> amounts) const override
+	IFStream GetAmounts(const CParticleComponentRuntime& runtime, THeapArray<float>& tempBuffer, EDataDomain domain) const override
 	{
-		TFloatArray extents(runtime.MemHeap(), amounts.size());
-		extents.fill(0.0f);
-		runtime.GetComponent()->GetSpatialExtents(runtime, amounts, extents);
-		amounts.copy(0, extents);
+		SUpdateRange range(0, runtime.DomainSize(domain));
+		tempBuffer.resize(range.m_end);
 
-		CFeatureSpawnCount::GetSpawnCounts(runtime, amounts);
+		SDynamicData<Vec4> extents(runtime, ESDT_SpatialExtents, domain, range);
+
+		THeapArray<float> amountsTemp(runtime.MemHeap());
+		auto amounts = CFeatureSpawnCount::GetAmounts(runtime, amountsTemp, domain);
+
+		for (auto i : range)
+			tempBuffer[i] = ApplyExtents(amounts[i], extents[i]);
+		return IFStream(tempBuffer.data(), tempBuffer.size());
 	}
 };
 

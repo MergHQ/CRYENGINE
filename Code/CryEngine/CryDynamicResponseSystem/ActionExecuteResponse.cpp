@@ -12,7 +12,7 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteResponse::Execute(DRS::IResp
 	if (m_responseID.IsValid())
 	{
 		CActionExecuteResponseInstance* pInstance = new CActionExecuteResponseInstance();
-		DRS::SignalInstanceId id = pResponseInstance->GetCurrentActor()->QueueSignal(m_responseID, pResponseInstance->GetContextVariables(), pInstance);
+		pResponseInstance->GetCurrentActor()->QueueSignal(m_responseID, pResponseInstance->GetContextVariables(), pInstance);
 		return DRS::IResponseActionInstanceUniquePtr(pInstance);
 	}
 	return nullptr;

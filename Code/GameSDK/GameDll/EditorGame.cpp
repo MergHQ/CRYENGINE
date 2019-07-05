@@ -1,15 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 30:8:2004   11:19 : Created by Márcio Martins
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "EditorGame.h"
 #include "Game.h"
@@ -178,18 +168,6 @@ IGamePhysicsSettings* CEditorGame::GetIGamePhysicsSettings()
 	return g_pGame->GetGamePhysicsSettings();
 }
 
-void CEditorGame::OnDisplayRenderUpdated(bool displayHelpers)
-{
-	CLedgeManagerEdit* pLedgeManagerEdit = g_pGame->GetLedgeManager()->GetEditorManager();
-	if (pLedgeManagerEdit != NULL)
-	{
-		pLedgeManagerEdit->OnDisplayHelpersChanged(displayHelpers);
-	}
-
-	g_pGame->OnEditorDisplayRenderUpdated(displayHelpers);
-}
-
-//------------------------------------------------------------------------
 void CEditorGame::InitUIEnums(IGameToEditorInterface* pGTE)
 {
 	m_pGTE = pGTE;
@@ -895,7 +873,7 @@ void MarkEntityForSerialize(TSerializationData& data, IEntity* pEntity, int reas
 
 void CEditorGame::OnSaveLevel()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	ILevelInfo* pLevelInfo = m_pGame->GetIGameFramework()->GetILevelSystem()->GetCurrentLevel();
 
 	if (pLevelInfo)
@@ -974,7 +952,7 @@ bool CEditorGame::BuildEntitySerializationList(XmlNodeRef output)
 
 		IFlowNodeIteratorPtr nodeIt = (*it)->CreateNodeIterator();
 		TFlowNodeId nodeId = 0;
-		while (IFlowNodeData* pNode = nodeIt->Next(nodeId))
+		while (nodeIt->Next(nodeId) != nullptr)
 		{
 			EntityId nodeEntity = (*it)->GetEntityId(nodeId);
 			if (nodeEntity != 0)
@@ -1072,7 +1050,7 @@ bool CEditorGame::BuildEntitySerializationList(XmlNodeRef output)
 		if (it->second != eST_NotSerialized)
 		{
 			XmlNodeRef child = output->createNode("Entity");
-			child->setAttr("id", it->first);
+			child->setAttr("guid", pEntity->GetGuid());
 			//child->setAttr("class", pEntity->GetClass()->GetName());	// debug check
 			//child->setAttr("name", pEntity->GetName());								// debug check
 			output->addChild(child);

@@ -47,7 +47,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerFindByValueNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Refresh(params);
 		CDocGraphNodeBase::AddInput("In", EScriptGraphPortFlags::MultiLink | EScriptGraphPortFlags::Execute);
@@ -73,7 +73,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphContainerFindByValueNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CDocGraphNodeBase::Serialize(archive);
 
@@ -149,11 +149,11 @@ namespace Schematyc2
 
 			if (valueStackPos != INVALID_INDEX)
 			{
-				compiler.Copy(valueStackPos, INVALID_INDEX, *m_pValue);
+				compiler.Copy(valueStackPos, INVALID_INDEX, *m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 			else
 			{
-				compiler.Push(*m_pValue);
+				compiler.Push(*m_pValue, CDocGraphNodeBase::GetGUID(), GetInputName(EInput::Value));
 			}
 
 			compiler.AddOutputToStack(*this, EOutput::Index, MakeAny<int32>());

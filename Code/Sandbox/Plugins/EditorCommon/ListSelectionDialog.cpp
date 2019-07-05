@@ -41,7 +41,7 @@ ListSelectionDialog::ListSelectionDialog(const QString& dialogNameId, QWidget* p
 	{
 		filterBox->addWidget(new QLabel("Filter:", this), 0);
 		filterBox->addWidget(m_filterEdit = new QLineEdit(this), 1);
-		connect(m_filterEdit, SIGNAL(textChanged(const QString &)), this, SLOT(onFilterChanged(const QString &)));
+		connect(m_filterEdit, &QLineEdit::textChanged, this, &ListSelectionDialog::onFilterChanged);
 		m_filterEdit->installEventFilter(this);
 	}
 
@@ -61,20 +61,16 @@ ListSelectionDialog::ListSelectionDialog(const QString& dialogNameId, QWidget* p
 	m_tree->setModel(m_filterModel);
 
 	m_tree->header()->setStretchLastSection(false);
-#if QT_VERSION >= 0x50000
 	m_tree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-#else
-	m_tree->header()->setResizeMode(0, QHeaderView::Stretch);
-#endif
 	//m_tree->header()->resizeSection(0, 80);
-	connect(m_tree, SIGNAL(activated(const QModelIndex &)), this, SLOT(onActivated(const QModelIndex &)));
+	connect(m_tree, &QAdvancedTreeView::activated, this, &ListSelectionDialog::onActivated);
 
 	layout->addWidget(m_tree, 1);
 
 	QDialogButtonBox* buttons = new QDialogButtonBox(this);
 	buttons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-	connect(buttons, SIGNAL(accepted()), this, SLOT(accept()));
-	connect(buttons, SIGNAL(rejected()), this, SLOT(reject()));
+	connect(buttons, &QDialogButtonBox::accepted, this, &ListSelectionDialog::accept);
+	connect(buttons, &QDialogButtonBox::rejected, this, &ListSelectionDialog::reject);
 	layout->addWidget(buttons, 0);
 }
 
@@ -128,11 +124,7 @@ void ListSelectionDialog::SetColumnText(int column, const char* text)
 		m_model->setColumnCount(column + 1);
 		for (int i = oldColumnCount; i <= column; ++i)
 		{
-#if QT_VERSION >= 0x50000
 			m_tree->header()->setSectionResizeMode(i, QHeaderView::Interactive);
-#else
-			m_tree->header()->setResizeMode(i, QHeaderView::Interactive);
-#endif
 			m_tree->header()->resizeSection(i, 40);
 		}
 	}
@@ -181,13 +173,15 @@ void ListSelectionDialog::AddRowColumn(const char* text)
 	++m_currentColumn;
 }
 
-const char* ListSelectionDialog::ChooseItem(const char* currentItem)
+ListSelectionDialog::SSelectionResult ListSelectionDialog::ChooseItem(const char* currentValue)
 {
-	QString selectedName = QString::fromLocal8Bit(currentItem);
+
+	QString selectedName = QString::fromLocal8Bit(currentValue);
+	SSelectionResult selectionResult{ false, currentValue };
 
 	typedef std::vector<QList<QStandardItem*>> JointIDToItem;
 	QStandardItem* selectedItem = 0;
-	StringToItem::iterator it = m_firstColumnToItem.find(currentItem);
+	StringToItem::iterator it = m_firstColumnToItem.find(currentValue);
 	if (it != m_firstColumnToItem.end())
 		selectedItem = it->second;
 
@@ -205,10 +199,10 @@ const char* ListSelectionDialog::ChooseItem(const char* currentItem)
 		{
 			QString str = item->data().toString();
 			m_chosenItem = str.toLocal8Bit().data();
-			return m_chosenItem.c_str();
+			selectionResult.selectionAccepted = true;
+			selectionResult.selectedItem = m_chosenItem.c_str();
 		}
 	}
 
-	return currentItem;
+	return selectionResult;
 }
-

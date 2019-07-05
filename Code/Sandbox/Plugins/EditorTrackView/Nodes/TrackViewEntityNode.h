@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
 #pragma once
 
 #include "TrackViewAnimNode.h"
@@ -90,11 +88,10 @@ private:
 
 	// IAnimNodeOwner
 	virtual void OnNodeVisibilityChanged(IAnimNode* pNode, const bool bHidden) override;
-	virtual void OnNodeReset(IAnimNode* pNode) override;
+	virtual bool OnNodeReset(IAnimNode* pNode) override;
 	// ~IAnimNodeOwner
 
 	IAnimEntityNode*   m_pAnimEntityNode;
 	CEntityObject*     m_pNodeEntity;
 	_smart_ptr<CTrackGizmo> m_trackGizmo;
 };
-

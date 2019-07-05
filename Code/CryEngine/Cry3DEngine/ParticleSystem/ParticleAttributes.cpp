@@ -107,6 +107,7 @@ int CAttributeTable::FindAttributeIdByName(const CCryName& name) const
 
 void CAttributeTable::Serialize(IArchive& ar)
 {
+	CRY_PFX2_PROFILE_DETAIL;
 	ar(m_attributes, "Attributes", "Attributes");
 	if (ar.isInput())
 	{

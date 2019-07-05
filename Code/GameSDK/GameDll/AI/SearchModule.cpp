@@ -120,9 +120,8 @@ void SearchSpot::MarkAsSearchedBy(SearchActor& participant, float timeout)
 			if (agent)
 			{
 				if(m_isTargetSearchSpot)
-					agent.SetSignal(0, "OnTargetSearchSpotSeen");
-
-				agent.SetSignal(0, "OnAssignedSearchSpotSeen");
+					agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetSearchSpotSeen()));
+				agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAssignedSearchSpotSeen()));
 			}
 		}
 		else
@@ -130,7 +129,7 @@ void SearchSpot::MarkAsSearchedBy(SearchActor& participant, float timeout)
 			Agent agent(m_assigneeID);
 			if (agent)
 			{
-				agent.SetSignal(0, "OnAssignedSearchSpotSeenBySomeoneElse");
+				agent.SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAssignedSearchSpotSeenBySomeoneElse()));
 			}
 		}
 		m_assigneeID = 0;
@@ -233,19 +232,19 @@ void SearchGroup::GenerateSearchSpots()
 	Vec3 eyes[MaxEyeCount];
 	uint32 eyeCount = 0;
 
-	std::vector<SearchActor>::iterator actorIt = m_actors.begin();
+	/*std::vector<SearchActor>::iterator actorIt = m_actors.begin();
 	std::vector<SearchActor>::iterator actorEnd = m_actors.end();
 
-// 	for ( ; (eyeCount < MaxEyeCount) && (actorIt != actorEnd); ++actorIt)
-// 	{
-// 		SearchActor& actor = (*actorIt);
-// 
-// 		Agent agent(actor.entityID);
-// 		if(!agent.IsValid())
-// 			continue;
-// 
-// 		eyes[eyeCount++] = agent.GetPos();
-// 	}
+ 	for ( ; (eyeCount < MaxEyeCount) && (actorIt != actorEnd); ++actorIt)
+ 	{
+ 		SearchActor& actor = (*actorIt);
+ 
+ 		Agent agent(actor.entityID);
+ 		if(!agent.IsValid())
+ 			continue;
+ 
+ 		eyes[eyeCount++] = agent.GetPos();
+ 	}*/
 
 	IAISystem& aiSystem = *gEnv->pAISystem;
 	uint32 locationCount = 
@@ -524,7 +523,7 @@ void SearchGroup::InitActors()
 			observerParams.eyePosition = agent.GetPos();
 			observerParams.eyeDirection = agent.GetViewDir();
 
-			observerParams.fovCos = cosf(120.0f);
+			observerParams.fovCos = cosf(DEG2RAD(m_actorFov));
 			observerParams.sightRange = 8.0f;
 
 			IScriptTable* entityTable = agent.GetScriptTable();

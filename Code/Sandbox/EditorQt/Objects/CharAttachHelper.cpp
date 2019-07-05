@@ -20,9 +20,9 @@ CCharacterAttachHelperObject::CCharacterAttachHelperObject()
 //////////////////////////////////////////////////////////////////////////
 void CCharacterAttachHelperObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	__super::Display(objRenderHelper);
 
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	dc.SetLineWidth(4.0f);
 	float s = 1.0f * GetHelperScale();
 
@@ -64,4 +64,3 @@ void CCharacterAttachHelperObject::SetHelperScale(float scale)
 {
 	m_charAttachHelperScale = scale;
 }
-

@@ -2,20 +2,22 @@
 
 #include "StdAfx.h"
 
-#include <QPixmap>
-#include <QApplication>
-#include <QFile>
-#include <QDir>
-#include <QWindow>
-#include <QScreen>
-#include <QTime>
-#include <QDate>
+#include "Notifications/NotificationCenter.h"
+#include "QtUtil.h"
+#include "IEditorImpl.h"
+#include <BoostPythonMacros.h>
+#include <Util/FileUtil.h>
 
 #include <CrySystem/ICryLink.h>
 
-#include "Util/FileUtil.h"
-#include "QtUtil.h"
-#include "Notifications/NotificationCenter.h"
+#include <QApplication>
+#include <QDate>
+#include <QDir>
+#include <QFile>
+#include <QPixmap>
+#include <QScreen>
+#include <QTime>
+#include <QWindow>
 
 namespace Private_ShortcutExporter
 {
@@ -54,4 +56,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTakeScreenshot, general, take_screenshot,
 REGISTER_EDITOR_COMMAND_SHORTCUT(general, take_screenshot, CKeyboardShortcut("F12"));
 
 }
-

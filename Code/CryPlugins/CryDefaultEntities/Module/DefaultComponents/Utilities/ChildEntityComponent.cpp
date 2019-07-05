@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "ChildEntityComponent.h"
+#include <CryPhysics/IPhysics.h>
 
 namespace Cry
 {
@@ -36,11 +37,6 @@ namespace Cry
 			{
 				RemoveEntity();
 				SpawnEntity();
-			}
-			else if (event.event ==  ENTITY_EVENT_DONE)
-			{
-				RemoveEntity();
-				RemoveIgnoreConstraint();
 			}
 			else if (event.event == ENTITY_EVENT_DETACH)
 			{
@@ -90,15 +86,14 @@ namespace Cry
 #endif
 		}
 
-		uint64 CChildEntityComponent::GetEventMask() const
+		Cry::Entity::EventFlags CChildEntityComponent::GetEventMask() const
 		{
-			return ENTITY_EVENT_BIT(ENTITY_EVENT_DETACH)
-				| ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
-				| ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
-				| ENTITY_EVENT_BIT(ENTITY_EVENT_DONE)
+			return ENTITY_EVENT_DETACH
+				| ENTITY_EVENT_PHYSICAL_TYPE_CHANGED
+				| ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED
 #ifndef RELEASE
-				| ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM)
-				| ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME)
+				| ENTITY_EVENT_XFORM
+				| ENTITY_EVENT_START_GAME
 #endif
 				;
 		}

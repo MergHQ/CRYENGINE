@@ -19,7 +19,7 @@
 
 // TODO: Replace when CNodeStyle was moved into its own header.
 #include "NodeGraph/NodeWidgetStyle.h"
-#include "NodeGraph/NodeHeaderWidgetStyle.h"
+#include "NodeGraph/HeaderWidgetStyle.h"
 #include "NodeGraph/NodeGraphViewStyle.h"
 #include "NodeGraph/ConnectionWidgetStyle.h"
 #include "NodeGraph/NodePinWidgetStyle.h"
@@ -29,11 +29,23 @@
 
 namespace CryParticleEditor {
 
-CParticleGraphModel::CParticleGraphModel(pfx2::IParticleEffectPfx2& effect)
+CParticleGraphModel::CParticleGraphModel(pfx2::IParticleEffect& effect)
 	: m_effect(effect)
 	, m_isValid(true)
 	, m_pSolorNode(nullptr)
 {
+	Refresh();
+}
+
+CParticleGraphModel::~CParticleGraphModel()
+{
+	Clear();
+}
+
+void CParticleGraphModel::Refresh()
+{
+	Clear();
+
 	uint32 numVisibleNodes = 0;
 	CNodeItem* pSoloNode = nullptr;
 
@@ -63,17 +75,19 @@ CParticleGraphModel::CParticleGraphModel(pfx2::IParticleEffectPfx2& effect)
 	ExtractConnectionsFromNodes();
 }
 
-CParticleGraphModel::~CParticleGraphModel()
+void CParticleGraphModel::Clear()
 {
 	for (CConnectionItem* pConnectionitem : m_connections)
 	{
 		delete pConnectionitem;
 	}
+	m_connections.clear();
 
 	for (CNodeItem* pNodeItem : m_nodes)
 	{
 		delete pNodeItem;
 	}
+	m_nodes.clear();
 }
 
 QString CParticleGraphModel::GetGraphName()
@@ -123,6 +137,11 @@ void CParticleGraphModel::ToggleSoloNode(CNodeItem& node)
 	}
 }
 
+void CParticleGraphModel::OnNodeItemChanged(CNodeItem* pItem)
+{
+	signalChanged(&pItem->GetComponentInterface());
+}
+
 CryGraphEditor::CAbstractNodeItem* CParticleGraphModel::CreateNode(QVariant identifier, const QPointF& position)
 {
 	const string templateName = QtUtil::ToString(identifier.value<QString>());
@@ -150,20 +169,30 @@ bool CParticleGraphModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 	SignalRemoveNode(node);
 	// ~TODO
 
-	const uint32 index = pNodeItem->GetIndex();
-	CRY_ASSERT(index < m_nodes.size());
-	if (index < m_nodes.size())
+	// Delete from effect
+	const uint32 index = pNodeItem->GetEffectIndex();
+	if (index == ~0)
+		return false;
+	m_effect.RemoveComponent(index);
+
+	// Delete from m_nodes (may not match effect after removing connections)
+	for (size_t i = 0; i < m_nodes.size(); ++i)
 	{
-		m_nodes.erase(m_nodes.begin() + index);
-
-		delete pNodeItem;
-
-		m_effect.RemoveComponent(index);
-		return true;
+		if (m_nodes[i] == pNodeItem)
+		{
+			m_nodes.erase(m_nodes.begin() + i);
+			delete pNodeItem;
+			break;
+		}
 	}
 
-	delete pNodeItem;
-	return false;
+	// Sort to match new effect order
+	stl::sort(m_nodes, [](CNodeItem* pNode)
+		{
+			return pNode->GetComponentInterface().GetIndex();
+		});
+
+	return true;
 }
 
 uint32 CParticleGraphModel::GetConnectionItemCount() const
@@ -230,6 +259,7 @@ bool CParticleGraphModel::RemoveConnection(CryGraphEditor::CAbstractConnectionIt
 		// TODO: ConnectTo(...) should do the job for us!
 		sourceNode.GetComponentInterface().SetChanged();
 		targetNode.GetComponentInterface().SetChanged();
+		m_effect.Update();
 		// ~TODO
 
 		CConnectionItem* pConnection = static_cast<CConnectionItem*>(&connection);
@@ -338,6 +368,7 @@ CNodeItem* CParticleGraphModel::CreateNode(const char* szTemplateName, const QPo
 	{
 		if (szTemplateName == nullptr || *szTemplateName == '\0' || Serialization::LoadJsonFile(*pComponent, szTemplateName))
 		{
+			m_effect.Update();
 			pComponent->SetNodePosition(Vec2(position.x(), position.y()));
 			return CreateNodeItem(*pComponent);
 		}
@@ -374,6 +405,7 @@ CConnectionItem* CParticleGraphModel::CreateConnection(CBasePinItem& sourcePin, 
 		// TODO: ConnectTo(...) should do the job for us!
 		sourceNode.GetComponentInterface().SetChanged();
 		targetNode.GetComponentInterface().SetChanged();
+		m_effect.Update();
 		// ~TODO
 
 		// TODO: Move this into a CNodeGraphViewModel method that gets called from here.
@@ -397,10 +429,6 @@ CNodeItem* CParticleGraphModel::CreateNodeItem(pfx2::IParticleComponent& compone
 	const uint32 crc = CCrc32::Compute(component.GetName());
 	m_nodes.push_back(pNodeItem);
 
-	// TODO: AddComponent(...) should do the job for us!
-	m_effect.SetChanged();
-	// ~TODO
-
 	// TODO: Move this into a CNodeGraphViewModel method that gets called from here.
 	SignalCreateNode(*pNodeItem);
 
@@ -416,7 +444,7 @@ CNodeItem* CParticleGraphModel::CreateNodeItem(pfx2::IParticleComponent& compone
 void AddNodeStyle(CryGraphEditor::CNodeGraphViewStyle& viewStyle, const char* szStyleId, const char* szIcon, QColor color, bool coloredHeaderIconText = true)
 {
 	CryGraphEditor::CNodeWidgetStyle* pStyle = new CryGraphEditor::CNodeWidgetStyle(szStyleId, viewStyle);
-	CryGraphEditor::CNodeHeaderWidgetStyle& headerStyle = pStyle->GetHeaderWidgetStyle();
+	CryGraphEditor::CHeaderWidgetStyle& headerStyle = pStyle->GetHeaderWidgetStyle();
 	headerStyle.SetNodeIcon(QIcon());
 }
 
@@ -459,4 +487,3 @@ CParticleGraphRuntimeContext::~CParticleGraphRuntimeContext()
 }
 
 }
-

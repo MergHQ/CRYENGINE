@@ -17,5 +17,6 @@ void AddPauseGame(IContextEstablisher* pEst, EContextViewState state, bool pause
 void AddWaitForPrecachingToFinish(IContextEstablisher* pEst, EContextViewState state, bool* pGameStart);
 void AddInitialSaveGame(IContextEstablisher* pEst, EContextViewState state);
 void AddClientTimeSync(IContextEstablisher* pEst, EContextViewState state);
+void AddGameChannelLoadingTasks(IContextEstablisher* pEst, bool isServer);
 
 #endif

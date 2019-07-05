@@ -2,9 +2,10 @@
 
 #include "StdAfx.h"
 #include "AxisScaleGizmo.h"
+
 #include "IDisplayViewport.h"
 #include "Gizmos/AxisHelper.h"
-#include "Grid.h"
+#include "Preferences/SnappingPreferences.h"
 
 #define HIT_RADIUS (8)
 
@@ -13,20 +14,6 @@ CAxisScaleGizmo::CAxisScaleGizmo()
 	, m_scale(1.0f)
 	, m_offset(0.0f)
 {
-}
-
-CAxisScaleGizmo::~CAxisScaleGizmo()
-{
-}
-
-void CAxisScaleGizmo::SetName(const char* sName)
-{
-	m_name = sName;
-}
-
-const char* CAxisScaleGizmo::GetName()
-{
-	return m_name.c_str();
 }
 
 void CAxisScaleGizmo::SetPosition(Vec3 pos)
@@ -61,7 +48,7 @@ void CAxisScaleGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CAxisScaleGizmo::DrawSquishBox(DisplayContext& dc, Vec3 position)
+void CAxisScaleGizmo::DrawSquishBox(SDisplayContext& dc, Vec3 position)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -101,7 +88,7 @@ void CAxisScaleGizmo::DrawSquishBox(DisplayContext& dc, Vec3 position)
 	dc.PopMatrix();
 }
 
-void CAxisScaleGizmo::Display(DisplayContext& dc)
+void CAxisScaleGizmo::Display(SDisplayContext& dc)
 {
 	uint32 curflags = dc.GetState();
 	dc.DepthTestOff();
@@ -115,7 +102,7 @@ void CAxisScaleGizmo::Display(DisplayContext& dc)
 		string msg;
 		msg.Format("Scale %.1f", m_scaleInteraction);
 
-		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.flags & DISPLAY_2D), textSize, (LPCSTR)msg, true);
+		dc.DrawTextLabel(ConvertToTextPos(m_position, Matrix34::CreateIdentity(), dc.view, dc.display2D), textSize, (LPCSTR)msg, true);
 	}
 
 	// draw a shadow arrow at the initial position
@@ -239,4 +226,3 @@ bool CAxisScaleGizmo::HitTest(HitContext& hc)
 
 	return false;
 }
-

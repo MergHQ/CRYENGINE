@@ -16,13 +16,14 @@ def build(bld):
 		pass
 
 	# FBX Plugin Module
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target                      = 'MeshImporter',
 		vs_filter                   = 'Sandbox/Plugins',
 		file_list                   = 'meshimporter.waf_files',
 		defines                     = [ 'BUILDING_FBX_TOOL' ],
 		includes                    = [ Path('Code/SDKs/FbxSdk/include'), Path('Code/Sandbox/Plugins/MFCToolsPlugin') ],
-		use                         = [ 'Sandbox', 'MFCToolsPlugin'],
+		use                         = [ 'MFCToolsPlugin'],
+		use_module                  = ['mikkelsen'],
 		pch                         = 'StdAfx.cpp',
 		win_x64_debug_libpath       = Path('Code/SDKs/FbxSdk/lib/' + fbx_sdk_subfolder + '/x64/debug'),
 		win_x64_profile_libpath     = Path('Code/SDKs/FbxSdk/lib/' + fbx_sdk_subfolder + '/x64/release'),

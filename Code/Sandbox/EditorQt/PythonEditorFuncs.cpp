@@ -1,24 +1,30 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "IEditorImpl.h"
-#include "GameEngine.h"
-#include "ViewManager.h"
-#include <Preferences/ViewportPreferences.h>
+
+#include "Commands/CommandManager.h"
 #include "Util/BoostPythonHelpers.h"
-#include "Dialogs/QStringDialog.h"
-#include "Dialogs/ToolbarDialog.h"
-#include "Dialogs/GenericSelectItemDialog.h"
 #include "Util/Ruler.h"
-#include "Util/Mailer.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
-#include "CryEditDoc.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "ViewManager.h"
+
+#include <Dialogs/GenericSelectItemDialog.h>
+#include <Util/FileUtil.h>
+
+#include <Controls/QuestionDialog.h>
+#include <Dialogs/QStringDialog.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <Objects/BaseObject.h>
+#include <Preferences/ViewportPreferences.h>
+#include <IObjectManager.h>
+#include <PathUtils.h>
+
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace
 {
-//////////////////////////////////////////////////////////////////////////
+
 const char* PyGetCVar(const char* pName)
 {
 	ICVar* pCVar = GetIEditorImpl()->GetSystem()->GetIConsole()->GetCVar(pName);
@@ -29,7 +35,7 @@ const char* PyGetCVar(const char* pName)
 	}
 	return pCVar->GetString();
 }
-//////////////////////////////////////////////////////////////////////////
+
 void PySetCVar(const char* pName, pSPyWrappedProperty pValue)
 {
 	ICVar* pCVar = GetIEditorImpl()->GetSystem()->GetIConsole()->GetCVar(pName);
@@ -39,17 +45,21 @@ void PySetCVar(const char* pName, pSPyWrappedProperty pValue)
 		throw std::logic_error(string("\"") + pName + " is an invalid cvar.");
 	}
 
-	if (pCVar->GetType() == CVAR_INT && pValue->type == SPyWrappedProperty::eType_Int)
+	if (pCVar->GetType() == ECVarType::Int && pValue->type == SPyWrappedProperty::eType_Int)
 	{
 		pCVar->Set(pValue->property.intValue);
 	}
-	else if (pCVar->GetType() == CVAR_FLOAT && pValue->type == SPyWrappedProperty::eType_Float)
+	else if (pCVar->GetType() == ECVarType::Float && pValue->type == SPyWrappedProperty::eType_Float)
 	{
 		pCVar->Set(pValue->property.floatValue);
 	}
-	else if (pCVar->GetType() == CVAR_STRING && pValue->type == SPyWrappedProperty::eType_String)
+	else if (pCVar->GetType() == ECVarType::String && pValue->type == SPyWrappedProperty::eType_String)
 	{
 		pCVar->Set((LPCTSTR)pValue->stringValue);
+	}
+	else if (pCVar->GetType() == ECVarType::Int64)
+	{
+		CRY_ASSERT_MESSAGE(false, "PySetCVar int64 cvar not implemented");
 	}
 	else
 	{
@@ -60,32 +70,6 @@ void PySetCVar(const char* pName, pSPyWrappedProperty pValue)
 	CryLog("PySetCVar: %s set to %s", pName, pCVar->GetString());
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-void PySuspendGameInput()
-{
-	if (GetIEditorImpl()->GetGameEngine() && GetIEditorImpl()->IsInGameMode())
-		GetIEditorImpl()->GetGameEngine()->ToggleGameInputSuspended();
-}
-
-void PyEnterGameMode()
-{
-	if (GetIEditorImpl()->GetGameEngine())
-		GetIEditorImpl()->GetGameEngine()->RequestSetGameMode(true);
-}
-
-void PyExitGameMode()
-{
-	if (GetIEditorImpl()->GetGameEngine())
-		GetIEditorImpl()->GetGameEngine()->RequestSetGameMode(false);
-}
-
-bool PyIsInGameMode()
-{
-	return GetIEditorImpl()->IsInGameMode();
-}
-
-//////////////////////////////////////////////////////////////////////////
 const char* PyNewObject(const char* typeName, const char* fileName, const char* name, float x, float y, float z)
 {
 	CBaseObject* pObject = GetIEditorImpl()->NewObject(typeName, fileName);
@@ -117,7 +101,6 @@ pPyGameObject PyCreateObject(const char* typeName, const char* fileName, const c
 	return PyScript::CreatePyGameObject(pObject);
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* PyNewObjectAtCursor(const char* typeName, const char* fileName, const char* name)
 {
 	CUndo undo("Create new object");
@@ -136,32 +119,28 @@ const char* PyNewObjectAtCursor(const char* typeName, const char* fileName, cons
 	return PyNewObject(typeName, fileName, name, pos.x, pos.y, pos.z);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyStartObjectCreation(const char* typeName, const char* fileName)
 {
 	CUndo undo("Create new object");
 	GetIEditorImpl()->StartObjectCreation(typeName, fileName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyRunConsole(const char* text)
 {
 	GetIEditorImpl()->GetSystem()->GetIConsole()->ExecuteString(text);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyRunLua(const char* text)
 {
 	GetIEditorImpl()->GetSystem()->GetIScriptSystem()->ExecuteBuffer(text, strlen(text));
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool GetPythonScriptPath(const char* pFile, string& path)
 {
 	bool bRelativePath = true;
 	char drive[_MAX_DRIVE];
 	drive[0] = '\0';
-	_splitpath(pFile, drive, 0, 0, 0);
+	_splitpath(pFile, drive, nullptr, nullptr, nullptr);
 	if (strlen(drive) != 0)
 	{
 		bRelativePath = false;
@@ -171,12 +150,11 @@ bool GetPythonScriptPath(const char* pFile, string& path)
 	GetCurrentDirectory(MAX_PATH, workingDirectory);
 	string scriptFolder = workingDirectory + string("/");
 	scriptFolder += GetIEditorImpl()->GetSystem()->GetIPak()->GetGameFolder() + string("/");
-	PathUtil::ToUnixPath(scriptFolder.GetBuffer());
 
 	if (bRelativePath)
 	{
 		// Try to open from user folder
-		path = string(PathUtil::GetUserSandboxFolder().c_str()) + pFile;
+		path = string(PathUtil::GetUserSandboxFolder()) + pFile;
 
 		// If not found try editor folder
 		if (!CFileUtil::FileExists(path))
@@ -189,7 +167,7 @@ bool GetPythonScriptPath(const char* pFile, string& path)
 		path = pFile;
 	}
 
-	PathUtil::ToUnixPath(path.GetBuffer());
+	path = PathUtil::ToUnixPath(path);
 
 	if (!CFileUtil::FileExists(path))
 	{
@@ -202,49 +180,65 @@ bool GetPythonScriptPath(const char* pFile, string& path)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void GetPythonArgumentsVector(const char* pArguments, std::vector<string>& inputArguments)
+std::vector<wstring> TokenizeArguments(const char* pArguments)
 {
-	if (pArguments == NULL)
-		return;
+	std::vector<wstring> arguments;
+
+	if (!pArguments)
+	{
+		return arguments;
+	}
 
 	string str(pArguments);
 	int pos = 0;
 	string token = str.Tokenize(" ", pos);
 	while (!token.IsEmpty())
 	{
-		inputArguments.push_back(token);
+		wstring wideToken;
+		Unicode::Convert(wideToken, token);
+
+		arguments.push_back(wideToken);
 		token = str.Tokenize(" ", pos);
 	}
+
+	return arguments;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void PyRunFileWithParameters(const char* pFile, const char* pArguments)
+void PyRunFileWithParameters(const char* szFile, const char* pArguments)
 {
 	string path;
-	std::vector<string> inputArguments;
-	GetPythonArgumentsVector(pArguments, inputArguments);
-	if (GetPythonScriptPath(pFile, path))
+	if (!GetPythonScriptPath(szFile, path))
 	{
-		PyObject* pyFileObject = PyFile_FromString(const_cast<char*>(path.GetString()), "r");
-
-		if (pyFileObject)
-		{
-			std::vector<const char*> argv;
-			argv.reserve(inputArguments.size() + 1);
-			argv.push_back(path.GetString());
-
-			for (auto iter = inputArguments.begin(); iter != inputArguments.end(); ++iter)
-			{
-				argv.push_back(*iter);
-			}
-
-			PySys_SetArgv(argv.size(), const_cast<char**>(&argv[0]));
-			PyRun_SimpleFile(PyFile_AsFile(pyFileObject), path);
-			PyErr_Print();
-		}
-		Py_DECREF(pyFileObject);
+		return;
 	}
+
+	FILE* pFile = fopen(path.c_str(), "r");
+	if (!pFile)
+	{
+		return;
+	}
+
+	const std::vector<wstring> inputArguments = TokenizeArguments(pArguments);
+
+	std::vector<wchar_t*> argv;
+	argv.reserve(inputArguments.size() + 1);
+
+	// Path - first
+	std::wstring widePath;
+	Unicode::Convert(widePath, path);
+	argv.push_back(const_cast<wchar_t*>(widePath.c_str()));
+
+	// Add arguments
+	for (auto iter = inputArguments.begin(); iter != inputArguments.end(); ++iter)
+	{
+		argv.push_back(const_cast<wchar_t*>(iter->c_str()));
+	}
+
+	PySys_SetArgv(argv.size(), const_cast<wchar_t**>(&argv[0]));
+	PyRun_SimpleFile(pFile, path.c_str());
+	PyErr_Print();
+
+	fclose(pFile);
 }
 
 void PyRunFile(const char* pFile)
@@ -252,20 +246,17 @@ void PyRunFile(const char* pFile)
 	PyRunFileWithParameters(pFile, nullptr);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyExecuteCommand(const char* cmdline)
 {
 	GetIEditorImpl()->GetCommandManager()->Execute(cmdline);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyLog(const char* pMessage)
 {
 	if (strcmp(pMessage, "") != 0)
 		CryLogAlways(pMessage);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool PyMessageBox(const char* pMessage)
 {
 	return QDialogButtonBox::StandardButton::Ok == CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr(pMessage), QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::Cancel);
@@ -544,57 +535,57 @@ static void PyDrawLabel(int x, int y, float size, float r, float g, float b, flo
 //////////////////////////////////////////////////////////////////////////
 const char* PyGetAxisConstraint()
 {
-	AxisConstrains actualConstrain = GetIEditorImpl()->GetAxisConstrains();
-	switch (actualConstrain)
+	CLevelEditorSharedState::Axis axisConstraint = GetIEditorImpl()->GetLevelEditorSharedState()->GetAxisConstraint();
+	switch (axisConstraint)
 	{
-	case AXIS_X:
+	case CLevelEditorSharedState::Axis::X:
 		return "X";
-	case AXIS_Y:
+	case CLevelEditorSharedState::Axis::Y:
 		return "Y";
-	case AXIS_Z:
+	case CLevelEditorSharedState::Axis::Z:
 		return "Z";
-	case AXIS_XY:
+	case CLevelEditorSharedState::Axis::XY:
 		return "XY";
-	case AXIS_XZ:
+	case CLevelEditorSharedState::Axis::XZ:
 		return "XZ";
-	case AXIS_YZ:
+	case CLevelEditorSharedState::Axis::YZ:
 		return "YZ";
-	case AXIS_XYZ:
+	case CLevelEditorSharedState::Axis::XYZ:
 		return "XYZ";
 	default:
-		throw std::logic_error("Invalid axes.");
+		throw std::logic_error("Invalid axis.");
 	}
 }
 
-void PySetAxisConstraint(string pConstrain)
+void PySetAxisConstraint(string constraint)
 {
-	if (pConstrain == "X")
+	if (constraint == "X")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_X);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::X);
 	}
-	else if (pConstrain == "Y")
+	else if (constraint == "Y")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_Y);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Y);
 	}
-	else if (pConstrain == "Z")
+	else if (constraint == "Z")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_Z);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::Z);
 	}
-	else if (pConstrain == "XY")
+	else if (constraint == "XY")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_XY);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XY);
 	}
-	else if (pConstrain == "YZ")
+	else if (constraint == "YZ")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_YZ);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::YZ);
 	}
-	else if (pConstrain == "XZ")
+	else if (constraint == "XZ")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_XZ);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XZ);
 	}
-	else if (pConstrain == "XYZ")
+	else if (constraint == "XYZ")
 	{
-		GetIEditorImpl()->SetAxisConstrains(AXIS_XYZ);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetAxisConstraint(CLevelEditorSharedState::Axis::XYZ);
 	}
 	else
 	{
@@ -606,20 +597,20 @@ void PySetAxisConstraint(string pConstrain)
 //////////////////////////////////////////////////////////////////////////
 const char* PyGetEditMode()
 {
-	int actualEditMode = GetIEditorImpl()->GetEditMode();
-	switch (actualEditMode)
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
+	switch (editMode)
 	{
-	case eEditModeSelect:
+	case CLevelEditorSharedState::EditMode::Select:
 		return "SELECT";
-	case eEditModeSelectArea:
+	case CLevelEditorSharedState::EditMode::SelectArea:
 		return "SELECTAREA";
-	case eEditModeMove:
+	case CLevelEditorSharedState::EditMode::Move:
 		return "MOVE";
-	case eEditModeRotate:
+	case CLevelEditorSharedState::EditMode::Rotate:
 		return "ROTATE";
-	case eEditModeScale:
+	case CLevelEditorSharedState::EditMode::Scale:
 		return "SCALE";
-	case eEditModeTool:
+	case CLevelEditorSharedState::EditMode::Tool:
 		return "TOOL";
 	default:
 		throw std::logic_error("Invalid edit mode.");
@@ -630,27 +621,27 @@ void PySetEditMode(string pEditMode)
 {
 	if (pEditMode == "MOVE")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeMove);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
 	}
 	else if (pEditMode == "ROTATE")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeRotate);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Rotate);
 	}
 	else if (pEditMode == "SCALE")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeScale);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Scale);
 	}
 	else if (pEditMode == "SELECT")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeSelect);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Select);
 	}
 	else if (pEditMode == "SELECTAREA")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeSelectArea);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::SelectArea);
 	}
 	else if (pEditMode == "TOOL")
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeTool);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Tool);
 	}
 	else if (pEditMode == "RULER")
 	{
@@ -685,13 +676,11 @@ void PySetHideMaskAll()
 	gViewportDebugPreferences.SetObjectHideMask(OBJTYPE_ANY);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PySetHideMaskNone()
 {
 	gViewportDebugPreferences.SetObjectHideMask(0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PySetHideMaskInvert()
 {
 	uint32 hideMask = gViewportDebugPreferences.GetObjectHideMask();
@@ -703,7 +692,7 @@ void PySetHideMask(const char* pName, bool bAdd)
 	uint32 hideMask = gViewportDebugPreferences.GetObjectHideMask();
 	int hideType = 0;
 
-	if (!stricmp(pName, "aipoints"))   hideType = OBJTYPE_AIPOINT;
+	if (!stricmp(pName, "aipoints")) hideType = OBJTYPE_AIPOINT;
 	else if (!stricmp(pName, "brushes"))
 		hideType = OBJTYPE_BRUSH;
 	else if (!stricmp(pName, "decals"))
@@ -760,7 +749,7 @@ bool PyGetHideMask(const char* pName)
 	    (!stricmp(pName, "volumes") && (hideMask & OBJTYPE_VOLUME)) ||
 	    (!stricmp(pName, "geomcaches") && (hideMask & OBJTYPE_GEOMCACHE)) ||
 	    (!stricmp(pName, "roads") && (hideMask & OBJTYPE_ROAD)) ||
-	    (!stricmp(pName, "rivers") && (hideMask & OBJTYPE_ROAD)))    return true;
+	    (!stricmp(pName, "rivers") && (hideMask & OBJTYPE_ROAD))) return true;
 
 	return false;
 }
@@ -768,36 +757,6 @@ bool PyGetHideMask(const char* pName)
 void PySetSelectionMask(int mask)
 {
 	GetIEditorImpl()->GetObjectManager()->SetSelectionMask(mask);
-}
-
-void PySetCoordSys(int value)
-{
-	GetIEditorImpl()->SetReferenceCoordSys((RefCoordSys)value);
-}
-
-void PySetViewCoords()
-{
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_VIEW);
-}
-
-void PySetLocalCoords()
-{
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_LOCAL);
-}
-
-void PySetParentCoords()
-{
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_PARENT);
-}
-
-void PySetWorldCoords()
-{
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_WORLD);
-}
-
-void PySetCustomCoords()
-{
-	GetIEditorImpl()->SetReferenceCoordSys(COORDS_USERDEFINED);
 }
 }
 
@@ -807,15 +766,6 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyGetCVar, general, get_cvar,
 REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PySetCVar, general, set_cvar,
                                           "Sets a cvar value from an integer, float or string.",
                                           "general.set_cvar(str cvarName, [int, float, string] cvarValue)");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyEnterGameMode, general, enter_game_mode,
-                                     "Enters the editor game mode.",
-                                     "general.enter_game_mode()");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyExitGameMode, general, exit_game_mode,
-                                     "Exits the editor game mode.",
-                                     "general.exit_game_mode()");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyIsInGameMode, general, is_in_game_mode,
-                                     "Queries if it's in the game mode or not.",
-                                     "general.is_in_game_mode()");
 REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PyNewObject, general, new_object,
                                           "Creates a new object with given arguments and returns the name of the object.",
                                           "general.new_object(str entityTypeName, str cgfName, str entityName, float xValue, float yValue, float zValue)");
@@ -903,30 +853,3 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyGetHideMask, general, get_hidemask,
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetSelectionMask, general, set_selection_mask,
                                      "Sets the selection mask for the level editor",
                                      "general.set_selection_mask(int mask)");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetCoordSys, general, set_coord_sys,
-                                     "Sets the coordinate system to use for level editor",
-                                     "general.set_coord_sys(int value)");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetViewCoords, general, set_view_coordinates,
-                                     "Use view coordinates",
-                                     "general.set_view_coordinates()");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetLocalCoords, general, set_local_coordinates,
-                                     "Use local coordinates",
-                                     "general.set_local_coordinates()");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetParentCoords, general, set_parent_coordinates,
-                                     "Use parent coordinates",
-                                     "general.set_parent_coordinates()");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetWorldCoords, general, set_world_coordinates,
-                                     "Use world coordinates",
-                                     "general.set_world_coordinates()");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySetCustomCoords, general, set_custom_coordinates,
-                                     "Use custom coordinates",
-                                     "general.set_custom_coordinates()");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySuspendGameInput, general, suspend_game_input,
-                                     "Suspend game input and allow editor to tweak properties",
-                                     "general.suspend_game_input()");
-

@@ -21,18 +21,13 @@ public:
 
 	struct Segment
 	{
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 	#pragma clang diagnostic push
 	#pragma clang diagnostic ignored "-Wconstant-conversion"
 #endif
-
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic ignored "-Woverflow"
-	#else
-		#pragma GCC diagnostic push
-		#pragma GCC diagnostic ignored "-Woverflow"
-	#endif
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Woverflow"
 #endif
 		Segment()
 		{
@@ -42,15 +37,11 @@ public:
 			flags = 0;
 			length = 0;
 		}
-#if defined(__clang__)
+#if CRY_COMPILER_CLANG
 	#pragma clang diagnostic pop
 #endif
-#if defined(__GNUC__)
-	#if __GNUC__ >= 4 && __GNUC__MINOR__ < 7
-		#pragma GCC diagnostic error "-Woverflow"
-	#else
-		#pragma GCC diagnostic pop
-	#endif
+#if defined(CRY_COMPILER_GCC)
+    #pragma GCC diagnostic pop
 #endif
 
 		Segment(const Vec3& n, float len, uint16 left, uint16 right, uint16 _flags)

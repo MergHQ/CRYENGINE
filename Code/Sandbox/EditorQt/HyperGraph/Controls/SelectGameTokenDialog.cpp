@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "SelectGameTokenDialog.h"
+#include "IEditorImpl.h"
 
 #include <IDataBaseItem.h>
 #include <IDataBaseManager.h>
@@ -209,4 +210,3 @@ void CSelectGameTokenDialog::OnTvnDoubleClick(NMHDR* pNMHDR, LRESULT* pResult)
 		EndDialog(IDOK);
 	}
 }
-

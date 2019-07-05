@@ -7,31 +7,56 @@
 
 namespace MaterialEffectsUtils
 {
-	static constexpr CryAudio::ControlId switchId = CryAudio::StringToId("1stOr3rdP");
-	static constexpr CryAudio::SwitchStateId fpStateId = CryAudio::StringToId("1stP");
-	static constexpr CryAudio::SwitchStateId tpStateId = CryAudio::StringToId("3rdP");
-
-template<typename AudioObjectType>
-void PrepareForAudioTriggerExecution(AudioObjectType* pIAudioObject, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
-{
-	pIAudioObject->SetSwitchState(switchId,	runtimeParams.playSoundFP ? fpStateId : tpStateId);
-
-	for (auto const& switchWrapper : audioParams.triggerSwitches)
+	void PrepareForAudioTriggerExecution(CryAudio::IObject* pIAudioObject, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
 	{
-		pIAudioObject->SetSwitchState(switchWrapper.GetSwitchId(), switchWrapper.GetSwitchStateId());
-	}
-
-	for (uint32 i = 0; i < runtimeParams.numAudioRtpcs; ++i)
-	{
-		char const* const szParameterName = runtimeParams.audioRtpcs[i].rtpcName;
-
-		if (szParameterName != nullptr && szParameterName[0] != '\0')
+		for (auto const& switchStatePair : runtimeParams.audioSwitchStates)
 		{
-			CryAudio::ControlId const parameterId = CryAudio::StringToId(szParameterName);
-			pIAudioObject->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue);
+			pIAudioObject->SetSwitchState(switchStatePair.first, switchStatePair.second);
+		}
+
+		for (auto const& switchWrapper : audioParams.triggerSwitches)
+		{
+			pIAudioObject->SetSwitchState(switchWrapper.GetSwitchId(), switchWrapper.GetSwitchStateId());
+		}
+
+		for (uint32 i = 0; i < runtimeParams.numAudioRtpcs; ++i)
+		{
+			char const* const szParameterName = runtimeParams.audioRtpcs[i].rtpcName;
+
+			if (szParameterName != nullptr && szParameterName[0] != '\0')
+			{
+				CryAudio::ControlId const parameterId = CryAudio::StringToId(szParameterName);
+				pIAudioObject->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue);
+			}
 		}
 	}
-}
+
+	void PrepareForAudioTriggerExecution(IEntityAudioComponent* pAudioComponent, const SMFXAudioEffectParams& audioParams, const SMFXRunTimeEffectParams& runtimeParams)
+	{
+		for (auto const& switchStatePair : runtimeParams.audioSwitchStates)
+		{
+			pAudioComponent->SetSwitchState(switchStatePair.first, switchStatePair.second);
+		}
+
+		for (auto const& switchWrapper : audioParams.triggerSwitches)
+		{
+			pAudioComponent->SetSwitchState(switchWrapper.GetSwitchId(), switchWrapper.GetSwitchStateId());
+		}
+
+		for (uint32 i = 0; i < runtimeParams.numAudioRtpcs; ++i)
+		{
+			char const* const szParameterName = runtimeParams.audioRtpcs[i].rtpcName;
+
+			if (szParameterName != nullptr && szParameterName[0] != '\0')
+			{
+				CryAudio::ControlId const parameterId = CryAudio::StringToId(szParameterName);
+				if (runtimeParams.audioProxyId != CryAudio::InvalidAuxObjectId)
+					pAudioComponent->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue, runtimeParams.audioProxyId);
+				else
+					pAudioComponent->SetParameter(parameterId, runtimeParams.audioRtpcs[i].rtpcValue);
+			}
+		}
+	}
 } // namespace MaterialEffectsUtils
 
 //////////////////////////////////////////////////////////////////////////
@@ -71,7 +96,7 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
-	IF_UNLIKELY (!m_audioParams.trigger.IsValid())
+	IF_UNLIKELY(!m_audioParams.trigger.IsValid())
 		return;
 
 	IEntity* pOwnerEntity = (params.audioProxyEntityId != 0) ? gEnv->pEntitySystem->GetEntity(params.audioProxyEntityId) : nullptr;
@@ -80,16 +105,16 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 		IEntityAudioComponent* pIEntityAudioComponent = pOwnerEntity->GetOrCreateComponent<IEntityAudioComponent>();
 		CRY_ASSERT(pIEntityAudioComponent);
 
-		MaterialEffectsUtils::PrepareForAudioTriggerExecution<IEntityAudioComponent>(pIEntityAudioComponent, m_audioParams, params);
+		MaterialEffectsUtils::PrepareForAudioTriggerExecution(pIEntityAudioComponent, m_audioParams, params);
 
 		pIEntityAudioComponent->ExecuteTrigger(m_audioParams.trigger.GetTriggerId(), params.audioProxyId);
 	}
 	else
 	{
-		CryAudio::SCreateObjectData const objectData("MFXAudioEffect", CryAudio::EOcclusionType::Low, params.pos, INVALID_ENTITYID, true);
+		CryAudio::SCreateObjectData const objectData("MFXAudioEffect", CryAudio::EOcclusionType::Low, params.pos, true);
 		CryAudio::IObject* const pIObject = gEnv->pAudioSystem->CreateObject(objectData);
 
-		MaterialEffectsUtils::PrepareForAudioTriggerExecution<CryAudio::IObject>(pIObject, m_audioParams, params);
+		MaterialEffectsUtils::PrepareForAudioTriggerExecution(pIObject, m_audioParams, params);
 
 		pIObject->ExecuteTrigger(m_audioParams.trigger.GetTriggerId());
 		gEnv->pAudioSystem->ReleaseObject(pIObject);

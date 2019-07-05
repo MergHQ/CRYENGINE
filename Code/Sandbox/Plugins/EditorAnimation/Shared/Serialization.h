@@ -6,10 +6,6 @@
 
 #include <CrySerialization/Forward.h>
 
-struct SkeletonAlias;
-
-bool Serialize(Serialization::IArchive& ar, SkeletonAlias& value, const char* name, const char* label);
-
 #include <CrySerialization/STL.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/OutputFilePath.h>
@@ -24,4 +20,3 @@ using Serialization::JointName;
 #include <CrySerialization/ClassFactory.h>
 #include <CrySerialization/Enum.h>
 using Serialization::IArchive;
-

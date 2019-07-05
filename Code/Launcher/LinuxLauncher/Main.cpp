@@ -16,6 +16,7 @@
 
 #include <CryEntitySystem/IEntity.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/SystemInitParams.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>				// used for crash handling
@@ -184,6 +185,15 @@ int RunGame(const char *, int, char**) __attribute__ ((noreturn));
 
 int RunGame(const char *commandLine, int argc, char* argv[])
 {
+#if defined(DEDICATED_SERVER) && !defined(ALLOW_RUNNING_SERVER_AS_ROOT)
+	// Don't allow running as root
+	if (getuid() == 0)
+	{
+		fprintf(stderr, "Error: Server running as root. Due to security reasons, this is not supported.\n");
+		RunGame_EXIT(1);
+	}
+#endif
+
 	char absPath[ MAX_PATH];
 	memset(absPath,0,sizeof(char)* MAX_PATH);
 	if (!getcwd(absPath,sizeof(char)* MAX_PATH))

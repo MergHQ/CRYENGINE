@@ -20,6 +20,7 @@
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryString/StringUtils.h>
 #include <CrySystem/Scaleform/IScaleformHelper.h>
+#include <CryFont/IFont.h>
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#include <unistd.h>
@@ -29,7 +30,6 @@
 	#include <float.h>
 	#include <CryCore/Platform/CryWindows.h>
 	#include <shellapi.h> // Needed for ShellExecute.
-	#include <Psapi.h>
 	#include <Aclapi.h>
 	#include <tlhelp32.h>
 
@@ -91,13 +91,9 @@ const char* g_szModuleGroups[][2] = {
 	{ "Game.dll",            g_szGroupCore },
 	{ "CryAction.dll",       g_szGroupCore },
 	{ "CryAnimation.dll",    g_szGroupCore },
-	{ "CryRenderD3D9.dll",   g_szGroupCore },
-	{ "CryRenderD3D10.dll",  g_szGroupCore },
 	{ "CryRenderD3D11.dll",  g_szGroupCore },
 	{ "CryRenderD3D12.dll",  g_szGroupCore },
-	{ "CryRenderOpenGL.dll", g_szGroupCore },
 	{ "CryRenderVulkan.dll", g_szGroupCore },
-	{ "CryRenderNULL.dll",   g_szGroupCore },
 	{ "CryFlowGraph.dll",    g_szGroupCore }
 };
 
@@ -113,7 +109,7 @@ void CSystem::DumpMemoryUsageStatistics(bool bUseKB)
 	CrySizerStatsRenderer StatsRenderer(this, m_pMemStats, 10, 0);
 	StatsRenderer.dump(bUseKB);
 
-	int iSizeInM = m_env.p3DEngine->GetTerrainSize();
+	//int iSizeInM = m_env.p3DEngine->GetTerrainSize();
 
 	//	ResourceCollector.ComputeDependencyCnt();
 
@@ -557,7 +553,7 @@ int CSystem::GetApplicationInstance()
 		{
 			suffix.Format("(%d)", instance);
 
-			HANDLE instanceMutex = CreateMutex(NULL, TRUE, "CrytekApplication" + suffix);
+			CreateMutex(NULL, TRUE, "CrytekApplication" + suffix);
 			// search for duplicates
 			if (GetLastError() != ERROR_ALREADY_EXISTS)
 			{
@@ -565,6 +561,47 @@ int CSystem::GetApplicationInstance()
 				break;
 			}
 		}
+	}
+
+	return m_iApplicationInstance;
+#elif CRY_PLATFORM_LINUX
+	if (m_iApplicationInstance == -1)
+	{
+		string path;
+		for (int i = 0; i < std::numeric_limits<int>::max(); ++i)
+		{
+			path.Format("/tmp/CrytekApplication%d.lock", i);
+
+			int fd = open(path.c_str(), O_CREAT | O_RDWR, 0666);
+			CRY_ASSERT(fd >= 0, "Failed to create mutex file, errno %d", errno);
+			if (fd >= 0)
+			{
+				flock lock;
+				memset(&lock, 0, sizeof(lock));
+				lock.l_type = F_WRLCK;
+				lock.l_whence = SEEK_SET;
+				lock.l_start = 0;
+				lock.l_len = 0; // Lock entire file
+				if (fcntl(fd, F_SETLK, &lock) != -1)
+				{
+					// We're not calling close in case of success as
+					// that would release the lock on the file
+					m_iApplicationInstance = i;
+					break;
+				}
+				else
+				{
+					close(fd);
+				}
+			}
+		}
+	}
+
+	// Set a valid value in case something went wrong
+	if (m_iApplicationInstance == -1)
+	{
+		m_iApplicationInstance = 0;
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Unable to tetermine application ID");
 	}
 
 	return m_iApplicationInstance;
@@ -679,13 +716,12 @@ void CSystem::DebugStats(bool checkpoint, bool leaks)
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	ILog* log = GetILog();
-	int totalal = 0, totalbl = 0, nolib = 0;
-
 	#ifdef _DEBUG
-	int extrastats[10];
+	ILog* log = GetILog();
+	int extrastats[10], totalal = 0, totalbl = 0;
 	#endif
 
+	int nolib = 0;
 	int totalUsedInModules = 0;
 	int countedMemoryModules = 0;
 	for (int i = 0; i < (int)(dbgmodules.size()); i++)
@@ -790,7 +826,9 @@ void CSystem::DebugStats(bool checkpoint, bool leaks)
 		phe.lpData = NULL;
 		int nCommitted = 0, nUncommitted = 0, nOverhead = 0;
 		int nCommittedPieces = 0, nUncommittedPieces = 0;
+#if defined(USE_CRY_ASSERT)
 		int nPrevRegionIndex = -1;
+#endif
 		while (HeapWalk(hHeap, &phe))
 		{
 			if (phe.wFlags & PROCESS_HEAP_REGION)
@@ -824,8 +862,7 @@ void CSystem::DebugStats(bool checkpoint, bool leaks)
 			nOverhead += phe.cbOverhead;
 		}
 		;
-		int nCommittedMin = min(nCommitted, nCommittedPieces);
-		int nCommittedMax = max(nCommitted, nCommittedPieces);
+
 		CryLogAlways("* heap %8x: %6d (or ~%6d) K in use, %6d..%6d K uncommitted, %6d K overhead (%s)\n",
 		             handles[i], nCommittedPieces / 1024, nCommitted / 1024, nUncommittedPieces / 1024, nUncommitted / 1024, nOverhead / 1024, hinfo);
 
@@ -939,7 +976,7 @@ void CSystem::GetExeSizes(ICrySizer* pSizer, MemStatsPurposeEnum nPurpose)
 	{
 		// the sizes of each module group
 		StringToSizeMap mapGroupSize;
-		DWORD dwTotalModuleSize = 0;
+
 		do
 		{
 			dwProcessID = me.th32ProcessID;
@@ -1047,53 +1084,6 @@ void CSystem::DumpWinHeaps()
 #endif
 }
 
-// Make system error message string
-//////////////////////////////////////////////////////////////////////////
-//! \return pointer to the null terminated error string or 0
-static const char* GetLastSystemErrorMessage()
-{
-#if CRY_PLATFORM_WINDOWS
-	DWORD dwError = GetLastError();
-
-	static char szBuffer[512]; // function will return pointer to this buffer
-
-	if (dwError)
-	{
-		LPVOID lpMsgBuf = 0;
-
-		if (FormatMessage(
-		      FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		      FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_IGNORE_INSERTS,
-		      NULL,
-		      GetLastError(),
-		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		      (LPTSTR) &lpMsgBuf,
-		      0,
-		      NULL))
-		{
-			cry_strcpy(szBuffer, (char*)lpMsgBuf);
-			LocalFree(lpMsgBuf);
-		}
-		else return 0;
-
-		//#else
-
-		//cry_sprintf(szBuffer, "Win32 ERROR: %i", dwError);
-		//OutputDebugString(szBuffer);
-
-		//#endif
-
-		return szBuffer;
-	}
-#else
-	return 0;
-
-#endif // CRY_PLATFORM_WINDOWS
-
-	return 0;
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CSystem::FatalError(const char* format, ...)
 {
@@ -1107,7 +1097,7 @@ void CSystem::FatalError(const char* format, ...)
 	va_end(ArgList);
 
 	// get system error message before any attempt to write into log
-	const char* szSysErrorMessage = GetLastSystemErrorMessage();
+	const char* szSysErrorMessage = CryGetLastSystemErrorMessage();
 
 	CryLogAlways("=============================================================================");
 	CryLogAlways("*ERROR");
@@ -1118,10 +1108,6 @@ void CSystem::FatalError(const char* format, ...)
 	if (szSysErrorMessage)
 		CryLogAlways("<CrySystem> Last System Error: %s", szSysErrorMessage);
 
-	if (const char* pLoadingProfilerCallstack = GetLoadingProfilerCallstack())
-		if (pLoadingProfilerCallstack[0])
-			CryLogAlways("<CrySystem> LoadingProfilerCallstack: %s", pLoadingProfilerCallstack);
-
 	assert(szBuffer[0] >= ' ');
 	//	strcpy(szBuffer,szBuffer+1);	// remove verbosity tag since it is not supported by ::MessageBox
 
@@ -1130,7 +1116,6 @@ void CSystem::FatalError(const char* format, ...)
 	CollectMemStats(0, nMSP_ForCrashLog);
 
 	OutputDebugString(szBuffer);
-#if CRY_PLATFORM_WINDOWS
 	OnFatalError(szBuffer);
 
 	if (!g_cvars.sys_no_crash_dialog)
@@ -1138,6 +1123,7 @@ void CSystem::FatalError(const char* format, ...)
 		CryMessageBox(szBuffer,"CRYENGINE FATAL ERROR", eMB_Error);
 	}
 
+#if CRY_PLATFORM_WINDOWS
 	//Triggers a fatal error, so the DebugCallstack can create the error.log and terminate the application
 	IDebugCallStack::instance()->FatalError(szBuffer);
 #endif
@@ -1145,14 +1131,7 @@ void CSystem::FatalError(const char* format, ...)
 	CryDebugBreak();
 
 	// app can not continue
-#ifdef _DEBUG
-
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	__debugbreak();
-	#endif
-
-#else
-
+#if !defined(_DEBUG)
 	#if CRY_PLATFORM_WINDOWS
 	_flushall();
 	#endif
@@ -1289,7 +1268,6 @@ void CSystem::LogSystemInfo()
 	char szProfileBuffer[128];
 	char szLanguageBuffer[64];
 	//char szCPUModel[64];
-	char* pChar = 0;
 
 	MEMORYSTATUSEX MemoryStatus;
 	MemoryStatus.dwLength = sizeof(MemoryStatus);
@@ -1299,7 +1277,7 @@ void CSystem::LogSystemInfo()
 	OSVerInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 
 	// log Windows type
-	Win32SysInspect::GetOS(m_env.pi.winVer, m_env.pi.win64Bit, szBuffer, sizeof(szBuffer));
+	Win32SysInspect::GetOS(m_env.pi.winInfo, szBuffer, sizeof(szBuffer));
 	CryLogAlways(szBuffer);
 
 	// log user name

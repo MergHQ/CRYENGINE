@@ -54,4 +54,3 @@ protected:
 	uint64           m_waterVolumeID;
 	Plane            m_fogPlane;
 };
-

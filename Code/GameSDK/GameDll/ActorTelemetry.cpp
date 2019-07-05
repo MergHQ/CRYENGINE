@@ -20,6 +20,7 @@ History:
 #include "StatHelpers.h"
 #include "Weapon.h"
 #include "GameActions.h"
+#include <CryGame/GameUtils.h>
 
 static const float POSITION_DUMP_INTERVAL = 1.0f;
 static const float POSITION_THRESHOLD = 0.5f;
@@ -134,9 +135,7 @@ void CActorTelemetry::Update()
 	CStatsRecordingMgr* pMgr = g_pGame->GetStatsRecorder();
 	if(tracker && pOwner && pMgr)
 	{
-		IGameStatistics		*gs=g_pGame->GetIGameFramework()->GetIGameStatistics();
 		CTimeValue time = gEnv->pTimer->GetFrameStartTime(ITimer::ETIMER_UI);
-		assert(gs);
 
 		if (TimePassedCheck(m_lastPositionTime, time, POSITION_DUMP_INTERVAL) && pMgr->ShouldRecordEvent(eSE_Position, pOwnerRaw))
 		{
@@ -263,11 +262,11 @@ void CActorTelemetry::SubscribeToWeapon(EntityId weaponId)
 						else if (pParams->category == g_pItemStrings->scope)
 							scopeAttachment = itAccessory->pClass->GetName();
 						else
-							CRY_ASSERT_MESSAGE(pParams->category.empty(), string().Format("Unrecognised attachment category %s", pParams->category.c_str()));
+							CRY_ASSERT(pParams->category.empty(), string().Format("Unrecognised attachment category %s", pParams->category.c_str()));
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(0, "Unable to find accessory params");
+						CRY_ASSERT(0, "Unable to find accessory params");
 					}
 				}
 

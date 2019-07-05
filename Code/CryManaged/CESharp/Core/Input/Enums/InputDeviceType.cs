@@ -5,35 +5,35 @@ namespace CryEngine
 	/// <summary>
 	/// The various input devices from which input can be received.
 	/// </summary>
-	public enum InputDeviceType
+	public enum InputDeviceType : byte
 	{
 		/// <summary>
 		/// Generic keyboard device.
 		/// </summary>
-		Keyboard,
+		Keyboard = CryEngine.Common.EInputDeviceType.eIDT_Keyboard,
 		/// <summary>
 		/// Generic mouse device.
 		/// </summary>
-		Mouse,
+		Mouse = CryEngine.Common.EInputDeviceType.eIDT_Mouse,
 		/// <summary>
 		/// Generic joystick device.
 		/// </summary>
-		Joystick,
+		Joystick = CryEngine.Common.EInputDeviceType.eIDT_Joystick,
 		/// <summary>
 		/// An eye-tracking device.
 		/// </summary>
-		EyeTracker,
+		EyeTracker = CryEngine.Common.EInputDeviceType.eIDT_EyeTracker,
 		/// <summary>
 		/// Generic gamepad device.
 		/// </summary>
-		Gamepad,
+		Gamepad = CryEngine.Common.EInputDeviceType.eIDT_Gamepad,
 		/// <summary>
 		/// Generic motion-controller device.
 		/// </summary>
-		MotionController,
+		MotionController = CryEngine.Common.EInputDeviceType.eIDT_MotionController,
 		/// <summary>
 		/// Device is unknown.
 		/// </summary>
-		Unknown = 255
+		Unknown = CryEngine.Common.EInputDeviceType.eIDT_Unknown
 	}
 }

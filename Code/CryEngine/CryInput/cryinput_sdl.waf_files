@@ -1,16 +1,16 @@
 {
-  "CryInput_sdl_uber.cpp":{
-    "Linux":[
-      "LinuxInput.cpp",
-      "LinuxInput.h"
-    ],
-    "SDL":[
-      "SDLPad.cpp",
-      "SDLPad.h",
-      "SDLMouse.cpp",
-      "SDLMouse.h",
-      "SDLKeyboard.cpp",
-      "SDLKeyboard.h"
-    ]
-  }
+    "CryInput_sdl_uber.cpp": {
+        "Linux": [
+            "LinuxInput.cpp",
+            "LinuxInput.h"
+        ],
+        "SDL": [
+            "SDLPad.cpp",
+            "SDLPad.h",
+            "SDLMouse.cpp",
+            "SDLMouse.h",
+            "SDLKeyboard.cpp",
+            "SDLKeyboard.h"
+        ]
+    }
 }

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_ANIMDB_EDITOR_DIALOG_H__
-#define __MANN_ANIMDB_EDITOR_DIALOG_H__
 #pragma once
 
 #include "MannequinBase.h"
@@ -39,21 +37,18 @@ private:
 	SMiniSubADB* GetSelectedSubADBInternal(const string& text, SMiniSubADB* pSub);
 	SMiniSubADB* GetSelectedSubADB();
 
-	IAnimationDatabase*        m_animDB;
+	IAnimationDatabase*          m_animDB;
 
-	SMiniSubADB::TSubADBArray  m_vSubADBs;
+	SMiniSubADB::TSubADBArray    m_vSubADBs;
 
-	CImageList                 m_imageList;
-	std::auto_ptr<CTreeCtrlEx> m_adbTree;
+	CImageList                   m_imageList;
+	std::unique_ptr<CTreeCtrlEx> m_adbTree;
 
-	CButton                    m_newContext;
-	CButton                    m_editContext;
-	CButton                    m_cloneContext;
-	CButton                    m_deleteContext;
+	CButton                      m_newContext;
+	CButton                      m_editContext;
+	CButton                      m_cloneContext;
+	CButton                      m_deleteContext;
 
-	CButton                    m_moveUp;
-	CButton                    m_moveDown;
+	CButton                      m_moveUp;
+	CButton                      m_moveDown;
 };
-
-#endif
-

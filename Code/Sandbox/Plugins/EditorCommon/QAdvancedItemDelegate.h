@@ -5,11 +5,11 @@
 #include <QStyledItemDelegate>
 #include <QSet>
 
-//! QAdvancedItemDelegate is meant to provide extra generic functionnality that we want to use in many QTreeViews. 
+//! QAdvancedItemDelegate is meant to provide extra generic functionality that we want to use in many QTreeViews. 
 //! It is designed to be used with QAdvancedTreeView.
 //! Check the behavior flags to discover all the features it provides
 //! Please add all generic behavior you need for your improved tree views so they can be reused easily, maintained properly and not duplicated.
-//TODO : Have a default behavior for all columns which can be overriden for specific ones, for convenience and easier setup. Also useful for models which dynamically add or remove columns.
+//TODO : Have a default behavior for all columns which can be overridden for specific ones, for convenience and easier setup. Also useful for models which dynamically add or remove columns.
 class EDITOR_COMMON_API QAdvancedItemDelegate : public QStyledItemDelegate
 {
 	Q_OBJECT
@@ -66,4 +66,3 @@ private:
 	QVariant                 m_checkValue;
 	QSet<QModelIndex>        m_checkedIndices;
 };
-

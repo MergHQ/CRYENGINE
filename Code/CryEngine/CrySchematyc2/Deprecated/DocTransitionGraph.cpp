@@ -119,6 +119,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	IScriptGraphNodePtr CDocTransitionGraph::CreateNode(const SGUID& guid, EScriptGraphNodeType type, const SGUID& contextGUID, const SGUID& refGUID, Vec2 pos)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Create Node(Doc Transition Graph)");
 		switch(type)
 		{
 		case EScriptGraphNodeType::Branch:

@@ -229,7 +229,7 @@ bool ElementSet::PickFromModel(CBaseObject* pObject, Model* pModel, CViewport* v
 	return false;
 }
 
-void ElementSet::Display(CBaseObject* pObject, DisplayContext& dc) const
+void ElementSet::Display(CBaseObject* pObject, SDisplayContext& dc) const
 {
 	int nOldLineWidth = dc.GetLineWidth();
 	dc.SetColor(kSelectedColor);
@@ -245,7 +245,7 @@ void ElementSet::Display(CBaseObject* pObject, DisplayContext& dc) const
 		if (m_Elements[i].IsVertex())
 		{
 			BrushVec3 worldVertexPos = pObject->GetWorldTM().TransformPoint(m_Elements[i].m_Vertices[0]);
-			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, worldVertexPos);
+			BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, worldVertexPos);
 			dc.DrawSolidBox(ToVec3(worldVertexPos - vBoxSize), ToVec3(worldVertexPos + vBoxSize));
 		}
 	}
@@ -373,13 +373,13 @@ Matrix33 ElementSet::GetOrts(Model* pModel) const
 			if (pModel->GetDB()->QueryAsVertex(m_Elements.front().GetPos(), queryResult) && queryResult.front().m_MarkList.size())
 			{
 				const auto i = std::find_if(queryResult.front().m_MarkList.begin(), queryResult.front().m_MarkList.end(), [](const auto& x)
-				{
-					return x.m_pPolygon != nullptr;
-				});
+					{
+						return x.m_pPolygon != nullptr;
+				  });
 
 				if (i != queryResult.front().m_MarkList.end())
 				{
-					// Use the poligon plane normal as an 'up', since it might be adjusted to create orthogonal base. 
+					// Use the poligon plane normal as an 'up', since it might be adjusted to create orthogonal base.
 					const BrushVec3 up = i->m_pPolygon->GetPlane().Normal();
 					const Matrix33 t = Matrix33::CreateOrientation(normal, -up, 0);
 
@@ -390,7 +390,7 @@ Matrix33 ElementSet::GetOrts(Model* pModel) const
 		}
 	}
 
-	return 	Matrix33::CreateOrthogonalBase(normal);
+	return Matrix33::CreateOrthogonalBase(normal);
 }
 
 void ElementSet::Erase(int nElementFlags)
@@ -777,4 +777,3 @@ _smart_ptr<Model> ElementSet::CreateModel()
 	return pModel;
 }
 }
-

@@ -1,6 +1,4 @@
-//////////////////////////////////////////////////////////////////////////
-
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -10,6 +8,11 @@
 inline bool Serialize(Serialization::IArchive& archive, SNavMeshQueryFilterDefault& value, const char* szName, const char* szLabel)
 {
 	return archive(NavigationSerialization::NavigationQueryFilter(value), szName, szLabel);
+}
+
+inline bool Serialize(Serialization::IArchive& archive, SNavMeshQueryFilterDefaultWithCosts& value, const char* szName, const char* szLabel)
+{
+	return archive(NavigationSerialization::NavigationQueryFilterWithCosts(value), szName, szLabel);
 }
 
 inline bool Serialize(Serialization::IArchive& archive, NavigationVolumeID& value, const char* szName, const char* szLabel)
@@ -168,6 +171,19 @@ inline bool Serialize(Serialization::IArchive& archive, NavigationAreaFlagID& va
 	return bResult;
 }
 
+namespace MNM
+{
+	inline bool Serialize(Serialization::IArchive& archive, SSnappingMetric& value, const char* szName, const char* szLabel)
+	{
+		return archive(NavigationSerialization::SnappingMetric(value), szName, szLabel);
+	}
+
+	inline bool Serialize(Serialization::IArchive& archive, SOrderedSnappingMetrics& value, const char* szName, const char* szLabel)
+	{
+		return archive(value.metricsArray, szName, szLabel);
+	}
+}
+
 namespace NavigationSerialization
 {
 	inline void NavigationAreaCost::Serialize(Serialization::IArchive& archive)
@@ -255,6 +271,12 @@ namespace NavigationSerialization
 
 	inline void NavigationQueryFilter::Serialize(Serialization::IArchive& archive)
 	{
+		archive(NavigationAreaFlagsMask(variable.includeFlags), "IncludeFlags", "IncludeFlags");
+		archive(NavigationAreaFlagsMask(variable.excludeFlags), "ExcludeFlags", "ExcludeFlags");
+	}
+
+	inline void NavigationQueryFilterWithCosts::Serialize(Serialization::IArchive& archive)
+	{
 		INavigationSystem* pNavigationSystem = gEnv->pAISystem->GetNavigationSystem();
 		const MNM::IAnnotationsLibrary& annotationsLib = pNavigationSystem->GetAnnotationLibrary();
 
@@ -296,5 +318,17 @@ namespace NavigationSerialization
 
 		archive(NavigationAreaFlagsMask(variable.includeFlags), "IncludeFlags", "IncludeFlags");
 		archive(NavigationAreaFlagsMask(variable.excludeFlags), "ExcludeFlags", "ExcludeFlags");
+	}
+
+	inline void SnappingMetric::Serialize(Serialization::IArchive& archive)
+	{
+		archive(value.type, "type", "Type");
+		archive(value.verticalUpRange, "verticalUp", "Vertical Up Range");
+		archive(value.verticalDownRange, "verticalDown", "Vertical Down Range");
+
+		if (value.type != MNM::SSnappingMetric::EType::Vertical)
+		{
+			archive(value.horizontalRange, "horizontal", "Horizontal Range");
+		}
 	}
 }

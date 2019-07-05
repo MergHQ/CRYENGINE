@@ -3,11 +3,6 @@
 #include "StdAfx.h"
 #include "VKHeap.hpp"
 
-const VkDeviceSize kMaxPagesPerType = 128;          // Max number of pages per type
-const VkDeviceSize kMinPageSize = 16 * 1024 * 1024; // Pages at least 16 MB each
-const VkDeviceSize kMinPagePopulation = 90;         // Percent of page that should be used before allocating separate pages
-const bool kMapPersistent = true;                   // Map all allocated host-visible pages persistently. Maybe turn off for 32-bit hosts?
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void* VKAPI_CALL NCryVulkan::CHostAllocator::CpuMalloc(void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope scope)
 {
@@ -52,8 +47,8 @@ void VKAPI_CALL NCryVulkan::CHostAllocator::CpuFree(void* pUserData, void* pMemo
 #if !defined(_RELEASE)
 	if (pMemory)
 	{
-		const size_t previousSize = CryModuleMemSize(pMemory, 1);
 		/* TODO: determine scope?
+		const size_t previousSize = CryModuleMemSize(pMemory, 1);
 		SPoolStats& stats = static_cast<CHostAllocator*>(pUserData)->AtStats(???);
 		CryInterlockedAdd(&stats.numDeallocations, 1);
 		CryInterlockedAdd(&stats.bytesDeallocated, previousSize);
@@ -148,7 +143,7 @@ void NCryVulkan::CHeap::Init(VkPhysicalDevice physicalDevice, VkDevice device)
 		}
 	}
 
-	const uint32_t deviceStagingTypes = (hostLocalTypes ? deviceLocalTypes & hostVisibleTypes : 0);
+	const uint32_t deviceStagingTypes = (hostVisibleTypes ? deviceLocalTypes & hostVisibleTypes : 0);
 
 	// Always take away the "upload" heap from all the heap-preferences (never fall back to "upload" heap)
 	if (deviceLocalTypes  != deviceStagingTypes) deviceLocalTypes  &= ~deviceStagingTypes;
@@ -400,13 +395,13 @@ NCryVulkan::CMemoryHandle NCryVulkan::CHeap::Allocate(const VkMemoryRequirements
 			const uint32_t bit = countTrailingZeros32(remainingPools); // Order intended here, try lowest pool index first, as this is what Vulkan drivers may use to express their preference.
 			remainingPools ^= 1U << bit;
 
-			if (result.handle = CGpuHeap::Allocate(bit, static_cast<uint32_t>(requirements.size), static_cast<uint32_t>(requirements.alignment)))
+			if ((result.handle = CGpuHeap::Allocate(bit, static_cast<uint32_t>(requirements.size), static_cast<uint32_t>(requirements.alignment))))
 			{
 				return result;
 			}
 		}
 
-		assert(types == 0 && "Memory fallback happened!");
+		CRY_ASSERT(types == 0, "Memory fallback happened!");
 	}
 	return result;
 }
@@ -440,11 +435,11 @@ NCryVulkan::CHeap::TBlockHandle NCryVulkan::CHeap::AllocateBlock(uint32_t memory
 	{
 		// At maximum population
 		// We should run out of memory long before this though.
-		VK_ASSERT(false && "Out of block handles");
+		VK_ASSERT(false, "Out of block handles");
 		return 0;
 	}
 	const TBlockHandle blockHandle = static_cast<TBlockHandle>(&*itResult - m_blocks.data());
-	VK_ASSERT(blockHandle < m_blocks.size() && "Bad block handle");
+	VK_ASSERT(blockHandle < m_blocks.size(), "Bad block handle");
 	m_blockProbe = blockHandle;
 
 	VkMemoryAllocateInfo info;

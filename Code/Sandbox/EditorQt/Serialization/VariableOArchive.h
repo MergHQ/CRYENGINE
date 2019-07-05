@@ -4,6 +4,7 @@
 
 #include "Util/Variable.h"
 #include "Serialization.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 namespace Serialization
 {
@@ -78,4 +79,3 @@ private:
 	EntityId            m_animationEntityId;
 };
 }
-

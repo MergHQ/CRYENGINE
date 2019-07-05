@@ -146,4 +146,3 @@ inline void AddSourceControlOptions(QMenu* pMenu, std::vector<string>& filenames
 		}
 	}
 }
-

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HUDEventDispatcher.h"
+#include <CryGame/GameUtils.h>
 
 //////////////////////////////////////////////////////////////////////////
 namespace
@@ -10,7 +11,9 @@ namespace
 	typedef std::vector<THUDEventListeners>         TEventVector;
 
 	static bool                                     s_safe = true;
-	static bool                                     s_stlSafe = true;
+#if !defined(DEDICATED_SERVER)
+    static bool                                     s_stlSafe = true;
+#endif
 	static TEventVector                             s_eventVec;
 }
 
@@ -370,7 +373,7 @@ static THUDEventLookup s_eventLookUpTable[] = {
 		for(; it!=end; ++it)
 		{
 			IHUDEventListener* pListener = (*it);
-			CRY_ASSERT_MESSAGE(!pListener, tmpstr.Format("HUD: Event listener '%p' is still listening for events when it shouldn't be!", pListener).c_str());
+			CRY_ASSERT(!pListener, tmpstr.Format("HUD: Event listener '%p' is still listening for events when it shouldn't be!", pListener).c_str());
 		}
 	}
 #endif
@@ -391,7 +394,7 @@ static THUDEventLookup s_eventLookUpTable[] = {
 /*static*/ void CHUDEventDispatcher::AddHUDEventListener( IHUDEventListener* pListener, const char* in_eventName )
 {
 #if !defined(DEDICATED_SERVER)
-	CRY_ASSERT_MESSAGE(s_stlSafe, "HUD: Can't call AddHUDEventListener() in an OnHUDEvent() callback!" );
+	CRY_ASSERT(s_stlSafe, "HUD: Can't call AddHUDEventListener() in an OnHUDEvent() callback!" );
 	if(s_stlSafe==false)
 	{
 		// HUD Event Sending is now unsafe and should not be done!
@@ -417,7 +420,7 @@ static THUDEventLookup s_eventLookUpTable[] = {
 /*static*/ void CHUDEventDispatcher::AddHUDEventListener( IHUDEventListener* pListener, EHUDEventType in_eventType )
 {
 #if !defined(DEDICATED_SERVER)
-	CRY_ASSERT_MESSAGE(s_stlSafe, "HUD: Can't call AddHUDEventListener() in an OnHUDEvent() callback!" );
+	CRY_ASSERT(s_stlSafe, "HUD: Can't call AddHUDEventListener() in an OnHUDEvent() callback!" );
 	if(s_stlSafe==false)
 	{
 		// HUD Event Sending is now unsafe and should not be done!
@@ -437,7 +440,7 @@ static THUDEventLookup s_eventLookUpTable[] = {
 /*static*/ void CHUDEventDispatcher::RemoveHUDEventListener( const IHUDEventListener* pListener )
 {
 #if !defined(DEDICATED_SERVER)
-	CRY_ASSERT_MESSAGE(s_stlSafe, "HUD: Can't call RemoveHUDEventListener() in an OnHUDEvent() callback!" );
+	CRY_ASSERT(s_stlSafe, "HUD: Can't call RemoveHUDEventListener() in an OnHUDEvent() callback!" );
 	if(s_stlSafe==false)
 	{
 		// HUD Event Unregistering is now unsafe and should not be done!
@@ -471,7 +474,7 @@ static THUDEventLookup s_eventLookUpTable[] = {
 {
 #if !defined(DEDICATED_SERVER)
 	CRY_PROFILE_FUNCTION(PROFILE_GAME);
-	CRY_ASSERT_MESSAGE(s_safe, "HUD: Can't send HUDEvent whilst initialising the HUD! i.e. from CHUDObject() or CHUDObject::Init()!" );
+	CRY_ASSERT(s_safe, "HUD: Can't send HUDEvent whilst initialising the HUD! i.e. from CHUDObject() or CHUDObject::Init()!" );
 	if(s_safe && !gEnv->pSystem->IsQuitting() && !s_eventVec.empty())
 	{
 		s_stlSafe = false;
@@ -536,7 +539,7 @@ string CHUDEventDispatcher::GetEventName(EHUDEventType inputEvent)
 	size_t regdEventCount = CRY_ARRAY_COUNT(s_eventLookUpTable);
 
 	// Check for delta sizes
-	CRY_ASSERT_MESSAGE( regdEventCount == eHUDEvent_LAST-1, string().Format("HUD: Wrong number of events registered (%d) when compared to the number defined (%d)! /FH", regdEventCount, (int)eHUDEvent_LAST - 1 ).c_str() );
+	CRY_ASSERT( regdEventCount == eHUDEvent_LAST-1, string().Format("HUD: Wrong number of events registered (%d) when compared to the number defined (%d)! /FH", regdEventCount, (int)eHUDEvent_LAST - 1 ).c_str() );
 
 	// Check for unreg'd
 	for(size_t defdEventId=eHUDEvent_None+1; defdEventId<eHUDEvent_LAST; ++defdEventId )
@@ -549,9 +552,9 @@ string CHUDEventDispatcher::GetEventName(EHUDEventType inputEvent)
 				definedEventFound = true;
 			}
 		}
-		CRY_ASSERT_MESSAGE( definedEventFound, string().Format("HUD: A defined event id was not found when looking for it in registered events. ID was %d. /FH", defdEventId).c_str() );
+		CRY_ASSERT( definedEventFound, string().Format("HUD: A defined event id was not found when looking for it in registered events. ID was %d. /FH", defdEventId).c_str() );
 	}
-
+#if defined(USE_CRY_ASSERT)
 	// Check for dupes
 	for(size_t i=0; i<regdEventCount; ++i )
 	{
@@ -561,10 +564,11 @@ string CHUDEventDispatcher::GetEventName(EHUDEventType inputEvent)
 		{
 			const char* checkName = s_eventLookUpTable[j].key.c_str();
 			const EHUDEventType checkType = s_eventLookUpTable[j].value;
-			CRY_ASSERT_MESSAGE( stricmp(regdName, checkName), string().Format("HUD: Duplicate event names found for %s(id%d). /FH", regdName, redgType ).c_str() );
-			CRY_ASSERT_MESSAGE( redgType != checkType, string().Format("HUD: Duplicate event ID entries found names found for ID%d(%s). /FH", redgType, regdName).c_str() );
+			CRY_ASSERT( stricmp(regdName, checkName), string().Format("HUD: Duplicate event names found for %s(id%d). /FH", regdName, redgType ).c_str() );
+			CRY_ASSERT( redgType != checkType, string().Format("HUD: Duplicate event ID entries found names found for ID%d(%s). /FH", redgType, regdName).c_str() );
 		}
 	}
+#endif
 #endif
 }
 

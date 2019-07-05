@@ -68,12 +68,6 @@ void CVehicleSeatActionMovement::Reset()
 //------------------------------------------------------------------------
 void CVehicleSeatActionMovement::StartUsing(EntityId passengerId)
 {
-	IActorSystem* pActorSystem = CCryAction::GetCryAction()->GetIActorSystem();
-	CRY_ASSERT(pActorSystem);
-
-	IActor* pActor = pActorSystem->GetActor(passengerId);
-	CRY_ASSERT(pActor);
-
 	IVehicleMovement* pMovement = m_pVehicle->GetMovement();
 	CRY_ASSERT(pMovement);
 

@@ -2,38 +2,36 @@
 
 #pragma once
 
-#include "Gizmo.h"
-#include "ITransformManipulator.h"
-#include "AxisTranslateGizmo.h"
-#include "PlaneTranslateGizmo.h"
-#include "ViewTranslateGizmo.h"
+#include "EditorCommonAPI.h"
+#include "AxisHelperExtended.h"
 #include "AxisRotateGizmo.h"
 #include "AxisScaleGizmo.h"
-#include "UniformScaleGizmo.h"
+#include "AxisTranslateGizmo.h"
+#include "Gizmo.h"
+#include "ITransformManipulator.h"
 #include "PlaneScaleGizmo.h"
+#include "PlaneTranslateGizmo.h"
 #include "TrackballGizmo.h"
-#include "IEditor.h" // for AxisConstrains and RefCoordSys
+#include "UniformScaleGizmo.h"
+#include "ViewTranslateGizmo.h"
 
-#include "AxisHelperExtended.h"
+#include <IEditor.h>
 
-// forward declarations.
-struct DisplayContext;
 
 /** Gizmo of Objects animation track.
  */
-class EDITOR_COMMON_API CTransformManipulator : public CGizmo, public ITransformManipulator, public IEditorNotifyListener
+class EDITOR_COMMON_API CTransformManipulator : public CGizmo, public ITransformManipulator
 {
 public:
 	CTransformManipulator(ITransformManipulatorOwner* owner);
-	// Creates axis gizmo linked to an object.
 	~CTransformManipulator();
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CGizmo
+	// Overrides from CGizmo
 	//////////////////////////////////////////////////////////////////////////
-	virtual void            GetWorldBounds(AABB& bbox);
-	virtual void            Display(DisplayContext& dc);
-	virtual bool            HitTest(HitContext& hc);
+	virtual void GetWorldBounds(AABB& bbox);
+	virtual void Display(SDisplayContext& dc);
+	virtual bool HitTest(HitContext& hc);
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
@@ -43,27 +41,25 @@ public:
 	virtual bool     MouseCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int nFlags);
 	virtual void     SetCustomTransform(bool on, const Matrix34& m);
 
-	bool NeedsSnappingGrid() const override;
+	bool             NeedsSnappingGrid() const override;
 
-	void BeginMoveDrag(IDisplayViewport* view, CGizmo* gizmo, const Vec3& initialPosition, const CPoint& point, int nFlags);
-	void MoveDragging(IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags);
+	void             BeginMoveDrag(IDisplayViewport* view, CGizmo* gizmo, const Vec3& initialPosition, const CPoint& point, int nFlags);
+	void             MoveDragging(IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags);
 
-	void BeginRotateDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
-	void RotateDragging(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& rotationAxis, const CPoint& point, int nFlags);
+	void             BeginRotateDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
+	void             RotateDragging(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& rotationAxis, const CPoint& point, int nFlags);
 
-	void BeginScaleDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
-	void ScaleDragging(IDisplayViewport* view, CGizmo* gizmo, float scale, const CPoint& point, int nFlags);
+	void             BeginScaleDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
+	void             ScaleDragging(IDisplayViewport* view, CGizmo* gizmo, float scale, const CPoint& point, int nFlags);
 
-	void EndDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
-
-	//////////////////////////////////////////////////////////////////////////
+	void             EndDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
 
 	//////////////////////////////////////////////////////////////////////////
-	void           SetWorldBounds(const AABB& bbox);
+
+	//////////////////////////////////////////////////////////////////////////
+	void         SetWorldBounds(const AABB& bbox);
 
 	virtual void SetHighlighted(bool highlighted) override;
-
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
 	virtual void Invalidate() override { SetFlag(EGIZMO_INVALID); }
 
@@ -72,11 +68,11 @@ private:
 	{
 		MANIPULATOR_MODE_NONE = -1,
 
-		MOVE_MODE = 0,
-		SCALE_MODE = 1,
-		ROTATE_MODE = 2,
-		SELECT_MODE = 3,
-		ROTATE_CIRCLE_MODE = 4,
+		MOVE_MODE             = 0,
+		SCALE_MODE            = 1,
+		ROTATE_MODE           = 2,
+		SELECT_MODE           = 3,
+		ROTATE_CIRCLE_MODE    = 4,
 
 		MAX_MANIPULATOR_MODES = 5
 	};
@@ -84,31 +80,29 @@ private:
 	void SetMatrix(const Matrix34&);
 	void SetUpGizmos();
 	//! update gizmo position and orientation
+	void OnUpdateState();
 	void UpdateGizmos();
 	void UpdateTransform();
 	//! update gizmo colors when for example, setting axis constraints
 	void UpdateGizmoColors();
-	bool HitTest(HitContext& hc, EManipulatorMode &manipulatorMode);
+	bool HitTest(HitContext& hc, EManipulatorMode& manipulatorMode);
 
-	void DisplayPivotPoint(DisplayContext& dc);
+	void DisplayPivotPoint(SDisplayContext& dc);
 
+	AABB                m_bbox;
+	CAxisHelperExtended m_pAxisHelperExtended;
 
-	AABB                               m_bbox;
-	CAxisHelperExtended                m_pAxisHelperExtended;
+	bool                m_bDragging;
+	CPoint              m_cMouseDownPos;
+	Vec3                m_initPos;
 
-	bool                               m_bDragging;
-	CPoint                             m_cMouseDownPos;
-	Vec3                               m_initPos;
+	Matrix34            m_matrix;
+	Matrix33            m_initMatrix;
+	Matrix33            m_initMatrixInverse;
 
-	int                                m_highlightAxis;
+	bool                m_bUseCustomTransform;
 
-	Matrix34                           m_matrix;
-	Matrix33                           m_initMatrix;
-	Matrix33                           m_initMatrixInverse;
-
-	bool                               m_bUseCustomTransform;
-
-	bool m_bSkipConstraintColor;
+	bool                m_bSkipConstraintColor;
 
 	//! axis movement gizmos
 	CAxisTranslateGizmo m_xMoveAxis;
@@ -135,24 +129,23 @@ private:
 
 	//! circle gizmo for view space rotation
 	CAxisRotateGizmo m_viewRotationGizmo;
-	CTrackballGizmo m_trackballGizmo;
+	CTrackballGizmo  m_trackballGizmo;
 
 	//! axis movement gizmos
-	CAxisScaleGizmo m_xScaleAxis;
-	CAxisScaleGizmo m_yScaleAxis;
-	CAxisScaleGizmo m_zScaleAxis;
+	CAxisScaleGizmo    m_xScaleAxis;
+	CAxisScaleGizmo    m_yScaleAxis;
+	CAxisScaleGizmo    m_zScaleAxis;
 
-	CPlaneScaleGizmo m_xyScalePlane;
-	CPlaneScaleGizmo m_yzScalePlane;
-	CPlaneScaleGizmo m_zxScalePlane;
+	CPlaneScaleGizmo   m_xyScalePlane;
+	CPlaneScaleGizmo   m_yzScalePlane;
+	CPlaneScaleGizmo   m_zxScalePlane;
 
 	CUniformScaleGizmo m_xyzScaleGizmo;
 
-	CGizmo* m_lastHitGizmo;
-	CGizmo* m_highlightedGizmo;
+	CGizmo*            m_lastHitGizmo;
+	CGizmo*            m_highlightedGizmo;
 
 	// owner of this manipulator object. When the manipulator has been tagged as invalid callbacks of the owner
 	//  will be called on next draw to update the manipulator
 	ITransformManipulatorOwner* m_owner;
 };
-

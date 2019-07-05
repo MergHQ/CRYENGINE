@@ -4,15 +4,20 @@
 
 #include "IHyperGraph.h"
 #include "NodePainter/DisplayList.h"
+
+#include <Util/Variable.h>
+
 #include <CryFlowGraph/IFlowSystem.h>
+#include <Objects/BaseObject.h>
+
 #include <stack>
-#include "Util/Variable.h"
 
 class CHyperGraph;
 class CHyperGraphView;
 class CHyperNode;
 class CObjectCloneContext;
 struct IHyperNodePainter;
+struct IUndoObject;
 
 typedef _smart_ptr<CHyperNode> THyperNodePtr;
 
@@ -131,11 +136,11 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual IHyperGraph* GetGraph() const override;
 	virtual HyperNodeID  GetId() const override   { return m_id; }
-	virtual const char*  GetName() const override { return m_name; };
+	virtual const char*  GetName() const override { return m_name; }
 	virtual void         SetName(const char* sName) override;
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual const char*            GetClassName() const   { return m_classname; };
+	virtual const char*            GetClassName() const   { return m_classname; }
 	virtual const char*            GetDescription() const { return "No description available."; }
 	virtual const char*            GetInfoAsString() const;
 	virtual void                   Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar = 0);
@@ -187,8 +192,8 @@ public:
 	virtual void        PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx) {}
 
 	//////////////////////////////////////////////////////////////////////////
-	Ports* GetInputs()  { return &m_inputs; };
-	Ports* GetOutputs() { return &m_outputs; };
+	Ports* GetInputs()  { return &m_inputs; }
+	Ports* GetOutputs() { return &m_outputs; }
 	//////////////////////////////////////////////////////////////////////////
 
 	// Finds a port by name.
@@ -236,7 +241,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetSelected(bool bSelected);
-	bool         IsSelected() const { return m_bSelected; };
+	bool         IsSelected() const { return m_bSelected; }
 
 	void         SelectInputPort(int nPort, bool bSelected);
 	void         SelectOutputPort(int nPort, bool bSelected);
@@ -330,8 +335,8 @@ protected:
 	uint32         m_nFlags;
 	int            m_drawPriority;
 
-	unsigned int   m_bSizeValid : 1;
-	unsigned int   m_bSelected  : 1;
+	bool           m_bSizeValid : 1;
+	bool           m_bSelected  : 1;
 
 	// Input/Output ports.
 	Ports m_inputs;
@@ -358,7 +363,7 @@ public:
 		m_end(end)
 	{
 	}
-	virtual void        Release() { delete this; };
+	virtual void        Release() { delete this; }
 	virtual IHyperNode* GetFirst()
 	{
 		if (m_begin != m_end)
@@ -389,7 +394,7 @@ public:
 		: m_pNextNode(pParent)
 	{
 	}
-	virtual void        Release() { delete this; };
+	virtual void        Release() { delete this; }
 	virtual IHyperNode* GetFirst()
 	{
 		return Iterate();
@@ -439,4 +444,3 @@ private:
 		return pNode;
 	}
 };
-

@@ -1,15 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2012.
-// -------------------------------------------------------------------------
-//  File name:   FlareUtil.h
-//  Created:     3/April/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include <CryRenderer/IFlares.h>
+#include <Util/Variable.h>
+
+class CBaseLibraryItem;
 class CEntityObject;
 
 #define LENSFLARE_ELEMENT_TREE  "LensFlareElementTree"
@@ -19,6 +15,10 @@ class CEntityObject;
 
 namespace LensFlareUtil
 {
+
+static constexpr CryInterfaceID s_pointLightID = "07D0CAD1-8E79-4177-9ADD-A2464A009FA5"_cry_guid;
+static constexpr CryInterfaceID s_projectorLightID = "0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid;
+
 inline bool IsElement(EFlareType type)
 {
 	return type != eFT__Base__ && type != eFT_Root && type != eFT_Group;
@@ -310,4 +310,3 @@ void                  SetVariablesTemplateFromOptics(IOpticsElementBasePtr pOpti
 void                  CopyOptics(IOpticsElementBasePtr pSrcOptics, IOpticsElementBasePtr pDestOptics, bool bReculsiveCopy = true);
 void                  OutputOpticsDebug(IOpticsElementBasePtr pOptics);
 };
-

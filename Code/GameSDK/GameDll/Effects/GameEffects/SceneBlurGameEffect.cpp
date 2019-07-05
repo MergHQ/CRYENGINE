@@ -8,6 +8,7 @@
 #include "SceneBlurGameEffect.h"
 
 #include "ItemParams.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 REGISTER_EFFECT_DEBUG_DATA(CSceneBlurGameEffect::DebugOnInputEvent,CSceneBlurGameEffect::DebugDisplay,SceneBlur);
 REGISTER_DATA_CALLBACKS(CSceneBlurGameEffect::LoadStaticData,CSceneBlurGameEffect::ReleaseStaticData,CSceneBlurGameEffect::ReloadStaticData,SceneBlurData);

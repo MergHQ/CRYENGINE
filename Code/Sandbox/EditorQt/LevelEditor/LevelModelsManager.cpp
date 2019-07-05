@@ -5,10 +5,12 @@
 #include "ProxyModels/MergingProxyModel.h"
 #include "ProxyModels/MountingProxyModel.h"
 #include "ProxyModels/ItemModelAttribute.h"
+#include "VersionControl/UI/VersionControlUIHelper.h"
 
 #include "Objects/ObjectLayerManager.h"
+#include "IEditorImpl.h"
 
-namespace CLevelModelsManager_Private
+namespace Private_LevelModelsManager
 {
 namespace
 {
@@ -18,7 +20,8 @@ enum EFullLevelColumns
 	eFullLevelColumns_LayerColor,
 	eFullLevelColumns_Visible, //Must be kept index 0 to match
 	eFullLevelColumns_Frozen,  //Must be kept index 1 to match
-	eFullLevelColumns_Name,    //Must be kept index 2 to match
+	eFullLevelColumns_VCS,     //Must be kept index 2 to match
+	eFullLevelColumns_Name,    //Must be kept index 3 to match
 	eFullLevelColumns_Layer,
 	eFullLevelColumns_Type,
 	eFullLevelColumns_TypeDesc,
@@ -37,6 +40,7 @@ enum EFullLevelColumns
 	eFullLevelColumns_LoadedByDefault,
 	eFullLevelColumns_HasPhysics,
 	eFullLevelColumns_Platform,
+	eFullLevelColumns_LinkedTo,
 	eFullLevelColumns_Size
 };
 
@@ -58,6 +62,8 @@ static CItemModelAttribute* FullLevel_GetColumnAttribute(int column)
 		return &LevelModelsAttributes::s_visibleAttribute;
 	case eFullLevelColumns_Frozen:
 		return &LevelModelsAttributes::s_frozenAttribute;
+	case eFullLevelColumns_VCS:
+		return VersionControlUIHelper::GetVCSStatusAttribute();
 	case eFullLevelColumns_DefaultMaterial:
 		return &LevelModelsAttributes::s_defaultMaterialAttribute;
 	case eFullLevelColumns_CustomMaterial:
@@ -88,6 +94,8 @@ static CItemModelAttribute* FullLevel_GetColumnAttribute(int column)
 		return &LevelModelsAttributes::s_HasPhysicsAttribute;
 	case eFullLevelColumns_Platform:
 		return &LevelModelsAttributes::s_PlatformAttribute;
+	case eFullLevelColumns_LinkedTo:
+		return &LevelModelsAttributes::s_linkedToAttribute;
 	default:
 		return nullptr;
 	}
@@ -110,12 +118,15 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 		if (section == eFullLevelColumns_Visible)
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eFullLevelColumns_Frozen)
-			return CryIcon("icons:General/editable.ico");
+			return CryIcon("icons:general_lock_true.ico");
+		if (section == eFullLevelColumns_VCS)
+			return CryIcon("icons:VersionControl/icon.ico");
 	}
 	if (role == Qt::DisplayRole)
 	{
 		//For Visible and Frozen we use Icons instead
-		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Frozen || section == eFullLevelColumns_LayerColor)
+		if (section == eFullLevelColumns_Visible || section == eFullLevelColumns_Frozen || section == eFullLevelColumns_VCS
+		    || section == eFullLevelColumns_LayerColor)
 		{
 			return QString("");
 		}
@@ -123,7 +134,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 	}
 	else if (role == Qt::ToolTipRole)
 	{
-			return pAttribute->GetName();
+		return pAttribute->GetName();
 	}
 	else if (role == Attributes::s_getAttributeRole)
 	{
@@ -135,6 +146,7 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 		{
 		case eFullLevelColumns_Visible:
 		case eFullLevelColumns_Frozen:
+		case eFullLevelColumns_VCS:
 		case eFullLevelColumns_Name:
 		case eFullLevelColumns_LayerColor:
 			return "";
@@ -151,17 +163,18 @@ static QVariant FullLevel_GetHeaderData(int section, Qt::Orientation orientation
 		case eFullLevelColumns_LODCount:
 		case eFullLevelColumns_MinSpec:
 		case eFullLevelColumns_AI_GroupId:
+		case eFullLevelColumns_LinkedTo:
 			return "Objects";
 		default:
 			return "Layers";
 		}
-	
+
 	}
 	return QVariant();
 }
 
 } // namespace
-} // namespace CLevelModelsManager_Private
+} // namespace Private_LevelModelsManager
 
 CLevelModelsManager& CLevelModelsManager::GetInstance()
 {
@@ -176,7 +189,7 @@ CLevelModel* CLevelModelsManager::GetLevelModel() const
 
 CLevelLayerModel* CLevelModelsManager::GetLayerModel(CObjectLayer* layer) const
 {
-	//it is possible that the layer is requested before it is created, 
+	//it is possible that the layer is requested before it is created,
 	//in this case attach to signalLayerModelsUpdated to request the model after creation.
 	if (layer)
 	{
@@ -214,7 +227,7 @@ CLevelModelsManager::CLevelModelsManager()
 	m_allObjectsModel->SetDragCallback(&LevelModelsUtil::GetDragDropData);
 
 	m_fullLevelModel = new CMountingProxyModel(WrapMemberFunction(this, &CLevelModelsManager::CreateLayerModelFromIndex));
-	m_fullLevelModel->SetHeaderDataCallbacks(CLevelModelsManager_Private::eFullLevelColumns_Size, &CLevelModelsManager_Private::FullLevel_GetHeaderData, Attributes::s_getAttributeRole);
+	m_fullLevelModel->SetHeaderDataCallbacks(Private_LevelModelsManager::eFullLevelColumns_Size, &Private_LevelModelsManager::FullLevel_GetHeaderData, Attributes::s_getAttributeRole);
 	m_fullLevelModel->SetSourceModel(m_levelModel);
 	m_fullLevelModel->SetDragCallback(&LevelModelsUtil::GetDragDropData);
 
@@ -239,8 +252,8 @@ void CLevelModelsManager::DeleteLayerModels()
 	auto it = m_layerModels.begin();
 	for (; it != m_layerModels.end(); ++it)
 	{
-		// Since deleteLater will queue up this model's deletion which will be handled next frame, we need to 
-		// make sure to disconnect the model so it doesn't handle events while in the process of dying. 
+		// Since deleteLater will queue up this model's deletion which will be handled next frame, we need to
+		// make sure to disconnect the model so it doesn't handle events while in the process of dying.
 		// May it rest in peace.
 		it->second->Disconnect();
 		it->second->deleteLater();
@@ -253,16 +266,17 @@ void CLevelModelsManager::DeleteLayerModels()
 
 void CLevelModelsManager::CreateLayerModels()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
-	for (CObjectLayer* layer : layers)
+	for (IObjectLayer* pLayer : layers)
 	{
-		if (layer->GetLayerType() != eObjectLayerType_Layer)
+		auto pObjectLayer = static_cast<CObjectLayer*>(pLayer);
+		if (pObjectLayer->GetLayerType() != eObjectLayerType_Layer)
 		{
 			continue;
 		}
-		auto layerModel = new CLevelLayerModel(layer, this);
-		m_layerModels[layer] = layerModel;
+		auto layerModel = CreateLevelLayerModel(pObjectLayer);
+		m_layerModels[pObjectLayer] = layerModel;
 		m_allObjectsModel->MountAppend(layerModel);
 	}
 
@@ -320,7 +334,7 @@ void CLevelModelsManager::OnLayerChange(const CLayerChangeEvent& event)
 	{
 	case CLayerChangeEvent::LE_AFTER_ADD:
 		{
-			auto layerModel = new CLevelLayerModel(event.m_layer, this);
+			auto layerModel = CreateLevelLayerModel(event.m_layer);
 			m_layerModels[event.m_layer] = layerModel;
 			m_allObjectsModel->MountAppend(layerModel);
 		}
@@ -385,6 +399,9 @@ void CLevelModelsManager::OnLayerUpdate(const CLayerChangeEvent& event)
 	{
 		if (auto pModel = GetLayerModel(event.m_layer))
 		{
+			disconnect(pModel, &CLevelLayerModel::beginResetModel, this, &CLevelModelsManager::OnLevelLayerModelResetBegin);
+			disconnect(pModel, &CLevelLayerModel::endResetModel, this, &CLevelModelsManager::OnLevelLayerModelResetEnd);
+
 			pModel->Disconnect();
 		}
 		DisconnectChildrenModels(event.m_layer);
@@ -404,3 +421,20 @@ void CLevelModelsManager::DisconnectChildrenModels(CObjectLayer* pLayer)
 	}
 }
 
+CLevelLayerModel* CLevelModelsManager::CreateLevelLayerModel(CObjectLayer* pLayer)
+{
+	CLevelLayerModel* pLevelLayerModel = new CLevelLayerModel(pLayer, this);
+	connect(pLevelLayerModel, &CLevelLayerModel::modelAboutToBeReset, this, &CLevelModelsManager::OnLevelLayerModelResetBegin);
+	connect(pLevelLayerModel, &CLevelLayerModel::modelReset, this, &CLevelModelsManager::OnLevelLayerModelResetEnd);
+	return pLevelLayerModel;
+}
+
+void CLevelModelsManager::OnLevelLayerModelResetBegin()
+{
+	signalLayerModelResetBegin();
+}
+
+void CLevelModelsManager::OnLevelLayerModelResetEnd()
+{
+	signalLayerModelResetEnd();
+}

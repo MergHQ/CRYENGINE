@@ -3,6 +3,7 @@
 #include "stdafx.h"
 
 #include "QGroupDialog.h"
+#include <QLabel>
 #include <QLineEdit>
 #include <QVBoxLayout>
 
@@ -27,5 +28,3 @@ const string QGroupDialog::GetGroup()
 {
 	return m_pGroup->text().toUtf8().constData();
 }
-
-

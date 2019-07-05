@@ -289,11 +289,9 @@ void CShaderMan::mfInitShadersCacheMissLog()
 	// create valid path (also for xbox dvd emu)
 	gEnv->pCryPak->MakeDir(g_szTestResults);
 
-	char path[ICryPak::g_nMaxPath];
-	path[sizeof(path) - 1] = 0;
+	CryPathString path;
 	gEnv->pCryPak->AdjustFileName("%USER%\\Shaders\\ShaderCacheMisses.txt",
 	                              path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-
 	m_ShaderCacheMissPath = string(path);
 
 	// load data which is already stored
@@ -337,7 +335,6 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 {
 	static_assert(SHADER_LIST_VER != SHADER_SERIALISE_VER, "Version mismatch!");
 
-	char str[2048];
 	bool bFromFile = (Combinations == NULL);
 	stack_string nameComb;
 	m_ShaderCacheExportCombinations.clear();
@@ -352,12 +349,13 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 			fp = gEnv->pCryPak->FOpen(nameComb.c_str(), "w+");
 		if (!fp)
 		{
-			gEnv->pCryPak->AdjustFileName(nameComb.c_str(), str, 0);
-			FILE* statusdst = fopen(str, "rb");
+			CryPathString filePath;
+			gEnv->pCryPak->AdjustFileName(nameComb.c_str(), filePath, 0);
+			FILE* statusdst = fopen(filePath, "rb");
 			if (statusdst)
 			{
 				fclose(statusdst);
-				CrySetFileAttributes(str, FILE_ATTRIBUTE_ARCHIVE);
+				CrySetFileAttributes(filePath, FILE_ATTRIBUTE_ARCHIVE);
 				fp = gEnv->pCryPak->FOpen(nameComb.c_str(), "r+");
 			}
 		}
@@ -365,6 +363,7 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 		Combinations = &m_ShaderCacheCombinations[nType];
 	}
 
+	char str[2048];
 	int nLine = 0;
 	char* pPtr = (char*)pCombinations;
 	char* ss;
@@ -550,19 +549,23 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 				sSkipLine(s);
 				goto end;
 			}
-			const char* descriptorSetBegin = ss + 1;
-			const char* descriptorSetEnd = strchr(descriptorSetBegin, ')');
-			const unsigned int descriptorSetLength = static_cast<int>(descriptorSetEnd - descriptorSetBegin);
-			if (descriptorSetLength > 0)
-			{
-				unsigned int decodedBufferSize  = Base64::decodedsize_base64(descriptorSetLength);
-				std::vector<uint8> encodedLayout(decodedBufferSize);
-				Base64::decode_base64((char*)&encodedLayout[0], descriptorSetBegin, descriptorSetLength, false);
-				encodedLayout.resize(GetDeviceObjectFactory().GetEncodedResourceLayoutSize(encodedLayout));
 
-				if (!GetDeviceObjectFactory().LookupResourceLayoutEncoding(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash))
+			{
+				// Define a block here to avoid clang complaining about jumping over variable initialisation.
+				const char* descriptorSetBegin = ss + 1;
+				const char* descriptorSetEnd = strchr(descriptorSetBegin, ')');
+				const unsigned int descriptorSetLength = static_cast<int>(descriptorSetEnd - descriptorSetBegin);
+				if (descriptorSetLength > 0)
 				{
-					GetDeviceObjectFactory().RegisterEncodedResourceLayout(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash, std::move(encodedLayout));
+					unsigned int decodedBufferSize  = Base64::decodedsize_base64(descriptorSetLength);
+					std::vector<uint8> encodedLayout(decodedBufferSize);
+					Base64::decode_base64((char*)&encodedLayout[0], descriptorSetBegin, descriptorSetLength, false);
+					encodedLayout.resize(GetDeviceObjectFactory().GetEncodedResourceLayoutSize(encodedLayout));
+
+					if (!GetDeviceObjectFactory().LookupResourceLayoutEncoding(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash))
+					{
+						GetDeviceObjectFactory().RegisterEncodedResourceLayout(cmb.Ident.m_pipelineState.VULKAN.resourceLayoutHash, std::move(encodedLayout));
+					}
 				}
 			}
 #endif			
@@ -1114,16 +1117,44 @@ void CShaderMan::mfInsertNewCombination(SShaderCombIdent& Ident, EHWShaderClass 
 		*Str = str;
 }
 
+static const char* GetGLSLANGTargetName(EHWShaderClass eClass)
+{
+	switch (eClass)
+	{
+	case EHWShaderClass::eHWSC_Vertex:
+		return "vert";
+
+	case EHWShaderClass::eHWSC_Pixel:
+		return "frag";
+
+	case EHWShaderClass::eHWSC_Geometry:
+		return "geom";
+
+	case EHWShaderClass::eHWSC_Domain:
+		return "tesc";
+
+	case EHWShaderClass::eHWSC_Hull:
+		return "tese";
+
+	case EHWShaderClass::eHWSC_Compute:
+		return "comp";
+	};
+
+	return "invalid";
+}
+
+
 string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState pipelineState) const
 {
 	string result;
 
-#define STRICT_MODE		" /Ges"
-#define COMPATIBLE_MODE	" /Gec"
+#define W_STRICT_MODE		" /Ges"
+#define W_COMPATIBLE_MODE	" /Gec"
+#define L_STRICT_MODE		" -Ges"
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
-	const char* pCompilerOrbis   = "ORBIS/V033/DXOrbisShaderCompiler.exe %s %s %s %s";
-	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
-	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo %s %s";
+	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo %s %s";
+	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo %s %s";
+	const char* pCompilerD3D12   = "SPIRV/V003/dxc/dxc.exe -nologo -E %s -T %s -Zpr" L_STRICT_MODE " -Fo %s %s";
 	
 	string compilerSPIRV = "";
 	if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_HLSLCC) == 0)
@@ -1133,50 +1164,38 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_DXC) == 0)
 	{
 		// " -spirv -Od -Zpr \"%s.%s\" -Fo \"%s.%s\" -Fc \"%s.%s\" -T %s -E \"%s\" %s %s"
-		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? "-fvk-invert-y" : "", CRenderer::CV_r_shadersdebug == 3 ? "-Od" : "-O3");
-		compilerSPIRV += "-spirv -no-warnings -E %s -T %s -Zpr -Fo %s %s";
+		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? " -fvk-invert-y " : "", CRenderer::CV_r_shadersdebug == 3 ? " -Od " : " -O3 ");
+		compilerSPIRV += " -Zpr -spirv -no-warnings -E %s -T %s -Fo %s %s";
 	}
+	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_GLSLANG) == 0)
+	{
+		//-D - fhlsl_functionality1 - V100 --target-env vulkan1.0 -S frag -e AuxGeomTexturePS -o vs_5_0_shader.out .\shader.in
 
-#define ESSL_VERSION   "es310"
-#if DXGL_REQUIRED_VERSION >= DXGL_VERSION_45
-	#define GLSL_VERSION "450"
-#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_44
-	#define GLSL_VERSION "440"
-#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_43
-	#define GLSL_VERSION "430"
-#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_42
-	#define GLSL_VERSION "420"
-#elif DXGL_REQUIRED_VERSION >= DXGL_VERSION_41
-	#define GLSL_VERSION "410"
-#elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_31
-	#define GLSL_VERSION "310"
-#elif DXGLES_REQUIRED_VERSION >= DXGLES_VERSION_30
-	#define GLSL_VERSION "300"
-#else
-	#error "Shading language revision not defined for this GL version"
-#endif
-
-	const char* pCompilerGL4 = "PCGL/V012/HLSLcc.exe -lang=" GLSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo\" -out=%s -in=%s";
-	const char* pCompilerGLES3 = "PCGL/V012/HLSLcc.exe -lang=" ESSL_VERSION " -flags=36609 -fxc=\"..\\..\\PCD3D11\\v007\\fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Fo\" -out=%s -in=%s";
+		compilerSPIRV.Format("SPIRV/V003/glslang/glslangValidator.exe -D -fhlsl_functionality1 -V100 --target-env vulkan1.0 %s -S %s", 
+			eClass == eHWSC_Vertex ? "--invert-y" : "", GetGLSLANGTargetName(eClass));
+		compilerSPIRV += " -e %s -I%s -o %s %s";
+	}
 
 	if (CRenderer::CV_r_shadersdebug == 3)
 	{
 		// Set debug information
-		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
-		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /Od /Fo %s %s";
+		pCompilerD3D12 = "SPIRV/V003/dxc/dxc.exe -nologo -E %s -T %s -Zpr" L_STRICT_MODE " -Fo %s %s";
 	}
 	else if (CRenderer::CV_r_shadersdebug == 4)
 	{
 		// Set debug information, optimized shaders
-		pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
-		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" COMPATIBLE_MODE "" STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerD3D11 = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Zi /O3 /Fo %s %s";
+		pCompilerD3D12 = "SPIRV/V003/dxc/dxc.exe -nologo -E %s -T %s -Zpr" L_STRICT_MODE " -O3 -Fo %s %s";
 	}
 
 	if (pipelineState.opaque != 0)
 	{
 		if (CParserBin::m_nPlatform == SF_ORBIS)
 		{
-			const char* const pCompilerGnm = "ORBIS/V033/GnmShaderCompiler.exe %s %s %s %s --RowMajorMatrixStorage --UpgradeLegacySamplers --DebugHelperFiles";
+			const char* const pCompilerGnm = "ORBIS/V034/GnmShaderCompiler.exe %s %s %s %s --RowMajorMatrixStorage --UpgradeLegacySamplers --DebugHelperFiles";
 
 			static const char* kVsStages[] =
 			{
@@ -1225,7 +1244,7 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "C", kISA[(pipelineState.GNM.CS.targetStage >> 5) & 3]);
 				break;
 			default:
-				CRY_ASSERT(false && "Unknown stage");
+				CRY_ASSERT(false, "Unknown stage");
 				break;
 			}
 			
@@ -1233,25 +1252,15 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 		}
 	}
 
-#if CRY_PLATFORM_ORBIS
-	result = pCompilerOrbis;
-#elif CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO
 	result = pCompilerDurango;
-#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-	result = pCompilerGLES3;
-#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-	result = pCompilerGL4;
 #else
 	if (CParserBin::m_nPlatform == SF_D3D11)
 		result = pCompilerD3D11;
-	else if (CParserBin::m_nPlatform == SF_ORBIS)
-		result = pCompilerOrbis;
+	else if (CParserBin::m_nPlatform == SF_D3D12)
+		result = pCompilerD3D12;
 	else if (CParserBin::m_nPlatform == SF_DURANGO)
 		result = pCompilerDurango;
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		result = pCompilerGL4;
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		result = pCompilerGLES3;
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		result = compilerSPIRV;
 	else
@@ -1263,12 +1272,13 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 
 	if (!CRenderer::CV_r_shadersCompileStrict)
 	{
-		result = result.replace("" STRICT_MODE "", "");
+		result = result.replace("" W_STRICT_MODE "", "");
+		result = result.replace("" L_STRICT_MODE "", "");
 	}
 
 	if (!CRenderer::CV_r_shadersCompileCompatible)
 	{
-		result = result.replace("" COMPATIBLE_MODE "", "");
+		result = result.replace("" W_COMPATIBLE_MODE "", "");
 	}
 
 	return result;
@@ -1391,7 +1401,7 @@ void CShaderMan::AddGLCombination(FXShaderCacheCombinations& CmbsMap, SCacheComb
 	}
 	else
 		cry_strcpy(name, st);
-	#ifdef __GNUC__
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	cry_sprintf(str, "%s(%llx)(%x)(%x)", name, cmb.Ident.m_GLMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask);
 	#else
 	cry_sprintf(str, "%s(%I64x)(%x)(%x)", name, cmb.Ident.m_GLMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask);
@@ -1429,7 +1439,7 @@ void CShaderMan::AddGLCombination(FXShaderCacheCombinations& CmbsMap, SCacheComb
 void CShaderMan::AddCombination(SCacheCombination& cmb, FXShaderCacheCombinations& CmbsMap, CHWShader* pHWS)
 {
 	char str[2048];
-	#ifdef __GNUC__
+    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 	sprintf(str, "%s(%llx)(%llx)(%d)(%d)(%d)(%llx)", cmb.Name.c_str(), cmb.Ident.m_GLMask, cmb.Ident.m_RTMask, cmb.Ident.m_LightMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask, cmb.Ident.m_pipelineState.opaque);
 	#else
 	sprintf(str, "%s(%I64x)(%I64x)(%d)(%d)(%d)(%llx)", cmb.Name.c_str(), cmb.Ident.m_GLMask, cmb.Ident.m_RTMask, cmb.Ident.m_LightMask, cmb.Ident.m_MDMask, cmb.Ident.m_MDVMask, cmb.Ident.m_pipelineState.opaque);
@@ -1479,10 +1489,8 @@ void CShaderMan::AddRTCombinations(FXShaderCacheCombinations& CmbsMap, CHWShader
 		nBitsPlatform |= SHGD_HW_DURANGO;
 	else if (CParserBin::m_nPlatform == SF_D3D11)
 		nBitsPlatform |= SHGD_HW_DX11;
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		nBitsPlatform |= SHGD_HW_GL4;
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		nBitsPlatform |= SHGD_HW_GLES3;
+	else if (CParserBin::m_nPlatform == SF_D3D12)
+		nBitsPlatform |= SHGD_HW_DX12;
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		nBitsPlatform |= SHGD_HW_VULKAN;
 
@@ -1590,7 +1598,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 		CRenderer::CV_r_shadersasynccompiling = 0;
 
 	// Command line shaders precaching
-	gRenDev->m_Features |= RFT_HW_SM20 | RFT_HW_SM2X | RFT_HW_SM30;
+	gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62;
 	FXShaderCacheCombinations* Combinations = &m_ShaderCacheCombinations[0];
 
 	std::vector<SCacheCombination> Cmbs;
@@ -1631,7 +1639,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 		m_bReload = true;
 		m_nCombinationsCompiled = 0;
 		m_nCombinationsEmpty = 0;
-		uint64 nGLLast = -1;
+
 		for (int i = 0; i < Cmbs.size(); i++)
 		{
 			SCacheCombination* cmb = &Cmbs[i];
@@ -1731,7 +1739,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 			CmbsMapRTDst.clear();
 			CmbsMapRTSrc.clear();
 			uint32 nFlags = HWSF_PRECACHE;
-			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3 | SF_VULKAN))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_VULKAN))
 				nFlags |= HWSF_STOREDATA;
 			if (bStatsOnly)
 				nFlags |= HWSF_FAKE;
@@ -1759,9 +1767,9 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 						CHWShader* shaders[] = { pPass->m_PShader, pPass->m_VShader, pPass->m_GShader, pPass->m_HShader, pPass->m_CShader, pPass->m_DShader };
 						for (auto* shader : shaders)
 						{
-							if (shader && (!m_szShaderPrecache || !stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) != 0))
+							if (shader && (!m_szShaderPrecache || (stricmp(m_szShaderPrecache, shader->m_EntryFunc.c_str()) == 0)))
 							{
-								uint64 nFlagsOrigShader_RT = cmbSaved.Ident.m_RTMask & shader->m_nMaskAnd_RT | shader->m_nMaskOr_RT;
+								uint64 nFlagsOrigShader_RT = (cmbSaved.Ident.m_RTMask & shader->m_nMaskAnd_RT) | shader->m_nMaskOr_RT;
 								uint64 nFlagsOrigShader_GL = shader->m_nMaskGenShader;
 								uint32 nFlagsOrigShader_LT = cmbSaved.Ident.m_LightMask;
 
@@ -1773,10 +1781,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 									if (!bStatsOnly)
 										shader->mfAddEmptyCombination(nFlagsOrigShader_RT, nFlagsOrigShader_GL, nFlagsOrigShader_LT, cmbSaved);
 								}
-
-								shader->mfWriteoutTokensToCache();
-							}
-							
+							}							
 						}
 
 						if (bStatsOnly)
@@ -1793,7 +1798,6 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 	#endif
 					}
 				}
-				pSH->mfFlushPendedShaders();
 				iLog->Update();
 			}
 
@@ -1842,7 +1846,6 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 				Stats.nUniqueEntries += _Stats.nUniqueEntries;
 				Stats.nSizeCompressed += _Stats.nSizeCompressed;
 				Stats.nSizeUncompressed += _Stats.nSizeUncompressed;
-				Stats.nTokenDataSize += _Stats.nTokenDataSize;
 			}
 		}
 	}
@@ -1863,7 +1866,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 	float t1 = gEnv->pTimer->GetAsyncCurTime();
 	CryLogAlways("All shaders combinations compiled in %.2f seconds", (t1 - t0));
 	CryLogAlways("Combinations: (Material: %d, Processed: %d; Compiled: %d; Removed: %d)", nMaterialCombinations, nProcessed, nCompiled, nEmpty);
-	CryLogAlways("-- Shader cache overall stats: Entries: %d, Unique Entries: %d, Size: %d, Compressed Size: %d, Token data size: %d", Stats.nEntries, Stats.nUniqueEntries, Stats.nSizeUncompressed, Stats.nSizeCompressed, Stats.nTokenDataSize);
+	CryLogAlways("-- Shader cache overall stats: Entries: %d, Unique Entries: %d, Size: %d, Compressed Size: %d", Stats.nEntries, Stats.nUniqueEntries, Stats.nSizeUncompressed, Stats.nSizeCompressed);
 
 	m_nCombinationsProcess = -1;
 	m_nCombinationsCompiled = -1;
@@ -1880,7 +1883,7 @@ void CHWShader::mfGenName(uint64 GLMask, uint64 RTMask, uint32 LightMask, uint32
 	char str[32];
 	if (bType != 0 && GLMask)
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		cry_sprintf(str, "(GL%llx)", GLMask);
 #else
 		cry_sprintf(str, "(GL%I64x)", GLMask);
@@ -1889,7 +1892,7 @@ void CHWShader::mfGenName(uint64 GLMask, uint64 RTMask, uint32 LightMask, uint32
 	}
 	if (bType != 0)
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		cry_sprintf(str, "(RT%llx)", RTMask);
 #else
 		cry_sprintf(str, "(RT%I64x)", RTMask);
@@ -1936,11 +1939,20 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 	#endif
 	}
 
-	gRenDev->m_bDeviceSupportsTessellation = CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN);
-	gRenDev->m_bDeviceSupportsGeometryShaders =	CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_GL4 | SF_VULKAN | SF_DURANGO | SF_ORBIS);
+	gRenDev->m_bDeviceSupportsTessellation    = CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_D3D12 | SF_VULKAN);
+	gRenDev->m_bDeviceSupportsGeometryShaders =	CRenderer::ShaderTargetFlag & (SF_D3D11 | SF_D3D12 | SF_VULKAN | SF_DURANGO | SF_ORBIS);
 
 	CParserBin::m_bShaderCacheGen = true;
-	gRenDev->m_Features |= RFT_HW_SM50;
+
+	switch (CRenderer::ShaderTargetFlag)
+	{
+	case SF_ORBIS  : gRenDev->m_Features |= RFT_HW_SM50; break;
+	case SF_D3D11  : gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51; break;
+	case SF_D3D12  : gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62; break;
+	case SF_DURANGO: gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62; break;
+	case SF_VULKAN : gRenDev->m_Features |= RFT_HW_SM50 | RFT_HW_SM51 | RFT_HW_SM60 | RFT_HW_SM62; break;
+	}
+
 	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
 	CryLogAlways("\nStarting shader compilation for %s...", CRenderer::CV_r_ShaderTarget->GetString());
 	mfInitShadersList(NULL);
@@ -1950,7 +1962,7 @@ void CShaderMan::mfPrecacheShaders(bool bStatsOnly)
 	if (CRenderer::ShaderTargetFlag & SF_ORBIS)
 		CRenderer::ShaderTargetFlag &= ~SF_ORBIS;
 
-	CParserBin::SetupForPlatform(SF_D3D11);
+	CParserBin::SetupForPlatform(CRenderer::ShaderTargetFlag);
 
 	gRenDev->m_cEF.m_Bin.InvalidateCache();
 }
@@ -1982,7 +1994,6 @@ struct SMgData
 	byte          bProcessed;
 };
 
-static int snCurListID;
 typedef std::map<CCryNameTSCRC, SMgData> ShaderData;
 typedef ShaderData::iterator             ShaderDataItor;
 
@@ -2060,7 +2071,7 @@ bool CShaderMan::CheckAllFilesAreWritable(const char* szDir) const
 
 bool CShaderMan::mfPreloadBinaryShaders()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	// don't preload binary shaders if we are in editing mode
 	if (CRenderer::CV_r_shadersediting)
 		return false;
@@ -2112,7 +2123,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 	char sName[256];
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CShaderMan::mfPreloadBinaryShaders(): FilesCFI");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CShaderMan::mfPreloadBinaryShaders(): FilesCFI");
 		for (i = 0; i < FilesCFI.size(); i++)
 		{
 			if (gEnv->pSystem && gEnv->pSystem->IsQuitting())
@@ -2121,13 +2132,12 @@ bool CShaderMan::mfPreloadBinaryShaders()
 			const string& file = FilesCFI[i];
 			cry_strcpy(sName, file.c_str());
 			PathUtil::RemoveExtension(sName);
-			SShaderBin* pBin = m_Bin.GetBinShader(sName, true, 0);
-			assert(pBin);
+			CRY_VERIFY(m_Bin.GetBinShader(sName, true, 0) != nullptr);
 		}
 	}
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CShaderMan::mfPreloadBinaryShaders(): FilesCFX");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CShaderMan::mfPreloadBinaryShaders(): FilesCFX");
 		for (i = 0; i < FilesCFX.size(); i++)
 		{
 			if (gEnv->pSystem && gEnv->pSystem->IsQuitting())
@@ -2136,8 +2146,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 			const string& file = FilesCFX[i];
 			cry_strcpy(sName, file.c_str());
 			PathUtil::RemoveExtension(sName);
-			SShaderBin* pBin = m_Bin.GetBinShader(sName, false, 0);
-			assert(pBin);
+			CRY_VERIFY(m_Bin.GetBinShader(sName, false, 0) != nullptr);
 		}
 	}
 

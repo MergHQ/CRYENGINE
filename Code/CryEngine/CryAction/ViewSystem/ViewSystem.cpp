@@ -8,7 +8,8 @@
 #include "CryAction.h"
 #include "IActorSystem.h"
 #include <CryMath/PNoise3.h>
-#include <CryAISystem/IAISystem.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define VS_CALL_LISTENERS(func)                                                                               \
   {                                                                                                           \
@@ -70,6 +71,7 @@ CViewSystem::~CViewSystem()
 	pConsole->UnregisterVariable("cl_camera_noise_freq", true);
 	pConsole->UnregisterVariable("cl_ViewSystemDebug", true);
 	pConsole->UnregisterVariable("cl_DefaultNearPlane", true);
+	pConsole->UnregisterVariable("cl_ViewApplyHmdOffset", true);
 
 	//Remove as level system listener
 	if (CCryAction::GetCryAction()->GetILevelSystem())
@@ -603,7 +605,7 @@ void CViewSystem::SetOverrideCameraRotation(bool bOverride, Quat rotation)
 }
 
 //////////////////////////////////////////////////////////////////
-void CViewSystem::OnLoadingStart(ILevelInfo* pLevel)
+bool CViewSystem::OnLoadingStart(ILevelInfo* pLevel)
 {
 	//If the level is being restarted (IsSerializingFile() == 1)
 	//views should not be cleared, because the main view (player one) won't be recreated in this case
@@ -612,6 +614,8 @@ void CViewSystem::OnLoadingStart(ILevelInfo* pLevel)
 
 	if (shouldClearViews)
 		ClearAllViews();
+
+	return true;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -622,7 +626,7 @@ void CViewSystem::OnUnloadComplete(ILevelInfo* pLevel)
 	if (shouldClearViews)
 		ClearAllViews();
 
-	assert(m_listeners.empty());
+	CRY_ASSERT(m_listeners.empty());
 	stl::free_container(m_listeners);
 }
 

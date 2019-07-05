@@ -2,10 +2,12 @@
 
 #include "StdAfx.h"
 #include "NavigationSystem.h"
-#include "../MNM/TileGenerator.h"
-#include "../MNM/NavMesh.h"
 #include "DebugDrawContext.h"
 #include "MNMPathfinder.h"
+#include "Navigation/MNM/NavMeshQueryManager.h"
+#include "Navigation/MNM/NavMeshQueryProcessing.h"
+#include "Navigation/MNM/MNMUtils.h"
+#include "SmartObjects.h"
 
 #include "Components/Navigation/NavigationComponent.h"
 
@@ -54,7 +56,7 @@ SAgentTypeListAutoComplete s_agentTypeListAutoComplete;
 enum { MaxTaskCountPerWorkerThread = 12, };
 enum { MaxVolumeDefCopyCount = 8 }; // volume copies for access in other threads
 
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 void GenerateTileJob(MNM::CTileGenerator::Params params, volatile uint16* state, MNM::STile* tile, MNM::CTileGenerator::SMetaData* metaData, uint32* hashValue)
 {
 	if (*state != NavigationSystem::TileTaskResult::Failed)
@@ -99,10 +101,20 @@ bool ShouldBeConsideredByVoxelizer(IPhysicalEntity& physicalEntity, uint32& flag
 		return false;
 	}
 
-	if (IEntity* pEntity = static_cast<IEntity*>(physicalEntity.GetForeignData(PHYS_FOREIGN_ID_ENTITY)))
+	pe_params_foreign_data pfd;
+	if (physicalEntity.GetParams(&pfd))
 	{
-		if(pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION)
+		if (pfd.iForeignFlags & PFF_EXCLUDE_FROM_STATIC)
 			return false;
+
+		if (pfd.iForeignData == PHYS_FOREIGN_ID_ENTITY)
+		{
+			if (IEntity* pEntity = static_cast<IEntity*>(pfd.pForeignData))
+			{
+				if (pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION)
+					return false;
+			}
+		}
 	}
 	
 	bool considerMass = (physicalEntity.GetType() == PE_RIGID);
@@ -141,7 +153,7 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_throughput(0.0f)
 	, m_cacheHitRate(0.0f)
 	, m_free(0)
-	, m_state(Idle)
+	, m_state(EWorkingState::Idle)
 	, m_meshes(256)                 //Same size of meshes, off-mesh and islandConnections elements
 	, m_offMeshNavigationManager(256)
 	, m_islandConnectionsManager()
@@ -155,12 +167,18 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_configurationVersion(0)
 	, m_isNavigationUpdatePaused(false)
 	, m_tileGeneratorExtensionsContainer()
+	, m_pNavMeshQueryManager(new MNM::CNavMeshQueryManager())
+	, m_frameStartTime(0.0f)
+	, m_frameDeltaTime(0.0f)
 {
 	SetupTasks();
 
 	m_worldMonitor = WorldMonitor(functor(m_updatesManager, &CMNMUpdatesManager::EntityChanged));
 
 	ReloadConfig();
+
+	MNM::DefaultQueryFilters::g_globalFilter.excludeFlags |= m_annotationsLibrary.GetInaccessibleAreaFlag().value;
+	MNM::DefaultQueryFilters::g_globalFilterVirtual.excludeFlags |= m_annotationsLibrary.GetInaccessibleAreaFlag().value;
 
 	m_pEditorBackgroundUpdate = new NavigationSystemBackgroundUpdate(*this);
 
@@ -180,9 +198,11 @@ NavigationSystem::~NavigationSystem()
 #ifdef NAVIGATION_SYSTEM_CONSOLE_AUTOCOMPLETE
 	gEnv->pConsole->UnRegisterAutoComplete("ai_debugMNMAgentType");
 #endif
+
+	SAFE_DELETE(m_pNavMeshQueryManager);
 }
 
-NavigationAgentTypeID NavigationSystem::CreateAgentType(const char* name, const CreateAgentTypeParams& params)
+NavigationAgentTypeID NavigationSystem::CreateAgentType(const char* name, const SCreateAgentTypeParams& params)
 {
 	assert(name);
 	AgentTypes::const_iterator it = m_agentTypes.begin();
@@ -280,9 +300,24 @@ MNM::AreaAnnotation NavigationSystem::GetAreaTypeAnnotation(const NavigationArea
 	return annotation;
 }
 
+void NavigationSystem::SetGlobalFilterFlags(const MNM::AreaAnnotation::value_type includeFlags, const MNM::AreaAnnotation::value_type excludeFlags)
+{
+	MNM::DefaultQueryFilters::g_globalFilter.includeFlags = includeFlags;
+	MNM::DefaultQueryFilters::g_globalFilter.excludeFlags = excludeFlags;
+
+	MNM::DefaultQueryFilters::g_globalFilterVirtual.includeFlags = includeFlags;
+	MNM::DefaultQueryFilters::g_globalFilterVirtual.excludeFlags = excludeFlags;
+}
+
+void NavigationSystem::GetGlobalFilterFlags(MNM::AreaAnnotation::value_type& includeFlags, MNM::AreaAnnotation::value_type& excludeFlags) const
+{
+	includeFlags = MNM::DefaultQueryFilters::g_globalFilter.includeFlags;
+	excludeFlags = MNM::DefaultQueryFilters::g_globalFilter.excludeFlags;
+}
+
 #ifdef SW_NAVMESH_USE_GUID
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params, NavigationMeshGUID guid)
+                                              const SCreateMeshParams& params, NavigationMeshGUID guid)
 {
 	MeshMap::iterator it = m_swMeshes.find(guid);
 	if (it != m_swMeshes.end())
@@ -296,17 +331,17 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
 }
 #else
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params)
+                                              const SCreateMeshParams& params)
 {
 	return CreateMesh(name, agentTypeID, params, NavigationMeshID(0));
 }
 #endif
 #ifdef SW_NAVMESH_USE_GUID
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params, NavigationMeshID requestedID, NavigationMeshGUID guid)
+                                              const SCreateMeshParams& params, NavigationMeshID requestedID, NavigationMeshGUID guid)
 #else
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params, NavigationMeshID requestedID)
+                                              const SCreateMeshParams& params, NavigationMeshID requestedID)
 #endif
 {
 	auto NearestFactor = [](size_t n, size_t f)
@@ -347,7 +382,7 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
 		else
 			m_meshes.insert(requestedID, NavigationMesh(agentTypeID));
 		NavigationMesh& mesh = m_meshes[id];
-		mesh.navMesh.Init(paramsGrid);
+		mesh.navMesh.Init(id, paramsGrid, agentType.settings.agent);
 		mesh.name = name;
 		mesh.exclusions = agentType.exclusions;
 		mesh.markups = agentType.markups;
@@ -366,7 +401,7 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
 	return NavigationMeshID();
 }
 
-NavigationMeshID NavigationSystem::CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, const NavigationVolumeID volumeID)
+NavigationMeshID NavigationSystem::CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, const NavigationVolumeID volumeID)
 {
 	if (volumeID && m_volumes.validate(volumeID))
 	{
@@ -423,6 +458,41 @@ void NavigationSystem::DestroyMesh(NavigationMeshID meshID)
 
 		ComputeWorldAABB();
 	}
+}
+
+void NavigationSystem::SetMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags)
+{
+	CRY_ASSERT(meshID.IsValid() && m_meshes.validate(meshID));
+
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		NavigationMesh& mesh = m_meshes[meshID];
+		mesh.flags.Add(flags);
+	}
+}
+
+void NavigationSystem::RemoveMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags)
+{
+	CRY_ASSERT(meshID.IsValid() && m_meshes.validate(meshID));
+
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		NavigationMesh& mesh = m_meshes[meshID];
+		mesh.flags.Remove(flags);
+	}
+}
+
+CEnumFlags<INavigationSystem::EMeshFlag> NavigationSystem::GetMeshFlags(NavigationMeshID meshID) const
+{
+	CRY_ASSERT(meshID.IsValid() && m_meshes.validate(meshID));
+
+	CEnumFlags<EMeshFlag> flags;
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		const NavigationMesh& mesh = m_meshes[meshID];
+		flags = mesh.flags;
+	}
+	return flags;
 }
 
 void NavigationSystem::SetMeshEntityCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshEntityCallback& callback)
@@ -860,9 +930,6 @@ void NavigationSystem::DestroyMarkupVolume(NavigationVolumeID volumeID)
 	{
 		stl::find_and_erase(agentType.markups, volumeID);
 
-		AgentType::Meshes::const_iterator mit = agentType.meshes.begin();
-		AgentType::Meshes::const_iterator mend = agentType.meshes.end();
-
 		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
 		{
 			const NavigationMeshID meshID = meshInfo.id;
@@ -892,9 +959,13 @@ void NavigationSystem::SetAnnotationForMarkupTriangles(NavigationVolumeID markup
 
 void NavigationSystem::ApplyAnnotationChanges()
 {	
+	if (m_markupAnnotationChangesToApply.empty())
+		return;
+	
 	// We are assuming here that every triangle can be owned by at most one markup volume. 
 	// Otherwise we would need to use something else then std::vector to store changed triangles.
 	std::unordered_map<NavigationMeshID, std::vector<MNM::TriangleID>> changedTrianglesPerNavmeshMap;
+	std::vector<MNM::TriangleID> changedTriangles;
 	
 	for (const auto& markupAnnotationChange : m_markupAnnotationChangesToApply)
 	{
@@ -905,18 +976,19 @@ void NavigationSystem::ApplyAnnotationChanges()
 		
 		for (MNM::SMarkupVolumeData::MeshTriangles& meshTriangles : m_markupsData[markupAnnotationChange.first].meshTriangles)
 		{
-			std::vector<MNM::TileID> affectedTiles;
-			NavigationMesh& mesh = m_meshes[meshTriangles.meshId];
-			mesh.navMesh.SetTrianglesAnnotation(meshTriangles.triangleIds.data(), meshTriangles.triangleIds.size(), areaAnnotation, affectedTiles);
-
-			auto& changedTriangles = changedTrianglesPerNavmeshMap[meshTriangles.meshId];
-			changedTriangles.insert(changedTriangles.end(), meshTriangles.triangleIds.begin(), meshTriangles.triangleIds.end());
-
-			AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
-			for (MNM::TileID tileId : affectedTiles)
+			if (!m_meshes.validate(meshTriangles.meshId))
 			{
-				agentType.annotationCallbacks.CallSafe(mesh.agentTypeID, meshTriangles.meshId, tileId);
+				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, 
+					"ApplyAnnotationChanges: Mesh with id %u wasn't found for annotation data id %u. Is the NavMesh really up to date?", meshTriangles.meshId, markupAnnotationChange.first);
+				continue;
 			}
+
+			changedTriangles.clear();
+			NavigationMesh& mesh = m_meshes[meshTriangles.meshId];
+			mesh.navMesh.SetTrianglesAnnotation(meshTriangles.triangleIds.data(), meshTriangles.triangleIds.size(), areaAnnotation, changedTriangles);
+
+			auto& changedTrianglesInMesh = changedTrianglesPerNavmeshMap[meshTriangles.meshId];
+			changedTrianglesInMesh.insert(changedTrianglesInMesh.end(), changedTriangles.begin(), changedTriangles.end());
 		}
 	}
 	m_markupAnnotationChangesToApply.clear();
@@ -925,10 +997,23 @@ void NavigationSystem::ApplyAnnotationChanges()
 	MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
 	for (auto it = changedTrianglesPerNavmeshMap.begin(); it != changedTrianglesPerNavmeshMap.end(); ++it)
 	{
+		const NavigationMeshID meshId = it->first;
 		const auto& changedTriangles = it->second;
-		NavigationMesh& mesh = m_meshes[it->first];
+		NavigationMesh& mesh = m_meshes[meshId];
 
 		mesh.navMesh.GetIslands().UpdateIslandsForTriangles(mesh.navMesh, NavigationMeshID(it->first), changedTriangles.data(), changedTriangles.size(), islandConnections);
+
+		std::vector<MNM::TileID> affectedTiles;
+		for (const MNM::TriangleID triangleId : changedTriangles)
+		{
+			stl::push_back_unique(affectedTiles, MNM::ComputeTileID(triangleId));
+		}
+
+		AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
+		for (const MNM::TileID tileId : affectedTiles)
+		{
+			agentType.annotationCallbacks.CallSafe(mesh.agentTypeID, meshId, tileId);
+		}
 	}
 }
 
@@ -975,6 +1060,23 @@ NavigationMeshID NavigationSystem::GetMeshID(const char* name, NavigationAgentTy
 	}
 
 	return NavigationMeshID();
+}
+
+DynArray<NavigationMeshID> NavigationSystem::GetMeshIDsForAgentType(const NavigationAgentTypeID agentTypeID) const
+{
+	CRY_ASSERT(agentTypeID.IsValid() && (agentTypeID <= m_agentTypes.size()));
+
+	DynArray<NavigationMeshID> allMeshIDs;
+
+	if (agentTypeID.IsValid() && (agentTypeID <= m_agentTypes.size()))
+	{
+		const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			allMeshIDs.push_back(meshInfo.id);
+		}
+	}
+	return allMeshIDs;
 }
 
 const char* NavigationSystem::GetMeshName(NavigationMeshID meshID) const
@@ -1028,9 +1130,19 @@ void NavigationSystem::WaitForAllNavigationSystemUsersCompleteTheirReadingAsynch
 	}
 }
 
-INavigationSystem::WorkingState NavigationSystem::GetState() const
+INavigationSystem::EWorkingState NavigationSystem::GetState() const
 {
 	return m_state;
+}
+
+void NavigationSystem::SetStateAndSendEvent(const EWorkingState newState)
+{
+	if (newState != m_state)
+	{
+		UpdateAllListeners(newState == EWorkingState::Idle ? ENavigationEvent::WorkingStateSetToIdle : ENavigationEvent::WorkingStateSetToWorking);
+		
+		m_state = newState;
+	}
 }
 
 void NavigationSystem::UpdateNavigationSystemUsersForSynchronousWritingOperations()
@@ -1051,10 +1163,13 @@ void NavigationSystem::UpdateNavigationSystemUsersForSynchronousOrAsynchronousRe
 
 void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
+	ApplyAnnotationChanges();
 
-	CRY_ASSERT_MESSAGE(m_pEditorBackgroundUpdate->IsRunning() == false, "Background update for editor is still running while the application has the focus!!");
+#if NAV_MESH_REGENERATION_ENABLED
+
+	CRY_ASSERT(m_pEditorBackgroundUpdate->IsRunning() == false, "Background update for editor is still running while the application has the focus!!");
 
 	const bool editorBackgroundThreadRunning = m_pEditorBackgroundUpdate->IsRunning();
 	if (editorBackgroundThreadRunning)
@@ -1063,24 +1178,24 @@ void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 		return;
 	}
 
-	ApplyAnnotationChanges();
-
 	m_worldMonitor.FlushPendingAABBChanges();
 
 	// Prevent multiple updates per frame
-	static int lastUpdateFrameID = 0;
+	static CTimeValue lastFrameStartTime;
 
-	const int frameID = gEnv->nMainFrameID;
-	const bool doUpdate = (frameID != lastUpdateFrameID) && !(editorBackgroundThreadRunning);
+	const bool doUpdate = (lastFrameStartTime != m_frameStartTime) && !(editorBackgroundThreadRunning);
 	if (doUpdate)
 	{
-		lastUpdateFrameID = frameID;
+		lastFrameStartTime = m_frameStartTime;
 
-		const float frameTime = gEnv->pTimer->GetFrameTime();
-
-		UpdateMeshes(frameTime, blocking, gAIEnv.CVars.NavigationSystemMT != 0, false);
+		UpdateMeshes(m_frameStartTime, m_frameDeltaTime, blocking, gAIEnv.CVars.navigation.NavigationSystemMT != 0, false);
 	}
 #endif
+
+	if (m_state != EWorkingState::Working)
+	{
+		UpdatePendingAccessibilityRequests();
+	}
 }
 
 void NavigationSystem::UpdateInternalSubsystems()
@@ -1088,8 +1203,11 @@ void NavigationSystem::UpdateInternalSubsystems()
 	m_offMeshNavigationManager.ProcessQueuedRequests();
 }
 
-INavigationSystem::WorkingState NavigationSystem::Update(bool blocking)
+INavigationSystem::EWorkingState NavigationSystem::Update(const CTimeValue frameStartTime, const float frameTime, bool blocking)
 {
+	m_frameStartTime = frameStartTime;
+	m_frameDeltaTime = frameTime;
+
 	// Pre update step. We need to request all our NavigationSystem users
 	// to complete all their reading jobs.
 	WaitForAllNavigationSystemUsersCompleteTheirReadingAsynchronousTasks();
@@ -1126,10 +1244,10 @@ uint32 NavigationSystem::GetWorkingQueueSize() const
 	return (uint32)m_updatesManager.GetRequestQueueSize();
 }
 
-#if NAVIGATION_SYSTEM_PC_ONLY
-void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground)
+#if NAV_MESH_REGENERATION_ENABLED
+void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground)
 {
-	m_updatesManager.Update();
+	m_updatesManager.Update(frameStartTime, frameTime);
 	
 	if (m_isNavigationUpdatePaused || frameTime == .0f)
 		return;
@@ -1138,13 +1256,11 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 
 	if (!m_updatesManager.HasUpdateRequests() && m_runningTasks.empty())
 	{
-		if (m_state != Idle)
+		if (m_state != EWorkingState::Idle)
 		{
-			// We just finished the processing of the tiles, so before being in Idle
-			// we need to recompute the Islands detection
-			ComputeIslands();
+			OnMeshesUpdateCompleted();
 		}
-		m_state = Idle;
+		SetStateAndSendEvent(INavigationSystem::EWorkingState::Idle);
 		return;
 	}
 
@@ -1155,7 +1271,7 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 	{
 		if (!m_runningTasks.empty())
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing");
 
 			RunningTasks::iterator it = m_runningTasks.begin();
 			RunningTasks::iterator end = m_runningTasks.end();
@@ -1175,7 +1291,7 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 				CommitTile(result);
 
 				{
-					CRY_PROFILE_REGION_WAITING(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing - WaitForJob");
+					CRY_PROFILE_SECTION_WAITING(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing - WaitForJob");
 					gEnv->GetJobManager()->WaitForJob(result.jobState);
 				}
 
@@ -1209,23 +1325,19 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 
 		if (!m_updatesManager.HasUpdateRequests() && m_runningTasks.empty())
 		{
-			if (m_state != Idle)
+			if (m_state != EWorkingState::Idle)
 			{
-				// We just finished the processing of the tiles, so before being in Idle
-				// we need to recompute the Islands detection
-				ComputeIslands();
+				OnMeshesUpdateCompleted();
 			}
-
-			m_state = Idle;
-
+			SetStateAndSendEvent(EWorkingState::Idle);
 			return;
 		}
 
 		if (m_updatesManager.HasUpdateRequests())
 		{
-			m_state = Working;
+			SetStateAndSendEvent(EWorkingState::Working);
 
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::UpdateMeshes() - Job Spawning");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::UpdateMeshes() - Job Spawning");
 			const size_t idealMinimumTaskCount = 2;
 			const size_t MaxRunningTaskCount = multiThreaded ? m_maxRunningTaskCount : std::min(m_maxRunningTaskCount, idealMinimumTaskCount);
 
@@ -1243,7 +1355,7 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 				const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
 
 				m_runningTasks.push_back(m_free);
-				CRY_ASSERT_MESSAGE(m_free < m_results.size(), "Index out of array bounds!");
+				CRY_ASSERT(m_free < m_results.size(), "Index out of array bounds!");
 				TileTaskResult& result = m_results[m_free];
 				m_free = result.next;
 
@@ -1291,11 +1403,21 @@ void NavigationSystem::UpdateMeshes(const float frameTime, const bool blocking, 
 		if (blocking && (m_updatesManager.HasUpdateRequests() || !m_runningTasks.empty()))
 			continue;
 
-		m_state = m_runningTasks.empty() ? Idle : Working;
-
+		SetStateAndSendEvent(m_runningTasks.empty() ? EWorkingState::Idle : EWorkingState::Working);
 		return;
 	}
 
+}
+
+// Updates Meshes using the global timer
+// Can be executed by the Sandbox Editor to regenerate the NavMesh
+// NavMesh regeneration should still work even if the AI system is disabled (edition mode)
+void NavigationSystem::UpdateMeshesFromEditor(const bool blocking, const bool multiThreaded, const bool bBackground)
+{
+	// Uses hard-coded frameDuration because this function gets executed by (ProcessQueuedMeshUpdates and NavigationSystemBackgroundUpdate)
+	// which are blocking operations. This effectively means the engine isn't updated and therefore we cannot tell what is the frame duration
+	const float frameDuration = 0.0333f;
+	UpdateMeshes(gEnv->pTimer->GetFrameStartTime(), frameDuration, blocking, multiThreaded, bBackground);
 }
 
 void NavigationSystem::SetupGenerator(
@@ -1428,7 +1550,7 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 
 	++def->refCount;
 
-	MNM::CTileGenerator::Params params;	
+	MNM::CTileGenerator::Params params;
 	SetupGenerator(meshID, paramsGrid, x, y, z, params, *def, bMarkupUpdate);
 	if (bMt)
 	{
@@ -1442,7 +1564,7 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 		GenerateTileJob(params, &result.state, &result.tile, &result.metaData, &result.hashValue);
 	}
 
-	if (gAIEnv.CVars.DebugDrawNavigation)
+	if (gAIEnv.CVars.navigation.DebugDrawNavigation)
 	{
 		if (gEnv->pRenderer)
 		{
@@ -1462,9 +1584,6 @@ void NavigationSystem::CommitMarkupData(const TileTaskResult& result, const MNM:
 	CRY_ASSERT(m_markupsData.capacity() == m_markupVolumes.capacity());
 	
 	const VolumeDefCopy& def = m_volumeDefCopy[result.volumeCopy];
-	const NavigationMesh& mesh = m_meshes[result.meshID];
-
-	MNM::SMarkupVolumeData::MeshTriangles* pMeshMarkupTriangles = nullptr;
 	
 	// Remove old triangle ids for the tile first
 	for (NavigationVolumeID markupID : def.markupIds)
@@ -1552,15 +1671,17 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 	{
 	case TileTaskResult::Completed:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ConnectToNetwork");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ConnectToNetwork");
 
 			MNM::TileID tileID = mesh.navMesh.SetTile(result.x, result.y, result.z, result.tile);
-			mesh.navMesh.ConnectToNetwork(tileID);
+			mesh.navMesh.ConnectToNetwork(tileID, &result.metaData.connectivityData);
 
 			CommitMarkupData(result, tileID);
 
 			m_offMeshNavigationManager.RefreshConnections(result.meshID, tileID);
 			gAIEnv.pMNMPathfinder->OnNavigationMeshChanged(result.meshID, tileID);
+
+			stl::push_back_unique(m_recentlyUpdatedMeshIds, result.meshID);
 
 			AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
 			agentType.callbacks.CallSafe(mesh.agentTypeID, result.meshID, tileID);
@@ -1568,7 +1689,7 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 		break;
 	case TileTaskResult::Failed:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ClearTile");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ClearTile");
 
 			if (MNM::TileID tileID = mesh.navMesh.GetTileID(result.x, result.y, result.z))
 			{
@@ -1576,6 +1697,8 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 
 				m_offMeshNavigationManager.RefreshConnections(result.meshID, tileID);
 				gAIEnv.pMNMPathfinder->OnNavigationMeshChanged(result.meshID, tileID);
+
+				stl::push_back_unique(m_recentlyUpdatedMeshIds, result.meshID);
 
 				AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
 				agentType.callbacks.CallSafe(mesh.agentTypeID, result.meshID, tileID);
@@ -1593,20 +1716,13 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 
 void NavigationSystem::ProcessQueuedMeshUpdates()
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
 	do
 	{
-		UpdateMeshes(0.0333f, false, gAIEnv.CVars.NavigationSystemMT != 0, false);
+		UpdateMeshesFromEditor(false, gAIEnv.CVars.navigation.NavigationSystemMT != 0, false);
 	}
-	while (m_state == INavigationSystem::Working);
+	while (m_state == EWorkingState::Working);
 #endif
-}
-
-size_t NavigationSystem::QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb)
-{
-	AIWarning("NavigationSystem::QueueMeshUpdate() is deprecated! INavigationUpdatesManager::RequestMeshUpdate should be used instead");
-	m_updatesManager.RequestMeshUpdate(meshID, aabb);
-	return 0;
 }
 
 void NavigationSystem::StopAllTasks()
@@ -1623,25 +1739,19 @@ void NavigationSystem::StopAllTasks()
 	m_runningTasks.clear();
 }
 
-void NavigationSystem::ComputeIslands()
+void NavigationSystem::ComputeAllIslands()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
 	m_islandConnectionsManager.Reset();
 
-	AgentTypes::const_iterator it = m_agentTypes.begin();
-	AgentTypes::const_iterator end = m_agentTypes.end();
-
-	for (; it != end; ++it)
+	for (const AgentType& agentType : m_agentTypes)
 	{
-		const AgentType& agentType = *it;
-		AgentType::Meshes::const_iterator itMesh = agentType.meshes.begin();
-		AgentType::Meshes::const_iterator endMesh = agentType.meshes.end();
-		for (; itMesh != endMesh; ++itMesh)
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
 		{
-			if (itMesh->id && m_meshes.validate(itMesh->id))
+			if (meshInfo.id && m_meshes.validate((meshInfo.id)))
 			{
-				NavigationMeshID meshID = itMesh->id;
+				const NavigationMeshID meshID = meshInfo.id;
 				MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
 				NavigationMesh& mesh = m_meshes[meshID];
 				mesh.navMesh.GetIslands().ComputeStaticIslandsAndConnections(mesh.navMesh, meshID, m_offMeshNavigationManager, islandConnections);
@@ -1650,103 +1760,121 @@ void NavigationSystem::ComputeIslands()
 	}
 }
 
-void NavigationSystem::AddIslandConnectionsBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID,
-                                                            const MNM::TriangleID endingTriangleID)
+void NavigationSystem::OnMeshesUpdateCompleted()
+{
+	// We just finished the processing of the tiles, so before being in Idle
+	// we need to recompute the Islands detection
+	const size_t meshesCount = m_recentlyUpdatedMeshIds.size();
+	ComputeIslandsForMeshes(m_recentlyUpdatedMeshIds.data(), meshesCount);
+	ComputeMeshesAccessibility(m_recentlyUpdatedMeshIds.data(), meshesCount);
+
+	for (size_t updatedIdx = 0; updatedIdx < meshesCount; ++updatedIdx)
+	{
+		for (auto it = m_accessibilityUpdateRequestForMeshIds.begin(); it != m_accessibilityUpdateRequestForMeshIds.end(); ++it)
+		{
+			if (m_recentlyUpdatedMeshIds[updatedIdx] == *it)
+			{
+				std::iter_swap(it, m_accessibilityUpdateRequestForMeshIds.end() - 1);
+				m_accessibilityUpdateRequestForMeshIds.pop_back();
+				break;
+			}
+		}
+	}
+	m_recentlyUpdatedMeshIds.clear();
+}
+
+void NavigationSystem::ComputeIslandsForMeshes(const NavigationMeshID* pUpdatedMeshes, const size_t count)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	if (m_meshes.validate(meshID))
+	for (size_t i = 0; i < count; ++i)
 	{
-		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::STriangle startingTriangle, endingTriangle;
-		if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
+		const NavigationMeshID meshId = pUpdatedMeshes[i];
+		if (meshId.IsValid() && m_meshes.validate(meshId))
 		{
-			if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-			{
-				MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
+			m_islandConnectionsManager.GetIslandConnections().ResetForMesh(meshId);
 
-				MNM::STile& tile = mesh.navMesh.GetTile(MNM::ComputeTileID(startingTriangleID));
-				for (uint16 l = 0; l < startingTriangle.linkCount; ++l)
-				{
-					const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
-					if (link.side == MNM::Tile::SLink::OffMesh)
-					{
-#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
-						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::AddIslandConnectionsBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
-#endif
-						MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-						MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-						MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
-						while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
-						{
-							if (nextTri.triangleID == endingTriangleID)
-							{
-								const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
-								assert(pLink);
-								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-								MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-								islandConnections.SetOneWayOffmeshConnectionBetweenIslands(startingIslandID, islandLink);
-							}
-						}
-					}
-				}
-			}
+			MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
+			NavigationMesh& mesh = m_meshes[meshId];
+			mesh.navMesh.GetIslands().ComputeStaticIslandsAndConnections(mesh.navMesh, meshId, m_offMeshNavigationManager, islandConnections);
 		}
 	}
 }
 
-void NavigationSystem::RemoveAllIslandConnectionsForObject(const NavigationMeshID& meshID, const uint32 objectId)
+void NavigationSystem::ComputeMeshesAccessibility(const NavigationMeshID* pUpdatedMeshes, const size_t count)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
+	std::vector<std::pair<Vec3, NavigationAgentTypeID>> allSeedPoints;
+	std::vector<Vec3> seedPointsAffectingMesh;
+	allSeedPoints.reserve(32);
+	seedPointsAffectingMesh.reserve(32);
+	GetAISystem()->GetNavigationSeeds(allSeedPoints);
+
+	MNM::SOrderedSnappingMetrics snappingMetrics;
+	snappingMetrics.EmplaceMetric(MNM::ESnappingType::Vertical, 1.0f, 1.0f);
+	snappingMetrics.EmplaceMetric(MNM::ESnappingType::Box, 1.0f, 1.0f, 1.0f);
+
+	for (size_t i = 0; i < count; ++i)
+	{
+		const NavigationMeshID meshId = pUpdatedMeshes[i];
+
+		if(!m_meshes.validate(meshId))
+			continue;
+
+		NavigationMesh& mesh = m_meshes[meshId];
+		MNM::CNavMesh& navMesh = mesh.navMesh;
+
+		seedPointsAffectingMesh.clear();
+
+		for (size_t seedIdx = 0, count = allSeedPoints.size(); seedIdx < count; ++seedIdx)
+		{
+			if (allSeedPoints[seedIdx].second.IsValid() && allSeedPoints[seedIdx].second != mesh.agentTypeID)
+				continue;
+
+			if (!IsLocationInMeshVolume(meshId, allSeedPoints[seedIdx].first))
+				continue;
+
+			seedPointsAffectingMesh.push_back(allSeedPoints[seedIdx].first);
+		}
+
+		if (seedPointsAffectingMesh.empty())
+		{
+			navMesh.GetIslands().ResetSeedConnectivityStates(MNM::CIslands::ESeedConnectivityState::Accessible);
+		}
+		else
+		{
+			navMesh.GetIslands().ResetSeedConnectivityStates(MNM::CIslands::ESeedConnectivityState::Inaccessible);
+			MNM::IslandConnections::ConnectedIslandsArray connectedIslands;
+
+			for (size_t seedIdx = 0, count = seedPointsAffectingMesh.size(); seedIdx < count; ++seedIdx)
+			{
+				connectedIslands.clear();
+
+				MNM::TriangleID triangleID;
+				if (!navMesh.SnapPosition(seedPointsAffectingMesh[seedIdx], snappingMetrics, &MNM::DefaultQueryFilters::g_acceptAllFilterVirtual, nullptr, &triangleID))
+					continue;
+
+				MNM::Tile::STriangle triangle;
+				if (!triangleID || !navMesh.GetTriangle(triangleID, triangle) || (triangle.islandID == MNM::Constants::eStaticIsland_InvalidIslandID))
+					continue;
+
+				const MNM::GlobalIslandID seedIslandID(meshId, triangle.islandID);
+				if (navMesh.GetIslands().GetSeedConnectivityState(triangle.islandID) != MNM::CIslands::ESeedConnectivityState::Accessible)
+				{
+					m_islandConnectionsManager.GetIslandConnections().GetConnectedIslands(seedIslandID, connectedIslands);
+					navMesh.GetIslands().SetSeedConnectivityState(connectedIslands.data(), connectedIslands.size(), MNM::CIslands::ESeedConnectivityState::Accessible);
+				}
+			}
+		}
+		navMesh.MarkTrianglesNotConnectedToSeeds(m_annotationsLibrary.GetInaccessibleAreaFlag().value);
+	}
+}
+
+void NavigationSystem::RemoveOffMeshLinkIslandConnection(const MNM::OffMeshLinkID offMeshLinkId)
 {
 	MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-	islandConnections.RemoveAllIslandConnectionsForObject(meshID, objectId);
-}
-
-void NavigationSystem::RemoveIslandsConnectionBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID,
-                                                               const MNM::TriangleID endingTriangleID)
-{
-	// NOTE pavloi 2016.02.05: be advised, that this function is not use anywhere. It should be called before triangles are unlinked
-	// from each other, but currently OffMeshNavigationManager first unlinks triangles and only then unlinks islands.
-
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	if (m_meshes.validate(meshID))
-	{
-		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::STriangle startingTriangle, endingTriangle;
-		if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
-		{
-			if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-			{
-				MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
-
-				MNM::STile& tile = mesh.navMesh.GetTile(MNM::ComputeTileID(startingTriangleID));
-				for (uint16 l = 0; l < startingTriangle.linkCount; ++l)
-				{
-					const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
-					if (link.side == MNM::Tile::SLink::OffMesh)
-					{
-#if DEBUG_MNM_LOG_OFFMESH_LINK_OPERATIONS
-						AILogCommentID("<MNM:OffMeshLink>", "NavigationSystem::RemoveIslandsConnectionBetweenTriangles link from %u to %u (mesh %u)", startingTriangle.islandID, endingTriangle.islandID, meshID);
-#endif
-						MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-						MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-						MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
-						while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
-						{
-							if (nextTri.triangleID == endingTriangleID)
-							{
-								const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID);
-								assert(pLink);
-								MNM::IslandConnections::Link islandLink(nextTri.triangleID, nextTri.offMeshLinkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-								MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-								islandConnections.RemoveOneWayConnectionBetweenIslands(startingIslandID, islandLink);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+	islandConnections.RemoveOffMeshLinkConnection(offMeshLinkId);
 }
 
 void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
@@ -1785,7 +1913,7 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 								{
 									if (nextTri.offMeshLinkID == linkID)
 									{
-										if (const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
+										if (const MNM::IOffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
 										{
 											bLinkIsFound = true;
 											break;
@@ -1821,184 +1949,137 @@ void NavigationSystem::AddOffMeshLinkIslandConnectionsBetweenTriangles(
 				const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
 				const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
 
-				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
+				const MNM::IOffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
 				if (pLink)
 				{
-					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
 					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(startingIslandID, islandLink);
+					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(
+						startingIslandID, startingTriangle.areaAnnotation,
+						endingIslandID, endingTriangle.areaAnnotation, 
+						linkID, endingTriangleID, pLink->GetEntityIdForOffMeshLink());
 				}
 			}
 		}
 	}
 }
 
-void NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles(
-  const NavigationMeshID& meshID,
-  const MNM::TriangleID startingTriangleID,
-  const MNM::TriangleID endingTriangleID,
-  const MNM::OffMeshLinkID& linkID)
+void NavigationSystem::RequestUpdateMeshAccessibility(const NavigationMeshID meshId)
+{
+	stl::push_back_unique(m_accessibilityUpdateRequestForMeshIds, meshId);
+}
+
+void NavigationSystem::RequestUpdateAccessibilityAfterSeedChange(const Vec3& oldPosition, const Vec3& newPosition)
+{
+	for (const AgentType& agentType : m_agentTypes)
+	{
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			if (IsLocationInMeshVolume(meshInfo.id, oldPosition) || IsLocationInMeshVolume(meshInfo.id, newPosition))
+			{
+				stl::push_back_unique(m_accessibilityUpdateRequestForMeshIds, meshInfo.id);
+			}
+		}
+	}
+}
+
+void NavigationSystem::UpdatePendingAccessibilityRequests()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-#if DEBUG_MNM_DATA_CONSISTENCY_ENABLED
+	
+	if (m_accessibilityUpdateRequestForMeshIds.size())
 	{
-		bool bLinkIsFound = false;
-		// Next piece code is an almost exact copy from RemoveIslandConnectionsBetweenTriangles()
-		if (m_meshes.validate(meshID))
-		{
-			const NavigationMesh& mesh = m_meshes[meshID];
-			MNM::Tile::STriangle startingTriangle, endingTriangle;
-			if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
-			{
-				if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-				{
-					const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
+		ComputeMeshesAccessibility(m_accessibilityUpdateRequestForMeshIds.data(), m_accessibilityUpdateRequestForMeshIds.size());
+		m_accessibilityUpdateRequestForMeshIds.clear();
+	}
+}
 
-					const MNM::STile& tile = mesh.navMesh.GetTile(MNM::ComputeTileID(startingTriangleID));
-					for (uint16 l = 0; l < startingTriangle.linkCount && !bLinkIsFound; ++l)
+void NavigationSystem::CalculateAccessibility()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+	
+	for (const AgentType& agentType : m_agentTypes)
+	{
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			RequestUpdateMeshAccessibility(meshInfo.id);
+		}
+	}
+}
+
+void NavigationSystem::RemoveAllTrianglesByFlags(const MNM::AreaAnnotation::value_type flags)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI);
+
+#if !defined(EXCLUDE_NORMAL_LOG)
+	const CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
+#endif
+
+	for (const AgentType& agentType : m_agentTypes)
+	{
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			const NavigationMeshID meshId = meshInfo.id;
+			CRY_ASSERT(m_meshes.validate(meshId));
+
+			NavigationMesh& mesh = m_meshes[meshId];
+			if(!mesh.flags.Check(EMeshFlag::RemoveInaccessibleTriangles))
+				continue;
+
+			// Gather all triangle ids that should be updated after triangles are removed from tiles
+			MNM::CNavMesh::TrianglesSetsByTile trianglesToUpdateByTile;
+
+			for (const NavigationVolumeID markupVolumeId : mesh.markups)
+			{
+				if (!m_markupsData.validate(markupVolumeId))
+					continue;
+
+				MNM::SMarkupVolumeData& markupData = m_markupsData[markupVolumeId];
+				for (MNM::SMarkupVolumeData::MeshTriangles& meshTriangles : markupData.meshTriangles)
+				{
+					if(meshTriangles.meshId != meshId)
+						continue;
+
+					for (const MNM::TriangleID triangleId : meshTriangles.triangleIds)
 					{
-						const MNM::Tile::SLink& link = tile.GetLinks()[startingTriangle.firstLink + l];
-						if (link.side == MNM::Tile::SLink::OffMesh)
+						const MNM::TileID tileId = MNM::ComputeTileID(triangleId);
+						trianglesToUpdateByTile[tileId].insert(&meshTriangles.triangleIds);
+					}
+				}
+			}
+
+			// Remove triangles and update triangle ids
+			mesh.navMesh.RemoveTrianglesByFlags(flags, trianglesToUpdateByTile);
+
+			// If a triangle was removed, its triangle id is set to InvalidTriangleID. All such triangles should be removed.
+			for (const NavigationVolumeID markupVolumeId : mesh.markups)
+			{
+				if (!m_markupsData.validate(markupVolumeId))
+					continue;
+
+				MNM::SMarkupVolumeData& markupData = m_markupsData[markupVolumeId];
+				for (auto meshTrianglesIt = markupData.meshTriangles.begin(); meshTrianglesIt != markupData.meshTriangles.end(); ++meshTrianglesIt)
+				{
+					MNM::SMarkupVolumeData::MeshTriangles& meshTriangles = *meshTrianglesIt;
+					if (meshTriangles.meshId == meshId)
+					{
+						const auto toRemoveIt = std::remove(meshTriangles.triangleIds.begin(), meshTriangles.triangleIds.end(), MNM::TriangleID());
+						meshTriangles.triangleIds.erase(toRemoveIt, meshTriangles.triangleIds.end());
+
+						if (meshTriangles.triangleIds.empty())
 						{
-							const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-							const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-							const MNM::OffMeshNavigation::QueryLinksResult linksResult = offMeshNavigation.GetLinksForTriangle(startingTriangleID, link.triangle);
-							while (MNM::WayTriangleData nextTri = linksResult.GetNextTriangle())
+							markupData.meshTriangles.erase(meshTrianglesIt);
+							if (markupData.meshTriangles.empty())
 							{
-								if (nextTri.triangleID == endingTriangleID)
-								{
-									if (nextTri.offMeshLinkID == linkID)
-									{
-										if (const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(nextTri.offMeshLinkID))
-										{
-											bLinkIsFound = true;
-											break;
-										}
-									}
-								}
+								m_markupsData.erase(markupVolumeId);
 							}
 						}
+						break;
 					}
 				}
 			}
 		}
-
-		if (bLinkIsFound)
-		{
-			// It's expected, that the triangles in tiles are already unlinked from each other before this function is called.
-			// But validation actually found, that the link is still there.
-			AIErrorID("<MNM:OffMeshLink>", "NavigationSystem::RemoveOffMeshLinkIslandsConnectionBetweenTriangles is called with wrong input");
-		}
 	}
-#endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
-
-	// TODO pavloi 2016.02.05: whole piece is suboptimal - this function is called from m_offMeshNavigationManager already, where
-	// it unlinked triangles and had full info about them. I leave it like this to be consistent with RemoveIslandConnectionsBetweenTriangles()
-	if (m_meshes.validate(meshID))
-	{
-		NavigationMesh& mesh = m_meshes[meshID];
-		MNM::Tile::STriangle startingTriangle, endingTriangle;
-		if (mesh.navMesh.GetTriangle(startingTriangleID, startingTriangle))
-		{
-			if (mesh.navMesh.GetTriangle(endingTriangleID, endingTriangle))
-			{
-				const MNM::GlobalIslandID startingIslandID(meshID, startingTriangle.islandID);
-				const MNM::GlobalIslandID endingIslandID(meshID, endingTriangle.islandID);
-
-				const MNM::OffMeshLink* pLink = m_offMeshNavigationManager.GetOffMeshLink(linkID);
-				if (pLink)
-				{
-					const MNM::IslandConnections::Link islandLink(endingTriangleID, linkID, endingIslandID, endingTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-					MNM::IslandConnections& islandConnections = m_islandConnectionsManager.GetIslandConnections();
-					islandConnections.RemoveOneWayConnectionBetweenIslands(startingIslandID, islandLink);
-				}
-			}
-		}
-	}
-}
-
-#if MNM_USE_EXPORT_INFORMATION
-void NavigationSystem::ComputeAccessibility(const Vec3& debugLocation, NavigationAgentTypeID agentTypeId /*= NavigationAgentTypeID(0)*/)
-{
-	NavigationMeshID meshId = GetEnclosingMeshID(agentTypeId, debugLocation);
-	if (meshId)
-	{
-		NavigationMesh& mesh = GetMesh(meshId);
-		const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-		const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
-
-		const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x), MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
-		const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
-		const MNM::vector3_t seedLocation(MNM::real_t(debugLocation.x), MNM::real_t(debugLocation.y), MNM::real_t(debugLocation.z));
-
-		const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentTypeId);
-
-		const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
-		const MNM::real_t verticalDownwardRange(verticalRange);
-
-		AgentType agentTypeProperties;
-		const bool arePropertiesValid = GetAgentTypeProperties(agentTypeId, agentTypeProperties);
-		assert(arePropertiesValid);
-		const uint16 minZOffsetMultiplier(2);
-		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
-		const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
-
-		MNM::TriangleID seedTriangleID = mesh.navMesh.GetTriangleAt(seedLocation - origin, verticalDownwardRange, verticalUpwardRange, nullptr);
-
-		if (seedTriangleID)
-		{
-			MNM::CNavMesh::AccessibilityRequest inputRequest(seedTriangleID, offMeshNavigation);
-			mesh.navMesh.ComputeAccessibility(inputRequest);
-		}
-	}
-}
-
-void NavigationSystem::ClearAllAccessibility(uint8 resetValue)
-{
-	AgentTypes::const_iterator it = m_agentTypes.begin();
-	AgentTypes::const_iterator end = m_agentTypes.end();
-
-	for (; it != end; ++it)
-	{
-		const AgentType& agentType = *it;
-		AgentType::Meshes::const_iterator itMesh = agentType.meshes.begin();
-		AgentType::Meshes::const_iterator endMesh = agentType.meshes.end();
-		for (; itMesh != endMesh; ++itMesh)
-		{
-			if (itMesh->id && m_meshes.validate(itMesh->id))
-			{
-				NavigationMesh& mesh = m_meshes[itMesh->id];
-				mesh.navMesh.ResetAccessibility(resetValue);
-			}
-		}
-	}
-}
-#endif
-
-void NavigationSystem::CalculateAccessibility()
-{
-#if MNM_USE_EXPORT_INFORMATION
-	ClearAllAccessibility(MNM::CNavMesh::eARNotAccessible);
-
-	//TODO: Should be navigation seeds rather registered in navigation system?
-	std::vector<std::pair<Vec3, NavigationAgentTypeID>> seeds(10);
-	GetAISystem()->GetNavigationSeeds(seeds);
-
-	for (size_t i = 0, count = seeds.size(); i < count; ++i)
-	{
-		if (seeds[i].second == NavigationAgentTypeID(0))
-		{
-			for (const AgentType& agentType : m_agentTypes)
-			{
-				ComputeAccessibility(seeds[i].first, GetAgentTypeID(agentType.name));
-			}
-		}
-		else
-		{
-			ComputeAccessibility(seeds[i].first, seeds[i].second);
-		}
-	}
-#endif //MNM_USE_EXPORT_INFORMATION
+	CryLog("Time used by removing NavMesh triangles: %li ms", (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSecondsAsInt64());
 }
 
 bool NavigationSystem::IsInUse() const
@@ -2006,17 +2087,16 @@ bool NavigationSystem::IsInUse() const
 	return m_meshes.size() != 0;
 }
 
-MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter)
+MNM::TileID NavigationSystem::GetTileIdWhereLocationIsAtForMesh(const NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter)
 {
-	NavigationMesh& mesh = GetMesh(meshID);
-
+	const NavigationMesh& mesh = GetMesh(meshID);
 	const MNM::real_t range = MNM::real_t(1.0f);
-	MNM::TriangleID triangleID = mesh.navMesh.GetTriangleAt(location, range, range, pFilter);
+	const MNM::TriangleID triangleID = mesh.navMesh.QueryTriangleAt(mesh.navMesh.ToMeshSpace(location), range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 
 	return MNM::ComputeTileID(triangleID);
 }
 
-void NavigationSystem::GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const
+void NavigationSystem::GetTileBoundsForMesh(const NavigationMeshID meshID, const MNM::TileID tileID, AABB& bounds) const
 {
 	const NavigationMesh& mesh = GetMesh(meshID);
 	const MNM::vector3_t coords = mesh.navMesh.GetTileContainerCoordinates(tileID);
@@ -2045,7 +2125,12 @@ const NavigationMesh& NavigationSystem::GetMesh(const NavigationMeshID& meshID) 
 	return dummy;
 }
 
-NavigationMeshID NavigationSystem::GetEnclosingMeshID(NavigationAgentTypeID agentTypeID, const Vec3& location) const
+NavigationMeshID NavigationSystem::GetEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& location) const
+{
+	return FindEnclosingMeshID(agentTypeID, location);
+}
+
+NavigationMeshID NavigationSystem::FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& location) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -2068,7 +2153,49 @@ NavigationMeshID NavigationSystem::GetEnclosingMeshID(NavigationAgentTypeID agen
 	return NavigationMeshID();
 }
 
-bool NavigationSystem::IsLocationInMesh(NavigationMeshID meshID, const Vec3& location) const
+NavigationMeshID NavigationSystem::FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const
+{
+	if (agentTypeID.IsValid() && agentTypeID <= m_agentTypes.size())
+	{
+		const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			const NavigationMeshID meshID = meshInfo.id;
+			CRY_ASSERT(m_meshes.validate(meshID));
+			const NavigationMesh& mesh = m_meshes[meshID];
+
+			if (IsLocationInMeshVolume(mesh, position, snappingMetric))
+				return meshID;
+		}
+	}
+	return NavigationMeshID();
+}
+
+NavigationMeshID NavigationSystem::FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics) const
+{
+	if (agentTypeID.IsValid() && agentTypeID <= m_agentTypes.size())
+	{
+		const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+
+		for (const MNM::SSnappingMetric& snappingMetric : snappingMetrics.metricsArray)
+		{
+			const AABB aabbAroundPos = GetAABBFromSnappingMetric(position, snappingMetric, agentTypeID);
+			
+			for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+			{
+				const NavigationMeshID meshID = meshInfo.id;
+				const NavigationMesh& mesh = m_meshes[meshID];
+
+				if (IsOverlappingWithMeshVolume(mesh, aabbAroundPos))
+					return meshID;
+			}
+		}
+	}
+	return NavigationMeshID();
+}
+
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location) const
 {
 	if (meshID && m_meshes.validate(meshID))
 	{
@@ -2081,15 +2208,97 @@ bool NavigationSystem::IsLocationInMesh(NavigationMeshID meshID, const Vec3& loc
 	return false;
 }
 
-MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange,
-                                                         float hrange, const INavMeshQueryFilter* pFilter, Vec3* meshLocation, float* distance) const
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const
+{
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		const NavigationMesh& mesh = m_meshes[meshID];
+		return IsLocationInMeshVolume(mesh, position, snappingMetric);
+	}
+	return false;
+}
+
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics) const
+{
+	if (!meshID.IsValid() || !m_meshes.validate(meshID))
+		return false;
+	
+	const NavigationMesh& mesh = m_meshes[meshID];
+	for (const MNM::SSnappingMetric& snappingMetric : snappingMetrics.metricsArray)
+	{
+		if (IsLocationInMeshVolume(mesh, position, snappingMetric))
+			return true;
+	}
+	return false;
+}
+
+AABB NavigationSystem::GetAABBFromSnappingMetric(const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const NavigationAgentTypeID agentID) const
+{
+	AABB aabbAroundPos(position);
+
+	CRY_ASSERT(agentID.IsValid() && agentID <= m_agentTypes.size());
+
+	const AgentType& agentType = m_agentTypes[agentID - 1];
+	const Vec3& voxelSize = agentType.settings.voxelSize;
+	const uint16 agentRadiusUnits = agentType.settings.agent.radius;
+	const uint16 agentHeightUnits = agentType.settings.agent.height;
+
+	const float verticalDefaultDownRange = MNM::Utils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z).as_float();
+	const float verticalDefaultUpRange = float(min(uint16(2), agentHeightUnits)) * voxelSize.z;
+
+	const float verticalDownRange = snappingMetric.verticalDownRange == -FLT_MAX ? verticalDefaultDownRange : snappingMetric.verticalDownRange;
+	const float verticalUpRange = snappingMetric.verticalUpRange == -FLT_MAX ? verticalDefaultUpRange : snappingMetric.verticalUpRange;
+
+	static_assert(int(MNM::SSnappingMetric::EType::Count) == 3, "Invalid enum size!");
+	switch (snappingMetric.type)
+	{
+	case MNM::SSnappingMetric::EType::Vertical:
+	{
+		aabbAroundPos.max.z += verticalUpRange;
+		aabbAroundPos.min.z -= verticalDownRange;
+		break;
+	}
+	case MNM::SSnappingMetric::EType::Box:
+	case MNM::SSnappingMetric::EType::Circular: //TODO: do more precise check for Circular type?
+	{
+		const float horizontalDefaultRange = MNM::Utils::CalculateMinHorizontalRange(agentRadiusUnits, voxelSize.x).as_float();
+		const float horizontalRange = snappingMetric.horizontalRange == -FLT_MAX ? horizontalDefaultRange : snappingMetric.horizontalRange;
+		aabbAroundPos.max += Vec3(horizontalRange, horizontalRange, verticalUpRange);
+		aabbAroundPos.min -= Vec3(horizontalRange, horizontalRange, verticalDownRange);
+		break;
+	}
+	}
+	return aabbAroundPos;
+}
+
+bool NavigationSystem::IsLocationInMeshVolume(const NavigationMesh& mesh, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const
+{
+	const NavigationVolumeID boundaryID = mesh.boundary;
+
+	if (!boundaryID.IsValid())
+		return false;
+
+	const AABB aabbAroundPos = GetAABBFromSnappingMetric(position, snappingMetric, mesh.agentTypeID);
+	return m_volumes[boundaryID].Overlaps(aabbAroundPos);
+}
+
+bool NavigationSystem::IsOverlappingWithMeshVolume(const NavigationMesh& mesh, const AABB& aabb) const
+{
+	const NavigationVolumeID boundaryID = mesh.boundary;
+	if (!boundaryID.IsValid())
+		return false;
+	
+	return m_volumes[boundaryID].Overlaps(aabb);
+}
+
+MNM::TriangleID NavigationSystem::GetClosestMeshLocation(const NavigationMeshID meshID, const Vec3& location, float vrange, float hrange, const INavMeshQueryFilter* pFilter, Vec3* meshLocation, float* distance) const
 {
 	if (meshID && m_meshes.validate(meshID))
 	{
-		MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
-		const NavigationMesh& mesh = m_meshes[meshID];
-		MNM::real_t verticalRange(vrange);
-		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, pFilter))
+		const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+		const MNM::vector3_t mnmLocation = navMesh.ToMeshSpace(location);
+		const MNM::real_t verticalRange(vrange);
+		if (const MNM::TriangleID enclosingTriID = navMesh.QueryTriangleAt( mnmLocation, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter))
 		{
 			if (meshLocation)
 				*meshLocation = location;
@@ -2101,26 +2310,27 @@ MNM::TriangleID NavigationSystem::GetClosestMeshLocation(NavigationMeshID meshID
 		}
 		else
 		{
-			MNM::real_t distanceFixed;
-			MNM::vector3_t closest;
+			const MNM::real_t realHrange = MNM::real_t(hrange);
+			const MNM::aabb_t localAabb(MNM::vector3_t(-realHrange, -realHrange, -verticalRange), MNM::vector3_t(realHrange, realHrange, verticalRange));
+			const MNM::SClosestTriangle closestTriangle = navMesh.QueryClosestTriangle(mnmLocation, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pFilter);
 
-			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), pFilter, &distanceFixed, &closest))
+			if (closestTriangle.id.IsValid())
 			{
 				if (meshLocation)
-					*meshLocation = closest.GetVec3();
+					*meshLocation = navMesh.ToWorldSpace(closestTriangle.position).GetVec3();
 
 				if (distance)
-					*distance = distanceFixed.as_float();
+					*distance = closestTriangle.distance.as_float();
 
-				return closestTriID;
+				return closestTriangle.id;
 			}
 		}
 	}
 
-	return MNM::TriangleID(0);
+	return MNM::TriangleID();
 }
 
-bool NavigationSystem::AgentTypeSupportSmartObjectUserClass(NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const
+bool NavigationSystem::AgentTypeSupportSmartObjectUserClass(const NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -2142,7 +2352,7 @@ bool NavigationSystem::AgentTypeSupportSmartObjectUserClass(NavigationAgentTypeI
 	return false;
 }
 
-uint16 NavigationSystem::GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentTypeID) const
+uint16 NavigationSystem::GetAgentRadiusInVoxelUnits(const NavigationAgentTypeID agentTypeID) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -2151,7 +2361,7 @@ uint16 NavigationSystem::GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentT
 	return 0;
 }
 
-uint16 NavigationSystem::GetAgentHeightInVoxelUnits(NavigationAgentTypeID agentTypeID) const
+uint16 NavigationSystem::GetAgentHeightInVoxelUnits(const NavigationAgentTypeID agentTypeID) const
 {
 	if (agentTypeID && agentTypeID <= m_agentTypes.size())
 	{
@@ -2215,13 +2425,19 @@ void NavigationSystem::Clear()
 	m_offMeshNavigationManager.Clear();
 	m_islandConnectionsManager.Reset();
 
+	m_recentlyUpdatedMeshIds.clear();
+	m_accessibilityUpdateRequestForMeshIds.clear();
+	m_markupAnnotationChangesToApply.clear();
+
 	ResetAllNavigationSystemUsers();
+
+	m_pNavMeshQueryManager->Clear();
 }
 
 void NavigationSystem::ClearAndNotify()
 {
 	Clear();
-	UpdateAllListener(NavigationCleared);
+	UpdateAllListeners(ENavigationEvent::NavigationCleared);
 
 	//////////////////////////////////////////////////////////////////////////
 	//After the 'clear' we need to re-enable and register smart objects again
@@ -2272,7 +2488,8 @@ bool NavigationSystem::ReloadConfig()
 
 	//Area Flags
 	if (XmlNodeRef childNode = rootNode->findChild("AreaFlags"))
-	{
+	{		
+		ColorB flagColor;
 		size_t areaFlagsCount = childNode->getChildCount();
 		for (size_t at = 0; at < areaFlagsCount; ++at)
 		{
@@ -2292,7 +2509,10 @@ bool NavigationSystem::ReloadConfig()
 					areaFlagNode->getLine(), m_configName.c_str());
 				return false;
 			}
-			m_annotationsLibrary.CreateAreaFlag(id, szFlagName);
+
+			bool bHasColor = areaFlagNode->getAttr("color", flagColor);
+
+			m_annotationsLibrary.CreateAreaFlag(id, szFlagName, bHasColor ? &flagColor : nullptr);
 		}
 	}
 
@@ -2372,7 +2592,7 @@ bool NavigationSystem::ReloadConfig()
 			}
 
 			const char* name = 0;
-			INavigationSystem::CreateAgentTypeParams params;
+			INavigationSystem::SCreateAgentTypeParams params;
 
 			for (size_t attr = 0; attr < (size_t)agentTypeNode->getNumAttributes(); ++attr)
 			{
@@ -2493,17 +2713,56 @@ bool NavigationSystem::ReloadConfig()
 			if (!agentTypeID)
 				return false;
 
-			//////////////////////////////////////////////////////////////////////////
-			/// Add supported SO classes for this AgentType/Mesh
+			AgentType& agentType = m_agentTypes[agentTypeID - 1];
 
 			for (size_t childIdx = 0; childIdx < (size_t)agentTypeNode->getChildCount(); ++childIdx)
 			{
 				XmlNodeRef agentTypeChildNode = agentTypeNode->getChild(childIdx);
-
-				if (!stricmp(agentTypeChildNode->getTag(), "SmartObjectUserClasses"))
+				if (!stricmp(agentTypeChildNode->getTag(), "LowerHeightArea"))
 				{
-					AgentType& agentType = m_agentTypes[agentTypeID - 1];
+					// Add lower height area for this agent type
+					MNM::SAgentSettings& agentSettings = agentType.settings.agent;
+					if (agentSettings.lowerHeightAreas.isfull())
+					{
+						AIWarning("Maximum number of LowerHeightAreas reached!");
+						continue;
+					}
 
+					uint16 height;
+					uint16 minAreaSize;
+					if (!agentTypeChildNode->getAttr("height", height))
+					{
+						AIWarning("LowerHeightArea doesn't have height attribute set!");
+						continue;
+					}
+
+					if (height <= 0 || height >= agentSettings.height)
+					{
+						AIWarning("LowerHeightArea height attribute needs to be positive and lower than AgentType height!");
+						continue;
+					}
+
+					MNM::SAgentSettings::SLowerHeightArea lowerHeightArea;
+					lowerHeightArea.height = height;
+					if (agentTypeChildNode->getAttr("minAreaSize", minAreaSize))
+					{
+						lowerHeightArea.minAreaSize = minAreaSize;
+					}
+
+					const char* szAreaTypeName = agentTypeChildNode->getAttr("areaType");
+					const NavigationAreaTypeID areaTypeId = m_annotationsLibrary.GetAreaTypeID(szAreaTypeName);
+					if (!areaTypeId.IsValid())
+					{
+						AIWarning("LowerHeightArea doesn't have valid areaType name ('%s').", szAreaTypeName ? szAreaTypeName : "not found");
+						continue;
+					}
+					lowerHeightArea.annotation = GetAreaTypeAnnotation(areaTypeId);
+					agentSettings.lowerHeightAreas.push_back(lowerHeightArea);
+					
+				}
+				else if (!stricmp(agentTypeChildNode->getTag(), "SmartObjectUserClasses"))
+				{
+					// Add supported SO classes for this AgentType/Mesh
 					size_t soClassesCount = agentTypeChildNode->getChildCount();
 					agentType.smartObjectUserClasses.reserve(soClassesCount);
 
@@ -2518,6 +2777,11 @@ bool NavigationSystem::ReloadConfig()
 					}
 				}
 			}
+
+			// Sort lower height areas by their height - the order is important in tile generation
+			std::sort(agentType.settings.agent.lowerHeightAreas.begin(), agentType.settings.agent.lowerHeightAreas.end(), [](const MNM::SAgentSettings::SLowerHeightArea& a, const MNM::SAgentSettings::SLowerHeightArea& b) {
+				return a.height < b.height;
+			});
 		}
 	}
 	return true;
@@ -2558,7 +2822,7 @@ void NavigationSystem::SetupTasks()
 	// will ever,ever,ever make that efficient.
 	// PeteB: Optimized the tile job time enough to make it viable to do more than one per frame. Added CVar
 	//        multiplier to allow people to control it based on the speed of their machine.
-	m_maxRunningTaskCount = (gEnv->pJobManager->GetNumWorkerThreads() * 3 / 4) * gAIEnv.CVars.NavGenThreadJobs;
+	m_maxRunningTaskCount = (gEnv->pJobManager->GetNumWorkerThreads() * 3 / 4) * gAIEnv.CVars.navigation.NavGenThreadJobs;
 	m_results.resize(m_maxRunningTaskCount);
 
 	for (uint16 i = 0; i < m_results.size(); ++i)
@@ -2636,6 +2900,29 @@ void NavigationSystem::RemoveLoadedMeshesWithoutRegisteredAreas()
 		}
 	}
 
+	// Remove all markups data whose mesh doesn't exist (was saved during the export but isn't in the map anymore)
+	for (const AgentType& agentType : m_agentTypes)
+	{
+		for (const NavigationVolumeID markupId : agentType.markups)
+		{
+			// Are markup data stored for this markup id?
+			if(!m_markupsData.validate(markupId))
+				continue;
+
+			MNM::SMarkupVolumeData& markupData = m_markupsData[markupId];
+			const auto removeIt = std::remove_if(markupData.meshTriangles.begin(), markupData.meshTriangles.end(), [this](const MNM::SMarkupVolumeData::MeshTriangles& meshTriangles)
+			{
+				return !m_meshes.validate(meshTriangles.meshId);
+			});
+			markupData.meshTriangles.erase(removeIt, markupData.meshTriangles.end());
+			
+			if (markupData.meshTriangles.empty())
+			{
+				m_markupsData.erase(markupId);
+			}
+		}
+	}
+
 	m_volumesManager.ClearLoadedAreas();
 }
 
@@ -2659,37 +2946,42 @@ void NavigationSystem::StopWorldMonitoring()
 	m_worldMonitor.Stop();
 }
 
-bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter, float minIslandArea) const
+bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter) const
 {
 	const NavigationMeshID meshID = GetEnclosingMeshID(agentID, location);
 	if (meshID && m_meshes.validate(meshID))
 	{
-		MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
-		const NavigationMesh& mesh = m_meshes[meshID];
-		MNM::real_t verticalRange(vrange);
+		const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+		
+		const MNM::vector3_t mnmLocation = navMesh.ToMeshSpace(location);
+		const MNM::real_t verticalRange(vrange);
 
 		//first check vertical range, because if we are over navmesh, we want that one
-		if (const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, verticalRange, verticalRange, pFilter, minIslandArea))
+		const MNM::TriangleID enclosingTriID = navMesh.QueryTriangleAt(mnmLocation, verticalRange, verticalRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
+		if (enclosingTriID.IsValid())
 		{
 			MNM::vector3_t v0, v1, v2;
-			mesh.navMesh.GetVertices(enclosingTriID, v0, v1, v2);
-			MNM::vector3_t closest = ClosestPtPointTriangle(loc, v0, v1, v2);
+			navMesh.GetVertices(enclosingTriID, v0, v1, v2);
+			const MNM::vector3_t closest = MNM::Utils::ClosestPtPointTriangle(mnmLocation, v0, v1, v2);
 
 			if (meshLocation)
 			{
-				*meshLocation = closest.GetVec3();
+				*meshLocation = navMesh.ToWorldSpace(closest).GetVec3();
 			}
 			return true;
 		}
 		else
 		{
 			MNM::vector3_t closest;
+			const MNM::real_t realHrange = MNM::real_t(hrange);
+			const MNM::aabb_t localAabb(MNM::vector3_t(-realHrange, -realHrange, -verticalRange), MNM::vector3_t(realHrange, realHrange, verticalRange));
+			const MNM::SClosestTriangle closestTriangle = navMesh.QueryClosestTriangle(mnmLocation, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pFilter);
 
-			if (const MNM::TriangleID closestTriID = mesh.navMesh.GetClosestTriangle(loc, MNM::real_t(vrange), MNM::real_t(hrange), pFilter, nullptr, &closest, minIslandArea))
+			if (closestTriangle.id.IsValid())
 			{
 				if (meshLocation)
 				{
-					*meshLocation = closest.GetVec3();
+					*meshLocation = navMesh.ToWorldSpace(closestTriangle.position).GetVec3();
 				}
 				return true;
 			}
@@ -2708,7 +3000,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 
 	MNM::GlobalIslandID startingIslandID;
 	const NavigationMeshID startingMeshID = GetEnclosingMeshID(agentID, startLocation);
-	if (startingMeshID)
+	if (startingMeshID.IsValid())
 	{
 		const MNM::TriangleID triangleID = GetClosestMeshLocation(startingMeshID, startLocation, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
 		const NavigationMesh& mesh = m_meshes[startingMeshID];
@@ -2722,7 +3014,7 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 
 	MNM::GlobalIslandID endingIslandID;
 	const NavigationMeshID endingMeshID = GetEnclosingMeshID(agentID, endLocation);
-	if (endingMeshID)
+	if (endingMeshID.IsValid())
 	{
 		const MNM::TriangleID triangleID = GetClosestMeshLocation(endingMeshID, endLocation, verticalRange, horizontalRange, nullptr, nullptr, nullptr);
 		const NavigationMesh& mesh = m_meshes[endingMeshID];
@@ -2733,11 +3025,54 @@ bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID 
 			endingIslandID = MNM::GlobalIslandID(endingMeshID, triangle.islandID);
 		}
 	}
+	return m_islandConnectionsManager.AreIslandsConnected(pEntityToTestOffGridLinks, startingIslandID, endingIslandID, pFilter);
+}
+
+bool NavigationSystem::IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter) const
+{
+	NavigationMeshID startMeshId;
+	MNM::TriangleID startTriangleId;
+	if (!SnapToNavMesh(agentID, startLocation, snappingMetrics, pFilter, nullptr, &startTriangleId, &startMeshId))
+		return false;
+
+	NavigationMeshID endMeshId;
+	MNM::TriangleID endTriangleId;
+	if (!SnapToNavMesh(agentID, endLocation, snappingMetrics, pFilter, nullptr, &endTriangleId, &endMeshId))
+		return false;
+
+	return IsPointReachableFromPosition(pEntityToTestOffGridLinks, startMeshId, startTriangleId, endMeshId, endTriangleId, pFilter);
+}
+
+bool NavigationSystem::IsPointReachableFromPosition(const IEntity* pEntityToTestOffGridLinks, const NavigationMeshID startMeshID, const MNM::TriangleID startTriangleID, const NavigationMeshID endMeshID, const MNM::TriangleID endTriangleID, const INavMeshQueryFilter* pFilter) const
+{
+	if (startMeshID != endMeshID)
+		return false; // Navigating between two different NavMeshes isn't supported
+	
+	if (!startMeshID.IsValid() || !m_meshes.validate(startMeshID))
+		return false;
+
+	const NavigationMeshID meshId = startMeshID;
+	const MNM::CNavMesh& navMesh = m_meshes[meshId].navMesh;
+
+	MNM::GlobalIslandID startingIslandID;
+	MNM::GlobalIslandID endingIslandID;
+
+	MNM::Tile::STriangle startTriangle;
+	if (startTriangleID && navMesh.GetTriangle(startTriangleID, startTriangle) && (startTriangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+	{
+		startingIslandID = MNM::GlobalIslandID(meshId, startTriangle.islandID);
+	}
+
+	MNM::Tile::STriangle endTriangle;
+	if (endTriangleID && navMesh.GetTriangle(endTriangleID, endTriangle) && (endTriangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+	{
+		endingIslandID = MNM::GlobalIslandID(meshId, endTriangle.islandID);
+	}
 
 	return m_islandConnectionsManager.AreIslandsConnected(pEntityToTestOffGridLinks, startingIslandID, endingIslandID, pFilter);
 }
 
-MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location)
+MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) const
 {
 	const float horizontalRange = 1.0f;
 	const float verticalRange = 1.0f;
@@ -2757,8 +3092,42 @@ MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const Navigati
 			startingIslandID = MNM::GlobalIslandID(startingMeshID, triangle.islandID);
 		}
 	}
-
 	return startingIslandID;
+}
+
+MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location, const MNM::SOrderedSnappingMetrics& snappingMetrics) const
+{
+	MNM::GlobalIslandID globalIslandId;
+
+	NavigationMeshID meshId;
+	MNM::TriangleID triangleId;
+
+	if (SnapToNavMesh(agentID, location, snappingMetrics, nullptr, nullptr, &triangleId, &meshId))
+	{
+		const MNM::CNavMesh& navMesh = m_meshes[meshId].navMesh;
+		MNM::Tile::STriangle triangle;
+		if (triangleId && navMesh.GetTriangle(triangleId, triangle) && (triangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+		{
+			globalIslandId = MNM::GlobalIslandID(meshId, triangle.islandID);
+		}
+	}
+	return globalIslandId;
+}
+
+MNM::GlobalIslandID NavigationSystem::GetGlobalIslandIdAtPosition(const NavigationMeshID meshID, const MNM::TriangleID triangleID) const
+{
+	MNM::GlobalIslandID globalIslandId;
+
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+		MNM::Tile::STriangle triangle;
+		if (triangleID && navMesh.GetTriangle(triangleID, triangle) && (triangle.islandID != MNM::Constants::eStaticIsland_InvalidIslandID))
+		{
+			globalIslandId = MNM::GlobalIslandID(meshID, triangle.islandID);
+		}
+	}
+	return globalIslandId;
 }
 
 bool NavigationSystem::IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange, float upRange) const
@@ -2767,9 +3136,8 @@ bool NavigationSystem::IsLocationValidInNavigationMesh(const NavigationAgentType
 	{
 		if (m_meshes.validate(meshID))
 		{
-			MNM::vector3_t loc(MNM::real_t(location.x), MNM::real_t(location.y), MNM::real_t(location.z));
 			const NavigationMesh& mesh = m_meshes[meshID];
-			const MNM::TriangleID enclosingTriID = mesh.navMesh.GetTriangleAt(loc, MNM::real_t(downRange), MNM::real_t(upRange), pFilter);
+			const MNM::TriangleID enclosingTriID = mesh.navMesh.QueryTriangleAt(mesh.navMesh.ToMeshSpace(location), MNM::real_t(downRange), MNM::real_t(upRange), MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 			return enclosingTriID != 0;
 		}
 	}
@@ -2782,14 +3150,12 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 	NavigationMeshID meshId = GetEnclosingMeshID(agentID, location);
 	if (meshId)
 	{
-		NavigationMesh& mesh = GetMesh(meshId);
-		const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-		const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
+		const NavigationMesh& mesh = GetMesh(meshId);
 
 		const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
 		const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentID);
 
-		const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
+		const MNM::real_t verticalRange = MNM::Utils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
 		const MNM::real_t verticalDownwardRange(verticalRange);
 
 		AgentType agentTypeProperties;
@@ -2799,56 +3165,125 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 		const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 		const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
-		return mesh.navMesh.GetTriangleAt(location - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, pFilter);
+		return mesh.navMesh.QueryTriangleAt(mesh.navMesh.ToMeshSpace(location), verticalDownwardRange, verticalUpwardRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 	}
 
-	return MNM::TriangleID(0);
+	return MNM::TriangleID();
 }
 
-bool NavigationSystem::SnapToNavMesh(const NavigationAgentTypeID agentID, const Vec3& position, const INavMeshQueryFilter* pFilter, const SSnapToNavMeshRulesInfo& snappingRules, Vec3& snappedPosition, MNM::TriangleID* pTriangleId) const
+bool NavigationSystem::SnapToNavMesh(
+	const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter,
+	Vec3* pOutSnappedPosition, MNM::TriangleID* pOutTriangleID, NavigationMeshID* pOutNavMeshID) const
 {
-	//TODO: don't we need to expand NavMeshes' bboxes when searching for nearest NavMesh? (input position may be outside of mesh volume)
-	NavigationMeshID meshId = GetEnclosingMeshID(agentID, position);
-	if (!meshId)
+	const NavigationMeshID meshId = FindEnclosingMeshID(agentTypeID, position, snappingMetric);
+	if (!meshId.IsValid())
 		return false;
+
+	if (pOutNavMeshID)
+	{
+		*pOutNavMeshID = meshId;
+	}
 
 	const NavigationMesh& mesh = GetMesh(meshId);
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
-	const MNM::CNavMesh::SGridParams& paramsGrid = navMesh.GetGridParams();
 
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x), MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
-
-	AgentType agentTypeProperties;
-	const bool arePropertiesValid = GetAgentTypeProperties(agentID, agentTypeProperties);
-	CRY_ASSERT(arePropertiesValid);
-
-	const MNM::real_t horizontalRange = MNMUtils::CalculateMinHorizontalRange(agentTypeProperties.settings.agent.radius, paramsGrid.voxelSize.x);
-	const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentTypeProperties.settings.agent.height, paramsGrid.voxelSize.z);
-
-	MNM::vector3_t navMeshPos;
-	MNM::aabb_t aroundPositionAABB(MNM::vector3_t(-horizontalRange, -horizontalRange, -verticalRange), MNM::vector3_t(horizontalRange, horizontalRange, verticalRange));
-	if (navMesh.SnapPosition(MNM::vector3_t(position) - origin, aroundPositionAABB, snappingRules, pFilter, navMeshPos, pTriangleId))
+	if (pOutSnappedPosition)
 	{
-		snappedPosition = navMeshPos.GetVec3();
-		return true;
+		MNM::vector3_t navMeshPos;
+		if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, &navMeshPos, pOutTriangleID))
+		{
+			*pOutSnappedPosition = navMesh.ToWorldSpace(navMeshPos).GetVec3();
+			return true;
+		}
+	}
+	else
+	{
+		return navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, nullptr, pOutTriangleID);
+	}	
+	return false;
+}
+
+bool NavigationSystem::SnapToNavMesh(
+	const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter,
+	Vec3* pOutSnappedPosition, MNM::TriangleID* pOutTriangleID, NavigationMeshID* pOutNavMeshID) const
+{
+	if (!agentTypeID.IsValid() || agentTypeID > m_agentTypes.size())
+		return false;
+	
+	const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+	for (const MNM::SSnappingMetric& snappingMetric : snappingMetrics.metricsArray)
+	{
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			const NavigationMeshID meshId = meshInfo.id;
+			const NavigationMesh& mesh = m_meshes[meshId];
+
+			if(!IsLocationInMeshVolume(mesh, position, snappingMetric))
+				continue;
+
+			// overlapping mesh found, try to snap the point on it
+			if (pOutNavMeshID)
+			{
+				*pOutNavMeshID = meshId;
+			}
+
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
+			if (pOutSnappedPosition)
+			{
+				MNM::vector3_t navMeshPos;
+				if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, &navMeshPos, pOutTriangleID))
+				{
+					*pOutSnappedPosition = navMesh.ToWorldSpace(navMeshPos).GetVec3();
+					return true;
+				}
+			}
+			else
+			{
+				if (navMesh.SnapPosition(navMesh.ToMeshSpace(position), snappingMetric, pFilter, nullptr, pOutTriangleID))
+					return true;
+			}
+		}
 	}
 	return false;
 }
 
-bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
+MNM::SPointOnNavMesh NavigationSystem::SnapToNavMesh(
+	const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter, NavigationMeshID* pOutNavMeshID) const
+{
+	MNM::TriangleID triangleId;
+	Vec3 snappedPosition;
+	
+	if (!SnapToNavMesh(agentTypeID, position, snappingMetric, pFilter, &snappedPosition, &triangleId, pOutNavMeshID))
+	{
+		return MNM::SPointOnNavMesh(MNM::TriangleID(), ZERO);
+	}
+	return MNM::SPointOnNavMesh(triangleId, snappedPosition);
+}
+
+MNM::SPointOnNavMesh NavigationSystem::SnapToNavMesh(
+	const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter, NavigationMeshID* pOutNavMeshID) const
+{
+	MNM::TriangleID triangleId;
+	Vec3 snappedPosition;
+
+	if (!SnapToNavMesh(agentTypeID, position, snappingMetrics, pFilter, &snappedPosition, &triangleId, pOutNavMeshID))
+	{
+		return MNM::SPointOnNavMesh(MNM::TriangleID(), ZERO);
+	}
+	return MNM::SPointOnNavMesh(triangleId, snappedPosition);
+}
+
+MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& toPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
 {
 	NavigationMeshID meshId = GetEnclosingMeshID(agentTypeID, startPos);
 	if (!meshId)
-		return false;
+		return MNM::ERayCastResult::InvalidStart;
 
 	const NavigationMesh& mesh = GetMesh(meshId);
-	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-	const MNM::OffMeshNavigation& offMeshNavigation = GetOffMeshNavigationManager()->GetOffMeshNavigationForMesh(meshId);
-
 	const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
 	const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentTypeID);
 
-	const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
+	const MNM::real_t verticalRange = MNM::Utils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
 	const MNM::real_t verticalDownwardRange(verticalRange);
 
 	AgentType agentTypeProperties;
@@ -2858,21 +3293,23 @@ bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, 
 	const uint16 zOffsetMultiplier = min(minZOffsetMultiplier, (uint16)agentTypeProperties.settings.agent.height);
 	const MNM::real_t verticalUpwardRange = arePropertiesValid ? MNM::real_t(zOffsetMultiplier * agentTypeProperties.settings.voxelSize.z) : MNM::real_t(.2f);
 
-	MNM::TriangleID startTriangle = mesh.navMesh.GetTriangleAt(startPos - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, pFilter);
-	MNM::TriangleID endTriangle = mesh.navMesh.GetTriangleAt(toPos - paramsGrid.origin, verticalDownwardRange, verticalUpwardRange, pFilter);
+	const MNM::vector3_t mnmStartPos = mesh.navMesh.ToMeshSpace(startPos);
+	const MNM::vector3_t mnmToPos = mesh.navMesh.ToMeshSpace(toPos);
+
+	const MNM::TriangleID startTriangle = mesh.navMesh.QueryTriangleAt(mnmStartPos, verticalDownwardRange, verticalUpwardRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
+	const MNM::TriangleID endTriangle = mesh.navMesh.QueryTriangleAt(mnmToPos, verticalDownwardRange, verticalUpwardRange, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pFilter);
 	
 	MNM::CNavMesh::RayCastRequest<512> request;
-	MNM::CNavMesh::ERayCastResult result = mesh.navMesh.RayCast(startPos - paramsGrid.origin, startTriangle, toPos - paramsGrid.origin, endTriangle, request, pFilter);
-	
-	bool isHit = result == MNM::CNavMesh::eRayCastResult_Hit;
-	if (isHit && pOutHit)
+	const MNM::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangle, mnmToPos, endTriangle, request, pFilter);
+
+	if (pOutHit && result == MNM::ERayCastResult::Hit)
 	{
 		const float t = request.hit.distance.as_float();
 		
 		pOutHit->distance = t;
 		pOutHit->position = startPos + (toPos - startPos) * t;
 
-		if (request.hit.triangleID != MNM::Constants::InvalidTriangleID && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
+		if (request.hit.triangleID.IsValid() && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
 		{
 			MNM::vector3_t verts[3];
 			mesh.navMesh.GetVertices(request.hit.triangleID, verts);
@@ -2886,7 +3323,49 @@ bool NavigationSystem::NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, 
 			pOutHit->normal2D = (startPos - toPos).GetNormalized();
 		}
 	}
-	return isHit;
+	return result;
+}
+
+MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationMeshID meshID, const MNM::TriangleID startTriangleId, const Vec3& startPos, const MNM::TriangleID endTriangleId, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
+{
+	if (!m_meshes.validate(meshID))
+		return MNM::ERayCastResult::InvalidStart;
+
+	const NavigationMesh& mesh = m_meshes[meshID];
+
+	const MNM::vector3_t mnmStartPos = mesh.navMesh.ToMeshSpace(startPos);
+	const MNM::vector3_t mnmToPos = mesh.navMesh.ToMeshSpace(endPos);
+
+	MNM::CNavMesh::RayCastRequest<512> request;
+	const MNM::ERayCastResult result = mesh.navMesh.RayCast(mnmStartPos, startTriangleId, mnmToPos, endTriangleId, request, pFilter);
+
+	if (pOutHit && result == MNM::ERayCastResult::Hit)
+	{
+		const float t = request.hit.distance.as_float();
+
+		pOutHit->distance = t;
+		pOutHit->position = startPos + (endPos - startPos) * t;
+
+		if (request.hit.triangleID.IsValid() && request.hit.edge != MNM::Constants::InvalidEdgeIndex)
+		{
+			MNM::vector3_t verts[3];
+			mesh.navMesh.GetVertices(request.hit.triangleID, verts);
+			const Vec3 edgeDir = (verts[(request.hit.edge + 1) % 3] - verts[request.hit.edge]).GetVec3();
+			const Vec3 edgeNormal(-edgeDir.y, edgeDir.x, 0.0f);
+
+			pOutHit->normal2D = edgeNormal.GetNormalized();
+		}
+		else
+		{
+			pOutHit->normal2D = (startPos - endPos).GetNormalized();
+		}
+	}
+	return result;
+}
+
+MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationMeshID meshID, const MNM::SPointOnNavMesh& startPointOnNavMesh, const MNM::SPointOnNavMesh& endPointOnNavMesh, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const
+{
+	return NavMeshRayCast(meshID, startPointOnNavMesh.GetTriangleID(), startPointOnNavMesh.GetWorldPosition(), endPointOnNavMesh.GetTriangleID(), endPointOnNavMesh.GetWorldPosition(), pFilter, pOutHit);
 }
 
 const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) const
@@ -2899,115 +3378,79 @@ const MNM::INavMesh* NavigationSystem::GetMNMNavMesh(NavigationMeshID meshID) co
 	return nullptr;
 }
 
-size_t NavigationSystem::GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea) const
+NavigationAgentTypeID NavigationSystem::GetAgentTypeOfMesh(const NavigationMeshID meshID) const
 {
 	if (m_meshes.validate(meshID))
 	{
-		const MNM::vector3_t min(MNM::real_t(searchAABB.min.x), MNM::real_t(searchAABB.min.y), MNM::real_t(searchAABB.min.z));
-		const MNM::vector3_t max(MNM::real_t(searchAABB.max.x), MNM::real_t(searchAABB.max.y), MNM::real_t(searchAABB.max.z));
 		const NavigationMesh& mesh = m_meshes[meshID];
-		const MNM::aabb_t aabb(min, max);
-		const size_t maxTriangleCount = 4096;
-		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
-		MNM::Tile::STriangle triangle;
-
-		if (triangleCount > 0)
-		{
-			MNM::vector3_t a, b, c;
-
-			size_t i = 0;
-			size_t num_tris = 0;
-			for (i = 0; i < triangleCount; ++i)
-			{
-				mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
-				centerLocations[num_tris] = ((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
-				num_tris++;
-
-				if (num_tris == maxCenterLocationCount)
-					return num_tris;
-			}
-
-			return num_tris;
-		}
+		return mesh.agentTypeID;
 	}
-
-	return 0;
+	return NavigationAgentTypeID();
 }
 
-size_t NavigationSystem::GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea /*= 0.0f*/) const
+INavigationSystem::NavMeshBorderWithNormalArray NavigationSystem::QueryTriangleBorders(const NavigationMeshID meshID, const MNM::aabb_t& localAabb) const
 {
-	size_t numBorders = 0;
-	if (!m_meshes.validate(meshID))
-		return numBorders;
-
-	const MNM::vector3_t min(MNM::real_t(aabb.min.x), MNM::real_t(aabb.min.y), MNM::real_t(aabb.min.z));
-	const MNM::vector3_t max(MNM::real_t(aabb.max.x), MNM::real_t(aabb.max.y), MNM::real_t(aabb.max.z));
-	const NavigationMesh& mesh = m_meshes[meshID];
-	const MNM::aabb_t mnmAABB(min, max);
-
-	return mesh.navMesh.GetMeshBorders(mnmAABB, pFilter, pBorders, maxBorderCount, minIslandArea);
+	return QueryTriangleBorders(meshID, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, nullptr, nullptr);
 }
 
-size_t NavigationSystem::GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, const INavMeshQueryFilter* pFilter, float minIslandArea) const
+INavigationSystem::NavMeshBorderWithNormalArray NavigationSystem::QueryTriangleBorders(const NavigationMeshID meshID, const MNM::aabb_t& localAabb, MNM::ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pQueryFilter, const INavMeshQueryFilter* pAnnotationFilter) const
 {
-	if (m_meshes.validate(meshID))
+	const MNM::CNavMesh& navMesh = GetMesh(meshID).navMesh;
+	const Vec3 meshOrigin = navMesh.GetGridParams().origin;
+	const MNM::aabb_t mnmAABB = navMesh.ToMeshSpace(MNM::aabb_t(localAabb.min, localAabb.max));
+	INavigationSystem::NavMeshBorderWithNormalArray triangleBorderArray = navMesh.QueryMeshBorders(mnmAABB, overlappingMode, pQueryFilter, pAnnotationFilter);
+
+	if (meshOrigin != ZERO)
 	{
-		const MNM::vector3_t min(MNM::real_t(aabb.min.x), MNM::real_t(aabb.min.y), MNM::real_t(aabb.min.z));
-		const MNM::vector3_t max(MNM::real_t(aabb.max.x), MNM::real_t(aabb.max.y), MNM::real_t(aabb.max.z));
-		const NavigationMesh& mesh = m_meshes[meshID];
-		const MNM::aabb_t aabb(min, max);
-		const size_t maxTriangleCount = 4096;
-		MNM::TriangleID triangleIDs[maxTriangleCount];
-		const size_t triangleCount = mesh.navMesh.GetTriangles(aabb, triangleIDs, maxTriangleCount, pFilter, minIslandArea);
-		MNM::Tile::STriangle triangle;
-
-		if (triangleCount > 0)
+		for (size_t i = 0; i < triangleBorderArray.size(); ++i)
 		{
-			MNM::vector3_t a, b, c;
-
-			size_t i = 0;
-			size_t num_tris = 0;
-			for (i = 0; i < triangleCount; ++i)
-			{
-				mesh.navMesh.GetTriangle(triangleIDs[i], triangle);
-				mesh.navMesh.GetVertices(triangleIDs[i], a, b, c);
-				centerLocations[num_tris] = ((a + b + c) * MNM::real_t(0.33333f)).GetVec3();
-				islandids[num_tris] = triangle.islandID;
-				num_tris++;
-
-				if (num_tris == max_count)
-					return num_tris;
-			}
-
-			return num_tris;
+			triangleBorderArray[i].v0 += meshOrigin;
+			triangleBorderArray[i].v1 += meshOrigin;
 		}
 	}
-
-	return 0;
+	return triangleBorderArray;
 }
 
-// Helper function to read various navigationId types from file without creating intermediate uint32.
-template<typename TId>
-static void ReadNavigationIdType(CCryFile& file, TId& outId)
+DynArray<Vec3> NavigationSystem::QueryTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const MNM::aabb_t& localAabb) const
 {
-	static_assert(sizeof(TId) == sizeof(uint32), "Navigation ID underlying type have changed");
-	uint32 id;
-	file.ReadType(&id);
-	outId = TId(id);
+	return QueryTriangleCenterLocationsInMesh(meshID, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, nullptr);
 }
 
-template<typename TId>
-static void WriteNavigationIdType(CCryFile& file, const TId& id)
+DynArray<Vec3> NavigationSystem::QueryTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const MNM::aabb_t& localAabb, MNM::ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pFilter) const
 {
-	static_assert(sizeof(TId) == sizeof(uint32), "Navigation ID underlying type have changed");
-	const uint32 uid = id;
-	file.WriteType<uint32>(&uid);
+	const MNM::INavMeshQuery::SNavMeshQueryConfigInstant config(
+		meshID,
+		"NavigationSystem::GetTriangleCenterInMesh",
+		localAabb,
+		overlappingMode,
+		pFilter
+	);
+
+	MNM::CTriangleCenterInMeshQueryProcessing queryProcessing(meshID);
+	m_pNavMeshQueryManager->RunInstantQuery(config, queryProcessing);
+	return std::move(queryProcessing.GetTriangleCenterArray());
+}
+
+bool NavigationSystem::GetTriangleVertices(const NavigationMeshID meshID, const MNM::TriangleID triangleID, Triangle& outTriangleVertices) const
+{
+	if (!meshID.IsValid() || !m_meshes.validate(meshID))
+		return false;
+
+	const MNM::CNavMesh& navMesh = m_meshes[meshID].navMesh;
+
+	MNM::vector3_t vertices[3];
+	if (!navMesh.GetVertices(triangleID, vertices))
+		return false;
+
+	outTriangleVertices.v0 = vertices[0].GetVec3();
+	outTriangleVertices.v1 = vertices[1].GetVec3();
+	outTriangleVertices.v2 = vertices[2].GetVec3();
+	return true;
 }
 
 bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Navigation Meshes (Read File)");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Navigation Meshes (Read File)");
 
 	bool fileLoaded = false;
 
@@ -3081,7 +3524,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					uint32 verticesCount;
 					uint32 volumeAreaNameSize;
 
-					ReadNavigationIdType(file, volumeId);
+					MNM::Utils::ReadNavigationIdType(file, volumeId);
 					file.ReadType(&volumeHeight);
 					file.ReadType(&verticesCount);
 
@@ -3119,8 +3562,12 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						continue;
 					}
 
+#if defined(USE_CRY_ASSERT)
 					const NavigationVolumeID createdVolumeId = CreateVolume(&volumeVerticesBuffer.front(), verticesCount, volumeHeight, volumeId);
 					CRY_ASSERT(volumeId == createdVolumeId);
+#else
+					CreateVolume(&volumeVerticesBuffer.front(), verticesCount, volumeHeight, volumeId);
+#endif
 
 					m_volumesManager.RegisterAreaFromLoadedData(volumeAreaName.c_str(), volumeId);
 				}
@@ -3150,7 +3597,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					uint32 verticesCount;
 					MNM::AreaAnnotation::value_type areaAnnotation;
 					
-					ReadNavigationIdType(file, markupId);
+					MNM::Utils::ReadNavigationIdType(file, markupId);
 					
 					file.ReadType(&params.height);
 					file.ReadType(&areaAnnotation);
@@ -3167,8 +3614,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						file.ReadType(&vtx.x, 3);
 					}
 
-					CRY_ASSERT_MESSAGE(markupId != NavigationVolumeID(), "Markup volume with invalid id loaded!");
-					CRY_ASSERT_MESSAGE(!m_markupVolumes.validate(markupId), "Markup volume with the same id was already loaded!");
+					CRY_ASSERT(markupId != NavigationVolumeID(), "Markup volume with invalid id loaded!");
+					CRY_ASSERT(!m_markupVolumes.validate(markupId), "Markup volume with the same id was already loaded!");
 
 					CreateMarkupVolume(markupId);
 					SetMarkupVolume(0, markupVerticesBuffer.data(), verticesCount, markupId, params);
@@ -3208,7 +3655,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					for (uint32 mIdx = 0; mIdx < markupsCount; ++mIdx)
 					{
 						NavigationVolumeID markupId;
-						ReadNavigationIdType(file, markupId);
+						MNM::Utils::ReadNavigationIdType(file, markupId);
 						markups.push_back(markupId);
 					}
 					m_agentTypes[agentTypeID - 1].markups = markups;
@@ -3239,6 +3686,15 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					file.ReadType(meshName, meshNameLength);
 					meshName[meshNameLength] = '\0';
 
+					// Reading flags
+					CEnumFlags<EMeshFlag> meshFlags;
+					if (nFileVersion >= NavigationSystem::eBAINavigationFileVersion::MESH_FLAGS)
+					{
+						uint32 flagsValue;
+						file.ReadType(&flagsValue);
+						meshFlags.UnderlyingValue() = flagsValue;
+					}
+
 					// Reading the amount of islands in the mesh
 					MNM::StaticIslandID totalIslands = 0;
 					file.ReadType(&totalIslands);
@@ -3255,7 +3711,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					file.ReadType(&boundaryGUID);
 #else
 					NavigationVolumeID boundaryID;
-					ReadNavigationIdType(file, boundaryID);
+					MNM::Utils::ReadNavigationIdType(file, boundaryID);
 #endif
 
 					{
@@ -3309,7 +3765,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					for (uint32 exclusionsCounter = 0; exclusionsCounter < exclusionShapesCount; ++exclusionsCounter)
 					{
 						NavigationVolumeID exclusionId;
-						ReadNavigationIdType(file, exclusionId);
+						MNM::Utils::ReadNavigationIdType(file, exclusionId);
 						// Save the exclusion shape with the read ID
 						exclusions.push_back(exclusionId);
 					}
@@ -3325,7 +3781,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						for (uint32 mIdx = 0; mIdx < markupsCount; ++mIdx)
 						{
 							NavigationVolumeID markupId;
-							ReadNavigationIdType(file, markupId);
+							MNM::Utils::ReadNavigationIdType(file, markupId);
 							markups.push_back(markupId);
 						}
 					}
@@ -3349,7 +3805,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					// If we are full reloading the mnm then we also want to create a new grid with the parameters
 					// written in the file
 
-					CreateMeshParams createParams;
+					SCreateMeshParams createParams;
 					createParams.origin = params.origin;
 					createParams.tileSize = params.tileSize;
 					createParams.tileCount = tilesCount;
@@ -3382,6 +3838,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 #else
 					SetMeshBoundaryVolume(newMeshID, boundaryID);
 #endif
+					mesh.flags = meshFlags;
 					mesh.markups = markups;
 					mesh.exclusions = exclusions;
 					mesh.navMesh.GetIslands().SetTotalIslands(totalIslands);
@@ -3458,7 +3915,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 			for (uint32 idx = 0; idx < dataCount; ++idx)
 			{
 				NavigationVolumeID markupId;
-				ReadNavigationIdType(file, markupId);
+				MNM::Utils::ReadNavigationIdType(file, markupId);
 
 				m_markupsData.insert(markupId, MNM::SMarkupVolumeData());
 
@@ -3470,7 +3927,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 				for (uint32 meshTriIdx = 0; meshTriIdx < meshTrianglesCount; ++meshTriIdx)
 				{
 					NavigationMeshID meshId;
-					ReadNavigationIdType(file, meshId);
+					MNM::Utils::ReadNavigationIdType(file, meshId);
 
 					const MNM::CNavMesh& navMesh = m_meshes[meshId].navMesh;
 
@@ -3501,6 +3958,12 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 			}
 
 			m_volumesManager.LoadData(file, nFileVersion);
+			m_updatesManager.LoadData(file, nFileVersion);
+
+			if (gAIEnv.CVars.navigation.MNMRemoveInaccessibleTrianglesOnLoad && !gEnv->IsEditor())
+			{
+				RemoveAllTrianglesByFlags(m_annotationsLibrary.GetInaccessibleAreaFlag().value);
+			}
 
 			fileLoaded = true;
 		}
@@ -3510,13 +3973,13 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 	m_volumesManager.ValidateAndSanitizeLoadedAreas(*this);
 
-	ENavigationEvent navigationEvent = (bAfterExporting) ? MeshReloadedAfterExporting : MeshReloaded;
-	UpdateAllListener(navigationEvent);
+	const ENavigationEvent navigationEvent = bAfterExporting ? ENavigationEvent::MeshReloadedAfterExporting : ENavigationEvent::MeshReloaded;
+	UpdateAllListeners(navigationEvent);
 
 	m_offMeshNavigationManager.OnNavigationLoadedComplete();
 
 	//TODO: consider saving island connectivity in the navmesh
-	ComputeIslands();
+	ComputeAllIslands();
 
 	m_pEditorBackgroundUpdate->Pause(false);
 
@@ -3583,10 +4046,7 @@ uint16 FilterOffMeshLinksForTile(const MNM::STile& tile, MNM::Tile::STriangle* p
 	{
 		for (uint16 i = 0; i < trianglesCount; ++i)
 		{
-			if ((pTrianglesBuffer[i].firstLink + pTrianglesBuffer[i].linkCount) > newLinkCount)
-			{
-				__debugbreak();
-			}
+			CRY_ASSERT((pTrianglesBuffer[i].firstLink + pTrianglesBuffer[i].linkCount) <= newLinkCount);
 		}
 	}
 #endif
@@ -3640,380 +4100,385 @@ void NavigationSystem::GatherNavigationVolumesToSave(std::vector<NavigationVolum
 
 bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_WARNING(6262)
 {
-#if NAVIGATION_SYSTEM_PC_ONLY
+#if NAV_MESH_REGENERATION_ENABLED
+
+	CCryFile file;
+	if (!file.Open(fileName, "wb"))
+		return false;
 
 	m_pEditorBackgroundUpdate->Pause(true);
 
-	CCryFile file;
-	if (false != file.Open(fileName, "wb"))
+	const size_t maxTriangles = MNM::Constants::TileTrianglesMaxCount;
+	const size_t maxLinks = MNM::Constants::TileLinksMaxCount;
+
+	MNM::Tile::STriangle triangleBuffer[maxTriangles];
+	MNM::Tile::SLink linkBuffer[maxLinks];
+
+	// Saving file data version
+	uint16 nFileVersion = eBAINavigationFileVersion::CURRENT;
+	file.Write(&nFileVersion, sizeof(nFileVersion));
+	file.Write(&m_configurationVersion, sizeof(m_configurationVersion));
+#ifdef SW_NAVMESH_USE_GUID
+	uint32 useGUID = BAI_NAVIGATION_GUID_FLAG;
+	file.Write(&useGUID, sizeof(useGUID));
+#endif
+
+	// Saving boundary volumes, their ID's and names
 	{
-		const int maxTriangles = 1024;
-		const int maxLinks = maxTriangles * 6;
-		MNM::Tile::STriangle triangleBuffer[maxTriangles];
-		MNM::Tile::SLink linkBuffer[maxLinks];
+		std::vector<NavigationVolumeID> usedVolumes;
+		GatherNavigationVolumesToSave(*&usedVolumes);
 
-		// Saving file data version
-		uint16 nFileVersion = eBAINavigationFileVersion::CURRENT;
-		file.Write(&nFileVersion, sizeof(nFileVersion));
-		file.Write(&m_configurationVersion, sizeof(m_configurationVersion));
-	#ifdef SW_NAVMESH_USE_GUID
-		uint32 useGUID = BAI_NAVIGATION_GUID_FLAG;
-		file.Write(&useGUID, sizeof(useGUID));
-	#endif
+		const uint32 usedVolumesCount = static_cast<uint32>(usedVolumes.size());
+		file.WriteType(&usedVolumesCount);
 
-		// Saving boundary volumes, their ID's and names
+		string volumeAreaName;
+		for (uint32 idx = 0; idx < usedVolumesCount; ++idx)
 		{
-			std::vector<NavigationVolumeID> usedVolumes;
-			GatherNavigationVolumesToSave(*&usedVolumes);
+			const NavigationVolumeID volumeId = usedVolumes[idx];
+			CRY_ASSERT(m_volumes.validate(volumeId));
+			const MNM::BoundingVolume& volume = m_volumes.get(volumeId);
 
-			const uint32 usedVolumesCount = static_cast<uint32>(usedVolumes.size());
-			file.WriteType(&usedVolumesCount);
+			const uint32 verticesCount = volume.GetBoundaryVertices().size();
 
-			string volumeAreaName;
-			for (uint32 idx = 0; idx < usedVolumesCount; ++idx)
+			volumeAreaName.clear();
+			m_volumesManager.GetAreaName(volumeId, *&volumeAreaName);
+			const uint32 volumeAreaNameSize = static_cast<uint32>(volumeAreaName.size());
+
+			MNM::Utils::WriteNavigationIdType(file, volumeId);
+			file.WriteType(&volume.height);
+			file.WriteType(&verticesCount);
+			for (const Vec3& vertex : volume.GetBoundaryVertices())
 			{
-				const NavigationVolumeID volumeId = usedVolumes[idx];
-				CRY_ASSERT(m_volumes.validate(volumeId));
-				const MNM::BoundingVolume& volume = m_volumes.get(volumeId);
+				file.WriteType(&vertex.x, 3);
+			}
+			file.WriteType(&volumeAreaNameSize);
+			file.WriteType(volumeAreaName.c_str(), volumeAreaNameSize);
+		}
+	}
 
-				const uint32 verticesCount = volume.GetBoundaryVertices().size();
+	// Saving markup boundary areas and data
+	{
+		//TODO: gather markup volumes to save
+		const uint32 markupsCount = static_cast<uint32>(m_markupVolumes.size());
+		const uint32 markupsCapacity = static_cast<uint32>(m_markupVolumes.capacity());
+		file.WriteType(&markupsCount);
+		file.WriteType(&markupsCapacity);
 
-				volumeAreaName.clear();
-				m_volumesManager.GetAreaName(volumeId, *&volumeAreaName);
-				const uint32 volumeAreaNameSize = static_cast<uint32>(volumeAreaName.size());
+		for (uint32 idx = 0; idx < m_markupVolumes.capacity(); ++idx)
+		{
+			if (m_markupVolumes.index_free(idx))
+				continue;
 
-				WriteNavigationIdType(file, volumeId);
-				file.WriteType(&volume.height);
-				file.WriteType(&verticesCount);
-				for (const Vec3& vertex : volume.GetBoundaryVertices())
-				{
-					file.WriteType(&vertex.x, 3);
-				}
-				file.WriteType(&volumeAreaNameSize);
-				file.WriteType(volumeAreaName.c_str(), volumeAreaNameSize);
+			const MNM::SMarkupVolume& markupVolume = m_markupVolumes.get_index(idx);
+			NavigationVolumeID volumeId = NavigationVolumeID(m_markupVolumes.get_index_id(idx));
+
+			const uint32 verticesCount = markupVolume.GetBoundaryVertices().size();
+			MNM::AreaAnnotation::value_type areaAnnotation = markupVolume.areaAnnotation.GetRawValue();
+
+			MNM::Utils::WriteNavigationIdType(file, volumeId);
+			file.WriteType(&markupVolume.height);
+			file.WriteType(&areaAnnotation);
+			file.WriteType(&markupVolume.bExpandByAgentRadius);
+			file.WriteType(&markupVolume.bStoreTriangles);
+			file.WriteType(&verticesCount);
+			for (const Vec3& vertex : markupVolume.GetBoundaryVertices())
+			{
+				file.WriteType(&vertex.x, 3);
 			}
 		}
+	}
 
-		// Saving markup boundary areas and data
+	// Saving number of agents
+	uint32 agentsCount = static_cast<uint32>(GetAgentTypeCount());
+	file.Write(&agentsCount, sizeof(agentsCount));
+	std::vector<string> agentsNamesList;
+
+	AgentTypes::const_iterator typeIt = m_agentTypes.begin();
+	AgentTypes::const_iterator typeEnd = m_agentTypes.end();
+
+	for (; typeIt != typeEnd; ++typeIt)
+	{
+		const AgentType& agentType = *typeIt;
+		uint32 nameLength = agentType.name.length();
+		nameLength = std::min(nameLength, (uint32)MAX_NAME_LENGTH - 1);
+		// Saving name length and the name itself
+		file.Write(&nameLength, sizeof(nameLength));
+		file.Write(agentType.name.c_str(), sizeof(char) * nameLength);
+
+		// Saving the amount of memory this agent is using inside the file to be able to skip it during loading
+		uint32 totalAgentMemory = 0;
+		size_t totalAgentMemoryPositionInFile = file.GetPosition();
+		file.Write(&totalAgentMemory, sizeof(totalAgentMemory));
+
+		AgentType::Meshes::const_iterator mit = agentType.meshes.begin();
+		AgentType::Meshes::const_iterator mend = agentType.meshes.end();
 		{
-			//TODO: gather markup volumes to save
-			const uint32 markupsCount = static_cast<uint32>(m_markupVolumes.size());
-			const uint32 markupsCapacity = static_cast<uint32>(m_markupVolumes.capacity());
+			// Saving markup volumes for agent
+			uint32 markupsCount = agentType.markups.size();
 			file.WriteType(&markupsCount);
-			file.WriteType(&markupsCapacity);
-
-			for (uint32 idx = 0; idx < m_markupVolumes.capacity(); ++idx)
+			for (NavigationVolumeID markupID : agentType.markups)
 			{
-				if(m_markupVolumes.index_free(idx))
-					continue;
-
-				const MNM::SMarkupVolume& markupVolume = m_markupVolumes.get_index(idx);
-				NavigationVolumeID volumeId = NavigationVolumeID(m_markupVolumes.get_index_id(idx));
-
-				const uint32 verticesCount = markupVolume.GetBoundaryVertices().size();
-				MNM::AreaAnnotation::value_type areaAnnotation = markupVolume.areaAnnotation.GetRawValue();
-
-				WriteNavigationIdType(file, volumeId);
-				file.WriteType(&markupVolume.height);
-				file.WriteType(&areaAnnotation);
-				file.WriteType(&markupVolume.bExpandByAgentRadius);
-				file.WriteType(&markupVolume.bStoreTriangles);
-				file.WriteType(&verticesCount);
-				for (const Vec3& vertex : markupVolume.GetBoundaryVertices())
-				{
-					file.WriteType(&vertex.x, 3);
-				}
+				MNM::Utils::WriteNavigationIdType(file, markupID);
 			}
 		}
 
-		// Saving number of agents
-		uint32 agentsCount = static_cast<uint32>(GetAgentTypeCount());
-		file.Write(&agentsCount, sizeof(agentsCount));
-		std::vector<string> agentsNamesList;
+		uint32 meshesCount = agentType.meshes.size();
+		file.Write(&meshesCount, sizeof(meshesCount));
 
-		AgentTypes::const_iterator typeIt = m_agentTypes.begin();
-		AgentTypes::const_iterator typeEnd = m_agentTypes.end();
-
-		for (; typeIt != typeEnd; ++typeIt)
+		for (; mit != mend; ++mit)
 		{
-			const AgentType& agentType = *typeIt;
-			uint32 nameLength = agentType.name.length();
-			nameLength = std::min(nameLength, (uint32)MAX_NAME_LENGTH - 1);
-			// Saving name length and the name itself
-			file.Write(&nameLength, sizeof(nameLength));
-			file.Write(agentType.name.c_str(), sizeof(char) * nameLength);
+			const uint32 meshIDuint32 = mit->id;
+			const NavigationMesh& mesh = m_meshes[NavigationMeshID(meshIDuint32)];
+			const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-			// Saving the amount of memory this agent is using inside the file to be able to skip it during loading
-			uint32 totalAgentMemory = 0;
-			size_t totalAgentMemoryPositionInFile = file.GetPosition();
-			file.Write(&totalAgentMemory, sizeof(totalAgentMemory));
+			// Saving mesh id
+#ifdef SW_NAVMESH_USE_GUID
+			const NavigationMeshGUID meshGUID = mit->guid;
+			file.Write(&meshGUID, sizeof(meshGUID));
+#else
+			file.Write(&meshIDuint32, sizeof(meshIDuint32));
+#endif
 
-			AgentType::Meshes::const_iterator mit = agentType.meshes.begin();
-			AgentType::Meshes::const_iterator mend = agentType.meshes.end();
+			// Saving mesh name
+			uint32 meshNameLength = mesh.name.length();
+			meshNameLength = std::min(meshNameLength, (uint32)MAX_NAME_LENGTH - 1);
+			file.Write(&meshNameLength, sizeof(meshNameLength));
+			file.Write(mesh.name.c_str(), sizeof(char) * meshNameLength);
+
+			// Saving flags
+			uint32 meshFlags = mesh.flags.UnderlyingValue();
+			file.WriteType(&meshFlags);
+
+			// Saving total islands
+			uint32 totalIslands = mesh.navMesh.GetIslands().GetTotalIslands();
+			file.Write(&totalIslands, sizeof(totalIslands));
+
+			uint32 totalMeshMemory = 0;
+			size_t totalMeshMemoryPositionInFile = file.GetPosition();
+			file.Write(&totalMeshMemory, sizeof(totalMeshMemory));
+
+			// Saving mesh boundary id
+			/*
+				Let's check if this boundary id matches the id of the
+				volume stored in the volumes manager.
+				It's an additional check for the consistency of the
+				saved binary data.
+				*/
+
+			if (!m_volumes.validate(mesh.boundary) || m_volumesManager.GetAreaID(mesh.name.c_str()) != mesh.boundary)
 			{
-				// Saving markup volumes for agent
-				uint32 markupsCount = agentType.markups.size();
-				file.WriteType(&markupsCount);
-				for (NavigationVolumeID markupID : agentType.markups)
-				{
-					WriteNavigationIdType(file, markupID);
-				}
+				CryMessageBox("Sandbox detected a possible data corruption during the save of the navigation mesh."
+					"Trigger a full rebuild and re-export to engine to fix"
+					" the binary data associated with the MNM.", "Navigation Save Error");
 			}
+#ifdef SW_NAVMESH_USE_GUID
+			file.Write(&mesh.boundaryGUID, sizeof(mesh.boundaryGUID));
+#else
+			MNM::Utils::WriteNavigationIdType(file, mesh.boundary);
+#endif
 
-			uint32 meshesCount = agentType.meshes.size();
-			file.Write(&meshesCount, sizeof(meshesCount));
-
-			for (; mit != mend; ++mit)
+			// Saving mesh exclusion shapes
+#ifdef SW_NAVMESH_USE_GUID
+			uint32 exclusionShapesCount = mesh.exclusionsGUID.size();
+			file.Write(&exclusionShapesCount, sizeof(exclusionShapesCount));
+			for (uint32 exclusionCounter = 0; exclusionCounter < exclusionShapesCount; ++exclusionCounter)
 			{
-				const uint32 meshIDuint32 = mit->id;
-				const NavigationMesh& mesh = m_meshes[NavigationMeshID(meshIDuint32)];
-				const MNM::BoundingVolume& volume = m_volumes[mesh.boundary];
-				const MNM::CNavMesh& navMesh = mesh.navMesh;
-
-				// Saving mesh id
-	#ifdef SW_NAVMESH_USE_GUID
-				const NavigationMeshGUID meshGUID = mit->guid;
-				file.Write(&meshGUID, sizeof(meshGUID));
-	#else
-				file.Write(&meshIDuint32, sizeof(meshIDuint32));
-	#endif
-
-				// Saving mesh name
-				uint32 meshNameLength = mesh.name.length();
-				meshNameLength = std::min(meshNameLength, (uint32)MAX_NAME_LENGTH - 1);
-				file.Write(&meshNameLength, sizeof(meshNameLength));
-				file.Write(mesh.name.c_str(), sizeof(char) * meshNameLength);
-
-				// Saving total islands
-				uint32 totalIslands = mesh.navMesh.GetIslands().GetTotalIslands();
-				file.Write(&totalIslands, sizeof(totalIslands));
-
-				uint32 totalMeshMemory = 0;
-				size_t totalMeshMemoryPositionInFile = file.GetPosition();
-				file.Write(&totalMeshMemory, sizeof(totalMeshMemory));
-
-				// Saving mesh boundary id
-				/*
-				   Let's check if this boundary id matches the id of the
-				   volume stored in the volumes manager.
-				   It's an additional check for the consistency of the
-				   saved binary data.
-				 */
-
-				if (!m_volumes.validate(mesh.boundary) || m_volumesManager.GetAreaID(mesh.name.c_str()) != mesh.boundary)
+				NavigationVolumeGUID exclusionGuid = mesh.exclusionsGUID[exclusionCounter];
+				file.Write(&(exclusionGuid), sizeof(exclusionGuid));
+			}
+#else
+			{
+				// Figure out which of the exclusion volume IDs are valid in order to export only those.
+				// This check will also fix maps that get exported after 2016-11-23. All maps prior to that date might contain invalid exclusion volume IDs and need to get exported again.
+				NavigationMesh::ExclusionVolumes validExlusionVolumes;
+				for (NavigationVolumeID volumeID : mesh.exclusions)
 				{
-					CryMessageBox("Sandbox detected a possible data corruption during the save of the navigation mesh."
-					              "Trigger a full rebuild and re-export to engine to fix"
-					              " the binary data associated with the MNM.", "Navigation Save Error");
+					if (m_volumes.validate(volumeID))
+					{
+						validExlusionVolumes.push_back(volumeID);
+					}
 				}
-	#ifdef SW_NAVMESH_USE_GUID
-				file.Write(&mesh.boundaryGUID, sizeof(mesh.boundaryGUID));
-	#else
-				WriteNavigationIdType(file, mesh.boundary);
-	#endif
 
-				// Saving mesh exclusion shapes
-	#ifdef SW_NAVMESH_USE_GUID
-				uint32 exclusionShapesCount = mesh.exclusionsGUID.size();
+				// Now export only the valid exclusion volume IDs.
+				uint32 exclusionShapesCount = validExlusionVolumes.size();
 				file.Write(&exclusionShapesCount, sizeof(exclusionShapesCount));
 				for (uint32 exclusionCounter = 0; exclusionCounter < exclusionShapesCount; ++exclusionCounter)
 				{
-					NavigationVolumeGUID exclusionGuid = mesh.exclusionsGUID[exclusionCounter];
-					file.Write(&(exclusionGuid), sizeof(exclusionGuid));
+					MNM::Utils::WriteNavigationIdType(file, validExlusionVolumes[exclusionCounter]);
 				}
-	#else
-				{
-					// Figure out which of the exclusion volume IDs are valid in order to export only those.
-					// This check will also fix maps that get exported after 2016-11-23. All maps prior to that date might contain invalid exclusion volume IDs and need to get exported again.
-					NavigationMesh::ExclusionVolumes validExlusionVolumes;
-					for (NavigationVolumeID volumeID : mesh.exclusions)
-					{
-						if (m_volumes.validate(volumeID))
-						{
-							validExlusionVolumes.push_back(volumeID);
-						}
-					}
-					
-					// Now export only the valid exclusion volume IDs.
-					uint32 exclusionShapesCount = validExlusionVolumes.size();
-					file.Write(&exclusionShapesCount, sizeof(exclusionShapesCount));
-					for (uint32 exclusionCounter = 0; exclusionCounter < exclusionShapesCount; ++exclusionCounter)
-					{
-						WriteNavigationIdType(file, validExlusionVolumes[exclusionCounter]);
-					}
-				}
-	#endif
-
-				{
-					// Saving markup volumes for mesh
-					uint32 markupsCount = mesh.markups.size();
-					file.WriteType(&markupsCount);
-					for (NavigationVolumeID markupID : mesh.markups)
-					{
-						WriteNavigationIdType(file, markupID);
-					}
-				}
-
-				// Saving tiles count
-				uint32 tileCount = navMesh.GetTileCount();
-				file.Write(&tileCount, sizeof(tileCount));
-
-				// Saving grid params (Not all of this params are actually important to recreate the mesh but
-				// we save all for possible further utilization)
-				const MNM::CNavMesh::SGridParams paramsGrid = navMesh.GetGridParams();
-				file.Write(&(paramsGrid.origin.x), sizeof(paramsGrid.origin.x));
-				file.Write(&(paramsGrid.origin.y), sizeof(paramsGrid.origin.y));
-				file.Write(&(paramsGrid.origin.z), sizeof(paramsGrid.origin.z));
-				file.Write(&(paramsGrid.tileSize.x), sizeof(paramsGrid.tileSize.x));
-				file.Write(&(paramsGrid.tileSize.y), sizeof(paramsGrid.tileSize.y));
-				file.Write(&(paramsGrid.tileSize.z), sizeof(paramsGrid.tileSize.z));
-				file.Write(&(paramsGrid.voxelSize.x), sizeof(paramsGrid.voxelSize.x));
-				file.Write(&(paramsGrid.voxelSize.y), sizeof(paramsGrid.voxelSize.y));
-				file.Write(&(paramsGrid.voxelSize.z), sizeof(paramsGrid.voxelSize.z));
-				file.Write(&(paramsGrid.tileCount), sizeof(paramsGrid.tileCount));
-
-				const AABB& boundary = m_volumes[mesh.boundary].aabb;
-
-				Vec3 bmin(std::max(0.0f, boundary.min.x - paramsGrid.origin.x),
-				          std::max(0.0f, boundary.min.y - paramsGrid.origin.y),
-				          std::max(0.0f, boundary.min.z - paramsGrid.origin.z));
-
-				Vec3 bmax(std::max(0.0f, boundary.max.x - paramsGrid.origin.x),
-				          std::max(0.0f, boundary.max.y - paramsGrid.origin.y),
-				          std::max(0.0f, boundary.max.z - paramsGrid.origin.z));
-
-				uint16 xmin = (uint16)(floor_tpl(bmin.x / (float)paramsGrid.tileSize.x));
-				uint16 xmax = (uint16)(floor_tpl(bmax.x / (float)paramsGrid.tileSize.x));
-
-				uint16 ymin = (uint16)(floor_tpl(bmin.y / (float)paramsGrid.tileSize.y));
-				uint16 ymax = (uint16)(floor_tpl(bmax.y / (float)paramsGrid.tileSize.y));
-
-				uint16 zmin = (uint16)(floor_tpl(bmin.z / (float)paramsGrid.tileSize.z));
-				uint16 zmax = (uint16)(floor_tpl(bmax.z / (float)paramsGrid.tileSize.z));
-
-				for (uint16 x = xmin; x < xmax + 1; ++x)
-				{
-					for (uint16 y = ymin; y < ymax + 1; ++y)
-					{
-						for (uint16 z = zmin; z < zmax + 1; ++z)
-						{
-							MNM::TileID i = navMesh.GetTileID(x, y, z);
-							// Skipping tile id that are not used (This should never happen now)
-							if (i == 0)
-							{
-								continue;
-							}
-
-							// Saving tile indexes
-							file.Write(&x, sizeof(x));
-							file.Write(&y, sizeof(y));
-							file.Write(&z, sizeof(z));
-							const MNM::STile& tile = navMesh.GetTile(i);
-							const uint32 tileHashValue = tile.GetHashValue();
-							file.Write(&tileHashValue, sizeof(tileHashValue));
-
-							// NOTE pavloi 2016.07.22: triangles and links are not saved as is - instead they are filtered and copied into triangleBuffer and linkBuffer
-							const uint16 saveLinkCount = FilterOffMeshLinksForTile(tile, triangleBuffer, maxTriangles, linkBuffer, maxLinks);
-
-							// Saving triangles
-							const uint16 trianglesCount = tile.GetTrianglesCount();
-							file.Write(&trianglesCount, sizeof(trianglesCount));
-							file.Write(triangleBuffer, sizeof(MNM::Tile::STriangle) * trianglesCount);
-
-							// Saving vertices
-							const MNM::Tile::Vertex* pVertices = tile.GetVertices();
-							const uint16 verticesCount = tile.GetVerticesCount();
-							file.Write(&verticesCount, sizeof(verticesCount));
-							file.Write(pVertices, sizeof(MNM::Tile::Vertex) * verticesCount);
-
-							// Saving links
-							file.Write(&saveLinkCount, sizeof(saveLinkCount));
-							file.Write(linkBuffer, sizeof(MNM::Tile::SLink) * saveLinkCount);
-
-							// Saving nodes
-							const MNM::Tile::SBVNode* pNodes = tile.GetBVNodes();
-							const uint16 nodesCount = tile.GetBVNodesCount();
-							file.Write(&nodesCount, sizeof(nodesCount));
-							file.Write(pNodes, sizeof(MNM::Tile::SBVNode) * nodesCount);
-
-							// Compile-time asserts to catch data type changes - don't forget to bump BAI file version number
-							static_assert(sizeof(uint16) == sizeof(tile.GetLinksCount()), "Invalid type size!");
-							static_assert(sizeof(uint16) == sizeof(tile.GetTrianglesCount()), "Invalid type size!");
-							static_assert(sizeof(uint16) == sizeof(tile.GetVerticesCount()), "Invalid type size!");
-							static_assert(sizeof(uint16) == sizeof(tile.GetBVNodesCount()), "Invalid type size!");
-							static_assert(sizeof(uint16) == sizeof(trianglesCount), "Invalid type size!");
-							static_assert(sizeof(uint16) == sizeof(verticesCount), "Invalid type size!");
-							static_assert(sizeof(uint16) == sizeof(saveLinkCount), "Invalid type size!");
-							static_assert(sizeof(uint16) == sizeof(nodesCount), "Invalid type size!");
-							static_assert(sizeof(MNM::Tile::Vertex) == 6, "Invalid type size!");
-							static_assert(sizeof(MNM::Tile::STriangle) == 16, "Invalid type size!");
-							static_assert(sizeof(MNM::Tile::SLink) == 2, "Invalid type size!");
-							static_assert(sizeof(MNM::Tile::SBVNode) == 14, "Invalid type size!");
-							static_assert(sizeof(uint32) == sizeof(tile.GetHashValue()), "Invalid type size!");
-						}
-					}
-
-				}
-				size_t endingMeshDataPosition = file.GetPosition();
-				totalMeshMemory = endingMeshDataPosition - totalMeshMemoryPositionInFile - sizeof(totalMeshMemory);
-				file.Seek(totalMeshMemoryPositionInFile, SEEK_SET);
-				file.Write(&totalMeshMemory, sizeof(totalMeshMemory));
-				file.Seek(endingMeshDataPosition, SEEK_SET);
 			}
+#endif
 
-			size_t endingAgentDataPosition = file.GetPosition();
-			totalAgentMemory = endingAgentDataPosition - totalAgentMemoryPositionInFile - sizeof(totalAgentMemory);
-			file.Seek(totalAgentMemoryPositionInFile, SEEK_SET);
-			file.Write(&totalAgentMemory, sizeof(totalAgentMemory));
-			file.Seek(endingAgentDataPosition, SEEK_SET);
-		}
-
-		const uint32 dataCount = static_cast<uint32>(m_markupsData.size());
-		file.WriteType(&dataCount);
-
-		for (uint32 idx = 0; idx < m_markupsData.capacity(); ++idx)
-		{
-			if (m_markupsData.index_free(idx))
-				continue;
-
-			const MNM::SMarkupVolumeData& markupData = m_markupsData.get_index(idx);
-			NavigationVolumeID markupId = NavigationVolumeID(m_markupsData.get_index_id(idx));
-
-			WriteNavigationIdType(file, markupId);
-
-			const uint32 meshTrianglesCount = markupData.meshTriangles.size();
-			file.WriteType(&meshTrianglesCount);
-
-			for (const MNM::SMarkupVolumeData::MeshTriangles& meshTriangles : markupData.meshTriangles)
 			{
-				const MNM::CNavMesh& navMesh = m_meshes[meshTriangles.meshId].navMesh;
-
-				WriteNavigationIdType(file, meshTriangles.meshId);
-
-				const uint32 trianglesCount = meshTriangles.triangleIds.size();
-				file.WriteType(&trianglesCount);
-				for (MNM::TriangleID triId : meshTriangles.triangleIds)
+				// Saving markup volumes for mesh
+				uint32 markupsCount = mesh.markups.size();
+				file.WriteType(&markupsCount);
+				for (NavigationVolumeID markupID : mesh.markups)
 				{
-					const MNM::TileID tileId = MNM::ComputeTileID(triId);
-					const uint16 triIndex = MNM::ComputeTriangleIndex(triId);
-
-					const MNM::vector3_t tileCoords = navMesh.GetTileContainerCoordinates(tileId);
-					const uint32 x = tileCoords.x.as_uint();
-					const uint32 y = tileCoords.y.as_uint();
-					const uint32 z = tileCoords.z.as_uint();
-
-					file.WriteType(&x);
-					file.WriteType(&y);
-					file.WriteType(&z);
-					file.WriteType(&triIndex);
+					MNM::Utils::WriteNavigationIdType(file, markupID);
 				}
 			}
+
+			// Saving tiles count
+			uint32 tileCount = navMesh.GetTileCount();
+			file.Write(&tileCount, sizeof(tileCount));
+
+			// Saving grid params (Not all of this params are actually important to recreate the mesh but
+			// we save all for possible further utilization)
+			const MNM::CNavMesh::SGridParams paramsGrid = navMesh.GetGridParams();
+			file.Write(&(paramsGrid.origin.x), sizeof(paramsGrid.origin.x));
+			file.Write(&(paramsGrid.origin.y), sizeof(paramsGrid.origin.y));
+			file.Write(&(paramsGrid.origin.z), sizeof(paramsGrid.origin.z));
+			file.Write(&(paramsGrid.tileSize.x), sizeof(paramsGrid.tileSize.x));
+			file.Write(&(paramsGrid.tileSize.y), sizeof(paramsGrid.tileSize.y));
+			file.Write(&(paramsGrid.tileSize.z), sizeof(paramsGrid.tileSize.z));
+			file.Write(&(paramsGrid.voxelSize.x), sizeof(paramsGrid.voxelSize.x));
+			file.Write(&(paramsGrid.voxelSize.y), sizeof(paramsGrid.voxelSize.y));
+			file.Write(&(paramsGrid.voxelSize.z), sizeof(paramsGrid.voxelSize.z));
+			file.Write(&(paramsGrid.tileCount), sizeof(paramsGrid.tileCount));
+
+			const AABB& boundary = m_volumes[mesh.boundary].aabb;
+
+			Vec3 bmin(std::max(0.0f, boundary.min.x - paramsGrid.origin.x),
+				std::max(0.0f, boundary.min.y - paramsGrid.origin.y),
+				std::max(0.0f, boundary.min.z - paramsGrid.origin.z));
+
+			Vec3 bmax(std::max(0.0f, boundary.max.x - paramsGrid.origin.x),
+				std::max(0.0f, boundary.max.y - paramsGrid.origin.y),
+				std::max(0.0f, boundary.max.z - paramsGrid.origin.z));
+
+			uint16 xmin = (uint16)(floor_tpl(bmin.x / (float)paramsGrid.tileSize.x));
+			uint16 xmax = (uint16)(floor_tpl(bmax.x / (float)paramsGrid.tileSize.x));
+
+			uint16 ymin = (uint16)(floor_tpl(bmin.y / (float)paramsGrid.tileSize.y));
+			uint16 ymax = (uint16)(floor_tpl(bmax.y / (float)paramsGrid.tileSize.y));
+
+			uint16 zmin = (uint16)(floor_tpl(bmin.z / (float)paramsGrid.tileSize.z));
+			uint16 zmax = (uint16)(floor_tpl(bmax.z / (float)paramsGrid.tileSize.z));
+
+			for (uint16 x = xmin; x < xmax + 1; ++x)
+			{
+				for (uint16 y = ymin; y < ymax + 1; ++y)
+				{
+					for (uint16 z = zmin; z < zmax + 1; ++z)
+					{
+						MNM::TileID i = navMesh.GetTileID(x, y, z);
+						// Skipping tile id that are not used (This should never happen now)
+						if (i == 0)
+						{
+							continue;
+						}
+
+						// Saving tile indexes
+						file.Write(&x, sizeof(x));
+						file.Write(&y, sizeof(y));
+						file.Write(&z, sizeof(z));
+						const MNM::STile& tile = navMesh.GetTile(i);
+						const uint32 tileHashValue = tile.GetHashValue();
+						file.Write(&tileHashValue, sizeof(tileHashValue));
+
+						// NOTE pavloi 2016.07.22: triangles and links are not saved as is - instead they are filtered and copied into triangleBuffer and linkBuffer
+						const uint16 saveLinkCount = FilterOffMeshLinksForTile(tile, triangleBuffer, maxTriangles, linkBuffer, maxLinks);
+
+						// Saving triangles
+						const uint16 trianglesCount = tile.GetTrianglesCount();
+						file.Write(&trianglesCount, sizeof(trianglesCount));
+						file.Write(triangleBuffer, sizeof(MNM::Tile::STriangle) * trianglesCount);
+
+						// Saving vertices
+						const MNM::Tile::Vertex* pVertices = tile.GetVertices();
+						const uint16 verticesCount = tile.GetVerticesCount();
+						file.Write(&verticesCount, sizeof(verticesCount));
+						file.Write(pVertices, sizeof(MNM::Tile::Vertex) * verticesCount);
+
+						// Saving links
+						file.Write(&saveLinkCount, sizeof(saveLinkCount));
+						file.Write(linkBuffer, sizeof(MNM::Tile::SLink) * saveLinkCount);
+
+						// Saving nodes
+						const MNM::Tile::SBVNode* pNodes = tile.GetBVNodes();
+						const uint16 nodesCount = tile.GetBVNodesCount();
+						file.Write(&nodesCount, sizeof(nodesCount));
+						file.Write(pNodes, sizeof(MNM::Tile::SBVNode) * nodesCount);
+
+						// Compile-time asserts to catch data type changes - don't forget to bump BAI file version number
+						static_assert(sizeof(uint16) == sizeof(tile.GetLinksCount()), "Invalid type size!");
+						static_assert(sizeof(uint16) == sizeof(tile.GetTrianglesCount()), "Invalid type size!");
+						static_assert(sizeof(uint16) == sizeof(tile.GetVerticesCount()), "Invalid type size!");
+						static_assert(sizeof(uint16) == sizeof(tile.GetBVNodesCount()), "Invalid type size!");
+						static_assert(sizeof(uint16) == sizeof(trianglesCount), "Invalid type size!");
+						static_assert(sizeof(uint16) == sizeof(verticesCount), "Invalid type size!");
+						static_assert(sizeof(uint16) == sizeof(saveLinkCount), "Invalid type size!");
+						static_assert(sizeof(uint16) == sizeof(nodesCount), "Invalid type size!");
+						static_assert(sizeof(MNM::Tile::Vertex) == 6, "Invalid type size!");
+						static_assert(sizeof(MNM::Tile::STriangle) == 16, "Invalid type size!");
+						static_assert(sizeof(MNM::Tile::SLink) == 2, "Invalid type size!");
+						static_assert(sizeof(MNM::Tile::SBVNode) == 14, "Invalid type size!");
+						static_assert(sizeof(uint32) == sizeof(tile.GetHashValue()), "Invalid type size!");
+					}
+				}
+
+			}
+			size_t endingMeshDataPosition = file.GetPosition();
+			totalMeshMemory = endingMeshDataPosition - totalMeshMemoryPositionInFile - sizeof(totalMeshMemory);
+			file.Seek(totalMeshMemoryPositionInFile, SEEK_SET);
+			file.Write(&totalMeshMemory, sizeof(totalMeshMemory));
+			file.Seek(endingMeshDataPosition, SEEK_SET);
 		}
 
-		m_volumesManager.SaveData(file, nFileVersion);
-
-		file.Close();
+		size_t endingAgentDataPosition = file.GetPosition();
+		totalAgentMemory = endingAgentDataPosition - totalAgentMemoryPositionInFile - sizeof(totalAgentMemory);
+		file.Seek(totalAgentMemoryPositionInFile, SEEK_SET);
+		file.Write(&totalAgentMemory, sizeof(totalAgentMemory));
+		file.Seek(endingAgentDataPosition, SEEK_SET);
 	}
+
+	const uint32 dataCount = static_cast<uint32>(m_markupsData.size());
+	file.WriteType(&dataCount);
+
+	for (uint32 idx = 0; idx < m_markupsData.capacity(); ++idx)
+	{
+		if (m_markupsData.index_free(idx))
+			continue;
+
+		const MNM::SMarkupVolumeData& markupData = m_markupsData.get_index(idx);
+		NavigationVolumeID markupId = NavigationVolumeID(m_markupsData.get_index_id(idx));
+
+		MNM::Utils::WriteNavigationIdType(file, markupId);
+
+		const uint32 meshTrianglesCount = markupData.meshTriangles.size();
+		file.WriteType(&meshTrianglesCount);
+
+		for (const MNM::SMarkupVolumeData::MeshTriangles& meshTriangles : markupData.meshTriangles)
+		{
+			const MNM::CNavMesh& navMesh = m_meshes[meshTriangles.meshId].navMesh;
+
+			MNM::Utils::WriteNavigationIdType(file, meshTriangles.meshId);
+
+			const uint32 trianglesCount = meshTriangles.triangleIds.size();
+			file.WriteType(&trianglesCount);
+			for (MNM::TriangleID triId : meshTriangles.triangleIds)
+			{
+				const MNM::TileID tileId = MNM::ComputeTileID(triId);
+				const uint16 triIndex = MNM::ComputeTriangleIndex(triId);
+
+				const MNM::vector3_t tileCoords = navMesh.GetTileContainerCoordinates(tileId);
+				const uint32 x = tileCoords.x.as_uint();
+				const uint32 y = tileCoords.y.as_uint();
+				const uint32 z = tileCoords.z.as_uint();
+
+				file.WriteType(&x);
+				file.WriteType(&y);
+				file.WriteType(&z);
+				file.WriteType(&triIndex);
+			}
+		}
+	}
+
+	m_volumesManager.SaveData(file, nFileVersion);
+	m_updatesManager.SaveData(file, nFileVersion);
+
+	file.Close();
 
 	m_pEditorBackgroundUpdate->Pause(false);
 
@@ -4021,7 +4486,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 	return true;
 }
 
-void NavigationSystem::UpdateAllListener(const ENavigationEvent event)
+void NavigationSystem::UpdateAllListeners(const ENavigationEvent event)
 {
 	for (NavigationListeners::Notifier notifier(m_listenersList); notifier.IsValid(); notifier.Next())
 	{
@@ -4032,6 +4497,10 @@ void NavigationSystem::UpdateAllListener(const ENavigationEvent event)
 void NavigationSystem::DebugDraw()
 {
 	m_debugDraw.DebugDraw(*this);
+
+#ifdef NAV_MESH_QUERY_DEBUG
+	m_pNavMeshQueryManager->DebugDrawQueriesList();
+#endif // NAV_MESH_QUERY_DEBUG
 }
 
 void NavigationSystem::Reset()
@@ -4051,7 +4520,6 @@ void NavigationSystem::GetMemoryStatistics(ICrySizer* pSizer)
 
 			const NavigationMesh& mesh = m_meshes[meshID];
 			const MNM::OffMeshNavigation& offMeshNavigation = m_offMeshNavigationManager.GetOffMeshNavigationForMesh(meshID);
-			const AgentType& agentType = m_agentTypes[mesh.agentTypeID - 1];
 
 			const NavigationMesh::ProfileMemoryStats meshMemStats = mesh.GetMemoryStats(pSizer);
 			const MNM::OffMeshNavigation::ProfileMemoryStats offMeshMemStats = offMeshNavigation.GetMemoryStats(pSizer);
@@ -4125,7 +4593,7 @@ TileGeneratorExtensionID NavigationSystem::RegisterTileGeneratorExtension(MNM::T
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(newId != TileGeneratorExtensionID(), "TileGeneratorExtensionID counter is exausted");
+		CRY_ASSERT(newId != TileGeneratorExtensionID(), "TileGeneratorExtensionID counter is exausted");
 		return TileGeneratorExtensionID();
 	}
 
@@ -4147,6 +4615,11 @@ bool NavigationSystem::UnRegisterTileGeneratorExtension(const TileGeneratorExten
 		return true;
 	}
 	return false;
+}
+
+MNM::INavMeshQueryManager* NavigationSystem::GetNavMeshQueryManager()
+{
+	return m_pNavMeshQueryManager;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4174,7 +4647,7 @@ void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 
 		lastFrameID = frameID;
 
-		MNM::TileID excludeTileID(0);
+		MNM::TileID excludeTileID = MNM::TileID();
 		DebugDrawSettings settings = GetDebugDrawSettings(navigationSystem);
 
 		if (settings.Valid())
@@ -4194,14 +4667,11 @@ void NavigationSystemDebugDraw::DebugDraw(NavigationSystem& navigationSystem)
 
 		DebugDrawNavigationMeshesForSelectedAgent(navigationSystem, excludeTileID);
 
+		DebugDrawMeshBorders(navigationSystem);
+
 		DebugDrawTriangleOnCursor(navigationSystem);
 
 		m_progress.Draw();
-
-		if (navigationSystem.IsInUse())
-		{
-			navigationSystem.m_offMeshNavigationManager.UpdateEditorDebugHelpers();
-		}
 	}
 
 	DebugDrawNavigationSystemState(navigationSystem);
@@ -4216,11 +4686,11 @@ void NavigationSystemDebugDraw::UpdateWorkingProgress(const float frameTime, con
 
 MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem& navigationSystem, const DebugDrawSettings& settings)
 {
-	MNM::TileID debugTileID(0);
-	#if DEBUG_MNM_ENABLED
+	MNM::TileID debugTileID = MNM::TileID();
+
+	#if DEBUG_MNM_ENABLED && NAV_MESH_REGENERATION_ENABLED
 
 	// TODO pavloi 2016.03.09: instead of calling GetAsyncKeyState(), register for events with GetISystem()->GetIInput()->AddEventListener().
-
 	static MNM::CTileGenerator debugGenerator;
 	static MNM::TileID tileID(0);
 	static bool prevKeyState = false;
@@ -4229,7 +4699,6 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 
 	NavigationMesh& mesh = navigationSystem.m_meshes[settings.meshID];
 	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-	const AgentType& agentType = navigationSystem.m_agentTypes[m_agentTypeID - 1];
 
 	bool forceGeneration = settings.forceGeneration;
 	size_t selectedX = settings.selectedX;
@@ -4323,7 +4792,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 
 	if (forceGeneration)
 	{
-		tileID = 0;
+		tileID = MNM::TileID();
 		debugGenerator = MNM::CTileGenerator();
 
 		MNM::STile tile;
@@ -4357,7 +4826,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		{
 			tileID = mesh.navMesh.SetTile(selectedX, selectedY, selectedZ, tile);
 
-			mesh.navMesh.ConnectToNetwork(tileID);
+			mesh.navMesh.ConnectToNetwork(tileID, &metaData.connectivityData);
 		}
 		else if (tileID = mesh.navMesh.GetTileID(selectedX, selectedY, selectedZ))
 			mesh.navMesh.ClearTile(tileID);
@@ -4427,7 +4896,7 @@ MNM::TileID NavigationSystemDebugDraw::DebugDrawTileGeneration(NavigationSystem&
 		break;
 	}
 
-	dc->Draw2dLabel(10.0f, 5.0f, 1.6f, Col_White, false, "TileID %d - Drawing %s", tileID, drawModeName);
+	dc->Draw2dLabel(10.0f, 5.0f, 1.6f, Col_White, false, "MNM::TileID %d - Drawing %s", tileID, drawModeName);
 
 	const MNM::CTileGenerator::ProfilerType& profilerInfo = debugGenerator.GetProfiler();
 
@@ -4491,9 +4960,7 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
 
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y),
-		MNM::real_t(paramsGrid.origin.z));
+	const MNM::vector3_t origin = MNM::vector3_t(paramsGrid.origin);
 	const MNM::vector3_t originOffset = origin + MNM::vector3_t(0, 0, MNM::real_t::fraction(725, 10000));
 
 	IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
@@ -4503,14 +4970,12 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 
 	const MNM::real_t range = MNM::real_t(1.0f);
 
-	MNM::vector3_t start = MNM::vector3_t(
-		MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z)) - origin;
-	MNM::vector3_t end = MNM::vector3_t(
-		MNM::real_t(endLoc.x), MNM::real_t(endLoc.y), MNM::real_t(endLoc.z)) - origin;
+	MNM::vector3_t start = MNM::vector3_t(startLoc) - origin;
+	MNM::vector3_t end = MNM::vector3_t(endLoc) - origin;
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
-	MNM::TriangleID triStart = navMesh.GetTriangleAt(start, range, range, pDebugQueryFilter);
+	MNM::TriangleID triStart = navMesh.QueryTriangleAt(start, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pDebugQueryFilter);
 	if (!triStart)
 		return;
 
@@ -4522,10 +4987,10 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 		renderFlags.SetAlphaBlendMode(e_AlphaBlended);
 		renderAuxGeom->SetRenderFlags(renderFlags);
 
-		MNM::TriangleID triEnd = navMesh.GetTriangleAt(end, range, range, pDebugQueryFilter);
+		MNM::TriangleID triEnd = navMesh.QueryTriangleAt(end, range, range, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, pDebugQueryFilter);
 
 		MNM::CNavMesh::RayCastRequest<512> raycastRequest;
-		MNM::CNavMesh::ERayCastResult result = navMesh.RayCast(start, triStart, end, triEnd, raycastRequest, pDebugQueryFilter);
+		MNM::ERayCastResult result = navMesh.RayCast(start, triStart, end, triEnd, raycastRequest, pDebugQueryFilter);
 
 		for (size_t i = 0; i < raycastRequest.wayTriCount; ++i)
 		{
@@ -4563,14 +5028,14 @@ void NavigationSystemDebugDraw::DebugDrawRayCast(NavigationSystem& navigationSys
 
 		const Vec3 offset(0.0f, 0.0f, 0.085f);
 
-		if (result == MNM::CNavMesh::eRayCastResult_NoHit)
+		if (result == MNM::ERayCastResult::NoHit)
 		{
 			renderAuxGeom->DrawLine(startLoc + offset, Col_YellowGreen, endLoc + offset, Col_YellowGreen, 8.0f);
 		}
 		else
 		{
 			const MNM::CNavMesh::RayHit& hit = raycastRequest.hit;
-			Vec3 hitLoc = (result == MNM::CNavMesh::eRayCastResult_Hit) ? startLoc + ((endLoc - startLoc) * hit.distance.as_float()) : startLoc;
+			Vec3 hitLoc = (result == MNM::ERayCastResult::Hit) ? startLoc + ((endLoc - startLoc) * hit.distance.as_float()) : startLoc;
 			renderAuxGeom->DrawLine(startLoc + offset, Col_YellowGreen, hitLoc + offset, Col_YellowGreen, 8.0f);
 			renderAuxGeom->DrawLine(hitLoc + offset, Col_Red, endLoc + offset, Col_Red, 8.0f);
 		}
@@ -4591,32 +5056,25 @@ void NavigationSystemDebugDraw::DebugDrawClosestPoint(NavigationSystem& navigati
 
 	NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
 	const MNM::CNavMesh& navMesh = mesh.navMesh;
-	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y),
-		MNM::real_t(paramsGrid.origin.z));
-	const MNM::vector3_t originOffset = origin + MNM::vector3_t(0, 0, MNM::real_t::fraction(725, 10000));
 
 	const Vec3& startLoc = debugObject.entityPos;
-	const MNM::vector3_t fixedPointStartLoc(MNM::real_t(startLoc.x), MNM::real_t(startLoc.y), MNM::real_t(startLoc.z));
+	const MNM::vector3_t fixedPointStartLoc = MNM::vector3_t(startLoc);
 	const MNM::real_t range = MNM::real_t(5.0f);
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
-
-	MNM::real_t distance(.0f);
-	MNM::vector3_t closestPosition;
-	if (MNM::TriangleID closestTriangle = navMesh.GetClosestTriangle(fixedPointStartLoc, range, range, pDebugQueryFilter, &distance, &closestPosition))
+	const MNM::aabb_t localAabb(MNM::vector3_t(-range, -range, -range), MNM::vector3_t(range, range, range));
+	const MNM::SClosestTriangle closestTriangle = navMesh.QueryClosestTriangle(navMesh.ToMeshSpace(fixedPointStartLoc), localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pDebugQueryFilter);
+	if (closestTriangle.id.IsValid())
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
-		const Vec3 endPos(closestPosition.GetVec3() + origin.GetVec3());
+		const Vec3 endPos = navMesh.ToWorldSpace(closestTriangle.position).GetVec3();
 		renderAuxGeom->DrawSphere(endPos + verticalOffset, 0.05f, ColorB(Col_Red));
 		renderAuxGeom->DrawSphere(fixedPointStartLoc.GetVec3() + verticalOffset, 0.05f, ColorB(Col_Black));
 
 		CDebugDrawContext dc;
 		dc->Draw2dLabel(10.0f, 10.0f, 1.3f, Col_White, false,
-			"Distance of the ending result position from the original one: %f", distance.as_float());
+			"Distance of the ending result position from the original one: %f", closestTriangle.distance.as_float());
 	}
 }
 
@@ -4630,12 +5088,6 @@ void NavigationSystemDebugDraw::DebugDrawGroundPoint(NavigationSystem& navigatio
 	IF_UNLIKELY(!meshID)
 		return;
 
-	NavigationMesh& mesh = navigationSystem.m_meshes[meshID];
-	const MNM::CNavMesh& navMesh = mesh.navMesh;
-	const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
-
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y), MNM::real_t(paramsGrid.origin.z));
 	const Vec3& startLoc = debugObject.entityPos;
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
@@ -4645,8 +5097,7 @@ void NavigationSystemDebugDraw::DebugDrawGroundPoint(NavigationSystem& navigatio
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
-		const Vec3 endPos(closestPosition + origin.GetVec3());
-		renderAuxGeom->DrawSphere(endPos + verticalOffset, 0.05f, ColorB(Col_Red));
+		renderAuxGeom->DrawSphere(closestPosition + verticalOffset, 0.05f, ColorB(Col_Red));
 		renderAuxGeom->DrawSphere(startLoc, 0.05f, ColorB(Col_Black));
 	}
 }
@@ -4657,19 +5108,17 @@ void NavigationSystemDebugDraw::DebugDrawSnapToNavmesh(NavigationSystem& navigat
 	if (!GetAISystem()->GetObjectDebugParamsFromName("MNMSnappedPoint", debugObject))
 		return;
 
-	SSnapToNavMeshRulesInfo snappingRules;
-	snappingRules.bVerticalSearch = true;
-	snappingRules.bBoxSearch = true;
+	MNM::SOrderedSnappingMetrics snappingMetrics;
+	snappingMetrics.CreateDefault();
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
-	Vec3 snappedPosition;
-	MNM::TriangleID triangleId;
-	if (navigationSystem.SnapToNavMesh(m_agentTypeID, debugObject.objectPos, pDebugQueryFilter, snappingRules, snappedPosition, &triangleId))
+	const MNM::SPointOnNavMesh pointOnNavMesh = navigationSystem.SnapToNavMesh(m_agentTypeID, debugObject.objectPos, snappingMetrics, pDebugQueryFilter, nullptr);
+	if(pointOnNavMesh.IsValid())
 	{
 		IRenderAuxGeom* renderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		const Vec3 verticalOffset = Vec3(.0f, .0f, .1f);
-		renderAuxGeom->DrawSphere(snappedPosition + verticalOffset, 0.05f, ColorB(Col_Red));
+		renderAuxGeom->DrawSphere(pointOnNavMesh.GetWorldPosition() + verticalOffset, 0.05f, ColorB(Col_Red));
 		renderAuxGeom->DrawSphere(debugObject.objectPos + verticalOffset, 0.05f, ColorB(Col_Black));
 	}
 }
@@ -4696,9 +5145,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	assert(offMeshNavigationManager);
 	const MNM::OffMeshNavigation& offMeshNavigation = offMeshNavigationManager->GetOffMeshNavigationForMesh(meshID);
 
-	const MNM::vector3_t origin = MNM::vector3_t(MNM::real_t(paramsGrid.origin.x),
-		MNM::real_t(paramsGrid.origin.y),
-		MNM::real_t(paramsGrid.origin.z));
+	const MNM::vector3_t origin = MNM::vector3_t(paramsGrid.origin);
 	const bool bOffsetTriangleUp = false;
 	const MNM::vector3_t originOffset = origin + MNM::vector3_t(0, 0, MNM::real_t::fraction(725, 10000));
 
@@ -4757,26 +5204,29 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
 	MNM::vector3_t fixedPointStartLoc;
-	const MNM::TriangleID triStart = navMesh.GetClosestTriangle(
-		MNM::vector3_t(startLoc) - origin, vrange, hrange, pDebugQueryFilter, nullptr, &fixedPointStartLoc);
+
+	const MNM::aabb_t localAabb(MNM::vector3_t(-hrange, -hrange, -vrange), MNM::vector3_t(hrange, hrange, vrange));
+	const MNM::SClosestTriangle closestTriangleStart = navMesh.QueryClosestTriangle(MNM::vector3_t(startLoc) - origin, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pDebugQueryFilter);
+	fixedPointStartLoc = closestTriangleStart.position;
 	//fixedPointStartLoc += origin;
 
-	if (triStart)
+	if (closestTriangleStart.id.IsValid())
 	{
 		MNM::vector3_t a, b, c;
-		navMesh.GetVertices(triStart, a, b, c);
+		navMesh.GetVertices(closestTriangleStart.id, a, b, c);
 
 		drawTriangle(renderAuxGeom, a, b, c, ColorB(ColorF(Col_GreenYellow, 0.5f)));
 	}
 
 	MNM::vector3_t fixedPointEndLoc;
-	const MNM::TriangleID triEnd = navMesh.GetClosestTriangle(
-		MNM::vector3_t(endLoc) - origin, vrange, hrange, pDebugQueryFilter, nullptr, &fixedPointEndLoc);
 
-	if (triEnd)
+	const MNM::SClosestTriangle closestTriangleEnd = navMesh.QueryClosestTriangle(MNM::vector3_t(endLoc) - origin, localAabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, MNM::real_t::max(), pDebugQueryFilter);
+	fixedPointEndLoc = closestTriangleEnd.position;
+
+	if (closestTriangleEnd.id.IsValid())
 	{
 		MNM::vector3_t a, b, c;
-		navMesh.GetVertices(triEnd, a, b, c);
+		navMesh.GetVertices(closestTriangleEnd.id, a, b, c);
 
 		drawTriangle(renderAuxGeom, a, b, c, ColorB(Col_MidnightBlue));
 	}
@@ -4784,20 +5234,20 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 	CTimeValue timeTotal(0ll);
 	CTimeValue stringPullingTotalTime(0ll);
 	float totalPathLength = 0;
-	if (triStart && triEnd)
+	if (closestTriangleStart.id.IsValid() && closestTriangleEnd.id.IsValid())
 	{
 		const MNM::vector3_t startToEnd = (fixedPointStartLoc - fixedPointEndLoc);
 		const MNM::real_t startToEndDist = startToEnd.lenNoOverflow();
-		MNM::CNavMesh::WayQueryWorkingSet workingSet;
-		workingSet.aStarOpenList.SetFrameTimeQuota(0.0f);
-		workingSet.aStarOpenList.SetUpForPathSolving(navMesh.GetTriangleCount(), triStart, fixedPointStartLoc, startToEndDist);
+		MNM::SWayQueryWorkingSet workingSet;
+		workingSet.aStarNodesList.SetFrameTimeQuota(0.0f);
+		workingSet.aStarNodesList.SetUpForPathSolving(navMesh.GetTriangleCount(), closestTriangleStart.id, fixedPointStartLoc, startToEndDist);
 
 		CTimeValue timeStart = gEnv->pTimer->GetAsyncTime();
 
 		MNM::DangerousAreasList dangersInfo;
 		MNM::DangerAreaConstPtr info;
 		const Vec3& cameraPos = gAIEnv.GetDebugRenderer()->GetCameraPos(); // To simulate the player position and evaluate the path generation
-		info.reset(new MNM::DangerAreaT<MNM::eWCT_Direction>(cameraPos, 0.0f, gAIEnv.CVars.PathfinderDangerCostForAttentionTarget));
+		info.reset(new MNM::DangerAreaT<MNM::eWCT_Direction>(cameraPos, 0.0f, gAIEnv.CVars.pathfinder.PathfinderDangerCostForAttentionTarget));
 		dangersInfo.push_back(info);
 
 		// This object is used to simulate the explosive threat and debug draw the behavior of the pathfinding
@@ -4805,7 +5255,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 		if (GetAISystem()->GetObjectDebugParamsFromName("MNMPathExplosiveThreat", debugObjectExplosiveThreat))
 		{
 			info.reset(new MNM::DangerAreaT<MNM::eWCT_Range>(debugObjectExplosiveThreat.objectPos,
-				gAIEnv.CVars.PathfinderExplosiveDangerRadius, gAIEnv.CVars.PathfinderDangerCostForExplosives));
+				gAIEnv.CVars.pathfinder.PathfinderExplosiveDangerRadius, gAIEnv.CVars.pathfinder.PathfinderDangerCostForExplosives));
 			dangersInfo.push_back(info);
 		}
 
@@ -4813,13 +5263,13 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 		const float pathSharingPenalty = .0f;
 		const float pathLinkSharingPenalty = .0f;
 
-		MNM::CNavMesh::WayQueryRequest inputParams(
+		MNM::CNavMesh::SWayQueryRequest inputParams(
 			debugObjectStart.entityId,
-			triStart, startLoc, triEnd, endLoc,
+			closestTriangleStart.id, startLoc, closestTriangleEnd.id, endLoc,
 			offMeshNavigation, *offMeshNavigationManager, 
 			dangersInfo, pDebugQueryFilter, MNMCustomPathCostComputerSharedPtr());  // no custom cost-computer (where should we get it from!?));
 
-		MNM::CNavMesh::WayQueryResult result(k_MaxWaySize);
+		MNM::SWayQueryResult result(k_MaxWaySize);
 
 		const bool hasPathfindingFinished = (navMesh.FindWay(inputParams, workingSet, result) == MNM::CNavMesh::eWQR_Done);
 
@@ -4833,7 +5283,7 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 
 		for (size_t i = 0; i < outputWaySize; ++i)
 		{
-			if ((pOutputWay[i].triangleID != triStart) && (pOutputWay[i].triangleID != triEnd))
+			if ((pOutputWay[i].triangleID != closestTriangleStart.id) && (pOutputWay[i].triangleID != closestTriangleEnd.id))
 			{
 				MNM::vector3_t a, b, c;
 
@@ -4852,11 +5302,11 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 				const Vec3 pathVerticalOffset = Vec3(.0f, .0f, .1f);
 				drawPath(renderAuxGeom, outputPath, Col_Gray, pathVerticalOffset);
 
-				const bool bBeautifyPath = (gAIEnv.CVars.BeautifyPath != 0);
+				const bool bBeautifyPath = (gAIEnv.CVars.pathfinder.BeautifyPath != 0);
 				CTimeValue stringPullingStartTime = gEnv->pTimer->GetAsyncTime();
 				if (bBeautifyPath)
 				{
-					outputPath.PullPathOnNavigationMesh(navMesh, gAIEnv.CVars.PathStringPullingIterations, nullptr);
+					outputPath.PullPathOnNavigationMesh(navMesh, gAIEnv.CVars.pathfinder.PathStringPullingIterations, nullptr);
 				}
 				stringPullingTotalTime = gEnv->pTimer->GetAsyncTime() - stringPullingStartTime;
 
@@ -4876,14 +5326,14 @@ void NavigationSystemDebugDraw::DebugDrawPathFinder(NavigationSystem& navigation
 		}
 	}
 
-	const stack_string predictionName = gAIEnv.CVars.MNMPathfinderPositionInTrianglePredictionType ? "Advanced prediction" : "Triangle Center";
+	const stack_string predictionName = gAIEnv.CVars.pathfinder.MNMPathfinderPositionInTrianglePredictionType ? "Advanced prediction" : "Triangle Center";
 
 	CDebugDrawContext dc;
 
 	dc->Draw2dLabel(10.0f, 172.0f, 1.3f, Col_White, false,
-		"Start: %08x  -  End: %08x - Total Pathfinding time: %.4fms -- Type of prediction for the point inside each triangle: %s", triStart, triEnd, timeTotal.GetMilliSeconds(), predictionName.c_str());
+		"Start: %08x  -  End: %08x - Total Pathfinding time: %.4fms -- Type of prediction for the point inside each triangle: %s", closestTriangleStart.id, closestTriangleEnd.id, timeTotal.GetMilliSeconds(), predictionName.c_str());
 	dc->Draw2dLabel(10.0f, 184.0f, 1.3f, Col_White, false,
-		"String pulling operation - Iteration %d  -  Total time: %.4fms -- Total Length: %f", gAIEnv.CVars.PathStringPullingIterations, stringPullingTotalTime.GetMilliSeconds(), totalPathLength);
+		"String pulling operation - Iteration %d  -  Total time: %.4fms -- Total Length: %f", gAIEnv.CVars.pathfinder.PathStringPullingIterations, stringPullingTotalTime.GetMilliSeconds(), totalPathLength);
 }
 
 static bool FindObjectToTestIslandConnectivity(const char* szName, Vec3& outPos, IEntity** ppOutEntityToTestOffGridLinks)
@@ -4940,7 +5390,7 @@ void NavigationSystemDebugDraw::DebugDrawIslandConnection(NavigationSystem& navi
 
 	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
 
-	const bool isReachable = gAIEnv.pNavigationSystem->IsPointReachableFromPosition(m_agentTypeID, pEntityToTestOffGridLinksOrNull, startPos, endPos, pDebugQueryFilter);
+	const bool isReachable =  gAIEnv.pNavigationSystem->IsPointReachableFromPosition(m_agentTypeID, pEntityToTestOffGridLinksOrNull, startPos, endPos, pDebugQueryFilter);
 
 	CDebugDrawContext dc;
 	dc->Draw2dLabel(10.0f, 250.0f, 1.6f, isReachable ? Col_ForestGreen : Col_VioletRed, false, isReachable ? "The two islands ARE connected" : "The two islands ARE NOT connected");
@@ -4948,7 +5398,7 @@ void NavigationSystemDebugDraw::DebugDrawIslandConnection(NavigationSystem& navi
 
 struct DefaultTriangleColorSelector : public MNM::ITriangleColorSelector
 {
-	DefaultTriangleColorSelector(NavigationSystem& navigationSystem, const char* szFlagToDraw) 
+	DefaultTriangleColorSelector(NavigationSystem& navigationSystem, const char* szFlagToDraw, const bool showAccessibility) 
 		: m_navigationSystem(navigationSystem)
 	{
 		const MNM::CAnnotationsLibrary& annotationsLib = navigationSystem.GetAnnotations();
@@ -4958,14 +5408,22 @@ struct DefaultTriangleColorSelector : public MNM::ITriangleColorSelector
 		{
 			m_flagsToDrawMask = pFlag->value;
 		}
+
+		m_defaultInaccessibleFlag = showAccessibility ? annotationsLib.GetInaccessibleAreaFlag().value : 0;
+		m_defaultInaccessibleColor = annotationsLib.GetInaccessibleAreaFlag().color;
 	}
 	
 	virtual ColorB GetAnnotationColor(MNM::AreaAnnotation annotation) const
 	{
 		const MNM::CAnnotationsLibrary& annotationsLib = m_navigationSystem.GetAnnotations();
+		const MNM::AreaAnnotation::value_type flags = annotation.GetFlags();
+		
+		if (m_defaultInaccessibleFlag & flags)
+		{
+			return m_defaultInaccessibleColor;
+		}
 
-		MNM::AreaAnnotation::value_type flags = annotation.GetFlags();
-		MNM::AreaAnnotation::value_type flagsToDraw = flags & m_flagsToDrawMask;
+		const MNM::AreaAnnotation::value_type flagsToDraw = flags & m_flagsToDrawMask;
 		ColorB color;
 		if (annotationsLib.GetFirstFlagColor(flagsToDraw, color))
 		{
@@ -4977,32 +5435,36 @@ struct DefaultTriangleColorSelector : public MNM::ITriangleColorSelector
 
 	NavigationSystem& m_navigationSystem;
 	MNM::AreaAnnotation::value_type m_flagsToDrawMask = 0;
+	MNM::AreaAnnotation::value_type m_defaultInaccessibleFlag = 0;
+	ColorB m_defaultInaccessibleColor;
 };
 
 void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(NavigationSystem& navigationSystem, MNM::TileID excludeTileID)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	DefaultTriangleColorSelector colorSelector(navigationSystem, gAIEnv.CVars.MNMDebugDrawFlag);
+	const DefaultTriangleColorSelector colorSelector(navigationSystem, gAIEnv.CVars.navigation.MNMDebugDrawFlag, !!gAIEnv.CVars.navigation.MNMDebugAccessibility);
 	
-	AgentType& agentType = navigationSystem.m_agentTypes[m_agentTypeID - 1];
-	AgentType::Meshes::const_iterator it = agentType.meshes.begin();
-	AgentType::Meshes::const_iterator end = agentType.meshes.end();
-
+	const AgentType& agentType = navigationSystem.m_agentTypes[m_agentTypeID - 1];
 	const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
 
-	for (; it != end; ++it)
+	for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
 	{
-		const NavigationMesh& mesh = navigationSystem.GetMesh(it->id);
+		const NavigationMesh& mesh = navigationSystem.GetMesh(meshInfo.id);
 
 		if(!viewCamera.IsAABBVisible_F(navigationSystem.m_volumes[mesh.boundary].aabb))
 			continue;
 
+		if (gAIEnv.CVars.navigation.MNMDebugDrawTileStates)
+		{
+			navigationSystem.m_updatesManager.DebugDrawMeshTilesState(meshInfo.id);
+		}
+
 		size_t drawFlag = MNM::STile::DrawTriangles | MNM::STile::DrawMeshBoundaries;
-		if (gAIEnv.CVars.MNMDebugAccessibility)
+		if (gAIEnv.CVars.navigation.MNMDebugAccessibility)
 			drawFlag |= MNM::STile::DrawAccessibility;
 
-		switch (gAIEnv.CVars.DebugDrawNavigation)
+		switch (gAIEnv.CVars.navigation.DebugDrawNavigation)
 		{
 		case 0:
 		case 1:
@@ -5035,20 +5497,49 @@ void NavigationSystemDebugDraw::DebugDrawNavigationMeshesForSelectedAgent(Naviga
 	}
 }
 
-void NavigationSystemDebugDraw::DebugDrawTriangleOnCursor(NavigationSystem& navigationSystem)
+void NavigationSystemDebugDraw::DebugDrawMeshBorders(NavigationSystem& navigationSystem)
 {
-	if (!gAIEnv.CVars.DebugTriangleOnCursor)
+	CAISystem::SObjectDebugParams debugObject;
+	if (!GetAISystem()->GetObjectDebugParamsFromName("MNMDebugMeshBorders", debugObject))
 		return;
 
+	NavigationMeshID meshID = navigationSystem.GetEnclosingMeshID(m_agentTypeID, debugObject.objectPos);
+	IF_UNLIKELY(!meshID)
+		return;
+
+	const INavMeshQueryFilter* pDebugQueryFilter = GetDebugQueryFilter("MNMDebugQueryFilter");
+	const MNM::aabb_t aabb(
+		MNM::vector3_t(debugObject.objectPos - Vec3(10.0f)), 
+		MNM::vector3_t(debugObject.objectPos + Vec3(10.0f))
+	);
+
+	const INavigationSystem::NavMeshBorderWithNormalArray bordersWithNormals = navigationSystem.QueryTriangleBorders(meshID, aabb, MNM::ENavMeshQueryOverlappingMode::BoundingBox_Partial, nullptr, pDebugQueryFilter);
+	
+	IRenderAuxGeom& renderAuxGeom = *gEnv->pRenderer->GetIRenderAuxGeom();
+
+	const ColorB color(Col_Red);
+	const Vec3 offset(0.0f, 0.0f, 0.07f);
+
+	for (size_t i = 0; i < bordersWithNormals.size(); ++i)
+	{
+		renderAuxGeom.DrawLine(bordersWithNormals[i].v0 + offset, color, bordersWithNormals[i + 1].v1 + offset, color, 5.0f);
+	}
+}
+
+void NavigationSystemDebugDraw::DebugDrawTriangleOnCursor(NavigationSystem& navigationSystem)
+{
+	if (!gAIEnv.CVars.navigation.DebugTriangleOnCursor)
+		return;
+
+	const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
+
 	CDebugDrawContext dc;
-	float yPos = gEnv->pRenderer->GetHeight() - 100.0f;
+	float yPos = viewCamera.GetViewSurfaceZ() - 100.0f;
 	const float textSize = 1.2f;
 	const float xPos = 200.0f;
 
 	dc->Draw2dLabel(xPos - 2.0f, yPos, 1.6f, Col_White, false, "NavMesh Triangle Info");
 	yPos += 20.0f;
-	
-	const CCamera& viewCamera = gEnv->pSystem->GetViewCamera();
 	
 	Vec3 rayStartPos = viewCamera.GetPosition();
 	Vec3 rayDir = viewCamera.GetViewdir();
@@ -5059,7 +5550,7 @@ void NavigationSystemDebugDraw::DebugDrawTriangleOnCursor(NavigationSystem& navi
 		gEnv->pHardwareMouse->GetHardwareMouseClientPosition(&mouseX, &mouseY);
 
 		// Invert mouse Y
-		mouseY = gEnv->pRenderer->GetHeight() - mouseY;
+		mouseY = viewCamera.GetViewSurfaceZ() - mouseY;
 
 		Vec3 pos0(0.0f);
 		Vec3 pos1(0.0f);
@@ -5161,17 +5652,17 @@ void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem&
 {
 	CDebugDrawContext dc;
 	
-	if (gAIEnv.CVars.DebugDrawNavigation)
+	if (gAIEnv.CVars.navigation.DebugDrawNavigation)
 	{
 		switch (navigationSystem.m_state)
 		{
-		case NavigationSystem::Working:
+		case INavigationSystem::EWorkingState::Working:
 			dc->Draw2dLabel(10.0f, 300.0f, 1.6f, Col_Yellow, false, "Navigation System Working");
 			dc->Draw2dLabel(10.0f, 322.0f, 1.2f, Col_White, false, "Processing: %d\nRemaining: %d\nThroughput: %.2f/s\n"
 				"Cache Hits: %.2f/s",
 				navigationSystem.m_runningTasks.size(), navigationSystem.GetWorkingQueueSize(), navigationSystem.m_throughput, navigationSystem.m_cacheHitRate);
 			break;
-		case NavigationSystem::Idle:
+		case INavigationSystem::EWorkingState::Idle:
 			dc->Draw2dLabel(10.0f, 300.0f, 1.6f, Col_ForestGreen, false, "Navigation System Idle");
 			break;
 		default:
@@ -5193,7 +5684,7 @@ void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem&
 
 	const size_t areaTypesCount = annotationsLib.GetAreaTypeCount();
 	const float lineHeight = 25.0f;
-	const float yPos = gEnv->pRenderer->GetHeight() - float(areaTypesCount + 1) * lineHeight - 20.0f;
+	const float yPos = gEnv->pRenderer->GetOverlayHeight() - float(areaTypesCount + 1) * lineHeight - 20.0f;
 
 	dc->Draw2dLabel(10.0f, yPos, 1.6f, Col_White, false, "Area Types");
 
@@ -5213,7 +5704,7 @@ void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem&
 
 void NavigationSystemDebugDraw::DebugDrawMemoryStats(NavigationSystem& navigationSystem)
 {
-	if (gAIEnv.CVars.MNMProfileMemory)
+	if (gAIEnv.CVars.navigation.MNMProfileMemory)
 	{
 		const float kbInvert = 1.0f / 1024.0f;
 
@@ -5461,11 +5952,11 @@ void NavigationSystemBackgroundUpdate::Thread::ThreadEntry()
 {
 	while (!m_requestedStop)
 	{
-		if (m_navigationSystem.GetState() == INavigationSystem::Working)
+		if (m_navigationSystem.GetState() == INavigationSystem::EWorkingState::Working)
 		{
 			const CTimeValue startedUpdate = gEnv->pTimer->GetAsyncTime();
 
-			m_navigationSystem.UpdateMeshes(0.0333f, false, true, true);
+			m_navigationSystem.UpdateMeshesFromEditor(false, true, true);
 
 			const CTimeValue lastUpdateTime = gEnv->pTimer->GetAsyncTime() - startedUpdate;
 
@@ -5494,7 +5985,7 @@ bool NavigationSystemBackgroundUpdate::Start()
 		m_pBackgroundThread = new Thread(m_navigationSystem);
 		if (!gEnv->pThreadManager->SpawnThread(m_pBackgroundThread, "NavigationSystemBackgroundUpdate"))
 		{
-			CRY_ASSERT_MESSAGE(false, "Error spawning \"NavigationSystemBackgroundUpdate\" thread.");
+			CRY_ASSERT(false, "Error spawning \"NavigationSystemBackgroundUpdate\" thread.");
 			delete m_pBackgroundThread;
 			m_pBackgroundThread = NULL;
 			return false;
@@ -5538,7 +6029,7 @@ void NavigationSystemBackgroundUpdate::OnSystemEvent(ESystemEvent event, UINT_PT
 	else if (event == ESYSTEM_EVENT_CHANGE_FOCUS)
 	{
 		// wparam != 0 is focused, wparam == 0 is not focused
-		const bool startBackGroundUpdate = (wparam == 0) && (gAIEnv.CVars.MNMEditorBackgroundUpdate != 0) && (m_navigationSystem.GetState() == INavigationSystem::Working) && !m_paused;
+		const bool startBackGroundUpdate = (wparam == 0) && (gAIEnv.CVars.navigation.MNMEditorBackgroundUpdate != 0) && (m_navigationSystem.GetState() == INavigationSystem::EWorkingState::Working) && !m_paused;
 
 		if (startBackGroundUpdate)
 		{

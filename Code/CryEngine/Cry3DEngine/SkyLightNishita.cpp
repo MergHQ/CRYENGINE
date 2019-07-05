@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 09:05:2005   11:08 : Created by Carsten Wenzel
-
-*************************************************************************/
-
 #include "StdAfx.h"
 
 #define IGNORE_ASSERTS
@@ -68,7 +57,7 @@ static inline f64 exp_fast(f64 arg)
 	const f64 eco_m(1048576L / 0.693147180559945309417232121458177);
 	const f64 eco_a(1072693248L - 60801L);
 
-#if CRY_PLATFORM_X86 || CRY_PLATFORM_X64 || CRY_PLATFORM_ARM // for little endian (tested on Win32 / Win64)
+#if CRY_PLATFORM_X64 || CRY_PLATFORM_ARM // for little endian (tested on Win32 / Win64)
 	eco e;
 	#ifdef _DEBUG
 	e.d = 1.0;
@@ -434,7 +423,7 @@ bool CSkyLightNishita::ComputeOpticalDepth(const Vec3d& cameraLookDir, const f64
 
 void CSkyLightNishita::ComputeOpticalLUTs()
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	ILog* pLog(C3DEngine::GetLog());
 	if (0 != pLog)

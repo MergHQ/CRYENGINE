@@ -90,10 +90,11 @@ public:
 	{
 		return m_pSwapChainOwner != NULL;
 	}
-	ILINE void VerifyBackBuffer() const
+	ILINE void VerifyBackBuffer(bool bWrite) const
 	{
 		DX12_ASSERT((!IsBackBuffer() || !GetDX12SwapChain()->IsPresentScheduled()), "Flush didn't dry out all outstanding Present() calls!");
-		DX12_ASSERT((!IsBackBuffer() || GetD3D12Resource() == GetDX12SwapChain()->GetCurrentBackBuffer().GetD3D12Resource()), "Resource is referring to old swapchain index!");
+		DX12_ASSERT((!IsBackBuffer() || !bWrite || GetD3D12Resource() == GetDX12SwapChain()->GetCurrentBackBuffer().GetD3D12Resource()), "Target Resource is referring to previous swapchain index!");
+		DX12_ASSERT((!IsBackBuffer() ||  bWrite || GetD3D12Resource() != GetDX12SwapChain()->GetCurrentBackBuffer().GetD3D12Resource()), "Source Resource is referring to current swapchain index!");
 	}
 
 	// Utility functions
@@ -248,7 +249,6 @@ public:
 	UINT64 SetFenceValue(UINT64 fenceValue, const int id, const int type) threadsafe
 	{
 		// Check submitted completed fence
-		UINT64 utilizedValue = fenceValue;
 		UINT64 previousValue = m_FenceValues[type][id];
 
 	#define DX12_FREETHREADED_RESOURCES

@@ -15,6 +15,7 @@
 #include "StdAfx.h"
 #include "GameRulesStandardSetup.h"
 #include <CrySystem/XML/IXml.h>
+#include "GameCVars.h"
 #include "GameRules.h"
 #include "Player.h"
 #include "UI/HUD/HUDEventDispatcher.h"
@@ -80,7 +81,7 @@ void CGameRulesStandardSetup::Init( XmlNodeRef xml )
 			m_numIgnoreItems = xmlChild->getChildCount();
 			if (m_numIgnoreItems >= MAX_IGNORE_REMOVE_ITEM_CLASSES)
 			{
-				CRY_ASSERT_MESSAGE(false, "Too many ignore item classes");
+				CRY_ASSERT(false, "Too many ignore item classes");
 				m_numIgnoreItems = MAX_IGNORE_REMOVE_ITEM_CLASSES - 1;
 			}
 
@@ -205,8 +206,8 @@ void CGameRulesStandardSetup::OnPlayerRevived(EntityId playerId)
 	CActor *pActor = static_cast<CActor*>(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId));
 	if (pActor)
 	{
-		CRY_ASSERT_MESSAGE(pActor->IsPlayer(), "Actor that is being spawned is not a player!");
-		CPlayer *pPlayer = static_cast<CPlayer*>(pActor);
+		CRY_ASSERT(pActor->IsPlayer(), "Actor that is being spawned is not a player!");
+		//CPlayer *pPlayer = static_cast<CPlayer*>(pActor);
 
 		bool  luaEquip = (m_usesTeamSpecifics && !m_luaEquipTeamSpecificsFunc.empty());
 
@@ -230,8 +231,8 @@ void CGameRulesStandardSetup::OnPlayerRevived(EntityId playerId)
 		if(!PickAndThrowId && !g_pGameCVars->g_mpNoEnvironmentalWeapons)
 			PickAndThrowId = pItemSystem->GiveItem(pActor, "PickAndThrowWeapon", false, false, false);
 
-		CRY_ASSERT_MESSAGE(pItemSystem->GetItem(noWeaponId), "Failed to find CItem for NoWeapon");
-		CRY_ASSERT_MESSAGE(pItemSystem->GetItem(PickAndThrowId) || g_pGameCVars->g_mpNoEnvironmentalWeapons, "Failed to find CItem for PickAndThrowWeapon");
+		CRY_ASSERT(pItemSystem->GetItem(noWeaponId), "Failed to find CItem for NoWeapon");
+		CRY_ASSERT(pItemSystem->GetItem(PickAndThrowId) || g_pGameCVars->g_mpNoEnvironmentalWeapons, "Failed to find CItem for PickAndThrowWeapon");
 
 		CEquipmentLoadout *pEquipmentLoadout = g_pGame->GetEquipmentLoadout();
 		if (pEquipmentLoadout != NULL && pEquipmentLoadout->SvHasClientEquipmentLoadout(pActor->GetChannelId()))
@@ -244,9 +245,12 @@ void CGameRulesStandardSetup::OnPlayerRevived(EntityId playerId)
 			pItemSystem->GiveItem(pActor, "FragGrenades", false, true, true);
 			pItemSystem->GiveItem(pActor, "Pistol", false, true, true);
 
+#if defined(USE_CRY_ASSERT)
 			EntityId weaponId = pItemSystem->GiveItem(pActor, "Rifle", false, true, true);
-
-			CRY_ASSERT_MESSAGE(pItemSystem->GetItem(weaponId), "Failed to find CItem for Rifle");
+			CRY_ASSERT(pItemSystem->GetItem(weaponId), "Failed to find CItem for Rifle");
+#else
+			pItemSystem->GiveItem(pActor, "Rifle", false, true, true);
+#endif
 		}
 
 		if (luaEquip)

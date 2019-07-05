@@ -2,10 +2,13 @@
 
 #pragma once
 
-class CGizmo;
 class CBaseObject;
-struct IDisplayViewport;
 class CDeepSelection;
+class CGizmo;
+
+#include "LevelEditor/LevelEditorSharedState.h"
+#include "Viewport/ViewportSettings.h"
+#include "IDisplayViewport.h"
 
 //! Flags used in HitContext for nSubObjFlags member.
 enum ESubObjHitFlags
@@ -54,6 +57,10 @@ struct HitContext
 	//! Optional camera for culling perspective viewports.
 	CCamera*          camera;
 
+	//! Ignores groups/prefabs being locked
+	bool         ignoreHierarchyLocks;
+	//! Ignores frozen objects
+	bool         ignoreFrozenObjects;
 	//! Testing performed in 2D viewport.
 	bool         b2DViewport;
 	//! Hit test only gizmo objects
@@ -74,45 +81,54 @@ struct HitContext
 	//! Sub object hit testing flags, @see ESubObjHitFlags
 	int   nSubObjFlags;
 
+	bool  iconShown;
+	bool  helperMeshShown;
+	bool  triggerBoundsShown;
+
 	// Output parameters.
 
 	//! true if this hit should have less priority then non weak hits.
 	//! (exp: Ray hit entity bounding box but not entity geometry.)
-	bool                     weakHit;
+	bool                          weakHit;
 	//! constrain axis if hit AxisGizmo.
-	int                      axis;
+	CLevelEditorSharedState::Axis axis;
 	//! distance to the object from src.
-	float                    dist;
+	float                         dist;
 	//! object that have been hit.
-	CBaseObject*             object;
+	CBaseObject*                  object;
 	//! gizmo object that have been hit.
-	CGizmo*                  gizmo;
+	CGizmo*                       gizmo;
 	//! for deep selection mode
-	CDeepSelection*          pDeepSelection;
+	CDeepSelection*               pDeepSelection;
 	//! For linking tool
-	const char*              name;
+	const char*                   name;
 
-	HitContext()
+	explicit HitContext(IDisplayViewport* pView)
+		: view{pView}
+		, point2d{0, 0}
+		, rect{0, 0, 0, 0}
+		, bounds{nullptr}
+		, camera{nullptr}
+		, ignoreHierarchyLocks{false}
+		, ignoreFrozenObjects{true}
+		, b2DViewport{false}
+		, bSkipIfGizmoHighlighted{false}
+		, bUseSelectionHelpers{false}
+		, pExcludedObject{nullptr}
+		, raySrc{0, 0, 0}
+		, rayDir{0, 0, 0}
+		, distanceTolerance{0}
+		, nSubObjFlags{0}
+		, iconShown{pView ? pView->GetHelperSettings().showIcons : false}
+		, helperMeshShown{pView ? pView->GetHelperSettings().showMesh : false}
+		, triggerBoundsShown{pView ? pView->GetHelperSettings().showTriggerBounds : false}
+		, weakHit{false}
+		, axis{CLevelEditorSharedState::Axis::None}
+		, dist{0}
+		, object{nullptr}
+		, gizmo{nullptr}
+		, pDeepSelection{nullptr}
+		, name{nullptr}
 	{
-		rect.top = rect.left = rect.bottom = rect.right = 0;
-		b2DViewport = false;
-		view = 0;
-		camera = 0;
-		point2d.x = 0;
-		point2d.y = 0;
-		axis = 0;
-		distanceTolerance = 0;
-		raySrc(0, 0, 0);
-		rayDir(0, 0, 0);
-		dist = 0;
-		object = 0;
-		weakHit = false;
-		nSubObjFlags = 0;
-		bounds = 0;
-		bSkipIfGizmoHighlighted = false;
-		bUseSelectionHelpers = false;
-		pDeepSelection = 0;
-		name = nullptr;
 	}
 };
-

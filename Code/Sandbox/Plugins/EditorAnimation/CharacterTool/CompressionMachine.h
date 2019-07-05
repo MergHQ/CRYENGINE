@@ -144,12 +144,15 @@ private:
 		string                   uncompressedAnimationPath;
 
 		Animation()
-			: state(eAnimationState_NotSet)
-			, enabled(true)
+			: enabled(true)
+			, state(eAnimationState_NotSet)
+			, type(UNKNOWN)
 			, hasSourceFile(true)
 			, hasReferenceCompressed(false)
 			, hasPreviewCompressed(false)
-			, type(UNKNOWN)
+			, previewTask(nullptr)
+			, referenceTask(nullptr)
+			, compressionSessionIndex(0)
 		{}
 
 	};
@@ -184,4 +187,3 @@ private:
 };
 
 }
-

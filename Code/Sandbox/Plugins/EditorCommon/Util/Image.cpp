@@ -5,13 +5,11 @@
 
 #include "XmlArchive.h"
 
-//////////////////////////////////////////////////////////////////////////
 bool CImageEx::LoadGrayscale16Tiff(const string& fileName)
 {
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CImageEx::SaveGrayscale16Tiff(const string& fileName)
 {
 	/*
@@ -105,4 +103,3 @@ QImage CImageEx::ToQImage() const
 {
 	return QImage((const uchar*)GetData(), GetWidth(), GetHeight(), QImage::Format_ARGB32);
 }
-

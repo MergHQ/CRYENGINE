@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "TrackViewEntityNode.h"
 #include "TrackViewSequence.h"
@@ -289,18 +286,18 @@ void CTrackViewEntityNode::SetNodeEntity(CEntityObject* pEntity)
 
 	if (pEntity)
 	{
-		const EntityGUID guid = ToEntityGuid(pEntity->GetId());
+		const EntityGUID guid = pEntity->GetId();
 		SetEntityGuid(guid);
 
 		if (pEntity->GetLookAt() && pEntity->GetLookAt()->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 		{
 			CEntityObject* target = static_cast<CEntityObject*>(pEntity->GetLookAt());
-			SetEntityGuidTarget(ToEntityGuid(target->GetId()));
+			SetEntityGuidTarget(target->GetId());
 		}
 		if (pEntity->GetLookAtSource() && pEntity->GetLookAtSource()->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 		{
 			CEntityObject* source = static_cast<CEntityObject*>(pEntity->GetLookAtSource());
-			SetEntityGuidSource(ToEntityGuid(source->GetId()));
+			SetEntityGuidSource(source->GetId());
 		}
 
 		SetPosRotScaleTracksDefaultValues();
@@ -401,16 +398,19 @@ void CTrackViewEntityNode::OnNodeVisibilityChanged(IAnimNode* pNode, const bool 
 		if (bUnhideSelected)
 		{
 			GetIEditor()->GetObjectManager()->UnselectObject(m_pNodeEntity);
-			GetIEditor()->GetObjectManager()->SelectObject(m_pNodeEntity);
+			GetIEditor()->GetObjectManager()->AddObjectToSelection(m_pNodeEntity);
 		}
 
 		UpdateTrackGizmo();
 	}
 }
 
-void CTrackViewEntityNode::OnNodeReset(IAnimNode* pNode)
+bool CTrackViewEntityNode::OnNodeReset(IAnimNode* pNode)
 {
-	if (gEnv->IsEditing() && m_pNodeEntity)
+	const CTrackViewSequence* pSequence = GetSequence();
+	const bool isAnimating = pSequence ? pSequence->IsAnimating() : false;
+
+	if (gEnv->IsEditing() && !isAnimating && m_pNodeEntity)
 	{
 		// If the node has an event track, one should also reload the script when the node is reset.
 		CTrackViewTrack* pAnimTrack = GetTrackForParameter(eAnimParamType_Event);
@@ -423,7 +423,11 @@ void CTrackViewEntityNode::OnNodeReset(IAnimNode* pNode)
 			}
 			m_pNodeEntity->Reload(true);
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 void CTrackViewEntityNode::MatrixInvalidated()
@@ -550,4 +554,3 @@ bool CTrackViewEntityNode::SyncFromBase()
 
 	return false;
 }
-

@@ -1,49 +1,46 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "GameExporter.h"
 
-#include <CryAISystem/IAISystem.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryGame/IGameFramework.h>
-#include <CryGame/IGame.h>
-
-#include "GameEngine.h"
-#include "CryEditDoc.h"
-#include "Mission.h"
-#include "ShaderCache.h"
-#include "CrySandbox/ScopedVariableSetter.h"
-#include "Preferences/GeneralPreferences.h"
-#include "Plugins/EditorCommon/FilePathUtil.h"
-
-#include "ParticleExporter.h"
-
-#include "AnimationSerializer.h"
-#include "Material/MaterialManager.h"
-#include "Material/MaterialLibrary.h"
-#include "Particles/ParticleManager.h"
-#include "GameTokens/GameTokenManager.h"
-
-#include "AI/NavDataGeneration/Navigation.h"
 #include "AI/AIManager.h"
-
-#include "Vegetation/VegetationMap.h"
-#include "Terrain/TextureCompression.h"
-#include "Terrain/TerrainTexGen.h"
-#include "Terrain/TerrainManager.h"
-#include "TerrainLighting.h"
-#include "Objects/ObjectLayerManager.h"
-#include "Objects/ObjectPhysicsManager.h"
-#include "Objects/EntityObject.h"
+#include "GameTokens/GameTokenManager.h"
+#include "LensFlareEditor/LensFlareItem.h"
 #include "LensFlareEditor/LensFlareManager.h"
 #include "LensFlareEditor/LensFlareLibrary.h"
-#include "LensFlareEditor/LensFlareItem.h"
-#include "GameExporter.h"
+#include "Material/MaterialLibrary.h"
+#include "Material/MaterialManager.h"
+#include "Objects/EntityObject.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Objects/ObjectManager.h"
+#include "Objects/ObjectPhysicsManager.h"
+#include "Particles/ParticleManager.h"
+#include "Terrain/TerrainManager.h"
+#include "Terrain/TerrainTexGen.h"
+#include "Terrain/TextureCompression.h"
+#include "Vegetation/VegetationMap.h"
+#include "AnimationSerializer.h"
+#include "CryEditDoc.h"
 #include "EntityPrototypeManager.h"
-#include "Prefabs/PrefabManager.h"
+#include "GameEngine.h"
+#include "LogFile.h"
+#include "Mission.h"
+#include "ParticleExporter.h"
+#include "ShaderCache.h"
+#include "TerrainLighting.h"
 
-#include <CryMath/Random.h>
+#include <FileUtils.h>
+#include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
+#include <Preferences/GeneralPreferences.h>
+#include <UsedResources.h>
+#include <Util/CryMemFile.h>
+#include <Util/FileUtil.h>
 
-//////////////////////////////////////////////////////////////////////////
+#include <CryGame/IGame.h>
+#include <CryGame/IGameFramework.h>
+#include <CrySandbox/ScopedVariableSetter.h>
+
 #define GAMETOKENS_LEVEL_LIBRARY_FILE "LevelGameTokens.xml"
 #define MATERIAL_LEVEL_LIBRARY_FILE   "Materials.xml"
 #define RESOURCE_LIST_FILE            "ResourceList.txt"
@@ -72,20 +69,21 @@ const ETEX_Format eTerrainSecondaryTextureFormat[2][2] = {
 	{ eTF_BC3, eTF_BC3 }, { eTF_BC3, eTF_BC3 }
 };
 
-//////////////////////////////////////////////////////////////////////////
-// SGameExporterSettings
-//////////////////////////////////////////////////////////////////////////
 SGameExporterSettings::SGameExporterSettings() :
 	iExportTexWidth(4096),
 	bHiQualityCompression(true),
 	bUpdateIndirectLighting(false),
 	nApplySS(1),
 	fBrMultiplier(1.0f),
-	eExportEndian(GetPlatformEndian())
+	eExportEndian(GetPlatformEndian()),
+	exportBinaryXml(false)
 {
+	if (ICVar* pCvar = gEnv->pConsole->GetCVar("ed_exportLevelXmlBinary"))
+	{
+		exportBinaryXml = (pCvar->GetIVal() != 0);
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void SGameExporterSettings::SetLowQuality()
 {
 	iExportTexWidth = 4096;
@@ -94,7 +92,6 @@ void SGameExporterSettings::SetLowQuality()
 	nApplySS = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void SGameExporterSettings::SetHiQuality()
 {
 	iExportTexWidth = 16384;
@@ -103,14 +100,11 @@ void SGameExporterSettings::SetHiQuality()
 	nApplySS = 1;
 }
 
-CGameExporter* CGameExporter::m_pCurrentExporter = NULL;
+CGameExporter* CGameExporter::m_pCurrentExporter = nullptr;
 
-//////////////////////////////////////////////////////////////////////////
-// CGameExporter
-//////////////////////////////////////////////////////////////////////////
-CGameExporter::CGameExporter(const SGameExporterSettings& settings) :
-	m_bAutoExportMode(false),
-	m_settings(settings)
+CGameExporter::CGameExporter(const SGameExporterSettings& settings)
+	: m_bAutoExportMode(false)
+	, m_settings(settings)
 {
 	m_pCurrentExporter = this;
 }
@@ -125,7 +119,6 @@ CGameExporter* CGameExporter::GetCurrentExporter()
 	return m_pCurrentExporter;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGameExporter::Export(unsigned int flags, const char* subdirectory)
 {
 	CGameEngine* pGameEngine = GetIEditorImpl()->GetGameEngine();
@@ -151,7 +144,6 @@ bool CGameExporter::Export(unsigned int flags, const char* subdirectory)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 {
 	CAutoDocNotReady autoDocNotReady;
@@ -165,7 +157,7 @@ bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 	SetCurrentDirectory(GetIEditorImpl()->GetMasterCDFolder());
 
 	// Close all Editor tools
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 
 	string sLevelPath = PathUtil::AddSlash(pGameEngine->GetLevelPath().GetString());
 	if (subdirectory && subdirectory[0] && strcmp(subdirectory, ".") != 0)
@@ -216,7 +208,6 @@ bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 		CrySetFileAttributes(m_levelPak.m_sPath, FILE_ATTRIBUTE_NORMAL);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	if (!CFileUtil::OverwriteFile(m_levelPak.m_sPath))
 	{
 		Error("Cannot overwrite Pak file " + m_levelPak.m_sPath);
@@ -229,37 +220,21 @@ bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 		return false;
 	}
 
-	////////////////////////////////////////////////////////////////////////
 	// Inform all objects that an export is about to begin
-	////////////////////////////////////////////////////////////////////////
 	GetIEditorImpl()->GetObjectManager()->GetPhysicsManager()->PrepareForExport();
 	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PRE_EXPORT);
 
-	////////////////////////////////////////////////////////////////////////
 	// Export all data to the game
-	////////////////////////////////////////////////////////////////////////
 	if (!ExportMap(sLevelPath, flags & eExp_SurfaceTexture, m_settings.eExportEndian))
 		return false;
 
-	////////////////////////////////////////////////////////////////////////
 	// Export the heightmap, store shadow informations in it
-	////////////////////////////////////////////////////////////////////////
 	ExportHeightMap(sLevelPath, m_settings.eExportEndian);
 
-	//////////////////////////////////////////////////////////////////////////
 	ExportDynTexSrcLayerInfo(sLevelPath);
 
-	////////////////////////////////////////////////////////////////////////
-	// Exporting map setttings
-	////////////////////////////////////////////////////////////////////////
 	ExportOcclusionMesh(sLevelPath);
 
-	////////////////////////////////////////////////////////////////////////
-	// Exporting map setttings
-	////////////////////////////////////////////////////////////////////////
-	//ExportMapIni( sLevelPath );
-
-	//////////////////////////////////////////////////////////////////////////
 	// Export Particles.
 	{
 		CParticlesExporter partExporter;
@@ -293,32 +268,24 @@ bool CGameExporter::DoExport(unsigned int flags, const char* subdirectory)
 	ExportGameData(sLevelPath);
 	CLogFile::WriteLine("Exporting Game Data done");
 
-	//////////////////////////////////////////////////////////////////////////
-	// Start Movie System animations.
-	//////////////////////////////////////////////////////////////////////////
 	ExportAnimations(sLevelPath);
-
-	//////////////////////////////////////////////////////////////////////////
-	// Export Brushes.
-	//////////////////////////////////////////////////////////////////////////
 	ExportBrushes(sLevelPath);
-
 	ExportLevelLensFlares(sLevelPath);
 	ExportLevelResourceList(sLevelPath);
 	ExportLevelPerLayerResourceList(sLevelPath);
 	ExportLevelShaderCache(sLevelPath);
-	//////////////////////////////////////////////////////////////////////////
+
 	// Export list of entities to save/load during gameplay
-	//////////////////////////////////////////////////////////////////////////
+	string pakFilename = PathUtil::RemoveSlash(sLevelPath.GetString()) + "Level.pak";
+
 	CLogFile::WriteLine("Exporting serialization list");
 	XmlNodeRef entityList = XmlHelpers::CreateXmlNode("EntitySerialization");
-	pGameEngine->BuildEntitySerializationList(entityList);
-	string levelDataFile = sLevelPath + "Serialize.xml";
-	string pakFilename = PathUtil::RemoveSlash(sLevelPath.GetString()) + "Level.pak";
-	XmlString xmlData = entityList->getXML();
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+	const bool hasSerializationList = pGameEngine->BuildEntitySerializationList(entityList);
+	if (hasSerializationList)
+	{
+		string levelDataFile = sLevelPath + "Serialize.xml";
+		WriteXmlFileToPak(entityList, levelDataFile);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// End Exporting Game data.
@@ -445,7 +412,6 @@ bool CGameExporter::ExportMap(const char* pszGamePath, bool bSurfaceTexture, EEn
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportHeightMap(const char* pszGamePath, EEndian eExportEndian)
 {
 	char szFileOutputPath[_MAX_PATH];
@@ -509,8 +475,7 @@ void CGameExporter::ExportHeightMap(const char* pszGamePath, EEndian eExportEndi
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CGameExporter::ExportMergedMeshInstanceSectors(const char* pszGamePath, EEndian eExportEndian, std::vector<struct IStatInstGroup*>* pVegGroupTable)
+void CGameExporter::ExportMergedMeshInstanceSectors(const char* pszGamePath, EEndian eExportEndian, std::vector<IStatInstGroup*>* pVegGroupTable)
 {
 	char szFileOutputPath[_MAX_PATH];
 	DynArray<string> usedMeshes;
@@ -554,19 +519,14 @@ void CGameExporter::ExportMergedMeshInstanceSectors(const char* pszGamePath, EEn
 	m_levelPak.m_pakFile.UpdateFile(szFileOutputPath, (byteArray.size() ? &byteArray[0] : NULL), byteArray.size());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportDynTexSrcLayerInfo(const char* pszGamePath)
 {
 	XmlNodeRef root = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GenerateDynTexSrcLayerInfo();
 
 	string levelDataFile = string(pszGamePath) + "DynTexSrcLayerAct.xml";
-	XmlString xmlData = root->getXML();
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+	WriteXmlFileToPak(root, levelDataFile);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportOcclusionMesh(const char* pszGamePath)
 {
 	XmlNodeRef root = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GenerateDynTexSrcLayerInfo();
@@ -586,7 +546,6 @@ void CGameExporter::ExportOcclusionMesh(const char* pszGamePath)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGameExporter::ExportSvogiData()
 {
 	CScopedVariableSetter<bool> autoBackupEnabledChange(gEditorFilePreferences.autoSaveEnabled, false);
@@ -629,7 +588,7 @@ bool CGameExporter::ExportSvogiData()
 	}
 
 	// completely remove old pak. TODO: support incremental update - update only modified level segments
-	PathUtil::RemoveFile(m_SvogiDataPak.m_sPath);
+	FileUtils::RemoveFile(m_SvogiDataPak.m_sPath);
 
 	if (!OpenLevelPack(m_SvogiDataPak, false))
 	{
@@ -639,13 +598,13 @@ bool CGameExporter::ExportSvogiData()
 
 	CLogFile::WriteLine("Exporting SVO...");
 
-	I3DEngine* p3DEngine = GetIEditorImpl()->Get3DEngine();
-
-	if (p3DEngine->GetSvoCompiledData(m_SvogiDataPak.m_pakFile.GetArchive()))
+#if defined(FEATURE_SVO_GI)
+	if (GetIEditorImpl()->Get3DEngine()->GetSvoCompiledData(m_SvogiDataPak.m_pakFile.GetArchive()))
 	{
 		CLogFile::WriteLine("SVO exported successfully");
 	}
 	else
+#endif
 	{
 		CLogFile::WriteLine("SVO export disabled or nothing to export");
 	}
@@ -655,7 +614,6 @@ bool CGameExporter::ExportSvogiData()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportAnimations(const string& path)
 {
 	CLogFile::WriteLine("Export animation sequences...");
@@ -664,7 +622,6 @@ void CGameExporter::ExportAnimations(const string& path)
 	CLogFile::WriteString("Done.");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportLevelData(const string& path, bool bExportMission)
 {
 	XmlNodeRef root = XmlHelpers::CreateXmlNode("LevelData");
@@ -674,27 +631,20 @@ void CGameExporter::ExportLevelData(const string& path, bool bExportMission)
 
 	ExportMapInfo(root);
 
-	//////////////////////////////////////////////////////////////////////////
 	/// Export vegetation objects.
 	XmlNodeRef vegetationNode = root->newChild("Vegetation");
 	CVegetationMap* pVegetationMap = GetIEditorImpl()->GetVegetationMap();
 	if (pVegetationMap)
 		pVegetationMap->SerializeObjects(vegetationNode);
 
-	//////////////////////////////////////////////////////////////////////////
 	// Export materials.
 	ExportMaterials(root, path);
-	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
 	// Export particle manager.
 	GetIEditorImpl()->GetParticleManager()->Export(root);
-	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
 	// Export Level GameTokens.
 	ExportGameTokens(root, path);
-	//////////////////////////////////////////////////////////////////////////
 
 	CCryEditDoc* pDocument = GetIEditorImpl()->GetDocument();
 	CMission* pCurrentMission = 0;
@@ -705,9 +655,7 @@ void CGameExporter::ExportLevelData(const string& path, bool bExportMission)
 		// Save contents of current mission.
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	// Export missions tag.
-	//////////////////////////////////////////////////////////////////////////
 	XmlNodeRef missionsNode = rootAction->newChild("Missions");
 	string missionFileName;
 	string currentMissionFileName;
@@ -734,26 +682,16 @@ void CGameExporter::ExportLevelData(const string& path, bool bExportMission)
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	// Save Level Data XML
-	//////////////////////////////////////////////////////////////////////////
 	string levelDataFile = path + "LevelData.xml";
-	XmlString xmlData = root->getXML();
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataFile, file);
+	WriteXmlFileToPak(root, levelDataFile);
 
 	string levelDataActionFile = path + "LevelDataAction.xml";
-	XmlString xmlDataAction = rootAction->getXML();
-	CCryMemFile fileAction;
-	fileAction.Write(xmlDataAction.c_str(), xmlDataAction.length());
-	m_levelPak.m_pakFile.UpdateFile(levelDataActionFile, fileAction);
+	WriteXmlFileToPak(rootAction, levelDataActionFile);
 
 	if (bExportMission)
 	{
-		//////////////////////////////////////////////////////////////////////////
 		// Export current mission file.
-		//////////////////////////////////////////////////////////////////////////
 		XmlNodeRef objectsNode = NULL;
 		XmlNodeRef missionNode = rootAction->createNode("Mission");
 		pCurrentMission->Export(missionNode, objectsNode);
@@ -763,20 +701,13 @@ void CGameExporter::ExportLevelData(const string& path, bool bExportMission)
 		//if (!CFileUtil::OverwriteFile( path+currentMissionFileName ))
 		//			return;
 
-		_smart_ptr<IXmlStringData> pXmlStrData = missionNode->getXMLData(5000000);
-
-		CCryMemFile fileMission;
-		fileMission.Write(pXmlStrData->GetString(), pXmlStrData->GetStringLength());
-		m_levelPak.m_pakFile.UpdateFile(path + currentMissionFileName, fileMission);
+		WriteXmlFileToPak(missionNode, path + currentMissionFileName, 5000000);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportLevelInfo(const string& path)
 {
-	//////////////////////////////////////////////////////////////////////////
 	// Export short level info xml.
-	//////////////////////////////////////////////////////////////////////////
 	XmlNodeRef root = XmlHelpers::CreateXmlNode("LevelInfo");
 	root->setAttr("SandboxVersion", (const char*)GetIEditorImpl()->GetFileVersion().ToFullString());
 
@@ -813,18 +744,11 @@ void CGameExporter::ExportLevelInfo(const string& path)
 		missionNode->setAttr("Description", pMission->GetDescription());
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	// Save LevelInfo file.
-	//////////////////////////////////////////////////////////////////////////
 	string filename = path + "LevelInfo.xml";
-	XmlString xmlData = root->getXML();
-
-	CCryMemFile file;
-	file.Write(xmlData.c_str(), xmlData.length());
-	m_levelPak.m_pakFile.UpdateFile(filename, file);
+	WriteXmlFileToPak(root, filename);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportMapInfo(XmlNodeRef& node)
 {
 	XmlNodeRef info = node->newChild("LevelInfo");
@@ -865,7 +789,6 @@ void CGameExporter::ExportMapInfo(XmlNodeRef& node)
 
 // "locally higher texture resolution"
 
-//////////////////////////////////////////////////////////////////////////
 bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szFilePathName, float fLeft, float fTop, float fWidth, float fHeight)
 {
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
@@ -890,8 +813,8 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 	lSectorDimensions[0] = 256;                                         // good texture size for streaming
 	lSectorDimensions[1] = lSectorDimensions[0] / OCCMAP_DOWNSCALE_FACTOR;
 
-	CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
-	uint32 dwMinRequiredTextureExtend = pRGBLayer->CalcMinRequiredTextureExtend();
+	//CRGBLayer* pRGBLayer = GetIEditorImpl()->GetTerrainManager()->GetRGBLayer();
+	//uint32 dwMinRequiredTextureExtend = pRGBLayer->CalcMinRequiredTextureExtend();
 
 	// if the requested texture resolution is higher then the painted one, stick to this resolution
 	//	if(lSectorDimensions[0]*numSectors>dwMinRequiredTextureExtend)
@@ -931,12 +854,12 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 	// layer 0
 	layerHeader0.eTexFormat = eTerrainPrimaryTextureFormat[m_settings.bUpdateIndirectLighting][m_settings.bHiQualityCompression];
 	layerHeader0.nSectorSizePixels = lSectorDimensions[0];
-	layerHeader0.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[0], lSectorDimensions[0], 1, 1, layerHeader0.eTexFormat);
+	layerHeader0.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[0], lSectorDimensions[0], 1, 1, layerHeader0.eTexFormat, eTM_None);
 
 	// layer 1
 	layerHeader1.eTexFormat = eTerrainSecondaryTextureFormat[m_settings.bUpdateIndirectLighting][m_settings.bHiQualityCompression];
 	layerHeader1.nSectorSizePixels = lSectorDimensions[1];
-	layerHeader1.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[1], lSectorDimensions[1], 1, 1, layerHeader1.eTexFormat);
+	layerHeader1.nSectorSizeBytes = pSystem->GetIRenderer()->GetTextureFormatDataSize(lSectorDimensions[1], lSectorDimensions[1], 1, 1, layerHeader1.eTexFormat, eTM_None);
 
 	ctcFile.Write(&layerHeader0, sizeof(STerrainTextureLayerFileHeader));
 	ctcFile.Write(&layerHeader1, sizeof(STerrainTextureLayerFileHeader));
@@ -945,7 +868,6 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 	uint32 dwUsedTextureIds = 0;
 	std::vector<int16> IndexBlock;    // >=0 means x is texture index, -1 is used as terminator
 	{
-		uint32 dwMaxTextureRes = pRGBLayer->CalcMinRequiredTextureExtend();
 		_BuildIndexBlockRecursive(lSectorDimensions[0], IndexBlock, dwUsedTextureIds, fLeft, fTop, fWidth, fHeight);
 
 		uint16 dwSize = (uint16)IndexBlock.size();
@@ -974,9 +896,6 @@ bool CGameExporter::ExportSurfaceTexture(CPakFile& levelPakFile, const char* szF
 		LightGen.Init(pHeightmap->GetWidth(), false);
 
 		CWaitProgress progress("Generating Terrain Texture");
-
-		int nSectorId = 0;
-
 		SProgressHelper phelper(progress, dwUsedTextureIds, LightGen, ctcFile, IndexBlock, DataSeekPos, ElementFileSize, szFilePathName);
 
 		phelper.m_dwLayerExtends[0] = lSectorDimensions[0];
@@ -1096,9 +1015,6 @@ float GetFilteredNoiseVal(int X, int Y)
 bool CGameExporter::_ExportSurfaceTextureRecursive(CPakFile& levelPakFile, CCryMemFile& fileTemp, SProgressHelper& phelper, const int iParentIndex, SRecursionHelperQuarter& rDestPiece,
                                                    const float fMinX, const float fMinY, const float fWidth, const float fHeight, const uint32 dwRecursionDepth)
 {
-	// to jump over one mip level
-	uint32 dwMipSectorCount = 1 << (dwRecursionDepth + 1);
-
 	SSectorInfo sectorInfo;
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
 	pHeightmap->GetSectorsInfo(sectorInfo);
@@ -1591,19 +1507,18 @@ void CGameExporter::DownSampleWithBordersPreservedAO(const CImageEx rIn[4],
 
 			uint32 dwC[2];
 			dwC[0] = ComputeAvgCol_AO(
-			  rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY),
-			  rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY),
-			  rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
+				rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY),
+				rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY),
+				rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
 			dwC[1] = ComputeAvgCol_AO(
-			  rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY + 1), rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY + 1),
-			  rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
+				rIn[dwPart].ValueAt(dwLocalInX, dwLocalInY + 1), rIn[dwPart].ValueAt(dwLocalInX + 1, dwLocalInY + 1),
+				rInTerrainMinZ[dwPart], rInTerrainMaxZ[dwPart], fNewZMin, fNewZMax);
 
 			rOut.ValueAt(dwX, dwY) = ComputeAvgCol_AO(dwC[0], dwC[1], fNewZMin, fNewZMax, fNewZMin, fNewZMax);
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportAINavigationData(const string& path)
 {
 	if (!GetIEditorImpl()->GetSystem()->GetAISystem())
@@ -1671,7 +1586,6 @@ void CGameExporter::ExportGameData(const string& path)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CGameExporter::ExportAIAreas(const string& path)
 {
 	// (MATT) Only updates _some_ files in the AI but is only place that copies all bai files present into the PAK! {2008/08/12}
@@ -1745,7 +1659,6 @@ string CGameExporter::ExportAICoverSurfaces(const string& path)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CGameExporter::ExportAI(const string& path, uint32 flags)
 {
 	if (!GetISystem()->GetAISystem())
@@ -1762,7 +1675,6 @@ string CGameExporter::ExportAI(const string& path, uint32 flags)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportBrushes(const string& path)
 {
 	GetIEditorImpl()->Notify(eNotify_OnExportBrushes);
@@ -1786,7 +1698,6 @@ void CGameExporter::EncryptPakFile(string& rPakFilename)
 #endif
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::DeleteOldFiles(const string& levelDir, bool bSurfaceTexture)
 {
 	ForceDeleteFile(levelDir + "brush.lst");
@@ -1797,10 +1708,8 @@ void CGameExporter::DeleteOldFiles(const string& levelDir, bool bSurfaceTexture)
 	ForceDeleteFile(levelDir + "objects.idx");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportMaterials(XmlNodeRef& levelDataNode, const string& path)
 {
-	//////////////////////////////////////////////////////////////////////////
 	// Export materials manager.
 	CMaterialManager* pManager = GetIEditorImpl()->GetMaterialManager();
 	pManager->Export(levelDataNode);
@@ -1826,11 +1735,7 @@ void CGameExporter::ExportMaterials(XmlNodeRef& levelDataNode, const string& pat
 	}
 	if (!bHaveItems)
 	{
-		XmlString xmlData = nodeMaterials->getXML();
-
-		CCryMemFile file;
-		file.Write(xmlData.c_str(), xmlData.length());
-		m_levelPak.m_pakFile.UpdateFile(filename, file);
+		WriteXmlFileToPak(nodeMaterials, filename);
 	}
 	else
 	{
@@ -1839,7 +1744,6 @@ void CGameExporter::ExportMaterials(XmlNodeRef& levelDataNode, const string& pat
 	m_numExportedMaterials = numMtls;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportLevelLensFlares(const string& path)
 {
 	std::vector<CBaseObject*> objects;
@@ -1886,14 +1790,10 @@ void CGameExporter::ExportLevelLensFlares(const string& path)
 		pRootNode->addChild(pFlareNode);
 	}
 
-	CCryMemFile lensFlareNames;
-	lensFlareNames.Write(pRootNode->getXMLData()->GetString(), pRootNode->getXMLData()->GetStringLength());
-
 	string exportPathName = path + FLARE_EXPORT_FILE;
-	m_levelPak.m_pakFile.UpdateFile(exportPathName, lensFlareNames);
+	WriteXmlFileToPak(pRootNode, exportPathName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportLevelResourceList(const string& path)
 {
 	IResourceList* pResList = gEnv->pCryPak->GetResourceList(ICryPak::RFOM_Level);
@@ -1910,8 +1810,6 @@ void CGameExporter::ExportLevelResourceList(const string& path)
 
 	m_levelPak.m_pakFile.UpdateFile(resFile, memFile, true);
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 void CGameExporter::GatherLayerResourceList_r(CObjectLayer* pLayer, CUsedResources& resources)
 {
@@ -1932,7 +1830,7 @@ void CGameExporter::ExportLevelPerLayerResourceList(const string& path)
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
 	for (size_t i = 0; i < layers.size(); ++i)
 	{
-		CObjectLayer* pLayer = layers[i];
+		CObjectLayer* pLayer = static_cast<CObjectLayer*>(layers[i]);
 
 		// Only export topmost layers, and make sure they are flagged for exporting
 		if (pLayer->GetParent() || !pLayer->IsExporLayerPak())
@@ -1943,7 +1841,7 @@ void CGameExporter::ExportLevelPerLayerResourceList(const string& path)
 
 		const char* acLayerName = (const char*)pLayer->GetName();
 
-		for (CUsedResources::TResourceFiles::const_iterator it = resources.files.begin(); it != resources.files.end(); it++)
+		for (CUsedResources::TResourceFiles::const_iterator it = resources.files.begin(); it != resources.files.end(); ++it)
 		{
 			string filePath = PathUtil::MakeGamePath((*it).GetString());
 			filePath.MakeLower();
@@ -1961,7 +1859,6 @@ void CGameExporter::ExportLevelPerLayerResourceList(const string& path)
 	m_levelPak.m_pakFile.UpdateFile(resFile, memFile, true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportLevelShaderCache(const string& path)
 {
 	string buf;
@@ -1973,7 +1870,6 @@ void CGameExporter::ExportLevelShaderCache(const string& path)
 	m_levelPak.m_pakFile.UpdateFile(filename, memFile, true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportGameTokens(XmlNodeRef& levelDataNode, const string& path)
 {
 	// Export game tokens
@@ -2011,21 +1907,14 @@ void CGameExporter::ExportGameTokens(XmlNodeRef& levelDataNode, const string& pa
 				// Export this library to pak file.
 				XmlNodeRef gtNodeLib = XmlHelpers::CreateXmlNode("GameTokensLibrary");
 				pLib->Serialize(gtNodeLib, false);
-				CCryMemFile file;
-				XmlString xmlData = gtNodeLib->getXML();
-				file.Write(xmlData.c_str(), xmlData.length());
 				string gtfilename = PathUtil::Make(gtPath, PathUtil::GetFile(pLib->GetFilename()));
-				m_levelPak.m_pakFile.UpdateFile(gtfilename, file);
+				WriteXmlFileToPak(gtNodeLib, gtfilename);
 			}
 		}
 	}
 	if (!bEmptyLevelLib)
 	{
-		XmlString xmlData = nodeLib->getXML();
-
-		CCryMemFile file;
-		file.Write(xmlData.c_str(), xmlData.length());
-		m_levelPak.m_pakFile.UpdateFile(filename, file);
+		WriteXmlFileToPak(nodeLib, filename);
 	}
 	else
 	{
@@ -2033,7 +1922,6 @@ void CGameExporter::ExportGameTokens(XmlNodeRef& levelDataNode, const string& pa
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGameExporter::ExportFileList(const string& path, const string& levelName)
 {
 	// process the folder of the specified map name, producing a filelist.xml file
@@ -2270,6 +2158,33 @@ bool CGameExporter::CloseLevelPack(SLevelPakHelper& lphelper, bool bCryPak)
 	return bRet;
 }
 
+void CGameExporter::WriteXmlFileToPak(XmlNodeRef& root, const string& filename, int xmlMemReserve/* = 1024*/)
+{
+	WriteXmlFile(root, filename, m_levelPak.m_pakFile, xmlMemReserve);
+}
+
+void CGameExporter::WriteXmlFile(XmlNodeRef& root, const string& filename, CPakFile& pak, int xmlMemReserve)
+{
+	if (m_settings.exportBinaryXml)
+	{
+		struct SXmlBinaryDataWriterMemFile : public XMLBinary::IDataWriter
+		{
+			SXmlBinaryDataWriterMemFile(int memReserve) : m_file(memReserve) {}
+			virtual void Write(const void* pData, size_t size) final { m_file.Write(pData, size); }
+			CCryMemFile m_file;
+		};
+		SXmlBinaryDataWriterMemFile dataWriter(xmlMemReserve);
+		IXmlUtils* pXmlUtils = gEnv->pSystem->GetXmlUtils();
+		pXmlUtils->SaveBinaryXmlWithWriter(dataWriter, root);
+		pak.UpdateFile(filename, dataWriter.m_file);
+	}
+	else
+	{
+		_smart_ptr<IXmlStringData> xmlData = root->getXMLData(xmlMemReserve);
+		pak.UpdateFile(filename, (void*)xmlData->GetString(), (int)xmlData->GetStringLength());
+	}
+}
+
 namespace Private_GameExporter
 {
 void ExportSvogiData()
@@ -2277,9 +2192,39 @@ void ExportSvogiData()
 	CGameExporter gameExporter;
 	gameExporter.ExportSvogiData();
 }
+
+void ExportToEngine()
+{
+	if (!GetIEditorImpl()->GetGameEngine()->IsLevelLoaded())
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "You must first load a level to export");
+		return;
+	}
+
+	if (!GetIEditorImpl()->GetDocument()->IsDocumentReady())
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Cannot export at this moment. Please wait for any remaining level tasks to end");
+		return;
+	}
+
+	CScopedVariableSetter<bool> autoBackupEnabledChange(gEditorFilePreferences.autoSaveEnabled, false);
+
+	SGameExporterSettings settings;
+	settings.eExportEndian = eLittleEndian;
+
+	CGameExporter gameExporter(settings);
+	if (gameExporter.Export(eExp_AI_All, "."))
+	{
+		// We should replace this with a progress notification and progress notifications should have a way error out
+		GetIEditorImpl()->GetNotificationCenter()->ShowInfo("Export to Engine", "Export to engine finished");
+	}
+}
 }
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_GameExporter::ExportSvogiData, general, export_svogi_data,
-                                     "Export SVOGI Data",
-                                     "general.export_svogi_data()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_GameExporter::ExportSvogiData, exporter, export_svogi_data,
+                                   CCommandDescription("Export SVOGI Data"));
 
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_GameExporter::ExportToEngine, exporter, export_to_engine,
+                                   CCommandDescription("Exports the current level to the engine"));
+REGISTER_EDITOR_UI_COMMAND_DESC(exporter, export_to_engine, "Export to Engine", "F7; Ctrl+E", "icons:General/Export.ico", false);
+REGISTER_COMMAND_REMAPPING(ui_action, actionExport_to_Engine, exporter, export_to_engine)

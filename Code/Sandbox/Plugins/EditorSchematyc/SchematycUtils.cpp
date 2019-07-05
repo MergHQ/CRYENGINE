@@ -39,4 +39,3 @@ void MakeScriptElementNameUnique(stack_string& name, Schematyc::IScriptElement* 
 }
 
 }
-

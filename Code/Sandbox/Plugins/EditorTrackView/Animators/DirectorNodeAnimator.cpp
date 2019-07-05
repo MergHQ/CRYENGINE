@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "DirectorNodeAnimator.h"
 #include "Nodes/TrackViewAnimNode.h"
@@ -159,7 +156,12 @@ void CDirectorNodeAnimator::ForEachActiveSequence(const SAnimContext& animContex
 						animateFunction(pSequence, newAnimContext);
 					}
 
+					// TODO: Indicating here that we are doing animating of DirectorNodeAnimator at the moment
+					// and the sequence going to be reseted during animating. This should be eliminated during future refactoring.
+					pSequence->SetAnimating(true);
 					resetFunction(pSequence, newAnimContext);
+					pSequence->SetAnimating(false);
+					// ~TODO
 				}
 			}
 		}
@@ -213,4 +215,3 @@ void CDirectorNodeAnimator::UnBind(CTrackViewAnimNode* pNode)
 		}
 	}
 }
-

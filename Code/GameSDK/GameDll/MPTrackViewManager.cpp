@@ -5,6 +5,7 @@
 #include "Utility/CryHash.h"
 #include "Utility/CryWatch.h"
 #include "GameRules.h"
+#include "GameCVars.h"
 
 static const float s_TrackViewMinTimeDifferenceForSynch = 0.25f;
 
@@ -48,8 +49,6 @@ void CMPTrackViewManager::Update()
 	if (g_pGameCVars->g_mptrackview_debug)
 	{
 		IMovieSystem *pMovieSystem = gEnv->pMovieSystem;
-
-		int numSequences=pMovieSystem->GetNumSequences();
 
 		CryWatch("num finished trackviews=%d", m_FinishedTrackViewCount);
 		for (int i=0; i<m_FinishedTrackViewCount; i++)

@@ -5,6 +5,9 @@
 
 #include "AutoEnum.h"
 
+struct ILoadGame;
+struct ISaveGame;
+
 #define GameMechanismEventList(f)   \
 	f(kGMEvent_GameRulesInit)         \
 	f(kGMEvent_GameRulesRestart)      \

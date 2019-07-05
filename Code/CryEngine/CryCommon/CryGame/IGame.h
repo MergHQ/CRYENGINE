@@ -9,17 +9,15 @@
 
 #include <CrySystem/ICmdLine.h>
 #include <CryNetwork/INetwork.h>
+#include <CryCore/Assert/CryAssert.h>
 
-struct IAIActorProxy;
 struct IGameFramework;
-struct IGameStateRecorder;
-struct IGameAudio;
-struct IGameWarningsListener;
-struct SGameStartParams;
-struct SRenderingPassInfo;
-struct IGameToEditorInterface;
-struct IGameWebDebugService;
 struct IGameplayListener;
+struct IGameStateRecorder;
+struct IGameToEditorInterface;
+struct IGameWarningsListener;
+struct IGameWebDebugService;
+struct SRenderingPassInfo;
 
 // Declare legacy GameDLL as deprecated except for the legacy modules that expose functionality for it
 #if !defined(eCryModule) || (eCryModule != eCryM_GameFramework && eCryModule != eCryM_LegacyGameDLL     \
@@ -62,7 +60,7 @@ struct IGame
 
 		static void       GetNameForFile(const char* baseFileName, const uint32 fileIdx, char* outputName, size_t outputNameSize)
 		{
-			assert(baseFileName != NULL);
+			CRY_ASSERT(baseFileName != NULL);
 			cry_sprintf(outputName, outputNameSize, "%s_%u", baseFileName, fileIdx);
 		}
 
@@ -89,7 +87,7 @@ struct IGame
 	//! Finish initializing the MOD.
 	//! Called after the game framework has finished its CompleteInit.
 	//! This is the point at which to register game flow nodes etc.
-	virtual bool CompleteInit() { return true; };
+	virtual bool CompleteInit() { return true; }
 
 	//! Shuts down the MOD and delete itself.
 	virtual void Shutdown() = 0;
@@ -163,7 +161,7 @@ struct IGame
 	virtual IResourcesPreCache* GetResourceCache() { return nullptr; }
 
 	//! Retrieves IGameWebDebugService for web-socket based remote debugging.
-	virtual IGameWebDebugService* GetIWebDebugService() { return nullptr; };
+	virtual IGameWebDebugService* GetIWebDebugService() { return nullptr; }
 	// </interfuscator:shuffle>
 };
 

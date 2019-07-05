@@ -9,12 +9,19 @@
 class CVolumetricCloudsStage : public CGraphicsPipelineStage
 {
 public:
+	static const EGraphicsPipelineStage StageID = eStage_VolumetricClouds;
+
 	static bool IsRenderable();
 	static Vec4 GetVolumetricCloudShadowParams(const CCamera&, const Vec2& windOffset, const Vec2& vTiling);
 
 public:
-	CVolumetricCloudsStage();
+	CVolumetricCloudsStage(CGraphicsPipeline& graphicsPipeline);
 	virtual ~CVolumetricCloudsStage();
+
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return gcpRendD3D->m_bVolumetricCloudsEnabled;
+	}
 
 	void Init() final;
 	void Update() final;
@@ -81,4 +88,7 @@ private:
 	TArray<Vec4>         m_blockerParamArray;
 	TArray<Vec4>         m_blockerSSPosArray;
 	TArray<Vec4>         m_blockerSSParamArray;
+
+public:
+	_smart_ptr<CTexture> m_pTexVolCloudShadow;
 };

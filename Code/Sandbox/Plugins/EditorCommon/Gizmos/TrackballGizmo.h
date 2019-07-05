@@ -2,23 +2,15 @@
 
 #pragma once
 
-#include "IEditor.h" // for AxisConstrains and RefCoordSys
+#include "EditorCommonAPI.h"
 #include "Gizmo.h"
+#include <CrySandbox/CrySignal.h>
 
-struct DisplayContext;
-struct HitContext;
-struct IDisplayViewport;
-
-//////////////////////////////////////////////////////////////////////////
-// CViewTranslateGizmo Gizmo.
-//
-// Allows view space movement
-//////////////////////////////////////////////////////////////////////////
+// Free Rotation (Trackball) gizmo
 class EDITOR_COMMON_API CTrackballGizmo : public CGizmo
 {
 public:
 	CTrackballGizmo();
-	~CTrackballGizmo();
 
 	//! set position - should be world space
 	void         SetPosition(Vec3 pos);
@@ -27,7 +19,7 @@ public:
 	//! set unique scale of the gizmo
 	void         SetScale(float scale);
 
-	virtual void Display(DisplayContext& dc) override;
+	virtual void Display(SDisplayContext& dc) override;
 
 	virtual bool MouseCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int nFlags) override;
 
@@ -52,6 +44,6 @@ private:
 	float m_scale;
 
 	Vec2  m_initOffset;
-	Vec3  m_initPosition;
+	float m_rotatedX;
+	float m_rotatedY;
 };
-

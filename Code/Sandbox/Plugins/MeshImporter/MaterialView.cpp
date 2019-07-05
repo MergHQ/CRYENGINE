@@ -20,6 +20,7 @@ CMaterialView::CMaterialView(CSortedMaterialModel* pModel, QWidget* pParent)
 	setModel(m_pModel);
 	setSelectionMode(QAbstractItemView::ExtendedSelection);
 	setSortingEnabled(true);
+	sortByColumn(CMaterialModel::eColumnType_Name, Qt::SortOrder::AscendingOrder);
 
 	m_pSubMaterialDelegate.reset(new CComboBoxDelegate(this));
 	m_pSubMaterialDelegate->SetFillEditorFunction([pModel](QMenuComboBox* pEditor)
@@ -31,7 +32,6 @@ CMaterialView::CMaterialView(CSortedMaterialModel* pModel, QWidget* pParent)
 
 		for (int i = 0; i < pScene->GetMaterialCount(); ++i)
 		{
-			const FbxTool::SMaterial* const pMaterial = pScene->GetMaterialByIndex(i);
 			QString text = QString("%1").arg(i);
 			const QString name = pModel->GetSubMaterialName(i);
 			if (!name.isEmpty())
@@ -121,4 +121,3 @@ CMaterialView* CMaterialViewContainer::GetView()
 {
 	return m_pView;
 }
-

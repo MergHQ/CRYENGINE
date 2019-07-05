@@ -11,7 +11,7 @@
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
 
-#ifdef USING_BEHAVIOR_TREE_VISUALIZER
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 namespace BehaviorTree
 {
 const float nodePosX = 10.0f;
@@ -40,17 +40,12 @@ void TreeVisualizer::Draw(
   const DebugTree& tree,
   const char* behaviorTreeName,
   const char* agentName,
-	#ifdef USING_BEHAVIOR_TREE_LOG
   const MessageQueue& behaviorLog,
-	#endif // USING_BEHAVIOR_TREE_LOG
   const TimestampCollection& timestampCollection,
-  const Blackboard& blackboard
-	#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
-  , const MessageQueue& eventsLog
-	#endif // USING_BEHAVIOR_TREE_EVENT_DEBUGGING
-  )
+  const Blackboard& blackboard, 
+  const MessageQueue& eventsLog)
 {
-	// Nodes
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugTree)
 	{
 		const DebugNode* firstNode = tree.GetFirstNode().get();
 		if (firstNode)
@@ -64,26 +59,33 @@ void TreeVisualizer::Draw(
 		}
 	}
 
-	#ifdef USING_BEHAVIOR_TREE_LOG
-	DrawBehaviorLog(behaviorLog);
-	#endif // USING_BEHAVIOR_TREE_LOG
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugLog)
+	{
+		DrawBehaviorLog(behaviorLog);
+	}
 
-	#ifdef USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
-	if (gAIEnv.CVars.DebugTimestamps)
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugTimestamps)
 	{
 		DrawTimestampCollection(timestampCollection);
 	}
-	#endif // USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
 
-	DrawBlackboard(blackboard);
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugBlackboard)
+	{
+		DrawBlackboard(blackboard);
+	}
 
-	#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
-	DrawEventLog(eventsLog);
-	#endif // USING_BEHAVIOR_TREE_EVENT_DEBUGGING
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugEvents)
+	{
+		DrawEventLog(eventsLog);
+	}
 }
 
 void TreeVisualizer::DrawNode(const DebugNode& node, const uint32 depth)
 {
+	// only show currently running nodes
+	if (node.nodeStatus != Running)
+		return;
+
 	// Construct a nice readable debug text for this node
 	stack_string str;
 
@@ -109,22 +111,12 @@ void TreeVisualizer::DrawNode(const DebugNode& node, const uint32 depth)
 
 	bool hasCustomText = false;
 
-	#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 	// Custom debug text from the node
-	stack_string customDebugText;
-
-	UpdateContext updateContext = m_updateContext;
-	const Node* nodeToDraw = static_cast<const Node*>(node.node);
-	const RuntimeDataID runtimeDataID = MakeRuntimeDataID(updateContext.entityId, nodeToDraw->m_id);
-	updateContext.runtimeData = nodeToDraw->GetCreator()->GetRuntimeData(runtimeDataID);
-
-	nodeToDraw->GetCustomDebugText(updateContext, customDebugText);
-	if (!customDebugText.empty())
+	if (!node.customDebugText.empty())
 	{
-		str += " - " + customDebugText;
+		str += " - " + node.customDebugText;
 		hasCustomText = true;
 	}
-	#endif // USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 
 	// Draw
 	ColorB color;
@@ -153,7 +145,6 @@ void TreeVisualizer::DrawLine(const char* label, const ColorB& color)
 	m_currentLinePositionY += lineHeight;
 }
 
-	#ifdef USING_BEHAVIOR_TREE_LOG
 void TreeVisualizer::DrawBehaviorLog(const MessageQueue& behaviorLog)
 {
 	SetLinePosition(behaviorLogPosX, behaviorLogPosY);
@@ -165,16 +156,13 @@ void TreeVisualizer::DrawBehaviorLog(const MessageQueue& behaviorLog)
 	for (; it != end; ++it)
 		DrawLine(*it, Col_White);
 }
-	#endif // USING_BEHAVIOR_TREE_LOG
 
-	#ifdef USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
 void TreeVisualizer::DrawTimestampCollection(const TimestampCollection& timestampCollection)
 {
 	SetLinePosition(timestampPosX, timestampPosY);
 	DrawLine("Timestamp Collection", Col_Yellow);
 	DrawLine("", Col_White);
 
-	CTimeValue timeNow = gEnv->pTimer->GetFrameStartTime();
 	Timestamps::const_iterator it = timestampCollection.GetTimestamps().begin();
 	Timestamps::const_iterator end = timestampCollection.GetTimestamps().end();
 	for (; it != end; ++it)
@@ -183,7 +171,7 @@ void TreeVisualizer::DrawTimestampCollection(const TimestampCollection& timestam
 		ColorB color;
 		if (it->IsValid())
 		{
-			s.Format("%s [%.2f]", it->id.timestampName, (timeNow - it->time).GetSeconds());
+			s.Format("%s [%.2f]", it->id.timestampName, m_updateContext.frameStartTime.GetDifferenceInSeconds(it->time));
 			color = Col_ForestGreen;
 		}
 		else
@@ -194,7 +182,6 @@ void TreeVisualizer::DrawTimestampCollection(const TimestampCollection& timestam
 		DrawLine(s.c_str(), color);
 	}
 }
-	#endif // USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
 
 void TreeVisualizer::SetLinePosition(float x, float y)
 {
@@ -219,22 +206,68 @@ void TreeVisualizer::DrawBlackboard(const Blackboard& blackboard)
 		BlackboardVariableId id = it->first;
 		IBlackboardVariablePtr variable = it->second;
 
+		stack_string variableValue;
 		Serialization::TypeID typeId = variable->GetDataTypeId();
-		if (typeId == Serialization::TypeID::get<Vec3>())
+		if (typeId == Serialization::TypeID::get<int>())
 		{
-			stack_string variableText;
-
+			int data;
+			variable->GetData(data);
+			variableValue.Format("%d", data);
+		}
+		else if (typeId == Serialization::TypeID::get<float>())
+		{
+			float data;
+			variable->GetData(data);
+			variableValue.Format("%.2f", data);
+		}
+		else if (typeId == Serialization::TypeID::get<Vec3>())
+		{
 			Vec3 data;
 			variable->GetData(data);
-			variableText.Format("%s - (%f, %f, %f)", id.name.c_str(), data.x, data.y, data.z);
-
-			DrawLine(variableText.c_str(), Col_White);
+			variableValue.Format("(%.2f, %.2f, %.2f)", data.x, data.y, data.z);
 		}
+		else if (typeId == Serialization::TypeID::get<bool>())
+		{
+			bool data;
+			variable->GetData(data);
+			variableValue.Format("%s", data ? "True" : "False");
+		}
+		else if (typeId == Serialization::TypeID::get<string>())
+		{
+			string data;
+			variable->GetData(data);
+			variableValue.Format("%s", data);
+		}
+		else if (typeId == Serialization::TypeID::get<double>())
+		{
+			double data;
+			variable->GetData(data);
+			variableValue.Format("%.5f", data);
+		}
+		else if (typeId == Serialization::TypeID::get<Vec2>())
+		{
+			Vec2 data;
+			variable->GetData(data);
+			variableValue.Format("(%f, %f)", id.name.c_str(), data.x, data.y);
+		}
+		else if (typeId == Serialization::TypeID::get<char>())
+		{
+			char data;
+			variable->GetData(data);
+			variableValue.Format("%c", data);
+		}
+		else
+		{
+			variableValue = "TYPE NOT SUPPORTED";
+		}
+
+		stack_string variableText;
+		variableText.Format("%s - %s", id.name.c_str(), variableValue.c_str());
+		DrawLine(variableText.c_str(), Col_White);
 	}
 	#endif
 }
 
-	#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
 void TreeVisualizer::DrawEventLog(const MessageQueue& eventsLog)
 {
 	SetLinePosition(eventLogPosX, eventLogPosY);
@@ -246,7 +279,6 @@ void TreeVisualizer::DrawEventLog(const MessageQueue& eventsLog)
 	for (; it != end; ++it)
 		DrawLine(*it, Col_White);
 }
-	#endif // USING_BEHAVIOR_TREE_EVENT_DEBUGGING
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -302,7 +334,7 @@ DebugTreeSerializer::DebugTreeSerializer(const BehaviorTreeInstance& treeInstanc
 			CollectTreeNodeInfo(*pFirstNode, updateContext, m_data.tree.rootNode);
 		}
 		CollectVariablesInfo(treeInstance);
-		CollectTimeStamps(treeInstance);
+		CollectTimeStamps(treeInstance, updateContext);
 		CollectEventsLog(treeInstance);
 	}
 }
@@ -314,27 +346,21 @@ void DebugTreeSerializer::Serialize(Serialization::IArchive& archive)
 
 void DebugTreeSerializer::CollectTreeNodeInfo(const DebugNode& debugNode, const UpdateContext& updateContext, TreeNode& outNode)
 {
+	// only show currently running nodes
+	if (debugNode.nodeStatus != Running)
+		return;
+
 	const uint32 xmlLine = static_cast<const Node*>(debugNode.node)->GetXmlLine();
 
 	stack_string tempOutput;
 	const char* szNodeType = static_cast<const Node*>(debugNode.node)->GetCreator()->GetTypeName();
 	tempOutput += szNodeType;
 
-	#ifdef USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 	// Custom debug text from the node
-	stack_string customDebugText;
-
-	UpdateContext updateContextCopy = updateContext;
-	const Node* pNodeToDraw = static_cast<const Node*>(debugNode.node);
-	const RuntimeDataID runtimeDataID = MakeRuntimeDataID(updateContext.entityId, pNodeToDraw->m_id);
-	updateContextCopy.runtimeData = pNodeToDraw->GetCreator()->GetRuntimeData(runtimeDataID);
-
-	pNodeToDraw->GetCustomDebugText(updateContextCopy, customDebugText);
-	if (!customDebugText.empty())
+	if (!debugNode.customDebugText.empty())
 	{
-		tempOutput += " - " + customDebugText;
+		tempOutput += " - " + debugNode.customDebugText;
 	}
-	#endif // USING_BEHAVIOR_TREE_NODE_CUSTOM_DEBUG_TEXT
 
 	outNode.xmlLine = xmlLine;
 	outNode.node = tempOutput.c_str();
@@ -366,10 +392,9 @@ void DebugTreeSerializer::CollectVariablesInfo(const BehaviorTreeInstance& insta
 	#endif
 }
 
-void DebugTreeSerializer::CollectTimeStamps(const BehaviorTreeInstance& instance)
+void DebugTreeSerializer::CollectTimeStamps(const BehaviorTreeInstance& instance, const UpdateContext& updateContext)
 {
-	#ifdef USING_BEHAVIOR_TREE_TIMESTAMP_DEBUGGING
-	CTimeValue timeNow = gEnv->pTimer->GetFrameStartTime();
+	CTimeValue timeNow = GetAISystem()->GetFrameStartTime();
 	Timestamps::const_iterator it = instance.timestampCollection.GetTimestamps().begin();
 	Timestamps::const_iterator end = instance.timestampCollection.GetTimestamps().end();
 
@@ -379,16 +404,14 @@ void DebugTreeSerializer::CollectTimeStamps(const BehaviorTreeInstance& instance
 		TimeStamp timeStamp;
 		timeStamp.name = it->id.timestampName;
 		timeStamp.bIsValid = it->IsValid();
-		timeStamp.value = it->IsValid() ? (timeNow - it->time).GetSeconds() : 0.0f;
+		timeStamp.value = it->IsValid() ? (updateContext.frameStartTime.GetDifferenceInSeconds(it->time)) : 0.0f;
 
 		m_data.timeStamps.push_back(timeStamp);
 	}
-	#endif
 }
 
 void DebugTreeSerializer::CollectEventsLog(const BehaviorTreeInstance& instance)
 {
-	#ifdef USING_BEHAVIOR_TREE_EVENT_DEBUGGING
 	PersonalLog::Messages::const_reverse_iterator it = instance.eventsLog.GetMessages().rbegin();
 	PersonalLog::Messages::const_reverse_iterator end = instance.eventsLog.GetMessages().rend();
 
@@ -397,12 +420,10 @@ void DebugTreeSerializer::CollectEventsLog(const BehaviorTreeInstance& instance)
 	{
 		m_data.eventLog.push_back(*it);
 	}
-	#endif
 }
 
 void DebugTreeSerializer::CollectExecutionErrorInfo(const DebugTree& debugTree)
 {
-	#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 	m_data.errorLog.reserve(debugTree.GetSucceededAndFailedNodes().size() + 1);
 
 	DynArray<DebugNodePtr>::const_iterator it = debugTree.GetSucceededAndFailedNodes().begin();
@@ -416,9 +437,7 @@ void DebugTreeSerializer::CollectExecutionErrorInfo(const DebugTree& debugTree)
 		messageLine.Format("(%d) %s.", node->GetXmlLine(), node->GetCreator()->GetTypeName());
 		m_data.errorLog.push_back(messageLine);
 	}
-	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
+}
 }
 
-}
-
-#endif // USING_BEHAVIOR_TREE_VISUALIZER
+#endif // DEBUG_MODULAR_BEHAVIOR_TREE

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CryCore/Containers/VectorMap.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "AreaGrid.h"
 
 //#define DEBUG_AREAMANAGER
@@ -11,6 +12,8 @@ class CEntitySystem;
 class CArea;
 struct IVisArea;
 struct IAreaManagerEventListener;
+struct SUpdateEntityAreaDebug;
+class CUpdateAreaProfileHistory;
 
 typedef std::vector<IAreaManagerEventListener*> AreaManagerEventListenerVector;
 typedef std::vector<SAudioAreaInfo>             AreaEnvironments;
@@ -169,7 +172,7 @@ private:
 		m_mapAreaCache.erase(nEntityId);
 	}
 
-	void UpdateEntity(Vec3 const& position, CEntity* const pIEntity);
+	void UpdateEntity(Vec3 const& position, CEntity* const pIEntity, SUpdateEntityAreaDebug& debug);
 	void UpdateDirtyAreas();
 	void ProcessArea(CArea* const pArea, SAreaCacheEntry& areaCacheEntry, SAreasCache* const pAreaCache, Vec3 const& pos, CEntity const* const pIEntity, AreaEnvironments& areaEnvironments);
 	void ExitArea(EntityId const entityId, CArea const* const _pArea);
@@ -227,6 +230,8 @@ private:
 	enum Threads : uint8 { Main = 0, Audio = 1, Num };
 	TAreaPointers                  m_areasAtPos[Threads::Num];
 	CryCriticalSectionNonRecursive m_accessAreas;
+
+	std::unique_ptr<CUpdateAreaProfileHistory> m_pProfileHistory;
 
 #if defined(DEBUG_AREAMANAGER)
 	//////////////////////////////////////////////////////////////////////////

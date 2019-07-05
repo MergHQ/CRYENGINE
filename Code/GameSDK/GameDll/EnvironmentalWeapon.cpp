@@ -37,9 +37,9 @@ const static float sNoRequiredKillVelocityWindow					= 0.25f;
 // Sweep testing
 const static int sMaxEntitiesToConsiderPerSweep = 2; 
 static Vec3  s_radiusAdjust(2.0f,2.0f,2.5f); // used to grab all entities in box
-static bool  s_bForceSweepTest			= true;
 
 #if ALLOW_SWEEP_DEBUGGING
+static bool s_bForceSweepTest = true;
 static bool  s_bRenderTris				= true; 
 static bool  s_bRenderFrameStamps		= true; 
 static bool  s_bRenderWeaponAABB		= false;
@@ -101,14 +101,14 @@ CEnvironmentalWeapon::CEnvironmentalWeapon()
 #endif //#ifndef _RELEASE
 {
 	s_pEnvironmentalWeaponClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass( s_EnvironmentalWeaponName );
-	CRY_ASSERT_MESSAGE(s_pEnvironmentalWeaponClass, "CEnvironmentalWeapon::CEnvironmentalWeapon - couldn't find weapon class");
+	CRY_ASSERT(s_pEnvironmentalWeaponClass, "CEnvironmentalWeapon::CEnvironmentalWeapon - couldn't find weapon class");
 }
 
 CEnvironmentalWeapon::~CEnvironmentalWeapon()
 {
 	if(CGameRules* pGameRules = g_pGame->GetGameRules())
 	{
-		g_pGame->GetGameRules()->UnRegisterRevivedListener(this); 
+		pGameRules->UnRegisterRevivedListener(this); 
 	}
 }
 
@@ -197,7 +197,6 @@ void CEnvironmentalWeapon::AttemptToRegisterInteractiveEntity()
 		GetEntity()->GetScriptTable()->GetValue( "IsRooted", bRooted );
 
 		// Test if can no longer interact / or *can* now interact
-		CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
 		if(m_logicFlags & ELogicFlag_registeredWithIEMonitor)
 		{
 			if( bRooted || m_OwnerId != 0 || g_pGameCVars->g_mpNoEnvironmentalWeapons )
@@ -226,7 +225,7 @@ void CEnvironmentalWeapon::InitWeaponState_Held()
 	if(pOwnerActor)
 	{
 		// Force the player to attach and hold this weapon
-		CRY_ASSERT_MESSAGE(pOwnerActor->GetActorClass() == CPlayer::GetActorClassType(), "CEnvironmentalWeapon::InitWeaponState_Held - Expected player, got something else");
+		CRY_ASSERT(pOwnerActor->GetActorClass() == CPlayer::GetActorClassType(), "CEnvironmentalWeapon::InitWeaponState_Held - Expected player, got something else");
 		CPlayer* pPlayer = static_cast<CPlayer*>(pOwnerActor);
 		pPlayer->EnterPickAndThrow(GetEntityId());
 
@@ -348,7 +347,7 @@ bool CEnvironmentalWeapon::DoDetachFromParent()
 	bool wasAttached=false;
 
 	IEntity* pWeaponEntity = GetEntity();
-	if (IEntity *pParent = pWeaponEntity->GetParent())
+	if (pWeaponEntity->GetParent() != nullptr)
 	{
 		// standard parent with assumed normal attachment - detaching
 		pWeaponEntity->DetachThis(IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
@@ -393,7 +392,7 @@ bool CEnvironmentalWeapon::Use(EntityId requesterId)
 						}
 					}
 
-					CRY_ASSERT_MESSAGE(pActor->GetActorClass() == CPlayer::GetActorClassType(), "CEnvironmentalWeapon::Use - Expected player, got something else");
+					CRY_ASSERT(pActor->GetActorClass() == CPlayer::GetActorClassType(), "CEnvironmentalWeapon::Use - Expected player, got something else");
 					static_cast<CPlayer*>(pActor)->EnterPickAndThrow( GetEntityId(), false );
 
 					if(gEnv->bServer)
@@ -571,7 +570,7 @@ bool CEnvironmentalWeapon::NetSerialize( TSerialize ser, EEntityAspects aspect, 
 		// before sending over network
 		float fCurrentHealth, fPrevHealth;
 		fCurrentHealth = fPrevHealth = GetCurrentHealth();
-		CRY_ASSERT_MESSAGE( fCurrentHealth <= 8191, "ERROR - edmg policy max cannot store currentHealth ");
+		CRY_ASSERT( fCurrentHealth <= 8191, "ERROR - edmg policy max cannot store currentHealth ");
 		ser.Value("currentHealth", fCurrentHealth, 'edmg' );
 
 		if(ser.IsReading())
@@ -818,7 +817,7 @@ void CEnvironmentalWeapon::DoInitWeaponState()
 	{
 		// Validity
 		// either 1) We have an owner and are in the held state, or 2) we don't have an owner and are in the dropped state
-		CRY_ASSERT_MESSAGE((m_OwnerId > 0 && m_State == EWS_Held) || (m_OwnerId == 0 && m_State == EWS_OnGround), "CEnvironmentalWeapon::PostInit() < ERROR - properties in invalid state");
+		CRY_ASSERT((m_OwnerId > 0 && m_State == EWS_Held) || (m_OwnerId == 0 && m_State == EWS_OnGround), "CEnvironmentalWeapon::PostInit() < ERROR - properties in invalid state");
 
 		if(m_OwnerId)
 		{
@@ -892,8 +891,6 @@ void CEnvironmentalWeapon::DoVehicleAttach()
 
 bool CEnvironmentalWeapon::ProcessMeleeHit(const EntityHitRecord& hitRecord, IPhysicalEntity* pVictimPhysicalEntity) 
 {
-	IEntity* pEntity = GetEntity(); 
-
 	// Determine what we have hit and react accordingly. 
 	IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(hitRecord.m_entityId);
 	if(pActor && pActor->IsPlayer())
@@ -1066,7 +1063,6 @@ void CEnvironmentalWeapon::UpdateDebugOutput() const
 	{
 		// Render throw helper
 		pAuxGeom->DrawPoint(m_throwDir,green,20);
-		const float throwDebugLineLength = 1.0f; 
 		pAuxGeom->DrawLine(m_throwOrigin, blue, m_throwTarget, red, 1.0f);
 	}
 
@@ -1171,9 +1167,9 @@ void CEnvironmentalWeapon::RenderDebugStats() const
 }
 #endif // #ifndef _RELEASE
 
-uint64 CEnvironmentalWeapon::GetEventMask() const
+Cry::Entity::EventFlags CEnvironmentalWeapon::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_LINK) | ENTITY_EVENT_BIT(ENTITY_EVENT_DELINK) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_LEVEL) | ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
+	return ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK | ENTITY_EVENT_START_LEVEL | ENTITY_EVENT_XFORM;
 }
 
 void CEnvironmentalWeapon::ProcessEvent(const SEntityEvent& event)
@@ -1267,7 +1263,6 @@ void CEnvironmentalWeapon::ProcessEvent(const SEntityEvent& event)
 	case ENTITY_EVENT_START_LEVEL:
 		{
 			//Register with interactive entity monitor
-			IActor* pClientActor(NULL);
 			if( (m_logicFlags & ELogicFlag_registeredWithIEMonitor) == 0)
 			{
 				AttemptToRegisterInteractiveEntity(); 
@@ -1292,14 +1287,14 @@ bool CEnvironmentalWeapon::ReloadExtension( IGameObject * pGameObject, const SEn
 	ResetGameObject();
 	EW::RegisterEvents(*this,*pGameObject);
 
-	CRY_ASSERT_MESSAGE(false, "CEnvironmentalWeapon::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CEnvironmentalWeapon::ReloadExtension not implemented");
 
 	return true;
 }
 
 bool CEnvironmentalWeapon::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CEnvironmentalWeapon::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CEnvironmentalWeapon::GetEntityPoolSignature not implemented");
 
 	return true;
 }
@@ -2153,8 +2148,6 @@ bool CEnvironmentalWeapon::HandleChargedThrowCollisionEvent( const EventPhysColl
 			// We care about collisions with everything, including geometry
 			if(pVictimPhysicalEntity)
 			{
-				bool bHandledPhysCollision = false;
-
 				IEntity* pVictimEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pVictimPhysicalEntity);
 				if(pVictimEntity)
 				{
@@ -2280,7 +2273,6 @@ Vec3 CEnvironmentalWeapon::CalculateImpulse_Player( const HitInfo& hitInfo, CPla
 	{
 		// Calc impulse required to move at targetVelocity
 		float victimMass = CalculateVictimMass(pVictimPhysicalEntity); 
-		Vec3 impulseVec  = hitInfo.dir * victimMass * desiredRagdollVelocity * g_pGameCVars->pl_pickAndThrow.environmentalWeaponImpulseScale; 
 
 		// LOGGING
 #ifndef _RELEASE
@@ -2514,7 +2506,7 @@ void CEnvironmentalWeapon::ProcessHitPlayer( IActor* pVictimActor, const EntityH
 		else 
 		{
 			// Charged throw
-			CRY_ASSERT_MESSAGE(m_currentAttackState & EAttackStateType_ChargedThrow, "CEnvironmentalWeapon::ProcessHitPlayer < ERROR - attempting to process player hit with unknown attack state");
+			CRY_ASSERT(m_currentAttackState & EAttackStateType_ChargedThrow, "CEnvironmentalWeapon::ProcessHitPlayer < ERROR - attempting to process player hit with unknown attack state");
 			
 			GenerateHitInfo(attackerId, sDamageRequiredForCertainDeath, hitInfo, entityHitRecord, nImpactDir, CGameRules::EHitType::EnvironmentalThrow);
 
@@ -2584,7 +2576,7 @@ void CEnvironmentalWeapon::ProcessHitObject( const EntityHitRecord& entityHitRec
 		else
 		{
 			// Charged throw
-			CRY_ASSERT_MESSAGE(m_currentAttackState & EAttackStateType_ChargedThrow, "CEnvironmentalWeapon::GenerateHitInfo < ERROR - attempting to process hit when in an unknown state");
+			CRY_ASSERT(m_currentAttackState & EAttackStateType_ChargedThrow, "CEnvironmentalWeapon::GenerateHitInfo < ERROR - attempting to process hit when in an unknown state");
 			float damageFraction = (impactSpeed - m_vehicleThrowMinVelocity) / (m_vehicleThrowMaxVelocity - m_vehicleThrowMinVelocity);
 			damageFraction = clamp_tpl(damageFraction, 0.f, 1.f);
 			GenerateHitInfo(attackerId, m_vehicleThrowDamage * damageFraction, hitInfo, entityHitRecord, nImpactDir, CGameRules::EHitType::EnvironmentalThrow);
@@ -2873,7 +2865,7 @@ void CEnvironmentalWeapon::DelegateAuthorityOnOwnershipChanged(EntityId prevOwne
 		{
 			// If new owner is a remote player
 			IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(newOwnerId);
-			CRY_ASSERT_MESSAGE(pActor, "CEnvironmentalWeapon::DelegateAuthorityOnOwnershipChanged < Something has gone wrong here - perhaps trying to hand ownership to a player that has left the game?"); 
+			CRY_ASSERT(pActor, "CEnvironmentalWeapon::DelegateAuthorityOnOwnershipChanged < Something has gone wrong here - perhaps trying to hand ownership to a player that has left the game?"); 
 			INetChannel *pNetChannel = gEnv->pGameFramework->GetNetChannel(pActor->GetChannelId());
 			if (pActor && pNetChannel)
 			{
@@ -2888,10 +2880,10 @@ void CEnvironmentalWeapon::RegisterListener( IEnvironmentalWeaponEventListener* 
 {
 #ifndef _RELEASE
 	TListenerList::iterator iter = std::find(m_eventListeners.begin(), m_eventListeners.end(), pListener);
-	CRY_ASSERT_MESSAGE(iter == m_eventListeners.end(), "CEnvironmentalWeapon::RegisterListener - this listener has already been registered!");
+	CRY_ASSERT(iter == m_eventListeners.end(), "CEnvironmentalWeapon::RegisterListener - this listener has already been registered!");
 #endif
 
-	CRY_ASSERT_MESSAGE(m_eventListeners.size() < s_maxListeners, "CEnvironmentalWeapon::RegisterListener < ERROR - adding more listeners than supported. Should increase listener container size - Let JONB know");
+	CRY_ASSERT(m_eventListeners.size() < s_maxListeners, "CEnvironmentalWeapon::RegisterListener < ERROR - adding more listeners than supported. Should increase listener container size - Let JONB know");
 	
 	if(m_eventListeners.size() < s_maxListeners)
 	{
@@ -2902,7 +2894,7 @@ void CEnvironmentalWeapon::RegisterListener( IEnvironmentalWeaponEventListener* 
 void CEnvironmentalWeapon::UnregisterListener( IEnvironmentalWeaponEventListener* pListener )
 {
 	TListenerList::iterator iter = std::find(m_eventListeners.begin(), m_eventListeners.end(), pListener);
-	CRY_ASSERT_MESSAGE(iter != m_eventListeners.end(), "CEnvironmentalWeapon::UnregisterListener - this listener is not currently registered!");
+	CRY_ASSERT(iter != m_eventListeners.end(), "CEnvironmentalWeapon::UnregisterListener - this listener is not currently registered!");
 
 	if(iter != m_eventListeners.end())
 	{

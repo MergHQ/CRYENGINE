@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include "InvertSelectionTool.h"
+
+#include "Core/Model.h"
 #include "DesignerEditor.h"
-#include "Util/ElementSet.h"
-#include "Tools/Select/SelectTool.h"
 
 namespace Designer
 {
@@ -55,4 +55,3 @@ void InvertSelectionTool::Enter()
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Invert, eToolGroup_Selection, "Invert", InvertSelectionTool,
                                    invertselection, "runs invert selection tool", "designer.invertselection")
-

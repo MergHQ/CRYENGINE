@@ -41,8 +41,6 @@ void VertexCommandTangents::Execute(VertexCommandTangents& command, CVertexData&
 
 	for (uint i = 0; i < command.tangetUpdateDataCount; ++i)
 	{
-		const uint base = i * 3;
-
 		const STangentUpdateTriangles& data = command.pTangentUpdateData[i];
 
 		const vtx_idx idx1 = data.idx1;
@@ -186,8 +184,6 @@ void VertexCommandTangents::Execute(VertexCommandTangents& command, CVertexData&
 
 	for (uint i = 0; i < command.tangetUpdateDataCount; ++i)
 	{
-		const uint base = i * 3;
-
 		const STangentUpdateTriangles& data = command.pTangentUpdateData[i];
 
 		const vtx_idx idx1 = data.idx1;
@@ -319,11 +315,11 @@ void VertexCommandCopy::Execute(VertexCommandCopy& command, CVertexData& vertexD
 
 void VertexCommandSkin::Execute(VertexCommandSkin& command, CVertexData& vertexData)
 {
-	assert(command.pTransformations);
-	assert(command.pTransformationRemapTable);
+	CRY_ASSERT(command.pTransformations);
+	CRY_ASSERT(command.pTransformationRemapTable);
 
-	bool hasPreviousPosition = command.pVertexPositionsPrevious != 0;
-	bool hasVelocity = vertexData.GetVelocities() != 0;
+	const bool hasPreviousPosition = vertexData.pPreviousPositions != 0;
+	const bool hasVelocity = vertexData.GetVelocities() != 0;
 
 	if (hasPreviousPosition && hasVelocity)
 	{
@@ -360,9 +356,9 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	strided_pointer<Vec3> pPositions = vertexData.GetPositions();
 	strided_pointer<Vec3> pVelocities = vertexData.GetVelocities();
 	strided_pointer<SPipTangents> pTangents = vertexData.GetTangents();
+	strided_pointer<const Vec3> pPositionsPrevious = vertexData.pPreviousPositions;
 
 	strided_pointer<const Vec3> pPositionsSource = command.pVertexPositions;
-	strided_pointer<const Vec3> pPositionsPrevious = command.pVertexPositionsPrevious;
 	if (!pPositionsSource.data)
 		pPositionsSource = vertexData.pPositions;
 
@@ -372,8 +368,6 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	Quat qtangent;
 	float flip;
 	Vec3 newPos;
-
-	const uint vertexTransformCount = command.vertexTransformCount;
 
 	for (uint i = 0; i < vertexCount; ++i)
 	{
@@ -554,6 +548,7 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	strided_pointer<Vec3> pPositions = vertexData.GetPositions();
 	strided_pointer<Vec3> pVelocities = vertexData.GetVelocities();
 	strided_pointer<SPipTangents> pTangents = vertexData.GetTangents();
+	strided_pointer<const Vec3> pPositionsPrevious = vertexData.GetPreviousPositions();
 
 	__m128 dq_nq = _mm_setzero_ps();
 	__m128 dq_dq;
@@ -567,7 +562,6 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	CRY_ALIGN(16) Vec4sf tangentBitangent[2];
 	CRY_ALIGN(16) Vec3A newPos;
 
-	strided_pointer<const Vec3> pPositionsPrevious = command.pVertexPositionsPrevious;
 	strided_pointer<const SoftwareVertexBlendIndex> pIndices = command.pVertexTransformIndices;
 	strided_pointer<const SoftwareVertexBlendWeight> pWeights = command.pVertexTransformWeights;
 
@@ -735,7 +729,10 @@ void VertexCommandAdd::Execute(VertexCommandAdd& command, CVertexData& vertexDat
 	__m128 _offset;
 
 	const __m128 _xyzMask = _mm_castsi128_ps(_mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff));
+
+#ifndef USE_VERTEXCOMMAND_SSE4
 	const __m128 _wMask = _mm_castsi128_ps(_mm_set_epi32(0xffffffff, 0, 0, 0));
+#endif
 
 	const uint count = command.count;
 	for (uint i = 0; i < count; ++i)

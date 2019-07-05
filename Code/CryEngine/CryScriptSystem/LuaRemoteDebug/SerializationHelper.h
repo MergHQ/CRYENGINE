@@ -122,7 +122,7 @@ public:
 		else
 		{
 			m_bBufferOverflow = true;
-			CRY_ASSERT_MESSAGE(false, "Buffer size is not large enough");
+			CRY_ASSERT(false, "Buffer size is not large enough");
 		}
 	}
 
@@ -143,7 +143,7 @@ public:
 		else
 		{
 			m_bBufferOverflow = true;
-			CRY_ASSERT_MESSAGE(false, "Buffer size is not large enough");
+			CRY_ASSERT(false, "Buffer size is not large enough");
 		}
 		return pResult;
 	}

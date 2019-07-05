@@ -7,10 +7,12 @@
 #include "GameCVars.h"
 #include "ItemSystem.h"
 #include <CryCore/BitFiddling.h>
+#include <Cry3DEngine/I3DEngine.h>
 #include "Effects/RenderNodes/IGameRenderNode.h"
 #include "Effects/RenderElements/GameRenderElement.h"
 #include "GameRules.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include "Game.h"
 
 //--------------------------------------------------------------------------------------------------
 // Desc: Defines
@@ -451,7 +453,7 @@ void CGameEffectsSystem::SetPostEffectCVarCallbacks()
 			postEffectCvar = gEnv->pConsole->GetCVar(postEffectNames[i]);
 			if(postEffectCvar)
 			{
-				postEffectCvar->SetOnChangeCallback(PostEffectCVarCallback);
+				postEffectCvar->AddOnChange(PostEffectCVarCallback);
 			}
 		}
 	}

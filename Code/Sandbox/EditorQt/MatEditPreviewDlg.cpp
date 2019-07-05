@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "MatEditPreviewDlg.h"
 #include "Material/MaterialManager.h"
+#include "IEditorImpl.h"
+#include <Util/FileUtil.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // CMatEditPreviewDlg dialog
@@ -15,7 +17,7 @@ CMatEditPreviewDlg::CMatEditPreviewDlg(const char* title, CWnd* pParent)
 
 	GetIEditorImpl()->GetMaterialManager()->AddListener(this);
 
-	BOOL b = Create(IDD_MATEDITPREVIEWDLG, pParent);
+	Create(IDD_MATEDITPREVIEWDLG, pParent);
 
 	OnPreviewSphere();
 }
@@ -161,7 +163,6 @@ void CMatEditPreviewDlg::OnSize(UINT nType, int cx, int cy)
 
 void CMatEditPreviewDlg::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
 {
-	CMaterial* pMtl = (CMaterial*)pItem;
 	switch (event)
 	{
 	case EDB_ITEM_EVENT_SELECTED:
@@ -182,4 +183,3 @@ LRESULT CMatEditPreviewDlg::OnKickIdle(WPARAM wParam, LPARAM)
 	SendMessageToDescendants(WM_IDLEUPDATECMDUI, 1);
 	return 0;
 }
-

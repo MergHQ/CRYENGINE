@@ -9,25 +9,62 @@
 #include "GameServerNub.h"
 #include <CryNetwork/NetHelpers.h>
 
-/*
- * Established context
- */
 
+
+//! Signals the begin of context state establishment
+class CCET_StartedEstablishingContext final : public CCET_Base
+{
+public:
+	CCET_StartedEstablishingContext(const int token) : m_token(token) {}
+
+	// IContextEstablishTask
+	virtual const char*                 GetName() override { return "StartedEstablishingContext"; }
+
+	virtual EContextEstablishTaskResult OnStep(SContextEstablishState& /*state*/) override
+	{
+		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
+		{
+			INetContext* pNetContext = pGameContext->GetNetContext();
+			CRY_ASSERT(pNetContext, "Task should never be updated without NetContext");
+			pNetContext->StartedEstablishingContext(m_token);
+		}
+		return eCETR_Ok;
+	}
+	// ~IContextEstablishTask
+
+private:
+	const int m_token;
+};
+
+void AddStartedEstablishingContext(IContextEstablisher* pEst, EContextViewState state, int token)
+{
+	pEst->AddTask(state, new CCET_StartedEstablishingContext(token));
+}
+
+
+//! Signals that context is established
 class CCET_EstablishedContext : public CCET_Base
 {
 public:
-	CCET_EstablishedContext(int token) : m_token(token) {}
+	CCET_EstablishedContext(const int token) : m_token(token) {}
 
-	const char*                 GetName() { return "EstablishedContext"; }
+	// IContextEstablishTask
+	virtual const char*                 GetName() override { return "EstablishedContext"; }
 
-	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
+	virtual EContextEstablishTaskResult OnStep(SContextEstablishState& /*state*/) override
 	{
-		CCryAction::GetCryAction()->GetGameContext()->GetNetContext()->EstablishedContext(m_token);
+		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
+		{
+			INetContext* pNetContext = pGameContext->GetNetContext();
+			CRY_ASSERT(pNetContext, "Task should never be updated without NetContext");
+			pNetContext->EstablishedContext(m_token);
+		}
 		return eCETR_Ok;
 	}
+	// ~IContextEstablishTask
 
 private:
-	int m_token;
+	const int m_token;
 };
 
 void AddEstablishedContext(IContextEstablisher* pEst, EContextViewState state, int token)
@@ -35,16 +72,15 @@ void AddEstablishedContext(IContextEstablisher* pEst, EContextViewState state, i
 	pEst->AddTask(state, new CCET_EstablishedContext(token));
 }
 
-/*
- * Declare witness
- */
 
+//! Declare witness
 class CCET_DeclareWitness : public CCET_Base
 {
 public:
-	const char*                 GetName() { return "DeclareWitness"; }
+	// IContextEstablishTask
+	virtual const char*                 GetName() override { return "DeclareWitness"; }
 
-	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
+	virtual EContextEstablishTaskResult OnStep(SContextEstablishState& /*state*/) override
 	{
 		if (CGameClientNub* pNub = CCryAction::GetCryAction()->GetGameClientNub())
 		{
@@ -59,6 +95,7 @@ public:
 		}
 		return eCETR_Failed;
 	}
+	// ~IContextEstablishTask
 };
 
 void AddDeclareWitness(IContextEstablisher* pEst, EContextViewState state)
@@ -66,24 +103,28 @@ void AddDeclareWitness(IContextEstablisher* pEst, EContextViewState state)
 	pEst->AddTask(state, new CCET_DeclareWitness);
 }
 
-/*
- * Delegate authority to player
- */
 
+//! Delegate authority to player
 class CCET_DelegateAuthority_ToClientActor : public CCET_Base
 {
 public:
-	const char* GetName() { return "DelegateAuthorityToClientActor"; }
+	// IContextEstablishTask
+	virtual const char* GetName() override { return "DelegateAuthorityToClientActor"; }
 
-public:
-	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
+	virtual EContextEstablishTaskResult OnStep(SContextEstablishState& state) override
 	{
 		EntityId entityId = GetEntity(state);
 		if (!entityId || !gEnv->pEntitySystem->GetEntity(entityId))
 			return eCETR_Ok; // Proceed even if there is no Actor
-		CCryAction::GetCryAction()->GetGameContext()->GetNetContext()->DelegateAuthority(entityId, state.pSender);
+		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
+		{
+			INetContext* pNetContext = pGameContext->GetNetContext();
+			CRY_ASSERT(pNetContext, "Task should never be updated without NetContext");
+			pNetContext->DelegateAuthority(entityId, state.pSender);
+		}
 		return eCETR_Ok;
 	}
+	// ~IContextEstablishTask
 
 private:
 	EntityId GetEntity(SContextEstablishState& state)
@@ -102,16 +143,15 @@ void AddDelegateAuthorityToClientActor(IContextEstablisher* pEst, EContextViewSt
 	pEst->AddTask(state, new CCET_DelegateAuthority_ToClientActor());
 }
 
-/*
- * Clear player ids
- */
 
+//! Clear player ids
 class CCET_ClearPlayerIds : public CCET_Base
 {
 public:
-	const char*                 GetName() { return "ClearPlayerIds"; }
+	// IContextEstablishTask
+	virtual const char*                 GetName() override { return "ClearPlayerIds"; }
 
-	EContextEstablishTaskResult OnStep(SContextEstablishState& state)
+	virtual EContextEstablishTaskResult OnStep(SContextEstablishState& state) override
 	{
 		if (CGameServerNub* pNub = CCryAction::GetCryAction()->GetGameServerNub())
 		{
@@ -126,6 +166,7 @@ public:
 		}
 		return eCETR_Ok;
 	}
+	// ~IContextEstablishTask
 };
 
 void AddClearPlayerIds(IContextEstablisher* pEst, EContextViewState state)

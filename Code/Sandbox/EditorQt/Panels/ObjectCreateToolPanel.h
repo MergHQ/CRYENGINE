@@ -12,6 +12,7 @@ class QStackedLayout;
 class QGridLayout;
 class QPreviewWidget;
 class QToolButton;
+class CObjectClassDesc;
 
 class CCreateObjectButtons : public QWidget
 {
@@ -57,4 +58,3 @@ private:
 	CCreateObjectButtons* m_pTypeButtonPanel;
 	std::vector<string>   m_typeToStackIndex;
 };
-

@@ -14,9 +14,9 @@ public:
 	bool        InitDevice();
 	bool        GetInputMessageData(void* message, long* returnVal);
 
-	int32       GetPluginVersion() override { return 1; };
-	const char* GetPluginName() override { return "3DConnexionDriver"; };
-	const char* GetPluginDescription() override { return "3DConnexionDriver"; };
+	int32       GetPluginVersion() override { return 1; }
+	const char* GetPluginName() override { return "3DConnexionDriver"; }
+	const char* GetPluginDescription() override { return "3DConnexionDriver"; }
 	void        OnEditorNotifyEvent(EEditorNotifyEvent aEventId) override;
 
 private:
@@ -25,4 +25,3 @@ private:
 	int                           m_nUsagePage1Usage8Devices;
 	float                         m_fMultiplier;
 };
-

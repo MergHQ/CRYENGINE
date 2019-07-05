@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "SunShafts.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 
 // TODO: Add support for occlusion query to find out if sky is visible at all
@@ -29,11 +28,6 @@ void CSunShaftsStage::Init()
 	m_passShaftsGen1.SetRequirePerViewConstantBuffer(true);
 }
 
-bool CSunShaftsStage::IsActive()
-{
-	return CRenderer::CV_r_sunshafts && CRenderer::CV_r_PostProcess;
-}
-
 int CSunShaftsStage::GetDownscaledTargetsIndex()
 {
 	return gRenDev->EF_GetRenderQuality() >= eRQ_High ? 0 : 1;
@@ -41,12 +35,12 @@ int CSunShaftsStage::GetDownscaledTargetsIndex()
 
 CTexture* CSunShaftsStage::GetFinalOutputRT()
 {
-	return CRendererResources::s_ptexBackBufferScaled[GetDownscaledTargetsIndex()];
+	return m_graphicsPipelineResources.m_pTexDisplayTargetScaled[GetDownscaledTargetsIndex()];
 }
 
 CTexture* CSunShaftsStage::GetTempOutputRT()
 {
-	return CRendererResources::s_ptexBackBufferScaledTemp[GetDownscaledTargetsIndex()];
+	return m_graphicsPipelineResources.m_pTexDisplayTargetScaledTemp[GetDownscaledTargetsIndex()];
 }
 
 void CSunShaftsStage::GetCompositionParams(Vec4& params0, Vec4& params1)
@@ -60,10 +54,8 @@ void CSunShaftsStage::GetCompositionParams(Vec4& params0, Vec4& params1)
 
 void CSunShaftsStage::Execute()
 {
+	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SUNSHAFTS_GEN");
-
-	if (!IsActive())
-		return;
 
 	CSunShafts* pSunShafts = (CSunShafts*)PostEffectMgr()->GetEffect(EPostEffectID::SunShafts);
 	float rayAttenuation = clamp_tpl<float>(pSunShafts->m_pRaysAttenuation->GetParam(), 0.0f, 10.0f);
@@ -85,9 +77,9 @@ void CSunShaftsStage::Execute()
 			m_passShaftsMask.SetRenderTarget(0, pFinalRT);
 			m_passShaftsMask.SetState(GS_NODEPTHTEST);
 
-			m_passShaftsMask.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[downscaledSourceIndex]);
-			m_passShaftsMask.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[downscaledSourceIndex]);
-			m_passShaftsMask.SetSampler(0, EDefaultSamplerStates::PointClamp);  
+			m_passShaftsMask.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepthScaled[downscaledSourceIndex]);
+			m_passShaftsMask.SetTexture(1, m_graphicsPipelineResources.m_pTexHDRTargetScaled[downscaledSourceIndex][0]);
+			m_passShaftsMask.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}
 
 		m_passShaftsMask.BeginConstantUpdate();
@@ -97,7 +89,7 @@ void CSunShaftsStage::Execute()
 	// Apply local radial blur to mask
 	{
 		SRenderViewInfo viewInfo[2];
-		int viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+		int viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
 
 		Vec4 sunPosScreen[2];
 		Vec3 sunPos = gEnv->p3DEngine->GetSunDir() * 1000.0f;
@@ -127,7 +119,7 @@ void CSunShaftsStage::Execute()
 			auto constants = m_passShaftsGen0.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerPrimitive);
 			constants->sunPos = sunPosScreen[0];
 			constants->params = Vec4(0.1f, rayAttenuation, 0, 0);
-			
+
 			if (viewInfoCount > 1)
 			{
 				constants.BeginStereoOverride();

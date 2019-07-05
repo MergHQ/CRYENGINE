@@ -6,6 +6,6 @@ def build(bld):
 		target     = 'Cry3DEngine',
 		vs_filter  = 'CryEngine',		
 		file_list  = 'cry3dengine.waf_files',
-		use_module = ['lz4'],
+		use_module = ['lz4', 'mikkelsen'],
 		pch        = 'StdAfx.cpp',		
 	)	

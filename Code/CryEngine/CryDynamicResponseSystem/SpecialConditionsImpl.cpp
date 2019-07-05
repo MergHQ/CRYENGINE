@@ -473,6 +473,6 @@ void CTimeSinceResponseCondition::Serialize(Serialization::IArchive& ar)
 //--------------------------------------------------------------------------------------------------
 string CTimeSinceResponseCondition::GetVerboseInfo() const
 {
-	string responseName = (m_responseId.IsValid()) ? m_responseId.GetText() : "CurrentResponse";
+	string responseName = (m_responseId.IsValid()) ? m_responseId.GetText() : string("CurrentResponse");
 	return "Execution of '" + responseName + string("' more than ") + CryStringUtils::toString(m_minTime) + " seconds and less then " + CryStringUtils::toString(m_maxTime);
 }

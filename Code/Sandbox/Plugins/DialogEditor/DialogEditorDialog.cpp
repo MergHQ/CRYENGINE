@@ -330,7 +330,6 @@ void CDialogFolderCtrl::Reload()
 			// continue stripping
 			groupName = fullClassName.Tokenize(tokens, pos);
 		}
-		;
 
 		// short node name without ':'. used for display in last column
 		nodeShortName = fullClassName.Mid(midPos);
@@ -354,8 +353,6 @@ void CDialogFolderCtrl::Reload()
 //////////////////////////////////////////////////////////////////////////
 void CDialogFolderCtrl::UpdateSCStatus(CTreeScriptRecord* pRec, CEditorDialogScript* pScript, bool bUseCached)
 {
-	uint32 scAttr = SCC_FILE_ATTRIBUTE_NORMAL;
-
 	int index = 0;
 
 	if (pRec->IsGroup())
@@ -624,13 +621,13 @@ class CDialogEditorDialogViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return DIALOG_EDITOR_NAME; };
-	virtual const char*    Category()        override { return "Game"; };
+	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return DIALOG_EDITOR_NAME; }
+	virtual const char*    Category()        override { return "Game"; }
 	virtual const char*    GetMenuPath()	 override { return "Deprecated"; }
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CDialogEditorDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T(DIALOG_EDITOR_NAME); };
-	virtual bool           SinglePane()      override { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CDialogEditorDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T(DIALOG_EDITOR_NAME); }
+	virtual bool           SinglePane()      override { return true; }
 };
 
 REGISTER_CLASS_DESC(CDialogEditorDialogViewClass)
@@ -690,9 +687,7 @@ BOOL CDialogEditorDialog::Create(DWORD dwStyle, const RECT& rect, CWnd* pParentW
 //////////////////////////////////////////////////////////////////////////
 BOOL CDialogEditorDialog::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo)
 {
-	BOOL res = FALSE;
-
-	res = m_View.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
+	BOOL res = m_View.OnCmdMsg(nID, nCode, pExtra, pHandlerInfo);
 	if (res)
 		return res;
 
@@ -931,49 +926,7 @@ void CDialogEditorDialog::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnBeginNewScene:           // Sent when the document is begin to be cleared.
 	case eNotify_OnBeginSceneOpen:          // Sent when document is about to be opened.
 	case eNotify_OnClearLevelContents:      // Send when the document is about to close.
-		//		if ( m_bSaveNeeded && SaveLibrary() )
-		//			m_bSaveNeeded = false;
 		SaveCurrent();
-
-		break;
-
-	case eNotify_OnInit:                    // Sent after editor fully initialized.
-	case eNotify_OnEndSceneOpen:            // Sent after document have been opened.
-		//		ReloadEntries();
-		break;
-
-	case eNotify_OnEndSceneSave:            // Sent after document have been saved.
-	case eNotify_OnEndNewScene:             // Sent after the document have been cleared.
-	case eNotify_OnMissionChange:           // Send when the current mission changes.
-		break;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Editing events.
-	//////////////////////////////////////////////////////////////////////////
-	case eNotify_OnEditModeChange:          // Sent when editing mode change (move,rotate,scale,....)
-	case eNotify_OnEditToolBeginChange:     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
-	case eNotify_OnEditToolEndChange:       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
-		break;
-
-	// Game related events.
-	case eNotify_OnEndGameMode:             // Send when editor goes out of game mode.
-		break;
-
-	// UI events.
-	case eNotify_OnUpdateViewports:             // Sent when editor needs to update data in the viewports.
-	case eNotify_OnInvalidateControls:          // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
-	case eNotify_OnUpdateSequencer:             // Sent when editor needs to update the CryMannequin sequencer view.
-	case eNotify_OnUpdateSequencerKeys:         // Sent when editor needs to update keys in the CryMannequin track view.
-	case eNotify_OnUpdateSequencerKeySelection: // Sent when CryMannequin sequencer view changes selection of keys.
-		break;
-
-	// Object events.
-	case eNotify_OnSelectionChange:         // Sent when object selection change.
-		// Unfortunately I have never received this notification!!!
-		// SinkSelection();
-		break;
-	case eNotify_OnPlaySequence:            // Sent when editor start playing animation sequence.
-	case eNotify_OnStopSequence:            // Sent when editor stop playing animation sequence.
 		break;
 	}
 }
@@ -1590,4 +1543,3 @@ bool CDialogEditorDialog::DoSourceControlOp(CEditorDialogScript* pScript, ESourc
 	}
 	return bRes;
 }
-

@@ -24,14 +24,14 @@
 
 #include <QtUtil.h>
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <Controls/QuestionDialog.h>
 #include <EditorFramework/Events.h>
 
 // UQS 3d rendering
 #include <IViewportManager.h>
-#include <SandboxAPI.h>	// SANDBOX_API
-struct IDataBaseItem;	// CViewport should have forward-declared this
+#include <SandboxAPI.h> // SANDBOX_API
+struct IDataBaseItem;   // CViewport should have forward-declared this
 #include <Viewport.h>
 
 //#pragma optimize("", off)
@@ -49,6 +49,7 @@ struct SQuery
 	{
 		Column_QueryIdAndQuerierName = 0,
 		Column_QueryBlueprintName,
+		Column_Priority,
 		// TODO: column for displaying the itemType of the items in the result set
 		Column_ItemCounts, // number of resulting items vs. generated items
 		Column_ElapsedTime,
@@ -65,6 +66,7 @@ struct SQuery
 	SQuery*              pParent;
 	std::vector<SQuery*> children;
 	UQS::Core::CQueryID  queryID;
+	int                  priority;
 	bool                 bFoundTooFewItems;
 	bool                 bExceptionEncountered;
 	bool                 bEncounteredSomeWarnings;
@@ -82,6 +84,7 @@ struct SQuery
 	SQuery(SQuery* _pParent, const UQS::Core::IQueryHistoryConsumer::SHistoricQueryOverview& overview)
 		: pParent(_pParent)
 		, queryID(overview.queryID)
+		, priority(overview.priority)
 		, bFoundTooFewItems(overview.bFoundTooFewItems)
 		, bExceptionEncountered(overview.bQueryEncounteredAnException)
 		, bEncounteredSomeWarnings(overview.bQueryEncounteredSomeWarnings)
@@ -100,6 +103,7 @@ struct SQuery
 	{
 		UQS::Shared::CUqsString queryIdAsString;
 		stack_string queryIdAndQuerierName;
+		stack_string priorityAsString;
 		stack_string itemCountsAsString;
 		stack_string elapsedTimeAsString;
 		stack_string timestampQueryCreatedAsString;
@@ -109,15 +113,17 @@ struct SQuery
 
 		overview.queryID.ToString(queryIdAsString);
 		queryIdAndQuerierName.Format("#%s: %s", queryIdAsString.c_str(), overview.szQuerierName);
+		priorityAsString.Format("%i", overview.priority);
 		itemCountsAsString.Format("%i / %i", (int)overview.numResultingItems, (int)overview.numGeneratedItems);
 		elapsedTimeAsString.Format("%.2f ms", overview.timeElapsedUntilResult.GetMilliSeconds());
-		UQS::Shared::CTimeValueUtil::Split(overview.timestampQueryCreated, &hours, &minutes, &seconds, &milliseconds);
-		timestampQueryCreatedAsString.Format  ("%i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
-		UQS::Shared::CTimeValueUtil::Split(overview.timestampQueryDestroyed, &hours, &minutes, &seconds, &milliseconds);
+		overview.timestampQueryCreated.Split(&hours, &minutes, &seconds, &milliseconds);
+		timestampQueryCreatedAsString.Format("%i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
+		overview.timestampQueryDestroyed.Split(&hours, &minutes, &seconds, &milliseconds);
 		timestampQueryDestroyedAsString.Format("%i:%02i:%02i:%03i", hours, minutes, seconds, milliseconds);
 
 		this->dataPerColumn[Column_QueryIdAndQuerierName] = QtUtil::ToQString(queryIdAndQuerierName.c_str());
 		this->dataPerColumn[Column_QueryBlueprintName] = QtUtil::ToQString(overview.szQueryBlueprintName);
+		this->dataPerColumn[Column_Priority] = QtUtil::ToQString(priorityAsString.c_str());
 		this->dataPerColumn[Column_ItemCounts] = QtUtil::ToQString(itemCountsAsString.c_str());
 		this->dataPerColumn[Column_ElapsedTime] = QtUtil::ToQString(elapsedTimeAsString.c_str());
 		this->dataPerColumn[Column_TimestampQueryCreated] = QtUtil::ToQString(timestampQueryCreatedAsString.c_str());
@@ -129,7 +135,7 @@ struct SQuery
 
 	static void HelpSerializeEvaluatorsBitfield(Serialization::IArchive& ar, UQS::Core::evaluatorsBitfield_t& bitfieldToSerialize, const std::vector<string>& evaluatorNames, const std::vector<string>& evaluatorLabelsForUI)
 	{
-		assert(evaluatorNames.size() == evaluatorLabelsForUI.size());
+		CRY_ASSERT(evaluatorNames.size() == evaluatorLabelsForUI.size());
 
 		for (size_t i = 0, n = evaluatorNames.size(); i < n; ++i)
 		{
@@ -196,6 +202,7 @@ const char* SQuery::headers[SQuery::ColumnCount] =
 {
 	"Query ID + querier",         // Column_QueryIdAndQuerierName
 	"Query Blueprint",            // Column_QueryBlueprintName
+	"Priority",                   // Column_Priority
 	"Items (accepted/generated)", // Column_ItemCounts
 	"Elapsed time",               // Column_ElapsedTime
 	"Timestamp query created",    // Column_TimestampQueryCreated
@@ -206,6 +213,7 @@ const char* SQuery::toolTips[SQuery::ColumnCount] =
 {
 	"Unique id of the query instance and the name of who started that query",                                                                                                                           // Column_QueryIdAndQuerierName
 	"Name of the blueprint from which the live query was instantiated",                                                                                                                                 // Column_QueryBlueprintName
+	"Priority of the query (the higher the more of the time-budget the query would have been granted in relation to the other queries)",
 	"Number of items that were generated and ended up in the final result set. Notice: a hierarchical query may not necessarily generate items, yet grab the resulting items from one of its children", // Column_ItemCounts
 	"Elapsed time from start to finish of the query. Notice: don't confuse with *consumed* time.",                                                                                                      // Column_ElapsedTime
 	"Timestamp of when the query was created in h:mm:ss:mmm",                                                                                                                                           // Column_TimestampQueryCreated
@@ -227,7 +235,7 @@ public:
 
 	Q_INVOKABLE virtual QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override
 	{
-		assert(row >= 0 && column >= 0);
+		CRY_ASSERT(row >= 0 && column >= 0);
 
 		const SQuery* pParentQuery;
 
@@ -260,7 +268,7 @@ public:
 
 		const SQuery* pChildQuery = static_cast<SQuery*>(child.internalPointer());
 		const SQuery* pParentQuery = pChildQuery->pParent;
-		assert(pParentQuery);
+		CRY_ASSERT(pParentQuery);
 
 		if (pParentQuery == &m_root)
 		{
@@ -275,7 +283,7 @@ public:
 			}
 		}
 
-		assert(0);
+		CRY_ASSERT(0);
 		return QModelIndex();
 	}
 
@@ -322,7 +330,7 @@ public:
 				// *orange* text if the query encountered some warnings
 				if (pQuery->bEncounteredSomeWarnings)
 				{
-					return QtUtil::ToQColor(ColorB(255, 165, 0));	// RGB values taken from Col_Orange
+					return QtUtil::ToQColor(ColorB(255, 165, 0)); // RGB values taken from Col_Orange
 				}
 
 				//
@@ -331,7 +339,7 @@ public:
 				{
 					// see if any of our children contains a warning
 					if (pQuery->ContainsWarningsDownwardsAlongHierarchy())
-						return QtUtil::ToQColor(ColorB(255, 165, 0));	// RGB values taken from Col_Orange
+						return QtUtil::ToQColor(ColorB(255, 165, 0)); // RGB values taken from Col_Orange
 				}
 
 				// *yellow* text if too few items were found
@@ -358,11 +366,11 @@ public:
 		switch (role)
 		{
 		case Qt::DisplayRole:
-			assert(section >= 0 && section < SQuery::ColumnCount);
+			CRY_ASSERT(section >= 0 && section < SQuery::ColumnCount);
 			return SQuery::headers[section];
 
 		case Qt::ToolTipRole:
-			assert(section >= 0 && section < SQuery::ColumnCount);
+			CRY_ASSERT(section >= 0 && section < SQuery::ColumnCount);
 			return SQuery::toolTips[section];
 
 		default:
@@ -379,12 +387,12 @@ public:
 		{
 			pParent = SQuery::FindQueryByQueryID(&m_root, overview.parentQueryID);
 
-			// FIXME: this assert() should be handled properly.
+			// FIXME: this CRY_ASSERT() should be handled properly.
 			//        -> What most likely happend is:
 			//           The history got cleared inbetween having already stored information about the parent and this child now receiving its information.
 			//           A typical scenario is when a parent query keeps running for a while, then the user clears the history and *then* the parent query starts its next child
 			//           => Once that child finishes and reports back to the history, the historic counterpart of its parent is already gone.
-			assert(pParent);
+			CRY_ASSERT(pParent);
 		}
 		else
 		{
@@ -433,11 +441,11 @@ class CHistoricQueryTreeView : public QAdvancedTreeView
 {
 public:
 	explicit CHistoricQueryTreeView(QWidget* pParent)
-		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset), pParent)
+		: QAdvancedTreeView(QAdvancedTreeView::Behavior(QAdvancedTreeView::None), pParent)
 	{
 	}
 
-	const SQuery* GetQueryByModelIndex(const QModelIndex &modelIndex)
+	const SQuery* GetQueryByModelIndex(const QModelIndex& modelIndex)
 	{
 		return static_cast<SQuery*>(modelIndex.internalPointer());
 	}
@@ -475,7 +483,7 @@ protected:
 		}
 	}
 
-	virtual void mouseDoubleClickEvent(QMouseEvent *event) override
+	virtual void mouseDoubleClickEvent(QMouseEvent* event) override
 	{
 		QAdvancedTreeView::mouseDoubleClickEvent(event);
 
@@ -564,9 +572,11 @@ CMainEditorWindow::CMainEditorWindow()
 	, m_pFreshlyAddedOrUpdatedQuery(nullptr)
 	, m_pHistoryPostRenderer(nullptr)
 {
+	m_pPaneMenu = new QMenu(this);
+
 	// "file" menu
 	{
-		QMenu* pFileMenu = menuBar()->addMenu("&File");
+		QMenu* pFileMenu = m_pPaneMenu->addMenu("&File");
 
 		QAction* pLoadHistory = pFileMenu->addAction("&Load history");
 		connect(pLoadHistory, &QAction::triggered, this, &CMainEditorWindow::OnLoadHistoryFromFile);
@@ -574,7 +584,11 @@ CMainEditorWindow::CMainEditorWindow()
 		QAction* pSaveLiveHistory = pFileMenu->addAction("&Save 'live' history");
 		connect(pSaveLiveHistory, &QAction::triggered, this, &CMainEditorWindow::OnSaveLiveHistoryToFile);
 	}
-
+	m_pPaneMenu->addSeparator();
+	{
+		QMenu* menuItem = m_pPaneMenu->addMenu("Help");
+		menuItem->addAction(GetIEditor()->GetICommandManager()->GetAction("general.help"));
+	}
 	m_pComboBoxHistoryOrigin = new QComboBox(this);
 	m_pComboBoxHistoryOrigin->addItem("Live history", QVariant(UQS::Core::IQueryHistoryManager::EHistoryOrigin::Live));
 	m_pComboBoxHistoryOrigin->addItem("Deserialized history", QVariant(UQS::Core::IQueryHistoryManager::EHistoryOrigin::Deserialized));
@@ -592,7 +606,7 @@ CMainEditorWindow::CMainEditorWindow()
 	m_pTextItemDetails = new QTextEdit(this);
 	m_pTextItemDetails->setText("(Item details will go here)");
 
-	m_pPropertyTree = new QPropertyTree;
+	m_pPropertyTree = new QPropertyTreeLegacy;
 
 	QSplitter* pDetailsSplitter = new QSplitter(this);
 	pDetailsSplitter->setOrientation(Qt::Vertical);
@@ -620,13 +634,13 @@ CMainEditorWindow::CMainEditorWindow()
 
 	setCentralWidget(pMainSplitter);
 
-	QObject::connect(m_pComboBoxHistoryOrigin, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &CMainEditorWindow::OnHistoryOriginComboBoxSelectionChanged);	// the static_cast<> is only for disambiguation of the overloaded currentIndexChanged() method
+	QObject::connect(m_pComboBoxHistoryOrigin, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &CMainEditorWindow::OnHistoryOriginComboBoxSelectionChanged);  // the static_cast<> is only for disambiguation of the overloaded currentIndexChanged() method
 	QObject::connect(m_pButtonClearCurrentHistory, &QPushButton::clicked, this, &CMainEditorWindow::OnClearHistoryButtonClicked);
 	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CMainEditorWindow::OnTreeViewCurrentChanged);
 
 	// instantiate the CUQSHistoryPostRenderer on the heap - it's IPostRenderer is refcounted and deletes itself when un-registering from the game's viewport
 	m_pHistoryPostRenderer = new CUQSHistoryPostRenderer(*m_pTreeView);
-	GetIEditor()->GetViewportManager()->GetGameViewport()->AddPostRenderer(m_pHistoryPostRenderer);	// this increments its refcount
+	GetIEditor()->GetViewportManager()->GetGameViewport()->AddPostRenderer(m_pHistoryPostRenderer); // this increments its refcount
 
 	if (UQS::Core::IHub* pHub = UQS::Core::IHubPlugin::GetHubPtr())
 	{
@@ -653,9 +667,9 @@ CMainEditorWindow::~CMainEditorWindow()
 	// - notice: we will *not* leak memory if the viewport-manager and/or the game-viewport are already gone, since they would then have decremented its refcount and eventually delete'd the object already
 	if (IViewportManager* pViewportManager = GetIEditor()->GetViewportManager())
 	{
-		if(CViewport* pGameViewport = pViewportManager->GetGameViewport())
+		if (CViewport* pGameViewport = pViewportManager->GetGameViewport())
 		{
-			pGameViewport->RemovePostRenderer(m_pHistoryPostRenderer);	// this decrements its refcount, eventually delete'ing it
+			pGameViewport->RemovePostRenderer(m_pHistoryPostRenderer);  // this decrements its refcount, eventually delete'ing it
 		}
 	}
 }
@@ -673,6 +687,11 @@ const char* CMainEditorWindow::GetPaneTitle() const
 	}
 }
 
+QMenu* CMainEditorWindow::GetPaneMenu() const
+{
+	return m_pPaneMenu;
+}
+
 void CMainEditorWindow::OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListener::SEvent& ev)
 {
 	switch (ev.type)
@@ -681,7 +700,7 @@ void CMainEditorWindow::OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListen
 	case UQS::Core::IQueryHistoryListener::EEventType::HistoricQueryJustFinishedInLiveQueryHistory:
 		if (m_pQueryHistoryManager->GetCurrentQueryHistory() == UQS::Core::IQueryHistoryManager::EHistoryOrigin::Live)
 		{
-			assert(ev.relatedQueryID.IsValid());
+			CRY_ASSERT(ev.relatedQueryID.IsValid());
 			m_pQueryHistoryManager->EnumerateSingleHistoricQuery(m_pQueryHistoryManager->GetCurrentQueryHistory(), ev.relatedQueryID, *this);
 		}
 		break;
@@ -734,8 +753,8 @@ void CMainEditorWindow::OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListen
 
 void CMainEditorWindow::AddOrUpdateHistoricQuery(const SHistoricQueryOverview& overview)
 {
-	assert(m_pFreshlyAddedOrUpdatedQuery == nullptr);
-	
+	CRY_ASSERT(m_pFreshlyAddedOrUpdatedQuery == nullptr);
+
 	m_pFreshlyAddedOrUpdatedQuery = m_pTreeModel->AddOrUpdateHistoricQuery(overview);
 
 	m_pQueryHistoryManager->EnumerateInstantEvaluatorNames(m_pQueryHistoryManager->GetCurrentQueryHistory(), m_pFreshlyAddedOrUpdatedQuery->queryID, *this);
@@ -778,7 +797,7 @@ void CMainEditorWindow::AddTextLineToFocusedItem(const ColorF& color, const char
 
 void CMainEditorWindow::AddInstantEvaluatorName(const char* szInstantEvaluatorName)
 {
-	assert(m_pFreshlyAddedOrUpdatedQuery);
+	CRY_ASSERT(m_pFreshlyAddedOrUpdatedQuery);
 
 	m_pFreshlyAddedOrUpdatedQuery->instantEvaluatorNames.push_back(szInstantEvaluatorName);
 
@@ -789,7 +808,7 @@ void CMainEditorWindow::AddInstantEvaluatorName(const char* szInstantEvaluatorNa
 
 void CMainEditorWindow::AddDeferredEvaluatorName(const char* szDeferredEvaluatorName)
 {
-	assert(m_pFreshlyAddedOrUpdatedQuery);
+	CRY_ASSERT(m_pFreshlyAddedOrUpdatedQuery);
 
 	m_pFreshlyAddedOrUpdatedQuery->deferredEvaluatorNames.push_back(szDeferredEvaluatorName);
 
@@ -823,7 +842,7 @@ void CMainEditorWindow::OnHistoryOriginComboBoxSelectionChanged(int index)
 	if (m_pQueryHistoryManager)
 	{
 		const QVariant data = m_pComboBoxHistoryOrigin->itemData(index);
-		assert(data.type() == QVariant::Int);
+		CRY_ASSERT(data.type() == QVariant::Int);
 		const UQS::Core::IQueryHistoryManager::EHistoryOrigin origin = (UQS::Core::IQueryHistoryManager::EHistoryOrigin)data.toInt();
 		m_pQueryHistoryManager->MakeQueryHistoryCurrent(origin);
 	}
@@ -888,7 +907,7 @@ void CMainEditorWindow::OnLoadHistoryFromFile()
 	}
 }
 
-void CMainEditorWindow::OnTreeViewCurrentChanged(const QModelIndex &current, const QModelIndex &previous)
+void CMainEditorWindow::OnTreeViewCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
 {
 	if (const SQuery* pQuery = m_pTreeView->GetQueryByModelIndex(current))
 	{

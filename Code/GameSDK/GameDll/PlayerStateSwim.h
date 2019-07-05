@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Audio/AudioSignalPlayer.h"
+#include <IItemSystem.h>
 
 struct SActorFrameMovementParams;
 class CPlayer;

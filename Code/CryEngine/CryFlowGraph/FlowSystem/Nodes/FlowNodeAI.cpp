@@ -125,8 +125,6 @@ public:
 		if (event != eFE_Update)
 			return;
 
-		float currTime = gEnv->pTimer->GetCurrTime();
-
 		RecalcAICounters();
 
 		if (m_localAICount != m_currentAICount)
@@ -155,7 +153,6 @@ private:
 		{
 			m_lastUpdateframeID = frameID;
 
-			bool changed = false;
 			int AICount = 0;
 			int AIEnemies = 0;
 
@@ -736,7 +733,7 @@ public:
 			{
 				IAIActor* pAIActor = members[i]->CastToIAIActor();
 				if (pAIActor)
-					pAIActor->SetSignal(10, "OnGroupChanged", members[i]->GetEntity(), 0);
+					pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupChanged(), members[i]->GetEntityID()));
 			}
 		}
 	}
@@ -938,14 +935,14 @@ public:
 	}
 	virtual void GetConfiguration(SFlowNodeConfig& config)
 	{
-		static const SInputPortConfig in_config[] =
+		/*static const SInputPortConfig in_config[] =
 		{
 			InputPortConfig_Void("restart", "Restarts execution of the whole AI Action from the beginning"),
 			InputPortConfig_Void("cancel",  "Cancels execution"),
 			InputPortConfig_Void("suspend", "Suspends execution"),
 			InputPortConfig_Void("resume",  "Resumes execution if it was suspended"),
 			{ 0 }
-		};
+		};*/
 		static const SOutputPortConfig out_config[] =
 		{
 			OutputPortConfig<EntityId>("UserId",   "Entity ID of the agent executing AI Action"),
@@ -1830,8 +1827,8 @@ void CFlowNode_AISetNavCostFactor::ProcessEvent(EFlowEvent event, SActivationInf
 {
 	if (event == eFE_Activate)
 	{
-		float factor = GetPortFloat(pActInfo, 1);
-		const string& pathName = GetPortString(pActInfo, 2);
+		//float factor = GetPortFloat(pActInfo, 1);
+		//const string& pathName = GetPortString(pActInfo, 2);
 
 		//gEnv->pAISystem->GetINavigation()->ModifyNavCostFactor(pathName.c_str(), factor);
 
@@ -2444,13 +2441,12 @@ public:
 			break;
 		case eFE_Activate:
 			const int groupId = GetPortInt(pActInfo, eIN_GroupId);
-			const char* signalName = "OnRequestReinforcementTriggered";
 
 			// Select the first member of the group to use it as a sender
 			IAIObject* pFirstGroupMember = gEnv->pAISystem->GetGroupMember(groupId, 0);
 			if (pFirstGroupMember)
 			{
-				gEnv->pAISystem->SendSignal(SIGNALFILTER_GROUPONLY, 1, signalName, pFirstGroupMember);
+				gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_GROUPONLY, gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnRequestReinforcementTriggered_DEPRECATED(), pFirstGroupMember->GetEntityID()));
 
 				ActivateOutput(pActInfo, eOUT_Done, true);
 			}

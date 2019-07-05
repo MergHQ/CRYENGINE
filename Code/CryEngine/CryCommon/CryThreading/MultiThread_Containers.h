@@ -1,26 +1,22 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   MultiThread_Containers.h
-//  Version:     v1.00
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __MultiThread_Containters_h__
-#define __MultiThread_Containters_h__
 #pragma once
 
-#include <CrySystem/Pipe.h>
+#include <CryThreading/CryThread.h>
 #include <CryCore/StlUtils.h>
-#include <CryCore/BitFiddling.h>
-
-#include <queue>
 #include <set>
-#include <algorithm>
+
+namespace CryMT
+{
+	template<class T, class Alloc> class queue;
+	template<class T> class vector;
+}
+
+namespace stl
+{
+	template<typename T> void free_container(CryMT::vector<T>& v);
+	template<typename T, class Alloc> void free_container(CryMT::queue<T, Alloc>& v);
+}
 
 namespace CryMT
 {
@@ -36,12 +32,12 @@ public:
 	typedef CryAutoCriticalSection AutoLock;
 
 	// std::queue interface
-	const T& front() const           { AutoLock lock(m_cs); return v.front(); };
+	const T& front() const           { AutoLock lock(m_cs); return v.front(); }
 	const T& back() const            { AutoLock lock(m_cs);  return v.back(); }
-	void     push(const T& x)        { AutoLock lock(m_cs); return v.push_back(x); };
-	void     reserve(const size_t n) { AutoLock lock(m_cs); v.reserve(n); };
+	void     push(const T& x)        { AutoLock lock(m_cs); return v.push_back(x); }
+	void     reserve(const size_t n) { AutoLock lock(m_cs); v.reserve(n); }
 	// classic pop function of queue should not be used for thread safety, use try_pop instead
-	//void	pop()							{ AutoLock lock(m_cs); return v.erase(v.begin()); };
+	//void	pop()							{ AutoLock lock(m_cs); return v.erase(v.begin()); }
 
 	CryCriticalSection& get_lock() const { return m_cs; }
 
@@ -322,52 +318,6 @@ private:
 	mutable CryCriticalSection m_cs;
 };
 
-//! Multi-thread safe lock-less FIFO queue container for passing pointers between threads.
-//! The queue only stores pointers to T, it does not copy the contents of T.
-template<class T, class Alloc = std::allocator<T>>
-class CLocklessPointerQueue
-{
-public:
-	explicit CLocklessPointerQueue(size_t reserve = 32) { m_lockFreeQueue.reserve(reserve); };
-	~CLocklessPointerQueue() {};
-
-	//! Checks if queue is empty.
-	bool empty() const;
-
-	//! Pushes item to the queue, only pointer is stored, T contents are not copied.
-	void push(T* ptr);
-
-	//! pop can return NULL, always check for it before use.
-	T* pop();
-
-private:
-	typedef typename Alloc::template rebind<T*> Alloc_rebind;
-	queue<T*, typename Alloc_rebind::other> m_lockFreeQueue;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<class T, class Alloc>
-inline bool CLocklessPointerQueue<T, Alloc >::empty() const
-{
-	return m_lockFreeQueue.empty();
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<class T, class Alloc>
-inline void CLocklessPointerQueue<T, Alloc >::push(T* ptr)
-{
-	m_lockFreeQueue.push(ptr);
-}
-
-//////////////////////////////////////////////////////////////////////////
-template<class T, class Alloc>
-inline T* CLocklessPointerQueue<T, Alloc >::pop()
-{
-	T* val = NULL;
-	m_lockFreeQueue.try_pop(val);
-	return val;
-}
-
 //! Producer/Consumer Queue for 1 to 1 thread communication.
 //! Realized with only volatile variables and memory barriers.
 //! \note This producer/consumer queue is only thread safe in a 1 to 1 situation
@@ -410,9 +360,9 @@ inline SingleProducerSingleConsumerQueue<T>::~SingleProducerSingleConsumerQueue(
 template<typename T>
 inline void SingleProducerSingleConsumerQueue<T >::Init(size_t nSize)
 {
-	assert(m_arrBuffer == NULL);
-	assert(m_nBufferSize == 0);
-	assert((nSize & (nSize - 1)) == 0);
+	CRY_ASSERT(m_arrBuffer == NULL);
+	CRY_ASSERT(m_nBufferSize == 0);
+	CRY_ASSERT((nSize & (nSize - 1)) == 0);
 
 	m_arrBuffer = alias_cast<T*>(CryModuleMemalign(nSize * sizeof(T), 16));
 	m_nBufferSize = nSize;
@@ -422,8 +372,8 @@ inline void SingleProducerSingleConsumerQueue<T >::Init(size_t nSize)
 template<typename T>
 inline void SingleProducerSingleConsumerQueue<T >::Push(const T& rObj)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	SingleProducerSingleConsumerQueueBase::Push((void*)&rObj, m_nProducerIndex, m_nComsumerIndex, m_nBufferSize, m_arrBuffer, sizeof(T));
 }
 
@@ -431,8 +381,8 @@ inline void SingleProducerSingleConsumerQueue<T >::Push(const T& rObj)
 template<typename T>
 inline void SingleProducerSingleConsumerQueue<T >::Pop(T* pResult)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	SingleProducerSingleConsumerQueueBase::Pop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nBufferSize, m_arrBuffer, sizeof(T));
 }
 
@@ -451,6 +401,7 @@ public:
 
 	void Push(const T &rObj);
 	bool Pop(T * pResult);
+	bool TryPop(T * pResult);
 
 	//! Needs to be called before using, assumes that there is at least one producer
 	//! so the first one doesn't need to call AddProducer, but he has to deregister itself.
@@ -490,10 +441,10 @@ inline N_ProducerSingleConsumerQueue<T>::~N_ProducerSingleConsumerQueue()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::Init(size_t nSize)
 {
-	assert(m_arrBuffer == NULL);
-	assert(m_arrStates == NULL);
-	assert(m_nBufferSize == 0);
-	assert((nSize & (nSize - 1)) == 0);
+	CRY_ASSERT(m_arrBuffer == NULL);
+	CRY_ASSERT(m_arrStates == NULL);
+	CRY_ASSERT(m_nBufferSize == 0);
+	CRY_ASSERT((nSize & (nSize - 1)) == 0);
 
 	m_arrBuffer = alias_cast<T*>(CryModuleMemalign(nSize * sizeof(T), 16));
 	m_arrStates = alias_cast<uint32*>(CryModuleMemalign(nSize * sizeof(uint32), 16));
@@ -505,10 +456,7 @@ inline void N_ProducerSingleConsumerQueue<T >::Init(size_t nSize)
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::SetRunningState()
 {
-#if !defined(_RELEASE)
-	if (m_nRunning == 1)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_nRunning != 1);
 	m_nRunning = 1;
 	m_nProducerCount = 1;
 }
@@ -517,13 +465,10 @@ inline void N_ProducerSingleConsumerQueue<T >::SetRunningState()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::AddProducer()
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
-#if !defined(_RELEASE)
-	if (m_nRunning == 0)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
+	CRY_ASSERT(m_nRunning != 0);
 	CryInterlockedIncrement((volatile int*)&m_nProducerCount);
 }
 
@@ -531,13 +476,10 @@ inline void N_ProducerSingleConsumerQueue<T >::AddProducer()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::RemoveProducer()
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
-#if !defined(_RELEASE)
-	if (m_nRunning == 0)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
+	CRY_ASSERT(m_nRunning != 0);
 	if (CryInterlockedDecrement((volatile int*)&m_nProducerCount) == 0)
 		m_nRunning = 0;
 }
@@ -546,9 +488,9 @@ inline void N_ProducerSingleConsumerQueue<T >::RemoveProducer()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::Push(const T& rObj)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	CryMT::detail::N_ProducerSingleConsumerQueueBase::Push((void*)&rObj, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
 }
 
@@ -556,23 +498,31 @@ inline void N_ProducerSingleConsumerQueue<T >::Push(const T& rObj)
 template<typename T>
 inline bool N_ProducerSingleConsumerQueue<T >::Pop(T* pResult)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	return CryMT::detail::N_ProducerSingleConsumerQueueBase::Pop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+template<typename T>
+inline bool N_ProducerSingleConsumerQueue<T >::TryPop(T* pResult)
+{
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
+	return CryMT::detail::N_ProducerSingleConsumerQueueBase::TryPop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
 }
 };
 
 namespace stl
 {
-template<typename T> void free_container(CryMT::vector<T>& v)
-{
-	v.free_memory();
+	template<typename T> void free_container(CryMT::vector<T>& v)
+	{
+		v.free_memory();
+	}
+	template<typename T, class Alloc> void free_container(CryMT::queue<T, Alloc>& v)
+	{
+		v.free_memory();
+	}
 }
-template<typename T> void free_container(CryMT::queue<T>& v)
-{
-	v.free_memory();
-}
-}
-
-#endif // __MultiThread_Containters_h__

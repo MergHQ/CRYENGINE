@@ -20,18 +20,18 @@ class QContainer;
 
 class QModelIndex;
 class QDockWidget;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class QToolBar;
 
-class CInspector;
 class CCurveEditorPanel;
 
 namespace pfx2
 {
-	struct IParticleEffectPfx2;
+struct IParticleEffect;
 }
 
-namespace CryParticleEditor {
+namespace CryParticleEditor
+{
 
 class CEffectAssetModel;
 class CEffectAssetTabs;
@@ -45,9 +45,7 @@ public:
 	CParticleEditor();
 
 	// CEditor
-	virtual const char* GetEditorName() const override { return "Particle Editor"; };
-	virtual void        SetLayout(const QVariantMap& state) override;
-	virtual QVariantMap GetLayout() const override;
+	virtual const char* GetEditorName() const override { return "Particle Editor"; }
 	// ~CEditor
 
 	// IEditorNotifyListener
@@ -58,34 +56,34 @@ public:
 
 protected:
 	// CAssetEditor
-	virtual bool OnOpenAsset(CAsset* pAsset) override;
-	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
-	virtual void OnDiscardAssetChanges() override;
-	virtual bool OnAboutToCloseAsset(string& reason) const override;
-	virtual void OnCloseAsset() override;
+	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
+	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
+	virtual bool                                  OnAboutToCloseAsset(string& reason) const override;
+	virtual void                                  OnCloseAsset() override;
+	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
+	virtual void                                  OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
+	virtual void                                  OnInitialize() override;
 	// ~CAssetEditor
 
-	// CEditor
-	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
-	// ~CEditor
+	void AssignToEntity(CBaseObject* pObject, const string& newAssetName);
+	bool AssetSaveDialog(string* pOutputName);
 
-	void                       AssignToEntity(CBaseObject* pObject, const string& newAssetName);
-	bool                       AssetSaveDialog(string* pOutputName);
-
-	void                       OnShowEffectOptions();
+	void OnShowEffectOptions();
 
 private:
+	void         RegisterActions();
 	void         InitMenu();
-	void         InitToolbar(QVBoxLayout* pWindowLayout);
-	void RegisterDockingWidgets();
 
-	virtual bool OnUndo() override;
-	virtual bool OnRedo() override;
+	bool OnReload();
+	bool OnImport();
+
+	bool OnCopy() { return false; }
+	bool OnPaste() { return false; }
+	bool OnDelete() { return false; }
+	bool OnUndo();
+	bool OnRedo();
 
 protected Q_SLOTS:
-	void SaveEffect(CEditableAsset& editAsset);
-	void OnReloadEffect();
-	void OnImportPfx1();
 	void OnLoadFromSelectedEntity();
 	void OnApplyToSelectedEntity();
 
@@ -94,18 +92,13 @@ protected Q_SLOTS:
 	void OnNewComponent();
 
 private:
-	CEffectAssetWidget* CreateEffectAssetWidget();
-
-private:
-	std::shared_ptr<CEffectAssetModel> m_pEffectAssetModel;
+	std::unique_ptr<CEffectAssetModel> m_pEffectAssetModel;
 
 	//
-	QToolBar*           m_pEffectToolBar;
-	CInspector*         m_pInspector;
+	CInspectorLegacy* m_pInspector;
 
-	QAction*            m_pReloadEffectMenuAction;
-	QAction*            m_pShowEffectOptionsMenuAction;
+	QAction*          m_pReloadEffectMenuAction;
+	QAction*          m_pShowEffectOptionsMenuAction;
 };
 
 }
-

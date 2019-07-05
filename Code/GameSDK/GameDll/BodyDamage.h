@@ -9,11 +9,12 @@
 #include "Utility/CryHash.h"
 
 struct HitInfo;
+struct ISurfaceType;
 
 class CBodyDamageProfile : public _reference_target_t
 {
 	
-	struct JointId : std::unary_function<bool, const JointId&>
+	struct JointId
 	{
 		JointId()
 			: m_id(0)
@@ -50,7 +51,7 @@ class CBodyDamageProfile : public _reference_target_t
 		CryHash m_id;
 	};
 
-	struct MatMappingId : std::unary_function<bool, const MatMappingId&>
+	struct MatMappingId
 	{
 		MatMappingId()
 			: m_jointId(0)
@@ -210,7 +211,7 @@ class CBodyDamageProfile : public _reference_target_t
 		PartId m_id;
 	};
 
-	class CPartByNameFunctor : std::unary_function<bool, const CPart&>
+	class CPartByNameFunctor
 	{
 	public:
 		CPartByNameFunctor(const char* name) : m_name(name) {}

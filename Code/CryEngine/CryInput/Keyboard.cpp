@@ -12,6 +12,7 @@
 
 #include "StdAfx.h"
 #include "Keyboard.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #ifdef USE_DXINPUT
 
@@ -98,13 +99,10 @@ bool CKeyboard::SetExclusiveMode(bool value)
 
 	HRESULT hr;
 
-	// Enable Windows keys if we are not in game mode - to always leave enabled, set to 0
-	DWORD winKeyFlags = (!gEnv->IsEditor() || gEnv->IsEditorGameMode() ? DISCL_NOWINKEY : 0);
-
 	if (value)
 	{
 		m_baseflags = DISCL_EXCLUSIVE | DISCL_FOREGROUND;
-		hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), GetDeviceFlags());
+		hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), GetDeviceFlags());
 
 		if (FAILED(hr))
 		{
@@ -115,7 +113,7 @@ bool CKeyboard::SetExclusiveMode(bool value)
 	else
 	{
 		m_baseflags = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
-		hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), GetDeviceFlags());
+		hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), GetDeviceFlags());
 		if (FAILED(hr))
 		{
 			gEnv->pLog->LogToFile("Cannot Set Keyboard Non-Exclusive Mode\n");
@@ -134,7 +132,7 @@ void CKeyboard::ChangeDisableWinKeys(ICVar* pVar)
 	Unacquire();
 	s_disableWinKeys = pVar->GetIVal();
 	HRESULT hr;
-	hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), GetDeviceFlags());
+	hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), GetDeviceFlags());
 	if (FAILED(hr))
 	{
 		gEnv->pLog->LogToFile("Error changing enabled state of windows keys\n");

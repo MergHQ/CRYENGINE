@@ -158,8 +158,8 @@ void CPipeManager::Serialize(TSerialize ser)
 //-----------------------------------------------------------------------------------------------------------
 struct CheckFuncCallScanDef
 {
-	int   p;    // compare iterator
-	char* str;  // function name to detect
+	int         p;    // compare iterator
+	const char* str;  // function name to detect
 };
 
 struct CheckFuncCall

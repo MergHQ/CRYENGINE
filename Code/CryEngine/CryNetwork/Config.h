@@ -108,14 +108,17 @@
 #define USE_CHANNEL_TIMERS 0
 
 // Set to use arithmetic compression or simple bit packing in CNetOutputSerializeImpl and CNetInputSerializeImpl
-#if CRY_PLATFORM_DESKTOP && !PC_CONSOLE_NET_COMPATIBLE
-	#define USE_ARITHSTREAM 1
-#else
-	#define USE_ARITHSTREAM 0
-#endif
+#define USE_ARITHSTREAM 1
+
 // When not using the arith stream, the below will reduce memory/cpu footprint still further (seperate define at present
 //to aid finding bugs introduced)
 #define USE_MEMENTO_PREDICTORS (0 || USE_ARITHSTREAM)
+
+// When not using the arith stream, allocate netId values from separate ranges (low, medium, high) to be able to pack
+// values into lower amount of bits.
+// When using arith stream - no need for nedId ranges, as arith stream implements its own predictive model to compress netId values.
+#define USE_NETID_PACKING (!USE_ARITHSTREAM)
+
 // Turn off to simplify the scheduler to reduce time taken to schedule packets : Currently ignores bang/pulses
 #define FULL_ON_SCHEDULING     1
 
@@ -199,25 +202,50 @@
 
 #define VERBOSE_MALFORMED_PACKET_REPORTS 1
 
-#if !PC_CONSOLE_NET_COMPATIBLE
-// Using rijndael cipher will pad data to multiple of 16 bytes
+// Using rijndael/aes cipher will pad data to multiple of 16 bytes
 // Using stream cipher there is no padding
-	#define ENCRYPTION_RIJNDAEL     1
-	#define ENCRYPTION_STREAMCIPHER 0
+
+#define ENCRYPTION_RIJNDAEL     0
+#define ENCRYPTION_STREAMCIPHER 0
+#define ENCRYPTION_CNG_AES      0
+#define ENCRYPTION_TOMCRYPT_AES 0
+
+#if CRYNETWORK_USE_CNG
+	#undef ENCRYPTION_CNG_AES
+	#define ENCRYPTION_CNG_AES 1
+#elif CRYNETWORK_USE_TOMCRYPT
+	#undef ENCRYPTION_TOMCRYPT_AES
+	#define ENCRYPTION_TOMCRYPT_AES 1
 #else
-	#define ENCRYPTION_RIJNDAEL     0
-	#define ENCRYPTION_STREAMCIPHER 0
+	#undef ENCRYPTION_RIJNDAEL
+	#define ENCRYPTION_RIJNDAEL 1
 #endif
+
+// HMAC-SHA256 adds 32 bytes to the packet.
+#define HMAC_CNG_SHA256         0
+#define HMAC_TOMCRYPT_SHA256    0
+
+#if CRYNETWORK_USE_CNG
+	#undef HMAC_CNG_SHA256
+	#define HMAC_CNG_SHA256 1
+#elif CRYNETWORK_USE_TOMCRYPT
+	#undef HMAC_TOMCRYPT_SHA256
+	#define HMAC_TOMCRYPT_SHA256 1
+#endif
+
+
 
 // this is here so that console and pc can talk to each other with the online services
 // enabled. once the platform specific services are up and running this shouldn't be needed
-#if defined(PC_CONSOLE_NET_COMPATIBLE) && (PC_CONSOLE_NET_COMPATIBLE)
-	#define ENABLE_PLATFORM_PROTOCOL 1
-#else
-	#define ENABLE_PLATFORM_PROTOCOL 1
-#endif
+#define ENABLE_PLATFORM_PROTOCOL 1
 
-#define ALLOW_ENCRYPTION (ENCRYPTION_RIJNDAEL || ENCRYPTION_STREAMCIPHER)
+#define ALLOW_HMAC (HMAC_CNG_SHA256 || HMAC_TOMCRYPT_SHA256)
+#define ALLOW_ENCRYPTION (ENCRYPTION_RIJNDAEL || ENCRYPTION_STREAMCIPHER || ENCRYPTION_CNG_AES || ENCRYPTION_TOMCRYPT_AES)
+#if (ALLOW_ENCRYPTION || ALLOW_HMAC) && CRYNETWORK_GENERATE_ENCRYPTION_KEYS
+	// If enabled, generate and exchange own keys/cryptographic material. 
+	// Otherwise - cryptographic material have to be supplied from outside through a different communication channel.
+	#define ENCRYPTION_GENERATE_KEYS 1
+#endif
 
 // never ever release with this defined
 #define INTERNET_SIMULATOR   1
@@ -306,6 +334,9 @@
 // Optimisation to prevent dirtying all the aspects when binding
 #define ENABLE_THIN_BINDS 0
 
+// Support for logs of context establishments
+#define LOG_CONTEXT_ESTABLISHMENT 1
+
 /*
  * from here on is validation of the above
  */
@@ -366,6 +397,7 @@
 	#undef LOG_MESSAGE_DROPS
 	#undef ENABLE_NETWORK_MEM_INFO
 	#undef ENABLE_SERIALIZATION_LOGGING
+	#undef LOG_CONTEXT_ESTABLISHMENT
 
 	#define USUAL_DEBUG_STUFF 0
 
@@ -429,6 +461,7 @@
 	#define LOG_ENTITYID_ERRORS                        0
 	#define LOG_MESSAGE_DROPS                          0
 	#define ENABLE_SERIALIZATION_LOGGING               0
+	#define LOG_CONTEXT_ESTABLISHMENT                  0
 
 #endif
 
@@ -464,6 +497,16 @@
 #if ALLOW_ENCRYPTION
 	#if ENABLE_BUFFER_VERIFICATION
 		#error Cannot define ENABLE_BUFFER_VERIFICATION and ALLOW_ENCRYPTION at once
+	#endif
+
+	#if (ENCRYPTION_RIJNDAEL + ENCRYPTION_STREAMCIPHER + ENCRYPTION_CNG_AES + ENCRYPTION_TOMCRYPT_AES) > 1
+		#error "Multiple encryption modes cannot be active"
+	#endif
+#endif
+
+#if ALLOW_HMAC
+	#if (HMAC_CNG_SHA256 + HMAC_TOMCRYPT_SHA256) > 1
+		#error "Multiple HMAC modes cannot be active"
 	#endif
 #endif
 
@@ -552,5 +595,11 @@ static inline bool ServerFileSyncEnabled()
 	#endif
 }
 #endif // SERVER_FILE_SYNC_MODE
+
+
+// Enable support of IGameQuery/IGameQueryListener/etc.
+#if CRYNETWORK_SUPPORT_GAME_QUERY
+#define ENABLE_GAME_QUERY 1
+#endif
 
 #endif

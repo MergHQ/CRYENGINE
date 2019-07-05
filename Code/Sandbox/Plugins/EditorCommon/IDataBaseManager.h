@@ -1,19 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __IDataBaseManager_h__
-#define __IDataBaseManager_h__
 #pragma once
 
-#include "IObjectEnumerator.h"
-#include "IDataBaseLibrary.h"
 #include "IDataBaseItem.h"
+#include "IDataBaseLibrary.h"
+#include "IObjectEnumerator.h"
 
 enum EDataBaseItemEvent
 {
 	EDB_ITEM_EVENT_ADD,
 	EDB_ITEM_EVENT_DELETE,
-	EDB_ITEM_EVENT_CHANGED, //According to usage, this is for name changes or structure changes (ex: matetrial changed into submaterial)
-	EDB_ITEM_EVENT_SELECTED, //selected in database view or equivalent
+	EDB_ITEM_EVENT_CHANGED,           //According to usage, this is for name changes or structure changes (ex: material changed into submaterial)
+	EDB_ITEM_EVENT_SELECTED,          //selected in database view or equivalent
 	EDB_ITEM_EVENT_UPDATE_PROPERTIES, //Internal properties were updated
 };
 
@@ -33,6 +31,7 @@ enum EDataBaseEvent
 //////////////////////////////////////////////////////////////////////////
 struct IDataBaseManagerListener
 {
+	virtual ~IDataBaseManagerListener() {}
 	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) = 0;
 	virtual void OnDataBaseLibraryEvent(IDataBaseLibrary* pLibrary, EDataBaseLibraryEvent event) {}
 	virtual void OnDataBaseEvent(EDataBaseEvent event)                                           {}
@@ -40,10 +39,11 @@ struct IDataBaseManagerListener
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
-//    his interface is used to enumerate al items registered to the database manager.
+//    his interface is used to enumerate all items registered to the database manager.
 //////////////////////////////////////////////////////////////////////////
 struct IDataBaseItemEnumerator
 {
+	virtual ~IDataBaseItemEnumerator() {}
 	virtual void           Release() = 0;
 	virtual IDataBaseItem* GetFirst() = 0;
 	virtual IDataBaseItem* GetNext() = 0;
@@ -57,6 +57,8 @@ struct IDataBaseItemEnumerator
 //////////////////////////////////////////////////////////////////////////
 struct IDataBaseManager
 {
+	virtual ~IDataBaseManager() {}
+
 	//! Clear all libraries.
 	virtual void ClearAll() = 0;
 
@@ -75,7 +77,7 @@ struct IDataBaseManager
 	virtual IDataBaseItemEnumerator* GetItemEnumerator() = 0;
 
 	// Select one item in DB.
-	virtual void SetSelectedItem(IDataBaseItem* pItem) = 0;
+	virtual void           SetSelectedItem(IDataBaseItem* pItem) = 0;
 	virtual IDataBaseItem* GetSelectedItem() const = 0;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -102,7 +104,7 @@ struct IDataBaseManager
 	virtual void Serialize(XmlNodeRef& node, bool bLoading) = 0;
 
 	//! Export items to game.
-	virtual void Export(XmlNodeRef& node) {};
+	virtual void Export(XmlNodeRef& node) {}
 
 	//! Enumerate objects in database
 	virtual void EnumerateObjects(IObjectEnumerator* pEnumerator)
@@ -117,7 +119,7 @@ struct IDataBaseManager
 				pEnumerator->AddEntry(pItem->GetFullName(), pItem->GetGUID().ToString());
 			}
 		}
-	};
+	}
 
 	//! Returns unique name base on input name.
 	virtual string MakeUniqItemName(const string& name) = 0;
@@ -143,6 +145,3 @@ struct IDataBaseManager
 	virtual void AddListener(IDataBaseManagerListener* pListener) = 0;
 	virtual void RemoveListener(IDataBaseManagerListener* pListener) = 0;
 };
-
-#endif // __IDataBaseManager_h__
-

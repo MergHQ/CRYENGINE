@@ -1,68 +1,65 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _BREEZEGENERATOR_H
-#define _BREEZEGENERATOR_H
+#pragma once
 
 #include "Cry3DEngineBase.h"
+#include <Cry3DEngine/IBreezeGenerator.h>
 
 struct SBreeze;
 
 // Spawns wind volumes around the camera to emulate breezes
-class CBreezeGenerator : public Cry3DEngineBase
+class CBreezeGenerator : public IBreezeGenerator, public Cry3DEngineBase
 {
 	friend class C3DEngine;
-
-	// The array of active breezes
-	SBreeze* m_breezes;
-
-	// The radius around the camera where the breezes will be spawned
-	float m_spawn_radius;
-
-	// The spread (variation in direction on spawn)
-	float m_spread;
-
-	// The max. number of wind areas active at the same time
-	uint32 m_count;
-
-	// The max. extents of each breeze
-	float m_radius;
-
-	// The max. life of each breeze
-	float m_lifetime;
-
-	// The random variance of each breeze in respect to it's other attributes
-	float m_variance;
-
-	// The strength of the breeze (as a factor of the original wind vector)
-	float m_strength;
-
-	// The speed of the breeze movement (not coupled to the wind speed)
-	float m_movement_speed;
-
-	// The global direction of the environment wind
-	Vec3 m_wind_speed;
-
-	// Set a fixed height for the breeze, for levels without terrain. -1 uses the terrain height
-	float m_fixed_height;
-
-	// Approximate threshold velocity that the wind can add to an entity part per second that will awake it (0 disables)
-	float m_awake_thresh;
-
-	// breeze generation enabled?
-	bool m_enabled;
-
 public:
-
 	CBreezeGenerator();
 	~CBreezeGenerator();
 
-	void Initialize();
+	virtual void   Initialize() override;
+	virtual void   Shutdown() override;
 
+	virtual void   SetParams(const BreezeGeneratorParams& params) override;
+	virtual BreezeGeneratorParams GetParams() const override;
+
+	virtual void   SetEnabled(bool enabled) override                  { m_params.breezeGenerationEnabled = enabled; }
+	virtual bool   GetEnabled() const override                        { return m_params.breezeGenerationEnabled;  }
+
+	virtual void   SetStrength(float strength) override               { m_params.breezeStrength = strength; }
+	virtual float  GetStrength() const override                       { return m_params.breezeStrength; }
+
+	virtual void   SetMovementSpeed(float movementSpeed) override     { m_params.breezeMovementSpeed = movementSpeed; }
+	virtual float  GetMovementSpeed() const override                  { return m_params.breezeMovementSpeed; }
+
+	virtual void   SetVariance(float variance) override               { m_params.breezeVariance = variance; }
+	virtual float  GetVariance() const override                       { return m_params.breezeVariance; }
+
+	virtual void   SetLifetime(float lifetime) override               { m_params.breezeLifeTime = lifetime; }
+	virtual float  GetLifetime() const override                       { return m_params.breezeLifeTime; }
+
+	virtual void   SetCount(uint32 count) override                    { m_params.breezeCount = count; }
+	virtual uint32 GetCount() const override                          { return m_params.breezeCount; }
+
+	virtual void   SetSpawnRadius(float spawnRadius) override         { m_params.breezeSpawnRadius = spawnRadius; }
+	virtual float  GetSpawnRadius() const override                    { return m_params.breezeSpawnRadius; }
+
+	virtual void   SetSpread(float spread) override                   { m_params.breezeSpread = spread; }
+	virtual float  GetSpread() const override                         { return m_params.breezeSpread; }
+
+	virtual void   SetRadius(float radius) override                   { m_params.breezeRadius = radius; }
+	virtual float  GetRadius() const override                         { return m_params.breezeRadius; }
+
+	virtual void   SetAwakeThreshold(float awakeThreshSpeed) override { m_params.breezeAwakeThreshold = awakeThreshSpeed; }
+	virtual float  GetAwakeThreshold() const override                 { return m_params.breezeAwakeThreshold; }
+
+	virtual void   SetFixedHeight(float fixedHeight) override         { m_params.breezeFixedHeight = fixedHeight; }
+	virtual float  GetFixedHeight() const override                    { return m_params.breezeFixedHeight; }
+
+private:
 	void Reset();
-
-	void Shutdown();
-
 	void Update();
-};
 
-#endif
+	BreezeGeneratorParams m_params;
+	
+	// The array of active breezes
+	SBreeze* m_breezes;
+};

@@ -12,21 +12,19 @@
 #include "ImporterUtil.h"
 
 // EditorCommon
-#include <Controls\QuestionDialog.h>
+#include <Controls/QuestionDialog.h>
 #include <CryIcon.h>
+#include <DragDrop.h>
+#include <FileDialogs/EngineFileDialog.h>
 #include <FileDialogs/ExtensionFilter.h>
 #include <FileDialogs/SystemFileDialog.h>
-#include <FileDialogs/EngineFileDialog.h>
-#include <FilePathUtil.h>
-#include <DragDrop.h>
 #include <Notifications/NotificationCenter.h>
+#include <PathUtils.h>
 #include <ThreadingUtils.h>
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
-
-// EditorQt
 
 // Qt
 #include <QFile>
@@ -176,7 +174,7 @@ void CBaseDialog::CreateMenu(IDialogHost* pDialogHost)
 {
 	if (GetToolButtons() & eToolButtonFlags_Reimport)
 	{
-		pDialogHost->Host_AddToMenu("File", "meshimporter.reimport");
+		pDialogHost->Host_AddToMenu("File", "general.reimport");
 	}
 }
 
@@ -489,7 +487,7 @@ void CBaseDialog::OnOpen()
 		return;
 	}
 
-	(void)Open(assetFilePath);
+	Open(assetFilePath);
 }
 
 bool CBaseDialog::Open(const string& filePath)
@@ -509,7 +507,7 @@ bool CBaseDialog::Open(const string& filePath)
 		{
 			if (pAsset->IsBeingEdited())
 			{
-				GetIEditor()->GetNotificationCenter()->ShowInfo(tr("Asset already open"), tr("'%1' already open").arg(pAsset->GetName()));
+				GetIEditor()->GetNotificationCenter()->ShowInfo(tr("Asset already open"), tr("'%1' already open").arg(pAsset->GetName().c_str()));
 				return false;  // A particular asset can only edited by a single editor at a time.
 			}
 
@@ -647,4 +645,3 @@ QString ReplaceExtension(const QString& str, const char* ext)
 }
 
 } // namespace MeshImporter
-

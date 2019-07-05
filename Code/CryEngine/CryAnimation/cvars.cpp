@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "cvars.h"
 #include <CrySerialization/Enum.h>
+
 //need global var as the singleton approach is too expensive
 Console g_Consoleself;
 namespace
@@ -115,6 +116,9 @@ void Console::Init()
 #ifndef _RELEASE
 	REGISTER_CVAR(ca_DebugAnimUsageOnFileAccess, 0, 0, "shows what animation assets are used in the level, triggered by key fileAccess events");
 	REGISTER_CVAR(ca_AttachmentTextureMemoryBudget, 100, 0, "texture budget for e_debugdraw 20 - in megabytes");
+	
+	REGISTER_CVAR(ca_debug_attachmentManager_maxUsedMemSize, 0, VF_NULL, "shows how many elements the memory vector of the AttachmentManager held at most");
+	REGISTER_CVAR(ca_debug_attachmentManager_maxUsedOffsetSize, 0, VF_NULL, "shows how many elements the offsets vector of the AttachmentManager held at most");
 #endif
 
 	ca_CharEditModel = "objects/characters/human/sdk_player/sdk_player.cdf";
@@ -122,7 +126,6 @@ void Console::Init()
 	REGISTER_STRING("ca_FilterJoints", ca_FilterJoints, VF_NULL, "");
 	REGISTER_STRING("ca_DrawPose", NULL, VF_NULL, "");
 	REGISTER_CVAR2("ca_DebugCommandBufferFilter", &ca_DebugCommandBufferFilter, "", VF_NULL, "Limits the command buffer debug output to a cdf containing the given string.");
-	assert(this);
 
 	DefineConstIntCVar(ca_DrawAllSimulatedSockets, 0, VF_CHEAT, "if set to 1, the own bounding box of the character is drawn");
 	DefineConstIntCVar(ca_DrawBBox, 0, VF_CHEAT, "if set to 1, the own bounding box of the character is drawn");
@@ -137,8 +140,6 @@ void Console::Init()
 	DefineConstIntCVar(ca_DrawBinormals, 0, VF_CHEAT, "draws the binormals of the rendered character");
 	DefineConstIntCVar(ca_DrawNormals, 0, VF_CHEAT, "draws the normals of the rendered character");
 	DefineConstIntCVar(ca_DrawAttachments, 1, VF_CHEAT, "if this is 0, will not draw the attachments objects");
-	DefineConstIntCVar(ca_DrawAttachmentsMergedForShadows, 1, VF_REQUIRE_APP_RESTART, "if this is 1 we merge attachments for shadow generation");
-	REGISTER_CVAR(ca_AttachmentMergingMemoryBudget, 25 * 1024 * 1024, VF_NULL, "amount of memory (in bytes) dedicated to merged character attachments");
 	DefineConstIntCVar(ca_DrawAttachmentOBB, 0, VF_CHEAT, "if this is 0, will not draw the attachments objects");
 	DefineConstIntCVar(ca_DrawAttachmentProjection, 0, VF_CHEAT, "if this is 0, will not draw the attachment projections");
 	DefineConstIntCVar(ca_DrawBaseMesh, 1, VF_CHEAT, "if this is 0, will not draw the characters");
@@ -190,6 +191,7 @@ void Console::Init()
 	                   "If set to 1, will prevent models from unloading from memory\nupon destruction of the last referencing character");
 	// if this is not empty string, the animations of characters with the given model will be logged
 	DefineConstIntCVar(ca_DebugSkeletonEffects, 0, VF_CHEAT, "If true, dump log messages when skeleton effects are handled.");
+	DefineConstIntCVar(ca_SkeletonEffectsPlayAudioInEngine, 0, VF_CHEAT, "If true, skeleton audio effects are spawned and played within CE. Otherwise, audio events have to be handled by game code (as it has been done historically).");
 	DefineConstIntCVar(ca_lipsync_phoneme_offset, 20, VF_CHEAT, "Offset phoneme start time by this value in milliseconds");
 	DefineConstIntCVar(ca_lipsync_phoneme_crossfade, 70, VF_CHEAT, "Cross fade time between phonemes in milliseconds");
 	DefineConstIntCVar(ca_eyes_procedural, 1, 0, "Enables/Disables procedural eyes animation");
@@ -200,8 +202,8 @@ void Console::Init()
 	DefineConstIntCVar(ca_DebugADIKTargets, 0, VF_CHEAT, "If 1, then it will show if there are animation-driven IK-Targets for this model.");
 	DefineConstIntCVar(ca_SaveAABB, 0, 0, "if the AABB is invalid, replace it by the default AABB");
 	DefineConstIntCVar(ca_DebugCriticalErrors, 0, VF_CHEAT, "if 1, then we stop with a Fatal-Error if we detect a serious issue");
-	DefineConstIntCVar(ca_UseIMG_CAF, 1, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
-	DefineConstIntCVar(ca_UseIMG_AIM, 1, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
+	DefineConstIntCVar(ca_UseIMG_CAF, 0, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
+	DefineConstIntCVar(ca_UseIMG_AIM, 0, VF_CHEAT, "if 1, then we use the IMG file. In development mode it is suppose to be off");
 	DefineConstIntCVar(ca_UnloadAnimationCAF, 1, VF_DUMPTODISK, "unloading streamed CAFs as soon as they are not used");
 	DefineConstIntCVar(ca_UnloadAnimationDBA, 1, VF_NULL, "if 1, then unload DBA if not used");
 	DefineConstIntCVar(ca_MinInPlaceCAFStreamSize, 128 * 1024, VF_CHEAT, "min size a caf should be for in-place streaming");
@@ -240,6 +242,14 @@ void Console::Init()
 
 	DefineConstIntCVar(ca_PreloadAllCAFs, 0, VF_NULL, "Preload all CAFs during level preloading.");
 
+	DefineConstIntCVar(ca_MinAttachmentMemorySize, 4096, VF_NULL, "Default reservation size of the memory vector in the AttachmentManager");
+	DefineConstIntCVar(ca_MinAttachmentOffsetSize, 4096, VF_NULL, "Default reservation size of the offsets vector in the AttachmentManager");
+
+	// Quasi static animation optimization
+	DefineConstIntCVar(ca_CullQuasiStaticAnimationUpdates, 0, VF_NULL, "Drops the animation updates of objects marked as 'quasi-static' when they sleep");
+	DefineConstIntCVar(ca_DebugQuasiStaticAnimationCulling, 0, VF_NULL, "Whether to display debug information about what updates are being culled.");
+	DefineConstIntCVar(ca_QuasiStaticAnimationSleepTimeoutMs, 2500, VF_NULL, "How much to wait (ms) before sleeping on quasi-static objects.");
+
 	// vars in console .cfgs
 	REGISTER_CVAR(ca_DrawVEGInfo, 0.0f, VF_CHEAT, "if set to 1, the VEG debug info is drawn");
 	REGISTER_CVAR(ca_DecalSizeMultiplier, 1.0f, VF_CHEAT, "The multiplier for the decal sizes");
@@ -271,6 +281,7 @@ void Console::Init()
 	REGISTER_CVAR(ca_MotionBlurMovementThreshold, 0.0f, 0, "\"advanced\" Set motion blur movement threshold for discarding skinned object");
 
 	REGISTER_CVAR(ca_DeathBlendTime, 0.3f, VF_CHEAT, "Specifies the blending time between low-detail dead body skeleton and current skeleton");
+	REGISTER_CVAR(ca_OverrideBlendWeightSimulatedSockets, 1.0f, 0, "Override helper joint value for blending between socket simulation and animation pose\n 0.0 - full animation\n 1.0 - full simulation (override disabled)");
 	REGISTER_CVAR(ca_lipsync_vertex_drag, 1.2f, VF_CHEAT, "Vertex drag coefficient when blending morph targets");
 	REGISTER_CVAR(ca_lipsync_phoneme_strength, 1.0f, 0, "LipSync phoneme strength");
 	REGISTER_CVAR(ca_AttachmentCullingRation, 200.0f, 0, "ration between size of attachment and distance to camera");

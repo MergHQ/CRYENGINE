@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FACIALPREVIEWOPTIONSDIALOG_H__
-#define __FACIALPREVIEWOPTIONSDIALOG_H__
+#pragma once
 
 #include "Controls/PropertiesPanel.h"
 
@@ -22,10 +21,10 @@ public:
 
 protected:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 	virtual BOOL OnInitDialog();
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 	virtual void OnSize(UINT nType, int cx, int cy);
 
 	DECLARE_MESSAGE_MAP()
@@ -37,6 +36,3 @@ protected:
 	HACCEL                m_hAccelerators;
 	CFacialEdContext*     m_pContext;
 };
-
-#endif //__FACIALPREVIEWOPTIONSDIALOG_H__
-

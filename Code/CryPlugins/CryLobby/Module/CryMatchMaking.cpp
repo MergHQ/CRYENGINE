@@ -4,6 +4,7 @@
 #include "CryMatchMaking.h"
 #include "CrySharedLobbyPacket.h"
 
+#include <CrySystem/CryVersion.h>
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "LAN/CryLANLobby.h"
@@ -121,10 +122,22 @@ CCryMatchMaking::CCryMatchMaking(CCryLobby* lobby, CCryLobbyService* service, EC
 	}
 
 	#if NETWORK_HOST_MIGRATION
-	gEnv->pConsole->GetCVar("net_hostHintingNATTypeOverride")->SetOnChangeCallback(HostHintingOverrideChanged);
-	gEnv->pConsole->GetCVar("net_hostHintingActiveConnectionsOverride")->SetOnChangeCallback(HostHintingOverrideChanged);
-	gEnv->pConsole->GetCVar("net_hostHintingPingOverride")->SetOnChangeCallback(HostHintingOverrideChanged);
-	gEnv->pConsole->GetCVar("net_hostHintingUpstreamBPSOverride")->SetOnChangeCallback(HostHintingOverrideChanged);
+	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingNATTypeOverride"))
+	{
+		pVar->AddOnChange(HostHintingOverrideChanged);
+	}
+	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingActiveConnectionsOverride"))
+	{
+		pVar->AddOnChange(HostHintingOverrideChanged);
+	}
+	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingPingOverride"))
+	{
+		pVar->AddOnChange(HostHintingOverrideChanged);
+	}
+	if (ICVar* pVar = gEnv->pConsole->GetCVar("net_hostHintingUpstreamBPSOverride"))
+	{
+		pVar->AddOnChange(HostHintingOverrideChanged);
+	}
 		#if ENABLE_HOST_MIGRATION_STATE_CHECK
 	m_hostMigrationStateCheckSession = CryLobbyInvalidSessionHandle;
 		#endif
@@ -246,7 +259,7 @@ void CCryMatchMaking::Tick(CTimeValue tv)
 	{
 		SSession* pSession = m_sessions[i];
 
-		CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
+		CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
 
 		if (pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED)
 		{
@@ -255,7 +268,7 @@ void CCryMatchMaking::Tick(CTimeValue tv)
 			{
 				SSession::SRConnection* pConnection = pSession->remoteConnection[j];
 
-				CRY_ASSERT_MESSAGE(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
+				CRY_ASSERT(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
 
 				if (pConnection->used)
 				{
@@ -478,12 +491,10 @@ void CCryMatchMaking::Tick(CTimeValue tv)
 	#endif
 }
 
-	#if !defined(_RELEASE)
+#if !defined(_RELEASE)
 void CCryMatchMaking::DrawDebugText()
 {
 	static float white[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	static float red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
-	static float green[] = { 0.0f, 1.0f, 0.0f, 1.0f };
 
 	if (CLobbyCVars::Get().showMatchMakingTasks != 0)
 	{
@@ -501,7 +512,10 @@ void CCryMatchMaking::DrawDebugText()
 		}
 	}
 
-		#if NETWORK_HOST_MIGRATION
+#if NETWORK_HOST_MIGRATION
+	static float red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+	static float green[] = { 0.0f, 1.0f, 0.0f, 1.0f };
+
 	for (uint32 debugIndex = 0; debugIndex < MAX_MATCHMAKING_SESSIONS; ++debugIndex)
 	{
 		float ypos = 50.0f;
@@ -621,9 +635,9 @@ void CCryMatchMaking::DrawDebugText()
 			}
 		}
 	}
-		#endif // NETWORK_HOST_MIGRATION
+#endif // NETWORK_HOST_MIGRATION
 }
-	#endif // !defined(_RELEASE)
+#endif // !defined(_RELEASE)
 
 void CCryMatchMaking::StartTaskRunning(CryMatchMakingTaskID mmTaskID)
 {
@@ -778,7 +792,7 @@ CryLobbySessionHandle CCryMatchMaking::GetCurrentNetNubSessionHandle() const
 
 		if ((pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED) && (pSession->createFlags & CRYSESSION_CREATE_FLAG_NUB))
 		{
-			CRY_ASSERT_MESSAGE((handle == CryLobbyInvalidSessionHandle), "Multiple matchmaking sessions created with CRYSESSION_CREATE_FLAG_NUB");
+			CRY_ASSERT((handle == CryLobbyInvalidSessionHandle), "Multiple matchmaking sessions created with CRYSESSION_CREATE_FLAG_NUB");
 			handle = i;
 		}
 	}
@@ -802,24 +816,23 @@ SCryMatchMakingConnectionUID CCryMatchMaking::GetHostConnectionUID(CrySessionHan
 {
 	LOBBY_AUTO_LOCK;
 
-	SCryMatchMakingConnectionUID uid = CryMatchMakingInvalidConnectionUID;
 	CryLobbySessionHandle h = GetSessionHandleFromGameSessionHandle(gh);
 
 	if (h != CryLobbyInvalidSessionHandle)
 	{
 		SSession* pSession = m_sessions[h];
 
-		CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
+		CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
 
 		if (pSession->localFlags & CRYSESSION_LOCAL_FLAG_HOST)
 		{
-			CRY_ASSERT_MESSAGE(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
+			CRY_ASSERT(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
 
 			return pSession->localConnection->uid;
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(pSession->remoteConnection[pSession->hostConnectionID], "CCryMatchMaking: Remote connection base pointers not setup");
+			CRY_ASSERT(pSession->remoteConnection[pSession->hostConnectionID], "CCryMatchMaking: Remote connection base pointers not setup");
 
 			return pSession->remoteConnection[pSession->hostConnectionID]->uid;
 		}
@@ -1082,13 +1095,13 @@ CryMatchMakingConnectionID CCryMatchMaking::AddRemoteConnection(CryLobbySessionH
 {
 	SSession* pSession = m_sessions[h];
 
-	CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
 
 	for (uint32 i = 0; i < MAX_LOBBY_CONNECTIONS; i++)
 	{
 		SSession::SRConnection* pConnection = pSession->remoteConnection[i];
 
-		CRY_ASSERT_MESSAGE(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
+		CRY_ASSERT(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
 
 		if (!pConnection->used)
 		{
@@ -1129,12 +1142,12 @@ void CCryMatchMaking::FreeRemoteConnection(CryLobbySessionHandle h, CryMatchMaki
 {
 	SSession* pSession = m_sessions[h];
 
-	CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
 
 	if (id != CryMatchMakingInvalidConnectionID)
 	{
 		SSession::SRConnection* pConnection = pSession->remoteConnection[id];
-		CRY_ASSERT_MESSAGE(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
+		CRY_ASSERT(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
 
 		if (pConnection->used)
 		{
@@ -1175,7 +1188,7 @@ void CCryMatchMaking::ResetConnection(CryLobbyConnectionID id)
 			{
 				SSession::SRConnection* pConnection = pSession->remoteConnection[j];
 
-				CRY_ASSERT_MESSAGE(pConnection, "CCryMatchMaking: Connection base pointers not setup");
+				CRY_ASSERT(pConnection, "CCryMatchMaking: Connection base pointers not setup");
 
 				if (pConnection->used)
 				{
@@ -1238,7 +1251,7 @@ bool CCryMatchMaking::FindConnectionFromSessionUID(CryLobbySessionHandle h, SCry
 {
 	SSession* pSession = m_sessions[h];
 
-	CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
 
 	if (pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED)
 	{
@@ -1246,7 +1259,7 @@ bool CCryMatchMaking::FindConnectionFromSessionUID(CryLobbySessionHandle h, SCry
 		{
 			SSession::SRConnection* pConnection = pSession->remoteConnection[i];
 
-			CRY_ASSERT_MESSAGE(pConnection, "CCryMatchMaking: Connection base pointers not setup");
+			CRY_ASSERT(pConnection, "CCryMatchMaking: Connection base pointers not setup");
 
 			if (pConnection->used)
 			{
@@ -1307,7 +1320,7 @@ CryMatchMakingTaskID CCryMatchMaking::FindTaskFromTaskSessionHandle(uint32 etask
 		{
 			STask* pTask = m_task[i];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCryMatchMaking: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCryMatchMaking: Task base pointers not setup");
 
 			if (pTask->used && (pTask->subTask == etask) && (pTask->session == h))
 			{
@@ -1393,7 +1406,7 @@ ESocketError CCryMatchMaking::Send(CryMatchMakingTaskID mmTaskID, CCryLobbyPacke
 		{
 			STask* pTask = m_task[mmTaskID];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCryMatchMaking: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCryMatchMaking: Task base pointers not setup");
 
 			pTask->sendID = id;
 			pTask->sendStatus = eCLE_Pending;
@@ -1409,8 +1422,8 @@ ESocketError CCryMatchMaking::Send(CryMatchMakingTaskID mmTaskID, CCryLobbyPacke
 	{
 		TNetAddress addr;
 
-		CRY_ASSERT_MESSAGE(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
-		CRY_ASSERT_MESSAGE(m_sessions[h]->remoteConnection[connectionID], "CCryMatchMaking: Session remote connection base pointers not setup");
+		CRY_ASSERT(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
+		CRY_ASSERT(m_sessions[h]->remoteConnection[connectionID], "CCryMatchMaking: Session remote connection base pointers not setup");
 
 		if (m_lobby->AddressFromConnection(addr, m_sessions[h]->remoteConnection[connectionID]->connectionID))
 		{
@@ -1427,7 +1440,7 @@ ESocketError CCryMatchMaking::Send(CryMatchMakingTaskID mmTaskID, CCryLobbyPacke
 				{
 					STask* pTask = m_task[mmTaskID];
 
-					CRY_ASSERT_MESSAGE(pTask, "CCryMatchMaking: Task base pointers not setup");
+					CRY_ASSERT(pTask, "CCryMatchMaking: Task base pointers not setup");
 
 					pTask->sendID = id;
 					pTask->sendStatus = eCLE_Pending;
@@ -1508,7 +1521,7 @@ ECryLobbyError CCryMatchMaking::SendToServer(CCryLobbyPacket* pPacket, CrySessio
 
 	CryLobbySessionHandle h = GetSessionHandleFromGameSessionHandle(gh);
 
-	CRY_ASSERT_MESSAGE(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
 
 	if (!(m_sessions[h]->localFlags & CRYSESSION_LOCAL_FLAG_HOST))
 	{
@@ -1537,7 +1550,7 @@ ECryLobbyError CCryMatchMaking::SendToServer(CCryLobbyPacket* pPacket, CrySessio
 void CCryMatchMaking::SendToServerNT(TMemHdl mh, uint32 length, CryLobbySessionHandle h)
 {
 	LOBBY_AUTO_LOCK;
-	CRY_ASSERT_MESSAGE(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
 
 	CCryLobbyPacket* pPacket = MemoryBlockToPacket(mh, length);
 
@@ -1551,7 +1564,7 @@ ECryLobbyError CCryMatchMaking::SendToAllClients(CCryLobbyPacket* pPacket, CrySe
 
 	CryLobbySessionHandle h = GetSessionHandleFromGameSessionHandle(gh);
 
-	CRY_ASSERT_MESSAGE(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(m_sessions[h], "CCryMatchMaking: Session base pointers not setup");
 
 	if (m_sessions[h]->localFlags & CRYSESSION_LOCAL_FLAG_HOST)
 	{
@@ -1654,8 +1667,8 @@ void CCryMatchMaking::DispatchUserPacket(TMemHdl mh, uint32 length, CrySessionHa
 
 void CCryMatchMaking::InitialDispatchUserPackets(CryLobbySessionHandle h, CryMatchMakingConnectionID connectionID)
 {
-	CRY_ASSERT_MESSAGE(h != CryLobbyInvalidSessionHandle, "CCryMatchMaking::InitialDispatchUserPackets: Invalid Session");
-	CRY_ASSERT_MESSAGE(connectionID != CryMatchMakingInvalidConnectionID, "CCryMatchMaking::InitialDispatchUserPackets: Invalid connection ID");
+	CRY_ASSERT(h != CryLobbyInvalidSessionHandle, "CCryMatchMaking::InitialDispatchUserPackets: Invalid Session");
+	CRY_ASSERT(connectionID != CryMatchMakingInvalidConnectionID, "CCryMatchMaking::InitialDispatchUserPackets: Invalid connection ID");
 
 	SSession* pSession = m_sessions[h];
 	SSession::SRConnection* pConnection = pSession->remoteConnection[connectionID];
@@ -1683,7 +1696,7 @@ void CCryMatchMaking::SessionDisconnectRemoteConnectionFromNub(CrySessionHandle 
 		{
 			SSession* pSession = m_sessions[i];
 
-			CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
+			CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
 
 			if ((pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED) && (pSession->createFlags & CRYSESSION_CREATE_FLAG_NUB))
 			{
@@ -1696,7 +1709,7 @@ void CCryMatchMaking::SessionDisconnectRemoteConnectionFromNub(CrySessionHandle 
 				{
 					uint32 uid = GetChannelIDFromGameSessionHandle(gh);
 
-					CRY_ASSERT_MESSAGE(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
+					CRY_ASSERT(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
 
 					if (pSession->localConnection->uid.m_uid == uid)
 					{
@@ -1708,7 +1721,7 @@ void CCryMatchMaking::SessionDisconnectRemoteConnectionFromNub(CrySessionHandle 
 						{
 							SSession::SRConnection* pConnection = pSession->remoteConnection[j];
 
-							CRY_ASSERT_MESSAGE(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
+							CRY_ASSERT(pConnection, "CCryMatchMaking: Remote connection base pointers not setup");
 
 							if (pConnection->used && (pConnection->uid.m_uid == uid))
 							{
@@ -1727,7 +1740,7 @@ void CCryMatchMaking::SessionDisconnectRemoteConnectionViaNub(CryLobbySessionHan
 	SSession* pSession = m_sessions[h];
 
 	NetLog("SessionDisconnectRemoteConnectionViaNub: " PRFORMAT_SH " " PRFORMAT_MMCID " cause %d '%s'", PRARG_SH(h), PRARG_MMCID(id), cause, pReason);
-	CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
 
 	if ((pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED) && (pSession->createFlags & CRYSESSION_CREATE_FLAG_NUB))
 	{
@@ -1737,12 +1750,12 @@ void CCryMatchMaking::SessionDisconnectRemoteConnectionViaNub(CryLobbySessionHan
 		{
 			if (id == CryMatchMakingInvalidConnectionID)
 			{
-				CRY_ASSERT_MESSAGE(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
+				CRY_ASSERT(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
 				pNub->DisconnectChannel(cause, pSession->localConnection->uid.m_uid, pReason);
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(pSession->remoteConnection[id], "CCryMatchMaking: Remote connection base pointers not setup");
+				CRY_ASSERT(pSession->remoteConnection[id], "CCryMatchMaking: Remote connection base pointers not setup");
 				pNub->DisconnectChannel(cause, pSession->remoteConnection[id]->uid.m_uid, pReason);
 			}
 		}
@@ -1755,7 +1768,6 @@ void CCryMatchMaking::SessionDisconnectRemoteConnection(CryLobbySessionHandle h,
 {
 	const uint32 MaxBufferSize = CryLobbyPacketHeaderSize + CryLobbyPacketConnectionUIDSize + CryLobbyPacketUINT8Size;
 	uint8 buffer[MaxBufferSize];
-	uint32 bufferSize = 0;
 	SSession* pSession = m_sessions[h];
 	SCryMatchMakingConnectionUID uid = (id == CryMatchMakingInvalidConnectionID) ? pSession->localConnection->uid : pSession->remoteConnection[id]->uid;
 
@@ -1950,7 +1962,7 @@ ECryLobbyError CCryMatchMaking::SessionTerminateHostHintingForGroup(CrySessionHa
 	ECryLobbyError error = eCLE_Success;
 	LOBBY_AUTO_LOCK;
 
-	CRY_ASSERT_MESSAGE((pConnections != NULL) && (numConnections > 0), "CCryMatchMaking::SessionTerminateHostHintingForGroup() : passed a NULL pointer or zero connection count");
+	CRY_ASSERT((pConnections != NULL) && (numConnections > 0), "CCryMatchMaking::SessionTerminateHostHintingForGroup() : passed a NULL pointer or zero connection count");
 
 	CryLobbySessionHandle h = GetSessionHandleFromGameSessionHandle(gh);
 	SSession* pSession = m_sessions[h];
@@ -2430,7 +2442,7 @@ void CCryMatchMaking::HostMigrationStateCheckLogDataItem(SHostMigrationStateChec
 
 	default:
 		NetLog("CCryMatchMaking::HostMigrationStateCheckLogDataItem: Unknown data type %d", pData->type);
-		CRY_ASSERT_MESSAGE(0, "CCryMatchMaking::HostMigrationStateCheckLogDataItem: Unknown data type");
+		CRY_ASSERT(0, "CCryMatchMaking::HostMigrationStateCheckLogDataItem: Unknown data type");
 		break;
 	}
 }
@@ -2446,7 +2458,7 @@ bool CCryMatchMaking::HostMigrationStateCheckCompareDataItems(SHostMigrationStat
 
 		default:
 			NetLog("CCryMatchMaking::HostMigrationStateCheckCompareDataItems: Unknown data type %d", pData1->type);
-			CRY_ASSERT_MESSAGE(0, "CCryMatchMaking::HostMigrationStateCheckCompareDataItems: Unknown data type");
+			CRY_ASSERT(0, "CCryMatchMaking::HostMigrationStateCheckCompareDataItems: Unknown data type");
 			break;
 		}
 	}
@@ -2482,7 +2494,7 @@ bool CCryMatchMaking::HostMigrationStateCheckWriteDataItemToPacket(CCryLobbyPack
 
 	default:
 		NetLog("CCryMatchMaking::HostMigrationStateCheckWriteDataItemToPacket: Unknown data type %d", pData->type);
-		CRY_ASSERT_MESSAGE(0, "CCryMatchMaking::HostMigrationStateCheckWriteDataItemToPacket: Unknown data type");
+		CRY_ASSERT(0, "CCryMatchMaking::HostMigrationStateCheckWriteDataItemToPacket: Unknown data type");
 		break;
 	}
 
@@ -2511,7 +2523,7 @@ bool CCryMatchMaking::HostMigrationStateCheckReadDataItemFromPacket(CCryLobbyPac
 
 		default:
 			NetLog("CCryMatchMaking::HostMigrationStateCheckReadDataItemFromPacket: Unknown data type %d", pData->type);
-			CRY_ASSERT_MESSAGE(0, "CCryMatchMaking::HostMigrationStateCheckReadDataItemFromPacket: Unknown data type");
+			CRY_ASSERT(0, "CCryMatchMaking::HostMigrationStateCheckReadDataItemFromPacket: Unknown data type");
 			break;
 		}
 	}
@@ -2613,7 +2625,6 @@ void CCryMatchMaking::ProcessHostMigrationStateCheckData(const TNetAddress& addr
 
 void CCryMatchMaking::ProcessSessionDeleteRemoteConnection(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket)
 {
-	uint32 bufferPos = 0;
 	SCryMatchMakingConnectionUID uid;
 	CryLobbySessionHandle h;
 	CryMatchMakingConnectionID id;
@@ -3286,7 +3297,6 @@ void CCryMatchMaking::ProcessServerPing(const TNetAddress& addr, CCrySharedLobby
 {
 	CryMatchMakingConnectionID id;
 	CryLobbySessionHandle handle = CryLobbyInvalidSessionHandle;
-	bool hintsChanged = false;
 
 	pPacket->StartRead();
 	SCryMatchMakingConnectionUID uid = pPacket->GetFromConnectionUID();
@@ -3343,8 +3353,8 @@ void CCryMatchMaking::SessionUserDataEvent(ECryLobbySystemEvent event, CryLobbyS
 {
 	SSession* pSession = m_sessions[h];
 
-	CRY_ASSERT_MESSAGE(pSession, "CCryMatchMaking: Session base pointers not setup");
-	CRY_ASSERT_MESSAGE(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
+	CRY_ASSERT(pSession, "CCryMatchMaking: Session base pointers not setup");
+	CRY_ASSERT(pSession->localConnection, "CCryMatchMaking: Local connection base pointer not setup");
 
 	if (pSession->localFlags & CRYSESSION_LOCAL_FLAG_USER_DATA_EVENTS_STARTED)
 	{
@@ -3432,7 +3442,7 @@ ECryLobbyError CCryMatchMaking::GetSessionPlayerPing(SCryMatchMakingConnectionUI
 
 	ECryLobbyError result = eCLE_InvalidParam;
 
-	CRY_ASSERT_MESSAGE(pPing, "CCryMatchMaking::GetSessionPlayerPing: NULL pPing ");
+	CRY_ASSERT(pPing, "CCryMatchMaking::GetSessionPlayerPing: NULL pPing ");
 
 	if (pPing)
 	{
@@ -3763,7 +3773,9 @@ void CCryMatchMaking::StatusCmd(eStatusCmdMode mode)
 			pSession = m_sessions[sessionIndex];
 			if ((pSession->localFlags & CRYSESSION_LOCAL_FLAG_USED) && (pSession->createFlags & CRYSESSION_CREATE_FLAG_NUB))
 			{
+#if !defined(EXCLUDE_NORMAL_LOG)
 				const char* pOwner = (pSession->localFlags & CRYSESSION_LOCAL_FLAG_HOST) ? "Server" : "Client";
+#endif
 
 				CryLogAlways("-----------------------------------------");
 				CryLogAlways("%s Status:", pOwner);
@@ -4071,7 +4083,10 @@ void CCryMatchMaking::TickSessionSetupDedicatedServerNameResolve(CryMatchMakingT
 	STask* pTask = m_task[mmTaskID];
 	CNameRequestPtr* ppReq = (CNameRequestPtr*)m_lobby->MemGetPtr(pTask->params[TDM_SETUP_DEDICATED_SERVER_NAME_REQUESTER]);
 	ENameRequestResult result = (*ppReq)->GetResult();
+
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CLobbyCVars& cvars = CLobbyCVars::Get();
+#endif
 
 	switch (result)
 	{

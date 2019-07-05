@@ -7,9 +7,6 @@
 
 class CRenderOutput;
 class CTexture;
-#if CRY_PLATFORM_DURANGO
-class DXGIOutput;
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 //! Display Context represent a target rendering context
@@ -17,6 +14,7 @@ class DXGIOutput;
 class CRenderDisplayContext
 {
 	friend class CD3D9Renderer;
+	friend class CRenderer;
 	friend class CRenderOutput;
 	friend class CRenderView;
 
@@ -57,15 +55,15 @@ protected:
 		m_pRenderOutput = std::make_shared<CRenderOutput>(this);
 	}
 
-	CRenderDisplayContext(CRenderDisplayContext &&) = default;
-	CRenderDisplayContext &operator=(CRenderDisplayContext &&) = default;
+	CRenderDisplayContext(CRenderDisplayContext&&) = default;
+	CRenderDisplayContext& operator=(CRenderDisplayContext&&) = default;
 
-	virtual void         ReleaseResources();
+	virtual void           ReleaseResources();
 
-	void                 SetDisplayResolutionAndRecreateTargets(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
+	void                   SetDisplayResolutionAndRecreateTargets(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
 
-	virtual void         ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
-	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
+	virtual void           ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp);
+	void                   ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
 	{
 		ChangeDisplayResolution(displayWidth, displayHeight, SRenderViewport(0, 0, displayWidth, displayHeight));
 	}
@@ -73,38 +71,37 @@ protected:
 public:
 	virtual ~CRenderDisplayContext() noexcept {}
 
-	virtual bool         IsSwapChainBacked() const { return false; }
+	virtual bool           IsSwapChainBacked() const { return false; }
 
-	void                 BeginRendering();
-	void                 EndRendering();
+	void                   BeginRendering();
+	void                   EndRendering();
 
-	virtual void         PrePresent() {}
-	virtual void         PostPresent() {}
-	virtual CTexture*    GetCurrentBackBuffer() const = 0;
-	virtual CTexture*    GetPresentedBackBuffer() const = 0;
+	virtual void           PrePresent()  {}
+	virtual void           PostPresent() {}
+	virtual CTexture*      GetCurrentBackBuffer() const = 0;
+	virtual CTexture*      GetPresentedBackBuffer() const = 0;
 
-	std::string          GetName() const { return m_name; }
-	uint32_t             GetID() const { return m_uniqueId; }
+	std::string            GetName() const                   { return m_name; }
+	uint32_t               GetID() const                     { return m_uniqueId; }
 
-	OutputSmartPtr       GetRenderOutput() const { return m_pRenderOutput; };
-	Vec2_tpl<uint32_t>   GetDisplayResolution() const { return Vec2_tpl<uint32_t>(m_DisplayWidth, m_DisplayHeight); }
-	const SRenderViewport& GetViewport() const { return m_viewport; }
-	float                GetAspectRatio() const { return m_aspectRatio; }
+	OutputSmartPtr         GetRenderOutput() const           { return m_pRenderOutput; }
+	Vec2_tpl<uint32_t>     GetDisplayResolution() const      { return Vec2_tpl<uint32_t>(m_DisplayWidth, m_DisplayHeight); }
+	const SRenderViewport& GetViewport() const               { return m_viewport; }
+	float                  GetAspectRatio() const            { return m_aspectRatio; }
 
-	bool                 IsMainViewport() const { return m_bMainViewport; }
-	bool                 IsMainContext() const { return IsMainViewport(); }
-	bool                 IsEditorDisplay() const;
-	bool                 IsScalable() const { return IsMainViewport() && !IsEditorDisplay(); }
-	bool                 IsDeferredShadeable() const { return IsMainViewport(); }
-	bool                 IsSuperSamplingEnabled() const { return m_nSSSamplesX * m_nSSSamplesY > 1; }
-	bool                 IsNativeScalingEnabled() const;
-	bool                 IsHighDynamicRangeDisplay() const { return false; /* CRendererCVars::CV_r_HDRSwapChain */ }
+	bool                   IsMainViewport() const            { return m_bMainViewport; }
+	bool                   IsMainContext() const             { return IsMainViewport(); }
+	bool                   IsEditorDisplay() const;
+	bool                   IsScalable() const                { return IsMainViewport() && !IsEditorDisplay(); }
+	bool                   IsSuperSamplingEnabled() const    { return m_nSSSamplesX * m_nSSSamplesY > 1; }
+	bool                   IsNativeScalingEnabled() const;
+	bool                   IsHighDynamicRangeDisplay() const { return false; /* CRendererCVars::CV_r_HDRSwapChain */ }
 
-	bool                 NeedsTempColor() const { return false; /* TODO: compare formats as well */ }
-	bool                 NeedsDepthStencil() const { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
+	bool                   NeedsTempColor() const            { return false; /* TODO: compare formats as well */ }
+	bool                   NeedsDepthStencil() const         { return (m_desc.renderFlags & (FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL)) != 0; }
 
-	virtual ETEX_Format  GetColorFormat() const { return CRendererResources::GetDisplayFormat(); }
-	ETEX_Format          GetDepthFormat() const { return CRendererResources::GetDepthFormat(); }
+	virtual ETEX_Format    GetColorFormat() const            { return CRendererResources::GetDisplayFormat(); }
+	ETEX_Format            GetDepthFormat() const            { return CRendererResources::GetDepthFormat(); }
 
 	// Get a temporary texture pointer (only valid for some short-lived scope
 	CTexture* GetCurrentColorOutput() const
@@ -141,10 +138,11 @@ using CRenderDisplayContextPtr = std::shared_ptr<CRenderDisplayContext>;
 class CSwapChainBackedRenderDisplayContext : public CRenderDisplayContext
 {
 	friend class CD3D9Renderer;
+	friend class CRenderer;
 
 private:
 	// Handle and a pointer to WIN32 window
-	HWND                     m_hWnd = 0;
+	CRY_HWND                 m_hWnd = 0;
 
 	CSwapChain               m_swapChain;
 	DXGIOutput*              m_pOutput = nullptr;
@@ -154,16 +152,15 @@ private:
 	TexSmartPtr              m_pBackBufferProxy = nullptr;
 	bool                     m_bSwapProxy = true;
 	bool                     m_fullscreen = false;
+#if (CRY_RENDERER_VULKAN >= 10)
 	bool                     m_bVSync = false;
+#endif
 
 private:
-	void                 CreateSwapChain(HWND hWnd, bool vsync);
+	void                 CreateSwapChain(CRY_HWND hWnd, bool isFullscreen, bool vsync);
 	void                 CreateOutput();
 	void                 ShutDown();
 	void                 ReleaseResources() override;
-#if CRY_PLATFORM_WINDOWS
-	void                 EnforceFullscreenPreemption();
-#endif
 	void                 ChangeOutputIfNecessary(bool isFullscreen, bool vsync = true);
 	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight, const SRenderViewport& vp) override;
 	void                 ChangeDisplayResolution(uint32_t displayWidth, uint32_t displayHeight)
@@ -184,35 +181,33 @@ public:
 	CSwapChainBackedRenderDisplayContext(IRenderer::SDisplayContextDescription desc, std::string name, uint32 uniqueId) : CRenderDisplayContext(desc, name, uniqueId) {}
 	~CSwapChainBackedRenderDisplayContext() { ShutDown(); }
 
-	CSwapChainBackedRenderDisplayContext(CSwapChainBackedRenderDisplayContext &&) = default;
-	CSwapChainBackedRenderDisplayContext &operator=(CSwapChainBackedRenderDisplayContext &&) = default;
+	CSwapChainBackedRenderDisplayContext(CSwapChainBackedRenderDisplayContext&&) = default;
+	CSwapChainBackedRenderDisplayContext& operator=(CSwapChainBackedRenderDisplayContext&&) = default;
 
-	bool                 IsSwapChainBacked() const override final { return true; }
+	bool                                  IsSwapChainBacked() const override final { return true; }
 
-	void                 PrePresent() override;
-	void                 PostPresent() override;
+	void                                  PrePresent() override;
+	void                                  PostPresent() override;
 
-	ETEX_Format          GetColorFormat() const override { return GetBackBufferFormat(); };
-	ETEX_Format          GetBackBufferFormat() const;
+	ETEX_Format                           GetColorFormat() const override { return GetBackBufferFormat(); };
+	ETEX_Format                           GetBackBufferFormat() const;
 
-	CTexture*            GetCurrentBackBuffer() const override;
-	CTexture*            GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
-	CTexture*            GetStorableColorOutput() override;
+	CTexture*                             GetCurrentBackBuffer() const override;
+	CTexture*                             GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
+	CTexture*                             GetStorableColorOutput() override;
 
-	HWND                 GetWindowHandle() const { return m_hWnd; }
+	CRY_HWND                              GetWindowHandle() const { return m_hWnd; }
 	//! Gets the resolution of the monitor that this context's window is currently present on
-	RectI                GetCurrentMonitorBounds() const;
+	RectI                                 GetCurrentMonitorBounds() const;
 
-	void                 SetFullscreenState(bool isFullscreen);
-	bool                 IsFullscreen() const { return m_fullscreen; }
-	bool                 GetVSyncState() const { return m_bVSync; }
+	void                                  SetFullscreenState(bool isFullscreen);
+	bool                                  IsFullscreen() const { return m_fullscreen; }
 
-	Vec2_tpl<uint32_t>   FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const;
+	uint32                                ComputePresentInterval(uint32 presentInterval);
+	Vec2_tpl<uint32_t>                    FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t>& resolution) const;
 
-#if defined(SUPPORT_DEVICE_INFO)
-	uint32               GetRefreshRateNumerator() const { return m_swapChain.GetRefreshRateNumerator(); }
-	uint32               GetRefreshRateDemoninator() const { return m_swapChain.GetRefreshRateDemoninator(); }
-#endif
+	uint32                                GetRefreshRateNumerator() const   { return m_swapChain.GetRefreshRateNumerator(); }
+	uint32                                GetRefreshRateDenominator() const { return m_swapChain.GetRefreshRateDenominator(); }
 
 private:
 	void ReleaseBackBuffers();
@@ -231,23 +226,23 @@ private:
 	TexSmartPtr              m_pBackBufferProxy = nullptr;
 	bool                     m_bSwapProxy = true;
 
-	void                 ShutDown();
-	void                 ReleaseResources() override;
+	void ShutDown();
+	void ReleaseResources() override;
 
 public:
 	// Creates a display context with manual control of the swapchain
-	CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, std::string name, uint32 uniqueId, std::vector<TexSmartPtr> &&backBuffersArray, uint32_t initialSwapChainIndex = 0);
+	CCustomRenderDisplayContext(IRenderer::SDisplayContextDescription desc, std::string name, uint32 uniqueId, std::vector<TexSmartPtr>&& backBuffersArray, uint32_t initialSwapChainIndex = 0);
 	~CCustomRenderDisplayContext() { ShutDown(); }
 
-	CCustomRenderDisplayContext(CCustomRenderDisplayContext &&) = default;
-	CCustomRenderDisplayContext &operator=(CCustomRenderDisplayContext &&) = default;
+	CCustomRenderDisplayContext(CCustomRenderDisplayContext&&) = default;
+	CCustomRenderDisplayContext& operator=(CCustomRenderDisplayContext&&) = default;
 
-	void             SetSwapChainIndex(uint32_t index);
+	void                         SetSwapChainIndex(uint32_t index);
 
-	void             PrePresent() override;
-	void             PostPresent() override;
+	void                         PrePresent() override;
+	void                         PostPresent() override;
 
-	CTexture*        GetCurrentBackBuffer() const override { return this->m_backBuffersArray[m_swapChainIndex]; }
-	CTexture*        GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
-	CTexture*        GetStorableColorOutput() override;
+	CTexture*                    GetCurrentBackBuffer() const override   { return this->m_backBuffersArray[m_swapChainIndex]; }
+	CTexture*                    GetPresentedBackBuffer() const override { return m_pBackBufferPresented; }
+	CTexture*                    GetStorableColorOutput() override;
 };

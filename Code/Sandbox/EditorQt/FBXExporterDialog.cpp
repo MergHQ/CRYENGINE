@@ -2,7 +2,8 @@
 
 #include "stdafx.h"
 #include "FBXExporterDialog.h"
-#include "Controls/QuestionDialog.h"
+
+#include <Controls/QuestionDialog.h>
 
 namespace
 {
@@ -117,4 +118,3 @@ BOOL CFBXExporterDialog::OnInitDialog()
 
 	return TRUE;
 }
-

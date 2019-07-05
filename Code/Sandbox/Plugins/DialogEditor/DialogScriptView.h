@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __DIALOGSCRIPTVIEW_H__
-#define __DIALOGSCRIPTVIEW_H__
-
 #pragma once
 
 #include <CryAudio/IAudioSystem.h>
@@ -163,13 +160,13 @@ public:
 	// Summary:
 	//     This method is called to cancel user selection.
 	//-------------------------------------------------------------------------
-	void Cancel(void);
+	void Cancel();
 
 	//-------------------------------------------------------------------------
 	// Summary:
 	//     This method is called to save selected value of list box.
 	//-------------------------------------------------------------------------
-	void Apply(void);
+	void Apply();
 
 protected:
 	//{{AFX_CODEJOCK_PRIVATE
@@ -193,6 +190,3 @@ private:
 	BOOL Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID, CCreateContext* pContext = NULL);
 	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
 };
-
-#endif //
-

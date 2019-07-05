@@ -4,7 +4,7 @@
 #include "NetEntity.h"
 #include "Entity.h"
 #include <CryGame/IGameFramework.h>
-
+#include <CryPhysics/physinterface.h>
 #include <set>
 
 class CNetEntity;
@@ -35,32 +35,33 @@ bool CNetEntity::BindToNetwork(EBindToNetworkMode mode)
 NetworkAspectType CNetEntity::CombineAspects()
 {
 	static const NetworkAspectType gameObjectAspects =
-	  eEA_GameClientDynamic |
-	  eEA_GameServerDynamic |
-	  eEA_GameClientStatic |
-	  eEA_GameServerStatic |
-	  eEA_Aspect31 |
-	  eEA_GameClientA |
-	  eEA_GameServerA |
-	  eEA_GameClientB |
-	  eEA_GameServerB |
-	  eEA_GameClientC |
-	  eEA_GameServerC |
-	  eEA_GameClientD |
-	  eEA_GameClientE |
-	  eEA_GameClientF |
-	  eEA_GameClientG |
-	  eEA_GameClientH |
-	  eEA_GameClientI |
-	  eEA_GameClientJ |
-	  eEA_GameClientK |
-	  eEA_GameServerD |
-	  eEA_GameClientL |
-	  eEA_GameClientM |
-	  eEA_GameClientN |
-	  eEA_GameClientO |
-	  eEA_GameClientP |
-	  eEA_GameServerE;
+		eEA_GameClientDynamic |
+		eEA_GameServerDynamic |
+		eEA_GameClientStatic |
+		eEA_GameServerStatic |
+		eEA_Aspect30 |
+		eEA_Aspect31 |
+		eEA_GameClientA |
+		eEA_GameServerA |
+		eEA_GameClientB |
+		eEA_GameServerB |
+		eEA_GameClientC |
+		eEA_GameServerC |
+		eEA_GameClientD |
+		eEA_GameClientE |
+		eEA_GameClientF |
+		eEA_GameClientG |
+		eEA_GameClientH |
+		eEA_GameClientI |
+		eEA_GameClientJ |
+		eEA_GameClientK |
+		eEA_GameServerD |
+		eEA_GameClientL |
+		eEA_GameClientM |
+		eEA_GameClientN |
+		eEA_GameClientO |
+		eEA_GameClientP |
+		eEA_GameServerE;
 
 	NetworkAspectType aspects = 0;
 	m_pEntity->m_components.NonRecursiveForEach([&aspects](const SEntityComponentRecord& componentRecord) -> EComponentIterationResult
@@ -97,7 +98,7 @@ bool CNetEntity::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId paren
 				return false;
 			CRY_ASSERT(parentId == 0);
 			parentId = m_cachedParentId;
-		// fall through
+			// fall through
 		case eBTNM_Force:
 			m_isBoundToNetwork = false;
 			break;
@@ -127,13 +128,11 @@ bool CNetEntity::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId paren
 			gEnv->pGameFramework->SetServerChannelPlayerId(GetChannelId(), m_pEntity->GetId());
 		}
 
-		bool isStatic = gEnv->pGameFramework->IsInLevelLoad();
-		if (m_pEntity->GetFlags() & ENTITY_FLAG_NEVER_NETWORK_STATIC)
-			isStatic = false;
+		const bool isStatic = m_pEntity->IsLoadedFromLevelFile() || m_pEntity->GetId() == 1;
 
-		auto eid = m_pEntity->GetId();
-		gEnv->pNetContext->BindObject(eid, parentId, CombineAspects(), isStatic);
-		gEnv->pNetContext->SetDelegatableMask(eid, m_delegatableAspects);
+		const EntityId entityId = m_pEntity->GetId();
+		gEnv->pNetContext->BindObject(entityId, parentId, CombineAspects(), isStatic);
+		gEnv->pNetContext->SetDelegatableMask(entityId, m_delegatableAspects);
 	}
 
 	m_isBoundToNetwork = true;
@@ -192,22 +191,25 @@ bool CNetEntity::NetSerializeEntity(TSerialize ser, EEntityAspects aspect, uint8
 
 void CNetEntity::RmiRegister(const SRmiHandler& handler)
 {
+#if defined(USE_CRY_ASSERT)
 	auto found = std::find_if(m_rmiHandlers.begin(), m_rmiHandlers.end(),
-	                          [&handler](SRmiHandler& p) { return p.decoder == handler.decoder; });
-	CRY_ASSERT_MESSAGE(found == m_rmiHandlers.end(), "Registering a duplicate RMI message.");
+		[&handler](SRmiHandler &p) { return p.decoder == handler.decoder; });
+#endif
 
-	CRY_ASSERT_MESSAGE(m_rmiHandlers.size() < std::numeric_limits<decltype(SRmiIndex::value)>::max(),
-	                   "Too many RMIs registered for the entity %s (%d)",
-	                   m_pEntity->GetName(), m_pEntity->GetId());
+	CRY_ASSERT(found == m_rmiHandlers.end(), "Registering a duplicate RMI message.");
+
+	CRY_ASSERT(m_rmiHandlers.size() < std::numeric_limits<decltype(SRmiIndex::value)>::max(),
+		"Too many RMIs registered for the entity %s (%d)",
+		m_pEntity->GetName(), m_pEntity->GetId());
 
 	m_rmiHandlers.push_back(handler);
 }
 
-INetEntity::SRmiIndex CNetEntity::RmiByDecoder(SRmiHandler::DecoderF decoder, SRmiHandler** handler)
+INetEntity::SRmiIndex CNetEntity::RmiByDecoder(SRmiHandler::DecoderF decoder, SRmiHandler **handler)
 {
 	auto found = std::find_if(m_rmiHandlers.begin(), m_rmiHandlers.end(),
-	                          [&decoder](SRmiHandler& p) { return p.decoder == decoder; });
-	CRY_ASSERT_MESSAGE(found != m_rmiHandlers.end(), "Sending an unregistered RMI message.");
+		[&decoder](SRmiHandler &p) { return p.decoder == decoder; });
+	CRY_ASSERT(found != m_rmiHandlers.end(), "Sending an unregistered RMI message.");
 
 	*handler = &*found;
 	return SRmiIndex(found - m_rmiHandlers.begin());
@@ -388,7 +390,7 @@ void CNetEntity::OnNetworkedEntityTransformChanged(EntityTransformationFlagsMask
 			doAspectUpdate = false;
 		// position has changed, best let other people know about it
 		// disabled volatile... see OnSpawn for reasoning
-		if (doAspectUpdate)
+		if (doAspectUpdate && gEnv->pNetContext)
 		{
 			gEnv->pNetContext->ChangedAspects(m_pEntity->GetId(), /*eEA_Volatile |*/ eEA_Physics);
 		}
@@ -429,10 +431,10 @@ void CNetEntity::OnEntityInitialized()
 	AUTO_LOCK(g_updateSchedulingProfileCritSec);
 	for (auto it = g_updateSchedulingProfile.begin(); it != g_updateSchedulingProfile.end(); )
 	{
-		CNetEntity* obj = *it;
+		CNetEntity *obj = *it;
 		if (obj->IsBoundToNetwork() &&
-		    gEnv->pNetContext->SetSchedulingParams(obj->m_pEntity->GetId(),
-		                                           obj->m_schedulingProfiles->normal, obj->m_schedulingProfiles->owned))
+			gEnv->pNetContext->SetSchedulingParams(obj->m_pEntity->GetId(),
+				obj->m_schedulingProfiles->normal, obj->m_schedulingProfiles->owned))
 			it = g_updateSchedulingProfile.erase(it);
 		else
 			++it;

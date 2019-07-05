@@ -135,7 +135,7 @@ public:
 
 	bool                    PickFromModel(CBaseObject* pObject, Model* pModel, CViewport* viewport, CPoint point, int nFlag, bool bOnlyIncludeCube, BrushVec3* pOutPickedPos);
 
-	void                    Display(CBaseObject* pObject, DisplayContext& dc) const;
+	void                    Display(CBaseObject* pObject, SDisplayContext& dc) const;
 	void                    FindElementsInRect(const CRect& rect, CViewport* pView, const Matrix34& worldTM, bool bOnlyUseSelectionCube, std::vector<Element>& elements) const;
 
 	std::vector<PolygonPtr> GetAllPolygons() const;
@@ -149,7 +149,7 @@ public:
 
 	bool                    Has(const Element& elementInfo) const;
 	bool                    HasVertex(const BrushVec3& vertex) const;
-	string                 GetElementsInfoText();
+	string                  GetElementsInfoText();
 	void                    RemoveInvalidElements();
 
 	void                    ApplyOffset(const BrushVec3& vOffset);
@@ -184,4 +184,3 @@ private:
 };
 typedef _smart_ptr<ElementSet> ElementsPtr;
 }
-

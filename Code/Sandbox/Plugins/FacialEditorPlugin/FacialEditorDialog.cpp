@@ -14,7 +14,7 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CrySystem/ILocalizationManager.h>
 #include "QT/Widgets/QWaitProgress.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "Util/MFCUtil.h"
 #include "Util/FileUtil.h"
 #include "ModelViewport.h"
@@ -50,13 +50,13 @@ class CFacialEditorViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return FACIAL_EDITOR_NAME; };
-	virtual const char*    Category()        override { return "Animation"; };
+	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return FACIAL_EDITOR_NAME; }
+	virtual const char*    Category()        override { return "Animation"; }
 	virtual const char*    GetMenuPath()     override { return "Animation"; }
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CFacialEditorDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T(FACIAL_EDITOR_NAME); };
-	virtual bool           SinglePane()      override { return false; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CFacialEditorDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T(FACIAL_EDITOR_NAME); }
+	virtual bool           SinglePane()      override { return false; }
 };
 
 REGISTER_CLASS_DESC(CFacialEditorViewClass)
@@ -480,8 +480,7 @@ BOOL CFacialEditorDialog::OnInitDialog()
 
 	if (m_lastProject != "")
 	{
-		bool loadResult = false;
-		loadResult = m_pContext->LoadProject(m_lastProject);
+		bool loadResult = m_pContext->LoadProject(m_lastProject);
 
 		if (loadResult)
 		{
@@ -682,9 +681,7 @@ bool CFacialEditorDialog::CloseCurrentSequence()
 		m_lastSequence = m_pContext->GetSequence()->GetName();
 	if (m_pContext->bSequenceModfied)
 	{
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Yes;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Sequence was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Sequence was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 
 		if (res == QDialogButtonBox::StandardButton::Yes)
 		{
@@ -709,10 +706,7 @@ bool CFacialEditorDialog::CloseCurrentLibrary()
 	if (m_pContext->bLibraryModfied)
 	{
 		// As to save old project.
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Yes;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Yes)
 		{
 			if (!SaveCurrentLibrary())
@@ -735,10 +729,7 @@ bool CFacialEditorDialog::CloseCurrentJoysticks()
 {
 	if (m_pContext->bJoysticksModfied)
 	{
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Yes;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Joystick Set?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Joystick Set?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return false;
@@ -900,8 +891,6 @@ void CFacialEditorDialog::MergeVideoExtractedSequence(const char* filename, floa
 
 	int nJoystickPhonemeStrenght = -1;
 
-	float fLenSeconds = fVideoFPS * nFrames;
-
 	for (int nFrameIndex = 0; nFrameIndex < nFrames; ++nFrameIndex)
 	{
 		//float oldTime = (nFrameIndex - 1) * fVideoFPS;
@@ -968,7 +957,7 @@ void CFacialEditorDialog::MergeVideoExtractedSequence(const char* filename, floa
 							if (stricmp(GetJoystickName(joystickIndex), szBuffer) == 0)
 							{
 
-								float fScale = 1.0f;
+								//float fScale = 1.0f;
 
 								for (int k = 0; k < m_pContext->m_nMarkers; k++)
 								{
@@ -1105,7 +1094,7 @@ struct LoadGroupFileSkeletonAnimationEntry
 	string animationName;
 	float  time;
 };
-struct LoadGroupFileSoundEntryExistingPositionOrderingPredicate : public std::binary_function<bool, LoadGroupFileSoundEntry, LoadGroupFileSoundEntry>
+struct LoadGroupFileSoundEntryExistingPositionOrderingPredicate
 {
 	bool operator()(const LoadGroupFileSoundEntry& left, const LoadGroupFileSoundEntry& right) const
 	{
@@ -1591,10 +1580,7 @@ void CFacialEditorDialog::OnClose()
 {
 	if (m_pContext->bLibraryModfied)
 	{
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::No;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Expression library was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Facial Expression library was modified.\r\nDo you want to save your changes?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -1831,7 +1817,6 @@ void CFacialEditorDialog::OnFacialEdEvent(EFacialEdEvent event, IFacialEffector*
 		}
 		break;
 	}
-	;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1936,11 +1921,7 @@ void CFacialEditorDialog::OnProjectOpen()
 	if (m_pContext->bProjectModfied)
 	{
 		// As to save old project.
-
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Project?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Project?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -1995,10 +1976,7 @@ void CFacialEditorDialog::OnLibraryOpen()
 	if (m_pContext->bLibraryModfied)
 	{
 		// As to save old project.
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -2135,10 +2113,7 @@ void CFacialEditorDialog::OnLoadCharacter()
 	if (m_pContext->bLibraryModfied)
 	{
 		// As to save old project.
-		QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-		res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+		auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 		if (res == QDialogButtonBox::StandardButton::Cancel)
 		{
 			return;
@@ -2261,10 +2236,7 @@ bool CFacialEditorDialog::SaveCurrentJoysticks(bool bSaveAs)
 //////////////////////////////////////////////////////////////////////////
 void CFacialEditorDialog::OnSequenceSave()
 {
-	QDialogButtonBox::StandardButton res = QDialogButtonBox::StandardButton::Cancel;
-
-	res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
-
+	auto res = CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Save Current Expressions Library?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::Cancel);
 	if (res == QDialogButtonBox::StandardButton::Yes)
 	{
 		SaveCurrentSequence();
@@ -2836,7 +2808,7 @@ public:
 	void operator()(const char* morphName)
 	{
 		CReportRecord<MorphCheckError>* record = m_report.AddRecord(MorphCheckError(morphName));
-		record->AddField("Morph Name", std::mem_fun_ref(&MorphCheckError::GetMorphName));
+		record->AddField("Morph Name", std::bind(&MorphCheckError::GetMorphName, std::placeholders::_1));
 	}
 
 private:
@@ -2991,4 +2963,3 @@ void CFacialEditorDialog::OnImportShortcuts()
 {
 	CMFCUtils::ImportShortcuts(GetCommandBars()->GetShortcutManager(), "FacialEditor");
 }
-

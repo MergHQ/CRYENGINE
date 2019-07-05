@@ -147,7 +147,6 @@ void CIronSight::Update(float frameTime, uint32 frameId)
 					gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMin", m_zoomParams->zoomParams.dof_focusMin);
 					gEnv->p3DEngine->SetPostEffectParam("Dof_FocusMax", m_zoomParams->zoomParams.dof_focusMax);
 					gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", m_zoomParams->zoomParams.dof_focusLimit);
-					CActor* pOwner = m_pWeapon->GetOwnerActor();
 					bool useMinFilter = true;
 					
 					if (useMinFilter)
@@ -534,8 +533,6 @@ void CIronSight::EnterZoom(float time, bool smooth, int zoomStep)
   Stereo3D::Zoom::SetFinalPlaneDist(m_zoomParams->stereoParams.convergenceDistance, time);
   Stereo3D::Zoom::SetFinalEyeDist(m_zoomParams->stereoParams.eyeDistance, time);
 
-	const SZoomParams &zoomParams = m_zoomParams->zoomParams;
-
 	m_pWeapon->PlayAction( m_pWeapon->GetFragmentIds().zoom_in, 0, false, CItem::eIPAF_Default);
 
 	OnEnterZoom();
@@ -619,7 +616,6 @@ struct CIronSight::DisableTurnOffAction
 
 	void execute(CItem *pWeapon)
 	{
-		const SZoomParams &zoomParams = ironSight->m_zoomParams->zoomParams;
 		ironSight->OnZoomedIn();
 	}
 };
@@ -857,7 +853,7 @@ void CIronSight::OnZoomedIn()
 			pCharacter->HideMaster(1);
 		}
 
-		if(const CPlayer* pOwnerPlayer = m_pWeapon->GetOwnerPlayer())
+		if(m_pWeapon->GetOwnerPlayer() != nullptr)
 		{
 			if(m_pWeapon && m_pWeapon->GetEntity()->GetClass()!=CItem::sBinocularsClass)
 			{
@@ -1116,7 +1112,7 @@ bool CIronSight::IsToggle()
 void CIronSight::FilterView(SViewParams &viewparams)
 {
 	CPlayer* pOwnerPlayer = m_pWeapon->GetOwnerPlayer();
-	CRY_ASSERT_MESSAGE(pOwnerPlayer, "Ironsight:FilterView - This should never happen. This is supposed to be the player's current weapon, but it's not!");
+	CRY_ASSERT(pOwnerPlayer, "Ironsight:FilterView - This should never happen. This is supposed to be the player's current weapon, but it's not!");
 	if(pOwnerPlayer)
 	{
 		const Ang3 frameSway = ZoomSway(*pOwnerPlayer, gEnv->pTimer->GetFrameTime());
@@ -1291,7 +1287,7 @@ float CIronSight::GetZoomInTime() const
 //===================================================
 float CIronSight::GetZoomTransition() const
 {
-	CRY_ASSERT_MESSAGE(!(m_zoomingIn && (m_currentStep == 0)), "GetZoomTransition zooming in whilst on step 0, this should never happen!");
+	CRY_ASSERT(!(m_zoomingIn && (m_currentStep == 0)), "GetZoomTransition zooming in whilst on step 0, this should never happen!");
 
 	const int zoomStep = m_zoomingIn ? -1 : 1;
 	const int prevStep = m_currentStep + zoomStep;

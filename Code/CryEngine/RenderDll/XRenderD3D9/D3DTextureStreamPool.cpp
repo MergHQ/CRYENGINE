@@ -3,8 +3,6 @@
 #include "StdAfx.h"
 #include "../Common/Textures/TextureStreamPool.h"
 
-#include "DriverD3D.h"
-
 #if !defined(CHK_RENDTH)
 	#define CHK_RENDTH assert(gRenDev->m_pRT->IsRenderThread(true))
 #endif
@@ -23,7 +21,6 @@ bool STexPoolItem::IsStillUsedByGPU(uint32 nTick)
 	if (pDeviceTexture)
 	{
 		CHK_MAINORRENDTH;
-		D3DBaseTexture* pD3DTex = pDeviceTexture->GetBaseTexture();
 	}
 	return (nTick - m_nFreeTick) < 4;
 }
@@ -113,7 +110,7 @@ STexPool* CTextureStreamPoolMgr::GetPool(const STextureLayout& pLayout)
 	if (pLayout.m_bIsSRGB)
 		d3dFmt = DeviceFormats::ConvertToSRGB(d3dFmt);
 
-	TexturePoolKey poolKey((uint16)pLayout.m_nWidth, (uint16)pLayout.m_nHeight, d3dFmt, (uint8)pLayout.m_eTT, (uint8)pLayout.m_nMips, (uint16)pLayout.m_nArraySize);
+	TexturePoolKey poolKey(pLayout.m_nWidth, pLayout.m_nHeight, d3dFmt, pLayout.m_eTT, pLayout.m_nMips, pLayout.m_nArraySize);
 
 	TexturePoolMap::iterator it = m_TexturesPools.find(poolKey);
 	if (it != m_TexturesPools.end())
@@ -124,8 +121,6 @@ STexPool* CTextureStreamPoolMgr::GetPool(const STextureLayout& pLayout)
 
 STexPoolItem* CTextureStreamPoolMgr::GetItem(const STextureLayout& pLayout, bool bShouldBeCreated, const char* sName, const STexturePayload* pPayload, bool bCanCreate, bool bWaitForIdle)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "Stream pool item %ix%ix%i", pLayout.m_nWidth, pLayout.m_nHeight, pLayout.m_nMips);
-
 	D3DFormat d3dFmt = DeviceFormats::ConvertFromTexFormat(pLayout.m_eDstFormat);
 	if (pLayout.m_bIsSRGB)
 		d3dFmt = DeviceFormats::ConvertToSRGB(d3dFmt);
@@ -253,12 +248,12 @@ void CTextureStreamPoolMgr::ReleaseItem(STexPoolItem* pItem)
 #endif
 }
 
-STexPool* CTextureStreamPoolMgr::GetOrCreatePool(int nWidth, int nHeight, int nMips, int nArraySize, D3DFormat eTF, ETEX_Type eTT)
+STexPool* CTextureStreamPoolMgr::GetOrCreatePool(uint16 nWidth, uint16 nHeight, int8 nMips, uint16 nArraySize, D3DFormat eTF, ETEX_Type eTT)
 {
 	STexPool* pPool = NULL;
 
 	assert((eTT != eTT_Cube && eTT != eTT_CubeArray) || !(nArraySize % 6));
-	TexturePoolKey poolKey((uint16)nWidth, (uint16)nHeight, eTF, (uint8)eTT, (uint8)nMips, (uint16)nArraySize);
+	TexturePoolKey poolKey(nWidth, nHeight, eTF, eTT, nMips, nArraySize);
 
 	TexturePoolMap::iterator it = m_TexturesPools.find(poolKey);
 	if (it == m_TexturesPools.end())
@@ -391,7 +386,7 @@ void CTextureStreamPoolMgr::GarbageCollect(size_t* nCurTexPoolSize, size_t nLowe
 			ps.nWidth = pPool->m_Width;
 			ps.nHeight = pPool->m_Height;
 			ps.nMips = pPool->m_nMips;
-			ps.nFormat = pPool->m_eFormat;
+			ps.nFormat = uint8(pPool->m_eFormat);
 			ps.eTT = pPool->m_eTT;
 
 			ps.nInUse = pPool->m_nItems - pPool->m_nItemsFree;

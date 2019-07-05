@@ -1,19 +1,28 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Viewport.h"
-
 #include "SplineObject.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "Gizmos/IGizmoManager.h"
 
-#include "Serialization/Decorators/EditToolButton.h"
-#include "Controls/DynamicPopupMenu.h"
+#include "Objects/SelectionGroup.h"
+#include "IEditorImpl.h"
+
+#include <Controls/DynamicPopupMenu.h>
+#include <Gizmos/IGizmoManager.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <Util/Math.h>
+#include <Util/Variable.h>
+#include <IObjectManager.h>
+#include <Viewport.h>
+
+#include <Util/MFCUtil.h>
+
+#include <CryPhysics/physinterface.h>
 
 //////////////////////////////////////////////////////////////////////////
 // CEditSplineObjectTool
-
 class CEditSplineObjectTool : public CEditTool, public ITransformManipulatorOwner
 {
 public:
@@ -27,32 +36,30 @@ public:
 		m_pManipulator(nullptr)
 	{}
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Edit Spline"; }
-	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
-	void           OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags);
-	void           OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags);
-	void           OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator);
-
-	virtual void   SetUserData(const char* key, void* userData);
-
-	virtual void   Display(DisplayContext& dc) {}
+	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags) override;
+	virtual void   SetUserData(const char* key, void* userData) override;
+	virtual void   Display(SDisplayContext& dc) override {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
-
-	bool           IsNeedMoveTool() override                 { return true; }
-
-	void           OnSplineEvent(CBaseObject* pObj, int evt);
+	virtual bool   IsNeedMoveTool() override             { return true; }
 
 	// ITransformManipulatorOwner
 	virtual void GetManipulatorPosition(Vec3& position) override;
 	virtual bool IsManipulatorVisible() override;
 
-protected:
+	void         OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags);
+	void         OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags);
+	void         OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator);
+	void         OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event);
+
+private:
 	virtual ~CEditSplineObjectTool();
 	void DeleteThis() { delete this; }
 
 	void SelectPoint(int index);
 	void SetCursor(EStdCursor cursor, bool bForce = false);
+	bool SnapPointToTerrainOrGeometry(CViewport* pView, CPoint& point);
 
 private:
 	CSplineObject*         m_pSpline;
@@ -64,10 +71,8 @@ private:
 	ITransformManipulator* m_pManipulator;
 };
 
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CEditSplineObjectTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 void CEditSplineObjectTool::SetUserData(const char* key, void* userData)
 {
 	m_pSpline = (CSplineObject*)userData;
@@ -82,11 +87,11 @@ void CEditSplineObjectTool::SetUserData(const char* key, void* userData)
 		m_pSpline->StoreUndo("Spline Modify");
 	}
 
-	m_pSpline->AddEventListener(functor(*this, &CEditSplineObjectTool::OnSplineEvent));
+	m_pSpline->signalChanged.Connect(this, &CEditSplineObjectTool::OnSplineEvent);
 
-	if (GetIEditorImpl()->GetEditMode() == eEditModeSelect)
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Select)
 	{
-		GetIEditorImpl()->SetEditMode(eEditModeMove);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
 	}
 
 	SelectPoint(-1);
@@ -114,14 +119,13 @@ bool CEditSplineObjectTool::IsManipulatorVisible()
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEditSplineObjectTool::~CEditSplineObjectTool()
 {
 	if (m_pSpline)
 	{
 		m_pSpline->SetEditMode(false);
 		SelectPoint(-1);
-		m_pSpline->RemoveEventListener(functor(*this, &CEditSplineObjectTool::OnSplineEvent));
+		m_pSpline->signalChanged.DisconnectObject(this);
 
 	}
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
@@ -137,12 +141,11 @@ CEditSplineObjectTool::~CEditSplineObjectTool()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CEditSplineObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	else if (nChar == Qt::Key_Delete)
 	{
@@ -162,15 +165,14 @@ bool CEditSplineObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRep
 	return true;
 }
 
-void CEditSplineObjectTool::OnSplineEvent(CBaseObject* pObj, int evt)
+void CEditSplineObjectTool::OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (evt == OBJECT_ON_UI_PROPERTY_CHANGED && m_pManipulator)
+	if (event.m_type == OBJECT_ON_UI_PROPERTY_CHANGED && m_pManipulator)
 	{
 		m_pManipulator->Invalidate();
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditSplineObjectTool::SelectPoint(int index)
 {
 	if (index < 0)
@@ -187,15 +189,13 @@ void CEditSplineObjectTool::SelectPoint(int index)
 	m_pSpline->SelectPoint(index);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
 {
 	// get world/local coordinate system setting.
-	RefCoordSys coordSys = GetIEditorImpl()->GetReferenceCoordSys();
-	int editMode = GetIEditorImpl()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
 	// get current axis constrains.
-	if (editMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		GetIEditorImpl()->GetIUndoManager()->Restore();
 		const Matrix34& splineTM = m_pSpline->GetWorldTM();
@@ -208,7 +208,7 @@ void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransfor
 		Vec3 wp = splineTM.TransformPoint(pos);
 		Vec3 newPos = wp + value;
 
-		if (!GetAsyncKeyState(VK_CONTROL) && GetIEditorImpl()->IsSnapToTerrainEnabled())
+		if (!GetAsyncKeyState(VK_CONTROL) && gSnappingPreferences.IsSnapToTerrainEnabled())
 		{
 			float height = wp.z - GetIEditorImpl()->GetTerrainElevation(wp.x, wp.y);
 			newPos.z = GetIEditorImpl()->GetTerrainElevation(newPos.x, newPos.y) + height;
@@ -229,9 +229,9 @@ void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransfor
 
 void CEditSplineObjectTool::OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags)
 {
-	int editMode = GetIEditorImpl()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
-	if (editMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_modifying = true;
 		// Accept changes.
@@ -244,9 +244,9 @@ void CEditSplineObjectTool::OnManipulatorBegin(IDisplayViewport* view, ITransfor
 
 void CEditSplineObjectTool::OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator)
 {
-	int editMode = GetIEditorImpl()->GetEditMode();
+	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
-	if (editMode == eEditModeMove)
+	if (editMode == CLevelEditorSharedState::EditMode::Move)
 	{
 		m_modifying = true;
 		// Accept changes.
@@ -257,13 +257,15 @@ void CEditSplineObjectTool::OnManipulatorEnd(IDisplayViewport* view, ITransformM
 	}
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////
 bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (!m_pSpline)
 		return false;
+
+	if ((event == eMouseLDown) && (flags & MK_CONTROL ) && (flags & MK_SHIFT))
+	{
+		return SnapPointToTerrainOrGeometry(view, point);
+	}
 
 	if (event == eMouseLDown)
 	{
@@ -272,7 +274,6 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 
 	if (event == eMouseLDown || event == eMouseMove || event == eMouseLDblClick || event == eMouseLUp)
 	{
-
 		const Matrix34& splineTM = m_pSpline->GetWorldTM();
 
 		Vec3 raySrc, rayDir;
@@ -326,7 +327,7 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 		if (index >= 0 && dist < fSplineCloseDistance + view->GetSelectionTolerance())
 		{
 			// Cursor near one of edited Spline points.
-			SetCursor(GetIEditorImpl()->GetEditMode() ? STD_CURSOR_MOVE : STD_CURSOR_HIT);
+			SetCursor(GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move ? STD_CURSOR_MOVE : STD_CURSOR_HIT);
 
 			if (event == eMouseLDown)
 			{
@@ -334,7 +335,7 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 				{
 					SelectPoint(index);
 
-					// Set construction plance for view.
+					// Set construction plane for view
 					m_pointPos = splineTM.TransformPoint(m_pSpline->GetPoint(index));
 					Matrix34 tm;
 					tm.SetIdentity();
@@ -366,7 +367,6 @@ bool CEditSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CP
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditSplineObjectTool::SetCursor(EStdCursor cursor, bool bForce)
 {
 	CViewport* pViewport = GetIEditorImpl()->GetActiveView();
@@ -377,9 +377,40 @@ void CEditSplineObjectTool::SetCursor(EStdCursor cursor, bool bForce)
 	}
 }
 
+bool CEditSplineObjectTool::SnapPointToTerrainOrGeometry(CViewport* pView, CPoint& point)
+{
+	CRY_ASSERT(m_pSpline);
+
+	const int pointIndex = m_pSpline->GetSelectedPoint();
+	if (pointIndex == -1)
+	{
+		return false;
+	}
+
+	Vec3 raySrc, rayDir;
+	pView->ViewToWorldRay(point, raySrc, rayDir);
+
+	IPhysicalWorld* pWorld = GetIEditor()->GetSystem()->GetIPhysicalWorld();
+	CRY_ASSERT(pWorld);
+
+	ray_hit hit{};
+	// rwi_stop_at_pierceable flag makes sure that all ray hits are treated as solid regardless of surface type pierceability settings
+	int col = pWorld->RayWorldIntersection(raySrc, rayDir * 1000.0f, ent_all, rwi_stop_at_pierceable, &hit, 1);
+	if (col == 0)
+	{
+		return false;
+	}
+
+	CUndo undo("Spline Move Point");
+	m_pSpline->StoreUndo("Move Point");
+
+	m_pSpline->SetPoint(pointIndex, hit.pt - m_pSpline->GetWorldPos());
+
+	return true;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // CSplitSplineObjectTool
-
 class CSplitSplineObjectTool : public CEditTool
 {
 public:
@@ -387,16 +418,16 @@ public:
 
 	CSplitSplineObjectTool();
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	virtual string GetDisplayName() const override { return "Split Spline"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(DisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
 	virtual ~CSplitSplineObjectTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 private:
 	CSplineObject* m_pSpline;
@@ -405,14 +436,12 @@ private:
 
 IMPLEMENT_DYNCREATE(CSplitSplineObjectTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CSplitSplineObjectTool::CSplitSplineObjectTool()
 {
 	m_pSpline = 0;
 	m_curPoint = -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplitSplineObjectTool::SetUserData(const char* key, void* userData)
 {
 	m_curPoint = -1;
@@ -427,7 +456,6 @@ void CSplitSplineObjectTool::SetUserData(const char* key, void* userData)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CSplitSplineObjectTool::~CSplitSplineObjectTool()
 {
 	//if (m_pSpline)
@@ -436,17 +464,15 @@ CSplitSplineObjectTool::~CSplitSplineObjectTool()
 		GetIEditorImpl()->GetIUndoManager()->Cancel();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplitSplineObjectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplitSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (!m_pSpline)
@@ -480,7 +506,7 @@ bool CSplitSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, C
 				m_pSpline->Split(p2, intPnt);
 				if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 					GetIEditorImpl()->GetIUndoManager()->Accept("Split Spline");
-				GetIEditorImpl()->SetEditTool(0);
+				GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 			}
 		}
 		else
@@ -495,7 +521,6 @@ bool CSplitSplineObjectTool::MouseCallback(CViewport* view, EMouseEvent event, C
 
 //////////////////////////////////////////////////////////////////////////
 // CMergeSplineObjectsTool
-
 class CMergeSplineObjectsTool : public CEditTool
 {
 public:
@@ -507,29 +532,25 @@ public:
 	virtual string GetDisplayName() const override { return "Merge Splines"; }
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 	virtual void   SetUserData(const char* key, void* userData);
-	virtual void   Display(DisplayContext& dc) {};
+	virtual void   Display(SDisplayContext& dc) {}
 	virtual bool   OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 
 protected:
 	virtual ~CMergeSplineObjectsTool();
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	int            m_curPoint;
 	CSplineObject* m_pSpline;
-
-private:
 };
 
 IMPLEMENT_DYNCREATE(CMergeSplineObjectsTool, CEditTool)
 
-//////////////////////////////////////////////////////////////////////////
 CMergeSplineObjectsTool::CMergeSplineObjectsTool()
 {
 	m_curPoint = -1;
 	m_pSpline = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMergeSplineObjectsTool::SetUserData(const char* key, void* userData)
 {
 	m_pSpline = (CSplineObject*)userData;
@@ -545,7 +566,6 @@ void CMergeSplineObjectsTool::SetUserData(const char* key, void* userData)
 	m_pSpline->SelectPoint(-1);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMergeSplineObjectsTool::~CMergeSplineObjectsTool()
 {
 	if (m_pSpline)
@@ -555,24 +575,20 @@ CMergeSplineObjectsTool::~CMergeSplineObjectsTool()
 		GetIEditorImpl()->GetIUndoManager()->Cancel();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMergeSplineObjectsTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (nChar == Qt::Key_Escape)
 	{
-		GetIEditorImpl()->SetEditTool(0);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 	}
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMergeSplineObjectsTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
-	//return true;
 	if (event == eMouseLDown || event == eMouseMove)
 	{
-		HitContext hc;
-		hc.view = view;
+		HitContext hc(view);
 		hc.point2d = point;
 		view->ViewToWorldRay(point, hc.raySrc, hc.rayDir);
 		if (!GetIEditorImpl()->GetObjectManager()->HitTest(hc))
@@ -639,7 +655,7 @@ bool CMergeSplineObjectsTool::MouseCallback(CViewport* view, EMouseEvent event, 
 				}
 				if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 					GetIEditorImpl()->GetIUndoManager()->Accept("Spline Merging");
-				GetIEditorImpl()->SetEditTool(0);
+				GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 			}
 		}
 
@@ -660,7 +676,6 @@ CSplineObject::CSplineObject() :
 	m_bbox.min = m_bbox.max = Vec3(0, 0, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::SelectPoint(int index)
 {
 	if (m_selectedPoint == index)
@@ -670,7 +685,6 @@ void CSplineObject::SelectPoint(int index)
 	OnUpdateUI();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::SetPoint(int index, const Vec3& pos)
 {
 	if (0 <= index && index < GetPointCount())
@@ -683,7 +697,6 @@ void CSplineObject::SetPoint(int index, const Vec3& pos)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSplineObject::InsertPoint(int index, const Vec3& point)
 {
 	int newindex = GetPointCount();
@@ -722,7 +735,6 @@ int CSplineObject::InsertPoint(int index, const Vec3& point)
 	return newindex;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::RemovePoint(int index)
 {
 	if ((index >= 0 || index < GetPointCount()) && GetPointCount() > GetMinPoints())
@@ -735,7 +747,6 @@ void CSplineObject::RemovePoint(int index)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CSplineObject::GetBezierPos(int index, float t) const
 {
 	float invt = 1.0f - t;
@@ -745,7 +756,6 @@ Vec3 CSplineObject::GetBezierPos(int index, float t) const
 	       m_points[index + 1].pos * (t * t * t);
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CSplineObject::GetBezierTangent(int index, float t) const
 {
 	float invt = 1.0f - t;
@@ -760,7 +770,6 @@ Vec3 CSplineObject::GetBezierTangent(int index, float t) const
 	return tan;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSplineObject::GetBezierSegmentLength(int index, float t) const
 {
 	const int kSteps = 32;
@@ -777,7 +786,6 @@ float CSplineObject::GetBezierSegmentLength(int index, float t) const
 	return fRet;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSplineObject::GetSplineLength() const
 {
 	float fRet = 0.f;
@@ -788,7 +796,6 @@ float CSplineObject::GetSplineLength() const
 	return fRet;
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSplineObject::GetPosByDistance(float distance, int& outIndex) const
 {
 	float lenPos = 0.0f;
@@ -806,7 +813,6 @@ float CSplineObject::GetPosByDistance(float distance, int& outIndex) const
 	return segmentLength > 0.0f ? (distance - lenPos) / segmentLength : 0.0f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CSplineObject::GetBezierNormal(int index, float t) const
 {
 	float kof = 0.0f;
@@ -832,7 +838,6 @@ Vec3 CSplineObject::GetBezierNormal(int index, float t) const
 	return n;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CSplineObject::GetLocalBezierNormal(int index, float t) const
 {
 	float kof = t;
@@ -879,7 +884,6 @@ Vec3 CSplineObject::GetLocalBezierNormal(int index, float t) const
 	return n;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::BezierCorrection(int index)
 {
 	BezierAnglesCorrection(index - 1);
@@ -889,7 +893,6 @@ void CSplineObject::BezierCorrection(int index)
 	BezierAnglesCorrection(index + 2);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::BezierAnglesCorrection(int index)
 {
 	int maxindex = GetPointCount() - 1;
@@ -954,7 +957,6 @@ void CSplineObject::BezierAnglesCorrection(int index)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSplineObject::GetPointAngle() const
 {
 	int index = m_selectedPoint;
@@ -965,7 +967,6 @@ float CSplineObject::GetPointAngle() const
 	return 0.0f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::SetPointAngle(float angle)
 {
 	int index = m_selectedPoint;
@@ -976,7 +977,6 @@ void CSplineObject::SetPointAngle(float angle)
 	OnUpdate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CSplineObject::GetPointWidth() const
 {
 	int index = m_selectedPoint;
@@ -987,7 +987,6 @@ float CSplineObject::GetPointWidth() const
 	return 0.0f;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::SetPointWidth(float width)
 {
 	int index = m_selectedPoint;
@@ -998,7 +997,6 @@ void CSplineObject::SetPointWidth(float width)
 	OnUpdate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplineObject::IsPointDefaultWidth() const
 {
 	int index = m_selectedPoint;
@@ -1009,7 +1007,6 @@ bool CSplineObject::IsPointDefaultWidth() const
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::PointDafaultWidthIs(bool isDefault)
 {
 	int index = m_selectedPoint;
@@ -1023,7 +1020,6 @@ void CSplineObject::PointDafaultWidthIs(bool isDefault)
 	OnUpdate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::ReverseShape()
 {
 	StoreUndo("Reverse Shape");
@@ -1031,7 +1027,6 @@ void CSplineObject::ReverseShape()
 	OnUpdate();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::Split(int index, const Vec3& point)
 {
 	// do not change the order of things here
@@ -1050,7 +1045,6 @@ void CSplineObject::Split(int index, const Vec3& point)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::Merge(CSplineObject* pSpline)
 {
 	if (!pSpline || m_mergeIndex < 0 || pSpline->m_mergeIndex < 0)
@@ -1076,7 +1070,6 @@ void CSplineObject::Merge(CSplineObject* pSpline)
 	GetObjectManager()->DeleteObject(pSpline);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplineObject::Init(CBaseObject* prev, const string& file)
 {
 	bool res = __super::Init(prev, file);
@@ -1091,10 +1084,9 @@ bool CSplineObject::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	m_points.clear();
 	__super::Done();
 }
@@ -1179,8 +1171,8 @@ void CSplineObject::SerializeProperties(Serialization::IArchive& ar, bool bMulti
 
 			if (!isDefault)
 			{
-				int pwidth = GetPointWidth();
-				int oldWidth = pwidth;
+				float pwidth = GetPointWidth();
+				float oldWidth = pwidth;
 
 				ar(pwidth, "pwidth", "Width:");
 
@@ -1194,7 +1186,6 @@ void CSplineObject::SerializeProperties(Serialization::IArchive& ar, bool bMulti
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::GetBoundBox(AABB& box)
 {
 	box.SetTransformedAABB(GetWorldTM(), m_bbox);
@@ -1203,13 +1194,11 @@ void CSplineObject::GetBoundBox(AABB& box)
 	box.max += Vec3(s, s, s);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::GetLocalBounds(AABB& box)
 {
 	box = m_bbox;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::CalcBBox()
 {
 	if (m_points.empty())
@@ -1243,16 +1232,15 @@ void CSplineObject::CalcBBox()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	bool isSelected = IsSelected();
 
 	float fPointSize = isSelected ? 0.005f : 0.0025f;
 
-	COLORREF colLine = GetColor();
-	COLORREF colPoint = GetColor();
+	COLORREF colLine = CMFCUtils::ColorBToColorRef(GetColor());
+	COLORREF colPoint = CMFCUtils::ColorBToColorRef(GetColor());
 
 	const Matrix34& wtm = GetWorldTM();
 
@@ -1323,11 +1311,10 @@ void CSplineObject::Display(CObjectRenderHelper& objRenderHelper)
 			dc.DepthTestOn();
 	}
 
-	DrawDefault(dc, GetColor());
+	DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CSplineObject::DrawJoints(DisplayContext& dc)
+void CSplineObject::DrawJoints(SDisplayContext& dc)
 {
 	const Matrix34& wtm = GetWorldTM();
 	float fPointSize = 0.5f;
@@ -1362,7 +1349,6 @@ void CSplineObject::DrawJoints(DisplayContext& dc)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSplineObject::GetNearestPoint(const Vec3& raySrc, const Vec3& rayDir, float& distance)
 {
 	int index = -1;
@@ -1387,12 +1373,8 @@ int CSplineObject::GetNearestPoint(const Vec3& raySrc, const Vec3& rayDir, float
 	return index;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplineObject::HitTest(HitContext& hc)
 {
-	// First check if ray intersect our bounding box.
-	float tr = hc.distanceTolerance / 2 + kSplinePointSelectionRadius;
-
 	// Find intersection of line with zero Z plane.
 	float minDist = FLT_MAX;
 	Vec3 intPnt;
@@ -1445,7 +1427,6 @@ bool CSplineObject::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplineObject::HitTestRect(HitContext& hc)
 {
 	AABB box;
@@ -1481,7 +1462,6 @@ bool CSplineObject::HitTestRect(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSplineObject::RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLineP2, const Vec3& pi, const Vec3& pj, float& distance, Vec3& intPnt)
 {
 	Vec3 pa, pb;
@@ -1508,7 +1488,6 @@ bool CSplineObject::RayToLineDistance(const Vec3& rayLineP1, const Vec3& rayLine
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::GetNearestEdge(const Vec3& raySrc, const Vec3& rayDir, int& p1, int& p2, float& distance, Vec3& intersectPoint)
 {
 	p1 = -1;
@@ -1556,13 +1535,11 @@ void CSplineObject::OnContextMenu(CPopupMenuItem* menu)
 	CBaseObject::OnContextMenu(menu);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::OnUpdateUI()
 {
 	UpdateUIVars();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSplineObject::Serialize(CObjectArchive& ar)
 {
 	__super::Serialize(ar);
@@ -1611,12 +1588,11 @@ void CSplineObject::Serialize(CObjectArchive& ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSplineObject::MouseCreateCallback(IDisplayViewport* pView, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseMove || event == eMouseLDown || event == eMouseLDblClick)
 	{
-		Vec3 pos = ((CViewport*)pView)->MapViewToCP(point, 0, true);
+		Vec3 pos = ((CViewport*)pView)->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true);
 
 		if (GetPointCount() < GetMinPoints())
 		{
@@ -1677,17 +1653,15 @@ void CSplineObject::EditSpline()
 	{
 		CUndo undo("Select Object");
 		// Select just this object, so we need to clear selection
-		GetObjectManager()->ClearSelection();
 		GetObjectManager()->SelectObject(this);
 	}
 
-	CEditTool* pEditTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pEditTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 
 	if (!pEditTool->IsKindOf(RUNTIME_CLASS(CEditSplineObjectTool)))
 	{
 		pEditTool = new CEditSplineObjectTool;
-		GetIEditorImpl()->SetEditTool(pEditTool);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pEditTool);
 		pEditTool->SetUserData("object", this);
 	}
 }
-

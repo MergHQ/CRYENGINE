@@ -9,7 +9,8 @@
 #include "ObjMan.h"
 #include "MeshCompiler/MeshCompiler.h"
 
-#include "CryCore/TypeInfo_impl.h"
+#include <CryCore/TypeInfo_impl.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 const float fRoadAreaZRange = 2.5f;
 const float fRoadTerrainZOffset = 0.06f;
@@ -131,7 +132,7 @@ void CRoadRenderNode::SetVertices(const Vec3* pVertsAll, int nVertsNumAll,
 
 void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses > 32k stack space
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// free old object and mesh
 	m_pRenderMesh = NULL;
@@ -418,7 +419,7 @@ void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses >
 
 		if (m_bPhysicalize)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("RoadPhysicalization");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "RoadPhysicalization");
 
 			IGeomManager* pGeoman = GetPhysicalWorld()->GetGeomManager();
 			primitives::box abox;
@@ -434,7 +435,7 @@ void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses >
 
 			if (m_pMaterial && m_pPhysEnt)
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("RoadPhysicalizationParts");
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "RoadPhysicalizationParts");
 
 				ISurfaceType* psf;
 				if ((psf = m_pMaterial->GetSurfaceType()) || m_pMaterial->GetSubMtl(0) && (psf = m_pMaterial->GetSubMtl(0)->GetSurfaceType()))
@@ -476,6 +477,8 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!passInfo.RenderRoads())
 		return; // false;
 
@@ -485,12 +488,12 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 	const auto objMat = Matrix34::CreateTranslationMat(vWSBoxCenter);
 
 	CRenderObject* pObj = nullptr;
-	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData.load(), pObj, nullptr, objMat, passInfo))
+	if (GetObjManager()->AddOrCreatePersistentRenderObject(m_pTempData, pObj, nullptr, objMat, passInfo))
 		return;
 
 	pObj->m_pRenderNode = this;
 	pObj->m_ObjFlags |= RendParams.dwFObjFlags;
-	pObj->SetAmbientColor(RendParams.AmbientColor, passInfo);
+	pObj->SetAmbientColor(RendParams.AmbientColor);
 	pObj->m_editorSelectionID = m_nEditorSelectionID;
 
 	//RendParams.nRenderList = EFSLIST_DECAL;
@@ -498,7 +501,8 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 	pObj->m_nSort = m_sortPrio;
 
 	//	if (RendParams.pShadowMapCasters)
-	pObj->m_ObjFlags |= (FOB_DECAL | FOB_INSHADOW | FOB_NO_FOG | FOB_TRANS_TRANSLATE);
+	pObj->m_ObjFlags |= FOB_DECAL | FOB_INSHADOW | FOB_NO_FOG | FOB_TRANS_TRANSLATE;
+	pObj->m_ObjFlags |= FOB_ALLOW_TERRAIN_LAYER_BLEND | FOB_ALLOW_DECAL_BLEND;
 
 	if (RendParams.pTerrainTexInfo && (RendParams.dwFObjFlags & (FOB_BLEND_WITH_TERRAIN_COLOR /* | FOB_AMBIENT_OCCLUSION*/)))
 	{
@@ -655,22 +659,12 @@ void CRoadRenderNode::GetClipPlanes(Plane* pPlanes, int nPlanesNum, int nVertId)
 
 void CRoadRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_serializedData.worldSpaceBBox.Move(delta);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CRoadRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CRoadRenderNode::GetBBox();
-}
-
-EERType CRoadRenderNode::GetRenderNodeType()
-{
-	return eERType_Road;
-}
-
-float CRoadRenderNode::GetMaxViewDist()
+float CRoadRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CRoadRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
@@ -688,7 +682,7 @@ IMaterial* CRoadRenderNode::GetMaterial(Vec3* pHitPos) const
 	return m_pMaterial;
 }
 
-bool CRoadRenderNode::CanExecuteRenderAsJob()
+bool CRoadRenderNode::CanExecuteRenderAsJob() const
 {
 	return !gEnv->IsEditor() && GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType());
 }

@@ -1,4 +1,4 @@
-if(WIN64)
+if(WINDOWS)
 
 function(PhysXaddLib version extension)
 
@@ -57,4 +57,4 @@ endif()
 set_target_properties(PHYSX PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/PhysX/SDK/Include")
 set_target_properties(PHYSX PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${SDK_DIR}/PhysX/Shared/Include")
 
-endif() # if(WIN64)
+endif() # if(WINDOWS)

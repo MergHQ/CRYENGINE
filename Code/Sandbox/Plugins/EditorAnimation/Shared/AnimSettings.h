@@ -9,17 +9,10 @@
 #include <CrySerialization/BlackBox.h>
 
 struct ICharacterInstance;
-class ICryXML;
+struct ICryXML;
 struct IPakSystem;
 
 #include <CrySerialization/Forward.h>
-
-struct SkeletonAlias
-{
-	string& alias;
-
-	SkeletonAlias(string& alias) : alias(alias) {}
-};
 
 using std::vector;
 
@@ -86,7 +79,6 @@ struct SCompressionSettings
 
 struct SAnimationBuildSettings
 {
-	string               skeletonAlias;
 	bool                 additive;
 	SCompressionSettings compression;
 	std::vector<string>  tags;
@@ -113,4 +105,3 @@ struct SAnimSettings
 	static string GetIntermediateFilename(const char* animationPath);
 	static void   SplitTagString(std::vector<string>* tags, const char* str);
 };
-

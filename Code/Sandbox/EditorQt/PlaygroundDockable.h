@@ -10,7 +10,6 @@ class CPlaygroundDockable : public CDockableEditor
 {
 public:
 	CPlaygroundDockable();
-	~CPlaygroundDockable();
 
-	virtual const char* GetEditorName() const override { return "Playground"; };
+	virtual const char* GetEditorName() const override { return "Playground"; }
 };

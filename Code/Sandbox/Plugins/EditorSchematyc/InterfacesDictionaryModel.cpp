@@ -41,7 +41,7 @@ QVariant CInterfaceDictionaryEntry::GetColumnValue(int32 columnIndex) const
 	return QVariant();
 }
 
-QString CInterfaceDictionaryEntry::GetToolTip() const
+QString CInterfaceDictionaryEntry::GetToolTip(int32 columnIndex) const
 {
 	return m_description;
 }
@@ -101,4 +101,3 @@ QString CInterfacesDictionary::GetColumnName(int32 index) const
 }
 
 }
-

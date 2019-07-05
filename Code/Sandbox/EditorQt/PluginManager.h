@@ -1,14 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2001-2012.
-// -------------------------------------------------------------------------
-//  Description: The plugin manager, central point for loading/unloading plugins
-//
-////////////////////////////////////////////////////////////////////////////
+#include <map>
 
 struct IPlugin;
 struct IUIEvent;
@@ -50,6 +43,5 @@ public:
 protected:
 	void CleanUp();
 
-	TPluginList     m_plugins;
+	TPluginList m_plugins;
 };
-

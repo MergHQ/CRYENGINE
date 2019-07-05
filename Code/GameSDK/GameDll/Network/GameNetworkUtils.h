@@ -14,6 +14,9 @@ History:
 #define __GAMENETWORKUTILS_H__
 
 struct SSessionNames;
+class CCryLobbyPacket;
+
+#include <CryLobby/CommonICryMatchMaking.h>
 
 namespace GameNetworkUtils
 {

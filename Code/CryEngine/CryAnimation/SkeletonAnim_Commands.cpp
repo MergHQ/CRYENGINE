@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "SkeletonAnim.h"
 
 #include "CharacterManager.h"
@@ -10,7 +11,6 @@
 #include "Command_Buffer.h"
 #include "Command_Commands.h"
 #include "ParametricSampler.h"
-#include <CrySystem/CryUnitTest.h>
 #include <numeric>
 
 namespace
@@ -33,6 +33,7 @@ ILINE bool CreateCommands(const CPoseModifierQueue& queue, Command::CBuffer& buf
 
 	return true;
 }
+} // namespace
 
 uint32 MergeParametricExamples(const uint32 numExamples, const f32* const exampleBlendWeights, const int16* const exampleLocalAnimationIds, f32* mergedExampleWeightsOut, int* mergedExampleIndicesOut)
 {
@@ -74,57 +75,6 @@ uint32 MergeParametricExamples(const SParametricSamplerInternal& parametricSampl
 
 	return MergeParametricExamples(numExamples, exampleBlendWeights, exampleLocalAnimationIds, mergedExampleWeightsOut, mergedExampleIndicesOut);
 }
-} // namespace
-
-CRY_UNIT_TEST(Test_MergeParametricExamples_ContainsZeroWeights)
-{
-	const f32 exampleBlendWeights[] = { 0.f, 1.f, -1.f, 0.f, 1.f };
-	const int16 exampleLocalAnimationIds[] = { 22, 44, 44, 22, 44 };
-	const uint32 examplesCount = 5;
-
-	int mergedExampleIndices[5];
-	f32 mergedExampleWeights[5];
-	const uint32 mergedExampleCount = MergeParametricExamples(examplesCount, exampleBlendWeights, exampleLocalAnimationIds, mergedExampleWeights, mergedExampleIndices);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleCount, 2);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleIndices[0], 0);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleIndices[1], 1);
-	CRY_UNIT_TEST_CHECK_CLOSE(mergedExampleWeights[0], 0.f, 0.01f);
-	CRY_UNIT_TEST_CHECK_CLOSE(mergedExampleWeights[1], 1.f, 0.01f);
-}
-
-CRY_UNIT_TEST(Test_MergeParametricExamples_NoZeroWeights)
-{
-	const f32 exampleBlendWeights[] = { -0.1f, 0.9f, -0.1f, 0.f, 0.3f };
-	const int16 exampleLocalAnimationIds[] = { 22, 44, 66, 22, 44 };
-	const uint32 examplesCount = 5;
-
-	int mergedExampleIndices[5];
-	f32 mergedExampleWeights[5];
-	const uint32 mergedExampleCount = MergeParametricExamples(examplesCount, exampleBlendWeights, exampleLocalAnimationIds, mergedExampleWeights, mergedExampleIndices);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleCount, 3);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleIndices[0], 0);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleIndices[1], 1);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleIndices[2], 2);
-	CRY_UNIT_TEST_CHECK_CLOSE(mergedExampleWeights[0], -0.1f, 0.01f);
-	CRY_UNIT_TEST_CHECK_CLOSE(mergedExampleWeights[1], 1.2f, 0.01f);
-	CRY_UNIT_TEST_CHECK_CLOSE(mergedExampleWeights[2], -0.1f, 0.01f);
-}
-
-CRY_UNIT_TEST(Test_MergeParametricExamples_WeightsAddToZero)
-{
-	const f32 exampleBlendWeights[] = { -1.f, 1.f, -1.f, 1.f, 1.f };
-	const int16 exampleLocalAnimationIds[] = { 22, 44, 44, 22, 44 };
-	const uint32 examplesCount = 5;
-
-	int mergedExampleIndices[5];
-	f32 mergedExampleWeights[5];
-	const uint32 mergedExampleCount = MergeParametricExamples(examplesCount, exampleBlendWeights, exampleLocalAnimationIds, mergedExampleWeights, mergedExampleIndices);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleCount, 2);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleIndices[0], 0);
-	CRY_UNIT_TEST_CHECK_EQUAL(mergedExampleIndices[1], 1);
-	CRY_UNIT_TEST_CHECK_CLOSE(mergedExampleWeights[0], 0.f, 0.01f);
-	CRY_UNIT_TEST_CHECK_CLOSE(mergedExampleWeights[1], 1.f, 0.01f);
-}
 
 namespace
 {
@@ -133,11 +83,11 @@ void BaseEvaluationLMG_CheckWeight(const IDefaultSkeleton& defaultSkeleton, cons
 	const uint32 localAnimationId = animation.GetAnimationId();
 
 	const ModelAnimationHeader* const pModelAnimationHeader = animationSet.GetModelAnimationHeader(localAnimationId);
-	assert(pModelAnimationHeader);
-	assert(pModelAnimationHeader->m_nAssetType == LMG_File);
+	CRY_ASSERT(pModelAnimationHeader);
+	CRY_ASSERT(pModelAnimationHeader->m_nAssetType == LMG_File);
 
 	const SParametricSamplerInternal* const pParametric = static_cast<const SParametricSamplerInternal*>(animation.GetParametricSampler());
-	assert(pParametric);
+	CRY_ASSERT(pParametric);
 
 	const f32 blendWeightSum = std::accumulate(pParametric->m_fBlendWeight, pParametric->m_fBlendWeight + pParametric->m_numExamples, 0.f);
 	if (0.09f < fabsf(blendWeightSum - 1.0f))
@@ -161,11 +111,11 @@ void BaseEvaluationLMG_DebugDrawSegmentation(const CCharInstance& characterInsta
 	const uint32 localAnimationId = animation.GetAnimationId();
 
 	const ModelAnimationHeader* const pModelAnimationHeader = animationSet.GetModelAnimationHeader(localAnimationId);
-	assert(pModelAnimationHeader);
-	assert(pModelAnimationHeader->m_nAssetType == LMG_File);
+	CRY_ASSERT(pModelAnimationHeader);
+	CRY_ASSERT(pModelAnimationHeader->m_nAssetType == LMG_File);
 
 	const SParametricSamplerInternal* const pParametric = static_cast<const SParametricSamplerInternal*>(animation.GetParametricSampler());
-	assert(pParametric);
+	CRY_ASSERT(pParametric);
 
 	const bool displayParameterInfo = (2 < debugSegmentation);
 	const bool displayDetailedSegmentationInfo = (1 < debugSegmentation || displayParameterInfo);
@@ -408,7 +358,7 @@ void CSkeletonAnim::Commands_BasePlayback(const CAnimation& rAnim, Command::CBuf
 	uint32 nSampleRateHZ30 = rAnim.m_nStaticFlags & CA_KEYFRAME_SAMPLE_30Hz;
 
 	const ModelAnimationHeader* pMAG = pAnimationSet->GetModelAnimationHeader(nAnimID);
-	assert(pMAG);
+	CRY_ASSERT(pMAG);
 	int32 nEGlobalID = pMAG->m_nGlobalAnimId;
 	if (pMAG->m_nAssetType == CAF_File)
 	{
@@ -421,7 +371,6 @@ void CSkeletonAnim::Commands_BasePlayback(const CAnimation& rAnim, Command::CBuf
 		ac->m_fWeight = rAnim.GetTransitionWeight();
 
 		f32 time_new0 = rAnim.GetCurrentSegmentNormalizedTime();
-		int32 segtotal = rCAF.m_Segments - 1;
 		int32 segcount = rAnim.m_currentSegmentIndex[0];
 		f32 segdur = rCAF.GetSegmentDuration(segcount);
 		f32 totdur = rCAF.GetTotalDuration();
@@ -460,7 +409,7 @@ void CSkeletonAnim::Commands_BasePlayback(const CAnimation& rAnim, Command::CBuf
 		f32 fKeys = fDuration * ANIMATION_30Hz;
 		f32 fKeyTime = ac->m_fETimeNew * fKeys;
 		ac->m_fETimeNew = f32(uint32(fKeyTime + 0.45f)) / fKeys;
-		assert(ac->m_fETimeNew >= 0.0f && ac->m_fETimeNew <= 1.0f);
+		CRY_ASSERT(ac->m_fETimeNew >= 0.0f && ac->m_fETimeNew <= 1.0f);
 	}
 }
 
@@ -478,8 +427,8 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 	const uint32 localAnimationId = animation.GetAnimationId();
 
 	const ModelAnimationHeader* const pModelAnimationHeader = animationSet.GetModelAnimationHeader(localAnimationId);
-	assert(pModelAnimationHeader);
-	assert(pModelAnimationHeader->m_nAssetType == LMG_File);
+	CRY_ASSERT(pModelAnimationHeader);
+	CRY_ASSERT(pModelAnimationHeader->m_nAssetType == LMG_File);
 
 	const uint32 globalAnimationId = pModelAnimationHeader->m_nGlobalAnimId;
 	const GlobalAnimationHeaderLMG& animationGlobalAnimationHeaderLMG = g_AnimationManager.m_arrGlobalLMG[globalAnimationId];
@@ -495,7 +444,7 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 
 	{
 		const SParametricSamplerInternal* const pParametricSampler = static_cast<const SParametricSamplerInternal*>(animation.GetParametricSampler());
-		assert(pParametricSampler);
+		CRY_ASSERT(pParametricSampler);
 
 		f32 mergedExampleWeights[MAX_LMG_ANIMS];
 		int mergedExampleIndices[MAX_LMG_ANIMS];
@@ -514,11 +463,11 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 			const int16 exampleLocalAnimationId = pParametricSampler->m_nAnimID[exampleIndex];
 
 			const ModelAnimationHeader* const pExampleModelAnimationHeader = animationSet.GetModelAnimationHeader(exampleLocalAnimationId);
-			assert(pExampleModelAnimationHeader);
+			CRY_ASSERT(pExampleModelAnimationHeader);
 
 			const int32 exampleGlobalAnimationId = pExampleModelAnimationHeader->m_nGlobalAnimId;
 
-			assert(pExampleModelAnimationHeader->m_nAssetType == CAF_File);
+			CRY_ASSERT(pExampleModelAnimationHeader->m_nAssetType == CAF_File);
 			const GlobalAnimationHeaderCAF& exampleGlobalAnimationHeaderCAF = g_AnimationManager.m_arrGlobalCAF[exampleGlobalAnimationId];
 
 			const f32 animationNormalizedTime = animation.GetCurrentSegmentNormalizedTime();
@@ -555,7 +504,7 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 void CSkeletonAnim::Commands_BaseEvaluationLMG(const CAnimation& rAnim, const uint32 nTargetBuffer, Command::CBuffer& buffer)
 {
 	const bool animationDrivenMotion = (m_AnimationDrivenMotion != 0);
-	assert(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
+	CRY_ASSERT(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
 	const CAnimationSet& animationSet = *m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 	CreateCommandsForLmgAnimation(animationDrivenMotion, animationSet, nTargetBuffer, rAnim, buffer);
 
@@ -657,10 +606,10 @@ void CSkeletonAnim::Commands_LPlayback(const CAnimation& rAnim, uint32 nTargetBu
 {
 	const int32 nAnimID = rAnim.GetAnimationId();
 
-	assert(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
+	CRY_ASSERT(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
 	const CAnimationSet& animationSet = *m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 	const ModelAnimationHeader* const pAnim = animationSet.GetModelAnimationHeader(nAnimID);
-	assert(pAnim->m_nAssetType == CAF_File);
+	CRY_ASSERT(pAnim->m_nAssetType == CAF_File);
 
 	const f32 w0 = rAnim.GetTransitionWeight(); //this is a percentage value between 0-1
 	const f32 w1 = rAnim.GetPlaybackWeight();   //this is a percentage value between 0-1

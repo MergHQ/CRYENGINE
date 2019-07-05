@@ -39,9 +39,10 @@ bool CDeviceResourceSet_DX12::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 	m_DescriptorBlockDX12 = *m_pDescriptors;
 
 	// gather descriptors for all bound resources and copy to new block. NOTE: CBV_SRV_UAV heap, SMP heap not yet supported
+	CDescriptorBlock descriptorScratchSpace = GetDevice()->GetResourceDescriptorScratchSpace();
 	bool bSuccess = GatherDescriptors(desc,
 		descriptors,
-		GetDevice()->GetResourceDescriptorScratchSpace(),
+		descriptorScratchSpace,
 		m_ConstantBuffersInUse,
 		m_ShaderResourceViewsInUse,
 		m_UnorderedAccessViewsInUse);
@@ -74,6 +75,16 @@ bool CDeviceResourceLayout_DX12::Init(const SDeviceResourceLayoutDesc& desc)
 			const SResourceBindPoint& resourceBindPoint = itLayoutBinding.second.begin()->first;
 
 			resourceMappings.m_RootParameters[layoutBindPoint.layoutSlot].InitAsConstantBufferView(
+				resourceBindPoint.slotNumber, 0, GetShaderVisibility(resourceBindPoint.stages));
+
+			++resourceMappings.m_NumRootParameters;
+		}
+		break;
+		case SDeviceResourceLayoutDesc::ELayoutSlotType::InlineShaderResource:
+		{
+			const SResourceBindPoint& resourceBindPoint = itLayoutBinding.second.begin()->first;
+
+			resourceMappings.m_RootParameters[layoutBindPoint.layoutSlot].InitAsShaderResourceView(
 				resourceBindPoint.slotNumber, 0, GetShaderVisibility(resourceBindPoint.stages));
 
 			++resourceMappings.m_NumRootParameters;
@@ -172,7 +183,7 @@ bool CDeviceResourceSet_DX12::GatherDescriptors(
 
 		if (!resource.IsValid())
 		{
-			CRY_ASSERT_MESSAGE(false, "Invalid resource in resource set desc. Update failed");
+			CRY_ASSERT(false, "Invalid resource in resource set desc. Update failed");
 			return false;
 		}
 

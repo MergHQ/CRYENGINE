@@ -8,12 +8,11 @@
 #include <QLabel>
 #include <QPointer>
 
-class QToolWindowManager;
+class QGridLayout;
 class QPushButton;
 class QToolButton;
-class QGridLayout;
-
 class QToolWindowCustomWrapper;
+class QToolWindowManager;
 
 class QTOOLWINDOWMANAGER_EXPORT QToolWindowCustomTitleBar : public QCustomTitleBar
 {
@@ -35,28 +34,25 @@ public:
 
 	static QToolWindowCustomWrapper* wrapWidget(QWidget* w, QVariantMap config = QVariantMap());
 
-	virtual QWidget* getWidget() Q_DECL_OVERRIDE { return this; }
-	virtual QWidget* getContents() Q_DECL_OVERRIDE { return m_contents; }
-	virtual void setContents(QWidget* widget) Q_DECL_OVERRIDE { internalSetContents(widget,false); }
-	virtual void startDrag() Q_DECL_OVERRIDE;
-	virtual void hide() Q_DECL_OVERRIDE { QCustomWindowFrame::hide(); }
-	virtual void deferDeletion() Q_DECL_OVERRIDE;
-	void setParent(QWidget* parent) Q_DECL_OVERRIDE { QCustomWindowFrame::setParent(parent); };
+	virtual QWidget*                 getWidget() override                  { return this; }
+	virtual QWidget*                 getContents() override                { return m_contents; }
+	virtual void                     setContents(QWidget* widget) override { internalSetContents(widget, false); }
+	virtual void                     startDrag() override;
+	virtual void                     hide() override                       { QCustomWindowFrame::hide(); }
+	virtual void                     deferDeletion() override;
+	virtual void                     setParent(QWidget* parent) override   { QCustomWindowFrame::setParent(parent); }
 
 private:
-	virtual bool event(QEvent *)Q_DECL_OVERRIDE;
-	virtual void closeEvent(QCloseEvent *) Q_DECL_OVERRIDE;
-
+	virtual bool event(QEvent*) override;
+	virtual void closeEvent(QCloseEvent*) override;
 
 protected:
-	virtual Qt::WindowFlags calcFrameWindowFlags() Q_DECL_OVERRIDE;
-	virtual bool eventFilter(QObject *, QEvent *) Q_DECL_OVERRIDE;
+	virtual Qt::WindowFlags calcFrameWindowFlags() override;
+	virtual bool            eventFilter(QObject*, QEvent*) override;
+	virtual bool            nativeEvent(const QByteArray& eventType, void* message, long* result) override;
 
-#if QT_VERSION >= 0x050000
-	virtual bool nativeEvent(const QByteArray &eventType, void *message, long *result) Q_DECL_OVERRIDE;
-#endif
 #if (defined(_WIN32) || defined(_WIN64))
-	virtual bool winEvent(MSG *msg, long *result);
+	virtual bool winEvent(MSG* msg, long* result);
 #endif
 
 protected:
@@ -64,4 +60,3 @@ protected:
 
 	friend class QToolWindowCustomTitleBar;
 };
-

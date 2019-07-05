@@ -1,0 +1,12 @@
+{
+    "CryRenderer_uber_5_vulkan_dxgi.cpp": {
+        "Vulkan/CryVulkanWrappers/GI/DXGI": [
+            "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIFactory_DXGI.hpp", 
+            "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIFactory_DXGI.cpp", 
+            "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIAdapter_DXGI.hpp", 
+            "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIAdapter_DXGI.cpp", 
+            "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIOutput_DXGI.hpp", 
+            "Vulkan/CryVulkanWrappers/GI/DXGI/CCryVKGIOutput_DXGI.cpp"
+        ]
+    }
+}

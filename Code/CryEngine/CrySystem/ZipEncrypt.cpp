@@ -23,7 +23,7 @@ bool g_using_zipencrypt = false;
 
 void ZipEncrypt::Init(const uint8* pKeyData, uint32 keyLen)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	g_using_zipencrypt = true;
 
@@ -33,8 +33,12 @@ void ZipEncrypt::Init(const uint8* pKeyData, uint32 keyLen)
 
 	register_cipher(&twofish_desc);
 
-	int prng_idx = register_prng(&yarrow_desc) != -1;
+#if defined(USE_CRY_ASSERT)
+	int prng_idx = register_prng(&yarrow_desc);
 	assert(prng_idx != -1);
+#else
+	register_prng(&yarrow_desc);
+#endif
 	rng_make_prng(128, find_prng("yarrow"), &g_yarrow_prng_state, NULL);
 
 	int importReturn = rsa_import(pKeyData, (unsigned long)keyLen, &g_rsa_key_public_for_sign);
@@ -107,7 +111,7 @@ bool ZipEncrypt::DecryptBufferWithStreamCipher(unsigned char* inBuffer, unsigned
 
 bool ZipEncrypt::DecryptBufferWithStreamCipher(unsigned char* inBuffer, size_t bufferSize, unsigned char key[16], unsigned char IV[16])
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	symmetric_CTR ctr;
 
@@ -169,8 +173,10 @@ bool ZipEncrypt::RSA_VerifyData(void* inBuffer, int sizeIn, unsigned char* signe
 
 	assert(hash_descriptor[sha256].hashsize == hashSize);
 
+#if defined(USE_CRY_ASSERT)
 	int prng_idx = find_prng("yarrow");
 	assert(prng_idx != -1);
+#endif
 
 	// Verify generated hash with RSA public key
 	int statOut = 0;
@@ -210,8 +216,10 @@ bool ZipEncrypt::RSA_VerifyData(const unsigned char** inBuffers, unsigned int* s
 
 	assert(hash_descriptor[sha256].hashsize == hashSize);
 
+#if defined(USE_CRY_ASSERT)
 	int prng_idx = find_prng("yarrow");
 	assert(prng_idx != -1);
+#endif
 
 	// Verify generated hash with RSA public key
 	int statOut = 0;
@@ -238,8 +246,8 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 	CRY_ASSERT(key != NULL);
 
 	/* valid padding? */
-	if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-	    (padding != LTC_LTC_PKCS_1_OAEP))
+	if ((padding != LTC_PKCS_1_V1_5) &&
+	    (padding != LTC_PKCS_1_OAEP))
 	{
 		return CRYPT_PK_INVALID_PADDING;
 	}
@@ -250,7 +258,7 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* valid hash? */
 		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
@@ -270,7 +278,7 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 		return CRYPT_BUFFER_OVERFLOW;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* OAEP pad the key */
 		x = *outlen;
@@ -285,7 +293,7 @@ int ZipEncrypt::custom_rsa_encrypt_key_ex(const unsigned char* in, unsigned long
 	{
 		/* LTC_PKCS #1 v1.5 pad the key */
 		x = *outlen;
-		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_LTC_PKCS_1_EME,
+		if ((err = pkcs_1_v1_5_encode(in, inlen, LTC_PKCS_1_EME,
 		                              modulus_bitlen, prng, prng_idx,
 		                              out, &x)) != CRYPT_OK)
 		{
@@ -318,13 +326,13 @@ int ZipEncrypt::custom_rsa_decrypt_key_ex(const unsigned char* in, unsigned long
 
 	/* valid padding? */
 
-	if ((padding != LTC_LTC_PKCS_1_V1_5) &&
-	    (padding != LTC_LTC_PKCS_1_OAEP))
+	if ((padding != LTC_PKCS_1_V1_5) &&
+	    (padding != LTC_PKCS_1_OAEP))
 	{
 		return CRYPT_PK_INVALID_PADDING;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* valid hash ? */
 		if ((err = hash_is_valid(hash_idx)) != CRYPT_OK)
@@ -358,7 +366,7 @@ int ZipEncrypt::custom_rsa_decrypt_key_ex(const unsigned char* in, unsigned long
 		return err;
 	}
 
-	if (padding == LTC_LTC_PKCS_1_OAEP)
+	if (padding == LTC_PKCS_1_OAEP)
 	{
 		/* now OAEP decode the packet */
 		err = pkcs_1_oaep_decode(tmp, x, lparam, lparamlen, modulus_bitlen, hash_idx,
@@ -367,7 +375,7 @@ int ZipEncrypt::custom_rsa_decrypt_key_ex(const unsigned char* in, unsigned long
 	else
 	{
 		/* now LTC_PKCS #1 v1.5 depad the packet */
-		err = pkcs_1_v1_5_decode(tmp, x, LTC_LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
+		err = pkcs_1_v1_5_decode(tmp, x, LTC_PKCS_1_EME, modulus_bitlen, out, outlen, stat);
 	}
 
 	XFREE(tmp);

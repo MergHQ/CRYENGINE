@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <CryCore/Platform/CryWindows.h>
 #include <CryString/CryString.h>
 #include <CryString/CryFixedString.h>
 #include <algorithm>
@@ -98,6 +97,20 @@ inline /*TString*/ ToDosPath(const TString& strPath)
 inline string ToDosPath(const char* szPath)
 {
 	return ToDosPath(string(szPath));
+}
+
+inline bool IsStrValid(const char* str)
+{
+	return str && *str;
+}
+
+inline bool IsRelativePath(const char* p)
+{
+	if (!IsStrValid(p))
+	{
+		return true;
+	}
+	return p[0] != '/' && p[0] != '\\' && !strchr(p, ':');
 }
 
 //! Split full file name to path and filename.
@@ -265,7 +278,7 @@ inline /*void*/ RemoveExtension(TString& filepath)
 			return;
 		case '.':
 			// there's an extension in this file name
-			filepath = filepath.erase(p - szFilepath);
+			filepath.erase(p - szFilepath);
 			return;
 		}
 	}
@@ -797,6 +810,8 @@ inline /*void*/ UnifyFilePath(TString& path)
 
 #ifndef CRY_COMMON_HELPERS_ONLY
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ICmdLine.h>
+#include <CrySystem/IConsole.h>
 
 namespace PathUtil
 {
@@ -804,6 +819,39 @@ inline string GetGameFolder()
 {
 	CRY_ASSERT(gEnv && gEnv->pCryPak);
 	return gEnv->pCryPak->GetGameFolder();
+}
+
+inline string GetProjectFolder()
+{
+	static bool checkedForCmdLineProjectArg = false;
+	static string cmdLineProjectPath;
+	if (cmdLineProjectPath.IsEmpty() && !checkedForCmdLineProjectArg)
+	{
+		CRY_ASSERT(gEnv && gEnv->pSystem && gEnv->pSystem->GetICmdLine(), "PathUtil::GetProjectFolder() was called before system was initialized");
+		const ICmdLineArg* project = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
+		if (project)
+		{
+			cmdLineProjectPath = PathUtil::GetParentDirectory(project->GetValue());
+		}
+		else
+		{
+			ICVar* pSysProject = gEnv->pConsole->GetCVar("sys_project");
+			if (pSysProject && pSysProject->GetString())
+			{
+				string sysProjectStr = PathUtil::GetParentDirectory(pSysProject->GetString());
+				if (PathUtil::IsRelativePath(sysProjectStr))
+				{
+					cmdLineProjectPath = PathUtil::Make(GetEnginePath(), sysProjectStr);
+				}
+				else
+				{
+					cmdLineProjectPath = sysProjectStr;
+				}
+			}
+		}
+		checkedForCmdLineProjectArg = true;
+	}
+	return PathUtil::ToUnixPath(cmdLineProjectPath);
 }
 
 inline string GetLocalizationFolder()
@@ -829,6 +877,25 @@ inline /*TString*/ MakeGamePath(const TString& path)
 inline string MakeGamePath(const char* szPath)
 {
 	return MakeGamePath(string(szPath));
+}
+
+//! Make a project correct path out of any input path.
+template<typename TString>
+typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::type
+inline /*TString*/ MakeProjectPath(const TString& path)
+{
+	const auto fullpath = ToUnixPath(path);
+	const auto rootDataFolder = ToUnixPath(AddSlash(PathUtil::GetProjectFolder()));
+	if (fullpath.length() > rootDataFolder.length() && strnicmp(fullpath.c_str(), rootDataFolder.c_str(), rootDataFolder.length()) == 0)
+	{
+		return fullpath.substr(rootDataFolder.length(), fullpath.length() - rootDataFolder.length());
+	}
+	return fullpath;
+}
+
+inline string MakeProjectPath(const char* szPath)
+{
+	return MakeProjectPath(string(szPath));
 }
 }
 #endif

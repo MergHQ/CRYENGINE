@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 #include "IEditor.h"
@@ -18,6 +15,7 @@ class CTrackViewSequence;
  */
 struct IAnimationContextListener
 {
+	virtual ~IAnimationContextListener()                             {}
 	virtual void OnSequenceChanged(CTrackViewSequence* pNewSequence) {}
 	virtual void OnTimeChanged(SAnimTime newTime)                    {}
 	virtual void OnPlaybackStateChanged(bool bPlaying, bool bPaused) {}
@@ -44,7 +42,7 @@ public:
 	/** Return current animation time in active sequence.
 	   @return Current time.
 	 */
-	SAnimTime GetTime() const            { return m_currTime; };
+	SAnimTime GetTime() const            { return m_currTime; }
 
 	float     GetTimeScale() const       { return m_fTimeScale; }
 	void      SetTimeScale(float fScale) { m_fTimeScale = fScale; }
@@ -56,7 +54,7 @@ public:
 
 	/** Get currently edited sequence.
 	 */
-	CTrackViewSequence* GetSequence() const { return m_pSequence; };
+	CTrackViewSequence* GetSequence() const { return m_pSequence; }
 
 	/** Set time markers to play within.
 	 */
@@ -72,20 +70,20 @@ public:
 
 	/** Returns true if editor is recording animations now.
 	 */
-	bool IsRecording() const { return m_bRecording && !m_bPlaying; };
+	bool IsRecording() const { return m_bRecording && !m_bPlaying; }
 
 	/** Returns true if editor is playing animation now.
 	 */
-	bool IsPlaying() const { return m_bPlaying; };
+	bool IsPlaying() const { return m_bPlaying; }
 
 	/** Returns true if editor is paused
 	 */
-	bool IsPaused() const { return m_bPaused; };
+	bool IsPaused() const { return m_bPaused; }
 
 	/** Return if animation context is now in recording mode.
 	    In difference from IsRecording function this function not affected by pause state.
 	 */
-	bool IsRecordMode() const { return m_bRecording; };
+	bool IsRecordMode() const { return m_bRecording; }
 
 	/** Returns true if currently looping as activated.
 	 */
@@ -104,7 +102,7 @@ public:
 	 */
 	void SetTime(SAnimTime t);
 
-	/** Start animation recorduing.
+	/** Start animation recording.
 	   Automatically stop playing.
 	   @param recording True to start recording, false to stop.
 	 */
@@ -115,7 +113,7 @@ public:
 	void SetAutoRecording(bool bEnable, SAnimTime fTimeStep);
 
 	//! Check if auto recording enabled.
-	bool IsAutoRecording() const { return m_bAutoRecording; };
+	bool IsAutoRecording() const { return m_bAutoRecording; }
 
 	/** Start/Pause animation playing.
 	   Automatically stop recording.
@@ -217,4 +215,3 @@ private:
 	//TODO : Improve observer system, right now every function has to loop and every event is a new virtual function...
 	std::vector<IAnimationContextListener*> m_contextListeners;
 };
-

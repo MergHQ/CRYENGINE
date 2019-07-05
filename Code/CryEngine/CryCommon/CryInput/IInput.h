@@ -9,9 +9,9 @@
 #endif
 
 #include <CryCore/Platform/platform.h>
-#include <CryString/CryName.h>
 
 #include <CrySystem/IEngineModule.h>
+#include <CryMath/Cry_Math.h>
 
 struct ISystem;
 
@@ -56,7 +56,7 @@ enum EInputState
 	eIS_Changed  = (1 << 3),
 };
 
-enum EInputDeviceType
+enum EInputDeviceType : uint8
 {
 	eIDT_Keyboard,
 	eIDT_Mouse,
@@ -76,9 +76,8 @@ enum EInputPlatformFlags
 #define USE_CRY_NAME_FOR_KEY_NAMES 0
 
 #if USE_CRY_NAME_FOR_KEY_NAMES
-
+#include <CryString/CryName.h>
 typedef CCryName TKeyName;
-
 #else
 
 struct TKeyName
@@ -244,7 +243,7 @@ enum EKeyId : uint32
 	eKI_MouseYAbsolute,
 	eKI_MouseLast,
 
-	// XBox controller.
+	// Xbox controller.
 	eKI_XI_DPadUp = KI_XINPUT_BASE,
 	eKI_XI_DPadDown,
 	eKI_XI_DPadLeft,
@@ -275,8 +274,6 @@ enum EKeyId : uint32
 	eKI_XI_ThumbRRight,
 	eKI_XI_TriggerLBtn,
 	eKI_XI_TriggerRBtn,
-	eKI_XI_Connect,    //!< Should be deprecated because all devices can be connected, use eKI_SYS_ConnectDevice instead.
-	eKI_XI_Disconnect, //!< Should be deprecated because all devices can be disconnected, use eKI_SYS_DisconnectDevice instead.
 
 	// Orbis controller.
 	eKI_Orbis_Options = KI_ORBIS_BASE,
@@ -527,12 +524,12 @@ struct SFFOutputEvent
 	}
 
 	SFFOutputEvent(EInputDeviceType id, EFFEffectId event, SFFTriggerOutputData::Initial::Value triggerInitValue, float time = 1.0f, float ampA = 1.0f, float ampB = 1.0f) :
-		deviceType(id), eventId(event), timeInSeconds(time), amplifierS(ampA), amplifierA(ampB),
+		deviceType(id), eventId(event), amplifierS(ampA), amplifierA(ampB), timeInSeconds(time),
 		triggerData(triggerInitValue)
 	{}
 
 	SFFOutputEvent(EInputDeviceType id, EFFEffectId event, const SFFTriggerOutputData& triggerData, float time = 1.0f, float ampA = 1.0f, float ampB = 1.0f) :
-		deviceType(id), eventId(event), timeInSeconds(time), amplifierS(ampA), amplifierA(ampB),
+		deviceType(id), eventId(event), amplifierS(ampA), amplifierA(ampB), timeInSeconds(time),
 		triggerData(triggerData)
 	{}
 };
@@ -550,8 +547,8 @@ struct SInputSymbol
 	};
 
 	SInputSymbol(uint32 devSpecId_, EKeyId keyId_, const TKeyName& name_, EType type_, uint32 user_ = 0)
-		: devSpecId(devSpecId_)
-		, keyId(keyId_), name(name_)
+		: keyId(keyId_), name(name_)
+		, devSpecId(devSpecId_)
 		, state(eIS_Unknown)
 		, type(type_)
 		, value(0.0f)
@@ -609,10 +606,10 @@ struct SInputBlockData
 	                const float fBlockDuration_,
 	                const bool bAllDeviceIndices_ = true,
 	                const uint8 deviceIndex_ = 0)
-		: keyId(keyId_)
-		, fBlockDuration(fBlockDuration_)
-		, bAllDeviceIndices(bAllDeviceIndices_)
+		: fBlockDuration(fBlockDuration_)
+		, keyId(keyId_)
 		, deviceIndex(deviceIndex_)
+		, bAllDeviceIndices(bAllDeviceIndices_)
 	{
 	}
 

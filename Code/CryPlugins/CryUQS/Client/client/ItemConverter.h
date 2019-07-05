@@ -47,7 +47,7 @@ namespace UQS
 
 			inline const IItemConverter& CItemConverterCollection::GetItemConverter(size_t index) const
 			{
-				assert(index < m_itemConverters.size());
+				CRY_ASSERT(index < m_itemConverters.size());
 				return *m_itemConverters[index];
 			}
 
@@ -127,9 +127,9 @@ namespace UQS
 			template <class TFromType, class TToType, void(*pConvertFunc)(const TFromType&, TToType&)>
 			void CItemConverter<TFromType, TToType, pConvertFunc>::ConvertItem(const void* pFromItem, void* pToItem) const
 			{
-				assert(pConvertFunc);
-				assert(pToItem);
-				assert(pFromItem);
+				CRY_ASSERT(pConvertFunc);
+				CRY_ASSERT(pToItem);
+				CRY_ASSERT(pFromItem);
 
 				const TFromType* pFrom = static_cast<const TFromType*>(pFromItem);
 				TToType* pTo = static_cast<TToType*>(pToItem);

@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terrainbeachgen_h__
-#define __terrainbeachgen_h__
 #pragma once
+
+struct IRenderMesh;
 
 //////////////////////////////////////////////////////////////////////////
 // Dynamic replacement for static 2d array
@@ -114,6 +114,3 @@ private:
 
 	CFile* m_pFile;
 };
-
-#endif // __terrainbeachgen_h__
-

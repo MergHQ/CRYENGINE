@@ -14,6 +14,7 @@
 
 struct IDockWidgetType
 {
+	virtual ~IDockWidgetType() {}
 	virtual const char*            Name() const = 0;
 	virtual const char*            Title() const = 0;
 	virtual QWidget*               Create(QDockWidget* dw) = 0;
@@ -104,4 +105,3 @@ private:
 	std::vector<OpenWidget>                       m_openWidgets;
 	std::vector<std::unique_ptr<IDockWidgetType>> m_types;
 };
-

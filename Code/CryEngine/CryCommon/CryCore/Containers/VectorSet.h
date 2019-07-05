@@ -1,17 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+#pragma once
+
 // -------------------------------------------------------------------------
-//  File name:   VectorSet.h
-//  Version:     v1.00
-//  Created:     25/9/2006 by MichaelS.
-//  Compilers:   Visual Studio.NET 2005
 //  Description: std::set replacement implemented using sorted vector.
 // -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-#ifndef __SORTEDSET_H__
-#define __SORTEDSET_H__
 
 //! --------------------------------------------------------------------------
 //! VectorSet
@@ -437,5 +430,3 @@ typename VectorSet<K, T, A>::const_reference VectorSet<K, T, A >::operator[](int
 {
 	return m_entries[index];
 }
-
-#endif //__SORTEDSET_H__

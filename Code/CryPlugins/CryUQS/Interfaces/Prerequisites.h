@@ -26,7 +26,7 @@
 // if this is #defined, then CFunctionBlueprint::InstantiateCallHierarchy() will add extra code to check for correct return types inside the call-hierarchy
 #define UQS_CHECK_RETURN_TYPE_CONSISTENCY_IN_CALL_HIERARCHY
 
-// if this is #defined, then the CQuery will add some asserts() to ensure proper cleanup once all deferred-evaluators report having finished their work on the remaining items
+// if this is #defined, then the CQuery will add some CRY_ASSERTs() to ensure proper cleanup once all deferred-evaluators report having finished their work on the remaining items
 #define UQS_CHECK_PROPER_CLEANUP_ONCE_ALL_ITEMS_ARE_INSPECTED
 
 // - the maximum number of each, instant- and deferred-evaluators in a query blueprint

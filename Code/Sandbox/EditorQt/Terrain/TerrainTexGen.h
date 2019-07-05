@@ -1,15 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terraintexgen_h__
-#define __terraintexgen_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "TerrainGrid.h"
+#include <Util/Image.h>
 
-// forward declaration.
 class CLayer;
 struct LightingSettings;
 
@@ -27,23 +22,19 @@ enum ETerrainTexGenFlags
 	ETTG_FAST_LLIGHTING          = 0x0400,  // Use fastest possible lighting algorithm.
 	ETTG_NO_TERRAIN_SHADOWS      = 0x0800,  // Do not calculate terrain shadows (Even if specified in lighting settings)
 	ETTG_BAKELIGHTING            = 0x1000,  // enforce one result (e.g. eDynamicSun results usually in two textures)
-	ETTG_PREVIEW                 = 0x2000,  // result is intended for the preview not rthe permanent storage
+	ETTG_PREVIEW                 = 0x2000,  // result is intended for the preview not the permanent storage
 };
 
-const uint32 OCCMAP_DOWNSCALE_FACTOR = 1;   // occlusionmap resolution factor to the diffuse texture, can be 1, 2, or 4
+const uint32 OCCMAP_DOWNSCALE_FACTOR = 1;   // occlusion map resolution factor to the diffuse texture, can be 1, 2, or 4
 
-#include "TerrainLayerTexGen.h"         // CTerrainLayerTexGen
-#include "TerrainLightGen.h"            // CTerrainLayerGen
-//#include "IndirectLighting/TerrainGIGen.h"								// CTerrainGIGen (indirect lighting)
+#include "TerrainLayerTexGen.h"
+#include "TerrainLightGen.h"
 
 /** Class that generates terrain surface texture.
  */
 class CTerrainTexGen
 {
 public:
-
-	// default constructor with standard resolution
-	CTerrainTexGen();
 
 	/** Generate terrain surface texture.
 	    @param surfaceTexture Output image where texture will be stored, it must already be allocated.
@@ -75,11 +66,7 @@ public:
 
 	void Init(const int resolution, const bool bFullInit);
 
-private: // ---------------------------------------------------------------------
-
-	CTerrainLayerTexGen m_LayerTexGen;              //
-	CTerrainLightGen    m_LightGen;                 //
+private:
+	CTerrainLayerTexGen m_LayerTexGen;
+	CTerrainLightGen    m_LightGen;
 };
-
-#endif // __terraintexgen_h__
-

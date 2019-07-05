@@ -1,0 +1,29 @@
+# Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
+import os
+from waflib import Logs
+
+def build(bld):
+	platform = bld.env['PLATFORM']
+	spec = bld.options.project_spec
+	configuration = bld.env['CONFIGURATION']
+
+	if platform and not platform == 'project_generator' and not bld.cmd == 'generate_uber_files' and 'CryAudioImplAdx2' in bld.spec_modules(spec, platform, configuration):
+		if not os.path.isdir('Code/SDKs/Audio/fmod'):
+			Logs.error('[ERROR] Attempting to build CryAudioImplAdx2, but could not find the Adx2 SDK at Code/SDKs/Audio/adx2, skipping.')
+			return
+
+	bld.CryEngineModule(
+		target      = 'CryAudioImplAdx2',
+		vs_filter   = 'CryEngine/Audio/Implementations',
+		file_list   = 'cryaudioimpl.waf_files',
+		pch         = 'stdafx.cpp',
+
+		### GENERAL ###
+		debug_defines       = 'ADX2_FOR_DEBUG',
+		profile_defines     = 'ADX2_FOR_PROFILE',
+		performance_defines = 'ADX2_FOR_RELEASE',
+		release_defines     = 'ADX2_FOR_RELEASE',
+
+		includes = '../../Common',
+	)

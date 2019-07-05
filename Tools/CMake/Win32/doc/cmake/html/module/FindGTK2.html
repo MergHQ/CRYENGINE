@@ -1,0 +1,186 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>FindGTK2 &mdash; CMake 3.14.5 Documentation</title>
+
+    <link rel="stylesheet" href="../_static/cmake.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/cmake-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FindGTK" href="FindGTK.html" />
+    <link rel="prev" title="FindGTest" href="FindGTest.html" />
+  
+ 
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="FindGTK.html" title="FindGTK"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="FindGTest.html" title="FindGTest"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" accesskey="U">cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="findgtk2">
+<span id="module:FindGTK2"></span><h1>FindGTK2<a class="headerlink" href="#findgtk2" title="Permalink to this headline">¶</a></h1>
+<p>FindGTK2.cmake</p>
+<p>This module can find the GTK2 widget libraries and several of its
+other optional components like gtkmm, glade, and glademm.</p>
+<p>NOTE: If you intend to use version checking, CMake 2.6.2 or later is</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>required.
+</pre></div>
+</div>
+<p>Specify one or more of the following components as you call this find
+module.  See example below.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>gtk
+gtkmm
+glade
+glademm
+</pre></div>
+</div>
+<p>The following variables will be defined for your use</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>GTK2_FOUND - Were all of your specified components found?
+GTK2_INCLUDE_DIRS - All include directories
+GTK2_LIBRARIES - All libraries
+GTK2_TARGETS - All imported targets
+GTK2_DEFINITIONS - Additional compiler flags
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>GTK2_VERSION - The version of GTK2 found (x.y.z)
+GTK2_MAJOR_VERSION - The major version of GTK2
+GTK2_MINOR_VERSION - The minor version of GTK2
+GTK2_PATCH_VERSION - The patch version of GTK2
+</pre></div>
+</div>
+<p>Optional variables you can define prior to calling this module:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>GTK2_DEBUG - Enables verbose debugging of the module
+GTK2_ADDITIONAL_SUFFIXES - Allows defining additional directories to
+                           search for include files
+</pre></div>
+</div>
+<p>================= Example Usage:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Call find_package() once, here are some examples to pick from:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Require GTK 2.6 or later
+    find_package(GTK2 2.6 REQUIRED gtk)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Require GTK 2.10 or later and Glade
+    find_package(GTK2 2.10 REQUIRED gtk glade)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Search for GTK/GTKMM 2.8 or later
+    find_package(GTK2 2.8 COMPONENTS gtk gtkmm)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>if(GTK2_FOUND)
+   include_directories(${GTK2_INCLUDE_DIRS})
+   add_executable(mygui mygui.cc)
+   target_link_libraries(mygui ${GTK2_LIBRARIES})
+endif()
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="FindGTest.html"
+                        title="previous chapter">FindGTest</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="FindGTK.html"
+                        title="next chapter">FindGTK</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/module/FindGTK2.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="FindGTK.html" title="FindGTK"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="FindGTest.html" title="FindGTest"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" >cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2000-2019 Kitware, Inc. and Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
+  </body>
+</html>

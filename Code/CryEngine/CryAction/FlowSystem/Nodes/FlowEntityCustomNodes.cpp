@@ -222,7 +222,6 @@ public:
 					if (pSkin)
 					{
 						CSKINAttachment* pSkinAttachment = new CSKINAttachment();
-						pSkinAttachment->m_pIAttachmentSkin = pAttachment->GetIAttachmentSkin();
 						pAttachment->AddBinding(pSkinAttachment, pSkin);
 
 						args.slotAttachmentCache[slotId] = pSkinAttachment;
@@ -701,7 +700,6 @@ public:
 				if (oldJointId != desiredJointId)
 				{
 					// If it's not on the right joint and we created it, then we can destroy it.
-					EntityId currentEntityId = m_actInfo.pEntity->GetId();
 					const string& currentAttachmentName = m_currentAttachmentName;
 					if (attachmentRegistry.OwnsAttachment(m_actInfo.pEntity->GetId(), currentAttachmentName))
 					{
@@ -1317,7 +1315,7 @@ private:
 
 void CEntityLinksSetNode::CEntityOriginalLinks::StoreCurrentEntityState(IEntity& entity)
 {
-	assert(m_linkDescs.empty()); // Storing the same entity twice ? Sounds like links could have been meddled with between these two storages.
+	CRY_ASSERT(m_linkDescs.empty()); // Storing the same entity twice ? Sounds like links could have been meddled with between these two storages.
 	m_linkDescs.clear();
 	for (IEntityLink* pLink = entity.GetEntityLinks(); pLink; pLink = pLink->next)
 	{

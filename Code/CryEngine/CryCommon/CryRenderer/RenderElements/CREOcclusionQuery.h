@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CREOCCLUSIONQUERY_H__
-#define __CREOCCLUSIONQUERY_H__
+#pragma once
+#include "RendElement.h"
 
 class CRenderMesh;
 
@@ -53,5 +53,3 @@ public:
 		pSizer->AddObject(this, sizeof(*this));
 	}
 };
-
-#endif  // __CREOCCLUSIONQUERY_H__

@@ -12,6 +12,7 @@ namespace renderitems_topological_sort
 {
 
 using bounds_t = TRect_tpl<uint16>;
+using bounds_collection_t = std::vector<bounds_t>;
 struct node
 {
 	using edge_t = node * ;
@@ -96,7 +97,7 @@ template <typename F, typename R>
 inline void topological(nodes_t &nodes, roots_t &roots, std::size_t min_resolve_area, const F &f, const R &r) noexcept
 {
 	roots_t roots_pending_resolve;
-	std::vector<bounds_t> resolve_rects;
+	bounds_collection_t resolve_rects;
 
 	for (; roots.size() || roots_pending_resolve.size();)
 	{
@@ -118,7 +119,7 @@ inline void topological(nodes_t &nodes, roots_t &roots, std::size_t min_resolve_
 		{
 			const auto area = static_cast<std::size_t>(rt->bounds.GetWidth()) * rt->bounds.GetHeight();
 
-			if (rt->requiresResolve && area >= min_resolve_area)
+			if (rt->requiresResolve && area > min_resolve_area)
 			{
 				roots_pending_resolve.push_back(rt);
 				resolve_rects.push_back(rt->bounds);
@@ -142,27 +143,27 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 	const auto max_resolves = CRendererCVars::CV_r_RefractionPartialResolveMaxResolveCount;
 	const auto min_reslolve_area = CRendererCVars::CV_r_RefractionPartialResolveMinimalResolveArea;
 
-	CRY_ASSERT_MESSAGE(CRendererCVars::CV_r_RefractionPartialResolveMode == 1 || CRendererCVars::CV_r_RefractionPartialResolveMode == 2,
+	CRY_ASSERT(CRendererCVars::CV_r_RefractionPartialResolveMode == 1 || CRendererCVars::CV_r_RefractionPartialResolveMode == 2,
 		"Unknown value for r_RefractionPartialResolveMode, defaulting to 2.");
 
 	if (CRendererCVars::CV_r_RefractionPartialResolveMode == 1)
 	{
-		for (auto i = 0; i < renderItems.size();)
+		for (size_t i = 0; i < renderItems.size();)
 		{
 			const auto& item = renderItems[i];
 			const bool needsResolve = !!(item.nBatchFlags & refractionMask);
 
 			STransparentSegment segment;
-			segment.rendItems.start = i;
+			segment.rendItems.start = static_cast<int>(i);
 			while (++i < renderItems.size() && !(renderItems[i].nBatchFlags & refractionMask)) {}
-			segment.rendItems.end = i;
+			segment.rendItems.end = static_cast<int>(i);
 
 			if (needsResolve)
 			{
 				const bool forceFullResolve = !!(item.nBatchFlags & FB_RESOLVE_FULL);
-				const auto bounds = item.pCompiledObject->m_aabb.IsEmpty() ?
-					bounds_t{ 0,0,0,0 } :
-					ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve);
+				const auto bounds = item.pCompiledObject && !item.pCompiledObject->m_aabb.IsEmpty() ?
+					ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve) :
+					bounds_t{ 0,0,0,0 };
 				segment.resolveRects.push_back(bounds);
 			}
 
@@ -176,9 +177,9 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 		for (const auto &item : renderItems)
 		{
 			const bool forceFullResolve = !!(item.nBatchFlags & FB_RESOLVE_FULL);
-			const auto bounds = item.pCompiledObject->m_aabb.IsEmpty() ?
-				bounds_t{ 0,0,0,0 } :
-				ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve);
+			const auto bounds = item.pCompiledObject && !item.pCompiledObject->m_aabb.IsEmpty() ?
+				ComputeResolveViewport(item.pCompiledObject->m_aabb, forceFullResolve) :
+				bounds_t{ 0,0,0,0 };
 			nodes.emplace_back(node{ item, bounds, !!(item.nBatchFlags & refractionMask) });
 		}
 
@@ -190,13 +191,17 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 		std::size_t start = 0, end = 0;
 		topological(nodes, roots, min_reslolve_area,
 			[&](const node& n) { renderItems[end++] = n.item; },
-			[&](std::vector<bounds_t> &&resolve_rects)
+			[&](bounds_collection_t &&resolve_rects)
 			{
+				// Add a segment if we have a pass with no resolve
+				if (end > start && !segments.size())
+					segments.emplace_back(STransparentSegment{});
+
 				if (segments.size())
 				{
 					// Finish previous segment
-					segments.back().rendItems.start = start;
-					segments.back().rendItems.end = end;
+					segments.back().rendItems.start = static_cast<int>(start);
+					segments.back().rendItems.end = static_cast<int>(end);
 
 					start = end;
 				}
@@ -214,8 +219,8 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 		{
 			if (!segments.size())
 				segments.emplace_back(STransparentSegment{});
-			segments.back().rendItems.start = start;
-			segments.back().rendItems.end = end;
+			segments.back().rendItems.start = static_cast<int>(start);
+			segments.back().rendItems.end = static_cast<int>(end);
 		}
 	}
 
@@ -224,7 +229,7 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 	{
 		// Iterate in reverse (from closest resolves to furthest away ones)
 		auto it = segments.rbegin();
-		for (; it != segments.rend() && resolves_count<max_resolves; ++it)
+		for (; it != segments.rend() && resolves_count < static_cast<std::size_t>(max_resolves); ++it)
 			if (it->resolveRects.size())
 				++resolves_count;
 		if (it != segments.rend())
@@ -249,31 +254,35 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 	return resolves_count;
 }
 
+DECLARE_JOB("OptimizeTransparentRenderItemsResolvesJob", TOptimizeTransparentRenderItemsResolvesJob, CRenderView::OptimizeTransparentRenderItemsResolvesJob);
+void CRenderView::OptimizeTransparentRenderItemsResolvesJob()
+{
+	static constexpr ERenderListID refractiveLists[] = { EFSLIST_TRANSP_BW, EFSLIST_TRANSP_AW, EFSLIST_TRANSP_NEAREST };
+
+	std::size_t resolves_count = 0;
+	for (const auto &list : refractiveLists)
+	{
+		if (!HasResolveForList(list))
+			continue;
+
+		auto& segments = GetTransparentSegments(list);
+		auto& renderItems = GetRenderItems(list);
+
+		// Clear list
+		segments = {};
+		// Pre-compute segments
+		resolves_count = OptimizeTransparentRenderItemsResolves(segments, renderItems, resolves_count);
+	}
+}
+
 void CRenderView::StartOptimizeTransparentRenderItemsResolvesJob()
 {
 	if (!CRendererCVars::CV_r_Refraction || CRendererCVars::CV_r_RefractionPartialResolveMode == 0)
 		return;
 
-	gEnv->pJobManager->AddLambdaJob("OptimizeTransparentRenderItemsResolvesJob", [this]()
-		{
-			static constexpr ERenderListID refractiveLists[] = { EFSLIST_TRANSP_BW, EFSLIST_TRANSP_AW, EFSLIST_TRANSP_NEAREST };
-
-			std::size_t resolves_count = 0;
-			for (const auto &list : refractiveLists)
-			{
-				if (!HasResolveForList(list))
-					continue;
-
-				auto& segments = GetTransparentSegments(list);
-				auto& renderItems = GetRenderItems(list);
-
-				// Clear list
-				segments = {};
-				// Pre-compute segments
-				resolves_count = OptimizeTransparentRenderItemsResolves(segments, renderItems, resolves_count);
-			}
-		},
-		JobManager::eRegularPriority, &m_optimizeTransparentRenderItemsResolvesJobStatus);
+	TOptimizeTransparentRenderItemsResolvesJob job;
+	job.SetClassInstance(this);
+	job.Run(JobManager::eRegularPriority, &m_optimizeTransparentRenderItemsResolvesJobStatus);
 }
 
 void CRenderView::WaitForOptimizeTransparentRenderItemsResolvesJob() const

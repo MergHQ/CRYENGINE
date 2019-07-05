@@ -10,23 +10,54 @@ namespace CryEngine.Compilation
 	public class CompilationFailedException : Exception
 	{
 		/// <summary>
-		/// Exception indicating that compiling C# source files has failed.
+		/// Gets the error data.
 		/// </summary>
-		public CompilationFailedException() { }
+		/// <value>
+		/// The error data.
+		/// </value>
+		public string[] ErrorData { get; }
+
+		/// <summary>
+		/// Gets the error count.
+		/// </summary>
+		/// <value>
+		/// The error count.
+		/// </value>
+		public Int64 ErrorCount { get; }
 
 		/// <summary>
 		/// Exception indicating that compiling C# source files has failed.
 		/// </summary>
-		/// <param name="errorMessage"></param>
-		public CompilationFailedException(string errorMessage)
-			: base(errorMessage) { }
+		public CompilationFailedException()
+		{
+			
+		}
+
+		/// <summary>
+		/// Exception indicating that compiling C# source files has failed.
+		/// </summary>
+		/// <param name="errorMessage">The error message.</param>
+		/// <param name="errorData">The error data in csv format.</param>
+		/// <param name="errorCount">The number of errors.</param>
+		public CompilationFailedException(string errorMessage, string[] errorData, Int64 errorCount)
+			: base(errorMessage)
+		{
+			ErrorData = errorData;
+			ErrorCount = errorCount;
+		}
 
 		/// <summary>
 		/// Exception indicating that compiling C# source files has failed.
 		/// </summary>
 		/// <param name="errorMessage"></param>
 		/// <param name="innerEx"></param>
-		public CompilationFailedException(string errorMessage, Exception innerEx)
-			: base(errorMessage, innerEx) { }
+		/// <param name="errorData"></param>
+		/// <param name="errorCount"></param>
+		public CompilationFailedException(string errorMessage, Exception innerEx, string[] errorData, Int64 errorCount)
+			: base(errorMessage, innerEx)
+		{
+			ErrorData = errorData;
+			ErrorCount = errorCount;
+		}
 	}
 }

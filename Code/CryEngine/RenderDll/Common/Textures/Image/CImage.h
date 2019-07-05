@@ -22,11 +22,13 @@ struct SRGBPixel
 	uint8 blue, green, red, alpha;
 	SRGBPixel()  /* : red(0), green(0), blue(0), alpha(255) {} */
 	{ *(unsigned int*)this = (unsigned int)~RGB_MASK; }
-	SRGBPixel(int r, int g, int b) : red(r), green(g), blue(b), alpha(255) {}
+	SRGBPixel(int r, int g, int b) : blue(b), green(g), red(r), alpha(255) {}
 	//bool eq (const SRGBPixel& p) const { return ((*(unsigned int *)this) & RGB_MASK) == ((*(unsigned int *)&p) & RGB_MASK); }
 };
 
 class CImageFile;
+typedef _smart_ptr<CImageFile> CImageFilePtr;
+
 namespace DDSSplitted {
 struct DDSDesc;
 }
@@ -86,10 +88,10 @@ protected:
 
 	int    m_ImgSize;
 
-	int    m_NumMips;
-	int    m_NumPersistantMips;
+	int8   m_NumMips;
+	int8   m_NumPersistantMips;
 	int    m_Flags;       // e.g. FIM_GREYSCALE|FIM_ALPHA
-	int    m_nStartSeek;
+	size_t m_nStartSeek;
 	float  m_fAvgBrightness;
 	ColorF m_cMinColor;
 	ColorF m_cMaxColor;
@@ -145,11 +147,11 @@ public:
 
 	EImFileError                 mfGet_error() const    { return m_eError; }
 
-	byte*                        mfGet_image(const int nSide);
+	byte*                        mfGet_image(const int nSide, const bool bMove = false);
 	void                         mfFree_image(const int nSide);
 	bool                         mfIs_image(const int nSide) const              { return m_pByteImage[nSide] != NULL; }
 
-	int                          mfGet_StartSeek() const                        { return m_nStartSeek; }
+	size_t                       mfGet_StartSeek() const                        { return m_nStartSeek; }
 
 	void                         mfSet_ImageSize(int Size)                      { m_ImgSize = Size; }
 	int                          mfGet_ImageSize() const                        { return m_ImgSize; }
@@ -157,11 +159,11 @@ public:
 	ETEX_Format                  mfGetFormat() const                            { return m_eFormat; }
 	ETEX_TileMode                mfGetTileMode() const                          { return m_eTileMode; }
 
-	void                         mfSet_numMips(const int num)                   { m_NumMips = num; }
-	int                          mfGet_numMips() const                          { return m_NumMips; }
+	void                         mfSet_numMips(const int8 num)                  { m_NumMips = num; }
+	int8                         mfGet_numMips() const                          { return m_NumMips; }
 
-	void                         mfSet_numPersistantMips(const int num)         { m_NumPersistantMips = num; }
-	int                          mfGet_numPersistantMips() const                { return m_NumPersistantMips; }
+	void                         mfSet_numPersistantMips(const int8 num)        { m_NumPersistantMips = num; }
+	int8                         mfGet_numPersistantMips() const                { return m_NumPersistantMips; }
 
 	void                         mfSet_avgBrightness(const float avgBrightness) { m_fAvgBrightness = avgBrightness; }
 	float                        mfGet_avgBrightness() const                    { return m_fAvgBrightness; }
@@ -194,8 +196,9 @@ public:
 		Skipped,
 	};
 
-	static _smart_ptr<CImageFile>  mfLoad_file(const string& filename, const uint32 nFlags);
-	static _smart_ptr<CImageFile>  mfStream_File(const string& filename, const uint32 nFlags, IImageFileStreamCallback* pCallback);
+	static CImageFilePtr mfLoad_file(const string& filename, const uint32 nFlags);
+	static CImageFilePtr mfStream_File(const string& filename, const uint32 nFlags, IImageFileStreamCallback* pCallback);
+
 	static EResourceCompilerResult mfInvokeRC(const string& fileToLoad, const string& filename, char* extOut, size_t extOutCapacity, bool immediate);
 };
 

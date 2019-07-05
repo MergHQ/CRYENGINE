@@ -8,23 +8,25 @@
 class QLineEdit;
 class CMaterial;
 class CMaterialSerializer;
+class CInspector;
 
 //! Material editor integrated with the asset system
 class CMaterialEditor : public CAssetEditor, public IAutoEditorNotifyListener, public IDataBaseManagerListener
 {
 public:
 	CMaterialEditor();
+
 	~CMaterialEditor();
 
-	virtual const char* GetEditorName() const override { return "Material Editor"; }
+	virtual const char*                           GetEditorName() const override { return "Material Editor"; }
 
-	virtual bool OnOpenAsset(CAsset* pAsset) override;
-	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
-	virtual void OnCloseAsset() override;
-	virtual void OnDiscardAssetChanges() override;
+	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
+	virtual void                                  OnCloseAsset() override;
+	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
+	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
 
-	void SetMaterial(CMaterial* pMaterial);
-	void SelectMaterialForEdit(CMaterial* pMaterial);
+	void                                          SetMaterial(CMaterial* pMaterial);
+	void                                          SelectMaterialForEdit(CMaterial* pMaterial);
 
 	//! Returns main material that is loaded
 	CMaterial* GetLoadedMaterial() { return m_pMaterial; }
@@ -32,7 +34,7 @@ public:
 	//! Returns material for editing, can be a sub material of the main material
 	CMaterial* GetMaterialSelectedForEdit() { return m_pEditedMaterial; }
 
-	void FillMaterialMenu(CAbstractMenu* menu);
+	void       FillMaterialMenu(CAbstractMenu* menu);
 
 	//! The main material that is loaded, may be composed of submaterials
 	CCrySignal<void(CMaterial*)> signalMaterialLoaded;
@@ -44,29 +46,30 @@ public:
 	CCrySignal<void(CMaterial*)> signalMaterialForEditChanged;
 
 	//Actions that can be called from components of the material editor
-
 	void OnResetSubMaterial(int slot);
 	void OnRemoveSubMaterial(int slot);
 
 private:
-
-	void InitMenuBar();
-	virtual void CreateDefaultLayout(CDockableContainer* sender) override;
+	void         RegisterActions();
+	void         InitMenuBar();
+	virtual void OnInitialize() override;
+	virtual void OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
 	virtual void OnLayoutChange(const QVariantMap& state) override;
-	void BroadcastPopulateInspector();
+	void         BroadcastPopulateInspector();
 
-	void OnConvertToMultiMaterial();
-	void OnConvertToSingleMaterial();
-	void OnAddSubMaterial();
-	void OnSetSubMaterialSlotCount();
-	void OnPickMaterial();
+	bool         OnUndo() { return false; }
+	bool         OnRedo() { return false; }
+	void         OnConvertToMultiMaterial();
+	void         OnConvertToSingleMaterial();
+	void         OnAddSubMaterial();
+	void         OnSetSubMaterialSlotCount();
+	void         OnPickMaterial();
 
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
-	void OnSubMaterialsChanged(CMaterial::SubMaterialChange change);
-	void OnReadOnlyChanged() override;
+	void         OnSubMaterialsChanged(CMaterial::SubMaterialChange change);
 
-	_smart_ptr<CMaterial> m_pMaterial;
-	_smart_ptr<CMaterial> m_pEditedMaterial;
+	_smart_ptr<CMaterial>           m_pMaterial;
+	_smart_ptr<CMaterial>           m_pEditedMaterial;
 	_smart_ptr<CMaterialSerializer> m_pMaterialSerializer;
 };

@@ -17,9 +17,11 @@
 #include <CryNetwork/IServiceNetwork.h>
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/CryThread.h>
 #include <CryNetwork/CrySocks.h>
 
 class CRemoteCommandManager;
+struct ICVar;
 
 // Remote command client implementation
 class CRemoteCommandClient : public IRemoteCommandClient, public IThread
@@ -48,13 +50,12 @@ protected:
 		void            Release();
 
 	private:
-		Command();
 		~Command();
 
-		volatile int            m_refCount;
-		uint32                  m_id;
-		const char*             m_szClassName; // debug only
-		IServiceNetworkMessage* m_pMessage;
+		volatile int            m_refCount = 1;
+		uint32                  m_id = 0;
+		const char*             m_szClassName = nullptr; // debug only
+		IServiceNetworkMessage* m_pMessage = nullptr;
 	};
 
 	//-------------------------------------------------------------
@@ -98,11 +99,11 @@ protected:
 		static const uint32 kCommandResendTime = 2000;
 
 	protected:
-		CRemoteCommandManager* m_pManager;
-		volatile int           m_refCount;
+		CRemoteCommandManager* m_pManager = nullptr;
+		volatile int           m_refCount = 1;
 
 		// Connection (from service network layer)
-		IServiceNetworkConnection* m_pConnection;
+		IServiceNetworkConnection* m_pConnection = nullptr;
 
 		// Cached address of the remote endpoint
 		ServiceNetworkAddress m_remoteAddress;
@@ -113,7 +114,7 @@ protected:
 		CryMutex  m_commandAccessMutex;
 
 		// A queue of raw messages
-		typedef CryMT::CLocklessPointerQueue<IServiceNetworkMessage> TRawMessageQueue;
+		typedef CryMT::queue<IServiceNetworkMessage*> TRawMessageQueue;
 		TRawMessageQueue m_pRawMessages;
 		CryMutex         m_rawMessagesMutex;
 
@@ -248,7 +249,7 @@ protected:
 		TLocalClassFactoryList m_pLocalClassFactories;
 
 		// Commands that were received and should be executed
-		typedef CryMT::CLocklessPointerQueue<WrappedCommand> TCommandQueue;
+		typedef CryMT::queue<WrappedCommand*> TCommandQueue;
 		TCommandQueue m_pCommandsToExecute;
 		CryMutex      m_commandListLock;
 
@@ -331,7 +332,7 @@ protected:
 	TEndpoints m_pEndpointToDelete;
 
 	// Received raw messages
-	typedef CryMT::CLocklessPointerQueue<RawMessage> TRawMessagesQueue;
+	typedef CryMT::queue<RawMessage*> TRawMessagesQueue;
 	TRawMessagesQueue m_pRawMessages;
 	CryMutex          m_rawMessagesLock;
 
@@ -345,11 +346,11 @@ protected:
 
 	// Suppression counter (execution of commands is suppressed when>0)
 	// This is updated using CryInterlocked* functions
-	volatile int m_suppressionCounter;
-	bool         m_bIsSuppressed;
+	volatile int m_suppressionCounter = 0;
+	bool         m_bIsSuppressed = false;
 
 	// Request to close the network thread
-	bool m_bCloseThread;
+	bool m_bCloseThread = false;
 
 public:
 	ILINE CRemoteCommandManager* GetManager() const

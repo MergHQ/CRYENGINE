@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "DesignerEditor.h"
 #include "Core/Helper.h"
+#include "DesignerSession.h"
 
 #include <CrySystem/ICryLink.h>
 
@@ -11,9 +11,9 @@ namespace Designer
 {
 
 template<class T>
-void DesignerBaseObject<T >::Done()
+void DesignerBaseObject<T>::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	if (m_pCompiler)
 	{
 		m_pCompiler->DeleteAllRenderNodes();
@@ -23,18 +23,18 @@ void DesignerBaseObject<T >::Done()
 	__super::Done();
 
 	if (!IsEmpty() && DesignerSession::GetInstance()->GetBaseObject() == this)
-		GetIEditor()->SetEditTool(NULL);
+		GetIEditor()->GetLevelEditorSharedState()->SetEditTool(NULL);
 }
 
 template<class T>
-void DesignerBaseObject<T >::SetCompiler(ModelCompiler* pCompiler)
+void DesignerBaseObject<T>::SetCompiler(ModelCompiler* pCompiler)
 {
 	DESIGNER_ASSERT(pCompiler);
 	m_pCompiler = pCompiler;
 }
 
 template<class T>
-ModelCompiler* DesignerBaseObject<T >::GetCompiler() const
+ModelCompiler* DesignerBaseObject<T>::GetCompiler() const
 {
 	if (!m_pCompiler)
 		m_pCompiler = new ModelCompiler(eCompiler_General);
@@ -42,14 +42,14 @@ ModelCompiler* DesignerBaseObject<T >::GetCompiler() const
 }
 
 template<class T>
-void DesignerBaseObject<T >::SetModel(Model* pModel)
+void DesignerBaseObject<T>::SetModel(Model* pModel)
 {
 	DESIGNER_ASSERT(pModel);
 	m_pModel = pModel;
 }
 
 template<class T>
-void DesignerBaseObject<T >::UpdateEngineNode()
+void DesignerBaseObject<T>::UpdateEngineNode()
 {
 	if (GetCompiler() == NULL)
 		return;
@@ -57,7 +57,7 @@ void DesignerBaseObject<T >::UpdateEngineNode()
 }
 
 template<class T>
-bool DesignerBaseObject<T >::QueryNearestPos(const BrushVec3& worldPos, BrushVec3& outPos) const
+bool DesignerBaseObject<T>::QueryNearestPos(const BrushVec3& worldPos, BrushVec3& outPos) const
 {
 	MODEL_SHELF_RECONSTRUCTOR(GetModel());
 	GetModel()->SetShelf(eShelf_Base);
@@ -73,7 +73,7 @@ bool DesignerBaseObject<T >::QueryNearestPos(const BrushVec3& worldPos, BrushVec
 }
 
 template<class T>
-void DesignerBaseObject<T >::Validate()
+void DesignerBaseObject<T>::Validate()
 {
 	CBaseObject::Validate();
 	if (!GetModel() || GetModel()->IsEmpty(eShelf_Base))
@@ -90,13 +90,13 @@ void DesignerBaseObject<T >::Validate()
 }
 
 template<class T>
-void DesignerBaseObject<T >::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
+void DesignerBaseObject<T>::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
 {
 	GetCompiler()->UpdateHighlightPassState(bSelected, bHighlighted);
 }
 
 template<class T>
-IStatObj* DesignerBaseObject<T >::GetIStatObj()
+IStatObj* DesignerBaseObject<T>::GetIStatObj()
 {
 	if (!GetCompiler())
 		return NULL;
@@ -109,7 +109,7 @@ IStatObj* DesignerBaseObject<T >::GetIStatObj()
 }
 
 template<class T>
-void DesignerBaseObject<T >::UpdateHiddenIStatObjState()
+void DesignerBaseObject<T>::UpdateHiddenIStatObjState()
 {
 	ModelCompiler* pCompiler = GetCompiler();
 
@@ -118,20 +118,22 @@ void DesignerBaseObject<T >::UpdateHiddenIStatObjState()
 
 	bool bHidden = IsHiddenByOption() || IsHidden() || IsHiddenBySpec() || GetIEditor()->IsInGameMode();
 
+	uint64 renderFlag = GetCompiler()->GetRenderFlags();
 	if (bHidden)
 	{
-		pCompiler->SetRenderFlags(GetCompiler()->GetRenderFlags() | ERF_HIDDEN);
+		renderFlag |= ERF_HIDDEN;
 	}
 	else
 	{
-		pCompiler->SetRenderFlags(GetCompiler()->GetRenderFlags() & (~ERF_HIDDEN));
+		renderFlag &= ~ERF_HIDDEN;
 	}
+	pCompiler->SetRenderFlags(renderFlag);
 
 	pCompiler->Compile(this, GetModel(), eShelf_Any, true);
 }
 
 template<class T>
-void DesignerBaseObject<T >::UpdateVisibility(bool visible)
+void DesignerBaseObject<T>::UpdateVisibility(bool visible)
 {
 	bool bShouldBeUpdated = visible == CheckFlags(OBJFLAG_INVISIBLE);
 
@@ -140,7 +142,7 @@ void DesignerBaseObject<T >::UpdateVisibility(bool visible)
 
 	if (pCompiler->GetRenderNode())
 	{
-		int renderFlag = pCompiler->GetRenderFlags();
+		uint64 renderFlag = pCompiler->GetRenderFlags();
 		if (!visible || IsHiddenBySpec() || IsHiddenByOption() || IsHidden())
 			renderFlag |= ERF_HIDDEN;
 		else
@@ -151,7 +153,7 @@ void DesignerBaseObject<T >::UpdateVisibility(bool visible)
 		_smart_ptr<IStatObj> pStatObj;
 		if (pCompiler->GetIStatObj(&pStatObj))
 		{
-			int flag = pStatObj->GetFlags();
+			uint64 flag = pStatObj->GetFlags();
 			if (visible)
 				flag &= (~STATIC_OBJECT_HIDDEN);
 			else
@@ -165,4 +167,3 @@ void DesignerBaseObject<T >::UpdateVisibility(bool visible)
 }
 
 }
-

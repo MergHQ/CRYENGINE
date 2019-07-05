@@ -30,8 +30,6 @@ void SelectTool::Enter()
 
 bool SelectTool::OnLButtonDown(CViewport* view, UINT nFlags, CPoint point)
 {
-	int nPolygonIndex(0);
-
 	if (m_bAllowSelectionUndo)
 	{
 		GetIEditor()->GetIUndoManager()->Begin();
@@ -258,7 +256,7 @@ void SelectTool::EraseElementsInRectangle(CViewport* view, CPoint point, bool bO
 bool SelectTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	DesignerSession* pSession = DesignerSession::GetInstance();
-	ElementSet* pSelected = pSession->GetSelectedElements();
+
 	if (nChar == Qt::Key_Escape)
 	{
 		pSession->GetExcludedEdgeManager()->Clear();
@@ -287,22 +285,21 @@ void SelectTool::UpdateCursor(CViewport* view, bool bPickingElements)
 		view->SetCurrentCursor(STD_CURSOR_DEFAULT, "");
 		return;
 	}
-	else if (GetIEditor()->GetEditMode() == eEditModeMove)
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 		view->SetCurrentCursor(STD_CURSOR_MOVE, "");
-	else if (GetIEditor()->GetEditMode() == eEditModeRotate)
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Rotate)
 		view->SetCurrentCursor(STD_CURSOR_ROTATE, "");
-	else if (GetIEditor()->GetEditMode() == eEditModeScale)
+	else if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Scale)
 		view->SetCurrentCursor(STD_CURSOR_SCALE, "");
 }
 
-void SelectTool::Display(DisplayContext& dc)
+void SelectTool::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 
 	if (gDesignerSettings.bHighlightElements)
 	{
 		DesignerSession* pSession = DesignerSession::GetInstance();
-		ElementSet* pSelected = pSession->GetSelectedElements();
 		Display::DisplayHighlightedElements(dc, GetMainContext(), m_nPickFlag, pSession->GetExcludedEdgeManager());
 	}
 }
@@ -312,7 +309,7 @@ void SelectTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	__super::OnEditorNotifyEvent(event);
 
 	DesignerSession* pSession = DesignerSession::GetInstance();
-	ElementSet* pSelected =pSession->GetSelectedElements();
+	ElementSet* pSelected = pSession->GetSelectedElements();
 
 	switch (event)
 	{
@@ -414,4 +411,3 @@ BrushMatrix34 SelectTool::GetOffsetTMOnAlignedPlane(CViewport* pView, const Brus
 	return offsetTM;
 }
 }
-

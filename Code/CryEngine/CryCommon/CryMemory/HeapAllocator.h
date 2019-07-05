@@ -1,13 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// Created by: Scott Peter
-//---------------------------------------------------------------------------
-
-#ifndef _HEAP_ALLOCATOR_H
-#define _HEAP_ALLOCATOR_H
+#pragma once
 
 #include <CryThreading/Synchronization.h>
 #include <CryParticleSystem/Options.h>
+#include "CrySizer.h"
 
 //---------------------------------------------------------------------------
 #define bMEM_ACCESS_CHECK 0
@@ -27,12 +24,7 @@ public:
 #endif
 };
 
-class GlobalHeapSysAllocator
-{
-public:
-	static void* SysAlloc(size_t nSize) { return malloc(nSize); }
-	static void  SysDealloc(void* ptr)  { free(ptr); }
-};
+using GlobalHeapSysAllocator = HeapSysAllocator;
 
 //! Round up to next multiple of nAlign. Handles any positive integer.
 inline size_t RoundUpTo(size_t nSize, size_t nAlign)
@@ -177,24 +169,21 @@ private:
 			return true;
 		}
 
-		void Deallocate(void* ptr, size_t nOldSize)
+		bool Deallocate(void* ptr, size_t nOldSize)
 		{
-			assert(CanReallocate(ptr, nOldSize, 0));
-			nUsed -= nOldSize;
+			if (!Reallocate(ptr, nOldSize, 0))
+				return false;
 			if (!nUsed)
 			{
 				nEndUsed = nStart();
 			}
-			else
+			else if (nGaps)
 			{
-				nEndUsed -= nOldSize;
-				if (nGaps)
-				{
-					nEndUsed -= *pGapStack();
-					nGaps--;
-				}
+				nEndUsed -= *pGapStack();
+				nGaps--;
 			}
 			Validate();
+			return true;
 		}
 
 		size_t GetMemoryAlloc() const                 { return nEndAlloc; }
@@ -286,11 +275,7 @@ public:
 				_TotalMem.nAlloc += nAllocSize;
 			}
 
-			if (_pPageList && _pPageList->GetMemoryUsed() == 0)
-			{
-				// Move unused empty page to free list
-				RecyclePage();
-			}
+			FreeEmptyPage();
 
 			// Insert at head of list.
 			pPageNode->pNext = _pPageList;
@@ -300,10 +285,7 @@ public:
 
 	bool Reallocate(const Lock& lock, void* ptr, size_t nOldSize, size_t nNewSize, size_t nAlign = 1)
 	{
-		// Reallocate only if last allocated block in last page
-		assert(ptr && nOldSize);
-		assert(_pPageList);
-		if (_pPageList->Reallocate(ptr, nOldSize, nNewSize))
+		if (_pPageList && _pPageList->Reallocate(ptr, nOldSize, nNewSize))
 		{
 			assert(_TotalMem.nUsed + nNewSize >= nOldSize);
 			_TotalMem.nUsed += nNewSize - nOldSize;
@@ -315,35 +297,20 @@ public:
 
 	bool Deallocate(const Lock& lock, void* ptr, size_t nSize, size_t nAlign = 1)
 	{
-		assert(CheckPtr(lock, ptr, nSize));
 		if (StackAlloc() && ptr)
 		{
-			assert(_pPageList);
-			_pPageList->Deallocate(ptr, nSize);
-			if (_pPageList->nUsed == 0)
-				RecyclePage();
+			if (!_pPageList || !_pPageList->Deallocate(ptr, nSize))
+				return false;
+			FreeEmptyPage();
 		}
-
+		else
+		{
+			assert(CheckPtr(lock, ptr, nSize));
+		}
 		assert(_TotalMem.nUsed >= nSize);
 		_TotalMem.nUsed -= nSize;
 		Validate(lock);
 		return true;
-	}
-
-	// Templated type allocation.
-
-	template<typename T>
-	T* New(size_t nAlign = 0)
-	{
-		void* pMemory = Allocate(Lock(*this), sizeof(T), nAlign ? nAlign : alignof(T));
-		return pMemory ? new(pMemory) T : 0;
-	}
-
-	template<typename T>
-	T* NewArray(size_t nCount, size_t nAlign = 0)
-	{
-		void* pMemory = Allocate(Lock(*this), sizeof(T) * nCount, nAlign ? nAlign : alignof(T));
-		return pMemory ? new(pMemory) T[nCount] : 0;
 	}
 
 	//! Storage base for DynArray, providing stack-based allocation and reallocation.
@@ -372,7 +339,7 @@ public:
 					if (new_size != a.size)
 					{
 						// Attempt to realloc existing array
-						if (_pHeap->Reallocate(Lock(*_pHeap), a.data, a.size, new_size, align))
+						if (_pHeap->Reallocate(Lock(*_pHeap), a.data, Align(a.size, align), new_size, align))
 							a.size = new_size;
 						else
 							assert(!"HeapAllocator array reallocation failed");
@@ -443,47 +410,45 @@ public:
 		}
 	};
 
+	// Free all memory held by this heap
 	void Clear(FreeMemLock& lock)
 	{
-		// Remove the pages from the object.
 		Validate(lock);
-		lock._pPageList = _pPageList;
+		FreeEmptyPages(lock);
+
+		if (_pPageList)
+		{ // concat lists
+			auto pListEnd = _pPageList;
+			while (pListEnd->pNext)
+				pListEnd = pListEnd->pNext;
+
+			pListEnd->pNext = lock._pPageList;
+			lock._pPageList = _pPageList;
+		}
+
 		_pPageList = 0;
 		_TotalMem.Clear();
 	}
-
 	void Clear()
 	{
 		FreeMemLock lock(*this);
 		Clear(lock);
 	}
 
-	void Reset(const Lock& lock)
+	void FreeEmptyPages(FreeMemLock& lock)
 	{
-		// Reset all pages, allowing memory re-use.
+		// Remove free pages from the object.
 		Validate(lock);
-		size_t nPrevSize = ~0;
-		for (PageNode** ppPage = &_pPageList; *ppPage; )
-		{
-			(*ppPage)->Reset();
-			if ((*ppPage)->GetMemoryAlloc() > nPrevSize)
-			{
-				// Move page to sorted location near beginning.
-				SortPage(lock, *ppPage);
-
-				// ppPage is now next page, so continue loop.
-				continue;
-			}
-			nPrevSize = (*ppPage)->GetMemoryAlloc();
-			ppPage = &(*ppPage)->pNext;
-		}
-		_TotalMem.nUsed = 0;
-		Validate(lock);
+		CRY_ASSERT(lock._pPageList == nullptr);
+		lock._pPageList = _pFreeList;
+		for (PageNode* pPage = _pFreeList; pPage; pPage = pPage->pNext)
+			_TotalMem.nAlloc -= pPage->GetMemoryAlloc();
+		_pFreeList = 0;
 	}
-
-	void Reset()
+	void FreeEmptyPages()
 	{
-		Reset(Lock(*this));
+		FreeMemLock lock(*this);
+		FreeEmptyPages(lock);
 	}
 
 	// Validation.
@@ -554,13 +519,24 @@ public:
 
 private:
 
-	void RecyclePage()
+	void FreeEmptyPage()
 	{
-		// Recycle empty page
-		PageNode* pFree = _pPageList;
-		_pPageList = _pPageList->pNext;
-		pFree->pNext = _pFreeList;
-		_pFreeList = pFree;
+		if (_pPageList && _pPageList->GetMemoryUsed() == 0)
+		{
+			PageNode* pFree = _pPageList;
+			_pPageList = _pPageList->pNext;
+			if (FreeWhenEmpty())
+			{
+				// Free empty page
+				A::SysDealloc(pFree);
+			}
+			else
+			{
+				// Recycle empty page
+				pFree->pNext = _pFreeList;
+				_pFreeList = pFree;
+			}
+		}
 	}
 
 	void SortPage(const Lock&, PageNode*& rpPage)
@@ -585,4 +561,3 @@ private:
 };
 }
 
-#endif //_HEAP_ALLOCATOR_H

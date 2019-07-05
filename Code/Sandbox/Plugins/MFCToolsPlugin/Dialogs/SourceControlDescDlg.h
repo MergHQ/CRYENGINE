@@ -1,11 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include "MFCToolsDefines.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CSourceControlDescDlg dialog
 
-class PLUGIN_API CSourceControlDescDlg : public CDialog
+class MFC_TOOLS_PLUGIN_API CSourceControlDescDlg : public CDialog
 {
 	// Construction
 public:
@@ -39,5 +40,3 @@ public:
 
 	CString m_sDesc;
 };
-
-

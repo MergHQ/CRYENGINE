@@ -1,17 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Viewport.h"
 #include "SpotManager.h"
-#include "Tools/BaseTool.h"
+
 #include "Core/Model.h"
+#include "Tools/BaseTool.h"
 #include "DesignerEditor.h"
-#include "Grid.h"
-#include "SurfaceInfoPicker.h"
+
+#include <SurfaceInfoPicker.h>
+
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
 
 namespace Designer
 {
-void SpotManager::DrawCurrentSpot(DisplayContext& dc, const BrushMatrix34& worldTM) const
+void SpotManager::DrawCurrentSpot(SDisplayContext& dc, const BrushMatrix34& worldTM) const
 {
 	static const ColorB edgeCenterColor(100, 255, 100, 255);
 	static const ColorB polygonCenterColor(100, 255, 100, 255);
@@ -34,7 +37,7 @@ void SpotManager::DrawCurrentSpot(DisplayContext& dc, const BrushMatrix34& world
 		DrawSpot(dc, worldTM, m_CurrentSpot.m_Pos, normalColor);
 }
 
-void SpotManager::DrawPolyline(DisplayContext& dc) const
+void SpotManager::DrawPolyline(SDisplayContext& dc) const
 {
 	if (m_SpotList.empty())
 		return;
@@ -136,7 +139,6 @@ bool SpotManager::AddPolygonToDesignerFromSpotList(Model* pModel, const SpotList
 		{
 			BrushVec3 firstVertex;
 			BrushVec3 lastVertex;
-			bool bOnlyAdd = false;
 
 			bool bFirstOnEdge =
 			  pPolygon0->GetFirstVertex(firstVertex) &&
@@ -782,7 +784,7 @@ bool SpotManager::IsSnapEnabled() const
 BrushVec3 SpotManager::Snap(const BrushVec3& vPos) const
 {
 	if (!m_bBuiltInSnap)
-		return gSnappingPreferences.Snap(vPos);
+		return gSnappingPreferences.Snap3D(vPos);
 
 	BrushVec3 snapped;
 	snapped.x = std::floor((vPos.x / m_BuiltInSnapSize) + (BrushFloat)0.5) * m_BuiltInSnapSize;
@@ -814,4 +816,3 @@ bool SpotManager::IsVertexOnEdgeInModel(Model* pModel, const BrushPlane& plane, 
 	return false;
 }
 }
-

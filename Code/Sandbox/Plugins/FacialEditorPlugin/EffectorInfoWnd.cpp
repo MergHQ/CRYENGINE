@@ -25,7 +25,7 @@
 class CSplineCtrlContainer : public CSplineCtrl
 {
 public:
-	virtual void PostNcDestroy() { delete this; };
+	virtual void PostNcDestroy() { delete this; }
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ class CFacialControllerContainerDialog : public CToolbarDialog
 {
 public:
 	enum { IDD = IDD_DATABASE };
-	CFacialControllerContainerDialog() : CToolbarDialog(IDD, 0) {};
+	CFacialControllerContainerDialog() : CToolbarDialog(IDD, 0) {}
 
 	DECLARE_MESSAGE_MAP()
 
@@ -50,7 +50,7 @@ public:
 		//m_wndToolBar.EnableCustomization(FALSE);
 		return res;
 	}
-	virtual void PostNcDestroy() { delete this; };
+	virtual void PostNcDestroy() { delete this; }
 	afx_msg void OnSize(UINT nType, int cx, int cy)
 	{
 		__super::OnSize(nType, cx, cy);
@@ -111,8 +111,12 @@ public:
 	CSmartVariable<Vec3>        mv_rotOffset;
 
 	CFacialAttachmentEffectorUI()
+		: m_pEffector{nullptr}
+		, m_pContext{nullptr}
 	{
 	}
+
+	virtual ~CFacialAttachmentEffectorUI() {}
 	void Attach(CFacialEdContext* pContext, CPropertyCtrl* pPropsCtrl, IFacialEffector* pEffector)
 	{
 		m_pContext = pContext;
@@ -459,8 +463,10 @@ void CEffectorInfoWnd::ReloadCtrls()
 		{
 		case EFE_TYPE_GROUP:
 			nImage = 0;
+			break;
 		case EFE_TYPE_EXPRESSION:
 			nImage = 1;
+			break;
 		case EFE_TYPE_MORPH_TARGET:
 		default:
 			nImage = 2;
@@ -486,7 +492,8 @@ void CEffectorInfoWnd::ReloadCtrls()
 		ci.pCtrl = pCtrl;
 		m_controllers.push_back(ci);
 
-		CXTPTaskPanelGroupItem* pItem = pFolder->AddControlItem(*pSplineCtrl);
+		pFolder->AddControlItem(*pSplineCtrl);
+		//CXTPTaskPanelGroupItem* pItem = pFolder->AddControlItem(*pSplineCtrl);
 		//pItem->GetMargins().SetRect(0,0,0,0);
 
 		pSplineCtrl->MoveWindow(sliderRc);
@@ -633,7 +640,6 @@ void CEffectorInfoWnd::OnSplineChange(UINT nID, NMHDR* pNMHDR, LRESULT* lpResult
 			{
 				if (m_controllers[i].pSplineCtrl == pSlineCtrl)
 				{
-					IFacialEffCtrl* pCtrl = m_controllers[i].pCtrl;
 					m_pContext->SetModified(m_pContext->pSelectedEffector);
 				}
 			}
@@ -811,13 +817,6 @@ void CEffectorInfoWnd::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CEffectorInfoWnd::OnChangeCurrentTime()
-{
-	//	SetWeight( atof(m_pCurrPosCtrl->GetEditText()) );
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEffectorInfoWnd::OnMeasureItemSplines(LPMEASUREITEMSTRUCT pMeasureItem)
 {
 	if (pMeasureItem->CtlID == IDC_SPLINES)
@@ -826,13 +825,3 @@ void CEffectorInfoWnd::OnMeasureItemSplines(LPMEASUREITEMSTRUCT pMeasureItem)
 		pMeasureItem->itemHeight = 100;
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
-void CEffectorInfoWnd::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
-{
-	if (nIDCtl == IDC_SPLINES)
-	{
-
-	}
-}
-

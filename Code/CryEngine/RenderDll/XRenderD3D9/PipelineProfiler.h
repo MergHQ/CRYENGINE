@@ -16,20 +16,26 @@ public:
 	CRenderPipelineProfiler();
 
 	void                   Init();
+	void                   Finish();
+	void                   Display();
+
 	void                   BeginFrame(const int frameID);
 	void                   EndFrame();
+
 	void                   BeginSection(const char* name);
 	void                   EndSection(const char* name);
 
 	uint32                 InsertMultithreadedSection(const char* name);
 	void                   UpdateMultithreadedSection(uint32 index, bool bSectionStart, int numDIPs, int numPolys, bool bIssueTimestamp, CTimeValue deltaTimestamp, CDeviceCommandList* pCommandList);
 	
-	bool                   IsEnabled();
-	void                   SetEnabled(bool enabled)                                        { m_enabled = enabled; }
+	bool                   IsEnabled() const;
+	void                   SetEnabled(bool enabled) { m_enabled = enabled; }
+	void                   SetPaused(bool paused) { if ((m_paused = paused)) m_recordData = false; }
 
 	const RPProfilerStats&                   GetBasicStats(ERenderPipelineProfilerStats stat, int nThreadID) { assert((uint32)stat < RPPSTATS_NUM); return m_basicStats[nThreadID][stat]; }
 	const RPProfilerStats*                   GetBasicStatsArray(int nThreadID)                               { return m_basicStats[nThreadID]; }
 	const DynArray<RPProfilerDetailedStats>* GetDetailedStatsArray(int nThreadID)                            { return &m_detailedStats[nThreadID]; }
+	const SRenderStatistics::SFrameSummary&  GetFrameSummary(int nThreadID)                                  { return m_frameTimings[nThreadID]; }
 
 protected:
 	struct SProfilerSection
@@ -42,9 +48,10 @@ protected:
 		CTimeValue      startTimeCPU, endTimeCPU;
 		uint32          startTimestamp, endTimestamp;
 		CCryNameTSCRC   path;
-		int             numDIPs, numPolys;		
+		int             numDIPs, numPolys;
 		int8            recLevel;   // Negative value means error in stack
 		uint8           flags;
+		uint16          pos;
 	};
 
 	struct SFrameData
@@ -57,13 +64,7 @@ protected:
 		CDeviceTimestampGroup   m_timestampGroup;
 		bool                    m_updated;
 
-		float fTimeRealFrameTime;
-		float fTimeWaitForMain;
-		float fTimeWaitForRender;
-		float fTimeProcessedRT;
-		float fTimeProcessedGPU;
-		float fTimeWaitForGPU;
-		float fTimeGPUIdlePercent;
+		SRenderStatistics::SFrameSummary m_frameTimings;
 
 		// cppcheck-suppress uninitMemberVar
 		SFrameData()
@@ -72,28 +73,6 @@ protected:
 			, m_updated(false)
 		{
 			memset(m_sections, 0, sizeof(m_sections));
-		}
-	};
-
-	struct SThreadTimings
-	{
-		float waitForMain;
-		float waitForRender;
-		float waitForGPU;
-		float gpuIdlePerc;
-		float gpuFrameTime;
-		float frameTime;
-		float renderTime;
-
-		SThreadTimings()
-			: waitForMain(0)
-			, waitForRender(0)
-			, waitForGPU(0)
-			, gpuIdlePerc(0)
-			, gpuFrameTime(33.0f / 1000.0f)
-			, frameTime(33.0f / 1000.0f)
-			, renderTime(0)
-		{
 		}
 	};
 
@@ -123,14 +102,18 @@ protected:
 	void SubtractFromStats(RPProfilerStats& outStats, SProfilerSection& section);
 	void UpdateStats(uint32 frameDataIndex);
 
-	void DisplayOverviewStats(uint32 frameDataIndex);
-	void DisplayDetailedPassStats(uint32 frameDataIndex);
+	void DisplayOverviewStats(uint32 frameDataIndex) const;
+	void DisplayDetailedPassStats(uint32 frameDataIndex) const;
 
 private:
 	SProfilerSection& FindSection(SFrameData& frameData, SProfilerSection& section);
 
 protected:
-	enum { kNumPendingFrames = MAX_FRAMES_IN_FLIGHT };
+	enum { kNumPendingFrames = MAX_FRAMES_IN_FLIGHT 
+		+ 1 /* display is delayed by one frame */ 
+		+ 1 /* timestamp group fence is issued after RT_EndFrame so it's technically part of the next frame */ };
+
+	static_assert(kNumPendingFrames <= MAX_TIMESTAMP_GROUPS, "Not enough reservable Timestamp-Groups available for the PipelineProfiler");
 
 	std::vector<uint32>               m_stack;
 	SFrameData                        m_frameData[kNumPendingFrames];
@@ -139,11 +122,13 @@ protected:
 	SFrameData*                       m_frameDataLRU;
 	float                             m_avgFrameTime;
 	bool                              m_enabled;
+	bool                              m_paused;
 	bool                              m_recordData;
 
 	RPProfilerStats                   m_basicStats[RT_COMMAND_BUF_COUNT][RPPSTATS_NUM];
 	DynArray<RPProfilerDetailedStats> m_detailedStats[RT_COMMAND_BUF_COUNT];
-	SThreadTimings                    m_frameTimings[RT_COMMAND_BUF_COUNT];
+	SRenderStatistics::SFrameSummary  m_frameTimings[RT_COMMAND_BUF_COUNT],
+	                                  m_frameTimingsSmoothed;
 
 	// we take a snapshot every now and then and store it in here to prevent the text from jumping too much
 	std::multimap<CCryNameTSCRC, SStaticElementInfo> m_staticNameList;

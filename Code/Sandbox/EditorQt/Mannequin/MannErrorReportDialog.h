@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __mannerrorreportdialog_h__
-#define __mannerrorreportdialog_h__
 #pragma once
 
 #include "MannequinBase.h"
@@ -139,6 +137,3 @@ protected:
 
 	SMannequinContexts*           m_contexts;
 };
-
-#endif // __mannerrorreportdialog_h__
-

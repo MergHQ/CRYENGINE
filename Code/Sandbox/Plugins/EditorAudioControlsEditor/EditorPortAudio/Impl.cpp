@@ -7,10 +7,16 @@
 #include "EventConnection.h"
 #include "ProjectLoader.h"
 #include "DataPanel.h"
+#include "Utils.h"
 
+#include <QtUtil.h>
 #include <CryAudioImplPortAudio/GlobalData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/StlUtils.h>
+#include <CrySystem/XML/IXml.h>
+#include <DragDrop.h>
+
+#include <QDirIterator>
 
 namespace ACE
 {
@@ -18,45 +24,81 @@ namespace Impl
 {
 namespace PortAudio
 {
+constexpr uint32 g_itemPoolSize = 2048;
+constexpr uint32 g_eventConnectionPoolSize = 2048;
+
 //////////////////////////////////////////////////////////////////////////
-string GetPath(CItem const* const pItem)
+bool HasDirValidData(QDir const& dir)
 {
-	string path;
-	IItem const* pParent = pItem->GetParent();
+	bool hasValidData = false;
 
-	while (pParent != nullptr)
+	if (dir.exists())
 	{
-		string const parentName = pParent->GetName();
+		QDirIterator itFiles(dir.path(), (QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot));
 
-		if (!parentName.empty())
+		while (itFiles.hasNext())
 		{
-			if (path.empty())
+			QFileInfo const& fileInfo(itFiles.next());
+
+			if (fileInfo.isFile())
 			{
-				path = parentName;
-			}
-			else
-			{
-				path = parentName + "/" + path;
+				hasValidData = true;
+				break;
 			}
 		}
 
-		pParent = pParent->GetParent();
+		if (!hasValidData)
+		{
+			QDirIterator itDirs(dir.path(), (QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot));
+
+			while (itDirs.hasNext())
+			{
+				QDir const& folder(itDirs.next());
+
+				if (HasDirValidData(folder))
+				{
+					hasValidData = true;
+					break;
+				}
+			}
+		}
 	}
 
-	return path;
+	return hasValidData;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos& fileImportInfos)
+{
+	if (dir.exists())
+	{
+		QString const parentFolderName = (folderName.isEmpty() ? (dir.dirName() + "/") : (folderName + dir.dirName() + "/"));
+
+		for (auto const& fileInfo : dir.entryInfoList(QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot))
+		{
+			if (fileInfo.isFile())
+			{
+				fileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive), parentFolderName);
+			}
+		}
+
+		for (auto const& fileInfo : dir.entryInfoList(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot))
+		{
+			QDir const& folder(fileInfo.absoluteFilePath());
+			GetFilesFromDir(folder, parentFolderName, fileImportInfos);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
-	, m_assetAndProjectPath(AUDIO_SYSTEM_DATA_ROOT "/" +
-	                        string(CryAudio::Impl::PortAudio::s_szImplFolderName) +
+	, m_assetAndProjectPath(CRY_AUDIO_DATA_ROOT "/" +
+	                        string(CryAudio::Impl::PortAudio::g_szImplFolderName) +
 	                        "/" +
-	                        string(CryAudio::s_szAssetsFolderName))
+	                        string(CryAudio::g_szAssetsFolderName))
+	, m_localizedAssetsPath(m_assetAndProjectPath)
 {
-	gEnv->pAudioSystem->GetImplInfo(m_implInfo);
-	m_implName = m_implInfo.name.c_str();
-	m_implFolderName = CryAudio::Impl::PortAudio::s_szImplFolderName;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -64,6 +106,27 @@ CImpl::~CImpl()
 {
 	Clear();
 	DestroyDataPanel();
+
+	CItem::FreeMemoryPool();
+	CEventConnection::FreeMemoryPool();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::Initialize(
+	SImplInfo& implInfo,
+	ExtensionFilterVector& extensionFilters,
+	QStringList& supportedFileTypes)
+{
+	CItem::CreateAllocator(g_itemPoolSize);
+	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
+
+	CryAudio::SImplInfo systemImplInfo;
+	gEnv->pAudioSystem->GetImplInfo(systemImplInfo);
+	m_implName = systemImplInfo.name.c_str();
+
+	SetImplInfo(implInfo);
+	extensionFilters = s_extensionFilters;
+	supportedFileTypes = s_supportedFileTypes;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -84,32 +147,29 @@ void CImpl::DestroyDataPanel()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::Reload(bool const preserveConnectionStatus)
+void CImpl::Reload(SImplInfo& implInfo)
 {
 	Clear();
+	SetImplInfo(implInfo);
 
-	CProjectLoader(m_assetAndProjectPath, m_rootItem);
+	CProjectLoader(m_assetAndProjectPath, m_localizedAssetsPath, m_rootItem, m_itemCache, *this);
 
-	CreateItemCache(&m_rootItem);
-
-	if (preserveConnectionStatus)
+	for (auto const& connection : m_connectionsByID)
 	{
-		for (auto const& connection : m_connectionsByID)
+		if (connection.second > 0)
 		{
-			if (connection.second > 0)
-			{
-				auto const pItem = static_cast<CItem* const>(GetItem(connection.first));
+			auto const pItem = static_cast<CItem* const>(GetItem(connection.first));
 
-				if (pItem != nullptr)
-				{
-					pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-				}
+			if (pItem != nullptr)
+			{
+				pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
 			}
 		}
 	}
-	else
+
+	if (m_pDataPanel != nullptr)
 	{
-		m_connectionsByID.clear();
+		m_pDataPanel->Reset();
 	}
 }
 
@@ -130,7 +190,7 @@ IItem* CImpl::GetItem(ControlId const id) const
 CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 {
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer during %s", __FUNCTION__);
 	return GetTypeIcon(pItem->GetType());
 }
 
@@ -138,42 +198,19 @@ CryIcon const& CImpl::GetItemIcon(IItem const* const pIItem) const
 QString const& CImpl::GetItemTypeName(IItem const* const pIItem) const
 {
 	auto const pItem = static_cast<CItem const* const>(pIItem);
-	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer.");
+	CRY_ASSERT_MESSAGE(pItem != nullptr, "Impl item is null pointer during %s", __FUNCTION__);
 	return TypeToString(pItem->GetType());
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CImpl::IsSystemTypeSupported(EAssetType const assetType) const
-{
-	bool isSupported = false;
-
-	switch (assetType)
-	{
-	case EAssetType::Trigger:
-	case EAssetType::Folder:
-	case EAssetType::Library:
-		isSupported = true;
-		break;
-	default:
-		isSupported = false;
-		break;
-	}
-
-	return isSupported;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const
 {
 	bool isCompatible = false;
-	auto const pItem = static_cast<CItem const* const>(pIItem);
 
-	if (pItem != nullptr)
+	if (assetType == EAssetType::Trigger)
 	{
-		if (assetType == EAssetType::Trigger)
-		{
-			isCompatible = (pItem->GetType() == EItemType::Event);
-		}
+		auto const pItem = static_cast<CItem const* const>(pIItem);
+		isCompatible = (pItem->GetType() == EItemType::Event);
 	}
 
 	return isCompatible;
@@ -185,16 +222,15 @@ EAssetType CImpl::ImplTypeToAssetType(IItem const* const pIItem) const
 	EAssetType assetType = EAssetType::None;
 	auto const pItem = static_cast<CItem const* const>(pIItem);
 
-	if (pItem != nullptr)
+	switch (pItem->GetType())
 	{
-		EItemType const implType = pItem->GetType();
-
-		switch (implType)
+	case EItemType::Event:
 		{
-		case EItemType::Event:
 			assetType = EAssetType::Trigger;
 			break;
-		default:
+		}
+	default:
+		{
 			assetType = EAssetType::None;
 			break;
 		}
@@ -204,154 +240,179 @@ EAssetType CImpl::ImplTypeToAssetType(IItem const* const pIItem) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CImpl::CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem)
+IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem)
 {
-	ConnectionPtr pConnection = nullptr;
-
-	if (pIItem != nullptr)
-	{
-		pConnection = std::make_shared<CEventConnection>(pIItem->GetId());
-	}
-
-	return pConnection;
+	return static_cast<IConnection*>(new CEventConnection(pIItem->GetId()));
 }
 
 //////////////////////////////////////////////////////////////////////////
-ConnectionPtr CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType)
+IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType)
 {
-	ConnectionPtr pConnectionPtr = nullptr;
+	IConnection* pIConnection = nullptr;
 
-	if (pNode != nullptr)
+	if (node.isValid())
 	{
-		char const* const szTag = pNode->getTag();
+		char const* const szTag = node->getTag();
 
-		if ((_stricmp(szTag, CryAudio::s_szEventTag) == 0) ||
-		    (_stricmp(szTag, CryAudio::Impl::PortAudio::s_szFileTag) == 0) ||
+		if ((_stricmp(szTag, CryAudio::Impl::PortAudio::g_szEventTag) == 0) ||
+		    (_stricmp(szTag, CryAudio::Impl::PortAudio::g_szSampleTag) == 0) ||
 		    (_stricmp(szTag, "PortAudioEvent") == 0) || // Backwards compatibility.
 		    (_stricmp(szTag, "PortAudioSample") == 0))  // Backwards compatibility.
 		{
-			string name = pNode->getAttr(CryAudio::s_szNameAttribute);
-			string path = pNode->getAttr(CryAudio::Impl::PortAudio::s_szPathAttribute);
-			// Backwards compatibility will be removed before March 2019.
+			string name = node->getAttr(CryAudio::g_szNameAttribute);
+			string path = node->getAttr(CryAudio::Impl::PortAudio::g_szPathAttribute);
+			// Backwards compatibility will be removed with CE 5.7.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-			if (name.IsEmpty() && pNode->haveAttr("portaudio_name"))
+			if (name.IsEmpty() && node->haveAttr("portaudio_name"))
 			{
-				name = pNode->getAttr("portaudio_name");
+				name = node->getAttr("portaudio_name");
 			}
 
-			if (path.IsEmpty() && pNode->haveAttr("portaudio_path"))
+			if (path.IsEmpty() && node->haveAttr("portaudio_path"))
 			{
-				path = pNode->getAttr("portaudio_path");
+				path = node->getAttr("portaudio_path");
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
-			ControlId id;
-
-			if (path.empty())
-			{
-				id = GetId(name);
-			}
-			else
-			{
-				id = GetId(path + "/" + name);
-			}
+			string const localizedAttribute = node->getAttr(CryAudio::Impl::PortAudio::g_szLocalizedAttribute);
+			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::PortAudio::g_szTrueValue) == 0);
+			ControlId const id = Utils::GetId(EItemType::Event, name, path, isLocalized);
 
 			auto pItem = static_cast<CItem*>(GetItem(id));
 
 			if (pItem == nullptr)
 			{
-				pItem = new CItem(name, id, EItemType::Event, EItemFlags::IsPlaceHolder);
+				EItemFlags const flags = (isLocalized ? (EItemFlags::IsPlaceHolder | EItemFlags::IsLocalized) : EItemFlags::IsPlaceHolder);
+				pItem = new CItem(name, id, EItemType::Event, path, flags);
 				m_itemCache[id] = pItem;
 			}
 
 			if (pItem != nullptr)
 			{
-				auto const pConnection = std::make_shared<CEventConnection>(pItem->GetId());
-				string actionType = pNode->getAttr(CryAudio::s_szTypeAttribute);
+				auto const pEventConnection = new CEventConnection(pItem->GetId());
+				string actionType = node->getAttr(CryAudio::g_szTypeAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-				if (actionType.IsEmpty() && pNode->haveAttr("event_type"))
+				if (actionType.IsEmpty() && node->haveAttr("event_type"))
 				{
-					actionType = pNode->getAttr("event_type");
+					actionType = node->getAttr("event_type");
 				}
 #endif        // USE_BACKWARDS_COMPATIBILITY
-				pConnection->m_actionType = actionType.compareNoCase(CryAudio::Impl::PortAudio::s_szStopValue) == 0 ? CEventConnection::EActionType::Stop : CEventConnection::EActionType::Start;
+				pEventConnection->SetActionType(actionType.compareNoCase(CryAudio::Impl::PortAudio::g_szStopValue) == 0 ? CEventConnection::EActionType::Stop : CEventConnection::EActionType::Start);
 
 				int loopCount = 0;
-				pNode->getAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, loopCount);
+				node->getAttr(CryAudio::Impl::PortAudio::g_szLoopCountAttribute, loopCount);
 				loopCount = std::max(0, loopCount);
-				pConnection->m_loopCount = static_cast<uint32>(loopCount);
+				pEventConnection->SetLoopCount(static_cast<uint32>(loopCount));
 
-				if (pConnection->m_loopCount == 0)
+				if (pEventConnection->GetLoopCount() == 0)
 				{
-					pConnection->m_isInfiniteLoop = true;
+					pEventConnection->SetInfiniteLoop(true);
 				}
 
-				pConnectionPtr = pConnection;
+				pIConnection = static_cast<IConnection*>(pEventConnection);
 			}
 		}
 	}
 
-	return pConnectionPtr;
+	return pIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::CreateXMLNodeFromConnection(ConnectionPtr const pConnection, EAssetType const assetType)
+XmlNodeRef CImpl::CreateXMLNodeFromConnection(
+	IConnection const* const pIConnection,
+	EAssetType const assetType,
+	CryAudio::ContextId const contextId)
 {
-	XmlNodeRef pNode = nullptr;
+	XmlNodeRef node;
 
-	std::shared_ptr<CEventConnection const> const pImplConnection = std::static_pointer_cast<CEventConnection const>(pConnection);
-	auto const pItem = static_cast<CItem const* const>(GetItem(pConnection->GetID()));
+	auto const pEventConnection = static_cast<CEventConnection const*>(pIConnection);
+	auto const pItem = static_cast<CItem const*>(GetItem(pIConnection->GetID()));
 
-	if ((pItem != nullptr) && (pImplConnection != nullptr) && (assetType == EAssetType::Trigger))
+	if ((pItem != nullptr) && (pEventConnection != nullptr) && (assetType == EAssetType::Trigger))
 	{
-		pNode = GetISystem()->CreateXmlNode(CryAudio::s_szEventTag);
-		pNode->setAttr(CryAudio::s_szNameAttribute, pItem->GetName());
+		node = GetISystem()->CreateXmlNode(CryAudio::Impl::PortAudio::g_szEventTag);
+		node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
-		string const path = GetPath(pItem);
-		pNode->setAttr(CryAudio::Impl::PortAudio::s_szPathAttribute, path);
+		string const& path = pItem->GetPath();
 
-		if (pImplConnection->m_actionType == CEventConnection::EActionType::Start)
+		if (!path.IsEmpty())
 		{
-			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStartValue);
+			node->setAttr(CryAudio::Impl::PortAudio::g_szPathAttribute, path.c_str());
+		}
 
-			if (pImplConnection->m_isInfiniteLoop)
+		if (pEventConnection->GetActionType() == CEventConnection::EActionType::Start)
+		{
+			node->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStartValue);
+
+			if (pEventConnection->IsInfiniteLoop())
 			{
-				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, 0);
+				node->setAttr(CryAudio::Impl::PortAudio::g_szLoopCountAttribute, 0);
 			}
 			else
 			{
-				pNode->setAttr(CryAudio::Impl::PortAudio::s_szLoopCountAttribute, pImplConnection->m_loopCount);
+				node->setAttr(CryAudio::Impl::PortAudio::g_szLoopCountAttribute, pEventConnection->GetLoopCount());
 			}
 		}
 		else
 		{
-			pNode->setAttr(CryAudio::s_szTypeAttribute, CryAudio::Impl::PortAudio::s_szStopValue);
+			node->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStopValue);
 		}
+
+		if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
+		{
+			node->setAttr(CryAudio::Impl::PortAudio::g_szLocalizedAttribute, CryAudio::Impl::PortAudio::g_szTrueValue);
+		}
+
+		++g_connections[contextId];
 	}
 
-	return pNode;
+	return node;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::EnableConnection(ConnectionPtr const pConnection, bool const isLoading)
+XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const contextId)
 {
-	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
+	XmlNodeRef node;
+
+	if (g_connections.find(contextId) != g_connections.end())
+	{
+		if (g_connections[contextId] > 0)
+		{
+			node = GetISystem()->CreateXmlNode(szTag);
+			node->setAttr(CryAudio::Impl::PortAudio::g_szEventsAttribute, g_connections[contextId]);
+		}
+	}
+
+	return node;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeWriteLibrary()
+{
+	g_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterWriteLibrary()
+{
+	g_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::EnableConnection(IConnection const* const pIConnection, bool const isLoading)
+{
+	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
 	if (pItem != nullptr)
 	{
 		++m_connectionsByID[pItem->GetId()];
 		pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsConnected);
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionAdded();
-		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DisableConnection(ConnectionPtr const pConnection, bool const isLoading)
+void CImpl::DisableConnection(IConnection const* const pIConnection, bool const isLoading)
 {
-	auto const pItem = static_cast<CItem* const>(GetItem(pConnection->GetID()));
+	auto const pItem = static_cast<CItem*>(GetItem(pIConnection->GetID()));
 
 	if (pItem != nullptr)
 	{
@@ -359,35 +420,36 @@ void CImpl::DisableConnection(ConnectionPtr const pConnection, bool const isLoad
 
 		if (connectionCount < 1)
 		{
-			CRY_ASSERT_MESSAGE(connectionCount >= 0, "Connection count is < 0");
+			CRY_ASSERT_MESSAGE(connectionCount >= 0, "Connection count is < 0 during %s", __FUNCTION__);
 			connectionCount = 0;
 			pItem->SetFlags(pItem->GetFlags() & ~EItemFlags::IsConnected);
 		}
 
 		m_connectionsByID[pItem->GetId()] = connectionCount;
-
-		if ((m_pDataPanel != nullptr) && !isLoading)
-		{
-			m_pDataPanel->OnConnectionRemoved();
-		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnAboutToReload()
+void CImpl::DestructConnection(IConnection const* const pIConnection)
+{
+	delete pIConnection;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeReload()
 {
 	if (m_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnAboutToReload();
+		m_pDataPanel->OnBeforeReload();
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnReloaded()
+void CImpl::OnAfterReload()
 {
 	if (m_pDataPanel != nullptr)
 	{
-		m_pDataPanel->OnReloaded();
+		m_pDataPanel->OnAfterReload();
 	}
 }
 
@@ -419,6 +481,84 @@ void CImpl::OnFileImporterClosed()
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CImpl::CanDropExternalData(QMimeData const* const pData) const
+{
+	bool hasValidData = false;
+	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
+
+	if (pDragDropData->HasFilePaths())
+	{
+		QStringList& allFiles = pDragDropData->GetFilePaths();
+
+		for (auto const& filePath : allFiles)
+		{
+			QFileInfo const& fileInfo(filePath);
+
+			if (fileInfo.isFile() && s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive))
+			{
+				hasValidData = true;
+				break;
+			}
+		}
+
+		if (!hasValidData)
+		{
+			for (auto const& filePath : allFiles)
+			{
+				QDir const& folder(filePath);
+
+				if (HasDirValidData(folder))
+				{
+					hasValidData = true;
+					break;
+				}
+			}
+		}
+	}
+
+	return hasValidData;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CImpl::DropExternalData(QMimeData const* const pData, FileImportInfos& fileImportInfos) const
+{
+	CRY_ASSERT_MESSAGE(fileImportInfos.empty(), "Passed container must be empty during %s", __FUNCTION__);
+
+	if (CanDropExternalData(pData))
+	{
+		CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
+
+		if (pDragDropData->HasFilePaths())
+		{
+			QStringList const& allFiles = pDragDropData->GetFilePaths();
+
+			for (auto const& filePath : allFiles)
+			{
+				QFileInfo const& fileInfo(filePath);
+
+				if (fileInfo.isFile())
+				{
+					fileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive));
+				}
+				else
+				{
+					QDir const& folder(filePath);
+					GetFilesFromDir(folder, "", fileImportInfos);
+				}
+			}
+		}
+	}
+
+	return !fileImportInfos.empty();
+}
+
+//////////////////////////////////////////////////////////////////////////
+ControlId CImpl::GenerateItemId(QString const& name, QString const& path, bool const isLocalized)
+{
+	return Utils::GetId(EItemType::Event, QtUtil::ToString(name), QtUtil::ToString(path), isLocalized);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::Clear()
 {
 	for (auto const& itemPair : m_itemCache)
@@ -431,29 +571,40 @@ void CImpl::Clear()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::CreateItemCache(CItem const* const pParent)
+void CImpl::SetImplInfo(SImplInfo& implInfo)
 {
-	if (pParent != nullptr)
-	{
-		size_t const numChildren = pParent->GetNumChildren();
+	SetLocalizedAssetsPath();
 
-		for (size_t i = 0; i < numChildren; ++i)
-		{
-			auto const pChild = static_cast<CItem* const>(pParent->GetChildAt(i));
-
-			if (pChild != nullptr)
-			{
-				m_itemCache[pChild->GetId()] = pChild;
-				CreateItemCache(pChild);
-			}
-		}
-	}
+	implInfo.name = m_implName.c_str();
+	implInfo.folderName = CryAudio::Impl::PortAudio::g_szImplFolderName;
+	implInfo.projectPath = m_assetAndProjectPath.c_str();
+	implInfo.assetsPath = m_assetAndProjectPath.c_str();
+	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
+	implInfo.flags = (
+		EImplInfoFlags::SupportsFileImport |
+		EImplInfoFlags::SupportsTriggers);
 }
 
 //////////////////////////////////////////////////////////////////////////
-ControlId CImpl::GetId(string const& name) const
+void CImpl::SetLocalizedAssetsPath()
 {
-	return CryAudio::StringToId(name);
+	if (ICVar const* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
+	{
+		char const* const szLanguage = pCVar->GetString();
+
+		if (szLanguage != nullptr)
+		{
+			m_localizedAssetsPath = PathUtil::GetLocalizationFolder().c_str();
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += szLanguage;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CRY_AUDIO_DATA_ROOT;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::Impl::PortAudio::g_szImplFolderName;
+			m_localizedAssetsPath += "/";
+			m_localizedAssetsPath += CryAudio::g_szAssetsFolderName;
+		}
+	}
 }
 } // namespace PortAudio
 } // namespace Impl

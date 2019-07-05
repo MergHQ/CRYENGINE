@@ -1,14 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File: SystemCFG.cpp
-//  Description: handles system cfg
-//
-//	History:
-//	-Jan 21,2004: created
-//
-//////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "System.h"
 #include <time.h>
@@ -22,6 +13,7 @@
 	#include <CrySystem/ILog.h>
 
 #endif
+#include "CmdLine.h"
 
 #ifndef EXE_VERSION_INFO_0
 	#define EXE_VERSION_INFO_0 1
@@ -80,9 +72,9 @@ void CSystem::SetVersionInfo(const char* const szVersion)
 	m_productVersion.Set(szVersion);
 	m_buildVersion.Set(szVersion);
 	CryLog("SetVersionInfo '%s'", szVersion);
-	CryLog("FileVersion: %d.%d.%d.%d", m_fileVersion.v[3], m_fileVersion.v[2], m_fileVersion.v[1], m_fileVersion.v[0]);
-	CryLog("ProductVersion: %d.%d.%d.%d", m_productVersion.v[3], m_productVersion.v[2], m_productVersion.v[1], m_productVersion.v[0]);
-	CryLog("BuildVersion: %d.%d.%d.%d", m_buildVersion.v[3], m_buildVersion.v[2], m_buildVersion.v[1], m_buildVersion.v[0]);
+	CryLog("FileVersion: %s", m_fileVersion.ToString().c_str());
+	CryLog("ProductVersion: %s", m_productVersion.ToString().c_str());
+	CryLog("BuildVersion: %s", m_buildVersion.ToString().c_str());
 #endif
 }
 
@@ -91,10 +83,10 @@ void CSystem::QueryVersionInfo()
 {
 #if !CRY_PLATFORM_WINDOWS
 	//do we need some other values here?
-	m_fileVersion.v[0] = m_productVersion.v[0] = EXE_VERSION_INFO_3;
-	m_fileVersion.v[1] = m_productVersion.v[1] = EXE_VERSION_INFO_2;
-	m_fileVersion.v[2] = m_productVersion.v[2] = EXE_VERSION_INFO_1;
-	m_fileVersion.v[3] = m_productVersion.v[3] = EXE_VERSION_INFO_0;
+	m_fileVersion[0] = m_productVersion[0] = EXE_VERSION_INFO_3;
+	m_fileVersion[1] = m_productVersion[1] = EXE_VERSION_INFO_2;
+	m_fileVersion[2] = m_productVersion[2] = EXE_VERSION_INFO_1;
+	m_fileVersion[3] = m_productVersion[3] = EXE_VERSION_INFO_0;
 	m_buildVersion = m_fileVersion;
 #else
 	char moduleName[_MAX_PATH];
@@ -107,9 +99,9 @@ void CSystem::QueryVersionInfo()
 
 	#ifdef _LIB
 	GetModuleFileName(NULL, moduleName, _MAX_PATH);  //retrieves the PATH for the current module
-	#else                                    //_LIB
+	#else //_LIB
 	cry_strcpy(moduleName, "CrySystem.dll"); // we want to version from the system dll
-	#endif                                   //_LIB
+	#endif //_LIB
 
 	int verSize = GetFileVersionInfoSize(moduleName, &dwHandle);
 	if (verSize > 0)
@@ -118,11 +110,10 @@ void CSystem::QueryVersionInfo()
 		VS_FIXEDFILEINFO* vinfo;
 		VerQueryValue(ver, "\\", (void**)&vinfo, &len);
 
-		const uint32 verIndices[4] = { 0, 1, 2, 3 };
-		m_fileVersion.v[verIndices[0]] = m_productVersion.v[verIndices[0]] = vinfo->dwFileVersionLS & 0xFFFF;
-		m_fileVersion.v[verIndices[1]] = m_productVersion.v[verIndices[1]] = vinfo->dwFileVersionLS >> 16;
-		m_fileVersion.v[verIndices[2]] = m_productVersion.v[verIndices[2]] = vinfo->dwFileVersionMS & 0xFFFF;
-		m_fileVersion.v[verIndices[3]] = m_productVersion.v[verIndices[3]] = vinfo->dwFileVersionMS >> 16;
+		m_fileVersion[0] = m_productVersion[0] = vinfo->dwFileVersionLS & 0xFFFF;
+		m_fileVersion[1] = m_productVersion[1] = vinfo->dwFileVersionLS >> 16;
+		m_fileVersion[2] = m_productVersion[2] = vinfo->dwFileVersionMS & 0xFFFF;
+		m_fileVersion[3] = m_productVersion[3] = vinfo->dwFileVersionMS >> 16;
 		m_buildVersion = m_fileVersion;
 
 		struct LANGANDCODEPAGE
@@ -161,9 +152,10 @@ void CSystem::LogVersion()
 
 	strftime(s, 128, "%d %b %y (%H %M %S)", today);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const SFileVersion& ver = GetFileVersion();
-
-	CryLogAlways("BackupNameAttachment=\" Build(%d) %s\"  -- used by backup system\n", ver.v[0], s);      // read by CreateBackupFile()
+	CryLogAlways("BackupNameAttachment=\" Build(%d) %s\"  -- used by backup system\n", ver[0], s);      // read by CreateBackupFile()
+#endif
 
 	// Use strftime to build a customized time string.
 	strftime(s, 128, "Log Started at %c", today);
@@ -176,17 +168,13 @@ void CSystem::LogVersion()
 #elif CRY_PLATFORM_ORBIS
 	CryLogAlways("Running 64 bit Orbis version SDK VER:0x%08X", SCE_ORBIS_SDK_VERSION);
 #elif CRY_PLATFORM_ANDROID
-	CryLogAlways("Running 32 bit Android version API VER:%d", __ANDROID_API__);
+	CryLogAlways("Running 64 bit Android version API VER:%d", __ANDROID_API__);
 #elif CRY_PLATFORM_IOS
 	CryLogAlways("Running 64 bit iOS version");
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#elif CRY_PLATFORM_WINDOWS
 	CryLogAlways("Running 64 bit Windows version");
-#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-	CryLogAlways("Running 32 bit Windows version");
-#elif (CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT)
+#elif CRY_PLATFORM_LINUX
 	CryLogAlways("Running 64 bit Linux version");
-#elif (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT)
-	CryLogAlways("Running 32 bit Linux version");
 #elif CRY_PLATFORM_MAC
 	CryLogAlways("Running 64 bit Mac version");
 #endif
@@ -196,8 +184,8 @@ void CSystem::LogVersion()
 	CryLogAlways("Executable: %s", s);
 #endif
 
-	CryLogAlways("FileVersion: %d.%d.%d.%d", m_fileVersion.v[3], m_fileVersion.v[2], m_fileVersion.v[1], m_fileVersion.v[0]);
-	CryLogAlways("ProductVersion: %d.%d.%d.%d", m_productVersion.v[3], m_productVersion.v[2], m_productVersion.v[1], m_productVersion.v[0]);
+	CryLogAlways("FileVersion: %d.%d.%d.%d", m_fileVersion[3], m_fileVersion[2], m_fileVersion[1], m_fileVersion[0]);
+	CryLogAlways("ProductVersion: %d.%d.%d.%d", m_productVersion[3], m_productVersion[2], m_productVersion[1], m_productVersion[0]);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -252,7 +240,7 @@ public:
 
 			string szLine = pCVar->GetName();
 
-			if (pCVar->GetType() == CVAR_STRING)
+			if (pCVar->GetType() == ECVarType::String)
 				szLine += " = \"" + szValue + "\"\r\n";
 			else
 				szLine += " = " + szValue + "\r\n";
@@ -277,8 +265,8 @@ void CSystem::SaveConfiguration()
 //////////////////////////////////////////////////////////////////////////
 // system cfg
 //////////////////////////////////////////////////////////////////////////
-CSystemConfiguration::CSystemConfiguration(const string& strSysConfigFilePath, CSystem* pSystem, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType)
-	: m_strSysConfigFilePath(strSysConfigFilePath), m_bError(false), m_pSink(pSink), m_configType(configType)
+CSystemConfiguration::CSystemConfiguration(const string& strSysConfigFilePath, CSystem* pSystem, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType, ELoadConfigurationFlags flags)
+	: m_strSysConfigFilePath(strSysConfigFilePath), m_bError(false), m_pSink(pSink), m_configType(configType), m_flags(flags)
 {
 	assert(pSink);
 
@@ -354,6 +342,12 @@ bool CSystemConfiguration::OpenFile(const string& filename, CCryFile& file, int 
 		return true;
 	}
 
+	// Next Search in engine folder.
+	if (file.Open(string("%ENGINEROOT%/Engine/") + filename, "rb", flags))
+	{
+		return true;
+	}
+
 	// Next Search in engine config subfolder, in case loosely stored on drive
 	if (file.Open(string("%ENGINEROOT%/Engine/config/") + filename, "rb", flags))
 	{
@@ -381,7 +375,10 @@ bool CSystemConfiguration::ParseSystemConfig()
 
 		if (!OpenFile(filename, file, flags))
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Config file %s not found!", filename.c_str());
+			if (ELoadConfigurationFlags::None == (m_flags & ELoadConfigurationFlags::SuppressConfigNotFoundWarning))
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Config file %s not found!", filename.c_str());
+			}
 			return false;
 		}
 		filenameLog = file.GetAdjustedFilename();
@@ -511,7 +508,7 @@ void CSystem::OnLoadConfigurationEntry(const char* szKey, const char* szValue, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType)
+void CSystem::LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySink* pSink, ELoadConfigurationType configType, ELoadConfigurationFlags flags)
 {
 	ELoadConfigurationType lastType = m_env.pConsole->SetCurrentConfigType(configType);
 
@@ -520,7 +517,7 @@ void CSystem::LoadConfiguration(const char* sFilename, ILoadConfigurationEntrySi
 		if (!pSink)
 			pSink = this;
 
-		CSystemConfiguration tempConfig(sFilename, this, pSink, configType);
+		CSystemConfiguration tempConfig(sFilename, this, pSink, configType, flags);
 	}
 	m_env.pConsole->SetCurrentConfigType(lastType);
 }

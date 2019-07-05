@@ -9,10 +9,10 @@
 struct IUndoObject
 {
 	// Virtual destructor.
-	virtual ~IUndoObject() {};
+	virtual ~IUndoObject() {}
 
 	//! Called to delete undo object.
-	virtual void        Release() { delete this; };
+	virtual void Release() { delete this; }
 
 	//! Return description of this Undo object.
 	virtual const char* GetDescription() = 0;
@@ -25,7 +25,7 @@ struct IUndoObject
 	virtual void Redo() = 0;
 
 	// Returns the name of undo object
-	virtual const char* GetObjectName() { return 0; };
+	virtual const char* GetObjectName() { return 0; }
 };
 
 //! Undo utility class.
@@ -34,7 +34,7 @@ class CUndo
 public:
 	CUndo(const char* description) : m_bCancelled(false)
 	{
-		if (!IsRecording())
+		if (!IsRecording() && !IsSuspended())
 		{
 			GetIEditor()->GetIUndoManager()->Begin();
 			m_description = description;
@@ -44,7 +44,7 @@ public:
 		{
 			m_bStartedRecord = false;
 		}
-	};
+	}
 
 	~CUndo()
 	{
@@ -55,7 +55,7 @@ public:
 			else
 				GetIEditor()->GetIUndoManager()->Accept(m_description);
 		}
-	};
+	}
 
 	void Cancel()
 	{
@@ -63,16 +63,16 @@ public:
 	}
 
 	//! Check if undo is recording.
-	static bool IsRecording() { return GetIEditor()->GetIUndoManager()->IsUndoRecording(); };
+	static bool IsRecording()             { return GetIEditor()->GetIUndoManager()->IsUndoRecording(); }
 	//! Check if undo is suspended.
-	static bool IsSuspended() { return GetIEditor()->GetIUndoManager()->IsUndoSuspended(); };
+	static bool IsSuspended()             { return GetIEditor()->GetIUndoManager()->IsUndoSuspended(); }
 	//! Record specified object.
-	static void Record(IUndoObject* undo) { return GetIEditor()->GetIUndoManager()->RecordUndo(undo); };
+	static void Record(IUndoObject* undo) { return GetIEditor()->GetIUndoManager()->RecordUndo(undo); }
 
 private:
 	string m_description;
-	bool    m_bCancelled;
-	bool    m_bStartedRecord;
+	bool   m_bCancelled;
+	bool   m_bStartedRecord;
 };
 
 class CScopedSuspendUndo
@@ -81,6 +81,3 @@ public:
 	CScopedSuspendUndo() { GetIEditor()->GetIUndoManager()->Suspend(); }
 	~CScopedSuspendUndo() { GetIEditor()->GetIUndoManager()->Resume(); }
 };
-
-
-

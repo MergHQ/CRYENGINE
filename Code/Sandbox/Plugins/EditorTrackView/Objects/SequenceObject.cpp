@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 
 #include "SequenceObject.h"
@@ -33,7 +30,7 @@ bool CSequenceObject::Init(CBaseObject* pPrev, const string& file)
 		return false;
 	}
 
-	SetColor(RGB(127, 127, 255));
+	SetColor(ColorB(127, 127, 255));
 
 	if (!file.IsEmpty())
 	{
@@ -64,7 +61,7 @@ bool CSequenceObject::CreateGameObject()
 
 void CSequenceObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	assert(m_pSequence);
 
 	CTrackViewPlugin::GetSequenceManager()->OnDeleteSequenceObject(GetName().GetString());
@@ -115,7 +112,7 @@ void CSequenceObject::GetLocalBounds(AABB& box)
 
 void CSequenceObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	DrawDefault(dc);
 }
 
@@ -124,8 +121,7 @@ void CSequenceObject::Serialize(CObjectArchive& ar)
 	CBaseObject::Serialize(ar);
 
 	// Sequence Undo/Redo is not handled by serialization. See TrackViewUndo.cpp
-	const IUndoManager* pUndoManager = GetIEditor()->GetIUndoManager();
-	if (pUndoManager->IsUndoTransaction() || pUndoManager->IsUndoRecording())
+	if(ar.bUndo)
 	{
 		return;
 	}
@@ -172,7 +168,7 @@ void CSequenceObject::PostLoad(CObjectArchive& ar)
 	if (m_pSequence != NULL && sequenceNode != NULL)
 	{
 		m_pSequence->Serialize(sequenceNode, true, true, m_sequenceId, ar.bUndo);
-		CTrackViewSequence* pTrackViewSequence = CTrackViewPlugin::GetSequenceManager()->GetSequenceByName(m_pSequence->GetName());
+		CTrackViewSequence* pTrackViewSequence = CTrackViewPlugin::GetSequenceManager()->GetSequenceByGUID(m_pSequence->GetGUID());
 
 		if (pTrackViewSequence)
 		{
@@ -180,4 +176,3 @@ void CSequenceObject::PostLoad(CObjectArchive& ar)
 		}
 	}
 }
-

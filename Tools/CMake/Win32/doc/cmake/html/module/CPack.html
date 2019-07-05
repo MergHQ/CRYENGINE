@@ -1,0 +1,555 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>CPack &mdash; CMake 3.14.5 Documentation</title>
+
+    <link rel="stylesheet" href="../_static/cmake.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/cmake-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CSharpUtilities" href="CSharpUtilities.html" />
+    <link rel="prev" title="CPackIFWConfigureFile" href="CPackIFWConfigureFile.html" />
+  
+ 
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="CSharpUtilities.html" title="CSharpUtilities"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="CPackIFWConfigureFile.html" title="CPackIFWConfigureFile"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" accesskey="U">cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="cpack">
+<span id="module:CPack"></span><h1>CPack<a class="headerlink" href="#cpack" title="Permalink to this headline">¶</a></h1>
+<p>Build binary and source package installers.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The CPack module generates a file <code class="docutils literal notranslate"><span class="pre">CPackConfig.cmake</span></code> intended for
+use in a subsequent run of  the <span class="target" id="index-0-manual:cpack(1)"></span><a class="reference internal" href="../manual/cpack.1.html#manual:cpack(1)" title="cpack(1)"><code class="xref cmake cmake-manual docutils literal notranslate"><span class="pre">cpack</span></code></a> program
+where it steers the generation of installers or/and source packages.</p>
+<p>Inclusion of the CPack module adds two new build targets, <code class="docutils literal notranslate"><span class="pre">package</span></code>
+and <code class="docutils literal notranslate"><span class="pre">package_source</span></code>, which build the binary and source installers
+respectively.  The generated binary installers contain everything
+installed via CMake’s <span class="target" id="index-0-command:install"></span><a class="reference internal" href="../command/install.html#command:install" title="install"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">install()</span></code></a> command (and the deprecated
+commands <span class="target" id="index-0-command:install_files"></span><a class="reference internal" href="../command/install_files.html#command:install_files" title="install_files"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">install_files()</span></code></a>, <span class="target" id="index-0-command:install_programs"></span><a class="reference internal" href="../command/install_programs.html#command:install_programs" title="install_programs"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">install_programs()</span></code></a>, and
+<span class="target" id="index-0-command:install_targets"></span><a class="reference internal" href="../command/install_targets.html#command:install_targets" title="install_targets"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">install_targets()</span></code></a>).</p>
+<p>For certain kinds of binary installers (including the graphical
+installers on macOS and Windows), CPack generates installers that
+allow users to select individual application components to install.
+See <span class="target" id="index-0-module:CPackComponent"></span><a class="reference internal" href="CPackComponent.html#module:CPackComponent" title="CPackComponent"><code class="xref cmake cmake-module docutils literal notranslate"><span class="pre">CPackComponent</span></code></a> module for further details.</p>
+</div>
+<div class="section" id="cpack-generators">
+<h2>CPack Generators<a class="headerlink" href="#cpack-generators" title="Permalink to this headline">¶</a></h2>
+<p>The <span class="target" id="index-0-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a> variable has different meanings in different
+contexts.  In a <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> file, <span class="target" id="index-1-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a> is a
+<em>list of generators</em>: and when <span class="target" id="index-1-manual:cpack(1)"></span><a class="reference internal" href="../manual/cpack.1.html#manual:cpack(1)" title="cpack(1)"><code class="xref cmake cmake-manual docutils literal notranslate"><span class="pre">cpack</span></code></a> is run with no other
+arguments, it will iterate over that list and produce one package for each
+generator.  In a <span class="target" id="index-0-variable:CPACK_PROJECT_CONFIG_FILE"></span><a class="reference internal" href="#variable:CPACK_PROJECT_CONFIG_FILE" title="CPACK_PROJECT_CONFIG_FILE"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PROJECT_CONFIG_FILE</span></code></a>,
+<span class="target" id="index-2-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a> is a <em>string naming a single generator</em>.  If you
+need per-cpack-generator logic to control <em>other</em> cpack settings, then you
+need a <span class="target" id="index-1-variable:CPACK_PROJECT_CONFIG_FILE"></span><a class="reference internal" href="#variable:CPACK_PROJECT_CONFIG_FILE" title="CPACK_PROJECT_CONFIG_FILE"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PROJECT_CONFIG_FILE</span></code></a>.</p>
+<p>The CMake source tree itself contains a <span class="target" id="index-2-variable:CPACK_PROJECT_CONFIG_FILE"></span><a class="reference internal" href="#variable:CPACK_PROJECT_CONFIG_FILE" title="CPACK_PROJECT_CONFIG_FILE"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PROJECT_CONFIG_FILE</span></code></a>.
+See the top level file <code class="docutils literal notranslate"><span class="pre">CMakeCPackOptions.cmake.in</span></code> for an example.</p>
+<p>If set, the <span class="target" id="index-3-variable:CPACK_PROJECT_CONFIG_FILE"></span><a class="reference internal" href="#variable:CPACK_PROJECT_CONFIG_FILE" title="CPACK_PROJECT_CONFIG_FILE"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PROJECT_CONFIG_FILE</span></code></a> is included automatically
+on a per-generator basis.  It only need contain overrides.</p>
+<p>Here’s how it works:</p>
+<ul class="simple">
+<li><span class="target" id="index-2-manual:cpack(1)"></span><a class="reference internal" href="../manual/cpack.1.html#manual:cpack(1)" title="cpack(1)"><code class="xref cmake cmake-manual docutils literal notranslate"><span class="pre">cpack</span></code></a> runs</li>
+<li>it includes <code class="docutils literal notranslate"><span class="pre">CPackConfig.cmake</span></code></li>
+<li>it iterates over the generators given by the <code class="docutils literal notranslate"><span class="pre">-G</span></code> command line option,
+or if no such option was specified, over the list of generators given by
+the <span class="target" id="index-3-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a> variable set in the <code class="docutils literal notranslate"><span class="pre">CPackConfig.cmake</span></code>
+input file.</li>
+<li>foreach generator, it then<ul>
+<li>sets <span class="target" id="index-4-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a> to the one currently being iterated</li>
+<li>includes the <span class="target" id="index-4-variable:CPACK_PROJECT_CONFIG_FILE"></span><a class="reference internal" href="#variable:CPACK_PROJECT_CONFIG_FILE" title="CPACK_PROJECT_CONFIG_FILE"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PROJECT_CONFIG_FILE</span></code></a></li>
+<li>produces the package for that generator</li>
+</ul>
+</li>
+</ul>
+<p>This is the key: For each generator listed in <span class="target" id="index-5-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a> in
+<code class="docutils literal notranslate"><span class="pre">CPackConfig.cmake</span></code>, cpack will <em>reset</em> <span class="target" id="index-6-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a>
+internally to <em>the one currently being used</em> and then include the
+<span class="target" id="index-5-variable:CPACK_PROJECT_CONFIG_FILE"></span><a class="reference internal" href="#variable:CPACK_PROJECT_CONFIG_FILE" title="CPACK_PROJECT_CONFIG_FILE"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PROJECT_CONFIG_FILE</span></code></a>.</p>
+</div>
+<div class="section" id="variables-common-to-all-cpack-generators">
+<h2>Variables common to all CPack Generators<a class="headerlink" href="#variables-common-to-all-cpack-generators" title="Permalink to this headline">¶</a></h2>
+<p>Before including this CPack module in your <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> file, there
+are a variety of variables that can be set to customize the resulting
+installers.  The most commonly-used variables are:</p>
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_NAME">
+<code class="descname">CPACK_PACKAGE_NAME</code><a class="headerlink" href="#variable:CPACK_PACKAGE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the package (or application).  If not specified, it defaults to
+the project name.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_VENDOR">
+<code class="descname">CPACK_PACKAGE_VENDOR</code><a class="headerlink" href="#variable:CPACK_PACKAGE_VENDOR" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the package vendor. (e.g., “Kitware”).  The default is “Humanity”.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_DIRECTORY">
+<code class="descname">CPACK_PACKAGE_DIRECTORY</code><a class="headerlink" href="#variable:CPACK_PACKAGE_DIRECTORY" title="Permalink to this definition">¶</a></dt>
+<dd><p>The directory in which CPack is doing its packaging.  If it is not set
+then this will default (internally) to the build dir.  This variable may
+be defined in a CPack config file or from the <span class="target" id="index-3-manual:cpack(1)"></span><a class="reference internal" href="../manual/cpack.1.html#manual:cpack(1)" title="cpack(1)"><code class="xref cmake cmake-manual docutils literal notranslate"><span class="pre">cpack</span></code></a>
+command line option <code class="docutils literal notranslate"><span class="pre">-B</span></code>.  If set, the command line option overrides the
+value found in the config file.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_VERSION_MAJOR">
+<code class="descname">CPACK_PACKAGE_VERSION_MAJOR</code><a class="headerlink" href="#variable:CPACK_PACKAGE_VERSION_MAJOR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Package major version.  This variable will always be set, but its default
+value depends on whether or not version details were given to the
+<span class="target" id="index-0-command:project"></span><a class="reference internal" href="../command/project.html#command:project" title="project"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">project()</span></code></a> command in the top level CMakeLists.txt file.  If version
+details were given, the default value will be
+<span class="target" id="index-0-variable:CMAKE_PROJECT_VERSION_MAJOR"></span><a class="reference internal" href="../variable/CMAKE_PROJECT_VERSION_MAJOR.html#variable:CMAKE_PROJECT_VERSION_MAJOR" title="CMAKE_PROJECT_VERSION_MAJOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_PROJECT_VERSION_MAJOR</span></code></a>.  If no version details were given,
+a default version of 0.1.1 will be assumed, leading to
+<code class="docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_MAJOR</span></code> having a default value of 0.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_VERSION_MINOR">
+<code class="descname">CPACK_PACKAGE_VERSION_MINOR</code><a class="headerlink" href="#variable:CPACK_PACKAGE_VERSION_MINOR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Package minor version.  The default value is determined based on whether or
+not version details were given to the <span class="target" id="index-1-command:project"></span><a class="reference internal" href="../command/project.html#command:project" title="project"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">project()</span></code></a> command in the top
+level CMakeLists.txt file.  If version details were given, the default
+value will be <span class="target" id="index-0-variable:CMAKE_PROJECT_VERSION_MINOR"></span><a class="reference internal" href="../variable/CMAKE_PROJECT_VERSION_MINOR.html#variable:CMAKE_PROJECT_VERSION_MINOR" title="CMAKE_PROJECT_VERSION_MINOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_PROJECT_VERSION_MINOR</span></code></a>, but if no minor
+version component was specified then <code class="docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_MINOR</span></code> will be
+left unset.  If no project version was given at all, a default version of
+0.1.1 will be assumed, leading to <code class="docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_MINOR</span></code> having a
+default value of 1.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_VERSION_PATCH">
+<code class="descname">CPACK_PACKAGE_VERSION_PATCH</code><a class="headerlink" href="#variable:CPACK_PACKAGE_VERSION_PATCH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Package patch version.  The default value is determined based on whether or
+not version details were given to the <span class="target" id="index-2-command:project"></span><a class="reference internal" href="../command/project.html#command:project" title="project"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">project()</span></code></a> command in the top
+level CMakeLists.txt file.  If version details were given, the default
+value will be <span class="target" id="index-0-variable:CMAKE_PROJECT_VERSION_PATCH"></span><a class="reference internal" href="../variable/CMAKE_PROJECT_VERSION_PATCH.html#variable:CMAKE_PROJECT_VERSION_PATCH" title="CMAKE_PROJECT_VERSION_PATCH"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_PROJECT_VERSION_PATCH</span></code></a>, but if no patch
+version component was specified then <code class="docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_PATCH</span></code> will be
+left unset.  If no project version was given at all, a default version of
+0.1.1 will be assumed, leading to <code class="docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_PATCH</span></code> having a
+default value of 1.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_DESCRIPTION">
+<code class="descname">CPACK_PACKAGE_DESCRIPTION</code><a class="headerlink" href="#variable:CPACK_PACKAGE_DESCRIPTION" title="Permalink to this definition">¶</a></dt>
+<dd><p>A description of the project, used in places such as the introduction
+screen of CPack-generated Windows installers.  If not set, the value of
+this variable is populated from the file named by
+<span class="target" id="index-0-variable:CPACK_PACKAGE_DESCRIPTION_FILE"></span><a class="reference internal" href="#variable:CPACK_PACKAGE_DESCRIPTION_FILE" title="CPACK_PACKAGE_DESCRIPTION_FILE"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_DESCRIPTION_FILE</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_DESCRIPTION_FILE">
+<code class="descname">CPACK_PACKAGE_DESCRIPTION_FILE</code><a class="headerlink" href="#variable:CPACK_PACKAGE_DESCRIPTION_FILE" title="Permalink to this definition">¶</a></dt>
+<dd><p>A text file used to describe the project when
+<span class="target" id="index-0-variable:CPACK_PACKAGE_DESCRIPTION"></span><a class="reference internal" href="#variable:CPACK_PACKAGE_DESCRIPTION" title="CPACK_PACKAGE_DESCRIPTION"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_DESCRIPTION</span></code></a> is not explicitly set.  The default
+value for <code class="docutils literal notranslate"><span class="pre">CPACK_PACKAGE_DESCRIPTION_FILE</span></code> points to a built-in template
+file <code class="docutils literal notranslate"><span class="pre">Templates/CPack.GenericDescription.txt</span></code>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_DESCRIPTION_SUMMARY">
+<code class="descname">CPACK_PACKAGE_DESCRIPTION_SUMMARY</code><a class="headerlink" href="#variable:CPACK_PACKAGE_DESCRIPTION_SUMMARY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Short description of the project (only a few words).  If the
+<span class="target" id="index-0-variable:CMAKE_PROJECT_DESCRIPTION"></span><a class="reference internal" href="../variable/CMAKE_PROJECT_DESCRIPTION.html#variable:CMAKE_PROJECT_DESCRIPTION" title="CMAKE_PROJECT_DESCRIPTION"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_PROJECT_DESCRIPTION</span></code></a> variable is set, it is used as the
+default value, otherwise the default will be a string generated by CMake
+based on <span class="target" id="index-0-variable:CMAKE_PROJECT_NAME"></span><a class="reference internal" href="../variable/CMAKE_PROJECT_NAME.html#variable:CMAKE_PROJECT_NAME" title="CMAKE_PROJECT_NAME"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_PROJECT_NAME</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_HOMEPAGE_URL">
+<code class="descname">CPACK_PACKAGE_HOMEPAGE_URL</code><a class="headerlink" href="#variable:CPACK_PACKAGE_HOMEPAGE_URL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project homepage URL.  The default value is taken from the
+<span class="target" id="index-0-variable:CMAKE_PROJECT_HOMEPAGE_URL"></span><a class="reference internal" href="../variable/CMAKE_PROJECT_HOMEPAGE_URL.html#variable:CMAKE_PROJECT_HOMEPAGE_URL" title="CMAKE_PROJECT_HOMEPAGE_URL"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_PROJECT_HOMEPAGE_URL</span></code></a> variable, which is set by the top
+level <span class="target" id="index-3-command:project"></span><a class="reference internal" href="../command/project.html#command:project" title="project"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">project()</span></code></a> command, or else the default will be empty if no
+URL was provided to <span class="target" id="index-4-command:project"></span><a class="reference internal" href="../command/project.html#command:project" title="project"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">project()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_FILE_NAME">
+<code class="descname">CPACK_PACKAGE_FILE_NAME</code><a class="headerlink" href="#variable:CPACK_PACKAGE_FILE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the package file to generate, not including the
+extension.  For example, <code class="docutils literal notranslate"><span class="pre">cmake-2.6.1-Linux-i686</span></code>.  The default value
+is:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_SYSTEM_NAME}
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_INSTALL_DIRECTORY">
+<code class="descname">CPACK_PACKAGE_INSTALL_DIRECTORY</code><a class="headerlink" href="#variable:CPACK_PACKAGE_INSTALL_DIRECTORY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Installation directory on the target system. This may be used by some
+CPack generators like NSIS to create an installation directory e.g.,
+“CMake 2.5” below the installation prefix.  All installed elements will be
+put inside this directory.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_ICON">
+<code class="descname">CPACK_PACKAGE_ICON</code><a class="headerlink" href="#variable:CPACK_PACKAGE_ICON" title="Permalink to this definition">¶</a></dt>
+<dd><p>A branding image that will be displayed inside the installer (used by GUI
+installers).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_CHECKSUM">
+<code class="descname">CPACK_PACKAGE_CHECKSUM</code><a class="headerlink" href="#variable:CPACK_PACKAGE_CHECKSUM" title="Permalink to this definition">¶</a></dt>
+<dd><p>An algorithm that will be used to generate an additional file with the
+checksum of the package.  The output file name will be:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>${CPACK_PACKAGE_FILE_NAME}.${CPACK_PACKAGE_CHECKSUM}
+</pre></div>
+</div>
+<p>Supported algorithms are those listed by the
+<a class="reference internal" href="../command/string.html#supported-hash-algorithms"><span class="std std-ref">string(&lt;HASH&gt;)</span></a> command.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PROJECT_CONFIG_FILE">
+<code class="descname">CPACK_PROJECT_CONFIG_FILE</code><a class="headerlink" href="#variable:CPACK_PROJECT_CONFIG_FILE" title="Permalink to this definition">¶</a></dt>
+<dd><p>CPack-time project CPack configuration file.  This file is included at cpack
+time, once per generator after CPack has set <span class="target" id="index-7-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a>
+to the actual generator being used.  It allows per-generator setting of
+<code class="docutils literal notranslate"><span class="pre">CPACK_*</span></code> variables at cpack time.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_RESOURCE_FILE_LICENSE">
+<code class="descname">CPACK_RESOURCE_FILE_LICENSE</code><a class="headerlink" href="#variable:CPACK_RESOURCE_FILE_LICENSE" title="Permalink to this definition">¶</a></dt>
+<dd><p>License to be embedded in the installer.  It will typically be displayed
+to the user by the produced installer (often with an explicit “Accept”
+button, for graphical installers) prior to installation.  This license
+file is NOT added to the installed files but is used by some CPack generators
+like NSIS.  If you want to install a license file (may be the same as this
+one) along with your project, you must add an appropriate CMake
+<span class="target" id="index-1-command:install"></span><a class="reference internal" href="../command/install.html#command:install" title="install"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">install()</span></code></a> command in your <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_RESOURCE_FILE_README">
+<code class="descname">CPACK_RESOURCE_FILE_README</code><a class="headerlink" href="#variable:CPACK_RESOURCE_FILE_README" title="Permalink to this definition">¶</a></dt>
+<dd><p>ReadMe file to be embedded in the installer.  It typically describes in
+some detail the purpose of the project during the installation.  Not all
+CPack generators use this file.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_RESOURCE_FILE_WELCOME">
+<code class="descname">CPACK_RESOURCE_FILE_WELCOME</code><a class="headerlink" href="#variable:CPACK_RESOURCE_FILE_WELCOME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Welcome file to be embedded in the installer.  It welcomes users to this
+installer.  Typically used in the graphical installers on Windows and Mac
+OS X.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_MONOLITHIC_INSTALL">
+<code class="descname">CPACK_MONOLITHIC_INSTALL</code><a class="headerlink" href="#variable:CPACK_MONOLITHIC_INSTALL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disables the component-based installation mechanism.  When set, the
+component specification is ignored and all installed items are put in a
+single “MONOLITHIC” package.  Some CPack generators do monolithic
+packaging by default and may be asked to do component packaging by
+setting <code class="docutils literal notranslate"><span class="pre">CPACK_&lt;GENNAME&gt;_COMPONENT_INSTALL</span></code> to <code class="docutils literal notranslate"><span class="pre">TRUE</span></code>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_GENERATOR">
+<code class="descname">CPACK_GENERATOR</code><a class="headerlink" href="#variable:CPACK_GENERATOR" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of CPack generators to use.  If not specified, CPack will create a
+set of options following the naming pattern
+<span class="target" id="index-0-variable:CPACK_BINARY_&lt;GENNAME&gt;"></span><a class="reference internal" href="#variable:CPACK_BINARY_&lt;GENNAME&gt;" title="CPACK_BINARY_&lt;GENNAME&gt;"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_BINARY_&lt;GENNAME&gt;</span></code></a> (e.g. <code class="docutils literal notranslate"><span class="pre">CPACK_BINARY_NSIS</span></code>) allowing
+the user to enable/disable individual generators.  If the <code class="docutils literal notranslate"><span class="pre">-G</span></code> option is
+given on the <span class="target" id="index-4-manual:cpack(1)"></span><a class="reference internal" href="../manual/cpack.1.html#manual:cpack(1)" title="cpack(1)"><code class="xref cmake cmake-manual docutils literal notranslate"><span class="pre">cpack</span></code></a> command line, it will override this
+variable and any <code class="docutils literal notranslate"><span class="pre">CPACK_BINARY_&lt;GENNAME&gt;</span></code> options.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_OUTPUT_CONFIG_FILE">
+<code class="descname">CPACK_OUTPUT_CONFIG_FILE</code><a class="headerlink" href="#variable:CPACK_OUTPUT_CONFIG_FILE" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the CPack binary configuration file.  This file is the CPack
+configuration generated by the CPack module for binary installers.
+Defaults to <code class="docutils literal notranslate"><span class="pre">CPackConfig.cmake</span></code>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_EXECUTABLES">
+<code class="descname">CPACK_PACKAGE_EXECUTABLES</code><a class="headerlink" href="#variable:CPACK_PACKAGE_EXECUTABLES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Lists each of the executables and associated text label to be used to
+create Start Menu shortcuts.  For example, setting this to the list
+<code class="docutils literal notranslate"><span class="pre">ccmake;CMake</span></code> will create a shortcut named “CMake” that will execute the
+installed executable <code class="docutils literal notranslate"><span class="pre">ccmake</span></code>.  Not all CPack generators use it (at least
+NSIS, WIX and OSXX11 do).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_STRIP_FILES">
+<code class="descname">CPACK_STRIP_FILES</code><a class="headerlink" href="#variable:CPACK_STRIP_FILES" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of files to be stripped.  Starting with CMake 2.6.0,
+<code class="docutils literal notranslate"><span class="pre">CPACK_STRIP_FILES</span></code> will be a boolean variable which enables
+stripping of all files (a list of files evaluates to <code class="docutils literal notranslate"><span class="pre">TRUE</span></code> in CMake,
+so this change is compatible).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_VERBATIM_VARIABLES">
+<code class="descname">CPACK_VERBATIM_VARIABLES</code><a class="headerlink" href="#variable:CPACK_VERBATIM_VARIABLES" title="Permalink to this definition">¶</a></dt>
+<dd><p>If set to <code class="docutils literal notranslate"><span class="pre">TRUE</span></code>, values of variables prefixed with <code class="docutils literal notranslate"><span class="pre">CPACK_</span></code> will be
+escaped before being written to the configuration files, so that the cpack
+program receives them exactly as they were specified.  If not, characters
+like quotes and backslashes can cause parsing errors or alter the value
+received by the cpack program.  Defaults to <code class="docutils literal notranslate"><span class="pre">FALSE</span></code> for backwards
+compatibility.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="variables-for-source-package-generators">
+<h2>Variables for Source Package Generators<a class="headerlink" href="#variables-for-source-package-generators" title="Permalink to this headline">¶</a></h2>
+<p>The following CPack variables are specific to source packages, and
+will not affect binary packages:</p>
+<dl class="variable">
+<dt id="variable:CPACK_SOURCE_PACKAGE_FILE_NAME">
+<code class="descname">CPACK_SOURCE_PACKAGE_FILE_NAME</code><a class="headerlink" href="#variable:CPACK_SOURCE_PACKAGE_FILE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the source package.  For example <code class="docutils literal notranslate"><span class="pre">cmake-2.6.1</span></code>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_SOURCE_STRIP_FILES">
+<code class="descname">CPACK_SOURCE_STRIP_FILES</code><a class="headerlink" href="#variable:CPACK_SOURCE_STRIP_FILES" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of files in the source tree that will be stripped.  Starting with
+CMake 2.6.0, <code class="docutils literal notranslate"><span class="pre">CPACK_SOURCE_STRIP_FILES</span></code> will be a boolean
+variable which enables stripping of all files (a list of files evaluates
+to <code class="docutils literal notranslate"><span class="pre">TRUE</span></code> in CMake, so this change is compatible).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_SOURCE_GENERATOR">
+<code class="descname">CPACK_SOURCE_GENERATOR</code><a class="headerlink" href="#variable:CPACK_SOURCE_GENERATOR" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of generators used for the source packages.  As with
+<span class="target" id="index-8-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a>, if this is not specified then CPack will
+create a set of options (e.g. <code class="docutils literal notranslate"><span class="pre">CPACK_SOURCE_ZIP</span></code>) allowing
+users to select which packages will be generated.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_SOURCE_OUTPUT_CONFIG_FILE">
+<code class="descname">CPACK_SOURCE_OUTPUT_CONFIG_FILE</code><a class="headerlink" href="#variable:CPACK_SOURCE_OUTPUT_CONFIG_FILE" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the CPack source configuration file.  This file is the CPack
+configuration generated by the CPack module for source installers.
+Defaults to <code class="docutils literal notranslate"><span class="pre">CPackSourceConfig.cmake</span></code>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_SOURCE_IGNORE_FILES">
+<code class="descname">CPACK_SOURCE_IGNORE_FILES</code><a class="headerlink" href="#variable:CPACK_SOURCE_IGNORE_FILES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pattern of files in the source tree that won’t be packaged when building
+a source package.  This is a list of regular expression patterns (that
+must be properly escaped), e.g.,
+<code class="docutils literal notranslate"><span class="pre">/CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="variables-for-advanced-use">
+<h2>Variables for Advanced Use<a class="headerlink" href="#variables-for-advanced-use" title="Permalink to this headline">¶</a></h2>
+<p>The following variables are for advanced uses of CPack:</p>
+<dl class="variable">
+<dt id="variable:CPACK_CMAKE_GENERATOR">
+<code class="descname">CPACK_CMAKE_GENERATOR</code><a class="headerlink" href="#variable:CPACK_CMAKE_GENERATOR" title="Permalink to this definition">¶</a></dt>
+<dd><p>What CMake generator should be used if the project is a CMake
+project.  Defaults to the value of <span class="target" id="index-0-variable:CMAKE_GENERATOR"></span><a class="reference internal" href="../variable/CMAKE_GENERATOR.html#variable:CMAKE_GENERATOR" title="CMAKE_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_GENERATOR</span></code></a>.  Few users
+will want to change this setting.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_INSTALL_CMAKE_PROJECTS">
+<code class="descname">CPACK_INSTALL_CMAKE_PROJECTS</code><a class="headerlink" href="#variable:CPACK_INSTALL_CMAKE_PROJECTS" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of four values that specify what project to install.  The four values
+are: Build directory, Project Name, Project Component, Directory.  If
+omitted, CPack will build an installer that installs everything.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_SYSTEM_NAME">
+<code class="descname">CPACK_SYSTEM_NAME</code><a class="headerlink" href="#variable:CPACK_SYSTEM_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>System name, defaults to the value of <span class="target" id="index-0-variable:CMAKE_SYSTEM_NAME"></span><a class="reference internal" href="../variable/CMAKE_SYSTEM_NAME.html#variable:CMAKE_SYSTEM_NAME" title="CMAKE_SYSTEM_NAME"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CMAKE_SYSTEM_NAME</span></code></a>,
+except on Windows where it will be <code class="docutils literal notranslate"><span class="pre">win32</span></code> or <code class="docutils literal notranslate"><span class="pre">win64</span></code>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_VERSION">
+<code class="descname">CPACK_PACKAGE_VERSION</code><a class="headerlink" href="#variable:CPACK_PACKAGE_VERSION" title="Permalink to this definition">¶</a></dt>
+<dd><p>Package full version, used internally.  By default, this is built from
+<span class="target" id="index-0-variable:CPACK_PACKAGE_VERSION_MAJOR"></span><a class="reference internal" href="#variable:CPACK_PACKAGE_VERSION_MAJOR" title="CPACK_PACKAGE_VERSION_MAJOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_MAJOR</span></code></a>,
+<span class="target" id="index-0-variable:CPACK_PACKAGE_VERSION_MINOR"></span><a class="reference internal" href="#variable:CPACK_PACKAGE_VERSION_MINOR" title="CPACK_PACKAGE_VERSION_MINOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_MINOR</span></code></a>, and
+<span class="target" id="index-0-variable:CPACK_PACKAGE_VERSION_PATCH"></span><a class="reference internal" href="#variable:CPACK_PACKAGE_VERSION_PATCH" title="CPACK_PACKAGE_VERSION_PATCH"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VERSION_PATCH</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_TOPLEVEL_TAG">
+<code class="descname">CPACK_TOPLEVEL_TAG</code><a class="headerlink" href="#variable:CPACK_TOPLEVEL_TAG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Directory for the installed files.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_INSTALL_COMMANDS">
+<code class="descname">CPACK_INSTALL_COMMANDS</code><a class="headerlink" href="#variable:CPACK_INSTALL_COMMANDS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extra commands to install components.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_INSTALLED_DIRECTORIES">
+<code class="descname">CPACK_INSTALLED_DIRECTORIES</code><a class="headerlink" href="#variable:CPACK_INSTALLED_DIRECTORIES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extra directories to install.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_PACKAGE_INSTALL_REGISTRY_KEY">
+<code class="descname">CPACK_PACKAGE_INSTALL_REGISTRY_KEY</code><a class="headerlink" href="#variable:CPACK_PACKAGE_INSTALL_REGISTRY_KEY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registry key used when installing this project.  This is only used by
+installers for Windows.  The default value is based on the installation
+directory.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_CREATE_DESKTOP_LINKS">
+<code class="descname">CPACK_CREATE_DESKTOP_LINKS</code><a class="headerlink" href="#variable:CPACK_CREATE_DESKTOP_LINKS" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of desktop links to create.  Each desktop link requires a
+corresponding start menu shortcut as created by
+<span class="target" id="index-0-variable:CPACK_PACKAGE_EXECUTABLES"></span><a class="reference internal" href="#variable:CPACK_PACKAGE_EXECUTABLES" title="CPACK_PACKAGE_EXECUTABLES"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_EXECUTABLES</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_BINARY_&lt;GENNAME&gt;">
+<code class="descname">CPACK_BINARY_&lt;GENNAME&gt;</code><a class="headerlink" href="#variable:CPACK_BINARY_<GENNAME>" title="Permalink to this definition">¶</a></dt>
+<dd><p>CPack generated options for binary generators.  The <code class="docutils literal notranslate"><span class="pre">CPack.cmake</span></code> module
+generates (when <span class="target" id="index-9-variable:CPACK_GENERATOR"></span><a class="reference internal" href="#variable:CPACK_GENERATOR" title="CPACK_GENERATOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_GENERATOR</span></code></a> is not set) a set of CMake
+options (see CMake <span class="target" id="index-0-command:option"></span><a class="reference internal" href="../command/option.html#command:option" title="option"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">option()</span></code></a> command) which may then be used to
+select the CPack generator(s) to be used when building the <code class="docutils literal notranslate"><span class="pre">package</span></code>
+target or when running <span class="target" id="index-5-manual:cpack(1)"></span><a class="reference internal" href="../manual/cpack.1.html#manual:cpack(1)" title="cpack(1)"><code class="xref cmake cmake-manual docutils literal notranslate"><span class="pre">cpack</span></code></a> without the <code class="docutils literal notranslate"><span class="pre">-G</span></code> option.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">CPack</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#cpack-generators">CPack Generators</a></li>
+<li><a class="reference internal" href="#variables-common-to-all-cpack-generators">Variables common to all CPack Generators</a></li>
+<li><a class="reference internal" href="#variables-for-source-package-generators">Variables for Source Package Generators</a></li>
+<li><a class="reference internal" href="#variables-for-advanced-use">Variables for Advanced Use</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="CPackIFWConfigureFile.html"
+                        title="previous chapter">CPackIFWConfigureFile</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="CSharpUtilities.html"
+                        title="next chapter">CSharpUtilities</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/module/CPack.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="CSharpUtilities.html" title="CSharpUtilities"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="CPackIFWConfigureFile.html" title="CPackIFWConfigureFile"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" >cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2000-2019 Kitware, Inc. and Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
+  </body>
+</html>

@@ -2,7 +2,13 @@
 
 #pragma once
 
+#include "EditorFramework/PersonalizationManager.h"
+#include "Objects/ObjectPropertyWidget.h"
+#include "EditorFramework/InspectorLegacy.h"
+
 #include <QCollapsibleFrame.h>
+
+#include <QVariantMap>
 
 class CInspectorWidgetCreator
 {
@@ -10,12 +16,12 @@ public:
 	struct SQueuedWidgetInfo
 	{
 		// Number of objects that have requested adding this widget
-		uint64 usageCount;
-		uint64 id;
+		uint64                                                         usageCount;
+		uint64                                                         id;
 		std::function<QWidget*(const SQueuedWidgetInfo& queuedWidget)> createWidgetCallback;
-		std::unique_ptr<QCollapsibleFrame> collapsibleFrames;
+		std::unique_ptr<QCollapsibleFrame>                             collapsibleFrames;
 
-		CObjectPropertyWidget::TSerializationFunc serializationFunc;
+		CObjectPropertyWidget::TSerializationFunc                      serializationFunc;
 	};
 
 	CInspectorWidgetCreator()
@@ -38,7 +44,7 @@ public:
 	}
 
 	// Helper to add a property tree contained inside a collapsible frame to the inspector's scrollable box area
-	template <typename TObjectType>
+	template<typename TObjectType>
 	void AddPropertyTree(const char* szTitle, std::function<void(TObjectType* pObject, Serialization::IArchive& ar, bool bMultiEdit)> serializationFunc, bool bCollapsedByDefault = false)
 	{
 		uint64 id = stl::hash_strcmp<const char*>()(szTitle);
@@ -90,7 +96,7 @@ public:
 	}
 
 	// Called when we're done queuing all inspector widgets, and want to finally add them to the inspector
-	void AddWidgetsToInspector(CInspector& inspector)
+	void AddWidgetsToInspector(CInspectorLegacy& inspector)
 	{
 		// Process widgets queued from the callback above
 		for (SQueuedWidgetInfo& queuedWidget : m_queuedWidgets)
@@ -148,6 +154,5 @@ private:
 	// Vector containing widgets that are queued for adding to the inspector
 	// This is sorted by widget id, in order to allow for binary search when adding elements to prevent duplicates
 	std::vector<SQueuedWidgetInfo> m_queuedWidgets;
-	QVariantMap     m_personalizationState;
+	QVariantMap                    m_personalizationState;
 };
-

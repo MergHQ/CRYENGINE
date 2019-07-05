@@ -1,19 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-//
-//	File:CrySizer.h
+#pragma once
+
 //  Declaration and definition of the CrySizer class, which is used to
 //  calculate the memory usage by the subsystems and components, to help
 //  the artists keep the memory budged low.
 //
-//	History:
-//
 //////////////////////////////////////////////////////////////////////
-
-#ifndef _CRY_COMMON_CRY_SIZER_INTERFACE_HDR_
-#define _CRY_COMMON_CRY_SIZER_INTERFACE_HDR_
-
-//////////////////////////////////////////////////////////////////////////
 
 // common containers for overloads
 #include <CryCore/StlUtils.h>
@@ -22,6 +15,7 @@
 #include <CryMath/Cry_Vector3.h>
 #include <CryMath/Cry_Quat.h>
 #include <CryMath/Cry_Color.h>
+#include <CryMemory/STLAlignedAlloc.h>
 
 // forward declarations for overloads
 struct AABB;
@@ -31,8 +25,8 @@ struct SVF_P3F_C4B_T2S;
 struct SVF_P3S_C4B_T2S;
 struct SPipTangents;
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
-	#include <string.h> // workaround for Amd64 compiler
+#if CRY_PLATFORM_WINDOWS
+	#include <cstring> // workaround for Amd64 compiler
 #endif
 
 #include <CrySystem/IResourceCollector.h>       // <> required for Interfuscator. IResourceCollector
@@ -219,7 +213,7 @@ public:
 	void AddObject(const SPipTangents&)                {}
 	void AddObject(void*)                              {}
 
-	// Overloads for container, will automaticly traverse the content.
+	// Overloads for container, will automatically traverse the content.
 	template<typename T, typename Alloc>
 	void AddObject(const std::list<T, Alloc>& rList)
 	{
@@ -377,6 +371,8 @@ public:
 	{
 		return AddObject(&rObject, sizeof(T));
 	}
+
+	virtual int GetMode() const { return 0; }
 
 	//! Used to collect the assets needed for streaming and to gather statistics always returns a valid reference.
 	virtual IResourceCollector* GetResourceCollector() = 0;
@@ -540,5 +536,3 @@ protected:
 //! Use this to push (and automatically pop) the sizer component name at the beginning of the getSize() function.
 #define SIZER_COMPONENT_NAME(pSizerPointer, szComponentName)    PREFAST_SUPPRESS_WARNING(6246) CrySizerComponentNameHelper __sizerHelper(pSizerPointer, szComponentName, false)
 #define SIZER_SUBCOMPONENT_NAME(pSizerPointer, szComponentName) PREFAST_SUPPRESS_WARNING(6246) CrySizerComponentNameHelper __sizerHelper(pSizerPointer, szComponentName, true)
-
-#endif //_CRY_COMMON_CRY_SIZER_INTERFACE_HDR_

@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef BASE64_H
-#define BASE64_H
+#pragma once
 
 namespace Base64
 {
@@ -129,6 +128,4 @@ static unsigned int decodedsize_base64(const unsigned int size)
 
 	return nSize;
 }
-};
-
-#endif
+}

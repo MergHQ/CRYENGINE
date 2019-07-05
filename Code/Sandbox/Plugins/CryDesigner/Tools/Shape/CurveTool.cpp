@@ -2,12 +2,11 @@
 
 #include "StdAfx.h"
 #include "CurveTool.h"
-#include "DesignerEditor.h"
-#include "Core/Model.h"
+
 #include "Core/Helper.h"
-#include "ViewManager.h"
-#include <CrySerialization/Enum.h>
-#include "Objects/DisplayContext.h"
+#include "DesignerEditor.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -139,7 +138,7 @@ void CurveTool::PrepareArcSpots(CViewport* view, UINT nFlags, CPoint point)
 	}
 }
 
-void CurveTool::Display(DisplayContext& dc)
+void CurveTool::Display(SDisplayContext& dc)
 {
 	int oldThickness = dc.GetLineWidth();
 
@@ -180,4 +179,3 @@ bool CurveTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Curve, eToolGroup_Shape, "Curve", CurveTool,
                                                            curve, "runs curve tool", "designer.curve")
-

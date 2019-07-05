@@ -1,52 +1,25 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// StaticObjParam.cpp: implementation of the CVegetationObject class.
-//
-//////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
-#include "VegetationMap.h"
-#include "VegetationSelectTool.h"
-#include "Material/MaterialManager.h"
+#include "VegetationObject.h"
 
+#include "Material/MaterialManager.h"
+#include "Objects/SelectionGroup.h"
 #include "Terrain/Heightmap.h"
-#include "Terrain/SurfaceType.h"
 #include "Terrain/TerrainManager.h"
+#include "Util/BoostPythonHelpers.h"
+#include "Vegetation/VegetationMap.h"
+#include "Vegetation/VegetationSelectTool.h"
+#include "IEditorImpl.h"
+
+#include <Preferences/ViewportPreferences.h>
 
 #include <Cry3DEngine/I3DEngine.h>
 
-#include "VegetationObject.h"
-
-#include "Util/BoostPythonHelpers.h"
-
-#include <EditorFramework/Editor.h>
-#include <EditorFramework/Preferences.h>
-#include <Preferences/GeneralPreferences.h>
-#include <Preferences/ViewportPreferences.h>
-
-#include "CryEditDoc.h"
-
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
-
 CVegetationObject::CVegetationObject(int id)
+	: m_id(id)
+	, m_guid(CryGUID::Create())
 {
-	m_id = id;
-
-	m_statObj = 0;
-	m_objectSize = 1;
-	m_numInstances = 0;
-	m_bSelected = false;
-	m_bHidden = false;
-	m_index = 0;
-	m_bInUse = true;
-
-	m_bVarIgnoreChange = false;
-
-	m_group = _T("Default");
-
-	// Int vars.
 	mv_size = 1.0f;
 	mv_size->SetLimits(0.1f, 3.0f, 0.0f, true, true);
 
@@ -57,7 +30,7 @@ CVegetationObject::CVegetationObject(int id)
 
 	// Limit the slope values from 0.0 to slightly less than 90. We later calculate the slope as
 	// tan(angle) and tan(90) will result in disaster
-	const float slopeLimitDeg = 90.f - 0.01;
+	const float slopeLimitDeg = 90.0f - 0.01f;
 	mv_slope_min = 0.0f;
 	mv_slope_min->SetLimits(0.0f, slopeLimitDeg, 0.0f, true, true);
 	mv_slope_max = slopeLimitDeg;
@@ -83,10 +56,10 @@ CVegetationObject::CVegetationObject(int id)
 	mv_castShadows = false;
 	mv_castShadowMinSpec = CONFIG_LOW_SPEC;
 	mv_giMode = true;
+	mv_offlineProcedural = false;
 	mv_instancing = false;
 	mv_DynamicDistanceShadows = false;
 	mv_hideable = 0;
-	//mv_hideableSecondary = false;
 	mv_playerHideable = 0;
 	mv_growOn = 0;
 	mv_pickable = false;
@@ -100,8 +73,7 @@ CVegetationObject::CVegetationObject(int id)
 	mv_minSpec = 0;
 	mv_allowIndoor = false;
 	mv_autoMerged = false;
-
-	m_guid = CryGUID::Create();
+	mv_ignoreTerrainLayerBlend = true;
 
 	mv_hideable.AddEnumItem("None", 0);
 	mv_hideable.AddEnumItem("Hideable", 1);
@@ -132,10 +104,7 @@ CVegetationObject::CVegetationObject(int id)
 	mv_castShadows->SetFlags(mv_castShadows->GetFlags() | IVariable::UI_INVISIBLE);
 	mv_castShadowMinSpec->SetFlags(mv_castShadowMinSpec->GetFlags() | IVariable::UI_UNSORTED);
 
-	if (m_pVarObject == nullptr)
-	{
-		m_pVarObject = stl::make_unique<CVarObject>();
-	}
+	m_pVarObject = std::make_unique<CVarObject>();
 
 	m_pVarObject->AddVariable(mv_size, "Size", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_sizevar, "SizeVar", functor(*this, &CVegetationObject::OnVarChange));
@@ -167,6 +136,7 @@ CVegetationObject::CVegetationObject(int id)
 	m_pVarObject->AddVariable(mv_castShadowMinSpec, "CastShadowMinSpec", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_DynamicDistanceShadows, "DynamicDistanceShadows", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_giMode, "GlobalIllumination", "Global Illumination", functor(*this, &CVegetationObject::OnVarChange));
+	m_pVarObject->AddVariable(mv_offlineProcedural, "OfflineProcedural", "Offline Procedural", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_instancing, "Instancing", "UseInstancing", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_SpriteDistRatio, "SpriteDistRatio", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_LodDistRatio, "LodDistRatio", functor(*this, &CVegetationObject::OnVarChange));
@@ -174,6 +144,7 @@ CVegetationObject::CVegetationObject(int id)
 	m_pVarObject->AddVariable(mv_material, "Material", functor(*this, &CVegetationObject::OnMaterialChange), IVariable::DT_MATERIAL);
 	m_pVarObject->AddVariable(mv_UseSprites, "UseSprites", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_minSpec, "MinSpec", functor(*this, &CVegetationObject::OnVarChange));
+	m_pVarObject->AddVariable(mv_ignoreTerrainLayerBlend, "IgnoreTerrainLayerBlend", functor(*this, &CVegetationObject::OnVarChange));
 
 	m_pVarObject->AddVariable(mv_layerFrozen, "Frozen", "Layer_Frozen", functor(*this, &CVegetationObject::OnVarChange));
 	m_pVarObject->AddVariable(mv_layerWet, "Layer_Wet", "Layer_Wet", functor(*this, &CVegetationObject::OnVarChange));
@@ -197,11 +168,11 @@ CVegetationObject::~CVegetationObject()
 		IStatInstGroup grp;
 		p3dEngine->SetStatInstGroup(m_id, grp);
 	}
+
 	if (m_pMaterial)
 	{
 		m_pMaterial = NULL;
 	}
-
 }
 
 void CVegetationObject::SetFileName(const string& strFileName)
@@ -209,13 +180,11 @@ void CVegetationObject::SetFileName(const string& strFileName)
 	mv_fileName->Set(strFileName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::SetGroup(const string& group)
 {
 	m_group = group;
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::UnloadObject()
 {
 	if (m_statObj)
@@ -228,7 +197,6 @@ void CVegetationObject::UnloadObject()
 	SetEngineParams();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::LoadObject()
 {
 	m_objectSize = 1;
@@ -253,7 +221,6 @@ void CVegetationObject::LoadObject()
 	SetEngineParams();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::SetHidden(bool bHidden)
 {
 	m_bHidden = bHidden;
@@ -270,7 +237,6 @@ void CVegetationObject::SetHidden(bool bHidden)
 	SetEngineParams();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::CopyFrom(const CVegetationObject& o)
 {
 	if (m_pVarObject != nullptr)
@@ -289,7 +255,6 @@ void CVegetationObject::CopyFrom(const CVegetationObject& o)
 	SetEngineParams();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::OnVarChange(IVariable* var)
 {
 	if (m_bVarIgnoreChange)
@@ -302,7 +267,7 @@ void CVegetationObject::OnVarChange(IVariable* var)
 	{
 		// Reposition this object on vegetation map.
 		GetIEditorImpl()->GetVegetationMap()->RepositionObject(this);
-		CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 		{
 			auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
@@ -311,7 +276,6 @@ void CVegetationObject::OnVarChange(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::OnTerrainLayerVarChange(IVariable* pTerrainLayerVariable)
 {
 	if (m_bVarIgnoreChange || !pTerrainLayerVariable)
@@ -338,7 +302,6 @@ void CVegetationObject::OnTerrainLayerVarChange(IVariable* pTerrainLayerVariable
 	GetIEditorImpl()->SetModifiedFlag();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::UpdateMaterial()
 {
 	// Update CGF material
@@ -367,7 +330,6 @@ void CVegetationObject::UpdateMaterial()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::OnMaterialChange(IVariable* var)
 {
 	if (m_bVarIgnoreChange)
@@ -378,7 +340,6 @@ void CVegetationObject::OnMaterialChange(IVariable* var)
 	GetIEditorImpl()->SetModifiedFlag();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::OnFileNameChange(IVariable* var)
 {
 	if (m_bVarIgnoreChange)
@@ -389,7 +350,7 @@ void CVegetationObject::OnFileNameChange(IVariable* var)
 	GetIEditorImpl()->SetModifiedFlag();
 	GetIEditorImpl()->GetVegetationMap()->RepositionObject(this);
 }
-//////////////////////////////////////////////////////////////////////////
+
 void CVegetationObject::SetEngineParams()
 {
 	I3DEngine* engine = GetIEditorImpl()->GetSystem()->GetI3DEngine();
@@ -416,10 +377,12 @@ void CVegetationObject::SetEngineParams()
 	grp.fBending = mv_bending;
 	grp.nCastShadowMinSpec = mv_castShadowMinSpec;
 	grp.bGIMode = mv_giMode;
+	grp.offlineProcedural = mv_offlineProcedural;
 	grp.bInstancing = mv_instancing;
 	grp.bDynamicDistanceShadows = mv_DynamicDistanceShadows;
 	grp.fSpriteDistRatio = mv_SpriteDistRatio;
 	grp.fLodDistRatio = mv_LodDistRatio;
+	grp.bIgnoreTerrainLayerBlend = mv_ignoreTerrainLayerBlend;
 	grp.fShadowDistRatio = mv_ShadowDistRatio;
 	grp.fMaxViewDistRatio = mv_MaxViewDistRatio;
 	grp.fBrightness = 1.f; // not used
@@ -499,7 +462,6 @@ void CVegetationObject::SetEngineParams()
 		GetIEditorImpl()->GetVegetationMap()->SetAIRadius(m_statObj, r);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::Serialize(XmlNodeRef& node, bool bLoading)
 {
 	if (bLoading)
@@ -511,7 +473,6 @@ void CVegetationObject::Serialize(XmlNodeRef& node, bool bLoading)
 		}
 		m_bVarIgnoreChange = false;
 
-		// Loading
 		string fileName;
 		node->getAttr("FileName", fileName);
 		fileName = PathUtil::ToUnixPath((const char*)fileName).c_str();
@@ -552,7 +513,7 @@ void CVegetationObject::Serialize(XmlNodeRef& node, bool bLoading)
 	}
 	else
 	{
-		// Do not serialize layer variables, behaviour of old mfc editor
+		// Do not serialize layer variables, behavior of old MFC editor
 		CVarBlock noLayerVariables;
 		if (m_pVarObject != nullptr)
 		{
@@ -588,13 +549,11 @@ void CVegetationObject::Serialize(XmlNodeRef& node, bool bLoading)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationObject::IsUsedOnTerrainLayer(const string& layer)
 {
 	return stl::find(m_terrainLayers, layer);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::UpdateTerrainLayerVariables()
 {
 	// clear old terrain layer variables
@@ -618,15 +577,12 @@ void CVegetationObject::UpdateTerrainLayerVariables()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CVegetationObject::GetTextureMemUsage(ICrySizer* pSizer)
 {
 	int nSize = 0;
-	if (m_statObj != NULL && m_statObj->GetRenderMesh() != NULL)
+	if (m_statObj != nullptr && m_statObj->GetRenderMesh() != nullptr)
 	{
-		IMaterial* pMtl = (m_pMaterial) ? m_pMaterial->GetMatInfo() : NULL;
-		if (!pMtl)
-			pMtl = m_statObj->GetMaterial();
+		IMaterial* pMtl = (m_pMaterial) ? m_pMaterial->GetMatInfo() : m_statObj->GetMaterial();
 		if (pMtl)
 			nSize = m_statObj->GetRenderMesh()->GetTextureMemoryUsage(pMtl, pSizer);
 
@@ -634,7 +590,6 @@ int CVegetationObject::GetTextureMemUsage(ICrySizer* pSizer)
 	return nSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::SetSelected(bool bSelected)
 {
 	bool bSendEvent = bSelected != m_bSelected;
@@ -645,7 +600,6 @@ void CVegetationObject::SetSelected(bool bSelected)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::OnConfigSpecChange()
 {
 	bool bHiddenBySpec = false;
@@ -667,7 +621,6 @@ void CVegetationObject::OnConfigSpecChange()
 		GetIEditorImpl()->GetVegetationMap()->HideObject(this, false);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CVegetationObject::SetNumInstances(int numInstances)
 {
 	if (m_numInstances == 0 && numInstances > 0)
@@ -682,7 +635,6 @@ void CVegetationObject::SetNumInstances(int numInstances)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CVegetationObject::IsHidden() const
 {
 	if (m_bHidden)
@@ -699,7 +651,6 @@ bool CVegetationObject::IsHidden() const
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 namespace
 {
 // Handle all Vegetation Object Getters
@@ -750,10 +701,9 @@ boost::python::list PyGetVegetation(const string& vegetationName = "", bool load
 
 	return result;
 }
-}
+} // unnamed namespace
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(pyGetVegetationOverload, PyGetVegetation, 0, 2);
 REGISTER_PYTHON_OVERLOAD_COMMAND(PyGetVegetation, vegetation, get_vegetation, pyGetVegetationOverload,
                                  "Get all, selected, specific name, loaded vegetation objects in the current level.",
                                  "general.get_vegetation(str vegetationName=\'\', bool loadedOnly=False)");
-

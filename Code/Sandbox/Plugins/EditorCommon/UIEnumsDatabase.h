@@ -1,8 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __UIEnumsDatabase_h__
-#define __UIEnumsDatabase_h__
 #pragma once
+#include "EditorCommonAPI.h"
 
 struct EDITOR_COMMON_API CUIEnumsDatabase_SEnum
 {
@@ -12,8 +11,8 @@ struct EDITOR_COMMON_API CUIEnumsDatabase_SEnum
 
 	const string& NameToValue(const string& name);
 	const string& ValueToName(const string& value);
-	const char* NameToValue(const char* name) { return NameToValue(string(name)); } // for CString conversion
-	const char* ValueToName(const char* value) { return ValueToName(string(value)); } // for CString conversion
+	const char*   NameToValue(const char* name)  { return NameToValue(string(name)); }  // for CString conversion
+	const char*   ValueToName(const char* value) { return ValueToName(string(value)); } // for CString conversion
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -32,6 +31,3 @@ private:
 	typedef std::map<string, CUIEnumsDatabase_SEnum*> Enums;
 	Enums m_enums;
 };
-
-#endif // __UIEnumsDatabase_h__
-

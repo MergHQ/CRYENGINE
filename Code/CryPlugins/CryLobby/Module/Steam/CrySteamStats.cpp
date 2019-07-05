@@ -132,11 +132,7 @@ ECryLobbyError CCrySteamStats::StartTask(ETask etask, bool startRunning, uint32 
 	CryStatsTaskID* pUseSTaskID = pSTaskID ? pSTaskID : &tmpSTaskID;
 	ECryLobbyError error = CCryStats::StartTask(etask, startRunning, pUseSTaskID, pLTaskID, h, pCb, pCbArg);
 
-	if (error == eCLE_Success)
-	{
-		STask* pTask = &m_task[*pUseSTaskID];
-	}
-	else if (error != eCLE_TooManyTasks)
+	if (error != eCLE_TooManyTasks)
 	{
 		FreeTask(*pUseSTaskID);
 	}
@@ -567,7 +563,7 @@ void CCrySteamStats::OnFindLeaderboard(LeaderboardFindResult_t* pParam, bool ioF
 					SCryStatsLeaderBoardWrite* writeInfo = (SCryStatsLeaderBoardWrite*)m_pLobby->MemGetPtr(pTask->paramsMem[STATS_PARAM_READ_LEADERBOARD_BOARD]);
 					if (writeInfo->data.score.score.m_type != eCLUDT_Int32)
 					{
-						CRY_ASSERT_MESSAGE(false, "score has to be int32 format");
+						CRY_ASSERT(false, "score has to be int32 format");
 					}
 
 					SCryStatsLeaderBoardUserColumn* userColumns = (SCryStatsLeaderBoardUserColumn*)m_pLobby->MemGetPtr(pTask->paramsMem[STATS_PARAM_READ_LEADERBOARD_GAME_COLUMNS]);
@@ -876,7 +872,7 @@ ECryLobbyError CCrySteamStats::StatsRegisterUserData(SCryLobbyUserData* pData, u
 
 			default:
 				itemSize = 0;
-				CRY_ASSERT_MESSAGE(0, "CCrySteamStats::StatsRegisterUserData: Undefined data type");
+				CRY_ASSERT(0, "CCrySteamStats::StatsRegisterUserData: Undefined data type");
 				break;
 			}
 

@@ -79,7 +79,7 @@ struct DDSCallback : public IImageFileStreamCallback
 };
 }
 
-_smart_ptr<CImageFile> CImageFile::mfLoad_file(const string& filename, const uint32 nFlags)
+CImageFilePtr CImageFile::mfLoad_file(const string& filename, const uint32 nFlags)
 {
 	string sFileToLoad;
 	{
@@ -91,9 +91,9 @@ _smart_ptr<CImageFile> CImageFile::mfLoad_file(const string& filename, const uin
 	char ext[16];
 	EResourceCompilerResult result = mfInvokeRC(sFileToLoad, filename, ext, 16, (nFlags & FIM_IMMEDIATE_RC) != 0);
 	if (result == EResourceCompilerResult::Failed || result == EResourceCompilerResult::Queued)
-		return NULL;
+		return nullptr;
 
-	_smart_ptr<CImageFile> pImageFile;
+	CImageFilePtr pImageFile;
 
 	// Try DDS first
 	if (!strcmp(ext, "dds"))
@@ -109,12 +109,12 @@ _smart_ptr<CImageFile> CImageFile::mfLoad_file(const string& filename, const uin
 
 			std::unique_ptr<DDSCallback> cb(new DDSCallback);
 			if (!pImageDDSFile->Stream(nFlags, &*cb))
-				return _smart_ptr<CImageFile>();
+				return CImageFilePtr();
 
 			cb->waitEvent.Wait();
 
 			if (!cb->ok)
-				return _smart_ptr<CImageFile>();
+				return CImageFilePtr();
 
 			pImageFile = pImageDDSFile;
 		}
@@ -123,12 +123,12 @@ _smart_ptr<CImageFile> CImageFile::mfLoad_file(const string& filename, const uin
 		TextureWarning(sFileToLoad.c_str(), "Unsupported texture extension '%s': '%s'", ext, filename.c_str());
 
 	if (pImageFile && pImageFile->mfGet_error() != eIFE_OK)
-		return _smart_ptr<CImageFile>();
+		return CImageFilePtr();
 
 	return pImageFile;
 }
 
-_smart_ptr<CImageFile> CImageFile::mfStream_File(const string& filename, const uint32 nFlags, IImageFileStreamCallback* pCallback)
+CImageFilePtr CImageFile::mfStream_File(const string& filename, const uint32 nFlags, IImageFileStreamCallback* pCallback)
 {
 	string sFileToLoad;
 	{
@@ -142,7 +142,7 @@ _smart_ptr<CImageFile> CImageFile::mfStream_File(const string& filename, const u
 	if (result == EResourceCompilerResult::Failed || result == EResourceCompilerResult::Queued)
 		return NULL;
 
-	_smart_ptr<CImageFile> pImageFile;
+	CImageFilePtr pImageFile;
 
 	// Try DDS first
 	if (!strcmp(ext, "dds"))
@@ -207,11 +207,15 @@ void CImageFile::mfFree_image(const int nSide)
 	SAFE_DELETE_ARRAY(m_pByteImage[nSide]);
 }
 
-byte* CImageFile::mfGet_image(const int nSide)
+byte* CImageFile::mfGet_image(const int nSide, const bool bMove)
 {
 	if (!m_pByteImage[nSide] && m_ImgSize)
 		m_pByteImage[nSide] = new byte[m_ImgSize];
-	return m_pByteImage[nSide];
+
+	byte* pointer = m_pByteImage[nSide];
+	if (bMove) m_pByteImage[nSide] = nullptr;
+
+	return pointer;
 }
 
 void CImageFile::mfAbortStreaming()

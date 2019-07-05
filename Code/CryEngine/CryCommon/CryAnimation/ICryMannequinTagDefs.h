@@ -290,7 +290,7 @@ struct STagState
 	template<typename T>
 	void GetToInteger(T& value, uint32 numBits) const
 	{
-		CRY_ASSERT_MESSAGE(numBits <= sizeof(T) * 8, "value is not large enough to accommodate the number of bits stored in the TagState");
+		CRY_ASSERT(numBits <= sizeof(T) * 8, "value is not large enough to accommodate the number of bits stored in the TagState");
 		uint32 minSize = (sizeof(T) <= NUM_BYTES ? sizeof(T) : NUM_BYTES);
 #ifdef NEED_ENDIAN_SWAP
 		uint8* pOut = ((uint8*)&value) + sizeof(T);
@@ -1386,7 +1386,7 @@ public:
 					if (priority > priorityCount.priority)
 					{
 						uint32 newTally = priorityTally * (priorityCount.count + 1);
-						//						CRY_ASSERT_MESSAGE(newTally >= priorityTally, "TagState rating overflow - too many distinct priority levels!");
+						//						CRY_ASSERT(newTally >= priorityTally, "TagState rating overflow - too many distinct priority levels!");
 						priorityTally = newTally;
 					}
 					else
@@ -2116,7 +2116,6 @@ public:
 		pOptimisedList->m_pFragDefData = pFragData;
 
 		STagStateBase globalKeys = STagStateBase(pOptimisedList->m_keys, bytesGlobal);
-		uint8* keyBuffer = pOptimisedList->m_keys;
 		T* valueBuffer = pOptimisedList->m_values;
 
 		//--- Assign the globalTags & data
@@ -2155,9 +2154,6 @@ public:
 
 	const T* GetBestMatch(const SFragTagState& fragTags, const CTagDefinition* pGlobalTagDef, const CTagDefinition* pFragTagDef, SFragTagState* pMatchedFragTags = NULL, uint32* pTagSetIdx = NULL) const
 	{
-		STagStateBase tagGlobal((const STagStateBase)(fragTags.globalTags));
-		STagStateBase tagFragment((const STagStateBase)(fragTags.fragmentTags));
-
 		const uint32 numEntries = m_keys.size();
 		for (uint32 i = 0; i < numEntries; i++)
 		{

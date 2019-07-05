@@ -29,6 +29,7 @@ History:
 #include "DLCManager.h"
 #include "PlaylistManager.h"
 #include <CryString/UnicodeFunctions.h>
+#include <CrySystem/CryVersion.h>
 
 static AUTOENUM_BUILDNAMEARRAY(s_standardLevelNames, NOTDLCLevelList);
 static AUTOENUM_BUILDNAMEARRAY(s_standardGameModes, NOTDLCGameModeList);
@@ -97,7 +98,7 @@ CDLCManager::~CDLCManager()
 {
 	if (IPlatformOS* pPlatformOS = gEnv->pSystem->GetPlatformOS())
 	{
-		gEnv->pSystem->GetPlatformOS()->RemoveListener(this);
+		pPlatformOS->RemoveListener(this);
 	}
 }
 
@@ -229,7 +230,7 @@ void CDLCManager::OnDLCMounted(const XmlNodeRef &rootNode, const char* sDLCRootF
 							DoDLCUnlocks( unlocksXml, dlcId);
 						}						
 
-						CryFixedStringT<ICryPak::g_nMaxPath> path;
+						CryPathString path;
 
 						//Level Extras pak contains things which need to be accessed relative to the Level Path
 						//eg. Level meta data, icons and mini maps
@@ -247,7 +248,7 @@ void CDLCManager::OnDLCMounted(const XmlNodeRef &rootNode, const char* sDLCRootF
 
 						if (success == false)
 						{
-							CRY_ASSERT_MESSAGE(success, "Failed to open DLC packs");
+							CRY_ASSERT(success, "Failed to open DLC packs");
 							CryLog("Failed to open DLC packs '%s'",path.c_str());
 						}
 						else
@@ -302,7 +303,7 @@ void CDLCManager::OnDLCMounted(const XmlNodeRef &rootNode, const char* sDLCRootF
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "DLC id is not within range");
+			CRY_ASSERT(false, "DLC id is not within range");
 		}
 	}
 	else
@@ -335,7 +336,7 @@ void CDLCManager::OnDLCMountFailed(IPlatformOS::EDLCMountFail reason)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Unrecognised DLC error");
+		CRY_ASSERT(false, "Unrecognised DLC error");
 	}
 }
 
@@ -372,7 +373,7 @@ void CDLCManager::OnDLCRemoved(const char* sDLCRootFolder)
 				m_allowedDLCs &= ~BIT(iDLC);
 
 				//close the paks
-				CryFixedStringT<ICryPak::g_nMaxPath> path;
+				CryPathString path;
 
 				path.Format("%s/dlcLevelExtras.pak", sDLCRootFolder);
 				CryLog( "DLC: Closing %s", path.c_str() );
@@ -390,7 +391,7 @@ void CDLCManager::OnDLCRemoved(const char* sDLCRootFolder)
 bool CDLCManager::VerifyCRCs(const XmlNodeRef &crcNode, const char* sDLCRootFolder)
 {
 	bool success = true;
-	CryFixedStringT<ICryPak::g_nMaxPath> path;
+	CryPathString path;
 	int numFiles = crcNode->getChildCount();
 	XmlString fileName;
 	uint32 storedCrc;
@@ -820,7 +821,7 @@ int CDLCManager::DlcIdForLevel( const char* pLevelName )
 			{
 				if (stricmp(m_dlcContents[i].levels[j].c_str(), pTrimmedLevelName) == 0)
 				{
-					CRY_ASSERT_MESSAGE( retVal == -1, "DLC level in multiple DLC packages" );
+					CRY_ASSERT( retVal == -1, "DLC level in multiple DLC packages" );
 					retVal = i;
 				}
 			}

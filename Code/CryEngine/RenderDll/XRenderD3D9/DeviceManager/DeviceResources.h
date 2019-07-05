@@ -8,6 +8,7 @@
 		#include "D3D11/DeviceResources_D3D11_NVAPI.h"
 	#endif
 #endif
+#include <CryRenderer/RenderElements/RendElement.h>
 
 typedef uintptr_t DeviceBufferHandle;
 typedef uint32    buffer_size_t;
@@ -78,25 +79,50 @@ struct SResourceLayout
 	buffer_size_t m_elementCount;
 	uint32        m_eFlags;           // e.g. CDeviceObjectFactory::BIND_VERTEX_BUFFER
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
+#if DURANGO_USE_ESRAM
 	int32         m_eSRAMOffset;
+	int32         m_eSRAMSize;
 #endif
 };
+
+namespace DeviceResources_Internal
+{
+ILINE void EscapeStringForCStyleFormatting(string& stringToEscape)
+{
+	size_t offset = 0;
+	while (true)
+	{
+		offset = stringToEscape.find('%', offset);
+		if (offset == string::npos)
+			break;
+		stringToEscape.replace(offset, 1, "%%");
+		offset += strlen("%%");
+	}
+}
+}
 
 class CDeviceResource
 {
 
 public:
-	CDeviceResource()
-		: m_pNativeResource(nullptr)
-		, m_eNativeFormat(DXGI_FORMAT_UNKNOWN) {}
-	virtual ~CDeviceResource()
-	{ Cleanup();  }
+	CDeviceResource() {}
+	virtual ~CDeviceResource() { Cleanup();  }
 
 	SResourceLayout     GetLayout() const;
 
+	inline void SetDebugName(const char* name) const
+	{
+		using namespace DeviceResources_Internal;
+		::SetDebugName(m_pNativeResource, name);
+	}
+
 	inline D3DResource* GetNativeResource() const
 	{
+#if DURANGO_USE_ESRAM
+		if (m_bIsResident)
+			return m_pNativeResourceESRAM;
+#endif
+
 		return m_pNativeResource;
 	}
 
@@ -129,6 +155,21 @@ public:
 
 	ESubstitutionResult SubstituteUsedResource();
 
+#if DURANGO_USE_ESRAM
+	enum EResidencyCoherence
+	{
+		eResCoherence_Uninitialize,
+		eResCoherence_Abandon = eResCoherence_Uninitialize,
+		eResCoherence_Clear,
+		eResCoherence_Transfer
+	};
+
+	bool IsESRAMResident();
+	bool AcquireESRAMResidency(EResidencyCoherence residencyEntry, ColorF m_cClearColor, uint32 numBytes, uint32 alignment);
+	bool ForfeitESRAMResidency(EResidencyCoherence residencyExit , ColorF m_cClearColor);
+	bool TransferESRAMAllocation(CDeviceResource& target);
+#endif
+
 protected:
 	enum
 	{
@@ -137,8 +178,13 @@ protected:
 		eSubResource_Num
 	};
 
-	D3DResource*  m_pNativeResource;
-	D3DFormat     m_eNativeFormat;
+	D3DResource*  m_pNativeResource      = nullptr;
+#if DURANGO_USE_ESRAM
+	D3DResource*  m_pNativeResourceESRAM = nullptr;
+	SESRAMAllocation m_ESRAMAllocation;
+#endif
+
+	D3DFormat     m_eNativeFormat = DXGI_FORMAT_UNKNOWN;
 	uint32        m_eFlags;
 	buffer_size_t m_resourceElements; // For buffers: in bytes; for textures: in texels
 	uint16        m_subResources[eSubResource_Num];
@@ -147,8 +193,15 @@ protected:
 	bool          m_bIsSrgb     : 1;
 	bool          m_bAllowSrgb  : 1;
 	bool          m_bIsMSAA     : 1;
+#if DURANGO_USE_ESRAM
+	bool          m_bIsResident : 1;
+#endif
 
 	int32 Cleanup();
+
+#if DURANGO_USE_ESRAM
+	void CleanupESRAMResource();
+#endif
 
 	////////////////////////////////////////////////////////////////////////////
 	// ResourceView API
@@ -187,18 +240,12 @@ struct RenderTargetData
 		uint8 m_nMSAAQuality : 4;
 	};
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32           m_nESRAMOffset;
-#endif
 	CDeviceTexture* m_pDeviceTextureMSAA;
 
 	RenderTargetData()
 	{
 		memset(this, 0, sizeof(*this));
 		m_nRTSetFrameID = -1;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-		m_nESRAMOffset = SKIP_ESRAM;
-#endif
 	}
 
 	~RenderTargetData();
@@ -214,10 +261,6 @@ struct SBufferLayout
 	uint16        m_elementSize;
 
 	uint32        m_eFlags;           // e.g. CDeviceObjectFactory::BIND_VERTEX_BUFFER
-
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32         m_eSRAMOffset;
-#endif
 };
 
 class CDeviceBuffer : public CDeviceResource
@@ -339,11 +382,6 @@ struct STextureLayout
 
 	// 128bits, [256,384)
 	ColorF            m_cClearColor;
-
-	// 32bits, [384,416)
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32             m_nESRAMOffset;
-#endif
 };
 
 class CDeviceTexture : public CDeviceResource
@@ -353,8 +391,9 @@ class CDeviceTexture : public CDeviceResource
 	// for native hand-made textures
 	size_t m_nBaseAllocatedSize;
 
-	bool   m_bNoDelete;
-	bool   m_bCube;
+	bool   m_bNoDelete : 1;
+	bool   m_bCube     : 1;
+	bool   m_Pinned    : 1;
 
 #ifdef DEVRES_USE_STAGING_POOL
 	D3DResource*      m_pStagingResource[2];
@@ -369,12 +408,11 @@ class CDeviceTexture : public CDeviceResource
 	SGPUMemHdl                m_gpuHdl;
 #endif
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && CRY_PLATFORM_DURANGO
-	uint32                    m_nBaseAddressInvalidated;
 	const SDeviceTextureDesc* m_pLayout;
 #endif
 
-#if defined(DEVICE_TEXTURE_STORE_OWNER)
-	CTexture*                 m_pDebugOwner;
+#if DEVICE_TEXTURE_STORE_OWNER
+	CTexture*                 m_pOwner;
 #endif
 
 	RenderTargetData*         m_pRenderTargetData;
@@ -382,6 +420,16 @@ class CDeviceTexture : public CDeviceResource
 public:
 	static CDeviceTexture*   Create(const STextureLayout& pLayout, const STexturePayload* pPayload);
 	static CDeviceTexture*   Associate(const STextureLayout& pLayout, D3DResource* pTex);
+
+#ifdef DEVRES_USE_STAGING_POOL
+	inline void SetDebugName(const char* name) const
+	{
+		CDeviceResource::SetDebugName(name);
+
+		::SetDebugName(m_pStagingResource[0], string(name).append(" Write-StagingB"));
+		::SetDebugName(m_pStagingResource[1], string(name).append(" Read-StagingB"));
+	}
+#endif
 
 	STextureLayout           GetLayout() const;
 	static STextureLayout    GetLayout(D3DBaseView* pView); // Layout object adjusted to include only the sub-resources in the view.
@@ -426,10 +474,12 @@ public:
 		return m_bCube;
 	}
 
-#if defined(DEVICE_TEXTURE_STORE_OWNER)
-	void SetOwner(CTexture* pOwner) { m_pDebugOwner = pOwner; }
+#if DEVICE_TEXTURE_STORE_OWNER
+	void SetOwner(CTexture* pOwner) { m_pOwner = pOwner; }
+	CTexture* GetOwner() { return m_pOwner; }
 #else
 	void SetOwner(CTexture* pOwner) {}
+	CTexture* GetOwner() { return nullptr; }
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(USE_NV_API)
@@ -455,7 +505,7 @@ public:
 
 	static uint32 TextureDataSize(D3DBaseView* pView);
 	static uint32 TextureDataSize(D3DBaseView* pView, const uint numRects, const RECT* pRects);
-	static uint32 TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags);
+	static uint32 TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags);
 
 #if DEVRES_USE_PINNING
 	void* WeakPin();
@@ -471,27 +521,6 @@ public:
 	void GpuUnpin(ID3DXboxPerformanceContext* pCtx);
 	void GpuUnpin(ID3D11DmaEngineContextX* pCtx);
 #endif
-#endif
-
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	// TODO: -> GetLayout()
-	void SetESRAMOffset(int32 offset)
-	{
-		if (m_pRenderTargetData)
-		{
-			m_pRenderTargetData->m_nESRAMOffset = offset;
-		}
-	}
-
-	int32 GetESRAMOffset()
-	{
-		if (m_pRenderTargetData)
-		{
-			return m_pRenderTargetData->m_nESRAMOffset;
-		}
-
-		return SKIP_ESRAM;
-	}
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && CRY_PLATFORM_DURANGO
@@ -519,7 +548,6 @@ public:
 	}
 
 	void ReplaceTexture(ID3D11Texture2D* pReplacement);
-	uint32 GetBaseAddressInvalidated() const { return m_nBaseAddressInvalidated; }
 #endif
 
 	void GetMemoryUsage(ICrySizer* pSizer) const
@@ -553,16 +581,16 @@ private:
 		: m_nBaseAllocatedSize(0)
 		, m_bNoDelete(false)
 		, m_bCube(false)
+		, m_Pinned(false)
 		, m_pRenderTargetData(nullptr)
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(USE_NV_API)
 		, m_handleMGPU(NULL)
 #endif
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && CRY_PLATFORM_DURANGO
 		, m_pLayout(NULL)
-		, m_nBaseAddressInvalidated(0)
 #endif
-#if defined(DEVICE_TEXTURE_STORE_OWNER)
-		, m_pDebugOwner(NULL)
+#if DEVICE_TEXTURE_STORE_OWNER
+		, m_pOwner(nullptr)
 #endif
 	{
 #ifdef DEVRES_USE_STAGING_POOL
@@ -619,13 +647,6 @@ class CDeviceTextureGpuPin
 public:
 	CDeviceTextureGpuPin(ID3DXboxPerformanceContext* pCtx, CDeviceTexture* pDevTex)
 		: m_pCtx(pCtx)
-		, m_pTexture(pDevTex)
-	{
-		pDevTex->GpuPin();
-	}
-
-	CDeviceTextureGpuPin(CCryPerformanceDeviceContextWrapper& ctx, CDeviceTexture* pDevTex)
-		: m_pCtx(ctx.GetRealPerformanceDeviceContext())
 		, m_pTexture(pDevTex)
 	{
 		pDevTex->GpuPin();

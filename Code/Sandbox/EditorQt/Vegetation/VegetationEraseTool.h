@@ -14,7 +14,5 @@ public:
 
 protected:
 	virtual ~CVegetationEraseTool() {}
-	// Delete itself.
 	virtual void DeleteThis() override { delete this; }
 };
-

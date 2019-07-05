@@ -7,16 +7,16 @@
 
 #include "FragmentBrowser.h"
 #include "PreviewerPage.h"
-#include "../FragmentTrack.h"
-#include "../FragmentEditor.h"
-#include "../MannKeyPropertiesDlgFE.h"
-#include "../MannequinDialog.h"
-#include "../MannequinModelViewport.h"
-#include "../MannequinNodes.h"
+#include "Mannequin/FragmentTrack.h"
+#include "Mannequin/FragmentEditor.h"
+#include "Mannequin/MannKeyPropertiesDlgFE.h"
+#include "Mannequin/MannequinDialog.h"
+#include "Mannequin/MannequinModelViewport.h"
+#include "Mannequin/MannequinNodes.h"
 #include "Controls/PropertiesPanel.h"
 #include "Dialogs/ToolbarDialog.h"
-#include "../MannequinPlayback.h"
-#include "../MannDebugOptionsDialog.h"
+#include "Mannequin/MannequinPlayback.h"
+#include "Mannequin/MannDebugOptionsDialog.h"
 // For persistent debugging
 #include <CryGame/IGameFramework.h>
 
@@ -908,4 +908,3 @@ void CFragmentEditorPage::Reset()
 	m_wndTrackPanel.SetFragment(FRAGMENT_ID_INVALID);
 	m_wndKeyProperties.ForceUpdate();
 }
-

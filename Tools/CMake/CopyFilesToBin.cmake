@@ -40,7 +40,6 @@ macro(add_optional_runtime_files)
 
 	if (OPTION_ENABLE_BROFILER)
 		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/Brofiler/ProfilerCore64.dll")
-		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/Brofiler/ProfilerCore32.dll")
 	endif()
 
 	if(OPTION_ENABLE_CRASHRPT)
@@ -55,6 +54,16 @@ macro(add_optional_runtime_files)
 		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/audio/oculus/wwise/Win32/bin/plugins/OculusSpatializerWwise.dll")
 	endif()
 
+	if (AUDIO_CRYSPATIAL)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/audio/cryspatial/x64/CrySpatial.dll")
+		set (BinaryFileList_Durango  ${BinaryFileList_Durango} "${SDK_DIR}/audio/cryspatial/xboxone/CrySpatial.dll")
+	endif()
+
+	if (AUDIO_CRYSPATIAL)
+		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/audio/cryspatial/x64/CrySpatial.dll")
+		set (BinaryFileList_Durango  ${BinaryFileList_Durango} "${SDK_DIR}/audio/cryspatial/xboxone/CrySpatial.dll")
+	endif()
+
 	if (PLUGIN_VR_OPENVR)
 		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/OpenVR/bin/win64/*.*")
 	endif()
@@ -63,33 +72,21 @@ macro(add_optional_runtime_files)
 		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/OSVR/dll/*.dll")
 	endif()
 
-	if (OPTION_SANDBOX)
-		if (CMAKE_BUILD_TYPE)
-			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icudt*.dll"
-			)
-			set (BinaryFileList_Win64_Profile ${BinaryFileList_Win64_Profile}
-				"${SDK_DIR}/XT_13_4/bin_vc14/*[^Dd].dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/icu[^Dd][^Tt]*[^Dd].dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/[^Ii]*[^Dd].dll"
-			)
-			set (BinaryFileList_Win64_Debug ${BinaryFileList_Win64_Debug}
-				"${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].dll"
-				"${SDK_DIR}/XT_13_4/bin_vc14/*[Dd].pdb"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*[Dd].pdb"
-			)
-		else()
-			set (BinaryFileList_Win64 ${BinaryFileList_Win64}
-				"${SDK_DIR}/XT_13_4/bin_vc14/*.dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*.dll"
-				"${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/bin/*d.pdb"
-			)
-		endif()
+endmacro()
+
+macro(deploy_runtime_file source)
+	if(${ARGC} GREATER 1)
+		deploy_runtime_file_impl(${source} ${ARGV1})
+	else()
+		set_base_outdir()
+		get_filename_component(FILE_NAME "${source}" NAME)
+		# Ensure remainders of a generator expression get removed
+		string(REPLACE ">" "" FILE_NAME "${FILE_NAME}")
+		deploy_runtime_file_impl(${source} "${base_outdir}/${FILE_NAME}")
 	endif()
 endmacro()
 
-macro(deploy_runtime_file source destination)
+macro(deploy_runtime_file_impl source destination)
 	if(USE_CONFIG)
 		# HACK: This works on the assumption that any individual file is only used by *one* configuration, or *all* configurations. CMake will generate errors otherwise.
 		list(APPEND DEPLOY_FILES "$<$<CONFIG:${USE_CONFIG}>:${source}>")
@@ -130,6 +127,14 @@ macro(deploy_runtime_files fileexpr)
 		else ()
 			deploy_runtime_file("${FILE_PATH}" "${base_outdir}/${FILE_NAME}")
 			install(FILES "${FILE_PATH}" DESTINATION bin)
+			if ((NOT USE_CONFIG) AND (${CMAKE_GENERATOR} MATCHES "Visual Studio") AND (NOT source MATCHES "<"))
+				# Make sure we also deploy to release directory for Visual Studio
+				set(outdir_temp ${BASE_OUTPUT_DIRECTORY})
+				set(BASE_OUTPUT_DIRECTORY ${BASE_OUTPUT_DIRECTORY_RELEASE})
+				set_base_outdir()
+				deploy_runtime_file("${FILE_PATH}" "${base_outdir}/${FILE_NAME}")
+				set(BASE_OUTPUT_DIRECTORY ${outdir_temp})
+			endif()
 		endif ()
 	endforeach()
 endmacro()
@@ -178,20 +183,13 @@ macro(deploy_pyside_files)
 endmacro()
 
 macro(deploy_pyside)
-	set(PYSIDE_SDK_SOURCE "${SDK_DIR}/Qt/5.6/msvc2015_64/PySide/")
+	set(PYSIDE_SDK_SOURCE "${QT_DEPLOY_ROOT}/PySide/")
 	set(PYSIDE_SOURCE "${PYSIDE_SDK_SOURCE}PySide2/")
 
-	# Only copy debug DLLs and .pyd's if we are building in debug mode, otherwise take only the release versions.
-	if(CMAKE_BUILD_TYPE)
-		set(USE_CONFIG Debug)
-	endif()
-	set(PYSIDE_DLLS "pyside2-python2.7-dbg.dll" "shiboken2-python2.7-dbg.dll")
-	file(GLOB FILES_TO_COPY RELATIVE "${PYSIDE_SOURCE}" "${PYSIDE_SOURCE}*_d.pyd")
-	deploy_pyside_files()
 	if(CMAKE_BUILD_TYPE)
 		set(USE_CONFIG Profile)
 	endif()
-	set(PYSIDE_DLLS "pyside2-python2.7.dll" "shiboken2-python2.7.dll")
+	set(PYSIDE_DLLS "pyside2.cp37-win_amd64.dll" "shiboken2.cp37-win_amd64.dll")
 	file(GLOB FILES_TO_COPY RELATIVE "${PYSIDE_SOURCE}" "${PYSIDE_SOURCE}*[^_][^d].pyd")
 	deploy_pyside_files()
 	set(USE_CONFIG)
@@ -233,27 +231,28 @@ macro(copy_binary_files_to_target)
 		deploy_runtime_files("${SDK_DIR}/Orbis/target/sce_module/*.prx" "app/sce_module")
 	endif()
 
-	if (WIN64)
+	if (WINDOWS)
 		if (OPTION_ENGINE)
-			deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+			if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
+				deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.15.26726/Redist/MSVC/14.15.26706/x64/**/*.dll")
+			elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
+				deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x64/**/*.dll")
+			endif()	
 		endif()
 		if (OPTION_SANDBOX)
-			deploy_runtime_files("${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/platforms/*.dll" "platforms")
-			deploy_runtime_files("${SDK_DIR}/Qt/5.6/msvc2015_64/Qt/plugins/imageformats/*.dll" "imageformats")
-			if (CMAKE_BUILD_TYPE)
-				set(USE_CONFIG Debug)
-				deploy_runtime_files("${SDK_DIR}/Python27/*_d.zip")
-				set(USE_CONFIG Profile)
-				deploy_runtime_files("${SDK_DIR}/Python27/*[^_][^d].zip")
-				set(USE_CONFIG)
-			else()
-				deploy_runtime_files("${SDK_DIR}/Python27/*.zip")
-			endif()
+			# Qt: Debug && Profile will use the same win_x64 folder, for Release Qt will not be deployed. Empty second arg do the job.
+			# d3dcompiler_47.dll file from Qt bin should not be copied in output folder
+			deploy_runtime_files("${QT_DEPLOY_ROOT}/Qt/bin/[^d][^3]*.dll" "")
+			deploy_runtime_files("${QT_DEPLOY_ROOT}/Qt/bin/QtWebEngineProcess.exe" "")
+			deploy_runtime_files("${QT_DEPLOY_ROOT}/PySide/PySide2/qt.conf" "")
+			deploy_runtime_files("${QT_DEPLOY_ROOT}/PySide/PySide2/shiboken2.cp37-win_amd64.pyd" "")
+			file(COPY ${QT_DEPLOY_ROOT}/Qt/plugins DESTINATION ${base_outdir})
+			file(COPY ${QT_DEPLOY_ROOT}/Qt/resources DESTINATION ${base_outdir})
+			file(COPY ${QT_DEPLOY_ROOT}/Qt/translations/qtwebengine_locales/en-US.pak DESTINATION "${base_outdir}/translations/qtwebengine_locales")
+
+			deploy_runtime_files("${SDK_DIR}/XT_13_4/bin_vc14/*.dll" "")
+			deploy_runtime_files("${SDK_DIR}/XT_13_4/bin_vc14/*.pdb" "")
 			deploy_pyside()
-		endif()
-	elseif(WIN32)
-		if (OPTION_ENGINE)
-			deploy_runtime_files("${SDK_DIR}/Microsoft Visual Studio Compiler/14.0/redist/x86/**/*.dll")
 		endif()
 	endif ()
 

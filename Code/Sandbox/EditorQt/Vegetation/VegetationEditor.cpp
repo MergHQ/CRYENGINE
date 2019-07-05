@@ -1,56 +1,75 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "VegetationEditor.h"
 
-#include "VegetationModel.h"
-#include "VegetationMap.h"
-#include "VegetationObject.h"
-#include "VegetationSelectTool.h"
-#include "VegetationPlaceTool.h"
-#include "VegetationTreeView.h"
-#include "VegetationPaintTool.h"
-#include "VegetationEraseTool.h"
-#include "Qt/Widgets/QEditToolButton.h"
+#include "QT/QToolTabManager.h"
+#include "QT/Widgets/QEditToolButton.h"
 #include "QT/Widgets/QPreviewWidget.h"
+#include "Vegetation/VegetationEraseTool.h"
+#include "Vegetation/VegetationMap.h"
+#include "Vegetation/VegetationModel.h"
+#include "Vegetation/VegetationObject.h"
+#include "Vegetation/VegetationPaintTool.h"
+#include "Vegetation/VegetationPlaceTool.h"
+#include "Vegetation/VegetationSelectTool.h"
+#include "Vegetation/VegetationTreeView.h"
+#include "IEditorImpl.h"
+
+#include <AssetSystem/Asset.h>
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <EditorFramework/Events.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <IUndoObject.h>
+#include <Controls/QuestionDialog.h>
+#include <Menu/AbstractMenu.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
+#include <Util/FileUtil.h>
+
 #include <CrySandbox/CrySignal.h>
-#include "FileDialogs/SystemFileDialog.h"
-#include "CryIcon.h"
-#include "QtUtil.h"
-#include "Controls/QuestionDialog.h"
-#include "Menu/AbstractMenu.h"
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-
-#include <QLayout>
+#include <QFileInfo>
 #include <QInputDialog>
 #include <QLabel>
+#include <QLayout>
+#include <QSortFilterProxyModel>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QToolBar>
-#include <QFileInfo>
 
 DECLARE_PYTHON_MODULE(vegetation);
 
 namespace Private_VegetationEditor
 {
+void EnsureVegetationEditorActive()
+{
+	CTabPaneManager* pPaneManager = CTabPaneManager::GetInstance();
+	if (pPaneManager)
+	{
+		pPaneManager->OpenOrCreatePane("Vegetation Editor");
+	}
+}
+
 void Paint()
 {
-	GetIEditor()->SetEditTool(new CVegetationPaintTool());
+	EnsureVegetationEditorActive();
+	CommandEvent("vegetation.paint").SendToKeyboardFocus();
 }
 
 void Erase()
 {
-	GetIEditor()->SetEditTool(new CVegetationEraseTool());
+	EnsureVegetationEditorActive();
+	CommandEvent("vegetation.erase").SendToKeyboardFocus();
 }
 
 void Select()
 {
-	GetIEditor()->SetEditTool(new CVegetationSelectTool());
+	EnsureVegetationEditorActive();
+	CommandEvent("vegetation.select").SendToKeyboardFocus();
 }
 
 void TryClearSelection()
 {
-	auto pTool = GetIEditorImpl()->GetEditTool();
+	auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 	{
 		auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
@@ -94,7 +113,7 @@ void ScaleVegetationObjects()
 		pVegetationMap->ScaleObjectInstances(pVegetationObject, scale);
 	}
 
-	// ViewUpdate not neccessary
+	// ViewUpdate not necessary
 }
 
 void RotateVegetationObjectsRandomly()
@@ -209,7 +228,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		CVegetationPaintTool* m_pVegetationPaintTool;
 		CSmartVariable<float> m_radius;
 
-		CVarObject m_varObject;
+		CVarObject            m_varObject;
 	};
 
 	struct SVegetationSerializer
@@ -266,8 +285,8 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			auto pEditMenu = pParentEditor->GetMenu(CEditor::MenuItems::EditMenu);
 			SetupEditMenu(pEditMenu);
 
-			auto pToolsMenu = pParentEditor->GetMenu(tr("Tools"));
-			SetupToolsMenu(pToolsMenu);
+			CAbstractMenu* pToolsMenu = pParentEditor->GetRootMenu()->CreateMenu(tr("Tools"), 0);
+			SetupToolsMenu(pToolsMenu, pParentEditor);
 
 			pParentEditor->AddToMenu(CEditor::MenuItems::ViewMenu);
 			auto pViewMenu = pParentEditor->GetMenu(CEditor::MenuItems::ViewMenu);
@@ -306,14 +325,20 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			toolBarActions.push_back(pCloneVegetationObjectAction);
 		}
 
-		void SetupToolsMenu(CAbstractMenu* pToolsMenu)
+		void SetupToolsMenu(CAbstractMenu* pToolsMenu, CVegetationEditor* pParentEditor)
 		{
-			pClearAction = pToolsMenu->CreateAction(tr("Clear selected Vegetation Objects"));
-			pScaleAction = pToolsMenu->CreateAction(tr("Scale selected Vegetation Objects"));
-			pRotateRndAction = pToolsMenu->CreateAction(tr("Randomly rotate all instances"));
-			pClearRotationAction = pToolsMenu->CreateAction(tr("Clear rotation"));
-			pMergeObjectsAction = pToolsMenu->CreateAction(tr("Merge Vegetation Objects"));
-			pRemoveDuplicatedVegetation = pToolsMenu->CreateAction(tr("Remove duplicated Vegetation"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.paint"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.erase"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.select"));
+
+			const int section = pToolsMenu->GetNextEmptySection();
+
+			pClearAction = pToolsMenu->CreateAction(tr("Clear selected Vegetation Objects"), section);
+			pScaleAction = pToolsMenu->CreateAction(tr("Scale selected Vegetation Objects"), section);
+			pRotateRndAction = pToolsMenu->CreateAction(tr("Randomly rotate all instances"), section);
+			pClearRotationAction = pToolsMenu->CreateAction(tr("Clear rotation"), section);
+			pMergeObjectsAction = pToolsMenu->CreateAction(tr("Merge Vegetation Objects"), section);
+			pRemoveDuplicatedVegetation = pToolsMenu->CreateAction(tr("Remove duplicated Vegetation"), section);
 		}
 
 		void SetupViewMenu(CAbstractMenu* pViewMenu, CVegetationEditor* pParentEditor)
@@ -321,16 +346,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			pShowPreviewAction = pViewMenu->CreateAction(tr("Show Preview"));
 			pShowPreviewAction->setCheckable(true);
 
-			pShowLodFilesAction = pViewMenu->CreateAction(tr("Show LOD files"));
-			pShowLodFilesAction->setCheckable(true);
-
 			bool bShowPreview = true;
 			pParentEditor->GetProperty(s_showPreviewPropertyName, bShowPreview);
 			pShowPreviewAction->setChecked(bShowPreview);
-
-			bool bShowLod = false;
-			pParentEditor->GetProperty(s_showLodPropertyName, bShowLod);
-			pShowLodFilesAction->setChecked(bShowLod);
 		}
 
 		QAction*              pImportAction;
@@ -349,28 +367,24 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		QAction*              pRemoveDuplicatedVegetation;
 		QAction*              pRemoveAction;
 		QAction*              pShowPreviewAction;
-		QAction*              pShowLodFilesAction;
 
 		std::vector<QAction*> toolBarActions;
 	};
 
 	struct SUi
 	{
-		SUi(QAbstractItemModel* pVegetationModel, QWidget* pParent, const std::vector<QAction*>& toolBarActions)
+		SUi(QAbstractItemModel* pVegetationModel, const std::vector<QAction*>& toolBarActions)
 		{
-			auto pParentLayout = pParent->layout();
+			pContentLayout = new QVBoxLayout();
 
-			auto pToolBar = CreateToolBar(toolBarActions, pParent);
-			// set spacing to 0 to remove small border between
-			// property tree and status bar
-			//pParentLayout->setSpacing(0);
-			pParentLayout->addWidget(pToolBar);
+			auto pToolBar = CreateToolBar(toolBarActions);
+			pContentLayout->addWidget(pToolBar);
 
-			pVegetationTreeView = CreateVegetationTreeView(pVegetationModel, pParent);
+			pVegetationTreeView = CreateVegetationTreeView(pVegetationModel);
 
-			auto pToolButtonPanel = CreateToolButtonPanel(pParent);
+			auto pToolButtonPanel = CreateToolButtonPanel();
 
-			pPropertyTree = CreatePropertyTree(pParent);
+			pPropertyTree = CreatePropertyTree();
 
 			auto pPropertyLayout = new QVBoxLayout;
 			pPropertyLayout->setContentsMargins(0, 0, 0, 0);
@@ -382,27 +396,27 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			auto pPropertyWidget = new QWidget;
 			pPropertyWidget->setLayout(pPropertyLayout);
 
-			pPreviewWidget = CreatePreviewWidget(pParent);
+			pPreviewWidget = CreatePreviewWidget();
 
 			pSplitter = new QSplitter(Qt::Vertical);
 			pSplitter->addWidget(pVegetationTreeView);
 			pSplitter->addWidget(pPropertyWidget);
 			pSplitter->addWidget(pPreviewWidget);
-			pParentLayout->addWidget(pSplitter);
+			pContentLayout->addWidget(pSplitter);
 
 			pSplitter->setStretchFactor(0, 0);
 			pSplitter->setStretchFactor(1, 1);
 			pSplitter->setStretchFactor(2, 1);
 
-			pStatusLabel = new QLabel(pParent);
-			auto pStatusBar = new QStatusBar(pParent);
+			pStatusLabel = new QLabel();
+			auto pStatusBar = new QStatusBar();
 			pStatusBar->addWidget(pStatusLabel);
-			pParentLayout->addWidget(pStatusBar);
+			pContentLayout->addWidget(pStatusBar);
 		}
 
-		static QToolBar* CreateToolBar(const std::vector<QAction*>& toolBarActions, QWidget* pParent)
+		static QToolBar* CreateToolBar(const std::vector<QAction*>& toolBarActions)
 		{
-			auto pToolBar = new QToolBar(pParent);
+			auto pToolBar = new QToolBar();
 			for (auto pAction : toolBarActions)
 			{
 				pToolBar->addAction(pAction);
@@ -411,10 +425,13 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			return pToolBar;
 		}
 
-		static CVegetationTreeView* CreateVegetationTreeView(QAbstractItemModel* pModel, QWidget* pParent)
+		static CVegetationTreeView* CreateVegetationTreeView(QAbstractItemModel* pModel)
 		{
-			auto pVegetationTreeView = new CVegetationTreeView(pParent);
-			pVegetationTreeView->setModel(pModel);
+			auto pVegetationTreeView = new CVegetationTreeView();
+			auto pFilterModel = new QSortFilterProxyModel();
+			pFilterModel->setSourceModel(pModel);
+			pVegetationTreeView->setModel(pFilterModel);
+
 			// show only name column by default
 			for (int i = 1; i < pModel->columnCount(); ++i)
 			{
@@ -424,9 +441,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			return pVegetationTreeView;
 		}
 
-		static QEditToolButtonPanel* CreateToolButtonPanel(QWidget* pParent)
+		static QEditToolButtonPanel* CreateToolButtonPanel()
 		{
-			auto pToolButtonPanel = new QEditToolButtonPanel(QEditToolButtonPanel::LayoutType::Horizontal, pParent);
+			auto pToolButtonPanel = new QEditToolButtonPanel(QEditToolButtonPanel::LayoutType::Horizontal);
 			pToolButtonPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 			const auto paintToolButtonInfo = CVegetationPaintTool::CreatePaintToolButtonInfo();
 			const auto eraseToolButtonInfo = CVegetationEraseTool::CreateEraseToolButtonInfo();
@@ -438,9 +455,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			return pToolButtonPanel;
 		}
 
-		static QPropertyTree* CreatePropertyTree(QWidget* pParent)
+		static QPropertyTreeLegacy* CreatePropertyTree()
 		{
-			auto pPropertyTree = new QPropertyTree(pParent);
+			auto pPropertyTree = new QPropertyTreeLegacy();
 			pPropertyTree->setValueColumnWidth(0.6f);
 			pPropertyTree->setSizeToContent(false);
 			pPropertyTree->setAutoRevert(false);
@@ -450,7 +467,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			return pPropertyTree;
 		}
 
-		static QPreviewWidget* CreatePreviewWidget(QWidget* pParent)
+		static QPreviewWidget* CreatePreviewWidget()
 		{
 			auto pPreviewWidget = new QPreviewWidget;
 			pPreviewWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -460,8 +477,39 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			return pPreviewWidget;
 		}
 
+		// Using QSortFilterProxyModel, we need to unmap indices received from selection before usage.
+		QModelIndex GetSelectedSourceIndex() const
+		{
+			QAbstractProxyModel* pProxy = static_cast<QAbstractProxyModel*>(pVegetationTreeView->model());
+			return pProxy->mapToSource(pVegetationTreeView->selectionModel()->currentIndex());
+		}
+
+		QModelIndexList GetAllSelectedSourceRows() const
+		{
+			// Remap from proxy model indices to indices for operation
+			QAbstractProxyModel* pProxy = static_cast<QAbstractProxyModel*>(pVegetationTreeView->model());
+
+			auto selectedRows = pVegetationTreeView->selectionModel()->selectedRows();
+			for (auto& row : selectedRows)
+			{
+				row = pProxy->mapToSource(row);
+			}
+
+			return selectedRows;
+		}
+
+		void MapFromSourceIndices(QModelIndexList& indices)
+		{
+			QAbstractProxyModel* pProxy = static_cast<QAbstractProxyModel*>(pVegetationTreeView->model());
+			for (auto& index : indices)
+			{
+				index = pProxy->mapFromSource(index);
+			}
+		}
+
+		QVBoxLayout*         pContentLayout;
 		CVegetationTreeView* pVegetationTreeView;
-		QPropertyTree*       pPropertyTree;
+		QPropertyTreeLegacy* pPropertyTree;
 		QPreviewWidget*      pPreviewWidget;
 		QSplitter*           pSplitter;
 		QLabel*              pStatusLabel;
@@ -469,19 +517,21 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	SImplementation(CVegetationEditor* pEditor)
 		: m_pEditor(pEditor)
-		, m_pVegetationModel(new CVegetationModel(pEditor))
+		, m_pVegetationModel(new CVegetationModel())
 		, m_actions(m_pEditor)
-		, m_ui(m_pVegetationModel, m_pEditor, m_actions.toolBarActions)
+		, m_ui(m_pVegetationModel, m_actions.toolBarActions)
 		, m_splitterState(QtUtil::ToQByteArray(m_pEditor->GetProperty(s_previewSplitterStatePropertyName)))
 	{
 		SetupControls();
 
 		GetIEditorImpl()->RegisterNotifyListener(this);
+		GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &SImplementation::OnEditToolChanged);
 	}
 
 	~SImplementation()
 	{
 		GetIEditorImpl()->UnregisterNotifyListener(this);
+		GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
 	}
 
 	void SetupControls()
@@ -507,7 +557,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void SetupVegetationTreeView()
 	{
-		QObject::connect(m_ui.pVegetationTreeView, &QTreeView::customContextMenuRequested, [ = ]
+		QObject::connect(m_ui.pVegetationTreeView, &QTreeView::customContextMenuRequested, [=]
 		{
 			auto pMenu = CreateContextMenu();
 			pMenu->exec(QCursor::pos());
@@ -522,7 +572,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			  return;
 			}
 
-			const auto currentSelection = pSelectionModel->selectedRows();
+			const auto currentSelection = m_ui.GetAllSelectedSourceRows();
 			const auto selectFlags = QItemSelectionModel::Select | QItemSelectionModel::Rows;
 			bBlockSignal = true;
 			for (const auto& currentIndex : currentSelection)
@@ -533,13 +583,13 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			    for (int i = 0; i < pGroupItem->rowCount(); ++i)
 			    {
 			      pSelectionModel->select(m_pVegetationModel->index(i, 0, currentIndex), selectFlags);
-			    }
-			  }
+					}
+				}
 			  else if (pSelectionModel->isSelected(currentIndex.parent()))
 			  {
 			    // do not deselect vegetation objects when their groups are still selected
 			    pSelectionModel->select(currentIndex, selectFlags);
-			  }
+				}
 			}
 			bBlockSignal = false;
 
@@ -555,9 +605,10 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			UpdateVegetationSerializers(selectedObjects);
 		});
 
-		QObject::connect(m_ui.pVegetationTreeView, &QTreeView::doubleClicked, [this](const QModelIndex& index)
+		QObject::connect(m_ui.pVegetationTreeView, &QTreeView::doubleClicked, [this]()
 		{
-			auto pVegetationObject = m_pVegetationModel->GetVegetationObject(index);
+			QModelIndex currSelection = m_ui.GetSelectedSourceIndex();
+			auto pVegetationObject = m_pVegetationModel->GetVegetationObject(currSelection);
 			if (!pVegetationObject)
 			{
 			  return;
@@ -566,9 +617,10 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			ActivatePlaceTool(pVegetationObject);
 		});
 
-		QObject::connect(m_ui.pVegetationTreeView, &CVegetationTreeView::dragStarted, [this](const QModelIndexList& dragRows)
+		QObject::connect(m_ui.pVegetationTreeView, &CVegetationTreeView::dragStarted, [this]()
 		{
-			if (std::find_if(dragRows.cbegin(), dragRows.cend(), [this](const QModelIndex& rowIndex) { return m_pVegetationModel->IsGroup(rowIndex); }) != dragRows.cend())
+			auto dragRows = m_ui.GetAllSelectedSourceRows();
+			if (std::any_of(dragRows.cbegin(), dragRows.cend(), [this](const QModelIndex& rowIndex) { return m_pVegetationModel->IsGroup(rowIndex); }))
 			{
 			  return;
 			}
@@ -653,13 +705,12 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			  if (!exportFileName.isEmpty())
 			  {
 			    ExportObjectsToXml(exportFileName.toStdString().c_str());
-			  }
+				}
 			}
 			else
 			{
 			  CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "You need to select object(s) to export");
 			}
-
 		});
 	}
 
@@ -672,7 +723,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QObject::connect(m_actions.pRenameGroupAction, &QAction::triggered, [this]
 		{
-			auto currentGroupIndex = m_ui.pVegetationTreeView->selectionModel()->currentIndex();
+			auto currentGroupIndex = m_ui.GetSelectedSourceIndex();
 			if (!m_pVegetationModel->IsGroup(currentGroupIndex))
 			{
 			  return;
@@ -687,19 +738,19 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QObject::connect(m_actions.pMoveSelectionToGroupAction, &QAction::triggered, [this]
 		{
-			auto pTool = GetIEditorImpl()->GetEditTool();
+			auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 			if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 			{
 			  auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
 			  if (pVegetationTool->GetCountSelectedInstances() <= 0)
 			  {
 			    return;
-			  }
+				}
 			  auto newGroupName = QInputDialog::getText(nullptr, tr("Rename Group"), tr("Input group name:"));
 			  if (newGroupName.isNull())
 			  {
 			    return;
-			  }
+				}
 			  m_pVegetationModel->MoveInstancesToGroup(newGroupName, pVegetationTool->GetSelectedInstances());
 			}
 		});
@@ -714,23 +765,21 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QObject::connect(m_actions.pReplaceVegetationObjectAction, &QAction::triggered, [this]
 		{
-			auto currentObjectIndex = m_ui.pVegetationTreeView->selectionModel()->currentIndex();
+			auto currentObjectIndex = m_ui.GetSelectedSourceIndex();
 			if (!m_pVegetationModel->IsVegetationObject(currentObjectIndex))
 			{
 			  return;
 			}
 
-			string filename;
-			if (!CFileUtil::SelectSingleFile(EFILE_TYPE_GEOMETRY, filename, string(), string("objects")))
+			const CAsset* pAsset = CAssetBrowserDialog::OpenSingleAssetForTypes({ "Mesh" });
+			if (!pAsset)
 			{
 			  return;
 			}
 
 			CUndo undo("Replace Vegetation Object");
-			m_pVegetationModel->ReplaceVegetationObject(currentObjectIndex, filename.GetString());
+			m_pVegetationModel->ReplaceVegetationObject(currentObjectIndex, QtUtil::ToQString(pAsset->GetFile(0)));
 
-			// Update properties in tree. revert() functions do not work
-			//m_pVegetationObjectPropTree->revertNoninterrupting();
 			const auto pVegetationMap = GetIEditorImpl()->GetVegetationMap();
 			const auto selectedObjects = pVegetationMap->GetSelectedObjects();
 			UpdateVegetationSerializers(selectedObjects);
@@ -784,16 +833,12 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			m_pEditor->SetProperty(s_showPreviewPropertyName, bIsChecked);
 			UpdatePreviewVisibility();
 		});
-
-		connect(m_actions.pShowLodFilesAction, &QAction::toggled, [this](bool bIsChecked)
-		{
-			m_pEditor->SetProperty(s_showLodPropertyName, bIsChecked);
-		});
 	}
 
 	QMenu* CreateContextMenu() const
 	{
-		const auto selectedRows = m_ui.pVegetationTreeView->selectionModel()->selectedRows();
+		const auto selectedRows = m_ui.GetAllSelectedSourceRows();
+
 		bool isGroupSelected = false, isObjectSelected = false;
 		for (const auto& selectedRow : selectedRows)
 		{
@@ -843,6 +888,28 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		return pContextMenu;
 	}
 
+	void OnEditToolChanged()
+	{
+		m_actions.pMoveSelectionToGroupAction->setVisible(false);
+
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+		if (pTool)
+		{
+			if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
+			{
+				auto pPaintTool = static_cast<CVegetationPaintTool*>(pTool);
+				pPaintTool->signalBrushRadiusChanged.Connect(this, &SImplementation::UpdateBrushRadius);
+			}
+			else if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
+			{
+				auto pSelectTool = static_cast<CVegetationSelectTool*>(pTool);
+				pSelectTool->signalSelectionChanged.Connect(this, &SImplementation::InstanceSelected);
+				m_actions.pMoveSelectionToGroupAction->setVisible(true);
+			}
+		}
+		UpdatePaintBrushSerializer();
+	}
+
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override
 	{
 		switch (event)
@@ -858,28 +925,8 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		case eNotify_OnEndNewScene:  // New Level
 			m_pVegetationModel->EndResetOnLevelChange();
 			break;
-
-		case eNotify_OnEditToolEndChange:
-			{
-				m_actions.pMoveSelectionToGroupAction->setVisible(false);
-
-				auto pTool = GetIEditorImpl()->GetEditTool();
-				if (pTool)
-				{
-					if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
-					{
-						auto pPaintTool = static_cast<CVegetationPaintTool*>(pTool);
-						pPaintTool->signalBrushRadiusChanged.Connect(this, &SImplementation::UpdateBrushRadius);
-					}
-					else if (pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
-					{
-						auto pSelectTool = static_cast<CVegetationSelectTool*>(pTool);
-						pSelectTool->signalSelectionChanged.Connect(this, &SImplementation::InstanceSelected);
-						m_actions.pMoveSelectionToGroupAction->setVisible(true);
-					}
-				}
-				UpdatePaintBrushSerializer();
-			}
+		case eNotify_OnClearLevelContents:
+			m_pVegetationModel->Clear();
 			break;
 		}
 	}
@@ -915,7 +962,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		m_serializers.clear();
 
 		// if paint tool is active the brush has to be serializable
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
 		{
 			AddVegetationSerializer();
@@ -927,15 +974,14 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 	void UpdatePaintBrushSerializer()
 	{
 		CVegetationPaintTool* pPaintTool = nullptr;
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPaintTool)))
 		{
 			pPaintTool = static_cast<CVegetationPaintTool*>(pTool);
 		}
 
-		// if paint tool is actived the brush has to be serializable even
-		// if no objects are selected
-		// if no paint tool is present the brush property tree is removed
+		// If paint tool is active, the brush has to be serializable even if no objects are selected
+		// If no paint tool is present the brush property tree is removed
 		m_vegetationBrush.SetVegetationPaintTool(pPaintTool);
 		if (m_vegetationSerializers.empty() && pPaintTool)
 		{
@@ -954,25 +1000,25 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void ActivatePlaceTool(CVegetationObject* pVegetationObject)
 	{
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		auto pPlaceTool = [pTool]() -> CVegetationPlaceTool*
-		{
-			if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPlaceTool)))
-			{
-				return static_cast<CVegetationPlaceTool*>(pTool);
-			}
+											{
+												if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPlaceTool)))
+												{
+													return static_cast<CVegetationPlaceTool*>(pTool);
+												}
 
-			auto pPlaceTool = new CVegetationPlaceTool();
-			GetIEditorImpl()->SetEditTool(pPlaceTool);
-			return pPlaceTool;
-		} ();
+												auto pPlaceTool = new CVegetationPlaceTool();
+												GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(pPlaceTool);
+												return pPlaceTool;
+											} ();
 
 		pPlaceTool->SelectObjectToCreate(pVegetationObject);
 	}
 
 	void AbortPlaceTool()
 	{
-		auto pTool = GetIEditorImpl()->GetEditTool();
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationPlaceTool)))
 		{
 			pTool->Abort();
@@ -985,7 +1031,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 		AbortPlaceTool();
 
 		CUndo undo("Vegetation Item Remove");
-		auto selectedRows = m_ui.pVegetationTreeView->selectionModel()->selectedRows();
+		auto selectedRows = m_ui.GetAllSelectedSourceRows();
 		m_pVegetationModel->RemoveItems(selectedRows);
 		// Reset property tree/preview widget
 		ResetVegetationSerializers();
@@ -993,35 +1039,23 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void AddVegetationObject()
 	{
-		CFileUtil::FileFilterCallback fileFilterFunc;
-		if (!m_actions.pShowLodFilesAction->isChecked())
-		{
-			fileFilterFunc = [](const FileSystem::SnapshotPtr&, const FileSystem::FilePtr& file)
-			{
-				const auto fileName = QFileInfo(file->provider->fullName).baseName();
-				QRegularExpressionMatch match;
-				const auto index = fileName.lastIndexOf(QRegularExpression(QStringLiteral("_lod[0-9]*"), QRegularExpression::CaseInsensitiveOption), -1, &match);
-				return (index < 0) || ((index + match.captured().size()) < fileName.size());
-			};
-		}
-
-		std::vector<string> filenames;
-		if (!CFileUtil::SelectMultipleFiles(EFILE_TYPE_GEOMETRY, filenames, string(), string("objects"), string(), fileFilterFunc))
+		const std::vector<CAsset*> assets = CAssetBrowserDialog::OpenMultipleAssetsForTypes({ "Mesh" });
+		if (assets.empty())
 		{
 			return;
 		}
 
 		auto pSelectionModel = m_ui.pVegetationTreeView->selectionModel();
-		auto currentIndex = pSelectionModel->currentIndex();
+		auto currentIndex = m_ui.GetSelectedSourceIndex();
 
 		auto pGroupItem = m_pVegetationModel->GetGroup(currentIndex);
 		const auto oldObjectCount = pGroupItem ? pGroupItem->rowCount() : -1;
 		CVegetationObject* pVegObject = nullptr;
 
 		CUndo undo("Add Vegetation Object(s)");
-		for (const auto& filename : filenames)
+		for (const CAsset* pAsset : assets)
 		{
-			pVegObject = m_pVegetationModel->AddVegetationObject(currentIndex, filename.GetString());
+			pVegObject = m_pVegetationModel->AddVegetationObject(currentIndex, QtUtil::ToQString(pAsset->GetFile(0)));
 		}
 
 		if (!pGroupItem && pVegObject)
@@ -1049,8 +1083,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void CloneVegetationObject()
 	{
-		auto pSelectionModel = m_ui.pVegetationTreeView->selectionModel();
-		auto currentObjectIndex = pSelectionModel->currentIndex();
+		auto currentObjectIndex = m_ui.GetSelectedSourceIndex();
 		if (m_pVegetationModel->IsGroup(currentObjectIndex))
 		{
 			return;
@@ -1069,7 +1102,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			pSelectionModel->select(m_pVegetationModel->index(i, 0), QItemSelectionModel::Select | QItemSelectionModel::Rows);
 		}
 
-		const auto selectedRows = pSelectionModel->selectedRows();
+		const auto selectedRows = m_ui.GetAllSelectedSourceRows();
 		m_pVegetationModel->Select(selectedRows);
 	}
 
@@ -1122,43 +1155,53 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 	void InstanceSelected()
 	{
-		auto pTool = GetIEditorImpl()->GetEditTool();
-		if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
+		auto pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+		if (!pTool || !pTool->IsKindOf(RUNTIME_CLASS(CVegetationSelectTool)))
 		{
-			auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
-			QModelIndexList indices = m_pVegetationModel->FindVegetationObjects(pVegetationTool->GetSelectedInstances());
-			CVegetationTreeView* treeView = m_pEditor->findChild<CVegetationTreeView*>();
-			QItemSelection selection;
+			return;
+		}
 
-			if (treeView)
+		CVegetationTreeView* pTreeView = m_pEditor->findChild<CVegetationTreeView*>();
+		if (!pTreeView)
+		{
+			return;
+		}
+
+		auto pVegetationTool = static_cast<CVegetationSelectTool*>(pTool);
+		QModelIndexList indices = m_pVegetationModel->FindVegetationObjects(pVegetationTool->GetSelectedInstances());
+		m_ui.MapFromSourceIndices(indices);
+
+		QItemSelection selection;
+		pTreeView->selectionModel()->clearSelection();
+		QModelIndex firstParent;
+
+		for (QModelIndex idx : indices)
+		{
+			if (!firstParent.isValid())
 			{
-				treeView->selectionModel()->clearSelection();
-				QModelIndex firstParent;
+				firstParent = idx.parent();
+			}
 
-				for (QModelIndex idx : indices)
-				{
-					if (!firstParent.isValid())
-					{
-						firstParent = idx.parent();
-					}
+			pTreeView->expand(idx.parent());
+			selection.select(idx, idx);
+		}
 
-					treeView->expand(idx.parent());
-					selection.select(idx, idx);
-				}
+		pTreeView->selectionModel()->select(selection, QItemSelectionModel::Select | QItemSelectionModel::Rows);
 
-				treeView->selectionModel()->select(selection, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-
-				// Scroll to the last selected index
-				if (!indices.empty())
-				{
-					auto lastIdx = indices.last();
-					if (lastIdx.isValid())
-					{
-						treeView->scrollTo(lastIdx);
-					}
-				}
+		// Scroll to the last selected index
+		if (!indices.empty())
+		{
+			auto lastIdx = indices.last();
+			if (lastIdx.isValid())
+			{
+				pTreeView->scrollTo(lastIdx);
 			}
 		}
+	}
+
+	QLayout* GetContentLayout() const
+	{
+		return m_ui.pContentLayout;
 	}
 
 private:
@@ -1173,26 +1216,24 @@ private:
 
 	static const QString               s_showPreviewPropertyName;
 	static const QString               s_previewSplitterStatePropertyName;
-	static const QString               s_showLodPropertyName;
 };
 
 const QString CVegetationEditor::SImplementation::s_showPreviewPropertyName = QStringLiteral("showPreview");
 const QString CVegetationEditor::SImplementation::s_previewSplitterStatePropertyName = QStringLiteral("previewSplitterState");
-const QString CVegetationEditor::SImplementation::s_showLodPropertyName = QStringLiteral("showLod");
 
 REGISTER_VIEWPANE_FACTORY(CVegetationEditor, "Vegetation Editor", "Tools", true)
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::Paint, vegetation, paint,
-                                     "Vegetation paint tool",
-                                     "vegetation.paint()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_VegetationEditor::Paint, vegetation, paint,
+                                   CCommandDescription("Vegetation paint tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(vegetation, paint, "Paint", "", "", false)
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::Erase, vegetation, erase,
-                                     "Vegetation erase tool",
-                                     "vegetation.erase()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_VegetationEditor::Erase, vegetation, erase,
+                                   CCommandDescription("Vegetation erase tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(vegetation, erase, "Erase", "", "", false)
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::Select, vegetation, select,
-                                     "Vegetation select tool",
-                                     "vegetation.select()");
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_VegetationEditor::Select, vegetation, select,
+                                   CCommandDescription("Vegetation select tool"))
+REGISTER_EDITOR_UI_COMMAND_DESC(vegetation, select, "Select", "", "", false)
 
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::ClearVegetationObjects, vegetation, clear,
                                      "Clear selected vegetation objects",
@@ -1228,37 +1269,42 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::ExportObjectsToXm
 
 CVegetationEditor::CVegetationEditor(QWidget* parent)
 	: CDockableEditor(parent)
-	, p(new SImplementation(this))
 {
+	RegisterActions();
+
+	//Should be after action registrations
+	m_pImpl.reset(new SImplementation(this));
+	SetContent(m_pImpl->GetContentLayout());
+
 	setAttribute(Qt::WA_DeleteOnClose);
 }
 
 CVegetationEditor::~CVegetationEditor()
 {
-	GetIEditorImpl()->SetEditTool(nullptr);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 }
 
-bool CVegetationEditor::OnNew()
+void CVegetationEditor::RegisterActions()
 {
-	p->AddVegetationObject();
-	return true;
+	// Register general commands
+	RegisterAction("general.new", [this]() { m_pImpl->AddVegetationObject(); });
+	RegisterAction("general.delete", &CVegetationEditor::OnDelete);
+	RegisterAction("general.duplicate", [this]() { m_pImpl->CloneVegetationObject(); });
+	RegisterAction("general.select_all", [this]() { m_pImpl->SelectAll(); });
+
+	RegisterAction("vegetation.paint", []() { 
+		GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationPaintTool()); 
+	});
+	RegisterAction("vegetation.erase", []() { GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationEraseTool()); });
+	RegisterAction("vegetation.select", []() { GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationSelectTool()); });
 }
 
-bool CVegetationEditor::OnDelete()
+void CVegetationEditor::OnDelete()
 {
-	p->RemoveTreeSelection();
-	return true;
-}
+	if (CQuestionDialog::SQuestion("Delete Objects", "Are you sure you want to delete selected vegetation objects?") != QDialogButtonBox::Yes)
+	{
+		return;
+	}
 
-bool CVegetationEditor::OnDuplicate()
-{
-	p->CloneVegetationObject();
-	return true;
+	m_pImpl->RemoveTreeSelection();
 }
-
-bool CVegetationEditor::OnSelectAll()
-{
-	p->SelectAll();
-	return true;
-}
-

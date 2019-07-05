@@ -13,7 +13,7 @@ static VkFilter MapFilter(int filter, float& impliedAniso)
 	switch (filter)
 	{
 	default:
-		VK_ASSERT(false && "Unknown filter value");
+		VK_ASSERT(false, "Unknown filter value");
 		// Fall through
 	case FILTER_NONE:
 	case FILTER_POINT:
@@ -56,7 +56,7 @@ static VkSamplerAddressMode MapAddressMode(ESamplerAddressMode mode)
 	case eSamplerAddressMode_Mirror:
 		return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
 	default:
-		VK_ASSERT("Unknown address-mode expression");
+		VK_ASSERT(false, "Unknown address-mode expression");
 	case eSamplerAddressMode_Clamp:
 		return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 	case eSamplerAddressMode_Border:
@@ -74,7 +74,7 @@ static VkBorderColor MapBorderColor(DWORD color)
 	switch (color)
 	{
 	default:
-		VK_ASSERT("Unknown border color expression");
+		VK_ASSERT(false, "Unknown border color expression");
 	case 0x00000000:
 		return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 	case 0x000000FF:
@@ -104,8 +104,19 @@ VkResult CSampler::Init(const SSamplerState& state)
 	info.addressModeV = MapAddressMode(static_cast<ESamplerAddressMode>(state.m_nAddressV));
 	info.addressModeW = MapAddressMode(static_cast<ESamplerAddressMode>(state.m_nAddressW));
 	info.mipLodBias = state.m_fMipLodBias;
-	info.maxAnisotropy = MapAnisotropy(state.m_nAnisotropy, impliedAniso);
-	info.anisotropyEnable = info.maxAnisotropy > 1.0f ? VK_TRUE : VK_FALSE;
+
+	if (GetDevice()->GetPhysicalDeviceInfo()->deviceFeatures.samplerAnisotropy)
+	{
+		info.anisotropyEnable = VK_FALSE;
+		info.maxAnisotropy = 0;
+	}
+	else
+	{
+		float anisotropy = std::min(GetDevice()->GetPhysicalDeviceInfo()->deviceProperties.limits.maxSamplerAnisotropy, static_cast<float>(state.m_nAnisotropy));
+		info.maxAnisotropy = MapAnisotropy(anisotropy, impliedAniso);
+		info.anisotropyEnable = info.maxAnisotropy > 1.0f ? VK_TRUE : VK_FALSE;
+	}
+
 	info.compareEnable = state.m_bComparison ? VK_TRUE : VK_FALSE;
 	info.compareOp = VK_COMPARE_OP_LESS;
 	info.minLod = 0.0f;
@@ -122,7 +133,7 @@ VkResult CSampler::Init(const SSamplerState& state)
 		info.maxAnisotropy = maxAnisotropy;
 
 		static bool bOnce = false;
-		VK_ASSERT(bOnce && "Clamped anisotropy to device limit, output may not be as expected");
+		VK_ASSERT(bOnce, "Clamped anisotropy to device limit, output may not be as expected");
 		bOnce = true;
 	}
 	else if (!(info.maxAnisotropy >= 1.0f)) // Paranoid check to catch NaN, some drivers confirmed to crash when passed value outside [1.0f, limits.maxAniso]
@@ -137,7 +148,7 @@ VkResult CSampler::Init(const SSamplerState& state)
 		info.maxLod = maxLod;
 
 		static bool bOnce = false;
-		VK_ASSERT(bOnce && "Clamped max LoD to device limit, output may not be as expected");
+		VK_ASSERT(bOnce, "Clamped max LoD to device limit, output may not be as expected");
 		bOnce = true;
 	}
 

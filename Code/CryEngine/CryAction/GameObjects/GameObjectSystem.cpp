@@ -148,7 +148,7 @@ void CGameObjectSystem::LoadSerializationOrderFile()
 			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "CGameObjectSystem::LoadSerializationOrderFile() - Duplicated game object extension: '%s'. Savegames wont have properly sorted game object extensions now", name.c_str());
 		}
 	}
-	assert(!duplicatedEntriesInXML);
+	CRY_ASSERT(!duplicatedEntriesInXML);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -214,7 +214,7 @@ void CGameObjectSystem::RegisterExtension(const char* szName, IGameObjectExtensi
 		//		pClsDesc->pUserProxyData = new SSpawnUserData(sName);
 		if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(*pClsDesc))
 		{
-			CRY_ASSERT_TRACE(0, ("Unable to register entity class '%s'", szName));
+			CRY_ASSERT(0, "Unable to register entity class '%s'", szName);
 			return;
 		}
 	}
@@ -424,7 +424,7 @@ void CGameObjectSystem::SetPostUpdate(IGameObject* pGameObject, bool enable)
 	else
 	{
 		auto it = std::find(m_postUpdateObjects.begin(), m_postUpdateObjects.end(), pGameObject);
-		if(it != m_postUpdateObjects.end())
+		if (it != m_postUpdateObjects.end())
 		{
 			if (m_isPostUpdating)
 			{
@@ -434,7 +434,6 @@ void CGameObjectSystem::SetPostUpdate(IGameObject* pGameObject, bool enable)
 			{
 				m_postUpdateObjects.erase(it);
 			}
-
 		}
 	}
 }

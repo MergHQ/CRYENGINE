@@ -232,4 +232,3 @@ void QLoading::paintEvent(QPaintEvent* pEvent)
 		p.drawPixmap(QRect(0, 0, pixMapSize, pixMapSize), m_doneImage);
 	}
 }
-

@@ -3,27 +3,22 @@
 #include "StdAfx.h"
 #include "ProjectManager.h"
 
-#include "System.h"
+#include "ExtensionSystem/CryPluginManager.h"
 
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/STL.h>
 #include <CrySerialization/Enum.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <cctype>
 
 // Temporary using statement to not break YASLI_ENUM_BEGIN_NESTED below
 // Before fixing, validate that serialization to disk is the same, it currently serializes a string.
 using namespace Cry;
-using namespace Cry::ProjectManagerInternals;
 
 #if CRY_PLATFORM_WINDOWS
 #include <Shlwapi.h>
 #endif
-
-YASLI_ENUM_BEGIN_NESTED(IPluginManager, EPluginType, "PluginType")
-YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Native, "Native")
-YASLI_ENUM_VALUE_NESTED(IPluginManager, EPluginType::Managed, "Managed")
-YASLI_ENUM_END()
 
 CProjectManager::CProjectManager()
 	: m_sys_project(nullptr)
@@ -31,8 +26,6 @@ CProjectManager::CProjectManager()
 	, m_sys_dll_game(nullptr)
 	, m_sys_game_folder(nullptr)
 {
-	RegisterCVars();
-
 	CryFindRootFolderAndSetAsCurrentWorkingDirectory();
 }
 
@@ -44,6 +37,11 @@ const char* CProjectManager::GetCurrentProjectName() const
 CryGUID CProjectManager::GetCurrentProjectGUID() const
 {
 	return m_project.guid;
+}
+
+const char* CProjectManager::GetCurrentEngineID() const
+{
+	return m_project.engineVersionId.c_str();
 }
 
 const char* CProjectManager::GetCurrentProjectDirectoryAbsolute() const
@@ -70,15 +68,15 @@ void CProjectManager::StoreConsoleVariable(const char* szCVarName, const char* s
 {
 	for (auto it = m_project.consoleVariables.begin(); it != m_project.consoleVariables.end(); ++it)
 	{
-		if (!stricmp(it->key, szCVarName))
+		if (!stricmp(it->first, szCVarName))
 		{
-			it->value = szValue;
+			it->second = szValue;
 
 			return;
 		}
 	}
 
-	m_project.consoleVariables.emplace_back(szCVarName, szValue);
+	m_project.consoleVariables.emplace(szCVarName, szValue);
 }
 
 void CProjectManager::SaveProjectChanges()
@@ -86,28 +84,15 @@ void CProjectManager::SaveProjectChanges()
 	gEnv->pSystem->GetArchiveHost()->SaveJsonFile(m_project.filePath, Serialization::SStruct(m_project));
 }
 
-bool SProject::Serialize(Serialization::IArchive& ar)
-{
-	// Only save to the latest format
-	if (ar.isOutput())
-	{
-		version = LatestProjectFileVersion;
-	}
-
-	ar(version, "version", "version");
-
-	SProjectFileParser<LatestProjectFileVersion> parser;
-	parser.Serialize(ar, *this);
-	return true;
-}
-
 bool CProjectManager::ParseProjectFile()
 {
+	RegisterCVars();
+
 	const char* szEngineRootDirectory = gEnv->pSystem->GetRootFolder();
 
 	const ICmdLineArg* arg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
 	string projectFile = arg != nullptr ? arg->GetValue() : m_sys_project->GetString();
-	if (projectFile.size() == 0)
+	if (projectFile.empty())
 	{
 		CryLogAlways("\nRunning CRYENGINE without a project!");
 		CryLogAlways("	Using Engine Folder %s", szEngineRootDirectory);
@@ -148,13 +133,16 @@ bool CProjectManager::ParseProjectFile()
 	file.Open(m_project.filePath.c_str(), "rb", flags);
 
 	std::vector<char> projectFileJson;
+	size_t fileSize = 0;
 	if (file.GetHandle() != nullptr)
 	{
-		projectFileJson.resize(file.GetLength());
+		fileSize = file.GetLength();
+		projectFileJson.resize(fileSize + 1);
+		projectFileJson[fileSize] = 0;
 	}
 
-	if (projectFileJson.size() > 0 &&
-		file.ReadRaw(projectFileJson.data(), projectFileJson.size()) == projectFileJson.size() &&
+	if (fileSize > 0 &&
+		file.ReadRaw(projectFileJson.data(), fileSize) == fileSize &&
 		gEnv->pSystem->GetArchiveHost()->LoadJsonBuffer(Serialization::SStruct(m_project), projectFileJson.data(), projectFileJson.size()))
 	{
 		if (m_project.version > LatestProjectFileVersion)
@@ -179,9 +167,7 @@ bool CProjectManager::ParseProjectFile()
 		// Does directory exist
 		if (!CryDirectoryExists(m_project.assetDirectoryFullPath.c_str()))
 		{
-			EQuestionResult result = CryMessageBox(string().Format("Attempting to start the engine with non-existent asset directory %s!"
-				"\n\nPlease verify the asset directory in your .cryproject file, in case you expected the asset directory to exist!\n\nDo you want to create the directory?",
-				m_project.assetDirectoryFullPath.c_str()), "Non-existent asset directory", eMB_YesCancel);
+			EQuestionResult result = CryMessageBox(string().Format("Attempting to start the engine with non-existent asset directory %s!\nDo you want to create it?", m_project.assetDirectoryFullPath.c_str()), "Non-existent asset directory", eMB_YesCancel);
 			if (result == eQR_Cancel)
 			{
 				CryLogAlways("\tNon-existent asset directory %s detected, user opted to quit", m_project.assetDirectoryFullPath.c_str());
@@ -192,36 +178,28 @@ bool CProjectManager::ParseProjectFile()
 		}
 
 		// Set the legacy game folder and name
-		m_sys_game_folder->Set(m_project.assetDirectory);
+		if (strlen(m_sys_game_folder->GetString()) == 0)
+		{
+			m_sys_game_folder->Set(m_project.assetDirectory);
+		}
 		m_sys_game_name->Set(m_project.name);
 
-		for (SProject::SConsoleInstruction& consoleVariable : m_project.consoleVariables)
+		for(const std::pair<string, string>& consoleVariablePair : m_project.consoleVariables)
 		{
-			gEnv->pConsole->LoadConfigVar(consoleVariable.key, consoleVariable.value);
+			gEnv->pConsole->LoadConfigVar(consoleVariablePair.first, consoleVariablePair.second);
 		}
 
-		for (SProject::SConsoleInstruction& consoleCommand : m_project.consoleCommands)
+		for (const std::pair<string, string>& consoleCommandPair : m_project.consoleCommands)
 		{
-			stack_string command = consoleCommand.key;
-			command.append(" ");
-			command.append(consoleCommand.value.c_str());
-			
-			gEnv->pConsole->ExecuteString(command.c_str(), false, true);
+			gEnv->pConsole->LoadConfigCommand(consoleCommandPair.first.c_str(), consoleCommandPair.second.c_str());
 		}
 
 		auto gameDllIt = m_project.legacyGameDllPaths.find("any");
 
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
 		if (gameDllIt == m_project.legacyGameDllPaths.end())
 		{
 			gameDllIt = m_project.legacyGameDllPaths.find("win_x64");
 		}
-#elif (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT)
-		if (gameDllIt == m_project.legacyGameDllPaths.end())
-		{
-			gameDllIt = m_project.legacyGameDllPaths.find("win_x86");
-		}
-#endif
 		string legacyGameDllPath;
 
 		// Set legacy Game DLL
@@ -365,22 +343,22 @@ void CProjectManager::MigrateFromLegacyWorkflowIfNecessary()
 
 		string sProjectFile = PathUtil::Make(m_project.rootDirectory, m_sys_project->GetString());
 		// Make sure we have the .cryproject extension
-		sProjectFile = PathUtil::ReplaceExtension(sProjectFile, ".cryproject");
-		gEnv->pSystem->GetArchiveHost()->SaveJsonFile(sProjectFile, Serialization::SStruct(m_project));
+		m_project.filePath = PathUtil::ReplaceExtension(sProjectFile, ".cryproject");
+		SaveProjectChanges();
 	}
 }
 
 void CProjectManager::RegisterCVars()
 {
-	// Default to no project when running unit tests or shader cache generator
-	bool bDefaultToNoProject = gEnv->bTesting || gEnv->pSystem->IsShaderCacheGenMode();
+	// Default to no project when running shader cache generator
+	bool bDefaultToNoProject = gEnv->pSystem->IsShaderCacheGenMode();
 
 	m_sys_project = REGISTER_STRING("sys_project", bDefaultToNoProject ? "" : "game.cryproject", VF_NULL, "Specifies which project to load.\nLoads from the engine root if relative path, otherwise full paths are allowed to allow out-of-engine projects\nHas no effect if -project switch is used!");
 
 	// Legacy
 	m_sys_game_name = REGISTER_STRING("sys_game_name", "CRYENGINE", VF_DUMPTODISK, "Specifies the name to be displayed in the Launcher window title bar");
-	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", VF_NULL, "Specifies the game DLL to load");
-	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "", VF_NULL, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
+	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", VF_CONST_CVAR | VF_REQUIRE_APP_RESTART, "Specifies the game DLL to load");
+	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "", VF_CONST_CVAR | VF_REQUIRE_APP_RESTART, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
 }
 
 //--- UTF8 parse helper routines

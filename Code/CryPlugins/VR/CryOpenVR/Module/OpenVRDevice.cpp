@@ -391,7 +391,7 @@ HMDCameraSetup Device::GetHMDCameraSetup(int nEye, float projRatio, float fnear)
 {
 	const vr::HmdMatrix44_t vrproj = m_system->GetProjectionMatrix((vr::EVREye)nEye, fnear, fnear*2.f);	// We do not care about far
 	Matrix44A proj;
-	std::memcpy(proj.GetData(), vrproj.m, sizeof(vrproj.m));
+    memcpy(proj.GetData(), vrproj.m, sizeof(vrproj.m));
 
 	HMDCameraSetup ret = HMDCameraSetup::fromProjectionMatrix(proj, projRatio, fnear);
 	ret.ipd = m_system->GetFloatTrackedDeviceProperty(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_UserIpdMeters_Float, nullptr);
@@ -429,8 +429,6 @@ void Device::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 // -------------------------------------------------------------------------
 void Device::UpdateTrackingState(EVRComponent type, uint64_t frameID)
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
-
 #if !defined(_RELEASE)
 	if (!gEnv->IsEditor())// we currently assume one system update per frame rendered, which is not always the case in editor (i.e. no level)
 	{
@@ -640,7 +638,7 @@ void Device::CreateDevice()
 	m_devInfo.fovH = 2.0f * atanf(m_symLeftTan);
 	m_devInfo.fovV = 2.0f * atanf(symTanUp);
 
-	vr::IVRSettings* vrSettings = vr::VRSettings();
+	vr::VRSettings();
 
 	m_devInfo.manufacturer = GetTrackedDeviceCharPointer(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_ManufacturerName_String);
 	m_devInfo.productName = GetTrackedDeviceCharPointer(vr::k_unTrackedDeviceIndex_Hmd, vr::ETrackedDeviceProperty::Prop_TrackingSystemName_String);

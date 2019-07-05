@@ -2,47 +2,50 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "RGBLayer.h"
-#include "Util/Image.h"
+#include "TerrainCommon.h"
+#include "TerrainGrid.h"
+
+#include <Util/Image.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <CrySandbox/CrySignal.h>
 
 // Heightmap data type
-typedef float t_hmap;
+typedef float                    t_hmap;
 typedef TImage<SSurfaceTypeItem> CSurfTypeImage;
 
-class CXmlArchive;
 class CDynamicArray2D;
-struct SNoiseParams;
-class CTerrainGrid;
+class CXmlArchive;
 struct SEditorPaintBrush;
+struct SNoiseParams;
 
 struct SANDBOX_API SSectorInfo
 {
 	float unitSize;           // Size of terrain unit.
-	int sectorSize;         // Sector size in meters.
-	int sectorTexSize;      // Size of texture for one sector in pixels.
-	int numSectors;         // Number of sectors on one side of terrain.
-	int surfaceTextureSize; // Size of whole terrain surface texture.
+	int   sectorSize;         // Sector size in meters.
+	int   sectorTexSize;      // Size of texture for one sector in pixels.
+	int   numSectors;         // Number of sectors on one side of terrain.
+	int   surfaceTextureSize; // Size of whole terrain surface texture.
 };
 
 // Editor data structure to keep the heights, detail layer information/holes, terrain texture
 class SANDBOX_API CHeightmap : public IEditorHeightmap
 {
 public:
-	// constructor
 	CHeightmap();
-	// destructor
 	virtual ~CHeightmap();
 
 	// Member data access
-	uint64 GetWidth() const     { return m_iWidth; };
-	uint64 GetHeight() const    { return m_iHeight; };
+	uint64 GetWidth() const     { return m_iWidth; }
+	uint64 GetHeight() const    { return m_iHeight; }
 	float  GetMaxHeight() const { return m_fMaxHeight; }
 
 	//! Get size of every heightmap unit in meters.
-	float  GetUnitSize() const { return m_unitSize; };
+	float GetUnitSize() const { return m_unitSize; }
 
-	void SetMaxHeight(float fMaxHeight);
-	void SetUnitSize(float unitSize) { m_unitSize = unitSize; }
+	void  SetMaxHeight(float fMaxHeight);
+	void  SetUnitSize(float unitSize) { m_unitSize = unitSize; }
 
 	//! Convert from world coordinates to heightmap coordinates.
 	CPoint WorldToHmap(const Vec3& wp);
@@ -59,7 +62,7 @@ public:
 	//! @param si Structure filled with queried data.
 	void    GetSectorsInfo(SSectorInfo& si);
 
-	t_hmap* GetData() { return m_pHeightmap; };
+	t_hmap* GetData() { return m_pHeightmap; }
 	bool    GetDataEx(t_hmap* pData, UINT iDestWidth, bool bSmooth = true, bool bNoise = true);
 
 	// Fill image data
@@ -73,13 +76,12 @@ public:
 	// Terrain Grid functions.
 	//////////////////////////////////////////////////////////////////////////
 	void          InitSectorGrid();
-	CTerrainGrid* GetTerrainGrid() const { return m_terrainGrid; };
+	CTerrainGrid* GetTerrainGrid() { return &m_terrainGrid; }
 
 	//////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////
-	void    SetXY(uint32 x, uint32 y, t_hmap iVal) { m_pHeightmap[x + y * m_iWidth] = iVal; };
-	t_hmap& GetXY(uint32 x, uint32 y)              { return m_pHeightmap[x + y * m_iWidth]; };
-	t_hmap  GetXY(uint32 x, uint32 y) const        { return m_pHeightmap[x + y * m_iWidth]; };
+	void    SetXY(uint32 x, uint32 y, t_hmap iVal) { m_pHeightmap[x + y * m_iWidth] = iVal; }
+	t_hmap& GetXY(uint32 x, uint32 y)              { return m_pHeightmap[x + y * m_iWidth]; }
+	t_hmap  GetXY(uint32 x, uint32 y) const        { return m_pHeightmap[x + y * m_iWidth]; }
 	t_hmap  GetSafeXY(const uint32 dwX, const uint32 dwY) const;
 
 	//! Calculate heightmap slope at given point.
@@ -145,7 +147,6 @@ public:
 	uint32 GetDominatingSurfaceTypeIdAtPosition(const int x, const int y) const;
 
 	float  GetElevationAtPosition(const float x, const float y) { return GetZInterpolated(x, y); }
-	float  GetRGBMultiplier();
 
 	// Arguments
 	//   dwLayerId - from CLayer::GetLayerId()
@@ -153,7 +154,7 @@ public:
 
 	void EraseLayerID(uchar id);
 
-	void MarkUsedLayerIds(bool bFree[256]) const;
+	void MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const;
 
 	// Hold / fetch
 	void Fetch();
@@ -210,9 +211,9 @@ public:
 	void MakeHole(int x1, int y1, int width, int height, bool bMake);
 
 	//! Export terrain block.
-	void   ExportBlock(const CRect& rect, CXmlArchive& ar, bool exportVegetation = true, bool exportRgbLayer = false);
+	void ExportBlock(const CRect& rect, CXmlArchive& ar, bool exportVegetation = true, bool exportRgbLayer = false);
 	//! Import terrain block, return offset of block to new position.
-	CPoint ImportBlock(CXmlArchive& ar, CPoint newPos, bool useNewPos = true, float heightOffset = 0.0f, bool importOnlyVegetation = false, int nRot = 0);
+	void ImportBlock(CXmlArchive& ar, CPoint newPos, bool useNewPos = true, float heightOffset = 0.0f, bool importOnlyVegetation = false, int nRot = 0);
 
 	//! Serialize segment in memory block
 	void ClearSegmentHeights(const CRect& rc);
@@ -242,7 +243,7 @@ public:
 	void  UpdateEngineHole(int x1, int y1, int width, int height);
 
 	void  SetWaterLevel(float waterLevel);
-	float GetWaterLevel() const { return m_fWaterLevel; };
+	float GetWaterLevel() const { return m_fWaterLevel; }
 
 	void  CopyData(t_hmap* pDataOut)
 	{
@@ -255,16 +256,17 @@ public:
 
 	//! Dump to log sizes of all layers.
 	//! @return Total size allocated for layers.
-	int   LogLayerSizes();
+	int                   LogLayerSizes();
 
-	float GetShortPrecisionScale() const { return (256.f * 256.f - 1.0f) / m_fMaxHeight; }
-	float GetBytePrecisionScale() const  { return 255.f / m_fMaxHeight; }
+	float                 GetShortPrecisionScale() const { return (256.f * 256.f - 1.0f) / m_fMaxHeight; }
+	float                 GetBytePrecisionScale() const  { return 255.f / m_fMaxHeight; }
 
-	void  GetMemoryUsage(ICrySizer* pSizer);
+	void                  GetMemoryUsage(ICrySizer* pSizer);
 
-	void       RecordUndo(int x1, int y1, int width, int height, bool bInfo = false);
+	void                  RecordUndo(int x1, int y1, int width, int height, bool bInfo = false);
 
-	CRGBLayer* GetRGBLayer() { return &m_TerrainRGBTexture; }
+	CRGBLayer*            GetRGBLayer()          { return &m_terrainRGBTexture; }
+	const CSurfTypeImage& GetLayersImage() const { return m_layerIdBitmap; }
 
 	// Arguments:
 	//   texsector - make sure the values are in valid range
@@ -285,11 +287,11 @@ public:
 
 	bool  IsAllocated();
 
-	static const int kInitHeight;
+	static const int   kInitHeight;
 
 	CCrySignal<void()> signalWaterLevelChanged;
 
-protected:
+private:
 	void ClampHeight(float& h) { h = min(m_fMaxHeight, max(0.0f, h)); }
 
 	// Helper functions
@@ -301,20 +303,17 @@ protected:
 	{
 		ASSERT(m_iWidth && m_iHeight);
 		ASSERT(!IsBadWritePtr(m_pHeightmap, sizeof(t_hmap) * m_iWidth * m_iHeight));
-	};
+	}
 
-	// Initialization
 	void InitNoise();
 
-private:
-	const float        m_kfBrMultiplier;
 	float              m_fWaterLevel;
 	float              m_fMaxHeight;
 
 	t_hmap*            m_pHeightmap;
 	CDynamicArray2D*   m_pNoise;
 
-	CSurfTypeImage     m_LayerIdBitmap; // (m_iWidth,m_iHeight) LayerId and EHeighmapInfo (was m_info, Detail LayerId per heightmap element)
+	CSurfTypeImage     m_layerIdBitmap; // (m_iWidth,m_iHeight) LayerId and EHeighmapInfo (was m_info, Detail LayerId per heightmap element)
 
 	uint64             m_iWidth;
 	uint64             m_iHeight;
@@ -323,9 +322,9 @@ private:
 	int                m_numSectors;  // Number of sectors per grid side.
 	float              m_unitSize;
 
-	CTerrainGrid*      m_terrainGrid;
+	CTerrainGrid       m_terrainGrid;
 
-	CRGBLayer          m_TerrainRGBTexture; // Terrain RGB texture
+	CRGBLayer          m_terrainRGBTexture; // Terrain RGB texture
 
 	std::vector<Vec2i> m_modSectors;
 	bool               m_updateModSectors;
@@ -333,8 +332,6 @@ private:
 	friend class CUndoHeightmapInfo;
 };
 
-//////////////////////////////////////////////////////////////////////////
-// Inlined implementation of get slope.
 inline float CHeightmap::GetSlope(int x, int y)
 {
 	//assert( x >= 0 && x < m_iWidth && y >= 0 && y < m_iHeight );
@@ -355,5 +352,4 @@ inline float CHeightmap::GetSlope(int x, int y)
 	fs = fs * 8;
 	if (fs > 255.0f) fs = 255.0f;
 	return fs;
-};
-
+}

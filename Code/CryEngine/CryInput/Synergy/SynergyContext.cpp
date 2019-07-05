@@ -336,7 +336,6 @@ static bool ProcessPackets(CSynergyContext* pContext, Stream* s)
 		}
 		if (i == CRY_ARRAY_COUNT(s_packets))
 		{
-			char* data = s->GetData() + packetLen;
 			//CryLog("SYNERGY: Can't understand packet:%s Length:%d\n", s->GetData(), packetLen);
 			s->Eat(packetLen);
 		}

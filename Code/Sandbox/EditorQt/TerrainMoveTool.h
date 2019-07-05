@@ -1,13 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TerrainMoveTool_h__
-#define __TerrainMoveTool_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
 #include "Gizmos/ITransformManipulator.h"
 #include <CryCore/Containers/CryListenerSet.h>
 
@@ -29,12 +24,14 @@ struct SMTBox
 
 struct ITerrainMoveToolListener
 {
+	virtual ~ITerrainMoveToolListener() {}
 	virtual void OnMove(const Vec3 targetPos, Vec3 sourcePos, bool bIsCopy) = 0;
 };
 
 class CXmlArchive;
 
 //////////////////////////////////////////////////////////////////////////
+//This tool actually mostly does Cloning from source to destination place, and in some cases it moves objects.
 class CTerrainMoveTool : public CEditTool, public ITransformManipulatorOwner
 {
 	DECLARE_DYNCREATE(CTerrainMoveTool)
@@ -42,11 +39,11 @@ public:
 	CTerrainMoveTool();
 	virtual ~CTerrainMoveTool();
 
-	virtual string GetDisplayName() const override { return "Move Terrain"; }
+	virtual string GetDisplayName() const override { return "Clone Terrain"; }
 
-	virtual void   Display(DisplayContext& dc);
+	virtual void   Display(SDisplayContext& dc);
 
-	// Ovverides from CEditTool
+	// Overrides from CEditTool
 	bool MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags);
 
 	// Key down.
@@ -56,7 +53,7 @@ public:
 	void OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& p0, const Vec3& value, int nFlags);
 
 	// Delete itself.
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	void Move(bool bOnlyVegetation = true, bool bOnlyTerrain = true);
 
@@ -74,7 +71,7 @@ public:
 
 	void         SetArchive(CXmlArchive* ar);
 
-	bool         IsNeedMoveTool() { return true; };
+	bool         IsNeedMoveTool() { return true; }
 
 	static void  AddListener(ITerrainMoveToolListener* pListener);
 	static void  RemoveListener(ITerrainMoveToolListener* pListener);
@@ -83,7 +80,7 @@ public:
 
 	// ITransformManipulatorOwner interface
 	virtual void GetManipulatorPosition(Vec3& position) override;
-	virtual bool GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) override;
+	virtual bool GetManipulatorMatrix(Matrix34& tm) override;
 	virtual bool IsManipulatorVisible();
 
 private:
@@ -94,16 +91,16 @@ private:
 
 	//static SMTBox m_source;
 	//static SMTBox m_target;
-	SMTBox      m_source;
-	SMTBox      m_target;
+	SMTBox                 m_source;
+	SMTBox                 m_target;
 
-	bool        m_isSyncHeight;
-	bool        m_onlyVegetation;
-	bool        m_onlyTerrain;
-	bool		m_moveObjects;
+	bool                   m_isSyncHeight;
+	bool                   m_onlyVegetation;
+	bool                   m_onlyTerrain;
+	bool                   m_moveObjects;
 
-	static Vec3 m_dym;
-	static int  m_targetRot;
+	static Vec3            m_dym;
+	static int             m_targetRot;
 
 	ITransformManipulator* m_manipulator;
 
@@ -112,6 +109,3 @@ private:
 	typedef CListenerSet<ITerrainMoveToolListener*> TMoveListener;
 	static TMoveListener ms_listeners;
 };
-
-#endif // __TerrainMoveTool_h__
-

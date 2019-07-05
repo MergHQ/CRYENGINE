@@ -5,6 +5,7 @@
 #include "CryAction.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IUIDraw.h>
+#include <CryFont/IFont.h>
 
 const char* CPersistantDebug::entityTagsContext = "PersistantDebugEntities";
 const float CPersistantDebug::kUnlimitedTime = -1.0f;
@@ -54,13 +55,6 @@ void CPersistantDebug::AddEntityTag(const SEntityTagParams& params, const char* 
 		if (ent)
 		{
 			CryLog("[Entity Tag] %s added tag: %s", ent->GetName(), params.text.c_str());
-
-			if (m_pETLog->GetIVal() > 1)
-			{
-				char text[256];
-				cry_sprintf(text, "[Entity Tag] %s", params.text.c_str());
-				gEnv->pAISystem->Record(ent->GetAI(), IAIRecordable::E_NONE, text);
-			}
 		}
 	}
 }
@@ -138,7 +132,7 @@ void CPersistantDebug::UpdateTags(float frameTime, SObj& obj, bool doFirstPass)
 	}
 
 	IFFont* pFont = gEnv->pCryFont->GetFont("default");
-	assert(pFont);
+	CRY_ASSERT(pFont);
 	STextDrawContext ctx;
 	ctx.SetSizeIn800x600(false);
 	ctx.SetProportional(true);
@@ -148,7 +142,6 @@ void CPersistantDebug::UpdateTags(float frameTime, SObj& obj, bool doFirstPass)
 		if (iterList->vScreenPos.IsZero())
 			continue;
 
-		float tagMaxDist = iterList->params.viewDistance;
 		float fontSize = iterList->params.size * m_pETFontSizeMultiplier->GetFVal();
 
 		// Calculate size of text on screen (so we can place it properly)

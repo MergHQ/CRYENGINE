@@ -118,4 +118,3 @@ QFrame* CreateHorizontalLine()
 }
 
 }
-

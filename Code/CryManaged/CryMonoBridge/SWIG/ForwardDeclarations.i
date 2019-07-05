@@ -10,10 +10,10 @@
 // Required by platform.h:
 // for now we only handle windows source and target . . and pretend to be vs 2012
 #define _MSC_VER 1900
-#if defined(_WIN32) && defined(_WIN64)
+#if defined(_WIN64)
   #define _M_X64
 #else
-  #define _M_IX86
+  #error Only 64-bit platforms are supported.
 #endif
 
 %include "../StdAfx.h"
@@ -23,22 +23,14 @@
 %include "../../../../CryEngine/CryCommon/CryCore/Compiler/MSVCspecific.h"
 
 // Platform-specific header files
-#if defined(_WIN32) && !defined(_WIN64) && !defined(DURANGO)
- #define _declspec(WINDOWS_EXTENDED_ATTRIBUTE)
- #define __w64
- %include "../../../../CryEngine/CryCommon/CryCore/Platform/Win32specific.h"
- %include <windows.i>
-#endif
+
 #if defined(_WIN64) && !defined(DURANGO)
  #define _declspec(WINDOWS_EXTENDED_ATTRIBUTE)
- %include "../../../../CryEngine/CryCommon/CryCore/Platform/Win64specific.h"
+ %include "../../../../CryEngine/CryCommon/CryCore/Platform/WindowsSpecific.h"
  %include <windows.i>
 #endif
-#if defined(LINUX64)
- %include "../../../../CryEngine/CryCommon/CryCore/Platform/Linux64Specific.h"
-#endif
-#if defined(LINUX32) && !defined(ANDROID)
- %include "../../../../CryEngine/CryCommon/CryCore/Platform/Linux32Specific.h"
+#if defined(LINUX)
+ %include "../../../../CryEngine/CryCommon/CryCore/Platform/LinuxSpecific.h"
 #endif
 #if defined(ANDROID)
 // HACKY architecture definition . . only for nVidia shield (Tegra K1):
@@ -70,7 +62,7 @@ void CryGetExecutableFolder(char *szOutPath, int pathSize)
 %include "../../../../CryEngine/CryCommon/CryCore/smartptr.h"
 
 %include "../../../CryEngine/CryCommon/CryExtension/CryTypeID.h"
-%include "../../../../CryEngine/CryCommon/CryThreading/CryThreadSafeRendererContainer.h"
+%include "../../../../CryEngine/CryCommon/CryThreading/CryThreadSafePushContainer.h"
 
 #define COMPILE_TIME_ASSERT(...)
 

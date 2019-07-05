@@ -2,25 +2,28 @@
 
 #pragma once
 
-#include <QWidget>
 #include "EditorFramework/Editor.h"
-#include "QtViewPane.h"
+
+class QTabWidget;
 
 class CTerrainEditor : public CDockableEditor
 {
 public:
 	CTerrainEditor(QWidget* parent = nullptr);
-	~CTerrainEditor();
 
+private:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
-
-	virtual const char*                       GetEditorName() const override       { return "Terrain Editor"; };
-	void                                      InitTerrainMenu();
-
+	virtual const char*                       GetEditorName() const override       { return "Terrain Editor"; }
 	virtual void                              SetLayout(const QVariantMap& state);
 	virtual QVariantMap                       GetLayout() const override;
+	virtual void                              Initialize() override;
 
-	static class CTerrainTextureDialog*       GetTextureLayerEditor();
+	void                                      RegisterActions();
+	void                                      InitTerrainMenu();
+	void                                      SetTerrainTool(int tabIndex, CRuntimeClass* pTool);
+
+	QTabWidget* m_pTabWidget;
+	int         m_sculptTabIdx;
+	int         m_paintTabIdx;
 };
-

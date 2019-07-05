@@ -33,8 +33,6 @@ protected:
 		// This is not required, but can be useful for future debugging
 		const string playerName = string().Format("Player(%i)", channelId);
 		spawnParams.sName = playerName;
-		// Notify the network system that this is a fully dynamic entity
-		spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 		// Determine if we are currently spawning the local player
 		const bool isLocalPlayer = m_clientEntityIdLookupMap.empty() && !gEnv->IsDedicated();

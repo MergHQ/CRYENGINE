@@ -4,14 +4,25 @@
 
 #include "Asset.h"
 
+#include <PoolObject.h>
+
 namespace ACE
 {
-class CFolder final : public CAsset
+class CFolder final : public CAsset, public CryAudio::CPoolObject<CFolder, stl::PSyncNone>
 {
 public:
 
-	explicit CFolder(string const& name);
-
 	CFolder() = delete;
+	CFolder(CFolder const&) = delete;
+	CFolder(CFolder&&) = delete;
+	CFolder& operator=(CFolder const&) = delete;
+	CFolder& operator=(CFolder&&) = delete;
+
+	explicit CFolder(string const& name, ControlId const id)
+		: CAsset(name, id, EAssetType::Folder)
+	{}
+
+	virtual ~CFolder() override = default;
+
 };
 } // namespace ACE

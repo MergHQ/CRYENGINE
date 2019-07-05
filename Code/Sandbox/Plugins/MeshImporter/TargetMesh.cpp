@@ -191,4 +191,3 @@ CTargetMeshView::CTargetMeshView(QWidget* pParent)
 {
 	setModel(m_pModel.get());
 }
-

@@ -6,7 +6,7 @@
 #include <vector>
 
 struct IPakSystem;
-class ICryXML;
+struct ICryXML;
 struct SDBATable;
 
 struct DBATableEntry
@@ -52,7 +52,7 @@ public:
 
 	void GetDBA(EnumeratedDBA* dba, int index) const;
 	bool GetCAF(EnumeratedCAF* caf, int dbaIndex, int animationIndex) const;
-	const char* FindDBAPath(const char* animationPath, const char* skeleton, const std::vector<string>& tags) const;
+	const char* FindDBAPath(const char* animationPath, const std::vector<string>& tags) const;
 
 private:
 	std::auto_ptr<SDBATable> m_table;

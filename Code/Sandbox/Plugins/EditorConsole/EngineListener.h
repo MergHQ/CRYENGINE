@@ -1,36 +1,23 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   EngineListener.h
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
-#include <CryCore/Platform/platform.h>
-#include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
-#include <CryString/CryString.h>
-#include <set>
-#include <CryCore/BoostHelpers.h> // to make sure we get own throw_exceptions
-#include <boost/circular_buffer.hpp>
-#include <functional>
-#include <algorithm>
 
 #include <IEditor.h>
-#include "ICommandManager.h"
+
+#include <CryCore/BoostHelpers.h> // to make sure we get own throw_exceptions
+#include <CryString/CryString.h>
+#include <CrySystem/IConsole.h>
+#include <CryThreading/CryThread.h>
+
+#include <boost/circular_buffer.hpp>
+
+#include <set>
+
+struct ISystem;
 
 //event handler for console events
 //this is the "engine-side" event handler that takes care of caching etc
-class CEngineListener : public IOutputPrintSink, public ICVarDumpSink, public IConsoleVarSink
+class CEngineListener : public IOutputPrintSink, public ICVarDumpSink, public IConsoleVarSink, public IAutoEditorNotifyListener
 {
 public:
 	//force refreshing of CVars and commands
@@ -78,12 +65,15 @@ private:
 	virtual void OnAfterVarChange(ICVar* pVar)                         { UpdateCVar(pVar, true); }
 	virtual void OnVarUnregister(ICVar* pVar)                          { ReleaseCVar(pVar); }
 
+	// IEditorNotifyListener
+	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
+
 protected:
 	//initialize event handler
 	void Init(size_t maxHistory);
 
 	//get console instance
-	IConsole* GetConsole() const { return m_system ? m_system->GetIConsole() : NULL; }
+	IConsole* GetConsole() const { return m_system ? m_system->GetIConsole() : nullptr; }
 
 	//string comparison function to use
 	static int StringCompare(const char* left, const char* right);
@@ -94,8 +84,6 @@ protected:
 public:
 	//constructs an event listener for the specified engine instance
 	CEngineListener(ISystem* system) : m_system(system), m_lines(0) {}
-
-	//destructor
 	~CEngineListener();
 
 	//emits a CVar after it has been discovered or changed
@@ -150,4 +138,3 @@ private:
 	//collection of known commands
 	t_commands m_commands;
 };
-

@@ -73,7 +73,7 @@ namespace BehaviorTree
 			}
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context)
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor)
 		{
 			const char* formationName = xml->getAttr("name");
 			if (!formationName)
@@ -84,7 +84,7 @@ namespace BehaviorTree
 
 			m_formationNameCRC32 = CCrc32::ComputeLowercase(formationName);
 
-			return LoadChildFromXml(xml, context);
+			return LoadChildFromXml(xml, context, isLoadingFromEditor);
 		}
 
 		virtual Status Update(const UpdateContext& context)
@@ -209,20 +209,20 @@ namespace BehaviorTree
 			IAIActor* pIAIActor = CastToIAIActorSafe(pAIObject);
 			if (pIAIActor)
 			{
-				SendSignal(pIAIActor, "ACT_JOIN_FORMATION",pEntityToFollow);
+				SendSignal(pIAIActor, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActJoinFormation(), pEntityToFollow);
 				return true;
 			}
 
 			return false;
 		}
 
-		void SendSignal(IAIActor* pIAIActor, const char* signalName, IEntity* pSender)
+		void SendSignal(IAIActor* pIAIActor, const AISignals::ISignalDescription& signalDescription, IEntity* pSender)
 		{
 			assert(pIAIActor);
-			IAISignalExtraData*	pData = gEnv->pAISystem->CreateSignalExtraData();
+			AISignals::IAISignalExtraData*	pData = gEnv->pAISystem->CreateSignalExtraData();
 			const int goalPipeId = gEnv->pAISystem->AllocGoalPipeId();
 			pData->iValue = goalPipeId;
-			pIAIActor->SetSignal( 10, signalName, pSender, pData );
+			pIAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, signalDescription, pSender ? pSender->GetId() : INVALID_ENTITYID, pData));
 		}
 	};
 
@@ -421,7 +421,7 @@ namespace BehaviorTree
 			void ApplyDamage(const EntityId attackerId, IPhysicalEntity* pCollider, const Vec3& pos, const Vec3& normal, const int surfaceIdx, const int iPart, const float damages)
 			{
 				CGameRules *pGameRules = g_pGame->GetGameRules();
-				CRY_ASSERT_MESSAGE(pGameRules, "No game rules! Melee can not apply hit damage");
+				CRY_ASSERT(pGameRules, "No game rules! Melee can not apply hit damage");
 				if (pGameRules)
 				{
 					float damageScale = 1.0f;
@@ -453,7 +453,7 @@ namespace BehaviorTree
 							pActor->KnockDown(impulseScale);
 							hasBeenKnockedDown = true;
 
-							SendSignal(attackerId, "OnMeleeKnockedDownTarget");
+							SendOnMeleeKnockedDownTargetSignal(attackerId);
 						}
 					}
 				}
@@ -488,13 +488,12 @@ namespace BehaviorTree
 				}
 			}
 
-			void SendSignal(EntityId entityId, const char* signalName)
+			void SendOnMeleeKnockedDownTargetSignal(EntityId entityId)
 			{
 				Agent agent(entityId);
 				if(agent.IsValid())
 				{
-					IAISignalExtraData*	pData = gEnv->pAISystem->CreateSignalExtraData();
-					agent.GetAIActor()->SetSignal( 10, signalName, agent.GetEntity(), NULL );
+					agent.GetAIActor()->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_ALLOW_DUPLICATES, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMeleeKnockedDownTarget(), entityId));
 				}
 			}
 
@@ -597,7 +596,7 @@ namespace BehaviorTree
 		}
 		// ------------------------------------------------------------------------------------------------------------------------
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
 			s_dictionaries.target.Get(xml, "target", m_target, true);
 
@@ -857,9 +856,9 @@ namespace BehaviorTree
 		{
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
-			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 				return LoadFailure;
 
 			if (!xml->getAttr("distance", m_distance))
@@ -1088,9 +1087,9 @@ namespace BehaviorTree
 		{
 		}
 
-		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context) override
+		virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 		{
-			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context) == LoadFailure)
+			IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
 				return LoadFailure;
 
 			xml->getAttr("radiusForAgentVsPlayer", m_radiusForAgentVsPlayer);

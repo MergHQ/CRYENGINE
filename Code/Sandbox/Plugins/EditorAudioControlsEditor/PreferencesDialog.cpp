@@ -3,9 +3,10 @@
 #include "StdAfx.h"
 #include "PreferencesDialog.h"
 
+#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
 #include "NameValidator.h"
+#include "Common/IImpl.h"
 
 #include <QtUtil.h>
 #include <FileDialogs/SystemFileDialog.h>
@@ -24,7 +25,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	: CEditorDialog("AudioSystemPreferencesDialog", pParent)
-	, m_projectPath(g_pIImpl->GetProjectPath())
+	, m_projectPath(g_implInfo.projectPath.c_str())
 {
 	setAttribute(Qt::WA_DeleteOnClose);
 	setWindowTitle(tr("Audio System Preferences"));
@@ -36,15 +37,16 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	auto const labelAlignment = static_cast<Qt::Alignment>(Qt::AlignLeft | Qt::AlignVCenter);
 
 	pLabelLayout->addWidget(new QLabel(tr("Audio Middleware") + ":"), 0, 0, labelAlignment);
-	pLabelLayout->addWidget(new QLabel(QtUtil::ToQString(g_pIImpl->GetName())), 0, 1, labelAlignment);
+	pLabelLayout->addWidget(new QLabel(QtUtil::ToQString(g_implInfo.name.c_str())), 0, 1, labelAlignment);
 
 	pLabelLayout->addWidget(new QLabel(tr("Assets Path") + ":"), 1, 0, labelAlignment);
-	pLabelLayout->addWidget(new QLabel(g_pIImpl->GetAssetsPath()), 1, 1);
+	pLabelLayout->addWidget(new QLabel(g_implInfo.assetsPath.c_str()), 1, 1);
 
 	pLabelLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, labelAlignment);
 
 	auto const pLineEdit = new QLineEdit(m_projectPath, this);
-	auto const pValidator = new CNameValidator(s_regexInvalidFilePath, pLineEdit);
+	auto const pValidator = new CNameValidator(pLineEdit);
+	pValidator->Initialize(s_regexInvalidFilePath);
 	pLineEdit->setValidator(pValidator);
 	pLineEdit->setMinimumWidth(300);
 	pLineEdit->setToolTip(m_projectPath);
@@ -54,7 +56,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	pBrowseButton->setToolTip(tr("Select project path"));
 	pBrowseButton->setIconSize(QSize(16, 16));
 
-	if (g_pIImpl->SupportsProjects())
+	if ((g_implInfo.flags & EImplInfoFlags::SupportsProjects) != EImplInfoFlags::None)
 	{
 		QObject::connect(pLineEdit, &QLineEdit::textChanged, [=](QString const& projectPath)
 			{
@@ -62,7 +64,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 				pValidator->fixup(fixedProjectPath);
 				SignalEnableSaveButton(!fixedProjectPath.isEmpty() && (m_projectPath.toLower().replace("/", R"(\)") != fixedProjectPath.toLower().replace("/", R"(\)")));
 				pLineEdit->setToolTip(fixedProjectPath);
-		  });
+			});
 
 		QObject::connect(pBrowseButton, &QToolButton::clicked, [=]()
 			{
@@ -75,7 +77,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 				  pLineEdit->setText(path);
 				  pLineEdit->setToolTip(path);
 				}
-		  });
+			});
 	}
 	else
 	{
@@ -103,12 +105,12 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			QString fixedProjectPath = pLineEdit->text();
 			pValidator->fixup(fixedProjectPath);
 			g_pIImpl->SetProjectPath(QtUtil::ToString(fixedProjectPath));
-			SignalImplementationSettingsAboutToChange();
+			SignalOnBeforeImplSettingsChange();
 			CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::BackupConnections);
-			SignalImplementationSettingsChanged();
+			SignalOnAfterImplSettingsChanged();
 
 			accept();
-	  });
+		});
 
 	QObject::connect(pButtons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 	pMainLayout->addWidget(pButtons, 0);

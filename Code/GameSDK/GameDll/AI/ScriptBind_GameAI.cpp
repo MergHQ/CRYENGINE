@@ -52,12 +52,12 @@ void CScriptBind_GameAI::RegisterMethods()
 	SCRIPT_REG_TEMPLFUNC(MarkAssignedSearchSpotAsUnreachable, "entityId");
 
 	SCRIPT_REG_TEMPLFUNC(ResetRanges, "entityID");
-	SCRIPT_REG_TEMPLFUNC(AddRange, "entityID, range, enterSignal, leaveSignal");
+	SCRIPT_REG_TEMPLFUNC(AddRange, "entityID, range");
 	SCRIPT_REG_TEMPLFUNC(GetRangeState, "entityID, rangeID");
 	SCRIPT_REG_TEMPLFUNC(ChangeRange, "entityID, rangeID, distance");
 
 	SCRIPT_REG_TEMPLFUNC(ResetAloneDetector, "entityID");
-	SCRIPT_REG_TEMPLFUNC(SetupAloneDetector, "entityID, range, aloneSignal, notAloneSignal");
+	SCRIPT_REG_TEMPLFUNC(SetupAloneDetector, "entityID, range");
 	SCRIPT_REG_TEMPLFUNC(AddActorClassToAloneDetector, "entityID, entityClassName");
 	SCRIPT_REG_TEMPLFUNC(RemoveActorClassFromAloneDetector, "entityID, entityClassName");
 	SCRIPT_REG_TEMPLFUNC(IsAloneForAloneDetector, "entityID");
@@ -298,13 +298,11 @@ int CScriptBind_GameAI::ResetRanges(IFunctionHandler* pH, ScriptHandle entityID)
 	return pH->EndFunction();
 }
 
-int CScriptBind_GameAI::AddRange(IFunctionHandler* pH, ScriptHandle entityID, float range, const char* enterSignal, const char* leaveSignal)
+int CScriptBind_GameAI::AddRange(IFunctionHandler* pH, ScriptHandle entityID, float range)
 {
 	if (RangeContainer* rangeContainer = gGameAIEnv.rangeModule->GetRunningInstance((EntityId)entityID.n))
 	{
 		RangeContainer::Range r;
-		r.enterSignal = enterSignal;
-		r.leaveSignal = leaveSignal;
 		r.rangeSq = square(range);
 
 		if (pH->GetParamCount() >= 5)
@@ -331,10 +329,10 @@ int CScriptBind_GameAI::ResetAloneDetector(IFunctionHandler* pH, ScriptHandle en
 	return pH->EndFunction();
 }
 
-int CScriptBind_GameAI::SetupAloneDetector(IFunctionHandler* pH, ScriptHandle entityID, float range, const char* aloneSignal, const char* notAloneSignal)
+int CScriptBind_GameAI::SetupAloneDetector(IFunctionHandler* pH, ScriptHandle entityID, float range)
 {
 	if(AloneDetectorContainer* aloneDetectorContainer = gGameAIEnv.aloneDetectorModule->GetRunningInstance(static_cast<EntityId>(entityID.n)))
-		aloneDetectorContainer->SetupDetector(AloneDetectorContainer::AloneDetectorSetup(range,aloneSignal,notAloneSignal));
+		aloneDetectorContainer->SetupDetector(AloneDetectorContainer::AloneDetectorSetup(range));
 
 	return pH->EndFunction();
 }

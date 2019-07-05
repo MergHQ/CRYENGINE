@@ -8,6 +8,8 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <Cry3DEngine/IGeomCache.h>
+#include <CryPhysics/physinterface.h>
+#include <CryParticleSystem/IParticles.h>
 
 #define MAX_CHARACTER_LOD 10
 
@@ -24,6 +26,7 @@ CEntitySlot::CEntitySlot(CEntity* pEntity)
 	m_worldTM.SetIdentity();
 	m_nSubObjHideMask = 0;
 	m_cameraSpacePos.Set(0, 0, 0);
+	m_bCameraSpacePos = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -61,7 +64,7 @@ void CEntitySlot::ReleaseObjects()
 			pSkeletonAnim->SetEventCallback(0, 0);
 
 		if (ISkeletonPose* pSkeletonPose = GetCharacter()->GetISkeletonPose())
-			pSkeletonPose->DestroyCharacterPhysics(0);
+			pSkeletonPose->DestroyCharacterPhysics(pSkeletonPose->GetCharacterPhysics() == m_pEntity->GetPhysics() ? IPhysicalWorld::DM_KEEP_IF_REFERENCED : IPhysicalWorld::DM_NORMAL);
 
 		m_pCharacter->Release();
 		m_pCharacter = nullptr;
@@ -103,9 +106,9 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 	ComputeWorldTransform();
 
 	bool bSlotShouldRender =
-	  (GetFlags() & ENTITY_SLOT_RENDER) &&
-	  (!m_pEntity->IsHidden()) &&
-	  (!m_pEntity->IsInvisible());
+		(GetFlags() & ENTITY_SLOT_RENDER) &&
+		(!m_pEntity->IsHidden()) &&
+		(!m_pEntity->IsInvisible());
 
 	if (bForceRecreateNode || !bSlotShouldRender)
 	{
@@ -166,7 +169,7 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		{
 			uint32 entityFlags = m_pEntity->GetFlags();
-			SetRenderNodeFlags(renderNodeFlags, ERF_DYNAMIC_DISTANCESHADOWS, 0 != (m_pEntity->m_flagsExtended & ENTITY_FLAG_EXTENDED_DYNAMIC_DISTANCE_SHADOWS));
+			SetRenderNodeFlags(renderNodeFlags, ERF_DYNAMIC_DISTANCESHADOWS, 0 != (m_pEntity->m_flags & ENTITY_FLAG_DYNAMIC_DISTANCE_SHADOWS));
 
 			SetRenderNodeFlags(renderNodeFlags, ERF_CASTSHADOWMAPS, (0 != (entityFlags & ENTITY_FLAG_CASTSHADOW)) || (0 != (GetFlags() & ENTITY_SLOT_CAST_SHADOW)));
 			SetRenderNodeFlags(renderNodeFlags, ERF_GOOD_OCCLUDER, 0 != (entityFlags & ENTITY_FLAG_GOOD_OCCLUDER));
@@ -176,6 +179,8 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			SetRenderNodeFlags(renderNodeFlags, ERF_ENABLE_ENTITY_RENDER_CALLBACK, 0 != (entityFlags & ENTITY_FLAG_SEND_RENDER_EVENT));
 			SetRenderNodeFlags(renderNodeFlags, ERF_CUSTOM_VIEW_DIST_RATIO, 0 != (entityFlags & ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO));
 
+			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, 0 != (GetFlags() & ENTITY_SLOT_ALLOW_TERRAIN_LAYER_BLEND));
+			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_ALLOW_DECAL_BLEND, 0 != (GetFlags() & ENTITY_SLOT_ALLOW_DECAL_BLEND));
 			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_RENDER_AFTER_POSTPROCESSING, 0 != (GetFlags() & ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING));
 			SetRenderNodeFlags(renderNodeFlags, ERF_FOB_NEAREST, 0 != (GetFlags() & ENTITY_SLOT_RENDER_NEAREST));
 
@@ -196,7 +201,10 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			SetRenderNodeFlags(renderNodeFlags, ERF_MOVES_EVERY_FRAME, !bPhysicsIsStatic);
 		}
 		renderNodeFlags |= renderNodeParams.additionalRenderNodeFlags;
+
 		m_pRenderNode->SetRndFlags(renderNodeFlags);
+
+		m_pRenderNode->SetRndFlags(ERF_HIDDEN, !bSlotShouldRender);
 
 		// Update render node location
 		m_pRenderNode->SetMatrix(m_worldTM);
@@ -228,31 +236,39 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		if (m_bCameraSpacePos)
 		{
-			m_pRenderNode->SetCameraSpacePos(&m_cameraSpacePos);
+			m_pRenderNode->SetCameraSpaceParams(SCameraSpaceParams{ m_cameraSpacePos, Vec3{ZERO} });
 		}
 		else
 		{
-			m_pRenderNode->SetCameraSpacePos(nullptr);
+			m_pRenderNode->SetCameraSpaceParams(stl::nullopt);
 		}
 
-		m_pRenderNode->Hide(!bSlotShouldRender);
-
-		if ((m_pEntity->GetFlags() & ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO) == 0)
-		{
-			if (GetFlags() & ENTITY_SLOT_RENDER_NEAREST)
-				m_pRenderNode->SetLodRatio(0); // Use LOD 0 on nearest objects
-			else
-				m_pRenderNode->SetLodRatio(renderNodeParams.lodRatio);
-
-			m_pRenderNode->SetViewDistRatio(renderNodeParams.viewDistRatio);
-		}
+		UpdateViewDistRatio(renderNodeParams);
 
 		m_pRenderNode->SetMinSpec(renderNodeParams.minSpec);
 	}
 }
 
+void CEntitySlot::UpdateViewDistRatio(const IEntity::SRenderNodeParams& renderNodeParams)
+{
+	if ((m_pEntity->GetFlags() & ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO) == 0)
+	{
+		const uint32 slotFlags = GetFlags();
+
+		if (slotFlags & ENTITY_SLOT_RENDER_NEAREST)
+			m_pRenderNode->SetLodRatio(0); // Use LOD 0 on nearest objects.
+		else
+			m_pRenderNode->SetLodRatio(renderNodeParams.lodRatio);
+
+		if ((slotFlags & ENTITY_SLOT_CUSTOM_VIEWDIST_RATIO) == 0)
+		{
+			m_pRenderNode->SetViewDistRatio(renderNodeParams.viewDistRatio);
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
-void CEntitySlot::OnXForm(int nWhyFlags)
+void CEntitySlot::OnXForm(EntityTransformationFlagsMask transformReasons)
 {
 	ComputeWorldTransform();
 
@@ -315,7 +331,7 @@ bool CEntitySlot::IsRendered() const
 	else if (m_pRenderNode)
 	{
 		// If node have temp data allocated for it, it is considered to be rendered by the 3dEngine
-		if (m_pRenderNode->m_pTempData.load())
+		if (m_pRenderNode->m_pTempData)
 			return true;
 
 		if (std::abs((int)m_pRenderNode->GetDrawFrame() - (int)gEnv->nMainFrameID) < 3)
@@ -382,7 +398,12 @@ void CEntitySlot::SetLocalTM(const Matrix34& localTM)
 	m_localTM = localTM;
 	ComputeWorldTransform();
 
-	OnXForm(0);
+	OnXForm(EntityTransformationFlagsMask());
+
+	if (m_pCharacter)
+	{
+		m_pCharacter->SetCharacterOffset(QuatTS(Quat(IDENTITY), Vec3(ZERO), m_pEntity->GetScale().x) * QuatTS(m_localTM));
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -658,8 +679,8 @@ void CEntitySlot::GetSlotInfo(SEntitySlotInfo& slotInfo) const
 	slotInfo.pParticleEmitter = GetParticleEmitter();
 #if defined(USE_GEOM_CACHES)
 	slotInfo.pGeomCacheRenderNode =
-	  (m_pRenderNode && m_pRenderNode->GetRenderNodeType() == eERType_GeomCache)
-	  ? static_cast<IGeomCacheRenderNode*>(m_pRenderNode) : NULL;
+		(m_pRenderNode && m_pRenderNode->GetRenderNodeType() == eERType_GeomCache)
+		? static_cast<IGeomCacheRenderNode*>(m_pRenderNode) : NULL;
 #endif
 	slotInfo.nSubObjHideMask = m_nSubObjHideMask;
 }

@@ -1,12 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __baselibrary_h__
-#define __baselibrary_h__
 #pragma once
 
 #include "SandboxAPI.h"
 #include "IDataBaseLibrary.h"
 #include "BaseLibraryItem.h"
+#include <CryCore/smartptr.h>
 
 class CBaseLibraryManager;
 class CBaseLibraryItem;
@@ -20,22 +19,22 @@ public:
 	~CBaseLibrary();
 
 	//! Set library name.
-	virtual void   SetName(const string& name);
+	virtual void  SetName(const string& name);
 	//! Get library name.
 	const string& GetName() const;
 
 	//! Set new filename for this library.
-	void           SetFilename(const string& filename) { m_filename = filename; m_filename.MakeLower(); };
-	const string& GetFilename() const                  { return m_filename; };
+	void          SetFilename(const string& filename) { m_filename = filename; m_filename.MakeLower(); }
+	const string& GetFilename() const                 { return m_filename; }
 
-	virtual bool   Save() = 0;
-	virtual bool   Load(const string& filename) = 0;
-	virtual void   Serialize(XmlNodeRef& node, bool bLoading) = 0;
+	virtual bool  Save() = 0;
+	virtual bool  Load(const string& filename) = 0;
+	virtual void  Serialize(XmlNodeRef& node, bool bLoading) = 0;
 
 	//! Mark library as modified.
 	void SetModified(bool bModified = true);
 	//! Check if library was modified.
-	bool IsModified() const { return m_bModified; };
+	bool IsModified() const { return m_bModified; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Working with items.
@@ -58,10 +57,10 @@ public:
 	IDataBaseItem* FindItem(const string& name);
 
 	//! Check if this library is local level library.
-	bool IsLevelLibrary() const { return m_bLevelLib; };
+	bool IsLevelLibrary() const { return m_bLevelLib; }
 
 	//! Set library to be level library.
-	void SetLevelLibrary(bool bEnable) { m_bLevelLib = bEnable; };
+	void SetLevelLibrary(bool bEnable) { m_bLevelLib = bEnable; }
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Return manager for this library.
@@ -100,6 +99,3 @@ protected:
 	// Array of all our library items.
 	std::vector<_smart_ptr<CBaseLibraryItem>> m_items;
 };
-
-#endif // __baselibrary_h__
-

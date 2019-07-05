@@ -26,7 +26,7 @@ bool Converter::CreateNewDesignerObject()
 		return false;
 
 	CUndo undo("Create Designer Objects");
-	GetIEditor()->ClearSelection();
+	GetIEditor()->GetObjectManager()->ClearSelection();
 
 	std::vector<DesignerObject*> pDesignerObjects;
 	ConvertToDesignerObjects(pSelectedMeshes, pDesignerObjects);
@@ -46,7 +46,7 @@ bool Converter::CreateNewDesignerObject()
 		Matrix34 newTM(pDesignerObjects[i]->GetWorldTM());
 		newTM.SetTranslation(newTM.GetTranslation() + Vec3(gapX, 0, 0));
 		pDesignerObjects[i]->SetWorldTM(newTM);
-		GetIEditor()->SelectObject(pDesignerObjects[i]);
+		GetIEditor()->GetObjectManager()->AddObjectToSelection(pDesignerObjects[i]);
 	}
 
 	return true;
@@ -76,7 +76,7 @@ bool Converter::ConvertToDesignerObject()
 		return false;
 
 	for (int i = 0; i < iSizeOfDesignerObjects; ++i)
-		GetIEditor()->SelectObject(pDesignerObjects[i]);
+		GetIEditor()->GetObjectManager()->AddObjectToSelection(pDesignerObjects[i]);
 
 	for (int i = 0, iSizeOfSelectedObjects(pSelectedMeshes.size()); i < iSizeOfSelectedObjects; ++i)
 		GetIEditor()->DeleteObject(pSelectedMeshes[i].m_pOriginalObject);
@@ -214,7 +214,6 @@ bool Converter::ConvertMeshToBrushDesigner(IIndexedMesh* pMesh, Model* pModel)
 		return false;
 
 	int numVerts = pMesh->GetVertexCount();
-	int numFaces = pMesh->GetIndexCount() / 3;
 
 	IIndexedMesh::SMeshDescription md;
 	pMesh->GetMeshDescription(md);
@@ -478,4 +477,3 @@ void Converter::GenerateUVIslands(Model* pModel)
 	}
 }
 };
-

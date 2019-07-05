@@ -21,7 +21,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void   ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 
 #ifndef RELEASE
 			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
@@ -67,6 +67,7 @@ namespace Cry
 				desc.AddMember(&CPointLightComponent::m_shadows, 'shad', "Shadows", "Shadows", "Shadow casting settings", CPointLightComponent::SShadows());
 				desc.AddMember(&CPointLightComponent::m_options, 'opt', "Options", "Options", "Specific Light Options", CPointLightComponent::SOptions());
 				desc.AddMember(&CPointLightComponent::m_animations, 'anim', "Animations", "Animations", "Light style / animation properties", CPointLightComponent::SAnimations());
+				desc.AddMember(&CPointLightComponent::m_shape, 'shap', "Shape", "Shape", "Area light shape properties", CPointLightComponent::SShape());
 			}
 
 		protected:

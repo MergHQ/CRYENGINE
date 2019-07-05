@@ -3,11 +3,11 @@
 #include "StdAfx.h"
 #include "ModelProperties.h"
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include <QAbstractItemView>
 
-CModelProperties::CModelProperties(QPropertyTree* pPropertyTree)
+CModelProperties::CModelProperties(QPropertyTreeLegacy* pPropertyTree)
 	: m_pInspectedModel(nullptr)
 	, m_pPropertyTree(pPropertyTree)
 {
@@ -102,4 +102,3 @@ void CModelProperties::ConnectViewToPropertyObject(QAbstractItemView* pView)
 		}
 	});
 }
-

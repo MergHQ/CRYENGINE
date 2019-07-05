@@ -2,6 +2,7 @@
 
 #ifndef ISTREAMENGINEDEFS_H
 #define ISTREAMENGINEDEFS_H
+#include <CryCore/smartptr.h>
 
 #if defined(ENABLE_PROFILING_CODE)
 	#define STREAMENGINE_ENABLE_LISTENER
@@ -77,6 +78,8 @@ enum EStreamSourceMediaType
 };
 
 #if defined(STREAMENGINE_ENABLE_STATS)
+#include <CryCore/Containers/CryArray.h>
+
 struct SStreamEngineStatistics
 {
 	struct SMediaTypeInfo

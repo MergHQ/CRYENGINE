@@ -1,6 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
+#include <CrySystem/IConsole.h>
+
+class CEntity;
+struct ICVar;
+struct IConsoleCmdArgs;
 
 //////////////////////////////////////////////////////////////////////////
 // Console variables local to EntitySystem.
@@ -15,14 +20,27 @@ struct SEntityWithCharacterInstanceAutoComplete : public IConsoleArgumentAutoCom
 
 struct CVar
 {
+	enum class EEntityDebugDrawType
+	{
+		Off,
+		BoundingBoxWithName,
+		BoundingBoxWithPositionPhysics,
+		BoundingBoxWithEntityId,
+		Hierarchies,
+		Links,
+		Components
+	};
+
 	// General entity CVars
 	static ICVar*      pUpdateScript;
 	static ICVar*      pUpdateEntities;
 	static ICVar*      pEntityBBoxes;
 
-	static int         es_DebugTimers;
+	static ICVar*      pFlowgraphComponents;
+
+	static EEntityDebugDrawType es_EntityDebugDraw;
+
 	static int         es_DebugFindEntity;
-	static int         es_DebugEvents;
 	static int         es_debugEntityLifetime;
 	static int         es_DebugEntityUsage;
 	static const char* es_DebugEntityUsageFilter;
@@ -58,8 +76,12 @@ struct CVar
 	static ICVar* pDrawAreaGrid;
 	static ICVar* pDrawAreaGridCells;
 	static ICVar* pDrawAreaDebug;
+	static ICVar* pLogAreaDebug;
+	static ICVar* pUpdateAreas;
 
 	static float  es_EntityUpdatePosDelta;
+
+	static int    es_UseProximityTriggerSystem;
 
 	// Script CVars
 	static ICVar* pEnableFullScriptSave;
@@ -80,4 +102,8 @@ struct CVar
 
 	// Console commands to enable/disable layers
 	static void ConsoleCommandToggleLayer(IConsoleCmdArgs* pArgs);
+
+	// Legacy CVar mapping
+	static void MapEntityBBoxesCVar(ICVar* pBBoxCVar);
+	static void MapDrawEntityIDCVar(ICVar* pIDCVar);
 };

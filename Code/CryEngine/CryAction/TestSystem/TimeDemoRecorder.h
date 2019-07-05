@@ -16,10 +16,13 @@
 #pragma once
 
 #include <CryCore/Containers/CryListenerSet.h>
-#include <ITimeDemoRecorder.h>
+#include <CryAction/ITimeDemoRecorder.h>
+#include <CrySystem/Profilers/ILegacyProfiler.h>
+#include <3rdParty/concqueue/concqueue-spsc.hpp>
 #include "ITestModule.h"
 
-struct SRecordedGameEvent;
+struct SRecordedGameEventV4;
+struct SRecordedGameEventV7;
 
 struct STimeDemoGameEvent
 {
@@ -49,7 +52,8 @@ struct STimeDemoGameEvent
 		}
 	}
 
-	STimeDemoGameEvent(const SRecordedGameEvent& event);
+	STimeDemoGameEvent(const SRecordedGameEventV4& event);
+	STimeDemoGameEvent(const SRecordedGameEventV7& event);
 
 	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -62,7 +66,7 @@ typedef std::vector<STimeDemoGameEvent> TGameEventRecords;
 
 class CTimeDemoRecorder 
 	: public ITimeDemoRecorder
-	, IFrameProfilePeakCallback
+	, public ICryProfilerFrameListener
 	, IInputEventListener
 	, IEntitySystemSink
 	, IGameplayListener
@@ -72,32 +76,28 @@ public:
 	CTimeDemoRecorder();
 	virtual ~CTimeDemoRecorder();
 
-	void Reset();
-
-	void PreUpdate();
-	void PostUpdate();
-
-	void GetMemoryStatistics(class ICrySizer* pSizer) const;
-
-	bool IsTimeDemoActive() const { return m_bChainloadingDemo || m_bPlaying || m_bRecording; }
-	bool IsChainLoading() const   { return m_bChainloadingDemo; }
-
 	//////////////////////////////////////////////////////////////////////////
 	// Implements ITimeDemoRecorder interface.
 	//////////////////////////////////////////////////////////////////////////
-	virtual bool IsRecording() const override { return m_bRecording; };
-	virtual bool IsPlaying() const override   { return m_bPlaying; };
+	virtual bool IsRecording() const override    { return m_bRecording; };
+	virtual bool IsPlaying() const override      { return m_bPlaying; };
+	virtual bool IsChainLoading() const override { return m_bChainloadingDemo; }
 	virtual void RegisterListener(ITimeDemoListener* pListener) override;
 	virtual void UnregisterListener(ITimeDemoListener* pListener) override;
 	virtual void GetCurrentFrameRecord(STimeDemoFrameRecord& externalRecord) const override;
+	virtual STimeDemoInfo* GetLastPlayedTimeDemo() const override;
+	virtual void Reset() override;
+	virtual void PreUpdate() override;
+	virtual void PostUpdate() override;
+	virtual void OnRegistered() override;
+	virtual void OnUnregistered() override;
+	virtual void GetMemoryStatistics(class ICrySizer* pSizer) const override;
 	//////////////////////////////////////////////////////////////////////////
 
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// Implements IFrameProfilePeakCallback interface.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void OnFrameProfilerPeak(CFrameProfiler* pProfiler, float fPeakTime) override;
-	//////////////////////////////////////////////////////////////////////////
+	// ICryProfilerFrameListener, for getting the peaks
+	void OnFrameEnd(TTime, ILegacyProfiler*) override;
+	// ~ICryProfilerFrameListener
 
 	//////////////////////////////////////////////////////////////////////////
 	// Implements IInputEventListener interface.
@@ -221,6 +221,7 @@ private:
 	CTimeValue         GetTime();
 	// Set Value of console variable.
 	void               SetConsoleVar(const char* sVarName, float value);
+	void               SetConsoleVar(const char* sVarName, int value);
 	// Get value of console variable.
 	float              GetConsoleVar(const char* sVarName);
 
@@ -320,12 +321,13 @@ private:
 
 	int        m_fileVersion;
 
-	bool       m_bEnabledProfiling, m_bVisibleProfiling;
-
+	bool       m_profilingPaused;
 	float      m_oldPeakTolerance;
 	float      m_fixedTimeStep;
 
 	string     m_file;
+
+	concqueue::spsc_queue_t<string> m_logInfoQueue;
 
 	//	IGameStateRecorder* m_pGameStateRecorder;
 

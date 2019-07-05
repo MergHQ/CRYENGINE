@@ -4,7 +4,7 @@
 #include "VehiclePart.h"
 
 #include "Viewport.h"
-
+#include "Util/MFCUtil.h"
 #include "VehiclePrototype.h"
 #include "VehicleHelperObject.h"
 #include "VehicleSeat.h"
@@ -25,16 +25,16 @@ IMPLEMENT_DYNCREATE(CVehiclePart, CBaseObject)
 
 //////////////////////////////////////////////////////////////////////////
 CVehiclePart::CVehiclePart()
+	: m_pVehicle(nullptr)
+	, m_pParent(nullptr)
+	, m_isMain(false)
+	, m_pYawSpeed(nullptr)
+	, m_pYawLimits(nullptr)
+	, m_pPitchSpeed(nullptr)
+	, m_pPitchLimits(nullptr)
+	, m_pHelper(nullptr)
+	, m_pPartClass(nullptr)
 {
-	m_pVehicle = 0;
-	m_pVar = 0;
-
-	m_pYawSpeed = 0;
-	m_pYawLimits = 0;
-	m_pPitchSpeed = 0;
-	m_pPitchLimits = 0;
-	m_pHelper = 0;
-	m_pPartClass = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ bool CVehiclePart::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, int axis)
+void CVehiclePart::DrawRotationLimits(SDisplayContext& dc, IVariable* pSpeed, IVariable* pLimits, IVariable* pHelper, CLevelEditorSharedState::Axis axis)
 {
 	if (pSpeed)
 	{
@@ -87,7 +87,6 @@ void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVa
 			{
 				const static Vec3 line(0, 2, 0);
 				const static float step = DEG2RAD(10);
-				const Matrix34& vehicleTM = m_pVehicle->GetWorldTM();
 				double angleMin = 0, angleMax = 0, angle = 0;
 				Matrix34 matMin, matMax;
 				Vec3 p0, p1;
@@ -101,12 +100,12 @@ void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVa
 
 				switch (axis)
 				{
-				case AXIS_X:
+				case CLevelEditorSharedState::Axis::X:
 					angleMin = DEG2RAD(max > 0 ? max : 360 + max); // angles for x-rotation
 					angleMax = DEG2RAD(min < 0 ? 360 + min : min);
 
-					matMin = vehicleTM.CreateRotationX(angleMin);
-					matMax = vehicleTM.CreateRotationX(angleMax);
+					matMin = m_pVehicle->GetWorldTM().CreateRotationX(angleMin);
+					matMax = m_pVehicle->GetWorldTM().CreateRotationX(angleMax);
 
 					p0.y = sourcePos.y + radius * cos(angleMax - step);
 					p0.z = sourcePos.z + radius * sin(angleMax - step);
@@ -114,12 +113,12 @@ void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVa
 
 					break;
 
-				case AXIS_Z:
+				case CLevelEditorSharedState::Axis::Z:
 					angleMin = DEG2RAD(min < 0 ? -min : 360 - min); // angles for z-rotation
 					angleMax = DEG2RAD(max > 0 ? 360 - max : -max);
 
-					matMin = vehicleTM.CreateRotationZ(angleMin);
-					matMax = vehicleTM.CreateRotationZ(angleMax);
+					matMin = m_pVehicle->GetWorldTM().CreateRotationZ(angleMin);
+					matMax = m_pVehicle->GetWorldTM().CreateRotationZ(angleMax);
 
 					p0.x = sourcePos.x + radius * -sin(angleMax - step);
 					p0.y = sourcePos.y + radius * cos(angleMax - step);
@@ -138,11 +137,11 @@ void CVehiclePart::DrawRotationLimits(DisplayContext& dc, IVariable* pSpeed, IVa
 				{
 					switch (axis)
 					{
-					case AXIS_X:
+					case CLevelEditorSharedState::Axis::X:
 						p1.y = sourcePos.y + radius * cos(angle);
 						p1.z = sourcePos.z + radius * sin(angle);
 						break;
-					case AXIS_Z:
+					case CLevelEditorSharedState::Axis::Z:
 						p1.x = sourcePos.x + radius * -sin(angle);
 						p1.y = sourcePos.y + radius * cos(angle);
 						break;
@@ -182,11 +181,11 @@ void CVehiclePart::Display(CObjectRenderHelper& objRenderHelper)
 	if (!IsSelected())
 		return;
 
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	COLORREF wireColor, solidColor;
 	float alpha = 0.4f;
 	wireColor = dc.GetSelectedColor();
-	solidColor = GetColor();
+	solidColor = CMFCUtils::ColorBToColorRef(GetColor());
 
 	// mass box rendering
 	if (GetPartClass() == PARTCLASS_MASS)
@@ -230,8 +229,8 @@ void CVehiclePart::Display(CObjectRenderHelper& objRenderHelper)
 	else
 	{
 		// draw rotation limits, if available
-		DrawRotationLimits(dc, m_pYawSpeed, m_pYawLimits, m_pHelper, AXIS_Z);
-		DrawRotationLimits(dc, m_pPitchSpeed, m_pPitchLimits, m_pHelper, AXIS_X);
+		DrawRotationLimits(dc, m_pYawSpeed, m_pYawLimits, m_pHelper, CLevelEditorSharedState::Axis::Z);
+		DrawRotationLimits(dc, m_pPitchSpeed, m_pPitchLimits, m_pHelper, CLevelEditorSharedState::Axis::X);
 	}
 
 	DrawDefault(dc);
@@ -453,19 +452,19 @@ void CVehiclePart::Done()
 //////////////////////////////////////////////////////////////////////////
 void CVehiclePart::AttachChild(CBaseObject* child, bool bKeepPos, bool bInvalidateTM)
 {
-	child->AddEventListener(functor(*this, &CVehiclePart::OnObjectEvent));
+	child->signalChanged.Connect(this, &CVehiclePart::OnObjectEvent);
 
 	CBaseObject::AttachChild(child, bKeepPos, bInvalidateTM);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehiclePart::OnObjectEvent(CBaseObject* node, int event)
+void CVehiclePart::OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
-		VeedLog("[CVehiclePart]: ON_DELETE for %s", node->GetName());
+		VeedLog("[CVehiclePart]: ON_DELETE for %s", pObject->GetName());
 		// delete variable
-		if (IVeedObject* pVO = IVeedObject::GetVeedObject(node))
+		if (IVeedObject* pVO = IVeedObject::GetVeedObject(const_cast<CBaseObject*>(pObject)))
 		{
 			if (pVO->DeleteVar())
 			{
@@ -476,7 +475,7 @@ void CVehiclePart::OnObjectEvent(CBaseObject* node, int event)
 					m_pVehicle->GetVariable()->DeleteVariable(pVO->GetVariable(), true);
 				}
 				pVO->SetVariable(0);
-				VeedLog("[CVehiclePart] deleting var for %s", node->GetName());
+				VeedLog("[CVehiclePart] deleting var for %s", pObject->GetName());
 			}
 		}
 	}
@@ -593,4 +592,3 @@ void CVehiclePart::UpdateScale(float scale)
 void CVehiclePart::OnTreeSelection()
 {
 }
-

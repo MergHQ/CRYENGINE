@@ -120,4 +120,45 @@ CTexture* LookupTexNeutral(EEfResTextures texSlot)
 	return *s_TexSlotSemantics[texSlot].neutral;
 }
 
+bool IsSlotAvailable(EEfResTextures texSlot)
+{
+#if !RENDERER_ENABLE_FULL_PIPELINE
+	return
+		texSlot == EFTT_DIFFUSE        ||
+		texSlot == EFTT_NORMALS        ||
+		texSlot == EFTT_SPECULAR       ||
+		texSlot == EFTT_SMOOTHNESS     ||
+		texSlot == EFTT_HEIGHT         ||
+		texSlot == EFTT_EMITTANCE      ||
+		texSlot == EFTT_DETAIL_OVERLAY ||
+		texSlot == EFTT_DECAL_OVERLAY;
+#else
+	return true;
+#endif
+}
+
+EShaderStage GetShaderStagesForTexSlot(EEfResTextures texSlot)
+{
+	return EShaderStage_AllWithoutCompute;
+	static const EShaderStage shaderStagesByTexSlot[EFTT_MAX] =
+	{
+		EShaderStage_Pixel,                                                                 // EFTT_DIFFUSE
+		EShaderStage_Pixel,                                                                 // EFTT_NORMALS
+		EShaderStage_Pixel,                                                                 // EFTT_SPECULAR
+		EShaderStage_Pixel,                                                                 // EFTT_ENV
+		EShaderStage_Pixel,                                                                 // EFTT_DETAIL_OVERLAY
+		EShaderStage_Pixel,                                                                 // EFTT_SMOOTHNESS
+		EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel, // EFTT_HEIGHT
+		EShaderStage_Pixel,                                                                 // EFTT_DECAL_OVERLAY
+		EShaderStage_Pixel,                                                                 // EFTT_SUBSURFACE
+		EShaderStage_Pixel,                                                                 // EFTT_CUSTOM
+		EShaderStage_Pixel,                                                                 // EFTT_CUSTOM_SECONDARY
+		EShaderStage_Pixel,                                                                 // EFTT_OPACITY
+		EShaderStage_Pixel,                                                                 // EFTT_TRANSLUCENCY
+		EShaderStage_Pixel,                                                                 // EFTT_EMITTANCE
+	};
+
+	return shaderStagesByTexSlot[texSlot];
+}
+
 }

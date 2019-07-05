@@ -1,15 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2011.
-// -------------------------------------------------------------------------
-//  File name:   LensFlareElement.h
-//  Created:     12/Dec/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
 #include <CryRenderer/IFlares.h>
+#include <Util/Variable.h>
 
 class CLensFlareElementTree;
 class CLensFlareView;
@@ -67,6 +61,4 @@ private:
 
 	IOpticsElementBasePtr m_pOpticsElement;
 	CVarBlockPtr          m_vars;
-
 };
-

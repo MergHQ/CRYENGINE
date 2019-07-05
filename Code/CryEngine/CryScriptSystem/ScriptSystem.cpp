@@ -7,7 +7,7 @@
 	#include <CryEntitySystem/IEntitySystem.h>
 #endif
 
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 #include "ScriptSystem.h"
 #include "ScriptTable.h"
@@ -23,6 +23,7 @@
 #include <CrySystem/ITimer.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryMath/Random.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CryNetwork/ISerialize.h>
 
@@ -207,7 +208,7 @@ extern "C"
 			const char* slevel = "";
 			if (level == 1)
 				slevel = "  ";
-			int nRes = lua_getinfo(L, "lnS", &ar);
+			lua_getinfo(L, "lnS", &ar);
 			if (ar.name)
 				CryLog("$6%s    > %s, (%s: %d)", slevel, ar.name, ar.short_src, ar.currentline);
 			else
@@ -220,7 +221,7 @@ extern "C"
 #if USE_RAW_LUA_ALLOCS
 		return _LuaRealloc(ptr, nsize);
 #else
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_LUA, 0, "Lua");
+		MEMSTAT_CONTEXT(EMemStatContextType::LUA, "Lua");
 
 		if (g_dumpStackOnAlloc)
 			DumpCallStack(g_LStack);
@@ -280,7 +281,9 @@ IScriptTable* CScriptSystem::GetLocalVariables(int nLevel, bool bRecursive)
 	pObj->AddRef();
 
 	// Attach a new table
+#if !defined(_RELEASE)
 	const int checkStack = lua_gettop(L);
+#endif
 	lua_newtable(L);
 	lua_pushvalue(L, -1);
 	AttachTable(pObj);
@@ -302,7 +305,9 @@ IScriptTable* CScriptSystem::GetLocalVariables(int nLevel, bool bRecursive)
 
 		// Assign variable names and values for the current frame to the table on top of the stack
 		int i = 1;
+#if !defined(_RELEASE)
 		const int checkInner = lua_gettop(L);
+#endif
 		assert(checkInner == checkStack + 1 + bRecursive && "Too much stack space used");
 		assert(lua_istable(L, -1) && "The target table must be on the top of the stack");
 		while ((name = lua_getlocal(L, &ar, i++)) != NULL)
@@ -1048,10 +1053,10 @@ bool CScriptSystem::_ExecuteFile(const char* sFileName, bool bRaiseError, IScrip
 		return false;
 
 	// Translate pak alias filenames
-	char translatedBuf[_MAX_PATH + 1];
-	const char* translated = gEnv->pCryPak->AdjustFileName(sFileName, translatedBuf, ICryPak::FLAGS_NO_FULL_PATH);
+	CryPathString translated;
+	gEnv->pCryPak->AdjustFileName(sFileName, translated, ICryPak::FLAGS_NO_FULL_PATH);
 
-	stack_string fileName("@");
+	CryPathString fileName("@");
 	fileName.append(translated);
 	fileName.replace('\\', '/');
 
@@ -1067,7 +1072,7 @@ bool CScriptSystem::ExecuteFile(const char* sFileName, bool bRaiseError, bool bF
 	if (strlen(sFileName) <= 0)
 		return false;
 
-	LOADING_TIME_PROFILE_SECTION_ARGS(sFileName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sFileName);
 
 	INDENT_LOG_DURING_SCOPE(true, "Executing file '%s' (raiseErrors=%d%s)", sFileName, bRaiseError, bForceReload ? ", force reload" : "");
 
@@ -1266,8 +1271,8 @@ bool CScriptSystem::ExecuteBuffer(const char* sBuffer, size_t nSize, const char*
 {
 	int status;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Lua LoadScript");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ScriptCall, 0, "%s", sBufferDescription);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Lua LoadScript");
+	MEMSTAT_CONTEXT(EMemStatContextType::ScriptCall, sBufferDescription);
 
 	{
 		status = luaL_loadbuffer(L, sBuffer, nSize, sBufferDescription);
@@ -1322,7 +1327,7 @@ int CScriptSystem::BeginCall(HSCRIPTFUNCTION hFunc)
 	lua_getref(L, (int)(INT_PTR)hFunc);
 	if (!lua_isfunction(L, -1))
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		ScriptWarning("[CScriptSystem::BeginCall] Function Ptr:%d not found", (int)(INT_PTR)hFunc);
 #else
 		ScriptWarning("[CScriptSystem::BeginCall] Function Ptr:%d not found", hFunc);
@@ -1791,13 +1796,17 @@ bool CScriptSystem::GetGlobalAny(const char* sKey, ScriptAnyValue& any)
 //////////////////////////////////////////////////////////////////////
 void CScriptSystem::ForceGarbageCollection()
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int beforeUsage = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+#endif
 
 	// Do a full garbage collection cycle.
 	lua_gc(L, LUA_GCCOLLECT, 0);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	int fracUsage = lua_gc(L, LUA_GCCOUNTB, 0);
 	int totalUsage = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + fracUsage;
+#endif
 
 #if USE_RAW_LUA_ALLOCS
 	// Nothing to do.
@@ -2129,11 +2138,9 @@ void CScriptSystem::ShowDebugger(const char* pszSourceFile, int iLine, const cha
 //////////////////////////////////////////////////////////////////////////
 void CScriptSystem::Update()
 {
-	CRY_PROFILE_REGION(PROFILE_SCRIPT, "ScriptSystem: Update");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("ScriptSystem: Update");
-
-	//CryGetScr
-	//L->l_G->totalbytes =
+	CRY_PROFILE_SECTION(PROFILE_SCRIPT, "ScriptSystem: Update");
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
+	
 	ITimer* pTimer = gEnv->pTimer;
 	CTimeValue nCurTime = pTimer->GetFrameStartTime();
 
@@ -2180,7 +2187,7 @@ void CScriptSystem::Update()
 
 	//if(bKickIn)
 	{
-		CRY_PROFILE_REGION(PROFILE_SCRIPT, "Lua GC");
+		CRY_PROFILE_SECTION(PROFILE_SCRIPT, "Lua GC");
 
 		//CryLog( "Lua GC=%d",GetCGCount() );
 
@@ -2220,7 +2227,7 @@ void CScriptSystem::SetEnvironment(HSCRIPTFUNCTION scriptFunction, IScriptTable*
 	lua_getref(L, (int)(INT_PTR)scriptFunction);
 	if (!lua_isfunction(L, -1))
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		ScriptWarning("[CScriptSystem::SetEnvironment] Function %d not found", (int)(INT_PTR)scriptFunction);
 #else
 		ScriptWarning("[CScriptSystem::SetEnvironment] Function %d not found", scriptFunction);
@@ -2240,7 +2247,7 @@ IScriptTable* CScriptSystem::GetEnvironment(HSCRIPTFUNCTION scriptFunction)
 
 	if (!lua_isfunction(L, -1))
 	{
-#if defined(__GNUC__)
+#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		ScriptWarning("[CScriptSystem::SetEnvironment] Function %d not found", (int)(INT_PTR)scriptFunction);
 #else
 		ScriptWarning("[CScriptSystem::SetEnvironment] Function %d not found", scriptFunction);
@@ -2645,7 +2652,6 @@ void CScriptSystem::ResetTimers()
 //////////////////////////////////////////////////////////////////////////
 HSCRIPTFUNCTION CScriptSystem::CompileBuffer(const char* sBuffer, size_t nSize, const char* sBufferDesc)
 {
-	int iIndex = -1;
 	const char* sBufferDescription = "Pre Compiled Code";
 	if (sBufferDesc)
 		sBufferDescription = sBufferDesc;

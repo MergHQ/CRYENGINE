@@ -29,4 +29,3 @@ private:
 	QPreviewWidget*   m_pPreviewWidget;
 	CObjectClassDesc* m_pClassDesc;
 };
-

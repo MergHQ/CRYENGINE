@@ -8,6 +8,9 @@
 // Includes
 #include "GameEffect.h"
 #include "Effects/GameEffectsSystem.h"
+#include <CryMemory/CrySizer.h>
+#include <CryPhysics/RayCastQueue.h>
+#include <CryCore/Containers/CryFixedArray.h>
 
 // Forward declares
 struct SExplosionContainer;

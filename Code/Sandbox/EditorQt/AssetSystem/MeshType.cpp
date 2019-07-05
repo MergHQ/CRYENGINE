@@ -2,24 +2,24 @@
 
 #include "StdAfx.h"
 #include "MeshType.h"
+
+#include "AssetSystem/AssetResourceSelector.h"
+#include "IEditorImpl.h"
+#include "PathUtils.h"
 #include "QT/Widgets/QPreviewWidget.h"
-#include "FilePathUtil.h"
-#include <ThreadingUtils.h>
 
 #include <AssetSystem/AssetEditor.h>
 #include <Cry3DEngine/I3DEngine.h>
-#include <ProxyModels/ItemModelAttribute.h>
-
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
-
-#include "AssetSystem/AssetResourceSelector.h"
+#include <ProxyModels/ItemModelAttribute.h>
+#include <ThreadingUtils.h>
 
 REGISTER_ASSET_TYPE(CMeshType);
 
 // Detail attributes.
-CItemModelAttribute CMeshType::s_triangleCountAttribute("Triangle count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CMeshType::s_vertexCountAttribute("Vertex count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CMeshType::s_materialCountAttribute("Material count", eAttributeType_Int, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMeshType::s_triangleCountAttribute("Triangle count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMeshType::s_vertexCountAttribute("Vertex count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CMeshType::s_materialCountAttribute("Material count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
 
 CAssetEditor* CMeshType::Edit(CAsset* asset) const
 {

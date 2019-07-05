@@ -108,15 +108,15 @@ namespace UQS
 			// find the ItemFactory by the return type of this function
 			m_pItemFactoryOfReturnValue = UQS::Core::IHubPlugin::GetHub().GetUtils().FindItemFactoryByType(Shared::SDataTypeHelper<TReturn>::GetTypeInfo());
 
-			// if this assert() fails, then a function returns a type that is not registered as an item-factory
+			// if this CRY_ASSERT() fails, then a function returns a type that is not registered as an item-factory
 			// FIXME: this should not only trigger in debug builds
-			assert(m_pItemFactoryOfReturnValue);
+			CRY_ASSERT(m_pItemFactoryOfReturnValue);
 		}
 
 		template <class TFunction, class TReturn, IFunctionFactory::ELeafFunctionKind tLeafFunctionKind>
 		void CFunctionBase<TFunction, TReturn, tLeafFunctionKind>::AddChildAndTransferItsOwnership(Client::FunctionUniquePtr& childPtr)
 		{
-			assert(childPtr.get() != nullptr);
+			CRY_ASSERT(childPtr.get() != nullptr);
 			m_children.push_back(std::move(childPtr));
 		}
 
@@ -129,7 +129,8 @@ namespace UQS
 		template <class TFunction, class TReturn, IFunctionFactory::ELeafFunctionKind tLeafFunctionKind>
 		void CFunctionBase<TFunction, TReturn, tLeafFunctionKind>::DebugAssertChildReturnTypes() const
 		{
-			assert(m_inputParameterRegistry.GetParameterCount() == m_children.size());
+#if defined(USE_CRY_ASSERT)
+			CRY_ASSERT(m_inputParameterRegistry.GetParameterCount() == m_children.size());
 
 			const size_t numChildren = m_children.size();
 
@@ -137,21 +138,22 @@ namespace UQS
 			{
 				const Shared::CTypeInfo& childReturnType = m_children[i]->DebugAssertGetReturnType();
 				const Shared::CTypeInfo& expectedReturnType = m_inputParameterRegistry.GetParameter(i).type;
-				assert(childReturnType == expectedReturnType);
+				CRY_ASSERT(childReturnType == expectedReturnType);
 			}
+#endif
 		}
 
 		template <class TFunction, class TReturn, IFunctionFactory::ELeafFunctionKind tLeafFunctionKind>
 		void CFunctionBase<TFunction, TReturn, tLeafFunctionKind>::Execute(const SExecuteContext& executeContext, void* pReturnValue) const
 		{
-			assert(m_inputParameterRegistry.GetParameterCount() == m_children.size());
+			CRY_ASSERT(m_inputParameterRegistry.GetParameterCount() == m_children.size());
 
 			const bool bIsLeafFunction = (tLeafFunctionKind != IFunctionFactory::ELeafFunctionKind::None);
 			Internal::SFunctionExecuteHelper<TFunction, TReturn, tLeafFunctionKind, bIsLeafFunction>::Execute(this, executeContext, pReturnValue);
 
-			IF_UNLIKELY(m_bAddReturnValueToDebugRenderWorldUponExecution && executeContext.blackboard.pDebugRenderWorldPersistent)
+			IF_UNLIKELY(m_bAddReturnValueToDebugRenderWorldUponExecution && executeContext.queryContext.pDebugRenderWorldPersistent)
 			{
-				m_pItemFactoryOfReturnValue->AddItemToDebugRenderWorld(pReturnValue, *executeContext.blackboard.pDebugRenderWorldPersistent);
+				m_pItemFactoryOfReturnValue->AddItemToDebugRenderWorld(pReturnValue, *executeContext.queryContext.pDebugRenderWorldPersistent);
 			}
 		}
 
@@ -166,8 +168,8 @@ namespace UQS
 		template <class TFunction, class TReturn, IFunctionFactory::ELeafFunctionKind tLeafFunctionKind>
 		void CFunctionBase<TFunction, TReturn, tLeafFunctionKind>::ExecuteWithInputParameters(const SExecuteContext& executeContext, void* pReturnValue) const
 		{
-			assert(m_inputParameterOffsets.size() == m_inputParameterRegistry.GetParameterCount());
-			assert(m_inputParameterOffsets.size() == m_children.size());
+			CRY_ASSERT(m_inputParameterOffsets.size() == m_inputParameterRegistry.GetParameterCount());
+			CRY_ASSERT(m_inputParameterOffsets.size() == m_children.size());
 
 			typename TFunction::SParams params;
 

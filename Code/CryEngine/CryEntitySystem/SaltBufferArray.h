@@ -2,19 +2,11 @@
 
 #pragma once
 
-#include "SaltHandle.h"           // CSaltHandle
-
 // use one instance of this class in your object manager
 // quite efficient implementation, avoids use of pointer to save memory and reduce cache misses
-class CSaltBufferArray
+struct SSaltBufferArray
 {
-public:
-	static constexpr EntityIndex MaxSize = std::numeric_limits<EntityIndex>::max() - 2;
-	static constexpr EntityIndex UsedMarker = MaxSize + 1;
-	static constexpr EntityIndex EndMarker = MaxSize + 2;
-
-	// constructor
-	CSaltBufferArray()
+	SSaltBufferArray()
 	{
 		Reset();
 	}
@@ -22,259 +14,189 @@ public:
 	// reset (don't use old handles after calling reset)
 	void Reset()
 	{
-		// build freelist
-
-		/*
-		   // front to back
-		   EntityIndex i;
-		   for(i=0;i<MaxSize-1;++i)
-		   {
-		   m_Buffer[i].m_Salt=0;						//
-		   m_Buffer[i].m_NextIndex=i+1;
-		   }
-		   m_Buffer[i].m_Salt=0;
-		   m_Buffer[i].m_NextIndex=EndMarker
-		   m_maxUsed=1;
-		   m_FreeListStartIndex=1;
-		 */
-
-		// back to front
-		EntityIndex i;
-		for (i = MaxSize - 1; i > 1; --i)
+		// build free list from front to back
+		auto it = m_buffer.begin();
+		for(auto end = m_buffer.cend(); it != end; ++it)
 		{
-			m_Buffer[i].m_Salt = 0;           //
-			m_Buffer[i].m_NextIndex = i - 1;
+			it->m_salt = 0u;
+			it->m_nextIndex = static_cast<EntityIndex>(std::distance(m_buffer.begin(), it)) + 1;
 		}
-		assert(i == 1);
-		m_Buffer[1].m_Salt = 0;
-		m_Buffer[1].m_NextIndex = EndMarker;
-		m_maxUsed = MaxSize - 1;
-		m_FreeListStartIndex = MaxSize - 1;
+
+		m_maxUsedEntityIndex = 0;
+		m_freeListStartIndex = 1;
 
 		// 0 is not used because it's nil
-		m_Buffer[0].m_Salt = ~0;
-		m_Buffer[0].m_NextIndex = UsedMarker;
+		m_buffer[0].m_salt = std::numeric_limits<EntityIndex>::max();
+		m_buffer[0].MarkUsed();
 	}
 
-	// max index that is allowed for EntityIndex (max entity count at a time)
-	static constexpr EntityIndex GetTSize()
+	bool IsEmpty() const
 	{
-		return MaxSize;
+		return m_maxUsedEntityIndex == 0;
 	}
 
-	//!
 	bool IsFull() const
 	{
-		return m_FreeListStartIndex == EndMarker;
+		return m_freeListStartIndex == EntityArraySize;
 	}
 
 	// O(n) n=FreeList Size
 	// useful for serialization (Reset should be called before inserting the first known element)
 	// Arguments:
 	//   Handle - must be not nil
-	void InsertKnownHandle(const CSaltHandle& Handle)
+	void InsertKnownHandle(const SEntityIdentifier& handle)
 	{
-		assert((bool)Handle);   // must be not nil
+		CRY_ASSERT(handle.GetId() != 0, "Entity index 0 cannot be reserved!");
+		CRY_ASSERT(handle.GetIndex() < EntityArraySize, "Entity index exceeded maximum bounds!");
 
-		if (!IsUsed(Handle.GetIndex()))
-			RemoveFromFreeList(Handle.GetIndex());
+		if (!IsUsed(handle.GetIndex()))
+		{
+			RemoveFromFreeList(handle.GetIndex());
+		}
 
-		if (Handle.GetIndex() > m_maxUsed)
-			m_maxUsed = Handle.GetIndex();
+		if (handle.GetIndex() > m_maxUsedEntityIndex)
+		{
+			m_maxUsedEntityIndex = handle.GetIndex();
+		}
 
-		SSaltBufferElement& rElement = m_Buffer[Handle.GetIndex()];
+		SSaltBufferElement& rElement = m_buffer[handle.GetIndex()];
 
-		rElement.m_Salt = Handle.GetSalt();
-		rElement.m_NextIndex = UsedMarker;      // mark used
+		rElement.m_salt = handle.GetSalt();
+		rElement.MarkUsed();
 	}
 
 	// O(1) = fast
 	// Returns:
 	//   nil if there was not enough space, valid SaltHandle otherwise
-	CSaltHandle InsertDynamic()
+	SEntityIdentifier Insert()
 	{
-		if (m_FreeListStartIndex == EndMarker)
-			return CSaltHandle();   // buffer is full
-
-		// update bounds
-		if (m_FreeListStartIndex > m_maxUsed)
-			m_maxUsed = m_FreeListStartIndex;
-
-		CSaltHandle ret(m_Buffer[m_FreeListStartIndex].m_Salt, m_FreeListStartIndex);
-
-		SSaltBufferElement& rElement = m_Buffer[m_FreeListStartIndex];
-
-		m_FreeListStartIndex = rElement.m_NextIndex;
-		rElement.m_NextIndex = UsedMarker;  // mark used
-
-		assert(IsUsed(ret.GetIndex()));   // Index was not used, Insert() wasn't called or Remove() called twice
-
-		return ret;
-	}
-
-	// O(n) = slow
-	// Returns:
-	//   nil if there was not enough space, valid SaltHandle otherwise
-	CSaltHandle InsertStatic()
-	{
-		if (m_FreeListStartIndex == EndMarker)
-			return CSaltHandle();   // buffer is full
-
-		// find last available index O(n)
-		EntityIndex LastFreeIndex = m_FreeListStartIndex;
-		EntityIndex* pPrevIndex = &m_FreeListStartIndex;
-
-		for (;; )
+		if (IsFull())
 		{
-			SSaltBufferElement& rCurrElement = m_Buffer[LastFreeIndex];
-
-			if (rCurrElement.m_NextIndex == EndMarker)
-				break;
-
-			pPrevIndex = &(rCurrElement.m_NextIndex);
-			LastFreeIndex = rCurrElement.m_NextIndex;
+			return SEntityIdentifier();
 		}
 
-		// remove from end
-		*pPrevIndex = EndMarker;
+		// update bounds
+		if (m_freeListStartIndex > m_maxUsedEntityIndex)
+		{
+			m_maxUsedEntityIndex = m_freeListStartIndex;
+		}
 
-		// update bounds (actually with introduction of InsertStatic/Dynamic() the m_maxUsed becomes useless)
-		if (LastFreeIndex > m_maxUsed)
-			m_maxUsed = LastFreeIndex;
+		const SEntityIdentifier entityId(m_buffer[m_freeListStartIndex].m_salt, m_freeListStartIndex);
 
-		CSaltHandle ret(m_Buffer[LastFreeIndex].m_Salt, LastFreeIndex);
+		SSaltBufferElement& saltBufferElement = m_buffer[m_freeListStartIndex];
 
-		SSaltBufferElement& rElement = m_Buffer[LastFreeIndex];
+		m_freeListStartIndex = saltBufferElement.m_nextIndex;
+		saltBufferElement.MarkUsed();
 
-		rElement.m_NextIndex = UsedMarker;  // mark used
+		CRY_ASSERT(IsUsed(entityId.GetIndex()), "Entity identifier was not correctly marked as used!");
 
-		assert(IsUsed(ret.GetIndex()));   // Index was not used, Insert() wasn't called or Remove() called twice
-
-		return ret;
+		return entityId;
 	}
 
 	// O(1) - don't call for invalid handles and don't remove objects twice
-	void Remove(const CSaltHandle& Handle)
+	void Remove(const SEntityIdentifier& handle)
 	{
-		assert((bool)Handle);     // must be not nil
+		CRY_ASSERT(handle.GetId() != 0, "Validity checks should not be performed on entity index 0");
+		CRY_ASSERT(handle.GetIndex() < EntityArraySize);
 
-		EntityIndex Index = Handle.GetIndex();
+		const EntityIndex index = handle.GetIndex();
 
-		assert(IsUsed(Index));    // Index was not used, Insert() wasn't called or Remove() called twice
+#if defined(USE_CRY_ASSERT)
+		const EntitySalt oldSalt = m_buffer[index].m_salt;
+#endif
 
-		EntitySalt& rSalt = m_Buffer[Index].m_Salt;
-		EntitySalt oldSalt = rSalt;
+		CRY_ASSERT(IsUsed(index), "Tried to remove entity identifier that was already marked as not in use!");
+		CRY_ASSERT(handle.GetSalt() == oldSalt);
 
-		assert(Handle.GetSalt() == oldSalt);
+		m_buffer[index].m_salt++;
 
-		rSalt++;
-
-		assert(rSalt > oldSalt);    // if this fails a wraparound occured (thats severe) todo: check in non debug as well
-		(void)oldSalt;
-
-		m_Buffer[Index].m_NextIndex = m_FreeListStartIndex;
-
-		m_FreeListStartIndex = Index;
-	}
-
-	// for pure debugging purpose
-	void Debug()
-	{
-		if (m_FreeListStartIndex == EndMarker)
-			printf("Debug (max size:%d, no free element): ", MaxSize);
-		else
-			printf("Debug (max size:%d, free index: %d): ", MaxSize, m_FreeListStartIndex);
-
-		for (EntityIndex i = 0; i < MaxSize; ++i)
-		{
-			if (m_Buffer[i].m_NextIndex == EndMarker)
-				printf("%d.%d ", (int)i, (int)m_Buffer[i].m_Salt);
-			else if (m_Buffer[i].m_NextIndex == UsedMarker)
-				printf("%d.%d* ", (int)i, (int)m_Buffer[i].m_Salt);
-			else
-				printf("%d.%d->%d ", (int)i, (int)m_Buffer[i].m_Salt, (int)m_Buffer[i].m_NextIndex);
-		}
-
-		printf("\n");
+		CRY_ASSERT(m_buffer[index].m_salt > oldSalt, "Entity salt overflowed, consider decreasing EntityIndexBitCount!");
+		
+		m_buffer[index].m_nextIndex = m_freeListStartIndex;
+		m_freeListStartIndex = index;
 	}
 
 	// O(1)
 	// Returns:
-	//   true=handle is referenceing to a valid object, false=handle is not or referencing to an object that was removed
-	bool IsValid(const CSaltHandle& rHandle) const
+	//   true=handle is referencing to a valid object, false=handle is not or referencing to an object that was removed
+	bool IsValid(const SEntityIdentifier& handle) const
 	{
-		if (!rHandle)
-		{
-			assert(!"Invalid Handle, please have caller test and avoid call on invalid handle");
-			return false;
-		}
+		CRY_ASSERT(handle.GetId() != 0, "Validity checks should not be performed on entity index 0");
+		CRY_ASSERT(handle.GetIndex() < EntityArraySize);
 
-		if (rHandle.GetIndex() > MaxSize)
-		{
-			assert(0);
-			return false;
-		}
-
-		return m_Buffer[rHandle.GetIndex()].m_Salt == rHandle.GetSalt();
+		return m_buffer[handle.GetIndex()].m_salt == handle.GetSalt();
 	}
 
 	// O(1) - useful for iterating the used elements, use together with GetMaxUsed()
-	bool IsUsed(const EntityIndex Index) const
+	bool IsUsed(const EntityIndex index) const
 	{
-		return m_Buffer[Index].m_NextIndex == UsedMarker;     // is marked used?
+		CRY_ASSERT(index != 0);
+		CRY_ASSERT(index < EntityArraySize);
+		return m_buffer[index].IsInUse();
 	}
 
 	// useful for iterating the used elements, use together with IsUsed()
-	EntityIndex GetMaxUsed() const
+	EntityIndex GetMaxUsedEntityIndex() const
 	{
-		return m_maxUsed;
+		return m_maxUsedEntityIndex;
 	}
 
-private: // ----------------------------------------------------------------------------------------
-
+private:
 	// O(n) n=FreeList Size
 	// Returns:
 	//   Index must be part of the FreeList
-	void RemoveFromFreeList(const EntityIndex Index)
+	void RemoveFromFreeList(const EntityIndex index)
 	{
-		if (m_FreeListStartIndex == Index)     // first index
+		if (m_freeListStartIndex == index)     // first index
 		{
-			m_FreeListStartIndex = m_Buffer[Index].m_NextIndex;
+			m_freeListStartIndex = m_buffer[index].m_nextIndex;
 		}
 		else                                // not the first index
 		{
-			EntityIndex old = m_FreeListStartIndex;
-			EntityIndex it = m_Buffer[old].m_NextIndex;
-
-			for (;; )
+			for (EntityIndex previousIndex = m_freeListStartIndex, currentIndex = m_buffer[previousIndex].m_nextIndex;; )
 			{
-				EntityIndex next = m_Buffer[it].m_NextIndex;
+				const EntityIndex nextIndex = m_buffer[currentIndex].m_nextIndex;
 
-				if (it == Index)
+				if (currentIndex == index)
 				{
-					m_Buffer[old].m_NextIndex = next;
+					m_buffer[previousIndex].m_nextIndex = nextIndex;
 					break;
 				}
 
-				assert(next != EndMarker);         // end index, would mean the element was not in the list
+				CRY_ASSERT(!m_buffer[currentIndex].IsLastItem(), "Tried to remove non-existing entity index from the free list!");
 
-				old = it;
-				it = next;
+				previousIndex = currentIndex;
+				currentIndex = nextIndex;
 			}
 		}
 
-		m_Buffer[Index].m_NextIndex = UsedMarker; // mark used
+		m_buffer[index].MarkUsed();
 	}
 
 	// ------------------------------------------------------------------------------------------------
 
 	struct SSaltBufferElement
 	{
-		EntitySalt  m_Salt;                                  //!< 0.. is counting up on every remove, should never wrap around
-		EntityIndex m_NextIndex;                             //!< linked list of free or used elements, EndMarker is used as end marker and for not valid elements, UsedMarker is used for used elements
+		// Used to indicate that this element is currently in use
+		static constexpr EntityIndex UsedMarker = EntityArraySize + 1;
+
+		void MarkUsed() { m_nextIndex = UsedMarker; }
+		bool IsInUse() const { return m_nextIndex == UsedMarker; }
+		bool IsLastItem() const { return m_nextIndex == EntityArraySize; }
+
+		//! 0.. is counting up on every remove, should never wrap around
+		EntityIndex m_salt      : EntitySaltBitCount;
+		//! linked list of free or used elements, EntityArraySize is used as end marker and for not valid elements, UsedMarker is used for used elements
+		EntityIndex m_nextIndex : EntityIndexBitCount;
 	};
 
-	SSaltBufferElement m_Buffer[MaxSize];               //!< freelist and salt buffer elements in one, [0] is not used
-	EntityIndex             m_FreeListStartIndex;          //!< EndMarker if empty, index in m_Buffer otherwise
-	EntityIndex             m_maxUsed;                     //!< to enable fast iteration through the used elements - is constantly growing execpt when calling Reset()
+	//! free list and salt buffer elements in one
+	std::array<SSaltBufferElement, EntityArraySize> m_buffer;
+	//! Next available entity index (relative to m_buffer)
+	//! 1 if empty (due to 0 being an invalid index), EntityArraySize if we are full
+	EntityIndex m_freeListStartIndex : EntityIndexBitCount;
+	//! Index of the max used entity index
+	//! Allows for fast iteration through only used elements and entities, instead of the whole array
+	//! Constantly grows, only resetting when Reset is called
+	EntityIndex m_maxUsedEntityIndex : EntityIndexBitCount;
 };

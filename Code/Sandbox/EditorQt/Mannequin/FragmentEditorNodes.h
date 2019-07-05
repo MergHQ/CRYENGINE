@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FRAGMENT_EDITOR_NODES__H__
-#define __FRAGMENT_EDITOR_NODES__H__
+#pragma once
 
 #include "SequencerNode.h"
 #include "MannequinBase.h"
@@ -67,6 +66,3 @@ public:
 	virtual bool               GetParamInfo(int nIndex, SParamInfo& info) const;
 	virtual CSequencerTrack*   CreateTrack(ESequencerParamType nParamId);
 };
-
-#endif
-

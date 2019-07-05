@@ -79,9 +79,11 @@
             "Components/Navigation/MovementActorAdapter.cpp", 
             "Components/Navigation/NavigationComponent.cpp", 
             "Components/Navigation/CollisionAvoidanceAgent.cpp", 
+            "Components/Navigation/NavigationMarkupShapeComponent.cpp", 
             "Components/Navigation/MovementActorAdapter.h", 
             "Components/Navigation/NavigationComponent.h", 
-            "Components/Navigation/CollisionAvoidanceAgent.h"
+            "Components/Navigation/CollisionAvoidanceAgent.h", 
+            "Components/Navigation/NavigationMarkupShapeComponent.h"
         ], 
         "Components/Perception": [
             "Components/Perception/ObserverComponent.cpp", 
@@ -170,31 +172,44 @@
     }, 
     "CryAISystem_navigation_uber_1.cpp": {
         "Navigation/MNM": [
+            "Navigation/MNM/MarkupVolume.cpp", 
             "Navigation/MNM/BoundingVolume.cpp", 
             "Navigation/MNM/CompactSpanGrid.cpp", 
             "Navigation/MNM/DynamicSpanGrid.cpp", 
+            "Navigation/MNM/Islands.cpp", 
             "Navigation/MNM/IslandConnections.cpp", 
+            "Navigation/MNM/NavMeshQuery.cpp", 
             "Navigation/MNM/NavMesh.cpp", 
             "Navigation/MNM/OffGridLinks.cpp", 
             "Navigation/MNM/Tile.cpp", 
             "Navigation/MNM/TileGenerator.cpp", 
             "Navigation/MNM/TileGeneratorDraw.cpp", 
+            "Navigation/MNM/TileConnectivity.cpp", 
             "Navigation/MNM/Voxelizer.cpp", 
+            "Navigation/MNM/MarkupVolume.h", 
             "Navigation/MNM/BoundingVolume.h", 
             "Navigation/MNM/CompactSpanGrid.h", 
+            "Navigation/MNM/DangerousAreas.h", 
             "Navigation/MNM/DynamicSpanGrid.h", 
             "Navigation/MNM/HashComputer.h", 
+            "Navigation/MNM/Islands.h", 
             "Navigation/MNM/IslandConnections.h", 
+            "Navigation/MNM/TileConnectivity.h", 
+            "Navigation/MNM/NavMeshQuery.h", 
             "Navigation/MNM/NavMesh.h", 
+            "Navigation/MNM/NavMesh.inl", 
             "Navigation/MNM/MNM.h", 
+            "Navigation/MNM/MNMDebugDefines.h", 
             "Navigation/MNM/OffGridLinks.h", 
             "Navigation/MNM/MNMProfiler.h", 
             "Navigation/MNM/Tile.h", 
             "Navigation/MNM/TileGenerator.h", 
             "Navigation/MNM/Voxelizer.h", 
-            "Navigation/MNM/OpenList.h"
+            "Navigation/MNM/OpenList.h", 
+            "Navigation/MNM/WayQuery.h"
         ], 
         "Navigation/NavigationSystem": [
+            "Navigation/NavigationSystem/AnnotationsLibrary.cpp", 
             "Navigation/NavigationSystem/IslandConnectionsManager.cpp", 
             "Navigation/NavigationSystem/NavigationSystem.cpp", 
             "Navigation/NavigationSystem/NavigationUpdatesManager.cpp", 
@@ -202,6 +217,7 @@
             "Navigation/NavigationSystem/VolumesManager.cpp", 
             "Navigation/NavigationSystem/WorldMonitor.cpp", 
             "Navigation/NavigationSystemSchematyc.cpp", 
+            "Navigation/NavigationSystem/AnnotationsLibrary.h", 
             "Navigation/NavigationSystem/IslandConnectionsManager.h", 
             "Navigation/NavigationSystem/NavigationSystem.h", 
             "Navigation/NavigationSystem/NavigationUpdatesManager.h", 
@@ -262,7 +278,9 @@
         ], 
         "SmartObjects": [
             "SmartObjects.cpp", 
-            "SmartObjects.h"
+            "SmartObjects.h", 
+            "SmartObjectOffMeshNavigation.cpp", 
+            "SmartObjectOffMeshNavigation.h"
         ]
     }, 
     "CryAISystem_uber_1.cpp": {
@@ -318,16 +336,14 @@
         ], 
         "System": [
             "AIConsoleVariables.cpp", 
-            "AISignal.cpp", 
-            "AISignalCRCs.cpp", 
+            "CSignal.cpp", 
             "CAISystem.cpp", 
             "CAISystemPhys.cpp", 
             "CAISystemUpdate.cpp", 
             "Environment.cpp", 
             "ObjectContainer.cpp", 
             "AIConsoleVariables.h", 
-            "AISignal.h", 
-            "AISignalCRCs.h", 
+            "CSignal.h", 
             "CAISystem.h", 
             "Configuration.h", 
             "Environment.h", 

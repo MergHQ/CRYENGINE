@@ -232,11 +232,7 @@ inline uint64 NextPower2_64(uint64 x)
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 inline unsigned long int IntegerLog2(unsigned long int x)
 {
-	#if CRY_PLATFORM_64BIT
 	return IntegerLog2((uint64)x);
-	#else
-	return IntegerLog2((uint32)x);
-	#endif
 }
 
 #endif

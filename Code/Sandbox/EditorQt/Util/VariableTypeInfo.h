@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VariableTypeInfo_h__
-#define __VariableTypeInfo_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Util/Variable.h"
 #include "UIEnumsDatabase.h"
@@ -443,6 +438,3 @@ IVariable* CVariableTypeInfo::Create(CTypeInfo::CVarInfo const& VarInfo, void* p
 
 	return new CVariableTypeInfo(VarInfo, pAddress, pAddressDefault, eType);
 }
-
-#endif // __VariableTypeInfo_h__
-

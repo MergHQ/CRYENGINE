@@ -38,10 +38,11 @@ protected:
 	UINT64                              m_frequency;
 	std::array<uint64, kMaxTimestamps>  m_timeValues;
 
-	bool                                m_measurable;
+	bool                                m_measurable : 1;
+	bool                                m_measured   : 1;
 
 protected:
-	static bool                         s_reservedGroups[4];
+	static bool                         s_reservedGroups[MAX_TIMESTAMP_GROUPS];
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -60,7 +61,7 @@ public:
 template<typename T>
 static inline D3D11_BIND_FLAG ConvertToDX11BindFlags(const T& desc)
 {
-	CRY_ASSERT_MESSAGE((desc & (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL)) != (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL), "RenderTarget and DepthStencil can't be requested together!");
+	CRY_ASSERT((desc & (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL)) != (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL), "RenderTarget and DepthStencil can't be requested together!");
 
 	// *INDENT-OFF*
 	return D3D11_BIND_FLAG(
@@ -105,7 +106,7 @@ static inline D3D11_CPU_ACCESS_FLAG ConvertToDX11CPUAccessFlags(const T& desc)
 template<typename T>
 static inline D3D11_USAGE ConvertToDX11Usage(const T& desc)
 {
-	CRY_ASSERT_MESSAGE((desc & (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE)) != (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE), "CPU Read and Write can't be requested together!");
+	CRY_ASSERT((desc & (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE)) != (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE), "CPU Read and Write can't be requested together!");
 
 	// *INDENT-OFF*
 	return D3D11_USAGE(
@@ -125,10 +126,6 @@ static inline D3D11_SUBRESOURCE_DATA* ConvertToDX11Data(uint32 numSubs, const ST
 		pDst[i].pSysMem = pSrc->m_pSysMemSubresourceData[i].m_pSysMem;
 		pDst[i].SysMemPitch = pSrc->m_pSysMemSubresourceData[i].m_sSysMemAlignment.rowStride;
 		pDst[i].SysMemSlicePitch = pSrc->m_pSysMemSubresourceData[i].m_sSysMemAlignment.planeStride;
-
-#if CRY_PLATFORM_ORBIS
-		pDst[i].SysMemTileMode = (D3D11_TEXTURE_TILE_MODE)pSrc.m_eSysMemTileMode;
-#endif
 	}
 
 	// Terminator
@@ -208,3 +205,4 @@ inline static CD3DX12_DESCRIPTOR_RANGE GetDescriptorRange(SResourceBindPoint bin
 #define GET_DX12_TEXTURE_RESOURCE(uniformTexture)              reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>((uniformTexture)->GetDevTexture()->GetBaseTexture())
 #define GET_DX12_BUFFER_RESOURCE(uniformBuffer)                reinterpret_cast<CCryDX12Resource<ID3D11Resource>*>((uniformBuffer).GetDevBuffer()->GetBaseBuffer())
 #define GET_DX12_CONSTANTBUFFER_RESOURCE(constantBuffer)       reinterpret_cast<CCryDX12Buffer*>((constantBuffer)->GetD3D())
+#define GET_DX12_RAWBUFFER_RESOURCE(rawBuffer)                 reinterpret_cast<CCryDX12Buffer*>((rawBuffer)->GetBuffer())

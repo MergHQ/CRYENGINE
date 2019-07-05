@@ -6,6 +6,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySchematyc/Reflection/TypeDesc.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 class CPlugin_CryDefaultEntities;
 
@@ -15,10 +16,10 @@ namespace Audio
 {
 namespace DefaultComponents
 {
-struct SPreloadSerializeHelper
+struct SPreloadSerializeHelper final
 {
 	void Serialize(Serialization::IArchive& archive);
-	bool operator==(SPreloadSerializeHelper const& other) const { return m_name == other.m_name; }
+	bool operator==(SPreloadSerializeHelper const& other) const { return m_id == other.m_id; }
 
 	CryAudio::PreloadRequestId m_id = CryAudio::InvalidPreloadRequestId;
 	string                     m_name;
@@ -32,10 +33,10 @@ protected:
 	static void Register(Schematyc::CEnvRegistrationScope& componentScope);
 
 	// IEntityComponent
-	virtual void   Initialize() override                      {}
-	virtual void   OnShutDown() override;
-	virtual uint64 GetEventMask() const override              { return 0; }
-	virtual void   ProcessEvent(const SEntityEvent& event) override {}
+	virtual void                    Initialize() override;
+	virtual void                    OnShutDown() override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override                    { return Cry::Entity::EventFlags(); }
+	virtual void                    ProcessEvent(const SEntityEvent& event) override {}
 	// ~IEntityComponent
 
 	// Properties exposed to UI
@@ -53,6 +54,11 @@ public:
 private:
 
 	bool m_bLoaded = false;
+
+#if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
+	Serialization::FunctorActionButton<std::function<void()>> m_loadButton;
+	Serialization::FunctorActionButton<std::function<void()>> m_unloadButton;
+#endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////

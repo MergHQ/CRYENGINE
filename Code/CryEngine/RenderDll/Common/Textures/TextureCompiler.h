@@ -10,6 +10,8 @@
 
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 
+struct IAsyncTextureCompileListener;
+
 //////////////////////////////////////////////////////////////////////////
 // Provides settings and functions to make calls to RC to compile textures.
 class CTextureCompiler : public CResourceCompilerHelper, NoCopy
@@ -122,6 +124,7 @@ private:
 	bool AddToWatchList(const char* szDstFile, const char* szSrcFile);
 	void NotifyCompilationQueueTriggered(int pending);
 	void NotifyCompilationStarted(TProcItem* item, int pending);
+	void NotifyCompilationFinished(const char* szSourceFile, const char* szDestFile, ERcExitCode eReturnCode);
 	void NotifyCompilationFinished(TProcItem* item);
 	void NotifyCompilationQueueDepleted();
 	void GetNextItem(TProcItem* &item, int &pending);

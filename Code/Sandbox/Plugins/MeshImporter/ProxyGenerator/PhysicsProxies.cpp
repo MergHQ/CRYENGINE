@@ -8,8 +8,9 @@
 void SPhysProxies::Serialize(Serialization::IArchive& ar)
 {
 	bool axisAligned = !is_unused(params.qForced), mergeIslands = params.mergeIslands, forceBBox = params.forceBBox, convexHull = params.convexHull;
-	bool findPrimSurfaces = params.findPrimSurfaces, findPrimLines = params.findPrimLines, findMeshes = params.findMeshes;
+	bool copyMeshes = !params.findMeshes, findPrimSurfaces = params.findPrimSurfaces && !copyMeshes, findPrimLines = params.findPrimLines && !copyMeshes;
 	ar(mergeIslands, "mergeIslands", "Merge islands");
+	ar(copyMeshes, "copyMeshes", "Use unprocessed meshes");
 	ar(axisAligned, "axisAligned", "Axis-aligned voxels");
 	ar(forceBBox, "forceBBox", "Force single box");
 	ar(convexHull, "convexHull", "Convex hull");
@@ -22,9 +23,9 @@ void SPhysProxies::Serialize(Serialization::IArchive& ar)
 	params.mergeIslands = mergeIslands ? 1 : 0;
 	params.forceBBox = forceBBox ? 1 : 0;
 	params.convexHull = convexHull ? 1 : 0;
-	params.findPrimSurfaces = findPrimSurfaces ? 1 : 0;
-	params.findPrimLines = findPrimLines ? 1 : 0;
-	params.findMeshes = findMeshes ? 1 : 0;
+	params.findPrimSurfaces = findPrimSurfaces && !copyMeshes ? 1 : 0;
+	params.findPrimLines = findPrimLines && !copyMeshes ? 1 : 0;
+	params.findMeshes = copyMeshes ? 0 : 1;
 
 	struct
 	{
@@ -57,4 +58,3 @@ void SPhysProxies::Serialize(Serialization::IArchive& ar)
 	} advanced = { params };
 	ar(advanced, "advanced", "Advanced settings");
 }
-

@@ -10,6 +10,7 @@
 #include <CryMath/Cry_Camera.h>
 #include "Controls/QuestionDialog.h"
 #include <CryAudio/IObject.h>
+#include <CrySystem/ISystem.h>
 
 #include "Resource.h"
 
@@ -137,12 +138,12 @@ void MyCXTPReportInplaceList::OnLButtonUp(UINT, CPoint point)
 		Cancel();
 }
 
-void MyCXTPReportInplaceList::Cancel(void)
+void MyCXTPReportInplaceList::Cancel()
 {
 	GetOwner()->SetFocus();
 }
 
-void MyCXTPReportInplaceList::Apply(void)
+void MyCXTPReportInplaceList::Apply()
 {
 	if (!pControl)
 		return;
@@ -1050,4 +1051,3 @@ void CDialogScriptView::OnAudioTriggerFinished(CryAudio::SRequestInfo const* con
 		ms_currentPlayLine = CryAudio::InvalidControlId;
 	}
 }
-

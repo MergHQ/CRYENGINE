@@ -382,10 +382,10 @@ struct CRY_ALIGN(8) CryCharAnimationParams
 		  , m_fPlaybackSpeed(1.0f)
 		  , m_fAllowMultilayerAnim(1.0f)
 		  , m_nLayerID(_nLayerID)
+		  , m_fPlaybackWeight(1.0f)
 		  , m_nFlags(_nFlags)
 		  , m_nInterpolationType(CA_Interpolation_Type::Linear)
 		  , m_nUserToken(0)
-		  , m_fPlaybackWeight(1.0f)
 #if defined(USE_PROTOTYPE_ABS_BLENDING)
 		  , m_pJointMask(NULL)
 #endif //!defined(USE_PROTOTYPE_ABS_BLENDING)
@@ -461,7 +461,7 @@ struct SParametricSampler
 	uint8         m_MotionParameterID[MAX_LMG_DIMENSIONS];                //!< The motion parameter id/name.
 	uint8         m_MotionParameterFlags[MAX_LMG_DIMENSIONS];             //!< Flags relevant to this motion parameter. /see CA_Dimension_Flags
 	virtual uint8 GetCurrentSegmentIndexBSpace() const = 0;
-	virtual ~SParametricSampler() {};
+	virtual ~SParametricSampler() {}
 };
 
 class CRY_ALIGN(16) CAnimation
@@ -472,18 +472,18 @@ public:
 
 	CAnimation()
 		: m_pParametricSampler(NULL)
-		  , m_nStaticFlags(0)
 		  , m_animationId(0)
-		  , m_currentSegmentExpectedDurationSeconds(-1.f)
-		  , m_expectedTotalDurationSeconds(-1.f)
 		  , m_fCurrentDeltaTime(-1.f)
 		  , m_fStartTime(0.0f)
-		  , m_nInterpolationType(CA_Interpolation_Type::Linear)
 		  , m_fTransitionTime(1.0f)
 		  , m_fTransitionPriority(0.f)
 		  , m_fTransitionWeight(-1.f)
 		  , m_fPlaybackScale(1.0f)
 		  , m_fPlaybackWeight(1.0f)
+		  , m_currentSegmentExpectedDurationSeconds(-1.f)
+		  , m_expectedTotalDurationSeconds(-1.f)
+		  , m_nStaticFlags(0)
+		  , m_nInterpolationType(CA_Interpolation_Type::Linear)
 		  , m_nUserToken(0)
 	{
 		m_fAnimTimePrev[0] = 0.0f;

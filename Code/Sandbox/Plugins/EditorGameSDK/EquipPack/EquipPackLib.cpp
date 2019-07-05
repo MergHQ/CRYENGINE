@@ -4,9 +4,13 @@
 #include "EquipPackLib.h"
 #include "EquipPack.h"
 #include "GameEngine.h"
-#include "Util/FileUtil.h"
+
+#include <Util/FileUtil.h>
+
+#include <Util/EditorUtils.h>
 
 #include <CrySandbox/IEditorGame.h>
+#include <CrySystem/XML/IXml.h>
 
 #include "UIEnumsDatabase.h"
 
@@ -263,4 +267,3 @@ void CEquipPackLib::ExportToGame()
 		}
 	}
 }
-

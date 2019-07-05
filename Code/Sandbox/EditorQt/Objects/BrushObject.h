@@ -1,31 +1,24 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __brushobject_h__
-#define __brushobject_h__
+#pragma once
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-#include "Objects/BaseObject.h"
-#include "CollisionFilteringProperties.h"
 #include "Geometry/EdMesh.h"
+#include "CollisionFilteringProperties.h"
 
-/*!
- *	CTagPoint is an object that represent named 3d position in world.
- *
- */
+#include <Objects/BaseObject.h>
+
 class SANDBOX_API CBrushObject : public CBaseObject
 {
 public:
 	DECLARE_DYNCREATE(CBrushObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Ovverides from CBaseObject.
+	// Overrides from CBaseObject.
 	//////////////////////////////////////////////////////////////////////////
 	bool                     Init(CBaseObject* prev, const string& file);
 	void                     Done();
 	void                     Display(CObjectRenderHelper& objRenderHelper);
+	const ColorB&            GetSelectionPreviewHighlightColor() override;
 	bool                     CreateGameObject();
 
 	void                     GetLocalBounds(AABB& box);
@@ -37,7 +30,7 @@ public:
 	virtual void             SetMinSpec(uint32 nSpec, bool bSetChildren = true);
 	virtual IPhysicalEntity* GetCollisionEntity() const;
 
-	void CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
+	void                     CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
 	virtual float            GetCreationOffsetFromTerrain() const override { return 0.f; }
 
@@ -57,32 +50,32 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual IStatObj* GetIStatObj();
-	int               GetRenderFlags() const                       { return m_renderFlags; };
-	IRenderNode*      GetEngineNode() const                        { return m_pRenderNode; };
-	float             GetRatioLod() const                          { return mv_ratioLOD; };
-	float             GetRatioViewDist() const                     { return mv_ratioViewDist; };
-	const string&     GetGeometryFile() const                      { return mv_geometryFile; }
-	void              SetGeometryFile(const string& geometryFile) { mv_geometryFile = geometryFile; }
+	uint64            GetRenderFlags() const   { return m_renderFlags; }
+	IRenderNode*      GetEngineNode() const    { return m_pRenderNode; }
+	float             GetRatioLod() const      { return mv_ratioLOD; }
+	float             GetRatioViewDist() const { return mv_ratioViewDist; }
+	const string& GetGeometryFile() const  { return mv_geometryFile; }
+	void          SetGeometryFile(const string& geometryFile);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Material
 	//////////////////////////////////////////////////////////////////////////
-	virtual void       SetMaterial(IEditorMaterial* mtl);
+	virtual void             SetMaterial(IEditorMaterial* mtl);
 	virtual IEditorMaterial* GetRenderMaterial() const;
-	virtual void       SetMaterialLayersMask(uint32 nLayersMask);
+	virtual void             SetMaterialLayersMask(uint32 nLayersMask);
 
-	virtual void InvalidateGeometryFile(const string& gamePath) override;
+	virtual void             InvalidateGeometryFile(const string& gamePath) override;
 
-	bool  ApplyIndirLighting() const { return false; }
+	bool                     ApplyIndirLighting() const { return false; }
 
-	void  SaveToCGF();
-	void  ReloadGeometry();
+	void                     SaveToCGF();
+	void                     ReloadGeometry();
 
-	bool  IncludeForGI();
+	bool                     IncludeForGI();
 
-	void  CreateBrushFromMesh(const char* meshFilname);
+	void                     CreateBrushFromMesh(const char* meshFilname);
 
-	void  GetVerticesInWorld(std::vector<Vec3>& vertices) const;
+	void                     GetVerticesInWorld(std::vector<Vec3>& vertices) const;
 
 protected:
 	//! Dtor must be protected.
@@ -95,7 +88,7 @@ protected:
 	void WorldToLocalRay(Vec3& raySrc, Vec3& rayDir);
 
 	bool ConvertFromObject(CBaseObject* object);
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 	void InvalidateTM(int nWhyFlags);
 	void OnEvent(ObjectEvent event);
 
@@ -108,11 +101,12 @@ protected:
 	void OnGeometryChange(IVariable* var);
 	void OnRenderVarChange(IVariable* var);
 	void OnAIRadiusVarChange(IVariable* var);
+	void OnExludeFromNavigationVarChange(IVariable* var);
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual string GetMouseOverStatisticsText() const;
 
-	virtual void UpdateHighlightPassState(bool bSelected, bool bHighlighted);
+	virtual void   UpdateHighlightPassState(bool bSelected, bool bHighlighted);
 
 	AABB     m_bbox;
 	Matrix34 m_invertTM;
@@ -134,29 +128,31 @@ protected:
 
 	CCollisionFilteringProperties m_collisionFiltering;
 	CVariable<bool>               mv_outdoor;
-	CVariable<bool>    mv_castShadowMaps;
-	CSmartVariable<bool> mv_giMode;
-	CVariable<bool>    mv_dynamicDistanceShadows;
-	CVariable<bool>    mv_rainOccluder;
-	CVariable<bool>    mv_registerByBBox;
-	CVariableEnum<int> mv_hideable;
-	CVariable<int>   mv_ratioLOD;
-	CVariable<int>   mv_ratioViewDist;
-	CVariable<bool>  mv_excludeFromTriangulation;
-	CVariable<bool>  mv_noDynWater;
-	CVariable<float> mv_aiRadius;
-	CVariable<bool>  mv_noDecals;
-	CVariable<bool>  mv_recvWind;
-	CVariable<bool>  mv_Occluder;
-	CVariable<bool>  mv_drawLast;
-	CVariable<int>   mv_shadowLodBias;
+	CVariable<bool>               mv_castShadowMaps;
+	CSmartVariable<bool>          mv_giMode;
+	CVariable<bool>               mv_dynamicDistanceShadows;
+	CVariable<bool>               mv_rainOccluder;
+	CVariable<bool>               mv_registerByBBox;
+	CVariableEnum<int>            mv_hideable;
+	CVariable<int>                mv_ratioLOD;
+	CVariable<int>                mv_ratioViewDist;
+	CVariable<bool>               mv_excludeFromTriangulation;
+	CVariable<bool>               mv_noDynWater;
+	CVariable<float>              mv_aiRadius;
+	CVariable<bool>               mv_noDecals;
+	CVariable<bool>               mv_recvWind;
+	CVariable<bool>               mv_Occluder;
+	CVariable<bool>               mv_drawLast;
+	CVariable<int>                mv_shadowLodBias;
+	CVariable<bool>               mv_ignoreTerrainLayerBlend;
+	CVariable<bool>               mv_ignoreDecalBlend;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Rendering flags.
-	int               m_renderFlags;
+	uint64  m_renderFlags;
 
-	bool              m_bIgnoreNodeUpdate;
-	bool              m_RePhysicalizeOnVisible;
+	bool m_bIgnoreNodeUpdate;
+	bool m_RePhysicalizeOnVisible;
 
 private:
 	// Brushes need to explicitly notify the NavMesh of their old AABB *before* it gets changed by transformation, because
@@ -175,13 +171,10 @@ private:
 class CBrushObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_BRUSH; };
-	const char*         ClassName()                         { return "Brush"; };
-	const char*         Category()                          { return "Brush"; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CBrushObject); };
-	const char*         GetFileSpec()                       { return "*.cgf"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_BRUSH; }
+	const char*         ClassName()                         { return "Brush"; }
+	const char*         Category()                          { return "Brush"; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CBrushObject); }
+	const char*         GetFileSpec()                       { return "*.cgf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
-
-#endif // __brushobject_h__
-

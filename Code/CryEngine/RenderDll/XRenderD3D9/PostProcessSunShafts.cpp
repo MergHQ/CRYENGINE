@@ -14,7 +14,6 @@
    =============================================================================*/
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
 
@@ -26,9 +25,6 @@
 
 bool CSunShafts::Preprocess(const SRenderViewInfo& viewInfo)
 {
-	if (CRenderer::CV_r_UseMergedPosts)
-		return false;
-
 	return IsVisible();
 }
 
@@ -257,7 +253,7 @@ bool CSunShafts::SunShaftsGen(CTexture* pSunShafts, CTexture* pPingPongRT)
 }
 
 // DEPRECATED
-void CSunShafts::Render()
+void CSunShafts::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*

@@ -6,11 +6,11 @@
 #include <CrySystem/File/ICryPak.h>
 #include <AK/Tools/Common/AkPlatformFuncs.h>
 
-#define MAX_NUMBER_STRING_SIZE   (10)       // 4G
-#define ID_TO_STRING_FORMAT_BANK AKTEXT("%u.bnk")
-#define ID_TO_STRING_FORMAT_WEM  AKTEXT("%u.wem")
-#define MAX_EXTENSION_SIZE       (4)                                               // .xxx
-#define MAX_FILETITLE_SIZE       (MAX_NUMBER_STRING_SIZE + MAX_EXTENSION_SIZE + 1) // null-terminated
+#define CRY_AUDIO_IMPL_WWISE_MAX_NUMBER_STRING_SIZE   (10)       // 4G
+#define CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_BANK AKTEXT("%u.bnk")
+#define CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_WEM  AKTEXT("%u.wem")
+#define CRY_AUDIO_IMPL_WWISE_MAX_EXTENSION_SIZE       (4)                                                                                         // .xxx
+#define CRY_AUDIO_IMPL_WWISE_MAX_FILETITLE_SIZE       (CRY_AUDIO_IMPL_WWISE_MAX_NUMBER_STRING_SIZE + CRY_AUDIO_IMPL_WWISE_MAX_EXTENSION_SIZE + 1) // null-terminated
 
 namespace CryAudio
 {
@@ -91,7 +91,7 @@ AKRESULT CFileIOHandler::Open(AkOSChar const* sFileName, AkOpenMode eOpenMode, A
 		rSyncOpen = true;
 		AkOSChar finalFilePath[AK_MAX_PATH] = { '\0' };
 		AKPLATFORM::SafeStrCpy(finalFilePath, m_sBankPath, AK_MAX_PATH);
-		char* szTemp = "Init.bnk";
+		char const* szTemp = "Init.bnk";
 		AkOSChar* pTemp = nullptr;
 		CONVERT_CHAR_TO_OSCHAR(szTemp, pTemp);
 		bool const bIsInitBank = (AKPLATFORM::OsStrCmp(pTemp, sFileName) == 0);
@@ -107,33 +107,33 @@ AKRESULT CFileIOHandler::Open(AkOSChar const* sFileName, AkOpenMode eOpenMode, A
 
 		AKPLATFORM::SafeStrCat(finalFilePath, sFileName, AK_MAX_PATH);
 
-		szTemp = nullptr;
-		CONVERT_OSCHAR_TO_CHAR(finalFilePath, szTemp);
+		char* szFileName = nullptr;
+		CONVERT_OSCHAR_TO_CHAR(finalFilePath, szFileName);
 		char const* sOpenMode = nullptr;
 
 		switch (eOpenMode)
 		{
 		case AK_OpenModeRead:
 			{
-				sOpenMode = "rbx";
+				sOpenMode = "rb";
 
 				break;
 			}
 		case AK_OpenModeWrite:
 			{
-				sOpenMode = "wbx";
+				sOpenMode = "wb";
 
 				break;
 			}
 		case AK_OpenModeWriteOvrwr:
 			{
-				sOpenMode = "w+bx";
+				sOpenMode = "w+b";
 
 				break;
 			}
 		case AK_OpenModeReadWrite:
 			{
-				sOpenMode = "abx";
+				sOpenMode = "ab";
 
 				break;
 			}
@@ -145,11 +145,11 @@ AKRESULT CFileIOHandler::Open(AkOSChar const* sFileName, AkOpenMode eOpenMode, A
 			}
 		}
 
-		FILE* const pFile = gEnv->pCryPak->FOpen(szTemp, sOpenMode, ICryPak::FOPEN_HINT_DIRECT_OPERATION);
+		FILE* const pFile = gEnv->pCryPak->FOpen(szFileName, sOpenMode);
 
 		if (pFile != nullptr)
 		{
-			rFileDesc.iFileSize = static_cast<AkInt64>(gEnv->pCryPak->FGetSize(szTemp));
+			rFileDesc.iFileSize = static_cast<AkInt64>(gEnv->pCryPak->FGetSize(szFileName));
 			rFileDesc.hFile = GetFileHandle(pFile);
 			rFileDesc.uSector = 0;
 			rFileDesc.deviceID = m_nDeviceID;
@@ -183,11 +183,11 @@ AKRESULT CFileIOHandler::Open(AkFileID nFileID, AkOpenMode eOpenMode, AkFileSyst
 			}
 		}
 
-		AkOSChar fileName[MAX_FILETITLE_SIZE] = { '\0' };
+		AkOSChar fileName[CRY_AUDIO_IMPL_WWISE_MAX_FILETITLE_SIZE] = { '\0' };
 
-		AkOSChar const* const pFilenameFormat = pFlags->uCodecID == AKCODECID_BANK ? ID_TO_STRING_FORMAT_BANK : ID_TO_STRING_FORMAT_WEM;
+		AkOSChar const* const pFilenameFormat = pFlags->uCodecID == AKCODECID_BANK ? CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_BANK : CRY_AUDIO_IMPL_WWISE_ID_TO_STRING_FORMAT_WEM;
 
-		AK_OSPRINTF(fileName, MAX_FILETITLE_SIZE, pFilenameFormat, static_cast<int unsigned>(nFileID));
+		AK_OSPRINTF(fileName, CRY_AUDIO_IMPL_WWISE_MAX_FILETITLE_SIZE, pFilenameFormat, static_cast<int unsigned>(nFileID));
 
 		AKPLATFORM::SafeStrCat(finalFilePath, fileName, AK_MAX_PATH);
 
@@ -198,7 +198,7 @@ AKRESULT CFileIOHandler::Open(AkFileID nFileID, AkOpenMode eOpenMode, AkFileSyst
 
 		if (fileSize > 0)
 		{
-			FILE* const pFile = gEnv->pCryPak->FOpen(szTemp, "rbx", ICryPak::FOPEN_HINT_DIRECT_OPERATION);
+			FILE* const pFile = gEnv->pCryPak->FOpen(szTemp, "rb");
 
 			if (pFile != nullptr)
 			{

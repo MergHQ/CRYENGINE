@@ -3,20 +3,113 @@
 #include "StdAfx.h"
 #include "PrefabManager.h"
 
+#include "GameEngine.h"
+#include "LogFile.h"
+#include "Objects/PrefabObject.h"
+#include "Objects/SelectionGroup.h"
+#include "PrefabEvents.h"
 #include "PrefabItem.h"
 #include "PrefabLibrary.h"
 
-#include "GameEngine.h"
+#include <AssetSystem/AssetImportContext.h>
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <Controls/QuestionDialog.h>
+#include <FileUtils.h>
+#include <PathUtils.h>
+#include <Util/FileUtil.h>
 
-#include "DataBaseDialog.h"
-#include "PrefabDialog.h"
+namespace Private_PrefabManager
+{
 
-#include "Objects/PrefabObject.h"
+void ImportPrefabLibrary(XmlNodeRef& library, const char* szPath)
+{
+	CAssetManager* const pAssetManager = GetIEditor()->GetAssetManager();
 
-#include "PrefabEvents.h"
+	std::vector<CAsset*> assets;
+	for (int i = 0; i < library->getChildCount(); i++)
+	{
+		XmlNodeRef itemNode = library->getChild(i);
+		if (stricmp(itemNode->getTag(), "Prefab") != 0)
+		{
+			continue;
+		}
 
-#define PREFABS_LIBS_PATH "Prefabs/"
+		string name;
+		CryGUID guid;
+		if (!itemNode->getAttr("Name", name) || !itemNode->getAttr("Id", guid))
+		{
+			continue;
+		}
 
+		if (pAssetManager->FindAssetById(guid))
+		{
+			continue;
+		}
+
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "Creating prefab asset %s in %s", name.c_str(), szPath);
+
+		// Create a sub folder for each part of the item name separated by a period.
+		name.replace('.', '/');
+		const string dataFilePath(PathUtil::Make(szPath, name, "prefab"));
+
+		GetISystem()->GetIPak()->MakeDir(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), PathUtil::GetPathWithoutFilename(dataFilePath)));
+
+		itemNode->setAttr("Name", PathUtil::GetFileName(name).c_str());
+		XmlHelpers::SaveXmlNode(itemNode, dataFilePath.c_str());
+
+		CAsset* pAsset = new CAsset("Prefab", guid, PathUtil::GetFileName(dataFilePath));
+		CAssetImportContext ctx;
+		CEditableAsset asset = ctx.CreateEditableAsset(*pAsset);
+		asset.SetMetadataFile(string().Format("%s.cryasset", dataFilePath.c_str()));
+		asset.AddFile(dataFilePath);
+		asset.WriteToFile();
+		assets.push_back(pAsset);
+	}
+
+	if (!assets.empty())
+	{
+		pAssetManager->MergeAssets(assets);
+	}
+}
+
+class CObjectsRefOwner
+{
+public:
+	CObjectsRefOwner(const std::vector<CBaseObject*>& objects)
+		: m_objects(objects)
+	{
+		for (auto pObject : m_objects)
+		{
+			pObject->AddRef();
+		}
+	}
+
+	void Release()
+	{
+		if (m_isReleased)
+		{
+			return;
+		}
+
+		m_isReleased = true;
+		for (auto pObject : m_objects)
+		{
+			pObject->Release();
+		}
+	}
+
+	~CObjectsRefOwner()
+	{
+		Release();
+	}
+
+private:
+	const std::vector<CBaseObject*>& m_objects;
+	bool                             m_isReleased = { false };
+};
+
+}
 //////////////////////////////////////////////////////////////////////////
 // CUndoGroupObjectOpenClose implementation.
 //////////////////////////////////////////////////////////////////////////
@@ -29,7 +122,7 @@ public:
 		m_bOpenForUndo = m_prefabObject->IsOpen();
 	}
 protected:
-	virtual const char* GetDescription() { return "Prefab's Open/Close"; };
+	virtual const char* GetDescription() { return "Prefab's Open/Close"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -63,7 +156,8 @@ private:
 //////////////////////////////////////////////////////////////////////////
 // CUndoAddObjectsToPrefab implementation.
 //////////////////////////////////////////////////////////////////////////
-CUndoAddObjectsToPrefab::CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, TBaseObjects& objects)
+
+CUndoAddObjectsToPrefab::CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, std::vector<CBaseObject*>& objects)
 {
 	m_pPrefabObject = prefabObj;
 
@@ -95,7 +189,7 @@ CUndoAddObjectsToPrefab::CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, TBase
 		addedObject.m_object = objects[i]->GetId();
 		// Store parent before the add operation
 		addedObject.m_objectParent = objects[i]->GetParent() ? objects[i]->GetParent()->GetId() : CryGUID::Null();
-		// Store childs before the add operation
+		// Store children before the add operation
 		if (const size_t childsCount = objects[i]->GetChildCount())
 		{
 			addedObject.m_objectsChilds.reserve(childsCount);
@@ -147,12 +241,11 @@ void CUndoAddObjectsToPrefab::Redo()
 //////////////////////////////////////////////////////////////////////////
 // CPrefabManager implementation.
 //////////////////////////////////////////////////////////////////////////
+
 CPrefabManager::CPrefabManager()
-	: m_pPrefabEvents(NULL)
+	: m_pPrefabEvents(nullptr)
 {
 	m_bUniqNameMap = true;
-	m_pLevelLibrary = (CBaseLibrary*)AddLibrary("Level");
-	m_pLevelLibrary->SetLevelLibrary(true);
 
 	m_pPrefabEvents = new CPrefabEvents();
 
@@ -161,67 +254,92 @@ CPrefabManager::CPrefabManager()
 	GetIEditorImpl()->GetIUndoManager()->AddListener(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CPrefabManager::~CPrefabManager()
 {
 	GetIEditorImpl()->GetIUndoManager()->RemoveListener(this);
 	SAFE_DELETE(m_pPrefabEvents);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabManager::ClearAll()
 {
 	CBaseLibraryManager::ClearAll();
 
 	m_pPrefabEvents->RemoveAllEventData();
-
-	m_pLevelLibrary = (CBaseLibrary*)AddLibrary("Level");
-	m_pLevelLibrary->SetLevelLibrary(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
+IDataBaseItem* CPrefabManager::CreateItem(const string& filename)
+{
+	const string libraryName = PathUtil::RemoveExtension(filename);
+	IDataBaseLibrary* const pLibrary = AddLibrary(libraryName);
+	if (!pLibrary)
+	{
+		return nullptr;
+	}
+
+	return CBaseLibraryManager::CreateItem(pLibrary);
+}
+
 CBaseLibraryItem* CPrefabManager::MakeNewItem()
 {
 	return new CPrefabItem;
 }
-//////////////////////////////////////////////////////////////////////////
+
 CBaseLibrary* CPrefabManager::MakeNewLibrary()
 {
 	return new CPrefabLibrary(this);
 }
-//////////////////////////////////////////////////////////////////////////
+
 string CPrefabManager::GetRootNodeName()
 {
 	return "PrefabsLibrary";
 }
-//////////////////////////////////////////////////////////////////////////
+
 string CPrefabManager::GetLibsPath()
 {
-	if (m_libsPath.IsEmpty())
-		m_libsPath = PREFABS_LIBS_PATH;
-	return m_libsPath;
+	return {};
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabManager::Serialize(XmlNodeRef& node, bool bLoading)
 {
-	LOADING_TIME_PROFILE_SECTION;
-	CBaseLibraryManager::Serialize(node, bLoading);
-}
-
-//////////////////////////////////////////////////////////////////////////
-CPrefabItem* CPrefabManager::MakeFromSelection()
-{
-	CBaseLibraryDialog* dlg = GetIEditorImpl()->OpenDataBaseLibrary(EDB_TYPE_PREFAB);
-	if (dlg && dlg->IsKindOf(RUNTIME_CLASS(CPrefabDialog)))
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+	if (bLoading)
 	{
-		CPrefabDialog* pPrefabDialog = (CPrefabDialog*)dlg;
-		return pPrefabDialog->GetPrefabFromSelection();
+		CBaseLibraryManager::Serialize(node, bLoading);
 	}
-	return 0;
+	else
+	{
+		// TODO: remove when DEV - 5324 is done, since prefabs are assets.
+		SaveAllLibs();
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+CPrefabItem* CPrefabManager::MakeFromSelection(const CSelectionGroup* pSelectionGroup)
+{
+	const CAssetType* const pAssetType = GetIEditor()->GetAssetManager()->FindAssetType("Prefab");
+	if (!pAssetType)
+	{
+		return nullptr;
+	}
+
+	const string assetBasePath = CAssetBrowserDialog::SaveSingleAssetForType(pAssetType->GetTypeName());
+	if (assetBasePath.empty())
+	{
+		return nullptr; // Operation cancelled by user.
+	}
+
+	const string newAssetPath = string().Format("%s.%s.cryasset", assetBasePath.c_str(), pAssetType->GetFileExtension());
+
+	SPrefabCreateParams createParam(pSelectionGroup);
+
+	pAssetType->Create(newAssetPath, &createParam);
+	CAsset* const pAsset = GetIEditor()->GetAssetManager()->FindAssetForMetadata(newAssetPath);
+	if (!pAsset)
+	{
+		return nullptr;
+	}
+	return static_cast<CPrefabItem*>(GetIEditor()->GetPrefabManager()->LoadItem(pAsset->GetGUID()));
+}
+
 void CPrefabManager::AddSelectionToPrefab()
 {
 	const CSelectionGroup* pSel = GetIEditorImpl()->GetSelection();
@@ -290,9 +408,11 @@ void CPrefabManager::CloseSelected()
 
 void CPrefabManager::AddSelectionToPrefab(CPrefabObject* pPrefab)
 {
+	using namespace Private_PrefabManager;
 	const CSelectionGroup* pSel = GetIEditorImpl()->GetSelection();
 
-	TBaseObjects objects;
+	std::vector<CBaseObject*> objects;
+	objects.reserve(pSel->GetCount());
 	for (int i = 0; i < pSel->GetCount(); i++)
 	{
 		CBaseObject* pObj = pSel->GetObject(i);
@@ -300,11 +420,13 @@ void CPrefabManager::AddSelectionToPrefab(CPrefabObject* pPrefab)
 			objects.push_back(pObj);
 	}
 
+	CObjectsRefOwner objectOwner(objects);
+
 	// Check objects if they can be added
 	bool invalidAddOperation = false;
 	for (int i = 0, count = objects.size(); i < count; ++i)
 	{
-		if (!pPrefab->CanObjectBeAddedAsMember(objects[i]))
+		if (!pPrefab->CanAddMember(objects[i]))
 		{
 			Warning("Object %s is already part of a prefab (%s)", objects[i]->GetName(), objects[i]->GetPrefab()->GetName());
 			invalidAddOperation = true;
@@ -318,15 +440,13 @@ void CPrefabManager::AddSelectionToPrefab(CPrefabObject* pPrefab)
 	if (CUndo::IsRecording())
 		CUndo::Record(new CUndoAddObjectsToPrefab(pPrefab, objects));
 
-	for (int i = 0; i < objects.size(); i++)
-		pPrefab->AddMember(objects[i]);
+	pPrefab->AddMembers(objects);
 
 	// If we have nested dependencies between these object send an modify event afterwards to resolve them properly (e.g. shape objects linked to area triggers)
 	for (int i = 0; i < objects.size(); i++)
 		objects[i]->UpdatePrefab();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabManager::ExtractObjectsFromPrefabs(std::vector<CBaseObject*>& childObjects)
 {
 	if (childObjects.empty())
@@ -352,20 +472,18 @@ void CPrefabManager::ExtractObjectsFromPrefabs(std::vector<CBaseObject*>& childO
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabManager::ExtractAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 {
 	if (prefabs.empty())
 		return;
 
 	CUndo undo("Extract all from prefab(s)");
+
 	CloneAllFromPrefabs(prefabs);
 
-	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
 	for (CPrefabObject* pPrefab : prefabs)
-	{
 		pObjectManager->DeleteObject(pPrefab);
-	}
 }
 
 void CPrefabManager::ExtractAllFromSelection()
@@ -392,47 +510,52 @@ void CPrefabManager::ExtractAllFromSelection()
 	}
 }
 
-bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* prefab, CBaseObject* obj)
+bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* pPrefab, CBaseObject* pObject)
 {
-	if (prefab && obj)
+	if (pPrefab && pObject)
 	{
-		if (!prefab->CanObjectBeAddedAsMember(obj))
+		if (!pPrefab->CanAddMember(pObject))
 		{
-			Warning("Object %s is already part of a prefab (%s)", obj->GetName(), obj->GetPrefab()->GetName());
+			Warning("Object %s cannot be added as a Member to prefab %s", pObject->GetName(), pPrefab->GetName());
 			return false;
 		}
 
-		TBaseObjects objects;
+		std::vector<CBaseObject*> objects;
 
 		CUndo undo("Add Object To Prefab");
 		if (CUndo::IsRecording())
 		{
 			// If this is not a group add all the attached children to the prefab,
 			// otherwise the group children adding is handled by the AddMember in CPrefabObject
-			if (!obj->IsKindOf(RUNTIME_CLASS(CGroup)))
+			if (!pObject->IsKindOf(RUNTIME_CLASS(CGroup)))
 			{
-				objects.reserve(obj->GetChildCount() + 1);
-				objects.push_back(obj);
-				obj->GetAllChildren(objects);
+				objects.reserve(pObject->GetChildCount() + 1);
+				objects.push_back(pObject);
+				TBaseObjects descendants;
+				descendants.reserve(pObject->GetChildCount() + 1);
+				pObject->GetAllDescendants(descendants);
+				for (const auto& child : descendants)
+				{
+					objects.push_back(child);
+				}
 			}
 			else
 			{
-				objects.push_back(obj);
+				objects.push_back(pObject);
 			}
 
-			CUndo::Record(new CUndoAddObjectsToPrefab(prefab, objects));
+			CUndo::Record(new CUndoAddObjectsToPrefab(pPrefab, objects));
 		}
 
 		for (int i = 0; i < objects.size(); i++)
 		{
-			prefab->AddMember(objects[i]);
+			pPrefab->AddMember(objects[i]);
 		}
 		return true;
 	}
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabManager::CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObjects)
 {
 	if (childObjects.empty())
@@ -462,66 +585,45 @@ void CPrefabManager::CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObj
 		(it->first)->CloneSelected(&(it->second), clonedObjects);
 	}
 
-	pObjectManager->SelectObjects(clonedObjects);
+	pObjectManager->AddObjectsToSelection(clonedObjects);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 {
 	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-
-	// We must clone the objects within the prefab before detaching them because if the user
-	// undoes this operation, the first thing that will happen is that a prefab of this type will be created.
-	// Doing this, will cause the prefab to be fully constructed, rather than just the empty prefab.
-	// This will cause GUID collision with the already existing objects (the ones we will extract now)
-	// when the action was first executed
-	CObjectCloneContext cloneContext;
 
 	CUndo undo("Clone all from prefab(s)");
 
 	pObjectManager->ClearSelection();
 
 	std::vector<CBaseObject*> objectsToSelect;
-	for (auto pPrefab : prefabs)
+	for (CPrefabObject* pPrefab : prefabs)
 	{
+		bool autoUpdatePrefab = pPrefab->GetAutoUpdatePrefab();
 		pPrefab->SetAutoUpdatePrefab(false);
+		pPrefab->StoreUndo("Set Auto Update");
 
 		auto childCount = pPrefab->GetChildCount();
 		std::vector<CBaseObject*> children;
+		std::vector<CBaseObject*> newChildren;
 		children.reserve(childCount);
-		objectsToSelect.reserve(childCount);
+		newChildren.reserve(childCount);
 
 		for (auto i = 0; i < childCount; ++i)
 		{
-			// Clone every object.
-			CBaseObject* pFromObject = pPrefab->GetChild(i);
-			CBaseObject* pNewObj = pObjectManager->CloneObject(pFromObject);
-			if (!pNewObj) // can be null, e.g. sequence can't be cloned
-			{
-				continue;
-			}
-			cloneContext.AddClone(pFromObject, pNewObj);
-			children.push_back(pNewObj);
+			children.push_back(pPrefab->GetChild(i));
 		}
 
-		// Only after everything was cloned, call PostClone on all cloned objects.
-		// Copy objects map as it can be invalidated during PostClone
-		auto objectsMap = cloneContext.m_objectsMap;
-		for (auto it : objectsMap)
-		{
-			CBaseObject* pFromObject = it.first;
-			CBaseObject* pClonedObject = it.second;
-			if (pClonedObject)
-			{
-				pClonedObject->PostClone(pFromObject, cloneContext);
-				objectsToSelect.push_back(pClonedObject);
-			}
-		}
+		pObjectManager->CloneObjects(children, newChildren);
 
-		pPrefab->RemoveMembers(children);
+		pPrefab->RemoveMembers(newChildren);
+		pPrefab->SetAutoUpdatePrefab(autoUpdatePrefab);
+		pPrefab->StoreUndo("Set Auto Update");
+
+		objectsToSelect.insert(objectsToSelect.cend(), newChildren.begin(), newChildren.end());
 	}
 
-	pObjectManager->SelectObjects(objectsToSelect);
+	pObjectManager->AddObjectsToSelection(objectsToSelect);
 }
 
 void CPrefabManager::CloneAllFromSelection()
@@ -548,7 +650,6 @@ void CPrefabManager::CloneAllFromSelection()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPrefabManager::OpenPrefabs(std::vector<CPrefabObject*>& prefabObjects)
 {
 	if (prefabObjects.empty())
@@ -573,7 +674,6 @@ bool CPrefabManager::OpenPrefabs(std::vector<CPrefabObject*>& prefabObjects)
 	return bOpenedAtLeastOne;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CPrefabManager::ClosePrefabs(std::vector<CPrefabObject*>& prefabObjects)
 {
 	if (prefabObjects.empty())
@@ -597,7 +697,6 @@ bool CPrefabManager::ClosePrefabs(std::vector<CPrefabObject*>& prefabObjects)
 	return bClosedAtLeastOne;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CPrefabManager::GetPrefabObjects(std::vector<CPrefabObject*>& outPrefabObjects)
 {
 	std::vector<CBaseObject*> prefabObjects;
@@ -615,8 +714,7 @@ void CPrefabManager::GetPrefabObjects(std::vector<CPrefabObject*>& outPrefabObje
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-int CPrefabManager::GetPrefabInstanceCount(CPrefabItem* pPrefabItem)
+int CPrefabManager::GetPrefabInstanceCount(IDataBaseItem* pPrefabItem)
 {
 	int instanceCount = 0;
 	std::vector<CPrefabObject*> prefabObjects;
@@ -624,13 +722,10 @@ int CPrefabManager::GetPrefabInstanceCount(CPrefabItem* pPrefabItem)
 
 	if (pPrefabItem)
 	{
-		CPrefabManager* pManager = GetIEditor()->GetPrefabManager();
 		for (int i = 0, prefabsFound(prefabObjects.size()); i < prefabsFound; ++i)
 		{
 			CPrefabObject* pPrefabObject = (CPrefabObject*)prefabObjects[i];
-			CPrefabItem* pRefItem = (CPrefabItem*)pManager->FindItem(pPrefabObject->GetPrefabGuid());
-
-			if (pRefItem == pPrefabItem)
+			if (pPrefabObject->GetPrefabGuid() == pPrefabItem->GetGUID())
 			{
 				++instanceCount;
 			}
@@ -640,7 +735,151 @@ int CPrefabManager::GetPrefabInstanceCount(CPrefabItem* pPrefabItem)
 	return instanceCount;
 }
 
-//////////////////////////////////////////////////////////////////////////
+IDataBaseLibrary* CPrefabManager::AddLibrary(const string& library, bool bSetFullFilename /*= false*/)
+{
+	// Check if library with same name already exist.
+	IDataBaseLibrary* const pBaseLib = FindLibrary(library);
+	if (pBaseLib)
+	{
+		return pBaseLib;
+	}
+
+	CBaseLibrary* const pLib = MakeNewLibrary();
+	pLib->SetName(library);
+
+	const string filename = MakeFilename(library);
+
+	pLib->SetFilename(filename);
+	pLib->SetModified(false);
+
+	m_libs.push_back(pLib);
+	return pLib;
+}
+
+string CPrefabManager::MakeFilename(const string& library)
+{
+	return string().Format("%s.%s", library.c_str(), GetFileExtension());
+}
+
+void CPrefabManager::importAssetsFromLevel(XmlNodeRef& levelRoot)
+{
+	using namespace Private_PrefabManager;
+
+	XmlNodeRef libs = levelRoot->findChild("PrefabsLibrary");
+	if (!libs)
+	{
+		return;
+	}
+
+	ICryPak* const pCryPak = GetIEditor()->GetSystem()->GetIPak();
+
+	for (int i = 0; i < libs->getChildCount(); i++)
+	{
+		XmlNodeRef libNode = libs->getChild(i);
+		string libName;
+		if (!libNode->getAttr("Name", libName))
+		{
+			continue;
+		}
+
+		if (strcmp(libNode->getTag(), "LevelLibrary") != 0)
+		{
+			const char* szRootFolder = "Prefabs";
+			const string filename(PathUtil::Make(szRootFolder, libName, "xml"));
+
+			if (pCryPak->IsFileExist(PathUtil::ReplaceExtension(filename.c_str(), "bak"), ICryPak::eFileLocation_OnDisk))
+			{
+				// already imported
+				continue;
+			}
+
+			if (!pCryPak->IsFileExist(filename.c_str()))
+			{
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Prefab library file not found: %s", filename.c_str());
+				continue;
+			}
+
+			libNode = XmlHelpers::LoadXmlFromFile(filename);
+			const string path = PathUtil::Make(szRootFolder, libName);
+
+			ImportPrefabLibrary(libNode, path);
+
+			FileUtils::BackupFile(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), path).c_str());
+		}
+		else
+		{
+			const char* szRootFolder = "Prefabs/LevelLibrary";
+			const string path = PathUtil::Make(szRootFolder, PathUtil::ToGamePath(GetIEditorImpl()->GetLevelFolder()));
+			ImportPrefabLibrary(libNode, path);
+		}
+	}
+}
+
+void CPrefabManager::UpdateAllPrefabsToLatestVersion()
+{
+	CAssetManager* const pAssetManager = GetIEditor()->GetAssetManager();
+	const CAssetType* const pPrefabType = pAssetManager->FindAssetType("Prefab");
+	pAssetManager->ForeachAssetOfType(pPrefabType, [this](CAsset* pAsset)
+	{
+		//get the asset guid and use it to load the prefab item (asset guid is the same as prefab guid)
+		const CryGUID& guid = pAsset->GetGUID();
+		CPrefabItem* pItem = static_cast<CPrefabItem*>(LoadItem(guid));
+		//upgrade the object and remember to reload all the objects in the scene to apply the new changes
+		pItem->CheckVersionAndUpgrade();
+		//update all the instances in the level (if there are any)
+		pItem->UpdateObjects();
+		//serialize the changes to file
+		pItem->GetLibrary()->Save();
+	});
+}
+
+std::vector<CPrefabItem*> CPrefabManager::GetAllPrefabItems(const std::vector<CBaseObject*>& objects)
+{
+	std::vector<CPrefabItem*> items;
+
+	for (const CBaseObject* pObject : objects)
+	{
+		if (pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+		{
+			const CPrefabObject* pPrefabObject = static_cast<const CPrefabObject*>(pObject);
+			CPrefabItem* pItem = pPrefabObject->GetPrefabItem();
+
+			if (std::find(items.begin(), items.end(), pItem) == items.end())
+			{
+				items.push_back(pItem);
+			}
+		}
+	}
+
+	return items;
+}
+
+std::vector<CBaseObject*> CPrefabManager::FindAllInstancesOfItem(const CPrefabItem* pPrefabItem)
+{
+	CBaseObjectsArray objects;
+	GetIEditor()->GetObjectManager()->FindObjectsOfType(OBJTYPE_PREFAB, objects);
+
+	std::vector<CBaseObject*> instances;
+	for (CBaseObject* pObject : objects)
+	{
+		CPrefabObject* pPrefabObject = static_cast<CPrefabObject*>(pObject);
+
+		if (pPrefabObject->GetPrefabItem()->GetGUID() == pPrefabItem->GetGUID())
+		{
+			instances.push_back(pPrefabObject);
+		}
+	}
+
+	return instances;
+}
+
+void CPrefabManager::SelectAllInstancesOfItem(const CPrefabItem* pPrefabItem)
+{
+	std::vector<CBaseObject*> instances = FindAllInstancesOfItem(pPrefabItem);
+	GetIEditor()->GetObjectManager()->ClearSelection();
+	GetIEditor()->GetObjectManager()->AddObjectsToSelection(instances);
+}
+
 void CPrefabManager::DeleteItem(IDataBaseItem* pItem)
 {
 	assert(pItem);
@@ -672,23 +911,47 @@ void CPrefabManager::DeleteItem(IDataBaseItem* pItem)
 			pObjMan->DeleteObject(pObj);
 	}
 
-	__super::DeleteItem(pItem);
+	IDataBaseLibrary* pLibrary = pItem->GetLibrary();
+
+	CBaseLibraryManager::DeleteItem(pItem);
+
+	//cleanup the library when it's been emptied
+	if (pLibrary && !pLibrary->GetItemCount())
+	{
+		DeleteLibrary(pLibrary->GetName());
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
+IDataBaseItem* CPrefabManager::LoadItem(const CryGUID& guid)
+{
+	IDataBaseItem* pItem = FindItem(guid);
+	if (pItem)
+	{
+		return pItem;
+	}
+
+	const CAsset* const pAsset = GetIEditor()->GetAssetManager()->FindAssetById(guid);
+	if (pAsset && pAsset->GetFilesCount() && LoadLibrary(pAsset->GetFile(0)))
+	{
+		return FindItem(guid);
+	}
+
+	return nullptr;
+}
+
 void CPrefabManager::ExpandGroup(CBaseObject* pObject, CSelectionGroup& selection) const
 {
 	selection.AddObject(pObject);
 	if (pObject->IsKindOf(RUNTIME_CLASS(CGroup)) && !pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
 	{
 		CGroup* pGroup = static_cast<CGroup*>(pObject);
-		const TBaseObjects& groupMembers = pGroup->GetMembers();
-		for (int i = 0, count = groupMembers.size(); i < count; ++i)
-			ExpandGroup(groupMembers[i], selection);
+		for (int i = 0, count = pGroup->GetChildCount(); i < count; ++i)
+		{
+			ExpandGroup(pGroup->GetChild(i), selection);
+		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IDataBaseLibrary* CPrefabManager::LoadLibrary(const string& filename, bool bReload)
 {
 	IDataBaseLibrary* pLibrary = CBaseLibraryManager::LoadLibrary(filename, bReload);
@@ -699,92 +962,3 @@ IDataBaseLibrary* CPrefabManager::LoadLibrary(const string& filename, bool bRelo
 	}
 	return pLibrary;
 }
-
-namespace Private_PrefabCommands
-{
-static void PyCreateFromSelection()
-{
-	GetIEditorImpl()->SetEditTool(nullptr);
-	GetIEditorImpl()->GetPrefabManager()->MakeFromSelection();
-}
-
-static void PyAddSelection()
-{
-	GetIEditorImpl()->GetPrefabManager()->AddSelectionToPrefab();
-}
-
-static void PyExtractAllFromSelection()
-{
-	GetIEditorImpl()->GetPrefabManager()->ExtractAllFromSelection();
-}
-
-static void PyCloneAllFromSelection()
-{
-	GetIEditorImpl()->GetPrefabManager()->CloneAllFromSelection();
-}
-
-static void PyOpen()
-{
-	GetIEditorImpl()->GetPrefabManager()->OpenSelected();
-}
-
-static void PyClose()
-{
-	GetIEditorImpl()->GetPrefabManager()->CloseSelected();
-}
-
-static void PyOpenAll()
-{
-	std::vector<CPrefabObject*> prefabObjects;
-	GetIEditorImpl()->GetPrefabManager()->GetPrefabObjects(prefabObjects);
-	if (!prefabObjects.empty())
-	{
-		CUndo undo("Open all prefab objects");
-		GetIEditorImpl()->GetPrefabManager()->OpenPrefabs(prefabObjects);
-	}
-}
-
-static void PyCloseAll()
-{
-	std::vector<CPrefabObject*> prefabObjects;
-	GetIEditorImpl()->GetPrefabManager()->GetPrefabObjects(prefabObjects);
-	if (!prefabObjects.empty())
-	{
-		CUndo undo("Close all prefab objects");
-		GetIEditorImpl()->GetPrefabManager()->ClosePrefabs(prefabObjects);
-	}
-}
-
-static void PyReloadAll()
-{
-	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PREFAB_REMAKE);
-}
-}
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCreateFromSelection, prefab, create_from_selection,
-                                   CCommandDescription("Create prefab"));
-REGISTER_EDITOR_COMMAND_ICON(prefab, create_from_selection, "icons:Tools/Create_Prefab.ico");
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyAddSelection, prefab, add_to_prefab,
-                                   CCommandDescription("Add selection to prefab"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyExtractAllFromSelection, prefab, extract_all,
-                                   CCommandDescription("Extract all objects"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCloneAllFromSelection, prefab, clone_all,
-                                   CCommandDescription("Clone all objects"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyOpen, prefab, open,
-                                   CCommandDescription("Open prefab"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyClose, prefab, close,
-                                   CCommandDescription("Close prefab"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyOpenAll, prefab, open_all,
-                                   CCommandDescription("Open all prefabs"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCloseAll, prefab, close_all,
-                                   CCommandDescription("Close all prefabs"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyReloadAll, prefab, reload_all,
-                                   CCommandDescription("Reload all prefabs"));

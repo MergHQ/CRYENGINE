@@ -1,27 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#pragma once
 
-#include <QWidget>
-#include <QToolButton>
-#include <QBoxLayout>
-#include <QPushButton>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QStyleOption>
-#include <QEvent>
-#include <QMouseEvent>
-#include <QMimeData>
-#include <QApplication>
-#include <QDrag>
+#pragma once
 
 #include "CryIcon.h"
 #include "CryQtAPI.h"
-#include "CryQtCompatibility.h"
-#include <memory>
+
+#include <QWidget>
+
 #include <functional>
 
-class QPushButton;
+class QEvent;
+class QFrame;
 class QLabel;
+class QPushButton;
+class QToolButton;
 
 //! This is a reusable UI component used for grouping widgets together with a title and the group can be collapsed
 class CRYQT_API QCollapsibleFrame : public QWidget
@@ -110,4 +102,3 @@ protected:
 protected Q_SLOTS:
 	void OnCollapseButtonClick();
 };
-

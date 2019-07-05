@@ -22,16 +22,15 @@
 #include "Serialization/SerializeScriptTableReader.h"
 #include "GameObjectSystem.h"
 #include <CrySystem/ITextModeConsole.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "CryActionCVars.h"
-
-#include <CryAISystem/IAIObject.h>
-#include <CryAISystem/IAIActorProxy.h>
 
 // ugly: for GetMovementController()
 #include "IActorSystem.h"
 #include "IVehicleSystem.h"
 
 #include <CryNetwork/INetwork.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -331,13 +330,6 @@ void CGameObject::Initialize()
 	m_pNetEntity = m_pEntity->AssignNetEntityLegacy(this);
 
 	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
-
-	// Fix case where init was already called
-	if (m_pEntity->IsInitialized())
-	{
-		SEntityEvent event(ENTITY_EVENT_INIT);
-		ProcessEvent(event);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -450,7 +442,7 @@ void CGameObject::DebugUpdateState()
 
 	if (g_showUpdateState == 2)
 	{
-		bool checkAIDisable = !ShouldUpdateAI() && GetEntity()->GetAI();
+		bool checkAIDisable = !ShouldUpdateAI() && GetEntity()->HasAI();
 		for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 		{
 			uint slotbit = 1;
@@ -537,17 +529,11 @@ void CGameObject::Update(SEntityUpdateContext& ctx)
 	/*
 	 * UPDATE EXTENSIONS
 	 */
-#ifdef _DEBUG
-	IGameObjectSystem* pGameObjectSystem = m_pGOS;
-#endif
 	bool shouldUpdateAI = ShouldUpdateAI();
 	bool keepUpdating = shouldUpdateAI;
-	bool checkAIDisableOnSlots = !shouldUpdateAI && GetEntity()->GetAI();
+	bool checkAIDisableOnSlots = !shouldUpdateAI && GetEntity()->HasAI();
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 	{
-#ifdef _DEBUG
-		const char* name = pGameObjectSystem->GetName(iter->id);
-#endif
 		uint32 slotbit = 1;
 		for (uint32 i = 0; i < MAX_UPDATE_SLOTS_PER_EXTENSION; ++i)
 		{
@@ -720,9 +706,6 @@ void CGameObject::ProcessEvent(const SEntityEvent& event)
 			break;
 		}
 
-		if (IAIObject* aiObject = m_pEntity->GetAI())
-			aiObject->EntityEvent(event);
-
 		// Events to extensions are sent by Entity system as they are EntityComponents
 		/*
 		   for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
@@ -733,28 +716,28 @@ void CGameObject::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CGameObject::GetEventMask() const
+Cry::Entity::EventFlags CGameObject::GetEventMask() const
 {
-	uint64 eventMask =
-		ENTITY_EVENT_BIT(ENTITY_EVENT_INIT) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_DONE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERAREA) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVEAREA) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_POST_SERIALIZE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE) |
-		ENTITY_EVENT_BIT(ENTITY_EVENT_SPAWNED_REMOTELY);
+	Cry::Entity::EventFlags eventMask =
+		ENTITY_EVENT_INIT |
+		ENTITY_EVENT_RESET |
+		ENTITY_EVENT_DONE |
+		ENTITY_EVENT_RENDER_VISIBILITY_CHANGE |
+		ENTITY_EVENT_ENTERAREA |
+		ENTITY_EVENT_LEAVEAREA |
+		ENTITY_EVENT_POST_SERIALIZE |
+		ENTITY_EVENT_HIDE |
+		ENTITY_EVENT_UNHIDE |
+		ENTITY_EVENT_SPAWNED_REMOTELY;
 
 	if (m_bShouldUpdate)
 	{
-		eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+		eventMask |= ENTITY_EVENT_UPDATE;
 	}
 
 	if (m_bPrePhysicsEnabled)
 	{
-		eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE);
+		eventMask |= ENTITY_EVENT_PREPHYSICSUPDATE;
 	}
 
 	return eventMask;
@@ -887,7 +870,7 @@ static const char* AspectProfileSerializationName(int i)
 		buffer[7] = 'e';
 	}
 
-	assert(i >= 0 && i < 256);
+	CRY_ASSERT(i >= 0 && i < 256);
 	i = clamp_tpl<int>(i, 0, 255);
 	buffer[8] = 0;
 	buffer[9] = 0;
@@ -1220,8 +1203,7 @@ IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExte
 					ext.refCount += (change == eCE_Acquire);
 					ext.activated |= (change == eCE_Activate);
 					ext.pExtension = pGameObjectSystem->Instantiate(ext.id, this);
-					assert(ext.pExtension);
-					if (ext.pExtension)
+					if (CRY_VERIFY(ext.pExtension))
 					{
 						pRet = ext.pExtension;
 						if (updatingEntity == GetEntityId())
@@ -1369,7 +1351,7 @@ void CGameObject::EnableUpdateSlot(IGameObjectExtension* pExtension, int slot)
 	SExtension* pExt = GetExtensionInfo(pExtension);
 	if (pExt)
 	{
-		CRY_ASSERT_TRACE(255 != pExt->updateEnables[slot], ("Already got 255 reasons for slot %d of '%s' to be enabled", slot, GetEntity()->GetEntityTextDescription().c_str()));
+		CRY_ASSERT(255 != pExt->updateEnables[slot], "Already got 255 reasons for slot %d of '%s' to be enabled", slot, GetEntity()->GetEntityTextDescription().c_str());
 		++pExt->updateEnables[slot];
 	}
 	EvaluateUpdateActivation();
@@ -1596,7 +1578,7 @@ bool CGameObject::ShouldUpdate()
 	// evaluate main-loop activation
 	bool shouldUpdateAI(!GetEntity()->IsHidden() && (IsProbablyVisible() || !IsProbablyDistant()));
 	bool shouldBeActivated = shouldUpdateAI;
-	bool hasAI = NULL != GetEntity()->GetAI();
+	bool hasAI = GetEntity()->HasAI();
 	bool checkAIDisableOnSlots = !shouldUpdateAI && hasAI;
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end() && !shouldBeActivated; ++iter)
 	{
@@ -1615,7 +1597,7 @@ void CGameObject::EvaluateUpdateActivation()
 	// evaluate main-loop activation
 	bool shouldUpdateAI = ShouldUpdateAI();
 	bool shouldBeActivated = shouldUpdateAI;
-	bool hasAI = NULL != GetEntity()->GetAI();
+	bool hasAI = GetEntity()->HasAI();
 	bool checkAIDisableOnSlots = !shouldUpdateAI && hasAI;
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end() && !shouldBeActivated; ++iter)
 	{
@@ -1700,15 +1682,6 @@ void CGameObject::SetActivation(bool activate)
 	{
 		m_bShouldUpdate = activate;
 		m_pEntity->UpdateComponentEventMask(this);
-
-		if (!activate)
-		{
-			IAIObject* aiObject = m_pEntity->GetAI();
-			IAIActorProxy* proxy = aiObject ? aiObject->GetProxy() : 0;
-
-			if (proxy)
-				proxy->NotifyAutoDeactivated();
-		}
 	}
 
 	if (activate)

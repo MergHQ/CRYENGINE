@@ -1,15 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  (c) 2001 - 2012 Crytek GmbH
-// -------------------------------------------------------------------------
-//  File name:   VertexSnappingMode.h
-//  Created:     Sep/12/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
 
+#include <EditorFramework/Preferences.h>
+#include <Objects/BaseObject.h>
 #include <CrySerialization/yasli/decorators/Range.h>
+#include <CryMath/Cry_Geo.h>
+#include <vector>
+#include <map>
 
 // Preferences
 struct SVertexSnappingPreferences : public SPreferencePage
@@ -45,12 +43,12 @@ public:
 	~CVertexSnappingModeTool();
 
 	virtual string GetDisplayName() const override { return "Snap to Vertex"; }
-	void           Display(DisplayContext& dc);
+	void           Display(SDisplayContext& dc) override;
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
 
 protected:
 
-	void DrawVertexCubes(DisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj);
+	void DrawVertexCubes(SDisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj);
 	void DeleteThis() { delete this; }
 	Vec3 GetCubeSize(IDisplayViewport* pView, const Vec3& pos) const;
 
@@ -86,4 +84,3 @@ private:
 	std::vector<AABB>                  m_DebugBoxes;
 	std::map<CBaseObjectPtr, CKDTree*> m_ObjectKdTreeMap;
 };
-

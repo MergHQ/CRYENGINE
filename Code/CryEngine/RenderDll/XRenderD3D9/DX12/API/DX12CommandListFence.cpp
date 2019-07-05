@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "DX12CommandListFence.hpp"
-#include "DriverD3D.h"
 
 namespace NCryDX12
 {

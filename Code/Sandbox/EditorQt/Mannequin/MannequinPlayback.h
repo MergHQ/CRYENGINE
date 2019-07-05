@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_PLAYBACK_PAGE__H__
-#define __MANN_PLAYBACK_PAGE__H__
+#pragma once
 
 #include "MannequinBase.h"
 
@@ -88,6 +87,3 @@ private:
 	float                   m_playScale;
 
 };
-
-#endif
-

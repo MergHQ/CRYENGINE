@@ -8,6 +8,8 @@
 	#include "SharedStates.h"
 	#include "SharedResources.h"
 	#include "System.h"
+	#include <CryMemory/IMemory.h>
+	#include <CrySystem/ConsoleRegistration.h>
 
 	#define TRACK_ALLOCATIONS
 
@@ -49,7 +51,7 @@ void* GSysAllocCryMem::Alloc(UPInt size, UPInt align)
 	void* ptr = allocateInHeap ? m_pHeap->Map(size) : CryGetIMemoryManager()->AllocPages(size);
 
 	#ifndef GHEAP_TRACE_ALL
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 	MEMREPLAY_SCOPE_ALLOC(ptr, size, granularity);
 	#endif
 
@@ -97,7 +99,7 @@ bool GSysAllocCryMem::Free(void* ptr, UPInt size, UPInt align)
 	#endif
 
 	#ifndef GHEAP_TRACE_ALL
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 	MEMREPLAY_SCOPE_FREE(ptr);
 	#endif
 
@@ -286,12 +288,10 @@ void GFxMemoryArenaWrapper::Destroy(unsigned int arenaID)
 
 	CryAutoCriticalSection lock(m_lock);
 
-	#if !defined(_RELEASE)
-	IF (!m_arenasRefCnt[arenaID], 0) __debugbreak();
-	#endif
+	CRY_ASSERT(m_arenasRefCnt[arenaID] > 0);
 	if (!--m_arenasRefCnt[arenaID])
 	{
-		if (GMemory::ArenaIsEmpty(arenaID))
+		if (CRY_VERIFY(GMemory::ArenaIsEmpty(arenaID)))
 		{
 			const unsigned int areaIDAsBit = 1 << arenaID;
 
@@ -304,10 +304,6 @@ void GFxMemoryArenaWrapper::Destroy(unsigned int arenaID)
 				m_arenasResetCache &= ~areaIDAsBit;
 			}
 		}
-	#if !defined(_RELEASE)
-		else
-			__debugbreak();
-	#endif
 	}
 }
 

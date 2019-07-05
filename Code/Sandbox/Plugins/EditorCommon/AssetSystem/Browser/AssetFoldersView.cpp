@@ -4,26 +4,35 @@
 
 #include "AssetFoldersModel.h"
 #include "AssetThumbnailsGenerator.h"
+#include "FilteredFolders.h"
 
+#include "DragDrop.h"
+#include "PathUtils.h"
 #include "ProxyModels/DeepFilterProxyModel.h"
 #include "QAdvancedTreeView.h"
-#include "FilePathUtil.h"
+#include "QSearchBox.h"
 #include "QtUtil.h"
 
 #include <QItemSelectionModel>
 #include <QMenu>
+#include <QApplication>
+#include <QBoxLayout>
 
-namespace Private_AssetFolderView
-{
-
-class CFoldersViewProxyModel : public QDeepFilterProxyModel
+class CAssetFoldersView::CFoldersViewProxyModel : public QDeepFilterProxyModel
 {
 public:
 	CFoldersViewProxyModel(bool bHideEngineFolder = false)
 		: QDeepFilterProxyModel(QDeepFilterProxyModel::BehaviorFlags(QDeepFilterProxyModel::AcceptIfChildMatches | QDeepFilterProxyModel::AcceptIfParentMatches))
 		, m_bHideEngineFolder(bHideEngineFolder)
+		, m_pFilteredFolders(nullptr)
 	{
 	}
+	virtual ~CFoldersViewProxyModel() override
+	{
+		// unsubscribe
+		SetFilteredFolders(nullptr);
+	}
+
 	bool rowMatchesFilter(int sourceRow, const QModelIndex& sourceParent) const
 	{
 		if (m_bHideEngineFolder)
@@ -41,59 +50,103 @@ public:
 			}
 		}
 
+		if (m_pFilteredFolders && !m_pFilteredFolders->IsEmpty())
+		{
+			QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
+			if (index.isValid())
+			{
+				QString path = index.data((int)CAssetFoldersModel::Roles::FolderPathRole).toString();
+				if (!m_pFilteredFolders->Contains(path) && !CAssetFoldersModel::GetInstance()->IsEmptyFolder(path))
+				{
+					return false;
+				}
+			}
+		}
+
 		return QDeepFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent);
 	}
+
+	virtual bool canDropMimeData(const QMimeData* pMimeData, Qt::DropAction action, int row, int column, const QModelIndex& parent) const override
+	{
+		if (QDeepFilterProxyModel::canDropMimeData(pMimeData, action, row, column, parent))
+		{
+			return true;
+		}
+
+		CDragDropData::ClearDragTooltip(qApp->widgetAt(QCursor::pos()));
+		return false;
+	}
+
+	void SetFilteredFolders(CFilteredFolders* pFilteredFolders)
+	{
+		if (m_pFilteredFolders)
+		{
+			m_pFilteredFolders->signalInvalidate.DisconnectObject(this);
+		}
+
+		m_pFilteredFolders = pFilteredFolders;
+
+		if (m_pFilteredFolders)
+		{
+			pFilteredFolders->signalInvalidate.Connect(this, &CFoldersViewProxyModel::invalidate);
+			invalidate();
+		}
+	}
+
 private:
-	bool m_bHideEngineFolder;
-
+	bool              m_bHideEngineFolder;
+	CFilteredFolders* m_pFilteredFolders;
 };
-
-}
 
 CAssetFoldersView::CAssetFoldersView(bool bHideEngineFolder /*= false*/, QWidget* parent /*= nullptr*/)
 	: QWidget(parent)
 {
-	using namespace Private_AssetFolderView;
-
 	QAbstractItemModel* pModel = CAssetFoldersModel::GetInstance();
 	CRY_ASSERT(pModel);
 
-	auto deepFilterProxy = new CFoldersViewProxyModel(bHideEngineFolder);
-	deepFilterProxy->setSourceModel(pModel);
-	deepFilterProxy->setFilterKeyColumn(0);
+	m_pProxyModel.reset(new CFoldersViewProxyModel(bHideEngineFolder));
+	m_pProxyModel->setSourceModel(pModel);
+	m_pProxyModel->setFilterKeyColumn(0);
 
 	m_treeView = new QAdvancedTreeView();
-	m_treeView->setModel(deepFilterProxy);
+	m_treeView->setModel(m_pProxyModel.get());
 	m_treeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_treeView->setUniformRowHeights(true);
 	m_treeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_treeView->setHeaderHidden(true);
 	m_treeView->sortByColumn(0, Qt::AscendingOrder);
+	m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
 
-	connect(m_treeView, &QTreeView::customContextMenuRequested, this, &CAssetFoldersView::OnContextMenu);
 	connect(m_treeView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]() { OnSelectionChanged(); });
-	connect(deepFilterProxy, &QAbstractItemModel::dataChanged, this, &CAssetFoldersView::OnDataChanged);
+	connect(m_pProxyModel.get(), &QAbstractItemModel::dataChanged, this, &CAssetFoldersView::OnDataChanged);
 
-	auto searchBox = new QSearchBox();
-	searchBox->setPlaceholderText(tr("Search Folders"));
-	searchBox->SetModel(deepFilterProxy);
-	searchBox->EnableContinuousSearch(true);
-	searchBox->SetAutoExpandOnSearch(m_treeView);
+	QWidget* pSearchBoxContainer = new QWidget();
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
 
-	auto layout = new QVBoxLayout();
-	layout->setMargin(0);
-	layout->addWidget(searchBox);
-	layout->addWidget(m_treeView);
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->setSpacing(0);
 
-	setLayout(layout);
+	QSearchBox* pSearchBox = new QSearchBox();
+	pSearchBox->setPlaceholderText(tr("Search Folders"));
+	pSearchBox->SetModel(m_pProxyModel.get());
+	pSearchBox->EnableContinuousSearch(true);
+	pSearchBox->SetAutoExpandOnSearch(m_treeView);
+
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
+
+	QVBoxLayout* pLayout = new QVBoxLayout();
+	pLayout->setMargin(0);
+	pLayout->setSpacing(0);
+	pLayout->addWidget(pSearchBoxContainer);
+	pLayout->addWidget(m_treeView);
+
+	setLayout(pLayout);
 
 	ClearSelection();
-}
-
-CAssetFoldersView::~CAssetFoldersView()
-{
-
 }
 
 QVariantMap CAssetFoldersView::GetState() const
@@ -174,6 +227,35 @@ void CAssetFoldersView::ClearSelection()
 	SelectFolder(assetsRootIndex);
 }
 
+void CAssetFoldersView::RenameFolder(const QModelIndex& folderIndex)
+{
+	CRY_ASSERT(folderIndex.model() == CAssetFoldersModel::GetInstance());
+
+	const QAbstractProxyModel* const pProxyModel = qobject_cast<QAbstractProxyModel*>(m_treeView->model());
+	const QModelIndex proxyIndex = pProxyModel->mapFromSource(folderIndex);
+
+	m_treeView->expand(proxyIndex.parent());
+	m_treeView->scrollTo(proxyIndex);
+	m_treeView->selectionModel()->setCurrentIndex(proxyIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+	m_treeView->edit(proxyIndex);
+}
+
+void CAssetFoldersView::RenameFolder(const QString& folder)
+{
+	const QModelIndex folderIndex = CAssetFoldersModel::GetInstance()->FindIndexForFolder(folder);
+	if (!folderIndex.isValid())
+	{
+		return;
+	}
+
+	RenameFolder(folderIndex);
+}
+
+void CAssetFoldersView::SetFilteredFolders(CFilteredFolders* pFilteredFolders)
+{
+	static_cast<CFoldersViewProxyModel*>(m_pProxyModel.get())->SetFilteredFolders(pFilteredFolders);
+}
+
 const QStringList& CAssetFoldersView::GetSelectedFolders() const
 {
 	return m_selectedFolders;
@@ -197,59 +279,10 @@ QString CAssetFoldersView::ToFolder(const QModelIndex& index)
 		return QString();
 }
 
-void CAssetFoldersView::OnContextMenu(const QPoint &pos)
-{
-	QString folder = ToFolder(m_treeView->indexAt(pos));
-
-	if (CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(folder))
-		return;
-
-	QMenu* menu = new QMenu();
-	auto action = menu->addAction(CryIcon("icons:General/Element_Add.ico"), tr("Create folder"));
-	connect(action, &QAction::triggered, [this, folder]() { OnCreateFolder(folder); });
-
-	if (CAssetFoldersModel::GetInstance()->IsEmptyFolder(folder))
-	{
-		menu->addSeparator();
-
-		action = menu->addAction(CryIcon("icons:General/Element_Remove.ico"), tr("Delete"));
-		connect(action, &QAction::triggered, [this, folder]() { OnDeleteFolder(folder); });
-
-		action = menu->addAction(tr("Rename"));
-		connect(action, &QAction::triggered, [this, folder]() { OnRenameFolder(folder); });
-	}
-
-	menu->addSeparator();
-
-	action = menu->addAction(tr("Open in Explorer"));
-	connect(action, &QAction::triggered, [this, folder]() { OnOpenInExplorer(folder); });
-
-	action = menu->addAction(tr("Generate Thumbnails"));
-	connect(action, &QAction::triggered, [folder]()
-	{
-		AsseThumbnailsGenerator::GenerateThumbnailsAsync(QtUtil::ToString(folder));
-	});
-
-
-	menu->exec(QCursor::pos());
-}
-
 void CAssetFoldersView::OnCreateFolder(const QString& parentFolder)
 {
 	QString newFolderPath = CAssetFoldersModel::GetInstance()->CreateFolder(parentFolder);
-	OnRenameFolder(newFolderPath);
-}
-
-void CAssetFoldersView::OnRenameFolder(const QString& folder)
-{
-	auto folderIndex = CAssetFoldersModel::GetInstance()->FindIndexForFolder(folder);
-	auto proxyModel = qobject_cast<QAbstractProxyModel*>(m_treeView->model());
-	auto proxyIndex = proxyModel->mapFromSource(folderIndex);
-
-	m_treeView->expand(proxyIndex.parent());
-	m_treeView->scrollTo(proxyIndex);
-	m_treeView->selectionModel()->setCurrentIndex(proxyIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-	m_treeView->edit(proxyIndex);
+	RenameFolder(newFolderPath);
 }
 
 void CAssetFoldersView::OnDeleteFolder(const QString& folder)
@@ -295,4 +328,3 @@ void CAssetFoldersView::OnSelectionChanged()
 
 	signalSelectionChanged(m_selectedFolders);
 }
-

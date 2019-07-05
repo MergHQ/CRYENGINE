@@ -8,6 +8,7 @@
 #include <CryMath/Angle.h>
 
 #include <CrySchematyc/CoreAPI.h>
+#include <CryCore/StaticInstanceList.h>
 
 namespace Schematyc
 {

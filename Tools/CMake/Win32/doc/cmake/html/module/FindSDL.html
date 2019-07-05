@@ -1,0 +1,175 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>FindSDL &mdash; CMake 3.14.5 Documentation</title>
+
+    <link rel="stylesheet" href="../_static/cmake.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/cmake-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FindSDL_sound" href="FindSDL_sound.html" />
+    <link rel="prev" title="FindSDL_net" href="FindSDL_net.html" />
+  
+ 
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="FindSDL_sound.html" title="FindSDL_sound"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="FindSDL_net.html" title="FindSDL_net"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" accesskey="U">cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="findsdl">
+<span id="module:FindSDL"></span><h1>FindSDL<a class="headerlink" href="#findsdl" title="Permalink to this headline">¶</a></h1>
+<p>Locate SDL library</p>
+<p>This module defines</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>SDL_LIBRARY, the name of the library to link against
+SDL_FOUND, if false, do not try to link to SDL
+SDL_INCLUDE_DIR, where to find SDL.h
+SDL_VERSION_STRING, human-readable string containing the version of SDL
+</pre></div>
+</div>
+<p>This module responds to the flag:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>SDL_BUILDING_LIBRARY
+  If this is defined, then no SDL_main will be linked in because
+  only applications need main().
+  Otherwise, it is assumed you are building an application and this
+  module will attempt to locate and set the proper link flags
+  as part of the returned SDL_LIBRARY variable.
+</pre></div>
+</div>
+<p>Don’t forget to include SDLmain.h and SDLmain.m your project for the
+OS X framework based version.  (Other versions link to -lSDLmain which
+this module will try to find on your behalf.) Also for OS X, this
+module will automatically add the -framework Cocoa on your behalf.</p>
+<p>Additional Note: If you see an empty SDL_LIBRARY_TEMP in your
+configuration and no SDL_LIBRARY, it means CMake did not find your SDL
+library (SDL.dll, libsdl.so, SDL.framework, etc).  Set
+SDL_LIBRARY_TEMP to point to your SDL library, and configure again.
+Similarly, if you see an empty SDLMAIN_LIBRARY, you should set this
+value as appropriate.  These values are used to generate the final
+SDL_LIBRARY variable, but when these values are unset, SDL_LIBRARY
+does not get created.</p>
+<p>$SDLDIR is an environment variable that would correspond to the
+./configure –prefix=$SDLDIR used in building SDL.  l.e.galup 9-20-02</p>
+<p>Modified by Eric Wing.  Added code to assist with automated building
+by using environmental variables and providing a more
+controlled/consistent search behavior.  Added new modifications to
+recognize OS X frameworks and additional Unix paths (FreeBSD, etc).
+Also corrected the header search path to follow “proper” SDL
+guidelines.  Added a search for SDLmain which is needed by some
+platforms.  Added a search for threads which is needed by some
+platforms.  Added needed compile switches for MinGW.</p>
+<p>On OSX, this will prefer the Framework version (if found) over others.
+People will have to manually change the cache values of SDL_LIBRARY to
+override this selection or set the CMake environment
+CMAKE_INCLUDE_PATH to modify the search paths.</p>
+<p>Note that the header path has changed from SDL/SDL.h to just SDL.h
+This needed to change because “proper” SDL convention is #include
+“SDL.h”, not &lt;SDL/SDL.h&gt;.  This is done for portability reasons
+because not all systems place things in SDL/ (see FreeBSD).</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="FindSDL_net.html"
+                        title="previous chapter">FindSDL_net</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="FindSDL_sound.html"
+                        title="next chapter">FindSDL_sound</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/module/FindSDL.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="FindSDL_sound.html" title="FindSDL_sound"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="FindSDL_net.html" title="FindSDL_net"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" >cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2000-2019 Kitware, Inc. and Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
+  </body>
+</html>

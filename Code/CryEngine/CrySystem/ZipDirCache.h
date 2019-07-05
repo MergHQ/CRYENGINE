@@ -3,6 +3,8 @@
 #ifndef _ZIP_DIR_CACHE_HDR_
 #define _ZIP_DIR_CACHE_HDR_
 
+#include <CryThreading/CryThread.h>
+
 /////////////////////////////////////////////////////////////
 // THe Zip Dir uses a special memory layout for keeping the structure of zip file.
 // This layout is optimized for small memory footprint (for big zip files)
@@ -16,6 +18,7 @@
 // record on 4-byte boundray.
 
 struct FileExt;
+class ICrySizer;
 
 namespace ZipDir
 {
@@ -95,12 +98,7 @@ struct Cache
 
 	bool ReOpen(const char* filePath);
 
-	void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		// to account for the full memory, see ZipDir::CacheFactory::MakeCache for this cause of this calculation
-		pSizer->AddObject(this, m_pCacheData->m_pHeap->PersistentAllocSize(m_nAllocatedSize));
-		pSizer->AddObject(m_pCacheData);
-	}
+	void GetMemoryUsage(ICrySizer* pSizer) const;
 
 	bool IsInMemory() const
 	{
@@ -182,10 +180,7 @@ protected:
 		UNIQUE_LOCK CryCriticalSection m_csCacheIOLock;
 #undef UNIQUE_LOCK
 
-		void GetMemoryUsage(ICrySizer* pSizer) const
-		{
-			pSizer->AddObject(this, sizeof(*this));
-		}
+		void GetMemoryUsage(ICrySizer* pSizer) const;
 	};
 
 	// need to have pointer on the structure

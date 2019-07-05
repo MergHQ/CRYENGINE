@@ -1,18 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "TerrainTexGen.h"                  // temporary needed
 #include "TerrainLightGen.h"
-#include "CryEditDoc.h"
-#include "TerrainLighting.h"
-#include "TerrainGrid.h"
-#include "Layer.h"
-#include "Vegetation/VegetationMap.h"
-#include "Sky Accessibility/HeightmapAccessibility.h"
 
 #include "IndirectLighting/TerrainGIGen.h"
-
+#include "Terrain/Sky Accessibility/HeightmapAccessibility.h"
+#include "Terrain/TerrainGrid.h"
 #include "Terrain/TerrainManager.h"
+#include "Terrain/TerrainTexGen.h"
+#include "Vegetation/VegetationMap.h"
+#include "CryEditDoc.h"
+#include "LogFile.h"
+#include "TerrainLighting.h"
+
+#include <Util/ImageUtil.h>
 
 // Sector flags.
 enum
@@ -23,12 +24,7 @@ enum
 
 #define MAX_BRIGHTNESS 100
 
-CTerrainLightGen::CTerrainLightGen
-(
-  const int cApplySS,
-  CPakFile* pLevelPakFile,
-  const bool cUpdateIndirLighting
-)
+CTerrainLightGen::CTerrainLightGen(const int cApplySS, CPakFile* pLevelPakFile, const bool cUpdateIndirLighting)
 	: m_pLevelPakFile(pLevelPakFile)
 {
 	m_resolution = 0;
@@ -54,13 +50,11 @@ CTerrainLightGen::CTerrainLightGen
 	m_TerrainAccMapRes = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTerrainLightGen::~CTerrainLightGen()
 {
 	delete[] m_pTerrainAccMap;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::Init(const int resolution, const bool bFullInit)
 {
 	int i;
@@ -138,8 +132,6 @@ float CTerrainLightGen::GetSunAmount(const float* inpHeightmapData, int iniX, in
 	int iDirX = (int)(vSunShadowVector.x * fForwardStepSize * iFixPointBase);
 	int iDirY = (int)(vSunShadowVector.y * fForwardStepSize * iFixPointBase);
 
-	float fLen = 0.0f;
-
 	int iX = iniX * iFixPointBase + iFixPointBase / 2, iY = iniY * iFixPointBase + iFixPointBase / 2;
 
 	float fZBottom = fZInit + 0.1f, fZTop = fZInit + 1.4f;
@@ -192,7 +184,10 @@ float CTerrainLightGen::GetSkyAccessibilityFloat(const float fX, const float fY)
 float CTerrainLightGen::GetSunAccessibilityFloat(const float fX, const float fY) const
 {
 	if (!m_SunAccessiblity.GetData())
-	{ return 1.0f; }                              // RefreshAccessibility was not sucessful
+	{
+		// RefreshAccessibility was not successful
+		return 1.0f;
+	}
 
 	assert(m_SunAccessiblity.GetWidth() != 0);
 	assert(m_SunAccessiblity.GetHeight() != 0);
@@ -261,12 +256,9 @@ bool CTerrainLightGen::GenerateSectorTexture(CPoint sector, const CRect& rect, i
 
 	CCryEditDoc* pDocument = GetIEditorImpl()->GetDocument();
 	CHeightmap* pHeightmap = GetIEditorImpl()->GetHeightmap();
-	int sectorFlags = GetCLightGenSectorFlag(sector);
 
 	assert(pDocument);
 	assert(pHeightmap);
-
-	float waterLevel = pHeightmap->GetWaterLevel();
 
 	// Update heightmap for that sector.
 	UpdateSectorHeightmap(sector);
@@ -304,7 +296,6 @@ bool CTerrainLightGen::GenerateSectorTexture(CPoint sector, const CRect& rect, i
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::GetSectorRect(CPoint sector, CRect& rect)
 {
 	rect.left = sector.x * m_sectorResolution;
@@ -313,7 +304,6 @@ void CTerrainLightGen::GetSectorRect(CPoint sector, CRect& rect)
 	rect.bottom = rect.top + m_sectorResolution;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::Log(const char* format, ...)
 {
 	if (!m_bLog)
@@ -329,11 +319,6 @@ void CTerrainLightGen::Log(const char* format, ...)
 	CLogFile::WriteLine(szBuffer);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Lighting.
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
 inline Vec3 CalcVertexNormal(const int x, const int y, const float* pHeightmapData, const int resolution, const float fHeightScale)
 {
 	if (x < resolution - 1 && y < resolution - 1 && x > 0 && y > 0)
@@ -352,7 +337,6 @@ inline Vec3 CalcVertexNormal(const int x, const int y, const float* pHeightmapDa
 		return(Vec3(0, 0, 1));
 }
 
-//////////////////////////////////////////////////////////////////////////
 inline Vec3 CalcBilinearVertexNormal(const float fX, const float fY, const float* pHeightmapData, const int resolution, const float fHeightScale)
 {
 	int x = (int)fX;
@@ -417,7 +401,6 @@ static void RGB2BGR(float p[3])
 	p[2] = h;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettings, CImageEx& lightmap, int genFlags)
 {
 	assert(m_resolution);
@@ -492,21 +475,14 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 	assert(fSunCol[0] >= 0 && fSunCol[1] >= 0 && fSunCol[2] >= 0);
 	assert(fSkyCol[0] >= 0 && fSkyCol[1] >= 0 && fSkyCol[2] >= 0);
 
-	float fHeighmapSizeInMeters = m_heightmap->GetWidth() * m_heightmap->GetUnitSize();
-
 	// Calculate a height scalation factor. This is needed to convert the
 	// relative nature of the height values. The contrast value is used to
-	// raise the slope of the triangles, whoch results in higher contrast
-	// lighting
+	// raise the slope of the triangles, whos results in higher contrast lighting
 
 	float fHeightScale = CalcHeightScaleForLighting(pSettings, m_resolution);
-	float fInvHeightScale = 1.0f / fHeightScale;
 
 	if (genFlags & ETTG_SHOW_WATER)
 		fWaterZ = m_heightmap->GetWaterLevel();
-
-	uint32 iWidth = m_resolution;
-	uint32 iHeight = m_resolution;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Prepare constants.
@@ -524,16 +500,15 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 	// Generate shadowmap.
 	//////////////////////////////////////////////////////////////////////////
 	CByteImage shadowmap;
-	float shadowAmmount = 255.0f * pSettings->iShadowIntensity / 100.0f;
-	//	float fShadowIntensity = (float)pSettings->iShadowIntensity/100.0f;
-	float fShadowBlur = pSettings->iShadowBlur * 0.04f;       // defines the slope blurring, 0=no blurring, .. (angle would be better but is slower)
+	//float shadowAmmount = 255.0f * pSettings->iShadowIntensity / 100.0f;
+	//float fShadowIntensity = (float)pSettings->iShadowIntensity/100.0f;
 
 	//	bool bStatObjShadows = genFlags & ETTG_STATOBJ_SHADOWS;
 	bool bPaintBrightness = (genFlags & ETTG_STATOBJ_PAINTBRIGHTNESS) && (GetIEditorImpl()->GetVegetationMap() != 0);
 	bool bTerrainShadows = pSettings->bTerrainShadows && (!(genFlags & ETTG_NO_TERRAIN_SHADOWS));
 
 	//////////////////////////////////////////////////////////////////////////
-	// generate accessiblity for this sector.
+	// generate accessibility for this sector.
 	//////////////////////////////////////////////////////////////////////////
 	if (!bUseFastLighting)
 	{
@@ -584,9 +559,7 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 		vSunShadowVector = lightVector * invR;
 	}
 
-	float fSkyLuminosity = ColorLuminosity(fSkyCol[0], fSkyCol[1], fSkyCol[2]);
 	float fBrightness, fBrightnessShadowmap;
-	float fBrighter = 0.f;
 
 	uint32 dwWidth = lightmap.GetWidth();
 	uint32 dwHeight = lightmap.GetHeight();
@@ -594,8 +567,6 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 	//	if(lightAlgo==ePrecise || lightAlgo==eDynamicSun)
 	{
 		assert(m_heightmap->GetWidth() == m_heightmap->GetHeight());
-		bool bHaveSkyColor = (fSkyCol[0] != 0) || (fSkyCol[1] != 0) || (fSkyCol[2] != 0);
-		float fSunBrightness = 0;
 
 		////////////////////////////////////////////////////////////////////////
 		// Precise lighting
@@ -702,8 +673,6 @@ bool CTerrainLightGen::GenerateLightmap(CPoint sector, LightingSettings* pSettin
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
 //! Generate shadows from static objects and place them in shadow map bitarray.
 void CTerrainLightGen::GenerateShadowmap(CPoint sector, CByteImage& shadowmap, float shadowAmmount, const Vec3& sunVector)
 {
@@ -711,11 +680,6 @@ void CTerrainLightGen::GenerateShadowmap(CPoint sector, CByteImage& shadowmap, f
 	//	return;
 	SSectorInfo si;
 	GetIEditorImpl()->GetHeightmap()->GetSectorsInfo(si);
-
-	int width = shadowmap.GetWidth();
-	int height = shadowmap.GetHeight();
-
-	int numSectors = si.numSectors;
 
 	int sectorTexSize = shadowmap.GetWidth();
 	int sectorTexSize2 = sectorTexSize * 2;
@@ -760,10 +724,9 @@ void CTerrainLightGen::GenerateShadowmap(CPoint sector, CByteImage& shadowmap, f
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::CalcTerrainMaxZ()
 {
-	// Caluclate max terrain height.
+	// Calculate max terrain height.
 	m_terrainMaxZ = 0;
 	int hmapSize = m_hmap.GetSize() / sizeof(float);
 	float* pData = m_hmap.GetData();
@@ -774,7 +737,6 @@ void CTerrainLightGen::CalcTerrainMaxZ()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 const CImageEx* CTerrainLightGen::GetOcclusionSurfaceTexture() const
 {
 	if (m_OcclusionSurfaceTexture.IsValid())
@@ -783,13 +745,11 @@ const CImageEx* CTerrainLightGen::GetOcclusionSurfaceTexture() const
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::ReleaseOcclusionSurfaceTexture()
 {
 	m_OcclusionSurfaceTexture.Release();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::UpdateSectorHeightmap(CPoint sector)
 {
 	int sectorFlags = GetSectorFlags(sector);
@@ -806,7 +766,6 @@ void CTerrainLightGen::UpdateSectorHeightmap(CPoint sector)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainLightGen::UpdateWholeHeightmap()
 {
 	if (m_numSectors)
@@ -821,7 +780,7 @@ bool CTerrainLightGen::UpdateWholeHeightmap()
 	{
 		if (!(m_sectorGrid[i] & eSectorHeightmapValid))
 		{
-			// Mark all heighmap sector flags as valid.
+			// Mark all heightmap sector flags as valid.
 			bAllValid = false;
 			m_sectorGrid[i] |= eSectorHeightmapValid;
 		}
@@ -836,7 +795,6 @@ bool CTerrainLightGen::UpdateWholeHeightmap()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTerrainLightGen::GetSectorFlags(CPoint sector)
 {
 	assert(sector.x >= 0 && sector.x < m_numSectors && sector.y >= 0 && sector.y < m_numSectors);
@@ -844,7 +802,6 @@ int CTerrainLightGen::GetSectorFlags(CPoint sector)
 	return m_sectorGrid[index];
 }
 
-//////////////////////////////////////////////////////////////////////////
 int& CTerrainLightGen::GetCLightGenSectorFlag(CPoint sector)
 {
 	assert(sector.x >= 0 && sector.x < m_numSectors && sector.y >= 0 && sector.y < m_numSectors);
@@ -852,17 +809,14 @@ int& CTerrainLightGen::GetCLightGenSectorFlag(CPoint sector)
 	return m_sectorGrid[index];
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::SetSectorFlags(CPoint sector, int flags)
 {
 	assert(sector.x >= 0 && sector.x < m_numSectors && sector.y >= 0 && sector.y < m_numSectors);
 	m_sectorGrid[sector.x + sector.y * m_numSectors] |= flags;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::InvalidateLighting()
 {
-	size_t nCount(0);
 	size_t nTotal(m_sectorGrid.size());
 	for (int i = 0; i < nTotal; i++)
 	{
@@ -870,7 +824,6 @@ void CTerrainLightGen::InvalidateLighting()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fSrcTop, const float fSrcRight, const float fSrcBottom, CImageEx& rOutImage, const int genFlags)
 {
 	assert(fSrcLeft >= 0.0f && fSrcLeft <= 1.0f);
@@ -892,7 +845,6 @@ void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fS
 
 	CCryEditDoc* pDocument = GetIEditorImpl()->GetDocument();
 	LightingSettings* pSettings = pDocument->GetLighting();
-	bool bTerrainShadows = pSettings->bTerrainShadows && (!(genFlags & ETTG_NO_TERRAIN_SHADOWS));
 	bool bPaintBrightness = (genFlags & ETTG_STATOBJ_PAINTBRIGHTNESS) && (GetIEditorImpl()->GetVegetationMap() != 0);
 
 	if (!RefreshAccessibility(pSettings, genFlags & ~ETTG_PREVIEW))
@@ -944,7 +896,7 @@ void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fS
 			float fSrcX = fSrcLeft + ((float)dwDestX + cTexelXOffset) * fScaleX;
 			fSrcX = min(fSrcX, cMaxResValue);
 			float fSkyWeight = GetSkyAccessibilityFloat(fSrcX, fSrcY); // 0..1
-			uint32 lg = pos_directed_rounding(fSkyWeight * 255.0f);          // 0..255
+			uint32 lg = pos_directed_rounding(fSkyWeight * 255.0f);    // 0..255
 			rOutImage.ValueAt(dwDestX, dwDestY) = RGB(255, lg, 0);
 		}
 	}
@@ -1009,13 +961,8 @@ void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fS
 	{
 		CVegetationMap* pVegetationMap = GetIEditorImpl()->GetVegetationMap();
 
-		CHeightmap& roHeightMap = *GetIEditorImpl()->GetHeightmap();
-
-		float fTerrainWidth = roHeightMap.GetWidth() * roHeightMap.GetUnitSize();
-		float fTerrainHeight = roHeightMap.GetWidth() * roHeightMap.GetUnitSize();
-
 		//////////////////////////////////////////////////////////////////////////
-		// Paint vegetation brighness.
+		// Paint vegetation brightness
 		//////////////////////////////////////////////////////////////////////////
 
 		for (uint32 dwDestY = 0; dwDestY < dwDestHeight; ++dwDestY)
@@ -1080,7 +1027,6 @@ void CTerrainLightGen::GetSubImageStretched(const float fSrcLeft, const float fS
 	//	CImageUtil::SaveBitmap("C:\\temp\\test.bmp",rOutImage);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainLightGen::RefreshAccessibility(const LightingSettings* inpLSettings, int genFlags)
 {
 	assert(m_resolution);
@@ -1287,4 +1233,3 @@ bool CTerrainLightGen::RefreshAccessibility(const LightingSettings* inpLSettings
 
 	return true;
 }
-

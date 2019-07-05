@@ -244,7 +244,6 @@ void CFacialEditorDialog::LoadC3DFile(const char* filename)
 	char cDummy;
 	//fread(&nDummy, sizeof(nDummy), 1, infile);
 	fread(&cDummy, sizeof(cDummy), 1, infile);
-	int nBlocks = cDummy;
 	fread(&cDummy, sizeof(cDummy), 1, infile);
 
 	// Because it is unknown how many groups and how many
@@ -495,7 +494,6 @@ void CFacialEditorDialog::LoadC3DFile(const char* filename)
 		gEnv->pLog->Log("Label %d=%s ", i, gname);
 
 		// gname has some other characters following the name
-		int nLen = 0;
 		for (int k = 0; k < ncol; k++)
 		{
 			if (gname[k] == 32)
@@ -534,7 +532,7 @@ void CFacialEditorDialog::LoadC3DFile(const char* filename)
 	// Next frame
 
 	// Determine interval to next frame of this markers data
-	int frame_length = (8 * 2 * nMarkers);
+	//int frame_length = (8 * 2 * nMarkers);
 
 	// read the first frame
 	for (int k = 0; k < FA_NUM_MARKERS; k++)
@@ -963,4 +961,3 @@ void CFacialEditorDialog::LoadC3DFile(const char* filename)
 	m_pContext->bSequenceModfied = true;
 	m_pContext->SendEvent(EFD_EVENT_SPLINE_CHANGE);
 }
-

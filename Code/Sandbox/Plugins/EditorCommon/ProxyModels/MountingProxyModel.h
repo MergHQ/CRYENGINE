@@ -126,4 +126,3 @@ private:
 	struct Implementation;
 	std::unique_ptr<Implementation> p;
 };
-

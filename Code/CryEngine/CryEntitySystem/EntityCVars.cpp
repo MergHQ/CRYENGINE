@@ -8,33 +8,38 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryAISystem/IAISystem.h>
+#include <CryAnimation/IAttachment.h>
+#include <CrySystem/ConsoleRegistration.h>
 
-ICVar* CVar::pUpdateScript = NULL;
-ICVar* CVar::pUpdateEntities = NULL;
-ICVar* CVar::pEntityBBoxes = NULL;
-ICVar* CVar::pMinImpulseVel = NULL;
-ICVar* CVar::pImpulseScale = NULL;
-ICVar* CVar::pMaxImpulseAdjMass = NULL;
-ICVar* CVar::pDebrisLifetimeScale = NULL;
-ICVar* CVar::pHitCharacters = NULL;
-ICVar* CVar::pHitDeadBodies = NULL;
-ICVar* CVar::pEnableFullScriptSave = NULL;
-ICVar* CVar::pLogCollisions = NULL;
-ICVar* CVar::pDrawAreas = NULL;
-ICVar* CVar::pDrawAreaGrid = NULL;
-ICVar* CVar::pDrawAreaGridCells = NULL;
-ICVar* CVar::pDrawAreaDebug = NULL;
+ICVar* CVar::pUpdateScript = nullptr;
+ICVar* CVar::pUpdateEntities = nullptr;
+ICVar* CVar::pEntityBBoxes = nullptr;
+ICVar* CVar::pMinImpulseVel = nullptr;
+ICVar* CVar::pImpulseScale = nullptr;
+ICVar* CVar::pMaxImpulseAdjMass = nullptr;
+ICVar* CVar::pDebrisLifetimeScale = nullptr;
+ICVar* CVar::pHitCharacters = nullptr;
+ICVar* CVar::pHitDeadBodies = nullptr;
+ICVar* CVar::pEnableFullScriptSave = nullptr;
+ICVar* CVar::pLogCollisions = nullptr;
+ICVar* CVar::pDrawAreas = nullptr;
+ICVar* CVar::pDrawAreaGrid = nullptr;
+ICVar* CVar::pDrawAreaGridCells = nullptr;
+ICVar* CVar::pDrawAreaDebug = nullptr;
+ICVar* CVar::pLogAreaDebug = nullptr;
+ICVar* CVar::pUpdateAreas = nullptr;
+ICVar* CVar::pFlowgraphComponents = nullptr;
 
-ICVar* CVar::pSysSpecLight = NULL;
+ICVar* CVar::pSysSpecLight = nullptr;
 
-int CVar::es_DebugTimers = 0;
+CVar::EEntityDebugDrawType CVar::es_EntityDebugDraw = CVar::EEntityDebugDrawType::Off;
+
 int CVar::es_DebugFindEntity = 0;
 int CVar::es_UsePhysVisibilityChecks = 1;
 float CVar::es_MaxPhysDist;
 float CVar::es_MaxPhysDistInvisible;
 float CVar::es_MaxPhysDistCloth;
 float CVar::es_FarPhysTimeout;
-int CVar::es_DebugEvents = 0;
 int CVar::es_debugEntityLifetime = 0;
 int CVar::es_DebugEntityUsage = 0;
 const char* CVar::es_DebugEntityUsageFilter = "";
@@ -45,6 +50,7 @@ int CVar::es_SaveLoadUseLUANoSaveFlag = 1;
 float CVar::es_EntityUpdatePosDelta = 0.0f;
 int CVar::es_debugDrawEntityIDs = 0;
 int CVar::es_MaxJointFx = 8;
+int CVar::es_UseProximityTriggerSystem = 1;
 
 int CVar::es_profileComponentUpdates = 0;
 
@@ -133,10 +139,21 @@ void CVar::Init()
 	REGISTER_COMMAND("es_dump_entity_classes_in_use", (ConsoleCommandFunc)DumpEntityClassesInUse, 0, "Dumps all used entity classes");
 	REGISTER_COMMAND("es_compile_area_grid", (ConsoleCommandFunc)CompileAreaGrid, 0, "Trigger a recompile of the area grid");
 
-	pEntityBBoxes = REGISTER_INT("es_bboxes", 0, VF_CHEAT,
+	REGISTER_CVAR2("es_DebugDraw", &es_EntityDebugDraw, es_EntityDebugDraw, VF_CHEAT,
+	                             "Provides different debug display options of the entity system\n"
+	                             "0 - Off\n"
+	                             "1 - Draw entities bbox with name\n"
+	                             "2 - Draw entities bbox with world position and physical state\n"
+	                             "3 - Draw entities bbox with entity id\n"
+	                             "4 - Draw hierarchies between entities. Red = parent -> blue = child\n"
+	                             "5 - Draw entity links\n"
+	                             "6 - Draw entities with components. Red = component receives updates every frame, Yellow = component receives pre physics update\n");
+
+	pEntityBBoxes = REGISTER_INT_CB("es_bboxes", 0, VF_CHEAT,
+	                             "[Deprecated: Use es_DebugDraw 1 instead]\n"
 	                             "Toggles entity bounding boxes.\n"
 	                             "Usage: es_bboxes [0/1]\n"
-	                             "Default is 0 (off). Set to 1 to display bounding boxes.");
+	                             "Default is 0 (off). Set to 1 to display bounding boxes.", MapEntityBBoxesCVar);
 	pUpdateScript = REGISTER_INT("es_UpdateScript", 1, VF_CHEAT,
 	                             "Usage: es_UpdateScript [0/1]\n"
 	                             "Default is 1 (on).");
@@ -161,14 +178,7 @@ void CVar::Init()
 	                                     VF_DUMPTODISK, "Enable (experimental) full script save functionality");
 
 	pLogCollisions = REGISTER_INT("es_log_collisions", 0, 0, "Enables collision events logging");
-	REGISTER_CVAR(es_DebugTimers, 0, VF_CHEAT,
-	              "This is for profiling and debugging (for game coders and level designer)\n"
-	              "By enabling this you get a lot of console printouts that show all entities that receive OnTimer\n"
-	              "events - it's good to minimize the call count. Certain entities might require this feature and\n"
-	              "using less active entities can often be defined by the level designer.\n"
-	              "Usage: es_DebugTimers 0/1");
 	REGISTER_CVAR(es_DebugFindEntity, 0, VF_CHEAT, "");
-	REGISTER_CVAR(es_DebugEvents, 0, VF_CHEAT, "Enables logging of entity events");
 
 	REGISTER_CVAR(es_DebugEntityUsage, 0, 0,
 	              "Draws information to the screen to show how entities are being used, per class, including total, active and hidden counts and memory usage"
@@ -186,14 +196,21 @@ void CVar::Init()
 	              "Render debug info on active layers: \n"
 	              "0 - inactive \n"
 	              "1 - active brush layers \n"
-	              "2 - all layer info \n"
-	              "3 - all layer and all layer pak info");
+	              "2 - all layers \n"
+	              "3 - all layers and memory info \n"
+	              "4 - all layers without folders\n"
+	              "5 - layer activation info");
 	REGISTER_CVAR(es_SaveLoadUseLUANoSaveFlag, 0, VF_CHEAT, "Save&Load optimization : use lua flag to not serialize entities, for example rigid bodies.");
 
 	pDrawAreas = REGISTER_INT("es_DrawAreas", 0, VF_CHEAT, "Enables drawing of Areas");
 	pDrawAreaGrid = REGISTER_INT("es_DrawAreaGrid", 0, VF_CHEAT, "Enables drawing of Area Grid");
 	pDrawAreaGridCells = REGISTER_INT("es_DrawAreaGridCells", 0, VF_CHEAT, "Enables drawing of Area Grid Cells' number and coordinates. Requires \"es_DrawAreaGrid\" to be enabled!");
 	pDrawAreaDebug = REGISTER_INT("es_DrawAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
+	pLogAreaDebug = REGISTER_INT("es_LogAreaDebug", 0, VF_CHEAT, "Enables debug drawing of Areas, set 2 for log details");
+	pUpdateAreas = REGISTER_INT("es_UpdateAreas", 1, VF_CHEAT,
+		"Toggles area updating.\n"
+		"Usage: es_UpdateAreas [0/1]\n"
+		"Default is 1 (on). Set to 0 to prevent all areas from updating.");
 
 	REGISTER_CVAR(es_UsePhysVisibilityChecks, 1, 0,
 	              "Activates physics quality degradation and forceful sleeping for invisible and faraway entities");
@@ -208,7 +225,9 @@ void CVar::Init()
 
 	pSysSpecLight = gEnv->pConsole->GetCVar("sys_spec_light");
 	if (pSysSpecLight && gEnv->IsEditor())
-		pSysSpecLight->SetOnChangeCallback(OnSysSpecLightChange);
+	{
+		pSysSpecLight->AddOnChange(OnSysSpecLightChange);
+	}
 
 	REGISTER_CVAR(es_debugEntityLifetime, 0, 0,
 	              "Debug entities creation and deletion time");
@@ -222,17 +241,63 @@ void CVar::Init()
 	              "Indicates the position delta by which an entity must move before the AreaManager updates position relevant data.\n"
 	              "Default: 0.1 (10 cm)");
 
-	REGISTER_CVAR(es_debugDrawEntityIDs, 0, VF_CHEAT,
+	REGISTER_CVAR_CB(es_debugDrawEntityIDs, 0, VF_CHEAT,
+	              "[Deprecated: Use es_DebugDraw 3 instead]\n"
 	              "Displays the EntityId of all entities.\n"
-	              "Default is 0 (off), any other number enables it.\n"
-	              "Note: es_debug must be set to 1 also (or else the EntityId won't be displayed)");
+	              "Default is 0 (off), any other number enables it.\n", MapDrawEntityIDCVar);
 
 	REGISTER_CVAR(es_MaxJointFx, 8, 0, "Sets the maximum number of joint break fx per frame");
 
-	REGISTER_CVAR(es_profileComponentUpdates, 0, 0, "Enables profiling of components that are updated per frame.\n"
-	                                                "Default: 0 (off)\n"
-	                                                "1 - Simple profiling, shows cost of all components per frame\n"
-	                                                "2 - Component type cost braekdown, shows cost of each component type per frame");
+	REGISTER_CVAR(es_profileComponentUpdates, 0, 0, 
+	              "Enables profiling of components that are updated per frame.\n"
+	              "Default: 0 (off)\n"
+	              "1 - Simple profiling, shows cost of all components per frame\n"
+	              "2 - Component type cost breakdown, shows cost of each component type per frame");
+
+	pFlowgraphComponents = REGISTER_INT("es_EnableFlowgraphComponents", 0, VF_CHEAT,
+	              "Toggles flowgraph components. Requires restart of the engine.\n"
+	              "Usage: es_UpdateEntities [0/1]\n"
+	              "Default is 0 (off). Set to 1 to enable flowgraph components.");
+
+	REGISTER_CVAR(es_UseProximityTriggerSystem, 1, 
+		VF_CHEAT | VF_REQUIRE_LEVEL_RELOAD, 
+		"Whether to register entities in the partition grid used for the proximity trigger system.\n"
+	    "0 - Entities will not be registered in the partition grid and can not be found by proximity queries."
+	    "1 - Entities can be registered in the partition grid and could then be found by proximity queries.");
+
+	// Call mapping in case the cvar was already set
+	MapEntityBBoxesCVar(pEntityBBoxes);
+	MapDrawEntityIDCVar(gEnv->pConsole->GetCVar("es_debugDrawEntityIDs"));
+}
+
+void CVar::MapEntityBBoxesCVar(ICVar* pBBoxCVar)
+{
+	if (ICVar* pIVar = gEnv->pConsole->GetCVar("es_DebugDraw"))
+	{
+		if (pBBoxCVar->GetIVal() != 0)
+		{
+			pIVar->Set(1);
+		}
+		else
+		{
+			pIVar->Set(0);
+		}
+	}
+}
+
+void CVar::MapDrawEntityIDCVar(ICVar* pIDCVar)
+{
+	if (ICVar* pIVar = gEnv->pConsole->GetCVar("es_DebugDraw"))
+	{
+		if (pIDCVar->GetIVal() != 0)
+		{
+			pIVar->Set(3);
+		}	
+		else
+		{
+			pIVar->Set(0);
+		}
+	}
 }
 
 void CVar::DumpEntities(IConsoleCmdArgs* args)

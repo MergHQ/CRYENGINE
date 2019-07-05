@@ -22,7 +22,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 			// ~IEntityComponent
 
 		public:
@@ -51,11 +51,7 @@ namespace Cry
 			void RemoveIgnoreConstraint();
 
 		protected:
-			// WORKAROUND: Can't register the same ResourceSelector (EntityClassName) for both Schematyc versions.
-			// Change this to EntityClassName when we finally have just one Schematyc.
-			Schematyc::EntityClass m_className;
-			// ~WORKAROUND
-
+			Schematyc::EntityClassName m_className;
 			bool m_bLinkTransformation = false;
 			bool m_bIgnoreContactsWithChild = true;
 			

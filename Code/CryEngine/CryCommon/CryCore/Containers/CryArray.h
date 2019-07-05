@@ -11,6 +11,7 @@
 
 #include <utility>
 #include <type_traits>
+#include <initializer_list>
 #include <CryMemory/IGeneralMemoryHeap.h> // <> required for Interfuscator
 
 //---------------------------------------------------------------------------
@@ -901,7 +902,6 @@ struct SmallDynStorage
 				char CRY_ALIGN(alignof(T)) elem;
 			};
 			static EmptyHeader s_EmptyHeader;
-			size_t st = sizeof(T), at = alignof(T), sh = sizeof(EmptyHeader), ah = alignof(EmptyHeader);
 			return (T*)&s_EmptyHeader.elem;
 		}
 		ILINE void set_null()      { m_aElems = null_header(); }
@@ -1306,6 +1306,16 @@ struct DynArray : Array<T, I, STORE>
 	iterator erase(Pos pos)
 	{
 		return erase(pos, 1);
+	}
+
+	iterator erase(iterator it)
+	{
+		return erase(static_cast<I>(std::distance(begin(), it)));
+	}
+
+	iterator erase(const_iterator it)
+	{
+		return erase(static_cast<I>(std::distance(static_cast<const_iterator>(begin()), it)));
 	}
 
 	void pop_back(I count = 1)

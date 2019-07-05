@@ -16,61 +16,61 @@ class QTOOLWINDOWMANAGER_EXPORT QToolWindowRollupBarArea : public QRollupBar, pu
 	Q_INTERFACES(IToolWindowArea);
 
 public:
-	explicit QToolWindowRollupBarArea(QToolWindowManager* manager, QWidget *parent = 0);
+	explicit QToolWindowRollupBarArea(QToolWindowManager* manager, QWidget* parent = nullptr);
 	virtual ~QToolWindowRollupBarArea();
 
-	void addToolWindow(QWidget* toolWindow, int index = -1) Q_DECL_OVERRIDE;
-	void addToolWindows(const QList<QWidget*>& toolWindows, int index = -1) Q_DECL_OVERRIDE;
+	virtual void                addToolWindow(QWidget* toolWindow, int index = -1) override;
+	virtual void                addToolWindows(const QList<QWidget*>& toolWindows, int index = -1) override;
 
-	void removeToolWindow(QWidget* toolWindow) Q_DECL_OVERRIDE;
+	virtual void                removeToolWindow(QWidget* toolWindow) override;
 
-	QList<QWidget*> toolWindows() Q_DECL_OVERRIDE;
+	virtual QList<QWidget*>     toolWindows() override;
 
-	QVariantMap saveState() Q_DECL_OVERRIDE;
-	void restoreState(const QVariantMap &data, int stateFormat) Q_DECL_OVERRIDE;
-	void adjustDragVisuals() Q_DECL_OVERRIDE;
+	virtual QVariantMap         saveState() override;
+	virtual void                restoreState(const QVariantMap& data, int stateFormat) override;
+	virtual void                adjustDragVisuals() override;
 
-	QWidget* getWidget() Q_DECL_OVERRIDE { return this; }
+	virtual QWidget*            getWidget() override { return this; }
 
-	virtual bool switchAutoHide(bool newValue);
+	virtual bool                switchAutoHide(bool newValue) override;
 
-	const QPalette& palette() const Q_DECL_OVERRIDE { return QRollupBar::palette(); };
-	void clear() Q_DECL_OVERRIDE { QRollupBar::clear(); };
-	QRect rect() const Q_DECL_OVERRIDE { return QRollupBar::rect(); };
-	QSize size() const Q_DECL_OVERRIDE { return QRollupBar::size(); };
-	int count() const Q_DECL_OVERRIDE { return QRollupBar::count(); };
-	QWidget* widget(int index) const Q_DECL_OVERRIDE { return QRollupBar::widget(index); };
-	void deleteLater() Q_DECL_OVERRIDE { QRollupBar::deleteLater(); };
-	int width() const Q_DECL_OVERRIDE { return QRollupBar::width(); };
-	int height() const Q_DECL_OVERRIDE { return QRollupBar::height(); };
-	const QRect geometry() const Q_DECL_OVERRIDE { return QRollupBar::geometry(); };
-	void hide() Q_DECL_OVERRIDE { QRollupBar::hide(); };
-	QObject* parent() const Q_DECL_OVERRIDE { return QRollupBar::parent(); };
-	void setParent(QWidget* parent) Q_DECL_OVERRIDE { QRollupBar::setParent(parent); };
-	int indexOf(QWidget* w) const Q_DECL_OVERRIDE;
-	QWidget* parentWidget() const Q_DECL_OVERRIDE { return QRollupBar::parentWidget(); };
-	QPoint mapFromGlobal(const QPoint & pos) const Q_DECL_OVERRIDE { return QRollupBar::mapFromGlobal(pos); };
-	QPoint mapToGlobal(const QPoint & pos) const Q_DECL_OVERRIDE { return QRollupBar::mapToGlobal(pos); };
-	void setCurrentWidget(QWidget* w) Q_DECL_OVERRIDE;
+	virtual const QPalette&     palette() const override                        { return QRollupBar::palette(); }
+	virtual void                clear() override                                { QRollupBar::clear(); }
+	virtual QRect               rect() const override                           { return QRollupBar::rect(); }
+	virtual QSize               size() const override                           { return QRollupBar::size(); }
+	virtual int                 count() const override                          { return QRollupBar::count(); }
+	virtual QWidget*            widget(int index) const override                { return QRollupBar::widget(index); }
+	virtual void                deleteLater() override                          { QRollupBar::deleteLater(); }
+	virtual int                 width() const override                          { return QRollupBar::width(); }
+	virtual int                 height() const override                         { return QRollupBar::height(); }
+	virtual const QRect         geometry() const override                       { return QRollupBar::geometry(); }
+	virtual void                hide() override                                 { QRollupBar::hide(); }
+	virtual QObject*            parent() const override                         { return QRollupBar::parent(); }
+	virtual void                setParent(QWidget* parent) override             { QRollupBar::setParent(parent); }
+	virtual int                 indexOf(QWidget* w) const override;
+	virtual QWidget*            parentWidget() const override                   { return QRollupBar::parentWidget(); }
+	virtual QPoint              mapFromGlobal(const QPoint& pos) const override { return QRollupBar::mapFromGlobal(pos); }
+	virtual QPoint              mapToGlobal(const QPoint& pos) const override   { return QRollupBar::mapToGlobal(pos); }
+	virtual void                setCurrentWidget(QWidget* w) override;
 
-	QPoint mapCombineDropAreaFromGlobal(const QPoint & pos) const Q_DECL_OVERRIDE;
-	QRect combineAreaRect() const Q_DECL_OVERRIDE;
-	QRect combineSubWidgetRect(int index) const Q_DECL_OVERRIDE;
-	int subWidgetAt(const QPoint& pos) const Q_DECL_OVERRIDE;
-	virtual QTWMWrapperAreaType areaType() const { return QTWMWrapperAreaType::watRollups; };
+	virtual QPoint              mapCombineDropAreaFromGlobal(const QPoint& pos) const override;
+	virtual QRect               combineAreaRect() const override;
+	virtual QRect               combineSubWidgetRect(int index) const override;
+	virtual int                 subWidgetAt(const QPoint& pos) const override;
+	virtual QTWMWrapperAreaType areaType() const override { return QTWMWrapperAreaType::watRollups; }
 protected:
-	virtual bool eventFilter(QObject *o, QEvent *ev) Q_DECL_OVERRIDE;
+	virtual bool                eventFilter(QObject* o, QEvent* ev) override;
 protected Q_SLOTS:
-	void closeRollup(int index);
-	void mouseReleaseEvent(QMouseEvent * e);
-	void swapToRollup();
+	void                        closeRollup(int index);
+	virtual void                mouseReleaseEvent(QMouseEvent* e) override;
+	void                        swapToRollup();
 private:
-	void setDraggable(bool draggable);
-	QPointer<QToolWindowManager> m_manager;
-	QLabel* m_pTopWidget;
-	QPoint m_areaDragStart;
-	bool m_areaDraggable;
-	bool m_tabDragCanStart;
-	bool m_areaDragCanStart;
-};
+	void                        setDraggable(bool draggable);
 
+	QPointer<QToolWindowManager> m_manager;
+	QLabel*                      m_pTopWidget;
+	QPoint                       m_areaDragStart;
+	bool                         m_areaDraggable;
+	bool                         m_tabDragCanStart;
+	bool                         m_areaDragCanStart;
+};

@@ -2,9 +2,13 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+#include <CrySandbox/CrySignal.h>
+#include <QVariant>
 #include <QWidget>
 
 class QToolButton;
+class QHBoxLayout;
+class QLineEdit;
 
 //! BreadcrumbsBar is typically used to display a path/address and enable the user to click on any part of the breadcrumb to go to that part of the path
 //! A typical use case is windows explorer's  address bar (win 7/10)

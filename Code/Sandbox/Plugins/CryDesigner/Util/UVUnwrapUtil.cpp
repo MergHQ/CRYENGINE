@@ -2,9 +2,8 @@
 
 #include "StdAfx.h"
 #include "UVUnwrapUtil.h"
-#include "Core/Model.h"
-#include "Util/ElementSet.h"
-#include "DesignerEditor.h"
+
+#include "Core/Helper.h"
 #include "DesignerSession.h"
 
 namespace Designer {
@@ -157,9 +156,6 @@ bool Project(const CCamera& camera, const Vec3& p, Vec3& outPos)
 	int pViewport[4] = { 0, 0, camera.GetViewSurfaceX(), camera.GetViewSurfaceZ() };
 
 	transformed = Vec4(p, 1) * mView;
-
-	bool visible = transformed.z < 0.0f;
-
 	projected = transformed * mProj;
 
 	if (projected.w == 0.0f)
@@ -413,4 +409,3 @@ void MakeUVIslandsFromSelectedElements(std::vector<UVIslandPtr>& outUVIslands)
 }
 }
 }
-

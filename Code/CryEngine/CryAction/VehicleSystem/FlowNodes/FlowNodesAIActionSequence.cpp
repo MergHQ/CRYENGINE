@@ -254,7 +254,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 
 			m_vehicleSeatEnterPosition = pEnterHelper->GetWorldSpaceTranslation();
 
-			assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			CRY_ASSERT(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
 			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 
 			// if it's the player, have him enter quickly (we assume that the user moved him close enough to the vehicle)
@@ -262,7 +262,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 			{
 				EnterVehicleSeat(true, pSeat);
 			}
-			else if (m_actInfo.pEntity->GetAI())
+			else if (m_actInfo.pEntity->HasAI())
 			{
 				if (m_fast)
 				{
@@ -291,7 +291,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(0, "no compatible entity was provided");
+				CRY_ASSERT(0, "no compatible entity was provided");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s failed to enter vehicle (no compatible entity was provided)", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 			}
@@ -302,7 +302,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 		{
 			if (m_movementRequestID)
 			{
-				gEnv->pAISystem->GetMovementSystem()->CancelRequest(m_movementRequestID);
+				gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestID);
 				m_movementRequestID = MovementRequestID::Invalid();
 				UnregisterFromVehicleEvent(NULL);
 			}
@@ -313,7 +313,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 
 IEntity* CFlowNode_AISequenceAction_ApproachAndEnterVehicle::GetEntity()
 {
-	assert(gEnv && gEnv->pEntitySystem);
+	CRY_ASSERT(gEnv && gEnv->pEntitySystem);
 	return gEnv->pEntitySystem->GetEntity(m_entityId);
 }
 
@@ -322,7 +322,7 @@ IVehicle* CFlowNode_AISequenceAction_ApproachAndEnterVehicle::GetVehicle(bool al
 	if (!m_vehicleId)
 		return NULL;
 
-	assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIVehicleSystem());
+	CRY_ASSERT(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIVehicleSystem());
 	IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if (!pVehicle)
 		return NULL;
@@ -356,7 +356,7 @@ bool CFlowNode_AISequenceAction_ApproachAndEnterVehicle::GetAnimationTransitionE
 
 void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::MovementRequestCallback(const MovementRequestResult& result)
 {
-	assert(m_movementRequestID == result.requestID);
+	CRY_ASSERT(m_movementRequestID == result.requestID);
 
 	switch (result.result)
 	{
@@ -572,13 +572,13 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 				return;
 			}
 
-			assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			CRY_ASSERT(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
 			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 
 			// ensure the FG entity is an IActor
 			if (!pActor)
 			{
-				CRY_ASSERT_MESSAGE(0, "no compatible entity was provided");
+				CRY_ASSERT(0, "no compatible entity was provided");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s failed to enter vehicle (no compatible entity was provided)", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -588,7 +588,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 			IVehicle* pVehicle = pActor->GetLinkedVehicle();
 			if (!pVehicle)
 			{
-				CRY_ASSERT_MESSAGE(0, "agent is not linked to a vehicle");
+				CRY_ASSERT(0, "agent is not linked to a vehicle");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s is not linked to a vehicle", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -598,7 +598,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 			CVehicleSeat* pSeat = static_cast<CVehicleSeat*>(pVehicle->GetSeatForPassenger(m_actInfo.pEntity->GetId()));
 			if (!pSeat)
 			{
-				CRY_ASSERT_MESSAGE(0, "agent is not sitting in the vehicle it is linked to");
+				CRY_ASSERT(0, "agent is not sitting in the vehicle it is linked to");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s is not sitting in the vehicle it is linked to", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -618,7 +618,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 			// ensure the vehicle-seat provided the correct action
 			if (!m_pActionRotateTurret)
 			{
-				CRY_ASSERT_MESSAGE(0, "a CVehicleSeatActionRotateTurret is not provided by the vehicle or someone else in the vehicle has reserved that action already.");
+				CRY_ASSERT(0, "a CVehicleSeatActionRotateTurret is not provided by the vehicle or someone else in the vehicle has reserved that action already.");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s could not find a CVehicleSeatActionRotateTurret or that action is already reserved by someone else", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;

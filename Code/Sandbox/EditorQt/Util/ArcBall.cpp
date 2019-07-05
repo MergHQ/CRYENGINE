@@ -1,8 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include <CryRenderer/IRenderAuxGeom.h>
 #include "arcball.h"
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryMath/Cry_Camera.h>
 
 bool CArcBall3D::ArcControl(const Matrix34& reference, const Ray& ray, uint32 mouseleft)
 {
@@ -688,4 +689,3 @@ void CArcBall3D::DrawSphere(const Matrix34& reference, const CCamera& cam, IRend
 	renderFlags.SetDepthWriteFlag(e_DepthWriteOn);
 	pRenderer->SetRenderFlags(renderFlags);
 }
-

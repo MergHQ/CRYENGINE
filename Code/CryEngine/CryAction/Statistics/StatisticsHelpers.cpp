@@ -366,7 +366,7 @@ CStatsTracker* CGameScopes::PushGameScope(size_t scopeID, uint32 timestamp, CGam
 
 	// Check that same scope isn't already on the stack
 	size_t pos = FindScopePos(scopeID);
-	CRY_ASSERT_MESSAGE(pos == m_scopeStack.size(), "Same scope can't be pushed twice");
+	CRY_ASSERT(pos == m_scopeStack.size(), "Same scope can't be pushed twice");
 	if (pos != m_scopeStack.size())
 		return 0;
 

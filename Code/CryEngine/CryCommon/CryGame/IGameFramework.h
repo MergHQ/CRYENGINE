@@ -9,24 +9,62 @@
 #include <CryLobby/CommonICryMatchMaking.h>
 #include <CryNetwork/INetwork.h>
 
-struct pe_explosion;
-struct IPhysicalEntity;
 struct EventPhysRemoveEntityParts;
+struct IActionMapManager;
+struct IActor;
+struct IActorSystem;
+struct IAnimationGraphState;
+struct IAnimationStateNodeFactory;
+struct ICheckpointSystem;
 struct ICombatLog;
-struct IAIActorProxy;
-struct ICooperativeAnimationManager;
-struct IGameSessionHandler;
-struct IRealtimeRemoteUpdate;
-struct IForceFeedbackSystem;
 struct ICommunicationVoiceLibrary;
+struct ICooperativeAnimationManager;
 struct ICustomActionManager;
 struct ICustomEventManager;
-struct ISerializeHelper;
-struct IGameVolumes;
+struct IDebrisMgr;
+struct IDebugHistoryManager;
+struct IEffectSystem;
+struct IFlowSystem;
+struct IForceFeedbackSystem;
 struct IGame;
-struct IGameServerNub;
+struct IGameChannel;
 struct IGameClientNub;
+struct IGameObject;
+struct IGameObjectExtension;
+struct IGameObjectSystem;
+struct IGameplayRecorder;
+struct IGameRules;
+struct IGameRulesSystem;
+struct IGameServerNub;
+struct IGameSessionHandler;
+struct IGameStatistics;
+struct IGameToEditorInterface;
+struct IGameTokenSystem;
+struct IGameVolumes;
+struct IItem;
+struct IItemSystem;
+struct ILanQueryListener;
+struct ILevelSystem;
+struct ILoadGame;
+struct IMannequin;
+struct IMaterialEffects;
+struct INetChannel;
+struct INetNub;
 struct INetworkedClientListener;
+struct IPhysicalEntity;
+struct IPlayerProfileManager;
+struct IRealtimeRemoteUpdate;
+struct ISaveGame;
+struct IScriptTable;
+struct ISerializeHelper;
+struct ISystem;
+struct ITimeDemoRecorder;
+struct IUIDraw;
+struct IVehicle;
+struct IVehicleSystem;
+struct IViewSystem;
+struct IWeapon;
+struct pe_explosion;
 
 //! Define to control the logging of breakability code.
 #define BREAK_LOGGING 0
@@ -96,51 +134,6 @@ struct IGameObjectExtensionCreatorBase
     RegisterFactory(name, &creator, isAI);                                              \
   }
 
-struct ISystem;
-struct IUIDraw;
-struct ILanQueryListener;
-struct IActor;
-struct IActorSystem;
-struct IItem;
-struct IGameRules;
-struct IWeapon;
-struct IItemSystem;
-struct ILevelSystem;
-struct IActionMapManager;
-struct IGameChannel;
-struct IViewSystem;
-struct IVehicle;
-struct IVehicleSystem;
-struct IGameRulesSystem;
-struct IFlowSystem;
-struct IGameTokenSystem;
-struct IEffectSystem;
-struct IGameObject;
-struct IGameObjectExtension;
-struct IGameObjectSystem;
-struct IGameplayRecorder;
-struct IAnimationStateNodeFactory;
-struct ISaveGame;
-struct ILoadGame;
-struct IGameObject;
-struct IMaterialEffects;
-struct INetChannel;
-struct IPlayerProfileManager;
-struct IAnimationGraphState;
-struct INetNub;
-struct ISaveGame;
-struct ILoadGame;
-struct IDebugHistoryManager;
-struct IDebrisMgr;
-struct ISubtitleManager;
-struct IDialogSystem;
-struct IGameStatistics;
-struct ICheckpointSystem;
-struct IGameToEditorInterface;
-struct IMannequin;
-struct IScriptTable;
-struct ITimeDemoRecorder;
-
 struct SEntitySchedulingProfiles
 {
 	uint32 normal;
@@ -192,7 +185,7 @@ enum ELoadGameResult
 	eLGR_CantQuick_NeedFullLoad
 };
 
-static const EntityId LOCAL_PLAYER_ENTITY_ID = 0x7777u; //!< 30583 between static and dynamic EntityIDs.
+static const EntityId LOCAL_PLAYER_ENTITY_ID = 2;
 
 struct SGameContextParams
 {
@@ -520,6 +513,7 @@ enum EActionEvent
 	eAE_resetBegin,
 	eAE_resetEnd,
 	eAE_resetProgress,
+	eAE_resetLoadedLevel,    //!< m_value -> 1 if loading new level, 0 otherwise
 	eAE_preSaveGame,         //!< m_value -> ESaveGameReason.
 	eAE_postSaveGame,        //!< m_value -> ESaveGameReason, m_description: 0 (failed), != 0 (successful).
 	eAE_inGame,
@@ -589,6 +583,14 @@ struct IBreakEventListener
 struct IGameFrameworkEngineModule : public Cry::IDefaultModule
 {
 	CRYINTERFACE_DECLARE_GUID(IGameFrameworkEngineModule, "CE1E93CB-2665-4F76-809D-070F11418EB9"_cry_guid);
+};
+
+struct IGameLevelLoadListener
+{
+	virtual ~IGameLevelLoadListener(){}
+	virtual EContextEstablishTaskResult OnLoadingStepClient(EContextViewState currentState) = 0;
+	virtual EContextEstablishTaskResult OnLoadingStepServer(EContextViewState currentState, uint16 channelId) = 0;
+	virtual void OnLoadingFailed(bool server, bool hasEntered) = 0;
 };
 
 //! Interface which exposes the CryAction subsystems.
@@ -722,17 +724,9 @@ struct IGameFramework
 	//! \return Pointer to IMaterialEffects interface.
 	virtual IMaterialEffects* GetIMaterialEffects() = 0;
 
-	//! Returns a pointer to the IDialogSystem interface
-	//! \return Pointer to IDialogSystem interface.
-	virtual IDialogSystem* GetIDialogSystem() = 0;
-
 	//! Returns a pointer to the IPlayerProfileManager interface.
 	//! \return Pointer to IPlayerProfileManager interface.
 	virtual IPlayerProfileManager* GetIPlayerProfileManager() = 0;
-
-	//! Returns a pointer to the ISubtitleManager interface.
-	//! \return Pointer to ISubtitleManager interface.
-	virtual ISubtitleManager* GetISubtitleManager() = 0;
 
 	//! Returns a pointer to the IRealtimeUpdate Interface.
 	virtual IRealtimeRemoteUpdate* GetIRealTimeRemoteUpdate() = 0;
@@ -878,6 +872,10 @@ struct IGameFramework
 
 	//! Retrieve pointer to the ITimeDemoRecorder (or NULL)
 	virtual ITimeDemoRecorder* GetITimeDemoRecorder() const = 0;
+
+	//! Set different implementation of ITimeDemoRecorder. IGameFramework doesn't assume ownership over the object.
+	//! \return Previous implementation of ITimeDemoRecorder
+	virtual ITimeDemoRecorder* SetITimeDemoRecorder(ITimeDemoRecorder* pRecorder) = 0;
 
 	//! Save the current game to disk
 	virtual bool SaveGame(const char* path, bool quick = false, bool bForceImmediate = true, ESaveGameReason reason = eSGR_QuickSave, bool ignoreDelay = false, const char* checkPoint = NULL) = 0;
@@ -1032,23 +1030,30 @@ struct IGameFramework
 		return cryinterface_cast<ExtensionInterface>(QueryExtensionInterfaceById(interfaceId)).get();
 	}
 
+	// sets game level loader
+	virtual void SetGameLevelLoadListener(IGameLevelLoadListener* pTasks) = 0;
+	virtual IGameLevelLoadListener* GetGameLevelLoadListener() const = 0;
+
+
 	virtual void AddNetworkedClientListener(INetworkedClientListener& listener) = 0;
 	virtual void RemoveNetworkedClientListener(INetworkedClientListener& listener) = 0;
 
 	virtual void DoInvokeRMI(_smart_ptr<IRMIMessageBody> pBody, unsigned where, int channel, const bool isGameObjectRmi) = 0;
 
-protected:
+	virtual void OnActionEvent(const SActionEvent& ev) = 0;
+
 	//! Retrieves an extension interface by interface id.
 	//! Internal, client uses 'QueryExtension<ExtensionInterface>()
 	//! \param interfaceID Interface id.
 	virtual ICryUnknownPtr QueryExtensionInterfaceById(const CryInterfaceID& interfaceID) const = 0;
+
+	virtual IScriptTable* GetActionScriptBindTable() = 0;
 
 	// </interfuscator:shuffle>
 };
 
 ILINE bool IsDemoPlayback()
 {
-	ISystem* pSystem = GetISystem();
 	INetContext* pNetContext = gEnv->pGameFramework->GetNetContext();
 	return pNetContext ? pNetContext->IsDemoPlayback() : false;
 }

@@ -25,26 +25,35 @@
 #include <CrySystem/XML/IXml.h>
 
 // Forward declarations.
-struct ISystem;
-struct IEntitySystem;
+class CEntity;
 class ICrySizer;
-struct IEntity;
-struct SpawnParams;
-struct IPhysicalEntity;
-struct IBreakEventListener;
-struct SRenderNodeCloneLookup;
+
 struct EventPhysRemoveEntityParts;
 struct IBreakableManager;
+struct IBreakEventListener;
+struct IEntity;
+struct IEntitySystem;
+struct IPhysicalEntity;
+struct ISystem;
 struct SComponentRegisteredEvents;
-class CEntity;
+struct SpawnParams;
+struct SRenderNodeCloneLookup;
+
+namespace Cry {
+namespace Entity {
+
+struct IReflectionRegistry;
+
+} // ~Entity namespace
+} // ~Cry namespace
 
 //! SpecType for entity layers.
 //! Add new bits to update. Do not just rename, cause values are used for saving levels.
-enum ESpecType
+enum ESpecType : uint32
 {
-	eSpecType_PC      = BIT(0),
-	eSpecType_XBoxOne = BIT(1),
-	eSpecType_PS4     = BIT(2),
+	eSpecType_PC      = BIT32(0),
+	eSpecType_XBoxOne = BIT32(1),
+	eSpecType_PS4     = BIT32(2),
 	eSpecType_All     = eSpecType_PC | eSpecType_XBoxOne | eSpecType_PS4
 };
 
@@ -216,7 +225,7 @@ struct IEntitySystemSink
 
 	//! Collect memory informations
 	//! \param pSizer Sizer class used to collect the memory informations.
-	virtual void GetMemoryUsage(class ICrySizer* pSizer) const {};
+	virtual void GetMemoryUsage(class ICrySizer* pSizer) const {}
 	// </interfuscator:shuffle>
 };
 
@@ -262,14 +271,14 @@ struct IEntityLayerSetUpdateListener
 {
 	virtual void LayerEnablingEvent(const char* szLayerName, bool bEnabled, bool bSerialized) = 0;
 protected:
-	~IEntityLayerSetUpdateListener() {}
+	virtual ~IEntityLayerSetUpdateListener() {}
 };
 
 struct IEntityLayerListener
 {
 	virtual void LayerEnabled(bool bActivated) = 0;
 protected:
-	~IEntityLayerListener() {}
+	virtual ~IEntityLayerListener() {}
 };
 
 //! Structure used by proximity query in entity system.
@@ -319,6 +328,7 @@ struct IEntitySystem
 		AllSinkEvents = ~0u,
 	};
 
+#ifndef RELEASE
 	//! Determines the state of simulation in the Editor, see OnEditorSimulationModeChanged
 	enum class EEditorSimulationMode
 	{
@@ -329,6 +339,7 @@ struct IEntitySystem
 		// Entities are being simulated without player being active
 		Simulation
 	};
+#endif
 
 	// <interfuscator:shuffle>
 	virtual ~IEntitySystem(){}
@@ -357,6 +368,10 @@ struct IEntitySystem
 	//! \return Pointer to the valid entity class registry interface.
 	virtual IEntityClassRegistry* GetClassRegistry() = 0;
 
+	//! Retrieves the new entity reflection registry interface.
+	//! \return Pointer to the valid entity reflection registry interface.
+	virtual Cry::Entity::IReflectionRegistry* GetReflectionRegistry() const = 0;
+
 	//! Spawns a new entity according to the data in the Entity Descriptor.
 	//! \param params		Entity descriptor structure that describes what kind of entity needs to be spawned.
 	//! \param bAutoInit	If true, automatically initialize entity.
@@ -371,6 +386,7 @@ struct IEntitySystem
 	//! \param params  Entity descriptor structure that describes what kind of entity needs to be spawned.
 	//! \return true if successfully initialized entity.
 	virtual bool InitEntity(IEntity* pEntity, SEntitySpawnParams& params) = 0;
+
 	//! Retrieves entity from its unique id.
 	//! \param id Unique ID of the entity required.
 	//! \return Entity if one with such an ID exists, and NULL if no entity could be matched with the id
@@ -389,12 +405,13 @@ struct IEntitySystem
 	//! \param id Must not be 0.
 	virtual void ReserveEntityId(const EntityId id) = 0;
 
-	//! Reserves a dynamic entity id.
-	virtual EntityId ReserveUnknownEntityId() = 0;
+	//! Generates a new available entity id, and reserves it for usage.
+	//! Can be set to SEntitySpawnParams::id at a later point to spawn with the reserved identifier
+	virtual EntityId ReserveNewEntityId() = 0;
 
 	//! Removes an entity by ID.
 	//! \param entity          Id of the entity to be removed.
-	//! \param bForceRemoveNow If true, forces immediately delete of entity, overwise will delete entity on next update.
+	//! \param bForceRemoveNow If true, forces immediately delete of entity, otherwise will delete entity on next update.
 	virtual void RemoveEntity(EntityId entity, bool bForceRemoveNow = false) = 0;
 
 	//! \return Number of stored in entity system.
@@ -410,8 +427,10 @@ struct IEntitySystem
 	//! \param event Event to send.
 	virtual void SendEventToAll(SEntityEvent& event) = 0;
 
+#ifndef RELEASE
 	//! Sent when game mode in Editor is changed
 	virtual void OnEditorSimulationModeChanged(EEditorSimulationMode mode) = 0;
+#endif
 
 	//! Sent after the level has finished loading
 	virtual void OnLevelLoaded() = 0;
@@ -557,6 +576,9 @@ struct IEntitySystem
 	//! Enable entity layers specified in the layer set and hide all other known layers.
 	virtual void EnableLayerSet(const char* const* pLayers, size_t layerCount, bool isSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) = 0;
 
+	//! Enable entity layers specified in the layer set and hide all other known layers from its accompanying scope.
+	virtual void EnableScopedLayerSet(const char* const* pLayers, size_t layerCount, const char* const* pScopeLayers, size_t scopeLayerCount, bool isSerialized = true, IEntityLayerSetUpdateListener* pListener = nullptr) = 0;
+
 	//! Find a layer with a given name.
 	virtual IEntityLayer* FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const = 0;
 
@@ -603,6 +625,23 @@ struct IEntitySystem
 
 	virtual IBSPTree3D* CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) = 0;
 	virtual void        ReleaseBSPTree3D(IBSPTree3D*& pTree) = 0;
+
+#if MaximumEntityCount <= UINT16_MAX
+	//! Represents a unique identifier for a static entity loaded from disk
+	//! Used to quickly identify static entities over the network, instead of needing to send over long GUIDs
+	using StaticEntityNetworkIdentifier = uint16;
+#else
+	using StaticEntityNetworkIdentifier = uint32;
+#endif
+
+#ifndef PURE_CLIENT
+	//! Queries a static entities unique network identifier
+	//! Only to be called from the server in order to send the network id to clients
+	virtual StaticEntityNetworkIdentifier GetStaticEntityNetworkId(EntityId id) const = 0;
+#endif
+
+	//! Queries an entity identifier from its static entity network id, most likely sent by the server
+	virtual EntityId GetEntityIdFromStaticEntityNetworkId(StaticEntityNetworkIdentifier id) const = 0;
 	// </interfuscator:shuffle>
 
 	//! Registers Entity Event's listeners.

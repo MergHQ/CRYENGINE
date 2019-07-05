@@ -1,8 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
 #include "UserGeneratedContent.h"
-
-#include "SteamPlatform.h"
+#include "SteamService.h"
 
 namespace Cry
 {
@@ -10,8 +11,9 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CUserGeneratedContent::CUserGeneratedContent(ApplicationIdentifier appId, IUserGeneratedContent::Identifier id)
-				: m_appId(appId)
+			CUserGeneratedContent::CUserGeneratedContent(CService& steamService, AppId_t appId, IUserGeneratedContent::Identifier id)
+				: m_service(steamService)
+				, m_appId(appId)
 				, m_id(id)
 				, m_updateHandle(0)
 			{
@@ -110,8 +112,6 @@ namespace Cry
 				SteamAPICall_t result = pSteamUGC->SubmitItemUpdate(m_updateHandle, changeNote);;
 				m_callResultContentUpdated.Set(result, this, &CUserGeneratedContent::OnContentUpdated);
 
-				CPlugin::GetInstance()->SetAwaitingCallback(1);
-
 				m_updateHandle = 0;
 			}
 
@@ -132,8 +132,6 @@ namespace Cry
 					}
 					break;
 				}
-
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
 			}
 		}
 	}

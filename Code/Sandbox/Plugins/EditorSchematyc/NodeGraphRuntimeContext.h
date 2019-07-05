@@ -114,6 +114,7 @@ public:
 
 	// CAbstractDictionary
 	virtual void                            ClearEntries() override;
+	virtual void                            ResetEntries() override;
 	virtual int32                           GetNumEntries() const override { return m_categories.size() + m_nodes.size(); }
 	virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override;
 
@@ -129,6 +130,7 @@ public:
 	void SetStyle(const CryGraphEditor::CNodeGraphViewStyle* pStyle) { m_pStyle = pStyle; }
 
 private:
+	Schematyc::IScriptGraph*                    m_scriptGraph;
 	const CryGraphEditor::CNodeGraphViewStyle*  m_pStyle;
 	std::vector<CNodesDictionaryCategoryEntry*> m_categories;
 	std::vector<CNodesDictionaryNodeEntry*>     m_nodes;
@@ -143,7 +145,7 @@ public:
 	~CNodeGraphRuntimeContext();
 
 	// CryGraphEditor::INodeGraphRuntimeContext
-	virtual const char*                                GetTypeName() const override { return "Schematyc_Graph"; };
+	virtual const char*                                GetTypeName() const override { return "Schematyc_Graph"; }
 	virtual CAbstractDictionary*                       GetAvailableNodesDictionary() override;
 
 	virtual const CryGraphEditor::CNodeGraphViewStyle* GetStyle() const override { return m_pStyle; }
@@ -156,4 +158,3 @@ private:
 };
 
 }
-

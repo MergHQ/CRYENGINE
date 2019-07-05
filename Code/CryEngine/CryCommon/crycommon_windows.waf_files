@@ -1,28 +1,35 @@
 {
-  "NoUberFile":{
-    "CryAssert":[
-      "CryAssert/CryAssert_Windows.h"
-    ],
-    "CryCore":[
-      {
-        "Platform":[
-          "CryCore/Platform/CryPlatform.Win32.h",
-          "CryCore/Platform/CryPlatform.Win64.h",
-          "CryCore/Platform/Win32specific.h",
-          "CryCore/Platform/Win64specific.h"
+    "NoUberFile": {
+        "CryAssert": [
+            "CryAssert/CryAssert_Windows.h"
+        ], 
+        "CryCore": [], 
+        "CryCore/Platform": [
+            "CryCore/Platform/CryPlatform.Win32.h", 
+            "CryCore/Platform/CryPlatform.Win64.h", 
+            "CryCore/Platform/Win32specific.h", 
+            "CryCore/Platform/Win64specific.h", 
+            "CryCore/Platform/platform_impl_winapi.inl"
+        ], 
+        "CryEntitySystem": [
+            "CryEntitySystem/IEntityBasicTypes.h", 
+            "CryEntitySystem/IEntityComponent.h", 
+            "CryEntitySystem/IEntitySystem.h", 
+            "CryEntitySystem/IEntity.h", 
+            "CryEntitySystem/IEntityClass.h", 
+            "CryEntitySystem/IEntityLayer.h", 
+            "CryEntitySystem/IEntitySerialize.h", 
+            "CryEntitySystem/EntityDesc.h", 
+            "CryEntitySystem/IBitStream.h", 
+            "CryEntitySystem/IBreakableManager.h", 
+            "CryEntitySystem/IBreakableGlassSystem.h", 
+            "CryEntitySystem/IReflectionRegistry.h", 
+            "CryEntitySystem/TypeExtension.h"
+        ], 
+        "CrySystem": [], 
+        "CrySystem/Profilers": [], 
+        "CrySystem/Profilers/FrameProfiler": [
+            "CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.pc.h"
         ]
-      }
-    ],
-    "CrySystem":[
-      {
-        "Profilers":[
-          {
-            "FrameProfiler":[
-              "CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.pc.h"
-            ]
-          }
-        ]
-      }
-    ]
-  }
+    }
 }

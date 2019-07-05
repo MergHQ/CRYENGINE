@@ -2,9 +2,12 @@
 
 #include <StdAfx.h>
 #include "FolderTreeCtrl.h"
+
 #include "Controls/DynamicPopupMenu.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "Util/MFCUtil.h"
+#include <Util/FileEnum.h>
+#include <Util/FileUtil.h>
 
 IMPLEMENT_DYNAMIC(CFolderTreeCtrl, CTreeCtrl)
 
@@ -194,7 +197,7 @@ void CFolderTreeCtrl::AddItem(const CString& path)
 	if (PathMatchSpec(path, m_fileNameSpec) && !GetItem(path))
 	{
 		CTreeItem* folderTreeItem = CreateFolderItems(folder.c_str());
-		CTreeItem* fileTreeItem = folderTreeItem->AddChild(fileNameWithoutExtension.c_str(), path, eTreeImage_File);
+		folderTreeItem->AddChild(fileNameWithoutExtension.c_str(), path, eTreeImage_File);
 	}
 }
 
@@ -364,4 +367,3 @@ void CFolderTreeCtrl::CTreeItem::RemoveChild(CTreeItem* item)
 	if (findIter != m_children.end())
 		m_children.erase(findIter);
 }
-

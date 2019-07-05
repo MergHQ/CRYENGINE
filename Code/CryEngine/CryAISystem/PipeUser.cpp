@@ -94,9 +94,6 @@ CPipeUser::CPipeUser()
 
 	// (MATT) SetName could be called to ensure we're consistent, rather than the code above {2009/02/03}
 
-	m_CurrentHideObject.m_HideSmartObject.pChainedUserEvent = NULL;
-	m_CurrentHideObject.m_HideSmartObject.pChainedObjectEvent = NULL;
-
 	m_callbacksForPipeuser.queuePathRequestFunction = functor(*this, &CPipeUser::RequestPathTo);
 	m_callbacksForPipeuser.checkOnPathfinderStateFunction = functor(*this, &CPipeUser::GetPathfinderState);
 	m_callbacksForPipeuser.getPathFollowerFunction = functor(*this, &CPipeUser::GetPathFollower);
@@ -133,7 +130,7 @@ CPipeUser::~CPipeUser(void)
 
 	gAIEnv.pMovementSystem->UnregisterEntity(GetEntityID());
 
-	if (m_pCoverUser)
+	if (m_pCoverUser && gAIEnv.pCoverSystem)
 	{
 		gAIEnv.pCoverSystem->UnregisterEntity(GetEntityID());
 	}
@@ -264,14 +261,11 @@ void CPipeUser::Reset(EObjectResetType type)
 	m_CurrentNodeNavType = IAISystem::NAV_UNSET;
 	m_idLastUsedSmartObject = 0;
 
-	m_CurrentHideObject.m_HideSmartObject.Clear();
 	m_bFirstUpdate = true;
 
 	m_lastLiveTargetPos.zero();
 	m_timeSinceLastLiveTarget = -1.0f;
 	m_spreadFireTime = 0.0f;
-
-	m_recentUnreachableHideObjects.clear();
 
 	m_bPathToFollowIsSpline = false;
 
@@ -310,8 +304,13 @@ void CPipeUser::Reset(EObjectResetType type)
 		params.fillCoverEyesCustomMethod = functor(*this, &CPipeUser::FillCoverEyes);
 		params.activeCoverInvalidateCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
 		params.activeCoverCompromisedCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
-		m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(GetEntityID(), params);
-		m_pCoverUser->Reset();
+
+		if (gAIEnv.pCoverSystem)
+		{
+			m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(GetEntityID(), params);
+			m_pCoverUser->Reset();
+		}
+
 		break;
 	}
 	case AIOBJRESET_SHUTDOWN:
@@ -406,26 +405,13 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 		}
 		break;
 	case IF_IS_HIDDEN:  // branch if already at hide spot
-		{
-			if (!m_CurrentHideObject.IsValid())
-				return false;
-			Vec3 diff(m_CurrentHideObject.GetLastHidePos() - GetPos());
-			diff.z = 0.f;
-			if (diff.len2() < Goal.params.fValue * Goal.params.fValue)
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_CAN_HIDE: // branch if hide spot was found
-		{
-			if (m_CurrentHideObject.IsValid())
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_CANNOT_HIDE:
-		{
-			if (!m_CurrentHideObject.IsValid())
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_STANCE_IS:  // branch if stance is equal to params.fValue
 		{
@@ -654,16 +640,12 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 	case IF_COVER_NOT_COMPROMISED:  // jumps if the current cover cannot be used for hiding or if the hide spots does not exists.
 		{
 			CCCPOINT(CPipeUser_GetBranchCondition_IF_COVER_COMPROMISED);
-			bool bCompromised = true;
-			if (pAttentionTarget)
-				bCompromised = m_CurrentHideObject.IsCompromised(this, pAttentionTarget->GetPos());
-
-			bool bResult = bCompromised;
+			// Hide object not supported anymore
+			bool bResult = false;
 			if (Goal.params.nValue == IF_COVER_NOT_COMPROMISED)
 				bResult = !bResult;
 
-			if (bResult)
-				return true;
+			return bResult;
 		}
 		break;
 	case IF_COVER_FIRE_ENABLED: // branch if cover firemode is  enabled
@@ -674,20 +656,10 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 		}
 		break;
 	case IF_COVER_SOFT:
-		{
-			bool isEmptyCover = m_CurrentHideObject.IsCoverPathComplete() && m_CurrentHideObject.GetCoverWidth(true) < 0.1f;
-			bool soft = !m_CurrentHideObject.IsObjectCollidable() || isEmptyCover;
-			if (soft)
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 	case IF_COVER_NOT_SOFT:
-		{
-			bool isEmptyCover = m_CurrentHideObject.IsCoverPathComplete() && m_CurrentHideObject.GetCoverWidth(true) < 0.1f;
-			bool soft = !m_CurrentHideObject.IsObjectCollidable() || isEmptyCover;
-			if (soft)
-				return true;
-		}
+		// Hide object not supported anymore
 		break;
 
 	case IF_LASTOP_FAILED:
@@ -744,8 +716,7 @@ bool CPipeUser::GetBranchCondition(QGoal& Goal)
 		break;
 
 	case IF_ACTIVE_GOALS_HIDE:
-		if (!m_vActiveGoals.empty() || !m_CurrentHideObject.IsValid())
-			return true;
+		// Hide object not supported anymore
 		break;
 
 	default://IF_ACTIVE_GOALS
@@ -801,14 +772,6 @@ void CPipeUser::Update(EUpdateType type)
 
 	if (type == EUpdateType::Full)
 	{
-		if (m_CurrentHideObject.IsValid())
-		{
-			m_CurrentHideObject.Update(this);
-
-			if (pAttentionTarget && m_CurrentHideObject.IsCompromised(this, pAttentionTarget->GetPos()))
-				SetCoverCompromised();
-		}
-
 		// Update some special objects if they have been recently used.
 
 		Vec3 vProbTargetPos = ZERO;
@@ -943,7 +906,7 @@ void CPipeUser::Update(EUpdateType type)
 				// keep track of last used smart object
 				m_idLastUsedSmartObject = m_currentNavSOStates.objectEntId;
 
-				SetSignal(1, "OnEnterNavSO");
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnterNavSO()));
 			}
 		}
 
@@ -958,7 +921,7 @@ void CPipeUser::Update(EUpdateType type)
 			m_currentNavSOStates.Clear();
 			m_eNavSOMethod = nSOmNone;
 
-			SetSignal(1, "OnLeaveNavSO");
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaveNavSO()));
 		}
 	}
 
@@ -1080,7 +1043,7 @@ void CPipeUser::SetCoverState(const ICoverUser::StateFlags& state)
 		CRY_ASSERT(currentState.Check(ICoverUser::EStateFlags::MovingToCover));
 		if (!currentState.Check(ICoverUser::EStateFlags::InCover))
 		{
-			SetSignal(1, "OnEnterCover", 0, 0, gAIEnv.SignalCRCs.m_nOnEnterCover);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnterCover()));
 		}
 	}
 	else if (state.Check(ICoverUser::EStateFlags::MovingToCover))
@@ -1088,10 +1051,10 @@ void CPipeUser::SetCoverState(const ICoverUser::StateFlags& state)
 		CRY_ASSERT(!currentState.Check(ICoverUser::EStateFlags::InCover));
 		if (!currentState.Check(ICoverUser::EStateFlags::MovingToCover))
 		{
-			SetSignal(1, "OnMovingToCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingToCover);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMovingToCover()));
 			if (state.Check(ICoverUser::EStateFlags::InCover))
 			{
-				SetSignal(1, "OnMovingInCover", 0, 0, gAIEnv.SignalCRCs.m_nOnMovingInCover);
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMovingInCover()));
 			}
 		}
 	}
@@ -1101,7 +1064,7 @@ void CPipeUser::SetCoverState(const ICoverUser::StateFlags& state)
 		{
 			SetCoverID(CoverID());
 			ResetBodyTargetDir();
-			SetSignal(1, "OnLeaveCover", 0, 0, gAIEnv.SignalCRCs.m_nOnLeaveCover);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaveCover()));
 		}
 	}
 }
@@ -1156,7 +1119,7 @@ void CPipeUser::SetCoverCompromised()
 
 	if (!m_pCoverUser->GetState().IsEmpty())
 	{
-		SetSignal(1, "OnCoverCompromised", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverCompromised);
+		SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCoverCompromised()));
 
 		if (CoverID coverID = m_pCoverUser->GetCoverID())
 			SetCoverBlacklisted(coverID, true, 10.0f);
@@ -1173,7 +1136,7 @@ void CPipeUser::SetCoverInvalidated(CoverID coverID, ICoverUser* pCoverUser)
 	if (!m_pCoverUser)
 		return;
 	
-	SetSignal(1, "OnCoverCompromised", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverCompromised);
+	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCoverCompromised()));
 
 	SetCoverState(ICoverUser::EStateFlags::None);
 
@@ -1193,21 +1156,11 @@ void CPipeUser::SetCoverInvalidated(CoverID coverID, ICoverUser* pCoverUser)
 //---------------------------------------------------------------------------------------------------------
 bool CPipeUser::IsCoverCompromised() const
 {
-	if (gAIEnv.CVars.CoverSystem)
+	if (gAIEnv.CVars.legacyCoverSystem.CoverSystem)
 	{
 		return m_pCoverUser ? m_pCoverUser->IsCompromised() : false;
 	}
-	else
-	{
-		CAIObject* pAttentionTarget = m_refAttentionTarget.GetAIObject();
-		if (!pAttentionTarget)
-			return false;
-
-		if (m_CurrentHideObject.IsValid())
-			return m_CurrentHideObject.IsCompromised(this, pAttentionTarget->GetPos());
-
-		return true;
-	}
+	return true;
 }
 
 //
@@ -1319,13 +1272,13 @@ void CPipeUser::FillCoverEyes(DynArray<Vec3>& eyesContainer)
 	if (!pTarget || eyesContainer.size() >= kMaxEyesCount)
 		return;
 
-	const bool prediction = gAIEnv.CVars.CoverPredictTarget > 0.001f;
+	const bool prediction = gAIEnv.CVars.legacyCoverSystem.CoverPredictTarget > 0.001f;
 	const float RangeThresholdSq = sqr(0.5f);
 
 	if (prediction && pTarget->IsAgent())
 	{
 		const Vec3 targetVelocity = pTarget->GetVelocity();
-		const Vec3 futureLocation = eyesContainer.back() + targetVelocity * gAIEnv.CVars.CoverPredictTarget;
+		const Vec3 futureLocation = eyesContainer.back() + targetVelocity * gAIEnv.CVars.legacyCoverSystem.CoverPredictTarget;
 
 		if (!HasPointInRangeSq(eyesContainer.data(), eyesContainer.size(), futureLocation, RangeThresholdSq))
 		{
@@ -1369,7 +1322,7 @@ void CPipeUser::FillCoverEyes(DynArray<Vec3>& eyesContainer)
 		if (prediction && nextTargetObject->IsAgent())
 		{
 			Vec3 targetVelocity = nextTargetObject->GetVelocity();
-			Vec3 futureLocation = eyesContainer.back() + targetVelocity * gAIEnv.CVars.CoverPredictTarget;
+			Vec3 futureLocation = eyesContainer.back() + targetVelocity * gAIEnv.CVars.legacyCoverSystem.CoverPredictTarget;
 
 			if (!HasPointInRangeSq(eyesContainer.data(), eyesContainer.size(), futureLocation, RangeThresholdSq))
 			{
@@ -2615,9 +2568,9 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 				if (!pObject)
 				{
 					// lets send a NoFormationPoint event
-					SetSignal(1, "OnNoFormationPoint", 0, 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+					SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 					if (pLeader)
-						pLeader->SetSignal(1, "OnNoFormationPoint", GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+						pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetEntityID()));
 				}
 			}
 
@@ -2663,7 +2616,7 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 			if (!pObject)
 			{
 				// lets send a NoFormationPoint event
-				SetSignal(1, "OnNoFormationPoint", 0, 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 			}
 		}
 
@@ -2677,23 +2630,15 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 		if (!pObject)
 		{
 			// lets send a NoFormationPoint event
-			SetSignal(1, "OnNoFormationPoint", 0, 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 			if (pLeader)
-				pLeader->SetSignal(1, "OnNoFormationPoint", GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnNoFormationPoint);
+				pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetEntityID()));
 		}
 	}
 	else if (strcmp(objName, "atttarget") == 0)
 	{
 		CAIObject* pAttentionTarget = m_refAttentionTarget.GetAIObject();
 		pObject = pAttentionTarget;
-	}
-	else if (strcmp(objName, "last_hideobject") == 0)
-	{
-		if (m_CurrentHideObject.IsValid())
-		{
-			pObject = GetOrCreateSpecialAIObject(AISPECIAL_LAST_HIDEOBJECT);
-			pObject->SetPos(m_CurrentHideObject.GetObjectPos());
-		}
 	}
 	else if (strcmp(objName, "lookat_target") == 0)
 	{
@@ -2960,9 +2905,6 @@ CAIObject* CPipeUser::GetOrCreateSpecialAIObject(ESpecialAIObjects type)
 	string name = GetName();
 	switch (type)
 	{
-	case AISPECIAL_LAST_HIDEOBJECT:
-		name += "_*LastHideObj";
-		break;
 	case AISPECIAL_PROBTARGET:
 		name += "_*ProbTgt";
 		break;
@@ -3072,8 +3014,6 @@ void CPipeUser::Serialize(TSerialize ser)
 
 	ser.Value("m_looseAttentionId", m_looseAttentionId);
 
-	m_CurrentHideObject.Serialize(ser);
-
 	ser.Value("m_nPathDecision", m_nPathDecision);
 	ser.Value("m_adjustpath", m_adjustpath);
 	ser.Value("m_IsSteering", m_IsSteering);
@@ -3179,34 +3119,6 @@ void CPipeUser::Serialize(TSerialize ser)
 	}
 	ser.Value("m_posLookAtSmartObject", m_posLookAtSmartObject);
 
-	ser.BeginGroup("UnreachableHideObjectList");
-	{
-		int count = m_recentUnreachableHideObjects.size();
-		ser.Value("UnreachableHideObjectList_size", count);
-		if (ser.IsReading())
-			m_recentUnreachableHideObjects.clear();
-		TimeOutVec3List::iterator it = m_recentUnreachableHideObjects.begin();
-		float time(0);
-		Vec3 point(0);
-		for (int i = 0; i < count; i++)
-		{
-			char name[32];
-			if (ser.IsWriting())
-			{
-				time = it->first;
-				point = it->second;
-				++it;
-			}
-			cry_sprintf(name, "time_%d", i);
-			ser.Value(name, time);
-			cry_sprintf(name, "point_%d", i);
-			ser.Value(name, point);
-			if (ser.IsReading())
-				m_recentUnreachableHideObjects.push_back(std::make_pair(time, point));
-		}
-		ser.EndGroup();
-	}
-
 	ser.EnumValue("m_eNavSOMethod", m_eNavSOMethod, nSOmNone, nSOmLast);
 	ser.Value("m_idLastUsedSmartObject", m_idLastUsedSmartObject);
 
@@ -3255,7 +3167,9 @@ void CPipeUser::PostSerialize()
 	params.userID = entityId;
 	params.activeCoverInvalidateCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
 	params.activeCoverCompromisedCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
-	m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(entityId, params);
+	
+	if (gAIEnv.pCoverSystem)
+		m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(entityId, params);
 }
 
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
@@ -3430,7 +3344,7 @@ void CPipeUser::DebugDrawGoals()
 //====================================================================
 void CPipeUser::SetPathToFollow(const char* pathName)
 {
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("CPipeUser::SetPathToFollow %s path = %s", GetName(), pathName);
 	m_pathToFollowName = pathName;
 	m_bPathToFollowIsSpline = false;
@@ -3446,7 +3360,7 @@ void CPipeUser::SetPathAttributeToFollow(bool bSpline)
 //===================================================================
 bool CPipeUser::GetPathEntryPoint(Vec3& entryPos, bool reverse, bool startNearest) const
 {
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("CPipeUser::GetPathEntryPoint %s path = %s", GetName(), m_pathToFollowName.c_str());
 
 	if (m_pathToFollowName.length() == 0)
@@ -3911,40 +3825,6 @@ void CPipeUser::SetRefPointPos(const Vec3& pos, const Vec3& dir)
 
 //
 //---------------------------------------------------------------------------------------------------------------------------
-void CPipeUser::IgnoreCurrentHideObject(float timeOut)
-{
-	const Vec3& pos(m_CurrentHideObject.GetObjectPos());
-
-	// Check if the object is already in the list (should not).
-	TimeOutVec3List::const_iterator end(m_recentUnreachableHideObjects.end());
-	for (TimeOutVec3List::const_iterator it = m_recentUnreachableHideObjects.begin(); it != end; ++it)
-	{
-		if (Distance::Point_PointSq(it->second, pos) < sqr(0.1f))
-			return;
-	}
-
-	// Add the object pos to the list.
-	m_recentUnreachableHideObjects.push_back(FloatVecPair(timeOut, pos));
-
-	while (m_recentUnreachableHideObjects.size() > 5)
-		m_recentUnreachableHideObjects.pop_front();
-}
-
-//
-//---------------------------------------------------------------------------------------------------------------------------
-bool CPipeUser::WasHideObjectRecentlyUnreachable(const Vec3& pos) const
-{
-	TimeOutVec3List::const_iterator end(m_recentUnreachableHideObjects.end());
-	for (TimeOutVec3List::const_iterator it = m_recentUnreachableHideObjects.begin(); it != end; ++it)
-	{
-		if (Distance::Point_PointSq(it->second, pos) < sqr(0.1f))
-			return true;
-	}
-	return false;
-}
-
-//
-//---------------------------------------------------------------------------------------------------------------------------
 int CPipeUser::SetLooseAttentionTarget(CWeakRef<CAIObject> refObject, int id)
 {
 
@@ -4097,7 +3977,7 @@ void CPipeUser::HandlePathDecision(MNMPathRequestResult& result)
 	{
 		result.pPath->CopyTo(&pNavPath);
 
-		if (gAIEnv.CVars.DebugPathFinding)
+		if (gAIEnv.CVars.LegacyDebugPathFinding)
 		{
 			const Vec3& vEnd = pNavPath.GetLastPathPos();
 			const Vec3& vStart = pNavPath.GetPrevPathPoint()->vPos;
@@ -4120,7 +4000,7 @@ void CPipeUser::HandlePathDecision(MNMPathRequestResult& result)
 		// while the actor target has been requested. This should not happen.
 		if (m_eNavSOMethod != nSOmNone && m_State.curActorTargetPhase == eATP_Waiting)
 		{
-			if (gAIEnv.CVars.DebugPathFinding)
+			if (gAIEnv.CVars.LegacyDebugPathFinding)
 			{
 				if (m_State.actorTargetReq.animation.empty())
 				{
@@ -4140,7 +4020,7 @@ void CPipeUser::HandlePathDecision(MNMPathRequestResult& result)
 		// Path regeneration should be inhibited while preparing for actor target.
 		if (GetActiveActorTargetRequest() && m_State.curActorTargetPhase == eATP_Waiting)
 		{
-			if (gAIEnv.CVars.DebugPathFinding)
+			if (gAIEnv.CVars.LegacyDebugPathFinding)
 			{
 				if (m_State.actorTargetReq.animation.empty())
 				{
@@ -4193,7 +4073,7 @@ void CPipeUser::HandlePathDecision(MNMPathRequestResult& result)
 	}
 	else
 	{
-		if (gAIEnv.CVars.DebugPathFinding)
+		if (gAIEnv.CVars.LegacyDebugPathFinding)
 		{
 			AILogAlways("CPipeUser::HandlePathDecision %s No path", GetName());
 		}
@@ -4241,7 +4121,7 @@ void CPipeUser::AdjustPath()
 bool CPipeUser::AdjustPathAroundObstacles()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-	if (gAIEnv.CVars.AdjustPathsAroundDynamicObstacles != 0)
+	if (gAIEnv.CVars.LegacyAdjustPathsAroundDynamicObstacles != 0)
 	{
 		CalculatePathObstacles();
 
@@ -4311,7 +4191,7 @@ IPathFollower* CPipeUser::CreatePathFollower(const PathFollowerParams& params)
 {
 	IPathFollower* pResult = NULL;
 
-	if (gAIEnv.CVars.UseSmartPathFollower == 1)
+	if (gAIEnv.CVars.pathFollower.UseSmartPathFollower == 1)
 	{
 		CSmartPathFollower* pSmartPathFollower = new CSmartPathFollower(params, m_pathAdjustmentObstacles);
 		pResult = pSmartPathFollower;
@@ -4347,7 +4227,7 @@ void CPipeUser::CreateMovementPlanCoverEndBlocks(DynArray<Movement::BlockPtr>& b
 
 void CPipeUser::PrePathFollowUpdate(const MovementUpdateContext& context, bool bIsLastFollowBlock)
 {
-	if (!bIsLastFollowBlock || !IsMovingToCover())
+	if (!bIsLastFollowBlock || !IsMovingToCover() || !gAIEnv.pCoverSystem)
 		return;
 	
 	CoverID coverID = GetCoverID();
@@ -4440,7 +4320,7 @@ void CPipeUser::HandleVisualStimulus(SAIEVENT* pAIEvent)
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	const float fGlobalVisualPerceptionScale = gEnv->pAISystem->GetGlobalVisualScale(this);
 	const float fVisualPerceptionScale = m_Parameters.m_PerceptionParams.perceptionScale.visual * fGlobalVisualPerceptionScale;
-	if (gAIEnv.CVars.IgnoreVisualStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fVisualPerceptionScale <= 0.0f)
+	if (gAIEnv.CVars.legacyPerception.IgnoreVisualStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fVisualPerceptionScale <= 0.0f)
 		return;
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
@@ -4482,7 +4362,7 @@ void CPipeUser::HandleSoundEvent(SAIEVENT* pAIEvent)
 
 	const float fGlobalAudioPerceptionScale = gEnv->pAISystem->GetGlobalAudioScale(this);
 	const float fAudioPerceptionScale = m_Parameters.m_PerceptionParams.perceptionScale.audio * fGlobalAudioPerceptionScale;
-	if (gAIEnv.CVars.IgnoreSoundStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fAudioPerceptionScale <= 0.0f)
+	if (gAIEnv.CVars.legacyPerception.IgnoreSoundStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fAudioPerceptionScale <= 0.0f)
 		return;
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
@@ -4736,21 +4616,21 @@ void CPipeUser::EnableUpdateLookTarget(bool bEnable /*= true*/)
 	m_bEnableUpdateLookTarget = bEnable;
 }
 
-void CPipeUser::OnAIHandlerSentSignal(const char* szText, uint32 crcCode)
+void CPipeUser::OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal)
 {
-	assert(crcCode != 0);
+	CRY_ASSERT(!pSignal->GetSignalDescription().IsNone());
 
 	ListWaitGoalOps::iterator it = m_listWaitGoalOps.begin();
 	while (it != m_listWaitGoalOps.end())
 	{
 		COPWaitSignal* pGoalOp = *it;
-		if (pGoalOp->NotifySignalReceived(this, szText, NULL))
+		if (pGoalOp->NotifySignalReceived(this, pSignal->GetSignalDescription().GetName(), NULL))
 			it = m_listWaitGoalOps.erase(it);
 		else
 			++it;
 	}
 
-	CAIActor::OnAIHandlerSentSignal(szText, crcCode);
+	CAIActor::OnAIHandlerSentSignal(pSignal);
 }
 
 Movement::PathfinderState CPipeUser::GetPathfinderState()

@@ -2,16 +2,16 @@
 
 #include "StdAfx.h"
 #include "ParticleEffectObject.h"
-#include "Particles\ParticleDialog.h"
-#include "DataBaseDialog.h"
-#include "Particles\ParticleManager.h"
-#include "Particles\ParticleItem.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/InspectorWidgetCreator.h"
-#include "GameEngine.h"
-#include "Gizmos/AxisHelper.h"
+
 #include "LevelEditor/LevelAssetType.h"
+#include "Particles/ParticleDialog.h"
+#include "Particles/ParticleItem.h"
+#include "Particles/ParticleManager.h"
+#include "GameEngine.h"
+
+#include <Gizmos/AxisHelper.h>
+#include <Objects/ObjectLoader.h>
+#include <Objects/InspectorWidgetCreator.h>
 
 #include <Serialization/Decorators/EditorActionButton.h>
 
@@ -27,8 +27,8 @@ void CParticleEffectObject::CreateInspectorWidgets(CInspectorWidgetCreator& crea
 	{
 		if (ar.openBlock("effect", "<Effect"))
 		{
-			ar(Serialization::ActionButton(std::bind(&CParticleEffectObject::OnMenuGoToDatabase, pObject)), "go_to_database", "^Edit");
-			ar.closeBlock();
+		  ar(Serialization::ActionButton(std::bind(&CParticleEffectObject::OnMenuGoToDatabase, pObject)), "go_to_database", "^Edit");
+		  ar.closeBlock();
 		}
 	});
 }
@@ -126,7 +126,8 @@ void CParticleEffectObject::AssignEffect(const string& effectName)
 
 void CParticleEffectObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	const Matrix34& wtm = GetWorldTM();
 
 	float fHelperScale = 1 * m_helperScale * gGizmoPreferences.helperScale;
@@ -381,4 +382,3 @@ void CParticleEffectObject::CFastParticleParser::ParseParticle(XmlNodeRef& node,
 		}
 	}
 }
-

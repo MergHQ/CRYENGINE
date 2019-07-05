@@ -201,8 +201,8 @@ CResourceManager::CResourceManager()
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::PrepareLevel(const char* sLevelFolder, const char* sLevelName)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Preload Level pak files");
-	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload Level pak files");
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	m_sLevelFolder = sLevelFolder;
 	m_sLevelName = sLevelName;
@@ -293,8 +293,8 @@ bool CResourceManager::LoadFastLoadPaks(bool bToMemory)
 	else
 	//if (g_cvars.pakVars.nLoadCache)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Paks Fast Load Cache");
-		LOADING_TIME_PROFILE_SECTION;
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Paks Fast Load Cache");
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		// Load a special _fastload paks
 		int nPakPreloadFlags = ICryPak::FLAGS_FILENAMES_AS_CRC32 | ICryArchive::FLAGS_OVERRIDE_PAK;
@@ -359,8 +359,8 @@ IResourceList* CResourceManager::GetLevelResourceList()
 //////////////////////////////////////////////////////////////////////////
 bool CResourceManager::LoadLevelCachePak(const char* sPakName, const char* sBindRoot, bool bOnlyDuringLevelLoading)
 {
-	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "LoadLevelCachePak %s", sPakName);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "LoadLevelCachePak %s", sPakName);
 
 	CryPathString pakPath = GetCurrentLevelCacheFolder() + "/" + sPakName;
 
@@ -517,7 +517,7 @@ void CResourceManager::UnloadMenuCommonPak(const char* sPakName, const char* sRe
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::UnloadLevelCachePak(const char* sPakName)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CryPathString pakPath = GetCurrentLevelCacheFolder() + "/" + sPakName;
 	pakPath.MakeLower();
 	pakPath.replace(CCryPak::g_cNonNativeSlash, CCryPak::g_cNativeSlash);
@@ -539,7 +539,7 @@ void CResourceManager::UnloadLevelCachePak(const char* sPakName)
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::UnloadAllLevelCachePaks(bool bLevelLoadEnd)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!bLevelLoadEnd)
 	{
@@ -608,7 +608,7 @@ void CResourceManager::Update()
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::Init()
 {
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CResourceManager");
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CResourceManager");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -625,8 +625,7 @@ bool CResourceManager::IsStreamingCachePak(const char* filename) const
 		"dds_cache.pak",
 		"cgf_cache.pak",
 		"skin_cache.pak",
-		"chr_cache.pak"
-	};
+		"chr_cache.pak" };
 
 	for (int i = 0; i < CRY_ARRAY_COUNT(cachePaks); ++i)
 	{
@@ -773,13 +772,15 @@ void CResourceManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_P
 			}
 
 			UnloadAllLevelCachePaks(true);
-		}
 
 #if CAPTURE_REPLAY_LOG
-		static int s_loadCount = 0;
-		CryGetIMemReplay()->AddLabelFmt("precacheEnd%d_%s", s_loadCount++, m_sLevelName.c_str());
+			static int s_loadCount = 0;
+			CryGetIMemReplay()->AddLabelFmt("precacheEnd%d_%s", s_loadCount++, m_sLevelName.c_str());
 #endif
+		}
+		break;
 
+	default:
 		break;
 	}
 }
@@ -787,8 +788,6 @@ void CResourceManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_P
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::GetMemoryStatistics(ICrySizer* pSizer)
 {
-	IResourceList* pResList = gEnv->pCryPak->GetResourceList(ICryPak::RFOM_Level);
-
 	pSizer->AddContainer(m_openedPaks);
 }
 
@@ -827,8 +826,10 @@ void CResourceManager::SaveRecordedResources(bool bTotalList)
 		{
 			for (std::vector<string>::iterator it = m_recordedFiles.begin(); it != m_recordedFiles.end(); ++it)
 			{
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 				const char* str = it->c_str();
 				fprintf(file, "%s\n", str);
+#endif
 			}
 			fclose(file);
 		}
@@ -841,8 +842,10 @@ void CResourceManager::SaveRecordedResources(bool bTotalList)
 		{
 			for (std::set<string>::iterator it = fileset.begin(); it != fileset.end(); ++it)
 			{
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 				const char* str = it->c_str();
 				fprintf(file, "%s\n", str);
+#endif
 			}
 			fclose(file);
 		}

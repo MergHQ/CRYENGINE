@@ -109,7 +109,7 @@ public:
 	NET_DECLARE_IMMEDIATE_MESSAGE(BeginBindPredictedObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(BeginBindStaticObject);
 	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(BeginUnbindObject, SSimpleObjectIDParams);
-	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(UnbindPredictedObject, SRemoveStaticObject);
+	NET_DECLARE_SIMPLE_IMMEDIATE_MESSAGE(UnbindPredictedObject, SRemovePredictedObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(ReconfigureObject);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_UnreliableOrdered);
 	NET_DECLARE_IMMEDIATE_MESSAGE(RMI_ReliableUnordered);
@@ -181,19 +181,23 @@ protected:
 	virtual void UnboundObject(SNetObjectID id);
 
 private:
-	enum EBeginBindFlags
+	enum class EBeginBindFlags : uint8
 	{
-		eBBF_ReadObjectID = BIT(0),
-		eBBF_FlagStatic   = BIT(1),
+		//! Raw entity id was sent over the network, parse and use locally
+		//! Note that this is very dangerous, and assumes that the entity is guaranteed to be on the same index (and with the same salt) on both client and server
+		ReadEntityID   = BIT(0),
+		//! Indicates that this entity is static and not spawned dynamically
+		//! The static network entity identifier will be read from the network
+		Static         = BIT(1),
 	};
 
 	virtual bool        ShouldInitContext() { return false; }
 	virtual const char* DebugString()       { return "CLIENT"; }
 	void                SendEstablishedMessage();
-	bool                DoBeginBind(TSerialize ser, uint32 flags);
+	bool                DoBeginBind(TSerialize ser, CEnumFlags<EBeginBindFlags> flags);
 	bool                SetAspectProfileMessage(NetworkAspectID aspectIdx, TSerialize ser, uint32, uint32, uint32);
 	void                ContinueEnterState();
-	static void                   OnUpdatePredictedSpawn(void* pUsr1, void* pUsr2, ENetSendableStateUpdate);
+	static void         OnUpdatePredictedSpawn(void* pUsr1, void* pUsr2, ENetSendableStateUpdate);
 
 	SNetClientBreakDescriptionPtr m_pBreakOps[MAX_BREAK_STREAMS];
 
@@ -207,7 +211,7 @@ private:
 	std::set<EntityId> m_predictedSpawns;
 
 #if ENABLE_DEBUG_KIT
-	std::auto_ptr<CNetVis> m_pNetVis;
+	std::unique_ptr<CNetVis> m_pNetVis;
 	float                  m_startUpdate;
 	Vec3                   m_curWorldPos;
 #endif

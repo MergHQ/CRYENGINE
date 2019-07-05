@@ -4,7 +4,7 @@
 
 #include <CryExtension/ICryFactoryRegistryImpl.h>
 #include <CryExtension/ICryFactory.h>
-
+#include <CryThreading/CryThread.h>
 #include <vector>
 
 class CCryFactoryRegistryImpl : public ICryFactoryRegistryImpl

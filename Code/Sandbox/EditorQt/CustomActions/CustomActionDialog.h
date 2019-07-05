@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CustomActionsDialog_h__
-#define __CustomActionsDialog_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 //////////////////////////////////////////////////////////////////////////
 // Dialog shown for custom action property
@@ -19,17 +14,17 @@ private:
 	CListBox m_wndActionList;
 
 public:
-	CCustomActionDialog(CWnd* pParent = NULL);   // standard constructor
+	CCustomActionDialog(CWnd* pParent = NULL);
 	virtual ~CCustomActionDialog();
 
 	void    SetCustomAction(const CString& customAction) { m_customAction = customAction; }
-	CString GetCustomAction()                            { return m_customAction; };
+	CString GetCustomAction()                            { return m_customAction; }
 
 	// Dialog Data
 	enum { IDD = IDD_AIANCHORS };
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void DoDataExchange(CDataExchange* pDX);
 
 	bool         OpenViewForCustomAction();
 
@@ -43,6 +38,3 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 };
-
-#endif // __CustomActionsDialog_h__
-

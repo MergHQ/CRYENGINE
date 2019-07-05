@@ -1,12 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __EdGeometry_h__
-#define __EdGeometry_h__
 #pragma once
+#include "SandboxAPI.h"
+#include <CryCore/smartptr.h>
+#include <CryMath/Cry_Math.h>
 
-struct IIndexedMesh;
-struct DisplayContext;
+struct AABB;
 struct HitContext;
+struct IIndexedMesh;
+struct IStatObj;
+struct SDisplayContext;
 struct SSubObjSelectionModifyContext;
 class CObjectArchive;
 
@@ -27,7 +29,7 @@ class SANDBOX_API CEdGeometry : public _i_reference_target_t
 {
 	DECLARE_DYNAMIC(CEdGeometry)
 public:
-	CEdGeometry() {};
+	CEdGeometry() {}
 
 	// Query the type of the geometry mesh.
 	virtual EEdGeometryType GetType() const = 0;
@@ -51,14 +53,11 @@ public:
 	virtual void EndSubObjSelection() = 0;
 
 	// Display geometry for sub object selection.
-	virtual void Display(DisplayContext& dc) = 0;
+	virtual void Display(SDisplayContext& dc) = 0;
 
 	// Sub geometry hit testing and selection.
 	virtual bool HitTest(HitContext& hit) = 0;
 
 protected:
-	~CEdGeometry() {};
+	~CEdGeometry() {}
 };
-
-#endif //__EdGeometry_h__
-

@@ -4,12 +4,13 @@
 
 #include <StdAfx.h>
 #include <CrySerialization/IArchive.h>
-#include "Serialization/PropertyTree/IDrawContext.h"
-#include "Serialization/PropertyTree/PropertyTree.h"
+#include "Serialization/PropertyTreeLegacy/IDrawContext.h"
+#include "Serialization/PropertyTreeLegacy/PropertyTreeLegacy.h"
 
 #include "IEditor.h"
 #include "IEditorClassFactory.h"
-#include "EditTool.h"
+#include "LevelEditor/Tools/EditTool.h"
+#include "LevelEditor/LevelEditorSharedState.h"
 
 namespace Serialization
 {
@@ -27,7 +28,7 @@ struct SEditToolButton
 	bool           m_bNeedDocument;
 	int            buttonflags;
 	void*          m_userData;
-	PropertyTree*  tree;
+	PropertyTreeLegacy*  tree;
 	CEditTool*     m_activeTool;
 
 	explicit SEditToolButton(const char* icon)
@@ -39,6 +40,8 @@ struct SEditToolButton
 		, m_activeTool(nullptr)
 	{
 	}
+
+	virtual ~SEditToolButton() {}
 
 	virtual const char* Icon() const
 	{
@@ -101,7 +104,7 @@ struct SEditToolButton
 		}
 
 		// Check tool state.
-		CEditTool* tool = GetIEditor()->GetEditTool();
+		CEditTool* tool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 		CRuntimeClass* toolClass = 0;
 		if (tool)
 			toolClass = tool->GetRuntimeClass();
@@ -129,7 +132,7 @@ struct SEditToolButton
 	}
 
 	// workaround for propertytree not being available at creation time
-	void SetPropertyTree(PropertyTree* ptree)
+	void SetPropertyTree(PropertyTreeLegacy* ptree)
 	{
 		tree = ptree;
 	}
@@ -144,11 +147,11 @@ struct SEditToolButton
 
 		if (buttonflags & BUTTON_PRESSED)
 		{
-			CEditTool* tool = GetIEditor()->GetEditTool();
+			CEditTool* tool = GetIEditor()->GetLevelEditorSharedState()->GetEditTool();
 			if (m_activeTool && tool == m_activeTool)
 			{
 				m_activeTool = nullptr;
-				GetIEditor()->SetEditTool(m_activeTool);
+				GetIEditor()->GetLevelEditorSharedState()->SetEditTool(m_activeTool);
 			}
 			return;
 		}
@@ -162,7 +165,7 @@ struct SEditToolButton
 				m_activeTool->SetUserData(m_userDataKey, m_userData);
 
 			// Must be last function, can delete this.
-			GetIEditor()->SetEditTool(m_activeTool);
+			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(m_activeTool);
 		}
 	}
 
@@ -186,4 +189,3 @@ inline SEditToolButton EditToolButton(const char* icon = "")
 }
 
 }
-

@@ -1,4 +1,6 @@
 start_sources()
+
+# -- libogg.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS libogg_dynamic libogg_static
@@ -13,7 +15,7 @@ CryEngineStaticModule(libogg_static SOLUTION_FOLDER "Libs/Audio")
 target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/libogg/include")
 set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "ogg")
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 elseif(LINUX)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE

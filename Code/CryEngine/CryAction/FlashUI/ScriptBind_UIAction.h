@@ -15,7 +15,6 @@
 #pragma once
 
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryScriptSystem/ScriptHelpers.h>
 #include <CrySystem/Scaleform/IFlashUI.h>
 #include <CryCore/Containers/CryListenerSet.h>
 
@@ -36,8 +35,8 @@ struct SUIToLuaConversationHelper
 ////////////////////////////////////////////////////////////////////////////
 template<class T> struct SUILuaCallbackInfo
 {
-	bool Accept(const SUILuaCallbackInfo<T>& info) const                                                                                { assert(false); return false; }
-	void CallScript(SmartScriptTable pScript, const char* functionName, SmartScriptTable args, const SUILuaCallbackInfo<T>& info) const { assert(false); }
+	bool Accept(const SUILuaCallbackInfo<T>& info) const                                                                                { CRY_ASSERT(false); return false; }
+	void CallScript(SmartScriptTable pScript, const char* functionName, SmartScriptTable args, const SUILuaCallbackInfo<T>& info) const { CRY_ASSERT(false); }
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -64,7 +63,7 @@ struct SUISUILuaCallbackDataId
 	{
 		static int id = 0;
 		++id;
-		assert(id > 0);
+		CRY_ASSERT(id > 0);
 		return id;
 	}
 };
@@ -105,7 +104,7 @@ struct SUILuaCallbackContainer : public SUISUILuaCallbackDataId
 			for (typename TCallbacks::Notifier it(m_Callbacks); it.IsValid(); it.Next())
 			{
 				SUILuaCallbackData<T>* pListener = *it;
-				assert(pListener);
+				CRY_ASSERT(pListener);
 				PREFAST_ASSUME(pListener);
 				if (pListener->Id == id && (strlen(functionName) == 0 || pListener->fctName == functionName))
 				{
@@ -160,7 +159,7 @@ struct SUILuaCallbackInfo<IUIElement>
 {
 	static SUILuaCallbackInfo<IUIElement> CreateInfo(IUIElement* pElement, const char* eventName, int instanceId = -2)
 	{
-		assert(pElement);
+		CRY_ASSERT(pElement);
 		PREFAST_ASSUME(pElement);
 		SUILuaCallbackInfo<IUIElement> res;
 		res.eventName = eventName;

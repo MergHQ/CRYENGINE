@@ -4,16 +4,17 @@
 #include <QWidget>
 #include <CrySerialization/StringList.h>
 
-//! Serializable object that is used to translate the CMaterial into a property-tree UI
+class QPropertyTree;
+
+//! Serializable object used to expose CMaterial properties into a property-tree UI
 class CMaterialSerializer : public _reference_target_t
 {
 public:
 	CMaterialSerializer(CMaterial* pMaterial, bool readOnly);
 
-	void Serialize(Serialization::IArchive& ar);
+	void            Serialize(Serialization::IArchive& ar);
 
-
-	QWidget* CreatePropertyTree();
+	QPropertyTree* CreatePropertyTree();
 
 	//Shader param info
 	struct SShaderParamInfo
@@ -27,12 +28,12 @@ public:
 			, m_step(0.1f)
 		{}
 
-		int8 bHasMin : 1;
-		int8 bHasMax : 1;
-		int8 bHasStep : 1;
-		float m_min;
-		float m_max;
-		float m_step;
+		int8   bHasMin  : 1;
+		int8   bHasMax  : 1;
+		int8   bHasStep : 1;
+		float  m_min;
+		float  m_max;
+		float  m_step;
 		string m_description;
 		string m_uiName;
 	};
@@ -43,18 +44,18 @@ private:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void SerializeTextureSlots(Serialization::IArchive& ar, bool& bHasDetailDecalOut);
-	void SerializeShaderParams(Serialization::IArchive& ar, bool bShaderChanged);
-	void SerializeShaderGenParams(Serialization::IArchive& ar);
+	void             SerializeTextureSlots(Serialization::IArchive& ar, bool& bHasDetailDecalOut);
+	void             SerializeShaderParams(Serialization::IArchive& ar, bool bShaderChanged);
+	void             SerializeShaderGenParams(Serialization::IArchive& ar);
 
 	SShaderParamInfo ParseShaderParamScript(const SShaderParam& param);
 
-	void PopulateStringLists();
+	void             PopulateStringLists();
 
 	//////////////////////////////////////////////////////////////////////////
 
 	_smart_ptr<CMaterial> m_pMaterial;
-	bool m_bIsReadOnly;
+	bool                  m_bIsReadOnly;
 
 	//String lists used in serialization, refreshed only on creation
 	Serialization::StringList m_shaderStringList;
@@ -68,6 +69,5 @@ private:
 	//Cache of shader parameters infos
 	std::map<string, SShaderParamInfo> m_shaderParamInfoCache;
 
-	bool m_bIsBeingChanged;
+	bool                               m_bIsBeingChanged;
 };
-

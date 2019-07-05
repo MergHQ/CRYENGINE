@@ -446,4 +446,3 @@ bool SkeletonParameters::SaveToMemory(vector<char>* buffer)
 }
 
 }
-

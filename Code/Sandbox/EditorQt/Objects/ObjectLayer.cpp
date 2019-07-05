@@ -6,7 +6,12 @@
 #include "ObjectLayerManager.h"
 #include "ObjectLayer.h"
 #include "Terrain/TerrainManager.h"
-#include "CryString/CryPath.h"
+#include "Terrain/RGBLayer.h"
+#include "Preferences/GeneralPreferences.h"
+#include "Util/TimeUtil.h"
+#include "IEditorImpl.h"
+#include <IObjectManager.h>
+#include <CryString/CryPath.h>
 
 //////////////////////////////////////////////////////////////////////////
 // class CUndoLayerStates
@@ -18,6 +23,8 @@ public:
 		m_undoIsVisible = pLayer->IsVisible();
 		m_undoIsFrozen = pLayer->IsFrozen();
 		m_layerGUID = pLayer->GetGUID();
+		m_undoLayerColorOverride = pLayer->GetColor();
+		m_undoUseColorOverride = pLayer->IsUsingColorOverride();
 	}
 protected:
 	virtual const char* GetDescription() { return "Set Layer State"; }
@@ -31,10 +38,12 @@ protected:
 			{
 				m_redoIsVisible = pLayer->IsVisible();
 				m_redoIsFrozen = pLayer->IsFrozen();
+				m_redoLayerColorOverride = pLayer->GetColor();
+				m_redoUseColorOverride = pLayer->IsUsingColorOverride();
 			}
-
 			pLayer->SetVisible(m_undoIsVisible);
 			pLayer->SetFrozen(m_undoIsFrozen);
+			pLayer->SetColor(m_undoLayerColorOverride, m_undoUseColorOverride);
 		}
 	}
 
@@ -45,14 +54,19 @@ protected:
 		{
 			pLayer->SetVisible(m_redoIsVisible);
 			pLayer->SetFrozen(m_redoIsFrozen);
+			pLayer->SetColor(m_redoLayerColorOverride, m_redoUseColorOverride);
 		}
 	}
 
 private:
-	bool   m_undoIsVisible;
-	bool   m_redoIsVisible;
-	bool   m_undoIsFrozen;
-	bool   m_redoIsFrozen;
+	bool    m_undoIsVisible;
+	bool    m_redoIsVisible;
+	bool    m_undoIsFrozen;
+	bool    m_redoIsFrozen;
+	ColorB  m_undoLayerColorOverride;
+	ColorB  m_redoLayerColorOverride;
+	bool    m_undoUseColorOverride;
+	bool    m_redoUseColorOverride;
 	CryGUID m_layerGUID;
 };
 
@@ -76,10 +90,10 @@ protected:
 		if (pLayer)
 		{
 			if (bUndo)
+			{
 				m_redoName = pLayer->GetName();
-
+			}
 			pLayer->SetName(m_undoName);
-			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
@@ -90,13 +104,12 @@ protected:
 		if (pLayer)
 		{
 			pLayer->SetName(m_redoName);
-			CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, pLayer).Send();
 		}
 	}
 
 private:
-	string m_undoName;
-	string m_redoName;
+	string  m_undoName;
+	string  m_redoName;
 	CryGUID m_layerGUID;
 };
 
@@ -120,7 +133,7 @@ public:
 
 	}
 protected:
-	virtual const char* GetDescription() { return "Change Layer Name"; }
+	virtual const char* GetDescription() { return "Change Layer Parent"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -159,20 +172,23 @@ private:
 namespace Private_ObjectLayer
 {
 
-class CTerrain : public CObjectLayer
+class CTerrainLayer : public CObjectLayer
 {
 public:
-	CTerrain::CTerrain(const char* szName)
+	CTerrainLayer::CTerrainLayer(const char* szName)
 		: CObjectLayer(szName, eObjectLayerType_Terrain)
 	{
-		const CTerrainManager* const pTerrainManager = GetIEditorImpl()->GetTerrainManager();
-		const string dataFolder = GetIEditorImpl()->GetLevelDataFolder();
-		const size_t n = pTerrainManager->GetDataFilesCount();
-		m_files.reserve(n);
-		for (size_t i = 0; i < n; ++i)
-		{
-			m_files.push_back(PathUtil::Make(dataFolder, pTerrainManager->GetDataFilename(i)));
-		}
+		PopulesDependantFiles();
+		CTerrainManager* pTerrainManager = GetIEditorImpl()->GetTerrainManager();
+		pTerrainManager->signalTerrainChanged.Connect(this, &CTerrainLayer::OnTerrainChange);
+		pTerrainManager->signalLayersChanged.Connect(this, &CTerrainLayer::OnTerrainChange);
+	}
+
+	~CTerrainLayer()
+	{
+		CTerrainManager* pTerrainManager = GetIEditorImpl()->GetTerrainManager();
+		pTerrainManager->signalTerrainChanged.DisconnectObject(this);
+		pTerrainManager->signalLayersChanged.DisconnectObject(this);
 	}
 
 	virtual void SetVisible(bool isVisible, bool isRecursive) override
@@ -202,6 +218,7 @@ public:
 				m_parent->SetVisible(isVisible, false);
 			}
 		}
+		SetModified(true);
 	}
 
 	virtual void SetFrozen(bool isFrozen, bool isRecursive = false) override
@@ -212,7 +229,48 @@ public:
 
 		// TODO:  Consider introducing the frozen state.
 	}
+
+	virtual void Serialize(XmlNodeRef& node, bool isLoading) override
+	{
+		CObjectLayer::Serialize(node, isLoading);
+
+		if (!isLoading)
+		{
+			// Save Heightmap and terrain data
+			GetIEditorImpl()->GetTerrainManager()->Save(gEditorFilePreferences.filesBackup);
+			// Save TerrainTexture
+			GetIEditorImpl()->GetTerrainManager()->SaveTexture(gEditorFilePreferences.filesBackup);
+		}
+	}
+
+private:
+	void OnTerrainChange()
+	{
+		SetModified(true);
+	}
+
+	void PopulesDependantFiles()
+	{
+		CTerrainManager* pTerrainManager = GetIEditorImpl()->GetTerrainManager();
+		const size_t numTerrainFiles = pTerrainManager->GetDataFilesCount();
+		m_files.reserve(numTerrainFiles);
+		string dataFolder = GetIEditorImpl()->GetLevelDataFolder();
+		string levelFolder = GetIEditorImpl()->GetLevelFolder();
+		for (size_t i = 0; i < numTerrainFiles; ++i)
+		{
+			m_files.push_back(PathUtil::Make(dataFolder, pTerrainManager->GetDataFilename(i)));
+		}
+		m_files.push_back(pTerrainManager->GetRGBLayer()->GetFullFileName());
+
+		for (string& file : m_files)
+		{
+			file = file.substr(levelFolder.size() + 1);
+		}
+	}
+
 };
+
+const ColorB g_defaultLayerColor(71, 71, 71);
 
 }
 
@@ -228,9 +286,9 @@ CObjectLayer::CObjectLayer()
 	, m_defaultLoaded(false)
 	, m_expanded(false)
 	, m_havePhysics(true)
-	, m_isModified(true)
+	, m_isModified(false)
 	, m_nLayerId(0)
-	, m_isDefaultColor(true)
+	, m_useColorOverride(false)
 	, m_specs(eSpecType_All)
 	, m_layerType(eObjectLayerType_Layer)
 {
@@ -247,14 +305,13 @@ CObjectLayer::CObjectLayer(const char* szName, EObjectLayerType type)
 	, m_defaultLoaded(false)
 	, m_expanded(false)
 	, m_havePhysics(true)
-	, m_isModified(true)
+	, m_isModified(false)
 	, m_nLayerId(0)
-	, m_isDefaultColor(true)
+	, m_useColorOverride(false)
 	, m_specs(eSpecType_All)
 	, m_layerType(type)
 {
-	m_color = GetSysColor(COLOR_BTNFACE);
-	ZeroStruct(m_parentGUID);
+	m_color = Private_ObjectLayer::g_defaultLayerColor;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -300,16 +357,27 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 		node->getAttr("HavePhysics", m_havePhysics);
 		node->getAttr("Specs", m_specs);
 
-		m_isDefaultColor = false;
-		node->getAttr("IsDefaultColor", m_isDefaultColor);
+		//To be coherent with objects behavior m_isDefaultColor is now m_useColorOverride
+		//still, for backward compatibility this flags needs to be inverted when loading the object
+		bool colorOverride = !m_useColorOverride;
+		node->getAttr("IsDefaultColor", colorOverride);
+		m_useColorOverride = !colorOverride;
+		m_color = Private_ObjectLayer::g_defaultLayerColor;
+		COLORREF color = RGB(m_color.r, m_color.g, m_color.b);
+		node->getAttr("Color", color);
+		m_color = ColorB(GetRValue(color), GetGValue(color), GetBValue(color));
 
-		m_color = GetSysColor(COLOR_BTNFACE);
-		if (!m_isDefaultColor)
-			node->getAttr("Color", m_color);
-		SetColor(m_color); // Update default state
-
-		ZeroStruct(m_parentGUID);
-		node->getAttr("ParentGUID", m_parentGUID);
+		XmlNodeRef pFiles = node->findChild("Files");
+		if (pFiles)
+		{
+			m_files.clear();
+			m_files.reserve(pFiles->getChildCount());
+			for (int i = 0, n = pFiles->getChildCount(); i < n; ++i)
+			{
+				XmlNodeRef pFile = pFiles->getChild(i);
+				m_files.emplace_back(pFile->getAttr("path"));
+			}
+		}
 
 		GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 	}
@@ -322,15 +390,27 @@ void CObjectLayer::Serialize(XmlNodeRef& node, bool isLoading)
 		node->setAttr("ExportLayerPak", m_exportLayerPak);
 		node->setAttr("DefaultLoaded", m_defaultLoaded);
 		node->setAttr("HavePhysics", m_havePhysics);
-		node->setAttr("IsDefaultColor", m_isDefaultColor);
+		node->setAttr("IsDefaultColor", !m_useColorOverride);
+		node->setAttr("Color", RGB(m_color.r, m_color.g, m_color.b));
+		node->setAttr("Timestamp", TimeUtil::GetCurrentTimeStamp());
+
 		if (m_specs != eSpecType_All)
 			node->setAttr("Specs", m_specs);
-		if (!m_isDefaultColor)
-			node->setAttr("Color", m_color);
 
-		CryGUID parentGUID = m_parentGUID;
-		if (parentGUID != CryGUID::Null())
-			node->setAttr("ParentGUID", parentGUID);
+		if (!m_files.empty())
+		{
+			XmlNodeRef pFiles = node->findChild("Files");
+			if (!pFiles)
+			{
+				pFiles = node->newChild("Files");
+			}
+
+			for (const string& file : m_files)
+			{
+				XmlNodeRef pFile = pFiles->newChild("File");
+				pFile->setAttr("path", file);
+			}
+		}
 	}
 }
 
@@ -346,7 +426,7 @@ CObjectLayer* CObjectLayer::Create(const char* szName, EObjectLayerType type)
 {
 	if (eObjectLayerType_Terrain == type)
 	{
-		return new Private_ObjectLayer::CTerrain(szName);
+		return new Private_ObjectLayer::CTerrainLayer(szName);
 	}
 
 	return new CObjectLayer(szName, type);
@@ -403,8 +483,9 @@ void CObjectLayer::SetNameImpl(const string& name, bool IsUpdateDepends)
 	string oldName = m_name;
 	m_name = name;
 
-	CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
+	CLayerChangeEvent(CLayerChangeEvent::LE_RENAME, this).Send();
 	GetIEditorImpl()->GetFlowGraphManager()->UpdateLayerName(oldName.GetString(), name.GetString());
+	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -430,7 +511,6 @@ void CObjectLayer::AddChild(CObjectLayer* pLayer, bool isNotify /*= true*/)
 
 	stl::push_back_unique(m_childLayers, pLayer);
 	pLayer->m_parent = this;
-	pLayer->m_parentGUID = GetGUID();
 	GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 
 	if (isNotify)
@@ -449,7 +529,6 @@ void CObjectLayer::RemoveChild(CObjectLayer* pLayer, bool isNotify /*= true*/)
 
 	assert(pLayer);
 	pLayer->m_parent = nullptr;
-	ZeroStruct(pLayer->m_parentGUID);
 	stl::find_and_erase(m_childLayers, pLayer);
 	GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 
@@ -477,6 +556,24 @@ CObjectLayer* CObjectLayer::GetChild(int index) const
 	return m_childLayers[index];
 }
 
+void CObjectLayer::GetDescendants(std::vector<CObjectLayer*>& result) const
+{
+	for (const _smart_ptr<CObjectLayer>& pLayer : m_childLayers)
+	{
+		result.push_back(pLayer.get());
+		pLayer->GetDescendants(result);
+	}
+}
+
+void CObjectLayer::GetAncestors(std::vector<CObjectLayer*>& result) const
+{
+	if (m_parent)
+	{
+		result.push_back(m_parent);
+		m_parent->GetAncestors(result);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 bool CObjectLayer::IsChildOf(const CObjectLayer* pParent) const
 {
@@ -495,12 +592,21 @@ void CObjectLayer::SetVisible(bool isVisible, bool isRecursive)
 	if (m_hidden != !isVisible)
 	{
 		if (CUndo::IsRecording())
+		{
 			CUndo::Record(new CUndoLayerStates(this));
+		}
+		else
+		{
+			string title;
+			title.Format("Set Layer %s", (isVisible ? "Visible" : "Invisible"));
+			CUndo setVisibleUndo(title);
+			CUndo::Record(new CUndoLayerStates(this));
+		}
 
 		m_hidden = !isVisible;
 
 		// Notify layer manager on layer modification.
-		CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
+		CLayerChangeEvent(CLayerChangeEvent::LE_VISIBILITY, this).Send();
 		GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 
 		// If turning visibility on in a child layer make sure the parent
@@ -516,6 +622,8 @@ void CObjectLayer::SetVisible(bool isVisible, bool isRecursive)
 			GetChild(i)->SetVisible(isVisible, isRecursive);
 		}
 	}
+
+	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -524,11 +632,20 @@ void CObjectLayer::SetFrozen(bool isFrozen, bool isRecursive)
 	if (m_frozen != isFrozen)
 	{
 		if (CUndo::IsRecording())
+		{
 			CUndo::Record(new CUndoLayerStates(this));
+		}
+		else
+		{
+			string title;
+			title.Format("Set Layer %s", (isFrozen ? "Frozen" : "Unfrozen"));
+			CUndo setFrozenUndo(title);
+			CUndo::Record(new CUndoLayerStates(this));
+		}
 
 		m_frozen = isFrozen;
 
-		CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
+		CLayerChangeEvent(CLayerChangeEvent::LE_FROZEN, this).Send();
 		GetIEditorImpl()->GetObjectManager()->InvalidateVisibleList();
 
 		// If unfreezing a child layer make sure the parent is also unfrozen
@@ -543,6 +660,7 @@ void CObjectLayer::SetFrozen(bool isFrozen, bool isRecursive)
 		}
 	}
 	GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_UPDATE_FROZEN);
+	SetModified(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -565,35 +683,71 @@ void CObjectLayer::SetModified(bool isModified)
 
 	CLayerChangeEvent(CLayerChangeEvent::LE_MODIFY, this).Send();
 	GetIEditorImpl()->Notify(eNotify_OnInvalidateControls);
+
+	if (m_isModified)
+	{
+		GetIEditorImpl()->SetModifiedFlag(true);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-string CObjectLayer::GetLayerFilepath()
+string CObjectLayer::GetLayerFilepath() const 
 {
 	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
 	string filePath = PathUtil::Make(GetIEditorImpl()->GetGameEngine()->GetLevelPath(), pLayerManager->GetLayersPath() + GetFullName()).c_str();
 	if (m_layerType != eObjectLayerType_Folder)
-		filePath += LAYER_FILE_EXTENSION;
+		filePath += CObjectLayerManager::GetLayerExtension();
 
 	return filePath;
 }
 
 //////////////////////////////////////////////////////////////////////////
-COLORREF CObjectLayer::GetColor() const
+ColorB CObjectLayer::GetColor() const
 {
-	if (m_isDefaultColor)
-		return GetSysColor(COLOR_BTNFACE);
+	if (!m_useColorOverride)
+	{
+		CObjectLayer* pOwner = m_parent;
+		while (pOwner)
+		{
+			if (pOwner->IsUsingColorOverride())
+			{
+				return pOwner->GetColor();
+			}
+			pOwner = pOwner->GetParent();
+		}
+
+		return ColorB(Private_ObjectLayer::g_defaultLayerColor);
+	}
 	return m_color;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjectLayer::SetColor(COLORREF color)
+void CObjectLayer::SetColor(ColorB color, bool useColorOverride)
 {
+	if (color == m_color && useColorOverride == m_useColorOverride)
+	{
+		return;
+	}
+	CUndo setColorUndo("Set Layer Color");
+	CUndo::Record(new CUndoLayerStates(this));
+	UseColorOverride(useColorOverride);
 	m_color = color;
-	m_isDefaultColor = (color == GetSysColor(COLOR_BTNFACE));
+	CLayerChangeEvent(CLayerChangeEvent::LE_LAYERCOLOR, this).Send();
+	SetModified(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CObjectLayer::UseColorOverride(bool useColorOverride)
+{
+	if (useColorOverride == m_useColorOverride)
+	{
+		return;
+	}
+	CUndo setColorColorOverrideUndo("Set Layer Color Override");
+	CUndo::Record(new CUndoLayerStates(this));
+	m_useColorOverride = useColorOverride;
+	CLayerChangeEvent(CLayerChangeEvent::LE_LAYERCOLOR, this).Send();
+}
+
 string CObjectLayer::GetFullName() const
 {
 	string fullName(m_name);
@@ -622,4 +776,3 @@ bool CObjectLayer::IsFrozen(bool isRecursive) const
 	}
 	return m_frozen;
 }
-

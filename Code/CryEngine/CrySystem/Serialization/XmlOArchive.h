@@ -4,6 +4,7 @@
 #define __XML_O_ARCHIVE__H__
 
 #include <CrySerialization/IArchive.h>
+#include <CrySystem/XML/IXml.h>
 
 namespace Serialization
 {

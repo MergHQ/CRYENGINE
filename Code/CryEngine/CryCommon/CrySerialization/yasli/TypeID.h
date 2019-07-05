@@ -9,12 +9,13 @@
 
 #pragma once
 
+#include <CryCore/Platform/CryPlatformDefines.h>
 #if !YALSI_NO_RTTI
 #include <typeinfo>
 #endif
 #include <CrySerialization/yasli/Config.h>
 #include <CrySerialization/yasli/Assert.h>
-#include <string.h>
+#include <cstring>
 
 
 namespace yasli{
@@ -32,8 +33,8 @@ class TypeID{
 	friend class TypesFactory;
 public:
 	TypeID()
-	: module_(0)
-	, typeInfo_(0)
+	: typeInfo_(0)
+	, module_(0)
 	{}
 
 	TypeID(const TypeID& original)
@@ -149,7 +150,7 @@ struct TypeInfo
 	template<size_t nameLen>
 	static void extractTypeName(char (&name)[nameLen], const char* funcName)
 	{
-#ifdef __clang__
+#ifdef CRY_COMPILER_CLANG
         const char* s;
         const char* send;
         const char* lastSquareBracket = strrchr(funcName, ']');
@@ -173,19 +174,21 @@ struct TypeInfo
             if (send > s && *(send-1) == ' ')
                 --send;
         }
-#elif __GNUC__ >= 4 && __GNUC_MINOR__ >= 4
+#elif CRY_COMPILER_GCC
 		// static yasli::TypeID yasli::TypeID::get() [with T = ActualTypeName]
 		const char* s = strstr(funcName, "[with T = ");
 		if (s)
 			s += 10;
 		const char* send = strrchr(funcName, ']');
-#else
+#elif CRY_COMPILER_MSVC
 		// static yasli::TypeID yasli::TypeID::get<ActualTypeName>()
 		const char* s = strchr(funcName, '<');
 		const char* send = strrchr(funcName, '>');
 		YASLI_ASSERT(s != 0  && send != 0);
 		if (s != send)
 			++s;
+#else
+#error Unknown compiler setup, unable to extract type name
 #endif
 		YASLI_ASSERT(s != 0  && send != 0);
 
@@ -195,7 +198,7 @@ struct TypeInfo
 		*d = '\0';
 		
 		// This assertion is not critical, but may result in collision as
-		// stripped name wil be used, e.g. for lookup in factory.
+		// stripped name will be used, e.g. for lookup in factory.
 		YASLI_ASSERT(s == send && "Type name does not fit into the buffer");
 	}
 
@@ -281,9 +284,6 @@ inline bool TypeID::operator<(const TypeID& rhs) const{
 	return false;
 #endif
 }
-
-template<class T>
-T* createDerivedClass(TypeID typeID);
 
 }
 

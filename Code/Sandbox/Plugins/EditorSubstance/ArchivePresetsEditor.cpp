@@ -1,30 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "SubstanceCommon.h"
-#include "SandboxPlugin.h"
 #include "ArchivePresetsEditor.h"
 
-#include <QDialogButtonBox>
-#include <QVBoxLayout>
-#include <QString>
-
-#include "FileDialogs/FileNameLineEdit.h"
-#include "FilePathUtil.h"
-#include "AssetSystem/Asset.h"
-#include "AssetSystem/AssetManager.h"
-#include "AssetSystem/Browser/AssetFoldersView.h"
-#include "OutputsWidget.h"
-#include "QAdvancedTreeView.h"
-#include "QScrollableBox.h"
-#include "Controls/QuestionDialog.h"
-#include "OutputEditorDialog.h"
-//#include "OutputEditor\GraphViewModel.h"
-#include "AssetTypes\SubstanceArchive.h"
-#include "QCollapsibleFrame.h"
+#include "AssetTypes/SubstanceArchive.h"
 #include "EditorSubstanceManager.h"
+#include "OutputEditorDialog.h"
+#include "OutputsWidget.h"
 
+#include <QCollapsibleFrame.h>
+#include <QScrollableBox.h>
 
+#include <AssetSystem/AssetManager.h>
+
+#include <QDialogButtonBox>
+#include <QResizeEvent>
+#include <QVBoxLayout>
 
 namespace EditorSubstance
 {
@@ -36,9 +27,9 @@ namespace EditorSubstance
 	{
 		AddToMenu(CEditor::MenuItems::SaveAs);
 
-		m_pScrollBox = new QScrollableBox(this);
+		m_pScrollBox = new QScrollableBox();
 
-		m_pOutputsWidgetHolder = new QWidget(this);
+		m_pOutputsWidgetHolder = new QWidget();
 		m_pOutputsWidgetHolder->setLayout(new QVBoxLayout());
 		m_pButtons = new QDialogButtonBox();
 		m_pButtons->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -46,12 +37,9 @@ namespace EditorSubstance
 		m_pModalGuard->resize(size());
 		m_pModalGuard->hide();
 
-
-		auto* const pMainLayout = new QVBoxLayout();
 		m_pScrollBox->addWidget(m_pOutputsWidgetHolder);
 
 		SetContent(m_pScrollBox);
-
 	}
 	
 	void CArchivePresetsEditor::OnEditOutputs(const string& graphName)
@@ -151,8 +139,7 @@ namespace EditorSubstance
 		{
 			assetType->SetGraphOutputsConfiguration(&editAsset, graphOutputs.first, graphOutputs.second, m_resolutions[graphOutputs.first]);
 		}
-		editAsset.WriteToFile();
-		return true;
+		return editAsset.WriteToFile();
 	}
 
 	void CArchivePresetsEditor::OnCloseAsset()

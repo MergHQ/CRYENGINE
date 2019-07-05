@@ -41,14 +41,14 @@ public:
 	void                            Serialize(bool bLoading); // serialize to/from registry
 
 public:
-	BOOL        m_bIncludePorts;
-	BOOL        m_bIncludeValues;
-	BOOL        m_bIncludeEntities;
-	BOOL        m_bIncludeIDs;
-	BOOL        m_bExactMatch;
+	BOOL        m_bIncludePorts{ FALSE };
+	BOOL        m_bIncludeValues{ FALSE };
+	BOOL        m_bIncludeEntities{ FALSE };
+	BOOL        m_bIncludeIDs{ FALSE };
+	BOOL        m_bExactMatch{ FALSE };
 	CString     m_strFind;
-	int         m_LookinIndex;
-	int         m_findSpecial;
+	int         m_LookinIndex{ eFL_Current };
+	int         m_findSpecial{ eFLS_None };
 
 	CStringList m_lstFindHistory;
 
@@ -139,4 +139,3 @@ protected:
 	void GroupBy(CXTPReportColumn* pColumn); // pColumn may be 0 -> ungroup
 	CHyperGraphDialog* m_pDialog;
 };
-

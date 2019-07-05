@@ -28,11 +28,11 @@ SET(SHIBOKEN_ARGS
 	"--use-isnull-as-nb_nonzero"
 	"--avoid-protected-hack"
 	"${CMAKE_CURRENT_SOURCE_DIR}/global.h"
-	"--include-paths=${PARENT_SOURCE_DIRECTORY}\;${PYSIDE_INCLUDE_PATH}\;${QT_INCLUDE_PATH}"
+	"--include-paths=${PARENT_SOURCE_DIRECTORY}\;${PYSIDE_INCLUDE_PATH}\;${QT_INCLUDE_PATH}\;${QT_INCLUDE_PATH}QtCore\;${QT_INCLUDE_PATH}QtGui\;${QT_INCLUDE_PATH}QtWidgets\;"
 	"--typesystem-paths=${TYPESYSTEM_PATHS}"
 	"--output-directory=${WRAPPER_OUTPUT_DIR}"
 	"${CMAKE_CURRENT_SOURCE_DIR}/typesystem_cryqt.xml"
-	"--api-version=5.6")
+	"--api-version=5.12")
 
 message( STATUS "Running PySide Shiboken ${SHIBOKEN_EXE}")
 execute_process ( COMMAND "${SHIBOKEN_EXE}" ${SHIBOKEN_ARGS} WORKING_DIRECTORY "${QT_DIR}/bin" OUTPUT_VARIABLE shiboken_output ERROR_VARIABLE shiboken_error)
@@ -57,10 +57,8 @@ CreateDynamicModule(CryQtShibokenWrapper SOLUTION_FOLDER "Sandbox/Libs")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DWIN32)
 target_include_directories(${THIS_PROJECT} PRIVATE "${SHIBOKEN_INCLUDE_PATH}" "${PYSIDE_INCLUDE_PATH}" "${PYSIDE_INCLUDE_PATH}/QtGui" "${PYSIDE_INCLUDE_PATH}/QtCore" "${PYSIDE_INCLUDE_PATH}/QtWidgets" "${QT_INCLUDE_PATH}/QtANGLE")
 target_link_libraries(${THIS_PROJECT} PRIVATE dwmapi gdi32 Ole32 qtmain$<$<CONFIG:Debug>:d>)
-target_link_libraries(${THIS_PROJECT} PRIVATE CryQt)
+target_link_libraries(${THIS_PROJECT} PRIVATE CryQt Python)
 set_property(TARGET ${THIS_PROJECT} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE)
-
-target_link_libraries(${THIS_PROJECT} PRIVATE python27)
 
 # Must include all sub-directories of CryQt, since generated files include header of wraped code by name only.
 FILE(GLOB_RECURSE all_headers "${PARENT_SOURCE_DIRECTORY}/*.h")
@@ -80,11 +78,11 @@ set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " 
 set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}\"${PYSIDE_DIR}\"")
 
 if (NOT DEFINED PYSIDE_LIB)
-	set(PYSIDE_LIB pyside2-python2.7$<$<CONFIG:Debug>:-dbg>)
+	set(PYSIDE_LIB pyside2.cp37-win_amd64)
 endif()
 
 if (NOT DEFINED SHIBOKEN_LIB)
-	set(SHIBOKEN_LIB shiboken2-python2.7$<$<CONFIG:Debug>:-dbg>)
+	set(SHIBOKEN_LIB shiboken2.cp37-win_amd64)
 endif()
 
 target_link_libraries(${THIS_PROJECT} PRIVATE "${PYSIDE_LIB}" "${SHIBOKEN_LIB}")

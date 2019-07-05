@@ -75,7 +75,7 @@ void CVehicleDamages::InitDamages(CVehicle* pVehicle, const CVehicleParams& tabl
 		damagesTable.getAttr("playerKillAISpeed", m_damageParams.playerKillAISpeed);
 		damagesTable.getAttr("aiKillAISpeed", m_damageParams.aiKillAISpeed);
 
-		assert(m_pVehicle->GetEntity());
+		CRY_ASSERT(m_pVehicle->GetEntity());
 		ParseDamageMultipliers(m_damageMultipliersByHitType, m_damageMultipliersByProjectile, damagesTable, *m_pVehicle->GetEntity());
 	}
 }
@@ -91,7 +91,7 @@ void CVehicleDamages::ParseDamageMultipliers(TDamageMultipliers& multipliersByHi
 	int c = damageMultipliersTable.getChildCount();
 
 	IGameRules* pGR = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
-	assert(pGR);
+	CRY_ASSERT(pGR);
 
 	for (; i < c; i++)
 	{
@@ -117,7 +117,6 @@ void CVehicleDamages::ParseDamageMultipliers(TDamageMultipliers& multipliersByHi
 			string ammoType = multiplierTable.getAttr("ammoType");
 			if (!ammoType.empty())
 			{
-				int projectileType = 0;
 				if (pGR && ammoType != "default")
 				{
 					uint16 classId(~uint16(0));

@@ -373,4 +373,3 @@ REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_MoveAndSew, eUVMappingToolGro
                                     move_and_sew, "runs move and sew tool", "uv_mapping.move_and_sew")
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_SmartSew, eUVMappingToolGroup_Manipulation, "Smart Sew", SmartSewTool,
                                     smart_sew, "runs smart sew tool", "uvmapping.smart_sew")
-

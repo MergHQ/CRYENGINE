@@ -1,8 +1,6 @@
 #include <CryAnimation/ICryMannequin.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
-#include <CryEntitySystem/IEntitySystem.h>
-
 class CAnimationEventsComponent final : public IEntityComponent
 {
 public:
@@ -24,7 +22,7 @@ public:
 	}
 
 	// Subscribe to animation events
-	virtual uint64 GetEventMask() const override { return ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT); }
+	virtual Cry::Entity::EventFlags GetEventMask() const override { return ENTITY_EVENT_ANIM_EVENT; }
 
 protected:
 	// The action controller we want to forward events to

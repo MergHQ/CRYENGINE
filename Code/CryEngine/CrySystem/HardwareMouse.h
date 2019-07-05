@@ -41,7 +41,7 @@ public:
 
 	// IHardwareMouse
 	virtual void                         Release();
-	virtual void                         OnPreInitRenderer();
+	virtual void                         OnPostInitRenderer();
 	virtual void                         OnPostInitInput();
 	virtual void                         Event(int iX, int iY, EHARDWAREMOUSEEVENT eHardwareMouseEvent, int wheelDelta = 0);
 	virtual void                         AddListener(IHardwareMouseEventListener* pHardwareMouseEventListener);
@@ -49,10 +49,11 @@ public:
 	virtual bool                         SetExclusiveEventListener(IHardwareMouseEventListener* pExclusiveEventListener);
 	virtual void                         RemoveExclusiveEventListener(IHardwareMouseEventListener* pExclusiveEventListener);
 	virtual IHardwareMouseEventListener* GetCurrentExclusiveEventListener() { return m_pExclusiveEventListener; }
-	virtual void                         SetConfinedWnd(HWND wnd);
+	virtual void                         SetConfinedWnd(CRY_HWND wnd);
 	virtual void                         SetGameMode(bool bGameMode);
 	virtual void                         IncrementCounter();
 	virtual void                         DecrementCounter();
+	virtual bool                         IsCursorVisible() const;
 	virtual void                         GetHardwareMousePosition(float* pfX, float* pfY);
 	virtual void                         SetHardwareMousePosition(float fX, float fY);
 	virtual void                         GetHardwareMouseClientPosition(float* pfX, float* pfY);
@@ -83,13 +84,13 @@ private:
 	void        EvaluateCursorConfinement();
 	//! respond to focus-in, focus-out events
 	void        HandleFocusEvent(bool bFocus);
-	HWND        GetConfinedWindowHandle() const;
+	CRY_HWND    GetConfinedWindowHandle() const;
 
 	typedef std::list<IHardwareMouseEventListener*> TListHardwareMouseEventListeners;
 	TListHardwareMouseEventListeners m_listHardwareMouseEventListeners;
-	IHardwareMouseEventListener*     m_pExclusiveEventListener;
+	IHardwareMouseEventListener*     m_pExclusiveEventListener = nullptr;
 
-	ITexture*  m_pCursorTexture;
+	ITexture*  m_pCursorTexture = nullptr;
 	int        m_iReferenceCounter;
 	float      m_fCursorX;
 	float      m_fCursorY;
@@ -101,7 +102,7 @@ private:
 	string     m_curCursorPath;
 	bool       m_shouldUseSystemCursor;
 	bool       m_usingSystemCursor;
-	HWND       m_confinedWnd;
+	CRY_HWND   m_confinedWnd;
 
 #if CRY_PLATFORM_WINDOWS
 	HCURSOR    m_hCursor;
@@ -113,7 +114,11 @@ private:
 
 	bool       m_hide;
 	bool       m_calledShowHWMouse;
-	int        m_debugHardwareMouse;
+	int        m_debugHardwareMouse = 0;
+
+	static float s_MouseCursorSoftwareOffsetX;
+	static float s_MouseCursorSoftwareOffsetY;
+	static int   s_MouseControllerEmulation;
 };
 
 //-----------------------------------------------------------------------------------------------------

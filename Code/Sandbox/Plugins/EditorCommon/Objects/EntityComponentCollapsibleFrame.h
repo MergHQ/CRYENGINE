@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
+
 #include <QCollapsibleFrame.h>
 
 struct IEntityComponent;
@@ -28,4 +30,3 @@ public:
 	CEntityComponentCollapsibleFrame(const QString& title, const CEntityComponentClassDesc& typeDesc, const size_t typeInstanceIndex, const bool isComponentUserAdded);
 	virtual ~CEntityComponentCollapsibleFrame() {}
 };
-

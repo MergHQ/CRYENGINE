@@ -7,7 +7,7 @@
 
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 
-#ifdef USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 namespace BehaviorTree
 {
 class ExecutionStackFileLogger
@@ -29,14 +29,14 @@ private:
 	ExecutionStackFileLogger(const ExecutionStackFileLogger&);
 	ExecutionStackFileLogger& operator=(const ExecutionStackFileLogger&);
 
-	void                      LogNodeRecursively(const DebugNode& debugNode, const UpdateContext& updateContext, const BehaviorTreeInstance& instance, const int indentLevel);
+	void                      LogNodeRecursively(const DebugNode& debugNode, const int indentLevel);
 
 	string           m_agentName;
-	char             m_logFilePath[ICryPak::g_nMaxPath];
+	CryPathString    m_logFilePath;
 	LogFileOpenState m_openState;
 	CCryFile         m_logFile;
 };
 }
-#endif  // USING_BEHAVIOR_TREE_EXECUTION_STACKS_FILE_LOG
+#endif  // DEBUG_MODULAR_BEHAVIOR_TREE
 
 #endif  // ExecutionStackFileLogger_h

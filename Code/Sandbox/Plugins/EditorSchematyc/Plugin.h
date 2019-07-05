@@ -7,9 +7,7 @@
 class CSchematycPlugin : public IPlugin
 {
 public:
-
 	CSchematycPlugin();
-	~CSchematycPlugin();
 
 	// IPlugin
 	int32       GetPluginVersion() override;
@@ -17,4 +15,3 @@ public:
 	const char* GetPluginDescription() override;
 	// ~IPlugin
 };
-

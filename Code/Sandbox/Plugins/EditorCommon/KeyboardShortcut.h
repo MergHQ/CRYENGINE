@@ -4,6 +4,7 @@
 #include "EditorCommonAPI.h"
 
 #include <QKeySequence>
+#include <QList>
 
 class EDITOR_COMMON_API CKeyboardShortcut
 {
@@ -79,4 +80,3 @@ private:
 	StandardKey m_key;
 	string      m_string;
 };
-

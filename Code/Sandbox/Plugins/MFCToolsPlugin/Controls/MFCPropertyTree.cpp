@@ -6,13 +6,11 @@
 
 #include <IEditor.h>
 #include <CrySerialization/IArchive.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <QPropertyTree/QPropertyDialog.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
+#include <QPropertyTreeLegacy/QPropertyDialog.h>
 
-#if QT_VERSION >= 0x50000
-	#include <QWindow>
-	#include <QGuiApplication>
-#endif
+#include <QWindow>
+#include <QGuiApplication>
 
 CMFCPropertyTreeSignalHandler::CMFCPropertyTreeSignalHandler(CMFCPropertyTree* propertyTree)
 	: m_propertyTree(propertyTree)
@@ -50,7 +48,7 @@ END_MESSAGE_MAP()
 CMFCPropertyTree::CMFCPropertyTree()
 	: m_propertyTree(0)
 {
-	m_propertyTree = new QPropertyTree(0);
+	m_propertyTree = new QPropertyTreeLegacy(0);
 	m_signalHandler = new CMFCPropertyTreeSignalHandler(this);
 }
 
@@ -89,19 +87,15 @@ int CMFCPropertyTree::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_propertyTree->setWindowFlags(Qt::Widget);
 	HWND child = (HWND)m_propertyTree->winId();
 	::SetWindowLong(child, GWL_STYLE, WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-#if QT_VERSION >= 0x50000
 	QWindow* qwindow = m_propertyTree->windowHandle();
 	qwindow->setProperty("_q_embedded_native_parent_handle", QVariant((WId)GetSafeHwnd()));
 	::SetParent(child, GetSafeHwnd());
 	qwindow->setFlags(Qt::FramelessWindowHint);
-#else
-	::SetParent(child, GetSafeHwnd());
-#endif
 
 	QEvent e(QEvent::EmbeddingControl);
 	QCoreApplication::sendEvent(m_propertyTree, &e);
 	m_propertyTree->setUndoEnabled(true);
-	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
+	PropertyTreeStyle treeStyle(QPropertyTreeLegacy::defaultTreeStyle());
 	treeStyle.propertySplitter = false;
 	m_propertyTree->setTreeStyle(treeStyle);
 	m_propertyTree->show();
@@ -220,4 +214,3 @@ HWND FindTopLevelFrame(HWND child)
 
 	return current;
 }
-

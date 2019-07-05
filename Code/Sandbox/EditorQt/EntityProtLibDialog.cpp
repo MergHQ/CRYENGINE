@@ -3,24 +3,25 @@
 #include "StdAfx.h"
 #include "EntityProtLibDialog.h"
 
-#include "Objects\EntityScript.h"
-#include "Objects\ProtEntityObject.h"
-#include "Dialogs/QGroupDialog.h"
-#include "Util/MFCUtil.h"
-#include "EntityPrototypeManager.h"
-#include "EntityPrototypeLibrary.h"
-#include "EntityPrototype.h"
-#include "Objects/EntityObject.h"
-#include "SelectEntityClsDialog.h"
-#include "Util/Clipboard.h"
-#include "ViewManager.h"
-
-#include <CryEntitySystem/IEntitySystem.h>
-
 #include "Material/MaterialManager.h"
-#include "Controls/MFCPropertyTree.h"
+#include "Objects/ProtEntityObject.h"
+#include "Objects/SelectionGroup.h"
+#include "Objects/EntityScript.h"
+#include "EntityPrototypeManager.h"
+#include "SelectEntityClsDialog.h"
+#include "ViewManager.h"
+#include "IEditorImpl.h"
 
-#include "Controls/QuestionDialog.h"
+#include <IObjectManager.h>
+#include <Controls/MFCPropertyTree.h>
+#include <Controls/PropertyItem.h>
+#include <Controls/QuestionDialog.h>
+#include <Util/Clipboard.h>
+#include <Util/MFCUtil.h>
+
+#include <Dialogs/QGroupDialog.h>
+#include <QDialogButtonBox>
+
 
 #define IDC_PROTOTYPES_TREE     AFX_IDW_PANE_FIRST
 #define IDC_DESCRIPTION_EDITBOX AFX_IDW_PANE_FIRST + 1
@@ -49,9 +50,7 @@
 #endif
 
 IMPLEMENT_DYNAMIC(CEntityProtLibDialog, CBaseLibraryDialog);
-//////////////////////////////////////////////////////////////////////////
-// CEntityProtLibDialog implementation.
-//////////////////////////////////////////////////////////////////////////
+
 CEntityProtLibDialog::CEntityProtLibDialog(CWnd* pParent)
 	: CBaseLibraryDialog(IDD_DB_ENTITY, pParent)
 {
@@ -62,17 +61,13 @@ CEntityProtLibDialog::CEntityProtLibDialog(CWnd* pParent)
 		bRegisterMFCPropertyTreeClass = false;
 	}
 
-	m_entity = 0;
 	m_pEntityManager = GetIEditorImpl()->GetEntityProtManager();
 	m_pItemManager = m_pEntityManager;
-	m_bEntityPlaying = false;
-	m_bShowDescription = false;
-	m_pArchetypeExtensionPropsCtrl = nullptr;
 
 	// Sort items using full recursion.
 	m_sortRecursionType = SORT_RECURSION_FULL;
 
-	// Immidiatly create dialog.
+	// Immediately create dialog.
 	Create(IDD_DATABASE, pParent);
 }
 
@@ -111,7 +106,6 @@ ON_WM_SIZE()
 ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnDestroy()
 {
 	CBaseLibraryDialog::OnDestroy();
@@ -214,21 +208,17 @@ BOOL CEntityProtLibDialog::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
-//////////////////////////////////////////////////////////////////////////
 UINT CEntityProtLibDialog::GetDialogMenuID()
 {
 	return IDR_DB_ENTITY;
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
-// Create the toolbar
 void CEntityProtLibDialog::InitToolbar(UINT nToolbarResID)
 {
 	InitLibraryToolbar();
 	InitItemToolbar();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnSize(UINT nType, int cx, int cy)
 {
 	CBaseLibraryDialog::OnSize(nType, cx, cy);
@@ -243,7 +233,6 @@ void CEntityProtLibDialog::OnSize(UINT nType, int cx, int cy)
 	RecalcLayout();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnAddPrototype()
 {
 	if (!m_pLibrary)
@@ -279,7 +268,6 @@ void CEntityProtLibDialog::OnAddPrototype()
 	SelectItem(prototype);
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CEntityProtLibDialog::SelectEntityClass()
 {
 	CSelectEntityClsDialog dlg;
@@ -373,7 +361,6 @@ void CEntityProtLibDialog::MarkFieldsThatDifferFromScriptDefaults(CVarBlock* pAr
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 class CArchetypeExtensionPropsWrapper
 {
 public:
@@ -401,7 +388,6 @@ private:
 	IEntityArchetype* m_pArchetype;
 };
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::SelectItem(CBaseLibraryItem* item, bool bForceReload)
 {
 	bool bChanged = item != m_pCurrentItem || bForceReload;
@@ -435,6 +421,7 @@ void CEntityProtLibDialog::SelectItem(CBaseLibraryItem* item, bool bForceReload)
 		m_propsCtrl.SetRootName("Class Properties");
 		m_propsCtrl.ExpandAll();
 		m_propsCtrl.SetUpdateCallback(functor(*this, &CEntityProtLibDialog::OnUpdateProperties));
+		m_propsCtrl.SetCallbackOnNonModified(false);
 
 		CVarBlock* pArchetypeVarBlock = prototype->GetProperties();
 		CVarBlock* pEntScriptVarBlock = prototype->GetScript() ? prototype->GetScript()->GetDefaultProperties() : NULL;
@@ -465,7 +452,6 @@ void CEntityProtLibDialog::SelectItem(CBaseLibraryItem* item, bool bForceReload)
 	UpdatePreview();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::UpdatePreview()
 {
 	CEntityPrototype* prototype = GetSelectedPrototype();
@@ -482,9 +468,7 @@ void CEntityProtLibDialog::UpdatePreview()
 			return;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	// Make visual object for this entity.
-	//////////////////////////////////////////////////////////////////////////
 	m_visualObject = "";
 	m_PrototypeMaterial = "";
 
@@ -539,7 +523,6 @@ void CEntityProtLibDialog::UpdatePreview()
 	m_previewCtrl.SetGrid(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::SpawnEntity(CEntityPrototype* prototype)
 {
 	assert(prototype);
@@ -583,7 +566,6 @@ void CEntityProtLibDialog::SpawnEntity(CEntityPrototype* prototype)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::ReleaseEntity()
 {
 	m_visualObject = "";
@@ -599,7 +581,6 @@ void CEntityProtLibDialog::ReleaseEntity()
 	//m_scriptDialog.SetScript( 0,0 );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::Update()
 {
 	if (!m_bEntityPlaying)
@@ -612,7 +593,6 @@ void CEntityProtLibDialog::Update()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnUpdateProperties(IVariable* var)
 {
 	CEntityPrototype* prototype = GetSelectedPrototype();
@@ -651,7 +631,6 @@ void CEntityProtLibDialog::OnUpdateProperties(IVariable* var)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnShowDescription()
 {
 	/*
@@ -664,7 +643,6 @@ void CEntityProtLibDialog::OnShowDescription()
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnPlay()
 {
 	m_bEntityPlaying = !m_bEntityPlaying;
@@ -682,7 +660,6 @@ void CEntityProtLibDialog::OnPlay()
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnUpdatePlay(CCmdUI* pCmdUI)
 {
 	if (m_bEntityPlaying)
@@ -691,7 +668,6 @@ void CEntityProtLibDialog::OnUpdatePlay(CCmdUI* pCmdUI)
 		pCmdUI->SetCheck(FALSE);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnArchetypeExtensionPropsChanged()
 {
 	if (CEntityPrototype* pPrototype = GetSelectedPrototype())
@@ -701,7 +677,6 @@ void CEntityProtLibDialog::OnArchetypeExtensionPropsChanged()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnReloadEntityScript()
 {
 	CEntityPrototype* prototype = GetSelectedPrototype();
@@ -713,14 +688,12 @@ void CEntityProtLibDialog::OnReloadEntityScript()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEntityPrototype* CEntityProtLibDialog::GetSelectedPrototype()
 {
 	CBaseLibraryItem* item = m_pCurrentItem;
 	return (CEntityPrototype*)item;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnDescriptionChange()
 {
 	/*
@@ -734,7 +707,6 @@ void CEntityProtLibDialog::OnDescriptionChange()
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnAssignToSelection()
 {
 	CEntityPrototype* pPrototype = GetSelectedPrototype();
@@ -758,7 +730,6 @@ void CEntityProtLibDialog::OnAssignToSelection()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnSelectAssignedObjects()
 {
 	CEntityPrototype* pItem = GetSelectedPrototype();
@@ -777,14 +748,13 @@ void CEntityProtLibDialog::OnSelectAssignedObjects()
 				continue;
 			if (pObject->IsHidden() || pObject->IsFrozen())
 				continue;
-			GetIEditorImpl()->GetObjectManager()->SelectObject(pObject);
+			GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pObject);
 		}
 	}
 }
 
 #define ID_CMD_CHANGECLASS 2
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnNotifyTreeRClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	// Show helper menu.
@@ -848,7 +818,6 @@ void CEntityProtLibDialog::OnNotifyTreeRClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnBeginDrag(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;
@@ -884,7 +853,6 @@ void CEntityProtLibDialog::OnBeginDrag(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnMouseMove(UINT nFlags, CPoint point)
 {
 	if (m_dragImage)
@@ -909,7 +877,7 @@ void CEntityProtLibDialog::OnMouseMove(UINT nFlags, CPoint point)
 				SetCursor(m_hCursorCreate);
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
-				HitContext hit;
+				HitContext hit(viewport);
 				if (viewport->HitTest(vp, hit))
 				{
 					if (hit.object && hit.object->IsKindOf(RUNTIME_CLASS(CProtEntityObject)))
@@ -924,7 +892,6 @@ void CEntityProtLibDialog::OnMouseMove(UINT nFlags, CPoint point)
 	CBaseLibraryDialog::OnMouseMove(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	if (m_dragImage)
@@ -948,7 +915,7 @@ void CEntityProtLibDialog::OnLButtonUp(UINT nFlags, CPoint point)
 			viewport->ScreenToClient(&vp);
 			// Drag and drop into one of views.
 			// Start object creation.
-			HitContext hit;
+			HitContext hit(viewport);
 			if (viewport->HitTest(vp, hit))
 			{
 				if (hit.object)
@@ -974,7 +941,6 @@ void CEntityProtLibDialog::OnLButtonUp(UINT nFlags, CPoint point)
 	CBaseLibraryDialog::OnLButtonUp(nFlags, point);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnCopy()
 {
 	CBaseLibraryItem* pItem = m_pCurrentItem;
@@ -989,7 +955,6 @@ void CEntityProtLibDialog::OnCopy()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnPaste()
 {
 	if (!m_pLibrary)
@@ -1014,7 +979,6 @@ void CEntityProtLibDialog::OnPaste()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnChangeEntityClass()
 {
 	CBaseLibraryItem* pItem = m_pCurrentItem;
@@ -1046,11 +1010,9 @@ void CEntityProtLibDialog::OnChangeEntityClass()
 				}
 			}
 		}
-		//////////////////////////////////////////////////////////////////////////
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEntityProtLibDialog::OnRemoveLibrary()
 {
 	string library = m_selectedLib;
@@ -1078,4 +1040,3 @@ void CEntityProtLibDialog::OnRemoveLibrary()
 		CBaseLibraryDialog::OnRemoveLibrary();
 	}
 }
-

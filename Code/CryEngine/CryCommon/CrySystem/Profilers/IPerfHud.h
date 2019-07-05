@@ -108,6 +108,9 @@ struct ICryPerfHUD : public ICryUnknown
 DECLARE_SHARED_POINTERS(ICryPerfHUD);
 
 void        CryPerfHUDWarning(float duration, const char*, ...) PRINTF_PARAMS(2, 3);
+
+#include <CrySystem/ISystem.h>
+
 inline void CryPerfHUDWarning(float duration, const char* format, ...)
 {
 	if (gEnv && gEnv->pSystem)

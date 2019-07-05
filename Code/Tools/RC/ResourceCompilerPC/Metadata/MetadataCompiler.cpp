@@ -6,6 +6,8 @@
 #include "FileUtil.h"
 #include "StringHelpers.h"
 #include "CGF/CGFLoader.h"
+#include <vector>
+#include <stack>
 
 namespace
 {
@@ -76,7 +78,7 @@ bool IsCgfLod(const string& cgf)
 //! Removes the read-only attribute and deletes the file. Returns true if successful or file does not exist, otherwise returns false.
 bool DeleteFileIfExists(const string filename)
 {
-	SetFileAttributesA(filename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+	FileUtil::MakeWritable(filename.c_str());
 	return (DeleteFileA(filename.c_str()) != 0) || (GetLastError() == ERROR_FILE_NOT_FOUND);
 }
 
@@ -335,15 +337,15 @@ void CMetadataCompiler::EndProcessing()
 
 bool CMetadataCompiler::Process()
 {
-	const string sourceFilename = m_CC.GetSourcePath();
-	const string metadataFilename = IAssetManager::GetMetadataFilename(sourceFilename);
+	const string filename = m_CC.GetSourcePath();
+	const string metadataFilename = IAssetManager::GetMetadataFilename(filename);
 
 	// If source file does not exist, ignore it.
-	if (!FileUtil::FileExists(sourceFilename))
+	if (!FileUtil::FileExists(filename))
 	{
 		if (!m_CC.config->GetAsBool("skipmissing", false, true))
 		{
-			RCLogWarning("File does not exist: %s", sourceFilename.c_str());
+			RCLogWarning("File does not exist: %s", filename.c_str());
 		}
 		return true;
 	}
@@ -353,12 +355,31 @@ bool CMetadataCompiler::Process()
 		return DeleteFileIfExists(metadataFilename);
 	}
 
+	string sourceFilename;
 	std::vector<string> files;
 
-	const char* szExt = PathUtil::GetExt(sourceFilename.c_str());
+	const char* szExt = PathUtil::GetExt(filename.c_str());
 	if (stricmp(szExt, "dds") == 0)
 	{
-		files = FindDdsAssetFiles(sourceFilename);
+		files = FindDdsAssetFiles(filename);
+
+		// try to resolve source file
+		string tifFilename = PathUtil::ReplaceExtension(filename.c_str(), "tif");
+		if (FileUtil::FileExists(tifFilename))
+		{
+			sourceFilename = tifFilename;
+		}
+		else
+		{
+			// try to resolve source file in output folder
+			tifFilename = PathUtil::Make(m_CC.GetOutputFolder(), 
+				PathUtil::ReplaceExtension(PathUtil::GetFile(filename), "tif"));
+			if (FileUtil::FileExists(tifFilename))
+			{
+				sourceFilename = tifFilename;
+			}
+		} 
+
 	}
 	else if (!stricmp(szExt, "cgf") || !stricmp(szExt, "cga") || !stricmp(szExt, "skin"))
 	{
@@ -367,7 +388,7 @@ bool CMetadataCompiler::Process()
 		{
 			if (FileUtil::FileExists(metadataFilename.c_str()))
 			{
-				files.emplace_back(sourceFilename);
+				files.emplace_back(filename);
 			}
 			else
 			{
@@ -376,15 +397,15 @@ bool CMetadataCompiler::Process()
 		}
 		else
 		{
-			files = FindCgfAssetFiles(sourceFilename);
+			files = FindCgfAssetFiles(filename);
 		}
 	}
 	else
 	{
-		files.emplace_back(sourceFilename);
+		files.emplace_back(filename);
 	}
 
-	return m_pResourceCompiler->GetAssetManager()->SaveCryasset(m_CC.config, "", files, m_CC.GetOutputFolder());
+	return m_pResourceCompiler->GetAssetManager()->SaveCryasset(m_CC.config, sourceFilename, files, m_CC.GetOutputFolder());
 }
 
 const char* CMetadataCompiler::GetExt(int index) const

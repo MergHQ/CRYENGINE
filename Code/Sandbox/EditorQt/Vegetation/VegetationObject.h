@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Material/Material.h"
+#include "Objects/EntityScript.h"
 
 #define VEGETATION_ELEVATION_MIN "ElevationMin"
 #define VEGETATION_ELEVATION_MAX "ElevationMax"
@@ -13,40 +14,39 @@
 
 class CVegetationMap;
 class CVegetationObject;
-/** This is description of single static vegetation object instance.
- */
+struct IDecalRenderNode;
+struct IRenderNode;
+
+// Description of single static vegetation object instance.
 struct SANDBOX_API CVegetationInstance
 {
-	CVegetationInstance* next;  //! Next object instance
-	CVegetationInstance* prev;  //! Prev object instance.
+	Vec3               pos;                      // Instance position
+	float              scale;                    // Instance scale factor
+	CVegetationObject* object;                   // Object of this instance
+	IRenderNode*       pRenderNode;              // Render node of this object
+	IDecalRenderNode*  pRenderNodeGroundDecal;   // Decal under vegetation
+	float              angle;                    // Instance rotation.
+	float              angleX;                   // Angle X for rotation
+	float              angleY;                   // Angle Y for rotation
 
-	Vec3                 pos;                    //!< Instance position.
-	float                scale;                  //!< Instance scale factor.
-	CVegetationObject*   object;                 //!< Object of this instance.
-	IRenderNode*         pRenderNode;            // Render node of this object.
-	IDecalRenderNode*    pRenderNodeGroundDecal; // Decal under vegetation.
-	uint8                brightness;             //!< Brightness of this object.
-	float                angle;                  //!< Instance rotation.
-	float                angleX;                 //!< Angle X for rotation
-	float                angleY;                 //!< Angle Y for rotation
+	int                m_refCount;               // Number of references to this vegetation instance
+	uint8              brightness;               // Brightness of this object
 
-	int                  m_refCount; //!< Number of references to this vegetation instance.
+	bool               m_boIsSelected;
 
-	bool                 m_boIsSelected;
+	//! Add new reference to this object
+	void AddRef() { m_refCount++; }
 
-	//! Add new refrence to this object.
-	void AddRef() { m_refCount++; };
-
-	//! Release refrence to this object.
+	//! Release reference to this object
 	//! when reference count reaches zero, object is deleted.
 	void Release()
 	{
-		if ((--m_refCount) <= 0)
+		if ((--m_refCount) == 0)
 			delete this;
 	}
 private:
 	// Private destructor, to not be able to delete it explicitly.
-	~CVegetationInstance() {};
+	~CVegetationInstance() {}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ public:
 	void Serialize(XmlNodeRef& node, bool bLoading);
 
 	// Member access
-	const char* GetFileName() const { mv_fileName->Get(m_fileNameTmp); return m_fileNameTmp.GetString(); };
+	const char* GetFileName() const { mv_fileName->Get(m_fileNameTmp); return m_fileNameTmp.GetString(); }
 	void        SetFileName(const string& strFileName);
 
 	//! Get this vegetation object GUID.
@@ -77,18 +77,18 @@ public:
 	//! Set current object group.
 	void        SetGroup(const string& group);
 	//! Get object's group.
-	const char* GetGroup() const { return m_group; };
+	const char* GetGroup() const { return m_group; }
 
 	//! Temporary unload IStatObj.
 	void  UnloadObject();
 	//! Load IStatObj again.
 	void  LoadObject();
 
-	float GetSize()               { return mv_size; };
-	void  SetSize(float fSize)    { mv_size = fSize; };
+	float GetSize()               { return mv_size; }
+	void  SetSize(float fSize)    { mv_size = fSize; }
 
-	float GetSizeVar()            { return mv_sizevar; };
-	void  SetSizeVar(float fSize) { mv_sizevar = fSize; };
+	float GetSizeVar()            { return mv_sizevar; }
+	void  SetSizeVar(float fSize) { mv_sizevar = fSize; }
 
 	//! Get actual size of object.
 	float GetObjectSize() const { return m_objectSize; }
@@ -96,54 +96,59 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Operators.
 	//////////////////////////////////////////////////////////////////////////
-	void SetElevation(float min, float max) { mv_hmin = min; mv_hmax = max; };
-	void SetSlope(float min, float max)     { mv_slope_min = min; mv_slope_max = max; };
-	void SetDensity(float dens)             { mv_density = dens; };
+	void SetElevation(float min, float max) { mv_hmin = min; mv_hmax = max; }
+	void SetSlope(float min, float max)     { mv_slope_min = min; mv_slope_max = max; }
+	void SetDensity(float dens)             { mv_density = dens; }
 	void SetSelected(bool bSelected);
 	void SetHidden(bool bHidden);
 	void SetNumInstances(int numInstances);
 	void SetBending(float fBending) { mv_bending = fBending; }
 	void SetFrozen(bool bFrozen)    { mv_layerFrozen = bFrozen; }
-	void SetInUse(bool bNewState)   { m_bInUse = bNewState; };
+	void SetInUse(bool bNewState)   { m_bInUse = bNewState; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Accessors.
 	//////////////////////////////////////////////////////////////////////////
-	float GetElevationMin() const { return mv_hmin; };
-	float GetElevationMax() const { return mv_hmax; };
-	float GetSlopeMin() const     { return mv_slope_min; };
-	float GetSlopeMax() const     { return mv_slope_max; };
-	float GetDensity() const      { return mv_density; };
+	float GetElevationMin() const { return mv_hmin; }
+	float GetElevationMax() const { return mv_hmax; }
+	float GetSlopeMin() const     { return mv_slope_min; }
+	float GetSlopeMax() const     { return mv_slope_max; }
+	float GetDensity() const      { return mv_density; }
 	bool  IsHidden() const;
 	bool  IsSelected() const      { return m_bSelected; }
-	int   GetNumInstances()       { return m_numInstances; };
-	float GetBending()            { return mv_bending; };
-	bool  GetFrozen() const       { return mv_layerFrozen; };
-	bool  GetInUse()              { return m_bInUse; };
+	int   GetNumInstances()       { return m_numInstances; }
+	float GetBending()            { return mv_bending; }
+	bool  GetFrozen() const       { return mv_layerFrozen; }
+	bool  GetInUse()              { return m_bInUse; }
 	bool  IsAutoMerged()          { return mv_autoMerged; }
 
 	//////////////////////////////////////////////////////////////////////////
-	void SetIndex(int i)  { m_index = i; };
-	int  GetIndex() const { return m_index; };
+	void SetIndex(int i)  { m_index = i; }
+	int  GetIndex() const { return m_index; }
 
 	//! Set is object cast shadow.
 	void SetCastShadow(bool on) { mv_castShadows = on; }
 	//! Check if object casting shadow.
-	bool IsCastShadow() const   { return mv_castShadows; };
+	bool IsCastShadow() const   { return mv_castShadows; }
 
 	//! Set if object can be voxelized.
 	void SetGIMode(bool on) { mv_giMode = on; }
 	//! Check if object can be voxelized.
-	bool GetGIMode() const   { return mv_giMode; };
+	bool GetGIMode() const  { return mv_giMode; }
+
+	//! Set if procedural object has to be exported as normal non-procedural object
+	void SetOfflineProcedural(bool enabled) { mv_offlineProcedural = enabled; }
+	//! Check if procedural object has to be exported as normal non-procedural object
+	bool IsOfflineProcedural() const { return mv_offlineProcedural; }
 
 	//////////////////////////////////////////////////////////////////////////
 	void SetDynamicDistanceShadows(bool on) { mv_DynamicDistanceShadows = on; }
-	bool HasDynamicDistanceShadows() const  { return mv_DynamicDistanceShadows; };
+	bool HasDynamicDistanceShadows() const  { return mv_DynamicDistanceShadows; }
 
 	//! Set to true if characters can hide behind this object.
 	void SetHideable(bool on) { mv_hideable = on; }
 	//! Check if characters can hide behind this object.
-	bool IsHideable() const   { return mv_hideable; };
+	bool IsHideable() const   { return mv_hideable; }
 
 	//! if < 0 then AI calculates the navigation radius automatically
 	//! if >= 0 then AI uses this radius
@@ -155,14 +160,18 @@ public:
 	bool  IsUseSprites() const                    { return mv_UseSprites; }
 	bool  IsAlignToTerrain() const                { return mv_alignToTerrainCoefficient != 0.f; }
 	bool  IsUseTerrainColor() const               { return mv_useTerrainColor; }
+	bool  IgnoresTerrainBlending() const          { return mv_ignoreTerrainLayerBlend; }
 	bool  IsAffectedByBrushes() const             { return mv_growOn == eGrowOn_Brushes || mv_growOn == eGrowOn_Both; }
 	bool  IsAffectedByTerrain() const             { return mv_growOn == eGrowOn_Terrain || mv_growOn == eGrowOn_Both; }
 
 	//! Copy all parameters from specified vegetation object.
 	void CopyFrom(const CVegetationObject& o);
 
+#pragma push_macro("GetObject")
+#undef GetObject
 	//! Return pointer to static object.
-	IStatObj* GetObject() { return m_statObj; };
+	IStatObj* GetObject() { return m_statObj; }
+#pragma pop_macro("GetObject")
 
 	//! Return true when the brush can paint on a location with the supplied parameters
 	bool IsPlaceValid(float height, float slope) const;
@@ -171,11 +180,11 @@ public:
 	float CalcVariableSize() const;
 
 	//! Id of this object.
-	int  GetId() const  { return m_id; };
-	void SetId(int nId) { m_id = nId; SetEngineParams(); };
+	int  GetId() const                                       { return m_id; }
+	void SetId(int nId)                                      { m_id = nId; SetEngineParams(); }
 
-	void GetTerrainLayers(std::vector<string>& layers)       { layers = m_terrainLayers; };
-	void SetTerrainLayers(const std::vector<string>& layers) { m_terrainLayers = layers; };
+	void GetTerrainLayers(std::vector<string>& layers)       { layers = m_terrainLayers; }
+	void SetTerrainLayers(const std::vector<string>& layers) { m_terrainLayers = layers; }
 	bool IsUsedOnTerrainLayer(const string& layer);
 	void UpdateTerrainLayerVariables();
 
@@ -185,9 +194,9 @@ public:
 	// Return texture memory used by this object.
 	int                GetTextureMemUsage(ICrySizer* pSizer = NULL);
 
-	virtual CMaterial* GetMaterial() const { return m_pMaterial; }
+	virtual CMaterial* GetMaterial() const  { return m_pMaterial; }
 
-	CVarObject* GetVarObject() const { return m_pVarObject.get(); }
+	CVarObject*        GetVarObject() const { return m_pVarObject.get(); }
 
 protected:
 	void SetEngineParams();
@@ -197,49 +206,49 @@ protected:
 	void OnFileNameChange(IVariable* var);
 	void UpdateMaterial();
 
-	CVegetationObject(const CVegetationObject& o) {};
+	CVegetationObject(const CVegetationObject& o) {}
 
 	CryGUID m_guid;
 
 	//! Index of object in editor.
-	int m_index;
+	int m_index { 0 };
 
 	//! Objects group.
-	string m_group;
+	string m_group { "Default" };
 
 	//! Used during generation ?
-	bool m_bInUse;
+	bool m_bInUse { true };
 
 	//! True if all instances of this object must be hidden.
-	bool m_bHidden;
+	bool m_bHidden { false };
 
 	//! True if Selected.
-	bool m_bSelected;
+	bool m_bSelected { false };
 
 	//! Real size of geometrical object.
-	float m_objectSize;
+	float m_objectSize { 1 };
 
 	//! Number of instances of this vegetation object placed on the map.
-	int m_numInstances;
+	int m_numInstances { 0 };
 
 	//! Current group Id of this object (Need not saving).
-	int m_id;
+	int m_id { 0 };
 
 	//! Pointer to object for this group.
-	IStatObj* m_statObj;
+	IStatObj* m_statObj { nullptr };
 
 	//! CGF custom material
 	TSmartPtr<CMaterial> m_pMaterial;
 
 	//! Ground decal material
-	TSmartPtr<CMaterial> m_pMaterialGroundDecal;
+	TSmartPtr<CMaterial>        m_pMaterialGroundDecal;
 
 	std::unique_ptr<CVarObject> m_pVarObject;
 
 	// Place on terrain layers.
 	std::vector<string> m_terrainLayers;
 
-	bool                 m_bVarIgnoreChange;
+	bool                m_bVarIgnoreChange { false };
 	//////////////////////////////////////////////////////////////////////////
 	// Variables.
 	//////////////////////////////////////////////////////////////////////////
@@ -253,6 +262,7 @@ protected:
 	CSmartVariable<bool>    mv_castShadows; // Legacy, remains for backward compatibility
 	CSmartVariableEnum<int> mv_castShadowMinSpec;
 	CSmartVariable<bool>    mv_giMode;
+	CSmartVariable<bool>    mv_offlineProcedural;
 	CSmartVariable<bool>    mv_instancing;
 	CSmartVariable<bool>    mv_DynamicDistanceShadows;
 	CSmartVariable<float>   mv_bending;
@@ -264,8 +274,8 @@ protected:
 	CSmartVariable<float>   mv_LodDistRatio;
 	CSmartVariable<float>   mv_ShadowDistRatio;
 	CSmartVariable<float>   mv_MaxViewDistRatio;
-	CSmartVariable<string> mv_material;
-	CSmartVariable<string> mv_materialGroundDecal;
+	CSmartVariable<string>  mv_material;
+	CSmartVariable<string>  mv_materialGroundDecal;
 	CSmartVariable<bool>    mv_UseSprites;
 	CSmartVariable<bool>    mv_rotation;
 	CSmartVariable<int>     mv_rotationRangeToTerrainNormal;
@@ -279,6 +289,7 @@ protected:
 	CSmartVariable<float>   mv_variance;
 	CSmartVariable<float>   mv_airResistance;
 	CSmartVariableEnum<int> mv_growOn;
+	CSmartVariable<bool>    mv_ignoreTerrainLayerBlend;
 
 	CSmartVariable<bool>    mv_layerFrozen;
 	CSmartVariable<bool>    mv_layerWet;
@@ -325,4 +336,3 @@ inline float CVegetationObject::CalcVariableSize() const
 		}
 	}
 }
-

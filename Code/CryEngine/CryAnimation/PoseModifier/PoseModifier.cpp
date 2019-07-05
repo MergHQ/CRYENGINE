@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "PoseModifier.h"
 
 #include "PoseModifierHelper.h"
@@ -280,8 +281,6 @@ bool CConstraintLine::Execute(const SAnimationPoseModifierParams& params)
 	{
 		weight *= clamp_tpl(pPoseData->GetJointRelative(m_weightNodeIndex).t.x, 0.0f, 1.0f);
 	}
-
-	const QuatT& nodeAbsolute = pPoseData->GetJointAbsolute(m_nodeIndex);
 
 	const QuatT& startPointAbsolute = pPoseData->GetJointAbsolute(m_startPointNodeIndex);
 	const Vec3 startPoint = startPointAbsolute.t + startPointAbsolute.q * m_desc.startPoint.localOffset + m_desc.startPoint.worldOffset;
@@ -866,6 +865,9 @@ CIkCCD::CIkCCD() :
 	m_endNodeIndex(-1),
 	m_targetNodeIndex(-1),
 	m_weightNodeIndex(-1),
+	m_nIterations(0),
+	m_fStepSize(0),
+	m_fThreshold(0),
 	m_bInitialized(false),
 	m_bDraw(false)
 {
@@ -936,7 +938,7 @@ bool CIkCCD::Prepare(const SAnimationPoseModifierParams& params)
 			m_arrJointChain.clear();
 		else
 		{
-			if (uint32 size = m_arrJointChain.size())
+			if (!m_arrJointChain.empty())
 			{
 				std::reverse(m_arrJointChain.begin(), m_arrJointChain.end());
 				m_bInitialized = true;
@@ -985,9 +987,8 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 		weight *= clamp_tpl(pPoseData->GetJointRelative(m_weightNodeIndex).t.x, 0.0f, 1.0f);
 
 	f32 inumLinks = 1.0f / f32(numLinks);
-	int32 nRootIdx = m_arrJointChain[1];              //Root
 	int32 nEndEffIdx = m_arrJointChain[numLinks - 1]; //EndEffector
-	ANIM_ASSET_ASSERT(nRootIdx < nEndEffIdx);
+	ANIM_ASSET_ASSERT(m_arrJointChain[1] < nEndEffIdx);
 	int32 iJointIterator = 1;
 
 	// Cyclic Coordinate Descent
@@ -1023,7 +1024,7 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 		{
 			int32 c = m_arrJointChain[j];
 			int32 p = m_arrJointChain[j - 1];
-			assert(p >= 0);
+			CRY_ASSERT(p >= 0);
 			ANIM_ASSET_ASSERT(pRelPose[c].q.IsUnit());
 			ANIM_ASSET_ASSERT(pAbsPose[p].q.IsUnit());
 			pAbsPose[c] = pAbsPose[p] * pRelPose[c];
@@ -1054,7 +1055,7 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 	{
 		int c = m_arrJointChain[i];
 		int p = m_arrJointChain[i - 1];
-		assert(p >= 0);
+		CRY_ASSERT(p >= 0);
 		pAbsPose[c].t += vAddDistance;
 		vAddDistance += bPartDistance;
 		ANIM_ASSET_ASSERT(pAbsPose[c].q.IsUnit());
@@ -1157,9 +1158,6 @@ void CDynamicsSpring::Draw(const Vec3& position)
 	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	if (!pAuxGeom)
 		return;
-
-	const float length = max(m_desc.length, 0.1f);
-	const Vec3 weightDirection = Vec3(0.0f, length, 0.0f).normalize();
 
 	SAuxGeomRenderFlags flags = gEnv->pRenderer->GetIRenderAuxGeom()->GetRenderFlags();
 	flags.SetDepthTestFlag(e_DepthTestOff);
@@ -1603,8 +1601,6 @@ bool CDynamicsPendulum::Execute(const SAnimationPoseModifierParams& params)
 	if (m_runtimeDesc.nodeIndex >= pPoseData->GetJointCount())
 		return false;
 
-	const Skeleton::CPoseData& poseDataDefault = defaultSkeleton.m_poseDefaultData;
-
 	const float _30hz = 0.0333f;
 	const float _1000hz = 0.001f;
 	const float timeDelta = clamp_tpl(params.timeDelta, _1000hz, _30hz);
@@ -1778,7 +1774,6 @@ void CTransformBlender::Draw(const QuatT& targetAbsolute, const QuatT& defaultAb
 	if (!pAuxGeom)
 		return;
 
-	SAuxGeomRenderFlags flags = gEnv->pRenderer->GetIRenderAuxGeom()->GetRenderFlags();
 	pAuxGeom->SetRenderFlags(e_Mode3D | e_AlphaBlended | e_DrawInFrontOn | e_FillModeSolid | e_CullModeNone | e_DepthWriteOff | e_DepthTestOff);
 
 	OBB obb;

@@ -6,6 +6,7 @@
 #include "ObjMan.h"
 #include "3dEngine.h"
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
 
 //////////////////////////////////////////////////////////////////////////
 static bool IsMatrixValid(const Matrix34& mat)
@@ -35,17 +36,16 @@ CCharacterRenderNode::CCharacterRenderNode()
 //////////////////////////////////////////////////////////////////////////
 CCharacterRenderNode::~CCharacterRenderNode()
 {
+	if (m_pCharacterInstance)
+	{
+		m_pCharacterInstance->SetParentRenderNode(nullptr);
+	}
+
 	Dephysicalize();
 	Get3DEngine()->FreeRenderNodeState(this);
 
 	m_pCharacterInstance = nullptr;
 	m_pPhysicsEntity = nullptr;
-
-	if (m_pCameraSpacePos)
-	{
-		delete m_pCameraSpacePos;
-		m_pCameraSpacePos = nullptr;
-	}
 
 	Cry3DEngineBase::GetInstCount(GetRenderNodeType())--;
 }
@@ -63,7 +63,9 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	if (!m_pCharacterInstance || m_dwRndFlags & ERF_HIDDEN)
+	DBG_LOCK_TO_THREAD(this);
+
+	if (!m_pCharacterInstance)
 		return;
 
 	// some parameters will be modified
@@ -75,21 +77,34 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 	rParms.pMaterial = m_pMaterial;
 
 	rParms.dwFObjFlags |= FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
-	rParms.dwFObjFlags |= (GetRndFlags() & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : 0;
+	rParms.dwFObjFlags |= (GetRndFlags() & ERF_FOB_RENDER_AFTER_POSTPROCESSING) ? FOB_RENDER_AFTER_POSTPROCESSING : FOB_NONE;
+	rParms.dwFObjFlags |= (GetRndFlags() & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : FOB_NONE;
 
 	rParms.nHUDSilhouettesParams = m_nHUDSilhouettesParam;
 	
+	if (!passInfo.IsShadowPass() && !passInfo.IsRecursivePass())
+	{
+		const uint64 camTest = (ERF_HIDDEN_FROM_CAMERA);
+		if ((m_dwRndFlags & camTest) != 0)
+			return;
+	}
+
+	if (passInfo.IsRecursivePass())
+	{
+		// Nearest objects are not rendered in the recursive passes.
+		const uint64 recTest = (ERF_HIDDEN_FROM_RECURSION | ERF_FOB_NEAREST);
+		if ((m_dwRndFlags & recTest) != 0)
+			return;
+	}
+
 	if (GetRndFlags() & ERF_FOB_NEAREST)
 	{
-		if (passInfo.IsRecursivePass()) // Nearest objects are not rendered in the recursive passes.
-			return;
-
 		rParms.dwFObjFlags |= FOB_NEAREST;
 
 		// Nearest objects recalculate instance matrix every frame
 		//m_bPermanentRenderObjectMatrixValid = false;
 		
-		auto nearestMatrix = m_matrix;	
+		auto nearestMatrix = m_matrix;
 		CalcNearestTransform(nearestMatrix, passInfo);
 		rParms.pNearestMatrix = &nearestMatrix;
 
@@ -120,15 +135,20 @@ void CCharacterRenderNode::SetMatrix(const Matrix34& transform)
 
 	m_matrix = transform;
 
+	InvalidatePermanentRenderObject();
+
 	m_cachedBoundsLocal = m_cachedBoundsWorld = AABB(0.0f);
 
-	Get3DEngine()->UnRegisterEntityAsJob(this);
-	Get3DEngine()->RegisterEntity(this);
+	if (!(m_dwRndFlags & ERF_NO_3DENGINE_REGISTRATION))
+	{
+		Get3DEngine()->UnRegisterEntityAsJob(this);
+		Get3DEngine()->RegisterEntity(this);
+	}
 
 	m_pCharacterInstance->SetAttachmentLocation_DEPRECATED(QuatTS(transform));
 }
 
-void CCharacterRenderNode::GetLocalBounds(AABB& bbox)
+void CCharacterRenderNode::GetLocalBounds(AABB& bbox) const
 {
 	if (!m_pCharacterInstance)
 	{
@@ -164,7 +184,7 @@ void CCharacterRenderNode::Physicalize(bool bInstant)
 }
 
 //////////////////////////////////////////////////////////////////////////
-float CCharacterRenderNode::GetMaxViewDist()
+float CCharacterRenderNode::GetMaxViewDist() const
 {
 	if (GetRndFlags() & ERF_FORCE_POST_3D_RENDER)
 	{
@@ -249,26 +269,39 @@ void CCharacterRenderNode::OnRenderNodeVisible( bool bBecomeVisible )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCharacterRenderNode::SetCameraSpacePos(Vec3* pCameraSpacePos)
+void CCharacterRenderNode::SetCameraSpaceParams(stl::optional<SCameraSpaceParams> cameraSpaceParams)
 {
-	if (pCameraSpacePos)
-	{
-		if (!m_pCameraSpacePos)
-			m_pCameraSpacePos = new Vec3;
-		*m_pCameraSpacePos = *pCameraSpacePos;
-	}
-	else
-	{
-		delete m_pCameraSpacePos;
-		m_pCameraSpacePos = nullptr;
-	}
+	m_cameraSpaceParams = cameraSpaceParams;
 }
+
+//////////////////////////////////////////////////////////////////////////
+stl::optional<SCameraSpaceParams> CCharacterRenderNode::GetCameraSpaceParams() const
+{
+	return m_cameraSpaceParams;
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CCharacterRenderNode::SetCharacter(ICharacterInstance* pCharacter)
 {
 	if (m_pCharacterInstance != pCharacter)
 	{
+		if (m_pCharacterInstance)
+		{
+			m_pCharacterInstance->SetParentRenderNode(nullptr);
+		}
+
 		m_pCharacterInstance = pCharacter;
+
+		if (m_pCharacterInstance)
+		{
+			if (const auto pPreviousOwner = static_cast<CCharacterRenderNode*>(m_pCharacterInstance->GetParentRenderNode()))
+			{
+				pPreviousOwner->m_pCharacterInstance = nullptr;
+			}
+
+			m_pCharacterInstance->SetParentRenderNode(this);
+		}
+
 		InvalidatePermanentRenderObject();
 	}
 }
@@ -276,7 +309,7 @@ void CCharacterRenderNode::SetCharacter(ICharacterInstance* pCharacter)
 //////////////////////////////////////////////////////////////////////////
 void CCharacterRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_matrix.SetTranslation(m_matrix.GetTranslation() + delta);
 	m_cachedBoundsLocal = m_cachedBoundsWorld = AABB(0.0f);
 }
@@ -285,11 +318,11 @@ void CCharacterRenderNode::OffsetPosition(const Vec3& delta)
 void CCharacterRenderNode::CalcNearestTransform(Matrix34& transformMatrix, const SRenderingPassInfo& passInfo)
 {
 	// Camera space
-	if (m_pCameraSpacePos)
+	if (m_cameraSpaceParams)
 	{
 		// Use camera space relative position
 		const Matrix33 cameraRotation = Matrix33(passInfo.GetCamera().GetViewMatrix());
-		transformMatrix.SetTranslation(*m_pCameraSpacePos * cameraRotation);
+		transformMatrix.SetTranslation((m_cameraSpaceParams->cameraSpacePosition * cameraRotation) + m_cameraSpaceParams->worldSpaceOffset);
 	}
 	else
 	{
@@ -342,8 +375,6 @@ void CCharacterRenderNode::PrecacheCharacterCollect(const float fImportance, ICh
 		minLod = max(minLod, 1);
 		nLod = 1;
 	}
-
-	SFrameLodInfo lodParam = gEnv->p3DEngine->GetFrameLodInfo();
 
 	IAttachmentManager* pAttMan = pCharacter->GetIAttachmentManager();
 	ICharacterInstance* pCharInstance = pAttMan->GetSkelInstance();
@@ -401,12 +432,9 @@ void CCharacterRenderNode::PrecacheCharacterCollect(const float fImportance, ICh
 					const int minPrecacheLod = clamp_tpl(nLod - 1, minLod, maxLod);
 					const int maxPrecacheLod = clamp_tpl(nLod + 1, minLod, maxLod);
 
-					const QuatT& q = pAtt->GetAttAbsoluteDefault();
-					Matrix34A tm34 = matParent * Matrix34(q);
-
 					for (int currentLod = minPrecacheLod; currentLod <= maxPrecacheLod; ++currentLod)
 					{
-						pStatObj->UpdateStreamableComponents(fImportance, tm34, bFullUpdate, currentLod);
+						pStatObj->UpdateStreamableComponents(fImportance, bFullUpdate, currentLod);
 
 						pStatObj = (CStatObj*)pStatObj->GetLodObject(currentLod, true);
 						IMaterial* pAttMatOverride = (IMaterial*)pIAttachmentObject->GetReplacementMaterial();
@@ -465,8 +493,7 @@ void CCharacterRenderNode::PrecacheCharacterCollect(const float fImportance, ICh
 
 				for (int currentLod = minPrecacheLod; currentLod <= maxPrecacheLod; ++currentLod)
 				{
-					Matrix34A tm34 = matParent * Matrix34(pSkeletonPose->GetAbsJointByID(i));
-					pStatObj->UpdateStreamableComponents(fImportance, tm34, bFullUpdate, currentLod);
+					pStatObj->UpdateStreamableComponents(fImportance, bFullUpdate, currentLod);
 
 					IMaterial* pStatObjMat = pStatObj->GetMaterial();
 					IStatObj* pStatObjLod = pStatObj->GetLodObject(currentLod, true);
@@ -529,7 +556,7 @@ void CCharacterRenderNode::UpdateStreamingPriority(const SUpdateStreamingPriorit
 		bDrawNear = true;
 	}
 
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "UpdateObjectsStreamingPriority_PrecacheCharacter");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "UpdateObjectsStreamingPriority_PrecacheCharacter");
 
 	const SRenderingPassInfo& passInfo = *streamingContext.pPassInfo;
 	// If the object is in camera space, don't use the prediction position.
@@ -539,4 +566,20 @@ void CCharacterRenderNode::UpdateStreamingPriority(const SUpdateStreamingPriorit
 	                                           : streamingContext.distance;
 	float fObjScale = 1.0f;
 	PrecacheCharacter(streamingContext.importance, m_pCharacterInstance, m_pMaterial, m_matrix, fApproximatePrecacheDistance, fObjScale, bDrawNear ? 4 : 2, streamingContext.bFullUpdate, bDrawNear, streamingContext.lod);
+}
+
+//////////////////////////////////////////////////////////////////////////
+IMaterial* CCharacterRenderNode::GetMaterial(Vec3* pHitPos) const
+{
+	if (m_pMaterial)
+	{
+		return m_pMaterial.get();
+	}
+
+	if (m_pCharacterInstance)
+	{
+		return m_pCharacterInstance->GetIMaterial();
+	}
+
+	return nullptr;
 }

@@ -3,6 +3,7 @@
 #include <stdafx.h>
 #include "PropertyRowEntityLink.h"
 
+#include "IEditorImpl.h"
 #include <CrySerialization/ClassFactory.h>
 #include <IEditor.h>
 #include <IObjectManager.h>
@@ -14,9 +15,9 @@ struct PropertyRowEntityLink::Picker : IPickObjectCallback
 {
 	PropertyRowEntityLink* row;
 	bool picking;
-	PropertyTree*                           tree;
+	PropertyTreeLegacy*                           tree;
 
-	Picker(PropertyRowEntityLink* row, PropertyTree* tree)
+	Picker(PropertyRowEntityLink* row, PropertyTreeLegacy* tree)
 		: row(row)
 		, picking(false)
 		, tree(tree)
@@ -47,7 +48,7 @@ struct PropertyRowEntityLink::Picker : IPickObjectCallback
 
 // ---------------------------------------------------------------------------
 
-EntityLinkMenuHandler::EntityLinkMenuHandler(PropertyTree* tree, PropertyRowEntityLink* self)
+EntityLinkMenuHandler::EntityLinkMenuHandler(PropertyTreeLegacy* tree, PropertyRowEntityLink* self)
 	: self(self), tree(tree)
 {
 }
@@ -81,25 +82,24 @@ PropertyRowEntityLink::~PropertyRowEntityLink()
 		// Make sure the picker's tree is set to null since it's in the process of getting destroyed.
 		// Calling repaint on the tree will lead to a crash
 		picker_->tree = nullptr;
-		GetIEditorImpl()->CancelPick();
+		GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 	}
 }
 
 void PropertyRowEntityLink::select()
 {
 	IObjectManager* manager = GetIEditorImpl()->GetObjectManager();
-	manager->ClearSelection();
 
-	if (CBaseObject* obj = manager->FindObject(guid_))
-		manager->SelectObject(obj);
+	if (CBaseObject* pObject = manager->FindObject(guid_))
+		manager->SelectObject(pObject);
 }
 
-void PropertyRowEntityLink::pick(PropertyTree* tree)
+void PropertyRowEntityLink::pick(PropertyTreeLegacy* tree)
 {
 	if (!picker_)
 		picker_.reset(new Picker(this, tree));
 	picker_->picking = true;
-	GetIEditorImpl()->PickObject(picker_.get());
+	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(picker_.get());
 	tree->repaint();
 }
 
@@ -119,7 +119,7 @@ void PropertyRowEntityLink::serializeValue(Serialization::IArchive& ar)
 	ar(name_, "name_");
 }
 
-property_tree::Icon PropertyRowEntityLink::buttonIcon(const PropertyTree* tree, int index) const
+property_tree::Icon PropertyRowEntityLink::buttonIcon(const PropertyTreeLegacy* tree, int index) const
 {
 	return property_tree::Icon("icons:Navigation/Basics_Select.ico");
 }
@@ -143,7 +143,7 @@ void PropertyRowEntityLink::clear()
 	guid_ = CryGUID::Null();
 }
 
-bool PropertyRowEntityLink::onContextMenu(IMenu& menu, PropertyTree* tree)
+bool PropertyRowEntityLink::onContextMenu(IMenu& menu, PropertyTreeLegacy* tree)
 {
 	yasli::SharedPtr<PropertyRow> selfPointer(this);
 
@@ -178,6 +178,3 @@ class PropertyRowEntityTargetImpl final : public PropertyRowEntityLink
 
 REGISTER_PROPERTY_ROW(Serialization::EntityTarget, PropertyRowEntityTargetImpl);
 DECLARE_SEGMENT(PropertyRowEntityLink)
-
-
-

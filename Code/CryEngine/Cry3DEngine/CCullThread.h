@@ -1,44 +1,43 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CCULLTHREAD__
-#define __CCULLTHREAD__
+#pragma once
 
 #include <CryThreading/IJobManager.h>
 
+struct SCheckOcclusionJobData;
+
 namespace NAsyncCull
 {
-
-class CRY_ALIGN(128) CCullThread: public Cry3DEngineBase
+class CCullThread : public Cry3DEngineBase
 {
 	bool m_Enabled;
-
 	bool m_Active;                                      // used to verify that the cull job is running and no new jobs are added after the job has finished
 
 public:
 	enum PrepareStateT { IDLE, PREPARE_STARTED, PREPARE_DONE, CHECK_REQUESTED, CHECK_STARTED };
-	PrepareStateT m_nPrepareState;
-	CryCriticalSection m_FollowUpLock;
-	SRenderingPassInfo m_passInfoForCheckOcclusion;
-	uint32 m_nRunningReprojJobs;
-	uint32 m_nRunningReprojJobsAfterMerge;
-	int m_bCheckOcclusionRequested;
+	PrepareStateT         m_nPrepareState;
+	CryCriticalSection    m_FollowUpLock;
+	SRenderingPassInfo    m_passInfoForCheckOcclusion;
+	uint32                m_nRunningReprojJobs;
+	uint32                m_nRunningReprojJobsAfterMerge;
+	int                   m_bCheckOcclusionRequested;
 private:
-	void* m_pCheckOcclusionJob;
 	JobManager::SJobState m_JobStatePrepareOcclusionBuffer;
 	JobManager::SJobState m_PrepareBufferSync;
-	Matrix44A m_MatScreenViewProj;
-	Matrix44A m_MatScreenViewProjTransposed;
-	Vec3 m_ViewDir;
-	Vec3 m_Position;
-	float m_NearPlane;
-	float m_FarPlane;
-	float m_NearestMax;
+	JobManager::SJobState m_checkOcclusion;
+	Matrix44A             m_MatScreenViewProj;
+	Matrix44A             m_MatScreenViewProjTransposed;
+	Vec3                  m_ViewDir;
+	Vec3                  m_Position;
+	float                 m_NearPlane;
+	float                 m_FarPlane;
+	float                 m_NearestMax;
 
-	PodArray<uint8> m_OCMBuffer;
-	uint8* m_pOCMBufferAligned;
-	uint32 m_OCMMeshCount;
-	uint32 m_OCMInstCount;
-	uint32 m_OCMOffsetInstances;
+	PodArray<uint8>       m_OCMBuffer;
+	uint8*                m_pOCMBufferAligned;
+	uint32                m_OCMMeshCount;
+	uint32                m_OCMInstCount;
+	uint32                m_OCMOffsetInstances;
 
 	template<class T>
 	T Swap(T& rData)
@@ -70,7 +69,8 @@ private:
 
 public:
 
-	void CheckOcclusion();
+	void CreateOcclusionJob(const SCheckOcclusionJobData& rCheckOcclusionData);
+	void CheckOcclusion_JobEntry(const SCheckOcclusionJobData checkOcclusionData);
 	void PrepareOcclusion();
 
 	void PrepareOcclusion_RasterizeZBuffer();
@@ -82,8 +82,10 @@ public:
 	bool LoadLevel(const char* pFolderName);
 	void UnloadLevel();
 
-	bool TestAABB(const AABB &rAABB, float fEntDistance, float fVerticalExpand = 0.0f);
-	bool TestQuad(const Vec3 &vCenter, const Vec3 &vAxisX, const Vec3 &vAxisY);
+	bool TestAABB(const AABB& rAABB, float fEntDistance, float fVerticalExpand = 0.0f);
+	bool TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& vAxisY);
+
+	void WaitOnCheckOcclusionJobs(bool waitForLights);
 
 	CCullThread();
 	~CCullThread();
@@ -92,17 +94,14 @@ public:
 	void CoverageBufferDebugDraw();
 #endif
 
-	void PrepareCullbufferAsync(const CCamera &rCamera);
-	void CullStart(const SRenderingPassInfo &passInfo);
+	void PrepareCullbufferAsync(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey);
+	void CullStart(const SRenderingPassInfo& passInfo);
 	void CullEnd();
 
-	bool IsActive() const        { return m_Active; }
-	void SetActive(bool bActive) { m_Active = bActive; }
+	void SetActive(bool bActive);
 
-	Vec3 GetViewDir()            { return m_ViewDir; };
+	Vec3 GetViewDir() { return m_ViewDir; }
 
 };
 
 }
-
-#endif

@@ -35,4 +35,3 @@ CResizeTerrainTextureDialog::Result CResizeTerrainTextureDialog::GetResult() con
 {
 	return m_pTexture->GetResult();
 }
-

@@ -1,18 +1,13 @@
 # Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 def build(bld):	
 	
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target      = 'EditorGameSDK',
 		vs_filter	= 'Sandbox/Plugins',
 		file_list   = 'editorgamesdk.waf_files',
 		pch			= 'StdAfx.cpp',
 		win_module_extensions = ['toolkit_pro'],
-		includes	= [ 
-				'..',
-				Path('Code/Sandbox/EditorQt/Include'),
-				Path('Code/Sandbox/EditorQt'),
-				Path('Code/Sandbox/Plugins/MFCToolsPlugin')
-				],
-		use			= [ 'Sandbox', 'MFCToolsPlugin' ]
+		includes	= [	Path('Code/Sandbox/Plugins/MFCToolsPlugin') ],
+		use			= [ 'MFCToolsPlugin' ]
 	)
 	

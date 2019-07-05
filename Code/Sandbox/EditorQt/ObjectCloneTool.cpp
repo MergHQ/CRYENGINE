@@ -2,8 +2,14 @@
 
 #include "StdAfx.h"
 #include "ObjectCloneTool.h"
-#include "Viewport.h"
-#include "Grid.h"
+#include "IEditorImpl.h"
+#include "IUndoManager.h"
+#include "IObjectManager.h"
+
+#include <Objects/BaseObject.h>
+#include <Objects/SelectionGroup.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
 
 IMPLEMENT_DYNCREATE(CObjectCloneTool, CEditTool)
 
@@ -48,46 +54,24 @@ CObjectCloneTool::~CObjectCloneTool()
 
 void CObjectCloneTool::CloneSelection()
 {
-	CSelectionGroup selObjects;
-	CSelectionGroup sel;
-
 	const CSelectionGroup* currSelection = GetIEditorImpl()->GetSelection();
 	currSelection->FilterParents();
 
+	std::vector<CBaseObject*> objects;
 	std::vector<CBaseObject*> newObjects;
+	objects.reserve(currSelection->GetFilteredCount());
 	newObjects.reserve(currSelection->GetFilteredCount());
 
-	CObjectCloneContext cloneContext;
-
-	auto pObjMan = GetIEditor()->GetObjectManager();
+	auto pObjectManager = GetIEditor()->GetObjectManager();
 
 	// Clone every object.
 	for (int i = 0; i < currSelection->GetFilteredCount(); i++)
 	{
-		CBaseObject* pFromObject = currSelection->GetFilteredObject(i);
-		CBaseObject* newObj = pObjMan->CloneObject(pFromObject);
-		if (!newObj) // can be null, e.g. sequence can't be cloned
-		{
-			continue;
-		}
-
-		cloneContext.AddClone(pFromObject, newObj);
-		newObjects.push_back(newObj);
+		objects.push_back(currSelection->GetFilteredObject(i));
 	}
+	pObjectManager->CloneObjects(objects, newObjects);
 
-	// Only after everything was cloned, call PostClone on all cloned objects.
-	//Copy objects map as it can be invalidated during PostClone
-	auto objectsMap = cloneContext.m_objectsMap;
-	for (auto it : objectsMap)
-	{
-		CBaseObject* pFromObject = it.first;
-		CBaseObject* pClonedObject = it.second;
-		if (pClonedObject)
-			pClonedObject->PostClone(pFromObject, cloneContext);
-	}
-
-	GetIEditorImpl()->ClearSelection();
-	GetIEditorImpl()->SelectObjects(newObjects);
+	pObjectManager->SelectObjects(newObjects);
 }
 
 void CObjectCloneTool::SetConstrPlane(CViewport* view, CPoint point)
@@ -95,7 +79,7 @@ void CObjectCloneTool::SetConstrPlane(CViewport* view, CPoint point)
 	Matrix34 originTM;
 	originTM.SetIdentity();
 	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-	if (!pSelection->GetManipulatorMatrix(GetIEditorImpl()->GetReferenceCoordSys(), originTM))
+	if (!pSelection->GetManipulatorMatrix(originTM))
 		originTM.SetIdentity();
 
 	m_initPosition = pSelection->GetCenter();
@@ -103,7 +87,7 @@ void CObjectCloneTool::SetConstrPlane(CViewport* view, CPoint point)
 	view->SetConstructionMatrix(originTM);
 }
 
-void CObjectCloneTool::Display(DisplayContext& dc)
+void CObjectCloneTool::Display(SDisplayContext& dc)
 {
 	//dc.SetColor( 1,1,0,1 );
 	//dc.DrawBall( gP1,1.1f );
@@ -136,10 +120,6 @@ bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 			const CSelectionGroup* selection = GetIEditorImpl()->GetSelection();
 			if (!selection->IsEmpty())
 			{
-				bool followTerrain = false;
-
-				int axis = GetIEditorImpl()->GetAxisConstrains();
-				
 				Vec3 p1 = m_initPosition;
 				Vec3 p2 = view->MapViewToCP(point);
 				if (p2.IsZero())
@@ -148,18 +128,18 @@ bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint&
 				Vec3 offset = view->GetCPVector(p1, p2);
 
 				offset = view->SnapToGrid(offset);
-				
+
 				int selectionFlags = CSelectionGroup::eMS_None;
-				if (GetIEditorImpl()->IsSnapToTerrainEnabled())
+				if (gSnappingPreferences.IsSnapToTerrainEnabled())
 					selectionFlags = CSelectionGroup::eMS_FollowTerrain;
 
-				if (GetIEditorImpl()->IsSnapToGeometryEnabled())
+				if (gSnappingPreferences.IsSnapToGeometryEnabled())
 					selectionFlags |= CSelectionGroup::eMS_FollowGeometry;
 
-				if (GetIEditorImpl()->IsSnapToNormalEnabled())
+				if (gSnappingPreferences.IsSnapToNormalEnabled())
 					selectionFlags |= CSelectionGroup::eMS_SnapToNormal;
 
-				GetIEditorImpl()->GetSelection()->Move(offset, selectionFlags, GetIEditorImpl()->GetReferenceCoordSys(), point, true);
+				GetIEditorImpl()->GetSelection()->Move(offset, selectionFlags, point, true);
 			}
 		}
 		if (event == eMouseWheel)
@@ -201,7 +181,7 @@ void CObjectCloneTool::Accept()
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->Accept("Clone");
 
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 }
 
 bool CObjectCloneTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags)
@@ -212,4 +192,3 @@ bool CObjectCloneTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, 
 	}
 	return false;
 }
-

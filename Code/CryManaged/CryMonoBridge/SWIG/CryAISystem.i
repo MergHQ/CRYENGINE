@@ -33,13 +33,20 @@
 #include <CryAISystem/IOffMeshNavigationManager.h>
 #include <CryAISystem/MovementRequest.h>
 #include <CryAISystem/MovementRequestID.h>
-#include <CryAISystem/IMNM.h>
 
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/BehaviorTree/Node.h>
 
 using namespace BehaviorTree;
 %}
+
+%typemap(csbase) EEntityAspects "ushort"
+%typemap(csbase) EAILoadDataFlag "ushort"
+%typemap(csbase) IMNMCustomPathCostComputer::EComputationType "uint"
+%typemap(csbase) MNM::Constants::Edges "uint"
+%typemap(csbase) EMNMDangers "uint"
+%typemap(csbase) ICoverUser::EStateFlags "byte"
+%typemap(csbase) INavigationSystem::EMeshFlag "uint"
 
 %ignore IAIEngineModule;
 
@@ -48,6 +55,9 @@ using namespace BehaviorTree;
 %template(NavigationAgentTypeID) TNavigationID<AgentTypeIDTag>;
 %template(NavigationVolumeID) TNavigationID<VolumeIDTag>;
 %template(TileGeneratorExtensionID) TNavigationID<TileGeneratorExtensionIDTag>;
+%template(TileIDTag) TNavigationID<TileIDTag>;
+%template(TileTriangleIDTag) TNavigationID<TileTriangleIDTag>;
+%template(OffMeshLinkIDTag) TNavigationID<OffMeshLinkIDTag>;
 %feature("director") IAISystemComponent;
 %include "../../../../CryEngine/CryCommon/CryAISystem/IAISystemComponent.h"
 %feature("director") IAIEventListener;
@@ -56,6 +66,7 @@ using namespace BehaviorTree;
 %ignore IAISystem::SerializeObjectIDs;
 %ignore IAISystem::Serialize;
 %ignore IAISystem::NavCapMask::Serialize;
+%ignore IAISystem::ESubsystemUpdateFlag;
 %include "../../../../CryEngine/CryCommon/CryAISystem/IAISystem.h"
 %feature("director") IAICommunicationHandler::IEventListener;
 %include "../../../../CryEngine/CryCommon/CryAISystem/IAgent.h"
@@ -120,12 +131,11 @@ public:
 %include "../../../../CryEngine/CryCommon/CryAISystem/MovementStyle.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/IMovementSystem.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/IOffMeshNavigationManager.h"
-%typemap(csbase) MNM::Constants::Edges "uint"
-%include "../../../../CryEngine/CryCommon/CryAISystem/IMNM.h"
 
 %ignore BehaviorTree::BehaviorVariablesContext;
 %ignore BehaviorTree::UpdateContext::variables;
 %feature("director") INode;
+%include "../../../../CryEngine/CryCommon/CryAISystem/BehaviorTree/BehaviorTreeDefines.h"
 %include "../../../../CryEngine/CryCommon/CryAISystem/BehaviorTree/IBehaviorTree.h"
 %include <typemaps.i>
 %apply stack_string *OUTPUT { stack_string& debugText };

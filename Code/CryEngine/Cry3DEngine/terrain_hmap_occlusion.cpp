@@ -23,7 +23,7 @@
 	#include "3dEngine.h"
 	#include "PolygonClipContext.h"
 
-bool CHeightMap::IsBoxOccluded
+bool CTerrain::IsBoxOccluded
 (
   const AABB& objBox,
   float fDistance,
@@ -59,8 +59,6 @@ bool CHeightMap::IsBoxOccluded
 
 	// when camera is underground - number of steps allowed to skip
 	int nMaxTestsToScip = (GetVisAreaManager()->m_pCurPortal) ? 3 : 10000;
-
-	CVars* const __restrict pCVars = GetCVars();
 
 	// density of tests in meters for this object
 	float fMaxStep = fDistance * GetFloatCVar(e_TerrainOcclusionCullingPrecision);
@@ -168,7 +166,7 @@ bool CHeightMap::IsBoxOccluded
 	return false;
 }
 
-bool CHeightMap::Intersect(Vec3 vStartPoint, Vec3 vStopPoint, float _fDist, int nMaxTestsToScip, Vec3& vLastVisPoint)
+bool CTerrain::Intersect(Vec3 vStartPoint, Vec3 vStopPoint, float _fDist, int nMaxTestsToScip, Vec3& vLastVisPoint)
 {
 	//  FUNCTION_PROFILER_3DENGINE;
 

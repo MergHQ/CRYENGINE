@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include "SkeletonAnim.h"
 
 #include <float.h>
@@ -230,7 +231,7 @@ void CSkeletonAnim::ParseLayer0(const CAnimation& rAnim, AnimInfo* pAInfo, uint3
 		//regular asset
 		CAnimationSet* pAnimationSet = m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 		const ModelAnimationHeader* pMAG = pAnimationSet->GetModelAnimationHeader(rAnim.GetAnimationId());
-		assert(pMAG);
+		CRY_ASSERT(pMAG);
 		if (pMAG->m_nAssetType != CAF_File)
 			return;
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[pMAG->m_nGlobalAnimId];
@@ -284,8 +285,8 @@ void CSkeletonAnim::ParseLayer0(const CAnimation& rAnim, AnimInfo* pAInfo, uint3
 
 			int nAnimID = pParametric->m_nAnimID[s];
 			const ModelAnimationHeader* pMAH = pInstModelAnimationSet->GetModelAnimationHeader(nAnimID);
-			assert(pMAH);
-			assert(pMAH->m_nAssetType == CAF_File);
+			CRY_ASSERT(pMAH);
+			CRY_ASSERT(pMAH->m_nAssetType == CAF_File);
 			GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[pMAH->m_nGlobalAnimId];
 
 			pAInfo[acounter].m_nEOC = 0;
@@ -341,7 +342,7 @@ void CSkeletonAnim::ParseLayer0(const CAnimation& rAnim, AnimInfo* pAInfo, uint3
 
 			acounter++;
 		}
-		assert((fBlendWeights == 0) || fabsf(fBlendWeights - 1.0f) < 0.05f);
+		CRY_ASSERT((fBlendWeights == 0) || fabsf(fBlendWeights - 1.0f) < 0.05f);
 	}
 
 }
@@ -363,12 +364,12 @@ void CSkeletonAnim::Extract_DeltaMovement(AnimInfo* pAInfo, uint32& acounter2, S
 		if (pAInfo[a].m_fWeight == 0.0f)
 			continue;
 
-		assert(pAInfo[a].m_nAnimID >= 0);
+		CRY_ASSERT(pAInfo[a].m_nAnimID >= 0);
 		CAnimationSet* pAnimationSet = m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 		const ModelAnimationHeader* pMAG = pAnimationSet->GetModelAnimationHeader(pAInfo[a].m_nAnimID);
-		assert(pMAG);
+		CRY_ASSERT(pMAG);
 		int32 nEGlobalID = pMAG->m_nGlobalAnimId;
-		assert(pMAG->m_nAssetType == CAF_File);
+		CRY_ASSERT(pMAG->m_nAssetType == CAF_File);
 		GlobalAnimationHeaderCAF& rCAF = g_AnimationManager.m_arrGlobalCAF[nEGlobalID];
 		IController* pRootController = GetRootController(rCAF);
 		if (pRootController == 0)
@@ -557,8 +558,7 @@ IController* CSkeletonAnim::GetRootController(GlobalAnimationHeaderCAF& rGAH) co
 
 	if (rGAH.IsAssetOnDemand())
 	{
-		assert(rGAH.IsAssetLoaded());
-		if (rGAH.IsAssetLoaded() == 0)
+		if (!CRY_VERIFY(rGAH.IsAssetLoaded()))
 			return 0;
 	}
 

@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "EngineListener.h"
+#include <Commands/Command.h>
+#include <Commands/ICommandManager.h>
 
 //string compare/ordering functions used
 //note: these are mostly non-standard (MSVC only), so I grouped them here in case this file ever needs to be ported
@@ -64,7 +66,7 @@ void CEngineListener::Init(size_t maxHistory)
 			}
 		}
 
-		//get CVars and comamnds
+		//get CVars and commands
 		RefreshCVarsAndCommands();
 
 		//add event handlers
@@ -142,31 +144,35 @@ void CEngineListener::RefreshCVarsAndCommands()
 	}
 }
 
-//update a CVar
 void CEngineListener::UpdateCVar(ICVar* pVar, bool changed)
 {
-	CryAutoCriticalSection lock(m_lock);
-	if (pVar)
+	if (!pVar)
 	{
-		if (m_cVars.insert(pVar).second || changed)
-		{
-			EmitCVar(pVar);
-		}
+		return;
+	}
+
+	CryAutoCriticalSection lock(m_lock);
+
+	if (m_cVars.insert(pVar).second || changed)
+	{
+		EmitCVar(pVar);
 	}
 }
 
-//release a CVar
 void CEngineListener::ReleaseCVar(ICVar* pVar)
 {
-	CryAutoCriticalSection lock(m_lock);
-	if (pVar)
+	if (!pVar)
 	{
-		t_cVars::iterator varIt = m_cVars.find(pVar);
-		if (varIt != m_cVars.end())
-		{
-			DestroyCVar(pVar);
-			m_cVars.erase(varIt);
-		}
+		return;
+	}
+
+	CryAutoCriticalSection lock(m_lock);
+
+	t_cVars::iterator varIt = m_cVars.find(pVar);
+	if (varIt != m_cVars.end())
+	{
+		DestroyCVar(pVar);
+		m_cVars.erase(varIt);
 	}
 }
 
@@ -220,6 +226,21 @@ CEngineListener::~CEngineListener()
 	}
 }
 
+void CEngineListener::OnEditorNotifyEvent(EEditorNotifyEvent event)
+{
+	if (event == eNotify_OnQuit)
+	{
+		CryAutoCriticalSection lock(m_lock);
+
+		for (auto it : m_cVars)
+		{
+			DestroyCVar(it);
+		}
+
+		m_cVars.clear();
+	}
+}
+
 //notify of new console output
 void CEngineListener::Print(const char* inszText)
 {
@@ -268,4 +289,3 @@ void CEngineListener::Execute(const t_string& command) const
 		pConsole->ExecuteString(command.c_str());
 	}
 }
-

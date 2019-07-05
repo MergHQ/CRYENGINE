@@ -26,14 +26,6 @@ CTargetTrackThreatModifier::CTargetTrackThreatModifier()
 	ITargetTrackManager *pTargetTrackManager = gEnv->pAISystem->GetTargetTrackManager();
 	if (pTargetTrackManager)
 		pTargetTrackManager->SetTargetTrackThreatModifier(this);
-
-	IConsole *pConsole = gEnv->pConsole;
-	assert(pConsole);
-
-	m_pCVar_CloakMinDist = pConsole->GetCVar("ai_CloakMinDist");
-	m_pCVar_CloakMaxDist = pConsole->GetCVar("ai_CloakMaxDist");
-	m_pCVar_SOMSpeedRelaxed = pConsole->GetCVar("ai_SOMSpeedRelaxed");
-	m_pCVar_SOMSpeedCombat = pConsole->GetCVar("ai_SOMSpeedCombat");
 }
 
 //////////////////////////////////////////////////////////////////////////

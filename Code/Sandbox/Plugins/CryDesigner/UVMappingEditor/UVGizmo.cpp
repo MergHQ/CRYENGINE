@@ -2,20 +2,23 @@
 
 #include "StdAfx.h"
 #include "UVGizmo.h"
-#include "QViewport.h"
+
 #include "UVMappingEditorCommon.h"
-#include "DisplayViewportAdapter.h"
-#include "Grid.h"
+
+#include <Preferences/SnappingPreferences.h>
+#include <DisplayViewportAdapter.h>
+#include <QViewport.h>
 
 namespace Designer {
 namespace UVMapping
 {
 
-UVGizmo::UVGizmo() :
-	m_pAxisHelper(new CAxisHelper),
-	m_Pos(Vec3(0, 0, 0)),
-	m_HighlightedAxis(0),
-	m_bVisible(true)
+UVGizmo::UVGizmo() 
+	: m_HighlightedAxis(0)
+	, m_Pos(Vec3(0, 0, 0))
+	, m_pAxisHelper(new CAxisHelper)
+	, m_bStartedDragging(false)
+	, m_bVisible(true)
 {
 	Vec3 red(1.0f, 0.0f, 0.0f);
 	Vec3 green(0.0f, 1.0f, 0.0f);
@@ -62,8 +65,8 @@ void UVGizmo::SetMode(EGizmoMode mode)
 	m_mode = mode;
 }
 
-void UVGizmo::SetPos(const Vec3& pos) 
-{ 
+void UVGizmo::SetPos(const Vec3& pos)
+{
 	m_Pos = pos;
 	m_xTranslateGizmo.SetPosition(m_Pos);
 	m_yTranslateGizmo.SetPosition(m_Pos);
@@ -77,11 +80,11 @@ void UVGizmo::SetPos(const Vec3& pos)
 }
 
 void UVGizmo::MovePos(const Vec3& offset)
-{ 
+{
 	SetPos(m_Pos + offset);
 }
 
-void UVGizmo::Draw(DisplayContext& dc)
+void UVGizmo::Draw(SDisplayContext& dc)
 {
 	if (!m_bVisible)
 		return;
@@ -104,12 +107,12 @@ void UVGizmo::Draw(DisplayContext& dc)
 	}
 }
 
-bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
+bool UVGizmo::HitTest(QViewport* viewport, int x, int y, CLevelEditorSharedState::Axis& axis)
 {
 	if (!m_bVisible)
 		return false;
 
-	HitContext hc;
+	HitContext hc(nullptr); //viewport does not contain helper settings
 	CDisplayViewportAdapter viewAdapter(viewport);
 	hc.view = &viewAdapter;
 	hc.camera = viewport->Camera();
@@ -123,19 +126,19 @@ bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
 	{
 		if (m_viewTranslateGizmo.HitTest(hc))
 		{
-			axis = AXIS_XY;
+			axis = CLevelEditorSharedState::Axis::XY;
 			m_lastHitGizmo = &m_viewTranslateGizmo;
 			return true;
 		}
 		if (m_xTranslateGizmo.HitTest(hc))
 		{
-			axis = AXIS_X;
+			axis = CLevelEditorSharedState::Axis::X;
 			m_lastHitGizmo = &m_xTranslateGizmo;
 			return true;
 		}
 		if (m_yTranslateGizmo.HitTest(hc))
 		{
-			axis = AXIS_Y;
+			axis = CLevelEditorSharedState::Axis::Y;
 			m_lastHitGizmo = &m_yTranslateGizmo;
 			return true;
 		}
@@ -144,19 +147,19 @@ bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
 	{
 		if (m_uniformScaleGizmo.HitTest(hc))
 		{
-			axis = AXIS_XY;
+			axis = CLevelEditorSharedState::Axis::XY;
 			m_lastHitGizmo = &m_uniformScaleGizmo;
 			return true;
 		}
 		if (m_xScaleGizmo.HitTest(hc))
 		{
-			axis = AXIS_X;
+			axis = CLevelEditorSharedState::Axis::X;
 			m_lastHitGizmo = &m_xScaleGizmo;
 			return true;
 		}
 		if (m_yScaleGizmo.HitTest(hc))
 		{
-			axis = AXIS_Y;
+			axis = CLevelEditorSharedState::Axis::Y;
 			m_lastHitGizmo = &m_yScaleGizmo;
 			return true;
 		}
@@ -165,7 +168,7 @@ bool UVGizmo::HitTest(QViewport* viewport, int x, int y, int& axis)
 	{
 		if (m_rotateGizmo.HitTest(hc))
 		{
-			axis = AXIS_XY;
+			axis = CLevelEditorSharedState::Axis::XY;
 			m_lastHitGizmo = &m_rotateGizmo;
 			return true;
 		}
@@ -180,7 +183,7 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 	if (!ev.viewport || !m_bVisible)
 		return;
 
-	int axis;
+	CLevelEditorSharedState::Axis axis;
 	bool bHit = HitTest(ev.viewport, ev.x, ev.y, axis);
 
 	if (ev.type == SMouseEvent::TYPE_PRESS && ev.button == SMouseEvent::BUTTON_LEFT)
@@ -232,9 +235,9 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 			if (m_Context.mode == CAxisHelper::MOVE_MODE)
 			{
 				offset = pos - m_Context.pos;
-				if (m_Context.axis == AXIS_X)
+				if (m_Context.axis == CLevelEditorSharedState::Axis::X)
 					offset.y = 0;
-				else if (m_Context.axis == AXIS_Y)
+				else if (m_Context.axis == CLevelEditorSharedState::Axis::Y)
 					offset.x = 0;
 			}
 			else if (m_Context.mode == CAxisHelper::ROTATE_CIRCLE_MODE)
@@ -242,7 +245,7 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 				float radian = 0;
 				Vec3 vDir0 = Vec3(0, 0, 0);
 				Vec3 vDir1 = Vec3(0, 0, 0);
-				
+
 				if (gSnappingPreferences.angleSnappingEnabled())
 				{
 					Vec3 v0 = SearchUtil::FindHitPointToUVPlane(ev.viewport, m_Context.mouse_down_x, m_Context.mouse_down_y);
@@ -277,9 +280,9 @@ void UVGizmo::OnViewportMouse(const SMouseEvent& ev_)
 			else if (m_Context.mode == CAxisHelper::SCALE_MODE)
 			{
 				offset = Vec3(1.0f + 0.01f * (ev.x - m_Context.mouse_x), 1.0f - 0.01f * (ev.y - m_Context.mouse_y), 1.0f);
-				if (m_Context.axis == AXIS_X)
+				if (m_Context.axis == CLevelEditorSharedState::Axis::X)
 					offset.y = 1.0f;
-				else if (m_Context.axis == AXIS_Y)
+				else if (m_Context.axis == CLevelEditorSharedState::Axis::Y)
 					offset.x = 1.0f;
 				else
 					offset.x = offset.y;
@@ -328,4 +331,3 @@ void UVGizmo::RemoveCallback(IGizmoTransform* pGizmoTransform)
 
 }
 }
-

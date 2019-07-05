@@ -274,9 +274,9 @@ struct ResponseHeader
 	uint32 lastCommandExecuted;
 
 	ResponseHeader()
-		: lastCommandReceived(0)
+		: msgType(PackedHeader::eCommand_ACK)
+		, lastCommandReceived(0)
 		, lastCommandExecuted(0)
-		, msgType(PackedHeader::eCommand_ACK)
 	{}
 
 	// serialization operator

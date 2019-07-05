@@ -2,7 +2,7 @@
 import os
 from waflib.TaskGen import after_method, feature
 from waflib import Logs
-
+from waflib.Utils import run_once
 
 def build(bld):
 	additional_defines = []
@@ -23,20 +23,19 @@ def build(bld):
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
-		features    = [ 'copy_d3d_compiler' ],
+		features    = [ 'copy_d3d_compiler', 'copy_amd_binaries' ],
 
-		win_features    = [ 'copy_d3d_compiler' ],
-		win_file_list   = [ 'dx11_renderer.waf_files', 'mesh_baker.waf_files' ],
+		win_file_list   = [ './DX11/dx11_renderer.waf_files', 'mesh_baker.waf_files' ],
 		win_defines     = [ 'CRY_RENDERER_DIRECT3D=110', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		win_lib         = [ 'dxguid', 'd3d11', 'd3d10', 'd3dcompiler', 'Ole32', 'Gdi32', 'wininet', 'Shell32' ],
 		win_linkflags   = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
 		win_use_module  = [ 'png16', 'tiff' ],
 
-		durango_file_list  = [ 'durango_renderer.waf_files', 'mesh_baker.waf_files' ],
+		durango_file_list  = [ './DX11/durango_renderer.waf_files', 'mesh_baker.waf_files' ],
 		durango_defines    = [ 'CRY_RENDERER_DIRECT3D=111', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		durango_lib        = [ 'ws2_32', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'kernelx' ],
 
-		orbis_file_list    = [ 'orbis_renderer.waf_files' ],
+		orbis_file_list    = [ './DXOrbis/orbis_renderer.waf_files' ],
 		orbis_defines      = [ 'CRY_RENDERER_DIRECT3D=111', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		orbis_lib          = [ 'SceSystemService_stub_weak', 'SceGnmDriver_stub_weak' ],
 		orbis_includes     = [ '../../..' ],
@@ -54,15 +53,15 @@ def build(bld):
 		target      = 'CryRenderOpenGL',
 		vs_filter   = 'CryEngine',
 
-		file_list   = [ 'core_renderer.waf_files', 'opengl_renderer.waf_files' ],
+		file_list   = [ 'core_renderer.waf_files', './DXGL/opengl_renderer.waf_files' ],
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr') ],
 		defines     = [ 'CRY_RENDERER_DIRECT3D=110', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
-		module_extensions = [ 'sdl2', 'sdl2_ext' ],
+		module_extensions = [ 'sdl2' ],
 		
 
-		win_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_wgl.waf_files' ],
+		win_file_list    = ['mesh_baker.waf_files', './DXGL/opengl_loader_gl.waf_files', './DXGL/opengl_loader_wgl.waf_files' ],
 		win_includes     = [ Path('Code/SDKs/squish-ccr'), Path('Code/Tools/LibTIFF'), Path('Code/Tools/HLSLCrossCompiler/include') ],
 		win_lib          = ['opengl32', 'winmm', 'Ole32', 'Gdi32', 'wininet', 'Shell32', 'libHLSLcc'  ],
 		win_libpath      = [ Path('Code/Tools/HLSLCrossCompiler/lib/win64') ],
@@ -77,13 +76,13 @@ def build(bld):
 		darwin_framework = ['OpenGL', 'ApplicationServices', 'IOKit' ],
 		darwin_defines   = ['CRY_RENDERER_OPENGL=440'],
 
-		linux_file_list    = ['mesh_baker.waf_files', 'opengl_loader_gl.waf_files', 'opengl_loader_glx.waf_files' ],
+		linux_file_list    = ['mesh_baker.waf_files', './DXGL/opengl_loader_gl.waf_files', './DXGL/opengl_loader_glx.waf_files' ],
 		linux_lib          = ['HLSLcc' ],
 		linux_includes     = [ Path('Code/Tools/HLSLCrossCompiler/include') ],
 		linux_x64_libpath  = [ Path('Code/Tools/HLSLCrossCompiler/lib/linux')],
 		linux_defines      = ['CRY_RENDERER_OPENGL=440'],
 				
-		android_file_list  = ['mesh_baker.waf_files', 'opengl_loader_gles2.waf_files', 'opengl_loader_egl.waf_files' ],
+		android_file_list  = ['mesh_baker.waf_files', './DXGL/opengl_loader_gles2.waf_files', './DXGL/opengl_loader_egl.waf_files' ],
 		android_includes   = [ Path('Code/Tools/HLSLCrossCompiler/include') ],
 		android_defines    = ['GLEW_MX', 'OPENGL_ES', 'CRY_RENDERER_OPENGLES=310'],
 		android_lib        = ['EGL', 'GLESv1_CM', 'GLESv2', 'GLESv3']
@@ -91,7 +90,7 @@ def build(bld):
 
 	# CryRenderD3D12 can only be built using VS 2015.
 	min_msvc_version = '14.0'
-	min_winsdk_version = '10.0.14393.0'
+	min_winsdk_version = '10.0.15063.0'
 	
 	build_d3d12_msvc_check = bld.env and bld.env['MSVC_VERSION'] and (bld.ToVersionNumbers(bld.env['MSVC_VERSION']) >= bld.ToVersionNumbers(min_msvc_version))
 	build_d3d12_winsdk_check = bld.env and bld.env['WINSDK_VERSION'] and (bld.ToVersionNumbers(bld.env['WINSDK_VERSION']) >= bld.ToVersionNumbers(min_winsdk_version))
@@ -102,22 +101,21 @@ def build(bld):
 			target      = 'CryRenderD3D12',
 			vs_filter   = 'CryEngine',
 			
-			file_list   = [ 'core_renderer.waf_files', 'dx12_renderer.waf_files' ],
+			file_list   = [ 'core_renderer.waf_files', './DX12/dx12_renderer.waf_files' ],
 			pch        = '../StdAfx.cpp',
-			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr') ],
+			includes    = [ '..', Path('Code/SDKs'), Path('Code/SDKs/squish-ccr'), Path('Code/Tools/LibTIFF'), Path('Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes') ],
 			use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib' ],
+			features     = ['copy_d3d_compiler', 'copy_amd_binaries' ],
 
-			win_features     = ['copy_d3d_compiler' ],
 			win_file_list    = ['mesh_baker.waf_files' ],
 			win_defines      = ['CRY_RENDERER_DIRECT3D=120', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
-			win_includes     = [ Path('Code/Tools/LibTIFF'), Path('Code/CryEngine/RenderDll/XRenderD3D9/DX12/Includes') ],
 			win_lib          = [ 'dxguid', 'd3d12', 'dxgi', 'd3dcompiler', 'Ole32', 'Gdi32', 'wininet', 'Shell32' ],
 			win_linkflags    = [ '/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
 			win_use_module   = [ 'png16', 'tiff' ],
 			
-			durango_file_list  = [ 'durango_renderer.waf_files' ],
+			durango_file_list  = [ './DX11/durango_renderer.waf_files' ],
 			durango_defines    = [ 'CRY_RENDERER_DIRECT3D=120', 'DO_RENDERSTATS', '_RENDERER' ] + additional_defines,
-			durango_lib        = [ 'ws2_32', 'SmartGlassInterop', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'kernelx' ],
+			durango_lib        = [ 'ws2_32', 'SmartGlassInterop', 'd3d12_x', 'd3dcompiler', 'dxguid', 'xg_x', 'uuid', 'kernelx' ],
 
 			# additional_settings = Settings( files = '../Common/lzss.cpp', disable_pch = True )
 		)
@@ -152,16 +150,17 @@ def build(bld):
 		target      = 'CryRenderVulkan',
 		vs_filter   = 'CryEngine',
 
-		file_list   = ['core_renderer.waf_files', 'Vulkan/vulkan_renderer.waf_files'],
+		file_list   = ['core_renderer.waf_files', './Vulkan/vulkan_renderer.waf_files'],
 		pch         = '../StdAfx.cpp',
 		includes    = [ '..', Path('Code/SDKs/squish-ccr'), Path('Code/SDKs/VulkanSDK/Include') ],
-		defines     = [ 'CRY_RENDERER_VULKAN=10', 'DO_RENDERSTATS', '_RENDERER' ] ,
+		defines     = [ 'CRY_RENDERER_VULKAN=10', 'DO_RENDERSTATS', '_RENDERER', 'SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS' ] ,
 		use_module  = [ 'lzma', 'lzss', 'lz4', 'zlib', 'spirv-cross' ],
-		module_extensions = [ 'sdl2', 'sdl2_ext' ],
+		module_extensions = [ 'sdl2' ],
 		
 		android_cxxflags = ['-fms-extensions', '-D_MSC_EXTENSIONS=1'],
+		android_lib = ['vulkan'],
 
-		win_file_list     = ['mesh_baker.waf_files'],
+		win_file_list     = ['mesh_baker.waf_files', './Vulkan/vulkan_win.waf_files'],
 		win_lib           = ['Ole32', 'Gdi32', 'wininet', 'Shell32', 'dxguid', 'vulkan-1' ], 
 		win_linkflags     = ['/NODEFAULTLIB:libcmt.lib' ], ## AMD AGS static lib references this
 		win_libpath       = [ Path('Code/SDKs/VulkanSDK/Lib') ],
@@ -170,3 +169,27 @@ def build(bld):
 		android_file_list = ['mesh_baker.waf_files']
 	)
 
+@feature('copy_amd_binaries')
+@run_once
+def feature_copy_amd_binaries(self):
+	bld 			= self.bld
+	platform		= bld.env['PLATFORM']
+	configuration	= bld.env['CONFIGURATION']
+
+	if platform  == 'project_generator':
+		return
+
+	if not platform in ['win_x64', 'win_x86']:
+		return
+		
+	output_folder = bld.get_output_folders(platform, configuration)[0]
+	libpath = bld.CreateRootRelativePath('Code/SDKs/AMD/AGS Lib/lib/')
+	
+	if platform == 'win_x64':
+		filename =  'amd_ags_x64.dll'
+	elif platform =='win_x86':
+		filename =  'amd_ags_x86.dll'	
+	
+	self.create_task('copy_outputs', self.bld.root.make_node(os.path.join(libpath, filename)), output_folder.make_node(filename))
+
+	

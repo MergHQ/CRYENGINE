@@ -20,6 +20,7 @@
 #include "IGameRulesRoundsModule.h"
 #include "Utility/CryDebugLog.h"
 #include "GameRulesTypes.h"
+#include "Game.h"
 
 #define DbgLog(...) CRY_DEBUG_LOG(GAMEMODE_EXTRACTION, __VA_ARGS__)
 #define DbgLogAlways(...) CRY_DEBUG_LOG_ALWAYS(GAMEMODE_EXTRACTION, __VA_ARGS__)
@@ -62,11 +63,12 @@ void CGameRulesExtractionVictoryConditions::TimeLimitExpired()
 			pRoundsModule->OnEnterSuddenDeath();
 			return;
 		}
-
+#if CRY_DEBUG_LOG_ENABLED
 		int  primaryTeam = pRoundsModule->GetPrimaryTeam();	// attacking
 		int secondaryTeam = (primaryTeam == 1) ? 2 : 1;			// defending
 
 		DbgLog("CGameRulesExtractionVictoryConditions::TimeLimitExpired() - secondary team %d has won", secondaryTeam);
+#endif
 
 		//		notify listeners
 		if (pRoundsModule->IsInProgress())
@@ -131,7 +133,7 @@ void CGameRulesExtractionVictoryConditions::UpdateResolutionData(int primaryTeam
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "UpdateResolutionData() unexpected primaryTeam");
+		CRY_ASSERT(0, "UpdateResolutionData() unexpected primaryTeam");
 	}
 
 	MaxFloatsToDrawResolutionData(ESVC_DrawResolution_level_1, team1Data, team2Data);

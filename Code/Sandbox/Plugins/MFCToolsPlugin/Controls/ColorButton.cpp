@@ -47,7 +47,7 @@ void CColorButton::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	DWORD style = GetStyle();
 
-	UINT uiDrawState(DFCS_ADJUSTRECT);
+	//UINT uiDrawState(DFCS_ADJUSTRECT);
 	UINT state(lpDrawItemStruct->itemState);
 
 	/*
@@ -192,4 +192,3 @@ CColorButton::GetShowText() const
 {
 	return(m_showText);
 }
-

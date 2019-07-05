@@ -24,13 +24,10 @@ public:
 	{
 		return (m_Flags & FCEF_SKINNED) != 0;
 	}
-	void  mfGetPlane(Plane& pl);
 
-	void  mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-
-	void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags);
-	bool  mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false);
-	void  mfGetBBox(Vec3& vMins, Vec3& vMaxs) const;
+	void* mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask);
+	bool  mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false);
+	void  mfGetBBox(AABB& bb) const;
 
 	int   Size()
 	{
@@ -46,7 +43,7 @@ public:
 
 	bool          GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessellation = false);
 	InputLayoutHandle GetVertexFormat() const;
-	bool          Compile(CRenderObject* pObj,CRenderView *pRenderView, bool updateInstanceDataOnly);
+	bool          Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly);
 	void          DrawToCommandList(CRenderObject* pObj, const SGraphicsPipelinePassContext& ctx, CDeviceCommandList* commandList);
 
 	//protected:

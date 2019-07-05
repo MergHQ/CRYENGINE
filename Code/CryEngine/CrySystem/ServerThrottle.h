@@ -18,6 +18,7 @@
 struct ISystem;
 
 class CCPUMonitor;
+struct ICVar;
 
 class CServerThrottle
 {

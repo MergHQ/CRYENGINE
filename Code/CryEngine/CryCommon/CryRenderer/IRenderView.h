@@ -5,14 +5,18 @@
 #pragma once
 
 #include "IShader.h"
+#include <CryCore/smartptr.h>
+
+namespace JobManager { struct SJobState; }
+typedef JobManager::SJobState CryJobState;
 
 struct SRenderViewport;
+class CGraphicsPipeline;
 
 // Defines an output target for the Render View
 // It could be an offscreen target or a back buffer
 struct IRenderViewOutput
 {
-
 };
 
 //! Describes a 3D Polygon to be rendered as a 3D Object and added to a Render View
@@ -30,15 +34,15 @@ struct SRenderPolygonDescription
 
 	SRenderPolygonDescription() {}
 	SRenderPolygonDescription(CRenderObject* pRendObj, SShaderItem& si, int numPts, const SVF_P3F_C4B_T2F* verts, const SPipTangents* tangs, uint16* inds, int ninds, ERenderListID _renderListId, int nAW)
-		: numVertices(numPts)
+		: shaderItem(si)
+		, numVertices(numPts)
 		, pVertices(verts)
 		, pTangents(tangs)
 		, pIndices(inds)
 		, numIndices(ninds)
-		, renderListId(_renderListId)
 		, afterWater(nAW)
+		, renderListId(_renderListId)
 		, pRenderObject(pRendObj)
-		, shaderItem(si)
 	{}
 };
 
@@ -63,6 +67,26 @@ struct SRenderGlobalFogDescription
 	bool   bEnable = false;
 	ColorF color = {};
 };
+
+namespace RD
+{
+	struct SColorGradingInfo
+	{
+		struct SChart
+		{
+			int   texID;
+			float blendAmount;
+		};
+		std::vector<SChart> charts;
+	};
+}
+
+struct SRendererData
+{
+	RD::SColorGradingInfo colorGrading;
+};
+
+struct SAuxStatObjParams;
 
 // Interface to the render view.
 struct IRenderView : public CMultiThreadRefCount
@@ -102,13 +126,13 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual void   SetShaderRenderingFlags(uint32 nFlags) = 0;
 	virtual uint32 GetShaderRenderingFlags() const = 0;
 
+	virtual void   SetZoomFactor(float zFactor) = 0;
+	virtual float  GetZoomFactor() const = 0;
+
 	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) = 0;
 	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) = 0;
 
 	virtual void   SwitchUsageMode(EUsageMode mode) = 0;
-
-	// All jobs that write items to render view should share and use this synchronization mutex.
-	virtual CryJobState* GetWriteMutex() = 0;
 
 	//! Enable global fog and provide the color when enabled.
 	virtual void SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) = 0;
@@ -135,6 +159,10 @@ struct IRenderView : public CMultiThreadRefCount
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
+	virtual const SRendererData& GetRendererData() const = 0;
+	virtual SRendererData&       GetRendererData() = 0;
+
+	//////////////////////////////////////////////////////////////////////////
 	// Interface for 3d engine
 	//////////////////////////////////////////////////////////////////////////
 	//! Adds a new render object to the view.
@@ -145,6 +173,10 @@ struct IRenderView : public CMultiThreadRefCount
 
 	//! Add one the previously created permanent render object.
 	virtual void AddPermanentObject(CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo) = 0;
+
+	//! Query if there are any elements in the list
+	virtual bool   HasAddedItems(ERenderListID renderList) = 0;
+	virtual size_t NumAddedItems(ERenderListID renderList) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Clip Volumes
@@ -174,7 +206,13 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual ShadowMapFrustum* GetShadowFrustumOwner() const = 0;
 
 	//! Set associated shadow frustum
-	virtual void              SetShadowFrustumOwner(ShadowMapFrustum* pOwner) = 0;
+	virtual void                                                  SetShadowFrustumOwner(ShadowMapFrustum* pOwner) = 0;
+
+	virtual void                                                  InjectAuxiliaryStatObject(const SAuxStatObjParams& statObjParams) = 0;
+	virtual const std::vector<SAuxStatObjParams>&				  GetAuxiliaryStatObjects() const = 0;
+
+	virtual void                                                  SetGraphicsPipeline(std::shared_ptr<CGraphicsPipeline> pipeline) = 0;
+	virtual const std::shared_ptr<CGraphicsPipeline>&             GetGraphicsPipeline() const = 0;
 };
 
 typedef _smart_ptr<IRenderView> IRenderViewPtr;

@@ -6,8 +6,9 @@
 #pragma once
 
 #include <CryAISystem/INavigationSystem.h>
+#include <CryAISystem/NavigationSystem/MNMNavMesh.h>
 
-#include "../MNM/MNM.h"
+#include "../MNM/AgentSettings.h"
 #include "../MNM/Tile.h"
 #include "../MNM/NavMesh.h"
 #include "../MNM/TileGenerator.h"
@@ -23,20 +24,22 @@
 #include <CryCore/Containers/CryListenerSet.h>
 
 #include <CryThreading/IThreadManager.h>
+#include <CryThreading/IJobManager.h>
 
-#if CRY_PLATFORM_WINDOWS
+#define NAV_MESH_REGENERATION_ENABLED 1
+
+#if CRY_PLATFORM_WINDOWS && NAV_MESH_REGENERATION_ENABLED
 	#define NAVIGATION_SYSTEM_EDITOR_BACKGROUND_UPDATE 1
 #else
 	#define NAVIGATION_SYSTEM_EDITOR_BACKGROUND_UPDATE 0
 #endif
 
-#if CRY_PLATFORM_WINDOWS
-	#define NAVIGATION_SYSTEM_PC_ONLY 1
-#else
-	#define NAVIGATION_SYSTEM_PC_ONLY 0
-#endif
-
 struct RayCastRequest;
+
+namespace MNM
+{
+	class CNavMeshQueryManager;
+}
 
 #if DEBUG_MNM_ENABLED || NAVIGATION_SYSTEM_EDITOR_BACKGROUND_UPDATE
 class NavigationSystem;
@@ -132,6 +135,7 @@ private:
 	void              DebugDrawNavigationSystemState(NavigationSystem& navigationSystem);
 	void              DebugDrawMemoryStats(NavigationSystem& navigationSystem);
 	void              DebugDrawTriangleOnCursor(NavigationSystem& navigationSystem);
+	void              DebugDrawMeshBorders(NavigationSystem& navigationSystem);
 
 	DebugDrawSettings GetDebugDrawSettings(NavigationSystem& navigationSystem);
 
@@ -240,10 +244,7 @@ class NavigationSystemBackgroundUpdate
 {
 public:
 	NavigationSystemBackgroundUpdate(NavigationSystem& navigationSystem)
-	{
-
-	}
-
+	{}
 	bool IsRunning() const                     { return false; }
 	void Pause(const bool readingOrSavingMesh) {}
 };
@@ -253,7 +254,7 @@ typedef MNM::BoundingVolume NavigationBoundingVolume;
 
 struct NavigationMesh
 {	
-	NavigationMesh(NavigationAgentTypeID _agentTypeID)
+	NavigationMesh(const NavigationAgentTypeID _agentTypeID)
 		: agentTypeID(_agentTypeID)
 		, version(0)
 	{
@@ -281,12 +282,10 @@ struct NavigationMesh
 
 	MNM::CNavMesh         navMesh;
 	NavigationVolumeID    boundary;
+	CEnumFlags<INavigationSystem::EMeshFlag> flags;
 
 	typedef std::vector<NavigationVolumeID> Markups;
 	Markups markups;
-
-	typedef std::unordered_map<NavigationVolumeID, MNM::SMarkupVolumeData> MarkupsData;
-	MarkupsData markupsData;
 
 #ifdef SW_NAVMESH_USE_GUID
 	NavigationVolumeGUID boundaryGUID;
@@ -323,7 +322,7 @@ struct AgentType
 		{}
 
 		Vec3 voxelSize;
-		MNM::CTileGenerator::SAgentSettings agent;
+		MNM::SAgentSettings agent;
 	};
 
 	struct MeshInfo
@@ -428,6 +427,8 @@ public:
 		INCOMPATIBLE = 10,
 		FIRST_COMPATIBLE,
 		ENTITY_MARKUP_GUIDS,
+		UPDATE_STATE,
+		MESH_FLAGS,
 
 		// Add new versions before NEXT
 		NEXT,
@@ -437,7 +438,7 @@ public:
 	NavigationSystem(const char* configName);
 	~NavigationSystem();
 
-	virtual NavigationAgentTypeID      CreateAgentType(const char* name, const CreateAgentTypeParams& params) override;
+	virtual NavigationAgentTypeID      CreateAgentType(const char* name, const SCreateAgentTypeParams& params) override;
 	virtual NavigationAgentTypeID      GetAgentTypeID(const char* name) const override;
 	virtual NavigationAgentTypeID      GetAgentTypeID(size_t index) const override;
 	virtual const char*                GetAgentTypeName(NavigationAgentTypeID agentTypeID) const override;
@@ -445,20 +446,25 @@ public:
 	bool                               GetAgentTypeProperties(const NavigationAgentTypeID agentTypeID, AgentType& agentTypeProperties) const;
 
 	virtual MNM::AreaAnnotation        GetAreaTypeAnnotation(const NavigationAreaTypeID areaTypeID) const override;
+	virtual void                       SetGlobalFilterFlags(const MNM::AreaAnnotation::value_type includeFlags, const MNM::AreaAnnotation::value_type excludeFlags) override;
+	virtual void                       GetGlobalFilterFlags(MNM::AreaAnnotation::value_type& includeFlags, MNM::AreaAnnotation::value_type& excludeFlags) const override;
 
 	virtual const MNM::IAnnotationsLibrary& GetAnnotationLibrary() const override { return m_annotationsLibrary; }
 	const MNM::CAnnotationsLibrary&         GetAnnotations()     { return m_annotationsLibrary; }
 
 #ifdef SW_NAVMESH_USE_GUID
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshGUID guid) override;
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshID requestedId, NavigationMeshGUID guid) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshGUID guid) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshID requestedId, NavigationMeshGUID guid) override;
 #else
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params) override;
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshID requestedId) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshID requestedId) override;
 #endif
-	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, const NavigationVolumeID volumeID) override;
+	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, const NavigationVolumeID volumeID) override;
 
 	virtual void             DestroyMesh(NavigationMeshID meshID) override;
+	virtual void             SetMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags) override;
+	virtual void             RemoveMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags) override;
+	virtual CEnumFlags<EMeshFlag> GetMeshFlags(NavigationMeshID meshID) const override;
 
 	virtual void             SetMeshEntityCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshEntityCallback& callback) override;
 	virtual void             AddMeshChangeCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshChangeCallback& callback) override;
@@ -493,11 +499,12 @@ public:
 #endif
 
 	virtual NavigationMeshID      GetMeshID(const char* name, NavigationAgentTypeID agentTypeID) const override;
+	virtual DynArray<NavigationMeshID> GetMeshIDsForAgentType(const NavigationAgentTypeID agentTypeID) const override;
 	virtual const char*           GetMeshName(NavigationMeshID meshID) const override;
 	virtual void                  SetMeshName(NavigationMeshID meshID, const char* name) override;
 
-	virtual WorkingState          GetState() const override;
-	virtual WorkingState          Update(bool blocking) override;
+	virtual EWorkingState         GetState() const override;
+	virtual EWorkingState         Update(const CTimeValue frameStartTime, const float frameTime, bool blocking) override;
 	virtual void                  PauseNavigationUpdate() override;
 	virtual void                  RestartNavigationUpdate() override;
 
@@ -516,26 +523,37 @@ public:
 	virtual void                  SetDebugDisplayAgentType(NavigationAgentTypeID agentTypeID) override;
 	virtual NavigationAgentTypeID GetDebugDisplayAgentType() const override;
 
-	//! deprecated - RequestQueueMeshUpdate(meshID, aabb) should be used instead
-	virtual size_t        QueueMeshUpdate(NavigationMeshID meshID, const AABB& aabb) override;
+	const NavigationMesh&         GetMesh(const NavigationMeshID& meshID) const;
+	NavigationMesh&               GetMesh(const NavigationMeshID& meshID);
 
-	const NavigationMesh& GetMesh(const NavigationMeshID& meshID) const;
-	NavigationMesh&       GetMesh(const NavigationMeshID& meshID);
-	NavigationMeshID      GetEnclosingMeshID(NavigationAgentTypeID agentTypeID, const Vec3& location) const override;
-	bool                  IsLocationInMesh(NavigationMeshID meshID, const Vec3& location) const;
-	MNM::TriangleID       GetClosestMeshLocation(NavigationMeshID meshID, const Vec3& location, float vrange, float hrange, const INavMeshQueryFilter* pFilter,
-	                                             Vec3* meshLocation, float* distance) const;
+	virtual NavigationMeshID      GetEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& location) const override;
+	virtual NavigationMeshID      FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position) const override;
+	virtual NavigationMeshID      FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric) const override;
+	virtual NavigationMeshID      FindEnclosingMeshID(const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics) const override;
 
-	virtual bool                             GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
+	virtual bool                  IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location) const override;
+	virtual bool                  IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location, const MNM::SSnappingMetric& snapMetric) const override;
+	virtual bool                  IsLocationInMeshVolume(const NavigationMeshID meshID, const Vec3& location, const MNM::SOrderedSnappingMetrics& snappingMetrics) const override;
+
+	virtual bool                             GetClosestPointInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, float vrange, float hrange, Vec3* meshLocation, const INavMeshQueryFilter* pFilter) const override;
 
 	virtual bool                             IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const INavMeshQueryFilter* pFilter) const override;
+	virtual bool                             IsPointReachableFromPosition(const NavigationAgentTypeID agentID, const IEntity* pEntityToTestOffGridLinks, const Vec3& startLocation, const Vec3& endLocation, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter) const override;
+	virtual bool                             IsPointReachableFromPosition(const IEntity* pEntityToTestOffGridLinks, const NavigationMeshID startMeshID, const MNM::TriangleID startTriangleID, const NavigationMeshID endMeshID, const MNM::TriangleID endTriangleID, const INavMeshQueryFilter* pFilter) const override;
+	
 	virtual bool                             IsLocationValidInNavigationMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter, float downRange = 1.0f, float upRange = 1.0f) const override;
 
-	virtual size_t                           GetTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const Vec3& location, const AABB& searchAABB, Vec3* centerLocations, size_t maxCenterLocationCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
+	virtual INavigationSystem::NavMeshBorderWithNormalArray QueryTriangleBorders(const NavigationMeshID meshID, const MNM::aabb_t& localAabb) const override;
+	virtual INavigationSystem::NavMeshBorderWithNormalArray QueryTriangleBorders(const NavigationMeshID meshID, const MNM::aabb_t& localAabb, MNM::ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pQueryFilter, const INavMeshQueryFilter* pAnnotationFilter) const override;
 
-	virtual size_t                           GetTriangleBorders(const NavigationMeshID meshID, const AABB& aabb, Vec3* pBorders, size_t maxBorderCount, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
-	virtual size_t                           GetTriangleInfo(const NavigationMeshID meshID, const AABB& aabb, Vec3* centerLocations, uint32* islandids, size_t max_count, const INavMeshQueryFilter* pFilter, float minIslandArea = 0.f) const override;
-	virtual MNM::GlobalIslandID              GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) override;
+	virtual DynArray<Vec3>                   QueryTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const MNM::aabb_t& localAabb) const override;
+	virtual DynArray<Vec3>                   QueryTriangleCenterLocationsInMesh(const NavigationMeshID meshID, const MNM::aabb_t& localAabb, MNM::ENavMeshQueryOverlappingMode overlappingMode, const INavMeshQueryFilter* pFilter) const override;
+
+	virtual bool                             GetTriangleVertices(const NavigationMeshID meshID, const MNM::TriangleID triangleID, Triangle& outTriangleVertices) const override;
+
+	virtual MNM::GlobalIslandID              GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location) const override;
+	virtual MNM::GlobalIslandID              GetGlobalIslandIdAtPosition(const NavigationAgentTypeID agentID, const Vec3& location, const MNM::SOrderedSnappingMetrics& snappingMetrics) const override;
+	virtual MNM::GlobalIslandID              GetGlobalIslandIdAtPosition(const NavigationMeshID meshID, const MNM::TriangleID triangleID) const override;
 
 	virtual bool                             ReadFromFile(const char* fileName, bool bAfterExporting) override;
 	virtual bool                             SaveToFile(const char* fileName) const override;
@@ -562,36 +580,60 @@ public:
 	virtual bool                             IsInUse() const override;
 	virtual void                             CalculateAccessibility() override;
 
+	void                                     RequestUpdateMeshAccessibility(const NavigationMeshID meshId);
+	void                                     RequestUpdateAccessibilityAfterSeedChange(const Vec3& oldPosition, const Vec3& newPosition);
+	void                                     UpdatePendingAccessibilityRequests();
+	void                                     RemoveAllTrianglesByFlags(const MNM::AreaAnnotation::value_type flags);
+
 	void                                     OffsetBoundingVolume(const Vec3& additionalOffset, const NavigationVolumeID volumeId);
 	void                                     OffsetAllMeshes(const Vec3& additionalOffset);
 
-	void                                     ComputeIslands();
-	void                                     AddIslandConnectionsBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID);
-	void                                     RemoveIslandsConnectionBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID = 0);
-	void                                     RemoveAllIslandConnectionsForObject(const NavigationMeshID& meshID, const uint32 objectId);
+	void                                     ComputeAllIslands();
+	void                                     ComputeIslandsForMeshes(const NavigationMeshID* pUpdatedMeshes, const size_t count);
+	void                                     ComputeMeshesAccessibility(const NavigationMeshID* pUpdatedMeshes, const size_t count);
+	void                                     OnMeshesUpdateCompleted();
 
 	void                                     AddOffMeshLinkIslandConnectionsBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID, const MNM::OffMeshLinkID& linkID);
-	void                                     RemoveOffMeshLinkIslandsConnectionBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID, const MNM::OffMeshLinkID& linkID);
+	void                                     RemoveOffMeshLinkIslandConnection(const MNM::OffMeshLinkID offMeshLinkId);
 
-	virtual MNM::TileID                      GetTileIdWhereLocationIsAtForMesh(NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter) override;
-	virtual void                             GetTileBoundsForMesh(NavigationMeshID meshID, MNM::TileID tileID, AABB& bounds) const override;
+	MNM::TriangleID                          GetClosestMeshLocation(const NavigationMeshID meshID, const Vec3& location, float vrange, float hrange, const INavMeshQueryFilter* pFilter,
+		Vec3* meshLocation, float* distance) const;
+	
+	virtual MNM::TileID                      GetTileIdWhereLocationIsAtForMesh(const NavigationMeshID meshID, const Vec3& location, const INavMeshQueryFilter* pFilter) override;
+	virtual void                             GetTileBoundsForMesh(const NavigationMeshID meshID, const MNM::TileID tileID, AABB& bounds) const override;
 	virtual MNM::TriangleID                  GetTriangleIDWhereLocationIsAtForMesh(const NavigationAgentTypeID agentID, const Vec3& location, const INavMeshQueryFilter* pFilter) override;
-	virtual bool                             SnapToNavMesh(const NavigationAgentTypeID agentID, const Vec3& position, const INavMeshQueryFilter* pFilter, const SSnapToNavMeshRulesInfo& snappingRules, Vec3& snappedPosition, MNM::TriangleID* pTriangleId) const override;
+	virtual bool SnapToNavMesh(
+		const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter,
+		Vec3* pOutSnappedPosition, MNM::TriangleID* pOutTriangleID, NavigationMeshID* pOutNavMeshID) const override;
 
+	virtual bool SnapToNavMesh(
+		const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter,
+		Vec3* pOutSnappedPosition, MNM::TriangleID* pOutTriangleID, NavigationMeshID* pOutNavMeshID) const override;
 
-	virtual const MNM::INavMesh*             GetMNMNavMesh(NavigationMeshID meshID) const override;
+	virtual MNM::SPointOnNavMesh SnapToNavMesh(
+		const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const INavMeshQueryFilter* pFilter, NavigationMeshID* pOutNavMeshID) const override;
 
-	virtual bool                             NavMeshTestRaycastHit(NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const override;
+	virtual MNM::SPointOnNavMesh SnapToNavMesh(
+		const NavigationAgentTypeID agentTypeID, const Vec3& position, const MNM::SOrderedSnappingMetrics& snappingMetrics, const INavMeshQueryFilter* pFilter, NavigationMeshID* pOutNavMeshID) const override;
+
+	virtual const MNM::INavMesh*             GetMNMNavMesh(const NavigationMeshID meshID) const override;
+	virtual NavigationAgentTypeID            GetAgentTypeOfMesh(const NavigationMeshID meshID) const override;
+
+	virtual MNM::ERayCastResult              NavMeshRayCast(const NavigationAgentTypeID agentTypeID, const Vec3& startPos, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const override;
+	virtual MNM::ERayCastResult              NavMeshRayCast(const NavigationMeshID meshID, const MNM::TriangleID startTriangleId, const Vec3& startPos, const MNM::TriangleID endTriangleId, const Vec3& endPos, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const override;
+	virtual MNM::ERayCastResult              NavMeshRayCast(const NavigationMeshID meshID, const MNM::SPointOnNavMesh& startPointOnNavMesh, const MNM::SPointOnNavMesh& endPointOnNavMesh, const INavMeshQueryFilter* pFilter, MNM::SRayHitOutput* pOutHit) const override;
 
 	virtual const IOffMeshNavigationManager& GetIOffMeshNavigationManager() const override { return m_offMeshNavigationManager; }
 	virtual IOffMeshNavigationManager&       GetIOffMeshNavigationManager() override       { return m_offMeshNavigationManager; }
 
-	bool                                     AgentTypeSupportSmartObjectUserClass(NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const;
-	uint16                                   GetAgentRadiusInVoxelUnits(NavigationAgentTypeID agentTypeID) const;
-	uint16                                   GetAgentHeightInVoxelUnits(NavigationAgentTypeID agentTypeID) const;
+	bool                                     AgentTypeSupportSmartObjectUserClass(const NavigationAgentTypeID agentTypeID, const char* smartObjectUserClass) const;
+	uint16                                   GetAgentRadiusInVoxelUnits(const NavigationAgentTypeID agentTypeID) const;
+	uint16                                   GetAgentHeightInVoxelUnits(const NavigationAgentTypeID agentTypeID) const;
 
 	virtual TileGeneratorExtensionID         RegisterTileGeneratorExtension(MNM::TileGenerator::IExtension& extension) override;
 	virtual bool                             UnRegisterTileGeneratorExtension(const TileGeneratorExtensionID extensionId) override;
+
+	virtual MNM::INavMeshQueryManager*       GetNavMeshQueryManager() override;
 
 	virtual INavigationUpdatesManager*       GetUpdateManager() override { return &m_updatesManager; }
 
@@ -678,8 +720,9 @@ private:
 		std::vector<NavigationVolumeID>  markupIds;
 	};
 
-#if NAVIGATION_SYSTEM_PC_ONLY
-	void UpdateMeshes(const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
+#if NAV_MESH_REGENERATION_ENABLED
+	void UpdateMeshes(const CTimeValue frameStartTime, const float frameTime, const bool blocking, const bool multiThreaded, const bool bBackground);
+	void UpdateMeshesFromEditor(const bool blocking, const bool multiThreaded, const bool bBackground);
 	void SetupGenerator(const NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
 	                    uint16 x, uint16 y, uint16 z, MNM::CTileGenerator::Params& params, const VolumeDefCopy& pDef, bool bMarkupUpdate);
 	bool SpawnJob(TileTaskResult& result, NavigationMeshID meshID, const MNM::CNavMesh::SGridParams& paramsGrid,
@@ -699,14 +742,14 @@ private:
 	void ComputeWorldAABB();
 	void SetupTasks();
 	void StopAllTasks();
+	void SetStateAndSendEvent(const EWorkingState newState);
 
-	void UpdateAllListener(const ENavigationEvent event);
+	void UpdateAllListeners(const ENavigationEvent event);
 	void ApplyAnnotationChanges();
 
-#if MNM_USE_EXPORT_INFORMATION
-	void ClearAllAccessibility(uint8 resetValue);
-	void ComputeAccessibility(const Vec3& debugLocation, NavigationAgentTypeID agentTypeId = NavigationAgentTypeID(0));
-#endif
+	bool IsLocationInMeshVolume(const NavigationMesh& mesh, const Vec3& position, const MNM::SSnappingMetric& snapMetric) const;
+	inline AABB GetAABBFromSnappingMetric(const Vec3& position, const MNM::SSnappingMetric& snappingMetric, const NavigationAgentTypeID agentID) const;
+	inline bool IsOverlappingWithMeshVolume(const NavigationMesh& mesh, const AABB& aabb) const;
 
 	void GatherNavigationVolumesToSave(std::vector<NavigationVolumeID>& usedVolumes) const;
 
@@ -732,7 +775,7 @@ private:
 	typedef stl::aligned_vector<TileTaskResult, alignof(TileTaskResult)> TileTaskResults;
 	TileTaskResults m_results;
 	uint16          m_free;
-	WorkingState    m_state;
+	EWorkingState   m_state;
 
 	typedef id_map<uint32, NavigationMesh> Meshes;
 	Meshes m_meshes;
@@ -745,6 +788,12 @@ private:
 	MarkupVolumes                                   m_markupVolumes;
 	id_map<uint32, MNM::SMarkupVolumeData>          m_markupsData;
 	std::unordered_map<NavigationVolumeID, MNM::AreaAnnotation> m_markupAnnotationChangesToApply;
+	
+	// vector of meshes ids, that were recently updated with newly generated tile
+	std::vector<NavigationMeshID> m_recentlyUpdatedMeshIds;
+
+	// vector of meshes ids, that were requested to updated their accessibility
+	std::vector<NavigationMeshID> m_accessibilityUpdateRequestForMeshIds;
 
 #ifdef SW_NAVMESH_USE_GUID
 	typedef std::map<NavigationMeshGUID, NavigationMeshID> MeshMap;
@@ -789,6 +838,10 @@ private:
 	bool                                   m_isNavigationUpdatePaused;
 
 	MNM::STileGeneratorExtensionsContainer m_tileGeneratorExtensionsContainer;
+	MNM::CNavMeshQueryManager*             m_pNavMeshQueryManager;
+
+	CTimeValue                             m_frameStartTime;
+	float                                  m_frameDeltaTime;
 };
 
 namespace NavigationSystemUtils

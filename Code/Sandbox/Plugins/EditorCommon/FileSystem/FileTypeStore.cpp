@@ -94,4 +94,3 @@ void CFileTypeStore::AddExtensionFileType(const QString& extension, const SFileT
 		return left < right;
 	});
 }
-

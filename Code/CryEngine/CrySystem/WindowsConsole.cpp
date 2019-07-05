@@ -199,6 +199,20 @@ void CWindowsConsole::OnInitProgress(const char* sProgressMsg)
 	}
 }
 
+static BOOL WINAPI CtrlHandler(DWORD evt)
+{
+	switch (evt)
+	{
+	case CTRL_C_EVENT:
+	case CTRL_BREAK_EVENT:
+		return TRUE;
+	case CTRL_CLOSE_EVENT:
+		gEnv->pSystem->Quit();
+		return TRUE;
+	}
+	return FALSE;
+}
+
 void CWindowsConsole::OnInit(ISystem* pSystem)
 {
 	if (m_requireDedicatedServer && !gEnv->IsDedicated())
@@ -220,6 +234,7 @@ void CWindowsConsole::OnInit(ISystem* pSystem)
 		m_inputBufferHandle = GetStdHandle(STD_INPUT_HANDLE);
 		m_screenBufferHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		SetConsoleMode(m_inputBufferHandle, ENABLE_WINDOW_INPUT);
+		SetConsoleCtrlHandler(CtrlHandler, TRUE);
 		m_consoleScreenBufferSize.X = WINDOWS_CONSOLE_WIDTH;
 		m_consoleScreenBufferSize.Y = WINDOWS_CONSOLE_HEIGHT;
 		m_consoleWindow.Left = 0;
@@ -639,7 +654,6 @@ void CWindowsConsole::DrawStatus()
 		// Current update rate and player count on the right.
 
 		const char* const pMapName = m_pCVarSvMap->GetString();
-		const char* const pGameRules = m_pCVarSvGameRules->GetString();
 
 		const char* const pMissionName = m_pCVarSvMission ? m_pCVarSvMission->GetString() : "";
 		cry_sprintf(bufferLeft, " mission: %s map:%s", pMissionName, pMapName);
@@ -832,7 +846,7 @@ void CWindowsConsole::CCellBuffer::AddCharacter(WCHAR ch, SPosition& position)
 
 	int32 index = (((position.head + position.lines + m_size.Y - 1) % m_size.Y) * m_size.X) + position.offset;
 
-	CRY_ASSERT_MESSAGE(index >= 0 && index < m_buffer.size(), "Invalid text position, would overflow");
+	CRY_ASSERT(index >= 0 && index < m_buffer.size(), "Invalid text position, would overflow");
 	CHAR_INFO& info = m_buffer[index];
 
 	info.Attributes = m_attr;

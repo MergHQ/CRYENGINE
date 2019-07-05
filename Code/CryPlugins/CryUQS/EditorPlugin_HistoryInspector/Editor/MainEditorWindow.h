@@ -15,7 +15,7 @@
 #include <IPostRenderer.h>
 
 #include <CryUQS/Shared/SharedIncludes.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 struct SQuery;
 class CHistoricQueryTreeModel;
@@ -52,6 +52,10 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	// ~CDockableWindow
 
+	// IPane
+	virtual QMenu* GetPaneMenu() const;
+	// ~IPane
+
 	// ~IQueryHistoryListener
 	virtual void OnQueryHistoryEvent(const UQS::Core::IQueryHistoryListener::SEvent& ev) override;
 	// ~IQueryHistoryListener
@@ -72,7 +76,7 @@ private:
 	void OnClearHistoryButtonClicked(bool checked);
 	void OnSaveLiveHistoryToFile();
 	void OnLoadHistoryFromFile();
-	void OnTreeViewCurrentChanged(const QModelIndex &current, const QModelIndex &previous);
+	void OnTreeViewCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
 
 private:
 	string                           m_windowTitle;
@@ -84,6 +88,7 @@ private:
 	QTextEdit*                       m_pTextItemDetails;
 	QComboBox*                       m_pComboBoxHistoryOrigin;
 	QPushButton*                     m_pButtonClearCurrentHistory;
-	QPropertyTree*                   m_pPropertyTree;
+	QPropertyTreeLegacy*                   m_pPropertyTree;
 	CUQSHistoryPostRenderer*         m_pHistoryPostRenderer;
+	QMenu*                           m_pPaneMenu;
 };

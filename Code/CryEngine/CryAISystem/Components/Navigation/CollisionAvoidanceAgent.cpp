@@ -4,33 +4,33 @@
 #include "CollisionAvoidanceAgent.h"
 #include "NavigationComponent.h"
 
+using namespace Cry::AI::CollisionAvoidance;
+
 CCollisionAvoidanceAgent::~CCollisionAvoidanceAgent()
 {
-	Release();
+	Unregister();
 }
 
-void CCollisionAvoidanceAgent::Initialize(IEntity* pEntity)
+bool CCollisionAvoidanceAgent::Register(IEntity* pEntity)
 {
-	if (m_pAttachedEntity != pEntity)
-	{
-		Release();
-	}
-
-	m_pAttachedEntity = pEntity;
-
 	if (pEntity)
 	{
-		gAIEnv.pCollisionAvoidanceSystem->RegisterAgent(this);
+		m_pAttachedEntity = pEntity;
+		return gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
 	}
+	CRY_ASSERT(pEntity, "Parameter 'pEntity' must be non-null.");
+	return false;
 }
 
-void CCollisionAvoidanceAgent::Release()
+bool CCollisionAvoidanceAgent::Unregister()
 {
 	if (m_pAttachedEntity)
 	{
-		gAIEnv.pCollisionAvoidanceSystem->UnregisterAgent(this);
 		m_pAttachedEntity = nullptr;
+		return gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
 	}
+	CRY_ASSERT(m_pAttachedEntity, "Can't unregister an agent who was not registered.");
+	return false;
 }
 
 NavigationAgentTypeID CCollisionAvoidanceAgent::GetNavigationTypeId() const
@@ -43,45 +43,46 @@ const INavMeshQueryFilter* CCollisionAvoidanceAgent::GetNavigationQueryFilter() 
 	return m_pOwningNavigationComponent->GetNavigationQueryFilter();
 }
 
-const char* CCollisionAvoidanceAgent::GetName() const
+const char* CCollisionAvoidanceAgent::GetDebugName() const
 {
 	return m_pAttachedEntity->GetName();
 }
 
-ICollisionAvoidanceAgent::TreatType CCollisionAvoidanceAgent::GetTreatmentType() const
+ETreatType CCollisionAvoidanceAgent::GetTreatmentDuringUpdateTick(SAgentParams& outAgent, SObstacleParams& outObstacle) const
 {
+	static_assert(int(ETreatType::Count) == 3, "Unexpected enum count!");
 	switch (m_pOwningNavigationComponent->GetCollisionAvoidanceProperties().type)
 	{
 	case CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType::Active:
+		// Don't actively avoid collisions when not moving (target destination is probably reached). 
+		// Break is omitted here on purpose. 
 		if (m_pOwningNavigationComponent->GetRequestedVelocity().GetLengthSquared() > 0.00001f)
 		{
-			return ICollisionAvoidanceAgent::TreatType::Agent;
+			// Set current state
+			outAgent.currentLocation = m_pOwningNavigationComponent->GetPosition();
+			outAgent.currentVelocity = m_pOwningNavigationComponent->GetVelocity();
+			outAgent.desiredVelocity = m_pOwningNavigationComponent->GetRequestedVelocity();
+
+			// Set agent properties
+			outAgent.maxSpeed = m_pOwningNavigationComponent->GetMovementProperties().maxSpeed;
+			outAgent.maxAcceleration = m_pOwningNavigationComponent->GetMovementProperties().maxAcceleration;
+			outAgent.radius = m_pOwningNavigationComponent->GetCollisionAvoidanceProperties().radius;
+			outAgent.height = m_pOwningNavigationComponent->GetCollisionAvoidanceProperties().height;
+
+			return ETreatType::Agent;
 		}
 	case CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType::Passive:
-		return ICollisionAvoidanceAgent::TreatType::Obstacle;
-	default:
-		return ICollisionAvoidanceAgent::TreatType::None;
+		outObstacle.currentLocation = m_pOwningNavigationComponent->GetPosition();
+		outObstacle.currentVelocity = m_pOwningNavigationComponent->GetVelocity();
+		outObstacle.radius = m_pOwningNavigationComponent->GetCollisionAvoidanceProperties().radius;
+		outObstacle.height = m_pOwningNavigationComponent->GetCollisionAvoidanceProperties().height;
+		return ETreatType::Obstacle;
+	case CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType::None:
+		return ETreatType::None;
 	}
-}
 
-void CCollisionAvoidanceAgent::InitializeCollisionAgent(CCollisionAvoidanceSystem::SAgentParams& agent) const
-{
-	// Set current state
-	agent.currentLocation = m_pOwningNavigationComponent->GetPosition();
-	agent.currentVelocity = m_pOwningNavigationComponent->GetVelocity();
-	agent.currentLookDirection = m_pOwningNavigationComponent->GetVelocity();
-	agent.desiredVelocity = m_pOwningNavigationComponent->GetRequestedVelocity();
-
-	// Set agent properties
-	agent.maxSpeed = m_pOwningNavigationComponent->GetMovementProperties().maxSpeed;
-	agent.maxAcceleration = m_pOwningNavigationComponent->GetMovementProperties().maxAcceleration;
-	agent.radius = m_pOwningNavigationComponent->GetCollisionAvoidanceProperties().radius;
-}
-void CCollisionAvoidanceAgent::InitializeCollisionObstacle(CCollisionAvoidanceSystem::SObstacleParams& obstacle) const
-{
-	obstacle.currentLocation = m_pOwningNavigationComponent->GetPosition();
-	obstacle.currentVelocity = m_pOwningNavigationComponent->GetVelocity();
-	obstacle.radius = m_pOwningNavigationComponent->GetCollisionAvoidanceProperties().radius;
+	CRY_ASSERT(false, "Unhandled CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType value");
+	return ETreatType::None;
 }
 
 void CCollisionAvoidanceAgent::ApplyComputedVelocity(const Vec2& avoidanceVelocity, float updateTime)

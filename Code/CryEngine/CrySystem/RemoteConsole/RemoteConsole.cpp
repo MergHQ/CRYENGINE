@@ -14,6 +14,7 @@
 
 #ifdef USE_REMOTE_CONSOLE
 	#include <CryGame/IGameFramework.h>
+	#include <CrySystem/ConsoleRegistration.h>
 	#include <../CryAction/ILevelSystem.h>
 	#if 0                       // currently no stroboscope support
 		#include "Stroboscope/Stroboscope.h"
@@ -32,12 +33,10 @@
 /////////////////////////////////////////////////////////////////////////////////////////////
 CRemoteConsole::CRemoteConsole()
 	: m_listener(1)
-	, m_running(false)
-#ifdef USE_REMOTE_CONSOLE
-	, m_pServer(new SRemoteServer())
-	, m_pLogEnableRemoteConsole(nullptr)
-#endif
 {
+#ifdef USE_REMOTE_CONSOLE
+	m_pServer = new SRemoteServer;
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -299,6 +298,7 @@ void SRemoteServer::SignalStopWork()
 	// Close socket here as server thread might be blocking on ::accept
 	if (m_socket != CRY_INVALID_SOCKET && m_socket != CRY_SOCKET_ERROR)
 	{
+		CrySock::shutdown(m_socket, SD_BOTH);
 		CrySock::closesocket(m_socket);
 	}
 	m_socket = CRY_SOCKET_ERROR;

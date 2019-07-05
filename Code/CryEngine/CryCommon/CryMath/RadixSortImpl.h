@@ -69,18 +69,18 @@ void RadixSort(uint32* pRanksBegin, uint32* pRanksEnd, const TValue* pValuesBegi
 	  sizeof(TValue) == 4 || sizeof(TValue) == 8,
 	  "Unsupported TValue type for RadixSort");
 	const uint count = uint(pValuesEnd - pValuesBegin);
-	CRY_ASSERT_MESSAGE(
+	CRY_ASSERT(
 	  uint(pRanksEnd - pRanksBegin) >= count,
 	  "Ranks array needs to be large enough to hold the ranks for the sorted values array.");
 
 	if (sizeof(TValue) == 4)
 	{
-		detail::RadixSortTpl<uint32, uint8, TAllocator, 4>(
+		::detail::RadixSortTpl<uint32, uint8, TAllocator, 4>(
 		  pRanksBegin, reinterpret_cast<const uint32*>(pValuesBegin), count, allocator);
 	}
 	else if (sizeof(TValue) == 8)
 	{
-		detail::RadixSortTpl<uint64, uint8, TAllocator, 8>(
+		::detail::RadixSortTpl<uint64, uint8, TAllocator, 8>(
 		  pRanksBegin, reinterpret_cast<const uint64*>(pValuesBegin), count, allocator);
 	}
 }

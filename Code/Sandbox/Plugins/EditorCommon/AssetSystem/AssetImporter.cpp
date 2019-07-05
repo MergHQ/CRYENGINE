@@ -6,7 +6,8 @@
 #include "Asset.h"
 #include "AssetImportContext.h"
 #include "AssetType.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
+
 #include <CryString/CryPath.h>
 
 #include <ThreadingUtils.h>
@@ -63,4 +64,3 @@ void CAssetImporter::ReimportAsset(CAsset* pAsset)
 	// If we cannot assume this anymore, CAssetManager::MergeAssets() should be called at the end
 	// of this method.
 }
-

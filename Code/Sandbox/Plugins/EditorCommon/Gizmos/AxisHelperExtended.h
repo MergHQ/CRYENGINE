@@ -6,7 +6,7 @@
 #include "Objects/BaseObject.h"
 #include "CryPhysics/physinterface.h"
 
-struct DisplayContext;
+struct SDisplayContext;
 struct IPhysicalEntity;
 
 //! This class draws an alignment line from a position to the world
@@ -14,10 +14,10 @@ class CAxisHelperExtended
 {
 public:
 	CAxisHelperExtended();
-	void DrawAxes(DisplayContext& dc, const Matrix34& matrix);
+	void DrawAxes(SDisplayContext& dc, const Matrix34& matrix);
 
 private:
-	void DrawAxis(DisplayContext& dc, const Vec3& direction, const float dist, const Vec3& up, const Vec3& color);
+	void DrawAxis(SDisplayContext& dc, const Vec3& direction, const float dist, const Vec3& up, const Vec3& color);
 
 private:
 	Matrix34                      m_matrix;
@@ -37,4 +37,3 @@ private:
 
 	static const float            ms_maxDist;
 };
-

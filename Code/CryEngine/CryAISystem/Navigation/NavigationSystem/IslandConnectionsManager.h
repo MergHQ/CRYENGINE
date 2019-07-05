@@ -16,8 +16,6 @@ public:
 
 	MNM::IslandConnections& GetIslandConnections();
 
-	void                    SetOneWayConnectionBetweenIsland(const MNM::GlobalIslandID fromIsland, const MNM::IslandConnections::Link& link);
-
 	bool                    AreIslandsConnected(const IEntity* pEntityToTestOffGridLinks, const MNM::GlobalIslandID startIsland, const MNM::GlobalIslandID endIsland, const INavMeshQueryFilter* pFilter) const;
 
 #ifdef CRYAISYSTEM_DEBUG

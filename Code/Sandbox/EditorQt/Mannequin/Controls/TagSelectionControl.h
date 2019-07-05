@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __TAG_SELECTION_CONTROL__H__
-#define __TAG_SELECTION_CONTROL__H__
+#pragma once
 
 #include <ICryMannequin.h>
 #include "Controls/PropertyCtrl.h"
@@ -49,6 +48,3 @@ private:
 
 	OnTagStateChangeCallback m_onTagStateChangeCallback;
 };
-
-#endif
-

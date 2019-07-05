@@ -7,6 +7,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "CVars.h"
 #include "Script/ScriptSerializationUtils.h"
@@ -87,11 +88,12 @@ namespace Schematyc2
 	CScriptRegistry::CScriptRegistry()
 	{
 		m_pRoot.reset(new CScriptRoot(ScriptRegistryUtils::g_dummyScriptFile));
-		REGISTER_COMMAND("sc_SaveAllScriptFiles", ScriptRegistryUtils::SaveAllScriptFilesCommand, VF_NULL, "Save all Schematyc script file regardless of whether they have been modified");
+		REGISTER_COMMAND("sc2_SaveAllScriptFiles", ScriptRegistryUtils::SaveAllScriptFilesCommand, VF_NULL, "Save all Schematyc script file regardless of whether they have been modified");
 	}
 
 	IScriptFile* CScriptRegistry::LoadFile(const char* szFileName)
 	{
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Script Registry File");
 		SCHEMATYC2_SYSTEM_ASSERT(szFileName);
 		if(szFileName)
 		{
@@ -396,115 +398,128 @@ namespace Schematyc2
 
 	bool CScriptRegistry::Load()
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Script Registry");
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		// Load old script files.
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Old Script Files");
+
 			stack_string extension = "*.";
 			extension.append(gEnv->pSchematyc2->GetOldScriptExtension());
 			FileUtils::EFileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
-			if(CVars::sc_IgnoreUnderscoredFolders)
+			if(CVars::sc2_IgnoreUnderscoredFolders)
 			{
 				fileEnumFlags |= FileUtils::EFileEnumFlags::IgnoreUnderscoredFolders;
 			}
 			FileUtils::EnumFilesInFolder(gEnv->pSchematyc2->GetOldScriptsFolder(), extension.c_str(), FileUtils::FileEnumCallback::FromMemberFunction<CScriptRegistry, &CScriptRegistry::EnumFile>(*this), fileEnumFlags);
 			for(FilesByCRC::iterator itFile = m_filesByCRC.begin(), itEndFile = m_filesByCRC.end(); itFile != itEndFile; ++ itFile)
 			{
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Refresh Script Files");
 				itFile->second->Refresh(SScriptRefreshParams(EScriptRefreshReason::Load));
 			}
 		}
-		// Load new script files.
-		// #SchematycTODO : How do we avoid loading files twice?
-		// #SchematycTODO : Set file info for each element!
-		if(gEnv->pSchematyc2->IsExperimentalFeatureEnabled("QtEditor"))
+
 		{
-			// Configure file enumeration flags.
-			FileUtils::EFileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
-			if(CVars::sc_IgnoreUnderscoredFolders)
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load New Script Files");
+
+			// Load new script files.
+			// #SchematycTODO : How do we avoid loading files twice?
+			// #SchematycTODO : Set file info for each element!
+			if(gEnv->pSchematyc2->IsExperimentalFeatureEnabled("QtEditor"))
 			{
-				fileEnumFlags |= FileUtils::EFileEnumFlags::IgnoreUnderscoredFolders;
-			}
-			// Enumerate files and construct new elements.
-			// #SchematycTODO : How can we minimize some of the duplication between loadJsonFile and loadXmlFile?
-			ScriptInputBlocks blocks;
-			auto loadJsonFile = [this, &blocks] (const char* szFileName, unsigned attributes)
-			{
-				SScriptInputBlock           block;
-				CScriptInputBlockSerializer blockSerializer(block);
-				Serialization::LoadJsonFile(blockSerializer, szFileName);
-				if(block.guid && block.rootElement.ptr)
 				{
-					INewScriptFile* pNewFile = GetNewFile(block.guid);
-					if(!pNewFile)
+					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Enumerate Files");
+					// Configure file enumeration flags.
+					FileUtils::EFileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
+					if(CVars::sc2_IgnoreUnderscoredFolders)
 					{
-						pNewFile = CreateNewFile(szFileName, block.guid);
-						pNewFile->AddElement(*block.rootElement.ptr);
-						block.rootElement.ptr->SetNewFile(pNewFile);
-						blocks.push_back(std::move(block));
+						fileEnumFlags |= FileUtils::EFileEnumFlags::IgnoreUnderscoredFolders;
 					}
-				}
-			};
-			auto loadXmlFile = [this, &blocks] (const char* szFileName, unsigned attributes)
-			{
-				SScriptInputBlock           block;
-				CScriptInputBlockSerializer blockSerializer(block);
-				Serialization::LoadXmlFile(blockSerializer, szFileName);
-				if(block.guid && block.rootElement.ptr)
-				{
-					INewScriptFile* pNewFile = GetNewFile(block.guid);
-					if(!pNewFile)
+					// Enumerate files and construct new elements.
+					// #SchematycTODO : How can we minimize some of the duplication between loadJsonFile and loadXmlFile?
+					ScriptInputBlocks blocks;
+					auto loadJsonFile = [this, &blocks] (const char* szFileName, unsigned attributes)
 					{
-						pNewFile = CreateNewFile(szFileName, block.guid);
-						pNewFile->AddElement(*block.rootElement.ptr);
-						block.rootElement.ptr->SetNewFile(pNewFile);
-						blocks.push_back(std::move(block));
-					}
-				}
-			};
-			const char* szScriptFolder = gEnv->pSchematyc2->GetScriptsFolder();
-			FileUtils::EnumFilesInFolder(szScriptFolder, "*.json", FileUtils::FileEnumCallback::FromLambdaFunction(loadJsonFile), fileEnumFlags);
-			FileUtils::EnumFilesInFolder(szScriptFolder, "*.xml", FileUtils::FileEnumCallback::FromLambdaFunction(loadXmlFile), fileEnumFlags);
-			// #SchematycTODO : Create ProcessInputBlocks() function!
-			{
-				// Unroll element blocks.
-				ScriptInputElementPtrs elements;
-				elements.reserve(100);
-				for(SScriptInputBlock& block : blocks)
-				{
-					UnrollScriptInputElementsRecursive(elements, block.rootElement);
-				}
-				// Pre-load elements.
-				for(SScriptInputElement* pElement : elements)
-				{
-					CScriptInputElementSerializer elementSerializer(*pElement->ptr, ESerializationPass::PreLoad);
-					Serialization::LoadBlackBox(elementSerializer, pElement->blackBox);
-				}
-				if(SortScriptInputElementsByDependency(elements))
-				{
-					// Load elements.
-					for(SScriptInputElement* pElement : elements)
-					{
-						CScriptInputElementSerializer elementSerializer(*pElement->ptr, ESerializationPass::Load);
-						Serialization::LoadBlackBox(elementSerializer, pElement->blackBox);
-						m_elements.insert(Elements::value_type(pElement->ptr->GetGUID(), pElement->ptr)); // #SchematycTODO : Make sure guid isn't duplicate!!!
-					}
-					// Attach elements.
-					for(SScriptInputBlock& block : blocks)
-					{
-						IScriptElement* pScope = block.scopeGUID ? GetElement(block.scopeGUID) : m_pRoot.get();
-						if(pScope)
+						SScriptInputBlock           block;
+						CScriptInputBlockSerializer blockSerializer(block);
+						Serialization::LoadJsonFile(blockSerializer, szFileName);
+						if(block.guid && block.rootElement.ptr)
 						{
-							pScope->AttachChild(*block.rootElement.ptr);
+							INewScriptFile* pNewFile = GetNewFile(block.guid);
+							if(!pNewFile)
+							{
+								pNewFile = CreateNewFile(szFileName, block.guid);
+								pNewFile->AddElement(*block.rootElement.ptr);
+								block.rootElement.ptr->SetNewFile(pNewFile);
+								blocks.push_back(std::move(block));
+							}
 						}
-						else
-						{
-							// #SchematycTODO : Error!!!
-						}
-					}
-					// Post-load elements.
-					for(SScriptInputElement* pElement : elements)
+					};
+					auto loadXmlFile = [this, &blocks] (const char* szFileName, unsigned attributes)
 					{
-						CScriptInputElementSerializer elementSerializer(*pElement->ptr, ESerializationPass::PostLoad);
-						Serialization::LoadBlackBox(elementSerializer, pElement->blackBox);
+						SScriptInputBlock           block;
+						CScriptInputBlockSerializer blockSerializer(block);
+						Serialization::LoadXmlFile(blockSerializer, szFileName);
+						if(block.guid && block.rootElement.ptr)
+						{
+							INewScriptFile* pNewFile = GetNewFile(block.guid);
+							if(!pNewFile)
+							{
+								pNewFile = CreateNewFile(szFileName, block.guid);
+								pNewFile->AddElement(*block.rootElement.ptr);
+								block.rootElement.ptr->SetNewFile(pNewFile);
+								blocks.push_back(std::move(block));
+							}
+						}
+					};
+					const char* szScriptFolder = gEnv->pSchematyc2->GetScriptsFolder();
+					FileUtils::EnumFilesInFolder(szScriptFolder, "*.json", FileUtils::FileEnumCallback::FromLambdaFunction(loadJsonFile), fileEnumFlags);
+					FileUtils::EnumFilesInFolder(szScriptFolder, "*.xml", FileUtils::FileEnumCallback::FromLambdaFunction(loadXmlFile), fileEnumFlags);
+					// #SchematycTODO : Create ProcessInputBlocks() function!
+					{
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Pre-load Elements");
+						// Unroll element blocks.
+						ScriptInputElementPtrs elements;
+						elements.reserve(100);
+						for(SScriptInputBlock& block : blocks)
+						{
+							UnrollScriptInputElementsRecursive(elements, block.rootElement);
+						}
+						// Pre-load elements.
+						for(SScriptInputElement* pElement : elements)
+						{
+							CScriptInputElementSerializer elementSerializer(*pElement->ptr, ESerializationPass::PreLoad);
+							Serialization::LoadBlackBox(elementSerializer, pElement->blackBox);
+						}
+						if(SortScriptInputElementsByDependency(elements))
+						{
+							// Load elements.
+							for(SScriptInputElement* pElement : elements)
+							{
+								CScriptInputElementSerializer elementSerializer(*pElement->ptr, ESerializationPass::Load);
+								Serialization::LoadBlackBox(elementSerializer, pElement->blackBox);
+								m_elements.insert(Elements::value_type(pElement->ptr->GetGUID(), pElement->ptr)); // #SchematycTODO : Make sure guid isn't duplicate!!!
+							}
+							// Attach elements.
+							for(SScriptInputBlock& block : blocks)
+							{
+								IScriptElement* pScope = block.scopeGUID ? GetElement(block.scopeGUID) : m_pRoot.get();
+								if(pScope)
+								{
+									pScope->AttachChild(*block.rootElement.ptr);
+								}
+								else
+								{
+									// #SchematycTODO : Error!!!
+								}
+							}
+							// Post-load elements.
+							for(SScriptInputElement* pElement : elements)
+							{
+								CScriptInputElementSerializer elementSerializer(*pElement->ptr, ESerializationPass::PostLoad);
+								Serialization::LoadBlackBox(elementSerializer, pElement->blackBox);
+							}
+						}
 					}
 				}
 			}
@@ -713,7 +728,7 @@ namespace Schematyc2
 
 	CScriptFilePtr CScriptRegistry::CreateFile(const char* szFileName, const SGUID& guid, EScriptFileFlags flags)
 	{
-		LOADING_TIME_PROFILE_SECTION(szFileName);
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(szFileName);
 		SCHEMATYC2_SYSTEM_ASSERT(szFileName);
 		if(szFileName)
 		{
@@ -752,9 +767,9 @@ namespace Schematyc2
 
 	void CScriptRegistry::EnumFile(const char* szFileName, unsigned attributes)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		const bool bOnDisk = (attributes & _A_IN_CRYPAK) == 0;
-		if(bOnDisk || !CVars::sc_IgnorePAKFiles)
+		if(bOnDisk || !CVars::sc2_IgnorePAKFiles)
 		{
 			CScriptFilePtr pFile = CreateFile(szFileName, SGUID(), bOnDisk ? EScriptFileFlags::OnDisk : EScriptFileFlags::None);
 			if(pFile)

@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "BackgroundScheduleManager.h"
+#include "IEditorImpl.h"
 
 namespace BackgroundScheduleManager
 {
@@ -621,4 +622,3 @@ void CScheduleManager::OnEditorNotifyEvent(EEditorNotifyEvent ev)
 //-----------------------------------------------------------------------------
 
 } // BackgroundScheduleManager
-

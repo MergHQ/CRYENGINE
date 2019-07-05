@@ -3,20 +3,11 @@
 #pragma once
 
 #include <NodeGraph/NodeGraphView.h>
-#include "NodeGraph/NodeWidget.h"
+#include <NodeGraph/NodeWidget.h>
 
 class CAssetNodeBase;
-class QPopupWidget;
 class CDictionaryWidget;
-
-namespace CryGraphEditor
-{
-
-class CNodeGraphViewStyle;
-class CNodeGraphViewBackground;
-class CNodeGraphView;
-
-}
+class QPopupWidget;
 
 class CGraphView : public CryGraphEditor::CNodeGraphView
 {
@@ -38,4 +29,3 @@ public:
 protected:
 	virtual void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* pEvent) override;
 };
-

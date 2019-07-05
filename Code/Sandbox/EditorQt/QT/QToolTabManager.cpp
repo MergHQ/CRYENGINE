@@ -3,33 +3,25 @@
 #include "StdAfx.h"
 #include "QToolTabManager.h"
 
-#include "QtViewPane.h"
-
+#include "IEditorImpl.h"
 #include "QT/QtMainFrame.h"
-#include "QMfcApp/qwinhost.h"
-#include "QT/Widgets/QViewPaneHost.h"
-#include "QToolWindowManager/QToolWindowManager.h"
-#include "LevelEditor/LevelFileUtils.h"
+
+#include <QMfcApp/qwinhost.h>
+
+#include <EditorFramework/PersonalizationManager.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <QtUtil.h>
+
+#include <CrySystem/IProjectManager.h>
+#include <CrySystem/UserAnalytics/IUserAnalytics.h>
 
 #include <QCloseEvent>
 #include <QDesktopWidget>
-#include <QLayout>
 #include <QJsonDocument>
-#include <QTextCodec>
-#include "FileDialogs/SystemFileDialog.h"
-
-#include "Util/BoostPythonHelpers.h"
-#include "QtViewPane.h"
-#include <QtUtil.h>
-#include <CrySystem/IProjectManager.h>
-
-#include <CrySystem/UserAnalytics/IUserAnalytics.h>
+#include <QLayout>
 
 #include <mutex>
 
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
 class QWinHostPane : public QWinHost
 {
 public:
@@ -46,13 +38,14 @@ public:
 	}
 };
 
-namespace
+namespace Private_ToolTabManager
 {
 CTabPaneManager* s_pGlobalToolTabManager = 0;
 
 static const char* szAppDataLayoutDir = "Layouts";
 static const char* szDefaultLayoutDir = "Editor/Layouts";
 static const char* szDefaultLayout = "Editor/Layouts/Default Layout.json";
+static const char* szUserLayout = "Layout.json";
 
 void PyLoadLayoutFromFile(const char* fullFilename)
 {
@@ -71,7 +64,7 @@ void PyResetLayout()
 
 void PyLoadLayoutDlg()
 {
-	QDir dir(QtUtil::GetAppDataFolder());
+	QDir dir(UserDataUtil::GetUserPath("").c_str());
 	dir.cd(szAppDataLayoutDir);
 
 	CSystemFileDialog::RunParams runParams;
@@ -90,8 +83,9 @@ void PySaveLayoutAs()
 {
 	QDir dir(QtUtil::GetAppDataFolder());
 	// This will build the folder structure required if it doesn't exist yet
-	dir.mkpath(QtUtil::GetAppDataFolder() + "/" + szAppDataLayoutDir);
-	dir.cd(szAppDataLayoutDir);
+	QString userDataPath(UserDataUtil::GetUserPath(szAppDataLayoutDir).c_str());
+	dir.mkpath(userDataPath);
+	dir.cd(userDataPath);
 
 	CSystemFileDialog::RunParams runParams;
 	runParams.title = CEditorMainFrame::tr("Save Layout");
@@ -104,31 +98,48 @@ void PySaveLayoutAs()
 		PySaveLayoutToFile(path.toStdString().c_str());
 	}
 }
+
+void FindSubPanes(IPane* pPane, const char* paneClassName, std::vector<IPane*>& result)
+{
+	for (IPane* pSubPane : pPane->GetSubPanes())
+	{
+		if (strcmp(pSubPane->GetPaneTitle(), paneClassName) == 0)
+		{
+			result.push_back(pSubPane);
+		}
+		else
+		{
+			FindSubPanes(pSubPane, paneClassName, result);
+		}
+	}
 }
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyLoadLayoutFromFile, layout, load,
+}
+
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PyLoadLayoutFromFile, layout, load,
                                      "Loads a layout from file.",
                                      "layout.load(str path)");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySaveLayoutToFile, layout, save,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PySaveLayoutToFile, layout, save,
                                      "Saves current layout to a file.",
                                      "layout.save(str absolutePath)");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyResetLayout, layout, reset,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PyResetLayout, layout, reset,
                                      "Reset Layout",
                                      "");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyLoadLayoutDlg, layout, load_dlg,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PyLoadLayoutDlg, layout, load_dlg,
                                      "Load Layout...", "");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySaveLayoutAs, layout, save_as,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PySaveLayoutAs, layout, save_as,
                                      "Save Layout As...", "");
 
 //////////////////////////////////////////////////////////////////////////
 CTabPaneManager::CTabPaneManager(QWidget* const pParent)
-	: m_pParent(pParent)
+	: CUserData({ Private_ToolTabManager::szAppDataLayoutDir, Private_ToolTabManager::szUserLayout })
+	, m_pParent(pParent)
 {
-	s_pGlobalToolTabManager = this;
+	Private_ToolTabManager::s_pGlobalToolTabManager = this;
 	m_bToolsDirty = false;
 	m_layoutLoaded = false;
 }
@@ -136,13 +147,12 @@ CTabPaneManager::CTabPaneManager(QWidget* const pParent)
 CTabPaneManager::~CTabPaneManager()
 {
 	CloseAllPanes();
-	s_pGlobalToolTabManager = nullptr;
+	Private_ToolTabManager::s_pGlobalToolTabManager = nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CTabPaneManager* CTabPaneManager::GetInstance()
 {
-	return s_pGlobalToolTabManager;
+	return Private_ToolTabManager::s_pGlobalToolTabManager;
 }
 
 void CTabPaneManager::OnTabPaneMoved(QWidget* tabPane, bool visible)
@@ -178,10 +188,9 @@ QString CTabPaneManager::CreateObjectName(const char* title)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* title, int nOverrideDockDirection, bool bLoadLayoutPersonalization)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(paneClassName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, paneClassName);
 	QTabPane* pPane = 0;
 	bool isToolAlreadyCreated = false;
 
@@ -236,22 +245,30 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 				title = pContentWidget->GetPaneTitle();
 			}
 			dockDir = pContentWidget->GetDockingDirection();
-
-			if (bLoadLayoutPersonalization)
-			{
-				pContentWidget->LoadLayoutPersonalization();
-			}
 		}
 		else if (!title)
 		{
 			title = pViewPaneClass->GetPaneTitle();
 		}
 
+		// Set default title
 		pPane->m_title = title;
 		pPane->setObjectName(CreateObjectName(title));
 		pPane->setWindowTitle(QWidget::tr(title));
 
 		pPane->m_category = pViewPaneClass->Category();
+
+		// Initialize after content has default title
+		if (pContentWidget)
+		{
+			pContentWidget->Initialize();
+
+			// Load personalization after content is actually initialized
+			if (bLoadLayoutPersonalization)
+			{
+				pContentWidget->LoadLayoutPersonalization();
+			}
+		}
 	}
 	else
 	{
@@ -327,7 +344,7 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 	}
 
 	QRect maxRc;
-	maxRc.setLeft( GetSystemMetrics(SM_XVIRTUALSCREEN));
+	maxRc.setLeft(GetSystemMetrics(SM_XVIRTUALSCREEN));
 	maxRc.setTop(GetSystemMetrics(SM_YVIRTUALSCREEN));
 	maxRc.setRight(maxRc.left() + GetSystemMetrics(SM_CXVIRTUALSCREEN));
 	maxRc.setBottom(maxRc.top() + GetSystemMetrics(SM_CYVIRTUALSCREEN));
@@ -346,7 +363,7 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 	{
 		paneRect.setRight(paneRect.left() + 10);
 	}
-	if (paneRect.width() < 10)
+	if (paneRect.height() < 10)
 	{
 		paneRect.setBottom(paneRect.top() + 10);
 	}
@@ -404,6 +421,8 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 
 	m_bToolsDirty = true;
 
+	IPane::s_signalPaneCreated(pPane->m_pane);
+
 	return pPane;
 }
 
@@ -420,7 +439,6 @@ void CTabPaneManager::BringToFront(IPane* pane)
 		GetToolManager()->bringToFront(tabPane);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CWnd* CTabPaneManager::OpenMFCPane(const char* sPaneClassName)
 {
 	IClassDesc* pClassDesc = GetIEditorImpl()->GetClassFactory()->FindClass(sPaneClassName);
@@ -431,31 +449,26 @@ CWnd* CTabPaneManager::OpenMFCPane(const char* sPaneClassName)
 
 	IViewPaneClass* pViewPaneClass = (IViewPaneClass*)pClassDesc;
 
+	QTabPane* pTool = nullptr;
 	// Check if view view pane class support only 1 pane at a time.
 	if (pViewPaneClass->SinglePane())
 	{
-		QTabPane* tool = FindTabPaneByClass(sPaneClassName);
-		if (tool)
-		{
-			// first activate then focus - else focus will not work
-			GetToolManager()->bringToFront(tool);
-			tool->activateWindow();
-			tool->setFocus();
-			return tool->m_MfcWnd;
-		}
+		pTool = FindTabPaneByClass(sPaneClassName);
 	}
 
-	QTabPane* tool = CreateTabPane(sPaneClassName, NULL, -1, true);
+	if (!pTool)
+	{
+		pTool = CreateTabPane(sPaneClassName, NULL, -1, true);
+	}
 
-	if (!tool)
+	if (!pTool)
 	{
 		return nullptr;
 	}
 
-	tool->setFocus();
-	tool->activateWindow();
+	FocusTabPane(pTool);
 
-	return tool->m_MfcWnd;
+	return pTool->m_MfcWnd;
 }
 
 CWnd* CTabPaneManager::FindMFCPane(const char* sPaneClassName)
@@ -481,29 +494,37 @@ IPane* CTabPaneManager::OpenOrCreatePane(const char* sPaneClassName)
 {
 	QTabPane* tool = FindTabPaneByClass(sPaneClassName);
 
-	if (tool)
+	if (!tool)
 	{
-		// first activate then focus - else focus will not work
-		GetToolManager()->bringToFront(tool);
-		tool->activateWindow();
-		tool->setFocus();
-		return tool->m_pane;
+		tool = CreateTabPane(sPaneClassName);
 	}
-
-	tool = CreateTabPane(sPaneClassName);
 
 	if (!tool)
 	{
 		return nullptr;
 	}
 
-	tool->setFocus();
-	tool->activateWindow();
+	FocusTabPane(tool);
 
 	return tool->m_pane;
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CTabPaneManager::FocusTabPane(QTabPane* pPane)
+{
+	QWidget* pTopMostParent = pPane;
+
+	while (QWidget* pParent = pTopMostParent->parentWidget())
+	{
+		pTopMostParent = pParent;
+	}
+
+	pTopMostParent->setWindowState((pTopMostParent->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+
+	pPane->setFocus();
+	pPane->activateWindow();
+	GetToolManager()->bringToFront(pPane);
+}
+
 bool CTabPaneManager::CloseTabPane(QTabPane* tool)
 {
 	bool bDeleted = stl::find_and_erase(m_panes, tool);
@@ -519,7 +540,6 @@ bool CTabPaneManager::CloseTabPane(QTabPane* tool)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByName(const QString& name)
 {
 	QList<QWidget*> tools = GetToolManager()->toolWindows();
@@ -549,7 +569,6 @@ QList<QTabPane*> CTabPaneManager::FindTabPanes(const QString& name)
 	return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByTitle(const char* title)
 {
 	QList<QTabPane*> tools = FindTabPanes();
@@ -564,7 +583,6 @@ QTabPane* CTabPaneManager::FindTabPaneByTitle(const char* title)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByCategory(const char* sPaneCategory)
 {
 	QList<QTabPane*> tools = FindTabPanes();
@@ -579,7 +597,6 @@ QTabPane* CTabPaneManager::FindTabPaneByCategory(const char* sPaneCategory)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane* CTabPaneManager::FindTabPaneByClass(const char* paneClassName)
 {
 	if (!CEditorMainFrame::GetInstance())
@@ -620,25 +637,71 @@ IPane* CTabPaneManager::FindPaneByTitle(const char* title)
 		return nullptr;
 }
 
+IPane* CTabPaneManager::FindPane(const std::function<bool(IPane*, const string& /*className*/)>& predicate)
+{
+	QList<QTabPane*> tools = FindTabPanes();
+	for (int i = 0; i < tools.count(); i++)
+	{
+		QTabPane* tool = tools.at(i);
+		if (tool->m_pane && predicate(tool->m_pane, tool->m_class))
+		{
+			return tool->m_pane;
+		}
+	}
+	return nullptr;
+}
+
+std::vector<IPane*> CTabPaneManager::FindAllPanelsByClass(const char* paneClassName)
+{
+	using namespace Private_ToolTabManager;
+	if (!CEditorMainFrame::GetInstance())
+	{
+		return {};
+	}
+	if (!GetToolManager())
+	{
+		return {};
+	}
+	std::vector<IPane*> result;
+	QList<QTabPane*> tools = FindTabPanes();
+	for (int i = 0; i < tools.count(); i++)
+	{
+		QTabPane* tool = tools.at(i);
+		if (0 == strcmp(tool->m_class, paneClassName))
+		{
+			result.push_back(tool->m_pane);
+		}
+		else
+		{
+			FindSubPanes(tool->m_pane, paneClassName, result);
+		}
+	}
+	return result;
+}
+
 void CTabPaneManager::SaveLayout()
 {
-	QString userLayout = QtUtil::GetAppDataFolder();
-	QDir(userLayout).mkpath(userLayout);
-	userLayout += "/Layout.json";
-	SaveLayoutToFile(userLayout.toStdString().c_str());
+	QJsonDocument doc(QJsonDocument::fromVariant(GetState()));
+	UserDataUtil::Save(Private_ToolTabManager::szUserLayout, doc.toJson());
 }
 
 bool CTabPaneManager::LoadUserLayout()
 {
-	QString userLayout = QtUtil::GetAppDataFolder();
-	userLayout += "/Layout.json";
-	return LoadLayoutFromFile(userLayout.toStdString().c_str());
+	QVariant state = UserDataUtil::Load(Private_ToolTabManager::szUserLayout);
+
+	if (!state.isValid())
+		return false;
+
+	SetState(state);
+	m_layoutLoaded = true;
+
+	return true;
 }
 
 bool CTabPaneManager::LoadLayout(const char* filePath)
 {
 	LOADING_TIME_PROFILE_AUTO_SESSION("sandbox_load_layout");
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (QFile(filePath).exists())
 		return LoadLayoutFromFile(filePath);
@@ -653,6 +716,7 @@ bool CTabPaneManager::LoadLayout(const char* filePath)
 
 bool CTabPaneManager::LoadDefaultLayout()
 {
+	using namespace Private_ToolTabManager;
 	// Check project folder first
 	QString projectPath(GetIEditorImpl()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute());
 	projectPath = projectPath + "/" + szDefaultLayout;
@@ -678,7 +742,7 @@ void CTabPaneManager::SaveLayoutToFile(const char* fullFilename)
 
 bool CTabPaneManager::LoadLayoutFromFile(const char* fullFilename)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(fullFilename);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, fullFilename);
 	QFile file(fullFilename);
 	if (!file.open(QIODevice::ReadOnly))
 	{
@@ -703,11 +767,12 @@ bool CTabPaneManager::LoadLayoutFromFile(const char* fullFilename)
 
 QFileInfoList CTabPaneManager::GetUserLayouts()
 {
+	using namespace Private_ToolTabManager;
 	QStringList filter;
 	filter << "*.json";
 
-	QDir dir(QtUtil::GetAppDataFolder());
-	if (dir.cd(szAppDataLayoutDir))
+	QDir dir(UserDataUtil::GetUserPath(szAppDataLayoutDir).c_str());
+	if (dir.exists())
 	{
 		return dir.entryInfoList(filter, QDir::Files);
 	}
@@ -719,6 +784,7 @@ QFileInfoList CTabPaneManager::GetUserLayouts()
 
 QFileInfoList CTabPaneManager::GetProjectLayouts()
 {
+	using namespace Private_ToolTabManager;
 	QStringList filter;
 	filter << "*.json";
 
@@ -730,6 +796,7 @@ QFileInfoList CTabPaneManager::GetProjectLayouts()
 
 QFileInfoList CTabPaneManager::GetAppLayouts()
 {
+	using namespace Private_ToolTabManager;
 	QStringList filter;
 	filter << "*.json";
 
@@ -746,7 +813,7 @@ QFileInfoList CTabPaneManager::GetAppLayouts()
 
 void CTabPaneManager::CloseAllPanes()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	bool bNeedsToDelete = false;
 	while (!m_panes.empty())
@@ -758,7 +825,7 @@ void CTabPaneManager::CloseAllPanes()
 
 	if (bNeedsToDelete)
 	{
-		//This must be called to ensure the deffered delete of child widgets is called synchronously
+		//This must be called to ensure the deferred delete of child widgets is called synchronously
 		//as destruction code will often rely on child widgets being deleted before the parent
 		qApp->processEvents();
 	}
@@ -775,7 +842,6 @@ void CTabPaneManager::StoreHistory(QTabPane* tool)
 	m_panesHistory[tool->m_title] = paneHistory;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::OnIdle()
 {
 	if (m_bToolsDirty)
@@ -785,7 +851,6 @@ void CTabPaneManager::OnIdle()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::CreateContentInPanes()
 {
 	for (size_t i = 0; i < m_panes.size(); i++)
@@ -799,10 +864,9 @@ void CTabPaneManager::CreateContentInPanes()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	pTool->m_bViewCreated = true;
 
 	IClassDesc* pClassDesc = GetIEditorImpl()->GetClassFactory()->FindClass(pTool->m_class);
@@ -812,13 +876,12 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 	}
 
 	IViewPaneClass* pViewPaneClass = (IViewPaneClass*)pClassDesc;
-	IPane* pWidget = pViewPaneClass->CreatePane();
-	if (pWidget)
+	IPane* pPane = pViewPaneClass->CreatePane();
+	if (pPane)
 	{
-		QWidget* const pContentWidget = pWidget->GetWidget();
-
+		QWidget* const pContentWidget = pPane->GetWidget();
 		pTool->layout()->addWidget(pContentWidget);
-		pTool->m_pane = pWidget;
+		pTool->m_pane = pPane;
 
 		QObject::connect(pContentWidget, &QWidget::windowTitleChanged, pTool, &QWidget::setWindowTitle);
 		QObject::connect(pContentWidget, &QWidget::windowIconChanged, pTool, &QWidget::setWindowIcon);
@@ -833,29 +896,26 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 		CRuntimeClass* pRuntimeClass = pViewPaneClass->GetRuntimeClass();
 		if (pRuntimeClass && mfcHostWidget)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Loading MFC Tool");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Loading MFC Tool");
 			assert(pRuntimeClass->IsDerivedFrom(RUNTIME_CLASS(CWnd)) || pRuntimeClass == RUNTIME_CLASS(CWnd));
 			pTool->m_MfcWnd = (CWnd*)pRuntimeClass->CreateObject();
 			assert(pTool->m_MfcWnd);
 			mfcHostWidget->setWindow(pTool->m_MfcWnd->GetSafeHwnd());
 		}
 	}
-	return pWidget;
+	return pPane;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QToolWindowManager* CTabPaneManager::GetToolManager() const
 {
 	return CEditorMainFrame::GetInstance()->GetToolManager();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::LayoutLoaded()
 {
 	m_layoutLoaded = true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 QVariant CTabPaneManager::GetState() const
 {
 	QVariantMap stateMap;
@@ -892,17 +952,16 @@ QVariant CTabPaneManager::GetState() const
 	return state;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::SetState(const QVariant& state)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// During the layout load, Qt events must be processed in order to cleanup after all tools.
 	// If the layout is loaded with a toolbar button, repeated clicking may cause this method to be called while the initial load is still in progress.
 	// This can cause issues for some tools, especially MFC-based tools. We catch this case with a mutex in order to ignore these recursive layout load requests.
 	static std::mutex reentry_protection;
 	auto mutexLock = std::unique_lock<std::mutex>(reentry_protection, std::defer_lock);
-	
+
 	if (!state.isValid() || state.type() != QVariant::Map || !mutexLock.try_lock())
 	{
 		return;
@@ -930,7 +989,7 @@ void CTabPaneManager::SetState(const QVariant& state)
 		for (QVariantMap::const_iterator iter = openToolsMap.begin(); iter != openToolsMap.end(); ++iter)
 		{
 			QString key = iter.key();
-			LOADING_TIME_PROFILE_SECTION_ARGS(key.toStdString().c_str());
+			CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, key.toStdString().c_str());
 			QVariantMap v = iter.value().toMap();
 			string className = v.value("class").toString().toStdString().c_str();
 			QVariantMap state = v.value("state", QVariantMap()).toMap();
@@ -971,7 +1030,6 @@ void CTabPaneManager::SetState(const QVariant& state)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTabPaneManager::PushUserEvent(const char* szEventName, const char* szTitle, const void* pAddress)
 {
 	UserAnalytics::Attributes attributes;
@@ -982,8 +1040,8 @@ void CTabPaneManager::PushUserEvent(const char* szEventName, const char* szTitle
 	USER_ANALYTICS_EVENT_ARG(szEventName, &attributes);
 }
 
-//////////////////////////////////////////////////////////////////////////
 QTabPane::QTabPane()
+	: QBaseTabPane()
 {
 	m_bViewCreated = false;
 	m_pane = nullptr;
@@ -996,13 +1054,23 @@ QTabPane::QTabPane()
 	setAttribute(Qt::WA_DeleteOnClose);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void QTabPane::showContextMenu(const QPoint& point)
 {
 	QMenu menu(this);
 	connect(menu.addAction(tr("Close")), &QAction::triggered, [this]() { close(); });
 
 	menu.exec(QPoint(point.x(), point.y()));
+}
+
+void QTabPane::focusInEvent(QFocusEvent* pEvent)
+{
+	if (m_pane && m_pane->GetWidget())
+	{
+		// Since QTabPane is just a wrapper class for proper panels and editors
+		// delegate focus to direct child whenever focus is received.
+		QWidget* pWidget = m_pane->GetWidget();
+		pWidget->setFocus();
+	}
 }
 
 #define WM_FRAME_CAN_CLOSE (WM_APP + 1000)
@@ -1035,4 +1103,3 @@ void QTabPane::closeEvent(QCloseEvent* event)
 QTabPane::~QTabPane()
 {
 }
-

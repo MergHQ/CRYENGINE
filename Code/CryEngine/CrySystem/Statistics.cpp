@@ -5,7 +5,7 @@
 #include <CrySystem/ISystem.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderer.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CrySystem/Profilers/IPerfHud.h>
 #include <CryString/CryPath.h>
@@ -14,18 +14,19 @@
 #include "CrySizerStats.h"
 #include "System.h"
 #include <CryMemory/CryMemoryManager.h>
-#include <CrySystem/ITestSystem.h>
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>    // CResourceCompilerHelper
-#include "LoadingProfiler.h"
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 #include "PhysRenderer.h"
 #include <CrySystem/File/IResourceManager.h>
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 #include <CrySystem/IStreamEngine.h>
+#include <CryAction/ITimeDemoRecorder.h>
+#include <CrySystem/Profilers/ILegacyProfiler.h>
 
 // Access to some game info.
-#include <CryGame/IGameFramework.h>    // IGameFramework
-#include <../CryAction/ILevelSystem.h> // ILevelSystemListener
+#include <CryGame/IGameFramework.h>
+#include <../CryAction/ILevelSystem.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
 const std::vector<string>& GetModuleNames()
 {
@@ -40,12 +41,6 @@ const std::vector<string>& GetModuleNames()
 }
 
 #if (!defined (_RELEASE) || defined(ENABLE_PROFILING_CODE))
-
-	#if CRY_PLATFORM_WINDOWS
-		#include "Psapi.h"
-typedef BOOL (WINAPI * GetProcessMemoryInfoProc)(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD);
-	#endif
-
 	#if CRY_PLATFORM_WINDOWS
 		#pragma pack(push,1)
 const struct PEHeader_DLL
@@ -228,7 +223,7 @@ public:                                 // -------------------------------------
 			OutputDebugString("ERROR: file wasn't registered with AddResource(): '");
 			OutputDebugString(sOutputFileName.c_str());
 			OutputDebugString("'\n");
-			assert(0);                             // asset wasn't registered yet AddResource() missing - unpredictable result might happen
+			CRY_ASSERT(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
 			return;
 		}
 
@@ -261,7 +256,7 @@ public:                                 // -------------------------------------
 			OutputDebugString("ERROR: file wasn't registered with AddResource(): '");
 			OutputDebugString(sOutputFileName.c_str());
 			OutputDebugString("'\n");
-			//assert(0);		// asset wasn't registered yet AddResource() missing - unpredictable result might happen
+			CRY_ASSERT(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
 			return;
 		}
 
@@ -580,8 +575,6 @@ struct SCryEngineStats
 
 		//! Total time spent in this counter including time of child profilers in current frame.
 		float m_totalTime;
-		//! Self frame time spent only in this counter (But includes recursive calls to same counter) in current frame.
-		int64 m_selfTime;
 		//! How many times this profiler counter was executed.
 		int   m_count;
 		//! Displayed quantity (interpolated or average).
@@ -623,35 +616,12 @@ struct SCryEngineStats
 	};
 
 	SCryEngineStats()
-		: nSummary_CodeAndStaticSize(0)
-
-		, nSummaryCharactersSize(0)
-
-		//, nSummary_TextureSize(0)
-		, nSummary_UserTextureSize(0)
-		, nSummary_EngineTextureSize(0)
-		, nSummary_TexturesStreamingThroughput(0.0f)
-		, nSummaryEntityCount(0)
-
-		, nStatObj_SummaryTextureSize(0)
-		, nStatObj_SummaryMeshSize(0)
-		, nStatObj_TotalCount(0)
-
-		, nChar_SummaryMeshSize(0)
-		, nChar_SummaryTextureSize(0)
-		, nChar_NumInstances(0)
-
-		, fLevelLoadTime(0.0f)
-		, nSummary_TexturesPoolSize(0)
 	{
 		ISystem* pSystem = GetISystem();
 		I3DEngine* p3DEngine = pSystem->GetI3DEngine();
 		IRenderer* pRenderer = pSystem->GetIRenderer();
 
 		nTotalAllocatedMemory = CryMemoryGetAllocatedSize();
-		nSummaryMeshSize = 0;
-		nSummaryMeshCount = 0;
-		nAPI_MeshSize = 0;
 
 		if (pRenderer)
 		{
@@ -679,39 +649,39 @@ struct SCryEngineStats
 		}
 	}
 
-	uint64                            nWin32_WorkingSet;
-	uint64                            nWin32_PeakWorkingSet;
-	uint64                            nWin32_PagefileUsage;
-	uint64                            nWin32_PeakPagefileUsage;
-	uint64                            nWin32_PageFaultCount;
+	uint64                            nWin32_WorkingSet = 0;
+	uint64                            nWin32_PeakWorkingSet = 0;
+	uint64                            nWin32_PagefileUsage = 0;
+	uint64                            nWin32_PeakPagefileUsage = 0;
+	uint64                            nWin32_PageFaultCount = 0;
 
-	uint32                            nTotalAllocatedMemory;
-	uint32                            nSummary_CodeAndStaticSize; // Total size of all code plus static data
+	uint32                            nTotalAllocatedMemory = 0;
+	uint32                            nSummary_CodeAndStaticSize = 0; // Total size of all code plus static data
 
-	uint32                            nSummaryScriptSize;
-	uint32                            nSummaryCharactersSize;
-	uint32                            nSummaryMeshCount;
-	uint32                            nSummaryMeshSize;
-	uint32                            nSummaryEntityCount;
+	uint32                            nSummaryScriptSize = 0;
+	uint32                            nSummaryCharactersSize = 0;
+	uint32                            nSummaryMeshCount = 0;
+	uint32                            nSummaryMeshSize = 0;
+	uint32                            nSummaryEntityCount = 0;
 
-	uint32                            nAPI_MeshSize; // Allocated by DirectX
+	uint32                            nAPI_MeshSize = 0; // Allocated by DirectX
 
-	uint32                            nSummary_TextureSize;                 // Total size of all textures
-	uint32                            nSummary_UserTextureSize;             // Size of eser textures, (from files...)
-	uint32                            nSummary_EngineTextureSize;           // Dynamic Textures
-	uint32                            nSummary_TexturesPoolSize;            // Dynamic Textures
-	float                             nSummary_TexturesStreamingThroughput; // in KB/sec
+	size_t                            nSummary_TextureSize = 0;                   // Total size of all textures
+	size_t                            nSummary_UserTextureSize = 0;               // Size of user textures, (from files...)
+	size_t                            nSummary_EngineTextureSize = 0;             // Dynamic Textures
+	size_t                            nSummary_TexturesPoolSize = 0;              // Dynamic Textures
+	float                             nSummary_TexturesStreamingThroughput = 0.f; // in KB/sec
 
-	uint32                            nStatObj_SummaryTextureSize;
-	uint32                            nStatObj_SummaryMeshSize;
-	uint32                            nStatObj_TotalCount; // Including sub-objects.
+	uint32                            nStatObj_SummaryTextureSize = 0;
+	uint32                            nStatObj_SummaryMeshSize = 0;
+	uint32                            nStatObj_TotalCount = 0; // Including sub-objects.
 
-	uint32                            nChar_SummaryMeshSize;
-	uint32                            nChar_SummaryTextureSize;
-	uint32                            nChar_NumInstances;
+	uint32                            nChar_SummaryMeshSize = 0;
+	uint32                            nChar_SummaryTextureSize = 0;
+	uint32                            nChar_NumInstances = 0;
 	SAnimMemoryTracker                m_AnimMemoryTracking;
 
-	float                             fLevelLoadTime;
+	float                             fLevelLoadTime = 0.f;
 	SDebugFPSInfo                     infoFPS;
 
 	std::vector<StatObjInfo>          objects;
@@ -722,11 +692,7 @@ struct SCryEngineStats
 	std::vector<IMaterial*>           materials;
 	std::vector<ProfilerInfo>         profilers;
 	std::vector<SPeakProfilerInfo>    peaks;
-	std::vector<SModuleProfilerInfo>  moduleprofilers;
 	std::vector<SAnimationStatistics> animations;
-	#if defined(ENABLE_LOADING_PROFILER)
-	std::vector<SLoadingProfilerInfo> loading;
-	#endif
 	std::vector<SEntityInfo>          entities;
 
 	MemInfo                           memInfo;
@@ -763,7 +729,6 @@ private: // --------------------------------------------------------------------
 	void CollectMemInfo();
 	void CollectProfileStatistics();
 	void CollectAnimations();
-	void CollectLoadingData();
 
 	// Arguments:
 	//   pObj - 0 is ignored
@@ -800,7 +765,6 @@ void CEngineStats::Collect()
 	CollectEntities();
 	CollectProfileStatistics();
 	CollectAnimations();
-	//CollectLoadingData();
 }
 
 inline bool CompareMaterialsByName(IMaterial* pMat1, IMaterial* pMat2)
@@ -845,8 +809,6 @@ bool CEngineStats::AddResource_SingleStatObj(IStatObj& rData)
 
 void CEngineStats::AddResource_CharInstance(ICharacterInstance& rData)
 {
-	IMaterial* pMat = rData.GetIMaterial();
-
 	if (!m_ResourceCollector.AddResource(rData.GetFilePath()))
 		return;   // was already registered
 
@@ -977,8 +939,6 @@ void CEngineStats::AddResource_StatObjWithLODs(IStatObj* pObj, CrySizerImpl& sta
 	si.bSplitLods = false;
 	// Analyze geom object.
 
-	bool bMultiSubObj = (si.pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND) != 0;
-
 	si.nMeshSize = 0;
 	si.nTextureSize = 0;
 	si.nIndices = 0;
@@ -1022,18 +982,9 @@ inline bool CompareAnimations(const SAnimationStatistics& p1, const SAnimationSt
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEngineStats::CollectLoadingData()
-{
-	#if defined(ENABLE_LOADING_PROFILER)
-	CLoadingProfilerSystem::FillProfilersList(m_stats.loading);
-	#endif
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEngineStats::CollectAnimations()
 {
-	ISystem* pSystem = GetISystem();
-	I3DEngine* p3DEngine = pSystem->GetI3DEngine();
+	// ISystem* pSystem = GetISystem();
 
 	m_stats.animations.clear();
 	/*
@@ -1097,7 +1048,10 @@ void CEngineStats::CollectGeometry()
 		p3DEngine->GetLoadedStatObjArray(0, nObjCount);
 		if (nObjCount > 0)
 		{
+	#ifdef _PREFAST_
 			const int numStatObjs = nObjCount;
+	#endif
+
 			m_stats.objects.reserve(nObjCount);
 			IStatObj** pObjects = new IStatObj*[nObjCount];
 			p3DEngine->GetLoadedStatObjArray(pObjects, nObjCount);
@@ -1106,7 +1060,7 @@ void CEngineStats::CollectGeometry()
 			for (int nCurObj = 0; nCurObj < nObjCount; nCurObj++)
 				AddResource_StatObjWithLODs(pObjects[nCurObj], statObjTextureSizer, 0);
 
-			delete[]pObjects;
+			delete[] pObjects;
 		}
 	}
 
@@ -1128,6 +1082,10 @@ void CEngineStats::CollectGeometry()
 
 			if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj())
 			{
+				// if the object is not backed by a file, ignore it
+				if (pEntObject->GetFilePath()[0] == 0)
+					continue;
+
 				AddResource_StatObjWithLODs(pEntObject, statObjTextureSizer, 0); // Ensure object is registered
 				m_ResourceCollector.AddInstance(pEntObject->GetFilePath(), pRenderNode);
 
@@ -1155,7 +1113,6 @@ void CEngineStats::CollectGeometry()
 void CEngineStats::CollectCharacters() PREFAST_SUPPRESS_WARNING(6262)
 {
 	ISystem* pSystem = GetISystem();
-	I3DEngine* p3DEngine = pSystem->GetI3DEngine();
 
 	m_stats.nChar_SummaryTextureSize = 0;
 	m_stats.nChar_SummaryMeshSize = 0;
@@ -1174,7 +1131,10 @@ void CEngineStats::CollectCharacters() PREFAST_SUPPRESS_WARNING(6262)
 	pICharacterManager->GetLoadedModels(0, nObjCount);
 	if (nObjCount > 0)
 	{
+	#ifdef _PREFAST_
 		const int numLoadedModels = nObjCount;
+	#endif
+
 		m_stats.characters.reserve(nObjCount);
 		IDefaultSkeleton** pObjects = new IDefaultSkeleton*[nObjCount];
 		pICharacterManager->GetLoadedModels(pObjects, nObjCount);
@@ -1227,7 +1187,7 @@ void CEngineStats::CollectCharacters() PREFAST_SUPPRESS_WARNING(6262)
 			const phys_geometry* pgeom;
 			{
 				for (int i = si.pIDefaultSkeleton->GetJointCount() - 1; i >= 0; i--)
-					if (pgeom = si.pIDefaultSkeleton->GetJointPhysGeom((uint32)i))
+					if (0 != (pgeom = si.pIDefaultSkeleton->GetJointPhysGeom((uint32)i)))
 					{
 						CrySizerImpl physMeshSizer;
 						pgeom->pGeom->GetMemoryStatistics(&physMeshSizer);
@@ -1395,7 +1355,7 @@ void CEngineStats::CollectTextures()
 	m_stats.nSummary_UserTextureSize = 0;
 	m_stats.nSummary_EngineTextureSize = 0;
 	m_stats.nSummary_TexturesStreamingThroughput = 0;
-	;
+
 	pRenderer->EF_Query(EFQ_TexturesPoolSize, m_stats.nSummary_TexturesPoolSize);
 
 	m_stats.textures.clear();
@@ -1408,7 +1368,7 @@ void CEngineStats::CollectTextures()
 		for (uint32 i = 0; i < query.numTextures; i++)
 		{
 			ITexture* pTexture = query.pTextures[i];
-			int nTexSize = pTexture->GetDataSize();
+			uint32 nTexSize = pTexture->GetDataSize();
 			if (nTexSize > 0)
 			{
 				m_stats.textures.push_back(pTexture);
@@ -1417,10 +1377,11 @@ void CEngineStats::CollectTextures()
 				if (pTexture->GetFlags() & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 				{
 					int numCopies = 1;
+
 					numCopies += (pTexture->GetFlags() & FT_STAGE_UPLOAD) ? 1 : 0;
 					numCopies += (pTexture->GetFlags() & FT_STAGE_READBACK) ? 1 : 0;
 
-					m_stats.nSummary_EngineTextureSize += numCopies * nTexSize;
+					m_stats.nSummary_EngineTextureSize += size_t(nTexSize) * numCopies;
 				}
 				else
 				{
@@ -1557,86 +1518,72 @@ void CEngineStats::CollectVoxels()
 void CEngineStats::CollectProfileStatistics()
 {
 	ISystem* pSystem = GetISystem();
-	IFrameProfileSystem* pProfiler = pSystem->GetIProfileSystem();
+	ILegacyProfiler* pProfiler = pSystem->GetLegacyProfilerInterface();
+	if (pProfiler == nullptr)
+		return;
+
+	pProfiler->AcquireReadAccess();
 
 	m_stats.profilers.clear();
 
-	uint32 num = pProfiler->GetProfilerCount();                                             //min(20, pProfiler->GetProfilerCount());
-
 	int need = 0;
-
-	for (uint32 i = 0; i < num; ++i)
+	for (const SProfilingSectionTracker* pTracker : *pProfiler->GetActiveTrackers())
 	{
-		CFrameProfiler* pFrameInfo = pProfiler->GetProfiler(i);
-		if (pFrameInfo && pFrameInfo->m_count.Average() > 0 && pFrameInfo->m_totalTime.Average() > 0.0f)
+		if (pTracker->count.Average() > 0 && pTracker->totalValue.Average() > 0.0f)
 			++need;
 	}
 
 	m_stats.profilers.resize(need);
-	for (uint32 j = 0, i = 0; j < num; ++j)
+	int i = 0;
+	for (const SProfilingSectionTracker* pTracker : *pProfiler->GetActiveTrackers())
 	{
-		CFrameProfiler* pFrameInfo = pProfiler->GetProfiler(j);
-
-		if (pFrameInfo && pFrameInfo->m_count.Average() > 0 && pFrameInfo->m_totalTime.Average() > 0.0f)
+		if (pTracker->count.Average() > 0 && pTracker->totalValue.Average() > 0.0f)
 		{
-
-			m_stats.profilers[i].m_count = pFrameInfo->m_count.Average();           //pFrameInfo->m_count;
-			m_stats.profilers[i].m_displayedValue = pFrameInfo->m_selfTime.Average();
-			m_stats.profilers[i].m_name = pFrameInfo->m_name;
-			m_stats.profilers[i].m_module = ((CFrameProfileSystem*)pProfiler)->GetModuleName(pFrameInfo);
-			m_stats.profilers[i].m_selfTime = pFrameInfo->m_selfTime;
-			m_stats.profilers[i].m_totalTime = pFrameInfo->m_totalTime.Average();
-			m_stats.profilers[i].m_variance = pFrameInfo->m_variance;
-			m_stats.profilers[i].m_min = (float)pFrameInfo->m_selfTime.Min();
-			m_stats.profilers[i].m_max = (float)pFrameInfo->m_selfTime.Max();
-			m_stats.profilers[i].m_mincount = pFrameInfo->m_count.Min();
-			m_stats.profilers[i].m_maxcount = pFrameInfo->m_count.Max();
-			i++;
+			m_stats.profilers[i].m_count = pos_round(pTracker->count.Average());
+			m_stats.profilers[i].m_displayedValue = pTracker->selfValue.Average();
+			m_stats.profilers[i].m_name = pTracker->pDescription->szEventname;
+			m_stats.profilers[i].m_module = pProfiler->GetModuleName(pTracker);
+			m_stats.profilers[i].m_totalTime = pTracker->totalValue.Average();
+			m_stats.profilers[i].m_variance = pTracker->selfValue.Variance();
+			m_stats.profilers[i].m_min = pTracker->selfValue.Min();
+			m_stats.profilers[i].m_max = pTracker->selfValue.Max();
+			m_stats.profilers[i].m_mincount = pos_round(pTracker->count.Min());
+			m_stats.profilers[i].m_maxcount = pos_round(pTracker->count.Max());
+			++i;
 		}
 	}
 
 	std::sort(m_stats.profilers.begin(), m_stats.profilers.end(), CompareFrameProfilersValueStats);
 
 	// fill peaks
-	num = pProfiler->GetPeaksCount();
-
-	m_stats.peaks.resize(num);
-	for (uint32 i = 0; i < num; ++i)
+	auto& peaks = *pProfiler->GetPeakRecords();
+	const uint32 peakCount = peaks.size();
+	m_stats.peaks.resize(peakCount);
+	for (uint32 i = 0; i < peakCount; ++i)
 	{
-
-		const SPeakRecord* pPeak = pProfiler->GetPeak(i);
-		CFrameProfiler* pFrameInfo = pPeak->pProfiler;
+		const SPeakRecord* pPeak = &peaks[i];
+		SProfilingSectionTracker* pTracker = pPeak->pTracker;
 
 		m_stats.peaks[i].peakValue = pPeak->peakValue;
 		m_stats.peaks[i].averageValue = pPeak->averageValue;
 		m_stats.peaks[i].variance = pPeak->variance;
-		m_stats.peaks[i].pageFaults = pPeak->pageFaults;                                       // Number of page faults at this frame.
-		m_stats.peaks[i].count = pPeak->count;                                                 // Number of times called for peak.
-		m_stats.peaks[i].when = pPeak->when;                                                   // when it added.
+		m_stats.peaks[i].pageFaults = pPeak->pageFaults;   // Number of page faults at this frame.
+		m_stats.peaks[i].count = pPeak->count;             // Number of times called for peak.
+		m_stats.peaks[i].when = pPeak->timeSeconds;        // when it added.
 
-		m_stats.peaks[i].profiler.m_count = pFrameInfo->m_count.Average();           //pFrameInfo->m_count;
-		m_stats.peaks[i].profiler.m_displayedValue = pFrameInfo->m_selfTime.Average();
-		m_stats.peaks[i].profiler.m_name = pFrameInfo->m_name;
-		m_stats.peaks[i].profiler.m_module = ((CFrameProfileSystem*)pProfiler)->GetModuleName(pFrameInfo);
-		m_stats.peaks[i].profiler.m_selfTime = pFrameInfo->m_selfTime;
-		m_stats.peaks[i].profiler.m_totalTime = pFrameInfo->m_totalTime.Average();
-		m_stats.peaks[i].profiler.m_variance = pFrameInfo->m_variance;
-		m_stats.peaks[i].profiler.m_min = (float)pFrameInfo->m_selfTime.Min();
-		m_stats.peaks[i].profiler.m_max = (float)pFrameInfo->m_selfTime.Max();
-		m_stats.peaks[i].profiler.m_mincount = pFrameInfo->m_count.Min();
-		m_stats.peaks[i].profiler.m_maxcount = pFrameInfo->m_count.Max();
+		m_stats.peaks[i].profiler.m_count = pos_round(pTracker->count.Average());
+		m_stats.peaks[i].profiler.m_displayedValue = pTracker->selfValue.Average();
+		m_stats.peaks[i].profiler.m_name = pTracker->pDescription->szEventname;
+		m_stats.peaks[i].profiler.m_module = pProfiler->GetModuleName(pTracker);
+		m_stats.peaks[i].profiler.m_totalTime = pTracker->totalValue.Average();
+		m_stats.peaks[i].profiler.m_variance = pTracker->selfValue.Variance();
+		m_stats.peaks[i].profiler.m_min = pTracker->selfValue.Min();
+		m_stats.peaks[i].profiler.m_max = pTracker->selfValue.Max();
+		m_stats.peaks[i].profiler.m_mincount = pos_round(pTracker->count.Min());
+		m_stats.peaks[i].profiler.m_maxcount = pos_round(pTracker->count.Max());
 	}
 
-	int modules = ((CFrameProfileSystem*)pProfiler)->GetModuleCount();
-	m_stats.moduleprofilers.resize(modules);
-
-	for (int i = 0; i < modules; i++)
-	{
-		float ratio = ((CFrameProfileSystem*)pProfiler)->GetOverBudgetRatio(i);
-		m_stats.moduleprofilers[i].name = ((CFrameProfileSystem*)pProfiler)->GetModuleName(i);
-		m_stats.moduleprofilers[i].overBugetRatio = ratio;
-	}
-
+	pProfiler->ReleaseReadAccess();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1757,8 +1704,6 @@ private:
 	void       ExportDependencies(CResourceCollector& stats);
 	void       ExportProfilerStatistics(SCryEngineStats& stats);
 	void       ExportAnimationStatistics(SCryEngineStats& stats);
-	void       ExportAllLoadingStatistics(SCryEngineStats& stats);
-	void       ExportLoadingStatistics(SCryEngineStats& stats);
 	void       ExportFPSBuckets();
 	void       ExportPhysEntStatistics(SCryEngineStats& stats);
 	void       ExportEntitiesStatistics(SCryEngineStats& stats);
@@ -2020,17 +1965,13 @@ void CStatsToExcelExporter::SetCellFlags(XmlNodeRef cell, int flags)
 
 static FILE* HandleFileExport(const char* filename)
 {
-	FILE* file = NULL;
+	CryPathString directory;
+	gEnv->pCryPak->AdjustFileName(g_szTestResults, directory, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+	gEnv->pCryPak->MakeDir(directory);
+	CryPathString path;
+	gEnv->pCryPak->AdjustFileName(directory + filename, path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 
-	string temp = g_szTestResults;
-	char path[ICryPak::g_nMaxPath];
-	path[sizeof(path) - 1] = 0;
-	gEnv->pCryPak->AdjustFileName(temp, path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-	gEnv->pCryPak->MakeDir(path);
-	gEnv->pCryPak->AdjustFileName(string(path) + "/" + filename, path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-	file = fopen(path, "wb");
-
-	return file;
+	return fopen(path, "wb");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2088,7 +2029,6 @@ void CStatsToExcelExporter::Export(XmlNodeRef Workbook, SCryEngineStats& stats)
 	ExportTimeDemoInfo();
 	ExportProfilerStatistics(stats);
 	ExportAnimationStatistics(stats);
-	//ExportAllLoadingStatistics(stats);
 	ExportPhysEntStatistics(stats);
 	ExportEntitiesStatistics(stats);
 	ExportAnimationInfo(stats);
@@ -2134,10 +2074,8 @@ void CStatsToExcelExporter::ExportSummary(SCryEngineStats& stats)
 	AddRow();
 	AddCell(string("Level ") + levelName);
 	AddRow();
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	AddCell("Running in 64bit version");
-	#else
-	AddCell("Running in 32bit version");
 	#endif
 	AddRow();
 	AddCell("Level Load Time (sec):");
@@ -2192,34 +2130,32 @@ void CStatsToExcelExporter::ExportSummary(SCryEngineStats& stats)
 	AddRow();
 
 	AddCell("Textures Overall Size", CELL_BOLD);
-	AddCell(stats.nSummary_TextureSize / (1024 * 1024));
+	AddCell((uint32)(stats.nSummary_TextureSize / (1024 * 1024)));
 	AddCell("Total amount of textures memory usage");
 
 	AddRow();
 	AddCell("Pool Size", CELL_BOLD);
-	AddCell(stats.nSummary_TexturesPoolSize / 1024 / 1024);
+	AddCell((uint32)(stats.nSummary_TexturesPoolSize / 1024 / 1024));
 	AddCell("Size of textures pool");
 
 	AddRow();
 	AddCell("Textures Memory Usage", CELL_BOLD);
-	AddCell((stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024));
+	AddCell(((uint32)(stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024)));
 	AddCell("Total memory of textures in RAM");
 
 	AddRow();
 	AddCell("Textures Engine Only", CELL_BOLD);
-	AddCell((stats.nSummary_EngineTextureSize) / (1024 * 1024));
+	AddCell(((uint32)(stats.nSummary_EngineTextureSize) / (1024 * 1024)));
 	AddCell("Textures for internal Engine usage ");
 
 	AddRow();
 	AddCell("User Textures", CELL_BOLD);
-	AddCell((stats.nSummary_UserTextureSize) / (1024 * 1024));
+	AddCell(((uint32)(stats.nSummary_UserTextureSize) / (1024 * 1024)));
 	AddCell("User textures not stored in the textures pool");
 
 	AddRow();
 	AddCell("Textures streaming throughput(KB/s)", CELL_BOLD);
-	;
-	if (stats.nSummary_TexturesStreamingThroughput > 0)
-		AddCell((stats.nSummary_TexturesStreamingThroughput) / 1024);
+	AddCell((uint32)((stats.nSummary_TexturesStreamingThroughput) / 1024));
 	AddRow();
 
 	//AddRow();
@@ -2420,11 +2356,6 @@ void CStatsToExcelExporter::ExportStatObjects(SCryEngineStats& stats)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CStatsToExcelExporter::ExportAllLoadingStatistics(SCryEngineStats& stats)
-{
-	ExportLoadingStatistics(stats);
-}
-
 struct CrySizerNaive : ICrySizer
 {
 	CrySizerNaive() : m_count(0), m_size(0) {}
@@ -2445,82 +2376,6 @@ struct CrySizerNaive : ICrySizer
 	virtual void SetResourceCollector(IResourceCollector* pColl)       {};
 	size_t m_count, m_size;
 };
-
-//////////////////////////////////////////////////////////////////////////
-void CStatsToExcelExporter::ExportLoadingStatistics(SCryEngineStats& stats)
-{
-	#if defined(ENABLE_LOADING_PROFILER)
-	NewWorksheet("Load Stats");
-
-	FreezeFirstRow();
-
-	XmlNodeRef Column;
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 300);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-	Column = m_CurrTable->newChild("Column");
-	Column->setAttr("ss:Width", 50);
-
-	AddRow();
-	m_CurrRow->setAttr("ss:StyleID", "s25");
-	AddCell("Function");
-	AddCell("Self (sec)");
-	AddCell("Total (sec)");
-	AddCell("Calls");
-	AddCell("Memory (Mb)");
-	AddCell("Read file size");
-	AddCell("Bandwith self (Kb/s)");
-	AddCell("Bandwith total (Kb/s)");
-	AddCell("FOpens self");
-	AddCell("FReads self");
-	AddCell("FSeeks self");
-	AddCell("FOpens total");
-	AddCell("FReads total");
-	AddCell("FSeeks total");
-
-	int nRows = (int)stats.loading.size();
-	for (int i = 0; i < nRows; i++)
-	{
-		SLoadingProfilerInfo& an = stats.loading[i];
-		AddRow();
-		AddCell(an.name);
-		AddCell((float)an.selfTime);
-		AddCell((float)an.totalTime);
-		AddCell(an.callsTotal);
-		AddCell((float)an.memorySize);
-		AddCell((float)an.selfInfo.m_dOperationSize / 1024.0f);
-		float bandwithSelf = an.selfTime > 0. ? (float)(an.selfInfo.m_dOperationSize / an.selfTime / 1024.0) : 0.0f;
-		float bandwithTotal = an.totalTime > 0. ? (float)(an.totalInfo.m_dOperationSize / an.totalTime / 1024.0) : 0.0f;
-		AddCell(bandwithSelf);
-		AddCell(bandwithTotal);
-		AddCell(an.selfInfo.m_nFileOpenCount);
-		AddCell(an.selfInfo.m_nFileReadCount);
-		AddCell(an.selfInfo.m_nSeeksCount);
-		AddCell(an.totalInfo.m_nFileOpenCount);
-		AddCell(an.totalInfo.m_nFileReadCount);
-		AddCell(an.totalInfo.m_nSeeksCount);
-	}
-	#endif
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CStatsToExcelExporter::ExportPhysEntStatistics(SCryEngineStats& stats)
@@ -2569,7 +2424,7 @@ void CStatsToExcelExporter::ExportPhysEntStatistics(SCryEngineStats& stats)
 	IPhysicalEntity* pent;
 	PhysicsVars* pVars = gEnv->pPhysicalWorld->GetPhysVars();
 
-	for (iter->MoveFirst(); pent = iter->Next(); )
+	for (iter->MoveFirst(); 0 != (pent = iter->Next());)
 	{
 		AddRow();
 		pe_params_foreign_data pfd;
@@ -2857,20 +2712,6 @@ void CStatsToExcelExporter::ExportProfilerStatistics(SCryEngineStats& stats)
 		Column->setAttr("ss:Width", 50);
 		Column = m_CurrTable->newChild("Column");
 		Column->setAttr("ss:Width", 50);
-
-		AddRow();
-		m_CurrRow->setAttr("ss:StyleID", "s25");
-		AddCell("Module");
-		AddCell("OverBudgetRatio%");
-
-		nRows = (int)stats.moduleprofilers.size();
-		for (int i = 0; i < nRows; i++)
-		{
-			SCryEngineStats::SModuleProfilerInfo& moduleProfile = stats.moduleprofilers[i];
-			AddRow();
-			AddCell(moduleProfile.name);
-			AddCell(moduleProfile.overBugetRatio * 100);
-		}
 	}
 
 }
@@ -3360,9 +3201,9 @@ void CStatsToExcelExporter::ExportMaterials(SCryEngineStats& stats)
 				{
 					SShaderTextureSlot* pSlot = pShaderSlots->m_UsedSlots[t];
 
-					const string& sTexName = pShaderResources->GetTexture(t) ? pShaderResources->GetTexture(t)->m_Name : "";
+					const string textureName = (pShaderResources->GetTexture(t) != nullptr) ? pShaderResources->GetTexture(t)->m_Name.c_str() : "";
 
-					if (!pSlot && !sTexName.empty())
+					if (!pSlot && !textureName.empty())
 					{
 						// found unused texture.
 
@@ -3380,7 +3221,7 @@ void CStatsToExcelExporter::ExportMaterials(SCryEngineStats& stats)
 
 						AddRow();
 						AddCell(pMat->GetMaterialHelpers().LookupTexName((EEfResTextures)t));
-						AddCell(sTexName);
+						AddCell(textureName);
 					}
 				}
 			}
@@ -3597,7 +3438,7 @@ void CStatsToExcelExporter::ExportMemStats(SCryEngineStats& stats)
 //////////////////////////////////////////////////////////////////////////
 
 void CStatsToExcelExporter::ExportStreamingInfo(
-  SStreamEngineStatistics& stats)
+	SStreamEngineStatistics& stats)
 {
 	NewWorksheet("Streaming Info");
 
@@ -3971,7 +3812,7 @@ void CStatsToExcelExporter::ExportMemInfo(SCryEngineStats& stats)
 	AddRow();
 	AddRow();
 	AddCell("API Textures (KB)", CELL_BOLD);
-	AddCell((stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024));
+	AddCell((uint32)((stats.nSummary_TexturesPoolSize + stats.nSummary_UserTextureSize + stats.nSummary_EngineTextureSize) / (1024 * 1024)));
 	AddRow();
 	AddCell("API Meshes (KB)", CELL_BOLD);
 	AddCell(stats.nAPI_MeshSize / 1024);
@@ -3980,9 +3821,7 @@ void CStatsToExcelExporter::ExportMemInfo(SCryEngineStats& stats)
 //////////////////////////////////////////////////////////////////////////
 void CStatsToExcelExporter::ExportTimeDemoInfo()
 {
-	if (!GetISystem()->GetITestSystem())
-		return;
-	STimeDemoInfo* pTD = GetISystem()->GetITestSystem()->GetTimeDemoInfo();
+	STimeDemoInfo* pTD = gEnv->pGameFramework->GetITimeDemoRecorder()->GetLastPlayedTimeDemo();
 	if (!pTD)
 		return;
 

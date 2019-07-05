@@ -1,0 +1,13 @@
+{
+    "NoUberFile": {
+        "Root": [
+            "IEditor.h",
+            "IUndoObject.h",
+            "IUndoManager.h",
+            "IAIManager.h",
+            "IEditorMaterial.h",
+            "IViewportManager.h",
+            "ILevelEditor.h"
+        ]
+    }
+}

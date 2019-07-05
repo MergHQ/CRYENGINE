@@ -15,6 +15,7 @@
 #include "StdAfx.h"
 #include "GameRulesModulesManager.h"
 #include "GameRules.h"
+#include "Game.h"
 
 #define GAMERULES_DEFINITIONS_XML_PATH		"Scripts/GameRules/GameModes.xml"
 

@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __REPORTDIALOG_H__
-#define __REPORTDIALOG_H__
+#pragma once
 
 #include "Report.h"
 
@@ -43,6 +42,3 @@ protected:
 	string                      m_title;
 	string                      m_profileTitle;
 };
-
-#endif //__REPORTDIALOG_H__
-

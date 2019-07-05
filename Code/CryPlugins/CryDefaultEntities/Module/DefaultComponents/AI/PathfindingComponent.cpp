@@ -96,9 +96,9 @@ void CPathfindingComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CPathfindingComponent::GetEventMask() const
+Cry::Entity::EventFlags CPathfindingComponent::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) | ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_START_GAME | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 }
 
 void CPathfindingComponent::SetMovementOutputValue(const PathFollowResult& result)

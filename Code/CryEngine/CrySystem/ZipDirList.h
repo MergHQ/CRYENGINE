@@ -3,6 +3,8 @@
 #ifndef _ZIP_DIR_LIST_HDR_
 #define _ZIP_DIR_LIST_HDR_
 
+#include <set>
+
 namespace ZipDir
 {
 

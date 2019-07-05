@@ -6,7 +6,7 @@
 #include "CollisionAvoidanceAgent.h"
 
 #include <CryAISystem/MovementRequest.h>
-#include <CryAISystem/NavigationSystem/INavigationQuery.h>
+#include <CryAISystem/NavigationSystem/NavMeshQueryFilterDefault.h>
 #include <CryAISystem/Components/IEntityNavigationComponent.h>
 
 #include <CrySerialization/Forward.h>
@@ -21,10 +21,10 @@ struct SUpdateContext;
 
 class CEntityAINavigationComponent final : public IEntityNavigationComponent
 {
-	const uint64 kDefaultEntityEventMask =
-		ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_RESET)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	const Cry::Entity::EventFlags kDefaultEntityEventMask =
+		ENTITY_EVENT_START_GAME
+		| ENTITY_EVENT_RESET
+		| ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 public:
 	struct SStateUpdatedSignal
@@ -53,14 +53,14 @@ public:
 	virtual void   OnShutDown() override;
 
 	virtual void   ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const override;
+	virtual Cry::Entity::EventFlags GetEventMask() const override;
 	// ~IEntityComponent
 
 	// IEntityNavigationComponent
 	virtual void   SetNavigationAgentType(const char* szTypeName) override;
 	virtual void   SetMovementProperties(const SMovementProperties& properties) override;
 	virtual void   SetCollisionAvoidanceProperties(const SCollisionAvoidanceProperties& properties) override;
-	virtual void   SetNavigationQueryFilter(const SNavMeshQueryFilterDefault& filter) override { m_navigationQueryFilter = filter; }
+	virtual void   SetNavigationQueryFilter(const SNavMeshQueryFilterDefaultWithCosts& filter) override { m_navigationQueryFilter = filter; }
 	virtual bool   TestRaycastHit(const Vec3& toPositon, Vec3& hitPos, Vec3& hitNorm) const override;
 	virtual bool   IsRayObstructed(const Vec3& toPosition) const override;
 	virtual bool   IsDestinationReachable(const Vec3& destination) const override;
@@ -113,6 +113,8 @@ private:
 
 	void                                 FillPathFollowerParams(PathFollowerParams& params) const;
 
+	void                                 RegisterEntityIfRequired();
+
 	// Callbacks
 	void                      QueueRequestPathFindingRequest(MNMPathRequest& request);
 	Movement::PathfinderState CheckOnPathfinderState();
@@ -147,7 +149,7 @@ private:
 	StateUpdatedCallback          m_stateUpdatedCallback;
 	NavigationCompletedCallback   m_navigationCompletedCallback;
 
-	SNavMeshQueryFilterDefault    m_navigationQueryFilter;
+	SNavMeshQueryFilterDefaultWithCosts    m_navigationQueryFilter;
 };
 
 void ReflectType(Schematyc::CTypeDesc<CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType>& desc);

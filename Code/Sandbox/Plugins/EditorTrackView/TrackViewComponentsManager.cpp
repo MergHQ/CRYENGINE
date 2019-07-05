@@ -4,13 +4,13 @@
 #include "TrackViewComponentsManager.h"
 
 CTrackViewComponentsManager::CTrackViewComponentsManager()
-	: m_pTrackViewCore(nullptr)
+	: m_pKeysToolbar(nullptr)
+	, m_pSequenceToolbar(nullptr)
+	, m_pSequenceTabWidget(nullptr)
+	, m_pPropertyTreeWidget(nullptr)
+	, m_pPlaybackToolbar(nullptr)
+	, m_pTrackViewCore(nullptr)
 {
-}
-
-CTrackViewComponentsManager::~CTrackViewComponentsManager()
-{
-	m_pTrackViewComponents.clear();
 }
 
 void CTrackViewComponentsManager::Init(CTrackViewCore* pTrackViewCore)
@@ -42,4 +42,3 @@ void CTrackViewComponentsManager::BroadcastTrackViewEditorEvent(ETrackViewEditor
 		(*it)->OnTrackViewEditorEvent(event);
 	}
 }
-

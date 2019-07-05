@@ -1,11 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CryMemory/CrySizer.h>             // ICrySizer
 #include "Undo.h"
-#include "IUndoObject.h"
-#include "Objects\ObjectManager.h"
+
+#include "Objects/ObjectManager.h"
 #include "CryEditDoc.h"
+
+#include <IUndoObject.h>
+
+#include <CryMemory/CrySizer.h>
 
 #define UNDOREDO_BUTTON_POPUP_TEXT_WIDTH 81
 #define UNDOREDO_MULTIPLE_OBJECTS_TEXT   " (Multiple Objects)"
@@ -14,13 +17,12 @@
 class CUndoStep
 {
 public:
-	CUndoStep() {};
 	virtual ~CUndoStep() { ClearObjects(); }
 
 	//! Set undo object name.
-	void           SetName(const string& name) { m_name = name; };
+	void          SetName(const string& name) { m_name = name; }
 	//! Get undo object name.
-	const string& GetName()                    { return m_name; };
+	const string& GetName()                   { return m_name; }
 
 	//! Add new undo object to undo step.
 	void AddUndoObject(IUndoObject* o)
@@ -45,15 +47,14 @@ public:
 	}
 	void ClearObjects()
 	{
-		int i;
 		// Release all undo objects.
-		for (i = 0; i < m_undoObjects.size(); i++)
+		for (int i = 0; i < m_undoObjects.size(); i++)
 		{
 			m_undoObjects[i]->Release();
 		}
 		m_undoObjects.clear();
-	};
-	virtual bool IsEmpty() const { return m_undoObjects.empty(); };
+	}
+	virtual bool IsEmpty() const { return m_undoObjects.empty(); }
 	virtual void Undo(bool bUndo)
 	{
 		for (int i = m_undoObjects.size() - 1; i >= 0; i--)
@@ -102,12 +103,12 @@ public:
 		}
 
 		return objNamesStr;
-	};
+	}
 
 private: // ------------------------------------------------------
 
 	friend class CUndoManager;
-	string                   m_name;
+	string                    m_name;
 	// Undo objects registered for this step.
 	std::vector<IUndoObject*> m_undoObjects;
 };
@@ -145,7 +146,6 @@ private:
 	std::vector<CUndoStep*> m_undoSteps;
 };
 
-//////////////////////////////////////////////////////////////////////////
 CUndoManager::CUndoManager()
 {
 	m_bRecording = false;
@@ -160,7 +160,6 @@ CUndoManager::CUndoManager()
 	m_bRedoing = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CUndoManager::~CUndoManager()
 {
 	m_bRecording = false;
@@ -171,7 +170,6 @@ CUndoManager::~CUndoManager()
 	delete m_currentUndo;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Begin()
 {
 	//CryLog( "<Undo> Begin SuspendCount=%d",m_suspendCount );
@@ -196,7 +194,6 @@ void CUndoManager::Begin()
 	//CLogFile::WriteLine( "<Undo> Begin OK" );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Restore(bool bUndo)
 {
 	if (m_bUndoing || m_bRedoing) // If Undoing or redoing now, ignore this calls.
@@ -215,7 +212,6 @@ void CUndoManager::Restore(bool bUndo)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Accept(const char* szName)
 {
 	//CryLog( "<Undo> Accept, Suspend Count=%d",m_suspendCount );
@@ -247,7 +243,7 @@ void CUndoManager::Accept(const char* szName)
 			m_undoStack.push_back(m_currentUndo);
 
 			signalBufferChanged(m_currentUndo, CUndoManager::eCommandChangeType_Insert, (int)m_undoStack.size() - 1);
-			
+
 			QString logLine = name + ": " + m_currentUndo->GetObjectNames();
 			//CryLog(logLine.toStdString().c_str());
 		}
@@ -268,7 +264,6 @@ void CUndoManager::Accept(const char* szName)
 	//CLogFile::WriteLine( "<Undo> Accept OK" );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Cancel()
 {
 	//CryLog( "<Undo> Cancel" );
@@ -294,7 +289,6 @@ void CUndoManager::Cancel()
 	//CLogFile::WriteLine( "<Undo> Cancel OK" );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Redo(int numSteps)
 {
 	GetIEditorImpl()->Notify(eNotify_OnBeginUndoRedo);
@@ -341,7 +335,6 @@ void CUndoManager::Redo(int numSteps)
 	GetIEditorImpl()->Notify(eNotify_OnEndUndoRedo);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Undo(int numSteps)
 {
 	GetIEditorImpl()->Notify(eNotify_OnBeginUndoRedo);
@@ -389,7 +382,6 @@ void CUndoManager::Undo(int numSteps)
 	GetIEditorImpl()->Notify(eNotify_OnEndUndoRedo);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::RecordUndo(IUndoObject* obj)
 {
 	//CryLog( "<Undo> RecordUndo Name=%s",obj->GetDescription() );
@@ -415,21 +407,18 @@ void CUndoManager::RecordUndo(IUndoObject* obj)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::ClearRedoStack()
 {
 	int redoCount = m_redoStack.size();
 	ClearRedoStack(redoCount);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::ClearUndoStack()
 {
 	int undoCount = m_undoStack.size();
 	ClearUndoStack(undoCount);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::ClearUndoStack(int num)
 {
 	int i = num;
@@ -445,7 +434,6 @@ void CUndoManager::ClearUndoStack(int num)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::ClearRedoStack(int num)
 {
 	int i = num;
@@ -461,26 +449,22 @@ void CUndoManager::ClearRedoStack(int num)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CUndoManager::IsHaveRedo() const
 {
 	return !m_redoStack.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CUndoManager::IsHaveUndo() const
 {
 	return !m_undoStack.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Suspend()
 {
 	m_suspendCount++;
 	//CryLog( "<Undo> Suspend %d",m_suspendCount );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Resume()
 {
 	assert(m_suspendCount >= 0);
@@ -491,7 +475,6 @@ void CUndoManager::Resume()
 	//CryLog( "<Undo> Resume %d",m_suspendCount );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::SuperBegin()
 {
 	//CryLog( "<Undo> SuperBegin (SuspendCount%d)",m_suspendCount );
@@ -503,7 +486,6 @@ void CUndoManager::SuperBegin()
 	//CLogFile::WriteLine( "<Undo> SuperBegin OK" );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::SuperAccept(const string& name)
 {
 	//CLogFile::WriteLine( "<Undo> SupperAccept" );
@@ -537,7 +519,6 @@ void CUndoManager::SuperAccept(const string& name)
 	//CLogFile::WriteLine( "<Undo> SupperAccept OK" );
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::SuperCancel()
 {
 	//CLogFile::WriteLine( "<Undo> SuperCancel" );
@@ -563,19 +544,16 @@ void CUndoManager::SuperCancel()
 	//CLogFile::WriteLine( "<Undo> SuperCancel OK" );
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CUndoManager::GetUndoStackLen() const
 {
 	return m_undoStack.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CUndoManager::GetRedoStackLen() const
 {
 	return m_redoStack.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::GetCommandName(CUndoStep* pStep, string& name)
 {
 	string objNames = pStep->GetObjectNames();
@@ -586,7 +564,6 @@ void CUndoManager::GetCommandName(CUndoStep* pStep, string& name)
 		name = pStep->GetName() + (objNames.IsEmpty() ? "" : " (" + objNames + ")");
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CUndoManager::Flush()
 {
 	m_bRecording = false;
@@ -641,4 +618,3 @@ void CUndoManager::EndRestoreTransaction()
 		(*iter)->EndRestoreTransaction();
 	}
 }
-

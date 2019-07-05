@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef PROJECTDEFINES_H
-#define PROJECTDEFINES_H
+#pragma once
 
 #include <CryCore/BaseTypes.h>
 
@@ -32,21 +31,14 @@
 #endif
 
 // Durango SDK and Orbis SDK are 64-bit only
-#if !(CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT)
+#if !CRY_PLATFORM_WINDOWS
 	#undef TOOLS_SUPPORT_DURANGO
 	#undef TOOLS_SUPPORT_ORBIS
 #endif
 
-// Type used for vertex indices
-#if defined(RESOURCE_COMPILER)
-typedef uint32 vtx_idx;
-#elif CRY_PLATFORM_MOBILE
-typedef uint16 vtx_idx;
-#else
 // Uncomment one of the two following typedefs:
 typedef uint32 vtx_idx;
 //typedef uint16 vtx_idx;
-#endif
 
 //! 0=off, 1=on
 //! \see http://wiki/bin/view/CryEngine/TerrainTexCompression
@@ -64,7 +56,6 @@ typedef uint32 vtx_idx;
 #define LOG_CONST_CVAR_ACCESS 0
 
 #if CRY_PLATFORM_WINDOWS || LOG_CONST_CVAR_ACCESS
-	#define RELEASE_LOGGING
 	#if defined(_RELEASE)
 		#define CVARS_WHITELIST
 	#endif // defined(_RELEASE)
@@ -76,8 +67,9 @@ typedef uint32 vtx_idx;
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 	#if defined(DEDICATED_SERVER)
-//! Enable/disable map load slicing functionality from the build.
-		#define MAP_LOADING_SLICING
+		//! Map Loading Slicing is by default disabled.
+		//! Enable/disable map load slicing functionality from the ProjectDefinesInclude.h.
+		//#define MAP_LOADING_SLICING
 	#endif
 #endif
 
@@ -96,11 +88,11 @@ extern void SliceAndSleep(const char* pFunc, int line);
 
 // Compile with unit testing enabled when not in RELEASE
 #if !defined(_RELEASE)
-	#define CRY_UNIT_TESTING
+	#define CRY_TESTING
 
 // configure the unit testing framework, if we have exceptions or not
 	#if !(CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_ORBIS)
-		#define CRY_UNIT_TESTING_USE_EXCEPTIONS
+		#define CRY_TESTING_USE_EXCEPTIONS
 	#endif
 
 #endif
@@ -109,7 +101,7 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define USE_HTTP_WEBSOCKETS 0
 #endif
 
-#if (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO) && !defined(RESOURCE_COMPILER)
+#if !defined(RELEASE) && !defined(RESOURCE_COMPILER) && !defined(NOT_USE_CRY_MEMORY_MANAGER)
 	#define CAPTURE_REPLAY_LOG 1
 #endif
 
@@ -140,43 +132,23 @@ extern void SliceAndSleep(const char* pFunc, int line);
 #endif
 
 #if !defined(_RELEASE)
-	#define USE_FRAME_PROFILER // comment this define to remove most profiler related code in the engine
 	#define CRY_TRACE_HEAP
 #endif
 
 //---------------------------------------------------------------------
 // Profiling
 //---------------------------------------------------------------------
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+#ifdef ENABLE_PROFILING_CODE
 // Define here if you want to enable any external profiling tools
-	#if defined(PERFORMANCE_BUILD)
-		#if defined(USE_FRAME_PROFILER)
-			#define ALLOW_FRAME_PROFILER 0 // currently not support in performance
-		#else
-			#define ALLOW_FRAME_PROFILER 0 // do not change this value
-		#endif
-		#if defined(USE_BROFILER) && CRY_PLATFORM_WINDOWS
-			#define ALLOW_BROFILER        1 // decide if you want to enable Brofiler
-		#else
-			#define ALLOW_BROFILER        0 // do not change this value
-		#endif
-		#define ALLOW_PLATFORM_PROFILER 1 // decide if you want to enable PIX/Razor/GPA
-		#define ALLOW_DEEP_PROFILING    1 // show more than just Regions
-	#else
-		#if defined(USE_FRAME_PROFILER)
-			#define ALLOW_FRAME_PROFILER 1 // decide if you want to enable internal profiler
-		#else
-			#define ALLOW_FRAME_PROFILER 0 // do not change this value
-		#endif
-		#if defined(USE_BROFILER) && CRY_PLATFORM_WINDOWS
-			#define ALLOW_BROFILER        1 // decide if you want to enable Brofiler
-		#else
-			#define ALLOW_BROFILER        0 // do not change this value
-		#endif
-		#define ALLOW_PLATFORM_PROFILER 1 // decide if you want to enable PIX/Razor/GPA
-		#define ALLOW_DEEP_PROFILING    1 // show more than just Regions
-	#endif
-
+#	if defined(USE_BROFILER) && CRY_PLATFORM_WINDOWS
+#		define ALLOW_BROFILER 1
+#	else
+#		define ALLOW_BROFILER 0
+#	endif
+#	define ALLOW_PLATFORM_PROFILER 1 // decide if you want to enable PIX/Razor/GPA
+#else
+#	define ALLOW_BROFILER 0
+#	define ALLOW_PLATFORM_PROFILER 0
 #endif
 //---------------------------------------------------------------------
 
@@ -224,7 +196,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 #endif
 
 //! These enable and disable certain net features to give compatibility between PCs and consoles / profile and performance builds.
-#define PC_CONSOLE_NET_COMPATIBLE          0
 #define PROFILE_PERFORMANCE_NET_COMPATIBLE 0
 
 #if (!defined(_RELEASE) || defined(PERFORMANCE_BUILD)) && !PROFILE_PERFORMANCE_NET_COMPATIBLE
@@ -281,8 +252,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#endif // TESSELLATION
 #endif   // !CRY_PLATFORM_MOBILE
 
-#define USE_GEOM_CACHES
-
 //------------------------------------------------------
 // SVO GI
 //------------------------------------------------------
@@ -318,8 +287,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 	#define SW_ENTITY_ID_USE_GUID
 	#define SW_NAVMESH_USE_GUID
 #endif
-
-#include "ProjectDefinesInclude.h"
 
 #ifdef RELEASE
 // Forces the .cryproject file to be read from a .pak file instead of directly from disk.
@@ -377,4 +344,6 @@ extern void SliceAndSleep(const char* pFunc, int line);
 // #define this if you still need the old C1-style AI-character system, but which will get removed soon
 //#define USE_DEPRECATED_AI_CHARACTER_SYSTEM
 
-#endif // PROJECTDEFINES_H
+#if defined(CRY_ENGINE_DEFINE_OVERRIDE_FILE)
+	#include CRY_ENGINE_DEFINE_OVERRIDE_FILE
+#endif

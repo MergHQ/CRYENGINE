@@ -15,6 +15,9 @@
 #include "BreakablePlane.h"
 #include <CryParticleSystem/ParticleParams.h>
 #include <CryParticleSystem/IParticles.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IMaterial.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CrySystem/ITimer.h>
 #include "BreakableManager.h"
 #include "Entity.h"
@@ -881,9 +884,6 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 		    pRndMesh->GetVerticesCount() == pmd->nVertices && pRndMesh->GetIndicesCount() == pmd->nTris * 3
 		    )
 		{
-			Matrix34 mtxInv = in.mtx.GetInverted();
-			Vec3 ptHit = mtxInv * in.pthit;
-			Vec3 dirHit = mtxInv.TransformVector(in.hitvel.normalized());
 			SExtractMeshIslandOut islandOut;
 
 			SExtractMeshIslandIn islandIn;

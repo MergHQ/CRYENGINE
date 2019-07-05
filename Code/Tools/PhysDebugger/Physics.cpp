@@ -113,10 +113,11 @@ protected:
 };
 CPhysRenderer g_PhysRenderer;
 
-struct DisplayContextImp : DisplayContext {
+struct DisplayContextImp : SDisplayContext {
 	DisplayContextImp(CCamera *cam) { camera = cam; }
 	virtual void DrawLine(const Vec3& pt0, const Vec3& pt1, const ColorF& clr0, const ColorF& clr1);
 	virtual void DrawBall(const Vec3& c, float r);
+	virtual void DrawSolidBox(const Vec3& vmin, const Vec3& vmax);
 	virtual void DrawTextLabel(const Vec3& pt, float fontSize, const char* txt, bool center) { g_PhysRenderer.DrawText(pt,txt,m_color,center); }
 	virtual void SetColor(COLORREF clr, float alpha=1);
 	ColorB m_color = { 255,255,255,255 };
@@ -147,7 +148,7 @@ extern "C" CRYPHYSICS_API ProfilerData *GetProfileData(int iThread);
 
 struct CSystemImp : ISystem {
 	virtual IPhysRenderer *GetIPhysRenderer() const { return &g_PhysRenderer; }
-	virtual float GetCurrTime() const { return time; }
+	virtual float GetCurrTime(ITimer::ETimer) const { return time; }
 	void UpdateTime() {
 		__int64 curTime;
 		QueryPerformanceCounter((LARGE_INTEGER*)&curTime);
@@ -162,7 +163,7 @@ SEnv *gEnv = &env;
 
 void ResetProfiler(ProfilerData *pd, int threads=-1)
 {
-	for(int i=0; i<=MAX_PHYS_THREADS; i++) if (threads & 1<<i) {
+	for(int i=0; i<MAX_PHYS_THREADS+MAX_EXT_THREADS; i++) if (threads & 1<<i) {
 		pd[i].iLevel = 0;
 		pd[i].sec0.m_iCurCode = 0;
 		pd[i].sec0.m_iCurSlot = pd[i].iLastSampleSlot = pd[i].iLastTimeSample = 0;
@@ -251,6 +252,11 @@ void SelectPrevProfVisInfo()
 void ExpandProfVisInfo(int bExpand)
 {
 	g_ProfVisInfos[getProfVisInfo(g_iActiveCode,1)].bExpanded = bExpand;
+}
+
+void NotifyStartSim() 
+{ 
+	g_Tool.OnEditorNotifyEvent(eNotify_OnBeginSimulationMode); 
 }
 
 DWORD WINAPI PhysProc(void *pParam)
@@ -500,7 +506,8 @@ void OnMouseEvent(uint evtWin, int x, int y, int flags)
 		case WM_MOUSEMOVE  : evt = eMouseMove; break;
 		default: return;
 	}
-	g_Tool.MouseCallback((CViewport*)&g_Cam, evt, CPoint(x,y), flags);
+	CPoint pt(x,y);
+	g_Tool.MouseCallback((CViewport*)&g_Cam, evt, pt, flags);
 }
 
 void OnSetCursor() 
@@ -751,7 +758,7 @@ void RenderWorld(HWND hWnd, HDC hDC)
 		if (!g_sync)
 			WaitForSingleObject(g_hThreadActive,INFINITE);
 		DrawProfileNode(offsx+40,20,tm.tmHeight, g_pPhysProfilerData,0);
-		ResetProfiler(g_pPhysProfilerData, 1<<MAX_PHYS_THREADS);
+		ResetProfiler(g_pPhysProfilerData, ((1<<MAX_EXT_THREADS)-1)<<MAX_PHYS_THREADS);
 	}
 	if (g_bShowProfiler & 1 || g_sync) 
 		ReleaseMutex(g_hThreadActive);
@@ -1097,6 +1104,18 @@ void DisplayContextImp::DrawBall(const Vec3& c, float r)
 	glTranslatef(c.x,c.y,c.z);
 	gluSphere(quad,r,16,8);
 	glPopMatrix();
+}
+
+void DisplayContextImp::DrawSolidBox(const Vec3& vmin, const Vec3& vmax)
+{
+	glBegin(GL_QUADS);
+	Vec3 c=(vmin+vmax)*0.5f, sz=(vmax-vmin)*0.5f;
+	for(int sg=-1;sg<=1;sg+=2) for(int i=0,j;i<3;i++) for(Vec2i rot(1,(j=0,1));j<4;j++,rot=Vec2i(-rot.y*sg,rot.x*sg))	{
+		Vec3 pt=c; pt[i]+=sz[i]*sg;
+		pt[incm3(i)]+=sz[incm3(i)]*rot.x; pt[decm3(i)]+=sz[decm3(i)]*rot.y;
+		_vtx(pt);
+	}
+	glEnd();
 }
 
 void DisplayContextImp::SetColor(COLORREF clr, float alpha) 

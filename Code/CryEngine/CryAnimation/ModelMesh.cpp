@@ -31,6 +31,11 @@ uint32 CModelMesh::InitMesh(CMesh* pMesh, CNodeCGF* pMeshNode, _smart_ptr<IMater
 
 		PrepareMesh(pMesh);
 	}
+	else if (pMeshNode)
+	{
+		m_geometricMeanFaceArea = pMeshNode->meshInfo.fGeometricMean;
+		m_faceCount = pMeshNode->meshInfo.nIndices / 3;
+	}
 
 	if (!Console::GetInst().ca_StreamCHR && pMesh)
 	{
@@ -64,8 +69,6 @@ uint32 CModelMesh::IsVBufferValid()
 	if (m_pIRenderMesh == 0)
 		return 0;
 	m_pIRenderMesh->LockForThreadAccess();
-	uint32 numIndices = m_pIRenderMesh->GetIndicesCount();
-	uint32 numVertices = m_pIRenderMesh->GetVerticesCount();
 	vtx_idx* pIndices = m_pIRenderMesh->GetIndexPtr(FSL_READ);
 	if (pIndices == 0)
 		return 0;
@@ -103,7 +106,6 @@ ClosestTri CModelMesh::GetAttachmentTriangle(const Vec3& RMWPosition, const Join
 		return cf;
 	m_pIRenderMesh->LockForThreadAccess();
 	uint32 numIndices = m_pIRenderMesh->GetIndicesCount();
-	uint32 numVertices = m_pIRenderMesh->GetVerticesCount();
 	vtx_idx* pIndices = m_pIRenderMesh->GetIndexPtr(FSL_READ);
 	if (pIndices == 0)
 		return cf;
@@ -192,7 +194,6 @@ uint32 CModelMesh::InitSWSkinBuffer()
 size_t CModelMesh::SizeOfModelMesh() const
 {
 	uint32 nSize = sizeof(CModelMesh);
-	uint32 numRenderChunks = m_arrRenderChunks.size();
 	nSize += m_arrRenderChunks.get_alloc_size();
 
 	return nSize;
@@ -260,8 +261,7 @@ _smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* s
 		eRMType = eRMT_Dynamic;
 
 	_smart_ptr<IRenderMesh> pRenderMesh = g_pIRenderer->CreateRenderMesh("Character", szFilePath, NULL, eRMType);
-	assert(pRenderMesh != 0);
-	if (pRenderMesh == 0)
+	if (!CRY_VERIFY(pRenderMesh != 0))
 	{
 		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "Failed to create render mesh for lod %d", nLod);
 		return 0;
@@ -289,7 +289,7 @@ _smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* s
 
 void CModelMesh::CreateMorphsBuffer(CMesh* pMesh)
 {
-	assert(pMesh);
+	CRY_ASSERT(pMesh);
 
 	uint32 numMorphs = m_softwareMesh.GetVertexFrames().GetCount();
 	uint32 numVertexDeltas = m_softwareMesh.GetVertexFrames().GetVertexDeltasCount();
@@ -319,7 +319,6 @@ void CModelMesh::CreateMorphsBuffer(CMesh* pMesh)
 		uint32 numMorphVerts = (uint32)frame.vertices.size();
 		for (uint32 j = 0; j < numMorphVerts; ++j)
 		{
-			const Vec3& deltaPos = frame.vertices[j].position;
 			uint32 vertexIndex = (uint32)frame.vertices[j].index;
 			++vertexBuckets[vertexIndex];
 		}
@@ -358,4 +357,20 @@ void CModelMesh::CreateMorphsBuffer(CMesh* pMesh)
 			numBits += CountBits(uint32(mask));
 		}
 	}
+}
+
+CModelMesh::sModelCache& CModelMesh::CreateModelCache()
+{
+	m_modelCache = stl::make_unique<sModelCache>();
+	return *m_modelCache.get();
+}
+
+CModelMesh::sModelCache const& CModelMesh::GetModelCache() const
+{
+	return *m_modelCache.get();
+}
+
+bool CModelMesh::HasModelCache() const
+{
+	return m_modelCache != nullptr;
 }

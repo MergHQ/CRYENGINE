@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "CryExtension/CryGUID.h"
+#include <CryExtension/CryGUID.h>
 
-class IXmlNode;
-struct IChunkFile;
+class XmlNodeRef;
 
 namespace AssetLoader
 {
@@ -20,6 +19,7 @@ struct SAssetMetadata
 	CryGUID guid = CryGUID::Null();
 	string sourceFile;
 	std::vector<string> files;
+	std::vector<string> workFiles;
 	std::vector<std::pair<string, string>> details;
 	std::vector<std::pair<string, int32>> dependencies;
 };
@@ -33,4 +33,3 @@ bool ReadMetadata(const XmlNodeRef& asset, SAssetMetadata& metadata);
 void WriteMetaData(const XmlNodeRef& asset, const SAssetMetadata& metadata);
 
 }
-

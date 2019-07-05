@@ -112,4 +112,3 @@ void CSceneElementCommon::MakeRoot(CSceneElementCommon* pSceneElement)
 	}
 	pSceneElement->GetParent()->RemoveChild(pSceneElement->GetSiblingIndex());
 }
-

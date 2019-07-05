@@ -9,7 +9,9 @@
 
 #include <CrySchematyc/CoreAPI.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryPhysics/physinterface.h>
 #include "CoreEnv/CoreEnv.h"
+#include <CryCore/StaticInstanceList.h>
 
 static void ReflectType(Schematyc::CTypeDesc<CCamera>& desc)
 {

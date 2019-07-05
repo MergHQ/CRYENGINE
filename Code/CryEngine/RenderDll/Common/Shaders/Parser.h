@@ -14,7 +14,7 @@
 struct STokenDesc
 {
 	int   id;
-	char* token;
+	const char* token;
 };
 int shGetObject(char** buf, STokenDesc* tokens, char** name, char** data);
 

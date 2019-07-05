@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _DevBuffer_H_
-#define _DevBuffer_H_
+#pragma once
 
 #if !defined(D3DBuffer)
 	#define D3DBuffer void
@@ -14,9 +13,8 @@
 #endif
 
 #include <CryCore/Platform/CryWindows.h>
+#include <CryMemory/IDefragAllocator.h>
 #include "../XRenderD3D9/DeviceManager/DeviceResources.h"
-
-class CSubmissionQueue_DX11; // friend
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Usage hints
@@ -114,6 +112,15 @@ public:
 			ReturnToPool();
 	}
 	
+	inline void SetDebugName(const char* name) const
+	{
+		if (!m_buffer) return;
+		// If we have CB direct access we only get a range-fragment instead of our own object which we can name
+#if !CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS
+		return m_buffer->SetDebugName(name);
+#endif
+	}
+
 	inline D3DBuffer* GetD3D() const
 	{
 		return m_buffer->GetBuffer();
@@ -128,7 +135,7 @@ public:
 
 	inline uint64 GetCode() const
 	{
-#if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS || CRY_RENDERER_OPENGL
+#if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS
 		uint64 code = reinterpret_cast<uintptr_t>(m_buffer) ^ SwapEndianValue((uint64)m_offset, true);
 		return code;
 #else
@@ -151,7 +158,7 @@ typedef _smart_ptr<CConstantBuffer> CConstantBufferPtr;
 class CGraphicsDeviceConstantBuffer : public IGraphicsDeviceConstantBuffer
 {
 public:
-	CGraphicsDeviceConstantBuffer() : m_size(0), m_bDirty(false) {};
+	CGraphicsDeviceConstantBuffer() : m_size(0), m_bDirty(false) {}
 	virtual void       SetData(const uint8* data, size_t size) override;
 	// Should only be called from the thread that can create and update constant buffers
 	CConstantBufferPtr GetConstantBuffer();
@@ -170,27 +177,6 @@ private:
 	static CryCriticalSection                          s_accessLock;
 };
 
-////////////////////////////////////////////////////////////////////////////////////////
-// Pool statistics
-struct SDeviceBufferPoolStats : private NoCopy
-{
-	string                buffer_descr;
-	size_t                bank_size;       // size of a pool bank in bytes
-	size_t                num_banks;       // number of banks currently allocated
-	size_t                num_allocs;      // number of allocs present in the device pool
-	IDefragAllocatorStats allocator_stats; // backing allocator statistics
-
-	SDeviceBufferPoolStats()
-		: buffer_descr()
-		, bank_size()
-		, num_banks()
-		, num_allocs()
-		, allocator_stats()
-	{ memset(&allocator_stats, 0x0, sizeof(allocator_stats)); }
-
-	~SDeviceBufferPoolStats() {}
-};
-
 class CDeviceBufferManager
 {
 	////////////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +184,6 @@ class CDeviceBufferManager
 	// Should only be called from the below befriended function! Please do not abuse!
 
 	friend class CGuardedDeviceBufferManager;
-	friend class CSubmissionQueue_DX11;
 
 	void            PinItem_Locked(buffer_handle_t);
 	void            UnpinItem_Locked(buffer_handle_t);
@@ -247,7 +232,7 @@ public:
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////
-	// Initialization and destruction and high level update funcationality
+	// Initialization and destruction and high level update functionality
 	bool Init();
 	void Update(uint32 frameId, bool called_during_loading);
 	void ReleaseEmptyBanks(uint32 frameId);
@@ -517,6 +502,20 @@ public:
 	void           Create(buffer_size_t numElements, buffer_size_t elementSize, DXGI_FORMAT elementFormat, uint32 flags, const void* pData);
 	void           Release();
 
+	inline SBufferLayout GetLayout() const
+	{
+		const SBufferLayout Layout =
+		{
+			m_eFormat,
+			m_elementCount,
+			static_cast<uint16>(m_elementSize),
+			/* TODO: change FT_... to CDeviceObjectFactory::... */
+			m_eFlags,
+		};
+
+		return Layout;
+	}
+
 	void           OwnDevBuffer(CDeviceBuffer* pDeviceTex);
 	void           UpdateBufferContent(const void* pData, buffer_size_t nSize);
 	void*          Lock();
@@ -527,6 +526,15 @@ public:
 	CDeviceBuffer* GetDevBuffer()    const { return m_pDeviceBuffer; }
 	uint32         GetFlags()        const { return m_eFlags; }
 	buffer_size_t  GetElementCount() const { return m_elementCount; }
+
+#if DURANGO_USE_ESRAM
+	bool IsESRAMResident();
+	bool AcquireESRAMResidency(CDeviceResource::EResidencyCoherence residencyEntry);
+	bool ForfeitESRAMResidency(CDeviceResource::EResidencyCoherence residencyExit);
+	bool TransferESRAMAllocation(CGpuBuffer* target);
+#endif
+
+	inline void    SetDebugName(const char* name) const { m_pDeviceBuffer->SetDebugName(name); }
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -546,6 +554,11 @@ private:
 	DXGI_FORMAT                      m_eFormat;
 	
 	bool                             m_bLocked;
+
+#if DURANGO_USE_ESRAM
+	uint32                           m_nESRAMSize = 0;
+	uint32                           m_nESRAMAlignment;
+#endif
 
 };
 
@@ -678,5 +691,3 @@ static inline bool FetchBufferData(void* dst, const void* src, size_t sze)
 
 	return requires_flush;
 }
-
-#endif // _D3DBuffer_H

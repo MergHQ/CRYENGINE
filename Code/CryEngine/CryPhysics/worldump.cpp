@@ -43,16 +43,16 @@
 
 
 enum fieldTypes { ft_int=0,ft_uint,ft_short,ft_ushort,ft_uint64,ft_float,ft_vector,ft_quaternion,ft_entityptr,ft_matrix33,ft_proc };
-static char *g_strFormats[2][10] = {{ "%i","%X","%hd","%hu","%I64X","%.8g","(%.8g %.8g %.8g)", "(%f (%f %f %f))", "%d", "(%f %f %f)(%f %f %f)(%f %f %f)" },
+static const char *g_strFormats[2][10] = {{ "%i","%X","%hd","%hu","%I64X","%.8g","(%.8g %.8g %.8g)", "(%f (%f %f %f))", "%d", "(%f %f %f)(%f %f %f)(%f %f %f)" },
 																	  { "%i","%X","%hd","%hu","%I64X","%g", "(%g %g %g)", "(%f (%f %f %f))", "%d", "(%f %f %f)(%f %f %f)(%f %f %f)" }};
-static char g_strTabs[17] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+static const char g_strTabs[17] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
 struct parse_item;
 struct parse_context;
-struct Serializer;
+struct CPhysSerializer;
 typedef std::map<string,parse_item*> parse_map;
 typedef std::vector<parse_item*> parse_list;
-typedef int (Serializer::*ParseProc)(parse_context&, char*);
+typedef int (CPhysSerializer::*ParseProc)(parse_context&, char*);
 
 unsigned short *g_hfData;
 unsigned char *g_hfFlags;
@@ -67,7 +67,7 @@ union parse_data {
 };
 
 struct parse_item {
-	char *name;
+	const char *name;
 	int itype;
 	parse_data data;
 	int idx;
@@ -76,7 +76,7 @@ struct parse_item {
 struct parse_context {
 	FILE *f;
 	CPhysicalWorld *pWorld;
-	Serializer *pSerializer,*pSerializerStack[16];
+	CPhysSerializer *pSerializer,*pSerializerStack[16];
 	void *pobj,*pObjStack[16];
 	int iStackPos;
 	int bSaving;
@@ -156,11 +156,11 @@ int proc(parse_context &ctx,char *str) { \
 	} return 0;	\
 }
 
-struct Serializer {
+struct CPhysSerializer {
 	parse_map map;
 	parse_list list;
 
-	~Serializer() {
+	~CPhysSerializer() {
 		for(unsigned int i=0; i<list.size(); i++)
 			delete list[i];
 	}
@@ -246,7 +246,7 @@ struct Serializer {
 };
 
 
-struct CMeshSerializer : Serializer {
+struct CMeshSerializer : CPhysSerializer {
 	CMeshSerializer() {
 		CTriMesh trg;
 		DECLARE_MEMBER("numVertices", ft_int, m_nVertices)
@@ -335,7 +335,7 @@ struct CMeshSerializer : Serializer {
 };
 
 
-struct CBoxSerializer : Serializer {
+struct CBoxSerializer : CPhysSerializer {
 	CBoxSerializer() {
 		CBoxGeom trg;
 		DECLARE_MEMBER("Oriented", ft_int, GetBox().bOriented)
@@ -358,7 +358,7 @@ struct CBoxSerializer : Serializer {
 };
 
 
-struct CCylinderSerializer : Serializer {
+struct CCylinderSerializer : CPhysSerializer {
 	CCylinderSerializer() {
 		CCylinderGeom trg;
 		DECLARE_MEMBER("Center", ft_vector, m_cyl.center)
@@ -384,7 +384,7 @@ struct CCylinderSerializer : Serializer {
 };
 
 
-struct CSphereSerializer : Serializer {
+struct CSphereSerializer : CPhysSerializer {
 	CSphereSerializer() {
 		CSphereGeom trg;
 		DECLARE_MEMBER("Center", ft_vector, m_sphere.center)
@@ -401,7 +401,7 @@ struct CSphereSerializer : Serializer {
 };
 
 
-struct CPlaneSerializer : Serializer {
+struct CPlaneSerializer : CPhysSerializer {
 	CPlaneSerializer() {
 		plane trg;
 		DECLARE_MEMBER("Normal", ft_vector, n)
@@ -413,7 +413,7 @@ struct CPlaneSerializer : Serializer {
 inline char hex2chr(int h) { return h+'0'+(9-h>>31 & 'A'-'0'-10); }
 inline int chr2hex(char c) { return c-'0'-(9+'0'-c>>31 & 'A'-'0'-10); }
 
-struct CHeightfieldSerializer : Serializer {
+struct CHeightfieldSerializer : CPhysSerializer {
 	CHeightfieldSerializer() {
 		CHeightfield trg;
 		DECLARE_MEMBER("BasisX", ft_vector, m_hf.Basis.m00)
@@ -498,7 +498,7 @@ struct CHeightfieldSerializer : Serializer {
 };
 
 
-struct CTetrahedronSerializer : Serializer {
+struct CTetrahedronSerializer : CPhysSerializer {
 	CTetrahedronSerializer() {
 		STetrahedron trg;
 		DECLARE_MEMBER("flags", ft_uint, flags)
@@ -549,7 +549,7 @@ struct CTetrahedronSerializer : Serializer {
 };
 
 
-struct CTetrLatticeSerializer : Serializer {
+struct CTetrLatticeSerializer : CPhysSerializer {
 	CTetrahedronSerializer *pTetrSerializer;
 
 	CTetrLatticeSerializer(CTetrahedronSerializer *trs) : pTetrSerializer(trs) {
@@ -609,7 +609,7 @@ struct CTetrLatticeSerializer : Serializer {
 };
 
 
-struct CPhysGeometrySerializer : Serializer {
+struct CPhysGeometrySerializer : CPhysSerializer {
 	CMeshSerializer *pMeshSerializer;
 	CHeightfieldSerializer *pHeightfieldSerializer;
 	CBoxSerializer *pBoxSerializer;
@@ -629,9 +629,9 @@ struct CPhysGeometrySerializer : Serializer {
 	}
 
 	int SerializeGeometryPtr(parse_context &ctx, char* str, IGeometry *&pGeom) {
-		Serializer *pSerializer;
+		CPhysSerializer *pSerializer;
 		if (ctx.bSaving) {
-			char *name;
+			const char *name;
 			if (!pGeom)
 				return 1;
 			switch (pGeom->GetType()) {
@@ -671,7 +671,7 @@ struct CPhysGeometrySerializer : Serializer {
 };
 
 
-struct CExplosionShapeSerializer : Serializer {
+struct CExplosionShapeSerializer : CPhysSerializer {
 	CMeshSerializer *pMeshSerializer;
 
 	CExplosionShapeSerializer(CMeshSerializer *ms) : pMeshSerializer(ms) {
@@ -719,7 +719,7 @@ struct CExplosionShapeSerializer : Serializer {
 };
 
 
-struct CCrackSerializer : Serializer {
+struct CCrackSerializer : CPhysSerializer {
 	CMeshSerializer *pMeshSerializer;
 
 	CCrackSerializer(CMeshSerializer *ms) : pMeshSerializer(ms) {
@@ -781,7 +781,7 @@ struct CCrackSerializer : Serializer {
 };
 
 
-struct CGeomanSerializer : Serializer {
+struct CGeomanSerializer : CPhysSerializer {
 	CPhysGeometrySerializer *pPhysGeometrySerializer;
 	CExplosionShapeSerializer *pExplSerializer;
 	CCrackSerializer *pCrackSerializer;
@@ -903,7 +903,7 @@ struct CGeomanSerializer : Serializer {
 };
 
 
-struct CPhysicalPlaceholderSerializer : Serializer {
+struct CPhysicalPlaceholderSerializer : CPhysSerializer {
 	CPhysicalPlaceholderSerializer() {
 		CPhysicalPlaceholder trg;
 		DECLARE_MEMBER("BBoxMin", ft_vector, m_BBox[0])
@@ -935,7 +935,7 @@ struct CPhysicalPlaceholderSerializer : Serializer {
 };
 
 
-struct CPhysicalEntityPartSerializer : Serializer {
+struct CPhysicalEntityPartSerializer : CPhysSerializer {
 	CTetrLatticeSerializer *pLatticeSerializer;
 
 	CPhysicalEntityPartSerializer(CTetrLatticeSerializer *tls) : pLatticeSerializer(tls) {
@@ -1055,7 +1055,7 @@ struct CPhysicalEntityPartSerializer : Serializer {
 };
 
 
-struct CPhysicalJointSerializerWrite : Serializer	{
+struct CPhysicalJointSerializerWrite : CPhysSerializer {
 	CPhysicalJointSerializerWrite() {
 		SStructuralJoint trg;
 		DECLARE_MEMBER("ipart0", ft_int, ipart[0])
@@ -1075,7 +1075,7 @@ struct CPhysicalJointSerializerWrite : Serializer	{
 	}
 };
 
-struct CPhysicalJointSerializerRead : Serializer	{
+struct CPhysicalJointSerializerRead : CPhysSerializer {
 	CPhysicalJointSerializerRead() {
 		pe_params_structural_joint trg;
 		DECLARE_MEMBER("ipart0", ft_int, partid[0])
@@ -1150,10 +1150,7 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 				if (pparts!=&pent->m_defpart) 
 					ctx.pWorld->FreeEntityParts(pparts, nparts);
 			}
-#if CRY_PLATFORM_DURANGO	 
-#pragma warning(disable : 4390)
-#endif
-			if (pent->m_nPartsAlloc!=1) { size_t sz = sizeof(geom) * pent->m_nParts; MEMSTAT_USAGE(pent->m_parts, sz); }
+			if (pent->m_nPartsAlloc!=1) { MEMSTAT_USAGE(pent->m_parts, sizeof(geom) * pent->m_nParts); }
 			ctx.PushState();
 			ctx.pobj = pent->m_parts+i;
 			pent->m_parts[i].pPlaceholder = 0;
@@ -1203,7 +1200,7 @@ struct CPhysicalEntitySerializer : CPhysicalPlaceholderSerializer {
 };
 
 
-struct CRigidBodySerializer : Serializer {
+struct CRigidBodySerializer : CPhysSerializer {
 	CRigidBodySerializer() {
 		RigidBody trg;
 		DECLARE_MEMBER("pos", ft_vector, pos)
@@ -1233,7 +1230,7 @@ struct CRigidBodySerializer : Serializer {
 	}
 };
 
-struct CConstraintSerializer : Serializer {
+struct CConstraintSerializer : CPhysSerializer {
 	CConstraintSerializer() {
 		pe_action_add_constraint trg;
 		DECLARE_MEMBER("pBuddy", ft_entityptr, pBuddy)
@@ -1348,7 +1345,7 @@ struct CRigidEntitySerializer : CPhysicalEntitySerializer {
 };
 
 
-struct CSuspSerializer : Serializer {
+struct CSuspSerializer : CPhysSerializer {
 	CSuspSerializer() {
 		suspension_point trg;
 		DECLARE_PROC("Driving", &CSuspSerializer::SerializeDriving)
@@ -1475,7 +1472,7 @@ struct CWheeledVehicleEntitySerializer : CRigidEntitySerializer {
 };
 
 
-struct CJointSerializer : Serializer {
+struct CJointSerializer : CPhysSerializer {
 	CRigidBodySerializer *pRigidBodySerializer;
 
 	CJointSerializer(CRigidBodySerializer *rbs) : pRigidBodySerializer(rbs) { 
@@ -1524,7 +1521,7 @@ struct CJointSerializer : Serializer {
 };
 
 
-struct CAEPartInfoSerializer : Serializer {
+struct CAEPartInfoSerializer : CPhysSerializer {
 	CAEPartInfoSerializer() {
 		ae_part_info trg;
 		DECLARE_MEMBER("Quat0", ft_quaternion, q0)
@@ -1723,7 +1720,7 @@ struct CWalkingRigidEntitySerializer : CRigidEntitySerializer {
 };
 
 
-struct CRopeVtxSerializer : Serializer {
+struct CRopeVtxSerializer : CPhysSerializer {
 	CRopeVtxSerializer() {
 		rope_vtx trg;
 		DECLARE_MEMBER("pt", ft_vector, pt)
@@ -1737,7 +1734,7 @@ struct CRopeVtxSerializer : Serializer {
 	DEFINE_MEMBER_PROC(rope_vtx, SerializeContactPart, iContactPart)
 };
 
-struct CRopeSegSerializer : Serializer {
+struct CRopeSegSerializer : CPhysSerializer {
 	CRopeSegSerializer() {
 		rope_segment trg;
 		DECLARE_MEMBER("pt", ft_vector, pt)
@@ -1863,7 +1860,7 @@ struct CRopeEntitySerializer : CPhysicalEntitySerializer {
 				Vec3 pos; quaternionf q; float scale;
 				pent->m_pTiedTo[i]->GetLocTransform(pent->m_iTiedPart[i], pos,q,scale, pent);
 				pr.ptTiedTo[i] = q*pent->m_ptTiedLoc[i]+pos;
-				pent->m_pTiedTo[0] = 0;
+				pent->m_pTiedTo[i] = 0;
 			}
 			pent->SetParams(&pr);
 		}
@@ -1872,7 +1869,7 @@ struct CRopeEntitySerializer : CPhysicalEntitySerializer {
 };
 
 
-struct CSoftVtxSerializer : Serializer {
+struct CSoftVtxSerializer : CPhysSerializer {
 	CSoftVtxSerializer() {
 		se_vertex trg; trg.pContactEnt=0;
 		DECLARE_MEMBER("pos", ft_vector, pos)
@@ -1893,7 +1890,7 @@ struct CSoftVtxSerializer : Serializer {
 	DEFINE_MEMBER_PROC(se_vertex,SerializeContactPart,iContactPart)
 };
 
-struct CSoftEdgeSerializer : Serializer {
+struct CSoftEdgeSerializer : CPhysSerializer {
 	CSoftEdgeSerializer() {
 		se_edge trg;
 		DECLARE_MEMBER("len0", ft_float, len0)
@@ -2113,7 +2110,7 @@ struct CAreaSerializer : CPhysicalPlaceholderSerializer {
 };
 
 
-struct CEntityGridSerializer : Serializer {
+struct CEntityGridSerializer : CPhysSerializer {
 	CEntityGridSerializer() {
 		CPhysicalWorld trg(0);
 		DECLARE_MEMBER("iAxisZ", ft_int, m_entgrid.iup)
@@ -2140,7 +2137,7 @@ struct CEntityGridSerializer : Serializer {
 };
 
 
-struct CPhysVarsSerializer : Serializer {
+struct CPhysVarsSerializer : CPhysSerializer {
 	CPhysVarsSerializer() {
 		PhysicsVars trg;
 		DECLARE_MEMBER("nMaxStackSizeMC", ft_int, nMaxStackSizeMC)
@@ -2199,7 +2196,7 @@ struct CPhysVarsSerializer : Serializer {
 	}
 };
 
-struct CPhysicalWorldSerializer : Serializer {
+struct CPhysicalWorldSerializer : CPhysSerializer {
 	CPhysVarsSerializer *pPhysVarsSerializer;
 	CEntityGridSerializer *pEntityGridSerializer;
 	CPhysicalEntitySerializer *pStaticEntitySerializer;
@@ -2289,8 +2286,8 @@ struct CPhysicalWorldSerializer : Serializer {
 				for(; pent; pent=pent->m_prev) {
 					if ((pent->m_flags & flaggedOnly)!=flaggedOnly)
 						continue;
-					char *name = "Static";
-					Serializer *pSerializer = pStaticEntitySerializer;
+					const char *name = "Static";
+					CPhysSerializer *pSerializer = pStaticEntitySerializer;
 					switch (pent->GetType()) {
 						case PE_RIGID: pSerializer = pRigidEntitySerializer; name = "Rigid Body"; break;
 						case PE_WHEELEDVEHICLE: pSerializer = pWheeledVehicleEntitySerializer; name = "Wheeled Vehicle"; break;
@@ -2314,7 +2311,6 @@ struct CPhysicalWorldSerializer : Serializer {
 				pWorld->m_nEntsAlloc += 512;
 				ReallocateList(pWorld->m_pTmpEntList, pWorld->m_nEntsAlloc-512, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pTmpEntList1, pWorld->m_nEntsAlloc-512, pWorld->m_nEntsAlloc);
-				ReallocateList(pWorld->m_pTmpEntList2, pWorld->m_nEntsAlloc-512, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pGroupMass, 0, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pMassList, 0, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pGroupIds, 0, pWorld->m_nEntsAlloc);
@@ -2474,6 +2470,7 @@ void SerializeWorld(CPhysicalWorld *pWorld, const char *fname,int bSave)
 }
 
 
+#undef AddObject
 struct CDummySizer : public ICrySizer {
 	virtual void Release() {}
 	virtual size_t GetTotalSize() { return 0; }
@@ -2495,7 +2492,7 @@ struct CSaverSizer : public CDummySizer {
 	std::map<void*,int> &objs;
 	CMemStream &stm;
 	CSaverSizer(std::map<void*,int> &objs, CMemStream &stm) : objs(objs),stm(stm) {}
-	virtual bool IsLoading() { return false; }
+	virtual int  GetMode() const { return 0; }
 	virtual bool AddObject(const void* ptr, size_t size, int nCount=1) { return AddObjectRaw((void*)ptr,size,false,size>=nCount*sizeof(void*)); }
 	virtual bool AddObjectRaw(void* ptr, size_t size, bool hasVMT=false, bool mapPtrs=true) {
 		int i=0,sz=size/sizeof(void*);
@@ -2517,9 +2514,9 @@ struct CLoaderSizer : public CDummySizer {
 	CMemStream &stm;
 	CPhysicalWorld *pWorld;
 	CLoaderSizer(std::vector<void*> &objs, CMemStream &stm, CPhysicalWorld *pWorld) : objs(objs),stm(stm),pWorld(pWorld) {}
-	virtual bool IsLoading() { return true; }
+	virtual int GetMode() const { return 1; }
 #ifndef STANDALONE_PHYSICS
-	virtual bool AddObject(const void* ptr, size_t size, int nCount=1)  { return false; }
+	virtual bool AddObject(const void* ptr, size_t size, int nCount=1)  { return AddObjectRaw((void*)ptr,size); }
 #endif
 	virtual bool AddPartsAlloc(struct geom* &parts, size_t size) { 
 		int nparts = size/sizeof(geom);
@@ -2549,7 +2546,7 @@ struct CLoaderSizer : public CDummySizer {
 };
 
 void PostLoadEntity(CPhysicalEntity *pent, CLoaderSizer&) {
-	pent->m_pNewCoords = (coord_block*)&pent->m_pos;
+	pent->m_pNewCoords = pent->m_pSyncCoords = (coord_block*)&pent->m_pos;
 	for(int i=0;i<pent->m_nParts;i++)	{
 		pent->m_parts[i].pNewCoords = (coord_block_BBox*)&pent->m_parts[i].pos;
 		if (!pent->m_parts[i].pMatMapping) {
@@ -2563,8 +2560,10 @@ void PostLoadEntity(CPhysicalEntity *pent, CLoaderSizer&) {
 void PostLoadEntityRigid(CRigidEntity *pent, CLoaderSizer& sizer)	{
 	PostLoadEntity(pent,sizer);
 	pent->m_pNewCoords = (coord_block*)&pent->m_posNew;
-	delete[] pent->m_pContactStart;
+	if (pent->m_nContacts)
+		delete[] pent->m_pContactStart;
 	pent->m_pContactStart=pent->m_pContactEnd = CONTACT_END(pent->m_pContactStart);
+	pent->m_nContacts = 0;
 	memset(pent->m_pColliderContacts, 0, pent->m_nColliders*sizeof(pent->m_pColliderContacts[0]));
 	for(int i=0;i<pent->m_nConstraintsAlloc;i++) if (pent->m_constraintMask & 1ull<<i) for(int j=0;j<2;j++)
 		pent->m_pConstraints[i].pbody[j] = pent->m_pConstraints[i].pent[j]->GetRigidBody(pent->m_pConstraints[i].ipart[j]);
@@ -2576,6 +2575,7 @@ void PostLoadEntityArtic(CArticulatedEntity *pent, CLoaderSizer& sizer) {
 		pent->m_parts[i].pNewCoords = (coord_block_BBox*)&pent->m_infos[i];
 	for(int i=0;i<pent->m_nJoints;i++)
 		pent->m_joints[i].fs = (featherstone_data*)_align16(pent->m_joints[i].fsbuf);
+	if (pent->m_pSrc) pent->m_pSrc->AddRef();
 }
 void PostLoadEntityVehicle(CWheeledVehicleEntity *pent, CLoaderSizer& sizer) {
 	PostLoadEntityRigid(pent,sizer);
@@ -2588,6 +2588,17 @@ void PostLoadEntityLiving(CLivingEntity *pent, CLoaderSizer& sizer) {
 	PostLoadEntity(pent,sizer);
 }
 void (*g_postLoad[PE_WALKINGRIGID+1])(CPhysicalEntity*,CLoaderSizer&) = { PostLoadEntity };
+
+struct InitPostLoadTable {
+	InitPostLoadTable() {
+		for(int i=0;i<=PE_WALKINGRIGID;i++) g_postLoad[i] = PostLoadEntity;
+		g_postLoad[PE_RIGID]=g_postLoad[PE_WALKINGRIGID] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityRigid;
+		g_postLoad[PE_ARTICULATED] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityArtic;
+		g_postLoad[PE_WHEELEDVEHICLE] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityVehicle;
+		g_postLoad[PE_LIVING] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityLiving;
+	}
+};
+static InitPostLoadTable now;
 
 const int NAME_CHUNK_SIZE = 4098;
 std::vector<std::vector<char>> g_nameBufs;
@@ -2616,7 +2627,7 @@ bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
 				stm.GrowBuf((phf->size.x+1)*(phf->size.y)*sizeof(int));
 				for(j=0;j<=phf->size.y;j++) for(i=0;i<=phf->size.x;i++)
 					stm.Write(FtoI(min(255.9f,phf->fpGetHeightCallback(i,j)+128.0f)*256.0f) | phf->fpGetSurfTypeCallback(i,j)<<16);
-				for(i=0;i<=MAX_PHYS_THREADS;i++)
+				for(i=0;i<MAX_TOT_THREADS;i++)
 					objs.insert(std::pair<void*,int>(w.m_pHeightfield[i],objs.size()));
 			}
 
@@ -2732,11 +2743,6 @@ bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
 			fclose(f);
 			std::vector<void*> objs;
 			CLoaderSizer sizer(objs,stm,pWorld);
-			for(i=0;i<=PE_WALKINGRIGID;i++) g_postLoad[i] = PostLoadEntity;
-			g_postLoad[PE_RIGID]=g_postLoad[PE_WALKINGRIGID] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityRigid;
-			g_postLoad[PE_ARTICULATED] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityArtic;
-			g_postLoad[PE_WHEELEDVEHICLE] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityVehicle;
-			g_postLoad[PE_LIVING] = (void(*)(CPhysicalEntity*,CLoaderSizer&))PostLoadEntityLiving;
 
 			if (stm.Read<int>()!=version)
 				return false;
@@ -2756,7 +2762,7 @@ bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
 				hf.fpGetHeightCallback = g_getHeightCallback;
 				hf.fpGetSurfTypeCallback = g_getSurfTypeCallback;
 				w.SetHeightfieldData(&hf);
-				for(i=0;i<=MAX_PHYS_THREADS;i++)
+				for(i=0;i<MAX_TOT_THREADS;i++)
 					objs.push_back(w.m_pHeightfield[i]);
 			}
 
@@ -2864,4 +2870,49 @@ bool SerializeWorldBin(CPhysicalWorld *pWorld, const char *fname,int bSave)
 	return false;
 }
 
+IPhysicalEntity *CPhysicalWorld::ClonePhysicalEntity(IPhysicalEntity* pent, bool regInWorld, int id) 
+{ 
+	CPhysicalEntity *pentSrc = (CPhysicalEntity*)pent;
+	CMemStream stm(false);
+	{ std::map<void*,int> objs;
+		objs.insert(std::pair<void*,int>(pentSrc,0));
+		CSaverSizer sizer(objs,stm);
+		pentSrc->GetMemoryStatistics(&sizer);
+	}
+
+	pe_type itype = pentSrc->GetType();
+	CPhysicalEntity *pentClone = (CPhysicalEntity*)CreatePhysicalEntity(itype, nullptr,nullptr,'nreg', id);
+	int idNew = pentClone->m_id;
+	stm.m_iPos = 0;
+	{ std::vector<void*> objs;
+		objs.push_back(pentClone);
+		CLoaderSizer sizer(objs,stm,this);
+		if (pentSrc->m_nParts)
+			pentClone->m_parts = AllocEntityParts(pentSrc->m_nParts);
+		pentClone->GetMemoryStatistics(&sizer);
+		pentClone->m_id = idNew;
+		g_postLoad[itype](pentClone, sizer);
+		for(int i=0; i<pentClone->m_nColliders; i++) if (pentClone->m_pColliders[i]!=pentClone)
+			pentClone->m_pColliders[i]->AddRef();
+		for(int i=0; i<pentClone->m_nParts; i++) {
+			++pentClone->m_parts[i].pPhysGeom->nRefCount;
+			++pentClone->m_parts[i].pPhysGeomProxy->nRefCount;
+		}
+		pentClone->m_iGThunk0 = 0;
+		pentClone->m_ig[0].x = GRID_REG_PENDING;
+		pentClone->m_next = pentClone->m_prev = nullptr;
+		pentClone->m_iPrevSimClass = 8;
+		pentClone->m_nRefCount = pentClone->m_nRefCountPOD = 0;
+		if (regInWorld)
+			UnlockGrid(pentClone, -RepositionEntity(pentClone));
+	}
+	return pentClone;
+}
+
+#else
+#include "physicalplaceholder.h"
+#include "physicalentity.h"
+#include "physicalworld.h"
+
+IPhysicalEntity *CPhysicalWorld::ClonePhysicalEntity(IPhysicalEntity*,bool,int) { return nullptr; }
 #endif

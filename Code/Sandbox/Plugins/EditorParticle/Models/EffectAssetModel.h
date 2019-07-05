@@ -2,34 +2,42 @@
 
 #pragma once
 
+#include "ParticleGraphModel.h"
 #include <CrySandbox/CrySignal.h>
-
 #include <memory>
 
+struct IAssetEditingSession;
 class CAsset;
 
-namespace CryParticleEditor {
-
-class CEffectAsset;
+namespace CryParticleEditor 
+{
 
 class CEffectAssetModel
 {
 public:
-	CEffectAssetModel();
+	bool                                    OpenAsset(CAsset* pAsset);
+	void                                    ClearAsset();
+	std::unique_ptr<IAssetEditingSession>   CreateEditingSession();
 
-	void MakeNewAsset();
-	bool OpenAsset(CAsset* pAsset);
-	void ClearAsset();
+	const char*                             GetName() const;
+	pfx2::IParticleEffect*                  GetEffect() { return m_pEffect; }
+	CryParticleEditor::CParticleGraphModel* GetModel() { return m_pModel.get(); }
 
-	CEffectAsset* GetEffectAsset();
+	void SetEffect(pfx2::IParticleEffect* pEffect);
 
+	bool MakeNewComponent(const char* szTemplateName);
+
+	void SetModified(bool bModified) { if (m_pAsset) m_pAsset->SetModified(bModified); }
+		
 public:
 	CCrySignal<void()> signalBeginEffectAssetChange;
 	CCrySignal<void()> signalEndEffectAssetChange;
+	CCrySignal<void(int, int)> signalEffectEdited;
 
 private:
-	std::unique_ptr<CEffectAsset> m_pEffectAsset; //!< There can be at most one active effect asset.
-	int m_nextUntitledAssetId;
+	CAsset*                                                 m_pAsset;
+	std::unique_ptr<CryParticleEditor::CParticleGraphModel> m_pModel;
+	_smart_ptr<pfx2::IParticleEffect>                       m_pEffect;
 };
 
 }

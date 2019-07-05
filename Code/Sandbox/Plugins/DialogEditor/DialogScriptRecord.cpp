@@ -53,8 +53,7 @@ struct KeyWord
 
 KeyWord keyWords[] =
 {
-	{ "#RESET#", RGB(0xA0, 0x20, 0x20), eKW_COL | eKW_BOLD },
-};
+	{ "#RESET#", RGB(0xA0, 0x20, 0x20), eKW_COL | eKW_BOLD }, };
 
 static const int numKeyWords = sizeof(keyWords) / sizeof(*keyWords);
 
@@ -113,15 +112,14 @@ class CLineNo : public CXTPReportRecordItemText
 		__super::GetItemMetrics(pDrawArgs, pItemMetrics);
 		if (pDrawArgs->pControl->HasFocus() && pDrawArgs->pRow->IsFocused() && pDrawArgs->pColumn == pDrawArgs->pControl->GetFocusedColumn())
 		{
-			COLORREF color = pItemMetrics->clrBackground;
 			const float fac = HFAC;
-			color = HCOL;
+			COLORREF color = HCOL;
 			pItemMetrics->clrBackground = color;
 		}
 	}
 	virtual void OnDblClick(
-	  XTP_REPORTRECORDITEM_CLICKARGS* pClickArgs
-	  )
+		XTP_REPORTRECORDITEM_CLICKARGS* pClickArgs
+		)
 	{
 		CDialogScriptView* pView = static_cast<CDialogScriptView*>(pClickArgs->pControl);
 		pView->PlayLine(GetRecord()->GetIndex());
@@ -461,25 +459,22 @@ static const COLORREF COL_LOOKAT = RGB(120, 100, 200);
 static const COLORREF COL_REST = RGB(120, 120, 200);
 
 CDialogScriptRecord::CDialogScriptRecord()
+	: m_pScript(nullptr)
 {
-	m_pScript = 0;
 }
 
 CDialogScriptRecord::CDialogScriptRecord(CEditorDialogScript* pScript, const CEditorDialogScript::SScriptLine* pLine)
+	: m_line(*pLine)
+	, m_pScript(pScript)
 {
-	m_line = *pLine;
-	m_pScript = pScript;
-
 	FillItems();
 }
 
-void
-CDialogScriptRecord::FillItems()
+void CDialogScriptRecord::FillItems()
 {
-	CXTPReportRecordItem* pItem = 0;
-	pItem = AddItem(new CLineNo());
+	AddItem(new CLineNo());
 	// Actor
-	pItem = AddItem(new CHelperConstraint<CEditorDialogScript::TActorID>(m_line.m_actor));
+	CXTPReportRecordItem* pItem = AddItem(new CHelperConstraint<CEditorDialogScript::TActorID>(m_line.m_actor));
 	pItem->SetBackgroundColor(COL_ACTOR);
 
 	// Sound
@@ -562,8 +557,9 @@ struct MsgHelper
 
 void CDialogScriptRecord::OnBrowseAudioTrigger(string& value, CDialogScriptRecord* pRecord)
 {
-	dll_string newValue = GetIEditor()->GetResourceSelectorHost()->GetSelector("AudioTrigger")->SelectResource(SResourceSelectorContext(), value);
-	value = newValue.c_str();
+	SResourceSelectorContext context;
+	SResourceSelectionResult result = GetIEditor()->GetResourceSelectorHost()->GetSelector("AudioTrigger")->SelectResource(context, value);
+	value = result.selectedResource.c_str();
 }
 
 void CDialogScriptRecord::OnBrowseFacial(string& value, CDialogScriptRecord* pRecord)
@@ -683,9 +679,6 @@ void CDialogScriptRecord::OnBrowseAG(string& value, CDialogScriptRecord* pRecord
 	if (pEntity == 0)
 		return;
 
-	const CEditorDialogScript::SScriptLine* pLine = pRecord->GetLine();
-	int method = pLine->m_flagAGSignal ? 1 : 0;
-
 	if (gEnv->pGameFramework)
 	{
 		IMannequin& mannequin = gEnv->pGameFramework->GetMannequinInterface();
@@ -730,4 +723,3 @@ void CDialogScriptRecord::Swap(CDialogScriptRecord* pOther)
 	pOther->m_pScript = pTmpScript;
 	pOther->FillItems();
 }
-

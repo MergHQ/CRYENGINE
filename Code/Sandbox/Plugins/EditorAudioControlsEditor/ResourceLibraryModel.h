@@ -12,11 +12,17 @@ class CResourceLibraryModel final : public CSystemLibraryModel
 {
 public:
 
-	explicit CResourceLibraryModel(CLibrary* const pLibrary, QObject* const pParent)
+	CResourceLibraryModel() = delete;
+	CResourceLibraryModel(CResourceLibraryModel const&) = delete;
+	CResourceLibraryModel(CResourceLibraryModel&&) = delete;
+	CResourceLibraryModel& operator=(CResourceLibraryModel const&) = delete;
+	CResourceLibraryModel& operator=(CResourceLibraryModel&&) = delete;
+
+	explicit CResourceLibraryModel(CLibrary* pLibrary, QObject* pParent)
 		: CSystemLibraryModel(pLibrary, pParent)
 	{}
 
-	CResourceLibraryModel() = delete;
+	virtual ~CResourceLibraryModel() override = default;
 
 protected:
 

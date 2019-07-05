@@ -46,7 +46,7 @@ void SubdivisionTool::Enter()
 void SubdivisionTool::Leave()
 {
 	__super::Leave();
-	DesignerSession* pSession = DesignerSession::GetInstance(); 
+	DesignerSession* pSession = DesignerSession::GetInstance();
 	m_HighlightedSharpEdges.clear();
 	pSession->GetExcludedEdgeManager()->Clear();
 }
@@ -105,7 +105,7 @@ void SubdivisionTool::DeleteEdgeTag(const char* name)
 	ApplyPostProcess(ePostProcess_Mesh | ePostProcess_SyncPrefab);
 }
 
-void SubdivisionTool::Display(DisplayContext& dc)
+void SubdivisionTool::Display(SDisplayContext& dc)
 {
 	dc.SetLineWidth(7);
 	dc.SetColor(ColorB(150, 255, 50, 255));
@@ -113,7 +113,6 @@ void SubdivisionTool::Display(DisplayContext& dc)
 		dc.DrawLine(m_HighlightedSharpEdges[i].m_v[0], m_HighlightedSharpEdges[i].m_v[1]);
 	dc.DepthTestOn();
 
-	ElementSet* pSelected = DesignerSession::GetInstance()->GetSelectedElements();
 	dc.SetColor(kSelectedColor);
 	dc.SetLineWidth(kChosenLineThickness);
 	for (int i = 0, iCount(m_SelectedEdgesAsEnter.size()); i < iCount; ++i)
@@ -170,4 +169,3 @@ void SubdivisionTool::DeleteAllUnused()
 #include "UIs/SubdivisionPanel.h"
 REGISTER_DESIGNER_TOOL_WITH_PANEL_AND_COMMAND(eDesigner_Subdivision, eToolGroup_Modify, "Subdivision", SubdivisionTool, SubdivisionPanel,
                                               subdivision, "runs subdivision tool", "designer.subdivision")
-

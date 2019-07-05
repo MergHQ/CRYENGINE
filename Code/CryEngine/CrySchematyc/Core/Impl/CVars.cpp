@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "CVars.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace Schematyc
 {
@@ -25,6 +26,8 @@ int CVars::sc_RunUnitTests = 0;
 ICVar* CVars::sc_ExperimentalFeatures = nullptr;
 int CVars::sc_allowFlowGraphNodes = 0;
 
+int CVars::sc_SettingsNotFoundWarning = 1;
+
 void CVars::Register()
 {
 	sc_RootFolder = REGISTER_STRING("sc_RootFolder", "libs/schematyc", VF_READONLY, "CrySchematyc - Root folder for files");
@@ -41,6 +44,8 @@ void CVars::Register()
 	sc_ExperimentalFeatures = REGISTER_STRING("sc_ExperimentalFeatures", "", VF_NULL, "CrySchematyc - Enable one or more experimental features");
 
 	REGISTER_CVAR(sc_allowFlowGraphNodes, sc_allowFlowGraphNodes, VF_EXPERIMENTAL, "CrySchematyc - Allows wrapped FlowGraph nodes in Schematyc.");
+
+	REGISTER_CVAR(sc_SettingsNotFoundWarning, sc_SettingsNotFoundWarning, VF_NULL, "CrySchematyc - Warning is not displayed when settings are not found");
 }
 
 void CVars::Unregister()

@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
@@ -14,8 +14,7 @@ extern int g_nPrintDX11;
 #define DX11_NEW_RAW(ctor) NCryDX11::PassAddRef(new ctor)
 
 #ifdef _DEBUG
-
-	#define DX11_FUNC_LOG do {                        \
+	#define DX11_FUNC_LOG do {                          \
 		if (g_nPrintDX11)                               \
 		{ CryLog("DX11 function call: %s", __FUNC__); } \
 	} while (0);
@@ -42,6 +41,10 @@ typedef struct D3D11_RESOURCE_DESC
 	UINT StructureByteSize;
 	DXGI_SAMPLE_DESC SampleDesc;
 	D3D11_RESOURCE_MISC_FLAG Flags;
+#if DURANGO_USE_ESRAM
+	UINT ESRAMOffsetBytes;
+	UINT ESRAMUsageBytes;
+#endif
 } 	D3D11_RESOURCE_DESC;
 
 #define DX11_RESOURCE_FLAG_HIFREQ_HEAP BIT(31)

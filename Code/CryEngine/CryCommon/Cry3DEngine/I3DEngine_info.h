@@ -1,6 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <Cry3DEngine/I3DEngine.h> // <> required for Interfuscator
+#include <Cry3DEngine/I3DEngine.h>
 
 STRUCT_INFO_BEGIN(STerrainInfo)
 STRUCT_VAR_INFO(heightMapSize_InUnits, TYPE_INFO(int))

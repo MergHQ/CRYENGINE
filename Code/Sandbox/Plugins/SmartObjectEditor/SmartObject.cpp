@@ -3,18 +3,17 @@
 #include "StdAfx.h"
 #include "SmartObject.h"
 
-#include <CryRenderer/IRenderAuxGeom.h>
+#include "Util/Math.h"
 #include "IDisplayViewport.h"
 #include "IIconManager.h"
 #include "SmartObjectsEditorDialog.h"
+
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryAISystem/IAgent.h>
-#include "Util/Math.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 REGISTER_CLASS_DESC(CSmartObjectClassDesc);
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CSmartObject, CEntityObject)
 
 CSmartObject::CSmartObject()
@@ -33,7 +32,6 @@ CSmartObject::~CSmartObject()
 		m_pStatObj->Release();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObject::Done()
 {
 	__super::Done();
@@ -41,7 +39,7 @@ void CSmartObject::Done()
 
 bool CSmartObject::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 	bool res = __super::Init(prev, file);
 
 	return res;
@@ -54,7 +52,7 @@ float CSmartObject::GetRadius()
 
 void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	const SRenderingPassInfo& passInfo = objRenderHelper.GetPassInfo();
 	const Matrix34& wtm = GetWorldTM();
 
@@ -67,7 +65,7 @@ void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 	{
 		objRenderHelper.Render(wtm);
 	}
-	else if (!(dc.flags & DISPLAY_2D))
+	else if (!dc.display2D)
 	{
 		if (m_pStatObj)
 		{
@@ -77,15 +75,20 @@ void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 			color[2] = dc.GetColor().b * (1.0f / 255.0f);
 			color[3] = dc.GetColor().a * (1.0f / 255.0f);
 
-			Matrix34 tempTm = wtm;
+			m_statObjWorldMatrix = wtm;
 			SRendParams rp;
-			rp.pMatrix = &tempTm;
+			rp.pMatrix = nullptr;
 			rp.AmbientColor = ColorF(color[0], color[1], color[2], 1);
 			rp.fAlpha = color[3];
 			rp.dwFObjFlags |= FOB_TRANS_MASK;
 			//rp.nShaderTemplate = EFT_HELPER;
 
-			m_pStatObj->Render(rp, passInfo);
+			SAuxStatObjParams statObjParams;
+			statObjParams.pStatObj = m_pStatObj;
+			statObjParams.renderParams = rp;
+			statObjParams.transformMatix = m_statObjWorldMatrix;
+
+			passInfo.GetIRenderView()->InjectAuxiliaryStatObject(statObjParams);
 		}
 	}
 
@@ -111,6 +114,29 @@ void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 
 	DrawDefault(dc);
+}
+
+void CSmartObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
+{
+	bool bDisplaySelectionHelper = false;
+	if (m_pEntity && CanBeDrawn(dc, bDisplaySelectionHelper))
+	{
+		const Vec3 wp = m_pEntity->GetWorldPos();
+		if (gEnv->pAISystem)
+		{
+			ISmartObjectManager* pSmartObjectManager = gEnv->pAISystem->GetSmartObjectManager();
+			if (!pSmartObjectManager->ValidateSOClassTemplate(m_pEntity))
+			{
+				DrawLabel(dc, wp, RGB(255, 0, 0), 1.f, 4);
+			}
+			if (IsSelected() || IsHighlighted())
+			{
+				pSmartObjectManager->DrawSOClassTemplate(m_pEntity);
+			}
+		}
+	}
+
+	__super::DrawDefault(dc, labelColor);
 }
 
 bool CSmartObject::HitTest(HitContext& hc)
@@ -168,14 +194,13 @@ void CSmartObject::GetLocalBounds(AABB& box)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IStatObj* CSmartObject::GetIStatObj()
 {
 	if (m_pStatObj)
 		return m_pStatObj;
 
-	ISmartObjectManager::IStatObjPtr* ppStatObjects = NULL;
-	IEntity* pEntity(GetIEntity());
+	ISmartObjectManager::IStatObjPtr* ppStatObjects = nullptr;
+	IEntity* pEntity = GetIEntity();
 
 	assert(pEntity);
 	if (gEnv->pAISystem && pEntity)
@@ -204,12 +229,12 @@ IStatObj* CSmartObject::GetIStatObj()
 		return m_pStatObj;
 	}
 
-	return NULL;
+	return nullptr;
 
 	// Try to load the object specified in the SO class template
-	m_pClassTemplate = NULL;
+	m_pClassTemplate = nullptr;
 	string classes;
-	IVariable* pVar = GetProperties() ? GetProperties()->FindVariable("soclasses_SmartObjectClass") : NULL;
+	IVariable* pVar = GetProperties() ? GetProperties()->FindVariable("soclasses_SmartObjectClass") : nullptr;
 	if (pVar)
 	{
 		pVar->Get(classes);
@@ -233,11 +258,11 @@ IStatObj* CSmartObject::GetIStatObj()
 
 	if (m_pClassTemplate && !m_pClassTemplate->model.empty())
 	{
-		m_pStatObj = GetIEditor()->Get3DEngine()->LoadStatObj("%EDITOR%/Objects/" + m_pClassTemplate->model, NULL, NULL, false);
+		m_pStatObj = GetIEditor()->Get3DEngine()->LoadStatObj("%EDITOR%/Objects/" + m_pClassTemplate->model, nullptr, nullptr, false);
 		if (!m_pStatObj)
 		{
 			CryLog("Error: Load Failed: %s", (const char*) m_pClassTemplate->model);
-			return NULL;
+			return nullptr;
 		}
 		m_pStatObj->AddRef();
 		if (GetHelperMaterial())
@@ -249,15 +274,13 @@ IStatObj* CSmartObject::GetIStatObj()
 
 #define HELPER_MATERIAL "%EDITOR%/Objects/Helper"
 
-//////////////////////////////////////////////////////////////////////////
 IMaterial* CSmartObject::GetHelperMaterial()
 {
 	if (!m_pHelperMtl)
 		m_pHelperMtl = GetIEditor()->Get3DEngine()->GetMaterialManager()->LoadMaterial(HELPER_MATERIAL);
 	return m_pHelperMtl;
-};
+}
 
-//////////////////////////////////////////////////////////////////////////
 void CSmartObject::OnPropertyChange(IVariable* var)
 {
 	if (m_pStatObj)
@@ -292,4 +315,3 @@ void CSmartObject::OnEvent(ObjectEvent eventID)
 		break;
 	}
 }
-

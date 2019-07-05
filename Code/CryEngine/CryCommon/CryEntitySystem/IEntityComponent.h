@@ -23,26 +23,25 @@
 #include <CryEntitySystem/IEntityBasicTypes.h>
 
 // Forward declarations
-struct SEntitySpawnParams;
-struct SEntityEvent;
-struct SEntityUpdateContext;
-struct IShaderPublicParams;
-struct IFlowGraph;
-struct IEntityEventListener;
-struct IPhysicalEntity;
-struct SSGHandle;
-struct a2DPoint;
-struct IRenderMesh;
-struct IClipVolume;
-struct IBSPTree3D;
-struct IMaterial;
-struct IScriptTable;
 struct AABB;
-struct IRenderNode;
+struct IBSPTree3D;
+struct IClipVolume;
 struct IEntity;
-struct INetworkSpawnParams;
+struct IEntityEventListener;
 struct IEntityScript;
+struct IFlowGraph;
+struct IMaterial;
+struct INetworkSpawnParams;
+struct IPhysicalEntity;
+struct IRenderMesh;
+struct IRenderNode;
+struct IScriptTable;
+struct IShaderPublicParams;
+struct SEntityEvent;
 struct SEntityPreviewContext;
+struct SEntitySpawnParams;
+struct SEntityUpdateContext;
+struct SSGHandle;
 
 namespace Schematyc
 {
@@ -70,17 +69,17 @@ struct IEntityPropertyGroup
 #define CRY_ENTITY_COMPONENT_CLASS(implclassname, interfaceName, cname, iidHigh, iidLow) CRY_PP_ERROR("Deprecated macro: Use CRY_ENTITY_COMPONENT_CLASS_GUID instead. Please refer to the Migrating Guide from CRYENGINE 5.3 to CRYENGINE 5.4 for more details.")
 
 #define CRY_ENTITY_COMPONENT_CLASS_GUID(implclassname, interfaceName, cname, cguid) \
-  CRYINTERFACE_BEGIN()                                                              \
-  CRYINTERFACE_ADD(IEntityComponent)                                                \
-  CRYINTERFACE_ADD(interfaceName)                                                   \
-  CRYINTERFACE_END()                                                                \
-  CRYGENERATE_CLASS_GUID(implclassname, cname, cguid)
+	CRYINTERFACE_BEGIN()                                                              \
+	CRYINTERFACE_ADD(IEntityComponent)                                                \
+	CRYINTERFACE_ADD(interfaceName)                                                   \
+	CRYINTERFACE_END()                                                                \
+	CRYGENERATE_CLASS_GUID(implclassname, cname, cguid)
 
 #define CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS(implclassname, cname, cguid) CRY_PP_ERROR("Deprecated macro: Use CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID instead. Please refer to the Migrating Guide from CRYENGINE 5.3 to CRYENGINE 5.4 for more details.")
 
 #define CRY_ENTITY_COMPONENT_INTERFACE_AND_CLASS_GUID(implclassname, cname, cguid) \
-  CRY_ENTITY_COMPONENT_INTERFACE_GUID(implclassname, cguid)                        \
-  CRY_ENTITY_COMPONENT_CLASS_GUID(implclassname, implclassname, cname, cguid)
+	CRY_ENTITY_COMPONENT_INTERFACE_GUID(implclassname, cguid)                        \
+	CRY_ENTITY_COMPONENT_CLASS_GUID(implclassname, implclassname, cname, cguid)
 
 #include <CrySchematyc/Component.h>
 
@@ -280,45 +279,45 @@ struct IEntityComponent : public ICryUnknown, ISimpleEntityEventListener
 	struct SInitParams
 	{
 		inline SInitParams(
-		  IEntity* pEntity_,
-		  const CryGUID& guid_,
-		  const string& name_,
-		  const CEntityComponentClassDesc* classDesc_,
-		  EntityComponentFlags flags_,
-		  IEntityComponent* pParent_,
-		  const CryTransform::CTransformPtr& transform_
-		  )
+			IEntity* pEntity_,
+			const CryGUID& guid_,
+			const string& name_,
+			const CEntityComponentClassDesc* classDesc_,
+			EntityComponentFlags flags_,
+			IEntityComponent* pParent_,
+			const CryTransform::CTransformPtr& transform_
+			)
 			: pEntity(pEntity_)
 			, guid(guid_)
 			, name(name_)
 			, classDesc(classDesc_)
-			, flags(flags_)
-			, pParent(pParent_)
 			, transform(transform_)
+			, pParent(pParent_)
+			, flags(flags_)
 		{}
 
-		IEntity*                           pEntity;
-		const CryGUID                      guid;
-		const string&                      name;
-		const CEntityComponentClassDesc*   classDesc;
-		const CryTransform::CTransformPtr& transform;
-		IEntityComponent*                  pParent = nullptr;
-		INetworkSpawnParams*               pNetworkSpawnParams = nullptr;
-		EntityComponentFlags               flags;
+		IEntity*                          pEntity;
+		const CryGUID                     guid;
+		const string                      name;
+		const CEntityComponentClassDesc*  classDesc;
+		const CryTransform::CTransformPtr transform;
+		IEntityComponent*                 pParent = nullptr;
+		INetworkSpawnParams*              pNetworkSpawnParams = nullptr;
+		EntityComponentFlags              flags;
 	};
 
 public:
 	//~ICryUnknown
-	virtual ICryFactory* GetFactory() const { return nullptr; };
+	virtual ICryFactory* GetFactory() const { return nullptr; }
 
 protected:
-	virtual void* QueryInterface(const CryInterfaceID& iid) const { return nullptr; };
-	virtual void* QueryComposite(const char* name) const          { return nullptr; };
+	virtual void* QueryInterface(const CryInterfaceID& iid) const { return nullptr; }
+	virtual void* QueryComposite(const char* name) const          { return nullptr; }
 	//~ICryUnknown
 
 public:
 	// Return Host entity pointer
-	ILINE IEntity* GetEntity() const { return m_pEntity; };
+	ILINE IEntity* GetEntity() const { return m_pEntity; }
 	ILINE EntityId GetEntityId() const;
 
 public:
@@ -382,7 +381,7 @@ protected:
 	virtual void Initialize() {}
 
 	//! Called on all Entity components right before all of the Entity Components are destructed.
-	virtual void OnShutDown() {};
+	virtual void OnShutDown() {}
 
 	//! Called when the transformation of the component is changed
 	virtual void OnTransformChanged() {}
@@ -396,11 +395,11 @@ protected:
 
 public:
 	//! Return bit mask of the EEntityEvent flags that we want to receive in ProcessEvent
-	//! (ex: ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE))
+	//! (ex: ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE)
 	//! Only events matching the returned bit mask will be sent to the ProcessEvent method
 	//! \par Example
 	//! \include CryEntitySystem/Examples/ComponentEvents.cpp
-	virtual Cry::Entity::EntityEventMask GetEventMask() const { return 0; }
+	virtual Cry::Entity::EventFlags GetEventMask() const { return {}; }
 
 	//! Determines the order in which this component will receive entity events (including update). Lower number indicates a higher priority.
 	virtual ComponentEventPriority GetEventPriority() const { return (ComponentEventPriority)GetProxyType(); }
@@ -420,7 +419,7 @@ public:
 	//! \see ISerialize::Value()
 	//! \par Example
 	//! \include CryEntitySystem/Examples/ComponentNetSerialize.cpp
-	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; };
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
 
 	//! Used to match an entity's state when it is replicated onto a remote machine.
 	//! This is called once when spawning an entity, in order to serialize its data - and once again on the remote client to deserialize the state.
@@ -449,11 +448,11 @@ public:
 
 public:
 	//! Set flags for this component
-	void SetComponentFlags(ComponentFlags flags) { m_componentFlags = flags; };
+	void SetComponentFlags(ComponentFlags flags) { m_componentFlags = flags; }
 
 	//! Return flags for this component
-	const ComponentFlags& GetComponentFlags() const { return m_componentFlags; };
-	ComponentFlags&       GetComponentFlags()       { return m_componentFlags; };
+	const ComponentFlags& GetComponentFlags() const { return m_componentFlags; }
+	ComponentFlags&       GetComponentFlags()       { return m_componentFlags; }
 
 	//! Return GUID of this component.
 	//! This GUID is only guaranteed to be unique within the host entity, different entities can have components with equal GUIDs.
@@ -463,7 +462,7 @@ public:
 
 	//! Return Parent component, only used by Schematyc components
 	//! Initialized by the PreInit call
-	IEntityComponent* GetParent() const { return m_pParent; };
+	IEntityComponent* GetParent() const { return m_pParent; }
 
 	//! Return Transformation of the entity component relative to the owning entity or parent component
 	const CryTransform::CTransformPtr& GetTransform() const { return m_pTransform; }
@@ -480,12 +479,29 @@ public:
 	//! Return Calculated Transformation Matrix for current component transform
 	Matrix34 GetTransformMatrix() const { return (m_componentFlags.Check(EEntityComponentFlags::Transform) && m_pTransform) ? m_pTransform->ToMatrix34() : IDENTITY; }
 
+	//! Starts a timer for this component instance
+	//! Entity timers are owned by the component, and each component can have its own independent timers with identifiers that are unique to that instance
+	//! When timer finishes entity system will signal to the component *once* with an event ENTITY_EVENT_TIMER.
+	//! Multiple timers can be started simultaneously with different timer ids.
+	//! If some timer is not yet finished and another timer with the same timerID is set, the new one
+	//! will override old timer, and old timer will not send finish event.
+	//! The timer will automatically be serialized to disk and restored for save games, assuming that a component with the same instance GUID exists at deserialization time.
+	//! \param timerId Timer ID, multiple timers with different IDs are possible.
+	//! \param timeInMilliseconds Timer timeout time in milliseconds.
+	void SetTimer(uint32 timerId, int timeInMilliseconds);
+	//! Stops the specified timer for this component instance
+	//! \see ENTITY_EVENT_TIMER
+	void KillTimer(uint32 timerId);
+	//! Stops all timers for this component instance
+	//! \see ENTITY_EVENT_TIMER
+	void KillAllTimers();
+
 	//! Get name of this individual component, usually only Schematyc components will have names
-	const char* GetName() const { return m_name.c_str(); };
+	const char* GetName() const { return m_name.c_str(); }
 
 	//! Set a new name for this component
-	//! Names of the components must not be unique
-	void SetName(const char* szName) { m_name = szName; };
+	//! Names of the components don't have to be unique
+	void SetName(const char* szName) { m_name = szName; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// HELPER METHODS FOR WORKING WITH ENTITY SLOTS
@@ -513,7 +529,7 @@ public:
 	//! \param receiving component
 	inline void SendEvent(const SEntityEvent& event)
 	{
-		if ((GetEventMask() & ENTITY_EVENT_BIT(event.event)) != 0)
+		if (GetEventMask().Check(event.event))
 		{
 			ProcessEvent(event);
 		}
@@ -528,14 +544,14 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// BEGIN Deprecated Methods
 	//////////////////////////////////////////////////////////////////////////
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const {};
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const {}
 
 	//! SaveGame serialization. Override to specify what to serialize in a saved game.
 	//! \param ser Serializing stream. Use IsReading() to decide read/write phase. Use Value() to read/write a property.
 	virtual void GameSerialize(TSerialize ser) {}
 	//! SaveGame serialization. Override to enable serialization for the component.
 	//! \return true If component needs to be serialized to/from a saved game.
-	virtual bool NeedGameSerialize() { return false; };
+	virtual bool NeedGameSerialize() { return false; }
 
 	//! Optionally serialize component to/from XML.
 	//! For user-facing properties, see GetProperties.
@@ -549,7 +565,7 @@ public:
 	virtual struct IEntityPropertyGroup* GetPropertyGroup() { return nullptr; }
 
 	//! Legacy, used for old entity proxies
-	virtual EEntityProxy GetProxyType() const { return ENTITY_PROXY_LAST; };
+	virtual EEntityProxy GetProxyType() const { return ENTITY_PROXY_LAST; }
 	//////////////////////////////////////////////////////////////////////////
 	// ~END Deprecated Methods
 	//////////////////////////////////////////////////////////////////////////
@@ -561,7 +577,7 @@ protected:
 	// Needs access to OnShutDown to maintain legacy game object extension shutdown behavior
 	friend class CGameObject;
 	// Needs access to Initialize
-	friend Schematyc::CObject;
+	friend Schematyc ::CObject;
 
 	// Host Entity pointer
 	IEntity*       m_pEntity = nullptr;
@@ -685,39 +701,43 @@ struct IEntityAudioComponent : public IEntityComponent
 	virtual CryAudio::EnvironmentId GetEnvironmentId() const = 0;
 	//! Creates an additional audio object managed by this component, allowing individual handling of effects
 	//! IEntityAudioComponent will always create an audio object by default where audio will be played unless otherwise specified.
-	virtual CryAudio::AuxObjectId   CreateAudioAuxObject() = 0;
-	virtual bool                    RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) = 0;
-	virtual void                    SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual Matrix34 const&         GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual bool                    PlayFile(CryAudio::SPlayFileInfo const& playbackInfo, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
-	virtual void                    StopFile(char const* const szFile, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual CryAudio::AuxObjectId CreateAudioAuxObject() = 0;
+	virtual bool                  RemoveAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId) = 0;
+	virtual void                  SetAudioAuxObjectOffset(Matrix34 const& offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual Matrix34 const&       GetAudioAuxObjectOffset(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	//! Executes the specified trigger on the entity
 	//! \param audioTriggerId The trigger we want to execute
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
+	//! \param entityId D of the entity that will receive the started/stopped callback depending on what it registered to.
 	//! \par Example
 	//! \include CryEntitySystem/Examples/Audio/ExecuteTrigger.cpp
-	virtual bool                    ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
-	virtual void                    StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual bool ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, EntityId const entityId = INVALID_ENTITYID, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual bool ExecuteTriggerWithCallbacks(CryAudio::STriggerCallbackData const& callbackData, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, EntityId const entityId = INVALID_ENTITYID, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	//! Sets the current state of a switch in the entity
 	//! \param audioSwitchId Identifier of the switch whose state we want to change
 	//! \param audioStateId Identifier of the switch state we want to set to
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
 	//! \include CryEntitySystem/Examples/Audio/SetSwitchState.cpp
-	virtual void                    SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void SetSwitchState(CryAudio::ControlId const audioSwitchId, CryAudio::SwitchStateId const audioStateId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
 	//! Sets the value of the specified parameter on the entity
 	//! \param parameterId Identifier of the parameter we want to modify the value of
 	//! \param audioAuxObjectId Audio object within the component that we want to set, see IEntityAudioComponent::CreateAudioAuxObject. If not provided it is played on the default object.
 	//! \par Example
 	//! \include CryEntitySystem/Examples/Audio/SetParameterValue.cpp
-	virtual void                    SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    SetCurrentEnvironments(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
-	virtual void                    AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) = 0;
-	virtual void                    AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const), CryAudio::ESystemEvents const eventMask) = 0;
-	virtual void                    RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (* func)(CryAudio::SRequestInfo const* const)) = 0;
-	virtual CryAudio::AuxObjectId   GetAuxObjectIdFromAudioObject(CryAudio::IObject* pObject) = 0;
+	virtual void SetParameter(CryAudio::ControlId const parameterId, float const value, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void SetObstructionCalcType(CryAudio::EOcclusionType const occlusionType, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void SetOcclusionRayOffset(float const offset, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void SetEnvironmentAmount(CryAudio::EnvironmentId const audioEnvironmentId, float const amount, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void SetCurrentEnvironments(CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId) = 0;
+	virtual void AudioAuxObjectsMoveWithEntity(bool const bCanMoveWithEntity) = 0;
+	virtual void AddAsListenerToAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const), CryAudio::ESystemEvents const eventMask) = 0;
+	virtual void RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const)) = 0;
+	virtual void ToggleAbsoluteVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ToggleRelativeVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void AddListener(CryAudio::ListenerId const listenerId) = 0;
+	virtual void RemoveListener(CryAudio::ListenerId const listenerId) = 0;
 };
 
 //! Type of an area managed by IEntityAreaComponent.
@@ -738,10 +758,10 @@ struct IEntityAreaComponent : public IEntityComponent
 {
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IEntityAreaComponent, "98eda61f-de8b-e2b1-a1ca-2a88e4eede66"_cry_guid)
 
-	enum EAreaComponentFlags
+	enum EAreaComponentFlags : uint32
 	{
-		FLAG_NOT_UPDATE_AREA = BIT(1), //!< When set points in the area will not be updated.
-		FLAG_NOT_SERIALIZE   = BIT(2)  //!< Areas with this flag will not be serialized.
+		FLAG_NOT_UPDATE_AREA = BIT32(1), //!< When set points in the area will not be updated.
+		FLAG_NOT_SERIALIZE   = BIT32(2)  //!< Areas with this flag will not be serialized.
 	};
 
 	//! Area flags.
@@ -965,4 +985,17 @@ struct IParticleEntityComponent : public IEntityComponent
 	CRY_ENTITY_COMPONENT_INTERFACE_GUID(IParticleEntityComponent, "68e3655d-ddd3-4390-aad5-448264e74461"_cry_guid)
 
 	virtual void SetParticleEffectName(const char* szEffectName) = 0;
+};
+
+//! Component interface in order for Editor actions such as material drag and drop to work
+struct IEditorEntityComponent : public IEntityComponent
+{
+	static void ReflectType(Schematyc::CTypeDesc<IEditorEntityComponent>& desc)
+	{
+		desc.SetGUID("{BB42BB62-E91A-4AD2-A75F-363C866A2332}"_cry_guid);
+	}
+
+	//! Called to permanently set the material on a slot
+	//! Only handle this if your component owns the specified slot
+	virtual bool SetMaterial(int slotId, const char* szMaterial) = 0;
 };

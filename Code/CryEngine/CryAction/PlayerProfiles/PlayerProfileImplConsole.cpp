@@ -87,8 +87,8 @@ void CPlayerProfileImplConsole::InternalMakeFSPath(SUserEntry* pEntry, const cha
 //------------------------------------------------------------------------
 void CPlayerProfileImplConsole::InternalMakeFSSaveGamePath(SUserEntry* pEntry, const char* profileName, string& outPath, bool bNeedFolder)
 {
-	assert(pEntry != 0);
-	assert(profileName != 0);
+	CRY_ASSERT(pEntry != 0);
+	CRY_ASSERT(profileName != 0);
 
 	if (m_pMgr->IsSaveGameFolderShared())
 	{
@@ -113,8 +113,6 @@ void CPlayerProfileImplConsole::InternalMakeFSSaveGamePath(SUserEntry* pEntry, c
 //------------------------------------------------------------------------
 bool CPlayerProfileImplConsole::SaveProfile(SUserEntry* pEntry, CPlayerProfile* pProfile, const char* name, bool initialSave, int /*reason = ePR_All*/)
 {
-	IPlatformOS* os = gEnv->pSystem->GetPlatformOS();
-
 	// save the profile into a specific location
 
 	// check if it's a valid filename

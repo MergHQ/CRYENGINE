@@ -12,17 +12,19 @@
 
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CryThreading/IThreadManager.h>
+#include <CrySystem/Profilers/ILegacyProfiler.h>
 
 #if ENABLE_STATOSCOPE
 
 const uint32 STATOSCOPE_BINARY_VERSION = 2;
 
-	#include <CryString/CryName.h>
-	#include <CryNetwork/CrySocks.h>
+#include <CryNetwork/CrySocks.h>
+#include <CryRenderer/IRenderer.h>
+#include <CryString/CryName.h>
 
-struct SPerfStatFrameProfilerRecord
+struct SPerfStatProfilerRecord
 {
-	CFrameProfiler* m_pProfiler;
+	CryFixedStringT<128> m_name;
 	int             m_count;
 	float           m_selfTime;
 	float           m_variance;
@@ -64,14 +66,9 @@ struct SCallstack
 	SCallstack() {}
 
 	SCallstack(void** addresses, uint32 numAddresses, const char* tag)
-		: m_addresses(addresses, addresses + numAddresses), m_tag(tag)
+		: m_tag(tag)
+		, m_addresses(addresses, addresses + numAddresses)
 	{}
-
-	void swap(SCallstack& other)
-	{
-		m_tag.swap(other.m_tag);
-		m_addresses.swap(other.m_addresses);
-	}
 };
 
 class CDataWriter;
@@ -564,8 +561,7 @@ public:
 		m_eventStreamLock.Lock();
 		CTimeValue tv = gEnv->pTimer->GetAsyncTime();
 		uint64 timeStamp = (uint64)tv.GetMicroSecondsAsInt64();
-		if (timeStamp < m_lastTimestampUs)
-			__debugbreak();
+		CRY_ASSERT(timeStamp >= m_lastTimestampUs);
 		m_lastTimestampUs = timeStamp;
 	}
 
@@ -640,45 +636,47 @@ private:
 	CryStringLocal m_hostname;
 	float          m_connectTimeout;
 	int            m_port;
-	CRYSOCKET      m_socket;
-	bool           m_hasSentHeader;
-	bool           m_socketErrorTriggered;
+	CRYSOCKET      m_socket = -1;
+	bool           m_hasSentHeader = false;
+	bool           m_socketErrorTriggered = false;
 };
 
 struct SParticleProfilersDG;
 struct SPhysEntityProfilersDG;
-struct SFrameProfilersDG;
+struct SCryProfilerDG;
 struct STexturePoolBucketsDG;
 struct SUserMarkerDG;
 struct SCallstacksDG;
 
 // Statoscope implementation, access IStatoscope through gEnv->pStatoscope
-class CStatoscope : public IStatoscope, public ISystemEventListener, ICaptureFrameListener
+class CStatoscope final : public IStatoscope, public ICryProfilerFrameListener, public ISystemEventListener, ICaptureFrameListener
 {
 public:
 	CStatoscope();
 	~CStatoscope();
 
-	virtual bool        RegisterDataGroup(IStatoscopeDataGroup* pDG);
-	virtual void        UnregisterDataGroup(IStatoscopeDataGroup* pDG);
+	bool        RegisterDataGroup(IStatoscopeDataGroup* pDG) override;
+	void        UnregisterDataGroup(IStatoscopeDataGroup* pDG) override;
 
-	virtual void        Tick();
-	virtual void        AddUserMarker(const char* path, const char* name);
-	virtual void        AddUserMarkerFmt(const char* path, const char* fmt, ...);
-	virtual void        LogCallstack(const char* tag);
-	virtual void        LogCallstackFormat(const char* tagFormat, ...);
-	virtual void        SetCurrentProfilerRecords(const std::vector<CFrameProfiler*>* profilers);
-	virtual void        Flush();
-	virtual bool        IsLoggingForTelemetry();
-	virtual bool        RequiresParticleStats(bool& bEffectStats);
-	virtual void        AddParticleEffect(const char* pEffectName, int count);
-	virtual void        AddPhysEntity(const phys_profile_info* pInfo);
-	virtual const char* GetLogFileName() { return m_logFilename.c_str(); }
-	virtual void        CreateTelemetryStream(const char* postHeader, const char* hostname, int port);
-	virtual void        CloseTelemetryStream();
+	void        Tick() override;
+	void        AddUserMarker(const char* path, const char* name) override;
+	void        AddUserMarkerFmt(const char* path, const char* fmt, ...) override;
+	void        LogCallstack(const char* tag) override;
+	void        LogCallstackFormat(const char* tagFormat, ...) override;
+	void        Flush() override;
+	bool        IsLoggingForTelemetry() override;
+	bool        RequiresParticleStats(bool& bEffectStats) override;
+	void        AddParticleEffect(const char* pEffectName, int count) override;
+	void        AddPhysEntity(const phys_profile_info* pInfo) override;
+	const char* GetLogFileName() override { return m_logFilename.c_str(); }
+	void        CreateTelemetryStream(const char* postHeader, const char* hostname, int port) override;
+	void        CloseTelemetryStream() override;
 
+	// ICryProfilerFrameListener
+	void OnFrameEnd(TTime, ILegacyProfiler*) override;
+	
 	// ISystemEventListener
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
+	void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
 	//protected:
 	enum EScreenShotCaptureState
@@ -738,17 +736,17 @@ public:
 	static void OnTagCVarChange(ICVar* pVar);
 
 	//Screenshot capturing
-	virtual bool OnNeedFrameData(unsigned char*& pConvertedTextureBuf);
-	virtual void OnFrameCaptured(void);
-	virtual int  OnGetFrameWidth(void);
-	virtual int  OnGetFrameHeight(void);
-	virtual int  OnCaptureFrameBegin(int* pTexHandle);
+	bool OnNeedFrameData(unsigned char*& pConvertedTextureBuf) override;
+	void OnFrameCaptured(void) override;
+	int  OnGetFrameWidth(void) override;
+	int  OnGetFrameHeight(void) override;
+	int  OnCaptureFrameBegin(int* pTexHandle) override;
 
 	//Setup statoscope for fps captures
-	virtual void SetupFPSCaptureCVars();
+	void SetupFPSCaptureCVars() override;
 
 	//Request statoscope screen shot, may not succeed if screem shot is already in progress
-	virtual bool RequestScreenShot();
+	bool RequestScreenShot() override;
 
 	void         PrepareScreenShot();
 	uint8*       ProcessScreenShot();
@@ -787,7 +785,7 @@ public:
 	uint64                                         m_activeIvDataGroupMask;
 	uint32                                         m_logNum;
 
-	std::vector<std::pair<CFrameProfiler*, int64>> m_perfStatDumpProfilers;   // only used locally in SetCurrentProfilerRecords() but kept to avoid reallocation
+	std::vector<std::pair<const SProfilingSectionTracker*, float>> m_perfStatDumpTrackers;   // only used locally in SetCurrentProfilerRecords() but kept to avoid reallocation
 
 	string                                         m_logFilename;
 
@@ -812,6 +810,8 @@ private:
 	void CreateDataWriter();
 	void WriteIntervalClassEvents();
 
+	void UpdateFrameListenerRegistration();
+
 private:
 	IntervalGroupVec       m_intervalGroups;
 	CStatoscopeEventWriter m_eventWriter;
@@ -819,7 +819,7 @@ private:
 	// Built in data groups
 	SParticleProfilersDG*   m_pParticleProfilers;
 	SPhysEntityProfilersDG* m_pPhysEntityProfilers;
-	SFrameProfilersDG*      m_pFrameProfilers;
+	SCryProfilerDG*         m_pProfilerDG;
 	SUserMarkerDG*          m_pUserMarkers;
 	SCallstacksDG*          m_pCallstacks;
 };

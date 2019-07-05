@@ -2,9 +2,11 @@
 
 #include "StdAfx.h"
 #include "WeldTool.h"
+
+#include "Core/Model.h"
+#include "Core/PolygonDecomposer.h"
 #include "Tools/Select/SelectTool.h"
 #include "DesignerEditor.h"
-#include "Core/PolygonDecomposer.h"
 
 namespace Designer
 {
@@ -140,4 +142,3 @@ void WeldTool::Enter()
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Weld, eToolGroup_Edit, "Weld", WeldTool,
                                    weld, "runs weld tool", "designer.weld")
-

@@ -272,7 +272,7 @@ void CFacialEffectorsLibrary::ReplaceEffector(CFacialEffector* pOriginalEffector
 				}
 				else
 				{
-					assert(pEffector != pEffector->GetSubEffector(i));
+					CRY_ASSERT(pEffector != pEffector->GetSubEffector(i));
 					Recurse(pEffector->GetSubEffector(i));
 				}
 			}
@@ -396,7 +396,7 @@ void CFacialEffectorsLibrary::MergeLibrary(IFacialEffectorsLibrary* pMergeLibrar
 								CryFatalError("Attachment Effectors no longer supported in Facial Animation system.");
 								break;
 							default:
-								assert(0);
+								CRY_ASSERT(0);
 								break;
 							}
 
@@ -445,7 +445,7 @@ void CFacialEffectorsLibrary::MergeLibrary(IFacialEffectorsLibrary* pMergeLibrar
 			{
 				ISplineInterpolator::ValueType value;
 				pOriginalSpline->GetKeyValue(key, value);
-				assert(pCloneSpline);
+				CRY_ASSERT(pCloneSpline);
 				PREFAST_ASSUME(pCloneSpline);
 				int cloneKeyIndex = pCloneSpline->InsertKey(pOriginalSpline->GetKeyTime(key), value);
 				pCloneSpline->SetKeyFlags(cloneKeyIndex, pOriginalSpline->GetKeyFlags(key));

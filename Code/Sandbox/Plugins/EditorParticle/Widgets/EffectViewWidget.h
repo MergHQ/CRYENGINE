@@ -2,13 +2,10 @@
 
 #pragma once
 
-#include "../Widgets/ViewWidget.h"
-
-#include <QWidget>
+#include "ViewWidget.h"
 
 namespace CryParticleEditor {
 
-class CEffectAsset;
 class CEffectAssetModel;
 
 class CEffectAssetWidget : public QWidget
@@ -16,36 +13,32 @@ class CEffectAssetWidget : public QWidget
 	Q_OBJECT
 
 public:
-	CEffectAssetWidget(std::shared_ptr<CEffectAssetModel>& pEffectAssetModel, QWidget* pParent = nullptr);
-	~CEffectAssetWidget();
+	CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWidget* pParent = nullptr);
 
-	const pfx2::IParticleEffectPfx2* GetEffect() const;
-	pfx2::IParticleEffectPfx2* GetEffect();
-	const char*                GetName() const;
+	const pfx2::IParticleEffect* GetEffect() const;
+	pfx2::IParticleEffect*       GetEffect();
+	const char*                  GetName() const;
 
-	void                       SetModified();
-	void                       OnDeleteSelected();
-	void                       CopyComponents();
-	void                       OnPasteComponent();
-	void                       OnNewComponent();
-	void                       OnOptionsChanged();
+	void                         OnDeleteSelected();
+	void                         CopyComponents();
+	void                         OnPasteComponent();
+	void                         OnNewComponent();
 
-	bool                       MakeNewComponent(const char* szTemplateName);
+	bool                         MakeNewComponent(const char* szTemplateName);
 
-protected:
-	// QWidget
-	virtual void customEvent(QEvent* event) override;
-	// ~QWidget
+private:
+	virtual void paintEvent(QPaintEvent* event) override;
+	virtual void closeEvent(QCloseEvent*pEvent) override;
 
 private:
 	void OnBeginEffectAssetChange();
 	void OnEndEffectAssetChange();
+	void OnEffectEdited(int nComp, int nFeature);
 
 private:
-	std::shared_ptr<CEffectAssetModel> m_pEffectAssetModel;
-	CEffectAsset* m_pEffectAsset;
-	CryParticleEditor::CGraphView*                          m_pGraphView;
+	CEffectAssetModel*             m_pEffectAssetModel;
+	CryParticleEditor::CGraphView* m_pGraphView;
+	bool                           m_updated;
 };
 
 }
-

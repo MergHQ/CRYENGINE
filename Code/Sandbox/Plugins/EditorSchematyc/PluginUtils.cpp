@@ -10,6 +10,7 @@
 #include <CryEntitySystem/IEntityClass.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryGame/IGameFramework.h>
 #include <CryString/CryStringUtils.h>
 #include <CrySchematyc/Utils/Assert.h>
@@ -71,10 +72,11 @@ public:
 	virtual ~CStringListDictionary() {}
 
 	// CryGraphEditor::CAbstractDictionary
+	virtual void                            ResetEntries() override              { m_func(); }
 	virtual int32                           GetNumEntries() const override       { return m_names.size(); }
 	virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override { return (m_names.size() > index) ? &m_names[index] : nullptr; }
 
-	virtual int32                           GetNumColumns() const override       { return Column_COUNT; };
+	virtual int32                           GetNumColumns() const override       { return Column_COUNT; }
 	virtual QString                         GetColumnName(int32 index) const override
 	{
 		if (index == Column_Name)
@@ -85,27 +87,25 @@ public:
 	virtual int32 GetDefaultFilterColumn() const override { return Column_Name; }
 	// ~CryGraphEditor::CAbstractDictionary
 
-	void Load(const Serialization::StringListStatic& names)
+	template<class StringList> void Load(const StringList& names)
 	{
-		for (string name : names)
-		{
-			CStringListDictionaryEntry entry;
-			entry.m_name = name;
-			m_names.emplace_back(entry);
-		}
-	}
+		m_func = std::bind([this, names]()
+			{
+				for (string name : names)
+				{
+				  CStringListDictionaryEntry entry;
+				  entry.m_name = name;
+				  m_names.emplace_back(entry);
+				}
+			});
 
-	void Load(const Serialization::StringList& names)
-	{
-		for (string name : names)
-		{
-			CStringListDictionaryEntry entry;
-			entry.m_name = name;
-			m_names.emplace_back(entry);
-		}
+		Reset();
+
+		m_func = std::bind([]() {});
 	}
 
 private:
+	std::function<void()>                   m_func;
 	std::vector<CStringListDictionaryEntry> m_names;
 };
 
@@ -138,7 +138,7 @@ private:
 
 namespace {
 
-dll_string EntityClassNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue, Serialization::StringListValue* pStringListValue)
+SResourceSelectionResult EntityClassNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	Serialization::StringListStatic names;
 
@@ -147,6 +147,9 @@ dll_string EntityClassNameSelector(const SResourceSelectorContext& context, cons
 
 	while (IEntityClass* pClass = entityClassRegistry.IteratorNext())
 	{
+		if ((pClass->GetFlags() & ECLF_INVISIBLE) != 0)
+			continue;
+
 		names.push_back(pClass->GetName());
 	}
 
@@ -156,16 +159,18 @@ dll_string EntityClassNameSelector(const SResourceSelectorContext& context, cons
 	const QPoint pos = QCursor::pos();
 	dictionary.ExecAt(pos);
 
+	SResourceSelectionResult result{ false, "" };
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(dictionary.GetResult());
 	if (pEntry)
 	{
-		return QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectionAccepted = true;
 	}
 
-	return "";
+	return result;
 }
 
-dll_string ActionMapNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue, Serialization::StringListValue* pStringListValue)
+SResourceSelectionResult ActionMapNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	Serialization::StringListStatic names;
 
@@ -184,17 +189,19 @@ dll_string ActionMapNameSelector(const SResourceSelectorContext& context, const 
 
 	const QPoint pos = QCursor::pos();
 	dictionary.ExecAt(pos);
+	SResourceSelectionResult result{ false, "" };
 
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(dictionary.GetResult());
 	if (pEntry)
 	{
-		return QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectionAccepted = true;
 	}
 
-	return "";
+	return result;
 }
 
-dll_string ActionMapActionNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue, Serialization::StringListValue* pStringListValue)
+SResourceSelectionResult ActionMapActionNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	CrySchematycEditor::CActionMapActionQuickSearchOptions quickSearchOptions;
 
@@ -203,17 +210,19 @@ dll_string ActionMapActionNameSelector(const SResourceSelectorContext& context, 
 
 	const QPoint pos = QCursor::pos();
 	dictionary.ExecAt(pos);
+	SResourceSelectionResult result{ false, "" };
 
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(dictionary.GetResult());
 	if (pEntry)
 	{
-		return QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectionAccepted = true;
 	}
 
-	return "";
+	return result;
 }
 
-dll_string SurfaceTypeNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue, Serialization::StringListValue* pStringListValue)
+SResourceSelectionResult SurfaceTypeNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
 	Serialization::StringListStatic names;
 
@@ -231,18 +240,22 @@ dll_string SurfaceTypeNameSelector(const SResourceSelectorContext& context, cons
 
 	const QPoint pos = QCursor::pos();
 	dictionary.ExecAt(pos);
+	SResourceSelectionResult result{ false, "" };
 
 	CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(dictionary.GetResult());
 	if (pEntry)
 	{
-		return QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+		result.selectionAccepted = true;
 	}
 
-	return "";
+	return result;
 }
 
-static dll_string MannequinScopeContextName(const SResourceSelectorContext& context, const char* szPreviousValue, Serialization::StringListValue* pStringListValue)
+static SResourceSelectionResult MannequinScopeContextNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
+	SResourceSelectionResult result{ false, "" };
+
 	if (std::shared_ptr<Serialization::SMannequinControllerDefResourceParams> pParams = std::static_pointer_cast<Serialization::SMannequinControllerDefResourceParams>(context.pCustomParams))
 	{
 		if (pParams->pControllerDef != nullptr)
@@ -263,16 +276,19 @@ static dll_string MannequinScopeContextName(const SResourceSelectorContext& cont
 			CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(dictionary.GetResult());
 			if (pEntry)
 			{
-				return QtUtil::ToString(pEntry->GetName()).c_str();
+				result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+				result.selectionAccepted = true;
 			}
 		}
 	}
 
-	return "";
+	return result;
 }
 
-static dll_string MannequinFragmentName(const SResourceSelectorContext& context, const char* szPreviousValue, Serialization::StringListValue* pStringListValue)
+static SResourceSelectionResult MannequinFragmentNameSelector(const SResourceSelectorContext& context, const char* szPreviousValue)
 {
+	SResourceSelectionResult result{ false, "" };
+
 	if (std::shared_ptr<Serialization::SMannequinControllerDefResourceParams> pParams = std::static_pointer_cast<Serialization::SMannequinControllerDefResourceParams>(context.pCustomParams))
 	{
 		if (pParams->pControllerDef != nullptr)
@@ -293,20 +309,21 @@ static dll_string MannequinFragmentName(const SResourceSelectorContext& context,
 			CrySchematycEditor::CStringListDictionaryEntry* pEntry = static_cast<CrySchematycEditor::CStringListDictionaryEntry*>(dictionary.GetResult());
 			if (pEntry)
 			{
-				return QtUtil::ToString(pEntry->GetName()).c_str();
+				result.selectedResource = QtUtil::ToString(pEntry->GetName()).c_str();
+				result.selectionAccepted = true;
 			}
 		}
 	}
 
-	return "";
+	return result;
 }
 
 REGISTER_RESOURCE_SELECTOR("EntityClass", EntityClassNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("ActionMap", ActionMapNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("ActionMapAction", ActionMapActionNameSelector, "")
 REGISTER_RESOURCE_SELECTOR("SurfaceTypeName", SurfaceTypeNameSelector, "")
-REGISTER_RESOURCE_SELECTOR("MannequinScopeContextName", MannequinScopeContextName, "")
-REGISTER_RESOURCE_SELECTOR("MannequinFragmentName", MannequinFragmentName, "")
+REGISTER_RESOURCE_SELECTOR("MannequinScopeContextName", MannequinScopeContextNameSelector, "")
+REGISTER_RESOURCE_SELECTOR("MannequinFragmentName", MannequinFragmentNameSelector, "")
 }
 
 namespace CrySchematycEditor {
@@ -390,4 +407,3 @@ bool ValidateClipboardContents(const char* szPrefix)
 
 }
 }
-

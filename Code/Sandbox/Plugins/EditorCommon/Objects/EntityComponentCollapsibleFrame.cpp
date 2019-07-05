@@ -4,14 +4,18 @@
 #include "EntityComponentCollapsibleFrame.h"
 
 #include "Controls/DynamicPopupMenu.h"
-
-#include "IObjectManager.h"
 #include "Objects/EntityObject.h"
-#include "IUndoObject.h" 
+#include "Objects/ISelectionGroup.h"
+#include "IObjectManager.h"
+
+#include <IEditor.h>
+#include <IUndoObject.h>
 
 #include <CryEntitySystem/IEntityComponent.h>
 #include <CryEntitySystem/IEntity.h>
-#include "ISelectionGroup.h"
+
+#include <QLayout>
+#include <QToolButton>
 
 class CUndoRemoveComponent : public IUndoObject
 {
@@ -19,14 +23,19 @@ public:
 	CUndoRemoveComponent(IEntityComponent* pAddedComponent)
 		: m_owningEntityGUID(pAddedComponent->GetEntity()->GetGuid())
 		, m_classDescription(pAddedComponent->GetClassDesc())
+		, m_componentInstanceGUID(pAddedComponent->GetGUID())
 		, m_flags(pAddedComponent->GetComponentFlags())
 		, m_name(pAddedComponent->GetName())
 		, m_transform(pAddedComponent->GetTransform())
-		, m_componentInstanceGUID(pAddedComponent->GetGUID())
 		, m_parentComponentInstanceGUID(pAddedComponent->GetParent() != nullptr ? pAddedComponent->GetParent()->GetGUID() : CryGUID::Null())
 	{
 		// Serialize component properties to buffer
-		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_propertyBuffer, Serialization::SStruct(IEntityComponent::SPropertySerializer{ pAddedComponent }));
+		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_propertyBuffer, Serialization::SStruct(IEntityComponent::SPropertySerializer { pAddedComponent }));
+
+		if (CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(m_owningEntityGUID)))
+		{
+			pEntityObject->SetLayerModified();
+		}
 	}
 
 	virtual void Undo(bool bUndo) override
@@ -45,10 +54,10 @@ public:
 			initParams.pParent = pEntity->GetComponentByGUID(m_parentComponentInstanceGUID);
 		}
 
-		IF_LIKELY(IEntityComponent* pComponent = pEntity->CreateComponentByInterfaceID(m_classDescription.GetGUID(), &initParams))
+		IF_LIKELY (IEntityComponent* pComponent = pEntity->CreateComponentByInterfaceID(m_classDescription.GetGUID(), &initParams))
 		{
 			// Deserialize to the target
-			gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(IEntityComponent::SPropertySerializer{ pComponent }), m_propertyBuffer.data(), m_propertyBuffer.size());
+			gEnv->pSystem->GetArchiveHost()->LoadBinaryBuffer(Serialization::SStruct(IEntityComponent::SPropertySerializer { pComponent }), m_propertyBuffer.data(), m_propertyBuffer.size());
 
 			GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
 		}
@@ -56,6 +65,8 @@ public:
 		{
 			m_componentInstanceGUID = CryGUID::Null();
 		}
+
+		pEntityObject->SetLayerModified();
 	}
 
 	virtual void Redo() override
@@ -74,20 +85,21 @@ public:
 
 			GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
 		}
+
+		pEntityObject->SetLayerModified();
 	}
 
 private:
-	virtual int         GetSize() { return sizeof(CUndoRemoveComponent); }
 	virtual const char* GetDescription() { return "Removed Entity Component"; }
 
 	const CEntityComponentClassDesc& m_classDescription;
-	const CryGUID& m_owningEntityGUID;
-	CryGUID m_componentInstanceGUID;
-	EntityComponentFlags m_flags;
-	string m_name;
-	CryTransform::CTransformPtr m_transform;
-	CryGUID m_parentComponentInstanceGUID;
-	DynArray<char> m_propertyBuffer;
+	const CryGUID&                   m_owningEntityGUID;
+	CryGUID                          m_componentInstanceGUID;
+	EntityComponentFlags             m_flags;
+	string                           m_name;
+	CryTransform::CTransformPtr      m_transform;
+	CryGUID                          m_parentComponentInstanceGUID;
+	DynArray<char>                   m_propertyBuffer;
 };
 
 CEntityComponentCollapsibleFrameHeader::CEntityComponentCollapsibleFrameHeader(const QString& title, QCollapsibleFrame* pParentCollapsible, const CEntityComponentClassDesc& typeDesc, const size_t typeInstanceIndex, const bool isComponentUserAdded)
@@ -133,7 +145,7 @@ CEntityComponentCollapsibleFrameHeader::CEntityComponentCollapsibleFrameHeader(c
 				}
 
 				GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
-			});
+		  });
 		}
 
 		menu.SpawnAtCursor();

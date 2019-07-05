@@ -2,17 +2,15 @@
 
 #pragma once
 
+#include "Common.h"
 #include <QWidget>
-#include <SharedData.h>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class QLabel;
-class QString;
 
 namespace ACE
 {
 class CConnectionsWidget;
-class CAsset;
 
 class CPropertiesWidget final : public QWidget
 {
@@ -20,32 +18,31 @@ class CPropertiesWidget final : public QWidget
 
 public:
 
+	CPropertiesWidget() = delete;
+	CPropertiesWidget(CPropertiesWidget const&) = delete;
+	CPropertiesWidget(CPropertiesWidget&&) = delete;
+	CPropertiesWidget& operator=(CPropertiesWidget const&) = delete;
+	CPropertiesWidget& operator=(CPropertiesWidget&&) = delete;
+
 	explicit CPropertiesWidget(QWidget* const pParent);
 	virtual ~CPropertiesWidget() override;
 
-	CPropertiesWidget() = delete;
-
 	void Reset();
-	void OnAboutToReload();
-	void OnReloaded();
-
-signals:
-
-	void SignalSelectConnectedImplItem(ControlId const itemId);
-
-public slots:
-
+	void OnBeforeReload();
+	void OnAfterReload();
+	void OnFileImporterOpened();
+	void OnFileImporterClosed();
 	void OnSetSelectedAssets(Assets const& selectedAssets, bool const restoreSelection);
+	void OnConnectionAdded(ControlId const id);
 
 private:
 
 	void RevertPropertyTree();
 
 	CConnectionsWidget* const m_pConnectionsWidget;
-	QPropertyTree* const      m_pPropertyTree;
+	QPropertyTreeLegacy* const      m_pPropertyTree;
 	QLabel*                   m_pConnectionsLabel;
 	std::unique_ptr<QString>  m_pUsageHint;
 	bool                      m_suppressUpdates;
 };
 } // namespace ACE
-

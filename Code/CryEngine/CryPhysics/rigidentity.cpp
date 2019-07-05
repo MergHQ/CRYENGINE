@@ -18,21 +18,8 @@
 #include "waterman.h"
 
 #if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
-#include <CryRenderer/IRenderer.h>
-#include <CryRenderer/IRenderAuxGeom.h>
-#endif
-
-#if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
 #define MAX_SEQUENCE_NUMBER 256
 #endif
-
-inline int FrameOwner(const entity_contact &cnt) { return isneg(cnt.pbody[1]->Minv-cnt.pbody[0]->Minv) & cnt.pent[1]->m_iSimClass-3>>31; }
-
-inline void GetContactFrames(const entity_contact &cnt, QuatT* frames, int n=2)	{ 
-	float scale;
-	for (int i=0;i<n;i++) 
-		cnt.pent[i]->GetPartTransform(cnt.ipart[i], frames[i].t,frames[i].q,scale, cnt.pent[0]);
-}
 
 CRigidEntity::CRigidEntity(CPhysicalWorld *pWorld, IGeneralMemoryHeap* pHeap)
 	: CPhysicalEntity(pWorld, pHeap)
@@ -305,7 +292,7 @@ void CRigidEntity::RemoveGeometry(int id, int bThreadSafe)
 	int i,bRecalcMass=0;
 	for(i=0;i<m_nParts && m_parts[i].id!=id;i++);
 	if (i==m_nParts) return;
-	phys_geometry *pgeom = m_parts[i].pPhysGeomProxy;
+	//phys_geometry *pgeom = m_parts[i].pPhysGeomProxy;
 
 	if (m_parts[i].mass>0) {
 		//Vec3 bodypos = m_pos + m_qrot*(m_parts[i].pos+m_parts[i].q*pgeom->origin*m_parts[i].scale); 
@@ -495,6 +482,7 @@ int CRigidEntity::SetParams(pe_params *_params, int bThreadSafe)
 		if (!is_unused(params->disablePreCG)) m_bDisablePreCG = params->disablePreCG;
 		if (!is_unused(params->maxFriction)) m_maxFriction = params->maxFriction;
 		if (!is_unused(params->collTypes)) m_collTypes = params->collTypes;
+		if (!is_unused(params->noMassDecay)) (m_body.flags &= ~rb_no_mass_decay) |=	rb_no_mass_decay*params->noMassDecay;
 		return 1;
 	}
 
@@ -535,6 +523,7 @@ int CRigidEntity::GetParams(pe_params *_params) const
 		params->disablePreCG = m_bDisablePreCG;
 		params->maxFriction = m_maxFriction;
 		params->collTypes = m_collTypes;
+		params->noMassDecay = 1^iszero(m_body.flags & rb_no_mass_decay);
 		return 1;
 	}
 
@@ -611,9 +600,11 @@ int CRigidEntity::GetStatus(pe_status *_status) const
 			} else
 				return 0;
 		for(i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;i++) if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].id==status->id) {
-			foundconstr:
-			status->pt[0] = m_pConstraints[i].pt[0];
-			status->pt[1] = m_pConstraints[i].pt[1];
+		foundconstr:
+			for(int iop=0;iop<2;iop++) {
+				status->pt[iop] = m_pConstraints[i].pt[iop];
+				status->partid[iop] = m_pConstraints[i].pent[iop]->m_parts[m_pConstraints[i].ipart[iop]].id;
+			}
 			status->n = m_pConstraints[i].n; 
 			status->flags = m_pConstraintInfos[i].flags;
 			status->pBuddyEntity = m_pConstraints[i].pent[1];
@@ -748,7 +739,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 		if (!pBuddy || (unsigned int)pBuddy->m_iSimClass>4u)
 			return 0;
 		int i,ipart[2],id,flagsInfo,bBreakable=0,flagsLin=contact_constraint_3dof;
-		Vec3 nloc,pt0,pt1;
+		Vec3 nloc,n,pt0,pt1;
 		quaternionf qframe[2];
 		float damping = 0;
 		qframe[0].SetIdentity(); qframe[1].SetIdentity();
@@ -799,8 +790,14 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 			pt1 = pt0;
 
 		CPhysicalEntity *pConstraintEnt = is_unused(action->pConstraintEntity) ? 0:(CPhysicalEntity*)action->pConstraintEntity;
-		if (pConstraintEnt && pConstraintEnt->GetType()==PE_AREA)
-			flagsInfo |= constraint_area;
+		if (pConstraintEnt) {
+			if (pConstraintEnt==WORLD_ENTITY)
+				pConstraintEnt = &g_StaticPhysicalEntity;
+			if (pConstraintEnt->GetType()==PE_AREA)
+				flagsInfo |= constraint_area;
+			else if (pConstraintEnt->m_iSimClass<=2)
+				flagsInfo |= constraint_fixed_frame;
+		}
 		i = RegisterConstraint(pt0,pt1,ipart[0], pBuddy,ipart[1], flagsLin,flagsInfo, pConstraintEnt);
 		if (i<0)
 			return 0;
@@ -810,7 +807,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 		if (!is_unused(action->maxPullForce)) m_pConstraintInfos[i].limit=action->maxPullForce, bBreakable=1;
 		if (!is_unused(action->hardnessLin)) m_pConstraintInfos[i].hardness = action->hardnessLin; 
 
-		QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames);
+		QuatT frames[2]; GetContactFrames(i, frames);
 		if (!is_unused(action->qframe[0])) qframe[0] = action->qframe[0];
 		if (!is_unused(action->qframe[1])) qframe[1] = action->qframe[1];
 		if (action->flags & local_frames) {
@@ -823,7 +820,9 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 			qframe[0] = transW.q*qframe[0];
 			qframe[1] = transW.q*qframe[1];
 		}
-		m_pConstraints[i].nloc=nloc = !frames[FrameOwner(m_pConstraints[i])].q*qframe[0]*Vec3(1,0,0);
+		if (is_unused(action->qframe[1]))
+			qframe[1] = qframe[0];
+		m_pConstraints[i].nloc=nloc = !frames[FrameOwner(m_pConstraints[i])].q*(n = qframe[0]*Vec3(1,0,0));
 		qframe[0] = !frames[0].q*qframe[0];
 		qframe[1] = !frames[1].q*qframe[1];
 		m_pConstraintInfos[i].qframe_rel[0]=qframe[0]; m_pConstraintInfos[i].qframe_rel[1]=qframe[1];
@@ -869,10 +868,12 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 			if (!is_unused(action->xlimits[0]) && action->xlimits[0]>=action->xlimits[1]) {
 				i = RegisterConstraint(pt0,pt1,ipart[0], pBuddy,ipart[1], contact_angular|contact_constraint_2dof,flagsInfo,pConstraintEnt);
 				m_pConstraints[i].nloc=nloc; m_pConstraintInfos[i].qframe_rel[0]=qframe[0];	m_pConstraintInfos[i].qframe_rel[1]=qframe[1];
+				m_pConstraints[i].n = n;
 				m_pConstraintInfos[i].id = id; m_pConstraintInfos[i].damping = damping;
 			} else if (!is_unused(action->yzlimits[0]) && action->yzlimits[0]>=action->yzlimits[1]) {				
 				i = RegisterConstraint(pt0,pt1,ipart[0], pBuddy,ipart[1], contact_angular|contact_constraint_1dof,flagsInfo,pConstraintEnt);
 				m_pConstraints[i].nloc=nloc; m_pConstraintInfos[i].qframe_rel[0]=qframe[0];	m_pConstraintInfos[i].qframe_rel[1]=qframe[1];
+				m_pConstraints[i].n = n;
 				m_pConstraintInfos[i].id = id; m_pConstraintInfos[i].damping = damping;
 			}
 
@@ -929,7 +930,7 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 		} else {
 			for(i=NMASKBITS-1,n=0; i>=0; i--) if (m_constraintMask & getmask(i) && m_pConstraintInfos[i].id==action->idConstraint) {
 				m_pConstraintInfos[i].flags = m_pConstraintInfos[i].flags & action->flagsAND | action->flagsOR;
-				QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames);
+				QuatT frames[2]; GetContactFrames(i, frames);
 				for(j=0;j<2;j++) {
 					if (!is_unused(action->pt[j])) {
 						m_pConstraints[i].pt[j] = (action->flags & world_frames) ? action->pt[j] : 
@@ -940,7 +941,8 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 						quaternionf qframe = action->qframe[j];
 						if (action->flags & local_frames)
 							qframe = m_pConstraints[i].pent[j]->m_qrot*qframe;
-						qframe = !frames[j].q*qframe;
+						if (!(action->flags & local_frames_part))
+							qframe = !frames[j].q*qframe;
 						m_pConstraintInfos[i].qframe_rel[j] = qframe;
 						if (j==FrameOwner(m_pConstraints[i]))
 							m_pConstraints[i].nloc = qframe*Vec3(1,0,0);
@@ -1411,12 +1413,11 @@ void CRigidEntity::ProcessContactEvents(geom_contact* pcontact, int i, int iCall
 	}
 }
 
-int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params *pip, int &itmax, Vec3 sweep, int iStartPart,int nParts, int *pFlagsAccum)
+int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params *pip, int &itmax, Vec3 sweep, int iStartPart,int nParts, int *pFlagsAccum, int iCaller)
 {
 	CPhysicalEntity **pentlist;
 	geom_world_data gwd1;
 	int ient,nents,i,j,icont,ncontacts,ipt,nTotContacts=0,bHasMatSubst=0,ient1,j1,j2,bSquashy,isAwake,flagsAccum=0;
-	int iCaller = get_iCaller_int();
 	RigidBody body(false),*pbody[2];
 	geom_contact *pcontacts;
 	IGeometry *pGeom;
@@ -1425,7 +1426,7 @@ int CRigidEntity::CheckForNewContacts(geom_world_data *pgwd0,intersection_params
 	bool bStopAtFirstTri = pip->bStopAtFirstTri, bCheckBBox;
 	Vec3 sz,BBox[2],BBox1[2],prevOutsidePivot=pip->ptOutsidePivot[0];
 	EventPhysBBoxOverlap event;
-	int bPivotFilled=isneg(pip->ptOutsidePivot[0].x-1E9f);
+	//int bPivotFilled=isneg(pip->ptOutsidePivot[0].x-1E9f);
 	pip->bThreadSafe = 1;
 	box bbox;
 	itmax = -1;
@@ -2003,6 +2004,14 @@ int CRigidEntity::RegisterConstraint(const Vec3 &pt0,const Vec3 &pt1, int ipart0
 	const int buddyCollider = AddCollider(pBuddy);
 	m_pColliderConstraints[buddyCollider] |= getmask(i);
 	m_constraintMask |= getmask(i);
+
+	m_pConstraintInfos[i].flags = flagsInfo;
+	m_pConstraintInfos[i].damping = 0;
+	m_pConstraintInfos[i].pConstraintEnt = pConstraintEnt;
+	m_pConstraintInfos[i].bActive = 0;
+	m_pConstraintInfos[i].sensorRadius = 0.05f;
+	m_pConstraintInfos[i].limit = 0;
+	m_pConstraintInfos[i].hardness = flags & contact_angular ? 20.0f : m_pWorld->m_vars.unprojVelScale;
 	
 	entity_contact& constraint = m_pConstraints[i];
 
@@ -2018,7 +2027,7 @@ int CRigidEntity::RegisterConstraint(const Vec3 &pt0,const Vec3 &pt1, int ipart0
 	constraint.ipart[1] = ipart1;
 	constraint.pbody[0] = GetRigidBody(ipart0);
 	constraint.pbody[1] = pBuddy->GetRigidBody(ipart1, iszero(flagsInfo & constraint_inactive));
-	QuatT frames[2]; GetContactFrames(constraint, frames);
+	QuatT frames[2]; GetContactFrames(i, frames);
 	m_pConstraintInfos[i].ptloc[0] = frames[0].GetInverted()*constraint.pt[0];
 	m_pConstraintInfos[i].ptloc[1] = frames[1].GetInverted()*constraint.pt[1];
 
@@ -2029,14 +2038,6 @@ int CRigidEntity::RegisterConstraint(const Vec3 &pt0,const Vec3 &pt1, int ipart0
 	constraint.bConstraint = 1;
 	constraint.Pspare = 0;
 	constraint.vreq.zero();
-
-	m_pConstraintInfos[i].flags = flagsInfo;
-	m_pConstraintInfos[i].damping = 0;
-	m_pConstraintInfos[i].pConstraintEnt = pConstraintEnt;
-	m_pConstraintInfos[i].bActive = 0;
-	m_pConstraintInfos[i].sensorRadius = 0.05f;
-	m_pConstraintInfos[i].limit = 0;
-	m_pConstraintInfos[i].hardness = flags & contact_angular ? 20.0f : m_pWorld->m_vars.unprojVelScale;
 
 	return i;
 }
@@ -2059,7 +2060,7 @@ void CRigidEntity::VerifyExistingContacts(float maxdist)
 {
 	int i,bConfirmed,nRemoved=0;
 	geom_world_data gwd;
-	Vec3 ptres[2],n,ptclosest[2];
+	//Vec3 ptres[2],n,ptclosest[2];
 	entity_contact *pContact,*pContactNext;
 	{ ReadLock lock(m_lockColliders);
 
@@ -2203,11 +2204,12 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 	Vec3 drift,dw,dL;
 	quaternionf qframe0,qframe1;
 
-	for(i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;i++) if (m_constraintMask & getmask(i)) 
-	if (!(m_pConstraintInfos[i].flags & constraint_inactive)) {
+	for(i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;i++) if (m_constraintMask & getmask(i)) {
 		int bSimple = m_pConstraints[i].pent[1]->m_iSimClass>3 && m_pConstraints[i].pent[1]->GetType()!=PE_ARTICULATED;
-		QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames, 2-bSimple);
+		QuatT frames[2]; GetContactFrames(i, frames, 2-bSimple);
 		m_pConstraints[i].pt[0] = frames[0]*m_pConstraintInfos[i].ptloc[0];
+		if (m_pConstraintInfos[i].flags & constraint_inactive)
+			continue;
 		if (bSimple) {
 			pe_params_pos ppos;
 			ppos.q = frames[0].q*m_pConstraintInfos[i].qframe_rel[0]*!m_pConstraintInfos[i].qframe_rel[1];
@@ -2216,7 +2218,6 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			m_pConstraintInfos[i].bActive = 0;
 			continue;
 		}
-		int flagsForce = 0;
 		if (m_pConstraintInfos[i].flags & constraint_area && m_pConstraintInfos[i].pConstraintEnt) {
 			pe_status_area sa; sa.ptClosest = m_pConstraints[i].pt[0];
 			m_pConstraintInfos[i].pConstraintEnt->GetStatus(&sa);
@@ -2232,7 +2233,8 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			m_pConstraints[i].pt[1] = frames[1]*m_pConstraintInfos[i].ptloc[1];
 
 		int bActive = m_pConstraintInfos[i].bActive;
-		drift = m_pConstraints[i].pt[1]-m_pConstraints[i].pt[0];
+		drift = (m_pConstraints[i].pt[1]-m_pConstraints[i].pt[0])*iszero((int)m_pConstraintInfos[i].flags & constraint_fixed_frame);
+		dw = m_pConstraints[i].pbody[0]->w-m_pConstraints[i].pbody[1]->w;
 		m_pConstraintInfos[i].bActive = 1;
 		m_pConstraints[i].iConstraint = i+1;
 		m_pConstraints[i].bConstraint = 1;
@@ -2280,7 +2282,6 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			m_pConstraints[i].n = frames[iframe].q*m_pConstraints[i].nloc;
 			qframe0 = frames[0].q*m_pConstraintInfos[i].qframe_rel[0];
 			qframe1 = frames[1].q*m_pConstraintInfos[i].qframe_rel[1];
-			dw = m_pConstraints[i].pbody[0]->w-m_pConstraints[i].pbody[1]->w;
 
 			if (m_pConstraints[i].flags & contact_constraint_3dof) {
 				Quat dq = qframe1*!qframe0;
@@ -2321,7 +2322,7 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 		RigidBody *pbody0=m_pConstraints[i].pbody[0], *pbody1=m_pConstraints[i].pbody[1];
 		Vec3 r0,r1;
 		if (hitLimit || hasDamping) {
-			if (m_pConstraints[i].flags & contact_angular){
+			if (m_pConstraints[i].flags & (contact_angular|contact_constraint_3dof)){
 				Matrix33 K = pbody0->Iinv+pbody1->Iinv;
 				dL = K.GetInverted()*dw;
 			}	else {
@@ -2351,7 +2352,7 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 			m_pWorld->OnEvent(m_flags, &epc);
 		}
 		if (hasDamping) {
-			if (m_pConstraints[i].flags & contact_angular){
+			if (m_pConstraints[i].flags & (contact_angular|contact_constraint_3dof)){
 				dL *= -min(0.9f,time_interval*m_pConstraintInfos[i].damping);
 				pbody0->L += dL; pbody1->L -= dL; 
 				pbody0->w = pbody0->Iinv*pbody0->L;
@@ -2746,7 +2747,7 @@ int CRigidEntity::Step(float time_interval)
 	m_pStableContact = 0;
 
 	m_dampingEx = 0;
-	if (m_timeStepPerformed>m_timeStepFull-0.001f || m_nParts==0)
+	if (/*m_timeStepPerformed>m_timeStepFull-0.001f ||*/ m_nParts==0)
 		return 1;
 	m_timeStepPerformed += time_interval;
 	m_lastTimeStep = time_interval;
@@ -2938,7 +2939,7 @@ int CRigidEntity::Step(float time_interval)
 							pcontacts[i].iPrim[1],pcontacts[i].iFeature[1], contact_new|hasArea, max(0.001f,(float)pcontacts[i].t-
 							axis*(pcontacts[i].ptborder[j]-pcontacts[i].pt)+r), iCaller, ntilt);
 				}
-				bSeverePenetration |= isneg(ip.maxUnproj*0.5f-pcontacts[i].t);
+				bSeverePenetration |= isneg(ip.maxUnproj*0.5f-pcontacts[i].t) & iszero((int)(m_parts[g_CurCollParts[i][0]].flags|g_CurColliders[i]->m_parts[g_CurCollParts[i][1]].flags) & geom_no_coll_response);
 			} else 
 				ProcessCanopyContact(pcontacts,i, time_interval, iCaller);
 		}
@@ -3368,7 +3369,7 @@ int CRigidEntity::Update(float time_interval, float damping)
 {
 	int i,j,iCaller=get_iCaller_int();
 	float dt,E,E_accum, Emin = m_bFloating && m_nColliders+m_nPrevColliders==0 ? m_EminWater : m_Emin;
-	Vec3 L_accum,pt[4];
+	Vec3 L_accum;// , pt[4];
 	coord_block_BBox partCoordTmp[2];
 	//m_nStickyContacts = m_nSlidingContacts = 0;
 	m_nStepBackCount = (m_nStepBackCount&-(int)m_bSteppedBack)+m_bSteppedBack;
@@ -3692,77 +3693,9 @@ int CRigidEntity::GetStateSnapshot( TSerialize ser, float time_back, int flags )
 */
 
 	if (ser.GetSerializationTarget()!=eST_Network) {
-		int i,count;
-		bool bVal;
-
 		if (flags & 16)
 			WriteContacts(ser);
-
-		if (ser.BeginOptionalGroup("constraints", m_constraintMask != 0))
-		{
-			int scount=0;
-			for(i=scount=0;i<NMASKBITS && getmask(i)<=m_constraintMask;) {
-				if (m_constraintMask & getmask(i) && !(m_pConstraintInfos[i].flags & constraint_rope))
-				{
-					pe_action_add_constraint aac;
-					aac.id = m_pConstraintInfos[i].id;
-					i += ExtractConstraintInfo(i,m_constraintMask,aac);
-					++scount;
-				}
-				else
-					++i;
-			}
-
-			ser.Value("count", scount);
-
-			for(i=count=0;i<NMASKBITS && getmask(i)<=m_constraintMask;)
-			{
-				if (m_constraintMask & getmask(i) && !(m_pConstraintInfos[i].flags & constraint_rope))
-				{
-					ser.BeginOptionalGroup("constraint", true);
-					pe_action_add_constraint aac;
-					aac.id = m_pConstraintInfos[i].id;
-					i += ExtractConstraintInfo(i,m_constraintMask,aac);
-					ser.Value("id", aac.id);
-					m_pWorld->SavePhysicalEntityPtr(ser,(CPhysicalEntity*)aac.pBuddy);
-					ser.Value("pt0", aac.pt[0]); ser.Value("pt1", aac.pt[1]); 
-					ser.Value("partid0", aac.partid[0]); ser.Value("partid1", aac.partid[1]); 
-					if (!is_unused(aac.qframe[0])) {
-						ser.Value("qf0used", bVal=true);
-						ser.Value("qframe0", aac.qframe[0]);
-					} else ser.Value("qf0used", bVal=false);
-					if (!is_unused(aac.qframe[1])) {
-						ser.Value("qf1used", bVal=true);
-						ser.Value("qframe1", aac.qframe[1]);
-					}	else ser.Value("qf1used", bVal=false);
-					if (!is_unused(aac.xlimits[0])) {
-						ser.Value("xlim", bVal=true);
-						ser.Value("xlim0", aac.xlimits[0]); ser.Value("xlim1", aac.xlimits[1]);
-					}	else ser.Value("xlim", bVal=false);
-					if (!is_unused(aac.yzlimits[0])) {
-						ser.Value("yzlim", bVal=true);
-						ser.Value("yzlim0", aac.yzlimits[0]); ser.Value("yzlim1", aac.yzlimits[1]);
-					}	else ser.Value("yzlim", bVal=false);
-					ser.Value("flags", aac.flags);
-					ser.Value("damping", aac.damping);
-					ser.Value("radius", aac.sensorRadius);
-					if (!is_unused(aac.maxPullForce)) {
-						ser.Value("breakableLin", bVal=true);
-						ser.Value("maxPullForce", aac.maxPullForce);
-					} else
-						ser.Value("breakableLin", bVal=false);
-					if (!is_unused(aac.maxBendTorque)) {
-						ser.Value("breakableAng", bVal=true);
-						ser.Value("maxBendTorque", aac.maxBendTorque);
-					} else
-						ser.Value("breakableAng", bVal=false);
-					ser.EndGroup();
-					count++;
-				} else
-					i++;
-			}
-			ser.EndGroup();
-		}
+		WriteConstraints(ser);
 	}
 
 	return 1;
@@ -3846,6 +3779,128 @@ int CRigidEntity::ReadContacts(TSerialize ser)
 		AttachContact(cnt, AddCollider(cnt->pent[1]), cnt->pent[1]);
 	}
 	return n;
+}
+
+int CRigidEntity::WriteConstraints(TSerialize ser, unsigned int excludeMask, int localFrames)
+{
+	int scount=0;
+	if (ser.BeginOptionalGroup("constraints", m_constraintMask != 0))	{
+		for(int i=scount=0;i<NMASKBITS && getmask(i)<=m_constraintMask;) {
+			if (m_constraintMask & getmask(i) && !(m_pConstraintInfos[i].flags & excludeMask)) {
+				pe_action_add_constraint aac;
+				aac.id = m_pConstraintInfos[i].id;
+				i += ExtractConstraintInfo(i,m_constraintMask,aac);
+				++scount;
+			}
+			else
+				++i;
+		}
+
+		ser.Value("count", scount);
+
+		for(int i=0;i<NMASKBITS && getmask(i)<=m_constraintMask;)	{
+			if (m_constraintMask & getmask(i) && !(m_pConstraintInfos[i].flags & excludeMask)) {
+				bool bVal;
+				ser.BeginOptionalGroup("constraint", true);
+				pe_action_add_constraint aac;
+				aac.id = m_pConstraintInfos[i].id;
+				i += ExtractConstraintInfo(i,m_constraintMask,aac,localFrames);
+				ser.Value("id", aac.id);
+				m_pWorld->SavePhysicalEntityPtr(ser,(CPhysicalEntity*)aac.pBuddy);
+				ser.Value("pt0", aac.pt[0]); ser.Value("pt1", aac.pt[1]); 
+				ser.Value("partid0", aac.partid[0]); ser.Value("partid1", aac.partid[1]); 
+				if (!is_unused(aac.qframe[0])) {
+					ser.Value("qf0used", bVal=true);
+					ser.Value("qframe0", aac.qframe[0]);
+				} else ser.Value("qf0used", bVal=false);
+				if (!is_unused(aac.qframe[1])) {
+					ser.Value("qf1used", bVal=true);
+					ser.Value("qframe1", aac.qframe[1]);
+				}	else ser.Value("qf1used", bVal=false);
+				if (!is_unused(aac.xlimits[0])) {
+					ser.Value("xlim", bVal=true);
+					ser.Value("xlim0", aac.xlimits[0]); ser.Value("xlim1", aac.xlimits[1]);
+				}	else ser.Value("xlim", bVal=false);
+				if (!is_unused(aac.yzlimits[0])) {
+					ser.Value("yzlim", bVal=true);
+					ser.Value("yzlim0", aac.yzlimits[0]); ser.Value("yzlim1", aac.yzlimits[1]);
+				}	else ser.Value("yzlim", bVal=false);
+				ser.Value("flags", aac.flags);
+				ser.Value("damping", aac.damping);
+				ser.Value("radius", aac.sensorRadius);
+				if (!is_unused(aac.maxPullForce)) {
+					ser.Value("breakableLin", bVal=true);
+					ser.Value("maxPullForce", aac.maxPullForce);
+				} else
+					ser.Value("breakableLin", bVal=false);
+				if (!is_unused(aac.maxBendTorque)) {
+					ser.Value("breakableAng", bVal=true);
+					ser.Value("maxBendTorque", aac.maxBendTorque);
+				} else
+					ser.Value("breakableAng", bVal=false);
+				ser.EndGroup();
+			} else
+				i++;
+		}
+		ser.EndGroup();
+	}
+	return scount;
+}
+int CRigidEntity::ReadConstraints(TSerialize ser)
+{
+	if (ser.BeginOptionalGroup("constraints",true))	{
+		int i,j;
+		pe_action_update_constraint auc; auc.bRemove = 1;
+		for(i=NMASKBITS-1;i>=0;) if (m_constraintMask & getmask(i) && !(m_pConstraintInfos[i].flags & constraint_rope)) {
+			auc.idConstraint = m_pConstraintInfos[i].id;
+			for(j=i;i>=0 && m_pConstraintInfos[i].id==m_pConstraintInfos[j].id;i--);
+			Action(&auc,0);
+		}	else i--;
+
+		int count = 0;
+		ser.Value("count", count);
+		while(--count>=0)	if (ser.BeginOptionalGroup("constraint", true))	{
+			bool bVal;
+			pe_action_add_constraint aac;
+			ser.Value("id", aac.id);
+			PREFAST_ASSUME(m_pWorld);
+			if (aac.pBuddy=m_pWorld->LoadPhysicalEntityPtr(ser)) {
+				ser.Value("pt0", aac.pt[0]); ser.Value("pt1", aac.pt[1]); 
+				ser.Value("partid0", aac.partid[0]); ser.Value("partid1", aac.partid[1]); 
+				ser.Value("qf0used", bVal);
+				if (bVal)
+					ser.Value("qframe0", aac.qframe[0]); 
+				ser.Value("qf1used", bVal);
+				if (bVal)
+					ser.Value("qframe1", aac.qframe[1]); 
+				ser.Value("xlim", bVal);
+				if (bVal) {
+					ser.Value("xlim0", aac.xlimits[0]); ser.Value("xlim1", aac.xlimits[1]);
+				}
+				ser.Value("yzlim", bVal);
+				if (bVal) {
+					ser.Value("yzlim0", aac.yzlimits[0]); ser.Value("yzlim1", aac.yzlimits[1]);
+				}
+				ser.Value("flags", aac.flags);
+				ser.Value("damping", aac.damping);
+				ser.Value("radius", aac.sensorRadius);
+				ser.Value("breakableLin", bVal);
+				if (bVal)
+					ser.Value("maxPullForce", aac.maxPullForce);
+				ser.Value("breakableAng", bVal);
+				if (bVal)
+					ser.Value("maxBendTorque", aac.maxBendTorque);
+				if (aac.flags & local_frames_part)
+					MARK_UNUSED aac.pt[1];
+				if (ser.ShouldCommitValues())
+					Action(&aac,0);
+			}
+			ser.EndGroup(); //constraint
+		}
+		ser.EndGroup(); //constraints
+		return count;
+	}
+	return 0;
 }
 
 int CRigidEntity::SetStateFromSnapshot(CStream &stm, int flags)
@@ -4220,59 +4275,7 @@ int CRigidEntity::SetStateFromSnapshot( TSerialize ser, int flags )
 	{
 		if (flags & 16)
 			ReadContacts(ser);
-
-		if (ser.BeginOptionalGroup("constraints",true))
-		{
-			int i,j;
-			pe_action_update_constraint auc; auc.bRemove = 1;
-			for(i=NMASKBITS-1;i>=0;) if (m_constraintMask & getmask(i) && !(m_pConstraintInfos[i].flags & constraint_rope)) {
-				auc.idConstraint = m_pConstraintInfos[i].id;
-				for(j=i;i>=0 && m_pConstraintInfos[i].id==m_pConstraintInfos[j].id;i--);
-				Action(&auc,0);
-			}	else i--;
-
-			int count = 0;
-			ser.Value("count", count);
-			while(--count>=0)	if (ser.BeginOptionalGroup("constraint", true))
-			{
-				bool bVal;
-				pe_action_add_constraint aac;
-				ser.Value("id", aac.id);
-				PREFAST_ASSUME(m_pWorld);
-				if (aac.pBuddy=m_pWorld->LoadPhysicalEntityPtr(ser))
-				{
-					ser.Value("pt0", aac.pt[0]); ser.Value("pt1", aac.pt[1]); 
-					ser.Value("partid0", aac.partid[0]); ser.Value("partid1", aac.partid[1]); 
-					ser.Value("qf0used", bVal);
-					if (bVal)
-						ser.Value("qframe0", aac.qframe[0]); 
-					ser.Value("qf1used", bVal);
-					if (bVal)
-						ser.Value("qframe1", aac.qframe[1]); 
-					ser.Value("xlim", bVal);
-					if (bVal) {
-						ser.Value("xlim0", aac.xlimits[0]); ser.Value("xlim1", aac.xlimits[1]);
-					}
-					ser.Value("yzlim", bVal);
-					if (bVal) {
-						ser.Value("yzlim0", aac.yzlimits[0]); ser.Value("yzlim1", aac.yzlimits[1]);
-					}
-					ser.Value("flags", aac.flags);
-					ser.Value("damping", aac.damping);
-					ser.Value("radius", aac.sensorRadius);
-					ser.Value("breakableLin", bVal);
-					if (bVal)
-						ser.Value("maxPullForce", aac.maxPullForce);
-					ser.Value("breakableAng", bVal);
-					if (bVal)
-						ser.Value("maxBendTorque", aac.maxBendTorque);
-					if (ser.ShouldCommitValues())
-						Action(&aac,0);
-				}
-				ser.EndGroup(); //constrain
-			}
-			ser.EndGroup(); //constrains
-		}
+		ReadConstraints(ser);
 		m_nEvents = 0;
 	}
 
@@ -4673,11 +4676,13 @@ int CRigidEntity::CompactContactBlock(entity_contact *pContact,int endFlags, flo
 }
 
 
-int CRigidEntity::ExtractConstraintInfo(int i, masktype constraintMask, pe_action_add_constraint &aac)
+int CRigidEntity::ExtractConstraintInfo(int i, masktype constraintMask, pe_action_add_constraint &aac, int localFrames)
 {
 	int i1,j;
 	int realent = m_pConstraints[i].pent[1]->m_iSimClass<3 || m_pConstraints[i].pent[1]->GetType()==PE_ARTICULATED;
-	QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames, realent+1);
+	QuatT frames[2] = { QuatT(IDENTITY), QuatT(IDENTITY) }; 
+	if (!localFrames)
+		GetContactFrames(i, frames, realent+1);
 	if (!realent) {
 		pe_status_pos sp;
 		m_pConstraints[i].pent[1]->GetStatus(&sp);
@@ -4691,29 +4696,32 @@ int CRigidEntity::ExtractConstraintInfo(int i, masktype constraintMask, pe_actio
 	if (m_pConstraintInfos[i].limit>0)
 		aac.maxPullForce = m_pConstraintInfos[i].limit;
 	aac.damping = m_pConstraintInfos[i].damping;
-	aac.flags = world_frames | m_pConstraintInfos[i].flags;
+	aac.flags = (localFrames ? local_frames_part : world_frames) | m_pConstraintInfos[i].flags;
 	aac.sensorRadius = m_pConstraintInfos[i].sensorRadius;
+	aac.pConstraintEntity = m_pConstraintInfos[i].pConstraintEnt;
 	for(j=0;j<realent+1;j++) aac.partid[j] = m_pConstraints[i].pent[j]->m_parts[m_pConstraints[i].ipart[j]].id;
-	if (i+1<NMASKBITS && constraintMask & getmask(i+1) && m_pConstraintInfos[i+1].id==m_pConstraintInfos[i].id &&
-			m_pConstraints[i+1].flags & (contact_constraint_2dof|contact_constraint_1dof|contact_constraint_3dof)) 
+	i1 = !(m_pConstraints[i].flags & contact_angular);
+	if (i+i1<NMASKBITS && constraintMask & getmask(i+i1) && m_pConstraintInfos[i+i1].id==m_pConstraintInfos[i].id &&
+			m_pConstraints[i+i1].flags & (contact_constraint_2dof|contact_constraint_1dof|contact_constraint_3dof)) 
 	{	
-		realent = m_pConstraints[i+1].pent[1]->m_iSimClass<3 || m_pConstraints[i+1].pent[1]->GetType()==PE_ARTICULATED;
-		GetContactFrames(m_pConstraints[i+1], frames, realent+1);
+		realent = m_pConstraints[i+i1].pent[1]->m_iSimClass<3 || m_pConstraints[i+i1].pent[1]->GetType()==PE_ARTICULATED;
+		if (!localFrames)
+			GetContactFrames(i+i1, frames, realent+1);
 		if (!realent) {
 			pe_status_pos sp;
-			m_pConstraints[i+1].pent[1]->GetStatus(&sp);
+			m_pConstraints[i+i1].pent[1]->GetStatus(&sp);
 			frames[1] = QuatT(sp.q,sp.pos);
 		}
-		for(j=0;j<2;j++) aac.qframe[j] = frames[j].q*m_pConstraintInfos[i+1].qframe_rel[j];
-		if (m_pConstraints[i+1].flags & contact_constraint_3dof)
+		for(j=0;j<2;j++) aac.qframe[j] = frames[j].q*m_pConstraintInfos[i+i1].qframe_rel[j];
+		if (m_pConstraints[i+i1].flags & contact_constraint_3dof)
 			aac.flags |= constraint_no_rotation;
-		else if (m_pConstraints[i+1].flags & contact_constraint_2dof)
+		else if (m_pConstraints[i+i1].flags & contact_constraint_2dof)
 			aac.xlimits[0]=aac.xlimits[1] = 0;
 		else
 			aac.yzlimits[0]=aac.yzlimits[1] = 0;
-		aac.damping = max(aac.damping, m_pConstraintInfos[i+1].damping);
-		i1=2;
-	}	else i1=1;
+		aac.damping = max(aac.damping, m_pConstraintInfos[i+i1].damping);
+		++i1;
+	}
 	if (i+i1<NMASKBITS && constraintMask & getmask(i+i1) && m_pConstraintInfos[i+i1].id==m_pConstraintInfos[i].id &&
 			m_pConstraintInfos[i+i1].flags & constraint_limited_1axis) 
 	{	for(j=0;j<2;j++) aac.xlimits[j] = m_pConstraintInfos[i+i1].limits[j];
@@ -4828,7 +4836,7 @@ void CRigidEntity::OnNeighbourSplit(CPhysicalEntity *pentOrig, CPhysicalEntity *
 
 void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 {
-#if USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
+#if 0 && USE_IMPROVED_RIGID_ENTITY_SYNCHRONISATION
 	if (m_pWorld->m_vars.netDebugDraw && m_pNetStateHistory && m_bAwake) {
 		IRenderAuxGeom* pAux = IRenderAuxGeom::GetAux();
 		if (pAux) {
@@ -4883,11 +4891,10 @@ void CRigidEntity::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 			if (m_constraintMask & getmask(i) && !(m_pConstraintInfos[i].flags & constraint_inactive) && (m_pConstraints[i].flags & contact_angular)) 
 			{
 				// determine the reference frame of the constraint
-				QuatT frames[2]; GetContactFrames(m_pConstraints[i], frames);
+				QuatT frames[2]; GetContactFrames(i, frames);
 				const Vec3& posBody0 = m_pConstraints[i].pbody[0]->pos;
-				const Vec3& posBody1 = m_pConstraints[i].pbody[1]->pos;									
 				quaternionf qframe0 = frames[0].q * m_pConstraintInfos[i].qframe_rel[0];
-				quaternionf qframe1 = frames[1].q * m_pConstraintInfos[i].qframe_rel[1];					
+				quaternionf qframe1 = frames[1].q * m_pConstraintInfos[i].qframe_rel[1];
 				Vec3 u = qframe0 * Vec3(1,0,0);
 				Vec3 posFrame = m_pConstraints[i].pt[0];
 				Vec3 l = posFrame - posBody0;

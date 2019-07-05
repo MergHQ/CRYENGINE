@@ -1,21 +1,19 @@
 {
-	"CryLobby_durango_live_uber.cpp":
-	{
-		"DurangoLive":
-		[	
-			"DurangoLive/DurangoChat/ChatIntegrationLayer.h",
-			"DurangoLive/DurangoChat/ChatIntegrationLayer.cpp",
-			"DurangoLive/CryDurangoLiveLobby.cpp",
-			"DurangoLive/CryDurangoLiveMatchMaking.cpp",
-			"DurangoLive/CryDurangoLiveLobby.h",
-			"DurangoLive/CryDurangoLiveLobbyPacket.h",
-			"DurangoLive/CryDurangoLiveMatchMaking.h",
-			"DurangoLive/CryDurangoLiveOnlineStorage.h",
-			"DurangoLive/CryDurangoLiveOnlineStorage.cpp",
-			"DurangoLive/CryDurangoLiveLobbyUI.h",
-			"DurangoLive/CryDurangoLiveLobbyUI.cpp",
-			"DurangoLive/platform.h",
-			"DurangoLive/platform.cpp"
-		]
-	}
+    "CryLobby_durango_live_uber.cpp": {
+        "DurangoLive": [
+            "DurangoLive/DurangoChat/ChatIntegrationLayer.h",
+            "DurangoLive/DurangoChat/ChatIntegrationLayer.cpp",
+            "DurangoLive/CryDurangoLiveLobby.cpp",
+            "DurangoLive/CryDurangoLiveMatchMaking.cpp",
+            "DurangoLive/CryDurangoLiveLobby.h",
+            "DurangoLive/CryDurangoLiveLobbyPacket.h",
+            "DurangoLive/CryDurangoLiveMatchMaking.h",
+            "DurangoLive/CryDurangoLiveOnlineStorage.h",
+            "DurangoLive/CryDurangoLiveOnlineStorage.cpp",
+            "DurangoLive/CryDurangoLiveLobbyUI.h",
+            "DurangoLive/CryDurangoLiveLobbyUI.cpp",
+            "DurangoLive/platform.h",
+            "DurangoLive/platform.cpp"
+        ]
+    }
 }

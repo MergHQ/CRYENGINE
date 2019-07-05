@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 
-#include "DriverD3D.h"
 #include "DeviceResources.h"
 
 #if CRY_RENDERER_GNM
@@ -84,10 +83,10 @@ void CDeviceResource::AllocatePredefinedResourceViews()
 	const bool bDefaultAvailable     = (bIsStructured || (eFormatD != DXGI_FORMAT_UNKNOWN)) && (bIsShaderResource);
 	const bool bAlternativeAvailable = (bIsStructured || (eFormatS != DXGI_FORMAT_UNKNOWN)) && (bIsShaderResource) && (bIsDepthStencil || bAllowSrgb) && (Default != Alternative);
 
-	ResourceViewHandle a = bDefaultAvailable     ? GetOrCreateResourceViewHandle(Default         ) : ReserveResourceViewHandle(Default         ); assert(a == EDefaultResourceViews::Default         );
-	ResourceViewHandle b = bAlternativeAvailable ? GetOrCreateResourceViewHandle(Alternative     ) : ReserveResourceViewHandle(Alternative     ); assert(b == EDefaultResourceViews::Alternative     );
-	ResourceViewHandle c = bIsRasterizerTarget   ? GetOrCreateResourceViewHandle(RasterizerTarget) : ReserveResourceViewHandle(RasterizerTarget); assert(c == EDefaultResourceViews::RasterizerTarget);
-	ResourceViewHandle e = bIsUnordered          ? GetOrCreateResourceViewHandle(UnorderedAccess ) : ReserveResourceViewHandle(UnorderedAccess ); assert(e == EDefaultResourceViews::UnorderedAccess );
+	CRY_VERIFY((bDefaultAvailable     ? GetOrCreateResourceViewHandle(Default         ) : ReserveResourceViewHandle(Default         )) == EDefaultResourceViews::Default         );
+	CRY_VERIFY((bAlternativeAvailable ? GetOrCreateResourceViewHandle(Alternative     ) : ReserveResourceViewHandle(Alternative     )) == EDefaultResourceViews::Alternative     );
+	CRY_VERIFY((bIsRasterizerTarget   ? GetOrCreateResourceViewHandle(RasterizerTarget) : ReserveResourceViewHandle(RasterizerTarget)) == EDefaultResourceViews::RasterizerTarget);
+	CRY_VERIFY((bIsUnordered          ? GetOrCreateResourceViewHandle(UnorderedAccess ) : ReserveResourceViewHandle(UnorderedAccess )) == EDefaultResourceViews::UnorderedAccess );
 
 	// Alias Default to Alternative if it's not suppose to be read in an alternative way
 	if (bDefaultAvailable && !bAlternativeAvailable)
@@ -106,7 +105,7 @@ int32 CDeviceResource::Cleanup()
 	// Gracefully deal with NULL-resources which are nullptr
 	int32 nRef = m_resourceElements ? -1 : 0; // -!!bool
 
-	if (m_pNativeResource)
+	if (m_pNativeResource && m_resourceElements)
 	{
 		// Figure out current ref-count
 		nRef = m_pNativeResource->AddRef();
@@ -119,13 +118,17 @@ int32 CDeviceResource::Cleanup()
 			GetDeviceObjectFactory().ReleaseResource(m_pNativeResource);
 
 		// NOTE: CDeviceResource might be shared, take care the texture-pointer stays valid for the other aliases
-		if (nRef == 1)
+		if (nRef > 0)
 		{
 			nRef = 0;
 
 			m_pNativeResource = nullptr;
 		}
 	}
+
+#if DURANGO_USE_ESRAM
+	CleanupESRAMResource();
+#endif
 
 	return nRef;
 }
@@ -144,11 +147,6 @@ CDeviceBuffer* CDeviceBuffer::Create(const SBufferLayout& pLayout, const void* p
 {
 	CDeviceBuffer* pDevBuffer = nullptr;
 	D3DBuffer* pBuffer = nullptr;
-
-	int32 nESRAMOffset = SKIP_ESRAM;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	nESRAMOffset = pLayout.m_eSRAMOffset;
-#endif
 
 	buffer_size_t elementSize = pLayout.m_elementSize;
 	buffer_size_t elementCount = pLayout.m_elementCount;
@@ -185,6 +183,7 @@ CDeviceBuffer* CDeviceBuffer::Create(const SBufferLayout& pLayout, const void* p
 	pDevBuffer->m_pNativeResource = pBuffer;
 
 	pDevBuffer->m_eNativeFormat = pLayout.m_eFormat;
+	pDevBuffer->m_eFlags = pLayout.m_eFlags;
 	pDevBuffer->m_resourceElements = elementCount * elementSize;
 	pDevBuffer->m_subResources[eSubResource_Mips] = 0;
 	pDevBuffer->m_subResources[eSubResource_Slices] = 0; 
@@ -193,7 +192,9 @@ CDeviceBuffer* CDeviceBuffer::Create(const SBufferLayout& pLayout, const void* p
 	pDevBuffer->m_bIsSrgb = false;
 	pDevBuffer->m_bAllowSrgb = false;
 	pDevBuffer->m_bIsMSAA = false;
-	pDevBuffer->m_eFlags = pLayout.m_eFlags;
+#if DURANGO_USE_ESRAM
+	pDevBuffer->m_bIsResident = false;
+#endif
 	pDevBuffer->AllocatePredefinedResourceViews();
 
 	return pDevBuffer;
@@ -242,22 +243,19 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	RenderTargetData* pRenderTargetData = nullptr;
 	HRESULT hr = S_OK;
 
-	int32 nESRAMOffset = SKIP_ESRAM;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	nESRAMOffset = pLayout.m_nESRAMOffset;
-#endif
-
 	bool bIsSRGB = pLayout.m_bIsSRGB;
 #if CRY_PLATFORM_MAC
 	if (!(pLayout.m_eFlags & FT_FROMIMAGE) && IsBlockCompressed(m_eTFDst))
 		bIsSRGB = true;
 #endif
 
+#if defined(SUPPORT_DEVICE_INFO)
 	CD3D9Renderer* r = gcpRendD3D;
+#endif //defined(SUPPORT_DEVICE_INFO)
 	uint32 nWdt = pLayout.m_nWidth;
 	uint32 nHgt = pLayout.m_nHeight;
 	uint32 nDepth = pLayout.m_nDepth;
-	uint32 nMips = pLayout.m_nMips;
+	uint8  nMips = pLayout.m_nMips;
 	uint32 nArraySize = pLayout.m_nArraySize;
 	D3DFormat D3DFmt = pLayout.m_pPixelFormat->DeviceFormat;
 
@@ -307,16 +305,13 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		{
 			eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
 			if (nMips <= 1)
-				nMips = max(1, CTexture::CalcNumMips(nWdt, nHgt) - 2);
+				nMips = std::max<int8>(1, CTexture::CalcNumMips(nWdt, nHgt) - 2);
 			CRY_ASSERT(!pPayload); // Not allowed as this is not what the outside expects
 		}
 
 		if (pLayout.m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 		{
 			pRenderTargetData = new RenderTargetData();
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-			pRenderTargetData->m_nESRAMOffset = nESRAMOffset;
-#endif
 		}
 
 		DXGI_FORMAT nFormatOrig = D3DFmt;
@@ -358,7 +353,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 			}
 
 			{
-				hr = GetDeviceObjectFactory().Create2DTexture(nWdt, nHgt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload, nESRAMOffset);
+				hr = GetDeviceObjectFactory().Create2DTexture(nWdt, nHgt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
 				if (!FAILED(hr) && pDevTexture)
 					pDevTexture->SetNoDelete(!!(pLayout.m_eFlags & FT_DONT_RELEASE));
 			}
@@ -386,7 +381,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 				TI.m_nDstMSAASamples = pRenderTargetData->m_nMSAASamples;
 				TI.m_nDstMSAAQuality = pRenderTargetData->m_nMSAAQuality;
 
-				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, pLayout.m_nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pRenderTargetData->m_pDeviceTextureMSAA, &TI);
+				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pRenderTargetData->m_pDeviceTextureMSAA, &TI);
 
 				assert(SUCCEEDED(hr));
 
@@ -394,7 +389,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 			}
 
 			{
-				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, pLayout.m_nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
+				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
 				if (!FAILED(hr) && pDevTexture)
 					pDevTexture->SetNoDelete(!!(pLayout.m_eFlags & FT_DONT_RELEASE));
 			}
@@ -461,7 +456,8 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	{
 		pDevTexture->m_pRenderTargetData = pRenderTargetData;
 		pDevTexture->m_eNativeFormat = D3DFmt;
-		pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8);
+		pDevTexture->m_eFlags = eFlags | stagingFlags;
+		pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None);
 		pDevTexture->m_subResources[eSubResource_Mips] = nMips;
 		pDevTexture->m_subResources[eSubResource_Slices] = nArraySize;
 		pDevTexture->m_eTT = pLayout.m_eTT;
@@ -469,7 +465,9 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		pDevTexture->m_bIsSrgb = bIsSRGB;
 		pDevTexture->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 		pDevTexture->m_bIsMSAA = false;
-		pDevTexture->m_eFlags = eFlags | stagingFlags;
+#if DURANGO_USE_ESRAM
+		pDevTexture->m_bIsResident = false;
+#endif
 		pDevTexture->AllocatePredefinedResourceViews();
 	}
 
@@ -477,7 +475,8 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	{
 		pRenderTargetData->m_pDeviceTextureMSAA->m_pRenderTargetData = nullptr;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eNativeFormat = D3DFmt;
-		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8) * pRenderTargetData->m_nMSAASamples;
+		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags | stagingFlags;
+		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None) * pRenderTargetData->m_nMSAASamples;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Mips] = nMips;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Slices] = nArraySize;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eTT = pLayout.m_eTT;
@@ -485,7 +484,9 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsSrgb = bIsSRGB;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsMSAA = true;
-		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags | stagingFlags;
+#if DURANGO_USE_ESRAM
+		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsResident = false;
+#endif
 		pRenderTargetData->m_pDeviceTextureMSAA->AllocatePredefinedResourceViews();
 	}
 
@@ -497,22 +498,20 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 	CDeviceTexture* pDevTexture = new CDeviceTexture();
 	RenderTargetData* pRenderTargetData = nullptr;
 
-	int32 nESRAMOffset = SKIP_ESRAM;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	nESRAMOffset = pLayout.m_nESRAMOffset;
-#endif
-
 	bool bIsSRGB = pLayout.m_bIsSRGB;
 #if CRY_PLATFORM_MAC
 	if (!(pLayout.m_eFlags & FT_FROMIMAGE) && IsBlockCompressed(m_eTFDst))
 		bIsSRGB = true;
 #endif
 
+#if defined(SUPPORT_DEVICE_INFO)
 	CD3D9Renderer* r = gcpRendD3D;
+#endif //defined(SUPPORT_DEVICE_INFO)
+	
 	uint32 nWdt = pLayout.m_nWidth;
 	uint32 nHgt = pLayout.m_nHeight;
 	uint32 nDepth = pLayout.m_nDepth;
-	uint32 nMips = pLayout.m_nMips;
+	int8   nMips = pLayout.m_nMips;
 	uint32 nArraySize = pLayout.m_nArraySize;
 	D3DFormat D3DFmt = pLayout.m_pPixelFormat->DeviceFormat;
 
@@ -553,14 +552,11 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 		if (pLayout.m_eFlags & FT_FORCE_MIPS)
 			eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
 		if (pLayout.m_eFlags & FT_USAGE_MSAA)
-			__debugbreak(); // TODO: one texture given, two textures needed
+			CRY_ASSERT_MESSAGE(false, "Handling of flag FT_USAGE_MSAA not implemented yet."); // TODO: one texture given, two textures needed
 
 		if (pLayout.m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 		{
 			pRenderTargetData = new RenderTargetData();
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-			pRenderTargetData->m_nESRAMOffset = nESRAMOffset;
-#endif
 		}
 
 		bIsSRGB &= (pLayout.m_pPixelFormat->Options & FMTSUPPORT_SRGB) && (pLayout.m_eFlags & (FT_USAGE_MSAA | FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)) == 0;
@@ -577,7 +573,8 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 
 	pDevTexture->m_pRenderTargetData = pRenderTargetData;
 	pDevTexture->m_eNativeFormat = D3DFmt;
-	pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8);
+	pDevTexture->m_eFlags = eFlags;
+	pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None);
 	pDevTexture->m_subResources[eSubResource_Mips] = nMips;
 	pDevTexture->m_subResources[eSubResource_Slices] = nArraySize;
 	pDevTexture->m_eTT = pLayout.m_eTT;
@@ -585,13 +582,16 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 	pDevTexture->m_bIsSrgb = bIsSRGB;
 	pDevTexture->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 	pDevTexture->m_bIsMSAA = false;
-	pDevTexture->m_eFlags = eFlags;
+#if DURANGO_USE_ESRAM
+	pDevTexture->m_bIsResident = false;
+#endif
 	pDevTexture->AllocatePredefinedResourceViews();
 
 	if (pRenderTargetData && pRenderTargetData->m_pDeviceTextureMSAA)
 	{
 		pRenderTargetData->m_pDeviceTextureMSAA->m_pRenderTargetData = nullptr;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eNativeFormat = D3DFmt;
+		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = pDevTexture->m_resourceElements * pRenderTargetData->m_nMSAASamples;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Mips] = nMips;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Slices] = nArraySize;
@@ -600,7 +600,9 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsSrgb = bIsSRGB;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsMSAA = true;
-		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags;
+#if DURANGO_USE_ESRAM
+		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsResident = false;
+#endif
 		pRenderTargetData->m_pDeviceTextureMSAA->AllocatePredefinedResourceViews();
 	}
 
@@ -636,6 +638,11 @@ int CDeviceTexture::Cleanup()
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && DEVRES_USE_PINNING
 		if (nRef <= 0 && m_gpuHdl.IsValid())
 		{
+			if (m_Pinned)
+			{
+				CryWarning(VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "Freeing a texture from the texture pool while it is still pinned!");
+			}
+			CRY_ASSERT(!m_Pinned);
 			GetDeviceObjectFactory().m_texturePool.Free(m_gpuHdl);
 			m_gpuHdl = SGPUMemHdl();
 		}
@@ -748,7 +755,7 @@ uint32 CDeviceTexture::TextureDataSize(D3DBaseView* pView, const uint numRects, 
 }
 
 #if !CRY_PLATFORM_CONSOLE
-uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
+uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
 {
 	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM_None);
 }

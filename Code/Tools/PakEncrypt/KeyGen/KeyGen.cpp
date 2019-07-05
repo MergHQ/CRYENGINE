@@ -4,8 +4,11 @@
 #include <time.h>
 #include <string>
 #include <errno.h>
-#include <direct.h>
-#include "tchar.h"
+
+#if WIN32
+	#include <direct.h>
+	#include "tchar.h"
+#endif
 
 //Template public key - Replace with actual key data
 const char *szPublicKeyPattern ="#ifndef __PUBLICKEY__H__\n#define __PUBLICKEY__H__\nstatic unsigned char g_rsa_public_key_data[] =\n{\n%s\n};\n#endif";
@@ -30,7 +33,7 @@ int ExportKey(const char *szFilePattern, const unsigned char *szExportedKey, con
 	for(unsigned long byteIndex=0; byteIndex < ulExportedKeyLength; byteIndex++)
 	{
 		char szExportBuf[5];
-		sprintf_s(szExportBuf, sizeof(szExportBuf), "0x%X%X", szExportedKey[byteIndex]>>4, szExportedKey[byteIndex]&0x0F);
+		snprintf(szExportBuf, sizeof(szExportBuf), "0x%X%X", szExportedKey[byteIndex]>>4, szExportedKey[byteIndex]&0x0F);
 		sExportString += szExportBuf;
 		if(byteIndex < (ulExportedKeyLength-1))
 		{
@@ -43,10 +46,10 @@ int ExportKey(const char *szFilePattern, const unsigned char *szExportedKey, con
 	}
 
 	char szHeaderBuffer[4096];
-	sprintf_s(szHeaderBuffer, sizeof(szHeaderBuffer), szFilePattern, sExportString.c_str());
+	snprintf(szHeaderBuffer, sizeof(szHeaderBuffer), szFilePattern, sExportString.c_str());
 
 	FILE *pHeaderFile;
-	errno_t fopenResult = _tfopen_s(&pHeaderFile, tszFileName, _T("wb"));
+	int fopenResult = _tfopen_s(&pHeaderFile, tszFileName, _T("wb"));
 	if(fopenResult != 0)
 	{
 		_ftprintf(stderr, _T("Failed to open %s to write: %d"), tszFileName, fopenResult);
@@ -55,7 +58,7 @@ int ExportKey(const char *szFilePattern, const unsigned char *szExportedKey, con
 	size_t fwriteBytes = fwrite(szHeaderBuffer, 1, strlen(szHeaderBuffer), pHeaderFile);
 	if(fwriteBytes < strlen(szHeaderBuffer))
 	{
-		_ftprintf(stderr, _T("Wrote an unexpected number of bytes to %s: %d (expected %d)"), tszFileName, fwriteBytes, strlen(szHeaderBuffer));
+		_ftprintf(stderr, _T("Wrote an unexpected number of bytes to %s: %lu (expected %lu)"), tszFileName, fwriteBytes, strlen(szHeaderBuffer));
 		return 1;
 	}
 	fclose(pHeaderFile);

@@ -2,6 +2,7 @@
 #include "VehicleComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace Cry
 {
@@ -250,12 +251,12 @@ namespace Cry
 			}
 		}
 
-		uint64 CVehiclePhysicsComponent::GetEventMask() const 
+		Cry::Entity::EventFlags CVehiclePhysicsComponent::GetEventMask() const
 		{
-			uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) | ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			Cry::Entity::EventFlags bitFlags = ENTITY_EVENT_UPDATE | ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 			if (m_bSendCollisionSignal)
 			{
-				bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
+				bitFlags |= ENTITY_EVENT_COLLISION;
 			}
 
 			return bitFlags;

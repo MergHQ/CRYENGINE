@@ -139,9 +139,9 @@ void CoverUser::UpdateCoverEyes()
 	}
 }
 
-void CoverUser::Update(float timeDelta)
+void CoverUser::Update(const CTimeValue frameStartTime, const float timeDelta)
 {
-	CRY_PROFILE_REGION(PROFILE_AI, "CoverUser::Update");
+	CRY_PROFILE_SECTION(PROFILE_AI, "CoverUser::Update");
 
 	UpdateBlacklisted(timeDelta);
 
@@ -161,7 +161,6 @@ void CoverUser::Update(float timeDelta)
 
 			m_distanceFromCoverLocationSqr = (currentPos - coverPos).len2();
 
-			EntityId compromisedByEntityId = INVALID_ENTITYID;
 			bool wasCompromised = m_compromised;
 			m_compromised = UpdateCompromised(coverPos, coverNormal, m_params.minEffectiveCoverHeight);
 			if (!wasCompromised && m_compromised)

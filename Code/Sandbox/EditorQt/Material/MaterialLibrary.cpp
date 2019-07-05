@@ -129,4 +129,3 @@ void CMaterialLibrary::RemoveAllItems()
 	m_items.clear();
 	Release();
 }
-

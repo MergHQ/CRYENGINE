@@ -16,9 +16,9 @@
 #include <Material/MaterialHelpers.h>
 
 // EditorCommon
-#include "FilePathUtil.h"
-#include <FileDialogs/EngineFileDialog.h>
+#include "PathUtils.h"
 #include <Controls/QuestionDialog.h>
+#include <FileDialogs/EngineFileDialog.h>
 
 #include <QFileInfo>
 #include <QDir>
@@ -270,4 +270,3 @@ void CCreateMaterialTask::FinishTask(bool bTaskSucceeded)
 
 	delete this;
 }
-

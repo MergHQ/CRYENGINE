@@ -7,8 +7,6 @@ sources_platform(ALL)
 add_sources("CryFlowGraph_flowsystem_nodes_uber.cpp"
 	SOURCE_GROUP "Flow System\\\\Nodes"
 		"FlowSystem/Nodes/FlowVRNodes.cpp"
-		"FlowSystem/Nodes/ColorGradientNode.cpp"
-		"FlowSystem/Nodes/ColorGradientNode.h"
 		"FlowSystem/Nodes/ComputeLightingNode.cpp"
 		"FlowSystem/Nodes/EntitiesInRangeNode.cpp"
 		"FlowSystem/Nodes/FlowCVarsNode.cpp"
@@ -55,10 +53,15 @@ add_sources("CryFlowGraph_flowsystem_nodes_uber.cpp"
 		"FlowSystem/Nodes/PlaySequenceNode.cpp"
 		"FlowSystem/Nodes/FlowExecuteStringNode.cpp"
 		"FlowSystem/Nodes/FlowNodeStereoparameters.cpp"
+		"FlowSystem/Nodes/FlowAudioDefaultTriggerNode.cpp"
+		"FlowSystem/Nodes/FlowAudioParameter.cpp"
 		"FlowSystem/Nodes/FlowAudioPreloadData.cpp"
 		"FlowSystem/Nodes/FlowAudioRtpcNode.cpp"
+		"FlowSystem/Nodes/FlowAudioSettingNode.cpp"
 		"FlowSystem/Nodes/FlowAudioSwitchNode.cpp"
+		"FlowSystem/Nodes/FlowAudioSwitchStateNode.cpp"
 		"FlowSystem/Nodes/FlowAudioTriggerNode.cpp"
+		"FlowSystem/Nodes/FlowAudioTriggerWithCallbacksNode.cpp"
 		"FlowSystem/Nodes/FlowAutoNoiseNodes.cpp"
 		"FlowSystem/Nodes/FlowAttachmentNodes.cpp"
 		"FlowSystem/Nodes/FlowCustomActionNodes.cpp"
@@ -144,3 +147,42 @@ CryEngineModule(CryFlowGraph PCH "StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
 target_include_directories(${THIS_PROJECT} PRIVATE .)
 #target_include_directories(${THIS_PROJECT} PRIVATE ../CryAction)
 
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-reorder
+		-Wno-unknown-pragmas
+		-Wno-parentheses
+		-Wno-switch
+		-Wno-format
+		-Wno-unused-private-field
+		-Wno-unused-value
+		-Wno-multichar
+		-Wno-empty-body
+		-Wno-unused-lambda-capture
+		-Wno-unused-function
+		-Wno-char-subscripts
+		-Wno-comment
+		-Wno-c++11-narrowing
+	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-unused-function
+		-Wno-unused-value
+		-Wno-sign-compare
+		-Wno-ignored-attributes
+		-Wno-int-in-bool-context
+		-Wno-unused-but-set-variable
+		-Wno-misleading-indentation
+		-Wno-maybe-uninitialized
+		-Wno-unknown-pragmas
+		-Wno-unused-const-variable
+		-Wno-strict-aliasing
+		-Wno-multichar
+		-Wno-char-subscripts
+		-Wno-parentheses
+		-Wno-comment
+		-Wno-address
+		-Wno-format
+		-Wno-switch
+	)
+endif()

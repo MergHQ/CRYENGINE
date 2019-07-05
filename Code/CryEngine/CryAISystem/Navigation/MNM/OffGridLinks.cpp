@@ -6,11 +6,14 @@
 #include "../NavigationSystem/NavigationSystem.h"
 #include "Tile.h"
 
+namespace MNM
+{
+
 // This needs to be static because OffMeshNavigationManager expects all link ids to be
 // unique, and there is one of these per navigation mesh.
-MNM::OffMeshLinkID MNM::OffMeshNavigation::s_linkIDGenerator = MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID;
+MNM::OffMeshLinkID MNM::OffMeshNavigation::s_linkIDGenerator = MNM::OffMeshLinkID();
 
-void MNM::OffMeshNavigation::TileLinks::CopyLinks(TriangleLink* links, uint16 linkCount)
+void OffMeshNavigation::TileLinks::CopyLinks(TriangleLink* links, uint16 linkCount)
 {
 	if (triangleLinkCount != linkCount)
 	{
@@ -26,19 +29,30 @@ void MNM::OffMeshNavigation::TileLinks::CopyLinks(TriangleLink* links, uint16 li
 		memcpy(triangleLinks, links, sizeof(TriangleLink) * linkCount);
 }
 
-void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, OffMeshLinkID& linkID)
+OffMeshLinkID OffMeshNavigation::GenerateLinkId()
+{
+	// Generate new link id
+	do
+	{
+		s_linkIDGenerator = MNM::OffMeshLinkID(s_linkIDGenerator.GetValue() + 1);
+	} while (!s_linkIDGenerator.IsValid());
+
+	return s_linkIDGenerator;
+}
+
+void OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID startTriangleID, const TriangleID endTriangleID, const OffMeshLinkID linkID)
 {
 	// We only support 1024 links per tile
-	const int kMaxTileLinks = 1024;
+	const int kMaxTileLinks = MNM::Constants::TileOffmeshLinksMaxCount;
 
 	//////////////////////////////////////////////////////////////////////////
-	/// Figure out the tile to operate on.
-	MNM::TileID tileID = MNM::ComputeTileID(startTriangleID);
+	// Figure out the tile to operate on.
+	TileID tileID = ComputeTileID(startTriangleID);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Attempt to find the current link data for this tile or create one if not already cached
 	TileLinks& tileLinks = m_tilesLinks[tileID];
-	CRY_ASSERT_TRACE(tileLinks.triangleLinkCount + 1 < kMaxTileLinks, ("Maximum number of offmesh links in tile reached! (tileID = %u, links count = %d)", tileID, tileLinks.triangleLinkCount));
+	CRY_ASSERT(tileLinks.triangleLinkCount + 1 < kMaxTileLinks, "Maximum number of offmesh links in tile reached! (tileID = %u, links count = %d)", tileID, tileLinks.triangleLinkCount);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Find if we have entries for this triangle, if not insert at the end
@@ -54,19 +68,8 @@ void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const Trian
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// If a valid link ID has been passed in, use it instead of generating a new one
-	// This can occur when re-adding existing links to a modified mesh.
-	if (linkID == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
-	{
-		// Generate new link id
-		// NOTE: Zero is an invalid link ID
-		while (++s_linkIDGenerator == MNM::Constants::eOffMeshLinks_InvalidOffMeshLinkID)
-			;
-		linkID = s_linkIDGenerator;
-	}
 	// A link ID should never be larger than the latest generated
-	CRY_ASSERT_TRACE(linkID <= s_linkIDGenerator, ("A link ID should not be larger than the latest generated (linkID = %u, lastGenerated = %u)", linkID, s_linkIDGenerator));
+	CRY_ASSERT(linkID <= s_linkIDGenerator, "A link ID should not be larger than the latest generated (linkID = %u, lastGenerated = %u)", linkID.GetValue(), s_linkIDGenerator.GetValue());
 
 	//////////////////////////////////////////////////////////////////////////
 	// Begin insert/copy process
@@ -118,16 +121,15 @@ void MNM::OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const Trian
 	}
 }
 
-void MNM::OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const TriangleID boundTriangleID, const OffMeshLinkID linkID)
+void OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const TriangleID boundTriangleID, const OffMeshLinkID linkID)
 {
-	MNM::TileID tileID = ComputeTileID(boundTriangleID);
+	TileID tileID = ComputeTileID(boundTriangleID);
 
 	TTilesLinks::iterator tileLinksIt = m_tilesLinks.find(tileID);
 
 	if (tileLinksIt != m_tilesLinks.end())
 	{
-		const int maxTileLinks = 1024;
-		TriangleLink tempTriangleLinks[maxTileLinks];
+		TriangleLink tempTriangleLinks[MNM::Constants::TileOffmeshLinksMaxCount];
 
 		TileLinks& tileLinks = tileLinksIt->second;
 
@@ -169,7 +171,7 @@ void MNM::OffMeshNavigation::RemoveLink(NavigationMesh& navigationMesh, const Tr
 	}
 }
 
-void MNM::OffMeshNavigation::InvalidateLinks(const TileID tileID)
+void OffMeshNavigation::InvalidateAllLinksForTile(const TileID tileID)
 {
 	// Remove all links associated with the provided tile ID
 
@@ -180,7 +182,7 @@ void MNM::OffMeshNavigation::InvalidateLinks(const TileID tileID)
 	}
 }
 
-MNM::OffMeshNavigation::QueryLinksResult MNM::OffMeshNavigation::GetLinksForTriangle(const TriangleID triangleID, const uint16 index) const
+OffMeshNavigation::QueryLinksResult OffMeshNavigation::GetLinksForTriangle(const TriangleID triangleID, const uint16 index) const
 {
 	const MNM::TileID& tileID = ComputeTileID(triangleID);
 
@@ -215,8 +217,7 @@ MNM::OffMeshNavigation::QueryLinksResult MNM::OffMeshNavigation::GetLinksForTria
 }
 
 #if DEBUG_MNM_ENABLED
-
-MNM::OffMeshNavigation::ProfileMemoryStats MNM::OffMeshNavigation::GetMemoryStats(ICrySizer* pSizer) const
+OffMeshNavigation::ProfileMemoryStats OffMeshNavigation::GetMemoryStats(ICrySizer* pSizer) const
 {
 	ProfileMemoryStats memoryStats;
 
@@ -238,5 +239,7 @@ MNM::OffMeshNavigation::ProfileMemoryStats MNM::OffMeshNavigation::GetMemoryStat
 
 	return memoryStats;
 }
-
 #endif
+
+} // namespace MNM
+

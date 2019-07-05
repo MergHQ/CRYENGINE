@@ -8,6 +8,7 @@
 
 #include "StdAfx.h"
 #include "Player.h"
+#include "GameCVars.h"
 #include "ILevelSystem.h"
 
 #include <CryAISystem/IAIActor.h>

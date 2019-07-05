@@ -16,8 +16,9 @@
 
 #include "ObjectModel.h"
 
-class CInspector;
+class CInspectorLegacy;
 class QAction;
+class QCommandAction;
 class QVBoxLayout;
 
 namespace Schematyc {
@@ -59,7 +60,7 @@ public:
 	~CMainWindow();
 
 	// CEditor
-	virtual const char* GetEditorName() const override { return "Schematyc Editor"; };
+	virtual const char* GetEditorName() const override { return "Schematyc Editor"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
 	// ~CEditor
@@ -77,15 +78,14 @@ public:
 	CAsset* GetAsset() const { return m_pAsset; }
 
 protected:
-	// CEditor
-	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
-	// ~CEditor
 
 	// CAssetEditor
 	virtual bool OnOpenAsset(CAsset* pAsset) override;
 	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
 	virtual bool OnAboutToCloseAsset(string& reason) const override;
 	virtual void OnCloseAsset() override;
+	virtual void OnInitialize() override;
+	virtual void OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
 	// ~CAssetEditor
 
 	void SaveState();
@@ -106,16 +106,15 @@ protected Q_SLOTS:
 	void OnGraphViewWidgetDestruction(QObject* pObject);
 
 private:
-	void                             RegisterWidgets();
+	void                             RegisterActions();
 	void                             InitMenu();
-	void                             InitToolbar(QVBoxLayout* pWindowLayout);
 
-	virtual bool                     OnUndo() override;
-	virtual bool                     OnRedo() override;
-	virtual bool                     OnCopy() override;
-	virtual bool                     OnCut() override;
-	virtual bool                     OnPaste() override;
-	virtual bool                     OnDelete() override;
+	bool                     OnUndo();
+	bool                     OnRedo();
+	bool                     OnCopy();
+	bool                     OnCut();
+	bool                     OnPaste();
+	bool                     OnDelete();
 
 	void                             ConfigureLogs();
 	void                             LoadSettings();
@@ -131,7 +130,7 @@ private:
 	Schematyc::CLogWidget*           CreateLogWidget();
 	Schematyc::CPreviewWidget*       CreatePreviewWidget();
 	Schematyc::CScriptBrowserWidget* CreateScriptBrowserWidget();
-	CInspector*                      CreateInspectorWidget();
+	CInspectorLegacy*                CreateInspectorWidget();
 	CGraphViewWidget*                CreateGraphViewWidget();
 
 private:
@@ -150,13 +149,12 @@ private:
 	QAction*                         m_pCompileAllMenuAction;
 	QAction*                         m_pRefreshEnvironmentMenuAction;
 
-	QAction*                         m_pClearLogToolbarAction;
-	QAction*                         m_pShowLogSettingsToolbarAction;
-	QAction*                         m_pShowPreviewSettingsToolbarAction;
+	QCommandAction*                  m_pClearLogToolbarAction;
+	QCommandAction*                  m_pShowLogSettingsToolbarAction;
+	QCommandAction*                  m_pShowPreviewSettingsToolbarAction;
 
-	CInspector*                      m_pInspector;
+	CInspectorLegacy*                m_pInspector;
 	CGraphViewWidget*                m_pGraphView;
 };
 
 } // Schematyc
-

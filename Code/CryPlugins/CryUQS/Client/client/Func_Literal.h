@@ -42,12 +42,12 @@ namespace UQS
 			CFunc_Literal<TLiteral>::CFunc_Literal(const SCtorContext& ctorContext)
 				: BaseClass(ctorContext)
 			{
-				assert(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
+				CRY_ASSERT(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
 
-				const Core::ILeafFunctionReturnValue::SLiteralInfo literalInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetLiteral(ctorContext.blackboard);
+				const Core::ILeafFunctionReturnValue::SLiteralInfo literalInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetLiteral(ctorContext.queryContext);
 
 				// if this fails then something might have gone wrong in CInputBlueprint::Resolve()
-				assert(literalInfo.type == Shared::SDataTypeHelper<TLiteral>::GetTypeInfo());
+				CRY_ASSERT(literalInfo.type == Shared::SDataTypeHelper<TLiteral>::GetTypeInfo());
 
 				m_literal = *static_cast<const TLiteral*>(literalInfo.pValue);
 			}

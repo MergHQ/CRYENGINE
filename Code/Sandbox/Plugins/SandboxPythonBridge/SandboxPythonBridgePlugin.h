@@ -13,4 +13,3 @@ public:
 	virtual const char* GetPluginName() override;
 	virtual const char* GetPluginDescription() override;
 };
-

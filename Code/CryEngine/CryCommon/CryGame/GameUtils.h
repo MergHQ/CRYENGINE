@@ -1,22 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description: Implements some utilities.
-
-   -------------------------------------------------------------------------
-   History:
-   - 4:11:2004: Created by Filippo De Luca
-
-*************************************************************************/
-#ifndef __GAME_UTILS_H__
-#define __GAME_UTILS_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 //! Normalize the val to 0-360 range.
 ILINE f32 Snap_s360(f32 val)
@@ -73,6 +57,13 @@ inline void Interpolate(Ang3& actual, const Ang3& goal, float speed, float frame
 	}
 
 	actual += delta * min(frameTime * speed, 1.0f);
+}
+
+//! Interpolate quaternion.
+inline void Interpolate(Quat& actual, const Quat& goal, float speed, float frameTime)
+{
+	const Quat delta(goal - actual);
+	actual += delta * std::min<float>(frameTime * speed, 1.0f);
 }
 
 //! Interpolate 3-vector.
@@ -220,7 +211,7 @@ inline const char* GetPrettyAsyncTime()
 	sTimeString.Format("%02d:%02d:%02d.%03d", (int)hours, (int)minutes, (int)seconds, (int)milliseconds);
 	return sTimeString.c_str();
 }
-};
+}
 
 template<class T, class U>
 struct TKeyValuePair
@@ -364,5 +355,3 @@ struct SStringPool
 	}
 	std::set<string> m_pool;
 };
-
-#endif //__GAME_UTILS_H__

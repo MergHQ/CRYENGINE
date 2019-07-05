@@ -8,8 +8,15 @@
 #include "Util/KDTree.h"
 #include "Objects/Group.h"
 #include "Objects/DisplayContext.h"
+#include "IEditorImpl.h"
 
 #include <EditorFramework/Editor.h>
+#include <IUndoManager.h>
+#include <Util/Math.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IIndexedMesh.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 IMPLEMENT_DYNCREATE(CVertexSnappingModeTool, CEditTool)
 
@@ -36,8 +43,8 @@ int VertexSnappingCVars::ed_vert_snapping_show_spatial_partition = 0;
 class CVertexSnappingModeToolClassDesc : public IClassDesc
 {
 	ESystemClassID SystemClassID()   { return ESYSTEM_CLASS_EDITTOOL; }
-	const char*    ClassName()       { return "EditTool.VertexSnappingMode"; };
-	const char*    Category()        { return "Select"; };
+	const char*    ClassName()       { return "EditTool.VertexSnappingMode"; }
+	const char*    Category()        { return "Select"; }
 	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVertexSnappingModeTool); }
 };
 
@@ -248,7 +255,7 @@ Vec3 CVertexSnappingModeTool::GetCubeSize(IDisplayViewport* pView, const Vec3& p
 	return gVertexSnappingPreferences.vertexCubeSize() * Vec3(fScreenFactor, fScreenFactor, fScreenFactor);
 }
 
-void CVertexSnappingModeTool::Display(struct DisplayContext& dc)
+void CVertexSnappingModeTool::Display(SDisplayContext& dc)
 {
 	const ColorB SnappedColor(0xFF00FF00);
 	const ColorB PivotColor(0xFF2020FF);
@@ -314,7 +321,7 @@ void CVertexSnappingModeTool::Display(struct DisplayContext& dc)
 	}
 }
 
-void CVertexSnappingModeTool::DrawVertexCubes(DisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj)
+void CVertexSnappingModeTool::DrawVertexCubes(SDisplayContext& dc, const Matrix34& tm, IStatObj* pStatObj)
 {
 	if (!pStatObj)
 		return;
@@ -359,4 +366,3 @@ CKDTree* CVertexSnappingModeTool::GetKDTree(CBaseObject* pObject)
 
 	return pTree;
 }
-

@@ -1,35 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   - 3:8:2004   11:23 : Created by Márcio Martins
-
-*************************************************************************/
-
 #pragma once
 
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
-#include <IGameObjectSystem.h>
-#include <IGameObject.h>
-#include <CryCore/Platform/IPlatformOS.h>
-#include <IActorSystem.h>
-#include <CryCore/StlUtils.h>
 #include <CryPhysics/RayCastQueue.h>
 #include <CryPhysics/IntersectionTestQueue.h>
 
-#include "TelemetryCollector.h"
-
 #include "Network/GameNetworkDefines.h"
-#include "Network/Lobby/MatchMakingTelemetry.h"
-
-#include <CryCore/Platform/CryWindows.h>
+#include "TelemetryCollector.h"
+#include <CryCore/Platform/IPlatformOS.h>
+#include <CryInput/IInput.h>
+#include <CryLobby/ICryLobbyEvent.h>
+#include <CryAction/IActionMapManager.h>
 
 #define GAME_NAME     "GAMESDK"
 #define GAME_LONGNAME "CRYENGINE GAME SDK"
@@ -74,12 +57,14 @@ class CScriptBind_MatchMaking;
 class CScriptBind_Turret;
 class CScriptBind_ProtectedBinds;
 class CScriptBind_LightningArc;
+class CScriptBind_DialogSystem;
 class CWeaponSystem;
 class CGameTokenSignalCreator;
 
 class CProfileOptions;
 class CTacticalManager;
 class CWarningsManager;
+class CMatchmakingTelemetry;
 #if defined(ENABLE_PROFILING_CODE)
 class CTelemetryBuffer;
 #endif
@@ -156,13 +141,8 @@ class CStatsEntityIdRegistry;
 
 class CMovingPlatformMgr;
 class CGamePhysicsSettings;
-
-namespace Graphics
-{
-class CColorGradientManager;
-//	class CScreenFader;
-//	class CPostEffectBlender;
-}
+class CDialogSystem;
+class CSubtitleManager;
 
 enum AsyncState
 {
@@ -558,9 +538,10 @@ public:
 	CDownloadMgr*            GetDownloadMgr()               { return m_pDownloadMgr; }
 	CDLCManager*             GetDLCManager()                { return m_pDLCManager; }
 	CWorldBuilder*           GetWorldBuilder()              { return m_pWorldBuilder; }
+	CDialogSystem*           GetDialogSystem()              { return m_pDialogSystem; }
 
-	CGameCache&              GetGameCache()                 { CRY_ASSERT_MESSAGE(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
-	const CGameCache&        GetGameCache() const           { CRY_ASSERT_MESSAGE(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
+	CGameCache&              GetGameCache()                 { CRY_ASSERT(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
+	const CGameCache&        GetGameCache() const           { CRY_ASSERT(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
 
 	ILINE CUIManager*        GetUI(void)                    { return m_pUIManager; }
 	ILINE CTacticalManager*  GetTacticalManager(void) const { return m_pTacticalManager; }
@@ -619,9 +600,6 @@ public:
 	virtual void LoadActionMaps(const char* filename = "libs/config/defaultProfile.xml");
 
 	void         QueueDeferredKill(const EntityId entityId);
-
-	void         OnEditorDisplayRenderUpdated(bool displayHelpers) { m_editorDisplayHelpers = displayHelpers; }
-	bool         DisplayEditorHelpersEnabled() const               { return m_editorDisplayHelpers; }
 
 	void         SetRenderingToHMD(bool bRenderingToHMD)           { m_RenderingToHMD = bRenderingToHMD; }
 	bool         IsRenderingToHMD() const                          { return m_RenderingToHMD; }
@@ -801,6 +779,8 @@ protected:
 
 	CWeaponSystem*        m_pWeaponSystem;
 	CGamePhysicsSettings* m_pGamePhysicsSettings;
+	CDialogSystem*        m_pDialogSystem;
+	CSubtitleManager*     m_pSubtitleManager;
 
 	bool                  m_bReload;
 	bool                  m_gameTypeMultiplayer;
@@ -808,7 +788,6 @@ protected:
 	bool                  m_userProfileChanged;
 	bool                  m_bLastSaveDirty;
 	bool                  m_needsInitPatchables;
-	bool                  m_editorDisplayHelpers;
 	bool                  m_RenderingToHMD;
 
 	// script binds
@@ -826,6 +805,7 @@ protected:
 	CScriptBind_Turret*            m_pScriptBindTurret;
 	CScriptBind_ProtectedBinds*    m_pScriptBindProtected;
 	CScriptBind_LightningArc*      m_pScriptBindLightningArc;
+	CScriptBind_DialogSystem*      m_pScriptBindDialogSystem;
 
 	//vis table
 	CPlayerVisTable*          m_pPlayerVisTable;
@@ -1017,6 +997,9 @@ private:
 #endif
 
 	uint64                   m_stereoOutputFunctorId;
+
+	uint64 m_maxPlayerCallbackIndex = -1;
+	uint64 m_migrationTimeoutCallbackIndex = -1;
 };
 
 extern CGame* g_pGame;

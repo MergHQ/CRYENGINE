@@ -22,6 +22,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/IStreamEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryMath/LCGRandom.h>
 
 const float CVisRegTest::MaxStreamingWait = 30.0f;
 
@@ -315,6 +316,7 @@ void CVisRegTest::Finish()
 
 bool CVisRegTest::WriteResults()
 {
+#if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 	stack_string filename("%USER%/TestResults/VisReg/");
 	filename += m_testName + "/visreg_results.xml";
 
@@ -350,6 +352,7 @@ bool CVisRegTest::WriteResults()
 	fprintf(f, "\t</testsuite>\n");
 	fprintf(f, "</testsuites>");
 	fclose(f);
+#endif
 
 	return true;
 }

@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __entityprototypemanager_h__
-#define __entityprototypemanager_h__
 #pragma once
 
 #include "BaseLibraryManager.h"
@@ -9,6 +7,7 @@
 
 class CEntityPrototype;
 class CEntityPrototypeLibrary;
+class CPakFile;
 
 /** Manages all entity prototypes and prototype libraries.
  */
@@ -44,12 +43,9 @@ private:
 	virtual CBaseLibraryItem* MakeNewItem();
 	virtual CBaseLibrary*     MakeNewLibrary();
 	//! Root node where this library will be saved.
-	virtual string           GetRootNodeName();
+	virtual string            GetRootNodeName();
 	//! Path to libraries in this manager.
-	virtual string           GetLibsPath();
+	virtual string            GetLibsPath();
 
 	string m_libsPath;
 };
-
-#endif // __entityprototypemanager_h__
-

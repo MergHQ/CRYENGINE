@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannTagEditorDialog_h__
-#define __MannTagEditorDialog_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "Controls/TagSelectionControl.h"
 
@@ -47,6 +42,9 @@ protected:
 	void          SelectTagDefByFilename(const CString& filename);
 
 	afx_msg void  OnEditTagDefs();
+
+	void RefreshFragmentTagDefinitionsComboBox();
+
 	afx_msg void  OnCbnSelchangeFragfileCombo();
 	afx_msg void  OnBnClickedCreateAdbFile();
 
@@ -81,6 +79,3 @@ private:
 	TEntryContainer m_entries;
 	TEntryContainer m_vFragADBFiles;
 };
-
-#endif
-

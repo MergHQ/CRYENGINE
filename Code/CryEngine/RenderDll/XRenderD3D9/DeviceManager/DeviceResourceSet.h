@@ -17,7 +17,6 @@ class CHWShader_D3D;
 class CShader;
 class CTexture;
 class CCryNameTSCRC;
-class CCryDeviceWrapper;
 class CConstantBuffer;
 class CDeviceBuffer;
 class CDeviceTexture;
@@ -71,9 +70,9 @@ struct SResourceMemoryAlignment
 		SResourceMemoryAlignment linear =
 		{
 			sizeof(T),
-			sizeof(T) * width,
-			sizeof(T) * width * height,
-			sizeof(T) * width * height * depth
+			static_cast<UINT>(sizeof(T) * width),			// We can be confident that the values passed fit in a UINT, even if T is an unsigned long.
+			static_cast<UINT>(sizeof(T) * width * height),
+			static_cast<UINT>(sizeof(T) * width * height * depth)
 		};
 
 		return linear;
@@ -162,7 +161,9 @@ struct STexturePayload
 
 ////////////////////////////////////////////////////////////////////////////
 
-const int ResourceSetBufferCount = 8;
+const int ResourceSetMaxUavCount = 8;      // Maximum number of UAVs per resource set. Internal Dx11 limitation, increase if necessary
+const int ResourceSetMaxSrvCount = 64;     // Internal limitation
+const int ResourceSetMaxSamplerCount = 16; // Maximum number of Samplers per resource set. Dx11 limitation, DO NOT CHANGE!
 
 class CDeviceResourceSetDesc : NoCopy
 {
@@ -257,13 +258,14 @@ typedef std::shared_ptr<CDeviceResourceSet> CDeviceResourceSetPtr;
 
 ////////////////////////////////////////////////////////////////////////////
 
-typedef std::bitset<EResourceLayoutSlot_Max + 1> UsedBindSlotSet;
+typedef std::bitset<EResourceLayoutSlot_Num> UsedBindSlotSet;
 
 struct SDeviceResourceLayoutDesc
 {
 	enum class ELayoutSlotType : uint8
 	{
 		InlineConstantBuffer,
+		InlineShaderResource,
 		ResourceSet
 	};
 
@@ -277,9 +279,9 @@ struct SDeviceResourceLayoutDesc
 	};
 
 	void            SetConstantBuffer(uint32 bindSlot, EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages);
+	void            SetShaderResource(uint32 bindSlot, EShaderResourceShaderSlot shaderSlot, EShaderStage shaderStages);
 	void            SetResourceSet(uint32 bindSlot, const CDeviceResourceSetDesc& resourceSet);
 
-	bool            IsValid() const;
 	UsedBindSlotSet GetRequiredResourceBindings() const;
 
 	uint64          GetHash() const;

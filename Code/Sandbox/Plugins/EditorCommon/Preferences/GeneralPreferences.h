@@ -46,4 +46,3 @@ struct SEditorFilePreferences : public SPreferencePage
 
 EDITOR_COMMON_API extern SEditorGeneralPreferences gEditorGeneralPreferences;
 EDITOR_COMMON_API extern SEditorFilePreferences gEditorFilePreferences;
-

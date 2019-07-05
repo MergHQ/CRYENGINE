@@ -10,6 +10,8 @@
 
 #include <CryGame/IGameFramework.h>
 
+struct IFFont;
+
 class CPersistantDebug : public IPersistantDebug, public ILogCallback
 {
 public:

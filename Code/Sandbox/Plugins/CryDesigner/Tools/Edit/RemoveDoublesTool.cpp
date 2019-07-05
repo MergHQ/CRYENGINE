@@ -99,4 +99,3 @@ bool RemoveDoublesTool::HasVertexInList(const std::vector<BrushVec3>& vList, con
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_RemoveDoubles, eToolGroup_Edit, "Remove Doubles", RemoveDoublesTool,
                                                            removedoubles, "runs remove doubles tool", "designer.removedoubles")
-

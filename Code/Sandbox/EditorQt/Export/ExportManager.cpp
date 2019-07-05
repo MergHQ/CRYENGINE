@@ -1,37 +1,33 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include "ExportManager.h"
 
+#include "Geometry/EdGeometry.h"
+#include "Material/Material.h"
 #include "Objects/SelectionGroup.h"
-#include "Objects/BaseObject.h"
 #include "Objects/BrushObject.h"
 #include "Objects/CameraObject.h"
-#include "Geometry/EdGeometry.h"
-#include <Cry3DEngine/IIndexedMesh.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryAnimation/IAttachment.h>
-#include <CrySystem/IProjectManager.h>
-#include "Objects/EntityObject.h"
-#include "Material/Material.h"
 #include "Terrain/TerrainManager.h"
 #include "Vegetation/VegetationMap.h"
-#include "Vegetation/VegetationObject.h"
-#include "ViewManager.h"
-#include "ExportManager.h"
-#include "OBJExporter.h"
-#include "OCMExporter.h"
 #include "FBXExporterDialog.h"
-#include "RenderViewport.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "QT/Widgets/QWaitProgress.h"
-#include "Controls/QuestionDialog.h"
+#include "GameEngine.h"
+#include "OCMExporter.h"
+#include "OBJExporter.h"
 
-// CExportManager
-CExportManager::CExportManager() :
-	m_isPrecaching(false),
-	m_pBaseObj(0),
-	m_fScale(100.0f), // this scale is used by CryEngine RC
-	m_bAnimationExport(false)
+#include <IObjectManager.h>
+#include <Controls/QuestionDialog.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <Objects/BaseObject.h>
+#include <QT/Widgets/QWaitProgress.h>
+
+#include <CrySystem/IProjectManager.h>
+
+CExportManager::CExportManager() 
+	: m_isPrecaching(false)
+	, m_pBaseObj(0)
+	, m_fScale(100.0f) // this scale is used by CryEngine RC
+	, m_bAnimationExport(false)
 {
 	RegisterExporter(new COBJExporter());
 	RegisterExporter(new COCMExporter());
@@ -144,11 +140,10 @@ void CExportManager::AddMesh(SExportObject* pObj, const IIndexedMesh* pIndMesh, 
 			pMesh->m_faces.reserve(nTris);
 			for (int f = 0; f < nTris; ++f)
 			{
-				Export::Face face;
-				face.idx[0] = *(pIndices++) + newOffsetIndex;
-				face.idx[1] = *(pIndices++) + newOffsetIndex;
-				face.idx[2] = *(pIndices++) + newOffsetIndex;
-				pMesh->m_faces.push_back(face);
+				const uint32 i0 = *(pIndices++) + newOffsetIndex;
+				const uint32 i1 = *(pIndices++) + newOffsetIndex;
+				const uint32 i2 = *(pIndices++) + newOffsetIndex;
+				pMesh->m_faces.emplace_back(i0, i1, i2);
 			}
 
 			if (pMtl)
@@ -179,11 +174,10 @@ void CExportManager::AddMesh(SExportObject* pObj, const IIndexedMesh* pIndMesh, 
 			pMesh->m_faces.reserve(nTris);
 			for (int f = 0; f < nTris; ++f)
 			{
-				Export::Face face;
-				face.idx[0] = *(pIndices++) + newOffsetIndex;
-				face.idx[1] = *(pIndices++) + newOffsetIndex;
-				face.idx[2] = *(pIndices++) + newOffsetIndex;
-				pMesh->m_faces.push_back(face);
+				const uint32 i0 = *(pIndices++) + newOffsetIndex;
+				const uint32 i1 = *(pIndices++) + newOffsetIndex;
+				const uint32 i2 = *(pIndices++) + newOffsetIndex;
+				pMesh->m_faces.emplace_back(i0, i1, i2);
 			}
 		}
 		else
@@ -191,11 +185,10 @@ void CExportManager::AddMesh(SExportObject* pObj, const IIndexedMesh* pIndMesh, 
 			pMesh->m_faces.reserve(meshDesc.m_nFaceCount);
 			for (int f = 0; f < meshDesc.m_nFaceCount; ++f)
 			{
-				Export::Face face;
-				face.idx[0] = meshDesc.m_pFaces[f].v[0];
-				face.idx[1] = meshDesc.m_pFaces[f].v[1];
-				face.idx[2] = meshDesc.m_pFaces[f].v[2];
-				pMesh->m_faces.push_back(face);
+				pMesh->m_faces.emplace_back(
+					meshDesc.m_pFaces[f].v[0],
+					meshDesc.m_pFaces[f].v[1],
+					meshDesc.m_pFaces[f].v[2]);
 			}
 		}
 
@@ -582,8 +575,7 @@ bool CExportManager::IsNotChildOfGroup(CBaseObject* pObj)
 
 bool CExportManager::AddSelectedRegionObjects()
 {
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return false;
 
@@ -617,8 +609,7 @@ bool CExportManager::AddSelectedRegionObjects()
 
 bool CExportManager::AddTerrain()
 {
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return false;
 
@@ -692,17 +683,16 @@ bool CExportManager::AddTerrain()
 	{
 		for (int x = 0; x < nExportWidth; ++x)
 		{
-			int nExtendedWidth = nExportWidth + 1;
-			Export::Face face;
-			face.idx[0] = x + (y) * nExtendedWidth;
-			face.idx[1] = x + (y + 1) * nExtendedWidth;
-			face.idx[2] = x + 1 + (y) * nExtendedWidth;
-			pMesh->m_faces.push_back(face);
+			const int nExtendedWidth = nExportWidth + 1;
+			const uint32 i00 = x + (y) * nExtendedWidth;
+			const uint32 i01 = x + (y + 1) * nExtendedWidth;
+			const uint32 i02 = x + 1 + (y) * nExtendedWidth;
+			pMesh->m_faces.emplace_back(i00, i01, i02);
 
-			face.idx[0] = x + 1 + (y) * nExtendedWidth;
-			face.idx[1] = x + (y + 1) * nExtendedWidth;
-			face.idx[2] = x + 1 + (y + 1) * nExtendedWidth;
-			pMesh->m_faces.push_back(face);
+			const uint32 i10 = x + 1 + (y)* nExtendedWidth;
+			const uint32 i11 = x + (y + 1) * nExtendedWidth;
+			const uint32 i12 = x + 1 + (y + 1) * nExtendedWidth;
+			pMesh->m_faces.emplace_back(i10, i11, i12);
 		}
 
 		if (nExportHeight >= 10 && y % (nExportHeight / 10) == 0 && !progress.Step(100 * y / nExportHeight))
@@ -749,8 +739,8 @@ bool CExportManager::AddVegetation()
 {
 	if (m_isOccluder)
 		return false;
-	AABB box;
-	GetIEditorImpl()->GetSelectedRegion(box);
+
+	AABB box = GetIEditorImpl()->GetLevelEditorSharedState()->GetSelectedRegion();
 	if (box.IsEmpty())
 		return false;
 
@@ -877,6 +867,11 @@ bool CExportManager::ExportToFile(const char* filename, bool bClearDataAfterExpo
 		return false;
 	}
 
+	for (auto& object : m_data.m_objects)
+	{
+		object->Weld();
+	}
+
 	for (int i = 0; i < m_exporters.size(); ++i)
 	{
 		IExporter* pExporter = m_exporters[i];
@@ -999,3 +994,42 @@ bool CExportManager::ExportSingleStatObj(IStatObj* pStatObj, const char* filenam
 	return true;
 }
 
+namespace Private_ExportManager
+{
+void ExportOcclusionMesh()
+{
+	CExportManager* pExportManager = static_cast<CExportManager*>(GetIEditorImpl()->GetExportManager());
+	string levelName = GetIEditorImpl()->GetGameEngine()->GetLevelName();
+	string levelPath = GetIEditorImpl()->GetGameEngine()->GetLevelPath();
+	pExportManager->Export(levelName, "ocm", levelPath, false, false, false, true);
+}
+
+void ExportSelectedObjects()
+{
+	CExportManager* pExportManager = static_cast<CExportManager*>(GetIEditorImpl()->GetExportManager());
+	string filename = "untitled";
+	CBaseObject* pObj = GetIEditorImpl()->GetSelectedObject();
+	if (pObj)
+	{
+		filename = pObj->GetName();
+	}
+	else
+	{
+		string levelName = GetIEditorImpl()->GetGameEngine()->GetLevelName();
+		if (!levelName.IsEmpty())
+			filename = levelName;
+	}
+	string levelPath = GetIEditorImpl()->GetGameEngine()->GetLevelPath();
+	pExportManager->Export(filename, "obj", levelPath);
+}
+}
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_ExportManager::ExportOcclusionMesh, exporter, export_occlusion_mesh,
+                                   CCommandDescription("Exports the current level's occlusion mesh"));
+REGISTER_EDITOR_UI_COMMAND_DESC(exporter, export_occlusion_mesh, "Export Occlusion Mesh...", "", "", false);
+REGISTER_COMMAND_REMAPPING(ui_action, actionExport_Occlusion_Mesh, exporter, export_occlusion_mesh)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_ExportManager::ExportSelectedObjects, exporter, export_selected_objects,
+                                   CCommandDescription("Exports selected object meshes"));
+REGISTER_EDITOR_UI_COMMAND_DESC(exporter, export_selected_objects, "Export Selected Objects...", "", "icons:Tools/Export_Selected_Objects.ico", false);
+REGISTER_COMMAND_REMAPPING(ui_action, actionExport_Selected_Objects, exporter, export_selected_objects)

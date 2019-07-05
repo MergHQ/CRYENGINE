@@ -2,12 +2,13 @@
 
 #include "stdafx.h"
 #include "MannTagEditorDialog.h"
-#include "MannequinDialog.h"
-#include "MannTagDefEditorDialog.h"
-#include <ICryMannequinEditor.h>
-#include <CryGame/IGameFramework.h>
+
 #include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
+#include "MannTagDefEditorDialog.h"
+#include "MannequinDialog.h"
+#include <CryGame/IGameFramework.h>
+#include <ICryMannequinEditor.h>
+#include <PathUtils.h>
 
 enum
 {
@@ -243,6 +244,8 @@ void CMannTagEditorDialog::InitialiseFragmentTags(const CTagDefinition* pTagDef)
 
 	InitialiseFragmentTagsRec(MANNEQUIN_FOLDER);
 
+	RefreshFragmentTagDefinitionsComboBox();
+
 	SelectTagDefByTagDef(pTagDef);
 }
 
@@ -416,6 +419,14 @@ void CMannTagEditorDialog::OnEditTagDefs()
 	CMannTagDefEditorDialog dialog(displayName);
 	dialog.DoModal();
 
+	RefreshFragmentTagDefinitionsComboBox();
+
+	const CTagDefinition* pFragTagDef = m_contexts->m_controllerDef->GetFragmentTagDef(m_fragmentID);
+	SelectTagDefByTagDef(pFragTagDef);
+}
+
+void CMannTagEditorDialog::RefreshFragmentTagDefinitionsComboBox()
+{
 	// Update the list of tag defs in the combo box in case new ones have been created
 	m_tagDefComboBox.ResetContent();
 	m_entries.clear();
@@ -429,9 +440,6 @@ void CMannTagEditorDialog::OnEditTagDefs()
 	{
 		AddTagDef((*it)->GetFilename());
 	}
-
-	const CTagDefinition* pFragTagDef = m_contexts->m_controllerDef->GetFragmentTagDef(m_fragmentID);
-	SelectTagDefByTagDef(pFragTagDef);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -562,4 +570,3 @@ void CMannTagEditorDialog::OnBnClickedCreateAdbFile()
 		ResetFragmentADBs();
 	}
 }
-

@@ -3,31 +3,17 @@
 #include "StdAfx.h"
 #include "ModelViewport.h"
 
-#include <CryMath/Cry_Vector3.h>
-#include <CryGame/IGameFramework.h>
-#include <CryRenderer/IRenderer.h>
-#include <CryRenderer/IShader.h>
-#include <CryAudio/IListener.h>
-
-#include <CryAnimation/ICryAnimation.h>
-#include <CryAnimation/IAttachment.h>
-#include <CryAnimation/CryCharMorphParams.h>
-
-#include <CryAnimation/CryCharAnimationParams.h>
-#include <CryAnimation/IFacialAnimation.h>
-
-#include "Objects/DisplayContext.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryPhysics/IPhysics.h>
-#include <CrySystem/ITimer.h>
-#include <CryRenderer/IRenderAuxGeom.h>
-#include "Controls/QuestionDialog.h"
-#include "FilePathUtil.h"
-
-#include "RenderLock.h"
 #include "IDataBaseItem.h"
+#include "RenderLock.h"
+#include "Controls/QuestionDialog.h"
 
+#include <CryAudio/IListener.h>
+#include <CryAudio/IAudioSystem.h>
+#include <CryPhysics/IPhysics.h>
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <CryAnimation/IAttachment.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 //uint32 g_ypos = 0;
 
@@ -50,13 +36,9 @@ static const char* szSupportedExt[] =
 	"cga",
 	"cga(c)",
 	"cid",
-	"caf"
-};
+	"caf" };
 
 }
-
-/////////////////////////////////////////////////////////////////////////////
-// CModelViewport
 
 CModelViewport::CModelViewport(const char* settingsPath)
 {
@@ -81,14 +63,11 @@ CModelViewport::CModelViewport(const char* settingsPath)
 
 	m_camRadius = 10;
 
-	m_moveSpeed = 0.1;
+	m_moveSpeed = 0.1f;
 	m_LightRotationRadian = 0.0f;
 
 	m_weaponIK = false;
 
-	m_pRESky = 0;
-	m_pSkyboxName = 0;
-	m_pSkyBoxShader = NULL;
 	m_pPhysicalEntity = NULL;
 
 	m_attachBone = "weapon_bone";
@@ -184,7 +163,6 @@ CModelViewport::CModelViewport(const char* settingsPath)
 	if (GetIEditor()->IsInPreviewMode())
 	{
 		// In preview mode create a simple physical grid, so we can register physical entities.
-		int nCellSize = 4;
 		IPhysicalWorld* pPhysWorld = gEnv->pPhysicalWorld;
 		if (pPhysWorld)
 		{
@@ -202,10 +180,9 @@ CModelViewport::CModelViewport(const char* settingsPath)
 	if (gEnv->pInput)
 	{
 		gEnv->pInput->AddEventListener(this);
-		uint32 test = gEnv->pInput->HasInputDeviceOfType(eIDT_Gamepad);
 	}
 
-	m_pIAudioListener = gEnv->pAudioSystem->CreateListener();
+	m_pIAudioListener = gEnv->pAudioSystem->CreateListener(m_viewTM, "ModelViewport");
 	m_AABB.Reset();
 }
 
@@ -224,196 +201,193 @@ bool CModelViewport::IsPreviewableFileType(const char* szPath)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::SaveDebugOptions() const
 {
 	//TODO save this in personalization
-/*
-	CXTRegistryManager regMgr;
-	string str;
-	const string strSection = _T(m_settingsPath);
+	/*
+	   CXTRegistryManager regMgr;
+	   string str;
+	   const string strSection = _T(m_settingsPath);
 
-	CVarBlock* vb = GetVarObject()->GetVarBlock();
-	int32 vbCount = vb->GetNumVariables();
+	   CVarBlock* vb = GetVarObject()->GetVarBlock();
+	   int32 vbCount = vb->GetNumVariables();
 
-	regMgr.WriteProfileInt(strSection, _T("iDebugOptionCount"), vbCount);
+	   regMgr.WriteProfileInt(strSection, _T("iDebugOptionCount"), vbCount);
 
-	char keyType[64], keyValue[64];
-	for (int32 i = 0; i < vbCount; ++i)
-	{
-		IVariable* var = vb->GetVariable(i);
-		IVariable::EType vType = var->GetType();
-		cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
-		cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
-		switch (vType)
-		{
-		case IVariable::UNKNOWN:
-			{
-				break;
-			}
-		case IVariable::INT:
-			{
-				int32 value = 0;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::INT);
-				regMgr.WriteProfileInt(strSection, _T(keyValue), value);
+	   char keyType[64], keyValue[64];
+	   for (int32 i = 0; i < vbCount; ++i)
+	   {
+	    IVariable* var = vb->GetVariable(i);
+	    IVariable::EType vType = var->GetType();
+	    cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
+	    cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
+	    switch (vType)
+	    {
+	    case IVariable::UNKNOWN:
+	      {
+	        break;
+	      }
+	    case IVariable::INT:
+	      {
+	        int32 value = 0;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::INT);
+	        regMgr.WriteProfileInt(strSection, _T(keyValue), value);
 
-				break;
-			}
-		case IVariable::BOOL:
-			{
-				BOOL value = 0;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::BOOL);
-				regMgr.WriteProfileInt(strSection, _T(keyValue), value);
-				break;
-			}
-		case IVariable::FLOAT:
-			{
-				f32 value = 0;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::FLOAT);
-				regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), sizeof(f32));
-				break;
-			}
-		case IVariable::VECTOR:
-			{
-				Vec3 value;
-				var->Get(value);
-				f32 valueArray[3];
-				valueArray[0] = value.x;
-				valueArray[1] = value.y;
-				valueArray[2] = value.z;
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::VECTOR);
-				regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 3 * sizeof(f32));
+	        break;
+	      }
+	    case IVariable::BOOL:
+	      {
+	        BOOL value = 0;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::BOOL);
+	        regMgr.WriteProfileInt(strSection, _T(keyValue), value);
+	        break;
+	      }
+	    case IVariable::FLOAT:
+	      {
+	        f32 value = 0;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::FLOAT);
+	        regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), sizeof(f32));
+	        break;
+	      }
+	    case IVariable::VECTOR:
+	      {
+	        Vec3 value;
+	        var->Get(value);
+	        f32 valueArray[3];
+	        valueArray[0] = value.x;
+	        valueArray[1] = value.y;
+	        valueArray[2] = value.z;
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::VECTOR);
+	        regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 3 * sizeof(f32));
 
-				break;
-			}
-		case IVariable::QUAT:
-			{
-				Quat value;
-				var->Get(value);
-				f32 valueArray[4];
-				valueArray[0] = value.w;
-				valueArray[1] = value.v.x;
-				valueArray[2] = value.v.y;
-				valueArray[3] = value.v.z;
+	        break;
+	      }
+	    case IVariable::QUAT:
+	      {
+	        Quat value;
+	        var->Get(value);
+	        f32 valueArray[4];
+	        valueArray[0] = value.w;
+	        valueArray[1] = value.v.x;
+	        valueArray[2] = value.v.y;
+	        valueArray[3] = value.v.z;
 
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
-				regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 4 * sizeof(f32));
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
+	        regMgr.WriteProfileBinary(strSection, _T(keyValue), (LPBYTE)(&value), 4 * sizeof(f32));
 
-				break;
-			}
-		case IVariable::STRING:
-			{
-				string value;
-				var->Get(value);
-				regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
-				regMgr.WriteProfileString(strSection, _T(keyValue), value);
+	        break;
+	      }
+	    case IVariable::STRING:
+	      {
+	        string value;
+	        var->Get(value);
+	        regMgr.WriteProfileInt(strSection, _T(keyType), IVariable::QUAT);
+	        regMgr.WriteProfileString(strSection, _T(keyValue), value);
 
-				break;
-			}
-		case IVariable::ARRAY:
-			{
-				break;
-			}
-		default:
-			break;
-		}
-	}*/
+	        break;
+	      }
+	    case IVariable::ARRAY:
+	      {
+	        break;
+	      }
+	    default:
+	      break;
+	    }
+	   }*/
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::RestoreDebugOptions()
 {
-/*
-	CXTRegistryManager regMgr;
-	string str;
-	const string strSection = _T(m_settingsPath);
+	/*
+	   CXTRegistryManager regMgr;
+	   string str;
+	   const string strSection = _T(m_settingsPath);
 
-	f32 floatValue = .0f;
-	UINT byteNum = sizeof(f32);
-	string strRead = "";
-	int32 iRead = 0;
-	BOOL bRead = FALSE;
-	f32 fRead = .0f;
-	LPBYTE pbtData = NULL;
-	UINT bytes = 0;
+	   f32 floatValue = .0f;
+	   UINT byteNum = sizeof(f32);
+	   string strRead = "";
+	   int32 iRead = 0;
+	   BOOL bRead = FALSE;
+	   f32 fRead = .0f;
+	   LPBYTE pbtData = NULL;
+	   UINT bytes = 0;
 
-	CVarBlock* vb = m_vars.GetVarBlock();
-	int32 vbCount = vb->GetNumVariables();
+	   CVarBlock* vb = m_vars.GetVarBlock();
+	   int32 vbCount = vb->GetNumVariables();
 
-	char keyType[64], keyValue[64];
-	for (int32 i = 0; i < vbCount; ++i)
-	{
-		IVariable* var = vb->GetVariable(i);
-		IVariable::EType vType = var->GetType();
-		cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
-		int32 iType = regMgr.GetProfileInt(strSection, _T(keyType), 0);
+	   char keyType[64], keyValue[64];
+	   for (int32 i = 0; i < vbCount; ++i)
+	   {
+	    IVariable* var = vb->GetVariable(i);
+	    IVariable::EType vType = var->GetType();
+	    cry_sprintf(keyType, "DebugOption_%s_type", var->GetName());
+	    int32 iType = regMgr.GetProfileInt(strSection, _T(keyType), 0);
 
-		cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
-		switch (iType)
-		{
-		case IVariable::UNKNOWN:
-			{
-				break;
-			}
-		case IVariable::INT:
-			{
-				iRead = regMgr.GetProfileInt(strSection, _T(keyValue), 0);
-				var->Set(iRead);
-				break;
-			}
-		case IVariable::BOOL:
-			{
-				bRead = regMgr.GetProfileInt(strSection, _T(keyValue), FALSE);
-				var->Set(bRead);
-				break;
-			}
-		case IVariable::FLOAT:
-			{
-				regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
-				fRead = *(f32*)(pbtData);
-				var->Set(fRead);
-				break;
-			}
-		case IVariable::VECTOR:
-			{
-				regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
-				assert(bytes == 3 * sizeof(f32));
-				f32* pfRead = (f32*)(pbtData);
+	    cry_sprintf(keyValue, "DebugOption_%s_value", var->GetName());
+	    switch (iType)
+	    {
+	    case IVariable::UNKNOWN:
+	      {
+	        break;
+	      }
+	    case IVariable::INT:
+	      {
+	        iRead = regMgr.GetProfileInt(strSection, _T(keyValue), 0);
+	        var->Set(iRead);
+	        break;
+	      }
+	    case IVariable::BOOL:
+	      {
+	        bRead = regMgr.GetProfileInt(strSection, _T(keyValue), FALSE);
+	        var->Set(bRead);
+	        break;
+	      }
+	    case IVariable::FLOAT:
+	      {
+	        regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
+	        fRead = *(f32*)(pbtData);
+	        var->Set(fRead);
+	        break;
+	      }
+	    case IVariable::VECTOR:
+	      {
+	        regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
+	        assert(bytes == 3 * sizeof(f32));
+	        f32* pfRead = (f32*)(pbtData);
 
-				Vec3 vecRead(pfRead[0], pfRead[1], pfRead[2]);
-				var->Set(vecRead);
-				break;
-			}
-		case IVariable::QUAT:
-			{
-				regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
-				assert(bytes == 4 * sizeof(f32));
-				f32* pfRead = (f32*)(pbtData);
+	        Vec3 vecRead(pfRead[0], pfRead[1], pfRead[2]);
+	        var->Set(vecRead);
+	        break;
+	      }
+	    case IVariable::QUAT:
+	      {
+	        regMgr.GetProfileBinary(strSection, _T(keyValue), &pbtData, &bytes);
+	        assert(bytes == 4 * sizeof(f32));
+	        f32* pfRead = (f32*)(pbtData);
 
-				Quat valueRead(pfRead[0], pfRead[1], pfRead[2], pfRead[3]);
-				var->Set(valueRead);
-				break;
-			}
-		case IVariable::STRING:
-			{
-				strRead = regMgr.GetProfileString(strSection, _T(keyValue), "");
-				var->Set(strRead);
-				break;
-			}
-		case IVariable::ARRAY:
-			{
-				break;
-			}
-		default:
-			break;
-		}
-	}*/
+	        Quat valueRead(pfRead[0], pfRead[1], pfRead[2], pfRead[3]);
+	        var->Set(valueRead);
+	        break;
+	      }
+	    case IVariable::STRING:
+	      {
+	        strRead = regMgr.GetProfileString(strSection, _T(keyValue), "");
+	        var->Set(strRead);
+	        break;
+	      }
+	    case IVariable::ARRAY:
+	      {
+	        break;
+	      }
+	    default:
+	      break;
+	    }
+	   }*/
 }
 
-//////////////////////////////////////////////////////////////////////////
 CModelViewport::~CModelViewport()
 {
 	OnDestroy();
@@ -436,7 +410,6 @@ CModelViewport::~CModelViewport()
 	GetIEditor()->SetConsoleVar("ca_UsePhysics", 1);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::ReleaseObject()
 {
 	if (m_object)
@@ -458,7 +431,6 @@ void CModelViewport::ReleaseObject()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CModelViewport::OnInputEvent(const SInputEvent& rInputEvent)
 {
 	if (rInputEvent.deviceType == eIDT_Gamepad)
@@ -481,7 +453,6 @@ bool CModelViewport::OnInputEvent(const SInputEvent& rInputEvent)
 	return 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::LoadObject(const string& fileName, float scale)
 {
 	m_bPaused = false;
@@ -542,7 +513,6 @@ void CModelViewport::LoadObject(const string& fileName, float scale)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::LoadStaticObject(const string& file)
 {
 	if (m_object)
@@ -562,8 +532,7 @@ void CModelViewport::LoadStaticObject(const string& file)
 	m_AABB.max = m_object->GetBoxMax();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CModelViewport::OnRender()
+void CModelViewport::OnRender(SDisplayContext& context)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -571,7 +540,7 @@ void CModelViewport::OnRender()
 	if (m_renderer)
 	{
 		SDisplayContextKey displayContextKey;
-		displayContextKey.key.emplace<HWND>(static_cast<HWND>(GetSafeHwnd()));
+		displayContextKey.key.emplace<CRY_HWND>(static_cast<CRY_HWND>(GetSafeHwnd()));
 
 		CRect rcClient;
 		GetClientRect(&rcClient);
@@ -588,13 +557,9 @@ void CModelViewport::OnRender()
 
 		Vec3 clearColor = mv_backgroundColor;
 
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, true, displayContextKey);
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, true, displayContextKey);
 		passInfo.GetIRenderView()->SetTargetClearColor(ColorF(clearColor, 1.0f), true);
-
-		{
-			CScopedWireFrameMode scopedWireFrame(m_renderer, mv_showWireframe1 ? R_WIREFRAME_MODE : R_SOLID_MODE);
-			DrawModel(passInfo);
-		}
+		DrawModel(passInfo);
 
 		ICharacterManager* pCharMan = gEnv->pCharacterManager;
 		if (pCharMan)
@@ -604,19 +569,6 @@ void CModelViewport::OnRender()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CModelViewport::DrawSkyBox(const SRenderingPassInfo& passInfo)
-{
-	CRenderObject* pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-	pObj->SetMatrix(Matrix34::CreateTranslationMat(GetViewTM().GetTranslation()), passInfo);
-
-	if (m_pSkyboxName)
-	{
-		passInfo.GetIRenderView()->AddRenderObject(m_pRESky, SShaderItem(m_pSkyBoxShader), pObj, passInfo, EFSLIST_GENERAL, 1);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
 	// TODO: Add your message handler code here and/or call default
@@ -626,7 +578,6 @@ void CModelViewport::OnLButtonDblClk(UINT nFlags, CPoint point)
 	SetViewTM(tm);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CModelViewport::OnKeyDown(uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 {
 	if (GetCharacterBase())
@@ -662,33 +613,28 @@ bool CModelViewport::OnKeyDown(uint32 nChar, uint32 nRepCnt, uint32 nFlags)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::OnLightColor(IVariable* var)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::OnShowNormals(IVariable* var)
 {
 	bool enable = mv_showNormals;
 	GetIEditor()->SetConsoleVar("r_ShowNormals", (enable) ? 1 : 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::OnShowTangents(IVariable* var)
 {
 	bool enable = mv_showTangents;
 	GetIEditor()->SetConsoleVar("r_ShowTangents", (enable) ? 1 : 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::OnCharPhysics(IVariable* var)
 {
 	bool enable = mv_useCharPhysics;
 	GetIEditor()->SetConsoleVar("ca_UsePhysics", enable);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::AttachObjectToBone(const string& model, const string& bone)
 {
 	if (!GetCharacterBase())
@@ -729,7 +675,6 @@ void CModelViewport::AttachObjectToBone(const string& model, const string& bone)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::AttachObjectToFace(const string& model)
 {
 	if (!GetCharacterBase())
@@ -756,7 +701,6 @@ void CModelViewport::AttachObjectToFace(const string& model)
 
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::OnShowShaders(IVariable* var)
 {
 	bool bEnable = mv_showShaders;
@@ -766,12 +710,8 @@ void CModelViewport::OnShowShaders(IVariable* var)
 void CModelViewport::OnDestroy()
 {
 	ReleaseObject();
-	if (m_pRESky)
-		m_pRESky->Release(false);
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -805,13 +745,11 @@ void CModelViewport::Update()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::SetCustomMaterial(IEditorMaterial* pMaterial)
 {
 	m_pCurrentMaterial = pMaterial;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IEditorMaterial* CModelViewport::GetMaterial()
 {
 	if (m_pCurrentMaterial)
@@ -833,7 +771,6 @@ IEditorMaterial* CModelViewport::GetMaterial()
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CModelViewport::CanDrop(CPoint point, IDataBaseItem* pItem)
 {
 	if (!pItem)
@@ -846,7 +783,6 @@ bool CModelViewport::CanDrop(CPoint point, IDataBaseItem* pItem)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::Drop(CPoint point, IDataBaseItem* pItem)
 {
 	if (!pItem)
@@ -861,7 +797,6 @@ void CModelViewport::Drop(CPoint point, IDataBaseItem* pItem)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::Physicalize()
 {
 	IPhysicalWorld* pPhysWorld = gEnv->pPhysicalWorld;
@@ -950,14 +885,12 @@ void CModelViewport::Physicalize()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::RePhysicalize()
 {
 	m_pPhysicalEntity = NULL;
 	Physicalize();
 }
 
-//////////////////////////////////////////////////////////////////////////
 namespace
 {
 void AllowAnimEventsToTriggerAgain(ICharacterInstance& characterInstance)
@@ -975,7 +908,6 @@ void AllowAnimEventsToTriggerAgain(ICharacterInstance& characterInstance)
 }
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::SetPaused(bool bPaused)
 {
 	//return;
@@ -1000,17 +932,15 @@ void CModelViewport::SetPaused(bool bPaused)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::DrawModel(const SRenderingPassInfo& passInfo)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	IRenderAuxGeom* pAuxGeom = m_renderer->GetIRenderAuxGeom();
+
 	m_renderer->EF_StartEf(passInfo);
 
-	//////////////////////////////////////////////////////////////////////////
-	// Draw lights.
-	//////////////////////////////////////////////////////////////////////////
+	// Draw lights
 	if (mv_lighting == true)
 	{
 		uint32 numLights = m_VPLights.size();
@@ -1087,8 +1017,7 @@ void CModelViewport::DrawModel(const SRenderingPassInfo& passInfo)
 	rp.AmbientColor.b = vAmbient.z * mv_lightMultiplier;
 	rp.AmbientColor.a = 1;
 
-	rp.dwFObjFlags = 0;
-	rp.dwFObjFlags |= FOB_TRANS_MASK;
+	rp.dwFObjFlags = FOB_TRANS_MASK;
 	if (m_pCurrentMaterial)
 		rp.pMaterial = m_pCurrentMaterial->GetMatInfo();
 
@@ -1114,17 +1043,17 @@ void CModelViewport::DrawModel(const SRenderingPassInfo& passInfo)
 	if (GetCharacterBase())
 		DrawCharacter(GetCharacterBase(), rp, passInfo);
 
-	m_renderer->EF_EndEf3D(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT, -1, -1, passInfo);
+	m_renderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
 }
 
 void CModelViewport::DrawLights(const SRenderingPassInfo& passInfo)
 {
 	//feature currently disabled
 	/*if (mv_animateLights)
-		m_LightRotationRadian += m_AverageFrameTime;
+	   m_LightRotationRadian += m_AverageFrameTime;
 
-	if (m_LightRotationRadian > gf_PI)
-		m_LightRotationRadian = -gf_PI;*/
+	   if (m_LightRotationRadian > gf_PI)
+	   m_LightRotationRadian = -gf_PI;*/
 
 	Matrix33 LightRot33 = Matrix33::CreateRotationZ(m_LightRotationRadian);
 	uint32 numLights = m_VPLights.size();
@@ -1189,13 +1118,10 @@ void CModelViewport::DrawLights(const SRenderingPassInfo& passInfo)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::PlayAnimation(const char* szName)
 {
-
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::DrawFloorGrid(const Quat& m33, const Vec3& vPhysicalLocation, const Matrix33& rGridRot, bool bInstantSubmit)
 {
 	if (!m_renderer)
@@ -1254,7 +1180,7 @@ void CModelViewport::DrawFloorGrid(const Quat& m33, const Vec3& vPhysicalLocatio
 	pAuxGeom->DrawOBB(_obb2, SlopeMat33 * Vec3(0.0f) + m_GridOrigin, 1, RGBA8(0x9f, 0x9f, 0x9f, 0x00), eBBD_Faceted);
 
 	// Draw grid.
-	const size_t nLineVertices = ( ((int)(XR / step) * 2 + 1) + ((int)(YR / step) * 2 + 1) ) * 2;
+	const size_t nLineVertices = (((int)(XR / step) * 2 + 1) + ((int)(YR / step) * 2 + 1)) * 2;
 	if (m_gridLineVertices.size() != nLineVertices) m_gridLineVertices.resize(nLineVertices);
 	Vec3* p = &m_gridLineVertices[0];
 
@@ -1262,16 +1188,16 @@ void CModelViewport::DrawFloorGrid(const Quat& m33, const Vec3& vPhysicalLocatio
 	for (float x = -XR; x < XR; x += step)
 	{
 		p[idx++] = SlopeMat33 * Vec3(x, -YR, 0) + m_GridOrigin;
-		p[idx++] = SlopeMat33 * Vec3(x,  YR, 0) + m_GridOrigin;
+		p[idx++] = SlopeMat33 * Vec3(x, YR, 0) + m_GridOrigin;
 	}
 
 	for (float y = -YR; y < YR; y += step)
 	{
 		p[idx++] = SlopeMat33 * Vec3(-XR, y, 0) + m_GridOrigin;
-		p[idx++] = SlopeMat33 * Vec3( XR, y, 0) + m_GridOrigin;
+		p[idx++] = SlopeMat33 * Vec3(XR, y, 0) + m_GridOrigin;
 	}
 
-	pAuxGeom->DrawLines( p, nLineVertices, RGBA8(0x7f, 0x7f, 0x7f, 0x00) );
+	pAuxGeom->DrawLines(p, nLineVertices, RGBA8(0x7f, 0x7f, 0x7f, 0x00));
 
 	// TODO - the grid should probably be an IRenderNode at some point
 	// flushing grid geometry now so it will not override transparent
@@ -1312,15 +1238,11 @@ void CModelViewport::DrawCoordSystem(const QuatT& location, f32 length)
 	pAuxGeom->DrawCone(location.t + absAxisZ * length * scale, absAxisZ, 0.03f * scale, 0.15f * scale, RGBA8(0x00, 0x00, 0xff, 0xff));
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CModelViewport::OnLightMultiplier(IVariable* var)
 {
-
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CModelViewport::UseAnimationDrivenMotion() const
 {
 	return false;
 }
-

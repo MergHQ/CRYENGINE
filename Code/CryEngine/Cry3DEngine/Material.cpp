@@ -15,6 +15,7 @@
 #include "MatMan.h"
 #include <CryRenderer/IRenderer.h>
 #include "VisAreas.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 DEFINE_INTRUSIVE_LINKED_LIST(CMatInfo)
 
@@ -71,7 +72,7 @@ size_t CMaterialLayer::GetResourceMemoryUsage(ICrySizer* pSizer)
 					if (piTexture)
 					{
 						SIZER_COMPONENT_NAME(pSizer, "MemoryTexture");
-						size_t nCurrentResourceMemoryUsage = piTexture->GetDataSize();
+						uint32 nCurrentResourceMemoryUsage = piTexture->GetDataSize();
 						nResourceMemory += nCurrentResourceMemoryUsage;
 						pSizer->AddObject(piTexture, nCurrentResourceMemoryUsage);
 
@@ -112,10 +113,6 @@ CMatInfo::CMatInfo()
 	m_pActiveLayer = NULL;
 
 	ZeroStruct(m_streamZoneInfo);
-
-#ifdef TRACE_MATERIAL_LEAKS
-	m_sLoadingCallstack = GetSystem()->GetLoadingProfilerCallstack();
-#endif
 
 #if defined(ENABLE_CONSOLE_MTL_VIZ)
 	m_pConsoleMtl = 0;
@@ -244,6 +241,7 @@ void CMatInfo::UpdateMaterialFlags()
 		const bool bAlphaBlended = (m_shaderItem.m_pShader->GetFlags() & (EF_NODRAW | EF_DECAL)) || (pRendShaderResources && pRendShaderResources->IsTransparent());
 		const bool bIsHair = (m_shaderItem.m_pShader->GetFlags2() & EF2_HAIR) != 0;
 		const bool bIsGlass = m_shaderItem.m_pShader->GetShaderType() == eST_Glass;
+		const bool bIsTerrain = m_shaderItem.m_pShader->GetShaderType() == eST_Terrain;
 
 		if (bAlphaBlended && !(m_shaderItem.m_pShader->GetFlags2() & EF2_NODRAW) && !(m_shaderItem.m_pShader->GetFlags() & EF_DECAL))
 		{
@@ -262,9 +260,10 @@ void CMatInfo::UpdateMaterialFlags()
 			m_Flags |= MTL_FLAG_REQUIRE_NEAREST_CUBEMAP;
 		}
 
-		// Make sure to refresh sectors
+		// Make sure to refresh sectors on terrain material changes
 		static int nLastUpdateFrameId = 0;
-		if (gEnv->IsEditing() && GetTerrain() && GetVisAreaManager() && nLastUpdateFrameId != GetRenderer()->GetFrameID())
+		if (gEnv->IsEditing() && GetTerrain() && GetVisAreaManager() && 
+			bIsTerrain && nLastUpdateFrameId != GetRenderer()->GetFrameID())
 		{
 			GetTerrain()->MarkAllSectorsAsUncompiled();
 			GetVisAreaManager()->MarkAllSectorsAsUncompiled();
@@ -814,7 +813,7 @@ const char* CMatInfo::GetLoadingCallstack()
 void CMatInfo::PrecacheMaterial(const float _fEntDistance, IRenderMesh* pRenderMesh, bool bFullUpdate, bool bDrawNear)
 {
 	//	FUNCTION_PROFILER_3DENGINE;
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	int nFlags = 0;
 	float fEntDistance;
@@ -890,12 +889,12 @@ void CMatInfo::PrecacheTextures(const float fMipFactor, const int nFlags, bool b
 			if (rZone.nRoundId == (nRoundId - 1))
 			{
 				nCurrentFlags |= rZone.bHighPriority ? FPR_HIGHPRIORITY : 0;
-				GetRenderer()->EF_PrecacheResource(&rSI, rZone.fMinMipFactor, 0, nCurrentFlags, nRoundId, 1); // accumulated value is valid
+				GetRenderer()->EF_PrecacheResource(&rSI, rZone.fMinMipFactor, 0, nCurrentFlags, nRoundId); // accumulated value is valid
 			}
 			else
 			{
 				nCurrentFlags |= (nFlags & FPR_HIGHPRIORITY);
-				GetRenderer()->EF_PrecacheResource(&rSI, fMipFactor, 0, nCurrentFlags, nRoundId, 1); // accumulated value is not valid, pass current value
+				GetRenderer()->EF_PrecacheResource(&rSI, fMipFactor, 0, nCurrentFlags, nRoundId); // accumulated value is not valid, pass current value
 			}
 		}
 
@@ -920,7 +919,7 @@ void CMatInfo::PrecacheTextures(const int iScreenTexels, const int nFlags, bool 
 		{
 			{
 				nCurrentFlags |= (nFlags & FPR_HIGHPRIORITY);
-				GetRenderer()->EF_PrecacheResource(&rSI, iScreenTexels, 0, nCurrentFlags, nRoundId, 1); // accumulated value is not valid, pass current value
+				GetRenderer()->EF_PrecacheResource(&rSI, iScreenTexels, 0, nCurrentFlags, nRoundId); // accumulated value is not valid, pass current value
 			}
 		}
 	}
@@ -1012,7 +1011,7 @@ int CMatInfo::GetTextureMemoryUsage(ICrySizer* pSizer, int nSubMtlSlot)
 				continue;
 			used.insert(pTexture);
 
-			int nTexSize = pTexture->GetDataSize();
+			uint32 nTexSize = pTexture->GetDataSize();
 			textureSize += nTexSize;
 
 			if (pSizer)

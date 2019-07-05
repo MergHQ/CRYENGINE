@@ -176,7 +176,7 @@ class CCircularBufferTimeline
 		void								SetType(
 												uint8		inType)
 											{
-												CRY_ASSERT_MESSAGE(m_type==eRBPT_Invalid || m_type==inType,"Cannot intermix different types of stats on the same event time line");
+												CRY_ASSERT(m_type==eRBPT_Invalid || m_type==inType,"Cannot intermix different types of stats on the same event time line");
 												m_type=inType;
 											}
 		uint8								GetType() const

@@ -1,15 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 2001.
-// -------------------------------------------------------------------------
-//  Created:     14/11/2001 by Timur.
-//  Description: Generic image class
-//
-////////////////////////////////////////////////////////////////////////////
+
 #include <CryRenderer/ITexture.h>
 #include "Util/MemoryBlock.h"
 
@@ -47,7 +39,7 @@ public:
 
 	const T& ValueAtSafe(int x, int y) const
 	{
-		static T zero; 
+		static T zero;
 		zero = 0;
 		if (0 <= x && x < m_width && 0 <= y && y < m_height)
 			return m_data[x + y * m_width];
@@ -124,7 +116,6 @@ public:
 		m_strDccFilename = "";
 	}
 
-	// Copy operator.
 	void Copy(const TImage<T>& img)
 	{
 		if (!img.IsValid())
@@ -136,23 +127,19 @@ public:
 		m_strDccFilename = img.m_strDccFilename;
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	void Clear()
 	{
 		Fill(0);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	void Fill(unsigned char c)
 	{
 		if (IsValid())
 			memset(GetData(), c, GetSize());
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	void GetSubImage(int x1, int y1, int width, int height, TImage<T>& img) const
 	{
-		int size = width * height;
 		img.Allocate(width, height);
 		for (int y = 0; y < height; y++)
 		{
@@ -162,7 +149,7 @@ public:
 			}
 		}
 	}
-	
+
 	void SetSubImage(int x1, int y1, const TImage<T>& subImage, float heightOffset, float fClamp = -1.0f)
 	{
 		int width = subImage.GetWidth();
@@ -262,26 +249,26 @@ public:
 		//assert( GetSize() == m_memory.GetSize() );
 	}
 
-	void           SetHasAlphaChannel(bool bHasAlphaChannel)      { m_bHasAlphaChannel = bHasAlphaChannel; }
-	void           SetIsLimitedHDR(bool bIsLimitedHDR)            { m_bIsLimitedHDR = bIsLimitedHDR; }
-	void           SetIsCubemap(bool bIsCubemap)                  { m_bIsCubemap = bIsCubemap; }
-	void           SetNumberOfMipMaps(unsigned int nNumberOfMips) { m_nNumberOfMipmaps = nNumberOfMips; }
+	void          SetHasAlphaChannel(bool bHasAlphaChannel)      { m_bHasAlphaChannel = bHasAlphaChannel; }
+	void          SetIsLimitedHDR(bool bIsLimitedHDR)            { m_bIsLimitedHDR = bIsLimitedHDR; }
+	void          SetIsCubemap(bool bIsCubemap)                  { m_bIsCubemap = bIsCubemap; }
+	void          SetNumberOfMipMaps(unsigned int nNumberOfMips) { m_nNumberOfMipmaps = nNumberOfMips; }
 
-	void           SetFormatDescription(const string& str) { m_formatDescription = str; };
-	const string& GetFormatDescription() const             { return m_formatDescription; };
+	void          SetFormatDescription(const string& str)        { m_formatDescription = str; }
+	const string& GetFormatDescription() const                   { return m_formatDescription; }
 
-	void           SetFormat(ETEX_Format format)            { m_format = format; }
-	ETEX_Format    GetFormat() const                        { return m_format; }
+	void          SetFormat(ETEX_Format format)                  { m_format = format; }
+	ETEX_Format   GetFormat() const                              { return m_format; }
 
-	void           SetSRGB(bool bEnable)                    { m_bIsSRGB = bEnable; }
-	bool           GetSRGB() const                          { return m_bIsSRGB; }
+	void          SetSRGB(bool bEnable)                          { m_bIsSRGB = bEnable; }
+	bool          GetSRGB() const                                { return m_bIsSRGB; }
 
-	void           SetDccFilename(const string& str)       { m_strDccFilename = str; };
-	const string& GetDccFilename() const                   { return m_strDccFilename; }
+	void          SetDccFilename(const string& str)              { m_strDccFilename = str; }
+	const string& GetDccFilename() const                         { return m_strDccFilename; }
 
 	// RotateOrt() — orthonormal image rotation
 	// nRot is type of rotation:
-	// 1 — 90 grads, 2 - 180 grads, 3 - 270 grads, other value - no rotation
+	// 1 - 90 grads, 2 - 180 grads, 3 - 270 grads, other value - no rotation
 	void RotateOrt(const TImage<T>& img, int nRot)
 	{
 		if (!img.IsValid())
@@ -334,8 +321,8 @@ private:
 	bool                     m_bIsCubemap;
 	bool                     m_bIsSRGB;
 	unsigned int             m_nNumberOfMipmaps;
-	string                  m_formatDescription;
-	string                  m_strDccFilename;
+	string                   m_formatDescription;
+	string                   m_strDccFilename;
 	ETEX_Format              m_format;
 };
 
@@ -343,7 +330,7 @@ private:
 class EDITOR_COMMON_API CImageEx : public TImage<unsigned int>
 {
 public:
-	CImageEx() : TImage() { m_bGetHistogramEqualization = false; };
+	CImageEx() : TImage() { m_bGetHistogramEqualization = false; }
 
 	bool LoadGrayscale16Tiff(const string& file);
 	bool SaveGrayscale16Tiff(const string& file);
@@ -353,8 +340,8 @@ public:
 	void FillAlpha(unsigned char value = 0xff);
 
 	// request histogram equalization for HDRs
-	void SetHistogramEqualization(bool bHistogramEqualization) { m_bGetHistogramEqualization = bHistogramEqualization; }
-	bool GetHistogramEqualization()                            { return m_bGetHistogramEqualization; }
+	void   SetHistogramEqualization(bool bHistogramEqualization) { m_bGetHistogramEqualization = bHistogramEqualization; }
+	bool   GetHistogramEqualization()                            { return m_bGetHistogramEqualization; }
 
 	QImage ToQImage() const;
 
@@ -368,4 +355,3 @@ private:
 typedef TImage<float>          CFloatImage;
 typedef TImage<unsigned char>  CByteImage;
 typedef TImage<unsigned short> CWordImage;
-

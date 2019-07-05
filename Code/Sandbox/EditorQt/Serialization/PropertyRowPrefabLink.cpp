@@ -24,10 +24,10 @@ struct PropertyRowPrefabLink::Picker : IPickObjectCallback
 	// and exit if we are the only owners.
 	yasli::SharedPtr<PropertyRowPrefabLink> row;
 	bool picking;
-	PropertyTree*                           tree;
+	PropertyTreeLegacy*                           tree;
 	CPrefabObject*                          prefab;
 
-	Picker(PropertyRowPrefabLink* row, PropertyTree* tree)
+	Picker(PropertyRowPrefabLink* row, PropertyTreeLegacy* tree)
 		: row(row)
 		, picking(false)
 		, tree(tree)
@@ -52,7 +52,7 @@ struct PropertyRowPrefabLink::Picker : IPickObjectCallback
 		// check if row is still there. If not, we need to quit
 		if (row->refCount() == 1)
 		{
-			GetIEditorImpl()->CancelPick();
+			GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 			return false;
 		}
 
@@ -74,7 +74,7 @@ struct PropertyRowPrefabLink::Picker : IPickObjectCallback
 
 // ---------------------------------------------------------------------------
 
-PrefabLinkMenuHandler::PrefabLinkMenuHandler(PropertyTree* tree, PropertyRowPrefabLink* self)
+PrefabLinkMenuHandler::PrefabLinkMenuHandler(PropertyTreeLegacy* tree, PropertyRowPrefabLink* self)
 	: self(self), tree(tree)
 {
 }
@@ -127,25 +127,24 @@ void PrefabLinkMenuHandler::onMenuClone()
 PropertyRowPrefabLink::~PropertyRowPrefabLink()
 {
 	if (picker_.get() && picker_->picking)
-		GetIEditorImpl()->CancelPick();
+		GetIEditorImpl()->GetLevelEditorSharedState()->CancelPick();
 }
 
 void PropertyRowPrefabLink::select()
 {
 	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
-	pObjectManager->ClearSelection();
 	CBaseObject* pObject = pObjectManager->FindObject(guid_);
 	CRY_ASSERT(pObject);
 	GetIEditorImpl()->OpenGroup(pObject->GetParent());
 	pObjectManager->SelectObject(pObject);
 }
 
-void PropertyRowPrefabLink::pick(PropertyTree* tree)
+void PropertyRowPrefabLink::pick(PropertyTreeLegacy* tree)
 {
 	if (!picker_)
 		picker_.reset(new Picker(this, tree));
 	picker_->picking = true;
-	GetIEditorImpl()->PickObject(picker_.get());
+	GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(picker_.get());
 	tree->repaint();
 }
 
@@ -199,7 +198,7 @@ void PropertyRowPrefabLink::clear()
 	guid_ = CryGUID::Null();
 }
 
-bool PropertyRowPrefabLink::onContextMenu(IMenu& menu, PropertyTree* tree)
+bool PropertyRowPrefabLink::onContextMenu(IMenu& menu, PropertyTreeLegacy* tree)
 {
 	yasli::SharedPtr<PropertyRow> selfPointer(this);
 
@@ -217,5 +216,3 @@ bool PropertyRowPrefabLink::onContextMenu(IMenu& menu, PropertyTree* tree)
 
 REGISTER_PROPERTY_ROW(PrefabLink, PropertyRowPrefabLink);
 DECLARE_SEGMENT(PropertyRowPrefabLink)
-
-

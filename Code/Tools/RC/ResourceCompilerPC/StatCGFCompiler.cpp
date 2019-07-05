@@ -344,22 +344,22 @@ static bool debugDumpCGF(const char* a_filename)
 	}
 
 	{
-		const CPhysicalizeInfoCGF* pPhys = pCGF->GetPhysicalizeInfo();
+		//const CPhysicalizeInfoCGF* pPhys = pCGF->GetPhysicalizeInfo();
 		fprintf(f, "\t" "PhysicalizeInfo: (not printed yet)\n");
 	}
 
 	{
-		CExportInfoCGF* pExport = pCGF->GetExportInfo();
+		//CExportInfoCGF* pExport = pCGF->GetExportInfo();
 		fprintf(f, "\t" "ExportInfo: (not printed yet)\n");
 	}
 
 	{
-		CSkinningInfo* pSkin = pCGF->GetSkinningInfo();
+		//CSkinningInfo* pSkin = pCGF->GetSkinningInfo();
 		fprintf(f, "\t" "SkinningInfo: (not printed yet)\n");
 	}
 
 	{
-		SFoliageInfoCGF* pSkin = pCGF->GetFoliageInfo();
+		//SFoliageInfoCGF* pSkin = pCGF->GetFoliageInfo();
 		fprintf(f, "\t" "FoliageInfo: (not printed yet)\n");
 	}
 
@@ -928,15 +928,15 @@ bool CStatCGFCompiler::Process()
 
 		{
 			const SFileVersion& fv = m_CC.pRC->GetFileVersion();
-			pCompiledCGF->GetExportInfo()->rc_version[0] = fv.v[0];
-			pCompiledCGF->GetExportInfo()->rc_version[1] = fv.v[1];
-			pCompiledCGF->GetExportInfo()->rc_version[2] = fv.v[2];
-			pCompiledCGF->GetExportInfo()->rc_version[3] = fv.v[3];
+			pCompiledCGF->GetExportInfo()->rc_version[0] = fv[0];
+			pCompiledCGF->GetExportInfo()->rc_version[1] = fv[1];
+			pCompiledCGF->GetExportInfo()->rc_version[2] = fv[2];
+			pCompiledCGF->GetExportInfo()->rc_version[3] = fv[3];
 
 			StringHelpers::SafeCopyPadZeros(
 				pCompiledCGF->GetExportInfo()->rc_version_string,
 				sizeof(pCompiledCGF->GetExportInfo()->rc_version_string),
-				StringHelpers::Format(" RCVer:%d.%d ", fv.v[2], fv.v[1]).c_str());
+				StringHelpers::Format(" RCVer:%d.%d ", fv[2], fv[1]).c_str());
 		}
 
 		std::vector<string> outputFiles;
@@ -958,7 +958,7 @@ bool CStatCGFCompiler::Process()
 
 			cgfSaver.SaveContent(pCompiledCGF, bNeedEndianSwap, bStorePositionsAsF16, bUseQuaternions, bStoreIndicesAsU16);
 
-			SetFileAttributes(outputFile, FILE_ATTRIBUTE_ARCHIVE);
+			FileUtil::MakeWritable(outputFile);
 
 			if (!chunkFile.Write(outputFile))
 			{
@@ -1031,7 +1031,7 @@ bool CStatCGFCompiler::Process()
 					lodCgfSaver.SetVertexStreamCompacting(bCompactVertexStreams);
 					lodCgfSaver.SetSubsetTexelDensityComputing(bComputeSubsetTexelDensity);
 					lodCgfSaver.SaveContent(pLodCgf, bNeedEndianSwap, bStorePositionsAsF16, bUseQuaternions, bStoreIndicesAsU16);
-					SetFileAttributes(lodFilename, FILE_ATTRIBUTE_ARCHIVE);
+					FileUtil::MakeWritable(lodFilename);
 					lodChunkFile.Write(lodFilename);
 					m_CC.pRC->AddInputOutputFilePair(m_CC.GetSourcePath(), lodFilename);
 					outputFiles.emplace_back(lodFilename);

@@ -7,6 +7,7 @@
 
 #include "GameAIHelpers.h"
 #include <CryPhysics/RayCastQueue.h>
+#include "Game.h"
 
 struct StalkerInstance : public CGameAIInstanceBase
 {

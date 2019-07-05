@@ -1,3 +1,4 @@
+include ("${CMAKE_CURRENT_LIST_DIR}/../../CrossPlatformSetup.cmake")
 set(ANDROID TRUE)
 set(OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/android")
 
@@ -18,22 +19,27 @@ set(CMAKE_ANDROID_API ${CMAKE_SYSTEM_VERSION})
 set(CMAKE_ANDROID_API_MIN ${CMAKE_SYSTEM_VERSION})
 
 set(CMAKE_ANDROID_ARCH "arm64-v8a")
+# Define an extra variable to have a value consistent with Makefile builds
+set(CMAKE_ANDROID_ARCH_FOLDER "arm64")
+set(CMAKE_ANDROID_ARCH_ABI "arm64-v8a")
 set(BUILD_PLATFORM "android-arm64-v8a")
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+set(CMAKE_SKIP_RPATH TRUE CACHE BOOL "No RPATH on Android")
 
 #set(CMAKE_SYSTEM_PROCESSOR "armv8-a")
 
 set(NDKROOT $ENV{NDKROOT})
 file(TO_CMAKE_PATH "${NDKROOT}" NDKROOT)
 string(REPLACE "\\" "/" NDKROOT "${NDKROOT}")
+set(CMAKE_ANDROID_NDK "${NDKROOT}")
 
 #set(CMAKE_SYSROOT ${NDKROOT}/platforms/android-${CMAKE_SYSTEM_VERSION}/arch-arm)
 
-include ("${CMAKE_MODULE_PATH}/../CRYENGINE-CLANG.cmake")
+include ("${CMAKE_CURRENT_LIST_DIR}/../../CRYENGINE-CLANG.cmake")
 
 #set(ANDROID_FLAGS "-DANDROID -DLINUX -DDISABLE_IMPORTGL -DHAS_STPCPY -march=armv7-a -mfpu=neon -marm -mfloat-abi=softfp")
 set(ANDROID_FLAGS "-DANDROID -DLINUX -DDISABLE_IMPORTGL -DHAS_STPCPY")
@@ -52,7 +58,7 @@ macro(configure_android_build)
 	set(apk_folder "${CMAKE_BINARY_DIR}/${THIS_PROJECT}/apk_data")
 	file(REMOVE_RECURSE "${apk_folder}")
 	file(MAKE_DIRECTORY "${apk_folder}/src")
-	file(MAKE_DIRECTORY "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
+	file(MAKE_DIRECTORY "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
 	file(MAKE_DIRECTORY "${apk_folder}/libs")
 	file(MAKE_DIRECTORY "${apk_folder}/gen")
 	file(MAKE_DIRECTORY "${apk_folder}/bin")
@@ -191,6 +197,7 @@ macro(configure_android_launcher name)
 	file(TO_CMAKE_PATH "$ENV{ANDROID_HOME}" ANDROID_SDK_DIR)
 
 	file(TO_NATIVE_PATH "${OUTPUT_DIRECTORY}" NATIVE_OUTDIR)
+	file(TO_NATIVE_PATH "${NDKROOT}" NATIVE_NDKROOT)
 	file(TO_NATIVE_PATH "${apk_folder}" apk_folder_native)
 
 	#Copy sources
@@ -203,15 +210,17 @@ macro(configure_android_launcher name)
 	endforeach()
 
 	#Copy external libs
-	file(COPY "${NDKROOT}/sources/cxx-stl/llvm-libc++/libs/${CMAKE_ANDROID_ARCH}/libc++_shared.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
-	file(COPY "${NDKROOT}/prebuilt/android-arm/gdbserver/gdbserver" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
-	file(COPY "${CMAKE_SOURCE_DIR}/Code/Tools/SDLExtension/lib/android-${CMAKE_ANDROID_ARCH}/libSDL2Ext.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
-	file(COPY "${SDK_DIR}/SDL2/lib/android-${CMAKE_ANDROID_ARCH}/libSDL2.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
-	file(COPY "${SDK_DIR}/Audio/fmod/android/api/lowlevel/lib/${CMAKE_ANDROID_ARCH}/libfmod.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
-	file(COPY "${SDK_DIR}/Audio/fmod/android/api/studio/lib/${CMAKE_ANDROID_ARCH}/libfmodstudio.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH}")
-
+	file(COPY "${NDKROOT}/sources/cxx-stl/llvm-libc++/libs/${CMAKE_ANDROID_ARCH_ABI}/libc++_shared.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+	file(COPY "${NDKROOT}/prebuilt/android-arm/gdbserver/gdbserver" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+	file(COPY "${CRYENGINE_DIR}/Code/Tools/SDLExtension/lib/android-${CMAKE_ANDROID_ARCH_ABI}/libSDL2Ext.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+	file(COPY "${SDK_DIR}/SDL2/android/${CMAKE_ANDROID_ARCH_ABI}/libSDL2.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
 	file(COPY "${ANDROID_SDK_DIR}/extras/android/support/v4/android-support-v4.jar" DESTINATION "${apk_folder}/libs")
-	file(COPY "${SDK_DIR}/Audio/fmod/android/api/lowlevel/lib/fmod.jar" DESTINATION "${apk_folder}/libs")
+
+	if (AUDIO_FMOD)
+		file(COPY "${SDK_DIR}/Audio/fmod/android/api/lowlevel/lib/${CMAKE_ANDROID_ARCH_ABI}/libfmod.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+		file(COPY "${SDK_DIR}/Audio/fmod/android/api/studio/lib/${CMAKE_ANDROID_ARCH_ABI}/libfmodstudio.so" DESTINATION "${apk_folder}/lib/${CMAKE_ANDROID_ARCH_ABI}")
+		file(COPY "${SDK_DIR}/Audio/fmod/android/api/lowlevel/lib/fmod.jar" DESTINATION "${apk_folder}/libs")
+	endif()
 
 	#Make ANT run
 	set(shared_copy)
@@ -231,6 +240,7 @@ ${name}")
 		${shared_copy}
 		${java_copy}
 		COMMAND copy /Y "${NATIVE_OUTDIR}\\lib${name}.so" ${so_paths} "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH}\\"
+		COMMAND copy /Y "$<$<CONFIG:Release>:nul>$<$<NOT:$<CONFIG:Release>>:${NATIVE_NDKROOT}\\sources\\third_party\\vulkan\\src\\build-android\\jniLibs\\${CMAKE_ANDROID_ARCH_ABI}\\lib*>" "${apk_folder_native}\\lib\\${CMAKE_ANDROID_ARCH_ABI}"
 		COMMAND call "$ENV{ANT_HOME}/bin/ant" clean
 		COMMAND call "$ENV{ANT_HOME}/bin/ant" debug
 		COMMAND copy /Y "${apk_folder_native}\\bin\\${name}-debug.apk" "${NATIVE_OUTDIR}\\${name}.apk" WORKING_DIRECTORY "${apk_folder}")	

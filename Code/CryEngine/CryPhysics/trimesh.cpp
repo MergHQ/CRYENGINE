@@ -18,7 +18,7 @@
 #include <CryMath/GeomQuery.h>
 
 InitTriMeshGlobals::InitTriMeshGlobals() {
-  for(int iCaller=0; iCaller<=MAX_PHYS_THREADS; iCaller++) {
+  for(int iCaller=0; iCaller<MAX_TOT_THREADS; iCaller++) {
     memset(G(UsedVtxMap), 0, sizeof(G(UsedVtxMap)));
     memset(G(UsedTriMap), 0, sizeof(G(UsedTriMap)));
     G(BrdPtBufPos) = 0; G(PolyPtBufPos) = 0;
@@ -677,7 +677,6 @@ CTriMesh *CTriMesh::SplitIntoIslands(plane *pGround,int nPlanes, int bOriginally
 	if (!ExpandVtxList())
 		return 0;
 
-	int iCaller = get_iCaller();
 	int i,j,imask,isle,idx,itri,ivtx,nRemovedTri=0,*pTriMap,*pVtxMap;
 	CTriMesh *pMesh=0,*pPrevMesh=0;
 	bop_meshupdate *pmu,*pmuPrev;
@@ -1127,11 +1126,10 @@ void CTriMesh::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm e
 	}
 	else
 	{
-		CGeomExtent const& extent = m_Extents[eForm];
-		if (!extent.NumParts())
+		if (!m_Extents[eForm].NumParts())
 			return points.fill(ZERO);
 		for (auto& ran : points) {
-			int nPart = extent.RandomPart(seed);
+			int nPart = m_Extents[eForm].RandomPart(seed);
 
 			int aIndices[3];
 			PosNorm aRan[3];
@@ -2737,7 +2735,7 @@ int CTriMesh::Intersect(IGeometry *pCollider, geom_world_data *pdata1,geom_world
 			ipt[1].set(float2int(pt[1].x*m_hashgrid[iPlane].stepr.x-0.5f), float2int(pt[1].y*m_hashgrid[iPlane].stepr.y-0.5f));
 			irect[0].set(max(0,min(ipt[0].x,ipt[1].x)), max(0,min(ipt[0].y,ipt[1].y)));
 			irect[1].set(min(m_hashgrid[iPlane].size.x-1,max(ipt[0].x,ipt[1].x)), min(m_hashgrid[iPlane].size.y-1,max(ipt[0].y,ipt[1].y)));
-			if (bNoBackoff-1 & (irect[0].x+1-irect[1].x>>31 | irect[0].x+1-irect[1].x>>31)) // can be ineffective for long rays
+			if (bNoBackoff-1 & (irect[0].x+1-irect[1].x>>31 | irect[0].y+1-irect[1].y>>31)) // can be ineffective for long rays
 				goto skiphashes;
 
 			nTris[iListPlane = inc_mod3[iListRes]] = 0; iListTmp = inc_mod3[iListPlane];
@@ -3204,7 +3202,8 @@ void CTriMesh::GetMemoryStatistics(ICrySizer *pSizer)
 {
 	if (GetType()==GEOM_TRIMESH)
 		pSizer->AddObject(this, sizeof(CTriMesh));
-	m_pTree->GetMemoryStatistics(pSizer);
+	if (m_pTree)
+		m_pTree->GetMemoryStatistics(pSizer);
 	int i, ivtx0; for(i=0,ivtx0=m_nVertices;i<m_nTris*3;i++) ivtx0=min(ivtx0,(int)m_pIndices[i]);
 
 	{ SIZER_COMPONENT_NAME(pSizer, "mesh data");
@@ -3760,7 +3759,7 @@ int CTriMesh::Boxify(primitives::box *pboxes,int nMaxBoxes, const SBoxificationP
 	float maxdot=cos_tpl(params.maxFaceTiltAngle), mindot=sqrt_tpl(1-maxdot*maxdot);
 	box BBox; GetBBox(&BBox);
 	float celldim=max(max(BBox.size.x,BBox.size.y),BBox.size.z)/params.voxResolution*2.001f, rcelldim=1.0f/celldim;
-	float minPatchArea=params.minFaceArea,maxCurve=maxdot,maxPatchDist=params.distFilter,minLayerFilling=params.minLayerFilling,
+	float minPatchArea=params.minFaceArea,maxPatchDist=params.distFilter,minLayerFilling=params.minLayerFilling,
 		maxLayerReusage=params.maxLayerReusage,minMatchArea=0.8f,maxPatchFaceDist=max(celldim,maxPatchDist),maxIslandConnections=params.maxVoxIslandConnections;
 
 	int i,j,ix,iy,iz,nboxes=0;
@@ -4614,7 +4613,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 		const float cosTick=cos(2*gf_PI/NRAYS), sinTick=sin(2*gf_PI/NRAYS);
 		Vec3 pthit[NRAYS],nhit[NRAYS];
 		quotientf hratio[NRAYS];
-		int nhits,nGeoms0=nGeoms;
+		int nhits;
 
 		auto LongestNormStreak = [&](std::function<bool(const Vec3&,const Vec3&)> ncheck)
 		{	// find the longest streak or norms that pass a check
@@ -4949,6 +4948,7 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 			if (nvtx && nTris) {
 				CTriMesh *pMesh = new CTriMesh();
 				pGeoms[nGeoms++] = pMesh->CreateTriMesh(vtx,&pOutTris[0].x,(char*)pOutTris,0,nTris,(nTris<11 ? mesh_SingleBB : mesh_AABB|mesh_AABB_rotated|mesh_OBB)|mesh_multicontact1);
+				memset(pMesh->m_pIds,0,nTris);
 				if (nGeoms>=params.maxGeoms)
 					break;
 			}
@@ -4960,6 +4960,14 @@ int CTriMesh::Proxify(IGeometry **&pOutGeoms, SProxifyParams *pparams)
 			(*(m_voxgrid=new voxgrid_tpl<false>)=vox).persistent = true;
 		}	else if (!params.reuseVox)
 			vox.Free();
+
+		if (!(params.findMeshes | params.findPrimLines | params.findPrimSurfaces)) {
+			CTriMesh *pMesh = new CTriMesh();
+			pGeoms[nGeoms++] = pMesh->CreateTriMesh(m_pVertices,pTris,(char*)pTris,0,nTris,(nTris<11 ? mesh_SingleBB : mesh_AABB|mesh_AABB_rotated|mesh_OBB)|mesh_multicontact1);
+			memset(pMesh->m_pIds,0,nTris);
+			if (nGeoms>=params.maxGeoms)
+					break;
+		}
 	}
 
 	if (pTris!=m_pIndices) delete[] pTris;

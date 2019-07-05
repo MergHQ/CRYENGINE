@@ -173,8 +173,8 @@ void CCommandList::End()
 	{
 		PendingResourceBarriers();
 
-		HRESULT res = m_pCmdList->Close();
-		DX12_ASSERT(res == S_OK, "Could not close command list!");
+		if (m_pCmdList->Close() != S_OK)
+			DX12_ERROR("Could not close command list!");
 	}
 
 	m_eState = CLSTATE_COMPLETED;
@@ -210,7 +210,7 @@ void CCommandList::Submit()
 	{
 		// Inject a Wait() into the CommandQueue prior to executing it to wait for all required resources being available either readable or writable
 		// *INDENT-OFF*
-#ifdef VK_IN_ORDER_SUBMISSION
+#ifdef DX12_IN_ORDER_SUBMISSION
 		         m_UsedFenceValues[CMDTYPE_ANY][CMDQUEUE_COMPUTE ] = std::max(m_UsedFenceValues[CMDTYPE_READ][CMDQUEUE_COMPUTE ], m_UsedFenceValues[CMDTYPE_WRITE][CMDQUEUE_COMPUTE ]);
 		         m_UsedFenceValues[CMDTYPE_ANY][CMDQUEUE_GRAPHICS] = std::max(m_UsedFenceValues[CMDTYPE_READ][CMDQUEUE_GRAPHICS], m_UsedFenceValues[CMDTYPE_WRITE][CMDQUEUE_GRAPHICS]);
 		         m_UsedFenceValues[CMDTYPE_ANY][CMDQUEUE_COPY    ] = std::max(m_UsedFenceValues[CMDTYPE_READ][CMDQUEUE_COPY    ], m_UsedFenceValues[CMDTYPE_WRITE][CMDQUEUE_COPY    ]);
@@ -403,7 +403,7 @@ bool CCommandList::IsFull(size_t numResources, size_t numSamplers, size_t numRen
 //---------------------------------------------------------------------------------------------------------------------
 void CCommandList::SetGraphicsRootSignature(const CRootSignature* pRootSignature, const D3D12_GPU_VIRTUAL_ADDRESS (&vConstViews)[8 /*CB_PER_FRAME*/])
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -435,7 +435,7 @@ void CCommandList::SetGraphicsRootSignature(const CRootSignature* pRootSignature
 
 void CCommandList::SetGraphicsDescriptorTables(const CRootSignature* pRootSignature, D3D12_DESCRIPTOR_HEAP_TYPE eType)
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -459,7 +459,7 @@ void CCommandList::SetGraphicsDescriptorTables(const CRootSignature* pRootSignat
 //---------------------------------------------------------------------------------------------------------------------
 void CCommandList::SetComputeRootSignature(const CRootSignature* pRootSignature, const D3D12_GPU_VIRTUAL_ADDRESS (&vConstViews)[8 /*CB_PER_FRAME*/])
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -491,7 +491,7 @@ void CCommandList::SetComputeRootSignature(const CRootSignature* pRootSignature,
 
 void CCommandList::SetComputeDescriptorTables(const CRootSignature* pRootSignature, D3D12_DESCRIPTOR_HEAP_TYPE eType)
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -541,7 +541,7 @@ void CCommandList::BindDepthStencilView(const CView& dsv)
 
 bool CCommandList::PresentSwapChain(CSwapChain* pDX12SwapChain)
 {
-	CResource& pBB = pDX12SwapChain->GetCurrentBackBuffer(); pBB.VerifyBackBuffer();
+	CResource& pBB = pDX12SwapChain->GetCurrentBackBuffer(); pBB.VerifyBackBuffer(true);
 
 	if (SetResourceState(pBB, D3D12_RESOURCE_STATE_PRESENT) != D3D12_RESOURCE_STATE_PRESENT)
 	{
@@ -589,7 +589,7 @@ void CCommandList::BindUnorderedAccessView(const CView& uav)
 //---------------------------------------------------------------------------------------------------------------------
 void CCommandList::BindResourceView(const CView& view, const TRange<UINT>& bindRange, D3D12_CPU_DESCRIPTOR_HANDLE dstHandle)
 {
-	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer();
+	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer(false);
 
 	switch (view.GetType())
 	{
@@ -648,25 +648,25 @@ void CCommandList::BindResourceView(const CView& view, const TRange<UINT>& bindR
 		break;
 
 	case EVT_DepthStencilView:
-		DX12_ASSERT(0, "Unsupported DSV creation for input!");
+		DX12_ERROR("Unsupported DSV creation for input!");
 
 		TrackResourceDSVUsage(resource, view);
 		break;
 
 	case EVT_RenderTargetView:
-		DX12_ASSERT(0, "Unsupported RTV creation for input!");
+		DX12_ERROR("Unsupported RTV creation for input!");
 
 		TrackResourceRTVUsage(resource, view);
 		break;
 
 	case EVT_VertexBufferView:
-		DX12_ASSERT(0, "Unsupported VSV creation for input!");
+		DX12_ERROR("Unsupported VSV creation for input!");
 
 		TrackResourceVBVUsage(resource);
 		break;
 
 	default:
-		DX12_ASSERT(0, "Unsupported resource-type for input!");
+		DX12_ERROR("Unsupported resource-type for input!");
 		break;
 	}
 }
@@ -829,7 +829,7 @@ void CCommandList::ClearRenderTargetView(const CView& view, const FLOAT rgba[4],
 {
 	DX12_ASSERT(INVALID_CPU_DESCRIPTOR_HANDLE != view.GetDescriptorHandle(), "View has no descriptor handle, that is not allowed!");
 
-	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer();
+	CResource& resource = view.GetDX12Resource(); resource.VerifyBackBuffer(true);
 
 	// TODO: if we know early that the resource(s) will be PRESENT we can begin the barrier early and end it here
 	TrackResourceRTVUsage(resource, view);
@@ -905,7 +905,7 @@ void CCommandList::ClearView(const CView& view, const FLOAT rgba[4], UINT NumRec
 	case EVT_ConstantBufferView:
 	case EVT_VertexBufferView:
 	default:
-		DX12_ASSERT(0, "Unsupported resource-type for input!");
+		DX12_ERROR("Unsupported resource-type for input!");
 		break;
 	}
 }
@@ -936,8 +936,8 @@ void CCommandList::CopyResource(CResource& rDstResource, CResource& rSrcResource
 	MaxResourceFenceValue(rSrcResource, CMDTYPE_WRITE);
 
 	// TODO: if we know early that the resource(s) will be DEST and SOURCE we can begin the barrier early and end it here
-	D3D12_RESOURCE_STATES prevDstState = SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
-	D3D12_RESOURCE_STATES prevSrcState = SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
+	/*D3D12_RESOURCE_STATES prevDstState = */SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
+	/*D3D12_RESOURCE_STATES prevSrcState = */SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
 
 	PendingResourceBarriers();
 
@@ -963,8 +963,8 @@ void CCommandList::CopySubresources(CResource& rDstResource, UINT dstSubResource
 	MaxResourceFenceValue(rSrcResource, CMDTYPE_WRITE);
 
 	// TODO: if we know early that the resource(s) will be DEST and SOURCE we can begin the barrier early and end it here
-	D3D12_RESOURCE_STATES prevDstState = SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
-	D3D12_RESOURCE_STATES prevSrcState = SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
+	/*D3D12_RESOURCE_STATES prevDstState = */SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
+	/*D3D12_RESOURCE_STATES prevSrcState = */SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
 
 	PendingResourceBarriers();
 
@@ -1003,8 +1003,8 @@ void CCommandList::CopySubresources(CResource& rDstResource, UINT dstSubResource
 			// NOTE: too complex case which is not supported as it leads to fe. [slice,mip] sequences like [0,4],[0,5],[0,6],[1,0],[1,1],...
 			// which we don't support because the offsets and dimensions are relative to a intermediate mip-level, while crossing the
 			// slice-boundary forces us to extrapolate dimensions to larger mips, which is probably not what is wanted in the first place.
-			DX12_ASSERT(!srcDesc.MipLevels || !((srcSubResource) % (srcDesc.MipLevels)) || (srcSubResource + NumSubresources <= srcDesc.MipLevels));
-			DX12_ASSERT(!dstDesc.MipLevels || !((dstSubResource) % (dstDesc.MipLevels)) || (dstSubResource + NumSubresources <= dstDesc.MipLevels));
+			DX12_ASSERT(!srcDesc.MipLevels || (srcSubResource / srcDesc.MipLevels == (srcSubResource + NumSubresources - 1) / srcDesc.MipLevels));
+			DX12_ASSERT(!dstDesc.MipLevels || (dstSubResource / dstDesc.MipLevels == (dstSubResource + NumSubresources - 1) / dstDesc.MipLevels));
 
 			for (UINT n = 0; n < NumSubresources; ++n)
 			{
@@ -1080,7 +1080,7 @@ void CCommandList::UpdateSubresourceRegion(CResource& rResource, UINT subResourc
 	MaxResourceFenceValue(rResource, CMDTYPE_ANY);
 
 	// TODO: if we know early that the resource(s) will be DEST we can begin the barrier early and end it here
-	D3D12_RESOURCE_STATES prevDstState = SetResourceState(rResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
+	/*D3D12_RESOURCE_STATES prevDstState = */SetResourceState(rResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
 
 	ID3D12Resource* res12 = rResource.GetD3D12Resource();
 	const D3D12_RESOURCE_DESC& desc = rResource.GetDesc();

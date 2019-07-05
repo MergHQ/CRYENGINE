@@ -11,7 +11,17 @@ class CRenderView;
 class CLensOpticsStage : public CGraphicsPipelineStage
 {
 public:
-	void      Init();
+	static const EGraphicsPipelineStage StageID = eStage_LensOptics;
+
+	CLensOpticsStage(CGraphicsPipeline& graphicsPipeline)
+		: CGraphicsPipelineStage(graphicsPipeline) {}
+
+	bool IsStageActive(EShaderRenderingFlags flags) const final
+	{
+		return CRenderer::CV_r_flares && !CRenderer::CV_r_durango_async_dips;
+	}
+
+	void      Init() final;
 	void      Execute();
 
 	bool      HasContent() const { return m_primitivesRendered>0; }
@@ -22,6 +32,6 @@ private:
 	CPrimitiveRenderPass  m_passLensOptics;
 	CSoftOcclusionManager m_softOcclusionManager;
 
-	int             m_occlusionUpdateFrame = -1;
-	int             m_primitivesRendered   =  0;
+	int                   m_occlusionUpdateFrame = -1;
+	int                   m_primitivesRendered   = 0;
 };

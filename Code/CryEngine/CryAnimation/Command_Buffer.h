@@ -23,6 +23,7 @@ public:
 	CState()
 		: m_pDefaultSkeleton(nullptr)
 		, m_location(IDENTITY)
+		, m_pFallbackPoseData(nullptr)
 		, m_pPoseData(nullptr)
 		, m_jointCount(0)
 		, m_originalTimeDelta(0.0f)
@@ -98,7 +99,7 @@ public:
 	template<class Type>
 	Type* CreateCommand()
 	{
-		assert((sizeof(Type) & 3) == 0);
+		CRY_ASSERT((sizeof(Type) & 3) == 0);
 
 		uint32 lengthFree = GetLengthFree();
 		if (lengthFree < sizeof(Type))

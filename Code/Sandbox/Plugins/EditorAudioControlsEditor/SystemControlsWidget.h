@@ -2,9 +2,8 @@
 
 #pragma once
 
+#include "Common.h"
 #include <QWidget>
-
-#include <SharedData.h>
 
 class QAction;
 class QVBoxLayout;
@@ -27,6 +26,12 @@ class CSystemControlsWidget final : public QWidget
 
 public:
 
+	CSystemControlsWidget() = delete;
+	CSystemControlsWidget(CSystemControlsWidget const&) = delete;
+	CSystemControlsWidget(CSystemControlsWidget&&) = delete;
+	CSystemControlsWidget& operator=(CSystemControlsWidget const&) = delete;
+	CSystemControlsWidget& operator=(CSystemControlsWidget&&) = delete;
+
 	CSystemControlsWidget(QWidget* const pParent);
 	virtual ~CSystemControlsWidget() override;
 
@@ -34,12 +39,10 @@ public:
 	Assets GetSelectedAssets() const;
 	void   SelectConnectedSystemControl(ControlId const systemControlId, ControlId const implItemId);
 	void   Reset();
-	void   OnAboutToReload();
-	void   OnReloaded();
-
-signals:
-
-	void SignalSelectedControlChanged();
+	void   OnBeforeReload();
+	void   OnAfterReload();
+	void   OnFileImporterOpened();
+	void   OnFileImporterClosed();
 
 private slots:
 
@@ -86,11 +89,10 @@ private:
 	QAction*                          m_pCreateStateAction;
 	QAction*                          m_pCreateEnvironmentAction;
 	QAction*                          m_pCreatePreloadAction;
+	QAction*                          m_pCreateSettingAction;
 
 	bool                              m_isReloading;
 	bool                              m_isCreatedFromMenu;
 	bool                              m_suppressRenaming;
-	int const                         m_nameColumn;
 };
 } // namespace ACE
-

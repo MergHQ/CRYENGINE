@@ -4,8 +4,8 @@
 
 #if defined(FEATURE_SVO_GI)
 
-	#include <3rdParty/concqueue/concqueue.hpp>
-	#include <CryThreading/IThreadManager.h>
+#include <3rdParty/concqueue/concqueue.hpp>
+#include <CryThreading/IThreadManager.h>	
 
 	#pragma pack(push,4)
 
@@ -20,7 +20,7 @@
 	#define SVO_ATLAS_DIM_BRICKS_Z     (CVoxelSegment::m_voxTexPoolDimZ / SVO_VOX_BRICK_MAX_SIZE)
 	#define SVO_ROOTLESS_PARENT_SIZE   512.f
 	#define SVO_STREAM_QUEUE_MAX_SIZE  12
-
+	
 typedef uint16 ObjectLayerIdType;
 const ObjectLayerIdType kInvalidObjectLayerId = 0;
 const ObjectLayerIdType kAllObjectLayersId = kInvalidObjectLayerId;
@@ -32,6 +32,7 @@ struct SVoxBrick
 		OPA3D,
 		COLOR,
 		NORML,
+		RTRIS,
 		MAX_NUM,
 	};
 
@@ -42,14 +43,10 @@ template<class T>
 class PodArrayRT : public PodArray<T>
 {
 public:
-	PodArrayRT()
-	{
-		m_bModified = false;
-		m_textureId = 0;
-	}
 	CryReadModifyLock m_Lock;
-	bool              m_bModified;
-	int               m_textureId;
+	int               m_writeOffsetReady = 0;
+	int               m_textureId = 0;
+	int               m_writeOffset = 0;
 };
 
 template<class Key, class T>
@@ -94,7 +91,7 @@ struct SVoxSegmentFileHeader
 };
 
 // SSuperMesh index type
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 typedef uint32 SMINDEX;
 	#else
 typedef uint16 SMINDEX;
@@ -104,9 +101,7 @@ struct SRayHitTriangleIndexed
 {
 	SRayHitTriangleIndexed() { ZeroStruct(*this); arrVertId[0] = arrVertId[1] = arrVertId[2] = (SMINDEX) ~0; }
 	Vec3              vFaceNorm;
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	uint              globalId;
-	#endif
 	uint8             triArea;
 	uint8             opacity;
 	uint8             hitObjectType;
@@ -120,6 +115,7 @@ struct SRayHitVertex
 	Vec3   v;
 	Vec2   t;
 	ColorB c;
+	Vec3   n;
 };
 
 struct SSuperMesh
@@ -132,6 +128,7 @@ struct SSuperMesh
 		SSvoMatInfo(){ ZeroStruct(*this); }
 		IMaterial* pMat;
 		ColorB*    pTexRgb;
+		int        texSlotId;
 		uint16     textureWidth;
 		uint16     textureHeight;
 		inline bool operator==(const SSvoMatInfo& other) const { return pMat == other.pMat; }
@@ -149,7 +146,7 @@ struct SSuperMesh
 	AABB                                m_boxTris;
 
 protected:
-	int FindVertex(const Vec3& rPos, const Vec2 rTC, PodArray<SMINDEX> arrVertHash[hashDim][hashDim][hashDim], PodArrayRT<SRayHitVertex>& vertsInArea);
+	int FindVertex(const Vec3& rPos, const Vec2 rTC, const Vec3& rNor, PodArray<SMINDEX> arrVertHash[hashDim][hashDim][hashDim], PodArrayRT<SRayHitVertex>& vertsInArea);
 	int AddVertex(const SRayHitVertex& rVert, PodArray<SMINDEX> arrVertHash[hashDim][hashDim][hashDim], PodArrayRT<SRayHitVertex>& vertsInArea);
 	bool m_bExternalData;
 };
@@ -180,11 +177,11 @@ public:
 	public:
 		CVoxStreamEngineThread(CVoxStreamEngine* pStreamingEngine);
 		virtual void ThreadEntry();
-		void         SignalStopWork();
+		void SignalStopWork();
 
 	private:
 		CVoxStreamEngine* m_pStreamingEngine;
-		bool              m_bRun;
+		bool m_bRun;
 	};
 
 	CVoxStreamEngine();
@@ -197,10 +194,10 @@ public:
 public:
 	BoundMPMC<SVoxStreamItem> m_arrForFileRead;
 	BoundMPMC<SVoxStreamItem> m_arrForSyncCallBack;
-	CrySemaphore              m_fileReadSemaphore;
+	CrySemaphore m_fileReadSemaphore;
 
 private:
-	std::vector<CVoxStreamEngineThread*> m_workerThreads;
+	std::vector<CVoxStreamEngineThread*> m_workerThreads;	
 };
 
 class CVoxelSegment : public Cry3DEngineBase, public SSuperMesh, public IStreamCallback
@@ -209,7 +206,7 @@ public:
 
 	CVoxelSegment(class CSvoNode* pNode, bool bDumpToDiskInUse = false, EFileStreamingStatus eStreamingStatus = ecss_Ready, bool bDroppedOnDisk = false);
 	~CVoxelSegment();
-	static int   GetSubSetsNum() { return GetCVars()->e_svoTI_IntegrationMode ? SVoxBrick::MAX_NUM : 1;  }
+	static int   GetSubSetsNum();
 	bool         CheckUpdateBrickRenderData(bool bJustCheck);
 	bool         LoadVoxels(byte* pData, int size);
 	void         SaveVoxels(PodArray<byte>& arrData);
@@ -236,6 +233,7 @@ public:
 	Vec3i        GetDxtDim();
 	void         AddTriangle(const SRayHitTriangleIndexed& ht, int trId, PodArray<int>*& rpNodeTrisXYZ, PodArrayRT<SRayHitVertex>* pVertInArea);
 	void         CheckStoreTextureInPool(SShaderItem* pShItem, uint16& nTexW, uint16& nTexH, int** ppSysTexId);
+	ColorB*      ApplyHighPass(uint16& nTexW, uint16& nTexH, const ColorB* pTexRgbOr);
 	void         ComputeDistancesFast_MinDistToSurf(ColorB* pTex3dOptRGBA, ColorB* pTex3dOptNorm, ColorB* pTex3dOptOpac, int threadId);
 	void         CropVoxTexture(int threadId, bool bCompSurfDist);
 	void         DebugDrawVoxels();
@@ -249,7 +247,7 @@ public:
 	void         RenderMesh(PodArray<SVF_P3F_C4B_T2F>& arrVertsOut);
 	void         SetBoxOS(const AABB& box) { m_boxOS = box; }
 	void         SetID(int32 nID)          { m_segmentID = nID; }
-	void         StoreAreaTrisIntoTriPool(PodArray<SRayHitTriangle>& allTrisInLevel);
+	void         StoreAreaTrisIntoTriPool();
 	void         StreamAsyncOnComplete(IReadStream* pStream, unsigned nError) override;
 	void         StreamOnComplete(IReadStream* pStream, unsigned nError) override;
 	void         UnloadStreamableData();
@@ -257,6 +255,7 @@ public:
 	void         UpdateNodeRenderData();
 	void         UpdateVoxRenderData();
 	void         VoxelizeMeshes(int threadId, bool bMT = false);
+	static void  CheckAllocateSubSets(SVoxBrick& voxData, int elemsNum, bool bClean = false);
 	void         CombineLayers();
 	void         BuildVoxels(SBuildVoxelsParams params);
 	int          CompressToDxt(ColorB* pImgSource, byte*& pDxtOut, int threadId);
@@ -323,6 +322,9 @@ public:
 	Vec3i                                                m_vStatLightsCheckSumm;
 	CryReadModifyLock                                    m_superMeshLock;
 	std::map<ObjectLayerIdType, SVoxBrick>               m_objLayerMap;
+	std::unique_ptr<PodArray<SObjInfo>>                  m_areaObjects;
+	bool                                                 m_isAreaParent = false;
+	bool                                                 m_isLowLodNode = false;
 };
 
 inline uint GetCurrPassMainFrameID() { return CVoxelSegment::m_currPassMainFrameID; }
@@ -330,4 +332,3 @@ inline uint GetCurrPassMainFrameID() { return CVoxelSegment::m_currPassMainFrame
 	#pragma pack(pop)
 
 #endif
-

@@ -129,7 +129,7 @@ bool CGeomCache::LoadGeomCache()
 	CRY_DEFINE_ASSET_SCOPE("GeomCache", m_fileName);
 
 	#if INCLUDE_MEMSTAT_CONTEXTS
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_GeomCache, EMemStatContextFlags::MSF_Instance, "%s", m_fileName.c_str());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::GeomCache, "%s", m_fileName.c_str());
 	#endif
 
 	CScopedFileHandle geomCacheFileHandle(m_fileName, "rb");
@@ -389,6 +389,7 @@ bool CGeomCache::ReadMeshesStaticData(CGeomCacheStreamReader& reader, const char
 
 	std::vector<GeomCacheFile::SMeshInfo> meshInfos;
 	meshInfos.reserve(numMeshes);
+	m_staticMeshData.reserve(numMeshes);
 
 	for (uint32 i = 0; i < numMeshes; ++i)
 	{
@@ -433,8 +434,7 @@ bool CGeomCache::ReadMeshesStaticData(CGeomCacheStreamReader& reader, const char
 
 		meshInfos.push_back(meshInfo);
 	}
-
-	m_staticMeshData.reserve(numMeshes);
+	
 	for (uint32 i = 0; i < numMeshes; ++i)
 	{
 		if (!ReadMeshStaticData(reader, meshInfos[i], m_staticMeshData[i], pFileName))
@@ -561,8 +561,6 @@ IGeomCache::SStatistics CGeomCache::GetStatistics() const
 	memset(&stats, 0, sizeof(stats));
 
 	std::set<uint16> materialIds;
-
-	CGeomCacheMeshManager& meshManager = GetGeomCacheManager()->GetMeshManager();
 
 	const uint numMeshes = m_staticMeshData.size();
 	for (uint i = 0; i < numMeshes; ++i)
@@ -693,6 +691,8 @@ uint64 CGeomCache::GetCompressedAnimationDataSize() const
 char* CGeomCache::GetFrameData(const uint frameIndex)
 {
 	assert(m_bPlaybackFromMemory);
+	if (m_animationData.empty())
+		return nullptr;
 
 	char* pAnimationData = &m_animationData[0];
 
@@ -705,6 +705,8 @@ char* CGeomCache::GetFrameData(const uint frameIndex)
 const char* CGeomCache::GetFrameData(const uint frameIndex) const
 {
 	assert(m_bPlaybackFromMemory);
+	if (m_animationData.empty())
+		return nullptr;
 
 	const char* pAnimationData = &m_animationData[0];
 

@@ -61,9 +61,6 @@ void RenderBar(const Vec2& normalizedCentrePosOffset, const float barwidth,  con
 	float nBarWidth    =  barwidth;
 	float nBarHeight   =  barHeight;
 
-	float x = normalizedCentrePosOffset.x; 
-	float y = normalizedCentrePosOffset.y; 
-
 	// Setup Tri indices
 	vtx_idx indTri[ 6 ] = 
 	{

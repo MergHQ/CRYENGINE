@@ -3,23 +3,17 @@
 #include "StdAfx.h"
 #include "ParticleExporter.h"
 
-#include "Util\PakFile.h"
-#include "Util/CryMemFile.h"
-#include "Particles\ParticleItem.h"
-#include "Particles\ParticleLibrary.h"
-#include "Particles\ParticleManager.h"
+#include "Particles/ParticleLibrary.h"
+#include "Particles/ParticleManager.h"
 
-//////////////////////////////////////////////////////////////////////////
-// Signatures for particles.lst file.
-#define PARTICLES_FILE_TYPE      2
-#define PARTICLES_FILE_VERSION   4
-#define PARTICLES_FILE_SIGNATURE "CRY"
+#include "IEditorImpl.h"
+#include <Util/CryMemFile.h>
+#include <Util/EditorUtils.h>
+#include <Util/PakFile.h>
 
 #define PARTICLES_FILE           "LevelParticles.xml"
-
 #define EFFECTS_PAK_FILE         "Effects.pak"
 
-//////////////////////////////////////////////////////////////////////////
 void CParticlesExporter::ExportParticles(const string& path, const string& levelName, CPakFile& levelPakFile)
 {
 	CParticleManager* pPartManager = GetIEditorImpl()->GetParticleManager();
@@ -107,4 +101,3 @@ void CParticlesExporter::ExportParticles(const string& path, const string& level
 	   pISystem->GetIPak()->OpenPack( pakFilename );
 	 */
 }
-

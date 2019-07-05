@@ -2,12 +2,14 @@
 
 #include "StdAfx.h"
 #include "AxisRotateGizmo.h"
-#include "IDisplayViewport.h"
-#include "Grid.h"
-#include "CryMath/Cry_Math.h"
-#include "Objects/DisplayContext.h"
+
 #include "Gizmos/AxisHelper.h"
+#include "Objects/DisplayContext.h"
+#include "Preferences/SnappingPreferences.h"
+#include "IDisplayViewport.h"
 #include "QtUtil.h"
+
+#include <CryMath/Cry_Math.h>
 
 ////////////////////////////////////////////////////
 // interaction modes for rotation gizmo
@@ -15,24 +17,24 @@
 
 namespace Private_AxisRotateGizmo
 {
-	float GetDistanceBetweenLines(const Vec3& p1, const Vec3& dir1, const Vec3& p2, const Vec3& dir2)
-	{
-		const Vec3 cross = dir2.Cross(dir1);
-		return cross.Dot(p2 - p1);
-	}
+float GetDistanceBetweenLines(const Vec3& p1, const Vec3& dir1, const Vec3& p2, const Vec3& dir2)
+{
+	const Vec3 cross = dir2.Cross(dir1);
+	return cross.Dot(p2 - p1);
+}
 
-	bool IsWithinRing(const Ray& ray, const Vec3& viewDir, const Vec3& pos, float outerRadius, float radius = 0)
-	{
-		const float rayAxisDot = ray.direction * viewDir;
-		const float radiusSq = radius * radius;
-		const float radiusOuterSq = outerRadius * outerRadius;
+bool IsWithinRing(const Ray& ray, const Vec3& viewDir, const Vec3& pos, float outerRadius, float radius = 0)
+{
+	const float rayAxisDot = ray.direction * viewDir;
+	const float radiusSq = radius * radius;
+	const float radiusOuterSq = outerRadius * outerRadius;
 
-		const Vec3 dp = ray.origin - pos;
-		const Vec3 isect = ray.origin - (dp * viewDir) * ray.direction / rayAxisDot;
+	const Vec3 dp = ray.origin - pos;
+	const Vec3 isect = ray.origin - (dp * viewDir) * ray.direction / rayAxisDot;
 
-		const float distSq = (isect - pos).len2();
-		return distSq > radiusSq && distSq < radiusOuterSq;
-	}
+	const float distSq = (isect - pos).len2();
+	return distSq > radiusSq && distSq < radiusOuterSq;
+}
 }
 
 class CInteractionMode
@@ -46,7 +48,7 @@ public:
 	{
 	}
 
-	virtual ~CInteractionMode() {};
+	virtual ~CInteractionMode() {}
 
 	//! Initialize data for interaction. The reason this is done as separate step and not in constructor is that we need
 	//! a boolean return value for cases where we can't interact (mouse too close to gizmo center, for instance)
@@ -63,9 +65,9 @@ public:
 	Vec3& GetCursorPosition() { return m_cursorPosition; }
 
 	//! Get the angle calculated during the Interact call
-	float GetAngle() { return m_angle; }
+	float        GetAngle() { return m_angle; }
 
-	virtual void DrawCursor(DisplayContext& dc, float scale) = 0;
+	virtual void DrawCursor(SDisplayContext& dc, float scale) = 0;
 
 	//! Initialization utility function, stores 2D offset in screen space. Also useful for screen aligned rotation
 	bool InitializeScreenSpaceOffset(POINT point, IDisplayViewport* view)
@@ -118,21 +120,21 @@ protected:
 	//! Initial gizmo position/axis. We need to store this and calculate interaction against these,
 	//! in case the position of the gizmo changes during interaction
 	//! (for instance, transforming a group of objects and the calculated gizmo position changes)
-	Vec3  m_initPosition;
-	Vec3  m_initAxis;
+	Vec3 m_initPosition;
+	Vec3 m_initAxis;
 
 	//! Direction from which we start rotating, lies on the gizmo plane.
-	Vec3  m_initDirection;
+	Vec3 m_initDirection;
 
 	//! offset of mouse from the initial position, projected on the view plane.
-	Vec3  m_cursorPosition;
+	Vec3 m_cursorPosition;
 
 	//! computed interaction angle
 	float m_angle;
 	bool  m_bScreenAligned;
 
 	//! pixel space offset from center of gizmo. Useful to calculate screen aligned gizmo interaction
-	Vec2  m_initScreenOffest;
+	Vec2 m_initScreenOffest;
 };
 
 //! Dial style interaction, rotate mouse around the center of the gizmo in screen space to change the rotation value
@@ -239,6 +241,7 @@ public:
 			m_localAngle = DEG2RAD(gSnappingPreferences.SnapAngle(angle));
 		}
 
+		const float oldAngle = m_angle;
 		m_angle = m_localAngle + m_revolutions * g_PI2;
 
 		if (axis * camToOrigin < 0.0f)
@@ -246,15 +249,15 @@ public:
 			m_angle = -m_angle;
 		}
 
-		rotation.angle = m_angle;
+		rotation.angle = m_angle - oldAngle;
 		rotation.axis = axis;
 		return true;
 	}
 
-	virtual void DrawCursor(DisplayContext& dc, float scale) override
+	virtual void DrawCursor(SDisplayContext& dc, float scale) override
 	{
 		Vec3 cursorDir;
-		cursorDir = ((m_cursorPosition - m_initPosition) ^ dc.view->CameraToWorld(m_cursorPosition)).GetNormalized() * 0.3 * scale;
+		cursorDir = ((m_cursorPosition - m_initPosition) ^ dc.view->CameraToWorld(m_cursorPosition)).GetNormalized() * 0.3f * scale;
 		dc.SetColor(0.0f, 0.0f, 0.0f);
 		dc.DrawArrow(m_cursorPosition, m_cursorPosition + cursorDir, 0.4f * scale);
 		dc.DrawArrow(m_cursorPosition, m_cursorPosition - cursorDir, 0.4f * scale);
@@ -367,7 +370,9 @@ public:
 
 		Vec3 offset = view->ViewToAxisConstraint(point, m_interactionLine, offsetOnGizmoCircle);
 
-		m_angle = ((offset * m_interactionLine > 0.0f) ? -1.0f : 1.0f) * offset.len() / scale;
+		const float oldAngle = m_angle;
+		const float sign = (offset * m_interactionLine > 0.0f) ? -1.0f : 1.0f;
+		m_angle = sign * offset.len() / scale;
 
 		if (gSnappingPreferences.angleSnappingEnabled())
 		{
@@ -376,13 +381,14 @@ public:
 		}
 
 		rotation.axis = axis;
-		// express angle in radians
-		rotation.angle = m_angle;
+
+		// Pass delta of rotation; m_angle is used for text rendering
+		rotation.angle = m_angle - oldAngle;
 
 		return true;
 	}
 
-	virtual void DrawCursor(DisplayContext& dc, float scale) override
+	virtual void DrawCursor(SDisplayContext& dc, float scale) override
 	{
 		Vec3 cursorDir = m_interactionLine * 0.5 * scale;
 		float activeSign = (m_angle < 0.0f) ? 1.0f : -1.0f;
@@ -394,12 +400,11 @@ public:
 
 private:
 	//! Normalized original offset from the origin on the gizmo plane
-	float m_scale;
-	Vec3  m_interactionLine;
+	float             m_scale;
+	Vec3              m_interactionLine;
 	//! viewport in which we are interacting
 	IDisplayViewport* m_view;
 };
-
 
 CAxisRotateGizmo::CAxisRotateGizmo()
 	: m_color(1.0f, 1.0f, 0.0f)
@@ -439,7 +444,7 @@ void CAxisRotateGizmo::SetScale(float scale)
 	m_scale = scale;
 }
 
-void CAxisRotateGizmo::Display(DisplayContext& dc)
+void CAxisRotateGizmo::Display(SDisplayContext& dc)
 {
 	IDisplayViewport* view = dc.view;
 
@@ -463,7 +468,7 @@ void CAxisRotateGizmo::Display(DisplayContext& dc)
 		float textSize = 1.4f;
 
 		Matrix34 m = m_interaction->CreateRotationFrameMatrix(view);
-			// Draw the value of rotation within the circle
+		// Draw the value of rotation within the circle
 		string msg;
 		msg.Format("%.1f degrees", angleVal);
 		dc.SetColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -527,7 +532,7 @@ void CAxisRotateGizmo::Display(DisplayContext& dc)
 			Vec3 yVec = camToOrigin ^ xVec;
 
 			Matrix34 m = Matrix34::CreateFromVectors(xVec, yVec, camToOrigin, m_position);
-			angle = g_PI2;
+			angle = static_cast<float>(g_PI2);
 			dc.PushMatrix(m);
 		}
 		else
@@ -537,7 +542,7 @@ void CAxisRotateGizmo::Display(DisplayContext& dc)
 			Vec3 xVec = yVec ^ m_axis;
 
 			Matrix34 m = Matrix34::CreateFromVectors(xVec, yVec, m_axis, m_position);
-			angle = g_PI;
+			angle = static_cast<float>(g_PI);
 			dc.PushMatrix(m);
 		}
 
@@ -606,7 +611,7 @@ bool CAxisRotateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, 
 			signalBeginDrag(view, this, point, nFlags);
 			return true;
 		}
-		else 
+		else
 		{
 			return false;
 		}
@@ -741,4 +746,3 @@ bool CAxisRotateGizmo::HitTest(HitContext& hc)
 	}
 	return false;
 }
-

@@ -26,7 +26,7 @@ struct SRenderNodeChunk
 	uint16 m_nLayerId;
 	int8   m_cShadowLodBias;
 	uint8  m_ucDummy;
-	uint32 m_dwRndFlags;
+	uint64 m_dwRndFlags;
 	uint16 m_nObjectTypeIndex;
 	uint8  m_ucViewDistRatio;
 	uint8  m_ucLodRatio;
@@ -225,9 +225,9 @@ inline void LoadCommonData(SRenderNodeChunk* pChunk, IRenderNode* pObj, const SL
 	COPY_MEMBER_LOAD(pObj, pChunk, m_ucViewDistRatio);
 	COPY_MEMBER_LOAD(pObj, pChunk, m_ucLodRatio);
 	COPY_MEMBER_LOAD(pObj, pChunk, m_cShadowLodBias);
-	pObj->m_dwRndFlags &= ~(ERF_HIDDEN | ERF_SELECTED);
-	if (pObj->m_dwRndFlags & ERF_CASTSHADOWMAPS)
-		pObj->m_dwRndFlags |= ERF_HAS_CASTSHADOWMAPS;
+	
+	pObj->SetRndFlags(ERF_HIDDEN | ERF_SELECTED, false);
+	pObj->SetRndFlags(ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, pObj->GetRndFlags() & ERF_CASTSHADOWMAPS ? true : false);
 
 	if (NULL != pLayerVisibility)
 	{
@@ -251,10 +251,10 @@ int32 COctreeNode::SaveObjects_CompareRenderNodes(const void* v1, const void* v2
 	IRenderNode* p[2] = { *(IRenderNode**)v1, *(IRenderNode**)v2 };
 
 	EERType t0 = p[0]->GetRenderNodeType();
-	int f0 = p[0]->m_dwRndFlags;
+	uint64 f0 = p[0]->m_dwRndFlags;
 
 	EERType t1 = p[1]->GetRenderNodeType();
-	int f1 = p[1]->m_dwRndFlags;
+	uint64 f1 = p[1]->m_dwRndFlags;
 
 	if (IsObjectStreamable(t0, f0) > IsObjectStreamable(t1, f1))
 		return 1;
@@ -356,7 +356,7 @@ int COctreeNode::LoadObjects(byte* pPtr, byte* pEndPtr, std::vector<IStatObj*>* 
 			if (pRN && pRN->m_pOcNode != this)
 			{
 				Get3DEngine()->UnRegisterEntityDirect(pRN);
-				LinkObject(pRN, pRN->GetRenderNodeType());
+				LinkObject(pRN, pRN->GetRenderNodeType(), !pRN->IsHidden());
 				pRN->m_pOcNode = this;
 				SetCompiled(IRenderNode::GetRenderNodeListId(pRN->GetRenderNodeType()), false);
 			}
@@ -375,10 +375,15 @@ int COctreeNode::GetSingleObjectFileDataSize(IRenderNode* pObj, const SHotUpdate
 
 	int nBlockSize = 0;
 
-	if (eType == eERType_Vegetation && !(pRenderNode->GetRndFlags() & ERF_PROCEDURAL))
+	if (eType == eERType_Vegetation)
 	{
-		nBlockSize += sizeof(eType);
-		nBlockSize += sizeof(SVegetationChunk);
+		CVegetation* pVeg = (CVegetation*)pObj;
+
+		if (!(pVeg->GetRndFlags() & ERF_PROCEDURAL) || (pVeg->GetStatObjGroup().offlineProcedural && Get3DEngine()->m_supportOfflineProceduralVegetation))
+		{
+			nBlockSize += sizeof(eType);
+			nBlockSize += sizeof(SVegetationChunk);
+		}
 	}
 	else if (eType == eERType_MergedMesh)
 	{
@@ -489,34 +494,40 @@ void COctreeNode::SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pE
 
 		AddToPtr(pPtr, nDatanSize, chunk, eEndian);
 	}
-	else if (eType == eERType_Vegetation && !(pEnt->GetRndFlags() & ERF_PROCEDURAL))
+	else if (eType == eERType_Vegetation)
 	{
-		AddToPtr(pPtr, nDatanSize, eType, eEndian);
+		CVegetation* pVeg = (CVegetation*)pEnt;
 
-		CVegetation* pObj = (CVegetation*)pEnt;
-
-		SVegetationChunk chunk;
-
-		CopyCommonData(&chunk, pObj);
-
-		// vegetation data
-		COPY_MEMBER_SAVE(&chunk, pObj, m_vPos);
-		chunk.m_fScale = pObj->GetScale();
-		COPY_MEMBER_SAVE(&chunk, pObj, m_nObjectTypeIndex);
-		COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngle);
-		COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleX);
-		COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleY);
-
+		if (!(pVeg->GetRndFlags() & ERF_PROCEDURAL) || (pVeg->GetStatObjGroup().offlineProcedural && Get3DEngine()->m_supportOfflineProceduralVegetation))
 		{
-			// find StatInstGroup Id
-			StatInstGroup& group = pObj->GetStatObjGroup();
-			int nItemId = CObjManager::GetItemId<IStatInstGroup>(pStatInstGroupTable, &group);
-			if (nItemId < 0)
-				assert(!"StatObj not found in StatInstGroupTable on exporting");
-			chunk.m_nObjectTypeIndex = nItemId;
-		}
+			AddToPtr(pPtr, nDatanSize, eType, eEndian);
 
-		AddToPtr(pPtr, nDatanSize, chunk, eEndian);
+			CVegetation* pObj = (CVegetation*)pEnt;
+
+			SVegetationChunk chunk;
+
+			CopyCommonData(&chunk, pObj);
+			chunk.m_dwRndFlags &= ~ERF_PROCEDURAL;
+
+			// vegetation data
+			COPY_MEMBER_SAVE(&chunk, pObj, m_vPos);
+			chunk.m_fScale = pObj->GetScale();
+			COPY_MEMBER_SAVE(&chunk, pObj, m_nObjectTypeIndex);
+			COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngle);
+			COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleX);
+			COPY_MEMBER_SAVE(&chunk, pObj, m_ucAngleY);
+
+			{
+				// find StatInstGroup Id
+				StatInstGroup& group = pObj->GetStatObjGroup();
+				int nItemId = CObjManager::GetItemId<IStatInstGroup>(pStatInstGroupTable, &group);
+				if (nItemId < 0)
+					assert(!"StatObj not found in StatInstGroupTable on exporting");
+				chunk.m_nObjectTypeIndex = nItemId;
+			}
+
+			AddToPtr(pPtr, nDatanSize, chunk, eEndian);
+		}
 	}
 	else if (eType == eERType_MergedMesh)
 	{
@@ -574,7 +585,7 @@ void COctreeNode::SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pE
 
 		AddToPtr(pPtr, nDatanSize, chunk, eEndian);
 
-		CRY_ASSERT_MESSAGE(sizeof(vtx_idx) == sizeof(uint32), "Road exporting can only occur on a platform with 32-bit vertex indices");
+		CRY_ASSERT(sizeof(vtx_idx) == sizeof(uint32), "Road exporting can only occur on a platform with 32-bit vertex indices");
 
 		AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.vertices.GetElements(), chunk.m_roadData.numVertices, eEndian);
 		AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.indices.GetElements(), chunk.m_roadData.numIndices, eEndian);
@@ -780,7 +791,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 	// For these structures, our Endian swapping is built in to the member copy.
 	if (eType == eERType_Brush)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Brush object");
+		MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Brush object");
 
 		SBrushChunk* pChunk = StepData<SBrushChunk>(pPtr, eEndian);
 
@@ -807,9 +818,6 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		// set material
 		pObj->SetMaterial(CObjManager::GetItemPtr(pMatTable, pChunk->m_nMaterialId));
 
-		// to get correct indirect lighting the registration must be done before checking if this object is inside a VisArea
-		Get3DEngine()->RegisterEntity(pObj);
-
 		if (NULL != pLayerVisibility)
 		{
 			if (!CheckLayerVisibility(pObj->GetLayerId(), pLayerVisibility))
@@ -823,6 +831,9 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 			pObj->SetRndFlags(ERF_HIDDEN, true);
 		}
 
+		// to get correct indirect lighting the registration must be done before checking if this object is inside a VisArea
+		Get3DEngine()->RegisterEntity(pObj);
+
 		if (!(Get3DEngine()->IsObjectsLayerHidden(pObj->GetLayerId(), pObj->GetBBox()) && GetCVars()->e_ObjectLayersActivationPhysics == 1) && !(pChunk->m_dwRndFlags & ERF_NO_PHYSICS))
 			pObj->Physicalize();
 
@@ -830,11 +841,9 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 	}
 	else if (eType == eERType_Vegetation)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Vegetation object");
+		MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Vegetation object");
 
 		SVegetationChunk* pChunk = StepData<SVegetationChunk>(pPtr, eEndian);
-
-		bool bStreamAllVegetation = true;
 
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(GetObjManager()->m_lstStaticTypes[pChunk->m_nObjectTypeIndex].m_dwRndFlags))
 			return;
@@ -868,7 +877,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 	}
 	else if (eType == eERType_MergedMesh)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Merged Mesh Object");
+		MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Merged Mesh Object");
 		SMergedMeshChunk* pChunk = StepData<SMergedMeshChunk>(pPtr, eEndian);
 
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode))
@@ -1092,16 +1101,16 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode) || !CheckRenderFlagsMinSpec(pChunk->m_dwRndFlags) || Get3DEngine()->IsLayerSkipped(pChunk->m_nLayerId))
 		{
 			int auxCntSrc = pChunk->m_volumeTypeAndMiscBits >> volumeTypeAndMiscBitShift;
-			const float *pAuxDataSrc = StepData<float>(pPtr, auxCntSrc, eEndian);
+			StepData<float>(pPtr, auxCntSrc, eEndian);
 
 			for (uint32 j(0); j < pChunk->m_numVertices; ++j)
 			{
-				SWaterVolumeVertex* pVertex(StepData<SWaterVolumeVertex>(pPtr, eEndian));
+				StepData<SWaterVolumeVertex>(pPtr, eEndian);
 			}
 
 			for (uint32 j(0); j < pChunk->m_numVerticesPhysAreaContour; ++j)
 			{
-				SWaterVolumeVertex* pVertex(StepData<SWaterVolumeVertex>(pPtr, eEndian));
+				StepData<SWaterVolumeVertex>(pPtr, eEndian);
 			}
 
 			return;
@@ -1308,7 +1317,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		{
 			for (uint32 j(0); j < pChunk->m_nVertexCount; ++j)
 			{
-				Vec3* pVertex(StepData<Vec3>(pPtr, eEndian));
+				StepData<Vec3>(pPtr, eEndian);
 			}
 
 			return;

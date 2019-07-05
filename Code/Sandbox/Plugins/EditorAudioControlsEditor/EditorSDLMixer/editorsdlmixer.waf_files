@@ -1,17 +1,43 @@
 {
-	"EditorSDLMixer_uber_0.cpp":
-	{
-		"Root":
-		[
-			"AudioSystemControl_sdlmixer.cpp",
-			"AudioSystemControl_sdlmixer.h",
-			"AudioSystemEditor_sdlmixer.cpp",
-			"AudioSystemEditor_sdlmixer.h",
-			"main.cpp",
-			"SDLMixerProjectLoader.h",
-			"SDLMixerProjectLoader.cpp",
-			"StdAfx.h",
-			"StdAfx.cpp"
-		]
-	}
+    "EditorSDLMixer_uber_0.cpp": {
+        "Connections": [
+            "BaseConnection.cpp", 
+            "BaseConnection.h", 
+            "EventConnection.cpp", 
+            "EventConnection.h", 
+            "ParameterConnection.cpp", 
+            "ParameterConnection.h", 
+            "StateConnection.cpp", 
+            "StateConnection.h"
+        ], 
+        "DataPanel": [
+            "DataPanel.cpp", 
+            "DataPanel.h", 
+            "FilterProxyModel.cpp", 
+            "FilterProxyModel.h", 
+            "ItemModel.cpp", 
+            "ItemModel.h", 
+            "TreeView.cpp", 
+            "TreeView.h"
+        ], 
+        "Root": [
+            "Common.h", 
+            "Impl.cpp", 
+            "Impl.h", 
+            "Item.cpp", 
+            "Item.h", 
+            "main.cpp", 
+            "ProjectLoader.cpp", 
+            "ProjectLoader.h", 
+            "StdAfx.cpp", 
+            "StdAfx.h", 
+            "Utils.cpp", 
+            "Utils.h"
+        ]
+    }, 
+    "NoUberFile": {
+        "Resources": [
+            "EditorSDLMixerUI.qrc"
+        ]
+    }
 }

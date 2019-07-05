@@ -1,4 +1,5 @@
 #include <CrySystem/ISystem.h>
+#include <CrySystem/XML/IXml.h>
 
 // Example of how an XML file can be parsed from a buffer
 void ParseXml()

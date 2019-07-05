@@ -7,13 +7,13 @@
 #include "TrackViewPlugin.h"
 #include "SequenceTabWidget.h"
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <QLayout>
 #include <QString>
 
 #include "Serialization.h"
 #include <CrySerialization/IArchive.h>
-#include "Serialization/PropertyTree/Serialization.h"
+#include "Serialization/PropertyTreeLegacy/Serialization.h"
 
 #include <CryMovie/AnimKey.h>
 #include "Objects/EntityObject.h"
@@ -33,7 +33,7 @@ void CTrackViewPropertyTreeWidget::STrackViewPropertiesRoot::Serialize(Serializa
 			const SSelectedKey& key = pTabWidget->GetCurrentSelectedKeys()[0];
 			const stack_string type = key.m_key->m_pType;
 			if (type == "Character" ||
-				type == "Event")
+			    type == "Event")
 			{
 				SetEntityContext(ar, key, pTabWidget);
 			}
@@ -100,7 +100,7 @@ CTrackViewPropertyTreeWidget::CTrackViewPropertyTreeWidget(CTrackViewCore* pTrac
 	: CTrackViewCoreComponent(pTrackViewCore, true)
 	, m_bUndoPush(false)
 {
-	m_pPropertyTree = new QPropertyTree();
+	m_pPropertyTree = new QPropertyTreeLegacy();
 	m_pPropertyTree->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	m_pPropertyTree->setAutoRevert(false);
 	m_pPropertyTree->setUndoEnabled(false);
@@ -115,11 +115,12 @@ CTrackViewPropertyTreeWidget::CTrackViewPropertyTreeWidget(CTrackViewCore* pTrac
 	setObjectName(QString("keyPropertiesDock"));
 	setWindowTitle(QString("Properties"));
 
-	connect(m_pPropertyTree, SIGNAL(signalPushUndo()), this, SLOT(OnPropertiesUndoPush()));
-	connect(m_pPropertyTree, SIGNAL(signalChanged()), this, SLOT(OnPropertiesChanged()));
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalBeginUndo, this, &CTrackViewPropertyTreeWidget::OnPropertiesBeginUndo);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &CTrackViewPropertyTreeWidget::OnPropertiesChanged);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalEndUndo, this, &CTrackViewPropertyTreeWidget::OnPropertiesEndUndo);
 }
 
-void CTrackViewPropertyTreeWidget::OnPropertiesUndoPush()
+void CTrackViewPropertyTreeWidget::OnPropertiesBeginUndo()
 {
 	GetIEditor()->GetIUndoManager()->Begin();
 	//m_bDontUpdateProperties = true;
@@ -147,12 +148,21 @@ void CTrackViewPropertyTreeWidget::OnPropertiesChanged()
 			if (CAnimationContext* pAnimationContext = CTrackViewPlugin::GetAnimationContext())
 				pAnimationContext->ForceAnimation();
 		}
-
-		m_bUndoPush = false;
-		GetIEditor()->GetIUndoManager()->Accept("Changed sequence properties");
-
 		GetTrackViewCore()->UnlockProperties();
 	}
+}
+
+void CTrackViewPropertyTreeWidget::OnPropertiesEndUndo(bool undoAccepted)
+{
+	if (undoAccepted)
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Changed sequence properties");
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
+	m_bUndoPush = false;
 }
 
 void CTrackViewPropertyTreeWidget::OnTrackViewEditorEvent(ETrackViewEditorEvent event)
@@ -184,7 +194,7 @@ void CTrackViewPropertyTreeWidget::Update()
 	{
 		yasli::Serializers serializers;
 
-		// Serializers will hold pointers to items of the m_properties array so it is critical to 
+		// Serializers will hold pointers to items of the m_properties array so it is critical to
 		// pre-allocate enought memory for all the items in once to avoid memory re-allocating.
 		m_properties.reserve(structs.size());
 		for (auto& prop : structs)

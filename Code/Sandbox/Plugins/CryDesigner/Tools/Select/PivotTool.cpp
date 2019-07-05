@@ -2,13 +2,11 @@
 
 #include "StdAfx.h"
 #include "PivotTool.h"
-#include "Core/Model.h"
-#include "DesignerEditor.h"
-#include "ViewManager.h"
-#include "Core/ModelDB.h"
+
 #include "Core/Helper.h"
-#include "ToolFactory.h"
-#include "Objects/DisplayContext.h"
+#include "DesignerEditor.h"
+
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -57,8 +55,8 @@ void PivotTool::Leave()
 void PivotTool::InitializeManipulator()
 {
 	m_StartingDragManipulatorPos = m_PivotPos = BrushVec3(0, 0, 0);
-	GetIEditor()->SetEditMode(eEditModeMove);
-	if(GetDesigner())
+	GetIEditor()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::Move);
+	if (GetDesigner())
 		GetDesigner()->UpdateTMManipulator(m_PivotPos, BrushVec3(0, 0, 1));
 }
 
@@ -87,7 +85,7 @@ void PivotTool::SetSelectionType(EPivotSelectionType selectionType, bool bForce)
 	}
 }
 
-void PivotTool::Display(DisplayContext& dc)
+void PivotTool::Display(SDisplayContext& dc)
 {
 	dc.SetColor(0xAAAAAAFF);
 	dc.DepthTestOff();
@@ -100,14 +98,14 @@ void PivotTool::Display(DisplayContext& dc)
 		if (m_nSelectedCandidate == i)
 			continue;
 		BrushVec3 vWorldVertexPos = GetWorldTM().TransformPoint(m_CandidateVertices[i]);
-		BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, vWorldVertexPos);
+		BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, vWorldVertexPos);
 		dc.DrawSolidBox(ToVec3(vWorldVertexPos - vBoxSize), ToVec3(vWorldVertexPos + vBoxSize));
 	}
 	if (m_nSelectedCandidate != -1)
 	{
 		dc.SetColor(RGB(100, 100, 255));
 		BrushVec3 vWorldVertexPos = GetWorldTM().TransformPoint(m_CandidateVertices[m_nSelectedCandidate]);
-		BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.flags & DISPLAY_2D, vWorldVertexPos);
+		BrushVec3 vBoxSize = GetElementBoxSize(dc.view, dc.display2D, vWorldVertexPos);
 		dc.DrawSolidBox(ToVec3(vWorldVertexPos - vBoxSize), ToVec3(vWorldVertexPos + vBoxSize));
 	}
 
@@ -176,4 +174,3 @@ void PivotTool::OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulato
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Pivot, eToolGroup_BasicSelection, "Pivot", PivotTool,
                                                            pivotselection, "runs pivot selection tool", "designer.pivotselection")
-

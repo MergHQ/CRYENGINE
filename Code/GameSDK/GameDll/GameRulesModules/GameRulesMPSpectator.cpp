@@ -27,6 +27,7 @@ History:
 #include <IUIDraw.h>
 #include "RecordingSystem.h"
 #include "Network/Lobby/GameLobby.h"
+#include <IGameplayRecorder.h>
 
 // -----------------------------------------------------------------------
 
@@ -86,7 +87,7 @@ void CGameRulesMPSpectator::Init(XmlNodeRef xml)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpectator failed to find valid eatsActorActions param");
+		CRY_ASSERT(0, "CGameRulesMPSpectator failed to find valid eatsActorActions param");
 	}
 
 	if (xml->getAttr("enableFree", boo))
@@ -95,7 +96,7 @@ void CGameRulesMPSpectator::Init(XmlNodeRef xml)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpectator failed to find valid enableFree param");
+		CRY_ASSERT(0, "CGameRulesMPSpectator failed to find valid enableFree param");
 	}
 
 	if (xml->getAttr("enableFollow", boo))
@@ -104,7 +105,7 @@ void CGameRulesMPSpectator::Init(XmlNodeRef xml)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpectator failed to find valid enableFollow param");
+		CRY_ASSERT(0, "CGameRulesMPSpectator failed to find valid enableFollow param");
 	}
 
 	if (xml->getAttr("enableKiller", boo))
@@ -113,7 +114,7 @@ void CGameRulesMPSpectator::Init(XmlNodeRef xml)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpectator failed to find valid enableFollow param");
+		CRY_ASSERT(0, "CGameRulesMPSpectator failed to find valid enableFollow param");
 	}
 
 	if (xml->getAttr("enableFollowWhenNoLivesLeft", boo))
@@ -132,7 +133,7 @@ void CGameRulesMPSpectator::Init(XmlNodeRef xml)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesMPSpectator failed to find valid timeFromDeathTillAutoSpectate param");
+		CRY_ASSERT(0, "CGameRulesMPSpectator failed to find valid timeFromDeathTillAutoSpectate param");
 	}
 
 	CryLog("Init() set params to eatsActorActions=%d; enableFree=%d; enableFollow=%d; enableKiller=%d, timeFromDeathTillAutoSpectate=%.1f", m_eatsActorActions, m_enableFree, m_enableFollow, m_enableKiller, m_timeFromDeathTillAutoSpectate);
@@ -476,10 +477,9 @@ EntityId CGameRulesMPSpectator::GetNextSpectatorTarget( EntityId playerId, int c
 		CGameRules::TPlayers  players;
 		players.reserve(m_pGameRules->GetNumChannels() + 1);
 
-		int  teamCount = m_pGameRules->GetTeamCount();
-		int  friendlyTeam = m_pGameRules->GetTeam(playerId);
+		int teamCount = m_pGameRules->GetTeamCount();
+		int friendlyTeam = m_pGameRules->GetTeam(playerId);
 
-		int teamIndex = max(friendlyTeam - 1, 0);
 		if ((teamCount == 0) || (friendlyTeam == 0))
 		{
 			IGameRulesPlayerStatsModule*  pPlayStatsMod = m_pGameRules->GetPlayerStatsModule();

@@ -10,6 +10,7 @@
 
 #ifndef _RELEASE
 #define DEBUG_RELEVANCE_GRID (1)
+#define DEBUG_BUCKETS_NAMES (1)
 #endif
 
 namespace Schematyc2
@@ -93,7 +94,6 @@ namespace Schematyc2
 		};
 
 		typedef std::vector<SRelevantCell>  TRelevantCells;
-		typedef VectorMap<EntityId, ushort> TEntityToGridCell;
 
 	public:
 		CRelevanceGrid();
@@ -104,13 +104,7 @@ namespace Schematyc2
 		// ~ISystemEventListener
 
 		// ILevelSystemListener
-		virtual void OnLevelNotFound(const char* levelName) override {}
-		virtual void OnLoadingStart(ILevelInfo* pLevel) override {}
 		virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) override;
-		virtual void OnLoadingComplete(ILevelInfo* pLevel) override {}
-		virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) override {}
-		virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) override {}
-		virtual void OnUnloadComplete(ILevelInfo* pLevel) override {}
 		// ~ILevelSystemListener
 
 		bool Register(CUpdateScope* pScope, const UpdateCallback& callback, UpdateFrequency frequency, UpdatePriority priority, const UpdateFilter& filter);
@@ -131,10 +125,10 @@ namespace Schematyc2
 
 #if DEBUG_RELEVANCE_GRID
 		void DebugDrawStatic(CUpdateRelevanceContext* pRelevanceContext);
+		void DebugLogStaticMemoryStats();
 #endif
 
 	private:
-		TEntityToGridCell m_entityToGridCellIndexLookup;
 		TGridCells        m_grid;
 		TDynamicObjects   m_dynamicObjects;
 		TRelevantCells    m_relevantCells;
@@ -162,7 +156,6 @@ namespace Schematyc2
 		// IUpdateScheduler
 		virtual bool Connect(CUpdateScope& scope, const UpdateCallback& callback, UpdateFrequency frequency = EUpdateFrequency::EveryFrame, UpdatePriority priority = EUpdatePriority::Default, const UpdateFilter& filter = UpdateFilter()) override;
 		virtual void Disconnect(CUpdateScope& scope) override;
-		virtual bool ScopeDestroyed(CUpdateScope& scope) override;
 		virtual bool InFrame() const override;
 		virtual bool BeginFrame(float frameTime) override;
 		virtual bool Update(UpdatePriority beginPriority = EUpdateStage::PrePhysics | EUpdateDistribution::Earliest, UpdatePriority endPriority = EUpdateStage::Post | EUpdateDistribution::End, CUpdateRelevanceContext* pRelevanceContext = nullptr) override;
@@ -172,122 +165,138 @@ namespace Schematyc2
 		virtual const UpdateSchedulerStats::IFrameUpdateStats* GetFrameUpdateStats() const override;
 		virtual void SetShouldUseRelevanceGridCallback(UseRelevanceGridPredicate directConnect) override;
 		virtual void SetIsDynamicObjectCallback(IsDynamicObjectPredicate isDynamicObject) override;
+		virtual void SetDebugPriorityNames(const DebugPriorityNameArray& debugNames) override;
 		// ~IUpdateScheduler
 
 	private:
 
 		bool ConnectInternal(CUpdateScope& scope, const UpdateCallback& callback, UpdateFrequency frequency = EUpdateFrequency::EveryFrame, UpdatePriority priority = EUpdatePriority::Default, const UpdateFilter& filter = UpdateFilter());
 		void DisconnectInternal(CUpdateScope &scope);
+		void UnregisterFromRelevanceGrid(CUpdateScope& scope);
 
-		struct SSlot
+		struct SUpdateSlot
 		{
-			SSlot();
+			SUpdateSlot();
+			SUpdateSlot(const UpdatePriority priority, const UpdateFrequency frequency);
 
-			SSlot(CUpdateScope* _pScope, uint32 _firstBucketIdx, UpdateFrequency _frequency, UpdatePriority _priority);
-
-			CUpdateScope*   pScope;
-			uint32          firstBucketIdx;
-			UpdateFrequency frequency;
 			UpdatePriority  priority;
-		};
+			UpdateFrequency bucketIndex;
 
-		typedef std::vector<SSlot> SlotVector;
-
-		struct SFindSlot
-		{
-			inline SFindSlot(const CUpdateScope* _pScope)
-				: pScope(_pScope)
-			{}
-
-			inline bool operator () (const SSlot& lhs) const
+			inline bool operator <(const SUpdateSlot& rhs) const
 			{
-				return lhs.pScope == pScope;
+				return priority > rhs.priority;
 			}
-
-			const CUpdateScope* pScope;
 		};
+
+		typedef std::vector<SUpdateSlot> TUpdateSlots;
 
 		struct SObserver
 		{
-			SObserver(const CUpdateScope* _pScope, const UpdateCallback& _callback, UpdateFrequency _frequency, UpdatePriority _priority, const UpdateFilter& _filter);
+			SObserver();
+			SObserver(CUpdateScope& scope, const UpdateCallback& callback, const UpdateFilter& filter, UpdateFrequency frequency, UpdateFrequency stride);
 
-			const CUpdateScope* pScope;
-			UpdateCallback      callback;
-			UpdateFrequency     frequency;
-			UpdatePriority      currentPriority;
-			UpdatePriority      newPriority;
-			UpdateFilter        filter;
+			CUpdateScope*   pScope;
+			UpdateCallback  callback;
+			UpdateFilter    filter;
+			UpdateFrequency frequency : 8;
+			UpdateFrequency stride : 8;
+
+			static_assert(sizeof(UpdateFrequency) == 2, "UpdateFrequency expected to be 16 bit");
 		};
 
-		typedef std::vector<SObserver> ObserverVector;
+		typedef std::vector<SObserver> TObserverVector;
 
-		struct SSortObservers
+		struct SPendingObserver : public SObserver
 		{
-			inline bool operator () (const SObserver& lhs, const SObserver& rhs) const
-			{
-				return (lhs.currentPriority > rhs.currentPriority) || ((lhs.currentPriority == rhs.currentPriority) && (lhs.callback < rhs.callback));
-			}
-		};
+			SPendingObserver();
+			SPendingObserver(CUpdateScope& scope, const UpdateCallback& callback, const UpdateFilter& filter, UpdateFrequency frequency, UpdateFrequency stride, UpdatePriority priority);
 
-		struct SLowerBoundObserver
-		{
-			inline bool operator () (const SObserver& lhs, const UpdatePriority& rhs) const
-			{
-				return lhs.currentPriority > rhs;
-			}
+			UpdatePriority priority;
 		};
 
 		struct SFrameUpdateStats : public UpdateSchedulerStats::IFrameUpdateStats
 		{
 			enum { k_maxStagesCount = 8 };
+			enum { k_maxBucketsCount = EUpdateFrequency::Count };
 
 			SFrameUpdateStats();
 
 			void Add(const UpdateSchedulerStats::SUpdateStageStats& stats);
+			void AddConnected(int64 timeTicks);
+			void AddDisconnected(int64 timeTicks);
 			void Reset();
 
-			virtual const UpdateSchedulerStats::SUpdateStageStats* Get(size_t& outCount) const override;
+			virtual const UpdateSchedulerStats::SUpdateStageStats* GetStageStats(size_t& outCount) const override;
+			virtual const UpdateSchedulerStats::SUpdateBucketStats* GetBucketStats(size_t& outCount) const override;
+			virtual const UpdateSchedulerStats::SChangeStats* GetChangeStats() const override { return &changeStats; }
 
 			UpdateSchedulerStats::SUpdateStageStats stagesStats[k_maxStagesCount];
-			size_t count;
+			size_t stagesCount;
+			UpdateSchedulerStats::SUpdateBucketStats bucketStats[k_maxBucketsCount];
+			UpdateSchedulerStats::SChangeStats changeStats;
 		};
+
+		typedef std::vector<size_t> TDirtyIndicesVector;
+
+		struct SObserverGroup
+		{
+			SObserverGroup();
+
+			TObserverVector     observers;
+			TDirtyIndicesVector dirtyIndices;
+		};
+
+		typedef VectorMap<UpdatePriority, SObserverGroup> TObserverMap;
+		typedef std::vector<SPendingObserver> TPendingObservers;
+		typedef std::vector<UpdatePriority> TPendingPriorities;
+		typedef VectorMap<UpdatePriority, const char*> TPriorityDebugNameMap;
 
 		class CBucket
 		{
 		public:
+			struct SUpdateStats;
 
 			CBucket();
 
 			void Connect(CUpdateScope& scope, const UpdateCallback& callback, UpdateFrequency frequency, UpdatePriority priority, const UpdateFilter& filter);
 			void Disconnect(CUpdateScope& scope, UpdatePriority priority);
-			void BeginUpdate();
-			void Update(const SUpdateContext (&frequencyUpdateContexts)[EUpdateFrequency::Count], UpdatePriority beginPriority, UpdatePriority endPriority, UpdateSchedulerStats::SUpdateStageStats& outUpdateStats);
-			void EndUpdate();
+			void BeginUpdate(TPendingPriorities& pendingPriorities);
+			template <bool UseStride>
+			void Update(const SUpdateContext context, UpdatePriority priority, uint32 frameId, UpdateSchedulerStats::SUpdateBucketStats& outUpdateStats, const TPriorityDebugNameMap& debugNames);
 			void Reset();
-			
-			inline size_t GetSize() const
-			{
-				return m_observers.size() - m_garbageCount;
-			}
+			void CleanUp();
+			void SetFrequency(UpdateFrequency frequency);
+
+		private:
+			UpdateFrequency SelectNewStride() const;
+			void AddObserver(TObserverVector& observers, CUpdateScope& scope, const UpdateCallback& callback, const UpdateFilter& filter);
+			void DeleteDirtyObservers();
+			void AddPendingObservers(TPendingPriorities& pendingPriorities);
+			const char* GetDebugName(UpdatePriority priority, const TPriorityDebugNameMap& debugNames);
 
 		private:
 
-			SObserver* FindObserver(CUpdateScope& scope, UpdatePriority priority);
-
-			ObserverVector m_observers;
-			size_t         m_dirtyCount;
-			size_t         m_garbageCount;
-			size_t         m_pos;
+			TObserverMap        m_observers;
+			TPendingObservers   m_pendingNewPriorityObservers;
+			size_t              m_totalObserverCount;
+			size_t              m_totalDirtyCount;
+			std::vector<size_t> m_frameStrideBuckets;
+			UpdateFrequency     m_frequency;
 		};
 
-		static const size_t s_bucketCount = 1 << (EUpdateFrequency::Count - 1);
+		static const size_t s_maxFrameStride = 1 << (EUpdateFrequency::Count - 1);
 
-		SlotVector        m_slots;
-		CBucket           m_buckets[s_bucketCount];
-		float             m_frameTimes[s_bucketCount];
-		size_t            m_currentBucketIdx;
+
+		CBucket           m_buckets[EUpdateFrequency::Count];
+		TUpdateSlots      m_updateOrder;
+		size_t            m_updatePosition;
+		float             m_frameTimes[s_maxFrameStride];
+		uint32            m_frameIdx;
 		bool              m_bInFrame;
+
+		TPriorityDebugNameMap m_debugNameMap;
 		SFrameUpdateStats m_stats;
+		TPendingPriorities m_pendingPriorities;
 		// Relevance grid related members
 		CRelevanceGrid                              m_relevanceGrid;
 		IUpdateScheduler::UseRelevanceGridPredicate m_useRelevanceGrid;

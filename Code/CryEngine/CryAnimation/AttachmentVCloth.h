@@ -328,7 +328,7 @@ public:
 	void                 SetSkinnedPositions(const Vector4* points);
 	void                 GetVertices(Vector4* pWorldCoords) const;
 	void                 GetVerticesFaded(Vector4* pWorldCoords);
-	bool                 IsParticleAttached(unsigned int idx) const { assert(idx < m_nVtx); return m_particlesCold[idx].bAttached != 0; }
+	bool                 IsParticleAttached(unsigned int idx) const { CRY_ASSERT(idx < m_nVtx); return m_particlesCold[idx].bAttached != 0; }
 
 	/**
 	 * Laplace-filter for input-positions, using the default mesh-edges.
@@ -396,9 +396,9 @@ private:
 	bool CheckCameraDistanceLessThan(float dist) const;
 
 	/**
-	 * Check screen space size of characters bounding box in x- or y-direction against viewport-size [using provided percentage-threshold]. 
-	 * @return True, if x- or y-dimension of bounding box in screen space is larger than provided threshold.
-	 */
+	* Check screen space size of characters bounding box in x- or y-direction against viewport-size [using provided percentage-threshold].
+	* @return True, if x- or y-dimension of bounding box in screen space is larger than provided threshold.
+	*/
 	bool CheckSSRatioLargerThan(float ssAxisSizePercThresh) const;
 
 	/**
@@ -586,8 +586,7 @@ private:
 	Vector4 SkinByTriangle(int i, strided_pointer<Vec3>& pVtx, int lod);
 
 	void    UpdateSimulation(const DualQuat* pTransformations, const uint transformationCount);
-	template<bool PREVIOUS_POSITIONS>
-	void    SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, const strided_pointer<const Vec3>& pVertexPositionsPrevious);
+	void    SkinSimulationToRenderMesh(int lod, CVertexData& vertexData);
 	void    SetRenderPositionsFromSkinnedPositions(bool setAllPositions);
 
 	void    WaitForJob(bool bPrev);
@@ -688,7 +687,7 @@ public:
 	virtual uint32             GetNameCRC() const override                            { return m_nSocketCRC32; }
 	virtual uint32             ReName(const char* strSocketName, uint32 crc) override { m_strSocketName.clear(); m_strSocketName = strSocketName; m_nSocketCRC32 = crc; return 1; };
 
-	virtual uint32             GetFlags() const override                              { return m_AttFlags | FLAGS_ATTACH_MERGED_FOR_SHADOWS; } // disable merging for vcloth shadows
+	virtual uint32             GetFlags() const override                              { return m_AttFlags; }
 	virtual void               SetFlags(uint32 flags) override                        { m_AttFlags = flags; }
 
 	void                       ReleaseRenderRemapTablePair();
@@ -731,7 +730,7 @@ public:
 	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual void         TriggerMeshStreaming(uint32 nDesiredRenderLOD, const SRenderingPassInfo& passInfo);
 
-	void                 DrawAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo, const Matrix34& rWorldMat34, f32 fZoomFactor = 1);
+	void                 RenderAttachment(SRendParams& rParams, const SRenderingPassInfo& passInfo);
 	void                 RecreateDefaultSkeleton(CCharInstance* pInstanceSkel, uint32 nLoadingFlags);
 	void                 UpdateRemapTable();
 	bool                 EnsureRemapTableIsValid();

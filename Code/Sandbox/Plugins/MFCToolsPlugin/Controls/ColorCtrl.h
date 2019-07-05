@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_COLORCTRL_H__CA4DE73C_CDC9_11D3_B261_00104BB13A66__INCLUDED_)
-#define AFX_COLORCTRL_H__CA4DE73C_CDC9_11D3_B261_00104BB13A66__INCLUDED_
-
-#if _MSC_VER >= 1000
-	#pragma once
-#endif // _MSC_VER >= 1000
+#pragma once
 
 ///////////////////////////////////////////////////////////////////////////////
 // class CColorCtrl
@@ -112,8 +107,7 @@ public:
 		return clr & ~CLR_DEFAULT;               // normal color
 	}
 
-	//protected:
-	UINT     m_nTimerID;
+	UINT_PTR m_nTimerID;
 	int      m_iBlinkPhase;
 	UINT     m_nDelay;
 	BOOL     m_fBlinkText;
@@ -505,7 +499,7 @@ public:
 class CDynamicToolTipCtrl : public CToolTipCtrl
 {
 public:
-	~CDynamicToolTipCtrl() {};
+	~CDynamicToolTipCtrl() {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -862,9 +856,3 @@ void CColorPushButton<BASE_TYPE >::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	if ((state & ODS_FOCUS) && !m_fNoFocus)
 		pDC->DrawFocusRect(rcFocus);
 }
-
-//{{AFX_INSERT_LOCATION}}
-// Microsoft Developer Studio will insert additional declarations immediately before the previous line.
-
-#endif // !defined(AFX_COLORCTRL_H__CA4DE73C_CDC9_11D3_B261_00104BB13A66__INCLUDED_)
-

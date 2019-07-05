@@ -313,4 +313,3 @@ void CObjectBrowser::UpdatePreviewWidget()
 		}
 	}
 }
-

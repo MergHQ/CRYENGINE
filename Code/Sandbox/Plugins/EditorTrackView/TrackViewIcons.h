@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2015.
-
 #include "StdAfx.h"
 #include <CryMovie/IMovieSystem.h>
 
@@ -50,9 +47,6 @@ struct CTrackViewIcons
 			break;
 		case eAnimParamType_AudioTrigger:
 			path = "icons:ObjectTypes/node_track_audio-trigger.ico";
-			break;
-		case eAnimParamType_AudioFile:
-			path = "icons:ObjectTypes/node_track_audio-file.ico";
 			break;
 		case eAnimParamType_AudioParameter:
 			path = "icons:ObjectTypes/node_track_audio-parameter.ico";
@@ -237,4 +231,3 @@ struct CTrackViewIcons
 		}
 	}
 };
-

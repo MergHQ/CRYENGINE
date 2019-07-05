@@ -1,0 +1,81 @@
+{
+    "NoUberFile": {
+        "CryAction": [
+            "CryAction/Examples/ActionListener.cpp", 
+            "CryAction/Examples/ReBindActionInput.cpp"
+        ], 
+        "CryAnimation": [
+            "CryAnimation/Examples/StartAnimation.cpp", 
+            "CryAnimation/Examples/CreateActionController.cpp", 
+            "CryAnimation/Examples/QueueFragment.cpp", 
+            "CryAnimation/Examples/SetTag.cpp", 
+            "CryAnimation/Examples/ControllerAnimationEvents.cpp", 
+            "CryAnimation/Examples/AimIK.cpp", 
+            "CryAnimation/Examples/LookIK.cpp", 
+            "CryAnimation/Examples/OperatorQueue.cpp", 
+            "CryAnimation/Examples/SetDesiredMotionParam.cpp"
+        ], 
+        "CryEntitySystem": [
+            "CryEntitySystem/Examples/SpawnEntity.cpp", 
+            "CryEntitySystem/Examples/GetEntity.cpp", 
+            "CryEntitySystem/Examples/FindEntityByName.cpp", 
+            "CryEntitySystem/Examples/TraverseEntities.cpp", 
+            "CryEntitySystem/Examples/ComponentEvents.cpp", 
+            "CryEntitySystem/Examples/MinimalEntityComponent.cpp", 
+            "CryEntitySystem/Examples/PreviewComponent.cpp", 
+            "CryEntitySystem/Examples/TriggerComponent.cpp", 
+            "CryEntitySystem/Examples/RopeComponent.cpp"
+        ], 
+        "CryEntitySystem/Audio": [
+            "CryEntitySystem/Examples/Audio/ExecuteTrigger.cpp", 
+            "CryEntitySystem/Examples/Audio/SetParameterValue.cpp", 
+            "CryEntitySystem/Examples/Audio/SetSwitchState.cpp"
+        ], 
+        "CryEntitySystem/Networking": [
+            "CryEntitySystem/Examples/ComponentNetReplicate.cpp", 
+            "CryEntitySystem/Examples/ComponentNetSerialize.cpp", 
+            "CryEntitySystem/Examples/ComponentRemoteMethodInvocation.cpp", 
+            "CryEntitySystem/Examples/AspectDelegation.cpp"
+        ], 
+        "CryEntitySystem/Physics": [
+            "CryEntitySystem/Examples/PhysicalizeEntity.cpp", 
+            "CryEntitySystem/Examples/PhysicalizeEntitySlot.cpp", 
+            "CryEntitySystem/Examples/PhysicalizeLiving.cpp", 
+            "CryEntitySystem/Examples/MonitorCollisions.cpp"
+        ], 
+        "CryEntitySystem/Slots": [
+            "CryEntitySystem/Examples/LoadCharacter.cpp", 
+            "CryEntitySystem/Examples/LoadFogVolume.cpp", 
+            "CryEntitySystem/Examples/LoadGeomCache.cpp", 
+            "CryEntitySystem/Examples/LoadGeometry.cpp", 
+            "CryEntitySystem/Examples/LoadLight.cpp", 
+            "CryEntitySystem/Examples/LoadParticleEmitter.cpp"
+        ], 
+        "CryNetwork": [
+            "CryNetwork/Examples/NetworkedClientListener.cpp"
+        ], 
+        "CryPhysics": [
+            "CryPhysics/Examples/GetPhysicalEntityPosition.cpp", 
+            "CryPhysics/Examples/SetPhysicalEntityPosition.cpp", 
+            "CryPhysics/Examples/GetSimulationParams.cpp", 
+            "CryPhysics/Examples/ActionImpulse.cpp", 
+            "CryPhysics/Examples/GetDynamicsStatus.cpp", 
+            "CryPhysics/Examples/AddConstraint.cpp", 
+            "CryPhysics/Examples/RayWorldIntersection.cpp", 
+            "CryPhysics/Examples/SimulateExplosion.cpp"
+        ], 
+        "CrySystem": [
+            "CrySystem/Examples/MinimalPlugin.cpp", 
+            "CrySystem/Examples/ConsoleVariable.cpp", 
+            "CrySystem/Examples/ConsoleCommand.cpp"
+        ], 
+        "CrySystem/Filesystem": [
+            "CrySystem/Examples/XmlParsing.cpp", 
+            "CrySystem/Examples/XmlWriting.cpp", 
+            "CrySystem/Examples/JsonSerialization.cpp"
+        ], 
+        "CrySystem/VirtualReality": [
+            "CrySystem/Examples/AsyncHMDCameraCallback.cpp"
+        ]
+    }
+}

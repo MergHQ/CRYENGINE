@@ -2,6 +2,9 @@
 
 #include "stdafx.h"
 #include <CryAnimation/ICryAnimation.h>
+#include <CryAnimation/IAttachment.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryEntitySystem/IEntityComponent.h>
 #include "BreakableManager.h"
 #include "BreakablePlane.h"
 #include "Entity.h"
@@ -11,9 +14,11 @@
 #include <CryGame/IGameFramework.h>
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/GeomRef.h>
 #include <CryParticleSystem/ParticleParams.h>
 #include <CryAction/IMaterialEffects.h>
 #include "RopeProxy.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 float ExtractFloatKeyFromString(const char* key, const char* props)
@@ -421,7 +426,6 @@ void CBreakableManager::BreakIntoPieces(GeomRef& geoOrig, const Matrix34& mxSrcT
 	}
 
 	IEntityClass* pClass = g_pIEntitySystem->GetClassRegistry()->FindClass("Breakage");
-	I3DEngine* p3DEngine = gEnv->p3DEngine;
 	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
 	PhysicsVars* pVars = pPhysicalWorld->GetPhysVars();
 
@@ -1344,7 +1348,7 @@ void CBreakableManager::ClonePartRemovedEntitiesByIndex(int32* pBrokenObjIndicie
 				createParams.fScale = worldTM.GetColumn0().len();
 				createParams.pCustomMtl = pRenderNode->GetMaterial();
 				createParams.nMatLayers = pRenderNode->GetMaterialLayers();
-				createParams.nEntityFlagsAdd = (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+				createParams.nEntityFlagsAdd = ENTITY_FLAG_CLIENT_ONLY;
 				createParams.nRenderNodeFlags = pRenderNode->GetRndFlags();
 				createParams.pSrcStaticRenderNode = pRenderNode;
 				createParams.pName = pRenderNode->GetName();
@@ -1432,8 +1436,6 @@ void CBreakableManager::UnhidePartRemovedObjectsByIndex(const int32* pPartRemova
 
 	for (int k = iNumPartRemovalIndices - 1; k >= 0; k--)
 	{
-		int iEventIndex = pPartRemovalIndices[k];
-
 		CEntity* pEntity = nullptr;
 		EntityId originalBrokenId = 0;
 
@@ -1592,7 +1594,7 @@ public:
 	{
 		if (event.event == ENTITY_EVENT_TIMER)
 		{
-			if (!GetEntity()->IsRendered())
+			if (event.nParam[0] == 0 && !GetEntity()->IsRendered())
 			{
 				// Remove ourself
 				g_pIEntitySystem->RemoveEntity(GetEntity()->GetId());
@@ -1600,23 +1602,23 @@ public:
 			else
 			{
 				// Wait some more to see if still rendered.
-				GetEntity()->SetTimer(0, m_timeoutMillis);
+				SetTimer(0, m_timeoutMillis);
 			}
 		}
 	}
-	virtual uint64 GetEventMask() const final { return ENTITY_EVENT_BIT(ENTITY_EVENT_TIMER) | ENTITY_EVENT_BIT(ENTITY_EVENT_RENDER_VISIBILITY_CHANGE); }
+	virtual Cry::Entity::EventFlags GetEventMask() const final { return ENTITY_EVENT_TIMER | ENTITY_EVENT_RENDER_VISIBILITY_CHANGE; }
 	virtual void   Initialize() final
 	{
 		m_pEntity->AddFlags(ENTITY_FLAG_NO_SAVE | ENTITY_FLAG_SEND_RENDER_EVENT);
 	}
 	virtual void Release() final                     { delete this; }
 
-	virtual void GameSerialize(TSerialize ser) final {};
+	virtual void GameSerialize(TSerialize ser) final {}
 
 	void         SetTimeout(int timeoutMillis)
 	{
 		m_timeoutMillis = timeoutMillis;
-		GetEntity()->SetTimer(0, m_timeoutMillis);
+		SetTimer(0, m_timeoutMillis);
 	}
 
 private:
@@ -2469,8 +2471,7 @@ int CBreakableManager::HandlePhysics_UpdateMeshEvent(const EventPhysUpdateMesh* 
 
 		if (bNewEntity)
 		{
-			SEntityEvent entityEvent(ENTITY_EVENT_PHYS_BREAK);
-			pCEntity->SendEvent(entityEvent);
+			pCEntity->GetPhysicalProxy()->SendBreakEvent(nullptr);
 		}
 
 		if (m_pBreakEventListener && pSrcStatObj != pDeformedStatObj && pUpdateEvent->iReason != EventPhysUpdateMesh::ReasonDeform)

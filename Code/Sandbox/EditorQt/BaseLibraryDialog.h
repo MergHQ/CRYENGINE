@@ -4,6 +4,9 @@
 
 #include "DataBaseDialog.h"
 #include "Controls/HotTrackingTreeCtrl.h"
+#include "IEditorImpl.h"
+#include "IUndoManager.h"
+#include "Objects/EntityScript.h"
 
 class CBaseLibrary;
 class CBaseLibraryItem;
@@ -35,7 +38,7 @@ public:
 	virtual bool CanRemoveEmptyFolder() const { return false; }
 
 	//! Returns menu for this dialog.
-	virtual UINT  GetDialogMenuID() { return 0; };
+	virtual UINT  GetDialogMenuID() { return 0; }
 
 	CBaseLibrary* GetCurrentLibrary()
 	{
@@ -43,8 +46,8 @@ public:
 	}
 
 protected:
-	virtual void         OnOK()     {};
-	virtual void         OnCancel() {};
+	virtual void         OnOK()     {}
+	virtual void         OnCancel() {}
 
 	virtual void         LoadLibrary();
 
@@ -185,4 +188,3 @@ protected:
 	HCURSOR           m_hCursorReplace;
 	SortRecursionType m_sortRecursionType;
 };
-

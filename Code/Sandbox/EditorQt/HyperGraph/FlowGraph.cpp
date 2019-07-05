@@ -11,6 +11,7 @@
 #include "FlowGraphNode.h"
 #include "FlowGraphManager.h"
 #include "FlowGraphMigrationHelper.h"
+#include "LogFile.h"
 #include "Nodes/CommentNode.h"
 #include "Nodes/CommentBoxNode.h"
 #include "Nodes/TrackEventNode.h"
@@ -98,7 +99,7 @@ protected:
 		return 0;
 	}
 
-	virtual const char* GetDescription() { return "FlowGraph Undo"; };
+	virtual const char* GetDescription() { return "FlowGraph Undo"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -159,7 +160,6 @@ protected:
 #endif
 				GetIEditorImpl()->GetPrefabManager()->SetSkipPrefabUpdate(true);
 				CObjectArchive remappingInfo(GetIEditorImpl()->GetObjectManager(), m_redo, true);
-				;
 				pGraph->ExtractObjectsPrefabIdToGlobalIdMappingFromPrefab(remappingInfo);
 
 				pGraph->Serialize(m_redo, true, &remappingInfo);
@@ -817,12 +817,13 @@ void CHyperFlowGraph::ExtractObjectsPrefabIdToGlobalIdMappingFromPrefab(CObjectA
 	{
 		if (CPrefabObject* pPrefabObject = (CPrefabObject*)pEntity->GetPrefab())
 		{
-			std::vector<CBaseObject*> childs;
-			pPrefabObject->GetAllPrefabFlagedChildren(childs);
+			std::vector<CBaseObject*> descendants;
+			pPrefabObject->GetAllPrefabFlagedDescendants(descendants);
 
-			for (int i = 0, count = childs.size(); i < count; ++i)
-				archive.RemapID(childs[i]->GetIdInPrefab(), childs[i]->GetId());
+			for (int i = 0, count = descendants.size(); i < count; ++i)
+			{
+				archive.RemapID(descendants[i]->GetIdInPrefab(), descendants[i]->GetId());
+			}
 		}
 	}
 }
-

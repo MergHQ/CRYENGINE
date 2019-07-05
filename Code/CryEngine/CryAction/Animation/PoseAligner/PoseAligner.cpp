@@ -7,6 +7,8 @@
 #include <CryAnimation/ICryAnimation.h>
 
 #include "PoseAligner.h"
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define UNKNOWN_GROUND_HEIGHT -1E10f
 
@@ -542,9 +544,7 @@ void CPose::Update(ICharacterInstance* pCharacter, const QuatT& location, const 
 
 	float groundHeight = 0.0f;
 	Vec3 groundNormal(0.0f, 0.0f, 1.0f);
-	bool bGroundHeightValid = GetGroundFromEntity(*m_pEntity, groundHeight, groundNormal);
-
-	//
+	GetGroundFromEntity(*m_pEntity, groundHeight, groundNormal);
 
 	float chainOffsetMin = 0.0f;
 	float chainOffsetMax = 0.0f;
@@ -613,7 +613,7 @@ void CPose::SetupPoseModifiers(const QuatT& location)
 		m_operatorQueue->PushComputeAbsolute();
 	}
 
-	m_pSkeletonAnim->PushPoseModifier(0, m_operatorQueue);
+	m_pSkeletonAnim->PushPoseModifier(0, m_operatorQueue, "PoseAligner");
 
 	for (uint i = 0; i < chainCount; ++i)
 		m_chains[i]->SetupTargetPoseModifiers(chainsLocation, m_rootOffsetDirection * rootOffset, *m_pSkeletonAnim);

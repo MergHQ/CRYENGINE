@@ -64,8 +64,8 @@ int CTerrainNode::CreateSectorTexturesFromBuffer(float * pSectorHeightMap)
 	{
 		int nDim = GetTerrain()->m_arrBaseTexInfos.m_TerrainTextureLayer[0].nSectorSizePixels;
 		ETEX_Format texFormat = GetTerrain()->m_arrBaseTexInfos.m_TerrainTextureLayer[0].eTexFormat;
-		int nSizeDxtMip0 = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, texFormat);
-		int nSizeMip0 = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8);
+		uint32 nSizeDxtMip0 = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, texFormat, eTM_None);
+		uint32 nSizeMip0    = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8, eTM_None);
 
 		SAFE_DELETE(GetTerrain()->m_pTerrainRgbLowResSystemCopy);
 		GetTerrain()->m_pTerrainRgbLowResSystemCopy = new PodArray<ColorB>;
@@ -73,6 +73,18 @@ int CTerrainNode::CreateSectorTexturesFromBuffer(float * pSectorHeightMap)
 
 		GetRenderer()->DXTDecompress(GetTerrain()->m_arrBaseTexInfos.m_ucpDiffTexTmpBuffer, nSizeDxtMip0,
 		                             (byte*)GetTerrain()->m_pTerrainRgbLowResSystemCopy->GetElements(), nDim, nDim, 1, texFormat, false, 4);
+
+		// srgb2rgb
+		ColorB* pRgba = (ColorB*)GetTerrain()->m_pTerrainRgbLowResSystemCopy->GetElements();
+		int numPixels = nSizeMip0 / sizeof(ColorB);
+		float rgbMult = GetTerrain()->GetTerrainTextureMultiplier();
+		for (int i = 0; i < numPixels; i++)
+		{
+			ColorF colF = pRgba[i];
+			colF.srgb2rgb();
+			colF *= rgbMult;
+			pRgba[i] = colF;
+	  }
 	}
 #endif
 
@@ -107,10 +119,10 @@ void CTerrainNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 
 		int nDim = m_pTerrain->m_texCache[0].m_nDim;
 
-		int nSizeDxt = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, pLayers[0].eTexFormat);
-		int nSizeRgb = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8);
+		uint32 nSizeDxt = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, pLayers[0].eTexFormat, eTM_None);
+		uint32 nSizeRgb = GetRenderer()->GetTextureFormatDataSize(nDim, nDim, 1, 1, eTF_R8G8B8A8, eTM_None);
 
-		byte * pDxtIn = (byte *)pStream->GetBuffer();
+		byte * pDxtIn  = (byte *)pStream->GetBuffer();
 		byte * pRgbOut = ((byte*)pStream->GetUserData()) + nDim * nDim * sizeof(float);
 
 		GetRenderer()->DXTDecompress(pDxtIn,						nSizeDxt, (byte*)pRgbOut,						 nDim, nDim, 1, pLayers[0].eTexFormat, false, 4);
@@ -126,6 +138,7 @@ void CTerrainNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 void CTerrainNode::StreamOnComplete(IReadStream* pStream, unsigned nError)
 {
 	FUNCTION_PROFILER_3DENGINE;
+	MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "CTerrainNode::StreamOnComplete");
 
 	if (pStream->IsError())
 	{

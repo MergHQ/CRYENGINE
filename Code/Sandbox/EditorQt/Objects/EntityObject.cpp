@@ -1,99 +1,70 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "EntityObject.h"
+#include "Objects/EntityObject.h"
 
-#include "Viewport.h"
-#include <Preferences/ViewportPreferences.h>
-#include "Group.h"
-
-#include <Cry3DEngine/I3DEngine.h>
-#include <CryAISystem/IAgent.h>
-#include <CryMovie/IMovieSystem.h>
-#include <CryEntitySystem/IEntitySystem.h>
-#include <CryAnimation/ICryAnimation.h>
-#include <CryAnimation/IVertexAnimation.h>
-
-#include <Cry3DEngine/IIndexedMesh.h>
-#include <CryEntitySystem/IBreakableManager.h>
-
-#include "EntityPrototype.h"
-#include "Material/MaterialManager.h"
-#include "Gizmos/AxisHelper.h"
-#include "Dialogs/QStringDialog.h"
-#include "Dialogs/GenericSelectItemDialog.h"
-
-#include "HyperGraph/FlowGraphManager.h"
+#include "AI/AIManager.h"
 #include "HyperGraph/FlowGraph.h"
 #include "HyperGraph/FlowGraphHelpers.h"
-
-#include "BrushObject.h"
-#include "GameEngine.h"
-
-#include <CryAISystem/IAIObject.h>
-#include <CryAISystem/IAIActor.h>
-
-#include "Viewport.h"
-#include "ViewManager.h"
-#include "IIconManager.h"
-#include "Dialogs/CustomColorDialog.h"
-#include "Util/MFCUtil.h"
-
-#include <CrySerialization/Serializer.h>
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/STL.h>
-#include <CrySerialization/DynArray.h>
-#include <CrySerialization/IArchiveHost.h>
-#include <CrySerialization/yasli/decorators/HorizontalLine.h>
-#include "Serialization/Decorators/EditorActionButton.h"
-#include <Serialization/Decorators/EntityLink.h>
-#include <Serialization/Decorators/EditToolButton.h>
-
-#include "Controls/PropertyItem.h"
-#include "Controls/DynamicPopupMenu.h"
-#include "Util/BoostPythonHelpers.h"
-#include "Objects/ObjectLayer.h"
-#include "Objects/DisplayContext.h"
-#include "Objects/ObjectLoader.h"
-#include "Objects/ObjectPropertyWidget.h"
-#include "Objects/InspectorWidgetCreator.h"
-
-#include <Objects/EntityComponentCollapsibleFrame.h>
-
-#include <CryRenderer/IFlares.h>
+#include "HyperGraph/FlowGraphManager.h"
+#include "LensFlareEditor/LensFlareLibrary.h"
 #include "LensFlareEditor/LensFlareManager.h"
 #include "LensFlareEditor/LensFlareUtil.h"
-#include "LensFlareEditor/LensFlareItem.h"
-#include "LensFlareEditor/LensFlareLibrary.h"
-#include "AI/AIManager.h"
-
-#include "Prefabs\PrefabManager.h"
-#include "Prefabs\PrefabLibrary.h"
-#include "Prefabs\PrefabItem.h"
-
-#include "UndoEntityProperty.h"
-#include "UndoEntityParam.h"
-
-#include "PickObjectTool.h"
-
-#include <Cry3DEngine/IGeomCache.h>
-
-#include <CrySandbox/IEditorGame.h>
-#include <CrySystem/ICryLink.h>
+#include "Material/MaterialManager.h"
+#include "Objects/EntityObjectUndo.h"
+#include "Objects/Group.h"
+#include "Objects/UndoEntityParam.h"
+#include "Objects/UndoEntityProperty.h"
+#include "Prefabs/PrefabItem.h"
+#include "Prefabs/PrefabLibrary.h"
+#include "Prefabs/PrefabManager.h"
+#include "Serialization/Decorators/EntityLink.h"
+#include "Util/BoostPythonHelpers.h"
 #include "CryEditDoc.h"
-#include "Util/MFCUtil.h"
+#include "GameEngine.h"
+#include "ViewManager.h"
 
+// MFC plugin
+#include <Dialogs/GenericSelectItemDialog.h>
+#include <Util/FileUtil.h>
+#include <Util/MFCUtil.h>
+
+// EditorCommon
+#include <AssetSystem/Asset.h>
+#include <AssetSystem/AssetType.h>
+#include <Controls/DictionaryWidget.h>
+#include <Controls/DynamicPopupMenu.h>
+#include <Dialogs/QStringDialog.h>
+#include <Gizmos/GizmoManager.h>
+#include <IIconManager.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+#include <Objects/DisplayContext.h>
+#include <Objects/EntityComponentCollapsibleFrame.h>
+#include <Objects/InspectorWidgetCreator.h>
+#include <Objects/IObjectLayer.h>
+#include <Objects/ObjectLoader.h>
+#include <Preferences/GlobalHelperPreferences.h>
+#include <Preferences/ViewportPreferences.h>
+#include <Serialization/Decorators/EditToolButton.h>
+#include <Util/AffineParts.h>
+#include <Util/Math.h>
+#include <Viewport.h>
+
+// CryEngine
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/IGeomCache.h>
+#include <CryAISystem/IAIObject.h>
+#include <CryAISystem/IAIActor.h>
+#include <CryAnimation/IVertexAnimation.h>
 #include <CryExtension/ICryFactoryRegistry.h>
-
+#include <CryMovie/IMovieSystem.h>
+#include <CryRenderer/IFlares.h>
+#include <CrySandbox/IEditorGame.h>
 #include <CrySchematyc/CoreAPI.h>
-#include <CrySchematyc/IObjectProperties.h>
-#include <CrySchematyc/Utils/ClassProperties.h>
-
 #include <IGameObjectSystem.h>
 
-#include <QToolButton.h>
-#include <QCollapsibleFrame.h>
-#include <Controls/DictionaryWidget.h>
+#include <QPushButton>
+#include <QToolButton>
 
 REGISTER_CLASS_DESC(CEntityClassDesc);
 
@@ -102,139 +73,6 @@ const char* CEntityObject::s_LensFlareMaterialName("%ENGINE%/EngineAssets/Materi
 
 namespace Private_EntityObject
 {
-
-//////////////////////////////////////////////////////////////////////////
-//! Undo object for attach/detach changes
-class CUndoAttachEntity : public IUndoObject
-{
-public:
-	CUndoAttachEntity(CEntityObject* pAttachedObject, bool bAttach)
-		: m_attachedEntityGUID(pAttachedObject->GetId())
-		, m_attachmentTarget(pAttachedObject->GetAttachTarget())
-		, m_attachmentType(pAttachedObject->GetAttachType())
-		, m_bAttach(bAttach)
-	{}
-
-	virtual void Undo(bool bUndo) override
-	{
-		if (!m_bAttach) SetAttachmentTypeAndTarget();
-	}
-
-	virtual void Redo() override
-	{
-		if (m_bAttach) SetAttachmentTypeAndTarget();
-	}
-
-private:
-	void SetAttachmentTypeAndTarget()
-	{
-		CObjectManager* pObjectManager = static_cast<CObjectManager*>(GetIEditorImpl()->GetObjectManager());
-		CEntityObject* pEntity = static_cast<CEntityObject*>(pObjectManager->FindObject(m_attachedEntityGUID));
-
-		if (pEntity)
-		{
-			pEntity->SetAttachType(m_attachmentType);
-			pEntity->SetAttachTarget(m_attachmentTarget);
-		}
-	}
-
-	virtual const char* GetDescription() { return "Attachment Changed"; }
-
-	CryGUID                        m_attachedEntityGUID;
-	CEntityObject::EAttachmentType m_attachmentType;
-	string                         m_attachmentTarget;
-	bool                           m_bAttach;
-};
-
-//////////////////////////////////////////////////////////////////////////
-//! Undo object for adding an entity component
-class CUndoAddComponent : public IUndoObject
-{
-	struct SComponentInstanceInfo
-	{
-		CryGUID owningEntityGUID;
-		CryGUID instanceGUID;
-	};
-
-public:
-	CUndoAddComponent(const CEntityComponentClassDesc* pClassDescription, size_t numExpectedEntities)
-		: m_pClassDescription(pClassDescription)
-	{
-		m_affectedEntityInfo.reserve(numExpectedEntities);
-	}
-
-	virtual void Undo(bool bUndo) override
-	{
-		for (const SComponentInstanceInfo& componentInstanceInfo : m_affectedEntityInfo)
-		{
-			CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(componentInstanceInfo.owningEntityGUID));
-			if (pEntityObject == nullptr)
-				continue;
-
-			IEntity* pEntity = pEntityObject->GetIEntity();
-			if (pEntity == nullptr)
-				continue;
-
-			IEntityComponent* pComponent = pEntity->GetComponentByGUID(componentInstanceInfo.instanceGUID);
-			if (pComponent == nullptr)
-				continue;
-
-			pEntity->RemoveComponent(pComponent);
-		}
-
-		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
-	}
-
-	virtual void Redo() override
-	{
-		for (SComponentInstanceInfo& componentInstanceInfo : m_affectedEntityInfo)
-		{
-			CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(componentInstanceInfo.owningEntityGUID));
-			if (pEntityObject == nullptr)
-				continue;
-
-			IEntity* pEntity = pEntityObject->GetIEntity();
-			if (pEntity == nullptr)
-				continue;
-
-			componentInstanceInfo.instanceGUID = AddComponentInternal(pEntity);
-		}
-
-		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
-	}
-
-	void AddComponent(IEntity* pEntity)
-	{
-		const CryGUID& componentInstanceGUID = AddComponentInternal(pEntity);
-		if (!componentInstanceGUID.IsNull())
-		{
-			m_affectedEntityInfo.emplace_back(SComponentInstanceInfo { pEntity->GetGuid(), componentInstanceGUID });
-		}
-	}
-
-	bool IsValid() const { return m_affectedEntityInfo.size() > 0; }
-
-private:
-	const CryGUID& AddComponentInternal(IEntity* pEntity)
-	{
-		EntityComponentFlags flags = m_pClassDescription->GetComponentFlags();
-		flags.Add(EEntityComponentFlags::UserAdded);
-		IEntityComponent::SInitParams initParams(pEntity, CryGUID::Create(), "", m_pClassDescription, flags, nullptr, nullptr);
-		IF_LIKELY (IEntityComponent* pComponent = pEntity->CreateComponentByInterfaceID(m_pClassDescription->GetGUID(), &initParams))
-		{
-			return pComponent->GetGUID();
-		}
-
-		static CryGUID invalidGUID = CryGUID::Null();
-		return invalidGUID;
-	}
-
-	virtual const char* GetDescription() { return "Added Entity Component"; }
-
-	const CEntityComponentClassDesc*    m_pClassDescription;
-	std::vector<SComponentInstanceInfo> m_affectedEntityInfo;
-};
-
 class EntityLinkTool : public CPickObjectTool
 {
 	DECLARE_DYNCREATE(EntityLinkTool)
@@ -258,7 +96,7 @@ class EntityLinkTool : public CPickObjectTool
 		{
 			return filterObject->IsKindOf(RUNTIME_CLASS(CEntityObject));
 		}
-
+		
 		void OnCancelPick() override
 		{
 		}
@@ -270,6 +108,12 @@ public:
 	EntityLinkTool()
 		: CPickObjectTool(&m_picker)
 	{
+		SetMultiplePicks(true);
+	}
+
+	~EntityLinkTool()
+	{
+		m_picker.OnCancelPick();
 	}
 
 	virtual void SetUserData(const char* key, void* userData) override
@@ -283,99 +127,8 @@ private:
 
 IMPLEMENT_DYNCREATE(EntityLinkTool, CPickObjectTool)
 
-//////////////////////////////////////////////////////////////////////////
-//! Undo Entity Link
-class CUndoEntityLink : public IUndoObject
-{
-public:
-	CUndoEntityLink(const std::vector<CBaseObject*>& objects)
-	{
-		m_Links.reserve(objects.size());
-		for (CBaseObject* pObj : objects)
-		{
-			if (pObj->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-			{
-				SLink link;
-				link.entityID = pObj->GetId();
-				link.linkXmlNode = XmlHelpers::CreateXmlNode("undo");
-				((CEntityObject*)pObj)->SaveLink(link.linkXmlNode);
-				m_Links.push_back(link);
-			}
-		}
-	}
-
-protected:
-	virtual void        Release()        { delete this; }
-	virtual const char* GetDescription() { return "Entity Link"; }
-	virtual const char* GetObjectName()  { return ""; }
-
-	virtual void        Undo(bool bUndo)
-	{
-		for (int i = 0, iLinkSize(m_Links.size()); i < iLinkSize; ++i)
-		{
-			SLink& link = m_Links[i];
-			CBaseObject* pObj = GetIEditorImpl()->GetObjectManager()->FindObject(link.entityID);
-			if (pObj == NULL)
-				continue;
-			if (!pObj->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-				continue;
-			CEntityObject* pEntity = (CEntityObject*)pObj;
-			if (link.linkXmlNode->getChildCount() == 0)
-				continue;
-			pEntity->LoadLink(link.linkXmlNode->getChild(0));
-		}
-	}
-	virtual void Redo() {}
-
-private:
-
-	struct SLink
-	{
-		CryGUID    entityID;
-		XmlNodeRef linkXmlNode;
-	};
-
-	std::vector<SLink> m_Links;
-};
-
-class CUndoCreateFlowGraph : public IUndoObject
-{
-public:
-	CUndoCreateFlowGraph(CEntityObject* entity, const char* groupName)
-		: m_entityGuid(entity->GetId())
-		, m_groupName(groupName)
-	{
-	}
-
-protected:
-	virtual void Undo(bool bUndo) override
-	{
-		auto pEntity = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(m_entityGuid));
-		if (pEntity)
-		{
-			pEntity->RemoveFlowGraph();
-		}
-	}
-
-	virtual void Redo() override
-	{
-		auto pEntity = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(m_entityGuid));
-		if (pEntity)
-		{
-			pEntity->OpenFlowGraph(m_groupName);
-		}
-	}
-
-	virtual const char* GetDescription() override { return "Create Flow Graph"; }
-
-private:
-	CryGUID     m_entityGuid;
-	const char* m_groupName;
-};
-
 std::map<EntityId, CEntityObject*> s_entityIdMap;
-
-};
+}
 
 IMPLEMENT_DYNCREATE(CEntityObject, CBaseObject)
 
@@ -410,15 +163,15 @@ CEntityObject* CEntityLink::GetTarget() const
 	return static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(targetId));
 }
 
-CEntityObject::CEntityObject() : m_listeners(1)
+CEntityObject::CEntityObject()
+	: m_listeners(1)
 {
-	m_pEntity = 0;
+	m_pEntity = nullptr;
 	m_bLoadFailed = false;
 
 	m_pEntityScript = nullptr;
 	m_pEntityClass = nullptr;
-
-	m_visualObject = 0;
+	m_pHelperMesh = nullptr;
 
 	m_proximityRadius = 0;
 	m_innerRadius = 0;
@@ -439,6 +192,7 @@ CEntityObject::CEntityObject() : m_listeners(1)
 	m_bVisible = true;
 	m_bCalcPhysics = true;
 	m_pFlowGraph = nullptr;
+	m_bCloned = false;
 	m_bLight = false;
 	m_bAreaLight = false;
 	m_fAreaWidth = 1;
@@ -455,7 +209,7 @@ CEntityObject::CEntityObject() : m_listeners(1)
 
 	UseMaterialLayersMask();
 
-	SetColor(RGB(255, 255, 0));
+	SetColor(ColorB(255, 255, 0));
 
 	// Init Variables.
 	mv_castShadow = true;
@@ -517,7 +271,7 @@ void CEntityObject::InitVariables()
 
 	if (m_pVarObject == nullptr)
 	{
-		m_pVarObject = stl::make_unique<CVarObject>();
+		m_pVarObject = std::make_unique<CVarObject>();
 	}
 
 	m_pVarObject->AddVariable(mv_outdoor, "OutdoorOnly", _T("Ignore Visareas"), functor(*this, &CEntityObject::OnEntityFlagsChange));
@@ -572,20 +326,22 @@ void CEntityObject::SetScriptName(const string& file, CBaseObject* pPrev)
 
 void CEntityObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	//Somehow this crashes the profiler, because entity names may be malformed at times. This would be very nice if it was fixed, meanwhile using the version without name.
-	//LOADING_TIME_PROFILE_SECTION_NAMED(GetName().c_str());
+	//CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, GetName().c_str());
 	if (m_pFlowGraph)
 	{
 		GetIEditorImpl()->GetFlowGraphManager()->UnregisterGraph(m_pFlowGraph);
 	}
 	SAFE_RELEASE(m_pFlowGraph);
 
+	//Remove the entity from the entity system, this does not clean some of the editor side structures (for example entity links)
 	DeleteEntity();
 	UnloadScript();
 
-	ReleaseEventTargets();
+	//We need to remove all the editor side entity links and disconnect all the observers
 	RemoveAllEntityLinks();
+	ReleaseEventTargets();
 
 	for (CListenerSet<IEntityObjectListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 	{
@@ -680,7 +436,8 @@ CEntityObject* CEntityObject::FindFromEntityId(EntityId id)
 
 bool CEntityObject::IsLegacyObject() const
 {
-	return (m_pEntityClass != nullptr && gEnv->pGameFramework->GetIGameObjectSystem()->GetID(m_pEntityClass->GetName()) != IGameObjectSystem::InvalidExtensionID)
+	return (m_pEntityClass != nullptr &&
+	        (gEnv->pGameFramework->GetIGameObjectSystem() && gEnv->pGameFramework->GetIGameObjectSystem()->GetID(m_pEntityClass->GetName()) != IGameObjectSystem::InvalidExtensionID))
 	       || (m_pEntityScript != nullptr && strlen(m_pEntityScript->GetClass()->GetScriptFile()) > 0)
 	       || m_prototype != nullptr;
 }
@@ -786,7 +543,7 @@ static void OnBnClickedAddComponent()
 			return QVariant();
 		}
 
-		virtual QString                         GetToolTip() const override                     { return m_tooltip; }
+		virtual QString                         GetToolTip(int32 columnIndex) const override    { return m_tooltip; }
 		virtual const QIcon*                    GetColumnIcon(int32 columnIndex) const override { return &m_icon; }
 		virtual const CAbstractDictionaryEntry* GetParentEntry() const override                 { return m_pParentEntry; }
 		virtual bool                            IsEnabled() const override                      { return m_bEnabled; }
@@ -833,12 +590,12 @@ static void OnBnClickedAddComponent()
 
 		void AddEntry(CComponentDictionaryEntry& entry)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryEntry>(entry));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryEntry>(entry));
 		}
 
 		CComponentDictionaryCategoryEntry& AddCategoryEntry(const char* szName)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryCategoryEntry>(szName, this));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryCategoryEntry>(szName, this));
 			return static_cast<CComponentDictionaryCategoryEntry&>(*m_entries.back().get());
 		}
 
@@ -857,7 +614,7 @@ static void OnBnClickedAddComponent()
 		virtual int32                           GetNumEntries() const override       { return m_entries.size(); }
 		virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override { return (m_entries.size() > index) ? m_entries[index].get() : nullptr; }
 
-		virtual int32                           GetNumColumns() const override       { return (uint32)EComponentDictionaryColumn::Count; };
+		virtual int32                           GetNumColumns() const override       { return (uint32)EComponentDictionaryColumn::Count; }
 		virtual QString                         GetColumnName(int32 index) const override
 		{
 			if (index == (uint32)EComponentDictionaryColumn::Name)
@@ -870,12 +627,12 @@ static void OnBnClickedAddComponent()
 
 		void AddEntry(CComponentDictionaryEntry& entry)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryEntry>(entry));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryEntry>(entry));
 		}
 
 		CComponentDictionaryCategoryEntry& AddCategoryEntry(const char* szName)
 		{
-			m_entries.emplace_back(stl::make_unique<CComponentDictionaryCategoryEntry>(szName));
+			m_entries.emplace_back(std::make_unique<CComponentDictionaryCategoryEntry>(szName));
 			return static_cast<CComponentDictionaryCategoryEntry&>(*m_entries.back().get());
 		}
 
@@ -918,24 +675,25 @@ static void OnBnClickedAddComponent()
 	std::map<string, std::vector<const Schematyc::IEnvComponent*>> componentsMap;
 
 	// Populate all available entity components into the map, sorted by category
-	auto visitComponentsLambda = [&existingComponentClassDescs, &componentsMap](const Schematyc::IEnvComponent& component)
-	{
-		if (strlen(component.GetDesc().GetLabel()) == 0)
+	auto visitComponentsLambda =
+		[&existingComponentClassDescs, &componentsMap](const Schematyc::IEnvComponent& component)
 		{
+			if (strlen(component.GetDesc().GetLabel()) == 0)
+			{
+				return Schematyc::EVisitStatus::Continue;
+			}
+
+			if (component.GetDesc().GetComponentFlags().Check(EEntityComponentFlags::HideFromInspector))
+			{
+				return Schematyc::EVisitStatus::Continue;
+			}
+
+			string editorCategory = component.GetDesc().GetEditorCategory();
+
+			componentsMap[editorCategory].push_back(&component);
+
 			return Schematyc::EVisitStatus::Continue;
-		}
-
-		if (component.GetDesc().GetComponentFlags().Check(EEntityComponentFlags::HideFromInspector))
-		{
-			return Schematyc::EVisitStatus::Continue;
-		}
-
-		string editorCategory = component.GetDesc().GetEditorCategory();
-
-		componentsMap[editorCategory].push_back(&component);
-
-		return Schematyc::EVisitStatus::Continue;
-	};
+		};
 
 	gEnv->pSchematyc->GetEnvRegistry().VisitComponents(visitComponentsLambda);
 
@@ -1000,14 +758,14 @@ static void OnBnClickedAddComponent()
 		}
 	}
 
-	std::unique_ptr<CModalPopupDictionary> pDictionary = stl::make_unique<CModalPopupDictionary>("Entity::AddComponent", dictionary);
+	std::unique_ptr<CModalPopupDictionary> pDictionary = std::make_unique<CModalPopupDictionary>("Entity::AddComponent", dictionary);
 	pDictionary->ExecAt(QCursor::pos());
 
 	if (CComponentDictionaryEntry* pSelectedComponentEntry = static_cast<CComponentDictionaryEntry*>(pDictionary->GetResult()))
 	{
 		using namespace Private_EntityObject;
 		const CSelectionGroup* pSelectionGroup = GetIEditor()->GetObjectManager()->GetSelection();
-		std::unique_ptr<CUndoAddComponent> pUndoAddComponent = stl::make_unique<CUndoAddComponent>(&pSelectedComponentEntry->GetComponent().GetDesc(), pSelectionGroup->GetCount());
+		std::unique_ptr<CUndoAddComponent> pUndoAddComponent = std::make_unique<CUndoAddComponent>(&pSelectedComponentEntry->GetComponent().GetDesc(), pSelectionGroup->GetCount());
 
 		for (int i = 0, n = pSelectionGroup->GetCount(); i < n; ++i)
 		{
@@ -1258,8 +1016,8 @@ void CEntityObject::CreateComponentWidgets(CInspectorWidgetCreator& creator)
 
 		CryGUID componentInstanceGUID = pComponent->GetGUID();
 
-		std::unique_ptr<CEntityComponentCollapsibleFrame> pWidget = stl::make_unique<CEntityComponentCollapsibleFrame>(szComponentLabel,
-			pComponent->GetClassDesc(), componentTypeIndex, pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded));
+		std::unique_ptr<CEntityComponentCollapsibleFrame> pWidget =
+			std::make_unique<CEntityComponentCollapsibleFrame>(szComponentLabel, pComponent->GetClassDesc(), componentTypeIndex, pComponent->GetComponentFlags().Check(EEntityComponentFlags::UserAdded));
 
 		creator.AddPropertyTree(pComponent->GetClassDesc().GetGUID().hipart + componentTypeIndex, szComponentLabel, std::move(pWidget), [componentClassGUID, componentTypeIndex](CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)
 		{
@@ -1337,7 +1095,8 @@ void CEntityObject::SerializeLinks(Serialization::IArchive& ar, bool bMultiEdit)
 			pickToolButton.SetToolClass(RUNTIME_CLASS(EntityLinkTool), nullptr, this);
 
 			ar(pickToolButton, "picker", "^Pick");
-			ar(Serialization::ActionButton([ = ] {
+			ar(Serialization::ActionButton([=]
+			{
 				CUndo undo("Clear entity links");
 				RemoveAllEntityLinks();
 			}), "picker", "^Clear");
@@ -1438,7 +1197,7 @@ IPhysicalEntity* CEntityObject::GetCollisionEntity() const
 	{
 		return m_pEntity->GetPhysics();
 	}
-	return 0;
+	return nullptr;
 }
 
 void CEntityObject::GetLocalBounds(AABB& box)
@@ -1481,6 +1240,11 @@ void CEntityObject::GetLocalBounds(AABB& box)
 			localSlotBounds.SetTransformedAABB(m_pEntity->GetSlotLocalTM(i, false), localSlotBounds);
 			box.Add(localSlotBounds);
 		}
+	}
+
+	if (m_pHelperMesh)
+	{
+		box.Add(m_pHelperMesh->GetAABB());
 	}
 }
 
@@ -1587,6 +1351,11 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 	AABB bbox;
 	m_pEntity->GetLocalBounds(bbox);
 
+	if (m_pHelperMesh && hc.helperMeshShown)
+	{
+		bbox.Add(m_pHelperMesh->GetAABB());
+	}
+
 	// Early exit, check bounding box
 	Vec3 point;
 	if (!Intersect::Ray_AABB(raySrc, rayDir, bbox, point))
@@ -1598,9 +1367,9 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 	hitInfo.inReferencePoint = raySrc;
 	hitInfo.inRay = Ray(raySrc, rayDir);
 
-	if (m_visualObject != nullptr)
+	if (m_pHelperMesh && hc.helperMeshShown)
 	{
-		if (m_visualObject->RayIntersection(hitInfo))
+		if (m_pHelperMesh->RayIntersection(hitInfo))
 		{
 			// World space distance.
 			Vec3 worldHitPos = GetWorldTM().TransformPoint(hitInfo.vHitPos);
@@ -1634,6 +1403,7 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 				return true;
 			}
 		}
+#if defined(USE_GEOM_CACHES)
 		else if (IGeomCacheRenderNode* pGeomCache = m_pEntity->GetGeomCacheRenderNode(i))
 		{
 			if (pGeomCache->RayIntersection(hitInfo))
@@ -1645,6 +1415,7 @@ bool CEntityObject::HitTestEntity(HitContext& hc, bool& bHavePhysics)
 				return true;
 			}
 		}
+#endif
 	}
 
 	IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysicalEntity();
@@ -1690,7 +1461,7 @@ bool CEntityObject::HitTest(HitContext& hc)
 				return false;
 			}
 		}
-		if (m_visualObject && !gViewportPreferences.showIcons && !gViewportPreferences.showSizeBasedIcons)
+		if (m_pHelperMesh && !hc.iconShown)
 		{
 			Matrix34 tm = GetWorldTM();
 			float sz = m_helperScale * gGizmoPreferences.helperScale;
@@ -1708,8 +1479,8 @@ bool CEntityObject::HitTest(HitContext& hc)
 			geom_contact* pcontacts = 0;
 			WriteLockCond lock;
 
-			int col = (m_visualObject->GetPhysGeom() && m_visualObject->GetPhysGeom()->pGeom)
-			          ? m_visualObject->GetPhysGeom()->pGeom->IntersectLocked(pRay, &gwd, 0, 0, pcontacts, lock)
+			int col = (m_pHelperMesh->GetPhysGeom() && m_pHelperMesh->GetPhysGeom()->pGeom)
+			          ? m_pHelperMesh->GetPhysGeom()->pGeom->IntersectLocked(pRay, &gwd, 0, 0, pcontacts, lock)
 			          : 0;
 
 			pGeomMgr->DestroyGeometry(pRay);
@@ -1726,14 +1497,12 @@ bool CEntityObject::HitTest(HitContext& hc)
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	if ((m_bDisplayBBox && gViewportPreferences.showTriggerBounds) || hc.b2DViewport || (m_bDisplayBBox && m_bBBoxSelection))
+	if ((m_bDisplayBBox && hc.triggerBoundsShown) || hc.b2DViewport || (m_bDisplayBBox && m_bBBoxSelection))
 	{
-		float hitEpsilon = hc.view->GetScreenScaleFactor(GetWorldPos()) * 0.01f;
-		float hitDist;
-
-		float fScale = GetScale().x;
 		AABB boxScaled;
 		GetLocalBounds(boxScaled);
+
+		float fScale = GetScale().x;
 		boxScaled.min *= fScale;
 		boxScaled.max *= fScale;
 
@@ -1759,6 +1528,8 @@ bool CEntityObject::HitTest(HitContext& hc)
 			else
 			{
 				// Check intersection with bbox edges.
+				float hitEpsilon = hc.view->GetScreenScaleFactor(GetWorldPos()) * 0.01f;
+				float hitDist;
 				if (Intersect::Ray_AABBEdge(xformedRaySrc, xformedRayDir, boxScaled, hitEpsilon, hitDist, intPnt))
 				{
 					hc.dist = xformedRaySrc.GetDistance(intPnt);
@@ -1791,10 +1562,10 @@ bool CEntityObject::HitTestRect(HitContext& hc)
 {
 	bool bResult = false;
 
-	if (m_visualObject && !gViewportPreferences.showIcons && !gViewportPreferences.showSizeBasedIcons)
+	if (m_pHelperMesh && !hc.iconShown)
 	{
 		AABB box;
-		box.SetTransformedAABB(GetWorldTM(), m_visualObject->GetAABB());
+		box.SetTransformedAABB(GetWorldTM(), m_pHelperMesh->GetAABB());
 		bResult = HitTestRectBounds(hc, box);
 	}
 	else
@@ -1856,7 +1627,7 @@ float CEntityObject::GetCreationOffsetFromTerrain() const
 
 bool CEntityObject::CreateGameObject()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!m_pEntityScript && !m_pEntityClass)
 	{
 		if (!m_entityClass.IsEmpty())
@@ -1877,7 +1648,7 @@ bool CEntityObject::CreateGameObject()
 
 bool CEntityObject::SetClass(const string& entityClass, bool bForceReload, XmlNodeRef xmlEntityNode)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (entityClass == m_entityClass && (m_pEntityScript || (m_pEntityClass && strlen(m_pEntityClass->GetScriptFile()) == 0)) && !bForceReload)
 	{
 		return true;
@@ -1938,10 +1709,10 @@ void CEntityObject::ResetEditorClassInfo()
 
 	if (!editorClassInfo.sHelper.empty())
 	{
-		m_visualObject = gEnv->p3DEngine->LoadStatObj(editorClassInfo.sHelper.c_str(), nullptr, nullptr, false);
-		if (m_visualObject)
+		m_pHelperMesh = gEnv->p3DEngine->LoadStatObj(editorClassInfo.sHelper.c_str(), nullptr, nullptr, false);
+		if (m_pHelperMesh)
 		{
-			m_visualObject->AddRef();
+			m_pHelperMesh->AddRef();
 		}
 	}
 
@@ -1969,7 +1740,7 @@ void CEntityObject::ResetEditorClassInfo()
 		{
 			iconId = GetClassDesc()->GetTextureIconId();
 			// Make sure there's always an icon
-			if (iconId == 0 && m_visualObject == nullptr)
+			if (iconId == 0 && !m_pHelperMesh)
 			{
 				iconId = GetIEditor()->GetIconManager()->GetIconTexture("%EDITOR%/ObjectIcons/Schematyc.bmp");
 			}
@@ -2011,7 +1782,7 @@ bool CEntityObject::SetEntityScript(std::shared_ptr<CEntityScript> pEntityScript
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Failed to load entity script for Entity %s(Script: %s) %s",
 			           (const char*)GetName(),
 			           (const char*)m_entityClass,
-			           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", GetName()));
+			           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 
 			return false;
 		}
@@ -2135,7 +1906,7 @@ IVariable* CEntityObject::FindVariableInSubBlock(CVarBlockPtr& properties, IVari
 
 void CEntityObject::SpawnEntity()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!m_pEntityClass)
 	{
 		return;
@@ -2151,23 +1922,19 @@ void CEntityObject::SpawnEntity()
 
 	IEntitySystem* pEntitySystem = GetIEditorImpl()->GetSystem()->GetIEntitySystem();
 
-	if (m_entityId != 0)
+	if (m_entityId != INVALID_ENTITYID && pEntitySystem->IsIDUsed(m_entityId))
 	{
-		if (pEntitySystem->IsIDUsed(m_entityId))
-		{
-			m_entityId = 0;
-		}
+		m_entityId = INVALID_ENTITYID;
 	}
 
 	SEntitySpawnParams params;
 	params.pClass = m_pEntityClass;
-	params.nFlags = 0;
-	params.nFlagsExtended = m_bCloned ? ENTITY_FLAG_EXTENDED_CLONED : 0;
+	params.nFlags = m_bCloned ? ENTITY_FLAG_CLONED : 0;
 	params.sName = (const char*)GetName();
 	params.vPosition = GetPos();
 	params.qRotation = GetRotation();
 	params.id = m_entityId;
-	// Give loaded xml data to the entity spawn function for loading schematyc components, and other component members
+	// Give loaded xml data to the entity spawn function for loading Schematyc components, and other component members
 	params.entityNode = m_loadedXmlNodeData;
 
 	m_bLight = strstr(params.pClass->GetScriptFile(), "/Lights/") ? true : false;
@@ -2200,12 +1967,7 @@ void CEntityObject::SpawnEntity()
 		params.nFlagsExtended = (params.nFlagsExtended & ~ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK) | ((((int)mv_giMode) << ENTITY_FLAG_EXTENDED_GI_MODE_BIT_OFFSET) & ENTITY_FLAG_EXTENDED_GI_MODE_BIT_MASK);
 	}
 
-	if (params.id == 0)
-	{
-		params.bStaticEntityId = true; // Tells to Entity system to generate new static id.
-	}
-
-	params.guid = ToEntityGuid(GetId());
+	params.guid = GetId();
 
 	// Spawn Entity but not initialize it.
 	m_pEntity = pEntitySystem->SpawnEntity(params, false);
@@ -2276,12 +2038,11 @@ void CEntityObject::SpawnEntity()
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Failed to initialize Entity %s(Script: %s) %s",
 			           (const char*)GetName(),
 			           (const char*)m_entityClass,
-			           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", GetName()));
+			           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 
 			return;
 		}
 
-		BindIEntityChilds();
 		UpdateIEntityLinks(false);
 
 		// Make sure the entity is already attached to it's parent so we can update it's transform
@@ -2326,7 +2087,7 @@ void CEntityObject::SpawnEntity()
 		// the entity can already have a FG if it is being reloaded
 		if (m_pFlowGraph)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Reloading Associated FlowGraph");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Reloading Associated FlowGraph");
 
 			// Re-apply entity for flow graph.
 			m_pFlowGraph->SetEntity(this, true);
@@ -2353,7 +2114,7 @@ void CEntityObject::SpawnEntity()
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Entity %s Failed to Spawn (Script: %s) %s",
 		           (const char*)GetName(),
 		           (const char*)m_entityClass,
-		           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", GetName()));
+		           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 	}
 
 	UpdateLightProperty();
@@ -2367,13 +2128,12 @@ void CEntityObject::DeleteEntity()
 
 	if (m_pEntity)
 	{
-		UnbindIEntity();
 		m_pEntity->ClearFlags(ENTITY_FLAG_UNREMOVABLE);
 		IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 		pEntitySystem->RemoveEntity(m_pEntity->GetId(), true);
 		s_entityIdMap.erase(m_entityId);
 	}
-	m_pEntity = 0;
+	m_pEntity = nullptr;
 }
 
 void CEntityObject::UnloadScript()
@@ -2384,12 +2144,12 @@ void CEntityObject::UnloadScript()
 	{
 		DeleteEntity();
 	}
-	if (m_visualObject)
+	if (m_pHelperMesh)
 	{
-		m_visualObject->Release();
+		m_pHelperMesh->Release();
 	}
-	m_visualObject = 0;
-	m_pEntityScript = 0;
+	m_pHelperMesh = nullptr;
+	m_pEntityScript = nullptr;
 }
 
 void CEntityObject::XFormGameEntity()
@@ -2403,7 +2163,7 @@ void CEntityObject::XFormGameEntity()
 	// Make sure components are correctly calculated.
 	if (m_pEntity)
 	{
-		if (m_pEntity->GetParent())
+		if (m_pEntity->GetParent() && !m_pEntity->GetLocalSimParent())
 		{
 			// If the entity is linked to its parent in game avoid precision issues from inverse/forward
 			// transform calculations by setting the local matrix instead of the world matrix
@@ -2420,20 +2180,20 @@ void CEntityObject::XFormGameEntity()
 
 void CEntityObject::CalcBBox()
 {
-	bool bChanged = false;
 	if (m_pEntity != nullptr)
 	{
 		// Get Local bounding box of entity.
-		AABB bbox, originalBBox;
+		AABB bbox;
 		m_pEntity->GetLocalBounds(bbox);
-		originalBBox = bbox;
+
+		AABB originalBBox = bbox;
 
 		if (bbox.min.x >= bbox.max.x || bbox.min.y >= bbox.max.y || bbox.min.z >= bbox.max.z)
 		{
-			if (m_visualObject)
+			if (m_pHelperMesh)
 			{
-				Vec3 minp = m_visualObject->GetBoxMin() * m_helperScale * gGizmoPreferences.helperScale;
-				Vec3 maxp = m_visualObject->GetBoxMax() * m_helperScale * gGizmoPreferences.helperScale;
+				Vec3 minp = m_pHelperMesh->GetBoxMin() * m_helperScale * gGizmoPreferences.helperScale;
+				Vec3 maxp = m_pHelperMesh->GetBoxMax() * m_helperScale * gGizmoPreferences.helperScale;
 				bbox.Add(minp);
 				bbox.Add(maxp);
 			}
@@ -2485,22 +2245,10 @@ void CEntityObject::SetSelected(bool bSelect)
 
 	if (m_pEntity)
 	{
-		//m_pEntity->SetFlags()
+		IRenderNode* pRenderNode = m_pEntity->GetRenderNode();
+		if (pRenderNode)
 		{
-			IRenderNode* pRenderNode = m_pEntity->GetRenderNode();
-			if (pRenderNode)
-			{
-				int flags = pRenderNode->GetRndFlags();
-				if (bSelect)
-				{
-					flags |= ERF_SELECTED;
-				}
-				else
-				{
-					flags &= ~ERF_SELECTED;
-				}
-				pRenderNode->SetRndFlags(flags);
-			}
+			pRenderNode->SetRndFlags(ERF_SELECTED, bSelect);
 		}
 	}
 
@@ -2577,7 +2325,7 @@ template<> struct IVariableType<Vec3>
 	enum { value = IVariable::VECTOR };
 };
 
-void CEntityObject::DrawProjectorPyramid(DisplayContext& dc, float dist)
+void CEntityObject::DrawProjectorPyramid(SDisplayContext& dc, float dist)
 {
 	const int numPoints = 16; // per one arc
 	const int numArcs = 6;
@@ -2662,7 +2410,7 @@ void CEntityObject::DrawProjectorPyramid(DisplayContext& dc, float dist)
 	dc.DrawLine(org, points[numPoints * 3]);
 }
 
-void CEntityObject::DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float dist)
+void CEntityObject::DrawProjectorFrustum(SDisplayContext& dc, Vec2 size, float dist)
 {
 	static const Vec3 org(0.0f, 0.0f, 0.0f);
 	const Vec3 corners[4] =
@@ -2670,8 +2418,7 @@ void CEntityObject::DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float di
 		Vec3(dist, -size.x, -size.y),
 		Vec3(dist, size.x,  -size.y),
 		Vec3(dist, -size.x, size.y),
-		Vec3(dist, size.x,  size.y)
-	};
+		Vec3(dist, size.x,  size.y) };
 
 	dc.DrawLine(org, corners[0]);
 	dc.DrawLine(org, corners[1]);
@@ -2681,31 +2428,32 @@ void CEntityObject::DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float di
 	dc.DrawWireBox(Vec3(dist, -size.x, -size.y), Vec3(dist, size.x, size.y));
 }
 
-void CEntityObject::DrawEntityLinks(DisplayContext& dc)
+void CEntityObject::DrawEntityLinks(SDisplayContext& dc)
 {
-	if (dc.flags & DISPLAY_LINKS)
+	if (!dc.showLinks)
 	{
-		for (const auto& link : m_links)
+		return;
+	}
+
+	for (const auto& link : m_links)
+	{
+		if (CEntityObject* pTarget = link.GetTarget())
 		{
-			if (CEntityObject* pTarget = link.GetTarget())
+			dc.DrawLine(this->GetWorldPos(), pTarget->GetWorldPos(), ColorF(0.0f, 1.0f, 0.0f), ColorF(0.0f, 1.0f, 0.0f));
+
+			Vec3 pos = 0.5f * (this->GetWorldPos() + pTarget->GetWorldPos());
+			float camDist = dc.camera->GetPosition().GetDistance(pos);
+			if (camDist < gGlobalHelperPreferences.textLabelDistance)
 			{
-				dc.DrawLine(this->GetWorldPos(), pTarget->GetWorldPos(), ColorF(0.0f, 1.0f, 0.0f), ColorF(0.0f, 1.0f, 0.0f));
-
-				Vec3 pos = 0.5f * (this->GetWorldPos() + pTarget->GetWorldPos());
-
-				float camDist = dc.camera->GetPosition().GetDistance(pos);
-				float maxDist = gViewportPreferences.labelsDistance;
-				if (camDist < gViewportPreferences.labelsDistance)
+				float maxDist = gGlobalHelperPreferences.textLabelDistance;
+				float rangeRatio = 1.0f;
+				float range = maxDist / 2.0f;
+				if (camDist > range)
 				{
-					float rangeRatio = 1.0f;
-					float range = maxDist / 2.0f;
-					if (camDist > range)
-					{
-						rangeRatio = 1.0f * (1.0f - (camDist - range) / range);
-					}
-					dc.SetColor(0.4f, 1.0f, 0.0f, rangeRatio);
-					dc.DrawTextLabel(pos + Vec3(0, 0, 0.2f), 1.2f, link.name);
+					rangeRatio = 1.0f * (1.0f - (camDist - range) / range);
 				}
+				dc.SetColor(0.4f, 1.0f, 0.0f, rangeRatio);
+				dc.DrawTextLabel(pos + Vec3(0, 0, 0.2f), 1.2f, link.name);
 			}
 		}
 	}
@@ -2713,9 +2461,11 @@ void CEntityObject::DrawEntityLinks(DisplayContext& dc)
 
 void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
-	if (!gViewportDebugPreferences.showEntityObjectHelper)
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	if (!dc.showEntityObjectHelper)
+	{
 		return;
+	}
 
 	if (!m_pEntity)
 	{
@@ -2727,7 +2477,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	Matrix34 wtm = GetWorldTM();
 
-	COLORREF col = GetColor();
+	COLORREF col = CMFCUtils::ColorBToColorRef(GetColor());
 	if (IsFrozen())
 	{
 		col = dc.GetFreezeColor();
@@ -2750,11 +2500,11 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		dc.DrawArrow(Vec3(0, 0, 0), FORWARD_DIRECTION * m_helperScale, m_helperScale);
 	}
 
-	bool bDisplaySolidBox = (m_bDisplaySolidBBox && gViewportPreferences.showTriggerBounds);
+	bool bDisplaySolidBox = (m_bDisplaySolidBBox && dc.showTriggerBounds);
 	if (IsSelected())
 	{
 		dc.SetSelectedColor(0.5f);
-		if (m_bDisplayBBox || (dc.flags & DISPLAY_2D))
+		if (m_bDisplayBBox || (dc.display2D))
 		{
 			bDisplaySolidBox = m_bDisplaySolidBBox;
 			AABB box;
@@ -2764,7 +2514,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 	}
 	else
 	{
-		if ((m_bDisplayBBox && gViewportPreferences.showTriggerBounds) || (dc.flags & DISPLAY_2D))
+		if ((m_bDisplayBBox && dc.showTriggerBounds) || (dc.display2D))
 		{
 			dc.SetColor(col, 0.3f);
 			AABB box;
@@ -2850,8 +2600,8 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 
-	// Draw radii if present and object selected.
-	if (gViewportPreferences.alwaysShowRadiuses || IsSelected())
+	// Draw radii if present or object is selected.
+	if (dc.showRadii || IsSelected())
 	{
 		const Vec3& scale = GetScale();
 		float fScale = scale.x; // Ignore matrix scale.
@@ -2905,33 +2655,39 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	dc.PopMatrix();
 
-	// Entities themselves are rendered by 3DEngine.
-
-	if (m_visualObject && ((!gViewportPreferences.showIcons && !gViewportPreferences.showSizeBasedIcons) || !HaveTextureIcon()))
+	if (m_pHelperMesh && dc.showMesh)
 	{
-		Matrix34 tm(wtm);
+		m_statObjWorldMatrix = wtm;
 		float sz = m_helperScale * gGizmoPreferences.helperScale;
-		tm.ScaleColumn(Vec3(sz, sz, sz));
+		m_statObjWorldMatrix.ScaleColumn(Vec3(sz, sz, sz));
 
 		SRendParams rp;
+
+		// Helper mesh is rendered explicitly here, while Entity mesh is rendered by the Engine implicitly
+		// As a workaround of rendering silhouette on selected object, we are changing color manually and use different material
 		Vec3 color;
 		if (IsSelected())
 		{
-			color = CMFCUtils::Rgb2Vec(dc.GetSelectedColor());
+			color = CMFCUtils::Rgb2Vec(CMFCUtils::ColorBToColorRef(gViewportSelectionPreferences.geometrySelectionColor));
+			rp.pMaterial = GetIEditorImpl()->GetIconManager()->GetHelperMaterial();
 		}
 		else
 		{
 			color = CMFCUtils::Rgb2Vec(col);
+			rp.pMaterial = m_pHelperMesh->GetMaterial();
 		}
 
 		rp.AmbientColor = ColorF(color[0], color[1], color[2], 1);
 		rp.dwFObjFlags |= FOB_TRANS_MASK;
 		rp.fAlpha = 1;
-		rp.pMatrix = &tm;
-		rp.pMaterial = GetIEditorImpl()->GetIconManager()->GetHelperMaterial();
+		rp.pMatrix = nullptr;
 
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
-		m_visualObject->Render(rp, passInfo);
+		SAuxStatObjParams statObjParams;
+		statObjParams.pStatObj = m_pHelperMesh;
+		statObjParams.renderParams = rp;
+		statObjParams.transformMatix = m_statObjWorldMatrix;
+
+		objRenderHelper.GetPassInfo().GetIRenderView()->InjectAuxiliaryStatObject(statObjParams);
 	}
 
 	if (IsSelected())
@@ -2946,7 +2702,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 
-	if ((dc.flags & DISPLAY_HIDENAMES) && gViewportPreferences.drawEntityLabels)
+	if (dc.showEntityObjectsTextLabels)
 	{
 		// If labels hidden but we draw entity labels enabled, always draw them.
 		CGroup* pGroup = (CGroup*)GetGroup();
@@ -2956,7 +2712,7 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		}
 	}
 
-	if (m_pEntity)
+	if (m_pEntity && dc.showComponentHelpers)
 	{
 		SGeometryDebugDrawInfo dd;
 		dd.tm = wtm;
@@ -2968,21 +2724,44 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		preview.bNoRenderNodes = true;
 		preview.bSelected = IsSelected();
 		preview.bRenderSlots = false;
+		preview.pPassInfo = &objRenderHelper.GetPassInfo();
+
 		m_pEntity->PreviewRender(preview);
 	}
 
 	DrawDefault(dc, col);
 }
 
+const ColorB& CEntityObject::GetSelectionPreviewHighlightColor()
+{
+	return gViewportSelectionPreferences.colorEntityBBox;
+}
+
+void CEntityObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
+{
+	CBaseObject::DrawSelectionPreviewHighlight(dc);
+
+	AABB bbox;
+	GetBoundBox(bbox);
+	ColorB color = GetSelectionPreviewHighlightColor();
+
+	if (GetParent())
+		color.a = (uint8)(gViewportSelectionPreferences.childObjectGeomAlpha * 255);
+
+	dc.DepthTestOff();
+	dc.SetColor(color);
+	dc.DrawSolidBox(bbox.min, bbox.max);
+	dc.DepthTestOn();
+}
+
 void CEntityObject::GetDisplayBoundBox(AABB& box)
 {
 	AABB bbox;
-
 	GetBoundBox(bbox);
 
 	for (const auto& link : m_links)
 	{
-		if (CEntityObject* pTarget = link.GetTarget())
+		if (const CEntityObject* pTarget = link.GetTarget())
 		{
 			bbox.Add(pTarget->GetWorldPos());
 		}
@@ -2991,7 +2770,7 @@ void CEntityObject::GetDisplayBoundBox(AABB& box)
 	box = bbox;
 }
 
-void CEntityObject::DrawAIInfo(DisplayContext& dc, IAIObject* aiObj)
+void CEntityObject::DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj)
 {
 	assert(aiObj);
 
@@ -3104,7 +2883,7 @@ void CEntityObject::Serialize(CObjectArchive& ar)
 
 		xmlNode->getAttr("AttachmentTarget", m_attachmentTarget);
 
-		bool bLoaded = SetClass(entityClass, false, ar.node);
+		SetClass(entityClass, false, ar.node);
 
 		if (ar.bUndo)
 		{
@@ -3215,14 +2994,13 @@ void CEntityObject::Serialize(CObjectArchive& ar)
 
 void CEntityObject::PostLoad(CObjectArchive& ar)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (m_pEntity)
 	{
 		// Force entities to register them-self in sectors.
 		// force entity to be registered in terrain sectors again.
 		XFormGameEntity();
-		BindToParent();
-		BindIEntityChilds();
+
 		if (m_pEntityScript)
 		{
 			m_pEntityScript->SetEventsTable(this);
@@ -3388,7 +3166,7 @@ XmlNodeRef CEntityObject::Export(const string& levelPath, XmlNodeRef& xmlExportN
 		objNode->setAttr("ClassGUID", m_entityClassGUID);
 	}
 	objNode->setAttr("EntityId", m_entityId);
-	objNode->setAttr("EntityGuid", ToEntityGuid(GetId()));
+	objNode->setAttr("EntityGuid", GetId());
 
 	if (IsLegacyObject())
 	{
@@ -3463,7 +3241,7 @@ XmlNodeRef CEntityObject::Export(const string& levelPath, XmlNodeRef& xmlExportN
 				if (et.target->IsKindOf(RUNTIME_CLASS(CEntityObject)))
 				{
 					entityId = ((CEntityObject*)et.target)->GetEntityId();
-					entityGuid = ToEntityGuid(et.target->GetId());
+					entityGuid = et.target->GetId();
 				}
 			}
 
@@ -3689,9 +3467,14 @@ void CEntityObject::UpdateVisibility(bool bVisible)
 	{
 		m_pEntity->Hide(!m_bVisible);
 	}
-};
+}
 
-void CEntityObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
+bool CEntityObject::IsLabelVisible(const SDisplayContext& dc) const
+{
+	return dc.showEntityObjectsTextLabels;
+}
+
+void CEntityObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 {
 	CBaseObject::DrawDefault(dc, labelColor);
 
@@ -3700,19 +3483,6 @@ void CEntityObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
 	{
 		const Vec3 wp = m_pEntity->GetWorldPos();
 
-		if (gEnv->pAISystem)
-		{
-			ISmartObjectManager* pSmartObjectManager = gEnv->pAISystem->GetSmartObjectManager();
-			if (!pSmartObjectManager->ValidateSOClassTemplate(m_pEntity))
-			{
-				DrawLabel(dc, wp, RGB(255, 0, 0), 1.f, 4);
-			}
-			if (IsSelected() || IsHighlighted())
-			{
-				pSmartObjectManager->DrawSOClassTemplate(m_pEntity);
-			}
-		}
-
 		// Draw "ghosted" data around the entity's actual position in simulation mode
 		if (GetIEditorImpl()->GetGameEngine()->GetSimulationMode())
 		{
@@ -3720,22 +3490,21 @@ void CEntityObject::DrawDefault(DisplayContext& dc, COLORREF labelColor)
 			{
 				DrawSelectionHelper(dc, wp, labelColor, 0.5f);
 			}
-			else if (!(dc.flags & DISPLAY_HIDENAMES))
+			else if (dc.showEntityObjectsTextLabels)
 			{
 				DrawLabel(dc, wp, labelColor, 0.5f);
 			}
 
-			if (GetIEditor()->IsHelpersDisplayed())
-				DrawTextureIcon(dc, wp, 0.5f, bDisplaySelectionHelper);
+			DrawTextureIcon(dc, wp, 0.5f, bDisplaySelectionHelper);
 		}
 	}
 
 	DrawEntityLinks(dc);
 }
 
-void CEntityObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
+void CEntityObject::DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared)
 {
-	if (!gViewportPreferences.showSizeBasedIcons && !gViewportPreferences.showIcons)
+	if (!dc.showIcons)
 		return;
 
 	Vec3 iconPosition = pos;
@@ -3756,8 +3525,6 @@ void CEntityObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float a
 	constexpr int iconDistX = 2;
 	constexpr int iconDistY = 5;
 
-	bool bDrewComponentIcon = false;
-
 	// Draw component icons first
 	if (m_pEntity != nullptr)
 	{
@@ -3774,8 +3541,6 @@ void CEntityObject::DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float a
 		constexpr int maxColumnCount = 5;
 
 		Vec3 iconPos = GetTextureIconDrawPos();
-
-		bDrewComponentIcon = m_componentIconTextureIds.size() > 0;
 
 		for (int i = 0, n = m_componentIconTextureIds.size(); i < n; ++i)
 		{
@@ -4016,30 +3781,6 @@ void CEntityObject::InvalidateTM(int nWhyFlags)
 	m_bEntityXfromValid = false;
 }
 
-//! Attach new child node.
-void CEntityObject::OnAttachChild(CBaseObject* pChild)
-{
-	using namespace Private_EntityObject;
-	CUndo::Record(new CUndoAttachEntity(this, true));
-
-	if (pChild && pChild->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-	{
-		((CEntityObject*)pChild)->BindToParent();
-	}
-	else if (pChild && pChild->IsKindOf(RUNTIME_CLASS(CGroup)))
-	{
-		((CGroup*)pChild)->BindToParent();
-	}
-}
-
-// Detach this node from parent.
-void CEntityObject::OnDetachThis()
-{
-	using namespace Private_EntityObject;
-	CUndo::Record(new CUndoAttachEntity(this, false));
-	UnbindIEntity();
-}
-
 void CEntityObject::OnLink(CBaseObject* pParent)
 {
 	if (!m_pEntity)
@@ -4124,83 +3865,6 @@ void CEntityObject::UpdateTransform()
 	}
 }
 
-void CEntityObject::BindToParent()
-{
-	if (!m_pEntity)
-	{
-		return;
-	}
-
-	CBaseObject* parent = GetParent();
-	if (parent)
-	{
-		if (parent->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-		{
-			CEntityObject* parentEntity = (CEntityObject*)parent;
-
-			IEntity* ientParent = parentEntity->GetIEntity();
-			if (ientParent)
-			{
-				XFormGameEntity();
-				const int flags = ((m_attachmentType == eAT_GeomCacheNode) ? IEntity::ATTACHMENT_GEOMCACHENODE : 0)
-				                  | ((m_attachmentType == eAT_CharacterBone) ? IEntity::ATTACHMENT_CHARACTERBONE : 0);
-				SChildAttachParams attachParams(flags | IEntity::ATTACHMENT_KEEP_TRANSFORMATION, m_attachmentTarget.GetString());
-				ientParent->AttachChild(m_pEntity, attachParams);
-				XFormGameEntity();
-			}
-		}
-	}
-}
-
-void CEntityObject::BindIEntityChilds()
-{
-	if (!m_pEntity)
-	{
-		return;
-	}
-
-	int numChilds = GetChildCount();
-	for (int i = 0; i < numChilds; i++)
-	{
-		CBaseObject* pChild = GetChild(i);
-		if (pChild && pChild->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-		{
-			CEntityObject* pChildEntity = static_cast<CEntityObject*>(pChild);
-			IEntity* ientChild = pChildEntity->GetIEntity();
-
-			if (ientChild)
-			{
-				pChildEntity->XFormGameEntity();
-				const int flags = ((pChildEntity->m_attachmentType == eAT_GeomCacheNode) ? IEntity::ATTACHMENT_GEOMCACHENODE : 0)
-				                  | ((pChildEntity->m_attachmentType == eAT_CharacterBone) ? IEntity::ATTACHMENT_CHARACTERBONE : 0);
-				SChildAttachParams attachParams(flags, pChildEntity->m_attachmentTarget.GetString());
-				m_pEntity->AttachChild(ientChild, attachParams);
-				pChildEntity->XFormGameEntity();
-			}
-		}
-	}
-}
-
-void CEntityObject::UnbindIEntity()
-{
-	if (!m_pEntity)
-	{
-		return;
-	}
-
-	CBaseObject* parent = GetParent();
-	if (parent && parent->IsKindOf(RUNTIME_CLASS(CEntityObject)))
-	{
-		CEntityObject* parentEntity = (CEntityObject*)parent;
-
-		IEntity* ientParent = parentEntity->GetIEntity();
-		if (ientParent)
-		{
-			m_pEntity->DetachThis(IEntity::ATTACHMENT_KEEP_TRANSFORMATION);
-		}
-	}
-}
-
 void CEntityObject::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	CBaseObject::PostClone(pFromObject, ctx);
@@ -4271,7 +3935,7 @@ void CEntityObject::ResolveEventTarget(CBaseObject* object, unsigned int index)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ASSERT, "Attempting to link Object %s which is not an EntityObject to entity %s", object->GetName(), GetName());
 		}
-		object->AddEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+		object->signalChanged.Connect(this, &CEntityObject::OnEventTargetEvent);
 	}
 	m_eventTargets[index].target = object;
 	if (!m_eventTargets.empty() && m_pEntityScript != 0)
@@ -4372,16 +4036,16 @@ void CEntityObject::SaveLink(XmlNodeRef xmlNode)
 	}
 }
 
-void CEntityObject::OnEventTargetEvent(CBaseObject* target, int event)
+void CEntityObject::OnEventTargetEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
 	// When event target is deleted.
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
 		// Find this target in events list and remove.
 		int numTargets = m_eventTargets.size();
 		for (int i = 0; i < numTargets; i++)
 		{
-			if (m_eventTargets[i].target == target)
+			if (m_eventTargets[i].target == pObject)
 			{
 				RemoveEventTarget(i);
 				numTargets = m_eventTargets.size();
@@ -4389,12 +4053,12 @@ void CEntityObject::OnEventTargetEvent(CBaseObject* target, int event)
 			}
 		}
 	}
-	else if (event == OBJECT_ON_PREDELETE)
+	else if (event.m_type == OBJECT_ON_PREDELETE)
 	{
 		int numTargets = m_links.size();
 		for (int i = 0; i < numTargets; i++)
 		{
-			if (m_links[i].targetId == target->GetId())
+			if (m_links[i].targetId == pObject->GetId())
 			{
 				RemoveEntityLink(i);
 				numTargets = m_eventTargets.size();
@@ -4415,7 +4079,7 @@ int CEntityObject::AddEventTarget(CBaseObject* target, const string& event, cons
 	// Assign event target.
 	if (et.target)
 	{
-		et.target->AddEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+		et.target->signalChanged.Connect(this, &CEntityObject::OnEventTargetEvent);
 	}
 
 	m_eventTargets.push_back(et);
@@ -4438,7 +4102,7 @@ void CEntityObject::RemoveEventTarget(int index, bool bUpdateScript)
 
 		if (m_eventTargets[index].target)
 		{
-			m_eventTargets[index].target->RemoveEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+			m_eventTargets[index].target->signalChanged.DisconnectObject(this);
 		}
 		m_eventTargets.erase(m_eventTargets.begin() + index);
 
@@ -4462,9 +4126,9 @@ int CEntityObject::AddEntityLink(const string& name, CryGUID targetEntityId)
 		{
 			target = (CEntityObject*)pObject;
 
-			if (target->GetEntityId() == m_pEntity->GetId())
+			if (target->GetId() == this->GetId())
 			{
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ASSERT, "Attempting to link Object %s with itself", m_pEntity->GetName());
+				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ASSERT, "Attempting to link Object %s with itself", pObject->GetName());
 				return -1;
 			}
 		}
@@ -4483,7 +4147,7 @@ int CEntityObject::AddEntityLink(const string& name, CryGUID targetEntityId)
 	// Assign event target.
 	if (target)
 	{
-		target->AddEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+		target->signalChanged.Connect(this, &CEntityObject::OnEventTargetEvent);
 	}
 
 	CEntityLink lnk;
@@ -4527,7 +4191,7 @@ void CEntityObject::RemoveEntityLink(int index)
 
 		if (CEntityObject* pTarget = link.GetTarget())
 		{
-			pTarget->RemoveEventListener(functor(*this, &CEntityObject::OnEventTargetEvent));
+			pTarget->signalChanged.DisconnectObject(this);
 			pTarget->EntityUnlinked(link.name.c_str(), GetId());
 		}
 		m_links.erase(m_links.begin() + index);
@@ -4780,6 +4444,160 @@ void CEntityObject::SetMaterial(IEditorMaterial* mtl)
 	UpdateMaterialInfo();
 }
 
+class CUndoComponentSlotMaterialChange : public IUndoObject
+{
+public:
+	CUndoComponentSlotMaterialChange(IEditorEntityComponent* pComponent, int slotIndex, const char* szMaterialName)
+		: m_owningEntityGUID(pComponent->GetEntity()->GetGuid())
+		, m_componentInstanceGUID(pComponent->GetGUID())
+		, m_slotId(slotIndex)
+		, m_materialAfterChange(szMaterialName)
+	{
+		if (IMaterial* pMaterial = pComponent->GetEntity()->GetSlotMaterial(slotIndex))
+		{
+			m_materialBeforeChange = pMaterial->GetName();
+		}
+	}
+
+	virtual void Undo(bool bUndo) override
+	{
+		CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(m_owningEntityGUID));
+		if (pEntityObject == nullptr)
+			return;
+
+		IEntity* pEntity = pEntityObject->GetIEntity();
+		if (pEntity == nullptr)
+			return;
+
+		IEditorEntityComponent* pComponent = static_cast<IEditorEntityComponent*>(pEntity->GetComponentByGUID(m_componentInstanceGUID));
+		if (pComponent == nullptr)
+			return;
+
+		pComponent->SetMaterial(m_slotId, m_materialBeforeChange.c_str());
+		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
+	}
+
+	virtual void Redo() override
+	{
+		CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(m_owningEntityGUID));
+		if (pEntityObject == nullptr)
+			return;
+
+		IEntity* pEntity = pEntityObject->GetIEntity();
+		if (pEntity == nullptr)
+			return;
+
+		if (IEditorEntityComponent* pComponent = static_cast<IEditorEntityComponent*>(pEntity->GetComponentByGUID(m_componentInstanceGUID)))
+		{
+			pComponent->SetMaterial(m_slotId, m_materialAfterChange.c_str());
+			GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
+		}
+	}
+
+private:
+	virtual int         GetSize()        { return sizeof(CUndoComponentSlotMaterialChange); }
+	virtual const char* GetDescription() { return "Entity Component Material Change"; }
+
+	const CryGUID& m_owningEntityGUID;
+	CryGUID        m_componentInstanceGUID;
+	int            m_slotId;
+	string         m_materialBeforeChange;
+	string         m_materialAfterChange;
+};
+
+bool CEntityObject::ApplyAsset(const CAsset& asset, HitContext* pHitContext)
+{
+	if (!strcmp(asset.GetType()->GetTypeName(), "Material"))
+	{
+		// This function will go through all slots in order to find out which sub-slot of the entity the material was dragged on to
+		// We then apply the material to the component that owns that instance.
+		if (m_pEntity != nullptr)
+		{
+			int hitSlotIndex = -1;
+
+			for (int slotIndex = 0, slotCount = m_pEntity->GetSlotCount(); slotIndex < slotCount; ++slotIndex)
+			{
+				Matrix34 invertedWorldTransform = m_pEntity->GetSlotWorldTM(slotIndex).GetInverted();
+
+				Vec3 raySrc = invertedWorldTransform.TransformPoint(pHitContext->raySrc);
+				Vec3 rayDir = invertedWorldTransform.TransformVector(pHitContext->rayDir).GetNormalized();
+
+				SRayHitInfo hitInfo;
+				hitInfo.inReferencePoint = raySrc;
+				hitInfo.inRay = Ray(raySrc, rayDir);
+
+				if (IStatObj* pStatObj = m_pEntity->GetStatObj(slotIndex))
+				{
+					if (pStatObj->RayIntersection(hitInfo))
+					{
+						float distance = pHitContext->raySrc.GetDistance(GetWorldTM().TransformPoint(hitInfo.vHitPos));
+						if (isneg(hitSlotIndex) || distance < pHitContext->dist)
+						{
+							hitSlotIndex = slotIndex;
+							pHitContext->dist = distance;
+						}
+					}
+				}
+				else if (ICharacterInstance* pCharacter = m_pEntity->GetCharacter(slotIndex))
+				{
+					bool hasPhysics = false;
+					if (HitTestCharacter(pCharacter, *pHitContext, hitInfo, hasPhysics))
+					{
+						float distance = pHitContext->raySrc.GetDistance(GetWorldTM().TransformPoint(hitInfo.vHitPos));
+						if (isneg(hitSlotIndex) || distance < pHitContext->dist)
+						{
+							hitSlotIndex = slotIndex;
+							pHitContext->dist = distance;
+						}
+					}
+				}
+#ifdef USE_GEOM_CACHES
+				else if (IGeomCacheRenderNode* pGeomCache = m_pEntity->GetGeomCacheRenderNode(slotIndex))
+				{
+					if (pGeomCache->RayIntersection(hitInfo))
+					{
+						float distance = pHitContext->raySrc.GetDistance(GetWorldTM().TransformPoint(hitInfo.vHitPos));
+						if (isneg(hitSlotIndex) || distance < pHitContext->dist)
+						{
+							hitSlotIndex = slotIndex;
+							pHitContext->dist = distance;
+						}
+					}
+				}
+#endif
+			}
+
+			if (!isneg(hitSlotIndex))
+			{
+				DynArray<IEditorEntityComponent*> components;
+				m_pEntity->GetAllComponents(components);
+
+				const char* szMaterialFileName = asset.GetFile(0);
+				if (szMaterialFileName == nullptr)
+				{
+					szMaterialFileName = "";
+				}
+
+				for (IEditorEntityComponent* pComponent : components)
+				{
+					CUndo::Record(new CUndoComponentSlotMaterialChange(pComponent, hitSlotIndex, szMaterialFileName));
+
+					if (pComponent->SetMaterial(hitSlotIndex, szMaterialFileName))
+					{
+						GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
+						return true;
+					}
+				}
+			}
+		}
+
+		// Fall back to setting legacy "global" material
+		return CBaseObject::ApplyAsset(asset);
+	}
+
+	return CBaseObject::ApplyAsset(asset);
+}
+
 IEditorMaterial* CEntityObject::GetRenderMaterial() const
 {
 	if (GetMaterial())
@@ -4886,7 +4704,7 @@ void CEntityObject::Validate()
 	if (!m_pEntity && !m_entityClass.IsEmpty())
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Entity %s Failed to Spawn (Script: %s) %s", (const char*)GetName(), (const char*)m_entityClass,
-		           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", GetName()));
+		           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 		return;
 	}
 
@@ -4895,11 +4713,9 @@ void CEntityObject::Validate()
 		return;
 	}
 
-	int slot;
-
 	// Check Entity.
 	int numObj = m_pEntity->GetSlotCount();
-	for (slot = 0; slot < numObj; slot++)
+	for (int slot = 0; slot < numObj; slot++)
 	{
 		IStatObj* pObj = m_pEntity->GetStatObj(slot);
 		if (!pObj)
@@ -4911,7 +4727,7 @@ void CEntityObject::Validate()
 		{
 			// File Not found.
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Geometry File in Slot %d for Entity %s not found %s", slot, (const char*)GetName(),
-			           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "general.select_and_go_to_object %s", GetName()));
+			           CryLinkService::CCryLinkUriFactory::GetUriV("Editor", "selection.select_and_go_to %s", GetName()));
 		}
 	}
 }
@@ -5131,6 +4947,19 @@ IRenderNode* CEntityObject::GetEngineNode() const
 	return NULL;
 }
 
+void CEntityObject::StoreUndo(const char* undoDescription, bool minimal, int flags)
+{
+	if (CUndo::IsRecording())
+	{
+		if (IsLegacyObject())
+		{
+			return CBaseObject::StoreUndo(undoDescription, minimal, flags);
+		}
+
+		return CUndo::Record(new CUndoEntityObject(this, undoDescription));
+	}
+}
+
 void CEntityObject::OnMenuCreateFlowGraph()
 {
 	CreateFlowGraphWithGroupDialog();
@@ -5190,90 +5019,8 @@ void CEntityObject::OnMenuReloadAllScripts()
 	gEnv->pEntitySystem->SendEventToAll(event);
 }
 
-void CEntityObject::OnMenuConvertToPrefab()
-{
-	const string& libraryFileName = this->GetEntityPropertyString("filePrefabLibrary");
-
-	IDataBaseLibrary* pLibrary = GetIEditorImpl()->GetPrefabManager()->FindLibrary(libraryFileName);
-	if (pLibrary == NULL)
-		IDataBaseLibrary* pLibrary = GetIEditorImpl()->GetPrefabManager()->LoadLibrary(libraryFileName);
-
-	if (pLibrary == NULL)
-	{
-		string sError = "Could not convert procedural object " + this->GetName() + "to prefab library " + libraryFileName;
-		CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, sError);
-		return;
-	}
-
-	GetIEditorImpl()->GetObjectManager()->ClearSelection();
-
-	GetIEditorImpl()->GetIUndoManager()->Suspend();
-	GetIEditorImpl()->SetModifiedFlag();
-
-	string strFullName = this->GetEntityPropertyString("sPrefabVariation");
-
-	// check if we have the info we need from the script
-	IEntity* pEnt = gEnv->pEntitySystem->GetEntity(this->GetEntityId());
-	if (pEnt)
-	{
-		IScriptTable* pScriptTable(pEnt->GetScriptTable());
-		if (pScriptTable)
-		{
-			ScriptAnyValue value;
-			if (pScriptTable->GetValueAny("PrefabSourceName", value))
-			{
-				char* szPrefabName = NULL;
-				if (value.CopyTo(szPrefabName))
-				{
-					strFullName = string(szPrefabName);
-				}
-			}
-		}
-	}
-
-	// strip the library name if it was added (for example it happens when automatically converting from prefab to procedural object)
-	const string& sLibraryName = pLibrary->GetName();
-	int nIdx = 0;
-	int nLen = sLibraryName.GetLength();
-	int nLen2 = strFullName.GetLength();
-	if (nLen2 > nLen && strncmp(strFullName.GetString(), sLibraryName.GetString(), nLen) == 0)
-		nIdx = nLen + 1;  // counts the . separating the library names
-
-	// check if the prefab item exists inside the library
-	const char* szItemName = strFullName.GetString();
-	IDataBaseItem* pItem = pLibrary->FindItem(&szItemName[nIdx]);
-
-	if (pItem)
-	{
-		string guid = pItem->GetGUID().ToString();
-		CBaseObject* pObject = GetIEditorImpl()->GetObjectManager()->NewObject("Prefab", 0, guid);
-		if (!pObject)
-		{
-			string sError = "Could not convert procedural object to " + strFullName;
-			CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, sError);
-		}
-		else
-		{
-			pObject->SetLayer(GetLayer());
-
-			GetIEditorImpl()->SelectObject(pObject);
-
-			pObject->SetWorldTM(this->GetWorldTM());
-			GetIEditorImpl()->GetObjectManager()->DeleteObject(this);
-		}
-	}
-	else
-	{
-		string sError = "Library not found " + sLibraryName;
-		CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, sError);
-	}
-
-	GetIEditorImpl()->GetIUndoManager()->Resume();
-}
-
 void CEntityObject::OnContextMenu(CPopupMenuItem* pMenu)
 {
-	CEntityObject* p = new CEntityObject();
 	if (!pMenu->Empty())
 	{
 		pMenu->AddSeparator();
@@ -5341,11 +5088,6 @@ void CEntityObject::OnContextMenu(CPopupMenuItem* pMenu)
 		pMenu->Add("Reload All Scripts", functor(*this, &CEntityObject::OnMenuReloadAllScripts));
 	}
 
-	if (pScript && pScript->GetClass() && stricmp(pScript->GetClass()->GetName(), "ProceduralObject") == 0)
-	{
-		pMenu->Add("Convert to prefab", functor(*this, &CEntityObject::OnMenuConvertToPrefab));
-		//pMenu->AddSeparator();
-	}
 	__super::OnContextMenu(pMenu);
 }
 
@@ -5440,8 +5182,6 @@ void CEntityObject::ApplyOptics(const string& opticsFullName, IOpticsElementBase
 
 void CEntityObject::SetOpticsName(const string& opticsFullName)
 {
-	bool bUpdateOpticsProperty = true;
-
 	if (opticsFullName.IsEmpty())
 	{
 		SRenderLight* pLight = GetLightProperty();
@@ -5821,20 +5561,21 @@ void CEntityObject::StoreUndoEntityLink(const std::vector<CBaseObject*>& objects
 
 IStatObj* CEntityObject::GetIStatObj()
 {
-	if (m_pEntity == NULL)
-		return NULL;
-
-	for (int i = 0, iSlotCount(m_pEntity->GetSlotCount()); i < iSlotCount; ++i)
+	if (m_pEntity != nullptr)
 	{
-		if (!m_pEntity->IsSlotValid(i))
-			continue;
-		IStatObj* pStatObj = m_pEntity->GetStatObj(i);
-		if (pStatObj == NULL)
-			continue;
-		return pStatObj;
+		for (int i = 0, iSlotCount(m_pEntity->GetSlotCount()); i < iSlotCount; ++i)
+		{
+			if (!m_pEntity->IsSlotValid(i))
+				continue;
+			IStatObj* pStatObj = m_pEntity->GetStatObj(i);
+			if (pStatObj != nullptr)
+			{
+				return pStatObj;
+			}
+		}
 	}
 
-	return NULL;
+	return m_pHelperMesh;
 }
 
 void CEntityObject::UpdateHighlightPassState(bool bSelected, bool bHighlighted)
@@ -5962,6 +5703,7 @@ string CEntityObject::GetMouseOverStatisticsText() const
 				}
 			}
 
+#if defined(USE_GEOM_CACHES)
 			IGeomCacheRenderNode* pGeomCacheRenderNode = m_pEntity->GetGeomCacheRenderNode(slot);
 
 			if (pGeomCacheRenderNode)
@@ -5988,6 +5730,7 @@ string CEntityObject::GetMouseOverStatisticsText() const
 					statsText += "\n  " + FormatWithThousandsSeperator(stats.m_memoryAnimationDataSize) + " Bytes Memory Animation Data";
 				}
 			}
+#endif
 
 			ICharacterInstance* pCharacter = m_pEntity->GetCharacter(slot);
 			if (pCharacter)
@@ -6163,10 +5906,7 @@ SPyWrappedProperty CEntityObject::PyGetEntityProperty(const char* pName) const
 		if (pVariable->GetDataType() == IVariable::DT_COLOR)
 		{
 			value.type = SPyWrappedProperty::eType_Color;
-			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(
-			                                               tempVec3[0],
-			                                               tempVec3[1],
-			                                               tempVec3[2]));
+			COLORREF col = CMFCUtils::ColorLinearToGamma(ColorF(tempVec3[0], tempVec3[1], tempVec3[2]));
 			value.property.colorValue.r = (int)GetRValue(col);
 			value.property.colorValue.g = (int)GetGValue(col);
 			value.property.colorValue.b = (int)GetBValue(col);
@@ -6464,4 +6204,3 @@ REGISTER_ONLY_PYTHON_COMMAND_WITH_EXAMPLE(PySetEntityProperty, general, set_enti
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyOpenEntityArchetype, entity, open_archetype,
                                      "Open archetype in a Entity Archetype editor",
                                      "entity.open_archetype archetypeName");
-

@@ -2,50 +2,50 @@
 
 #pragma once
 
-#include "QScrollableBox.h"
+#include "EditorCommonAPI.h"
+#include "EditorFramework/Inspector.h"
+
 #include <memory>
 #include <vector>
 
-#include "EditorFramework/Inspector.h"
 
-class QScrollArea;
-class QVBoxLayout;
 class CBaseObject;
-class QShowEvent;
-class QPropertyTree;
+class QPropertyTreeLegacy;
+
+struct CObjectEvent;
 
 class EDITOR_COMMON_API CObjectPropertyWidget : public QWidget, public IAutoEditorNotifyListener
 {
 	Q_OBJECT
 
 public:
-	typedef std::function<void(CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)> TSerializationFunc;
+	typedef std::function<void (CBaseObject* pObject, Serialization::IArchive& ar, bool bMultiEdit)> TSerializationFunc;
 
 	CObjectPropertyWidget(TSerializationFunc serializationFunc);
 	virtual ~CObjectPropertyWidget();
-	void OnObjectEvent(class CBaseObject* object, int event);
+	void OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event);
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
 
-public slots:
-	void UndoPush();
+public:
+	void OnBeginUndo();
+	void OnUndoEnd(bool undoAccepted);
 
 	void CreatePropertyTrees();
 
 private:
 	struct SBaseObjectSerializer;
 
-	typedef std::unique_ptr<QPropertyTree>     PropertyTreePtr;
+	typedef std::unique_ptr<QPropertyTreeLegacy>     PropertyTreePtr;
 	typedef std::vector<SBaseObjectSerializer> SerializerList;
 
 	void UnregisterObjects();
 	void ReloadPropertyTrees();
 	void CleanupDeletedObjects();
 
-	PropertyTreePtr m_propertyTree;
-	SerializerList  m_objectSerializers;
-	bool            m_bReloadProperties;
-	bool            m_bCleanupDeletedObjects;
+	PropertyTreePtr    m_propertyTree;
+	SerializerList     m_objectSerializers;
+	bool               m_bReloadProperties;
+	bool               m_bCleanupDeletedObjects;
 
 	TSerializationFunc m_serializationFunc;
 };
-

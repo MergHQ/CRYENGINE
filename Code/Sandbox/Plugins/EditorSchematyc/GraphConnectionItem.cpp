@@ -59,4 +59,3 @@ bool CConnectionItem::HasId(QVariant id) const
 }
 
 }
-

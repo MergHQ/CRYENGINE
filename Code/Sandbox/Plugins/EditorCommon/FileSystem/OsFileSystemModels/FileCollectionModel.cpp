@@ -7,16 +7,6 @@
 #include <QFileSystemModel>
 #include <QMimeData>
 
-CFileCollectionModel::CFileCollectionModel()
-{
-
-}
-
-CFileCollectionModel::~CFileCollectionModel()
-{
-
-}
-
 void CFileCollectionModel::AddEntry(const QString& file)
 {
 	if (!HasEntry(file))
@@ -301,4 +291,3 @@ QModelIndex CFileCollectionModel::GetSourceIndex(const QString &path, int column
 	CRY_ASSERT(sourceModel);
 	return sourceModel->index(path, column);
 }
-

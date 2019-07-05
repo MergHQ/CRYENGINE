@@ -18,7 +18,7 @@ namespace UQS
 
 		CTextualQueryBlueprint::CTextualQueryBlueprint()
 			: m_queryFactoryGUID(CryGUID::Null())
-			, m_maxItemsToKeepInResultSet(0)
+			, m_maxItemsToKeepInResultSet(1)	// default to 1 item in the result set (i.e. the most common use-case), instead of 0 (which would mean: "return me as many items as possible")
 		{
 			// nothing
 		}
@@ -145,13 +145,13 @@ namespace UQS
 
 		const ITextualEvaluatorBlueprint& CTextualQueryBlueprint::GetInstantEvaluator(size_t index) const
 		{
-			assert(index < m_instantEvaluators.size());
+			CRY_ASSERT(index < m_instantEvaluators.size());
 			return *m_instantEvaluators[index];
 		}
 
 		const ITextualEvaluatorBlueprint& CTextualQueryBlueprint::GetDeferredEvaluator(size_t index) const
 		{
-			assert(index < m_deferredEvaluators.size());
+			CRY_ASSERT(index < m_deferredEvaluators.size());
 			return *m_deferredEvaluators[index];
 		}
 
@@ -162,7 +162,7 @@ namespace UQS
 
 		const ITextualQueryBlueprint& CTextualQueryBlueprint::GetChild(size_t index) const
 		{
-			assert(index < m_children.size());
+			CRY_ASSERT(index < m_children.size());
 			return *m_children[index];
 		}
 
@@ -218,14 +218,14 @@ namespace UQS
 			{
 				const char* szParamName = pair.first.c_str();
 				Client::IItemFactory* pItemFactory = pair.second;
-				assert(pItemFactory);
+				CRY_ASSERT(pItemFactory);
 				visitor.OnRuntimeParamVisited(szParamName, *pItemFactory);
 			}
 		}
 
 		const Shared::CTypeInfo& CQueryBlueprint::GetOutputType() const
 		{
-			assert(m_pQueryFactory);
+			CRY_ASSERT(m_pQueryFactory);
 			return m_pQueryFactory->GetQueryBlueprintType(*this);
 		}
 
@@ -439,6 +439,15 @@ namespace UQS
 				}
 			}
 
+			// patch the name such that it also contains an extra suffix indicating its location in the hierarchical query (e. g. "spider_hide_spot::[childQuery_#0]::[childQuery_#2]")
+			// (this is done *before* sorting instant-evaluators, so that when the query blueprint's GetName() is used for debug logging, it will reflect its *original* location in the hierarchy as authored in the query editor)
+			stack_string nameSuffix;
+			for (const CQueryBlueprint* pParent = m_pParent, *pChild = this; pParent; pChild = pParent, pParent = pParent->m_pParent)
+			{
+				nameSuffix = stack_string().Format("::[childQuery_#%i]", pParent->GetChildIndex(pChild)) + nameSuffix;
+			}
+			m_name += nameSuffix.c_str();
+
 			// sort the instant-evaluator blueprints by cost and evaluation modality such that their order at execution time won't change
 			// (this also helps the user to read the query history as it will show all evaluators in order of how they were executed)
 			SortInstantEvaluatorBlueprintsByCostAndEvaluationModality();
@@ -458,7 +467,7 @@ namespace UQS
 
 		std::shared_ptr<const CQueryBlueprint> CQueryBlueprint::GetChild(size_t index) const
 		{
-			assert(index < m_children.size());
+			CRY_ASSERT(index < m_children.size());
 			return m_children[index];
 		}
 
@@ -474,7 +483,7 @@ namespace UQS
 
 		QueryBaseUniquePtr CQueryBlueprint::CreateQuery(const CQueryBase::SCtorContext& ctorContext) const
 		{
-			assert(m_pQueryFactory);
+			CRY_ASSERT(m_pQueryFactory);
 			return m_pQueryFactory->CreateQuery(ctorContext);
 		}
 
@@ -508,7 +517,7 @@ namespace UQS
 			return m_deferredEvaluators;
 		}
 
-		bool CQueryBlueprint::CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(const Shared::IVariantDict& runtimeParamsToValidate, Shared::CUqsString& error) const
+		bool CQueryBlueprint::CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(const Shared::IVariantDict& runtimeParamsToValidate, Shared::IUqsString& error) const
 		{
 			//
 			// ensure that all required runtime-params have been passed in and that their data types match those in this query-blueprint
@@ -528,7 +537,7 @@ namespace UQS
 				}
 
 				const Client::IItemFactory* pExpectedItemFactory = pair.second.pItemFactory;
-				assert(pExpectedItemFactory);
+				CRY_ASSERT(pExpectedItemFactory);
 
 				if (pFoundItemFactory != pExpectedItemFactory)
 				{
@@ -551,13 +560,13 @@ namespace UQS
 
 		const Shared::CTypeInfo* CQueryBlueprint::GetTypeOfShuttledItemsToExpect() const
 		{
-			assert(m_pQueryFactory);
+			CRY_ASSERT(m_pQueryFactory);
 			return m_pQueryFactory->GetTypeOfShuttledItemsToExpect(*this);
 		}
 
 		const CQueryFactoryBase& CQueryBlueprint::GetQueryFactory() const
 		{
-			assert(m_pQueryFactory);
+			CRY_ASSERT(m_pQueryFactory);
 			return *m_pQueryFactory;
 		}
 
@@ -575,7 +584,7 @@ namespace UQS
 			// factory
 			//
 
-			assert(m_pQueryFactory);
+			CRY_ASSERT(m_pQueryFactory);
 			logger.Printf("Query factory = %s", m_pQueryFactory->GetName());
 
 			//
@@ -711,7 +720,7 @@ namespace UQS
 						break;
 
 					default:
-						assert(0);
+						CRY_ASSERT(0);
 					}
 					break;
 
@@ -727,12 +736,12 @@ namespace UQS
 						break;
 
 					default:
-						assert(0);
+						CRY_ASSERT(0);
 					}
 					break;
 
 				default:
-					assert(0);
+					CRY_ASSERT(0);
 				}
 			}
 
@@ -752,7 +761,7 @@ namespace UQS
 			{
 				const char* szParamName = pair.first.c_str();
 				Client::IItemFactory* pItemFactory = pair.second.pItemFactory;
-				assert(pItemFactory);
+				CRY_ASSERT(pItemFactory);
 				out[szParamName] = pItemFactory;	// potentially overwrite the param from a parent; we presume here that both have the same item type (this is ensured by CGlobalRuntimeParamsBlueprint::Resolve())
 			}
 

@@ -8,6 +8,9 @@
 #define __GAMELOBBYDATA_H__
 
 #include "AutoEnum.h"
+#include "ICryStats.h"
+
+struct SCrySessionSearchResult;
 
 //------------
 // LOBBY DATA

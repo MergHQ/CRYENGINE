@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "qwinhost.h"
 
-class PLUGIN_API QMfcHost : public QWinHost
+class MFC_TOOLS_PLUGIN_API QMfcHost : public QWinHost
 {
 public:
 	class QMfcHost(QWidget* parent, CWnd* pWnd, bool bNoScale = false, bool deleteWnd = true) : QWinHost(parent)
@@ -32,4 +33,3 @@ private:
 	CWnd* m_wnd;
 	int   m_width, m_height;
 };
-

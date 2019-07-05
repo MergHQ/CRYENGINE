@@ -4,7 +4,6 @@
 #include "EditorCommonAPI.h"
 
 #include <QFileSystemModel>
-#include <QHash>
 
 /**
  * \brief Replacement for QFileSystemModel. Do not use QFileSystemModel
@@ -22,4 +21,3 @@ public:
 	// interface QAbstractItemModel
 	virtual QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 };
-

@@ -73,7 +73,7 @@ namespace UQS
 
 			inline void CGeneratorDeleter::operator()(IGenerator* pGeneratorToDelete)
 			{
-				assert(m_pFactory);
+				CRY_ASSERT(m_pFactory);
 				m_pFactory->DestroyGenerator(pGeneratorToDelete);
 			}
 

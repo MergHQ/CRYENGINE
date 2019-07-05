@@ -1,3 +1,5 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include <functional>
@@ -78,7 +80,7 @@ namespace stl
 	//! Remove once we move to C++17
 
 	struct nullopt_t {};
-	static nullopt_t nullopt;
+	constexpr nullopt_t nullopt;
 
 	struct optional_ctor_inplace {};
 
@@ -98,7 +100,7 @@ namespace stl
 				if (!has_val)
 				{
 					// throw
-					CRY_ASSERT_MESSAGE(false, "Attempting to get value but optional is empty");
+					CRY_ASSERT(false, "Attempting to get value but optional is empty");
 				}
 				return *reinterpret_cast<T*>(&storage);
 			}
@@ -106,7 +108,7 @@ namespace stl
 				if (!has_val)
 				{
 					// throw
-					CRY_ASSERT_MESSAGE(false, "Attempting to get value but optional is empty");
+					CRY_ASSERT(false, "Attempting to get value but optional is empty");
 				}
 				return std::move(*reinterpret_cast<T*>(&storage));
 			}
@@ -115,7 +117,7 @@ namespace stl
 				if (!has_val)
 				{
 					// throw
-					CRY_ASSERT_MESSAGE(false, "Attempting to get value but optional is empty");
+					CRY_ASSERT(false, "Attempting to get value but optional is empty");
 				}
 				return *reinterpret_cast<const T*>(&storage);
 			}

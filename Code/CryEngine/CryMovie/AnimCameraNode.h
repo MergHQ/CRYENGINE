@@ -89,7 +89,7 @@ private:
 
 	ShakeParam m_shakeParam[SHAKE_COUNT];
 
-	ICVar*     m_cv_r_PostProcessEffects;
+	ICVar*     m_cv_r_PostProcessEffects = nullptr;
 };
 
 #endif // __animcameranode_h__

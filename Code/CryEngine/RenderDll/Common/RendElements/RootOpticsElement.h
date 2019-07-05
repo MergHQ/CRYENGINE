@@ -51,7 +51,7 @@ private:
 
 	static const float        kExtendedFlareRadiusRatio;
 
-	void RT_RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos);
+	void RT_RenderPreview(const Vec3& vPos, const SLensFlareRenderParam* pParam);
 
 public:
 
@@ -61,19 +61,21 @@ public:
 		m_bLateralChromaticAbr(false),
 		m_fChromaticAbrOffset(0.002f),
 		m_fChromaticAbrDir(0.785f),
+		m_fEffectiveSensorSize(0.8f),
+		m_bCustomSensorVariationMap(false),
+		m_bPostBlur(false),
+		m_fPostBlurAmount(0),
+
 		m_bOcclusionEnabled(true),
 		m_fFlareVisibilityFactor(1),
 		m_fShaftVisibilityFactor(1),
+		m_bEnableInvertFade(false),
 		m_pOccQuery(NULL),
-		m_fEffectiveSensorSize(0.8f),
-		m_bCustomSensorVariationMap(false),
+
 		m_bAffectedByLightColor(false),
 		m_bAffectedByLightRadius(false),
 		m_bAffectedByLightFOV(true),
-		m_bPostBlur(false),
-		m_fPostBlurAmount(0),
 		m_bMultiplyColor(true),
-		m_bEnableInvertFade(false),
 		m_flareLight()
 	{
 		SetFlareFadingDuration(0.2f);
@@ -95,7 +97,7 @@ public:
 	void                Load(IXmlNode* pNode) override;
 
 	void                RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos) override;
-	bool                ProcessAll(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender = false, bool bUpdateOcclusion = true);
+	bool                ProcessAll(CGraphicsPipeline* pGraphicsPipeline, CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender = false, bool bUpdateOcclusion = true);
 
 	IOpticsElementBase* GetParent() const override                 { return NULL; }
 
@@ -153,7 +155,7 @@ public:
 	bool      IsAffectedByLightFOV() const     { return m_bAffectedByLightFOV; }
 	void      SetAffectedByLightFOV(bool b)    { m_bAffectedByLightFOV = b; }
 
-	bool      IsMultiplyColor() const          { return m_bMultiplyColor;  }
+	bool      IsMultiplyColor() const          { return m_bMultiplyColor; }
 	void      SetMultiplyColor(bool b)         { m_bMultiplyColor = b; }
 
 	bool      IsInvertFade() const             { return m_bEnableInvertFade; }

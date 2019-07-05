@@ -58,6 +58,7 @@ static const unsigned TopLevelMessages =
   //#endif
   eNOE_Reset |
   eNOE_ChangeContext |
+  eNOE_StartedEstablishingContext |
   eNOE_SendVoicePackets |
   eNOE_RemoveRMIListener |
   eNOE_DebugEvent |
@@ -892,8 +893,8 @@ void CContextView::GC_GetEstablishmentOrder()
 	InitChannelEstablishmentTasks(pEstablisher);
 	// +1 is a small hack to get things working - we should change ChangeContext to return a serial number and arrange to have
 	// that passed around in GameContext
-#if ENABLE_DEBUG_KIT
-	NetLog("Request channel establishment tasks for CTXSERIAL:%d", ContextState()->GetToken());
+#if LOG_CONTEXT_ESTABLISHMENT
+	NetLogEstablishment(1, "Request channel establishment tasks for CTXSERIAL:%d", ContextState()->GetToken());
 #endif
 	ContextState()->GetGameContext()->InitChannelEstablishmentTasks(pEstablisher, Parent(), ContextState()->GetToken());
 
@@ -910,6 +911,8 @@ void CContextView::GC_GetEstablishmentOrder()
 
 bool CContextView::EnterState(EContextViewState state)
 {
+	NetLogEstablishment(1, "CContextView::EnterState %d %s, view %s %p", state, GetStateName(state), GetName().c_str(), (INetContextListener*)this);
+
 	if (state == eCVS_Initial)
 	{
 		ContextState()->ChangeSubscription(this, FilterEventMask(ContextViewEvents[state], state) & m_eventMask);
@@ -963,6 +966,8 @@ bool CContextView::EnterState(EContextViewState state)
 
 void CContextView::ExitState(EContextViewState state)
 {
+	NetLogEstablishment(1, "CContextView::ExitState %d %s, view %s %p", state, GetStateName(state), GetName().c_str(), (INetContextListener*)this);
+
 	if (!m_forcedStates.empty())
 	{
 		state = m_forcedStates.front();
@@ -1312,8 +1317,10 @@ bool CContextView::ScheduleAttachment(bool fromChannel, IRMIMessageBodyPtr pMess
 				SNetObjectID netId = ContextState()->GetNetID(pMessage->objId);
 				if (!netId)
 				{
+#if !defined(EXCLUDE_NORMAL_LOG)
 					IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pMessage->objId);
 					NetLog("[RMI]: [%s] invoked to [%s] when entity [%s] (id %d) does not exist", (pMessage->pMessageDef != NULL) ? pMessage->pMessageDef->description : "<unknown>", Parent()->GetName(), pEntity ? pEntity->GetName() : "<unknown>", pMessage->objId);
+#endif
 					cantSend |= 2 * !CheckDependentId(pMessage->objId, depHdl + 2, false, &lkObj);
 				}
 			}
@@ -1333,7 +1340,9 @@ bool CContextView::ScheduleAttachment(bool fromChannel, IRMIMessageBodyPtr pMess
 					{
 						if (m_objects[id.id].orderedRMIHandle == 0)
 						{
+#if !defined(EXCLUDE_NORMAL_LOG)
 							IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pMessage->objId);
+#endif
 #if ENABLE_DEFERRED_RMI_QUEUE
 							NetLog("[RMI]: Ordered [%s] invoked to [%s] when entity [%s] (id %d) is not bound (bind handle is 0) - %s", (pMessage->pMessageDef != NULL) ? pMessage->pMessageDef->description : "<unknown>", Parent()->GetName(), pEntity ? pEntity->GetName() : "<unknown>", pMessage->objId, fromChannel ? "DEFERRING" : "NOT SENDING");
 							if (fromChannel)
@@ -1370,12 +1379,14 @@ bool CContextView::ScheduleAttachment(bool fromChannel, IRMIMessageBodyPtr pMess
 	#endif    // ENABLE_URGENT_RMIS
 						if (dependOnBind)
 						{
+#if !defined(EXCLUDE_NORMAL_LOG)
 							// Unordered RMIs (urgent or independent) are dependent on the bind handle only
 							if (m_objects[id.id].bindHandle == 0)
 							{
 								IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pMessage->objId);
 								NetLog("[RMI]: Unordered [%s] invoked to [%s] when entity [%s] (id %d) is not bound (bind handle is 0)", (pMessage->pMessageDef != NULL) ? pMessage->pMessageDef->description : "<unknown>", Parent()->GetName(), pEntity ? pEntity->GetName() : "<unknown>", pMessage->objId);
 							}
+#endif
 							depHdl[1] = m_objects[id.id].bindHandle;
 						}
 					}
@@ -1435,8 +1446,12 @@ bool CContextView::ScheduleAttachment(bool fromChannel, IRMIMessageBodyPtr pMess
 				idx = *pIndex;
 			}
 
+#if defined(USE_CRY_ASSERT)
 			bool changed = m_pAttachments[pMessage->attachment]->insert(std::make_pair(idx, pMessage)).second;
 			NET_ASSERT(changed);
+#else
+			m_pAttachments[pMessage->attachment]->insert(std::make_pair(idx, pMessage)).second;
+#endif
 
 			SNetChannelEvent evt;
 			evt.event = eNCE_ScheduleRMI;
@@ -1726,7 +1741,6 @@ void CContextView::UpdateSchedulerState(SNetObjectID id)
 	SContextObjectRef obj = ContextState()->GetContextObject(id);
 
 	SContextViewObject* pVwObj = &m_objects[id.id];
-	SContextViewObjectEx* pVwObjEx = &m_objectsEx[id.id];
 
 	// figure what priority class to have
 	if (pVwObj->msgHandle)
@@ -2171,6 +2185,8 @@ bool CContextView::HaveAuthorityOfObject(SNetObjectID id) const
 
 bool CContextView::UpdateAspect(NetworkAspectID i, TSerialize ser, uint32 nCurSeq, uint32 nOldSeq, uint32 timeFraction32)
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CContextView::UpdateAspect");
+
 	if (IsLocal())
 	{
 		NetWarning("Update aspect called on a local connection");

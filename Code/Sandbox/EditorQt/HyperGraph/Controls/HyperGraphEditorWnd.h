@@ -11,6 +11,7 @@
 #include "HyperGraphEditorTree.h"
 #include "HyperGraphEditorNodeList.h"
 #include "BreakPointsCtrl.h"
+#include <vector>
 
 
 class CEntityObject;
@@ -23,6 +24,8 @@ class CHGGraphPropsPanel;
 class CFlowGraphTokensCtrl;
 class CHyperGraphsTreeCtrl;
 class CHyperGraphComponentsReportCtrl;
+class CBaseObject;
+struct CObjectEvent;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -37,7 +40,7 @@ public:
 	BOOL Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd);
 
 	//! Get the viewport that displays the graph nodes and edges.
-	CHyperGraphView*      GetGraphView() { return &m_view; };
+	CHyperGraphView*      GetGraphView() { return &m_view; }
 	//! Get the panel with the tree list of the available graphs.
 	CHyperGraphsTreeCtrl* GetGraphsTreeCtrl() { return &m_graphsTreeCtrl; }
 	//! Get the panel with the input and options for searching.
@@ -203,9 +206,7 @@ protected:
 
 private:
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
-	void OnObjectEvent(CObjectEvent& eventObj);
-	void OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent& eventObj);
 	virtual void OnHyperGraphManagerEvent(EHyperGraphEvent event, IHyperGraph* pGraph, IHyperNode* pNode);
 
 	void NewFGModule(bool bGlobal = true);
@@ -233,7 +234,7 @@ private:
 
 	CXTPDockingPaneManager            m_paneManager;
 	CXTPTaskPanel                     m_wndTaskPanel;
-	std::auto_ptr<CPropertyCtrl>      m_pWndProps;
+	std::unique_ptr<CPropertyCtrl>      m_pWndProps;
 
 	CXTPStatusBar                     m_titleBar; //! displays the name/path of the current graph. technically it's a status bar
 	bool                              m_isTitleBarVisible; //! if the title bar is being displayed. saved to personalization.
@@ -268,4 +269,3 @@ private:
 
 	bool                              m_bIgnoreObjectEvents; //! All level contents and graphs are being created or deleted. Ignore certain types of events.
 };
-

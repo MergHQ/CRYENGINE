@@ -19,4 +19,3 @@ private:
 	mutable std::vector<Convex> m_Convexes;
 };
 }
-

@@ -92,7 +92,9 @@ void CAsyncIOFileRequest::operator delete(void* p)
 //////////////////////////////////////////////////////////////////////////
 CAsyncIOFileRequest::CAsyncIOFileRequest()
 	: m_nRefCount(0)
-	, m_pMemoryBuffer(NULL)
+	, m_pMemoryBuffer(nullptr)
+	, m_bStatsUpdated(false)
+	, m_bOutputAllocated(false)
 {
 	Reset();
 }
@@ -100,12 +102,8 @@ CAsyncIOFileRequest::CAsyncIOFileRequest()
 //////////////////////////////////////////////////////////////////////////
 CAsyncIOFileRequest::~CAsyncIOFileRequest()
 {
-#ifndef _RELEASE
-	if (m_pMemoryBuffer)
-		__debugbreak();
-	if (m_eType)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_pMemoryBuffer == nullptr);
+	CRY_ASSERT(m_eType == 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -307,7 +305,7 @@ uint32 CAsyncIOFileRequest::AllocateOutput(CCachedFileData* pZipEntry)
 			++nMemoryBufferUsers;
 		m_nMemoryBufferUsers = nMemoryBufferUsers;
 
-		m_bOutputAllocated = 1;
+		m_bOutputAllocated = true;
 	}
 
 #ifdef SUPPORT_RSA_AND_STREAMCIPHER_PAK_ENCRYPTION
@@ -488,6 +486,8 @@ void CAsyncIOFileRequest::FreeBuffer()
 		CryInterlockedAdd(&stats.typeInfo[m_eType].nPendingReadBytes, -nSize);
 	}
 #endif
+
+	m_bOutputAllocated = false;
 }
 
 CAsyncIOFileRequest* CAsyncIOFileRequest::Allocate(EStreamTaskType eType)
@@ -515,14 +515,13 @@ void CAsyncIOFileRequest::Flush()
 
 void CAsyncIOFileRequest::Reset()
 {
-#ifndef _RELEASE
-	if (m_pMemoryBuffer)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_pMemoryBuffer == nullptr);
 
 	m_pReadStream = NULL;
 	m_strFileName.resize(0);
 	m_pakFile.resize(0);
+	m_bSortKeyComputed = false;
+	m_bReadBegun = false;
 
 #ifdef SUPPORT_RSA_AND_STREAMCIPHER_PAK_ENCRYPTION
 	m_decryptionCTRInitialisedAgainst = m_pakFile;
@@ -534,11 +533,7 @@ void CAsyncIOFileRequest::Reset()
 
 void CAsyncIOFileRequest::Init(EStreamTaskType eType)
 {
-#ifndef _RELEASE
-	if (!eType)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(eType != 0);
 	m_eType = eType;
 
 #ifdef STREAMENGINE_ENABLE_STATS
@@ -557,10 +552,7 @@ void CAsyncIOFileRequest::Init(EStreamTaskType eType)
 
 void CAsyncIOFileRequest::Finalize()
 {
-#ifndef _RELEASE
-	if (!m_eType)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_eType != 0);
 
 #ifdef STREAMENGINE_ENABLE_LISTENER
 	IStreamEngineListener* pListener = gEnv->pSystem->GetStreamEngine()->GetListener();
@@ -586,13 +578,10 @@ uint32 CAsyncIOFileRequest::OpenFile(CCryFile& file)
 	ICryPak* pIPak = gEnv ? gEnv->pCryPak : NULL;
 	PREFAST_ASSUME(pIPak);
 
-	CryStackStringT<char, MAX_PATH> fileName(m_strFileName.c_str());
+	CryPathString fileName(m_strFileName.c_str());
 	if (m_pReadStream && m_pReadStream->GetParams().nFlags & IStreamEngine::FLAGS_FILE_ON_DISK)
 	{
-		const int g_nMaxPath = 0x800;
-		char szFullPathBuf[g_nMaxPath];
-		fileName = pIPak->AdjustFileName(m_strFileName.c_str(), szFullPathBuf, ICryPak::FOPEN_HINT_QUIET);
-
+		pIPak->AdjustFileName(m_strFileName.c_str(), fileName, ICryPak::FOPEN_HINT_QUIET);
 		pIPak = 0;
 	}
 
@@ -685,13 +674,9 @@ uint32 CAsyncIOFileRequest::ReadFileResume(CStreamingIOThread* pIOThread)
 
 uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryFile& file)
 {
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+#if defined(ENABLE_PROFILING_CODE)
 	const char* pFileNameShort = PathUtil::GetFile(m_strFileName.c_str());
-	char eventName[128] = { 0 };
-	cry_sprintf(eventName, "ReadFileInPages %s", pFileNameShort);
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "ReadFileInPages");
-	CRYPROFILE_SCOPE_PROFILE_MARKER(eventName);
-	CRYPROFILE_SCOPE_PLATFORM_MARKER(eventName);
+	CRY_PROFILE_SECTION_ARG(PROFILE_SYSTEM, "ReadFileInPages", pFileNameShort);
 #endif
 
 	CCryPak* pCryPak = static_cast<CCryPak*>(gEnv->pCryPak);
@@ -725,7 +710,6 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 	                                : 0;
 
 	byte* const pReadBase = (byte*)m_pReadMemoryBuffer + nReadStartOffset;
-	byte* const pReadEnd = (byte*)m_pReadMemoryBuffer + m_nReadMemoryBufferSize;
 
 	CStreamEngine* pStreamEngine = static_cast<CStreamEngine*>(gEnv->pSystem->GetStreamEngine());
 
@@ -747,14 +731,12 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 			return nError;
 
 		byte* pReadTarget = pReadBase + m_nPageReadCurrent;
-		byte* pReadTargetEnd = pReadTarget + nPageSize;
 		bool bTemporaryReadTarget = false;
 		SStreamPageHdr* pTemporaryPageHdr = NULL;
 
 		if (bInPlace)
 		{
-			if (pReadTargetEnd > pReadEnd)
-				__debugbreak();
+			CRY_ASSERT(pReadTarget + nPageSize <= (byte*)m_pReadMemoryBuffer + m_nReadMemoryBufferSize);
 		}
 		else
 		{
@@ -767,10 +749,7 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 			pTemporaryPageHdr->nRefs = 1;
 		}
 
-#ifndef _RELEASE
-		if (m_nPageReadCurrent + nPageSize > nPageReadLen)
-			__debugbreak();
-#endif
+		CRY_ASSERT(m_nPageReadCurrent + nPageSize <= nPageReadLen);
 
 		{
 #ifdef STREAMENGINE_ENABLE_LISTENER
@@ -830,9 +809,9 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 			{
 				PushDecompressPage(pStreamEngine->GetJobEngineState(), pReadTarget, pTemporaryPageHdr, nPageSize, bLastBlock);
 			}
-			else if (bTemporaryReadTarget)
+			else
 			{
-				__debugbreak();
+				CRY_ASSERT(!bTemporaryReadTarget);
 			}
 
 			if (pTemporaryPageHdr && CryInterlockedDecrement(&pTemporaryPageHdr->nRefs) == 0)
@@ -915,9 +894,8 @@ void CAsyncIOFileRequest::ComputeSortKey(uint64 nCurrentKeyInProgress)
 		return;
 	}
 
-	const int g_nMaxPath = 0x800;
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = gEnv->pCryPak->AdjustFileName(m_strFileName.c_str(), szFullPathBuf, ICryPak::FOPEN_HINT_QUIET);
+	CryPathString fullPath;
+	gEnv->pCryPak->AdjustFileName(m_strFileName.c_str(), fullPath, ICryPak::FOPEN_HINT_QUIET);
 
 	CCryPak* pCryPak = static_cast<CCryPak*>(gEnv->pCryPak);
 
@@ -925,8 +903,8 @@ void CAsyncIOFileRequest::ComputeSortKey(uint64 nCurrentKeyInProgress)
 	unsigned int archFlags = 0;
 	ZipDir::FileEntry* pFileEntry = NULL;
 
-	if (pCryPak->WillOpenFromPak(szFullPath))
-		pFileEntry = pCryPak->FindPakFileEntry(szFullPath, archFlags, &pZip, false);
+	if (pCryPak->WillOpenFromPak(fullPath))
+		pFileEntry = pCryPak->FindPakFileEntry(fullPath, archFlags, &pZip, false);
 
 	EStreamSourceMediaType ssmt = pCryPak->GetMediaType(pZip, archFlags);
 

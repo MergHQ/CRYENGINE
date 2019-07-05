@@ -17,7 +17,7 @@ namespace CryEngine
 		/// <summary>
 		/// Invoked when loading a level has started.
 		/// </summary>
-		public static event Action<EventArgs<ILevelInfo>> LoadingStart;
+		public static event Func<EventArgs<ILevelInfo>, bool> LoadingStart;
 		/// <summary>
 		/// Invoked when loading entities in a level has started.
 		/// </summary>
@@ -52,9 +52,9 @@ namespace CryEngine
 		/// Called by the engine when loading a level has started.
 		/// </summary>
 		/// <param name="pLevel"></param>
-		public override void OnLoadingStart(ILevelInfo pLevel)
+		public override bool OnLoadingStart(ILevelInfo pLevel)
 		{
-			LoadingStart?.Invoke(new EventArgs<ILevelInfo>(pLevel));
+			return LoadingStart?.Invoke(new EventArgs<ILevelInfo>(pLevel)) ?? false;
 		}
 
 		/// <summary>

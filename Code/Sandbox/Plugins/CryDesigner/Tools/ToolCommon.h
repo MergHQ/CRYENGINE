@@ -5,8 +5,9 @@
 #include "ToolFactory.h"
 
 struct IDataBaseItem;
-enum EDataBaseItemEvent;
 struct ITransformManipulator;
+
+enum EDataBaseItemEvent;
 
 namespace Designer
 {
@@ -101,4 +102,3 @@ typedef void* TDesignerNotifyParam;
   if (ar.openBlock("Message", msg)) \
     ar.closeBlock();
 }
-

@@ -98,7 +98,10 @@ void CObjManager::UnloadObjects(bool bDeleteAll)
 		m_nameToObjectMap.clear();
 		m_lstLoadedObjects.clear();
 
+#if !defined(_RELEASE)
 		int nNumLeaks = 0;
+#endif //_RELEASE
+
 		std::vector<CStatObj*> garbage;
 		for (CStatObj* pStatObj = CStatObj::get_intrusive_list_root(); pStatObj; pStatObj = pStatObj->get_next_intrusive())
 		{
@@ -149,7 +152,9 @@ void CObjManager::UnloadObjects(bool bDeleteAll)
 	for (size_t rl = 0; rl < MAX_RECURSION_LEVELS; ++rl)
 	{
 		for (size_t ti = 0; ti < nThreadsNum; ++ti)
-			stl::free_container(m_arrVegetationSprites[rl][ti]);
+		{
+			m_arrVegetationSprites[rl][ti].reset_container();
+		}
 	}
 
 	m_lstStaticTypes.Free();
@@ -166,366 +171,553 @@ void CObjManager::CleanStreamingData()
 }
 
 //////////////////////////////////////////////////////////////////////////
-// class for asyncronous preloading of level CGF's
-//////////////////////////////////////////////////////////////////////////
-struct CLevelStatObjLoader : public IStreamCallback, public Cry3DEngineBase
-{
-	int m_nTasksNum;
-
-	CLevelStatObjLoader()
-	{
-		m_nTasksNum = 0;
-	}
-
-	void StartStreaming(const char* pFileName)
-	{
-		m_nTasksNum++;
-
-		// request the file
-		StreamReadParams params;
-		params.dwUserData = 0;
-		params.nSize = 0;
-		params.pBuffer = NULL;
-		params.nLoadTime = 0;
-		params.nMaxLoadTime = 0;
-		params.ePriority = estpUrgent;
-		GetSystem()->GetStreamEngine()->StartRead(eStreamTaskTypeGeometry, pFileName, this, &params);
-	}
-
-	virtual void StreamOnComplete(IReadStream* pStream, unsigned nError)
-	{
-		if (!nError)
-		{
-			string szName = pStream->GetName();
-			// remove game folder from path
-			const char* szInGameName = strstr(szName, "\\");
-			// load CGF from memory
-			GetObjManager()->LoadStatObj(szInGameName + 1, NULL, NULL, true, 0, pStream->GetBuffer(), pStream->GetBytesRead());
-		}
-
-		m_nTasksNum--;
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
 // Preload in efficient way all CGF's used in level
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::PreloadLevelObjects()
+
+class CObjManager::CPreloadTimeslicer : public IStatObjFoundCallback
 {
-	LOADING_TIME_PROFILE_SECTION;
+public:
+	enum class EStep
+	{
+		Init,
+		BrushListLoad,
+		ResourceListStream,
+		Finish,
 
-	// Starting a new level, so make sure the round ids are ahead of what they were in the last level
-	m_nUpdateStreamingPrioriryRoundId += 8;
-	m_nUpdateStreamingPrioriryRoundIdFast += 8;
+		// Results
+		Done,
+		Failed,
+		Count
+	};
 
-	PrintMessage("Starting loading level CGF's ...");
+	CPreloadTimeslicer(CObjManager& owner)
+		: m_owner(owner)
+	{}
+
+	I3DEngine::ELevelLoadStatus DoStep(const float fTimeslicingLimitSec);
+
+	void OnFound(CStatObj* pObject, IStatObj::SSubObject* pSubObject) override
+	{
+		if (pObject && pObject->m_bMeshStrippedCGF)
+			m_inLevelCacheCount++;
+	}
+
+private:
+
+	I3DEngine::ELevelLoadStatus SetInProgress(EStep nextStep)
+	{
+		m_currentStep = nextStep;
+		return I3DEngine::ELevelLoadStatus::InProgress;
+	}
+
+	I3DEngine::ELevelLoadStatus SetDone()
+	{
+		m_currentStep = EStep::Done;
+		return I3DEngine::ELevelLoadStatus::Done;
+	}
+
+	I3DEngine::ELevelLoadStatus SetFailed()
+	{
+		m_currentStep = EStep::Failed;
+		return I3DEngine::ELevelLoadStatus::Failed;
+	}
+
+	// inputs
+	CObjManager& m_owner;
+
+	// state support
+	EStep m_currentStep = EStep::Init;
+
+	// intermediate
+	float m_startTime = 0;
+	bool m_isCgfCacheExist = false;
+	int m_loadedCgfCounter = 0;
+	int m_inLevelCacheCount = 0;
+	bool m_isVerboseLogging = GetCVars()->e_StatObjPreload > 1;
+};
+
+I3DEngine::ELevelLoadStatus CObjManager::CPreloadTimeslicer::DoStep(const float timeSlicingLimitSec)
+{
+#define NEXT_STEP(step) return SetInProgress(step); case step: 
+
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	INDENT_LOG_DURING_SCOPE();
 
-	float fStartTime = GetCurAsyncTimeSec();
-
-	bool bCgfCacheExist = false;
-	if (GetCVars()->e_StreamCgf != 0)
+	switch (m_currentStep)
 	{
-		// Only when streaming enable use no-mesh cgf pak.
-		//bCgfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( CGF_LEVEL_CACHE_PAK,"" );
-	}
-	IResourceList* pResList = GetISystem()->GetIResourceManager()->GetLevelResourceList();
-
-	// Construct streamer object
-	CLevelStatObjLoader cgfStreamer;
-
-	CryPathString cgfFilename;
-	int nCgfCounter = 0;
-	int nInLevelCacheCount = 0;
-
-	bool bVerboseLogging = GetCVars()->e_StatObjPreload > 1;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Enumerate all .CGF inside level from the "brushlist.txt" file.
-	{
-		string brushListFilename = Get3DEngine()->GetLevelFilePath(BRUSH_LIST_FILE);
-		CCryFile file;
-		if (file.Open(brushListFilename.c_str(), "rb") && file.GetLength() > 0)
+		case EStep::Init:
 		{
-			int nFileLength = file.GetLength();
-			char* buf = new char[nFileLength + 1];
-			buf[nFileLength] = 0; // Null terminate
-			file.ReadRaw(buf, nFileLength);
+			// Starting a new level, so make sure the round ids are ahead of what they were in the last level
+			m_owner.m_nUpdateStreamingPrioriryRoundId += 8;
+			m_owner.m_nUpdateStreamingPrioriryRoundIdFast += 8;
 
-			// Parse file, every line in a file represents a resource filename.
-			char seps[] = "\r\n";
-			char* token = strtok(buf, seps);
-			while (token != NULL)
+			m_owner.PrintMessage("Starting loading level CGF's ...");
+
+
+			m_startTime = GetCurAsyncTimeSec();
+
+			m_isCgfCacheExist = false;
+			if (GetCVars()->e_StreamCgf != 0)
 			{
-				int nAliasLen = sizeof("%level%") - 1;
-				if (strncmp(token, "%level%", nAliasLen) == 0)
-				{
-					cgfFilename = Get3DEngine()->GetLevelFilePath(token + nAliasLen);
-				}
-				else
-				{
-					cgfFilename = token;
-				}
-
-				if (bVerboseLogging)
-				{
-					CryLog("%s", cgfFilename.c_str());
-				}
-				// Do not use streaming for the Brushes from level.pak.
-				GetObjManager()->LoadStatObj(cgfFilename.c_str(), NULL, 0, false, 0);
-				//cgfStreamer.StartStreaming(cgfFilename.c_str());
-				nCgfCounter++;
-
-				token = strtok(NULL, seps);
-
-				//This loop can take a few seconds, so we should refresh the loading screen and call the loading tick functions to ensure that no big gaps in coverage occur.
-				SYNCHRONOUS_LOADING_TICK();
+				// Only when streaming enable use no-mesh cgf pak.
+				//m_bCgfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( CGF_LEVEL_CACHE_PAK,"" );
 			}
-			delete[]buf;
+
+			m_loadedCgfCounter = 0;
+			m_inLevelCacheCount = 0;
+
+			m_isVerboseLogging = GetCVars()->e_StatObjPreload > 1;
 		}
-	}
-	//////////////////////////////////////////////////////////////////////////
 
-	// Request objects loading from Streaming System.
-	if (const char* pCgfName = pResList->GetFirst())
-	{
-		while (pCgfName)
+		NEXT_STEP(EStep::BrushListLoad)
 		{
-			if (strstr(pCgfName, ".cgf"))
+			//////////////////////////////////////////////////////////////////////////
+			// Start loading all .CGF inside level from the "brushlist.txt" file.
 			{
-				const char* sLodName = strstr(pCgfName, "_lod");
-				if (sLodName && (sLodName[4] >= '0' && sLodName[4] <= '9'))
+				const char* brushListFilename = Get3DEngine()->GetLevelFilePath(BRUSH_LIST_FILE);
+				CCryFile file;
+				if (file.Open(brushListFilename, "rb") && file.GetLength() > 0)
 				{
-					// Ignore Lod files.
-					pCgfName = pResList->GetNext();
-					continue;
-				}
+					const size_t fileLength = file.GetLength();
 
-				cgfFilename = pCgfName;
+					std::unique_ptr<char[]> brushListBuffer(new char[fileLength + 1]);
 
-				if (bVerboseLogging)
-				{
-					CryLog("%s", cgfFilename.c_str());
-				}
-				CStatObj* pStatObj = GetObjManager()->LoadStatObj(cgfFilename.c_str(), NULL, 0, true, 0);
-				if (pStatObj)
-				{
-					if (pStatObj->m_bMeshStrippedCGF)
+					brushListBuffer[fileLength] = 0; // Null terminate
+					file.ReadRaw(brushListBuffer.get(), fileLength);
+
+					// Parse file, every line in a file represents a resource filename.
+					const char* seps = "\r\n";
+					char* token = strtok(brushListBuffer.get(), seps);
+					while (token != NULL)
 					{
-						nInLevelCacheCount++;
+						const char* szCgfFileName;
+						const int nAliasLen = sizeof("%level%") - 1;
+						if (strncmp(token, "%level%", nAliasLen) == 0)
+							szCgfFileName = Get3DEngine()->GetLevelFilePath(token + nAliasLen);
+						else
+							szCgfFileName = token;
+
+						if (m_isVerboseLogging)
+						{
+							CryLog("%s", szCgfFileName);
+						}
+
+						GetObjManager()->LoadStatObjAsync(szCgfFileName, NULL, false, 0);
+						m_loadedCgfCounter++;
+						token = strtok(NULL, seps);
 					}
 				}
-				//cgfStreamer.StartStreaming(cgfFilename.c_str());
-				nCgfCounter++;
+			}
+		}
 
-				//This loop can take a few seconds, so we should refresh the loading screen and call the loading tick functions to ensure that no big gaps in coverage occur.
-				SYNCHRONOUS_LOADING_TICK();
+		NEXT_STEP(EStep::ResourceListStream)
+		{
+			IResourceList* pResList = GetISystem()->GetIResourceManager()->GetLevelResourceList();
+
+			// Request objects loading from Streaming System.
+			for(const char* szResFileName = pResList->GetFirst(); szResFileName != nullptr; szResFileName = pResList->GetNext())
+			{
+				const char* szFileExt = PathUtil::GetExt(szResFileName);
+				const bool isCgf = cry_stricmp(szFileExt, CRY_GEOMETRY_FILE_EXT) == 0;
+
+				if (isCgf)
+				{
+					const char* sLodName = strstr(szResFileName, "_lod");
+					if (sLodName && (sLodName[4] >= '0' && sLodName[4] <= '9'))
+					{
+						// Ignore Lod files.
+						continue;
+					}
+
+					if (m_isVerboseLogging)
+					{
+						CryLog("%s", szResFileName);
+					}
+
+					GetObjManager()->LoadStatObjAsync(szResFileName, NULL, true, 0, this);
+					m_loadedCgfCounter++;
+				}
+			}
+		}
+
+		NEXT_STEP(EStep::Finish)
+		{
+			// wait for the async loads to finish
+			GetSystem()->GetStreamEngine()->UpdateAndWait();
+			
+			if (m_isCgfCacheExist)
+			{
+				//GetISystem()->GetIResourceManager()->UnloadLevelCachePak( CGF_LEVEL_CACHE_PAK );
 			}
 
-			pCgfName = pResList->GetNext();
+			float dt = GetCurAsyncTimeSec() - m_startTime;
+			PrintMessage("Finished loading level CGF's: %d objects loaded (%d from LevelCache) in %.1f sec", m_loadedCgfCounter, m_inLevelCacheCount, dt);
 		}
+
+	case EStep::Done:
+		return SetDone();
+
+	case EStep::Failed:
+	default:
+		return SetFailed();
 	}
+#undef NEXT_STEP
+}
 
-	//  PrintMessage("Finished requesting level CGF's: %d objects in %.1f sec", nCgfCounter, GetCurAsyncTimeSec()-fStartTime);
-
-	// Continue updating streaming system until all CGF's are loaded
-	if (cgfStreamer.m_nTasksNum > 0)
+void CObjManager::PreloadLevelObjects()
+{
+	CPreloadTimeslicer slicer(*this);
+	I3DEngine::ELevelLoadStatus result = I3DEngine::ELevelLoadStatus::InProgress;
+	const float infiniteTimeSlicingLimit = -1.0f;
+	do
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CObjManager::PreloadLevelObjects_StreamEngine_Update");
-		GetSystem()->GetStreamEngine()->UpdateAndWait();
-	}
+		result = slicer.DoStep(infiniteTimeSlicingLimit);
+	} while (result == I3DEngine::ELevelLoadStatus::InProgress);
+}
 
-	if (bCgfCacheExist)
+void CObjManager::StartPreloadLevelObjects()
+{
+	if (m_pPreloadTimeSlicer)
 	{
-		//GetISystem()->GetIResourceManager()->UnloadLevelCachePak( CGF_LEVEL_CACHE_PAK );
+		return;
 	}
 
-	float dt = GetCurAsyncTimeSec() - fStartTime;
-	PrintMessage("Finished loading level CGF's: %d objects loaded (%d from LevelCache) in %.1f sec", nCgfCounter, nInLevelCacheCount, dt);
+	m_pPreloadTimeSlicer.reset(new CPreloadTimeslicer(*this));
+}
+
+I3DEngine::ELevelLoadStatus CObjManager::UpdatePreloadLevelObjects()
+{
+	if (!m_pPreloadTimeSlicer)
+	{
+		return I3DEngine::ELevelLoadStatus::Failed;
+	}
+
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+
+	const float timeSlicingLimitSec = 1.0f;
+
+	switch (m_pPreloadTimeSlicer->DoStep(timeSlicingLimitSec))
+	{
+	case I3DEngine::ELevelLoadStatus::InProgress:
+		return I3DEngine::ELevelLoadStatus::InProgress;
+
+	case I3DEngine::ELevelLoadStatus::Done:
+		m_pPreloadTimeSlicer.reset();
+		return I3DEngine::ELevelLoadStatus::Done;
+
+	case I3DEngine::ELevelLoadStatus::Failed:
+	default:
+		m_pPreloadTimeSlicer.reset();
+		return I3DEngine::ELevelLoadStatus::Failed;
+	}
+}
+
+void CObjManager::CancelPreloadLevelObjects()
+{
+	if (m_pPreloadTimeSlicer)
+	{
+		m_pPreloadTimeSlicer.reset();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Create / delete object
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-CStatObj* CObjManager::LoadStatObj(const char* __szFileName
-                                   , const char* _szGeomName, IStatObj::SSubObject** ppSubObject
-                                   , bool bUseStreaming
-                                   , unsigned long nLoadingFlags
-                                   , const void* pData
-                                   , int nDataSize
-                                   , const char* szBlockName)
+struct SLoadPrepareState
 {
-	if (!m_pDefaultCGF && strcmp(__szFileName, DEFAULT_CGF_NAME) != 0)
+	CStatObj* pObject;
+	int  flagCloth;
+	bool forceBreakable;
+	char szAdjustedFilename[MAX_PATH];
+};
+
+SLoadPrepareState CObjManager::LoadStatObj_Prepare(const char* szFileName, const char* szGeomName, IStatObj::SSubObject** ppSubObject, uint32 loadingFlags)
+{
+	SLoadPrepareState prepState;
+	prepState.forceBreakable = false;
+	prepState.flagCloth = 0;
+	prepState.pObject = nullptr;
+	
+	if (ppSubObject)
+		*ppSubObject = NULL;
+
+	if (!m_pDefaultCGF && strcmp(szFileName, DEFAULT_CGF_NAME) != 0)
 	{
 		// Load default object if not yet loaded.
-		const char* sDefaulObjFilename = DEFAULT_CGF_NAME;
-		// prepare default object
-		m_pDefaultCGF = LoadStatObj(sDefaulObjFilename, NULL, NULL, false, nLoadingFlags);
+		m_pDefaultCGF = LoadStatObj(DEFAULT_CGF_NAME, NULL, NULL, false, loadingFlags);
 		if (!m_pDefaultCGF)
 		{
-			Error("CObjManager::LoadStatObj: Default object not found (%s)", sDefaulObjFilename);
+			Error("CObjManager::LoadStatObj: Default object not found (%s)", DEFAULT_CGF_NAME);
 			m_pDefaultCGF = new CStatObj();
 		}
 		m_pDefaultCGF->m_bDefaultObject = true;
 	}
 
-	if (CryStringUtils::stristr(__szFileName, "_lod"))
+	if (CryStringUtils::stristr(szFileName, "_lod"))
 	{
-		Warning("Failed to load cgf: %s, '_lod' meshes can be loaded only internally as part of multi-lod CGF loading", __szFileName);
-		return m_pDefaultCGF;
+		Warning("Failed to load cgf: %s, '_lod' meshes can be loaded only internally as part of multi-lod CGF loading", szFileName);
+		prepState.pObject = m_pDefaultCGF;
+		return prepState;
 	}
 
-	LOADING_TIME_PROFILE_SECTION_ARGS(__szFileName);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Static Geometry");
-
-	if (ppSubObject)
-		*ppSubObject = NULL;
-
-	if (!strcmp(__szFileName, "NOFILE"))
+	if (!strcmp(szFileName, "NOFILE"))
 	{
 		// make empty object to be filled from outside
-		CStatObj* pObject = new CStatObj();
-		m_lstLoadedObjects.insert(pObject);
-		return pObject;
+		prepState.pObject = new CStatObj();
+		m_lstLoadedObjects.insert(prepState.pObject);
+		return prepState;
 	}
 
-	// Normalize file name
-	char sFilename[_MAX_PATH];
-
 	//////////////////////////////////////////////////////////////////////////
-	// Remap %level% alias if needed an unify filename
+	// Remap %level% alias if needed and unify filename
 	{
 		int nAliasNameLen = sizeof("%level%") - 1;
-		if (strncmp(__szFileName, "%level%", nAliasNameLen) == 0)
+		if (strncmp(szFileName, "%level%", nAliasNameLen) == 0)
 		{
-			cry_strcpy(sFilename, Get3DEngine()->GetLevelFilePath(__szFileName + nAliasNameLen));
+			cry_strcpy(prepState.szAdjustedFilename, Get3DEngine()->GetLevelFilePath(szFileName + nAliasNameLen));
 		}
 		else
 		{
-			cry_strcpy(sFilename, __szFileName);
+			cry_strcpy(prepState.szAdjustedFilename, szFileName);
 		}
 
-		PREFAST_SUPPRESS_WARNING(6054)                                     // sFilename is null terminated
-		std::replace(sFilename, sFilename + strlen(sFilename), '\\', '/'); // To Unix Path
+		PREFAST_SUPPRESS_WARNING(6054) // sFilename is null terminated
+		std::replace(prepState.szAdjustedFilename, prepState.szAdjustedFilename + strlen(prepState.szAdjustedFilename), '\\', '/'); // To Unix Path
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	bool bForceBreakable = strstr(sFilename, "break") != 0;
-	if (_szGeomName && !strcmp(_szGeomName, "#ForceBreakable"))
+	prepState.forceBreakable = strstr(prepState.szAdjustedFilename, "break") != 0;
+	if (szGeomName && !strcmp(szGeomName, "#ForceBreakable"))
 	{
-		bForceBreakable = true;
-		_szGeomName = 0;
+		prepState.forceBreakable = true;
 	}
 
-	// Try to find already loaded object
-	CStatObj* pObject = 0;
-
-	int flagCloth = 0;
-	if (_szGeomName && !strcmp(_szGeomName, "cloth"))
-		_szGeomName = 0, flagCloth = STATIC_OBJECT_DYNAMIC | STATIC_OBJECT_CLONE;
+	if (szGeomName && !strcmp(szGeomName, "cloth"))
+	{
+		prepState.flagCloth = STATIC_OBJECT_DYNAMIC | STATIC_OBJECT_CLONE;
+	}
 	else
 	{
-		pObject = stl::find_in_map(m_nameToObjectMap, CONST_TEMP_STRING(sFilename), NULL);
-		if (pObject)
-		{
-			if (!bUseStreaming && pObject->m_bCanUnload)
-			{
-				pObject->DisableStreaming();
-			}
-
-			assert(!pData);
-			if (!pObject->m_bLodsLoaded && !pData)
-			{
-				pObject->LoadLowLODs(bUseStreaming, nLoadingFlags);
-			}
-
-			if (_szGeomName && _szGeomName[0])
-			{
-				// Return SubObject.
-				CStatObj::SSubObject* pSubObject = pObject->FindSubObject(_szGeomName);
-				if (!pSubObject || !pSubObject->pStatObj)
-					return 0;
-				if (pSubObject->pStatObj)
-				{
-					if (ppSubObject)
-						*ppSubObject = pSubObject;
-					return (CStatObj*)pSubObject->pStatObj;
-				}
-			}
-			return pObject;
-		}
+		prepState.pObject = stl::find_in_map(m_nameToObjectMap, CONST_TEMP_STRING(prepState.szAdjustedFilename), NULL);
 	}
 
+	return prepState;
+}
+
+CStatObj* TryFindSubobject(CStatObj* pObject, const char* szGeomName, IStatObj::SSubObject** ppSubObject)
+{
+	if (szGeomName)
+	{
+		// special tags that we do not want to look up
+		if(strcmp(szGeomName, "#ForceBreakable") == 0 || strcmp(szGeomName, "cloth") == 0)
+			szGeomName = nullptr;
+	}
+	
+	if (ppSubObject)
+		*ppSubObject = nullptr;
+
+	if (szGeomName && szGeomName[0])
+	{
+		CStatObj::SSubObject* pSubObject = pObject->FindSubObject(szGeomName);
+		if (!pSubObject || !pSubObject->pStatObj)
+			return nullptr;
+
+		if (ppSubObject)
+			*ppSubObject = pSubObject;
+		return (CStatObj*)pSubObject->pStatObj;
+	}
+	return pObject;
+}
+
+// actual callback implementation
+class CStatObjAsyncLoader : IStatObjLoadedCallback
+{
+public:
+	CStatObjAsyncLoader(CStatObj* pObject, uint32 loadingFlags, const char* szGeomName, IStatObjFoundCallback* pCallback) :
+		m_pObject(pObject), m_pCallback(pCallback), m_geomName(szGeomName), m_loadingFlags(loadingFlags), m_lodLoadingStarted(false), m_useStreaming(false)
+	{
+		if (s_pStreamEngine == nullptr)
+			s_pStreamEngine = gEnv->pSystem->GetStreamEngine();
+	}
+
+	void OnLoaded(bool succeeded, CStatObj* object) override
+	{
+		CObjManager* const pObjectManager = Cry3DEngineBase::GetObjManager();
+
+		if (!succeeded && !m_lodLoadingStarted)
+		{
+			if (!(m_loadingFlags & IStatObj::ELoadingFlagsNoErrorIfFail))
+				Cry3DEngineBase::Error("Failed to load cgf: %s", m_pObject->GetFilePath());
+			SAFE_DELETE(m_pObject);
+
+			if(m_pCallback)
+			{
+				if (!m_geomName.empty())
+					m_pCallback->OnFound(nullptr, nullptr);
+				else
+					m_pCallback->OnFound(pObjectManager->m_pDefaultCGF, nullptr);
+			}
+		}
+		else
+		{
+			if (!m_lodLoadingStarted)
+			{
+				StartLoad_LodsOnly(m_useStreaming);
+				return;
+			}
+
+			if (!m_pObject->m_bCanUnload)
+			{
+				m_pObject->DisableStreaming();
+			}
+			m_pObject->TryMergeSubObjects(false);
+
+			pObjectManager->m_lstLoadedObjects.insert(m_pObject);
+			pObjectManager->m_nameToObjectMap[m_pObject->m_szFileName] = m_pObject;
+
+			if (m_pCallback)
+			{
+				IStatObj::SSubObject* pSubObject;
+				CStatObj* pFound = TryFindSubobject(m_pObject, m_geomName.c_str(), &pSubObject);
+				m_pCallback->OnFound(pFound, pSubObject);
+			}
+		}
+		
+		delete this;
+	}
+
+	void StartLoad(const char* szFilename, bool useStreaming)
+	{
+		m_useStreaming = useStreaming;
+		m_pObject->LoadCGFAsync(szFilename,m_loadingFlags, this);
+		m_lodLoadingStarted = false;
+	}
+
+	void StartLoad_LodsOnly(bool useStreaming)
+	{
+		m_lodLoadingStarted = true;
+		m_pObject->LoadLowLODsAsync(useStreaming, m_loadingFlags, this);
+	}
+
+private:
+	static IStreamEngine* s_pStreamEngine;
+
+	CStatObj* m_pObject;
+	IStatObjFoundCallback* m_pCallback;
+	string m_geomName;
+	uint32 m_loadingFlags;
+	bool m_lodLoadingStarted;
+	bool m_useStreaming;
+};
+
+IStreamEngine* CStatObjAsyncLoader::s_pStreamEngine = nullptr;
+
+void CObjManager::LoadStatObjAsync(const char* szFileName, const char* szGeomName, bool useStreaming, uint32 loadingFlags, IStatObjFoundCallback* pCallback)
+{
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szFileName);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Static Geometry");
+
+	SLoadPrepareState prepState = LoadStatObj_Prepare(szFileName, szGeomName, nullptr, loadingFlags);
+	CStatObj* pObject = prepState.pObject;
+
+	if (pObject)
+	{
+		if (!useStreaming && pObject->m_bCanUnload)
+		{
+			pObject->DisableStreaming();
+		}
+
+		if (!pObject->m_bLodsLoaded)
+		{
+			auto pLoader = new CStatObjAsyncLoader(pObject, loadingFlags, szGeomName, pCallback);
+			pLoader->StartLoad_LodsOnly(useStreaming);
+		}
+		else if (pCallback)
+		{
+			IStatObj::SSubObject* pSubObject;
+			CStatObj* pFound = TryFindSubobject(pObject, szGeomName, &pSubObject);
+			pCallback->OnFound(pFound, pSubObject);
+		}
+		return;
+	}
+	
 	// Load new CGF
 	pObject = new CStatObj();
-	pObject->m_nFlags |= flagCloth;
+	pObject->m_nFlags |= prepState.flagCloth;
 
-	bUseStreaming &= (GetCVars()->e_StreamCgf != 0);
+	useStreaming &= (GetCVars()->e_StreamCgf != 0);
 
-	if (bUseStreaming)
+	if (useStreaming)
 		pObject->m_bCanUnload = true;
-	if (bForceBreakable)
-		nLoadingFlags |= IStatObj::ELoadingFlagsForceBreakable;
+	if (prepState.forceBreakable)
+		loadingFlags |= IStatObj::ELoadingFlagsForceBreakable;
 
-	if (!pObject->LoadCGF(sFilename, strstr(sFilename, "_lod") != NULL, nLoadingFlags, pData, nDataSize))
+	auto pLoader = new CStatObjAsyncLoader(pObject, loadingFlags, szGeomName, pCallback);
+	pLoader->StartLoad(prepState.szAdjustedFilename, useStreaming);
+}
+
+CStatObj* CObjManager::LoadStatObj(const char* szFileName
+                                   , const char* szGeomName, IStatObj::SSubObject** ppSubObject
+                                   , bool useStreaming, uint32 loadingFlags)
+{
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szFileName);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Static Geometry");
+	
+	SLoadPrepareState prepState = LoadStatObj_Prepare(szFileName, szGeomName, ppSubObject, loadingFlags);
+	CStatObj* pObject = prepState.pObject;
+
+	if (pObject)
 	{
-		if (!(nLoadingFlags & IStatObj::ELoadingFlagsNoErrorIfFail))
-			Error("Failed to load cgf: %s", __szFileName);
-		// object not found
-		// if geom name is specified - just return 0
-		if (_szGeomName && _szGeomName[0])
+		if (!useStreaming && pObject->m_bCanUnload)
 		{
+			pObject->DisableStreaming();
+		}
+
+		if (!pObject->m_bLodsLoaded)
+		{
+			pObject->LoadLowLODs(useStreaming, loadingFlags);
+		}
+	}
+	else // Load new CGF
+	{
+		pObject = new CStatObj();
+		pObject->m_nFlags |= prepState.flagCloth;
+
+		useStreaming &= (GetCVars()->e_StreamCgf != 0);
+
+		if (useStreaming)
+			pObject->m_bCanUnload = true;
+		if (prepState.forceBreakable)
+			loadingFlags |= IStatObj::ELoadingFlagsForceBreakable;
+
+		if (!pObject->LoadCGF(prepState.szAdjustedFilename, loadingFlags))
+		{
+			if (!(loadingFlags & IStatObj::ELoadingFlagsNoErrorIfFail))
+				Error("Failed to load cgf: %s", szFileName);
 			delete pObject;
-			return 0;
+
+			if (szGeomName && szGeomName[0])
+				return nullptr;
+			else
+				return m_pDefaultCGF;
 		}
 
-		// make unique default CGF for every case of missing CGF, this will make export process more reliable and help finding missing CGF's in pure game
-		/*		pObject->m_bCanUnload = false;
-		    if (m_bEditor && pObject->LoadCGF( DEFAULT_CGF_NAME, false, nLoadingFlags, pData, nDataSize ))
-		    {
-		      pObject->m_szFileName = sFilename;
-		      pObject->m_bDefaultObject = true;
-		    }
-		    else*/
+		pObject->LoadLowLODs(useStreaming, loadingFlags);
+		
+		if (!pObject->m_bCanUnload)
 		{
-			delete pObject;
-			return m_pDefaultCGF;
+			// even if streaming is disabled we register object for potential streaming (streaming system will never unload it)
+			pObject->DisableStreaming();
 		}
+
+		// sub meshes merging
+		pObject->TryMergeSubObjects(false);
+
+		m_lstLoadedObjects.insert(pObject);
+		m_nameToObjectMap[pObject->m_szFileName] = pObject;
 	}
 
-	// now try to load lods
-	if (!pData)
-	{
-		pObject->LoadLowLODs(bUseStreaming, nLoadingFlags);
-	}
-
-	if (!pObject->m_bCanUnload)
-	{
-		// even if streaming is disabled we register object for potential streaming (streaming system will never unload it)
-		pObject->DisableStreaming();
-	}
-
-	// sub meshes merging
-	pObject->TryMergeSubObjects(false);
-
-	m_lstLoadedObjects.insert(pObject);
-	m_nameToObjectMap[pObject->m_szFileName] = pObject;
-
-	if (_szGeomName && _szGeomName[0])
-	{
-		// Return SubObject.
-		CStatObj::SSubObject* pSubObject = pObject->FindSubObject(_szGeomName);
-		if (!pSubObject || !pSubObject->pStatObj)
-			return 0;
-		if (pSubObject->pStatObj)
-		{
-			if (ppSubObject)
-				*ppSubObject = pSubObject;
-			return (CStatObj*)pSubObject->pStatObj;
-		}
-	}
-
-	return pObject;
+	return TryFindSubobject(pObject, szGeomName, ppSubObject);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -581,7 +773,9 @@ CObjManager::CObjManager() :
 	m_pDefaultCGF(NULL),
 	m_decalsToPrecreate(),
 	m_bNeedProcessObjectsStreaming_Finish(false),
-	m_CullThread()
+	m_CullThread(),
+	m_CheckOcclusionOutputQueue(GetCVars()->e_CheckOcclusionOutputQueueSize)
+
 {
 #ifdef POOL_STATOBJ_ALLOCS
 	m_statObjPool = new stl::PoolAllocator<sizeof(CStatObj), stl::PSyncMultiThread, alignof(CStatObj)>(stl::FHeap().PageSize(64)); // 20Kb per page
@@ -632,10 +826,6 @@ CObjManager::CObjManager() :
 	m_bGarbageCollectionEnabled = true;
 
 	m_decalsToPrecreate.reserve(128);
-
-	// init queue for check occlusion
-	m_CheckOcclusionQueue.Init(GetCVars()->e_CheckOcclusionQueueSize);
-	m_CheckOcclusionOutputQueue.Init(GetCVars()->e_CheckOcclusionOutputQueueSize);
 }
 
 // make unit box for occlusion test
@@ -862,7 +1052,6 @@ void CObjManager::ReregisterEntitiesInArea(AABB * pBox, bool bCleanUpTree)
 
 	for (int i = 0; i < lstEntitiesInArea.Count(); i++)
 	{
-		IVisArea* pPrevArea = lstEntitiesInArea[i].pNode->GetEntityVisArea();
 		Get3DEngine()->UnRegisterEntityDirect(lstEntitiesInArea[i].pNode);
 
 		if (lstEntitiesInArea[i].pNode->GetRenderNodeType() == eERType_Decal)
@@ -1004,8 +1193,11 @@ bool CObjManager::SphereRenderMeshIntersection(IRenderMesh* pRenderMesh, const V
 
 	// get indices
 	vtx_idx* pInds = pRenderMesh->GetIndexPtr(FSL_READ);
+
+#if defined(USE_CRY_ASSERT)
 	int nInds = pRenderMesh->GetIndicesCount();
 	assert(nInds % 3 == 0);
+#endif
 
 	// test tris
 	TRenderChunkArray& Chunks = pRenderMesh->GetChunks();
@@ -1146,8 +1338,10 @@ void CObjManager::UnregisterForGarbage(CStatObj* pObject)
 bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const Matrix34& transformationMatrix, const SRenderingPassInfo& passInfo) const
 {
 	CRY_ASSERT(pRenderObject == nullptr);
-	const bool shouldGetOrCreatePermanentObject = (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && (!pLodValue || !pLodValue->DissolveRefA())) && 
+	const bool multipleLevelsOfDetail = pLodValue && pLodValue->DissolveRefA();
+	const bool shouldGetOrCreatePermanentObject = (GetCVars()->e_PermanentRenderObjects && (pTempData || pRenderObject) && GetCVars()->e_DebugDraw == 0 && !multipleLevelsOfDetail) &&
 		!(passInfo.IsRecursivePass() || (pTempData && (pTempData->userData.m_pFoliage || (pTempData->userData.pOwnerNode && (pTempData->userData.pOwnerNode->GetRndFlags() & ERF_SELECTED)))));
+
 	if (shouldGetOrCreatePermanentObject)
 	{
 		if (pLodValue && pLodValue->LodA() == -1 && pLodValue->LodB() == -1)
@@ -1160,29 +1354,35 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 			return true;
 
 		int nLod = pLodValue ? CLAMP(0, pLodValue->LodA(), MAX_STATOBJ_LODS_NUM - 1) : 0;
+		IPermanentRenderObject* pPermanentRenderObj = static_cast<IPermanentRenderObject*>(pTempData->GetRenderObject(nLod));
 
-		uint32 passId = passInfo.IsShadowPass() ? 1 : 0;
-		uint32 passMask = BIT(passId);
-
-		pRenderObject = pTempData->GetRenderObject(nLod);
+		const CRenderObject::ERenderPassType passType = passInfo.GetPassType();
 
 		// Update instance only for dirty objects
-		const auto instanceDataDirty = pRenderObject->m_bInstanceDataDirty[passId];
-		passInfo.GetIRenderView()->AddPermanentObject(pRenderObject, passInfo);
+		const bool instanceDataDirty = pPermanentRenderObj->IsInstanceDataDirty(passType);
+
+		// When permanent renderobject has sub-object and its instance data dirty, its instances need to be updated as well.
+		if (pPermanentRenderObj->IsPreparedForPass(passType) && instanceDataDirty && pPermanentRenderObj->HasSubObject())
+		{
+			pPermanentRenderObj = static_cast<IPermanentRenderObject*>(pTempData->RefreshRenderObject(nLod));
+		}
+
+		passInfo.GetIRenderView()->AddPermanentObject(pPermanentRenderObj, passInfo);
 
 		// Has this object already been filled?
-		int previousMask = CryInterlockedExchangeOr(reinterpret_cast<volatile LONG*>(&pRenderObject->m_passReadyMask), passMask);
-		if (previousMask & passMask) // Object drawn once => fast path.
+		if (pPermanentRenderObj->IsPreparedForPass(passType)) // Object drawn once => fast path.
 		{
 			if (instanceDataDirty)
 			{
 				// Update instance matrix
-				pRenderObject->SetMatrix(transformationMatrix, passInfo);
-				pRenderObject->m_bInstanceDataDirty[passId] = false;
+				pPermanentRenderObj->SetMatrix(transformationMatrix);
+				pPermanentRenderObj->SetInstanceDataDirty(passType, false);
 			}
 
+#if !defined(_RELEASE)
 			if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
-				GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pRenderObject->m_fDistance, passInfo);
+				GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pPermanentRenderObj->m_fDistance, passInfo);
+#endif
 
 			return true;
 		}
@@ -1190,16 +1390,24 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 		// Permanent object needs to be filled first time,
 		if (pTempData && pTempData->userData.pOwnerNode)
 			pTempData->userData.nStatObjLastModificationId = GetResourcesModificationChecksum(pTempData->userData.pOwnerNode);
+
+		pPermanentRenderObj->SetPreparedForPass(passType);
+
+		pRenderObject = pPermanentRenderObj;
 	}
 	else
 	{
+		// Release persistent ROs associated with this temp-data
+		if (pTempData)
+			pTempData->FreeRenderObjects();
+
 		// Fallback to temporary render object
 		pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 	}
 
 	// We do not have a persistant render object
 	// Always update instance matrix
-	pRenderObject->SetMatrix(transformationMatrix, passInfo);
+	pRenderObject->SetMatrix(transformationMatrix);
 
 	return false;
 }

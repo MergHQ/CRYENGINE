@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __RESFILE_H__
-#define __RESFILE_H__
+#pragma once
 
 #include <CryString/CryName.h>
 
@@ -18,8 +17,6 @@
 #define RF_DUPLICATE   BIT(1)
 #define RF_COMPRESS    BIT(2)
 #define RF_TEMPDATA    BIT(3)
-#define RF_RES_$TOKENS BIT(5)
-#define RF_RES_$ (RF_RES_$TOKENS)
 #define RF_COMPRESSED  BIT(7)
 
 class  CResFileLookupDataMan;
@@ -134,7 +131,7 @@ class CResFile
 
 private:
 	string m_name;
-	char*  m_szAccess;
+	const char*  m_szAccess;
 	FILE*  m_handle;
 	ResDir m_Dir;
 	ResDirOpen m_DirOpen;
@@ -341,5 +338,3 @@ public:
 	CResFile* getHandle() { return rf; }
 	const CResFile* getHandle() const { return rf; }
 };
-
-#endif //  __RESFILE_H__

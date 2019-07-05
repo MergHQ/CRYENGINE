@@ -2,9 +2,9 @@
 
 #include "StdAfx.h"
 #include "SelectAllNoneTool.h"
+
+#include "Core/Model.h"
 #include "DesignerEditor.h"
-#include "Tools/Select/SelectTool.h"
-#include "DesignerSession.h"
 
 namespace Designer
 {
@@ -108,4 +108,3 @@ void SelectAllNoneTool::DeselectAllFaces()
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_AllNone, eToolGroup_Selection, "AllNone", SelectAllNoneTool,
                                    allnoneselection, "runs All/None selection tool", "designer.allnoneselection")
-

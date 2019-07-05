@@ -2,12 +2,9 @@
 
 #pragma once
 
-#include "Objects/EntityObject.h"
 #include "Objects/AreaBox.h"
 #include "DesignerBaseObject.h"
 
-class IDesignerEventHandler;
-class CPickEntitiesPanel;
 class ICrySizer;
 
 namespace Designer
@@ -25,12 +22,14 @@ public:
 	void                       GetLocalBounds(AABB& box);
 	bool                       HitTest(HitContext& hc);
 	void                       Display(CObjectRenderHelper& objRenderHelper);
-	void                       DisplayMemoryUsage(DisplayContext& dc);
+	void                       DisplayMemoryUsage(SDisplayContext& dc);
 
 	bool                       Init(CBaseObject* prev, const string& file);
 
 	virtual void               OnEntityAdded(IEntity const* const pIEntity) override;
 	virtual void               OnEntityRemoved(IEntity const* const pIEntity) override;
+
+	virtual void               ClearArea() override final;
 
 	void                       CreateInspectorWidgets(CInspectorWidgetCreator& creator) override;
 
@@ -48,7 +47,7 @@ public:
 	int                        GetAreaId() const { return m_areaId; }
 
 	void                       UpdateGameArea();
-	void                       UpdateGameResource() override { UpdateGameArea(); };
+	void                       UpdateGameResource() override { UpdateGameArea(); }
 
 	void                       GenerateGameFilename(string& generatedFileName) const;
 
@@ -57,12 +56,12 @@ public:
 	bool                       IsHiddenByOption() override;
 
 	std::vector<EDesignerTool> GetIncompatibleSubtools() override;
+
 protected:
-	//! Dtor must be protected.
 	AreaSolidObject();
 
 	void AddConvexhullToEngineArea(IEntityAreaComponent* pArea, std::vector<std::vector<Vec3>>& faces, bool bObstructrion);
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	void Reload(bool bReloadScript = false) override;
 	void OnAreaChange(IVariable* pVar) override;
@@ -84,12 +83,11 @@ protected:
 class AreaSolidClassDesc final : public CObjectClassDesc
 {
 public:
-	virtual ObjectType     GetObjectType() override     { return OBJTYPE_VOLUMESOLID; };
-	virtual const char*    ClassName() override         { return "AreaSolid"; };
-	virtual const char*    UIName() override            { return "Solid"; };
-	virtual const char*    Category() override          { return "Area"; };
-	virtual CRuntimeClass* GetRuntimeClass() override   { return RUNTIME_CLASS(AreaSolidObject); };
-	virtual const char*    GetToolClassName() override  { return "EditTool.CreateAreaSolidTool"; }
+	virtual ObjectType     GetObjectType() override    { return OBJTYPE_VOLUMESOLID; }
+	virtual const char*    ClassName() override        { return "AreaSolid"; }
+	virtual const char*    UIName() override           { return "Solid"; }
+	virtual const char*    Category() override         { return "Area"; }
+	virtual CRuntimeClass* GetRuntimeClass() override  { return RUNTIME_CLASS(AreaSolidObject); }
+	virtual const char*    GetToolClassName() override { return "EditTool.CreateAreaSolidTool"; }
 };
 } // namespace Designer
-

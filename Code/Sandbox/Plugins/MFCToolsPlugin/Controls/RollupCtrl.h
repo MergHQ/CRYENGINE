@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "MFCToolsDefines.h"
 #include "Controls/ColorCtrl.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -42,20 +43,14 @@ const COLORREF RC_SCROLLBARCOLOR = ::GetSysColor(COLOR_BTNFACE); //RGB(150,180,1
 #define RC_IDM_COLLAPSEALL 0x101
 #define RC_IDM_STARTPAGES  0x102
 
-/////////////////////////////////////////////////////////////////////////////
-// CRollupCtrl class definition
-
-class PLUGIN_API CRollupCtrl : public CWnd
+class MFC_TOOLS_PLUGIN_API CRollupCtrl : public CWnd
 {
 	DECLARE_DYNCREATE(CRollupCtrl)
 
 public:
-
-	// Constructor-Destructor
 	CRollupCtrl();
 	virtual ~CRollupCtrl();
 
-	// Methods
 	BOOL         Create(DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID);
 
 	int          InsertPage(LPCTSTR caption, CDialog* pwndTemplate, BOOL bAutoDestroyTpl = TRUE, int idx = -1, BOOL bAutoExpand = TRUE); //Return page zero-based index
@@ -86,7 +81,6 @@ public:
 
 protected:
 
-	// Internal methods
 	void         RecalLayout();
 	void         RecalcHeight();
 	int          GetPageIdxFromButtonHWND(HWND hwnd);
@@ -100,7 +94,6 @@ protected:
 	RC_PAGEINFO* FindPage(int id);
 	int          FindPageIndex(int id);
 
-	// Datas
 	CString                   m_strMyClass;
 	std::vector<RC_PAGEINFO*> m_PageList;
 	int                       m_nStartYPos, m_nPageHeight;
@@ -117,18 +110,8 @@ protected:
 	static LRESULT CALLBACK DlgWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK ButWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-public:
-
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CRollupCtrl)
 protected:
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
-	//}}AFX_VIRTUAL
-
-	// Generated message map functions
-protected:
-	//{{AFX_MSG(CRollupCtrl)
 	afx_msg void OnDestroy();
 	afx_msg void OnPaint();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
@@ -139,9 +122,6 @@ protected:
 	afx_msg int  OnMouseActivate(CWnd* pDesktopWnd, UINT nHitTest, UINT message);
 	afx_msg void OnContextMenu(CWnd* pWnd, CPoint point);
 	afx_msg HBRUSH OnCtlColor(CDC*, CWnd * pWnd, UINT);
-	//}}AFX_MSG
+
 	DECLARE_MESSAGE_MAP()
 };
-
-
-

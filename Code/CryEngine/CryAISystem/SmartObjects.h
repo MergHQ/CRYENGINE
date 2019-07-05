@@ -1,34 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/********************************************************************
-   -------------------------------------------------------------------------
-   File name:   SmartObjects.h
-   $Id$
-   Description:
-
-   -------------------------------------------------------------------------
-   History:
-   - ?							: Created by ?
-
- *********************************************************************/
-#ifndef _SMARTOBJECTS_H_
-#define _SMARTOBJECTS_H_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMemory/STLPoolAllocator.h>
-#include "Navigation/MNM/MNM.h"
 
 // forward declaration
 class CAIActor;
 class CSmartObject;
 class CSmartObjectClass;
 struct CCondition;
-
 struct OffMeshLink_SmartObject;
+class CSmartObjectOffMeshNavigation;
 
 typedef std::vector<CSmartObjectClass*> CSmartObjectClasses;
 
@@ -446,6 +429,7 @@ protected:
 	};
 	typedef std::map<CClassTemplateData*, CTemplateData> MapTemplates;
 	std::unique_ptr<MapTemplates> m_pMapTemplates;
+	bool m_updateTemplates;
 
 public:
 	explicit CSmartObject(EntityId entityId);
@@ -463,13 +447,20 @@ public:
 	bool operator==(const CSmartObject& other) const { return m_entityId == other.m_entityId; }
 
 	//Adds a class to the current set
-	void RegisterSmartObjectClass(CSmartObjectClass* pClass) { m_vClasses.push_back(pClass); }
+	void RegisterSmartObjectClass(CSmartObjectClass* pClass)
+	{ 
+		m_vClasses.push_back(pClass);
+	}
 
 	//Removes a class from the current set
 	void UnregisterSmartObjectClass(CSmartObjectClass* pClass)
 	{
+#ifdef ENABLE_AI_ASSERT
 		const bool foundClass = stl::find_and_erase(m_vClasses, pClass);
 		AIAssert(foundClass);
+#else
+		stl::find_and_erase(m_vClasses, pClass);
+#endif
 	}
 
 	CSmartObjectClasses& GetClasses()      { return m_vClasses; }
@@ -479,6 +470,8 @@ public:
 
 	/// Measures the user size and applies value to all associated smart object classes
 	void ApplyUserSize();
+
+	void InvalidateTemplates() { m_updateTemplates = true; }
 
 	MapTemplates& GetMapTemplates();
 
@@ -892,14 +885,14 @@ public:
 	// returns the id of the inserted goal pipe if a rule was found or 0 if no rule
 	int TriggerEvent(const char* sEventName, IEntity*& pUser, IEntity*& pObject, QueryEventMap* pQueryEvents = NULL, const Vec3* pExtraPoint = NULL, bool bHighPriority = false);
 
-	/// used by heuristic to check is this link passable by current pathfind requester
-	bool  GetSmartObjectLinkCostFactorForMNM(const OffMeshLink_SmartObject* pSmartObjectLink, const IEntity* pRequesterEntity, float* fCostMultiplier) const;
+	// used by heuristic to check is this link passable by current pathfind requester
+	bool  GetSmartObjectLinkCostFactorForMNM(const OffMeshLink_SmartObject* pSmartObjectLink, const EntityId requesterEntityId, float* fCostMultiplier) const;
 
 	// used by COPTrace to use smart objects in navigation
 	int                  GetNavigationalSmartObjectActionTypeForMNM(CPipeUser* pPipeUser, CSmartObject* pSmartObject, CSmartObjectClass* pSmartObjectClass, SmartObjectHelper* pFromHelper, SmartObjectHelper* pToHelper);
 	bool                 PrepareNavigateSmartObject(CPipeUser* pPipeUser, CSmartObject* pObject, CSmartObjectClass* pObjectClass, SmartObjectHelper* pFromHelper, SmartObjectHelper* pToHelper);
 	void                 UseSmartObject(CSmartObject* pSmartObjectUser, CSmartObject* pObject, CCondition* pCondition, int eventId = 0, bool bForceHighPriority = false);
-	/// Used by COPTrace to detect busy state of SO allowing agents to wait instead of simply failing the movement request.
+	// Used by COPTrace to detect busy state of SO allowing agents to wait instead of simply failing the movement request.
 	bool                 IsSmartObjectBusy(const CSmartObject* pSmartObject) const;
 
 	void                 MapPathTypeToSoUser(const string& soUser, const string& pathType);
@@ -925,6 +918,7 @@ private:
 	};
 
 	typedef VectorMap<CSmartObject*, float> SmartObjectFloatMap;
+	CSmartObjectOffMeshNavigation*           m_pOffMeshNavigation;
 	SmartObjectFloatMap                      m_bannedNavSmartObjects;
 	std::map<string, string>                 m_MappingSOUserPathType;
 	static std::map<EntityId, CSmartObject*> g_smartObjectEntityMap;
@@ -1053,58 +1047,3 @@ CAIObject* CSmartObjectBase::GetAI() const
 	return NULL;
 }
 
-//////////////////////////////////////////////////////////////////////////
-/// MNM integration
-
-struct OffMeshLink_SmartObject : public MNM::OffMeshLink
-{
-	OffMeshLink_SmartObject()
-		: MNM::OffMeshLink(eLinkType_SmartObject, 0)
-		, m_pSmartObject(NULL)
-		, m_pSmartObjectClass(NULL)
-		, m_pFromHelper(NULL)
-		, m_pToHelper(NULL)
-	{
-	}
-
-	OffMeshLink_SmartObject(const EntityId objectId, CSmartObject* _smartObject, CSmartObjectClass* _smartObjectClass, SmartObjectHelper* _fromHelper, SmartObjectHelper* _toHelper)
-		: MNM::OffMeshLink(eLinkType_SmartObject, objectId)
-		, m_pSmartObject(_smartObject)
-		, m_pSmartObjectClass(_smartObjectClass)
-		, m_pFromHelper(_fromHelper)
-		, m_pToHelper(_toHelper)
-	{
-
-	}
-
-	virtual ~OffMeshLink_SmartObject() {};
-
-	virtual MNM::OffMeshLink* Clone() const
-	{
-		return new OffMeshLink_SmartObject(GetEntityIdForOffMeshLink(), m_pSmartObject, m_pSmartObjectClass, m_pFromHelper, m_pToHelper);
-	}
-
-	virtual Vec3 GetStartPosition() const
-	{
-		return m_pSmartObject->GetHelperPos(m_pFromHelper);
-	}
-
-	virtual Vec3 GetEndPosition() const
-	{
-		return m_pSmartObject->GetHelperPos(m_pToHelper);
-	}
-
-	virtual bool CanUse(const IEntity* pRequester, float* costMultiplier) const
-	{
-		return gAIEnv.pSmartObjectManager->GetSmartObjectLinkCostFactorForMNM(this, pRequester, costMultiplier);
-	}
-
-	static LinkType GetType() { return eLinkType_SmartObject; }
-
-	CSmartObject*      m_pSmartObject;
-	CSmartObjectClass* m_pSmartObjectClass;
-	SmartObjectHelper* m_pFromHelper;
-	SmartObjectHelper* m_pToHelper;
-};
-
-#endif

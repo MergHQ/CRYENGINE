@@ -14,6 +14,7 @@
 
 #include <CryInput/IHardwareMouse.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class CFlowMouseCoordNode : public CFlowBaseNode<eNCT_Instanced>, public IHardwareMouseEventListener, public IInputEventListener

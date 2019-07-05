@@ -5,7 +5,7 @@
 
 #include "Viewport.h"
 #include <CryEntitySystem/IEntitySystem.h>
-
+#include "Util/MFCUtil.h"
 #include <CryScriptSystem/IScriptSystem.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -138,26 +138,26 @@ void CVehiclePrototype::AddComponent(CVehicleComponent* pComp)
 //////////////////////////////////////////////////////////////////////////
 void CVehiclePrototype::AttachChild(CBaseObject* child, bool bKeepPos, bool bInvalidateTM)
 {
-	child->AddEventListener(functor(*this, &CVehiclePrototype::OnObjectEvent));
+	child->signalChanged.Connect(this, &CVehiclePrototype::OnObjectEvent);
 
 	CBaseObject::AttachChild(child, bKeepPos, bInvalidateTM);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVehiclePrototype::OnObjectEvent(CBaseObject* node, int event)
+void CVehiclePrototype::OnObjectEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
-		VeedLog("[CVehiclePrototype]: ON_DELETE for %s", node->GetName());
+		VeedLog("[CVehiclePrototype]: ON_DELETE for %s", pObject->GetName());
 		// when child deleted, remove its variable
-		if (IVeedObject* pVO = IVeedObject::GetVeedObject(node))
+		if (IVeedObject* pVO = IVeedObject::GetVeedObject(const_cast<CBaseObject*>(pObject)))
 		{
 			if (pVO->DeleteVar())
 			{
 				if (GetVariable())
 				{
 					bool del = GetVariable()->DeleteVariable(pVO->GetVariable(), true);
-					VeedLog("[CVehiclePrototype] deleting var for %s: %i", node->GetName(), del);
+					VeedLog("[CVehiclePrototype] deleting var for %s: %i", pObject->GetName(), del);
 				}
 				pVO->SetVariable(0);
 			}
@@ -208,13 +208,13 @@ void CVehiclePrototype::Display(CObjectRenderHelper& objRenderHelper)
 	// don't display anything, we're attached to vehicle now
 	return;
 
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	Matrix34 wtm = GetWorldTM();
 
 	if (hasEntity())
 	{
 		// check if dc is 2d view, then render
-		if (dc.flags & DISPLAY_2D)
+		if (dc.display2D)
 		{
 			IRenderNode* pRenderNode = GetCEntity()->GetIEntity()->GetRenderNode();
 			if (!pRenderNode)
@@ -227,12 +227,12 @@ void CVehiclePrototype::Display(CObjectRenderHelper& objRenderHelper)
 			//rp.nDLightMask = GetIEditor()->Get3DEngine()->GetLightMaskFromPosition(wtm.GetTranslation(),1.f) & 0xFFFF;
 			//rp.pMaterial = GetIEditor()->GetIconManager()->GetHelperMaterial();
 
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(GetIEditor()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(objRenderHelper.GetPassInfo().GetGraphicsPipelineKey(), GetIEditor()->GetSystem()->GetViewCamera(), SRenderingPassInfo::DEFAULT_FLAGS, true, dc.GetDisplayContextKey());
 			pRenderNode->Render(rp, passInfo);
 		}
 
 		// display CEntity stuff
-		DrawDefault(dc, GetColor());
+		DrawDefault(dc, CMFCUtils::ColorBToColorRef(GetColor()));
 	}
 	else
 	{
@@ -247,9 +247,15 @@ void CVehiclePrototype::Display(CObjectRenderHelper& objRenderHelper)
 		dc.DrawArrow(wp, wp + dir * 2, fHelperScale);
 
 		if (IsFrozen())
+		{
 			dc.SetFreezeColor();
+		}
 		else
-			dc.SetColor(GetColor(), 0.8f);
+		{
+			ColorB color = GetColor();
+			color.a = 204;
+			dc.SetColor(color);
+		}
 
 		dc.DrawBall(wp, VEHICLE_RADIUS);
 
@@ -425,4 +431,3 @@ void CVehiclePrototype::AddHelper(CVehicleHelper* pHelper, IVariable* pHelperVar
 
 	AttachChild(pHelper, true);
 }
-

@@ -1,26 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   TimeOfDay.cpp
-//  Version:     v1.00
-//  Created:     25/10/2005 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "TimeOfDay.h"
+
+#include "EnvironmentPreset.h"
 #include "terrain_water.h"
+
+#include <CryCore/StlUtils.h>
+#include <CryGame/IGameFramework.h>
 #include <CryMath/ISplines.h>
 #include <CryNetwork/IRemoteCommand.h>
-#include <CryGame/IGameFramework.h>
 #include <CrySerialization/ClassFactory.h>
 #include <CrySerialization/Enum.h>
 #include <CrySerialization/IArchiveHost.h>
-#include "EnvironmentPreset.h"
 
 #define SERIALIZATION_ENUM_DEFAULTNAME(x) SERIALIZATION_ENUM(ITimeOfDay::x, # x, # x)
 
@@ -28,6 +20,13 @@ SERIALIZATION_ENUM_BEGIN_NESTED(ITimeOfDay, ETimeOfDayParamID, "ETimeOfDayParamI
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SUN_COLOR)
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SUN_INTENSITY)
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SUN_SPECULAR_MULTIPLIER)
+
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_ANGLE)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_STRETCHING)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_COLOR)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_INTENSITY)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_FILTER)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_OPACITY)
 
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_FOG_COLOR)
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_FOG_COLOR_MULTIPLIER)
@@ -324,7 +323,7 @@ void ReadCTimeOfDayVariableFromXmlNode(CTimeOfDayVariable* pVar, XmlNodeRef varN
 			var.GetSpline(1)->GetKey(k) = key;
 			key.m_controlPoint.m_value = fValue[2];
 			var.GetSpline(2)->GetKey(k) = key;
-		}   //for k
+		}
 	}
 }
 
@@ -343,8 +342,8 @@ void ReadPresetFromToDXMLNode(CEnvironmentPreset& pPreset, XmlNodeRef node)
 			continue;
 
 		ReadCTimeOfDayVariableFromXmlNode(pVar, varNode);
-	} // for i
-}   //void ReadWeatherPresetFromToDXMLNode
+	}
+}
 
 void MigrateLegacyData(CEnvironmentPreset& preset, bool bSunIntensity)
 {
@@ -416,19 +415,27 @@ void LoadPresetFromOldFormatXML(CEnvironmentPreset& preset, XmlNodeRef node)
 static const char* sPresetsLibsPath = "libs/environmentpresets/";
 static const char* sPresetXMLRootNodeName = "EnvironmentPreset";
 
-string GetPresetXMLFilenamefromName(const string& presetName, const bool bForWriting)
+CryPathString GetPresetXMLFilenamefromName(const string& presetName, const bool bForWriting)
 {
-	//const string filePath = sPresetsLibsPath + presetName + ".xml";
-	const string filePath = presetName;
+	CryPathString adjustedName;
+	gEnv->pCryPak->AdjustFileName(presetName.c_str(), adjustedName, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
 
-	char szAdjustedFile[ICryPak::g_nMaxPath];
-	const char* szTemp = gEnv->pCryPak->AdjustFileName(filePath.c_str(), szAdjustedFile, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
-	return string(szAdjustedFile);
+	// Backward compatibility with old xml file extension.
+	if (!bForWriting && !GetISystem()->GetIPak()->IsFileExist(adjustedName))
+	{
+		string filePathXml = PathUtil::ReplaceExtension(adjustedName, "xml");
+		if (GetISystem()->GetIPak()->IsFileExist(filePathXml))
+		{
+			return filePathXml;
+		}
+	}
+
+	return adjustedName;
 }
 
 bool SavePresetToXML(const CEnvironmentPreset& preset, const string& presetName)
 {
-	const string filename = GetPresetXMLFilenamefromName(presetName, false);
+	const CryPathString filename(GetPresetXMLFilenamefromName(presetName, false));
 
 	if (!Serialization::SaveXmlFile(filename.c_str(), preset, sPresetXMLRootNodeName))
 	{
@@ -441,7 +448,7 @@ bool SavePresetToXML(const CEnvironmentPreset& preset, const string& presetName)
 
 bool LoadPresetFromXML(CEnvironmentPreset& pPreset, const string& presetName)
 {
-	const string filename = GetPresetXMLFilenamefromName(presetName, false);
+	const CryPathString filename(GetPresetXMLFilenamefromName(presetName, false));
 	const bool bFileExist = gEnv->pCryPak->IsFileExist(filename.c_str());
 	if (!bFileExist)
 	{
@@ -465,82 +472,25 @@ Vec3 ConvertIlluminanceToLightColor(float illuminance, Vec3 colorRGB)
 
 	return finalColor;
 }
+
 }
 
 //////////////////////////////////////////////////////////////////////////
 CTimeOfDay::CTimeOfDay()
-	: m_timeOfDayRtpcId(CryAudio::InvalidControlId)
+	: m_pCurrentPreset(nullptr)
+	, m_fTime(12)
+	, m_bEditMode(false)
+	, m_bPaused(false)
+	, m_pTimer(nullptr)
+	, m_fHDRMultiplier(1.0f)
+	, m_timeOfDayRtpcId(CryAudio::StringToId("time_of_day"))
 	, m_listeners(16)
 {
-	m_pTimer = 0;
 	SetTimer(gEnv->pTimer);
-	m_fTime = 12;
-	m_bEditMode = false;
 	m_advancedInfo.fAnimSpeed = 0;
 	m_advancedInfo.fStartTime = 0;
 	m_advancedInfo.fEndTime = 24;
-	m_fHDRMultiplier = 1.f;
 	m_pTimeOfDaySpeedCVar = gEnv->pConsole->GetCVar("e_TimeOfDaySpeed");
-	m_sunRotationLatitude = 0;
-	m_sunRotationLongitude = 0;
-	m_bPaused = false;
-	m_bSunLinkedToTOD = true;
-	memset(m_vars, 0, sizeof(SVariableInfo) * ITimeOfDay::PARAM_TOTAL);
-
-	// fill local var list so, sandbox can access var list without level being loaded
-	CEnvironmentPreset tempPreset;
-	for (int i = 0; i < PARAM_TOTAL; ++i)
-	{
-		const CTimeOfDayVariable* presetVar = tempPreset.GetVar((ETimeOfDayParamID)i);
-		SVariableInfo& var = m_vars[i];
-
-		var.name = presetVar->GetName();
-		var.displayName = presetVar->GetDisplayName();
-		var.group = presetVar->GetGroupName();
-
-		var.nParamId = i;
-		var.type = presetVar->GetType();
-		var.pInterpolator = NULL;
-
-		Vec3 presetVal = presetVar->GetValue();
-		var.fValue[0] = presetVal.x;
-		const EVariableType varType = presetVar->GetType();
-		if (varType == TYPE_FLOAT)
-		{
-			var.fValue[1] = presetVar->GetMinValue();
-			var.fValue[2] = presetVar->GetMaxValue();
-		}
-		else if (varType == TYPE_COLOR)
-		{
-			var.fValue[1] = presetVal.y;
-			var.fValue[2] = presetVal.z;
-		}
-	}
-
-	m_pCurrentPreset = NULL;
-
-	m_timeOfDayRtpcId = CryAudio::StringToId("time_of_day");
-}
-
-//////////////////////////////////////////////////////////////////////////
-CTimeOfDay::~CTimeOfDay()
-{
-	//delete m_pCurrentPreset;
-}
-
-void CTimeOfDay::SetTimer(ITimer* pTimer)
-{
-	assert(pTimer);
-	m_pTimer = pTimer;
-
-	// Update timer for ocean also - Craig
-	COcean::SetTimer(pTimer);
-}
-
-ITimeOfDay::SVariableInfo& CTimeOfDay::GetVar(ETimeOfDayParamID id)
-{
-	assert(id == m_vars[id].nParamId);
-	return(m_vars[id]);
 }
 
 bool CTimeOfDay::GetPresetsInfos(SPresetInfo* resultArray, unsigned int arraySize) const
@@ -551,30 +501,13 @@ bool CTimeOfDay::GetPresetsInfos(SPresetInfo* resultArray, unsigned int arraySiz
 	size_t i = 0;
 	for (TPresetsSet::const_iterator it = m_presets.begin(); it != m_presets.end(); ++it)
 	{
-		resultArray[i].m_pName = it->first.c_str();
-		resultArray[i].m_bCurrent = (m_pCurrentPreset == &(it->second));
+		resultArray[i].szName = it->first.c_str();
+		resultArray[i].isCurrent = (m_pCurrentPreset == (it->second).get());
+		resultArray[i].isDefault = m_defaultPresetName.CompareNoCase(it->first) == 0;
 		++i;
 	}
 
 	return true;
-}
-
-bool CTimeOfDay::SetCurrentPreset(const char* szPresetName)
-{
-	TPresetsSet::iterator it = m_presets.find(szPresetName);
-	if (it != m_presets.end())
-	{
-		CEnvironmentPreset* newPreset = &(it->second);
-		if (m_pCurrentPreset != newPreset)
-		{
-			m_pCurrentPreset = newPreset;
-			m_currentPresetName = szPresetName;
-			Update(true, true);
-			NotifyOnChange(IListener::EChangeType::CurrentPresetChanged, szPresetName);
-		}
-		return true;
-	}
-	return false;
 }
 
 const char* CTimeOfDay::GetCurrentPresetName() const
@@ -582,49 +515,98 @@ const char* CTimeOfDay::GetCurrentPresetName() const
 	return m_currentPresetName.c_str();
 }
 
-bool CTimeOfDay::AddNewPreset(const char* szPresetName)
+bool CTimeOfDay::SetCurrentPreset(const char* szPresetName)
 {
-	TPresetsSet::const_iterator it = m_presets.find(szPresetName);
+	TPresetsSet::iterator it = m_presets.find(szPresetName);
 	if (it == m_presets.end())
 	{
-		string presetFileName = GetPresetXMLFilenamefromName(szPresetName, true);
-
-		std::pair<TPresetsSet::iterator, bool> insertResult = m_presets.emplace(string(szPresetName), CEnvironmentPreset());
-		if (insertResult.second)
-		{
-			m_pCurrentPreset = &(insertResult.first->second);
-			m_currentPresetName = szPresetName;
-			Update(true, true);
-			NotifyOnChange(IListener::EChangeType::PresetAdded, szPresetName);
-		}
-		return true;
+		return false;
 	}
-	return false;
+
+	CEnvironmentPreset* newPreset = (it->second).get();
+	if (m_pCurrentPreset != newPreset)
+	{
+		m_pCurrentPreset = newPreset;
+		m_currentPresetName = szPresetName;
+		Update(true, true);
+		ConstantsChanged();
+		NotifyOnChange(IListener::EChangeType::CurrentPresetChanged, szPresetName);
+	}
+	return true;
+}
+
+
+bool CTimeOfDay::SetDefaultPreset(const char* szPresetName)
+{
+	TPresetsSet::iterator it = m_presets.find(szPresetName);
+	if (it == m_presets.end())
+	{
+		return false;
+	}
+
+	CEnvironmentPreset* newPreset = (it->second).get();
+	if (m_pCurrentPreset != newPreset)
+	{
+		m_pCurrentPreset = newPreset;
+		m_currentPresetName = szPresetName;
+		Update(true, true);
+		ConstantsChanged();
+	}
+
+	m_defaultPresetName = szPresetName;
+	NotifyOnChange(IListener::EChangeType::DefaultPresetChanged, szPresetName);
+	return true;
+}
+
+const char* CTimeOfDay::GetDefaultPresetName() const
+{
+	return m_defaultPresetName.c_str();
+}
+
+bool CTimeOfDay::AddNewPreset(const char* szPresetName)
+{
+	const std::pair<CEnvironmentPreset*, bool> result = GetOrCreatePreset(szPresetName);
+	if (!result.second)
+	{
+		return false;
+	}
+
+	m_pCurrentPreset = result.first;
+	m_currentPresetName = szPresetName;
+	Update(true, true);
+	ConstantsChanged();
+	NotifyOnChange(IListener::EChangeType::PresetAdded, szPresetName);
+	return true;
 }
 
 bool CTimeOfDay::RemovePreset(const char* szPresetName)
 {
-	TPresetsSet::const_iterator it = m_presets.find(szPresetName);
-	if (it != m_presets.end())
+	const TPresetsSet::iterator findResult = m_presets.find(szPresetName);
+	if (findResult == m_presets.end())
 	{
-		if (m_pCurrentPreset == &(it->second))
-		{
-			m_pCurrentPreset = NULL;
-			m_currentPresetName.clear();
-		}
-
-		m_presets.erase(it);
-
-		if (!m_pCurrentPreset && m_presets.size())
-		{
-			const auto it = m_presets.begin();
-			m_pCurrentPreset = &(it->second);
-			m_currentPresetName = it->first;
-		}
-
-		Update(true, true);
-		NotifyOnChange(IListener::EChangeType::PresetRemoved, szPresetName);
+		return false;
 	}
+
+	if (m_pCurrentPreset == findResult->second.get())
+	{
+		m_pCurrentPreset = nullptr;
+		m_currentPresetName.clear();
+	}
+
+	// The preset interface can still be used outside the class, so we never delete the presets, just move them to the list of preview's preset.
+	m_previewPresets[findResult->first] = std::move(findResult->second);
+	m_presets.erase(findResult);
+
+	if (!m_pCurrentPreset && m_presets.size())
+	{
+		const auto it = m_presets.begin();
+		m_pCurrentPreset = it->second.get();
+		m_currentPresetName = it->first;
+		Update(true, true);
+		ConstantsChanged();
+	}
+	
+	NotifyOnChange(IListener::EChangeType::PresetRemoved, szPresetName);
 	return true;
 }
 
@@ -634,66 +616,138 @@ bool CTimeOfDay::SavePreset(const char* szPresetName) const
 	TPresetsSet::const_iterator it = m_presets.find(sPresetName);
 	if (it != m_presets.end())
 	{
-		const bool bResult = SavePresetToXML(it->second, sPresetName);
+		const bool bResult = SavePresetToXML(*it->second.get(), sPresetName);
 		return bResult;
 	}
+
+	// check the preview presets list.
+	it = m_previewPresets.find(szPresetName);
+	if (it != m_previewPresets.end())
+	{
+		const bool bResult = SavePresetToXML(*it->second.get(), sPresetName);
+		return bResult;
+	}
+
 	return false;
 }
 
 bool CTimeOfDay::LoadPreset(const char* szFilePath)
 {
-	XmlNodeRef root = GetISystem()->LoadXmlFromFile(szFilePath);
-	if (root)
+	const string path(szFilePath);
+
+	std::pair<CEnvironmentPreset*, bool> result = GetOrCreatePreset(path);
+
+	// has been just created?
+	if (result.second)
 	{
-		const string path(szFilePath);
-
-		TPresetsSet::const_iterator it = m_presets.find(path);
-		if (it != m_presets.end())
+		CEnvironmentPreset& preset = *result.first;
+		XmlNodeRef root = GetISystem()->LoadXmlFromFile(szFilePath);
+		if (!root)
+		{
+			m_presets.erase(szFilePath);
 			return false;
+		}
 
-		std::pair<TPresetsSet::iterator, bool> insertResult = m_presets.emplace(path, CEnvironmentPreset());
-		CEnvironmentPreset& preset = insertResult.first->second;
 		if (root->isTag(sPresetXMLRootNodeName))
 		{
 			Serialization::LoadXmlFile(preset, szFilePath);
 		}
 		else
 		{
-			//try to load old format
+			// Try to load old format
 			LoadPresetFromOldFormatXML(preset, root);
 		}
-
-		m_pCurrentPreset = &preset;
-		m_currentPresetName = insertResult.first->first;
-		Update(true, true);
-		NotifyOnChange(IListener::EChangeType::PresetLoaded, m_currentPresetName.c_str());
-		return true;
 	}
 
-	return false;
+	m_pCurrentPreset = result.first;
+	m_currentPresetName = path;
+
+	if (m_defaultPresetName.empty())
+	{
+		m_defaultPresetName = path;
+	}
+
+	Update(true, true);
+	ConstantsChanged();
+	NotifyOnChange(result.second ? IListener::EChangeType::PresetLoaded : IListener::EChangeType::CurrentPresetChanged, m_currentPresetName.c_str());
+	return true;
 }
 
-void CTimeOfDay::ResetPreset(const char* szPresetName)
+bool CTimeOfDay::ResetPreset(const char* szPresetName)
 {
 	TPresetsSet::iterator it = m_presets.find(szPresetName);
-	if (it != m_presets.end())
+	if (it == m_presets.end())
 	{
-		it->second.ResetVariables();
+		it = m_previewPresets.find(szPresetName);
+		if (it == m_previewPresets.end())
+		{
+			return false;
+		}
+	}
+
+	it->second->Reset();
+	if (it->second.get() == m_pCurrentPreset)
+	{
 		Update(true, true);
+		ConstantsChanged();
+	}
+	return true;
+}
+
+void CTimeOfDay::DiscardPresetChanges(const char* szPresetName)
+{
+	TPresetsSet::iterator it = m_presets.find(szPresetName);
+	if (it == m_presets.end())
+	{
+		it = m_previewPresets.find(szPresetName);
+		if (it == m_previewPresets.end())
+		{
+			return;
+		}
+	}
+
+	CEnvironmentPreset& preset = *it->second;
+	XmlNodeRef root = GetISystem()->LoadXmlFromFile(szPresetName);
+	if (!root)
+	{
+		return;
+	}
+
+	if (root->isTag(sPresetXMLRootNodeName))
+	{
+		Serialization::LoadXmlFile(preset, szPresetName);
+	}
+	else
+	{
+		// Try to load old format
+		LoadPresetFromOldFormatXML(preset, root);
+	}
+
+	if (it->second.get() == m_pCurrentPreset)
+	{
+		Update(true, true);
+		ConstantsChanged();
+		NotifyOnChange(IListener::EChangeType::PresetLoaded, m_currentPresetName.c_str());
 	}
 }
 
 bool CTimeOfDay::ImportPreset(const char* szPresetName, const char* szFilePath)
 {
-	TPresetsSet::iterator it = m_presets.find(szPresetName);
+	TPresetsSet::const_iterator it = m_presets.find(szPresetName);
 	if (it == m_presets.end())
-		return false;
+	{
+		it = m_previewPresets.find(szPresetName);
+		if (it == m_previewPresets.end())
+		{
+			return false;
+		}
+	}
 
 	XmlNodeRef root = GetISystem()->LoadXmlFromFile(szFilePath);
 	if (!root)
 		return false;
 
-	CEnvironmentPreset& preset = it->second;
+	CEnvironmentPreset& preset = *it->second.get();
 	if (root->isTag(sPresetXMLRootNodeName))
 	{
 		Serialization::LoadXmlFile(preset, szFilePath);
@@ -702,7 +756,7 @@ bool CTimeOfDay::ImportPreset(const char* szPresetName, const char* szFilePath)
 	{
 		LoadPresetFromOldFormatXML(preset, root);
 	}
-	//preset.SetDirty(true);
+
 	Update(true, true);
 
 	return true;
@@ -710,148 +764,104 @@ bool CTimeOfDay::ImportPreset(const char* szPresetName, const char* szFilePath)
 
 bool CTimeOfDay::ExportPreset(const char* szPresetName, const char* szFilePath) const
 {
-	const string sPresetName(szPresetName);
-	TPresetsSet::const_iterator it = m_presets.find(sPresetName);
-	if (it != m_presets.end())
+	TPresetsSet::const_iterator it = m_presets.find(szPresetName);
+	if (it == m_presets.end())
 	{
-		if (!Serialization::SaveXmlFile(szFilePath, it->second, sPresetXMLRootNodeName))
+		it = m_previewPresets.find(szPresetName);
+		if (it == m_previewPresets.end())
 		{
-			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "TimeOfDay: Failed to save preset: %s", szFilePath);
 			return false;
 		}
-		return true;
 	}
-	return false;
-}
 
-//////////////////////////////////////////////////////////////////////////
-bool CTimeOfDay::GetVariableInfo(int nIndex, SVariableInfo& varInfo)
-{
-
-	if (nIndex < 0 || nIndex >= (int)ITimeOfDay::PARAM_TOTAL)
+	if (!Serialization::SaveXmlFile(szFilePath, *it->second.get(), sPresetXMLRootNodeName))
+	{
+		CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "TimeOfDay: Failed to save preset: %s", szFilePath);
 		return false;
+	}
 
-	varInfo = m_vars[nIndex];
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTimeOfDay::SetVariableValue(int nIndex, float fValue[3])
+bool CTimeOfDay::PreviewPreset(const char* szPresetName)
 {
-	if (nIndex < 0 || nIndex >= (int)ITimeOfDay::PARAM_TOTAL)
-		return;
-
-	m_vars[nIndex].fValue[0] = fValue[0];
-	m_vars[nIndex].fValue[1] = fValue[1];
-	m_vars[nIndex].fValue[2] = fValue[2];
-}
-//////////////////////////////////////////////////////////////////////////
-
-bool CTimeOfDay::InterpolateVarInRange(int nIndex, float fMin, float fMax, unsigned int nCount, Vec3* resultArray) const
-{
-	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL && m_pCurrentPreset)
+	// In case if the preset is already used by the current level
+	if (SetCurrentPreset(szPresetName))
 	{
-		m_pCurrentPreset->InterpolateVarInRange((ITimeOfDay::ETimeOfDayParamID)nIndex, fMin, fMax, nCount, resultArray);
 		return true;
 	}
 
-	return false;
-}
+	// Try to load preset.
 
-uint CTimeOfDay::GetSplineKeysCount(int nIndex, int nSpline) const
-{
-	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL && m_pCurrentPreset)
+	const string path(szPresetName);
+	XmlNodeRef root = GetISystem()->LoadXmlFromFile(szPresetName);
+	if (!root)
 	{
-		CTimeOfDayVariable* pVar = m_pCurrentPreset->GetVar((ITimeOfDay::ETimeOfDayParamID)nIndex);
-		return pVar->GetSplineKeyCount(nSpline);
-	}
-	return 0;
-}
-
-bool CTimeOfDay::GetSplineKeysForVar(int nIndex, int nSpline, SBezierKey* keysArray, unsigned int keysArraySize) const
-{
-	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL && m_pCurrentPreset)
-	{
-		CTimeOfDayVariable* pVar = m_pCurrentPreset->GetVar((ITimeOfDay::ETimeOfDayParamID)nIndex);
-		return pVar->GetSplineKeys(nSpline, keysArray, keysArraySize);
+		return false;
 	}
 
-	return false;
-}
-
-bool CTimeOfDay::SetSplineKeysForVar(int nIndex, int nSpline, const SBezierKey* keysArray, unsigned int keysArraySize)
-{
-	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL && m_pCurrentPreset)
+	std::pair<TPresetsSet::iterator, bool> insertResult = m_previewPresets.emplace(path, nullptr);
+	if (insertResult.second)
 	{
-		CTimeOfDayVariable* pVar = m_pCurrentPreset->GetVar((ITimeOfDay::ETimeOfDayParamID)nIndex);
-		const bool bResult = pVar->SetSplineKeys(nSpline, keysArray, keysArraySize);
-		return bResult;
+		insertResult.first->second.reset(new CEnvironmentPreset());
+		CEnvironmentPreset& preset = *insertResult.first->second;
+		if (root->isTag(sPresetXMLRootNodeName))
+		{
+			Serialization::LoadXmlFile(preset, szPresetName);
+		}
+		else
+		{
+			//try to load old format
+			LoadPresetFromOldFormatXML(preset, root);
+		}
 	}
-	return false;
+
+	m_pCurrentPreset = insertResult.first->second.get();
+	m_currentPresetName = insertResult.first->first;
+
+	Update(true, true);
+	ConstantsChanged();
+	NotifyOnChange(IListener::EChangeType::PresetLoaded, m_currentPresetName.c_str());
+	return true;
 }
 
-bool CTimeOfDay::UpdateSplineKeyForVar(int nIndex, int nSpline, float fTime, float newValue)
+
+void CTimeOfDay::SetTimer(ITimer* pTimer)
 {
-	if (nIndex >= 0 && nIndex < ITimeOfDay::PARAM_TOTAL && m_pCurrentPreset)
-	{
-		CTimeOfDayVariable* pVar = m_pCurrentPreset->GetVar((ITimeOfDay::ETimeOfDayParamID)nIndex);
-		const bool bResult = pVar->UpdateSplineKeyForTime(nSpline, fTime, newValue);
-		return bResult;
-	}
-	return false;
+	CRY_ASSERT(pTimer);
+	m_pTimer = pTimer;
+
+	// Update timer for ocean also - Craig
+	COcean::SetTimer(pTimer);
 }
 
-float CTimeOfDay::GetAnimTimeSecondsIn24h()
+float CTimeOfDay::GetAnimTimeSecondsIn24h() const
 {
 	return CEnvironmentPreset::GetAnimTimeSecondsIn24h();
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTimeOfDay::ResetVariables()
+CEnvironmentPreset& CTimeOfDay::GetPreset() const
 {
-	if (!m_pCurrentPreset)
-		return;
-
-	m_pCurrentPreset->ResetVariables();
-
-	for (int i = 0; i < PARAM_TOTAL; ++i)
+	if (m_pCurrentPreset)
 	{
-		const CTimeOfDayVariable* presetVar = m_pCurrentPreset->GetVar((ETimeOfDayParamID)i);
-		SVariableInfo& var = m_vars[i];
-
-		var.name = presetVar->GetName();
-		var.displayName = presetVar->GetDisplayName();
-		var.group = presetVar->GetGroupName();
-
-		var.nParamId = i;
-		var.type = presetVar->GetType();
-		var.pInterpolator = NULL;
-
-		Vec3 presetVal = presetVar->GetValue();
-		var.fValue[0] = presetVal.x;
-		const EVariableType varType = presetVar->GetType();
-		if (varType == TYPE_FLOAT)
-		{
-			var.fValue[1] = presetVar->GetMinValue();
-			var.fValue[2] = presetVar->GetMaxValue();
-		}
-		else if (varType == TYPE_COLOR)
-		{
-			var.fValue[1] = presetVal.y;
-			var.fValue[2] = presetVal.z;
-		}
+		return *m_pCurrentPreset;
 	}
+
+	// Create a default environment preset to provide valid environment values even if no custom preset is loaded.
+	static CEnvironmentPreset s_defaultPreset;
+	return s_defaultPreset;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTimeOfDay::SetEnvironmentSettings(const SEnvironmentInfo& envInfo)
+const Vec3 CTimeOfDay::GetValue(ETimeOfDayParamID id) const
 {
-	m_sunRotationLongitude = envInfo.sunRotationLongitude;
-	m_sunRotationLatitude = envInfo.sunRotationLatitude;
-	m_bSunLinkedToTOD = envInfo.bSunLinkedToTOD;
+	return GetPreset().GetVar(id)->GetValue();
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CTimeOfDay::SetValue(ETimeOfDayParamID id, const Vec3& newValue)
+{
+	GetPreset().GetVar(id)->SetValue(newValue);
+}
+
 void CTimeOfDay::SaveInternalState(struct IDataWriteStream& writer)
 {
 	// current time
@@ -888,6 +898,39 @@ void CTimeOfDay::LoadInternalState(struct IDataReadStream& reader)
 	}
 }
 
+void CTimeOfDay::Reset()
+{
+	m_pCurrentPreset = nullptr;
+	m_currentPresetName.clear();
+	m_defaultPresetName.clear();
+
+	if (!gEnv->IsEditor())
+	{
+		m_previewPresets.clear();
+	}
+	else // do not delete and overwrite state of loaded presets, as they may have active editing sessions and unsaved changes.
+	{
+		for (auto&& preset : m_presets)
+		{
+			m_previewPresets[preset.first] = std::move(preset.second);
+		}
+	}
+	m_presets.clear();
+
+	m_fTime = 12;
+	m_bEditMode = false;
+	m_bPaused = false;
+	m_fHDRMultiplier = 1.0f;
+	m_advancedInfo.fAnimSpeed = 0;
+	m_advancedInfo.fStartTime = 0;
+	m_advancedInfo.fEndTime = 24;
+}
+
+ITimeOfDay::IPreset& CTimeOfDay::GetCurrentPreset()
+{
+	return GetPreset();
+}
+
 //////////////////////////////////////////////////////////////////////////
 bool CTimeOfDay::RegisterListenerImpl(IListener* const pListener, const char* const szDbgName, const bool staticName)
 {
@@ -914,50 +957,46 @@ void CTimeOfDay::SetTime(float fHour, bool bForceUpdate)
 	// Inform audio of this change.
 	if (m_timeOfDayRtpcId != CryAudio::InvalidControlId)
 	{
-		gEnv->pAudioSystem->SetParameter(m_timeOfDayRtpcId, m_fTime);
+		gEnv->pAudioSystem->SetParameterGlobally(m_timeOfDayRtpcId, m_fTime);
 	}
 
 	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TIME_OF_DAY_SET, 0, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTimeOfDay::SetSunPos(float longitude, float latitude)
-{
-	m_sunRotationLongitude = longitude;
-	m_sunRotationLatitude = latitude;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTimeOfDay::Update(bool bInterpolate, bool bForceUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
 
-	if (bInterpolate)
+	if (bInterpolate && m_pCurrentPreset)
 	{
-		// normalized time for interpolation
-		float t = m_fTime / 24.0f;
+		// Time for interpolation is in range [0.0-1.0]
+		float normalizedTime = m_fTime / 24.0f;
 
-		if (m_pCurrentPreset)
-		{
-			m_pCurrentPreset->Update(t);
-
-			for (int i = 0; i < PARAM_TOTAL; ++i)
-			{
-				const CTimeOfDayVariable* pVar = m_pCurrentPreset->GetVar((ETimeOfDayParamID)i);
-				const Vec3 varValue = pVar->GetValue();
-				float* pDst = m_vars[i].fValue;
-				pDst[0] = varValue.x;
-				if (pVar->GetType() == TYPE_COLOR)
-				{
-					pDst[1] = varValue.y;
-					pDst[2] = varValue.z;
-				}
-			}
-		}
-	}//if(bInterpolate)
+		m_pCurrentPreset->Update(normalizedTime);
+	}
 
 	// update environment lighting according to new interpolated values
 	UpdateEnvLighting(bForceUpdate);
+}
+
+void CTimeOfDay::ConstantsChanged()
+{
+	C3DEngine* p3DEngine((C3DEngine*)gEnv->p3DEngine);
+
+	p3DEngine->UpdateMoonParams();
+	p3DEngine->UpdateWindParams();
+	p3DEngine->UpdateCloudShadows();
+	
+	// Empty texture means disable color grading; Transition time == 0 -> switch immediately
+	const auto& cgp = GetConstants().GetColorGradingParams();
+	p3DEngine->GetColorGradingCtrl()->SetColorGradingLut(cgp.useTexture ? cgp.texture.c_str() : "", 0.f);
+
+#if defined(FEATURE_SVO_GI)
+	p3DEngine->UpdateTISettings();
+#endif
+
+	//Will update sun params, and recalculate dependent on it lighting
+	UpdateEnvLighting(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -965,7 +1004,6 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 {
 	C3DEngine* p3DEngine((C3DEngine*)gEnv->p3DEngine);
 	IRenderer* pRenderer(gEnv->pRenderer);
-	const float fRecip255 = 1.0f / 255.0f;
 
 	if (pRenderer)
 	{
@@ -973,68 +1011,69 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 		pRenderer->EF_Query(EFQ_HDRModeEnabled, bHDRModeEnabled);
 		if (bHDRModeEnabled)
 		{
-			m_fHDRMultiplier = powf(HDRDynamicMultiplier, GetVar(PARAM_HDR_DYNAMIC_POWER_FACTOR).fValue[0]);
+			m_fHDRMultiplier = powf(HDRDynamicMultiplier, GetValue(PARAM_HDR_DYNAMIC_POWER_FACTOR).x);
 
-			const Vec3 vEyeAdaptationParams(GetVar(PARAM_HDR_EYEADAPTATION_EV_MIN).fValue[0],
-			                                GetVar(PARAM_HDR_EYEADAPTATION_EV_MAX).fValue[0],
-			                                GetVar(PARAM_HDR_EYEADAPTATION_EV_AUTO_COMPENSATION).fValue[0]);
+			const Vec3 vEyeAdaptationParams(GetValue(PARAM_HDR_EYEADAPTATION_EV_MIN).x,
+			                                GetValue(PARAM_HDR_EYEADAPTATION_EV_MAX).x,
+											GetValue(PARAM_HDR_EYEADAPTATION_EV_AUTO_COMPENSATION).x);
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_EYEADAPTATION_PARAMS, vEyeAdaptationParams);
 
-			const Vec3 vEyeAdaptationParamsLegacy(GetVar(PARAM_HDR_EYEADAPTATION_SCENEKEY).fValue[0],
-			                                      GetVar(PARAM_HDR_EYEADAPTATION_MIN_EXPOSURE).fValue[0],
-			                                      GetVar(PARAM_HDR_EYEADAPTATION_MAX_EXPOSURE).fValue[0]);
+			const Vec3 vEyeAdaptationParamsLegacy(GetValue(PARAM_HDR_EYEADAPTATION_SCENEKEY).x,
+			                                      GetValue(PARAM_HDR_EYEADAPTATION_MIN_EXPOSURE).x,
+			                                      GetValue(PARAM_HDR_EYEADAPTATION_MAX_EXPOSURE).x);
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_EYEADAPTATION_PARAMS_LEGACY, vEyeAdaptationParamsLegacy);
 
-			float fHDRShoulderScale(GetVar(PARAM_HDR_FILMCURVE_SHOULDER_SCALE).fValue[0]);
-			float fHDRMidtonesScale(GetVar(PARAM_HDR_FILMCURVE_LINEAR_SCALE).fValue[0]);
-			float fHDRToeScale(GetVar(PARAM_HDR_FILMCURVE_TOE_SCALE).fValue[0]);
-			float fHDRWhitePoint(GetVar(PARAM_HDR_FILMCURVE_WHITEPOINT).fValue[0]);
+			const float fHDRShoulderScale(GetValue(PARAM_HDR_FILMCURVE_SHOULDER_SCALE).x);
+			const float fHDRMidtonesScale(GetValue(PARAM_HDR_FILMCURVE_LINEAR_SCALE).x);
+			const float fHDRToeScale(GetValue(PARAM_HDR_FILMCURVE_TOE_SCALE).x);
+			const float fHDRWhitePoint(GetValue(PARAM_HDR_FILMCURVE_WHITEPOINT).x);
 
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_FILMCURVE_SHOULDER_SCALE, Vec3(fHDRShoulderScale, 0, 0));
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_FILMCURVE_LINEAR_SCALE, Vec3(fHDRMidtonesScale, 0, 0));
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_FILMCURVE_TOE_SCALE, Vec3(fHDRToeScale, 0, 0));
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_FILMCURVE_WHITEPOINT, Vec3(fHDRWhitePoint, 0, 0));
 
-			float fHDRBloomAmount(GetVar(PARAM_HDR_BLOOM_AMOUNT).fValue[0]);
+			const float fHDRBloomAmount(GetValue(PARAM_HDR_BLOOM_AMOUNT).x);
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_BLOOM_AMOUNT, Vec3(fHDRBloomAmount, 0, 0));
 
-			float fHDRSaturation(GetVar(PARAM_HDR_COLORGRADING_COLOR_SATURATION).fValue[0]);
+			const float fHDRSaturation(GetValue(PARAM_HDR_COLORGRADING_COLOR_SATURATION).x);
 			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_COLORGRADING_COLOR_SATURATION, Vec3(fHDRSaturation, 0, 0));
 
-			Vec3 vColorBalance(GetVar(PARAM_HDR_COLORGRADING_COLOR_BALANCE).fValue[0],
-			                   GetVar(PARAM_HDR_COLORGRADING_COLOR_BALANCE).fValue[1],
-			                   GetVar(PARAM_HDR_COLORGRADING_COLOR_BALANCE).fValue[2]);
-			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_COLORGRADING_COLOR_BALANCE, vColorBalance);
+			p3DEngine->SetGlobalParameter(E3DPARAM_HDR_COLORGRADING_COLOR_BALANCE, GetValue(PARAM_HDR_COLORGRADING_COLOR_BALANCE));
 		}
 		else
 		{
 			m_fHDRMultiplier = 1.f;
 		}
 
-		pRenderer->SetShadowJittering(GetVar(PARAM_SHADOW_JITTERING).fValue[0]);
+		pRenderer->SetShadowJittering(GetValue(PARAM_SHADOW_JITTERING).x);
 	}
 
-	float skyBrightMultiplier(GetVar(PARAM_TERRAIN_OCCL_MULTIPLIER).fValue[0]);
-	float GIMultiplier(GetVar(PARAM_GI_MULTIPLIER).fValue[0]);
-	float sunMultiplier(1.0f);
-	float sunSpecMultiplier(GetVar(PARAM_SUN_SPECULAR_MULTIPLIER).fValue[0]);
-	float fogMultiplier(GetVar(PARAM_FOG_COLOR_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
-	float fogMultiplier2(GetVar(PARAM_FOG_COLOR2_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
-	float fogMultiplierRadial(GetVar(PARAM_FOG_RADIAL_COLOR_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
-	float nightSkyHorizonMultiplier(GetVar(PARAM_NIGHSKY_HORIZON_COLOR_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
-	float nightSkyZenithMultiplier(GetVar(PARAM_NIGHSKY_ZENITH_COLOR_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
-	float nightSkyMoonMultiplier(GetVar(PARAM_NIGHSKY_MOON_COLOR_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
-	float nightSkyMoonInnerCoronaMultiplier(GetVar(PARAM_NIGHSKY_MOON_INNERCORONA_COLOR_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
-	float nightSkyMoonOuterCoronaMultiplier(GetVar(PARAM_NIGHSKY_MOON_OUTERCORONA_COLOR_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
+	float sunMultiplier = 1.0f;
+
+	const float skyBrightMultiplier = GetValue(PARAM_TERRAIN_OCCL_MULTIPLIER).x;
+	const float GIMultiplier = GetValue(PARAM_GI_MULTIPLIER).x;
+	const float sunSpecMultiplier = GetValue(PARAM_SUN_SPECULAR_MULTIPLIER).x;
+	const float fogMultiplier = GetValue(PARAM_FOG_COLOR_MULTIPLIER).x * m_fHDRMultiplier;
+	const float fogMultiplier2 = GetValue(PARAM_FOG_COLOR2_MULTIPLIER).x * m_fHDRMultiplier;
+	const float fogMultiplierRadial = GetValue(PARAM_FOG_RADIAL_COLOR_MULTIPLIER).x * m_fHDRMultiplier;
+	const float nightSkyHorizonMultiplier = GetValue(PARAM_NIGHSKY_HORIZON_COLOR_MULTIPLIER).x * m_fHDRMultiplier;
+	const float nightSkyZenithMultiplier = GetValue(PARAM_NIGHSKY_ZENITH_COLOR_MULTIPLIER).x * m_fHDRMultiplier;
+	const float nightSkyMoonMultiplier = GetValue(PARAM_NIGHSKY_MOON_COLOR_MULTIPLIER).x * m_fHDRMultiplier;
+	const float nightSkyMoonInnerCoronaMultiplier = GetValue(PARAM_NIGHSKY_MOON_INNERCORONA_COLOR_MULTIPLIER).x * m_fHDRMultiplier;
+	const float nightSkyMoonOuterCoronaMultiplier = GetValue(PARAM_NIGHSKY_MOON_OUTERCORONA_COLOR_MULTIPLIER).x * m_fHDRMultiplier;
 
 	// set sun position
 	Vec3 sunPos;
 
-	if (m_bSunLinkedToTOD)
+	const ITimeOfDay::Sun& sun = GetSunParams();
+	const ITimeOfDay::Sky& sky = GetSkyParams();
+
+	if (sun.sunLinkedToTOD)
 	{
-		float timeAng(((m_fTime + 12.0f) / 24.0f) * gf_PI * 2.0f);
-		float sunRot = gf_PI * (-m_sunRotationLatitude) / 180.0f;
-		float longitude = 0.5f * gf_PI - gf_PI * m_sunRotationLongitude / 180.0f;
+		const float timeAng(((m_fTime + 12.0f) / 24.0f) * gf_PI * 2.0f);
+		const float sunRot = gf_PI * (-sun.latitude) / 180.0f;
+		const float longitude = 0.5f * gf_PI - gf_PI * sun.longitude / 180.0f;
 
 		Matrix33 a, b, c, m;
 
@@ -1045,29 +1084,29 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 		m = a * b * c;
 		sunPos = Vec3(0, 1, 0) * m;
 
-		float h = sunPos.z;
+		const float h = sunPos.z;
 		sunPos.z = sunPos.y;
 		sunPos.y = -h;
 	}
 	else // when not linked, it behaves like the moon
 	{
-		float sunLati(-gf_PI + gf_PI * m_sunRotationLatitude / 180.0f);
-		float sunLong(0.5f * gf_PI - gf_PI * m_sunRotationLongitude / 180.0f);
+		const float sunLati(-gf_PI + gf_PI * sun.latitude / 180.0f);
+		const float sunLong(0.5f * gf_PI - gf_PI * sun.longitude / 180.0f);
 
-		float sinLon(sinf(sunLong));
-		float cosLon(cosf(sunLong));
-		float sinLat(sinf(sunLati));
-		float cosLat(cosf(sunLati));
+		const float sinLon(sinf(sunLong));
+		const float cosLon(cosf(sunLong));
+		const float sinLat(sinf(sunLati));
+		const float cosLat(cosf(sunLati));
 
 		sunPos = Vec3(sinLon * cosLat, sinLon * sinLat, cosLon);
 	}
 
-	Vec3 sunPosOrig = sunPos;
+	const Vec3 sunPosOrig = sunPos;
 
 	// transition phase for sun/moon lighting
-	assert(p3DEngine->m_dawnStart <= p3DEngine->m_dawnEnd);
-	assert(p3DEngine->m_duskStart <= p3DEngine->m_duskEnd);
-	assert(p3DEngine->m_dawnEnd <= p3DEngine->m_duskStart);
+	CRY_ASSERT(p3DEngine->m_dawnStart <= p3DEngine->m_dawnEnd);
+	CRY_ASSERT(p3DEngine->m_duskStart <= p3DEngine->m_duskEnd);
+	CRY_ASSERT(p3DEngine->m_dawnEnd <= p3DEngine->m_duskStart);
 	float sunIntensityMultiplier(m_fHDRMultiplier);
 	float dayNightIndicator(1.0);
 	if (m_fTime < p3DEngine->m_dawnStart || m_fTime >= p3DEngine->m_duskEnd)
@@ -1080,7 +1119,7 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 	else if (m_fTime < p3DEngine->m_dawnEnd)
 	{
 		// dawn
-		assert(p3DEngine->m_dawnStart < p3DEngine->m_dawnEnd);
+		CRY_ASSERT(p3DEngine->m_dawnStart < p3DEngine->m_dawnEnd);
 		float b(0.5f * (p3DEngine->m_dawnStart + p3DEngine->m_dawnEnd));
 		if (m_fTime < b)
 		{
@@ -1107,7 +1146,7 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 	else if (m_fTime < p3DEngine->m_duskEnd)
 	{
 		// dusk
-		assert(p3DEngine->m_duskStart < p3DEngine->m_duskEnd);
+		CRY_ASSERT(p3DEngine->m_duskStart < p3DEngine->m_duskEnd);
 		float b(0.5f * (p3DEngine->m_duskStart + p3DEngine->m_duskEnd));
 		if (m_fTime < b)
 		{
@@ -1126,100 +1165,116 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 
 		dayNightIndicator = (p3DEngine->m_duskEnd - m_fTime) / (p3DEngine->m_duskEnd - p3DEngine->m_duskStart);
 	}
-	sunIntensityMultiplier = max(GetVar(PARAM_SKYLIGHT_SUN_INTENSITY_MULTIPLIER).fValue[0], 0.0f);
+	sunIntensityMultiplier = max(GetValue(PARAM_SKYLIGHT_SUN_INTENSITY_MULTIPLIER).x, 0.0f);
 	p3DEngine->SetGlobalParameter(E3DPARAM_DAY_NIGHT_INDICATOR, Vec3(dayNightIndicator, 0, 0));
 
 	p3DEngine->SetSunDir(sunPos);
 
 	// set sun, sky, and fog color
-	Vec3 sunColor(Vec3(GetVar(PARAM_SUN_COLOR).fValue[0],
-	                   GetVar(PARAM_SUN_COLOR).fValue[1], GetVar(PARAM_SUN_COLOR).fValue[2]));
-	float sunIntensityLux(GetVar(PARAM_SUN_INTENSITY).fValue[0] * sunMultiplier);
-	p3DEngine->SetSunColor(ConvertIlluminanceToLightColor(sunIntensityLux, sunColor));
+	const Vec3 sunColor(GetValue(PARAM_SUN_COLOR));
+	const float sunIntensityLux(GetValue(PARAM_SUN_INTENSITY).x * sunMultiplier);
+	const Vec3 sunEmission(ConvertIlluminanceToLightColor(sunIntensityLux, sunColor));
+	p3DEngine->SetSunColor(sunEmission);
 	p3DEngine->SetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER, Vec3(sunSpecMultiplier, 0, 0));
 	p3DEngine->SetSkyBrightness(skyBrightMultiplier);
 	p3DEngine->SetGIAmount(GIMultiplier);
 
-	Vec3 fogColor(fogMultiplier * Vec3(GetVar(PARAM_FOG_COLOR).fValue[0],
-	                                   GetVar(PARAM_FOG_COLOR).fValue[1], GetVar(PARAM_FOG_COLOR).fValue[2]));
+	const float skyboxAngle(GetValue(PARAM_SKYBOX_ANGLE).x);
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE, skyboxAngle);
+	const float skyboxStretch(GetValue(PARAM_SKYBOX_STRETCHING).x);
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING, skyboxStretch);
+	const Vec3 skyboxColor(GetValue(PARAM_SKYBOX_COLOR));
+	const float skyboxIntensityLux(GetValue(PARAM_SKYBOX_INTENSITY).x * sunMultiplier);
+	const Vec3 skyboxEmmission(ConvertIlluminanceToLightColor(skyboxIntensityLux, skyboxColor));
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_EMITTANCE, skyboxEmmission);
+	const Vec3 skyboxFilter(GetValue(PARAM_SKYBOX_FILTER));
+	const float skyboxOpacity(GetValue(PARAM_SKYBOX_OPACITY).x);
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_FILTER, skyboxFilter * skyboxOpacity);
+
+	// Selective overwrite
+	IMaterial* pMaterialDef = nullptr;
+	if (!sky.materialDefSpec.empty())
+		p3DEngine->SetSkyMaterial(pMaterialDef = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(sky.materialDefSpec.c_str(), false), eSkySpec_Def);
+	else
+		p3DEngine->SetSkyMaterial(pMaterialDef, eSkySpec_Def);
+
+	IMaterial* pMaterialLow = nullptr;
+	if (!sky.materialLowSpec.empty())
+		p3DEngine->SetSkyMaterial(pMaterialLow = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(sky.materialLowSpec.c_str(), false), eSkySpec_Low);
+	else
+		p3DEngine->SetSkyMaterial(pMaterialDef, eSkySpec_Low);
+
+	const Vec3 fogColor(fogMultiplier * GetValue(PARAM_FOG_COLOR));
 	p3DEngine->SetFogColor(fogColor);
 
-	const Vec3 fogColor2 = fogMultiplier2 * Vec3(GetVar(PARAM_FOG_COLOR2).fValue[0], GetVar(PARAM_FOG_COLOR2).fValue[1], GetVar(PARAM_FOG_COLOR2).fValue[2]);
+	const Vec3 fogColor2 = fogMultiplier2 * GetValue(PARAM_FOG_COLOR2);
 	p3DEngine->SetGlobalParameter(E3DPARAM_FOG_COLOR2, fogColor2);
 
-	const Vec3 fogColorRadial = fogMultiplierRadial * Vec3(GetVar(PARAM_FOG_RADIAL_COLOR).fValue[0], GetVar(PARAM_FOG_RADIAL_COLOR).fValue[1], GetVar(PARAM_FOG_RADIAL_COLOR).fValue[2]);
+	const Vec3 fogColorRadial = fogMultiplierRadial * GetValue(PARAM_FOG_RADIAL_COLOR);
 	p3DEngine->SetGlobalParameter(E3DPARAM_FOG_RADIAL_COLOR, fogColorRadial);
 
-	const Vec3 volFogHeightDensity = Vec3(GetVar(PARAM_VOLFOG_HEIGHT).fValue[0], GetVar(PARAM_VOLFOG_DENSITY).fValue[0], 0);
+	const Vec3 volFogHeightDensity = Vec3(GetValue(PARAM_VOLFOG_HEIGHT).x, GetValue(PARAM_VOLFOG_DENSITY).x, 0);
 	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_HEIGHT_DENSITY, volFogHeightDensity);
 
-	const Vec3 volFogHeightDensity2 = Vec3(GetVar(PARAM_VOLFOG_HEIGHT2).fValue[0], GetVar(PARAM_VOLFOG_DENSITY2).fValue[0], 0);
+	const Vec3 volFogHeightDensity2 = Vec3(GetValue(PARAM_VOLFOG_HEIGHT2).x, GetValue(PARAM_VOLFOG_DENSITY2).x, 0);
 	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_HEIGHT_DENSITY2, volFogHeightDensity2);
 
-	const Vec3 volFogGradientCtrl = Vec3(GetVar(PARAM_VOLFOG_HEIGHT_OFFSET).fValue[0], GetVar(PARAM_VOLFOG_RADIAL_SIZE).fValue[0], GetVar(PARAM_VOLFOG_RADIAL_LOBE).fValue[0]);
+	const Vec3 volFogGradientCtrl = Vec3(GetValue(PARAM_VOLFOG_HEIGHT_OFFSET).x, GetValue(PARAM_VOLFOG_RADIAL_SIZE).x, GetValue(PARAM_VOLFOG_RADIAL_LOBE).x);
 	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_GRADIENT_CTRL, volFogGradientCtrl);
 
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_GLOBAL_DENSITY, Vec3(GetVar(PARAM_VOLFOG_GLOBAL_DENSITY).fValue[0], 0, GetVar(PARAM_VOLFOG_FINAL_DENSITY_CLAMP).fValue[0]));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_GLOBAL_DENSITY, Vec3(GetValue(PARAM_VOLFOG_GLOBAL_DENSITY).x, 0, GetValue(PARAM_VOLFOG_FINAL_DENSITY_CLAMP).x));
 
 	// set volumetric fog ramp
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_RAMP, Vec3(GetVar(PARAM_VOLFOG_RAMP_START).fValue[0], GetVar(PARAM_VOLFOG_RAMP_END).fValue[0], GetVar(PARAM_VOLFOG_RAMP_INFLUENCE).fValue[0]));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_RAMP, Vec3(GetValue(PARAM_VOLFOG_RAMP_START).x, GetValue(PARAM_VOLFOG_RAMP_END).x, GetValue(PARAM_VOLFOG_RAMP_INFLUENCE).x));
 
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_RANGE, Vec3(GetVar(PARAM_VOLFOG_SHADOW_RANGE).fValue[0], 0, 0));
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_DARKENING, Vec3(GetVar(PARAM_VOLFOG_SHADOW_DARKENING).fValue[0], GetVar(PARAM_VOLFOG_SHADOW_DARKENING_SUN).fValue[0], GetVar(PARAM_VOLFOG_SHADOW_DARKENING_AMBIENT).fValue[0]));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_RANGE, Vec3(GetValue(PARAM_VOLFOG_SHADOW_RANGE).x, 0, 0));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_DARKENING, Vec3(GetValue(PARAM_VOLFOG_SHADOW_DARKENING).x, GetValue(PARAM_VOLFOG_SHADOW_DARKENING_SUN).x, GetValue(PARAM_VOLFOG_SHADOW_DARKENING_AMBIENT).x));
 
 	// set HDR sky lighting properties
-	Vec3 sunIntensity(sunIntensityMultiplier * Vec3(GetVar(PARAM_SKYLIGHT_SUN_INTENSITY).fValue[0],
-	                                                GetVar(PARAM_SKYLIGHT_SUN_INTENSITY).fValue[1], GetVar(PARAM_SKYLIGHT_SUN_INTENSITY).fValue[2]));
+	const Vec3 sunIntensity(sunIntensityMultiplier * GetValue(PARAM_SKYLIGHT_SUN_INTENSITY));
 
-	Vec3 rgbWaveLengths(GetVar(PARAM_SKYLIGHT_WAVELENGTH_R).fValue[0],
-	                    GetVar(PARAM_SKYLIGHT_WAVELENGTH_G).fValue[0], GetVar(PARAM_SKYLIGHT_WAVELENGTH_B).fValue[0]);
+	const Vec3 rgbWaveLengths(GetValue(PARAM_SKYLIGHT_WAVELENGTH_R).x, GetValue(PARAM_SKYLIGHT_WAVELENGTH_G).x, GetValue(PARAM_SKYLIGHT_WAVELENGTH_B).x);
 
-	p3DEngine->SetSkyLightParameters(sunPosOrig, sunIntensity, GetVar(PARAM_SKYLIGHT_KM).fValue[0],
-	                                 GetVar(PARAM_SKYLIGHT_KR).fValue[0], GetVar(PARAM_SKYLIGHT_G).fValue[0], rgbWaveLengths, forceUpdate);
+	p3DEngine->SetSkyLightParameters(sunPosOrig, sunIntensity, GetValue(PARAM_SKYLIGHT_KM).x,
+	                                 GetValue(PARAM_SKYLIGHT_KR).x, GetValue(PARAM_SKYLIGHT_G).x, rgbWaveLengths, forceUpdate);
 
 	// set night sky color properties
-	Vec3 nightSkyHorizonColor(nightSkyHorizonMultiplier * Vec3(GetVar(PARAM_NIGHSKY_HORIZON_COLOR).fValue[0],
-	                                                           GetVar(PARAM_NIGHSKY_HORIZON_COLOR).fValue[1], GetVar(PARAM_NIGHSKY_HORIZON_COLOR).fValue[2]));
+	const Vec3 nightSkyHorizonColor(nightSkyHorizonMultiplier * GetValue(PARAM_NIGHSKY_HORIZON_COLOR));
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_HORIZON_COLOR, nightSkyHorizonColor);
 
-	Vec3 nightSkyZenithColor(nightSkyZenithMultiplier * Vec3(GetVar(PARAM_NIGHSKY_ZENITH_COLOR).fValue[0],
-	                                                         GetVar(PARAM_NIGHSKY_ZENITH_COLOR).fValue[1], GetVar(PARAM_NIGHSKY_ZENITH_COLOR).fValue[2]));
+	const Vec3 nightSkyZenithColor(nightSkyZenithMultiplier * GetValue(PARAM_NIGHSKY_ZENITH_COLOR));
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_ZENITH_COLOR, nightSkyZenithColor);
 
-	float nightSkyZenithColorShift(GetVar(PARAM_NIGHSKY_ZENITH_SHIFT).fValue[0]);
+	const float nightSkyZenithColorShift(GetValue(PARAM_NIGHSKY_ZENITH_SHIFT).x);
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_ZENITH_SHIFT, Vec3(nightSkyZenithColorShift, 0, 0));
 
-	float nightSkyStarIntensity(GetVar(PARAM_NIGHSKY_START_INTENSITY).fValue[0]);
+	const float nightSkyStarIntensity(GetValue(PARAM_NIGHSKY_START_INTENSITY).x);
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_STAR_INTENSITY, Vec3(nightSkyStarIntensity, 0, 0));
 
-	Vec3 nightSkyMoonColor(nightSkyMoonMultiplier * Vec3(GetVar(PARAM_NIGHSKY_MOON_COLOR).fValue[0],
-	                                                     GetVar(PARAM_NIGHSKY_MOON_COLOR).fValue[1], GetVar(PARAM_NIGHSKY_MOON_COLOR).fValue[2]));
+	const Vec3 nightSkyMoonColor(nightSkyMoonMultiplier * GetValue(PARAM_NIGHSKY_MOON_COLOR));
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_MOON_COLOR, nightSkyMoonColor);
 
-	Vec3 nightSkyMoonInnerCoronaColor(nightSkyMoonInnerCoronaMultiplier * Vec3(GetVar(PARAM_NIGHSKY_MOON_INNERCORONA_COLOR).fValue[0],
-	                                                                           GetVar(PARAM_NIGHSKY_MOON_INNERCORONA_COLOR).fValue[1], GetVar(PARAM_NIGHSKY_MOON_INNERCORONA_COLOR).fValue[2]));
+	const Vec3 nightSkyMoonInnerCoronaColor(nightSkyMoonInnerCoronaMultiplier * GetValue(PARAM_NIGHSKY_MOON_INNERCORONA_COLOR));
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_MOON_INNERCORONA_COLOR, nightSkyMoonInnerCoronaColor);
 
-	float nightSkyMoonInnerCoronaScale(GetVar(PARAM_NIGHSKY_MOON_INNERCORONA_SCALE).fValue[0]);
+	const float nightSkyMoonInnerCoronaScale(GetValue(PARAM_NIGHSKY_MOON_INNERCORONA_SCALE).x);
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_MOON_INNERCORONA_SCALE, Vec3(nightSkyMoonInnerCoronaScale, 0, 0));
 
-	Vec3 nightSkyMoonOuterCoronaColor(nightSkyMoonOuterCoronaMultiplier * Vec3(GetVar(PARAM_NIGHSKY_MOON_OUTERCORONA_COLOR).fValue[0],
-	                                                                           GetVar(PARAM_NIGHSKY_MOON_OUTERCORONA_COLOR).fValue[1], GetVar(PARAM_NIGHSKY_MOON_OUTERCORONA_COLOR).fValue[2]));
+	const Vec3 nightSkyMoonOuterCoronaColor(nightSkyMoonOuterCoronaMultiplier * GetValue(PARAM_NIGHSKY_MOON_OUTERCORONA_COLOR));
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_MOON_OUTERCORONA_COLOR, nightSkyMoonOuterCoronaColor);
 
-	float nightSkyMoonOuterCoronaScale(GetVar(PARAM_NIGHSKY_MOON_OUTERCORONA_SCALE).fValue[0]);
+	const float nightSkyMoonOuterCoronaScale(GetValue(PARAM_NIGHSKY_MOON_OUTERCORONA_SCALE).x);
 	p3DEngine->SetGlobalParameter(E3DPARAM_NIGHSKY_MOON_OUTERCORONA_SCALE, Vec3(nightSkyMoonOuterCoronaScale, 0, 0));
 
 	// set sun shafts visibility and activate if required
 
-	float fSunShaftsVis = GetVar(PARAM_SUN_SHAFTS_VISIBILITY).fValue[0];
+	float fSunShaftsVis = GetValue(PARAM_SUN_SHAFTS_VISIBILITY).x;
 	fSunShaftsVis = clamp_tpl<float>(fSunShaftsVis, 0.0f, 0.3f);
-	float fSunRaysVis = GetVar(PARAM_SUN_RAYS_VISIBILITY).fValue[0];
-	float fSunRaysAtten = GetVar(PARAM_SUN_RAYS_ATTENUATION).fValue[0];
-	float fSunRaySunColInfluence = GetVar(PARAM_SUN_RAYS_SUNCOLORINFLUENCE).fValue[0];
+	const float fSunRaysVis = GetValue(PARAM_SUN_RAYS_VISIBILITY).x;
+	const float fSunRaysAtten = GetValue(PARAM_SUN_RAYS_ATTENUATION).x;
+	const float fSunRaySunColInfluence = GetValue(PARAM_SUN_RAYS_SUNCOLORINFLUENCE).x;
 
-	float* pSunRaysCustomColorVar = GetVar(PARAM_SUN_RAYS_CUSTOMCOLOR).fValue;
-	Vec4 pSunRaysCustomColor = Vec4(pSunRaysCustomColorVar[0], pSunRaysCustomColorVar[1], pSunRaysCustomColorVar[2], 1.0f);
+	const Vec4 pSunRaysCustomColor = Vec4(GetValue(PARAM_SUN_RAYS_CUSTOMCOLOR), 1.0f);
 
 	p3DEngine->SetPostEffectParam("SunShafts_Active", (fSunShaftsVis > 0.05f || fSunRaysVis > 0.05f) ? 1.f : 0.f);
 	p3DEngine->SetPostEffectParam("SunShafts_Amount", fSunShaftsVis);
@@ -1229,95 +1284,92 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 	p3DEngine->SetPostEffectParamVec4("SunShafts_RaysCustomColor", pSunRaysCustomColor);
 
 	{
-		const Vec3 cloudShadingMultipliers = Vec3(GetVar(PARAM_CLOUDSHADING_SUNLIGHT_MULTIPLIER).fValue[0], GetVar(PARAM_CLOUDSHADING_SKYLIGHT_MULTIPLIER).fValue[0], 0);
+		const Vec3 cloudShadingMultipliers = Vec3(GetValue(PARAM_CLOUDSHADING_SUNLIGHT_MULTIPLIER).x, GetValue(PARAM_CLOUDSHADING_SKYLIGHT_MULTIPLIER).x, 0);
 		p3DEngine->SetGlobalParameter(E3DPARAM_CLOUDSHADING_MULTIPLIERS, cloudShadingMultipliers);
 
-		const float cloudShadingCustomSunColorMult = GetVar(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR_MULTIPLIER).fValue[0];
-		const Vec3 cloudShadingCustomSunColor = cloudShadingCustomSunColorMult * Vec3(GetVar(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR).fValue[0], GetVar(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR).fValue[1], GetVar(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR).fValue[2]);
-		const float cloudShadingCustomSunColorInfluence = GetVar(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR_INFLUENCE).fValue[0];
+		const float cloudShadingCustomSunColorMult = GetValue(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR_MULTIPLIER).x;
+		const Vec3 cloudShadingCustomSunColor = cloudShadingCustomSunColorMult * GetValue(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR);
+		const float cloudShadingCustomSunColorInfluence = GetValue(PARAM_CLOUDSHADING_SUNLIGHT_CUSTOM_COLOR_INFLUENCE).x;
 
 		const Vec3 cloudShadingSunColor = p3DEngine->GetSunColor() * cloudShadingMultipliers.x;
-		const Vec3 cloudShadingSkyColor = p3DEngine->GetSunColor() * cloudShadingMultipliers.y;
 
 		p3DEngine->SetGlobalParameter(E3DPARAM_CLOUDSHADING_SUNCOLOR, cloudShadingSunColor + (cloudShadingCustomSunColor - cloudShadingSunColor) * cloudShadingCustomSunColorInfluence);
 
 		// set volumetric cloud parameters
-		const Vec3 volCloudAtmosAlbedo = Vec3(GetVar(PARAM_VOLCLOUD_ATMOSPHERIC_ALBEDO).fValue[0], GetVar(PARAM_VOLCLOUD_ATMOSPHERIC_ALBEDO).fValue[1], GetVar(PARAM_VOLCLOUD_ATMOSPHERIC_ALBEDO).fValue[2]);
+		const Vec3 volCloudAtmosAlbedo(GetValue(PARAM_VOLCLOUD_ATMOSPHERIC_ALBEDO));
 		const float volCloudRayleighBlue = 2.06e-5f; // Rayleigh scattering coefficient for blue as 488 nm wave length.
 		const Vec3 volCloudRayleighScattering = volCloudAtmosAlbedo * volCloudRayleighBlue;
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_ATMOSPHERIC_SCATTERING, volCloudRayleighScattering);
 
-		const Vec3 volCloudGenParam = Vec3(GetVar(PARAM_VOLCLOUD_GLOBAL_DENSITY).fValue[0], GetVar(PARAM_VOLCLOUD_HEIGHT).fValue[0], GetVar(PARAM_VOLCLOUD_THICKNESS).fValue[0]);
+		const Vec3 volCloudGenParam = Vec3(GetValue(PARAM_VOLCLOUD_GLOBAL_DENSITY).x, GetValue(PARAM_VOLCLOUD_HEIGHT).x, GetValue(PARAM_VOLCLOUD_THICKNESS).x);
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_GEN_PARAMS, volCloudGenParam);
 
-		const Vec3 volCloudScatteringLow = Vec3(GetVar(PARAM_VOLCLOUD_SUN_SINGLE_SCATTERING).fValue[0], GetVar(PARAM_VOLCLOUD_SUN_LOW_ORDER_SCATTERING).fValue[0], GetVar(PARAM_VOLCLOUD_SUN_LOW_ORDER_SCATTERING_ANISTROPY).fValue[0]);
+		const Vec3 volCloudScatteringLow = Vec3(GetValue(PARAM_VOLCLOUD_SUN_SINGLE_SCATTERING).x, GetValue(PARAM_VOLCLOUD_SUN_LOW_ORDER_SCATTERING).x, GetValue(PARAM_VOLCLOUD_SUN_LOW_ORDER_SCATTERING_ANISTROPY).x);
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_SCATTERING_LOW, volCloudScatteringLow);
 
-		const Vec3 volCloudScatteringHigh = Vec3(GetVar(PARAM_VOLCLOUD_SUN_HIGH_ORDER_SCATTERING).fValue[0], GetVar(PARAM_VOLCLOUD_SKY_LIGHTING_SCATTERING).fValue[0], GetVar(PARAM_VOLCLOUD_GOUND_LIGHTING_SCATTERING).fValue[0]);
+		const Vec3 volCloudScatteringHigh = Vec3(GetValue(PARAM_VOLCLOUD_SUN_HIGH_ORDER_SCATTERING).x, GetValue(PARAM_VOLCLOUD_SKY_LIGHTING_SCATTERING).x, GetValue(PARAM_VOLCLOUD_GOUND_LIGHTING_SCATTERING).x);
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_SCATTERING_HIGH, volCloudScatteringHigh);
 
-		const Vec3 volCloudGroundColor = Vec3(GetVar(PARAM_VOLCLOUD_GROUND_LIGHTING_ALBEDO).fValue[0], GetVar(PARAM_VOLCLOUD_GROUND_LIGHTING_ALBEDO).fValue[1], GetVar(PARAM_VOLCLOUD_GROUND_LIGHTING_ALBEDO).fValue[2]);
+		const Vec3 volCloudGroundColor(GetValue(PARAM_VOLCLOUD_GROUND_LIGHTING_ALBEDO));
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_GROUND_COLOR, volCloudGroundColor);
 
-		const Vec3 volCloudScatteringMulti = Vec3(GetVar(PARAM_VOLCLOUD_MULTI_SCATTERING_ATTENUATION).fValue[0], GetVar(PARAM_VOLCLOUD_MULTI_SCATTERING_PRESERVATION).fValue[0], GetVar(PARAM_VOLCLOUD_POWDER_EFFECT).fValue[0]);
+		const Vec3 volCloudScatteringMulti = Vec3(GetValue(PARAM_VOLCLOUD_MULTI_SCATTERING_ATTENUATION).x, GetValue(PARAM_VOLCLOUD_MULTI_SCATTERING_PRESERVATION).x, GetValue(PARAM_VOLCLOUD_POWDER_EFFECT).x);
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_SCATTERING_MULTI, volCloudScatteringMulti);
 
 		const float sunIntensityOriginal = (sunIntensityLux / RENDERER_LIGHT_UNIT_SCALE) / gf_PI; // divided by pi to match to GetSunColor(), it's also divided by pi in ConvertIlluminanceToLightColor().
 		const float sunIntensityCustomSun = cloudShadingMultipliers.x * cloudShadingCustomSunColorMult;
 		const float sunIntensityCloudAtmosphere = Lerp(sunIntensityOriginal, sunIntensityCustomSun, cloudShadingCustomSunColorInfluence);
-		const float atmosphericScatteringMultiplier = GetVar(PARAM_VOLCLOUD_ATMOSPHERIC_SCATTERING).fValue[0];
-		const Vec3 volCloudWindAtmos = Vec3(GetVar(PARAM_VOLCLOUD_WIND_INFLUENCE).fValue[0], 0.0f, sunIntensityCloudAtmosphere * atmosphericScatteringMultiplier);
+		const float atmosphericScatteringMultiplier = GetValue(PARAM_VOLCLOUD_ATMOSPHERIC_SCATTERING).x;
+		const Vec3 volCloudWindAtmos = Vec3(GetValue(PARAM_VOLCLOUD_WIND_INFLUENCE).x, 0.0f, sunIntensityCloudAtmosphere * atmosphericScatteringMultiplier);
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_WIND_ATMOSPHERIC, volCloudWindAtmos);
 
-		const Vec3 volCloudTurbulence = Vec3(GetVar(PARAM_VOLCLOUD_CLOUD_EDGE_TURBULENCE).fValue[0], GetVar(PARAM_VOLCLOUD_CLOUD_EDGE_THRESHOLD).fValue[0], GetVar(PARAM_VOLCLOUD_ABSORPTION).fValue[0]);
+		const Vec3 volCloudTurbulence = Vec3(GetValue(PARAM_VOLCLOUD_CLOUD_EDGE_TURBULENCE).x, GetValue(PARAM_VOLCLOUD_CLOUD_EDGE_THRESHOLD).x, GetValue(PARAM_VOLCLOUD_ABSORPTION).x);
 		p3DEngine->SetGlobalParameter(E3DPARAM_VOLCLOUD_TURBULENCE, volCloudTurbulence);
 	}
 
 	// set ocean fog color multiplier
-	const float oceanFogColorMultiplier = GetVar(PARAM_OCEANFOG_COLOR_MULTIPLIER).fValue[0];
-	const Vec3 oceanFogColor = Vec3(GetVar(PARAM_OCEANFOG_COLOR).fValue[0], GetVar(PARAM_OCEANFOG_COLOR).fValue[1], GetVar(PARAM_OCEANFOG_COLOR).fValue[2]);
+	const float oceanFogColorMultiplier = GetValue(PARAM_OCEANFOG_COLOR_MULTIPLIER).x;
+	const Vec3 oceanFogColor(GetValue(PARAM_OCEANFOG_COLOR));
 	p3DEngine->SetGlobalParameter(E3DPARAM_OCEANFOG_COLOR, oceanFogColor * oceanFogColorMultiplier);
 
-	const float oceanFogColorDensity = GetVar(PARAM_OCEANFOG_DENSITY).fValue[0];
+	const float oceanFogColorDensity = GetValue(PARAM_OCEANFOG_DENSITY).x;
 	p3DEngine->SetGlobalParameter(E3DPARAM_OCEANFOG_DENSITY, Vec3(oceanFogColorDensity, 0, 0));
 
 	// set skybox multiplier
-	float skyBoxMulitplier(GetVar(PARAM_SKYBOX_MULTIPLIER).fValue[0] * m_fHDRMultiplier);
+	const float skyBoxMulitplier(GetValue(PARAM_SKYBOX_MULTIPLIER).x * m_fHDRMultiplier);
 	p3DEngine->SetGlobalParameter(E3DPARAM_SKYBOX_MULTIPLIER, Vec3(skyBoxMulitplier, 0, 0));
 
 	// Set color grading stuff
-	float fValue = GetVar(PARAM_COLORGRADING_FILTERS_GRAIN).fValue[0];
+	float fValue = GetValue(PARAM_COLORGRADING_FILTERS_GRAIN).x;
 	p3DEngine->SetGlobalParameter(E3DPARAM_COLORGRADING_FILTERS_GRAIN, Vec3(fValue, 0, 0));
 
-	Vec4 pColor = Vec4(GetVar(PARAM_COLORGRADING_FILTERS_PHOTOFILTER_COLOR).fValue[0],
-	                   GetVar(PARAM_COLORGRADING_FILTERS_PHOTOFILTER_COLOR).fValue[1],
-	                   GetVar(PARAM_COLORGRADING_FILTERS_PHOTOFILTER_COLOR).fValue[2], 1.0f);
-	p3DEngine->SetGlobalParameter(E3DPARAM_COLORGRADING_FILTERS_PHOTOFILTER_COLOR, Vec3(pColor.x, pColor.y, pColor.z));
-	fValue = GetVar(PARAM_COLORGRADING_FILTERS_PHOTOFILTER_DENSITY).fValue[0];
+	const Vec4 photofilterColor = Vec4(GetValue(PARAM_COLORGRADING_FILTERS_PHOTOFILTER_COLOR), 1.0f);
+	p3DEngine->SetGlobalParameter(E3DPARAM_COLORGRADING_FILTERS_PHOTOFILTER_COLOR, Vec3(photofilterColor.x, photofilterColor.y, photofilterColor.z));
+	fValue = GetValue(PARAM_COLORGRADING_FILTERS_PHOTOFILTER_DENSITY).x;
 	p3DEngine->SetGlobalParameter(E3DPARAM_COLORGRADING_FILTERS_PHOTOFILTER_DENSITY, Vec3(fValue, 0, 0));
 
-	fValue = GetVar(PARAM_COLORGRADING_DOF_FOCUSRANGE).fValue[0];
+	fValue = GetValue(PARAM_COLORGRADING_DOF_FOCUSRANGE).x;
 	p3DEngine->SetPostEffectParam("Dof_Tod_FocusRange", fValue);
 
-	fValue = GetVar(PARAM_COLORGRADING_DOF_BLURAMOUNT).fValue[0];
+	fValue = GetValue(PARAM_COLORGRADING_DOF_BLURAMOUNT).x;
 	p3DEngine->SetPostEffectParam("Dof_Tod_BlurAmount", fValue);
 
 	const float arrDepthConstBias[MAX_SHADOW_CASCADES_NUM] =
 	{
-		GetVar(PARAM_SHADOWSC0_BIAS).fValue[0], GetVar(PARAM_SHADOWSC1_BIAS).fValue[0], GetVar(PARAM_SHADOWSC2_BIAS).fValue[0], GetVar(PARAM_SHADOWSC3_BIAS).fValue[0],
-		GetVar(PARAM_SHADOWSC4_BIAS).fValue[0], GetVar(PARAM_SHADOWSC5_BIAS).fValue[0], GetVar(PARAM_SHADOWSC6_BIAS).fValue[0], GetVar(PARAM_SHADOWSC7_BIAS).fValue[0],
-		2.0f,                                   2.0f,                                   2.0f,                                   2.0f,
-		2.0f,                                   2.0f,                                   2.0f,                                   2.0f,
-		2.0f,                                   2.0f,                                   2.0f,                                   2.0f
+		GetValue(PARAM_SHADOWSC0_BIAS).x, GetValue(PARAM_SHADOWSC1_BIAS).x, GetValue(PARAM_SHADOWSC2_BIAS).x, GetValue(PARAM_SHADOWSC3_BIAS).x,
+		GetValue(PARAM_SHADOWSC4_BIAS).x, GetValue(PARAM_SHADOWSC5_BIAS).x, GetValue(PARAM_SHADOWSC6_BIAS).x, GetValue(PARAM_SHADOWSC7_BIAS).x,
+		2.0f,                             2.0f,                             2.0f,                             2.0f,
+		2.0f,                             2.0f,                             2.0f,                             2.0f,
+		2.0f,                             2.0f,                             2.0f,                             2.0f 
 	};
 
 	const float arrDepthSlopeBias[MAX_SHADOW_CASCADES_NUM] =
 	{
-		GetVar(PARAM_SHADOWSC0_SLOPE_BIAS).fValue[0], GetVar(PARAM_SHADOWSC1_SLOPE_BIAS).fValue[0], GetVar(PARAM_SHADOWSC2_SLOPE_BIAS).fValue[0], GetVar(PARAM_SHADOWSC3_SLOPE_BIAS).fValue[0],
-		GetVar(PARAM_SHADOWSC4_SLOPE_BIAS).fValue[0], GetVar(PARAM_SHADOWSC5_SLOPE_BIAS).fValue[0], GetVar(PARAM_SHADOWSC6_SLOPE_BIAS).fValue[0], GetVar(PARAM_SHADOWSC7_SLOPE_BIAS).fValue[0],
-		0.5f,                                         0.5f,                                         0.5f,                                         0.5f,
-		0.5f,                                         0.5f,                                         0.5f,                                         0.5f,
-		0.5f,                                         0.5f,                                         0.5f,                                         0.5f
+		GetValue(PARAM_SHADOWSC0_SLOPE_BIAS).x, GetValue(PARAM_SHADOWSC1_SLOPE_BIAS).x, GetValue(PARAM_SHADOWSC2_SLOPE_BIAS).x, GetValue(PARAM_SHADOWSC3_SLOPE_BIAS).x,
+		GetValue(PARAM_SHADOWSC4_SLOPE_BIAS).x, GetValue(PARAM_SHADOWSC5_SLOPE_BIAS).x, GetValue(PARAM_SHADOWSC6_SLOPE_BIAS).x, GetValue(PARAM_SHADOWSC7_SLOPE_BIAS).x,
+		0.5f,                                   0.5f,                                   0.5f,                                   0.5f,
+		0.5f,                                   0.5f,                                   0.5f,                                   0.5f,
+		0.5f,                                   0.5f,                                   0.5f,                                   0.5f 
 	};
 
 	p3DEngine->SetShadowsCascadesBias(arrDepthConstBias, arrDepthSlopeBias);
@@ -1328,25 +1380,22 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 	}
 
 	// set volumetric fog 2 params
-	const Vec3 volFogCtrlParams = Vec3(GetVar(PARAM_VOLFOG2_RANGE).fValue[0], GetVar(PARAM_VOLFOG2_BLEND_FACTOR).fValue[0], GetVar(PARAM_VOLFOG2_BLEND_MODE).fValue[0]);
+	const Vec3 volFogCtrlParams = Vec3(GetValue(PARAM_VOLFOG2_RANGE).x, GetValue(PARAM_VOLFOG2_BLEND_FACTOR).x, GetValue(PARAM_VOLFOG2_BLEND_MODE).x);
 	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_CTRL_PARAMS, volFogCtrlParams);
 
-	const Vec3 volFogScatteringParams = Vec3(GetVar(PARAM_VOLFOG2_INSCATTER).fValue[0], GetVar(PARAM_VOLFOG2_EXTINCTION).fValue[0], GetVar(PARAM_VOLFOG2_ANISOTROPIC).fValue[0]);
+	const Vec3 volFogScatteringParams = Vec3(GetValue(PARAM_VOLFOG2_INSCATTER).x, GetValue(PARAM_VOLFOG2_EXTINCTION).x, GetValue(PARAM_VOLFOG2_ANISOTROPIC).x);
 	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_SCATTERING_PARAMS, volFogScatteringParams);
 
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_RAMP, Vec3(GetVar(PARAM_VOLFOG2_RAMP_START).fValue[0], GetVar(PARAM_VOLFOG2_RAMP_END).fValue[0], 0.0f));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_RAMP, Vec3(GetValue(PARAM_VOLFOG2_RAMP_START).x, GetValue(PARAM_VOLFOG2_RAMP_END).x, 0.0f));
 
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_COLOR, Vec3(GetVar(PARAM_VOLFOG2_COLOR).fValue[0], GetVar(PARAM_VOLFOG2_COLOR).fValue[1], GetVar(PARAM_VOLFOG2_COLOR).fValue[2]));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_COLOR, GetValue(PARAM_VOLFOG2_COLOR));
 
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_GLOBAL_DENSITY, Vec3(GetVar(PARAM_VOLFOG2_GLOBAL_DENSITY).fValue[0], GetVar(PARAM_VOLFOG2_FINAL_DENSITY_CLAMP).fValue[0], GetVar(PARAM_VOLFOG2_GLOBAL_FOG_VISIBILITY).fValue[0]));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_GLOBAL_DENSITY, Vec3(GetValue(PARAM_VOLFOG2_GLOBAL_DENSITY).x, GetValue(PARAM_VOLFOG2_FINAL_DENSITY_CLAMP).x, GetValue(PARAM_VOLFOG2_GLOBAL_FOG_VISIBILITY).x));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_HEIGHT_DENSITY, Vec3(GetValue(PARAM_VOLFOG2_HEIGHT).x, GetValue(PARAM_VOLFOG2_DENSITY).x, GetValue(PARAM_VOLFOG2_ANISOTROPIC1).x));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_HEIGHT_DENSITY2, Vec3(GetValue(PARAM_VOLFOG2_HEIGHT2).x, GetValue(PARAM_VOLFOG2_DENSITY2).x, GetValue(PARAM_VOLFOG2_ANISOTROPIC2).x));
 
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_HEIGHT_DENSITY, Vec3(GetVar(PARAM_VOLFOG2_HEIGHT).fValue[0], GetVar(PARAM_VOLFOG2_DENSITY).fValue[0], GetVar(PARAM_VOLFOG2_ANISOTROPIC1).fValue[0]));
-
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_HEIGHT_DENSITY2, Vec3(GetVar(PARAM_VOLFOG2_HEIGHT2).fValue[0], GetVar(PARAM_VOLFOG2_DENSITY2).fValue[0], GetVar(PARAM_VOLFOG2_ANISOTROPIC2).fValue[0]));
-
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_COLOR1, Vec3(GetVar(PARAM_VOLFOG2_COLOR1).fValue[0], GetVar(PARAM_VOLFOG2_COLOR1).fValue[1], GetVar(PARAM_VOLFOG2_COLOR1).fValue[2]));
-
-	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_COLOR2, Vec3(GetVar(PARAM_VOLFOG2_COLOR2).fValue[0], GetVar(PARAM_VOLFOG2_COLOR2).fValue[1], GetVar(PARAM_VOLFOG2_COLOR2).fValue[2]));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_COLOR1, GetValue(PARAM_VOLFOG2_COLOR1));
+	p3DEngine->SetGlobalParameter(E3DPARAM_VOLFOG2_COLOR2, GetValue(PARAM_VOLFOG2_COLOR2));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1358,7 +1407,7 @@ void CTimeOfDay::SetAdvancedInfo(const SAdvancedInfo& advInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTimeOfDay::GetAdvancedInfo(SAdvancedInfo& advInfo)
+void CTimeOfDay::GetAdvancedInfo(SAdvancedInfo& advInfo) const
 {
 	advInfo = m_advancedInfo;
 }
@@ -1368,6 +1417,8 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 {
 	if (bLoading)
 	{
+		Reset();
+
 		node->getAttr("Time", m_fTime);
 
 		node->getAttr("TimeStart", m_advancedInfo.fStartTime);
@@ -1377,9 +1428,6 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 		if (m_pTimeOfDaySpeedCVar->GetFVal() != m_advancedInfo.fAnimSpeed)
 			m_pTimeOfDaySpeedCVar->Set(m_advancedInfo.fAnimSpeed);
 
-		m_pCurrentPreset = NULL;
-		m_currentPresetName.clear();
-		m_presets.clear();
 		if (XmlNodeRef presetsNode = node->findChild("Presets"))
 		{
 			const int nPresetsCount = presetsNode->getChildCount();
@@ -1387,67 +1435,69 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 			{
 				if (XmlNodeRef presetNode = presetsNode->getChild(i))
 				{
-					const char* presetName = presetNode->getAttr("Name");
-					if (presetName)
+					const char* szPresetName = presetNode->getAttr("Name");
+					if (!szPresetName)
 					{
-						string name = presetName;
-						if (!strchr(presetName, '/'))
-						{
-							name = string(sPresetsLibsPath) + name + ".xml"; // temporary for backwards compatibility
-						}
+						continue;
+					}
 
-						std::pair<TPresetsSet::iterator, bool> insertResult = m_presets.emplace(std::make_pair(name, CEnvironmentPreset()));
-						const TPresetsSet::key_type& presetName = insertResult.first->first;
-						CEnvironmentPreset& preset = insertResult.first->second;
+					const string presetName = PathUtil::ReplaceExtension(szPresetName, "env");
+					std::pair<CEnvironmentPreset*, bool> result = GetOrCreatePreset(presetName);
 
-						if (LoadPresetFromXML(preset, name))
+					// Try to load only if the preset has just been created.
+					if (!result.second || LoadPresetFromXML(*result.first, presetName))
+					{
+						if (presetNode->haveAttr("Default"))
 						{
-							if (presetNode->haveAttr("Default"))
-							{
-								m_pCurrentPreset = &preset;
-								m_currentPresetName = presetName;
-							}
+							m_pCurrentPreset = result.first;
+							m_currentPresetName = presetName;
+							m_defaultPresetName = presetName;
+							ConstantsChanged();
 						}
-						else
-						{
-							m_presets.erase(insertResult.first);
-						}
+					}
+					else // failed to load newly created preset.
+					{
+						m_presets.erase(presetName);
 					}
 				}
 			}
-
 		}
-		else
+		else if (node->getChildCount()) // if the root node is not empty, this is probably the old XML format.
 		{
-			// old format - convert to the new one
-			string presetName("default");
 			if (gEnv->pGameFramework)
 			{
-				const char* pLevelName = gEnv->pGameFramework->GetLevelName();
-				if (pLevelName && *pLevelName)
+				const char* szLevelName = gEnv->pGameFramework->GetLevelName();
+				if (szLevelName && *szLevelName)
 				{
-					//presetName = pLevelName;
-					presetName = string(sPresetsLibsPath) + pLevelName + ".xml";
+					const string presetName = PathUtil::Make(sPresetsLibsPath, szLevelName, "env");
+					std::pair<CEnvironmentPreset*, bool> result = GetOrCreatePreset(presetName);
+					// Try to load only if the preset has just been created.
+					if (!result.second)
+					{
+						CEnvironmentPreset& preset = *result.first;
+						LoadPresetFromOldFormatXML(preset, node);
+						SavePreset(presetName);
+					}
 				}
 			}
-
-			std::pair<TPresetsSet::iterator, bool> insertRes = m_presets.emplace(presetName, CEnvironmentPreset());
-			CEnvironmentPreset& preset = insertRes.first->second;
-
-			LoadPresetFromOldFormatXML(preset, node);
 		}
 
-		if (!m_pCurrentPreset && m_presets.size())
+		if (m_presets.empty()) // create a new default preset
+		{
+			LoadPreset(GetDefaultPresetFilepath());
+		}
+		else if (!m_pCurrentPreset)
 		{
 			const auto it = m_presets.begin();
-			m_pCurrentPreset = &(it->second);
+			m_pCurrentPreset = it->second.get();
 			m_currentPresetName = it->first;
+			m_defaultPresetName = it->first;
 		}
 
 		SetTime(m_fTime, false);
 		NotifyOnChange(IListener::EChangeType::CurrentPresetChanged, m_currentPresetName.c_str());
 	}
-	else //if (bLoading)
+	else // saving
 	{
 		node->setAttr("Time", m_fTime);
 		node->setAttr("TimeStart", m_advancedInfo.fStartTime);
@@ -1458,14 +1508,14 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 			for (TPresetsSet::const_iterator it = m_presets.begin(); it != m_presets.end(); ++it)
 			{
 				const TPresetsSet::key_type& presetName = it->first;
-				const CEnvironmentPreset& preset = it->second;
 				if (XmlNodeRef presetNode = presetsNode->newChild("Preset"))
 				{
 					presetNode->setAttr("Name", presetName.c_str());
-					if (&preset == m_pCurrentPreset)
+					if (m_defaultPresetName.CompareNoCase(presetName) == 0)
+					{
 						presetNode->setAttr("Default", 1);
+					}
 				}
-				SavePresetToXML(preset, presetName);
 			}
 		}
 	}
@@ -1474,27 +1524,34 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 //////////////////////////////////////////////////////////////////////////
 void CTimeOfDay::Serialize(TSerialize ser)
 {
-	assert(ser.GetSerializationTarget() != eST_Network);
+	CRY_ASSERT(ser.GetSerializationTarget() != eST_Network);
 
 	string tempName;
 
 	ser.Value("time", m_fTime);
 	ser.Value("mode", m_bEditMode);
-	ser.Value("m_sunRotationLatitude", m_sunRotationLatitude);
-	ser.Value("m_sunRotationLongitude", m_sunRotationLongitude);
+
+	//Serialize only sun constants, because they can be modified in runtime by artists
+	ser.Value("m_sunRotationLatitude", GetSunParams().latitude);
+	ser.Value("m_sunRotationLongitude", GetSunParams().longitude);
+
 	const int size = GetVariableCount();
 	ser.BeginGroup("VariableValues");
 	for (int v = 0; v < size; v++)
 	{
-		tempName = m_vars[v].name;
+		SVariableInfo info;
+		GetVariableInfo(v, info);
+		tempName = info.szName;
 		tempName.replace(' ', '_');
 		tempName.replace('(', '_');
 		tempName.replace(')', '_');
 		tempName.replace(':', '_');
 		ser.BeginGroup(tempName);
-		ser.Value("Val0", m_vars[v].fValue[0]);
-		ser.Value("Val1", m_vars[v].fValue[1]);
-		ser.Value("Val2", m_vars[v].fValue[2]);
+		Vec3 value = GetValue(static_cast<ETimeOfDayParamID>(v));
+		ser.Value("Val0", value[0]);
+		ser.Value("Val1", value[1]);
+		ser.Value("Val2", value[2]);
+		SetValue(static_cast<ETimeOfDayParamID>(v), value);
 		ser.EndGroup();
 	}
 	ser.EndGroup();
@@ -1507,6 +1564,27 @@ void CTimeOfDay::Serialize(TSerialize ser)
 	{
 		SetTime(m_fTime, true);
 	}
+}
+
+std::pair<CEnvironmentPreset*, bool> CTimeOfDay::GetOrCreatePreset(const string& presetName)
+{
+	TPresetsSet::iterator findResult = m_presets.find(presetName);
+	if (findResult != m_presets.end())
+	{
+		return std::make_pair(findResult->second.get(), false);
+	}
+
+	findResult = m_previewPresets.find(presetName);
+	if (findResult != m_previewPresets.end())
+	{
+		CEnvironmentPreset* const pPreset = findResult->second.get();
+		m_presets[presetName] = std::move(findResult->second);
+		m_previewPresets.erase(findResult);
+		return std::make_pair(pPreset, false);
+	}
+
+	std::pair<TPresetsSet::iterator, bool> insertResult = m_presets.emplace(presetName, stl::make_unique<CEnvironmentPreset>());
+	return std::make_pair(insertResult.first->second.get(), true);
 }
 
 //////////////////////////////////////////////////////////////////////////

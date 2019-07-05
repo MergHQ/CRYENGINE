@@ -34,13 +34,13 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 
 	assert(pLight && vLightPos.len() > 1); // world space pos required
 
-	pFr->ResetCasterLists();
-
 	assert(CLightEntity::IsOnePassTraversalFrustum(pFr));
 }
 
 int CObjManager::MakeStaticShadowCastersList(IRenderNode* pIgnoreNode, ShadowMapFrustum* pFrustum, const PodArray<struct SPlaneObject>* pShadowHull, int renderNodeExcludeFlags, int nMaxNodes, const SRenderingPassInfo& passInfo)
 {
+	FUNCTION_PROFILER_3DENGINE;
+
 	const int curLevel = 0;
 	int nRemainingNodes = nMaxNodes;
 

@@ -22,7 +22,7 @@ if loadedmodel == True and loadedmaterial == True:
 	finished = 0.0
 	while finished >= 0.0:
 		finished = lodtools.generatetick()
-		print 'Lod Chain Generation progress: ' + str(finished)
+		print('Lod Chain Generation progress: ' + str(finished))
 		time.sleep(1)
 		if finished == 1.0:
 			break

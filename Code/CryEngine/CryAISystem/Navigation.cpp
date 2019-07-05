@@ -20,7 +20,6 @@
 #include "PolygonSetOps/Polygon2d.h"
 
 #include "DebugDrawContext.h"
-#include "CalculationStopper.h"
 #include <CrySystem/File/CryBufferedFileReader.h>
 
 static const int maxForbiddenNameLen = 1024;
@@ -49,7 +48,7 @@ void CNavigation::ShutDown()
 //-----------------------------------------------------------------------------------------------------------
 void CNavigation::LoadNavigationData(const char* szLevel, const char* szMission)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CTimeValue startTime = gEnv->pTimer->GetAsyncCurTime();
 	
@@ -422,7 +421,7 @@ const char* CNavigation::GetNearestPathOfTypeInRange(IAIObject* requester, const
 		else
 		{
 			// Distance to nearest point on path.
-			ListPositions::const_iterator nearest = path.NearestPointOnPath(reqPos, false, d, tmp);
+			path.NearestPointOnPath(reqPos, false, d, tmp);
 		}
 
 		if (d < closestShapeDist)

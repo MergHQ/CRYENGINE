@@ -2,46 +2,72 @@
 
 #pragma once
 
+#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <ITriggerInfo.h>
+
 namespace CryAudio
 {
 namespace Impl
 {
 namespace SDL_mixer
 {
-static constexpr char const* s_szImplFolderName = "sdlmixer";
+constexpr char const* g_szImplFolderName = "sdlmixer";
 
 // XML tags
-static constexpr char const* s_szFileTag = "Sample";
+constexpr char const* g_szEventTag = "Event";
+constexpr char const* g_szSampleTag = "Sample";
 
 // XML attributes
-static constexpr char const* s_szPathAttribute = "path";
-static constexpr char const* s_szPanningEnabledAttribute = "enable_panning";
-static constexpr char const* s_szAttenuationEnabledAttribute = "enable_dist_attenuation";
-static constexpr char const* s_szAttenuationMinDistanceAttribute = "attenuation_dist_min";
-static constexpr char const* s_szAttenuationMaxDistanceAttribute = "attenuation_dist_max";
-static constexpr char const* s_szVolumeAttribute = "volume";
-static constexpr char const* s_szLoopCountAttribute = "loop_count";
-static constexpr char const* s_szFadeInTimeAttribute = "fade_in_time";
-static constexpr char const* s_szFadeOutTimeAttribute = "fade_out_time";
-static constexpr char const* s_szValueAttribute = "value";
-static constexpr char const* s_szMutiplierAttribute = "value_multiplier";
-static constexpr char const* s_szShiftAttribute = "value_shift";
+constexpr char const* g_szPathAttribute = "path";
+constexpr char const* g_szPanningEnabledAttribute = "enable_panning";
+constexpr char const* g_szAttenuationEnabledAttribute = "enable_dist_attenuation";
+constexpr char const* g_szAttenuationMinDistanceAttribute = "attenuation_dist_min";
+constexpr char const* g_szAttenuationMaxDistanceAttribute = "attenuation_dist_max";
+constexpr char const* g_szVolumeAttribute = "volume";
+constexpr char const* g_szLoopCountAttribute = "loop_count";
+constexpr char const* g_szFadeInTimeAttribute = "fade_in_time";
+constexpr char const* g_szFadeOutTimeAttribute = "fade_out_time";
+constexpr char const* g_szValueAttribute = "value";
+constexpr char const* g_szMutiplierAttribute = "value_multiplier";
+constexpr char const* g_szShiftAttribute = "value_shift";
+constexpr char const* g_szLocalizedAttribute = "localized";
+
+// XML attributes for impl data node
+constexpr char const* g_szEventsAttribute = "events";
+constexpr char const* g_szParametersAttribute = "parameters";
+constexpr char const* g_szSwitchStatesAttribute = "switchstates";
 
 // XML values
-static constexpr char const* s_szTrueValue = "true";
-static constexpr char const* s_szStartValue = "start";
-static constexpr char const* s_szStopValue = "stop";
-static constexpr char const* s_szPauseValue = "pause";
-static constexpr char const* s_szResumeValue = "resume";
+constexpr char const* g_szTrueValue = "true";
+constexpr char const* g_szFalseValue = "false";
+constexpr char const* g_szStartValue = "start";
+constexpr char const* g_szStopValue = "stop";
+constexpr char const* g_szPauseValue = "pause";
+constexpr char const* g_szResumeValue = "resume";
 
 // Default values
-static constexpr float const s_defaultFadeInTime = 0.0f;
-static constexpr float const s_defaultFadeOutTime = 0.0f;
-static constexpr float const s_defaultMinAttenuationDist = 0.0f;
-static constexpr float const s_defaultMaxAttenuationDist = 100.0f;
-static constexpr float const s_defaultParamMultiplier = 1.0f;
-static constexpr float const s_defaultParamShift = 0.0f;
-static constexpr float const s_defaultStateValue = 1.0f;
+constexpr float g_defaultFadeInTime = 0.0f;
+constexpr float g_defaultFadeOutTime = 0.0f;
+constexpr float g_defaultMinAttenuationDist = 0.0f;
+constexpr float g_defaultMaxAttenuationDist = 100.0f;
+constexpr float g_defaultParamMultiplier = 1.0f;
+constexpr float g_defaultParamShift = 0.0f;
+constexpr float g_defaultStateValue = 1.0f;
+
+// Required to create a preview trigger in editor.
+struct STriggerInfo final : public ITriggerInfo
+{
+	CryFixedStringT<MaxFileNameLength> name;
+	CryFixedStringT<MaxFilePathLength> path;
+	bool                               isLocalized;
+};
+
+struct SPoolSizes final
+{
+	uint16 events = 0;
+	uint16 parameters = 0;
+	uint16 switchStates = 0;
+};
 } // namespace SDL_mixer
 } // namespace Impl
 } // namespace CryAudio

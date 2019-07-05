@@ -17,6 +17,12 @@ History:
 #define _ENTITY_EFFECTS_H_
 
 #include "ItemString.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
+struct IParticleEmitter;
+struct IParticleEffect;
+struct IRenderNode;
+struct ILightSource;
 
 namespace EntityEffects
 {

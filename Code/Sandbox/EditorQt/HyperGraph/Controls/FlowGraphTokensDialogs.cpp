@@ -32,11 +32,8 @@ IMPLEMENT_DYNAMIC(CFlowGraphTokensCtrl, CWnd)
 
 CFlowGraphTokensCtrl::CFlowGraphTokensCtrl(CHyperGraphDialog* pParent, CXTPTaskPanel* pPanel)
 	: m_pParent(pParent),
-	m_pTaskPanel(pPanel),
-	m_pGraph(0),
-	m_bUpdate(false)
-{
-}
+	m_pTaskPanel(pPanel)
+{}
 
 CFlowGraphTokensCtrl::~CFlowGraphTokensCtrl()
 {
@@ -268,9 +265,9 @@ IMPLEMENT_DYNAMIC(CFlowGraphNewTokenDlg, CDialog)
 
 CFlowGraphNewTokenDlg::CFlowGraphNewTokenDlg(STokenData* pTokenData, TTokens tokenList, CWnd* pParent /*=NULL*/)
 	: CDialog(CFlowGraphNewTokenDlg::IDD, pParent)
+	, m_pTokenData(pTokenData)
+	, m_tokens(tokenList)
 {
-	m_pTokenData = pTokenData;
-	m_tokens = tokenList;
 }
 
 void CFlowGraphNewTokenDlg::DoDataExchange(CDataExchange* pDX)
@@ -346,4 +343,3 @@ bool CFlowGraphNewTokenDlg::DoesTokenExist(CString tokenName)
 	}
 	return false;
 }
-

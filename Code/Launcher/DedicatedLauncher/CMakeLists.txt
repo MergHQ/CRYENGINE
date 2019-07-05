@@ -3,7 +3,7 @@
 
 start_sources()
 # -- launcher.waf_files --
-sources_platform(WIN32)
+sources_platform(WINDOWS)
 add_sources("NoUberFile"
 	SOURCE_GROUP "Header Files"
 		"StdAfx.h"
@@ -16,7 +16,7 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-if(WIN32)
+if(WINDOWS)
 	CryDedicatedServer(DedicatedLauncher SOLUTION_FOLDER "Launcher")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE Shell32)
 else()

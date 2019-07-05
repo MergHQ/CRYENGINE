@@ -4,7 +4,6 @@
 #include "StdAfx.h"
 #include "D3DREBreakableGlassBuffer.h"
 
-#include "DriverD3D.h"
 #include <CryRenderer/VertexFormats.h>
 
 // Shared buffer-type constants
@@ -237,7 +236,7 @@ bool CREBreakableGlassBuffer::RT_UpdateVertexBuffer(const uint32 id, const EBuff
 	if (vertexCount > 0 && buffer.verticesHdl && pVertData && RT_IsBufferValid(id, buffType))
 	{
 		const size_t devHdl = buffer.verticesHdl;
-		CRY_ASSERT_MESSAGE(devHdl >= 0, "Updating an invalid VBuffer.");
+		CRY_ASSERT(devHdl >= 0, "Updating an invalid VBuffer.");
 
 		const uint32 stride = sizeof(SVF_P3F_C4B_T2F);
 		gRenDev->m_DevBufMan.UpdateBuffer(devHdl, pVertData, vertexCount * stride);
@@ -266,7 +265,7 @@ bool CREBreakableGlassBuffer::RT_UpdateIndexBuffer(const uint32 id, const EBuffe
 	if (indexCount > 0 && buffer.indicesHdl && pIndData && RT_IsBufferValid(id, buffType))
 	{
 		const size_t devHdl = buffer.indicesHdl;
-		CRY_ASSERT_MESSAGE(devHdl >= 0, "Updating an invalid VBuffer.");
+		CRY_ASSERT(devHdl >= 0, "Updating an invalid VBuffer.");
 
 		const uint32 stride = sizeof(uint16);
 		gRenDev->m_DevBufMan.UpdateBuffer(devHdl, pIndData, indexCount * stride);
@@ -314,7 +313,6 @@ bool CREBreakableGlassBuffer::RT_DrawBuffer(const uint32 id, const EBufferType b
 {
 	const uint32 cyclicId = id % NumBufferSlots;
 	const SBuffer& buffer = m_buffer[buffType][cyclicId];
-	const SVertexConst& bufferConsts = s_bufferConsts[buffType];
 
 	bool success = false;
 
@@ -338,7 +336,7 @@ bool CREBreakableGlassBuffer::RT_DrawBuffer(const uint32 id, const EBufferType b
 //--------------------------------------------------------------------------------------------------
 void CREBreakableGlassBuffer::DrawBuffer(const uint32 cyclicId, const EBufferType buffType, const uint32 indCount)
 {
-	CRY_ASSERT_MESSAGE(indCount % 3 == 0, "Invalid number of glass indices");
+	CRY_ASSERT(indCount % 3 == 0, "Invalid number of glass indices");
 
 	ASSERT_LEGACY_PIPELINE
 		/*

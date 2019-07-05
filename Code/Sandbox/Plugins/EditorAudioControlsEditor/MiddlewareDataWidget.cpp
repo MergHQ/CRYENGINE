@@ -3,14 +3,12 @@
 #include "StdAfx.h"
 #include "MiddlewareDataWidget.h"
 
-#include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
+#include "AssetsManager.h"
+#include "ImplManager.h"
+#include "SystemControlsWidget.h"
 #include "AssetIcons.h"
-#include "FileImporterDialog.h"
-
-#include <FilePathUtil.h>
-#include <QtUtil.h>
-#include <FileDialogs/SystemFileDialog.h>
+#include "FileImporterUtils.h"
+#include "Common/IImpl.h"
 
 #include <QDir>
 #include <QVBoxLayout>
@@ -26,22 +24,22 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 	m_pLayout->setContentsMargins(0, 0, 0, 0);
 	InitImplDataWidget();
 
-	g_implementationManager.SignalImplementationAboutToChange.Connect([this]()
+	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
 			ClearImplDataWidget();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalImplementationChanged.Connect([this]()
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			InitImplDataWidget();
-	  }, reinterpret_cast<uintptr_t>(this));
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
-	g_implementationManager.SignalImplementationAboutToChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalImplementationChanged.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	ClearImplDataWidget();
 }
@@ -57,22 +55,26 @@ void CMiddlewareDataWidget::InitImplDataWidget()
 		g_pIImpl->SignalGetConnectedSystemControls.Connect([&](ControlId const id, SControlInfos& controlInfos)
 			{
 				GetConnectedControls(id, controlInfos);
-		  }, reinterpret_cast<uintptr_t>(this));
+			}, reinterpret_cast<uintptr_t>(this));
 
 		g_pIImpl->SignalSelectConnectedSystemControl.Connect([&](ControlId const systemControlId, ControlId const implItemId)
 			{
-				SignalSelectConnectedSystemControl(systemControlId, implItemId);
-		  }, reinterpret_cast<uintptr_t>(this));
+				if (g_pSystemControlsWidget != nullptr)
+				{
+				  g_pSystemControlsWidget->SelectConnectedSystemControl(systemControlId, implItemId);
+				}
 
-		g_pIImpl->SignalImportFiles.Connect([&](ExtensionFilterVector const& extensionFilters, QStringList const& supportedType, QString const& targetFolderName)
-			{
-				OnImportFiles(extensionFilters, supportedType, targetFolderName);
-		  }, reinterpret_cast<uintptr_t>(this));
+			}, reinterpret_cast<uintptr_t>(this));
 
-		g_pIImpl->SignalFilesDropped.Connect([&](FileImportInfos const& fileImportInfos, QString const& targetFolderName)
+		g_pIImpl->SignalImportFiles.Connect([&](QString const& targetFolderName, bool const isLocalized)
 			{
-				OpenFileImporter(fileImportInfos, targetFolderName);
-		  }, reinterpret_cast<uintptr_t>(this));
+				OpenFileSelectorFromImpl(targetFolderName, isLocalized);
+			}, reinterpret_cast<uintptr_t>(this));
+
+		g_pIImpl->SignalFilesDropped.Connect([&](FileImportInfos const& fileImportInfos, QString const& targetFolderName, bool const isLocalized)
+			{
+				OpenFileImporter(fileImportInfos, targetFolderName, isLocalized, EImportTargetType::Middleware, nullptr);
+			}, reinterpret_cast<uintptr_t>(this));
 	}
 }
 
@@ -104,76 +106,5 @@ void CMiddlewareDataWidget::GetConnectedControls(ControlId const implItemId, SCo
 			controlInfos.emplace_back(info);
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::OnImportFiles(ExtensionFilterVector const& extensionFilters, QStringList const& supportedTypes, QString const& targetFolderName)
-{
-	g_pIImpl->OnFileImporterOpened();
-	CSystemFileDialog::RunParams runParams;
-	runParams.extensionFilters = extensionFilters;
-	runParams.title = tr("Import Audio Files");
-	runParams.buttonLabel = tr("Import");
-	std::vector<QString> const importedFiles = CSystemFileDialog::RunImportMultipleFiles(runParams, this);
-	g_pIImpl->OnFileImporterClosed();
-
-	if (!importedFiles.empty())
-	{
-		FileImportInfos fileInfos;
-
-		for (auto const& filePath : importedFiles)
-		{
-			QFileInfo const& fileInfo(filePath);
-
-			if (fileInfo.isFile())
-			{
-				fileInfos.emplace_back(fileInfo, supportedTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive));
-			}
-		}
-
-		OpenFileImporter(fileInfos, targetFolderName);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMiddlewareDataWidget::OpenFileImporter(FileImportInfos const& fileImportInfos, QString const& targetFolderName)
-{
-	FileImportInfos fileInfos = fileImportInfos;
-
-	QString const assetFolderPath = QtUtil::ToQString(PathUtil::GetGameFolder() + "/" + g_assetsManager.GetAssetFolderPath());
-	QString const targetFolderPath = assetFolderPath + targetFolderName;
-
-	QDir const targetFolder(targetFolderPath);
-	QString const fullTargetPath = targetFolder.absolutePath() + "/";
-
-	for (auto& fileInfo : fileInfos)
-	{
-		if (fileInfo.isTypeSupported && fileInfo.sourceInfo.isFile())
-		{
-			QString const targetPath = fullTargetPath + fileInfo.parentFolderName + fileInfo.sourceInfo.fileName();
-			QFileInfo const targetFile(targetPath);
-
-			fileInfo.targetInfo = targetFile;
-
-			if (fileInfo.sourceInfo == fileInfo.targetInfo)
-			{
-				fileInfo.actionType = SFileImportInfo::EActionType::SameFile;
-			}
-			else
-			{
-				fileInfo.actionType = (targetFile.isFile() ? SFileImportInfo::EActionType::Replace : SFileImportInfo::EActionType::New);
-			}
-		}
-	}
-
-	auto const pFileImporterDialog = new CFileImporterDialog(fileInfos, QDir(assetFolderPath).absolutePath(), fullTargetPath, this);
-	g_pIImpl->OnFileImporterOpened();
-
-	QObject::connect(pFileImporterDialog, &CFileImporterDialog::destroyed, [&]()
-		{
-			g_pIImpl->OnFileImporterClosed();
-	  });
-
-	pFileImporterDialog->exec();
 }
 } // namespace ACE

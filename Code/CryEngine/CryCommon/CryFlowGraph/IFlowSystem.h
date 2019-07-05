@@ -191,7 +191,7 @@ namespace cry_variant
 template<> \
 ILINE bool ConvertVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant&, T&) \
 { \
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index."); \
+	CRY_ASSERT(false, "Invalid variant index."); \
 	return false; \
 }
 	FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION(SFlowSystemVoid);
@@ -232,7 +232,7 @@ ILINE bool ConvertVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(co
 template<> \
 ILINE bool ConvertToVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(const T&, TFlowInputDataVariant&) \
 { \
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index."); \
+	CRY_ASSERT(false, "Invalid variant index."); \
 	return false; \
 }
 	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(SFlowSystemVoid);
@@ -537,7 +537,7 @@ inline bool DefaultInitializedForTag::Initialize<stl::variant_size<TFlowInputDat
 		return true;
 	}
 
-	CRY_ASSERT_MESSAGE(var.index() == stl::variant_npos, "Invalid variant index.");
+	CRY_ASSERT(var.index() == stl::variant_npos, "Invalid variant index.");
 	return false;
 }
 //! \endcond
@@ -849,7 +849,7 @@ public:
 	}
 
 	//! Checks if the current value matches the given string or if it would require a conversion due to incompatible with the datatype
-	// eg. setting a Bool with '1' is valid, setting it with '12' is not (so this will return true). For both cases the FlowData will be set to true
+	//! eg. setting a Bool with '1' is valid, setting it with '12' is not (so this will return true). For both cases the FlowData will be set to true
 	bool CheckIfForcedConversionOfCurrentValueWithString(const string& valueStr)
 	{
 		string convertedValueStr;
@@ -911,6 +911,9 @@ public:
 					}
 				}
 				break;
+			default:
+				CryLogAlways("Attempted to convert an invalid EFlowDataTypes member.");
+				break;
 			}
 
 			return true;
@@ -949,7 +952,7 @@ public:
 
 	void           Serialize(TSerialize ser)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Configurable variant serialization");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Configurable variant serialization");
 
 		if (ser.IsWriting())
 		{
@@ -1017,7 +1020,7 @@ private:
 template<>
 ILINE void TFlowInputData::LoadType::SerializeVariant<stl::variant_size<TFlowInputDataVariant>::value>(TFlowInputDataVariant& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 template<>
 ILINE void TFlowInputData::WriteType::SerializeVariant<stl::variant_size<TFlowInputDataVariant>::value>(TFlowInputDataVariant& var)
@@ -1026,7 +1029,7 @@ ILINE void TFlowInputData::WriteType::SerializeVariant<stl::variant_size<TFlowIn
 template<>
 ILINE void TFlowInputData::MemStatistics::AddVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant&)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 struct SFlowAddress

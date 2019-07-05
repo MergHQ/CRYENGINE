@@ -29,7 +29,7 @@ public:
 	virtual inline void                 Update(SEntityUpdateContext& ctx, int)                                          {}
 	virtual inline void                 HandleEvent(const SGameObjectEvent& event)                                      {}
 	virtual inline void                 ProcessEvent(const SEntityEvent& event)                                               {}
-	virtual uint64                      GetEventMask() const final { return 0; };
+	virtual Cry::Entity::EventFlags     GetEventMask() const final { return Cry::Entity::EventFlags(); };
 	virtual inline void                 SetChannelId(uint16 id)                                                         {}
 	virtual inline void                 PostUpdate(float frameTime)                                                     {}
 	virtual inline void                 PostRemoteSpawn()                                                               {}
@@ -51,7 +51,7 @@ inline bool CBreakRepGameObject::Init(IGameObject* pGameObject)
 inline bool CBreakRepGameObject::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
 {
 	ResetGameObject();
-	CRY_ASSERT_MESSAGE(false, "CBreakRepGameObject::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CBreakRepGameObject::ReloadExtension not implemented");
 	return false;
 }
 

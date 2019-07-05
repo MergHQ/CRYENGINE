@@ -28,5 +28,3 @@ private:
 	bool m_bFileNameLimitation;
 	bool m_bFileNameAsciiOnly;
 };
-
-

@@ -19,8 +19,9 @@ History:
 #include "ItemString.h"
 #include "ItemParamsRegistration.h"
 #include "GameTypeInfo.h"
-
-
+#include <CryMemory/CrySizer.h>
+#include <CrySystem/XML/IXml.h>
+#include <CryParticleSystem/IParticles.h>
 
 struct IFireModePluginParams
 {

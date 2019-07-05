@@ -3,14 +3,15 @@
 #include "StdAfx.h"
 #include "HyperGraph.h"
 
-#include "FilePathUtil.h"
 #include "GameEngine.h"
+#include "LogFile.h"
+#include "PathUtils.h"
 
 #include "HyperGraphManager.h"
 #include "Nodes/MissingNode.h"
 #include "Controls/HyperGraphEditorWnd.h"
 #include "FlowGraphPreferences.h"
-
+#include <Objects/SelectionGroup.h>
 
 /*
    //////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,7 @@
     m_node = node;
    }
    protected:
-   virtual const char* GetDescription() { return "HyperNodeUndoCreate"; };
+   virtual const char* GetDescription() { return "HyperNodeUndoCreate"; }
 
    virtual void Undo( bool bUndo )
    {
@@ -67,7 +68,6 @@
    };
  */
 
-//////////////////////////////////////////////////////////////////////////
 CHyperGraphSerializer::CHyperGraphSerializer(CHyperGraph* pGraph, CObjectArchive* ar)
 {
 	m_pGraph = pGraph;
@@ -76,7 +76,6 @@ CHyperGraphSerializer::CHyperGraphSerializer(CHyperGraph* pGraph, CObjectArchive
 	m_bSelectLoaded = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphSerializer::SaveNode(CHyperNode* pNode, bool bSaveEdges)
 {
 	m_nodes.insert(pNode);
@@ -93,7 +92,6 @@ void CHyperGraphSerializer::SaveNode(CHyperNode* pNode, bool bSaveEdges)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphSerializer::SaveEdge(CHyperEdge* pEdge)
 {
 	m_edges.insert(pEdge);
@@ -132,10 +130,9 @@ struct sortEdges
 };
 };
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraphSerializer::Serialize(XmlNodeRef& node, bool bLoading, bool bLoadEdges, bool bIsPaste)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	static ICVar* pCVarFlowGraphWarnings = gEnv->pConsole->GetCVar("g_display_fg_warnings");
 
 	bool bHasChanges = false;
@@ -339,33 +336,28 @@ bool CHyperGraphSerializer::Serialize(XmlNodeRef& node, bool bLoading, bool bLoa
 	return bHasChanges;
 }
 
-//////////////////////////////////////////////////////////////////////////
 HyperNodeID CHyperGraphSerializer::GetId(HyperNodeID id)
 {
 	id = stl::find_in_map(m_remap, id, id);
 	return id;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphSerializer::RemapId(HyperNodeID oldId, HyperNodeID newId)
 {
 	m_remap[oldId] = newId;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraphSerializer::GetLoadedNodes(std::vector<CHyperNode*>& nodes) const
 {
 	stl::set_to_vector(m_nodes, nodes);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperNode* CHyperGraphSerializer::GetFirstNode()
 {
 	if (m_nodes.empty())
 		return 0;
 	return *m_nodes.begin();
 }
-//////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
 // Undo object for CHyperGraph.
@@ -383,7 +375,7 @@ public:
 		m_pGraph->Serialize(m_undo, false);
 	}
 protected:
-	virtual const char* GetDescription() { return "HyperNodeUndoCreate"; };
+	virtual const char* GetDescription() { return "HyperNodeUndoCreate"; }
 
 	virtual void        Undo(bool bUndo)
 	{
@@ -421,25 +413,24 @@ public:
 		m_pMap = pMap;
 		m_iterator = m_pMap->begin();
 	}
-	virtual void        Release() { delete this; };
+	virtual void        Release() { delete this; }
 	virtual IHyperNode* GetFirst()
 	{
 		m_iterator = m_pMap->begin();
 		if (m_iterator == m_pMap->end())
-			return 0;
+			return nullptr;
 		return m_iterator->second;
 	}
 	virtual IHyperNode* GetNext()
 	{
 		if (m_iterator != m_pMap->end())
-			m_iterator++;
+			++m_iterator;
 		if (m_iterator == m_pMap->end())
-			return 0;
+			return nullptr;
 		return m_iterator->second;
 	}
 };
 
-//////////////////////////////////////////////////////////////////////////
 IHyperGraphEnumerator* CHyperGraph::GetNodesEnumerator()
 {
 	return new CHyperGraphNodeEnumerator<NodesMap>(&m_nodesMap);
@@ -465,14 +456,12 @@ CHyperGraph::CHyperGraph(CHyperGraphManager* pManager)
 	m_viewOffset.SetPoint(0, 0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperGraph::~CHyperGraph()
 {
-	m_pManager = 0;
+	m_pManager = nullptr;
 	SendNotifyEvent(0, EHG_GRAPH_REMOVED);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::SetModified(bool bModified)
 {
 	if (bModified)
@@ -487,19 +476,16 @@ void CHyperGraph::SetModified(bool bModified)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CHyperGraph::GetMissingNodesCount() const
 {
 	return m_iMissingNodes;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CHyperGraph::GetMissingPortsCount() const
 {
 	return m_iMissingPorts;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::UpdateMissingCount()
 {
 	m_iMissingPorts = 0;
@@ -512,31 +498,27 @@ void CHyperGraph::UpdateMissingCount()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::AddListener(IHyperGraphListener* pListener)
 {
 	stl::push_back_unique(m_listeners, pListener);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::RemoveListener(IHyperGraphListener* pListener)
 {
 	stl::find_and_erase(m_listeners, pListener);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::SendNotifyEvent(IHyperNode* pNode, EHyperGraphEvent event)
 {
 	Listeners::iterator next;
 	for (Listeners::iterator it = m_listeners.begin(); it != m_listeners.end(); it = next)
 	{
 		next = it;
-		next++;
+		++next;
 		(*it)->OnHyperGraphEvent(pNode, event);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::InvalidateNode(IHyperNode* pNode, bool bModified /* = true*/)
 {
 	SendNotifyEvent(pNode, EHG_NODE_CHANGE);
@@ -545,7 +527,6 @@ void CHyperGraph::InvalidateNode(IHyperNode* pNode, bool bModified /* = true*/)
 		SetModified(true);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::AddNode(CHyperNode* pNode)
 {
 	if (!pNode)
@@ -560,7 +541,6 @@ void CHyperGraph::AddNode(CHyperNode* pNode)
 	SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::RemoveNode(IHyperNode* pNode)
 {
 	if (!pNode)
@@ -586,7 +566,6 @@ void CHyperGraph::RemoveNode(IHyperNode* pNode)
 	SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::RemoveNodeKeepLinks(IHyperNode* pNode)
 {
 	if (!pNode)
@@ -600,7 +579,6 @@ void CHyperGraph::RemoveNodeKeepLinks(IHyperNode* pNode)
 	SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::RemoveEdge(CHyperEdge* pEdge)
 {
 	if (!pEdge)
@@ -632,7 +610,7 @@ void CHyperGraph::RemoveEdge(CHyperEdge* pEdge)
 			m_edgesMap.erase(it);
 			break;
 		}
-		it++;
+		++it;
 	}
 	// Remove NodeOut link.
 	it = m_edgesMap.lower_bound(pEdge->nodeOut);
@@ -643,14 +621,13 @@ void CHyperGraph::RemoveEdge(CHyperEdge* pEdge)
 			m_edgesMap.erase(it);
 			break;
 		}
-		it++;
+		++it;
 	}
 
 	SendNotifyEvent(0, EHG_GRAPH_INVALIDATE);
 	SetModified();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::RemoveEdgeSilent(CHyperEdge* pEdge)
 {
 	if (!pEdge)
@@ -682,7 +659,7 @@ void CHyperGraph::RemoveEdgeSilent(CHyperEdge* pEdge)
 			m_edgesMap.erase(it);
 			break;
 		}
-		it++;
+		++it;
 	}
 	// Remove NodeOut link.
 	it = m_edgesMap.lower_bound(pEdge->nodeOut);
@@ -693,14 +670,13 @@ void CHyperGraph::RemoveEdgeSilent(CHyperEdge* pEdge)
 			m_edgesMap.erase(it);
 			break;
 		}
-		it++;
+		++it;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::ClearAll()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_nodesMap.clear();
 	m_edgesMap.clear();
 	m_iMissingNodes = 0;
@@ -709,13 +685,11 @@ void CHyperGraph::ClearAll()
 	SendNotifyEvent(NULL, EHG_GRAPH_CLEAR_ALL);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperEdge* CHyperGraph::CreateEdge()
 {
 	return new CHyperEdge();
 }
 
-//////////////////////////////////////////////////////////////////////////
 IHyperNode* CHyperGraph::CreateNode(const char* sNodeClass, Gdiplus::PointF& pos)
 {
 	CHyperNode* pNode = NULL;
@@ -752,7 +726,6 @@ IHyperNode* CHyperGraph::CreateNode(const char* sNodeClass, Gdiplus::PointF& pos
 	return pNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 IHyperNode* CHyperGraph::CloneNode(IHyperNode* pFromNode)
 {
 	if (!pFromNode)
@@ -765,7 +738,6 @@ IHyperNode* CHyperGraph::CloneNode(IHyperNode* pFromNode)
 	return pNode;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	for (NodesMap::iterator it = m_nodesMap.begin(); it != m_nodesMap.end(); ++it)
@@ -775,13 +747,11 @@ void CHyperGraph::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IHyperNode* CHyperGraph::FindNode(HyperNodeID id) const
 {
 	return stl::find_in_map(m_nodesMap, id, NULL);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::IsSelectedAny()
 {
 	for (NodesMap::iterator it = m_nodesMap.begin(); it != m_nodesMap.end(); ++it)
@@ -793,7 +763,6 @@ bool CHyperGraph::IsSelectedAny()
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::UnselectAll()
 {
 	for (NodesMap::iterator it = m_nodesMap.begin(); it != m_nodesMap.end(); ++it)
@@ -804,7 +773,6 @@ void CHyperGraph::UnselectAll()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::HasEdge(CHyperNode* pSrcNode, CHyperNodePort* pSrcPort, CHyperNode* pTrgNode, CHyperNodePort* pTrgPort, CHyperEdge* pExistingEdge)
 {
 	assert(pSrcNode);
@@ -840,7 +808,6 @@ bool CHyperGraph::HasEdge(CHyperNode* pSrcNode, CHyperNodePort* pSrcPort, CHyper
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::CanConnectPorts(CHyperNode* pSrcNode, CHyperNodePort* pSrcPort, CHyperNode* pTrgNode, CHyperNodePort* pTrgPort, CHyperEdge* pExistingEdge)
 {
 	assert(pSrcNode);
@@ -873,7 +840,6 @@ bool CHyperGraph::CanConnectPorts(CHyperNode* pSrcNode, CHyperNodePort* pSrcPort
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::GetAllEdges(std::vector<CHyperEdge*>& edges) const
 {
 	edges.clear();
@@ -887,7 +853,6 @@ bool CHyperGraph::GetAllEdges(std::vector<CHyperEdge*>& edges) const
 	return !edges.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::FindEdges(CHyperNode* pNode, std::vector<CHyperEdge*>& edges) const
 {
 	if (!pNode)
@@ -900,13 +865,12 @@ bool CHyperGraph::FindEdges(CHyperNode* pNode, std::vector<CHyperEdge*>& edges) 
 	while (it != m_edgesMap.end() && it->first == nodeId)
 	{
 		edges.push_back(it->second);
-		it++;
+		++it;
 	}
 
 	return !edges.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperEdge* CHyperGraph::FindEdge(CHyperNode* pNode, CHyperNodePort* pPort) const
 {
 	HyperNodeID nodeId = pNode->GetId();
@@ -924,13 +888,12 @@ CHyperEdge* CHyperGraph::FindEdge(CHyperNode* pNode, CHyperNodePort* pPort) cons
 			if (it->second->nodeOut == nodeId && stricmp(it->second->portOut, portname) == 0)
 				return it->second;
 		}
-		it++;
+		++it;
 	}
 
-	return 0;
+	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::ConnectPorts(CHyperNode* pSrcNode, CHyperNodePort* pSrcPort, CHyperNode* pTrgNode, CHyperNodePort* pTrgPort)
 {
 	if (!CanConnectPorts(pSrcNode, pSrcPort, pTrgNode, pTrgPort))
@@ -974,14 +937,12 @@ bool CHyperGraph::ConnectPorts(CHyperNode* pSrcNode, CHyperNodePort* pSrcPort, C
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::RegisterEdge(CHyperEdge* pEdge)
 {
 	m_edgesMap.insert(EdgesMap::value_type(pEdge->nodeIn, pEdge));
 	m_edgesMap.insert(EdgesMap::value_type(pEdge->nodeOut, pEdge));
 }
 
-//////////////////////////////////////////////////////////////////////////
 CHyperEdge* CHyperGraph::MakeEdge(CHyperNode* pNodeOut, CHyperNodePort* pPortOut, CHyperNode* pNodeIn, CHyperNodePort* pPortIn, bool bEnabled)
 {
 	assert(pNodeIn);
@@ -1014,14 +975,12 @@ CHyperEdge* CHyperGraph::MakeEdge(CHyperNode* pNodeOut, CHyperNodePort* pPortOut
 	return pNewEdge;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::EnableEdge(CHyperEdge* pEdge, bool bEnable)
 {
 	pEdge->enabled = bEnable;
 	SendNotifyEvent(0, EHG_GRAPH_EDGE_STATE_CHANGED);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::IsNodeActivationModified()
 {
 	bool retVal = false;
@@ -1038,7 +997,6 @@ bool CHyperGraph::IsNodeActivationModified()
 	return retVal;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::ClearDebugPortActivation()
 {
 	NodesMap::iterator it = m_nodesMap.begin();
@@ -1053,7 +1011,6 @@ void CHyperGraph::ClearDebugPortActivation()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::OnPostLoad()
 {
 
@@ -1067,7 +1024,7 @@ void CHyperGraph::Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar)
 	CHyperGraphSerializer serializer(this, ar);
 	if (bLoading)
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS("Loading");
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, "Loading");
 
 		ClearAll();
 
@@ -1083,7 +1040,7 @@ void CHyperGraph::Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar)
 	}
 	else
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS("Saving");
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, "Saving");
 		for (NodesMap::iterator nit = m_nodesMap.begin(); nit != m_nodesMap.end(); ++nit)
 		{
 			serializer.SaveNode(nit->second);
@@ -1097,14 +1054,12 @@ void CHyperGraph::Serialize(XmlNodeRef& node, bool bLoading, CObjectArchive* ar)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::Migrate(XmlNodeRef& /* node */)
 {
 	// we changed nothing
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::Save(const char* filename)
 {
 	bool bWasModified = IsModified();
@@ -1121,10 +1076,9 @@ bool CHyperGraph::Save(const char* filename)
 	return success;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::Load(const char* filename)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(filename);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, filename);
 	m_filename = filename;
 	if (m_name.IsEmpty())
 	{
@@ -1142,7 +1096,6 @@ bool CHyperGraph::Load(const char* filename)
 		return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::Reload(bool bForceReload)
 {
 	if (bForceReload || IsModified())
@@ -1171,7 +1124,6 @@ bool CHyperGraph::Reload(bool bForceReload)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::Import(const char* filename)
 {
 	XmlNodeRef graphNode = XmlHelpers::LoadXmlFromFile(filename);
@@ -1191,7 +1143,6 @@ bool CHyperGraph::Import(const char* filename)
 		return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::RecordUndo()
 {
 	if (CUndo::IsRecording())
@@ -1202,13 +1153,11 @@ void CHyperGraph::RecordUndo()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 IUndoObject* CHyperGraph::CreateUndo()
 {
 	return new CUndoHyperGraph(this);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::EditEdge(CHyperEdge* pEdge)
 {
 	for (Listeners::const_iterator iter = m_listeners.begin(); iter != m_listeners.end(); ++iter)
@@ -1217,7 +1166,6 @@ void CHyperGraph::EditEdge(CHyperEdge* pEdge)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CHyperGraph::SetViewPosition(CPoint point, float zoom)
 {
 	m_bViewPosInitialized = true;
@@ -1225,11 +1173,9 @@ void CHyperGraph::SetViewPosition(CPoint point, float zoom)
 	m_fViewZoom = zoom;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CHyperGraph::GetViewPosition(CPoint& point, float& zoom)
 {
 	point = m_viewOffset;
 	zoom = m_fViewZoom;
 	return m_bViewPosInitialized;
 }
-

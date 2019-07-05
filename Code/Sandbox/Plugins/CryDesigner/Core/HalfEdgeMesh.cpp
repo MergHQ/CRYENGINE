@@ -510,4 +510,3 @@ bool HalfEdgeMesh::GetValenceCount(const HE_Vertex& v, int& nOutValenceCount) co
 }
 
 };
-

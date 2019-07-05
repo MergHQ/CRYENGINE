@@ -35,4 +35,3 @@ BOOL CMannequinDebugOptionsDialog::OnInitDialog()
 
 	return TRUE;
 }
-

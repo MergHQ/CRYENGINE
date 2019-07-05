@@ -143,7 +143,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CScriptGraphLink::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		if(!archive.isEdit())
 		{
 			archive(m_srcNodeGUID, "src_node_guid");
@@ -223,7 +223,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphBase::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		SerializationContext::SetValidatorLink(archive, SValidatorLink(m_guid)); // #SchematycTODO : This should be handled by derived classes!
 
@@ -244,7 +244,7 @@ namespace Schematyc2
 				}
 				Serialization::SContext fileContext(archive, static_cast<IScriptFile*>(&CScriptElementBase::GetFile())); // #SchematycTODO : Do we really need this?
 				Serialization::SContext docGraphContext(archive, static_cast<CDocGraphBase*>(this)); // #SchematycTODO : Do we really need this?
-				archive(m_nodes, "nodes");
+				yasli::SerializeMapAsVector<DocGraphNodeMap, SGUID, SDocGraphNode>(archive, m_nodes, "nodes", "nodes");
 				break;
 			}
 		case ESerializationPass::Load:
@@ -265,7 +265,7 @@ namespace Schematyc2
 			{
 				Serialization::SContext fileContext(archive, static_cast<IScriptFile*>(&CScriptElementBase::GetFile())); // #SchematycTODO : Do we really need this?
 				Serialization::SContext docGraphContext(archive, static_cast<CDocGraphBase*>(this)); // #SchematycTODO : Do we really need this?
-				archive(m_nodes, "nodes");
+				yasli::SerializeMapAsVector<DocGraphNodeMap, SGUID, SDocGraphNode>(archive, m_nodes, "nodes", "nodes");
 				archive(m_links, "links");
 				break;
 			}
@@ -775,7 +775,7 @@ namespace Schematyc2
 	{
 		Serialization::SContext fileContext(archive, static_cast<IScriptFile*>(&graph.GetFile())); // #SchematycTODO : Do we still need this?
 		Serialization::SContext docGraphContext(archive, static_cast<CDocGraphBase*>(&graph)); // #SchematycTODO : Do we still need this?
-		archive(graph.m_nodes, "nodes");
+		yasli::SerializeMapAsVector<DocGraphNodeMap, SGUID, SDocGraphNode>(archive, graph.m_nodes, "nodes", "nodes");
 
 		std::sort(graph.m_links.begin(), graph.m_links.end(), [](const CScriptGraphLinkPtr a, const CScriptGraphLinkPtr b)
 		{

@@ -189,7 +189,6 @@ bool CSequencerNode::CanAddTrackForParameter(ESequencerParamType paramId) const
 	if (!GetParamInfoFromId(paramId, paramInfo))
 		return false;
 
-	int flags = 0;
 	CSequencerTrack* track = GetTrackForParameter(paramId);
 	if (track && !(paramInfo.flags & CSequencerNode::PARAM_MULTIPLE_TRACKS))
 	{
@@ -210,4 +209,3 @@ void CSequencerNode::ClearMenuOptions(CMenu& menu)
 void CSequencerNode::OnMenuOption(int menuOption)
 {
 }
-

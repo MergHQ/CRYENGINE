@@ -1,8 +1,8 @@
 {
-	"version": 3,
+	"version": 4,
 	"type": "",
 	"info": {
-		"name": "Rolling Ball Game Template",
+		"name": "Rolling Ball",
 		"guid": "35978b08-5e7d-562f-7d15-ff4a18f37bc1"
 	},
 	"content": {
@@ -10,29 +10,25 @@
 		"code": [ "Code" ],
 		"libs": [
 			{
-				"name": "Rolling Ball Game Template",
+				"name": "Rolling Ball",
 				"shared": { "any": "", "win_x64": "", "win_x86": "" }
 			}
 		]
 	},
 	"require": {
-		"engine": "engine-5.5",
+		"engine": "engine-dev",
 		"plugins": [
-			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
-			{ "type": "EPluginType::Native", "path": "CrySensorSystem" },
-			{ "type": "EPluginType::Native", "path": "CryPerceptionSystem" },
-			{ "type": "EPluginType::Managed", "path": "bin/Game.dll" },
+			{ "type": "EType::Native", "path": "CryDefaultEntities" },
+			{ "type": "EType::Native", "path": "CrySensorSystem" },
+			{ "type": "EType::Native", "path": "CryPerceptionSystem" },
+			{ "type": "EType::Managed", "path": "bin/Game.dll" },
 			{
-				"type": "EPluginType::Native",
+				"type": "EType::Native",
 				"path": "CryGamePlatform",
 				"platforms": [ "PS4" ]
 			}
 		]
 	},
-	"console_variables": [
-		{ "name": "sys_target_platforms", "value": "pc,ps4,xboxone,linux" }
-	],
-	"console_commands": [
-		{ "name": "map", "value": "example" }
-	]
+	"console_variables": { "sys_target_platforms": "pc,ps4,xboxone,linux" },
+	"console_commands": { "map": "example" }
 }

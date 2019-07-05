@@ -116,8 +116,8 @@ CRenderElement::CRenderElement(bool bGlobal)
 		}
 	}
 
-	m_Flags = 0;
-	m_nFrameUpdated = 0xffff;
+	m_Flags = FCEF_NONE;
+	m_nFrameUpdated = -1;
 	m_CustomData = NULL;
 	m_nID = CRenderElement::s_nCounter++;
 	int i;
@@ -129,8 +129,8 @@ CRenderElement::CRenderElement()
 {
 	m_Type = eDATA_Unknown;
 
-	m_Flags = 0;
-	m_nFrameUpdated = 0xffff;
+	m_Flags = FCEF_NONE;
+	m_nFrameUpdated = -1;
 	m_CustomData = NULL;
 	m_NextGlobal = NULL;
 	m_PrevGlobal = NULL;
@@ -165,16 +165,12 @@ const char*        CRenderElement::mfTypeString()
 {
 	switch (m_Type)
 	{
-	case eDATA_Sky:
-		return "Sky";
 	case eDATA_ClientPoly:
 		return "ClientPoly";
 	case eDATA_Flare:
 		return "Flare";
 	case eDATA_Terrain:
 		return "Terrain";
-	case eDATA_SkyZone:
-		return "SkyZone";
 	case eDATA_Mesh:
 		return "Mesh";
 	case eDATA_LensOptics:
@@ -183,8 +179,6 @@ const char*        CRenderElement::mfTypeString()
 		return "OcclusionQuery";
 	case eDATA_Particle:
 		return "Particle";
-	case eDATA_HDRSky:
-		return "HDRSky";
 	case eDATA_FogVolume:
 		return "FogVolume";
 	case eDATA_WaterVolume:
@@ -211,14 +205,33 @@ CRenderElement* CRenderElement::mfCopyConstruct(void)
 	*re = *this;
 	return re;
 }
-void CRenderElement::mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
+
+void CRenderElement::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
 {
-	centr(0, 0, 0);
-}
-void CRenderElement::mfGetPlane(Plane& pl)
-{
-	pl.n = Vec3(0, 0, 1);
-	pl.d = 0;
+	AABB bb;
+	mfGetBBox(bb);
+
+	Pos = bb.GetCenter();
+	if (pObj)
+		Pos += pObj->GetMatrix().GetTranslation();
 }
 
-void* CRenderElement::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags) { return NULL; }
+void CRenderElement::mfGetPlane(Plane& pl)
+{
+	// TODO: plane orientation based on biggest bbox axis
+	AABB bb;
+	mfGetBBox(bb);
+
+	Vec3 p0 = bb.min;
+	Vec3 p1 = Vec3(bb.max.x, bb.min.y, bb.min.z);
+	Vec3 p2 = Vec3(bb.min.x, bb.max.y, bb.min.z);
+	pl.SetPlane(p2, p0, p1);
+}
+
+void CRenderElement::mfGetBBox(AABB& bb) const
+{
+	// Obj view max distance
+	bb = AABB { Vec3(-100000.f), Vec3(+100000.f) };
+}
+
+void* CRenderElement::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask) { return NULL; }

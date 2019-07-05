@@ -6,7 +6,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/ITimer.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/IStreamEngine.h>
 #include "System.h"
 #include "CrySizerImpl.h"
@@ -28,6 +28,12 @@ const char c_sys_budget_soundCPU[] = "sys_budget_soundCPU";
 const char c_sys_budget_numdrawcalls[] = "sys_budget_numdrawcalls";
 const char c_sys_budget_numpolys[] = "sys_budget_numpolys";
 const char c_sys_budget_streamingthroughput[] = "sys_budget_streamingthroughput";
+
+static int RoundToClosestMB(size_t memSize)
+{
+	// add half a MB and shift down to get closest MB
+	return((int)((memSize + (1 << 19)) >> 20));
+}
 
 CBudgetingSystem::CBudgetingSystem()
 	: m_pRenderer(0)
@@ -70,10 +76,8 @@ CBudgetingSystem::~CBudgetingSystem()
 
 void CBudgetingSystem::RegisterWithPerfHUD()
 {
-	ICryPerfHUDPtr pPerfHUD;
-	CryCreateClassInstanceForInterface(cryiidof<ICryPerfHUD>(), pPerfHUD);
-	minigui::IMiniGUIPtr pGUI;
-	CryCreateClassInstanceForInterface(cryiidof<minigui::IMiniGUI>(), pGUI);
+	ICryPerfHUD* pPerfHUD = gEnv->pSystem->GetPerfHUD();
+	minigui::IMiniGUI* pGUI = gEnv->pSystem->GetMiniGUI();
 
 	if (pPerfHUD && pGUI)
 	{

@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   MatMan.cpp
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description: Material Manager Implementation
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "MatMan.h"
 #include "3dEngine.h"
@@ -32,10 +21,8 @@ struct MaterialHelpers CMatMan::s_materialHelpers;
 
 #if !defined(_RELEASE)
 static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif";
-static const char* szGeomNotBreakable = "%ENGINE%/EngineAssets/TextureMsg/GeomNotBreakable.tif";
 #else
 static const char* szReplaceMe = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeRelease.tif";
-static const char* szGeomNotBreakable = "%ENGINE%/EngineAssets/TextureMsg/ReplaceMeRelease.tif";
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -294,9 +281,9 @@ IMaterial* CMatMan::LoadMaterial(const char* sMtlName, bool bMakeIfNotFound, boo
 	const char* name = UnifyName(sMtlName);
 	IMaterial* pMtl = 0;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Materials");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_MTL, EMemStatContextFlags::MSF_Instance, "%s", name);
-	LOADING_TIME_PROFILE_SECTION_ARGS(sMtlName); // Only profile actually loading of the material.
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Materials");
+	MEMSTAT_CONTEXT(EMemStatContextType::MTL, name);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sMtlName); // Only profile actually loading of the material.
 
 	CRY_DEFINE_ASSET_SCOPE("Material", sMtlName);
 
@@ -484,7 +471,7 @@ IMaterial* CMatMan::MakeMaterialFromXml(const char* sMtlName, const char* sMtlFi
 			}
 			else
 			{
-				// version doens't has string gen mask yet ? Remap flags if needed
+				// version doesn't has string gen mask yet ? Remap flags if needed
 				nShaderGenMask = GetRenderer()->EF_GetRemapedShaderMaskGen((const char*)shaderName, nShaderGenMask, ((mtlFlags & MTL_64BIT_SHADERGENMASK) != 0));
 			}
 		}
@@ -814,8 +801,13 @@ static void shGetVector4(const char* buf, float v[4])
 {
 	if (!buf)
 		return;
+
+#if defined(_DEBUG) && !defined(IGNORE_ASSERTS) // this is used in SkyLightNishita.cpp to redefine asserts
 	int res = sscanf(buf, "%f,%f,%f,%f", &v[0], &v[1], &v[2], &v[3]);
 	assert(res);
+#else
+	sscanf(buf, "%f,%f,%f,%f", &v[0], &v[1], &v[2], &v[3]);
+#endif
 }
 
 void CMatMan::ParsePublicParams(SInputShaderResources& sr, XmlNodeRef paramsNode)
@@ -843,7 +835,7 @@ void CMatMan::ParsePublicParams(SInputShaderResources& sr, XmlNodeRef paramsNode
 ISurfaceType* CMatMan::GetSurfaceTypeByName(const char* sSurfaceTypeName, const char* sWhy)
 {
 	return m_pSurfaceTypeManager->GetSurfaceTypeByName(sSurfaceTypeName, sWhy);
-};
+}
 
 //////////////////////////////////////////////////////////////////////////
 int CMatMan::GetSurfaceTypeIdByName(const char* sSurfaceTypeName, const char* sWhy)
@@ -852,7 +844,7 @@ int CMatMan::GetSurfaceTypeIdByName(const char* sSurfaceTypeName, const char* sW
 	if (pSurfaceType)
 		return pSurfaceType->GetId();
 	return 0;
-};
+}
 
 //////////////////////////////////////////////////////////////////////////
 IMaterial* CMatMan::GetDefaultLayersMaterial()
@@ -1005,7 +997,7 @@ void CMatMan::InitDefaults()
 		return;
 	m_bInitialized = true;
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SYNCHRONOUS_LOADING_TICK();
 
@@ -1080,7 +1072,7 @@ IMaterial* CMatMan::LoadCGFMaterial(const char* szMaterialName, const char* szCg
 	if (sMtlName.find('/') == stack_string::npos)
 	{
 		// If no slashes in the name assume it is in same folder as a cgf.
-		sMtlName = PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(stack_string(szCgfFilename))) + sMtlName;
+		sMtlName.Format("%s%s", PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(stack_string(szCgfFilename))).c_str(), szMaterialName);
 	}
 	else
 	{
@@ -1101,7 +1093,7 @@ static bool IsPureChild(IMaterial* pMtl)
 static bool IsMultiSubMaterial(IMaterial* pMtl)
 {
 	return (pMtl->GetFlags() & MTL_FLAG_MULTI_SUBMTL) ? true : false;
-};
+}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1125,7 +1117,7 @@ IMaterial* CMatMan::LoadMaterialFromXml(const char* sMtlName, XmlNodeRef mtlNode
 //////////////////////////////////////////////////////////////////////////
 void CMatMan::PreloadLevelMaterials()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	//bool bMtlfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( MTL_LEVEL_CACHE_PAK,"" );
 	//if (!bMtlfCacheExist)
@@ -1182,7 +1174,7 @@ void CMatMan::PreloadLevelMaterials()
 //////////////////////////////////////////////////////////////////////////
 void CMatMan::PreloadDecalMaterials()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	float fStartTime = GetCurAsyncTimeSec();
 
@@ -1290,7 +1282,6 @@ void CMatMan::FreeAllMaterials()
 	CMatInfo* pMtl = CMatInfo::get_intrusive_list_root();
 
 	// Shut down all materials
-	pMtl = CMatInfo::get_intrusive_list_root();
 	while (pMtl)
 	{
 		pMtl->ShutDown();

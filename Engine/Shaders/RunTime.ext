@@ -42,7 +42,9 @@ Property
   Precache = EyePS
   Precache = EyeVS  
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = ParticleVS
   Precache = ParticleHS
   Precache = ParticleDS
@@ -65,7 +67,6 @@ Property
 	Precache = ParticleImposterVS
 	Precache = ParticleImposterPS
 	Precache = VolumetricCloudsPS
-	Precache = SkyPassPS
 }
 
 Property
@@ -104,6 +105,7 @@ Property
   Precache = ShadowGenPS
   Precache = DebugPassPS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
 }
 
 Property
@@ -128,7 +130,9 @@ Property
   Precache = EyePS
   Precache = EyeVS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = ParticleVS
   Precache = ParticleHS
   Precache = ParticleDS
@@ -145,7 +149,6 @@ Property
   Precache = ParticleImposterVS
   Precache = ParticleImposterPS
   Precache = VolumetricCloudsPS
-	Precache = SkyPassPS
 }
 
 Property
@@ -162,7 +165,9 @@ Property
   Precache = SkinVS
   Precache = GeneralVS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = VegetationVS    
   Precache = ShadowVS
   Precache = DetailVS
@@ -191,7 +196,9 @@ Property
   Precache = VegetationPS
 	Precache = GeneralPS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = GlowVS
   Precache = GlowPS  
   Precache = MotionBlurVS
@@ -221,7 +228,9 @@ Property
   Precache = HairPS
   Precache = EyePS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = ParticlePS
+  Precache = DeferredPassPS
 }
 
 Property
@@ -247,6 +256,8 @@ Property
   Precache = CustomRenderDS
   Precache = CustomRenderVS
   Precache = CustomRenderPS
+  Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = SkinPS
   Precache = HDRPostProcessPS
   Precache = PostMotionBlurVS
@@ -281,11 +292,13 @@ Property
   Precache = ParticleDS
   Precache = WaterSurfacePS
 	
+	Precache = DownsampleDepthPS
 	Precache = TiledShadingCS
 	Precache = VolumeLightInjectionCS
 	Precache = ResolvePS
 	Precache = VolumetricCloudsPS
 	Precache = ReprojectCloudsPS
+	Precache = SkyPassPS
 
 	Precache = DebugPassVS
 	Precache = DebugPassPS
@@ -333,6 +346,7 @@ Property
 	Precache = VolumetricCloudsPS
 	Precache = ReprojectCloudsPS
 	Precache = CloudShadowGenCS
+	Precache = DownsampleDepthPS
 
 	Precache = DebugPassVS
 	Precache = DebugPassPS
@@ -365,8 +379,14 @@ Property
   Precache = WaterFogVolume_PS
 	
 	Precache = TiledShadingCS
-	Precache = CloudShadowGenCS
+	Precache = VolumeLightInjectionCS
+	Precache = RaymarchVolumetricFogCS
+	Precache = ReprojectVolumetricFogCS
+	Precache = BlurHorizontalInscatteringVolumeCS
+	Precache = BlurVerticalInscatteringVolumeCS
 	Precache = VolumetricCloudsPS
+	Precache = ReprojectCloudsPS
+	Precache = CloudShadowGenCS
 
 	Precache = WaterSurfaceVS
 	Precache = WaterSurfacePS
@@ -405,6 +425,7 @@ Property
 	Precache = GeneralPS
   Precache = ClothVS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
 //  Precache = VegetationPS  
   Precache = CustomRenderHS
   Precache = CustomRenderDS
@@ -447,7 +468,9 @@ Property
   Precache = EyePS
   Precache = EyeVS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = TerrainPS  
   Precache = TerrainVS  
   Precache = VoxTerrainPS
@@ -510,7 +533,9 @@ Property
   Precache = EyePS
   Precache = EyeVS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = TerrainPS  
   Precache = TerrainVS  
   Precache = VoxTerrainPS
@@ -552,6 +577,16 @@ Property
 
 Property
 {
+  Name = %_RT_SHADOW_DEPTH_OUTPUT_LINEAR
+  Mask = 0x100000
+
+  Precache = ShadowGenVS
+  Precache = ShadowGenPS
+  Precache = DeferredLightPassPS
+}
+
+Property
+{
   Name = %_RT_ENVIRONMENT_CUBEMAP
   Mask = 0x400000
   Precache = ParticlePS
@@ -562,6 +597,7 @@ Property
 	Precache = HairVS 
   Precache = EyeVS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = VegetationVS    
   Precache = ShadowVS
   Precache = ShadowGenVS  
@@ -582,6 +618,7 @@ Property
 	Precache = EyePS
 	Precache = HairPS
 	Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
 	Precache = GeneralPS
 	Precache = VegetationPS
 	Precache = SkinPS
@@ -744,6 +781,7 @@ Property
 	Precache = HairVS	
   Precache = EyeVS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = VegetationVS    
   Precache = ShadowVS
   Precache = ShadowGenVS
@@ -770,6 +808,7 @@ Property
 	Precache = HairVS	
   Precache = EyeVS
   Precache = GlassVS
+  Precache = MultiLayeredMaterialsVS
   Precache = VegetationVS    
   Precache = ShadowVS
   Precache = ShadowGenVS
@@ -953,19 +992,6 @@ Property
 
 Property
 {
-  Name = %_RT_SHADOW_MIXED_MAP_G16R16
-  Mask = 0x20000000000
-  Precache = ShadowPS
-  Precache = FogPassVolShadowsInterleavePassPS
-  Precache = ShadowVS
-  Precache = WaterFogVolume_PS
-
-  Precache = ShadowMaskGenVS
-  Precache = ShadowMaskGenPS
-}
-
-Property
-{
   Name = %_RT_MSAA_QUALITY  
   Mask = 0x40000000000
   
@@ -1033,6 +1059,7 @@ Property
   Precache = CustomRenderPS
   Precache = SkinPS
   Precache = GlassPS
+  Precache = MultiLayeredMaterialsPS
   Precache = DebugPassVS
   Precache = DebugPassPS
 	Precache = ZPS
@@ -1077,7 +1104,8 @@ Property
   Precache = VolumeLightInjectionCS
   Precache = VolumetricCloudsPS
   Precache = ReprojectCloudsPS
-	
+	Precache = DownsampleDepthPS
+
 	Precache = SkyPassPS
 	Precache = LightingMobilePS
 }
@@ -1151,6 +1179,7 @@ Property
 		Precache = HairVS	
 		Precache = EyeVS
 		Precache = GlassVS
+		Precache = MultiLayeredMaterialsVS
 		Precache = VegetationVS    
 		Precache = ShadowVS
 		Precache = ShadowGenVS
@@ -1166,13 +1195,6 @@ Property
 		Precache = DebugPassVS
 		Precache = CloakVS
 		Precache = DynamicOverlay
-
-		Precache = WaterSurfaceVS
-		Precache = WaterSurfacePS
-		Precache = WaterSurfaceHS
-		Precache = WaterSurfaceDS
-		Precache = WaterFogVolume_VS
-		Precache = WaterFogVolume_PS
 }
 
 Property

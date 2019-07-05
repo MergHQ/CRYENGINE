@@ -246,7 +246,7 @@ void CInteractiveActionController::OnLeave( CPlayer& player )
 
 void CInteractiveActionController::Update( CPlayer& player, float frameTime,  const SActorFrameMovementParams& movement )
 {
-	CRY_ASSERT_MESSAGE(m_state != eState_None, "Non valid state!");
+	CRY_ASSERT(m_state != eState_None, "Non valid state!");
 
 	m_runningTime += frameTime;
 

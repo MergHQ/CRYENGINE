@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_TAG_TRANSITION_PICKER_H__
-#define __MANN_TAG_TRANSITION_PICKER_H__
 #pragma once
 
 #include "MannequinBase.h"
@@ -43,6 +41,3 @@ private:
 	// "To" fragment ID selection
 	CComboBox m_toComboBox;
 };
-
-#endif
-

@@ -2,14 +2,13 @@
 
 #pragma once
 
-#include <CryMath/Cry_Vector2.h>
-#include <CryMath/Cry_Vector3.h>
-#include <CryMath/Cry_Matrix33.h>
+#include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
 #include <CryCore/smartptr.h>
+#include <CryCore/Containers/CryArray.h>
 #include <CryString/StringUtils.h>
 
-class ITexture;
+struct ITexture;
 
 enum FuncParamType
 {
@@ -22,7 +21,7 @@ class IFuncVariable : public _reference_target_t
 {
 public:
 	// <interfuscator:shuffle>
-	virtual ~IFuncVariable(){};
+	virtual ~IFuncVariable(){}
 
 	virtual float     GetMin() const = 0;
 	virtual float     GetMax() const = 0;
@@ -69,12 +68,12 @@ public:
 	float GetMin() const { return range.first; }
 	float GetMax() const { return range.second; }
 
-	MFPVariable(FuncParamType type, char* _humanname, char* _description, T* obj, OpticsBase_MFPtr setter, OpticsBase_MFPtr getter, float fMin = 0, float fMax = 1.0f)
+	MFPVariable(FuncParamType type, const char* _humanname, const char* _description, T* obj, OpticsBase_MFPtr setter, OpticsBase_MFPtr getter, float fMin = 0, float fMax = 1.0f)
 	{
 		Set(type, _humanname, _description, obj, setter, getter, fMin, fMax);
 	}
 
-	void Set(FuncParamType type, char* _humanname, char* _description, T* obj, OpticsBase_MFPtr setter, OpticsBase_MFPtr getter, float fMin = 0, float fMax = 1.0f)
+	void Set(FuncParamType type, const char* _humanname, const char* _description, T* obj, OpticsBase_MFPtr setter, OpticsBase_MFPtr getter, float fMin = 0, float fMax = 1.0f)
 	{
 		paramType = type;
 

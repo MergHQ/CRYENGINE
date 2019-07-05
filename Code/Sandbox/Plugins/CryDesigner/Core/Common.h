@@ -171,17 +171,17 @@ static const int kDefaultStepNumber = 16;
 
 BrushVec3        WorldPos2ScreenPos(const BrushVec3& worldPos);
 BrushVec3        ScreenPos2WorldPos(const BrushVec3& screenPos);
-void             DrawSpot(DisplayContext& dc, const BrushMatrix34& worldTM, const BrushVec3& pos, const ColorB& color, float fSize = 5.0f);
+void             DrawSpot(SDisplayContext& dc, const BrushMatrix34& worldTM, const BrushVec3& pos, const ColorB& color, float fSize = 5.0f);
 
 EOperationResult SubtractEdge3D(const BrushEdge3D& inEdge0, const BrushEdge3D& inEdge1, BrushEdge3D outEdge[2]);
 EOperationResult IntersectEdge3D(const BrushEdge3D& inEdge0, const BrushEdge3D& inEdge1, BrushEdge3D& outEdge);
 ESplitResult     Split(
-  const BrushPlane& plane,
-  const BrushLine& splitLine,
-  const std::vector<BrushEdge3D>& splitEdges,
-  const BrushEdge3D& inEdge,
-  BrushEdge3D& positiveEdge,
-  BrushEdge3D& negativeEdge);
+	const BrushPlane& plane,
+	const BrushLine& splitLine,
+	const std::vector<BrushEdge3D>& splitEdges,
+	const BrushEdge3D& inEdge,
+	BrushEdge3D& positiveEdge,
+	BrushEdge3D& negativeEdge);
 
 void  MakeSectorOfCircle(BrushFloat fRadius, const BrushVec2& vCenter, BrushFloat startRadian, BrushFloat diffRadian, int nSegmentCount, std::vector<BrushVec2>& outVertexList);
 float ComputeAnglePointedByPos(const BrushVec2& vCenter, const BrushVec2& vPointedPos);
@@ -218,7 +218,7 @@ bool                     DoesEquivalentExist(std::vector<BrushVec3>& vertexList,
 bool                     ComputePlane(const std::vector<Vertex>& vList, BrushPlane& outPlane);
 BrushVec3                ComputeNormal(const BrushVec3& v0, const BrushVec3& v1, const BrushVec3& v2);
 void                     GetLocalViewRay(const BrushMatrix34& worldTM, IDisplayViewport* view, CPoint point, BrushRay& outRay);
-void                     DrawPlane(DisplayContext& dc, const BrushVec3& vPivot, const BrushPlane& plane, float size = 12.0f);
+void                     DrawPlane(SDisplayContext& dc, const BrushVec3& vPivot, const BrushPlane& plane, float size = 12.0f);
 BrushFloat               SnapGrid(BrushFloat fValue);
 BrushFloat               Snap(BrushFloat pos);
 
@@ -242,9 +242,10 @@ bool                     HasVertexInVertexList(const std::vector<BrushVec3>& ver
 
 struct MainContext
 {
-	MainContext() : pObject(NULL), pCompiler(NULL), pModel(NULL) {}
-	MainContext(CBaseObject* _pObject, ModelCompiler* _pCompiler, Model* _pModel) : pObject(_pObject), pCompiler(_pCompiler), pModel(_pModel) {}
+	MainContext() : pObject(nullptr), pCompiler(nullptr), pModel(nullptr), pSelected(nullptr) {}
+	MainContext(CBaseObject* _pObject, ModelCompiler* _pCompiler, Model* _pModel) : pObject(_pObject), pCompiler(_pCompiler), pModel(_pModel), pSelected(nullptr) {}
 	bool IsValid() const { return pObject && pCompiler && pModel; }
+
 	CBaseObject*   pObject;
 	ModelCompiler* pCompiler;
 	Model*         pModel;
@@ -270,5 +271,4 @@ inline Serialization::RangeDecorator<float> STEPRISE_RANGE(float& value)  { retu
 
 #define CRYDESIGNER_USER_DIRECTORY "CryDesigner"
 #define SERIALIZATION_ENUM_LABEL(value, label) \
-  description.add(int(value), label, label);
-
+	description.add(int(value), label, label);

@@ -55,4 +55,3 @@ void SphereUnwrappingTool::Enter()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Sphere, eUVMappingToolGroup_Unwrapping, "Sphere", SphereUnwrappingTool,
                                     sphere_unwrapping, "runs sphere unwrapping tool", "uvmapping.sphere_unwrapping");
-

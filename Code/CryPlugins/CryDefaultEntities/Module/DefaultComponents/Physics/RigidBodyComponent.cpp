@@ -5,6 +5,7 @@
 #include "Vehicles/VehicleComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace Cry
 {
@@ -32,12 +33,14 @@ void CRigidBodyComponent::Register(Schematyc::CEnvRegistrationScope& componentSc
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::SetVelocity, "{FC7012F5-2FD2-4E06-BFA2-30A3C44C2AAB}"_cry_guid, "SetVelocity");
 		pFunction->SetDescription("Set Entity Velocity");
 		pFunction->BindInput(1, 'vel', "velocity");
+		pFunction->BindInput(2, 'part', "part id", "Physical part id; <0 to ignore and use default", -1);
 		componentScope.Register(pFunction);
 	}
 
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::GetVelocity, "{1E8C3D8F-404E-452D-B6BE-C5B8EF996FFC}"_cry_guid, "GetVelocity");
 		pFunction->SetDescription("Get Entity Velocity");
+		pFunction->BindInput(1, 'part', "part id", "Physical part id; <0 to ignore and use default", -1);
 		pFunction->BindOutput(0, 'vel', "velocity");
 		componentScope.Register(pFunction);
 	}
@@ -46,26 +49,31 @@ void CRigidBodyComponent::Register(Schematyc::CEnvRegistrationScope& componentSc
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::SetAngularVelocity, "{33590792-AD99-4C20-B4D9-DA7C4E40B255}"_cry_guid, "SetAngularVelocity");
 		pFunction->SetDescription("Set Entity Angular Velocity");
 		pFunction->BindInput(1, 'vel', "angular velocity");
+		pFunction->BindInput(2, 'part', "part id", "Physical part id; <0 to ignore and use default", -1);
 		componentScope.Register(pFunction);
 	}
 
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::GetAngularVelocity, "{AEEF2373-B1E3-4334-9D39-CB3376C3C6B3}"_cry_guid, "GetAngularVelocity");
 		pFunction->SetDescription("Get Entity Angular Velocity");
+		pFunction->BindInput(1, 'part', "part id", "Physical part id; <0 to ignore and use default", -1);
 		pFunction->BindOutput(0, 'vel', "angular velocity");
 		componentScope.Register(pFunction);
 	}
 
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::ApplyImpulse, "FB7197A9-9545-46BD-8748-1B5829CA3AFA"_cry_guid, "ApplyImpulse");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::ApplyImpulse, "{FB7197A9-9545-46BD-8748-1B5829CA3AFA}"_cry_guid, "ApplyImpulse");
 		pFunction->SetDescription("Applies an impulse to the physics object");
 		pFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
+		pFunction->BindInput(2, 'pt', "Point", "Application point in the world space; (0,0,0) to ignore the point and apply the impulse to the center of mass", Vec3(ZERO));
+		pFunction->BindInput(3, 'part', "Part Id", "Physical part id; <0 to ignore and use default", -1);
 		componentScope.Register(pFunction);
 	}
 	{
-		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::ApplyAngularImpulse, "22926748-513F-4566-AE40-455A51600A3D"_cry_guid, "ApplyAngularImpulse");
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CRigidBodyComponent::ApplyAngularImpulse, "{22926748-513F-4566-AE40-455A51600A3D}"_cry_guid, "ApplyAngularImpulse");
 		pFunction->SetDescription("Applies an angular impulse to the physics object");
 		pFunction->BindInput(1, 'for', "Force", "Force of the impulse", Vec3(ZERO));
+		pFunction->BindInput(2, 'part', "Part Id", "Physical part id; <0 to ignore and use default", -1);
 		componentScope.Register(pFunction);
 	}
 	// Signals
@@ -114,12 +122,21 @@ void CRigidBodyComponent::Physicalize()
 	physParams.nSlot = std::numeric_limits<int>::max();
 	m_pEntity->Physicalize(physParams);
 
+	pe_simulation_params simParams;
+	simParams.maxTimeStep = m_simulationParameters.maxTimeStep;
+	simParams.minEnergy = sqr(m_simulationParameters.sleepSpeed);
+	simParams.damping = m_simulationParameters.damping;
+	m_pEntity->GetPhysicalEntity()->SetParams(&simParams);
+
 	pe_params_buoyancy buoyancyParams;
 	buoyancyParams.waterDensity = m_buoyancyParameters.density;
 	buoyancyParams.waterResistance = m_buoyancyParameters.resistance;
 	buoyancyParams.waterDamping = m_buoyancyParameters.damping;
 	m_pEntity->GetPhysicalEntity()->SetParams(&buoyancyParams);
 
+	pe_action_awake aa;
+	aa.bAwake = m_isResting ? 0 : 1;
+	m_pEntity->GetPhysicalEntity()->Action(&aa);
 }
 
 void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
@@ -178,7 +195,7 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 			{
 				pe_action_awake pa;
 				pa.bAwake = !m_isResting;
-				int result = m_pEntity->GetPhysicalEntity()->Action(&pa);
+				m_pEntity->GetPhysicalEntity()->Action(&pa);
 			}
 		}
 		break;
@@ -187,12 +204,12 @@ void CRigidBodyComponent::ProcessEvent(const SEntityEvent& event)
 
 }
 
-uint64 CRigidBodyComponent::GetEventMask() const
+Cry::Entity::EventFlags CRigidBodyComponent::GetEventMask() const
 {
-	uint64 bitFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME);
+	Cry::Entity::EventFlags bitFlags = ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_START_GAME;
 	if (m_bSendCollisionSignal)
 	{
-		bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
+		bitFlags |= ENTITY_EVENT_COLLISION;
 	}
 
 	return bitFlags;

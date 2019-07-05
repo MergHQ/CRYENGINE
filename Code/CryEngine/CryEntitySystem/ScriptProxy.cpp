@@ -486,7 +486,7 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 		// Kill all timers.
 		{
 			// If state changed kill all old timers.
-			m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
+			KillAllTimers();
 			m_currentStateId = 0;
 		}
 		break;
@@ -531,19 +531,18 @@ void CEntityComponentLuaScript::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentLuaScript::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentLuaScript::GetEventMask() const
 {
-	uint64 eventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_INIT)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_TIMER) | ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) | ENTITY_EVENT_BIT(ENTITY_EVENT_ATTACH) | ENTITY_EVENT_BIT(ENTITY_EVENT_ATTACH_THIS)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_DETACH) | ENTITY_EVENT_BIT(ENTITY_EVENT_DETACH_THIS) | ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_MOVEINSIDEAREA)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVEAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERNEARAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVENEARAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_MOVENEARAREA)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_PHYS_BREAK) | ENTITY_EVENT_BIT(ENTITY_EVENT_AUDIO_TRIGGER_ENDED) | ENTITY_EVENT_BIT(ENTITY_EVENT_LEVEL_LOADED) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_LEVEL)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) | ENTITY_EVENT_BIT(ENTITY_EVENT_PRE_SERIALIZE) | ENTITY_EVENT_BIT(ENTITY_EVENT_POST_SERIALIZE) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE)
-		| ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM_FINISHED_EDITOR) | ENTITY_EVENT_BIT(ENTITY_EVENT_COLLISION);
+	Cry::Entity::EventFlags eventMask = ENTITY_EVENT_ANIM_EVENT | ENTITY_EVENT_DONE | ENTITY_EVENT_RESET | ENTITY_EVENT_INIT
+		| ENTITY_EVENT_ATTACH | ENTITY_EVENT_ATTACH_THIS | ENTITY_EVENT_DETACH | ENTITY_EVENT_DETACH_THIS | ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_MOVEINSIDEAREA
+		| ENTITY_EVENT_LEAVEAREA | ENTITY_EVENT_ENTERNEARAREA | ENTITY_EVENT_LEAVENEARAREA | ENTITY_EVENT_MOVENEARAREA
+		| ENTITY_EVENT_PHYS_BREAK | ENTITY_EVENT_AUDIO_TRIGGER_ENDED | ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_START_LEVEL
+		| ENTITY_EVENT_START_GAME | ENTITY_EVENT_PRE_SERIALIZE | ENTITY_EVENT_POST_SERIALIZE | ENTITY_EVENT_HIDE
+		| ENTITY_EVENT_UNHIDE | ENTITY_EVENT_XFORM_FINISHED_EDITOR | ENTITY_EVENT_COLLISION;
 
 	if (m_implementedUpdateFunction && m_isUpdateEnabled && (!m_pEntity->IsHidden() || (m_pEntity->GetFlags() & ENTITY_FLAG_UPDATE_HIDDEN) != 0))
 	{
-		eventMask |= ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE);
+		eventMask.Add(ENTITY_EVENT_UPDATE);
 	}
 
 	return eventMask;
@@ -575,7 +574,7 @@ bool CEntityComponentLuaScript::GotoState(int stateId)
 	m_pScript->CallStateFunction(CurrentState(), m_pThis.get(), ScriptState_OnEndState);
 
 	// If state changed kill all old timers.
-	m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
+	KillAllTimers();
 
 	SEntityEvent levent;
 	levent.event = ENTITY_EVENT_LEAVE_SCRIPT_STATE;
@@ -691,7 +690,7 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 
 	if (ser.GetSerializationTarget() != eST_Network)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Script proxy serialization");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Script proxy serialization");
 
 		if (NeedGameSerialize())
 		{
@@ -705,7 +704,7 @@ void CEntityComponentLuaScript::GameSerialize(TSerialize ser)
 				if (m_currentStateId != currStateId)
 				{
 					// If state changed kill all old timers.
-					m_pEntity->KillTimer(IEntity::KILL_ALL_TIMER);
+					KillAllTimers();
 					m_currentStateId = currStateId;
 				}
 				if (ser.IsReading())

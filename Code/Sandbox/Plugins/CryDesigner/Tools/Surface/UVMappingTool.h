@@ -109,4 +109,3 @@ private:
 	UVMappingParameter m_CopiedUVMappingParameter;
 };
 }
-

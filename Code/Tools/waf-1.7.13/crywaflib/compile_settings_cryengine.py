@@ -9,6 +9,7 @@ def init_compiler_settings(conf):
 	# Create empty env values to ensure appending always works
 	v['DEFINES'] = []
 	v['INCLUDES'] = []
+	v['SYSTEM_INCLUDES'] = []
 	v['CXXFLAGS'] = []
 	v['LIB'] = []
 	v['LIBPATH'] = []
@@ -28,7 +29,7 @@ def load_cryengine_common_settings(conf):
 	code_node = conf.srcnode.make_node('Code')
 	code_path = code_node.abspath()
 	code_path = code_path.replace('\\', '/')
-	v['DEFINES'] += [ 'CODE_BASE_FOLDER="' + code_path + '/"' ]
+	v['DEFINES'] += [ ('CODE_BASE_FOLDER="' + code_path + '/"').replace('\\', '/') ]
 	
 	# To allow pragma comment (lib, 'SDKs/...) uniformly, pass Code to the libpath
 	v['LIBPATH'] += [ conf.CreateRootRelativePath('Code') ]
@@ -112,13 +113,6 @@ def set_editor_module_flags(self, kw):
 def set_editor_flags(self, kw):
 
 	set_editor_module_flags(self, kw)
-	
-	kw['includes'] += [
-	self.CreateRootRelativePath('Code/Sandbox/EditorQt'),
-	self.CreateRootRelativePath('Code/Sandbox/EditorQt/Include')
-	]
-	
-	kw['defines'] += ['SANDBOX_EDITOR_IMPL'] #HACK temporary to achieve GetIEditor() returning IEditorImpl for sandbox only
 
 ###############################################################################
 @conf	
@@ -127,8 +121,7 @@ def set_rc_flags(self, kw):
 	kw['includes'] = [
 		'.',
 		self.CreateRootRelativePath('Code/CryEngine/CryCommon'),
-        self.CreateRootRelativePath('Code/CryEngine/CryCommon/3rdParty') ,
-		self.CreateRootRelativePath('Code/SDKs/boost'),
+        self.CreateRootRelativePath('Code/CryEngine/CryCommon/3rdParty'),
 		self.CreateRootRelativePath('Code/Sandbox/Plugins/EditorCommon'),
 	] + kw['includes']
 

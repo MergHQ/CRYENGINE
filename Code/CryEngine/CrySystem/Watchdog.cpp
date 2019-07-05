@@ -26,7 +26,7 @@ CWatchdogThread::CWatchdogThread(int timeOutSeconds)
 	CRY_ASSERT(timeOutSeconds > 0);
 	if (!gEnv->pThreadManager->SpawnThread(this, "Watch Dog"))
 	{
-		CRY_ASSERT_MESSAGE(false, "Error spawning \"Watch Dog\" thread.");
+		CRY_ASSERT(false, "Error spawning \"Watch Dog\" thread.");
 	}
 }
 

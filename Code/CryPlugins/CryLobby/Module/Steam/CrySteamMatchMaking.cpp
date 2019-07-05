@@ -256,7 +256,6 @@ ECryLobbyError CCrySteamMatchMaking::SessionCreate(uint32* users, int numUsers, 
 
 		if (error == eCLE_Success)
 		{
-			STask* pTask = &m_task[mmTaskID];
 			SSession* pSession = &m_sessions[h];
 
 			if (data->m_ranked)
@@ -343,7 +342,6 @@ ECryLobbyError CCrySteamMatchMaking::SessionUpdate(CrySessionHandle h, SCrySessi
 
 			if (error == eCLE_Success)
 			{
-				STask* task = &m_task[mmTaskID];
 				error = CreateTaskParam(mmTaskID, SESSION_UPDATE_PARAM_USER_DATA, data, numData, numData * sizeof(data[0]));
 
 				if (error == eCLE_Success)
@@ -393,8 +391,6 @@ ECryLobbyError CCrySteamMatchMaking::SessionUpdateSlots(CrySessionHandle h, uint
 
 			if (error == eCLE_Success)
 			{
-				STask* task = &m_task[mmTaskID];
-
 				CreateTaskParam(mmTaskID, SESSION_UPDATE_SLOTS_PARAM_NUM_PUBLIC, NULL, numPublic, 0);
 				CreateTaskParam(mmTaskID, SESSION_UPDATE_SLOTS_PARAM_NUM_PRIVATE, NULL, numPrivate, 0);
 				FROM_GAME_TO_LOBBY(&CCrySteamMatchMaking::StartTaskRunning, this, mmTaskID);
@@ -425,7 +421,6 @@ ECryLobbyError CCrySteamMatchMaking::SessionQuery(CrySessionHandle h, CryLobbyTa
 
 	if ((lsh < MAX_MATCHMAKING_SESSIONS) && (m_sessions[lsh].localFlags & CRYSESSION_LOCAL_FLAG_USED))
 	{
-		SSession* pSession = &m_sessions[lsh];
 		CryMatchMakingTaskID mmTaskID;
 
 		error = StartTask(eT_SessionQuery, false, &mmTaskID, pTaskID, lsh, (void*)pCB, pCBArg);
@@ -459,7 +454,6 @@ ECryLobbyError CCrySteamMatchMaking::SessionGetUsers(CrySessionHandle h, CryLobb
 
 	if ((lsh < MAX_MATCHMAKING_SESSIONS) && m_sessions[lsh].localFlags & CRYSESSION_LOCAL_FLAG_USED)
 	{
-		SSession* pSession = &m_sessions[lsh];
 		CryMatchMakingTaskID tid;
 
 		error = StartTask(eT_SessionGetUsers, false, &tid, pTaskID, lsh, pCB, pCBArg);
@@ -563,7 +557,6 @@ ECryLobbyError CCrySteamMatchMaking::SessionDelete(CrySessionHandle h, CryLobbyT
 
 	if ((lsh < MAX_MATCHMAKING_SESSIONS) && (m_sessions[lsh].localFlags & CRYSESSION_LOCAL_FLAG_USED))
 	{
-		SSession* pSession = &m_sessions[lsh];
 		CryMatchMakingTaskID mmTaskID;
 
 		error = StartTask(eT_SessionDelete, false, &mmTaskID, taskID, lsh, cb, cbArg);
@@ -598,8 +591,6 @@ ECryLobbyError CCrySteamMatchMaking::SessionSearch(uint32 user, SCrySessionSearc
 
 	if (error == eCLE_Success)
 	{
-		STask* pTask = &m_task[mmTaskID];
-
 		error = CreateTaskParam(mmTaskID, SESSION_SEARCH_PARAM_GAME_PARAM, param, 1, sizeof(SCrySessionSearchParam));
 
 		if (error == eCLE_Success)
@@ -1017,7 +1008,7 @@ ECryLobbyError CCrySteamMatchMaking::CreateSessionHandle(CryLobbySessionHandle* 
 
 uint64 CCrySteamMatchMaking::GetSIDFromSessionHandle(CryLobbySessionHandle h)
 {
-	CRY_ASSERT_MESSAGE((h < MAX_MATCHMAKING_SESSIONS) && (m_sessions[h].localFlags & CRYSESSION_LOCAL_FLAG_USED), "CCrySteamMatchMaking::GetSIDFromSessionHandle: invalid session handle");
+	CRY_ASSERT((h < MAX_MATCHMAKING_SESSIONS) && (m_sessions[h].localFlags & CRYSESSION_LOCAL_FLAG_USED), "CCrySteamMatchMaking::GetSIDFromSessionHandle: invalid session handle");
 	return m_sessions[h].m_id.m_steamID.ConvertToUint64();
 }
 

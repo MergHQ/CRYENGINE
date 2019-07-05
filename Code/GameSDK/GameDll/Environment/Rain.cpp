@@ -71,7 +71,7 @@ bool CRain::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& 
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CRain::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CRain::ReloadExtension not implemented");
 
 	return false;
 }
@@ -79,7 +79,7 @@ bool CRain::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& 
 //------------------------------------------------------------------------
 bool CRain::GetEntityPoolSignature(TSerialize signature)
 {
-	CRY_ASSERT_MESSAGE(false, "CRain::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CRain::GetEntityPoolSignature not implemented");
 
 	return true;
 }
@@ -153,9 +153,9 @@ void CRain::HandleEvent(const SGameObjectEvent& event)
 {
 }
 
-uint64 CRain::GetEventMask() const
+Cry::Entity::EventFlags CRain::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_HIDE | ENTITY_EVENT_DONE;
 }
 
 //------------------------------------------------------------------------
@@ -272,8 +272,6 @@ public:
 
 	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 	{
-		EFlowEvent eventType = event;
-
 		switch (event)
 		{
 		case eFE_Activate:

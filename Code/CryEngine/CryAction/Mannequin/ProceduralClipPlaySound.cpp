@@ -123,7 +123,7 @@ struct SAudioParams : public IProceduralParams
 	{
 		ar(Serialization::AudioTrigger<TProcClipString>(startTrigger), "StartTrigger", "Start Trigger");
 		ar(Serialization::AudioTrigger<TProcClipString>(stopTrigger), "StopTrigger", "Stop Trigger");
-		ar(Serialization::AudioRTPC<TProcClipString>(audioParameter), "AudioParameter", "Audio Parameter");
+		ar(Serialization::AudioParameter<TProcClipString>(audioParameter), "AudioParameter", "Audio Parameter");
 		ar(audioParameterValue, "AudioParameterValue", "Audio Parameter Value");
 		ar(audioOcclusionType, "OcclusionType", "Occlusion Type");
 		ar(Serialization::Decorators::JointName<SProcDataCRC>(attachmentJoint), "AttachmentJoint", "Joint Name");
@@ -217,7 +217,6 @@ public:
 
 		m_referenceJointID = -1;
 		bool const playFacial = params.playFacial;
-		bool const isVoice = playFacial || params.isVoice;
 
 		bool bIsSilentPlaybackMode = gEnv->IsEditor() && gEnv->pGameFramework->GetMannequinInterface().IsSilentPlaybackMode();
 
@@ -227,8 +226,6 @@ public:
 		{
 			m_referenceJointID = pCharacterInstance->GetIDefaultSkeleton().GetJointIDByCRC32(params.attachmentJoint.ToUInt32());
 		}
-
-		QuatT const soundOffset = GetBoneAbsLocationByID(m_referenceJointID);
 
 		if (!bIsSilentPlaybackMode)
 		{

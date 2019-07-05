@@ -2,10 +2,11 @@
 
 #include "StdAfx.h"
 #include "aibehavior.h"
-#include "Util\FileUtil.h"
+#include "IEditorImpl.h"
+
+#include <Util/FileUtil.h>
 #include <CryScriptSystem/IScriptSystem.h>
 
-//////////////////////////////////////////////////////////////////////////
 void CAIBehavior::ReloadScript()
 {
 	// Execute script file in script system.
@@ -15,18 +16,16 @@ void CAIBehavior::ReloadScript()
 	if (CFileUtil::CompileLuaFile(GetScript()))
 	{
 		IScriptSystem* scriptSystem = GetIEditorImpl()->GetSystem()->GetIScriptSystem();
-		// Script compiled succesfully.
+		// Script compiled successfully.
 		scriptSystem->ReloadScript(m_script);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAIBehavior::Edit()
 {
 	CFileUtil::EditTextFile(GetScript());
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAICharacter::ReloadScript()
 {
 	// Execute script file in script system.
@@ -36,14 +35,12 @@ void CAICharacter::ReloadScript()
 	if (CFileUtil::CompileLuaFile(GetScript()))
 	{
 		IScriptSystem* scriptSystem = GetIEditorImpl()->GetSystem()->GetIScriptSystem();
-		// Script compiled succesfully.
+		// Script compiled successfully.
 		scriptSystem->ReloadScript(m_script);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CAICharacter::Edit()
 {
 	CFileUtil::EditTextFile(GetScript());
 }
-

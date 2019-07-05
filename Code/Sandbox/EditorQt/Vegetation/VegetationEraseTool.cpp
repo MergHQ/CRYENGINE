@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include <StdAfx.h>
 #include "VegetationEraseTool.h"
+#include <IEditorClassFactory.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Class description.
@@ -11,11 +12,11 @@ class CVegetationEraseTool_ClassDesc : public IClassDesc
 	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_EDITTOOL; }
 
 	//! This method returns the human readable name of the class.
-	virtual const char* ClassName() { return "EditTool.VegetationErase"; };
+	virtual const char* ClassName() { return "EditTool.VegetationErase"; }
 
-	//! This method returns Category of this class, Category is specifing where this plugin class fits best in
+	//! This method returns Category of this class, Category is specifying where this plugin class fits best in
 	//! create panel.
-	virtual const char*    Category()        { return "Terrain"; };
+	virtual const char*    Category()        { return "Terrain"; }
 
 	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVegetationEraseTool); }
 };
@@ -42,4 +43,3 @@ QEditToolButtonPanel::SButtonInfo CVegetationEraseTool::CreateEraseToolButtonInf
 	eraseToolButtonInfo.icon = "icons:Vegetation/Vegetation_Erase.ico";
 	return eraseToolButtonInfo;
 }
-

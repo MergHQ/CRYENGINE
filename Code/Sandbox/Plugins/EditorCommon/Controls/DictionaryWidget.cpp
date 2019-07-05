@@ -10,49 +10,37 @@
 #include "ProxyModels/AttributeFilterProxyModel.h"
 #include "ProxyModels/ItemModelAttribute.h"
 #include "ProxyModels/MergingProxyModel.h"
-#include "EditorStyleHelper.h"
-#include "QFilteringPanel.h"
 
-#include <QStyledItemDelegate>
+#include <QFilteringPanel.h>
+#include <EditorStyleHelper.h>
+
 #include <QAbstractItemModel>
-
-#include <QHelpEvent>
+#include <QBoxLayout>
 #include <QEventLoop>
-
-const CItemModelAttribute* CAbstractDictionary::GetFilterAttribute() const
-{
-	static CItemModelAttribute filterAttribute(GetName(), eAttributeType_String);
-	return &filterAttribute;
-}
-
-const CItemModelAttribute* CAbstractDictionary::GetColumnAttribute(int32 index) const
-{
-	// TODO: This is just a hack until all users of the abstract dictionary implement this function
-	static CItemModelAttribute fallback("", eAttributeType_String);
-	QString& columnName = const_cast<QString&>(fallback.GetName());
-	columnName = GetColumnName(index);
-	return &fallback;
-	// ~TODO
-}
+#include <QHelpEvent>
+#include <QPainter>
+#include <QStyledItemDelegate>
+#include <QToolTip>
 
 class CDictionaryModel : public QAbstractItemModel
 {
 public:
 	enum ERole : int32
 	{
-		DisplayRole   = Qt::DisplayRole,
-		ToolTipRole   = Qt::ToolTipRole,
+		EditRole      = Qt::EditRole,
+		DisplayRole   = Qt::DisplayRole,		
 		IconRole      = Qt::DecorationRole,
 		ColorRole     = Qt::TextColorRole,
 		PointerRole   = Qt::UserRole + 0,
 		MergingRole   = Qt::UserRole + 1,
-		FilteringRole = Qt::UserRole + 2,
-
+		ToolTipRole   = Qt::UserRole + 2,
+		CategoryRole  = Qt::UserRole + 3,
 	};
 
 public:
 	CDictionaryModel(CAbstractDictionary& dictionary)
-		: m_dictionary(dictionary)
+		: QAbstractItemModel(&dictionary)
+		, m_dictionary(dictionary)
 	{
 	}
 
@@ -65,21 +53,18 @@ public:
 		return &m_dictionary;
 	}
 
-	void Initialize()
-	{
-		m_dictionary.signalDictionaryClear.Connect(this, &CDictionaryModel::Clear);
-	}
-
-	void ShutDown()
-	{
-		m_dictionary.signalDictionaryClear.DisconnectObject(this);
-	}
-
 	void Clear()
 	{
 		beginRemoveRows(QModelIndex(), 0, m_dictionary.GetNumEntries() - 1);
 		m_dictionary.ClearEntries();
 		endRemoveRows();
+	}
+
+	void Reset()
+	{
+		beginResetModel();
+		m_dictionary.ResetEntries();
+		endResetModel();
 	}
 
 	// QAbstractItemModel
@@ -97,6 +82,20 @@ public:
 				return pEntry->GetNumChildEntries();
 			}
 		}
+		return 0;
+	}
+
+	virtual Qt::ItemFlags flags(const QModelIndex &index) const override
+	{
+		if (index.isValid())
+		{
+			const CAbstractDictionaryEntry* pEntry = static_cast<const CAbstractDictionaryEntry*>(index.internalPointer());
+			if (pEntry)
+			{				
+				return (pEntry->IsEditable(index.column()) ? (Qt::ItemIsEditable | QAbstractItemModel::flags(index)) : QAbstractItemModel::flags(index));
+			}
+		}
+
 		return 0;
 	}
 
@@ -119,16 +118,17 @@ public:
 			{
 				switch (role)
 				{
+				case CDictionaryModel::EditRole:
 				case CDictionaryModel::DisplayRole:
 				case CDictionaryModel::MergingRole:
-				case CDictionaryModel::FilteringRole:
+				case CDictionaryModel::CategoryRole:
 					{
 						return QVariant::fromValue(pEntry->GetColumnValue(index.column()));
 					}
 					break;
 				case CDictionaryModel::ToolTipRole:
 					{
-						const QString text = pEntry->GetToolTip();
+						const QString text = pEntry->GetToolTip(index.column());
 						if (!text.isEmpty())
 						   return QVariant::fromValue(text);
 					}
@@ -162,6 +162,27 @@ public:
 			}
 		}
 		return QVariant();
+	}
+
+	virtual bool setData(const QModelIndex& index, const QVariant& value, int role) override
+	{
+		if (index.isValid())
+		{
+			CAbstractDictionaryEntry* pEntry = static_cast<CAbstractDictionaryEntry*>(index.internalPointer());
+			if (pEntry)
+			{
+				switch (role)
+				{
+					case CDictionaryModel::EditRole:
+					{
+						pEntry->SetColumnValue(index.column(), value);
+					}
+					break;
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 
 	virtual QModelIndex CDictionaryModel::index(int row, int column, const QModelIndex& parent) const override
@@ -251,91 +272,111 @@ private:
 	CAbstractDictionary& m_dictionary;
 };
 
-class CDictionaryFilterProxyModel : public QAttributeFilterProxyModel//public QDeepFilterProxyModel
+CDictionaryFilterProxyModel::CDictionaryFilterProxyModel(BehaviorFlags behavior, QObject* pParent, int role)
+	: QAttributeFilterProxyModel(behavior, pParent, role)
+	, m_sortingOrder(Qt::AscendingOrder)
 {
-	using QAttributeFilterProxyModel::QAttributeFilterProxyModel;
+}
 
-	// Ensures folders and entries are always grouped together in the sorting order.
-	bool lessThan(const QModelIndex& left, const QModelIndex& right) const override
-	{
-		CAbstractDictionaryEntry* pLeft = reinterpret_cast<CAbstractDictionaryEntry*>(left.data(CDictionaryModel::PointerRole).value<quintptr>());
-		CAbstractDictionaryEntry* pRight = reinterpret_cast<CAbstractDictionaryEntry*>(right.data(CDictionaryModel::PointerRole).value<quintptr>());
-		if (pLeft && pRight && pLeft->GetType() != pRight->GetType())
-		{
-			return pLeft->GetType() == CAbstractDictionaryEntry::Type_Folder;
-		}
-		else
-			return QDeepFilterProxyModel::lessThan(left, right);
-	}
-};
-
-class CDictionaryDelegate : public QStyledItemDelegate
+void CDictionaryFilterProxyModel::sort(int column, Qt::SortOrder order)
 {
-public:
-	CDictionaryDelegate(QObject* pParent = nullptr)
-		: QStyledItemDelegate(pParent)
-	{
-		m_pLabel = new QLabel();
-		m_pLabel->setWordWrap(true);
-		m_pToolTip = new QPopupWidget("DictionaryToolTip ", m_pLabel);
-		m_pToolTip->setAttribute(Qt::WA_ShowWithoutActivating);
-	}
+	m_sortingOrder = order;
+	QDeepFilterProxyModel::sort(column, order);
+}
 
-	virtual bool helpEvent(QHelpEvent* pEvent, QAbstractItemView* pView, const QStyleOptionViewItem& option, const QModelIndex& index) override
-	{
-		QString description = index.data(CDictionaryModel::ToolTipRole).value<QString>();
-		if (!description.isEmpty())
-		{
-			if (m_currentDisplayedIndex != index)
-			{
-				m_pLabel->setText(description);
+bool CDictionaryFilterProxyModel::lessThan(const QModelIndex& left, const QModelIndex& right) const
+{
+	return m_sortingFunc(left, right);
+}
 
-				if (m_pToolTip->isHidden())
-					m_pToolTip->ShowAt(pEvent->globalPos());
-				else
-					m_pToolTip->move(pEvent->globalPos());
-			}
-			else if (m_pToolTip->isHidden())
-				m_pToolTip->ShowAt(pEvent->globalPos());
+void CDictionaryFilterProxyModel::SetupSortingFunc(const CSortingFunc& sortingFunc)
+{
+	m_sortingFunc = sortingFunc;
+}
 
-			m_currentDisplayedIndex = index;
+void CDictionaryFilterProxyModel::RestoreDefaultSortingFunc()
+{
+	m_sortingFunc = std::bind(&CDictionaryFilterProxyModel::DefaultSortingFunc, this, std::placeholders::_1, std::placeholders::_2);
+}
 
-			return true;
-		}
+bool CDictionaryFilterProxyModel::DefaultSortingFunc(const QModelIndex& left, const QModelIndex& right)
+{
+	CAbstractDictionaryEntry* pLeft = reinterpret_cast<CAbstractDictionaryEntry*>(left.data(CDictionaryModel::PointerRole).value<quintptr>());
+	CAbstractDictionaryEntry* pRight = reinterpret_cast<CAbstractDictionaryEntry*>(right.data(CDictionaryModel::PointerRole).value<quintptr>());
 
-		m_pToolTip->hide();
-		return false;
-	}
+	if (pLeft && !pLeft->IsSortable())
+		return m_sortingOrder = Qt::AscendingOrder;
 
-private:
-	QModelIndex   m_currentDisplayedIndex;
-	QPopupWidget* m_pToolTip;
-	QLabel*       m_pLabel;
-};
+	if (pRight && !pRight->IsSortable())
+		return m_sortingOrder != Qt::AscendingOrder;
+
+	if (pLeft && pRight && pLeft->GetType() != pRight->GetType())
+		return pLeft->GetType() == CAbstractDictionaryEntry::Type_Folder;
+
+	return QDeepFilterProxyModel::lessThan(left, right);
+}
+
+
+
+CAbstractDictionary::CAbstractDictionary()
+	: m_pDictionaryModel(new CDictionaryModel(*this))
+{
+}
+
+CAbstractDictionary::~CAbstractDictionary()
+{	
+}
 
 void CAbstractDictionary::Clear()
 {
-	signalDictionaryClear();
+	m_pDictionaryModel->Clear();
 }
+
+void CAbstractDictionary::Reset()
+{
+	m_pDictionaryModel->Reset();
+}
+
+const CItemModelAttribute* CAbstractDictionary::GetFilterAttribute() const
+{
+	static CItemModelAttribute filterAttribute(GetName(), &Attributes::s_stringAttributeType);
+	return &filterAttribute;
+}
+
+const CItemModelAttribute* CAbstractDictionary::GetColumnAttribute(int32 index) const
+{
+	static CItemModelAttribute fallback("", &Attributes::s_stringAttributeType);
+
+	QString& columnName = const_cast<QString&>(fallback.GetName());
+	columnName = GetColumnName(index);
+
+	return &fallback;
+}
+
+CDictionaryModel* CAbstractDictionary::GetDictionaryModel() const
+{
+	return m_pDictionaryModel;
+}
+
 
 CDictionaryWidget::CDictionaryWidget(QWidget* pParent, QFilteringPanel* pFilteringPanel)
 	: m_pFilterProxy(nullptr)
 	, m_pFilteringPanel(pFilteringPanel)
 	, m_pMergingModel(new CMergingProxyModel(this))
-	, m_pTreeView(new QAdvancedTreeView(static_cast<QAdvancedTreeView::Behavior>(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset | QAdvancedTreeView::UseItemModelAttribute)))
+	, m_pTreeView(new QDictionaryTreeView(this, static_cast<QAdvancedTreeView::Behavior>(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset | QAdvancedTreeView::UseItemModelAttribute)))
 {
 	m_pFilter = pFilteringPanel ? pFilteringPanel->GetSearchBox() : new QSearchBox();
 
 	m_pFilter->EnableContinuousSearch(true);
 	m_pFilter->setPlaceholderText("Search");
-	m_pFilter->signalOnFiltered.Connect(this, &CDictionaryWidget::OnFiltered);
+	m_pFilter->signalOnSearch.Connect(this, &CDictionaryWidget::OnFiltered);
 
 	m_pTreeView->setSelectionMode(QAbstractItemView::NoSelection);
 	m_pTreeView->setHeaderHidden(true);
 	m_pTreeView->setItemsExpandable(true);
 	m_pTreeView->setRootIsDecorated(true);
 	m_pTreeView->setMouseTracking(true);
-	m_pTreeView->setItemDelegate(new CDictionaryDelegate());
+	m_pTreeView->setSortingEnabled(true);
 
 	QObject::connect(m_pTreeView, &QTreeView::clicked, this, &CDictionaryWidget::OnClicked);
 	QObject::connect(m_pTreeView, &QTreeView::doubleClicked, this, &CDictionaryWidget::OnDoubleClicked);
@@ -368,40 +409,50 @@ CDictionaryWidget::~CDictionaryWidget()
 
 	if (m_pFilterProxy)
 		m_pFilterProxy->deleteLater();
-
-	for (auto it : m_modelMap)
-		it->deleteLater();
 }
 
 CAbstractDictionary* CDictionaryWidget::GetDictionary(const QString& name) const
 {
 	CAbstractDictionary* pDictionary = nullptr;
 
-	if (m_modelMap.contains(name))
-		pDictionary = static_cast<CDictionaryModel*>(m_modelMap.value(name))->GetDictionary();
+	auto models = m_pMergingModel->GetSourceModels().toStdVector();
+	auto it = std::find_if(models.begin(), models.end(), [name](const QAbstractItemModel* model)
+	{
+		return static_cast<const CDictionaryModel*>(model)->GetDictionary()->GetName() == name;
+	});
+
+	if (it != models.end())
+	{
+		pDictionary = static_cast<const CDictionaryModel*>(*it)->GetDictionary();
+	}
 
 	return pDictionary;
 }
 
 void CDictionaryWidget::AddDictionary(CAbstractDictionary& newDictionary)
 {
-	RemoveDictionary(newDictionary.GetName());
+	auto       models             = m_pMergingModel->GetSourceModels().toStdVector();
+	const bool isDictAlreadyAdded = std::find(models.begin(), models.end(), newDictionary.GetDictionaryModel()) != models.end();
 
-	CDictionaryModel* pNewModel = new CDictionaryModel(newDictionary);
-	pNewModel->Initialize();
+	CRY_ASSERT_MESSAGE(!isDictAlreadyAdded, "Dictionary was already added before.");
+	if (isDictAlreadyAdded)
+	{
+		return;
+	}
 
-	m_modelMap.insert(newDictionary.GetName(), pNewModel);
+	std::vector<CItemModelAttribute*> columns;	
+
+	models.push_back(newDictionary.GetDictionaryModel());
+	GatherItemModelAttributes(columns, models);
 
 	if (m_pFilterProxy)
 		m_pFilterProxy->deleteLater();
 
-	std::vector<CItemModelAttribute*> columns;
-	GatherItemModelAttributes(columns);
-
 	m_pMergingModel->SetHeaderDataCallbacks(columns.size(), std::bind(&CDictionaryWidget::GeneralHeaderDataCallback, this, columns, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), CDictionaryModel::MergingRole);
-	m_pMergingModel->MountAppend(pNewModel);
+	m_pMergingModel->MountAppend(newDictionary.GetDictionaryModel());
 
-	m_pFilterProxy = new CDictionaryFilterProxyModel(static_cast<CDictionaryFilterProxyModel::BehaviorFlags>(CDictionaryFilterProxyModel::AcceptIfChildMatches | CDictionaryFilterProxyModel::AcceptIfParentMatches), this, CDictionaryModel::FilteringRole);
+	m_pFilterProxy = new CDictionaryFilterProxyModel(static_cast<CDictionaryFilterProxyModel::BehaviorFlags>(CDictionaryFilterProxyModel::AcceptIfChildMatches | CDictionaryFilterProxyModel::AcceptIfParentMatches), this, CDictionaryModel::CategoryRole);
+	m_pFilterProxy->RestoreDefaultSortingFunc();
 	m_pFilterProxy->setSourceModel(m_pMergingModel);
 
 	if (m_pFilteringPanel)
@@ -418,52 +469,49 @@ void CDictionaryWidget::AddDictionary(CAbstractDictionary& newDictionary)
 	if (sortColumn >= 0)
 	{
 		m_pTreeView->setSortingEnabled(true);
-		m_pTreeView->sortByColumn(sortColumn, Qt::SortOrder::AscendingOrder);
 	}
 	else
 	{
 		m_pTreeView->setSortingEnabled(false);
 	}
+
+	m_pFilterProxy->sort(0, Qt::SortOrder::AscendingOrder);
+
+	const size_t columnCount = columns.size();
+	for (size_t i = 0; i < columnCount; i++)
+	{
+		m_pTreeView->resizeColumnToContents(i);
+	}
 }
 
-void CDictionaryWidget::RemoveDictionary(const QString& name)
+void CDictionaryWidget::RemoveDictionary(CAbstractDictionary& dictionary)
 {
-	CAbstractDictionary* pDictionary = GetDictionary(name);
-	if (pDictionary)
-	{
-		CDictionaryModel* pModel = static_cast<CDictionaryModel*>(m_modelMap[name]);
-
-		m_pMergingModel->Unmount(pModel);
-
-		m_modelMap.erase(m_modelMap.find(name));
-
-		pModel->ShutDown();
-		pModel->deleteLater();
-	}
+	m_pMergingModel->Unmount(dictionary.GetDictionaryModel());
 }
 
 void CDictionaryWidget::RemoveAllDictionaries()
 {
-	for (auto it = m_modelMap.begin(); it != m_modelMap.end(); it++)
-	{
-		CDictionaryModel* pModel = static_cast<CDictionaryModel*>(it.value());
-		m_pMergingModel->Unmount(pModel);
-
-		m_modelMap.erase(it);
-
-		pModel->ShutDown();
-		pModel->deleteLater();
-	}
+	m_pMergingModel->UnmountAll();
 }
 
-void CDictionaryWidget::ShowHeader(bool flag)
+void CDictionaryWidget::ShowHeader(bool isShown)
 {
-	m_pTreeView->setHeaderHidden(!flag);
+	m_pTreeView->setHeaderHidden(!isShown);
 }
 
 void CDictionaryWidget::SetFilterText(const QString& filterText)
 {
 	m_pFilter->setText(filterText);
+}
+
+QDictionaryTreeView* CDictionaryWidget::GetTreeView() const
+{
+	return m_pTreeView;
+}
+
+CDictionaryFilterProxyModel* CDictionaryWidget::GetFilterProxy() const
+{
+	return m_pFilterProxy;
 }
 
 void CDictionaryWidget::OnClicked(const QModelIndex& index)
@@ -483,6 +531,19 @@ void CDictionaryWidget::OnClicked(const QModelIndex& index)
 			}
 		}
 	}
+}
+
+void CDictionaryWidget::RemountDictionaries()
+{
+	//for (auto model : m_modelMap)
+	//{
+	//	m_pMergingModel->Unmount(model);
+	//}
+
+	//for (auto model : m_modelMap)
+	//{
+	//	m_pMergingModel->MountAppend(model);
+	//}
 }
 
 void CDictionaryWidget::OnDoubleClicked(const QModelIndex& index)
@@ -510,12 +571,12 @@ void CDictionaryWidget::OnFiltered()
 	}
 }
 
-void CDictionaryWidget::GatherItemModelAttributes(std::vector<CItemModelAttribute*>& columns)
+void CDictionaryWidget::GatherItemModelAttributes(std::vector<CItemModelAttribute*>& columns, std::vector<const QAbstractItemModel*>& models)
 {
-	for (auto it : m_modelMap)
+	for (auto it : models)
 	{
-		CDictionaryModel*    model = static_cast<CDictionaryModel*>(it);
-		CAbstractDictionary* dictionary = model->GetDictionary();
+		const CDictionaryModel* model = static_cast<const CDictionaryModel*>(it);
+		CAbstractDictionary*    dictionary = model->GetDictionary();
 
 		size_t count = dictionary->GetNumColumns();
 		for (size_t i = 0; i < count; i++)
@@ -545,7 +606,7 @@ QVariant CDictionaryWidget::GeneralHeaderDataCallback(std::vector<CItemModelAttr
 		{
 			return pAttribute->GetName();
 		}
-		else if (role == CDictionaryModel::FilteringRole)//&& pAttribute->GetVisibility() == CItemModelAttribute::AlwaysHidden)
+		else if (role == CDictionaryModel::CategoryRole)
 		{
 			return QVariant::fromValue(const_cast<CItemModelAttribute*>(pAttribute));
 		}
@@ -595,7 +656,10 @@ CModalPopupDictionary::CModalPopupDictionary(QString name, CAbstractDictionary& 
 
 CModalPopupDictionary::~CModalPopupDictionary()
 {
-	m_pDictionaryWidget->RemoveDictionary(m_dictName);
+	CAbstractDictionary* abstractDictionary = m_pDictionaryWidget->GetDictionary(m_dictName);
+	CRY_ASSERT(abstractDictionary);
+
+	m_pDictionaryWidget->RemoveDictionary(*abstractDictionary);
 	m_pPopupWidget->deleteLater();
 	delete m_pEventLoop;
 }
@@ -623,3 +687,62 @@ void CModalPopupDictionary::OnAborted()
 		m_pEventLoop->exit();
 }
 
+QDictionaryTreeView::QDictionaryTreeView(CDictionaryWidget* pWidget, BehaviorFlags flags, QWidget* pParent)
+	: QAdvancedTreeView(flags, pParent)
+	, m_pWidget(pWidget)
+{
+	CRY_ASSERT(m_pWidget);
+}
+
+QDictionaryTreeView::~QDictionaryTreeView()
+{
+}
+
+void QDictionaryTreeView::SetSeparator(QModelIndex index)
+{
+	m_index = index;
+}
+
+void QDictionaryTreeView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+	QAdvancedTreeView::drawRow(painter, option, index);
+
+	if (m_index.isValid() && (m_index == index))
+	{
+		painter->setPen(QColor(0x66, 0x66, 0x66));
+		painter->drawLine(0, index.row()*rowHeight(index), viewport()->size().width(), index.row()*rowHeight(index));
+	}
+}
+
+void QDictionaryTreeView::mouseMoveEvent(QMouseEvent* pEvent)
+{
+	QAdvancedTreeView::mouseMoveEvent(pEvent);
+
+	QModelIndex index = indexAt(pEvent->pos());
+	if (index.isValid())
+	{
+		QString text = model()->data(index, CDictionaryModel::ToolTipRole).value<QString>();
+		if (text.size())
+		{
+			QToolTip::showText(pEvent->globalPos(), text);
+		}
+		else
+		{
+			QToolTip::hideText();
+		}
+	}
+	else
+	{
+		QToolTip::hideText();
+	}
+}
+
+void QDictionaryTreeView::mouseReleaseEvent(QMouseEvent* pEvent)
+{
+	QTreeView::mouseReleaseEvent(pEvent);
+
+	if (pEvent->button() == Qt::RightButton)
+	{		
+		signalMouseRightButton(indexAt(pEvent->localPos().toPoint()), pEvent->screenPos().toPoint());
+	}
+}

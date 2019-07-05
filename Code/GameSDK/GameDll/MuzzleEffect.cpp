@@ -5,6 +5,7 @@
 #include "Weapon.h"
 #include "FireMode.h"
 #include "FireModeParams.h"
+#include "GameCVars.h"
 
 
 namespace
@@ -176,7 +177,7 @@ void CMuzzleEffect::MuzzleBeamEffect(bool attach, CFireMode* pFireMode)
 
 	if (attach)
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "CMuzzleEffect::MuzzleBeamEffect() Attach Effect");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "CMuzzleEffect::MuzzleBeamEffect() Attach Effect");
 
 		const CItem::SStats &stats = pWeapon->GetStats();
 
@@ -205,7 +206,7 @@ void CMuzzleEffect::MuzzleBeamEffect(bool attach, CFireMode* pFireMode)
 	}
 	else
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "CMuzzleEffect::MuzzleBeamEffect() Detach Effect");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "CMuzzleEffect::MuzzleBeamEffect() Detach Effect");
 		pWeapon->DetachEffect(m_beamFxId[0]);
 		pWeapon->DetachEffect(m_beamFxId[1]);
 		m_beamFxId[0] = m_beamFxId[1] = 0;
@@ -220,7 +221,6 @@ void CMuzzleEffect::AttachEmitters(CFireMode* pFireMode, int barrel)
 
 	CWeapon* pWeapon = pFireMode->GetWeapon();
 	const SEffectParams& muzzleFlash = GetMuzzleFlashParams(pFireMode);
-	const SEffectParams& muzzleBeam = GetMuzzleBeamParams(pFireMode);
 
 	if (m_mfIds.empty())
 		return;

@@ -14,6 +14,8 @@ History:
 #include "Utility/SingleAllocTextBlock.h"
 #include "GameRulesTypes.h"
 
+struct IConsoleCmdArgs;
+
 #define INVALID_ANNOUNCEMENT_ID (-1)
 
 struct SAnnouncementDef

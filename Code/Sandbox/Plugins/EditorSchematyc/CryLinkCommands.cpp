@@ -4,6 +4,7 @@
 #include "CryLinkCommands.h"
 
 #include "MainWindow.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace Schematyc
 {
@@ -74,4 +75,3 @@ CCryLinkCommands& CCryLinkCommands::GetInstance()
 
 CCryLinkCommands CCryLinkCommands::ms_instance;
 } // Schematyc
-

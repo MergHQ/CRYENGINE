@@ -1,11 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __ENGINETERRAINMODIFICATIONS_H__
-#define __ENGINETERRAINMODIFICATIONS_H__
-
 #pragma once
 
-#include <CryNetwork/ISerialize.h>            // TSerialize
+#include <CryNetwork/ISerialize.h>
 
 // helper class to serialize (load/save) terrain heighmap changes and limit the modification
 // also to remove some vegetation for the affected area
@@ -40,7 +37,7 @@ private: // -------------------------------------------------------------------
 
 		// constructor
 		STerrainMod(const Vec3& vPos, const float fRadius, const float fHeight)
-			: m_vPos(vPos), m_fRadius(fRadius), m_fHeight(fHeight)
+			: m_vPos(vPos), m_fHeight(fHeight), m_fRadius(fRadius)
 		{
 		}
 
@@ -68,5 +65,3 @@ private: // -------------------------------------------------------------------
 	// O(n), n=registered modifications and that should not be a huge number but that might need improvement
 	float ComputeMaxDepthAt(const float fX, const float fY, const uint32 dwCheckExistingMods) const;
 };
-
-#endif // __ENGINETERRAINMODIFICATIONS_H__

@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   Shader.h : Shaders declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef __SHADER_H__
-#define __SHADER_H__
+#pragma once
 
 #include "../Defs.h"
 
@@ -28,7 +19,7 @@
 
 // bump this value up if you want to invalidate shader cache (e.g. changed some code or .ext file)
 // #### VIP NOTE ####: DON'T USE MORE THAN ONE DECIMAL PLACE!!!! else it doesn't work...
-#define FX_CACHE_VER     0.3
+#define FX_CACHE_VER     1.0
 #define FX_SER_CACHE_VER 1.2    // Shader serialization version (FX_CACHE_VER + FX_SER_CACHE_VER)
 
 // Maximum 1 digit here
@@ -250,10 +241,7 @@ struct SFXParam
 		m_nRegister[4] = 10000;
 		m_nRegister[5] = 10000;
 	}
-	~SFXParam()
-	{
-		int nnn = 0;
-	}
+	~SFXParam() = default;
 	uint32 GetComponent(EHWShaderClass eSHClass);
 	void   GetParamComp(uint32 nOffset, CryFixedStringT<128>& param);
 	uint32 GetParamFlags() { return m_nFlags; }
@@ -318,12 +306,12 @@ enum ETexFilter
 
 //=============================================================================
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( push )               //AMD Port
 	#pragma warning( disable : 4267 )
 #endif
 
-#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+#if CRY_PLATFORM_WINDOWS
 	#pragma warning( pop )                //AMD Port
 #endif
 
@@ -536,7 +524,6 @@ struct SOptimiseStats
 	int nUniqueEntries;
 	int nSizeUncompressed;
 	int nSizeCompressed;
-	int nTokenDataSize;
 	int nDirDataSize;
 	SOptimiseStats()
 	{
@@ -544,7 +531,6 @@ struct SOptimiseStats
 		nUniqueEntries = 0;
 		nSizeUncompressed = 0;
 		nSizeCompressed = 0;
-		nTokenDataSize = 0;
 		nDirDataSize = 0;
 	}
 };
@@ -596,7 +582,7 @@ enum EHWSRMaskBit
 
 	HWSR_DECAL_TEXGEN_2D,
 
-	HWSR_SHADOW_MIXED_MAP_G16R16,
+	HWSR_SHADOW_DEPTH_OUTPUT_LINEAR,
 	HWSR_HW_PCF_COMPARE,
 	HWSR_SHADOW_JITTERING,
 	HWSR_POINT_LIGHT,
@@ -846,7 +832,6 @@ public:
 	virtual const char* mfGetEntryName() = 0;
 	virtual void        mfUpdatePreprocessFlags(SShaderTechnique* pTech) = 0;
 	virtual bool        mfFlushCacheFile() = 0;
-	bool                mfWriteoutTokensToCache();
 
 	// Used to precache shader combination during shader cache generation.
 	virtual bool        PrecacheShader(CShader* pSH, const SShaderCombIdent &cacheIdent,uint32 nFlags) = 0;
@@ -874,7 +859,6 @@ public:
 	static byte*            mfIgnoreRemapsFromCache(int nRemaps, byte* pP);
 	static byte*            mfIgnoreBindsFromCache(int nParams, byte* pP);
 
-	static void             mfValidateTokenData(CResFile* pRF);
 	static void             mfValidateDirEntries(CResFile* pRF);
 
 	// Import/Export
@@ -965,8 +949,8 @@ public:
 
 	CLightStyle() : m_Color(Col_White),
 		m_vPosOffset(ZERO),
-		m_LastTime(0.0f),
 		m_TimeIncr(60.0f),
+		m_LastTime(0.0f),
 		m_bRandColor(0),
 		m_bRandIntensity(0),
 		m_bRandPosOffset(0),
@@ -1229,12 +1213,12 @@ class CShader : public IShader, public CBaseResource
 public:
 	string                    m_NameFile; // } FIXME: This fields order is very important
 	string                    m_NameShader;
+	uint32                    m_NameShaderICRC;
 	EShaderDrawType           m_eSHDType; // } Check CShader::operator = in ShaderCore.cpp for more info
 
 	uint32                    m_Flags;  // Different flags EF_  (see IShader.h)
 	uint32                    m_Flags2; // Different flags EF2_ (see IShader.h)
-	uint32                    m_nMDV;   // Vertex modificator flags
-	uint32                    m_NameShaderICRC;
+	EVertexModifier           m_nMDV;   // Vertex modificator flags
 
 	InputLayoutHandle         m_eVertexFormat; // Base vertex format for the shader (see VertexFormats.h)
 	ECull                     m_eCull;         // Global culling type
@@ -1264,11 +1248,11 @@ public:
 
 	void       mfFree();
 	CShader()
-		: m_eSHDType(eSHDT_General)
+		: m_NameShaderICRC(0)
+		, m_eSHDType(eSHDT_General)
 		, m_Flags(0)
 		, m_Flags2(0)
-		, m_nMDV(0)
-		, m_NameShaderICRC(0)
+		, m_nMDV(MDV_NONE)
 		, m_eVertexFormat(EDefaultInputLayouts::P3F_C4B_T2F)
 		, m_eCull((ECull) - 1)
 		, m_nMaskCB(0)
@@ -1377,7 +1361,7 @@ public:
 	virtual DynArrayRef<SShaderParam>& GetPublicParams();
 	virtual void                       CopyPublicParamsTo(SInputShaderResources& copyToResource);
 	virtual EShaderType                GetShaderType()        { return m_eShaderType; }
-	virtual uint32                     GetVertexModificator() { return m_nMDV; }
+	virtual EVertexModifier            GetVertexModificator() { return m_nMDV; }
 
 	SShaderTechnique* mfFindTechnique(const CCryNameTSCRC& name)
 	{
@@ -1429,7 +1413,6 @@ public:
 
 inline SShaderTechnique* SShaderItem::GetTechnique() const
 {
-	SShaderTechnique* pTech = NULL;
 	int nTech = m_nTechnique;
 	if (nTech < 0)
 		nTech = 0;
@@ -1445,7 +1428,3 @@ inline SShaderTechnique* SShaderItem::GetTechnique() const
 	}
 	return NULL;
 }
-
-//////////////////////////////////////////////////////////////////////////
-
-#endif

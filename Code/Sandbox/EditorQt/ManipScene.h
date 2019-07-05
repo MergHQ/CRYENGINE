@@ -20,7 +20,7 @@ class CAxisHelper;
 namespace Manip
 {
 
-using std::auto_ptr;
+using std::unique_ptr;
 using std::set;
 using std::vector;
 
@@ -131,6 +131,7 @@ struct SElementData {};
 
 struct IMouseDragHandler
 {
+	virtual ~IMouseDragHandler() {}
 	virtual bool Begin(const SMouseEvent& ev, Vec3 hitPoint) = 0;
 	virtual void Update(const SMouseEvent& ev) = 0;
 	virtual void Render(const SRenderContext& rc) {}
@@ -147,14 +148,14 @@ struct SSelectionSet
 		items.push_back(elementId);
 		std::sort(items.begin(), items.end());
 	}
-	void Remove(ElementId elementId)  { items.erase(std::remove(items.begin(), items.end(), elementId), items.end()); }
-	void Clear()                      { items.clear(); }
-	bool IsEmpty() const              { return items.empty(); }
-	bool Contains(ElementId id) const { return std::find(items.begin(), items.end(), id) != items.end(); }
-	size_t Size() const               { return items.size(); }
+	void   Remove(ElementId elementId)                { items.erase(std::remove(items.begin(), items.end(), elementId), items.end()); }
+	void   Clear()                                    { items.clear(); }
+	bool   IsEmpty() const                            { return items.empty(); }
+	bool   Contains(ElementId id) const               { return std::find(items.begin(), items.end(), id) != items.end(); }
+	size_t Size() const                               { return items.size(); }
 
-	bool operator==(const SSelectionSet& rhs) const { return items == rhs.items; }
-	bool operator!=(const SSelectionSet& rhs) const { return !operator==(rhs); }
+	bool   operator==(const SSelectionSet& rhs) const { return items == rhs.items; }
+	bool   operator!=(const SSelectionSet& rhs) const { return !operator==(rhs); }
 
 	std::vector<ElementId> items;
 };
@@ -163,11 +164,13 @@ struct ICommand {};
 
 struct IElementTracer
 {
+	virtual ~IElementTracer() {}
 	virtual bool HitRay(Vec3* intersectionPoint, const Ray& ray, const SElement& element) const = 0;
 };
 
 struct IElementDrawer
 {
+	virtual ~IElementDrawer() {}
 	virtual bool Draw(const SElement& element);
 };
 
@@ -212,6 +215,7 @@ struct SLookSettings
 
 struct ISpaceProvider
 {
+	virtual ~ISpaceProvider() {}
 	virtual SSpaceAndIndex FindSpaceIndexByName(int spaceType, const char* name, int parentsUp) const = 0;
 	virtual QuatT          GetTransform(const SSpaceAndIndex& index) const = 0;
 };
@@ -266,7 +270,6 @@ public:
 	void                 ApplyToSelection(EElementAction);
 	void                 RefreshAllElements(); //!< Emit signal 'changed' to all elements in all layers
 
-
 	void                 SetSpaceProvider(ISpaceProvider* spaceProvider);
 	ISpaceProvider*      SpaceProvider() const { return m_spaceProvider; }
 	QuatT                GetParentSpace(const SElement& e) const;
@@ -313,25 +316,24 @@ private:
 	struct SScalingHandler;
 	struct STransformBox;
 
-	IElementTracer*             m_customTracer;
-	IElementDrawer*             m_customDrawer;
+	IElementTracer*               m_customTracer;
+	IElementDrawer*               m_customDrawer;
 
-	SSelectionSet               m_selection;
-	auto_ptr<IMouseDragHandler> m_mouseDragHandler;
-	ISpaceProvider*             m_spaceProvider;
-	auto_ptr<CAxisHelper>       m_axisHelper;
-	SElements                   m_elements;
-	std::vector<ElementId>      m_lastIdByLayer;
-	ETransformationMode         m_transformationMode;
-	ETransformationSpace        m_transformationSpace;
-	int                         m_highlightItem;
-	unsigned int                m_visibleLayerMask;
-	bool                        m_showGizmo;
-	unsigned int                m_gizmoVisibilityFlags;
-	SLookSettings               m_lookSettings;
-	int                         m_highlightedItem;
-	QuatT                       m_temporaryLocalDelta;
+	SSelectionSet                 m_selection;
+	unique_ptr<IMouseDragHandler> m_mouseDragHandler;
+	ISpaceProvider*               m_spaceProvider;
+	unique_ptr<CAxisHelper>       m_axisHelper;
+	SElements                     m_elements;
+	std::vector<ElementId>        m_lastIdByLayer;
+	ETransformationMode           m_transformationMode;
+	ETransformationSpace          m_transformationSpace;
+	int                           m_highlightItem;
+	unsigned int                  m_visibleLayerMask;
+	bool                          m_showGizmo;
+	unsigned int                  m_gizmoVisibilityFlags;
+	SLookSettings                 m_lookSettings;
+	int                           m_highlightedItem;
+	QuatT                         m_temporaryLocalDelta;
 };
 
 }
-

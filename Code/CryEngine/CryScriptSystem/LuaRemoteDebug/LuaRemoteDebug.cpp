@@ -119,7 +119,7 @@ void CLuaRemoteDebug::SendGameFolder()
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Error trying to compute root folder");
+			CRY_ASSERT(false, "Error trying to compute root folder");
 			success = false;
 			break;
 		}
@@ -275,7 +275,7 @@ void CLuaRemoteDebug::OnNotificationNetworkReceive(const void* pBuffer, size_t l
 		ReceiveEnableCppCallstack(bufferUtil);
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, "Unrecognised packet type");
+		CRY_ASSERT(false, "Unrecognised packet type");
 		break;
 	}
 }
@@ -399,10 +399,8 @@ void CLuaRemoteDebug::SendVersion()
 	m_sendBuffer.Write((int)LUA_REMOTE_DEBUG_HOST_VERSION);
 	if (m_clientVersion >= 4)
 	{
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 		m_sendBuffer.Write((char)eP_Win64);
-	#elif CRY_PLATFORM_WINDOWS && CRY_PLATFORM_32BIT
-		m_sendBuffer.Write((char)eP_Win32);
 	#else
 		m_sendBuffer.Write((char)eP_Unknown);
 	#endif
@@ -485,7 +483,7 @@ void CLuaRemoteDebug::SerializeLuaTable(IScriptTable* pTable, CSerializationHelp
 	else
 	{
 		buffer.Write((uint16)0);
-		CRY_ASSERT_MESSAGE(false, "Table count is too great to fit in 2 bytes");
+		CRY_ASSERT(false, "Table count is too great to fit in 2 bytes");
 	}
 }
 

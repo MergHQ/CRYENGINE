@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "FeatureCommon.h"
+#include "../ParticleRender.h"
 
 namespace pfx2
 {
@@ -109,7 +110,7 @@ void CFeatureRenderDecals::RenderDeferred(const CParticleComponentRuntime& runti
 
 	if (renderContext.m_passInfo.IsRecursivePass())
 		return;
-	if (!runtime.IsCPURuntime())
+	if (!runtime.IsCPURuntime() || !runtime.GetComponent()->IsVisible())
 		return;
 
 	const auto& passInfo = renderContext.m_passInfo;
@@ -123,13 +124,17 @@ void CFeatureRenderDecals::RenderDeferred(const CParticleComponentRuntime& runti
 	const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 	const IFStream angles = container.GetIFStream(EPDT_Angle2D);
 	const bool hasAngles2D = container.HasData(EPDT_Angle2D);
-	const bool hasBlending = params.m_textureAnimation.m_frameBlending;
+	const bool hasBlending = params.m_textureAnimation.IsAnimating() && params.m_textureAnimation.m_frameBlending;
 
 	SDecalTiler decalTiler(params, container);
 	SDeferredDecal decal;
 	decal.pMaterial = params.m_pMaterial;
-	decal.nSortOrder = clamp_tpl(int(m_sortBias * 100.f), 0, 255);
+	decal.nSortOrder = clamp(int(m_sortBias * 100.f), 0, 255);
 	decal.nFlags = 0;
+
+	const CCamera& camera = renderContext.m_passInfo.GetCamera();
+	const Vec3 cameraPosition = camera.GetPosition();
+	SFarCulling culling(runtime, camera);
 
 	for (auto particleId : runtime.FullRange())
 	{
@@ -156,14 +161,22 @@ void CFeatureRenderDecals::RenderDeferred(const CParticleComponentRuntime& runti
 		const float alpha = alphas.SafeLoad(particleId);
 		decal.fAlpha = alpha * (1.0f - texBlend.z);
 
-		pRenderer->EF_AddDeferredDecal(decal, passInfo);
+		if (culling.DoCulling())
+		{
+			const float invDist = (cameraPosition - position).GetInvLengthFast();
+			decal.fAlpha *= culling.DistanceFade(size, invDist);
+		}
+
+		if (decal.fAlpha)
+			pRenderer->EF_AddDeferredDecal(decal, passInfo);
 
 		if (hasBlending)
 		{
 			decal.rectTexture.x = texBlend.x;
 			decal.rectTexture.y = texBlend.y;
 			decal.fAlpha = alpha * texBlend.z;
-			pRenderer->EF_AddDeferredDecal(decal, passInfo);
+			if (decal.fAlpha)
+				pRenderer->EF_AddDeferredDecal(decal, passInfo);
 		}
 	}
 }

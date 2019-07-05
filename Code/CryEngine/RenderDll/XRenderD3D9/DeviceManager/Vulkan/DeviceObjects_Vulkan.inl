@@ -27,7 +27,8 @@ private:
 	DeviceFenceHandle                   m_fence;
 	std::array<uint64, kMaxTimestamps>  m_timestampData;
 
-	bool                                m_measurable;
+	bool                                m_measurable : 1;
+	bool                                m_measured   : 1;
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -56,7 +57,7 @@ public:
 template<typename T>
 static inline VkImageUsageFlagBits ConvertToVKImageUsageBits(const T& desc)
 {
-	CRY_ASSERT_MESSAGE((desc & (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL)) != (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL), "RenderTarget and DepthStencil can't be requested together!");
+	CRY_ASSERT((desc & (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL)) != (CDeviceObjectFactory::BIND_RENDER_TARGET | CDeviceObjectFactory::BIND_DEPTH_STENCIL), "RenderTarget and DepthStencil can't be requested together!");
 
 	// *INDENT-OFF*
 	return VkImageUsageFlagBits(

@@ -23,6 +23,7 @@
 #include "DownloadMgr.h"
 #include <CryCore/Containers/CryFixedArray.h>
 #include <CryCore/Platform/IPlatformOS.h>
+#include <CryMemory/IMemory.h>
 #include "IPatchPakManagerListener.h"
 
 #if defined(_RELEASE) 

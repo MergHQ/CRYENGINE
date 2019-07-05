@@ -4,9 +4,9 @@
 #include "Controls/EditorDialog.h"
 #include <QDialogButtonbox>
 
-class QLabel;
 class QCheckBox;
 class QGridLayout;
+class QLabel;
 
 enum EInfoMessageType
 {
@@ -19,7 +19,7 @@ class EDITOR_COMMON_API CQuestionDialog : public CEditorDialog
 {
 	Q_OBJECT
 public:
-	CQuestionDialog();
+	explicit CQuestionDialog(QWidget* pParent = nullptr);
 	~CQuestionDialog();
 
 	//will set the boolean value only if the dialog is accepted
@@ -36,11 +36,11 @@ public:
 public:
 
 	// static calls. Prefer using this for trivial cases
-	static QDialogButtonBox::StandardButton SCritical(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Ok, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::No);
-	static QDialogButtonBox::StandardButton SQuestion(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::No);
-	static QDialogButtonBox::StandardButton SWarning(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Ok, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::No);
+	static QDialogButtonBox::StandardButton SCritical(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Ok, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::No, QWidget* pParent = nullptr);
+	static QDialogButtonBox::StandardButton SQuestion(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::No, QWidget* pParent = nullptr);
+	static QDialogButtonBox::StandardButton SWarning(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Ok, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::No, QWidget* pParent = nullptr);
 	//! Shows a standard save dialog with the options to save, cancel or discard
-	static QDialogButtonBox::StandardButton SSave(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::Cancel);
+	static QDialogButtonBox::StandardButton SSave(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons = QDialogButtonBox::Save | QDialogButtonBox::Discard | QDialogButtonBox::Cancel, QDialogButtonBox::StandardButton defaultButton = QDialogButtonBox::Cancel, QWidget* pParent = nullptr);
 
 protected:
 	virtual void showEvent(QShowEvent* pEvent) override;
@@ -56,4 +56,3 @@ protected:
 	QGridLayout*                      m_layout;
 	QVector<QPair<QCheckBox*, bool*>> m_checkBoxes;
 };
-

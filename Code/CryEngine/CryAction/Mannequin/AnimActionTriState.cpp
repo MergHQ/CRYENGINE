@@ -312,7 +312,7 @@ void CAnimActionTriState::Stop()
 {
 	if ((GetStatus() == IAction::None) || (GetStatus() == IAction::Pending))
 	{
-		assert(m_subState == eSS_None);
+		CRY_ASSERT(m_subState == eSS_None);
 		TBase::Stop();
 	}
 	else

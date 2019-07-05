@@ -24,6 +24,7 @@
 #include "GameStatsConfig.h"
 #include "CryActionCVars.h"
 #include <CryGame/IGameStatistics.h>
+#include <CrySystem/CryVersion.h>
 
 const float REPORT_INTERVAL = 1.0f;//each second send state to network engine
 const float UPDATE_INTERVAL = 20.0f;
@@ -1049,7 +1050,7 @@ void CGameStats::OnLevelNotFound(const char* levelName)
 	m_startReportNeeded = false;
 }
 
-void CGameStats::OnLoadingStart(ILevelInfo* pLevel)
+bool CGameStats::OnLoadingStart(ILevelInfo* pLevel)
 {
 	if (gEnv->bServer)
 	{
@@ -1079,27 +1080,13 @@ void CGameStats::OnLoadingStart(ILevelInfo* pLevel)
 			m_stateChanged = false;
 		}
 	}
-}
 
-void CGameStats::OnLoadingLevelEntitiesStart(ILevelInfo* pLevel)
-{
-}
-
-void CGameStats::OnLoadingComplete(ILevelInfo* pLevel)
-{
+	return true;
 }
 
 void CGameStats::OnLoadingError(ILevelInfo* pLevel, const char* error)
 {
 	m_startReportNeeded = false;
-}
-
-void CGameStats::OnLoadingProgress(ILevelInfo* pLevel, int progressAmount)
-{
-}
-
-void CGameStats::OnUnloadComplete(ILevelInfo* pLevel)
-{
 }
 
 void CGameStats::OnKill(int plrId, EntityId* extra)
@@ -1624,7 +1611,7 @@ void CGameStats::ReportSession()
 
 	ReportGame();
 
-	if ((CCryAction::GetCryAction()->GetILevelSystem()->IsLevelLoaded() && CCryAction::GetCryAction()->IsGameStarted()) || m_startReportNeeded)//otherwise, OnLoadingStart will report it
+	if (gEnv->pGameFramework->GetILevelSystem()->IsLevelLoaded() && gEnv->pGameFramework->IsGameStarted() || m_startReportNeeded)//otherwise, OnLoadingStart will report it
 	{
 		if (m_serverReport && !m_reportStarted)//report now
 		{

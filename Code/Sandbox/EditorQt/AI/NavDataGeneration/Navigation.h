@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef NAVIGATION_H
-#define NAVIGATION_H
+#pragma once
 
 #include <CryAISystem/INavigation.h>
 #include <CryAISystem/IAISystem.h>
@@ -35,16 +34,16 @@ public:
 	// Prompt the exporting of data from AI - these should require not-too-much processing - the volume
 	// stuff requires more processing so isn't done for a normal export
 	void ExportData(const char* navFileName, const char* areasFileName, const char* roadsFileName,
-		const char* vertsFileName, const char* volumeFileName,
-		const char* flightFileName);
+	                const char* vertsFileName, const char* volumeFileName,
+	                const char* flightFileName);
 
-	void          FlushAllAreas();
+	void FlushAllAreas();
 	/// Check all the forbidden areas are sensible size etc
-	bool          ValidateAreas();
-	
+	bool ValidateAreas();
+
 	/// Checks if navigation shape exists - called by editor
-	bool        DoesNavigationShapeExists(const char* szName, EnumAreaType areaType, bool road = false);
-	
+	bool DoesNavigationShapeExists(const char* szName, EnumAreaType areaType, bool road = false);
+
 	bool CreateNavigationShape(const SNavigationShapeParams& params);
 	/// Deletes designer created path/shape - called by editor
 	void DeleteNavigationShape(const char* szName);
@@ -63,6 +62,3 @@ private:
 
 	ISystem*                   m_pSystem;
 };
-
-#endif // NAVIGATION_H
-

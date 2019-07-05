@@ -69,20 +69,20 @@ private:
 
 	EffectorID EffectorFromEyeAndDirection(EyeID eye, DirectionID direction)
 	{
-		assert(eye >= 0 && eye < EyeCOUNT);
-		assert(direction >= 0 && direction < DirectionCOUNT);
+		CRY_ASSERT(eye >= 0 && eye < EyeCOUNT);
+		CRY_ASSERT(direction >= 0 && direction < DirectionCOUNT);
 		return static_cast<EffectorID>(eye * DirectionCOUNT + direction);
 	}
 
 	EyeID EyeFromEffector(EffectorID effector)
 	{
-		assert(effector >= 0 && effector < EffectorCOUNT);
+		CRY_ASSERT(effector >= 0 && effector < EffectorCOUNT);
 		return static_cast<EyeID>(effector / DirectionCOUNT);
 	}
 
 	DirectionID DirectionFromEffector(EffectorID effector)
 	{
-		assert(effector >= 0 && effector < EffectorCOUNT);
+		CRY_ASSERT(effector >= 0 && effector < EffectorCOUNT);
 		return static_cast<DirectionID>(effector % DirectionCOUNT);
 	}
 

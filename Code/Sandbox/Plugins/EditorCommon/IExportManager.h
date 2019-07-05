@@ -12,6 +12,7 @@ struct IStatObj;
 // Exporter could be provided by user through plug-in system
 struct IExporter
 {
+	virtual ~IExporter() {}
 	// Get file extension of exporter type, f.i. "obj"
 	virtual const char* GetExtension() const = 0;
 
@@ -30,6 +31,7 @@ struct IExporter
 // IExportManager: interface to export manager
 struct IExportManager
 {
+	virtual ~IExportManager() {}
 	//! Register exporter
 	//! return true if succeed, otherwise false
 	virtual bool       RegisterExporter(IExporter* pExporter) = 0;
@@ -41,7 +43,6 @@ struct IExportManager
 	//! Export specified geometry
 	//! return true if succeed, otherwise false
 	virtual bool Export(const char* defaultName, const char* defaultExt = "", const char* defaultPath = "", bool isSelectedObjects = true,
-		bool isSelectedRegionObjects = false, bool isTerrain = false, bool isOccluder = false, bool bAnimationExport = false) = 0;
+	                    bool isSelectedRegionObjects = false, bool isTerrain = false, bool isOccluder = false, bool bAnimationExport = false) = 0;
 
 };
-

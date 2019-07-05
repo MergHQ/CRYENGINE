@@ -34,6 +34,7 @@ class CGlobalImportSettings;
 class CProxyData;
 class CProxyGenerator;
 class CPhysProxiesControlsWidget;
+class QTabWidget;
 
 namespace DialogMesh
 {
@@ -282,8 +283,8 @@ private:
 	CTargetMeshView*                       m_pTargetMeshView;
 	CSplitViewportContainer*               m_pViewportContainer;
 	Private_MainDialog::CShowMeshesModeWidget* m_pShowMeshesModeWidget;
-	QPropertyTree*                         m_pGlobalImportSettingsTree;
-	QPropertyTree*                         m_pPropertyTree; // General properties of selected view item.
+	QPropertyTreeLegacy*                         m_pGlobalImportSettingsTree;
+	QPropertyTreeLegacy*                         m_pPropertyTree; // General properties of selected view item.
 	std::unique_ptr<CSceneContextMenu> m_pSceneContextMenu;
 
 	std::unique_ptr<CGlobalImportSettings> m_pGlobalImportSettings;
@@ -299,6 +300,8 @@ private:
 	SViewSettings   m_viewSettings;
 
 	CMaterialPanel* m_pMaterialPanel;
+	QTabWidget*     m_pSceneTab;
+	QTabWidget*     m_pPropertiesTab;
 
 	std::unique_ptr<CModelProperties> m_pModelProperties;
 
@@ -307,4 +310,3 @@ private:
 	std::unique_ptr<CProxyGenerator> m_pProxyGenerator;
 	CPhysProxiesControlsWidget* m_pPhysProxiesControls;
 };
-

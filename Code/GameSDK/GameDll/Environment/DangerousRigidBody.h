@@ -4,6 +4,7 @@
 #define __DANGEROUS_RIGID_BODY_H__
 
 #include <IGameObject.h>
+struct SGameObjectEvent;
 
 class CDangerousRigidBody : public CGameObjectExtensionHelper<CDangerousRigidBody, IGameObjectExtension, 1>
 {
@@ -30,7 +31,7 @@ public:
 	virtual void PostRemoteSpawn() {}
 	virtual void HandleEvent(const SGameObjectEvent& event) {};
 	virtual void ProcessEvent(const SEntityEvent& event);
-	virtual uint64 GetEventMask() const;
+	virtual Cry::Entity::EventFlags GetEventMask() const;
 	virtual void SetChannelId(uint16 id) {}
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );

@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SEQUENCE_BROWSER__H__
-#define __SEQUENCE_BROWSER__H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 class CFolderTreeCtrl;
 class CPreviewerPage;
@@ -32,6 +27,3 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 };
-
-#endif
-

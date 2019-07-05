@@ -27,11 +27,6 @@ public:
 	}
 
 	// IUndoObject
-	virtual int GetSize()
-	{
-		return sizeof(*this);
-	}
-
 	virtual const char* GetDescription()
 	{
 		return "PhonemeCtrl";
@@ -1186,4 +1181,3 @@ void CPhonemesCtrl::SetSentenceEndTime(int sentenceIndex, float endTime)
 {
 	m_sentences[sentenceIndex].endTime = endTime;
 }
-

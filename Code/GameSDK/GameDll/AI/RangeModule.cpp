@@ -67,10 +67,10 @@ void RangeContainer::Update(float frameTime)
 			{
 				range.state = newState;
 
-				if (newState == Range::Inside && !range.enterSignal.empty())
-					SendSignal(range.enterSignal.c_str());
-				else if (newState == Range::Outside && !range.leaveSignal.empty())
-					SendSignal(range.leaveSignal.c_str());
+				if (newState == Range::Inside)
+					SendSignal(gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEnterSignal());
+				else if (newState == Range::Outside)
+					SendSignal(gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLeaveSignal());
 			}
 		}
 	}

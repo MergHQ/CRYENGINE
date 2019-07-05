@@ -2,19 +2,21 @@
 #pragma once
 
 #include "IEditorClassFactory.h"
+#include <CryCore/smartptr.h>
 
 // Source control status of item.
 enum ESccFileAttributes
 {
-	SCC_FILE_ATTRIBUTE_INVALID         = 0x0000, // File is not found.
-	SCC_FILE_ATTRIBUTE_NORMAL          = 0x0001, // Normal file on disk.
-	SCC_FILE_ATTRIBUTE_READONLY        = 0x0002, // Read only files cannot be modified at all, either read only file not under source control or file in packfile.
-	SCC_FILE_ATTRIBUTE_INPAK           = 0x0004, // File is inside pack file.
-	SCC_FILE_ATTRIBUTE_MANAGED         = 0x0008, // File is managed under source control.
-	SCC_FILE_ATTRIBUTE_CHECKEDOUT      = 0x0010, // File is under source control and is checked out.
-	SCC_FILE_ATTRIBUTE_BYANOTHER       = 0x0020, // File is under source control and is checked out by another user.
-	SCC_FILE_ATTRIBUTE_FOLDER          = 0x0040, // Managed folder.
-	SCC_FILE_ATTRIBUTE_LOCKEDBYANOTHER = 0x0080, // File is under source control and is checked out and locked by another user.
+	SCC_FILE_ATTRIBUTE_INVALID									= 0x0000, // File is not found.
+	SCC_FILE_ATTRIBUTE_NORMAL									= 0x0001, // Normal file on disk.
+	SCC_FILE_ATTRIBUTE_READONLY									= 0x0002, // Read only files cannot be modified at all, either read only file not under source control or file in packfile.
+	SCC_FILE_ATTRIBUTE_INPAK									= 0x0004, // File is inside pack file.
+	SCC_FILE_ATTRIBUTE_MANAGED									= 0x0008, // File is managed under source control.
+	SCC_FILE_ATTRIBUTE_CHECKEDOUT								= 0x0010, // File is under source control and is checked out.
+	SCC_FILE_ATTRIBUTE_BYANOTHER								= 0x0020, // File is under source control and is checked out by another user.
+	SCC_FILE_ATTRIBUTE_FOLDER									= 0x0040, // Managed folder.
+	SCC_FILE_ATTRIBUTE_LOCKEDBYANOTHER							= 0x0080, // File is under source control and is checked out and locked by another user.
+	SCC_FILE_ATTRIBUTE_EXCLUSIVE_CHECKEDOUT_OR_LOCKED_BYANOTHER = 0x0100, // File is under source control and is checked or locked out exclusively by another user.
 };
 
 // Source control flags
@@ -47,6 +49,7 @@ struct ISourceControl : public IClassDesc, public _i_reference_target_t
 	// Return:
 	//    Combination of flags from ESccFileAttributes enumeration.
 	virtual uint32 GetFileAttributes(const char* filename) = 0;
+	virtual uint32 GetFileAttributesAndFullFileName(const char* filename, char* fullFileName) = 0;
 
 	virtual bool   DoesChangeListExist(const char* pDesc, char* changeid, int nLen) = 0;
 	virtual bool   CreateChangeList(const char* pDesc, char* changeid, int nLen) = 0;
@@ -90,4 +93,3 @@ struct ISourceControl : public IClassDesc, public _i_reference_target_t
 	virtual bool           DeleteChangeList(char* changeid)                                                               { return false; }
 	virtual bool           Reopen(const char* filename, char* changeid = NULL)                                            { return false; }
 };
-

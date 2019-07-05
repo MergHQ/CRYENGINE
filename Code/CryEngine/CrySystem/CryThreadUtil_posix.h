@@ -10,6 +10,8 @@
 #endif
 //////////////////////////////////////////////////////////////////////////
 
+#include <sys/resource.h>
+
 #define DEFAULT_THREAD_STACK_SIZE_KB 0
 #define CRY_PTHREAD_THREAD_NAME_MAX  16
 
@@ -164,9 +166,8 @@ bool CryCreateThread(TThreadHandle* pThreadHandle, const SThreadCreationDesc& th
 {
 	uint32 nStackSize = threadDesc.nStackSizeInBytes != 0 ? threadDesc.nStackSizeInBytes : DEFAULT_THREAD_STACK_SIZE_KB * 1024;
 
-	assert(pThreadHandle != THREADID_NULL);
+	CRY_ASSERT(pThreadHandle != nullptr);
 	pthread_attr_t threadAttr;
-	sched_param schedParam;
 	pthread_attr_init(&threadAttr);
 	pthread_attr_setdetachstate(&threadAttr, PTHREAD_CREATE_JOINABLE);
 	pthread_attr_setstacksize(&threadAttr, nStackSize);
@@ -208,6 +209,18 @@ void CryThreadExitCall()
 	// Notes on: pthread_exit
 	// A thread that was create with pthread_create implicitly calls pthread_exit when the thread returns from its start routine (the function that was first called after a thread was created).
 	// pthread_exit(NULL);
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CryIsThreadAlive(TThreadHandle pThreadHandle)
+{
+	// Note: Don't use getpriority(PRIO_PROCESS,pThreadHandle. 
+	// On some linux platforms it is not supported and always return "false".
+	if ( pthread_kill(pThreadHandle, 0) != S_OK )	
+	{
+		return false;  // unable to find thread
+	}
+	return true;
 }
 }
 

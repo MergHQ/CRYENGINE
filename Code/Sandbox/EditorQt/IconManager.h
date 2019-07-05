@@ -6,6 +6,10 @@ struct IStatObj;
 struct IMaterial;
 
 #include "IIconManager.h"
+#include "IEditor.h"
+#include <CryCore/smartptr.h>
+#include <CryCore/StlUtils.h>
+#include <unordered_map>
 
 /*!
  *	CIconManager contains map of icon names to icon textures,
@@ -16,9 +20,7 @@ struct IMaterial;
 class CIconManager : public IIconManager, public IAutoEditorNotifyListener
 {
 public:
-	// Construction
 	CIconManager();
-	~CIconManager();
 
 	void Init();
 	void Done();
@@ -26,10 +28,9 @@ public:
 	// Unload all loaded resources.
 	void Reset();
 
-	// Operations
 	virtual int        GetIconTexture(EIcon icon);
 
-	virtual IStatObj*  GetObject(EStatObject object);
+	virtual IStatObj*  GetStatObject(EStatObject object);
 	virtual int        GetIconTexture(const char* szIconName);
 	virtual int        GetIconTexture(const char* szIconName, CryIcon& icon);
 
@@ -37,10 +38,10 @@ public:
 
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 
-	virtual void OnNewDocument()   { Reset(); };
-	virtual void OnLoadDocument()  { Reset(); };
-	virtual void OnCloseDocument() { Reset(); };
-	virtual void OnMissionChange() { Reset(); };
+	virtual void OnNewDocument()   { Reset(); }
+	virtual void OnLoadDocument()  { Reset(); }
+	virtual void OnCloseDocument() { Reset(); }
+	virtual void OnMissionChange() { Reset(); }
 	//////////////////////////////////////////////////////////////////////////
 
 private:
@@ -57,4 +58,3 @@ private:
 	typedef std::map<string, CBitmap*> IconsMap;
 	IconsMap m_iconBitmapsMap;
 };
-

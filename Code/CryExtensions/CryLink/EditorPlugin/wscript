@@ -10,16 +10,13 @@
 def build(bld):	
 	files = bld.read_file_list('editorplugin.waf_files')
 
-	bld.CryPlugin(
+	bld.CryEditorPlugin(
 		target = 'EditorCryLink',
 		vs_filter = 'Sandbox/Plugins/Extensions',
 		file_list = 'editorplugin.waf_files',
 		module_extensions = ['toolkit_pro'],
 		includes = [
-			'.',
 			'..',
-			Path('Code/CryExtensions/CryLink/Interface'),
-			Path('Code/SDKs/XT_13_4/Include'), 
-		],						
-		use = [ 'Editor', 'EditorCommon' ]
+			Path('Code/CryExtensions/CryLink/Interface')
+		]
 	)

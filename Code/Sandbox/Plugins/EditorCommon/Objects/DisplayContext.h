@@ -2,38 +2,24 @@
 
 #pragma once
 
-#include <CryMath/Cry_Color.h>
-#include <CryMath/Cry_Geo.h>
+#include "EditorCommonAPI.h"
+#include <CryMath/Cry_Math.h>
 #include <CryRenderer/IRenderer.h>
 
-// forward declarations.
-struct IDisplayViewport;
-struct IRenderer;
-struct IRenderAuxGeom;
-struct IIconManager;
-struct I3DEngine;
-class CDisplaySettings;
 class CCamera;
+class CDisplaySettings;
 
-enum DisplayFlags
-{
-	DISPLAY_2D                = BIT(0),
-	DISPLAY_HIDENAMES         = BIT(1),
-	DISPLAY_BBOX              = BIT(2),
-	DISPLAY_TRACKS            = BIT(3),
-	DISPLAY_TRACKTICKS        = BIT(4),
-	DISPLAY_WORLDSPACEAXIS    = BIT(5), //!< Set if axis must be displayed in world space.
-	DISPLAY_LINKS             = BIT(6),
-	DISPLAY_DEGRADATED        = BIT(7), //!< Display Objects in degradated quality (When moving/modifying).
-	DISPLAY_SELECTION_HELPERS = BIT(8), //!< Display advanced selection helpers.
-};
+struct I3DEngine;
+struct IDisplayViewport;
+struct IIconManager;
+struct IRenderAuxGeom;
 
 /*!
  *  DisplayContex is a structure passed to BaseObject Display method.
  *	It contains everything the object should know to display itself in a view.
  *	All fields must be filled before passing that structure to Display call.
  */
-struct EDITOR_COMMON_API DisplayContext
+struct EDITOR_COMMON_API SDisplayContext
 {
 	enum ETextureIconFlags
 	{
@@ -50,41 +36,70 @@ struct EDITOR_COMMON_API DisplayContext
 	I3DEngine*        engine;
 	CCamera*          camera;
 	AABB              box; // Bounding box of volume that need to be repainted.
-	int               flags;
 
-	//! Ctor.
-	DisplayContext();
+
+	unsigned int      enabled                       : 1;
+	unsigned int      display2D                     : 1;
+	unsigned int      displaySelectionHelpers       : 1;
+
+	unsigned int      showIcons                     : 1;
+	unsigned int      showMesh                      : 1;
+	unsigned int      showAnimationTracks           : 1;
+	unsigned int      showBoundingBoxes             : 1;
+	unsigned int      showComponentHelpers          : 1;
+	unsigned int      showDimensions                : 1;
+	unsigned int      fillSelectedShapes            : 1;
+	unsigned int      showFrozenObjectsHelpers      : 1;
+	unsigned int      showTextLabels                : 1;
+	unsigned int      showEntityObjectsTextLabels   : 1;
+	unsigned int      showLinks                     : 1;
+	unsigned int      showMeshStatsOnMouseOver      : 1;
+	unsigned int      showRadii                     : 1;
+	unsigned int      showSelectedObjectOrientation : 1;
+	unsigned int      showSnappingGridGuide         : 1;
+	unsigned int      showTriggerBounds             : 1;
+	unsigned int      showAreaHelper                : 1;
+	unsigned int      showBrushHelper               : 1;
+	unsigned int      showDecalHelper               : 1;
+	unsigned int      showEntityObjectHelper        : 1;
+	unsigned int      showEnviromentProbeHelper     : 1;
+	unsigned int      showGroupHelper               : 1;
+	unsigned int      showPrefabHelper              : 1;
+	unsigned int      showPrefabBounds              : 1;
+	unsigned int      showPrefabChildrenHelpers     : 1;
+	unsigned int      showRoadHelper                : 1;
+	unsigned int      showShapeHelper               : 1;
+
+	SDisplayContext();
 	// Helper methods.
 	void              SetView(IDisplayViewport* pView);
 	IDisplayViewport* GetView() const { return view; }
 	void              Flush2D();
 
 	void              SetCamera(CCamera* pCamera);
-	const CCamera&    GetCamera() const { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
+	const CCamera& GetCamera() const { return (camera) ? *camera : GetISystem()->GetViewCamera(); }
 
-	int               GetWidth() const { return static_cast<int>(m_width); }
-	int               GetHeight() const { return static_cast<int>(m_height); }
+	int            GetWidth() const  { return static_cast<int>(m_width); }
+	int            GetHeight() const { return static_cast<int>(m_height); }
 
-	void              SetDisplayContext(const SDisplayContextKey &displayContextKey, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
+	void           SetDisplayContext(const SDisplayContextKey& displayContextKey, IRenderer::EViewportType eType = IRenderer::eViewportType_Default);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Draw functions
 	//////////////////////////////////////////////////////////////////////////
-	//! Set current materialc color.
-	void   SetColor(float r, float g, float b, float a = 1) { m_color4b = ColorB(int(r * 255.0f), int(g * 255.0f), int(b * 255.0f), int(a * 255.0f)); };
-	void   SetColor(const Vec3& color, float a = 1) { m_color4b = ColorB(int(color.x * 255.0f), int(color.y * 255.0f), int(color.z * 255.0f), int(a * 255.0f)); };
-	void   SetColor(COLORREF rgb, float a = 1) { m_color4b = ColorB(GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), int(a * 255.0f)); };
-	void   SetColor(const ColorB& color) { m_color4b = color; };
-	void   SetColor(const ColorF& color) {
-		m_color4b = ColorB(int(color.r * 255.0f), int(color.g * 255.0f), int(color.b * 255.0f), int(color.a * 255.0f));
-	};
-	void   SetAlpha(float a = 1) { m_color4b.a = int(a * 255.0f); };
-	ColorB GetColor() const { return m_color4b; }
+	//! Set current material color.
+	void   SetColor(float r, float g, float b, float a = 1) { m_color4b = ColorB(int(r * 255.0f), int(g * 255.0f), int(b * 255.0f), int(a * 255.0f)); }
+	void   SetColor(const Vec3& color, float a = 1)         { m_color4b = ColorB(int(color.x * 255.0f), int(color.y * 255.0f), int(color.z * 255.0f), int(a * 255.0f)); }
+	void   SetColor(COLORREF rgb, float a = 1)              { m_color4b = ColorB(GetRValue(rgb), GetGValue(rgb), GetBValue(rgb), int(a * 255.0f)); }
+	void   SetColor(const ColorB& color)                    { m_color4b = color; }
+	void   SetColor(const ColorF& color)                    { m_color4b = ColorB(int(color.r * 255.0f), int(color.g * 255.0f), int(color.b * 255.0f), int(color.a * 255.0f)); }
+	void   SetAlpha(float a = 1)                            { m_color4b.a = int(a * 255.0f); }
+	ColorB GetColor() const                                 { return m_color4b; }
 
 	void   SetSelectedColor(float fAlpha = 1);
 	void   SetFreezeColor();
 
-	//! Get color to draw selectin of object.
+	//! Get color to draw selection of object.
 	COLORREF GetSelectedColor();
 	COLORREF GetFreezeColor();
 
@@ -150,7 +165,7 @@ struct EDITOR_COMMON_API DisplayContext
 	// Draw texture label in 2d view coordinates.
 	// w,h in pixels.
 	void DrawTextureLabel(const Vec3& pos, int nWidth, int nHeight, int nTexId, int nTexIconFlags = 0, int srcOffsetX = 0, int scrOffsetY = 0,
-		float fDistanceScale = 1.0f, float distanceSquared = 0);
+	                      float fDistanceScale = 1.0f, float distanceSquared = 0);
 
 	void RenderObject(int objectType, const Vec3& pos, float scale, const SRenderingPassInfo& passInfo);
 	void RenderObject(int objectType, const Matrix34& tm, const SRenderingPassInfo& passInfo);
@@ -191,18 +206,18 @@ struct EDITOR_COMMON_API DisplayContext
 	//   Changes fill mode.
 	// Arguments:
 	//    nFillMode is one of the values from EAuxGeomPublicRenderflags_FillMode
-	int   SetFillMode(int nFillMode);
+	int                SetFillMode(int nFillMode);
 
-	Vec3  ToWorldPos(const Vec3& v) { return ToWS(v); }
-	float GetLineWidth() const { return m_thickness; }
+	Vec3               ToWorldPos(const Vec3& v)    { return ToWS(v); }
+	float              GetLineWidth() const         { return m_thickness; }
 
 	SDisplayContextKey GetDisplayContextKey() const { return m_displayContextKey; }
 
 private:
 	// Convert vector to world space.
-	Vec3  ToWS(const Vec3& v) { return m_matrixStack[m_currentMatrix].TransformPoint(v); }
+	Vec3 ToWS(const Vec3& v) { return m_matrixStack[m_currentMatrix].TransformPoint(v); }
 
-	void  InternalDrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1);
+	void InternalDrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1);
 
 	ColorB   m_color4b;
 	uint32   m_renderState;
@@ -215,10 +230,12 @@ private:
 	Matrix34 m_matrixStack[32];
 	int      m_previousMatrixIndex[32];
 
+	Matrix34 m_statObjWorldMatrix;
+
 	// Display Helper Sizes
-	const int displayHelperSizeLarge = 32;
-	const int displayHelperSizeSmall = 4;
-	SDisplayContextKey m_displayContextKey;
+	const int                displayHelperSizeLarge = 32;
+	const int                displayHelperSizeSmall = 4;
+	SDisplayContextKey       m_displayContextKey;
 	IRenderer::EViewportType m_eType = IRenderer::eViewportType_Default;
 
 	struct STextureLabel
@@ -231,4 +248,3 @@ private:
 	};
 	std::vector<STextureLabel> m_textureLabels;
 };
-

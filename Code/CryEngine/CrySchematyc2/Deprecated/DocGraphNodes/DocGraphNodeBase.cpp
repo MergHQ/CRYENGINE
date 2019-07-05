@@ -183,7 +183,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CDocGraphNodeBase::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		if(archive.isEdit())
 		{
 			archive(m_name, "name", "!Name");
@@ -283,7 +283,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	size_t CDocGraphNodeBase::AddOutput(const char* szName, EScriptGraphPortFlags flags, const CAggregateTypeId& typeId)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		CRY_ASSERT(szName);
 		if(szName)
 		{
@@ -324,12 +324,13 @@ namespace Schematyc2
 				const size_t	stackPos = compiler.FindInputOnStack(node, iInput);
 				if(stackPos != INVALID_INDEX)
 				{
-					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInput]);
+					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInput], node.GetGUID(), node.GetInputName(iInput));
 				}
 				else
 				{
 					// Push default input value.
-					compiler.Push(*inputValues[iInput]);
+					compiler.Push(*inputValues[iInput], node.GetGUID(), node.GetInputName(iInput));
+					//CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Copying input %s with value %zu", node.GetInputName(iInput), iInput);
 				}
 			}
 		}
@@ -350,12 +351,12 @@ namespace Schematyc2
 				const size_t	iInputValue = firstInputValueIdx + (iInput - firstInputIdx);
 				if(stackPos != INVALID_INDEX)
 				{
-					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInputValue]);
+					compiler.Copy(stackPos, INVALID_INDEX, *inputValues[iInputValue], node.GetGUID(), node.GetInputName(iInput));
 				}
 				else
 				{
 					// Push default input value.
-					compiler.Push(*inputValues[iInputValue]);
+					compiler.Push(*inputValues[iInputValue], node.GetGUID(), node.GetInputName(iInput));
 				}
 			}
 		}

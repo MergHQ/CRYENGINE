@@ -5,6 +5,8 @@
 #include <vector>
 #include <deque>
 
+class XmlNodeRef;
+
 struct SEquipment
 {
 	SEquipment()
@@ -100,4 +102,3 @@ protected:
 	TAmmoVec       m_ammoVec;
 	bool           m_bModified;
 };
-

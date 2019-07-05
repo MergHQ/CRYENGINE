@@ -65,7 +65,7 @@ public:
 
 	virtual bool IsScopeActive(uint32 scopeID) const override
 	{
-		CRY_ASSERT_MESSAGE((scopeID < m_scopeCount), "Invalid scope id");
+		CRY_ASSERT((scopeID < m_scopeCount), "Invalid scope id");
 
 		return ((m_activeScopes & BIT64(scopeID)) != 0);
 	}

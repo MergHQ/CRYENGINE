@@ -19,7 +19,6 @@
 #include "GlobalAnimationHeader.h"
 #include "GlobalAnimationHeaderCAF.h"
 #include "GlobalAnimationHeaderAIM.h"
-#include "ResourceCompiler.h" // for CryCriticalSection
 
 class CSkeletonInfo;
 struct ConvertContext;

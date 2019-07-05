@@ -26,6 +26,7 @@ def load_gcc_common_settings(conf):
 	v['CC_SRC_F']  	= v['CXX_SRC_F']	= []
 	v['CC_TGT_F'] 	= v['CXX_TGT_F']	= ['-c', '-o']
 	
+	v['CPPPATH_SYSTEM_ST'] = '-isystem%s'
 	v['CPPPATH_ST'] 	= '-I%s'
 	v['DEFINES_ST'] 	= '-D%s'
 	
@@ -104,7 +105,7 @@ def load_gcc_common_settings(conf):
 		'-fno-rtti',				# Disable RTTI
 		'-fno-exceptions',			# Disable Exceptions	
 		'-fvisibility-inlines-hidden',
-		'-std=c++11',				# Enable c++11 features
+		'-std=c++14',				# Enable c++14 features
 		
 		# Disable some C++ specific warnings	
 		'-Wno-invalid-offsetof',

@@ -13,7 +13,6 @@
 
 class CCryDX12DeviceContext : public CCryDX12Object<ID3D11DeviceContext1ToImplement>
 {
-	friend class CSubmissionQueue_DX11;
 	friend class CDeviceObjectFactory;
 
 public:
@@ -769,59 +768,6 @@ public:
 	  _In_ UINT NumInitialData,
 	  _In_reads_(NumInitialData) D3D12_SUBRESOURCE_DATA * pSrcData);
 
-	// Timestamp management API
-	ILINE void ResetTimestamps()
-	{
-		m_TimestampIndex = 0;
-	}
-
-	ILINE UINT64 GetTimestampFrequency()
-	{
-		// D3D12 WARNING: ID3D12CommandQueue::ID3D12CommandQueue::GetTimestampFrequency: Use
-		// ID3D12Device::SetStablePowerstate for reliable timestamp queries [ EXECUTION WARNING #736: UNSTABLE_POWER_STATE]
-		UINT64 Frequency = 0;
-		m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS)->GetD3D12CommandQueue()->GetTimestampFrequency(&Frequency);
-		return Frequency;
-	}
-
-	ILINE INT ReserveTimestamp()
-	{
-		return TimestampIndex(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS));
-	}
-
-	ILINE void InsertTimestamp(INT index, NCryDX12::CCommandList* pCommandList)
-	{
-		InsertTimestamp(pCommandList, index);
-	}
-
-	ILINE void ResolveTimestamps()
-	{
-		ResolveTimestamps(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS));
-	}
-
-	ILINE void QueryTimestamp(INT index, void* mem)
-	{
-		QueryTimestamp(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), index, mem);
-	}
-
-	ILINE void QueryTimestamps(INT firstIndex, INT numIndices, void* mem)
-	{
-		uint32 outIndex = 0;
-		for (INT index = firstIndex; index < firstIndex + numIndices; ++index)
-		{
-			QueryTimestamp(m_Scheduler.GetCommandList(CMDQUEUE_GRAPHICS), index, (char*)mem + outIndex * sizeof(UINT64));
-			++outIndex;
-		}
-	}
-
-	ILINE void QueryTimestampBuffer(ID3D11Buffer** ppTimestampBuffer)
-	{
-		if (ppTimestampBuffer)
-		{
-			*ppTimestampBuffer = CCryDX12Buffer::Create(m_pDevice, m_TimestampDownloadBuffer, D3D12_RESOURCE_STATE_GENERIC_READ);
-		}
-	}
-
 	// Fence management API
 	ILINE UINT64  InsertFence (                 ) { return m_Scheduler.InsertFence (          ); }
 	ILINE HRESULT FlushToFence(UINT64 fenceValue) { return m_Scheduler.FlushToFence(fenceValue); }
@@ -863,31 +809,11 @@ private:
 	SCryDX11PipelineState m_GraphicsState;
 	SCryDX11PipelineState m_ComputeState;
 
-public:
-	UINT TimestampIndex(NCryDX12::CCommandList* pCmdList);
-	void InsertTimestamp(NCryDX12::CCommandList* pCmdList, UINT index);
-	void ResolveTimestamps(NCryDX12::CCommandList* pCmdList);
-	void QueryTimestamp(NCryDX12::CCommandList* pCmdList, UINT index, void* mem);
-
-	UINT OcclusionIndex(NCryDX12::CCommandList* pCmdList, bool counter);
-	void InsertOcclusionStart(NCryDX12::CCommandList* pCmdList, UINT index, bool counter);
-	void InsertOcclusionStop(NCryDX12::CCommandList* pCmdList, UINT index, bool counter);
-	void ResolveOcclusion(NCryDX12::CCommandList* pCmdList, UINT index, void* mem);
-
 private:
-	ID3D12Resource*            m_TimestampDownloadBuffer;
-	ID3D12Resource*            m_OcclusionDownloadBuffer;
-	UINT                       m_TimestampIndex;
-	UINT                       m_OcclusionIndex;
-	void*                      m_TimestampMemory;
-	void*                      m_OcclusionMemory;
-	bool                       m_TimestampMapValid;
-	bool                       m_OcclusionMapValid;
 	NCryDX12::CDescriptorHeap* m_pResourceHeap;
 	NCryDX12::CDescriptorHeap* m_pSamplerHeap;
 
-	NCryDX12::CQueryHeap       m_TimestampHeap;
-	NCryDX12::CQueryHeap       m_OcclusionHeap;
+	UINT                       m_OcclusionIndex;
 
 #ifdef DX12_STATS
 	size_t m_NumMapDiscardSkips;

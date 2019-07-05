@@ -19,8 +19,10 @@ History:
 # pragma once
 #endif
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
 #include "ItemString.h"
 struct IMaterial;
+struct ICharacterInstance;
 
 class CTeamVisualizationManager 
 {

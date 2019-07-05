@@ -2,13 +2,17 @@
 
 #include "stdafx.h"
 #include "TopRendererWnd.h"
-#include ".\Terrain\Heightmap.h"
+
+#include "IEditorImpl.h"
+#include "Terrain/Heightmap.h"
+#include "Terrain/TerrainTexGen.h"
 #include "Vegetation/VegetationMap.h"
 #include "ViewManager.h"
+
+#include <Controls/DynamicPopupMenu.h>
 #include <Preferences/ViewportPreferences.h>
 
-#include ".\Terrain\TerrainTexGen.h"
-#include "Controls/DynamicPopupMenu.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 // Size of the surface texture
 #define SURFACE_TEXTURE_WIDTH 512
@@ -42,10 +46,6 @@ static uint32 sVegetationColors[16] =
 };
 
 IMPLEMENT_DYNCREATE(CTopRendererWnd, C2DViewport)
-
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
 
 CTopRendererWnd::CTopRendererWnd()
 {
@@ -89,15 +89,6 @@ CTopRendererWnd::CTopRendererWnd()
 	m_colorBackground = RGB(128, 128, 128);
 }
 
-//////////////////////////////////////////////////////////////////////////
-CTopRendererWnd::~CTopRendererWnd()
-{
-	////////////////////////////////////////////////////////////////////////
-	// Destroy the attached render and free the surface texture
-	////////////////////////////////////////////////////////////////////////
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::SetType(EViewportType type)
 {
 	m_viewType = type;
@@ -105,7 +96,6 @@ void CTopRendererWnd::SetType(EViewportType type)
 	SetAxis(m_axis);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::ResetContent()
 {
 	C2DViewport::ResetContent();
@@ -116,7 +106,6 @@ void CTopRendererWnd::ResetContent()
 	m_vegetationTextureId = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::UpdateContent(int flags)
 {
 	if (gViewportPreferences.mapViewportSwapXY)
@@ -149,7 +138,6 @@ void CTopRendererWnd::UpdateContent(int flags)
 	m_bFirstTerrainUpdate = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::InitHeightmapAlignment()
 {
 	CHeightmap* heightmap = GetIEditorImpl()->GetHeightmap();
@@ -158,7 +146,6 @@ void CTopRendererWnd::InitHeightmapAlignment()
 		SSectorInfo si;
 		heightmap->GetSectorsInfo(si);
 		float sizeMeters = si.numSectors * si.sectorSize;
-		float mid = sizeMeters / 2;
 		//SetScrollOffset( 0,-sizeMeters );
 
 		SetZoom(0.95f * m_rcClient.Width() / sizeMeters, CPoint(m_rcClient.Width() / 2, m_rcClient.Height() / 2));
@@ -166,7 +153,6 @@ void CTopRendererWnd::InitHeightmapAlignment()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::UpdateSurfaceTexture(int flags)
 {
 	////////////////////////////////////////////////////////////////////////
@@ -230,7 +216,6 @@ void CTopRendererWnd::UpdateSurfaceTexture(int flags)
 	m_bContentValid = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::DrawStaticObjects()
 {
 	if (!m_bShowStatObjects)
@@ -266,7 +251,6 @@ void CTopRendererWnd::DrawStaticObjects()
 	vegetationMap->DrawToTexture(trg, trgW, trgH, rc.left, rc.top);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTopRendererWnd::ResetSurfaceTexture()
 {
 	////////////////////////////////////////////////////////////////////////
@@ -274,8 +258,6 @@ void CTopRendererWnd::ResetSurfaceTexture()
 	////////////////////////////////////////////////////////////////////////
 
 	unsigned int i, j;
-	DWORD* pSurfaceTextureData = NULL;
-	DWORD* pPixData = NULL, * pPixDataEnd = NULL;
 	CBitmap bmpLoad;
 	BOOL bReturn;
 
@@ -307,8 +289,6 @@ void CTopRendererWnd::ResetSurfaceTexture()
 void CTopRendererWnd::Draw(CObjectRenderHelper& objRenderHelper)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
-
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	////////////////////////////////////////////////////////////////////////
 	// Perform the rendering for this window
@@ -459,7 +439,6 @@ void CTopRendererWnd::Draw(CObjectRenderHelper& objRenderHelper)
 	C2DViewport::Draw(objRenderHelper);
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CTopRendererWnd::ViewToWorld(CPoint vp, bool* collideWithTerrain, bool onlyTerrain, bool bSkipVegetation, bool bTestRenderMesh)
 {
 	Vec3 wp = C2DViewport::ViewToWorld(vp, collideWithTerrain, onlyTerrain, bSkipVegetation, bTestRenderMesh);
@@ -524,4 +503,3 @@ void CTopRendererWnd::SerializeDisplayOptions(Serialization::IArchive& ar)
 
 	C2DViewport::SerializeDisplayOptions(ar);
 }
-

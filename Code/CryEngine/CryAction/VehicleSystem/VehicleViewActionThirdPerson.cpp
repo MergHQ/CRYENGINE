@@ -20,6 +20,7 @@
 #include "VehicleCVars.h"
 #include "Vehicle.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/Cry_GeoIntersect.h>
 #include <CryMath/Cry_GeoDistance.h>
 
@@ -286,10 +287,8 @@ void CVehicleViewActionThirdPerson::Update(float frameTimeIn)
 #if ENABLE_VEHICLE_DEBUG
 	if (m_isDebugView)
 	{
-		IRenderer* pRenderer = gEnv->pRenderer;
 		IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 		SAuxGeomRenderFlags flags = pAuxGeom->GetRenderFlags();
-		SAuxGeomRenderFlags oldFlags = pAuxGeom->GetRenderFlags();
 		flags.SetDepthWriteFlag(e_DepthWriteOff);
 		flags.SetDepthTestFlag(e_DepthTestOff);
 		pAuxGeom->SetRenderFlags(flags);

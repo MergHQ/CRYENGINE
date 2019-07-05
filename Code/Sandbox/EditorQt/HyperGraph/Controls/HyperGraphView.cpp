@@ -1981,7 +1981,6 @@ void CHyperGraphView::OnLButtonDblClk(UINT nFlags, CPoint point)
 //////////////////////////////////////////////////////////////////////////
 void CHyperGraphView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-	bool processed = true;
 	switch (nChar)
 	{
 	case VK_ADD:
@@ -2152,7 +2151,6 @@ void CHyperGraphView::UpdateDebugCount(CHyperNode* pNode)
 		return;
 
 	std::vector<CHyperEdge*> edges;
-	int count = pNode->GetDebugCount();
 
 	if (m_pGraph->FindEdges(pNode, edges))
 	{
@@ -2938,7 +2936,7 @@ bool CHyperGraphView::GetNodesInRect(const CRect& viewRect, std::multimap<int, C
 {
 	if (!m_pGraph)
 		return false;
-	bool bFirst = true;
+
 	Gdiplus::RectF localRect = ViewToLocalRect(viewRect);
 	IHyperGraphEnumerator* pEnum = m_pGraph->GetNodesEnumerator();
 	nodes.clear();
@@ -3095,7 +3093,7 @@ void CHyperGraphView::OnSelectEntity()
 		return;
 
 	CUndo undo("Select Object(s)");
-	GetIEditorImpl()->ClearSelection();
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
 	for (int i = 0; i < nodes.size(); i++)
 	{
 		// only can CFlowNode* if not a comment, argh...
@@ -3104,7 +3102,7 @@ void CHyperGraphView::OnSelectEntity()
 			CFlowNode* pFlowNode = (CFlowNode*)nodes[i];
 			if (pFlowNode->GetEntity())
 			{
-				GetIEditorImpl()->SelectObject(pFlowNode->GetEntity());
+				GetIEditorImpl()->GetObjectManager()->AddObjectToSelection(pFlowNode->GetEntity());
 			}
 			else if(strcmp(pFlowNode->GetClassName(), "Prefab:Instance") == 0)
 			{
@@ -3117,7 +3115,15 @@ void CHyperGraphView::OnSelectEntity()
 					{
 						IEditor* const pEditor = GetIEditor();
 						CBaseObject* const pObject = pEditor->GetObjectManager()->FindObject(sInstanceName);
-						pEditor->SelectObject(pObject);
+						//make sure this object actually exists 
+						if (pObject)
+						{
+							pEditor->GetObjectManager()->AddObjectToSelection(pObject);
+						}
+						else
+						{
+							CryWarning(EValidatorModule::VALIDATOR_MODULE_FLOWGRAPH, EValidatorSeverity::VALIDATOR_WARNING, "The Prefab Instance named %s does not exist", sInstanceName.GetBuffer());
+						}
 					}
 				}
 			}
@@ -5220,6 +5226,7 @@ void CHyperGraphView::QuickSearchNode(CHyperNode* pNode)
 	m_quickSearchEdit.SetCapture();
 	m_quickSearchEdit.SetSel(0, -1);
 	m_quickSearchEdit.SetFocus();
+	DeleteObject(font);
 }
 
 void CHyperGraphView::OnAcceptSearch()
@@ -5511,4 +5518,3 @@ const Gdiplus::PointF& CHyperGraphView::SGraphVisualChanges::GetNodeStartPositio
 
 	return dummyPoint;
 }
-

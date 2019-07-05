@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   ConsolePlugin.cpp
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 
 #define CRY_USE_ATL
@@ -63,12 +49,16 @@ inline Messages::EVarType GetVarType(ICVar* pVar)
 	{
 		switch (pVar->GetType())
 		{
-		case CVAR_INT:
+		case ECVarType::Int:
 			return Messages::eVarType_Int;
-		case CVAR_FLOAT:
+		case ECVarType::Float:
 			return Messages::eVarType_Float;
-		case CVAR_STRING:
+		case ECVarType::String:
 			return Messages::eVarType_String;
+		case ECVarType::Int64:
+			// TODO: full int64 support
+			return Messages::eVarType_Int;
+			break;
 		}
 	}
 	return Messages::eVarType_None;

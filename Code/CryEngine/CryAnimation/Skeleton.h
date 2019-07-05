@@ -128,25 +128,25 @@ inline CPoseData* CPoseData::GetPoseData(IAnimationPoseData* pPoseData)
 
 inline QuatT* CPoseData::GetJointsRelative()
 {
-	assert(m_jointsBuffer);
+	CRY_ASSERT(m_jointsBuffer);
 	return m_jointsBuffer.get<0>();
 }
 
 inline const QuatT* CPoseData::GetJointsRelative() const
 {
-	assert(m_jointsBuffer);
+	CRY_ASSERT(m_jointsBuffer);
 	return m_jointsBuffer.get<0>();
 }
 
 inline QuatT* CPoseData::GetJointsAbsolute()
 {
-	assert(m_jointsBuffer);
+	CRY_ASSERT(m_jointsBuffer);
 	return m_jointsBuffer.get<1>();
 }
 
 inline const QuatT* CPoseData::GetJointsAbsolute() const
 {
-	assert(m_jointsBuffer);
+	CRY_ASSERT(m_jointsBuffer);
 	return m_jointsBuffer.get<1>();
 }
 
@@ -172,13 +172,13 @@ inline const float* CPoseData::GetScalingAbsolute() const
 
 inline JointState* CPoseData::GetJointsStatus()
 {
-	assert(m_jointsBuffer);
+	CRY_ASSERT(m_jointsBuffer);
 	return m_jointsBuffer.get<2>();
 }
 
 inline const JointState* CPoseData::GetJointsStatus() const
 {
-	assert(m_jointsBuffer);
+	CRY_ASSERT(m_jointsBuffer);
 	return m_jointsBuffer.get<2>();
 }
 

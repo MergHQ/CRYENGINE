@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "GameTokenDialog.h"
+#include "LogFile.h"
 
 #include "Dialogs/QGroupDialog.h"
 #include "Dialogs/ToolbarDialog.h"
@@ -55,118 +56,13 @@ BOOL CGameTokenDialog::CXTPTaskPanelSpecific::OnCommand(WPARAM wParam, LPARAM lP
 	}
 }
 
-/*
-   //////////////////////////////////////////////////////////////////////////
-   class CGameTokenUIDefinition
-   {
-   public:
-   CVarBlockPtr m_vars;
-
-   CSmartVariableEnum<int> tokenType;
-   _smart_ptr<CVariableBase> pTokenValue;
-
-   //////////////////////////////////////////////////////////////////////////
-   CVarBlock* CreateVars()
-   {
-    m_vars = new CVarBlock;
-
-    tokenType.AddEnumItem( "Bool",eFDT_Bool );
-    tokenType.AddEnumItem( "Int",eFDT_Int );
-    tokenType.AddEnumItem( "Float",eFDT_Float );
-    tokenType.AddEnumItem( "String",eFDT_String );
-    tokenType.AddEnumItem( "Vec3",eFDT_Vec3 );
-
-    // Create UI vars, using GameTokenParams TypeInfo.
-    CVariableArray* pMainTable = AddGroup("Game Token");
-
-    pTokenValue = new CVariable<int>;
-    AddVariable( *pMainTable,tokenType,"Type" );
-    AddVariable( *pMainTable,*pTokenValue,"Value" );
-
-    return m_vars;
-   }
-
-   //////////////////////////////////////////////////////////////////////////
-   void WriteToUI( CGameTokenItem *pGameTokens )
-   {
-   }
-
-   //////////////////////////////////////////////////////////////////////////
-   void ReadFromUI( CGameTokenItem *pGameTokens )
-   {
-    int tp = tokenType;
-    switch (tp) {
-    case eFDT_Float:
-      {
-        m_vars->Clear();
-        // Create UI vars, using GameTokenParams TypeInfo.
-        CVariableArray* pMainTable = AddGroup("Game Token");
-
-        pTokenValue = new CVariable<int>;
-        AddVariable( *pMainTable,tokenType,"Type" );
-        AddVariable( *pMainTable,*pTokenValue,"Value" );
-      }
-      break;
-    case eFDT_Bool:
-      {
-        m_vars->Clear();
-        // Create UI vars, using GameTokenParams TypeInfo.
-        CVariableArray* pMainTable = AddGroup("Game Token");
-
-        pTokenValue = new CVariable<bool>;
-        AddVariable( *pMainTable,tokenType,"Type" );
-        AddVariable( *pMainTable,*pTokenValue,"Value" );
-      }
-      break;
-    }
-
-    // Update GameTokens.
-    pGameTokens->Update();
-   }
-
-   private:
-
-   //////////////////////////////////////////////////////////////////////////
-   CVariableArray* AddGroup( const char *sName )
-   {
-    CVariableArray* pArray = new CVariableArray;
-    pArray->AddRef();
-    pArray->SetFlags(IVariable::UI_BOLD);
-    if (sName)
-      pArray->SetName(sName);
-    m_vars->AddVariable(pArray);
-    return pArray;
-   }
-
-   //////////////////////////////////////////////////////////////////////////
-   void AddVariable( CVariableBase &varArray,CVariableBase &var,const char *varName,unsigned char dataType=IVariable::DT_SIMPLE )
-   {
-    if (varName)
-      var.SetName(varName);
-    var.SetDataType(dataType);
-    varArray.AddChildVar(&var);
-   }
-   //////////////////////////////////////////////////////////////////////////
-   void AddVariable( CVarBlock *vars,CVariableBase &var,const char *varName,unsigned char dataType=IVariable::DT_SIMPLE )
-   {
-    if (varName)
-      var.SetName(varName);
-    var.SetDataType(dataType);
-    vars->AddVariable(&var);
-   }
-   };
-
-   static CGameTokenUIDefinition gGameTokenUI;
-   //////////////////////////////////////////////////////////////////////////
- */
-
 //////////////////////////////////////////////////////////////////////////
 class CGameTokenTypeCombo : public CComboBox
 {
 public:
 	CGameTokenDialog* m_pDlg;
 
-	CGameTokenTypeCombo(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {};
+	CGameTokenTypeCombo(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {}
 	BOOL Create(DWORD dwStyle, const CRect& rc, CWnd* pParentWnd, UINT nID)
 	{
 		BOOL bRes = __super::Create(dwStyle | CBS_HASSTRINGS | CBS_DROPDOWNLIST, rc, pParentWnd, nID);
@@ -210,7 +106,7 @@ class CGameTokenValueEdit : public CEdit
 public:
 	CGameTokenDialog* m_pDlg;
 
-	CGameTokenValueEdit(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {};
+	CGameTokenValueEdit(CGameTokenDialog* pDlg) : m_pDlg(pDlg) {}
 	BOOL Create(DWORD dwStyle, const CRect& rc, CWnd* pParentWnd, UINT nID)
 	{
 		BOOL bRes = __super::Create(dwStyle, rc, pParentWnd, nID);
@@ -387,51 +283,41 @@ BOOL CGameTokenDialog::OnInitDialog()
 	m_tokenInfoEdit.SetOwner(this);
 
 	// Add default tasks.
-	CXTPTaskPanelGroupItem* pItem = NULL;
 	CXTPTaskPanelGroup* pGroup = NULL;
 	{
 		pGroup = m_wndTaskPanel.AddGroup(1);
 		pGroup->SetCaption("Library Tasks");
 
-		pItem = pGroup->AddLinkItem(ID_DB_ADDLIB, 2);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem = pGroup->AddLinkItem(ID_DB_DELLIB, 3);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem = pGroup->AddLinkItem(ID_DB_LOADLIB, 1);
-		pItem->SetType(xtpTaskItemTypeLink);
+		pGroup->AddLinkItem(ID_DB_ADDLIB, 2)->SetType(xtpTaskItemTypeLink);
+		pGroup->AddLinkItem(ID_DB_DELLIB, 3)->SetType(xtpTaskItemTypeLink);
+		pGroup->AddLinkItem(ID_DB_LOADLIB, 1)->SetType(xtpTaskItemTypeLink);
 	}
 	{
 		pGroup = m_wndTaskPanel.AddGroup(2);
 		pGroup->SetCaption("Game Token Tasks");
 
-		pItem = pGroup->AddLinkItem(ID_DB_ADD, 6);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem = pGroup->AddLinkItem(ID_DB_CLONE, 7);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem = pGroup->AddLinkItem(ID_DB_REMOVE, 8);
-		pItem->SetType(xtpTaskItemTypeLink);
-		pItem = pGroup->AddLinkItem(ID_DB_RENAME, -1);
-		pItem->SetType(xtpTaskItemTypeLink);
+		pGroup->AddLinkItem(ID_DB_ADD, 6)->SetType(xtpTaskItemTypeLink);
+		pGroup->AddLinkItem(ID_DB_CLONE, 7)->SetType(xtpTaskItemTypeLink);
+		pGroup->AddLinkItem(ID_DB_REMOVE, 8)->SetType(xtpTaskItemTypeLink);
+		pGroup->AddLinkItem(ID_DB_RENAME, -1)->SetType(xtpTaskItemTypeLink);
 	}
 	{
 		pGroup = m_wndTaskPanel.AddGroup(3);
 		pGroup->SetCaption("Selected Token");
 
-		pItem = pGroup->AddLinkItem(IDC_TOKEN_NAME);
-		pItem->SetType(xtpTaskItemTypeText);
-		pItem = pGroup->AddTextItem("");
-		pItem = pGroup->AddTextItem("Type:");
-		pItem = pGroup->AddLinkItem(IDC_TOKEN_TYPE);
-		pItem->SetType(xtpTaskItemTypeText);
-		pItem = pGroup->AddControlItem(m_tokenTypeCombo);
-		pItem = pGroup->AddTextItem("");
-		pItem = pGroup->AddTextItem("Value:");
-		pItem = pGroup->AddControlItem(m_tokenValueEdit);
-		pItem = pGroup->AddTextItem("");
-		pItem = pGroup->AddControlItem(m_tokenLocalOnlyCheck);
-		pItem = pGroup->AddTextItem("");
-		pItem = pGroup->AddTextItem("Description:");
-		pItem = pGroup->AddControlItem(m_tokenInfoEdit);
+		pGroup->AddLinkItem(IDC_TOKEN_NAME)->SetType(xtpTaskItemTypeText);
+		pGroup->AddTextItem("");
+		pGroup->AddTextItem("Type:");
+		pGroup->AddLinkItem(IDC_TOKEN_TYPE)->SetType(xtpTaskItemTypeText);
+		pGroup->AddControlItem(m_tokenTypeCombo);
+		pGroup->AddTextItem("");
+		pGroup->AddTextItem("Value:");
+		pGroup->AddControlItem(m_tokenValueEdit);
+		pGroup->AddTextItem("");
+		pGroup->AddControlItem(m_tokenLocalOnlyCheck);
+		pGroup->AddTextItem("");
+		pGroup->AddTextItem("Description:");
+		pGroup->AddControlItem(m_tokenInfoEdit);
 	}
 	//////////////////////////////////////////////////////////////////////////
 
@@ -832,16 +718,6 @@ void CGameTokenDialog::OnMouseMove(UINT nFlags, CPoint point)
 				SetCursor(m_hCursorCreate);
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
-				/*
-				   HitContext hit;
-				   if (viewport->HitTest( vp,hit ))
-				   {
-				   if (hit.object && hit.object->IsKindOf(RUNTIME_CLASS(CGameTokenObject)))
-				   {
-				    SetCursor( m_hCursorReplace );
-				   }
-				   }
-				 */
 			}
 		}
 	}
@@ -899,36 +775,11 @@ void CGameTokenDialog::OnLButtonUp(UINT nFlags, CPoint point)
 		else
 		{
 			// Not droped inside tree.
-
-			CWnd* wnd = WindowFromPoint(p);
-
 			CViewport* viewport = GetIEditorImpl()->GetViewManager()->GetViewportAtPoint(p);
 			if (viewport)
 			{
-				bool bHit = false;
 				CPoint vp = p;
 				viewport->ScreenToClient(&vp);
-
-				/*
-				   // Drag and drop into one of views.
-				   // Start object creation.
-				   HitContext  hit;
-				   if (viewport->HitTest( vp,hit ))
-				   {
-				   if (hit.object && hit.object->IsKindOf(RUNTIME_CLASS(CGameTokenObject)))
-				   {
-				    bHit = true;
-				    CUndo undo( "Assign GameToken" );
-				    ((CGameTokenObject*)hit.object)->SetGameToken( (CGameTokenItem*)m_pDraggedItem,false );
-				   }
-				   }
-				   if (!bHit)
-				   {
-				   CUndo undo( "Create GameToken" );
-				   CString guid = GuidUtil::ToString( m_pDraggedItem->GetGUID() );
-				   GetIEditorImpl()->StartObjectCreation( GameToken_OBJECT_CLASS_NAME,guid );
-				   }
-				 */
 			}
 		}
 		m_pDraggedItem = 0;
@@ -1223,4 +1074,3 @@ void CGameTokenDialog::OnTokenLocalOnlyChange()
 
 	UpdateField(IDC_TOKEN_LOCAL_ONLY, "", m_tokenLocalOnlyCheck.GetCheck() == BST_CHECKED);
 }
-

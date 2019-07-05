@@ -9,10 +9,14 @@
 #include "BaseLibrary.h"
 #include "BaseLibraryItem.h"
 #include "BaseLibraryManager.h"
-#include "Util/Clipboard.h"
 #include "Controls/QuestionDialog.h"
 #include "Controls/SharedFonts.h"
-#include "FilePathUtil.h"
+#include "IUndoObject.h"
+#include "LogFile.h"
+#include "PathUtils.h"
+#include "Util/Clipboard.h"
+#include "Util/EditorUtils.h"
+#include "Util/FileUtil.h"
 
 #define LIBRARY_CB_WIDTH 150
 
@@ -23,19 +27,18 @@ IMPLEMENT_DYNAMIC(CBaseLibraryDialog, CToolbarDialog)
 //////////////////////////////////////////////////////////////////////////
 CBaseLibraryDialog::CBaseLibraryDialog(UINT nID, CWnd* pParent)
 	: CDataBaseDialogPage(nID, pParent)
+	, m_pItemManager(nullptr)
+	, m_pDraggedItem(nullptr)
+	, m_dragImage(nullptr)
+	, m_bIgnoreSelectionChange(false)
+	, m_sortRecursionType(SORT_RECURSION_FULL)
+	, m_bLibsLoaded(false)
 {
-	m_sortRecursionType = SORT_RECURSION_FULL;
-
-	m_bIgnoreSelectionChange = false;
-
-	m_pItemManager = 0;
-
 	// Load cusrors.
 	m_hCursorDefault = AfxGetApp()->LoadStandardCursor(IDC_ARROW);
 	m_hCursorNoDrop = AfxGetApp()->LoadCursor(IDC_NODROP);
 	m_hCursorCreate = AfxGetApp()->LoadCursor(IDC_HIT_CURSOR);
 	m_hCursorReplace = AfxGetApp()->LoadCursor(IDC_HAND_INTERNAL);
-	m_bLibsLoaded = false;
 
 	GetIEditorImpl()->RegisterNotifyListener(this);
 }
@@ -260,7 +263,7 @@ void CBaseLibraryDialog::DeleteItem(CBaseLibraryItem* pItem)
 //////////////////////////////////////////////////////////////////////////
 void CBaseLibraryDialog::ReloadLibs()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!m_pItemManager)
 		return;
 
@@ -272,7 +275,7 @@ void CBaseLibraryDialog::ReloadLibs()
 		m_libraryCtrl.ResetContent();
 		m_libraryCtrl.SetDroppedWidth(LIBRARY_CB_WIDTH);
 	}
-	bool bFound = false;
+
 	for (int i = 0; i < m_pItemManager->GetLibraryCount(); i++)
 	{
 		CString library = m_pItemManager->GetLibrary(i)->GetName().GetString();
@@ -363,7 +366,7 @@ void CBaseLibraryDialog::ReloadItems()
 				hRoot = hParentItem;
 		}
 
-		HTREEITEM hNewItem = InsertItemToTree(pItem, hRoot);
+		InsertItemToTree(pItem, hRoot);
 	}
 
 	SortItems(m_sortRecursionType);
@@ -543,7 +546,7 @@ void CBaseLibraryDialog::OnRemoveItem()
 		itEnd = m_cpoSelectedLibraryItems.end();
 		itCurrentIterator = m_cpoSelectedLibraryItems.begin();
 		// For now, we have a maximum limit of 7 items per messagebox...
-		for (nItemCount = 0; nItemCount < 7; ++nItemCount, itCurrentIterator++)
+		for (nItemCount = 0; nItemCount < 7; ++nItemCount, ++itCurrentIterator)
 		{
 			if (itCurrentIterator == itEnd)
 			{
@@ -560,7 +563,7 @@ void CBaseLibraryDialog::OnRemoveItem()
 
 		if (MessageBox(strMessageString, _T("Delete Confirmation"), MB_YESNO | MB_ICONQUESTION) == IDYES)
 		{
-			for (itCurrentIterator = m_cpoSelectedLibraryItems.begin(); itCurrentIterator != itEnd; itCurrentIterator++)
+			for (itCurrentIterator = m_cpoSelectedLibraryItems.begin(); itCurrentIterator != itEnd; ++itCurrentIterator)
 			{
 				CBaseLibraryItem* pCurrent = *itCurrentIterator;
 				DeleteItem(pCurrent);
@@ -1015,4 +1018,3 @@ string CBaseLibraryDialog::MakeValidName(const string& candidateName) const
 	assert(0 && "CBaseLibraryDialog::MakeValidName()");
 	return candidateName;
 }
-

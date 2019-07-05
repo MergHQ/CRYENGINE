@@ -6,6 +6,7 @@
 #include "AssetSystem/AssetManager.h"
 #include "AssetThumbnailsLoader.h"
 
+#include <QApplication>
 #include <QBoxLayout>
 #include <QEvent.h>
 
@@ -18,7 +19,7 @@ void CAssetTooltip::ShowTrackingTooltip(CAsset* asset, QWidget* parent /*= nullp
 	}
 	else
 	{
-		auto tt = QSharedPointer<QTrackingTooltip>(new CAssetTooltip(asset, parent), &QObject::deleteLater);
+		auto tt = QSharedPointer<QTrackingTooltip>(reinterpret_cast<QTrackingTooltip*>(new CAssetTooltip(asset, parent)), &QObject::deleteLater);
 		QTrackingTooltip::ShowTrackingTooltip(tt);
 	}
 }
@@ -38,7 +39,6 @@ CAssetTooltip::CAssetTooltip(CAsset* asset, QWidget* parent /*= nullptr*/)
 	m_thumbnail->setObjectName("CAssetTooltipThumbnail");
 	m_thumbnail->hide();
 
-
 	auto layout = new QHBoxLayout();
 	layout->addWidget(m_label);
 	layout->addWidget(m_thumbnail);
@@ -48,7 +48,7 @@ CAssetTooltip::CAssetTooltip(CAsset* asset, QWidget* parent /*= nullptr*/)
 	m_mainWidget->setLayout(layout);
 
 	//For some reason QStackedLayout simply does not work in the tooltip
-	//Let's just use visibilty flags in a regular VBowLayout
+	//Let's just use visibility flags in a regular VBoxLayout
 	auto mainLayout = new QVBoxLayout();
 	mainLayout->setMargin(0);
 	mainLayout->addWidget(m_mainWidget);
@@ -100,9 +100,9 @@ void CAssetTooltip::UpdateInfos()
 {
 	QString str;
 
-	str += QString(tr("<b>Name:</b> %1")).arg(m_asset->GetName());
+	str += QString(tr("<b>Name:</b> %1")).arg(m_asset->GetName().c_str());
 	str += QString(tr("<br/><b>Type:</b> %1")).arg(m_asset->GetType()->GetUiTypeName());
-	str += QString(tr("<br/><b>Asset File:</b> %1")).arg(m_asset->GetMetadataFile());
+	str += QString(tr("<br/><b>Asset File:</b> %1")).arg(m_asset->GetMetadataFile().c_str());
 
 	const int dataFilesCount = m_asset->GetFilesCount();
 
@@ -116,7 +116,7 @@ void CAssetTooltip::UpdateInfos()
 	}
 
 	if (m_asset->HasSourceFile())
-		str += QString(tr("<br/><b>Source File:</b> %1")).arg(m_asset->GetSourceFile());
+		str += QString(tr("<br/><b>Source File:</b> %1")).arg(m_asset->GetSourceFile().c_str());
 
 	const std::vector<CItemModelAttribute*>& details = m_asset->GetType()->GetDetails();
 	QString detailsText;
@@ -165,7 +165,7 @@ void CAssetTooltip::SetBigMode(bool bBigMode)
 {
 	if (bBigMode && m_asset->GetType()->HasThumbnail())
 	{
- 		if (m_bigWidget)
+		if (m_bigWidget)
 		{
 			m_bigWidget->setVisible(true);
 			m_mainWidget->setVisible(false);
@@ -173,14 +173,14 @@ void CAssetTooltip::SetBigMode(bool bBigMode)
 		else
 		{
 			m_bigWidget = m_asset->GetType()->CreateBigInfoWidget(m_asset);
-			if(m_bigWidget)
+			if (m_bigWidget)
 			{
 				layout()->addWidget(m_bigWidget);
 				m_mainWidget->setVisible(false);
 			}
 		}
 	}
-	else if(m_bigWidget)
+	else if (m_bigWidget)
 	{
 		m_bigWidget->setVisible(false);
 		m_mainWidget->setVisible(true);
@@ -208,23 +208,23 @@ bool CAssetTooltip::eventFilter(QObject* object, QEvent* event)
 	switch (event->type())
 	{
 	case QEvent::KeyPress:
-	{
-		QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-		if (keyEvent->key() == Qt::Key_Control && !keyEvent->isAutoRepeat())
 		{
-			//Using space as a key prevents the tooltip event from being emitted, using CTRL instead
-			SetBigMode(true);
+			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+			if (keyEvent->key() == Qt::Key_Control && !keyEvent->isAutoRepeat())
+			{
+				//Using space as a key prevents the tooltip event from being emitted, using CTRL instead
+				SetBigMode(true);
+			}
 		}
-	}
-	break;
+		break;
 	case QEvent::KeyRelease:
-	{
-		QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-		if (keyEvent->key() == Qt::Key_Control && !keyEvent->isAutoRepeat())
 		{
-			SetBigMode(false);
+			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+			if (keyEvent->key() == Qt::Key_Control && !keyEvent->isAutoRepeat())
+			{
+				SetBigMode(false);
+			}
 		}
-	}
 	default:
 		break;
 	}
@@ -237,4 +237,3 @@ void CAssetTooltip::hideEvent(QHideEvent* event)
 {
 	SetBigMode(false);
 }
-

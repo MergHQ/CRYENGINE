@@ -30,7 +30,7 @@ public:
 	virtual uint32   GetType() const override { return CAbstractDictionaryEntry::Type_Entry; }
 
 	virtual QVariant GetColumnValue(int32 columnIndex) const override;
-	virtual QString  GetToolTip() const override;
+	virtual QString  GetToolTip(int32 columnIndex) const override;
 	// ~CAbstractDictionaryEntry
 
 	QString            GetName() const    { return m_name; }
@@ -63,7 +63,7 @@ public:
 	virtual int32                           GetNumEntries() const override { return m_interfaces.size(); }
 	virtual const CAbstractDictionaryEntry* GetEntry(int32 index) const override;
 
-	virtual int32                           GetNumColumns() const override { return Column_COUNT; };
+	virtual int32                           GetNumColumns() const override { return Column_COUNT; }
 	virtual QString                         GetColumnName(int32 index) const override;
 
 	virtual int32                           GetDefaultFilterColumn() const override { return Column_Name; }
@@ -74,4 +74,3 @@ private:
 };
 
 }
-

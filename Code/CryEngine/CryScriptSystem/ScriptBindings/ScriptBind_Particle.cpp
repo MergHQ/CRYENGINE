@@ -15,8 +15,10 @@
 #include "ScriptBind_Particle.h"
 #include <CrySystem/ISystem.h>
 #include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/CryEngineDecalInfo.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryAnimation/ICryAnimation.h>
+#include <CryParticleSystem/IParticles.h>
 #include <CryParticleSystem/ParticleParams.h>
 
 // TypeInfo implementations

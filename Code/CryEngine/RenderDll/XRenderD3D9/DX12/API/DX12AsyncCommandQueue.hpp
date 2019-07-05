@@ -5,10 +5,12 @@
 #include <CryThreading/IThreadManager.h>
 #include <concqueue/concqueue.hpp>
 #include "DX12Base.hpp"
+#include <CryThreading/CryThread.h>
 
 namespace NCryDX12
 {
 
+class CCommandList;
 class CCommandListPool;
 
 class CAsyncCommandQueue : public IThread

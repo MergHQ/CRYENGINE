@@ -96,7 +96,7 @@ NetworkAspectType CUpdateMessage::ComputeSendAspectMask(INetSender* pSender, SHi
 
 	const uint8 forceSendData = (m_syncFlags & eSCF_AssumeEnabled) != 0;
 
-	CHistory* pAuthHistory = m_pView->GetHistory(eH_Auth);
+	//CHistory* pAuthHistory = m_pView->GetHistory(eH_Auth);
 	CHistory* pHistory = m_pView->GetHistory(eH_AspectData);
 
 	NetworkAspectType aspectMask = maySend & pHistory->indexMask;
@@ -142,12 +142,7 @@ SMessageTag CUpdateMessage::GetMessageTag(INetSender* pSender, IMessageMapper* m
 	if (pEntity != NULL)
 	{
 		pEntityClass = pEntity->GetClass();
-	#if CRY_PLATFORM_64BIT
 		mTag.varying1 = (uint64)pEntityClass;
-	#else
-		uint32 t = (uint32)pEntityClass;
-		mTag.varying1 = (uint64)t;
-	#endif
 	}
 	else
 	{

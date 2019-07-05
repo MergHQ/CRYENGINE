@@ -38,7 +38,6 @@ CAnimCameraNode::CAnimCameraNode(const int id)
 	, m_fFOV(60.0f)
 	, m_fDOF(ZERO)
 	, m_fNearZ(DEFAULT_NEAR)
-	, m_cv_r_PostProcessEffects(NULL)
 	, m_bJustActivated(false)
 	, m_cameraShakeSeedValue(0)
 {
@@ -250,6 +249,13 @@ void CAnimCameraNode::Animate(SAnimContext& animContext)
 		bNodeAnimated = true;
 	}
 
+	if (bNodeAnimated && m_pOwner && !IsSkipInterpolatedCameraNodeEnabled())
+	{
+		m_bIgnoreSetParam = true;
+		m_pOwner->OnNodeAnimated(this);
+		m_bIgnoreSetParam = false;
+	}
+
 	if (pEntity)
 	{
 		Quat rotation = pEntity->GetRotation();
@@ -265,13 +271,6 @@ void CAnimCameraNode::Animate(SAnimContext& animContext)
 
 			bNodeAnimated = true;
 		}
-	}
-
-	if (bNodeAnimated && m_pOwner && !IsSkipInterpolatedCameraNodeEnabled())
-	{
-		m_bIgnoreSetParam = true;
-		m_pOwner->OnNodeAnimated(this);
-		m_bIgnoreSetParam = false;
 	}
 }
 

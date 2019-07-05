@@ -3,17 +3,12 @@
 #include "stdafx.h"
 #include "TerrainFormulaDlg.h"
 
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainFormulaDlg dialog
-
 CTerrainFormulaDlg::CTerrainFormulaDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CTerrainFormulaDlg::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(CTerrainFormulaDlg)
 	m_dParam1 = 0.0;
 	m_dParam2 = 0.0;
 	m_dParam3 = 0.0;
-	//}}AFX_DATA_INIT
 }
 
 void CTerrainFormulaDlg::DoDataExchange(CDataExchange* pDX)
@@ -30,11 +25,4 @@ void CTerrainFormulaDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CTerrainFormulaDlg, CDialog)
-//{{AFX_MSG_MAP(CTerrainFormulaDlg)
-// NOTE: the ClassWizard will add message map macros here
-//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
-
-/////////////////////////////////////////////////////////////////////////////
-// CTerrainFormulaDlg message handlers
-

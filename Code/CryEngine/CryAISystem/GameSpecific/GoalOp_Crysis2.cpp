@@ -17,7 +17,6 @@
 #include "PipeUser.h"
 #include "Puppet.h"
 #include "DebugDrawContext.h"
-#include "HideSpot.h"
 #include "Cover/CoverSystem.h"
 #include "GenericAStarSolver.h"
 #include "ObjectContainer.h"
@@ -308,7 +307,6 @@ EGoalOpResult COPCrysis2AdjustAim::Execute(CPipeUser* pPipeUser)
 		m_nextUpdateMs += 150;
 	else if (elapsedMs >= m_nextUpdateMs)
 	{
-		PostureManager::PostureID postureID = -1;
 		PostureManager::PostureInfo* posture;
 
 		PostureManager& postureManager = pPuppet->GetPostureManager();
@@ -419,8 +417,7 @@ bool COPCrysis2AdjustAim::ProcessQueryResult(CPipeUser* pipeUser, AsyncState que
 	{
 		if ((now - m_lastGood).GetMilliSecondsAsInt64() > 500)
 		{
-			pipeUser->SetSignal(1, "OnNoAimPosture", 0, 0, gAIEnv.SignalCRCs.m_nOnNoAimPosture);
-
+			pipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoAimPosture_DEPRECATED()));
 			return false;
 		}
 
@@ -478,7 +475,7 @@ void COPCrysis2AdjustAim::DebugDraw(CPipeUser* pPipeUser) const
 
 	// m_selector.DebugDraw(pPipeUser);
 
-	Vec3 basePos = pPipeUser->GetPhysicsPos();
+	//Vec3 basePos = pPipeUser->GetPhysicsPos();
 	Vec3 targetPos = pPipeUser->GetProbableTargetPosition();
 
 	CDebugDrawContext dc;
@@ -638,7 +635,6 @@ EGoalOpResult COPCrysis2Peek::Execute(CPipeUser* pPipeUser)
 
 	if (elapsedMs >= m_nextUpdateMs)
 	{
-		PostureManager::PostureID postureID = -1;
 		PostureManager::PostureInfo* posture;
 
 		PostureManager& postureManager = pPuppet->GetPostureManager();
@@ -736,7 +732,7 @@ bool COPCrysis2Peek::ProcessQueryResult(CPipeUser* pipeUser, AsyncState querySta
 	{
 		if ((now - m_lastGood).GetMilliSecondsAsInt64() > 500)
 		{
-			pipeUser->SetSignal(1, "OnNoPeekPosture", 0, 0, gAIEnv.SignalCRCs.m_nOnNoPeekPosture);
+			pipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoPeekPosture_DEPRECATED()));
 
 			return false;
 		}
@@ -876,35 +872,8 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 		if (m_location == AI_REG_REFPOINT)
 		{
 			CCCPOINT(COPCrysis2Hide_Execute_RefPoint);
-
-			if (IAIObject* pRefPoint = pPipeUser->GetRefPoint())
-			{
-				// Setup the hide object.
-				Vec3 pos = pRefPoint->GetPos();
-				Vec3 dir = pRefPoint->GetEntityDir();
-
-				if (dir.IsZero())
-				{
-					Vec3 target(pPipeUser->GetAttentionTarget() ? pPipeUser->GetAttentionTarget()->GetPos() : pos);
-					dir = (target - pos).GetNormalizedSafe();
-				}
-
-				SHideSpot hideSpot(SHideSpotInfo::eHST_ANCHOR, pos, dir);
-				CAIHideObject& currentHideObject = pPipeUser->m_CurrentHideObject;
-				currentHideObject.Set(&hideSpot, hideSpot.info.pos, hideSpot.info.dir);
-
-				if (!currentHideObject.IsValid() ||
-				    !GetAISystem()->IsHideSpotOccupied(pPipeUser, hideSpot.info.pos))
-				{
-					Reset(pPipeUser);
-
-					pPipeUser->SetCoverState(ICoverUser::EStateFlags::None);
-
-					return eGOR_FAILED;
-				}
-
-				CreateHideTarget(pPipeUser, pos);
-			}
+			AIWarningID("COPCrysis2Hide", "Registering refpoint isn't supported anymore!");
+			return eGOR_FAILED;
 		}
 		else // AI_REG_COVER
 		{
@@ -919,7 +888,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 
 				CreateHideTarget(pPipeUser, pos, -normal);
 
-				if (gAIEnv.CVars.CoverExactPositioning)
+				if (gAIEnv.CVars.LegacyCoverExactPositioning)
 				{
 					SAIActorTargetRequest req;
 					req.approachLocation = pos + normal * 0.25f;
@@ -936,15 +905,9 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 				}
 
 #ifdef CRYAISYSTEM_DEBUG
-				if (gAIEnv.CVars.DebugDrawCover)
+				if (gAIEnv.CVars.legacyCoverSystem.DebugDrawCover)
 					GetAISystem()->AddDebugCylinder(pos + CoverUp * 0.015f, CoverUp, pPipeUser->GetParameters().m_fPassRadius, 0.025f, Col_Red, 3.5f);
 #endif
-			}
-			else if (pPipeUser->m_CurrentHideObject.IsValid())
-			{
-				Vec3 pos = pPipeUser->m_CurrentHideObject.GetLastHidePos();
-
-				CreateHideTarget(pPipeUser, pos);
 			}
 			else
 			{
@@ -961,7 +924,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 	{
 		if (!m_pPathfinder)
 		{
-			if (gAIEnv.CVars.DebugPathFinding)
+			if (gAIEnv.CVars.LegacyDebugPathFinding)
 			{
 				const Vec3& vPos = m_refHideTarget->GetPos();
 				AILogAlways("COPCrysis2Hide::Execute %s pathfinding to (%5.2f, %5.2f, %5.2f)", pPipeUser->GetName(),
@@ -969,7 +932,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 			}
 
 			CAIObject* targetObject = 0;
-			if (gAIEnv.CVars.CoverSystem && gAIEnv.CVars.CoverExactPositioning)
+			if ((gAIEnv.CVars.legacyCoverSystem.CoverSystem > 0) && (gAIEnv.CVars.LegacyCoverExactPositioning > 0))
 				targetObject = pPipeUser->GetOrCreateSpecialAIObject(CPipeUser::AISPECIAL_ANIM_TARGET);
 			else
 				targetObject = m_refHideTarget.GetAIObject();
@@ -981,7 +944,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 		{
 			if (pPipeUser->m_nPathDecision == PATHFINDER_PATHFOUND)
 			{
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					const Vec3& vPos = m_refHideTarget->GetPos();
 					AILogAlways("COPCrysis2Hide::Execute %s Creating trace to hide target (%5.2f, %5.2f, %5.2f)", pPipeUser->GetName(),
@@ -1044,8 +1007,8 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 					pPipeUser->SetCoverRegister(CoverID());
 					pPipeUser->SetCoverBlacklisted(coverID, true, 10.0f);
 				}
-				else
-					pPipeUser->IgnoreCurrentHideObject(10.0f);
+				/*else
+					pPipeUser->IgnoreCurrentHideObject(10.0f);*/
 
 				Reset(pPipeUser);
 
@@ -1066,7 +1029,7 @@ EGoalOpResult COPCrysis2Hide::Execute(CPipeUser* pPipeUser)
 				if (pPipeUser->GetCoverID())
 				{
 					pPipeUser->SetInCover(true);
-					pPipeUser->SetSignal(1, "OnCoverReached", 0, 0, gAIEnv.SignalCRCs.m_nOnCoverReached);
+					pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCoverReached_DEPRECATED()));
 				}
 
 				return eGOR_SUCCEEDED;
@@ -1214,21 +1177,16 @@ void COPCrysis2Hide::UpdateMovingToCoverAnimation(CPipeUser* pPipeUser) const
 	// Give hints to animation system for sliding into cover
 	if (pPipeUser->IsMovingToCover() && !pPipeUser->IsInCover()) // GoalOpHide is used both when moving into cover and *in* cover..
 	{
-		Vec3 hidePos, hideNormal;
+		CoverID coverID = pPipeUser->GetCoverID();
+		if (!coverID)
+			return;
+
+		Vec3 hideNormal;
 		float hideHeight;
-		if (CoverID coverID = pPipeUser->GetCoverID())
-		{
-			float radius = pPipeUser->GetParameters().distanceToCover;
-			hidePos = gAIEnv.pCoverSystem->GetCoverLocation(coverID, radius, &hideHeight, &hideNormal);
-			//hidePos = gAIEnv.pCoverSystem->GetCoverSurface(coverID)->GetCoverOcclusionAt(radius, &hideHeight, &hideNormal);
-			hideHeight = pPipeUser->GetCoverUser()->GetLocationEffectiveHeight();
-		}
-		else
-		{
-			hidePos = pPipeUser->m_CurrentHideObject.GetLastHidePos();
-			hideNormal = -pPipeUser->m_CurrentHideObject.GetObjectDir();
-			hideHeight = pPipeUser->m_CurrentHideObject.HasLowCover() ? 0 : HighCoverMaxHeight; // old system: assume low cover when low cover is available, otherwise assume high cover
-		}
+		const float radius = pPipeUser->GetParameters().distanceToCover;
+		const Vec3 hidePos = gAIEnv.pCoverSystem->GetCoverLocation(coverID, radius, &hideHeight, &hideNormal);
+		//hidePos = gAIEnv.pCoverSystem->GetCoverSurface(coverID)->GetCoverOcclusionAt(radius, &hideHeight, &hideNormal);
+		hideHeight = pPipeUser->GetCoverUser()->GetLocationEffectiveHeight();
 
 		if (hideHeight < LowCoverMaxHeight) // only slides into low cover are supported
 		{
@@ -1300,8 +1258,6 @@ EGoalOpResult COPCrysis2Communicate::Execute(CPipeUser* pPipeUser)
 	case AI_REG_COVER:
 		if (CoverID coverID = pPipeUser->GetCoverRegister())
 			request.target = gAIEnv.pCoverSystem->GetCoverLocation(coverID);
-		else
-			request.target = pPipeUser->m_CurrentHideObject.GetObjectPos();
 		break;
 	default:
 		break;
@@ -1510,7 +1466,7 @@ EGoalOpResult COPCrysis2StickPath::ExecuteCurrentState(CPipeUser* pPipeUser, boo
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "COPCrysis2StickPath::Execute Unhandled state");
+			CRY_ASSERT(false, "COPCrysis2StickPath::Execute Unhandled state");
 			break;
 		}
 	}
@@ -1533,7 +1489,7 @@ bool COPCrysis2StickPath::ExecuteState_Prepare(CPuppet* pPuppet, bool bDryUpdate
 		const char* szPathName = pPuppet->GetPathToFollow();
 		if (!gAIEnv.pNavigation->GetDesignerPath(szPathName, m_Path))
 		{
-			pPuppet->SetSignal(0, "OnNoPathFound", 0, 0, gAIEnv.SignalCRCs.m_nOnNoPathFound);
+			pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoPathFound_DEPRECATED()));
 			return false;
 		}
 
@@ -1616,9 +1572,6 @@ bool COPCrysis2StickPath::ExecuteState_Navigate(CPuppet* pPuppet, bool bDryUpdat
 
 	if (!bDryUpdate)
 	{
-		CAIObject* pTarget = m_refTarget.GetAIObject();
-		assert(pTarget);
-
 		const Vec3 vMyPos = pPuppet->GetPos();
 
 		Vec3 vNearestMyPoint(ZERO);
@@ -2463,7 +2416,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 	{
 	case C2F_INVALID:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "COPCrysis2Fly: SETUP ASTAR" );
+			CRY_PROFILE_SECTION(PROFILE_AI, "COPCrysis2Fly: SETUP ASTAR" );
 
 			result = CalculateTarget(pPipeUser);
 
@@ -2480,7 +2433,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 		}
 	case C2F_PATHFINDING:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "COPCrysis2Fly: ASTAR UPDATE";
+			CRY_PROFILE_SECTION(PROFILE_AI, "COPCrysis2Fly: ASTAR UPDATE";
 
 			if (m_Solver)
 			{
@@ -2627,7 +2580,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 					result = eGOR_FAILED;
 				}
 
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					gEnv->pRenderer->GetIRenderAuxGeom()->DrawCone(nextPos + Vec3(0.0f, 0.0f, 2.0f), Vec3(0.0f, 0.0f, -1.0f), 1.0f, 2.0f, colour);
 				}
@@ -2639,7 +2592,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 				float lookDist = m_lookAheadDist;
 				GetLookAheadPoint(m_PathOut, lookDist, lookAheadPos);
 
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					gEnv->pRenderer->GetIRenderAuxGeom()->DrawCone(lookAheadPos + Vec3(0.0f, 0.0f, 2.0f), Vec3(0.0f, 0.0f, -1.0f), 1.0f, 2.0f, colour);
 				}
@@ -2688,7 +2641,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 
 				GetLookAheadPoint(m_PathOut, lookDist * 2.0f, lookAheadPos);
 
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					colour.r = 0;
 					colour.b = 255;
@@ -2740,7 +2693,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 		break;
 	}
 
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 	{
 		CFlightNavRegion2::DrawPath(m_PathOut);
 
@@ -3364,7 +3317,6 @@ ILINE float GetSubpathTo(const ListPositions& path, size_t startIndex, float sta
 		pathOut.push_back(lastNode);
 
 		size_t startOffset = (startSegmentFraction >= 0.001f ? 0 : 1);
-		size_t endOffset = (endSegmentFraction >= 0.001f ? 0 : 1);
 
 		for (size_t i = startIndex - startOffset; i > endIndex; --i)
 		{
@@ -3541,7 +3493,7 @@ EGoalOpResult COPCrysis2ChaseTarget::Execute(CPipeUser* pPipeUser)
 				Vec3 nextPos;
 				GetNextPathPoint(m_PathOut, curPos, nextPos);
 
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					gEnv->pRenderer->GetIRenderAuxGeom()->DrawCone(nextPos + Vec3(0.0f, 0.0f, 2.0f), Vec3(0.0f, 0.0f, -1.0f), 1.0f, 2.0f, colour);
 				}
@@ -3554,7 +3506,7 @@ EGoalOpResult COPCrysis2ChaseTarget::Execute(CPipeUser* pPipeUser)
 				float lookDist = m_lookAheadDist;
 				GetLookAheadPoint(m_PathOut, lookDist, lookAheadPos);
 
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					gEnv->pRenderer->GetIRenderAuxGeom()->DrawCone(lookAheadPos + Vec3(0.0f, 0.0f, 2.0f), Vec3(0.0f, 0.0f, -1.0f), 1.0f, 2.0f, colour);
 				}
@@ -3575,7 +3527,7 @@ EGoalOpResult COPCrysis2ChaseTarget::Execute(CPipeUser* pPipeUser)
 				pPipeUser->m_State.fDistanceToPathEnd = distanceToEnd;
 				pPipeUser->m_State.vLookTargetPos = lookAheadPos2;
 
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					colour.r = 0;
 					colour.b = 255;
@@ -3965,7 +3917,6 @@ EGoalOpResult COPCrysis2FlightFireWeapons::Execute(CPipeUser* pPipeUser)
 {
 	EGoalOpResult ret = eGOR_IN_PROGRESS;
 
-	Vec3 forward = pPipeUser->GetEntity()->GetForwardDir();
 	Vec3 playerPos;// = GetAISystem()->GetPlayer()->GetPos();
 
 	if (!GetTarget(pPipeUser, playerPos))

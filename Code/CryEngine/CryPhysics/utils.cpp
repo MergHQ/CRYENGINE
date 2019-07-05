@@ -130,6 +130,33 @@ int ChoosePrimitiveForMesh(strided_pointer<const Vec3> pVertices,strided_pointer
 	int i,j,ibest;
 	real error_max[3],error_avg[4],locerror,locarea;
 
+	if (flags & mesh_approx_sphere) {
+		Vec3r p0,p1,p2,n;
+		real r,rinv,area;
+		for(i=0,r=0;i<nTris*3;i++) r += (pVertices[pIndices[i]]-center).len();
+		r /= nTris*3;	rinv = (real)1.0/r;
+		error_max[0]=error_avg[0]=area = 0;
+		for(i=0;i<nTris;i++) {
+			p0=pVertices[pIndices[i*3]]; p1=pVertices[pIndices[i*3+1]]; p2=pVertices[pIndices[i*3+2]];
+			locerror = fabs_tpl((p0-center).len()-r)*rinv;
+			locerror = max(locerror, fabs_tpl((p1-center).len()-r)*rinv);
+			locerror = max(locerror, fabs_tpl((p2-center).len()-r)*rinv);
+			n = p1-p0^p2-p0; locarea = n.len();	
+			if (locarea>1E-5)
+				locerror = max(locerror, fabs_tpl(((p0-center)*n)/locarea-r)*rinv);
+			error_max[0] = max(error_max[0],locerror);
+			error_avg[0] += locerror*locarea;
+			area += locarea;
+		}
+		error_avg[0] /= area;
+		if (error_max[0]<tolerance*1.5f && error_avg[0]<tolerance) {
+			asphere.r = r;
+			asphere.center = center;
+			pprim = &asphere;
+			return sphere::type;
+		}
+	}
+
 	if (flags & mesh_approx_capsule) {
 		float r[3],h[3],V[3],area[2],zloc,rinv;
 		Matrix33 Basis = GetMtxFromBasis(eigen_axes);
@@ -257,33 +284,6 @@ int ChoosePrimitiveForMesh(strided_pointer<const Vec3> pVertices,strided_pointer
 		}
 	}
 
-	if (flags & mesh_approx_sphere) {
-		Vec3r p0,p1,p2,n;
-		real r,rinv,area;
-		for(i=0,r=0;i<nTris*3;i++) r += (pVertices[pIndices[i]]-center).len();
-		r /= nTris*3;	rinv = (real)1.0/r;
-		error_max[0]=error_avg[0]=area = 0;
-		for(i=0;i<nTris;i++) {
-			p0=pVertices[pIndices[i*3]]; p1=pVertices[pIndices[i*3+1]]; p2=pVertices[pIndices[i*3+2]];
-			locerror = fabs_tpl((p0-center).len()-r)*rinv;
-			locerror = max(locerror, fabs_tpl((p1-center).len()-r)*rinv);
-			locerror = max(locerror, fabs_tpl((p2-center).len()-r)*rinv);
-			n = p1-p0^p2-p0; locarea = n.len();	
-			if (locarea>1E-5)
-				locerror = max(locerror, fabs_tpl(((p0-center)*n)/locarea-r)*rinv);
-			error_max[0] = max(error_max[0],locerror);
-			error_avg[0] += locerror*locarea;
-			area += locarea;
-		}
-		error_avg[0] /= area;
-		if (error_max[0]<tolerance*1.5f && error_avg[0]<tolerance) {
-			asphere.r = r;
-			asphere.center = center;
-			pprim = &asphere;
-			return sphere::type;
-		}
-	}
-
 	if (flags & mesh_approx_cylinder) {
 		float r[3],h[3],area[2],zloc,rinv,hinv;
 		Matrix33 Basis = GetMtxFromBasis(eigen_axes);
@@ -385,7 +385,7 @@ real RotatePointToPlane(const Vec3r &pt, const Vec3r &axis,const Vec3r &center, 
 }
 
 
-int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec3& s, int bReleaseOld)
+int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec3& s, int bReleaseOld,  const Matrix33 *pskewMtx)
 {
 	IGeometry *pGeomScaled=0;
 	if (phys_geometry *pAdam = (phys_geometry*)pgeom->pGeom->GetForeignData(DATA_UNSCALED_GEOM)) {
@@ -396,6 +396,11 @@ int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec
 	switch (int itype=pgeom->pGeom->GetType()) {
 		case GEOM_BOX: { 
 			const primitives::box *pbox = (const primitives::box*)pgeom->pGeom->GetData();
+			Matrix33 R = pskewMtx ? *pskewMtx*pbox->Basis.T() : pbox->Basis.T();
+			if (fabs(R.GetColumn0()*R.GetColumn1()) + fabs(R.GetColumn0()*R.GetColumn2()) + fabs(R.GetColumn1()*R.GetColumn2()) > 0.01f) {
+				pGeomScaled = pgeom->pGeom->GetTriMesh();
+				goto use_mesh; 
+			}
 			primitives::box boxScaled;	
 			boxScaled = *pbox;
 			Diag33 smtx(s);
@@ -418,17 +423,18 @@ int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec
 		}	break;
 		case GEOM_TRIMESH: {
 			pGeomScaled = pGeoman->CloneGeometry(pgeom->pGeom);
+		use_mesh:
 			mesh_data *pmd = (mesh_data*)pGeomScaled->GetData();
-			Diag33 smtx(s);
+			Matrix33 mtx = pskewMtx ? *pskewMtx : Diag33(s);
 			for(int i=0; i<pmd->nVertices; i++)
-				pmd->pVertices[i] = smtx*pmd->pVertices[i];
+				pmd->pVertices[i] = mtx*pmd->pVertices[i];
 			pGeomScaled->SetData(pmd);
 		} break;
 	}
 	if (pGeomScaled) {
 		if (bReleaseOld)
 			pGeoman->UnregisterGeometry(pgeom);
-		pGeomScaled->SetForeignData(pgeom,DATA_UNSCALED_GEOM);
+		pGeomScaled->SetForeignData(pgeom,DATA_UNSCALED_GEOM); ++pgeom->nRefCount;
 		pgeom = pGeoman->RegisterGeometry(pGeomScaled, pgeom->surface_idx, pgeom->pMatMapping,pgeom->nMats);
 		pgeom->nRefCount = 0;	pGeomScaled->Release();
 		return 1;
@@ -437,26 +443,33 @@ int BakeScaleIntoGeometry(phys_geometry *&pgeom,IGeomManager *pGeoman, const Vec
 }
 
 
-Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, phys_geometry **ppgeom,IGeomManager *pGeoman)
+Vec3 get_xqs_from_matrices(Matrix34 *pMtx3x4,Matrix33 *pMtx3x3, Vec3 &pos,quaternionf &q,float &scale, phys_geometry **ppgeom,IGeomManager *pGeoman, Matrix33 *pskewMtx)
 {
 	Vec3 s;
+	Matrix33 skewMtx;
 	if (pMtx3x4) {
 		s.Set(pMtx3x4->GetColumn(0).len(), pMtx3x4->GetColumn(1).len(), pMtx3x4->GetColumn(2).len());
-		q = quaternionf(Matrix33(pMtx3x4->GetColumn(0)/s.x, pMtx3x4->GetColumn(1)/s.y, pMtx3x4->GetColumn(2)/s.z));
+		q = quaternionf(Matrix33(pMtx3x4->GetColumn(0)/s.x, pMtx3x4->GetColumn(1)/s.y, pMtx3x4->GetColumn(2)/s.z)).GetNormalized();
 		pos = pMtx3x4->GetTranslation();
+		skewMtx = Matrix33(!q)*Matrix33(*pMtx3x4);
 	} else if (pMtx3x3) {
 		s.Set(pMtx3x3->GetColumn(0).len(), pMtx3x3->GetColumn(1).len(), pMtx3x3->GetColumn(2).len());
-		q = quaternionf(Matrix33(pMtx3x3->GetColumn(0)/s.x, pMtx3x3->GetColumn(1)/s.y, pMtx3x3->GetColumn(2)/s.z));
+		q = quaternionf(Matrix33(pMtx3x3->GetColumn(0)/s.x, pMtx3x3->GetColumn(1)/s.y, pMtx3x3->GetColumn(2)/s.z)).GetNormalized();
+		skewMtx = Matrix33(!q)**pMtx3x3;
 	} else
 		return Vec3(1);
 	scale = min(min(s.x,s.y),s.z);
 	if (fabs_tpl(scale-1.0f)<0.001f)
 		scale = 1.0f;
-	else
+	else {
 		s /= scale;
+		skewMtx /= scale;
+	}
 	if (s.len2()>3.03f && ppgeom && pGeoman)
-		if (!BakeScaleIntoGeometry(*ppgeom,pGeoman,s))
+		if (!BakeScaleIntoGeometry(*ppgeom,pGeoman,s,0,&skewMtx))
 			scale *= (s.x+s.y+s.z)*(1.0f/3);
+	if (pskewMtx)
+		*pskewMtx = skewMtx;
 	return s;
 }
 
@@ -913,7 +926,6 @@ int bin2ascii(const unsigned char *pin,int sz, unsigned char *pout)
 int ascii2bin(const unsigned char *pin,int sz, unsigned char *pout)
 {
 	int a[4],nout,count0;
-	const unsigned char *pin0=pin;
 	for(nout=count0=0; *pin || count0; nout+=3) {
 		for(int i=0;i<4;i++) if (count0>0) 
 			a[i]=0, count0--; 
@@ -1308,7 +1320,6 @@ public:
 			int iPlane = GetProjCubePlane(pt[0]);
 			const int az = iPlane>>1, ay = dec_mod3[az], ax = inc_mod3[az];
 			int* rawdata = cubemap->grid[iPlane];
-			const float scale = scaleSign[iPlane&1];
 			float z = 1.f/(fabsf(pt[0][az])+1e-6f);
 			int ix0 = min(N-1,max(0, float2int((pt[0][ax]*z+1.f)*cubemap->halfN)));
 			int iy0 = min(N-1,max(0, float2int((pt[0][ay]*z+1.f)*cubemap->halfN)));

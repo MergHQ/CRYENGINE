@@ -40,8 +40,6 @@ void CIntegerValuePredictor::SetMode(EPredictorMode mode)
 
 void CIntegerValuePredictor::Update(int32 value, const int32 prediction, int32 mementoAge, uint32 time)
 {
-	int32 delta = abs(prediction - value);
-
 	if (m_predictorMode == ePredictorMode_Time)
 		UpdateTime(value, prediction, mementoAge, time);
 	else
@@ -165,7 +163,9 @@ int32 CIntegerValuePredictor::PredictAge(uint32& left, uint32& right, uint32 avg
 		{
 			for (int j = 1; j < mementoAge && j < 5; j++)
 			{
+#if defined(USE_CRY_ASSERT)
 				uint32 oldRange = range;
+#endif
 				range = (uint32)CLAMP(uint64(range) * uint64(6) / uint64(5), uint64(0), uint64(~uint32(0)));
 				NET_ASSERT(range >= oldRange);
 			}
@@ -242,7 +242,9 @@ int32 CIntegerValuePredictor::PredictTime(uint32 &left, uint32 &right, uint32 av
 		{
 			for(int j = 1; j < mementoAge && j < 5; j++)
 			{
+#if defined(USE_CRY_ASSERT)
 				uint32 oldRange = range;
+#endif
 				range = (uint32)CLAMP( uint64(range) * uint64(6) / uint64(5), uint64(0), uint64(~uint32(0)) );
 				NET_ASSERT(range >= oldRange);
 			}

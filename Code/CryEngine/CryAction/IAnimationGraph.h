@@ -52,7 +52,7 @@ enum EMovementControlMethod
 };
 AUTO_TYPE_INFO(EMovementControlMethod);
 
-extern char* g_szMCMString[eMCM_COUNT];
+extern const char* g_szMCMString[eMCM_COUNT];
 
 enum EColliderMode
 {
@@ -71,7 +71,7 @@ enum EColliderMode
 	eColliderMode_COUNT,
 	eColliderMode_FF = 0xFF
 };
-extern char* g_szColliderModeString[eColliderMode_COUNT];
+extern const char* g_szColliderModeString[eColliderMode_COUNT];
 
 AUTO_TYPE_INFO(EColliderMode);
 
@@ -94,7 +94,7 @@ enum EColliderModeLayer
 	eColliderModeLayer_FF = 0xFF
 };
 
-extern char* g_szColliderModeLayerString[eColliderModeLayer_COUNT];
+extern const char* g_szColliderModeLayerString[eColliderModeLayer_COUNT];
 
 enum EAnimationGraphUserData
 {

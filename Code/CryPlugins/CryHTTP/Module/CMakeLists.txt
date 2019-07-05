@@ -1,4 +1,4 @@
-if ((WIN32 OR ORBIS) AND OPTION_ENGINE)
+if ((WINDOWS OR ORBIS) AND OPTION_ENGINE)
 	option(PLUGIN_HTTP "Enable HTTP support" ON)
 else()
 	option(PLUGIN_HTTP "Enable HTTP support" OFF)
@@ -9,15 +9,16 @@ if (NOT PLUGIN_HTTP)
 endif()
 
 start_sources()
+# -- cryhttp.waf_files --
 sources_platform(ALL)
-add_sources("CryHTTP_uber_0.cpp"
+add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"resource.h"
 		"StdAfx.cpp"
 		"StdAfx.h"
 )
 
-sources_platform(WIN32 LINUX APPLE)
+sources_platform(WINDOWS LINUX APPLE)
 add_sources("CryHTTP_cURL_uber_0.cpp"
 	SOURCE_GROUP "Implementation"
 		"HttpImplementation_cURL.cpp"
@@ -31,11 +32,6 @@ add_sources("CryHTTP_sce_uber_0.cpp"
 		"HttpImplementation_SCE.h"
 )
 
-add_sources("NoUberFile"
-	SOURCE_GROUP "Root"
-		"StdAfx.cpp"
-)
-
 end_sources()
 
 CryEngineModule(CryHTTP PCH "StdAfx.cpp" SOLUTION_FOLDER "CryPlugins")
@@ -47,6 +43,10 @@ PUBLIC
 	../Interface
 )
 
-if(WIN32 OR LINUX OR APPLE)
+if(WINDOWS OR LINUX OR APPLE)
 	target_link_libraries( ${THIS_PROJECT} PRIVATE curl )
+endif()
+
+if(LINUX OR ORBIS)
+	target_compile_options(${THIS_PROJECT} PRIVATE -w)
 endif()

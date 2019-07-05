@@ -70,12 +70,14 @@ private:
 class CDeviceGraphicsCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
-	void PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews, bool bCompute) const;
+	void PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews, bool bCompute) const;
 	void PrepareRenderPassForUseImpl(CDeviceRenderPass& renderPass) const;
 	void PrepareResourceForUseImpl(uint32 bindSlot, CTexture* pTexture, const ResourceViewHandle TextureView, ::EShaderStage srvUsage) const;
 	void PrepareResourcesForUseImpl(uint32 bindSlot, CDeviceResourceSet* pResources) const;
 	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
 	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages) const;
+	void PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
+	void PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages) const;
 	void PrepareVertexBuffersForUseImpl(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams) const;
 	void PrepareIndexBufferForUseImpl(const CDeviceInputStream* indexStream) const;
 	void BeginResourceTransitionsImpl(uint32 numTextures, CTexture** pTextures, EResourceTransitionType type);
@@ -89,6 +91,8 @@ protected:
 	void SetResourcesImpl(uint32 bindSlot, const CDeviceResourceSet* pResources);
 	void SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass);
 	void SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, ::EShaderStage shaderStages);
+	void SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass, ResourceViewHandle resourceViewID);
+	void SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ::EShaderStage shaderStages, ResourceViewHandle resourceViewID);
 	void SetVertexBuffersImpl(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams);
 	void SetIndexBufferImpl(const CDeviceInputStream* indexStream);       // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
 	void SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants);
@@ -102,6 +106,9 @@ protected:
 	void ClearSurfaceImpl(D3DSurface* pView, const FLOAT Color[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects);
 
+	void DiscardContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects);
+	void DiscardContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
+
 	void BeginOcclusionQueryImpl(D3DOcclusionQuery* pQuery);
 	void EndOcclusionQueryImpl(D3DOcclusionQuery* pQuery);
 };
@@ -109,25 +116,32 @@ protected:
 class CDeviceComputeCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
-	void PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews) const;
+	void PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews) const;
 	void PrepareResourcesForUseImpl(uint32 bindSlot, CDeviceResourceSet* pResources) const;
-	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlots, ::EShaderStage shaderStages) const;
+	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot) const;
+	void PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot) const;
 
 	void SetPipelineStateImpl(const CDeviceComputePSO* pDevicePSO);
 	void SetResourceLayoutImpl(const CDeviceResourceLayout* pResourceLayout);
 	void SetResourcesImpl(uint32 bindSlot, const CDeviceResourceSet* pResources);
 	void SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot);
+	void SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ResourceViewHandle resourceViewID);
 	void SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants);
 
 	void DispatchImpl(uint32 X, uint32 Y, uint32 Z);
 
 	void ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
+
+	void DiscardUAVContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects);
+	void DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
 };
 
 class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
+	void CopyImpl(D3DResource*    pSrc, D3DResource*    pDst);
+
 	void CopyImpl(CDeviceBuffer*  pSrc, CDeviceBuffer*  pDst);
 	void CopyImpl(D3DBuffer*      pSrc, D3DBuffer*      pDst);
 	void CopyImpl(CDeviceTexture* pSrc, CDeviceTexture* pDst);

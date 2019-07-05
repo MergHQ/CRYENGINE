@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HyperGraphEditorTree.h"
+#include "IEditorImpl.h"
 
 #include <CryGame/IGameFramework.h>
 #include <CrySystem/Scaleform/IFlashUI.h>
@@ -519,7 +520,7 @@ void CHyperGraphsTreeCtrl::FullReload()
 	if (m_bIgnoreReloads)
 		return;
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SetRedraw(FALSE);
 
@@ -596,5 +597,3 @@ void CHyperGraphsTreeCtrl::DeleteEmptyParentFolders(HTREEITEM hFirstParent)
 			return;
 	}
 }
-
-

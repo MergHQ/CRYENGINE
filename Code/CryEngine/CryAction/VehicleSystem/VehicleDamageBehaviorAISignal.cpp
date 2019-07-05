@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "VehicleDamageBehaviorAISignal.h"
 
-#include <CryAISystem/IAgent.h>
 #include "IVehicleSystem.h"
 
 CVehicleDamageBehaviorAISignal::CVehicleDamageBehaviorAISignal()
@@ -79,20 +78,20 @@ void CVehicleDamageBehaviorAISignal::OnDamageEvent(EVehicleDamageBehaviorEvent e
 	{
 		Vec3 entityPosition = pEntity->GetPos();
 
-		IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->point = entityPosition;
 
-		pAISystem->SendAnonymousSignal(m_signalId, m_freeSignalText.c_str(), entityPosition, m_freeSignalRadius, NULL, pData);
+		pAISystem->SendAnonymousSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(m_signalId, m_freeSignalText, 0, pData), entityPosition, m_freeSignalRadius);
 
 		if (m_freeSignalRepeat)
 			ActivateUpdate(true);
 	}
 
-	IAISignalExtraData* pExtraData = pAISystem->CreateSignalExtraData();
+	AISignals::IAISignalExtraData* pExtraData = pAISystem->CreateSignalExtraData();
 	CRY_ASSERT(pExtraData);
 	pExtraData->iValue = behaviorParams.shooterId;
 
-	pAISystem->SendSignal(SIGNALFILTER_SENDER, m_signalId, m_signalText.c_str(), pEntity->GetAI(), pExtraData);
+	pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(m_signalId, m_freeSignalText, pEntity->GetId(), pExtraData));
 }
 
 void CVehicleDamageBehaviorAISignal::Update(const float deltaTime)
@@ -113,10 +112,10 @@ void CVehicleDamageBehaviorAISignal::Update(const float deltaTime)
 
 		Vec3 entityPosition = pEntity->GetPos();
 
-		IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+		AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 		pData->point = entityPosition;
 
-		pAISystem->SendAnonymousSignal(m_signalId, m_freeSignalText.c_str(), entityPosition, m_freeSignalRadius, NULL, pData);
+		pAISystem->SendAnonymousSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(m_signalId, m_freeSignalText, 0, pData), entityPosition, m_freeSignalRadius);
 
 		m_timeCounter = 1.0f;
 	}

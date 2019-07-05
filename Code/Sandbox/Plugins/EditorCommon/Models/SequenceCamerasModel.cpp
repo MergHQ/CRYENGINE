@@ -82,4 +82,3 @@ void CSequenceCamerasModel::Load()
 		}
 	}
 }
-

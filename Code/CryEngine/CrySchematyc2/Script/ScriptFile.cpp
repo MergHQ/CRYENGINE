@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "Script/ScriptFile.h"
 
+#include <CrySystem/CryVersion.h>
 #include <CrySerialization/BlackBox.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/STL.h>
@@ -588,7 +589,7 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	IScriptStateMachine* CScriptFile::AddStateMachine(const SGUID& scopeGUID, const char* szName, EScriptStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID)
+	IScriptStateMachine* CScriptFile::AddStateMachine(const SGUID& scopeGUID, const char* szName, EStateMachineLifetime lifetime, const SGUID& contextGUID, const SGUID& partnerGUID)
 	{
 		SCHEMATYC2_SYSTEM_ASSERT(gEnv->IsEditor());
 		if(gEnv->IsEditor())
@@ -1201,7 +1202,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CScriptFile::Load()
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS(m_fileName.c_str());
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, m_fileName.c_str());
 
 		if(!m_fileName.empty())
 		{
@@ -1284,7 +1285,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CScriptFile::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS(m_fileName.c_str());
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, m_fileName.c_str());
 		for(Elements::value_type& element : m_elements)
 		{
 			element.second->Refresh(params);
@@ -1585,29 +1586,40 @@ namespace Schematyc2
 
 				inputBlock.SortElementsByDependency();
 
-				// Copy elements to file.
-				for(DocSerializationUtils::CInputBlock::SElement& element : elements)
 				{
-					Serialization::LoadBlackBox(element, element.blackBox);
-					m_elements.insert(Elements::value_type(element.ptr->GetGUID(), element.ptr));
-				}
-				for(DocSerializationUtils::CInputBlock::SElement& element : elements)
-				{
-					Serialization::LoadBlackBox(element, element.blackBox);
-				}
-				// Validate elements.
-				CValidatorArchive     validatorArchive(EValidatorArchiveFlags::ForwardWarningsToLog | EValidatorArchiveFlags::ForwardErrorsToLog);
-				CSerializationContext serializationContext(SSerializationContextParams(validatorArchive, this, ESerializationPass::Validate));
-				for(DocSerializationUtils::CInputBlock::SElement& element : elements)
-				{
-					element.ptr->Serialize(validatorArchive);
-				}
+					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load And Insert Elements");
 
-				if(origin == EElementOrigin::Clipboard)
-				{
-					// Refresh all elements and mark file as modified.
-					Refresh(SScriptRefreshParams(EScriptRefreshReason::EditorPaste));
-					SetFlags(GetFlags() | EScriptFileFlags::Modified);
+					// Copy elements to file.
+					for(DocSerializationUtils::CInputBlock::SElement& element : elements)
+					{
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Insert Elements");
+						Serialization::LoadBlackBox(element, element.blackBox);
+						m_elements.insert(Elements::value_type(element.ptr->GetGUID(), element.ptr));
+					}
+					for(DocSerializationUtils::CInputBlock::SElement& element : elements)
+					{
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Elements");
+						Serialization::LoadBlackBox(element, element.blackBox);
+					}
+					
+					{
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Validate Elements");
+
+						// Validate elements.
+						CValidatorArchive     validatorArchive(EValidatorArchiveFlags::ForwardWarningsToLog | EValidatorArchiveFlags::ForwardErrorsToLog);
+						CSerializationContext serializationContext(SSerializationContextParams(validatorArchive, this, ESerializationPass::Validate));
+						for(DocSerializationUtils::CInputBlock::SElement& element : elements)
+						{
+							element.ptr->Serialize(validatorArchive);
+						}
+
+						if(origin == EElementOrigin::Clipboard)
+						{
+							// Refresh all elements and mark file as modified.
+							Refresh(SScriptRefreshParams(EScriptRefreshReason::EditorPaste));
+							SetFlags(GetFlags() | EScriptFileFlags::Modified);
+						}
+					}
 				}
 			}
 		}
@@ -1621,7 +1633,7 @@ namespace Schematyc2
 			const IScriptElementPtr& pElement = element.second;
 			if(pElement->GetElementType() == type)
 			{
-				if ((CVars::sc_DiscardOnSave == 0) || ((pElement->GetElementFlags() & EScriptElementFlags::Discard) == 0))
+				if ((CVars::sc2_DiscardOnSave == 0) || ((pElement->GetElementFlags() & EScriptElementFlags::Discard) == 0))
 				{
 					elementsToSave[string(pElement->GetName())].insert( ElementsScopeGuidMap::value_type(pElement->GetScopeGUID(), pElement.get()) );
 				}

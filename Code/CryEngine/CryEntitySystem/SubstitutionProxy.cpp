@@ -3,6 +3,8 @@
 #include "stdafx.h"
 #include "SubstitutionProxy.h"
 #include "Entity.h"
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryPhysics/IPhysics.h>
 #include <CryNetwork/ISerialize.h>
 
 CRYREGISTER_CLASS(CEntityComponentSubstitution);
@@ -66,9 +68,9 @@ void CEntityComponentSubstitution::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentSubstitution::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentSubstitution::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_DONE) | ENTITY_EVENT_BIT(ENTITY_EVENT_PHYSICAL_TYPE_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_ENABLE_PHYSICS);
+	return ENTITY_EVENT_DONE | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED | ENTITY_EVENT_ENABLE_PHYSICS;
 }
 
 //////////////////////////////////////////////////////////////////////////

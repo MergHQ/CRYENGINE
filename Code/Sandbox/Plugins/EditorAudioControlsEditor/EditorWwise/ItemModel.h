@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace ACE
 {
@@ -16,20 +17,26 @@ class CItemModel final : public QAbstractItemModel
 {
 public:
 
-	enum class EColumns
+	CItemModel() = delete;
+	CItemModel(CItemModel const&) = delete;
+	CItemModel(CItemModel&&) = delete;
+	CItemModel& operator=(CItemModel const&) = delete;
+	CItemModel& operator=(CItemModel&&) = delete;
+
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Notification,
 		Connected,
 		Localized,
 		Name,
-		Count,
-	};
+		Count, };
 
 	explicit CItemModel(CItem const& rootItem, QObject* const pParent);
+	virtual ~CItemModel() override = default;
 
-	CItemModel() = delete;
+	void          Reset();
 
-	void Reset();
+	static CItem* GetItemFromIndex(QModelIndex const& index);
 
 protected:
 
@@ -58,4 +65,3 @@ private:
 } // namespace Wwise
 } // namespace Impl
 } // namespace ACE
-

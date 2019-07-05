@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CrySystem/ConsoleRegistration.h>
+
 //////////////////////////////////////////////////////////////////////////
 // console variable interfaces.
 // In an instance of this class (singleton for now), there are all the interfaces
@@ -48,6 +50,9 @@ struct CRY_ALIGN(128) Console
 #ifndef _RELEASE
 	int32 ca_DebugAnimUsageOnFileAccess;
 	int32 ca_AttachmentTextureMemoryBudget;
+
+	int32 ca_debug_attachmentManager_maxUsedMemSize;
+	int32 ca_debug_attachmentManager_maxUsedOffsetSize;
 #endif
 
 	DeclareConstIntCVar(ca_SnapToVGrid, 0);
@@ -66,7 +71,6 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DrawBinormals, 0);
 	DeclareConstIntCVar(ca_DrawNormals, 0);
 	DeclareConstIntCVar(ca_DrawAttachments, 1);
-	DeclareConstIntCVar(ca_DrawAttachmentsMergedForShadows, 1);
 	DeclareConstIntCVar(ca_DrawAttachmentOBB, 0);
 	DeclareConstIntCVar(ca_DrawAttachmentProjection, 0);
 	DeclareConstIntCVar(ca_DrawBaseMesh, 1);
@@ -83,8 +87,8 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DebugAnimationStreaming, 0);
 	DeclareConstIntCVar(ca_DebugAttachmentsProxies, 0);
 	DeclareConstIntCVar(ca_DebugCriticalErrors, 0);
-	DeclareConstIntCVar(ca_UseIMG_CAF, 1);
-	DeclareConstIntCVar(ca_UseIMG_AIM, 1);
+	DeclareConstIntCVar(ca_UseIMG_CAF, 0);
+	DeclareConstIntCVar(ca_UseIMG_AIM, 0);
 	DeclareConstIntCVar(ca_UseMorph, 1);
 	DeclareConstIntCVar(ca_NoAnim, 0);
 	DeclareConstIntCVar(ca_UsePhysics, 1);
@@ -117,6 +121,7 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DebugADIKTargets, 0);
 	DeclareConstIntCVar(ca_SaveAABB, 0);
 	DeclareConstIntCVar(ca_DebugSkeletonEffects, 0);
+	DeclareConstIntCVar(ca_SkeletonEffectsPlayAudioInEngine, 0);
 	DeclareConstIntCVar(ca_cloth_vars_reset, 2);
 	DeclareConstIntCVar(ca_SerializeSkeletonAnim, 0);
 	DeclareConstIntCVar(ca_LockFeetWithIK, 1);
@@ -127,6 +132,11 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DisableAnimationUnloading, 0);
 	DeclareConstIntCVar(ca_PreloadAllCAFs, 0);
 	DeclareConstIntCVar(ca_SampleQuatHemisphereFromCurrentPose, 0);
+	DeclareConstIntCVar(ca_MinAttachmentMemorySize, 4096);
+	DeclareConstIntCVar(ca_MinAttachmentOffsetSize, 4096);
+	DeclareConstIntCVar(ca_CullQuasiStaticAnimationUpdates, 0);
+	DeclareConstIntCVar(ca_DebugQuasiStaticAnimationCulling, 0); 
+	DeclareConstIntCVar(ca_QuasiStaticAnimationSleepTimeoutMs, 2500);
 
 #if USE_FACIAL_ANIMATION_FRAMERATE_LIMITING
 	DeclareConstIntCVar(ca_FacialAnimationFramerate, 20);
@@ -162,6 +172,7 @@ struct CRY_ALIGN(128) Console
 
 	int32 ca_VClothMode;
 
+	f32 ca_OverrideBlendWeightSimulatedSockets;
 	f32 ca_lipsync_vertex_drag;
 	f32 ca_lipsync_phoneme_strength;
 	f32 ca_DeathBlendTime;
@@ -192,7 +203,6 @@ struct CRY_ALIGN(128) Console
 
 	int32 ca_vaUpdateTangents;
 	int32 ca_vaSkipVertexAnimationLOD;
-	int32 ca_AttachmentMergingMemoryBudget;
 
 	DeclareConstIntCVar(ca_DrawCloth, 1);
 	DeclareConstIntCVar(ca_ClothBlending, 1);

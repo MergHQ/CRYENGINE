@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "PrefabEvents.h"
 
+#include "IEditorImpl.h"
+#include "LogFile.h"
 #include "PrefabItem.h"
 #include "Objects/PrefabObject.h"
 #include "HyperGraph/FlowGraphManager.h"
@@ -78,7 +80,6 @@ void CPrefabEvents::OnHyperGraphEvent(IHyperNode* pINode, EHyperGraphEvent event
 		if (pHyperNode->IsFlowNode())
 		{
 			CFlowNode* pFlowNode = static_cast<CFlowNode*>(pINode);
-			TFlowNodeId typeId = pFlowNode->GetTypeId();
 
 			if (pFlowNode->GetTypeId() == s_prefabInstanceNodeId)
 			{
@@ -1247,4 +1248,3 @@ void CPrefabEvents::SPrefabNodeHelper::CompleteNodeRemoval()
 		m_nodePosToRemove.clear();
 	}
 }
-

@@ -10,7 +10,9 @@
 
 #ifdef USE_GLOBAL_BUCKET_ALLOCATOR
 	#define MMM_USE_BUCKET_ALLOCATOR            1
-	#define MMM_BUCKET_ALLOCATOR_SIZE           (4 * 1024 * 1024)
+	#ifndef MMM_BUCKET_ALLOCATOR_SIZE
+		#define MMM_BUCKET_ALLOCATOR_SIZE           (4 * 1024 * 1024)
+	#endif
 	#define LOG_BUCKET_ALLOCATOR_HIGH_WATERMARK 0
 #else
 	#define MMM_USE_BUCKET_ALLOCATOR            0
@@ -162,7 +164,7 @@ private:
 	private:
 		ILINE Hdl ProtectHdl(Hdl x) const
 		{
-#if !CRY_PLATFORM_APPLE && !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
+#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
 			if (x != InvalidHdl)
 			{
 				return (x << 1) ^ ((uint32)UINT_PTR(this) + 1);     // ensures 0xFFFFFFFF cannot be a valid result (this will always be at least 4 byte aligned)
@@ -173,7 +175,7 @@ private:
 
 		ILINE Hdl UnprotectHdl(Hdl x) const
 		{
-#if !CRY_PLATFORM_APPLE && !(CRY_PLATFORM_LINUX && CRY_PLATFORM_64BIT) && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
+#if !CRY_PLATFORM_APPLE && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ORBIS && CRYNETWORK_RELEASEBUILD
 			if (x != InvalidHdl)
 			{
 				return (x ^ ((uint32)UINT_PTR(this) + 1)) >> 1;

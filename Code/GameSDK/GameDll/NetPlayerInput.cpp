@@ -15,6 +15,7 @@
 
 #include "Utility/CryWatch.h"
 #include <CryMath/Cry_GeoDistance.h>
+#include <CryGame/GameUtils.h>
 
 
 /*
@@ -125,7 +126,6 @@ struct CNetLerper::Debug
 	
 		m_timer += gEnv->pTimer->GetFrameTime();
 		if (m_timer>30.f) m_timer = 0.f;
-		float time = gEnv->pTimer->GetCurrTime();
 		float dt = (1.f/50.f);
 		Vec3 offset = Vec3(0.f, 0.f, 0.025f + 0.003f*sinf(8.f*m_timer));
 		Vec3 offset2 = Vec3(0.f, 0.f, 0.035f + 0.003f*sinf(5.f*m_timer));
@@ -451,7 +451,6 @@ CNetPlayerInput::CNetPlayerInput( CPlayer * pPlayer )
 
 void CNetPlayerInput::UpdateInterpolation()
 {
-	Vec3 desiredPosition = m_curInput.position;
 	Vec3 desiredVelocity = m_curInput.deltaMovement * g_pGameCVars->pl_netSerialiseMaxSpeed;
 
 	// Use the physics pos as the entity position is a frame behind at this point
@@ -463,8 +462,6 @@ void CNetPlayerInput::UpdateInterpolation()
 	pe_status_living psl;
 	psl.velGround.zero();
 	pent->GetStatus(&psl);
-	
-	float dt = gEnv->pTimer->GetFrameTime();
 
 	// New data?
 	if (m_newInterpolation)

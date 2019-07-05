@@ -98,7 +98,7 @@ CMatchmakingTelemetry::EMMTelRetVal CMatchmakingTelemetry::EndMatchmakingTranscr
 		CTelemetryCollector *tc=static_cast<CTelemetryCollector*>(static_cast<CGame*>(g_pGame)->GetITelemetryCollector());
 		ITelemetryProducer *pProducer = new CMMTelemetryProducer( m_pBuffer );
 
-		char* nameBase;
+		const char* nameBase;
 
 		switch( transcript )
 		{
@@ -327,7 +327,7 @@ ITelemetryProducer::EResult CMMTelemetryProducer::ProduceTelemetry( char *pOutBu
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE( (int)writtingIndex >= inMinRequired, "MatchMaking Telemetry event is too large to send" );
+			CRY_ASSERT( (int)writtingIndex >= inMinRequired, "MatchMaking Telemetry event is too large to send" );
 			writtenEnough = true;
 		}
 	}
@@ -430,7 +430,7 @@ void CMMTelemetryProducer::OutputChosenSessionData( SRecording_Packet& eventPack
 {
 	SMMChosenSessionEvent& sessionEvent = reinterpret_cast<SMMChosenSessionEvent&>( eventPacket );
 
-	char* tagName;
+	const char* tagName;
 
 	if( sessionEvent.m_created )
 	{

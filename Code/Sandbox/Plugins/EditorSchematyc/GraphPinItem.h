@@ -89,7 +89,7 @@ public:
 	virtual const char*                        GetStyleId() const { return m_styleId.c_str(); }
 	virtual CryGraphEditor::CAbstractNodeItem& GetNodeItem() const override;
 
-	virtual QString                            GetName() const override        { return m_name; };
+	virtual QString                            GetName() const override        { return m_name; }
 	virtual QString                            GetDescription() const override { return QString(); }
 	virtual QString                            GetTypeName() const override;
 
@@ -132,4 +132,3 @@ inline CPinId CPinItem::GetPinId() const
 }
 
 Q_DECLARE_METATYPE(CrySchematycEditor::CPinId);
-

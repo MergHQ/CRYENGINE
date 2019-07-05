@@ -36,7 +36,7 @@ namespace Cry
 			virtual void Initialize() final;
 
 			virtual void   ProcessEvent(const SEntityEvent& event) final;
-			virtual uint64 GetEventMask() const final;
+			virtual Cry::Entity::EventFlags GetEventMask() const final;
 
 #ifndef RELEASE
 			virtual IEntityComponentPreviewer* GetPreviewer() final { return this; }
@@ -63,12 +63,13 @@ namespace Cry
 				desc.SetDescription("Captures an image of its full surroundings and used to light nearby objects with reflective materials");
 				desc.SetIcon("icons:Designer/Designer_Box.ico");
 				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly });
-				
-				desc.AddMember(&CEnvironmentProbeComponent::m_generation, 'gen', "Generation", "Generation Parameters", "Parameters for default cube map generation and load", CEnvironmentProbeComponent::SGeneration());
+
 				desc.AddMember(&CEnvironmentProbeComponent::m_bActive, 'actv', "Active", "Active", "Determines whether the environment probe is enabled", true);
 				desc.AddMember(&CEnvironmentProbeComponent::m_extents, 'exts', "BoxSize", "Box Size", "Size of the area the probe affects.", Vec3(10.f));
+
 				desc.AddMember(&CEnvironmentProbeComponent::m_options, 'opt', "Options", "Options", "Specific Probe Options", CEnvironmentProbeComponent::SOptions());
 				desc.AddMember(&CEnvironmentProbeComponent::m_color, 'colo', "Color", "Color", "Probe Color emission information", CEnvironmentProbeComponent::SColor());
+				desc.AddMember(&CEnvironmentProbeComponent::m_generation, 'gen', "Generation", "Generation Parameters", "Parameters for default cube map generation and load", CEnvironmentProbeComponent::SGeneration());
 			}
 
 			struct SOptions
@@ -328,7 +329,7 @@ namespace Cry
 
 			virtual bool GetCubemapTextures(const char* path, ITexture** pSpecular, ITexture** pDiffuse, bool bLoadFromDisk = true) const
 			{
-				stack_string specularCubemap = PathUtil::ReplaceExtension(path, ".dds");
+				CryPathString specularCubemap = PathUtil::ReplaceExtension(path, ".dds");
 
 				int strIndex = specularCubemap.find("_diff");
 				if (strIndex >= 0)
@@ -336,13 +337,13 @@ namespace Cry
 					specularCubemap = specularCubemap.substr(0, strIndex) + specularCubemap.substr(strIndex + 5, specularCubemap.length());
 				}
 
-				char diffuseCubemap[ICryPak::g_nMaxPath];
-				cry_sprintf(diffuseCubemap, "%s%s%s.%s", PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(specularCubemap)).c_str(),
+				CryPathString diffuseCubemap;
+				diffuseCubemap.Format("%s%s%s.%s", PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(specularCubemap)).c_str(),
 					PathUtil::GetFileName(specularCubemap).c_str(), "_diff", PathUtil::GetExt(specularCubemap));
 
 				// '\\' in filename causing texture duplication
-				stack_string specularCubemapUnix = PathUtil::ToUnixPath(specularCubemap.c_str());
-				stack_string diffuseCubemapUnix = PathUtil::ToUnixPath(diffuseCubemap);
+				CryPathString specularCubemapUnix = PathUtil::ToUnixPath(specularCubemap.c_str());
+				CryPathString diffuseCubemapUnix = PathUtil::ToUnixPath(diffuseCubemap);
 
 				if (bLoadFromDisk)
 				{

@@ -83,10 +83,13 @@ void CDecalRenderNode::CreateDecalOnStaticObjects()
 	CVisAreaManager* pVisAreaManager(GetVisAreaManager());
 	PodArray<SRNInfo> decalReceivers;
 
-	if (pTerrain && m_pOcNode && !m_pOcNode->GetVisArea())
-		pTerrain->GetObjectsAround(m_decalProperties.m_pos, m_decalProperties.m_radius, &decalReceivers, true, false);
-	else if (pVisAreaManager && m_pOcNode && m_pOcNode->GetVisArea())
-		pVisAreaManager->GetObjectsAround(m_decalProperties.m_pos, m_decalProperties.m_radius, &decalReceivers, true);
+	if (GetEntityVisArea())
+	{
+		if (pTerrain)
+			pTerrain->GetObjectsAround(m_decalProperties.m_pos, m_decalProperties.m_radius, &decalReceivers, true, false);
+		else if (pVisAreaManager)
+			pVisAreaManager->GetObjectsAround(m_decalProperties.m_pos, m_decalProperties.m_radius, &decalReceivers, true);
+	}
 
 	// delete vegetations
 	for (int nRecId(0); nRecId < decalReceivers.Count(); ++nRecId)
@@ -373,7 +376,7 @@ void CDecalRenderNode::SetDecalProperties(const SDecalProperties& properties)
 		const float thickness = 0.01f;
 		geom_world_data gwd[2];
 		gwd[0].offset = m_Matrix.GetTranslation();
-		gwd[0].v = m_Matrix.TransformVector(Vec3(0, 0, 1));
+		gwd[0].v = m_Matrix.TransformVector(Vec3(0, 0, 1)).GetNormalized();
 		primitives::cylinder cyl;
 
 		Vec2_tpl<uint16> sz;
@@ -596,6 +599,8 @@ void CDecalRenderNode::Render(const SRendParams& rParam, const SRenderingPassInf
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	if (!passInfo.RenderDecals())
 		return; // false;
 
@@ -700,23 +705,13 @@ void CDecalRenderNode::CleanUpOldDecals()
 
 void CDecalRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_WSBBox.Move(delta);
 	m_Matrix.SetTranslation(m_Matrix.GetTranslation() + delta);
 }
 
-void CDecalRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CDecalRenderNode::GetBBox();
-}
-
-EERType CDecalRenderNode::GetRenderNodeType()
-{
-	return eERType_Decal;
-}
-
-float CDecalRenderNode::GetMaxViewDist()
+float CDecalRenderNode::GetMaxViewDist() const
 {
 	float fMatScale = m_Matrix.GetColumn0().GetLength();
 

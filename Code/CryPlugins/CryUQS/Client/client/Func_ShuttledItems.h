@@ -45,9 +45,9 @@ namespace UQS
 				: BaseClass(ctorContext)
 				, m_pItemListProxy(nullptr)
 			{
-				assert(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
+				CRY_ASSERT(ctorContext.pOptionalReturnValueInCaseOfLeafFunction);
 
-				const Core::ILeafFunctionReturnValue::SShuttledItemsInfo shuttledItemsInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetShuttledItems(ctorContext.blackboard);
+				const Core::ILeafFunctionReturnValue::SShuttledItemsInfo shuttledItemsInfo = ctorContext.pOptionalReturnValueInCaseOfLeafFunction->GetShuttledItems(ctorContext.queryContext);
 
 				// check for existence of shuttled items
 				if (shuttledItemsInfo.pShuttledItems)
@@ -66,7 +66,7 @@ namespace UQS
 				}
 				else
 				{
-					m_errorMessage = "there are no shuttled items from a potential previous query on the blackboard";
+					m_errorMessage = "there are no shuttled items from a potential previous query on the queryContext";
 				}
 			}
 
@@ -93,7 +93,7 @@ namespace UQS
 			template <class TItem>
 			CItemListProxy_Readable<TItem> CFunc_ShuttledItems<TItem>::DoExecute(const SExecuteContext& executeContext) const
 			{
-				assert(m_pItemListProxy);  // should have been caught by ValidateDynamic() already
+				CRY_ASSERT(m_pItemListProxy);  // should have been caught by ValidateDynamic() already
 				return *m_pItemListProxy;
 			}
 

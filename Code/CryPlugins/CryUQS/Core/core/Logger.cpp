@@ -25,7 +25,7 @@ namespace UQS
 
 		CLoggerIndentation::~CLoggerIndentation()
 		{
-			assert(s_indentLevel > 0);
+			CRY_ASSERT(s_indentLevel > 0);
 			--s_indentLevel;
 		}
 
@@ -49,8 +49,7 @@ namespace UQS
 			cry_vsprintf(text, szFormat, args);
 			va_end(args);
 
-			const int indentLevel = CLoggerIndentation::GetCurrentIndentLevel();
-			CryLog("%*s%s", indentLevel * 4, "", text);
+			CryLog("%*s%s", CLoggerIndentation::GetCurrentIndentLevel() * 4, "", text);
 		}
 
 	}

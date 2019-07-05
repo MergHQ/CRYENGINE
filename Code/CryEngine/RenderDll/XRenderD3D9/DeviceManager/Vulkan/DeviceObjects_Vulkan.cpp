@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 #include "Vulkan/API/VKInstance.hpp"
 #include "Vulkan/API/VKBufferResource.hpp"
@@ -53,6 +52,12 @@ CDeviceObjectFactory::CDeviceObjectFactory()
 
 	m_pVKDevice    = nullptr;
 	m_pVKScheduler = nullptr;
+
+#if !RENDERER_ENABLE_FULL_PIPELINE
+	m_objectValidator = CDeviceObjectValidator::CreateForMobile();
+#else
+	m_objectValidator = CDeviceObjectValidator::Create();
+#endif
 }
 
 void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)
@@ -155,11 +160,36 @@ VkDescriptorSetLayout CDeviceObjectFactory::GetInlineConstantBufferLayout()
 		layoutCreateInfo.bindingCount = 1;
 		layoutCreateInfo.pBindings = &cbBinding;
 
-		VkResult result = vkCreateDescriptorSetLayout(GetDevice()->GetVkDevice(), &layoutCreateInfo, nullptr, &m_inlineConstantBufferLayout);
-		CRY_ASSERT(result == VK_SUCCESS);
+		CRY_VERIFY(vkCreateDescriptorSetLayout(GetDevice()->GetVkDevice(), &layoutCreateInfo, nullptr, &m_inlineConstantBufferLayout) == VK_SUCCESS);
 	}
 
 	return m_inlineConstantBufferLayout;
+}
+
+VkDescriptorSetLayout CDeviceObjectFactory::GetInlineShaderResourceLayout()
+{
+	// NOTE: In order to avoid building a set of descriptors for each constant buffer
+	// (due to sub allocation) we currently set stageFlags to all possible stages.
+	if (m_inlineShaderResourceLayout == VK_NULL_HANDLE)
+	{
+		VkDescriptorSetLayoutBinding cbBinding;
+		cbBinding.binding = 0;
+		cbBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+		cbBinding.descriptorCount = 1;
+		cbBinding.stageFlags = GetShaderStageFlags(EShaderStage_All);
+		cbBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo layoutCreateInfo;
+		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutCreateInfo.pNext = nullptr;
+		layoutCreateInfo.flags = 0;
+		layoutCreateInfo.bindingCount = 1;
+		layoutCreateInfo.pBindings = &cbBinding;
+
+		CRY_VERIFY(vkCreateDescriptorSetLayout(GetDevice()->GetVkDevice(), &layoutCreateInfo, nullptr, &m_inlineShaderResourceLayout) == VK_SUCCESS);
+	}
+
+	return m_inlineShaderResourceLayout;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -268,7 +298,6 @@ UINT64 CDeviceObjectFactory::QueryFormatSupport(D3DFormat Format)
 	{
 		const SPhysicalDeviceInfo* pInfo = GetVKDevice()->GetPhysicalDeviceInfo();
 		const VkFormatProperties& Props = pInfo->formatProperties[vkFormat];
-		VkFormatFeatureFlags PropsAny = Props.linearTilingFeatures | Props.optimalTilingFeatures | Props.bufferFeatures;
 		VkFormatFeatureFlags PropsTex = Props.linearTilingFeatures | Props.optimalTilingFeatures;
 
 		// *INDENT-OFF*
@@ -382,7 +411,6 @@ CDeviceSamplerState* CDeviceObjectFactory::CreateSamplerState(const SSamplerStat
 
 CDeviceInputLayout* CDeviceObjectFactory::CreateInputLayout(const SInputLayout& pLayout, const SShaderBlob* m_pConsumingVertexShader)
 {
-	VK_NOT_IMPLEMENTED;
 	return nullptr;
 }
 
@@ -495,7 +523,7 @@ void CDeviceObjectFactory::AllocateNullResources()
 			m_NullResources[dimension]->AddRef();
 		}
 	}
-	VK_ASSERT(!bAnyFailed && "Cannot create null resources, this will cause issues for resource-sets using them!");
+	VK_ASSERT(!bAnyFailed, "Cannot create null resources, this will cause issues for resource-sets using them!");
 }
 
 void CDeviceObjectFactory::ReleaseNullResources()
@@ -508,7 +536,7 @@ void CDeviceObjectFactory::ReleaseNullResources()
 
 void CDeviceObjectFactory::UpdateDeferredUploads()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CDeviceObjectFactory::UpdateDeferredUploads");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CDeviceObjectFactory::UpdateDeferredUploads");
 	AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_deferredUploadCS);
 
 	for (auto& upload : m_deferredUploads)
@@ -564,7 +592,7 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 
 	if (result == VK_SUCCESS)
 	{
-		if (pMappedAddress = pStaging->Map())
+		if ((pMappedAddress = pStaging->Map()))
 		{
 			return pStaging;
 		}
@@ -572,7 +600,7 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 		pStaging->Release(); // trigger ReleaseLater with kResourceFlagReusable
 	}
 
-	VK_ASSERT(false && "Upload buffer skipped: Cannot create staging buffer");
+	VK_ASSERT(false, "Upload buffer skipped: Cannot create staging buffer");
 	return nullptr;
 }
 
@@ -598,7 +626,7 @@ void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)
 template<typename T>
 static inline EHeapType SuggestVKHeapType(const T& desc)
 {
-	CRY_ASSERT_MESSAGE((desc & (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE)) != (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE), "CPU Read and Write can't be requested together!");
+	CRY_ASSERT((desc & (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE)) != (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE), "CPU Read and Write can't be requested together!");
 
 	// *INDENT-OFF*
 	return EHeapType(
@@ -620,7 +648,7 @@ static EHeapType ConfigureUsage(VkImageCreateInfo& info, uint32 nUsage)
 	if (info.tiling == VK_IMAGE_TILING_LINEAR)
 	{
 		// CPU access of some kind requested, this will fail on anything except copy-only resources!
-		VK_ASSERT((info.usage & ~(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)) == 0 && "CPU access not allowed on images, when the image is not copy-only");
+		VK_ASSERT((info.usage & ~(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)) == 0, "CPU access not allowed on images, when the image is not copy-only");
 	}
 
 	return SuggestVKHeapType(nUsage);
@@ -685,7 +713,7 @@ void CDeviceObjectFactory::UploadInitialImageData(SSubresourcePayload pSrcMips[]
 		CBufferResource* pStagingRaw = nullptr;
 		if (GetDevice()->CreateOrReuseStagingResource(pDst, imageMapping.MemoryLayout.volumeStride, &pStagingRaw, true) != VK_SUCCESS) 
 		{
-			VK_ASSERT(false && "Upload buffer skipped: Cannot create staging buffer");
+			VK_ASSERT(false, "Upload buffer skipped: Cannot create staging buffer");
 			return;
 		}
 		_smart_ptr<CBufferResource> pStaging;
@@ -702,7 +730,7 @@ void CDeviceObjectFactory::UploadInitialImageData(SSubresourcePayload pSrcMips[]
 			pSlice += info.mipLevels;
 			bufferMapping.ResourceOffset.Left += pData->m_sSysMemAlignment.planeStride;
 			
-			VK_ASSERT(pSlice->m_sSysMemAlignment.rowStride == pData->m_sSysMemAlignment.rowStride && pSlice->m_sSysMemAlignment.planeStride == pData->m_sSysMemAlignment.planeStride && "Slice data not compatible");
+			VK_ASSERT(pSlice->m_sSysMemAlignment.rowStride == pData->m_sSysMemAlignment.rowStride && pSlice->m_sSysMemAlignment.planeStride == pData->m_sSysMemAlignment.planeStride, "Slice data not compatible");
 			bFilled &= CDeviceCopyCommandInterface::FillBuffer(pSlice->m_pSysMem, pStaging, bufferMapping);
 		}
 
@@ -736,8 +764,7 @@ void CDeviceObjectFactory::UploadInitialImageData(SSubresourcePayload pSrcMips[]
 void CDeviceObjectFactory::SelectStagingLayout(const NCryVulkan::CImageResource* pImage, uint32 subResource, SResourceMemoryMapping& result)
 {
 	const uint32 mip = subResource % pImage->GetMipCount();
-	const uint32 slice = subResource / pImage->GetMipCount();
-	VK_ASSERT(mip < pImage->GetMipCount() && slice < pImage->GetSliceCount() && "Bad subresource selected");
+	VK_ASSERT(mip < pImage->GetMipCount() && (subResource / pImage->GetMipCount()) < pImage->GetSliceCount(), "Bad subresource selected");
 
 	const uint32 width = std::max(pImage->GetWidth() >> mip, 1U);
 	const uint32 height = std::max(pImage->GetHeight() >> mip, 1U);
@@ -748,7 +775,7 @@ void CDeviceObjectFactory::SelectStagingLayout(const NCryVulkan::CImageResource*
 	if (!bIsBlocks)
 	{
 		blockBytes = s_FormatWithSize[s_VkFormatToDXGI[pImage->GetFormat()]].Size; // TODO: Use a better API for this?
-		VK_ASSERT(blockBytes >= 1 && blockBytes <= 16 && "Unknown texel size");
+		VK_ASSERT(blockBytes >= 1 && blockBytes <= 16, "Unknown texel size");
 	}
 
 	const uint32 widthInBlocks = (width + blockWidth - 1U) / blockWidth;
@@ -766,7 +793,7 @@ void CDeviceObjectFactory::SelectStagingLayout(const NCryVulkan::CImageResource*
 	result.Flags = 0;
 }
 
-HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI, int32 nESRAMOffset)
+HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI)
 {
 	VkImageCreateInfo info;
 
@@ -814,7 +841,7 @@ HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uin
 		info.flags &= ~VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
 	}
 
-	VK_ASSERT(nWidth * nHeight * nArraySize * nMips != 0);
+	VK_ASSERT(nWidth * nHeight * nArraySize * nMips != 0, "");
 	CImageResource* pResult = nullptr;
 	VkResult hResult = VK_SUCCESS;
 	if (nUsage & USAGE_HIFREQ_HEAP)
@@ -830,7 +857,7 @@ HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uin
 	CDeviceTexture* const pWrapper = (*ppDevTexture = new CDeviceTexture());
 	if (pTI && pTI->m_pSysMemSubresourceData)
 	{
-		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None && "Tiled upload not supported");
+		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None, "Tiled upload not supported");
 		UploadInitialImageData(pTI->m_pSysMemSubresourceData, pResult, info);
 	}
 
@@ -867,7 +894,7 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint
 		info.samples = (VkSampleCountFlagBits)pTI->m_nDstMSAASamples;
 	}
 
-	VK_ASSERT(nSize * nSize * nArraySize * nMips != 0);
+	VK_ASSERT(nSize * nSize * nArraySize * nMips != 0, "");
 	CImageResource* pResult = nullptr;
 	VkResult hResult = VK_SUCCESS;
 	if (nUsage & USAGE_HIFREQ_HEAP)
@@ -883,7 +910,7 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(uint32 nSize, uint32 nMips, uint
 	CDeviceTexture* const pWrapper = (*ppDevTexture = new CDeviceTexture());
 	if (pTI && pTI->m_pSysMemSubresourceData)
 	{
-		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None && "Tiled upload not supported");
+		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None, "Tiled upload not supported");
 		UploadInitialImageData(pTI->m_pSysMemSubresourceData, pResult, info);
 	}
 
@@ -917,10 +944,10 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight,
 
 	if (pTI)
 	{
-		VK_ASSERT(pTI->m_nDstMSAASamples == 1 && "MSAA samples not supported on 3D textures");
+		VK_ASSERT(pTI->m_nDstMSAASamples == 1, "MSAA samples not supported on 3D textures");
 	}
 
-	VK_ASSERT(nWidth * nHeight * nDepth * nMips != 0);
+	VK_ASSERT(nWidth * nHeight * nDepth * nMips != 0, "");
 	CImageResource* pResult = nullptr;
 	VkResult hResult = VK_SUCCESS;
 	if (nUsage & USAGE_HIFREQ_HEAP)
@@ -936,7 +963,7 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(uint32 nWidth, uint32 nHeight,
 	CDeviceTexture* const pWrapper = (*ppDevTexture = new CDeviceTexture());
 	if (pTI && pTI->m_pSysMemSubresourceData)
 	{
-		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None && "Tiled upload not supported");
+		VK_ASSERT(pTI->m_eSysMemTileMode == eTM_None, "Tiled upload not supported");
 		UploadInitialImageData(pTI->m_pSysMemSubresourceData, pResult, info);
 	}
 
@@ -959,7 +986,7 @@ HRESULT CDeviceObjectFactory::CreateBuffer(buffer_size_t nSize, buffer_size_t el
 	info.pQueueFamilyIndices = nullptr;
 	const EHeapType heapHint = ConfigureUsage(info, nUsage | nBindFlags);
 
-	VK_ASSERT(nSize * elemSize != 0);
+	VK_ASSERT(nSize * elemSize != 0, "");
 	CBufferResource* pResult = nullptr;
 	VkResult hResult = VK_SUCCESS;
 
@@ -999,21 +1026,34 @@ HRESULT CDeviceObjectFactory::CreateBuffer(buffer_size_t nSize, buffer_size_t el
 		mapping.Extent.Subresources = 1;
 		mapping.MemoryLayout = SResourceMemoryAlignment::Linear(elemSize, nSize);
 
-		const bool bImmediateUpload = gcpRendD3D->m_pRT->IsRenderThread() && !gcpRendD3D->m_pRT->IsRenderLoadingThread();
+		const bool deferUpload = !gcpRendD3D->m_pRT->IsRenderThread() || gcpRendD3D->m_pRT->IsRenderLoadingThread();
 
-		CDeviceCommandListRef commandList = GetCoreCommandList();
-		if (CBufferResource* const pStaging = commandList.GetCopyInterface()->UploadBuffer(pData, pResult, mapping, bImmediateUpload))
+		if (deferUpload)
 		{
-			// Unable to perform upload immediately (not called from render-thread and the desired buffer is not CPU writable).
-			// We have to perform the staging at the earliest convenience of the render-thread instead.
-			SDeferredUploadData uploadData;
-			uploadData.pStagingBuffer.Assign_NoAddRef(pStaging);
-			uploadData.pTarget = pResult;
-			uploadData.targetMapping = mapping;
-			uploadData.bExtendedAdressing = false;
+			if (pResult->GetFlag(kResourceFlagCpuWritable))
+			{
+				CDeviceCopyCommandInterfaceImpl::FillBuffer(pData, pResult, mapping);
+			}
+			else
+			{
+				if (CBufferResource* pStaging = CDeviceCopyCommandInterfaceImpl::PrepareStagingBuffer(pData, pResult, mapping))
+				{
+					// Unable to perform upload immediately (not called from render-thread and the desired buffer is not CPU writable).
+					// We have to perform the staging at the earliest convenience of the render-thread instead.
+					SDeferredUploadData uploadData;
+					uploadData.pStagingBuffer.Assign_NoAddRef(pStaging);
+					uploadData.pTarget = pResult;
+					uploadData.targetMapping = mapping;
+					uploadData.bExtendedAdressing = false;
 
-			AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_deferredUploadCS);
-			m_deferredUploads.push_back(uploadData);
+					AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_deferredUploadCS);
+					m_deferredUploads.push_back(uploadData);
+				}
+			}
+		}
+		else
+		{
+			GetCoreCommandList().GetCopyInterface()->UploadBuffer(pData, pResult, mapping);
 		}
 	}
 
@@ -1042,20 +1082,20 @@ void CDeviceObjectFactory::InvalidateBuffer(D3DBuffer* buffer, void* base_ptr, b
 
 uint8* CDeviceObjectFactory::Map(D3DBuffer* buffer, uint32 subresource, buffer_size_t offset, buffer_size_t size, D3D11_MAP mode)
 {
-	VK_ASSERT(mode == D3D11_MAP_WRITE_NO_OVERWRITE || mode == D3D11_MAP_READ); // NOTE: access to resources in use by the gpu MUST be synchronized externally
+	VK_ASSERT(mode == D3D11_MAP_WRITE_NO_OVERWRITE || mode == D3D11_MAP_READ, ""); // NOTE: access to resources in use by the gpu MUST be synchronized externally
 	return reinterpret_cast<uint8*>(buffer->Map());
 }
 
 void CDeviceObjectFactory::Unmap(D3DBuffer* buffer, uint32 subresource, buffer_size_t offset, buffer_size_t size, D3D11_MAP mode)
 {
-	VK_ASSERT(mode == D3D11_MAP_WRITE_NO_OVERWRITE || mode == D3D11_MAP_READ); // NOTE: access to resources in use by the gpu MUST be synchronized externally
+	VK_ASSERT(mode == D3D11_MAP_WRITE_NO_OVERWRITE || mode == D3D11_MAP_READ, ""); // NOTE: access to resources in use by the gpu MUST be synchronized externally
 	buffer->Unmap();
 }
 
 template<const bool bDirectAccess>
 void CDeviceObjectFactory::UploadContents(D3DBuffer* buffer, uint32 subresource, buffer_size_t offset, buffer_size_t size, D3D11_MAP mode, const void* pInDataCPU, void* pOutDataGPU, UINT numDataBlocks)
 {
-	VK_ASSERT(mode == D3D11_MAP_WRITE_NO_OVERWRITE); // only no-overwrite supported currently
+	VK_ASSERT(mode == D3D11_MAP_WRITE_NO_OVERWRITE, ""); // only no-overwrite supported currently
 
 	if (!bDirectAccess)
 	{
@@ -1080,9 +1120,9 @@ void CDeviceObjectFactory::UploadContents(D3DBuffer* buffer, uint32 subresource,
 template<const bool bDirectAccess>
 void CDeviceObjectFactory::DownloadContents(D3DBuffer* buffer, uint32 subresource, buffer_size_t offset, buffer_size_t size, D3D11_MAP mode, void* pOutDataCPU, const void* pInDataGPU, UINT numDataBlocks)
 {
-	VK_ASSERT(buffer->GetHeapType() == kHeapDownload);
-	VK_ASSERT(mode == D3D11_MAP_READ); // NOTE: access to resources in use by the gpu MUST be synchronized externally
-	VK_ASSERT(pInDataGPU == nullptr);  // Currently not handled
+	VK_ASSERT(buffer->GetHeapType() == kHeapDownload, "");
+	VK_ASSERT(mode == D3D11_MAP_READ, ""); // NOTE: access to resources in use by the gpu MUST be synchronized externally
+	VK_ASSERT(pInDataGPU == nullptr, "");  // Currently not handled
 
 	uint8* pInData = CDeviceObjectFactory::Map(buffer, subresource, offset, size, mode) + offset;
 	memcpy(pOutDataCPU, pInData, size);

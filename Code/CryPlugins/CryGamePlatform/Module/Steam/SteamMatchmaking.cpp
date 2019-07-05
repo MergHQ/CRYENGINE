@@ -1,10 +1,12 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 
-#include <steam/steam_api.h>
-
+#include <CrySystem/CryVersion.h>
 #include "SteamMatchmaking.h"
-#include "SteamUserLobby.h"
-#include "SteamPlatform.h"
+#include "SteamService.h"
+#include "SteamUserIdentifier.h"
+#include "IPlatformUser.h"
 
 namespace Cry
 {
@@ -12,32 +14,31 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CMatchmaking::CMatchmaking()
-				: m_callbackJoinRequested(this, &CMatchmaking::OnJoinRequested)
+			CMatchmaking::CMatchmaking(CService& steamService)
+				: m_service(steamService)
+				, m_callbackJoinRequested(this, &CMatchmaking::OnJoinRequested)
 				, m_callbackGameServerChangeRequested(this, &CMatchmaking::OnGameServerChangeRequested)
 				, m_callbackInvited(this, &CMatchmaking::OnInvited)
 			{
 			}
 
-			void CMatchmaking::CreateLobby(IUserLobby::EVisbility visibility, int maxMemberCount)
+			void CMatchmaking::CreateLobby(IUserLobby::EVisibility visibility, int maxMemberCount)
 			{
 				if (ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking())
 				{
 					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->CreateLobby((ELobbyType)visibility, maxMemberCount);
 					m_callResultCreateLobby.Set(hSteamAPICall, this, &CMatchmaking::OnCreateLobby);
-
-					CPlugin::GetInstance()->SetAwaitingCallback(1);
 				}
 			}
 
-			IUserLobby* CMatchmaking::GetUserLobby(IUser::Identifier user) const
+			CUserLobby* CMatchmaking::GetUserLobby(const AccountIdentifier& user) const
 			{
 				for (const std::unique_ptr<CUserLobby>& pLobby : m_lobbies)
 				{
-					int numMembers = pLobby->GetNumMembers();
+					const int numMembers = pLobby->GetNumMembers();
 					for (int i = 0; i < numMembers; i++)
 					{
-						CSteamID memberId = pLobby->GetMemberAtIndex(i);
+						const AccountIdentifier memberId = pLobby->GetMemberAtIndex(i);
 						if (memberId == user)
 						{
 							return pLobby.get();
@@ -48,9 +49,27 @@ namespace Cry
 				return nullptr;
 			}
 
-			IUserLobby* CMatchmaking::GetLobbyById(IUserLobby::Identifier id)
+			CUserLobby* CMatchmaking::GetUserLobby(const IUser& user) const
 			{
-				return TryGetLobby(id);
+				if (IAccount* pAccount = user.GetAccount(SteamServiceID))
+				{
+					return GetUserLobby(pAccount->GetIdentifier());
+				}
+
+				return nullptr;
+			}
+
+			CUserLobby* CMatchmaking::GetLobbyById(const LobbyIdentifier& id)
+			{
+				for (const std::unique_ptr<CUserLobby>& pLobby : m_lobbies)
+				{
+					if (pLobby->GetIdentifier() == id)
+					{
+						return pLobby.get();
+					}
+				}
+
+				return nullptr;
 			}
 
 			void CMatchmaking::QueryLobbies()
@@ -67,20 +86,17 @@ namespace Cry
 				{
 					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->RequestLobbyList();
 					m_callResultLobbyMatchList.Set(hSteamAPICall, this, &CMatchmaking::OnLobbyMatchList);
-
-					CPlugin::GetInstance()->SetAwaitingCallback(1);
 				}
 				else
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam matchmaking service not available");
 					LobbyMatchList_t temp;
 					temp.m_nLobbiesMatching = 0;
-					CPlugin::GetInstance()->SetAwaitingCallback(1); // since OnLobbyMatchList will expect to be used as a callback
 					OnLobbyMatchList(&temp, true);
 				}
 			}
 
-			IUserLobby::Identifier CMatchmaking::GetQueriedLobbyIdByIndex(int index) const
+			LobbyIdentifier CMatchmaking::GetQueriedLobbyIdByIndex(int index) const
 			{
 				CSteamID result = k_steamIDNil;
 				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
@@ -88,7 +104,7 @@ namespace Cry
 				{
 					result = pSteamMatchmaking->GetLobbyByIndex(index);
 				}
-				return result.ConvertToUint64();				
+				return CreateLobbyIdentifier(result);
 			}
 
 			void CMatchmaking::AddLobbyQueryFilterString(const char* key, const char* value, IUserLobby::EComparison comparison)
@@ -104,15 +120,13 @@ namespace Cry
 				}
 			}
 
-			void CMatchmaking::JoinLobby(IUserLobby::Identifier lobbyId)
+			void CMatchmaking::JoinLobby(const LobbyIdentifier& lobbyId)
 			{
 				ISteamMatchmaking* pSteamMatchmaking = SteamMatchmaking();
 				if (pSteamMatchmaking)
 				{
-					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->JoinLobby(lobbyId);
+					SteamAPICall_t hSteamAPICall = pSteamMatchmaking->JoinLobby(ExtractSteamID(lobbyId));
 					m_callResultLobbyEntered.Set(hSteamAPICall, this, &CMatchmaking::OnJoin);
-
-					CPlugin::GetInstance()->SetAwaitingCallback(1);
 				}
 				else
 				{
@@ -120,7 +134,6 @@ namespace Cry
 					LobbyEnter_t temp;
 					temp.m_EChatRoomEnterResponse = k_EChatRoomEnterResponseError;
 					temp.m_ulSteamIDLobby = k_steamIDNil.ConvertToUint64();
-					CPlugin::GetInstance()->SetAwaitingCallback(1); // since onJoin will expect to be used as a callback
 					OnJoin(&temp, true);
 				}
 			}
@@ -137,7 +150,7 @@ namespace Cry
 				}
 			}
 
-			CUserLobby* CMatchmaking::TryGetLobby(uint64 id)
+			CUserLobby* CMatchmaking::TryGetLobby(const LobbyIdentifier& id)
 			{
 				for (const std::unique_ptr<CUserLobby>& pLobby : m_lobbies)
 				{
@@ -147,8 +160,13 @@ namespace Cry
 					}
 				}
 
-				m_lobbies.emplace_back(stl::make_unique<CUserLobby>(id));
+				m_lobbies.emplace_back(stl::make_unique<CUserLobby>(m_service, id));
 				return m_lobbies.back().get();
+			}
+
+			CUserLobby* CMatchmaking::TryGetLobby(const CSteamID& id)
+			{
+				return TryGetLobby(CreateLobbyIdentifier(id));
 			}
 
 			// Steam callbacks
@@ -158,7 +176,7 @@ namespace Cry
 				{
 					CryFixedStringT<32> versionString = gEnv->pSystem->GetProductVersion().ToString();
 
-					CUserLobby* pLobby = TryGetLobby(pResult->m_ulSteamIDLobby);
+					CUserLobby* pLobby = TryGetLobby(CSteamID(pResult->m_ulSteamIDLobby));
 					pLobby->SetData("version", versionString.c_str());
 
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Steam] [Lobby] Creating lobby with game version: %s", versionString.c_str());
@@ -169,15 +187,10 @@ namespace Cry
 						pListener->OnJoinedLobby(pLobby);
 					}
 				}
-
-				// Remove callback so that we don't call update all the time
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
 			}
 
 			void CMatchmaking::OnLobbyMatchList(LobbyMatchList_t* pLobbyMatchList, bool bIOFailure)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
-
 				for (IListener* pListener : m_listeners)
 				{
 					pListener->OnLobbyQueryComplete(pLobbyMatchList->m_nLobbiesMatching);
@@ -186,13 +199,11 @@ namespace Cry
 
 			void CMatchmaking::OnJoinRequested(GameLobbyJoinRequested_t* pCallback)
 			{
-				JoinLobby(pCallback->m_steamIDLobby.ConvertToUint64());
+				JoinLobby(CreateLobbyIdentifier(pCallback->m_steamIDLobby));
 			}
 
 			void CMatchmaking::OnJoin(LobbyEnter_t* pCallback, bool bIOFailure)
 			{
-				CPlugin::GetInstance()->SetAwaitingCallback(-1);
-
 				if (pCallback->m_EChatRoomEnterResponse == k_EChatRoomEnterResponseSuccess)
 				{
 					// Make sure CUserLobby object exists on this client
@@ -207,7 +218,7 @@ namespace Cry
 				{
 					for (IListener* pListener : m_listeners)
 					{
-						pListener->OnLobbyJoinFailed(pCallback->m_ulSteamIDLobby);
+						pListener->OnLobbyJoinFailed(CreateLobbyIdentifier(pCallback->m_ulSteamIDLobby));
 					}
 				}
 			}

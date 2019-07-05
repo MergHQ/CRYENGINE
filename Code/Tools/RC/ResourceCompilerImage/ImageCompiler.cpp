@@ -46,7 +46,7 @@
 
 #include <iterator>
 
-static ThreadUtils::CriticalSection s_initDiallogSystemLock;
+static std::recursive_mutex s_initDiallogSystemMutex;
 
 
 const char* stristr(const char* szString, const char* szSubstring)
@@ -152,8 +152,7 @@ bool CImageCompiler::SaveOutput(const ImageObject* pImageObject, const char* szT
 		return false;
 	}
 
-	// Force remove of the read only flag.
-	SetFileAttributes(lpszPathName, FILE_ATTRIBUTE_ARCHIVE);
+	FileUtil::MakeWritable(lpszPathName);
 
 	if (m_Props.GetImageCompressor() == CImageProperties::eImageCompressor_Tif)
 	{
@@ -205,7 +204,7 @@ bool CImageCompiler::SaveOutput(const ImageObject* pImageObject, const char* szT
 
 bool CImageCompiler::InitDialogSystem()
 {
-	ThreadUtils::AutoLock lock(s_initDiallogSystemLock);
+	std::lock_guard<std::recursive_mutex> lock(s_initDiallogSystemMutex);
 
 	if (m_bDialogSystemInitialized)
 	{
@@ -222,7 +221,7 @@ bool CImageCompiler::InitDialogSystem()
 
 void CImageCompiler::ReleaseDialogSystem()
 {
-	ThreadUtils::AutoLock lock(s_initDiallogSystemLock);
+	std::lock_guard<std::recursive_mutex> lock(s_initDiallogSystemMutex);
 
 	if (m_bDialogSystemInitialized)
 	{
@@ -1806,8 +1805,7 @@ void CImageCompiler::GetFinalImageInfo(int platform, EPixelFormat& finalFormat, 
 			return;
 		}
 
-		const PixelFormatInfo* const pInputFormatInfo = CPixelFormats::GetPixelFormatInfo(inputFormat);
-		assert(pInputFormatInfo);
+		assert(CPixelFormats::GetPixelFormatInfo(inputFormat));
 
 		uint32 dwMips;
 
@@ -1821,8 +1819,7 @@ void CImageCompiler::GetFinalImageInfo(int platform, EPixelFormat& finalFormat, 
 			return;
 		}
 
-		const PixelFormatInfo* const pFinalFormatInfo = CPixelFormats::GetPixelFormatInfo(finalFormat);
-		assert(pFinalFormatInfo);
+		assert(CPixelFormats::GetPixelFormatInfo(finalFormat));
 	}
 
 	bCubemap = m_Props.GetCubemap(platform) && m_pInputImage->HasCubemapCompatibleSizes();

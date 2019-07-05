@@ -57,6 +57,28 @@ namespace Schematyc2
 		Game             // Object is in game.
 	};
 
+	enum class EStateMachineLifetime
+	{
+		Persistent,
+		Task,
+		Unknown
+	};
+
+	enum class EStateMachineNetAuthority
+	{
+		Local,
+		Server
+	};
+
+	enum class EGraphExecutionFilter
+	{
+		Always,
+		DevModeOrLoggingEnabled,
+		DevModeOnly,
+		Count
+	};
+
+
 	WRAP_TYPE(EntityId, ExplicitEntityId, 0) // Strongly typed entity id.
 	WRAP_TYPE(uint32,   ObjectId,         0)
 	WRAP_TYPE(uint32,   LibFunctionId,    0) // #SchematycTODO : Remove!!!
@@ -68,10 +90,10 @@ namespace Schematyc2
 #else
 	typedef struct
 	{
-		unsigned long  Data1;
-		unsigned short Data2;
-		unsigned short Data3;
-		unsigned char  Data4[8];
+		uint32  Data1;
+		uint16  Data2;
+		uint16  Data3;
+		uint8   Data4[8];
 	} SysGUID;
 #endif
 

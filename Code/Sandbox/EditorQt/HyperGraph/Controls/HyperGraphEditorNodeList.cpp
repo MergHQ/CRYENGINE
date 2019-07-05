@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "HyperGraphEditorNodeList.h"
+#include "IEditorImpl.h"
 
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraphNode.h"
@@ -265,7 +266,6 @@ void CHyperGraphComponentsReportCtrl::Reload()
 			// continue stripping
 			groupName = fullClassName.Tokenize(":", pos);
 		}
-		;
 
 		// short node name without ':'. used for display in last column
 		nodeShortName = fullClassName.Mid(midPos);
@@ -382,4 +382,3 @@ CImageList* CHyperGraphComponentsReportCtrl::CreateDragImage(CXTPReportRow* pRow
 	bitmap.DeleteObject();
 	return pImageList;
 }
-

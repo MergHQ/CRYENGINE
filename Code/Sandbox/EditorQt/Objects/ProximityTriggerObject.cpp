@@ -13,7 +13,6 @@ CProximityTrigger::CProximityTrigger()
 
 void CProximityTrigger::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	if (IEntity* pEntity = GetIEntity())
 	{
 		if (IScriptTable* pScriptTable = pEntity->GetScriptTable())
@@ -28,6 +27,8 @@ void CProximityTrigger::Display(CObjectRenderHelper& objRenderHelper)
 				properties->GetValue("DimY", dimensions.y);
 				properties->GetValue("DimZ", dimensions.z);
 
+				SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+				dc.SetColor(Col_White);
 				dc.DrawWireBox(pEntity->GetWorldPos() + dimensions * -0.5f, pEntity->GetWorldPos() + dimensions * 0.5f);
 			}
 		}

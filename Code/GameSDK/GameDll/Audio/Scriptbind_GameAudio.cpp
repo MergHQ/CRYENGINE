@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CryScriptSystem/IScriptSystem.h>
 #include "Scriptbind_GameAudio.h"
 #include "GameAudio.h"
 #include "Game.h"
@@ -26,19 +27,19 @@ CScriptbind_GameAudio::~CScriptbind_GameAudio()
 //------------------------------------------------------------------------
 void CScriptbind_GameAudio::Reset()
 {
-	TSignalPlayersSearchMap::iterator iter = m_signalPlayersSearchMap.begin();
+	//TSignalPlayersSearchMap::iterator iter = m_signalPlayersSearchMap.begin();
 
-	while (iter!=m_signalPlayersSearchMap.end())
-	{
-		const SKey& key = iter->first;
-		int ind = iter->second;
-		CAudioSignalPlayer& signalPlayer = m_signalPlayers[ind];
-		
-		//signalPlayer.Stop( key.m_entityId );
-		REINST("needs verification!");
-		
-		++iter;
-	}
+	//while (iter!=m_signalPlayersSearchMap.end())
+	//{
+	//	const SKey& key = iter->first;
+	//	int ind = iter->second;
+	//	CAudioSignalPlayer& signalPlayer = m_signalPlayers[ind];
+	//	
+	//	//signalPlayer.Stop( key.m_entityId );
+	//	REINST("needs verification!");
+	//	
+	//	++iter;
+	//}
 
 	stl::free_container(m_signalPlayers);
 	m_signalPlayersSearchMap.clear();
@@ -168,7 +169,7 @@ void CScriptbind_GameAudio::PlaySignal_Internal( TAudioSignalID signalId, Entity
 		m_signalPlayers.push_back( signalPlayer );
 	}
 
-	CAudioSignalPlayer& signalPlayer = m_signalPlayers[ind];
+	//CAudioSignalPlayer& signalPlayer = m_signalPlayers[ind];
 	//signalPlayer.Play( entityId );
 }
 
@@ -176,14 +177,14 @@ void CScriptbind_GameAudio::PlaySignal_Internal( TAudioSignalID signalId, Entity
 //------------------------------------------------------------------------
 void CScriptbind_GameAudio::StopSignal_Internal( TAudioSignalID signalId, EntityId entityId )
 {
-	SKey key( signalId, entityId );
+	/*SKey key( signalId, entityId );
 	TSignalPlayersSearchMap::iterator iter = m_signalPlayersSearchMap.find( key );
 	if (iter!=m_signalPlayersSearchMap.end())
 	{
 		int ind = iter->second;
 		CAudioSignalPlayer& signalPlayer = m_signalPlayers[ind];
-		//signalPlayer.Stop( entityId );
-	}
+		signalPlayer.Stop( entityId );
+	}*/
 }
 
 //------------------------------------------------------------------------

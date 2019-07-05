@@ -1,17 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// ------------------------------------------------------------------------
-//  File name:   IGeomCache.h
-//  Created:     19/7/2012 by Axel Gneiting
-//  Description: Interface for CGeomCache class
-// -------------------------------------------------------------------------
-//
-////////////////////////////////////////////////////////////////////////////
+#pragma once
 
-#ifndef _IGeomCache_H_
-#define _IGeomCache_H_
+#include <CryCore/smartptr.h>
+#include "IStatObj.h"
 
-#include <CryCore/smartptr.h>     // TYPEDEF_AUTOPTR
+struct IMaterial;
 
 //! Interface to hold geom cache data.
 struct IGeomCache : public IStreamable
@@ -71,7 +65,5 @@ struct IGeomCache : public IStreamable
 protected:
 
 	//! Should be never called, use Release() instead.
-	virtual ~IGeomCache() {};
+	virtual ~IGeomCache() {}
 };
-
-#endif // _IGeomCache_H_

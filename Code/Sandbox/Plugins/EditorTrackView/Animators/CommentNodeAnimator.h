@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek
-// -------------------------------------------------------------------------
-//  File name: CommentNodeAnimator.h
-//  Created:   09-04-2010 by Dongjoon Kim
-//  Description: Comment node animator class
-//
-////////////////////////////////////////////////////////////////////////////
 
 /** CCommentContext stores information about comment track.
    The Comment Track is activated only in the editor.
@@ -57,4 +47,3 @@ private:
 	CTrackViewAnimNode* m_pCommentNode;
 	CCommentContext     m_commentContext;
 };
-

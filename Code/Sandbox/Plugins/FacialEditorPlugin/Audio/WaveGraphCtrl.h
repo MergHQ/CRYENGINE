@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __WAVEGRAPHCTRL_H__
-#define __WAVEGRAPHCTRL_H__
 #pragma once
 
 #include <CryAnimation/IFacialAnimation.h>
@@ -84,9 +82,9 @@ public:
 	CPoint WorldToClient(Vec2 v);
 	void   SetZoom(Vec2 zoom, CPoint center);
 	void   SetZoom(Vec2 zoom);
-	Vec2   GetZoom() const         { return m_grid.zoom; };
+	Vec2   GetZoom() const         { return m_grid.zoom; }
 	void   SetScrollOffset(Vec2 ofs);
-	Vec2   GetScrollOffset() const { return m_grid.origin; };
+	Vec2   GetScrollOffset() const { return m_grid.origin; }
 	float  SnapTime(float time);
 	float  SnapValue(float val);
 	void   SetLeftOffset(int nLeft);
@@ -190,6 +188,3 @@ private:
 	bool                  m_bPlaying;
 	float                 m_fPlaybackSpeed;
 };
-
-#endif // __SplineCtrl_h__
-

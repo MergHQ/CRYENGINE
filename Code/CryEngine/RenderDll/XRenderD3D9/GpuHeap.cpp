@@ -62,11 +62,11 @@
 
 // Heap checking/debugging can be enabled or disabled here.
 #if defined(_DEBUG)
-	#define HEAP_CHECK 1
-	#define HEAP_ASSERT(x) CRY_ASSERT(x)
+	#define HEAP_CHECK       1
+	#define HEAP_ASSERT(...) CRY_ASSERT(__VA_ARGS__)
 #else
-	#define HEAP_CHECK 0
-	#define HEAP_ASSERT(x)
+	#define HEAP_CHECK       0
+	#define HEAP_ASSERT(...) ((void)0)
 #endif
 
 namespace Detail
@@ -207,13 +207,8 @@ struct SHugePage : SLinkedPage<1>
 
 	uint16_t              mapped;    // Number of times mapped
 	uint16_t              size;      // Block size in large regions (note: shared huge-pages are always 256 regions large)
-#if CRY_PLATFORM_32BIT
-	size_t                apiHandle; // Handle from API level
-	size_t                address;   // CPU accessible address (only set when mapped != 0)
-#else
-	size_t                apiHandle: kAlignShift;
-	size_t                address: (64U - kAlignShift);
-#endif
+	size_t                apiHandle: kAlignShift;        // Handle from API level
+	size_t                address: (64U - kAlignShift);  // CPU accessible address (only set when mapped != 0)
 
 	void* GetAddress() const
 	{
@@ -370,98 +365,43 @@ struct STinyPage : SLinkedPage<1U>
 	static const uint32_t kBlockBits = SLog2<kBlockCount>::kValue;
 
 	SHandle               parentBlock;
-#if CRY_PLATFORM_64BIT
 	uint64_t              freeBlocks;
-#else
-	uint32_t              freeBlocks[2];
-#endif
 
 	void Init(SHandle parent)
 	{
 		parentBlock = parent;
-#if CRY_PLATFORM_64BIT
 		freeBlocks = ~0ULL;
-#else
-		freeBlocks[0] = ~0U;
-		freeBlocks[1] = ~0U;
-#endif
 	}
 
 	uint32_t Allocate()
 	{
-#if CRY_PLATFORM_64BIT
 		HEAP_ASSERT(freeBlocks != 0U);
 		const uint32_t blockIndex = static_cast<uint32_t>(countTrailingZeros64(freeBlocks));
 		freeBlocks ^= 1ULL << blockIndex;
 		return blockIndex;
-#else
-		if (freeBlocks[0U] != 0U)
-		{
-			const uint32_t blockIndex = countTrailingZeros32(freeBlocks[0U]);
-			freeBlocks[0U] ^= 1U << blockIndex;
-			return blockIndex;
-		}
-
-		HEAP_ASSERT(freeBlocks[1] != 0U);
-		const uint32_t blockIndex = countTrailingZeros32(freeBlocks[1U]);
-		freeBlocks[1U] ^= 1U << blockIndex;
-		return blockIndex + 32U;
-#endif
 	}
 
 	void Deallocate(uint32_t blockIndex)
 	{
 		HEAP_ASSERT(blockIndex < kBlockCount);
-#if CRY_PLATFORM_64BIT
 		HEAP_ASSERT((freeBlocks & (1ULL << blockIndex)) == 0U);
 		freeBlocks ^= 1ULL << blockIndex;
-#else
-		if (blockIndex < kBlockCount / 2U)
-		{
-			HEAP_ASSERT((freeBlocks[0U] & (1U << blockIndex)) == 0U);
-			freeBlocks[0U] ^= 1U << blockIndex;
-		}
-		else
-		{
-			HEAP_ASSERT((freeBlocks[1] & (1U << blockIndex - 32U)) == 0U);
-			freeBlocks[1U] ^= 1U << (blockIndex - kBlockCount / 2U);
-		}
-#endif
 	}
 
 	bool IsFull() const
 	{
-#if CRY_PLATFORM_64BIT
 		return freeBlocks == 0ULL;
-#else
-		return (freeBlocks[0U] == 0U) && (freeBlocks[1U] == 0U);
-#endif
 	}
 
 	bool IsEmpty() const
 	{
-#if CRY_PLATFORM_64BIT
 		return freeBlocks == ~0ULL;
-#else
-		return freeBlocks[0] == ~0U && freeBlocks[1] == ~0U;
-#endif
 	}
 
 	bool IsAllocated(uint32_t blockIndex) const
 	{
 		HEAP_ASSERT(blockIndex < kBlockCount);
-#if CRY_PLATFORM_64BIT
 		return (freeBlocks & (1ULL << blockIndex)) == 0U;
-#else
-		if (blockIndex < kBlockCount / 2U)
-		{
-			return (freeBlocks[0U] & (1U << blockIndex)) == 0U;
-		}
-		else
-		{
-			return (freeBlocks[1] & (1U << blockIndex - 32U)) == 0U;
-		}
-#endif
 	}
 };
 
@@ -613,7 +553,6 @@ public:
 	void Unlink(UPage* pPages, TPageType* pPage)
 	{
 		HEAP_ASSERT(pPage && Contains(pPages, pPage));
-		TPageType& alias = Alias();
 		const TPageId prevId = pPage->link[kLinkIndex].prev;
 		const TPageId nextId = pPage->link[kLinkIndex].next;
 		TPageType& prev = *Resolve<true>(pPages, prevId);
@@ -832,7 +771,9 @@ static void DeallocatePage(UPage* pPages, TPageType* pPage)
 
 // This is for NatVis only, it's never read by code.
 // Assuming you have only one GpuHeap instance this will allow NatVis to follow links in GpuHeap structures.
+#if HEAP_CHECK || (HEAP_STATIC_STORAGE && defined(_DEBUG))
 static UPage* gpHeapPages;
+#endif
 
 #if HEAP_STATIC_STORAGE
 // Static duration storage for the meta-data
@@ -842,49 +783,36 @@ static SSubHeap gHeapStorage[kMaxMemoryTypes];
 
 #if HEAP_MEMREPLAY
 // Generates a (potentially fictional) address for MemReplay allocation/deallocation events.
-void MakeMemReplayEvent(const SHugePage& page, uint32_t offset, bool bMapPersistent, bool bAllocate, uint32_t bytes, uint32_t align)
+void MakeMemReplayEvent(const SHugePage& page, uint32_t offset, bool bAllocate, uint32_t bytes, uint32_t align)
 {
-	if (bMapPersistent)
+	void* pPersistent = page.GetAddress();
+	if (pPersistent)
 	{
-		void* pPersistent = page.GetAddress();
-		if (pPersistent)
+#if CAPTURE_REPLAY_LOG
+		const size_t address = reinterpret_cast<size_t>(pPersistent) + offset;
+#endif
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
+		if (bAllocate)
 		{
-			const size_t address = reinterpret_cast<size_t>(pPersistent) + offset;
-			MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
-			if (bAllocate)
-			{
-				MEMREPLAY_SCOPE_ALLOC(address, bytes, align);
-			}
-			else
-			{
-				MEMREPLAY_SCOPE_FREE(address);
-			}
+			MEMREPLAY_SCOPE_ALLOC(address, bytes, align);
+		}
+		else
+		{
+			MEMREPLAY_SCOPE_FREE(address);
 		}
 	}
-
-	#if CRY_PLATFORM_32BIT
-	// Generate addresses in the top of the address space.
-	const size_t fictionalBase = 0xC0000000U;
-
-	// We treat every quantum as a single byte to enlarge our available "fictional" space.
-	// This means that MemReplay will display tiny allocations.
-	bytes = (bytes + kQuantumSize + 1) / kQuantumSize;
-	align = (align + kQuantumSize + 1) / kQuantumSize;
-	offset /= kQuantumSize;
-
-	#else
+#if CAPTURE_REPLAY_LOG
 	// Generate addresses in the top of the address space.
 	const size_t fictionalBase = 0xC000000000000000ULL;
-	#endif
 
 	// Construct a (hopefully unique) fictional address.
 	const size_t fictionalMask = ~fictionalBase;
 	const size_t blockOffset = (fictionalMask + 1U) / (1U << SHugePage::kAlignShift);
 	const size_t result = page.apiHandle * blockOffset + offset;
 	const size_t address = (result & fictionalMask) | fictionalBase;
-
+#endif
 	// Fictional event
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 	if (bAllocate)
 	{
 		MEMREPLAY_SCOPE_ALLOC(address, bytes, align);
@@ -899,9 +827,8 @@ void MakeMemReplayEvent(const SHugePage& page, uint32_t offset, bool bMapPersist
 
 using namespace Detail;
 
-CGpuHeap::CGpuHeap(uint32_t numMemoryTypes, bool bMapPersistent, bool bCommitRegions)
-	: m_bMapPersistent(bMapPersistent)
-	, m_bCommitRegions(bCommitRegions)
+CGpuHeap::CGpuHeap(uint32_t numMemoryTypes, bool bCommitRegions)
+	: m_bCommitRegions(bCommitRegions)
 	, m_numHeaps(numMemoryTypes)
 	, m_pPages(nullptr)
 	, m_pHeaps(nullptr)
@@ -909,7 +836,7 @@ CGpuHeap::CGpuHeap(uint32_t numMemoryTypes, bool bMapPersistent, bool bCommitReg
 	if (numMemoryTypes <= kMaxMemoryTypes && numMemoryTypes != 0)
 	{
 #if HEAP_STATIC_STORAGE
-		HEAP_ASSERT(gpHeapPages == nullptr && "Only one heap may be instantiated when HEAP_STATIC_STORAGE is set");
+		HEAP_ASSERT(gpHeapPages == nullptr, "Only one heap may be instantiated when HEAP_STATIC_STORAGE is set");
 		m_pHeaps = gHeapStorage;
 		m_pPages = gPageStorage;
 	#if HEAP_CHECK
@@ -935,48 +862,6 @@ CGpuHeap::CGpuHeap(uint32_t numMemoryTypes, bool bMapPersistent, bool bCommitReg
 
 CGpuHeap::~CGpuHeap()
 {
-	// When using committed regions, we must free all the blocks separately, since we have to reconstruct the large-block frees accurately.
-	const bool bFreeAllHandles = HEAP_MEMREPLAY || HEAP_CHECK || m_bCommitRegions;
-	if (bFreeAllHandles)
-	{
-		const auto pfnFree = [](void* pContext, THandle handle, uint32_t memoryType, TBlockHandle blockHandle, uint32_t blockOffset, uint32_t allocationSize, void* pMappedAddress)
-		{
-			CGpuHeap* const pThis = static_cast<CGpuHeap*>(pContext);
-			pThis->DeallocateInternal(handle);
-		};
-		Walk(this, nullptr, pfnFree);
-	}
-	else
-	{
-		for (uint32_t i = 0; i < m_numHeaps; ++i)
-		{
-			m_pHeaps[i].hugeBlocks.Walk(m_pPages, [this, i](SHugePage& page) -> bool
-			{
-				if (page.mapped)
-				{
-				  void* const pAddress = page.GetAddress();
-				  if (pAddress)
-				  {
-				    UnmapBlock(i, page.GetHandle(), pAddress);
-				  }
-				}
-				DeallocateBlock(i, page.GetHandle(), page.size * kRegionSize);
-				return true;
-			});
-		}
-	}
-
-#if !HEAP_STATIC_STORAGE
-	delete[] m_pHeaps;
-	delete[] m_pPages;
-#else
-	::memset(m_pHeaps, 0, sizeof(SSubHeap) * m_numHeaps);
-	::memset(m_pPages, 0, sizeof(UPage) * kMaxPages);
-#endif
-
-#if HEAP_CHECK
-	gpHeapPages = nullptr;
-#endif
 }
 
 CGpuHeap::THandle CGpuHeap::Allocate(uint32_t memoryType, uint32_t bytes, uint32_t align)
@@ -1026,7 +911,7 @@ CGpuHeap::THandle CGpuHeap::AllocateInternal(uint32_t memoryType, uint32_t bytes
 #if HEAP_MEMREPLAY
 	uint32_t offset;
 	const SHugePage& page = UnpackHandle(result, offset)->hugePage;
-	Detail::MakeMemReplayEvent(page, offset, m_bMapPersistent, true, bytes, align);
+	Detail::MakeMemReplayEvent(page, offset, true, bytes, align);
 #endif
 
 	HEAP_ASSERT(result); // OOM?
@@ -1053,7 +938,7 @@ void CGpuHeap::DeallocateInternal(THandle handle)
 #if HEAP_MEMREPLAY
 	uint32_t offset;
 	const SHugePage& page = UnpackHandle(handle, offset)->hugePage;
-	Detail::MakeMemReplayEvent(page, offset, m_bMapPersistent, false, 0, 0);
+	Detail::MakeMemReplayEvent(page, offset, false, 0, 0);
 #endif
 
 	switch (internalHandle.pageType)
@@ -1073,6 +958,52 @@ void CGpuHeap::DeallocateInternal(THandle handle)
 	}
 }
 
+void CGpuHeap::Release()
+{
+	// When using committed regions, we must free all the blocks separately, since we have to reconstruct the large-block frees accurately.
+	const bool bFreeAllHandles = HEAP_MEMREPLAY || HEAP_CHECK || m_bCommitRegions;
+	if (bFreeAllHandles)
+	{
+		const auto pfnFree = [](void* pContext, THandle handle, uint32_t memoryType, TBlockHandle blockHandle, uint32_t blockOffset, uint32_t allocationSize, void* pMappedAddress)
+		{
+			CGpuHeap* const pThis = static_cast<CGpuHeap*>(pContext);
+			pThis->DeallocateInternal(handle);
+		};
+		Walk(this, nullptr, pfnFree);
+	}
+	else
+	{
+		for (uint32_t i = 0; i < m_numHeaps; ++i)
+		{
+			m_pHeaps[i].hugeBlocks.Walk(m_pPages, [this, i](SHugePage& page) -> bool
+			{
+				if (page.mapped)
+				{
+					void* const pAddress = page.GetAddress();
+					if (pAddress)
+					{
+						UnmapBlock(i, page.GetHandle(), pAddress);
+					}
+				}
+				DeallocateBlock(i, page.GetHandle(), page.size * kRegionSize);
+				return true;
+			});
+		}
+	}
+
+#if !HEAP_STATIC_STORAGE
+	delete[] m_pHeaps;
+	delete[] m_pPages;
+#else
+	::memset(m_pHeaps, 0, sizeof(SSubHeap) * m_numHeaps);
+	::memset(m_pPages, 0, sizeof(UPage) * kMaxPages);
+#endif
+
+#if HEAP_CHECK
+	gpHeapPages = nullptr;
+#endif
+}
+
 CGpuHeap::THandle CGpuHeap::AllocateTiny(uint32_t memoryType, uint32_t bin)
 {
 	HEAP_ASSERT(bin < kTinyBlockBins);
@@ -1080,8 +1011,7 @@ CGpuHeap::THandle CGpuHeap::AllocateTiny(uint32_t memoryType, uint32_t bin)
 	STinyPage* pPage = pages.AtFront(m_pPages);
 	if (!pPage)
 	{
-		const uint32_t blockSize = GetBinSize(bin);
-		if (pPage = AllocatePage<STinyPage>(m_pPages))
+		if ((pPage = AllocatePage<STinyPage>(m_pPages)))
 		{
 			static_assert(kDistribution2 == STinyPage::kBlockBits * 2U && kSmallBlockBins == kTinyBlockBins * 2, "Need to revise this mapping");
 			const uint32_t smallBin = (5U - kDistribution1) + bin + bin;
@@ -1105,8 +1035,7 @@ CGpuHeap::THandle CGpuHeap::AllocateTiny(uint32_t memoryType, uint32_t bin)
 		const uint32_t blockState = blockIndex | (bin << STinyPage::kBlockBits);
 		if (pPage->IsFull())
 		{
-			STinyPage* pFirstPage = pages.PopFront(m_pPages);
-			HEAP_ASSERT(pFirstPage == pPage);
+			CRY_VERIFY(pages.PopFront(m_pPages) == pPage);
 			m_pHeaps[memoryType].tinyFull.PushFront(m_pPages, pPage);
 		}
 		return MakeExternalHandle(pageId, kPageTypeTiny, memoryType, blockState);
@@ -1148,8 +1077,7 @@ CGpuHeap::THandle CGpuHeap::AllocateSmall(uint32_t memoryType, uint32_t bin)
 	const uint32_t blockState = blockIndex | (bin << SSmallPage::kBlockBits);
 	if (pPage->IsFull())
 	{
-		SSmallPage* pFirstPage = pages.PopFront(m_pPages);
-		HEAP_ASSERT(pFirstPage == pPage);
+		CRY_VERIFY(pages.PopFront(m_pPages) == pPage);
 		m_pHeaps[memoryType].smallFull[bin].PushFront(m_pPages, pPage);
 	}
 	return MakeExternalHandle(pageId, kPageTypeSmall, memoryType, blockState);
@@ -1304,6 +1232,7 @@ CGpuHeap::THandle CGpuHeap::AllocateLarge(uint32_t memoryType, uint32_t bin, uin
 
 CGpuHeap::THandle CGpuHeap::AllocateHuge(uint32_t memoryType, uint32_t bytes, uint32_t align, bool bCommit)
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "GPU Heap");
 	SHugePage* const pPage = AllocatePage<SHugePage>(m_pPages);
 	if (!pPage)
 	{
@@ -1316,7 +1245,7 @@ CGpuHeap::THandle CGpuHeap::AllocateHuge(uint32_t memoryType, uint32_t bytes, ui
 	{
 		if (blockHandle)
 		{
-			HEAP_ASSERT(false && "Block handle value too large");
+			HEAP_ASSERT(false, "Block handle value too large");
 			DeallocateBlock(memoryType, blockHandle, numRegions * kRegionSize);
 		}
 		DeallocatePage(m_pPages, pPage);
@@ -1335,21 +1264,12 @@ CGpuHeap::THandle CGpuHeap::AllocateHuge(uint32_t memoryType, uint32_t bytes, ui
 
 	pPage->size = numRegions;
 
-	if (m_bMapPersistent)
+	void* pAddress = MapBlock(memoryType, blockHandle);
+	if (!pPage->SetAddress(pAddress))
 	{
-		void* pAddress = MapBlock(memoryType, blockHandle);
-		if (!pPage->SetAddress(pAddress))
-		{
-			UnmapBlock(memoryType, blockHandle, pAddress);
-		}
-		pPage->mapped = 1U;
+		UnmapBlock(memoryType, blockHandle, pAddress);
 	}
-	else
-	{
-		pPage->SetAddress(nullptr);
-		pPage->mapped = 0U;
-	}
-
+	pPage->mapped = 1U;
 	m_pHeaps[memoryType].hugeBlocks.PushFront(m_pPages, pPage);
 
 	const uint32_t pageId = GetPageId(m_pPages, pPage);
@@ -1450,7 +1370,10 @@ void CGpuHeap::DeallocateLarge(uint32_t memoryType, uint32_t pageId, bool bUnlin
 		page.range.e = newEnd - (pPrevPage || newEnd == 256U);
 
 		// Unlink from address list
+#if defined(_DEBUG)
 		const uint32_t nextNext = pNextPage->link[1U].next;
+#endif
+		
 		addressLinks.Unlink(m_pPages, pNextPage);
 		HEAP_ASSERT(page.link[1U].next == nextNext);
 		HEAP_ASSERT(nextNext == 0U || m_pPages[nextNext].largePage.link[1U].prev == pageId);
@@ -1486,7 +1409,10 @@ void CGpuHeap::DeallocateLarge(uint32_t memoryType, uint32_t pageId, bool bUnlin
 		}
 
 		// Unlink from address list
+#if defined(_DEBUG)
 		const TPageId prevPrev = pPrevPage->link[1U].prev;
+#endif
+
 		addressLinks.Unlink(m_pPages, pPrevPage);
 		HEAP_ASSERT(page.link[1U].prev == prevPrev);
 		HEAP_ASSERT(prevPrev == 0U || m_pPages[prevPrev].largePage.link[1U].next == pageId);
@@ -1524,18 +1450,11 @@ void CGpuHeap::DeallocateHuge(uint32_t memoryType, uint32_t pageId, bool bCommit
 	m_pHeaps[memoryType].hugeBlocks.Unlink(m_pPages, &page);
 
 	const uint32_t blockHandle = page.GetHandle();
-	if (m_bMapPersistent)
+	HEAP_ASSERT(page.mapped == 1U);
+	void* pAddress = page.GetAddress();
+	if (pAddress)
 	{
-		HEAP_ASSERT(page.mapped == 1U);
-		void* pAddress = page.GetAddress();
-		if (pAddress)
-		{
-			UnmapBlock(memoryType, blockHandle, pAddress);
-		}
-	}
-	else
-	{
-		HEAP_ASSERT(page.mapped == 0U);
+		UnmapBlock(memoryType, blockHandle, pAddress);
 	}
 
 	if (bCommit && m_bCommitRegions)
@@ -1625,7 +1544,7 @@ void* CGpuHeap::Map(THandle handle)
 		if (pAddress && !page.SetAddress(pAddress))
 		{
 			UnmapBlock(memoryType, blockHandle, pAddress);
-			HEAP_ASSERT(false && "Block alignment does not meet requested alignment");
+			HEAP_ASSERT(false, "Block alignment does not meet requested alignment");
 		}
 	}
 
@@ -1645,7 +1564,6 @@ void CGpuHeap::Unmap(THandle handle)
 		--page.mapped;
 		if (!page.mapped)
 		{
-			HEAP_ASSERT(!m_bMapPersistent);
 			const uint32_t memoryType = MakeInternalHandle(handle).memoryType;
 			UnmapBlock(memoryType, page.GetHandle(), page.GetAddress());
 			page.SetAddress(nullptr);
@@ -1655,7 +1573,7 @@ void CGpuHeap::Unmap(THandle handle)
 
 UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 {
-	HEAP_ASSERT(handle && "Null handle passed");
+	HEAP_ASSERT(handle, "Null handle passed");
 	SHandle internalHandle = MakeInternalHandle(handle);
 	offset = 0;
 	if (internalHandle.pageType == kPageTypeTiny)
@@ -1664,7 +1582,7 @@ UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 		const uint32_t blockIndex = internalHandle.blockState & ((1U << STinyPage::kBlockBits) - 1U);
 		const uint32_t blockSize = GetBinSize(bin);
 		const STinyPage& page = m_pPages[internalHandle.pageIndex].tinyPage;
-		HEAP_ASSERT((page.IsFull() ? m_pHeaps[internalHandle.memoryType].tinyFull : m_pHeaps[internalHandle.memoryType].tinyAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex) && "Tiny handle not allocated (or already freed)");
+		HEAP_ASSERT((page.IsFull() ? m_pHeaps[internalHandle.memoryType].tinyFull : m_pHeaps[internalHandle.memoryType].tinyAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex), "Tiny handle not allocated (or already freed)");
 		offset += blockIndex * blockSize;
 		internalHandle = page.parentBlock;
 	}
@@ -1674,7 +1592,7 @@ UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 		const uint32_t blockIndex = internalHandle.blockState & ((1U << SSmallPage::kBlockBits) - 1U);
 		const uint32_t blockSize = GetBinSize(bin + kTinyBlockBins);
 		const SSmallPage& page = m_pPages[internalHandle.pageIndex].smallPage;
-		HEAP_ASSERT((page.IsFull() ? m_pHeaps[internalHandle.memoryType].smallFull[bin] : m_pHeaps[internalHandle.memoryType].smallAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex) && "Small handle not allocated (or already freed)");
+		HEAP_ASSERT((page.IsFull() ? m_pHeaps[internalHandle.memoryType].smallFull[bin] : m_pHeaps[internalHandle.memoryType].smallAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex), "Small handle not allocated (or already freed)");
 		offset += blockIndex * blockSize;
 		offset += page.GetBegin(false) * kRegionSize;
 		internalHandle.pageIndex = page.parentPage;
@@ -1683,15 +1601,15 @@ UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 	else if (internalHandle.pageType == kPageTypeLarge)
 	{
 		SLargePage& largePage = m_pPages[internalHandle.pageIndex].largePage;
-		HEAP_ASSERT(m_pHeaps[internalHandle.memoryType].largeFull.Contains(m_pPages, &largePage) && !largePage.IsFree() && "Large handle not allocated (or already freed)");
+		HEAP_ASSERT(m_pHeaps[internalHandle.memoryType].largeFull.Contains(m_pPages, &largePage) && !largePage.IsFree(), "Large handle not allocated (or already freed)");
 		offset += largePage.GetBegin(false) * kRegionSize;
 		internalHandle.pageIndex = largePage.parentPage;
 		internalHandle.pageType = kPageTypeHuge;
 	}
-	HEAP_ASSERT(internalHandle.pageType == kPageTypeHuge && "Invalid handle passed");
+	HEAP_ASSERT(internalHandle.pageType == kPageTypeHuge, "Invalid handle passed");
 	UPage* const pResult = m_pPages + internalHandle.pageIndex;
-	HEAP_ASSERT(m_pHeaps[internalHandle.memoryType].hugeBlocks.Contains(m_pPages, &pResult->hugePage) && "Huge handle not allocated (or already freed)");
-	HEAP_ASSERT(offset < pResult->hugePage.size * kRegionSize && "Sub-block out of bounds");
+	HEAP_ASSERT(m_pHeaps[internalHandle.memoryType].hugeBlocks.Contains(m_pPages, &pResult->hugePage), "Huge handle not allocated (or already freed)");
+	HEAP_ASSERT(offset < pResult->hugePage.size * kRegionSize, "Sub-block out of bounds");
 	return pResult;
 }
 
@@ -1813,7 +1731,9 @@ uint32_t CGpuHeap::Walk(void* pContext, TSummaryCallback pfnSummary, TAllocation
 		{
 			largeBin.Walk(pPages, [&](const SLargePage& largePage) -> bool
 			{
+#if defined(_DEBUG)
 				const SHugePage* const pHugePage = &pPages[largePage.parentPage].hugePage;
+#endif
 				HEAP_ASSERT(std::find(hugePages.begin(), hugePages.end(), pHugePage) == hugePages.end());
 				++freePages;
 				freeRegions += largePage.GetRegionCount(true);
@@ -1891,14 +1811,12 @@ uint32_t CGpuHeap::Walk(void* pContext, TSummaryCallback pfnSummary, TAllocation
 			const TPageId pageId = GetPageId(pPages, pTinyPage);
 			const uint32_t bin = SelectBin(pair.second);
 			HEAP_ASSERT(bin < kTinyBlockBins && (pTinyPage->IsFull() ? heap.tinyFull : heap.tinyAlloc[bin]).Contains(pPages, pTinyPage));
-			uint32_t allocatedBlocks[2];
-#if CRY_PLATFORM_32BIT
-			allocatedBlocks[0] = ~pTinyPage->freeBlocks[0];
-			allocatedBlocks[1] = ~pTinyPage->freeBlocks[1];
-#else
-			allocatedBlocks[0] = ~static_cast<uint32_t>(pTinyPage->freeBlocks);
-			allocatedBlocks[1] = ~static_cast<uint32_t>(pTinyPage->freeBlocks >> 32U);
-#endif
+
+			uint32_t allocatedBlocks[2] = {
+				~static_cast<uint32_t>(pTinyPage->freeBlocks),
+				~static_cast<uint32_t>(pTinyPage->freeBlocks >> 32U)
+			};
+
 			uint32_t count = 0U;
 			for (uint32_t i = 0; i < 2; ++i)
 			{
@@ -1919,7 +1837,9 @@ uint32_t CGpuHeap::Walk(void* pContext, TSummaryCallback pfnSummary, TAllocation
 
 		// Check that all regions and blocks are accounted for.
 		const uint64_t internalBytes = static_cast<uint64_t>(internalBlocks) * kRegionSize * 256U;
+#if defined(_DEBUG)
 		const uint64_t availableBytes = static_cast<uint64_t>(freeRegions) * kRegionSize + freeBytes;
+#endif
 		HEAP_ASSERT(usedBytes + availableBytes == externalBytes + internalBytes);
 
 		consumedPages += usedPages;

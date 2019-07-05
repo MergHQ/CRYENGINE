@@ -104,11 +104,11 @@ private:
 	{
 		float SamplePattern(float time) const
 		{
-			assert((time >= 0.0f) && (time <= 1.0f));
+			CRY_ASSERT((time >= 0.0f) && (time <= 1.0f));
 
 			const float fSampleIdx = floor_tpl(time * (float)__fres(FFSYSTEM_PATTERN_SAMPLE_STEP));
 			int sampleIdx1 = (int)fSampleIdx;
-			assert((sampleIdx1 >= 0) && (sampleIdx1 < FFSYSTEM_MAX_PATTERN_SAMPLES));
+			CRY_ASSERT((sampleIdx1 >= 0) && (sampleIdx1 < FFSYSTEM_MAX_PATTERN_SAMPLES));
 			int sampleIdx2 = (sampleIdx1 >= (FFSYSTEM_MAX_PATTERN_SAMPLES - 1)) ? 0 : sampleIdx1 + 1;
 			const float delta = clamp_tpl((FFSYSTEM_PATTERN_SAMPLE_STEP - (time - (FFSYSTEM_PATTERN_SAMPLE_STEP * fSampleIdx))) * FFSYSTEM_MAX_PATTERN_SAMPLES_FLOAT, 0.0f, 1.0f);
 
@@ -140,7 +140,7 @@ private:
 	{
 		float SampleEnvelope(float time) const
 		{
-			assert((time >= 0.0f) && (time <= 1.0f));
+			CRY_ASSERT((time >= 0.0f) && (time <= 1.0f));
 
 			const float fSampleIdx = floor_tpl(time * (float)__fres(FFSYSTEM_ENVELOPE_SAMPLE_STEP));
 			int sampleIdx1 = (int)fSampleIdx;

@@ -54,6 +54,7 @@ add_sources("NoUberFile"
 		"CGA/TrackStorage.h"
 		"SkeletonInfo.cpp"
 		"SkeletonInfo.h"
+		"AnimList.h"
 	SOURCE_GROUP "AnimationCompiler\\\\Controllers"
 		"CGA/CompressionController.cpp"
 		"CGA/CompressionController.h"
@@ -132,11 +133,11 @@ add_sources("NoUberFile"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.cpp"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.cpp"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/TangentSpaceCalculation.cpp"
-		"../../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.cpp"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.h"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/TangentSpaceCalculation.h"
 		"../../../CryEngine/Cry3DEngine/MeshCompiler/ForsythFaceReorderer.h"
-		"../../../SDKs/TangentBasisComputation/mikkelsen/mikktspace.h"
+		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.cpp"
+		"${SDK_DIR}/TangentBasisComputation/mikkelsen/mikktspace.h"
 		"../../../CryEngine/CryAnimation/AttachmentVClothPreProcess.cpp"
 	SOURCE_GROUP "Root"
 		"../../../CryEngine/Cry3DEngine/CGF/CGFSaver.cpp"
@@ -189,18 +190,31 @@ if (OPTION_FBX_SDK)
 	)
 endif()
 
+sources_platform(WIN32)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_windows.cpp"
+)
+sources_platform(LINUX)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_posix.cpp"
+)
+
 end_sources()
 #END-FILE-LIST
 
-CryResourceCompilerModule(ResourceCompilerPC PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
-target_include_directories(${THIS_PROJECT} PRIVATE 
+CryResourceCompilerModule(ResourceCompilerPC PCH "stdafx.cpp" SOLUTION_FOLDER "RC")
+target_include_directories(${THIS_PROJECT} PRIVATE
 	"${CMAKE_SOURCE_DIR}/ResourceCompiler"
 	"${CRYENGINE_SOURCE_DIR}/Code/Tools"
-	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools" 
-	"${CRYENGINE_SOURCE_DIR}/Code/CryEngine/Cry3DEngine" 
-	"${CRYENGINE_SOURCE_DIR}/Code/Sandbox" 
+	"${CRYENGINE_SOURCE_DIR}/Code/Tools/CryCommonTools"
+	"${CRYENGINE_SOURCE_DIR}/Code/CryEngine/Cry3DEngine"
+	"${CRYENGINE_SOURCE_DIR}/Code/CryEngine/Cry3DEngine/MeshCompiler"
+	"${CRYENGINE_SOURCE_DIR}/Code/Sandbox"
+	"${SDK_DIR}/TangentBasisComputation"
 	"${SDK_DIR}"
-	"${SDK_DIR}/Alembic/alembic-1.1.0/include" 
+	"${SDK_DIR}/Alembic/alembic-1.1.0/include"
 	"${SDK_DIR}/Alembic/ilmbase-1.0.2/include")
 target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR)
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRYTOOLS -DRESOURCECOMPILERPC_EXPORTS -DOFFLINE_COMPUTATION)
@@ -209,4 +223,3 @@ if (OPTION_FBX_SDK)
 endif()
 target_link_libraries(${THIS_PROJECT} PRIVATE Gdi32 Shell32 Ole32 dbghelp Wininet)
 target_link_libraries(${THIS_PROJECT} PRIVATE lua vco)
-set_target_properties(${THIS_PROJECT} PROPERTIES LINK_FLAGS "/DEF:ResourceCompilerPlugin.def")

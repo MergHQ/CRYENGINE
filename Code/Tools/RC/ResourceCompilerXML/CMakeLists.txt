@@ -6,6 +6,7 @@ start_sources()
 sources_platform(ALL)
 add_sources("NoUberFile"
 	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil.h"
 		"../../CryCommonTools/PathHelpers.cpp"
 		"../../CryCommonTools/StringHelpers.cpp"
 		"../../CryCommonTools/PathHelpers.h"
@@ -26,11 +27,20 @@ add_sources("NoUberFile"
 		"stdafx.cpp"
 		"XMLConverter.h"
 )
-
+sources_platform(WIN32)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_windows.cpp"
+)
+sources_platform(LINUX)
+add_sources("NoUberFile"
+	SOURCE_GROUP "CryCommonTools"
+		"../../CryCommonTools/FileUtil_posix.cpp"
+)
 end_sources()
 #END-FILE-LIST
 
-CryResourceCompilerModule(ResourceCompilerXML PCH "StdAfx.cpp" SOLUTION_FOLDER "RC")
+CryResourceCompilerModule(ResourceCompilerXML PCH "stdafx.cpp" SOLUTION_FOLDER "RC")
 target_include_directories(${THIS_PROJECT} PRIVATE 
 	"${CMAKE_SOURCE_DIR}/ResourceCompiler" 
 	"${CRYENGINE_SOURCE_DIR}/Code/Tools" 

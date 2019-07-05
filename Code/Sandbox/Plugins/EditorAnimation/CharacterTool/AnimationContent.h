@@ -44,7 +44,6 @@ struct AnimationContent
 	SAnimSettings          settings;
 	BlendSpace             blendSpace;
 	CombinedBlendSpace     combinedBlendSpace;
-	string                 newAnimationSkeleton;
 	std::vector<AnimEvent> events;
 
 	AnimationContent();
@@ -60,4 +59,3 @@ struct AnimationContent
 };
 
 }
-

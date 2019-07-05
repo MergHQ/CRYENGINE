@@ -1,11 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __MANNEQUIN_MODEL_VIEWPORT_H__
-#define __MANNEQUIN_MODEL_VIEWPORT_H__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "ModelViewport.h"
 #include "MannequinBase.h"
@@ -14,8 +8,9 @@
 #include "Util/ArcBall.h"
 #include "Gizmos/AxisHelper.h"
 
-class IActionController;
+struct IActionController;
 class CMannequinDialog;
+struct EventPhys;
 
 //////////////////////////////////////////////////////////////////////////
 class CMannequinModelViewport : public CModelViewport, public IParticleEffectListener, public IMannequinGameListener, public CActionInputHandler
@@ -41,7 +36,7 @@ public:
 	virtual void Update();
 	void         UpdateAnimation(float timePassed);
 
-	virtual void OnRender();
+	virtual void OnRender(SDisplayContext& context);
 
 	void         SetActionController(IActionController* pActionController)
 	{
@@ -151,7 +146,7 @@ protected:
 	void OnLButtonUp(UINT nFlags, CPoint point);
 	void OnMouseMove(UINT nFlags, CPoint point);
 
-	void DrawGrid(const Quat& tmRotation, const Vec3& MotionTranslation, const Vec3& FootSlide, const Matrix33& rGridRot) {};
+	void DrawGrid(const Quat& tmRotation, const Vec3& MotionTranslation, const Vec3& FootSlide, const Matrix33& rGridRot) {}
 
 private:
 
@@ -295,8 +290,4 @@ private:
 	f32                  m_lrGround;
 	OBB                  m_GroundOBB;
 	Vec3                 m_GroundOBBPos;
-
 };
-
-#endif // __MANNEQUIN_MODEL_VIEWPORT_H__
-

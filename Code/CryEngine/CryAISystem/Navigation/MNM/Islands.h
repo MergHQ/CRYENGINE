@@ -17,16 +17,28 @@ class CIslands
 public:
 	typedef uint64 TwoStaticIslandsIDs;
 
+	enum class ESeedConnectivityState : uint8
+	{
+		NotUpdated,
+		Accessible,
+		Inaccessible,
+		Count,
+	};
+
 	CIslands();
 	
 	void           ComputeStaticIslandsAndConnections(CNavMesh& navMesh, const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections);
-	void           UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMeshID meshID, const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, MNM::IslandConnections& islandConnections);
+	void           UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMeshID meshID, const TriangleID* pTrianglesArray, const size_t trianglesCount, MNM::IslandConnections& islandConnections);
 
 	inline void    SetTotalIslands(uint32 totalIslands) { m_islands.resize(totalIslands); }
 	inline uint32  GetTotalIslands() const { return m_islands.size(); }
 	float          GetIslandArea(StaticIslandID islandID) const;
 
 	void           ResetConnectedIslandsIDs(CNavMesh& navMesh);
+
+	void           SetSeedConnectivityState(const StaticIslandID* pIslandIds, const size_t islandsCount, const ESeedConnectivityState state);
+	void           ResetSeedConnectivityStates(const ESeedConnectivityState state);
+	ESeedConnectivityState GetSeedConnectivityState(const StaticIslandID islandId) const;
 
 private:
 
@@ -36,6 +48,7 @@ private:
 			: id(0)
 			, area(0.f)
 			, trianglesCount(0)
+			, seedConnectivityState(ESeedConnectivityState::NotUpdated)
 		{
 		}
 		SIsland(StaticIslandID id, AreaAnnotation annotation)
@@ -43,12 +56,14 @@ private:
 			, annotation(annotation)
 			, area(0.f)
 			, trianglesCount(0)
+			, seedConnectivityState(ESeedConnectivityState::NotUpdated)
 		{}
 
-		StaticIslandID id;
-		AreaAnnotation annotation;
-		uint32         trianglesCount;
-		float          area;
+		StaticIslandID         id;
+		AreaAnnotation         annotation;
+		uint32                 trianglesCount;
+		float                  area;
+		ESeedConnectivityState seedConnectivityState;
 	};
 
 	struct SConnectionRequests
@@ -68,6 +83,12 @@ private:
 			uint16         offMeshLinkIndex;
 		};
 
+		void Reset()
+		{
+			offmeshConnections.clear();
+			areaConnection.clear();
+		}
+
 		void AddAreaConnection(const StaticIslandID firstIslandId, const StaticIslandID secondIslandId);
 		void RemoveAreaConnection(const StaticIslandID firstIslandId, const StaticIslandID secondIslandId);
 
@@ -82,11 +103,11 @@ private:
 	void    ResolvePendingConnectionRequests(CNavMesh& navMesh, SConnectionRequests& islandConnectionRequests, const NavigationMeshID meshID, const OffMeshNavigationManager* pOffMeshNavigationManager, MNM::IslandConnections& islandConnections);
 	void    ComputeStaticIslands(CNavMesh& navMesh, SConnectionRequests& islandConnectionRequests);
 	
-	void    FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sourceTriangleId, const size_t reserveCount, 
+	void    FloodFillOnTriangles(CNavMesh& navMesh, const TriangleID sourceTriangleId, const size_t reserveCount, 
 		std::function<bool(const STile& prevTile, const Tile::STriangle& prevTriangle, const STile& nextTile, Tile::STriangle& nextTriangle)> executeFunc);
 	
 	template<typename T>
-	void    FloodFillOnTrianglesWithBackupValue(CNavMesh& navMesh, const MNM::TriangleID sourceTriangleId, const T sourceValue, const size_t reserveCount, 
+	void    FloodFillOnTrianglesWithBackupValue(CNavMesh& navMesh, const TriangleID sourceTriangleId, const T sourceValue, const size_t reserveCount, 
 		std::function<bool(const STile& prevTile, const Tile::STriangle& prevTriangle, const T prevValue, const STile& nextTile, Tile::STriangle& nextTriangle, T& nextValue)> executeFunc);
 
 	inline size_t GetIslandIndex(const StaticIslandID islandID) const
@@ -101,7 +122,7 @@ private:
 	}
 
 	std::vector<SIsland> m_islands;
-	std::vector<size_t> m_islandsFreeIndices;
+	std::deque<size_t> m_islandsFreeIndices;
 };
 
 } // MNM

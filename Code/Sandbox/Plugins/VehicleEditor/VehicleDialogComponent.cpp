@@ -99,12 +99,12 @@ void CVeedObject::InitOnTransformCallback(CBaseObject* pObject)
 		return;
 	}
 
-	pObject->AddEventListener(functor(*this, &CVeedObject::OnObjectEventCallback));
+	pObject->signalChanged.Connect(this, &CVeedObject::OnObjectEventCallback);
 }
 
-void CVeedObject::OnObjectEventCallback(CBaseObject* pObject, int eventId)
+void CVeedObject::OnObjectEventCallback(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (eventId == OBJECT_ON_TRANSFORM)
+	if (event.m_type == OBJECT_ON_TRANSFORM)
 	{
 		if (m_ignoreOnTransformCallback)
 		{
@@ -117,4 +117,3 @@ void CVeedObject::OnObjectEventCallback(CBaseObject* pObject, int eventId)
 		m_ignoreOnTransformCallback = false;
 	}
 }
-

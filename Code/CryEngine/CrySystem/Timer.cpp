@@ -4,9 +4,10 @@
 #include "Timer.h"
 #include <time.h>
 #include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ILog.h>
 #include <CryNetwork/ISerialize.h>
+#include <CryRenderer/IRenderer.h>
 /////////////////////////////////////////////////////
 #include <CryCore/Platform/CryWindows.h>
 
@@ -242,8 +243,8 @@ void CTimer::UpdateBlending()
 	}
 	else
 	{
-		// Decay avg frame time, set as new peak.
-		m_fAvgFrameTime *= 1.f - fFrameTime / m_fSmoothTime;
+		// Decay peak time toward current, check for new peak
+		m_fAvgFrameTime += (fFrameTime - m_fAvgFrameTime) * fFrameTime / m_fSmoothTime;
 		if (fFrameTime > m_fAvgFrameTime)
 		{
 			m_fAvgFrameTime = fFrameTime;
@@ -490,11 +491,13 @@ void CTimer::Serialize(TSerialize ser)
 
 		SetOffsetToMatchGameTime(curTime);
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 		if (m_TimeDebug)
 		{
 			const int64 now = CryGetTicks();
 			CryLogAlways("[CTimer]: Serialize: Frame=%d Last=%lld Now=%lld Off=%lld Async=%f CurrTime=%f UI=%f", gEnv->pRenderer->GetFrameID(false), (long long)m_lLastTime, (long long)now, (long long)m_lOffsetTime, GetAsyncCurTime(), GetCurrTime(ETIMER_GAME), GetCurrTime(ETIMER_UI));
 		}
+#endif
 	}
 }
 
@@ -602,8 +605,10 @@ time_t CTimer::DateToSecondsUTC(struct tm& inDate)
 
 void CTimer::SetOffsetToMatchGameTime(int64 ticks)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const int64 previousOffset = m_lOffsetTime;
 	const float previousGameTime = GetCurrTime(ETIMER_GAME);
+#endif
 
 	m_lOffsetTime = ticks - m_lLastTime;
 	RefreshGameTime(m_lLastTime);

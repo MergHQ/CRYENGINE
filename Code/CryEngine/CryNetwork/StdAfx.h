@@ -55,7 +55,7 @@
 void NET_ASSERT_FAIL(const char* check, const char* file, int line);
 #undef NET_ASSERT
 #if NET_ASSERT_LOGGING
-	#define NET_ASSERT(x) if (true) { bool net_ok = true; if (!(x)) net_ok = false; CRY_ASSERT_MESSAGE(net_ok, # x); if (!net_ok) NET_ASSERT_FAIL( # x, __FILE__, __LINE__); } else
+	#define NET_ASSERT(x) if (true) { bool net_ok = true; if (!(x)) net_ok = false; CRY_ASSERT(net_ok, # x); if (!net_ok) NET_ASSERT_FAIL( # x, __FILE__, __LINE__); } else
 #else
 	#define NET_ASSERT assert
 #endif

@@ -474,7 +474,7 @@ bool CItem::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams
 	ResetGameObject();
 	pGameObject->RegisterExtForEvents( this, NULL, 0 );
 
-	CRY_ASSERT_MESSAGE(false, "CItem::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CItem::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -482,7 +482,7 @@ bool CItem::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams
 //------------------------------------------------------------------------
 bool CItem::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CItem::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CItem::GetEntityPoolSignature not implemented");
 	
 	return true;
 }
@@ -822,9 +822,9 @@ void CItem::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CItem::GetEventMask() const
+Cry::Entity::EventFlags CItem::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT) | ENTITY_EVENT_BIT(ENTITY_EVENT_TIMER) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_PRE_SERIALIZE) | ENTITY_EVENT_BIT(ENTITY_EVENT_DEACTIVATED);
+	return ENTITY_EVENT_ANIM_EVENT | ENTITY_EVENT_TIMER | ENTITY_EVENT_RESET | ENTITY_EVENT_PRE_SERIALIZE | ENTITY_EVENT_DEACTIVATED;
 }
 
 //------------------------------------------------------------------------
@@ -1338,7 +1338,7 @@ struct CItem::SelectAction
 //------------------------------------------------------------------------
 void CItem::DoSelectWeaponGrab()
 {
-	CRY_ASSERT_MESSAGE(AreAnyItemFlagsSet(eIF_SelectGrabbingWeapon), "Triggering delayed weapon grab when weapon is not expecting it!");
+	CRY_ASSERT(AreAnyItemFlagsSet(eIF_SelectGrabbingWeapon), "Triggering delayed weapon grab when weapon is not expecting it!");
 
 	ClearItemFlags(eIF_SelectGrabbingWeapon);
 	Hide(false);
@@ -1680,9 +1680,6 @@ void CItem::DetachItem(IEntity* pThisItemEntity, CActor* pOwnerActor, float impu
 						}
 
 						dropDirection.z = -1.f;
-
-						SActorStats* pActorStats = pOwnerActor->GetActorStats();
-						assert(pActorStats);
 
 						const Vec3 velocity = pOwnerActor->GetActorPhysics().velocity;
 
@@ -2118,8 +2115,8 @@ void CItem::Pickalize(bool enable, bool dropped)
 		if(dropped)
 		{
 			const int dropFlyTimeout = 750;
-			GetEntity()->KillTimer(eIT_Flying);
-			GetEntity()->SetTimer(eIT_Flying, dropFlyTimeout);
+			KillTimer(eIT_Flying);
+			SetTimer(eIT_Flying, dropFlyTimeout);
 		}
 
 		if(GetEntity()->IsSlotValid(eIGS_Aux0))
@@ -2628,7 +2625,7 @@ const Matrix34 CItem::GetWorldTM() const
 			}
 		}
 
-		CRY_ASSERT_MESSAGE(0, "Weapon thinks it is attached but isn't");
+		CRY_ASSERT(0, "Weapon thinks it is attached but isn't");
 		return GetEntity()->GetWorldTM();
 	}
 	else
@@ -2651,7 +2648,7 @@ const Vec3 CItem::GetWorldPos() const
 			}
 		}
 
-		CRY_ASSERT_MESSAGE(0, "Weapon thinks it is attached but isn't");
+		CRY_ASSERT(0, "Weapon thinks it is attached but isn't");
 		return GetEntity()->GetWorldPos();
 	}
 	else
@@ -2676,7 +2673,7 @@ void CItem::GetRelativeLocation(QuatT& location) const
 			}
 		}
 
-		CRY_ASSERT_MESSAGE(0, "Weapon thinks it is attached but isn't");
+		CRY_ASSERT(0, "Weapon thinks it is attached but isn't");
 	}
 
 	const bool bRelativeToParent = false;
@@ -2925,7 +2922,7 @@ bool CItem::AttachToHand(bool attach, bool checkAttachment)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(!IsAttachedToBack(), "Logic flow error, should never seek to attach to the hand whilst attached to the back!");
+		CRY_ASSERT(!IsAttachedToBack(), "Logic flow error, should never seek to attach to the hand whilst attached to the back!");
 
 		bool firstPerson = (m_stats.viewmode & eIVM_FirstPerson);
 		int slot = firstPerson ? eIGS_FirstPerson : eIGS_ThirdPerson;
@@ -3078,7 +3075,7 @@ bool CItem::AttachToBack(bool attach)
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(!IsAttachedToHand(), "Logic flow error, should never seek to attach to the back whilst attached to the hand!");
+					CRY_ASSERT(!IsAttachedToHand(), "Logic flow error, should never seek to attach to the back whilst attached to the hand!");
 
 					m_stats.attachment = attachmentId;
 					if(GetOwnerActor() && GetOwnerActor()->IsPlayer())
@@ -3321,7 +3318,7 @@ void CItem::ProcessAccessoryAmmoCapacities(IInventory* pOwnerInventory, bool add
 
 			newCapacity = currentCapacity + additionalCapacity;
 
-			CRY_ASSERT_MESSAGE(newCapacity >= 0, string().Format("Trying to set ammo capacity for '%s' to a negative number", iter->first->GetName()));
+			CRY_ASSERT(newCapacity >= 0, string().Format("Trying to set ammo capacity for '%s' to a negative number", iter->first->GetName()));
 
 			pOwnerInventory->SetAmmoCapacity(iter->first, newCapacity);
 		}
@@ -3563,7 +3560,7 @@ void CItem::UnRegisterAs3pAudioCacheUser()
 
 void CItem::AudioCacheItemAndAccessories(const bool enable, const char* type)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CItem::AudioCacheItem");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CItem::AudioCacheItem");
 	IEntityClass* pClass = GetEntity()->GetClass();
 	g_pGame->GetWeaponSystem()->GetWeaponAlias().UpdateClass(&pClass);
 	AudioCacheItem(enable, pClass, "", type);

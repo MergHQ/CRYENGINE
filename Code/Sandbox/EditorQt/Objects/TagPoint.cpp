@@ -2,36 +2,30 @@
 
 #include "StdAfx.h"
 #include "TagPoint.h"
+
+#include <Gizmos/AxisHelper.h>
+#include <Viewport.h>
+
 #include <CryAISystem/IAgent.h>
-
-#include "Viewport.h"
-
 #include <CryAISystem/IAISystem.h>
-#include "AI\AIManager.h"
-#include "Gizmos/AxisHelper.h"
 
 REGISTER_CLASS_DESC(CTagPointClassDesc);
 REGISTER_CLASS_DESC(CNavigationSeedPointClassDesc);
 
-//////////////////////////////////////////////////////////////////////////
-// CBase implementation.
-//////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CTagPoint, CEntityObject)
 IMPLEMENT_DYNCREATE(CNavigationSeedPoint, CTagPoint)
 
 STagPointPreferences tagPointPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(STagPointPreferences, &tagPointPreferences)
 
-//////////////////////////////////////////////////////////////////////////
 CTagPoint::CTagPoint()
 {
 	m_entityClass = "TagPoint";
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTagPoint::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(RGB(0, 0, 255));
+	SetColor(ColorB(0, 0, 255));
 	SetTextureIcon(GetClassDesc()->GetTextureIconId());
 
 	bool res = CEntityObject::Init(prev, file);
@@ -41,23 +35,20 @@ bool CTagPoint::Init(CBaseObject* prev, const string& file)
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTagPoint::InitVariables()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
 float CTagPoint::GetRadius()
 {
 	return GetHelperScale() * gGizmoPreferences.helperScale * tagPointPreferences.tagpointScaleMulti;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTagPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
 	if (event == eMouseMove || event == eMouseLDown)
 	{
-		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain());
+		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain());
 
 		SetPos(pos);
 		if (event == eMouseLDown)
@@ -69,10 +60,10 @@ int CTagPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CP
 	return CBaseObject::MouseCreateCallback(view, event, point, flags);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTagPoint::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+
 	const Matrix34& wtm = GetWorldTM();
 
 	float fHelperScale = 1 * m_helperScale * gGizmoPreferences.helperScale;
@@ -85,9 +76,15 @@ void CTagPoint::Display(CObjectRenderHelper& objRenderHelper)
 	dc.DrawArrow(wp, wp + dir * 2, fHelperScale);
 
 	if (IsFrozen())
+	{
 		dc.SetFreezeColor();
+	}
 	else
-		dc.SetColor(GetColor(), 0.8f);
+	{
+		ColorB color = GetColor();
+		color.a = 204;
+		dc.SetColor(color);
+	}
 
 	dc.DrawBall(wp, GetRadius());
 
@@ -100,7 +97,6 @@ void CTagPoint::Display(CObjectRenderHelper& objRenderHelper)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTagPoint::HitTest(HitContext& hc)
 {
 	// Must use icon..
@@ -129,7 +125,6 @@ bool CTagPoint::HitTest(HitContext& hc)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTagPoint::GetBoundBox(AABB& box)
 {
 	Vec3 pos = GetWorldPos();
@@ -138,47 +133,9 @@ void CTagPoint::GetBoundBox(AABB& box)
 	box.max = pos + Vec3(r, r, r);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTagPoint::GetLocalBounds(AABB& box)
 {
 	float r = GetRadius();
 	box.min = -Vec3(r, r, r);
 	box.max = Vec3(r, r, r);
 }
-
-//////////////////////////////////////////////////////////////////////////
-
-CNavigationSeedPoint::CNavigationSeedPoint()
-{
-	m_entityClass = "NavigationSeedPoint";
-}
-
-void CNavigationSeedPoint::Display(CObjectRenderHelper& objRenderHelper)
-{
-	DrawDefault(objRenderHelper.GetDisplayContextRef());
-}
-
-int CNavigationSeedPoint::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
-{
-	const int retValue = __super::MouseCreateCallback(view, event, point, flags);
-
-	if (event == eMouseLDown)
-	{
-		GetIEditorImpl()->GetAI()->CalculateNavigationAccessibility();
-	}
-
-	return retValue;
-}
-
-void CNavigationSeedPoint::Done()
-{
-	__super::Done();
-	GetIEditorImpl()->GetAI()->CalculateNavigationAccessibility();
-}
-
-void CNavigationSeedPoint::SetModified(bool boModifiedTransformOnly, bool bNotifyObjectManager)
-{
-	__super::SetModified(boModifiedTransformOnly, bNotifyObjectManager);
-	GetIEditorImpl()->GetAI()->CalculateNavigationAccessibility();
-}
-

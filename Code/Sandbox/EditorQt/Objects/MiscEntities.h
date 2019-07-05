@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include "SandboxAPI.h"
 #include "EntityObject.h"
+
+struct IGeometry;
+struct IStatObj;
 
 //////////////////////////////////////////////////////////////////////////
 // WindArea entity.
@@ -12,11 +16,7 @@ class CWindAreaEntity : public CEntityObject
 public:
 	DECLARE_DYNCREATE(CWindAreaEntity)
 
-	//////////////////////////////////////////////////////////////////////////
-	CWindAreaEntity(){}
 	virtual void Display(CObjectRenderHelper& objRenderHelper);
-
-private:
 };
 
 /*!
@@ -25,11 +25,11 @@ private:
 class CWindAreaEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; };
-	const char*         ClassName()                         { return "Entity::WindArea"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CWindAreaEntity); };
-	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; }
+	const char*         ClassName()                         { return "Entity::WindArea"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CWindAreaEntity); }
+	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
 
@@ -62,12 +62,12 @@ private:
 class CConstraintEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; }
 	// this was done because the string was prefixed in the object manager and would otherwise return by default CEntityObject
-	const char*         ClassName()                         { return "Entity::Constraint"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CConstraintEntity); };
-	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; };
+	const char*         ClassName()                         { return "Entity::Constraint"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CConstraintEntity); }
+	const char*         GetFileSpec()                       { return "*.cgf;*.chr;*.cga;*.cdf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
 
@@ -80,28 +80,7 @@ public:
 
 	CGeomCacheEntity() {}
 
-	virtual bool HitTestEntity(HitContext& hc, bool& bHavePhysics) override
-	{
-		IGeomCacheRenderNode* pGeomCacheRenderNode = m_pEntity->GetGeomCacheRenderNode(0);
-		if (pGeomCacheRenderNode)
-		{
-			SRayHitInfo hitInfo;
-			ZeroStruct(hitInfo);
-			hitInfo.inReferencePoint = hc.raySrc;
-			hitInfo.inRay = Ray(hitInfo.inReferencePoint, hc.rayDir.GetNormalized());
-			hitInfo.bInFirstHit = false;
-			hitInfo.bUseCache = false;
-
-			if (pGeomCacheRenderNode->RayIntersection(hitInfo))
-			{
-				hc.object = this;
-				hc.dist = hitInfo.fDistance;
-				return true;
-			}
-		}
-
-		return false;
-	}
+	virtual bool HitTestEntity(HitContext& hc, bool& bHavePhysics) override;
 };
 #endif
 
@@ -112,11 +91,11 @@ public:
 class CGeomCacheEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_GEOMCACHE; };
-	const char*         ClassName()                         { return "Entity::GeomCache"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CGeomCacheEntity); };
-	const char*         GetFileSpec()                       { return "*.cax"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_GEOMCACHE; }
+	const char*         ClassName()                         { return "Entity::GeomCache"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CGeomCacheEntity); }
+	const char*         GetFileSpec()                       { return "*.cax"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 	virtual bool        RenderTextureOnTop() const override { return true; }
 };
@@ -129,7 +108,7 @@ class CJointGenEntity : public CEntityObject
 {
 public:
 	DECLARE_DYNCREATE(CJointGenEntity)
-	CJointGenEntity() {}
+	CJointGenEntity();
 	virtual void Display(CObjectRenderHelper& objRenderHelper);
 private:
 	string                m_fname;
@@ -140,11 +119,10 @@ private:
 class CJointGenEntityClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; };
-	const char*         ClassName()                         { return "Entity::JointGen"; };
-	const char*         Category()                          { return ""; };
-	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CJointGenEntity); };
-	const char*         GetFileSpec()                       { return "*.cgf"; };
+	ObjectType          GetObjectType()                     { return OBJTYPE_ENTITY; }
+	const char*         ClassName()                         { return "Entity::JointGen"; }
+	const char*         Category()                          { return ""; }
+	CRuntimeClass*      GetRuntimeClass()                   { return RUNTIME_CLASS(CJointGenEntity); }
+	const char*         GetFileSpec()                       { return "*.cgf"; }
 	virtual const char* GetDataFilesFilterString() override { return GetFileSpec(); }
 };
-

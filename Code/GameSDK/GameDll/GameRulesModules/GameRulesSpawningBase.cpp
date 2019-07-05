@@ -19,6 +19,7 @@ History:
 #include "IGameRulesRoundsModule.h"
 #include "IGameRulesPlayerStatsModule.h"
 #include "IGameRulesObjectivesModule.h"
+#include "GameCVars.h"
 
 struct compare_spawns
 {
@@ -189,7 +190,7 @@ void CGameRulesSpawningBase::DisableSpawnLocation(EntityId id, bool isInitialSpa
 
 EntityId CGameRulesSpawningBase::GetSpawnLocation(EntityId playerId)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::GetSpawnLocation() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::GetSpawnLocation() is NOT implemented and shouldn't be called until it has been");
 	return 0;
 }
 
@@ -251,23 +252,23 @@ int CGameRulesSpawningBase::GetSpawnIndexForEntityId(EntityId spawnId) const
 
 void CGameRulesSpawningBase::AddAvoidPOI(EntityId entityId, float avoidDistance, bool enabled, bool bStaticPOI)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::AddAvoidPOI() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::AddAvoidPOI() is NOT implemented and shouldn't be called until it has been");
 }
 
 void CGameRulesSpawningBase::RemovePOI(EntityId entityId)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::RemovePOI() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::RemovePOI() is NOT implemented and shouldn't be called until it has been");
 }
 	
 void CGameRulesSpawningBase::EnablePOI(EntityId entityId)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::EnablePOI() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::EnablePOI() is NOT implemented and shouldn't be called until it has been");
 
 }
 
 void CGameRulesSpawningBase::DisablePOI(EntityId entityId)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::DisablePOI() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::DisablePOI() is NOT implemented and shouldn't be called until it has been");
 }
 
 void CGameRulesSpawningBase::PlayerJoined(EntityId playerId)
@@ -284,7 +285,7 @@ void CGameRulesSpawningBase::PlayerLeft(EntityId playerId)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesSpawningBase::PlayerLeft() failed to find a playervalue for player. This should not happen");
+		CRY_ASSERT(0, "CGameRulesSpawningBase::PlayerLeft() failed to find a playervalue for player. This should not happen");
 	}
 }
 
@@ -303,34 +304,34 @@ void CGameRulesSpawningBase::OnPlayerKilled(const HitInfo &hitInfo)
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(0, string().Format("CGameRulesSpawningBase::OnPlayerKilled() failed to find a playervalue for player %s. This should not happen", targetEntity->GetName()));
+			CRY_ASSERT(0, string().Format("CGameRulesSpawningBase::OnPlayerKilled() failed to find a playervalue for player %s. This should not happen", targetEntity->GetName()));
 		}
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesSpawningBase::OnPlayerKilled() failed to find a targetEntity for player that died");
+		CRY_ASSERT(0, "CGameRulesSpawningBase::OnPlayerKilled() failed to find a targetEntity for player that died");
 	}
 }
 
 void CGameRulesSpawningBase::ClRequestRevive(EntityId playerId)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::ClRequestRevive() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::ClRequestRevive() is NOT implemented and shouldn't be called until it has been");
 }
 
 bool CGameRulesSpawningBase::SvRequestRevive(EntityId playerId, EntityId preferredSpawnId)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::SvRequestRevive() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::SvRequestRevive() is NOT implemented and shouldn't be called until it has been");
 	return false;
 }
 
 void CGameRulesSpawningBase::PerformRevive(EntityId playerId, int teamId, EntityId preferredSpawnId)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::PerformRevive() is NOT implemented and shouldn't be called until it has been"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::PerformRevive() is NOT implemented and shouldn't be called until it has been");
 }
 
 void CGameRulesSpawningBase::ReviveAllPlayers(bool isReset, bool bOnlyIfDead)
 {
-	CRY_ASSERT_TRACE(0, ("CGameRulesSpawningBase::ReviveAllPlayers() is NOT implemented and shouldn't be called until it has been. Shouldn't be needed in singleplayer"));
+	CRY_ASSERT(0, "CGameRulesSpawningBase::ReviveAllPlayers() is NOT implemented and shouldn't be called until it has been. Shouldn't be needed in singleplayer");
 }
 
 CGameRulesSpawningBase::TSpawnLocations& CGameRulesSpawningBase::GetSpawnLocations(const EntityId playerId)

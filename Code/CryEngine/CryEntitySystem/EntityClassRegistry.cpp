@@ -338,7 +338,7 @@ void CEntityClassRegistry::LoadArchetypeDescription(const XmlNodeRef& root)
 			if (!pClass)
 			{
 				SEntityClassDesc cd;
-				cd.flags = ECLF_INVISIBLE | ECLF_ENTITY_ARCHETYPE;
+				cd.flags = ECLF_ENTITY_ARCHETYPE;
 				cd.sName = fullName.c_str();
 				RegisterStdClass(cd);
 			}
@@ -454,7 +454,7 @@ public:
 		{
 			if (!pObject->SetSimulationMode(Schematyc::ESimulationMode::Preview, Schematyc::EObjectSimulationUpdatePolicy::Always))
 			{
-				CRY_ASSERT_MESSAGE(0, "Failed to reset Schematyc Preview.");
+				CRY_ASSERT(0, "Failed to reset Schematyc Preview.");
 				DestroyObject(m_objectId);
 			}
 		}
@@ -629,7 +629,6 @@ bool CEntityClassRegistry::OnClientConnectionReceived(int channelId, bool bIsRes
 			SEntitySpawnParams spawnParams;
 			spawnParams.pClass = classPair.second;
 			spawnParams.sName = "Client";
-			spawnParams.nFlags |= ENTITY_FLAG_NEVER_NETWORK_STATIC;
 
 			// Set local player details
 			if (channelId == 1 && !gEnv->IsDedicated() && g_pIEntitySystem->GetEntityFromID(LOCAL_PLAYER_ENTITY_ID) == nullptr)

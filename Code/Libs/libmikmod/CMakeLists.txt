@@ -1,4 +1,6 @@
 start_sources()
+
+# -- libmikmod.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS libmikmod_static
@@ -75,7 +77,7 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE
 )
 
 set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "mikmod")
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE
 		-DDRV_DS
 		-DDRV_WIN

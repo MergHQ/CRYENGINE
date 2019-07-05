@@ -1,17 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
 #include "EditorCommonAPI.h"
+
+#include "EditorFramework/PreferencesDialog.h"
+#include "Util/UserDataUtil.h"
 #include "AutoRegister.h"
-#include "QtViewPane.h"
 
-#include "PreferencesDialog.h"
-
-#include <CrySerialization/Enum.h>
-#include <CryString/CryString.h>
 #include <CrySandbox/CrySignal.h>
 
 class CPreferences;
@@ -19,42 +15,40 @@ class CPreferences;
 typedef CAutoRegister<CPreferences> CAutoRegisterPreferencesHelper;
 
 #define REGISTER_PREFERENCES_PAGE(Type)                                                               \
-  namespace Internal                                                                                  \
-  {                                                                                                   \
-  void RegisterPreferencesPage ## Type()                                                              \
-  {                                                                                                   \
-    GetIEditor()->GetPreferences()->RegisterPage<Type>();                                             \
-  }                                                                                                   \
-  CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
-  }
+	namespace Internal                                                                                  \
+	{                                                                                                   \
+	void RegisterPreferencesPage ## Type()                                                              \
+	{                                                                                                   \
+		GetIEditor()->GetPreferences()->RegisterPage<Type>();                                             \
+	}                                                                                                   \
+	CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
+	}
 
 #define REGISTER_PREFERENCES_PAGE_PTR(Type, TypePtr)                                                  \
-  namespace Internal                                                                                  \
-  {                                                                                                   \
-  void RegisterPreferencesPage ## Type()                                                              \
-  {                                                                                                   \
-    GetIEditor()->GetPreferences()->RegisterPage<Type>(TypePtr);                                      \
-  }                                                                                                   \
-  CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
-  }
+	namespace Internal                                                                                  \
+	{                                                                                                   \
+	void RegisterPreferencesPage ## Type()                                                              \
+	{                                                                                                   \
+		GetIEditor()->GetPreferences()->RegisterPage<Type>(TypePtr);                                      \
+	}                                                                                                   \
+	CAutoRegisterPreferencesHelper g_AutoRegPreferencesHelper ## Type(RegisterPreferencesPage ## Type); \
+	}
 
 #define ADD_PREFERENCE_PAGE_PROPERTY(type, accessor, mutator) \
-  public:                                                     \
-    void mutator(const type val)                              \
-    {                                                         \
-      if (m_ ## accessor != val)                              \
-      {                                                       \
-        m_ ## accessor = val;                                 \
-        accessor ## Changed();                                \
-        signalSettingsChanged();                              \
-      }                                                       \
-    }                                                         \
-    const type& accessor() const { return m_ ## accessor; }   \
-    CCrySignal<void()> accessor ## Changed;                   \
-  private:                                                    \
-    type m_ ## accessor;                                      \
-
-struct SPreferencePage;
+public:                                                       \
+	void mutator(const type val)                                \
+	{                                                           \
+		if (m_ ## accessor != val)                                \
+		{                                                         \
+			m_ ## accessor = val;                                   \
+			accessor ## Changed();                                  \
+			signalSettingsChanged();                                \
+		}                                                         \
+	}                                                           \
+	const type& accessor() const { return m_ ## accessor; }     \
+	CCrySignal<void()> accessor ## Changed;                     \
+private:                                                      \
+	type m_ ## accessor;                                        \
 
 struct EDITOR_COMMON_API SPreferencePage
 {
@@ -89,11 +83,11 @@ private:
 	SPreferencePage() {}
 
 	friend class CPreferences;
-	void SetName(const string& name) { m_name = name; }
-	void SetPath(const string& path) { m_path = path; }
+	void    SetName(const string& name) { m_name = name; }
+	void    SetPath(const string& path) { m_path = path; }
 
 	QString GetSerializedProperties();
-	void FromSerializedProperties(const QByteArray& jsonBlob);
+	void    FromSerializedProperties(const QByteArray& jsonBlob);
 
 public:
 	CCrySignal<void()> signalSettingsChanged;
@@ -101,16 +95,16 @@ public:
 private:
 	CCrySignal<void()> signalRequestReset;
 
-	string m_name;
-	string m_path;
+	string             m_name;
+	string             m_path;
 };
 
-class EDITOR_COMMON_API CPreferences
+class EDITOR_COMMON_API CPreferences : public CUserData
 {
-	friend yasli::Serializer;
+	friend yasli ::Serializer;
 public:
 	CPreferences();
-	~CPreferences();
+	virtual ~CPreferences();
 
 	// Need to call init after all preferences have been registered
 	void Init();
@@ -123,7 +117,7 @@ public:
 		pPreferencePage->signalSettingsChanged.Connect(std::function<void()>([this]() { signalSettingsChanged(); }));
 		pPreferencePage->signalRequestReset.Connect(std::function<void()>([pPreferencePage]()
 		{
-			*pPreferencePage =  Type();
+			*pPreferencePage = Type();
 			pPreferencePage->signalSettingsChanged();
 		}));
 
@@ -134,7 +128,8 @@ public:
 	void RegisterPage(Type* pPreferencePage)
 	{
 		pPreferencePage->signalSettingsChanged.Connect(std::function<void()>([this]() { signalSettingsChanged(); }));
-		pPreferencePage->signalRequestReset.Connect(std::function<void()>([pPreferencePage]() {
+		pPreferencePage->signalRequestReset.Connect(std::function<void()>([pPreferencePage]()
+		{
 			*pPreferencePage = Type();
 			pPreferencePage->signalSettingsChanged();
 		}));
@@ -148,15 +143,15 @@ public:
 		return new QPreferencePage(GetPages(path), path);
 	}
 
-	const std::map<string, std::vector<SPreferencePage*>>& GetPages() const { return m_preferences; }
+	const std::map<string, std::vector<SPreferencePage*>>& GetPages() const  { return m_preferences; }
 
-	bool         IsLoading() const { return m_bIsLoading; }
-	void         Reset(const char* path);
-	void         Save();
+	bool                                                   IsLoading() const { return m_bIsLoading; }
+	void                                                   Reset(const char* path);
+	void                                                   Save();
 
 private:
 	void         Load();
-	void         Load(const QString& path);
+	void         SetState(const QVariant& state);
 	void         AddPage(SPreferencePage* pPreferencePage);
 
 	virtual bool Serialize(yasli::Archive& ar);
@@ -175,6 +170,5 @@ ILINE bool Serialize(yasli::Archive& ar, SPreferencePage* val, const char* name,
 	if (!val)
 		return false;
 
-	return ar(*val, name ? name : val->GetFullPath(), label ? label : val->GetName());
+	return ar(*val, name ? name : val->GetFullPath().c_str(), label ? label : val->GetName().c_str());
 }
-

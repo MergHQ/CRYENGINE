@@ -3,20 +3,24 @@
 #pragma once
 
 #include <AssetSystem/Asset.h>
-#include "CryCore\Containers\MiniQueue.h"
+#include <CryCore/Containers/MiniQueue.h>
+#include <CrySandbox/CrySignal.h>
 
 #include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <unordered_set>
 
 class CAsset;
+struct ICVar;
 
 class CAssetThumbnailsLoader
 {
 private:
 	class CAssetThumbnailsFinalizer;
+	friend CAssetThumbnailsFinalizer;
 
 public:
 	static CAssetThumbnailsLoader& GetInstance();
@@ -41,6 +45,8 @@ private:
 
 	static void OnCVarChanged(ICVar* const pCVar);
 
+	void NotifyThumbnailLoaded(CAsset& asset);
+
 private:
 	//! Defines size of the loader ring buffer. 
 	//! The optimal value should be slightly larger than the usual number of thumbnails displayed in one view.
@@ -51,7 +57,7 @@ private:
 	std::condition_variable m_conditionVariable;
 	MiniQueue<CAssetPtr, m_queueSize> m_assets;
 	std::mutex m_assetsMutex;
+	std::unordered_set<CAsset*> m_activeRequests;
 
 	volatile bool m_bGenerateThumbnais;
 };
-

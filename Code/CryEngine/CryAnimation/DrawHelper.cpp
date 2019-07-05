@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "DrawHelper.h"
 
+#include <CryCore/ScopeGuard.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "CharacterManager.h"
 #include "Model.h"
@@ -14,9 +15,9 @@ ILINE Matrix33 ComputeOrientationAlongDirectionMatrix(
   const uint forwardIndex, const Vec3& forwardVector,
   const uint upIndex, const Vec3& upVector)
 {
-	assert(forwardIndex < 3);
-	assert(upIndex < 3);
-	assert(forwardIndex != upIndex);
+	CRY_ASSERT(forwardIndex < 3);
+	CRY_ASSERT(upIndex < 3);
+	CRY_ASSERT(forwardIndex != upIndex);
 	const uint sideIndex = 3 - (forwardIndex + upIndex);
 
 	Vec3 m[3];
@@ -106,8 +107,6 @@ void Arrow(const QuatT& location, const Vec3& direction, float length, ColorB co
 	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
 	g_pAuxGeom->SetRenderFlags(renderFlags);
 
-	Vec3 absAxisY = location.q.GetColumn1();
-
 	Vec3 vdir = direction.GetNormalized();
 	Matrix33 m;
 	m.m00 = 1;
@@ -168,11 +167,9 @@ void CurvedArrow(const QuatT& location, float moveSpeed, float travelAngle, floa
 
 	f64 fStepSize = 1.0 / 50.0;
 	QuatTd wpos = location * Quat::CreateRotationZ(travelAngle);
-	f64 fTurnSpeed = turnSpeed * fStepSize;
 	g_pAuxGeom->DrawSphere(wpos.t, 0.05f, ColorB(0xff, 0, 0));
 
 	Vec3d absAxisX = wpos.q.GetColumn0();
-	Vec3d absAxisY = wpos.q.GetColumn1();
 
 	const f64 size = 0.015;
 	Matrix33d SlopeMat33 = Matrix33::CreateRotationAA(slope, absAxisX);
@@ -303,6 +300,62 @@ void Pose(const CDefaultSkeleton& rDefaultSkeleton, const Skeleton::CPoseData& p
 
 		Frame(jointLocation, Vec3(length * 0.25f));
 	}
+}
+
+void Wireframe(IRenderMesh& mesh, const Matrix34& renderMatrix, const ColorB& color)
+{
+	const uint32 indexCount = mesh.GetIndicesCount();
+	const uint32 vertexCount = mesh.GetVerticesCount();
+	CRY_ASSERT(vertexCount > 0);
+
+	static std::vector<Vec3> transformedPositions;
+	if (transformedPositions.size() != vertexCount)
+	{
+		transformedPositions.resize(vertexCount);
+	}
+
+	static std::vector<vtx_idx> indices;
+	if (indices.size() != indexCount)
+	{
+		indices.resize(indexCount);
+	}
+
+	{
+		IRenderMesh::ThreadAccessLock threadLock{ &mesh };
+
+		const vtx_idx* const pIndices = mesh.GetIndexPtr(FSL_READ);
+		if (!pIndices)
+		{
+			return;
+		}
+		ScopeGuard indexStreamGuard{ [&mesh]() { mesh.UnlockIndexStream(); } };
+
+		int32 positionStride;
+		const uint8* const pPositions = mesh.GetPosPtr(positionStride, FSL_READ);
+		if (!pPositions)
+		{
+			return;
+		}
+		ScopeGuard generalStreamGuard{ [&mesh]() { mesh.UnlockStream(VSF_GENERAL); } };
+
+		for (uint32 i = 0; i < vertexCount; ++i)
+		{
+			const Vec3 v = *(Vec3*)(pPositions + i * positionStride);
+			transformedPositions[i] = renderMatrix * v;
+		}
+
+		for (uint32 i = 0; i < indexCount; ++i)
+		{
+			indices[i] = pIndices[i];
+		}
+	}
+
+	SAuxGeomRenderFlags renderFlags(e_Def3DPublicRenderflags);
+	renderFlags.SetFillMode(e_FillModeWireframe);
+	renderFlags.SetDrawInFrontMode(e_DrawInFrontOn);
+	renderFlags.SetAlphaBlendMode(e_AlphaAdditive);
+	g_pAuxGeom->SetRenderFlags(renderFlags);
+	g_pAuxGeom->DrawTriangles(transformedPositions.data(), vertexCount, indices.data(), indexCount, color);
 }
 
 } // namespace DrawHelper

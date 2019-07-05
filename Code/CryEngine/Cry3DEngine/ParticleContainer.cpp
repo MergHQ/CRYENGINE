@@ -101,7 +101,10 @@ void CParticleContainer::OnEffectChange()
 	m_nEnvFlags = m_pParams->nEnvFlags;
 
 	// Update existing particle history arrays if needed.
+#if CRY_PLATFORM_DESKTOP
 	int nPrevSteps = m_nHistorySteps;
+#endif
+
 	m_nHistorySteps = m_pParams->GetTailSteps();
 
 	// Do not use coverage buffer culling for 'draw near' or 'on top' particles
@@ -722,7 +725,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 	else if (nRenderFlags & REN_SPRITE)
 	{
 		// Copy pre-computed render and state flags.
-		uint64 nObjFlags = pParams->nRenObjFlags & PRParams.m_nRenObjFlags;
+		ERenderObjectFlags nObjFlags = ERenderObjectFlags(pParams->nRenObjFlags & PRParams.m_nRenObjFlags);
 
 		IF (pParams->eFacing == pParams->eFacing.Water, 0)
 		{
@@ -782,14 +785,14 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 				nObjFlags &= ~FOB_OCTAGONAL;
 		}
 		
-		job.pRenderObject->m_ObjFlags = (nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
-		job.pRenderObject->SetInstanceDataDirty();
+		job.pRenderObject->m_ObjFlags = ERenderObjectFlags(nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
+		job.pRenderObject->SetInstanceDataDirty(true);
 
 		pOD->m_FogVolumeContribIdx = PRParams.m_nFogVolumeContribIdx;
 
 		pOD->m_LightVolumeId = PRParams.m_nDeferredLightVolumeId;
 
-		if (const auto pTempData = GetMain().m_pTempData.load())
+		if (const auto pTempData = GetMain().m_pTempData)
 			*((Vec4f*)&pOD->m_fTempVars[0]) = Vec4f(pTempData->userData.vEnvironmentProbeMults);
 		else
 			*((Vec4f*)&pOD->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -799,7 +802,9 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 			job.pRenderObject->m_fDistance = PRParams.m_fCamDistance;
 		else
 			job.pRenderObject->m_fDistance = GetMain().GetNearestDistance(passInfo.GetCamera().GetPosition(), pParams->fSortBoundsScale);
-		job.pRenderObject->m_fDistance += pParams->fSortOffset;
+		job.pRenderObject->m_fSort = pParams->fSortOffset;
+		static_cast<CREParticle*>(job.pRenderObject->m_pRE)->SetBBox(m_bbWorld);
+		job.pRenderObject->m_pRE->m_CustomTexBind[0] = RenParams.nTextureID;
 
 		//
 		// Set remaining SAddParticlesToSceneJob data.
@@ -809,12 +814,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		if (pParams->fTexAspect == 0.f)
 			non_const(*m_pParams).UpdateTextureAspect();
 
-		job.nCustomTexId = RenParams.nTextureID;
-		job.aabb = m_bbWorld;
-
-		int passId = passInfo.IsShadowPass() ? 1 : 0;
-		int passMask = BIT(passId);
-		pRenderObject->m_passReadyMask |= passMask;
+		pRenderObject->SetPreparedForPass(passInfo.GetPassType());
 
 		passInfo.GetIRenderView()->AddPermanentObject(
 			pRenderObject,
@@ -829,20 +829,21 @@ CRenderObject* CParticleContainer::CreateRenderObject(uint64 nObjFlags, const SR
 	SRenderObjData* pOD = pRenderObject->GetObjData();
 
 	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
-	pRenderObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+	pRenderObject->SetMatrix(Matrix34::CreateIdentity());
 	pRenderObject->m_RState = uint8(nObjFlags);
 	pRenderObject->m_pCurrMaterial = pParams->pMaterial;
 	pOD->m_pParticleShaderData = &GetEffect()->GetParams().ShaderData;
 
-	IF(!!pParams->fHeatScale, 0)
+	if (pParams->fHeatScale)
 	{
 		pOD->m_nVisionScale = MAX_HEATSCALE;
 		uint32 nHeatAmount = pParams->fHeatScale.GetStore();
 		pOD->m_nVisionParams = (nHeatAmount << 24) | (nHeatAmount << 16) | (nHeatAmount << 8) | (0);
 	}
-
-	pRenderObject->m_ParticleObjFlags = (pParams->bHalfRes ? CREParticle::ePOF_HALF_RES : 0)
-		| (pParams->bVolumeFog ? CREParticle::ePOF_VOLUME_FOG : 0);
+	if (pParams->bHalfRes)
+		pRenderObject->m_ObjFlags |= FOB_HALF_RES;
+	if (pParams->bVolumeFog)
+		pRenderObject->m_ObjFlags |= FOB_VOLUME_FOG;
 
 	return pRenderObject;
 }
@@ -1007,7 +1008,7 @@ void CParticleContainer::GetCounts(SParticleCounts& counts) const
 		reinterpret_cast<SContainerCounts&>(counts) += m_Counts;
 		counts.components.updated += 1.f;
 		counts.particles.updated += m_Particles.size();
-		counts.subemitters.updated += m_Emitters.size();
+		counts.spawners.updated += m_Emitters.size();
 
 		if ((m_nEnvFlags & REN_ANY) && !m_bbWorldDyn.IsReset())
 		{

@@ -69,4 +69,3 @@ void CopyTool::Copy(MainContext& mc, ElementSet* pOutCopiedElements)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Copy, eToolGroup_Edit, "Copy", CopyTool,
                                    copy, "runs copy tool", "designer.copy")
-

@@ -714,8 +714,6 @@ public:
 						IAnimSequence* pSequence = pMPTrackViewManager->FindTrackviewSequence(id.id);
 						if (pSequence)
 						{
-							IMovieSystem* pMovieSystem = gEnv->pMovieSystem;
-
 							UpdateTrackedSequence(pSequence);
 
 							CGameRules::STrackViewRequestParameters params;
@@ -957,7 +955,7 @@ public:
 
 	virtual void OnPathCompleted(EntityId attachedEntityId)
 	{
-		CRY_ASSERT_MESSAGE(attachedEntityId == m_EntityId, "CMPAttachToPath_Node::OnPathCompleted - Path listener listening to unexpected entity");
+		CRY_ASSERT(attachedEntityId == m_EntityId, "CMPAttachToPath_Node::OnPathCompleted - Path listener listening to unexpected entity");
 
 		CMPPathFollowingManager* pMPPathFollowingManager = g_pGame->GetGameRules()->GetMPPathFollowingManager();
 		pMPPathFollowingManager->UnregisterListener(attachedEntityId);
@@ -1776,10 +1774,9 @@ public:
 		{
 			m_bHighlighted = highlight;
 
-			if (IActor* pClientActor = g_pGame->GetIGameFramework()->GetClientActor())
+			if (g_pGame->GetIGameFramework()->GetClientActor() != nullptr)
 			{
-				CPlayer* pPlayer = static_cast<CPlayer*>(pClientActor);
-				if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId))
+				if (gEnv->pEntitySystem->GetEntity(m_entityId) != nullptr)
 				{
 					if (highlight)
 					{
@@ -1799,8 +1796,6 @@ public:
 		const IGameFramework* pGameFramework = g_pGame->GetIGameFramework();
 		if (m_bRequiresNanosuit && gEnv->IsClient() && pGameFramework->GetClientActorId() == entityId)
 		{
-			const CActor* pClientActor = static_cast<CActor*>(pGameFramework->GetClientActor());
-
 			if (m_bHighlighted)
 			{
 				HighlightEntity(m_bHighlighted, false);
@@ -2169,24 +2164,28 @@ public:
 			ICVar* pICVar = gEnv->pConsole->GetCVar(cvar.c_str());
 			if (pICVar != 0)
 			{
-				if (pICVar->GetType() == CVAR_INT)
+				if (pICVar->GetType() == ECVarType::Int)
 				{
 					const int ival = pICVar->GetIVal();
 					ActivateOutput(pActInfo, INTVALUE, ival);
 					ActivateOutput(pActInfo, BOOLVALUE, ival != 0);
 					ActivateOutput(pActInfo, FLTVALUE, (float)ival);
 				}
-				if (pICVar->GetType() == CVAR_FLOAT)
+				if (pICVar->GetType() == ECVarType::Float)
 				{
 					const float fval = pICVar->GetFVal();
 					ActivateOutput(pActInfo, FLTVALUE, fval);
 					ActivateOutput(pActInfo, BOOLVALUE, fabs_tpl(fval) > FLT_EPSILON);
 					ActivateOutput(pActInfo, INTVALUE, (int)fval);
 				}
-				if (pICVar->GetType() == CVAR_STRING)
+				if (pICVar->GetType() == ECVarType::String)
 				{
 					const string sVal = pICVar->GetString();
 					ActivateOutput(pActInfo, STRVALUE, sVal);
+				}
+				if (pICVar->GetType() == ECVarType::Int64)
+				{
+					CRY_ASSERT(false, "CMPCheckCVar_Node::ProcessEvent int64 cvar not implemented");
 				}
 			}
 			else

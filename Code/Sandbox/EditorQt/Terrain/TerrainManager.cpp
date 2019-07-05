@@ -1,38 +1,25 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include <StdAfx.h>
-#include "TerrainManager.h"
 
-//////////////////////////////////////////////////////////////////////////
-#include "SurfaceType.h"
-#include "Layer.h"
-#include "TerrainTexGen.h"
+#include "Terrain/SurfaceType.h"
+#include "Terrain/TerrainLayerUndoObject.h"
+#include "Terrain/TerrainManager.h"
+#include "Terrain/TerrainTexGen.h"
 #include "Util/AutoLogTime.h"
+#include "CryEditDoc.h"
+#include "LogFile.h"
 
 #include "QT/Widgets/QWaitProgress.h"
-
-#include "CryEditDoc.h"
+#include <Controls/QuestionDialog.h>
+#include <Util/TempFileHelper.h>
+#include <Util/FileUtil.h>
 
 namespace {
 const char* kHeightmapFile = "Heightmap.dat";
-const char* kHeightmapFileOld = "Heightmap.xml";    //TODO: Remove support after January 2012 (support old extension at least for convertion levels time)
 const char* kTerrainTextureFile = "TerrainTexture.xml";
-};
-
-//////////////////////////////////////////////////////////////////////////
-// CTerrainManager
-
-//////////////////////////////////////////////////////////////////////////
-CTerrainManager::CTerrainManager()
-{
 }
 
-//////////////////////////////////////////////////////////////////////////
-CTerrainManager::~CTerrainManager()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::RemoveSurfaceType(CSurfaceType* pSurfaceType)
 {
 	for (int i = 0; i < m_surfaceTypes.size(); i++)
@@ -46,7 +33,6 @@ void CTerrainManager::RemoveSurfaceType(CSurfaceType* pSurfaceType)
 	ConsolidateSurfaceTypes();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTerrainManager::AddSurfaceType(CSurfaceType* srf)
 {
 	GetIEditorImpl()->SetModifiedFlag(TRUE);
@@ -55,15 +41,13 @@ int CTerrainManager::AddSurfaceType(CSurfaceType* srf)
 	return m_surfaceTypes.size() - 1;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::RemoveAllSurfaceTypes()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	GetIEditorImpl()->SetModifiedFlag(TRUE);
 	m_surfaceTypes.clear();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SerializeSurfaceTypes(CXmlArchive& xmlAr, bool bUpdateEngineTerrain)
 {
 	if (xmlAr.bLoading)
@@ -85,7 +69,7 @@ void CTerrainManager::SerializeSurfaceTypes(CXmlArchive& xmlAr, bool bUpdateEngi
 			sf->Serialize(ar);
 			AddSurfaceType(sf);
 
-			if (sf->GetSurfaceTypeID() == CLayer::e_undefined)  // For older levels.
+			if (sf->GetSurfaceTypeID() == e_layerIdUndefined)  // For older levels.
 			{
 				sf->AssignUnusedSurfaceTypeID();
 			}
@@ -94,10 +78,7 @@ void CTerrainManager::SerializeSurfaceTypes(CXmlArchive& xmlAr, bool bUpdateEngi
 	}
 	else
 	{
-		// Storing
 		CLogFile::WriteLine("Storing surface types...");
-
-		// Save the layer count
 
 		XmlNodeRef node = xmlAr.root->newChild("SurfaceTypes");
 
@@ -111,21 +92,19 @@ void CTerrainManager::SerializeSurfaceTypes(CXmlArchive& xmlAr, bool bUpdateEngi
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::ConsolidateSurfaceTypes()
 {
 	// We must consolidate the IDs after removing
 	for (size_t i = 0; i < m_surfaceTypes.size(); ++i)
 	{
-		int id = i < CLayer::e_undefined ? i : CLayer::e_undefined;
+		int id = i < e_layerIdUndefined ? i : e_layerIdUndefined;
 		m_surfaceTypes[i]->SetSurfaceTypeID(id);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::ReloadSurfaceTypes(bool bUpdateEngineTerrain, bool bUpdateHeightmap)
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	CXmlArchive ar;
 	XmlNodeRef node = XmlHelpers::CreateXmlNode("SurfaceTypes_Editor");
@@ -146,7 +125,6 @@ void CTerrainManager::ReloadSurfaceTypes(bool bUpdateEngineTerrain, bool bUpdate
 	signalLayersChanged();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CTerrainManager::FindSurfaceType(const string& name)
 {
 	for (int i = 0; i < m_surfaceTypes.size(); i++)
@@ -157,19 +135,17 @@ int CTerrainManager::FindSurfaceType(const string& name)
 	return -1;
 }
 
-//////////////////////////////////////////////////////////////////////////
-CLayer* CTerrainManager::FindLayer(const char* sLayerName) const
+CLayer* CTerrainManager::FindLayer(const char* szLayerName) const
 {
 	for (int i = 0; i < GetLayerCount(); i++)
 	{
-		CLayer* layer = GetLayer(i);
-		if (strcmp(layer->GetLayerName(), sLayerName) == 0)
-			return layer;
+		CLayer* pLayer = GetLayer(i);
+		if (strcmp(pLayer->GetLayerName(), szLayerName) == 0)
+			return pLayer;
 	}
-	return 0;
+	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CLayer* CTerrainManager::FindLayerByLayerId(const uint32 dwLayerId) const
 {
 	for (int i = 0; i < GetLayerCount(); i++)
@@ -178,95 +154,38 @@ CLayer* CTerrainManager::FindLayerByLayerId(const uint32 dwLayerId) const
 		if (layer->GetCurrentLayerId() == dwLayerId)
 			return layer;
 	}
-	return 0;
+	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainManager::RemoveLayer(CLayer* layer)
-{
-	SelectLayer(-1);
-
-	if (layer && layer->GetCurrentLayerId() != CLayer::e_undefined)
-	{
-		uint32 id = layer->GetCurrentLayerId();
-
-		if (id != CLayer::e_undefined)
-			m_heightmap.EraseLayerID(id);
-	}
-
-	if (layer)
-	{
-		delete layer;
-		m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), layer), m_layers.end());
-	}
-
-	signalLayersChanged();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTerrainManager::SwapLayers(int layer1, int layer2)
-{
-	assert(layer1 >= 0 && layer1 < m_layers.size());
-	assert(layer2 >= 0 && layer2 < m_layers.size());
-	std::swap(m_layers[layer1], m_layers[layer2]);
-
-	// If necessary, also swap the surface types (their order is important when using masked surface type transitions)
-	int st1 = m_layers[layer1]->GetEngineSurfaceTypeId();
-	int st2 = m_layers[layer2]->GetEngineSurfaceTypeId();
-	CSurfaceType* pSurfaceType1 = GetSurfaceTypePtr(st1);
-	CSurfaceType* pSurfaceType2 = GetSurfaceTypePtr(st2);
-	if (pSurfaceType1 && pSurfaceType2 && sgn(st1 - st2) == -sgn(layer1 - layer2))
-	{
-		CLayer TempLayer;
-		TempLayer.SetSurfaceType(pSurfaceType1); // Temporarily holds the surface type so that it does not get deleted
-		m_layers[layer1]->SetSurfaceType(pSurfaceType2);
-		m_layers[layer2]->SetSurfaceType(pSurfaceType1);
-		TempLayer.SetSurfaceType(NULL);
-		CSurfaceType& surfaceType1 = *m_surfaceTypes[st1];
-		CSurfaceType& surfaceType2 = *m_surfaceTypes[st2];
-		std::swap(surfaceType1, surfaceType2);
-		m_heightmap.UpdateEngineTerrain();
-	}
-
-	signalLayersChanged();
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::InvalidateLayers()
 {
-	////////////////////////////////////////////////////////////////////////
-	// Set the update needed flag for all layer
-	////////////////////////////////////////////////////////////////////////
 	for (int i = 0; i < GetLayerCount(); ++i)
+	{
 		GetLayer(i)->InvalidateMask();
+	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::ClearLayers()
 {
-	LOADING_TIME_PROFILE_SECTION;
-	SelectLayer(-1);
-	////////////////////////////////////////////////////////////////////////
-	// Clear all texture layers
-	////////////////////////////////////////////////////////////////////////
-	for (int i = 0; i < GetLayerCount(); ++i)
-		delete GetLayer(i);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+	SelectLayer(s_invalidLayerIndex);
+
+	for (CLayer* pLayer : m_layers)
+	{
+		delete pLayer;
+	}
 
 	m_layers.clear();
 
-	signalLayersChanged();
+	ReloadSurfaceTypes();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Load or restore the layer settings from an XML
-	////////////////////////////////////////////////////////////////////////
 	if (xmlAr.bLoading)
 	{
 		// Loading
-		int selected_layer = GetSelectedLayerIndex();
+		int selectedLayer = GetSelectedLayerIndex();
 		CLogFile::WriteLine("Loading layer settings...");
 		CWaitProgress progress(_T("Loading Terrain Layers"));
 
@@ -279,54 +198,50 @@ void CTerrainManager::SerializeLayerSettings(CXmlArchive& xmlAr)
 			return;
 
 		// Read all layers
-		int numLayers = layers->getChildCount();
+		const int numLayers = layers->getChildCount();
+		m_layers.reserve(numLayers);
+
 		for (int i = 0; i < numLayers; i++)
 		{
 			progress.Step(100 * i / numLayers);
-			// Create a new layer
-			m_layers.push_back(new CLayer);
 
 			CXmlArchive ar(xmlAr);
 			ar.root = layers->getChild(i);
-			// Fill the layer with the data
-			GetLayer(i)->Serialize(ar);
 
-			CryLog("  loaded editor layer %d  name='%s' LayerID=%d", i, GetLayer(i)->GetLayerName(), GetLayer(i)->GetCurrentLayerId());
+			CLayer* pLayer = new CLayer;
+			pLayer->Serialize(ar);
+
+			m_layers.push_back(pLayer);
+
+			CryLog("  loaded editor layer %d  name='%s' LayerID=%d", i, pLayer->GetLayerName(), pLayer->GetCurrentLayerId());
 		}
 
 		// If surface type ids are unassigned, assign them.
 		for (int i = 0; i < GetSurfaceTypeCount(); i++)
 		{
-			if (GetSurfaceTypePtr(i)->GetSurfaceTypeID() >= CLayer::e_undefined)
+			if (GetSurfaceTypePtr(i)->GetSurfaceTypeID() >= e_layerIdUndefined)
 				GetSurfaceTypePtr(i)->AssignUnusedSurfaceTypeID();
 		}
 
-		signalLayersChanged();
-
-		SelectLayer(selected_layer);
+		ReloadSurfaceTypes();
+		SelectLayer(selectedLayer);
 	}
 	else
 	{
-		// Storing
-
 		CLogFile::WriteLine("Storing layer settings...");
-
-		// Save the layer count
 
 		XmlNodeRef layers = xmlAr.root->newChild("Layers");
 
 		// Write all layers
-		for (int i = 0; i < GetLayerCount(); i++)
+		for (CLayer* pLayer : m_layers)
 		{
 			CXmlArchive ar(xmlAr);
 			ar.root = layers->newChild("Layer");
-			;
-			GetLayer(i)->Serialize(ar);
+			pLayer->Serialize(ar);
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 uint32 CTerrainManager::GetDetailIdLayerFromLayerId(const uint32 dwLayerId)
 {
 	for (int i = 0, num = (int)m_layers.size(); i < num; i++)
@@ -354,46 +269,39 @@ uint32 CTerrainManager::GetDetailIdLayerFromLayerId(const uint32 dwLayerId)
 		AddLayer(pNewLayer);
 	}
 
-	return CLayer::e_undefined;
+	return e_layerIdUndefined;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CTerrainManager::MarkUsedLayerIds(bool bFree[CLayer::e_undefined]) const
+void CTerrainManager::MarkUsedLayerIds(bool bFree[e_layerIdUndefined]) const
 {
-	std::vector<CLayer*>::const_iterator it;
-
-	for (it = m_layers.begin(); it != m_layers.end(); ++it)
+	for (const CLayer* pLayer : m_layers)
 	{
-		CLayer* pLayer = *it;
-
 		const uint32 id = pLayer->GetCurrentLayerId();
 
-		if (id < CLayer::e_undefined)
+		if (id < e_layerIdUndefined)
 			bFree[id] = false;
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::CreateDefaultLayer()
 {
 	// Create default layer.
 	CLayer* layer = new CLayer;
 	AddLayer(layer);
 	layer->SetLayerName("Default");
-	layer->LoadTexture("%ENGINE%/engineassets/textures/grey.dds");
+	layer->LoadTexture("%ENGINE%/EngineAssets/Textures/grey.dds");
 	layer->SetLayerId(0);
 
 	// Create default surface type.
 	CSurfaceType* sfType = new CSurfaceType;
 	sfType->SetName("%ENGINE%/EngineAssets/Materials/material_terrain_default");
-	uint32 dwDetailLayerId = AddSurfaceType(sfType);
+	AddSurfaceType(sfType);
 	sfType->SetMaterial("%ENGINE%/EngineAssets/Materials/material_terrain_default");
 	sfType->AssignUnusedSurfaceTypeID();
 
 	layer->SetSurfaceType(sfType);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SerializeTerrain(TDocMultiArchive& arrXmlAr)
 {
 	bool bLoading = IsLoadingXmlArArray(arrXmlAr);
@@ -418,18 +326,6 @@ void CTerrainManager::SerializeTerrain(TDocMultiArchive& arrXmlAr)
 			CAutoLogTime logtime("Load Terrain");
 
 			m_heightmap.SerializeTerrain((*arrXmlAr[DMAS_GENERAL]));
-
-			{
-				XmlNodeRef layers = (*arrXmlAr[DMAS_GENERAL]).root->findChild("Layers");
-				if (layers)
-				{
-					int numLayers = layers->getChildCount();
-					for (int i = 0; i < numLayers; i++)
-					{
-						GetLayer(i)->Update3dengineInfo();
-					}
-				}
-			}
 		}
 
 		if (!m_heightmap.IsAllocated())
@@ -460,7 +356,6 @@ void CTerrainManager::SerializeTerrain(TDocMultiArchive& arrXmlAr)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SerializeTerrain(CXmlArchive& xmlAr)
 {
 	if (xmlAr.bLoading)
@@ -482,18 +377,6 @@ void CTerrainManager::SerializeTerrain(CXmlArchive& xmlAr)
 		{
 			CAutoLogTime logtime("Load Terrain");
 			m_heightmap.SerializeTerrain(xmlAr);
-
-			{
-				XmlNodeRef layers = xmlAr.root->findChild("Layers");
-				if (layers)
-				{
-					int numLayers = layers->getChildCount();
-					for (int i = 0; i < numLayers; i++)
-					{
-						GetLayer(i)->Update3dengineInfo();
-					}
-				}
-			}
 		}
 
 		if (!m_heightmap.IsAllocated())
@@ -520,37 +403,28 @@ void CTerrainManager::SerializeTerrain(CXmlArchive& xmlAr)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SerializeTexture(CXmlArchive& xmlAr)
 {
 	GetRGBLayer()->Serialize(xmlAr.root, xmlAr.bLoading);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::GetTerrainMemoryUsage(ICrySizer* pSizer)
 {
 	{
 		SIZER_COMPONENT_NAME(pSizer, "Layers");
-
-		std::vector<CLayer*>::iterator it;
-
-		for (it = m_layers.begin(); it != m_layers.end(); ++it)
+		for (const CLayer* pLayer : m_layers)
 		{
-			CLayer* pLayer = *it;
-
 			pLayer->GetMemoryUsage(pSizer);
 		}
 	}
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "CHeightmap");
-
 		m_heightmap.GetMemoryUsage(pSizer);
 	}
 
 	{
 		SIZER_COMPONENT_NAME(pSizer, "RGBLayer");
-
 		GetRGBLayer()->GetMemoryUsage(pSizer);
 	}
 }
@@ -573,7 +447,6 @@ const char* CTerrainManager::GetDataFilename(int i) const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainManager::ConvertLayersToRGBLayer()
 {
 	bool bConvertNeeded = !GetRGBLayer()->IsAllocated();
@@ -581,23 +454,11 @@ bool CTerrainManager::ConvertLayersToRGBLayer()
 	if (!bConvertNeeded)
 		return false;
 
-	std::vector<CLayer*>::iterator it;
-
 	uint32 dwTexResolution = 0;
 
-	for (it = m_layers.begin(); it != m_layers.end(); ++it)
+	for (const CLayer* pLayer : m_layers)
 	{
-		CLayer* pLayer = *it;
-
 		dwTexResolution = max(dwTexResolution, (uint32)pLayer->GetMaskResolution());
-		/*
-		   if(pLayer->GetMask().IsValid())
-		   {
-		   dwTexResolution=pLayer->GetMask().GetWidth();
-		   bLayersStillHaveAMask=true;
-		   break;
-		   }
-		 */
 	}
 
 	if (QDialogButtonBox::StandardButton::No == CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr("Convert LayeredTerrainTexture to RGBTerrainTexture?"), QDialogButtonBox::StandardButton::Yes | QDialogButtonBox::StandardButton::No))
@@ -657,10 +518,8 @@ bool CTerrainManager::ConvertLayersToRGBLayer()
 	GetIEditorImpl()->GetHeightmap()->CalcSurfaceTypes();
 
 	// we no longer need the layer mask data
-	for (it = m_layers.begin(); it != m_layers.end(); ++it)
+	for (CLayer* pLayer : m_layers)
 	{
-		CLayer* pLayer = *it;
-
 		pLayer->ReleaseMask();
 	}
 
@@ -669,40 +528,28 @@ bool CTerrainManager::ConvertLayersToRGBLayer()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SetTerrainSize(int resolution, float unitSize)
 {
 	m_heightmap.Resize(resolution, resolution, unitSize);
+	GetRGBLayer()->SetDirty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::ResetHeightMap()
 {
-	////////////////////////////////////////////////////////////////////////
-	// Reset Heightmap
-	////////////////////////////////////////////////////////////////////////
 	m_heightmap.ClearModSectors();
 	m_heightmap.SetWaterLevel(16); // Default water level.
 	SetTerrainSize(1024, 2);
 	m_heightmap.SetMaxHeight(1024);
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CTerrainManager::WouldHeightmapSaveSucceed()
-{
-	return GetRGBLayer()->WouldSaveSucceed();
-}
-
-//////////////////////////////////////////////////////////////////////////
 CRGBLayer* CTerrainManager::GetRGBLayer()
 {
 	return m_heightmap.GetRGBLayer();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::Save(bool bBackup)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + kHeightmapFile);
 
 	CXmlArchive xmlAr;
@@ -712,30 +559,24 @@ void CTerrainManager::Save(bool bBackup)
 	helper.UpdateFile(bBackup);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainManager::Load()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	string filename = GetIEditorImpl()->GetLevelDataFolder() + kHeightmapFile;
 	CXmlArchive xmlAr;
 	xmlAr.bLoading = true;
 	if (!xmlAr.Load(filename))
 	{
-		string filename = GetIEditorImpl()->GetLevelDataFolder() + kHeightmapFileOld;
-		if (!xmlAr.Load(filename))
-		{
-			return false;
-		}
+		return false;
 	}
 
 	SerializeTerrain(xmlAr);
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SaveTexture(bool bBackup)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + kTerrainTextureFile);
 
 	XmlNodeRef root;
@@ -746,7 +587,6 @@ void CTerrainManager::SaveTexture(bool bBackup)
 	helper.UpdateFile(bBackup);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CTerrainManager::LoadTexture()
 {
 	string filename = GetIEditorImpl()->GetLevelDataFolder() + kTerrainTextureFile;
@@ -759,13 +599,10 @@ bool CTerrainManager::LoadTexture()
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTerrainManager::SetModified(int x1, int y1, int x2, int y2)
 {
 	if (!gEnv->p3DEngine->GetITerrain())
 		return;
-
-	GetIEditorImpl()->SetModifiedFlag();
 
 	AABB bounds;
 	bounds.Reset();
@@ -790,6 +627,8 @@ void CTerrainManager::SetModified(int x1, int y1, int x2, int y2)
 		bounds.Add(Vec3((y1 - 1) * nTerrainSectorSize, (x1 - 1) * nTerrainSectorSize, -32000.0f));
 		bounds.Add(Vec3((y2 + 1) * nTerrainSectorSize, (x2 + 1) * nTerrainSectorSize, +32000.0f));
 	}
+
+	signalTerrainChanged();
 }
 
 void CTerrainManager::SelectLayer(int layerIndex)
@@ -819,7 +658,7 @@ int CTerrainManager::GetSelectedLayerIndex()
 		}
 	}
 
-	return -1;
+	return s_invalidLayerIndex;
 }
 
 CLayer* CTerrainManager::GetSelectedLayer()
@@ -831,12 +670,111 @@ CLayer* CTerrainManager::GetSelectedLayer()
 	return nullptr;
 }
 
-void CTerrainManager::AddLayer(CLayer* layer)
+void CTerrainManager::AddLayer(CLayer* pLayer, int index)
 {
-	int layerIndex = m_layers.size();
-	m_layers.push_back(layer);
-	signalLayersChanged();
+	std::vector<CLayer*>::iterator itPos;
+	if (index == s_invalidLayerIndex || index > m_layers.size())
+	{
+		itPos = m_layers.end();
+		index = m_layers.size();
+	}
+	else
+	{
+		itPos = m_layers.begin() + index;
+	}
 
-	SelectLayer(layerIndex);
+	m_layers.insert(itPos, pLayer);
+
+	ReloadSurfaceTypes();
+	SelectLayer(index);
 }
 
+void CTerrainManager::RemoveSelectedLayer()
+{
+	const int index = GetSelectedLayerIndex();
+	if (index == s_invalidLayerIndex)
+	{
+		return;
+	}
+
+	CLayer* pLayer = m_layers[index];
+	if (!pLayer)
+	{
+		return;
+	}
+
+	CUndo undo("Delete Terrain Layer");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+
+	if (pLayer->GetCurrentLayerId() != e_layerIdUndefined)
+	{
+		uint32 id = pLayer->GetCurrentLayerId();
+
+		if (id != e_layerIdUndefined)
+			m_heightmap.EraseLayerID(id);
+	}
+
+	signalLayerAboutToDelete(pLayer);
+	delete pLayer;
+	m_layers.erase(m_layers.begin() + index);
+
+	ReloadSurfaceTypes();
+
+	const int newSelection = (index != m_layers.size()) ? index : index - 1;
+	SelectLayer(newSelection);
+}
+
+void CTerrainManager::DuplicateSelectedLayer()
+{
+	const int index = GetSelectedLayerIndex();
+	if (index == s_invalidLayerIndex)
+	{
+		return;
+	}
+
+	CLayer* pLayer = m_layers[index];
+	if (!pLayer)
+	{
+		return;
+	}
+
+	CUndo undo("Duplicate Terrain Layer");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+
+	CLayer* pNewLayer = pLayer->Duplicate();
+	AddLayer(pNewLayer, index + 1);
+}
+
+void CTerrainManager::MoveLayer(int oldPos, int newPos)
+{
+	if (oldPos == newPos)
+	{
+		return;
+	}
+
+	CUndo undo("Move Terrain Layer");
+	GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
+
+	CRY_ASSERT(oldPos >= 0 && oldPos < m_layers.size());
+
+	if (newPos == s_invalidLayerIndex)
+	{
+		newPos = m_layers.size();
+	}
+
+	if (newPos > oldPos)
+	{
+		// Adjust because of removed element
+		--newPos;
+	}
+
+	CRY_ASSERT(newPos >= 0 && newPos < m_layers.size());
+
+	CLayer* pMovedLayer = m_layers[oldPos];
+
+	m_layers.erase(m_layers.begin() + oldPos);
+
+	m_layers.insert(m_layers.begin() + newPos, pMovedLayer);
+
+	signalLayersChanged();
+}

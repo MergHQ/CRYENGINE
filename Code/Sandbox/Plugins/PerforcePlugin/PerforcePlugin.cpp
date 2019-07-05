@@ -1,48 +1,46 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "PerforcePlugin.h"
-#include "PerforceSourceControl.h"
-#include "ISourceControl.h"
-#include "IEditorClassFactory.h"
 
-REGISTER_PLUGIN(CPerforcePlugin)
+#include "CryCore/Platform/platform_impl.inl"
+#include "PathUtils.h"
+#include "PerforceVCSAdapter.h"
+#include "VersionControl/VersionControlInitializer.h"
 
-CPerforceSourceControl* g_pPerforceControl;
-
-namespace PluginInfo
+namespace Private_PerforcePlugin
 {
-const char* kName = "Perforce Client";
+
+const char* kName = "Perforce Plugin";
 const int kVersion = 1;
+
+class CPerforceVersionControl_ClassDesc : public IClassDesc
+{
+	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VCS_PROVIDER; }
+	virtual const char*    ClassName() { return "Perforce"; }
+	virtual const char*    Category() { return "VersionControl"; }
+	virtual void*          CreateObject()
+	{
+		return new CPerforceVCSAdapter(PathUtil::MatchAbsolutePathToCaseOnFileSystem(PathUtil::GetGameProjectAssetsPath()));
+	}
+};
+
+REGISTER_CLASS_DESC(CPerforceVersionControl_ClassDesc);
+
 }
 
 CPerforcePlugin::CPerforcePlugin()
 {
-	g_pPerforceControl = new CPerforceSourceControl();
-	GetIEditor()->GetClassFactory()->RegisterClass(g_pPerforceControl);
-}
-
-CPerforcePlugin::~CPerforcePlugin()
-{
-	delete g_pPerforceControl;
-	g_pPerforceControl = nullptr;
+	CVersionControlInitializer::Initialize();
 }
 
 int32 CPerforcePlugin::GetPluginVersion()
 {
-	return PluginInfo::kVersion;
+	return Private_PerforcePlugin::kVersion;
 }
 
 const char* CPerforcePlugin::GetPluginName()
 {
-	return PluginInfo::kName;
+	return Private_PerforcePlugin::kName;
 }
 
-void CPerforcePlugin::OnEditorNotifyEvent(EEditorNotifyEvent aEventId)
-{
-	if (eNotify_OnInit == aEventId)
-	{
-		g_pPerforceControl->Init();
-	}
-}
-
+REGISTER_PLUGIN(CPerforcePlugin);

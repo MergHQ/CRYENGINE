@@ -1,13 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MaterialPickTool_h__
-#define __MaterialPickTool_h__
+#pragma once
+#include <LevelEditor/Tools/EditTool.h>
+#include <Cry3DEngine/IStatObj.h>
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-//////////////////////////////////////////////////////////////////////////
 class CMaterialPickTool : public CEditTool
 {
 public:
@@ -15,13 +11,9 @@ public:
 
 	CMaterialPickTool();
 
-	//////////////////////////////////////////////////////////////////////////
-	// CEditTool implementation
-	//////////////////////////////////////////////////////////////////////////
 	virtual string GetDisplayName() const override { return "Pick Material"; }
 	virtual bool   MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
-	virtual void   Display(DisplayContext& dc);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void   Display(SDisplayContext& dc);
 
 protected:
 
@@ -30,13 +22,10 @@ protected:
 
 	virtual ~CMaterialPickTool();
 	// Delete itself.
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	_smart_ptr<IMaterial> m_pMaterial;
-	string               m_displayString;
+	string                m_displayString;
 	CPoint                m_Mouse2DPosition;
 	SRayHitInfo           m_HitInfo;
 };
-
-#endif // __MaterialPickTool_h__
-

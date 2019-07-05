@@ -18,6 +18,7 @@
 #include <CrySystem/Profilers/IPerfHud.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CrySystem/IStreamEngine.h>
+#include <CrySystem/IMiniLog.h>
 #include <CryGame/IGameStartup.h>
 #include <CryCore/CryCrc32.h>
 #include <zlib.h>
@@ -36,6 +37,9 @@
 	#include <unistd.h>
 	#include <sys/stat.h>       // fstat, fileno
 //#define fileno(X) ((X)->_Handle)
+#endif
+#if CRY_PLATFORM_LINUX
+	#include <sys/sendfile.h>
 #endif
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
@@ -65,56 +69,10 @@ FILE* CCryPak::m_pPatchObbExpFile = NULL;
 FILE* CCryPak::m_pAssetFile = NULL;
 AAssetManager* CCryPak::m_pAssetManager = NULL;
 #endif
-static bool IsShippedLevel(const char* str)
-{
-	return false; // TODO: fix me!
-}
 
-#if defined(PURE_CLIENT)
 
-	#pragma warning( disable : 6240 )// (<expression> && <non-zero constant>) always evaluates to the result of <expression>
-
-	#define IsModPath(xxx) (false)                    // Removes functionality for PC client release and consoles. ANTI TAMPER
-
-#else
-
-inline bool IsModPath(const char* originalPath)
-{
-	// create copy of path and replace slashes
-	CryPathString path = originalPath;
-	path.replace('\\', '/');
-
-	// check if field lies inside of mods/ folder
-	CryStackStringT<char, 32> modsStr("m");
-	modsStr += "o";
-	modsStr += "d";
-	modsStr += "s";
-	modsStr += "/";
-	const size_t modsStrLen = modsStr.length();
-
-	if (strnicmp(path.c_str(), modsStr.c_str(), modsStrLen) == 0)
-		return true;
-
-	// check for custom SP/MP levels inside of gamecrysis2/levels/ folder
-	CryStackStringT<char, 32> levelsStr("c");
-	levelsStr += "3";
-	levelsStr += "/";
-	levelsStr += "l";
-	levelsStr += "e";
-	levelsStr += "v";
-	levelsStr += "e";
-	levelsStr += "l";
-	levelsStr += "s";
-	levelsStr += "/";
-	const size_t levelsStrLen = levelsStr.length();
-	const bool startsWithLevels = strnicmp(path.c_str(), levelsStr.c_str(), levelsStrLen) == 0;
-	if (startsWithLevels && !IsShippedLevel(path.c_str() + levelsStrLen))
-		return true;
-
-	return false;
-}
-#endif
-
+static const size_t s_defaultOpenFileSlots = 128;
+static const size_t s_openFileSlotsGrowNumber = 32;
 
 //////////////////////////////////////////////////////////////////////////
 // IResourceList implementation class.
@@ -385,13 +343,13 @@ static void fileAccessMessage(int threadIndex, const char* inName)
 CCryPak::CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes) :
 	m_pLog(pLog),
 	m_eRecordFileOpenList(RFOM_Disabled),
-	m_pPakVars(pPakVars ? pPakVars : &g_cvars.pakVars),
 	m_fFileAcessTime(0.f),
+	m_pPakVars(pPakVars ? pPakVars : &g_cvars.pakVars),
 	m_bLvlRes(bLvlRes),
 	m_renderThreadId(0),
 	m_pWidget(NULL)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	m_HandleSource = 0;
@@ -416,6 +374,8 @@ CCryPak::CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes) :
 	m_mainThreadId = GetCurrentThreadId();
 
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CCryPak");
+
+	m_arrOpenFiles.resize(s_defaultOpenFileSlots);
 }
 
 void CCryPak::SetDecryptionKey(const uint8* pKeyData, uint32 keyLength)
@@ -527,41 +487,12 @@ bool CCryPak::CheckFileAccessDisabled(const char* name, const char* mode)
 
 void CCryPak::LogFileAccessCallStack(const char* name, const char* nameFull, const char* mode)
 {
-	//static std::vector<string> s_InvalidFileNames;
 	static bool s_Init = false;
-	static int s_AccessCount = 0;
-
 	if (!s_Init)
 	{
 		MakeDir("FileAccess");
 		s_Init = true;
 	}
-
-	/*
-	   // don't output the same file twice to reduce the amount if logging
-	   std::vector<string>::iterator itFindRes = std::find(s_InvalidFileNames.begin(), s_InvalidFileNames.end(), name);
-	   if (itFindRes != s_InvalidFileNames.end())
-	   return;
-	   s_InvalidFileNames.push_back(name);
-	 */
-
-	string n(name);
-	int idx = n.find('.');
-	string filename;
-
-	if (idx != -1)
-	{
-		n.replace(idx, n.length() - idx, 1, '\0'); //truncate extension
-
-		filename.Format("FileAccess/%s_%s_%d.log", name + idx + 1, n.c_str(), ++s_AccessCount);
-	}
-	else
-	{
-		filename.Format("FileAccess/%s_%d.log", n.c_str(), ++s_AccessCount);
-	}
-
-	char tempPath[MAX_PATH];
-	const char* szPath = AdjustFileName(filename.c_str(), tempPath, FLAGS_PATH_REAL | FLAGS_FOR_WRITING);
 
 	// Print call stack for each find.
 	const char* funcs[32];
@@ -574,7 +505,6 @@ void CCryPak::LogFileAccessCallStack(const char* name, const char* nameFull, con
 	{
 		CryLogAlways("    %02d) %s", i, funcs[i]);
 	}
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -584,21 +514,22 @@ void CCryPak::SetGameFolderWritable(bool bWritable)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCryPak::AddMod(const char* szMod)
+void CCryPak::AddMod(const char* szMod, EModAccessPriority modAccessPriority)
 {
 	// remember the prefix to use to convert the file names
 	CryPathString strPrepend = szMod;
 	strPrepend.replace(g_cNativeSlash, g_cNonNativeSlash);
 	strPrepend.MakeLower();
 
-	std::vector<string>::iterator strit;
-	for (strit = m_arrMods.begin(); strit != m_arrMods.end(); ++strit)
+	for (auto &mod : m_arrMods)
 	{
-		string& sMOD = *strit;
-		if (stricmp(sMOD.c_str(), strPrepend.c_str()) == 0)
+		if (mod.path.compareNoCase(strPrepend.c_str()) == 0)
 			return; // already added
 	}
-	m_arrMods.push_back(strPrepend);
+	SModFolder modFolder;
+	modFolder.priority = modAccessPriority;
+	modFolder.path = strPrepend.c_str();
+	m_arrMods.push_back(modFolder);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -608,11 +539,9 @@ void CCryPak::RemoveMod(const char* szMod)
 	strPrepend.replace(g_cNativeSlash, g_cNonNativeSlash);
 	strPrepend.MakeLower();
 
-	std::vector<string>::iterator it;
-	for (it = m_arrMods.begin(); it != m_arrMods.end(); ++it)
+	for (auto it = m_arrMods.begin(); it != m_arrMods.end(); ++it)
 	{
-		string& sMOD = *it;
-		if (stricmp(sMOD.c_str(), strPrepend.c_str()) == 0)
+		if (it->path.compareNoCase(strPrepend.c_str()) == 0)
 		{
 			m_arrMods.erase(it);
 			break;
@@ -623,7 +552,7 @@ void CCryPak::RemoveMod(const char* szMod)
 //////////////////////////////////////////////////////////////////////////
 const char* CCryPak::GetMod(int index)
 {
-	return index >= 0 && index < (int)m_arrMods.size() ? m_arrMods[index].c_str() : NULL;
+	return index >= 0 && index < (int)m_arrMods.size() ? m_arrMods[index].path.c_str() : NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -917,13 +846,20 @@ CCryPak::~CCryPak()
 		for (TAliasList::iterator it = m_arrAliases.begin(); it != cAliasEnd; ++it)
 		{
 			tNameAlias* tTemp = (*it);
-			SAFE_DELETE(tTemp->szName);
-			SAFE_DELETE(tTemp->szAlias);
+			SAFE_DELETE_ARRAY(tTemp->szName);
+			SAFE_DELETE_ARRAY(tTemp->szAlias);
 			delete tTemp;
 		}
 	}
 
-	SAFE_DELETE(m_pWidget);
+#ifdef USE_PERFHUD
+	ICryPerfHUD* const pPerfHUD = gEnv->pSystem->GetPerfHUD();
+
+	if (pPerfHUD != nullptr)
+	{
+		pPerfHUD->RemoveWidget(m_pWidget);
+	}
+#endif // USE_PERFHUD
 }
 
 // makes the path lower-case and removes the duplicate and non native slashes
@@ -972,14 +908,14 @@ char* CCryPak::BeautifyPath(char* dst, bool bMakeLowercase)
 void CCryPak::RemoveRelativeParts(char* dst)
 {
 	char* q = dst;
-	char* p = NULL;
+	char* p = nullptr;
 
 	PREFAST_ASSUME(q);
 
 	// replace all '/./' with '/'
 	const char slashDotSlashString[4] = { g_cNativeSlash, '.', g_cNativeSlash, 0 };
 
-	while (p = strstr(q, slashDotSlashString))
+	while ((p = strstr(q, slashDotSlashString)) != nullptr)
 	{
 		//Move the string and the null terminator
 		memmove(p, p + 2, strlen(p + 2) + 1);
@@ -988,7 +924,7 @@ void CCryPak::RemoveRelativeParts(char* dst)
 	// replace all '/%s/../' with '/'
 	const char slashDotDotSlashString[5] = { g_cNativeSlash, '.', '.', g_cNativeSlash, 0 };
 
-	while (p = strstr(q, slashDotDotSlashString))
+	while ((p = strstr(q, slashDotDotSlashString)) != nullptr)
 	{
 		if (p != q) // only remove if not in front of a path
 		{
@@ -1036,12 +972,31 @@ inline bool CheckFileExistOnDisk(const char* filename)
 };
 
 //////////////////////////////////////////////////////////////////////////
-
-const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags)
+bool CCryPak::IsModPath(const char* szPath)
 {
-	CRY_ASSERT(src);
+#if !defined(PURE_CLIENT)
+	CryPathString path = szPath;
+	path.replace(g_cNativeSlash, g_cNonNativeSlash);
+	for (auto it = m_arrMods.begin(); it != m_arrMods.end(); ++it)
+	{
+		if (filehelpers::CheckPrefix(path.c_str(), it->path.c_str()))
+		{
+			return true;
+		}
+	}
+#endif //!defined(PURE_CLIENT)
+	return false;
+}
 
-	bool bSkipMods = false;
+//////////////////////////////////////////////////////////////////////////
+
+void CCryPak::AdjustFileName(const char* src, CryPathString& dst, unsigned nFlags)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+	CRY_ASSERT(src);
+	dst.clear();
+
+	bool bSkipMods = m_arrMods.empty();
 
 	if (g_cvars.sys_filesystemCaseSensitivity > 0)
 	{
@@ -1049,29 +1004,36 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 	}
 
 	if (!bSkipMods &&
+			!IsAbsPath(src) &&
+			!IsModPath(src) &&
 	    ((nFlags & FLAGS_PATH_REAL) == 0) &&
 	    ((nFlags & FLAGS_FOR_WRITING) == 0) &&
-	    (!m_arrMods.empty()) &&
 	    (*src != '%') &&                                                                   // If path starts with '%' it is a special alias.
+			(*src != '.') &&                                                                   // If path starts with '.' it is assuming starting from the game root folder.
 	    ((m_pPakVars->nPriority != ePakPriorityPakOnly) || (nFlags & FLAGS_NEVER_IN_PAK) || (*src == '%'))) // When priority is Pak only, we only check Mods directories if we're looking for a file that can't be in a pak
 	{
-		// Scan mod folders
-		std::vector<string>::reverse_iterator it;
-		for (it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
+		if (filehelpers::CheckPrefix(src, m_strDataRootWithSlash.c_str()))
 		{
-			CryPathString modPath = (*it).c_str();
+			src += m_strDataRootWithSlash.length();
+		}
+
+		// Scan mod folders
+		for (auto it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
+		{
+			const SModFolder &mod = *it;
+			CryPathString modPath = mod.path.c_str();
 			modPath.append(1, '/');
 			modPath += src;
-			const char* szFinalPath = AdjustFileNameInternal(modPath, dst, nFlags | FLAGS_PATH_REAL);
+			AdjustFileNameInternal(modPath, dst, nFlags | FLAGS_PATH_REAL);
 
-			if (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && !IsModPath(szFinalPath))
+			if (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && !IsModPath(dst.c_str()))
 				continue;
 
 			if (nFlags & FLAGS_NEVER_IN_PAK)
 			{
 				// only check the filesystem
-				if (filehelpers::CheckFileExistOnDisk(szFinalPath))
-					return szFinalPath;
+				if (filehelpers::CheckFileExistOnDisk(dst.c_str()))
+					return;
 			}
 			else
 			{
@@ -1081,18 +1043,30 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 				case ePakPriorityFileFirstModsOnly:
 				case ePakPriorityFileFirst:
 					{
-						if (filehelpers::CheckFileExistOnDisk(szFinalPath))
-							return szFinalPath;
-						if (FindPakFileEntry(szFinalPath))
-							return szFinalPath;
+						if (mod.priority == EModAccessPriority::AfterSource)
+						{
+							CryPathString unmoddedPath;
+							AdjustFileNameInternal(src, unmoddedPath, nFlags);
+
+							if (filehelpers::CheckFileExistOnDisk(unmoddedPath.c_str()))
+							{
+								dst = unmoddedPath;
+								return;
+							}
+						}
+
+						if (filehelpers::CheckFileExistOnDisk(dst.c_str()))
+							return;
+						if (FindPakFileEntry(dst.c_str()))
+							return;
 					}
 					break;
 				case ePakPriorityPakFirst:
 					{
-						if (FindPakFileEntry(szFinalPath))
-							return szFinalPath;
-						if (filehelpers::CheckFileExistOnDisk(szFinalPath))
-							return szFinalPath;
+						if (FindPakFileEntry(dst.c_str()))
+							return;
+						if (filehelpers::CheckFileExistOnDisk(dst.c_str()))
+							return;
 					}
 					break;
 				}
@@ -1101,7 +1075,7 @@ const char* CCryPak::AdjustFileName(const char* src, char dst[g_nMaxPath], unsig
 		}   //it
 	}
 
-	return AdjustFileNameInternal(src, dst, nFlags);
+	AdjustFileNameInternal(src, dst, nFlags);
 }
 //////////////////////////////////////////////////////////////////////////
 bool CCryPak::AdjustAliases(char* dst)
@@ -1125,7 +1099,7 @@ bool CCryPak::AdjustAliases(char* dst)
 		{
 			if (pos[tTemp->nLen1] == g_cNativeSlash && pos[-1] == g_cNativeSlash)
 			{
-				strcpy(pos, &pos[tTemp->nLen1+1]);
+				memmove(pos, &pos[tTemp->nLen1 + 1], strlen(pos + tTemp->nLen1 + 1));
 			}
 			searchIdx = pos + 1;
 		}
@@ -1142,11 +1116,10 @@ void CCryPak::GetCachedPakCDROffsetSize(const char* szName, uint32& offset, uint
 	offset = 0;     // play it safe
 	size = 0;
 
-	char szFullPathBuf[g_nMaxPath];
+	CryPathString fullPath;
+	AdjustFileName(szName, fullPath, FOPEN_HINT_QUIET | FLAGS_PATH_REAL);
 
-	const char* szFullPath = AdjustFileName(szName, szFullPathBuf, FOPEN_HINT_QUIET | FLAGS_PATH_REAL);
-
-	CryLog("CRC:Looking for a zip called %s, fullpath %s", szName, szFullPath);
+	CryLog("CRC:Looking for a zip called %s, fullpath %s", szName, fullPath.c_str());
 
 	// scan through registered pak files and try to find this file
 	for (ZipArray::reverse_iterator itZip = m_arrZips.rbegin(); itZip != m_arrZips.rend(); ++itZip)
@@ -1156,24 +1129,23 @@ void CCryPak::GetCachedPakCDROffsetSize(const char* szName, uint32& offset, uint
 
 		const char* pathToZip = itZip->pZip->GetFilePath();
 		CryLog("CRC: comparing zip path %s", pathToZip);
-		if (stricmp(pathToZip, szFullPath) == 0)
+		if (stricmp(pathToZip, fullPath.c_str()) == 0)
 		{
 			itZip->pZip->GetCDROffsetSize(offset, size);
 			CryLog("CRC: Match. offset %u, size %u", offset, size);
 			return;         // May as well early out
 		}
 	}
-
 }
 
 //////////////////////////////////////////////////////////////////////////
 // given the source relative path, constructs the full path to the file according to the flags
-const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned nFlags)
+void CCryPak::AdjustFileNameInternal(const char* src, CryPathString& dst, unsigned nFlags)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	// in many cases, the path will not be long, so there's no need to allocate so much..
 	// I'd use _alloca, but I don't like non-portable solutions. besides, it tends to confuse new developers. So I'm just using a big enough array
-	char szNewSrc[g_nMaxPath];
+	char szNewSrc[CryPathString::MAX_SIZE];
 	cry_strcpy(szNewSrc, src);
 
 	if (nFlags & FLAGS_FOR_WRITING)
@@ -1211,8 +1183,8 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 
 	if (nFlags & FLAGS_NO_FULL_PATH)
 	{
-		strcpy(dst, szNewSrc);
-		return (dst);
+		dst.assign(szNewSrc);
+		return;
 	}
 
 	bool isAbsolutePath = IsAbsPath(szNewSrc);
@@ -1232,7 +1204,7 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	if (!isAbsolutePath && !(nFlags & FLAGS_PATH_REAL) && !bAliasWasUsed)
+	if (!isAbsolutePath && !(nFlags & FLAGS_PATH_REAL) && !bAliasWasUsed && !IsModPath(szNewSrc))
 	{
 		// This is a relative filename.
 		// 1) /root/system.cfg
@@ -1243,6 +1215,7 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		if (filehelpers::CheckPrefix(szNewSrc, "localization/") ||
 		    (!filehelpers::CheckPrefix(szNewSrc, m_strDataRootWithSlash.c_str()) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "./") &&
+		     !filehelpers::CheckPrefix(szNewSrc, "engineassets/" ) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "engine/")))
 #else
 		if (filehelpers::CheckPrefix(szNewSrc, "localization" CRY_NATIVE_PATH_SEPSTR) ||
@@ -1251,6 +1224,7 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 		     !filehelpers::CheckPrefix(szNewSrc, ".." CRY_NATIVE_PATH_SEPSTR) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "editor" CRY_NATIVE_PATH_SEPSTR) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "mods" CRY_NATIVE_PATH_SEPSTR) &&
+		     !filehelpers::CheckPrefix(szNewSrc, "engineassets" CRY_NATIVE_PATH_SEPSTR) &&
 		     !filehelpers::CheckPrefix(szNewSrc, "engine" CRY_NATIVE_PATH_SEPSTR)))
 #endif
 		{
@@ -1264,6 +1238,14 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 			memmove(szNewSrc, szNewSrc + 2, len);
 			szNewSrc[len] = 0;
 		}
+		else if (filehelpers::CheckPrefix(szNewSrc, "engineassets"))
+		{
+			char szTempSrc[MAX_PATH];
+			cry_strcpy(szTempSrc,"%engine%" CRY_NATIVE_PATH_SEPSTR);
+			cry_strcat(szTempSrc,szNewSrc);
+			AdjustAliases(szTempSrc);
+			cry_strcpy(szNewSrc,szTempSrc);
+		}
 	}
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS	
@@ -1272,23 +1254,20 @@ const char* CCryPak::AdjustFileNameInternal(const char* src, char* dst, unsigned
 	ConvertFilenameNoCase(szNewSrc + rootAdj);
 #endif
 
-	strcpy(dst, szNewSrc);
-	const int dstLen = strlen(dst);
-
-	char* pEnd = dst + dstLen;
+	dst.assign(szNewSrc);
+	const char dstLastChar = dst.end()[-1];
 
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && pEnd > dst && (pEnd[-1] != g_cNativeSlash && pEnd[-1] != g_cNonNativeSlash))
+	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && !dst.empty() && (dstLastChar != g_cNativeSlash && dstLastChar != g_cNonNativeSlash))
 #else
 	// p now points to the end of string
-	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && pEnd > dst && pEnd[-1] != g_cNativeSlash)
+	if ((nFlags & FLAGS_ADD_TRAILING_SLASH) && !dst.empty() && dstLastChar != g_cNativeSlash)
 #endif
 	{
-		*pEnd = g_cNativeSlash;
-		*++pEnd = '\0';
+		dst += g_cNativeSlash;
 	}
 
-	return dst; // the last MOD scanned, or the absolute path outside MasterCD
+	return; // the last MOD scanned, or the absolute path outside MasterCD
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1296,6 +1275,28 @@ bool CCryPak::CopyFileOnDisk(const char* source, const char* dest, bool bFailIfE
 {
 #if CRY_PLATFORM_WINDOWS
 	return ::CopyFile((LPCSTR)source, (LPCSTR)dest, bFailIfExist) == TRUE;
+#elif CRY_PLATFORM_LINUX
+	if (bFailIfExist && IsFileExist(dest, eFileLocation_OnDisk))
+		return false;
+
+	const SignedFileSize sourceSize = GetFileSizeOnDisk(source);
+	if (sourceSize < 0)
+		return false;
+
+	FILE* hSource = fopen(source, "r");
+	FILE* hDestination = fopen(dest, "w");
+	if (hSource == nullptr || hDestination == nullptr)
+	{
+		fclose(hSource);
+		fclose(hDestination);
+		return false;
+	}
+
+	const bool success = (size_t(sourceSize) != sendfile(fileno(hDestination), fileno(hSource), nullptr, size_t(sourceSize)));
+	fclose(hSource);
+	fclose(hDestination);
+
+	return success;
 #else
 	if (bFailIfExist && IsFileExist(dest, eFileLocation_OnDisk))
 		return false;
@@ -1343,25 +1344,25 @@ bool CCryPak::IsFileExist(const char* sFilename, EFileSearchLocation fileLocatio
 	// lock-less check
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	char szFullPathBuf[g_nMaxPath];
 
 	const int nVarPakPriority = m_pPakVars->nPriority;
 
-	const char* szFullPath = AdjustFileName(sFilename, szFullPathBuf, FOPEN_HINT_QUIET);
-	if (!szFullPath)
+	CryPathString fullPath;
+	AdjustFileName(sFilename, fullPath, FOPEN_HINT_QUIET);
+	if (fullPath.empty())
 		return false;
 
 	if (fileLocation == eFileLocation_InPak)
 	{
-		if (FindPakFileEntry(szFullPath)) // try to find the pseudo-file in one of the zips
+		if (FindPakFileEntry(fullPath)) // try to find the pseudo-file in one of the zips
 			return true;
 		return false;
 	}
 
 	if (nVarPakPriority == ePakPriorityFileFirst ||
-	    (nVarPakPriority == ePakPriorityFileFirstModsOnly && IsModPath(szFullPath))) // if the file system files have priority now..
+	    (nVarPakPriority == ePakPriorityFileFirstModsOnly && IsModPath(fullPath))) // if the file system files have priority now..
 	{
-		if (filehelpers::CheckFileExistOnDisk(szFullPath))
+		if (filehelpers::CheckFileExistOnDisk(fullPath))
 		{
 			return true;
 		}
@@ -1371,12 +1372,12 @@ bool CCryPak::IsFileExist(const char* sFilename, EFileSearchLocation fileLocatio
 		}
 	}
 
-	if (FindPakFileEntry(szFullPath)) // try to find the pseudo-file in one of the zips
+	if (FindPakFileEntry(fullPath)) // try to find the pseudo-file in one of the zips
 		return true;
 
 	if (nVarPakPriority == ePakPriorityPakFirst || eFileLocation_OnDisk == fileLocation) // if the pak files had more priority, we didn't attempt fopen before- try it now
 	{
-		if (filehelpers::CheckFileExistOnDisk(szFullPath))
+		if (filehelpers::CheckFileExistOnDisk(fullPath))
 			return true;
 	}
 
@@ -1388,12 +1389,12 @@ bool CCryPak::IsFolder(const char* sPath)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = AdjustFileName(sPath, szFullPathBuf, FOPEN_HINT_QUIET);
-	if (!szFullPath)
+	CryPathString fullPath;
+	AdjustFileName(sPath, fullPath, FOPEN_HINT_QUIET);
+	if (fullPath.empty())
 		return false;
 
-	DWORD attrs = GetFileAttributes(szFullPath);
+	DWORD attrs = GetFileAttributes(fullPath);
 
 	if (attrs == FILE_ATTRIBUTE_DIRECTORY)
 	{
@@ -1405,6 +1406,8 @@ bool CCryPak::IsFolder(const char* sPath)
 
 ICryPak::SignedFileSize CCryPak::GetFileSizeOnDisk(const char* filename)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
+
 #if CRY_PLATFORM_ORBIS
 	char buf[512];
 	filename = ConvertFileName(buf, sizeof(buf), filename);
@@ -1424,7 +1427,7 @@ ICryPak::SignedFileSize CCryPak::GetFileSizeOnDisk(const char* filename)
 #else
 	struct stat desc;
 
-	if (stat(filename, &desc) == 0)
+	if (stat(filename, &desc) == 0 && !(desc.st_mode & S_IFDIR))
 	{
 		return (ICryPak::SignedFileSize)desc.st_size;
 	}
@@ -1437,19 +1440,19 @@ bool CCryPak::IsFileCompressed(const char* filename)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	char fullPathBuf[g_nMaxPath];
-	const char* pFullPath = AdjustFileName(filename, fullPathBuf, FOPEN_HINT_QUIET);
-	if (!pFullPath)
+	CryPathString fullPath;
+	AdjustFileName(filename, fullPath, FOPEN_HINT_QUIET);
+	if (fullPath.empty())
 		return false;
 
 	if (m_pPakVars->nPriority == ePakPriorityFileFirst ||
-	    (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && IsModPath(pFullPath)))
+	    (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && IsModPath(fullPath)))
 	{
-		if (filehelpers::CheckFileExistOnDisk(pFullPath))
+		if (filehelpers::CheckFileExistOnDisk(fullPath))
 			return false;
 	}
 
-	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(pFullPath);
+	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(fullPath);
 	if (pFileEntry)
 		return pFileEntry->IsCompressed();
 
@@ -1459,7 +1462,7 @@ bool CCryPak::IsFileCompressed(const char* filename)
 //////////////////////////////////////////////////////////////////////////
 FILE* CCryPak::FOpenRaw(const char* pName, const char* mode)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pName);
 	PROFILE_DISK_OPEN;
 	return CIOWrapper::Fopen(pName, mode);
 }
@@ -1467,19 +1470,20 @@ FILE* CCryPak::FOpenRaw(const char* pName, const char* mode)
 //////////////////////////////////////////////////////////////////////////
 FILE* CCryPak::FOpen(const char* pName, const char* szMode, char* szFileGamePath, int nLen)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pName);
 
 	SAutoCollectFileAcessTime accessTime(this);
 
 	PROFILE_DISK_OPEN;
 	FILE* fp = NULL;
 
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = AdjustFileName(pName, szFullPathBuf, 0);
-	if (nLen > g_nMaxPath)
-		nLen = g_nMaxPath;
-	cry_strcpy(szFileGamePath, nLen, szFullPath);
-	fp = CIOWrapper::FopenEx(szFullPath, szMode);
+	CryPathString fullPath;
+	AdjustFileName(pName, fullPath, 0);
+	if (nLen > CryPathString::MAX_SIZE)
+		nLen = CryPathString::MAX_SIZE;
+
+	cry_strcpy(szFileGamePath, nLen, fullPath);
+	fp = CIOWrapper::FopenEx(fullPath, szMode);
 
 	CheckFileAccessDisabled(pName, szMode);
 
@@ -1493,16 +1497,15 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, char* szFileGamePath
 //////////////////////////////////////////////////////////////////////////
 FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pName);
 
-	if (strlen(pName) >= g_nMaxPath)
+	if (strlen(pName) >= CryPathString::MAX_SIZE)
 		return 0;
 
 	PROFILE_DISK_OPEN;
 	SAutoCollectFileAcessTime accessTime(this);
 
 	FILE* fp = NULL;
-	char szFullPathBuf[g_nMaxPath];
 
 	bool bFileCanBeOnDisk = 0 != (nInputFlags & FOPEN_ONDISK);
 
@@ -1529,9 +1532,6 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 #else
 	unsigned nOSFlags = _O_BINARY | _O_RDONLY;
 #endif
-
-	//Timur, Try direct zip operation always.
-	nInputFlags |= FOPEN_HINT_DIRECT_OPERATION;
 
 	int nAdjustFlags = 0;
 
@@ -1592,8 +1592,10 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 
 		case 'x':
 		case 'X':
-			nInputFlags |= FOPEN_HINT_DIRECT_OPERATION;
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Using deprecated file open mode 'x' on file %s.", pName);
 			break;
+		default:
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Using unknown file open mode '%c' on file %s.", *pModeChar, pName);
 		}
 
 	if (nInputFlags & FLAGS_PATH_REAL)
@@ -1606,29 +1608,30 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 		nAdjustFlags |= FLAGS_NO_LOWCASE;
 	}
 
-	const char* szFullPath = AdjustFileName(pName, szFullPathBuf, nAdjustFlags);
+	CryPathString fullPath;
+	AdjustFileName(pName, fullPath, nAdjustFlags);
 
 	if (nOSFlags & (_O_WRONLY | _O_RDWR))
 	{
-		CheckFileAccessDisabled(szFullPath, szMode);
+		CheckFileAccessDisabled(fullPath, szMode);
 
 		// we need to open the file for writing, but we failed to do so.
 		// the only reason that can be is that there are no directories for that file.
 		// now create those dirs
-		if (!MakeDir(PathUtil::GetParentDirectory(string(szFullPath)).c_str()))
+		if (!MakeDir(PathUtil::GetParentDirectory(fullPath).c_str()))
 		{
 			return NULL;
 		}
 		FILE* file = NULL;
 		if (!bFileOpenLocked)
-			file = CIOWrapper::FopenEx(szFullPath, smode);
+			file = CIOWrapper::FopenEx(fullPath, smode);
 		else
-			file = CIOWrapper::FopenLocked(szFullPath, smode);
+			file = CIOWrapper::FopenLocked(fullPath, smode);
 
 #if !defined(_RELEASE)
 		if (file && g_cvars.pakVars.nLogAllFileAccess)
 		{
-			CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has directly opened requested file %s for writing", szFullPath);
+			CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has directly opened requested file %s for writing", fullPath.c_str());
 		}
 #endif
 
@@ -1636,21 +1639,21 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 	}
 
 	if (nVarPakPriority == ePakPriorityFileFirst ||
-	    (nVarPakPriority == ePakPriorityFileFirstModsOnly && IsModPath(szFullPath))) // if the file system files have priority now..
+	    (nVarPakPriority == ePakPriorityFileFirstModsOnly && IsModPath(fullPath))) // if the file system files have priority now..
 	{
 		if (!bFileOpenLocked)
-			fp = CIOWrapper::FopenEx(szFullPath, smode);
+			fp = CIOWrapper::FopenEx(fullPath, smode);
 		else
-			fp = CIOWrapper::FopenLocked(szFullPath, smode);
+			fp = CIOWrapper::FopenLocked(fullPath, smode);
 
 		if (fp)
 		{
-			CheckFileAccessDisabled(szFullPath, szMode);
+			CheckFileAccessDisabled(fullPath, szMode);
 
 #if !defined(_RELEASE)
 			if (g_cvars.pakVars.nLogAllFileAccess)
 			{
-				CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has directly opened requested file %s with FileFirst priority", szFullPath);
+				CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has directly opened requested file %s with FileFirst priority", fullPath.c_str());
 			}
 #endif
 
@@ -1660,7 +1663,7 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 	}
 
 	unsigned int archiveFlags;
-	CCachedFileData_AutoPtr pFileData = GetFileData(szFullPath, archiveFlags);
+	CCachedFileData_AutoPtr pFileData = GetFileData(fullPath, archiveFlags);
 	if (pFileData)
 	{
 #if !defined(_RELEASE)
@@ -1673,14 +1676,14 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 				const char* pZipFilePath = pZip->GetFilePath();
 				if (pZipFilePath && pZipFilePath[0])
 				{
-					CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has opened requested file %s from %s pak %s, disk offset %u", szFullPath, pZip->IsInMemory() ? "memory" : "disk", pZipFilePath, pFileData->GetFileEntry()->nFileDataOffset);
+					CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has opened requested file %s from %s pak %s, disk offset %u", fullPath.c_str(), pZip->IsInMemory() ? "memory" : "disk", pZipFilePath, pFileData->GetFileEntry()->nFileDataOffset);
 					logged = true;
 				}
 			}
 
 			if (!logged)
 			{
-				CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has opened requested file %s from a pak file who's path isn't known", szFullPath);
+				CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has opened requested file %s from a pak file who's path isn't known", fullPath.c_str());
 			}
 		}
 #endif
@@ -1690,18 +1693,18 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 		if (nVarPakPriority != ePakPriorityPakOnly || bFileCanBeOnDisk) // if the pak files had more priority, we didn't attempt fopen before- try it now
 		{
 			if (!bFileOpenLocked)
-				fp = CIOWrapper::FopenEx(szFullPath, smode);
+				fp = CIOWrapper::FopenEx(fullPath, smode);
 			else
-				fp = CIOWrapper::FopenLocked(szFullPath, smode);
+				fp = CIOWrapper::FopenLocked(fullPath, smode);
 
 			if (fp)
 			{
-				CheckFileAccessDisabled(szFullPath, szMode);
+				CheckFileAccessDisabled(fullPath, szMode);
 
 #if !defined(_RELEASE)
 				if (g_cvars.pakVars.nLogAllFileAccess)
 				{
-					CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has directly opened requested file %s after failing to open from paks", szFullPath);
+					CryLog("<PAK LOG FILE ACCESS> CCryPak::FOpen() has directly opened requested file %s after failing to open from paks", fullPath.c_str());
 				}
 #endif
 
@@ -1718,27 +1721,37 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 		return NULL; // we can't find such file in the pack files
 	}
 
-	CheckFileAccessDisabled(szFullPath, szMode);
-
-	// try to open the pseudofile from one of the zips, make sure there is no user alias
-	AUTO_MODIFYLOCK(m_csOpenFiles);
+	CheckFileAccessDisabled(fullPath, szMode);
 
 	size_t nFile;
+	nOSFlags |= (archiveFlags & FLAGS_REDIRECT_TO_DISC);
+
+	// try to open the pseudofile from one of the zips, make sure there is no user alias
 	// find the empty slot and open the file there; return the handle
+	bool foundFileSlot = false;
 	{
-		for (nFile = 0; nFile < m_arrOpenFiles.size() && m_arrOpenFiles[nFile].GetFile(); ++nFile)
-			continue;
-		if (nFile == m_arrOpenFiles.size())
+		// fast path: try to find empty file slot
+		AUTO_READLOCK(m_csOpenFiles);
+		for (nFile = 0; nFile < m_arrOpenFiles.size(); ++nFile)
 		{
-			m_arrOpenFiles.resize(nFile + 1);
+			if (m_arrOpenFiles[nFile].TryConstruct(pFileData, nOSFlags))
+			{
+				foundFileSlot = true;
+				break;
+			}
 		}
-		if (pFileData != NULL && (nInputFlags & FOPEN_HINT_DIRECT_OPERATION) && !pFileData->m_pZip->IsInMemory())
+	}
+	if (!foundFileSlot)
+	{
+		// slow path: wait for other file users to finish and then grow array of file slots
+		AUTO_MODIFYLOCK(m_csOpenFiles);
+		const size_t newSize = m_arrOpenFiles.size() + s_openFileSlotsGrowNumber;
+		m_arrOpenFiles.resize(newSize);
+		nFile = newSize - 1;
+		if (!m_arrOpenFiles[nFile].TryConstruct(pFileData, nOSFlags))
 		{
-			nOSFlags |= CZipPseudoFile::_O_DIRECT_OPERATION;
+			CRY_ASSERT(false, "Newly created file slot is already in use");
 		}
-		CZipPseudoFile& rZipFile = m_arrOpenFiles[nFile];
-		nOSFlags |= (archiveFlags & FLAGS_REDIRECT_TO_DISC);
-		rZipFile.Construct(pFileData, nOSFlags);
 	}
 
 	FILE* ret = (FILE*)(nFile + g_nPseudoFileIdxOffset);
@@ -1776,9 +1789,8 @@ CCachedFileDataPtr CCryPak::GetFileData(const char* szName, unsigned int& nArchi
 //////////////////////////////////////////////////////////////////////////
 CCachedFileDataPtr CCryPak::GetOpenedFileDataInZip(FILE* hFile)
 {
-	AUTO_READLOCK(m_csOpenFiles);
-
 	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+	AUTO_READLOCK(m_csOpenFiles);
 	if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 	{
 		return m_arrOpenFiles[nPseudoFile].GetFile();
@@ -1806,11 +1818,6 @@ bool CCryPak::WillOpenFromPak(const char* szPath)
 ZipDir::FileEntry* CCryPak::FindPakFileEntry(const char* szPath, unsigned int& nArchiveFlags, ZipDir::CachePtr* pZip, bool bSkipInMemoryPaks)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	// Timur, is it safe?
-	//replaceDoublePathFilename((char*)szName);
-#endif
 
 	unsigned nNameLen = (unsigned)strlen(szPath);
 	AUTO_READLOCK(m_csZips);
@@ -1851,23 +1858,22 @@ ZipDir::FileEntry* CCryPak::FindPakFileEntry(const char* szPath, unsigned int& n
 
 long CCryPak::FTell(FILE* hFile)
 {
-	AUTO_READLOCK(m_csOpenFiles);
-	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
-	if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 	{
-		return m_arrOpenFiles[nPseudoFile].FTell();
+		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
+		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
+		{
+			return m_arrOpenFiles[nPseudoFile].FTell();
+		}
 	}
-	else
-	{
-		return (long)CIOWrapper::FTell(hFile);
-	}
+	return (long)CIOWrapper::FTell(hFile);
 }
 
 // returns the path to the archive in which the file was opened
 const char* CCryPak::GetFileArchivePath(FILE* hFile)
 {
-	AUTO_READLOCK(m_csOpenFiles);
 	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+	AUTO_READLOCK(m_csOpenFiles);
 	if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 		return m_arrOpenFiles[nPseudoFile].GetArchivePath();
 	else
@@ -1881,8 +1887,8 @@ const char* CCryPak::GetFileArchivePath(FILE* hFile)
 // returns the file modification time
 uint64 CCryPak::GetModificationTime(FILE* hFile)
 {
-	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 	{
+		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].GetModificationTime();
@@ -1912,8 +1918,8 @@ uint64 CCryPak::GetModificationTime(FILE* hFile)
 
 size_t CCryPak::FGetSize(FILE* hFile)
 {
-	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 	{
+		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].GetFileSize();
@@ -1940,26 +1946,26 @@ size_t CCryPak::FGetSize(const char* sFilename, bool bAllowUseFileSystem)
 	// lock-less GetSize
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = AdjustFileName(sFilename, szFullPathBuf, FOPEN_HINT_QUIET);
-	if (!szFullPath)
+	CryPathString fullPath;
+	AdjustFileName(sFilename, fullPath, FOPEN_HINT_QUIET);
+	if (fullPath.empty())
 		return false;
 
 	if (m_pPakVars->nPriority == ePakPriorityFileFirst ||
-	    (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && IsModPath(szFullPath))) // if the file system files have priority now..
+	    (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && IsModPath(fullPath))) // if the file system files have priority now..
 	{
-		ICryPak::SignedFileSize nFileSize = filehelpers::GetFileSizeOnDisk(szFullPath);
+		ICryPak::SignedFileSize nFileSize = filehelpers::GetFileSizeOnDisk(fullPath);
 		if (nFileSize != ICryPak::FILE_NOT_PRESENT)
 			return (size_t)nFileSize;
 	}
 
-	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(szFullPath);
+	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(fullPath);
 	if (pFileEntry) // try to find the pseudo-file in one of the zips
 		return pFileEntry->desc.lSizeUncompressed;
 
 	if (bAllowUseFileSystem || m_pPakVars->nPriority == ePakPriorityPakFirst) // if the pak files had more priority, we didn't attempt fopen before- try it now
 	{
-		ICryPak::SignedFileSize nFileSize = filehelpers::GetFileSizeOnDisk(szFullPath);
+		ICryPak::SignedFileSize nFileSize = filehelpers::GetFileSizeOnDisk(fullPath);
 		if (nFileSize != ICryPak::FILE_NOT_PRESENT)
 			return (size_t)nFileSize;
 	}
@@ -1970,8 +1976,8 @@ size_t CCryPak::FGetSize(const char* sFilename, bool bAllowUseFileSystem)
 int CCryPak::FFlush(FILE* hFile)
 {
 	SAutoCollectFileAcessTime accessTime(this);
-	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 	{
+		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return 0;
@@ -1985,8 +1991,8 @@ size_t CCryPak::FSeek(FILE* hFile, long seek, int mode)
 	SAutoCollectFileAcessTime accessTime(this);
 
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].FSeek(seek, mode);
 	}
@@ -2000,8 +2006,8 @@ size_t CCryPak::FWrite(const void* data, size_t length, size_t elems, FILE* hFil
 {
 	SAutoCollectFileAcessTime accessTime(this);
 
-	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 	{
+		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
 		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return 0;
@@ -2015,13 +2021,13 @@ size_t CCryPak::FWrite(const void* data, size_t length, size_t elems, FILE* hFil
 //////////////////////////////////////////////////////////////////////////
 size_t CCryPak::FReadRaw(void* pData, size_t nSize, size_t nCount, FILE* hFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SAutoCollectFileAcessTime accessTime(this);
 
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 		{
 			return m_arrOpenFiles[nPseudoFile].FRead(pData, nSize, nCount, hFile);
@@ -2034,32 +2040,36 @@ size_t CCryPak::FReadRaw(void* pData, size_t nSize, size_t nCount, FILE* hFile)
 //////////////////////////////////////////////////////////////////////////
 size_t CCryPak::FReadRawAll(void* pData, size_t nFileSize, FILE* hFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SAutoCollectFileAcessTime accessTime(this);
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 		{
 			return m_arrOpenFiles[nPseudoFile].FReadAll(pData, nFileSize, hFile);
 		}
 	}
 
+#if defined(USE_CRY_ASSERT)
 	int nRes = CIOWrapper::Fseek(hFile, 0, SEEK_SET);
 	assert(nRes == 0);
+#else
+	CIOWrapper::Fseek(hFile, 0, SEEK_SET);
+#endif
 	return CIOWrapper::Fread(pData, 1, nFileSize, hFile);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void* CCryPak::FGetCachedFileData(FILE* hFile, size_t& nFileSize)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SAutoCollectFileAcessTime accessTime(this);
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].GetFileData(nFileSize, hFile);
 	}
@@ -2076,8 +2086,13 @@ void* CCryPak::FGetCachedFileData(FILE* hFile, size_t& nFileSize)
 	m_pCachedFileData = new CCachedFileRawData(nFileSize);
 	m_pCachedFileData->m_hFile = hFile;
 
+#if defined(USE_CRY_ASSERT)
 	int nRes = CIOWrapper::Fseek(hFile, 0, SEEK_SET);
 	assert(nRes == 0);
+#else
+	CIOWrapper::Fseek(hFile, 0, SEEK_SET);
+#endif
+
 	if (CIOWrapper::Fread(m_pCachedFileData->m_pCachedData, 1, nFileSize, hFile) != nFileSize)
 	{
 		m_pCachedFileData = 0;
@@ -2093,23 +2108,22 @@ int CCryPak::FClose(FILE* hFile)
 		m_pCachedFileData = 0;
 
 	SAutoCollectFileAcessTime accessTime(this);
-	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
-	AUTO_MODIFYLOCK(m_csOpenFiles);
-	if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 	{
-		m_arrOpenFiles[nPseudoFile].Destruct();
-		return 0;
+		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
+		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
+		{
+			m_arrOpenFiles[nPseudoFile].Destruct();
+			return 0;
+		}
 	}
-	else
-	{
-		return CIOWrapper::FcloseEx(hFile);
-	}
+	return CIOWrapper::FcloseEx(hFile);
 }
 
 bool CCryPak::IsInPak(FILE* hFile)
 {
-	AUTO_READLOCK(m_csOpenFiles);
 	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+	AUTO_READLOCK(m_csOpenFiles);
 	return (UINT_PTR)nPseudoFile < m_arrOpenFiles.size();
 }
 
@@ -2117,8 +2131,8 @@ int CCryPak::FEof(FILE* hFile)
 {
 	SAutoCollectFileAcessTime accessTime(this);
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].FEof();
 	}
@@ -2129,8 +2143,8 @@ int CCryPak::FEof(FILE* hFile)
 int CCryPak::FError(FILE* hFile)
 {
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return 0;
 	}
@@ -2144,15 +2158,21 @@ int CCryPak::FGetErrno()
 
 int CCryPak::FScanf(FILE* hFile, const char* format, ...)
 {
-	AUTO_READLOCK(m_csOpenFiles);
 	SAutoCollectFileAcessTime accessTime(this);
 	va_list arglist;
 	int count = 0;
 	va_start(arglist, format);
-	INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
-	if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
-		count = m_arrOpenFiles[nPseudoFile].FScanfv(format, arglist);
-	else
+	bool isProcessed = false;
+	{
+		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
+		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
+		{
+			count = m_arrOpenFiles[nPseudoFile].FScanfv(format, arglist);
+			isProcessed = true;
+		}
+	}
+	if (!isProcessed)
 	{
 		// Not supported.
 		count = 0;//vfscanf(handle, format, arglist);
@@ -2168,8 +2188,8 @@ int CCryPak::FPrintf(FILE* hFile, const char* szFormat, ...)
 {
 	SAutoCollectFileAcessTime accessTime(this);
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return 0; // we don't support it now
 	}
@@ -2187,8 +2207,8 @@ char* CCryPak::FGets(char* str, int n, FILE* hFile)
 {
 	SAutoCollectFileAcessTime accessTime(this);
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].FGets(str, n);
 	}
@@ -2202,8 +2222,8 @@ int CCryPak::Getc(FILE* hFile)
 {
 	SAutoCollectFileAcessTime accessTime(this);
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].Getc();
 	}
@@ -2216,8 +2236,8 @@ int CCryPak::Ungetc(int c, FILE* hFile)
 {
 	SAutoCollectFileAcessTime accessTime(this);
 	{
-		AUTO_READLOCK(m_csOpenFiles);
 		INT_PTR nPseudoFile = ((INT_PTR)hFile) - g_nPseudoFileIdxOffset;
+		AUTO_READLOCK(m_csOpenFiles);
 		if ((UINT_PTR)nPseudoFile < m_arrOpenFiles.size())
 			return m_arrOpenFiles[nPseudoFile].Ungetc(c);
 	}
@@ -2240,15 +2260,12 @@ const char* GetExtension(const char* in)
 intptr_t CCryPak::FindFirst(const char* pDir, _finddata_t* fd,
                             unsigned int nPathFlags, bool bAllOwUseFileSystem)
 {
-	char szFullPathBuf[g_nMaxPath];
-
-	//m_pLog->Log("Scanning %s",pDir);
-	//const char *szFullPath = AdjustFileName(pDir, szFullPathBuf, 0);
-	const char* szFullPath = AdjustFileName(pDir, szFullPathBuf, nPathFlags);
+	CryPathString fullPath;
+	AdjustFileName(pDir, fullPath, nPathFlags);
 
 	// Prevent recursive data root folder scanning.
 	CCryPakFindData_AutoPtr pFindData = new CCryPakFindData(m_strDataRoot);
-	pFindData->Scan(this, szFullPath, bAllOwUseFileSystem);
+	pFindData->Scan(this, fullPath, bAllOwUseFileSystem);
 	if (pFindData->empty())
 	{
 		if (m_arrMods.empty())
@@ -2259,18 +2276,29 @@ intptr_t CCryPak::FindFirst(const char* pDir, _finddata_t* fd,
 	{
 		// now scan mod folders as well
 
-		std::vector<string>::reverse_iterator it;
-		for (it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
+		for (auto it = m_arrMods.rbegin(); it != m_arrMods.rend(); ++it)
 		{
-			if (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && !IsModPath(it->c_str()))
+			if (m_pPakVars->nPriority == ePakPriorityFileFirstModsOnly && !IsModPath(it->path.c_str()))
 				continue;
-			CryPathString modPath = (*it).c_str();
-			modPath.append(1, '/');
-			modPath += pDir;
-			const char* szFullModPath = AdjustFileName(modPath, szFullPathBuf, nPathFlags | FLAGS_PATH_REAL);
-			if (szFullModPath)
+
+			char szTempDir[CryPathString::MAX_SIZE];
+			cry_strcpy(szTempDir, pDir);
+			BeautifyPath(szTempDir, false);
+			const char* szBeautifiedSrc = szTempDir;
+			
+			if (filehelpers::CheckPrefix(szBeautifiedSrc, m_strDataRootWithSlash.c_str()) && strstr(it->path.c_str(),"%engineroot%") == 0)
 			{
-				pFindData->Scan(this, szFullModPath);
+				// When path starts from data root and mod folder is not mapping to engine folder, remove game data root from path.
+				szBeautifiedSrc += m_strDataRootWithSlash.length();
+			}
+
+			CryPathString modPath = it->path.c_str();
+			modPath.append(1, '/');
+			modPath += szBeautifiedSrc;
+			AdjustFileName(modPath, fullPath, nPathFlags | FLAGS_PATH_REAL);
+			if (!fullPath.empty())
+			{
+				pFindData->Scan(this, fullPath);
 			}
 		} //it
 	}
@@ -2343,8 +2371,8 @@ int CCryPak::FindClose(intptr_t handle)
 //////////////////////////////////////////////////////////////////////////
 bool CCryPak::LoadPakToMemory(const char* pName, ICryPak::EInMemoryPakLocation nLoadPakToMemory, IMemoryBlock* pMemoryBlock)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pName);
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Load Pak To Memory: %s", pName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Load Pak To Memory: %s", pName);
 
 	CryPathString pakFile = pName;
 	pakFile.MakeLower();
@@ -2372,8 +2400,8 @@ bool CCryPak::LoadPakToMemory(const char* pName, ICryPak::EInMemoryPakLocation n
 //////////////////////////////////////////////////////////////////////////
 void CCryPak::LoadPaksToMemory(int nMaxPakSize, bool bLoadToMemory)
 {
-	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Load Paks To Memory");
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Load Paks To Memory");
 	AUTO_MODIFYLOCK(m_csZips);
 	for (ZipArray::reverse_iterator itZip = m_arrZips.rbegin(); itZip != m_arrZips.rend(); ++itZip)
 	{
@@ -2393,49 +2421,54 @@ void CCryPak::LoadPaksToMemory(int nMaxPakSize, bool bLoadToMemory)
 }
 
 //======================================================================
-bool CCryPak::OpenPack(const char* szBindRootIn, const char* szPath, unsigned nFlags, IMemoryBlock* pData, CryFixedStringT<g_nMaxPath>* pFullPath)
+bool CCryPak::OpenPack(const char* szBindRootIn, const char* szPath, unsigned nFlags, IMemoryBlock* pData, CryPathString* pFullPath)
 {
 	assert(szBindRootIn);
-	char szFullPathBuf[g_nMaxPath];
+	
+	CryPathString fullPath;
+	AdjustFileName(szPath, fullPath, nFlags);
 
-	const char* szFullPath = AdjustFileName(szPath, szFullPathBuf, nFlags);
+	CryPathString bindRoot;
+	AdjustFileName(szBindRootIn, bindRoot, FLAGS_ADD_TRAILING_SLASH | FLAGS_PATH_REAL);
 
-	char szBindRootBuf[g_nMaxPath];
-	const char* szBindRoot = AdjustFileName(szBindRootIn, szBindRootBuf, FLAGS_ADD_TRAILING_SLASH | FLAGS_PATH_REAL);
-
-	bool result = OpenPackCommon(szBindRoot, szFullPath, nFlags, pData);
+	bool result = OpenPackCommon(bindRoot, fullPath, nFlags, pData);
 
 	if (pFullPath)
 	{
-		pFullPath->assign(szFullPath);
+		pFullPath->assign(fullPath);
 	}
 
 	return result;
 }
 
-bool CCryPak::OpenPack(const char* szPath, unsigned nFlags, IMemoryBlock* pData, CryFixedStringT<g_nMaxPath>* pFullPath)
+bool CCryPak::OpenPack(const char* szPath, unsigned nFlags, IMemoryBlock* pData, CryPathString* pFullPath)
 {
-	char szFullPathBuf[g_nMaxPath];
-
-	const char* szFullPath = AdjustFileName(szPath, szFullPathBuf, nFlags);
-	string strBindRoot;
-	const char* pLastSlash = strrchr(szFullPath, g_cNativeSlash);
+	CryPathString fullPath;
+	AdjustFileName(szPath, fullPath, nFlags);
+	
+	CryPathString bindRoot;
+	size_t lastSlashIdx = fullPath.rfind(g_cNativeSlash);
+	
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
-	if (!pLastSlash) pLastSlash = strrchr(szFullPath, g_cNonNativeSlash);
+	if (lastSlashIdx == CryPathString::npos)
+	{
+		lastSlashIdx = fullPath.rfind(g_cNonNativeSlash);
+	}
 #endif
-	if (pLastSlash)
-		strBindRoot.assign(szFullPath, pLastSlash - szFullPath + 1);
+	if (lastSlashIdx != CryPathString::npos)
+	{
+		bindRoot.assign(fullPath, lastSlashIdx + 1);
+	}
 	else
 	{
-		m_pLog->LogError("Pak file %s has absolute path %s, which is strange", szPath, szFullPath);
-		//		desc.strFileName = szZipPath;
+		m_pLog->LogError("Pak file %s has absolute path %s, which is strange", szPath, fullPath.c_str());
 	}
 
-	bool result = OpenPackCommon(strBindRoot.c_str(), szFullPath, nFlags, pData);
+	bool result = OpenPackCommon(bindRoot, fullPath, nFlags, pData);
 
 	if (pFullPath)
 	{
-		pFullPath->assign(szFullPath);
+		pFullPath->assign(fullPath);
 	}
 
 	return result;
@@ -2540,20 +2573,16 @@ bool CCryPak::OpenPackCommon(const char* szBindRoot, const char* szFullPath, uns
 		return false; // don't support such objects yet
 }
 
-//int gg=1;
 // after this call, the file will be unlocked and closed, and its contents won't be used to search for files
 bool CCryPak::ClosePack(const char* pName, unsigned nFlags)
 {
-	char szZipPathBuf[g_nMaxPath];
-	const char* szZipPath = AdjustFileName(pName, szZipPathBuf, nFlags);
-
-	//if (strstr(szZipPath,"huggy_tweak_scripts"))
-	//	gg=0;
+	CryPathString zipPath;
+	AdjustFileName(pName, zipPath, nFlags);
 
 	AUTO_MODIFYLOCK(m_csZips);
 	for (ZipArray::iterator it = m_arrZips.begin(); it != m_arrZips.end(); ++it)
 	{
-		if (!stricmp(szZipPath, it->GetFullPath()))
+		if (!stricmp(zipPath.c_str(), it->GetFullPath()))
 		{
 			// this is the pack with the given name - remove it, and if possible it will be deleted
 			// the zip is referenced from the archive and *it; the archive is referenced only from *it
@@ -2581,46 +2610,46 @@ bool CCryPak::ClosePack(const char* pName, unsigned nFlags)
 
 bool CCryPak::FindPacks(const char* pWildcardIn)
 {
-	char cWorkBuf[g_nMaxPath];
-	AdjustFileName(pWildcardIn, cWorkBuf, ICryPak::FLAGS_PATH_REAL | ICryArchive::FLAGS_OVERRIDE_PAK | FLAGS_COPY_DEST_ALWAYS);
-	string strBindRoot = PathUtil::GetParentDirectory(cWorkBuf);
+	CryPathString wildcardPath;
+	AdjustFileName(pWildcardIn, wildcardPath, ICryPak::FLAGS_PATH_REAL | ICryArchive::FLAGS_OVERRIDE_PAK | FLAGS_COPY_DEST_ALWAYS);
+	CryPathString strBindRoot = PathUtil::GetParentDirectory(wildcardPath);
 	strBindRoot += g_cNativeSlash;
 	__finddata64_t fd;
-	intptr_t h = _findfirst64(cWorkBuf, &fd);
+	intptr_t h = _findfirst64(wildcardPath.c_str(), &fd);
 	_findclose(h);
 	return h != -1;
 }
 
-bool CCryPak::OpenPacks(const char* pWildcardIn, unsigned nFlags, std::vector<CryFixedStringT<g_nMaxPath>>* pFullPaths)
+bool CCryPak::OpenPacks(const char* pWildcardIn, unsigned nFlags, std::vector<CryPathString>* pFullPaths)
 {
-	char cWorkBuf[g_nMaxPath];
-	AdjustFileName(pWildcardIn, cWorkBuf, nFlags | FLAGS_COPY_DEST_ALWAYS);
-	string strBindRoot = PathUtil::GetParentDirectory(cWorkBuf);
+	CryPathString wildcardPath;
+	AdjustFileName(pWildcardIn, wildcardPath, nFlags | FLAGS_COPY_DEST_ALWAYS);
+	string strBindRoot = PathUtil::GetParentDirectory(wildcardPath);
 	strBindRoot += g_cNativeSlash;
-	return OpenPacksCommon(strBindRoot.c_str(), pWildcardIn, cWorkBuf, nFlags, pFullPaths);
+	return OpenPacksCommon(strBindRoot.c_str(), pWildcardIn, wildcardPath, nFlags, pFullPaths);
 }
 
-bool CCryPak::OpenPacks(const char* szBindRoot, const char* pWildcardIn, unsigned nFlags, std::vector<CryFixedStringT<g_nMaxPath>>* pFullPaths)
+bool CCryPak::OpenPacks(const char* szBindRoot, const char* pWildcardIn, unsigned nFlags, std::vector<CryPathString>* pFullPaths)
 {
-	char cWorkBuf[g_nMaxPath];
-	AdjustFileName(pWildcardIn, cWorkBuf, nFlags | FLAGS_COPY_DEST_ALWAYS);
+	CryPathString wildcardPath;
+	AdjustFileName(pWildcardIn, wildcardPath, nFlags | FLAGS_COPY_DEST_ALWAYS);
 
-	char cBindRootBuf[g_nMaxPath];
-	const char* pBindRoot = AdjustFileName(szBindRoot, cBindRootBuf, FLAGS_ADD_TRAILING_SLASH | FLAGS_PATH_REAL);
+	CryPathString bindRoot;
+	AdjustFileName(szBindRoot, bindRoot, FLAGS_ADD_TRAILING_SLASH | FLAGS_PATH_REAL);
 
-	return OpenPacksCommon(pBindRoot, pWildcardIn, cWorkBuf, nFlags, pFullPaths);
+	return OpenPacksCommon(bindRoot, pWildcardIn, wildcardPath, nFlags, pFullPaths);
 }
 
-bool CCryPak::OpenPacksCommon(const char* szDir, const char* pWildcardIn, char* cWork, int nPakFlags, std::vector<CryFixedStringT<g_nMaxPath>>* pFullPaths)
+bool CCryPak::OpenPacksCommon(const char* szDir, const char* pWildcardIn, CryPathString& wildcardPath, int nPakFlags, std::vector<CryPathString>* pFullPaths)
 {
-	if (!strchr(cWork, '*') && !strchr(cWork, '?'))
+	if (wildcardPath.find('*') == CryPathString::npos && wildcardPath.find('?') != CryPathString::npos)
 	{
 		// No wildcards, just open pack
-		if (OpenPackCommon(szDir, cWork, nPakFlags))
+		if (OpenPackCommon(szDir, wildcardPath, nPakFlags))
 		{
 			if (pFullPaths)
 			{
-				pFullPaths->push_back(cWork);
+				pFullPaths->push_back(wildcardPath);
 			}
 		}
 		return true;
@@ -2633,28 +2662,34 @@ bool CCryPak::OpenPacksCommon(const char* szDir, const char* pWildcardIn, char* 
 	// Therefore this code performs an additional check to make sure that the
 	// found filenames match the spec.
 	_finddata_t fd;
-	intptr_t h = FindFirst(cWork, &fd, FLAGS_PATH_REAL, /*bAllOwUseFileSystem =*/ true);
+	intptr_t h = FindFirst(wildcardPath, &fd, FLAGS_PATH_REAL, /*bAllOwUseFileSystem =*/ true);
 
-	char cWildcardFullPath[MAX_PATH];
-	cry_sprintf(cWildcardFullPath, "*.%s", PathUtil::GetExt(pWildcardIn));
+	CryPathString wildcardFullPath;
+	wildcardFullPath.Format("*.%s", PathUtil::GetExt(pWildcardIn));
+	
+	// buffer to concatenate filenames to the directory part of wildcardPath
+	char destName[CryPathString::MAX_SIZE];
+	cry_strcpy(destName, wildcardPath);
+	char* pDirectoriesEnd = strrchr(destName, g_cNativeSlash);
 
-	// where to copy the filenames to form the path in cWork
-	char* pDestName = strrchr(cWork, g_cNativeSlash);
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
-	if (!pDestName) pDestName = strrchr(cWork, g_cNonNativeSlash);
+	if (!pDirectoriesEnd)
+		pDirectoriesEnd = strrchr(destName, g_cNonNativeSlash);
 #endif
-	if (!pDestName)
-		pDestName = cWork;
+	if (!pDirectoriesEnd)
+		pDirectoriesEnd = destName;
 	else
-		++pDestName;
+		++pDirectoriesEnd;
+
+	const size_t remainingBufferCapacity = sizeof(destName) - (pDirectoriesEnd - destName);
 	if (h != -1)
 	{
 		std::vector<string> files;
 		do
 		{
-			strcpy(pDestName, fd.name);
-			if (PathUtil::MatchWildcard(cWork, cWildcardFullPath))
-				files.push_back(strlwr(cWork));
+			cry_strcpy(pDirectoriesEnd, remainingBufferCapacity, fd.name);
+			if (PathUtil::MatchWildcard(destName, wildcardFullPath))
+				files.push_back(strlwr(destName));
 		}
 		while (FindNext(h, &fd) >= 0);
 
@@ -2681,9 +2716,9 @@ bool CCryPak::OpenPacksCommon(const char* szDir, const char* pWildcardIn, char* 
 bool CCryPak::ClosePacks(const char* pWildcardIn, unsigned nFlags)
 {
 	__finddata64_t fd;
-	char cWorkBuf[g_nMaxPath];
-	const char* cWork = AdjustFileName(pWildcardIn, cWorkBuf, nFlags);
-	intptr_t h = _findfirst64(cWork, &fd);
+	CryPathString workPath;
+	AdjustFileName(pWildcardIn, workPath, nFlags);
+	intptr_t h = _findfirst64(workPath, &fd);
 	string strDir = PathUtil::GetParentDirectory(pWildcardIn);
 	if (h != -1)
 	{
@@ -2814,13 +2849,38 @@ CCachedFileRawData::~CCachedFileRawData()
 }
 
 //////////////////////////////////////////////////////////////////////////
+CZipPseudoFile::CZipPseudoFile(CZipPseudoFile&& other)
+	: m_nCurSeek(other.m_nCurSeek)
+	, m_pFileData(std::move(other.m_pFileData))
+	, m_nFlags(other.m_nFlags)
+	, m_fileSlotInUse(other.m_fileSlotInUse.exchange(false))
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+CZipPseudoFile& CZipPseudoFile::operator=(CZipPseudoFile&& other)
+{
+	m_nCurSeek = other.m_nCurSeek;
+	m_pFileData = std::move(other.m_pFileData);
+	m_nFlags = other.m_nFlags;
+	m_fileSlotInUse = other.m_fileSlotInUse.exchange(false);
+	return *this;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // this object must be constructed before usage
 // nFlags is a combination of _O_... flags
-void CZipPseudoFile::Construct(CCachedFileData* pFileData, unsigned nFlags)
+bool CZipPseudoFile::TryConstruct(CCachedFileData* pFileData, unsigned nFlags)
 {
-	m_pFileData = pFileData;
-	m_nFlags = nFlags;
-	m_nCurSeek = 0;
+	bool expectedInUse = false;
+	if (m_fileSlotInUse.compare_exchange_strong(expectedInUse, true))
+	{
+		m_pFileData = pFileData;
+		m_nFlags = nFlags;
+		m_nCurSeek = 0;
+		return true;
+	}
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2828,8 +2888,11 @@ void CZipPseudoFile::Construct(CCachedFileData* pFileData, unsigned nFlags)
 void CZipPseudoFile::Destruct()
 {
 	assert(m_pFileData);
+	assert(m_fileSlotInUse);
 	// mark it free, and deallocate the pseudo file memory
 	m_pFileData = NULL;
+
+	m_fileSlotInUse = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2859,7 +2922,7 @@ int CZipPseudoFile::FSeek(long nOffset, int nMode)
 //////////////////////////////////////////////////////////////////////////
 size_t CZipPseudoFile::FRead(void* pDest, size_t nSize, size_t nCount, FILE* hFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!GetFile())
 		return 0;
@@ -2917,7 +2980,7 @@ size_t CZipPseudoFile::FRead(void* pDest, size_t nSize, size_t nCount, FILE* hFi
 //////////////////////////////////////////////////////////////////////////
 size_t CZipPseudoFile::FReadAll(void* pDest, size_t nFileSize, FILE* hFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!GetFile())
 		return 0;
@@ -2939,7 +3002,7 @@ size_t CZipPseudoFile::FReadAll(void* pDest, size_t nFileSize, FILE* hFile)
 //////////////////////////////////////////////////////////////////////////
 void* CZipPseudoFile::GetFileData(size_t& nFileSize, FILE* hFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!GetFile())
 		return 0;
@@ -3027,6 +3090,11 @@ int CZipPseudoFile::Ungetc(int c)
 		return EOF;
 	m_nCurSeek--;
 	return c;
+}
+
+void CZipPseudoFile::GetMemoryUsage(ICrySizer * pSizer) const
+{
+	pSizer->AddObject(m_pFileData);
 }
 
 CCachedFileData::CCachedFileData(class CCryPak* pPak, ZipDir::Cache* pZip, unsigned int nArchiveFlags, ZipDir::FileEntry* pFileEntry, const char* szFilename)
@@ -3183,6 +3251,12 @@ int64 CCachedFileData::ReadData(void* pBuffer, int64 nFileOffset, int64 nReadSiz
 	return nReadSize;
 }
 
+void CCachedFileData::GetMemoryUsage(ICrySizer * pSizer) const
+{
+	pSizer->AddObject(m_pZip);
+	pSizer->AddObject(m_pFileEntry);
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CCachedFileData::AddRef() const
 {
@@ -3226,7 +3300,7 @@ void CCryPakFindData::Scan(class CCryPak* pPak, const char* szDir, bool bAllowUs
 		// first, find the zip files
 		ScanZips(pPak, szDir);
 		if (bAllowUseFS ||
-		    (nVarPakPriority != ePakPriorityPakOnly && (nVarPakPriority != ePakPriorityFileFirstModsOnly || IsModPath(szDir))))
+		    (nVarPakPriority != ePakPriorityPakOnly && (nVarPakPriority != ePakPriorityFileFirstModsOnly || pPak->IsModPath(szDir))))
 		{
 			ScanFS(pPak, szDir);
 		}
@@ -3247,14 +3321,11 @@ CCryPakFindData::CCryPakFindData(const char* szNameFilter)
 //////////////////////////////////////////////////////////////////////////
 void CCryPakFindData::ScanFS(CCryPak* pPak, const char* szDirIn)
 {
-	//char cWork[CCryPak::g_nMaxPath];
-	//pPak->AdjustFileName(szDirIn, cWork);
-
 #if CRY_PLATFORM_WINDOWS
 
 	_wfinddata64_t fdw;
 	__finddata64_t fd;
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	memset(&fdw, 0, sizeof(fdw));
 	memset(&fd, 0, sizeof(fd));
 	#endif
@@ -3285,7 +3356,7 @@ void CCryPakFindData::ScanFS(CCryPak* pPak, const char* szDirIn)
 			HANDLE handle = CreateFileW(szPath, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, NULL);
 			if (handle != INVALID_HANDLE_VALUE)
 			{
-				WCHAR buffer[ICryPak::g_nMaxPath];
+				WCHAR buffer[MAX_PATH];
 				const size_t length = GetFinalPathNameByHandleW(handle, buffer, CRY_ARRAY_COUNT(buffer), FILE_NAME_NORMALIZED);
 				CloseHandle(handle);
 
@@ -3317,7 +3388,7 @@ void CCryPakFindData::ScanFS(CCryPak* pPak, const char* szDirIn)
 #else
 
 	__finddata64_t fd;
-	#if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
+	#if CRY_PLATFORM_WINDOWS
 	memset(&fd, 0, sizeof(fd));
 	#endif
 	intptr_t nFS = _findfirst64(szDirIn, &fd);
@@ -3509,17 +3580,17 @@ bool CCryPak::MakeDir(const char* szPath, bool bGamePathMapping)
 		return true;
 	}
 
-	char tempPath[MAX_PATH];
+	CryPathString tempPath;
 	int nFlagsAdd = (!bGamePathMapping) ? FLAGS_PATH_REAL : 0;
-	szPath = AdjustFileName(szPath, tempPath, FLAGS_FOR_WRITING | nFlagsAdd);
+	AdjustFileName(szPath, tempPath, FLAGS_FOR_WRITING | nFlagsAdd);
 
 	char newPath[MAX_PATH];
 	char* q = newPath;
 
 	memset(newPath, 0, sizeof(newPath));
 
-	const char* p = szPath;
-	bool bUNCPath = false;
+	const char* p = tempPath.begin();
+
 	// Check for UNC path.
 	if (szPath[0] == g_cNativeSlash && szPath[1] == g_cNativeSlash)
 	{
@@ -3534,11 +3605,12 @@ bool CCryPak::MakeDir(const char* szPath, bool bGamePathMapping)
 		{
 			*q++ = *p++;
 		}
-		// If empty string, nothing to create
-		if (*newPath != 0)
+
+		if (*newPath != 0 && !CryCreateDirectory(newPath))
 		{
-			CryCreateDirectory(newPath);
+			return false;
 		}
+
 		if (*p)
 		{
 			if (*p != g_cNonNativeSlash)
@@ -3553,7 +3625,7 @@ bool CCryPak::MakeDir(const char* szPath, bool bGamePathMapping)
 		}
 	}
 
-	return CryCreateDirectory(szPath);
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3562,13 +3634,12 @@ bool CCryPak::MakeDir(const char* szPath, bool bGamePathMapping)
 ICryArchive* CCryPak::OpenArchive(
   const char* szPath, unsigned int nFlags, IMemoryBlock* pData)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(szPath);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szPath);
 	PROFILE_DISK_OPEN;
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "CryPak (%s)", szPath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "CryPak (%s)", szPath);
 
-	char szFullPathBuf[CCryPak::g_nMaxPath];
-
-	const char* szFullPath = AdjustFileName(szPath, szFullPathBuf, FLAGS_PATH_REAL);
+	CryPathString fullPath;
+	AdjustFileName(szPath, fullPath, FLAGS_PATH_REAL);
 
 	// if it's simple and read-only, it's assumed it's read-only
 	if (nFlags & ICryArchive::FLAGS_OPTIMIZED_READ_ONLY)
@@ -3591,7 +3662,7 @@ ICryArchive* CCryPak::OpenArchive(
 	if (nFlags & ICryArchive::FLAGS_CREATE_NEW)
 		nFactoryFlags |= ZipDir::CacheFactory::FLAGS_CREATE_NEW;
 
-	ICryArchive* pArchive = FindArchive(szFullPath);
+	ICryArchive* pArchive = FindArchive(fullPath);
 	if (pArchive)
 	{
 		// check for compatibility
@@ -3621,11 +3692,7 @@ ICryArchive* CCryPak::OpenArchive(
 		return NULL;
 	}
 
-	string strBindRoot;
-
-	//if (!(nFlags & ICryArchive::FLAGS_RELATIVE_PATHS_ONLY))
-	strBindRoot = PathUtil::GetParentDirectory(szFullPath);
-
+	const CryPathString strBindRoot(PathUtil::GetParentDirectory(fullPath));
 	// Check if file on disk exist.
 	bool bFileExists = false;
 
@@ -3658,10 +3725,10 @@ ICryArchive* CCryPak::OpenArchive(
 	else
 	{
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-		if (access(szFullPath, R_OK) == 0)
+		if (access(fullPath, R_OK) == 0)
 			bFileExists = true;
 #else
-		FILE* fp = CIOWrapper::Fopen(szFullPath, "rb");
+		FILE* fp = CIOWrapper::Fopen(fullPath, "rb");
 		if (fp)
 		{
 			CIOWrapper::Fclose(fp);
@@ -3673,7 +3740,7 @@ ICryArchive* CCryPak::OpenArchive(
 	if (!bFileExists && (nFactoryFlags & ZipDir::CacheFactory::FLAGS_READ_ONLY))
 	{
 		// Pak file not found.
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Cannot open Pak file %s", szFullPath);
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Cannot open Pak file %s", fullPath.c_str());
 		return NULL;
 	}
 
@@ -3683,7 +3750,7 @@ ICryArchive* CCryPak::OpenArchive(
 		ZipDir::CachePtr cache = 0;
 		if (pData)
 		{
-			cache = factory.New(szFullPath, pData);
+			cache = factory.New(fullPath, pData);
 		}
 		else
 		{
@@ -3698,7 +3765,7 @@ ICryArchive* CCryPak::OpenArchive(
 			{
 				if (!bContainedInApkPackage)
 				{
-					cache = factory.New(szFullPath, eMemLocale);
+					cache = factory.New(fullPath, eMemLocale);
 					if (cache)
 					{
 						FILE* pPakHandle = cache->GetFileHandle();
@@ -3714,7 +3781,7 @@ ICryArchive* CCryPak::OpenArchive(
 				}
 				else
 				{
-					cache = factory.New(szFullPath, eMemLocale, m_pAssetManager);
+					cache = factory.New(fullPath, eMemLocale, m_pAssetManager);
 					if (cache && m_pAssetFile == NULL)
 					{
 						m_pAssetFile = cache->GetFileHandle();
@@ -3732,7 +3799,7 @@ ICryArchive* CCryPak::OpenArchive(
 					FILE* pPakHandle = pZip->GetFileHandle();
 					int nAssetOffset = pZip->GetAssetOffset();
 					int nAssetLength = pZip->GetAssetLength();
-					cache = factory.New(szFullPath, eMemLocale, pPakHandle, nAssetOffset, nAssetLength, pFileEntry);
+					cache = factory.New(fullPath, eMemLocale, pPakHandle, nAssetOffset, nAssetLength, pFileEntry);
 				}
 				else
 				{
@@ -3742,7 +3809,7 @@ ICryArchive* CCryPak::OpenArchive(
 				}
 			}
 #else
-			cache = factory.New(szFullPath, eMemLocale);
+			cache = factory.New(fullPath, eMemLocale);
 #endif
 		}
 
@@ -3752,7 +3819,7 @@ ICryArchive* CCryPak::OpenArchive(
 	else
 	{
 #ifndef OPTIMIZED_READONLY_ZIP_ENTRY
-		ZipDir::CacheRWPtr cache = factory.NewRW(szFullPath);
+		ZipDir::CacheRWPtr cache = factory.NewRW(fullPath);
 		if (cache)
 			return new CryArchiveRW(this, strBindRoot, cache, nFlags);
 #else
@@ -3792,7 +3859,7 @@ uint32 CCryPak::ComputeCRC(const char* szPath, uint32 nFileOpenFlags)
 		}
 
 		// rbx open flags, x is a hint to not cache whole file in memory.
-		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rbx", nFileOpenFlags);
+		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rb", nFileOpenFlags);
 
 		if (!fp)
 		{
@@ -3805,9 +3872,12 @@ uint32 CCryPak::ComputeCRC(const char* szPath, uint32 nFileOpenFlags)
 		{
 			uint32 dwLocalSize = min(dwSize, dwChunkSize);
 
+#if defined(USE_CRY_ASSERT)
 			INT_PTR read = gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
-
 			assert(read == dwLocalSize);
+#else
+			gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
+#endif
 
 			dwCRC = crc32(dwCRC, pMem, dwLocalSize);
 			dwSize -= dwLocalSize;
@@ -3850,9 +3920,7 @@ bool CCryPak::ComputeMD5(const char* szPath, unsigned char* md5, uint32 nFileOpe
 			}
 		}
 
-		// rbx open flags, x is a hint to not cache whole file in memory.
-		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rbx", nFileOpenFlags);
-
+		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rb", nFileOpenFlags);
 		if (!fp)
 		{
 			delete[]pMem;
@@ -3864,8 +3932,12 @@ bool CCryPak::ComputeMD5(const char* szPath, unsigned char* md5, uint32 nFileOpe
 		{
 			uint32 dwLocalSize = min(dwSize, dwChunkSize);
 
+#if defined(USE_CRY_ASSERT)
 			INT_PTR read = gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
 			assert(read == dwLocalSize);
+#else
+			gEnv->pCryPak->FReadRaw(pMem, 1, dwLocalSize, fp);
+#endif
 
 			MD5Update(&context, pMem, dwLocalSize);
 			dwSize -= dwLocalSize;
@@ -3884,7 +3956,6 @@ int CCryPak::ComputeCachedPakCDR_CRC(const char* filename, bool useCryFile /*=tr
 {
 	uint32 offset = 0;
 	uint32 size = 0;
-	int retval = 0;
 
 	//get Central Directory Record position and length
 	gEnv->pCryPak->GetCachedPakCDROffsetSize(filename, offset, size);
@@ -4238,16 +4309,14 @@ void CCryPak::UnregisterFileAccessSink(ICryPakFileAcesssSink* pSink)
 //////////////////////////////////////////////////////////////////////////
 bool CCryPak::RemoveFile(const char* pName)
 {
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = AdjustFileName(pName, szFullPathBuf, 0);
-	uint32 dwAttr = CryGetFileAttributes(szFullPath);
+	CryPathString fullPath;
+	AdjustFileName(pName, fullPath, 0);
+	uint32 dwAttr = CryGetFileAttributes(fullPath);
 	bool ok = false;
 	if (dwAttr != INVALID_FILE_ATTRIBUTES && dwAttr != FILE_ATTRIBUTE_DIRECTORY)
 	{
-#if CRY_PLATFORM_WINDOWS
-		SetFileAttributes(szFullPath, FILE_ATTRIBUTE_NORMAL);
-#endif
-		ok = (remove(szFullPath) == 0);
+		CrySetFileAttributes(fullPath, FILE_ATTRIBUTE_NORMAL);
+		ok = (remove(fullPath) == 0);
 	}
 	return ok;
 }
@@ -4303,14 +4372,14 @@ static void Deltree(const char* szFolder, bool bRecurse)
 //////////////////////////////////////////////////////////////////////////
 bool CCryPak::RemoveDir(const char* pName, bool bRecurse)
 {
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = AdjustFileName(pName, szFullPathBuf, 0);
+	CryPathString fullPath;
+	AdjustFileName(pName, fullPath, 0);
 
 	bool ok = false;
-	uint32 dwAttr = CryGetFileAttributes(szFullPath);
+	uint32 dwAttr = CryGetFileAttributes(fullPath);
 	if (dwAttr == FILE_ATTRIBUTE_DIRECTORY)
 	{
-		Deltree(szFullPath, bRecurse);
+		Deltree(fullPath, bRecurse);
 		ok = true;
 	}
 	return ok;
@@ -4335,11 +4404,9 @@ void CCryPak::SetLog(IMiniLog* pLog)
 {
 	m_pLog = pLog;
 
-	std::vector<string>::iterator stringVecIt;
-	for (stringVecIt = m_arrMods.begin(); stringVecIt != m_arrMods.end(); ++stringVecIt)
+	for (const auto &mod : m_arrMods)
 	{
-		string& sMOD = *stringVecIt;
-		m_pLog->Log("Added MOD directory <%s> to CryPak", sMOD.c_str());
+		m_pLog->Log("Added MOD directory <%s> to CryPak", mod.path.c_str());
 	}
 }
 
@@ -4420,17 +4487,7 @@ void CCryPak::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 			m_fFileAcessTime = 0;
 		}
 		break;
-
-	case ESYSTEM_EVENT_GAME_POST_INIT:
-		break;
-
-	case ESYSTEM_EVENT_LEVEL_LOAD_PREPARE:
-		break;
-
-	case ESYSTEM_EVENT_LEVEL_PRECACHE_START:
-		break;
-
-	case ESYSTEM_EVENT_LEVEL_PRECACHE_END:
+	default: 
 		break;
 	}
 
@@ -4439,16 +4496,16 @@ void CCryPak::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 // return offset in pak file (ideally has to return offset on DVD)
 uint64 CCryPak::GetFileOffsetOnMedia(const char* sFilename)
 {
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = AdjustFileName(sFilename, szFullPathBuf, FOPEN_HINT_QUIET);
+	CryPathString fullPath;
+	AdjustFileName(sFilename, fullPath, FOPEN_HINT_QUIET);
 
-	assert(szFullPath);
-	if (!szFullPath)
+	assert(!fullPath.empty());
+	if (fullPath.empty())
 		return 0;
 
 	ZipDir::CachePtr pZip = 0;
 	unsigned int nArchiveFlags;
-	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(szFullPath, nArchiveFlags, &pZip, false);
+	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(fullPath, nArchiveFlags, &pZip, false);
 	if (!pFileEntry)
 	{
 		return 0;
@@ -4458,12 +4515,12 @@ uint64 CCryPak::GetFileOffsetOnMedia(const char* sFilename)
 
 EStreamSourceMediaType CCryPak::GetFileMediaType(const char* szName)
 {
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = gEnv->pCryPak->AdjustFileName(szName, szFullPathBuf, ICryPak::FOPEN_HINT_QUIET);
+	CryPathString fullPath;
+	AdjustFileName(szName, fullPath, ICryPak::FOPEN_HINT_QUIET);
 
 	ZipDir::CachePtr pZip = 0;
 	unsigned int archFlags;
-	ZipDir::FileEntry* pFileEntry = FindPakFileEntry(szFullPath, archFlags, &pZip, false);
+	FindPakFileEntry(fullPath, archFlags, &pZip, false);
 
 	return GetMediaType(pZip, archFlags);
 }
@@ -4503,9 +4560,9 @@ ICustomMemoryHeap* CCryPak::GetInMemoryPakHeap()
 bool CCryPak::SetPacksAccessible(bool bAccessible, const char* pWildcard, unsigned nFlags)
 {
 	__finddata64_t fd;
-	char cWorkBuf[g_nMaxPath];
-	const char* cWork = AdjustFileName(pWildcard, cWorkBuf, nFlags);
-	intptr_t h = _findfirst64(cWork, &fd);
+	CryPathString workPath;
+	AdjustFileName(pWildcard, workPath, nFlags);
+	intptr_t h = _findfirst64(workPath, &fd);
 	string strDir = PathUtil::GetParentDirectory(pWildcard);
 	if (h != -1)
 	{
@@ -4522,13 +4579,13 @@ bool CCryPak::SetPacksAccessible(bool bAccessible, const char* pWildcard, unsign
 
 bool CCryPak::SetPackAccessible(bool bAccessible, const char* pName, unsigned nFlags)
 {
-	char szZipPathBuf[g_nMaxPath];
-	const char* szZipPath = AdjustFileName(pName, szZipPathBuf, nFlags);
+	CryPathString zipPath;
+	AdjustFileName(pName, zipPath, nFlags);
 
 	AUTO_MODIFYLOCK(m_csZips);
 	for (ZipArray::iterator it = m_arrZips.begin(); it != m_arrZips.end(); ++it)
 	{
-		if (!stricmp(szZipPath, it->GetFullPath()))
+		if (!stricmp(zipPath, it->GetFullPath()))
 		{
 			return it->pArchive->SetPackAccessible(bAccessible);
 		}
@@ -4539,7 +4596,7 @@ bool CCryPak::SetPackAccessible(bool bAccessible, const char* pName, unsigned nF
 
 void CCryPak::SetPacksAccessibleForLevel(const char* sLevelName)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	IPlatformOS* pPlatform = gEnv->pSystem->GetPlatformOS();
 
 	AUTO_MODIFYLOCK(m_csZips);
@@ -4606,10 +4663,10 @@ void CCryPak::CPakFileWidget::Update()
 
 bool CCryPak::ForEachArchiveFolderEntry(const char* szArchivePath, const char* szFolderPath, const ArchiveEntrySinkFunction& callback)
 {
-	char szFullPathBuf[CCryPak::g_nMaxPath];
-	const char* szFullPath = AdjustFileName(szArchivePath, szFullPathBuf, FLAGS_NEVER_IN_PAK);
+	CryPathString fullPath;
+	AdjustFileName(szArchivePath, fullPath, FLAGS_NEVER_IN_PAK);
 
-	ICryArchive* pArchive = FindArchive(szFullPath);
+	ICryArchive* pArchive = FindArchive(fullPath);
 	if (!pArchive)
 	{
 		return false; // archive node found
@@ -4643,7 +4700,7 @@ bool CCryPak::ForEachArchiveFolderEntry(const char* szArchivePath, const char* s
 	{
 		ZipDir::FindFile fd(pZip);
 		ZipDir::FileEntry* pFileEntry = nullptr;
-		for (fd.FindFirst(szFolderPath); pFileEntry = fd.GetFileEntry(); fd.FindNext())
+		for (fd.FindFirst(szFolderPath); (pFileEntry = fd.GetFileEntry()) != nullptr; fd.FindNext())
 		{
 			const char* szFname = fd.GetFileName();
 			if (szFname[0] == '\0')
@@ -4660,4 +4717,12 @@ bool CCryPak::ForEachArchiveFolderEntry(const char* szArchivePath, const char* s
 		}
 	}
 	return true;
+}
+
+void CCryPak::PackDesc::GetMemoryUsage(ICrySizer* pSizer) const
+{
+	pSizer->AddObject(strBindRoot);
+	pSizer->AddObject(strFileName);
+	pSizer->AddObject(pArchive);
+	pSizer->AddObject(pZip);
 }

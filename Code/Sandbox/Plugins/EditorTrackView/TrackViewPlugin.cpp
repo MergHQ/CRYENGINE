@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "TrackViewPlugin.h"
 
@@ -90,12 +87,13 @@ void CTrackViewPlugin::OnOpenObjectContextMenu(CPopupMenuItem* pMenu, const CBas
 void CTrackViewPlugin::OnMenuOpenTrackView(CTrackViewAnimNode* pAnimNode)
 {
 	GetIEditor()->OpenView("Track View");
-	std::vector<CTrackViewWindow*> windows = CTrackViewWindow::GetTrackViewWindows();
+
+	// TODO
+	/*std::vector<CTrackViewWindow*> windows = CTrackViewWindow::GetTrackViewWindows();
 	for (CTrackViewWindow* pWindow : windows)
 	{
-		// TODO
-		//pWindow->ShowNode(pAnimNode);
-	}
+		pWindow->ShowNode(pAnimNode);
+	}*/
 }
 
 void CTrackViewPlugin::OnMove(const Vec3 targetPos, Vec3 sourcePos, bool bIsCopy)
@@ -140,4 +138,3 @@ void CTrackViewPlugin::OnMove(const Vec3 targetPos, Vec3 sourcePos, bool bIsCopy
 		}
 	}
 }
-

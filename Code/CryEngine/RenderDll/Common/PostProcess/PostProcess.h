@@ -1,17 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   PostProcess.h : Post processing techniques base interface
-
-   Revision history:
-* 18/06/2005: Re-organized (to minimize code dependencies/less annoying compiling times)
-* 23/02/2005: Re-factored/Converted to CryEngine 2.0
-* Created by Tiago Sousa
-
-   =============================================================================*/
-
-#ifndef _POSTPROCESS_H_
-#define _POSTPROCESS_H_
+#pragma once
 
 struct SRenderViewInfo;
 
@@ -303,15 +292,15 @@ private:
 	{
 		for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 		{
-			m_threadSafeData[i].pTexParam = NULL;
+			m_threadSafeData[i].pTexParam = nullptr;
 			m_threadSafeData[i].bSetThisFrame = false;
 		}
 	}
 
 	struct CParamTextureThreadSafeData
 	{
-		CTexture* pTexParam;
-		bool      bSetThisFrame;
+		_smart_ptr<CTexture> pTexParam;
+		bool                 bSetThisFrame;
 	};
 
 	CParamTextureThreadSafeData m_threadSafeData[RT_COMMAND_BUF_COUNT];
@@ -332,7 +321,7 @@ enum EPostProcessRenderFlag
 class CPostEffect
 {
 public:
-	CPostEffect() : m_pActive(0), /*m_nID(ePFX_DefaultID),*/ m_nRenderFlags(PSP_UPDATE_BACKBUFFER)
+	CPostEffect() : m_nRenderFlags(PSP_UPDATE_BACKBUFFER), m_pActive(0) /*, m_nID(ePFX_DefaultID),*/
 	{
 	}
 
@@ -342,17 +331,17 @@ public:
 	}
 
 	// Initialize post processing technique - device access allowed (queries, ...)
-	virtual int  Initialize()      { return 1; }
+	virtual int  Init()                                                                                                   { return 1; }
 	// Create all the resources for the pp effects which don't require the device (such as textures)
-	virtual int  CreateResources() { return 1; }
+	virtual int  CreateResources()                                                                                        { return 1; }
 	// Free resources used
-	virtual void Release()         {}
+	virtual void Release()                                                                                                {}
 	// Preprocess technique
-	virtual bool Preprocess(const SRenderViewInfo& viewInfo)      { return IsActive(); }
+	virtual bool Preprocess(const SRenderViewInfo& viewInfo)                                                              { return IsActive(); }
 	// Some effects might require updating data/parameters, etc
-	virtual void Update()          {};
+	virtual void Update()                                                                                                 {}
 	// Render technique
-	virtual void Render() = 0;
+	virtual void Execute() = 0;
 	// Reset technique state to default
 	virtual void Reset(bool bOnSpecChange = false) = 0;
 	// release resources when required
@@ -361,7 +350,7 @@ public:
 	// Add render element/object to post process (use for custom geometry)
 	virtual void AddRE(const CRenderElement* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo) {}
 	// release resources when required
-	virtual void OnBeginFrame(const SRenderingPassInfo& passInfo)                                                                            {}
+	virtual void OnBeginFrame(const SRenderingPassInfo& passInfo)                                                                          {}
 
 	// Get technique render flags
 	int GetRenderFlags() const
@@ -388,7 +377,7 @@ public:
 	}
 
 public:
-	CPostEffectContext* GetCurrentContext() { return m_pCurrentContext; }
+	CPostEffectContext* GetCurrentContext()                      { return m_pCurrentContext; }
 	void                SetCurrentContext(CPostEffectContext* p) { m_pCurrentContext = p; }
 
 protected:
@@ -430,7 +419,7 @@ class CPostEffectsMgr;
 static CPostEffectsMgr* PostEffectMgr();
 
 // Post process effects manager
-class CPostEffectsMgr
+class CPostEffectsMgr : public ISyncMainWithRenderListener
 {
 public:
 	CPostEffectsMgr()
@@ -462,10 +451,15 @@ public:
 		m_activeEffectsDebug.reserve(16);
 		m_activeParamsDebug.reserve(32);
 #endif
+		if (gEnv && gEnv->pRenderer)
+			gEnv->pRenderer->RegisterSyncWithMainListener(this);
 	}
 
 	virtual ~CPostEffectsMgr()
 	{
+		if (gEnv && gEnv->pRenderer)
+			gEnv->pRenderer->RemoveSyncWithMainListener(this);
+
 		Release();
 	}
 
@@ -486,7 +480,7 @@ public:
 	// release resources when required
 	void OnBeginFrame(const SRenderingPassInfo& passInfo);
 	// Sync main thread post effect data with render thread post effect data
-	void SyncMainWithRender();
+	void SyncMainWithRender() final;
 
 	// Get techniques list
 	CPostEffectVec& GetEffects()
@@ -684,7 +678,7 @@ struct SContainerPostEffectInitialize
 	{
 		if (pObj)
 		{
-			pObj->Initialize();
+			pObj->Init();
 		}
 	}
 };
@@ -741,5 +735,3 @@ struct SContainerPostEffectOnBeginFrame
 			pObj->OnBeginFrame(localPassInfo);
 	}
 };
-
-#endif

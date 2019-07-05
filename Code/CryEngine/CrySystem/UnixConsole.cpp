@@ -15,6 +15,7 @@
 #include "StdAfx.h"
 #include "System.h"
 #include "UnixConsole.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CryThreading/IThreadManager.h>
 
@@ -133,35 +134,14 @@ class CUNIXConsoleSignalHandler
 };
 
 CUNIXConsole::CUNIXConsole()
-	: m_HistoryIndex(-1)
-	, m_PromptResponseChars{0}
-	, m_PromptResponse(0)
-	, m_pSystem(NULL)
-	, m_pConsole(NULL)
-	, m_pTimer(NULL)
-	, m_OnUpdateCalled(false)
-	, m_LastUpdateTime(0.0f)
-	, m_svMap(NULL)
-	, m_svGameRules(NULL)
-	, m_Width(~0)
+	: m_Width(~0)
 	, m_Height(~0)
 	, m_HeaderHeight(1)
 	, m_StatusHeight(1)
 	, m_CmdHeight(2)
 	, m_Color(DEFAULT_COLOR)
 	, m_DefaultColorPair(-1)
-	, m_EnableColor(true)
-	, m_WindowResized(false)
-	, m_OnShutdownCalled(false)
-	, m_Initialized(false)
-	, m_RequireDedicatedServer(false)
 	, m_ScrollUp(0)
-	, m_ColorPair{0}
-	, m_pInputThread(NULL)
-	, m_CursorPosition(0)
-	, m_ScrollPosition(0)
-	, m_fsMode(false)
-	, m_bShowConsole(true)
 {}
 
 CUNIXConsole::~CUNIXConsole()
@@ -544,8 +524,8 @@ unsigned CUNIXConsole::GetLineLength(const string& line)
 	unsigned length = 0;
 
 	for (string::const_iterator it = line.begin(), itEnd = line.end();
-	     it != itEnd;
-	     ++it)
+		 it != itEnd;
+		 ++it)
 	{
 		char c = *it;
 		if (c == 1)
@@ -772,12 +752,7 @@ void CUNIXConsole::KeyEnter()
 
 	if (pushCommand)
 	{
-		CSystem* pSystem = static_cast<CSystem*>(gEnv->pSystem);
-		#if defined(CVARS_WHITELIST)
-		ICVarsWhitelist* pCVarsWhitelist = pSystem->GetCVarsWhiteList();
-		bool execute = (pCVarsWhitelist) ? pCVarsWhitelist->IsWhiteListed(m_InputLine, false) : true;
-		if (execute)
-		#endif // defined(CVARS_WHITELIST)
+		if (gEnv->pSystem->IsCVarWhitelisted(m_InputLine.c_str(), false))
 		{
 			m_CommandQueue.push_back(m_InputLine);
 		}
@@ -888,8 +863,6 @@ void CUNIXConsole::KeyEnd(bool ctrl)
 	assert(IsLocked());
 	if (ctrl)
 	{
-		const int logHeight = GetLogHeight();
-		int maxUp = m_LineBuffer.size() - logHeight;
 		if (m_ScrollUp != 0)
 		{
 			m_ScrollUp = 0;
@@ -953,7 +926,7 @@ void CUNIXConsole::KeyDeleteWord()
 		   {
 		   wordIndex = m_InputLine.find_last_not_of(" ", wordIndex);
 		   if (wordIndex != string::npos)
-		    wordIndex += 1;
+			wordIndex += 1;
 		   }
 		   if (wordIndex == string::npos)
 		   {
@@ -1037,7 +1010,7 @@ void CUNIXConsole::KeyPgUp(bool ctrl)
 
 void CUNIXConsole::KeyPgDown(bool ctrl)
 {
-	const int logHeight = GetLogHeight();
+	// const int logHeight = GetLogHeight();
 	// int logStep = logHeight - 2;
 	int logStep = ctrl ? 10 : 1;
 	int prevScrollUp = m_ScrollUp;
@@ -1492,8 +1465,8 @@ void CUNIXConsole::DrawCmd(bool cursorOnly)
 
 	// If the window is too small, then don't draw anything.
 	if (IsTooSmall()
-	    || m_CmdHeight == 0
-	    || m_Width < promptWidth + moreLeftWidth + moreRightWidth)
+		|| m_CmdHeight == 0
+		|| m_Width < promptWidth + moreLeftWidth + moreRightWidth)
 		return;
 
 	if (!m_Prompt.empty())
@@ -1538,8 +1511,8 @@ void CUNIXConsole::DrawCmd(bool cursorOnly)
 		if (m_ScrollPosition > 0)
 		{
 			for (int i = m_ScrollPosition + strlen(UNIXConsole_MORE_LEFT);
-			     i > 0;
-			     --i, ++it)
+				 i > 0;
+				 --i, ++it)
 				;
 		}
 		attrset(A_NORMAL);
@@ -1694,8 +1667,8 @@ void CUNIXConsole::Print(const char* line)
 	// It it is a prefix, then the output is added to the last line sent to the
 	// sink.
 	if (!firstCall
-	    && lineLength > lastLine.size()
-	    && !strncmp(line, lastLine.c_str(), lastLine.size()))
+		&& lineLength > lastLine.size()
+		&& !strncmp(line, lastLine.c_str(), lastLine.size()))
 	{
 		// Line continued.
 		lineOffset = lastLine.size();
@@ -1812,7 +1785,7 @@ void CUNIXConsole::OnInit(ISystem* pSystem)
 
 	Unlock();
 
-		#if defined(NCURSES)
+#if defined(NCURSES)
 	// Setup the signal handler.
 	struct sigaction action;
 	memset(&action, 0, sizeof action);
@@ -1820,12 +1793,13 @@ void CUNIXConsole::OnInit(ISystem* pSystem)
 	sigfillset(&action.sa_mask);
 	CUNIXConsoleSignalHandler::m_pUNIXConsole = this;
 	sigaction(SIGWINCH, &action, NULL);
+	sigaction(SIGHUP, &action, NULL);
 	sigset_t mask;
-	memset(&mask, 0, sizeof mask);
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGWINCH);
+	sigaddset(&mask, SIGHUP);
 	sigprocmask(SIG_UNBLOCK, &mask, NULL);
-		#endif
+#endif
 }
 
 void CUNIXConsole::OnShutdown()
@@ -1924,21 +1898,21 @@ void CUNIXConsole::GetMemoryUsage(ICrySizer* pSizer)
 	size += m_HeaderString.size();
 	size += m_LineBuffer.size() * sizeof(string);
 	for (TLineBuffer::const_iterator it = m_LineBuffer.begin(),
-	     itEnd = m_LineBuffer.end();
-	     it != itEnd;
-	     ++it)
+		 itEnd = m_LineBuffer.end();
+		 it != itEnd;
+		 ++it)
 		size += it->size();
 	size += m_CommandQueue.size() * sizeof(string);
 	for (TCommandQueue::const_iterator it = m_CommandQueue.begin(),
-	     itEnd = m_CommandQueue.end();
-	     it != itEnd;
-	     ++it)
+		 itEnd = m_CommandQueue.end();
+		 it != itEnd;
+		 ++it)
 		size += it->size();
 	size += m_CommandHistory.size() * sizeof(string);
 	for (TCommandHistory::const_iterator it = m_CommandHistory.begin(),
-	     itEnd = m_CommandHistory.end();
-	     it != itEnd;
-	     ++it)
+		 itEnd = m_CommandHistory.end();
+		 it != itEnd;
+		 ++it)
 		size += it->size();
 	if (m_pInputThread != NULL)
 		size += sizeof *m_pInputThread;
@@ -1982,6 +1956,12 @@ void CUNIXConsoleInputThread::ThreadEntry()
 {
 		#if !CRY_PLATFORM_WINDOWS
 	fd_set rdfds;
+
+	// If stdout is not a tty, we won't be accepting input, so just end the thread
+	if (!isatty(fileno(stdout)))
+	{
+		return;
+	}
 		#endif
 	bool interrupted = false;
 
@@ -2229,6 +2209,9 @@ void CUNIXConsoleSignalHandler::Handler(int signum)
 		m_pUNIXConsole->m_WindowResized = true;
 		m_pUNIXConsole->m_pInputThread->Interrupt();
 		break;
+	case SIGHUP:
+		gEnv->pSystem->Quit();
+		break;
 	default:
 		break;
 	}
@@ -2358,10 +2341,10 @@ void CSyslogStats::Update(float srvRate, int numPlayers, INetNub::SStatistics& n
 		if ((m_syslogCurrTime - m_syslogStartTime).GetMilliSeconds() > m_syslog_period)
 		{
 			syslog(LOG_NOTICE, "rate:%.1f/s, players:%i, up:%.1fk/s, dn:%.1fk/s",
-			       srvRate,
-			       numPlayers,
-			       netNubStats.bandwidthUp / 1000.0f,
-			       netNubStats.bandwidthDown / 1000.0f);
+				   srvRate,
+				   numPlayers,
+				   netNubStats.bandwidthUp / 1000.0f,
+				   netNubStats.bandwidthDown / 1000.0f);
 
 			m_syslogStartTime = m_syslogCurrTime;
 		}

@@ -16,6 +16,7 @@
 #include "SquadManager.h"
 
 #include <CryCore/TypeInfo_impl.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "Utility/CryWatch.h"
 #include <CryString/StringUtils.h>
@@ -30,7 +31,9 @@
 #define SQUADMGR_CREATE_SQUAD_RETRY_TIMER 10.f
 
 static int sm_enable = 0;
+#if !defined(_RELEASE)
 static int sm_debug = 0;
+#endif
 static float sm_inviteJoinTimeout = 2.f;
 
 //---------------------------------------
@@ -627,7 +630,7 @@ void CSquadManager::CleanUpSession()
 	m_requestedGameSessionId = CrySessionInvalidID;
 	m_bSessionStarted = false;
 
-	CRY_ASSERT_MESSAGE(m_nameList.Size() <= 1, "[tlh] SANITY FAIL! i thought all remote connections should've been removed by the LeaveUserCallback by this point, so it should only be me in this list...? need rethink.");
+	CRY_ASSERT(m_nameList.Size() <= 1, "[tlh] SANITY FAIL! i thought all remote connections should've been removed by the LeaveUserCallback by this point, so it should only be me in this list...? need rethink.");
 	m_nameList.Clear();
 
 	// Make sure we tell the GameLobby that we've left our current squad (need to do this after ensuring that the names list is empty
@@ -819,8 +822,6 @@ void CSquadManager::UserPacketCallback(UCryLobbyEventData eventData, void* userP
 
 		if (eventData.pUserPacketData->session != CrySessionInvalidHandle)
 		{
-			const CrySessionHandle lobbySessionHandle = g_pGame->GetGameLobby()->GetCurrentSessionHandle();
-
 			if (eventData.pUserPacketData->session == pSquadManager->m_squadHandle)
 			{
 				pSquadManager->ReadSquadPacket(&eventData.pUserPacketData);
@@ -876,8 +877,11 @@ void CSquadManager::SendSquadPacket(GameUserPacketDefinitions packetType, SCryMa
 			if (packet.CreateWriteBuffer(MaxBufferSize))
 			{
 				packet.StartWrite(packetType, true);
+#if defined(USE_CRY_ASSERT)
 				ECryLobbyError error = pMatchmaking->WriteSessionIDToPacket(m_currentGameSessionId, &packet);
-
+#else
+				pMatchmaking->WriteSessionIDToPacket(m_currentGameSessionId, &packet);
+#endif
 				bool bIsMatchmakingGame = false;
 
 				CGameLobby* pGameLobby = g_pGame->GetGameLobby();
@@ -973,16 +977,20 @@ void CSquadManager::SendSquadPacket(GameUserPacketDefinitions packetType, SCryMa
 			if (packet.CreateWriteBuffer(MaxBufferSize))
 			{
 				packet.StartWrite(packetType, true);
+#if defined(USE_CRY_ASSERT)
 				ECryLobbyError error = pMatchmaking->WriteSessionIDToPacket(m_inviteSessionId, &packet);
 				CRY_ASSERT(error == eCLE_Success);
+#else
+				pMatchmaking->WriteSessionIDToPacket(m_inviteSessionId, &packet);
+#endif
 			}
 			break;
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(packet.GetWriteBuffer() != NULL, "Haven't written any data");
-	CRY_ASSERT_MESSAGE(packet.GetWriteBufferPos() == packet.GetReadBufferSize(), "Packet size doesn't match data size");
-	CRY_ASSERT_MESSAGE(packet.GetReliable(), "Unreliable packet sent");
+	CRY_ASSERT(packet.GetWriteBuffer() != NULL, "Haven't written any data");
+	CRY_ASSERT(packet.GetWriteBufferPos() == packet.GetReadBufferSize(), "Packet size doesn't match data size");
+	CRY_ASSERT(packet.GetReliable(), "Unreliable packet sent");
 
 	if (m_squadLeader)
 	{
@@ -1006,7 +1014,7 @@ void CSquadManager::ReadSquadPacket(SCryLobbyUserPacketData** ppPacketData)
 {
 	SCryLobbyUserPacketData* pPacketData = (*ppPacketData);
 	CCryLobbyPacket* pPacket = pPacketData->pPacket;
-	CRY_ASSERT_MESSAGE(pPacket->GetReadBuffer() != NULL, "No packet data");
+	CRY_ASSERT(pPacket->GetReadBuffer() != NULL, "No packet data");
 
 	uint32 packetType = pPacket->StartRead();
 	CryLog("CSquadManager::ReadSquadPacket() packetType = '%d'", packetType);
@@ -1201,7 +1209,7 @@ void CSquadManager::ReadSquadPacket(SCryLobbyUserPacketData** ppPacketData)
 		break;
 	}
 
-	CRY_ASSERT_MESSAGE(pPacket->GetReadBufferSize() == pPacket->GetReadBufferPos(), "Haven't read all the data");
+	CRY_ASSERT(pPacket->GetReadBufferSize() == pPacket->GetReadBufferPos(), "Haven't read all the data");
 }
 
 //---------------------------------------
@@ -1220,7 +1228,7 @@ void CSquadManager::OnSquadLeaderChanged()
 		if (hostIdx != SSessionNames::k_unableToFind)
 		{
 			CryUserID hostUserId = m_nameList.m_sessionNames[hostIdx].m_userId;
-			CRY_ASSERT_MESSAGE(hostUserId.IsValid(), "Failed to find a valid hostUserId, probably attempting to use squads on a LAN!");
+			CRY_ASSERT(hostUserId.IsValid(), "Failed to find a valid hostUserId, probably attempting to use squads on a LAN!");
 			if (hostUserId.IsValid())
 			{
 				m_squadLeaderId = hostUserId;

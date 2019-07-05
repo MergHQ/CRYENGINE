@@ -114,6 +114,8 @@ private:
 	EntityId m_targetID;
 	float m_searchSpotTimeout;
 	std::vector<EntityId> m_enteredEntities;
+
+	const float m_actorFov = 120.0f;
 };
 
 class SearchModule : public IGameAIModule

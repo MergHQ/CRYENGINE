@@ -26,7 +26,7 @@ QToolWindowDropTarget::~QToolWindowDropTarget()
 		delete m_pixmap;
 }
 
-void QToolWindowDropTarget::paintEvent(QPaintEvent *paintEvent)
+void QToolWindowDropTarget::paintEvent(QPaintEvent* paintEvent)
 {
 	QPainter painter(this);
 	painter.drawPixmap(0, 0, *m_pixmap);
@@ -84,7 +84,7 @@ QToolWindowAreaTarget QToolWindowDragHandlerDropTargets::getTargetFromPosition(I
 
 		if (area && result.reference == QToolWindowAreaReference::Floating)
 		{
-			QPoint& tabPos = area->mapCombineDropAreaFromGlobal(QCursor::pos());
+			QPoint tabPos = area->mapCombineDropAreaFromGlobal(QCursor::pos());
 			if (area->combineAreaRect().contains(tabPos))
 			{
 				result.reference = QToolWindowAreaReference::Combine;
@@ -114,7 +114,7 @@ QToolWindowAreaTarget QToolWindowDragHandlerDropTargets::finishDrag(QList<QWidge
 
 		if (result.reference == QToolWindowAreaReference::Floating)
 		{
-			QPoint& tabPos = destination->mapCombineDropAreaFromGlobal(QCursor::pos());
+			QPoint tabPos = destination->mapCombineDropAreaFromGlobal(QCursor::pos());
 			if (destination->combineAreaRect().contains(tabPos))
 			{
 				result.reference = QToolWindowAreaReference::Combine;

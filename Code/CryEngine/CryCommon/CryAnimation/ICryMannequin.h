@@ -19,7 +19,9 @@
 
 #include <CryCore/BitFiddling.h>
 #include <CryMath/MTPseudoRandom.h>
+#include <CryMath/LCGRandom.h>
 #include "ICryMannequinTagDefs.h"
+#include "IAttachment.h"
 
 struct IMannequinEditorManager;
 struct IMannequinGameListener;
@@ -394,8 +396,6 @@ struct SFragmentData
 	};
 
 	SFragmentData()
-		: isOneShot(false)
-		, blendOutDuration(0.0f)
 	{
 		for (uint32 p = 0; p < PART_TOTAL; p++)
 		{
@@ -404,12 +404,12 @@ struct SFragmentData
 		}
 	}
 
-	float                       blendOutDuration;
+	float                       blendOutDuration = 0.0f;
 	DynArray<TAnimClipSequence> animLayers;
 	DynArray<TProcClipSequence> procLayers;
 	float                       duration[PART_TOTAL];
 	EClipType                   transitionType[PART_TOTAL];
-	bool                        isOneShot;
+	bool                        isOneShot = false;
 };
 
 class CFragment
@@ -512,11 +512,11 @@ private:
 //---------------------------------------------------------------------------------------------------------
 struct SFragmentBlend
 {
-	enum EFlags
+	enum EFlags : uint8
 	{
-		Cyclic = BIT(0),
-		CycleLocked = BIT(1),
-		ExitTransition = BIT(2)
+		Cyclic = BIT8(0),
+		CycleLocked = BIT8(1),
+		ExitTransition = BIT8(2)
 	};
 
 	SFragmentBlend()
@@ -553,10 +553,10 @@ typedef TTagSortedList<ActionScopes> TTagListActionScope;
 
 struct SFragmentDef
 {
-	enum EFlags
+	enum EFlags : uint8
 	{
-		PERSISTENT = BIT(0),
-		AUTO_REINSTALL_BEST_MATCH = BIT(1)
+		PERSISTENT = BIT8(0),
+		AUTO_REINSTALL_BEST_MATCH = BIT8(1)
 	};
 
 	SFragmentDef()
@@ -754,7 +754,7 @@ struct IMannequinListener
 {
 	virtual ~IMannequinListener() {}
 
-	virtual void OnEvent(const SMannHistoryItem& historyItem, const class IActionController& actionController) = 0;
+	virtual void OnEvent(const SMannHistoryItem& historyItem, const struct IActionController& actionController) = 0;
 };
 
 struct SMannequinErrorReport
@@ -833,12 +833,12 @@ struct SBlendQueryResult
 
 struct SBlendQuery
 {
-	enum EFlags
+	enum EFlags : uint32
 	{
-		fromInstalled = BIT(0),
-		toInstalled = BIT(1),
-		higherPriority = BIT(2),
-		noTransitions = BIT(3)
+		fromInstalled = BIT32(0),
+		toInstalled = BIT32(1),
+		higherPriority = BIT32(2),
+		noTransitions = BIT32(3)
 	};
 
 	SBlendQuery()
@@ -941,9 +941,8 @@ struct SMiniSubADB
 typedef void(*MannErrorCallback)(const SMannequinErrorReport& errorReport, void* _context);
 typedef void(*MannAssetCallback)(const SAnimAssetReport& assetReport, void* _context);
 
-class IAnimationDatabase
+struct IAnimationDatabase
 {
-public:
 	virtual ~IAnimationDatabase() {}
 
 	virtual bool        Validate(const struct IAnimationSet* animSet, MannErrorCallback errorCallback = NULL, MannErrorCallback warningCallback = NULL, void* errorCallbackContext = NULL) const = 0;
@@ -988,9 +987,8 @@ public:
 	virtual void                  QueryUsedTags(const FragmentID fragmentID, const SFragTagState& filter, SFragTagState& usedTags) const = 0;
 };
 
-class IAnimationDatabaseManager
+struct IAnimationDatabaseManager
 {
-public:
 	virtual ~IAnimationDatabaseManager() {}
 
 	virtual int                       GetTotalDatabases() const = 0;
@@ -1022,7 +1020,7 @@ enum EPriorityComparison
 	Higher
 };
 
-class IActionController;
+struct IActionController;
 class IAction;
 typedef _smart_ptr<IAction> IActionPtr;
 class CAnimation;
@@ -1080,13 +1078,13 @@ public:
 	bool GetParam(uint32 paramNameCRC, PODTYPE& value) const;
 };
 
-enum EActionControllerFlags
+enum EActionControllerFlags : uint32
 {
-	AC_PausedUpdate = BIT(0),
-	AC_DebugDraw = BIT(1),
-	AC_DumpState = BIT(2),
-	AC_IsInUpdate = BIT(3),
-	AC_NoTransitions = BIT(4),
+	AC_PausedUpdate = BIT32(0),
+	AC_DebugDraw = BIT32(1),
+	AC_DumpState = BIT32(2),
+	AC_IsInUpdate = BIT32(3),
+	AC_NoTransitions = BIT32(4),
 };
 
 enum EActionFailure
@@ -1200,9 +1198,8 @@ private:
 };
 
 //! Main interface into an action controller, managing fragment playback on a specific entity
-class IActionController
+struct IActionController
 {
-public:
 	virtual void OnEvent(const SGameObjectEvent& event) = 0;
 	//! Should be called when the specified character encounters an animation event
 	//! \par Example
@@ -1248,11 +1245,11 @@ public:
 	virtual const SAnimationContext& GetContext() const = 0;
 
 	virtual void                     Pause() = 0;
-	enum EResumeFlags
+	enum EResumeFlags : uint32
 	{
-		ERF_RestartAnimations = BIT(0),
-		ERF_RestoreLoopingAnimationTime = BIT(1),
-		ERF_RestoreNonLoopingAnimationTime = BIT(2),
+		ERF_RestartAnimations = BIT32(0),
+		ERF_RestoreLoopingAnimationTime = BIT32(1),
+		ERF_RestoreNonLoopingAnimationTime = BIT32(2),
 
 		ERF_Default = ERF_RestartAnimations | ERF_RestoreLoopingAnimationTime | ERF_RestoreNonLoopingAnimationTime
 	};
@@ -1386,32 +1383,27 @@ public:
 	// FragmentIsOneShot			- This action is a one-shot & so will end itself at the end of the sequence
 	// Stopping								- This action is marked for stopping
 	//---------------------------------------------------------------------------------------------------------
-	enum EFlags
+	enum EFlags : uint32
 	{
-		BlendOut = BIT(0),
-		NoAutoBlendOut = BIT(1),
-		Interruptable = BIT(2),
-		Installing = BIT(4),
-		Started = BIT(5),
-		Requeued = BIT(6),
-		TrumpSelf = BIT(7),
-		Transitioning = BIT(8),
-		PlayingFragment = BIT(9),
-		TransitioningOut = BIT(10),
-		TransitionPending = BIT(11),
-		FragmentIsOneShot = BIT(12),
-		Stopping = BIT(13),
+		BlendOut = BIT32(0),
+		NoAutoBlendOut = BIT32(1),
+		Interruptable = BIT32(2),
+		Installing = BIT32(4),
+		Started = BIT32(5),
+		Requeued = BIT32(6),
+		TrumpSelf = BIT32(7),
+		Transitioning = BIT32(8),
+		PlayingFragment = BIT32(9),
+		TransitioningOut = BIT32(10),
+		TransitionPending = BIT32(11),
+		FragmentIsOneShot = BIT32(12),
+		Stopping = BIT32(13),
 		PlaybackStateMask = (Transitioning | PlayingFragment | TransitioningOut)
 	};
 
 	virtual ~IAction()
 	{
-#ifndef _RELEASE
-		if ((m_flags & Started))
-		{
-			__debugbreak();
-		}
-#endif //_RELEASE
+		CRY_ASSERT((m_flags & Started) == 0);
 	}
 
 	IAction(int priority, FragmentID fragmentID = FRAGMENT_ID_INVALID, const TagState& fragTags = TAG_STATE_EMPTY, uint32 flags = 0, ActionScopes scopeMask = 0, uint32 userToken = 0)
@@ -1506,12 +1498,12 @@ public:
 	}
 	const IScope& GetRootScope() const
 	{
-		CRY_ASSERT_MESSAGE(m_rootScope, "Action not installed or queued into actionStack!");
+		CRY_ASSERT(m_rootScope, "Action not installed or queued into actionStack!");
 		return *m_rootScope;
 	}
 	IScope& GetRootScope()
 	{
-		CRY_ASSERT_MESSAGE(m_rootScope, "Action not installed or queued into actionStack!");
+		CRY_ASSERT(m_rootScope, "Action not installed or queued into actionStack!");
 		return *m_rootScope;
 	}
 	uint32 GetFlags() const
@@ -2273,8 +2265,6 @@ private:
 				const SAnimClip& animClip = sequence[j];
 				const int animID = piAnimationSet->GetAnimIDByCRC(animClip.animation.animRef.crc);
 				const uint32 filePathCRC = piAnimationSet->GetFilePathCRCByAnimID(animID);
-
-				const char* pAnimPath = piAnimationSet->GetFilePathByID(animID);
 
 				// CharacterManager needs the filePathCRC
 				m_animsCached.push_back(SCacheAnims(filePathCRC));

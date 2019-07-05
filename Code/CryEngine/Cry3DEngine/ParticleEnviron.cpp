@@ -285,8 +285,6 @@ void SWorldPhysEnviron::FinishUpdate()
 
 void SPhysEnviron::Update(SPhysEnviron const& envSource, AABB const& box, bool bIndoors, uint32 nFlags, bool bNonUniformAreas, const void* pObjectSkip)
 {
-	assert(envSource.IsCurrent());
-
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	Clear();
@@ -420,7 +418,7 @@ bool SPhysEnviron::PhysicsCollision(ray_hit& hit, Vec3 const& vStart, Vec3 const
 	if ((nEnvFlags & ~ENV_COLLIDE_PHYSICS & ENV_TERRAIN) && !pTestEntity && GetTerrain())
 	{
 		nEnvFlags &= ~ENV_TERRAIN;
-		CHeightMap::SRayTrace rt;
+		CTerrain::SRayTrace rt;
 		if (GetTerrain()->RayTrace(vStart, vStart + vMove, &rt))
 		{
 			if ((fMoveNorm = rt.vNorm * vMove) < 0.f)
@@ -670,4 +668,67 @@ IVisArea* SVisEnviron::GetClipVisArea(IVisArea* pVisAreaCam, AABB const& bb) con
 		}
 	}
 	return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Entity functions
+
+#include "CryParticleSystem/IParticles.h"
+#include "CryEntitySystem/IEntity.h"
+#include "CryEntitySystem/IEntitySystem.h"
+
+bool GetPhysicalVelocity(Velocity3& Vel, IEntity* pEnt, const Vec3& vPos)
+{
+	if (pEnt)
+	{
+		if (IPhysicalEntity* pPhysEnt = pEnt->GetPhysics())
+		{
+			pe_status_dynamics dyn;
+			if (pPhysEnt->GetStatus(&dyn))
+			{
+				Vel.vLin = dyn.v;
+				Vel.vRot = dyn.w;
+				Vel.vLin = Vel.VelocityAt(vPos - dyn.centerOfMass);
+				return true;
+			}
+		}
+		if (pEnt = pEnt->GetParent())
+			return GetPhysicalVelocity(Vel, pEnt, vPos);
+	}
+	return false;
+}
+
+bool UpdateTarget(ParticleTarget& target, IEntity* pEntity, const Vec3& vPos)
+{
+	// Set external target.
+	if (target.bPriority || !pEntity)
+		return false;
+
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	ParticleTarget targetNew;
+	for (IEntityLink* pLink = pEntity->GetEntityLinks(); pLink; pLink = pLink->next)
+	{
+		if (!stricmp(pLink->name, "Target") || !strnicmp(pLink->name, "Target-", 7))
+		{
+			if (IEntity* pTarget = gEnv->pEntitySystem->GetEntity(pLink->entityId))
+			{
+				targetNew.bTarget = true;
+				targetNew.vTarget = pTarget->GetPos();
+
+				Velocity3 Vel(ZERO);
+				GetPhysicalVelocity(Vel, pTarget, vPos);
+				targetNew.vVelocity = Vel.vLin;
+
+				AABB bb;
+				pTarget->GetLocalBounds(bb);
+				targetNew.fRadius = bb.GetRadius();
+				break;
+			}
+		}
+	}
+
+	bool changed = targetNew.bTarget != target.bTarget || targetNew.vTarget != target.vTarget;
+	target = targetNew;
+	return changed;
 }

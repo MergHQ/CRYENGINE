@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FacialEdContext_h__
-#define __FacialEdContext_h__
 #pragma once
 
 #include <CryAnimation/IFacialAnimation.h>
@@ -48,12 +46,13 @@ enum EFacialEdEvent
 //////////////////////////////////////////////////////////////////////////
 struct IFacialEdListener
 {
+	virtual ~IFacialEdListener() {}
 	virtual void OnFacialEdEvent(EFacialEdEvent event, IFacialEffector* pEffector, int nChannelCount = 0, IFacialAnimChannel** ppChannels = 0) = 0;
 };
 
-class IUndoLibraryChangeContext
+struct IUndoLibraryChangeContext
 {
-public:
+	virtual ~IUndoLibraryChangeContext() {}
 	virtual void OnLibraryUndo() = 0;
 };
 
@@ -62,9 +61,10 @@ enum SequenceChangeType
 	FE_SEQ_CHANGE_TOTAL,
 	FE_SEQ_CHANGE_SOUND_TIMES
 };
-class IUndoSequenceChangeContext
+
+struct IUndoSequenceChangeContext
 {
-public:
+	virtual ~IUndoSequenceChangeContext() {}
 	virtual void OnSequenceUndo(SequenceChangeType changeType) = 0;
 };
 
@@ -191,10 +191,10 @@ public:
 	IFacialEffectorsLibrary* GetLibrary();
 
 	void                     SetSequence(IFacialAnimSequence* pSequence);
-	IFacialAnimSequence*     GetSequence() { return m_pCurrentSequence; };
+	IFacialAnimSequence*     GetSequence() { return m_pCurrentSequence; }
 
 	void                     SetSequenceTime(float fTime);
-	float                    GetSequenceTime() { return m_fSequenceTime; };
+	float                    GetSequenceTime() { return m_fSequenceTime; }
 
 	void                     PlaySequence(bool bPlay);
 	bool                     IsPlayingSequence() const { return m_bPlaying; }
@@ -222,8 +222,6 @@ public:
 	void                     PasteExpressionFromClipboard();
 	string                   GetExpressionNameFromClipboard();
 	string                   GetExpressionNameFromDataSource(COleDataObject* dataObject);
-
-	float                    GetVideoLength();
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -255,9 +253,9 @@ public:
 		CheckMorphs(&handlerObject);
 	}
 
-	class IMorphCheckHandler
+	struct IMorphCheckHandler
 	{
-	public:
+		virtual ~IMorphCheckHandler() {}
 		virtual void HandleMorphError(const char* morphName) = 0;
 	};
 
@@ -296,8 +294,6 @@ protected:
 	typedef std::set<IFacialEffector*> EffectorSet;
 	template<typename H> void ForEachEffector(H& handler);
 	template<typename H> void ForEachEffectorRecurse(H& handler, IFacialEffector* pEffector, EffectorSet& visitedEffectors);
-
-	void                      RegisterClipboardFormats();
 
 	COleDataSource*           CreateExpressionNameDataSource(IFacialEffector* pEffector);
 	COleDataSource*           CreateChannelDescriptorDataSource(IFacialAnimChannel* pChannel);
@@ -339,8 +335,4 @@ private:
 
 public:
 	float m_fC3DScale;
-
 };
-
-#endif // __FacialEdContext_h__
-

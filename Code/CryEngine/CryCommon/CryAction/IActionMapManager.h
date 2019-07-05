@@ -12,19 +12,19 @@ struct SInputEvent;
 
 // Summary
 //   Enumeration all all the possible activation mode used for the actions
-enum EActionActivationMode // Value for onpress, onrelease, onhold must match EInputState
+enum EActionActivationMode : uint32 // Value for onpress, onrelease, onhold must match EInputState
 {
 	eAAM_Invalid   = 0,
-	eAAM_OnPress   = BIT(0),        // Used when the action key is pressed
-	eAAM_OnRelease = BIT(1),        // Used when the action key is released
-	eAAM_OnHold    = BIT(2),        // Used when the action key is held
-	eAAM_Always    = BIT(3),
+	eAAM_OnPress   = BIT32(0),        // Used when the action key is pressed
+	eAAM_OnRelease = BIT32(1),        // Used when the action key is released
+	eAAM_OnHold    = BIT32(2),        // Used when the action key is held
+	eAAM_Always    = BIT32(3),
 
 	// Special modifiers.
-	eAAM_Retriggerable = BIT(4),
-	eAAM_NoModifiers   = BIT(5),
-	eAAM_ConsoleCmd    = BIT(6),
-	eAAM_AnalogCompare = BIT(7),    // Used when analog compare op succeeds
+	eAAM_Retriggerable = BIT32(4),
+	eAAM_NoModifiers   = BIT32(5),
+	eAAM_ConsoleCmd    = BIT32(6),
+	eAAM_AnalogCompare = BIT32(7),    // Used when analog compare op succeeds
 
 };
 
@@ -89,13 +89,13 @@ enum EActionFilterType
 	eAFT_ActionFail,
 };
 
-enum EActionInputDevice
+enum EActionInputDevice : uint32
 {
 	eAID_Unknown       = 0,
-	eAID_KeyboardMouse = BIT(0),
-	eAID_XboxPad       = BIT(1),
-	eAID_PS4Pad        = BIT(2),
-	eAID_OculusTouch   = BIT(3),
+	eAID_KeyboardMouse = BIT32(0),
+	eAID_XboxPad       = BIT32(1),
+	eAID_PS4Pad        = BIT32(2),
+	eAID_OculusTouch   = BIT32(3),
 };
 
 struct SActionInputDeviceData

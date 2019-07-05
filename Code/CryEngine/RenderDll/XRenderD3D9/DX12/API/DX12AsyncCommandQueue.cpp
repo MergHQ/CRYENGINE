@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "DX12AsyncCommandQueue.hpp"
 #include "DX12CommandList.hpp"
-#include "DriverD3D.h"
 
 #ifdef DX12_LINKEDADAPTER
 	#include "Redirections/D3D12Device.inl"
@@ -60,7 +59,7 @@ void CAsyncCommandQueue::SPresentBackbuffer::Process(const STaskArgs& args)
 		result = WaitForSingleObjectEx(frameLatencyWaitableObject, 0, true);
 	}
 
-	if (Desc->Windowed && (Desc->Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING))
+	if (Desc->Windowed && (Desc->Flags & DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING) && !(Flags & DXGI_PRESENT_TEST))
 	{
 		Flags |= DXGI_PRESENT_ALLOW_TEARING;
 		SyncInterval = 0;

@@ -1,11 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __REPORT_H__
-#define __REPORT_H__
+#pragma once
 
-class IReportField
+struct IReportField
 {
-public:
 	virtual ~IReportField() {}
 
 	virtual const char* GetDescription() const = 0;
@@ -28,9 +26,8 @@ private:
 	string     m_description;
 };
 
-class IReportRecord
+struct IReportRecord
 {
-public:
 	virtual ~IReportRecord() {}
 	virtual int         GetFieldCount() const = 0;
 	virtual const char* GetFieldDescription(int fieldIndex) const = 0;
@@ -147,6 +144,3 @@ inline void CReport::Clear()
 		delete (*it);
 	m_records.clear();
 }
-
-#endif //__REPORT_H__
-

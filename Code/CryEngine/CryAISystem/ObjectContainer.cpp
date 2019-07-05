@@ -58,7 +58,7 @@ void CObjectContainer::Reset()
 	{
 		DumpRegistered();
 	}
-	CRY_ASSERT_MESSAGE(numRegistered == 0, "Something has leaked AI objects, and we're about to create dangling pointers! Check the log for details");
+	CRY_ASSERT(numRegistered == 0, "Something has leaked AI objects, and we're about to create dangling pointers! Check the log for details");
 
 	m_objects.clear();
 
@@ -159,11 +159,11 @@ bool CObjectContainer::DeregisterObjectUntyped(CAbstractUntypedRef* ref)
 	tAIObjectID id = ref->GetObjectID();
 	bool validID = m_objects.validate(id);
 
-	CRY_ASSERT_TRACE(validID, ("Multiple AI objects with id %i, dangling pointers or corruption imminent", id));
+	CRY_ASSERT(validID, "Multiple AI objects with id %i, dangling pointers or corruption imminent", id);
 
 	if (validID)
 	{
-		CRY_ASSERT_MESSAGE(!stl::find(m_DeregisteredBuffer, id), "Double deregistering object!");
+		CRY_ASSERT(!stl::find(m_DeregisteredBuffer, id), "Double deregistering object!");
 		m_DeregisteredBuffer.push_back(id);
 		ref->Assign(INVALID_AIOBJECTID);
 
@@ -177,9 +177,11 @@ bool CObjectContainer::DeregisterObjectUntyped(CAbstractUntypedRef* ref)
 	}
 	else
 	{
+#if defined(USE_CRY_ASSERT)
 		int prevIndex = m_objects.get_index_for_id(id);
 		CAIObject* pObject = m_objects.get_index(prevIndex);
-		CRY_ASSERT_TRACE(false, ("Previous object was %s (%d)", pObject ? pObject->GetName() : "<NULL OBJECT>", pObject ? pObject->GetAIObjectID() : 0));
+		CRY_ASSERT(false, "Previous object was %s (%d)", pObject ? pObject->GetName() : "<NULL OBJECT>", pObject ? pObject->GetAIObjectID() : 0);
+#endif
 
 		return false;
 	}
@@ -265,7 +267,7 @@ int CObjectContainer::ReleaseDeregisteredObjects(bool checkForLeaks)
 		if (count != totalObjects)
 			DumpRegistered();
 
-		CRY_ASSERT_MESSAGE(count == totalObjects, "Something has leaked AI objects! Check the log for details");
+		CRY_ASSERT(count == totalObjects, "Something has leaked AI objects! Check the log for details");
 	}
 #endif
 
@@ -301,9 +303,7 @@ void CObjectContainer::DumpRegistered()
 
 void CObjectContainer::Serialize(TSerialize ser)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Object Container serialization");
-
-	CAISystem* pAISystem = GetAISystem();
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Object Container serialization");
 
 	// Deal with the deregistration list as it makes no sense to serialize those objects
 	ReleaseDeregisteredObjects(true);
@@ -398,7 +398,7 @@ void CObjectContainer::Serialize(TSerialize ser)
 
 		if (object)
 		{
-			MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "AI object (%s) serialization", GetNameFromType(objHeader.aiClass));
+			MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "AI object (%s) serialization", GetNameFromType(objHeader.aiClass));
 
 			// (MATT) Note that this call may reach CAIActor, which currently handles serialising the proxies {2009/04/30}
 			object->Serialize(ser);

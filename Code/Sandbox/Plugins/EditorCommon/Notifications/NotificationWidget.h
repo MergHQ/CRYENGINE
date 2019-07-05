@@ -48,7 +48,6 @@ protected:
 
 	virtual void mousePressEvent(QMouseEvent* pEvent) override;
 	virtual void paintEvent(QPaintEvent* pEvent) override;
-	virtual void resizeEvent(QResizeEvent* pEvent) override;
 	virtual void enterEvent(QEvent* pEvent) override;
 	virtual void leaveEvent(QEvent* pEvent) override;
 
@@ -57,6 +56,7 @@ public:
 	CCrySignal<void()> signalNotificationHideAll;
 
 protected:
+	QWidget*      m_pParent;
 	QString       m_title;
 	QTimer*       m_pHideTimer;
 	QLabel*       m_pTitle;
@@ -70,4 +70,3 @@ protected:
 	bool          m_bIsAccepted; // User has seen and accepted this notification
 	bool          m_bDisableTimerHide;
 };
-

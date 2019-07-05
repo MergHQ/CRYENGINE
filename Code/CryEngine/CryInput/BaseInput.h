@@ -19,6 +19,7 @@
 #pragma once
 
 #include <CryCore/Platform/platform.h>
+#include <CryThreading/CryThread.h>
 
 #if CRY_PLATFORM_DURANGO
 	#include "KinectInputWinRT.h"
@@ -55,7 +56,7 @@ public:
 	// stub implementation
 	virtual bool                Init();
 	virtual void                PostInit();
-	virtual void                Update(bool bFocus);
+	virtual void                Update(bool bHasFocus);
 	virtual void                ShutDown();
 	virtual void                SetExclusiveMode(EInputDeviceType deviceType, bool exclusive, void* pUser);
 	virtual bool                InputState(const TKeyName& keyName, EInputState state);
@@ -93,7 +94,7 @@ public:
 	virtual void                 ForceFeedbackEvent(const SFFOutputEvent& event);
 	virtual void                 ForceFeedbackSetDeviceIndex(int index);
 	virtual void                 EnableDevice(EInputDeviceType deviceType, bool enable);
-	virtual void                 ProcessKey(uint32 key, bool pressed, wchar_t unicode, bool repeat) {};
+	virtual void                 ProcessKey(uint32 key, bool pressed, wchar_t unicode, bool repeat) {}
 	// ~IInput
 
 	// ISystemEventListener
@@ -139,7 +140,7 @@ private:
 	static bool OnFilterInputEventDummy(SInputEvent* pInput);
 
 	// listener functionality
-	typedef std::list<IInputEventListener*> TInputEventListeners;
+	typedef CListenerSet<IInputEventListener*> TInputEventListeners;
 	TInputSymbols                      m_holdSymbols;
 	TInputEventListeners               m_listeners;
 	TInputEventListeners               m_consoleListeners;

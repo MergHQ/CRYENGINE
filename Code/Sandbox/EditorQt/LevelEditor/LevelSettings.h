@@ -2,33 +2,26 @@
 
 #pragma once
 
-#include <QWidget>
-#include "EditorFramework/Editor.h"
-#include "QtViewPane.h"
+#include <EditorFramework/Editor.h>
+#include <QtViewPane.h>
+#include <Util/Variable.h>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
+class CEnvironmentPresets;
 
-class CLevelSettingsEditor : public CDockableEditor, public ISystemEventListener
+class CLevelSettingsEditor : public CDockableEditor
 {
 public:
 	CLevelSettingsEditor(QWidget* parent = nullptr);
-	~CLevelSettingsEditor();
-
-	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
-	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 500, 800); }
-
-	virtual const char*                       GetEditorName() const override       { return "Level Settings"; };
-	void                                      InitMenu();
 
 private:
-	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
-	void         ReloadFromTemplate();
-	void         BeforeSerialization(Serialization::IArchive& ar);
-	void         AfterSerialization(Serialization::IArchive& ar);
-	void         PushUndo();
+	virtual void                              Initialize() override;
+	virtual const char*                       GetEditorName() const override { return "Level Settings"; }
+	virtual void                              CreateDefaultLayout(CDockableContainer* pSender) override;
+	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
+	virtual QRect                             GetPaneRect() override { return QRect(0, 0, 500, 800); }
 
-	QPropertyTree* m_pPropertyTree;
-	CVarBlockPtr   m_varBlock;
-	bool           m_bIgnoreEvent;
+	void                                      RegisterActions();
+	void                                      CreateMenu();
+	void                                      RegisterDockingWidgets();
 };
-

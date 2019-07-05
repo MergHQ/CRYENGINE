@@ -16,18 +16,17 @@ private:
 	struct EntityVolume
 	{
 		EntityVolume()
-			: entityId(0)
-			, height(0.0f)
+			: height(0.0f)
 			, closed(false)
 		{
 		}
 
-		bool operator==(const EntityId& id) const
+		bool operator==(const CryGUID& id) const
 		{
-			return entityId == id;
+			return entityGUID.hipart == id.hipart && entityGUID.lopart == id.lopart;
 		}
 
-		EntityId entityId;
+		CryGUID  entityGUID;
 		f32      height;
 		bool     closed;
 		Vertices vertices;
@@ -59,15 +58,14 @@ public:
 	virtual void        Export(const char* fileName) const;
 	// ~IGameVolumesEdit
 
-private:
-	void RebuildIndex();
+	void ResolveEntityIdsFromGUIDs();
 
 private:
 	TEntityToIndexMap m_entityToIndexMap; // Level memory
 	TEntityVolumes    m_volumesData; // Level memory
 	TVolumeClasses    m_classes;     // Global memory, initialized at start-up
 
-	const static uint32 GAME_VOLUMES_FILE_VERSION = 2;
+	const static uint32 GAME_VOLUMES_FILE_VERSION = 3;
 };
 
 #endif

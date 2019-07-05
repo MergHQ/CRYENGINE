@@ -45,13 +45,15 @@
 typedef double                        real;
 
 typedef uint32                        DWORD;
+typedef int32                         INT32;
+typedef uint32                        UINT32;
 typedef DWORD*                        LPDWORD;
 typedef uint64                        DWORD_PTR;
 typedef intptr_t INT_PTR, *           PINT_PTR;
 typedef uintptr_t UINT_PTR, *         PUINT_PTR;
 typedef char* LPSTR, *                PSTR;
 typedef uint64                        __uint64;
-#if !defined(__clang__)
+#if !CRY_COMPILER_CLANG
 typedef int64                         __int64;
 #endif
 typedef int64                         INT64;

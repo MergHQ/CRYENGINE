@@ -1,0 +1,47 @@
+{
+    "EditorAdx2_uber_0.cpp": {
+        "Connections": [
+            "BaseConnection.cpp", 
+            "BaseConnection.h", 
+            "BinaryConnection.cpp", 
+            "BinaryConnection.h", 
+            "CueConnection.cpp", 
+            "CueConnection.h", 
+            "ParameterConnection.cpp", 
+            "ParameterConnection.h", 
+            "ParameterToStateConnection.cpp", 
+            "ParameterToStateConnection.h", 
+            "SnapshotConnection.cpp", 
+            "SnapshotConnection.h"
+        ], 
+        "DataPanel": [
+            "DataPanel.cpp", 
+            "DataPanel.h", 
+            "FilterProxyModel.cpp", 
+            "FilterProxyModel.h", 
+            "ItemModel.cpp", 
+            "ItemModel.h", 
+            "TreeView.cpp", 
+            "TreeView.h"
+        ], 
+        "Root": [
+            "Common.h", 
+            "Impl.cpp", 
+            "Impl.h", 
+            "Item.cpp", 
+            "Item.h", 
+            "main.cpp", 
+            "ProjectLoader.cpp", 
+            "ProjectLoader.h", 
+            "StdAfx.cpp", 
+            "StdAfx.h", 
+            "Utils.cpp", 
+            "Utils.h"
+        ]
+    }, 
+    "NoUberFile": {
+        "Resources": [
+            "EditorAdx2UI.qrc"
+        ]
+    }
+}

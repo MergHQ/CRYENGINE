@@ -88,13 +88,13 @@ void IK_Solver2Bones(const Vec3& goal, const IKLimbType& rIKLimbType, Skeleton::
 	QuatT* const __restrict pAbsPose = poseData.GetJointsAbsolute();
 
 	int32 b0 = rIKLimbType.m_arrJointChain[0].m_idxJoint;
-	assert(b0 > 0);                                                     //BaseRoot
+	CRY_ASSERT(b0 > 0);                                                     //BaseRoot
 	int32 b1 = rIKLimbType.m_arrJointChain[1].m_idxJoint;
-	assert(b1 > 0);                                                     //Ball Joint (and Root of Chain)
+	CRY_ASSERT(b1 > 0);                                                     //Ball Joint (and Root of Chain)
 	int32 b2 = rIKLimbType.m_arrJointChain[2].m_idxJoint;
-	assert(b2 > 0);                                                     //Hinge Joint
+	CRY_ASSERT(b2 > 0);                                                     //Hinge Joint
 	int32 b3 = rIKLimbType.m_arrJointChain[3].m_idxJoint;
-	assert(b3 > 0);                                                     //EndEffector
+	CRY_ASSERT(b3 > 0);                                                     //EndEffector
 
 	if (((goal - pAbsPose[b3].t) | (goal - pAbsPose[b3].t)) < 0.0000000001f)
 		return; //end-effector and new goal are very close ... IK not necessary
@@ -141,9 +141,9 @@ void IK_Solver2Bones(const Vec3& goal, const IKLimbType& rIKLimbType, Skeleton::
 
 		//This a just simple 2D operation, but we have to execute in 3d.
 		Vec3 anorm = aseg * ialen;
-		assert(anorm.IsUnit(0.01f));
+		CRY_ASSERT(anorm.IsUnit(0.01f));
 		Vec3 bnorm = bseg * iblen;
-		assert(bnorm.IsUnit(0.01f));
+		CRY_ASSERT(bnorm.IsUnit(0.01f));
 		Vec3 vHingeAxis = bnorm % anorm;
 		f32 fDot = vHingeAxis | vHingeAxis;
 		if (fDot < 0.00001f)  return; //no stable hinge-axis1 ... IK not possible
@@ -175,9 +175,9 @@ void IK_Solver2Bones(const Vec3& goal, const IKLimbType& rIKLimbType, Skeleton::
 		if (ilenR2G > 100.0f) return; //no stable solution possible
 
 		Vec3 v0 = vR2E * ilenR2E;
-		assert(v0.IsUnit(0.01f));
+		CRY_ASSERT(v0.IsUnit(0.01f));
 		Vec3 v1 = vR2G * ilenR2G;
-		assert(v1.IsUnit(0.01f));
+		CRY_ASSERT(v1.IsUnit(0.01f));
 		f32 dot = (v0 | v1) + 1.0f;
 		if (dot < 0.0001f)
 			return; //goal already reached...we're done!
@@ -409,9 +409,9 @@ void IK_Solver3Bones(const Vec3& goal, const IKLimbType& rIKLimbType, Skeleton::
 		f32 ilenR2G = isqrt_tpl(vR2G | vR2G);
 		if (ilenR2G > 100.0f) return; //no stable solution possible
 		Vec3 v0 = vR2E * ilenR2E;
-		assert(v0.IsUnit(0.01f));
+		CRY_ASSERT(v0.IsUnit(0.01f));
 		Vec3 v1 = vR2G * ilenR2G;
-		assert(v1.IsUnit(0.01f));
+		CRY_ASSERT(v1.IsUnit(0.01f));
 		f32 dot = (v0 | v1) + 1.0f;
 		if (dot < 0.0001f)
 			return; //goal already reached...we're done!
@@ -437,9 +437,8 @@ void IK_SolverCCD(const Vec3& vTarget, const IKLimbType& rIKLimbType, Skeleton::
 	}
 
 	f32 inumLinks = 1.0f / f32(numLinks);
-	int32 nRootIdx = rIKLimbType.m_arrJointChain[1].m_idxJoint;              //Root
 	int32 nEndEffIdx = rIKLimbType.m_arrJointChain[numLinks - 1].m_idxJoint; //EndEffector
-	ANIM_ASSET_ASSERT(nRootIdx < nEndEffIdx);
+	ANIM_ASSET_ASSERT(rIKLimbType.m_arrJointChain[1].m_idxJoint < nEndEffIdx);
 	int32 iJointIterator = 1;   //numLinks-2;
 
 	// Cyclic Coordinate Descent
@@ -473,7 +472,7 @@ void IK_SolverCCD(const Vec3& vTarget, const IKLimbType& rIKLimbType, Skeleton::
 		{
 			int32 c = rIKLimbType.m_arrJointChain[j].m_idxJoint;
 			int32 p = rIKLimbType.m_arrJointChain[j - 1].m_idxJoint;
-			assert(p >= 0);
+			CRY_ASSERT(p >= 0);
 			ANIM_ASSET_ASSERT(pRelPose[c].q.IsUnit());
 			ANIM_ASSET_ASSERT(pAbsPose[p].q.IsUnit());
 			pAbsPose[c] = pAbsPose[p] * pRelPose[c];
@@ -521,7 +520,7 @@ void IK_SolverCCD(const Vec3& vTarget, const IKLimbType& rIKLimbType, Skeleton::
 	{
 		int c = rIKLimbType.m_arrJointChain[i].m_idxJoint;
 		int p = rIKLimbType.m_arrJointChain[i - 1].m_idxJoint;
-		assert(p >= 0);
+		CRY_ASSERT(p >= 0);
 		pAbsPose[c].t += vAddDistance;
 		vAddDistance += bPartDistance;
 		ANIM_ASSET_ASSERT(pAbsPose[c].q.IsUnit());

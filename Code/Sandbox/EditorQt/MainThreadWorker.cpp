@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "MainThreadWorker.h"
+#include <CrySystem/ISystem.h>
 
 namespace Private_MainThreadWorker
 {
@@ -51,4 +52,3 @@ bool CMainThreadWorker::TryExecuteNextTask()
 }
 
 CMainThreadWorker* CMainThreadWorker::s_pTheInstance = nullptr;
-

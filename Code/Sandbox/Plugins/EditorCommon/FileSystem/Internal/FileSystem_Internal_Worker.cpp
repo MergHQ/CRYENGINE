@@ -360,4 +360,3 @@ void CWorker::RenamePakFile(const QString& keyEnginePath, const SAbsolutePath& t
 } // namespace FileSystem
 
 #undef DEBUG_MONITOR_UPDATES
-

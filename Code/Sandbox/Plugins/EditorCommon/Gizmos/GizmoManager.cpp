@@ -30,11 +30,11 @@ bool SGizmoPreferences::Serialize(yasli::Archive& ar)
 	return true;
 }
 
-EDITOR_COMMON_API SGizmoPreferences gGizmoPreferences;
+SGizmoPreferences gGizmoPreferences;
 REGISTER_PREFERENCES_PAGE_PTR(SGizmoPreferences, &gGizmoPreferences)
 
 //////////////////////////////////////////////////////////////////////////
-void CGizmoManager::Display(DisplayContext& dc)
+void CGizmoManager::Display(SDisplayContext& dc)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
@@ -102,18 +102,15 @@ ITransformManipulator* CGizmoManager::AddManipulator(ITransformManipulatorOwner*
 
 void CGizmoManager::RemoveManipulator(ITransformManipulator* pManipulator)
 {
-	CTransformManipulator* pGizmo = static_cast <CTransformManipulator*> (pManipulator);
+	CTransformManipulator* pGizmo = static_cast<CTransformManipulator*>(pManipulator);
 	RemoveGizmo(pGizmo);
 }
 
-
-//////////////////////////////////////////////////////////////////////////
 void CGizmoManager::AddGizmo(CGizmo* gizmo)
 {
 	m_gizmos.insert(gizmo);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CGizmoManager::RemoveGizmo(CGizmo* gizmo)
 {
 	if (gizmo == m_highlighted)
@@ -124,13 +121,11 @@ void CGizmoManager::RemoveGizmo(CGizmo* gizmo)
 	m_gizmos.erase(gizmo);
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CGizmoManager::GetGizmoCount() const
 {
 	return (int)m_gizmos.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CGizmo* CGizmoManager::GetGizmoByIndex(int nIndex) const
 {
 	int nCount = 0;
@@ -148,15 +143,12 @@ CGizmo* CGizmoManager::GetHighlightedGizmo() const
 	return m_highlighted;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CGizmoManager::HitTest(HitContext& hc)
 {
 	float mindist = FLT_MAX;
 
 	HitContext ghc = hc;
 	bool bGizmoHit = false;
-
-	AABB bbox;
 
 	for (Gizmos::iterator it = m_gizmos.begin(); it != m_gizmos.end(); ++it)
 	{
@@ -181,7 +173,6 @@ bool CGizmoManager::HitTest(HitContext& hc)
 
 bool CGizmoManager::HandleMouseInput(IDisplayViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
-
 	if (event == eMouseMove)
 	{
 		// release previous highlighted gizmo
@@ -197,10 +188,9 @@ bool CGizmoManager::HandleMouseInput(IDisplayViewport* view, EMouseEvent event, 
 			m_highlighted = nullptr;
 		}
 
-		HitContext hitInfo;
+		HitContext hitInfo(view);
 		Vec3 raySrc(0, 0, 0), rayDir(1, 0, 0);
 		view->ViewToWorldRay(point, hitInfo.raySrc, hitInfo.rayDir);
-		hitInfo.view = view;
 		hitInfo.point2d = point;
 
 		if (HitTest(hitInfo))
@@ -208,7 +198,6 @@ bool CGizmoManager::HandleMouseInput(IDisplayViewport* view, EMouseEvent event, 
 			m_highlighted = hitInfo.gizmo;
 			m_highlighted->SetHighlighted(true);
 		}
-
 	}
 
 	if (m_highlighted)
@@ -218,4 +207,3 @@ bool CGizmoManager::HandleMouseInput(IDisplayViewport* view, EMouseEvent event, 
 
 	return false;
 }
-

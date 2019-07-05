@@ -28,12 +28,13 @@
 
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILog.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ITimer.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryGame/IGameFramework.h>
 #include <CryMovie/AnimKey_impl.h>
 #include <../CryAction/IViewSystem.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 int CMovieSystem::m_mov_NoCutscenes = 0;
 float CMovieSystem::m_mov_cameraPrecacheTime = 1.f;
@@ -126,7 +127,6 @@ void RegisterParamTypes()
 	REGISTER_PARAM_TYPE(Camera)
 	REGISTER_PARAM_TYPE(Animation)
 	REGISTER_PARAM_TYPE(AudioTrigger)
-	REGISTER_PARAM_TYPE(AudioFile)
 	REGISTER_PARAM_TYPE(AudioParameter)
 	REGISTER_PARAM_TYPE(AudioSwitch)
 	REGISTER_PARAM_TYPE(DynamicResponseSignal)
@@ -275,7 +275,7 @@ void CMovieSystem::DoNodeStaticInitialisation()
 bool CMovieSystem::Load(const char* pszFile, const char* pszMission)
 {
 	INDENT_LOG_DURING_SCOPE(true, "Movie system is loading the file '%s' (mission='%s')", pszFile, pszMission);
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	XmlNodeRef rootNode = m_pSystem->LoadXmlFromFile(pszFile);
 
@@ -1427,8 +1427,7 @@ void CMovieSystem::ControlCapture()
 		return;
 	}
 
-	bool bBothStartAndEnd = m_bStartCapture && m_bEndCapture;
-	assert(!bBothStartAndEnd);
+	assert(!(m_bStartCapture && m_bEndCapture));
 
 	if (m_bStartCapture)
 	{
@@ -1737,15 +1736,7 @@ CLightAnimWrapper* CLightAnimWrapper::Create(const char* szName)
 
 void CLightAnimWrapper::ReconstructCache()
 {
-#if !defined(_RELEASE)
-
-	if (!ms_lightAnimWrapperCache.empty())
-	{
-		__debugbreak();
-	}
-
-#endif
-
+	CRY_ASSERT(ms_lightAnimWrapperCache.empty());
 	stl::reconstruct(ms_lightAnimWrapperCache);
 	SetLightAnimSet(0);
 }
@@ -1762,14 +1753,8 @@ void CLightAnimWrapper::SetLightAnimSet(IAnimSequence* pLightAnimSet)
 
 void CLightAnimWrapper::InvalidateAllNodes()
 {
-#if !defined(_RELEASE)
+	CRY_ASSERT(gEnv->IsEditor());
 
-	if (!gEnv->IsEditor())
-	{
-		__debugbreak();
-	}
-
-#endif
 	// !!! Will only work in Editor as the renderer runs in single threaded mode !!!
 	// Invalidate all node pointers before the light anim set can get destroyed via SetLightAnimSet(0).
 	// They'll get re-resolved in the next frame via Resolve(). Needed for Editor undo, import, etc.

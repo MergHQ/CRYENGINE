@@ -231,4 +231,3 @@ void CMonitorAdapter::Enqueue(const SActionSequence& changes)
 } // namespace FileSystem
 
 #undef DEBUG_MONITOR_ADAPTER
-

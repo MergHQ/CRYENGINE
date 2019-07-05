@@ -48,6 +48,8 @@ namespace Serialization
 	{
 		if (ar.isEdit())
 		{
+			
+			// UI -> model
 			if (ar.isInput())
 			{
 				StringListValue selectedLabel(value.m_labels, StringList::npos);
@@ -68,9 +70,9 @@ namespace Serialization
 				return true;
 			}
 			else
-			{
+			{   // model -> UI
 				CRY_ASSERT(ar.isOutput());
-
+				
 				Serialization::StringListValue selectedLabel;
 
 				const auto itSearch = std::find_if(std::begin(value.m_items), std::end(value.m_items), [&value](const auto& x) { return x == value.m_value; });
@@ -103,8 +105,8 @@ namespace Serialization
 		using TContainerValue = std::remove_reference_t<decltype(*std::begin(std::declval<TContainer&>()))>;
 		static_assert(std::is_same<TContainerValue, T>::value, "TContainer is expected to hold values of type T");
 
-		CRY_ASSERT(labels.size() == std::distance(std::begin(items), std::end(items)));
-
+		CRY_ASSERT(std::size(labels) == std::size(items));
+		
 		return CListSelectorDecorator<T, TContainer>(value, items, labels, std::move(fallback));
 	}
 
@@ -239,8 +241,8 @@ void BlendSpaceAnnotation::Serialize(IArchive& ar)
 {
 	static const size_t allowedSizes[] = { 2, 3, 4, 5, 6, 7, 8 };
 
-	std::vector<CryGUID> exampleList;
-	Serialization::StringList exampleLabels;
+	std::vector<CryGUID> exampleRuntimeGuids;
+	Serialization::StringList exampleRuntimeLabels;
 	if (ar.isEdit())
 	{
 		CRY_ASSERT(ar.context<BlendSpace>());
@@ -251,38 +253,46 @@ void BlendSpaceAnnotation::Serialize(IArchive& ar)
 
 		for (const auto& example : blendSpace.m_examples)
 		{
-			const auto& label = std::to_string(entryIndex++) + " (" + example.animation.c_str() + ")";
-			exampleList.push_back(example.runtimeGuid);
-			exampleLabels.push_back(label.c_str());
+			const auto& label = std::to_string(entryIndex) + " (Example " + std::to_string(entryIndex) + ")";
+			entryIndex++;
+			exampleRuntimeGuids.push_back(example.runtimeGuid);
+			exampleRuntimeLabels.push_back(label.c_str());
 		}
 		for (const auto& example : blendSpace.m_pseudoExamples)
 		{
-			const auto& label = std::to_string(entryIndex++) + " (Pseudo Example " + std::to_string(pseudoIndex++) + ")";
-			exampleList.push_back(example.runtimeGuid);
-			exampleLabels.push_back(label.c_str());
+			const auto& label = std::to_string(entryIndex) + " (Pseudo Example " + std::to_string(pseudoIndex) + ")";
+			entryIndex++;
+			pseudoIndex++;
+			exampleRuntimeGuids.push_back(example.runtimeGuid);
+			exampleRuntimeLabels.push_back(label.c_str());
 		}
 	}
 
-	size_t exampleCount = exampleGuids.size();
+	size_t exampleCount = m_exampleSerializedGuids.size();
 	ar(Serialization::ListSelector(exampleCount, allowedSizes, allowedSizes[0]), "size", "^>");
-	exampleGuids.resize(exampleCount);
+	m_exampleSerializedGuids.resize(exampleCount);
 
-	for (auto& guid : exampleGuids)
+	for (auto& guid : m_exampleSerializedGuids)
 	{
-		ar(Serialization::ListSelector(guid, exampleList, exampleLabels, CryGUID::Null()), "", "<");
+		ar(Serialization::ListSelector(guid, exampleRuntimeGuids, exampleRuntimeLabels, CryGUID::Null()), "", "<");
+		if (guid.IsNull())
+		{
+			ar.error(guid, "Blend Space definition has invalid example reference!");
+		}
 
 		// Remove selected item from the list, to make sure subsequent entries don't duplicate it.
-		const auto itSelected = std::find(exampleList.begin(), exampleList.end(), guid);
-		if (itSelected != exampleList.end())
+		const auto itSelected = std::find(exampleRuntimeGuids.begin(), exampleRuntimeGuids.end(), guid);
+		if (itSelected != exampleRuntimeGuids.end())
 		{
-			exampleLabels.erase(std::next(exampleLabels.begin(), std::distance(exampleList.begin(), itSelected)));
-			exampleList.erase(itSelected);
+			exampleRuntimeLabels.erase(std::next(exampleRuntimeLabels.begin(), std::distance(exampleRuntimeGuids.begin(), itSelected)));
+			exampleRuntimeGuids.erase(itSelected);
 		}
 	}
 }
 
 void BlendSpaceExample::Serialize(IArchive& ar)
 {
+	ar(runtimeGuid, "runtimeGuid");
 	ar(AnimationAlias(animation), "animation", "<^");
 	if (ar.isEdit() && ar.isOutput())
 	{
@@ -338,7 +348,6 @@ void BlendSpaceExample::Serialize(IArchive& ar)
 			ar.closeBlock();
 		}
 	}
-
 	ar(playbackScale, "playbackScale", "Playback Scale");
 }
 // ---------------------------------------------------------------------------
@@ -355,6 +364,7 @@ bool Serialize(IArchive& ar, BlendSpaceReference& ref, const char* name, const c
 
 void BlendSpacePseudoExample::Serialize(IArchive& ar)
 {
+	ar(runtimeGuid, "runtimeGuid");
 	std::vector<CryGUID> exampleList;
 	Serialization::StringList exampleLabels;
 	if (ar.isEdit())
@@ -679,7 +689,7 @@ bool BlendSpace::LoadFromXml(string& errorMessage, XmlNodeRef root, IAnimationSe
 						int32 exampleIndex;
 						if (nodeAnnotation->getAttr(facePointNames[i], exampleIndex))
 						{
-							face.exampleGuids.push_back(exampleIndex2Guid(exampleIndex));
+							face.m_exampleSerializedGuids.push_back(exampleIndex2Guid(exampleIndex));
 						}
 					}
 					m_annotations.push_back(face);
@@ -962,10 +972,12 @@ XmlNodeRef BlendSpace::SaveToXml() const
 			XmlNodeRef nodeFace = nodeList->newChild("Face");
 			const BlendSpaceAnnotation& face = m_annotations[i];
 
-			CRY_ASSERT(face.exampleGuids.size() <= CRY_ARRAY_COUNT(facePointNames));
-			for (uint32 k = 0, pointCount = face.exampleGuids.size(); k < pointCount; ++k)
+			CRY_ASSERT(face.m_exampleSerializedGuids.size() <= CRY_ARRAY_COUNT(facePointNames));
+			for (uint32 k = 0, pointCount = face.m_exampleSerializedGuids.size(); k < pointCount; ++k)
 			{
-				nodeFace->setAttr(facePointNames[k], exampleGuid2Index(face.exampleGuids[k]));
+				int32 exampleIndex = exampleGuid2Index(face.m_exampleSerializedGuids[k]);
+				CRY_ASSERT(exampleIndex != -1);
+				nodeFace->setAttr(facePointNames[k], exampleIndex);
 			}
 		}
 	}
@@ -1364,4 +1376,3 @@ XmlNodeRef CombinedBlendSpace::SaveToXml() const
 }
 
 }
-

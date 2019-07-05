@@ -151,7 +151,7 @@ public:
 	ILINE void WaitForFenceOnGPU(const T64 (&fenceValues)[CMDQUEUE_NUM], INT& numPendingWSemaphores, std::array<VkSemaphore, 64>& PendingWSemaphoreHeap) threadsafe
 	{
 		// Mask in-order queues, preventing a Wait()-command being generated
-		const bool bMasked = PERSP_GPU && IsInOrder();
+		//const bool bMasked = PERSP_GPU && IsInOrder();
 
 		// The pool which waits for the fence can be omitted (in-order-execution)
 		UINT64 fenceValuesMasked[CMDQUEUE_NUM];
@@ -247,7 +247,7 @@ public:
 			VK_ASSERT(numPendingWSemaphores < PendingWSemaphoreHeap.size(), "Too many other CLs to synchronize with!");
 
 			//	m_AsyncCommandQueue.Wait(m_rCmdFences.GetVkFence(id), fenceValue);
-			VkNaryFence* const pFence = m_rCmdFences.GetVkFence(id);
+			//VkNaryFence* const pFence = m_rCmdFences.GetVkFence(id);
 			if (true)
 				PendingWSemaphoreHeap[numPendingWSemaphores++] = semaphoreObject;
 		}
@@ -354,7 +354,7 @@ public:
 	ILINE VkSemaphore AcquireLastSignalledSemaphore() threadsafe
 	{
 		UINT64 lastSignalledFenceValue = m_LastSignalledFenceValue.exchange(0);
-		VK_ASSERT(lastSignalledFenceValue != 0);
+		VK_ASSERT(lastSignalledFenceValue != 0, "");
 		VkNaryFence* const pFence = m_rCmdFences.GetVkFence(m_nPoolFenceId);
 		return pFence->second[lastSignalledFenceValue % pFence->second.size()];
 	}
@@ -386,7 +386,7 @@ private:
 
 public:
 	static VkQueueFlagBits m_MapQueueType[CMDQUEUE_NUM];
-	static std::pair<uint32, uint32> m_MapQueueBits[1U << 4];
+	static std::pair<uint32, uint32> m_MapQueueBits[1U << 5];  // One element per each permutation of VkQueueFlagBits (VK1.1)
 	static uint32 m_MapQueueIndices[32];
 };
 

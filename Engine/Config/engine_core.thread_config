@@ -70,7 +70,7 @@ StackSizeKB:
 	<!-- === DURANGO === -->
 	<!-- =============== -->
 	<Platform name="Durango">
-		<ThreadDefault Affinity="-1" Priority="Normal" StackSizeKB="64"/>
+		<ThreadDefault Affinity="5,6" Priority="Normal" StackSizeKB="64"/>
 
 		<!-- [PROCESS] -->
 		<Thread name ="Main" Affinity="0" Priority="Above_Normal"/>
@@ -79,52 +79,55 @@ StackSizeKB:
 		<Thread name ="XboxKinectSyncThread"/>
 				
 		<!-- [RenderDLL] -->
-		<Thread name ="RenderThread" Affinity="1" StackSizeKB="128"/>
-		<Thread name ="RenderLoadingThread" Affinity="3" Priority="Above_Normal" StackSizeKB="72"/>
-		<Thread name ="ShaderCompile" Affinity="5" Priority="Below_Normal"/>
+		<Thread name ="RenderThread" Affinity="4" StackSizeKB="128"/>
+		<Thread name ="RenderLoadingThread" Affinity="1,2,3,5" StackSizeKB="72"/>
+		<Thread name ="ShaderCompile" Affinity="6"/>
 		
 		<!-- [SYSTEM] -->
-		<Thread name ="GFxMeshCacheReset" Affinity="5"/>		
-		<Thread name ="MTrace NetPump" Priority="25" StackSizeKB="64"/>
+		<Thread name ="GFxMeshCacheReset"/>		
+		<Thread name ="MTrace NetPump" StackSizeKB="64"/>
 		<Thread name ="NotificationNetwork"/>
-		<Thread name ="ReplayRecord" Affinity="3"/>
+		<Thread name ="ReplayRecord" Affinity="6"/>
 		<Thread name ="ResourceActivator"/>		
-		<Thread name ="StatoscopeDataWriter" Affinity="5"/>
+		<Thread name ="StatoscopeDataWriter" Affinity="6"/>
 		<Thread name ="Stroboscope"/>		
 		<Thread name ="RemoteCommandClient"/>
-		<Thread name ="RemoteCommandServer" Affinity="5"/>
-		<Thread name ="ServiceNetwork" Affinity="3"/>	
+		<Thread name ="RemoteCommandServer"/>
+		<Thread name ="ServiceNetwork"/>	
 		<Thread name ="SysCrashTestOnThread"/>
-		
-		<!-- [SYSTEM] - JobSystem -->
-		<Thread name ="JobSystem_Worker_0 (Blocking)" Affinity="4" StackSizeKB="64"/>
-		<Thread name ="JobSystem_Worker_1 (Blocking)" Affinity="2" StackSizeKB="64"/>
-		<Thread name ="JobSystem_Worker_2 (Blocking)" Affinity="3" StackSizeKB="64"/>
+		<Thread name ="LogThread" Affinity="6" Priority="Below_Normal"/>
 
-		<Thread name ="JobSystem_Worker_0" Affinity="2" StackSizeKB="256"/>
-		<Thread name ="JobSystem_Worker_1" Affinity="3" StackSizeKB="256"/>
-		<Thread name ="JobSystem_Worker_2" Affinity="4" StackSizeKB="256"/>
-		<Thread name ="JobSystem_Worker_3" Affinity="5" StackSizeKB="256"/>
+		<!-- [SYSTEM] - JobSystem -->
+		<Thread name ="JobSystem_Worker_0 (Blocking)" Affinity="5,6" StackSizeKB="64"/>
+		<Thread name ="JobSystem_Worker_1 (Blocking)" Affinity="5,6" StackSizeKB="64"/>
+		<Thread name ="JobSystem_Worker_2 (Blocking)" Affinity="5,6" StackSizeKB="64"/>
+
+		<Thread name ="JobSystem_Worker_0" Affinity="1,2,3" StackSizeKB="256"/>
+		<Thread name ="JobSystem_Worker_1" Affinity="1,2,3" StackSizeKB="256"/>
+		<Thread name ="JobSystem_Worker_2" Affinity="1,2,3" StackSizeKB="256"/>
+		<Thread name ="JobSystem_Worker_3" Affinity="1,2,3,5" StackSizeKB="256"/>
+		
+		<Thread name ="JobSystem_Helper_*" Affinity="0,1,2,3,4" Priority="below_normal" StackSizeKB="256"/>
 		
 		<!-- [SYSTEM] - Physics -->
-		<Thread name ="Physics"  Affinity="2,3" StackSizeKB="128"/>	
-		<Thread name ="PhysicsWorkerThread_*" Affinity="4,5" StackSizeKB="128"/>
+		<Thread name ="Physics" Affinity="1,2,3" StackSizeKB="128"/>	
+		<Thread name ="PhysicsWorkerThread_*" Affinity="3,5" StackSizeKB="128"/>
 				
 		<!-- [SYSTEM] - Streaming -->
-		<Thread name ="Streaming File IO HDD" Priority="Above_Normal" Affinity="5"/>
-		<Thread name ="Streaming File IO Optical" Priority="Above_Normal" Affinity="5"/>
-		<Thread name ="Streaming File IO InMemory" Priority="Above_Normal" Affinity="5"/>		
+		<Thread name ="Streaming File IO HDD" Affinity="5,6"/>
+		<Thread name ="Streaming File IO Optical" Affinity="5,6"/>
+		<Thread name ="Streaming File IO InMemory" Affinity="5"/>		
 
-		<Thread name ="Streaming AsyncCallback" Affinity="4"/>
-		<Thread name ="Streaming AsyncCallback Pak 0" Affinity="4"/>
+		<Thread name ="Streaming AsyncCallback" Affinity="5"/>
+		<Thread name ="Streaming AsyncCallback Pak 0" Affinity="5"/>
 		
 		<!-- [SYSTEM] - Console -->
-		<Thread name ="RemoteConsoleServer"/>
-		<Thread name ="RemoteConsoleClient"/>
+		<Thread name ="RemoteConsoleServer" Affinity="6"/>
+		<Thread name ="RemoteConsoleClient" Affinity="6"/>
 		
 		<!-- [SYSTEM] - Profiling -->
-		<Thread name ="BootProfiler"/>
-		<Thread name ="TelemetryCopier"/>
+		<Thread name ="BootProfiler" Affinity="6"/>
+		<Thread name ="TelemetryCopier" Affinity="6"/>
 		
 		<!-- [NETWORK] -->
 		<Thread name ="Network" Affinity="5"/>
@@ -135,21 +138,21 @@ StackSizeKB:
 		<Thread name ="NetAddressSolver" Affinity="5" StackSizeKB="16" />
 		
 		<!-- [AUDIO] -->		
-		<Thread name ="AudioMainThread" Affinity="2,3,4,5" Priority="below_normal" StackSize="ignore"/>
+		<Thread name ="AudioMainThread" Affinity="5,6" StackSize="ignore"/>
 		
-		<Thread name ="AuxWwiseAudioThread" Affinity="2,3,4,5" StackSize="ignore"/>
-		<Thread name ="Wwise_Device" Affinity="2,3,4,5" Priority="ignore" StackSize="ignore"/>
-		<Thread name ="Wwise_BankManager" Affinity="5" Priority="ignore" StackSize="ignore"/>
-		<Thread name ="Wwise_LEngine" Affinity="5" Priority="ignore" StackSize="ignore"/>
-		<Thread name ="Wwise_Monitor" Affinity="5" Priority="ignore" StackSize="ignore"/>
+		<Thread name ="AuxWwiseAudioThread" Affinity="5,6" StackSize="ignore"/>
+		<Thread name ="Wwise_Device"        Affinity="5,6" Priority="ignore" StackSize="ignore"/>
+		<Thread name ="Wwise_BankManager"   Affinity="5,6" Priority="ignore" StackSize="ignore"/>
+		<Thread name ="Wwise_LEngine"       Affinity="5,6" Priority="ignore" StackSize="ignore"/>
+		<Thread name ="Wwise_Monitor"       Affinity="5,6" Priority="ignore" StackSize="ignore"/>
 		
 		<!-- [AI] -->
-		<Thread name ="NavigationSystemBackgroundUpdate"/>
+		<Thread name ="NavigationSystemBackgroundUpdate" Affinity="6"/>
 		
 		<!-- [ACTION] -->
-		<Thread name ="NetworkStallTicker"/>
-		<Thread name ="ZLibCompressor" Affinity="3" Priority="Above_Normal" StackSizeKB="32"/>
-		<Thread name ="LevelLoadingThread" Affinity="3" Priority="Above_Normal" StackSizeKB="128"/>
+		<Thread name ="NetworkStallTicker" Affinity="6"/>
+		<Thread name ="ZLibCompressor" StackSizeKB="32"/>
+		<Thread name ="LevelLoadingThread" Affinity="1,2,3" StackSizeKB="128"/>
 		
 		<!-- [INPUT] -->
 		<Thread name ="InputWorker"/>
@@ -165,9 +168,9 @@ StackSizeKB:
 		<Thread name ="VoxelStreamingWorker_*" Priority="Below_Normal"/>
 		
 		<!-- [SCALEFORM][3rd Party] -->
-		<Thread name ="GFxVideo_SoundUpdate" Affinity="5" Priority="time_critical" DisablePriorityBoost="ignore" StackSizeKB="16"/>	
-		<Thread name ="GFxVideo_Decoder" Affinity="4" Priority="highest" DisablePriorityBoost="ignore" StackSizeKB="ignore"/>	
-		<Thread name ="GFxVideo_Reader" Affinity="5" Priority="highest" DisablePriorityBoost="ignore" StackSizeKB="ignore"/>	
+		<Thread name ="GFxVideo_SoundUpdate" DisablePriorityBoost="ignore" StackSizeKB="16"/>	
+		<Thread name ="GFxVideo_Decoder" DisablePriorityBoost="ignore" StackSizeKB="ignore"/>	
+		<Thread name ="GFxVideo_Reader" DisablePriorityBoost="ignore" StackSizeKB="ignore"/>	
 	</Platform> 
 
 	<!-- ============= -->
@@ -205,6 +208,7 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork" Affinity="5"/>
 		<Thread name ="SysCrashTestOnThread"/>
+		<Thread name ="LogThread" Priority="Below_Normal"/>
 
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_0 (Blocking)" Affinity="5"/>
@@ -213,6 +217,8 @@ StackSizeKB:
 		<Thread name ="JobSystem_Worker_1" Affinity="2" StackSizeKB="256"/>
 		<Thread name ="JobSystem_Worker_2" Affinity="3" StackSizeKB="256"/>
 		<Thread name ="JobSystem_Worker_3" Affinity="5" StackSizeKB="256"/>
+		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>
@@ -289,7 +295,9 @@ StackSizeKB:
 		
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
-		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>		
+		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
+		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 		
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>
@@ -313,7 +321,8 @@ StackSizeKB:
 		<Thread name ="ServiceNetwork"/>
 		<Thread name ="SysCrashTestOnThread"/>
 		<Thread name ="UserAnalytics"/>
-		
+		<Thread name ="LogThread" Priority="Below_Normal"/>
+
 		<!-- [SYSTEM] - Streaming -->
 		<Thread name ="Streaming File IO HDD" Priority="Above_Normal"/>
 		<Thread name ="Streaming File IO Optical" Priority="Above_Normal"/>
@@ -405,6 +414,8 @@ StackSizeKB:
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
 		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
+		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>
@@ -427,6 +438,7 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork"/>
 		<Thread name ="SysCrashTestOnThread"/>
+		<Thread name ="LogThread" Priority="Below_Normal"/>
 
 		<!-- [SYSTEM] - Streaming -->
 		<Thread name ="Streaming File IO HDD" Priority="Above_Normal"/>
@@ -489,7 +501,8 @@ StackSizeKB:
 
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_* (Blocking)" StackSizeKB="64"/>
-		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>
+		<Thread name ="JobSystem_Worker_*" StackSizeKB="256"/>		
+		<Thread name ="JobSystem_Helper_*" StackSizeKB="256"/>
 
 		<!-- [SYSTEM] - Physics -->
 		<Thread name ="Physics"  StackSizeKB="128"/>
@@ -512,6 +525,7 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork"/>
 		<Thread name ="SysCrashTestOnThread"/>
+		<Thread name ="LogThread" Priority="Below_Normal"/>
 
 		<!-- [AUDIO] -->
 		<Thread name ="AudioMainThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>

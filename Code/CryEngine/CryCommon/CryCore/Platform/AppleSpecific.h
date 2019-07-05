@@ -15,7 +15,7 @@
 
 #if CRY_PLATFORM_APPLE
 
-	#if defined(__clang__)
+	#if CRY_COMPILER_CLANG
 		#pragma diagnostic ignore "-W#pragma-messages"
 	#endif
 
@@ -91,7 +91,7 @@ typedef intptr_t INT_PTR, *           PINT_PTR;
 typedef uintptr_t UINT_PTR, *         PUINT_PTR;
 typedef char* LPSTR, *                PSTR;
 typedef uint64                        __uint64;
-	#if !defined(__clang__)
+	#if !CRY_COMPILER_CLANG
 typedef int64                         __int64;
 	#endif
 typedef int64                         INT64;
@@ -261,11 +261,11 @@ public:
 	CHandle(const HandleType cHandle = U) : m_Value(cHandle){}
 	CHandle(const PointerType cpHandle) : m_Value(reinterpret_cast<HandleType>(cpHandle)){}
 	CHandle(INVALID_HANDLE_VALUE_ENUM) : m_Value(U){}      //!< to be able to use a common value for all InvalidHandle - types
-		#if CRY_PLATFORM_64BIT
+
 	//! Treat __null tyope also as invalid handle type.
 	//! To be able to use a common value for all InvalidHandle - types.
 	CHandle(long) : m_Value(U){}
-		#endif
+
 	operator HandleType(){ return m_Value; }
 	bool           operator!() const                             { return m_Value == sciInvalidHandleValue; }
 	const CHandle& operator=(const CHandle& crHandle)            { m_Value = crHandle.m_Value; return *this; }
@@ -399,7 +399,7 @@ typedef struct in_addr_windows
 	#define _flushall sync
 
 //! We take the definition of the pthread_t type directly from the pthread file.
-	#define THREADID_NULL 0
+constexpr threadID THREADID_NULL = 0;
 
 #endif // CRY_PLATFORM_APPLE
 

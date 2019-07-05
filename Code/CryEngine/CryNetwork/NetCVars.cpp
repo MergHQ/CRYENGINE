@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "NetCVars.h"
 #include "NetDebugInfo.h"
+#include <CrySystem/ConsoleRegistration.h>
 #if NEW_BANDWIDTH_MANAGEMENT
 	#include <CryGame/IGameFramework.h>
 	#include "Protocol/NetNub.h"
@@ -14,6 +15,7 @@ CNetCVars* CNetCVars::s_pThis;
 void DumpMessageApproximations(IConsoleCmdArgs* pArgs);
 #endif
 
+#if USE_NETID_PACKING
 static void OnNetIDBitsChanged(ICVar* pCVar)
 {
 	CNetCVars& netCVars = CNetCVars::Get();
@@ -25,6 +27,7 @@ static void OnNetIDBitsChanged(ICVar* pCVar)
 	netCVars.net_numNetIDs = netCVars.net_netIDHighBitStart + netCVars.net_numNetIDHighBitIDs;
 	netCVars.net_invalidNetID = netCVars.net_numNetIDLowBitIDs;
 }
+#endif // USE_NETID_PACKING
 
 CNetCVars::CNetCVars()
 {
@@ -33,15 +36,14 @@ CNetCVars::CNetCVars()
 	NET_ASSERT(!s_pThis);
 	s_pThis = this;
 
-	IConsole* c = gEnv->pConsole;
-
-#if ALLOW_ENCRYPTION
+#if ENCRYPTION_GENERATE_KEYS
 	#if defined(_DEBUG) || defined(DEBUG)
 	REGISTER_COMMAND_DEV_ONLY("net_ExpKeyXch_test", CExponentialKeyExchange::Test, 0, "");
 	#endif
 #endif
 
-	REGISTER_CVAR2_DEV_ONLY("cl_tokenid", &TokenId, 0, 0, "Token id expected from client player during connection");
+	REGISTER_CVAR2("cl_profile", &ProfileId, 0, 0, "Profile id expected from client player during connection");
+	REGISTER_CVAR2("cl_tokenid", &TokenId, 0, 0, "Token id expected from client player during connection");
 
 	//	REGISTER_CVAR2( "sys_network_CPU", &CPU, 1, 0, "Run network multithreaded" );
 	REGISTER_CVAR2("net_log", &LogLevel, 0, 0, "Logging level of network system");
@@ -111,6 +113,7 @@ CNetCVars::CNetCVars()
 
 #if CRY_PLATFORM_DURANGO
 	REGISTER_CVAR2_DEV_ONLY("net_threadAffinity", &networkThreadAffinity, 5, VF_DUMPTODISK, "Xbox network thread affinity");
+	REGISTER_CVAR(net_xboxAssociationTemplateName, "CryNetworkTraffic", VF_REQUIRE_APP_RESTART, _HELP("Xbox secure device association template set in the application manifest"));
 #endif
 
 #if LOCK_NETWORK_FREQUENCY == 0
@@ -137,15 +140,15 @@ CNetCVars::CNetCVars()
 #if STATS_COLLECTOR_INTERACTIVE
 	REGISTER_CVAR2_DEV_ONLY("net_showdatabits", &ShowDataBits, 0, 0, "show bits used for different data");
 #endif
-#if defined(DEDICATED_SERVER)
-	static const int DEFAULT_CHEAT_PROTECTION = 3;
-#else
-	#if ENABLE_DEBUG_KIT
-	static const int DEFAULT_CHEAT_PROTECTION = 3;
-	#else
-	static const int DEFAULT_CHEAT_PROTECTION = 0;//0 for GameK01 for now
-	#endif
-#endif // defined(DEDICATED_SERVER)
+//#if defined(DEDICATED_SERVER)
+//	static const int DEFAULT_CHEAT_PROTECTION = 3;
+//#else
+//	#if ENABLE_DEBUG_KIT
+//	static const int DEFAULT_CHEAT_PROTECTION = 3;
+//	#else
+//	static const int DEFAULT_CHEAT_PROTECTION = 0;//0 for GameK01 for now
+//	#endif
+//#endif // defined(DEDICATED_SERVER)
 #if !defined(OLD_VOICE_SYSTEM_DEPRECATED)
 	pVoiceCodec = REGISTER_STRING_DEV_ONLY("sv_voicecodec", "speex", VF_REQUIRE_LEVEL_RELOAD, "");
 	REGISTER_CVAR2_DEV_ONLY("sv_voice_enable_groups", &EnableVoiceGroups, 1, VF_NULL, "");
@@ -265,17 +268,23 @@ CNetCVars::CNetCVars()
 	REGISTER_COMMAND_DEV_ONLY("net_DumpMessageApproximations", DumpMessageApproximations, VF_NULL, "Dumps the statistics used for message queue limit avoidance");
 #endif
 
+#if USE_NETID_PACKING
 	REGISTER_CVAR_CB(net_numNetIDLowBitBits, 5, VF_CHEAT, "Number of bits used for low bit NetIDs. By default players start allocating from low bit NetIDs.", OnNetIDBitsChanged);
 	REGISTER_CVAR_CB(net_numNetIDMediumBitBits, 9, VF_CHEAT, "Number of bits used for medium bit NetIDs. By default dynamic entities start allocating from medium bit NetIDs.", OnNetIDBitsChanged);
 	REGISTER_CVAR_CB(net_numNetIDHighBitBits, 13, VF_CHEAT, "Number of bits used for high bit NetIDs. By default static entities start allocating from high bit NetIDs.", OnNetIDBitsChanged);
 
 	OnNetIDBitsChanged(NULL);
+#endif // USE_NETID_PACKING
 
 	REGISTER_CVAR2_DEDI_ONLY("net_dedi_scheduler_server_port", &net_dedi_scheduler_server_port, 47264, VF_NULL, "Dedi scheduler server port");
 	REGISTER_CVAR2_DEDI_ONLY("net_dedi_scheduler_client_base_port", &net_dedi_scheduler_client_base_port, 47265, VF_NULL, "Dedi scheduler client base port");
 
 	REGISTER_STRING_DEV_ONLY("net_profile_deep_bandwidth_logname", "profile_messages.log", VF_NULL, "log name for net deep bandwidth");
 	REGISTER_CVAR2_DEV_ONLY("net_profile_deep_bandwidth_logging", &net_profile_deep_bandwidth_logging, 0, VF_NULL, "enable/disable logging");
+
+#if LOG_CONTEXT_ESTABLISHMENT
+	REGISTER_CVAR2("net_log_context_establishment", &net_log_context_establishment, 0, VF_NULL, "Logging of context establishment. 0 - disabled; 1 - enabled; 2 - verbose.");
+#endif
 }
 
 CNetCVars::~CNetCVars()

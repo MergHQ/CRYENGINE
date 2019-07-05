@@ -5,7 +5,6 @@
 #if defined(INCLUDE_VR_RENDERING)
 
 	#include "D3DOpenVR.h"
-	#include "DriverD3D.h"
 	#include "D3DPostProcess.h"
 	#include "DeviceInfo.h"
 
@@ -47,7 +46,7 @@ CD3DOpenVRRenderer::CD3DOpenVRRenderer(CryVR::OpenVR::IOpenVRDevice* openVRDevic
 
 bool CD3DOpenVRRenderer::Initialize(int initialWidth, int initialeight)
 {
-	D3DDevice* d3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+	D3DDevice* d3d11Device = m_pRenderer->GetDevice();
 
 #if CRY_RENDERER_DIRECT3D >= 120
 	ID3D12CommandQueue* pD3d12Queue = GetDeviceObjectFactory().GetNativeCoreCommandQueue();
@@ -175,13 +174,13 @@ bool CD3DOpenVRRenderer::Initialize(int initialWidth, int initialeight)
 	}
 
 	// Mirror texture
-	void* srv = nullptr;
 	for (uint32 eye = 0; eye < 2; ++eye)
 	{
 #if CRY_RENDERER_DIRECT3D >= 120
 		// No mirror textures in D3D12
 		// Request the resource-view from openVR
 #elif CRY_RENDERER_DIRECT3D >= 110
+		void* srv = nullptr;
 		m_pOpenVRDevice->GetMirrorImageView(static_cast<EEyeType>(eye), m_mirrorTextures[eye]->GetDevTexture()->Get2DTexture(), &srv);
 		m_mirrorTextures[eye]->SetDefaultShaderResourceView(static_cast<D3DShaderResource*>(srv), false);
 #endif
@@ -311,7 +310,7 @@ void CD3DOpenVRRenderer::SubmitFrame()
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	{
 		// Transition resources
-		ID3D11Device* pD3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+		ID3D11Device* pD3d11Device = m_pRenderer->GetDevice();
 		NCryDX12::CCommandList* pCL = ((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->GetCoreGraphicsCommandList();
 
 		CCryDX12RenderTargetView* lRV = (CCryDX12RenderTargetView*)m_scene3DRenderData[EEyeType::eEyeType_LeftEye].texture->GetSurface(-1, 0);

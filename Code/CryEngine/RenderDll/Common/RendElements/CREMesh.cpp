@@ -14,19 +14,10 @@
 
 #include "XRenderD3D9/DriverD3D.h"
 
-void CREMeshImpl::mfCenter(Vec3& Pos, CRenderObject* pObj, const SRenderingPassInfo& passInfo)
+void CREMeshImpl::mfGetBBox(AABB& bb) const
 {
-	Vec3 Mins = m_pRenderMesh->m_vBoxMin;
-	Vec3 Maxs = m_pRenderMesh->m_vBoxMax;
-	Pos = (Mins + Maxs) * 0.5f;
-	if (pObj)
-		Pos += pObj->GetMatrix(passInfo).GetTranslation();
-}
-
-void CREMeshImpl::mfGetBBox(Vec3& vMins, Vec3& vMaxs) const
-{
-	vMins = m_pRenderMesh->_GetVertexContainer()->m_vBoxMin;
-	vMaxs = m_pRenderMesh->_GetVertexContainer()->m_vBoxMax;
+	const auto& container = *m_pRenderMesh->_GetVertexContainer();
+	bb = AABB{ container.m_vBoxMin, container.m_vBoxMax };
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -47,14 +38,13 @@ CRenderChunk* CREMeshImpl::mfGetMatInfo()
 	return m_pChunk;
 }
 
-bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation)
+bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation)
 {
 	DETAILED_PROFILE_MARKER("CREMeshImpl::mfUpdate");
 	FUNCTION_PROFILER_RENDER_FLAT
 	IF (m_pRenderMesh == NULL, 0)
 		return false;
 
-	CRenderer* rd = gRenDev;
 	const int threadId = gRenDev->GetRenderThreadID();
 
 	// If no updates are pending it counts as having successfully "processed" them
@@ -66,7 +56,7 @@ bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTesse
 	{
 		m_pRenderMesh->SyncAsyncUpdate(gRenDev->GetRenderThreadID());
 
-		bPendingUpdatesSucceeded = m_pRenderMesh->RT_CheckUpdate(m_pRenderMesh->_GetVertexContainer(), eVertFormat, Flags | VSM_MASK, bTessellation);
+		bPendingUpdatesSucceeded = m_pRenderMesh->RT_CheckUpdate(m_pRenderMesh->_GetVertexContainer(), eVertFormat, StreamMask | VSM_MASK, bTessellation);
 		if (bPendingUpdatesSucceeded)
 		{
 			AUTO_LOCK(CRenderMesh::m_sLinkLock);
@@ -82,7 +72,7 @@ bool CREMeshImpl::mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTesse
 	return true;
 }
 
-void* CREMeshImpl::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags)
+void* CREMeshImpl::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask)
 {
 	DETAILED_PROFILE_MARKER("CREMeshImpl::mfGetPointer");
 	CRenderMesh* pRM = m_pRenderMesh->_GetVertexContainer();
@@ -115,19 +105,6 @@ void* CREMeshImpl::mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, E
 	return pD;
 }
 
-void CREMeshImpl::mfGetPlane(Plane& pl)
-{
-	CRenderMesh* pRM = m_pRenderMesh->_GetVertexContainer();
-
-	// fixme: plane orientation based on biggest bbox axis
-	Vec3 pMin, pMax;
-	mfGetBBox(pMin, pMax);
-	Vec3 p0 = pMin;
-	Vec3 p1 = Vec3(pMax.x, pMin.y, pMin.z);
-	Vec3 p2 = Vec3(pMin.x, pMax.y, pMin.z);
-	pl.SetPlane(p2, p0, p1);
-}
-
 //////////////////////////////////////////////////////////////////////////
 InputLayoutHandle CREMeshImpl::GetVertexFormat() const
 {
@@ -137,7 +114,7 @@ InputLayoutHandle CREMeshImpl::GetVertexFormat() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CREMeshImpl::Compile(CRenderObject* pObj, CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREMeshImpl::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pRenderMesh)
 		return false;
@@ -162,7 +139,7 @@ bool CREMeshImpl::GetGeometryInfo(SGeometryInfo& geomInfo, bool bSupportTessella
 	geomInfo.primitiveType = pVContainer->_GetPrimitiveType();
 
 	// Test if any pending updates have to be processed (and process them)
-	if (!mfCheckUpdate(geomInfo.eVertFormat, VSM_MASK, (uint16)gRenDev->GetRenderFrameID(), bSupportTessellation))
+	if (!mfCheckUpdate(geomInfo.eVertFormat, VSM_MASK, gRenDev->GetRenderFrameID(), bSupportTessellation))
 		return false;
 
 	if (!m_pRenderMesh->FillGeometryInfo(geomInfo))

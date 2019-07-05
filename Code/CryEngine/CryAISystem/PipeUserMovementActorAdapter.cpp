@@ -4,9 +4,12 @@
 #include "PipeUserMovementActorAdapter.h"
 #include "PipeUser.h"
 
+#include "SmartObjects.h"
+#include "SmartObjectOffMeshNavigation.h"
+
 void PipeUserMovementActorAdapter::OnMovementPlanProduced()
 {
-	m_attachedPipeUser.SetSignal(AISIGNAL_DEFAULT, "MovementPlanProduced");
+	m_attachedPipeUser.SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMovementPlanProduced()));
 }
 
 bool PipeUserMovementActorAdapter::GetDesignedPath(SShape& pathShape) const

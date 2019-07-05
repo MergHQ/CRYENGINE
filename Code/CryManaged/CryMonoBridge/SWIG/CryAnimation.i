@@ -18,12 +18,24 @@
 %ignore IAnimationEngineModule;
 %ignore IAnimationSerializable;
 %ignore CreateCharManager;
-%include "../../../../CryEngine/CryCommon/CryAnimation/ICryAnimation.h"
+
 %typemap(csbase) CA_AssetFlags "uint"
+%typemap(csbase) CHRLOADINGFLAGS "uint"
+%typemap(csbase) AttachmentFlags "uint"
+%typemap(csbase) SFragmentBlend::EFlags "byte"
+%typemap(csbase) SFragmentDef::EFlags "byte"
+%typemap(csbase) SBlendQuery::EFlags "uint"
+%typemap(csbase) IAction::EFlags "uint"
+%typemap(csbase) IActionController::EResumeFlags "uint"
+%typemap(csbase) IFacialAnimSequence::ESerializationFlags "uint"
+%typemap(csbase) eSequenceFlags "uint"
+%typemap(csbase) EActionControllerFlags "uint"
+
+%include "../../../../CryEngine/CryCommon/CryAnimation/ICryAnimation.h"
 %include "../../../../CryEngine/CryCommon/CryAnimation/CryCharAnimationParams.h"
 %include "../../../../CryEngine/CryCommon/CryAnimation/IAttachment.h"
 %include "../../../../CryEngine/CryCommon/CryAnimation/IAnimationPoseModifier.h"
-%typemap(csbase) IFacialAnimSequence::ESerializationFlags "uint"
+
 %include "../../../../CryEngine/CryCommon/CryAnimation/IFacialAnimation.h"
 %include "../../../../CryEngine/CryCommon/CryInput/IJoystick.h"
 %include "../../../../CryEngine/CryCommon/CryAnimation/IVertexAnimation.h"

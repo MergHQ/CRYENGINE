@@ -1,20 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+
+#ifndef RELEASE
 #include <CrySchematyc/Utils/ClassProperties.h>
 
-// Entity property cache saves the values of the component properties when switching to game mode,
-// so that they can be restored when switching our of the game mode
-// It is only used when running with the Sandbox Editor
-
-#include "CrySchematyc/Utils/ClassProperties.h"
-
-class CEntitiesComponentPropertyCache
+//! Entity components cache stores the states of components as they are edited during game mode in Sandbox
+//! This allows us to restore state when switching back to editing mode
+class CEntityComponentsCache
 {
 public:
-	void ClearCache();
-
 	void StoreEntities();
 	void RestoreEntities();
+
+	void OnEntitySpawnedDuringGameMode(const EntityId id) { m_entitiesSpawnedDuringEditorGameMode.emplace(id); }
+	void OnEntityRemovedDuringGameMode(const EntityId id) {	m_entitiesSpawnedDuringEditorGameMode.erase(id); }
+	void RemoveEntitiesSpawnedDuringGameMode();
 
 private:
 	void StoreEntity(CEntity& entity);
@@ -37,5 +37,8 @@ private:
 			return hasher(doubleGuid.guid1.lopart) ^ hasher(doubleGuid.guid1.hipart) ^ hasher(doubleGuid.guid2.lopart) ^ hasher(doubleGuid.guid2.hipart);
 		}
 	};
+
 	std::unordered_map<SDoubleGUID, std::unique_ptr<Schematyc::CClassProperties>, HashDoubleGUID> m_componentPropertyCache;
+	std::unordered_set<EntityId> m_entitiesSpawnedDuringEditorGameMode;
 };
+#endif

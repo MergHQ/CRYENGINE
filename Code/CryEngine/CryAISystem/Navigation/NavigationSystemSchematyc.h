@@ -56,12 +56,12 @@ static void ReflectType(Schematyc::CTypeDesc<NavigationAreaFlagID>& desc)
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline void ReflectType(Schematyc::CTypeDesc<SNavMeshQueryFilterDefault>& desc)
+inline void ReflectType(Schematyc::CTypeDesc<SNavMeshQueryFilterDefaultWithCosts>& desc)
 {
 	desc.SetGUID("BC7B6732-BA06-4C76-98AA-219E7775D989"_cry_guid);
 	desc.SetLabel("Navigation Query Filter");
 	desc.SetDescription("Navigation Query Filter");
-	desc.SetDefaultValue(SNavMeshQueryFilterDefault());
+	desc.SetDefaultValue(SNavMeshQueryFilterDefaultWithCosts());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -100,6 +100,7 @@ inline void ReflectType(Schematyc::CTypeDesc<IEntityNavigationComponent::SCollis
 
 	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::type, 'type', "type", "Type", "How the agent is going to behave in collision avoidance system", IEntityNavigationComponent::SCollisionAvoidanceProperties::EType::Active);
 	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::radius, 'rad', "radius", "Radius", "Radius of the agent used in collision avoidance calculations", 0.3f);
+	desc.AddMember(&IEntityNavigationComponent::SCollisionAvoidanceProperties::height, 'hei', "height", "Height", "Height of the agent used in collision avoidance calculations", 2.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////

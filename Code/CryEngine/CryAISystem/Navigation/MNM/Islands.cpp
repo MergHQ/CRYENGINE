@@ -43,7 +43,6 @@ inline bool IsIslandVisited(StaticIslandID id)
 CIslands::CIslands()
 {
 	m_islands.reserve(32);
-	m_islandsFreeIndices.reserve(4);
 }
 
 void CIslands::ComputeStaticIslandsAndConnections(CNavMesh& navMesh, const NavigationMeshID meshID, const OffMeshNavigationManager& offMeshNavigationManager, MNM::IslandConnections& islandConnections)
@@ -79,7 +78,30 @@ void CIslands::ResetConnectedIslandsIDs(CNavMesh& navMesh)
 	m_islandsFreeIndices.clear();
 }
 
-void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sourceTriangleId, const size_t reserveCount, 
+void CIslands::SetSeedConnectivityState(const StaticIslandID* pIslandIds, const size_t islandsCount, const ESeedConnectivityState state)
+{
+	for (size_t i = 0; i < islandsCount; ++i)
+	{
+		const size_t islandIdx = GetIslandIndex(pIslandIds[i]);
+		m_islands[islandIdx].seedConnectivityState = state;
+	}
+}
+
+CIslands::ESeedConnectivityState CIslands::GetSeedConnectivityState(const StaticIslandID islandId) const
+{
+	const size_t islandIdx = GetIslandIndex(islandId);
+	return m_islands[islandIdx].seedConnectivityState;
+}
+
+void CIslands::ResetSeedConnectivityStates(const ESeedConnectivityState state)
+{
+	for (SIsland& island : m_islands)
+	{
+		island.seedConnectivityState = state;
+	}
+}
+
+void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const TriangleID sourceTriangleId, const size_t reserveCount, 
 	std::function<bool(const STile& prevTile, const Tile::STriangle& prevTriangle, const STile& nextTile, Tile::STriangle& nextTriangle)> executeFunc)
 {
 	std::vector<TriangleID> trianglesToVisit;
@@ -89,7 +111,7 @@ void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sou
 
 	while (!trianglesToVisit.empty())
 	{
-		const MNM::TriangleID currentTriangleID = trianglesToVisit.back();
+		const TriangleID currentTriangleID = trianglesToVisit.back();
 		trianglesToVisit.pop_back();
 
 		const TileID currentTileId = ComputeTileID(currentTriangleID);
@@ -116,7 +138,7 @@ void CIslands::FloodFillOnTriangles(CNavMesh& navMesh, const MNM::TriangleID sou
 }
 
 template<typename T>
-void CIslands::FloodFillOnTrianglesWithBackupValue(CNavMesh& navMesh, const MNM::TriangleID sourceTriangleId, const T sourceValue, const size_t reserveCount,
+void CIslands::FloodFillOnTrianglesWithBackupValue(CNavMesh& navMesh, const TriangleID sourceTriangleId, const T sourceValue, const size_t reserveCount,
 	std::function<bool(const STile& prevTile, const Tile::STriangle& prevTriangle, const T prevValue, const STile& nextTile, Tile::STriangle& nextTriangle, T& nextValue)> executeFunc)
 {
 	struct STriangleWithValue
@@ -196,10 +218,10 @@ void CIslands::ComputeStaticIslands(CNavMesh& navMesh, SConnectionRequests& conn
 			for (size_t index = 0; index < totalTrianglesToVisit; ++index)
 			{
 				// Get next triangle to start the evaluation from
-				const MNM::TriangleID currentTriangleID = trianglesToVisit[index];
+				const TriangleID currentTriangleID = trianglesToVisit[index];
 
 				const TileID currentTileId = ComputeTileID(currentTriangleID);
-				CRY_ASSERT_MESSAGE(currentTileId > 0, "ComputeStaticIslands is trying to access a triangle ID associated with an invalid tile id.");
+				CRY_ASSERT(currentTileId > 0, "ComputeStaticIslands is trying to access a triangle ID associated with an invalid tile id.");
 
 				const CNavMesh::TileContainer& container = navMesh.m_tiles[currentTileId - 1];
 				const STile& currentTile = container.tile;
@@ -241,20 +263,20 @@ void CIslands::ComputeStaticIslands(CNavMesh& navMesh, SConnectionRequests& conn
 	}
 }
 
-void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMeshID meshID, const MNM::TriangleID* pTrianglesArray, const size_t trianglesCount, MNM::IslandConnections& islandConnections)
+void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMeshID meshID, const TriangleID* pTrianglesArray, const size_t trianglesCount, MNM::IslandConnections& islandConnections)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
 	SConnectionRequests connectionRequests;
 
-	std::unordered_map<StaticIslandID, std::vector<MNM::TriangleID>> splitUpdateSources;
+	std::unordered_map<StaticIslandID, std::vector<TriangleID>> splitUpdateSources;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Get source triangles for updating
 	//////////////////////////////////////////////////////////////////////////
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
-		const MNM::TriangleID triangleID = pTrianglesArray[i];
+		const TriangleID triangleID = pTrianglesArray[i];
 
 		const TileID currentTileId = ComputeTileID(triangleID);
 		const CNavMesh::TileContainer& currentContainer = navMesh.m_tiles[currentTileId - 1];
@@ -308,7 +330,7 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 	//////////////////////////////////////////////////////////////////////////
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
-		const MNM::TriangleID sourceTriangleID = pTrianglesArray[i];
+		const TriangleID sourceTriangleID = pTrianglesArray[i];
 		const TileID sourceTileId = ComputeTileID(sourceTriangleID);
 		const CNavMesh::TileContainer& sourceContainer = navMesh.m_tiles[sourceTileId - 1];
 		const STile& sourceTile = sourceContainer.tile;
@@ -390,6 +412,11 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 		});
 	}
 
+	// Apply pending connection requests before any new islands are created. 
+	// Since island id can be reused, it could cause troubles updating links between the islands, if they were resolved only in the end.
+	ResolvePendingConnectionRequests(navMesh, connectionRequests, meshID, nullptr, islandConnections);
+	connectionRequests.Reset();
+
 	//////////////////////////////////////////////////////////////////////////
 	// Splitting islands
 	//////////////////////////////////////////////////////////////////////////
@@ -400,7 +427,7 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 
 		bool wantCreateNewIsland = false;
 
-		for (const MNM::TriangleID sourceTriangleID : islandSplitSources.second)
+		for (const TriangleID sourceTriangleID : islandSplitSources.second)
 		{
 			const TileID sourceTileId = ComputeTileID(sourceTriangleID);
 			const CNavMesh::TileContainer& sourceContainer = navMesh.m_tiles[sourceTileId - 1];
@@ -484,7 +511,7 @@ void CIslands::UpdateIslandsForTriangles(CNavMesh& navMesh, const NavigationMesh
 	//////////////////////////////////////////////////////////////////////////
 	for (size_t i = 0; i < trianglesCount; ++i)
 	{
-		const MNM::TriangleID sourceTriangleID = pTrianglesArray[i];
+		const TriangleID sourceTriangleID = pTrianglesArray[i];
 
 		const TileID sourceTileId = ComputeTileID(sourceTriangleID);
 		const CNavMesh::TileContainer& sourceContainer = navMesh.m_tiles[sourceTileId - 1];
@@ -530,8 +557,8 @@ CIslands::SIsland& CIslands::GetNewIsland(const AreaAnnotation annotation)
 
 	if (m_islandsFreeIndices.size())
 	{
-		const size_t freeIdx = m_islandsFreeIndices.back();
-		m_islandsFreeIndices.pop_back();
+		const size_t freeIdx = m_islandsFreeIndices.front();
+		m_islandsFreeIndices.pop_front();
 
 		CRY_ASSERT(freeIdx < m_islands.size());
 		CRY_ASSERT(m_islands[freeIdx].trianglesCount == 0);
@@ -545,7 +572,7 @@ CIslands::SIsland& CIslands::GetNewIsland(const AreaAnnotation annotation)
 	// Generate new id (NOTE: Invalid is 0)
 	const StaticIslandID id = m_islands.size() + 1;
 
-	CRY_ASSERT_MESSAGE(GetIslandID(id) == id, "CIslands::GetNewIsland: Too many islands created!");
+	CRY_ASSERT(GetIslandID(id) == id, "CIslands::GetNewIsland: Too many islands created!");
 
 	m_islands.emplace_back(id, annotation);
 	return m_islands.back();
@@ -568,16 +595,23 @@ void CIslands::ResolvePendingConnectionRequests(CNavMesh& navMesh, SConnectionRe
 		while (!connectionRequests.offmeshConnections.empty())
 		{
 			const SConnectionRequests::OffmeshConnectionRequest& request = connectionRequests.offmeshConnections.back();
+			const SIsland& startingIsland = GetIsland(request.startingIslandID);
 			const OffMeshNavigation::QueryLinksResult links = offMeshNavigation.GetLinksForTriangle(request.startingTriangleID, request.offMeshLinkIndex);
 			while (const WayTriangleData nextTri = links.GetNextTriangle())
 			{
 				Tile::STriangle endTriangle;
 				if (navMesh.GetTriangle(nextTri.triangleID, endTriangle))
 				{
-					const OffMeshLink* pLink = pOffMeshNavigationManager->GetOffMeshLink(nextTri.offMeshLinkID);
+					const IOffMeshLink* pLink = pOffMeshNavigationManager->GetOffMeshLink(nextTri.offMeshLinkID);
 					CRY_ASSERT(pLink);
-					const MNM::IslandConnections::Link link(nextTri.triangleID, nextTri.offMeshLinkID, GlobalIslandID(meshID, endTriangle.islandID), endTriangle.areaAnnotation, pLink->GetEntityIdForOffMeshLink(), 1);
-					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(GlobalIslandID(meshID, request.startingIslandID), link);
+					islandConnections.SetOneWayOffmeshConnectionBetweenIslands(
+						GlobalIslandID(meshID, request.startingIslandID),
+						startingIsland.annotation,
+						GlobalIslandID(meshID, endTriangle.islandID),
+						endTriangle.areaAnnotation,
+						nextTri.offMeshLinkID,
+						nextTri.triangleID,
+						pLink->GetEntityIdForOffMeshLink());
 				}
 			}
 			connectionRequests.offmeshConnections.pop_back();

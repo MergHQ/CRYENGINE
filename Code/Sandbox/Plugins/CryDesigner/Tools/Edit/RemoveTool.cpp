@@ -95,4 +95,3 @@ bool RemoveTool::RemoveSelectedElements()
 }
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Remove, eToolGroup_Edit, "Remove", RemoveTool,
                                    remove, "runs remove tool", "designer.remove")
-

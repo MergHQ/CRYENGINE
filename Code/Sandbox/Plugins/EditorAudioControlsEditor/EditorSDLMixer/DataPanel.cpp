@@ -6,16 +6,17 @@
 #include "common.h"
 #include "Impl.h"
 #include "FilterProxyModel.h"
-#include "ItemModel.h"
 #include "TreeView.h"
+#include "../Common/ModelUtils.h"
 
-#include <ModelUtils.h>
 #include <QFilteringPanel.h>
 #include <QSearchBox.h>
 #include <QtUtil.h>
 #include <FileDialogs/SystemFileDialog.h>
+#include <CryAudioImplSDLMixer/GlobalData.h>
 
 #include <QHeaderView>
+#include <QKeyEvent>
 #include <QMenu>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -26,6 +27,9 @@ namespace Impl
 {
 namespace SDLMixer
 {
+CryAudio::Impl::SDL_mixer::STriggerInfo g_previewTriggerInfo;
+bool g_isPreviewPlaying = false;
+
 //////////////////////////////////////////////////////////////////////////
 CDataPanel::CDataPanel(CImpl const& impl)
 	: m_impl(impl)
@@ -33,28 +37,27 @@ CDataPanel::CDataPanel(CImpl const& impl)
 	, m_pModel(new CItemModel(impl, impl.GetRootItem(), this))
 	, m_pTreeView(new CTreeView(this))
 	, m_pImportButton(new QPushButton(tr("Import Files"), this))
-	, m_nameColumn(static_cast<int>(CItemModel::EColumns::Name))
 {
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
 	m_pFilterProxyModel->setSourceModel(m_pModel);
-	m_pFilterProxyModel->setFilterKeyColumn(m_nameColumn);
+	m_pFilterProxyModel->setFilterKeyColumn(g_nameColumn);
 
 	m_pTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	m_pTreeView->setDragEnabled(true);
 	m_pTreeView->setDragDropMode(QAbstractItemView::DragDrop);
 	m_pTreeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_pTreeView->setSelectionBehavior(QAbstractItemView::SelectRows);
-	m_pTreeView->setTreePosition(m_nameColumn);
+	m_pTreeView->setTreePosition(g_nameColumn);
 	m_pTreeView->setUniformRowHeights(true);
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	m_pTreeView->setModel(m_pFilterProxyModel);
-	m_pTreeView->sortByColumn(m_nameColumn, Qt::AscendingOrder);
+	m_pTreeView->sortByColumn(g_nameColumn, Qt::AscendingOrder);
+	m_pTreeView->viewport()->installEventFilter(this);
+	m_pTreeView->installEventFilter(this);
 	m_pTreeView->header()->setMinimumSectionSize(25);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CItemModel::EColumns::Notification), QHeaderView::ResizeToContents);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CItemModel::EColumns::PakStatus), QHeaderView::ResizeToContents);
-	m_pTreeView->SetNameColumn(m_nameColumn);
-	m_pTreeView->SetNameRole(static_cast<int>(ModelUtils::ERoles::Name));
 	m_pTreeView->TriggerRefreshHeaderColumns();
 
 	m_pFilteringPanel = new QFilteringPanel("ACESDLMixerDataPanel", m_pFilterProxyModel, this);
@@ -68,13 +71,40 @@ CDataPanel::CDataPanel(CImpl const& impl)
 
 	QObject::connect(m_pImportButton, &QPushButton::clicked, this, &CDataPanel::OnImportFiles);
 	QObject::connect(m_pTreeView, &CTreeView::customContextMenuRequested, this, &CDataPanel::OnContextMenu);
+	QObject::connect(m_pTreeView->selectionModel(), &QItemSelectionModel::currentChanged, this, &CDataPanel::StopEvent);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CDataPanel::~CDataPanel()
+{
+	StopEvent();
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CDataPanel::eventFilter(QObject* pObject, QEvent* pEvent)
+{
+	if (pEvent->type() == QEvent::KeyRelease)
+	{
+		auto const pKeyEvent = static_cast<QKeyEvent const*>(pEvent);
+
+		if ((pKeyEvent != nullptr) && (pKeyEvent->key() == Qt::Key_Space))
+		{
+			PlayEvent();
+		}
+	}
+	else if (pEvent->type() == QEvent::MouseButtonDblClick)
+	{
+		PlayEvent();
+	}
+
+	return QWidget::eventFilter(pObject, pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CDataPanel::OnContextMenu(QPoint const& pos)
 {
 	auto const pContextMenu = new QMenu(this);
-	auto const& selection = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
+	auto const& selection = m_pTreeView->selectionModel()->selectedRows(g_nameColumn);
 
 	if (!selection.isEmpty())
 	{
@@ -83,37 +113,46 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 			ControlId const itemId = selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt();
 			auto const pItem = static_cast<CItem const*>(m_impl.GetItem(itemId));
 
-			if ((pItem != nullptr) && ((pItem->GetFlags() & EItemFlags::IsConnected) != 0))
+			if (pItem != nullptr)
 			{
-				SControlInfos controlInfos;
-				m_impl.SignalGetConnectedSystemControls(pItem->GetId(), controlInfos);
-
-				if (!controlInfos.empty())
+				if (pItem->GetType() == EItemType::Event)
 				{
-					auto const pConnectionsMenu = new QMenu(pContextMenu);
-
-					for (auto const& info : controlInfos)
-					{
-						pConnectionsMenu->addAction(info.icon, QtUtil::ToQString(info.name), [=]()
-									{
-										m_impl.SignalSelectConnectedSystemControl(info.id, pItem->GetId());
-						      });
-					}
-
-					pConnectionsMenu->setTitle(tr("Connections (" + ToString(controlInfos.size()) + ")"));
-					pContextMenu->addMenu(pConnectionsMenu);
+					pContextMenu->addAction(tr("Play Event"), [&]() { PlayEvent(); });
 					pContextMenu->addSeparator();
 				}
-			}
 
-			if ((pItem != nullptr) && ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) && !pItem->GetFilePath().IsEmpty())
-			{
-				pContextMenu->addAction(tr("Show in File Explorer"), [=]()
-							{
-								QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pItem->GetFilePath()).c_str());
-				      });
+				if ((pItem->GetFlags() & EItemFlags::IsConnected) != EItemFlags::None)
+				{
+					SControlInfos controlInfos;
+					m_impl.SignalGetConnectedSystemControls(pItem->GetId(), controlInfos);
 
-				pContextMenu->addSeparator();
+					if (!controlInfos.empty())
+					{
+						auto const pConnectionsMenu = new QMenu(pContextMenu);
+
+						for (auto const& info : controlInfos)
+						{
+							pConnectionsMenu->addAction(info.icon, QtUtil::ToQString(info.name), [=]()
+										{
+											m_impl.SignalSelectConnectedSystemControl(info.id, pItem->GetId());
+										});
+						}
+
+						pConnectionsMenu->setTitle(tr("Connections (" + ToString(controlInfos.size()) + ")"));
+						pContextMenu->addMenu(pConnectionsMenu);
+						pContextMenu->addSeparator();
+					}
+				}
+
+				if (((pItem->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None) && !pItem->GetFilePath().IsEmpty())
+				{
+					pContextMenu->addAction(tr("Show in File Explorer"), [=]()
+								{
+									QtUtil::OpenInExplorer((PathUtil::GetGameFolder() + "/" + pItem->GetFilePath()).c_str());
+								});
+
+					pContextMenu->addSeparator();
+				}
 			}
 		}
 
@@ -132,16 +171,45 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CDataPanel::PlayEvent()
+{
+	StopEvent();
+
+	CItem const* const pItem = CItemModel::GetItemFromIndex(m_pTreeView->currentIndex());
+
+	if ((pItem != nullptr) && (pItem->GetType() == EItemType::Event))
+	{
+		g_previewTriggerInfo.name = pItem->GetName().c_str();
+		g_previewTriggerInfo.path = pItem->GetPath().c_str();
+		g_previewTriggerInfo.isLocalized = (pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None;
+
+		gEnv->pAudioSystem->ExecutePreviewTriggerEx(g_previewTriggerInfo);
+		g_isPreviewPlaying = true;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CDataPanel::StopEvent()
+{
+	if (g_isPreviewPlaying)
+	{
+		gEnv->pAudioSystem->StopPreviewTrigger();
+		g_isPreviewPlaying = false;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CDataPanel::OnImportFiles()
 {
 	QString targetFolderName = "";
+	bool isLocalized = false;
 
-	if (!m_pTreeView->selectionModel()->selectedRows(m_nameColumn).isEmpty())
+	if (!m_pTreeView->selectionModel()->selectedRows(g_nameColumn).isEmpty())
 	{
-		targetFolderName = m_pModel->GetTargetFolderName(m_pFilterProxyModel->mapToSource(m_pTreeView->currentIndex()));
+		targetFolderName = m_pModel->GetTargetFolderName(m_pFilterProxyModel->mapToSource(m_pTreeView->currentIndex()), isLocalized);
 	}
 
-	m_impl.SignalImportFiles(s_extensionFilters, s_supportedFileTypes, targetFolderName);
+	m_impl.SignalImportFiles(targetFolderName, isLocalized);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -159,7 +227,7 @@ void CDataPanel::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDataPanel::OnAboutToReload()
+void CDataPanel::OnBeforeReload()
 {
 	m_pTreeView->BackupExpanded();
 	m_pTreeView->BackupSelection();
@@ -167,23 +235,11 @@ void CDataPanel::OnAboutToReload()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDataPanel::OnReloaded()
+void CDataPanel::OnAfterReload()
 {
 	m_pModel->Reset();
 	m_pTreeView->RestoreExpanded();
 	m_pTreeView->RestoreSelection();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDataPanel::OnConnectionAdded() const
-{
-	m_pFilterProxyModel->invalidate();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDataPanel::OnConnectionRemoved() const
-{
-	m_pFilterProxyModel->invalidate();
 }
 
 //////////////////////////////////////////////////////////////////////////

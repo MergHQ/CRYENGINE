@@ -392,4 +392,3 @@ void CGameTokenItem::ApplyFlags()
 			pToken->SetFlags(pToken->GetFlags()&~EGAME_TOKEN_LOCALONLY);
 	}
 }
-

@@ -197,6 +197,7 @@ void CFogVolumeRenderNode::SetFogVolumeProperties(const SFogVolumeProperties& pr
 		m_localBounds.min = Vec3(-1, -1, -1).CompMul(m_scale);
 		m_localBounds.max = -m_localBounds.min;
 		UpdateWorldSpaceBBox();
+		UpdateFogVolumeMatrices();
 	}
 
 	m_volumeType = clamp_tpl<int32>(properties.m_volumeType,
@@ -243,10 +244,10 @@ const Matrix34& CFogVolumeRenderNode::GetMatrix() const
 	return m_matNodeWS;
 }
 
-void CFogVolumeRenderNode::GetLocalBounds(AABB& bbox)
+void CFogVolumeRenderNode::GetLocalBounds(AABB& bbox) const
 {
 	bbox = m_localBounds;
-};
+}
 
 void CFogVolumeRenderNode::SetMatrix(const Matrix34& mat)
 {
@@ -369,6 +370,8 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 {
 	FUNCTION_PROFILER_3DENGINE;
 
+	DBG_LOCK_TO_THREAD(this);
+
 	// anything to render?
 	if (!passInfo.IsGeneralPass())
 		return;
@@ -453,18 +456,18 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 	IRenderView* pRenderView = passInfo.GetIRenderView();
 	if (bVolFog)
 	{
+		// TODO: make it threadsafe and add it to e_ExecuteRenderAsJobMask
 		pRenderView->AddFogVolume(m_pFogVolumeRenderElement[fillThreadID]);
 	}
 	else
 	{
-		IRenderer* pRenderer = GetRenderer();
 		CRenderObject* pRenderObject = pRenderView->AllocateTemporaryRenderObject();
 
 		if (!pRenderObject)
 			return;
 
 		// set basic render object properties
-		pRenderObject->SetMatrix(m_matNodeWS, passInfo);
+		pRenderObject->SetMatrix(m_matNodeWS);
 		pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
 		pRenderObject->m_fSort = 0;
 
@@ -510,7 +513,7 @@ void CFogVolumeRenderNode::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CFogVolumeRenderNode::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_pos += delta;
 	m_matNodeWS.SetTranslation(m_matNodeWS.GetTranslation() + delta);
 	m_matWS.SetTranslation(m_matWS.GetTranslation() + delta);
@@ -554,7 +557,7 @@ void CFogVolumeRenderNode::TraceFogVolumes(const Vec3& worldPos, ColorF& fogColo
 			const CFogVolumeRenderNode* pFogVol((*it).m_pFogVol);
 
 			// only trace visible fog volumes
-			if (!(pFogVol->GetRndFlags() & ERF_HIDDEN))
+			if (!pFogVol->IsHidden())
 			{
 				// check if view ray intersects with bounding box of current fog volume
 				if (Overlap::Lineseg_AABB(lineseg, pFogVol->m_WSBBox))
@@ -604,7 +607,7 @@ void CFogVolumeRenderNode::GetVolumetricFogColorEllipsoid(const Vec3& worldPos, 
 {
 	const CCamera& cam(passInfo.GetCamera());
 	Vec3 camPos(cam.GetPosition());
-	Vec3 camDir(cam.GetViewdir());
+	//Vec3 camDir(cam.GetViewdir());
 	Vec3 cameraLookDir(worldPos - camPos);
 
 	resultColor = ColorF(1.0f, 1.0f, 1.0f, 1.0f);
@@ -775,19 +778,7 @@ void CFogVolumeRenderNode::GetVolumetricFogColorBox(const Vec3& worldPos, const 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CFogVolumeRenderNode::FillBBox(AABB& aabb)
-{
-	aabb = CFogVolumeRenderNode::GetBBox();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-EERType CFogVolumeRenderNode::GetRenderNodeType()
-{
-	return eERType_FogVolume;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-float CFogVolumeRenderNode::GetMaxViewDist()
+float CFogVolumeRenderNode::GetMaxViewDist() const
 {
 	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
 		return max(GetCVars()->e_ViewDistMin, CFogVolumeRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());

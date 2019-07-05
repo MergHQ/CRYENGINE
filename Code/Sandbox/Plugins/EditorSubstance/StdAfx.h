@@ -20,7 +20,9 @@
 // std::unique_ptr and _smart_ptr conversions
 #include <CryCore/smartptr.h>
 #include <memory>
+
 #include <CryMath/Cry_Vector2.h>
+#include <CryThreading/CryThread.h>
 
 // Put these headers here, so we don't need to modify files from Cry3DEngine.
 #include <CryMath/Cry_Geo.h>    // Used by MeshCompiler.cpp.

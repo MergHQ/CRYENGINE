@@ -42,7 +42,6 @@ void FilterAnimationList::Populate()
 		{
 			SAnimationFilterItem filterItem;
 			filterItem.tags = settings.build.tags;
-			filterItem.skeletonAlias = settings.build.skeletonAlias;
 			filterItem.path = PathUtil::ReplaceExtension(PathUtil::ToUnixPath(filename), "caf");
 			m_items.push_back(filterItem);
 		}
@@ -126,4 +125,3 @@ void FilterAnimationList::OnFileChange(const char* filename, EChangeType eType)
 }
 
 }
-

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <CrySerialization/IArchive.h>
+#include <CryNetwork/SerializeFwd.h>
 
 #include "CrySchematyc/Utils/IString.h"
 
@@ -18,6 +19,7 @@ struct STypeOperators
 	typedef bool (* Equals)(const void* pLHS, const void* pRHS);
 	typedef bool (* Serialize)(Serialization::IArchive& archive, void* pValue, const char* szName, const char* szLabel);
 	typedef void (* ToString)(IString& output, const void* pInput);
+	typedef void (* NetSerialize)(TSerialize& ser, const char* szName, void* pValue, int32 policy);
 
 	DefaultConstruct defaultConstruct = nullptr;
 	Destruct         destruct = nullptr;
@@ -26,6 +28,7 @@ struct STypeOperators
 	Equals           equals = nullptr;
 	Serialize        serialize = nullptr;
 	ToString         toString = nullptr;
+	NetSerialize     netSerialize = nullptr;
 };
 
 struct SStringOperators

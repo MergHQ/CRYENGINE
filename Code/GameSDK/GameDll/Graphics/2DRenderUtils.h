@@ -21,7 +21,8 @@ History:
 
 #include <CryMath/Cry_Color.h>
 #include "IUIDraw.h" // For alignment flags.
-#include <CryRenderer/IRenderAuxGeom.h> // RenderStates
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CryFont/IFont.h>
 
 //-----------------------------------------------------------------------------------------------------
 

@@ -1,10 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DesignerEditor.h"
-#include "Util/HeightManipulator.h"
-#include "ExtrudeTool.h"
 #include "ExtrudeMultipleTool.h"
+
+#include "Core/Helper.h"
+#include "Util/HeightManipulator.h"
+#include "DesignerEditor.h"
+#include "ExtrudeTool.h"
 
 namespace Designer
 {
@@ -144,7 +146,7 @@ void ExtrudeMultipleTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-void ExtrudeMultipleTool::Display(DisplayContext& dc)
+void ExtrudeMultipleTool::Display(SDisplayContext& dc)
 {
 	__super::Display(dc);
 	s_HeightManipulator.Display(dc);
@@ -357,4 +359,3 @@ void ExtrudeMultipleTool::UpdateModel(ExtrudeMultipleContext& emc)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_ExtrudeMultiple, eToolGroup_Edit, "Extrude Multiple", ExtrudeMultipleTool,
                                                            extrudemultiple, "runs extrude multiple tool", "designer.extrudemultiple")
-

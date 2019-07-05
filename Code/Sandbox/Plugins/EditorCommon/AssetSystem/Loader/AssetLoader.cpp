@@ -2,21 +2,26 @@
 
 #include "StdAfx.h"
 #include "AssetLoader.h"
+
 #include "AssetLoaderHelpers.h"
 #include "AssetSystem/Asset.h"
-#include "FileReader.h"
 #include "CompletionPortFileReader.h"
+#include "FileReader.h"
 #include "Metadata.h"
-#include "FilePathUtil.h"
-#include <CrySystem/ISystem.h>
-#include <Cry3DEngine/I3DEngine.h>
+#include "PathUtils.h"
+#include "QtUtil.h"
+
 #include <Cry3DEngine/CGF/IChunkFile.h>  
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryString/CryPath.h>
 #include <CrySystem/IProjectManager.h>
-#include <QtUtil.h>
+#include <CrySystem/ISystem.h>
+
 #include <QDirIterator> 
+
 #include <condition_variable>
 #include <unordered_map>
+#include <stack>
 
 namespace Loader_Private
 {
@@ -60,7 +65,7 @@ namespace Loader_Private
 		}
 
 	private:
-		bool IsCompleted() const { return m_bCompleted && m_container.empty(); };
+		bool IsCompleted() const { return m_bCompleted && m_container.empty(); }
 
 	private:
 		std::mutex              m_mutex;
@@ -263,7 +268,7 @@ namespace Loader_Private
 		{
 			ICryPak* const pPak = GetISystem()->GetIPak();
 
-			FILE* file = pPak->FOpen(szFilename, "rbx");
+			FILE* file = pPak->FOpen(szFilename, "rb");
 			if (!file)
 			{
 				CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Failed to open asset file: \"%s\".", szFilename);
@@ -330,5 +335,3 @@ namespace AssetLoader
 		}
 	}
 }
-
-

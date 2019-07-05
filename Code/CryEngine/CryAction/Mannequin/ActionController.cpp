@@ -10,10 +10,12 @@
 
 #include "AnimationDatabase.h"
 
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryExtension/CryCreateClassInstance.h>
 
 #include "MannequinUtils.h"
 #include "MannequinDebug.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 const uint32 MAX_ALLOWED_QUEUE_SIZE = 10;
 
@@ -81,8 +83,7 @@ void CActionController::RegisterCVars()
 	if (!s_registeredCVars)
 	{
 		IConsole* pConsole = gEnv->pConsole;
-		assert(pConsole);
-		if (!pConsole)
+		if (!CRY_VERIFY(pConsole))
 			return;
 
 #ifndef _RELEASE
@@ -102,8 +103,7 @@ void CActionController::RegisterCVars()
 		REGISTER_CVAR3("mn_fatalerroroninvalidcharinst", s_mnFatalErrorOnInvalidCharInst, 1, VF_CHEAT, "Throw a fatal error when an invalid character instance is detected");
 #endif //!CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 
-		char channelName[10];
-		cry_strcpy(channelName, "channel0");
+		char channelName[] = "channel0";
 		for (uint32 i = 0; i < MANN_NUMBER_BLEND_CHANNELS; i++)
 		{
 			channelName[7] = '0' + i;
@@ -180,11 +180,13 @@ void CActionController::OnShutdown()
 
 	if (numControllers > 0)
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		for (TActionControllerList::iterator iter = s_actionControllers.begin(); iter != s_actionControllers.end(); ++iter)
 		{
 			CActionController* pAC = *iter;
 			CryLogAlways("ActionController not released - Owner Controller Def: %s", pAC->GetContext().controllerDef.m_filename.c_str());
 		}
+#endif
 		CryFatalError("ActionControllers (%u) not released at shutdown", numControllers);
 	}
 }
@@ -923,7 +925,7 @@ void CActionController::ClearScopeContext(uint32 scopeContextID, bool flushAnima
 
 IScope* CActionController::GetScope(uint32 scopeID)
 {
-	CRY_ASSERT_MESSAGE((scopeID < m_scopeCount), "Invalid scope id");
+	CRY_ASSERT((scopeID < m_scopeCount), "Invalid scope id");
 
 	if (scopeID < m_scopeCount)
 	{
@@ -935,7 +937,7 @@ IScope* CActionController::GetScope(uint32 scopeID)
 
 const IScope* CActionController::GetScope(uint32 scopeID) const
 {
-	CRY_ASSERT_MESSAGE((scopeID < m_scopeCount), "Invalid scope id");
+	CRY_ASSERT((scopeID < m_scopeCount), "Invalid scope id");
 
 	if (scopeID < m_scopeCount)
 	{
@@ -1520,7 +1522,6 @@ void CActionController::Flush()
 	ActionScopes scopeFlag = 1;
 	for (uint32 i=0; i<m_scopeCount; i++, scopeFlag <<= 1)
 	{
-		CActionScope& scope = m_scopeArray[i];
 		FlushScope(i, scopeFlag);
 	}
 
@@ -1676,7 +1677,6 @@ ActionScopes CActionController::EndActionsOnScope(ActionScopes scopeMask, IActio
 
 void CActionController::PushOntoQueue(IAction& action)
 {
-	const int priority = action.GetPriority();
 	const bool requeued = ((action.GetFlags() & IAction::Requeued) != 0);
 
 	for (TActionList::iterator iter = m_queuedActions.begin(); iter != m_queuedActions.end(); ++iter)
@@ -2014,7 +2014,6 @@ void CActionController::DebugDraw() const
 
 		if (scope.m_scopeContext.pCharInst)
 		{
-			IAnimationSet* animSet = scope.m_scopeContext.pCharInst->GetIAnimationSet();
 			for (uint32 l = 0; l < scope.m_numLayers; l++)
 			{
 				const CActionScope::SSequencer& sequencer = scope.m_layerSequencers[l];
@@ -2357,7 +2356,7 @@ bool CActionController::UpdateScopeContextValidity(uint32 scopeContextID)
 #if CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		IEntity* expectedEntity = gEnv->pEntitySystem->GetEntity(scopeContext.entityId);
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[CActionController::UpdateScopeContextValidity] Dangling Entity %p (expected %p for id=%u) in context '%s'", (void*)scopeContext.pCachedEntity, (void*)expectedEntity, scopeContext.entityId, m_context.controllerDef.m_scopeContexts.GetTagName(scopeContextID));
-		CRY_ASSERT_MESSAGE(0,"[CActionController::UpdateScopeContextValidity] Dangling Entity");
+		CRY_ASSERT(0,"[CActionController::UpdateScopeContextValidity] Dangling Entity");
 #endif // !CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 
 		scopeContext.pCharInst = NULL;
@@ -2371,7 +2370,7 @@ bool CActionController::UpdateScopeContextValidity(uint32 scopeContextID)
 #if CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		const char* entityName = (scopeContext.pCachedEntity ? scopeContext.pCachedEntity->GetName() : "<NULL>");
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[CActionController::UpdateScopeContextValidity] Dangling Char Inst in entity '%s' (id=%d) in context '%s'", entityName, scopeContext.entityId, m_context.controllerDef.m_scopeContexts.GetTagName(scopeContextID));
-		CRY_ASSERT_MESSAGE(0,"[CActionController::UpdateScopeContextValidity] Dangling Char Inst in entity ");
+		CRY_ASSERT(0,"[CActionController::UpdateScopeContextValidity] Dangling Char Inst in entity ");
 #endif // !CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 
 		scopeContext.pCharInst = NULL;
@@ -2388,7 +2387,7 @@ bool CActionController::UpdateRootEntityValidity()
 	{
 #if CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[CActionController::UpdateRootEntityValidity] Dangling Entity %p (expected %p for id=%u) in actioncontroller for '%s'", (void*)m_cachedEntity, (void*)expectedEntity, m_entityId, m_context.controllerDef.m_filename.c_str());
-		CRY_ASSERT_MESSAGE(0,"[CActionController::UpdateRootEntityValidity] Dangling Entity");
+		CRY_ASSERT(0,"[CActionController::UpdateRootEntityValidity] Dangling Entity");
 #endif // !CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		m_entityId = 0;
 		m_cachedEntity = NULL;

@@ -6,7 +6,8 @@
 #include "CCullRenderer.h"
 #include <CryThreading/IJobManager_JobDelegator.h>
 
-DECLARE_JOB("CheckOcclusion", TOcclusionCheckJob, NAsyncCull::CCullThread::CheckOcclusion);
+DECLARE_JOB("CheckOcclusion", TOcclusionCheckJob, NAsyncCull::CCullThread::CheckOcclusion_JobEntry);
+
 DECLARE_JOB("PrepareOcclusion", TOcclusionPrepareJob, NAsyncCull::CCullThread::PrepareOcclusion);
 DECLARE_JOB("PrepareOcclusion_ReprojectZBuffer", TOcclusionPrepareReprojectJob, NAsyncCull::CCullThread::PrepareOcclusion_ReprojectZBuffer);
 DECLARE_JOB("PrepareOcclusion_ReprojectZBufferLine", TOcclusionPrepareReprojectLineJob, NAsyncCull::CCullThread::PrepareOcclusion_ReprojectZBufferLine);
@@ -27,12 +28,10 @@ const NVMath::vec4 MaskNot3 = NVMath::Vec4(~3u, ~0u, ~0u, ~0u);
 
 CCullThread::CCullThread()
 	: m_Enabled(false)
-	, m_Active(false)
 	, m_nPrepareState(IDLE)
 	, m_nRunningReprojJobs(0)
 	, m_nRunningReprojJobsAfterMerge(0)
 	, m_bCheckOcclusionRequested(0)
-	, m_pCheckOcclusionJob(nullptr)
 	, m_ViewDir(ZERO)
 	, m_Position(ZERO)
 	, m_NearPlane(0.0f)
@@ -52,13 +51,12 @@ CCullThread::CCullThread()
 
 bool CCullThread::LoadLevel(const char* pFolderName)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Occluder Mesh");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Occluder Mesh");
 	m_OCMBuffer.resize(0);
-	//FILE* pFile	=	gEnv->pCryPak->FOpen("Canyon25.ocm","rbx");
-	FILE* pFile = gEnv->pCryPak->FOpen((string(pFolderName) + "/occluder.ocm").c_str(), "rbx");
+	//FILE* pFile	=	gEnv->pCryPak->FOpen("Canyon25.ocm","rb");
+	FILE* pFile = gEnv->pCryPak->FOpen((string(pFolderName) + "/occluder.ocm").c_str(), "rb");
 	if (!pFile)
 	{
-		//__debugbreak();
 		return false;
 	}
 	gEnv->pCryPak->FSeek(pFile, 0, SEEK_END);
@@ -128,7 +126,7 @@ bool CCullThread::LoadLevel(const char* pFolderName)
 			Swap(pWorldMat[0xA]);
 			Swap(pWorldMat[0xB]);
 
-			if (Offsets.find(MeshOffset) != Offsets.end())//already endian swapped?
+			if (Offsets.find(MeshOffset) != Offsets.end()) //already endian swapped?
 				continue;
 			Offsets[MeshOffset] = static_cast<uint32>(pOut - &OCMBufferOut[0]);//zero based offset
 
@@ -245,20 +243,17 @@ void CCullThread::UnloadLevel()
 	m_OCMMeshCount = 0;
 	m_OCMInstCount = 0;
 	m_OCMOffsetInstances = 0;
-
-	if (m_pCheckOcclusionJob)
-		delete static_cast<TOcclusionCheckJob*>(m_pCheckOcclusionJob);
-	m_pCheckOcclusionJob = NULL;
 }
 
 CCullThread::~CCullThread()
 {
 	READ_WRITE_BARRIER
 	gEnv->pJobManager->WaitForJob(m_JobStatePrepareOcclusionBuffer);
-	delete static_cast<TOcclusionCheckJob*>(m_pCheckOcclusionJob);
+
+	m_checkOcclusion.Wait();
 }
 
-void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera)
+void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey)
 {
 	Matrix44 MatProj;
 	Matrix44 MatView;
@@ -268,9 +263,7 @@ void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera)
 	static int _debug = -1;
 	if (_debug == -1)
 		_debug = gEnv->pRenderer->GetFrameID(false);
-	else if (_debug == gEnv->pRenderer->GetFrameID(false))
-		__debugbreak();
-	else
+	else if (CRY_VERIFY(_debug != gEnv->pRenderer->GetFrameID(false), "double invocations of the prepare occlusion buffer job in one frame"))
 		_debug = gEnv->pRenderer->GetFrameID(false);
 #endif
 
@@ -302,13 +295,12 @@ void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera)
 
 	m_Position = rCam.GetPosition();
 
-	GetObjManager()->BeginCulling();
-
+	// Start occlusion culling
 	m_nPrepareState = PREPARE_STARTED;
 	m_Enabled = false;
 	m_bCheckOcclusionRequested = 0;
 
-	RASTERIZER.Prepare();
+	RASTERIZER.Prepare(cullGraphicsContextKey);
 
 	m_PrepareBufferSync.SetRunning();
 
@@ -345,14 +337,6 @@ void CCullThread::CullStart(const SRenderingPassInfo& passInfo)
 			m_nPrepareState = CHECK_REQUESTED;
 		}
 	}
-
-	if (bNeedJobStart)
-	{
-		TOcclusionCheckJob job;
-		job.SetClassInstance(this);
-		job.SetPriorityLevel(JobManager::eHighPriority);
-		job.Run();
-	}
 }
 
 void CCullThread::CullEnd()
@@ -360,20 +344,21 @@ void CCullThread::CullEnd()
 	// If no frame was rendered, we need to remove the producer added in BeginCulling
 	gEnv->pJobManager->WaitForJob(m_PrepareBufferSync);
 
-	bool bNeedRemoveProducer = false;
-	{
-		if (m_nPrepareState != CHECK_STARTED && m_nPrepareState != IDLE)
-		{
-			bNeedRemoveProducer = true;
-		}
-	}
-
 	// release the copied passInfo
 	m_passInfoForCheckOcclusion = SRenderingPassInfo(0);
+}
 
-	if (bNeedRemoveProducer)
+void CCullThread::SetActive(bool bActive)
+{
+	// Ensure the occlusion job state is only "finished" once we add no more jobs
+	// This also ensures that the PostJob is not fired prior we push the last job
+	if (bActive)
 	{
-		GetObjManager()->RemoveCullJobProducer();
+		m_checkOcclusion.SetRunning();
+	}
+	else
+	{
+		m_checkOcclusion.SetStopped();
 	}
 }
 
@@ -441,7 +426,7 @@ void CCullThread::RasterizeZBuffer(uint32 PolyLimit)
 		{
 			Matrix44 World(IDENTITY);
 			uint8* pInstance = pInstances + a * (sizeof(int) + 12 * sizeof(float));//meshoffset+worldmatrix43
-			const uint32 MeshOffset = *reinterpret_cast<const uint32*>(&pInstance[0]);
+
 			const float* pWorldMat = reinterpret_cast<const float*>(&pInstance[4]);
 			memcpy(&World, (void*)pWorldMat, 12 * sizeof(float));
 			Vec3 Pos = World.GetTranslation(), Extend;
@@ -555,8 +540,7 @@ void CCullThread::PrepareOcclusion()
 
 		if ((bHWZBuffer & 3) > 0)
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "Transfer Previous Frame Z-Buffer");
-			CRYPROFILE_SCOPE_PROFILE_MARKER("Transfer Previous Frame Z-Buffer");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Transfer Previous Frame Z-Buffer");
 			m_Enabled = RASTERIZER.DownLoadHWDepthBuffer(m_NearPlane, m_FarPlane, m_NearestMax, GetCVars()->e_CoverageBufferBias);
 		}
 		else
@@ -571,9 +555,7 @@ void CCullThread::PrepareOcclusion()
 
 void CCullThread::PrepareOcclusion_ReprojectZBuffer()
 {
-
 	int bHWZBuffer = GetCVars()->e_CoverageBufferReproj;
-	int PolyLimit = GetCVars()->e_CoverageBufferRastPolyLimit;
 
 	if (bHWZBuffer > 3 && m_OCMBuffer.empty())
 		bHWZBuffer = 2;
@@ -664,8 +646,7 @@ void CCullThread::PrepareOcclusion_RasterizeZBuffer()
 
 		if (bHWZBuffer & 4)
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "Rasterize Z-Buffer");
-			CRYPROFILE_SCOPE_PROFILE_MARKER("Rasterize Z-Buffer");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Rasterize Z-Buffer");
 			m_Enabled = true;
 			RasterizeZBuffer((uint32)PolyLimit);
 		}
@@ -684,97 +665,104 @@ void CCullThread::PrepareOcclusion_RasterizeZBuffer()
 	}
 
 	m_PrepareBufferSync.SetStopped();
-	if (bNeedJobStart)
-	{
-		TOcclusionCheckJob job;
-		job.SetClassInstance(this);
-		job.SetPriorityLevel(JobManager::eHighPriority);
-		job.Run();
-	}
 }
 
-void CCullThread::CheckOcclusion()
+void CCullThread::CreateOcclusionJob(const SCheckOcclusionJobData& rCheckOcclusionData)
 {
-	uint8 AlignBuffer[2 * sizeof(Matrix44A) + 16];
-	size_t pBuffer = (reinterpret_cast<size_t>(AlignBuffer) + 15) & ~15;
-	Matrix44A& RESTRICT_REFERENCE rMatFinalT = reinterpret_cast<Matrix44A*>(pBuffer)[1];
+	TOcclusionCheckJob job(rCheckOcclusionData);
+	job.SetClassInstance(this);
+	job.SetPriorityLevel(JobManager::eHighPriority);
+	job.RegisterJobState(&m_checkOcclusion);
+	job.Run();
+}
 
-	const Vec3 cameraPosition = m_passInfoForCheckOcclusion.GetCamera().GetPosition();
-	const AABB PosAABB = AABB(m_Position, 0.5f);
-	const float Bias = GetCVars()->e_CoverageBufferAABBExpand;
-	const float TerrainBias = GetCVars()->e_CoverageBufferTerrainExpand;
-	rMatFinalT = m_MatScreenViewProj.GetTransposed();
-	bool bEnabled = m_Enabled;
-
-	while (1)
+void CCullThread::CheckOcclusion_JobEntry(SCheckOcclusionJobData checkOcclusionData)
+{
+	if (checkOcclusionData.type == SCheckOcclusionJobData::CONTENT_NODE)
 	{
-		SCheckOcclusionJobData jobData;
-		GetObjManager()->PopFromCullQueue(&jobData);
+		AABB rAABB;
+		COctreeNode* pOctTreeNode = checkOcclusionData.octTreeData.pOctTreeNode;
+		const Vec3 cameraPosition = m_passInfoForCheckOcclusion.GetCamera().GetPosition();
 
-		// stop processing when beeing told so
-		if (jobData.type == SCheckOcclusionJobData::QUIT)
-			break;
+		memcpy(&rAABB, &pOctTreeNode->GetObjectsBBox(), sizeof(AABB));
+		float fDistance = sqrtf(Distance::Point_AABBSq(cameraPosition, rAABB));
 
-		if (jobData.type == SCheckOcclusionJobData::OCTREE_NODE)
+		// Test OctTree bounding box against main view
+		if ((checkOcclusionData.passCullMask & kPassCullMainMask) != 0 && !CCullThread::TestAABB(rAABB, fDistance))
 		{
-			AABB rAABB;
-			COctreeNode* pOctTreeNode = jobData.octTreeData.pOctTreeNode;
-
-			memcpy(&rAABB, &pOctTreeNode->GetObjectsBBox(), sizeof(AABB));
-			float fDistance = sqrtf(Distance::Point_AABBSq(cameraPosition, rAABB));
-
-			// Test OctTree bounding box against main view
-			if (jobData.passCullMask & kPassCullMainMask && !TestAABB(rAABB, fDistance))
-			{
-				jobData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
-			}
-
-			// TODO: check also occlusion of shadow volumes
-
-			if (jobData.passCullMask)
-			{
-				Vec3 vAmbColor(jobData.octTreeData.vAmbColor[0], jobData.octTreeData.vAmbColor[1], jobData.octTreeData.vAmbColor[2]);
-
-				SRenderingPassInfo passInfo = SRenderingPassInfo::CreateTempRenderingInfo(/*jobData.pCam,*/ jobData.rendItemSorter, m_passInfoForCheckOcclusion);
-				passInfo.SetShadowPasses(jobData.pShadowPasses);
-
-				pOctTreeNode->COctreeNode::RenderContent(jobData.octTreeData.nRenderMask, vAmbColor, jobData.passCullMask, passInfo);
-			}
-		}
-		else if (jobData.type == SCheckOcclusionJobData::TERRAIN_NODE)
-		{
-			AABB rAABB(Vec3(jobData.terrainData.vAABBMin[0], jobData.terrainData.vAABBMin[1], jobData.terrainData.vAABBMin[2]),
-			           Vec3(jobData.terrainData.vAABBMax[0], jobData.terrainData.vAABBMax[1], jobData.terrainData.vAABBMax[2]));
-
-			float fDistance = jobData.terrainData.fDistance;
-
-			// Test bounding box against main view
-			if (jobData.passCullMask & kPassCullMainMask && !TestAABB(rAABB, fDistance, TerrainBias))
-			{
-				jobData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
-			}
-
-			// special case for terrain, they are directly tested and send back to PPU
-			if (jobData.passCullMask)
-			{
-				SCheckOcclusionOutput outPut = SCheckOcclusionOutput::CreateTerrainOutput(jobData.terrainData.pTerrainNode, jobData.passCullMask, m_passInfoForCheckOcclusion);
-				GetObjManager()->PushIntoCullOutputQueue(outPut);
-			}
-		}
-		else
-		{
-			__debugbreak(); // unknown culler job type
+			checkOcclusionData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
 		}
 
+		// TODO: check also occlusion of shadow volumes
+
+		if (checkOcclusionData.passCullMask != 0)
+		{
+			Vec3 vAmbColor(checkOcclusionData.octTreeData.vAmbColor[0], checkOcclusionData.octTreeData.vAmbColor[1], checkOcclusionData.octTreeData.vAmbColor[2]);
+
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateTempRenderingInfo(/*checkOcclusionData.pCam,*/ checkOcclusionData.rendItemSorter, m_passInfoForCheckOcclusion);
+			passInfo.SetShadowPasses(checkOcclusionData.pShadowPasses);
+
+			pOctTreeNode->COctreeNode::RenderContent(checkOcclusionData.octTreeData.nRenderMask, vAmbColor, checkOcclusionData.passCullMask, passInfo);
+		}
 	}
+	else if (checkOcclusionData.type == SCheckOcclusionJobData::LIGHTS_NODE)
+	{
+		AABB rAABB;
+		COctreeNode* pOctTreeNode = checkOcclusionData.octTreeData.pOctTreeNode;
+		const Vec3 cameraPosition = m_passInfoForCheckOcclusion.GetCamera().GetPosition();
 
-	GetObjManager()->RemoveCullJobProducer();
+		memcpy(&rAABB, &pOctTreeNode->GetObjectsBBox(), sizeof(AABB));
+		float fDistance = sqrtf(Distance::Point_AABBSq(cameraPosition, rAABB));
+
+		// Test OctTree bounding box against main view
+		if (checkOcclusionData.passCullMask & kPassCullMainMask && !CCullThread::TestAABB(rAABB, fDistance))
+		{
+			checkOcclusionData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
+		}
+
+		// TODO: check also occlusion of shadow volumes
+
+		if (checkOcclusionData.passCullMask)
+		{
+			Vec3 vAmbColor(checkOcclusionData.octTreeData.vAmbColor[0], checkOcclusionData.octTreeData.vAmbColor[1], checkOcclusionData.octTreeData.vAmbColor[2]);
+
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateTempRenderingInfo(/*checkOcclusionData.pCam,*/ checkOcclusionData.rendItemSorter, m_passInfoForCheckOcclusion);
+			passInfo.SetShadowPasses(checkOcclusionData.pShadowPasses);
+
+			pOctTreeNode->COctreeNode::RenderLights(checkOcclusionData.octTreeData.nRenderMask, vAmbColor, checkOcclusionData.passCullMask, passInfo);
+		}
+	}
+	else if (checkOcclusionData.type == SCheckOcclusionJobData::TERRAIN_NODE)
+	{
+		const float TerrainBias = GetCVars()->e_CoverageBufferTerrainExpand;
+		AABB rAABB(Vec3(checkOcclusionData.terrainData.vAABBMin[0], checkOcclusionData.terrainData.vAABBMin[1], checkOcclusionData.terrainData.vAABBMin[2]),
+		           Vec3(checkOcclusionData.terrainData.vAABBMax[0], checkOcclusionData.terrainData.vAABBMax[1], checkOcclusionData.terrainData.vAABBMax[2]));
+
+		float fDistance = checkOcclusionData.terrainData.fDistance;
+
+		// Test bounding box against main view
+		if ((checkOcclusionData.passCullMask & kPassCullMainMask) != 0 && !CCullThread::TestAABB(rAABB, fDistance, TerrainBias))
+		{
+			checkOcclusionData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
+		}
+
+		// special case for terrain, they are directly tested and send back to PPU
+		if (checkOcclusionData.passCullMask != 0)
+		{
+			SCheckOcclusionOutput outPut = SCheckOcclusionOutput::CreateTerrainOutput(checkOcclusionData.terrainData.pTerrainNode, checkOcclusionData.passCullMask, m_passInfoForCheckOcclusion);
+			GetObjManager()->PushIntoCullOutputQueue(outPut);
+		}
+	}
+	else
+	{
+		CRY_ASSERT(false, "Unknown job type %d", int(checkOcclusionData.type));
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 bool CCullThread::TestAABB(const AABB& rAABB, float fEntDistance, float fVerticalExpand)
 {
-	IF (GetCVars()->e_CheckOcclusion == 0, 0)
+	IF(GetCVars()->e_CheckOcclusion == 0, 0)
 		return true;
 
 	FUNCTION_PROFILER_3DENGINE;
@@ -818,6 +806,17 @@ bool CCullThread::TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& 
 		return true;
 
 	return false;
+}
+
+void CCullThread::WaitOnCheckOcclusionJobs(bool waitForLights)
+{
+	// Ensure all jobs have finished
+	m_checkOcclusion.Wait();
+
+	if (!waitForLights)
+		GetObjManager()->GetRenderContentJobState().Wait();
+	else
+		GetObjManager()->GetRenderLightsJobState().Wait();
 }
 
 } // namespace NAsyncCull

@@ -1,16 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+#pragma once
 
-#if !defined(AFX_TOOLBARDIALOG_H__31620F0B_DB2D_45BA_A86B_E71BD4F79414__INCLUDED_)
-#define AFX_TOOLBARDIALOG_H__31620F0B_DB2D_45BA_A86B_E71BD4F79414__INCLUDED_
+#include "MFCToolsDefines.h"
+#include "Controls/DlgBars.h"
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-
-#include "PluginAPI.h"
-#include "Controls\DlgBars.h"
-
-class PLUGIN_API CToolbarDialog : public CXTPDialogBase<CXTResizeDialog>
+class MFC_TOOLS_PLUGIN_API CToolbarDialog : public CXTPDialogBase<CXTResizeDialog>
 {
 	DECLARE_DYNAMIC(CToolbarDialog)
 public:
@@ -19,14 +13,7 @@ public:
 	virtual ~CToolbarDialog();
 
 	void RecalcLayout();
-	void RecalcBarLayout() { RecalcLayout(); };
-	// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CTerrainDialog)
-protected:
-	//}}AFX_VIRTUAL
-
-	// Implementation
+	void RecalcBarLayout() { RecalcLayout(); }
 protected:
 	void RepositionBarsInternal(UINT nIDFirst, UINT nIDLast, UINT nIDLeftOver,
 	                            UINT nFlags = reposDefault, LPRECT lpRectParam = NULL, LPCRECT lpRectClient = NULL, BOOL bStretch = TRUE);
@@ -49,7 +36,10 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 // Custom frame window.
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CCustomFrameWnd : public CXTPFrameWnd
+// disable virtual function override warnings, as MFC headers do not pass them.
+#pragma warning(push)
+#pragma warning(disable: 4264)
+class MFC_TOOLS_PLUGIN_API CCustomFrameWnd : public CXTPFrameWnd
 {
 public:
 	DECLARE_DYNAMIC(CCustomFrameWnd)
@@ -57,7 +47,6 @@ public:
 	CCustomFrameWnd();
 
 	BOOL                    Create(DWORD dwStyle, const CRect& rect, CWnd* pParentWnd, UINT nID);
-	void                    SetView(CWnd* pViewWnd);
 
 	void                    LoadLayout(const CString& profile);
 	void                    InstallDockingPanes();
@@ -67,12 +56,12 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
 
-	virtual BOOL    OnInitDialog()                                    { return TRUE; };
-	virtual LRESULT OnDockingPaneNotify(WPARAM wParam, LPARAM lParam) { return 0; };
+	virtual BOOL    OnInitDialog()                                    { return TRUE; }
+	virtual LRESULT OnDockingPaneNotify(WPARAM wParam, LPARAM lParam) { return 0; }
 
 	virtual BOOL    PreTranslateMessage(MSG* pMsg);
 	virtual BOOL    OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
-	virtual void    PostNcDestroy() {};
+	virtual void    PostNcDestroy() {}
 
 	afx_msg BOOL    OnEraseBkgnd(CDC* pDC);
 	afx_msg void    OnDestroy();
@@ -84,6 +73,4 @@ protected:
 	CXTPDockingPaneManager m_paneManager;
 	CString                m_profile;
 };
-
-#endif // !defined(AFX_TOOLBARDIALOG_H__31620F0B_DB2D_45BA_A86B_E71BD4F79414__INCLUDED_)
-
+#pragma warning(pop)

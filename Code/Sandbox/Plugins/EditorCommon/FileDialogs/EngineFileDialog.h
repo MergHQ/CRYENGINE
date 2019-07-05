@@ -1,32 +1,31 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
-#include "Controls/EditorDialog.h"
 
 #include "EditorCommonAPI.h"
 
+#include "Controls/EditorDialog.h"
 #include "FileDialogs/ExtensionFilter.h"
 #include "FileSystem/FileSystem_FileFilter.h"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 class CFilePopupMenu;
 
-class EDITOR_COMMON_API CEngineFileDialog
-	: public CEditorDialog
+class EDITOR_COMMON_API CEngineFileDialog : public CEditorDialog
 {
 	Q_OBJECT
 
 public:
-	typedef FileSystem::SFileFilter::FileFilterCallback                             FileFilterCallback;
-	typedef std::function<bool (const QString& path)> AcceptFileCallback;
+	typedef FileSystem::SFileFilter::FileFilterCallback FileFilterCallback;
+	typedef std::function<bool (const QString& path)>   AcceptFileCallback;
 
 	enum Mode
 	{
-		SelectDirectory,	// ignore files and select a directory
-		OpenFile,			// select one file
-		OpenMultipleFiles,	// select multiple files
-		SaveFile,			// save (write) a file
+		SelectDirectory,   // ignore files and select a directory
+		OpenFile,          // select one file
+		OpenMultipleFiles, // select multiple files
+		SaveFile,          // save (write) a file
 
 		Count
 	};
@@ -38,7 +37,7 @@ public:
 		ExtensionFilterVector extensionFilters; // extension filters for files
 		QString               initialDir;       // full engine path
 		QString               initialFile;      // full engine path
-		QString               baseDirectory; // limits selection to files below this directory
+		QString               baseDirectory;    // limits selection to files below this directory
 		FileFilterCallback    fileFilterFunc;
 		bool                  allowCreateFolder;   // show a button to create new folders
 		QString               defaultExtension;    // if set, this will be selected as the default extension. If the user doesn't specify an extension however, the first extension from the current extension filter will be used. This is similar to windows behavior
@@ -61,7 +60,7 @@ public:
 	explicit CEngineFileDialog(OpenParams& openParams, QWidget* parent = nullptr);
 	~CEngineFileDialog();
 
-	/// \returns vector with engine pathes of all files selected
+	/// \returns vector with engine paths of all files selected
 	std::vector<QString> GetSelectedFiles() const;
 
 public:
@@ -83,4 +82,3 @@ private:
 	struct Implementation;
 	std::unique_ptr<Implementation> p;
 };
-

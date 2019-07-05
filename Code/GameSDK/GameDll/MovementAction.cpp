@@ -8,6 +8,7 @@
 //#include "Utility/CryWatch.h"
 
 #include "GameConstantCVars.h"
+#include <CryGame/GameUtils.h>
 
 //--- TODO! Move these somewhere more sensible!
 

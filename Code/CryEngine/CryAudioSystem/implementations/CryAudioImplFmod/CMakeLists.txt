@@ -6,28 +6,48 @@ start_sources()
 sources_platform(ALL)
 add_sources("CryAudioImpl_uber_0.cpp"
 	SOURCE_GROUP "Header Files"
-		"ATLEntities.h"
-		"AudioEvent.h"
-		"AudioImpl.h"
-		"AudioImplCVars.h"
-		"AudioObject.h"
+		"Bank.h"
+		"BaseTriggerConnection.h"
 		"Common.h"
+		"CVars.h"
+		"Event.h"
+		"EventInstance.h"
 		"GlobalData.h"
+		"Impl.h"
+		"Listener.h"
+		"MasterBank.h"
+		"Object.h"
+		"Parameter.h"
+		"ParameterEnvironment.h"
+		"ParameterInfo.h"
+		"ParameterState.h"
 		"resource.h"
-		"stdafx.h"
+		"Return.h"
+		"Snapshot.h"
+		"Vca.h"
+		"VcaState.h"
 	SOURCE_GROUP "Source Files"
-		"ATLEntities.cpp"
-		"AudioEvent.cpp"
-		"AudioImpl.cpp"
-		"AudioImplCVars.cpp"
-		"AudioObject.cpp"
 		"Common.cpp"
 		"CryAudioImpl.cpp"
+		"CVars.cpp"
+		"Event.cpp"
+		"EventInstance.cpp"
+		"Impl.cpp"
+		"Listener.cpp"
+		"Object.cpp"
+		"Parameter.cpp"
+		"ParameterEnvironment.cpp"
+		"ParameterState.cpp"
+		"Return.cpp"
+		"Snapshot.cpp"
+		"Vca.cpp"
+		"VcaState.cpp"
 )
 
 add_sources("NoUberFile"
 	SOURCE_GROUP "Root"
 		"stdafx.cpp"
+		"stdafx.h"
 )
 
 end_sources()
@@ -35,8 +55,32 @@ end_sources()
 
 if(AUDIO_FMOD)
 	CryEngineModule(CryAudioImplFmod FORCE_SHARED_WIN PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
-	target_include_directories(CryAudioImplFmod PRIVATE ../../Common)
-	target_link_libraries(CryAudioImplFmod PRIVATE fmod fmodstudio)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE>)
+	target_include_directories(${THIS_PROJECT} PRIVATE ../../Common)
+	target_link_libraries(${THIS_PROJECT} PRIVATE fmod fmodstudio)
 else()
 	CryFileContainer(CryAudioImplFmod SOLUTION_FOLDER "CryEngine/Audio/Implementations")
+endif()
+if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-format
+		-Wno-multichar
+		-Wno-parentheses
+		-Wno-unknown-pragmas
+		-Wno-unused-function
+		-Wno-unused-private-field
+	)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		-Wno-format
+		-Wno-maybe-uninitialized
+		-Wno-misleading-indentation
+		-Wno-multichar
+		-Wno-parentheses
+		-Wno-sign-compare
+		-Wno-strict-aliasing
+		-Wno-unknown-pragmas
+		-Wno-unused-but-set-variable
+		-Wno-unused-function
+	)
 endif()

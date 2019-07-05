@@ -20,7 +20,9 @@
             "DefaultComponents/Audio/SwitchComponent.cpp", 
             "DefaultComponents/Audio/SwitchComponent.h", 
             "DefaultComponents/Audio/TriggerComponent.cpp", 
-            "DefaultComponents/Audio/TriggerComponent.h"
+            "DefaultComponents/Audio/TriggerComponent.h", 
+            "DefaultComponents/Audio/VelocityComponent.cpp", 
+            "DefaultComponents/Audio/VelocityComponent.h"
         ], 
         "Cameras": [
             "DefaultComponents/Cameras/CameraComponent.cpp", 
@@ -31,6 +33,9 @@
         "Cameras/VirtualReality": [
             "DefaultComponents/Cameras/VirtualReality/RoomscaleCamera.cpp", 
             "DefaultComponents/Cameras/VirtualReality/RoomscaleCamera.h"
+        ], 
+        "ComponentHelpers": [
+            "DefaultComponents/ComponentHelpers/PhysicsParameters.h"
         ], 
         "Constraints": [
             "DefaultComponents/Constraints/PointConstraint.cpp", 
@@ -59,6 +64,7 @@
             "DefaultComponents/Effects/RainComponent.h"
         ], 
         "Geometry": [
+            "DefaultComponents/Geometry/BaseMeshComponent.cpp", 
             "DefaultComponents/Geometry/BaseMeshComponent.h", 
             "DefaultComponents/Geometry/StaticMeshComponent.cpp", 
             "DefaultComponents/Geometry/StaticMeshComponent.h", 
@@ -127,6 +133,7 @@
             "DefaultComponents/Lights/EnvironmentProbeComponent.h", 
             "DefaultComponents/Lights/PointLightComponent.cpp", 
             "DefaultComponents/Lights/PointLightComponent.h", 
+            "DefaultComponents/Lights/ILightComponent.h", 
             "DefaultComponents/Lights/ProjectorLightComponent.cpp", 
             "DefaultComponents/Lights/ProjectorLightComponent.h"
         ], 
@@ -135,6 +142,7 @@
             "DefaultComponents/Physics/CharacterControllerComponent.h", 
             "DefaultComponents/Physics/RigidBodyComponent.cpp", 
             "DefaultComponents/Physics/RigidBodyComponent.h", 
+            "DefaultComponents/Physics/PhysicsPrimitiveComponent.cpp", 
             "DefaultComponents/Physics/PhysicsPrimitiveComponent.h", 
             "DefaultComponents/Physics/BoxPrimitiveComponent.cpp", 
             "DefaultComponents/Physics/BoxPrimitiveComponent.h", 
@@ -149,7 +157,9 @@
             "DefaultComponents/Physics/AreaComponent.cpp", 
             "DefaultComponents/Physics/AreaComponent.h", 
             "DefaultComponents/Physics/SampleRigidbodyActorComponent.cpp", 
-            "DefaultComponents/Physics/SampleRigidbodyActorComponent.h"
+            "DefaultComponents/Physics/SampleRigidbodyActorComponent.h", 
+            "DefaultComponents/Physics/LocalGridComponent.cpp", 
+            "DefaultComponents/Physics/LocalGridComponent.h"
         ], 
         "Physics/Vehicles": [
             "DefaultComponents/Physics/Vehicles/VehicleComponent.cpp", 

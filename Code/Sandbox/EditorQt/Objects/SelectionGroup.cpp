@@ -2,30 +2,27 @@
 
 #include "StdAfx.h"
 #include "SelectionGroup.h"
-#include "Grid.h"
-#include "Viewport.h"
-#include "Objects/BaseObject.h"
-#include "Objects/DisplayContext.h"
-#include "GeomEntity.h"
-#include "PrefabObject.h"
-#include "BrushObject.h"
-#include "EntityObject.h"
-#include "SurfaceInfoPicker.h"
+
+#include "Objects/BrushObject.h"
+#include "Objects/EntityObject.h"
+#include "Objects/GeomEntity.h"
+#include "Objects/PrefabObject.h"
 #include "Prefabs/PrefabManager.h"
+#include "SurfaceInfoPicker.h"
 
-//////////////////////////////////////////////////////////////////////////
-CSelectionGroup::CSelectionGroup()
-{
+#include <Objects/BaseObject.h>
+#include <Objects/DisplayContext.h>
+#include <Preferences/SnappingPreferences.h>
+#include <Viewport.h>
+#include <Util/Math.h>
+#include <Cry3DEngine/IStatObj.h>
+#include <queue>
 
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Reserve(size_t count)
 {
 	m_objects.reserve(count);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::AddObject(CBaseObject* obj)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
@@ -39,7 +36,6 @@ void CSelectionGroup::AddObject(CBaseObject* obj)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::RemoveObject(CBaseObject* obj)
 {
 	for (Objects::iterator it = m_objects.begin(); it != m_objects.end(); ++it)
@@ -55,7 +51,6 @@ void CSelectionGroup::RemoveObject(CBaseObject* obj)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::RemoveAll()
 {
 	m_objects.clear();
@@ -69,26 +64,30 @@ bool CSelectionGroup::IsContainObject(CBaseObject* obj) const
 	return (m_objectsSet.find(obj) != m_objectsSet.end());
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CSelectionGroup::IsEmpty() const
 {
 	return m_objects.empty();
 }
 
-//////////////////////////////////////////////////////////////////////////
 int CSelectionGroup::GetCount() const
 {
 	return m_objects.size();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CSelectionGroup::GetObject(int index) const
 {
 	ASSERT(index >= 0 && index < m_objects.size());
 	return m_objects[index];
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CSelectionGroup::GetObjects(std::vector<CBaseObject*>& objects) const
+{
+	for (_smart_ptr<CBaseObject> pObject : m_objects)
+	{
+		objects.push_back(pObject.get());
+	}
+}
+
 CBaseObject* CSelectionGroup::GetObjectByGuid(CryGUID guid) const
 {
 	for (size_t i = 0, count(m_objects.size()); i < count; ++i)
@@ -101,7 +100,6 @@ CBaseObject* CSelectionGroup::GetObjectByGuid(CryGUID guid) const
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CBaseObject* CSelectionGroup::GetObjectByGuidInPrefab(CryGUID guid) const
 {
 	std::queue<CBaseObject*> groups;
@@ -138,7 +136,6 @@ CBaseObject* CSelectionGroup::GetObjectByGuidInPrefab(CryGUID guid) const
 	return nullptr;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Copy(const CSelectionGroup& from)
 {
 	m_name = from.m_name;
@@ -147,7 +144,6 @@ void CSelectionGroup::Copy(const CSelectionGroup& from)
 	m_filtered = from.m_filtered;
 }
 
-//////////////////////////////////////////////////////////////////////////
 Vec3 CSelectionGroup::GetCenter() const
 {
 	Vec3 c(0, 0, 0);
@@ -160,22 +156,24 @@ Vec3 CSelectionGroup::GetCenter() const
 	return c;
 }
 
-bool CSelectionGroup::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) const
+bool CSelectionGroup::GetManipulatorMatrix(Matrix34& tm) const
 {
 	int numObjects = GetCount();
 
 	if (numObjects > 0)
 	{
+		CLevelEditorSharedState::CoordSystem coordSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+
 		CBaseObject* pObj = GetObject(numObjects - 1);
-		if (coordSys == COORDS_LOCAL || coordSys == COORDS_PARENT)
+		if (coordSystem == CLevelEditorSharedState::CoordSystem::Local || coordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 		{
 			// attempt to get local or parent matrix from gizmo owner. If none is provided, just use world matrix instead
-			if (!pObj->GetManipulatorMatrix(coordSys, tm))
+			if (!pObj->GetManipulatorMatrix(tm))
 			{
 				tm.SetIdentity();
 			}
 		}
-		else if (coordSys == COORDS_WORLD)
+		else if (coordSystem == CLevelEditorSharedState::CoordSystem::World)
 		{
 			tm.SetIdentity();
 		}
@@ -188,7 +186,6 @@ bool CSelectionGroup::GetManipulatorMatrix(RefCoordSys coordSys, Matrix34& tm) c
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 AABB CSelectionGroup::GetBounds() const
 {
 	AABB b;
@@ -203,7 +200,6 @@ AABB CSelectionGroup::GetBounds() const
 	return box;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::FilterParents() const
 {
 	if (!m_filtered.empty())
@@ -212,7 +208,6 @@ void CSelectionGroup::FilterParents() const
 	GetIEditorImpl()->GetObjectManager()->FilterParents(m_objects, m_filtered);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::FilterLinkedObjects() const
 {
 	if (!m_filtered.empty())
@@ -220,9 +215,8 @@ void CSelectionGroup::FilterLinkedObjects() const
 
 	GetIEditorImpl()->GetObjectManager()->FilterLinkedObjects(m_objects, m_filtered);
 }
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoordSys, const CPoint& point, bool bFromInitPos) const
+
+void CSelectionGroup::Move(const Vec3& offset, int moveFlags, const CPoint& point, bool bFromInitPos) const
 {
 	// [MichaelS - 17/3/2005] Removed this code from the three edit functions (move,
 	// rotate and scale). This was causing a bug where the render node of objects
@@ -249,8 +243,25 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 
 	if ((moveFlags & eMS_FollowGeometry) && bValidFollowGeometryMode)
 	{
+		//If that object has children they need to be excluded from the search as we don't want the raycast to collide with them
 		for (int i = 0; i < GetFilteredCount(); ++i)
-			excludeObjects.Add(GetFilteredObject(i));
+		{
+			CBaseObject* object = GetFilteredObject(i);
+			//exclude the object itself
+			excludeObjects.Add(object);
+
+			//and then all the children
+			if (object->HasChildren())
+			{
+				TBaseObjects descendants;
+				object->GetAllDescendants(descendants);
+
+				for (auto child : descendants)
+				{
+					excludeObjects.Add(child.get());
+				}
+			}
+		}
 	}
 
 	for (int i = 0; i < GetFilteredCount(); i++)
@@ -282,7 +293,7 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 
 		if ((moveFlags & eMS_FollowGeometry) && bValidFollowGeometryMode)
 		{
-			if (GetIEditorImpl()->GetActiveView()->GetAxisConstrain() == AXIS_Z)
+			if (GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint() == CLevelEditorSharedState::Axis::Z)
 			{
 				continue;
 			}
@@ -290,8 +301,9 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 			CPoint screenSpacePos = GetIEditorImpl()->GetActiveView()->WorldToView(newPos);
 
 			CSurfaceInfoPicker surfacePicker;
+			// All movements (with snapping to geometry) should also consider frozen objects
+			surfacePicker.SetPickOptionFlag(CSurfaceInfoPicker::ePickOption_IncludeFrozenObject);
 			bValidFollowGeometryMode = surfacePicker.Pick(screenSpacePos, pickedInfo, &excludeObjects);
-
 			obj->SetWorldPos(pickedInfo.vHitPos);
 
 			if (moveFlags & eMS_SnapToNormal)
@@ -308,7 +320,7 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 
 		if (moveFlags & eMS_FollowTerrain)
 		{
-			if (GetIEditorImpl()->GetActiveView()->GetAxisConstrain() != AXIS_Z)
+			if (GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint() != CLevelEditorSharedState::Axis::Z)
 			{
 				// Make sure object keeps it height.
 				float height = wp.z - GetIEditorImpl()->GetTerrainElevation(wp.x, wp.y);
@@ -330,38 +342,24 @@ void CSelectionGroup::Move(const Vec3& offset, int moveFlags, int referenceCoord
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::MoveTo(const Vec3& pos, EMoveSelectionFlag moveFlag, int referenceCoordSys, const CPoint& point) const
-{
-	FilterParents();
-	if (GetFilteredCount() < 1)
-		return;
-
-	CBaseObject* refObj = GetFilteredObject(0);
-	CSelectionGroup::Move(pos - refObj->GetWorldTM().GetTranslation(), moveFlag, referenceCoordSys, point);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Rotate(const Quat& qRot, int referenceCoordSys) const
+void CSelectionGroup::Rotate(const Quat& qRot) const
 {
 	Matrix34 rotateTM = Matrix33(qRot);
 
-	Rotate(rotateTM, referenceCoordSys);
+	Rotate(rotateTM);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Rotate(const Ang3& angles, int referenceCoordSys) const
+void CSelectionGroup::Rotate(const Ang3& angles) const
 {
 	//if (angles.x == 0 && angles.y == 0 && angles.z == 0)
 	//	return;
 
 	Matrix34 rotateTM = Matrix34::CreateRotationXYZ(DEG2RAD(-angles)); //NOTE: angles in radians and negated
 
-	Rotate(rotateTM, referenceCoordSys);
+	Rotate(rotateTM);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) const
+void CSelectionGroup::Rotate(const Matrix34& rotateTM) const
 {
 	// Rotate selection about selection center.
 	Vec3 center = GetCenter();
@@ -372,14 +370,19 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 	ToOrigin.SetIdentity();
 	FromOrigin.SetIdentity();
 
-	if (referenceCoordSys != COORDS_LOCAL)
+	CLevelEditorSharedState::CoordSystem coordinateSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
+
+	if (coordinateSystem != CLevelEditorSharedState::CoordSystem::Local)
 	{
 		ToOrigin.SetTranslation(-center);
 		FromOrigin.SetTranslation(center);
 
-		if (referenceCoordSys == COORDS_USERDEFINED)
+		if (coordinateSystem == CLevelEditorSharedState::CoordSystem::UserDefined)
 		{
-			Matrix34 userTM = gSnappingPreferences.GetMatrix();
+			Matrix34 userTM = Matrix34::CreateIdentity();
+			GetManipulatorMatrix(userTM);
+			userTM.SetTranslation(Vec3(0, 0, 0));
+
 			Matrix34 invUserTM = userTM.GetInvertedFast();
 
 			ToOrigin = invUserTM * ToOrigin;
@@ -395,12 +398,12 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 
 		Matrix34 m = obj->GetWorldTM();
 
-		auto axisConstraints = GetIEditor()->GetAxisConstrains();
+		auto axisConstraints = GetIEditor()->GetLevelEditorSharedState()->GetAxisConstraint();
 		// Rotation around view axis should be the same regardless of space (local, parent, world)
-		if (axisConstraints == AXIS_VIEW || axisConstraints == AXIS_XYZ)
+		if (axisConstraints == CLevelEditorSharedState::Axis::View || axisConstraints == CLevelEditorSharedState::Axis::XYZ)
 		{
 			// Rotate objects in view space using each object's separate world position as the pivot
-			if (referenceCoordSys == COORDS_LOCAL)
+			if (coordinateSystem == CLevelEditorSharedState::CoordSystem::Local)
 			{
 				CBaseObject* obj = GetFilteredObject(i);
 				Matrix34 m = obj->GetWorldTM();
@@ -424,9 +427,9 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 				obj->SetWorldTM(m, eObjectUpdateFlags_UserInput);
 			}
 		}
-		else if (referenceCoordSys != COORDS_LOCAL)
+		else if (coordinateSystem != CLevelEditorSharedState::CoordSystem::Local)
 		{
-			if (referenceCoordSys == COORDS_PARENT && obj->GetParent())
+			if (coordinateSystem == CLevelEditorSharedState::CoordSystem::Parent && obj->GetParent())
 			{
 				Matrix34 parentTM = obj->GetParent()->GetWorldTM();
 				parentTM.OrthonormalizeFast();
@@ -451,8 +454,7 @@ void CSelectionGroup::Rotate(const Matrix34& rotateTM, int referenceCoordSys) co
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
+void CSelectionGroup::Scale(const Vec3& scaleArg) const
 {
 	Vec3 scl = scaleArg;
 	if (scl.x == 0) scl.x = 0.01f;
@@ -461,31 +463,32 @@ void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
 
 	FilterParents();
 
+	CLevelEditorSharedState::CoordSystem coordinateSystem = GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem();
 	for (int i = 0; i < GetFilteredCount(); i++)
 	{
-		int objCoordSystem = referenceCoordSys;
+		CLevelEditorSharedState::CoordSystem objCoordSystem = coordinateSystem;
 
 		CBaseObject* const pObj = GetFilteredObject(i);
 		Vec3 scale = m_initElementTransforms[i].scale;
 
-		if (objCoordSystem == COORDS_PARENT && pObj->GetParent() == nullptr)
+		if (objCoordSystem == CLevelEditorSharedState::CoordSystem::Parent && pObj->GetParent() == nullptr)
 		{
-			objCoordSystem = COORDS_LOCAL;
+			objCoordSystem = CLevelEditorSharedState::CoordSystem::Local;
 		}
 
-		if (objCoordSystem == COORDS_LOCAL)
+		if (objCoordSystem == CLevelEditorSharedState::CoordSystem::Local)
 		{
 			scale = scale.CompMul(scl);
 		}
-		else if (objCoordSystem == COORDS_WORLD || objCoordSystem == COORDS_PARENT || objCoordSystem == COORDS_VIEW)
+		else if (objCoordSystem == CLevelEditorSharedState::CoordSystem::World || objCoordSystem == CLevelEditorSharedState::CoordSystem::Parent || objCoordSystem == CLevelEditorSharedState::CoordSystem::View)
 		{
 			Matrix33 mFromWorld;
 
 			// scale is not in local space, so we need to project the scale vector to the local space of the object
-			if (objCoordSystem == COORDS_PARENT)
+			if (objCoordSystem == CLevelEditorSharedState::CoordSystem::Parent)
 			{
 				mFromWorld = Matrix33(m_initElementTransforms[i].localRotation.GetInverted());
-			}	
+			}
 			else
 			{
 				mFromWorld = m_initElementTransforms[i].worldRotation.GetTransposed();
@@ -508,7 +511,7 @@ void CSelectionGroup::Scale(const Vec3& scaleArg, int referenceCoordSys) const
 	}
 }
 
-void CSelectionGroup::SetScale(const Vec3& scale, int referenceCoordSys) const
+void CSelectionGroup::SetScale(const Vec3& scale) const
 {
 	Vec3 relScale = scale;
 
@@ -520,10 +523,9 @@ void CSelectionGroup::SetScale(const Vec3& scale, int referenceCoordSys) const
 		relScale = relScale / objScale;
 	}
 
-	Scale(relScale, referenceCoordSys);
+	Scale(relScale);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::Align() const
 {
 	for (int i = 0; i < GetFilteredCount(); ++i)
@@ -545,20 +547,6 @@ void CSelectionGroup::Align() const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::Transform(const Vec3& offset, EMoveSelectionFlag moveFlag, const Ang3& angles, const Vec3& scale, int referenceCoordSys) const
-{
-	if (offset != Vec3(0))
-		Move(offset, moveFlag, referenceCoordSys);
-
-	if (!(angles == Ang3(ZERO)))
-		Rotate(angles, referenceCoordSys);
-
-	if (scale != Vec3(0))
-		Scale(scale, referenceCoordSys);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::ResetTransformation() const
 {
 	FilterParents();
@@ -574,7 +562,6 @@ void CSelectionGroup::ResetTransformation() const
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 static void RecursiveFlattenHierarchy(CBaseObject* pObj, CSelectionGroup& newGroup, bool flattenGroups)
 {
 	if (!pObj->IsKindOf(RUNTIME_CLASS(CGroup)))
@@ -592,16 +579,14 @@ static void RecursiveFlattenHierarchy(CBaseObject* pObj, CSelectionGroup& newGro
 	}
 	else if (flattenGroups)
 	{
-		const TBaseObjects& groupMembers = static_cast<CGroup*>(pObj)->GetMembers();
-		for (int i = 0, count = groupMembers.size(); i < count; ++i)
+		for (int i = 0, count = pObj->GetChildCount(); i < count; ++i)
 		{
-			newGroup.AddObject(groupMembers[i]);
-			RecursiveFlattenHierarchy(groupMembers[i], newGroup, flattenGroups);
+			newGroup.AddObject(pObj->GetChild(i));
+			RecursiveFlattenHierarchy(pObj->GetChild(i), newGroup, flattenGroups);
 		}
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::FlattenHierarchy(CSelectionGroup& newGroup, bool flattenGroups)
 {
 	for (int i = 0; i < GetCount(); i++)
@@ -612,110 +597,6 @@ void CSelectionGroup::FlattenHierarchy(CSelectionGroup& newGroup, bool flattenGr
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-class CAttachToGroup : public IPickObjectCallback
-{
-public:
-	//! Called when object picked.
-	virtual void OnPick(CBaseObject* picked)
-	{
-		assert(picked->GetType() == OBJTYPE_PREFAB || picked->GetType() == OBJTYPE_GROUP);
-
-		IObjectManager* objManager = GetIEditorImpl()->GetObjectManager();
-
-		if (picked->GetType() == OBJTYPE_GROUP)
-		{
-			CUndo undo("Attach to Group");
-			CGroup* gpicked = static_cast<CGroup*>(picked);
-			const CSelectionGroup* selGroup = GetIEditorImpl()->GetSelection();
-			selGroup->FilterParents();
-			std::vector<CBaseObject*> filteredObjects;
-			filteredObjects.reserve(selGroup->GetFilteredCount());
-
-			// Save filtered list locally because we will be doing selections, which will invalidate the filtered group
-			for (int i = 0; i < selGroup->GetFilteredCount(); i++)
-				filteredObjects.push_back(selGroup->GetFilteredObject(i));
-
-			for (CBaseObject* selectedObj : filteredObjects)
-			{
-				if (ChildIsValid(picked, selectedObj))
-				{
-					gpicked->AddMember(selectedObj);
-
-					// If this is not an open group we are adding to, we must also update the selection
-					if (!gpicked->IsOpen())
-						objManager->UnselectObject(selectedObj);
-				}
-			}
-
-			if (!gpicked->IsOpen() && !gpicked->IsSelected())
-				objManager->SelectObject(gpicked);
-		}
-		else if (picked->GetType() == OBJTYPE_PREFAB)
-		{
-			CUndo undo("Attach to Prefab");
-
-			CPrefabObject* gpicked = static_cast<CPrefabObject*>(picked);
-			GetIEditor()->GetPrefabManager()->AddSelectionToPrefab(gpicked);
-		}
-
-		delete this;
-	}
-	//! Called when pick mode cancelled.
-	virtual void OnCancelPick()
-	{
-		delete this;
-	}
-	//! Return true if specified object is pickable.
-	virtual bool OnPickFilter(CBaseObject* filterObject)
-	{
-		if (filterObject->GetType() == OBJTYPE_PREFAB || filterObject->GetType() == OBJTYPE_GROUP)
-			return true;
-		else
-			return false;
-	}
-private:
-	bool ChildIsValid(CBaseObject* pParent, CBaseObject* pChild, int nDir = 3)
-	{
-		if (pParent == pChild)
-			return false;
-
-		CBaseObject* pObj;
-		if (nDir & 1)
-		{
-			if (pObj = pChild->GetParent())
-			{
-				if (!ChildIsValid(pParent, pObj, 1))
-				{
-					return false;
-				}
-			}
-		}
-		if (nDir & 2)
-		{
-			for (int i = 0; i < pChild->GetChildCount(); i++)
-			{
-				if (pObj = pChild->GetChild(i))
-				{
-					if (!ChildIsValid(pParent, pObj, 2))
-					{
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
-void CSelectionGroup::AttachToGroup() const
-{
-	CAttachToGroup* pCallback = new CAttachToGroup;
-	GetIEditorImpl()->PickObject(pCallback);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::SendEvent(ObjectEvent event) const
 {
 	for (int i = 0; i < m_objects.size(); i++)
@@ -740,15 +621,14 @@ void CSelectionGroup::SaveFilteredTransform() const
 		// Here copied what was there in Move function instead of GetPos due to high risk time for the fix.
 		// TODO: explore if SetPos works correctly even with object hierarchies
 		STransformElementInit elem;
-		elem.position      = m_filtered[i]->GetWorldPos();
-		elem.scale         = m_filtered[i]->GetScale();
+		elem.position = m_filtered[i]->GetWorldPos();
+		elem.scale = m_filtered[i]->GetScale();
 		elem.worldRotation = m_filtered[i]->GetWorldRotTM();
 		elem.localRotation = m_filtered[i]->GetRotation();
 		m_initElementTransforms.push_back(elem);
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CSelectionGroup::ObjectModified() const
 {
 	//Object has been moved/scaled/rotated, call reset
@@ -786,4 +666,3 @@ void CSelectionGroup::FinishChanges() const
 
 	m_initElementTransforms.clear();
 }
-

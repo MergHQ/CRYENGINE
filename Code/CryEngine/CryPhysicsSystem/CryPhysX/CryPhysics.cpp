@@ -8,6 +8,8 @@
 #include "world.h"
 
 #ifndef STANDALONE_PHYSICS
+#include "../../CryPhysics/cvars.h"
+#include <CryPhysics/IPhysics.h>
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
@@ -78,6 +80,8 @@ class CEngineModule_CryPhysics : public IPhysicsEngineModule
 			pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_physics, "CSystemEventListner_Physics");
 
 		env.pPhysicalWorld = new PhysXWorld(pSystem ? pSystem->GetILog() : 0);
+
+		PhysicsCVars::Register(env.pPhysicalWorld->GetPhysVars());
 
 		return true;
 	}

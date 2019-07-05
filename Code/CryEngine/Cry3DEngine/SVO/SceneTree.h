@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __SCENETREE_H__
-#define __SCENETREE_H__
+#pragma once
 
 #if defined(FEATURE_SVO_GI)
 
-	#pragma pack(push,4)
+#pragma pack(push,4)
 
 typedef std::unordered_map<uint64, std::pair<byte, byte>> PvsMap;
 typedef std::set<class CVoxelSegment*>                    VsSet;
@@ -77,15 +76,17 @@ public:
 
 	void                 CheckAllocateChilds();
 	void                 DeleteChilds();
-	void                 Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int treeLevel, PodArray<SVF_P3F_C4B_T2F>& arrVertsOut, PodArray<class CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE]);
+	void                 Render(PodArray<struct SPvsItem>* pSortedPVS, uint64 nodeKey, int treeLevel, PodArray<SVF_P3F_C4B_T2F>& arrVertsOut,
+	                            PodArray<class CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE], const AABB& playableArea);
 	bool                 IsStreamingInProgress();
 	void                 GetTrisInAreaStats(int& trisCount, int& vertCount, int& trisBytes, int& vertBytes, int& maxVertPerArea, int& matsCount);
 	void                 GetVoxSegMemUsage(int& allocated);
 	AABB                 GetChildBBox(int childId);
+	static AABB          GetMagnifiedNodeBox(const AABB& nodeBox);
 	void                 CheckAllocateSegment(int lod);
 	void                 OnStatLightsChanged(const AABB& objBox);
 	class CVoxelSegment* AllocateSegment(int cloudId, int stationId, int lod, EFileStreamingStatus eStreamingStatus, bool bDroppedOnDisk);
-	uint32               SaveNode(PodArray<byte>& arrData, uint32& nNodesCounter, ICryArchive* pArchive, uint32& totalSizeCounter);
+	uint32               SaveNode(PodArray<byte>& arrData, uint32& nNodesCounter, ICryArchive* pArchive, uint32& totalSizeCounter, const AABB& playableArea);
 	void                 MakeNodeFilePath(char* szFileName);
 	bool                 CheckReadyForRendering(int treeLevel, PodArray<CVoxelSegment*> arrForStreaming[SVO_STREAM_QUEUE_MAX_SIZE][SVO_STREAM_QUEUE_MAX_SIZE]);
 	CSvoNode*            FindNodeByPosition(const Vec3& vPosWS, int treeLevelToFind, int treeLevelCur);
@@ -138,12 +139,14 @@ public:
 	bool Render();
 	void ProcessSvoRootTeleport();
 	void CheckUpdateMeshPools();
+	template<class T> void ProcessIncrementalTextureUpdate(PodArrayRT<T>& rAr, ETEX_Format texFormat, const char* szComment);
 	int  GetWorstPointInSubSet(const int start, const int end);
 	void StartupStreamingTimeTest(bool bDone);
 	void OnLevelGeometryChanged();
 	void ReconstructTree(bool bMultiPoint);
 	void AllocateRootNode();
 	int  ExportSvo(ICryArchive* pArchive);
+	AABB GetPlayableArea();
 	void DetectMovement_StaticGeom();
 	void DetectMovement_StatLights();
 	void CollectLights();
@@ -188,24 +191,18 @@ public:
 	int                       m_texRgb4PoolId;
 	int                       m_texDynlPoolId;
 	int                       m_texAldiPoolId;
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	int                       m_texTrisPoolId;
-	#endif
 
 	ETEX_Format                                       m_voxTexFormat;
 	TDoublyLinkedList<CVoxelSegment>                  m_arrSegForUnload;
 	CCustomSVOPoolAllocator<struct SBrickSubSet, 128> m_brickSubSetAllocator;
 	CCustomSVOPoolAllocator<CSvoNode, 128>            m_nodeAllocator;
 
-	#ifdef FEATURE_SVO_GI_USE_MESH_RT
 	PodArrayRT<ColorB> m_arrRTPoolTexs;
 	PodArrayRT<Vec4>   m_arrRTPoolTris;
 	PodArrayRT<ColorB> m_arrRTPoolInds;
-	#endif
 };
 
-	#pragma pack(pop)
-
-#endif
+#pragma pack(pop)
 
 #endif

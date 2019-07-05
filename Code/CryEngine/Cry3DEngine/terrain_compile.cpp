@@ -36,12 +36,14 @@
 
 // Bits 13-14 reserved for player hideability
 #define SIGC_PLAYERHIDEABLE_LOWBIT    (13)
-#define SIGC_PLAYERHIDEABLE_MASK      BIT(13) | BIT(14)
+#define SIGC_PLAYERHIDEABLE_MASK      (BIT(13) | BIT(14))
 
+// Bits 15,16,17 reserved for shadows
 #define SIGC_CASTSHADOW_MINSPEC_SHIFT (15)
-#define SIGC_CASTSHADOW_MINSPEC_MASK  ((END_CONFIG_SPEC_ENUM - 1) << SIGC_CASTSHADOW_MINSPEC_SHIFT)
+#define SIGC_CASTSHADOW_MINSPEC_MASK  (BIT(15) | BIT(16) | BIT(17))
 
-#define SIGC_INSTANCING               BIT(16)
+#define SIGC_INSTANCING               BIT(18)
+#define SIGC_OFFLINE_PROCEDURAL       BIT(19)
 
 void CTerrain::GetVegetationMaterials(std::vector<IMaterial*>*& pMatTable)
 {
@@ -51,7 +53,6 @@ void CTerrain::GetVegetationMaterials(std::vector<IMaterial*>*& pMatTable)
 	{
 		// get vegetation objects materials
 		PodArray<StatInstGroup>& rTable = GetObjManager()->m_lstStaticTypes;
-		int nObjectsCount = rTable.size();
 
 		// init struct values and load cgf's
 		for (uint32 i = 0; i < rTable.size(); i++)
@@ -186,6 +187,8 @@ void CTerrain::SaveTables(byte*& pData, int& nDataSize, std::vector<struct IStat
 					lstFileChunks[i].nFlags |= SIGC_PROCEDURALLYANIMATED;
 				if (rTable[i]->bGIMode)
 					lstFileChunks[i].nFlags |= SIGC_GI_MODE;
+				if (rTable[i]->offlineProcedural)
+					lstFileChunks[i].nFlags |= SIGC_OFFLINE_PROCEDURAL;
 				if (rTable[i]->bInstancing)
 					lstFileChunks[i].nFlags |= SIGC_INSTANCING;
 				if (rTable[i]->bDynamicDistanceShadows)
@@ -425,6 +428,7 @@ void CTerrain::LoadVegetationData(PodArray<StatInstGroup>& rTable, PodArray<Stat
 	rTable[i].bPickable = (lstFileChunks[i].nFlags & SIGC_PICKABLE) != 0;
 	rTable[i].bAutoMerged = (lstFileChunks[i].nFlags & SIGC_PROCEDURALLYANIMATED) != 0;  // && GetCVars()->e_MergedMeshes;
 	rTable[i].bGIMode = (lstFileChunks[i].nFlags & SIGC_GI_MODE) != 0;
+	rTable[i].offlineProcedural = (lstFileChunks[i].nFlags & SIGC_OFFLINE_PROCEDURAL) != 0;
 	rTable[i].bInstancing = (lstFileChunks[i].nFlags & SIGC_INSTANCING) != 0;
 	rTable[i].bDynamicDistanceShadows = (lstFileChunks[i].nFlags & SIGC_DYNAMICDISTANCESHADOWS) != 0;
 	rTable[i].bUseSprites = (lstFileChunks[i].nFlags & SIGC_USESPRITES) != 0;
@@ -462,7 +466,7 @@ void CTerrain::LoadVegetationData(PodArray<StatInstGroup>& rTable, PodArray<Stat
 	if (rTable[i].szFileName[0])
 	{
 		rTable[i].pStatObj.ReleaseOwnership();
-		rTable[i].pStatObj = GetObjManager()->LoadStatObj(rTable[i].szFileName, NULL, NULL, !rTable[i].bAutoMerged); //,NULL,NULL,false);
+		rTable[i].pStatObj = GetObjManager()->LoadStatObj(rTable[i].szFileName, NULL, NULL, !rTable[i].bAutoMerged);
 	}
 
 	rTable[i].Update(GetCVars(), Get3DEngine()->GetGeomDetailScreenRes());
@@ -473,7 +477,7 @@ void CTerrain::LoadVegetationData(PodArray<StatInstGroup>& rTable, PodArray<Stat
 template<class T>
 bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkHeader, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable, bool bHotUpdate, SHotUpdateInfo* pExportInfo)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	assert(pTerrainChunkHeader->nVersion == TERRAIN_CHUNK_VERSION);
 	if (pTerrainChunkHeader->nVersion != TERRAIN_CHUNK_VERSION)
@@ -501,7 +505,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 	m_fInvUnitSize = 1.f / m_fUnitSize;
 	m_nTerrainSize = int(pTerrainChunkHeader->TerrainInfo.heightMapSize_InUnits * pTerrainChunkHeader->TerrainInfo.unitSize_InMeters);
 
-	m_nTerrainSizeDiv = int((m_nTerrainSize * m_fInvUnitSize) - 1);
+	m_nTerrainUnits = pTerrainChunkHeader->TerrainInfo.heightMapSize_InUnits;
 	m_nSectorSize = pTerrainChunkHeader->TerrainInfo.sectorSize_InMeters;
 	m_nSectorsTableSize = pTerrainChunkHeader->TerrainInfo.sectorsTableSize_InSectors;
 	m_fHeightmapZRatio = pTerrainChunkHeader->TerrainInfo.heightmapZRatio;
@@ -525,7 +529,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 	if (bHMap && !m_pParentNode)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("BuildSectorsTree");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "BuildSectorsTree");
 
 		// build nodes tree in fast way
 		BuildSectorsTree(false);
@@ -537,7 +541,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 	// setup physics grid
 	if (!m_bEditor && !bHotUpdate)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("SetupEntityGrid");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "SetupEntityGrid");
 
 		int nCellSize = CTerrain::GetTerrainSize() > 2048 ? CTerrain::GetTerrainSize() >> 10 : 2;
 		nCellSize = max(nCellSize, GetCVars()->e_PhysMinCellSize);
@@ -559,8 +563,8 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 		{
 			// get vegetation objects count
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Vegetation");
-			LOADING_TIME_PROFILE_SECTION_NAMED("Vegetation");
+			MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Vegetation");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Vegetation");
 
 			int nObjectsCount = 0;
 			if (!LoadDataFromFile(&nObjectsCount, 1, f, nDataSize, eEndian))
@@ -594,8 +598,8 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 		{
 			// get brush objects count
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Brushes");
-			LOADING_TIME_PROFILE_SECTION_NAMED("Brushes");
+			MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Brushes");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Brushes");
 
 			int nObjectsCount = 0;
 			if (!LoadDataFromFile(&nObjectsCount, 1, f, nDataSize, eEndian))
@@ -632,7 +636,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 		{
 			// get brush materials count
-			LOADING_TIME_PROFILE_SECTION_NAMED("BrushMaterials");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "BrushMaterials");
 
 			int nObjectsCount = 0;
 			if (!LoadDataFromFile(&nObjectsCount, 1, f, nDataSize, eEndian))
@@ -689,7 +693,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 	// set nodes data
 	int nNodesLoaded = 0;
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("TerrainNodes");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "TerrainNodes");
 
 		if (!bHotUpdate)
 			PrintMessage("===== Initializing terrain nodes ===== ");
@@ -701,7 +705,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 		if (!bHotUpdate)
 			PrintMessage("===== Loading outdoor instances ===== ");
 
-		LOADING_TIME_PROFILE_SECTION_NAMED("ObjectInstances");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "ObjectInstances");
 
 		PodArray<IRenderNode*> arrUnregisteredObjects;
 		Get3DEngine()->m_pObjectsTree->UnregisterEngineObjectsInArea(pExportInfo, arrUnregisteredObjects, true);
@@ -735,7 +739,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 	if (bObjs)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("PostObj");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "PostObj");
 
 		if (ppStatObjTable)
 			*ppStatObjTable = pStatObjTable;
@@ -750,7 +754,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 	if (bHMap)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("PostTerrain");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "PostTerrain");
 
 		GetParentNode()->UpdateRangeInfoShift();
 		ResetTerrainVertBuffers(NULL);
@@ -774,20 +778,26 @@ bool CTerrain::SetCompiledData(byte* pData, int nDataSize, std::vector<struct IS
 
 bool CTerrain::Load(FILE* f, int nDataSize, STerrainChunkHeader* pTerrainChunkHeader, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "CTerrain::Load");
+
 	bool bRes;
 
 	// in case of small data amount (console game) load entire file into memory in single operation
 	if (nDataSize < 4 * 1024 * 1024 && !GetCVars()->e_StreamInstances)
 	{
-		_smart_ptr<IMemoryBlock> pMemBlock = gEnv->pCryPak->PoolAllocMemoryBlock(nDataSize + 8, "LoadTerrain");
+		IMemoryBlock* pMemBlock = gEnv->pCryPak->PoolAllocMemoryBlock(nDataSize + 8, "LoadTerrain");
 		byte* pPtr = (byte*)pMemBlock->GetData();
 		while (UINT_PTR(pPtr) & 3)
 			pPtr++;
 
 		if (GetPak()->FReadRaw(pPtr, 1, nDataSize, f) != nDataSize)
+		{
+			gEnv->pCryPak->PoolFree(pMemBlock);
 			return false;
+		}
 
 		bRes = Load_T(pPtr, nDataSize, pTerrainChunkHeader, ppStatObjTable, ppMatTable, 0, 0);
+		gEnv->pCryPak->PoolFree(pMemBlock);
 	}
 	else
 	{

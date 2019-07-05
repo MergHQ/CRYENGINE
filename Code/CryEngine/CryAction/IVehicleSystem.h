@@ -21,7 +21,6 @@ class CMovementRequest;
 struct SMovementState;
 struct IVehicleEventListener;
 struct SVehicleEventParams;
-struct IFireController;
 struct IVehicleSystem;
 struct IVehicleSeat;
 struct IVehicleAnimation;
@@ -172,6 +171,13 @@ const TVehicleSeatId FirstVehicleViewId   = 1;
 //   IVehicleAnimation
 typedef int TVehicleAnimStateId;
 const TVehicleAnimStateId InvalidVehicleAnimStateId = -1;
+
+struct IFireController
+{
+	virtual ~IFireController() {}
+	virtual bool RequestFire(bool bFire) = 0;
+	virtual void UpdateTargetPosAI(const Vec3& pos) = 0;
+};
 
 struct SVehicleStatus
 {
@@ -652,7 +658,7 @@ struct IVehicleAction
   TVehicleObjectId obj::m_objectId = InvalidVehicleObjectId;
 
 #define CAST_VEHICLEOBJECT(type, objptr) \
-  (objptr->GetId() == type::m_objectId) ? (type*)objptr : NULL
+  ((objptr->GetId() == type::m_objectId) ? (type*)objptr : NULL)
 
 // Summary:
 //   Vehicle implementation interface

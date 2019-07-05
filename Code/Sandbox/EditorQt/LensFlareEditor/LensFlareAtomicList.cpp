@@ -7,6 +7,8 @@
 #include "LensFlareEditor.h"
 #include "LensFlareElementTree.h"
 #include "LensFlareItemTree.h"
+#include <Util/ImageUtil.h>
+#include <IUndoObject.h>
 
 BEGIN_MESSAGE_MAP(CLensFlareAtomicList, CImageListCtrl)
 END_MESSAGE_MAP()
@@ -135,4 +137,3 @@ void CLensFlareAtomicList::OnDraggingItem(CPoint point)
 		pEditor->GetLensFlareItemTree()->UpdateDraggingFromOtherWindow();
 	}
 }
-

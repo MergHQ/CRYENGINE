@@ -2,14 +2,12 @@
 
 #pragma once
 
+#include "Serialization.h"
+
+#include <CryMath/Bezier_impl.h>
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
-#include <CryMath/Bezier.h>
-#include <CryMovie/AnimTime.h>
-#include <CryMath/ISplines.h>
-
 #include <CrySerialization/Color.h>
-#include "Serialization.h"
 
 #include <QObject>
 
@@ -238,4 +236,3 @@ Q_SIGNALS:
 public:
 	TCurveEditorCurves m_curves;
 };
-

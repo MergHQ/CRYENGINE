@@ -299,7 +299,6 @@ bool CGameRulesSPDamageHandling::SvOnHit(const HitInfo& hit)
 
 		if (victimIsLocalClientPlayer)
 		{
-			CPlayer* pPlayer = static_cast<CPlayer*>(pVictimActor);
 			SDamageHandling damageHandling(&hit, 1.0f);
 			
 			HitInfo hitInfo(hit);
@@ -404,7 +403,7 @@ bool CGameRulesSPDamageHandling::SvOnHitScaled(const HitInfo& hitInfo)
 				//
 				// isDead = result from Lua function IsDead in victim entity script
 
-				CRY_PROFILE_REGION(PROFILE_GAME, "SvOnHitScaled IsDead scope");
+				CRY_PROFILE_SECTION(PROFILE_GAME, "SvOnHitScaled IsDead scope");
 
 				HSCRIPTFUNCTION isDeadFunc = NULL;
 				if (victimScript->GetValue("IsDead", isDeadFunc))
@@ -551,7 +550,6 @@ void CGameRulesSPDamageHandling::SvOnExplosion(const ExplosionInfo& explosionInf
 	bool bHitActor = false;
 	for ( ; it != affectedEntities.end(); ++it)
 	{
-		bool success = false;
 		IEntity* entity = it->first;
 		float obstruction = 1.0f - it->second;
 
@@ -729,14 +727,14 @@ float CGameRulesSPDamageHandling::CalcExplosionDamage(IEntity* entity, const Exp
 			}
 			else
 			{
-				assert(explosionInfo.radius - explosionInfo.minRadius > 0.0f);
+				CRY_ASSERT(explosionInfo.radius - explosionInfo.minRadius > 0.0f);
 				effect = 1.0f - (sqrtf(distanceSq) - explosionInfo.minRadius) / (explosionInfo.radius - explosionInfo.minRadius);
 				effect *= effect;
 			}
 		}
 	}
 
-	CRY_ASSERT_TRACE (effect >= 0.0f && effect <= 1.0f, ("Effectiveness of explosion should be between 0 and 1 but it's %.3f (minRadius=%.3f, maxRadius=%.3f)", effect, explosionInfo.minRadius, explosionInfo.radius));
+	CRY_ASSERT(effect >= 0.0f && effect <= 1.0f, "Effectiveness of explosion should be between 0 and 1 but it's %.3f (minRadius=%.3f, maxRadius=%.3f)", effect, explosionInfo.minRadius, explosionInfo.radius);
 
 	return explosionInfo.damage * effect * (1.0f - obstruction);
 }
@@ -763,13 +761,12 @@ void CGameRulesSPDamageHandling::SvOnCollision(const IEntity* pVictimEntity, con
 	const IEntity* pOffenderEntity = gEnv->pEntitySystem->GetEntity(offenderID);
 
 	IScriptTable* pVictimScript = pVictimEntity ? pVictimEntity->GetScriptTable() : NULL;
-	IScriptTable* pOffenderScript = pOffenderEntity ? pOffenderEntity->GetScriptTable() : NULL;
 
 	const float currentTime = gEnv->pTimer->GetCurrTime();
 
 	if (pOffenderEntity)
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "Filter out recent collisions");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "Filter out recent collisions");
 
 		EntityCollisionRecords::const_iterator collisionRecordIter = m_entityCollisionRecords.find(victimID);
 		if (collisionRecordIter != m_entityCollisionRecords.end())
@@ -786,7 +783,7 @@ void CGameRulesSPDamageHandling::SvOnCollision(const IEntity* pVictimEntity, con
 	//Notify object movement to AI
 	if (pVictimEntity)
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "Notify object movement to AI");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "Notify object movement to AI");
 	
 		if (stl::find(m_entityClassesWithTrackedMovement, pVictimEntity->GetClass()))
 		{
@@ -1076,7 +1073,7 @@ void CGameRulesSPDamageHandling::SvOnCollision(const IEntity* pVictimEntity, con
 			}	
 			else if (pVictimScript)
 			{
-				CRY_PROFILE_REGION(PROFILE_GAME, "Call to OnHit");
+				CRY_PROFILE_SECTION(PROFILE_GAME, "Call to OnHit");
 
 				if (!IsDead(victimActor, pVictimScript))
 				{
@@ -1282,7 +1279,7 @@ void CGameRulesSPDamageHandling::DelegateServerHit(IScriptTable* victimScript, c
 				}
 				else // Hit was not deadly
 				{
-					CRY_PROFILE_REGION(PROFILE_GAME, "Trigger hit reaction");
+					CRY_PROFILE_SECTION(PROFILE_GAME, "Trigger hit reaction");
 
 					// Trigger hit reaction
 					bool hitReactionProcessed = false;
@@ -1360,7 +1357,7 @@ bool CGameRulesSPDamageHandling::IsDead(CActor* actor, IScriptTable* actorScript
 		//
 		// isDead = result from Lua function IsDead in victim entity script
 
-		CRY_PROFILE_REGION(PROFILE_GAME, "SvOnCollision IsDead scope");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "SvOnCollision IsDead scope");
 
 		HSCRIPTFUNCTION isDeadFunc = NULL;
 		if (actorScript->GetValue("IsDead", isDeadFunc))

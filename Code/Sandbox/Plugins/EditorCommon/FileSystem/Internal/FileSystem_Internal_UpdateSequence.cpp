@@ -59,4 +59,3 @@ void CUpdateSequence::AddModifyFile(const SFileInfoInternal& info)
 
 } // namespace Internal
 } // namespace FileSystem
-

@@ -20,8 +20,8 @@
 #define __ResourceCompilerPC_h__
 #pragma once
 
-#include "..\ResourceCompiler\IRCLog.h"
-#include "..\ResourceCompiler\IResCompiler.h"
-#include "..\ResourceCompiler\IAssetManager.h"
+#include <IRCLog.h>
+#include <IResCompiler.h>
+#include <IAssetManager.h>
 
 #endif // __ResourceCompilerPC_h__

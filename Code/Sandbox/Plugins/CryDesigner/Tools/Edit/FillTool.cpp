@@ -177,7 +177,6 @@ bool FillTool::FillHoleBasedOnSelectedElements()
 	linkedEdgeList.push_back(validEdgeList[0]);
 	usedEdgeSet.insert(0);
 	const int nValidEdgeSize(validEdgeList.size());
-	bool bFinishLoop = false;
 
 	while (linkedEdgeList.size() < nValidEdgeSize)
 	{
@@ -366,4 +365,3 @@ void FillTool::Serialize(Serialization::IArchive& ar)
 
 REGISTER_DESIGNER_TOOL_WITH_PROPERTYTREE_PANEL_AND_COMMAND(eDesigner_Fill, eToolGroup_Edit, "Fill", FillTool,
                                                            fill, "runs fill tool", "designer.fill")
-

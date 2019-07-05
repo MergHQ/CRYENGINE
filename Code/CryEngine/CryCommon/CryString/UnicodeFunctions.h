@@ -3,7 +3,10 @@
 //! \cond INTERNAL
 
 #pragma once
+#include <CryCore/BaseTypes.h>
+#include <CryCore/Assert/CryAssert.h>
 #include "UnicodeBinding.h"
+#include "UnicodeEncoding.h"
 namespace Unicode
 {
 //! Results of analysis of an input range of code-units (in any encoding).
@@ -22,7 +25,7 @@ struct SAnalysisResult
 	size_type cpInvalid;        //!< The number of invalid UCS code-point encountered (or 0xFFFFFFFF if not available).
 
 	//! Default constructor, initialize everything to zero.
-	SAnalysisResult() : inputUnits(0), outputUnits8(0), outputUnits16(0), outputUnits32(0), cpInvalid(0), cpNonAscii(0) {}
+	SAnalysisResult() : inputUnits(0), outputUnits8(0), outputUnits16(0), outputUnits32(0), cpNonAscii(0), cpInvalid(0) {}
 
 	//! Check if the input range was empty.
 	bool IsEmpty() const { return inputUnits == 0; }
@@ -42,7 +45,7 @@ struct SAnalysisResult
 
 	//! Get the length of the input range when encoded with the given encoding, in code-units.
 	//! \note If the encoding is not supported for output, the function returns 0.
-	size_type LengthInEncodingUnits(EEncoding encoding) const
+	size_type LengthInEncodingUnits(Unicode::EEncoding encoding) const
 	{
 		switch (encoding)
 		{

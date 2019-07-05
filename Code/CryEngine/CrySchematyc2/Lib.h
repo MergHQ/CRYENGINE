@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CryCore/BoostHelpers.h>
-
 #include <CrySchematyc2/ILib.h>
 
 #include "Signal.h"
@@ -34,10 +32,10 @@ namespace Schematyc2
 
 	private:
 
-		SGUID          m_guid;
-		string         m_name;
-		TVariantVector m_variantInputs;
-		TVariantVector m_variantOutputs;
+		SGUID			m_guid;
+		string			m_name;
+		TVariantVector	m_variantInputs;
+		TVariantVector	m_variantOutputs;
 	};
 
 	DECLARE_SHARED_POINTERS(CLibAbstractInterfaceFunction)
@@ -57,7 +55,7 @@ namespace Schematyc2
 
 	private:
 
-		SGUID		m_guid;
+		SGUID	m_guid;
 		string	m_name;
 	};
 
@@ -69,12 +67,13 @@ namespace Schematyc2
 	{
 	public:
 
-		CLibStateMachine(const SGUID& guid, const char* name, ELibStateMachineLifetime lifetime);
+		CLibStateMachine(const SGUID& guid, const char* name, const EStateMachineLifetime lifetime, const EStateMachineNetAuthority netType);
 
 		// ILibStateMachine
 		virtual SGUID GetGUID() const override;
 		virtual const char* GetName() const override;
-		virtual ELibStateMachineLifetime GetLifetime() const override;
+		virtual EStateMachineLifetime GetLifetime() const override;
+		virtual EStateMachineNetAuthority GetNetAuthority() const override;
 		virtual size_t GetPartner() const override;
 		virtual size_t GetListenerCount() const override;
 		virtual size_t GetListener(size_t iListener) const override;
@@ -91,16 +90,19 @@ namespace Schematyc2
 		void AddVariable(const size_t iVariable);
 		void AddContainer(const size_t iContainer);
 
+		void CompactMemory();
+
 	private:
 
-		SGUID											m_guid;
-		string										m_name;
-		ELibStateMachineLifetime	m_lifetime;
-		size_t										m_iPartner;
-		TSizeTVector							m_listeners;
-		TSizeTVector							m_variables;
-		TSizeTVector							m_containers;
-		LibFunctionId							m_beginFunctionId;
+		SGUID						m_guid;
+		string						m_name;
+		EStateMachineLifetime		m_lifetime;
+		EStateMachineNetAuthority	m_netAuthority;
+		size_t						m_iPartner;
+		TSizeTVector				m_listeners;
+		TSizeTVector				m_variables;
+		TSizeTVector				m_containers;
+		LibFunctionId				m_beginFunctionId;
 	};
 
 	// Library state.
@@ -147,13 +149,15 @@ namespace Schematyc2
 		void AddSignalReceiver(size_t iSignalReceiver);
 		void AddTransition(size_t iTransition);
 
+		void CompactMemory();
+
 	private:
 
-		SGUID					m_guid;
-		string				m_name;
-		size_t				m_iParent;
-		size_t				m_iPartner;
-		size_t				m_iStateMachine;
+		SGUID			m_guid;
+		string			m_name;
+		size_t			m_iParent;
+		size_t			m_iPartner;
+		size_t			m_iStateMachine;
 		TSizeTVector	m_variables;
 		TSizeTVector	m_containers;
 		TSizeTVector	m_timers;
@@ -186,13 +190,13 @@ namespace Schematyc2
 
 	private:
 
-		SGUID             m_guid;
-		string            m_name;
-		EOverridePolicy   m_overridePolicy;
-		IAnyPtr           m_pValue;
-		size_t            m_variantPos;
-		size_t            m_variantCount;
-		ELibVariableFlags m_flags;
+		SGUID				m_guid;
+		string				m_name;
+		EOverridePolicy		m_overridePolicy;
+		IAnyPtr				m_pValue;
+		size_t				m_variantPos;
+		size_t				m_variantCount;
+		ELibVariableFlags	m_flags;
 	};
 
 	typedef std::vector<CLibVariable> LibVariables;
@@ -213,9 +217,9 @@ namespace Schematyc2
 
 	private:
 
-		SGUID		m_guid;
+		SGUID	m_guid;
 		string	m_name;
-		SGUID		m_typeGUID;
+		SGUID	m_typeGUID;
 	};
 
 	// Library timer.
@@ -234,8 +238,8 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
-		string				m_name;
+		SGUID			m_guid;
+		string			m_name;
 		STimerParams	m_params;
 	};
 
@@ -264,15 +268,15 @@ namespace Schematyc2
 		{
 			SFunction(const SGUID& _guid, const LibFunctionId& _functionId);
 
-			SGUID					guid;
+			SGUID			guid;
 			LibFunctionId	functionId;
 		};
 
 		typedef std::vector<SFunction> TFunctionVector;
 
-		SGUID						m_guid;
-		string					m_name;
-		SGUID						m_interfaceGUID;
+		SGUID			m_guid;
+		string			m_name;
+		SGUID			m_interfaceGUID;
 		TFunctionVector	m_functions;
 	};
 
@@ -343,7 +347,7 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
+		SGUID			m_guid;
 		LibFunctionId	m_functionId;
 	};
 
@@ -362,7 +366,7 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
+		SGUID			m_guid;
 		LibFunctionId	m_functionId;
 	};
 
@@ -382,8 +386,8 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
-		SGUID					m_contextGUID;
+		SGUID			m_guid;
+		SGUID			m_contextGUID;
 		LibFunctionId	m_functionId;
 	};
 
@@ -403,8 +407,8 @@ namespace Schematyc2
 
 	private:
 
-		SGUID					m_guid;
-		SGUID					m_contextGUID;
+		SGUID			m_guid;
+		SGUID			m_contextGUID;
 		LibFunctionId	m_functionId;
 	};
 
@@ -447,6 +451,7 @@ namespace Schematyc2
 		virtual ActionMemberFunctionConstTable GetActionMemberFunctionTable() const override;
 		virtual size_t GetSize() const override;
 		virtual const SVMOp* GetOp(size_t pos) const override;
+		virtual bool IsGraphExecutionAllowed() const override;
 		// ~ILibFunction
 
 		void SetGUID(const SGUID& guid);
@@ -458,7 +463,22 @@ namespace Schematyc2
 		size_t AddOp(const SVMOp& op);
 		SVMOp* GetOp(size_t pos);
 		SVMOp* GetLastOp();
-		
+		void SetGraphExecutionFilter(EGraphExecutionFilter filter);
+
+		void CompactMemory();
+
+		// Debug
+		void                    AddDebugOperationSymbolNode(size_t pos, const SGUID& guid);
+		void                    AddDebugOperationSymbolInput(size_t pos, const SGUID& guid, const char* input);
+		void                    ClearDebugOperationSymbols();
+
+		virtual const SDebugSymbol*     GetDebugOperationSymbol(size_t pos) const override;
+		virtual size_t                  GetDebugOperationsSize() const override;
+
+		size_t GetOpCapacity() const { return m_capacity; }
+		size_t GetOpSize() const { return m_size; }
+
+
 	private:
 
 		struct SParam
@@ -473,31 +493,34 @@ namespace Schematyc2
 		typedef std::vector<IGlobalFunctionConstPtr>					GlobalFunctionTable;
 		typedef std::vector<IComponentMemberFunctionConstPtr>	ComponentMemberFunctionTable;
 		typedef std::vector<IActionMemberFunctionConstPtr>		ActionMemberFunctionTable;
+		typedef std::unordered_map<size_t, SDebugSymbol>                  DebugSymbolTable;
 
 		void Release();
 
 		static const size_t	MIN_CAPACITY;
 		static const size_t	GROWTH_FACTOR;
 
-		SGUID													m_guid;
-		SGUID													m_classGUID;
-		string												m_name;
-		string												m_scope;
-		string												m_fileName;
-		string												m_author;
-		string												m_textDesc;
-		TParamVector									m_inputs;
-		TVariantVector								m_variantInputs;
-		TParamVector									m_outputs;
-		TVariantVector								m_variantOutputs;
-		TVariantVector								m_variantConsts;
-		GlobalFunctionTable						m_globalFunctionTable;
+		SGUID							m_guid;
+		SGUID							m_classGUID;
+		string							m_name;
+		string							m_scope;
+		string							m_fileName;
+		string							m_author;
+		string							m_textDesc;
+		TParamVector					m_inputs;
+		TVariantVector					m_variantInputs;
+		TParamVector					m_outputs;
+		TVariantVector					m_variantOutputs;
+		TVariantVector					m_variantConsts;
+		GlobalFunctionTable				m_globalFunctionTable;
 		ComponentMemberFunctionTable	m_componentMemberFunctionTable;
-		ActionMemberFunctionTable			m_actionMemberFunctionTable;
-		size_t												m_capacity;
-		size_t												m_size;
-		size_t												m_lastOpPos;
-		uint8*												m_pBegin;
+		ActionMemberFunctionTable		m_actionMemberFunctionTable;
+		size_t							m_capacity;
+		size_t							m_size;
+		size_t							m_lastOpPos;
+		uint8*							m_pBegin;
+		EGraphExecutionFilter           m_executionFilter;
+		DebugSymbolTable                m_debugSymbolTable;
 	};
 
 	// Library class properties.
@@ -600,6 +623,7 @@ namespace Schematyc2
 		virtual const ILibTransition* GetTransition(size_t iTransition) const override;
 		virtual LibFunctionId GetFunctionId(const SGUID& guid) const override;
 		virtual const ILibFunction* GetFunction(const LibFunctionId& functionId) const override;
+		virtual const SGUID GetFunctionGUID(const LibFunctionId& functionId) const override;
 		virtual const CRuntimeFunction* GetFunction_New(uint32 functionIdx) const override;
 		virtual void PreviewGraphFunctions(const SGUID& graphGUID, const StringStreamOutCallback& stringStreamOutCallback) const override;
 		virtual void AddPrecacheResource(IAnyConstPtr resource) override;
@@ -607,7 +631,7 @@ namespace Schematyc2
 		virtual IAnyConstPtr GetPrecacheResource(size_t ressourceIdx) const override;
 		// ~ILibClass
 
-		size_t AddStateMachine(const SGUID& guid, const char* name, ELibStateMachineLifetime lifetime);
+		size_t AddStateMachine(const SGUID& guid, const char* name, EStateMachineLifetime lifetime, EStateMachineNetAuthority netType);
 		CLibStateMachine* GetStateMachine(size_t iStateMachine);
 		size_t AddState(const SGUID& guid, const char* name);
 		CLibState* GetState(size_t iState);
@@ -645,16 +669,20 @@ namespace Schematyc2
 		CRuntimeFunction* GetFunction_New(uint32 functionIdx);
 		bool BindFunctionToGUID(const LibFunctionId& functionId, const SGUID& guid);
 
-	private:
-
-		struct SFunction // #SchematycTODO : Can't we just store the id and graph guid in the function itself?
+		void CompactMemory();
+	
+		
+		struct SFunction
 		{
-			SFunction(const LibFunctionId& _functionId, const SGUID& _graphGUID);
+			explicit SFunction(const SGUID& _graphGUID);
 
-			LibFunctionId functionId;
-			SGUID         graphGUID;
 			CLibFunction  function;
 		};
+		typedef std::map<LibFunctionId, SFunction>                TFunctionMap;
+
+		const TFunctionMap& GetFunctionMap() const { return m_functions; }
+
+	private:
 
 		DECLARE_SHARED_POINTERS(CRuntimeFunction)
 
@@ -669,7 +697,7 @@ namespace Schematyc2
 		typedef std::vector<CLibDestructor>                       TDestructorVector;
 		typedef std::vector<CLibSignalReceiver>                   TSignalReceiverVector;
 		typedef std::vector<CLibTransition>                       TTransitionVector;
-		typedef std::map<LibFunctionId, SFunction>                TFunctionMap;
+		
 		typedef std::unordered_map<SGUID, LibFunctionId>          TFunctionIdByGUIDMap;
 		typedef std::vector<CRuntimeFunctionPtr>                  Functions_New;
 		typedef std::vector<IAnyConstPtr>                         TAnyConstPtrVector;
@@ -738,6 +766,8 @@ namespace Schematyc2
 		CLibClassPtr AddClass(const SGUID& guid, const char* name, const SGUID& foundationGUID, const IPropertiesConstPtr& pFoundationProperties);
 		CLibClassPtr GetClass(const SGUID& guid);
 
+		void CompactMemory();
+
 	private:
 
 		typedef std::unordered_map<SGUID, CSignalPtr>												TSignalMap;
@@ -745,11 +775,11 @@ namespace Schematyc2
 		typedef std::unordered_map<SGUID, CLibAbstractInterfaceFunctionPtr>	TAbstractInterfaceFunctionMap;
 		typedef std::unordered_map<SGUID, CLibClassPtr>											TClassMap;
 
-		string												m_name;
-		TSignalMap										m_signals;
-		TAbstractInterfaceMap					m_abstractInterfaces;
+		string							m_name;
+		TSignalMap						m_signals;
+		TAbstractInterfaceMap			m_abstractInterfaces;
 		TAbstractInterfaceFunctionMap	m_abstractInterfaceFunctions;
-		TClassMap											m_classes;
+		TClassMap						m_classes;
 	};
 
 	DECLARE_SHARED_POINTERS(CLib)

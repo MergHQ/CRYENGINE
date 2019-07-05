@@ -35,9 +35,9 @@ void ChromaticRing::InitEditorParamGroups(DynArray<FuncVariableGroup>& groups)
 ChromaticRing::ChromaticRing(const char* name)
 	: COpticsElement(name)
 	, m_bUseSpectrumTex(false)
-	, m_fWidth(0.5f)
 	, m_nPolyComplexity(160)
 	, m_nColorComplexity(2)
+	, m_fWidth(0.5f)
 	, m_fNoiseStrength(0.0f)
 	, m_fCompletionStart(90.f)
 	, m_fCompletionEnd(270.f)
@@ -50,6 +50,8 @@ ChromaticRing::ChromaticRing(const char* name)
 	m_meshDirty = true;
 
 	CConstantBufferPtr pSharedCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SShaderParams), true, true);
+	if (pSharedCB) pSharedCB->SetDebugName("ChromaticRing Per-Primitive CB");
+
 	m_primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 	m_wireframePrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pSharedCB, EShaderStage_Vertex | EShaderStage_Pixel);
 }

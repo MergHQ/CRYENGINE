@@ -1,29 +1,6 @@
 # Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 def build(bld):
-	# No warnings in 3rdParty code, we can't fix them anyway
-	common_win_cflags = [ '/W0', ]
-	common_linux_cflags = ['-w']
-	common_android_cflags = ['-w']
-
-	common_defines = [
-		'OGG_MUSIC',
-		'MID_MUSIC',
-		'FLAC_MUSIC',
-		'MOD_MUSIC',
-		'MODPLUG_MUSIC',
-		'MODPLUG_HEADER="modplug.h"',
-		'USE_TIMIDITY_MIDI',
-		'USE_NATIVE_MIDI',
-	]
-	
-	common_win_defines = [
-		'WAV_MUSIC',
-		'MP3_MUSIC',
-		'MODPLUG_DYNAMIC="libmodplug-1.dll"',
-		'MP3_DYNAMIC="smpeg2.dll"'
-	]
-
 	bld.CryEngineStaticModule( 
 		target    = 'sdl_mixer', 
 		vs_filter = 'Libs/Audio',
@@ -33,11 +10,11 @@ def build(bld):
 		output_file_name = "SDL2_mixer",
 
 		includes = [
-			Path('Code/SDKs/SDL_mixer'),
-			Path('Code/SDKs/libmodplug/src'),
-			Path('Code/SDKs/libmodplug/src/libmodplug')],
+			Path('Code/SDKs/SDL_mixer')
+			],
 		win_includes = [
-			Path('Code/SDKs/SDL_mixer/VisualC/external/include')],
+			Path('Code/SDKs/SDL_mixer/VisualC/external/include')
+			],
 
 		use_module = ['timidity',
 			'native_midi',
@@ -47,16 +24,30 @@ def build(bld):
 			'libvorbis',
 			'libvorbisfile'
 			],
-		linux_use_module = [ 'libmodplug' ],
+		linux_use_module = [ 'libmodplug_static' ],
 		module_extensions = ['sdl2'],
 
 		win_lib = ['Winmm'],
 
-		defines = common_defines,
-		win_defines = common_win_defines,
-		win_cflags  = common_win_cflags,
-		linux_cflags = common_linux_cflags,
-		android_cflags = common_android_cflags,
+		defines = [
+			'MUSIC_OGG',
+			'MUSIC_FLAC',
+			'MUSIC_MID_NATIVE',
+			'MUSIC_MOD_MIKMOD',
+			'MUSIC_MOD_MODPLUG',
+			'MUSIC_MID_TIMIDITY'
+		],
+		
+		win_defines = [
+			'WAV_MUSIC',
+			'MODPLUG_DYNAMIC="libmodplug-1.dll"',
+			'MP3_DYNAMIC="smpeg2.dll"'
+		],
+		
+		# No warnings in 3rdParty code, we can't fix them anyway
+		win_cflags  = [ '/W0', ],
+		linux_cflags = ['-w'],
+		android_cflags = ['-w'],
 
 		module_provides = dict(
 			includes = [Path('Code/SDKs/SDL_mixer')],
@@ -73,7 +64,9 @@ def build(bld):
 
 		module_extensions = ['sdl2'],
 
-		win_cflags  = common_win_cflags,
+		win_cflags  = [ '/W0', ],
+		linux_cflags = ['-w'],
+		android_cflags = ['-w'],
 
 		module_provides = dict(
 			includes = [Path('Code/SDKs/SDL_mixer/timidity')],
@@ -89,7 +82,9 @@ def build(bld):
 
 		module_extensions = ['sdl2'],
 
-		win_cflags  = common_win_cflags,
+		win_cflags  = [ '/W0', ],
+		linux_cflags = ['-w'],
+		android_cflags = ['-w'],
 
 		module_provides = dict(
 			includes = [Path('Code/SDKs/SDL_mixer/native_midi')],

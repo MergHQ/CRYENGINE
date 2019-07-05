@@ -4,10 +4,9 @@
 
 #include "Objects/BaseObject.h"
 #include "EntityScript.h"
-
-#include <CryMovie/IMovieSystem.h>
 #include "EntityPrototype.h"
-#include "Gizmos/Gizmo.h"
+
+#include <Util/Variable.h>
 #include <CryCore/Containers/CryListenerSet.h>
 
 class CHyperFlowGraph;
@@ -16,17 +15,14 @@ class CPopupMenuItem;
 class IOpticsElementBase;
 struct SPyWrappedProperty;
 
-#include <CrySerialization/Serializer.h>
-#include <CrySerialization/STL.h>
-
 /*!
  *	CEntityEventTarget is an Entity event target and type.
  */
 struct CEntityEventTarget
 {
-	CBaseObject*       target; //! Target object.
-	string            event;
-	string            sourceEvent;
+	CBaseObject* target;       //! Target object.
+	string       event;
+	string       sourceEvent;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -34,21 +30,16 @@ struct CEntityEventTarget
 //////////////////////////////////////////////////////////////////////////
 struct CEntityLink
 {
-	CryGUID             targetId; // Target entity id.
-	string              name;     // Name of the link.
+	CryGUID        targetId;      // Target entity id.
+	string         name;          // Name of the link.
 
-	void Serialize(Serialization::IArchive& ar);
+	void           Serialize(Serialization::IArchive& ar);
 	CEntityObject* GetTarget() const;
 };
 
-inline const EntityGUID& ToEntityGuid(CryGUID guid)
+struct IEntityObjectListener
 {
-	return guid;
-}
-
-class IEntityObjectListener
-{
-public:
+	virtual ~IEntityObjectListener() {}
 	virtual void OnNameChanged(const char* pName) = 0;
 	virtual void OnSelectionChanged(const bool bSelected) = 0;
 	virtual void OnDone() = 0;
@@ -56,6 +47,7 @@ public:
 
 struct IPickEntitesOwner
 {
+	virtual ~IPickEntitesOwner() {}
 	virtual void         AddEntity(CBaseObject* const pBaseObject) = 0;
 	virtual CBaseObject* GetEntity(size_t const index) = 0;
 	virtual size_t       GetEntityCount() const = 0;
@@ -72,13 +64,9 @@ public:
 	DECLARE_DYNCREATE(CEntityObject)
 
 	//////////////////////////////////////////////////////////////////////////
-	// Overrides from CBaseObject.
-	//////////////////////////////////////////////////////////////////////////
-	//! Return type name of Entity.
-	string GetTypeDescription() const { return GetEntityClass(); }
-
-	//////////////////////////////////////////////////////////////////////////
-	bool              IsSameClass(CBaseObject* obj);
+	// CBaseObject.
+	virtual string    GetTypeDescription() const { return GetEntityClass(); }
+	virtual bool      IsSameClass(CBaseObject* obj);
 
 	virtual bool      Init(CBaseObject* prev, const string& file);
 	virtual void      InitVariables();
@@ -89,13 +77,15 @@ public:
 	bool              GetEntityPropertyBool(const char* name) const;
 	int               GetEntityPropertyInteger(const char* name) const;
 	float             GetEntityPropertyFloat(const char* name) const;
-	string           GetEntityPropertyString(const char* name) const;
+	string            GetEntityPropertyString(const char* name) const;
 	void              SetEntityPropertyBool(const char* name, bool value);
 	void              SetEntityPropertyInteger(const char* name, int value);
 	void              SetEntityPropertyFloat(const char* name, float value);
 	void              SetEntityPropertyString(const char* name, const string& value);
 
 	virtual void      Display(CObjectRenderHelper& objRenderHelper);
+	const ColorB&     GetSelectionPreviewHighlightColor() override;
+	void              DrawSelectionPreviewHighlight(SDisplayContext& dc) override;
 
 	virtual void      GetDisplayBoundBox(AABB& box);
 
@@ -141,10 +131,11 @@ public:
 	virtual IPhysicalEntity* GetCollisionEntity() const;
 
 	virtual void             SetMaterial(IEditorMaterial* mtl);
-	virtual IEditorMaterial*       GetRenderMaterial() const;
-	
+	virtual IEditorMaterial* GetRenderMaterial() const;
 
-	virtual void InvalidateGeometryFile(const string& gamePath) override;
+	virtual bool             ApplyAsset(const CAsset& asset, HitContext* pHitContext = nullptr) override;
+
+	virtual void             InvalidateGeometryFile(const string& gamePath) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void SetMinSpec(uint32 nSpec, bool bSetChildren = true);
@@ -164,10 +155,12 @@ public:
 		eAT_CharacterBone,
 	};
 
+	const char*     GetLinkedToName() const override { return GetAttachTarget(); }
+
 	void            SetAttachType(const EAttachmentType attachmentType) { m_attachmentType = attachmentType; }
 	void            SetAttachTarget(const char* target)                 { m_attachmentTarget = target; }
 	EAttachmentType GetAttachType() const                               { return m_attachmentType; }
-	string         GetAttachTarget() const                             { return m_attachmentTarget; }
+	string          GetAttachTarget() const                             { return m_attachmentTarget; }
 
 	// Updates transform if attached
 	void                 UpdateTransform();
@@ -180,6 +173,8 @@ public:
 
 	virtual IRenderNode* GetEngineNode() const;
 	virtual bool         HasMeasurementAxis() const { return false; }
+
+	virtual void         StoreUndo(const char* undoDescription, bool minimal = false, int flags = 0) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// END CBaseObject
@@ -196,8 +191,8 @@ public:
 	virtual void DeleteEntity();
 	virtual void UnloadScript();
 
-	string      GetEntityClass() const { return m_entityClass; }
-	EntityId    GetEntityId() const    { return m_entityId; }
+	string       GetEntityClass() const { return m_entityClass; }
+	EntityId     GetEntityId() const    { return m_entityId; }
 
 	//! Return entity prototype class if present.
 	virtual CEntityPrototype* GetPrototype() const { return m_prototype; }
@@ -242,19 +237,19 @@ public:
 	const IEntity*   GetIEntity() const           { return m_pEntity; }
 
 	int              GetCastShadowMinSpec() const { return mv_castShadowMinSpec; }
-	int              GetGIMode() const { return mv_giMode; }
+	int              GetGIMode() const            { return mv_giMode; }
 
 	float            GetRatioLod() const          { return (float)mv_ratioLOD; }
 	float            GetRatioViewDist() const     { return (float)mv_ratioViewDist; }
 
-	CVarBlock*       GetProperties() const        { return m_pLuaProperties; };
-	CVarBlock*       GetProperties2() const       { return m_pLuaProperties2; };
+	CVarBlock*       GetProperties() const        { return m_pLuaProperties; }
+	CVarBlock*       GetProperties2() const       { return m_pLuaProperties2; }
 
-	bool             IsLight()  const             { return m_bLight;    }
+	bool             IsLight()  const             { return m_bLight; }
 
 	void             Validate();
 
-	virtual string GetAssetPath() const override;
+	virtual string   GetAssetPath() const override;
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
 
@@ -273,10 +268,10 @@ public:
 	static CEntityObject* FindFromEntityId(EntityId id);
 
 	// Retrieve smart object class for this entity if exist.
-	string               GetSmartObjectClass() const;
+	string GetSmartObjectClass() const;
 
 	// Get the name of the light animation node assigned to this, if any.
-	string               GetLightAnimation() const;
+	string                GetLightAnimation() const;
 
 	IVariable*            GetLightVariable(const char* name) const;
 	IOpticsElementBasePtr GetOpticsElement();
@@ -289,12 +284,9 @@ public:
 	void                  UpdateLightProperty();
 	void                  OnMenuReloadScripts();
 
-	IStatObj* GetVisualObject()
-	{
-		return m_visualObject;
-	}
+	IStatObj*             GetVisualObject() { return m_pHelperMesh; }
 
-	static void StoreUndoEntityLink(const std::vector<CBaseObject*>& objects);
+	static void           StoreUndoEntityLink(const std::vector<CBaseObject*>& objects);
 
 	static const char* s_LensFlarePropertyName;
 	static const char* s_LensFlareMaterialName;
@@ -315,7 +307,7 @@ protected:
 	virtual bool              SetEntityScript(std::shared_ptr<CEntityScript> pEntityScript, bool bForceReload = false, XmlNodeRef xmlEntityNode = XmlNodeRef());
 	virtual void              GetScriptProperties(XmlNodeRef xmlEntityNode);
 
-	SRenderLight*                  GetLightProperty() const;
+	SRenderLight*             GetLightProperty() const;
 
 	bool                      HitTestCharacter(ICharacterInstance* pCharacter, HitContext& hc, SRayHitInfo& hitInfo, bool& bHavePhysics);
 	virtual bool              HitTestEntity(HitContext& hc, bool& bHavePhysics);
@@ -328,11 +320,12 @@ protected:
 	virtual void PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx);
 
 	//! Draw default object items.
-	virtual void DrawDefault(DisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
-	virtual void DrawTextureIcon(DisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared = 0) override;
-	void         DrawProjectorPyramid(DisplayContext& dc, float dist);
-	void         DrawProjectorFrustum(DisplayContext& dc, Vec2 size, float dist);
-	void         DrawEntityLinks(DisplayContext& dc);
+	virtual bool IsLabelVisible(const SDisplayContext& dc) const override;
+	virtual void DrawDefault(SDisplayContext& dc, COLORREF labelColor = RGB(255, 255, 255)) override;
+	virtual void DrawTextureIcon(SDisplayContext& dc, const Vec3& pos, float alpha, bool bDisplaySelectionHelper, float distanceSquared = 0) override;
+	void         DrawProjectorPyramid(SDisplayContext& dc, float dist);
+	void         DrawProjectorFrustum(SDisplayContext& dc, Vec2 size, float dist);
+	void         DrawEntityLinks(SDisplayContext& dc);
 
 	// !Recreates the icons buffer
 	void RenewTextureIconsBuffer();
@@ -362,9 +355,9 @@ protected:
 			UpdatePrefab();
 		}
 	}
-	
+
 	//////////////////////////////////////////////////////////////////////////
-	virtual void OnEventTargetEvent(CBaseObject* target, int event);
+	virtual void OnEventTargetEvent(const CBaseObject* pObject, const CObjectEvent& event);
 	void         ResolveEventTarget(CBaseObject* object, unsigned int index);
 	void         ReleaseEventTargets();
 	void         UpdateMaterialInfo();
@@ -372,7 +365,6 @@ protected:
 	// Called when link info changes.
 	virtual void UpdateIEntityLinks(bool bCallOnPropertyChange = true);
 
-	//! Dtor must be protected.
 	CEntityObject();
 	void DeleteThis() { delete this; }
 
@@ -382,12 +374,7 @@ protected:
 	//! Force IEntity to the local position/angles/scale.
 	void XFormGameEntity();
 
-	//! Sets correct binding for IEntity.
-	virtual void BindToParent();
-	virtual void BindIEntityChilds();
-	virtual void UnbindIEntity();
-
-	void         DrawAIInfo(DisplayContext& dc, struct IAIObject* aiObj);
+	void DrawAIInfo(SDisplayContext& dc, IAIObject* aiObj);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Callbacks.
@@ -413,7 +400,6 @@ protected:
 	void OnAreaLightChange(IVariable* var);
 	void OnAreaWidthChange(IVariable* var);
 	void OnAreaHeightChange(IVariable* var);
-	void OnAreaFOVChange(IVariable* var);
 	void OnAreaLightSizeChange(IVariable* var);
 	void OnColorChange(IVariable* var);
 	//////////////////////////////////////////////////////////////////////////
@@ -425,23 +411,19 @@ protected:
 	void OnBoxLengthChange(IVariable* var);
 	//////////////////////////////////////////////////////////////////////////
 
-	void            FreeGameData();
+	void           FreeGameData();
 
-	void            CheckSpecConfig();
+	void           CheckSpecConfig();
 
-	IVariable*      FindVariableInSubBlock(CVarBlockPtr& properties, IVariable* pSubBlockVar, const char* pVarName);
+	IVariable*     FindVariableInSubBlock(CVarBlockPtr& properties, IVariable* pSubBlockVar, const char* pVarName);
 
-	void            OnMenuCreateFlowGraph();
-	void            OnMenuScriptEvent(int eventIndex);
-	void            OnMenuReloadAllScripts();
-	void            OnMenuConvertToPrefab();
+	void           OnMenuCreateFlowGraph();
+	void           OnMenuScriptEvent(int eventIndex);
+	void           OnMenuReloadAllScripts();
 
 	virtual string GetMouseOverStatisticsText() const override;
 
-	void            SetFlareName(const string& name)
-	{
-		SetEntityPropertyString(s_LensFlarePropertyName, name);
-	}
+	void           SetFlareName(const string& name) { SetEntityPropertyString(s_LensFlarePropertyName, name); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// UI Part
@@ -456,7 +438,6 @@ protected:
 	void SerializeArchetype(Serialization::IArchive& ar, bool bMultiEdit);
 
 	void OnEditScript();
-	void OnReloadScript();
 	void OnOpenArchetype();
 	void OnBnClickedOpenFlowGraph();
 	void OnBnClickedRemoveFlowGraph();
@@ -465,7 +446,6 @@ protected:
 
 	// Reset information obtained from editor class info
 	void ResetEditorClassInfo();
-
 	bool IsLegacyObject() const;
 
 protected:
@@ -489,20 +469,19 @@ protected:
 	Vec3         m_lightColor;
 
 	//! Entity class.
-	string    m_entityClass;
-	CryGUID   m_entityClassGUID;
+	string  m_entityClass;
+	CryGUID m_entityClassGUID;
 
 	//! Id of spawned entity.
-	EntityId  m_entityId;
-	IEntity*  m_pEntity;
+	EntityId      m_entityId;
+	IEntity*      m_pEntity;
 	IEntityClass* m_pEntityClass;
-
-	IStatObj* m_visualObject;
+	IStatObj*     m_pHelperMesh;
 
 	// Entity class description.
 	std::shared_ptr<CEntityScript> m_pEntityScript;
 
-	std::vector<int> m_componentIconTextureIds;
+	std::vector<int>               m_componentIconTextureIds;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Main entity parameters.
@@ -559,9 +538,9 @@ protected:
 	TSmartPtr<CEntityPrototype> m_prototype;
 
 	//! Entity properties variables.
-	CVarBlockPtr          m_pLuaProperties;
+	CVarBlockPtr m_pLuaProperties;
 	//! Per instance entity properties variables
-	CVarBlockPtr          m_pLuaProperties2;
+	CVarBlockPtr m_pLuaProperties2;
 
 	// Physics state, as a string.
 	XmlNodeRef m_physicsState;
@@ -569,28 +548,25 @@ protected:
 	// Loaded data for the entity;
 	// This xml data is passed to the entity for loading data from it.
 	XmlNodeRef m_loadedXmlNodeData;
-	bool       m_bCloned = false;
+	bool       m_bCloned;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Associated FlowGraph.
 	CHyperFlowGraph* m_pFlowGraph;
 
-	static int   m_rollupId;
-	static float m_helperScale;
+	static int       m_rollupId;
+	static float     m_helperScale;
 
 	// Override IsScalable value from script file.
-	bool              m_bForceScale;
+	bool            m_bForceScale;
 
-	EAttachmentType   m_attachmentType;
-	string           m_attachmentTarget;
+	EAttachmentType m_attachmentType;
+	string          m_attachmentTarget;
 
 private:
 	void         ResetCallbacks();
 	void         SetVariableCallback(IVariable* pVar, IVariable::OnSetCallback func);
 	void         ClearCallbacks();
-
-	virtual void OnAttachChild(CBaseObject* pChild) override;
-	virtual void OnDetachThis() override;
 
 	virtual void OnLink(CBaseObject* pParent) override;
 	virtual void OnUnLink() override;
@@ -602,6 +578,8 @@ private:
 	friend void               PySetEntityProperty(const char* entityName, const char* propName, SPyWrappedProperty value);
 	friend SPyWrappedProperty PyGetEntityParam(const char* pObjectName, const char* pVarPath);
 	friend void               PySetEntityParam(const char* pObjectName, const char* pVarPath, SPyWrappedProperty value);
+
+	Matrix34 m_statObjWorldMatrix;
 };
 
 /*!
@@ -617,4 +595,3 @@ public:
 	const char*         GetFileSpec()                       { return "*EntityClass"; }
 	virtual const char* GetDataFilesFilterString() override { return not_implemented; }
 };
-

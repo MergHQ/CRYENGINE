@@ -23,6 +23,7 @@ History:
 
 #include "WeaponSharedParams.h"
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
+#include "IGameplayRecorder.h"
 
 
 CRY_IMPLEMENT_GTI(CDetonate, CSingle);
@@ -135,8 +136,6 @@ void CDetonate::StartFire()
 {
 	if (CanFire(false))
 	{
-		CActor *pOwner=m_pWeapon->GetOwnerActor();
-
 		CCCPOINT(DetonateFireMode_StartFireOK);
 		m_pWeapon->RequireUpdate(eIUS_FireMode);
 		m_detonationTimer = 0.1f;

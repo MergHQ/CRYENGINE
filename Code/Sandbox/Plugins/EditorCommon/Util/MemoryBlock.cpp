@@ -2,10 +2,22 @@
 
 #include "StdAfx.h"
 #include "MemoryBlock.h"
-#include <zlib.h>
 #include "Controls/QuestionDialog.h"
+#include <IEditor.h>
+#include <CrySystem/ISystem.h>
 
-//////////////////////////////////////////////////////////////////////////
+#include <zlib.h>
+
+namespace Private_MemoryBlock
+{
+	void* RealocateBlock(void* pBlock, int size)
+	{
+		void* pNewBlock = realloc(pBlock, size);
+		CRY_ASSERT_MESSAGE(pNewBlock, "Could not reallocate memory block of size %d", 4);
+		return pNewBlock;
+	}
+}
+
 CMemoryBlock::CMemoryBlock()
 {
 	m_buffer = 0;
@@ -14,19 +26,16 @@ CMemoryBlock::CMemoryBlock()
 	m_owns = false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock::CMemoryBlock(const CMemoryBlock& mem)
 {
 	*this = mem;
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock::~CMemoryBlock()
 {
 	Free();
 }
 
-//////////////////////////////////////////////////////////////////////////
 CMemoryBlock& CMemoryBlock::operator=(const CMemoryBlock& mem)
 {
 	if (mem.GetSize() > 0)
@@ -49,13 +58,13 @@ CMemoryBlock& CMemoryBlock::operator=(const CMemoryBlock& mem)
 	return *this;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CMemoryBlock::Allocate(int size, int uncompressedSize)
 {
-	assert(size > 0);
+	using namespace Private_MemoryBlock;
+	CRY_ASSERT(size > 0);
 	if (m_buffer)
 	{
-		m_buffer = realloc(m_buffer, size);
+		m_buffer = RealocateBlock(m_buffer, size);
 	}
 	else
 	{
@@ -71,7 +80,7 @@ bool CMemoryBlock::Allocate(int size, int uncompressedSize)
 		GetIEditor()->ReduceMemory();
 		if (m_buffer)
 		{
-			m_buffer = realloc(m_buffer, size);
+			m_buffer = RealocateBlock(m_buffer, size);
 		}
 		else
 		{
@@ -96,7 +105,6 @@ bool CMemoryBlock::Allocate(int size, int uncompressedSize)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Free()
 {
 	if (m_buffer && m_owns)
@@ -107,14 +115,12 @@ void CMemoryBlock::Free()
 	m_uncompressedSize = 0;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Copy(void* src, int size)
 {
-	assert(size <= m_size);
+	CRY_ASSERT(size <= m_size);
 	memcpy(m_buffer, src, size);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Attach(void* buffer, int size, int uncompressedSize)
 {
 	Free();
@@ -124,17 +130,15 @@ void CMemoryBlock::Attach(void* buffer, int size, int uncompressedSize)
 	m_uncompressedSize = uncompressedSize;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Detach()
 {
 	Free();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Compress(CMemoryBlock& toBlock) const
 {
 	// Cannot compress to itself.
-	assert(this != &toBlock);
+	CRY_ASSERT(this != &toBlock);
 	unsigned long destSize = m_size * 2 + 128;
 	CMemoryBlock temp;
 	temp.Allocate(destSize);
@@ -146,19 +150,17 @@ void CMemoryBlock::Compress(CMemoryBlock& toBlock) const
 	toBlock.m_uncompressedSize = GetSize();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Uncompress(CMemoryBlock& toBlock) const
 {
-	assert(this != &toBlock);
+	CRY_ASSERT(this != &toBlock);
 	toBlock.Allocate(m_uncompressedSize);
 	toBlock.m_uncompressedSize = 0;
 	unsigned long destSize = m_uncompressedSize;
 	int result = uncompress((unsigned char*)toBlock.GetBuffer(), &destSize, (unsigned char*)GetBuffer(), GetSize());
-	assert(result == Z_OK);
-	assert(destSize == m_uncompressedSize);
+	CRY_ASSERT(result == Z_OK);
+	CRY_ASSERT(destSize == m_uncompressedSize);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CMemoryBlock::Serialize(CArchive& ar)
 {
 	if (ar.IsLoading())
@@ -180,4 +182,3 @@ void CMemoryBlock::Serialize(CArchive& ar)
 		ar.Write(m_buffer, m_size);
 	}
 }
-

@@ -34,6 +34,15 @@ CManagedEntityComponent::CManagedEntityComponent(CManagedEntityComponent&& other
 	, m_numProperties(other.m_numProperties)
 {
 	other.m_pMonoObject.reset();
+
+	if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pInternalUpdateComponentHandleMethod.lock())
+	{
+		void* args[1];
+		CManagedEntityComponent* pAddress = this;
+		args[0] = &pAddress;
+
+		pMethod->Invoke(m_pMonoObject.get(), args);
+	}
 }
 
 void CManagedEntityComponent::PreInit(const SInitParams& params)
@@ -44,9 +53,11 @@ void CManagedEntityComponent::PreInit(const SInitParams& params)
 
 	EntityId id = m_pEntity->GetId();
 
-	void* pParams[2];
+	void* pParams[3];
 	pParams[0] = &m_pEntity;
 	pParams[1] = &id;
+	CManagedEntityComponent* pAddress = this;
+	pParams[2] = &pAddress;
 
 	if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pInternalSetEntityMethod.lock())
 	{
@@ -129,11 +140,11 @@ void CManagedEntityComponent::ProcessEvent(const SEntityEvent &event)
 		break;
 		case ENTITY_EVENT_RESET:
 		{
-			void* pParams[1];
-			pParams[0] = const_cast<intptr_t*>(&event.nParam[0]);
-
 			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pGameModeChangeMethod.lock())
 			{
+				const void* pParams[1];
+				pParams[0] = &event.nParam[0];
+
 				pMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
 		}
@@ -156,39 +167,139 @@ void CManagedEntityComponent::ProcessEvent(const SEntityEvent &event)
 		break;
 		case ENTITY_EVENT_COLLISION:
 		{
-			const EventPhysCollision* pCollision = reinterpret_cast<const EventPhysCollision*>(event.nParam[0]);
-			
-			// Make sure all references to this entity are slotted in the first element of the arrays.
-			const int entityIndex = static_cast<int>(event.nParam[1]);
-			const int otherIndex = (entityIndex + 1) % 2;
-
-			const void* pParams[12];
-			pParams[0] = &pCollision->pEntity[entityIndex]; // sourceEntityPhysics
-			pParams[1] = &pCollision->pEntity[otherIndex]; // targetEntityPhysics
-			pParams[2] = &pCollision->pt; // point
-			pParams[3] = &pCollision->n; // normal
-			pParams[4] = &pCollision->vloc[entityIndex]; // ownVelocity
-			pParams[5] = &pCollision->vloc[otherIndex]; // otherVelocity
-			pParams[6] = &pCollision->mass[entityIndex]; // ownMass
-			pParams[7] = &pCollision->mass[otherIndex]; // otherMass
-			pParams[8] = &pCollision->penetration; // penetrationDepth
-			pParams[9] = &pCollision->normImpulse; // normImpulse
-			pParams[10] = &pCollision->radius; // radius
-			pParams[11] = &pCollision->fDecalPlacementTestMaxSize; // decalMaxSize
-
 			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pCollisionMethod.lock())
 			{
+				const EventPhysCollision* pCollision = reinterpret_cast<const EventPhysCollision*>(event.nParam[0]);
+			
+				// Make sure all references to this entity are slotted in the first element of the arrays.
+				const int entityIndex = static_cast<int>(event.nParam[1]);
+				const int otherIndex = (entityIndex + 1) % 2;
+
+				const void* pParams[12];
+				pParams[0] = &pCollision->pEntity[entityIndex]; // sourceEntityPhysics
+				pParams[1] = &pCollision->pEntity[otherIndex]; // targetEntityPhysics
+				pParams[2] = &pCollision->pt; // point
+				pParams[3] = &pCollision->n; // normal
+				pParams[4] = &pCollision->vloc[entityIndex]; // ownVelocity
+				pParams[5] = &pCollision->vloc[otherIndex]; // otherVelocity
+				pParams[6] = &pCollision->mass[entityIndex]; // ownMass
+				pParams[7] = &pCollision->mass[otherIndex]; // otherMass
+				pParams[8] = &pCollision->penetration; // penetrationDepth
+				pParams[9] = &pCollision->normImpulse; // normImpulse
+				pParams[10] = &pCollision->radius; // radius
+				pParams[11] = &pCollision->fDecalPlacementTestMaxSize; // decalMaxSize
+
 				pMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
 		}
 		break;
+		case ENTITY_EVENT_ANIM_EVENT:
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pAnimationEventMethod.lock())
+			{
+				const void* pParams[2];
+				pParams[0] = &event.nParam[0];
+				pParams[1] = &event.nParam[1];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+			
+		}
 		case ENTITY_EVENT_PREPHYSICSUPDATE:
 		{
-			void* pParams[1];
-			pParams[0] = const_cast<float*>(&event.fParam[0]);
-
 			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pPrePhysicsUpdateMethod.lock())
 			{
+				const void* pParams[1];
+				pParams[0] = &event.fParam[0];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+		}
+		break;
+		case ENTITY_EVENT_TIMER:
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pTimerMethod.lock())
+			{
+				const void* pParams[1];
+				pParams[0] = &event.nParam[0];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+		}
+		break;
+		case ENTITY_EVENT_MOVENEARAREA:
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pMoveNearAreaMethod.lock())
+			{
+				const void* pParams[4];
+				pParams[0] = &event.nParam[0];
+				pParams[1] = &event.nParam[1];
+				pParams[2] = &event.nParam[2];
+				pParams[3] = &event.fParam[0];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+		}
+		break;
+		case ENTITY_EVENT_LEAVENEARAREA:
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pLeaveNearAreaMethod.lock())
+			{
+				const void* pParams[3];
+				pParams[0] = &event.nParam[0];
+				pParams[1] = &event.nParam[1];
+				pParams[2] = &event.nParam[2];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+		break;
+		case ENTITY_EVENT_ENTERNEARAREA:
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pEnterNearAreaMethod.lock())
+			{
+				const void* pParams[4];
+				pParams[0] = &event.nParam[0];
+				pParams[1] = &event.nParam[1];
+				pParams[2] = &event.nParam[2];
+				pParams[3] = &event.fParam[0];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+		}
+		case ENTITY_EVENT_MOVEINSIDEAREA:
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pMoveInsideAreaMethod.lock())
+			{
+				const void* pParams[3];
+				pParams[0] = &event.nParam[0];
+				pParams[1] = &event.nParam[1];
+				pParams[2] = &event.nParam[2];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+		}
+		break;
+		case ENTITY_EVENT_LEAVEAREA:
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pLeaveAreaMethod.lock())
+			{
+				const void* pParams[3];
+				pParams[0] = &event.nParam[0];
+				pParams[1] = &event.nParam[1];
+				pParams[2] = &event.nParam[2];
+
+				pMethod->Invoke(m_pMonoObject.get(), pParams);
+			}
+		}
+		break;
+		case ENTITY_EVENT_ENTERAREA:
+		{
+			if (std::shared_ptr<CMonoMethod> pMethod = m_factory.m_pEnterAreaMethod.lock())
+			{
+				const void* pParams[3];
+				pParams[0] = &event.nParam[0];
+				pParams[1] = &event.nParam[1];
+				pParams[2] = &event.nParam[2];
+
 				pMethod->Invoke(m_pMonoObject.get(), pParams);
 			}
 		}
@@ -201,6 +312,7 @@ void CManagedEntityComponent::ProcessEvent(const SEntityEvent &event)
 			}
 		}
 		break;
+
 	}
 }
 
@@ -266,7 +378,7 @@ void CManagedEntityComponent::SendSignal(int signalId, MonoInternals::MonoArray*
 			break;
 
 			default:
-				CRY_ASSERT_MESSAGE(false, "Tried to send Schematyc signal with non-primitive parameter type!");
+				CRY_ASSERT(false, "Tried to send Schematyc signal with non-primitive parameter type!");
 				return;
 			}
 

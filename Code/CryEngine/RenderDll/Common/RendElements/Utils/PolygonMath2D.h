@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _POLYGON_MATH_2D_
-#define _POLYGON_MATH_2D_
 #pragma once
 
 #include <CryCore/Containers/CryFixedArray.h>
@@ -27,7 +25,7 @@ public:
 		else
 		{
 			CryLogAlways("FixedPodArray::resize() failing as size too large - NOT resizing array");
-			CRY_ASSERT_MESSAGE(0, "FixedPodArray::resize() failing as size too large - NOT resizing array");
+			CRY_ASSERT(0, "FixedPodArray::resize() failing as size too large - NOT resizing array");
 		}
 	}
 
@@ -51,7 +49,7 @@ public:
 		else
 		{
 			CryLogAlways("FixedPodArray::erase() failing as element range invalid - NOT removing element");
-			CRY_ASSERT_MESSAGE(0, "FixedPodArray::erase() failing as element range invalid - NOT removing element");
+			CRY_ASSERT(0, "FixedPodArray::erase() failing as element range invalid - NOT removing element");
 		}
 	}
 
@@ -72,7 +70,7 @@ public:
 		else
 		{
 			CryLogAlways("FixedPodArray::insert_before() failing as element index invalid - NOT inserting element");
-			CRY_ASSERT_MESSAGE(0, "FixedPodArray::insert_before() failing as element index invalid - NOT inserting element");
+			CRY_ASSERT(0, "FixedPodArray::insert_before() failing as element index invalid - NOT inserting element");
 		}
 	}
 
@@ -137,5 +135,3 @@ enum EPolygonInCircle2D
 };
 
 EPolygonInCircle2D PolygonInCircle2D(const Vec2& center, const float radius, const Vec2* pPolygon, const int numPts);
-
-#endif // _POLYGON_MATH_2D_

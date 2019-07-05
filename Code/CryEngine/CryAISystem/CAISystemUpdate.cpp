@@ -33,6 +33,7 @@
 #include <CrySystem/IConsole.h>
 #include <CryNetwork/ISerialize.h>
 #include <CryAISystem/IAgent.h>
+#include <CryAISystem/IAISystemComponent.h>
 #include <CryCore/Containers/VectorSet.h>
 
 #include "CAISystem.h"
@@ -44,20 +45,46 @@
 #include "AIPlayer.h"
 #include "PipeUser.h"
 #include "Leader.h"
-#include "SmartObjects.h"
 #include "AIActions.h"
 #include "AICollision.h"
 #include "AIRadialOcclusion.h"
 #include "CentralInterestManager.h"
 #include "StatsManager.h"
+#include "AuditionMap/AuditionMap.h"
+#include "Group/GroupManager.h"
+#include "TargetSelection/TargetTrackManager.h"
+#include "BehaviorTree/BehaviorTreeManager.h"
 #include "TacticalPointSystem/TacticalPointSystem.h"
 #include "Communication/CommunicationManager.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "CollisionAvoidance/CollisionAvoidanceSystem.h"
 
 #include "DebugDrawContext.h"
 
-#include "Navigation/MNM/TileGenerator.h"
-#include "Navigation/MNM/NavMesh.h"
+ //-----------------------------------------------------------------------------------------------------------
+void RemoveNonActors(CAISystem::AIActorSet& actorSet)
+{
+	for (CAISystem::AIActorSet::iterator it = actorSet.begin(); it != actorSet.end(); )
+	{
+		IAIObject* pAIObject = it->GetAIObject();
+		CRY_ASSERT(pAIObject, "An AI Actors set contains a null entry for object id %d!", it->GetObjectID());
+
+		// [AlexMcC|29.06.10] We can't trust that this is an AI Actor, because CWeakRef::GetAIObject()
+		// doesn't do any type checking. If this weakref becomes invalid, then the id is used by another
+		// object (which can happen if we chainload or load a savegame), this might not be an actor anymore.
+		const bool bIsActor = pAIObject ? (pAIObject->CastToCAIActor() != NULL) : false;
+		CRY_ASSERT(bIsActor, "A non-actor is in an AI actor set!");
+
+		if (pAIObject && bIsActor)
+		{
+			++it;
+		}
+		else
+		{
+			it = actorSet.erase(it);
+		}
+	}
+}
 
 //-----------------------------------------------------------------------------------------------------------
 static bool IsPuppetOnScreen(CPuppet* pPuppet)
@@ -121,10 +148,8 @@ EPuppetUpdatePriority CAISystem::CalcPuppetUpdatePriority(CPuppet* pPuppet) cons
 	}
 }
 
-//
-//-----------------------------------------------------------------------------------------------------------
 #ifdef CRYAISYSTEM_DEBUG
-void CAISystem::UpdateDebugStuff()
+void CAISystem::TryUpdateDebugFakeDamageIndicators()
 {
 	#if CRY_PLATFORM_WINDOWS
 
@@ -136,52 +161,8 @@ void CAISystem::UpdateDebugStuff()
 		m_vecDebugBoxes.clear();
 	}
 
-	// Update fake tracers
-	if (gAIEnv.CVars.DrawFakeTracers > 0)
-	{
-		for (size_t i = 0; i < m_DEBUG_fakeTracers.size(); )
-		{
-			m_DEBUG_fakeTracers[i].t -= m_frameDeltaTime;
-			if (m_DEBUG_fakeTracers[i].t < 0.0f)
-			{
-				m_DEBUG_fakeTracers[i] = m_DEBUG_fakeTracers.back();
-				m_DEBUG_fakeTracers.pop_back();
-			}
-			else
-			{
-				++i;
-			}
-		}
-	}
-	else
-	{
-		m_DEBUG_fakeTracers.clear();
-	}
-
-	// Update fake hit effects
-	if (gAIEnv.CVars.DrawFakeHitEffects > 0)
-	{
-		for (size_t i = 0; i < m_DEBUG_fakeHitEffect.size(); )
-		{
-			m_DEBUG_fakeHitEffect[i].t -= m_frameDeltaTime;
-			if (m_DEBUG_fakeHitEffect[i].t < 0.0f)
-			{
-				m_DEBUG_fakeHitEffect[i] = m_DEBUG_fakeHitEffect.back();
-				m_DEBUG_fakeHitEffect.pop_back();
-			}
-			else
-			{
-				++i;
-			}
-		}
-	}
-	else
-	{
-		m_DEBUG_fakeHitEffect.clear();
-	}
-
 	// Update fake damage indicators
-	if (gAIEnv.CVars.DrawFakeDamageInd > 0)
+	if (gAIEnv.CVars.legacyDebugDraw.DrawFakeDamageInd > 0)
 	{
 		for (unsigned i = 0; i < m_DEBUG_fakeDamageInd.size(); )
 		{
@@ -206,9 +187,6 @@ void CAISystem::UpdateDebugStuff()
 }
 #endif //CRYAISYSTEM_DEBUG
 
-//===================================================================
-// GetUpdateAllAlways
-//===================================================================
 bool CAISystem::GetUpdateAllAlways() const
 {
 	bool updateAllAlways = gAIEnv.CVars.UpdateAllAlways != 0;
@@ -218,23 +196,267 @@ bool CAISystem::GetUpdateAllAlways() const
 struct SSortedPuppetB
 {
 	SSortedPuppetB(CPuppet* o, float dot, float d) : obj(o), weight(0.f), dot(dot), dist(d) {}
-	bool operator<(const SSortedPuppetB& rhs) const { return weight < rhs.weight;  }
+	bool operator<(const SSortedPuppetB& rhs) const { return weight < rhs.weight; }
 
 	float    weight, dot, dist;
 	CPuppet* obj;
 };
 
-//
-//-----------------------------------------------------------------------------------------------------------
-void CAISystem::UpdateAmbientFire()
+ //===================================================================
+ // Subsystems Updates
+ //===================================================================
+
+void CAISystem::SubsystemUpdateActionManager()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(m_pAIActionManager);
+
+	if (m_pAIActionManager)
+		m_pAIActionManager->Update();
+}
+
+void CAISystem::SubsystemUpdateRadialOcclusionRaycast()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CAIRadialOcclusionRaycast::UpdateActiveCount();
+}
+
+void CAISystem::SubsystemUpdateLightManager()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	m_lightManager.Update(false);
+}
+
+void CAISystem::SubsystemUpdateNavigation()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(m_pNavigation);
+
+	if (m_pNavigation)
+		m_pNavigation->Update(m_frameStartTime, m_frameDeltaTime);
+}
+
+void CAISystem::SubsystemUpdateBannedSOs()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(m_pSmartObjectManager);
+	PREFAST_ASSUME(m_pSmartObjectManager);
+	m_pSmartObjectManager->UpdateBannedSOs(m_frameDeltaTime);
+}
+
+void CAISystem::SubsystemUpdateSystemComponents()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)	
+	for (auto& systemComponent : m_setSystemComponents)
+	{
+		systemComponent->Update(m_frameDeltaTime);
+	}
+}
+
+void CAISystem::SubsystemUpdateCommunicationManager()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	if (gAIEnv.CVars.legacyCommunicationSystem.CommunicationSystem)
+	{
+		CRY_ASSERT(gAIEnv.pCommunicationManager);
+		gAIEnv.pCommunicationManager->Update(m_frameDeltaTime);
+	}
+}
+
+void CAISystem::TrySubsystemUpdateVisionMap(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pVisionMap);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::VisionMap, isAutomaticUpdate))
+		return;
+
+	gAIEnv.pVisionMap->Update(frameStartTime, frameDeltaTime);
+}
+
+void CAISystem::TrySubsystemUpdateAuditionMap(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pAuditionMap);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::AuditionMap, isAutomaticUpdate))
+		return;
+	
+	gAIEnv.pAuditionMap->Update(frameStartTime, frameDeltaTime);
+}
+
+void CAISystem::SubsystemUpdateGroupManager()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	if (gAIEnv.CVars.legacyGroupSystem.GroupSystem)
+	{
+		CRY_ASSERT(gAIEnv.pGroupManager);
+		gAIEnv.pGroupManager->Update(m_frameDeltaTime);
+	}
+}
+
+void CAISystem::TrySubsystemUpdateCoverSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	if (gAIEnv.CVars.legacyCoverSystem.CoverSystem)
+	{
+		if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::CoverSystem, isAutomaticUpdate))
+			return;
+
+		gAIEnv.pCoverSystem->Update(frameStartTime, frameDeltaTime);
+	}
+}
+
+void CAISystem::TrySubsystemUpdateNavigationSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pNavigationSystem);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::NavigationSystem, isAutomaticUpdate))
+		return;
+	
+	gAIEnv.pNavigationSystem->Update(frameStartTime, frameDeltaTime, false);
+}
+
+void CAISystem::SubsystemUpdatePlayers()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pAIObjectManager);
+	AIObjectOwners::const_iterator ai = gAIEnv.pAIObjectManager->m_Objects.find(AIOBJECT_PLAYER);
+
+	for (; ai != gAIEnv.pAIObjectManager->m_Objects.end() && ai->first == AIOBJECT_PLAYER; ++ai)
+	{
+		CAIPlayer* pPlayer = CastToCAIPlayerSafe(ai->second.GetAIObject());
+		if (pPlayer)
+			pPlayer->Update(IAIObject::EUpdateType::Full);
+	}
+}
+
+void CAISystem::SubsystemUpdateGroups()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	const int64 dt = (m_frameStartTime - m_lastGroupUpdateTime).GetMilliSecondsAsInt64();
+	if (dt > gAIEnv.CVars.AIUpdateInterval)
+	{
+		for (AIGroupMap::iterator it = m_mapAIGroups.begin(); it != m_mapAIGroups.end(); ++it)
+			it->second->Update();
+
+		m_lastGroupUpdateTime = m_frameStartTime;
+	}
+}
+
+void CAISystem::TrySubsystemUpdateMovementSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pMovementSystem);
+	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::MovementSystem, isAutomaticUpdate))
+		return;
+
+	gAIEnv.pMovementSystem->Update(frameStartTime, frameDeltaTime);
+}
+
+
+void CAISystem::SubsystemUpdateLeaders()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	const static float leaderUpdateRate(.2f);
+	static float leaderNoUpdatedTime(.0f);
+	leaderNoUpdatedTime += m_frameDeltaTime;
+	if (leaderNoUpdatedTime > leaderUpdateRate)
+	{
+		leaderNoUpdatedTime = 0.0f;
+		AIObjectOwners::iterator aio = gAIEnv.pAIObjectManager->m_Objects.find(AIOBJECT_LEADER);
+
+		for (; aio != gAIEnv.pAIObjectManager->m_Objects.end(); ++aio)
+		{
+			if (aio->first != AIOBJECT_LEADER)
+				break;
+
+			CLeader* pLeader = aio->second.GetAIObject()->CastToCLeader();
+			if (pLeader)
+				pLeader->Update(IAIObject::EUpdateType::Full);
+		}
+	}
+}
+
+void CAISystem::SubsystemUpdateSmartObjectManager()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	if (m_bUpdateSmartObjects)
+	{
+		CRY_ASSERT(m_pSmartObjectManager);
+		m_pSmartObjectManager->Update();
+	}
+}
+
+void CAISystem::TrySubsystemUpdateGlobalRayCaster(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pRayCaster);
+	if (!gAIEnv.pRayCaster || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::GlobalRaycaster, isAutomaticUpdate))
+		return;
+
+	gAIEnv.pRayCaster->SetQuota(gAIEnv.CVars.RayCasterQuota);
+	gAIEnv.pRayCaster->Update(frameDeltaTime);
+}
+
+void CAISystem::TrySubsystemUpdateGlobalIntersectionTester(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pIntersectionTester);
+	if (!gAIEnv.pIntersectionTester || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::GlobalIntersectionTester, isAutomaticUpdate))
+		return;
+
+	gAIEnv.pIntersectionTester->SetQuota(gAIEnv.CVars.IntersectionTesterQuota);
+	gAIEnv.pIntersectionTester->Update(frameDeltaTime);
+}
+
+void CAISystem::TrySubsystemUpdateClusterDetector(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pClusterDetector);
+	if (!gAIEnv.pClusterDetector || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::ClusterDetector, isAutomaticUpdate))
+		return;
+
+	gAIEnv.pClusterDetector->Update(frameStartTime, frameDeltaTime);
+}
+
+void CAISystem::SubsystemUpdateInterestManager()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	ICentralInterestManager* pInterestManager = CCentralInterestManager::GetInstance();
+	CRY_ASSERT(pInterestManager);
+	if (pInterestManager->Enable(gAIEnv.CVars.legacyInterestSystem.InterestSystem != 0))
+		pInterestManager->Update(m_frameDeltaTime);
+}
+
+void CAISystem::TrySubsystemUpdateBehaviorTreeManager(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pBehaviorTreeManager);
+	if (!gAIEnv.pBehaviorTreeManager || !ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::BehaviorTreeManager, isAutomaticUpdate))
+		return;
+
+	gAIEnv.pBehaviorTreeManager->Update(frameStartTime, frameDeltaTime);
+}
+
+// Update asynchronous TPS processing
+void CAISystem::SubsystemUpdateTacticalPointSystem()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	if (gAIEnv.CVars.legacyTacticalPointSystem.TacticalPointSystem)
+	{
+		CRY_ASSERT(gAIEnv.pTacticalPointSystem);
+		gAIEnv.pTacticalPointSystem->Update(gAIEnv.CVars.legacyTacticalPointSystem.TacticalPointUpdateTime);
+	}
+}
+
+void CAISystem::SubsystemUpdateAmbientFire()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	if (gAIEnv.CVars.AmbientFireEnable == 0)
+	if (gAIEnv.CVars.legacyFiring.AmbientFireEnable == 0)
 		return;
 
 	int64 dt((GetFrameStartTime() - m_lastAmbientFireUpdateTime).GetMilliSecondsAsInt64());
-	if (dt < (int)(gAIEnv.CVars.AmbientFireUpdateInterval * 1000.0f))
+	if (dt < (int)(gAIEnv.CVars.legacyFiring.AmbientFireUpdateInterval * 1000.0f))
 		return;
 
 	// Marcio: Update ambient fire towards all players.
@@ -379,7 +601,7 @@ void CAISystem::UpdateAmbientFire()
 			std::sort(shooters.begin(), shooters.end());
 
 			uint32 i = 0;
-			uint32 quota = gAIEnv.CVars.AmbientFireQuota;
+			uint32 quota = gAIEnv.CVars.legacyFiring.AmbientFireQuota;
 
 			for (TShooters::iterator it = shooters.begin(); it != shooters.end(); ++it)
 			{
@@ -396,9 +618,7 @@ inline bool PuppetFloatSorter(const std::pair<CPuppet*, float>& lhs, const std::
 	return lhs.second < rhs.second;
 }
 
-//
-//-----------------------------------------------------------------------------------------------------------
-void CAISystem::UpdateExpensiveAccessoryQuota()
+void CAISystem::SubsystemUpdateExpensiveAccessoryQuota()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
@@ -508,8 +728,240 @@ void CAISystem::UpdateExpensiveAccessoryQuota()
 	}
 }
 
-//
-//-----------------------------------------------------------------------------------------------------------
+void CAISystem::SubsystemUpdateActorsAndTargetTrackAndORCA()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+		AIAssert(!m_iteratingActorSet);
+	m_iteratingActorSet = true;
+
+	RemoveNonActors(m_enabledAIActorsSet);
+
+	AIActorVector& fullUpdates = m_tmpFullUpdates;
+	fullUpdates.resize(0);
+
+	AIActorVector& dryUpdates = m_tmpDryUpdates;
+	dryUpdates.resize(0);
+
+	AIActorVector& allUpdates = m_tmpAllUpdates;
+	allUpdates.resize(0);
+
+	uint32 activeAIActorCount = m_enabledAIActorsSet.size();
+	gAIEnv.pStatsManager->SetStat(eStat_ActiveActors, static_cast<float>(activeAIActorCount));
+
+	uint32 fullUpdateCount = 0;
+	if (activeAIActorCount > 0)
+	{
+		const float updateInterval = max(gAIEnv.CVars.AIUpdateInterval, 0.0001f);
+		const float updatesPerSecond = (activeAIActorCount / updateInterval) + m_enabledActorsUpdateError;
+		unsigned actorUpdateCount = (unsigned)floorf(updatesPerSecond * m_frameDeltaTime);
+		if (m_frameDeltaTime > 0.0f)
+			m_enabledActorsUpdateError = updatesPerSecond - actorUpdateCount / m_frameDeltaTime;
+
+		uint32 skipped = 0;
+		m_enabledActorsUpdateHead %= activeAIActorCount;
+		uint32 idx = m_enabledActorsUpdateHead;
+
+		for (uint32 i = 0; i < activeAIActorCount; ++i)
+		{
+			// [AlexMcC|29.06.10] We can't trust that this is an AI Actor, because CWeakRef::GetAIObject()
+			// doesn't do any type checking. If this weakref becomes invalid, then the id is used by another
+			// object (which can happen if we chainload or load a savegame), this might not be an actor anymore.
+
+			IAIObject* object = m_enabledAIActorsSet[idx++ % activeAIActorCount].GetAIObject();
+			CAIActor* actor = object->CastToCAIActor();
+			AIAssert(actor);
+
+			if (actor)
+			{
+				if (object->GetAIType() != AIOBJECT_PLAYER)
+				{
+					if (fullUpdates.size() < actorUpdateCount)
+						fullUpdates.push_back(actor);
+					else
+						dryUpdates.push_back(actor);
+				}
+				else if (fullUpdates.size() < actorUpdateCount)
+				{
+					++skipped;
+				}
+
+				allUpdates.push_back(actor);
+			}
+		}
+
+		{
+			CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Full Updates");
+
+			AIActorVector::iterator it = fullUpdates.begin();
+			AIActorVector::iterator end = fullUpdates.end();
+
+			for (; it != end; ++it)
+			{
+				CAIActor* pAIActor = *it;
+				if (CPuppet* pPuppet = pAIActor->CastToCPuppet())
+					pPuppet->SetUpdatePriority(CalcPuppetUpdatePriority(pPuppet));
+
+				// Full update
+				pAIActor->Update(IAIObject::EUpdateType::Full);
+
+				if (!pAIActor->m_bUpdatedOnce && m_bUpdateSmartObjects && pAIActor->IsEnabled())
+				{
+					if (CPipeUser* pPipeUser = pAIActor->CastToCPipeUser())
+					{
+						if (!pPipeUser->GetCurrentGoalPipe() || !pPipeUser->GetCurrentGoalPipe()->GetSubpipe())
+						{
+							pAIActor->m_bUpdatedOnce = true;
+						}
+					}
+					else
+					{
+						pAIActor->m_bUpdatedOnce = true;
+					}
+				}
+
+				m_totalActorsUpdateCount++;
+
+				if (m_totalActorsUpdateCount >= (int)activeAIActorCount)
+				{
+					// full update cycle finished on all ai objects
+					// now allow updating smart objects
+					m_bUpdateSmartObjects = true;
+					m_totalActorsUpdateCount = 0;
+				}
+
+				fullUpdateCount++;
+			}
+
+			// CE-1629: special case if there is only a CAIPlayer (and no other CAIActor) to ensure that smart-objects will get updated
+			if (fullUpdates.empty() && actorUpdateCount > 0)
+			{
+				m_bUpdateSmartObjects = true;
+			}
+
+			// Advance update head.
+			m_enabledActorsUpdateHead += fullUpdateCount;
+			m_enabledActorsUpdateHead += skipped;
+		}
+
+		{
+			CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Dry Updates");
+
+			AIActorVector::iterator it = dryUpdates.begin();
+			AIActorVector::iterator end = dryUpdates.end();
+
+			for (; it != end; ++it)
+				SingleDryUpdate(*it);
+		}
+
+		{
+			CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Subsystems Updates");
+
+			for (IAISystemComponent* systemComponent : m_setSystemComponents)
+			{
+				if (systemComponent->WantActorUpdates(IAIObject::EUpdateType::Full))
+				{
+					for (CAIActor* pAIActor : fullUpdates)
+					{
+						systemComponent->ActorUpdate(pAIActor, IAIObject::EUpdateType::Full, m_frameDeltaTime);
+					}
+				}
+				if (systemComponent->WantActorUpdates(IAIObject::EUpdateType::Dry))
+				{
+					for (CAIActor* pAIActor : dryUpdates)
+					{
+						systemComponent->ActorUpdate(pAIActor, IAIObject::EUpdateType::Dry, m_frameDeltaTime);
+					}
+				}
+			}
+		}
+
+		SubsystemUpdateTargetTrackManager();
+	}
+
+	SubsystemUpdateCollisionAvoidanceSystem();
+
+	if (activeAIActorCount > 0)
+	{
+		CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Proxy Updates");
+		{
+			{
+				AIActorVector::iterator fit = fullUpdates.begin();
+				AIActorVector::iterator fend = fullUpdates.end();
+
+				for (; fit != fend; ++fit)
+					(*fit)->UpdateProxy(IAIObject::EUpdateType::Full);
+			}
+
+			{
+				AIActorVector::iterator dit = dryUpdates.begin();
+				AIActorVector::iterator dend = dryUpdates.end();
+
+				for (; dit != dend; ++dit)
+					(*dit)->UpdateProxy(IAIObject::EUpdateType::Dry);
+			}
+		}
+
+		gAIEnv.pStatsManager->SetStat(eStat_FullUpdates, static_cast<float>(fullUpdateCount));
+
+		RemoveNonActors(m_disabledAIActorsSet);
+	}
+	else
+	{
+		// No active puppets, allow updating smart objects
+		m_bUpdateSmartObjects = true;
+	}
+
+	RemoveNonActors(m_disabledAIActorsSet);
+
+	if (!m_disabledAIActorsSet.empty())
+	{
+		uint32 inactiveAIActorCount = m_disabledAIActorsSet.size();
+		const float updateInterval = 0.3f;
+		const float updatesPerSecond = (inactiveAIActorCount / updateInterval) + m_disabledActorsUpdateError;
+		unsigned aiActorDisabledUpdateCount = (unsigned)floorf(updatesPerSecond * m_frameDeltaTime);
+		if (m_frameDeltaTime > 0.0f)
+			m_disabledActorsUpdateError = updatesPerSecond - aiActorDisabledUpdateCount / m_frameDeltaTime;
+
+		m_disabledActorsHead %= inactiveAIActorCount;
+		uint32 idx = m_disabledActorsHead;
+
+		for (unsigned i = 0; (i < aiActorDisabledUpdateCount) && inactiveAIActorCount; ++i)
+		{
+			// [AlexMcC|29.06.10] We can't trust that this is an AI Actor, because CWeakRef::GetAIObject()
+			// doesn't do any type checking. If this weakref becomes invalid, then the id is used by another
+			// object (which can happen if we chainload or load a savegame), this might not be an actor anymore.
+			IAIObject* object = m_disabledAIActorsSet[idx++ % inactiveAIActorCount].GetAIObject();
+			CAIActor* actor = object ? object->CastToCAIActor() : NULL;
+			AIAssert(actor);
+
+			actor->UpdateDisabled(IAIObject::EUpdateType::Full);
+
+			// [AlexMcC|28.09.09] UpdateDisabled might remove the puppet from the disabled set, so the size might change
+			inactiveAIActorCount = m_disabledAIActorsSet.size();
+		}
+
+		// Advance update head.
+		m_disabledActorsHead += aiActorDisabledUpdateCount;
+	}
+
+	AIAssert(m_iteratingActorSet);
+	m_iteratingActorSet = false;
+}
+
+void CAISystem::SubsystemUpdateTargetTrackManager()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	CRY_ASSERT(gAIEnv.pTargetTrackManager);
+	gAIEnv.pTargetTrackManager->ShareFreshestTargetData();
+}
+
+void CAISystem::SubsystemUpdateCollisionAvoidanceSystem()
+{
+	CRY_PROFILE_FUNCTION(PROFILE_AI)
+	if (gAIEnv.CVars.collisionAvoidance.EnableORCA)
+		gAIEnv.pCollisionAvoidanceSystem->Update(m_frameDeltaTime);
+}
+
 void CAISystem::SingleDryUpdate(CAIActor* pAIActor)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);

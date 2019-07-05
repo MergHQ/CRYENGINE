@@ -1,15 +1,9 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "DX11Device.hpp"
 
 namespace NCryDX11 {
-
-#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
-auto GetDebugName = [](ID3D11Resource* pO) -> const char* { UINT len = 511; static char name[512] = "unknown"; pO->GetPrivateData(WKPDID_D3DDebugObjectName, &len, name); name[len] = '\0'; return name; };
-#else
-auto GetDebugName = [](ID3D11Resource* pO) -> const char* { return "unknown"; };
-#endif
 
 //---------------------------------------------------------------------------------------------------------------------
 CDevice* CDevice::Create(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLevel)
@@ -18,18 +12,28 @@ CDevice* CDevice::Create(IDXGIAdapter* pAdapter, D3D_FEATURE_LEVEL* pFeatureLeve
 	return nullptr;
 }
 
-CDevice* CDevice::Create(ID3D11Device* device, D3D_FEATURE_LEVEL featureLevel)
+CDevice* CDevice::Create(D3DDevice* device, D3D_FEATURE_LEVEL featureLevel)
 {
-	return new CDevice(device, featureLevel);
+	D3DDeviceContext* pDeviceContext = nullptr;
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	device->GetImmediateContext1(&pDeviceContext);
+#else
+	device->GetImmediateContext(&pDeviceContext);
+#endif
+
+	CDevice* const pDevice = new CDevice(device, pDeviceContext, featureLevel);
+	pDeviceContext->Release();
+	return pDevice;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //---------------------------------------------------------------------------------------------------------------------
-CDevice::CDevice(ID3D11Device* d3d11Device, D3D_FEATURE_LEVEL featureLevel)
-	: m_pDevice(d3d11Device)
+CDevice::CDevice(D3DDevice* d3d11Device, D3DDeviceContext* d3dDeviceContext, D3D_FEATURE_LEVEL featureLevel)
+	: m_pD3DDevice(d3d11Device)
+	, m_pD3DImmediateDeviceContext(d3dDeviceContext)
 	, m_featureLevel(featureLevel)
-	// Must be constructed last as it relies on functionality from the heaps
+	// Must be constructed last as it relies on the deviceContext
 	, m_Scheduler(this)
 {
 }
@@ -148,7 +152,12 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseStagingResource(
 //---------------------------------------------------------------------------------------------------------------------
 HRESULT STDMETHODCALLTYPE CDevice::DuplicateCommittedResource(
 	_In_ ID3D11Resource* pInputResource,
-	_Out_ ID3D11Resource** ppOutputResource)
+	_Out_ ID3D11Resource** ppOutputResource
+#if DURANGO_USE_ESRAM
+	,_In_ int32 nESRAMOffset,
+	_In_ int32 nESRAMSize
+#endif
+)
 {
 	struct
 	{
@@ -232,6 +241,20 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateCommittedResource(
 		clearableBlob.sResourceDesc.Flags = D3D11_RESOURCE_MISC_FLAG(sDesc.MiscFlags);
 	}
 
+#if DURANGO_USE_ESRAM
+	if (nESRAMOffset != SKIP_ESRAM)
+	{
+		clearableBlob.sResourceDesc.Flags = D3D11_RESOURCE_MISC_FLAG(clearableBlob.sResourceDesc.Flags | D3D11X_RESOURCE_MISC_ESRAM_RESIDENT);
+		clearableBlob.sHeap.Type = D3D11_USAGE_DEFAULT;
+		clearableBlob.sHeap.CPUPageProperty = D3D11_CPU_ACCESS_FLAG(0);
+	}
+	else
+		clearableBlob.sResourceDesc.Flags = D3D11_RESOURCE_MISC_FLAG(clearableBlob.sResourceDesc.Flags & ~D3D11X_RESOURCE_MISC_ESRAM_RESIDENT);
+
+	clearableBlob.sResourceDesc.ESRAMOffsetBytes = nESRAMOffset;
+	clearableBlob.sResourceDesc.ESRAMUsageBytes = nESRAMSize;
+#endif
+
 	ID3D11Resource* outputResource = nullptr;
 	HRESULT result = CreateOrReuseCommittedResource(
 		&clearableBlob.sHeap,
@@ -243,6 +266,7 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateCommittedResource(
 	{
 		*ppOutputResource = outputResource;
 
+		::SetDebugName(outputResource, ::GetDebugName(pInputResource).c_str());
 		return S_OK;
 	}
 
@@ -251,11 +275,11 @@ HRESULT STDMETHODCALLTYPE CDevice::DuplicateCommittedResource(
 
 //---------------------------------------------------------------------------------------------------------------------
 HRESULT STDMETHODCALLTYPE CDevice::SubstituteUsedCommittedResource(
-	_In_ const FVAL64 (&fenceValues)[CMDQUEUE_NUM],
+	_In_ const FVAL64& fenceValue,
 	_Inout_ ID3D11Resource** ppSubstituteResource) threadsafe
 {
 	const auto& fenceManager = GetScheduler().GetFenceManager();
-	if (fenceManager.IsCompleted(fenceValues[CMDQUEUE_IMMEDIATE], CMDQUEUE_IMMEDIATE))
+	if (fenceManager.IsCompleted(fenceValue))
 	{
 		// Can continued to be used without substitution
 		return S_FALSE;
@@ -266,7 +290,7 @@ HRESULT STDMETHODCALLTYPE CDevice::SubstituteUsedCommittedResource(
 
 	if (result == S_OK && *ppSubstituteResource != nullptr)
 	{
-		ReleaseLater(fenceValues, pDisposableResource, true);
+		ReleaseLater(fenceValue, pDisposableResource, true);
 		pDisposableResource->Release();
 
 		return S_OK;
@@ -298,17 +322,32 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseCommittedResource(
 	hashableBlob.sResourceDesc = *pResourceDesc;
 	hashableBlob.sResourceDesc.Alignment = 0; // alignment is intrinsic
 	
-	// Clear spaces from alignment of members
-	void* ptr1 = ((char*)&hashableBlob.sHeapProperties.CPUPageProperty) + sizeof(hashableBlob.sHeapProperties.Type);
-	ZeroMemory(ptr1, offsetof(D3D11_HEAP_PROPERTIES, CPUPageProperty) - sizeof(hashableBlob.sHeapProperties.Type));
-	void* ptr2 = ((char*)&hashableBlob.sHeapProperties.CPUPageProperty) + sizeof(hashableBlob.sHeapProperties.CPUPageProperty);
-	ZeroMemory(ptr2, sizeof(hashableBlob.sHeapProperties) - offsetof(D3D11_HEAP_PROPERTIES, CPUPageProperty) - sizeof(hashableBlob.sHeapProperties.CPUPageProperty));
+	// Check type size assumptions about this padding clearing
+	static_assert(sizeof(UINT64)      == 8, "UINT64 is not 8 bytes");
+	static_assert(sizeof(UINT)        == 4, "UINT is not 4 bytes");
+	static_assert(sizeof(UINT16)      == 2, "UINT16 is not 2 bytes");
 
-	// Clear spaces from alignment of members
-	void* ptr3 = ((char*)&hashableBlob.sResourceDesc.Dimension) + sizeof(hashableBlob.sResourceDesc.Dimension);
-	ZeroMemory(ptr3, offsetof(D3D11_RESOURCE_DESC, Alignment) - sizeof(hashableBlob.sResourceDesc.Dimension));
-	void* ptr4 = ((char*)&hashableBlob.sResourceDesc.Flags) + sizeof(hashableBlob.sResourceDesc.Flags);
-	ZeroMemory(ptr4, sizeof(hashableBlob.sResourceDesc) - offsetof(D3D11_RESOURCE_DESC, Flags) - sizeof(hashableBlob.sResourceDesc.Flags));
+	// There is no guarantee that enum backing types are 4 bytes
+	static_assert(sizeof(D3D11_USAGE)              == 4, "D3D11_USAGE backing type is not 4 bytes");
+	static_assert(sizeof(D3D11_CPU_ACCESS_FLAG)    == 4, "D3D11_CPU_ACCESS_FLAG backing type is not 4 bytes");
+	static_assert(sizeof(D3D11_RESOURCE_DIMENSION) == 4, "D3D11_RESOURCE_DIMENSION backing type is not 4 bytes");
+	static_assert(sizeof(DXGI_FORMAT)              == 4, "DXGI_FORMAT backing type is not 4 bytes");
+	static_assert(sizeof(D3D11_RESOURCE_MISC_FLAG) == 4, "D3D11_RESOURCE_MISC_FLAG backing type is not 4 bytes");
+	static_assert(sizeof(DXGI_SAMPLE_DESC)         == 8, "DXGI_SAMPLE_DESC is not 8 bytes");
+	
+	// Clear spaces from struct padding
+	void* ptr1 = ((char*)&hashableBlob.sHeapProperties.CPUPageProperty) + sizeof(hashableBlob.sHeapProperties.CPUPageProperty);
+	ZeroMemory(ptr1, sizeof(hashableBlob.sHeapProperties) - offsetof(D3D11_HEAP_PROPERTIES, CPUPageProperty) - sizeof(hashableBlob.sHeapProperties.CPUPageProperty));
+
+	void* ptr2 = ((char*)&hashableBlob.sResourceDesc.Dimension) + sizeof(hashableBlob.sResourceDesc.Dimension);
+	ZeroMemory(ptr2, offsetof(D3D11_RESOURCE_DESC, Alignment) - sizeof(hashableBlob.sResourceDesc.Dimension));
+#if DURANGO_USE_ESRAM
+	void* ptr3 = ((char*)&hashableBlob.sResourceDesc.ESRAMUsageBytes) + sizeof(hashableBlob.sResourceDesc.ESRAMUsageBytes);
+	ZeroMemory(ptr3, sizeof(hashableBlob.sResourceDesc) - offsetof(D3D11_RESOURCE_DESC, ESRAMUsageBytes) - sizeof(hashableBlob.sResourceDesc.ESRAMUsageBytes));
+#else
+	void* ptr3 = ((char*)&hashableBlob.sResourceDesc.Flags) + sizeof(hashableBlob.sResourceDesc.Flags);
+	ZeroMemory(ptr3, sizeof(hashableBlob.sResourceDesc) - offsetof(D3D11_RESOURCE_DESC, Flags) - sizeof(hashableBlob.sResourceDesc.Flags));
+#endif
 
 	THash hHash = ComputeSmallHash<sizeof(hashableBlob)>(&hashableBlob);
 
@@ -323,6 +362,7 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateOrReuseCommittedResource(
 			{
 				// Guaranteed O(1) lookup
 				*ppvResource = result->second.front().pObject;
+				ClearDebugName(result->second.front().pObject);
 
 				result->second.pop_front();
 				if (!result->second.size())
@@ -353,6 +393,10 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateCommittedResource(
 		sDesc.CPUAccessFlags = pHeapProperties->CPUPageProperty;
 		sDesc.MiscFlags = pResourceDesc->Flags;
 		sDesc.StructureByteStride = pResourceDesc->StructureByteSize;
+#if DURANGO_USE_ESRAM
+		sDesc.ESRAMOffsetBytes = pResourceDesc->ESRAMOffsetBytes;
+		sDesc.ESRAMUsageBytes = pResourceDesc->ESRAMUsageBytes;
+#endif
 
 		return GetD3D11Device()->CreateBuffer(&sDesc, nullptr, (ID3D11Buffer**)ppvResource);
 	}
@@ -368,6 +412,10 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateCommittedResource(
 		sDesc.BindFlags = HeapFlags;
 		sDesc.CPUAccessFlags = pHeapProperties->CPUPageProperty;
 		sDesc.MiscFlags = pResourceDesc->Flags;
+#if DURANGO_USE_ESRAM
+		sDesc.ESRAMOffsetBytes = pResourceDesc->ESRAMOffsetBytes;
+		sDesc.ESRAMUsageBytes = pResourceDesc->ESRAMUsageBytes;
+#endif
 
 		return GetD3D11Device()->CreateTexture1D(&sDesc, nullptr, (ID3D11Texture1D**)ppvResource);
 	}
@@ -385,6 +433,10 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateCommittedResource(
 		sDesc.BindFlags = HeapFlags;
 		sDesc.CPUAccessFlags = pHeapProperties->CPUPageProperty;
 		sDesc.MiscFlags = pResourceDesc->Flags;
+#if DURANGO_USE_ESRAM
+		sDesc.ESRAMOffsetBytes = pResourceDesc->ESRAMOffsetBytes;
+		sDesc.ESRAMUsageBytes = pResourceDesc->ESRAMUsageBytes;
+#endif
 
 		return GetD3D11Device()->CreateTexture2D(&sDesc, nullptr, (ID3D11Texture2D**)ppvResource);
 	}
@@ -401,6 +453,10 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateCommittedResource(
 		sDesc.BindFlags = HeapFlags;
 		sDesc.CPUAccessFlags = pHeapProperties->CPUPageProperty;
 		sDesc.MiscFlags = pResourceDesc->Flags;
+#if DURANGO_USE_ESRAM
+		sDesc.ESRAMOffsetBytes = pResourceDesc->ESRAMOffsetBytes;
+		sDesc.ESRAMUsageBytes = pResourceDesc->ESRAMUsageBytes;
+#endif
 
 		return GetD3D11Device()->CreateTexture3D(&sDesc, nullptr, (ID3D11Texture3D**)ppvResource);
 	}
@@ -409,7 +465,7 @@ HRESULT STDMETHODCALLTYPE CDevice::CreateCommittedResource(
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe
+void CDevice::FlushReleaseHeap(const UINT64 completedFenceValue, const UINT64 pruneFenceValue) threadsafe
 {
 	uint32 releases = 0;
 	uint32 recyclations = 0;
@@ -424,9 +480,9 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 			nx = it;
 			++nx;
 
-			if (((it->second.fenceValue) <= completedFenceValues[CMDQUEUE_IMMEDIATE]))
+			if (((it->second.fenceValue) <= completedFenceValue))
 			{
-				if (((it->second.fenceValue) > pruneFenceValues[CMDQUEUE_IMMEDIATE]) && (it->second.bFlags & 1))
+				if (((it->second.fenceValue) > pruneFenceValue) && (it->second.bFlags & 1))
 				{
 					CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_RecycleHeapTheadSafeScope);
 
@@ -453,8 +509,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				}
 				else
 				{
-					ULONG counter = it->first->Release();
-					DX11_ASSERT(counter == 0, "Ref-Counter of D3D11 resource %s is not 0, memory will leak!", GetDebugName(it->first));
+					CRY_DX11_VERIFY(it->first->Release() == 0, "Invalid ref-count of D3D11 resource %s, memory will leak!", GetDebugName(it->first).c_str());
 
 					releases++;
 				}
@@ -474,14 +529,13 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 			nx = it;
 			++nx;
 
-			while (((it->second.back().fenceValue) <= pruneFenceValues[CMDQUEUE_IMMEDIATE]))
+			while (((it->second.back().fenceValue) <= pruneFenceValue))
 			{
 				// NOTE: some of the objects are referenced by multiple classes,
 				// so even when the CResource is destructed and the d3d resource
 				// given up for release, they can continue being in use
 				// This means the ref-count here doesn't necessarily need to be 0
-				ULONG counter = it->second.back().pObject->Release();
-				DX11_ASSERT(counter == 0, "Ref-Counter of D3D11 resource %s is not 0, memory will leak!", GetDebugName(it->second.back().pObject));
+				CRY_DX11_VERIFY(it->second.back().pObject->Release() == 0, "Invalid ref-count of D3D11 resource %s, memory will leak!", GetDebugName(it->second.back().pObject).c_str());
 
 				it->second.pop_back();
 				evictions++;
@@ -505,16 +559,14 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 		int rowPos = 25;
 		int rowMax = 25;
 		float colPos = 20;
-		size_t releaseSize = 0;
 		size_t recycleSize = 0;
-		size_t releaseNums = 0;
 		size_t recycleNums = 0;
 
 		const auto& fenceManager = GetScheduler().GetFenceManager();
 
 		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), 2.0f, Col_Blue, false, "GPU Resource Heap Debug");
 		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, Col_Blue, false, "Fences: Current %lli, Submitted %lli, Completed %lli",
-			fenceManager.GetCurrentValue(CMDQUEUE_IMMEDIATE), fenceManager.GetSubmittedValue(CMDQUEUE_IMMEDIATE), fenceManager.GetLastCompletedFenceValue(CMDQUEUE_IMMEDIATE));
+			fenceManager.GetCurrentValue(), fenceManager.GetSubmittedValue(), fenceManager.GetLastCompletedFenceValue());
 		IRenderAuxText::Draw2dLabel(colPos, float(rowPos += rowHeight), fontSize, Col_Blue, false, "Movements: Releases %lli, Recyclations %lli, Evictions %lli",
 			releases, recyclations, evictions);
 
@@ -555,7 +607,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				D3D11_TEXTURE1D_DESC sDesc;
 				((ID3D11Texture1D*)pInputResource)->GetDesc(&sDesc);
 
-				uint32 size = CTexture::TextureDataSize(sDesc.Width, 1, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(sDesc.Width, 1, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 
@@ -569,7 +621,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				D3D11_TEXTURE2D_DESC sDesc;
 				((ID3D11Texture2D*)pInputResource)->GetDesc(&sDesc);
 
-				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, 1, sDesc.MipLevels, sDesc.ArraySize, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 
@@ -583,7 +635,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 				D3D11_TEXTURE3D_DESC sDesc;
 				((ID3D11Texture3D*)pInputResource)->GetDesc(&sDesc);
 
-				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, sDesc.Depth, sDesc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(sDesc.Format));
+				uint32 size = CTexture::TextureDataSize(sDesc.Width, sDesc.Height, sDesc.Depth, sDesc.MipLevels, 1, DeviceFormats::ConvertToTexFormat(sDesc.Format), eTM_Optimal);
 				recycleSize += counter * size;
 				recycleNums += counter;
 
@@ -609,7 +661,7 @@ void CDevice::FlushReleaseHeap(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Resource* pObject, bool bReusable) threadsafe
+void CDevice::ReleaseLater(const FVAL64& fenceValue, ID3D11Resource* pObject, bool bReusable) threadsafe
 {
 	if (pObject)
 	{
@@ -700,15 +752,22 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Reso
 			hashableBlob.sHeap.Type == D3D11_USAGE_DEFAULT ||
 			hashableBlob.sHeap.Type == D3D11_USAGE_IMMUTABLE;
 
-		// GPU-only resources can't race each other when they are managed by ref-counts/pools
-		if (isGPUOnly && bReusable)
+		const FVAL64 completedFenceValue = m_Scheduler.GetFenceManager().GetLastCompletedFenceValue();
+		const UINT64 fenceValueWithPrunningDelay = std::max(fenceValue, completedFenceValue);
+		
+		const bool isUnused =
+			SmallerEqualFenceValues(fenceValueWithPrunningDelay, completedFenceValue);
+
+		// GPU-only resources can't race with itself when they are managed by ref-counts/pools
+		// CPU-write resources can be recycled immediately if they have been used up already
+		if ((isGPUOnly | isUnused) & bReusable)
 		{
 			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_RecycleHeapTheadSafeScope);
 
 			RecycleInfo recycleInfo;
 
 			recycleInfo.pObject = pObject;
-			recycleInfo.fenceValue = fenceValues[CMDQUEUE_IMMEDIATE];
+			recycleInfo.fenceValue = fenceValue;
 
 			auto& sorted = m_RecycleHeap[hHash];
 #if OUT_OF_ODER_RELEASE_LATER
@@ -728,7 +787,7 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Reso
 				pObject->AddRef();
 			}
 		}
-		else
+		else if (!isUnused)
 		{
 			CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(m_ReleaseHeapTheadSafeScope);
 
@@ -736,7 +795,7 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Reso
 
 			releaseInfo.hHash = hHash;
 			releaseInfo.bFlags = bReusable ? 1 : 0;
-			releaseInfo.fenceValue = fenceValues[CMDQUEUE_IMMEDIATE];
+			releaseInfo.fenceValue = fenceValue;
 
 			std::pair<TReleaseHeap::iterator, bool> result = m_ReleaseHeap.emplace(pObject, std::move(releaseInfo));
 
@@ -746,6 +805,11 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Reso
 				pObject->AddRef();
 			}
 		}
+	
+#if 0	// NOTE: Use the code-fragment to detect resources without names
+		if (GetDebugName(pObject).empty())
+			__debugbreak();
+#endif
 	}
 }
 
@@ -753,7 +817,7 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], ID3D11Reso
 void CDevice::FlushAndWaitForGPU()
 {
 	// Submit pending command-lists in case there are left-overs, make sure it's flushed to and executed on the hardware
-	GetScheduler().Flush(true);
+	m_Scheduler.Flush(true);
 }
 
 }

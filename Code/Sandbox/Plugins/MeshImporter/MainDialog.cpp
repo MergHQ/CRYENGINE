@@ -22,7 +22,7 @@
 #include "MaterialSettings.h"
 #include "AutoLodSettings.h"
 #include "EditorMetaData.h"
-#include "FilePathUtil.h"
+#include "PathUtils.h"
 #include "MaterialHelpers.h"
 #include "MaterialPanel.h"
 #include "ImporterUtil.h"
@@ -51,9 +51,9 @@
 #include <Material/Material.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IEditor.h>
-#include <Controls\QuestionDialog.h>
+#include <Controls/QuestionDialog.h>
 #include <QtViewPane.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <ProxyModels/AttributeFilterProxyModel.h>
 #include <../../CryEngine/Cry3DEngine/CGF/ChunkFile.h>
 #include <../../CryEngine/Cry3DEngine/MeshCompiler/MeshCompiler.h>
@@ -848,8 +848,6 @@ void CMainDialog::RenderStaticMesh(const SRenderContext& rc)
 		{
 			if (!m_bHasLods && !GetAutoLodNodes(GetScene()).empty())
 			{
-				IRenderAuxGeom* const pAux = gEnv->pRenderer->GetIRenderAuxGeom();
-
 				string label;
 				label.Format("Waiting for generation of LOD %d.\n", m_viewSettings.lod);
 				frameText += label;
@@ -862,8 +860,6 @@ void CMainDialog::RenderStaticMesh(const SRenderContext& rc)
 			}
 		}
 	}
-
-	const FbxTool::CScene* pScene = GetScene();
 
 	for (size_t i = 0; i < m_pSceneModel->GetElementCount(); ++i)
 	{
@@ -978,9 +974,6 @@ void CMainDialog::RenderSkin(const SRenderContext& rc)
 {
 	IRenderAuxGeom* pAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	pAuxGeom->SetRenderFlags(e_Def3DPublicRenderflags);
-
-	IRenderer* const pRenderer = gEnv->pRenderer;
-	IRenderAuxGeom* const pAux = pRenderer->GetIRenderAuxGeom();
 
 	// Update skin material, if necessary
 	if (m_pCharacterInstance && m_pMaterialPanel->GetMaterialSettings()->GetMaterial() && m_pCharacterInstance->GetIMaterial() != m_pMaterialPanel->GetMaterialSettings()->GetMaterial()->GetMatInfo())
@@ -1266,11 +1259,15 @@ void CMainDialog::CreateSkinFromFile(const string& filePath)
 		materialFilename = m_pMaterialPanel->GetMaterialSettings()->GetMaterialName();
 	}
 
-	ICharacterManager* const pCharacterManager = GetIEditor()->GetSystem()->GetIAnimationSystem();
 	m_pCharacterInstance = CreateTemporaryCharacter(
 		QtUtil::ToQString(filePath),
 		QtUtil::ToQString(filePath),
 		QtUtil::ToQString(materialFilename));
+
+	if (m_pCharacterInstance)
+	{
+		m_pCharacterInstance->SetCharEditMode(m_pCharacterInstance->GetCharEditMode() | CA_CharacterAuxEditor);
+	}
 }
 
 void CMainDialog::UpdateResources()
@@ -1300,6 +1297,8 @@ CMainDialog::CMainDialog(QWidget* pParent /*= nullptr*/)
 	, m_pUnmergedMeshStatObj(nullptr)
 	, m_ppSelectionMesh(nullptr)
 	, m_pCharacterInstance(nullptr)
+	, m_pSceneTab(nullptr)
+	, m_pPropertiesTab(nullptr)
 {
 	m_pMeshRcObject = CreateTempRcObject();
 
@@ -1459,16 +1458,16 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 
 	// Create property tree widget.
 
-	m_pGlobalImportSettingsTree = new QPropertyTree();
+	m_pGlobalImportSettingsTree = new QPropertyTreeLegacy();
 	m_pGlobalImportSettingsTree->setSizeToContent(false);
 	m_pGlobalImportSettingsTree->setEnabled(false);
-	connect(m_pGlobalImportSettingsTree, &QPropertyTree::signalChanged, this, &CMainDialog::OnGlobalImportsTreeChanged);
+	connect(m_pGlobalImportSettingsTree, &QPropertyTreeLegacy::signalChanged, this, &CMainDialog::OnGlobalImportsTreeChanged);
 
 	m_pGlobalImportSettings.reset(new CGlobalImportSettings());
 	m_pGlobalImportSettingsTree->attach(Serialization::SStruct(*m_pGlobalImportSettings));
 	m_pGlobalImportSettingsTree->expandAll();
 
-	m_pPropertyTree = new QPropertyTree();
+	m_pPropertyTree = new QPropertyTreeLegacy();
 	m_pPropertyTree->setSliderUpdateDelay(5);
 	m_pPropertyTree->setToolTip(tr("Properties of selected scene object or material"));
 	m_pPropertyTree->setStatusTip(tr("Properties of selected scene object or material"));
@@ -1481,35 +1480,22 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 	m_pShowMeshesModeWidget = new Private_MainDialog::CShowMeshesModeWidget();
 	m_pViewportContainer->SetHeaderWidget(m_pShowMeshesModeWidget);
 
-	// Create tab widget.
 
-	QTabWidget* const pTabWidget = new QTabWidget();
-	pTabWidget->setObjectName("notificationTabs");
-
-	// Create geometry widget.
 	// The geometry widget consists of settings and scene view.
 	QSplitter* const pGeometryWidget = new QSplitter(Qt::Vertical);
-
 	pGeometryWidget->addWidget(m_pGlobalImportSettingsTree);
-	{
-		QTabWidget* const pSceneTabWidget = new QTabWidget();
-		pSceneTabWidget->setObjectName("notificationTabs");
-		if (m_pSceneTree)
-		{
-			pSceneTabWidget->addTab(m_pSceneViewContainer, "Source");
-		}
-		if (m_pTargetMeshView)
-		{
-			pSceneTabWidget->addTab(m_pTargetMeshView, "Target");
-		}
-		pGeometryWidget->addWidget(pSceneTabWidget);
-	}
-
 	// Give scene view maximal vertical screen estate.
 	pGeometryWidget->setStretchFactor(0, 0);
 	pGeometryWidget->setStretchFactor(1, 1);
 
-	// Create properties tab.
+	m_pSceneTab = new QTabWidget();
+	m_pSceneTab->setObjectName("notificationTabs");
+	m_pSceneTab->addTab(m_pSceneViewContainer, "Source");
+	m_pSceneTab->addTab(m_pTargetMeshView, "Target");
+	pGeometryWidget->addWidget(m_pSceneTab);
+
+	m_pPropertiesTab = new QTabWidget();
+	m_pPropertiesTab->setObjectName("notificationTabs");
 	m_pPhysProxiesControls = new CPhysProxiesControlsWidget();
 	QSplitter* const pPropsSplitter = new QSplitter(Qt::Vertical);
 	pPropsSplitter->addWidget(m_pPhysProxiesControls);
@@ -1518,10 +1504,10 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 	sizesProps.push_back(110);
 	sizesProps.push_back(800);
 	pPropsSplitter->setSizes(sizesProps);
-	pTabWidget->addTab(pPropsSplitter, tr("Properties"));
+	m_pPropertiesTab->addTab(pPropsSplitter, tr("Properties"));
 
 	// Create material tab.
-	pTabWidget->addTab(m_pMaterialPanel, "Material");
+	m_pPropertiesTab->addTab(m_pMaterialPanel, "Material");
 
 	// Main Dialog layout
 	{
@@ -1533,7 +1519,7 @@ void CMainDialog::setupUi(CMainDialog* MainDialog)
 		{
 			pSplitter->addWidget(pGeometryWidget);
 			pSplitter->addWidget(m_pViewportContainer);
-			pSplitter->addWidget(pTabWidget);
+			pSplitter->addWidget(m_pPropertiesTab);
 
 			pSplitter->setStretchFactor(0, 0);
 			pSplitter->setStretchFactor(1, 1);
@@ -1751,7 +1737,7 @@ std::unique_ptr<CModelProperties::SSerializer> CreateSerializer(QAbstractItemMod
 
 void CMainDialog::Init()
 {
-	m_connections.emplace_back(connect(m_pGlobalImportSettingsTree, &QPropertyTree::signalChanged, [this]()
+	m_connections.emplace_back(connect(m_pGlobalImportSettingsTree, &QPropertyTreeLegacy::signalChanged, [this]()
 	{
 		m_pMaterialPanel->ApplyMaterial();
 	}));
@@ -2081,11 +2067,11 @@ void CMainDialog::AssignScene(const MeshImporter::SImportScenePayload* pPayload)
 	pActiveScene->AddObserver(this);
 
 	*m_pAutoLodSettings = CAutoLodSettings();
-	m_pAutoLodSettings->getGlobalParams().m_fViewreSolution = 26.6932144;
+	m_pAutoLodSettings->getGlobalParams().m_fViewreSolution = 26.6932144f;
 	m_pAutoLodSettings->getGlobalParams().m_iViewsAround = 12;
 	m_pAutoLodSettings->getGlobalParams().m_iViewElevations = 3;
-	m_pAutoLodSettings->getGlobalParams().m_fSilhouetteWeight = 5.0;
-	m_pAutoLodSettings->getGlobalParams().m_fVertexWelding = 0.001;
+	m_pAutoLodSettings->getGlobalParams().m_fSilhouetteWeight = 5.0f;
+	m_pAutoLodSettings->getGlobalParams().m_fVertexWelding = 0.001f;
 	m_pAutoLodSettings->getGlobalParams().m_bCheckTopology = true;
 	m_pAutoLodSettings->getGlobalParams().m_bObjectHasBase = false;
 
@@ -2823,8 +2809,7 @@ bool CMainDialog::CreateMetaData(FbxMetaData::SMetaData& metaData, const QString
 	  m_pGlobalImportSettings->GetUpAxis(),
 	  m_pGlobalImportSettings->GetForwardAxis());
 
-	CSortedMaterialModel* const pMaterialModel = m_pMaterialPanel->GetMaterialModel();
-	assert(m_pSceneModel && pMaterialModel);
+	assert(m_pSceneModel && m_pMaterialPanel->GetMaterialModel());
 	m_pMaterialPanel->ApplyMaterial();
 
 	const FbxTool::CScene* const pScene = GetScene();
@@ -3118,82 +3103,83 @@ void CMainDialog::AddSourceNodeElementContextMenu(const QModelIndex& index, QMen
 
 	const FbxTool::SNode* const pNode = pSourceNodeElement->GetNode();
 
-		// Include/Exclude
+	// Include/Exclude
 
-		QAction* const pInclude = pMenu->addAction(tr("Include this node"));
-		connect(pInclude, &QAction::triggered, [=]()
+	QAction* const pInclude = pMenu->addAction(tr("Include this node"));
+	connect(pInclude, &QAction::triggered, [=]()
+	{
+		if (index.isValid())
 		{
-			if (index.isValid())
+		const FbxTool::ENodeExportSetting oldExportSetting = EvaluateExportSetting(pNode);
+		GetScene()->SetNodeExportSetting(pNode, FbxTool::eNodeExportSetting_Include);
+		m_bRefreshRcMesh = m_bRefreshRcMesh || oldExportSetting != EvaluateExportSetting(pNode);
+			if (m_bRefreshRcMesh)
 			{
+				m_pTargetMeshView->model()->Clear();
+			}
+		}
+	});
+
+	QAction* const pExclude = pMenu->addAction(tr("Exclude this node"));
+	connect(pExclude, &QAction::triggered, [=]()
+	{
+		if (index.isValid())
+		{
 			const FbxTool::ENodeExportSetting oldExportSetting = EvaluateExportSetting(pNode);
-			GetScene()->SetNodeExportSetting(pNode, FbxTool::eNodeExportSetting_Include);
+			m_pSceneModel->SetExportSetting(index, FbxTool::eNodeExportSetting_Exclude);
 			m_bRefreshRcMesh = m_bRefreshRcMesh || oldExportSetting != EvaluateExportSetting(pNode);
-			  if (m_bRefreshRcMesh)
-			  {
-			    m_pTargetMeshView->model()->Clear();
-			  }
+			//m_pTargetMeshView->model()->Rebuild();
+			if (m_bRefreshRcMesh)
+			{
+				m_pTargetMeshView->model()->Clear();
+			}
+		}
+	});
+
+	pMenu->addSeparator();
+
+	// Reset scene's export settings.
+
+	if (!pNode->pParent)
+	{
+		QAction* pAct = pMenu->addAction(tr("Reset selection"));
+		connect(pAct, &QAction::triggered, [=]()
+		{
+			const char* const szText =
+				"Do you really want to reset the selection? "
+				"All node export settings of this LOD will be discarded.";
+			if (QDialogButtonBox::Yes == CQuestionDialog::SQuestion(tr("Reset selection"), tr(szText)))
+			{
+				m_pSceneModel->ResetExportSettingsInSubtree(index);
+				m_bRefreshRcMesh = true;
+				m_pTargetMeshView->model()->Clear();
 			}
 		});
+		pMenu->addSeparator();
+	}
 
-		QAction* const pExclude = pMenu->addAction(tr("Exclude this node"));
-		connect(pExclude, &QAction::triggered, [=]()
+	// Material selection
+
+	if (pNode->numMeshes)
+	{
+		QAction* const pSelectMaterials = pMenu->addAction(tr("Select materials used by mesh"));
+		connect(pSelectMaterials, &QAction::triggered, [=]()
 		{
-			if (index.isValid())
+			CSceneElementCommon* const pElement = m_pSceneModel->GetSceneElementFromModelIndex(index);
+			if (pElement->GetType() == ESceneElementType::SourceNode)
 			{
-			const FbxTool::ENodeExportSetting oldExportSetting = EvaluateExportSetting(pNode);
-			  m_pSceneModel->SetExportSetting(index, FbxTool::eNodeExportSetting_Exclude);
-			m_bRefreshRcMesh = m_bRefreshRcMesh || oldExportSetting != EvaluateExportSetting(pNode);
-			  //m_pTargetMeshView->model()->Rebuild();
-			  if (m_bRefreshRcMesh)
-			  {
-			    m_pTargetMeshView->model()->Clear();
-			  }
+				CSceneElementSourceNode* const pSourceNodeElement = (CSceneElementSourceNode*)pElement;
+				const FbxTool::SMesh* const pMesh = pSourceNodeElement->GetNode()->ppMeshes[0];
+				if (pMesh)
+				{
+					SelectMaterialsOnMesh(pMesh);
+					m_pPropertiesTab->setCurrentWidget(m_pMaterialPanel);
+				}
 			}
 		});
 
 		pMenu->addSeparator();
-
-		// Reset scene's export settings.
-
-	if (!pNode->pParent)
-		{
-			QAction* pAct = pMenu->addAction(tr("Reset selection"));
-			connect(pAct, &QAction::triggered, [=]()
-			{
-				const char* const szText =
-				  "Do you really want to reset the selection? "
-				  "All node export settings of this LOD will be discarded.";
-				if (QDialogButtonBox::Yes == CQuestionDialog::SQuestion(tr("Reset selection"), tr(szText)))
-				{
-				  m_pSceneModel->ResetExportSettingsInSubtree(index);
-				  m_bRefreshRcMesh = true;
-				  m_pTargetMeshView->model()->Clear();
-				}
-			});
-			pMenu->addSeparator();
-		}
-
-		// Material selection
-
-	if (pNode->numMeshes)
-		{
-			QAction* const pSelectMaterials = pMenu->addAction(tr("Select materials used by mesh"));
-			connect(pSelectMaterials, &QAction::triggered, [=]()
-			{
-			CSceneElementCommon* const pElement = m_pSceneModel->GetSceneElementFromModelIndex(index);
-			if (pElement->GetType() == ESceneElementType::SourceNode)
-				{
-				CSceneElementSourceNode* const pSourceNodeElement = (CSceneElementSourceNode*)pElement;
-				const FbxTool::SMesh* const pMesh = pSourceNodeElement->GetNode()->ppMeshes[0];
-				  if (pMesh)
-				  {
-				    SelectMaterialsOnMesh(pMesh);
-				  }
-				}
-			});
-
-			pMenu->addSeparator();
-		}
+	}
 }
 
 void CMainDialog::CreateMaterialContextMenu(QMenu* pMenu, CMaterialElement* pElement)
@@ -3204,7 +3190,8 @@ void CMainDialog::CreateMaterialContextMenu(QMenu* pMenu, CMaterialElement* pEle
 	{
 		if (pElement)
 		{
-		  SelectMeshesUsingMaterial(pElement);
+			SelectMeshesUsingMaterial(pElement);
+			m_pSceneTab->setCurrentWidget(m_pSceneViewContainer);
 		}
 	});
 }
@@ -3323,4 +3310,3 @@ void CMainDialog::UpdateSkin()
 	m_pSkinRcObject->SetMetaData(metaData);
 	m_pSkinRcObject->CreateAsync();
 }
-

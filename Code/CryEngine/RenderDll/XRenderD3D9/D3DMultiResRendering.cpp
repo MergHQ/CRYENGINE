@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "D3DMultiResRendering.h"
 
-#include "DriverD3D.h"
 #include "D3DPostProcess.h"
 #include "../Common/CryNameR.h"
 #include "../Common/Shaders/CShader.h"
@@ -20,7 +19,11 @@
 #include <NVIDIA/multiprojection_dx_2.0/nv_planar.cpp>
 #endif
 
-CVrProjectionManager* CVrProjectionManager::m_pInstance = nullptr;
+CVrProjectionManager::SVRProjectionPasses::SVRProjectionPasses(CGraphicsPipeline* pGraphicsPipeline)
+	: passDepthFlattening(pGraphicsPipeline)
+	, currentKey(pGraphicsPipeline->GetKey())
+{
+}
 
 CVrProjectionManager::CVrProjectionManager(CD3D9Renderer* const pRenderer)
 	: m_pRenderer(pRenderer)
@@ -30,35 +33,59 @@ CVrProjectionManager::CVrProjectionManager(CD3D9Renderer* const pRenderer)
 	, m_currentConfigMirrored(false)
 	, m_currentPreset(0)
 	, m_projection(eVrProjection_Planar)
-
 {
 	m_ptexZTargetFlattened = std::move(CTexture::GetOrCreateTextureObject("$ZTargetFlattened", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, CRendererResources::s_eTFZ));
 }
 
-void CVrProjectionManager::Init(CD3D9Renderer* const pRenderer)
+void CVrProjectionManager::Init()
 {
-	CRY_ASSERT(!m_pInstance);
-	m_pInstance = new CVrProjectionManager(pRenderer);
-	m_pInstance->m_projection = eVrProjection_Planar;
+	m_projection = eVrProjection_Planar;
 
 #if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	m_pInstance->m_pRenderer->GetDeviceContext().QueryNvidiaProjectionFeatureSupport(
-		m_pInstance->m_multiResSupported,
-		m_pInstance->m_lensMatchedSupported
-	);
+	m_multiResSupported = false;
+	m_lensMatchedSupported = false;
 
-	if (CRenderer::CV_r_VrProjectionType == 1 && m_pInstance->m_multiResSupported)
-		m_pInstance->m_projection = eVrProjection_MultiRes;
-	else if (CRenderer::CV_r_VrProjectionType == 2 && m_pInstance->m_lensMatchedSupported)
-		m_pInstance->m_projection = eVrProjection_LensMatched;
+	if (NvAPI_Initialize() == NVAPI_OK)
+	{
+		ID3D11Device* pDevice = m_pRenderer->GetDevice();
+		NvAPI_D3D_RegisterDevice(pDevice);
+
+		#include "Common/NvidiaFastGeometryShaderTest.h"
+
+		NvAPI_D3D11_CREATE_FASTGS_EXPLICIT_DESC FastGSArgs = {};
+		FastGSArgs.version = NVAPI_D3D11_CREATEFASTGSEXPLICIT_VER;
+		FastGSArgs.flags = NV_FASTGS_USE_VIEWPORT_MASK;
+
+		ID3D11GeometryShader* pShader = nullptr;
+		if (NvAPI_D3D11_CreateFastGeometryShaderExplicit(pDevice, g_main, sizeof(g_main), nullptr, &FastGSArgs, &pShader) == NVAPI_OK && pShader != nullptr)
+		{
+			m_multiResSupported = true;
+			pShader->Release();
+
+			NV_QUERY_MODIFIED_W_SUPPORT_PARAMS ModifiedWParams = {};
+			ModifiedWParams.version = NV_QUERY_MODIFIED_W_SUPPORT_PARAMS_VER;
+			if (NvAPI_D3D_QueryModifiedWSupport(pDevice, &ModifiedWParams) == NVAPI_OK)
+			{
+				m_lensMatchedSupported = ModifiedWParams.bModifiedWSupported != 0;
+			}
+		}
+	}
+
+	if (CRenderer::CV_r_VrProjectionType == 1 && m_multiResSupported)
+		m_projection = eVrProjection_MultiRes;
+	else if (CRenderer::CV_r_VrProjectionType == 2 && m_lensMatchedSupported)
+		m_projection = eVrProjection_LensMatched;
 	else
-		m_pInstance->m_projection = eVrProjection_Planar;
+		m_projection = eVrProjection_Planar;
 #endif
 }
 
-void CVrProjectionManager::Reset()
+void CVrProjectionManager::BeginFrame(CGraphicsPipeline* pGraphicsPipeline)
 {
-	SAFE_DELETE(m_pInstance);
+	if (!m_passes || m_passes->currentKey != pGraphicsPipeline->GetKey())
+	{
+		m_passes = stl::make_unique<SVRProjectionPasses>(pGraphicsPipeline);
+	}
 }
 
 bool CVrProjectionManager::IsMultiResEnabled() const
@@ -68,15 +95,15 @@ bool CVrProjectionManager::IsMultiResEnabled() const
 
 bool CVrProjectionManager::IsMultiResEnabledStatic()
 {
-	return Instance() && Instance()->IsMultiResEnabled();
+	return IsMultiResEnabled();
 }
 
 bool CVrProjectionManager::IsProjectionConfigured() const
-{ 
-	return m_isConfigured; 
+{
+	return m_isConfigured;
 }
 
-void CVrProjectionManager::Configure(const SRenderViewport& originalViewport, bool bMirrored)
+void CVrProjectionManager::Configure(const D3D11_VIEWPORT& originalViewport, bool bMirrored)
 {
 	m_isConfigured = false;
 	m_currentConfigMirrored = bMirrored;
@@ -90,16 +117,11 @@ void CVrProjectionManager::Configure(const SRenderViewport& originalViewport, bo
 			m_currentPreset = CRenderer::CV_r_VrProjectionPreset;
 		}
 
-		m_originalViewport.TopLeftX = static_cast<float>(originalViewport.x);
-		m_originalViewport.TopLeftY = static_cast<float>(originalViewport.y);
-		m_originalViewport.Width = static_cast<float>(originalViewport.width);
-		m_originalViewport.Height = static_cast<float>(originalViewport.height);
-		m_originalViewport.MinDepth = originalViewport.zmin;
-		m_originalViewport.MaxDepth = originalViewport.zmax;
+		memcpy(&m_originalViewport, &originalViewport, sizeof(m_originalViewport));
 
 		// In this particular integration, original viewport covers the entire texture.
 		// In general, that's not necessarily the case.
-		Nv::VR::Float2 textureSize = Nv::VR::Float2{ m_originalViewport.Width, m_originalViewport.Height };
+		Nv::VR::Float2 textureSize = Nv::VR::Float2{ originalViewport.Width, originalViewport.Height };
 
 		CalculateViewportsAndBufferData(textureSize, m_originalViewport, textureSize, m_planarConfig, m_planarData);
 
@@ -205,7 +227,6 @@ void CVrProjectionManager::Configure(const SRenderViewport& originalViewport, bo
 #endif
 }
 
-
 bool CVrProjectionManager::SetRenderingState(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const D3D11_VIEWPORT& viewport, bool bSetViewports, bool bBindConstantBuffer)
 {
 #if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
@@ -262,15 +283,15 @@ uint64 CVrProjectionManager::GetRTFlags() const
 {
 	if (m_projection == eVrProjection_MultiRes)
 		return g_HWSR_MaskBit[HWSR_PROJECTION_MULTI_RES];
-	else if(m_projection == eVrProjection_LensMatched)
+	else if (m_projection == eVrProjection_LensMatched)
 		return g_HWSR_MaskBit[HWSR_PROJECTION_LENS_MATCHED];
 
 	return 0;
 }
 
-void CVrProjectionManager::GetProjectionSize(int flattenedWidth, int flattenedHeight, int & projectionWidth, int & projectionHeight)
+void CVrProjectionManager::GetProjectionSize(int flattenedWidth, int flattenedHeight, int& projectionWidth, int& projectionHeight)
 {
-	CRY_ASSERT(IsMultiResEnabled() && m_isConfigured);
+	CRY_ASSERT(IsMultiResEnabled());
 
 	projectionWidth  = flattenedWidth;
 	projectionHeight = flattenedHeight;
@@ -332,7 +353,6 @@ void CVrProjectionManager::ExecuteFlattenDepth(CTexture* pSrcRT, CTexture* pDest
 
 	PROFILE_LABEL_SCOPE("FLATTEN_DEPTH");
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CShader* pShader = CShaderMan::s_shPostEffects;
 
 	const int dstWidth  = pSrcRT->GetWidth();
@@ -345,36 +365,31 @@ void CVrProjectionManager::ExecuteFlattenDepth(CTexture* pSrcRT, CTexture* pDest
 		pDestRT->CreateRenderTarget(CRendererResources::s_eTFZ, ColorF(1.0f, 1.0f, 1.0f, 1.0f));
 	}
 
-	if (m_passDepthFlattening.IsDirty())
+	if (m_passes->passDepthFlattening.IsDirty())
 	{
 		static CCryNameTSCRC techFlattenDepth("FlattenDepth");
 
-		m_passDepthFlattening.SetTechnique(pShader, techFlattenDepth, CVrProjectionManager::Instance()->GetRTFlags());
-		m_passDepthFlattening.SetRenderTarget(0, pDestRT);
-		m_passDepthFlattening.SetState(GS_NODEPTHTEST);
-		m_passDepthFlattening.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
-		m_passDepthFlattening.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
-		m_passDepthFlattening.SetRequirePerViewConstantBuffer(true);
-		m_passDepthFlattening.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
+		m_passes->passDepthFlattening.SetTechnique(pShader, techFlattenDepth, 0);
+		m_passes->passDepthFlattening.SetRenderTarget(0, pDestRT);
+		m_passes->passDepthFlattening.SetState(GS_NODEPTHTEST);
+		m_passes->passDepthFlattening.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
+		m_passes->passDepthFlattening.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
-		m_passDepthFlattening.BeginConstantUpdate();
-		
-		m_passDepthFlattening.SetTexture(16, pSrcRT);
+		m_passes->passDepthFlattening.SetTexture(16, pSrcRT);
 	}
 
-	m_passDepthFlattening.Execute();
+	m_passes->passDepthFlattening.Execute();
 }
 
 void CVrProjectionManager::ExecuteLensMatchedOctagon(CTexture* pDestRT)
 {
 	CRY_ASSERT(IsMultiResEnabled());
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CShader* pShader = CShaderMan::s_shPostEffects;
 
 	static const CCryNameTSCRC techName("DrawLensMatchedOctagon");
 
-	m_primitiveLensMatchedOctagon.SetTechnique(pShader, techName, CVrProjectionManager::Instance()->GetRTFlags());
+	m_primitiveLensMatchedOctagon.SetTechnique(pShader, techName, GetRTFlags());
 	m_primitiveLensMatchedOctagon.SetRenderState(GS_DEPTHFUNC_LESS | GS_DEPTHWRITE);
 	m_primitiveLensMatchedOctagon.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 
@@ -391,7 +406,6 @@ void CVrProjectionManager::ExecuteLensMatchedOctagon(CTexture* pDestRT)
 	if (m_passLensMatchedOctagon.GetPrimitiveCount() > 0)
 		m_passLensMatchedOctagon.Execute();
 }
-
 
 #if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 

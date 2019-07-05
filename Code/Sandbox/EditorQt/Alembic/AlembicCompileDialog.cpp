@@ -2,6 +2,8 @@
 
 #include "StdAfx.h"
 #include "AlembicCompileDialog.h"
+#include "Util/EditorUtils.h"
+#include <CrySystem/File/ICryPak.h>
 
 IMPLEMENT_DYNAMIC(CAlembicCompileDialog, CDialog)
 BEGIN_MESSAGE_MAP(CAlembicCompileDialog, CDialog)
@@ -313,4 +315,3 @@ CAlembicCompileDialog::SConfig CAlembicCompileDialog::LoadConfig(const CString& 
 
 	return config;
 }
-

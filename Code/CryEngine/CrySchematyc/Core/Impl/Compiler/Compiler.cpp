@@ -208,7 +208,9 @@ ClassCompilationSignal::Slots& CCompiler::GetClassCompilationSignalSlots()
 
 bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 {
+#if SCHEMATYC_LOGGING_ENABLED
 	const int64 startTime = CryGetTicks();
+#endif
 
 	SCHEMATYC_COMPILER_COMMENT("\nCompiling class: name = %s ...", scriptClass.GetName());
 
@@ -329,9 +331,11 @@ bool CCompiler::CompileClass(const IScriptClass& scriptClass)
 
 		// Send results to log.
 
+#if SCHEMATYC_LOGGING_ENABLED
 		const float time = gEnv->pTimer->TicksToSeconds(CryGetTicks() - startTime);
 
 		SCHEMATYC_COMPILER_COMMENT("----- %s : time = %f(s), warnings = %d, errors = %d -----\n", logScope.errorCount == 0 ? "Success" : "Failed", time, logScope.warningCount, logScope.errorCount);
+#endif
 
 		// Notify listeners that class has been compiled.
 
@@ -503,7 +507,7 @@ bool CCompiler::CompileGraph(SCompilerContext& context, CRuntimeClass& runtimeCl
 		GraphNodeLookup graphNodeLookup;
 		graphNodeLookup.reserve(graphNodeCount);
 
-		auto visitScriptGraphNode = [this, &graphNodes, &graphNodeLookup](const IScriptGraphNode& scriptGraphNode) -> EVisitStatus
+		auto visitScriptGraphNode = [&graphNodes, &graphNodeLookup](const IScriptGraphNode& scriptGraphNode) -> EVisitStatus
 		{
 			SGraphNode graphNode(scriptGraphNode, scriptGraphNode.GetName());
 
@@ -564,7 +568,7 @@ bool CCompiler::CompileGraph(SCompilerContext& context, CRuntimeClass& runtimeCl
 
 		// Collect links.
 
-		auto visitScriptGraphLink = [this, &graphNodes, &graphNodeLookup](const IScriptGraphLink& scriptGraphLink) -> EVisitStatus
+		auto visitScriptGraphLink = [&graphNodes, &graphNodeLookup](const IScriptGraphLink& scriptGraphLink) -> EVisitStatus
 		{
 			GraphNodeLookup::iterator itSrcGraphNode = graphNodeLookup.find(scriptGraphLink.GetSrcNodeGUID());
 			GraphNodeLookup::iterator itDstGraphNode = graphNodeLookup.find(scriptGraphLink.GetDstNodeGUID());

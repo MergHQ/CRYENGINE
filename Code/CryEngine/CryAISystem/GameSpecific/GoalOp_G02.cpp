@@ -234,8 +234,6 @@ void COPCharge::ValidateRange()
 		return;
 	ray_hit hit;
 
-	Vec3 delta = m_chargeEnd - m_chargeStart;
-
 	Vec3 hitPos;
 	float hitDist;
 
@@ -340,7 +338,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			SetChargeParams();
 			m_state = STATE_CHARGE; //STATE_ANTICIPATE;
 			m_anticipateTime = GetAISystem()->GetFrameStartTime();
-			m_pOperand->SetSignal(0, "OnChargeStart", pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeStart);
+			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetEntityID()));
 
 			// Start jump approach animation.
 			if (m_pOperand->GetProxy())
@@ -352,7 +350,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			SetChargeParams();
 			m_state = STATE_CHARGE; //STATE_ANTICIPATE;
 			m_anticipateTime = GetAISystem()->GetFrameStartTime();
-			m_pOperand->SetSignal(0, "OnChargeStart", pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeStart);
+			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetEntityID()));
 
 			// Start jump approach animation.
 			if (m_pOperand->GetProxy())
@@ -382,9 +380,9 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			if (Distance::Point_Point(opPos, m_moveTarget->GetPos()) < rad * 1.5f)
 			{
 				// Send the target that was hit along with the signal.
-				AISignalExtraData* pData = new AISignalExtraData;
+				AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 				pData->nID = m_moveTarget->GetEntityID();
-				m_pOperand->SetSignal(0, "OnChargeHit", m_pOperand->GetEntity(), pData, gAIEnv.SignalCRCs.m_nOnChargeHit);
+				m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeHit_DEPRECATED(), pOperand->GetEntityID(), pData));
 
 				m_state = STATE_FOLLOW_TROUGH;
 			}
@@ -392,7 +390,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			{
 				if (!m_bailOut)
 				{
-					m_pOperand->SetSignal(0, "OnChargeMiss", m_pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeMiss);
+					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeMiss_DEPRECATED(), pOperand->GetEntityID()));
 					m_state = STATE_FOLLOW_TROUGH;
 
 					if (m_pOperand->GetProxy())
@@ -415,7 +413,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 
 				if (!m_bailOut)
 				{
-					m_pOperand->SetSignal(0, "OnChargeBailOut", m_pOperand->GetEntity(), 0, gAIEnv.SignalCRCs.m_nOnChargeBailOut);
+					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeBailOut_DEPRECATED(), pOperand->GetEntityID()));
 					m_bailOut = true;
 				}
 			}
@@ -520,11 +518,6 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 #ifdef _DEBUG
 		m_pOperand->m_DEBUGmovementReason = CPipeUser::AIMORE_MOVE;
 #endif
-	}
-
-	if (m_state == STATE_APPROACH || m_state == STATE_CHARGE || m_state == STATE_FOLLOW_TROUGH)
-	{
-		Vec3 deltaMove = pOperand->GetPhysicsPos() - m_lastOpPos;
 	}
 
 	m_lastOpPos = pOperand->GetPhysicsPos();
@@ -1104,7 +1097,7 @@ EGoalOpResult COPSeekCover::Execute(CPipeUser* pOperand)
 
 	if (!m_pTraceDirective)
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "SeekCover/CalculatePathTree");
+		CRY_PROFILE_SECTION(PROFILE_AI, "SeekCover/CalculatePathTree");
 
 		if (m_state >= 0)
 		{
@@ -1236,7 +1229,7 @@ EGoalOpResult COPSeekCover::Execute(CPipeUser* pOperand)
 					}
 					else
 					{
-						if (gAIEnv.CVars.DebugPathFinding)
+						if (gAIEnv.CVars.LegacyDebugPathFinding)
 							AIWarning("COPSeekCover::Entity %s could not find path.", pOperand->GetName());
 
 						Reset(pOperand);

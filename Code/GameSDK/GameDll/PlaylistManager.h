@@ -1,23 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
--------------------------------------------------------------------------
-$Id$
-$DateTime$
-Description: Manager for playlists
-
--------------------------------------------------------------------------
-History:
-- 06:03:2010 : Created by Tom Houghton
-
-*************************************************************************/
-
-#ifndef ___PLAYLISTMANAGER_H___
-#define ___PLAYLISTMANAGER_H___
-
-#if _MSC_VER > 1000
 # pragma once
-#endif
 
 #include "ILevelSystem.h"
 
@@ -304,8 +287,8 @@ public:
 	void GetGameModeProfileOptionName(const uint32 index, CryFixedStringT<32> &result);
 
 	uint16 PackCustomVariantOption(uint32 index);
-	int UnpackCustomVariantOption(uint16 value, uint32 index, int* pIntValue, float* pFloatValue);
-	int UnpackCustomVariantOptionProfileValues(uint16 value, uint32 index, int* pIntValue, float* pFloatValue, int* pFloatPrecision);
+	ECVarType UnpackCustomVariantOption(uint16 value, uint32 index, int* pIntValue, float* pFloatValue);
+	ECVarType UnpackCustomVariantOptionProfileValues(uint16 value, uint32 index, int* pIntValue, float* pFloatValue, int* pFloatPrecision);
 	void ReadDetailedServerInfo(uint16 *pOptions, uint32 numOptions);
 
 	void WriteSetCustomVariantOptions(CCryLobbyPacket* pPacket, CPlaylistManager::TOptionsVec pOptions, uint32 numOptions);
@@ -404,6 +387,3 @@ private:
 	bool m_inited;
 	bool m_bIsSettingOptions;
 };
-
-
-#endif  // ___PLAYLISTMANAGER_H___

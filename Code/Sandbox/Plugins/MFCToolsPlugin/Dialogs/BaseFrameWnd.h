@@ -1,16 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __BaseFrameWnd__
-#define __BaseFrameWnd__
-
 #pragma once
+#include "MFCToolsDefines.h"
 
 //////////////////////////////////////////////////////////////////////////
 //
 // Base class for Sandbox frame windows
 //
 //////////////////////////////////////////////////////////////////////////
-class PLUGIN_API CBaseFrameWnd : public CXTPFrameWnd
+class MFC_TOOLS_PLUGIN_API CBaseFrameWnd : public CXTPFrameWnd
 {
 public:
 	CBaseFrameWnd();
@@ -36,8 +34,8 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 
-	virtual void OnOK()     {};
-	virtual void OnCancel() {};
+	virtual void OnOK()     {}
+	virtual void OnCancel() {}
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual void PostNcDestroy();
 
@@ -46,7 +44,7 @@ protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Implement in derived class
 	//////////////////////////////////////////////////////////////////////////
-	virtual BOOL    OnInitDialog() { return TRUE; };
+	virtual BOOL    OnInitDialog() { return TRUE; }
 	virtual LRESULT OnDockingPaneNotify(WPARAM wParam, LPARAM lParam);
 	virtual LRESULT OnFrameCanClose(WPARAM wParam, LPARAM lParam);
 	//////////////////////////////////////////////////////////////////////////
@@ -59,6 +57,3 @@ protected:
 
 	std::vector<std::pair<int, CWnd*>> m_dockingPaneWindows;
 };
-
-#endif //__BaseFrameWnd__
-

@@ -140,6 +140,5 @@ protected:
 
 	CMatEditPreviewDlg*                   m_pPreviewDlg;
 
-	std::auto_ptr<CMaterialImageListCtrl> m_pMaterialImageListCtrl;
+	std::unique_ptr<CMaterialImageListCtrl> m_pMaterialImageListCtrl;
 };
-

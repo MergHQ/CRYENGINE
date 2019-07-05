@@ -1,17 +1,37 @@
 {
-	"EditorPortAudio_uber_0.cpp":
-	{
-		"Root":
-		[
-			"AudioSystemControl.cpp",
-			"AudioSystemControl.h",
-			"AudioSystemEditor.cpp",
-			"AudioSystemEditor.h",
-			"main.cpp",
-			"ProjectLoader.h",
-			"ProjectLoader.cpp",
-			"StdAfx.h",
-			"StdAfx.cpp"
-		]
-	}
+    "EditorPortAudio_uber_0.cpp": {
+        "Connections": [
+            "EventConnection.cpp", 
+            "EventConnection.h"
+        ], 
+        "DataPanel": [
+            "DataPanel.cpp", 
+            "DataPanel.h", 
+            "FilterProxyModel.cpp", 
+            "FilterProxyModel.h", 
+            "ItemModel.cpp", 
+            "ItemModel.h", 
+            "TreeView.cpp", 
+            "TreeView.h"
+        ], 
+        "Root": [
+            "Common.h", 
+            "Impl.cpp", 
+            "Impl.h", 
+            "Item.cpp", 
+            "Item.h", 
+            "main.cpp", 
+            "ProjectLoader.cpp", 
+            "ProjectLoader.h", 
+            "StdAfx.cpp", 
+            "StdAfx.h", 
+            "Utils.cpp", 
+            "Utils.h"
+        ]
+    }, 
+    "NoUberFile": {
+        "Resources": [
+            "EditorPortAudioUI.qrc"
+        ]
+    }
 }

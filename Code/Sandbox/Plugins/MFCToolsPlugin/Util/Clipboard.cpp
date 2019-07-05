@@ -2,15 +2,32 @@
 
 #include "StdAfx.h"
 #include "Clipboard.h"
-#include "Util/CryMemFile.h"        // CCryMemFile
-#include "Controls/QuestionDialog.h"
+
+#include <Controls/QuestionDialog.h>
+#include <Util/CryMemFile.h>
 
 XmlNodeRef CClipboard::m_node;
 string CClipboard::m_title;
 
-//////////////////////////////////////////////////////////////////////////
-// Clipboard implementation.
-//////////////////////////////////////////////////////////////////////////
+namespace Private_Clipboard
+{
+	class CBitmapHolder
+	{
+	public:
+		CBitmapHolder(HBITMAP bitmap)
+			: m_bitmap(bitmap)
+		{}
+
+		~CBitmapHolder()
+		{
+			DeleteObject(m_bitmap);
+		}
+
+	private:
+		HBITMAP m_bitmap;
+	};
+}
+
 void CClipboard::Put(XmlNodeRef& node, const string& title)
 {
 	m_title = title;
@@ -37,13 +54,11 @@ void CClipboard::Put(XmlNodeRef& node, const string& title)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CClipboard::GetTitle() const 
 {
 	return m_title; 
 }
 
-//////////////////////////////////////////////////////////////////////////
 XmlNodeRef CClipboard::Get() const
 {
 	string str = GetString();
@@ -76,7 +91,6 @@ XmlNodeRef CClipboard::Get() const
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CClipboard::PutString(const string& text, const string& title /* = ""  */)
 {
 	if (!OpenClipboard(NULL))
@@ -115,7 +129,6 @@ void CClipboard::PutString(const string& text, const string& title /* = ""  */)
 	 */
 }
 
-//////////////////////////////////////////////////////////////////////////
 string CClipboard::GetString() const
 {
 	string buffer;
@@ -128,7 +141,6 @@ string CClipboard::GetString() const
 	return buffer;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CClipboard::IsEmpty() const
 {
 	return GetString().IsEmpty();
@@ -149,7 +161,6 @@ bool CClipboard::IsEmpty() const
 	//return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CClipboard::PutImage(const CImageEx& img)
 {
 	HBITMAP hBm = CreateBitmap(img.GetWidth(), img.GetHeight(), 1, 32, img.GetData());
@@ -158,6 +169,8 @@ void CClipboard::PutImage(const CImageEx& img)
 		CQuestionDialog::SCritical(QObject::tr(""), QObject::tr("Cannot create Bitmap"));
 		return;
 	}
+
+	Private_Clipboard::CBitmapHolder bh(hBm);
 
 	if (!OpenClipboard(NULL))
 	{
@@ -173,11 +186,8 @@ void CClipboard::PutImage(const CImageEx& img)
 
 	SetClipboardData(CF_BITMAP, hBm);
 	CloseClipboard();
-
-	DeleteObject(hBm);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CClipboard::GetImage(CImageEx& img)
 {
 	if (!OpenClipboard(NULL))
@@ -219,4 +229,3 @@ bool CClipboard::GetImage(CImageEx& img)
 
 	return true;
 }
-

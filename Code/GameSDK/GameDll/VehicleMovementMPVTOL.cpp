@@ -6,6 +6,7 @@
 #include "PersistantStats.h"
 #include "GamePhysicsSettings.h"
 #include "WaypointPath.h"
+#include "GameCVars.h"
 //#include "Utility/CryWatch.h"
 
 CVehicleMovementMPVTOL::CVehicleMovementMPVTOL() 
@@ -93,7 +94,7 @@ bool CVehicleMovementMPVTOL::Init(IVehicle* pVehicle, const CVehicleParams& tabl
 			m_maxAngleRad = DEG2RAD(maxAngleDeg);
 		}
 		wingRotationParams.getAttr("canReachMaxAngleAtSpeed", m_maxAngleSpeed);
-		CRY_ASSERT_MESSAGE(m_maxAngleSpeed, "CVehicleMovementMPVTOL::Init - canReachMaxAngleAtSpeed is 0. This will result in divide by 0 error during update.");
+		CRY_ASSERT(m_maxAngleSpeed, "CVehicleMovementMPVTOL::Init - canReachMaxAngleAtSpeed is 0. This will result in divide by 0 error during update.");
 		wingRotationParams.getAttr("angleAngularVelMult", m_angularVelMult);
 		wingRotationParams.getAttr("smoothTime", m_angleSmoothTime);
 		wingRotationParams.getAttr("insideWingSpeedMult", m_insideWingSpeedMult);
@@ -361,7 +362,7 @@ void CVehicleMovementMPVTOL::PostInit()
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(m_pLeftWing && m_pRightWing, "CVehicleMovementMPVTOL::PostInit - Wing parts not found");
+	CRY_ASSERT(m_pLeftWing && m_pRightWing, "CVehicleMovementMPVTOL::PostInit - Wing parts not found");
 }
 
 

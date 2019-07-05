@@ -19,7 +19,7 @@
 #include "GameActions.h"
 #include "NetPlayerInput.h"
 #include "ActorManager.h"
-
+#include <CrySystem/ConsoleRegistration.h>
 
 #ifndef _RELEASE
 static int		g_spectate_follow_debug_enable;
@@ -223,7 +223,7 @@ void CLocalPlayerComponent::InitFollowCameraSettings( const IItemParamsNode* pFo
 		success &= pCameraModeNode->GetAttribute("userSelectable", userSelectable);
 		success &= pCameraModeNode->GetAttribute("disableHeightAdj", disableHeightAdj);
 
-		CRY_ASSERT_MESSAGE(success, string().Format("CLocalPlayerComponent::InitFollowCameraSettings - Invalid follow camera settings - mode %i. Check XML data.", i+1));
+		CRY_ASSERT(success, string().Format("CLocalPlayerComponent::InitFollowCameraSettings - Invalid follow camera settings - mode %i. Check XML data.", i+1));
 
 		mode.m_cameraYaw = DEG2RAD(cameraYawDeg);
 		mode.m_cameraFov = DEG2RAD(cameraFovDeg);
@@ -662,11 +662,12 @@ void CLocalPlayerComponent::UpdatePlayerLowHealthStatus( const float oldHealth )
 	const float healthThrMid = g_pGameCVars->g_playerMidHealthThreshold;
 
 	const float maxHealth = (float)m_rPlayer.GetMaxHealth();
-	const float minHealth = 0; 
 	const float currentHealth = m_rPlayer.m_health.GetHealth();
 	const bool isDead = m_rPlayer.m_health.IsDead();
-	
+#if defined(USE_CRY_ASSERT)
+	const float minHealth = 0; 
 	CRY_ASSERT( maxHealth > minHealth );
+#endif
 
 	//Extra 'mid-low' health sound hint
 	if ((currentHealth <= healthThrMid) && (oldHealth > healthThrMid))

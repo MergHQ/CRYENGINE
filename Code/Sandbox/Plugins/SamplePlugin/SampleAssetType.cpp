@@ -4,7 +4,7 @@
 #include "SampleAssetType.h"
 
 #include <AssetSystem/AssetEditor.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 REGISTER_ASSET_TYPE(CSampleAssetType)
 
@@ -28,11 +28,11 @@ bool CreateDataFile(const char* szFilePath)
 
 } // namespace Private_SampleAssetType
 
-bool CSampleAssetType::OnCreate(CEditableAsset& editAsset, const void* /* pCreateParams */) const
+bool CSampleAssetType::OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const
 {
 	using namespace Private_SampleAssetType;
 
-	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(editAsset.GetAsset().GetMetadataFile()));
+	const string basePath = PathUtil::RemoveExtension(PathUtil::RemoveExtension(asset.GetMetadataFile()));
 
 	const string dataFilePath = basePath + ".txt";
 	const string absoluteDataFilePath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), dataFilePath);
@@ -42,7 +42,7 @@ bool CSampleAssetType::OnCreate(CEditableAsset& editAsset, const void* /* pCreat
 		return false;
 	}
 
-	editAsset.AddFile(dataFilePath);
+	asset.AddFile(dataFilePath);
 
 	return true;
 }

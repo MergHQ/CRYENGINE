@@ -19,6 +19,8 @@ History:
 #include "ReplayActor.h"
 #include "RecordingSystem.h"
 #include "Effects/GameEffects/ParameterGameEffect.h"
+#include "Game.h"
+#include <CryGame/GameUtils.h>
 
 REGISTER_DATA_CALLBACKS(CPlayerHealthGameEffect::LoadStaticData,CPlayerHealthGameEffect::ReleaseStaticData,CPlayerHealthGameEffect::ReloadStaticData,PlayerHealthData);
 
@@ -395,7 +397,6 @@ void CPlayerHealthGameEffect::UpdateHealthReadibility(float effectIntensity, flo
 	const float radialBlurOscillationTime = s_playerHealthGEData.radialBlurOscillationTime;
 	const float minIllumination = s_playerHealthGEData.minIllumination;
 	const float maxIllumination = s_playerHealthGEData.maxIllumination;
-	const float maxContrast = s_playerHealthGEData.maxContrast;
 	const float minSaturation = s_playerHealthGEData.minSaturation;
 	const float interpolateVelocity = (effectIntensity > m_lastEffectIntensity) ? 1.0f : 12.0f;
 

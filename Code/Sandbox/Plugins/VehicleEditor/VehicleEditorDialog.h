@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __VehicleEditorDialog_h__
-#define __VehicleEditorDialog_h__
 #pragma once
 
 #include <list>
@@ -43,8 +41,8 @@ public:
 
 	bool               ApplyToVehicle(string filename = "", bool mergeFile = true);
 
-	void               OnPrototypeEvent(CBaseObject* object, int event);
-	void               OnEntityEvent(CBaseObject* object, int event);
+	void               OnPrototypeEvent(const CBaseObject* pObject, const CObjectEvent& event);
+	void               OnEntityEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
 	void               RecalcLayout(BOOL bNotify = TRUE);
 	void               Close();
@@ -53,8 +51,8 @@ public:
 
 protected:
 	DECLARE_MESSAGE_MAP()
-	virtual void            OnOK()     {};
-	virtual void            OnCancel() {};
+	virtual void            OnOK()     {}
+	virtual void            OnCancel() {}
 
 	virtual BOOL            PreTranslateMessage(MSG* pMsg);
 	virtual BOOL            OnInitDialog();
@@ -114,6 +112,3 @@ private:
 	friend class CVehicleFXPanel;
 	friend class CVehicleMovementPanel;
 };
-
-#endif // __VehicleEditorDialog_h__
-

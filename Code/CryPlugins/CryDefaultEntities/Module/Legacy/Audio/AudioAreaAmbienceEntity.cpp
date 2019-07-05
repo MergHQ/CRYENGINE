@@ -145,9 +145,7 @@ void CAudioAreaAmbienceEntity::OnResetState()
 	m_globalRtpcId = CryAudio::StringToId(m_globalRtpcName.c_str());
 	m_environmentId = CryAudio::StringToId(m_environmentName.c_str());
 
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioProxy.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
-
+	audioProxy.SetObstructionCalcType(m_occlusionType);
 	audioProxy.SetFadeDistance(m_rtpcDistance);
 	audioProxy.SetEnvironmentFadeDistance(m_environmentDistance);
 	audioProxy.SetEnvironmentId(m_environmentId);
@@ -220,7 +218,7 @@ void CAudioAreaAmbienceEntity::UpdateRtpc(float fadeValue)
 
 	if (m_globalRtpcId != CryAudio::InvalidControlId)
 	{
-		gEnv->pAudioSystem->SetParameter(m_globalRtpcId, fadeValue);
+		gEnv->pAudioSystem->SetParameterGlobally(m_globalRtpcId, fadeValue);
 	}
 
 	m_fadeValue = fadeValue;
@@ -246,8 +244,8 @@ void CAudioAreaAmbienceEntity::SerializeProperties(Serialization::IArchive& arch
 	archive(Serialization::AudioTrigger(m_stopTriggerName), "StopTrigger", "StopTrigger");
 	archive(m_bTriggerAreasOnMove, "TriggerAreasOnMove", "TriggerAreasOnMove");
 
-	archive(Serialization::AudioRTPC(m_rtpcName), "Rtpc", "Rtpc");
-	archive(Serialization::AudioRTPC(m_globalRtpcName), "GlobalRtpc", "GlobalRtpc");
+	archive(Serialization::AudioParameter(m_rtpcName), "Rtpc", "Rtpc");
+	archive(Serialization::AudioParameter(m_globalRtpcName), "GlobalRtpc", "GlobalRtpc");
 	archive(m_rtpcDistance, "RtpcDistance", "RtpcDistance");
 
 	archive(Serialization::AudioEnvironment(m_environmentName), "Environment", "Environment");

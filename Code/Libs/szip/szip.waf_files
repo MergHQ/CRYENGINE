@@ -1,16 +1,14 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"../../SDKs/szip/src/encoding.c",
-			"../../SDKs/szip/src/rice.c",
-			"../../SDKs/szip/src/sz_api.c",
-			"../../SDKs/szip/src/rice.h",
-			"../../SDKs/szip/src/ricehdf.h",
-			"../../SDKs/szip/src/szip_adpt.h",
-			"../../SDKs/szip/src/szlib.h",
-			"SZconfig.h"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/szip/src/encoding.c",
+            "../../SDKs/szip/src/rice.c",
+            "../../SDKs/szip/src/sz_api.c",
+            "../../SDKs/szip/src/rice.h",
+            "../../SDKs/szip/src/ricehdf.h",
+            "../../SDKs/szip/src/szip_adpt.h",
+            "../../SDKs/szip/src/szlib.h",
+            "SZconfig.h"
+        ]
+    }
 }

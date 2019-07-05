@@ -12,6 +12,7 @@
 class CNetCVars
 {
 public:
+	int   ProfileId;
 	int   TokenId;
 	int   CPU;
 	int   LogLevel;
@@ -30,6 +31,7 @@ public:
 	int   EnableTFRC;
 #if CRY_PLATFORM_DURANGO
 	int   networkThreadAffinity;
+	const char* net_xboxAssociationTemplateName;
 #endif
 
 #if LOCK_NETWORK_FREQUENCY == 0
@@ -212,6 +214,7 @@ public:
 
 	int enableWatchdogTimer;
 
+#if USE_NETID_PACKING
 	// Non arithstream NetID bits
 	int net_numNetIDLowBitBits;
 	int net_numNetIDLowBitIDs;
@@ -222,12 +225,17 @@ public:
 	int net_numNetIDHighBitIDs;
 	int net_numNetIDs;
 	int net_invalidNetID;
+#endif // USE_NETID_PACKING
 
 	// Dedi server scheduler
 	int net_dedi_scheduler_server_port;
 	int net_dedi_scheduler_client_base_port;
 
 	int net_profile_deep_bandwidth_logging;
+
+#if LOG_CONTEXT_ESTABLISHMENT
+	int net_log_context_establishment;
+#endif
 
 	static ILINE CNetCVars& Get()
 	{

@@ -1,19 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __INCLUDE_CRY3DENGINE_OBJECTTREE_H
-#define __INCLUDE_CRY3DENGINE_OBJECTTREE_H
-
 #pragma once
 
 #define OCTREENODE_RENDER_FLAG_OBJECTS               1
 #define OCTREENODE_RENDER_FLAG_OCCLUDERS             2
 #define OCTREENODE_RENDER_FLAG_CASTERS               4
 #define OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES 8
+#define OCTREENODE_RENDER_FLAG_LIGHTS                16
 
 #define OCTREENODE_CHUNK_VERSION                     5
-
-constexpr uint32 kPassCullMainBitId = 0;
-constexpr uint32 kPassCullMainMask = BIT(kPassCullMainBitId);
 
 enum ELoadObjectsMode { LOM_LOAD_ALL, LOM_LOAD_ONLY_NON_STREAMABLE, LOM_LOAD_ONLY_STREAMABLE };
 
@@ -22,20 +17,22 @@ class COctreeNode;
 template<class T, size_t overAllocBytes> class PodArray;
 struct ILightSource;
 struct IParticleEmitter;
+struct SPlaneObject;
+struct SObjManPrecacheCamera;
 
 ///////////////////////////////////////////////////////////////////////////////
 // data to be pushed to occlusion culler
-struct CRY_ALIGN(16) SCheckOcclusionJobData
+struct SCheckOcclusionJobData
 {
-	enum JobTypeT { QUIT, OCTREE_NODE, TERRAIN_NODE };
+	enum JobTypeT { CONTENT_NODE, LIGHTS_NODE, TERRAIN_NODE };
 
 	SCheckOcclusionJobData()
 	{
 	}
 
-	static SCheckOcclusionJobData CreateQuitJobData();
-	static SCheckOcclusionJobData CreateOctreeJobData(COctreeNode * pOctTreeNode, int nRenderMask, const Vec3 &rAmbColor, uint32 passCullMask, const SRenderingPassInfo &passInfo);
-	static SCheckOcclusionJobData CreateTerrainJobData(CTerrainNode * pTerrainNode, const AABB &rAABB, float fDistance, uint32 passCullMask);
+	static SCheckOcclusionJobData CreateContentJobData(COctreeNode * pOctTreeNode, int nRenderMask, const Vec3 &rAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo &passInfo);
+	static SCheckOcclusionJobData CreateLightsJobData(COctreeNode * pOctTreeNode, int nRenderMask, const Vec3 &rAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo &passInfo);
+	static SCheckOcclusionJobData CreateTerrainJobData(CTerrainNode * pTerrainNode, const AABB &rAABB, float fDistance, FrustumMaskType passCullMask);
 
 	JobTypeT type; // type to indicate with which data the union is filled
 	union
@@ -61,22 +58,14 @@ struct CRY_ALIGN(16) SCheckOcclusionJobData
 	SRendItemSorter rendItemSorter; // ensure order octree traversal oder even with parallel execution
 	const CCamera* pCam;            // store camera to handle vis areas correctly
 	std::vector<SRenderingPassInfo>* pShadowPasses = nullptr;
-	uint32 passCullMask;
+	FrustumMaskType passCullMask;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateQuitJobData()
+inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateContentJobData(COctreeNode* pOctTreeNode, int nRenderMask, const Vec3& rAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo)
 {
 	SCheckOcclusionJobData jobData;
-	jobData.type = QUIT;
-	return jobData;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateOctreeJobData(COctreeNode* pOctTreeNode, int nRenderMask, const Vec3& rAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo)
-{
-	SCheckOcclusionJobData jobData;
-	jobData.type = OCTREE_NODE;
+	jobData.type = CONTENT_NODE;
 	jobData.octTreeData.pOctTreeNode = pOctTreeNode;
 	jobData.octTreeData.nRenderMask = nRenderMask;
 	jobData.octTreeData.vAmbColor[0] = rAmbColor.x;
@@ -90,7 +79,24 @@ inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateOctreeJobData(COctre
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateTerrainJobData(CTerrainNode* pTerrainNode, const AABB& rAABB, float fDistance, uint32 passCullMask)
+inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateLightsJobData(COctreeNode* pOctTreeNode, int nRenderMask, const Vec3& rAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo)
+{
+	SCheckOcclusionJobData jobData;
+	jobData.type = LIGHTS_NODE;
+	jobData.octTreeData.pOctTreeNode = pOctTreeNode;
+	jobData.octTreeData.nRenderMask = nRenderMask;
+	jobData.octTreeData.vAmbColor[0] = rAmbColor.x;
+	jobData.octTreeData.vAmbColor[1] = rAmbColor.y;
+	jobData.octTreeData.vAmbColor[2] = rAmbColor.z;
+	jobData.passCullMask = passCullMask;
+	jobData.rendItemSorter = passInfo.GetRendItemSorter();
+	jobData.pCam = &passInfo.GetCamera();
+	jobData.pShadowPasses = passInfo.GetShadowPasses();
+	return jobData;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+inline SCheckOcclusionJobData SCheckOcclusionJobData::CreateTerrainJobData(CTerrainNode* pTerrainNode, const AABB& rAABB, float fDistance, FrustumMaskType passCullMask)
 {
 	SCheckOcclusionJobData jobData;
 	jobData.type = TERRAIN_NODE;
@@ -112,9 +118,9 @@ struct CRY_ALIGN(16) SCheckOcclusionOutput
 {
 	enum JobTypeT { ROAD_DECALS, COMMON, TERRAIN, DEFORMABLE_BRUSH };
 
-	static SCheckOcclusionOutput CreateDecalsAndRoadsOutput(IRenderNode * pObj, PodArray<SRenderLight*>* pAffectingLights, const Vec3 &rAmbColor, const AABB &rObjBox, float fEntDistance, bool bCheckPerObjectOcclusion, const SRenderingPassInfo &passInfo);
-	static SCheckOcclusionOutput CreateCommonObjectOutput(IRenderNode * pObj, PodArray<SRenderLight*>* pAffectingLights, const Vec3 &rAmbColor, const AABB &rObjBox, float fEntDistance, SSectorTextureSet * pTerrainTexInfo, uint32 passCullMask, const SRenderingPassInfo &passInfo);
-	static SCheckOcclusionOutput CreateTerrainOutput(CTerrainNode * pTerrainNode, uint32 passCullMask, const SRenderingPassInfo &passInfo);
+	static SCheckOcclusionOutput CreateDecalsAndRoadsOutput(IRenderNode * pObj, const Vec3 &rAmbColor, const AABB &rObjBox, float fEntDistance, bool bCheckPerObjectOcclusion, const SRenderingPassInfo &passInfo);
+	static SCheckOcclusionOutput CreateCommonObjectOutput(IRenderNode * pObj, const Vec3 &rAmbColor, const AABB &rObjBox, float fEntDistance, SSectorTextureSet * pTerrainTexInfo, FrustumMaskType passCullMask, const SRenderingPassInfo &passInfo);
+	static SCheckOcclusionOutput CreateTerrainOutput(CTerrainNode * pTerrainNode, FrustumMaskType passCullMask, const SRenderingPassInfo &passInfo);
 	static SCheckOcclusionOutput CreateDeformableBrushOutput(CBrush * pBrush, CRenderObject * pObj, int nLod, const SRenderingPassInfo &passInfo);
 
 	JobTypeT type;
@@ -124,7 +130,6 @@ struct CRY_ALIGN(16) SCheckOcclusionOutput
 		struct
 		{
 			IRenderNode*             pObj;
-			PodArray<SRenderLight*>* pAffectingLights;
 			SSectorTextureSet*       pTerrainTexInfo;
 			float                    fEntDistance;
 			bool                     bCheckPerObjectOcclusion;
@@ -158,11 +163,11 @@ struct CRY_ALIGN(16) SCheckOcclusionOutput
 	Vec3 vAmbColor;
 	AABB objBox;
 	SRendItemSorter rendItemSorter;
-	uint32 passCullMask;
+	FrustumMaskType passCullMask;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateDecalsAndRoadsOutput(IRenderNode* pObj, PodArray<SRenderLight*>* pAffectingLights, const Vec3& rAmbColor, const AABB& rObjBox, float fEntDistance, bool bCheckPerObjectOcclusion, const SRenderingPassInfo& passInfo)
+inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateDecalsAndRoadsOutput(IRenderNode* pObj, const Vec3& rAmbColor, const AABB& rObjBox, float fEntDistance, bool bCheckPerObjectOcclusion, const SRenderingPassInfo& passInfo)
 {
 	SCheckOcclusionOutput outputData;
 	outputData.type = ROAD_DECALS;
@@ -171,7 +176,6 @@ inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateDecalsAndRoadsOutput(I
 	outputData.objBox = rObjBox;
 
 	outputData.common.pObj = pObj;
-	outputData.common.pAffectingLights = pAffectingLights;
 	outputData.common.pTerrainTexInfo = NULL;
 	outputData.common.fEntDistance = fEntDistance;
 	outputData.common.bCheckPerObjectOcclusion = bCheckPerObjectOcclusion;
@@ -180,7 +184,7 @@ inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateDecalsAndRoadsOutput(I
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateCommonObjectOutput(IRenderNode* pObj, PodArray<SRenderLight*>* pAffectingLights, const Vec3& rAmbColor, const AABB& rObjBox, float fEntDistance, SSectorTextureSet* pTerrainTexInfo, uint32 passCullMask, const SRenderingPassInfo& passInfo)
+inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateCommonObjectOutput(IRenderNode* pObj, const Vec3& rAmbColor, const AABB& rObjBox, float fEntDistance, SSectorTextureSet* pTerrainTexInfo, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo)
 {
 	SCheckOcclusionOutput outputData;
 	outputData.type = COMMON;
@@ -189,14 +193,13 @@ inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateCommonObjectOutput(IRe
 	outputData.objBox = rObjBox;
 	outputData.passCullMask = passCullMask;
 	outputData.common.pObj = pObj;
-	outputData.common.pAffectingLights = pAffectingLights;
 	outputData.common.fEntDistance = fEntDistance;
 	outputData.common.pTerrainTexInfo = pTerrainTexInfo;
 	return outputData;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateTerrainOutput(CTerrainNode* pTerrainNode, uint32 passCullMask, const SRenderingPassInfo& passInfo)
+inline SCheckOcclusionOutput SCheckOcclusionOutput::CreateTerrainOutput(CTerrainNode* pTerrainNode, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo)
 {
 	SCheckOcclusionOutput outputData;
 	outputData.type = TERRAIN;
@@ -333,7 +336,7 @@ struct SOctreeLoadObjectsData
 	byte*                    pEndObjPtr;
 };
 
-class COctreeNode : public IOctreeNode, Cry3DEngineBase, IStreamCallback
+class COctreeNode final : public IOctreeNode, Cry3DEngineBase, IStreamCallback
 {
 public:
 
@@ -354,27 +357,32 @@ public:
 	int                      CountChildNodes();
 	void                     InsertObject(IRenderNode* pObj, const AABB& objBox, const float fObjRadiusSqr, const Vec3& vObjCenter);
 	bool                     DeleteObject(IRenderNode* pObj);
-	void                     Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo);
-	void                     Render_LightSources(bool bNodeCompletelyInFrustum, const SRenderingPassInfo& passInfo);
-	static uint32            UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePassTraversalShadowCascades, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDist, const bool bTestCoverageBuffer,
-	                                        bool& bCompletelyInMainFrustum, OcclusionTestClient* occlusionTestClient, uint32 passCullMask);
+
+	void                     Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo);
+	void                     Render_Light_Nodes (bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo);
+	
+	static FrustumMaskType   UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePassTraversalShadowCascades, const IRenderNode::RenderFlagsType renderFlags, const SRenderingPassInfo& passInfo, const AABB& nodeBox, const float nodeDistance, const float nodeMaxViewDist, const bool bTestCoverageBuffer,
+	                                        bool& bCompletelyInMainFrustum, OcclusionTestClient* occlusionTestClient, FrustumMaskType passCullMask);
 	void                     CheckUpdateStaticInstancing();
 	void                     RenderDebug();
-	void                     RenderContent(int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo);
-	void                     RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, uint32 passCullMask, SRenderingPassInfo passInfo);
-	void                     RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
-	void                     RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
-	void                     RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, const SRenderingPassInfo& passInfo);
-	void                     RenderBrushes(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, const bool bOcNodeCompletelyInFrustum, PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
-	static void              RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const uint32 passCullMask);
+
+	void                     RenderContent        (int nRenderMask, const Vec3& vAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo);
+	void                     RenderContentJobEntry(int nRenderMask,       Vec3  vAmbColor, FrustumMaskType passCullMask,       SRenderingPassInfo  passInfo);
+	void                     RenderLights         (int nRenderMask, const Vec3& vAmbColor, FrustumMaskType passCullMask, const SRenderingPassInfo& passInfo);
+	void                     RenderLightsJobEntry (int nRenderMask,       Vec3  vAmbColor, FrustumMaskType passCullMask,       SRenderingPassInfo  passInfo);
+
+	void                     RenderVegetations   (TDoublyLinkedList<IRenderNode>* lstObjects, const FrustumMaskType passCullMask, int nRenderMask, const bool bOcNodeCompletelyInFrustum, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
+	void                     RenderLights        (TDoublyLinkedList<IRenderNode>* lstObjects, const FrustumMaskType passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
+	void                     RenderCommonObjects (TDoublyLinkedList<IRenderNode>* lstObjects, const FrustumMaskType passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
+	void                     RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObjects, const FrustumMaskType passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, const SRenderingPassInfo& passInfo);
+	void                     RenderBrushes       (TDoublyLinkedList<IRenderNode>* lstObjects, const FrustumMaskType passCullMask, const bool bOcNodeCompletelyInFrustum, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
+
+	static void              RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const FrustumMaskType passCullMask);
 	static bool              IsShadowCaster(IRenderNode* pObj);
-	PodArray<SRenderLight*>* GetAffectingLights(const SRenderingPassInfo& passInfo);
-	void                     AddLightSource(SRenderLight* pSource, const SRenderingPassInfo& passInfo);
-	void                     CheckInitAffectingLights(const SRenderingPassInfo& passInfo);
 	void                     InvalidateCachedShadowData();
 	void                     ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys, IGeneralMemoryHeap* pHeap, const AABB& layerBox);
 	void                     GetLayerMemoryUsage(uint16 nLayerId, ICrySizer* pSizer, int* pNumBrushes, int* pNumDecals);
-	virtual void             MarkAsUncompiled(const ERNListType eListType)       { SetCompiled(eListType, false); }
+	virtual void             MarkAsUncompiled(const ERNListType eListType) override { SetCompiled(eListType, false); }
 	void                     MarkAsUncompiled();
 	inline bool              IsCompiled(ERNListType eRNListType) const           { return (m_compiledFlag & (1 << eRNListType)) != 0; }
 	void                     SetCompiled(ERNListType eRNListType, bool compiled) { m_compiledFlag = (compiled ? (1 << eRNListType) : 0) | (m_compiledFlag & ~(1 << eRNListType)); }
@@ -416,8 +424,8 @@ public:
 	void         UpdateTerrainNodes(CTerrainNode* pParentNode = 0);
 
 	template<class T>
-	int         Load_T(T*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibility);
-	int         Load(FILE*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibility);
+	int         Load_T(T*&   f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibility);
+	int         Load(FILE*&  f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibility);
 	int         Load(uint8*& f, int& nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox, const SLayerVisibility* pLayerVisibility);
 	bool        StreamLoad(uint8* pData, int nDataSize, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, EEndian eEndian, AABB* pBox);
 
@@ -433,7 +441,7 @@ public:
 	float                  GetNodeStreamingDistance(const SObjManPrecacheCamera* pPrecacheCams, AABB objectsBox, size_t nPrecacheCams, const SRenderingPassInfo& passInfo);
 	void                   ReleaseStreamableContent();
 	bool                   CheckStartStreaming(bool bFullUpdate);
-	virtual void           StreamOnComplete(IReadStream* pStream, unsigned nError);
+	virtual void           StreamOnComplete(IReadStream* pStream, unsigned nError) override;
 	template<class T> void StreamOnCompleteReadObjects(T* f, int nDataSize);
 	void                   StartStreaming(bool bFinishNow, IReadStream_AutoPtr* ppStream);
 	template<class T> int  ReadObjects(T*& f, int& nDataSize, EEndian eEndian, std::vector<IStatObj*>* pStatObjTable, std::vector<IMaterial*>* pMatTable, const SLayerVisibility* pLayerVisibilityMask, SOcTreeNodeChunk& chunk, ELoadObjectsMode eLoadMode);
@@ -467,8 +475,9 @@ protected:
 	// Check if min spec specified in render node passes current server config spec.
 	static bool CheckRenderFlagsMinSpec(uint32 dwRndFlags);
 
-	void        LinkObject(IRenderNode* pObj, EERType eERType, bool bPushFront = true);
-	void        UnlinkObject(IRenderNode* pObj);
+	void         LinkObject(IRenderNode* pObj, EERType eERType, bool bPushFront = true);
+	void         UnlinkObject(IRenderNode* pObj);
+	virtual void ReorderObject(IRenderNode* pObj, bool bPushFront) final;
 
 	static int  Cmp_OctreeNodeSize(const void* v1, const void* v2);
 
@@ -477,7 +486,7 @@ private:
 
 	float        GetNodeRadius2() const { return m_vNodeAxisRadius.Dot(m_vNodeAxisRadius); }
 	COctreeNode* FindChildFor(IRenderNode* pObj, const AABB& objBox, const float fObjRadius, const Vec3& vObjCenter);
-	bool         HasAnyRenderableCandidates(const SRenderingPassInfo& passInfo) const;
+	bool         HasAnyRenderableCandidates(const SRenderingPassInfo& passInfo, bool renderLights) const;
 	void         BuildLoadingDatas(PodArray<SOctreeLoadObjectsData>* pQueue, byte* pOrigData, byte*& pData, int& nDataSize, EEndian eEndian);
 	PodArray<SOctreeLoadObjectsData> m_loadingDatas;
 
@@ -503,11 +512,14 @@ private:
 
 	OcclusionTestClient              m_occlusionTestClient;
 
-	uint32                           m_compiledFlag: eRNListType_ListsNum;
-	uint32                           m_bHasLights               : 1;
-	uint32                           m_bHasRoads                : 1;
-	uint32                           m_bNodeCompletelyInFrustum : 1;
-	uint32                           m_bStaticInstancingIsDirty : 1;
+	uint32                           m_linkedTypes : eERType_TypesNum;
+	uint32                           m_compiledFlag : eRNListType_ListsNum;
+
+	static_assert(eERType_TypesNum + eRNListType_ListsNum <= 32, "Sum of type-bits plus listtype-bits should be 32");
+
+	uint8                            m_bNodeCompletelyInFrustum : 1;
+	uint8                            m_bStaticInstancingApplied : 1;
+	uint8                            m_bStaticInstancingIsDirty : 1;
 
 	// used for streaming
 	int                           m_nFileDataOffset; // TODO: make it 64bit
@@ -527,6 +539,8 @@ private:
 	};
 	std::map<std::pair<IStatObj*, IMaterial*>, PodArray<SNodeInstancingInfo>*>* m_pStaticInstancingInfo;
 
+	CryCriticalSectionNonRecursive m_renderLock;
+
 	float m_fPrevTerrainTexScale;                         // used to detect terrain texturing change and refresh info in object instances
 
 public:
@@ -538,5 +552,3 @@ public:
 	volatile int                  m_updateStaticInstancingLock;
 	uint32                        m_onePassTraversalFrameId = 0; // Used to request visiting of the node during one-pass traversal
 };
-
-#endif

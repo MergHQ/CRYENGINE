@@ -1,8 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 #include "VegetationTreeView.h"
 
-#include <QItemSelectionModel>
 #include <QDrag>
 
 CVegetationTreeView::CVegetationTreeView(QWidget* pParent)
@@ -33,8 +32,7 @@ void CVegetationTreeView::startDrag(Qt::DropActions supportedActions)
 		return;
 	}
 
-	dragStarted(rowIndexes);
+	dragStarted();
 	pDrag->setMimeData(pMimeData);
 	pDrag->exec(supportedActions);
 }
-

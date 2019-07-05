@@ -14,6 +14,7 @@
 #include "StdAfx.h"
 #include "DebugCallStack.h"
 #include <CryThreading/IThreadManager.h>
+#include <CryInput/IInput.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -21,7 +22,7 @@
 
 #if CRY_PLATFORM_WINDOWS
 
-	#include <CrySystem/IConsole.h>
+	#include <CrySystem/ConsoleRegistration.h>
 	#include <CryScriptSystem/IScriptSystem.h>
 	#include "JiraClient.h"
 	#include "System.h"
@@ -278,10 +279,10 @@ bool CCrashRpt::InstallHandler()
 	//crAddScreenshot2(CR_AS_MAIN_WINDOW | CR_AS_USE_JPEG_FORMAT, 95);
 
 	// Add our log file to the error report
-	const char* logFileName = gEnv->pLog->GetFileName();
-	if (logFileName)
+	const char* logFilePath = gEnv->pLog->GetFilePath();
+	if (logFilePath)
 	{
-		crAddFile2(logFileName, NULL, "Log File", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
+		crAddFile2(logFilePath, NULL, "Log File", CR_AF_TAKE_ORIGINAL_FILE | CR_AF_MISSING_FILE_OK | CR_AF_ALLOW_DELETE);
 	}
 	else
 	{
@@ -398,12 +399,10 @@ SFileVersion CCrashRpt::GetSystemVersionInfo()
 		UINT len(0);
 		VerQueryValue(ver, "\\", (void**)&vinfo, &len);
 
-		const uint32 verIndices[4] = { 0, 1, 2, 3 };
-
-		productVersion.v[verIndices[0]] = vinfo->dwFileVersionLS & 0xFFFF;
-		productVersion.v[verIndices[1]] = vinfo->dwFileVersionLS >> 16;
-		productVersion.v[verIndices[2]] = vinfo->dwFileVersionMS & 0xFFFF;
-		productVersion.v[verIndices[3]] = vinfo->dwFileVersionMS >> 16;
+		productVersion[0] = vinfo->dwFileVersionLS & 0xFFFF;
+		productVersion[1] = vinfo->dwFileVersionLS >> 16;
+		productVersion[2] = vinfo->dwFileVersionMS & 0xFFFF;
+		productVersion[3] = vinfo->dwFileVersionMS >> 16;
 	}
 #endif //CRY_PLATFORM_WINDOWS
 	return productVersion;
@@ -426,11 +425,6 @@ IDebugCallStack* IDebugCallStack::instance()
 // Sets up the symbols for functions in the debug file.
 //------------------------------------------------------------------------------------------------------------------------
 DebugCallStack::DebugCallStack()
-	: m_pSystem(0)
-	, m_symbols(false)
-	, m_bCrash(false)
-	, m_szBugMessage(NULL)
-	, m_previousHandler(nullptr)
 {
 	RemoveOldFiles();
 	if (gEnv && gEnv->pThreadManager)
@@ -782,22 +776,28 @@ void DebugCallStack::FillStackTrace(int maxStackEntries, int skipNumFunctions, H
 			if (!funcName.empty())
 			{
 				m_functions.push_back(funcName);
-			}
-			else
-			{
-				void* p = (void*)(uintptr_t)stack_frame.AddrPC.Offset;
-				char str[80];
-				cry_sprintf(str, "function=0x%p", p);
-				m_functions.push_back(str);
+				continue;
 			}
 		}
-		else
+
+		// If we don't have a symbol for the address, we attempt to output module name and offset from base address so we can look it up later
+		// When the module base is unknown, we only output the raw function address
+		IMAGEHLP_MODULE64 modInfo;
+		modInfo.SizeOfStruct = sizeof(modInfo);
+		if (!SymGetModuleInfo64(GetCurrentProcess(), stack_frame.AddrPC.Offset, &modInfo))
 		{
-			void* p = (void*)(uintptr_t)stack_frame.AddrPC.Offset;
-			char str[80];
-			cry_sprintf(str, "function=0x%p", p);
-			m_functions.push_back(str);
+			CryLogAlways("Failed to get module info for 0x%" PRIx64 ", last error: %d", stack_frame.AddrPC.Offset, GetLastError());
+			m_functions.push_back(string().Format("function=0x%" PRIx64 " ", stack_frame.AddrPC.Offset));
+			continue;
 		}
+
+		DWORD64 modOffset = stack_frame.AddrPC.Offset - modInfo.BaseOfImage;
+
+		char str[300];
+		char* szImageNameLastPathSeparator = strrchr(modInfo.ImageName, '\\');
+		char* szImageName = szImageNameLastPathSeparator ? szImageNameLastPathSeparator + 1 : modInfo.ImageName;
+		cry_sprintf(str, "function=%s+0x%" PRIx64, szImageName, modOffset);
+		m_functions.push_back(str);
 	}
 }
 
@@ -988,7 +988,7 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 	}
 
 #ifdef USE_CRY_ASSERT
-	gEnv->ignoreAllAsserts = true;
+	Cry::Assert::IgnoreAllAsserts(true);
 #endif
 
 	gEnv->pLog->FlushAndClose();
@@ -1049,13 +1049,6 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 		cry_sprintf(excCode, "0x%08X", exception_pointer->ExceptionRecord->ExceptionCode);
 		WriteLineToLog("Exception: %s, at Address: %s", excCode, excAddr);
 
-		if (CSystem* pSystem = (CSystem*)GetSystem())
-		{
-			if (const char* pLoadingProfilerCallstack = pSystem->GetLoadingProfilerCallstack())
-				if (pLoadingProfilerCallstack[0])
-					WriteLineToLog("<CrySystem> LoadingProfilerCallstack: %s", pLoadingProfilerCallstack);
-		}
-
 		{
 			IMemoryManager::SProcessMemInfo memInfo;
 			if (gEnv->pSystem->GetIMemoryManager()->GetProcessMemInfo(memInfo))
@@ -1099,15 +1092,10 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 	}
 	else if (ret == IDB_IGNORE)
 	{
-	#if CRY_PLATFORM_32BIT
-		exception_pointer->ContextRecord->FloatSave.StatusWord &= ~31;
-		exception_pointer->ContextRecord->FloatSave.ControlWord |= 7;
-		(*(WORD*)(exception_pointer->ContextRecord->ExtendedRegisters + 24) &= 31) |= 0x1F80;
-	#else
 		exception_pointer->ContextRecord->FltSave.StatusWord &= ~31;
 		exception_pointer->ContextRecord->FltSave.ControlWord |= 7;
 		(exception_pointer->ContextRecord->FltSave.MxCsr &= 31) |= 0x1F80;
-	#endif
+
 		firstTime = true;
 		callCount = 0;
 
@@ -1116,7 +1104,10 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 			gEnv->pThreadManager->ForEachOtherThread(ResumeAnyThread);
 
 		// Resume render thread
-		gEnv->pRenderer->ResumeRendererFromFrameEnd();
+		if (gEnv->pRenderer)
+		{
+			gEnv->pRenderer->ResumeRendererFromFrameEnd();
+		}
 
 		return EXCEPTION_CONTINUE_EXECUTION;
 	}
@@ -1160,7 +1151,7 @@ void DebugCallStack::LogMemCallstackFile(int memSize)
 	CryFixedStringT<64> temp("*** Memory allocation for ");
 	temp.append(buffer);
 	temp.append(" bytes ");
-	int frame = gEnv->pRenderer->GetFrameID(false);
+	int frame = gEnv->nMainFrameID;
 	itoa(frame, buffer, 10);
 	temp.append("in frame ");
 	temp.append(buffer);
@@ -1386,8 +1377,8 @@ void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointe
 	int prev_sys_no_crash_dialog = g_cvars.sys_no_crash_dialog;
 
 #ifdef USE_CRY_ASSERT
-	gEnv->ignoreAllAsserts = true;
-	gEnv->cryAssertLevel = ECryAssertLevel::Disabled;
+	Cry::Assert::IgnoreAllAsserts(true);
+	Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled);
 #endif
 
 	g_cvars.sys_no_crash_dialog = 1;
@@ -1817,10 +1808,6 @@ void DebugCallStack::ResetFPU(EXCEPTION_POINTERS* pex)
 	{
 		// How to reset FPU: http://www.experts-exchange.com/Programming/System/Windows__Programming/Q_10310953.html
 		_clearfp();
-	#if CRY_PLATFORM_32BIT
-		pex->ContextRecord->FloatSave.ControlWord |= 0x2F;
-		pex->ContextRecord->FloatSave.StatusWord &= ~0x8080;
-	#endif
 	}
 }
 
@@ -1896,7 +1883,7 @@ int DebugCallStack::CollectCallStack(HANDLE thread, void** pCallstack, int maxSt
 	#endif
 	int prev_priority = GetThreadPriority(thread);
 	SetThreadPriority(thread, THREAD_PRIORITY_TIME_CRITICAL);
-	BOOL result = GetThreadContext(thread, &context);
+	GetThreadContext(thread, &context);
 	::SetThreadPriority(thread, prev_priority);
 	return WalkStackFrames(context, pCallstack, maxStackEntries);
 }

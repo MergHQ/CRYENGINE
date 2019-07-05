@@ -30,11 +30,12 @@
 #include "DownloadMgr.h"
 #include <CryThreading/IThreadManager.h>
 
+struct IPlayerProfile;
 class CXMLStatsSerializer;
 class CCircularXMLSerializer;
 class CActor;
 class CCircularBufferStatsStorage;
-struct IPlayerProfile;
+class CTelemetryCollector;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -345,23 +346,7 @@ class CStatsRecordingMgr : public IGameStatisticsCallback, public IHitListener, 
 		// ~IDataListener
 
 		// Helper function - try to track event.
-		static inline void TryTrackEvent(IActor *pActor, size_t eventID, const SStatAnyValue &value = SStatAnyValue())
-		{
-			if(pActor)
-			{
-				CStatsRecordingMgr *pStatsRecordingMgr = g_pGame->GetStatsRecorder();
-
-				if(pStatsRecordingMgr != NULL  && pStatsRecordingMgr->ShouldRecordEvent(eventID, pActor))
-				{
-					IStatsTracker	*pStatsTracker = pStatsRecordingMgr->GetStatsTracker(pActor);
-
-					if(pStatsTracker)
-					{
-						pStatsTracker->Event(eventID, value);
-					}
-				}
-			}
-		}
+		static void TryTrackEvent(IActor *pActor, size_t eventID, const SStatAnyValue &value = SStatAnyValue());
 
 #if !defined(_RELEASE)
 		IEntityClass *m_pDummyEntityClass;

@@ -11,11 +11,11 @@
 class CSafeObjectsArray
 {
 public:
-	CSafeObjectsArray() {};
+	CSafeObjectsArray() {}
 	~CSafeObjectsArray();
 
 	void         Add(CBaseObject* obj);
-	void         Remove(CBaseObject* obj);
+	void         Remove(const CBaseObject* obj);
 
 	bool         IsEmpty() const  { return m_objects.empty(); }
 	size_t       GetCount() const { return m_objects.size(); }
@@ -28,10 +28,9 @@ public:
 	void UnregisterEventCallback(CBaseObject::EventCallback const& cb);
 
 private:
-	void OnTargetEvent(CBaseObject* target, int event);
+	void OnTargetEvent(const CBaseObject* pObject, const CObjectEvent& event);
 
 	//////////////////////////////////////////////////////////////////////////
 	std::vector<CBaseObjectPtr>             m_objects;
 	std::vector<CBaseObject::EventCallback> m_eventListeners;
 };
-

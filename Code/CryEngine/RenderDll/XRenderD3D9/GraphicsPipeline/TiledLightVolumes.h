@@ -5,6 +5,7 @@
 #include "Common/GraphicsPipelineStage.h"
 #include "Common/ComputeRenderPass.h"
 #include "Common/FullscreenPass.h"
+#include "TiledShading.h" // eDeferredMode
 
 constexpr uint32 MaxNumTileLights = 255;
 
@@ -23,39 +24,45 @@ class CTiledLightVolumesStage : public CGraphicsPipelineStage
 	struct STiledLightShadeInfo;
 
 public:
-	CTiledLightVolumesStage();
+	static const EGraphicsPipelineStage StageID = eStage_TiledLightVolumes;
+
+	CTiledLightVolumesStage(CGraphicsPipeline& graphicsPipeline);
 	~CTiledLightVolumesStage();
 
-	uint32                GetDispatchSizeX() const { return m_dispatchSizeX; }
-	uint32                GetDispatchSizeY() const { return m_dispatchSizeY; }
+	uint32                GetDispatchSizeX() const        { return m_dispatchSizeX; }
+	uint32                GetDispatchSizeY() const        { return m_dispatchSizeY; }
 
 	CGpuBuffer*           GetTiledTranspLightMaskBuffer() { return &m_tileTranspLightMaskBuf; }
 	CGpuBuffer*           GetTiledOpaqueLightMaskBuffer() { return &m_tileOpaqueLightMaskBuf; }
-	CGpuBuffer*           GetLightCullInfoBuffer() { return &m_lightCullInfoBuf; }
-	CGpuBuffer*           GetLightShadeInfoBuffer() { return &m_lightShadeInfoBuf; }
-	CTexture*             GetProjectedLightAtlas() const { return m_spotTexAtlas.texArray; }
-	CTexture*             GetSpecularProbeAtlas() const { return m_specularProbeAtlas.texArray; }
-	CTexture*             GetDiffuseProbeAtlas() const { return m_diffuseProbeAtlas.texArray; }
+	CGpuBuffer*           GetLightCullInfoBuffer()        { return &m_lightCullInfoBuf; }
+	CGpuBuffer*           GetLightShadeInfoBuffer()       { return &m_lightShadeInfoBuf; }
+	CTexture*             GetProjectedLightAtlas() const  { return m_spotTexAtlas.texArray; }
+	CTexture*             GetSpecularProbeAtlas()  const  { return m_specularProbeAtlas.texArray; }
+	CTexture*             GetDiffuseProbeAtlas()   const  { return m_diffuseProbeAtlas.texArray; }
+	CLightVolumeBuffer&   GetLightVolumeBuffer()          { return m_lightVolumeBuffer; }
 
-	STiledLightInfo*      GetTiledLightInfo() { return m_tileLights; }
-	STiledLightCullInfo*  GetTiledLightCullInfo() { return &tileLightsCull[0]; }
-	STiledLightShadeInfo* GetTiledLightShadeInfo() { return &tileLightsShade[0]; }
-	uint32                GetValidLightCount() { return m_numValidLights; }
+	STiledLightInfo*      GetTiledLightInfo()             { return m_tileLights; }
+	STiledLightCullInfo*  GetTiledLightCullInfo()         { return &tileLightsCull[0]; }
+	STiledLightShadeInfo* GetTiledLightShadeInfo()        { return &tileLightsShade[0]; }
+	uint32                GetValidLightCount()            { return m_numValidLights; }
 
-	bool                  IsCausticsVisible() const { return m_bApplyCaustics; }
-	void                  NotifyCausticsVisible() { m_bApplyCaustics = true; }
-	void                  NotifyCausticsInvisible() { m_bApplyCaustics = false; }
+	bool                  IsCausticsVisible() const       { return m_bApplyCaustics; }
+	void                  NotifyCausticsVisible()         { m_bApplyCaustics = true; }
+	void                  NotifyCausticsInvisible()       { m_bApplyCaustics = false; }
 
-	void Init() final;
-	void Resize(int renderWidth, int renderHeight) final;
-	void Clear();
-	void Destroy(bool destroyResolutionIndependentResources);
-	void Update() final;
+	void                  Init() final;
+	void                  Resize(int renderWidth, int renderHeight) final;
+	void                  Clear();
+	void                  Destroy(bool destroyResolutionIndependentResources);
+	void                  Update() final;
 
-	void GenerateLightList();
-	void Execute();
+	void                  GenerateLightList();
+	void                  Execute();
 
-	bool IsSeparateVolumeListGen();
+	static inline bool    IsSeparateVolumeListGen()
+	{
+		return CRendererCVars::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_2Pass || CRendererCVars::CV_r_GraphicsPipelineMobile;
+	}
 
 	// Cubemap Array(s) ==================================================================
 
@@ -65,8 +72,8 @@ public:
 private:
 	// Cubemap Array(s) ==================================================================
 
-	int  InsertTexture(CTexture* texture, float mipFactor, TextureAtlas& atlas, int arrayIndex);
-	void UploadTextures(TextureAtlas& atlas);
+	int                       InsertTexture(CTexture* texture, float mipFactor, TextureAtlas& atlas, int arrayIndex);
+	void                      UploadTextures(TextureAtlas& atlas);
 	std::pair<size_t, size_t> MeasureTextures(TextureAtlas& atlas);
 
 	// Tiled Light Volumes ===============================================================
@@ -90,17 +97,13 @@ private:
 		static constexpr uint8 highestMip = 100;
 		static constexpr float mipFactorMinSize = highestMip * highestMip;
 
-		TexSmartPtr texture;
-		int         updateFrameID;
-		int         accessFrameID;
-		float       mipFactorRequested;
-		uint8       lowestTransferedMip;
-		uint8       lowestRenderableMip;
-		bool        invalid;
-
-		AtlasItem() : texture(nullptr), updateFrameID(-1), accessFrameID(0),
-			lowestTransferedMip(highestMip), lowestRenderableMip(highestMip),
-			mipFactorRequested(mipFactorMinSize), invalid(false) {}
+		TexSmartPtr texture = nullptr;
+		int         updateFrameID = -1;
+		int         accessFrameID = 0;
+		float       mipFactorRequested = mipFactorMinSize;
+		uint8       lowestTransferedMip = highestMip;
+		uint8       lowestRenderableMip = highestMip;
+		bool        invalid = false;
 	};
 
 	struct TextureAtlas
@@ -116,6 +119,7 @@ private:
 
 	enum ETiledLightTypes
 	{
+		tlTypeNone             = 0,
 		tlTypeProbe            = 1,
 		tlTypeAmbientPoint     = 2,
 		tlTypeAmbientProjector = 3,
@@ -198,14 +202,14 @@ private:
 
 		eVolumeType_Count
 	};
-	
+
 	struct SVolumeGeometry
 	{
-		CGpuBuffer       vertexDataBuf;
-		buffer_handle_t  vertexBuffer;
-		buffer_handle_t  indexBuffer;
-		uint32           numVertices;
-		uint32           numIndices;
+		CGpuBuffer      vertexDataBuf;
+		buffer_handle_t vertexBuffer;
+		buffer_handle_t indexBuffer;
+		uint32          numVertices;
+		uint32          numIndices;
 	};
 
 private:
@@ -238,12 +242,14 @@ private:
 
 	// Tiled Light Volumes ===============================================================
 
-	CGpuBuffer            m_lightVolumeInfoBuf;
+	CGpuBuffer           m_lightVolumeInfoBuf;
 
-	SVolumeGeometry       m_volumeMeshes[eVolumeType_Count];
+	// light volume data
+	CLightVolumeBuffer   m_lightVolumeBuffer;
 
-	CFullscreenPass       m_passCopyDepth;
-	CPrimitiveRenderPass  m_passLightVolumes;
-	CRenderPrimitive      m_volumePasses[eVolumeType_Count * 2];  // Inside and outside of volume for each type
-	uint32                m_numVolumesPerPass[eVolumeType_Count * 2];
+	SVolumeGeometry      m_volumeMeshes[eVolumeType_Count];
+
+	CPrimitiveRenderPass m_passLightVolumes;
+	CRenderPrimitive     m_volumePasses[eVolumeType_Count * 2];   // Inside and outside of volume for each type
+	uint32               m_numVolumesPerPass[eVolumeType_Count * 2];
 };

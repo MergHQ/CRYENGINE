@@ -56,7 +56,6 @@ void FilesTreeView::OnContextMenu(const QPoint& point)
 
 			connect(pAction, &QAction::toggled, [=](bool bChecked)
 				{
-					int column = pAction->data().toInt();
 					if (bChecked)
 						header()->showSection(i);
 					else
@@ -68,4 +67,3 @@ void FilesTreeView::OnContextMenu(const QPoint& point)
 }
 
 }
-

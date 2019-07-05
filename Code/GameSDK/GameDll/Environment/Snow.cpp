@@ -14,6 +14,8 @@ History:
 #include "StdAfx.h"
 #include "Snow.h"
 #include "Game.h"
+#include <CryMath/Cry_Camera.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CSnow::CSnow()
 	: m_bEnabled(false)
@@ -53,7 +55,7 @@ bool CSnow::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CSnow::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CSnow::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -61,7 +63,7 @@ bool CSnow::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams
 //------------------------------------------------------------------------
 bool CSnow::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CSnow::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CSnow::GetEntityPoolSignature not implemented");
 	
 	return true;
 }
@@ -95,9 +97,6 @@ void CSnow::Update(SEntityUpdateContext &ctx, int updateSlot)
 	const IActor * pClient = g_pGame->GetIGameFramework()->GetClientActor();
 	if (pClient && Reset())
 	{
-		const Vec3 vCamPos = GetISystem()->GetViewCamera().GetPosition();
-		Vec3 vR = (GetEntity()->GetWorldPos() - vCamPos) / max(m_fRadius, 1e-3f);
-
 		// todo: only update when things have changed.
 		gEnv->p3DEngine->SetSnowSurfaceParams(GetEntity()->GetWorldPos(), m_fRadius, m_fSnowAmount, m_fFrostAmount, m_fSurfaceFreezing);
 		gEnv->p3DEngine->SetSnowFallParams(m_nSnowFlakeCount, m_fSnowFlakeSize, m_fSnowFallBrightness, m_fSnowFallGravityScale, m_fSnowFallWindScale, m_fSnowFallTurbulence, m_fSnowFallTurbulenceFreq);
@@ -109,9 +108,9 @@ void CSnow::HandleEvent(const SGameObjectEvent &event)
 {
 }
 
-uint64 CSnow::GetEventMask() const
+Cry::Entity::EventFlags CSnow::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_DONE);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_HIDE | ENTITY_EVENT_DONE;
 }
 
 //------------------------------------------------------------------------

@@ -156,9 +156,7 @@ void CAudioAreaRandom::OnResetState()
 
 	// Update values
 	audioEntityComponent.SetFadeDistance(m_parameterDistance);
-	const auto& stateIds = AudioEntitiesUtils::GetObstructionOcclusionStateIds();
-	audioEntityComponent.SetSwitchState(AudioEntitiesUtils::GetObstructionOcclusionSwitch(), stateIds[IntegralValue(m_occlusionType)]);
-
+	audioEntityComponent.SetObstructionCalcType(m_occlusionType);
 	audioEntityComponent.SetCurrentEnvironments(CryAudio::InvalidAuxObjectId);
 	audioEntityComponent.SetAudioAuxObjectOffset(Matrix34(IDENTITY));
 	audioEntityComponent.AudioAuxObjectsMoveWithEntity(m_bMoveWithEntity);
@@ -180,7 +178,7 @@ void CAudioAreaRandom::OnResetState()
 		if (!m_bPlaying)
 		{
 			// Entity was enabled
-			entity.KillTimer(m_timerId);
+			KillTimer(m_timerId);
 			m_timerId = 0;
 
 			Play();
@@ -217,12 +215,12 @@ void CAudioAreaRandom::Play()
 			pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
 			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::None, this);
-			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, userData);
+			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, INVALID_ENTITYID, userData);
 		}
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;
 
-		GetEntity()->SetTimer(m_timerId, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
+		SetTimer(m_timerId, static_cast<int>(cry_random(m_minDelay, m_maxDelay)));
 		m_bPlaying = true;
 	}
 }
@@ -230,7 +228,7 @@ void CAudioAreaRandom::Play()
 void CAudioAreaRandom::Stop()
 {
 	IEntity& entity = *GetEntity();
-	entity.KillTimer(m_timerId);
+	KillTimer(m_timerId);
 
 	if (auto pAudioProxy = entity.GetComponent<IEntityAudioComponent>())
 	{
@@ -289,7 +287,7 @@ void CAudioAreaRandom::SerializeProperties(Serialization::IArchive& archive)
 
 	archive(m_occlusionType, "OcclusionType", "Occlusion Type");
 
-	archive(Serialization::AudioRTPC(m_parameterName), "Rtpc", "Rtpc");
+	archive(Serialization::AudioParameter(m_parameterName), "Rtpc", "Rtpc");
 	archive(m_parameterDistance, "RTPCDistance", "RTPC Distance");
 	archive(m_radius, "RadiusRandom", "Radius Random");
 

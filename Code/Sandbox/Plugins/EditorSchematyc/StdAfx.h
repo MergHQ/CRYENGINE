@@ -37,13 +37,12 @@
 // Schematyc headers and declarations.
 
 #if defined(SCHEMATYC_PLUGIN_EXPORTS)
-	#define SCHEMATYC_PLUGIN_API __declspec(dllexport)
+	#define SCHEMATYC_PLUGIN_API DLL_EXPORT
 #else
-	#define SCHEMATYC_PLUGIN_API __declspec(dllimport)
+	#define SCHEMATYC_PLUGIN_API DLL_IMPORT
 #endif
 
 #include <CrySchematyc/CoreAPI.h>
 
 
 Q_DECLARE_METATYPE(CryGUID);
-

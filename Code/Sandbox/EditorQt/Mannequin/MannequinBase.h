@@ -1,16 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MannequinBase_h__
-#define __MannequinBase_h__
+#pragma once
 
 #include "ICryMannequin.h"
+#include <Objects/BaseObject.h>
 #include <CryInput/IInput.h>
+#include <Util/Variable.h>
 
-class IAnimationDatabase;
+struct IActionController;
+struct IAnimationDatabase;
+struct IMannequinEditorManager;
+struct SEditorAnimationContext;
+
 class CSequencerTrack;
 class CSequencerNode;
 class CSequencerSequence;
-struct IMannequinEditorManager;
+class CVarBlock;
 
 const uint32 HISTORY_ITEM_INVALID = 0xffffffff;
 const uint32 CONTEXT_DATA_NONE = 0xffffffff;
@@ -36,13 +41,13 @@ struct SScopeContextViewData
 	{
 	}
 
-	_smart_ptr<ICharacterInstance>  charInst;
-	IStatObj*                       pStatObj;
-	IEntity*                        entity;
-	QuatT                           oldAttachmentLoc;
-	struct SEditorAnimationContext* m_pAnimContext;
-	class IActionController*        m_pActionController;
-	bool                            enabled;
+	_smart_ptr<ICharacterInstance> charInst;
+	IStatObj*                      pStatObj;
+	IEntity*                       entity;
+	QuatT                          oldAttachmentLoc;
+	SEditorAnimationContext*       m_pAnimContext;
+	IActionController*             m_pActionController;
+	bool                           enabled;
 };
 
 struct SScopeContextData
@@ -65,7 +70,7 @@ struct SScopeContextData
 	void SetCharacter(EMannequinEditorMode editorMode, ICharacterInstance* charInst)
 	{
 		viewData[editorMode].charInst = charInst;
-		viewData[editorMode].charInst->SetCharEditMode(CA_CharacterTool);
+		viewData[editorMode].charInst->SetCharEditMode(CA_CharacterAuxEditor);
 		animSet = charInst->GetIAnimationSet();
 	}
 
@@ -80,7 +85,7 @@ struct SScopeContextData
 
 			if (data.charInst)
 			{
-				data.charInst->SetCharEditMode(CA_CharacterTool);
+				data.charInst->SetCharEditMode(CA_CharacterAuxEditor);
 				animSet = data.charInst->GetIAnimationSet();
 			}
 			else
@@ -173,7 +178,7 @@ struct SMannequinContextViewData
 
 	IEntity*                        m_pEntity;
 	struct SEditorAnimationContext* m_pAnimContext;
-	class IActionController*        m_pActionController;
+	IActionController*              m_pActionController;
 	TBackgroundObjects              backgroundObjects;
 	std::vector<int>                backgroundProps;
 };
@@ -233,7 +238,7 @@ public:
 	void FillInTagStates()
 	{
 		TagState tags = TAG_STATE_EMPTY;
-		for (THistoryBuffer::iterator iter = m_items.begin(); iter != m_items.end(); iter++)
+		for (THistoryBuffer::iterator iter = m_items.begin(); iter != m_items.end(); ++iter)
 		{
 			SHistoryItem& item = *iter;
 			if (item.type == SHistoryItem::Tag)
@@ -337,7 +342,7 @@ public:
 	const SHistoryItem* FindLastByType(SHistoryItem::EType type, float endTime) const
 	{
 		const SHistoryItem* ret = NULL;
-		for (THistoryBuffer::const_iterator iter = m_items.begin(); (iter != m_items.end()) && (iter->time <= endTime); iter++)
+		for (THistoryBuffer::const_iterator iter = m_items.begin(); (iter != m_items.end()) && (iter->time <= endTime); ++iter)
 		{
 			const SHistoryItem& item = *iter;
 			if (item.type == type)
@@ -602,6 +607,3 @@ public:
 	float m_lockedValues[eMotionParamID_COUNT];
 	bool  m_locked[eMotionParamID_COUNT];
 };
-
-#endif //!__MannequinBase_h__
-

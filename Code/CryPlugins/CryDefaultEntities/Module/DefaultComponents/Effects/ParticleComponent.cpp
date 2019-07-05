@@ -49,9 +49,9 @@ void CParticleComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CParticleComponent::GetEventMask() const
+Cry::Entity::EventFlags CParticleComponent::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 }
 
 void CParticleComponent::SetEffectName(const char* szPath)

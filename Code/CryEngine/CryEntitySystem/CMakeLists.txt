@@ -23,6 +23,8 @@ add_sources("CryEntitySystem_component_uber.cpp"
 	SOURCE_GROUP "Components\\\\FlowGraph"
 		"FlowGraphProxy.cpp"
 		"FlowGraphProxy.h"
+		"FlowGraphComponent.cpp"
+		"FlowGraphComponent.h"
 	SOURCE_GROUP "Proxy\\\\NetEntity"
 		"NetEntity.cpp"
 		"NetEntity.h"
@@ -99,13 +101,14 @@ add_sources("CryEntitySystem_uber_0.cpp"
 		"EntityComponentsCache.cpp"
 		"EntityComponentsCache.h"
 		"SaltBufferArray.h"
-		"SaltHandle.h"
 		"CharacterBoneAttachmentManager.h"
 		"CharacterBoneAttachmentManager.cpp"
 		"GeomCacheAttachmentManager.h"
 		"GeomCacheAttachmentManager.cpp"
 		"EntityUnitTests.cpp"
 		"EntityUnitTests.h"
+		"ReflectionRegistry.cpp"
+		"ReflectionRegistry.h"
 )
 
 add_sources("CryEntitySystem_uber_1.cpp"
@@ -142,7 +145,58 @@ add_sources("NoUberFile"
 end_sources()
 #END-FILE-LIST
 
-CryEngineModule(CryEntitySystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine")
+macro(setup_CryEntitySystem)
+	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-reorder
+			-Wno-unknown-pragmas
+			-Wno-parentheses
+			-Wno-switch
+			-Wno-format
+			-Wno-dynamic-class-memaccess
+			-Wno-unused-private-field
+			-Wno-unused-value
+			-Wno-invalid-offsetof
+			-Wno-multichar
+			-Wno-empty-body
+			-Wno-unused-lambda-capture
+			-Wno-unused-function
+			-Wno-char-subscripts
+			-Wno-comment
+			-Wno-c++11-narrowing
+			-Wno-tautological-constant-out-of-range-compare
+		)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		target_compile_options(${THIS_PROJECT} PRIVATE
+			-Wno-unused-function
+			-Wno-unused-value
+			-Wno-sign-compare
+			-Wno-ignored-attributes
+			-Wno-invalid-offsetof
+			-Wno-aligned-new
+			-Wno-int-in-bool-context
+			-Wno-unused-but-set-variable
+			-Wno-misleading-indentation
+			-Wno-strict-aliasing
+			-Wno-maybe-uninitialized
+			-Wno-unknown-pragmas
+			-Wno-array-bounds
+			-Wno-multichar
+			-Wno-char-subscripts
+			-Wno-conversion-null
+			-Wno-parentheses
+			-Wno-comment
+			-Wno-reorder
+			-Wno-address
+			-Wno-format
+			-Wno-switch
+		)
+    endif()
+endmacro()
 
-# Make sure that the entity system always compiles without items that are deprecated
-target_compile_definitions(${THIS_PROJECT} PRIVATE EXCLUDE_5_5_ENTITY_DEPRECATIONS=1)
+CryEngineModule(CryEntitySystem PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine")
+setup_CryEntitySystem()
+if (OPTION_UNIT_TEST AND NOT OPTION_STATIC_LINKING) #Currently an additional static lib is only used by unit testing under non-monolithic mode
+	CryEngineModule(CryEntitySystemLib PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine" FORCE_STATIC)
+	setup_CryEntitySystem()
+endif()

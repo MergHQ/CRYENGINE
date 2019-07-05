@@ -79,7 +79,7 @@ EEntityType GetEntityType(EntityId id)
 				const char* className = pClass->GetName();
 
 				// Check AI
-				if (pEntity->GetAI())
+				if (pEntity->HasAI())
 				{
 					type |= eET_AI;
 				}
@@ -245,7 +245,6 @@ public:
 			if (id > 0)
 			{
 				const EntityId entityId = (EntityId)id;
-				const EEntityType entityType = GetEntityType((EntityId)id);
 				if (IsValidType(m_type, GetEntityType(entityId)))
 				{
 					m_List.push_back(entityId);
@@ -328,7 +327,6 @@ public:
 	{
 		const Vec3& center(GetPortVec3(m_pActInfo, EIP_Pos));
 		const float range = GetPortFloat(m_pActInfo, EIP_Range);
-		const float rangeSq = range * range;
 
 		m_min(center.x - range, center.y - range, center.z - range);
 		m_max(center.x + range, center.y + range, center.z + range);

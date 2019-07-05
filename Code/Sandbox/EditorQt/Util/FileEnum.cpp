@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "FileEnum.h"
+#include <CrySystem/File/ICryPak.h>
 #include <io.h>
 
 CFileEnum::CFileEnum()
@@ -74,7 +75,6 @@ bool CFileEnum::GetNextFile(__finddata64_t* pFile)
 
 		return false;
 	}
-	;
 
 	// At least one file left
 	return true;
@@ -161,4 +161,3 @@ bool CFileEnum::ScanDirectory(
 {
 	return ScanDirectoryRecursive(path, "", file, files, bRecursive, bSkipPaks);
 }
-

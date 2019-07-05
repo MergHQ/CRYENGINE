@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 #include "Objects/BaseObject.h"
@@ -13,7 +10,7 @@ class CSequenceObject : public CBaseObject, public IAnimSequenceOwner
 public:
 	DECLARE_DYNCREATE(CSequenceObject)
 
-	// Overides from CBaseObject.
+	// Overrides from CBaseObject.
 	bool           Init(CBaseObject* prev, const string& file) override;
 	void           Display(CObjectRenderHelper& objRenderHelper) override;
 
@@ -32,7 +29,7 @@ protected:
 	//! Dtor must be protected.
 	CSequenceObject();
 
-	void DeleteThis() { delete this; };
+	void DeleteThis() { delete this; }
 
 	// Local callbacks.
 
@@ -47,11 +44,10 @@ private:
 class CSequenceObjectClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_OTHER; };
-	const char*    ClassName()         { return "SequenceObject"; };
-	const char*    Category()          { return ""; }; // Empty category name to prevent showing object in creation tab
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CSequenceObject); };
-	const char*    GetFileSpec()       { return ""; };
-	const char*    GetTextureIcon()    { return "%EDITOR%/ObjectIcons/sequence.bmp"; };
+	ObjectType     GetObjectType()   { return OBJTYPE_OTHER; }
+	const char*    ClassName()       { return "SequenceObject"; }
+	const char*    Category()        { return ""; }   // Empty category name to prevent showing object in creation tab
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CSequenceObject); }
+	const char*    GetFileSpec()     { return ""; }
+	const char*    GetTextureIcon()  { return "%EDITOR%/ObjectIcons/sequence.bmp"; }
 };
-

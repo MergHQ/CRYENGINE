@@ -1,13 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __aibehaviorlibrary_h__
-#define __aibehaviorlibrary_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include "AiBehavior.h"
+#include "Objects/EntityScript.h"
+#include <vector>
+#include <map>
 
 /*!
  * CAIBehaviorLibrary is collection of global AI behaviors.
@@ -16,7 +14,7 @@ class CAIBehaviorLibrary
 {
 public:
 	CAIBehaviorLibrary();
-	~CAIBehaviorLibrary() {};
+	~CAIBehaviorLibrary() {}
 
 	//! Add new behavior to the library.
 	void         AddBehavior(CAIBehavior* behavior);
@@ -55,6 +53,3 @@ private:
 	std::map<string, TSmartPtr<CAICharacter>> m_characters;
 	string m_scriptsPath;
 };
-
-#endif // __aibehaviorlibrary_h__
-

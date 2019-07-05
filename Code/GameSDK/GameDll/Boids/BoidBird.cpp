@@ -14,8 +14,13 @@
 #include "StdAfx.h"
 #include "BoidBird.h"
 #include "BirdsFlock.h"
+#include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryEntitySystem/IBreakableManager.h>
+#include <Cry3DEngine/ISurfaceType.h>
+#include <CryMath/Random.h>
+#include <CryGame/GameUtils.h>
+#include <CryParticleSystem/IParticles.h>
 
 #define MAX_BIRDS_DISTANCE 300
 
@@ -284,7 +289,7 @@ void CBoidBird::UpdateOnGroundAction(float dt, SBoidContext& bc)
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0, "CBoidBird::UpdateOnGroundAction: omitted EOnGroundStatus");
+			CRY_ASSERT(0, "CBoidBird::UpdateOnGroundAction: omitted EOnGroundStatus");
 		}
 	}
 }	
@@ -335,10 +340,8 @@ void CBoidBird::CalcMovementBird(float dt,SBoidContext& bc,bool banking)
 			Interpolate(m_pos,m_landingPoint, 2.0f,dt);
 			return;
 		}
-		// Avoid obstacles & terrain.
-		IPhysicalWorld *physWorld = bc.physics;
 
-		Vec3 vDir0 = m_heading*bc.fBoidRadius*0.5f;
+		// Avoid obstacles & terrain.
 		Vec3 vPos = m_pos;
 		vPos.z += bc.fBoidRadius*0.5f;
 		Vec3 vDir(0,0,bc.fBoidRadius*1.5f);
@@ -741,16 +744,6 @@ void CBoidBird::ThinkWalk( float dt,SBoidContext &bc )
 
 		m_accel += (m_birdOriginPos - m_pos) * bc.factorAttractToOriginGround;
 	}
-
-
-	// Avoid collision with Terrain and Static objects.
-	float fCollisionAvoidanceWeight = 10.0f;
-
-	// Do walk sounds.
-// 	if ((cry_rand()&0xFF) == 0)
-// 		PlaySound(CHICKEN_SOUND_CLUCK);
-
-
 	
 	m_accel.z = 0;
 

@@ -248,8 +248,8 @@ void NSH::CMeshCoefficientStreams<DirectCoeffType>::CreateSingleStream
 			//will be deleted in destructor
 			float *pStream((float*)(sAllocator.new_mem_array(sizeof(float) * (uint32)rCoeffsToStreamConvert.size() * cCoeffsPerSet)));
 			int j=0;
-			const TCoeffList::const_iterator cEnd = rCoeffsToStreamConvert.end();
-			for(TCoeffList::const_iterator iter=rCoeffsToStreamConvert.begin(); iter != cEnd; ++iter)
+			const auto cEnd = rCoeffsToStreamConvert.end();
+			for(auto iter=rCoeffsToStreamConvert.begin(); iter != cEnd; ++iter)
 			{
 				const SCoeffList_tpl<CoeffType>& rCoeff = *iter;
 				for(uint8 v=0; v<cCoeffsPerSet; ++v)

@@ -88,6 +88,14 @@ Property
 
 Property
 {
+  Name = %BLENDTERRAIN
+  Mask = 0x40000
+  Property    (Terrainblend)
+  Description (Normal-mapped diffuse layer from terrain blended below the base material)
+}
+
+Property
+{
   Name = %VERTCOLORS
   Mask = 0x100000
   DependencySet = $UserEnabled

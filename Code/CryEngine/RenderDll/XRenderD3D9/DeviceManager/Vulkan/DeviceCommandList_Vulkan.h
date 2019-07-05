@@ -20,7 +20,7 @@ struct SSharedState
 // deferred binding of descriptor sets
 struct SPendingBindings
 {
-	enum { MaxPendingBindings  = EResourceLayoutSlot_Max + 1};
+	enum { MaxPendingBindings = EResourceLayoutSlot_Num };
 
 	uint32          validMask;
 	uint32          dynamicOffsetMask;
@@ -110,12 +110,14 @@ class CDeviceGraphicsCommandInterfaceImpl : public CDeviceCommandListImpl
 	friend class CDeviceCommandListImpl;
 
 protected:
-	void PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews, bool bCompute) const;
+	void PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews, bool bCompute) const;
 	void PrepareRenderPassForUseImpl(CDeviceRenderPass& renderPass) const;
 	void PrepareResourcesForUseImpl(uint32 bindSlot, CDeviceResourceSet* pResources) const;
 	void PrepareResourceForUseImpl(uint32 bindSlot, CTexture* pTexture, const ResourceViewHandle TextureView, ::EShaderStage srvUsage) const;
 	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
 	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages) const;
+	void PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass) const;
+	void PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EShaderStage shaderStages) const;
 	void PrepareVertexBuffersForUseImpl(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams) const;
 	void PrepareIndexBufferForUseImpl(const CDeviceInputStream* indexStream) const;
 	void BeginResourceTransitionsImpl(uint32 numTextures, CTexture** pTextures, EResourceTransitionType type) { /*NOP*/ }
@@ -129,6 +131,8 @@ protected:
 	void SetResourcesImpl(uint32 bindSlot, const CDeviceResourceSet* pResources);
 	void SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EHWShaderClass shaderClass);
 	void SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot, EShaderStage shaderStages);
+	void SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EHWShaderClass shaderClass, ResourceViewHandle resourceViewID);
+	void SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, EShaderStage shaderStages, ResourceViewHandle resourceViewID);
 	void SetVertexBuffersImpl(uint32 numStreams, uint32 lastStreamSlot, const CDeviceInputStream* vertexStreams);
 	void SetIndexBufferImpl(const CDeviceInputStream* indexStream); // NOTE: Take care with PSO strip cut/restart value and 32/16 bit indices
 	void SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants) { VK_NOT_IMPLEMENTED; }
@@ -142,6 +146,9 @@ protected:
 	void ClearSurfaceImpl(D3DSurface* pView, const FLOAT Color[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearSurfaceImpl(D3DDepthSurface* pView, int clearFlags, float depth, uint8 stencil, uint32 numRects, const D3D11_RECT* pRects);
 
+	void DiscardContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects);
+	void DiscardContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
+
 	void BeginOcclusionQueryImpl(D3DOcclusionQuery* pQuery);
 	void EndOcclusionQueryImpl(D3DOcclusionQuery* pQuery);
 
@@ -152,32 +159,39 @@ protected:
 class CDeviceComputeCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
-	void PrepareUAVsForUseImpl(uint32 viewCount, CGpuBuffer** pViews) const;
+	void PrepareUAVsForUseImpl(uint32 viewCount, CDeviceBuffer** pViews) const;
 	void PrepareResourcesForUseImpl(uint32 bindSlot, CDeviceResourceSet* pResources) const;
-	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlots, EShaderStage shaderStages) const;
+	void PrepareInlineConstantBufferForUseImpl(uint32 bindSlot, CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot) const;
+	void PrepareInlineShaderResourceForUseImpl(uint32 bindSlot, CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot) const;
 
 	void SetPipelineStateImpl(const CDeviceComputePSO* pDevicePSO);
 	void SetResourceLayoutImpl(const CDeviceResourceLayout* pResourceLayout);
 	void SetResourcesImpl(uint32 bindSlot, const CDeviceResourceSet* pResources);
 	void SetInlineConstantBufferImpl(uint32 bindSlot, const CConstantBuffer* pBuffer, EConstantBufferShaderSlot shaderSlot);
+	void SetInlineShaderResourceImpl(uint32 bindSlot, const CDeviceBuffer* pBuffer, EShaderResourceShaderSlot shaderSlot, ResourceViewHandle resourceViewID);
 	void SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants) { VK_NOT_IMPLEMENTED; }
 
 	void DispatchImpl(uint32 X, uint32 Y, uint32 Z);
 
 	void ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects);
 	void ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects);
+
+	void DiscardUAVContentsImpl(D3DResource* pResource, uint32 numRects, const D3D11_RECT* pRects);
+	void DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
 };
 
 class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 public:
-	void                         CopyBuffer(NCryVulkan::CBufferResource* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceRegionMapping& mapping);                      // GPU-side copy
-	void                         CopyImage(NCryVulkan::CImageResource* pSrc, NCryVulkan::CImageResource* pDst, const SResourceRegionMapping& mapping);                         // GPU-side copy
-	static bool                  FillBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryMapping& mapping);                                       // CPU-fill
-	NCryVulkan::CBufferResource* UploadBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryMapping& mapping, bool bAllowGpu);                     // CPU-fill (+ GPU-side copy if needed)
-	void                         UploadImage(const void* pSrc, NCryVulkan::CImageResource* pDst, const SResourceMemoryMapping& mapping, bool bExt = false);                    // CPU-fill (+ GPU-side copy if needed)
-	void                         UploadImage(NCryVulkan::CBufferResource* pSrc, NCryVulkan::CImageResource* pDst, const SResourceMemoryMapping& mapping, bool bExt = false);   // GPU-side copy only
-	void                         DownloadImage(NCryVulkan::CImageResource* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryMapping& mapping, bool bExt = false); // GPU-side copy only
+	void                                CopyBuffer(NCryVulkan::CBufferResource* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceRegionMapping& mapping);                      // GPU-side copy
+	void                                CopyImage(NCryVulkan::CImageResource* pSrc, NCryVulkan::CImageResource* pDst, const SResourceRegionMapping& mapping);                         // GPU-side copy
+	static bool                         FillBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryMapping& mapping);                                       // CPU-fill
+	static NCryVulkan::CBufferResource* PrepareStagingBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, SResourceMemoryMapping mapping);                                    // staging buffer allocation + CPU fill
+	void                                UploadBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryMapping& mapping);                                     // CPU-fill (+ GPU-side copy if needed)
+	void                                UploadImage(const void* pSrc, NCryVulkan::CImageResource* pDst, const SResourceMemoryMapping& mapping, bool bExt = false);                    // CPU-fill (+ GPU-side copy if needed)
+	void                                UploadImage(NCryVulkan::CBufferResource* pSrc, NCryVulkan::CImageResource* pDst, const SResourceMemoryMapping& mapping, bool bExt = false);   // GPU-side copy only
+	void                                DownloadImage(NCryVulkan::CImageResource* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryMapping& mapping, bool bExt = false); // GPU-side copy only
+
 
 private: // All function below are implemented inline and forward to one of the functions above
 
@@ -208,14 +222,14 @@ private: // All function below are implemented inline and forward to one of the 
 		CopyImage(pSrc, pDst, mapping);
 	}
 
-	NCryVulkan::CBufferResource* UploadBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryAlignment& alignment, bool bAllowGpu)
+	void UploadBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceMemoryAlignment& alignment)
 	{
 		SResourceMemoryMapping mapping;
 		mapping.MemoryLayout = alignment;
 		mapping.ResourceOffset.Left = 0;
 		mapping.ResourceOffset.Subresource = 0;
 		mapping.Extent.Width = pDst->GetElementCount();
-		return UploadBuffer(pSrc, pDst, mapping, bAllowGpu);
+		UploadBuffer(pSrc, pDst, mapping);
 	}
 
 	void UploadImage(const void* pSrc, NCryVulkan::CImageResource* pDst, const SResourceMemoryAlignment& alignment)
@@ -258,6 +272,11 @@ private: // All function below are implemented inline and forward to one of the 
 	}
 
 protected:
+	void CopyImpl(D3DResource* pSrc, D3DResource* pDst)
+	{
+		VK_NOT_IMPLEMENTED;
+	}
+
 	void CopyImpl(CDeviceBuffer* pSrc, CDeviceBuffer* pDst)
 	{
 		CopyBuffer(UnwrapDeviceBuffer(pSrc), UnwrapDeviceBuffer(pDst));
@@ -310,17 +329,17 @@ protected:
 
 	void CopyImpl(const void* pSrc, CConstantBuffer* pDst, const SResourceMemoryAlignment& memoryLayout)
 	{
-		VK_ASSERT(memoryLayout.typeStride == 1);
+		VK_ASSERT(memoryLayout.typeStride == 1, "");
 		SResourceMemoryMapping mapping;
 		mapping.MemoryLayout = memoryLayout;
 		mapping.ResourceOffset.Left = 0;
 		mapping.Extent.Width = memoryLayout.rowStride;
-		UploadBuffer(pSrc, UnwrapConstantBuffer(pDst), mapping, true);
+		UploadBuffer(pSrc, UnwrapConstantBuffer(pDst), mapping);
 	}
 
 	void CopyImpl(const void* pSrc, CDeviceBuffer* pDst, const SResourceMemoryAlignment& memoryLayout)
 	{
-		UploadBuffer(pSrc, UnwrapDeviceBuffer(pDst), memoryLayout, true);
+		UploadBuffer(pSrc, UnwrapDeviceBuffer(pDst), memoryLayout);
 	}
 
 	void CopyImpl(const void* pSrc, CDeviceTexture* pDst, const SResourceMemoryAlignment& memoryLayout)
@@ -330,12 +349,12 @@ protected:
 
 	void CopyImpl(const void* pSrc, CConstantBuffer* pDst, const SResourceMemoryMapping& memoryMapping)
 	{
-		UploadBuffer(pSrc, UnwrapConstantBuffer(pDst), memoryMapping, true);
+		UploadBuffer(pSrc, UnwrapConstantBuffer(pDst), memoryMapping);
 	}
 
 	void CopyImpl(const void* pSrc, CDeviceBuffer* pDst, const SResourceMemoryMapping& memoryMapping)
 	{
-		UploadBuffer(pSrc, UnwrapDeviceBuffer(pDst), memoryMapping, true);
+		UploadBuffer(pSrc, UnwrapDeviceBuffer(pDst), memoryMapping);
 	}
 
 	void CopyImpl(const void* pSrc, CDeviceTexture* pDst, const SResourceMemoryMapping& memoryMapping)

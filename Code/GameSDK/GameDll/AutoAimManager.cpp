@@ -11,11 +11,14 @@ $DateTime$
 #include "StdAfx.h"
 #include <CryAnimation/ICryAnimation.h>
 #include "Game.h"
+#include "GameCVars.h"
 #include "AutoAimManager.h"
 #include "GameRules.h"
 #include <CryAISystem/IAIObject.h>
 #include "Actor.h"
 #include <CryAISystem/IFactionMap.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 CAutoAimManager::CAutoAimManager()
 : m_closeCombatSnapTargetId(0)

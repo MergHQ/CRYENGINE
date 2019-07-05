@@ -72,4 +72,3 @@ CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryAISystem)
 #endif
 
 #include <CryCore/TypeInfo_impl.h>
-#include "AutoTypeStructs_info.h"

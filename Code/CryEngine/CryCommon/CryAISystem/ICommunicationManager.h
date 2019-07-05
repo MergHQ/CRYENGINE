@@ -174,9 +174,9 @@ struct SCommunicationRequest
 		, ordering(Unordered)
 		, contextExpiry(0.0f)
 		, minSilence(-1.0f)
-		, eventListener(0)
 		, skipCommSound(false)
 		, skipCommAnimation(false)
+		, eventListener(0)
 	{
 	}
 

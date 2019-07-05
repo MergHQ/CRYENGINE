@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 
 #include "SampleRigidbodyActorComponent.h"
+#include <CryPhysics/IPhysics.h>
 
 namespace Cry
 {
@@ -30,49 +31,18 @@ void CSampleActorComponent::Register(Schematyc::CEnvRegistrationScope& component
 	}
 }
 
-void CSampleActorComponent::ReflectType(Schematyc::CTypeDesc<CSampleActorComponent>& desc)
-{
-	desc.SetGUID(CSampleActorComponent::IID());
-	desc.SetEditorCategory("Physics");
-	desc.SetLabel("Sample Rigidbody Actor");
-	desc.SetDescription("Very basic sample support for the new actor (walking rigid) entity in physics");
-	//desc.SetIcon("icons:ObjectTypes/object.ico");
-	desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
-
-	desc.AddMember(&CSampleActorComponent::m_friction, 'fric', "Friction", "Friction", "Ground friction when standing still", 1.0f);
-	desc.AddMember(&CSampleActorComponent::m_minMass, 'gmas', "MinGroundMass", "MinGroundMass", "Only check ground colliders with this or higher masses", 1.0f);
-	desc.AddMember(&CSampleActorComponent::m_legStiffness, 'stif', "LegStiffness", "LegStiffness", "Leg stiffness", 10.0f);
-}
-
-int CSampleActorComponent::g_numActors = 0;
-
-int OnPostStepWalking(const EventPhysPostStep *epps)
-{
-	if (epps->iForeignData == PHYS_FOREIGN_ID_ENTITY && epps->pEntity->GetType() == PE_WALKINGRIGID)
-		if (CSampleActorComponent *actor = ((IEntity*)epps->pForeignData)->GetComponent<CSampleActorComponent>())
-			return actor->OnPostStep(epps);
-	return 1;
-}
-
-CSampleActorComponent::CSampleActorComponent()
-{
-	if (!g_numActors++)
-		gEnv->pPhysicalWorld->AddEventClient(EventPhysPostStep::id, (int(*)(const EventPhys*))OnPostStepWalking, 0);
-}
-
 CSampleActorComponent::~CSampleActorComponent()
 {
 	SEntityPhysicalizeParams pp;
 	pp.type = PE_NONE;
 	m_pEntity->Physicalize(pp);
-	if (!--g_numActors)
-		gEnv->pPhysicalWorld->RemoveEventClient(EventPhysPostStep::id, (int(*)(const EventPhys*))OnPostStepWalking, 0);
 }
 
-int CSampleActorComponent::OnPostStep(const EventPhysPostStep *epps)
+int CSampleActorComponent::OnPostStep(float deltaTime)
 {
 	// immediate post step; is called directly from the physics thread
-	if (epps->dt <= 0)
+	IPhysicalEntity *pEntity = m_pEntity->GetPhysicalEntity();
+	if (deltaTime <= 0 || !pEntity)
 		return 1;
 	pe_params_walking_rigid pwr;
 	pe_action_set_velocity asv;
@@ -81,16 +51,18 @@ int CSampleActorComponent::OnPostStep(const EventPhysPostStep *epps)
 	pe_status_dynamics sd;
 	pe_status_sensors ss;
 	Vec3 pt; ss.pPoints = &pt;
-	epps->pEntity->GetStatus(&sl);
-	epps->pEntity->GetStatus(&sd);
-	epps->pEntity->GetStatus(&ss);
+	// ground contact rays are extended by stickVel*dt, so if horizontal velocity is v, stickVel of v*tan(angle) will make the entity stick to slopes up to 'angle'
+	float stickVel = Vec2(m_velMove).GetLength(); // * tan(gf_PI*0.25f), which is 1; will stick to slopes up to pi/4
+	pEntity->GetStatus(&sl);
+	pEntity->GetStatus(&sd);
+	pEntity->GetStatus(&ss);
 	if (sl.pGroundCollider)	
 	{
 		Vec3 velReq = m_velMove - sl.groundSlope*(sl.groundSlope*m_velMove); // project velMove to the ground
 		velReq += sl.velGround;	// if we stand on something, inherit its velocity
-		Vec3 dv = (velReq-sl.vel)*(epps->dt*10.0f);	// default inertial movement: exponentially approach velReq with strength 10
+		Vec3 dv = (velReq-sl.vel)*(deltaTime*10.0f);	// default inertial movement: exponentially approach velReq with strength 10
 		m_timeFly = 0;
-		pwr.velLegStick = 0.5f;
+		pwr.velLegStick = stickVel;
 		if (m_velJump.len2())
 		{
 			// if jump is requested, immediately set velocity to velJump + velMove
@@ -118,14 +90,15 @@ int CSampleActorComponent::OnPostStep(const EventPhysPostStep *epps)
 			pwr.legFriction = m_friction;
 			sp.minEnergy = sqr(0.07f);
 		}
+		asv.v -= sl.groundSlope*(sl.groundSlope*asv.v); // project final velocity on the ground to account for sudden slope changes
 	}	
 	else
-		m_timeFly -= epps->dt;
+		m_timeFly -= deltaTime;
 	if (m_timeFly <= 0)
-		pwr.velLegStick = 0.5f;
-	epps->pEntity->SetParams(&sp,1);
-	epps->pEntity->SetParams(&pwr,1);
-	epps->pEntity->Action(&asv,1);
+		pwr.velLegStick = stickVel;
+	pEntity->SetParams(&sp,1);
+	pEntity->SetParams(&pwr,1);
+	pEntity->Action(&asv,1);
 	return 1;
 }
 

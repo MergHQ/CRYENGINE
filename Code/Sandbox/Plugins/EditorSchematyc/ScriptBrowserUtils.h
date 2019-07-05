@@ -87,4 +87,3 @@ bool                      RenameScriptElement(IScriptElement& element, const cha
 bool                      RemoveScriptElement(const IScriptElement& element);
 } // ScriptBrowserUtils
 } // Schematyc
-

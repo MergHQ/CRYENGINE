@@ -1,4 +1,6 @@
 start_sources()
+
+# -- flac.waf_files --
 sources_platform(ALL)
 add_sources("NoUberFile"
 	PROJECTS flac_static
@@ -35,7 +37,8 @@ add_sources("NoUberFile"
 		"../../SDKs/flac/src/libFLAC/window.c"
 )
 
-sources_platform(WIN32 WIN64)
+# -- win_flac.waf_files --
+sources_platform(WINDOWS)
 add_sources("NoUberFile"
 	PROJECTS flac_static
 	SOURCE_GROUP "Root"
@@ -59,7 +62,7 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE
 )
 target_link_libraries(${THIS_PROJECT} PRIVATE libogg_static)
 
-if(WIN32 OR WIN64)
+if(WINDOWS)
 	target_compile_definitions(${THIS_PROJECT} PUBLIC -DFLAC__NO_DLL)
 	target_compile_options(${THIS_PROJECT} PRIVATE /W0)
 elseif(LINUX OR ANDROID)

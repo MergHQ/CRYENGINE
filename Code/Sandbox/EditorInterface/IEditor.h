@@ -7,86 +7,89 @@
 #pragma warning(disable: 4266)
 
 #include <CryCore/functor.h>
+#include <CryString/CryString.h>
+#include <CryMath/Cry_Math.h>
+#include <functional>
 
-class CEditTool;
-class CPersonalizationManager;
-class CTrayArea;
-class ICommandManager;
-class INotificationCenter;
-class IPythonManager;
-class CBroadcastManager;
-class CUIEnumsDatabase;
+class CAssetManager;
 class CBaseObject;
-class CDisplaySettings;
+class CBroadcastManager;
+class CConfigurationManager;
+class CCryEditDoc;
+class CFlowGraphManager;
+class CHeightmap;
+class CGameEngine;
+class CLevelEditorSharedState;
+class CMaterialManager;
+class CPersonalizationManager;
 class CPopupMenuItem;
+class CPrefabManager;
+class CPreferences;
+class CRuler;
+class CToolBarService;
+class CTrayArea;
+class CUIEnumsDatabase;
+class CViewManager;
+class CViewport;
 class CWaitProgress;
 class CWnd;
-class CPreferences;
-class CViewport;
-class CMaterialManager;
-class CGameEngine;
-class CCryEditDoc;
-class CPrefabManager;
-class CViewManager;
-class CConfigurationManager;
-struct IAIManager;
-struct IUndoManager;
+class QString;
+class QWidget;
+
+struct AABB;
 struct I3DEngine;
+struct IAIManager;
+struct IBackgroundTaskManager;
+struct ICommandManager;
+struct IDataBaseItem;
+struct IDataBaseManager;
+struct IDisplayViewport;
+struct IEditorClassFactory;
+struct IEditorMaterial;
+struct IEditorNotifyListener;
 struct IExportManager;
-struct ITransformManipulator;
+struct IFileChangeMonitor;
+struct IGizmoManager;
+struct IIconManager;
+struct ILevelEditor;
+struct IMaterial;
+struct IMovieSystem;
+struct INotificationCenter;
+struct IObjectManager;
+struct IPane;
+struct IPythonManager;
+struct IRenderer;
+struct IRenderNode;
+struct IResourceSelectorHost;
+struct ISelectionGroup;
 struct ISourceControl;
 struct ISystem;
-struct IGame;
-struct IResourceSelectorHost;
-struct IEditorClassFactory;
-struct IBackgroundTaskManager;
-struct IFileChangeMonitor;
-struct IEditorNotifyListener;
-struct SEditorSettings;
-struct IUndoObject;
-struct IDataBaseManager;
-struct IObjectManager;
-struct IIconManager;
-struct ISelectionGroup;
-struct IGizmoManager;
-struct IMaterial;
-struct IEditorMaterial;
-struct IRenderer;
-struct AABB;
-struct SObjectChangedContext;
-struct IMovieSystem;
-struct IRenderNode;
-struct SRayHitInfo;
+struct IUndoManager;
 struct IUriEventListener;
-struct IDisplayViewport;
-struct IProjectManager;
-class IPane;
-class CAssetManager;
-class QWidget;
-class QString;
-class CFlowGraphManager;
-struct IDataBaseItem;
 struct IViewportManager;
-class CRuler;
-struct ILevelEditor;
+struct SObjectChangedContext;
+struct SRayHitInfo;
 
 enum ESystemConfigSpec;
-enum AxisConstrains;
-enum EModifiedModule;
 
 namespace FileSystem
 {
 class CEnumerator;
 }
 
+namespace Cry
+{
+struct IProjectManager;
+}
+
 enum EReloadScriptsType
 {
-	eReloadScriptsType_None = 0,
+	eReloadScriptsType_None   = 0,
 	eReloadScriptsType_Entity = BIT(0),
-	eReloadScriptsType_Actor = BIT(1),
-	eReloadScriptsType_Item = BIT(2),
-	eReloadScriptsType_AI = BIT(3),
-	eReloadScriptsType_UI = BIT(4),
+	eReloadScriptsType_Actor  = BIT(1),
+	eReloadScriptsType_Item   = BIT(2),
+	eReloadScriptsType_AI     = BIT(3),
+	eReloadScriptsType_UI     = BIT(4),
 };
 
 // Global editor notify events.
@@ -116,11 +119,6 @@ enum EEditorNotifyEvent
 	eNotify_OnExportToGame,            // Sent when the level is exported to game
 	eNotify_OnExportToGameFailed,      // Sent when the exporting level to game failed
 
-	// Editing events.
-	eNotify_OnEditModeChange,          // Sent when editing mode change (move, rotate, scale, ....)
-	eNotify_OnEditToolBeginChange,     // Sent when edit tool is about to be changed (ObjectMode,TerrainModify,....)
-	eNotify_OnEditToolEndChange,       // Sent when edit tool has been changed (ObjectMode,TerrainModify,....)
-
 	// Game related events.
 	eNotify_OnBeginGameMode,           // Sent when editor goes to game mode.
 	eNotify_OnEndGameMode,             // Sent when editor goes out of game mode.
@@ -133,14 +131,13 @@ enum EEditorNotifyEvent
 
 	// UI events.
 	eNotify_OnUpdateViewports,         // Sent when editor needs to update data in the viewports.
-	eNotify_OnMainFrameCreated,
+	eNotify_OnMainFrameInitialized,    // Sent when editor main frame is initialized.
 
 	eNotify_OnUpdateSequencer,             // Sent when editor needs to update the CryMannequin sequencer view.
 	eNotify_OnUpdateSequencerKeys,         // Sent when editor needs to update keys in the CryMannequin track view.
 	eNotify_OnUpdateSequencerKeySelection, // Sent when CryMannequin sequencer view changes selection of keys.
 
 	eNotify_OnInvalidateControls,      // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
-	eNotify_OnStyleChanged,            // Sent when UI color theme was changed
 
 	// Object events.
 	eNotify_OnSelectionChange,   // Sent when object selection change.
@@ -154,14 +151,11 @@ enum EEditorNotifyEvent
 	eNotify_OnVegetationObjectSelection, // When vegetation objects selection change.
 	eNotify_OnVegetationPanelUpdate,     // When vegetation objects selection change.
 
-	eNotify_OnDisplayRenderUpdate,     // Sent when editor finish terrain texture generation.
+	eNotify_OnObjectHideMaskChange,     // Sent when editor changes types of objects to display
 
 	eNotify_OnTimeOfDayChange,         // Time of day parameters where modified.
 
 	eNotify_OnDataBaseUpdate,          // DataBase Library was modified.
-
-	eNotify_OnLayerImportBegin,   //layer import was started
-	eNotify_OnLayerImportEnd,     //layer import completed
 
 	eNotify_OnBeginSWNewScene,          // Sent when SW document is begin to be cleared.
 	eNotify_OnEndSWNewScene,            // Sent after SW document have been cleared.
@@ -179,9 +173,6 @@ enum EEditorNotifyEvent
 
 	eNotify_OnTextureLayerChange,      // Sent when texture layer was added, removed or moved
 	eNotify_OnBeginBindViewport,       // Sent when a viewport is about to be bound.
-
-	eNotify_OnReferenceCoordSysChanged, // Send when the reference coordinate system has changed
-	eNotify_OnAxisConstraintChanged,    // Send when axis constraint has changed
 
 	eNotify_OnBeginLayoutResize, //  Sent when we begin changing the layout
 	eNotify_OnEndLayoutResize,   //  Sent when we begin changing the layout
@@ -224,48 +215,6 @@ enum EOperationMode
 	eModellingMode          // Geometry modeling mode
 };
 
-enum EEditMode
-{
-	eEditModeSelect,
-	eEditModeSelectArea,
-	eEditModeMove,
-	eEditModeRotate,
-	eEditModeScale,
-	eEditModeTool,
-};
-
-enum ESnapMode
-{
-	eSnapMode_None          = 0x0,
-	eSnapMode_Terrain       = 0x01,
-	eSnapMode_Geometry      = 0x02,
-	eSnapMode_SurfaceNormal = 0x04
-};
-
-//! Reference coordinate system values
-enum RefCoordSys
-{
-	COORDS_VIEW = 0,
-	COORDS_LOCAL,
-	COORDS_PARENT,
-	COORDS_WORLD,
-	COORDS_USERDEFINED,
-	LAST_COORD_SYSTEM, // Must always be the last member
-};
-
-//! Axis constrains value.
-enum AxisConstrains
-{
-	AXIS_X = 1,
-	AXIS_Y,
-	AXIS_Z,
-	AXIS_XY,
-	AXIS_YZ,
-	AXIS_XZ,
-	AXIS_XYZ,
-	AXIS_VIEW
-};
-
 //////////////////////////////////////////////////////////////////////////
 //DEPRECATED
 //! Types of database items
@@ -275,7 +224,7 @@ enum EDataBaseItemType
 	EDB_TYPE_MATERIAL,
 	EDB_TYPE_PARTICLE,
 	EDB_TYPE_ENTITY_ARCHETYPE,
-	EDB_TYPE_PREFAB,
+	EDB_TYPE_PREFAB, // Deprecated since CE 5.6
 	EDB_TYPE_GAMETOKEN,
 	EDB_TYPE_FLARE
 };
@@ -294,6 +243,8 @@ void CryFatalError(const char*, ...);
 
 struct IEditor
 {
+	virtual ~IEditor() {}
+
 	virtual ISystem*             GetSystem() = 0;
 
 	virtual IMovieSystem*        GetMovieSystem() = 0;
@@ -329,20 +280,28 @@ struct IEditor
 	//! Access to tray area
 	virtual CTrayArea* GetTrayArea() = 0;
 
+	//! Access to toolbar service for loading and storing editor specific toolbars
+	virtual CToolBarService* GetToolBarService() = 0;
+
 	//! Retrieve interface to the source control.
 	virtual ISourceControl* GetSourceControl() = 0;
 
 	//! Get project manager interface
-	virtual IProjectManager* GetProjectManager() = 0;
+	virtual Cry::IProjectManager* GetProjectManager() = 0;
 
 	//! Gets the level editor primary interface
-	virtual ILevelEditor* GetLevelEditor() = 0;
+	virtual ILevelEditor*            GetLevelEditor() = 0;
+	virtual CLevelEditorSharedState* GetLevelEditorSharedState() = 0;
 
-	virtual void          Notify(EEditorNotifyEvent event) = 0;
+	virtual void                     Notify(EEditorNotifyEvent event) = 0;
 	//! Register Editor notifications listener.
-	virtual void          RegisterNotifyListener(IEditorNotifyListener* listener) = 0;
+	virtual void                     RegisterNotifyListener(IEditorNotifyListener* listener) = 0;
 	//! Unregister Editor notifications listener.
-	virtual void          UnregisterNotifyListener(IEditorNotifyListener* listener) = 0;
+	virtual void                     UnregisterNotifyListener(IEditorNotifyListener* listener) = 0;
+
+	// Register Object Mode sub tools. Needed for tools defined within Sandbox project
+	virtual void RegisterAllObjectModeSubTools() = 0;
+	virtual void UnRegisterAllObjectModeSubTools() = 0;
 
 	//! This folder is supposed to store Sandbox user settings and state
 	virtual const char* GetUserFolder() = 0;
@@ -364,8 +323,11 @@ struct IEditor
 	virtual bool          IsDevModeEnabled() const = 0; //should go to preferences?
 
 	//Dockable pane management
-	virtual IPane* CreateDockable(const char* className) = 0;
-	virtual void   RaiseDockable(IPane* pPane) = 0;
+	virtual IPane*              CreateDockable(const char* szClassName) = 0;
+	virtual IPane*              FindDockable(const char* szClassName) = 0;
+	virtual IPane*              FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate) = 0;
+	virtual std::vector<IPane*> FindAllDockables(const char* szClassName) = 0;
+	virtual void                RaiseDockable(IPane* pPane) = 0;
 
 	//!Creates a preview widget for any file type, returns null if cannot be previewed
 	virtual QWidget* CreatePreviewWidget(const QString& file, QWidget* pParent = nullptr) = 0;
@@ -402,57 +364,37 @@ struct IEditor
 
 	//TODO: This is part of level editor
 	virtual IGizmoManager* GetGizmoManager() = 0;
-	virtual RefCoordSys    GetReferenceCoordSys() = 0;
-	virtual void           SetReferenceCoordSys(RefCoordSys refCoords) = 0;
-	//! Returns current edit tool.
-	virtual CEditTool*     GetEditTool() = 0;
 
 	virtual CRuler*        GetRuler() = 0;
-	//! Assign current edit tool, destroy previously used edit too.
-	virtual void           SetEditTool(CEditTool* tool, bool bStopCurrentTool = true) = 0;
-	virtual void           SetEditTool(const string& sEditToolName, bool bStopCurrentTool = true) = 0;
 
 	// Return true if editor in a state where document is ready to be modified.
 	virtual bool         IsDocumentReady() const = 0;
 	virtual CCryEditDoc* GetDocument() const = 0;
 	virtual void         SetModifiedFlag(bool modified = true) = 0;
 
-	//! Select object
-	//TODO: this should be part of object manager
-	virtual void             SelectObject(CBaseObject* obj) = 0;
 	//! Get access to object manager.
-	virtual IObjectManager*  GetObjectManager() = 0;
+	virtual IObjectManager* GetObjectManager() = 0;
 
-	//! Creates a new object. 
-	//! bInteractive: when true, will force visibility of the object type, will show and unfreeze the layer if necessary and select the object, 
+	//! Creates a new object.
+	//! bInteractive: when true, will force visibility of the object type, will show and unfreeze the layer if necessary and select the object,
 	//! intended for immediate interaction of the object
-	virtual CBaseObject*     NewObject(const char* type, const char* file = nullptr, bool bInteractive = false) = 0;
+	virtual CBaseObject*           NewObject(const char* type, const char* file = nullptr, bool bInteractive = false) = 0;
 
-	virtual void             DeleteObject(CBaseObject* obj) = 0;
+	virtual void                   DeleteObject(CBaseObject* obj) = 0;
 	virtual const ISelectionGroup* GetISelectionGroup() const = 0;
-	virtual int              ClearSelection() = 0;
-	virtual CBaseObject*     GetSelectedObject() = 0;
-	virtual int              GetEditMode() = 0;
-	virtual void             SetEditMode(int editMode) = 0;
-	virtual CPrefabManager*  GetPrefabManager() = 0;
-	virtual const char*      GetLevelName() = 0;
-	virtual const char*      GetLevelPath() = 0;
-	virtual bool             IsSnapToTerrainEnabled() const = 0;
-	virtual bool             IsSnapToGeometryEnabled() const = 0;
-	virtual bool             IsHelpersDisplayed() const = 0;
-	virtual void             EnableHelpersDisplay(bool bEnable) = 0;
-	virtual bool             IsPivotSnappingEnabled() const = 0;
-	virtual void             EnablePivotSnapping(bool bEnable) = 0;
-	virtual AxisConstrains   GetAxisConstrains() = 0;
-	virtual void             SetAxisConstrains(AxisConstrains axis) = 0;
-	virtual void             StartObjectCreation(const char* type, const char* file = nullptr) = 0;
-	virtual void             SetSelectedRegion(const AABB& box) = 0;
-	virtual void             GetSelectedRegion(AABB& box) = 0;
+	virtual bool                   IsSelectionLocked() = 0;
+	virtual CBaseObject*           GetSelectedObject() = 0;
+	virtual CPrefabManager*        GetPrefabManager() = 0;
+	virtual const char*            GetLevelName() = 0;
+	virtual const char*            GetLevelPath() = 0;
+	virtual bool                   StartObjectCreation(const char* type, const char* file = nullptr) = 0;
+	virtual CHeightmap*            GetHeightmap() = 0;
 	// end level editor methods
 
 	virtual ESystemConfigSpec GetEditorConfigSpec() const = 0;
 
-	virtual void              SetConsoleVar(const char* var, float value) = 0;
+	virtual void              SetConsoleVar(const char* var, const int value) = 0;
+	virtual void              SetConsoleVar(const char* var, const float value) = 0;
 	virtual float             GetConsoleVar(const char* var) = 0;
 
 	//! Adds a handler for native OS specific events. Useful for plugins that need access to specific OS messages.
@@ -493,7 +435,7 @@ struct IEditor
 	virtual CViewport*        GetActiveView() = 0;
 	virtual IDisplayViewport* GetActiveDisplayViewport() = 0;
 
-	virtual void              UpdateViews(int flags = 0xFFFFFFFF, AABB* updateRegion = NULL) = 0;
+	virtual void              UpdateViews(int flags = 0xFFFFFFFF, AABB* updateRegion = nullptr) = 0;
 	virtual bool              IsUpdateSuspended() const = 0;
 	virtual bool              IsGameInputSuspended() = 0;
 	virtual void              ToggleGameInputSuspended() = 0;
@@ -506,19 +448,12 @@ struct IEditor
 	virtual void             AddWaitProgress(CWaitProgress* pProgress) = 0;
 	virtual void             RemoveWaitProgress(CWaitProgress* pProgress) = 0;
 	virtual void             OnObjectContextMenuOpened(CPopupMenuItem* pMenu, const CBaseObject* pObject) = 0;
-	virtual void             OnGroupMake() = 0;
-	virtual void             OnGroupAttach() = 0;
-	virtual void             OnGroupDetach() = 0;
-	virtual void             OnGroupDetachToRoot() = 0;
-	virtual void             OnLinkTo() = 0;
-	virtual void             OnUnLink() = 0;
-	virtual void             OnPrefabMake() = 0;
 	virtual IEditorMaterial* LoadMaterial(const string& name) = 0;
 	virtual void             OnRequestMaterial(IMaterial* pMatInfo) = 0;
 	virtual bool             IsCGroup(CBaseObject* pObject) = 0;
 	virtual void             ResumeUpdateCGroup(CBaseObject* pObject) = 0;
 	virtual bool             SuspendUpdateCGroup(CBaseObject* pObject) = 0;
-	virtual void             SyncPrefabCPrefabObject(CBaseObject* oObject, const SObjectChangedContext& context) = 0;
+	virtual void             SyncPrefabCPrefabObject(CBaseObject* pObject, const SObjectChangedContext& context) = 0;
 	virtual bool             IsModifyInProgressCPrefabObject(CBaseObject* oObject) = 0;
 	virtual bool             IsCPrefabObject(CBaseObject* pObject) = 0;
 	virtual bool             IsGroupOpen(CBaseObject* pObject) = 0;
@@ -552,18 +487,17 @@ struct IEditorNotifyListener
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) = 0;
 };
 
-//! Better implementation of IEditorNotifyListener with automatic registration and deregistration in constructor/desctructor
+//! Better implementation of IEditorNotifyListener with automatic registration and deregistration in constructor/destructor
 struct IAutoEditorNotifyListener : public IEditorNotifyListener
 {
 	IAutoEditorNotifyListener()
 		: IEditorNotifyListener()
 	{
-		((IEditor*)GetIEditor())->RegisterNotifyListener(this);
+		GetIEditor()->RegisterNotifyListener(this);
 	}
 
 	~IAutoEditorNotifyListener()
 	{
-		((IEditor*)GetIEditor())->UnregisterNotifyListener(this);
+		GetIEditor()->UnregisterNotifyListener(this);
 	}
 };
-

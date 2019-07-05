@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
@@ -13,7 +14,7 @@ namespace UQS
 
 		CXMLDatasource::CXMLDatasource()
 		{
-			assert(!s_pInstance);
+			CRY_ASSERT(!s_pInstance);
 			s_pInstance = this;
 		}
 
@@ -47,7 +48,7 @@ namespace UQS
 
 		void CXMLDatasource::EnumerateAndLoadAllQueryBlueprints()
 		{
-			assert(m_pLibraryLoader);
+			CRY_ASSERT(m_pLibraryLoader);
 
 			m_pLibraryLoader->EnumerateAll();
 			m_pLibraryLoader->LoadAllEnumerated();

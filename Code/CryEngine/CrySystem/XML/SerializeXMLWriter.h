@@ -10,6 +10,7 @@
 #include <CrySystem/XML/IXml.h>
 #include <CrySystem/IValidator.h>
 #include <CryNetwork/SimpleSerialize.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 class CSerializeXMLWriterImpl : public CSimpleSerializeImpl<false, eST_SaveGame>
 {

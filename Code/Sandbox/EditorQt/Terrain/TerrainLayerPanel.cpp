@@ -2,20 +2,20 @@
 
 #include "StdAfx.h"
 
-#include <QGridLayout>
-#include <QSplitter>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-
+#include "QT/Widgets/QEditToolButton.h"
 #include "Terrain/Layer.h"
 #include "Terrain/TerrainLayerPanel.h"
+#include "Terrain/TerrainLayerUndoObject.h"
 #include "Terrain/TerrainLayerView.h"
-#include "Terrain/TerrainEditor.h"
 #include "Terrain/TerrainManager.h"
-#include "TerrainTexture.h"
 #include "TerrainTexturePainter.h"
-#include "QT/Widgets/QEditToolButton.h"
-#include "QMfcApp/qmfchost.h"
-#include "CryIcon.h"
+
+#include <CryIcon.h>
+
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
+
+#include <QSplitter>
+#include <QBoxLayout>
 
 void STexturePainterSerializer::YASLI_SERIALIZE_METHOD(Serialization::IArchive& ar)
 {
@@ -69,28 +69,29 @@ QTerrainLayerPanel::QTerrainLayerPanel(QWidget* parent)
 	pSplitter->setOrientation(Qt::Vertical);
 	localLayout->addWidget(pSplitter);
 
-	QTerrainLayerView* pLayerView = new QTerrainLayerView(GetIEditorImpl()->GetTerrainManager());
+	QTerrainLayerView* pLayerView = new QTerrainLayerView(this, GetIEditorImpl()->GetTerrainManager());
 	pSplitter->addWidget(pLayerView);
 
-	if (GetIEditorImpl()->GetTerrainManager())
-		GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.Connect(this, &QTerrainLayerPanel::SetLayer);
+	GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.Connect(this, &QTerrainLayerPanel::SetLayer);
+	GetIEditorImpl()->GetTerrainManager()->signalLayerAboutToDelete.Connect(this, &QTerrainLayerPanel::OnLayerAboutToDelete);
 
 	QWidget* pPainterContainer = new QWidget(this);
-	QVBoxLayout* paiterLayout = new QVBoxLayout(pPainterContainer);
-	paiterLayout->setContentsMargins(0, 0, 0, 0);
-	pPainterContainer->setLayout(paiterLayout);
+	QVBoxLayout* pPainterLayout = new QVBoxLayout(pPainterContainer);
+	pPainterLayout->setContentsMargins(0, 0, 0, 0);
+	pPainterContainer->setLayout(pPainterLayout);
 	pSplitter->addWidget(pPainterContainer);
-	paiterLayout->addWidget(new QTerrainLayerButtons());
+	pPainterLayout->addWidget(new QTerrainLayerButtons());
 
-	m_pPropertyTree = new QPropertyTree();
-	paiterLayout->addWidget(m_pPropertyTree);
-	QObject::connect(m_pPropertyTree, &QPropertyTree::signalPushUndo, this, &QTerrainLayerPanel::UndoPush);
+	m_pPropertyTree = new QPropertyTreeLegacy();
+	pPainterLayout->addWidget(m_pPropertyTree);
+	QObject::connect(m_pPropertyTree, &QPropertyTreeLegacy::signalBeginUndo, this, &QTerrainLayerPanel::OnBeginUndo);
+	QObject::connect(m_pPropertyTree, &QPropertyTreeLegacy::signalEndUndo, this, &QTerrainLayerPanel::OnEndUndo);
 }
 
 QTerrainLayerPanel::~QTerrainLayerPanel()
 {
-	if (GetIEditorImpl()->GetTerrainManager())
-		GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.DisconnectObject(this);
+	GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.DisconnectObject(this);
+	GetIEditorImpl()->GetTerrainManager()->signalLayerAboutToDelete.DisconnectObject(this);
 
 	if (m_layerSerializer.pEditTool)
 		m_layerSerializer.pEditTool->signalPropertiesChanged.DisconnectObject(this);
@@ -147,6 +148,17 @@ void QTerrainLayerPanel::SetLayer(CLayer* pLayer)
 	}
 }
 
+void QTerrainLayerPanel::OnLayerAboutToDelete(CLayer* pLayer)
+{
+	CRY_ASSERT(pLayer, "Unexpected pLayer value");
+	if (m_layerSerializer.pLayer == pLayer)
+	{
+		m_layerSerializer.pLayer->signalPropertiesChanged.DisconnectObject(this);
+		m_layerSerializer.pLayer = nullptr;
+		m_pPropertyTree->revert();
+	}
+}
+
 void QTerrainLayerPanel::LayerChanged(CLayer* pLayer)
 {
 	if (!m_layerSerializer.textureLayerUpdate)
@@ -168,9 +180,20 @@ void QTerrainLayerPanel::AttachProperties()
 	m_pPropertyTree->attach(structs);
 }
 
-void QTerrainLayerPanel::UndoPush()
+void QTerrainLayerPanel::OnBeginUndo()
 {
-	CUndo layerModified("Texture Layer Change");
-	CTerrainTextureDialog::StoreLayersUndo();
+	GetIEditor()->GetIUndoManager()->Begin();
+	GetIEditor()->GetIUndoManager()->RecordUndo(new CTerrainLayersPropsUndoObject);
 }
 
+void QTerrainLayerPanel::OnEndUndo(bool acceptUndo)
+{
+	if (acceptUndo)
+	{
+		GetIEditor()->GetIUndoManager()->Accept("Terrain Layers Properties");
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
+}

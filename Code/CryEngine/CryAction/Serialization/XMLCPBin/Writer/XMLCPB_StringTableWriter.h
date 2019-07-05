@@ -86,7 +86,7 @@ private:
 
 	ILINE const char* GetStringRealPointer(StringID ID, const SAddr*& addr) const
 	{
-		assert(ID != XMLCPB_INVALID_ID);
+		CRY_ASSERT(ID != XMLCPB_INVALID_ID);
 
 		if (ID == SEARCHING_ID)
 		{

@@ -19,6 +19,7 @@
 #include <QPropertyAnimation>
 #include <QToolButton>
 #include "EditorFramework/PersonalizationManager.h"
+#include <IObjectManager.h>
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CObjectCreateToolPanel, "Create Object", "Level Editor", false, "Level Editor");
 
@@ -386,26 +387,26 @@ void CObjectCreateToolPanel::StartCreation(CObjectClassDesc* cls, const char* fi
 
 	if (strcmp(cls->GetToolClassName(), "EditTool.ObjectCreate") == 0)
 	{
-		CEditTool* editTool = GetIEditorImpl()->GetEditTool();
+		CEditTool* editTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 		CObjectCreateTool* objectCreateTool = editTool ? DYNAMIC_DOWNCAST(CObjectCreateTool, editTool) : nullptr;
 
 		if (!objectCreateTool)
 		{
 			objectCreateTool = new CObjectCreateTool();
-			GetIEditorImpl()->SetEditTool(objectCreateTool);
+			GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(objectCreateTool);
 		}
 
 		objectCreateTool->SelectObjectToCreate(cls, file);
 	}
 	else
 	{
-		GetIEditorImpl()->SetEditTool(cls->GetToolClassName(), true);
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(cls->GetToolClassName(), true);
 	}
 }
 
 void CObjectCreateToolPanel::AbortCreateTool()
 {
-	CEditTool* editTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* editTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	CObjectCreateTool* objectCreateTool = editTool ? DYNAMIC_DOWNCAST(CObjectCreateTool, editTool) : nullptr;
 
 	if (objectCreateTool)
@@ -451,4 +452,3 @@ void CCreateObjectButtons::AddButton(const char* szType, const std::function<voi
 	int row = index / 2;
 	m_layout->addWidget(pButton, row, column);
 }
-

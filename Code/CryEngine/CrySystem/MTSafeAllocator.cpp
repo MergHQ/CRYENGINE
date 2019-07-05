@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "MTSafeAllocator.h"
 #include <CrySystem/IConsole.h>
+#include <CryMemory/CrySizer.h>
 
 extern CMTSafeHeap* g_pPakHeap;
 
@@ -38,7 +39,7 @@ CMTSafeHeap::CMTSafeHeap()
 	m_TempAllocationsFailed(),
 	m_TempAllocationsTime()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CryPak Heap");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CryPak Heap");
 
 #if MTSAFE_USE_INPLACE_POOL
 	if (MTSAFE_TEMPORARY_POOL_SIZE == 0)
@@ -167,7 +168,7 @@ void CMTSafeHeap::FreePersistent(void* p)
 void* CMTSafeHeap::TempAlloc(size_t nSize, const char* szDbgSource, bool& bFallBackToMalloc, uint32 align)
 {
 	// provide hint to mem replay on debug source
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, szDbgSource);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, szDbgSource);
 
 #if MTSAFE_PROFILE
 	CSimpleTimer timer(m_TempAllocationsTime);
@@ -242,7 +243,7 @@ void* CMTSafeHeap::TempAlloc(size_t nSize, const char* szDbgSource, bool& bFallB
 #endif
 	{
 		// provide hint to mem replay on debug source
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, szDbgSource);
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, szDbgSource);
 
 #if MTSAFE_USE_VIRTUALALLOC
 		return TempVirtualAlloc(nSize);
@@ -333,7 +334,9 @@ void CMTSafeHeap::PrintStats()
 #if MTSAFE_PROFILE
 	LARGE_INTEGER freq;
 	QueryPerformanceFrequency(&freq);
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const double rFreq = 1. / static_cast<double>(freq.QuadPart);
+#endif
 
 	CryLogAlways("mtsafe temporary pool failed for %" PRISIZE_T " bytes, time spent in allocations %3.08f seconds",
 	             m_TempAllocationsFailed, static_cast<double>(m_TempAllocationsTime.QuadPart) * rFreq);
@@ -344,7 +347,7 @@ void CMTSafeHeap::PrintStats()
 #if MTSAFE_USE_VIRTUALALLOC
 void* CMTSafeHeap::TempVirtualAlloc(size_t nSize)
 {
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 	char* ptr = NULL;
 
@@ -376,7 +379,7 @@ void* CMTSafeHeap::TempVirtualAlloc(size_t nSize)
 
 void CMTSafeHeap::TempVirtualFree(void* ptr)
 {
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 	char* ptrb = reinterpret_cast<char*>(ptr);
 	bool source = reinterpret_cast<bool*>(ptrb)[-1];

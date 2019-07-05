@@ -104,7 +104,9 @@ void CPMTUDiscovery::AckedPacket(CTimeValue curTime, uint32 seq, bool ack)
 		{
 			if (iter->second.sz > m_pmtu)
 			{
+#if !defined(EXCLUDE_NORMAL_LOG)
 				uint16 last = m_pmtu;
+#endif
 				m_pmtu = iter->second.sz;
 				if (CVARS.LogLevel > 1)
 					NetLog("[pmtu] INCREASED to [%d] from [%d]", m_pmtu, last);
@@ -120,7 +122,9 @@ void CPMTUDiscovery::FragmentedPacket(CTimeValue curTime)
 {
 	if (m_experiments.empty())
 	{
+#if !defined(EXCLUDE_NORMAL_LOG)
 		uint16 last = m_pmtu;
+#endif
 		int index = MTUIndexForSize(m_pmtu);
 		//index -= !!index;
 		assert(index >= 0 && index < CRY_ARRAY_COUNT(LikelyPMTUs));

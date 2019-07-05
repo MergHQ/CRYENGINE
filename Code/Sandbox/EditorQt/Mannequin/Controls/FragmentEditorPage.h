@@ -1,20 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __MANN_FRAGMENT_EDITOR_PAGE__H__
-#define __MANN_FRAGMENT_EDITOR_PAGE__H__
+#pragma once
 
 #include <ICryMannequin.h>
 
 #include "MannequinEditorPage.h"
-#include "../MannequinBase.h"
-#include "../MannequinNodes.h"
-#include "../SequencerSplitter.h"
+#include "Mannequin/MannequinBase.h"
+#include "Mannequin/MannequinNodes.h"
+#include "Mannequin/SequencerSplitter.h"
 #include "Dialogs/ToolbarDialog.h"
-#include "../MannKeyPropertiesDlgFE.h"
-#include "../FragmentEditor.h"
-#include "../SequencerDopeSheetToolbar.h"
-#include "../Controls/ClampedSplitterWnd.h"
+#include "Mannequin/MannKeyPropertiesDlgFE.h"
+#include "Mannequin/FragmentEditor.h"
+#include "Mannequin/SequencerDopeSheetToolbar.h"
+#include "Controls/ClampedSplitterWnd.h"
 #include "QMfcApp/qmfcviewporthost.h"
+#include "Objects/EntityScript.h"
 
 struct SMannequinContexts;
 class CMannequinModelViewport;
@@ -99,20 +99,20 @@ private:
 	SFragTagState GetTagStateFromCtrl() const;
 	void          OnInternalVariableChange(IVariable* pVar);
 
-	CSequencerSplitter                       m_wndSplitterTracks;
-	CClampedSplitterWnd                      m_wndSplitterVert;
-	CClampedSplitterWnd                      m_wndSplitterHorz;
-	CPropertiesPanel                         m_tagsPanel;
-	CMannFragmentEditor                      m_wndTrackPanel;
-	CMannNodesCtrl                           m_wndNodes;
-	CMannKeyPropertiesDlgFE                  m_wndKeyProperties;
-	CSequencerDopeSheetToolbar               m_cDlgToolBar;
-    CMannequinModelViewport*                 m_modelViewport;
+	CSequencerSplitter         m_wndSplitterTracks;
+	CClampedSplitterWnd        m_wndSplitterVert;
+	CClampedSplitterWnd        m_wndSplitterHorz;
+	CPropertiesPanel           m_tagsPanel;
+	CMannFragmentEditor        m_wndTrackPanel;
+	CMannNodesCtrl             m_wndNodes;
+	CMannKeyPropertiesDlgFE    m_wndKeyProperties;
+	CSequencerDopeSheetToolbar m_cDlgToolBar;
+	CMannequinModelViewport*   m_modelViewport;
 
-	QMfcContainer                            m_viewportHost;
-	QMfcViewportHost*                        m_pViewportWidget;
+	QMfcContainer              m_viewportHost;
+	QMfcViewportHost*          m_pViewportWidget;
 
-	SMannequinContexts*                      m_contexts;
+	SMannequinContexts*        m_contexts;
 
 	float                      m_fTime;
 	float                      m_playSpeed;
@@ -134,6 +134,3 @@ private:
 
 	HACCEL                     m_hAccelerators;
 };
-
-#endif
-

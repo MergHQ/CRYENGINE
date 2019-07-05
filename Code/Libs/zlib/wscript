@@ -22,8 +22,8 @@ def build(bld):
 		
 		orbis_cflags    = ['-Wno-shift-negative-value'],
 		linux_cflags    = ['-Wno-shift-negative-value'],
-		android_cflags  = ['-Wno-shift-negative-value'],
+		android_cflags  = ['-Wno-shift-negative-value', '-Wno-implicit-function-declaration'],
 		
 		durango_defines = ['_CRT_SECURE_NO_WARNINGS', '_CRT_NONSTDC_NO_DEPRECATE'],
-		durango_cflags     = [ '/wd4267' ],
+		durango_cflags  = [ '/wd4267' ],
 	)	

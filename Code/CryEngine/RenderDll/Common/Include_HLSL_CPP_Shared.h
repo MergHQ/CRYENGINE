@@ -123,6 +123,9 @@ hlsl_cbuffer_register(PerViewGlobalConstantBuffer, register (b6), 6) //eConstant
 
 	hlsl_matrix44(CV_ViewMatr);
 	hlsl_matrix44(CV_InvViewMatr);
+
+	hlsl_matrix44(CV_ProjMatr);
+	hlsl_matrix44(CV_ProjMatrUnjittered);
 };
 
 hlsl_cbuffer_register(VrProjectionConstantBuffer, register (b7), 7) // eConstantBufferShaderSlot_VrProjection

@@ -4,6 +4,7 @@
 
 #include <CryFlowGraph/IFlowGraphDebugger.h> //IFlowGraphDebugListener
 #include "HyperGraph/IHyperGraph.h"          //IHyperGraphManagerListener
+#include <IEditor.h>
 
 class CFlowGraphDebuggerEditor : private IFlowGraphDebugListener, IHyperGraphManagerListener, IEditorNotifyListener
 {
@@ -53,5 +54,3 @@ private:
 	bool                  m_CursorVisible;
 	IFlowGraphDebuggerPtr m_pFlowGraphDebugger;
 };
-
-

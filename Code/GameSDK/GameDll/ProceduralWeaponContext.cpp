@@ -57,7 +57,6 @@ void CProceduralWeaponAnimationContext::Update(float timePassed)
 	const IAnimationOperatorQueue::EOp set = IAnimationOperatorQueue::eOp_OverrideRelative;
 	const IAnimationOperatorQueue::EOp additive = IAnimationOperatorQueue::eOp_Additive;
 
-	ISkeletonPose* pPose = pCharacter->GetISkeletonPose();
 	Vec3 relBlendPos = Vec3(1.0f, 0.0f, 0.0f);
 	m_pPoseModifier->PushPosition(m_params.m_rightBlendIkIdx, set, relBlendPos);
 

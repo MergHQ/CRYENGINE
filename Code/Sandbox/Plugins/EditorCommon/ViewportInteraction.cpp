@@ -2,7 +2,7 @@
 #include <StdAfx.h>
 #include "ViewportInteraction.h"
 
-#include "PolledKey.h"
+#include "Commands/PolledKey.h"
 
 REGISTER_POLLED_KEY(viewport, forward, "Moves the camera forward", CKeyboardShortcut("W; Up"));
 REGISTER_POLLED_KEY(viewport, backward, "Moves the camera backward", CKeyboardShortcut("S; Down"));
@@ -26,4 +26,3 @@ bool ViewportInteraction::CheckPolledKey(Key key)
 		return false;
 	}
 }
-

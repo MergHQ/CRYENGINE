@@ -1,31 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  CryEngine Source File.
-//  Copyright (C), Crytek, 2014.
-// -------------------------------------------------------------------------
-//  File name: QtMain.h
-//  Created:   26/09/2014 by timur
-//  Description: QT MainFrame window
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
-
-#include <QMainWindow>
-
-#include <QMenu>
 
 #include "EditorFramework/EventLoopHandler.h"
 #include "LevelEditor/LevelEditor.h"
 
-class QToolWindowManager;
-class QMainToolBarManager;
-class QLoading;
+#include <QMainWindow>
+
+class CCommand;
 class CWaitProgress;
+class QLoading;
+class QMenu;
+class CToolBarService;
+class QToolWindowManager;
 
 class CEditorMainFrame : public QMainWindow, public IAutoEditorNotifyListener //TODO : class name doesn't match filename
 {
@@ -33,16 +20,11 @@ class CEditorMainFrame : public QMainWindow, public IAutoEditorNotifyListener //
 public:
 	CEditorMainFrame(QWidget* parent = 0);
 	virtual ~CEditorMainFrame();
-	void PostLoad();
-
-	//////////////////////////////////////////////////////////////////////////
+	void                     PostLoad();
 
 	static CEditorMainFrame* GetInstance();
 
-	//////////////////////////////////////////////////////////////////////////
-
-	QToolWindowManager*  GetToolManager();
-	QMainToolBarManager* GetToolBarManager();
+	QToolWindowManager*      GetToolManager();
 
 	//Temporary functions to handle CWaitProgress more elegantly
 	void          AddWaitProgress(CWaitProgress* task);
@@ -53,17 +35,22 @@ public:
 	CLevelEditor* GetLevelEditor() { return m_levelEditor.get(); }
 
 private:
+	void AddCommand(CCommand* pCommand);
 	void OnIdleCallback();
-	bool OnNativeEvent(void *message, long *result);
+	bool OnNativeEvent(void* message, long* result);
 	void OnBackgroundUpdateTimer();
 
 	void OnAutoBackupTimeChanged();
 	void OnAutoSaveTimer();
-	void OnAutoRemindTimer();
+	void OnEditToolChanged();
 	void OnEditorNotifyEvent(EEditorNotifyEvent event);
+	void OnCustomizeToolBar();
+	void OnToolBarAdded(QToolBar* pToolBar);
+	void OnToolBarModified(QToolBar* pToolBar);
+	void OnToolBarRenamed(const char* szOldToolBarName, QToolBar* pToolBar);
+	void OnToolBarRemoved(const char* szToolBarName);
 	void UpdateWindowTitle(const QString& levelPath = "");
 
-	bool focusNextPrevChild(bool next) override;
 	void contextMenuEvent(QContextMenuEvent* pEvent);
 
 	void SetDefaultLayout();
@@ -79,9 +66,7 @@ private:
 	bool BeforeClose();
 	void closeEvent(QCloseEvent*);
 	void SaveConfig();
-	bool event(QEvent *event) override;
-
-	void OnAxisConstrainChanged(int axis);
+	bool event(QEvent* event) override;
 
 public:
 	static CEditorMainFrame*      m_pInstance;
@@ -95,7 +80,6 @@ public:
 private:
 	//Should not be accessible
 	QStatusBar* statusBar() const { return QMainWindow::statusBar(); }
-	QMainToolBarManager*        m_pMainToolBarManager;
 	QTimer*                     m_pAutoBackupTimer;
 	std::vector<CWaitProgress*> m_waitTasks;
 	QMetaObject::Connection     m_layoutChangedConnection;
@@ -105,4 +89,3 @@ private:
 	CTimeValue                  m_lastUserInputTime;
 	bool                        m_bUserEventPriorityMode; // emergency mode will disregard all updates to the engine while
 };
-

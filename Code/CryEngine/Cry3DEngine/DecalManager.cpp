@@ -902,7 +902,7 @@ void CDecalManager::OnEntityDeleted(IRenderNode* pRenderNode)
 				{
 					CDecal& decal = m_arrDecals[i];
 					Vec3 vPos = decal.GetWorldPosition();
-					char* szOwnerName = "none";
+					const char* szOwnerName = "none";
 #ifdef _DEBUG
 					szOwnerName = decal.m_decalOwnerName;
 #endif
@@ -970,13 +970,13 @@ void CDecalManager::MoveToEdge(IRenderMesh* pRM, const float fRadius, Vec3& vOut
 
 	if (!pPos || !pInds)
 		return;
-
+#if defined(USE_CRY_ASSERT)
 	int nInds = pRM->GetIndicesCount();
+	assert(nInds % 3 == 0);
+#endif
 
 	//	if(nInds>6000)
 	//	return; // skip insane objects
-
-	assert(nInds % 3 == 0);
 
 	if (!vOutNormal.IsZero())
 		vOutNormal.Normalize();

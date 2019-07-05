@@ -5,19 +5,10 @@
 
 #include "SystemSourceModel.h"
 #include "Control.h"
-
-#include <ModelUtils.h>
+#include "Common/ModelUtils.h"
 
 namespace ACE
 {
-//////////////////////////////////////////////////////////////////////////
-CResourceFilterProxyModel::CResourceFilterProxyModel(EAssetType const type, Scope const scope, QObject* const pParent)
-	: QDeepFilterProxyModel(QDeepFilterProxyModel::Behavior::AcceptIfChildMatches, pParent)
-	, m_type(type)
-	, m_scope(scope)
-{
-}
-
 //////////////////////////////////////////////////////////////////////////
 bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const& sourceParent) const
 {
@@ -31,10 +22,13 @@ bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex cons
 		{
 			auto const pControl = static_cast<CControl const*>(CSystemSourceModel::GetAssetFromIndex(index, 0));
 
-			if (pControl != nullptr)
+			if ((pControl != nullptr) && ((pControl->GetFlags() & EAssetFlags::IsHiddenInResourceSelector) == EAssetFlags::None))
 			{
-				Scope const scope = pControl->GetScope();
-				matchesFilter = (pControl->GetType() == m_type) && ((scope == GlobalScopeId) || (scope == m_scope));
+				CryAudio::ContextId const contextId = pControl->GetContextId();
+				matchesFilter =
+					(pControl->GetType() == m_type) &&
+					((contextId == CryAudio::GlobalContextId) ||
+					 (std::find(g_activeUserDefinedContexts.begin(), g_activeUserDefinedContexts.end(), contextId) != g_activeUserDefinedContexts.end()));
 			}
 		}
 	}

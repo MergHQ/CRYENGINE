@@ -21,15 +21,17 @@ namespace UQS
 			// nothing
 		}
 
-		void CQuery_Chained::HandleChildQueryFinishedWithSuccess(const CQueryID& childQueryID, QueryResultSetUniquePtr&& pResultSet)
+		void CQuery_Chained::HandleChildQueryFinishedWithSuccess(CQueryBase& childQuery)
 		{
 			CRY_PROFILE_FUNCTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, m_pQueryBlueprint->GetName());	// mainly for keeping an eye on the copy operation of the items below
 
-			assert(pResultSet != nullptr);
+			QueryResultSetUniquePtr pResultSet = childQuery.ClaimResultSet();
+
+			CRY_ASSERT(pResultSet != nullptr);
 
 			// * if there are more queries in chain, then do the following:
 			//    - convert the result set to a list of "pre-generated" items
-			//    - instantiate the next query and pass that list to it (so that it resides on its private blackboard)
+			//    - instantiate the next query and pass that list to it (so that it resides in its private query context)
 			//      -> that way, the next query can use that list as some kind of input without having to generate items on its own
 			//
 			// * but if this was the last query in the chain, then copy the result set away to have it picked up by the CQueryManager (or the parent query, of course)
@@ -51,9 +53,7 @@ namespace UQS
 			}
 
 			// transfer all item-monitors from the child to ourself to keep monitoring until a higher-level query decides differently
-			CQueryBase* pChildQuery = g_pHub->GetQueryManager().FindQueryByQueryID(childQueryID);
-			assert(pChildQuery);
-			pChildQuery->TransferAllItemMonitorsToOtherQuery(*this);
+			childQuery.TransferAllItemMonitorsToOtherQuery(*this);
 		}
 
 	}

@@ -1,17 +1,16 @@
 {
-  "NoUberFile":{
-    "CryAssert":[
-      "CryAssert/CryAssert_Android.h"
-    ],
-    "CryCore":[
-      {
-        "Platform":[
-          "CryCore/Platform/AndroidSpecific.h",
-          "CryCore/Platform/Android32Specific.h",
-          "CryCore/Platform/Android64Specific.h",
-		  "CryCore/Platform/platform_impl_android.inl"
+    "NoUberFile": {
+        "CryAssert": [
+            "CryAssert/CryAssert_Android.h"
+        ], 
+        "CryCore": [], 
+        "CryCore/Platform": [
+            "CryCore/Platform/AndroidSpecific.h", 
+            "CryCore/Platform/Android32Specific.h", 
+            "CryCore/Platform/Android64Specific.h", 
+            "CryCore/Platform/platform_impl_android.inl", 
+            "CryCore/Platform/AndroidJNI.h", 
+            "CryCore/Platform/AndroidJNI.inl"
         ]
-      }
-    ]
-  }
+    }
 }

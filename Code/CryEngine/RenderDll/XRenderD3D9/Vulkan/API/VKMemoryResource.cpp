@@ -46,7 +46,7 @@ void CMemoryResource::Unmap()
 
 void CMemoryResource::Destroy()
 {
-	VK_ASSERT(false);
+	VK_ASSERT(false, "");
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -161,12 +161,27 @@ VkAccessFlags CMemoryResource::AccessBarrier(CCommandList* pCmdList)
 
 #ifndef _RELEASE
 
-bool CMemoryResource::DebugSetName(const char* szName)
+void CMemoryResource::ClearDebugName()
+{
+	if (const CBufferResource* pBuffer = AsBuffer())
+	{
+		if (!AsDynamicOffsetBuffer()) // Naming constant buffers does not make much sense since we constantly suballocate
+		{
+			return Extensions::ClearDebugName(GetDevice()->GetVkDevice(), (uintptr_t)pBuffer);
+		}
+	}
+	else if (const CImageResource* pImage = AsImage())
+	{
+		return Extensions::ClearDebugName(GetDevice()->GetVkDevice(), (uintptr_t)pImage);
+	}
+}
+
+bool CMemoryResource::SetDebugName(const char* szName)
 {
 	if (Extensions::EXT_debug_marker::IsSupported)
 	{
 		VkDebugMarkerObjectNameInfoEXT nameInfo;
-		nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+		nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT;
 		nameInfo.pNext = nullptr;
 		nameInfo.pObjectName = szName;
 
@@ -177,7 +192,7 @@ bool CMemoryResource::DebugSetName(const char* szName)
 				nameInfo.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT;
 				nameInfo.object = uint64(pBuffer->GetHandle());
 
-				if (Extensions::EXT_debug_marker::SetObjectName(GetDevice()->GetVkDevice(), &nameInfo) == VK_SUCCESS)
+				if (Extensions::SetObjectName(GetDevice()->GetVkDevice(), (uintptr_t)pBuffer, &nameInfo) == VK_SUCCESS)
 					return true;
 			}
 		}
@@ -186,12 +201,29 @@ bool CMemoryResource::DebugSetName(const char* szName)
 			nameInfo.objectType = VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT;
 			nameInfo.object = uint64(pImage->GetHandle());
 
-			if (Extensions::EXT_debug_marker::SetObjectName(GetDevice()->GetVkDevice(), &nameInfo) == VK_SUCCESS)
+			if (Extensions::SetObjectName(GetDevice()->GetVkDevice(), (uintptr_t)pImage, &nameInfo) == VK_SUCCESS)
 				return true;
 		}	
 	}
 
 	return false;
+}
+
+std::string CMemoryResource::GetDebugName() const
+{
+	if (const CBufferResource* pBuffer = AsBuffer())
+	{
+		if (!AsDynamicOffsetBuffer()) // Naming constant buffers does not make much sense since we constantly suballocate
+		{
+			return Extensions::GetObjectName(GetDevice()->GetVkDevice(), (uintptr_t)pBuffer);
+		}
+	}
+	else if (const CImageResource* pImage = AsImage())
+	{
+		return Extensions::GetObjectName(GetDevice()->GetVkDevice(), (uintptr_t)pImage);
+	}
+
+	return "";
 }
 
 #endif

@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "XMLSerializer.h"
-#include "xml/xml.h"
+#include "XML/xml.h"
 #include "IXMLSerializer.h"
 #include <CryString/StringUtils.h>
 

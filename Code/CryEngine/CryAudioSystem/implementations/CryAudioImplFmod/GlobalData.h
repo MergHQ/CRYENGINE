@@ -2,37 +2,73 @@
 
 #pragma once
 
+#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <ITriggerInfo.h>
+
 namespace CryAudio
 {
 namespace Impl
 {
 namespace Fmod
 {
-static constexpr char const* s_szImplFolderName = "fmod";
+constexpr char const* g_szImplFolderName = "fmod";
 
 // XML tags
-static constexpr char const* s_szSnapshotTag = "Snapshot";
-static constexpr char const* s_szParameterTag = "Parameter";
-static constexpr char const* s_szFileTag = "File";
-static constexpr char const* s_szBusTag = "Bus";
-static constexpr char const* s_szVcaTag = "VCA";
+constexpr char const* g_szEventTag = "Event";
+constexpr char const* g_szKeyTag = "Key";
+constexpr char const* g_szSnapshotTag = "Snapshot";
+constexpr char const* g_szParameterTag = "Parameter";
+constexpr char const* g_szFileTag = "File";
+constexpr char const* g_szBusTag = "Bus";
+constexpr char const* g_szVcaTag = "VCA";
 
 // XML attributes
-static constexpr char const* s_szValueAttribute = "value";
-static constexpr char const* s_szMutiplierAttribute = "value_multiplier";
-static constexpr char const* s_szShiftAttribute = "value_shift";
-static constexpr char const* s_szLocalizedAttribute = "localized";
+constexpr char const* g_szValueAttribute = "value";
+constexpr char const* g_szMutiplierAttribute = "value_multiplier";
+constexpr char const* g_szShiftAttribute = "value_shift";
+constexpr char const* g_szLocalizedAttribute = "localized";
+constexpr char const* g_szEventAttribute = "event";
+
+// XML attributes for impl data node
+constexpr char const* g_szEventsAttribute = "events";
+constexpr char const* g_szParametersAttribute = "parameters";
+constexpr char const* g_szParameterEnvironmentsAttribute = "parameterenvironments";
+constexpr char const* g_szParameterStatesAttribute = "parameterstates";
+constexpr char const* g_szSnapshotsAttribute = "snapshots";
+constexpr char const* g_szReturnsAttribute = "returns";
+constexpr char const* g_szVcasAttribute = "vcas";
+constexpr char const* g_szVcaStatesAttribute = "vcastates";
+constexpr char const* g_szBanksAttribute = "banks";
 
 // XML values
-static constexpr char const* s_szTrueValue = "true";
-static constexpr char const* s_szStopValue = "stop";
-static constexpr char const* s_szPauseValue = "pause";
-static constexpr char const* s_szResumeValue = "resume";
+constexpr char const* g_szTrueValue = "true";
+constexpr char const* g_szStopValue = "stop";
+constexpr char const* g_szPauseValue = "pause";
+constexpr char const* g_szResumeValue = "resume";
 
 // Default values
-static constexpr float const s_defaultParamMultiplier = 1.0f;
-static constexpr float const s_defaultParamShift = 0.0f;
-static constexpr float const s_defaultStateValue = 0.0f;
+constexpr float g_defaultParamMultiplier = 1.0f;
+constexpr float g_defaultParamShift = 0.0f;
+constexpr float g_defaultStateValue = 0.0f;
+
+// Required to create a preview trigger in editor.
+struct STriggerInfo final : public ITriggerInfo
+{
+	CryFixedStringT<MaxControlNameLength> name;
+};
+
+struct SPoolSizes final
+{
+	uint16 events = 0;
+	uint16 parameters = 0;
+	uint16 parameterEnvironments = 0;
+	uint16 parameterStates = 0;
+	uint16 snapshots = 0;
+	uint16 returns = 0;
+	uint16 vcas = 0;
+	uint16 vcaStates = 0;
+	uint16 banks = 0;
+};
 } // namespace Fmod
 } // namespace Impl
 } // namespace CryAudio

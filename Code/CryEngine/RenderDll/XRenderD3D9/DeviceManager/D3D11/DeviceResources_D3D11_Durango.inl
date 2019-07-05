@@ -4,9 +4,244 @@
 
 #include "../../../Common/Textures/TextureStreamPool.h" // STexPoolItem
 
+////////////////////////////////////////////////////////////////////////////
+// CDeviceResource API
+
+#if DURANGO_USE_ESRAM
+bool CDeviceResource::IsESRAMResident()
+{
+	return m_bIsResident;
+}
+
+bool CDeviceResource::AcquireESRAMResidency(EResidencyCoherence residencyEntry, ColorF cClear, uint32 numBytes, uint32 alignment)
+{
+	if (!CRenderer::CV_r_useESRAM)
+	{
+		return false;
+	}
+
+	if (m_bIsResident)
+	{
+		return true;
+	}
+
+	CRY_ASSERT(!m_pNativeResourceESRAM);
+
+	auto& rFactory = CDeviceObjectFactory::GetInstance();
+	CDeviceCommandListRef commandList = rFactory.GetCoreCommandList();
+
+	if (!m_ESRAMAllocation.IsValid())
+	{
+		rFactory.m_ESRAMManager.Allocate(numBytes, alignment, m_ESRAMAllocation);
+		if (!m_ESRAMAllocation.IsValid())
+		{
+			return false;
+		}
+	}
+
+	const HRESULT result = rFactory.GetDX11Device()->DuplicateCommittedResource(m_pNativeResource, &m_pNativeResourceESRAM, m_ESRAMAllocation.m_esramPtr, m_ESRAMAllocation.m_esramSize);
+	if (result != S_OK)
+	{
+		rFactory.m_ESRAMManager.Free(m_ESRAMAllocation);
+		return false;
+	}
+
+	m_bIsResident = true;
+
+	ReleaseResourceViews();
+	AllocatePredefinedResourceViews();
+
+	switch (residencyEntry)
+	{
+	case eResCoherence_Uninitialize:
+		break;
+	case eResCoherence_Clear:
+		if ((m_eFlags & CDeviceObjectFactory::BIND_RENDER_TARGET))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupRTV(EDefaultResourceViews::RenderTarget), cClear, 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_DEPTH_STENCIL))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, cClear.r, int8(cClear.g), 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_UNORDERED_ACCESS))
+			commandList.GetComputeInterface()->ClearUAV(LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear, 0, nullptr);
+		else
+			CRY_ASSERT(false);
+		break;
+	case eResCoherence_Transfer:
+		commandList.GetCopyInterface()->Copy(m_pNativeResource, m_pNativeResourceESRAM);
+		break;
+	}
+
+	return true;
+}
+
+bool CDeviceResource::ForfeitESRAMResidency(EResidencyCoherence residencyExit, ColorF cClear)
+{
+	if (!m_bIsResident)
+	{
+		return true;
+	}
+
+	CRY_ASSERT(m_pNativeResourceESRAM);
+	
+	auto& rFactory = CDeviceObjectFactory::GetInstance();
+	CDeviceCommandListRef commandList = rFactory.GetCoreCommandList();
+
+	switch (residencyExit)
+	{
+	case eResCoherence_Abandon:
+		break;
+	case eResCoherence_Clear:
+		if ((m_eFlags & CDeviceObjectFactory::BIND_RENDER_TARGET))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupRTV(EDefaultResourceViews::RenderTarget), cClear, 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_DEPTH_STENCIL))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, cClear.r, int8(cClear.g), 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_UNORDERED_ACCESS))
+			commandList.GetComputeInterface()->ClearUAV(LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear, 0, nullptr);
+		else
+			CRY_ASSERT(false);
+		break;
+	case eResCoherence_Transfer:
+		commandList.GetCopyInterface()->Copy(m_pNativeResourceESRAM, m_pNativeResource);
+		break;
+	}
+
+	if (m_ESRAMAllocation.IsValid())
+	{
+		rFactory.m_ESRAMManager.Free(m_ESRAMAllocation);
+	}
+
+	rFactory.ReleaseResource(m_pNativeResourceESRAM);
+	m_pNativeResourceESRAM = nullptr;
+
+	m_bIsResident = false;
+
+	ReleaseResourceViews();
+	AllocatePredefinedResourceViews();
+
+	return true;
+}
+
+bool CDeviceResource::TransferESRAMAllocation(CDeviceResource& target)
+{
+	if (!m_ESRAMAllocation.IsValid() || target.m_ESRAMAllocation.IsValid())
+	{
+		return false;
+	}
+
+	target.m_ESRAMAllocation = m_ESRAMAllocation;
+	m_ESRAMAllocation.Invalidate();
+
+	return true;
+}
+
+void CDeviceResource::CleanupESRAMResource()
+{
+	if (m_ESRAMAllocation.IsValid())
+	{
+		GetDeviceObjectFactory().m_ESRAMManager.Free(m_ESRAMAllocation);
+	}
+
+	if (m_pNativeResourceESRAM)
+	{
+		GetDeviceObjectFactory().ReleaseResource(m_pNativeResourceESRAM);
+		m_pNativeResourceESRAM = nullptr;
+	}
+
+	m_bIsResident = false;
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////
+// CTexture API
+
+#if DURANGO_USE_ESRAM
+bool CTexture::IsESRAMResident()
+{
+	if (auto* devTexture = GetDevTexture())
+		return devTexture->IsESRAMResident();
+	return false;
+}
+
+bool CTexture::AcquireESRAMResidency(CDeviceResource::EResidencyCoherence residencyEntry)
+{
+	if (auto* devTexture = GetDevTexture())
+	{
+		if (m_nESRAMSize == 0)
+		{
+			ID3D11Texture2D* pDevTex = devTexture->Get2DTexture();
+
+			D3D11_TEXTURE2D_DESC desc;
+			pDevTex->GetDesc(&desc);
+
+			XG_TEXTURE2D_DESC xgDesc;
+			ZeroMemory(&xgDesc, sizeof(xgDesc));
+			xgDesc.Width = desc.Width;
+			xgDesc.Height = desc.Height;
+			xgDesc.MipLevels = desc.MipLevels;
+			xgDesc.ArraySize = desc.ArraySize;
+			xgDesc.Format = (XG_FORMAT)desc.Format;
+			xgDesc.SampleDesc.Count = desc.SampleDesc.Count;
+			xgDesc.SampleDesc.Quality = desc.SampleDesc.Quality;
+			xgDesc.Usage = XG_USAGE_DEFAULT;
+			xgDesc.BindFlags = desc.BindFlags;
+			xgDesc.CPUAccessFlags = 0;
+			xgDesc.MiscFlags = desc.MiscFlags | XG_RESOURCE_MISC_ESRAM_RESIDENT;
+			xgDesc.ESRAMOffsetBytes = 0;
+			xgDesc.ESRAMUsageBytes = 0;
+
+			XG_RESOURCE_LAYOUT layout;
+			if (XGComputeTexture2DLayout(&xgDesc, &layout) != S_OK)
+			{
+				return false;
+			}
+
+			m_nESRAMSize = (uint32)layout.SizeBytes;
+			m_nESRAMAlignment = (uint32)layout.BaseAlignmentBytes;
+		}
+
+		if (devTexture->AcquireESRAMResidency(residencyEntry, m_cClearColor, m_nESRAMSize, m_nESRAMAlignment))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyEntry != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CTexture::ForfeitESRAMResidency(CDeviceResource::EResidencyCoherence residencyExit)
+{
+	if (auto* devTexture = GetDevTexture())
+	{
+		if (devTexture->ForfeitESRAMResidency(residencyExit, m_cClearColor))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyExit != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CTexture::TransferESRAMAllocation(CTexture* target)
+{
+	auto* devTexture = GetDevTexture();
+	auto* targetDevTexture = target->GetDevTexture();
+	if (devTexture && targetDevTexture)
+	{
+		if (devTexture->TransferESRAMAllocation(*targetDevTexture))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+#endif
+
 UINT64 CTexture::StreamInsertFence()
 {
-	return gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
+	return gcpRendD3D->GetPerformanceContext()->InsertFence();
 }
 
 bool CTexture::StreamPrepare_Platform()
@@ -14,13 +249,13 @@ bool CTexture::StreamPrepare_Platform()
 	const SPixFormat* pPF;
 	ETEX_TileMode srcTileMode = m_eSrcTileMode;
 	bool isBlockCompressed = IsBlockCompressed(m_eSrcFormat);
-	ETEX_Format eSrcFormat = CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
+	CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
 
 	if (srcTileMode == eTM_Optimal)
 	{
 		// i/o and be done
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = true;
@@ -48,7 +283,7 @@ bool CTexture::StreamPrepare_Platform()
 		XGComputeTexture2DLayout(&desc, &linLayout);
 
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = linLayout.Plane[0].MipLayout[nMip].Slice2DSizeBytes >= 16384; // Tested in RC - all surfaces larger fit in their optimal counterparts
@@ -57,7 +292,7 @@ bool CTexture::StreamPrepare_Platform()
 	else if (srcTileMode == eTM_LinearPadded && isBlockCompressed)
 	{
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = false;
@@ -66,7 +301,7 @@ bool CTexture::StreamPrepare_Platform()
 	else //if (srcTileMode == eTM_None)
 	{
 		STexStreamingInfo* pSI = m_pFileTexMips;
-		for (int nMip = 0; nMip < m_nMips; ++nMip)
+		for (int8 nMip = 0; nMip < m_nMips; ++nMip)
 		{
 			STexMipHeader& mh = pSI->m_pMipHeader[nMip];
 			mh.m_InPlaceStreamable = false;
@@ -80,7 +315,7 @@ bool CTexture::StreamInCheckTileComplete_Durango(STexStreamInState& state)
 {
 	if (state.m_tileFence)
 	{
-		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_tileFence))
+		if (!gcpRendD3D->GetPerformanceDevice()->IsFencePending(state.m_tileFence))
 			state.m_tileFence = 0;
 		else
 			return false;
@@ -93,7 +328,7 @@ bool CTexture::StreamInCheckCopyComplete_Durango(STexStreamInState& state)
 {
 	if (state.m_copyMipsFence)
 	{
-		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_copyMipsFence))
+		if (!gcpRendD3D->GetPerformanceDevice()->IsFencePending(state.m_copyMipsFence))
 			state.m_copyMipsFence = 0;
 		else
 			return false;
@@ -107,7 +342,7 @@ bool CTexture::StreamOutCheckComplete_Durango(STexStreamOutState& state)
 #if defined(TEXSTRM_ASYNC_TEXCOPY)
 	if (state.m_copyFence)
 	{
-		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_copyFence))
+		if (!gcpRendD3D->GetPerformanceDevice()->IsFencePending(state.m_copyFence))
 			state.m_copyFence = 0;
 		else
 			return false;
@@ -117,7 +352,7 @@ bool CTexture::StreamOutCheckComplete_Durango(STexStreamOutState& state)
 	return true;
 }
 
-UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int nMipSrc, STexPoolItem* pDstItem, int nMipDest, int nNumMips)
+UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int8 nMipSrc, STexPoolItem* pDstItem, int8 nMipDest, int8 nNumMips)
 {
 	CDeviceTexture* pDstDevTexture = pDstItem->m_pDevTexture;
 	CDeviceTexture* pSrcDevTexture = pSrcItem->m_pDevTexture;
@@ -139,7 +374,7 @@ UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int n
 
 	for (int32 iSide = 0; iSide < nSides; ++iSide)
 	{
-		for (int nMip = 0; nMip < nNumMips; ++nMip)
+		for (int8 nMip = 0; nMip < nNumMips; ++nMip)
 		{
 			pDMA->CopySubresourceRegion(
 				pDstResource,
@@ -160,32 +395,30 @@ UINT64 CTexture::StreamCopyMipsTexToTex_MoveEngine(STexPoolItem* pSrcItem, int n
 // Called if not streamable in-place (see STexStreamInState::StreamAsyncOnComplete)
 // In-place streaming can be turned off, which means all tiling-modes need to be supported.
 void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
-	int nMip, int nBaseMip,
+	int8 nMip, int8 nBaseMip,
 	STexPoolItem* pNewPoolItem, STexStreamInMipState& mipState)
 {
 	FUNCTION_PROFILER_RENDERER();
 
 	CDeviceTexture* pDeviceTexture = pNewPoolItem->m_pDevTexture;
-	bool bStreamInPlace = mipState.m_bStreamInPlace;
 
 	// Determine optimal layout, and size/alignment for texture
 	const D3D11_TEXTURE2D_DESC& Desc = pDeviceTexture->GetTDesc()->d3dDesc;
 	const XG_RESOURCE_LAYOUT* pLayout = &pDeviceTexture->GetTDesc()->layout;
-	XG_TILE_MODE dstNativeTileMode = pLayout->Plane[0].MipLayout[0].TileMode;
 
 	if (pDeviceTexture->IsInPool())
 	{
 		const SPixFormat* pPF;
 		ETEX_TileMode srcTileMode = m_eSrcTileMode;
 		bool isBlockCompressed = IsBlockCompressed(m_eSrcFormat);
-		ETEX_Format eSrcFormat = CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
+		CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
 
 		// If any of the sub resources are in a linear general format, we'll need a computer to tile on the CPU.
 		bool bNeedsComputer = (srcTileMode == eTM_None) || (srcTileMode == eTM_LinearPadded && isBlockCompressed);
 
-		int numMips = pNewPoolItem->m_pOwner->m_nMips;
+		int8 numMips = pNewPoolItem->m_pOwner->m_nMips;
 		const int numSides = StreamGetNumSlices();
-		int nTexMip = nMip + nBaseMip;
+		int8 nTexMip = nMip + nBaseMip;
 
 		XGTextureAddressComputer* pComputerRaw = NULL;
 		if (bNeedsComputer)
@@ -301,9 +534,9 @@ void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
 			char* pDstBaseAddress = (char*)pin.GetBaseAddress();
 
 			// Expecting that the data has been expanded, or that the src format is an inplace format (expansion is a nop)
-			const int nSubResourceSize = TextureDataSize(m_nWidth >> nTexMip, m_nHeight >> nTexMip, 1, 1, 1, m_eDstFormat);
+			const int nSubResourceSize = TextureDataSize(m_nWidth >> nTexMip, m_nHeight >> nTexMip, 1, 1, 1, m_eDstFormat, eTM_None);
 			const int nSrcSidePitch = nSubResourceSize + mipState.m_nSideDelta;
-			const int nSrcRowPitch = TextureDataSize(m_nWidth >> nTexMip, 1, 1, 1, 1, m_eDstFormat);
+			const int nSrcRowPitch = TextureDataSize(m_nWidth >> nTexMip, 1, 1, 1, 1, m_eDstFormat, eTM_None);
 
 			for (int nSlice = 0; nSlice < numSides; ++nSlice)
 			{
@@ -350,7 +583,7 @@ void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
 
 // Called whenever streaming in is complete and not aborted, for expanded, in-place and not in-place streamable.
 // Only those cases neet to be supported which did not successfully finished their data in CTexture::StreamUploadMip_Durango
-void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolItem* pNewPoolItem, STexStreamInState& streamState)
+void CTexture::StreamUploadMips_Durango(int8 nBaseMip, int8 nMipCount, STexPoolItem* pNewPoolItem, STexStreamInState& streamState)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -361,7 +594,7 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 		const SPixFormat* pPF;
 		ETEX_TileMode srcTileMode = m_eSrcTileMode;
 		bool isBlockCompressed = IsBlockCompressed(m_eSrcFormat);
-		ETEX_Format eSrcFormat = CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
+		CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
 
 		// If any of the sub resources are in a linear general format, we'll need a computer to tile on the CPU.
 		bool bNeedsComputer = (srcTileMode == eTM_None) || (srcTileMode == eTM_LinearPadded && isBlockCompressed);
@@ -414,10 +647,10 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 			CDeviceObjectFactory::STileRequest subRes[g_nD3D10MaxSupportedSubres];
 			size_t nSubRes = 0;
 
-			for (int nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
+			for (int8 nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
 			{
 				STexStreamInMipState& mipState = streamState.m_mips[nMip - nBaseMip];
-				int nDstMip = nMip - nBaseMip;
+				int8 nDstMip = nMip - nBaseMip;
 
 				if (!mipState.m_bUploaded)
 				{
@@ -429,7 +662,6 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 						if (mipState.m_bStreamInPlace)
 						{
 							void* pSrcDataAddress = pDstBaseAddress + pDeviceTexture->GetSurfaceOffset(nDstMip, nSide);
-							size_t nSubResourceSize = pDeviceTexture->GetSurfaceSize(nDstMip);
 
 #if defined(TEXTURES_IN_CACHED_MEM)
 							D3DFlushCpuCache((void*)pSrcDataAddress, nSubResourceSize);
@@ -462,7 +694,7 @@ void CTexture::StreamUploadMips_Durango(int nBaseMip, int nMipCount, STexPoolIte
 		{
 #ifndef _RELEASE
 			// Done
-			for (int nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
+			for (int8 nMip = nBaseMip; nMip < (nBaseMip + nMipCount); ++nMip)
 			{
 				STexStreamInMipState& mipState = streamState.m_mips[nMip - nBaseMip];
 				
@@ -488,32 +720,17 @@ void CDeviceTexture::InitD3DTexture()
 
 	if (!m_pNativeResource)
 	{
-		if (!m_gpuHdl.IsValid()) __debugbreak();
-			
-		XG_TILE_MODE tileMode = m_pLayout->xgTileMode;
-		SGPUMemHdl texHdl = m_gpuHdl;
+#ifndef _RELEASE
+		if (!m_gpuHdl.IsValid())
+			__debugbreak();
+#endif
 
 		CDeviceTexturePin pin(this);
 
-		HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&m_pLayout->d3dDesc, tileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
-	#ifndef _RELEASE
+		HRESULT hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementTexture2D(
+			&m_pLayout->d3dDesc, m_pLayout->xgTileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
 		if (FAILED(hr))
-		{
-			__debugbreak();
-		}
-#endif
-
-	//	m_pRenderTargetData = pRenderTargetData;
-	//	m_eNativeFormat = D3DFmt;
-	//	m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8);
-	//	m_subResources[eSubResource_Mips] = nMips;
-	//	m_subResources[eSubResource_Slices] = nArraySize;
-	//	m_eTT = pLayout.m_eTT;
-	//	m_bFilterable = true;
-	//	m_bIsSrgb = bIsSRGB;
-	//	m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
-	//	m_bIsMSAA = false;
-	//	m_eFlags = eFlags | stagingFlags;
+			return;
 
 		// Same as CDeviceTexture::SubstituteUsedResource
 		ReleaseResourceViews();
@@ -530,94 +747,112 @@ void CDeviceTexture::ReplaceTexture(ID3D11Texture2D* pReplacement)
 	ReleaseResourceViews();
 	AllocatePredefinedResourceViews();
 
-	++m_nBaseAddressInvalidated;
+	if (m_pOwner)
+	{
+#ifdef _DEBUG
+		int references = 0;
+
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		ResourcesMapItor it;
+		for (it = pRL->m_RMap.begin(); it != pRL->m_RMap.end(); ++it)
+		{
+			CTexture* tp = (CTexture*)it->second;
+			if (tp && (tp->GetDevTexture() == this))
+			{
+				references++;
+			}
+		}
+
+		if (references > 1)
+		{
+			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "Substituting Resource referenced by more than one texture! Might crash in a short while.");
+		}
+#endif
+
+		m_pOwner->InvalidateDeviceResource(m_pOwner, eDeviceResourceDirty | eDeviceResourceViewDirty);
+	}
+#ifdef _DEBUG
+	else
+	{
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		ResourcesMapItor it;
+		for (it = pRL->m_RMap.begin(); it != pRL->m_RMap.end(); ++it)
+		{
+			CTexture* tp = (CTexture*)it->second;
+			if (tp && (tp->GetDevTexture() == this))
+			{
+				CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "Substituting Resource without marked but existing owner! Might crash in a short while.");
+			}
+		}
+	}
+#endif
 }
 
 void* CDeviceTexture::WeakPin()
 {
+	void* pAddress = nullptr;
+
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
-		return GetDeviceObjectFactory().m_texturePool.WeakPin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
-	
-	return NULL;
+		pAddress = GetDeviceObjectFactory().m_texturePool.WeakPin(m_gpuHdl);
+
+	return pAddress;
 }
 
 void* CDeviceTexture::Pin()
 {
+	void* pAddress = nullptr;
+	m_Pinned = true;
+
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
-		return GetDeviceObjectFactory().m_texturePool.Pin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
-	
-	return NULL;
+		pAddress = GetDeviceObjectFactory().m_texturePool.Pin(m_gpuHdl);
+
+	return pAddress;
 }
 
 void CDeviceTexture::Unpin()
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.Unpin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
+
+	m_Pinned = false;
 }
 
 void CDeviceTexture::GpuPin()
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.GpuPin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
 }
 
 void CDeviceTexture::GpuUnpin(ID3DXboxPerformanceContext* pCtx)
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.GpuUnpin(m_gpuHdl, pCtx);
-	}
-	else
-		__debugbreak();
 }
 
 void CDeviceTexture::GpuUnpin(ID3D11DmaEngineContextX* pCtx)
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.GpuUnpin(m_gpuHdl, pCtx);
-	}
-	else
-		__debugbreak();
 }
 
 void CDeviceTexture::GPUFlush()
 {
-#if DURANGO_ENABLE_ASYNC_DIPS
-	gcpRendD3D->WaitForAsynchronousDevice();
-#endif
-	gcpRendD3D->GetPerformanceDeviceContext().FlushGpuCaches(GetBaseTexture());
+	gcpRendD3D->GetPerformanceContext()->FlushGpuCaches(GetBaseTexture());
 }
 
-uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
+uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -699,3 +934,84 @@ uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDe
 	// Fallback to the default texture size function
 	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM_None);
 }
+
+
+////////////////////////////////////////////////////////////////////////////
+// CGpuBuffer API
+#if DURANGO_USE_ESRAM
+bool CGpuBuffer::IsESRAMResident()
+{
+	if (auto* devBuffer = GetDevBuffer())
+		return devBuffer->IsESRAMResident();
+	return false;
+}
+
+bool CGpuBuffer::AcquireESRAMResidency(CDeviceResource::EResidencyCoherence residencyEntry)
+{
+	if (auto* devBuffer = GetDevBuffer())
+	{
+		if (m_nESRAMSize == 0)
+		{
+			D3D11_BUFFER_DESC desc;
+			devBuffer->GetBuffer()->GetDesc(&desc);
+			XG_BUFFER_DESC xgDesc;
+			ZeroMemory(&xgDesc, sizeof(xgDesc));
+			xgDesc.ByteWidth = desc.ByteWidth;
+			xgDesc.Usage = XG_USAGE_DEFAULT;
+			xgDesc.BindFlags = desc.BindFlags;
+			xgDesc.CPUAccessFlags = 0;
+			xgDesc.MiscFlags = desc.MiscFlags | XG_RESOURCE_MISC_ESRAM_RESIDENT;
+			xgDesc.StructureByteStride = desc.StructureByteStride;
+			xgDesc.ESRAMOffsetBytes = 0;
+			xgDesc.ESRAMUsageBytes = 0;
+
+			XG_RESOURCE_LAYOUT layout;
+			if (XGComputeBufferLayout(&xgDesc, &layout) != S_OK)
+			{
+				return false;
+			}
+
+			m_nESRAMSize = (uint32)layout.SizeBytes;
+			m_nESRAMAlignment = (uint32)layout.BaseAlignmentBytes;
+		}
+
+		if (devBuffer->AcquireESRAMResidency(residencyEntry, ColorF(), m_nESRAMSize, m_nESRAMAlignment))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyEntry != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CGpuBuffer::ForfeitESRAMResidency(CDeviceResource::EResidencyCoherence residencyExit)
+{
+	if (auto* devBuffer = GetDevBuffer())
+	{
+		if (devBuffer->ForfeitESRAMResidency(residencyExit, ColorF()))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyExit != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CGpuBuffer::TransferESRAMAllocation(CGpuBuffer* target)
+{
+	auto* devBuffer = GetDevBuffer();
+	auto* targetDevBuffer = target->GetDevBuffer();
+	if (devBuffer && targetDevBuffer)
+	{
+		if (devBuffer->TransferESRAMAllocation(*targetDevBuffer))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+#endif

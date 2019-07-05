@@ -11,7 +11,7 @@ typedef std::function<void (TSerialize, int32, uint8, int)> NetworkSerializeCall
 
 struct INetworkObject
 {
-	~INetworkObject() {}
+	virtual ~INetworkObject() {}
 
 	virtual bool   RegisterSerializeCallback(int32 aspects, const NetworkSerializeCallback& callback, CConnectionScope& connectionScope) = 0;
 	virtual void   MarkAspectsDirty(int32 aspects) = 0;

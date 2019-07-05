@@ -311,8 +311,8 @@ public:
 	//WORLD_HMAP_COORDINATE_EXCHANGE
 	void WorldToGridPos(uint16& rX, uint16& rY, const float cX, const float cY) const
 	{
-		rX = cY / (float)m_WorldSpaceMul;
-		rY = cX / (float)m_WorldSpaceMul;
+		rX = static_cast<uint16>(cY / (float)m_WorldSpaceMul);
+		rY = static_cast<uint16>(cX / (float)m_WorldSpaceMul);
 	}
 
 	const uint32 GetGridResolution() const
@@ -399,4 +399,3 @@ protected: // ------------------------------------------------------------------
 	  const float cWedgeHorizonAngle
 	);
 }; // CHemisphereSink_SH
-

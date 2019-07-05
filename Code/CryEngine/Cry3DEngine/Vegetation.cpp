@@ -14,8 +14,8 @@
 #include "StdAfx.h"
 
 #include "StatObj.h"
+#include "StatObjFoliage.h"
 #include "terrain.h"
-#include "StatObj.h"
 #include "ObjMan.h"
 #include "PolygonClipContext.h"
 #include "3dEngine.h"
@@ -25,6 +25,52 @@
 #define BYTE2RAD(x) ((x) * float(g_PI2) / 255.0f)
 
 float CRY_ALIGN(128) CVegetation::g_scBoxDecomprTable[256];
+
+namespace VegetationPoolAllocator
+{
+stl::PoolAllocator<sizeof(CVegetation), stl::PSyncNone> m_vegetationAllocator[CVegetation::eAllocator_Count];
+}
+
+void* CVegetation::operator new(size_t size, EAllocatorId allocatorId)
+{
+	// allocate procedural vegetation separately from normal vegetation
+	return VegetationPoolAllocator::m_vegetationAllocator[allocatorId].Allocate();
+}
+
+void CVegetation::operator delete(void* pToFree, EAllocatorId unused)
+{
+	CVegetation::operator delete(pToFree);
+}
+
+void CVegetation::operator delete(void* pToFree)
+{
+	if (((CVegetation*)pToFree)->m_dwRndFlags & ERF_PROCEDURAL)
+		VegetationPoolAllocator::m_vegetationAllocator[eAllocator_Procedural].Deallocate(pToFree);
+	else
+		VegetationPoolAllocator::m_vegetationAllocator[eAllocator_Default].Deallocate(pToFree);
+}
+
+void CVegetation::StaticReset()
+{
+	for (int i = 0; i < eAllocator_Count; i++)
+	{
+		assert(VegetationPoolAllocator::m_vegetationAllocator[i].GetCounts().nUsed == 0);
+		VegetationPoolAllocator::m_vegetationAllocator[i].FreeMemory();
+	}
+}
+
+void CVegetation::GetStaticMemoryUsage(ICrySizer* pSizer)
+{
+	{
+		SIZER_COMPONENT_NAME(pSizer, "DefaultVegetPool");
+		pSizer->AddObject(VegetationPoolAllocator::m_vegetationAllocator[CVegetation::eAllocator_Default]);
+	}
+
+	{
+		SIZER_COMPONENT_NAME(pSizer, "ProcVegetPool");
+		pSizer->AddObject(VegetationPoolAllocator::m_vegetationAllocator[CVegetation::eAllocator_Procedural]);
+	}
+}
 
 // g_scBoxDecomprTable heps on consoles (no difference on PC)
 void CVegetation::InitVegDecomprTable()
@@ -54,6 +100,30 @@ void CVegetation::Init()
 	m_pSpriteInfo = nullptr;
 	m_pDeformable = nullptr;
 	m_bApplyPhys = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CVegetation::Instance(bool bInstance)
+{
+	if (bInstance == IsInstanced())
+		return;
+
+	if (!bInstance)
+	{
+		// Drop instancing/temp-data even from hidden objects
+		if (m_pInstancingInfo)
+		{
+			SAFE_DELETE(m_pInstancingInfo);
+			InvalidatePermanentRenderObject();
+		}
+	}
+
+	// keep inactive objects at the end of the list
+	// keep active objects at the front of the list
+	if (!IsHidden() && m_pOcNode)
+		m_pOcNode->ReorderObject(this, !bInstance);
+
+	FlipRndFlags(ERF_STATIC_INSTANCING);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -150,8 +220,8 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 			const float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 			wantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
 
-			if (auto pTempData = m_pTempData.load())
-				pTempData->userData.nWantedLod = wantedLod;
+			if (m_pTempData)
+				m_pTempData->userData.nWantedLod = wantedLod;
 		}
 
 		int minUsableLod = pStatObj->GetMinUsableLod();
@@ -170,8 +240,6 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 
 		if (passInfo.IsGeneralPass())
 		{
-			const float fSpriteSwitchDist = GetSpriteSwitchDist();
-
 			if (m_pSpriteInfo)
 			{
 				m_pSpriteInfo->ucDissolveOut = 255;
@@ -199,20 +267,20 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 
 	return CLodValue(nLodA, nDissolveRefA, nLodB);
 }
-	
+
 //////////////////////////////////////////////////////////////////////////
-void CVegetation::FillBendingData(CRenderObject* pObj, const SRenderingPassInfo& passInfo) const
+void CVegetation::FillBendingData(CRenderObject* pObj) const
 {
 	const StatInstGroup& vegetGroup = GetStatObjGroup();
 
 	if (GetCVars()->e_VegetationBending && vegetGroup.fBending)
 	{
-		pObj->SetBendingData({ 0.1f * vegetGroup.fBending, vegetGroup.GetStatObj() ? vegetGroup.GetStatObj()->GetRadiusVert() : 1.0f }, passInfo);
+		pObj->SetBendingData({ 0.1f * vegetGroup.fBending, vegetGroup.GetStatObj() ? vegetGroup.GetStatObj()->GetRadiusVert() : 1.0f });
 		pObj->m_ObjFlags |= FOB_BENDED | FOB_DYNAMIC_OBJECT;
 	}
 	else
 	{
-		pObj->SetBendingData({ 0.0f, 0.0f }, passInfo);
+		pObj->SetBendingData({ 0.0f, 0.0f });
 	}
 }
 
@@ -221,7 +289,9 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	auto pTempData = m_pTempData.load();
+	DBG_LOCK_TO_THREAD(this);
+
+	auto pTempData = m_pTempData;
 	if (!pTempData)
 	{
 		CRY_ASSERT(false);
@@ -262,11 +332,10 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	if (!pStatObj)
 		return;
 
-	FillBendingData(pRenderObject, passInfo);
+	FillBendingData(pRenderObject);
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = GetBBox().GetCenter();
-	const Vec3 vObjPos = GetPos();
 
 	float fEntDistance = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 	float fEntDistance2D = pRenderObject->m_bPermanent ? 0 : sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
@@ -275,6 +344,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	pRenderObject->m_pRenderNode = const_cast<IRenderNode*>(static_cast<const IRenderNode*>(this));
 	pRenderObject->m_fAlpha = 1.f;
 	pRenderObject->m_ObjFlags |= FOB_INSHADOW | FOB_TRANS_MASK | FOB_DYNAMIC_OBJECT;
+	pRenderObject->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : FOB_NONE;
 	pRenderObject->m_editorSelectionID = m_nEditorSelectionID;
 
 	if (!userData.objMat.m01 && !userData.objMat.m02 && !userData.objMat.m10 && !userData.objMat.m12 && !userData.objMat.m20 && !userData.objMat.m21)
@@ -291,8 +361,9 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	else
 		pRenderObject->m_ObjFlags &= ~FOB_BLEND_WITH_TERRAIN_COLOR;
 
+	CRY_ASSERT(fEntDistance * 2.0f <= std::numeric_limits<decltype(CRenderObject::m_nSort)>::max());
 	pRenderObject->m_fDistance = fEntDistance;
-	pRenderObject->m_nSort = fastround_positive(fEntDistance * 2.0f);
+	pRenderObject->m_nSort = HalfFlip(CryConvertFloatToHalf(fEntDistance * 2.0f));
 
 	if (uint8 nMaterialLayers = GetMaterialLayers())
 	{
@@ -308,9 +379,9 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	else if (vegetGroup.GetStatObj())
 		pRenderObject->m_pCurrMaterial = vegetGroup.GetStatObj()->GetMaterial();
 
-	ColorF color = pRenderObject->GetAmbientColor(passInfo);
+	ColorF color = pRenderObject->GetAmbientColor();
 	color.a = vegetGroup.fBrightness > 1.f ? 1.f : vegetGroup.fBrightness;
-	pRenderObject->SetAmbientColor(color, passInfo);
+	pRenderObject->SetAmbientColor(color);
 
 	float fRenderQuality = vegetGroup.bUseSprites ?
 	                       min(1.f, max(1.f - fEntDistance2D / GetSpriteSwitchDist(), 0.f)) :
@@ -358,7 +429,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 		SRenderObjData* pOD = pRenderObject->GetObjData();
 		if (pOD)
 		{
-			pOD->m_pSkinningData = pFoliage->GetSkinningData(pRenderObject->GetMatrix(passInfo), passInfo);
+			pOD->m_pSkinningData = pFoliage->GetSkinningData(pRenderObject->GetMatrix(), passInfo);
 			pRenderObject->m_ObjFlags |= FOB_SKINNED | FOB_DYNAMIC_OBJECT;
 			pFoliage->SetFlags(pFoliage->GetFlags() & ~IFoliage::FLAG_FROZEN | -(int)(pRenderObject->m_nMaterialLayers & MTL_LAYER_FROZEN) & IFoliage::FLAG_FROZEN);
 		}
@@ -368,14 +439,14 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	// because it can be called from the physics callback.
 	// A query for the visareastencilref is therefore issued every time it is rendered.
 	pRenderObject->m_nClipVolumeStencilRef = 0;
-	if (m_pOcNode && m_pOcNode->GetVisArea())
-		pRenderObject->m_nClipVolumeStencilRef = ((IVisArea*)m_pOcNode->GetVisArea())->GetStencilRef();
+	if (auto pVisArea = GetEntityVisArea())
+		pRenderObject->m_nClipVolumeStencilRef = pVisArea->GetStencilRef();
 	else if (userData.m_pClipVolume)
 		pRenderObject->m_nClipVolumeStencilRef = userData.m_pClipVolume->GetStencilRef();
 
 	if (m_pSpriteInfo && m_pSpriteInfo->ucAlphaTestRef < 255 && GetCVars()->e_VegetationSprites && !passInfo.IsShadowPass())
 	{
-		CThreadSafeRendererContainer<SVegetationSpriteInfo>& arrSpriteInfo = GetObjManager()->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][passInfo.ThreadID()];
+		CryMT::CThreadSafePushContainer<SVegetationSpriteInfo>& arrSpriteInfo = GetObjManager()->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][passInfo.ThreadID()];
 		arrSpriteInfo.push_back(*m_pSpriteInfo);
 	}
 
@@ -451,8 +522,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 			mat = matRotZ * mat;
 			// set sprite translation
 			mat.SetTranslation(m_vPos + matRotZ * pStatObj->GetVegCenter() * GetScale());
-			
-			pRenderObject->SetMatrix(mat, passInfo);
+
+			pRenderObject->SetMatrix(mat);
 
 			// disable selection on sprites
 			pRenderObject->m_editorSelectionID = 0;
@@ -469,8 +540,10 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 			m_pDeformable->RenderInternalDeform(pRenderObject, lodValue.LodA(), GetBBox(), passInfo);
 	}
 
+#if !defined(_RELEASE)
 	if (GetCVars()->e_BBoxes)
 		GetObjManager()->RenderObjectDebugInfo((IRenderNode*)this, pRenderObject->m_fDistance, passInfo);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -491,7 +564,7 @@ void CVegetation::Physicalize(bool bInstant)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Vegetation physicalization");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Vegetation physicalization");
 
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
@@ -638,7 +711,7 @@ bool CVegetation::PhysicalizeFoliage(bool bPhysicalize, int iSource, int nSlot)
 	if (!pBody || !pBody->m_pSpines)
 		return false;
 
-	if (auto pTempData = m_pTempData.load())
+	if (auto pTempData = m_pTempData)
 	{
 		if (bPhysicalize)
 		{
@@ -700,7 +773,7 @@ IRenderNode* CVegetation::Clone() const
 void CVegetation::ShutDown()
 {
 	Get3DEngine()->FreeRenderNodeState(this); // Also does unregister entity.
-	CRY_ASSERT(!m_pTempData.load());
+	CRY_ASSERT(!m_pTempData);
 
 	// TODO: Investigate thread-safety wrt tempdata here.
 	Dephysicalize();
@@ -728,7 +801,7 @@ void CVegetation::Dephysicalize(bool bKeepIfReferenced)
 	if (m_pPhysEnt && GetSystem()->GetIPhysicalWorld()->DestroyPhysicalEntity(m_pPhysEnt, 4 * (int)bKeepIfReferenced))
 	{
 		m_pPhysEnt = 0;
-		const auto pTempData = m_pTempData.load();
+		const auto pTempData = m_pTempData;
 		if (pTempData && pTempData->userData.m_pFoliage)
 		{
 			pTempData->userData.m_pFoliage->Release();
@@ -752,7 +825,7 @@ const char* CVegetation::GetName() const
 	       GetStatObj()->GetFilePath() : "StatObjNotSet";
 }
 //////////////////////////////////////////////////////////////////////////
-IRenderMesh* CVegetation::GetRenderMesh(int nLod)
+IRenderMesh* CVegetation::GetRenderMesh(int nLod) const
 {
 	CStatObj* pStatObj(GetStatObj());
 
@@ -771,7 +844,7 @@ IRenderMesh* CVegetation::GetRenderMesh(int nLod)
 	return pStatObj->GetRenderMesh();
 }
 //////////////////////////////////////////////////////////////////////////
-IMaterial* CVegetation::GetMaterialOverride()
+IMaterial* CVegetation::GetMaterialOverride() const
 {
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
@@ -795,8 +868,6 @@ void CVegetation::OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData,
 	userData.objMat = mtx;
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
-	StatInstGroup& vegetGroup = GetStatObjGroup();
-	float fEntDistance2D = sqrt_tpl(vCamPos.GetSquaredDistance2D(m_vPos)) * passInfo.GetZoomFactor();
 	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, GetBBox())) * passInfo.GetZoomFactor();
 
 	userData.nWantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
@@ -819,7 +890,6 @@ void CVegetation::UpdateSpriteInfo(SVegetationSpriteInfo& si, float fSpriteAmoun
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 
 	const float nMin = 1;
-	const float nMax = 255;
 
 	si.ucAlphaTestRef = (byte)nMin;
 
@@ -858,8 +928,8 @@ void CVegetation::UpdateSpriteInfo(SVegetationSpriteInfo& si, float fSpriteAmoun
 
 IFoliage* CVegetation::GetFoliage(int nSlot)
 {
-	if (const auto pTempData = m_pTempData.load())
-		return pTempData->userData.m_pFoliage;
+	if (m_pTempData)
+		return m_pTempData->userData.m_pFoliage;
 
 	return nullptr;
 }
@@ -904,7 +974,7 @@ void CVegetation::CheckCreateDeformable()
 
 void CVegetation::OffsetPosition(const Vec3& delta)
 {
-	if (const auto pTempData = m_pTempData.load()) pTempData->OffsetPosition(delta);
+	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	// GetBBox before moving position
 	AABB aabb = GetBBox();
 	if (m_bApplyPhys)
@@ -954,13 +1024,6 @@ bool CVegetation::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* dist
 	return true;
 }
 
-const AABB CVegetation::GetBBox() const
-{
-	AABB aabb;
-	FillBBoxFromExtends(aabb, m_boxExtends, m_vPos);
-	return aabb;
-}
-
 void CVegetation::UpdateRndFlags()
 {
 	StatInstGroup& vegetGroup = GetStatObjGroup();
@@ -971,22 +1034,13 @@ void CVegetation::UpdateRndFlags()
 
 	m_dwRndFlags &= ~dwFlagsToUpdate;
 	m_dwRndFlags |= vegetGroup.m_dwRndFlags & (dwFlagsToUpdate | ERF_HAS_CASTSHADOWMAPS);
+	m_dwRndFlags |= !vegetGroup.bIgnoreTerrainLayerBlend ? ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND : 0;
 
 	IRenderNode::SetLodRatio((int)(vegetGroup.fLodDistRatio * 100.f));
 	IRenderNode::SetViewDistRatio((int)(vegetGroup.fMaxViewDistRatio * 100.f));
 }
 
-void CVegetation::FillBBox(AABB& aabb)
-{
-	FillBBoxFromExtends(aabb, m_boxExtends, m_vPos);
-}
-
-EERType CVegetation::GetRenderNodeType()
-{
-	return eERType_Vegetation;
-}
-
-float CVegetation::GetMaxViewDist()
+float CVegetation::GetMaxViewDist() const
 {
 	StatInstGroup& group = GetStatObjGroup();
 	CStatObj* pStatObj = (CStatObj*)(IStatObj*)group.pStatObj;
@@ -1005,9 +1059,9 @@ IStatObj* CVegetation::GetEntityStatObj(unsigned int nSubPartId, Matrix34A* pMat
 {
 	if (pMatrix)
 	{
-		if (const auto pTempData = m_pTempData.load())
+		if (m_pTempData)
 		{
-			*pMatrix = pTempData->userData.objMat;
+			*pMatrix = m_pTempData->userData.objMat;
 		}
 		else
 		{
@@ -1039,7 +1093,7 @@ IMaterial* CVegetation::GetMaterial(Vec3* pHitPos) const
 	return NULL;
 }
 
-bool CVegetation::CanExecuteRenderAsJob()
+bool CVegetation::CanExecuteRenderAsJob() const
 {
-	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0;
+	return (GetCVars()->e_ExecuteRenderAsJobMask & BIT(GetRenderNodeType())) != 0 && (m_dwRndFlags & ERF_RENDER_ALWAYS) == 0;
 }

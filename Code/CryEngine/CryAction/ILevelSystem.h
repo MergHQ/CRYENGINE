@@ -103,17 +103,15 @@ struct ILevelInfo
 
 	struct SMinimapInfo
 	{
-		SMinimapInfo() : fStartX(0), fStartY(0), fEndX(1), fEndY(1), fDimX(1), fDimY(1), iWidth(1024), iHeight(1024) {}
-
 		string sMinimapName;
-		int    iWidth;
-		int    iHeight;
-		float  fStartX;
-		float  fStartY;
-		float  fEndX;
-		float  fEndY;
-		float  fDimX;
-		float  fDimY;
+		int    iWidth  = 1024;
+		int    iHeight = 1024;
+		float  fStartX = 0.f;
+		float  fStartY = 0.f;
+		float  fEndX   = 1.f;
+		float  fEndY   = 1.f;
+		float  fDimX   = 1.f;
+		float  fDimY   = 1.f;
 	};
 
 	virtual const char*                      GetName() const = 0;
@@ -155,14 +153,14 @@ struct ILevelInfo
 
 struct ILevelSystemListener
 {
-	virtual ~ILevelSystemListener(){}
-	virtual void OnLevelNotFound(const char* levelName) = 0;
-	virtual void OnLoadingStart(ILevelInfo* pLevel) = 0;
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) = 0;
-	virtual void OnLoadingComplete(ILevelInfo* pLevel) = 0;
-	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) = 0;
-	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) = 0;
-	virtual void OnUnloadComplete(ILevelInfo* pLevel) = 0;
+	virtual ~ILevelSystemListener()                                        {}
+	virtual void OnLevelNotFound(const char* levelName)                    {}
+	virtual bool OnLoadingStart(ILevelInfo* pLevel)                        { return true; }
+	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel)           {}
+	virtual void OnLoadingComplete(ILevelInfo* pLevel)                     {}
+	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error)     {}
+	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) {}
+	virtual void OnUnloadComplete(ILevelInfo* pLevel)                      {}
 
 	void         GetMemoryUsage(ICrySizer* pSizer) const { /*nothing*/ }
 };
@@ -174,6 +172,14 @@ struct ILevelSystem :
 	{
 		TAG_MAIN    = 'MAIN',
 		TAG_UNKNOWN = 'ZZZZ'
+	};
+
+	//! Result of time-sliced level loading
+	enum class ELevelLoadStatus
+	{
+		InProgress,  //!< Loading in progress
+		Done,        //!< Loading done
+		Failed       //!< Loading failed 
 	};
 
 	virtual void              Rescan(const char* levelsFolder, const uint32 tag) = 0;
@@ -188,6 +194,8 @@ struct ILevelSystem :
 
 	virtual ILevelInfo*       GetCurrentLevel() const = 0;
 	virtual ILevelInfo*       LoadLevel(const char* levelName) = 0;
+	virtual bool              StartLoadLevel(const char* szLevelName) = 0;
+	virtual ELevelLoadStatus  UpdateLoadLevelStatus() = 0;
 	virtual void              UnLoadLevel() = 0;
 	virtual ILevelInfo*       SetEditorLoadedLevel(const char* levelName, bool bReadLevelInfoMetaData = false) = 0;
 	virtual bool              IsLevelLoaded() = 0;

@@ -82,7 +82,7 @@ public:
 	void OnInitialise()
 	{
 #ifndef _RELEASE
-		CRY_ASSERT_TRACE (0, ("Unexpected anim type %d (%s) for %s action", m_animType, s_onOffAnimTypeNames[m_animType], GetName()));
+		CRY_ASSERT (0, ("Unexpected anim type %d (%s) for %s action", m_animType, s_onOffAnimTypeNames[m_animType], GetName()));
 #endif
 	}
 
@@ -287,7 +287,7 @@ void CPlayerStateLadder::OnUseLadder(CPlayer& player, IEntity* pLadder)
 	LadderLogIndent();
 
 #ifndef _RELEASE
-	CRY_ASSERT_TRACE(m_dbgNumActions == 0, ("%s shouldn't have any leftover ladder actions but has %d", player.GetEntity()->GetEntityTextDescription().c_str(), m_dbgNumActions));
+	CRY_ASSERT(m_dbgNumActions == 0, "%s shouldn't have any leftover ladder actions but has %d", player.GetEntity()->GetEntityTextDescription().c_str(), m_dbgNumActions);
 #endif
 
 	assert (player.IsOnLadder());
@@ -484,8 +484,6 @@ void CPlayerStateLadder::OnExit( CPlayer& player )
 	{
 		return;
 	}
-
-	IAnimatedCharacter* pAnimChar = player.GetAnimatedCharacter();
 
 	//player.GetActorStats()->gravity = simPar.gravity;
 

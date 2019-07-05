@@ -15,6 +15,9 @@
 
 #include "StdAfx.h"
 #include "NetworkedPhysicsEntity.h"
+#include <CryMemory/CrySizer.h>
+#include <CryPhysics/physinterface.h>
+#include <CryMath/Random.h>
 
 //-----------------------------------------------------------------------------
 CNetworkedPhysicsEntity::CNetworkedPhysicsEntity()
@@ -58,7 +61,7 @@ bool CNetworkedPhysicsEntity::ReloadExtension( IGameObject * pGameObject, const 
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CCTFFlag::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CCTFFlag::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -66,7 +69,7 @@ bool CNetworkedPhysicsEntity::ReloadExtension( IGameObject * pGameObject, const 
 //-----------------------------------------------------------------------------
 bool CNetworkedPhysicsEntity::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CCTFFlag::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CCTFFlag::GetEntityPoolSignature not implemented");
 	
 	return true;
 }

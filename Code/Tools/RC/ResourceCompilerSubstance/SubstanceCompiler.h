@@ -4,7 +4,6 @@
 
 #include "IConverter.h"             // IConverter
 #include "SubstanceConverter.h"         // ImageConverter::PresetAliases
-#include "ResourceCompiler.h"
 
 
 enum EConfigPriority; 

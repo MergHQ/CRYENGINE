@@ -5,6 +5,7 @@
 
 #include <CrySystem/ISystem.h>
 #include <CryCore/Containers/CryListenerSet.h>
+#include <CryThreading/MultiThread_Containers.h>
 
 class CSystemEventDispatcher : public ISystemEventDispatcher
 {
@@ -21,8 +22,6 @@ public:
 
 	// ~ISystemEventDispatcher
 private:
-	void OnSystemEventAnyThread(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
-
 	typedef CListenerSet<ISystemEventListener*> TSystemEventListeners;
 	TSystemEventListeners m_listeners;
 

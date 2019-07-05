@@ -175,10 +175,62 @@ ColorB GetCurveColor(CAnimParamType paramType)
 
 	return ColorB(243, 121, 223);
 }
+
+std::vector<SAddableTrack> FindIntersection(std::vector<SAddableTrack> &v1, std::vector<SAddableTrack> &v2)
+{
+	std::vector<SAddableTrack> v3;
+
+	std::sort(v1.begin(), v1.end());
+	std::sort(v2.begin(), v2.end());
+
+	std::set_intersection(v1.begin(), v1.end(), v2.begin(), v2.end(), std::back_inserter(v3));
+	return v3;
 }
+}
+
+class CCurveEditorFrame : public QFrame
+{
+public:
+	CCurveEditorFrame(QWidget* pParent = nullptr)
+		: QFrame(pParent)
+		, m_pCurveEditor(new CCurveEditor(this))
+		, m_pCurveEditorToolbar(new QToolBar("Curve Controls"))
+	{
+		QVBoxLayout* pFrameLayout = new QVBoxLayout();
+
+		pFrameLayout->setMargin(0);
+		pFrameLayout->setSpacing(0);
+		pFrameLayout->setContentsMargins(1, 1, 1, 1);
+		
+		pFrameLayout->addWidget(m_pCurveEditorToolbar);
+		pFrameLayout->addWidget(m_pCurveEditor);
+		
+		setLayout(pFrameLayout);
+	}
+
+	void UpdateToolbar()
+	{
+		m_pCurveEditor->FillWithCurveToolsAndConnect(m_pCurveEditorToolbar);
+	}
+
+	CCurveEditor* GetCurveEditor() const
+	{
+		return m_pCurveEditor;
+	}
+
+	QToolBar* GetCurveEditorToolbar() const
+	{
+		return m_pCurveEditorToolbar;
+	}
+
+private:
+	CCurveEditor* m_pCurveEditor;
+	QToolBar*     m_pCurveEditorToolbar;
+};
 
 namespace
 {
+
 typedef std::vector<STimelineTrack*>                               TSelectedTracks;
 typedef std::unordered_map<STimelineTrack*, bool>                  TAllTracksWithSelection;
 typedef std::vector<std::pair<STimelineTrack*, STimelineElement*>> TSelectedElements;
@@ -206,20 +258,33 @@ void GetAllTracksWithSelection(STimelineTrack& track, TAllTracksWithSelection& t
 	}
 }
 
-void GetSelectedElements(STimelineTrack& track, TSelectedElements& elements)
+// calculate selected elements and corresponding key count; 
+// keyCount means that in the compound track such as "Position" we have keyCount("Position") = max(keyCount("X"),keyCount("Y"),keyCount("Z"))
+size_t GetSelectedElements(STimelineTrack& track, TSelectedElements& elements, size_t& keyCount, size_t depth = 0)
 {
+	size_t elementCount = 0;
 	for (auto iter = track.elements.begin(); iter != track.elements.end(); ++iter)
 	{
 		if (iter->selected && !iter->deleted)
 		{
 			elements.push_back(std::make_pair(&track, &(*iter)));
+			elementCount += 1;
 		}
 	}
 
 	for (auto iter = track.tracks.begin(); iter != track.tracks.end(); ++iter)
 	{
-		GetSelectedElements(**iter, elements);
+		elementCount = max(elementCount, GetSelectedElements(**iter, elements, keyCount, depth + 1));
 	}
+
+	if (depth == 2) // level 2 is hardcoded assuming that actual keys are starting to appear on the 2nd level of the tree of tracks;
+					// for example usually we have structure such as: (Root) -> "Entity-1" -> "Position" -> "X","Y","Z" and we calculating 
+					// keys on the "Position" level such as keyCount("Position") = max(keyCount("X"),keyCount("Y"),keyCount("Z"))
+	{
+		keyCount += elementCount;
+	}
+	
+	return elementCount;
 }
 }
 
@@ -227,15 +292,17 @@ CTrackViewSequenceTabWidget::CTrackViewSequenceTabWidget(CTrackViewCore* pTrackV
 	: CTrackViewCoreComponent(pTrackViewCore, true)
 	, m_pCurrentSelectionDopeSheet(nullptr)
 	, m_pCurrentSelectionCurveEditor(nullptr)
+	, m_currentKeySelectionCount(0)
 	, m_pCurrentSelectedNode(nullptr)
 	, m_bDontUpdateDopeSheet(false)
-	, m_pToolbar(nullptr)
 	, m_bDontUpdateCurveEditor(false)
 	, m_showCurveEditor(true)
 	, m_showDopeSheet(true)
 	, m_timelineLink(true)
 	, m_showKeyText(true)
+	, m_syncSelection(false)
 	, m_timeUnit(SAnimTime::EDisplayMode::Time)
+	, m_invertScrubberSnappingBehavior(false)
 {
 	GetIEditor()->RegisterNotifyListener(this);
 
@@ -432,11 +499,6 @@ void CTrackViewSequenceTabWidget::TimelineLayoutChanged(bool bUpdateProperties)
 	}
 }
 
-void CTrackViewSequenceTabWidget::SetToolbar(QToolBar* pToolbar)
-{
-	m_pToolbar = pToolbar;
-}
-
 CTrackViewNode* CTrackViewSequenceTabWidget::GetNodeFromActiveSequence(const STimelineTrack* pDopeSheetTrack)
 {
 	return GetNodeFromDopeSheetTrack(GetActiveSequence(), pDopeSheetTrack);
@@ -455,7 +517,6 @@ void CTrackViewSequenceTabWidget::OpenSequenceTab(const CryGUID sequenceGUID)
 
 	SSequenceData& sequenceData = m_idToSequenceDataMap[sequenceGUID];
 
-	bool bOpen = false;
 	const int numTabs = m_pDopesheetTabs->count();
 	for (int i = 0; i < numTabs; ++i)
 	{
@@ -499,10 +560,42 @@ void CTrackViewSequenceTabWidget::OpenSequenceTab(const CryGUID sequenceGUID)
 	pDopeSheet->SetDrawTrackTimeMarkers(true);
 	pDopeSheet->SetVisibleDistance((sequenceData.m_endTime - sequenceData.m_startTime).ToFloat());
 	pDopeSheet->SetKeySnapping(GetTrackViewCore()->GetCurrentSnapMode() == eSnapMode_KeySnapping);
+	pDopeSheet->SetInvertScrubberSnapping(m_invertScrubberSnappingBehavior);
 	pDopeSheet->SetTimeSnapping(GetTrackViewCore()->GetCurrentSnapMode() == eSnapMode_TimeSnapping);
-	pDopeSheet->SetKeyScaling(GetTrackViewCore()->GetCurrentKeyMoveMode() == eKeyMoveMode_Scale);
 	pDopeSheet->SetTime(pSequence->GetTime());
 	pDopeSheet->SetContent(&sequenceData.m_timelineContent);
+
+	switch (GetTrackViewCore()->GetCurrentKeyMoveMode())
+	{
+		case eKeyMoveMode_Move:
+		{
+			pDopeSheet->SetKeyMoving();
+			break;
+		}
+		case eKeyMoveMode_Slide:
+		{
+			ETrackViewKeySlideMode slideMode = GetTrackViewCore()->GetCurrentKeySlideMode();
+			switch (slideMode)
+			{
+				case eKeySlideMode_Both:
+					pDopeSheet->SetKeySliding(CTimeline::eKeysSlideMode_Both);
+					break;
+				case eKeySlideMode_Left:
+					pDopeSheet->SetKeySliding(CTimeline::eKeysSlideMode_Left);
+					break;
+				case eKeySlideMode_Right:
+					pDopeSheet->SetKeySliding(CTimeline::eKeysSlideMode_Right);
+					break;
+			}
+			break;
+		}
+		case eKeyMoveMode_Scale:
+		{
+			pDopeSheet->SetKeyScaling();
+			break;
+		}
+	}
+	
 
 	QObject::connect(pDopeSheet, &CTimeline::SignalSelectionChanged, this, &CTrackViewSequenceTabWidget::OnSelectionChanged);
 	QObject::connect(pDopeSheet, &CTimeline::SignalSelectionRefresh, this, &CTrackViewSequenceTabWidget::OnSelectionRefresh);
@@ -529,22 +622,19 @@ void CTrackViewSequenceTabWidget::OpenSequenceTab(const CryGUID sequenceGUID)
 	connect(pDopeSheet, SIGNAL(SignalCopy(SAnimTime, STimelineTrack*)), this, SLOT(OnDopesheetCopy()));
 	connect(pDopeSheet, SIGNAL(SignalPaste(SAnimTime, STimelineTrack*)), this, SLOT(OnDopesheetPaste(SAnimTime, STimelineTrack*)));
 
-	QFrame* pCurveEditorFrame = new QFrame(m_pDopesheetTabs);
+	CCurveEditorFrame* pCurveEditorFrame = new CCurveEditorFrame(m_pDopesheetTabs);
 	pCurveEditorFrame->setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
-	QVBoxLayout* pCurveEditorLayout = new QVBoxLayout(pCurveEditorFrame);
-	pCurveEditorLayout->setMargin(0);
-	pCurveEditorLayout->setSpacing(0);
-	pCurveEditorFrame->setLayout(pCurveEditorLayout);
 
-	CCurveEditor* pCurveEditor = new CCurveEditor(pCurveEditorFrame);
+	CCurveEditor* pCurveEditor = pCurveEditorFrame->GetCurveEditor();
 	pCurveEditor->SetContent(&sequenceData.m_curveEditorContent);
 	pCurveEditor->SetTimeRange(sequenceData.m_startTime, sequenceData.m_endTime);
 	pCurveEditor->SetTime(pSequence->GetTime());
 	pCurveEditor->SetGridVisible(true);
+	pCurveEditor->SetFitMargin(0.0f);
 	pCurveEditor->SetKeySnapping(GetTrackViewCore()->GetCurrentSnapMode() == eSnapMode_KeySnapping);
 	pCurveEditor->SetTimeSnapping(GetTrackViewCore()->GetCurrentSnapMode() == eSnapMode_TimeSnapping);
-
-	pCurveEditorLayout->addWidget(pCurveEditor);
+	
+	pCurveEditorFrame->UpdateToolbar();
 
 	connect(pCurveEditor, SIGNAL(SignalContentChanged()), this, SLOT(OnCurveEditorContentChanged()));
 	connect(pCurveEditor, SIGNAL(SignalScrub()), this, SLOT(OnCurveEditorScrub()));
@@ -573,7 +663,8 @@ void CTrackViewSequenceTabWidget::OpenSequenceTab(const CryGUID sequenceGUID)
 
 	UpdateActiveSequence();
 	UpdatePlaybackRangeMarkers();
-	UpdateToolbar();
+
+	EnableTimelineLink(!m_timelineLink);
 }
 
 void CTrackViewSequenceTabWidget::OnAddNodeButtonClicked()
@@ -700,8 +791,6 @@ void CTrackViewSequenceTabWidget::OnRenameNode()
 
 void CTrackViewSequenceTabWidget::OnDeleteNodes()
 {
-	QAction* pAction = static_cast<QAction*>(QObject::sender());
-
 	CTimeline* pDopeSheet = GetActiveDopeSheet();
 	CTrackViewSequence* pSequence = GetSequenceFromDopeSheet(pDopeSheet);
 	STimelineContent* pContent = pDopeSheet ? pDopeSheet->Content() : nullptr;
@@ -801,15 +890,46 @@ void CTrackViewSequenceTabWidget::OnSelectEntity()
 {
 	if (m_pContextMenuNode && m_pContextMenuNode->GetNodeType() == eTVNT_AnimNode)
 	{
-		CTrackViewAnimNode* pAnimNode = static_cast<CTrackViewAnimNode*>(m_pContextMenuNode);
-		CEntityObject* pEntity = pAnimNode->GetNodeEntity();
-		if (pEntity)
+		SelectEntity(static_cast<CTrackViewAnimNode*>(m_pContextMenuNode)->GetNodeEntity());
+	}
+}
+
+void CTrackViewSequenceTabWidget::SelectEntity(CEntityObject* pEntity)
+{
+	if (!pEntity)
+		return;
+
+	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+	pObjectManager->SelectObject(pEntity);
+}
+
+void CTrackViewSequenceTabWidget::OnAddTrackToSelectedNode(CAnimParamType type)
+{
+	CTrackViewNode* pTempMenuNode = m_pContextMenuNode;
+	if (CTrackViewSequence* pActiveSequence = GetActiveSequence())
+	{
+		if (CTimeline* pTimeline = GetDopeSheetFromSequenceGUID(pActiveSequence->GetGUID()))
 		{
-			IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
-			pObjectManager->ClearSelection();
-			pObjectManager->SelectObject(pEntity);
+			if (STimelineContent* pContent = pTimeline->Content())
+			{
+				std::vector<STimelineTrack*> selectedTracks;
+				GetSelectedTracks(pContent->track, selectedTracks);
+
+				const size_t numSelectedTracks = selectedTracks.size();
+				if (numSelectedTracks == 1)
+				{
+					CTrackViewNode* pSelectedNode = GetNodeFromDopeSheetTrack(pActiveSequence, selectedTracks[0]);
+					if (pSelectedNode && (pSelectedNode->GetNodeType() == eTVNT_AnimNode))
+					{
+						m_pContextMenuNode = pSelectedNode;
+					}
+				}
+			}
 		}
 	}
+
+	OnAddTrack(type);
+	m_pContextMenuNode = pTempMenuNode;
 }
 
 void CTrackViewSequenceTabWidget::OnImportFromFile()
@@ -944,8 +1064,10 @@ size_t CTrackViewSequenceTabWidget::GetSelectedElementsCount(STimelineTrack* pTi
 
 	if (pTimelineTrack != nullptr)
 	{
+		size_t keyCount = 0;
 		TSelectedElements elements;
-		GetSelectedElements(*pTimelineTrack, elements);
+
+		GetSelectedElements(*pTimelineTrack, elements, keyCount);
 		selectedElementCount = elements.size();
 	}
 
@@ -1002,17 +1124,6 @@ void CTrackViewSequenceTabWidget::UpdateSequenceTabs()
 	}
 }
 
-void CTrackViewSequenceTabWidget::UpdateToolbar()
-{
-	// TODO: We clear here because CurveEditor creates always all items. So should actually
-	//			 refactor the curve editor so we just disconnect and connect.
-	m_pToolbar->clear();
-	if (CCurveEditor* pCurveEditor = GetActiveCurveEditor())
-	{
-		pCurveEditor->FillWithCurveToolsAndConnect(m_pToolbar);
-	}
-}
-
 void CTrackViewSequenceTabWidget::UpdatePlaybackRangeMarkers()
 {
 	CTimeline* pActiveDopeSheet = GetActiveDopeSheet();
@@ -1066,6 +1177,20 @@ void CTrackViewSequenceTabWidget::UpdateActiveSequence()
 	{
 		CTrackViewPlugin::GetAnimationContext()->SetSequence(nullptr, false, true);
 		GetTrackViewCore()->ClearProperties();
+	}
+}
+
+void CTrackViewSequenceTabWidget::UpdateCurveEditorSelection()
+{
+	if (m_pCurrentSelectionCurveEditor)
+	{
+		std::set<SAnimTime> selectedTimes;
+		for (const SSelectedKey& selectedKey : m_currentKeySelection)
+		{
+			selectedTimes.insert(selectedKey.m_key->GetTime());
+		}
+
+		m_pCurrentSelectionCurveEditor->SelectKeysWidthTimes(selectedTimes);
 	}
 }
 
@@ -1131,6 +1256,60 @@ void CTrackViewSequenceTabWidget::CreateAddTrackMenu(QMenu& parentMenu, const CT
 
 		QAction* pAction = pParentMenu->addAction(pathList[pathList.size() - 1]);
 		connect(pAction, &QAction::triggered, [this, type]() { OnAddTrack(type); });
+	}
+}
+
+void CTrackViewSequenceTabWidget::CreateAddTrackMenu(QMenu& parentMenu, const std::vector<CTrackViewAnimNode*>& animNodes)
+{
+	parentMenu.addSeparator();
+	QMenu* pAddTrackMenu = parentMenu.addMenu("Add Track");
+
+	auto addableTracks = Private_TrackViewWindow::GetAddableTracks(*animNodes[0]);
+
+	const size_t animNodesCount = animNodes.size();
+	for (size_t i = 1; i < animNodesCount; i++)
+	{
+		auto addableTracks_i = Private_TrackViewWindow::GetAddableTracks(*animNodes[i]);
+		addableTracks = Private_TrackViewWindow::FindIntersection(addableTracks, addableTracks_i);
+	}
+
+	std::sort(addableTracks.begin(), addableTracks.end(), [](const SAddableTrack& first, const SAddableTrack& second)
+	{
+		return first.m_name < second.m_name;
+	});
+
+	for (const SAddableTrack& track : addableTracks)
+	{
+		CAnimParamType type = track.m_type;
+		QString path(track.m_name.c_str());
+		QStringList pathList = path.split("/");
+		QMenu* pParentMenu = pAddTrackMenu;
+		for (auto i = 0, subMenuCount = pathList.size() - 1; i < subMenuCount; ++i)
+		{
+			const QString& section = pathList[i];
+			QMenu* pMenu = pParentMenu->findChild<QMenu*>(section);
+			if (!pMenu)
+			{
+				pMenu = pParentMenu->addMenu(section);
+				pMenu->setObjectName(section);
+			}
+
+			pParentMenu = pMenu;
+		}
+
+		QAction* pAction = pParentMenu->addAction(pathList[pathList.size() - 1]);
+		connect(pAction, &QAction::triggered, [this, type, animNodes]()
+		{
+			for (size_t i = 0; i < animNodes.size(); i++)
+			{
+				CTrackViewAnimNode* pAnimNode = animNodes[i];
+
+				string undoMessage;
+				undoMessage.Format("Added track to node '%s'", pAnimNode->GetName());
+				CUndo undo(undoMessage);
+				pAnimNode->CreateTrack(type);
+			}
+		});
 	}
 }
 
@@ -1286,6 +1465,13 @@ void CTrackViewSequenceTabWidget::OnDopesheetTrackSelectionChanged()
 				if (bIsSingleNodeSelection && iter->second)
 				{
 					SetSelection(pNode);
+					
+					if (eTVNT_AnimNode != pNode->GetNodeType() || !m_syncSelection)
+					{
+						continue;
+					}
+
+					SelectEntity(static_cast<CTrackViewAnimNode*>(pNode)->GetNodeEntity());
 				}
 			}
 		}
@@ -1317,14 +1503,14 @@ void CTrackViewSequenceTabWidget::OnDopesheetTreeContextMenu(const QPoint& point
 		std::vector<STimelineTrack*> selectedTracks;
 		GetSelectedTracks(pContent->track, selectedTracks);
 
-		const STimelineTrack* hoverTrack = pDopeSheet->GetTrackFromPos(point);
+		const STimelineTrack* pHoverTrack = pDopeSheet->GetTrackFromPos(point);
 
 		const size_t numSelectedTracks = selectedTracks.size();
-		STimelineTrack* pSingleTrack = (numSelectedTracks == 1) ? selectedTracks[0] : nullptr;
+		const STimelineTrack* pSingleTrack = (numSelectedTracks == 1) ? pHoverTrack : nullptr;
 
 		std::unique_ptr<QMenu> pContextMenu(new QMenu);
 
-		CTrackViewNode* pSelectedNode = GetNodeFromDopeSheetTrack(pSequence, pSingleTrack);
+		CTrackViewNode* pSelectedNode = GetNodeFromDopeSheetTrack(pSequence, pHoverTrack);
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 		const CSelectionGroup* pSelectedObjects = pObjectManager->GetSelection();
 
@@ -1336,13 +1522,13 @@ void CTrackViewSequenceTabWidget::OnDopesheetTreeContextMenu(const QPoint& point
 			pContextMenu->addAction("Add Selected Entities", this, SLOT(OnAddSelectedEntities()))->setEnabled(bShowAddSelectedEntities);
 		}
 
-		if (numSelectedTracks == 0 || !hoverTrack)
+		if (numSelectedTracks == 0 || !pHoverTrack)
 		{
 			m_pContextMenuNode = pSequence;
 			QMenu* addMenu = pContextMenu->addMenu("Add Node");
 			FillAddNodeMenu(*addMenu);
 		}
-		else if (numSelectedTracks > 0 && hoverTrack)
+		else if (numSelectedTracks > 0 && pHoverTrack)
 		{
 			pContextMenu->addSeparator();
 
@@ -1406,7 +1592,7 @@ void CTrackViewSequenceTabWidget::OnDopesheetTreeContextMenu(const QPoint& point
 				if (pEntityObject)
 				{
 					pContextMenu->addSeparator();
-					QAction* pAction = pContextMenu->addAction("Select in Viewport", this, SLOT(OnSelectEntity()));
+					pContextMenu->addAction("Select in Viewport", this, SLOT(OnSelectEntity()));
 				}
 
 				pAnimNode->RefreshDynamicParams();
@@ -1447,6 +1633,57 @@ void CTrackViewSequenceTabWidget::OnDopesheetTreeContextMenu(const QPoint& point
 				}
 			}
 		}
+		else if (numSelectedTracks > 1)
+		{
+			std::vector<CTrackViewAnimNode*> selectedEntities;
+
+			for (size_t i = 0; i < numSelectedTracks; i++)
+			{
+				CTrackViewNode* pViewNode = GetNodeFromDopeSheetTrack(pSequence, selectedTracks[i]);
+				if (pViewNode->GetNodeType() == eTVNT_AnimNode)
+				{ 
+					CTrackViewAnimNode* pViewAnimNode = static_cast<CTrackViewAnimNode*>(pViewNode);
+					if (pViewAnimNode->GetType() == eAnimNodeType_Entity)
+					{
+						selectedEntities.push_back(pViewAnimNode);
+					}
+					else
+					{
+						selectedEntities.clear();
+						break;
+					}
+				}
+				else
+				{
+					selectedEntities.clear();
+					break;
+				}
+			}
+
+			const size_t numSelectedEntities = selectedEntities.size();
+			if ((numSelectedEntities > 0) && pHoverTrack)
+			{
+				pContextMenu->addSeparator();
+				pContextMenu->addAction("Select in Viewport", this, [this, selectedEntities]()
+				{					
+					IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+					pObjectManager->ClearSelection();
+
+					for (size_t i = 0; i < selectedEntities.size(); i++)
+					{
+						pObjectManager->SelectObject(selectedEntities[i]->GetNodeEntity(true));
+					}
+				});
+
+				for (size_t i = 0; i < numSelectedEntities; i++)
+				{
+					selectedEntities[i]->RefreshDynamicParams();
+				}
+
+				CreateAddTrackMenu(*pContextMenu, selectedEntities);
+			}
+		}
+
 
 		pContextMenu->exec(point);
 	}
@@ -1589,8 +1826,6 @@ void CTrackViewSequenceTabWidget::OnCurveEditorContentChanged()
 		CUndo undo("TrackView curve changed");
 
 		CUndo::Record(new CUndoAnimKeySelection(pSequence));
-		CTrackViewKeyBundle bundle = pSequence->GetAllKeys();
-		bundle.SelectKeys(false);
 
 		const size_t numCurves = pCurveEditorContent->m_curves.size();
 		for (size_t i = 0; i < numCurves; ++i)
@@ -1704,6 +1939,25 @@ void CTrackViewSequenceTabWidget::ShowKeyText(bool show)
 	}
 }
 
+void CTrackViewSequenceTabWidget::SyncSelection(bool sync)
+{
+	m_syncSelection = sync;
+}
+
+void CTrackViewSequenceTabWidget::InvertScrubberSnappingBehavior(bool invert)
+{
+	m_invertScrubberSnappingBehavior = invert;
+
+	for (auto iter = m_idToSequenceDataMap.begin(); iter != m_idToSequenceDataMap.end(); ++iter)
+	{
+		CTimeline* pDopeSheet = iter->second.m_pDopeSheet;
+		if (pDopeSheet)
+		{
+			pDopeSheet->SetInvertScrubberSnapping(invert);
+		}
+	}
+}
+
 void CTrackViewSequenceTabWidget::ApplyDopeSheetChanges(CTimeline* pDopeSheet)
 {
 	m_bDontUpdateDopeSheet = true;
@@ -1758,7 +2012,6 @@ void CTrackViewSequenceTabWidget::ApplyTrackChangesRecursive(const CTrackViewSeq
 void CTrackViewSequenceTabWidget::UpdateTrackViewTrack(CTrackViewTrack* pTrack)
 {
 	CTrackViewSequence* pSequence = pTrack->GetSequence();
-	SSequenceData& sequenceData = m_idToSequenceDataMap[pSequence->GetGUID()];
 	STimelineTrack* pDopeSheetTrack = GetDopeSheetTrackFromNode(pTrack);
 	CTrackViewSequenceNotificationContext notificationContext(pSequence);
 
@@ -1782,19 +2035,25 @@ void CTrackViewSequenceTabWidget::UpdateTrackViewTrack(CTrackViewTrack* pTrack)
 				const SAnimTime time(iter->start);
 				CTrackViewKeyHandle handle = pTrack->CreateKey(time);
 
-				if (!iter->added)
+				if (handle.IsValid())
 				{
+					// TODO: This is a very wrong logic.
 					_smart_ptr<IAnimKeyWrapper> pWrappedKey = GetWrappedKeyFromElement(*pDopeSheetTrack, *iter);
 					if (pWrappedKey)
 					{
+						if (!iter->added)
+						{
+							pWrappedKey->SetTime(handle.GetTime());
+						}
 						handle.SetKey(pWrappedKey->Key());
 					}
+					// ~TODO
+
+					handle.SetDuration(SAnimTime(iter->end - iter->start));
+					handle.Select(iter->selected);
+
+					Serialization::SaveBinaryBuffer(iter->userSideLoad, *handle.GetWrappedKey());
 				}
-
-				handle.SetDuration(SAnimTime(iter->end - iter->start));
-				handle.Select(iter->selected);
-
-				Serialization::SaveBinaryBuffer(iter->userSideLoad, *handle.GetWrappedKey());
 			}
 		}
 	}
@@ -1888,7 +2147,30 @@ void CTrackViewSequenceTabWidget::AddNodeToDopeSheet(CTrackViewNode* pNode)
 
 			pDopeSheetTrack->name = pNode->GetName();
 			pDopeSheetTrack->height = 22;
-			pDopeSheetTrack->caps |= STimelineTrack::CAP_DESCRIPTION_TRACK;
+
+			switch (pAnimNode->GetType())
+			{
+				case eAnimNodeType_Group:
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_FOLDER_TRACK;
+				}
+				break;
+				case eAnimNodeType_Entity:
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_NODE_TRACK;
+				}
+				break;
+				default:
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_DESCRIPTION_TRACK;
+				}
+			}
+
+			if (pAnimNode->GetType() == eAnimNodeType_Entity)
+			{
+				CTrackViewEntityNode* pEntityNode = static_cast<CTrackViewEntityNode*>(pAnimNode);
+				pDopeSheetTrack->detached = !pEntityNode->GetNodeEntity(false) ? true : false;
+			}
 
 			Serialization::SaveBinaryBuffer(pDopeSheetTrack->userSideLoad, userData);
 			InsertDopeSheetTrack(pParentTrack, pDopeSheetTrack, pNode);
@@ -1922,6 +2204,28 @@ void CTrackViewSequenceTabWidget::AddNodeToDopeSheet(CTrackViewNode* pNode)
 			}
 			else
 			{
+				if (pDopeSheetTrack->name == "X")
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_X_SUBTRACK;
+				}
+				else if (pDopeSheetTrack->name == "Y")
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_Y_SUBTRACK;
+				}
+				else if (pDopeSheetTrack->name == "Z")
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_Z_SUBTRACK;
+				}
+				else
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_SUBTRACK;
+				}
+
+				if (pTrack->GetParameterType() == eAnimParamType_Camera)
+				{
+					pDopeSheetTrack->caps |= STimelineTrack::CAP_CAM_TRACK;
+				}
+
 				if (pTrack->GetValueType() == eAnimValue_Bool)
 				{
 					pDopeSheetTrack->caps |= STimelineTrack::CAP_TOGGLE_TRACK;
@@ -2015,9 +2319,6 @@ void CTrackViewSequenceTabWidget::UpdateDopeSheetNode(CTrackViewNode* pNode)
 			return;
 		}
 
-		CTrackViewSequence* pSequence = pTrack->GetSequence();
-		SSequenceData& sequenceData = m_idToSequenceDataMap[pSequence->GetGUID()];
-
 		if (pDopeSheetTrack)
 		{
 			pDopeSheetTrack->elements.clear();
@@ -2056,32 +2357,46 @@ void CTrackViewSequenceTabWidget::UpdateDopeSheetNode(CTrackViewNode* pNode)
 	}
 }
 
-void CTrackViewSequenceTabWidget::AssignDopeSheetName(STimelineTrack* pDopeSheetTrack, CTrackViewAnimNode* pAnimNode)
+void CTrackViewSequenceTabWidget::NodeOwnerChanged(CTrackViewNode* pNode)
 {
-	assert(pAnimNode);
-	assert(pDopeSheetTrack);
+	SSequenceData& sequenceData = m_idToSequenceDataMap[pNode->GetSequence()->GetGUID()];
+	auto it = sequenceData.m_uIdToTimelineTrackMap.find(pNode->GetGUID());
 
-	string namealias = pAnimNode->GetName();
+	if (it == sequenceData.m_uIdToTimelineTrackMap.end())
+	{
+		return;
+	}
 
-	CTrackViewEntityNode* pEntityNode = (pAnimNode->GetType() == eAnimNodeType_Entity) ? static_cast<CTrackViewEntityNode*>(pAnimNode) : nullptr;
+	STimelineTrack* pDopeSheetTrack = it->second;
+	if (pNode->GetNodeType() != eTVNT_AnimNode)
+	{
+		return;
+	}
+
+	CTrackViewAnimNode* pAnimNode = static_cast<CTrackViewAnimNode*>(pNode);
+	if (pAnimNode->GetType() != eAnimNodeType_Entity)
+	{
+		return;
+	}
+
+	CTrackViewEntityNode* pEntityNode = static_cast<CTrackViewEntityNode*>(pAnimNode);
 	if (!pEntityNode || pEntityNode->GetNodeEntity(false))
 	{
-		pDopeSheetTrack->name = namealias;
+		pDopeSheetTrack->detached = false;
 	}
 	else
 	{
-		pDopeSheetTrack->name = namealias + " (Detached)";		
+		pDopeSheetTrack->detached = true;
 	}
 }
 
 void CTrackViewSequenceTabWidget::OnDopesheetContentChanged(bool continuous)
 {
-	if (continuous)
+	if (continuous == false)
 	{
-		return;
+		OnSelectionChanged(true);
 	}
 
-	OnSelectionChanged(true);
 	TimelineLayoutChanged();
 }
 
@@ -2101,8 +2416,10 @@ void CTrackViewSequenceTabWidget::OnSelectionChanged(bool /*bContinuous*/)
 		m_pCurrentSelectionDopeSheet = pDopeSheet;
 		m_pCurrentSelectionCurveEditor = pCurveEditor;
 
+		m_currentKeySelectionCount = 0;
+
 		TSelectedElements elements;
-		GetSelectedElements(pContent->track, elements);
+		GetSelectedElements(pContent->track, elements, m_currentKeySelectionCount);
 
 		const size_t numElements = elements.size();
 
@@ -2120,6 +2437,8 @@ void CTrackViewSequenceTabWidget::OnSelectionChanged(bool /*bContinuous*/)
 				m_currentKeySelection.push_back(selectedKey);
 			}
 		}
+
+		UpdateCurveEditorSelection();
 
 		TSelectedTracks selectedTracks;
 		GetSelectedTracks(pContent->track, selectedTracks);
@@ -2197,8 +2516,10 @@ void CTrackViewSequenceTabWidget::GetKeyProperties(Serialization::SStructs& stru
 		m_pCurrentSelectionDopeSheet = pDopeSheet;
 		m_pCurrentSelectionCurveEditor = pCurveEditor;
 
+		size_t keyCount = 0;
 		TSelectedElements elements;
-		GetSelectedElements(pContent->track, elements);
+
+		GetSelectedElements(pContent->track, elements, keyCount);
 
 		const size_t numElements = elements.size();
 
@@ -2288,8 +2609,6 @@ void CTrackViewSequenceTabWidget::OnTimeChanged(SAnimTime newTime)
 void CTrackViewSequenceTabWidget::OnSequenceChanged(CTrackViewSequence* pSequence)
 {
 	UpdateSequenceTabs();
-	UpdateToolbar();
-
 	if (CTimeline* pDopesheet = GetActiveDopeSheet())
 	{
 		pDopesheet->ShowKeyText(m_showKeyText);
@@ -2367,39 +2686,37 @@ void CTrackViewSequenceTabWidget::OnNodeChanged(CTrackViewNode* pNode, ENodeChan
 {
 	switch (type)
 	{
-	case ITrackViewSequenceListener::eNodeChangeType_Added:
-		AddNodeToDopeSheet(pNode);
-		break;
-	case ITrackViewSequenceListener::eNodeChangeType_Removed:
-		{
-			if (m_pCurrentSelectedNode == pNode)
+		case ITrackViewSequenceListener::eNodeChangeType_Added:
 			{
-				m_pCurrentSelectedNode = nullptr;
+				AddNodeToDopeSheet(pNode);
 			}
-			RemoveNodeFromDopeSheet(pNode);
-		}
-		break;
-	case ITrackViewSequenceListener::eNodeChangeType_Disabled:
-	case ITrackViewSequenceListener::eNodeChangeType_Enabled:
-	case ITrackViewSequenceListener::eNodeChangeType_KeysChanged:
-	// Fall through
-	case ITrackViewSequenceListener::eNodeChangeType_KeySelectionChanged:
-		{
-			const bool bOldDontUpdateDopeSheet = m_bDontUpdateDopeSheet;
-			m_bDontUpdateDopeSheet = false;
-			UpdateDopeSheetNode(pNode);
-			m_bDontUpdateDopeSheet = bOldDontUpdateDopeSheet;
-		}
-		break;
+			break;
+		case ITrackViewSequenceListener::eNodeChangeType_Removed:
+			{
+				if (m_pCurrentSelectedNode == pNode)
+				{
+					m_pCurrentSelectedNode = nullptr;
+				}
+				RemoveNodeFromDopeSheet(pNode);
+			}
+			break;
+		case ITrackViewSequenceListener::eNodeChangeType_Disabled:
+		case ITrackViewSequenceListener::eNodeChangeType_Enabled:
+		case ITrackViewSequenceListener::eNodeChangeType_KeysChanged:
+		// Fall through
+		case ITrackViewSequenceListener::eNodeChangeType_KeySelectionChanged:
+			{
+				const bool bOldDontUpdateDopeSheet = m_bDontUpdateDopeSheet;
+				m_bDontUpdateDopeSheet = false;
+				UpdateDopeSheetNode(pNode);
+				m_bDontUpdateDopeSheet = bOldDontUpdateDopeSheet;
+			}
+			break;
 		case ITrackViewSequenceListener::eNodeChangeType_NodeOwnerChanged:
-		{
-			SSequenceData& sequenceData = m_idToSequenceDataMap[pNode->GetSequence()->GetGUID()];
-			if (sequenceData.m_uIdToTimelineTrackMap.find(pNode->GetGUID()) != sequenceData.m_uIdToTimelineTrackMap.end())
 			{
-				AssignDopeSheetName(sequenceData.m_uIdToTimelineTrackMap[pNode->GetGUID()], static_cast<CTrackViewAnimNode*>(pNode));
+				NodeOwnerChanged(pNode);
 			}
-		}
-		break;
+			break;
 	}
 	const CryGUID sequenceGUID = pNode->GetSequence()->GetGUID();
 	CTimeline* pDopeSheet = GetDopeSheetFromSequenceGUID(sequenceGUID);
@@ -2468,7 +2785,36 @@ void CTrackViewSequenceTabWidget::OnTrackViewEditorEvent(ETrackViewEditorEvent e
 				CTimeline* pDopeSheet = iter->second.m_pDopeSheet;
 				if (pDopeSheet)
 				{
-					pDopeSheet->SetKeyScaling(newMoveMode == eKeyMoveMode_Scale);
+					switch (newMoveMode)
+					{
+						case eKeyMoveMode_Move:
+						{
+							pDopeSheet->SetKeyMoving();
+							break;
+						}
+						case eKeyMoveMode_Slide:
+						{
+							ETrackViewKeySlideMode newSlideMode = GetTrackViewCore()->GetCurrentKeySlideMode();
+							switch (newSlideMode)
+							{
+								case eKeySlideMode_Both:
+									pDopeSheet->SetKeySliding(CTimeline::eKeysSlideMode_Both);
+									break;
+								case eKeySlideMode_Left:
+									pDopeSheet->SetKeySliding(CTimeline::eKeysSlideMode_Left);
+									break;
+								case eKeySlideMode_Right:
+									pDopeSheet->SetKeySliding(CTimeline::eKeysSlideMode_Right);
+									break;
+							}
+							break;
+						}
+						case eKeyMoveMode_Scale:
+						{
+							pDopeSheet->SetKeyScaling();
+							break;
+						}
+					}
 				}
 			}
 			break;
@@ -2630,7 +2976,7 @@ void CTrackViewSequenceTabWidget::OnDopesheetCopy()
 	const bool bIsKeySelected = (m_currentKeySelection.size() > 0);
 	if (bIsKeySelected)
 	{
-		GetActiveSequence()->CopyKeysToClipboard(true, false);
+		GetActiveSequence()->CopyKeysToClipboard(true, false, m_currentKeySelectionCount);
 	}
 	else
 	{
@@ -2656,9 +3002,9 @@ void CTrackViewSequenceTabWidget::OnDopesheetPaste(SAnimTime time, STimelineTrac
 				pTrackViewNode = GetActiveSequence()->GetNodeFromGUID(currentTrackGUID);
 			}
 
-			CTrackViewAnimNode* pAnimNode = static_cast<CTrackViewAnimNode*>(pTrackViewNode);
-			if (pAnimNode)
+			if (pTrackViewNode && (pTrackViewNode->GetNodeType() == eTVNT_AnimNode))
 			{
+				CTrackViewAnimNode* pAnimNode = static_cast<CTrackViewAnimNode*>(pTrackViewNode);
 				pAnimNode->PasteNodesFromClipboard();
 			}
 		}
@@ -2674,9 +3020,15 @@ void CTrackViewSequenceTabWidget::OnDopesheetPaste(SAnimTime time, STimelineTrac
 			{
 				CTrackViewTrack* pTrackViewTrack = static_cast<CTrackViewTrack*>(pTrackViewNode);
 				CTrackViewAnimNode* pAnimNode = pTrackViewTrack->GetAnimNode();
+
 				GetActiveSequence()->PasteKeysFromClipboard(pAnimNode, pTrackViewTrack, time);
+				OnSelectionChanged(false);
+
+				if (m_pCurrentSelectionDopeSheet)
+				{
+					m_pCurrentSelectionDopeSheet->OnPasteKeys();
+				}
 			}
 		}
 	}
 }
-

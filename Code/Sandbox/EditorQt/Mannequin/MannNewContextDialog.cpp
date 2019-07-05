@@ -5,6 +5,7 @@
 #include "MannequinDialog.h"
 
 #include "Dialogs/QStringDialog.h"
+#include <Util/FileUtil.h>
 
 #include <ICryMannequin.h>
 #include <CryGame/IGameFramework.h>
@@ -245,8 +246,7 @@ void CMannNewContextDialog::OnOk()
 	else
 	{
 		m_contextCombo.GetLBText(m_pData->contextID, tempString);
-		const char* idname = pControllerDef->m_scopeContexts.GetTagName(m_pData->contextID);
-		assert(stricmp(tempString, idname) == 0);
+		CRY_ASSERT(stricmp(tempString, pControllerDef->m_scopeContexts.GetTagName(m_pData->contextID)) == 0);
 	}
 
 	m_pData->tags = m_tagControls.Get();
@@ -469,4 +469,3 @@ void CMannNewContextDialog::OnNewAdbButton()
 	// ...and select it in the list
 	m_databaseCombo.SelectString(0, pADB->GetFilename());
 }
-

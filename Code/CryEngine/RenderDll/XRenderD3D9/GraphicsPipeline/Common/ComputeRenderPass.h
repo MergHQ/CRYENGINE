@@ -4,7 +4,6 @@
 
 #include "RenderPassBase.h"
 
-
 class CComputeRenderPass : public CRenderPassBase
 {
 public:
@@ -29,6 +28,7 @@ public:
 
 public:
 	CComputeRenderPass(EPassFlags flags = eFlags_None);
+	CComputeRenderPass(CGraphicsPipeline* pGraphicsPipeline, EPassFlags flags = eFlags_None);
 
 	bool IsDirty() const override final;
 	using CRenderPassBase::IsDirty;
@@ -43,10 +43,11 @@ public:
 	void SetBuffer(uint32 slot, CGpuBuffer* pBuffer);
 	void SetSampler(uint32 slot, SamplerStateHandle sampler);
 	void SetInlineConstantBuffer(uint32 slot, CConstantBuffer* pConstantBuffer);
-	void SetConstant(const CCryNameR& paramName, const Vec4 &param);
-	void SetConstant(const CCryNameR& paramName, const Matrix44 &param);
+	void SetConstantBuffer(uint32 slot, CConstantBuffer* pConstantBuffer);
+	void SetConstant(const CCryNameR& paramName, const Vec4& param);
+	void SetConstant(const CCryNameR& paramName, const Matrix44& param);
 	void SetConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams);
-
+	void SetGraphicsPipeline(CGraphicsPipeline* pGraphicsPipeline) { m_pGraphicsPipeline = pGraphicsPipeline; }
 	void PrepareResourcesForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
 	void BeginConstantUpdate();
@@ -83,6 +84,8 @@ private:
 	int                      m_currentPsoUpdateCount;
 
 	ConstantManager          m_constantManager;
+
+	CGraphicsPipeline*       m_pGraphicsPipeline;
 
 	bool                     m_bPendingConstantUpdate;
 	bool                     m_bCompiled;
@@ -129,13 +132,18 @@ inline void CComputeRenderPass::SetInlineConstantBuffer(uint32 slot, CConstantBu
 		m_dirtyMask |= eDirty_ResourceLayout;
 }
 
-inline void CComputeRenderPass::SetConstant(const CCryNameR& paramName, const Vec4 &param)
+inline void CComputeRenderPass::SetConstantBuffer(uint32 slot, CConstantBuffer* pConstantBuffer)
+{
+	m_resourceDesc.SetConstantBuffer(EConstantBufferShaderSlot(slot), pConstantBuffer, EShaderStage_Compute);
+}
+
+inline void CComputeRenderPass::SetConstant(const CCryNameR& paramName, const Vec4& param)
 {
 	CRY_ASSERT(m_bPendingConstantUpdate);
 	m_constantManager.SetNamedConstant(paramName, param, eHWSC_Compute);
 }
 
-inline void CComputeRenderPass::SetConstant(const CCryNameR& paramName, const Matrix44 &param)
+inline void CComputeRenderPass::SetConstant(const CCryNameR& paramName, const Matrix44& param)
 {
 	SetConstantArray(paramName, reinterpret_cast<const Vec4*>(param.GetData()), 4);
 }

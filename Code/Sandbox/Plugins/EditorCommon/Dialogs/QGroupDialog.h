@@ -22,5 +22,3 @@ public:
 private:
 	QLineEdit* m_pGroup;
 };
-
-

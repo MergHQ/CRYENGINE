@@ -1,11 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FLOWGRAPHVARIABLES_H__
-#define __FLOWGRAPHVARIABLES_H__
 #pragma once
 
 #include <Util/Variable.h>
 #include "FlowGraphNode.h"
+#include "Objects/EntityScript.h"
 
 #define FGVARIABLES_REAL_CLONE
 // #undef  FGVARIABLES_REAL_CLONE  // !!! Not working without real cloning currently !!!
@@ -23,7 +22,7 @@ class CFlowNodeGetCustomItemsBase;
 
 namespace FlowGraphVariables
 {
-template<typename T> CFlowNodeGetCustomItemsBase* CreateIt() { return new T(); };
+template<typename T> CFlowNodeGetCustomItemsBase* CreateIt() { return new T(); }
 
 // A simple struct to map prefixes to data types
 struct MapEntry
@@ -99,7 +98,7 @@ public:
 	}
 protected:
 	CFlowNode* m_pFlowNode;
-	string    m_config;
+	string     m_config;
 private:
 	CFlowNodeGetCustomItemsBase(const CFlowNodeGetCustomItemsBase&) {}
 };
@@ -321,8 +320,8 @@ protected:
 		//! Get the name of specified value in enumeration, or NULL if out of range.
 		virtual const char* GetItemName(uint index);
 
-		virtual string     NameToValue(const string& name);
-		virtual string     ValueToName(const string& value);
+		virtual string      NameToValue(const string& name);
+		virtual string      ValueToName(const string& value);
 
 		//! Don't add anything to a global enum database
 		virtual void AddItem(const string& name, const string& value) {}
@@ -333,8 +332,8 @@ protected:
 
 protected:
 	TSmartPtr<CDynamicEnumList> m_pDynEnumList;
-	string                     m_refPort;
-	string                     m_refFormatString;
+	string                      m_refPort;
+	string                      m_refFormatString;
 };
 
 // looks up value in a different variable[port] and provides enum accordingly
@@ -398,8 +397,5 @@ protected:
 
 protected:
 	string m_refFormatString;
-	uint32  m_portId;
+	uint32 m_portId;
 };
-
-#endif
-

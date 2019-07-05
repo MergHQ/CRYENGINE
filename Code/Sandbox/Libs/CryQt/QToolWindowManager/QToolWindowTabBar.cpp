@@ -1,21 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-
 #include "QToolWindowTabBar.h"
-#include <QToolButton>
+
 #include <CryIcon.h>
+
 #include <QAction>
-#include <QStylePainter>
 #include <QMenu>
-#include <QSignalMapper>
 #include <QPaintEvent>
+#include <QSignalMapper>
+#include <QStylePainter>
+#include <QToolButton>
 
 QToolWindowTabBar::QToolWindowTabBar(QWidget* parent)
 	: QTabBar(parent)
-#if QT_VERSION <= 0x050000
-	, bAutoHide(false)
-#endif
 {
 	m_tabSelectionButton = new QToolButton(this);
 	m_tabSelectionMenu = new QTabSelectionMenu(m_tabSelectionButton, this);
@@ -24,12 +22,12 @@ QToolWindowTabBar::QToolWindowTabBar(QWidget* parent)
 	m_tabSelectionButton->setIcon(CryIcon("icons:General/Pointer_Down_Expanded.ico"));
 	m_tabSelectionButton->setMenu(m_tabSelectionMenu);
 	m_tabSelectionButton->setPopupMode(QToolButton::InstantPopup);
-	QString styleSheet = QString("QToolWindowArea > QTabBar::scroller{	width: %1px;}").arg(m_tabSelectionButton->sizeHint().width()/2);//use half the size of the button for scrollers (Because size is used for each of the scroller
+	QString styleSheet = QString("QToolWindowArea > QTabBar::scroller{	width: %1px;}").arg(m_tabSelectionButton->sizeHint().width() / 2);//use half the size of the button for scrollers (Because size is used for each of the scroller
 	setStyleSheet(styleSheet);
 	connect(m_tabSelectionMenu, &QMenu::aboutToShow, this, &QToolWindowTabBar::onSelectionMenuClicked);
 }
 
-void QToolWindowTabBar::paintEvent(QPaintEvent *e)
+void QToolWindowTabBar::paintEvent(QPaintEvent* e)
 {
 	QTabBar::paintEvent(e);
 	QRect tabbarRect = rect();
@@ -40,7 +38,7 @@ void QToolWindowTabBar::paintEvent(QPaintEvent *e)
 		m_tabSelectionButton->raise();
 		QRect rect = contentsRect();
 		QSize size = m_tabSelectionButton->sizeHint();
-		m_tabSelectionButton->move(QPoint(rect.width()-m_tabSelectionButton->width(), 0));
+		m_tabSelectionButton->move(QPoint(rect.width() - m_tabSelectionButton->width(), 0));
 	}
 	else
 	{
@@ -73,13 +71,8 @@ void QToolWindowTabBar::onSelectionMenuClicked()
 	connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(setCurrentIndex(int)));
 }
 
-QToolWindowTabBar::~QToolWindowTabBar()
-{
-
-}
-
 QTabSelectionMenu::QTabSelectionMenu(QToolButton* pToolButton, QToolWindowTabBar* pParentTabbar)
 	: QMenu(pToolButton)
 	, m_pParentTabbar(pParentTabbar)
 {
-};
+}

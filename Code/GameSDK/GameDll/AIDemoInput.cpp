@@ -56,7 +56,6 @@ void CDedicatedInput::PreUpdate()
 	bool shouldFire = (g_pGameCVars->g_dummyPlayersFire != 0);
 	bool shouldFireNoExplosives = (g_pGameCVars->g_dummyPlayersFire == 2);
 	bool shouldMove = (g_pGameCVars->g_dummyPlayersMove != 0);
-	bool shouldToggleSuitMode = (g_pGameCVars->g_dummyPlayersMove == 1);
 	bool shouldChangeWeapon = (g_pGameCVars->g_dummyPlayersChangeWeapon != 0);
 
 	if (m_fire != eDB_Default)
@@ -175,7 +174,7 @@ void CDedicatedInput::PreUpdate()
 	else
 	{
 		float fractionDoneThisFrame = changeAmount / (m_interpolateToNewMoveLookInputs + changeAmount);
-		CRY_ASSERT_TRACE (fractionDoneThisFrame >= 0.f && fractionDoneThisFrame <= 1.f, ("fractionDoneThisFrame = %f (changeAmount=%f, interpolate=%f)", fractionDoneThisFrame, changeAmount, m_interpolateToNewMoveLookInputs));
+		CRY_ASSERT(fractionDoneThisFrame >= 0.f && fractionDoneThisFrame <= 1.f, "fractionDoneThisFrame = %f (changeAmount=%f, interpolate=%f)", fractionDoneThisFrame, changeAmount, m_interpolateToNewMoveLookInputs);
 		m_deltaMovement = m_deltaMovement * (1.f - fractionDoneThisFrame) + m_targetDeltaMovement * fractionDoneThisFrame;
 		m_deltaRotation = m_deltaRotation * (1.f - fractionDoneThisFrame) + m_targetDeltaRotation * fractionDoneThisFrame;
 	}
@@ -356,8 +355,6 @@ void CDedicatedInput::Update()
 			}
 			if (shouldFire)
 			{
-				CWeapon *pcweap = (CWeapon*) pWeapon;
-
 				bool currWeaponExplosive = false; 
 				IInventory::EInventorySlots inventorySlot = IInventory::eInventorySlot_Last;
 				IItem *pCurrentItem = m_pPlayer->GetCurrentItem(false);

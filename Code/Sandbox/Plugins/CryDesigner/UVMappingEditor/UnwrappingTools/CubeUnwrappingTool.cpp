@@ -82,4 +82,3 @@ void CubeUnwrappingTool::Enter()
 
 REGISTER_UVMAPPING_TOOL_AND_COMMAND(eUVMappingTool_Cube, eUVMappingToolGroup_Unwrapping, "Cube", CubeUnwrappingTool,
                                     cube_unwrmapping, "runs cube unwrapping tool", "uvmapping.cube_unwrapping")
-

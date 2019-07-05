@@ -6,8 +6,9 @@
 
 namespace NCryVulkan
 {
-
+#ifndef _RELEASE
 static int g_cvar_vk_heap_summary;
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -27,7 +28,7 @@ _smart_ptr<CDevice> CDevice::Create(const SPhysicalDeviceInfo* pDeviceInfo, VkAl
 		QueueInfo.queueFamilyIndex = i;
 		QueueInfo.queueCount = pDeviceInfo->queueFamilyProperties[i].queueCount;
 		QueueInfo.pQueuePriorities = queuePriorities.data();
-		VK_ASSERT(QueueInfo.queueCount <= 64);
+		VK_ASSERT(QueueInfo.queueCount <= 64, "");
 
 		queueRequests.push_back(QueueInfo);
 	}
@@ -68,9 +69,8 @@ _smart_ptr<CDevice> CDevice::Create(const SPhysicalDeviceInfo* pDeviceInfo, VkAl
 
 //---------------------------------------------------------------------------------------------------------------------
 CDevice::CDevice(const SPhysicalDeviceInfo* pDeviceInfo, VkAllocationCallbacks* hostAllocator, VkDevice Device)
-	: m_pDeviceInfo(pDeviceInfo)
-	, m_Allocator(*hostAllocator)
-	, m_device(Device)
+	: CDeviceHolder(Device, hostAllocator)
+	, m_pDeviceInfo(pDeviceInfo)
 	, m_pipelineCache(VK_NULL_HANDLE)
 	// Must be constructed last as it relies on functionality from the heaps
 	, m_Scheduler(this)
@@ -131,7 +131,7 @@ CDevice::CDevice(const SPhysicalDeviceInfo* pDeviceInfo, VkAllocationCallbacks* 
 		CryFatalError("Failed to initialize global descriptor pool!");
 
 	if (!m_occlusionQueries.Init(GetVkDevice()))
-		CRY_ASSERT_MESSAGE(false, "Failed to initialize occlusion queries");
+		CRY_ASSERT(false, "Failed to initialize occlusion queries");
 
 	m_Scheduler.BeginScheduling();
 }
@@ -143,11 +143,6 @@ CDevice::~CDevice()
 	for (uint32_t i = 0; i < kDeferTicks; ++i)
 	{
 		TickDestruction();
-	}
-
-	if (m_device != VK_NULL_HANDLE)
-	{
-		vkDestroyDevice(m_device, &m_Allocator);
 	}
 }
 
@@ -278,7 +273,7 @@ VkResult CDevice::CommitResource(EHeapType heapHint, CResource* pInputResource) 
 	vkGetResourceMemoryRequirements(GetVkDevice(), pInputResource->GetHandle(), &requirements);
 
 	CMemoryHandle boundMemory;
-	if (boundMemory = GetHeap().Allocate(requirements, heapHint))
+	if ((boundMemory = GetHeap().Allocate(requirements, heapHint)))
 	{
 		VkDeviceMemoryLocation memloc = GetHeap().GetBindAddress(boundMemory);
 
@@ -328,7 +323,11 @@ VkResult CDevice::CreateCommittedResource(EHeapType heapHint, const VkCreateInfo
 template<class CResource>
 VkResult CDevice::DuplicateCommittedResource(CResource* pInputResource, CResource** ppOutputResource) threadsafe
 {
-	return CreateOrReuseCommittedResource<CResource, typename CResource::VkCreateInfo>(pInputResource->GetHeapType(), pInputResource->GetCreateInfo(), ppOutputResource);
+
+	VkResult result = CreateOrReuseCommittedResource<CResource, typename CResource::VkCreateInfo>(pInputResource->GetHeapType(), pInputResource->GetCreateInfo(), ppOutputResource);
+	if (result == VK_SUCCESS)
+		SetDebugName(*ppOutputResource, GetDebugName(pInputResource).c_str());
+	return result;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -455,6 +454,7 @@ VkResult CDevice::CreateOrReuseCommittedResource(EHeapType HeapHint, const VkCre
 				// Guaranteed O(1) lookup
 				(*ppOutputResource = result->second.front().pObject)->AddRef();
 				VK_ASSERT(result->second.front().pObject->IsUniquelyOwned(), "Ref-Counter of VK resource is not 1, implementation will crash!");
+				ClearDebugName(result->second.front().pObject);
 
 				result->second.pop_front();
 				if (!result->second.size())
@@ -581,8 +581,15 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource*
 		pObject->GetHeapType() == kHeapTargets ||
 		pObject->GetHeapType() == kHeapSources;
 
-	// GPU-only resources can't race each other when they are managed by ref-counts/pools
-	if (isGPUOnly && bReusable)
+	UINT64 fenceValuesWithPrunningDelay[CMDQUEUE_NUM];
+	const FVAL64(&completedFenceValues)[CMDQUEUE_NUM] = m_Scheduler.GetFenceManager().GetLastCompletedFenceValues();
+	MaxFenceValues(fenceValuesWithPrunningDelay, fenceValues, completedFenceValues);
+	const bool isUnused =
+		SmallerEqualFenceValues(fenceValuesWithPrunningDelay, completedFenceValues);
+
+	// GPU-only resources can't race with itself when they are managed by ref-counts/pools
+	// CPU-write resources can be recycled immediately if they have been used up already
+	if ((isGPUOnly | isUnused) & bReusable)
 	{
 		TRecycleHeap<CResource>& RecycleHeap = GetRecycleHeap<CResource>();
 		CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(GetRecycleHeapCriticalSection<CResource>());
@@ -607,7 +614,7 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource*
 #endif
 			sorted.push_front(std::move(recycleInfo));
 	}
-	else
+	else if (!isUnused)
 	{
 		TReleaseHeap<CResource>& ReleaseHeap = GetReleaseHeap<CResource>();
 		CryAutoLock<CryCriticalSectionNonRecursive> lThreadSafeScope(GetReleaseHeapCriticalSection<CResource>());
@@ -620,8 +627,13 @@ void CDevice::ReleaseLater(const FVAL64 (&fenceValues)[CMDQUEUE_NUM], CResource*
 		releaseInfo.fenceValues[CMDQUEUE_COMPUTE] = fenceValues[CMDQUEUE_COMPUTE];
 		releaseInfo.fenceValues[CMDQUEUE_COPY] = fenceValues[CMDQUEUE_COPY];
 
-		std::pair<typename TReleaseHeap<CResource>::iterator, bool> result = ReleaseHeap.emplace(pObject, std::move(releaseInfo));
+		ReleaseHeap.emplace(pObject, std::move(releaseInfo));
 	}
+
+#if 0	// NOTE: Use the code-fragment to detect resources without names
+	if (GetDebugName(pObject).empty())
+		__debugbreak();
+#endif
 }
 
 //---------------------------------------------------------------------------------------------------------------------

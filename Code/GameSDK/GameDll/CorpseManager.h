@@ -21,7 +21,10 @@ History:
 #define MAX_CORPSES (24)
 
 #include <CryCore/Containers/CryFixedArray.h>
+#include <CryEntitySystem/IEntityBasicTypes.h>
 #include "GameRulesModules/IGameRulesRoundsListener.h"
+
+struct IPhysicalEntity;
 
 class CCorpseManager : IGameRulesRoundsListener
 {

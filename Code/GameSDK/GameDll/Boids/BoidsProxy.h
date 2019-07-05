@@ -16,6 +16,7 @@
 #pragma once
 
 #include <CryEntitySystem/IEntityComponent.h>
+#include <CryMemory/CrySizer.h>
 
 class CFlock;
 class CBoidObject;
@@ -46,7 +47,7 @@ public:
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_BOIDS; }
 	virtual void Release() final;
 	virtual	void ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	virtual bool Init(IEntity *pEntity, SEntitySpawnParams &params) final { return true; }
 	virtual void Reload(IEntity *pEntity, SEntitySpawnParams &params) final;
 	virtual void GameSerialize(TSerialize ser) final;
@@ -100,7 +101,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual EEntityProxy GetProxyType() const override { return ENTITY_PROXY_BOID_OBJECT; }
 	virtual	void ProcessEvent(const SEntityEvent& event) override;
-	virtual uint64 GetEventMask() const final;
+	virtual Cry::Entity::EventFlags GetEventMask() const final;
 	virtual void GameSerialize(TSerialize ser) override;
 	virtual bool NeedGameSerialize() override { return false; };
 	//////////////////////////////////////////////////////////////////////////

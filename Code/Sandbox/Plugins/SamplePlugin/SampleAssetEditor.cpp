@@ -5,7 +5,7 @@
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/EditableAsset.h>
-#include <FilePathUtil.h>
+#include <PathUtils.h>
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -107,7 +107,7 @@ bool CSampleAssetEditor::OnSaveAsset(CEditableAsset& editAsset)
 		return false;
 	}
 
-	editAsset.SetFiles("", { dataFilePath });
+	editAsset.SetFiles({ dataFilePath });
 
 	return true;
 }

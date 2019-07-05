@@ -14,6 +14,8 @@ History:
 // GCC requires a full decl of TSerialize, not just a fwd decl. for the CVehicleNetActionSync
 #include <CryNetwork/ISerialize.h>
 
+#include <CryRenderer/IRenderAuxGeom.h>
+
 
 // Lerp an axis of the vector to a target (axis must be normalised)
 ILINE void LerpAxisTimeIndependent(Vec3& x, const Vec3& axisNormalised, const float target, const float dt, const float strength)

@@ -5,26 +5,27 @@
 #include <CrySandbox/CrySignal.h>
 
 struct IUndoObject;
-class ICrySizer;
 class CUndoStep;
 
 struct IUndoManagerListener
 {
-	virtual void BeginUndoTransaction() {}
-	virtual void EndUndoTransaction() {}
+	virtual ~IUndoManagerListener() {}
+
+	virtual void BeginUndoTransaction()    {}
+	virtual void EndUndoTransaction()      {}
 	virtual void BeginRestoreTransaction() {}
-	virtual void EndRestoreTransaction() {}
+	virtual void EndRestoreTransaction()   {}
 };
 
 struct IUndoManager
 {
 	enum ECommandChangeType
 	{
-		eCommandChangeType_Undo = BIT(1),
-		eCommandChangeType_Redo = BIT(2),
+		eCommandChangeType_Undo   = BIT(1),
+		eCommandChangeType_Redo   = BIT(2),
 		eCommandChangeType_Insert = BIT(3),
 		eCommandChangeType_Remove = BIT(4),
-		eCommandChangeType_Move = BIT(5),
+		eCommandChangeType_Move   = BIT(5),
 	};
 
 	virtual ~IUndoManager() {}
@@ -77,19 +78,17 @@ struct IUndoManager
 
 	//! Completely flush all Undo and redo buffers.
 	//! Must be done on level reloads or global Fetch operation.
-	virtual void Flush() = 0;
+	virtual void                         Flush() = 0;
 
-	virtual void ClearRedoStack() = 0;
-	virtual void ClearUndoStack() = 0;
+	virtual void                         ClearRedoStack() = 0;
+	virtual void                         ClearUndoStack() = 0;
 
-	virtual void ClearUndoStack(int num) = 0;
-	virtual void ClearRedoStack(int num) = 0;
+	virtual void                         ClearUndoStack(int num) = 0;
+	virtual void                         ClearRedoStack(int num) = 0;
 
-	virtual void AddListener(IUndoManagerListener* pListener) = 0;
-	virtual void RemoveListener(IUndoManagerListener* pListener) = 0;
+	virtual void                         AddListener(IUndoManagerListener* pListener) = 0;
+	virtual void                         RemoveListener(IUndoManagerListener* pListener) = 0;
 
 	virtual const std::list<CUndoStep*>& GetUndoStack() const = 0;
 	virtual const std::list<CUndoStep*>& GetRedoStack() const = 0;
 };
-
-

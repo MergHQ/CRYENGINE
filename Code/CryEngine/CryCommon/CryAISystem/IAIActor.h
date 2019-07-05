@@ -53,8 +53,8 @@ struct IAIActor : public IAIPathAgent
 	virtual SOBJECTSTATE&               GetState() = 0;
 	virtual const SOBJECTSTATE&         GetState() const = 0;
 	virtual IAIActorProxy*              GetProxy() const = 0;
-	virtual void                        SetSignal(int nSignalID, const char* szText, IEntity* pSender = 0, IAISignalExtraData* pData = NULL, uint32 crcCode = 0) = 0;
-	virtual void                        OnAIHandlerSentSignal(const char* szText, uint32 crcCode) = 0;
+	virtual void                        SetSignal(const AISignals::SignalSharedPtr& pSignal) = 0;
+	virtual void                        OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal) = 0;
 	virtual const AgentParameters&      GetParameters() const = 0;
 	virtual void                        SetParameters(const AgentParameters& pParams) = 0;
 	virtual const AgentMovementAbility& GetMovementAbility() const = 0;

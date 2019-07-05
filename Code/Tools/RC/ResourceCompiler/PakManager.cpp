@@ -1,10 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <stdafx.h>
+#include <StdAfx.h>
 #include "PakManager.h"
-#include <Shlwapi.h>  // PathRelativePathTo(), PathCanonicalize()
-#pragma message("Note: including Shlwapi.lib")
-#pragma comment(lib, "Shlwapi.lib")
+
+#if CRY_PLATFORM_WINDOWS
+	#include <Shlwapi.h>  // PathRelativePathTo(), PathCanonicalize()
+	#pragma message("Note: including Shlwapi.lib")
+	#pragma comment(lib, "Shlwapi.lib")
+#endif
 #include "IRCLog.h"
 #include "FileUtil.h"
 #include "ResourceCompiler.h"
@@ -327,7 +330,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 		if (!bUpdate)
 		{
 			// Delete old pak file.
-			::SetFileAttributes(pakFilename.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+			FileUtil::MakeWritable(pakFilename.c_str());
 			::DeleteFile(pakFilename.c_str());
 		}
 
@@ -446,7 +449,7 @@ PakManager::ECallResult PakManager::CreatePakFile(
 				const string existingPak = PathUtil::ReplaceExtension(pakFilenameToWrite, "pak");
 				if (FileUtil::FileExists(existingPak))
 				{
-					::SetFileAttributes(existingPak.c_str(), FILE_ATTRIBUTE_ARCHIVE);
+					FileUtil::MakeWritable(existingPak.c_str());
 					::MoveFileEx(existingPak.c_str(), pakFilenameToWrite.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
 				}
 			}

@@ -22,8 +22,8 @@
 #include "Controls/QuestionDialog.h"
 #include <QCheckBox>
 
-inline f32 Sandbox2MayaFOVDeg(const f32 fov, const f32 ratio)     { return RAD2DEG(2.0f * atan_tpl(tan(DEG2RAD(fov) / 2.0f) * ratio)); };
-inline f32 Sandbox2MayaFOVRad2Deg(const f32 fov, const f32 ratio) { return RAD2DEG(2.0f * atan_tpl(tan(fov / 2.0f) * ratio)); };
+inline f32 Sandbox2MayaFOVDeg(const f32 fov, const f32 ratio)     { return RAD2DEG(2.0f * atan_tpl(tan(DEG2RAD(fov) / 2.0f) * ratio)); }
+inline f32 Sandbox2MayaFOVRad2Deg(const f32 fov, const f32 ratio) { return RAD2DEG(2.0f * atan_tpl(tan(fov / 2.0f) * ratio)); }
 
 CTrackViewExporter::CTrackViewExporter()
 	: m_bBakedKeysSequenceExport(true)
@@ -307,7 +307,6 @@ bool CTrackViewExporter::ExportToFile(bool bCompleteSequence)
 	runParams.extensionFilters = extensionFilters;
 
 	string fileName = CSystemFileDialog::RunExportFile(runParams, nullptr).toLocal8Bit().data();
-	;
 	if (fileName.GetLength() > 0)
 	{
 		EFormat selFormat = eFormat_Unknown;
@@ -413,9 +412,6 @@ bool CTrackViewExporter::ShowFBXExportDialog()
 	{
 		m_pivotEntityObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(pivotObjectNode->GetName()));
 	}
-
-	bool bExportMasterCamOnly = false;
-	bool bExportLocalToSelected = false;
 
 	QFBXExporterDlg fbxExporterDlg(false, false, (m_pivotEntityObject != nullptr));
 	fbxExporterDlg.exec();
@@ -600,8 +596,6 @@ void CTrackViewExporter::AddEntityAnimationData(const CTrackViewTrack* pTrack, S
 
 			float fOutTantentX = currentCurve.m_keys[keyNumber].m_controlPoint.m_outTangent.x;
 			float fOutTantentY = currentCurve.m_keys[keyNumber].m_controlPoint.m_outTangent.y;
-
-			float fTangentDelta = 0.01f;
 
 			if (fInTantentX == 0.0f)
 			{
@@ -1123,13 +1117,12 @@ bool CTrackViewExporter::ProcessObjectsForExport()
 	m_data.AddObject(pObj);
 
 	const int32 fpsTimeInterval = SAnimTime::numTicksPerSecond / m_FBXBakedExportFramerate;
-	IObjectManager* pObjMgr = GetIEditor()->GetObjectManager();
 
 	CTrackViewPlugin::GetAnimationContext()->SetRecording(false);
 	CTrackViewPlugin::GetAnimationContext()->PlayPause(false);
 
-	CViewport* vp = GetIEditor()->GetViewManager()->GetSelectedViewport();
-	/*
+	/*CViewport* vp = GetIEditor()->GetViewManager()->GetSelectedViewport();
+	
 	   if (vp && vp->IsRenderViewport())
 	    ((CRenderViewport*)vp)->SetSequenceCamera();
 	 */
@@ -1354,4 +1347,3 @@ void CTrackViewExporter::CreateCurveFromTrack(const CTrackViewTrack* pTrack, SCu
 		}
 	}
 }
-

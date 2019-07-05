@@ -17,26 +17,26 @@ class CD3D9Renderer;
 // LIQUID VR
 enum GpuMask
 {
-	GPUMASK_LEFT = 0x1,
+	GPUMASK_LEFT  = 0x1,
 	GPUMASK_RIGHT = 0x2,
-	GPUMASK_BOTH = (GPUMASK_LEFT | GPUMASK_RIGHT)
+	GPUMASK_BOTH  = (GPUMASK_LEFT | GPUMASK_RIGHT)
 };
 
-#if defined(AMD_LIQUID_VR) && !CRY_RENDERER_OPENGL
-#include <LiquidVR/public_mgpu/inc/AmdExtMgpuAppControl.h>
-#include <LiquidVR/public_mgpu/inc/AmdDxExtMgpuAppControlApi.h>
+#if defined(AMD_LIQUID_VR)
+	#include <LiquidVR/public_mgpu/inc/AmdExtMgpuAppControl.h>
+	#include <LiquidVR/public_mgpu/inc/AmdDxExtMgpuAppControlApi.h>
 
 extern IAmdDxExtMgpuAppControl* g_pMgpu;
-#define SELECT_GPU(a)    { if (g_pMgpu) g_pMgpu->SetRenderGpuMask(a); }
-#define SELECT_ALL_GPU() { if (g_pMgpu) g_pMgpu->SetRenderGpuMask(GPUMASK_BOTH); }
+	#define SELECT_GPU(a)    { if (g_pMgpu) g_pMgpu->SetRenderGpuMask(a); }
+	#define SELECT_ALL_GPU() { if (g_pMgpu) g_pMgpu->SetRenderGpuMask(GPUMASK_BOTH); }
 #elif defined(USE_NV_API)
 extern void* g_pMgpu;
-#define SELECT_GPU(a)
-#define SELECT_ALL_GPU()
+	#define SELECT_GPU(a)
+	#define SELECT_ALL_GPU()
 #else
 extern void* g_pMgpu;
-#define SELECT_GPU(a)
-#define SELECT_ALL_GPU()
+	#define SELECT_GPU(a)
+	#define SELECT_ALL_GPU()
 #endif
 
 struct SStereoRenderContext
@@ -89,17 +89,17 @@ public:
 	void              InitDeviceAfterD3D();
 	void              Shutdown();
 
-	bool              IsQuadLayerEnabled() const { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && (m_mode == EStereoMode::STEREO_MODE_DUAL_RENDERING || m_mode == EStereoMode::STEREO_MODE_MENU) && m_output == EStereoOutput::STEREO_OUTPUT_HMD; }
-	bool              IsStereoEnabled() const { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && m_mode != EStereoMode::STEREO_MODE_NO_STEREO; }
-	bool              IsMenuModeEnabled() const override { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && m_mode == EStereoMode::STEREO_MODE_MENU; }
-	bool              IsPostStereoEnabled() const { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && m_mode == EStereoMode::STEREO_MODE_POST_STEREO; }
+	bool              IsQuadLayerEnabled() const           { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && (m_mode == EStereoMode::STEREO_MODE_DUAL_RENDERING || m_mode == EStereoMode::STEREO_MODE_MENU) && m_output == EStereoOutput::STEREO_OUTPUT_HMD; }
+	bool              IsStereoEnabled() const              { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && m_mode != EStereoMode::STEREO_MODE_NO_STEREO; }
+	bool              IsMenuModeEnabled() const override   { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && m_mode == EStereoMode::STEREO_MODE_MENU; }
+	bool              IsPostStereoEnabled() const          { return m_pHmdRenderer != nullptr && m_device != EStereoDevice::STEREO_DEVICE_NONE && m_mode == EStereoMode::STEREO_MODE_POST_STEREO; }
 	bool              RequiresSequentialSubmission() const { return m_submission == EStereoSubmission::STEREO_SUBMISSION_SEQUENTIAL; }
 
 	void              PrepareStereo();
-	EStereoMode       GetStereoMode() const { return m_mode; }
-	EStereoSubmission GetStereoSubmissionMode() const { return m_submission; }
+	EStereoMode       GetStereoMode() const                { return m_mode; }
+	EStereoSubmission GetStereoSubmissionMode() const      { return m_submission; }
 
-	EStereoOutput          GetStereoOutput() const { return m_output; }
+	EStereoOutput          GetStereoOutput() const         { return m_output; }
 	std::array<CCamera, 2> GetStereoCameras() const;
 	const CCamera&         GetHeadLockedQuadCamera() const { return m_headlockedQuadCamera; }
 
@@ -113,7 +113,7 @@ public:
 	{
 		if (m_pVrQuadLayerDisplayContexts[id].first)
 			return { m_pVrQuadLayerDisplayContexts[id].first.get(), m_pVrQuadLayerDisplayContexts[id].second };
-		return { nullptr,{} };
+		return { nullptr, {} };
 	}
 
 	void Clear(ColorF clearColor) override
@@ -141,8 +141,8 @@ public:
 
 	bool              TakeScreenshot(const char path[]);
 
-	float             GetNearGeoShift() const { return m_zeroParallaxPlaneDist; }
-	float             GetNearGeoScale() const { return m_nearGeoScale; }
+	float             GetNearGeoShift() const    { return m_zeroParallaxPlaneDist; }
+	float             GetNearGeoScale() const    { return m_nearGeoScale; }
 	float             GetGammaAdjustment() const { return m_gammaAdjustment; }
 
 	_smart_ptr<CTexture> WrapD3DRenderTarget(D3DTexture* d3dTexture, uint32 width, uint32 height, DXGI_FORMAT format, const char* name, bool shaderResourceView);
@@ -179,8 +179,8 @@ private:
 	enum DriverType
 	{
 		DRIVER_UNKNOWN = 0,
-		DRIVER_NV = 1,
-		DRIVER_AMD = 2
+		DRIVER_NV      = 1,
+		DRIVER_AMD     = 2
 	};
 
 	EStereoDevice      m_device;
@@ -221,7 +221,7 @@ private:
 
 private:
 	void          SelectDefaultDevice();
-
+	
 	bool          EnableStereo();
 	void          DisableStereo();
 	void          ChangeOutputFormat();

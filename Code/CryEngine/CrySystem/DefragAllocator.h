@@ -4,6 +4,8 @@
 #define DEVBUFFERALLOCATOR_H
 
 #include <CryMemory/IDefragAllocator.h>
+#include <CryThreading/CryThread.h>
+#include <CryCore/Containers/CryArray.h>
 
 #ifndef _RELEASE
 	#define CDBA_DEBUG
@@ -97,31 +99,7 @@ struct SDefragAllocChunk
 	uint32 hash;
 #endif
 
-	void SwapEndian()
-	{
-		::SwapEndian(addrPrevIdx, true) ;
-		::SwapEndian(addrNextIdx, true) ;
-		::SwapEndian(packedPtr, true) ;
-		::SwapEndian(attr.ui, true);
-
-		if (attr.IsBusy())
-		{
-			::SwapEndian(pContext, true);
-		}
-		else
-		{
-			::SwapEndian(freePrevIdx, true) ;
-			::SwapEndian(freeNextIdx, true);
-		}
-
-#ifndef _RELEASE
-		::SwapEndian(source, true);
-#endif
-
-#ifdef CDBA_MORE_DEBUG
-		::SwapEndian(hash, true);
-#endif
-	}
+	void SwapEndian();
 };
 
 struct SDefragAllocSegment
@@ -130,12 +108,7 @@ struct SDefragAllocSegment
 	uint32                   capacity;
 	SDefragAllocChunk::Index headSentinalChunkIdx;
 
-	void                     SwapEndian()
-	{
-		::SwapEndian(address, true) ;
-		::SwapEndian(capacity, true) ;
-		::SwapEndian(headSentinalChunkIdx, true);
-	}
+	void                     SwapEndian();
 };
 
 class CDefragAllocator;
@@ -317,12 +290,7 @@ private:
 		bool                             relocated;
 		bool                             cancelled;
 
-		void                             SwapEndian()
-		{
-			::SwapEndian(srcChunkIdx, true) ;
-			::SwapEndian(dstChunkIdx, true) ;
-			::SwapEndian(userMoveId, true);
-		}
+		void                             SwapEndian();
 	};
 
 	struct PendingMoveSrcChunkPredicate
@@ -623,7 +591,7 @@ private:
 	{
 		UINT_PTR dstChunkBase = dstChunk.ptr;
 		UINT_PTR dstChunkEnd = dstChunkBase + dstChunk.attr.GetSize();
-#if (CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT) || CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 		UINT_PTR allocAlign = BIT64(srcChunk.logAlign);
 #else
 		UINT_PTR allocAlign = BIT(srcChunk.logAlign);

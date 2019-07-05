@@ -2,9 +2,10 @@
 
 #include "StdAfx.h"
 #include "RingSelectionTool.h"
+
+#include "Core/Model.h"
+#include "Tools/Select/LoopSelectionTool.h"
 #include "DesignerEditor.h"
-#include "Util/ElementSet.h"
-#include "LoopSelectionTool.h"
 
 namespace Designer
 {
@@ -176,4 +177,3 @@ void RingSelectionTool::SelectFaceRing(MainContext& mc)
 
 REGISTER_DESIGNER_TOOL_AND_COMMAND(eDesigner_Ring, eToolGroup_Selection, "Ring", RingSelectionTool,
                                    ringselection, "runs ring selection tool", "designer.ringselection")
-

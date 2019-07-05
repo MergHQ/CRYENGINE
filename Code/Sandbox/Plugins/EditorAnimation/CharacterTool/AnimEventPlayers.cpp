@@ -4,6 +4,7 @@
 
 #include "AnimEvent.h"
 
+#include <Cry3DEngine/ISurfaceType.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAnimation/IAnimEventPlayer.h>
 #include <CryAudio/IAudioSystem.h>
@@ -135,7 +136,7 @@ void SerializeParameterAudioSwitch(string& parameter, IArchive& ar)
 	string switchState;
 	SpliterParameterValue(&switchName, &switchState, parameter.c_str());
 	ar(Serialization::AudioSwitch(switchName), "switchName", "^");
-	ar(Serialization::AudioSwitchState(switchState), "switchState", "^");
+	ar(Serialization::AudioState(switchState), "switchState", "^");
 	if (ar.isInput())
 		parameter = switchName + "=" + switchState;
 }
@@ -146,7 +147,7 @@ void SerializeParameterAudioRTPC(string& parameter, IArchive& ar)
 	string valueString;
 	SpliterParameterValue(&name, &valueString, parameter.c_str());
 	float value = (float)atof(valueString.c_str());
-	ar(Serialization::AudioRTPC(name), "rtpcName", "^");
+	ar(Serialization::AudioParameter(name), "rtpcName", "^");
 	ar(value, "rtpcValue", "^");
 
 	char newValue[32];
@@ -161,20 +162,18 @@ static SCustomAnimEventType g_atlEvents[] = {
 	{ "audio_trigger", ANIM_EVENT_USES_BONE, "Plays audio trigger using ATL"                                    },
 	{ "audio_switch",  0,                    "Sets audio switch using ATL"                                      },
 	{ "audio_rtpc",    0,                    "Sets RTPC value using ATL"                                        },
-	{ "sound",         ANIM_EVENT_USES_BONE, "Play audio trigger using ATL. Obsolete in favor of audio_trigger" },
-};
+	{ "sound",         ANIM_EVENT_USES_BONE, "Play audio trigger using ATL. Obsolete in favor of audio_trigger" }, };
 
 TSerializeParameterFunc g_atlEventFunctions[sizeof(g_atlEvents) / sizeof(g_atlEvents[0])] = {
 	&SerializeParameterAudioTrigger,
 	&SerializeParameterAudioSwitch,
 	&SerializeParameterAudioRTPC,
-	&SerializeParameterAudioTrigger
-};
+	&SerializeParameterAudioTrigger };
 
 static Vec3 GetBonePosition(ICharacterInstance* character, const QuatTS& physicalLocation, const char* boneName)
 {
 	int jointId = -1;
-	if (boneName != '\0')
+	if (boneName && boneName[0] != '\0')
 		jointId = character->GetIDefaultSkeleton().GetJointIDByName(boneName);
 	if (jointId != -1)
 		return (physicalLocation * character->GetISkeletonPose()->GetAbsJointByID(jointId)).t;
@@ -275,7 +274,8 @@ public:
 	{
 		if (enableAudio && m_pIAudioListener == nullptr)
 		{
-			m_pIAudioListener = gEnv->pAudioSystem->CreateListener();
+			static const Matrix34 identityMatrix(IDENTITY);
+			m_pIAudioListener = gEnv->pAudioSystem->CreateListener(identityMatrix, "AnimEventPlayer");
 		}
 		else if (m_pIAudioListener != nullptr)
 		{
@@ -346,18 +346,30 @@ public:
 		m_pIAudioObject->ExecuteTrigger(triggerId);
 	}
 
-private:
 	struct PredefinedSwitch
 	{
 		string name;
 		string state;
+		std::pair<CryAudio::ControlId, CryAudio::SwitchStateId> ids;
+
+		PredefinedSwitch()
+			: ids{CryAudio::InvalidControlId, CryAudio::InvalidSwitchStateId}
+		{}
 
 		void Serialize(Serialization::IArchive& ar)
 		{
 			ar(Serialization::AudioSwitch(name), "name", "^");
-			ar(Serialization::AudioSwitchState(state), "state", "^");
+			ar(Serialization::AudioState(state), "state", "^");
+			ids = std::pair<CryAudio::ControlId, CryAudio::SwitchStateId>(CryAudio::StringToId(name.c_str()), CryAudio::StringToId(state.c_str()));
 		}
 	};
+
+	std::vector<PredefinedSwitch> const& GetPredefinedSwitches() const
+	{
+		return m_predefinedSwitches;
+	}
+
+private:
 
 	std::vector<PredefinedSwitch> m_predefinedSwitches;
 
@@ -399,14 +411,12 @@ CRYREGISTER_CLASS(AnimEventPlayer_AudioTranslationLayer)
 static SCustomAnimEventType g_mfxEvents[] = {
 	{ "foley",        ANIM_EVENT_USES_BONE, "Foley are used for sounds that are specific to character and material that is being contacted." },
 	{ "footstep",     ANIM_EVENT_USES_BONE, "Footstep are specific to character and surface being stepped on."                               },
-	{ "groundEffect", ANIM_EVENT_USES_BONE },
-};
+	{ "groundEffect", ANIM_EVENT_USES_BONE },};
 
 TSerializeParameterFunc g_mfxEventFuncitons[sizeof(g_mfxEvents) / sizeof(g_mfxEvents[0])] = {
 	&SerializeParameterString,
 	&SerializeParameterString,
-	&SerializeParameterString,
-};
+	&SerializeParameterString, };
 
 class AnimEventPlayerMaterialEffects : public IAnimEventPlayer
 {
@@ -710,6 +720,15 @@ public:
 					effectFound = (effectId != InvalidEffectId) || effectFound;
 					if (effectId != InvalidEffectId)
 					{
+						if (m_pAudioTranslationLayer)
+						{
+							params.audioSwitchStates.reserve(m_pAudioTranslationLayer->GetPredefinedSwitches().size());
+							for (auto const& it : m_pAudioTranslationLayer->GetPredefinedSwitches())
+							{
+								params.audioSwitchStates.push_back(it.ids);
+							}
+						}
+
 						pMaterialEffects->ExecuteEffect(effectId, params);
 					}
 				}
@@ -740,16 +759,23 @@ public:
 		return false;
 	}
 
+	void SetAudioTranslationLayer(AnimEventPlayer_AudioTranslationLayer* pAudioTranslationLayer)
+	{
+		m_pAudioTranslationLayer = pAudioTranslationLayer;
+	}
+
 private:
-	bool                 m_audioEnabled;
-	TAnimFxSources       m_animFxSources;
-	string               m_parameter;
-	QuatT                m_playerLocation;
-	TCustomEventTypes    m_eventTypes;
-	TSerializeParamFuncs m_eventSerializeFuncs;
+	bool                                   m_audioEnabled;
+	TAnimFxSources                         m_animFxSources;
+	string                                 m_parameter;
+	QuatT                                  m_playerLocation;
+	TCustomEventTypes                      m_eventTypes;
+	TSerializeParamFuncs                   m_eventSerializeFuncs;
+	AnimEventPlayer_AudioTranslationLayer* m_pAudioTranslationLayer;
 };
 
 AnimEventPlayerAnimFXEvents::AnimEventPlayerAnimFXEvents()
+	: m_pAudioTranslationLayer(nullptr)
 {
 	m_eventTypes.push_back({ "anim_fx", ANIM_EVENT_USES_BONE, "Animation fx's are defined by designers (on the game side) and are executed through the Material FX System." });
 	m_eventSerializeFuncs.push_back(&SerializeParameterAnimFXEvent);
@@ -760,12 +786,10 @@ CRYREGISTER_CLASS(AnimEventPlayerAnimFXEvents)
 // ---------------------------------------------------------------------------
 
 static SCustomAnimEventType g_particleEvents[] = {
-	{ "effect", ANIM_EVENT_USES_BONE | ANIM_EVENT_USES_OFFSET_AND_DIRECTION, "Spawns a particle effect." }
-};
+	{ "effect", ANIM_EVENT_USES_BONE | ANIM_EVENT_USES_OFFSET_AND_DIRECTION, "Spawns a particle effect." } };
 
 TSerializeParameterFunc g_particleEventFuncitons[sizeof(g_particleEvents) / sizeof(g_particleEvents[0])] = {
-	&SerializeParameterEffect,
-};
+	&SerializeParameterEffect, };
 
 class AnimEventPlayer_Particles : public IAnimEventPlayer
 {
@@ -877,8 +901,10 @@ AnimEventPlayer_CharacterTool::AnimEventPlayer_CharacterTool()
 	}
 
 	IAnimEventPlayerPtr player;
+	AnimEventPlayer_AudioTranslationLayer* pAudioTranslationLayer = nullptr;
 	if (::CryCreateClassInstance<IAnimEventPlayer>(CharacterTool::AnimEventPlayer_AudioTranslationLayer::GetCID(), player))
 	{
+		pAudioTranslationLayer = static_cast<AnimEventPlayer_AudioTranslationLayer*>(player.get());
 		m_list.push_back(player);
 		m_names.push_back("Audio Translation Layer");
 	}
@@ -894,6 +920,7 @@ AnimEventPlayer_CharacterTool::AnimEventPlayer_CharacterTool()
 	}
 	if (::CryCreateClassInstance<IAnimEventPlayer>(CharacterTool::AnimEventPlayerAnimFXEvents::GetCID(), player))
 	{
+		static_cast<AnimEventPlayerAnimFXEvents*>(player.get())->SetAudioTranslationLayer(pAudioTranslationLayer);
 		m_list.push_back(player);
 		m_names.push_back("AnimFX");
 	}
@@ -902,4 +929,3 @@ AnimEventPlayer_CharacterTool::AnimEventPlayer_CharacterTool()
 CRYREGISTER_CLASS(AnimEventPlayer_CharacterTool)
 
 }
-

@@ -1,0 +1,32 @@
+{
+    "CryReflection_Uber_0.cpp": {
+        "Descriptions": [
+            "BaseTypeDesc.cpp",
+            "BaseTypeDesc.h",
+            "DescExtension.h",
+            "EnumValueDesc.cpp",
+            "EnumValueDesc.h",
+            "FunctionDesc.cpp",
+            "FunctionDesc.h",
+            "TypeDesc.cpp",
+            "TypeDesc.h",
+            "VariableDesc.cpp",
+            "VariableDesc.h"
+        ],
+        "Registry": [
+            "CoreRegistry.cpp",
+            "CoreRegistry.h"
+        ],
+        "Root": [
+            "Module.cpp",
+            "Module.h",
+            "Reflection.natvis"
+        ]
+    },
+    "NoUberFile": {
+        "Root": [
+            "StdAfx.cpp",
+            "StdAfx.h"
+        ]
+    }
+}

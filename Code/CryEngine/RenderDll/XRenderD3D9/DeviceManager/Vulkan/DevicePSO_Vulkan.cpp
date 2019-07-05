@@ -2,7 +2,6 @@
 
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include "xxhash.h"
 #include "Vulkan/API/VKInstance.hpp"
 #include "Vulkan/API/VKBufferResource.hpp"
@@ -101,7 +100,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 			stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(0, "Shader class not supported");
+			CRY_ASSERT(0, "Shader class not supported");
 			return EInitResult::Failure;
 		}
 
@@ -134,11 +133,10 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 			vertexInputBindingDescriptions.reserve(min(limits.maxVertexInputBindings, 16u));
 			vertexInputAttributeDescriptions.reserve(min(limits.maxVertexInputAttributes, 32u));
 
-			uint32 streamMask = psoDesc.CombineVertexStreamMasks(uint8(pVsInstance->m_VStreamMask_Decl), psoDesc.m_ObjectStreamMask);
+			EStreamMasks streamMask = psoDesc.CombineVertexStreamMasks(pVsInstance->m_VStreamMask_Decl, psoDesc.m_ObjectStreamMask);
 
 			const auto& inputLayoutPair = CDeviceObjectFactory::GetOrCreateInputLayout(&pVsInstance->m_Shader, streamMask, psoDesc.m_VertexFormat);
 			const auto& inputLayout = inputLayoutPair->first;
-			const unsigned int declarationCount = inputLayout.m_Declaration.size();
 
 			// match shader inputs to input layout by semantic
 			for (const auto& declInputElement : inputLayout.m_Declaration)
@@ -155,7 +153,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 						{
 							if (itBinding->binding == declInputElement.InputSlot)
 							{
-								CRY_ASSERT_MESSAGE(itBinding->inputRate == (declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE), "Mismatching input rate not supported");
+								CRY_ASSERT(itBinding->inputRate == (declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE), "Mismatching input rate not supported");
 								break;
 							}
 						}
@@ -163,7 +161,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 						// need to add a new binding
 						if (itBinding == vertexInputBindingDescriptions.end())
 						{
-							CRY_ASSERT_MESSAGE(declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA || declInputElement.InstanceDataStepRate == 1, "Data step rate not supported");
+							CRY_ASSERT(declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA || declInputElement.InstanceDataStepRate == 1, "Data step rate not supported");
 
 							VkVertexInputBindingDescription bindingDesc;
 							bindingDesc.binding = declInputElement.InputSlot;
@@ -221,7 +219,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 
 		if (topology == VK_PRIMITIVE_TOPOLOGY_MAX_ENUM)
 		{
-			CRY_ASSERT_MESSAGE(0, "Primitive type not supported");
+			CRY_ASSERT(0, "Primitive type not supported");
 			return EInitResult::Failure;
 		}
 	}
@@ -262,6 +260,13 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 	rasterizationStateCreateInfo.depthBiasClamp = 0;
 	rasterizationStateCreateInfo.depthBiasSlopeFactor = 0;
 	rasterizationStateCreateInfo.lineWidth = 1.0f;
+
+	VkPipelineRasterizationStateRasterizationOrderAMD rasterizationOrderAMD = {};
+	rasterizationOrderAMD.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_RASTERIZATION_ORDER_AMD;
+	rasterizationOrderAMD.rasterizationOrder = psoDesc.m_bRelaxedRasterizationOrder ? VK_RASTERIZATION_ORDER_RELAXED_AMD : VK_RASTERIZATION_ORDER_STRICT_AMD;
+
+	if (Extensions::EXT_rasterization_order::IsSupported)
+		rasterizationStateCreateInfo.pNext = &rasterizationOrderAMD;
 
 	VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {};
 	multisampleStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -363,6 +368,8 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		{ VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,  VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,		true },		// GS_BLSRC_ALPHASATURATE
 		{ VK_BLEND_FACTOR_SRC_ALPHA,           VK_BLEND_FACTOR_ZERO,					true },		// GS_BLSRC_SRCALPHA_A_ZERO
 		{ VK_BLEND_FACTOR_SRC1_ALPHA,          VK_BLEND_FACTOR_SRC1_ALPHA,				false },	// GS_BLSRC_SRC1ALPHA
+		{ VK_BLEND_FACTOR_SRC1_ALPHA,          VK_BLEND_FACTOR_ONE,						false },	// GS_BLSRC_SRC1ALPHA_A_ONE
+		{ VK_BLEND_FACTOR_SRC_ALPHA,           VK_BLEND_FACTOR_ONE,						true },		// GS_BLSRC_SRCALPHA_A_ONE
 	};
 
 	static SBlendFactors DstBlendFactors[GS_BLDST_MASK >> GS_BLDST_SHIFT] =
@@ -378,6 +385,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 		{ VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,  VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,	true },		// GS_BLDST_ONEMINUSDSTALPHA
 		{ VK_BLEND_FACTOR_ONE,                  VK_BLEND_FACTOR_ZERO,					true },		// GS_BLDST_ONE_A_ZERO
 		{ VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,	false },	// GS_BLDST_ONEMINUSSRC1ALPHA
+		{ VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, VK_BLEND_FACTOR_ZERO,					false },	// GS_BLDST_ONEMINUSSRC1ALPHA_A_ZERO
 	};
 
 	static VkBlendOp BlendOp[GS_BLEND_OP_MASK >> GS_BLEND_OP_SHIFT] =
@@ -521,7 +529,7 @@ bool CDeviceComputePSO_Vulkan::Init(const CDeviceComputePSODesc& psoDesc)
 
 	SDeviceObjectHelpers::THwShaderInfo hwShaders;
 	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique,
-		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, psoDesc.m_ShaderFlags_MDV, customPipelineState, false);
+		psoDesc.m_ShaderFlags_RT, psoDesc.m_ShaderFlags_MD, MDV_NONE, customPipelineState, false);
 
 	if (validShaderStages != EShaderStage_Compute)
 		return false;

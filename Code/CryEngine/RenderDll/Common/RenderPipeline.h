@@ -1,37 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   RenderPipeline.h : Shaders pipeline declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef __RENDERPIPELINE_H__
-#define __RENDERPIPELINE_H__
-
 #pragma  once
 
-#include <CryThreading/CryThreadSafeRendererContainer.h>
-#include <CryThreading/CryThreadSafeWorkerContainer.h>
 #include "Shadow_Renderer.h"
 
 #include "LightVolumeBuffer.h"
 #include "ParticleBuffer.h"
 
-#include "Common/Shaders/CShader.h"         // CShaderMan
-#include "Common/Shaders/ShaderResources.h" // CShaderResources
-//====================================================================
-
-
+#include "Common/Shaders/CShader.h"
+#include "Common/Shaders/ShaderResources.h"
 
 class CRenderView;
 struct IRenderNode;
 struct IRenderMesh;
 
-#define MAX_REND_SHADERS                      4096
-#define MAX_REND_SHADER_RES                   16384
+#define MAX_REND_SHADERS                      (1U << 12)
+#define MAX_REND_SHADER_RES                   (1U << 14)
 
 struct CRY_ALIGN(32) SRendItem
 {
@@ -51,31 +35,55 @@ struct CRY_ALIGN(32) SRendItem
 	CRenderElement* pElem;
 	//uint32 nStencRef  : 8;
 
-	static float EncodeDistanceSortingValue(CRenderObject* pObj)
+	static uint32 EncodeObjFlagsValue(uint64 objFlags)
 	{
-		return pObj->m_fDistance + pObj->m_fSort;
+		return uint32(objFlags) & (0xFFFF0000 & FOB_SORT_MASK);
 	}
 
-	static uint32 EncodeObjFlagsSortingValue(CRenderObject* pObj)
+	static uint16 EncodePriorityIntegerValue(CRenderObject* pObj)
 	{
-		return (pObj->m_ObjFlags & ~0xFFFF) + (pObj->m_nSort & 0xFFFF);
+		return uint16(pObj->m_nSort);
 	}
 
-	static bool TestObjFlagsSortingValue(uint32 nFlag, uint32 sortingValue)
+	static uint16 EncodeDistanceIntegerValue(float fDistance)
 	{
-		return (nFlag & sortingValue) != 0;
+		return HalfFlip(CryConvertFloatToHalf(std::min(fDistance, 65504.0f)));
 	}
 
-	static inline void ExtractShaderItem(uint32 nVal, SShaderItem& sh)
+	static float EncodeCustomDistanceSortingValue(CRenderObject* pObj, float fDistance)
 	{
-		CShader* pShader = (CShader*)(CShaderMan::s_pContainer->m_RList[CBaseResource::RListIndexFromId((nVal >> 20) & (MAX_REND_SHADERS - 1))]);
+		int nRenderAlways = (pObj->m_pRenderNode) ? pObj->m_pRenderNode->GetRndFlags() & ERF_RENDER_ALWAYS : 1;
+		float comp = fDistance + pObj->m_fSort;
+		return nRenderAlways ? std::numeric_limits<float>::lowest() + comp : comp;
+	}
+
+	static float EncodeDistanceSortingValue(CRenderObject* pObj, float fDistance)
+	{
+		return fDistance + pObj->m_fSort;
+	}
+
+	static uint32 EncodeObjFlagsSortingValue(CRenderObject* pObj, uint64 objFlags, float fDistance)
+	{
+		return EncodeObjFlagsValue(objFlags) + EncodeDistanceIntegerValue(fDistance);
+	}
+
+	static uint32 EncodeObjFlagsSortingValue(CRenderObject* pObj, uint64 objFlags)
+	{
+		return EncodeObjFlagsValue(objFlags) + EncodePriorityIntegerValue(pObj);
+	}
+
+	static inline void ExtractShaderItem(uint32 value, uint32 batchFlags, SShaderItem& sh)
+	{
+		uint32 nShaderId = (value >> 20) & (MAX_REND_SHADERS - 1);
+		CShader* pShader = (CShader*)(CShaderMan::s_pContainer->m_RList[CBaseResource::RListIndexFromId(nShaderId)]);
 		sh.m_pShader = static_cast<IShader*>(pShader);
-		uint32 nTechnique = (nVal & 0x3f);
+		uint32 nTechnique = ((value >> 14) & 0x3f);
 		if (nTechnique == 0x3f)
 			nTechnique = -1;
 		sh.m_nTechnique = nTechnique;
-		int nRes = (nVal >> 6) & (MAX_REND_SHADER_RES - 1);
-		sh.m_pShaderResources = (IRenderShaderResources*)((nRes) ? CShader::s_ShaderResources_known[nRes] : nullptr);
+		int nResID = (value) & (MAX_REND_SHADER_RES - 1);
+		sh.m_pShaderResources = (IRenderShaderResources*)((nResID) ? CShader::s_ShaderResources_known[nResID] : nullptr);
+		sh.m_nPreprocessFlags = batchFlags;
 	}
 
 	static inline uint32 PackShaderItem(const SShaderItem& shaderItem)
@@ -84,9 +92,30 @@ struct CRY_ALIGN(32) SRendItem
 		uint32 nShaderId = ((CShader*)shaderItem.m_pShader)->mfGetID();
 		assert(nResID < CShader::s_ShaderResources_known.size());
 		assert(nShaderId != 0);
-		uint32 value = (nResID << 6) | (nShaderId << 20) | (shaderItem.m_nTechnique & 0x3f);
+		uint32 value = (nShaderId << 20) | ((shaderItem.m_nTechnique & 0x3f) << 14) | (nResID);
 		return value;
 	}
+
+	/////////////////////////////////////////////////////////////////////
+
+	static inline bool TestIndividualBatchFlags(uint32 batchFlags, uint32 batchIncludeFilter, uint32 batchExcludeFilter)
+	{
+		// The tested field must have all included, and must _not_ have any excluded flags
+		return (((batchFlags & batchIncludeFilter) | (batchFlags & batchExcludeFilter)) == batchIncludeFilter);
+	}
+
+	static inline bool TestCombinedBatchFlags(uint32 batchFlags, uint32 batchIncludeFilter)
+	{
+		// The tested field must have all included (the exclusion can't be tested on the combined bitfield)
+		return (((batchFlags & batchIncludeFilter)) == batchIncludeFilter);
+	}
+
+	static inline bool TestIndividualObjFlag(uint32 objFlag, uint32 objIncludeFilter)
+	{
+		return ((objFlag & objIncludeFilter) == objIncludeFilter);
+	}
+
+	/////////////////////////////////////////////////////////////////////
 
 	// Sort by SortVal member of RI
 	static void mfSortPreprocess(SRendItem* First, int Num);
@@ -95,7 +124,26 @@ struct CRY_ALIGN(32) SRendItem
 	// Sort by light
 	static void mfSortByLight(SRendItem* First, int Num, bool bSort, const bool bIgnoreRePtr, bool bSortDecals);
 	// Special sorting for ZPass (compromise between depth and batching)
-	static void mfSortForZPass(SRendItem* First, int Num);
+	static void mfSortForZPass(SRendItem* First, int Num, bool bZPre);
+	static void mfSortForDepthPass(SRendItem* First, int Num);
+};
+
+struct CMotionBlurPredicate
+{
+	bool operator()(SRendItem& item)
+	{
+		// Assumes not set flags in order before set flags
+		return SRendItem::TestIndividualObjFlag(item.ObjSort, FOB_HAS_PREVMATRIX) == 0;
+	}
+};
+
+struct CZPrePassPredicate
+{
+	bool operator()(SRendItem& item)
+	{
+		// Assumes not set flags in order before set flags
+		return SRendItem::TestIndividualObjFlag(item.ObjSort, FOB_ZPREPASS) == 0;
+	}
 };
 
 //==================================================================
@@ -116,30 +164,30 @@ enum EStencilStateFunction
 	FSS_STENCFUNC_MASK     = 0x7
 };
 
-#define FSS_STENCIL_TWOSIDED   0x8
+#define FSS_STENCIL_TWOSIDED 0x8
 
-#define FSS_CCW_SHIFT          16
+#define FSS_CCW_SHIFT        16
 
 enum EStencilStateOp
 {
-	FSS_STENCOP_KEEP       = 0x0,
-	FSS_STENCOP_REPLACE    = 0x1,
-	FSS_STENCOP_INCR       = 0x2,
-	FSS_STENCOP_DECR       = 0x3,
-	FSS_STENCOP_ZERO       = 0x4,
-	FSS_STENCOP_INCR_WRAP  = 0x5,
-	FSS_STENCOP_DECR_WRAP  = 0x6,
-	FSS_STENCOP_INVERT     = 0x7
+	FSS_STENCOP_KEEP      = 0x0,
+	FSS_STENCOP_REPLACE   = 0x1,
+	FSS_STENCOP_INCR      = 0x2,
+	FSS_STENCOP_DECR      = 0x3,
+	FSS_STENCOP_ZERO      = 0x4,
+	FSS_STENCOP_INCR_WRAP = 0x5,
+	FSS_STENCOP_DECR_WRAP = 0x6,
+	FSS_STENCOP_INVERT    = 0x7
 };
 
-#define FSS_STENCFAIL_SHIFT    4
-#define FSS_STENCFAIL_MASK     (0x7 << FSS_STENCFAIL_SHIFT)
+#define FSS_STENCFAIL_SHIFT  4
+#define FSS_STENCFAIL_MASK   (0x7 << FSS_STENCFAIL_SHIFT)
 
-#define FSS_STENCZFAIL_SHIFT   8
-#define FSS_STENCZFAIL_MASK    (0x7 << FSS_STENCZFAIL_SHIFT)
+#define FSS_STENCZFAIL_SHIFT 8
+#define FSS_STENCZFAIL_MASK  (0x7 << FSS_STENCZFAIL_SHIFT)
 
-#define FSS_STENCPASS_SHIFT    12
-#define FSS_STENCPASS_MASK     (0x7 << FSS_STENCPASS_SHIFT)
+#define FSS_STENCPASS_SHIFT  12
+#define FSS_STENCPASS_MASK   (0x7 << FSS_STENCPASS_SHIFT)
 
 #define STENC_FUNC(op)        (op)
 #define STENC_CCW_FUNC(op)    (op << FSS_CCW_SHIFT)
@@ -151,26 +199,28 @@ enum EStencilStateOp
 #define STENCOP_CCW_PASS(op)  (op << (FSS_STENCPASS_SHIFT + FSS_CCW_SHIFT))
 
 //Stencil masks
-#define BIT_STENCIL_RESERVED          0x80
-#define BIT_STENCIL_INSIDE_CLIPVOLUME 0x40
-#define STENCIL_VALUE_OUTDOORS        0x0
+#define BIT_STENCIL_RESERVED                0x80
+#define BIT_STENCIL_INSIDE_CLIPVOLUME       0x40
+#define BIT_STENCIL_ALLOW_TERRAINLAYERBLEND 0x20
+#define BIT_STENCIL_ALLOW_DECALBLEND        0x10
+#define STENCIL_VALUE_OUTDOORS              0x0
 
-#define STENC_VALID_BITS_NUM          7
-#define STENC_MAX_REF                 ((1 << STENC_VALID_BITS_NUM) - 1)
+#define STENC_VALID_BITS_NUM                7
+#define STENC_MAX_REF                       ((1 << STENC_VALID_BITS_NUM) - 1)
 
 //Batch flags.
 enum EBatchFlags
 {
 	FB_GENERAL         = 0x1,
 	FB_TRANSPARENT     = 0x2,
-	FB_SKIN            = 0x4,
+	// UNUSED          = 0x4,
 	FB_Z               = 0x8,
 	FB_BELOW_WATER     = 0x10,
 	FB_ZPREPASS        = 0x20,
 	FB_PREPROCESS      = 0x40,
 	FB_MOTIONBLUR      = 0x80,
 	FB_POST_3D_RENDER  = 0x100,
-	FB_MULTILAYERS     = 0x200,
+	// UNUSED          = 0x200,
 	FB_COMPILED_OBJECT = 0x400,
 	FB_CUSTOM_RENDER   = 0x800,
 	FB_RESOLVE_FULL    = 0x1000,
@@ -187,8 +237,8 @@ enum EBatchFlags
 
 enum SRenderShaderLightMaskFlags
 {
-	SLMF_DIRECT = 0,
-	SLMF_POINT = 1,
+	SLMF_DIRECT    = 0,
+	SLMF_POINT     = 1,
 	SLMF_PROJECTED = 2,
 	SLMF_TYPE_MASK = (SLMF_POINT | SLMF_PROJECTED)
 };
@@ -209,6 +259,3 @@ enum EShapeMeshType
 	SHAPE_BOX,
 	SHAPE_MAX,
 };
-
-
-#endif  // __RENDERPIPELINE_H__

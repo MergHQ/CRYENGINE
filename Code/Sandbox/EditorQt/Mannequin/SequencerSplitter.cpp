@@ -14,10 +14,6 @@ CSequencerSplitter::CSequencerSplitter()
 	m_cxBorder = m_cyBorder = 0;
 }
 
-CSequencerSplitter::~CSequencerSplitter()
-{
-}
-
 BEGIN_MESSAGE_MAP(CSequencerSplitter, CClampedSplitterWnd)
 END_MESSAGE_MAP()
 
@@ -55,4 +51,3 @@ void CSequencerSplitter::OnDrawSplitter(CDC* pDC, ESplitType nType, const CRect&
 	// Draw border
 	pDC->Draw3dRect(rectArg, GetSysColor(COLOR_BTNSHADOW), GetSysColor(COLOR_BTNHIGHLIGHT));
 }
-

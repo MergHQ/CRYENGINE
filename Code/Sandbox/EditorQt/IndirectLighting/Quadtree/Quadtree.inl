@@ -610,7 +610,6 @@ RemoveLeafFromNode(SQuadNode& rParentNode, const TLeafContent& crCont, const TVe
 		for (int i = 0; i < TMaxCellElems - 1; ++i)
 		{
 			TIndexType tempNextCellLeaf = 0;
-			;
 			if (nextCellLeafIndex != TLeaf::INVALID_LEAF_INDEX)
 			{
 				tempNextCellLeaf = GetLeaf(nextCellLeafIndex).GetNextCellLeaf();
@@ -636,7 +635,7 @@ RemoveLeafFromNode(SQuadNode& rParentNode, const TLeafContent& crCont, const TVe
 }
 
 template<class TLeafContent, uint32 TMaxCellElems, class TPosType, class TIndexType, bool TUseRadius>
-void CQuadTree<TLeafContent, TMaxCellElems, TPosType, TIndexType, TUseRadius >::EnsureTreeIntegrity(const TTravRecVecType crTraversedNodes)
+void CQuadTree<TLeafContent, TMaxCellElems, TPosType, TIndexType, TUseRadius >::EnsureTreeIntegrity(const TTravRecVecType& crTraversedNodes)
 {
 	const uint32 cCount = crTraversedNodes.size();
 	for (int i = cCount - 1; i >= 0; --i)
@@ -765,7 +764,7 @@ const EInsertionResult CQuadTree<TLeafContent, TMaxCellElems, TPosType, TIndexTy
 
 	//retrieve non rotated positions
 	static const TVec2F cCenterPosNoRot = m_Center;   //center pos set in constructor, so this is safe and good here
-	static const TVec2F cRelOffset = TVec2F(m_SideLength * 0.5, m_SideLength * 0.5) - cCenterPosNoRot;
+	static const TVec2F cRelOffset = TVec2F{ m_SideLength * (typename SCenterType<TPosType>::Type)0.5, m_SideLength * (typename SCenterType<TPosType>::Type)0.5 } -cCenterPosNoRot;
 	const TVec2 cPosNoRot(crPos);
 	const TVec2F cPosRel(cPosNoRot.x + cRelOffset.x, cPosNoRot.y + cRelOffset.y);  //relative position with 0,0 in upper left corner
 	std::vector<TVec2F> positions;
@@ -827,7 +826,7 @@ void CQuadTree<TLeafContent, TMaxCellElems, TPosType, TIndexType, TUseRadius >::
 	int hitCount = 0;
 	for (int i = 0; i < 4; ++i)
 	{
-		childHits[i] = IsPosInCell(crPos, crNodeData.sideLength * 0.5, childCenters[i], cRadius);
+		childHits[i] = IsPosInCell(crPos, crNodeData.sideLength * (typename SCenterType<TPosType>::Type)0.5, childCenters[i], cRadius);
 		if (childHits[i])
 			hitCount++;
 	}
@@ -1278,7 +1277,7 @@ InsertLeafWithSubdivisionRecurse
 		aChildIndices[ind].ResetForRecursion();
 	ResetChildIndicesVec(aChildIndices);
 	TEChildIndexExt posChildIndex;  //index where new node goes
-	GatherChildInfo(crPos, crNodedata.centerPos, aChildIndices, crCellLeaves, cRadius, childCenters, crNodedata.sideLength * 0.5, subdivisionInfo, posChildIndex);
+	GatherChildInfo(crPos, crNodedata.centerPos, aChildIndices, crCellLeaves, cRadius, childCenters, crNodedata.sideLength * (typename SCenterType<TPosType>::Type)0.5, subdivisionInfo, posChildIndex);
 	//check if cell where node actually goes can be handled in PropagateLeavesToNewNode
 	const bool cPosCellMasked = TUseRadius ? ((posChildIndex != NP_E /*pos outside all cells*/) && subdivisionInfo.elems[posChildIndex]) : subdivisionInfo.elems[0];
 	if (cPosCellMasked)
@@ -1290,7 +1289,7 @@ InsertLeafWithSubdivisionRecurse
 		const EPosInsertionResult cSubRes = InsertLeafWithSubdivisionRecurse
 		                                    (
 		  crPos,
-		  SQuadNodeData(cFirstChildIndex + posChildIndex, childCenters[(int)posChildIndex], crNodedata.sideLength * 0.5),
+		  SQuadNodeData(cFirstChildIndex + posChildIndex, childCenters[(int)posChildIndex], crNodedata.sideLength * (typename SCenterType<TPosType>::Type)0.5),
 		  crCellLeaves,
 		  subDivLevel,
 		  cNewLeafIndex,
@@ -1322,7 +1321,7 @@ InsertLeafWithSubdivisionRecurse
 				const EPosInsertionResult cSubRes = InsertLeafWithSubdivisionRecurse
 				                                    (
 				  crPos,
-				  SQuadNodeData(cFirstChildIndex + cNewIndex, childCenters[(int)cNewIndex], crNodedata.sideLength * 0.5),
+				  SQuadNodeData(cFirstChildIndex + cNewIndex, childCenters[(int)cNewIndex], crNodedata.sideLength * (typename SCenterType<TPosType>::Type)0.5),
 				  crCellLeaves,
 				  subDivLevel,
 				  cNewLeafIndex,
@@ -2301,7 +2300,7 @@ GetSubdivisionCenters(const float cSideLength, const SVec2<TCompType>& crCenter,
 {
 	//processed in enum order
 	assert(cSideLength > 0);
-	const TCompType cNewHalfSideLength = cSideLength / 4.0;
+	const TCompType cNewHalfSideLength = cSideLength / 4.0f;
 	childCenters[0].x = childCenters[2].x = (crCenter.x - cNewHalfSideLength);
 	childCenters[1].x = childCenters[3].x = (crCenter.x + cNewHalfSideLength);
 	childCenters[0].y = childCenters[1].y = (crCenter.y - cNewHalfSideLength);
@@ -2319,4 +2318,3 @@ GetQuadrantIndex(const SVec2<TCenterCompType>& crCenterPos, const SVec2<TCompTyp
 };//NQT
 
 #pragma warning(default:4127)
-

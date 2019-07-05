@@ -35,8 +35,6 @@ void CParticleComponentRuntime::UpdateParticles(SUpdateContext& context, CDevice
 	if (!m_parameters->numParticles)
 		return;
 
-	m_parameters->deltaTime = context.deltaTime;
-	m_parameters->currentTime += context.deltaTime;
 	m_parameters->viewProjection = context.pRenderView->GetViewInfo(CCamera::eEye_Left).cameraProjMatrix;
 	m_parameters->sortMode = m_params.sortMode;
 
@@ -145,6 +143,8 @@ void CParticleComponentRuntime::AddParticles(SUpdateContext& context)
 	m_particleInitializationParameters = updateData;
 	m_initializationShaderFlags        = updateData.initFlags;
 
+	m_parameters->deltaTime            = updateData.deltaTime;
+	m_parameters->currentTime         += updateData.deltaTime;
 	m_parameters->lifeTime             = updateData.lifeTime;
 	m_parameters->emitterPosition      = updateData.emitterPosition;
 	m_parameters->emitterOrientation   = updateData.emitterOrientation;
@@ -213,9 +213,7 @@ void CParticleComponentRuntime::UpdateNewBorns(const SUpdateContext& context, CD
 	m_passFeatureInitialization.SetInlineConstantBuffer(eConstantBufferSlot_Base, m_parameters.GetDeviceConstantBuffer());
 	m_passFeatureInitialization.SetInlineConstantBuffer(eConstantBufferSlot_Initialization, m_particleInitializationParameters.GetDeviceConstantBuffer());
 
-	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(
-	  m_parameters->numNewBorns,
-	  kThreadsInBlock);
+	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(m_parameters->numNewBorns, kThreadsInBlock);
 	if (blocks == 0)
 		CryFatalError("");
 	m_passFeatureInitialization.SetDispatchSize(blocks, 1, 1);
@@ -233,9 +231,7 @@ void CParticleComponentRuntime::FillKillList(const SUpdateContext& context, CDev
 	m_parameters.CopyToDevice();
 	m_passFillKillList.SetInlineConstantBuffer(eConstantBufferSlot_Base, m_parameters.GetDeviceConstantBuffer());
 
-	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(
-	  GetNumParticles(),
-	  kThreadsInBlock);
+	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(GetNumParticles(), kThreadsInBlock);
 
 	m_passFillKillList.SetDispatchSize(blocks, 1, 1);
 
@@ -264,9 +260,7 @@ void CParticleComponentRuntime::UpdateFeatures(const SUpdateContext& context, CD
 
 	m_passFeatureUpdate.SetOutputUAV(0, &m_container.GetDefaultParticleDataBuffer());
 
-	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(
-	  GetNumParticles(),
-	  kThreadsInBlock);
+	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(GetNumParticles(), kThreadsInBlock);
 
 	m_passFeatureUpdate.SetSampler(0, EDefaultSamplerStates::BilinearClamp);
 	m_passFeatureUpdate.SetSampler(1, EDefaultSamplerStates::PointClamp);
@@ -274,7 +268,10 @@ void CParticleComponentRuntime::UpdateFeatures(const SUpdateContext& context, CD
 	for (int i = 0; i < eConstantBufferSlot_COUNT; ++i)
 	{
 		if (m_updateConstantBuffers[i])
-			m_passFeatureUpdate.SetInlineConstantBuffer(i, m_updateConstantBuffers[i]);
+		{
+			CRY_ASSERT(i != eConstantBufferSlot_Base); // make sure we don't bind eConstantBufferSlot_Base twice
+			m_passFeatureUpdate.SetConstantBuffer(i, m_updateConstantBuffers[i]);
+		}
 	}
 
 	m_parameters.CopyToDevice();
@@ -361,18 +358,18 @@ void CParticleComponentRuntime::SetInitializationSRV(EFeatureInitializationSrvSl
 }
 
 CParticleComponentRuntime::CParticleComponentRuntime(const SComponentParams& params, TConstArray<IParticleFeature*> features)
-	: m_bounds(AABB::RESET)
-	, m_initialized(false)
+	: m_container(params.maxParticles)
 	, m_blockSums(params.maxParticles)
 	, m_killList(params.maxParticles)
 	, m_newBornIndices(params.maxNewBorns)
 	, m_parentDataRenderThread(params.maxNewBorns)
 	, m_params(params)
-	, m_container(params.maxParticles)
+	, m_bounds(AABB::RESET)
 	, m_updateShaderFlags(0)
-	, m_previousUpdateShaderShaderFlags(std::numeric_limits<uint64>::max())
 	, m_initializationShaderFlags(0)
 	, m_previousInitializationShaderFlags(std::numeric_limits<uint64>::max())
+	, m_previousUpdateShaderShaderFlags(std::numeric_limits<uint64>::max())
+	, m_initialized(false)
 {
 	ZeroStruct(m_updateSrvSlots);
 	ZeroStruct(m_updateTextureSlots);
@@ -392,9 +389,7 @@ void CParticleComponentRuntime::SwapToEnd(const SUpdateContext& context, CDevice
 	m_passSwapToEnd.SetOutputUAV(1, &m_killList.GetBuffer());
 	m_passSwapToEnd.SetOutputUAV(2, context.pScratchBuffer);
 
-	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(
-	  m_parameters->numKilled,
-	  kThreadsInBlock);
+	const int blocks = gpu::GetNumberOfBlocksForArbitaryNumberOfThreads(m_parameters->numKilled, kThreadsInBlock);
 
 	m_parameters.CopyToDevice();
 	m_passSwapToEnd.SetInlineConstantBuffer(eConstantBufferSlot_Base, m_parameters.GetDeviceConstantBuffer());
@@ -406,18 +401,18 @@ void CParticleComponentRuntime::SwapToEnd(const SUpdateContext& context, CDevice
 	m_parameters->numParticles -= m_parameters->numKilled;
 }
 
-gpu_physics::CParticleFluidSimulation* CParticleComponentRuntime::CreateFluidSimulation()
+gpu_physics::CParticleFluidSimulation* CParticleComponentRuntime::CreateFluidSimulation(const gpu_pfx2::SUpdateContext& context)
 {
 	// [PFX2_TODO_GPU] : The maximum fluid particle number needs to be adjustable
-	m_pFluidSimulation = std::unique_ptr<gpu_physics::CParticleFluidSimulation>(new gpu_physics::CParticleFluidSimulation(32 * 1024));
+	m_pFluidSimulation = std::unique_ptr<gpu_physics::CParticleFluidSimulation>(new gpu_physics::CParticleFluidSimulation(context.pRenderView->GetGraphicsPipeline().get(), 32 * 1024));
 	return m_pFluidSimulation.get();
 }
 
-void CParticleComponentRuntime::FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
+void CParticleComponentRuntime::FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const gpu_pfx2::SUpdateContext& context)
 {
 	if (m_parameters->numParticles)
 	{
-	   m_pFluidSimulation->FluidCollisions(commandList, m_parameters.GetDeviceConstantBuffer(), eConstantBufferSlot_Base);
+		m_pFluidSimulation->FluidCollisions(commandList, context, m_parameters.GetDeviceConstantBuffer(), eConstantBufferSlot_Base);
 	}
 }
 
@@ -425,7 +420,7 @@ void CParticleComponentRuntime::EvolveParticles(CDeviceCommandListRef RESTRICT_R
 {
 	if (m_parameters->numParticles)
 	{
-	   m_pFluidSimulation->EvolveParticles(commandList, m_container.GetDefaultParticleDataBuffer(), m_parameters->numParticles);
+		m_pFluidSimulation->EvolveParticles(commandList, m_container.GetDefaultParticleDataBuffer(), m_parameters->numParticles);
 	}
 }
 
@@ -439,12 +434,20 @@ void CParticleComponentRuntime::InitializePasses()
 	m_passReorderParticles.SetTechnique(CShaderMan::s_ShaderGpuParticles, CCryNameTSCRC("ReorderParticles"), 0);
 }
 
-void CParticleComponentRuntime::Initialize()
+void CParticleComponentRuntime::Initialize(CGraphicsPipeline* pGraphicsPipeline)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	if (m_initialized)
 		return;
+
+	m_passCalcBounds.SetGraphicsPipeline(pGraphicsPipeline);
+	m_passFeatureInitialization.SetGraphicsPipeline(pGraphicsPipeline);
+	m_passFillKillList.SetGraphicsPipeline(pGraphicsPipeline);
+	m_passFeatureUpdate.SetGraphicsPipeline(pGraphicsPipeline);
+	m_passPrepareSort.SetGraphicsPipeline(pGraphicsPipeline);
+	m_passReorderParticles.SetGraphicsPipeline(pGraphicsPipeline);
+	m_passSwapToEnd.SetGraphicsPipeline(pGraphicsPipeline);
 
 	ZeroStruct(m_updateSrvSlots);
 	ZeroStruct(m_updateTextureSlots);
@@ -470,7 +473,7 @@ void CParticleComponentRuntime::Initialize()
 	bool sorting = m_params.sortMode != ESortMode::None;
 	m_container.Initialize(sorting);
 	if (sorting)
-		m_pMergeSort = std::unique_ptr<gpu::CMergeSort>(new gpu::CMergeSort(m_params.maxParticles));
+		m_pMergeSort = std::unique_ptr<gpu::CMergeSort>(new gpu::CMergeSort(pGraphicsPipeline, m_params.maxParticles));
 
 	// Alloc GPU resources
 	m_blockSums.CreateDeviceBuffer();

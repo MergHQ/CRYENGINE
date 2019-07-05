@@ -1,14 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __entityscriptdialog_h__
-#define __entityscriptdialog_h__
 #pragma once
 
-// CEntityScriptDialog dialog
-
 #include "Controls/ColorCheckBox.h"
+#include <CryCore/functor.h>
 
 class CEntityScript;
+struct IEntity;
 
 class CEntityScriptDialog : public CXTResizeDialog
 {
@@ -16,25 +14,23 @@ class CEntityScriptDialog : public CXTResizeDialog
 public:
 	typedef Functor0 Callback;
 
-	CEntityScriptDialog(CWnd* pParent = NULL);   // standard constructor
-	virtual ~CEntityScriptDialog();
+	CEntityScriptDialog(CWnd* pParent = NULL);
 
 	// Dialog Data
 	enum { IDD = IDD_DB_ENTITY_METHODS };
 
 	void SetScript(std::shared_ptr<CEntityScript> script, IEntity* m_entity);
 
-	void SetOnReloadScript(Callback cb) { m_OnReloadScript = cb; };
+	void SetOnReloadScript(Callback cb) { m_OnReloadScript = cb; }
 
 protected:
 	virtual void   DoDataExchange(CDataExchange* pDX);  // DDX/DDV support
 	virtual BOOL   OnInitDialog();
 
-	virtual void   OnOK()     {};
-	virtual void   OnCancel() {};
+	virtual void   OnOK()     {}
+	virtual void   OnCancel() {}
 
 	void           ReloadMethods();
-	void           ReloadEvents();
 
 	void           GotoMethod(const string& method);
 
@@ -59,11 +55,8 @@ protected:
 	CString                        m_selectedMethod;
 
 	std::shared_ptr<CEntityScript> m_script;
-	IEntity*                       m_entity;
+	IEntity*                       m_entity { nullptr };
 	CBrush                         m_grayBrush;
 
 	Callback                       m_OnReloadScript;
 };
-
-#endif // __entityscriptdialog_h__
-

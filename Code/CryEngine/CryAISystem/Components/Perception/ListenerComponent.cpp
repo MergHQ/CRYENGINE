@@ -40,7 +40,7 @@ struct SSoundHeardSignal
 };
 
 CEntityAIListenerComponent::CEntityAIListenerComponent()
-	: m_entityEventMask(ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME))
+	: m_entityEventMask(ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME)
 {
 
 }
@@ -113,7 +113,7 @@ void CEntityAIListenerComponent::ProcessEvent(const SEntityEvent& event)
 		break;
 	case ENTITY_EVENT_START_GAME:
 	{
-		m_entityEventMask |= IsUsingBones() ? ENTITY_EVENT_BIT(ENTITY_EVENT_UPDATE) : ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM);
+		m_entityEventMask |= IsUsingBones() ? ENTITY_EVENT_UPDATE : ENTITY_EVENT_XFORM;
 		GetEntity()->UpdateComponentEventMask(this);
 		break;
 	}
@@ -129,7 +129,7 @@ void CEntityAIListenerComponent::Reset(EEntitySimulationMode simulationMode)
 	else
 	{
 		UnregisterFromAuditionMap();
-		m_entityEventMask = ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME);
+		m_entityEventMask = ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME;
 	}
 }
 

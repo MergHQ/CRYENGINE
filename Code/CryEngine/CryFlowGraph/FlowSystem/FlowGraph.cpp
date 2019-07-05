@@ -339,7 +339,7 @@ void CFlowGraphBase::Cleanup()
 
 CFlowGraphBase::~CFlowGraphBase()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	RemoveGraphTokens();
 
@@ -352,7 +352,7 @@ CFlowGraphBase::~CFlowGraphBase()
 
 const char* CFlowGraphBase::GetDebugName() const
 {
-#if !defined(_RELEASE)
+#if defined(ENABLE_PROFILING_CODE)
 	return m_debugName.c_str();
 #else
 	return "";
@@ -361,15 +361,15 @@ const char* CFlowGraphBase::GetDebugName() const
 
 void CFlowGraphBase::SetDebugName(const char* sName)
 {
-#if !defined(_RELEASE)
+#if defined(ENABLE_PROFILING_CODE)
 	m_debugName = sName;
 #endif
 }
 
 void CFlowGraphBase::CreateDebugName()
 {
-#if !defined(_RELEASE)
-	char* sType;
+#if defined(ENABLE_PROFILING_CODE)
+	const char* sType;
 	stack_string sExtra = "";
 
 	switch (m_Type)
@@ -548,7 +548,7 @@ void CFlowGraphBase::CloneInner(CFlowGraphBase* pClone)
 	pClone->m_Type = m_Type;
 	// pClone->m_bActive = m_bActive;
 	// pClone->m_bSuspended = m_bSuspended;
-#if !defined (_RELEASE)
+#if defined(ENABLE_PROFILING_CODE)
 	// copy the name as is. something else should overwrite it (such as the module manager or changing the graph's entity)
 	pClone->m_debugName = m_debugName;
 #endif
@@ -1203,7 +1203,7 @@ const char* CFlowGraphBase::GetGlobalNameForGraphToken(const char* tokenName) co
 
 void CFlowGraphBase::UnregisterGraphTokens()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
 	IF_UNLIKELY(!pGTS) return;
@@ -1227,7 +1227,7 @@ void CFlowGraphBase::UnregisterGraphTokens()
 
 void CFlowGraphBase::RemoveGraphTokens()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	if (m_graphTokens.empty()) return; //nothing to do
 
 	if (m_bRegistered)
@@ -1482,7 +1482,6 @@ bool CFlowGraphBase::ReadXML(const XmlNodeRef& root)
 		{
 			XmlNodeRef node = nodes->getChild(i);
 			const char* type = node->getAttr(NODE_TYPE_ATTR);
-			const char* name = node->getAttr(NODE_NAME_ATTR);
 			if (0 == strcmp(type, "_comment"))
 				continue;
 			if (0 == strcmp(type, "_commentbox"))
@@ -1945,7 +1944,6 @@ void CFlowGraphBase::GetGraphStats(int& nodeCount, int& edgeCount)
 {
 	nodeCount = m_flowData.size();
 	edgeCount = m_edges.size();
-	size_t cool = m_nodeNameToId.size();
 }
 
 //////////////////////////////////////////////////////////////////////////

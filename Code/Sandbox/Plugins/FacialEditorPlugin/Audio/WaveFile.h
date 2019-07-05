@@ -2,11 +2,7 @@
 
 #pragma once
 
-#ifndef __WAVEFILE_H__
-	#define __WAVEFILE_H__
-
-	#include <CryCore/Platform/CryWindows.h>
-//#include <XAudDefs.h>
+#include <CryCore/Platform/CryWindows.h>
 
 namespace ATG
 {
@@ -168,6 +164,3 @@ public:
 };
 
 } // namespace ATG
-
-#endif // __WAVEFILE_H__
-

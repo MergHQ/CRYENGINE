@@ -44,7 +44,7 @@ CMannequinObject::CMannequinObject()
 void CMannequinObject::Initialize()
 {
 	const auto pGameObject = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectForEntity(GetEntity()->GetId());
-	assert(pGameObject);
+	CRY_ASSERT(pGameObject);
 
 	pGameObject->EnablePrePhysicsUpdate(ePPU_Always);
 	pGameObject->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
@@ -65,12 +65,12 @@ void CMannequinObject::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CMannequinObject::GetEventMask() const
+Cry::Entity::EventFlags CMannequinObject::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_START_LEVEL)
-	       | ENTITY_EVENT_BIT(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED)
-	       | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET)
-	       | ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM_FINISHED_EDITOR);
+	return ENTITY_EVENT_START_LEVEL
+	       | ENTITY_EVENT_EDITOR_PROPERTY_CHANGED
+	       | ENTITY_EVENT_RESET
+	       | ENTITY_EVENT_XFORM_FINISHED_EDITOR;
 }
 
 IEntityPropertyGroup* CMannequinObject::GetPropertyGroup()
@@ -88,7 +88,7 @@ void CMannequinObject::Reset()
 	IEntity& entity = *GetEntity();
 
 	const auto pGameObject = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectForEntity(entity.GetId());
-	assert(pGameObject);
+	CRY_ASSERT(pGameObject);
 
 	if (!m_pAnimatedCharacter)
 	{

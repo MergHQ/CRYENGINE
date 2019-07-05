@@ -274,7 +274,7 @@ void CAIDebugRenderer::Draw3dLabel(Vec3 vPos, float fFontSize, const char* text,
 {
 	va_list args;
 	va_start(args, text);
-	IRenderAuxText::DrawText(vPos, fFontSize, NULL, eDrawText_FixedSize | eDrawText_800x600, text, args);
+	IRenderAuxText::DrawText(vPos, fFontSize, NULL, eDrawText_FixedSize, text, args);
 	va_end(args);
 }
 
@@ -283,7 +283,7 @@ void CAIDebugRenderer::Draw3dLabelEx(Vec3 vPos, float fFontSize, const ColorB& c
 	va_list args;
 	va_start(args, text);
 
-	int flags = (bFramed ? eDrawText_Framed : 0) | (bDepthTest ? eDrawText_DepthTest : 0) | (bFixedSize ? eDrawText_FixedSize : 0) | (bCenter ? eDrawText_Center : 0) | eDrawText_800x600;
+	int flags = (bFramed ? eDrawText_Framed : 0) | (bDepthTest ? eDrawText_DepthTest : 0) | (bFixedSize ? eDrawText_FixedSize : 0) | (bCenter ? eDrawText_Center : 0);
 
 	IRenderAuxText::DrawText(vPos, fFontSize, color, flags, text, args);
 

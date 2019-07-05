@@ -1,12 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __FLOWGRAPH_MIGRATION_HELPER_H__
-#define __FLOWGRAPH_MIGRATION_HELPER_H__
-
 #pragma once
 
 #include "IHyperGraph.h"
 
+#include <CryScriptSystem/IScriptSystem.h>
 #include <map>
 
 class CFlowGraphMigrationHelper
@@ -74,6 +72,3 @@ protected:
 	std::vector<ReportEntry>     m_report;
 	std::vector<HSCRIPTFUNCTION> m_transformFuncs;
 };
-
-#endif // __FLOWGRAPH_MIGRATION_HELPER_H__
-

@@ -1,0 +1,33 @@
+{
+    "toolBar": [
+        {
+            "command": "level.set_world_coordinate_system",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "set_world_coordinate_system",
+            "type": 0
+        },
+        {
+            "command": "level.set_local_coordinate_system",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "set_local_coordinate_system",
+            "type": 0
+        },
+        {
+            "command": "level.set_view_coordinate_system",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "set_view_coordinate_system",
+            "type": 0
+        },
+        {
+            "command": "level.set_parent_coordinate_system",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "set_parent_coordinate_system",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

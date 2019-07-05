@@ -265,7 +265,7 @@ struct ControllerData
 			difference_time = (realtimef - prevtime) / (time - prevtime);
 		}
 
-		assert(difference_time >= 0.0f && difference_time <= 1.0f);
+		CRY_ASSERT(difference_time >= 0.0f && difference_time <= 1.0f);
 		return nPos;
 	}
 
@@ -402,8 +402,8 @@ public:
 	CControllerOptNonVirtual() {};
 
 	CControllerOptNonVirtual(int iRotType, int iRotKeyType, int iPosType, int iPosKeyType) :
-		m_position(iPosType, iPosKeyType),
-		m_rotation(iRotType, iRotKeyType)
+		m_rotation(iRotType, iRotKeyType),
+		m_position(iPosType, iPosKeyType)
 	{
 	}
 
@@ -502,7 +502,7 @@ public:
 			else
 			{
 				CRY_ALIGN(16) Quat p1;
-				assert(key - 1 < m_rotation.GetNumCount());
+				CRY_ASSERT(key - 1 < m_rotation.GetNumCount());
 				GetRotValueFromKey(m_rotation.GetNumCount() - 1, p1);
 				pos = p1;
 			}

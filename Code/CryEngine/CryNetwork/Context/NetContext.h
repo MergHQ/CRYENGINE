@@ -85,6 +85,7 @@ public:
 	virtual void            ChangedTransform(EntityId id, const Vec3& pos, const Quat& rot, float drawDist);
 	virtual void            ChangedFov(EntityId id, float fov);
 #endif
+	virtual void            StartedEstablishingContext(int establishToken);
 	virtual void            EstablishedContext(int establishToken);
 	virtual void            SpawnedObject(EntityId userID);
 	virtual bool            IsBound(EntityId userID);
@@ -233,8 +234,8 @@ private:
 	INetContextListenerPtr       m_pAspectBandwidthDebugger;
 
 #if SERVER_FILE_SYNC_MODE
-	std::auto_ptr<CSyncedFileSet> m_pFileSet;
-	std::auto_ptr<CSyncedFilePak> m_pFilePak;
+	std::unique_ptr<CSyncedFileSet> m_pFileSet;
+	std::unique_ptr<CSyncedFilePak> m_pFilePak;
 #endif
 
 	// this context's session id

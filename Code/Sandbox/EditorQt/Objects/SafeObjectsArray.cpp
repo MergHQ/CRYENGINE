@@ -15,7 +15,7 @@ void CSafeObjectsArray::Clear()
 	size_t const num = m_objects.size();
 	for (size_t i = 0; i < num; ++i)
 	{
-		m_objects[i]->RemoveEventListener(functor(*this, &CSafeObjectsArray::OnTargetEvent));
+		m_objects[i]->signalChanged.DisconnectObject(this);
 	}
 	m_objects.clear();
 }
@@ -42,18 +42,18 @@ void CSafeObjectsArray::Add(CBaseObject* obj)
 		{
 			m_objects.push_back(obj);
 			// Make reference on this object.
-			obj->AddEventListener(functor(*this, &CSafeObjectsArray::OnTargetEvent));
+			obj->signalChanged.Connect(this, &CSafeObjectsArray::OnTargetEvent);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSafeObjectsArray::Remove(CBaseObject* obj)
+void CSafeObjectsArray::Remove(const CBaseObject* pObject)
 {
 	// Find this object.
-	if (stl::find_and_erase(m_objects, obj))
+	if (stl::find_and_erase(m_objects, pObject))
 	{
-		obj->RemoveEventListener(functor(*this, &CSafeObjectsArray::OnTargetEvent));
+		const_cast<CBaseObject*>(pObject)->signalChanged.DisconnectObject(this);
 	}
 }
 
@@ -65,11 +65,11 @@ CBaseObject* CSafeObjectsArray::Get(size_t const index) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSafeObjectsArray::OnTargetEvent(CBaseObject* target, int event)
+void CSafeObjectsArray::OnTargetEvent(const CBaseObject* pObject, const CObjectEvent& event)
 {
-	if (event == OBJECT_ON_DELETE)
+	if (event.m_type == OBJECT_ON_DELETE)
 	{
-		Remove(target);
+		Remove(pObject);
 	}
 
 	if (!m_eventListeners.empty())
@@ -78,9 +78,9 @@ void CSafeObjectsArray::OnTargetEvent(CBaseObject* target, int event)
 		{
 			if (eventCallback.getFunc() != nullptr)
 			{
-				eventCallback(target, event);
+				// TODO: remove this event callback. Who came up with this shitty code?
+				eventCallback(const_cast<CBaseObject*>(pObject), event.m_type);
 			}
 		}
 	}
 }
-

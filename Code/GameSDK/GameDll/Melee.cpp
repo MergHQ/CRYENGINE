@@ -98,7 +98,7 @@ CMelee::~CMelee()
 
 void CMelee::InitMeleeMode(CWeapon* pWeapon, const SMeleeModeParams* pParams)
 {
-	CRY_ASSERT_MESSAGE(pParams, "Melee Mode Params NULL! Have you set up the weapon xml correctly?");
+	CRY_ASSERT(pParams, "Melee Mode Params NULL! Have you set up the weapon xml correctly?");
 
 	m_pWeapon = pWeapon;
 	m_pMeleeParams = pParams;
@@ -304,7 +304,7 @@ struct CMelee::StopAttackingAction
 			if (IEntity* owner = pItem->GetOwner())
 				if (IAIObject* aiObject = owner->GetAI())
 					if (IAIActor* aiActor = aiObject->CastToIAIActor())
-						aiActor->SetSignal(0, "OnMeleePerformed");
+						aiActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMeleePerformed()));
 		}
 		else if( g_pGameCVars->pl_melee.mp_melee_system_camera_lock_and_turn && s_meleeSnapTargetId && (pActor = pItem->GetOwnerActor()) && pActor->IsClient() )
 		{
@@ -379,7 +379,7 @@ void CMelee::GenerateAndQueueMeleeActionForStatus( const SMeleeTags::TTagParamsC
 
 const ItemString &CMelee::SelectMeleeAction() const
 {
-	CRY_ASSERT_MESSAGE( !IsMeleeWeapon(), "SelectMeleeAction is deprecated for the melee weapon!" );
+	CRY_ASSERT( !IsMeleeWeapon(), "SelectMeleeAction is deprecated for the melee weapon!" );
 
 	const SMeleeActions& actions = m_pMeleeParams->meleeactions;
 
@@ -496,7 +496,7 @@ void CMelee::StartAttack()
 		{
 			if (!gEnv->IsDedicated())
 			{
-				CRY_ASSERT_MESSAGE(false, string().Format("CMelee<%p> Warning! Melee attack timeout (%f seconds) needs to be substantially longer than the damage delay (%f seconds)! Increasing...", this, durationInMilliseconds / 1000.f, m_delayTimer));
+				CRY_ASSERT(false, string().Format("CMelee<%p> Warning! Melee attack timeout (%f seconds) needs to be substantially longer than the damage delay (%f seconds)! Increasing...", this, durationInMilliseconds / 1000.f, m_delayTimer));
 			}
 			durationInMilliseconds = (uint32) ((m_delayTimer + k_requireAdditionalTime) * 1000.0f + 0.5f);	// Add 0.5f to round up when turning into a uint32
 		}
@@ -781,7 +781,7 @@ int CMelee::Hit(const Vec3 &pt, const Vec3 &dir, const Vec3 &normal, IPhysicalEn
 			if(pTarget)
 			{
 				CGameRules *pGameRules = g_pGame->GetGameRules();
-				CRY_ASSERT_MESSAGE(pGameRules, "No game rules! Melee can not apply hit damage");
+				CRY_ASSERT(pGameRules, "No game rules! Melee can not apply hit damage");
 
 				if (pGameRules)
 				{
@@ -820,7 +820,6 @@ int CMelee::Hit(const Vec3 &pt, const Vec3 &dir, const Vec3 &normal, IPhysicalEn
 
 		if (pTarget)
 		{
-			CActor *pCTargetActor = static_cast<CActor*>(pTargetActor);
 			CPlayer* pTargetPlayer = (pTargetActor && pTargetActor->IsPlayer()) ? static_cast<CPlayer*>(pTargetActor) : NULL;
 
 			if(pTargetPlayer && pTargetPlayer->IsClient())
@@ -1003,7 +1002,7 @@ void CMelee::Impulse(const Vec3 &pt, const Vec3 &dir, const Vec3 &normal, IPhysi
 		// so we must solve for v given the same energy as a scar bullet
 		float speed = sqrt_tpl(4000.0f/(80.0f*0.5f)); // 80.0f is the mass of the player
 
-		if( IRenderNode *pBrush = (IRenderNode*)pCollider->GetForeignData(PHYS_FOREIGN_ID_STATIC) )
+		if(pCollider->GetForeignData(PHYS_FOREIGN_ID_STATIC) != nullptr)
 		{
 			speed = 0.003f;
 		}

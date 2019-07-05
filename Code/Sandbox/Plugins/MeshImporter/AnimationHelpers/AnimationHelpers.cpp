@@ -61,20 +61,31 @@ ICharacterInstance* LoadCharacter(const QString& cdfFilePath)
 } // namespace Private_AnimationHelpers
 
 QString CreateCDF(
+	const QString& skeletonFilePath,
+	const QString& skinFilePath,
+	const QString& materialFilePath)
+{
+	return CreateCDF(skeletonFilePath, QStringList{ skinFilePath }, QStringList{ materialFilePath });
+}
+
+QString CreateCDF(
   const QString& skeletonFilePath,
-  const QString& skinFilePath,
-  const QString& materialFilePath)
+  const QStringList& skinsFilePaths,
+  const QStringList& materialsFilePaths)
 {
 	static const char* const szCdfContent =
 	  "<CharacterDefinition>\n"
 	  " <Model File=\"%1\"/>\n"
-	  " %2"
+	  " %2 \n"
 	  "</CharacterDefinition>\n";
 
-	static const char* const szSkinContent =
+	static const char* const szAttachmentListWrapper =
 	  " <AttachmentList>\n"
-	  "  <Attachment Type=\"CA_SKIN\" AName=\"the_skin\" Binding=\"%1\" %2 Flags=\"0\"/>\n"
+	  "%1 \n"
 	  " </AttachmentList>\n";
+
+	static const char* const szAttachmentElement =
+		"  <Attachment Type=\"CA_SKIN\" AName=\"skin%1\" Binding=\"%2\" %4 Flags=\"0\"/>\n";
 
 	if (skeletonFilePath.isEmpty())
 	{
@@ -82,19 +93,29 @@ QString CreateCDF(
 	}
 
 	QString attachments;
-
-	QString material;
-	if (!materialFilePath.isEmpty())
+	
+	for (int i = 0; i < skinsFilePaths.length(); ++i)
 	{
-		material = QString("Material=\"%1\"").arg(materialFilePath);
+		QString material;
+		if (i < materialsFilePaths.length() && !materialsFilePaths[i].isEmpty())
+		{
+			material = QString("Material=\"%1\"").arg(materialsFilePaths[i]);
+		}
+
+		if (!skinsFilePaths[i].isEmpty())
+		{
+			attachments += QString(szAttachmentElement).arg(i).arg(skinsFilePaths[i]).arg(material);
+		}
+	}
+	
+	QString attachmentList;
+
+	if (!attachments.isEmpty())
+	{
+		attachmentList = QString(szAttachmentListWrapper).arg(attachments);
 	}
 
-	if (!skinFilePath.isEmpty())
-	{
-		attachments = QString(szSkinContent).arg(skinFilePath).arg(material);
-	}
-
-	return QString(szCdfContent).arg(skeletonFilePath).arg(attachments);
+	return QString(szCdfContent).arg(skeletonFilePath).arg(attachmentList);
 }
 
 ICharacterInstance* CreateTemporaryCharacter(
@@ -123,4 +144,3 @@ ICharacterInstance* CreateTemporaryCharacter(
 
 	return LoadCharacter(cdfFilePath);
 }
-

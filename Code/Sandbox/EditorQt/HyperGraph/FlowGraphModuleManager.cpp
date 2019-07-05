@@ -2,12 +2,14 @@
 
 #include "StdAfx.h"
 #include "FlowGraphModuleManager.h"
+#include "IEditorImpl.h"
 
 #include "FlowGraphManager.h"
 #include "Controls/HyperGraphEditorWnd.h"
 
 #include <CryFlowGraph/IFlowGraphDebugger.h>
 #include "Controls/QuestionDialog.h"
+#include <Util/FileUtil.h>
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -342,7 +344,7 @@ void CEditorFlowGraphModuleManager::OnModuleDestroyed(IFlowGraphModule* module)
 
 void CEditorFlowGraphModuleManager::OnRootGraphChanged(IFlowGraphModule* module, ERootGraphChangeReason reason)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(module->GetName());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, module->GetName());
 
 	if (reason == ERootGraphChangeReason::ScanningForModules)
 	{
@@ -369,7 +371,7 @@ void CEditorFlowGraphModuleManager::OnModulesScannedAndReloaded()
 	// Reload the classes in case the new modules registered node types.
 	GetIEditorImpl()->GetFlowGraphManager()->ReloadClasses();
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CFlowGraphManager* const pFlowMan = GetIEditorImpl()->GetFlowGraphManager();
 	pFlowMan->SetGUIControlsProcessEvents(false, false);
 
@@ -380,7 +382,7 @@ void CEditorFlowGraphModuleManager::OnModulesScannedAndReloaded()
 
 void CEditorFlowGraphModuleManager::CreateEditorFlowgraphs()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// TODO: possible optimization - separate global and level module loading to reload only what is necessary
 
@@ -420,4 +422,3 @@ void CEditorFlowGraphModuleManager::CreateEditorFlowgraphs()
 	}
 
 }
-

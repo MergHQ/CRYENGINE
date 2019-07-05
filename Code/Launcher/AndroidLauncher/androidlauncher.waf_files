@@ -9,7 +9,10 @@
 		],
 		"Java Files" :
 		[
+			"SDL.java",
 			"SDLActivity.java",
+			"SDLAudioManager.java",
+			"SDLControllerManager.java",
 			"CryEngineActivity.java"
 		]
 	}

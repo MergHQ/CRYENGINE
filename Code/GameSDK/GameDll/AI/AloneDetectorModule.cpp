@@ -69,10 +69,10 @@ void AloneDetectorContainer::SendCorrectSignal()
 	switch(m_setup.state)
 	{
 	case AloneDetectorSetup::Alone :
-		SendSignal(m_setup.aloneSignal.c_str());	
+		SendSignal(gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAloneSignal());	
 		break;
 	case AloneDetectorSetup::EntitiesInRange :
-		SendSignal(m_setup.notAloneSignal.c_str());
+		SendSignal(gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNotAloneSignal());
 		break;
 	default:
 		assert(0);

@@ -14,6 +14,7 @@
 #include <CryNetwork/ISerialize.h>
 #include <CryAISystem/VisionMapTypes.h>
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "Navigation/MNM/NavMeshQueryManager.h"
 #include "Formation/FormationManager.h"
 
 //////////////////////////////////////////////////////////////////////
@@ -249,7 +250,7 @@ bool CAIObject::ShouldSerialize() const
 	if (!m_serialize)
 		return false;
 
-	if (gAIEnv.CVars.ForceSerializeAllObjects == 0)
+	if (gAIEnv.CVars.LegacyForceSerializeAllObjects == 0)
 	{
 		IEntity* pEntity = GetEntity();
 		return pEntity ? ((pEntity->GetFlags() & ENTITY_FLAG_NO_SAVE) == 0) : true;
@@ -725,6 +726,8 @@ const Vec3& CAIObject::GetPos() const
 
 const Vec3 CAIObject::GetPosInNavigationMesh(const uint32 agentTypeID) const
 {
+	//Note: this function is not taking into account mesh origin offset
+	
 	Vec3 outputLocation = GetPos();
 	NavigationMeshID meshID = gAIEnv.pNavigationSystem->GetEnclosingMeshID(static_cast<NavigationAgentTypeID>(agentTypeID), outputLocation);
 	if (meshID)
@@ -733,16 +736,20 @@ const Vec3 CAIObject::GetPosInNavigationMesh(const uint32 agentTypeID) const
 		const MNM::real_t strictVerticalRange = MNM::real_t(1.0f);
 		const float fPushUp = 0.2f;
 		const MNM::real_t pushUp = MNM::real_t(fPushUp);
-		MNM::TriangleID triangleID(0);
 		const MNM::vector3_t location_t(MNM::real_t(outputLocation.x), MNM::real_t(outputLocation.y), MNM::real_t(outputLocation.z) + pushUp);
-		if (!(triangleID = mesh.navMesh.GetTriangleAt(location_t, strictVerticalRange, strictVerticalRange, nullptr)))
+
+		const MNM::TriangleID triangleId = mesh.navMesh.QueryTriangleAt(location_t, strictVerticalRange, strictVerticalRange);
+		if (triangleId.IsValid())
 		{
 			const MNM::real_t largeVerticalRange = MNM::real_t(6.0f);
 			const MNM::real_t largeHorizontalRange = MNM::real_t(3.0f);
-			MNM::vector3_t closestLocation;
-			if (triangleID = mesh.navMesh.GetClosestTriangle(location_t, largeVerticalRange, largeHorizontalRange, nullptr, nullptr, &closestLocation))
+
+			const MNM::aabb_t localAabb(MNM::vector3_t(-largeHorizontalRange, -largeHorizontalRange, -largeVerticalRange), MNM::vector3_t(largeHorizontalRange, largeHorizontalRange, largeVerticalRange));
+			const MNM::SClosestTriangle closestTriangle = mesh.navMesh.QueryClosestTriangle(location_t, localAabb);
+
+			if (closestTriangle.id.IsValid())
 			{
-				outputLocation = closestLocation.GetVec3();
+				outputLocation = closestTriangle.position.GetVec3();
 				outputLocation.z += fPushUp;
 			}
 		}
@@ -975,12 +982,16 @@ void SOBJECTSTATE::Serialize(TSerialize ser)
 			{
 				vSignals.resize(signalsCount);
 			}
-			for (DynArray<AISIGNAL>::iterator ai(vSignals.begin()); ai != vSignals.end(); ++ai)
+			for (DynArray<AISignals::SignalSharedPtr>::iterator ai(vSignals.begin()); ai != vSignals.end(); ++ai)
 			{
+				if (ser.IsReading())
+				{
+					*ai = gAIEnv.pSignalManager->CreateSignal(AISIGNAL_DEFAULT, gAIEnv.pSignalManager->GetBuiltInSignalDescriptions().GetNone());
+				}
+
 				ser.BeginGroup("Signal");
 				{
-					AISIGNAL& signal = *ai;
-					signal.Serialize(ser);
+					(*ai)->Serialize(ser);
 				}
 				ser.EndGroup();
 			}

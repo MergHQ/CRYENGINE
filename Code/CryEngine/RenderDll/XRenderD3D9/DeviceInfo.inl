@@ -14,7 +14,6 @@ DeviceInfo::DeviceInfo()
 	, m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 	, m_autoDepthStencilFmt(DXGI_FORMAT_R24G8_TYPELESS)
 	, m_activated(true)
-	, m_activatedMT(true)
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 	, m_msgQueueLock()
 	, m_msgQueue()
@@ -22,7 +21,7 @@ DeviceInfo::DeviceInfo()
 {
 	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
 
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
+#if !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
 #if CRY_RENDERER_DIRECT3D >= 120
 	ZeroStruct(m_D3D120aOptions);
 	ZeroStruct(m_D3D120bOptions);
@@ -47,12 +46,24 @@ DeviceInfo::DeviceInfo()
 
 void DeviceInfo::Release()
 {
-	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
+	if (m_pDevice)
+	{
+		// TODO: Make it work, it's re right approach, maybe the flag is reset again?
+		HRESULT hr = S_FALSE;
+		ID3D11Debug* pDebugDevice = nullptr;
+		if (SUCCEEDED(m_pDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&pDebugDevice)))
+			hr = pDebugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+		SAFE_RELEASE(pDebugDevice);
+	}
+#endif
 
 	SAFE_RELEASE(m_pContext);
 	SAFE_RELEASE(m_pDevice);
 	SAFE_RELEASE(m_pAdapter);
 	SAFE_RELEASE(m_pFactory);
+
+	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
 }
 
 static int GetDXGIAdapterOverride()
@@ -65,7 +76,7 @@ static int GetDXGIAdapterOverride()
 #endif
 }
 
-static void ProcessWindowMessages(HWND hWnd)
+static void ProcessWindowMessages(CRY_HWND hWnd)
 {
 #if CRY_PLATFORM_WINDOWS
 	iSystem->PumpWindowMessage(true, hWnd);
@@ -127,101 +138,16 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	m_autoDepthStencilFmt = zbpp == 32 ? DXGI_FORMAT_R32G8X24_TYPELESS : DXGI_FORMAT_R24G8_TYPELESS;
 #endif
 
-#if CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES
-
-	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
+	CRY_HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
 	if (!hWnd)
 	{
 		Release();
 		return false;
 	}
 
-	const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
-	const int r_multithreaded = GetMultithreaded();
-	unsigned int nAdapterOrdinal = r_overrideDXGIAdapter >= 0 ? r_overrideDXGIAdapter : 0;
-	FillSwapChainDesc(m_swapChainDesc, backbufferWidth, backbufferHeight, hWnd, windowed);
-
-	if (!SUCCEEDED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&m_pFactory)) || !m_pFactory)
-	{
-		Release();
-		return false;
-	}
-
-	while (m_pFactory->EnumAdapters1(nAdapterOrdinal, &m_pAdapter) != DXGI_ERROR_NOT_FOUND)
-	{
-		if (m_pAdapter)
-		{
-			m_driverType = D3D_DRIVER_TYPE_HARDWARE;
-			m_creationFlags = 0;
-
-			D3D_FEATURE_LEVEL* aFeatureLevels(NULL);
-			unsigned int uNumFeatureLevels(0);
-#if !defined(_RELEASE)
-			D3D_FEATURE_LEVEL eForcedFeatureLevel(CRY_RENDERER_DIRECT3D_FL);
-			if (GetForcedFeatureLevel(&eForcedFeatureLevel))
-			{
-				aFeatureLevels = &eForcedFeatureLevel;
-				uNumFeatureLevels = 1;
-			}
-#endif //!defined(_RELEASE)
-
-			const D3D_DRIVER_TYPE driverType = m_driverType == D3D_DRIVER_TYPE_HARDWARE ? D3D_DRIVER_TYPE_UNKNOWN : m_driverType;
-			HRESULT hr = D3D11CreateDeviceAndSwapChain(
-				m_pAdapter,
-				driverType,
-				0,
-				m_creationFlags,
-				aFeatureLevels,
-				uNumFeatureLevels,
-				D3D11_SDK_VERSION,
-				&m_swapChainDesc,
-				&m_pSwapChain,
-				&m_pDevice,
-				&m_featureLevel,
-				&m_pContext);
-			
-			if (SUCCEEDED(hr) && m_pDevice && m_pSwapChain)
-			{
-				if (SUCCEEDED(m_pAdapter->EnumOutputs(0, &pOutput)) && pOutput)
-				{
-					m_pAdapter->GetDesc1(&m_adapterDesc);
-					break;
-				}
-				else if (r_overrideDXGIAdapter >= 0)
-					CryLogAlways("No display connected to DXGI adapter override %d. Adapter cannot be used for rendering.", r_overrideDXGIAdapter);
-			}
-
-			SAFE_RELEASE(m_pContext);
-			SAFE_RELEASE(m_pDevice);
-			SAFE_RELEASE(m_pSwapChain);
-			SAFE_RELEASE(m_pAdapter);
-		}
-	}
-
-	if (!m_pDevice || !m_pSwapChain)
-	{
-		Release();
-		return false;
-	}
-
-	if (pCreateDeviceCallback)
-		pCreateDeviceCallback(m_pDevice);
-
-	#if !DXGL_FULL_EMULATION
-		#if OGL_SINGLE_CONTEXT
-	DXGLBindDeviceContext(m_pContext);
-		#else
-	if (r_multithreaded)
-		DXGLReserveContext(m_pDevice);
-	DXGLBindDeviceContext(m_pContext, !r_multithreaded);
-		#endif
-	#endif //!DXGL_FULL_EMULATION
-
-	return IsOk();
-#elif (CRY_RENDERER_VULKAN >= 10)
+#if (CRY_RENDERER_VULKAN >= 10)
 
 	const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
-	const int r_multithreaded = GetMultithreaded();
 	unsigned int nAdapterOrdinal = r_overrideDXGIAdapter >= 0 ? r_overrideDXGIAdapter : 0;
 
 	if (!SUCCEEDED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&m_pFactory)) || !m_pFactory)
@@ -229,6 +155,9 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		Release();
 		return false;
 	}
+
+	// Disable automatic DXGI alt + enter behavior
+	m_pFactory->MakeWindowAssociation((HWND)hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
 
 	while (m_pFactory->EnumAdapters1(nAdapterOrdinal, &m_pAdapter) != DXGI_ERROR_NOT_FOUND)
 	{
@@ -269,13 +198,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		return false;
 	}
 
-	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
-	if (!hWnd)
-	{
-		Release();
-		return false;
-	}
-
 	{
 		if (pCreateDeviceCallback)
 			pCreateDeviceCallback(m_pDevice);
@@ -283,6 +205,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 
 	return IsOk();
 #elif CRY_PLATFORM_WINDOWS
+
 	typedef HRESULT (WINAPI * FP_CreateDXGIFactory1)(REFIID, void**);
 
 	FP_CreateDXGIFactory1 pCDXGIF =
@@ -309,6 +232,9 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 
 		if (pD3D11CD)
 		{
+			// Disable automatic DXGI alt + enter behavior
+			m_pFactory->MakeWindowAssociation((HWND)hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+
 			const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
 			unsigned int nAdapterOrdinal = r_overrideDXGIAdapter >= 0 ? r_overrideDXGIAdapter : 0;
 
@@ -351,7 +277,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 					HRESULT hr = pD3D11CD(pAdapter, driverType, 0, m_creationFlags, pFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &pDevice, &m_featureLevel, &pContext);
 					if (SUCCEEDED(hr) && pDevice && pContext)
 					{
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
+#if !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
 	#if CRY_RENDERER_DIRECT3D >= 120
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS , &m_D3D120aOptions, sizeof(m_D3D120aOptions));
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS1, &m_D3D120bOptions, sizeof(m_D3D120bOptions));
@@ -379,7 +305,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	#endif
 #endif
 
-#if (CRY_RENDERER_DIRECT3D >= 111) && (CRY_RENDERER_DIRECT3D < 120)
+#if CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING
 						if (!m_D3D110aOptions.MapNoOverwriteOnDynamicConstantBuffer)
 							CryFatalError("D3D11.1 feature 'MapNoOverwriteOnDynamicConstantBuffer' is required!");
 #endif
@@ -429,7 +355,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 	SAFE_RELEASE(pDevice);
 	SAFE_RELEASE(pAdapter);
 
-#if CRY_PLATFORM_WINDOWS
 	// Change adapter memory maximum utilization to 7/8th -------------------------------------------------------------------------
 #if (CRY_RENDERER_DIRECT3D >= 110)
 	if (m_pAdapter)
@@ -462,14 +387,6 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		SAFE_RELEASE(pDebugDevice);
 	}
 #endif
-#endif
-
-	HWND hWnd = pCreateWindowCallback ? pCreateWindowCallback() : 0;
-	if (!hWnd)
-	{
-		Release();
-		return false;
-	}
 
 	ProcessWindowMessages(hWnd);
 
@@ -477,6 +394,25 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		pCreateDeviceCallback(m_pDevice);
 
 	ProcessWindowMessages(hWnd);
+
+#if defined(USE_NV_API)
+	{
+		const NvAPI_Status opStatus = NvAPI_SYS_GetDriverAndBranchVersion(&m_driverVersion, m_buildBranchVersion);
+		switch (opStatus)
+		{
+		case NVAPI_OK:
+			break;
+		case NVAPI_INVALID_ARGUMENT:
+		case NVAPI_API_NOT_INITIALIZED:
+		case NVAPI_ERROR:
+		default:
+			cry_sprintf(m_buildBranchVersion, strlen(m_buildBranchVersion), "Unavailable (NVAPI error)");
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "NvAPI_SYS_GetDriverAndBranchVersion() failed with error code: %d", static_cast<int>(opStatus));
+		}
+	}
+#else
+	cry_sprintf(m_buildBranchVersion, strlen(m_buildBranchVersion), "Unavailable (NVAPI disabled)");
+#endif
 
 	return IsOk();
 
@@ -487,27 +423,10 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 }
 
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-void DeviceInfo::OnActivate(UINT_PTR wParam, UINT_PTR lParam)
-{
-	const bool activate = LOWORD(wParam) != 0;
-	if (m_activatedMT != activate)
-	{
-		if (gcpRendD3D->IsFullscreen())
-		{
-			HWND hWnd = (HWND) gcpRendD3D->GetHWND();
-			ShowWindow(hWnd, activate ? SW_RESTORE : SW_MINIMIZE);
-		}
-
-		m_activatedMT = activate;
-	}
-
-	PushSystemEvent(ESYSTEM_EVENT_ACTIVATE, wParam, lParam);
-}
-
 void DeviceInfo::PushSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR lParam)
 {
-	#if !defined(_RELEASE) && !defined(STRIP_RENDER_THREAD)
-	if (gcpRendD3D->m_pRT && !gcpRendD3D->m_pRT->IsMainThread()) __debugbreak();
+	#if !defined(STRIP_RENDER_THREAD)
+	CRY_ASSERT(!gcpRendD3D->m_pRT || gcpRendD3D->m_pRT->IsMainThread());
 	#endif
 	CryAutoCriticalSection lock(m_msgQueueLock);
 	m_msgQueue.push_back(DeviceInfoInternal::MsgQueueItem(event, wParam, lParam));
@@ -515,9 +434,7 @@ void DeviceInfo::PushSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR l
 
 void DeviceInfo::ProcessSystemEventQueue()
 {
-	#if !defined(_RELEASE)
-	if (gcpRendD3D->m_pRT && !gcpRendD3D->m_pRT->IsRenderThread()) __debugbreak();
-	#endif
+	CRY_ASSERT(!gcpRendD3D->m_pRT || gcpRendD3D->m_pRT->IsRenderThread());
 
 	m_msgQueueLock.Lock();
 	DeviceInfoInternal::MsgQueue localQueue;
@@ -533,10 +450,8 @@ void DeviceInfo::ProcessSystemEventQueue()
 
 void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR lParam)
 {
-	#if !defined(_RELEASE)
-	if (gcpRendD3D->m_pRT && !gcpRendD3D->m_pRT->IsRenderThread()) __debugbreak();
-	#endif
-
+	CRY_ASSERT(!gcpRendD3D->m_pRT || gcpRendD3D->m_pRT->IsRenderThread());
+	
 	switch (event)
 	{
 	case ESYSTEM_EVENT_ACTIVATE:
@@ -565,5 +480,4 @@ void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PT
 	}
 }
 #endif // #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
-
 #endif // #if defined(SUPPORT_DEVICE_INFO)

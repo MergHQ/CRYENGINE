@@ -66,7 +66,6 @@ CNetOutputSerializeImpl::CNetOutputSerializeImpl(IStreamAllocator* pAllocator, s
 
 ESerializeChunkResult CNetOutputSerializeImpl::SerializeChunk(ChunkID chunk, uint8 profile, TMemHdl* phData, CTimeValue* pTimeInfo, CMementoMemoryManager& mmm)
 {
-	CTimeValue temp;
 	if (!phData || *phData == CMementoMemoryManager::InvalidHdl)
 	{
 		return eSCR_Failed;
@@ -106,6 +105,8 @@ CNetInputSerializeImpl::CNetInputSerializeImpl(const uint8* pBuffer, size_t nSiz
 
 ESerializeChunkResult CNetInputSerializeImpl::SerializeChunk(ChunkID chunk, uint8 profile, TMemHdl* phData, CTimeValue* pTimeInfo, CMementoMemoryManager& mmm)
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CNetInputSerializeImpl::SerializeChunk");
+
 	if (!Ok())
 		return eSCR_Failed;
 
@@ -229,6 +230,10 @@ void CNetOutputSerializeImpl::Reset(uint8 bonus)
 void CNetOutputSerializeImpl::WriteNetId(SNetObjectID id)
 {
 	debugPacketDataSizeStartNetIDData(id, GetBitSize());
+
+#if !USE_NETID_PACKING 
+#error Requires USE_NETID_PACKING
+#endif
 
 	if (m_multiplayer)
 	{
@@ -514,6 +519,10 @@ ESerializeChunkResult CNetInputSerializeImpl::SerializeChunk(ChunkID chunk, uint
 
 SNetObjectID CNetInputSerializeImpl::ReadNetId()
 {
+#if !USE_NETID_PACKING 
+#error Requires USE_NETID_PACKING
+#endif
+
 	SNetObjectID id;
 
 	if (m_multiplayer)

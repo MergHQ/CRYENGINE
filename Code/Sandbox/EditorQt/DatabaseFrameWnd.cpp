@@ -2,12 +2,20 @@
 
 #include "StdAfx.h"
 #include "DatabaseFrameWnd.h"
+
 #include "BaseLibraryItem.h"
 #include "BaseLibraryManager.h"
-#include "Dialogs/QGroupDialog.h"
-#include "Util/Clipboard.h"
 #include "Controls/QuestionDialog.h"
-#include <FilePathUtil.h>
+#include "Dialogs/QGroupDialog.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "Objects/EntityScript.h"
+#include "Util/Clipboard.h"
+#include "Util/FileUtil.h"
+#include "Util/EditorUtils.h"
+
+#include <IUndoObject.h>
+#include <PathUtils.h>
 
 class CUndoSelectLibraryUndo : public IUndoObject
 {
@@ -20,7 +28,7 @@ public:
 	~CUndoSelectLibraryUndo(){}
 
 protected:
-	const char* GetDescription() { return "Select database library."; };
+	const char* GetDescription() { return "Select database library."; }
 	void        Undo(bool bUndo)
 	{
 		SelectLibrary(bUndo);
@@ -147,7 +155,7 @@ void CDatabaseFrameWnd::InitTreeCtrl()
 
 void CDatabaseFrameWnd::ReloadLibs()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!m_pItemManager)
 		return;
 
@@ -159,7 +167,7 @@ void CDatabaseFrameWnd::ReloadLibs()
 		m_LibraryListComboBox.ResetContent();
 		m_LibraryListComboBox.SetDroppedWidth(LIBRARY_CB_WIDTH);
 	}
-	bool bFound = false;
+
 	for (int i = 0; i < m_pItemManager->GetLibraryCount(); i++)
 	{
 		CString library = m_pItemManager->GetLibrary(i)->GetName();
@@ -250,7 +258,7 @@ void CDatabaseFrameWnd::ReloadItems()
 				hRoot = hParentItem;
 		}
 
-		HTREEITEM hNewItem = InsertItemToTree(pItem, hRoot);
+		InsertItemToTree(pItem, hRoot);
 	}
 
 	SortItems(m_sortRecursionType);
@@ -433,7 +441,6 @@ void CDatabaseFrameWnd::GetAllItems(std::vector<HTREEITEM>& outItemList) const
 		GetItemsUnderSpecificItem(hItem, outItemList);
 		hItem = GetTreeCtrl().GetNextItem(hItem, TVGN_NEXT);
 	}
-	;
 }
 
 void CDatabaseFrameWnd::GetItemsUnderSpecificItem(HTREEITEM hItem, std::vector<HTREEITEM>& outItemList) const
@@ -544,7 +551,7 @@ void CDatabaseFrameWnd::OnRemoveItem()
 		itEnd = m_cpoSelectedLibraryItems.end();
 		itCurrentIterator = m_cpoSelectedLibraryItems.begin();
 		// For now, we have a maximum limit of 7 items per messagebox...
-		for (nItemCount = 0; nItemCount < 7; ++nItemCount, itCurrentIterator++)
+		for (nItemCount = 0; nItemCount < 7; ++nItemCount, ++itCurrentIterator)
 		{
 			if (itCurrentIterator == itEnd)
 			{
@@ -561,7 +568,7 @@ void CDatabaseFrameWnd::OnRemoveItem()
 
 		if (MessageBox(strMessageString, _T("Delete Confirmation"), MB_YESNO | MB_ICONQUESTION) == IDYES)
 		{
-			for (itCurrentIterator = m_cpoSelectedLibraryItems.begin(); itCurrentIterator != itEnd; itCurrentIterator++)
+			for (itCurrentIterator = m_cpoSelectedLibraryItems.begin(); itCurrentIterator != itEnd; ++itCurrentIterator)
 			{
 				CBaseLibraryItem* pCurrent = *itCurrentIterator;
 				DeleteItem(pCurrent);
@@ -944,4 +951,3 @@ void CDatabaseFrameWnd::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	}
 }
-

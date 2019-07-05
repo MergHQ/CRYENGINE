@@ -7,6 +7,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySchematyc/Env/IEnvRegistry.h>
 #include <CrySchematyc/Env/Elements/IEnvComponent.h>
 #include <CrySchematyc/Services/ILog.h>
@@ -97,7 +98,7 @@ void CScriptRegistry::ProcessEvent(const SScriptEvent& event)
 
 bool CScriptRegistry::Load()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Configure file enumeration flags.
 	FileUtils::FileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
@@ -112,7 +113,7 @@ bool CScriptRegistry::Load()
 
 	auto loadScript = [this, &inputBlocks](const char* szFileName, unsigned attributes)
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS(szFileName);
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szFileName);
 		// TODO: Move this to a separated function.
 		SScriptInputBlock inputBlock;
 		CScriptLoadSerializer serializer(inputBlock);
@@ -123,7 +124,7 @@ bool CScriptRegistry::Load()
 			CScript* pScript = GetScript(inputBlock.guid);
 			if (!pScript)
 			{
-				CRY_ASSERT_MESSAGE(szFileName && szFileName[0], "Undefined file name!");
+				CRY_ASSERT(szFileName && szFileName[0], "Undefined file name!");
 				if (szFileName && szFileName[0])
 				{
 					CScriptPtr pSharedScript = std::make_shared<CScript>(inputBlock.guid, szFileName);
@@ -897,11 +898,11 @@ IScript* CScriptRegistry::GetScriptByFileName(const char* szFilePath) const
 
 IScript* CScriptRegistry::LoadScript(const char* szFilePath)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CScript* pScript = nullptr;
 
-	CRY_ASSERT_MESSAGE(szFilePath && szFilePath[0], "Undefined file name!");
+	CRY_ASSERT(szFilePath && szFilePath[0], "Undefined file name!");
 	if (szFilePath && szFilePath[0])
 	{
 		const uint32 fileNameCrc = CCrc32::ComputeLowercase(szFilePath);
@@ -1109,11 +1110,11 @@ void CScriptRegistry::AddElement(const IScriptElementPtr& pElement, IScriptEleme
 
 	if (bCreateScript)
 	{
-		CRY_ASSERT_MESSAGE(szFilePath, "Script file path must be not null!");
+		CRY_ASSERT(szFilePath, "Script file path must be not null!");
 		// #SchematycTODO : We should do this when patching up script elements!!!
 		if (szFilePath)
 		{
-			CScript* pScript = CreateScript(szFilePath, pElement);
+			CreateScript(szFilePath, pElement);
 		}
 	}
 
@@ -1166,12 +1167,12 @@ void CScriptRegistry::SaveScript(CScript& script)
 	const CStackString fileName = script.GetFilePath();
 	const bool hasFileName = !fileName.empty();
 
-	CRY_ASSERT_MESSAGE(hasFileName, "Trying to save Schematyc script without a defined file name.");
+	CRY_ASSERT(hasFileName, "Trying to save Schematyc script without a defined file name.");
 	if (hasFileName)
 	{
 		CStackString folder = fileName.substr(0, fileName.rfind('/'));
 
-		auto elementSerializeCallback = [this](IScriptElement& element)
+		auto elementSerializeCallback = [](IScriptElement& element)
 		{
 			CScriptRegistry& scriptRegistry = static_cast<CScriptRegistry&>(gEnv->pSchematyc->GetScriptRegistry());
 			scriptRegistry.ProcessChange(SScriptRegistryChange(EScriptRegistryChangeType::ElementSaved, element));

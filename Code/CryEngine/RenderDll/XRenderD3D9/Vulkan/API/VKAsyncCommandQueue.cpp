@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "VKAsyncCommandQueue.hpp"
 #include "VKCommandList.hpp"
-#include "DriverD3D.h"
 
 #ifdef VK_LINKEDADAPTER
 	#include "Redirections/VkDevice.inl"
@@ -28,7 +27,7 @@ void CAsyncCommandQueue::SExecuteCommandlist::Process(const STaskArgs& args)
 	Info.pSignalSemaphores    = SignalableSemaphores;
 	// *INDENT-ON*
 
-	VkResult res = vkQueueSubmit(
+	vkQueueSubmit(
 		args.pCommandListPool->GetVkCommandQueue(),
 		1,
 		&Info,
@@ -75,9 +74,9 @@ bool CAsyncCommandQueue::IsSynchronous()
 }
 
 CAsyncCommandQueue::CAsyncCommandQueue()
-	: m_pCmdListPool(nullptr)
-	, m_QueuedFramesCounter(0)
+	: m_QueuedFramesCounter(0)
 	, m_bStopRequested(false)
+	, m_pCmdListPool(nullptr)
 	, m_TaskEvent(INT_MAX, 0)
 {
 }

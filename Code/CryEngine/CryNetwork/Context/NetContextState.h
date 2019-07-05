@@ -6,6 +6,7 @@
 #pragma once
 
 #include <CryNetwork/INetwork.h>
+#include <CryEntitySystem/IEntitySystem.h>
 #include "INetContextState.h"
 #include "INetContextListener.h"
 #include "ContextEstablisher.h"
@@ -154,6 +155,7 @@ public:
 	bool                   DoSetAspectProfile(EntityId id, NetworkAspectType aspectBit, uint8 profile, bool checkOwnership, bool informedGame, bool unlockUpdate);
 	void                   BroadcastChannelEvent(INetChannel* pFrom, SNetChannelEvent* pEvent);
 	bool                   SendEventToChannelListener(INetChannel* pChannel, SNetObjectEvent* pEvent);
+	bool                   IsStartedEstablishingContext() const { return m_startedEstablishingContext; }
 	bool                   IsContextEstablished() const { return m_established; }
 	SNetObjectID           GetNetID(EntityId userID, bool ensureNotUnbinding = true);
 	EntityId               GetEntityID(SNetObjectID netID);
@@ -162,7 +164,8 @@ public:
 	void                   UpdateAuthority(SNetObjectID id, bool bAuth, bool bLocal);
 	bool                   AllocateObject(EntityId userID, SNetObjectID netID, NetworkAspectType aspectBits, bool bOwned, ESpawnType spawnType, INetContextListenerPtr pController);
 	bool                   UnbindObject(SNetObjectID id, uint32 flags);
-	void                   UnbindStaticObject(EntityId id);
+	void                   UnbindStaticObject(IEntitySystem::StaticEntityNetworkIdentifier staticId);
+	void                   UnbindPredictedObject(EntityId staticId);
 	void                   ForceUnbindObject(SNetObjectID id);
 	// reconfigure an objects enabled aspects status
 	void                   ReconfigureObject(SNetObjectID netID, NetworkAspectType aspects);
@@ -196,6 +199,7 @@ public:
 	void          ChangedTransform(EntityId id, const Vec3& pos, const Quat& rot, float drawDist);
 	void          ChangedFov(EntityId id, float fov);
 #endif
+	void          StartedEstablishingContext();
 	void          EstablishedContext();
 	void          DisableAspectsUntilObjectUpdated(EntityId idDisable, NetworkAspectType aspectBits, EntityId idReference, INetChannel* pChannel);
 	void          SpawnedObject(EntityId userID);
@@ -419,6 +423,7 @@ private:
 	CNetContextPtr m_pContext;
 	IGameContext*  m_pGameContext;
 	bool           m_multiplayer;
+	bool           m_startedEstablishingContext;
 	bool           m_established;
 	// in PerformRegularCleanup
 	bool           m_bInCleanup;
@@ -438,9 +443,13 @@ private:
 	CChangeList<SNetObjectAspectChange>    m_vGameChangedObjects;
 	std::vector<SChannelChange>            m_vNetChangeLog;
 	std::vector<SChannelChange>            m_vNetChangeLogUnique;
+#if USE_NETID_PACKING
 	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeLowBitObjects;
 	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeMediumBitObjects;
 	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeHighBitObjects;
+#else // USE_NETID_PACKING
+	std::priority_queue<uint16, std::vector<uint16>, std::greater<uint16>> m_freeObjects;
+#endif // USE_NETID_PACKING
 	TChangedProfiles          m_changedProfiles;
 	std::vector<EntityId>     m_removedStaticEntities;
 #if RESERVE_UNBOUND_ENTITIES
@@ -464,6 +473,7 @@ private:
 	mutable SContextObjectRef m_cacheObjectRef;
 	void ClearContextObjectCache() { m_cacheObjectID = SNetObjectID(); m_cacheObjectRef = SContextObjectRef(); }
 
+	SNetObjectID AllocateNetObjectID(ESpawnType spawnType, EntityId userID);
 	void AddToFreeObjects(uint16 id);
 	void ClearFreeObjects();
 
@@ -472,7 +482,7 @@ private:
 #else
 	typedef std::unordered_map<EntityId, SNetObjectID, stl::hash_uint32, std::equal_to<uint32>, STLMementoAllocator<std::pair<const EntityId, SNetObjectID>>> TNetIDMap;
 #endif
-	std::auto_ptr<TNetIDMap> m_pNetIDs;
+	std::unique_ptr<TNetIDMap> m_pNetIDs;
 
 	CTimeValue               m_localPhysicsTime;
 
@@ -487,7 +497,7 @@ private:
 	EntityId m_spawnedObjectId;
 
 	typedef std::list<SNetIntBreakDescription, STLMementoAllocator<SNetIntBreakDescription>> TNetIntBreakDescriptionList;
-	std::auto_ptr<TNetIntBreakDescriptionList> m_pLoggedBreakage;
+	std::unique_ptr<TNetIntBreakDescriptionList> m_pLoggedBreakage;
 
 	// called by the view when the object is really destroyed remotely
 	// (so we can wait for all objects before resetting)

@@ -8,7 +8,3 @@
 #include <CryCore/StlUtils.h>
 #include <CryCore/Project/ProjectDefines.h>
 #include <CrySystem/ISystem.h>
-
-#if !defined(_RELEASE)
-	#define INCLUDE_SDLMIXER_IMPL_PRODUCTION_CODE
-#endif // _RELEASE

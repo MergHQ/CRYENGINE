@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CryParticleSystem/IParticlesPfx2.h>
-#include <CryRenderer/RenderElements/CREParticle.h>
+#include <CryMemory/HeapAllocator.h>
 
 // compile options
 #ifdef _DEBUG
@@ -22,11 +22,7 @@
 #endif
 #define CRY_PFX2_DBG	// obsolete
 
-#ifndef _RELEASE
-	#define CRY_PFX2_ASSERT(cond) CRY_ASSERT(cond)
-#else
-	#define CRY_PFX2_ASSERT(cond)
-#endif
+#define CRY_PFX2_ASSERT(cond) CRY_ASSERT(cond)
 
 #ifdef CRY_PFX2_DEBUG
 #	define CRY_PFX2_DEBUG_ASSERT(cond) CRY_PFX2_ASSERT(cond);
@@ -42,44 +38,76 @@
 
 #define CRY_PFX2_PARTICLES_ALIGNMENT 16
 
-#if (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS || CRY_PLATFORM_APPLE) && !CRY_PLATFORM_NEON
+#ifdef CRY_PLATFORM_SSE2
 	#define CRY_PFX2_USE_SSE
 	#if (CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS)
 		#define CRY_PFX2_USE_SEE4
 	#endif
 #endif
-#if CRY_PLATFORM_X86
-	#undef CRY_PFX2_USE_SSE // limited code generation in x86, disabling SSE entirely for now.
-	#// msvc x86 only supports up to 3 arguments by copy of type __m128. More than that will require
-	#// references. That makes it incompatible with Vec4_tpl.
-#endif
 
 namespace pfx2
 {
 
-const uint gMinimumVersion = 1;
-const uint gCurrentVersion = 12;
+const uint gMinimumVersion   = 1;
+const uint gCurrentVersion   = 13;
 
-const TParticleId gInvalidId           = -1;
-const float gInfinity                  = std::numeric_limits<float>::infinity();
+const TParticleId gInvalidId = -1;
+const float gInfinity        = std::numeric_limits<float>::infinity();
 
-using TParticleHeap                    = stl::HeapAllocator<stl::PSyncNone>;
+class HeapAllocator
+{
+public:
+	static void* SysAlloc(size_t nSize)
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		return malloc(nSize); 
+	}
+	static void  SysDealloc(void* ptr)
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+		free(ptr);
+	}
+};
+
+using TParticleHeap                    = stl::HeapAllocator<stl::PSyncNone, HeapAllocator>;
 template<typename T> using THeapArray  = TParticleHeap::Array<T, uint, CRY_PFX2_PARTICLES_ALIGNMENT>;
 using TParticleIdArray                 = THeapArray<TParticleId>;
 using TFloatArray                      = THeapArray<float>;
 
 template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
-template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
+template<typename T> using TSmallArray = SmallDynArray<T, uint, NAlloc::ModuleAlloc>;
+template<typename T> using TSmartArray = TSmallArray<_smart_ptr<T>>;
 
+template<typename T> struct TReuseArray : TSmallArray<T>
+{
+	void reset()
+	{
+		m_nUsed = 0;
+	}
+	uint used() const
+	{
+		return m_nUsed;
+	}
+	T& append()
+	{
+		if (m_nUsed == this->size())
+			this->emplace_back();
+		return (*this)[m_nUsed++];
+	}
 
+protected:
+	uint m_nUsed = 0;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 #ifdef CRY_PFX2_USE_SSE
 
-#define CRY_PFX2_PARTICLESGROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
+#define CRY_PFX2_GROUP_STRIDE 4 // can be 8 for AVX or 64 forGPU
 
 struct TParticleGroupId
 {
 	TParticleGroupId() {}
-	explicit TParticleGroupId(uint32 i) { id = i; CRY_PFX2_DEBUG_ASSERT(IsAligned(i, CRY_PFX2_PARTICLESGROUP_STRIDE)); }
+	explicit TParticleGroupId(uint32 i) { id = i; CRY_PFX2_DEBUG_ASSERT(IsAligned(i, CRY_PFX2_GROUP_STRIDE)); }
 	friend bool                       operator<(const TParticleGroupId a, const TParticleGroupId b)  { return a.id < b.id; }
 	friend bool                       operator>(const TParticleGroupId a, const TParticleGroupId b)  { return a.id > b.id; }
 	friend bool                       operator<=(const TParticleGroupId a, const TParticleGroupId b) { return a.id <= b.id; }
@@ -97,21 +125,22 @@ private:
 
 #else
 
-#define CRY_PFX2_PARTICLESGROUP_STRIDE 1
+#define CRY_PFX2_GROUP_STRIDE 1
 
 typedef TParticleId TParticleGroupId;
 
 #endif
 
-#define CRY_PFX2_PARTICLESGROUP_ALIGN(id) Align(id, CRY_PFX2_PARTICLESGROUP_STRIDE)
+#define CRY_PFX2_GROUP_ALIGN(id) Align(id, CRY_PFX2_GROUP_STRIDE)
 
 
+///////////////////////////////////////////////////////////////////////////////
 struct SRenderContext
 {
 	SRenderContext(const SRendParams& rParams, const SRenderingPassInfo& passInfo)
 		: m_renderParams(rParams)
 		, m_passInfo(passInfo)
-		, m_distance(0.0f)
+		, m_distance(rParams.fDistance)
 		, m_lightVolumeId(0)
 		, m_fogVolumeId(0) {}
 	const SRendParams&        m_renderParams;
@@ -121,6 +150,7 @@ struct SRenderContext
 	uint16                    m_fogVolumeId;
 };
 
+///////////////////////////////////////////////////////////////////////////////
 template<typename TIndex, int nStride = 1>
 struct TIndexRange
 {
@@ -145,7 +175,7 @@ struct TIndexRange
 		: m_begin(+b)
 		, m_end(Align(+e, nStride))
 	{
-		CRY_ASSERT(IsAligned(+b, nStride));
+		CRY_PFX2_DEBUG_ASSERT(IsAligned(+b, nStride));
 	}
 
 	template<typename TIndex2, int nStride2>
@@ -154,21 +184,9 @@ struct TIndexRange
 };
 
 typedef TIndexRange<TParticleId> SUpdateRange;
-typedef TIndexRange<TParticleGroupId, CRY_PFX2_PARTICLESGROUP_STRIDE> SGroupRange;
+typedef TIndexRange<TParticleGroupId, CRY_PFX2_GROUP_STRIDE> SGroupRange;
 
-enum EFeatureType
-{
-	EFT_Generic = 0x0,        // this feature does nothing in particular. Can have many of this per component.
-	EFT_Spawn   = BIT(0),     // this feature spawns particles. At least one is needed in a component.
-	EFT_Size    = BIT(1),     // this feature changes particles sizes. At least one is required per component.
-	EFT_Life    = BIT(2),     // this feature changes particles life time. At least one is required per component.
-	EFT_Render  = BIT(3),     // this feature renders particles. Each component can only have either none or just one of this.
-	EFT_Motion  = BIT(4),     // this feature moves particles around. Each component can only have either none or just one of this.
-	EFT_Child   = BIT(5),     // this feature spawns instances from parent particles. At least one is needed for child components
-
-	EFT_END     = BIT(6)
-};
-
+///////////////////////////////////////////////////////////////////////////////
 template<typename C>
 struct SkipEmptySerialize
 {
@@ -191,7 +209,42 @@ bool Serialize(Serialization::IArchive& ar, SkipEmptySerialize<C>& cont, cstr na
 	return Serialize(ar, cont.container, name, label);
 }
 
-inline int ThreadMode() { return Cry3DEngineBase::GetCVars()->e_ParticlesThread; }
+///////////////////////////////////////////////////////////////////////////////
+template<typename T>
+class TSaveRestore
+{
+public:
+	template<class... Vals>
+	TSaveRestore(T& save, Vals&&... vals)
+		: m_saved(save)
+		, m_object(std::forward<Vals>(vals)...)
+	{
+		swap();
+	}
+	~TSaveRestore()
+	{
+		swap();
+	}
+
+private:
+	T& m_saved;
+	T  m_object;
+
+	void swap()
+	{
+		char temp[sizeof(T)];
+		memcpy(temp, &m_object, sizeof(T));
+		memcpy(&m_object, &m_saved, sizeof(T));
+		memcpy(&m_saved, temp, sizeof(T));
+	}
+};
+
+///////////////////////////////////////////////////////////////////////////////
+inline const CVars* GetCVars() { return Cry3DEngineBase::GetCVars(); }
+inline int ThreadMode() { return GetCVars()->e_ParticlesThread; }
+inline int DebugVar() { return GetCVars()->e_ParticlesDebug; }
+inline int DebugMode(char flag) { return (DebugVar() & AlphaBit(flag)); }
+inline int DebugMode(int flags) { return (DebugVar() & AlphaBits(flags)); }
 
 }
 

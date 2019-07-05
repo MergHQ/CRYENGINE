@@ -3,9 +3,10 @@
 #include "stdafx.h"
 #include "XmlArchive.h"
 #include "Util/PakFile.h"
+#include "QtUtil.h"
+#include <IEditor.h>
+#include <QDir>
 
-//////////////////////////////////////////////////////////////////////////
-// CXmlArchive
 bool CXmlArchive::Load(const string& file)
 {
 	bLoading = true;
@@ -45,18 +46,22 @@ bool CXmlArchive::Load(const string& file)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CXmlArchive::Save(const string& file)
 {
-	string filename(file);
-	if (GetIEditor()->GetConsoleVar("ed_lowercasepaths"))
-		filename = filename.MakeLower();
-
-	bLoading = false;
 	if (!root)
 	{
 		return;
 	}
+
+	string filename(file);
+	if (GetIEditor()->GetConsoleVar("ed_lowercasepaths"))
+		filename = filename.MakeLower();
+
+	// We can not use ICryPak::MakeDir here because it uses its own "lowercase" logic, which can conflict with "ed_lowercasepaths".
+	QDir dir;
+	dir.mkpath(QtUtil::ToQString(PathUtil::GetPathWithoutFilename(file.c_str())));
+
+	bLoading = false;
 
 	CFile cFile;
 	// Open the file for writing, create it if needed
@@ -77,10 +82,9 @@ void CXmlArchive::Save(const string& file)
 	pNamedData->Serialize(ar);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CXmlArchive::SaveToPak(const string& levelPath, CPakFile& pakFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	_smart_ptr<IXmlStringData> pXmlStrData = root->getXMLData(5000000);
 
 	// Save xml file.
@@ -93,7 +97,6 @@ bool CXmlArchive::SaveToPak(const string& levelPath, CPakFile& pakFile)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CXmlArchive::LoadFromPak(const string& levelPath)
 {
 	string xmlFilename = levelPath + "Level.editor_xml";
@@ -108,7 +111,7 @@ bool CXmlArchive::LoadFromPak(const string& levelPath)
 
 bool CXmlArchive::SaveToFile(const string& filepath)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!root->saveToFile(filepath))
 	{
@@ -129,4 +132,3 @@ bool CXmlArchive::LoadFromFile(const string& filepath)
 
 	return pNamedData->Load(PathUtil::GetPathWithoutFilename(filepath));
 }
-

@@ -1,30 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __terrainlightgen_h__
-#define __terrainlightgen_h__
+#pragma once
+#include <Util/Image.h>
 
-#if _MSC_VER > 1000
-	#pragma once
-#endif
-
-// forward declaration.
 class CLayer;
+class CPakFile;
 struct LightingSettings;
 
 /** Class that generates terrain surface texture for lighting
  */
 class CTerrainLightGen
 {
-public: // -----------------------------------------------------------------------
-
-	// default constructor
-	CTerrainLightGen
-	(
-	  const int cApplySS = 1,
-	  CPakFile* m_pLevelPakFile = NULL,
-	  const bool cUpdateIndirLighting = false
-	);
-	// destructor
+public:
+	explicit CTerrainLightGen(const int cApplySS = 1, CPakFile* m_pLevelPakFile = nullptr, const bool cUpdateIndirLighting = false);
 	~CTerrainLightGen();
 
 	// Generate terrain surface texture.
@@ -52,7 +40,7 @@ public: // ---------------------------------------------------------------------
 
 	void GetSubImageStretched(const float fSrcLeft, const float fSrcTop, const float fSrcRight, const float fSrcBottom, CImageEx& rOutImage, const int genFlags);
 
-private: // ---------------------------------------------------------------------
+private:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Sectors.
@@ -109,22 +97,18 @@ private: // --------------------------------------------------------------------
 	void GenerateShadowmap(CPoint sector, CByteImage& shadowmap, float shadowAmmount, const Vec3& sunVector);
 	void UpdateSectorHeightmap(CPoint sector);
 	bool UpdateWholeHeightmap();
-	//! Caluclate max terrain height (Optimizes calculation of shadows and sky accessibility).
+	//! Calculate max terrain height (Optimizes calculation of shadows and sky accessibility).
 	void CalcTerrainMaxZ();
 
 	//! Log generation progress.
 	void Log(const char* format, ...);
 
 	//! you have to do it for the whole map and that can take a min but using the result is just a lookup
-	//! upate m_SkyAccessiblity and m_SunAccessiblity
+	//! update m_SkyAccessiblity and m_SunAccessiblity
 	//! \return true=success, false otherwise
 	bool  RefreshAccessibility(const LightingSettings* inpLS, int genFlags);
 
 	float CalcHeightScaleForLighting(const LightingSettings* pSettings, const DWORD indwTargetResolution) const;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Vars.
-	//////////////////////////////////////////////////////////////////////////
 
 	bool             m_bLog;                            // true if ETTG_QUIET was not specified
 	bool             m_bNotValid;
@@ -136,14 +120,14 @@ private: // --------------------------------------------------------------------
 	float            m_pixelSizeInMeters;               // Size of one pixel on generated texture in meters.
 	float            m_terrainMaxZ;                     // Highest point on terrain. use CalcTerrainMaxZ() to update this value
 
-	CHeightmap*      m_heightmap;                       // pointer to the editor heihgtmap (not scaled up to the target resolution)
+	CHeightmap*      m_heightmap;                       // pointer to the editor heightmap (not scaled up to the target resolution)
 	CImageEx         m_OcclusionSurfaceTexture;         // might be valid (!=0, depending on mode) after GenerateSectorTexture(), release with ReleaseOcclusionSurfaceTexture()
 
 	std::vector<int> m_sectorGrid;                // Sector grid.
 
 	CFloatImage      m_hmap;                            // Local heightmap (scaled up to the target resolution)
 
-	// Sky Accessiblity
+	// Sky Accessibility
 	CByteImage m_SkyAccessiblity;                       // Amount of sky that is visible for each point (4MB for 2048x2048) (not scaled up from source, but might be scaled down), 0=no sky accessible, 255= full sky accessible
 	int        m_iCachedSkyAccessiblityQuality;         // to detect changes to refresh m_SkyAccessiblity
 	//	int								m_iCachedSkyBrightening;					// to detect changes to refresh m_SkyAccessiblity
@@ -164,6 +148,3 @@ private: // --------------------------------------------------------------------
 
 	friend class CTerrainTexGen;
 };
-
-#endif // __terrainlightgen_h__
-

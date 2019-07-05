@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright 2001-2016 Crytek GmbH. All rights reserved.
-
 #pragma once
 
 #include <CryMovie/IMovieSystem.h>
@@ -20,7 +17,8 @@ public:
 	virtual SAnimTime GetKeyAnimStart(const uint index) const override;
 	virtual SAnimTime GetKeyAnimEnd(const uint index) const override;
 
+	virtual _smart_ptr<IAnimKeyWrapper> GetWrappedKey(int key);
+
 private:
 	float GetKeyDurationFromAnimationData(const SCharacterKey& key) const;
 };
-

@@ -5,11 +5,11 @@
 #include <CryMath/Cry_Camera.h>
 #include <CrySystem/VR/IHMDDevice.h>
 #include <CrySystem/VR/IHMDManager.h>
-#include <ITimeDemoRecorder.h>
+#include <CryAction/ITimeDemoRecorder.h>
 #include "GameObjects/GameObject.h"
 #include "IGameSessionHandler.h"
 #include "ViewSystem.h"
-#include <DefaultComponents/Audio/ListenerComponent.h>
+#include <DefaultComponents/Audio/DefaultListenerComponent.h>
 
 namespace Cry
 {
@@ -73,7 +73,7 @@ void CView::Update(float frameTime, bool isActive)
 	{
 		m_viewParams.SaveLast();
 
-		const CCamera &sysCam = m_pSystem->GetViewCamera();
+		const CCamera& sysCam = m_pSystem->GetViewCamera();
 
 		//process screen shaking
 		ProcessShaking(frameTime);
@@ -93,12 +93,12 @@ void CView::Update(float frameTime, bool isActive)
 			if (!m_viewParams.position.IsValid())
 			{
 				m_viewParams.position = m_viewParams.GetPositionLast();
-				CRY_ASSERT_MESSAGE(0, "Camera position is invalid, reverting to old position");
+				CRY_ASSERT(0, "Camera position is invalid, reverting to old position");
 			}
 			if (!m_viewParams.rotation.IsValid())
 			{
 				m_viewParams.rotation = m_viewParams.GetRotationLast();
-				CRY_ASSERT_MESSAGE(0, "Camera rotation is invalid, reverting to old rotation");
+				CRY_ASSERT(0, "Camera rotation is invalid, reverting to old rotation");
 			}
 		}
 		else
@@ -177,7 +177,7 @@ void CView::Update(float frameTime, bool isActive)
 					const Vec3 cameraLocalPos = m_viewParams.position;
 
 					// Set entity's camera space position
-					const Vec3 cameraSpacePos(-cameraLocalPos * m_viewParams.rotation);
+					const Vec3 cameraSpacePos(-cameraLocalPos* m_viewParams.rotation);
 					pLinkedToEntity->SetSlotCameraSpacePos(slotIndex, cameraSpacePos);
 
 					// Add world pos onto camera local pos
@@ -346,13 +346,13 @@ void CView::SetViewShakeEx(const SShakeParams& params)
 //------------------------------------------------------------------------
 void CView::SetScale(const float scale)
 {
-	CRY_ASSERT_MESSAGE(scale == 1.0f || m_scale == 1.0f, "Attempting to CView::SetScale but has already been set!");
+	CRY_ASSERT(scale == 1.0f || m_scale == 1.0f, "Attempting to CView::SetScale but has already been set!");
 	m_scale = scale;
 }
 
 void CView::SetZoomedScale(const float scale)
 {
-	CRY_ASSERT_MESSAGE(scale == 1.0f || m_zoomedScale == 1.0f, "Attempting to CView::SetZoomedScale but has already been set!");
+	CRY_ASSERT(scale == 1.0f || m_zoomedScale == 1.0f, "Attempting to CView::SetZoomedScale but has already been set!");
 	m_zoomedScale = scale;
 }
 
@@ -421,7 +421,7 @@ void CView::ProcessShakeNormal(SShake* pShake, float frameTime)
 //////////////////////////////////////////////////////////////////////////
 void CView::ProcessShakeSmooth(SShake* pShake, float frameTime)
 {
-	assert(pShake->timeDone >= 0);
+	CRY_ASSERT(pShake->timeDone >= 0);
 
 	float endTimeFadeIn = pShake->fadeInDuration;
 	float endTimeSustain = pShake->sustainDuration + endTimeFadeIn;
@@ -509,10 +509,9 @@ void CView::CubeInterpolateVector(float t, SShake* pShake)
 	Vec3 v1 = pShake->goalShakeVectorSpeed * 0.8f;
 
 	pShake->shakeVector = (((p0 * 2.f + p1 * -2.f + v0 + v1) * t
-	                        + (p0 * -3.f + p1 * 3.f + v0 * -2.f - v1)) * t
-	                       + (v0)) * t
-	                      + p0;
-
+							+ (p0 * -3.f + p1 * 3.f + v0 * -2.f - v1)) * t
+							+ (v0)) * t
+							+ p0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -768,6 +767,8 @@ void CView::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 void CView::CreateAudioListener()
 {
+	MEMSTAT_CONTEXT(EMemStatContextType::Entity, "CView::CreateAudioListener");
+
 	IEntity* const pIEntity = GetLinkedEntity();
 
 	if (m_pAudioListenerEntity == nullptr && pIEntity != nullptr)
@@ -788,7 +789,7 @@ void CView::CreateAudioListener()
 			gEnv->pEntitySystem->AddEntityEventListener(m_pAudioListenerEntity->GetId(), ENTITY_EVENT_DONE, this);
 			m_pAudioListenerEntity->SetName(pIEntity->GetName());
 
-			m_pAudioListenerComponent = m_pAudioListenerEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
+			m_pAudioListenerComponent = m_pAudioListenerEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CDefaultListenerComponent>();
 			CRY_ASSERT(m_pAudioListenerComponent != nullptr);
 			m_pAudioListenerComponent->SetComponentFlags(m_pAudioListenerComponent->GetComponentFlags() | IEntityComponent::EFlags::UserAdded);
 		}

@@ -42,4 +42,3 @@ protected:
 	QMenuComboBox* m_pComboBox;
 	QLineEdit* m_pLineEdit;
 };
-

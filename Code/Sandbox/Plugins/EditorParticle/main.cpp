@@ -63,4 +63,3 @@ public:
 };
 
 REGISTER_PLUGIN(CParticleEditorPlugin)
-

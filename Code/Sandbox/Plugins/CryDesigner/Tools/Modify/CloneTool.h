@@ -28,8 +28,6 @@ struct CloneParameter
 	void Serialize(Serialization::IArchive& ar);
 };
 
-typedef DesignerObject Clone;
-
 class CloneTool : public BaseTool
 {
 public:
@@ -41,7 +39,7 @@ public:
 	void        Enter() override;
 	void        Leave() override;
 
-	void        Display(struct DisplayContext& dc) override;
+	void        Display(struct SDisplayContext& dc) override;
 	bool        OnLButtonDown(CViewport* view, UINT nFlags, CPoint point) override;
 	bool        OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 	void        Serialize(Serialization::IArchive& ar);
@@ -50,9 +48,10 @@ public:
 private:
 
 	void Confirm();
-	void FreezeClones();
+	void FinishCloning();
+	void ClearClonesList();
 
-	void SetPivotToObject(CBaseObject* pObj, const Vec3& pos);
+	void SetObjectPivot(CBaseObject* pObj, const Vec3& pos);
 	Vec3 GetCenterBottom(const AABB& aabb) const;
 	void UpdateClonePositions();
 	void UpdateCloneList();
@@ -60,20 +59,15 @@ private:
 	void UpdateClonePositionsAlongCircle();
 	void UpdateClonePositionsAlongLine();
 
-	typedef _smart_ptr<Clone> ClonePtr;
+	std::vector<CBaseObject*> m_Clones;
+	CBaseObject*              m_pSelectedClone;
 
-	std::vector<ClonePtr> m_Clones;
-	ClonePtr              m_SelectedClone;
-
-	BrushPlane            m_Plane;
-	Vec3                  m_vStartPos;
-	Vec3                  m_vPickedPos;
-	float                 m_fRadius;
-	bool                  m_bSuspendedUndo;
-
-	Vec3                  m_InitObjectWorldPos;
-
-	CloneParameter        m_CloneParameter;
+	BrushPlane                m_Plane;
+	Vec3                      m_vStartPos;
+	Vec3                      m_vPickedPos;
+	float                     m_fRadius;
+	bool                      m_bSuspendedUndo;
+	CloneParameter            m_CloneParameter;
 };
 
 class ArrayCloneTool : public CloneTool
@@ -84,4 +78,3 @@ public:
 	}
 };
 }
-

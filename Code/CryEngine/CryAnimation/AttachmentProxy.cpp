@@ -10,7 +10,7 @@
 uint32 CProxy::SetJointName(const char* szJointName)
 {
 	m_nJointID = -1;
-	if (!szJointName)  { assert(0); return 0; }
+	if (!CRY_VERIFY(szJointName))  { return 0; }
 	int nJointID = m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetJointIDByName(szJointName);
 	if (nJointID < 0)
 	{
@@ -136,7 +136,7 @@ f32 CProxy::TestOverlapping(const Vec3& p0, Vec3 dir, f32 sl, f32 sr) const
 		return fabs(PmE[i0] / dir[i0]) > lext ? e.CheckEdge(p0, p1, loz) : -loz.w * loz.w;
 	for (uint32 i = 0; i < 2; p = i1, i1 = i2, i2 = p, i++)
 	{
-		f32 pE1 = m[i1] + loz[i1], pE2 = m[i2] + loz[i2], bE1 = loz[i1], bE2 = loz[i2];
+		f32 pE1 = m[i1] + loz[i1], pE2 = m[i2] + loz[i2], bE1 = loz[i1];
 		f32 s = dir[i0] * dir[i0] + dir[i2] * dir[i2], x = s * pE1 - dir[i1] * (dir[i0] * PmE[i0] + dir[i2] * pE2);
 		if (dir[i0] * pE1 >= dir[i1] * PmE[i0] || x >= 0)
 		{
@@ -533,7 +533,7 @@ Vec3 CProxy::ShortarcRotationalProjection(const Vec3& ipos, const Vec3& idir, f3
 			if ((rminX > ca && rmaxX > ca) || (rminX < -ca && rmaxX < -ca))
 				return rpos - rdir * sl;
 			f32 dx = fabs(rdir.x), dy = fabs(idy), dz = idz * rz;
-			f32 x = minX * 0.2f + maxX * 0.8f, y, z, clm[5] = { 0.97, 0.99, 1.0, 1.0, 1.0 }, dot = 9;
+			f32 x = minX * 0.2f + maxX * 0.8f, y, z, clm[5] = { 0.97f, 0.99f, 1.0f, 1.0f, 1.0f }, dot = 9.0f;
 			for (i = 0; dot > 0 && i < 5; ++i)
 			{
 				f32 y = C - A * x * x, iz = isqrt_tpl(rr - y * y), iz3 = iz * iz * iz * 0.25f;
@@ -547,7 +547,7 @@ Vec3 CProxy::ShortarcRotationalProjection(const Vec3& ipos, const Vec3& idir, f3
 			maxX = x;
 			if (dot > 0)
 				return rpos - rdir * sl;
-			const f32 clx[10] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.995, 0.980 };
+			const f32 clx[10] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.995f, 0.980f };
 			f32 d = 9, j, iz, yiz, e0 = 2 * A * dy, e1 = 2 * A * dz * rz, e3 = 4 * A * A * dz * rz;
 			for (i = 9, x = (minX + maxX) * 0.5f; fabs(d) > eps && i; x = clamp_tpl(x + d, minX, minX + (maxX - minX) * clx[i]), --i)
 				y = C - A * x * x, iz = isqrt_tpl(rr - y * y), yiz = y * iz, j = (e0 - e1 * yiz) * x - dx, d = j / ((e1 * y - (e3 + e3 * yiz * yiz) * x * x) * iz - e0);
@@ -578,7 +578,7 @@ Vec3 CProxy::ShortarcRotationalProjection(const Vec3& ipos, const Vec3& idir, f3
 	{
 		Vec3 linedir = Vec3(0, d.y, d.z).GetNormalizedSafe(Vec3(0, 1, 0));
 		Vec3 c = d * ((p.x + loz.x + loz.w) / d.x), pol = p - c;
-		f32 bb = linedir | c, off = loz.x + loz.w - lr;
+		f32 bb = linedir | c;
 		arrpnt[0] = linedir * (bb + sqrt_tpl(sl * sl + bb * bb - (c | c))) + pol, arrdot[0] = (arrpnt[0] - p).GetNormalized() | d;
 		f32 rop = sqrt_tpl(sqr(p.y - arrpnt[0].y) + sqr(p.z - arrpnt[0].z));
 		s04 = loz.z - p.z < rop, s26 = p.z + loz.z < rop, xzmid = !s26, s02 = loz.y - p.y < rop, s46 = p.y + loz.y < rop, xymid = !s46;
@@ -589,7 +589,7 @@ Vec3 CProxy::ShortarcRotationalProjection(const Vec3& ipos, const Vec3& idir, f3
 	{
 		Vec3 linedir = Vec3(d.x, 0, d.z).GetNormalizedSafe(Vec3(1, 0, 0));
 		Vec3 c = d * ((p.y + loz.y + loz.w) / d.y), pol = p - c;
-		f32 bb = linedir | c, off = loz.y + loz.w - lr;
+		f32 bb = linedir | c;
 		arrpnt[1] = linedir * (bb + sqrt_tpl(sl * sl + bb * bb - (c | c))) + pol, arrdot[1] = (arrpnt[1] - p).GetNormalized() | d;
 		f32 rop = sqrt_tpl(sqr(p.x - arrpnt[1].x) + sqr(p.z - arrpnt[1].z));
 		s45 = loz.z - p.z < rop, s67 = p.z + loz.z < rop, yzmid = !s67, s57 = loz.x - p.x < rop, t46 = xymid && p.x + loz.x < rop;
@@ -600,7 +600,7 @@ Vec3 CProxy::ShortarcRotationalProjection(const Vec3& ipos, const Vec3& idir, f3
 	{
 		Vec3 linedir = Vec3(d.x, d.y, 0).GetNormalizedSafe(Vec3(0, 1, 0));
 		Vec3 c = d * ((p.z + loz.z + loz.w) / d.z), pol = p - c;
-		f32 bb = linedir | c, off = loz.z + loz.w - lr;
+		f32 bb = linedir | c;
 		arrpnt[2] = linedir * (bb + sqrt_tpl(sl * sl + bb * bb - (c | c))) + pol, arrdot[2] = (arrpnt[2] - p).GetNormalized() | d;
 		f32 rop = sqrt_tpl(sqr(p.x - arrpnt[2].x) + sqr(p.y - arrpnt[2].y));
 		s23 = loz.y - p.y < rop, t67 = yzmid && p.y + loz.y < rop, t26 = xzmid && p.x + loz.x < rop, s37 = loz.x - p.x < rop;

@@ -2,17 +2,13 @@
 #include <StdAfx.h>
 #include "TextureAssetType.h"
 
-#include "AssetSystem/Asset.h"
-#include "AssetSystem/AssetEditor.h"
-#include "AssetSystem/AssetManager.h"
-#include "Util/Image.h"
-#include "Util/ImageUtil.h"
-#include "QtUtil.h"
-#include "FilePathUtil.h"
-#include <QImage>
-#include <QDir>
-
+#include <Util/Image.h>
+#include <Util/ImageUtil.h>
+#include <AssetSystem/AssetEditor.h>
+#include <AssetSystem/AssetManager.h>
+#include <PathUtils.h>
 #include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
+#include <QDir>
 
 REGISTER_ASSET_TYPE(CTextureType)
 
@@ -40,10 +36,10 @@ static bool CallRcWithUserDialog(const string& filename, const string& options =
 } // namespace Private_TextureType
 
  // Detail attributes.
-CItemModelAttribute CTextureType::s_widthAttribute("Width", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CTextureType::s_heightAttribute("Height", eAttributeType_Int, CItemModelAttribute::StartHidden);
-CItemModelAttribute CTextureType::s_mipCountAttribute("Mip count", eAttributeType_Int, CItemModelAttribute::StartHidden);
-
+CItemModelAttribute CTextureType::s_widthAttribute("Width", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CTextureType::s_heightAttribute("Height", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CTextureType::s_mipCountAttribute("Mip count", &Attributes::s_intAttributeType, CItemModelAttribute::StartHidden);
+CItemModelAttribute CTextureType::s_parentAssetAttribute("Parent", &Attributes::s_stringAttributeType, CItemModelAttribute::StartHidden);
 
 CryIcon CTextureType::GetIconInternal() const
 {
@@ -144,13 +140,52 @@ CAssetEditor* CTextureType::Edit(CAsset* pAsset) const
 	return nullptr;
 }
 
+void CTextureType::AppendContextMenuActions(const std::vector<CAsset*>& assets, CAbstractMenu* pMenu) const
+{
+	if (assets.size() != 1)
+	{
+		return;
+	}
+
+	const CAsset* const pAsset = assets.front();
+	const string parentAssetFilename = pAsset->GetDetailValue("parent");
+	if (parentAssetFilename.empty())
+	{
+		return;
+	}
+
+	const string parentAssetPath = PathUtil::Make(pAsset->GetFolder(), parentAssetFilename);
+	const CAsset* const pParentAsset = GetIEditor()->GetAssetManager()->FindAssetForFile(parentAssetPath);
+	if (!pParentAsset)
+	{
+		return;
+	}
+
+	const QString parentAssetName = QtUtil::ToQString(pParentAsset->GetName());
+
+	CAbstractMenu* const pSubMenu = pMenu->CreateMenu(QString("%1 (%2)").arg(QObject::tr("Parent"), QtUtil::ToQString(pParentAsset->GetType()->GetUiTypeName())));
+
+	QAction* pAction = pSubMenu->CreateAction(QString("%1 '%2'").arg(QObject::tr("Go to"), parentAssetName));
+	QObject::connect(pAction, &QAction::triggered, [parentAssetPath]()
+	{
+		GetIEditor()->ExecuteCommand("asset.show_in_browser '%s'", parentAssetPath.c_str());
+	});
+
+	pAction = pSubMenu->CreateAction(QString("%1 '%2'").arg(QObject::tr("Open"), parentAssetName));
+	QObject::connect(pAction, &QAction::triggered, [parentAssetPath]()
+	{
+		GetIEditor()->ExecuteCommand("asset.edit '%s'", parentAssetPath.c_str());
+	});
+}
+
 std::vector<CItemModelAttribute*> CTextureType::GetDetails() const
 {
 	return
 	{
 		&s_widthAttribute,
 		&s_heightAttribute,
-		&s_mipCountAttribute
+		&s_mipCountAttribute,
+		&s_parentAssetAttribute
 	};
 }
 
@@ -163,6 +198,11 @@ QVariant CTextureType::GetDetailValue(const CAsset * pAsset, const CItemModelAtt
 		{ &s_mipCountAttribute, "mipCount" }
 	};
 
+	if (pDetail == &s_parentAssetAttribute)
+	{
+		return GetVariantFromDetail(PathUtil::GetFileName(pAsset->GetDetailValue("parent")), pDetail);
+	}
+
 	for( const auto& attr : attributes)
 	{
 		if (attr.first == pDetail)
@@ -172,4 +212,3 @@ QVariant CTextureType::GetDetailValue(const CAsset * pAsset, const CItemModelAtt
 	}
 	return QVariant();
 }
-

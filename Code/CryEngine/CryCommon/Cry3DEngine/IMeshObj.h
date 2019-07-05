@@ -2,7 +2,13 @@
 
 #pragma once
 
+#include "CGF/CryHeaders.h"
 #include <CryMath/Cry_Geo.h>
+#include <CryCore/Containers/CryArray.h>
+
+class CRndGen;
+struct SRendParams;
+struct SRenderingPassInfo;
 
 //////////////////////////////////////////////////////////////////////////
 // IMeshObj:

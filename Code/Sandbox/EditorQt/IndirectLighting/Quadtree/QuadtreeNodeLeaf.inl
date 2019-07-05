@@ -284,4 +284,3 @@ inline void CQuadTree<TLeafContent, TMaxCellElems, TPosType, TIndexType, TUseRad
 //	return ((leafIndex & ~IS_LEAF_INDEX) != 0 && (leafIndex & IS_LEAF_INDEX) == 0);//return true if index is not 0 and leaf bit is not set
 //}
 };//NQT
-

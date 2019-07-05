@@ -37,6 +37,12 @@
 #include "HazardModule/HazardModule.h"
 #include "RadioChatter/RadioChatterModule.h"
 
+#include "Action/AIProxyManager.h"
+#include "Action/AIFaceManager.h"
+#include "Action/RangeSignalingSystem/RangeSignaling.h"
+#include "Action/SignalTimers/SignalTimers.h"
+#include "Action/ScriptBind_AIAction.h"
+
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include "BehaviorTree/BehaviorTreeNodes_Game.h"
 
@@ -105,9 +111,19 @@ CGameAISystem::CGameAISystem()
 	m_modules.push_back(gGameAIEnv.hazardModule = new HazardSystem::HazardModule);
 	m_modules.push_back(gGameAIEnv.radioChatterModule = new RadioChatterModule);
 
+	m_pAIProxyManager = new CAIProxyManager;
+	m_pAIProxyManager->Init();
+
+	CRangeSignaling::Create();
+	CSignalTimer::Create();
+
+	CAIFaceManager::LoadStatic();
+
 	RegisterGameBehaviorTreeNodes();
 
 	Reset(false);
+
+	m_pScriptBindAIAction = new CScriptBind_AIAction(this);
 }
 
 CGameAISystem::~CGameAISystem()
@@ -122,6 +138,17 @@ CGameAISystem::~CGameAISystem()
 	}
 
 	m_modules.clear();
+
+	CSignalTimer::Shutdown();
+	CRangeSignaling::Shutdown();
+
+	if (m_pAIProxyManager)
+	{
+		m_pAIProxyManager->Shutdown();
+		SAFE_DELETE(m_pAIProxyManager);
+	}
+
+	SAFE_RELEASE(m_pScriptBindAIAction);
 }
 
 IGameAIModule* CGameAISystem::FindModule(const char* moduleName) const
@@ -148,7 +175,7 @@ void CGameAISystem::EnterModule(EntityId entityID, const char* moduleName)
 		string message;
 		message.Format("Could not register entity '%s' [%d] with module '%s' - the module doesn't exist.", entity ? entity->GetName() : "NullEntity", entityID, moduleName);
 		gEnv->pLog->LogError("GameAISystem: %s", message.c_str());
-		CRY_ASSERT_MESSAGE(0, message.c_str());
+		CRY_ASSERT(0, message.c_str());
 		return;
 	}
 
@@ -254,6 +281,19 @@ void CGameAISystem::ResetModules(bool bUnload)
 		IGameAIModule* module = m_modules[i];
 		module->Reset(bUnload);
 	}
+}
+
+void CGameAISystem::CompleteInit()
+{
+	ICVar* pEnableAI = gEnv->pConsole->GetCVar("sv_AISystem");
+	if (!gEnv->bMultiplayer || (pEnableAI && pEnableAI->GetIVal()))
+	{
+		m_pAIProxyManager = new CAIProxyManager;
+		m_pAIProxyManager->Init();
+	}
+
+	CRangeSignaling::ref().Init();
+	CSignalTimer::ref().Init();
 }
 
 void CGameAISystem::Reset(bool bUnload)

@@ -17,6 +17,7 @@ History:
 #include "Player.h"
 #include "PlayerStateEvents.h"
 #include "Game.h"
+#include "GameCVars.h"
 #include "Projectile.h"
 #include "WeaponSystem.h"
 #include "GameRules.h"
@@ -27,9 +28,9 @@ History:
 #include "GameCodeCoverage/GameCodeCoverageTracker.h"
 #include "PlayerAnimation.h"
 
-
 #include "UI/HUD/HUDEventDispatcher.h"
 #include "UI/HUD/HUDUtils.h"
+#include <IGameplayRecorder.h>
 
 #define MAX_TRAJECTORY_TIME 5.0f
 
@@ -191,8 +192,8 @@ void CThrow::Update(float frameTime, uint32 frameId)
 						pGameRules->ProjectileExplosion(pep);
 					}
 		
-					CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
-					CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
+					CRY_ASSERT(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
+					CRY_ASSERT(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
 
 					//apply a hit to the owner as well to ensure they are always killed
 					HitInfo hitInfo(ownerId, ownerId, m_pWeapon->GetEntityId(), fDamage, 0.0f, 0, -1, m_fireParams->fireparams.hitTypeId, pos, ZERO, ZERO);
@@ -623,8 +624,8 @@ void CThrow::ShootInternal(Vec3 hit, Vec3 pos, Vec3 dir, Vec3 vel, bool clientIs
 	if (pAmmo)
 	{
 
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
 
 		pAmmo->SetParams(CProjectile::SProjectileDesc(
 			m_pWeapon->GetOwnerId(), m_pWeapon->GetHostId(), m_pWeapon->GetEntityId(), (int)m_fireParams->fireparams.damage,
@@ -686,8 +687,8 @@ void CThrow::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, const
 	CProjectile *pAmmo = m_pWeapon->SpawnAmmo(m_fireParams->fireparams.spawn_ammo_class, true);
 	if (pAmmo)
 	{
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
 		
 		pAmmo->SetParams(CProjectile::SProjectileDesc(
 			m_pWeapon->GetOwnerId(), m_pWeapon->GetHostId(), m_pWeapon->GetEntityId(),
@@ -886,7 +887,6 @@ void CThrow::RenderTrajectory(const Vec3* trajectory, unsigned int sampleCount, 
 
 	const float dashLength = g_pGameCVars->i_grenade_trajectory_dashes;
 	const float gapLength = g_pGameCVars->i_grenade_trajectory_gaps;
-	const float partLength = dashLength+gapLength;
 
 	float dash = 0.0f;
 	float gap = 0.0f;

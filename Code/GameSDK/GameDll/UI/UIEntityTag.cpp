@@ -18,6 +18,7 @@
 #include <CryGame/IGameFramework.h>
 #include <IViewSystem.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CryMath/Cry_Camera.h>
 
 ////////////////////////////////////////////////////////////////////////////
 void CUIEntityTag::InitEventSystem()

@@ -219,5 +219,3 @@ struct SBlockSignals
 	CCrySignal<void()> m_oldJointProxyChanged;
 	CCrySignal<void()> m_oldJointDataChanged;
 };
-
-

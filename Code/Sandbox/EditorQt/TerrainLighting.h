@@ -1,13 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(AFX_TERRAINLIGHTING_H__4CAA5295_2647_42FD_8334_359F55EBA4F8__INCLUDED_)
-#define AFX_TERRAINLIGHTING_H__4CAA5295_2647_42FD_8334_359F55EBA4F8__INCLUDED_
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif // _MSC_VER > 1000
-// TerrainLighting.h : header file
-//
+#pragma once
 
 #define LIGHTING_TOOL_WINDOW_NAME "Lighting Tool"
 
@@ -15,8 +8,8 @@ enum eLightAlgorithm              // correspond to the radio buttons in the ligh
 {
 	//	eHemisphere = 0,
 	eDP3        = 1,          // <will be removed soon>
-	ePrecise    = 2,          // Sky Accessiblity, lambert sun lighting, soft shadows, baked together with diffuse color (DXT1)
-	eDynamicSun = 3,          // diffuse color in (DXT1) | sky accesiblity, lambert sun lighting, vegetation shadow (R5G6B5)
+	ePrecise    = 2,          // Sky Accessibility, Lambert sun lighting, soft shadows, baked together with diffuse color (DXT1)
+	eDynamicSun = 3,          // diffuse color in (DXT1) | sky accessibility, Lambert sun lighting, vegetation shadow (R5G6B5)
 };
 
 struct LightingSettings
@@ -131,6 +124,3 @@ struct LightingSettings
 		}
 	}
 };
-
-#endif // !defined(AFX_TERRAINLIGHTING_H__4CAA5295_2647_42FD_8334_359F55EBA4F8__INCLUDED_)
-

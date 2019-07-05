@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "ClampedSplitterWnd.h"
+#include <Util/EditorUtils.h>
 
 IMPLEMENT_DYNAMIC(CClampedSplitterWnd, CXTSplitterWnd)
 
@@ -149,4 +150,3 @@ void CClampedSplitterWnd::ResizePanels(const int resizeAmount, CRowColInfo& make
 	makeBigger.nCurSize += resizeAmount;
 	makeBigger.nIdealSize = makeBigger.nCurSize;
 }
-

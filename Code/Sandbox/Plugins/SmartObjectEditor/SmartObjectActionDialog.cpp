@@ -1,13 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IAgent.h>
+#include "SmartObjectActionDialog.h"
+
 #include "AI/AIManager.h"
 #include "HyperGraph/FlowGraphManager.h"
 #include "HyperGraph/FlowGraph.h"
 
-#include "SmartObjectActionDialog.h"
+#include <CryAISystem/IAISystem.h>
+#include <CryAISystem/IAgent.h>
+#include <CryAISystem/IAIAction.h>
 
 // CSmartObjectActionDialog dialog
 
@@ -78,11 +80,9 @@ void CSmartObjectActionDialog::OnRefreshBtn()
 	m_wndActionList.ResetContent();
 	m_wndActionList.AddString("");
 
-	IAIManager* pAIMgr = GetIEditor()->GetAIManager();
-	ASSERT(pAIMgr);
 	typedef std::vector<string> TSOActionsVec;
 	TSOActionsVec vecSOActions;
-	pAIMgr->GetSmartObjectActions(vecSOActions);
+	GetSmartObjectActions(vecSOActions);
 	for (TSOActionsVec::iterator it = vecSOActions.begin(); it != vecSOActions.end(); ++it)
 		m_wndActionList.AddString((*it).GetString());
 	m_wndActionList.SelectString(-1, m_sSOAction);
@@ -122,3 +122,24 @@ BOOL CSmartObjectActionDialog::OnInitDialog()
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
 
+void CSmartObjectActionDialog::GetSmartObjectActions(std::vector<string>& values) const
+{
+	if (!gEnv->pAISystem)
+		return;
+
+	IAIActionManager* pAIActionManager = gEnv->pAISystem->GetAIActionManager();
+	assert(pAIActionManager);
+	if (!pAIActionManager)
+		return;
+
+	values.clear();
+
+	for (int i = 0; IAIAction* pAIAction = pAIActionManager->GetAIAction(i); ++i)
+	{
+		const char* szActionName = pAIAction->GetName();
+		if (szActionName)
+		{
+			values.push_back(szActionName);
+		}
+	}
+}

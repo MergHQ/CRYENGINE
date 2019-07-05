@@ -3,10 +3,11 @@
 #define FRUSTUM_EXIT_DETECTION   1
 //#define START_OFFSET_JITTER     1
 //#undef RAYBUNDLE_TRACING       1
-//#define NEAREST_HALFRES_MASKING  1
+#define NEAREST_HALFRES_MASKING  1
 
 struct ReflParams
 {
+	// In
 	float2 ScreenTC;
 	float2 ProjRatio;
 
@@ -35,9 +36,11 @@ struct ReflParams
 #define FRUSTUM_NOCLIP_BOT   8
 	uint   limitMask;
 	
-	bool   Reproject;
+	bool     Reproject;
 	float4x4 ViewProjPrev;
+	float4x4 ReprojectToPrev;
 
+	// Out
 	float  blendWeight;
 };
 
@@ -59,83 +62,75 @@ float GetMaxTracingDistance(in ReflParams params, in float3 reflVec)
 
 	// right
 	if (!(params.limitMask & FRUSTUM_NOCLIP_RIGHT))
-	do
 	{
 		float3 n  = -FEP[0].xyz;
 		float3 n0 = FEP[0].w * n;
 
 		// [-1,+1]
 		float det = dot(l, n);
-		if (det >= 0)
-			break;
+		if (!(det >= 0))
+		{
+			float3 r = n0 - l0;
+			float d = dot(r, n) / det;
 
-		float3 r = n0 - l0;
-		float d = dot(r, n) / det;
-
-		if (exitDist > d)
-			exitDist = d;
+			if (exitDist > d)
+				exitDist = d;
+		}
 	}
-	while(0);
 	
 	// left
 	if (!(params.limitMask & FRUSTUM_NOCLIP_LEFT))
-	do
 	{
 		float3 n  = -FEP[1].xyz;
 		float3 n0 = FEP[1].w * n;
 
 		// [-1,+1]
 		float det = dot(l, n);
-		if (det >= 0)
-			break;
+		if (!(det >= 0))
+		{
+			float3 r = n0 - l0;
+			float d = dot(r, n) / det;
 
-		float3 r = n0 - l0;
-		float d = dot(r, n) / det;
-
-		if (exitDist > d)
-			exitDist = d;
+			if (exitDist > d)
+				exitDist = d;
+		}
 	}
-	while(0);
 
 	// top
 	if (!(params.limitMask & FRUSTUM_NOCLIP_TOP))
-	do
 	{
 		float3 n  = -FEP[2].xyz;
 		float3 n0 = FEP[2].w * n;
 
 		// [-1,+1]
 		float det = dot(l, n);
-		if (det >= 0)
-			break;
+		if (!(det >= 0))
+		{
+			float3 r = n0 - l0;
+			float d = dot(r, n) / det;
 
-		float3 r = n0 - l0;
-		float d = dot(r, n) / det;
-
-		if (exitDist > d)
-			exitDist = d;
+			if (exitDist > d)
+				exitDist = d;
+		}
 	}
-	while(0);
 
 	// bottom
 	if (!(params.limitMask & FRUSTUM_NOCLIP_BOT))
-	do
 	{
 		float3 n  = -FEP[3].xyz;
 		float3 n0 = FEP[3].w * n;
 
 		// [-1,+1]
 		float det = dot(l, n);
-		if (det >= 0)
-			break;
+		if (!(det >= 0))
+		{
+			float3 r = n0 - l0;
+			float d = dot(r, n) / det;
 
-		float3 r = n0 - l0;
-		float d = dot(r, n) / det;
-
-		if (exitDist > d)
-			exitDist = d;
+			if (exitDist > d)
+				exitDist = d;
+		}
 	}
-	while(0);
 	#endif
 	
 	return min(exitDist, furthestDist);
@@ -230,13 +225,15 @@ float4 SSRaycast
 	float dirAtten = saturate( dot( params.ViewVec, reflVec ) + 0.5);
 //	if (dirAtten < 0.01) return 0;
 
-	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS, 1 ) );
-	rayStart.z = params.fDepth;
-	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS          , 1 ) );
+	float4 rayEnd   = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
+	float2 rayDir   = (rayEnd.xy / rayEnd.w) - (rayStart.xy / rayStart.w);
 
-	float4 rayEnd = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
-	rayEnd.z = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
-	rayEnd.xy = GetScaledScreenTC( rayEnd.xy * float2(0.5, -0.5) + 0.5 * rayEnd.w );
+	rayStart.z = params.fDepth;
+	rayEnd.z   = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
+
+	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	rayEnd.xy   = GetScaledScreenTC( rayEnd.xy   * float2(0.5, -0.5) + 0.5 * rayEnd.w   );
 
 	float4 ray = rayEnd - rayStart;
 	
@@ -261,47 +258,60 @@ float4 SSRaycast
 			uvMultiRes.y > 0.0f && uvMultiRes.y < 1.0f
 		)
 		{
-			bestLen = 1.0f;
+			bestLen = 1.0f * sign(projPos.w);
 		}
 	}
 
 	[branch] if (bestLen == 1.0f)
 	{
-		float4 reprojPos = rayStart + ray * bestLen;
+		float4 depthPos = rayStart + ray * bestLen;
+		
+		depthPos.xy /= depthPos.w;
+		depthPos.xy *= CV_HPosScale.zw;
+		depthPos.xy = MapViewportToRaster(depthPos.xy);
+
+		float4 colorPos = depthPos;
 		
 		// Reprojection
 		if (params.Reproject)
 		{
-			reprojPos = float4( params.vPositionWS + reflVec * bestLen, 1 );
-			reprojPos = mul( reprojPos, params.ViewProjPrev );
+			// Get Device-Depth
+			float2 fLinearDepthTapXY =
+				GetTexture2D(SSRRay_LinDepthSc, SSRRay_Linear_Sampler, depthPos.xy).xy;
+			float fLinearDepthTap = params.UnscaledMultiplier.x <= 1.0f ?
+				fLinearDepthTapXY.x :
+				fLinearDepthTapXY.y;
+			float fSceneDepthTap = g_PS_ProjRatio.y / fLinearDepthTap + g_PS_ProjRatio.x;
+
+			colorPos = float4(depthPos.xy, fSceneDepthTap, 1);
+			colorPos = mul(colorPos, params.ReprojectToPrev);
+
+			colorPos.xy /= colorPos.w;
+			colorPos.xy *= CV_HPosScale.zw;
+			colorPos.xy = MapViewportToRaster(colorPos.xy);
 		}
-		
-		reprojPos.xyz /= reprojPos.w;
 		
 		// TODO: ellipsoid fade-out region instead of rectangular
 		float brdAtten = abs(dot(normalize(CV_CameraFrontVector.xyz), params.NormalWorld)); // Use camera inclination up/down to reduce horizontal border
 		float2 borderSize = params.borderSize.xy * CV_HPosScale.xy * float2(brdAtten, 1.0f);  // Fade out at borders
 		
-		float2 borderDist = GetMinBorderDistance(params, reprojPos.xy, ray.xy);
+		float2 borderDist = GetMinBorderDistance(params, colorPos.xy, rayDir);
 		float2 edgeWeights = borderDist < borderSize ? borderDist / borderSize : 1.0f;
 		float edgeWeight = min(edgeWeights.x, edgeWeights.y); /* edgeWeights.x **** x-axis is mirrored when using SSRaycast instead of fade out */
 
-		reprojPos.xy *= CV_HPosScale.zw;
-		reprojPos.xy = MapViewportToRaster(reprojPos.xy);
-		
 		if (params.bgMultiplier != 1.0f)
 		{
 			// Gather from max(depth)
 			float4 fLinearDepthTap = true ? // params.UnscaledMultiplier.x <= 1.0f ?
-				SSRRay_LinDepthSc.GatherRed  (SSRRay_Linear_Sampler, reprojPos.xy, int2(0,0) ).xyzw :
-				SSRRay_LinDepthSc.GatherGreen(SSRRay_Linear_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
+				SSRRay_LinDepthSc.GatherRed  (SSRRay_Linear_Sampler, depthPos.xy, int2(0,0) ).xyzw :
+				SSRRay_LinDepthSc.GatherGreen(SSRRay_Linear_Sampler, depthPos.xy, int2(0,0) ).xyzw;
 
-			float4 fBackgroundTapR = SSRRay_HDRTarg.GatherRed   (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
-			float4 fBackgroundTapG = SSRRay_HDRTarg.GatherGreen (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
-			float4 fBackgroundTapB = SSRRay_HDRTarg.GatherBlue  (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
+			float4 fBackgroundTapR = SSRRay_HDRTarg.GatherRed   (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0) ).xyzw;
+			float4 fBackgroundTapG = SSRRay_HDRTarg.GatherGreen (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0) ).xyzw;
+			float4 fBackgroundTapB = SSRRay_HDRTarg.GatherBlue  (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0) ).xyzw;
 
 			float4 fWeightTap = max(float4(params.bgMultiplier, params.bgMultiplier, params.bgMultiplier, params.bgMultiplier), fLinearDepthTap != 1.0f);
-			float2 subUV = frac(reprojPos.xy * CV_ScreenSize.xy * rcp(params.UnscaledMultiplier));
+			float2 subUV = frac(colorPos.xy * CV_ScreenSize.xy * rcp(params.UnscaledMultiplier));
 
 			// X = top-left, Y = top-right, Z = bottom-right, W = bottom-left
 			color.r = (fWeightTap.x * fBackgroundTapR.x * (1.0f - subUV.x) + fWeightTap.y * fBackgroundTapR.y * (subUV.x)) * (1.0f - subUV.y) +
@@ -320,7 +330,7 @@ float4 SSRaycast
 		}
 		else
 		{
-			color.rgb = GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( reprojPos.xy, 0, 0 ) ).rgb;
+			color.rgb = GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( colorPos.xy, 0, 0 ) ).rgb;
 			color.a = 1.0;
 		}
 		
@@ -355,16 +365,18 @@ float4 SSRRaytrace
 	float dirAtten = saturate( dot( params.ViewVec, reflVec ) + 0.5);
 	if (dirAtten < 0.01) return 0;
 	
-	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS, 1 ) );
-	rayStart.z = params.fDepth;
-	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	float4 rayStart = mul( CV_ViewProjMatr, float4( params.vPositionWS          , 1 ) );
+	float4 rayEnd   = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
+	float2 rayDir   = (rayEnd.xy / rayEnd.w) - (rayStart.xy / rayStart.w);
 
-	float4 rayEnd = mul( CV_ViewProjMatr, float4( params.vPositionWS + reflVec, 1 ) );
-	rayEnd.z = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
-	rayEnd.xy = GetScaledScreenTC( rayEnd.xy * float2(0.5, -0.5) + 0.5 * rayEnd.w );
+	rayStart.z = params.fDepth;
+	rayEnd.z   = params.ProjRatio.y / (rayEnd.z / rayEnd.w - params.ProjRatio.x);
+	
+	rayStart.xy = GetScaledScreenTC( rayStart.xy * float2(0.5, -0.5) + 0.5 * rayStart.w );
+	rayEnd.xy   = GetScaledScreenTC( rayEnd.xy   * float2(0.5, -0.5) + 0.5 * rayEnd.w   );
 
 	float4 ray = rayEnd - rayStart;
-
+		
 	const int numSamples = GetMaxTracingSamples(params, reflLen, reflVec);
 	const float stepSize = rcp(numSamples);
 	
@@ -541,44 +553,58 @@ float4 SSRRaytrace
 
 	[branch] if (bestLen < 1.0f)
 	{
-		float4 reprojPos = rayStart + ray * bestLen;
+		float4 depthPos = rayStart + ray * bestLen;
+
+		depthPos.xy /= depthPos.w;
+		depthPos.xy *= CV_HPosScale.zw;
+		depthPos.xy = MapViewportToRaster(depthPos.xy);
+		
+		float4 colorPos = depthPos;
 		
 		// Reprojection
 		if (params.Reproject)
 		{
-			reprojPos = float4( params.vPositionWS + reflVec * bestLen, 1 );
-			reprojPos = mul( reprojPos, params.ViewProjPrev );
+			// Get Device-Depth
+			float2 fLinearDepthTapXY =
+				GetTexture2D(SSRRay_LinDepthSc, SSRRay_Linear_Sampler, depthPos.xy).xy;
+			float fLinearDepthTap = params.UnscaledMultiplier.x <= 1.0f ?
+				fLinearDepthTapXY.x :
+				fLinearDepthTapXY.y;
+			float fSceneDepthTap = g_PS_ProjRatio.y / fLinearDepthTap + g_PS_ProjRatio.x;
+
+			colorPos = float4(depthPos.xy, fSceneDepthTap, 1);
+			colorPos = mul(colorPos, params.ReprojectToPrev);
+
+			colorPos.xy /= colorPos.w;
+			colorPos.xy *= CV_HPosScale.zw;
+			colorPos.xy = MapViewportToRaster(colorPos.xy);
 		}
-		
-		reprojPos.xyz /= reprojPos.w;
 		
 		// TODO: ellipsoid fade-out region instead of rectangular
 		float brdAtten = 1;//abs(dot(normalize(CV_CameraFrontVector.xyz), params.NormalWorld)); // Use camera inclination up/down to reduce horizontal border
 		float2 borderSize = params.borderSize.xy * CV_HPosScale.xy * float2(brdAtten, 1.0f);  // Fade out at borders
 		float traceSize = params.borderSize.z;  // Fade out at distance
 
-		float2 borderDist = GetMinBorderDistance(params, reprojPos.xy, ray.xy);
+		float2 borderDist = GetMinBorderDistance(params, colorPos.xy, rayDir);
 		float2 edgeWeights = borderDist < borderSize ? borderDist / borderSize : 1.0f;
 		float edgeWeight = min(edgeWeights.x, edgeWeights.y);
 		
-		float traceDist = 1.0f - length(ray * bestLen) / GetFarTracingDistance(params, reflVec);
-		float traceWeight = traceDist < traceSize ? traceDist / traceSize : 1.0f;
-
-		reprojPos.xy *= CV_HPosScale.zw;
-		reprojPos.xy = MapViewportToRaster(reprojPos.xy);
+		// TODO: add distance fade-out
+		float traceDist = /*1.0f -*/ length(reflVec * bestLen) / GetFarTracingDistance(params, reflVec);
+		float traceWeight = 1.0f; //traceDist > traceSize ? 0.0f : 1.0f;//traceDist < traceSize ? traceDist / traceSize : 1.0f;
 
 		#if 0
 		#if !RAYBUNDLE_TRACING
-		color.rgb = GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( reprojPos.xy, 0, 0 ) ).rgb;
+		color.rgb = GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( colorPos.xy, 0, 0 ) ).rgb;
 		color.a = 1.0;
 		#else
 		float coverage = bestWght.x + bestWght.y + bestWght.z + bestWght.w;
 		float sum      = bestMask.x + bestMask.y + bestMask.z + bestMask.w;
 		float4 weight  = bestMask * rcp(sum);
 		
-		color.r = min(dot(SSRRay_HDRTarg.GatherRed  (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0)).xyzw, weight), params.maxLum.x);
-		color.g = min(dot(SSRRay_HDRTarg.GatherGreen(SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0)).xyzw, weight), params.maxLum.x);
-		color.b = min(dot(SSRRay_HDRTarg.GatherBlue (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0)).xyzw, weight), params.maxLum.x);
+		color.r = min(dot(SSRRay_HDRTarg.GatherRed  (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0)).xyzw, weight), params.maxLum.x);
+		color.g = min(dot(SSRRay_HDRTarg.GatherGreen(SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0)).xyzw, weight), params.maxLum.x);
+		color.b = min(dot(SSRRay_HDRTarg.GatherBlue (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0)).xyzw, weight), params.maxLum.x);
 		color.a = 1.0 - 0.25 * coverage;
 		#endif
 		#endif
@@ -587,22 +613,22 @@ float4 SSRRaytrace
 		{
 			// Gather from max(depth)
 			float4 fLinearDepthTap = true ? // params.UnscaledMultiplier.x <= 1.0f ?
-				SSRRay_LinDepthSc.GatherRed  (SSRRay_Linear_Sampler, reprojPos.xy, int2(0,0) ).xyzw :
-				SSRRay_LinDepthSc.GatherGreen(SSRRay_Linear_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
+				SSRRay_LinDepthSc.GatherRed  (SSRRay_Linear_Sampler, depthPos.xy, int2(0,0) ).xyzw :
+				SSRRay_LinDepthSc.GatherGreen(SSRRay_Linear_Sampler, depthPos.xy, int2(0,0) ).xyzw;
 				
-			float4 fBackgroundTapR = SSRRay_HDRTarg.GatherRed   (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
-			float4 fBackgroundTapG = SSRRay_HDRTarg.GatherGreen (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
-			float4 fBackgroundTapB = SSRRay_HDRTarg.GatherBlue  (SSRRay_HDRT_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
+			float4 fBackgroundTapR = SSRRay_HDRTarg.GatherRed   (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0) ).xyzw;
+			float4 fBackgroundTapG = SSRRay_HDRTarg.GatherGreen (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0) ).xyzw;
+			float4 fBackgroundTapB = SSRRay_HDRTarg.GatherBlue  (SSRRay_HDRT_Sampler, colorPos.xy, int2(0,0) ).xyzw;
 			
 			// We didn't start tracing in nearest geometry, but we're attempting a nearest depth-probe, which is filtered out now
 			float4 fWeightTap = max(float4(params.bgMultiplier, params.bgMultiplier, params.bgMultiplier, params.bgMultiplier), fLinearDepthTap != 1.0f);
-			float2 subUV = frac(reprojPos.xy * CV_ScreenSize.xy * rcp(params.UnscaledMultiplier));
-			
+			float2 subUV = frac(colorPos.xy * CV_ScreenSize.xy * rcp(params.UnscaledMultiplier));
+
 #if NEAREST_HALFRES_MASKING
 			// Gather from min(depth)
 			float4 fLinearDepthTest = params.UnscaledMultiplier.x <= 1.0f ?
-				SSRRay_LinDepthSc.GatherRed  (SSRRay_Linear_Sampler, reprojPos.xy, int2(0,0) ).xyzw :
-				SSRRay_LinDepthSc.GatherGreen(SSRRay_Linear_Sampler, reprojPos.xy, int2(0,0) ).xyzw;
+				SSRRay_LinDepthSc.GatherRed  (SSRRay_Linear_Sampler, depthPos.xy, int2(0,0) ).xyzw :
+				SSRRay_LinDepthSc.GatherGreen(SSRRay_Linear_Sampler, depthPos.xy, int2(0,0) ).xyzw;
 			
 			// We didn't start tracing in nearest geometry, but we're attempting a nearest depth-probe, which is filtered out now
 			const bool4 nearestDepthTest = fLinearDepthTest < nearestDepthThreshold;
@@ -630,7 +656,7 @@ float4 SSRRaytrace
 #if NEAREST_HALFRES_MASKING
 			// Sample min(fDepth)
 			float2 fLinearDepthTapXY =
-				GetTexture2D(SSRRay_LinDepthSc, SSRRay_Linear_Sampler, reprojPos.xy).xy;
+				GetTexture2D(SSRRay_LinDepthSc, SSRRay_Linear_Sampler, depthPos.xy).xy;
 			float fLinearDepthTest = params.UnscaledMultiplier.x <= 1.0f ?
 				fLinearDepthTapXY.x :
 				fLinearDepthTapXY.y;
@@ -641,7 +667,7 @@ float4 SSRRaytrace
 				return color;
 #endif
 
-			color.rgb = GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( reprojPos.xy, 0, 0 ) ).rgb;
+			color.rgb = GetTexture2DLod( SSRRay_HDRTarg, SSRRay_HDRT_Sampler, float4( colorPos.xy, 0, 0 ) ).rgb;
 			color.a = 1.0;
 		}
 		

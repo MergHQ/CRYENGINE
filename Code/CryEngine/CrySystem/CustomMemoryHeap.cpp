@@ -6,6 +6,7 @@
 #if CRY_PLATFORM_DURANGO
 	#include <apu.h>
 #endif // CRY_PLATFORM_DURANGO
+#include <CryMemory/CrySizer.h>
 
 //////////////////////////////////////////////////////////////////////////
 CCustomMemoryHeapBlock::CCustomMemoryHeapBlock(CCustomMemoryHeap* pHeap, void* pData, size_t const allocateSize, char const* const szUsage)
@@ -51,7 +52,7 @@ ICustomMemoryBlock* CCustomMemoryHeap::AllocateBlock(size_t const allocateSize, 
 		pCreatedData = CryGetIMemoryManager()->AllocPages(allocateSize);
 		break;
 	case IMemoryManager::eapCustomAlignment:
-		CRY_ASSERT_MESSAGE(alignment != 0, "CCustomMemoryHeap: trying to allocate memory via eapCustomAlignment with an alignment of zero!");
+		CRY_ASSERT(alignment != 0, "CCustomMemoryHeap: trying to allocate memory via eapCustomAlignment with an alignment of zero!");
 		pCreatedData = CryModuleMemalign(allocateSize, alignment);
 		break;
 #if CRY_PLATFORM_DURANGO

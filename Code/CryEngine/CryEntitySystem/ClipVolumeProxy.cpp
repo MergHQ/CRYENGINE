@@ -4,6 +4,7 @@
 
 #include "ClipVolumeProxy.h"
 #include <Cry3DEngine/CGF/CGFContent.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 CRYREGISTER_CLASS(CEntityComponentClipVolume);
 
@@ -51,9 +52,9 @@ void CEntityComponentClipVolume::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentClipVolume::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentClipVolume::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_XFORM) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE);
+	return ENTITY_EVENT_XFORM | ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE;
 }
 
 void CEntityComponentClipVolume::UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces)
@@ -102,7 +103,7 @@ void CEntityComponentClipVolume::LegacySerializeXML(XmlNodeRef& entityNode, XmlN
 {
 	if (bLoading)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		XmlNodeRef volumeNode = componentNode->findChild("ClipVolume");
 		if (!volumeNode)

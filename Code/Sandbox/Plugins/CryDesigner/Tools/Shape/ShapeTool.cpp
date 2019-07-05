@@ -1,19 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ShapeTool.h."
-#include "DesignerEditor.h"
-#include "ViewManager.h"
-#include "Core/Model.h"
-#include "Core/Helper.h"
-#include "Tools/Edit/SeparateTool.h"
-#include "Tools/Misc/ResetXFormTool.h"
-#include "Tools/Select/SelectTool.h"
-#include "Core/SmoothingGroupManager.h"
-#include "Util/Display.h"
-#include "GameEngine.h"
+#include "ShapeTool.h"
 
-#include "IAIManager.h"
+#include "Core/SmoothingGroupManager.h"
+#include "Objects/DesignerObject.h"
+#include "Tools/Edit/SeparateTool.h"
+
+#include <IAIManager.h>
+#include <Viewport.h>
 
 namespace Designer
 {
@@ -63,7 +58,7 @@ bool ShapeTool::UpdateCurrentSpotPosition(
 	return true;
 }
 
-void ShapeTool::DisplayCurrentSpot(DisplayContext& dc)
+void ShapeTool::DisplayCurrentSpot(SDisplayContext& dc)
 {
 	dc.SetFillMode(e_FillModeSolid);
 	DrawCurrentSpot(dc, GetWorldTM());
@@ -176,8 +171,6 @@ void ShapeTool::RegisterShape(PolygonPtr pFloorPolygon)
 	GetModel()->SetShelf(eShelf_Construction);
 	GetModel()->RemovePolygonsWithSpecificFlagsAndPlane(ePolyFlag_Mirrored);
 
-	bool bUniquePolygon = GetModel()->GetPolygonCount() == 1 ? true : false;
-
 	PolygonList polygons;
 	GetModel()->GetPolygonList(polygons);
 	PolygonPtr pPolygonTouchingFloor = NULL;
@@ -274,4 +267,3 @@ void ShapeTool::StoreSeparateStatus()
 	m_bSeparatedNewShape = GetAsyncKeyState(VK_SHIFT);
 }
 }
-

@@ -56,7 +56,9 @@
 #include "Utility/AttachmentUtils.h"
 #include <CryMovie/IMovieSystem.h>
 
+#ifdef RECSYS_DEBUG
 static AUTOENUM_BUILDNAMEARRAY(s_thirdPersonPacketList, ThirdPersonPacketList);
+#endif
 const char* NIGHT_VISION_PE = "NightVision_Active";
 
 // --------------------------------------------------------------------------------
@@ -74,7 +76,7 @@ void CRecordingSystem::FirstPersonDiscardingPacketStatic(SRecording_Packet* ps, 
 	if (!s_savingHighlightsGuard && ageOfPacket < maxBufferTimeRequired && ((CRecordingSystem*)inUserData)->IsRecordingAndNotPlaying())
 	{
 		RecSysLog("FirstPersonDiscardingPacketStatic(), shouldn't be discarding yet, must have run out of memory");
-		CRY_ASSERT_MESSAGE(false, "Recording first person buffer is out of memory, please tell Pete");
+		CRY_ASSERT(false, "Recording first person buffer is out of memory, please tell Pete");
 	}
 }
 
@@ -90,7 +92,7 @@ void CRecordingSystem::DiscardingPacket(SRecording_Packet* packet, float recorde
 	if (!s_savingHighlightsGuard && ageOfPacket < maxBufferTimeRequired && IsRecordingAndNotPlaying())
 	{
 		RecSysLog("DiscardingPacket(), shouldn't be discarding yet, must have run out of memory");
-		CRY_ASSERT_MESSAGE(false, "Recording third person buffer is out of memory, please tell Pete");
+		CRY_ASSERT(false, "Recording third person buffer is out of memory, please tell Pete");
 	}
 #endif //RECSYS_DEBUG
 
@@ -193,7 +195,7 @@ void CRecordingSystem::DiscardingPacket(SRecording_Packet* packet, float recorde
 			//{
 			//	m_recordedData.m_discardedSounds[pPlaySound->soundId] = std::make_pair(*pPlaySound, recordedTime);
 			//	RecSysLogDebug(eRSD_Sound, "Recording discarded looping sounds: %d, %s. num discarded: %" PRISIZE_T, pPlaySound->soundId, pPlaySound->szName, m_recordedData.m_discardedSounds.size());
-			//	CRY_ASSERT_MESSAGE(m_recordedData.m_discardedSounds.size() < 64, "We have recorded a lot of discarded looping sounds without stopping them, something may have gone wrong here");
+			//	CRY_ASSERT(m_recordedData.m_discardedSounds.size() < 64, "We have recorded a lot of discarded looping sounds without stopping them, something may have gone wrong here");
 			//}
 		}
 		break;
@@ -761,7 +763,7 @@ void CRecordingSystem::Init(XmlNodeRef root)
 				else
 				{
 					RecSysLogAlways("Could not find class: %s", name);
-					CRY_ASSERT_MESSAGE(false, "Could not find class.");
+					CRY_ASSERT(false, "Could not find class.");
 				}
 			}
 		}
@@ -1157,7 +1159,7 @@ void CRecordingSystem::GetTPCameraData(float startTime)
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "The first packet in the buffer should always be of type eRBPT_FrameData");
+			CRY_ASSERT(false, "The first packet in the buffer should always be of type eRBPT_FrameData");
 		}
 		m_pBuffer->RemoveFrame();
 	}
@@ -1190,7 +1192,7 @@ size_t CRecordingSystem::GetFirstPersonDataForTimeRange(uint8** data, float from
 			{
 				memcpy(m_firstPersonSendBuffer + datasize, pPacket, pPacket->size);
 				datasize += pPacket->size;
-				CRY_ASSERT_MESSAGE(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
+				CRY_ASSERT(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
 			}
 		}
 		offset += pPacket->size;
@@ -1205,7 +1207,7 @@ size_t CRecordingSystem::GetFirstPersonDataForTimeRange(uint8** data, float from
 		{
 			memcpy(m_firstPersonSendBuffer + datasize, pPacket, pPacket->size);
 			datasize += pPacket->size;
-			CRY_ASSERT_MESSAGE(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
+			CRY_ASSERT(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
 		}
 		offset += pPacket->size;
 	}
@@ -1276,7 +1278,7 @@ size_t CRecordingSystem::GetVictimDataForTimeRange(uint8** data, EntityId victim
 				{
 					memcpy(m_firstPersonSendBuffer + datasize, pPacket, pPacket->size);
 					datasize += pPacket->size;
-					CRY_ASSERT_MESSAGE(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
+					CRY_ASSERT(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
 					break;
 				}
 			}
@@ -1290,7 +1292,7 @@ size_t CRecordingSystem::GetVictimDataForTimeRange(uint8** data, EntityId victim
 		packet.timeOffset = timeOffset;
 		memcpy(m_firstPersonSendBuffer + datasize, &packet, packet.size);
 		datasize += packet.size;
-		CRY_ASSERT_MESSAGE(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
+		CRY_ASSERT(datasize < sizeof(m_firstPersonSendBuffer), "Ran out of memory in m_firstPersonSendBuffer");
 	}
 	*data = m_firstPersonSendBuffer;
 
@@ -1360,7 +1362,7 @@ void CRecordingSystem::ExtractVictimPositions(CryFixedArray<SRecording_VictimPos
 
 /*static*/ void CRecordingSystem::SetFirstPersonData(uint8* data, size_t datasize, SPlaybackInstanceData& rPlaybackInstanceData, SFirstPersonDataContainer& rFirstPersonDataContainer)
 {
-	CRY_ASSERT_MESSAGE(datasize <= sizeof(rFirstPersonDataContainer.m_firstPersonData), "Ran out of memory in m_firstPersonData");
+	CRY_ASSERT(datasize <= sizeof(rFirstPersonDataContainer.m_firstPersonData), "Ran out of memory in m_firstPersonData");
 
 #ifdef RECSYS_DEBUG
 	maxFirstPersonDataSeen = max(maxFirstPersonDataSeen, datasize);
@@ -1385,7 +1387,7 @@ void CRecordingSystem::ExtractVictimPositions(CryFixedArray<SRecording_VictimPos
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "The first packet in the first person data buffer should be of type eFPP_FPChar");
+			CRY_ASSERT(false, "The first packet in the first person data buffer should be of type eFPP_FPChar");
 		}
 	}
 
@@ -1517,11 +1519,10 @@ bool CRecordingSystem::QueueStartPlayback(const SPlaybackRequest& request)
 
 	RecSysLogFunc;
 
-	IEntity* pKiller = gEnv->pEntitySystem->GetEntity(request.kill.killerId);
-
 #if defined(RECSYS_DEBUG)
 	if (!request.highlights)
 	{
+		IEntity* pKiller = gEnv->pEntitySystem->GetEntity(request.kill.killerId);
 		IEntity* pVictim = gEnv->pEntitySystem->GetEntity(request.kill.victimId);
 
 		const char* killerName = pKiller ? pKiller->GetName() : "unknown";
@@ -2373,7 +2374,7 @@ void CRecordingSystem::ApplyWeaponSelect(const SRecording_WeaponSelect* weaponSe
 		else
 		{
 			RecSysLog("ApplyWeaponSelect Unable to select weapon, replay weapon with id %d not found! ownerId = %d, isRippedOff = %d", weaponSelect->weaponId, weaponSelect->ownerId, (int)weaponSelect->isRippedOff);
-			CRY_ASSERT_MESSAGE(false, "Unable to select weapon, replay weapon not found");
+			CRY_ASSERT(false, "Unable to select weapon, replay weapon not found");
 		}
 	}
 }
@@ -2739,9 +2740,6 @@ void CRecordingSystem::OnPlaybackStart(void)
 
 			m_playInfo.m_timings.ApplyOffset(GetPlaybackTimeOffset());
 
-#ifdef RECSYS_DEBUG
-			float liveBufferLength = GetLiveBufferLenSeconds();
-#endif //RECSYS_DEBUG
 			if (!m_highlightsReel)
 			{
 				GetTPCameraData(m_playInfo.m_timings.recStart);
@@ -2857,7 +2855,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 									{
 										if (ISkeletonAnim* pAnim = pChar->GetISkeletonAnim())
 										{
-											if (ISkeletonPose* pPose = pChar->GetISkeletonPose())
+											if (pChar->GetISkeletonPose() != nullptr)
 											{
 												int32 numJoints = corpse.m_numJoints;
 												IAnimationOperatorQueuePtr poseModifier;
@@ -2925,7 +2923,6 @@ void CRecordingSystem::OnPlaybackStart(void)
 			// Takes 22ms
 			static IEntityClass* pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("ReplayActor");
 			assert(pEntityClass);
-			int killerTeam = pGameRules->GetTeam(m_killer);
 
 			for (int i = 0; i < MAX_RECORDED_PLAYERS; ++i)
 			{
@@ -2944,7 +2941,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 					params.vPosition.Set(0.f, 0.f, 0.f);
 					params.qRotation.SetIdentity();
 
-					params.nFlags |= (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+					params.nFlags |= ENTITY_FLAG_CLIENT_ONLY;
 
 					IEntity* pCloneEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 					if (pCloneEntity)
@@ -3006,7 +3003,7 @@ void CRecordingSystem::OnPlaybackStart(void)
 							int rank = (int) initialState.playerJoined.rank;
 							int reincarnations = (int) initialState.playerJoined.reincarnations;
 
-							class IActionController* pActionController = NULL;
+							IActionController* pActionController = NULL;
 							// Setup the replay actor's data.
 							{
 								CReplayActor* pReplayActor = GetReplayActor(cloneEntityId, false);
@@ -3376,14 +3373,14 @@ void CRecordingSystem::FillOutFPCamera(SRecording_FPChar* cam, float playbacktim
 	int loweroffset = upperoffset - 1;
 	if (loweroffset >= 0)
 	{
-		CRY_ASSERT_MESSAGE(pFPCharData[loweroffset].type == eFPP_FPChar, "This packet type is not valid");
-		CRY_ASSERT_MESSAGE(pFPCharData[upperoffset].type == eFPP_FPChar, "This packet type is not valid");
+		CRY_ASSERT(pFPCharData[loweroffset].type == eFPP_FPChar, "This packet type is not valid");
+		CRY_ASSERT(pFPCharData[upperoffset].type == eFPP_FPChar, "This packet type is not valid");
 
 		float loweroffsettime = pFPCharData[loweroffset].frametime - m_PlaybackInstanceData.m_remoteStartTime;
 		float upperoffsettime = pFPCharData[upperoffset].frametime - m_PlaybackInstanceData.m_remoteStartTime;
 		float timediff = upperoffsettime - loweroffsettime;
 
-		CRY_ASSERT_MESSAGE(timediff != 0, "The time difference must not be 0");
+		CRY_ASSERT(timediff != 0, "The time difference must not be 0");
 		float lerpval = clamp_tpl((playbacktime - loweroffsettime) / timediff, 0.f, 1.f);
 
 		cam->camlocation.SetNLerp(pFPCharData[loweroffset].camlocation, pFPCharData[upperoffset].camlocation, lerpval);
@@ -3427,14 +3424,14 @@ bool CRecordingSystem::GetVictimPosition(float playbackTime, Vec3& victimPositio
 	int loweroffset = upperoffset - 1;
 	if (loweroffset >= 0)
 	{
-		CRY_ASSERT_MESSAGE(pVictimData[loweroffset].type == eFPP_VictimPosition, "This packet type is not valid");
-		CRY_ASSERT_MESSAGE(pVictimData[upperoffset].type == eFPP_VictimPosition, "This packet type is not valid");
+		CRY_ASSERT(pVictimData[loweroffset].type == eFPP_VictimPosition, "This packet type is not valid");
+		CRY_ASSERT(pVictimData[upperoffset].type == eFPP_VictimPosition, "This packet type is not valid");
 
 		float loweroffsettime = pVictimData[loweroffset].frametime - m_PlaybackInstanceData.m_remoteStartTime;
 		float upperoffsettime = pVictimData[upperoffset].frametime - m_PlaybackInstanceData.m_remoteStartTime;
 		float timediff = upperoffsettime - loweroffsettime;
 
-		CRY_ASSERT_MESSAGE(timediff != 0, "The time difference must not be 0");
+		CRY_ASSERT(timediff != 0, "The time difference must not be 0");
 		float lerpval = clamp_tpl((playbackTime - loweroffsettime) / timediff, 0.f, 1.f);
 
 		victimPosition.SetLerp(pVictimData[loweroffset].victimPosition, pVictimData[upperoffset].victimPosition, lerpval);
@@ -3546,7 +3543,7 @@ void CRecordingSystem::PlaybackRecordedFirstPersonActions(float playbacktime)
 			}
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(false, "Unrecognised packet type found");
+			CRY_ASSERT(false, "Unrecognised packet type found");
 			break;
 		}
 		if (packetProcessed)
@@ -3573,7 +3570,6 @@ void CRecordingSystem::DropTPFrame()
 
 		if (packet->type == eRBPT_FrameData)
 		{
-			SRecording_FrameData* sfd = (SRecording_FrameData*) startingplace;
 			frame++;
 			if (frame == 2)
 			{
@@ -3654,7 +3650,7 @@ void CRecordingSystem::QueueAddPacket(const SRecording_Packet& packet)
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Ran out of memory queueing packets");
+			CRY_ASSERT(false, "Ran out of memory queueing packets");
 		}
 	}
 }
@@ -4028,7 +4024,7 @@ void CRecordingSystem::UpdateBulletPosition()
 			params.vPosition = m_bulletOrigin;
 			params.qRotation = m_bulletOrientation * Quat::CreateRotationZ(gf_PI);
 
-			params.nFlags |= (ENTITY_FLAG_NEVER_NETWORK_STATIC | ENTITY_FLAG_CLIENT_ONLY);
+			params.nFlags |= ENTITY_FLAG_CLIENT_ONLY;
 
 			IEntity* pBulletEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 			pBulletEntity->LoadGeometry(0, m_bulletGeometryName);
@@ -4266,7 +4262,7 @@ void CRecordingSystem::UpdatePlayback(const float frameTime)
 
 void CRecordingSystem::InterpolateRecordedPositions(float frameTime, float playbackTime, float lerpValue) PREFAST_SUPPRESS_WARNING(6262)
 {
-	CRY_ASSERT_MESSAGE(lerpValue >= 0.f && lerpValue <= 1.f, "Lerp value should be between 0 and 1");
+	CRY_ASSERT(lerpValue >= 0.f && lerpValue <= 1.f, "Lerp value should be between 0 and 1");
 
 	int frameCount = -1;
 	uint8* startingplace = m_pTPDataBuffer;
@@ -4609,7 +4605,7 @@ float CRecordingSystem::PlaybackRecordedFrame(float frameTime)
 			}
 		default:
 			{
-				CRY_ASSERT_MESSAGE(false, "KillCam replay unrecognised packet type");
+				CRY_ASSERT(false, "KillCam replay unrecognised packet type");
 				break;
 			}
 		}
@@ -4880,7 +4876,7 @@ void CRecordingSystem::UpdateView(SViewParams& viewParams)
 				}
 				break;
 			default:
-				CRY_ASSERT_MESSAGE(false, "Unrecognised bullet time phase");
+				CRY_ASSERT(false, "Unrecognised bullet time phase");
 				break;
 			}
 		}
@@ -5220,7 +5216,7 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar* tpchar
 		bool isCloaked = ((tpchar->playerFlags & eTPF_Cloaked) != 0);
 		bool fade = true;
 
-		IEntityRender* pIEntityRender = (pReplayEntity->GetRenderInterface());
+		//IEntityRender* pIEntityRender = (pReplayEntity->GetRenderInterface());
 
 		{
 			//pIEntityRender->SetEffectLayerParams( tpchar->layerEffectParams );
@@ -5386,7 +5382,7 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn* entitySpaw
 	if (entitySpawn->entityId == 0 || m_replayEntities.count(entitySpawn->entityId) > 0)
 	{
 		// Don't spawn the same entity twice
-		CRY_ASSERT_MESSAGE(entitySpawn->entityId == 0, "CRecordingSystem::ApplyEntitySpawn Shouldn't be trying to spawn the same entity twice!");
+		CRY_ASSERT(entitySpawn->entityId == 0, "CRecordingSystem::ApplyEntitySpawn Shouldn't be trying to spawn the same entity twice!");
 		return;
 	}
 
@@ -5464,7 +5460,7 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn* entitySpaw
 					int length = strlen(entitySpawn->szCharacterSlot[i]);
 					const char* pExtension = entitySpawn->szCharacterSlot[i] + length - 3;
 					bool validString = (stricmp(pExtension, "cga") == 0 || stricmp(pExtension, "cdf") == 0 || stricmp(pExtension, "chr") == 0);
-					CRY_ASSERT_MESSAGE(validString, "The string appears to be corrupt (please tell martinsh)");
+					CRY_ASSERT(validString, "The string appears to be corrupt (please tell martinsh)");
 #endif
 					pEntity->LoadCharacter(i, entitySpawn->szCharacterSlot[i]);
 				}
@@ -5983,7 +5979,7 @@ void CRecordingSystem::RecordEntitySpawnGeometry(SRecording_EntitySpawn* pEntity
 			const float fScaleZSqr = slotInfo.pLocalTM->GetColumn2().GetLengthSquared();
 			if (fabsf(1.f - fScaleXSqr) > 0.001f && fabsf(fScaleXSqr - fScaleYSqr) < 0.001f && fabsf(fScaleXSqr - fScaleZSqr) < 0.001f)
 			{
-				CRY_ASSERT_MESSAGE(currentScaling != eS_NotScaled, "A previous slot has no scaling, but this one does!");
+				CRY_ASSERT(currentScaling != eS_NotScaled, "A previous slot has no scaling, but this one does!");
 
 				if (currentScaling == eS_INVALID)
 				{
@@ -5994,12 +5990,12 @@ void CRecordingSystem::RecordEntitySpawnGeometry(SRecording_EntitySpawn* pEntity
 				}
 				else if (currentScaling == eS_Scaled)
 				{
-					CRY_ASSERT_MESSAGE(fabsf(sqr(fFoundScale) - fScaleXSqr) < 0.001f, "More than one different scale being applied to entity slots");
+					CRY_ASSERT(fabsf(sqr(fFoundScale) - fScaleXSqr) < 0.001f, "More than one different scale being applied to entity slots");
 				}
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(currentScaling == eS_NotScaled || currentScaling == eS_INVALID, "Non scaled slot on the same render proxy as a scaled slot");
+				CRY_ASSERT(currentScaling == eS_NotScaled || currentScaling == eS_INVALID, "Non scaled slot on the same render proxy as a scaled slot");
 				currentScaling = eS_NotScaled;
 			}
 		}
@@ -6018,7 +6014,7 @@ void CRecordingSystem::RecordEntitySpawnGeometry(SRecording_EntitySpawn* pEntity
 	if (!geometryFound && m_validWithNoGeometry.count(pEntitySpawn->pClass) == 0)
 	{
 		RecSysLog("Tried to record geometry spawn for class[%s]. If this class can validly contain no geometry, please add it to the \"NoGeometryValid\" block in KillCam.xml", pEntitySpawn->pClass->GetName());
-		CRY_ASSERT_MESSAGE(false, "Neither a character nor a statobj found in the entity.");
+		CRY_ASSERT(false, "Neither a character nor a statobj found in the entity.");
 	}
 #endif
 }
@@ -6056,7 +6052,6 @@ void CRecordingSystem::RecordWeaponAccessories()
 		CItem* pItem = (CItem*)g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(*itEntity);
 		if (pItem)
 		{
-			IEntity* pEntity = pItem->GetEntity();
 			RecordWeaponAccessories(pItem);
 		}
 	}
@@ -6253,7 +6248,7 @@ void CRecordingSystem::RecordParticleInfo()
 
 bool CRecordingSystem::OnBeforeSpawn(SEntitySpawnParams& params)
 {
-	CRY_ASSERT_MESSAGE(false, "Shouldn't be getting these events");
+	CRY_ASSERT(false, "Shouldn't be getting these events");
 	return true;
 }
 
@@ -6310,7 +6305,7 @@ bool CRecordingSystem::OnRemove(IEntity* pEntity)
 
 void CRecordingSystem::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 {
-	CRY_ASSERT_MESSAGE(false, "CRecordingSystem::OnReused needs implementing");
+	CRY_ASSERT(false, "CRecordingSystem::OnReused needs implementing");
 }
 
 void CRecordingSystem::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
@@ -6554,7 +6549,7 @@ void CRecordingSystem::OnItemSwitchToHand(CItem* pItem, int hand)
 //									if (soundParameters.numParameters >= MAX_SOUND_PARAMETERS)
 //									{
 //										float val = 0.f;
-//										CRY_ASSERT_MESSAGE(!pSound->GetParam(MAX_SOUND_PARAMETERS, &val), "Sound has too many parameters");
+//										CRY_ASSERT(!pSound->GetParam(MAX_SOUND_PARAMETERS, &val), "Sound has too many parameters");
 //										break;
 //									}
 //								}
@@ -6861,7 +6856,7 @@ void CRecordingSystem::OnBattleChatter(EBattlechatter chatter, EntityId actorId,
 void CRecordingSystem::DebugDrawAnimationData(void)
 {
 	// TODO: Implement me, this is only used for debugging purposes though...
-	CRY_ASSERT_MESSAGE(false, "This function has not been implemented yet");
+	CRY_ASSERT(false, "This function has not been implemented yet");
 #if 0
 	const float FONT_SIZE = 1.0f;
 	const float FONT_COLOUR[4] = { 0.0f, 1.0f, 1.0f, 1.0f };
@@ -6935,7 +6930,7 @@ void CRecordingSystem::DebugDrawMemoryUsage()
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "Unrecognised packet type in recording buffer");
+				CRY_ASSERT(false, "Unrecognised packet type in recording buffer");
 			}
 			if (itPacket->type == eRBPT_FrameData)
 			{
@@ -7096,8 +7091,8 @@ void CRecordingSystem::SwapFPCameraEndian(uint8* pBuffer, size_t size, bool send
 				// If we are receiving the data then the packet size must be accessed after swapping
 				packetSize = pPacket->size;
 			}
-			CRY_ASSERT_MESSAGE(packetSize <= 255, "Packet size is larger than expected, has something gone wrong with endian swapping?");
-			CRY_ASSERT_MESSAGE(packetSize != 0, "Packet size is zero, the buffer is corrupt?");
+			CRY_ASSERT(packetSize <= 255, "Packet size is larger than expected, has something gone wrong with endian swapping?");
+			CRY_ASSERT(packetSize != 0, "Packet size is zero, the buffer is corrupt?");
 			switch (pPacket->type)
 			{
 			case eFPP_FPChar:
@@ -7164,7 +7159,7 @@ void CRecordingSystem::SwapFPCameraEndian(uint8* pBuffer, size_t size, bool send
 					break;
 				}
 			default:
-				CRY_ASSERT_MESSAGE(false, "Unhandled packet type");
+				CRY_ASSERT(false, "Unhandled packet type");
 			}
 			pPos += packetSize;
 		}
@@ -7296,7 +7291,7 @@ void CRecordingSystem::ApplyPlaySound(const SRecording_PlaySound* pPlaySound, fl
 	//		if (pEntity)
 	//		{
 	//			IEntityAudioComponent* pIEntityAudioComponent = pEntity->GetOrCreateComponent<IEntityAudioComponent>();
-	//			CRY_ASSERT_MESSAGE(pIEntityAudioComponent.get(), "Failed to create sound proxy");
+	//			CRY_ASSERT(pIEntityAudioComponent.get(), "Failed to create sound proxy");
 	//			if(pIEntityAudioComponent)
 	//			{
 	//				pIEntityAudioComponent->PlaySound(pSound);
@@ -7369,15 +7364,14 @@ void CRecordingSystem::ApplyBattleChatter(const SRecording_BattleChatter* pPacke
 				TReplayActorMap::iterator itReplayActor = m_replayActors.find(actorId);
 				if (itReplayActor != m_replayActors.end())
 				{
-					const float currentTime = gEnv->pTimer->GetCurrTime();
-					CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
+					/*CActor* pActor = static_cast<CActor*>(gEnv->pGameFramework->GetIActorSystem()->GetActor(actorId));
 
 					int killerTeam = -1;
 					CReplayActor* pKillerReplayActor = GetReplayActor(m_killer, true);
 					if (pKillerReplayActor)
 					{
 						killerTeam = pKillerReplayActor->GetTeam();
-					}
+					}*/
 
 					REINST("needs verification!");
 					//pBattleChatter->Play(pInfo, (EBattlechatter)pPacket->chatterType, pActor, itReplayActor->second, currentTime, eSoundSemantic_Replay, ((int)pPacket->chatterVariation)-1, killerTeam);
@@ -7447,7 +7441,7 @@ const char* CRecordingSystem::CacheString(const char* name, eStringCache cache)
 		else
 		{
 			RecSysLog("CacheString() ran out of memory in the string cache trying to save '%s'", name);
-			CRY_ASSERT_MESSAGE(false, "Ran out of memory in the string cache");
+			CRY_ASSERT(false, "Ran out of memory in the string cache");
 			return NULL;
 		}
 	}
@@ -7721,7 +7715,7 @@ void CRecordingSystem::ApplyObjectCloakSync(const SRecording_ObjectCloakSync* pO
 	IEntity* pCloakSlave = GetReplayEntity(pObjectCloakSync->cloakObjectId);
 	if (pCloakSlave && pCloakMasterActor)
 	{
-		IEntity* pCloakMaster = pCloakMasterActor->GetEntity();
+		//IEntity* pCloakMaster = pCloakMasterActor->GetEntity();
 
 		// Grab render proxies
 		IEntityRender* pCloakSlaveRP = (pCloakSlave->GetRenderInterface());
@@ -7739,7 +7733,7 @@ void CRecordingSystem::ApplyObjectCloakSync(const SRecording_ObjectCloakSync* pO
 		}
 		else
 		{
-			IEntityRender* pCloakMasterRP = (pCloakMaster->GetRenderInterface());
+			//IEntityRender* pCloakMasterRP = (pCloakMaster->GetRenderInterface());
 			//const float cloakBlendSpeedScale		= pCloakMasterRP->GetCloakBlendTimeScale();
 			//const bool  bFadeByDistance				= pCloakMasterRP->DoesCloakFadeByDistance();
 			//const uint8 colorChannel			    = pCloakMasterRP->GetCloakColorChannel();
@@ -8017,7 +8011,7 @@ void CRecordingSystem::OnMannequinSetSlaveController(EntityId inMasterActorId, E
 		SRecording_MannSetSlaveController mannSetSlaveControllerPacket;
 		mannSetSlaveControllerPacket.masterActorId = inMasterActorId;
 		mannSetSlaveControllerPacket.slaveActorId = inSlaveActorId;
-		CRY_ASSERT_MESSAGE(inTargetContext < 256, "targetContext is stored in a u8 in killcam, yet the targetContext being set is out of range!");
+		CRY_ASSERT(inTargetContext < 256, "targetContext is stored in a u8 in killcam, yet the targetContext being set is out of range!");
 		mannSetSlaveControllerPacket.targetContext = static_cast<uint8>(inTargetContext);
 		mannSetSlaveControllerPacket.enslave = inEnslave;
 		if (piOptionalDatabase)
@@ -8407,7 +8401,7 @@ void CRecordingSystem::SaveHighlight(const SRecordedKill& details, const int ind
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "The first packet in the buffer should always be of type eRBPT_FrameData");
+			CRY_ASSERT(false, "The first packet in the buffer should always be of type eRBPT_FrameData");
 		}
 		m_pBuffer->RemoveFrame();
 	}

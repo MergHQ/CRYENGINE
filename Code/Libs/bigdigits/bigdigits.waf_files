@@ -1,17 +1,15 @@
 {
-	"NoUberFile": 
-	{
-		"Root":
-		[
-			"../../SDKs/BigDigits/bigd.c",
-			"../../SDKs/BigDigits/bigdigits.c",
-			"../../SDKs/BigDigits/bigdRand.c",
-			"../../SDKs/BigDigits/spBigdigits.c",
-			"../../SDKs/BigDigits/spRandom.c",
-			"../../SDKs/BigDigits/bigd.h",
-			"../../SDKs/BigDigits/bigdigits.h",
-			"../../SDKs/BigDigits/bigdRand.h",
-			"../../SDKs/BigDigits/spRandom.h"
-		]
-	}
+    "NoUberFile": {
+        "Root": [
+            "../../SDKs/BigDigits/bigd.c",
+            "../../SDKs/BigDigits/bigdigits.c",
+            "../../SDKs/BigDigits/bigdRand.c",
+            "../../SDKs/BigDigits/spBigdigits.c",
+            "../../SDKs/BigDigits/spRandom.c",
+            "../../SDKs/BigDigits/bigd.h",
+            "../../SDKs/BigDigits/bigdigits.h",
+            "../../SDKs/BigDigits/bigdRand.h",
+            "../../SDKs/BigDigits/spRandom.h"
+        ]
+    }
 }

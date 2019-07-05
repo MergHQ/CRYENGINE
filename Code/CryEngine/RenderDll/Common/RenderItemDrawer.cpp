@@ -3,8 +3,6 @@
 #include "StdAfx.h"
 #include "RenderView.h"
 
-#include "DriverD3D.h"
-
 #include "GraphicsPipeline/ShadowMap.h"
 #include "CompiledRenderObject.h"
 
@@ -28,32 +26,38 @@ void DrawCompiledRenderItemsToCommandList(
 	CRY_ASSERT(startRenderItem >= pInputPassContext->rendItems.start && endRenderItem <= pInputPassContext->rendItems.end);
 
 	const SGraphicsPipelinePassContext &passContext = *pInputPassContext;
-	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start;
-	const bool shouldIssueEndTimeStamp = endRenderItem == passContext.rendItems.end;
+	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start && (passContext.type != GraphicsPipelinePassType::resolve);
+	const bool shouldIssueEndTimeStamp   = endRenderItem   == passContext.rendItems.end   && (passContext.type != GraphicsPipelinePassType::resolve);
+
+#if defined(ENABLE_PROFILING_CODE)
 	CTimeValue deltaTimestamp(0LL);
+#endif
 
 	// Prepare command list
 	commandList->Reset();
 
 	// Start profile section
 #if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
+	#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	{
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, true, 0, 0, shouldIssueStartTimeStamp, deltaTimestamp, commandList);
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(
+			passContext.profilerSectionIndex, true, 0,
+			0, shouldIssueStartTimeStamp, deltaTimestamp, commandList);
 		deltaTimestamp = gEnv->pTimer->GetAsyncTime();
 	}
+	#endif
 
 	commandList->BeginProfilingSection();
 #endif
 
 	if (shouldIssueStartTimeStamp)
-		commandList->GetGraphicsInterface()->BeginProfilerEvent(passContext.pSceneRenderPass->GetLabel());
+		commandList->GetGraphicsInterface()->BeginProfilerEvent(passContext.groupLabel.c_str());
 
 	// Execute pass
 	if (passContext.type == GraphicsPipelinePassType::resolve)
 	{
 		// Resolve pass
-		passContext.pSceneRenderPass->ResolvePass(*commandList, passContext.resolveScreenBounds);
+		passContext.pSceneRenderPass->ResolvePass(*passContext.pRenderView->GetGraphicsPipeline().get(), *commandList, passContext.resolveScreenBounds);
 	}
 	else
 	{
@@ -61,8 +65,8 @@ void DrawCompiledRenderItemsToCommandList(
 		passContext.pSceneRenderPass->BeginRenderPass(*commandList, passContext.renderNearest); 
 
 		// Allow only compiled objects to actually draw
-		const uint32 alwaysRequiredFlags = FB_COMPILED_OBJECT;
-		const uint32 batchExcludeFilter = passContext.batchExcludeFilter | alwaysRequiredFlags;
+		const uint32 batchExcludeFilter = passContext.batchExcludeFilter;
+		const uint32 batchIncludeFilter = passContext.batchIncludeFilter | FB_COMPILED_OBJECT;
 
 		static const int cDynamicInstancingMaxCount = 128;
 		int dynamicInstancingCount = 0;
@@ -88,9 +92,9 @@ void DrawCompiledRenderItemsToCommandList(
 			}
 
 			const SRendItem& ri = (*renderItems)[i];
-			if ((ri.nBatchFlags & batchExcludeFilter) == alwaysRequiredFlags)
 			{
-				if (ri.nBatchFlags & passContext.batchFilter)
+				// If excludeFilter contains parts of includeFilter, it doesn't affect the result
+				if (SRendItem::TestIndividualBatchFlags(ri.nBatchFlags, batchIncludeFilter, batchExcludeFilter))
 				{
 					if (cvarInstancing && (i < e && dynamicInstancingCount < cDynamicInstancingMaxCount))
 					{
@@ -105,7 +109,8 @@ void DrawCompiledRenderItemsToCommandList(
 
 							// Look ahead to see if we can instance multiple sequential draw calls that have same draw parameters, with only difference in per instance constant buffer
 							const SRendItem& nextri = (*renderItems)[j];
-							if (nextri.nBatchFlags & (nextri.nBatchFlags & passContext.batchExcludeFilter ? 0 : passContext.batchFilter))
+							// If excludeFilter contains parts of includeFilter, it doesn't affect the result
+							if (SRendItem::TestIndividualBatchFlags(nextri.nBatchFlags, batchIncludeFilter, batchExcludeFilter))
 							{
 								if (ri.pCompiledObject->CheckDynamicInstancing(passContext, nextri.pCompiledObject))
 								{
@@ -152,17 +157,19 @@ void DrawCompiledRenderItemsToCommandList(
 
 	// End profile section
 	if (shouldIssueEndTimeStamp)
-		commandList->GetGraphicsInterface()->EndProfilerEvent(passContext.pSceneRenderPass->GetLabel());
+		commandList->GetGraphicsInterface()->EndProfilerEvent(passContext.groupLabel.c_str());
 
 #if defined(ENABLE_PROFILING_CODE)
-	if (gcpRendD3D->m_pPipelineProfiler)
+	#if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	{
 		deltaTimestamp = gEnv->pTimer->GetAsyncTime() - deltaTimestamp;
-		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(passContext.profilerSectionIndex, false, commandList->EndProfilingSection().numDIPs,
+		gcpRendD3D->m_pPipelineProfiler->UpdateMultithreadedSection(
+			passContext.profilerSectionIndex, false, commandList->EndProfilingSection().numDIPs,
 			commandList->EndProfilingSection().numPolygons, shouldIssueEndTimeStamp, deltaTimestamp, commandList);
 	}
+	#endif
 
-	gcpRendD3D->AddRecordedProfilingStats(commandList->EndProfilingSection(), passContext.pSceneRenderPass->GetRenderList(), true);
+	gcpRendD3D->AddRecordedProfilingStats(commandList->EndProfilingSection(), passContext.recordListId, true);
 #endif
 }
 
@@ -215,12 +222,6 @@ void CRenderItemDrawer::DrawCompiledRenderItems(const SGraphicsPipelinePassConte
 {
 	if (passContext.type == GraphicsPipelinePassType::renderPass && passContext.rendItems.IsEmpty())
 		return;
-	if (CRenderer::CV_r_NoDraw == 2) // Completely skip filling of the command list.
-		return;
-
-	const bool bAllowRenderNearest = CRenderer::CV_r_nodrawnear == 0;
-	if (!bAllowRenderNearest && passContext.renderNearest)
-		return;
 
 	PROFILE_FRAME(DrawCompiledRenderItems);
 
@@ -261,7 +262,6 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 	if (numItems == 0)
 		return;
 
-#if (CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_GNM || CRY_RENDERER_VULKAN
 	if (!CRenderer::CV_r_multithreadedDrawing)
 		bForceImmediateExecution = true;
 
@@ -311,7 +311,6 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 	}
 
 	if (bForceImmediateExecution)
-#endif
 	{
 		pCursor = pStart;
 		while (pCursor != pEnd)
@@ -337,12 +336,10 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 
 void CRenderItemDrawer::WaitForDrawSubmission()
 {
-#if (CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_GNM || CRY_RENDERER_VULKAN
 	if (CRenderer::CV_r_multithreadedDrawing == 0)
 		return;
 
 	CRY_PROFILE_FUNCTION_WAITING(PROFILE_RENDERER)
 
 	m_CoalescedContexts.WaitForJobs();
-#endif
 }

@@ -1,26 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ISurfaceType.h
-//  Version:     v1.00
-//  Created:     30/9/2004 by Timur.
-//  Compilers:   Visual Studio.NET 2003
-//  Description: Defines interfaces to access Surface Types.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 //! Flags that ISurfaceType::GetFlags() can return.
-enum ESurfaceTypeFlags
+enum ESurfaceTypeFlags : uint32
 {
-	SURFACE_TYPE_NO_PHYSICALIZE         = BIT(1), //!< This surface should not be physicalized.
-	SURFACE_TYPE_NO_COLLIDE             = BIT(2), //!< Should only be set for vegetation canopy mats.
-	SURFACE_TYPE_VEHICLE_ONLY_COLLISION = BIT(3),
-	SURFACE_TYPE_CAN_SHATTER            = BIT(4), //!< This surface type can shatter.
-	SURFACE_TYPE_BULLET_PIERCEABLE      = BIT(5), //!< This surface is pierceable by bullets (used by MFX system to spawn front/back FX).
+	SURFACE_TYPE_NO_PHYSICALIZE         = BIT32(1), //!< This surface should not be physicalized.
+	SURFACE_TYPE_NO_COLLIDE             = BIT32(2), //!< Should only be set for vegetation canopy mats.
+	SURFACE_TYPE_VEHICLE_ONLY_COLLISION = BIT32(3),
+	SURFACE_TYPE_CAN_SHATTER            = BIT32(4), //!< This surface type can shatter.
+	SURFACE_TYPE_BULLET_PIERCEABLE      = BIT32(5), //!< This surface is pierceable by bullets (used by MFX system to spawn front/back FX).
 };
 
 //! \cond INTERNAL
@@ -103,9 +92,9 @@ struct ISurfaceType
 		float  destroy_timeout;
 		float  destroy_timeout_spread;
 
-		SBreakable2DParams() : blast_radius(0), rigid_body(0), life_time(0), cell_size(0), max_patch_tris(0), shard_density(0), crack_decal_scale(0),
-			max_fracture(1.0f), vert_size_spread(0), filter_angle(0), use_edge_alpha(0), blast_radius_first(0), no_procedural_full_fracture(0),
-			destroy_timeout(0), destroy_timeout_spread(0) {}
+		SBreakable2DParams() : blast_radius(0), blast_radius_first(0), vert_size_spread(0), rigid_body(0), life_time(0), cell_size(0),
+			max_patch_tris(0), filter_angle(0), shard_density(0), use_edge_alpha(0), crack_decal_scale(0),
+			max_fracture(1.0f), no_procedural_full_fracture(0), destroy_timeout(0), destroy_timeout_spread(0) {}
 	};
 	struct SBreakageParticles
 	{
@@ -124,7 +113,7 @@ struct ISurfaceType
 	virtual void Release() = 0;
 
 	//! Return unique Id of this surface type.
-	//! Maximum of 65535 simultanious surface types can exist.
+	//! Maximum of 65535 simultaneous surface types can exist.
 	virtual uint16 GetId() const = 0;
 
 	//! Unique name of the surface type.
@@ -178,7 +167,7 @@ struct ISurfaceTypeEnumerator
 
 // Description:
 //    Manages loading and mapping of physical surface materials to Ids and materials scripts.
-// Behaviour:
+// Behavior:
 //    At start will enumerate all material names.
 //    When the surface is first time requested by name it will be loaded and cached
 //    and new unique id will be generated for it.

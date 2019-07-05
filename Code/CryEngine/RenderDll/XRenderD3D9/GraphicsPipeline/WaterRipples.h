@@ -9,7 +9,9 @@
 class CWaterRipplesStage : public CGraphicsPipelineStage
 {
 public:
-	CWaterRipplesStage();
+	static const EGraphicsPipelineStage StageID = eStage_WaterRipples;
+
+	CWaterRipplesStage(CGraphicsPipeline& graphicsPipeline);
 	~CWaterRipplesStage();
 
 	void Init() final;
@@ -90,6 +92,7 @@ private:
 	Vec4                          m_lookupParam;
 
 	bool                          m_bInitializeSim;
+	bool                          m_bGenerateRipples;
 	bool                          m_bSnapToCenter;
 
 	std::vector<SWaterRippleInfo> m_waterRipples;

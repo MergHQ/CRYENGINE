@@ -41,12 +41,12 @@
 
 CDXInput* CDXInput::This = 0;
 
-CDXInput::CDXInput(ISystem* pSystem, HWND hwnd) : CBaseInput()
+CDXInput::CDXInput(ISystem* pSystem) : CBaseInput()
 {
 	assert(!This && "CDXInput has been instantiated more than once");
 
 	m_bImeComposing = false;
-	m_hwnd = hwnd;
+	m_hwnd = pSystem->GetHWND();
 	m_pKeyboard = nullptr;
 	m_lastLayout = 0;
 	This = this;
@@ -82,9 +82,13 @@ bool CDXInput::Init()
 	m_lastLayout = GetKeyboardLayout(0);
 	if (!AddInputDevice(m_pKeyboard)) return false;
 
-	if (GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == NULL)
+	// check for mouse enabled & check confine ability (either not set or zero)
+	if (gEnv->pConsole->GetCVar("sys_NoMouse") == nullptr || gEnv->pConsole->GetCVar("sys_NoMouse")->GetIVal() == 0)
 	{
-		if (!AddInputDevice(new CMouse(*this))) return false;
+		if (!AddInputDevice(new CMouse(*this)))
+		{
+			return false;
+		}
 	}
 
 	// add xinput controllers devices
@@ -159,7 +163,7 @@ int CDXInput::ShowCursor(const bool bShow)
 	return ::ShowCursor(bShow);
 }
 
-bool CDXInput::HandleMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+bool CDXInput::HandleMessage(CRY_HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
 {
 	// Check for text input character
 	// Note: Text input is separate from "normal" input through CryInput

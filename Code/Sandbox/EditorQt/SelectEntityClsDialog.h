@@ -1,20 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __selectentityclsdialog_h__
-#define __selectentityclsdialog_h__
 #pragma once
-
-// CSelectEntityClsDialog dialog
 
 class CSelectEntityClsDialog : public CXTResizeDialog
 {
 	DECLARE_DYNAMIC(CSelectEntityClsDialog)
 
 public:
-	CSelectEntityClsDialog(CWnd* pParent = NULL);   // standard constructor
-	virtual ~CSelectEntityClsDialog();
+	CSelectEntityClsDialog(CWnd* pParent = nullptr);
 
-	string GetEntityClass() { return m_entityClass; };
+	string GetEntityClass() { return m_entityClass; }
 
 	// Dialog Data
 	enum { IDD = IDD_SELECT_ENTITY_CLASS };
@@ -30,10 +25,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 	CTreeCtrl m_tree;
-	CImageList                   m_imageList;
+	CImageList                  m_imageList;
 	string                      m_entityClass;
 	std::map<HTREEITEM, string> m_itemsMap;
 };
-
-#endif // __selectentityclsdialog_h__
-

@@ -9,15 +9,9 @@
 
 /* externally defined renderer-implementation toggles:
  *  CRY_RENDERER_DIRECT3D       110, 111, 120, 121, 122
- *  CRY_RENDERER_OPENGL         430, 440, 450
- *  CRY_RENDERER_OPENGLES       310
  *  CRY_RENDERER_GNM            40
  *  CRY_RENDERER_VULKAN         10
  *
- * Combinations trigger emulators:
- *  CRY_RENDERER_DIRECT3D + CRY_RENDERER_OPENGL  -> DirectX-API + Opengl implementation
- *
- * Combinations select special code paths:
  *  CRY_RENDERER_DIRECT3D + CRY_PLATFORM_DURANGO -> Durango-only Direct3D extensions
  *  CRY_RENDERER_DIRECT3D + USE_NV_API           -> Nvidia-only Direct3D extensions
  */
@@ -27,14 +21,29 @@
 	//#define RENDERER_ENABLE_LEGACY_PIPELINE
 #endif
 
-#if (defined(CRY_USE_GNM) || defined(CRY_USE_GNM_RENDERER) || defined(CRY_USE_DX12) || defined(OPENGL) || defined(VULKAN)) || \
-   !(defined(CRY_RENDERER_DIRECT3D) || defined(CRY_RENDERER_OPENGL) || defined(CRY_RENDERER_OPENGLES) || defined(CRY_RENDERER_GNM) || defined(CRY_RENDERER_VULKAN))
+
+/* Choice of rendering pipeline: 
+ * RENDERER_ENABLE_FULL_PIPELINE   - full rendering pipeline with all bells and whistles
+ * RENDERER_ENABLE_MOBILE_PIPELINE - reduced rendering pipeline with limited features for mobile
+ * Note that both pipelines can be enabled simultaneously and runtime-switched via r_GraphicsPipelineMobile cvar
+*/
+
+#if !CRY_PLATFORM_MOBILE
+	#define RENDERER_ENABLE_FULL_PIPELINE   1
+#else
+	#define RENDERER_ENABLE_MOBILE_PIPELINE 1
+#endif
+
+#if !RENDERER_ENABLE_FULL_PIPELINE && !RENDERER_ENABLE_MOBILE_PIPELINE
+	#error "Enable either full rendering pipeline or mobile rendering pipeline (or both)"
+#endif
+
+#if (defined(CRY_USE_GNM) || defined(CRY_USE_GNM_RENDERER) || defined(CRY_USE_DX12) || defined(VULKAN)) || \
+   !(defined(CRY_RENDERER_DIRECT3D) || defined(CRY_RENDERER_GNM) || defined(CRY_RENDERER_VULKAN))
      #error "Renderer-Type configuration has not been changed to the unified naming scheme!"
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && !((CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_VULKAN || CRY_RENDERER_GNM)
-	#define DX11_WRAPPABLE_INTERFACE	1
-
 	#if !defined(_RELEASE) // DO_RENDERLOG cannot be compiled in release configs for consoles
 		#define DO_RENDERLOG 1
 	#endif
@@ -87,8 +96,18 @@
 	#define CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS 0
 #endif
 
+#if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS && (CRY_RENDERER_DIRECT3D < 120) && !BUFFER_ENABLE_DIRECT_ACCESS
+	#define CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING 1
+#else
+	#define CONSTANT_BUFFER_ENABLE_ALLOCATOR_MAPPING 0
+#endif
+
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	#define DEVICE_SUPPORTS_PERFORMANCE_DEVICE
+	#define DEVICE_TEXTURE_STORE_OWNER 1
+#else
+	#undef  DEVICE_SUPPORTS_PERFORMANCE_DEVICE
+	#define DEVICE_TEXTURE_STORE_OWNER 0
 #endif
 
 #if CRY_PLATFORM_DURANGO
@@ -100,9 +119,6 @@
 #ifdef _DEBUG
 	#define CRTDBG_MAP_ALLOC
 #endif //_DEBUG
-
-#undef USE_STATIC_NAME_TABLE
-#define USE_STATIC_NAME_TABLE
 
 #if !defined(_RELEASE)
 	#define ENABLE_FRAME_PROFILER
@@ -182,13 +198,6 @@ enum EVerifyType
 
 #define MAX_REND_RECURSION_LEVELS 2
 
-#if CRY_RENDERER_OPENGL
-	#define OGL_ADAPT_CLIP_SPACE   1
-	#define OGL_FLIP_Y             1
-	#define OGL_MODIFY_PROJECTIONS !OGL_ADAPT_CLIP_SPACE
-	#define OGL_SINGLE_CONTEXT     1
-#endif
-
 #ifdef STRIP_RENDER_THREAD
 	#define m_nCurThreadFill    0
 	#define m_nCurThreadProcess 0
@@ -216,45 +225,33 @@ typedef void (*RenderFunc)(void);
 	#define EXCLUDE_SQUISH_SDK
 #endif
 
-#if USE_SDL2 && (CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS || CRY_PLATFORM_LINUX)
+#if defined(USE_SDL2) && (CRY_PLATFORM_ANDROID || CRY_PLATFORM_IOS || CRY_PLATFORM_LINUX)
 	#define USE_SDL2_VIDEO	1
 	#include <SDL.h>
-	#include <SDL_syswm.h>
 #endif
 
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#if CRY_PLATFORM_WINDOWS && CRY_RENDERER_DIRECT3D && !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES && !CRY_RENDERER_VULKAN
+#if CRY_PLATFORM_WINDOWS && CRY_RENDERER_DIRECT3D && !CRY_RENDERER_VULKAN
 // nv API
 	#if !defined(EXCLUDE_NV_API)
 		#define USE_NV_API 1
 		#define NV_API_HEADER "NVIDIA/NVAPI_r386/nvapi.h"
-
-		#if CRY_PLATFORM_64BIT
-			#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/amd64/nvapi64.lib"
-		#else
-			#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/x86/nvapi.lib"
-		#endif
+		#define NV_API_LIB "SDKs/NVIDIA/NVAPI_r386/amd64/nvapi64.lib"
 	#endif
 
 	// AMD EXT (DX11 only)
 	#if !defined(EXCLUDE_AMD_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		#define USE_AMD_API 1
 		#define AMD_API_HEADER "AMD/AGS Lib/inc/amd_ags.h"
-
-		#if CRY_PLATFORM_64BIT
-			#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x64.lib"
-		#else
-			#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x86.lib"
-		#endif
+		#define AMD_API_LIB "SDKs/AMD/AGS Lib/lib/amd_ags_x64.lib"
 	#endif
 #endif
 
-
 // SF implementation enabled
 #define RENDERER_SUPPORT_SCALEFORM 1
- 
+
 // windows desktop API available for usage
 #if CRY_PLATFORM_WINDOWS
 	#define WINDOWS_DESKTOP_API
@@ -269,21 +266,6 @@ typedef void (*RenderFunc)(void);
 //////////////////////////////////////////////////////////////////////////
 #if CRY_RENDERER_GNM
 	#include "XRenderD3D9/GNM/GnmBase.hpp"
-#elif CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES
-	#include <CryCore/Platform/CryLibrary.h>
-	#include <CryCore/Platform/CryWindows.h>
-	#include "XRenderD3D9/DXGL/CryDXGL.hpp"
-	#if CRY_PLATFORM_WINDOWS
-		typedef uintptr_t SOCKET;   // ../Common/Shaders/RemoteCompiler.h
-	#endif
-#elif CRY_PLATFORM_ORBIS
-	#if  (!defined(_RELEASE) || defined(PERFORMANCE_BUILD))
-		#define SUPPORT_HW_MOUSE_CURSOR
-	#endif
-
-	#include "XRenderD3D9/DXOrbis/CCryDXOrbisMisc.hpp"
-	#include "XRenderD3D9/DXOrbis/CCryDXOrbisRenderer.hpp"
-	#include "XRenderD3D9/DXOrbis/DXOrbisGI/CCryDXOrbisGI.hpp"
 #elif ((CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120))
 	#include <CryCore/Platform/CryLibrary.h>
 	#include <CryCore/Platform/CryWindows.h>
@@ -308,21 +290,21 @@ typedef void (*RenderFunc)(void);
 		#include <d3d11shader.h>
 		#include <d3dcompiler.h>
 
-		#define VIRTUALGFX virtual
-		#define FINALGFX final
+		#define VIRTUALGFX   virtual
+		#define FINALGFX     final
 		#define IID_GFX_ARGS IID_PPV_ARGS
 	#endif
 
-	#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_OPENGL
+	#if CRY_PLATFORM_WINDOWS
 		#include "d3d9.h" // includes <windows.h>
 	#endif
 
 	#if BUFFER_USE_STAGED_UPDATES == 0
-		namespace detail
-		{
-			template<typename T> inline void safe_release(T*& ptr) { SAFE_RELEASE(ptr); }
-			template<> inline void safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
-		}
+namespace detail
+{
+template<typename T> inline void safe_release(T*& ptr) { SAFE_RELEASE(ptr); }
+template<> inline void           safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
+}
 
 		// Call custom release-code for ID3D11Buffer on Durango by replacing SAFE_RELEASE()
 		#undef SAFE_RELEASE
@@ -359,6 +341,13 @@ typedef void (*RenderFunc)(void);
 	#endif
 
 	#include <vulkan/vulkan.h>
+#endif
+
+
+#if CRY_RENDERER_VULKAN > 10
+#if !VK_VERSION_1_1
+#error ("Included Vulkan header files are not supporting Vulkan 1.1.")
+#endif
 #endif
 
 // Internal numbers:  10|0   (three decimal digits)
@@ -400,12 +389,38 @@ typedef void (*RenderFunc)(void);
 	#if !defined(RELEASE) || defined(ENABLE_PROFILING_CODE)
 		#define USE_PIX_DURANGO 1
 	#endif
-#elif CRY_PLATFORM_WINDOWS
-	#include <pix_win.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////
 //#define Direct3D IDXGIAdapter
+
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	#define D3DReflection                     D3DReflectDXILorDXBC
+	#define IID_D3DShaderReflection           IID_ID3D12ShaderReflection
+	#define D3DShaderReflection               ID3D12ShaderReflection
+	#define D3DShaderReflectionConstantBuffer ID3D12ShaderReflectionConstantBuffer
+	#define D3DShaderReflectionVariable       ID3D12ShaderReflectionVariable
+	#define D3DShaderReflectionType           ID3D12ShaderReflectionType
+	#define D3D_SHADER_DESC                   D3D12_SHADER_DESC
+	#define D3D_SHADER_TYPE_DESC              D3D12_SHADER_TYPE_DESC
+	#define D3D_SHADER_BUFFER_DESC            D3D12_SHADER_BUFFER_DESC
+	#define D3D_SHADER_VARIABLE_DESC          D3D12_SHADER_VARIABLE_DESC
+	#define D3D_SHADER_INPUT_BIND_DESC        D3D12_SHADER_INPUT_BIND_DESC
+	#define D3D_SIGNATURE_PARAMETER_DESC      D3D12_SIGNATURE_PARAMETER_DESC
+#else
+	#define D3DReflection                     D3DReflect
+	#define IID_D3DShaderReflection           IID_ID3D11ShaderReflection
+	#define D3DShaderReflection               ID3D11ShaderReflection
+	#define D3DShaderReflectionConstantBuffer ID3D11ShaderReflectionConstantBuffer
+	#define D3DShaderReflectionVariable       ID3D11ShaderReflectionVariable
+	#define D3DShaderReflectionType           ID3D11ShaderReflectionType
+	#define D3D_SHADER_DESC                   D3D11_SHADER_DESC
+	#define D3D_SHADER_TYPE_DESC              D3D11_SHADER_TYPE_DESC
+	#define D3D_SHADER_BUFFER_DESC            D3D11_SHADER_BUFFER_DESC
+	#define D3D_SHADER_VARIABLE_DESC          D3D11_SHADER_VARIABLE_DESC
+	#define D3D_SHADER_INPUT_BIND_DESC        D3D11_SHADER_INPUT_BIND_DESC
+	#define D3D_SIGNATURE_PARAMETER_DESC      D3D11_SIGNATURE_PARAMETER_DESC
+#endif
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
     #if CRY_PLATFORM_DURANGO
@@ -432,12 +447,20 @@ typedef void (*RenderFunc)(void);
         #define D3DDevice                 ID3D11Device
     #endif
 
-#elif (CRY_RENDERER_DIRECT3D >= 111) && !CRY_PLATFORM_ORBIS
-    #define     DXGIFactory               IDXGIFactory2
-    #define     DXGIDevice                IDXGIDevice1
-    #define     DXGIAdapter               IDXGIAdapter1
-    #define     DXGIOutput                IDXGIOutput1
-    #define     DXGISwapChain             IDXGISwapChain1
+#elif (CRY_RENDERER_DIRECT3D >= 111)
+    #if CRY_PLATFORM_DURANGO
+        #define     DXGIFactory               IDXGIFactory2
+        #define     DXGIDevice                IDXGIDevice1
+        #define     DXGIAdapter               IDXGIAdapter1
+        #define     DXGIOutput                IDXGIOutput
+        #define     DXGISwapChain             IDXGISwapChain1
+    #else
+        #define     DXGIFactory               IDXGIFactory2
+        #define     DXGIDevice                IDXGIDevice1
+        #define     DXGIAdapter               IDXGIAdapter1
+        #define     DXGIOutput                IDXGIOutput1
+        #define     DXGISwapChain             IDXGISwapChain1
+    #endif
 
     #define     D3DDeviceContext          ID3D11DeviceContext1
     #define     D3DDevice                 ID3D11Device1
@@ -644,11 +667,11 @@ typedef void (*RenderFunc)(void);
 	#define     IDXGISwapChain                       CCryVKSwapChain
 	#define     IDXGIOutput                          CCryVKGIOutput
 	#define     IDXGIFactory1                        CCryVKGIFactory
-	
+
 	#define     ID3D11Resource                       NCryVulkan::CMemoryResource
 	#define     ID3D11Device                         NCryVulkan::CDevice
 	#define     ID3D11DeviceContext                  NCryVulkan::CRefCounted /* unused */
-	
+
 	#define     ID3D11DeviceChild                    NCryVulkan::CDeviceObject
 	#define     ID3D11View                           NCryVulkan::CResourceView
 	#define     ID3D11BaseTexture                    NCryVulkan::CImageResource
@@ -763,6 +786,7 @@ typedef D3DBaseView     CDeviceResourceView;
 //////////////////////////////////////////////////////////////////////////
 #define MAX_FRAME_LATENCY    3                          // At most 16 - 1 (DXGI limitation)
 #define MAX_FRAMES_IN_FLIGHT (MAX_FRAME_LATENCY + 1)    // Current frame and frames buffered by driver/GPU
+#define MAX_TIMESTAMP_GROUPS 16                         // Must be at least MAX_FRAMES_IN_FLIGHT+N (see PipelineProfiler)
 
 #if CRY_PLATFORM_DURANGO
 	#include <xg.h>
@@ -776,10 +800,10 @@ typedef D3DBaseView     CDeviceResourceView;
 	#define FEATURE_SILHOUETTE_POM
 #endif
 
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO) && !CRY_RENDERER_OPENGL && !CRY_RENDERER_GNM && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO) && !CRY_RENDERER_GNM && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	#define DX11_ALLOW_D3D_DEBUG_RUNTIME
 #endif
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO) && !CRY_RENDERER_OPENGL && !CRY_RENDERER_GNM && (CRY_RENDERER_DIRECT3D >= 120)
+#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO) && !CRY_RENDERER_GNM && (CRY_RENDERER_DIRECT3D >= 120)
 	#define DX12_ALLOW_D3D_DEBUG_RUNTIME
 #endif
 
@@ -792,7 +816,6 @@ typedef D3DBaseView     CDeviceResourceView;
 #endif
 
 #include <Cry3DEngine/I3DEngine.h>
-
 
 #if (CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
 // ConstantBuffer/ShaderResource/UnorderedAccess need markers,
@@ -886,44 +909,9 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 #endif
 
 #if defined(RENDERER_ENABLE_LEGACY_PIPELINE) || defined(CRY_RENDERER_DIRECT3D)
-	#include "XRenderD3D9/DeviceManager/D3D11/DeviceWrapper_D3D11.h"
-	#include "XRenderD3D9/DeviceManager/D3D11/DeviceWrapper_D3D11_MemReplay.h"
-#else
-
-	// These are dummy objects to replace device wrapper
-	struct ICryDeviceWrapperHook;
-
-	class CCryDeviceWrapper
-	{
-	public:
-		void AssignDevice(D3DDevice* pDevice) { m_pDevice = pDevice; }
-		void ReleaseDevice() { SAFE_RELEASE(m_pDevice); }
-		D3DDevice* GetRealDevice() const { assert(false && "Don't use device wrapper without legacy define set!"); return m_pDevice; }
-		UINT GetNodeCount() const { return 1; }
-		void SwitchNodeVisibility(UINT) {}
-		bool IsValid() const { return m_pDevice != nullptr; }
-		void RegisterHook(ICryDeviceWrapperHook*) { assert(false); }
-		void UnregisterHook(const char*) { assert(false); }
-		HRESULT GetDeviceRemovedReason() const { return DXGI_ERROR_DRIVER_INTERNAL_ERROR; }
-	private:
-		D3DDevice* m_pDevice = nullptr;
-	};
-
-	class CCryDeviceContextWrapper
-	{
-	public:
-		void AssignDeviceContext(D3DDeviceContext* pDevice) { m_pDevice = pDevice; }
-		void ReleaseDeviceContext() { SAFE_RELEASE(m_pDevice); }
-		D3DDeviceContext* GetRealDeviceContext() const { assert(false && "Don't use device context wrapper without legacy define set!"); return m_pDevice; }
-		int GetNodeCount() const { return 1; }
-		bool IsValid() const { return m_pDevice != nullptr; }
-		void RegisterHook(ICryDeviceWrapperHook*) { assert(false); }
-		void UnregisterHook(const char*) { assert(false); }
-		void CopyResourceOvercross(ID3D11Resource*, ID3D11Resource*) { assert(false); }
-		void ResetCachedState() {}
-	private:
-		D3DDeviceContext* m_pDevice = nullptr;
-	};
+	#if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+		#include NV_API_HEADER
+	#endif
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -956,9 +944,9 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 #include "Common/CryNameR.h"
 
 #if defined(CRY_PLATFORM_ORBIS)
-#define MAX_TMU   32
+	#define MAX_TMU 32
 #else
-#define MAX_TMU   64
+	#define MAX_TMU 64
 #endif
 
 //! Include main interfaces.
@@ -1124,7 +1112,7 @@ unsigned sizeOfMapS(Map& map)
 	#define VOLUMETRIC_FOG_SHADOWS
 #endif
 
-#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_OPENGL && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(RELEASE)
+#if CRY_PLATFORM_WINDOWS && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(RELEASE)
 	#define ENABLE_NULL_D3D11DEVICE
 #endif
 
@@ -1139,7 +1127,7 @@ unsigned sizeOfMapS(Map& map)
 	#define TEXSTRM_TEXTURECENTRIC_MEMORY
 #endif
 
-#if CRY_PLATFORM_DESKTOP && !CRY_RENDERER_OPENGL && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+#if CRY_PLATFORM_DESKTOP && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	#define TEXSTRM_DEFERRED_UPLOAD
 #endif
 
@@ -1154,13 +1142,6 @@ unsigned sizeOfMapS(Map& map)
 // Multi-threaded texture uploading, requires UpdateSubresourceRegion() being thread-safe
 #if CRY_PLATFORM_DURANGO /*|| (CRY_RENDERER_DIRECT3D >= 120)*/
 	#define TEXSTRM_ASYNC_TEXCOPY
-#endif
-
-// The below submits the device context state changes and draw commands
-// asynchronously via a high priority packet queue.
-// Note: please continuously monitor ASYNC_DIP_SYNC profile marker for stalls
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	#define DURANGO_ENABLE_ASYNC_DIPS 1
 #endif
 
 #if CRY_PLATFORM_DURANGO
@@ -1178,14 +1159,13 @@ unsigned sizeOfMapS(Map& map)
 #endif
 
 #define DEVRES_USE_STAGING_POOL 1
-#define DEVRES_TRACK_LATENCY 0
+#define DEVRES_TRACK_LATENCY    0
 
 #ifdef WIN32
-	#define ASSERT_LEGACY_PIPELINE CRY_ASSERT_MESSAGE(0,__func__);
+	#define ASSERT_LEGACY_PIPELINE CRY_ASSERT(0, __func__);
 #else
 	#define ASSERT_LEGACY_PIPELINE assert(0);
 #endif
-
 
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Geo.h>
@@ -1194,7 +1174,6 @@ unsigned sizeOfMapS(Map& map)
 #include <CryCore/StlUtils.h>
 #include "Common/DevBuffer.h"
 #include "XRenderD3D9/DeviceManager/DeviceResources.h"
-#include "XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h"
 #include "XRenderD3D9/DeviceManager/DeviceObjects.h"
 
 #include <CryRenderer/VertexFormats.h>
@@ -1227,6 +1206,10 @@ unsigned sizeOfMapS(Map& map)
 #include "Common/PostProcess/PostProcess.h"
 
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
+#include "GraphicsPipeline/MinimumGraphicsPipeline.h"
+#include "GraphicsPipeline/BillboardGraphicsPipeline.h"
+#include "GraphicsPipeline/MobileGraphicsPipeline.h"
+#include "GraphicsPipeline/CharacterToolGraphicsPipeline.h"
 
 /*-----------------------------------------------------------------------------
    Vector transformations.
@@ -1429,16 +1412,15 @@ inline void _SetVar(const char* szVarName, int nVal)
 	}
 }
 
-inline D3DViewPort RenderViewportToD3D11Viewport(const SRenderViewport &vp)
+inline D3DViewPort RenderViewportToD3D11Viewport(const SRenderViewport& vp)
 {
-	D3DViewPort viewport = { 
+	D3DViewPort viewport = {
 		float(vp.x),
 		float(vp.y),
 		float(vp.width),
 		float(vp.height),
 		vp.zmin,
-		vp.zmax
-	};
+		vp.zmax };
 	return viewport;
 }
 
@@ -1454,5 +1436,3 @@ inline D3DViewPort RenderViewportToD3D11Viewport(const SRenderViewport &vp)
 #include "Common/Defs.h"
 
 #include "XRenderD3D9/DeviceManager/DeviceCommandList.inl"
-#include "XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h"
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed

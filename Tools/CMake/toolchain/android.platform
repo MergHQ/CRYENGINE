@@ -1,0 +1,4 @@
+platform_name=Android
+generator_suffix=
+solution_path=solutions_cmake\android
+toolchain=toolchain\Android\Android-Nsight.cmake

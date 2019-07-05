@@ -8,8 +8,8 @@
 #include <QLabel>
 #include <QCheckBox>
 
-CQuestionDialog::CQuestionDialog()
-	: CEditorDialog(QStringLiteral("QuestionDialog"), 0, false)
+CQuestionDialog::CQuestionDialog(QWidget* pParent /*= nullptr*/)
+	: CEditorDialog(QStringLiteral("QuestionDialog"), pParent, false)
 	, m_defaultButton(QDialogButtonBox::NoButton)
 {
 	setWindowTitle(tr(""));
@@ -87,7 +87,7 @@ void CQuestionDialog::SetupUI(EInfoMessageType type, const QString& title, const
 	for (auto& checkBox : m_checkBoxes)
 	{
 		auto row = m_layout->rowCount();
-		m_layout->addWidget(checkBox.first, row, 0, 1, -1, Qt::AlignLeft);
+		m_layout->addWidget(checkBox.first, row, 1, 1, -1, Qt::AlignLeft);
 	}
 
 	auto row = m_layout->rowCount();
@@ -151,31 +151,30 @@ QDialogButtonBox::StandardButton CQuestionDialog::Execute()
 }
 
 // static calls
-QDialogButtonBox::StandardButton CQuestionDialog::SCritical(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton)
+QDialogButtonBox::StandardButton CQuestionDialog::SCritical(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton, QWidget* pParent)
 {
-	CQuestionDialog dialog;
+	CQuestionDialog dialog(pParent);
 	dialog.SetupUI(EInfoMessageType::CriticalType, title, text, buttons, defaultButton);
 	return dialog.Execute();
 }
 
-QDialogButtonBox::StandardButton CQuestionDialog::SQuestion(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton)
+QDialogButtonBox::StandardButton CQuestionDialog::SQuestion(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton, QWidget* pParent)
 {
-	CQuestionDialog dialog;
+	CQuestionDialog dialog(pParent);
 	dialog.SetupUI(EInfoMessageType::QuestionType, title, text, buttons, defaultButton);
 	return dialog.Execute();
 }
 
-QDialogButtonBox::StandardButton CQuestionDialog::SWarning(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton)
+QDialogButtonBox::StandardButton CQuestionDialog::SWarning(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton, QWidget* pParent)
 {
-	CQuestionDialog dialog;
+	CQuestionDialog dialog(pParent);
 	dialog.SetupUI(EInfoMessageType::WarningType, title, text, buttons, defaultButton);
 	return dialog.Execute();
 }
 
-QDialogButtonBox::StandardButton CQuestionDialog::SSave(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton)
+QDialogButtonBox::StandardButton CQuestionDialog::SSave(const QString& title, const QString& text, QDialogButtonBox::StandardButtons buttons, QDialogButtonBox::StandardButton defaultButton, QWidget* pParent)
 {
-	CQuestionDialog dialog;
+	CQuestionDialog dialog(pParent);
 	dialog.SetupUI(EInfoMessageType::QuestionType, title, text, buttons, defaultButton);
 	return dialog.Execute();
 }
-

@@ -2,6 +2,8 @@
 
 #include <StdAfx.h>
 #include "Commands/CommandListDockable.h"
+#include "CommandManager.h"
+#include "IEditorImpl.h"
 
 #include "ProxyModels/DeepFilterProxyModel.h"
 #include "QAdvancedTreeView.h"
@@ -34,17 +36,14 @@ ECommandListDepth GetIndexDepth(const QModelIndex& index)
 	}
 	return static_cast<ECommandListDepth>(depth - 1);
 }
-
 CCommandListModel::CCommandListModel()
 {
-}
-
-CCommandListModel::~CCommandListModel()
-{
+	Initialize();
 }
 
 void CCommandListModel::Initialize()
 {
+	GetIEditor()->GetICommandManager()->signalChanged.Connect(this, &CCommandListModel::Rebuild);
 	Rebuild();
 }
 
@@ -77,10 +76,10 @@ QVariant CCommandListModel::data(const QModelIndex& index, int role) const
 				switch (index.column())
 				{
 				case eCommandListColumn_Name:
-					return CommandModel::data(this->index(index.row(), 1, parent), Qt::DisplayRole);
+					return CCommandModel::data(this->index(index.row(), 1, parent), Qt::DisplayRole);
 
 				case eCommandListColumn_Description:
-					return CommandModel::data(this->index(index.row(), 0, parent), static_cast<int>(CommandModel::Roles::CommandDescriptionRole));
+					return CCommandModel::data(this->index(index.row(), 0, parent), static_cast<int>(CCommandModel::Roles::CommandDescriptionRole));
 
 				default:
 					break;
@@ -113,7 +112,7 @@ QVariant CCommandListModel::data(const QModelIndex& index, int role) const
 			{
 				return parameters[index.row()].GetIndex();
 			}
-			else if (role == static_cast<int>(CommandModel::Roles::SearchRole))
+			else if (role == static_cast<int>(CCommandModel::Roles::SearchRole))
 			{
 				return QVariant();
 			}
@@ -123,7 +122,7 @@ QVariant CCommandListModel::data(const QModelIndex& index, int role) const
 		break;
 	}
 
-	return CommandModel::data(index, role);
+	return CCommandModel::data(index, role);
 }
 
 Qt::ItemFlags CCommandListModel::flags(const QModelIndex& index) const
@@ -144,7 +143,7 @@ bool CCommandListModel::hasChildren(const QModelIndex& parent) const
 		return false;
 	}
 
-	return CommandModel::hasChildren(parent);
+	return CCommandModel::hasChildren(parent);
 }
 
 QVariant CCommandListModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -166,7 +165,7 @@ QModelIndex CCommandListModel::index(int row, int column, const QModelIndex& par
 		return createIndex(row, column, reinterpret_cast<quintptr>(&parameters[row]));
 	}
 
-	return CommandModel::index(row, column, parent);
+	return CCommandModel::index(row, column, parent);
 }
 
 QModelIndex CCommandListModel::parent(const QModelIndex& index) const
@@ -178,7 +177,7 @@ QModelIndex CCommandListModel::parent(const QModelIndex& index) const
 		return GetIndex(static_cast<CUiCommand*>(pParam->GetCommand()));
 	}
 
-	return CommandModel::parent(index);
+	return CCommandModel::parent(index);
 }
 
 int CCommandListModel::rowCount(const QModelIndex& parent) const
@@ -194,7 +193,7 @@ int CCommandListModel::rowCount(const QModelIndex& parent) const
 		return 0;
 	}
 
-	return CommandModel::rowCount(parent);
+	return CCommandModel::rowCount(parent);
 }
 
 void CCommandListModel::Rebuild()
@@ -253,18 +252,29 @@ public:
 CCommandListDockable::CCommandListDockable(QWidget* const pParent)
 	: CDockableWidget(pParent)
 {
-	m_pModel = std::unique_ptr<CommandModel>(CommandModelFactory::Create<CCommandListModel>());
+	m_pModel = std::make_unique<CCommandListModel>();
 
 	const QDeepFilterProxyModel::BehaviorFlags behavior = QDeepFilterProxyModel::AcceptIfChildMatches | QDeepFilterProxyModel::AcceptIfParentMatches;
 	const auto pFilterProxy = new CCommandListSortProxyModel(behavior);
 	pFilterProxy->setSourceModel(m_pModel.get());
 	pFilterProxy->setFilterKeyColumn(eCommandListColumn_Name);
-	pFilterProxy->setFilterRole(static_cast<int>(CommandModel::Roles::SearchRole));
+	pFilterProxy->setFilterRole(static_cast<int>(CCommandModel::Roles::SearchRole));
 	pFilterProxy->setSortRole(CCommandListModel::SortRole);
+
+	QWidget* pSearchBoxContainer = new QWidget();
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
+
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->setSpacing(0);
 
 	const auto pSearchBox = new QSearchBox();
 	pSearchBox->SetModel(pFilterProxy);
 	pSearchBox->EnableContinuousSearch(true);
+
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
 
 	m_pTreeView = new QAdvancedTreeView();
 	m_pTreeView->setModel(pFilterProxy);
@@ -279,8 +289,8 @@ CCommandListDockable::CCommandListDockable(QWidget* const pParent)
 	pSearchBox->SetAutoExpandOnSearch(m_pTreeView);
 
 	const auto pLayout = new QVBoxLayout();
-	pLayout->setContentsMargins(1, 1, 1, 1);
-	pLayout->addWidget(pSearchBox);
+	pLayout->setContentsMargins(0,0,0,0);
+	pLayout->addWidget(pSearchBoxContainer);
 	pLayout->addWidget(m_pTreeView);
 	setLayout(pLayout);
 }
@@ -288,4 +298,3 @@ CCommandListDockable::CCommandListDockable(QWidget* const pParent)
 CCommandListDockable::~CCommandListDockable()
 {
 }
-

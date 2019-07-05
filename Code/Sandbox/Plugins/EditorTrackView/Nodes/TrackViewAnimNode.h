@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 
 #include "TrackViewNode.h"
@@ -31,9 +28,8 @@ private:
 };
 
 // Callback called by animation node when its animated.
-class IAnimNodeAnimator
+struct IAnimNodeAnimator
 {
-public:
 	virtual ~IAnimNodeAnimator() {}
 
 	virtual void Animate(CTrackViewAnimNode* pNode, const SAnimContext& ac) = 0;
@@ -176,8 +172,8 @@ public:
 	virtual bool IsValidReparentingTo(CTrackViewAnimNode* pNewParent);
 
 	// Sync from/to base transform. Returns false if nothing was synced.
-	virtual bool    SyncToBase()             { return false; };
-	virtual bool    SyncFromBase()           { return false; };
+	virtual bool    SyncToBase()             { return false; }
+	virtual bool    SyncFromBase()           { return false; }
 
 	virtual CryGUID GetGUID() const override { return m_pAnimNode->GetGUID(); }
 
@@ -210,11 +206,10 @@ private:
 
 	// IAnimNodeOwner
 	virtual void OnNodeVisibilityChanged(IAnimNode* pNode, const bool bHidden) override {}
-	virtual void OnNodeReset(IAnimNode* pNode) override                                 {};
+	virtual bool OnNodeReset(IAnimNode* pNode) override                                 { return true; }
 	// ~IAnimNodeOwner
 
 	IAnimSequence*                     m_pAnimSequence;
 	_smart_ptr<IAnimNode>              m_pAnimNode;
 	std::unique_ptr<IAnimNodeAnimator> m_pNodeAnimator;
 };
-

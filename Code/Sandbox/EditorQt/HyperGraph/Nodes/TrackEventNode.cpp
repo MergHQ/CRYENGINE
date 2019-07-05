@@ -1,6 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#include "IEditorImpl.h"
 #include "TrackEventNode.h"
 
 #include "HyperGraph/HyperGraph.h"
@@ -495,4 +496,3 @@ void CTrackEventNode::OnTrackEvent(IAnimSequence* pSequence, int reason, const c
 		break;
 	}
 }
-

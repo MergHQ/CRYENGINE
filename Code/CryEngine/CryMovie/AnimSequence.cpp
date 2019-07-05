@@ -286,13 +286,12 @@ void CAnimSequence::RemoveNode(IAnimNode* node)
 	{
 		if (node == m_nodes[i])
 		{
-			m_nodes.erase(m_nodes.begin() + i);
-
 			if (node->NeedToRender())
 			{
 				RemoveNodeNeedToRender(node);
 			}
 
+			m_nodes.erase(m_nodes.begin() + i);
 			continue;
 		}
 
@@ -605,7 +604,7 @@ void CAnimSequence::PrecacheDynamic(SAnimTime time)
 
 void CAnimSequence::PrecacheEntity(IEntity* pEntity)
 {
-	if (m_precachedEntitiesSet.find(pEntity) != m_precachedEntitiesSet.end())
+	if (m_precachedEntitiesSet.find(pEntity) == m_precachedEntitiesSet.end())
 	{
 		if (IEntityRender* pIEntityRender = pEntity->GetRenderInterface())
 		{
@@ -738,7 +737,7 @@ void CAnimSequence::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmpt
 		{
 			if (CLightAnimWrapper::GetLightAnimSet())
 			{
-				CRY_ASSERT_MESSAGE(0, "Track Sequence flagged as LightAnimationSet have LightAnimationSet pointer already set");
+				CRY_ASSERT(0, "Track Sequence flagged as LightAnimationSet have LightAnimationSet pointer already set");
 			}
 			CLightAnimWrapper::SetLightAnimSet(this);
 		}

@@ -30,17 +30,17 @@ protected:
 	void OnVarChange(IVariable* pVar);
 
 protected:
-	CHyperFlowGraph*        m_pGraph;
-	CHyperGraphDialog*      m_pParent;
-	CXTPTaskPanel*          m_pTaskPanel;
-	CXTPTaskPanelGroup*     m_pGroup;
-	CXTPTaskPanelGroupItem* m_pPropItem;
+	CHyperFlowGraph*        m_pGraph{ nullptr };
+	CHyperGraphDialog*      m_pParent{ nullptr };
+	CXTPTaskPanel*          m_pTaskPanel{ nullptr };
+	CXTPTaskPanelGroup*     m_pGroup{ nullptr };
+	CXTPTaskPanelGroupItem* m_pPropItem{ nullptr };
 	CPropertyCtrl           m_graphProps;
 
 	CSmartVariable<bool>    m_varEnabled;
 	CSmartVariableEnum<int> m_varMultiPlayer;
 
-	bool                    m_bUpdate;
+	bool                    m_bUpdate{ false };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,13 +61,12 @@ protected:
 	void Init(int nID);
 
 protected:
-	CHyperFlowGraph*        m_pGraph;
-	CHyperGraphDialog*      m_pParent;
-	CXTPTaskPanel*          m_pTaskPanel;
-	CXTPTaskPanelGroup*     m_pGroup;
-	CXTPTaskPanelItem*      m_pInfoItem;
-	CXTPTaskPanelGroupItem* m_pDescTitleHeaderItem;
-	CXTPTaskPanelGroupItem* m_pDescItem;
+	CHyperFlowGraph*        m_pGraph{ nullptr };
+	CHyperGraphDialog*      m_pParent{ nullptr };
+	CXTPTaskPanel*          m_pTaskPanel{ nullptr };
+	CXTPTaskPanelGroup*     m_pGroup{ nullptr };
+	CXTPTaskPanelItem*      m_pInfoItem{ nullptr };
+	CXTPTaskPanelGroupItem* m_pDescTitleHeaderItem{ nullptr };
+	CXTPTaskPanelGroupItem* m_pDescItem{ nullptr };
 	CColorCtrl<CEdit>       m_nodeDescription;
 };
-

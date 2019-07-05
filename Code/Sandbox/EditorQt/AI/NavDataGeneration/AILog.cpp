@@ -10,8 +10,7 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IValidator.h>
-#include <CrySystem/IConsole.h>
-#include <CrySystem/ITestSystem.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // these should all be in sync - so testing one for 0 should be the same for all
 ISystem* pSystem = 0;
@@ -50,12 +49,6 @@ void AIInitLog(ISystem* system)
 	// NOTE Mrz 4, 2008: <pvl> this is the editor, let's assume devmode instead
 	// of trying to access the function that lives in a different dll and isn't
 	// exported
-	bool inDevMode = true; //::IsAIInDevMode();
-#ifdef _DEBUG
-	int isDebug = 1;
-#else
-	int isDebug = 0;
-#endif
 
 	if (console)
 	{
@@ -271,13 +264,7 @@ void AIError(const char* format, ...)
 	va_end(args);
 	pSystem->Warning(VALIDATOR_MODULE_AI, VALIDATOR_ERROR, VALIDATOR_FLAG_AI, 0, "AI: Error: %s", outputBufferLog);
 
-	if (GetISystem()->GetITestSystem())
-	{
-		// supress user interaction for automated test
-		if (GetISystem()->GetITestSystem()->GetILog())
-			GetISystem()->GetITestSystem()->GetILog()->LogError(outputBufferLog);
-	}
-	else
+	if (!gEnv->bTesting)
 	{
 		static bool sDoMsgBox = true;
 		if (sDoMsgBox && !gEnv->IsEditor())
@@ -328,4 +315,3 @@ void AIError(const char* format, ...)
 }
 
 #endif  // CRY_PLATFORM_WINDOWS
-

@@ -4,6 +4,7 @@
 
 #include "Material.h"
 #include "IEditorImpl.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 namespace MaterialHelpers
 {
@@ -58,4 +59,3 @@ inline void SetXmlFromShaderParams(const SInputShaderResources& pShaderResources
 //////////////////////////////////////////////////////////////////////////
 inline void MigrateXmlLegacyData(SInputShaderResources& pShaderResources, const XmlNodeRef& node) { GetIEditorImpl()->Get3DEngine()->GetMaterialHelpers().MigrateXmlLegacyData(pShaderResources, node); }
 }
-

@@ -7,7 +7,7 @@
 namespace pfx2
 {
 
-MakeDataType(EPDT_MeshGeometry, IMeshObj*, EDataDomain(EDD_PerParticle | EDD_NeedsClear)); // Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
+MakeDataType(EPDT_MeshGeometry, IMeshObj*);
 
 extern TDataType<float> EPDT_Alpha;
 extern TDataType<UCol>  EPDT_Color;
@@ -40,78 +40,106 @@ class CFeatureRenderMeshes : public CParticleFeature, public Cry3DEngineBase
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureRenderMeshes()
-		: m_scale(1.0f, 1.0f, 1.0f)
-		, m_sizeMode(ESizeMode::Scale)
-		, m_originMode(EOriginMode::Origin)
-		, m_piecesMode(EPiecesMode::RandomPiece)
-		, m_piecePlacement(EPiecePlacement::Standard)
-	{}
-
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
 		ar(Serialization::ModelFilename(m_meshName), "Mesh", "Mesh");
-		ar(m_scale, "Scale", "Scale");
-		ar(m_sizeMode, "SizeMode", "Size Mode");
-		ar(m_originMode, "OriginMode", "Origin Mode");
-		ar(m_piecesMode, "PiecesMode", "Pieces Mode");
-		ar(m_piecePlacement, "PiecePlacement", "Piece Placement");
+		SERIALIZE_VAR(ar, m_scale);
+		SERIALIZE_VAR(ar, m_sizeMode);
+		SERIALIZE_VAR(ar, m_originMode);
+		SERIALIZE_VAR(ar, m_piecesMode);
+		SERIALIZE_VAR(ar, m_piecePlacement);
+		SERIALIZE_VAR(ar, m_castShadows);
 	}
 
 	virtual EFeatureType GetFeatureType() override { return EFT_Render; }
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		if (!(m_pStaticObject = Get3DEngine()->FindStatObjectByFilename(m_meshName)))
-		{
-			GetPSystem()->CheckFileAccess(m_meshName);
-			m_pStaticObject = Get3DEngine()->LoadStatObj(m_meshName, NULL, NULL, m_piecesMode == EPiecesMode::Whole);
-		}
-		pParams->m_pMesh = m_pStaticObject;
-		pParams->m_meshCentered = m_originMode == EOriginMode::Center;
-		if (m_pStaticObject)
+		pComponent->LoadResources.add(this);
+		LoadResources(*pComponent);
+		if (pParams->m_pMesh)
 		{
 			pComponent->RenderDeferred.add(this);
+			if (m_castShadows)
+				pComponent->AddEnvironFlags(ENV_CAST_SHADOWS);
 			pComponent->AddParticleData(EPVF_Position);
 			pComponent->AddParticleData(EPQF_Orientation);
-
-			m_aSubObjects.clear();
-			float maxRadiusSqr = 0.0f;
-			if (m_piecesMode != EPiecesMode::Whole)
-			{
-				int subObjectCount = m_pStaticObject->GetSubObjectCount();
-				for (int i = 0; i < subObjectCount; ++i)
-				{
-					if (IStatObj::SSubObject* pSub = m_pStaticObject->GetSubObject(i))
-						if (pSub->nType == STATIC_SUB_OBJECT_MESH && pSub->pStatObj && pSub->pStatObj->GetRenderMesh())
-						{
-							if (string(pSub->name).Right(5) == "_main")
-								continue;
-							m_aSubObjects.push_back(pSub);
-							SetMax(maxRadiusSqr, MeshRadiusSqr(pSub->pStatObj));
-						}
-				}
-			}
-
 			if (m_aSubObjects.size() > 0)
 			{
 				// Require per-particle sub-objects
 				assert(m_aSubObjects.size() < 256);
+				pComponent->OnEdit.add(this);
 				pComponent->InitParticles.add(this);
 				pComponent->AddParticleData(EPDT_MeshGeometry);
-				if (m_piecesMode == EPiecesMode::AllPieces)
-				{
-					pComponent->AddParticleData(EPDT_SpawnId);
-					pParams->m_scaleParticleCount *= m_aSubObjects.size();
-				}
 			}
-			else
+		}
+	}
+
+	virtual void LoadResources(CParticleComponent& component) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		SComponentParams& params = component.ComponentParams();
+		if (!params.m_pMesh)
+		{
+			IStatObj* pMeshObj = nullptr;
+			if (GetPSystem()->IsRuntime())
+				pMeshObj = Get3DEngine()->FindStatObjectByFilename(m_meshName);
+			if (!pMeshObj)
 			{
-				maxRadiusSqr = MeshRadiusSqr(m_pStaticObject);
+				GetPSystem()->CheckFileAccess(m_meshName);
+				pMeshObj = Get3DEngine()->LoadStatObj(m_meshName, NULL, NULL, m_piecesMode == EPiecesMode::Whole);
 			}
-			if (m_sizeMode == ESizeMode::Scale)
-				pParams->m_physicalSizeSlope.scale *= sqrt(maxRadiusSqr);
+			params.m_pMesh = pMeshObj;
+			params.m_meshCentered = m_originMode == EOriginMode::Center;
+
+			m_aSubObjects.clear();
+
+			if (pMeshObj)
+			{
+				float maxRadiusSqr = 0.0f;
+				if (m_piecesMode != EPiecesMode::Whole)
+				{
+					int subObjectCount = pMeshObj->GetSubObjectCount();
+					for (int i = 0; i < subObjectCount; ++i)
+					{
+						if (IStatObj::SSubObject* pSub = pMeshObj->GetSubObject(i))
+							if (pSub->nType == STATIC_SUB_OBJECT_MESH && pSub->pStatObj)
+							{
+								if (string(pSub->name).Right(5) == "_main")
+									continue;
+								m_aSubObjects.push_back(pSub);
+								SetMax(maxRadiusSqr, MeshRadiusSqr(pSub->pStatObj));
+							}
+					}
+				}
+
+				if (m_aSubObjects.size() > 0)
+				{
+					// Require per-particle sub-objects
+					assert(m_aSubObjects.size() < 256);
+					component.OnEdit.add(this);
+					component.InitParticles.add(this);
+					component.AddParticleData(EPDT_MeshGeometry);
+					if (m_piecesMode == EPiecesMode::AllPieces)
+					{
+						component.AddParticleData(EPDT_SpawnId);
+						params.m_scaleParticleCount *= m_aSubObjects.size();
+					}
+				}
+				else
+				{
+					maxRadiusSqr = MeshRadiusSqr(pMeshObj);
+				}
+				if (m_sizeMode == ESizeMode::Scale)
+					params.m_scaleParticleSize *= sqrt(maxRadiusSqr);
+			}
+		}
+		if (params.m_pMesh && GetCVars()->e_ParticlesPrecacheAssets)
+		{
+			m_pObjManager->PrecacheStatObj(static_cast<CStatObj*>(&*params.m_pMesh), 0,
+				params.m_pMesh->GetMaterial(), 1.0f, 0.0f, true, true);
 		}
 	}
 
@@ -123,18 +151,24 @@ public:
 			max(bb.min.GetLengthSquared(), bb.max.GetLengthSquared());
 	}
 
+	virtual void OnEdit(CParticleComponentRuntime& runtime) override
+	{
+		// Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
+		runtime.GetContainer().FillData(EPDT_MeshGeometry, (IMeshObj*)nullptr, runtime.FullRange());
+	}
+
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 		CParticleContainer& container = runtime.GetContainer();
 		TIOStream<IMeshObj*> meshes = container.IOStream(EPDT_MeshGeometry);
-		TIStream<uint> spawnIds = container.IStream(EPDT_SpawnId);
 		IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 		IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
 		IFStream sizes = container.GetIFStream(EPDT_Size, 1.0f);
-		uint pieceCount = m_aSubObjects.size();
-		Vec3 center = m_pStaticObject->GetAABB().GetCenter();
+		const uint spawnIdOffset = container.GetSpawnIdOffset();
+		const uint pieceCount = m_aSubObjects.size();
+		Vec3 center = runtime.ComponentParams().m_pMesh->GetAABB().GetCenter();
 
 		for (auto particleId : runtime.SpawnedRange())
 		{
@@ -145,7 +179,7 @@ public:
 			}
 			else if (m_piecesMode == EPiecesMode::AllPieces)
 			{
-				piece = spawnIds.Load(particleId);
+				piece = particleId + spawnIdOffset;
 			}
 			piece %= pieceCount;
 
@@ -186,7 +220,7 @@ public:
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-		if (!runtime.IsCPURuntime())
+		if (!runtime.IsCPURuntime() || !runtime.GetComponent()->IsVisible())
 			return;
 		auto& passInfo = renderContext.m_passInfo;
 		SRendParams renderParams = renderContext.m_renderParams;
@@ -200,7 +234,7 @@ public:
 		const Vec3 camPosition = passInfo.GetCamera().GetPosition();
 		const bool hasAlphas = container.HasData(EPDT_Alpha);
 
-		IMeshObj* pMeshObj = m_pStaticObject;
+		IMeshObj* pMeshObj = runtime.ComponentParams().m_pMesh;
 		AABB bBox = pMeshObj->GetAABB();
 		float sizeScale = m_sizeMode == ESizeMode::Size ? rsqrt_fast(MeshRadiusSqr(pMeshObj)) : 1.0f;
 
@@ -212,6 +246,8 @@ public:
 			{
 				pMeshObj = meshes.SafeLoad(particleId);
 				if (!pMeshObj)
+					continue;
+				if (!pMeshObj->GetRenderMesh())
 					continue;
 				bBox = pMeshObj->GetAABB();
 				sizeScale = m_sizeMode == ESizeMode::Size ? rsqrt_fast(MeshRadiusSqr(pMeshObj)) : 1.0f;
@@ -251,13 +287,13 @@ public:
 
 private:
 	string                             m_meshName;
-	Vec3                               m_scale;
-	ESizeMode                          m_sizeMode;
-	EOriginMode                        m_originMode;
-	EPiecesMode                        m_piecesMode;
-	EPiecePlacement                    m_piecePlacement;
+	Vec3                               m_scale          {1};
+	ESizeMode                          m_sizeMode       = ESizeMode::Scale;
+	EOriginMode                        m_originMode     = EOriginMode::Origin;
+	EPiecesMode                        m_piecesMode     = EPiecesMode::RandomPiece;
+	EPiecePlacement                    m_piecePlacement = EPiecePlacement::Standard;
+	bool                               m_castShadows    = true;
 
-	_smart_ptr<IStatObj>               m_pStaticObject;
 	std::vector<IStatObj::SSubObject*> m_aSubObjects;
 };
 

@@ -16,7 +16,8 @@
 #include "GameTokenSystem.h"
 #include "GameToken.h"
 #include "ScriptBind_GameToken.h"
-#include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define SCRIPT_GAMETOKEN_ALWAYS_CREATE // GameToken.SetValue from Script always creates the token
 // #undef SCRIPT_GAMETOKEN_ALWAYS_CREATE     // GameToken.SetValue from Script warns if Token not found
@@ -491,7 +492,7 @@ void CGameTokenSystem::Serialize(TSerialize ser)
 //////////////////////////////////////////////////////////////////////////
 void CGameTokenSystem::LoadLibs(const char* sFileSpec)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_bGoingIntoGame = true;
 
 	ICryPak* pPak = gEnv->pCryPak;
@@ -818,7 +819,6 @@ void CGameTokenSystem::ClearDebugHistory()
 //////////////////////////////////////////////////////////////////////////
 void CGameTokenSystem::DrawToken(const char* pTokenName, const char* pTokenValue, const CTimeValue& timeChanged, int line)
 {
-	IRenderer* pRenderer = gEnv->pRenderer;
 	float notChanged[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	float changed[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 	float color[] = { 0.f, 0.f, 0.f, 0.f };

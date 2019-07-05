@@ -1,7 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __material_h__
-#define __material_h__
 #pragma once
 
 #include "SandboxAPI.h"
@@ -57,7 +55,7 @@ struct SANDBOX_API SMaterialLayerResources
 
 	uint8                             m_nFlags;
 	bool                              m_bRegetPublicParams;
-	string                           m_shaderName;
+	string                            m_shaderName;
 
 	_smart_ptr<IMaterialLayer>        m_pMatLayer;
 	_smart_ptr<SInputShaderResources> m_shaderResources;
@@ -71,22 +69,22 @@ public:
 	CMaterial(const string& name, int nFlags = 0);
 	~CMaterial();
 
-	virtual void AddRef() const override { CBaseLibraryItem::AddRef(); }
-	virtual void Release() const override { CBaseLibraryItem::Release(); }
-	virtual const string& GetName() const override { return CBaseLibraryItem::GetName(); }
+	virtual void              AddRef() const override  { CBaseLibraryItem::AddRef(); }
+	virtual void              Release() const override { CBaseLibraryItem::Release(); }
+	virtual const string&     GetName() const override { return CBaseLibraryItem::GetName(); }
 
-	virtual EDataBaseItemType GetType() const { return EDB_TYPE_MATERIAL; };
+	virtual EDataBaseItemType GetType() const          { return EDB_TYPE_MATERIAL; }
 
 	//Note: this does not handle undo properly. Use RenameSubMaterial in order to properly rename a submaterial while handling undo.
-	void                      SetName(const string& name);
+	void SetName(const string& name);
 
 	//! Renames a submaterial and correctly handles undo actions
-	void					  RenameSubMaterial(int subMtlSlot, const string& newName);
+	void RenameSubMaterial(int subMtlSlot, const string& newName);
 	//! Renames a submaterial and correctly handles undo actions
-	void					  RenameSubMaterial(CMaterial* pSubMaterial, const string& newName);
+	void RenameSubMaterial(CMaterial* pSubMaterial, const string& newName);
 
 	//////////////////////////////////////////////////////////////////////////
-	string GetFullName() const { return m_name; };
+	string GetFullName() const { return m_name; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// File properties of the material.
@@ -95,31 +93,31 @@ public:
 
 	//! Collect filenames of texture sources used in material
 	//! Return number of filenames
-	int    GetTextureFilenames(std::vector<string>& outFilenames) const;
-	int    GetAnyTextureFilenames(std::vector<string>& outFilenames) const;
+	int GetTextureFilenames(std::vector<string>& outFilenames) const;
+	int GetAnyTextureFilenames(std::vector<string>& outFilenames) const;
 
 	//! Returns number of dependencies and file paths (game path) for asset saving
-	int	   GetTextureDependencies(std::vector<SAssetDependencyInfo>& outFilenames) const;
+	int    GetTextureDependencies(std::vector<SAssetDependencyInfo>& outFilenames) const;
 
 	void   UpdateFileAttributes();
 	uint32 GetFileAttributes();
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Sets one or more material flags from EMaterialFlags enum.
-	void SetFlags(int flags)        { m_mtlFlags = flags; };
+	void         SetFlags(int flags)                 { m_mtlFlags = flags; }
 	//! Query this material flags.
 	virtual int  GetFlags() const override           { return m_mtlFlags; }
-	virtual bool IsMultiSubMaterial() const override { return (m_mtlFlags & MTL_FLAG_MULTI_SUBMTL) != 0; };
-	bool IsPureChild() const        { return (m_mtlFlags & MTL_FLAG_PURE_CHILD) != 0; }
+	virtual bool IsMultiSubMaterial() const override { return (m_mtlFlags & MTL_FLAG_MULTI_SUBMTL) != 0; }
+	bool         IsPureChild() const                 { return (m_mtlFlags & MTL_FLAG_PURE_CHILD) != 0; }
 
 	virtual void GatherUsedResources(CUsedResources& resources);
 
 	//! Set name of shader used by this material.
 	void                   SetShaderName(const string& shaderName);
 	//! Get name of shader used by this material.
-	string                GetShaderName() const { return m_shaderName; };
+	string                 GetShaderName() const { return m_shaderName; }
 
-	SInputShaderResources& GetShaderResources()  { return *m_shaderResources; };
+	SInputShaderResources& GetShaderResources()  { return *m_shaderResources; }
 
 	//! Get public parameters of material in variable block.
 	CVarBlock* GetPublicVars(SInputShaderResources& pShaderResources);
@@ -141,12 +139,12 @@ public:
 	void       SetShaderGenMaskFromUI(uint64 mask);
 
 	//! Return variable block of shader params.
-	SShaderItem& GetShaderItem() { return m_shaderItem; };
+	SShaderItem& GetShaderItem() { return m_shaderItem; }
 
 	//! Return material layers resources
-	SMaterialLayerResources* GetMtlLayerResources() { return m_pMtlLayerResources; };
+	SMaterialLayerResources*       GetMtlLayerResources()       { return m_pMtlLayerResources; }
 
-	const SMaterialLayerResources* GetMtlLayerResources() const { return m_pMtlLayerResources; };
+	const SMaterialLayerResources* GetMtlLayerResources() const { return m_pMtlLayerResources; }
 
 	//! Get texture map usage mask for shader in this material.
 	unsigned int GetTexmapUsageMask() const;
@@ -169,15 +167,15 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// Surface types.
 	//////////////////////////////////////////////////////////////////////////
-	void           SetSurfaceTypeName(const string& surfaceType, bool bUpdateMatInfo = true);
-	const string& GetSurfaceTypeName() const { return m_surfaceType; };
-	bool           IsBreakable2D() const;
+	void          SetSurfaceTypeName(const string& surfaceType, bool bUpdateMatInfo = true);
+	const string& GetSurfaceTypeName() const { return m_surfaceType; }
+	bool          IsBreakable2D() const;
 
 	//////////////////////////////////////////////////////////////////////////
 	// MatTemplate.
 	//////////////////////////////////////////////////////////////////////////
-	void           SetMatTemplate(const string& matTemplate);
-	const string& GetMatTemplate() { return m_matTemplate; };
+	void          SetMatTemplate(const string& matTemplate);
+	const string& GetMatTemplate() { return m_matTemplate; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Child Sub materials.
@@ -198,7 +196,7 @@ public:
 	//! Remove all sub materials, does not change number of sub material slots.
 	void ClearAllSubMaterials();
 	//! Finds the index of a submaterial, or returns -1
-	int FindSubMaterial(CMaterial* pMaterial);
+	int  FindSubMaterial(CMaterial* pMaterial);
 
 	void ConvertToMultiMaterial();
 	void ConvertToSingleMaterial();
@@ -243,9 +241,9 @@ public:
 	void SetFromMatInfo(IMaterial* pMatInfo);
 
 	// Link a submaterial by name (used for value propagation in CMaterialUI)
-	void           LinkToMaterial(const string& name);
-	void           LinkToMaterial(const char* name) { LinkToMaterial(string(name)); } // for CString conversion
-	const string& GetLinkedMaterialName() const { return m_linkedMaterial; }
+	void          LinkToMaterial(const string& name);
+	void          LinkToMaterial(const char* name) { LinkToMaterial(string(name)); }  // for CString conversion
+	const string& GetLinkedMaterialName() const    { return m_linkedMaterial; }
 
 	// Return parent material for submaterial
 	CMaterial* GetParent() const { return m_pParent; }
@@ -262,21 +260,21 @@ public:
 	}
 
 	//! Loads material layers
-	bool LoadMaterialLayers();
+	bool         LoadMaterialLayers();
 	//! Updates material layers
-	void UpdateMaterialLayers();
+	void         UpdateMaterialLayers();
 
 	virtual void DisableHighlight() override { SetHighlightFlags(0); }
 
-	void SetHighlightFlags(int highlightFlags);
-	void UpdateHighlighting();
-	void RecordUndo(const char* sText, bool bForceUpdate = false);
+	void         SetHighlightFlags(int highlightFlags);
+	void         UpdateHighlighting();
+	void         RecordUndo(const char* sText, bool bForceUpdate = false);
 
-	int  GetPropagationFlags() const          { return m_propagationFlags; }
-	void SetPropagationFlags(const int flags) { m_propagationFlags = flags; }
+	int          GetPropagationFlags() const          { return m_propagationFlags; }
+	void         SetPropagationFlags(const int flags) { m_propagationFlags = flags; }
 
-	bool LayerActivationAllowed() const       { return m_allowLayerActivation; }
-	void SetLayerActivation(bool allowed)     { m_allowLayerActivation = allowed; }
+	bool         LayerActivationAllowed() const       { return m_allowLayerActivation; }
+	void         SetLayerActivation(bool allowed)     { m_allowLayerActivation = allowed; }
 
 	//! Notifies listeners that internal properties have changed
 	void NotifyPropertiesUpdated();
@@ -287,7 +285,7 @@ public:
 private:
 	void UpdateMatInfo();
 	void CheckSpecialConditions();
-	
+
 	//Material is non-copyable by design. Use CopyFrom to copy all the attributes to another material through serialization
 	CMaterial(const CMaterial&) = delete;
 	CMaterial(CMaterial&&) = delete;
@@ -348,6 +346,3 @@ private:
 
 	bool m_allowLayerActivation;
 };
-
-#endif
-

@@ -1,5 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+#include "EditorCommonAPI.h"
 
 struct EDITOR_COMMON_API ViewportInteraction
 {
@@ -13,4 +14,3 @@ struct EDITOR_COMMON_API ViewportInteraction
 
 	static bool CheckPolledKey(Key key);
 };
-

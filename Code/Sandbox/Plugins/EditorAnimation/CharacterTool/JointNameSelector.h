@@ -34,4 +34,3 @@ private:
 	QLineEdit*             m_filterEdit;
 	QLabel*                m_skeletonLabel;
 };
-

@@ -4,6 +4,7 @@
 #include "CryIcon.h"
 
 #include <QApplication>
+#include <QBitmap>
 #include <QDebug>
 #include <QFileInfo>
 #include <QImageReader>
@@ -13,12 +14,7 @@
 #include <QStringBuilder>
 #include <QStyle>
 #include <QStyleOption>
-#include "QBitmap"
-
-class QWindow;
-#if QT_VERSION >= 0x050000
 #include <QWindow>
-#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -34,13 +30,8 @@ CryPixmapIconEngine::CryPixmapIconEngine(const CryPixmapIconEngine& other) : Cry
 {
 }
 
-CryPixmapIconEngine::~CryPixmapIconEngine()
-{
-}
-
 static qreal qt_effective_device_pixel_ratio(QWindow* window = 0)
 {
-#if QT_VERSION >= 0x050000
 	if (!qApp->testAttribute(Qt::AA_UseHighDpiPixmaps))
 		return qreal(1.0);
 
@@ -48,9 +39,6 @@ static qreal qt_effective_device_pixel_ratio(QWindow* window = 0)
 		return window->devicePixelRatio();
 
 	return qApp->devicePixelRatio(); // Don't know which window to target.
-#else
-	return qreal(1.0);
-#endif
 }
 
 static inline int                area(const QSize& s) { return s.width() * s.height(); }
@@ -580,4 +568,3 @@ void CryIcon::SetDefaultTint(QIcon::Mode mode, QBrush brush)
 		break;
 	}
 }
-

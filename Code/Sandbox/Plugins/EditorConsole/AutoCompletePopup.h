@@ -1,19 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//  Crytek Engine Source File.
-//  Copyright (C), Crytek Studios, 1999-2014.
-// -------------------------------------------------------------------------
-//  File name:   AutoCompletePopup.h
-//  Version:     v1.00
-//  Created:     03/03/2014 by Matthijs vd Meide
-//  Compilers:   Visual Studio 2010
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #pragma once
 
 #include <vector>
@@ -38,9 +24,6 @@ public:
 			eType_Function,
 			eType_Count
 		} type;
-
-		//this will also interpret markup and set the type accordingly
-		void Set(const char* text);
 	};
 
 private:
@@ -58,7 +41,7 @@ private:
 		CAutoCompleteModel();
 
 		//the number of rows in the model
-		int rowCount(const QModelIndex& parent) const { return m_items.size(); };
+		int rowCount(const QModelIndex& parent) const { return m_items.size(); }
 
 		//retrieve data for an item
 		QVariant data(const QModelIndex& index, int role) const;
@@ -74,7 +57,7 @@ private:
 
 		void        ClearItems()    { m_items.clear(); }
 
-		size_t      GetItemsCount() { return m_items.size(); };
+		size_t      GetItemsCount() { return m_items.size(); }
 		void        SetHistoryItems(std::vector<SAutoCompleteItem>& historyItems)
 		{
 			m_items.assign(historyItems.begin(), historyItems.end());
@@ -102,7 +85,7 @@ public:
 	~CAutoCompletePopup() {}
 
 	//populates the dialog with the specified options
-	//returns true if teh window should be shown
+	//returns true if the window should be shown
 	bool Set(const Messages::SAutoCompleteReply& reply);
 
 	//select the next or previous item in the list
@@ -111,13 +94,13 @@ public:
 	//select the item with the given name
 	void Select(const QString& name);
 
-	int GetDefaultHeight() { return m_defaultHeight; }
+	int  GetDefaultHeight() { return m_defaultHeight; }
 
 	//get the currently selected item
 	QString    GetSelectedItem();
 	QString    SelectNext();
 
-	void       SetHistoryMatches(const Messages::SAutoCompleteReply item)        { m_model.Set(item); };
+	void       SetHistoryMatches(const Messages::SAutoCompleteReply& item)       { m_model.Set(item); }
 	void       AddHistoryMatch(Messages::SAutoCompleteReply::SItem newMatchItem) { m_historyReply.matches.push_back(newMatchItem); }
 
 	void       DisplayHistory();
@@ -132,7 +115,7 @@ signals:
 private:
 
 	void SetupUI();
-	//handle item selection change due ot user-input
+	//handle item selection change due to user-input
 	void HandleSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
 	//raise changed event
@@ -155,8 +138,7 @@ private:
 
 	EPopupType                     m_popupType;
 
-	int m_defaultHeight;
+	int                            m_defaultHeight;
 
 	Q_OBJECT;
 };
-

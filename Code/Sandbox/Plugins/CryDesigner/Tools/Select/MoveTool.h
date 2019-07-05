@@ -2,14 +2,11 @@
 
 #pragma once
 
-#include "Tools/BaseTool.h"
-#include "Core/Model.h"
 #include "Tools/Select/SelectTool.h"
 
 namespace Designer
 {
 class MovePipeline;
-class Model;
 
 class MoveTool : public SelectTool
 {
@@ -52,4 +49,3 @@ GENERATE_MOVETOOL_CLASS(VertexPolygon, EDesignerTool)
 GENERATE_MOVETOOL_CLASS(EdgePolygon, EDesignerTool)
 GENERATE_MOVETOOL_CLASS(VertexEdgePolygon, EDesignerTool)
 }
-

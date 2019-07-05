@@ -1,11 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __bitarray_h__
-#define __bitarray_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -36,7 +31,7 @@ public:
 				*p &= ~mask;
 			return *this;
 		}
-		BitReference& operator=(const BitReference& __x)        { return *this = bool(__x);  }
+		BitReference& operator=(const BitReference& __x)        { return *this = bool(__x); }
 		bool          operator==(const BitReference& __x) const { return bool(*this) == bool(__x); }
 		bool          operator<(const BitReference& __x) const  { return !bool(*this) && bool(__x); }
 		BitReference& operator|=(bool __x)
@@ -54,9 +49,9 @@ public:
 		void flip() {* p ^= mask; }
 	};
 
-	CBitArray() { m_base = NULL; m_bits = NULL; m_size = 0; m_numBits = 0; };
-	CBitArray(int numBits)  { resize(numBits); };
-	~CBitArray()  { if (m_base) free(m_base); };
+	CBitArray() { m_base = NULL; m_bits = NULL; m_size = 0; m_numBits = 0; }
+	CBitArray(int numBits)  { resize(numBits); }
+	~CBitArray()  { if (m_base) free(m_base); }
 
 	void resize(int c)
 	{
@@ -65,8 +60,8 @@ public:
 		if (newSize > m_size)
 			Alloc(newSize);
 	}
-	int  size() const  { return m_numBits; };
-	bool empty() const { return m_numBits == 0; };
+	int  size() const  { return m_numBits; }
+	bool empty() const { return m_numBits == 0; }
 
 	//////////////////////////////////////////////////////////////////////////
 	void set()
@@ -138,10 +133,11 @@ public:
 			Alloc(b.m_size);
 		}
 		memcpy(m_bits, b.m_bits, m_size * sizeof(uint32));
+		m_numBits = b.m_numBits;
 		return *this;
 	}
 
-	bool checkByte(int pos) const { return reinterpret_cast<char*>(m_bits)[pos] != 0; };
+	bool checkByte(int pos) const { return reinterpret_cast<char*>(m_bits)[pos] != 0; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compresses this bit array into the specified one.
@@ -213,7 +209,11 @@ public:
 				in++;
 				c = *in++;
 				decompressed += c;
-				while (c) { *out++ = 0; c--; };
+				while (c) 
+				{ 
+					*out++ = 0; 
+					c--; 
+				}
 			}
 		}
 		m_numBits = decompressed;
@@ -268,6 +268,3 @@ inline int concatBitarray(CBitArray& b1, CBitArray& b2, CBitArray& test, CBitArr
 	}
 	return any;
 }
-
-#endif // __bitarray_h__
-

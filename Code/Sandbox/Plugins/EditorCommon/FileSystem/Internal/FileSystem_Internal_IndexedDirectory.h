@@ -19,4 +19,3 @@ struct SIndexedDirectory : SDirectory
 
 } // namespace Internal
 } // namespace FileSystem
-

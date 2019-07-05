@@ -17,6 +17,10 @@ class CTrackViewPlaybackControlsToolbar : public QToolBar, public CTrackViewCore
 {
 	Q_OBJECT
 
+	//TODO: avoid friend class
+	friend class CTrackViewWindow;
+	//~TODO:
+
 public:
 	CTrackViewPlaybackControlsToolbar(CTrackViewCore* pTrackViewCore);
 	~CTrackViewPlaybackControlsToolbar() {}
@@ -67,4 +71,3 @@ private:
 	SAnimTime               m_lastTime;
 	SAnimTime::EDisplayMode m_displayMode;
 };
-

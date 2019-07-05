@@ -72,7 +72,8 @@ struct SParams_WeaponFPAiming
 	CCryFlags<uint32> flags;
 };
 
-class IActionController;
+struct IActionController;
+
 class CWeaponFPAiming
 {
 	friend class CFPAimingAction;

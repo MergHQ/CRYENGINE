@@ -45,4 +45,3 @@ private:
 	std::map<std::string, FbxSurfaceMaterial*> m_materials;
 	std::map<const SExportMesh*, int>          m_meshMaterialIndices;
 };
-

@@ -5,7 +5,8 @@
 #include <IActorSystem.h>
 #include <IMovementController.h>
 #include "GameRules.h"
-
+#include "Game.h"
+#include "GameCVars.h"
 
 namespace PickAndThrow
 {

@@ -5,6 +5,7 @@
 #include "Player.h"
 #include "WeaponSystem.h"
 #include "GamePhysicsSettings.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace
 {
@@ -382,7 +383,7 @@ bool CStickyProjectile::AttachToCharacter(CProjectile* pProjectile, IEntity& pEn
 	if(!pCharacterAttachment)
 	{
 		CryLogAlways("Could not create attachment for StickyProjectile[%s]. AttachmentName[%s] BoneName[%s]", pProjectileEntity->GetName(), attachName, boneName );
-		CRY_ASSERT_MESSAGE(pCharacterAttachment, "Could not create attachment for StickyProjectile. This must be fixed.");
+		CRY_ASSERT(pCharacterAttachment, "Could not create attachment for StickyProjectile. This must be fixed.");
 		return false;
 	}
 

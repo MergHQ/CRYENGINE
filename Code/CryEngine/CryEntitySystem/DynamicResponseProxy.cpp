@@ -40,22 +40,22 @@ void CEntityComponentDynamicResponse::ProcessEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 CEntityComponentDynamicResponse::GetEventMask() const
+Cry::Entity::EventFlags CEntityComponentDynamicResponse::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_RESET;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DRS::IVariableCollection* CEntityComponentDynamicResponse::GetLocalVariableCollection() const
 {
-	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
+	CRY_ASSERT(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
 	return m_pResponseActor->GetLocalVariables();
 }
 
 //////////////////////////////////////////////////////////////////////////
 DRS::IResponseActor* CEntityComponentDynamicResponse::GetResponseActor() const
 {
-	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
+	CRY_ASSERT(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
 	return m_pResponseActor;
 }
 

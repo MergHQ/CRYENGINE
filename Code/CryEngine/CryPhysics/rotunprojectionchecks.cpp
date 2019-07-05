@@ -260,7 +260,7 @@ int ray_cyl_rot_unprojection(unprojection_mode *pmode, const ray *pray,int iFeat
 														 contact *pcontact, geom_contact_area *parea)
 {
 	Vec3r center,ccap,v,vx,vy,vz,l,lx,ly,lz,vsin,vcos,pt,ptz[2],ptx[2],pty[2], rotax=pmode->dir, axis=pcyl->axis;
-	real a,b,c,d,k,ksin,kcos, hh=pcyl->hh, r2=sqr(pcyl->r), len2=pray->dir.len2(), roots[4];
+	real a,b,c,d,k,ksin,kcos, hh=pcyl->hh, r2=sqr(pcyl->r), roots[4];
 	quotient tmax(0,1),tsin,tcos,t;
 	int i,j,icap,idbest=-1,bContact,bBest;
 	polynomial_tpl<real,4> pn;
@@ -538,7 +538,7 @@ int ray_capsule_rot_unprojection(unprojection_mode *pmode, const ray *pray,int i
 																 contact *pcontact, geom_contact_area *parea)
 {
 	Vec3r center,ccap,v,vx,vy,vz,l,lx,ly,lz,vsin,vcos,pt,ptz[2],ptx[2],pty[2], rotax=pmode->dir, axis=pcaps->axis;
-	real a,b,c,d,k,ksin,kcos, hh=pcaps->hh, r2=sqr(pcaps->r), len2=pray->dir.len2(), roots[4];
+	real a,b,c,d,k,ksin,kcos, hh=pcaps->hh, r2=sqr(pcaps->r), roots[4];
 	quotient tmax(0,1),tsin,tcos,t;
 	int i,j,icap,idbest=-1,bContact,bBest;
 	polynomial_tpl<real,4> pn;
@@ -695,7 +695,7 @@ int ray_sphere_rot_unprojection(unprojection_mode *pmode, const ray *pray,int iF
 																contact *pcontact, geom_contact_area *parea)
 {
 	Vec3r center,v,vx,vy,vz,l,lx,ly,lz,vsin,vcos,pt,ptz[2],ptx[2],pty[2], rotax=pmode->dir;
-	real a,b,c,d,k,ksin,kcos, r2=sqr(psph->r), len2=pray->dir.len2(), roots[4];
+	real a,b,c,d,k,ksin,kcos, r2=sqr(psph->r), roots[4];
 	quotient tmax(0,1),tsin,tcos,t;
 	int i,j,idbest=-1,bContact,bBest;
 	polynomial_tpl<real,4> pn;

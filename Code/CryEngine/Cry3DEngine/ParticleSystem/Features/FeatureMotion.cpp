@@ -4,7 +4,8 @@
 #include "FeatureMotion.h"
 #include "ParticleSystem/ParticleEmitter.h"
 #include <CrySerialization/Math.h>
-#include <CrySystem/CryUnitTest.h>
+#include <CrySystem/Testing/CryTest.h>
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace pfx2
 {
@@ -55,7 +56,7 @@ void CFeatureMotionPhysics::AddToComponent(CParticleComponent* pComponent, SComp
 		if (m_perParticleForceComputation)
 			pComponent->AddParticleData(EPVF_VelocityField);
 	}
-	pComponent->GetEffect()->AddEnvironFlags(m_environFlags);
+	pComponent->AddEnvironFlags(m_environFlags);
 
 	auto it = std::remove_if(m_localEffectors.begin(), m_localEffectors.end(), [](const PLocalEffector& ptr) { return !ptr; });
 	m_localEffectors.erase(it, m_localEffectors.end());
@@ -100,8 +101,8 @@ void CFeatureMotionPhysics::Serialize(Serialization::IArchive& ar)
 
 void CFeatureMotionPhysics::InitParticles(CParticleComponentRuntime& runtime)
 {
-	m_gravity.InitParticles(runtime, EPDT_Gravity);
-	m_drag.InitParticles(runtime, EPDT_Drag);
+	m_gravity.Init(runtime, EPDT_Gravity);
+	m_drag.Init(runtime, EPDT_Drag);
 }
 
 void CFeatureMotionPhysics::UpdateParticles(CParticleComponentRuntime& runtime)
@@ -148,7 +149,9 @@ uint CFeatureMotionPhysics::ComputeEffectors(CParticleComponentRuntime& runtime,
 	CRY_PFX2_PROFILE_DETAIL;
 
 	auto hasGravity = area.m_nFlags & ENV_GRAVITY;
+#if defined(USE_CRY_ASSERT)
 	auto hasWind = area.m_nFlags & ENV_WIND;
+#endif
 	assert(hasGravity || hasWind);
 	assert(!(hasGravity && hasWind));
 
@@ -281,7 +284,7 @@ ILINE void DragAdjust(T& velAdjust, T& accAdjust, T in, const T coeffs[6])
 	velAdjust = convert<T>(1.0) - accAdjust * in;
 }
 
-CRY_UNIT_TEST(DragFast)
+CRY_TEST(DragFast)
 {
 	float x1 = 1.0e-12f;
 	for (int i = 0; i < 24; ++i, x1 *= 10.f)
@@ -317,8 +320,8 @@ void CFeatureMotionPhysics::Integrate(CParticleComponentRuntime& runtime)
 
 	IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 	IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
-	IVec3Stream velocityField = container.GetIVec3Stream(EPVF_VelocityField);
-	IVec3Stream accelerations = container.GetIVec3Stream(EPVF_Acceleration);
+	IOVec3Stream velocityField = container.GetIOVec3Stream(EPVF_VelocityField);
+	IOVec3Stream accelerations = container.GetIOVec3Stream(EPVF_Acceleration);
 	IFStream gravities = container.GetIFStream(EPDT_Gravity, 0.0f);
 	IFStream drags = container.GetIFStream(EPDT_Drag);
 	IFStream normAges = container.GetIFStream(EPDT_NormalAge);
@@ -441,7 +444,7 @@ void CFeatureMotionPhysics::AngularLinearIntegral(CParticleComponentRuntime& run
 
 	for (auto particleGroupId : runtime.FullRangeV())
 	{
-		const floatv dT = DeltaTime(deltaTime, particleGroupId, normAges, lifeTimes);
+		DeltaTime(deltaTime, particleGroupId, normAges, lifeTimes);
 
 		if (spin2D)
 		{
@@ -518,7 +521,7 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureMotionPhysics, "Motion", "P
 
 MakeDataType(EPDT_PhysicalEntity, IPhysicalEntity*);
 
-void PopulateSurfaceTypes()
+bool Serialize(IArchive& ar, ESurfaceType& val, cstr name, cstr label)
 {
 	// Populate enum on first serialization call.
 	if (!ESurfaceType::count() && gEnv)
@@ -538,6 +541,7 @@ void PopulateSurfaceTypes()
 
 		pSurfaceTypeEnum->Release();
 	}
+	return Serialize(ar, static_cast<DynamicEnum<ISurfaceType>&>(val), name, label);
 }
 
 CFeatureMotionCryPhysics::CFeatureMotionCryPhysics()
@@ -564,8 +568,6 @@ void CFeatureMotionCryPhysics::AddToComponent(CParticleComponent* pComponent, SC
 
 void CFeatureMotionCryPhysics::Serialize(Serialization::IArchive& ar)
 {
-	PopulateSurfaceTypes();
-
 	CParticleFeature::Serialize(ar);
 	ar(m_physicsType, "PhysicsType", "Physics Type");
 	ar(m_surfaceType, "SurfaceType", "Surface Type");
@@ -789,7 +791,6 @@ public:
 		CParticleContainer& container = runtime.GetContainer();
 		const CParticleContainer& parentContainer = runtime.GetParentContainer();
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
-		const IFStream parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 		const IVec3Stream parentPositions = parentContainer.GetIVec3Stream(EPVF_Position);
 		const IQuatStream parentOrientations = parentContainer.GetIQuatStream(EPQF_Orientation);
 		IOVec3Stream parentPrevPositions = container.GetIOVec3Stream(EPVF_ParentPosition);

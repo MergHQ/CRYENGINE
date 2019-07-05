@@ -6,16 +6,16 @@
 #include <ICryMannequinEditor.h>
 #include <CryGame/IGameFramework.h>
 
-#include "../FragmentEditor.h"
-#include "../MannKeyPropertiesDlgFE.h"
-#include "../MannequinDialog.h"
-#include "../MannequinModelViewport.h"
-#include "../MannequinNodes.h"
-#include "../SequencerSequence.h"
-#include "../MannequinPlayback.h"
-#include "../FragmentTrack.h"
-#include "../SequenceAnalyzerNodes.h"
-#include "../MannDebugOptionsDialog.h"
+#include "Mannequin/FragmentEditor.h"
+#include "Mannequin/MannKeyPropertiesDlgFE.h"
+#include "Mannequin/MannequinDialog.h"
+#include "Mannequin/MannequinModelViewport.h"
+#include "Mannequin/MannequinNodes.h"
+#include "Mannequin/SequencerSequence.h"
+#include "Mannequin/MannequinPlayback.h"
+#include "Mannequin/FragmentTrack.h"
+#include "Mannequin/SequenceAnalyzerNodes.h"
+#include "Mannequin/MannDebugOptionsDialog.h"
 
 namespace
 {
@@ -721,7 +721,7 @@ float CTransitionEditorPage::PopulateClipTracks(CSequencerNode* node, const int 
 					uint32 rootScope = 0;
 					for (uint32 i = 0; i <= scopeID; i++)
 					{
-						if ((BIT64(1) & scopeMask) != 0)
+						if ((BIT64(i) & scopeMask) != 0)
 						{
 							rootScope = i;
 							break;
@@ -1243,7 +1243,6 @@ void CTransitionEditorPage::SetHistoryFromUI()
 //////////////////////////////////////////////////////////////////////////
 void CTransitionEditorPage::OnUpdateTV(bool forceUpdate)
 {
-	IMannequin& mannequinSys = gEnv->pGameFramework->GetMannequinInterface();
 	bool anyChanges = false;
 
 	const uint32 numScopes = m_contexts->m_scopeData.size();
@@ -1391,7 +1390,7 @@ void CTransitionEditorPage::OnUpdateTV(bool forceUpdate)
 		if ((clipChangeCount || fragChangeCount) && pFragTrack)
 		{
 			const int numKeys = pFragTrack->GetNumKeys();
-			float lastTime = 0.0f;
+
 			for (uint32 k = 0; k < numKeys; k++)
 			{
 				CFragmentKey fragKey;
@@ -1566,7 +1565,6 @@ void CTransitionEditorPage::PopulateTagList()
 	transitionTags.fragmentTags = m_fromFragTag.fragmentTags | m_toFragTag.fragmentTags;
 
 	// Store the current preview tag state
-	const CTagDefinition& tagDefs = m_contexts->m_controllerDef->m_tags;
 	const TagState globalTags = m_contexts->viewData[eMEM_TransitionEditor].m_pAnimContext->state.GetMask();
 
 	SFragTagState usedTags(TAG_STATE_EMPTY, TAG_STATE_EMPTY);
@@ -1756,4 +1754,3 @@ void CTransitionEditorPage::SetTime(float fTime)
 
 	m_wndTrackPanel.SetCurrTime(fTime, true);
 }
-

@@ -17,4 +17,3 @@ CFilePopupMenu::CFilePopupMenu(const QFileInfo& fileInfo, QWidget* pParent)
 	addAction(new SFilePopupMenuAction(tr("Copy Path To Clipboard"), this, [this] { QApplication::clipboard()->setText(m_fileInfo.absoluteFilePath());
 	                                   }));
 }
-

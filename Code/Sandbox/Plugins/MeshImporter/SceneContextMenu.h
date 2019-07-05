@@ -34,4 +34,3 @@ private:
 
 	QMenu* m_pMenu;
 };
-

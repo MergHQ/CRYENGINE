@@ -12,11 +12,12 @@
 #include <CryCore/Platform/CryWindows.h>
 #include <WinSock2.h>
 #include <ws2tcpip.h>
+#include <CrySystem/ISystem.h>
 
 #define CRY_INVALID_SOCKET INVALID_SOCKET
 #define CRY_SOCKET_ERROR   SOCKET_ERROR
 
-#include <string.h>
+#include <cstring>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -412,7 +413,7 @@ static eCrySockError TranslateLastSocketError()
 
 		TRANSLATE(WSANOTINITIALISED, eCSE_ENOTINITIALISED);
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("CrySock could not translate OS error code %x, treating as miscellaneous", error));
+		CRY_ASSERT(false, string().Format("CrySock could not translate OS error code %x, treating as miscellaneous", error));
 		socketError = eCSE_MISC_ERROR;
 		break;
 	}
@@ -461,7 +462,7 @@ static int TranslateToSocketError(eCrySockError socketError)
 
 		TRANSLATE(WSANOTINITIALISED, eCSE_ENOTINITIALISED);
 	default:
-		CRY_ASSERT_MESSAGE(false, string().Format("CrySock could not translate eCrySockError error code %x, treating as miscellaneous", socketError));
+		CRY_ASSERT(false, string().Format("CrySock could not translate eCrySockError error code %x, treating as miscellaneous", socketError));
 		break;
 	}
 #undef TRANSLATE

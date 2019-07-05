@@ -31,7 +31,7 @@
     { "LifeImmortal": [ ] },
     {
       "AppearanceMaterial": {
-        "Material": "",
+        "Material": "EngineAssets/Materials/material_terrain_default.mtl",
         "Texture": ""
       }
     },
@@ -54,5 +54,13 @@
         }
       }
     },
+    {
+      "VelocityMoveRelativeToEmitter": {
+        "AngularInherit": 0.0,
+        "PositionInherit": 1.0,
+        "VelocityInheritAfterDeath": 0.0,
+        "VelocityInherit": 1.0
+      }
+    }
   ]
 }

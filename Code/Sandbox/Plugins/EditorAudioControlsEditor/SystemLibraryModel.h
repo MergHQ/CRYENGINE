@@ -13,7 +13,13 @@ class CSystemLibraryModel : public QAbstractItemModel
 {
 public:
 
-	CSystemLibraryModel(CLibrary* const pLibrary, QObject* const pParent);
+	CSystemLibraryModel() = delete;
+	CSystemLibraryModel(CSystemLibraryModel const&) = delete;
+	CSystemLibraryModel(CSystemLibraryModel&&) = delete;
+	CSystemLibraryModel& operator=(CSystemLibraryModel const&) = delete;
+	CSystemLibraryModel& operator=(CSystemLibraryModel&&) = delete;
+
+	CSystemLibraryModel(CLibrary* pLibrary, QObject* pParent);
 	virtual ~CSystemLibraryModel() override;
 
 	void DisconnectSignals();
@@ -42,6 +48,5 @@ private:
 	QModelIndex IndexFromItem(CAsset const* pAsset) const;
 
 	CLibrary* const m_pLibrary;
-	int const       m_nameColumn;
 };
 } // namespace ACE

@@ -22,6 +22,8 @@
 
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetType.h>
+#include <AssetSystem/EditableAsset.h>
+#include <Commands/QCommandAction.h>
 #include <IUndoManager.h>
 
 #include <CrySchematyc/Compiler/ICompiler.h>
@@ -34,7 +36,8 @@
 #include <CrySystem/File/ICryPak.h>
 #include <Serialization/Qt.h>
 #include <CryIcon.h>
-#include <EditorFramework/Inspector.h>
+#include <EditorFramework/InspectorLegacy.h>
+#include <EditorFramework/BroadcastManager.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
 #include <QtUtil.h>
@@ -49,6 +52,15 @@
 #include <QTabWidget>
 #include <QSplitter>
 #include <QApplication>
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(schematyc, clear_log, CCommandDescription("Clear schematyc log"))
+REGISTER_EDITOR_UI_COMMAND_DESC(schematyc, clear_log, "Clear Log", "", "icons:schematyc/toolbar_clear_log.ico", false)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(schematyc, show_log_settings, CCommandDescription("Shows schematyc log settings in properties panel"))
+REGISTER_EDITOR_UI_COMMAND_DESC(schematyc, show_log_settings, "Show Log Settings", "", "icons:schematyc/toolbar_log_settings.ico", false)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(schematyc, show_preview_settings, CCommandDescription("Shows schematyc preview settings in properties panel"))
+REGISTER_EDITOR_UI_COMMAND_DESC(schematyc, show_preview_settings, "Show Preview Settings", "", "icons:schematyc/toolbar_preview_settings.ico", false)
 
 namespace CrySchematycEditor {
 
@@ -106,14 +118,8 @@ CMainWindow::CMainWindow()
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
 
-	QVBoxLayout* pWindowLayout = new QVBoxLayout();
-	pWindowLayout->setContentsMargins(0, 0, 0, 0);
-	SetContent(pWindowLayout);
-
+	RegisterActions();
 	InitMenu();
-	InitToolbar(pWindowLayout);
-
-	RegisterWidgets();
 
 	GetIEditor()->RegisterNotifyListener(this);
 }
@@ -143,7 +149,7 @@ void CMainWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
 void CMainWindow::Serialize(Serialization::IArchive& archive)
 {
 	// TODO: What is going to happen with this?
-	int stateVersion = 1;
+	//int stateVersion = 1;
 	QByteArray state;
 	if (archive.isOutput())
 	{
@@ -226,7 +232,7 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 	return true;
 }
 
-void CMainWindow::CreateDefaultLayout(CDockableContainer* pSender)
+void CMainWindow::OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser)
 {
 	CRY_ASSERT(pSender);
 
@@ -293,7 +299,7 @@ bool CMainWindow::OnAboutToCloseAsset(string& reason) const
 	if (m_pScriptBrowser && m_pScript && m_pScriptBrowser->HasScriptUnsavedChanges())
 	{
 		CRY_ASSERT(GetAssetBeingEdited());
-		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName()));
+		reason = QtUtil::ToString(tr("Asset '%1' has unsaved modifications.").arg(GetAssetBeingEdited()->GetName().c_str()));
 		return false;
 	}
 	return true;
@@ -303,8 +309,7 @@ void CMainWindow::OnCloseAsset()
 {
 	if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 	{
-		PopulateInspectorEvent popEvent([](CInspector& inspector) {});
-		pBroadcastManager->Broadcast(popEvent);
+		ClearLegacyInspectorEvent().Broadcast(pBroadcastManager);
 	}
 
 	if (m_pGraphView)
@@ -345,15 +350,28 @@ void CMainWindow::OnCloseAsset()
 	m_pAsset = nullptr;
 }
 
-void CMainWindow::RegisterWidgets()
+void CMainWindow::OnInitialize()
 {
-	EnableDockingSystem();
-
 	RegisterDockableWidget("Script Browser", [&]() { return CreateScriptBrowserWidget(); }, true, false);
 	RegisterDockableWidget("Graph View", [&]() { return CreateGraphViewWidget(); }, true, false);
 	RegisterDockableWidget("Preview", [&]() { return CreatePreviewWidget(); }, true, false);
 	RegisterDockableWidget("Log", [&]() { return CreateLogWidget(); }, true, false);
 	RegisterDockableWidget("Properties", [&]() { return CreateInspectorWidget(); }, true, false);
+}
+
+void CMainWindow::RegisterActions()
+{
+	RegisterAction("general.undo", &CMainWindow::OnUndo);
+	RegisterAction("general.redo", &CMainWindow::OnRedo);
+	RegisterAction("general.copy", &CMainWindow::OnCopy);
+	RegisterAction("general.cut", &CMainWindow::OnCut);
+	RegisterAction("general.paste", &CMainWindow::OnPaste);
+	RegisterAction("general.delete", &CMainWindow::OnDelete);
+
+	// Schematyc specific actions
+	m_pClearLogToolbarAction = RegisterAction("schematyc.clear_log", &CMainWindow::ClearLog);
+	m_pShowLogSettingsToolbarAction = RegisterAction("schematyc.show_log_settings", &CMainWindow::ShowLogSettings);
+	m_pShowPreviewSettingsToolbarAction = RegisterAction("schematyc.show_preview_settings", &CMainWindow::ShowPreviewSettings);
 }
 
 void CMainWindow::InitMenu()
@@ -367,49 +385,6 @@ void CMainWindow::InitMenu()
 	};
 	// ~TODO
 	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
-}
-
-void CMainWindow::InitToolbar(QVBoxLayout* pWindowLayout)
-{
-	QHBoxLayout* pToolBarsLayout = new QHBoxLayout();
-	pToolBarsLayout->setDirection(QBoxLayout::LeftToRight);
-	pToolBarsLayout->setSizeConstraint(QLayout::SetMaximumSize);
-
-	{
-		QToolBar* pToolBar = new QToolBar("Schematyc Tools");
-
-		{
-			QAction* pAction = pToolBar->addAction(CryIcon("icons:General/File_Save.ico"), QString());
-			pAction->setToolTip("Saves all changes.");
-			pAction->setShortcut(QObject::tr("Ctrl+S"));
-			QObject::connect(pAction, &QAction::triggered, this, &CMainWindow::OnSave);
-		}
-
-		{
-			m_pClearLogToolbarAction = pToolBar->addAction(CryIcon("icons:schematyc/toolbar_clear_log.ico"), QString());
-			m_pClearLogToolbarAction->setToolTip("Clears log output.");
-			m_pClearLogToolbarAction->setEnabled(false);
-			QObject::connect(m_pClearLogToolbarAction, &QAction::triggered, this, &CMainWindow::ClearLog);
-		}
-
-		{
-			m_pShowLogSettingsToolbarAction = pToolBar->addAction(CryIcon("icons:schematyc/toolbar_log_settings.ico"), QString());
-			m_pShowLogSettingsToolbarAction->setToolTip("Shows log settings in properties panel.");
-			m_pShowLogSettingsToolbarAction->setEnabled(false);
-			QObject::connect(m_pShowLogSettingsToolbarAction, &QAction::triggered, this, &CMainWindow::ShowLogSettings);
-		}
-
-		{
-			m_pShowPreviewSettingsToolbarAction = pToolBar->addAction(CryIcon("icons:schematyc/toolbar_preview_settings.ico"), QString());
-			m_pShowPreviewSettingsToolbarAction->setToolTip("Shows preview settings in properties panel.");
-			m_pShowPreviewSettingsToolbarAction->setEnabled(false);
-			QObject::connect(m_pShowPreviewSettingsToolbarAction, &QAction::triggered, this, &CMainWindow::ShowPreviewSettings);
-		}
-
-		pToolBarsLayout->addWidget(pToolBar, 0, Qt::AlignLeft);
-	}
-
-	pWindowLayout->addLayout(pToolBarsLayout);
 }
 
 bool CMainWindow::OnUndo()
@@ -515,7 +490,7 @@ void CMainWindow::OnScriptBrowserWidgetDestruction(QObject* pObject)
 
 void CMainWindow::OnInspectorWidgetDestruction(QObject* pObject)
 {
-	CInspector* pWidget = static_cast<CInspector*>(pObject);
+	CInspectorLegacy* pWidget = static_cast<CInspectorLegacy*>(pObject);
 	if (m_pInspector == pWidget)
 	{
 		m_pInspector = nullptr;
@@ -604,8 +579,8 @@ void CMainWindow::OnScriptBrowserSelection(const Schematyc::SScriptBrowserSelect
 			CPropertiesWidget* pPropertiesWidget = new CPropertiesWidget(*pDetailItem, this, m_pPreview);
 			Schematyc::IScriptElement* pScriptElement = selection.pScriptElement;
 
-			PopulateInspectorEvent popEvent([pPropertiesWidget, pScriptElement](CInspector& inspector)
-				{
+			PopulateLegacyInspectorEvent popEvent([pPropertiesWidget, pScriptElement](CInspectorLegacy& inspector)
+			{
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame(pScriptElement->GetName());
 					pInspectorWidget->SetWidget(pPropertiesWidget);
 					inspector.AddWidget(pInspectorWidget);
@@ -671,8 +646,8 @@ void CMainWindow::ShowLogSettings()
 	{
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
-			PopulateInspectorEvent popEvent([this](CInspector& inspector)
-				{
+			PopulateLegacyInspectorEvent popEvent([this](CInspectorLegacy& inspector)
+			 {
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Log Settings");
 					pInspectorWidget->SetWidget(new Schematyc::CLogSettingsWidget(m_logSettings));
 					inspector.AddWidget(pInspectorWidget);
@@ -689,8 +664,8 @@ void CMainWindow::ShowPreviewSettings()
 	{
 		if (CBroadcastManager* pBroadcastManager = CBroadcastManager::Get(this))
 		{
-			PopulateInspectorEvent popEvent([this](CInspector& inspector)
-				{
+			PopulateLegacyInspectorEvent popEvent([this](CInspectorLegacy& inspector)
+			 {
 					QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Preview Settings");
 					pInspectorWidget->SetWidget(new Schematyc::CPreviewSettingsWidget(*m_pPreview));
 					inspector.AddWidget(pInspectorWidget);
@@ -734,9 +709,9 @@ Schematyc::CPreviewWidget* CMainWindow::CreatePreviewWidget()
 	return pPreviewWidget;
 }
 
-CInspector* CMainWindow::CreateInspectorWidget()
+CInspectorLegacy* CMainWindow::CreateInspectorWidget()
 {
-	CInspector* pInspectorWidget = new CInspector(this);
+	CInspectorLegacy* pInspectorWidget = new CInspectorLegacy(this);
 	if (m_pInspector == nullptr)
 	{
 		m_pInspector = pInspectorWidget;
@@ -775,11 +750,11 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 			    if (pScriptGraph && &pModel->GetScriptGraph() == pScriptGraph)
 			    {
 			      m_pGraphView->SetModel(nullptr);
-			    }
+				}
 			  }
 			}
 
-	  });
+		});
 
 	if (m_pModel)
 	{
@@ -796,4 +771,3 @@ Schematyc::CScriptBrowserWidget* CMainWindow::CreateScriptBrowserWidget()
 }
 
 } // Schematyc
-

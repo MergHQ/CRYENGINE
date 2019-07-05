@@ -2,6 +2,7 @@
 
 #include "DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
 #include "VehicleComponent.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {

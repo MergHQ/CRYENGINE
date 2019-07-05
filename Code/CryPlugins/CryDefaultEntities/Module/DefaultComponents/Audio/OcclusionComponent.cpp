@@ -34,6 +34,7 @@ void COcclusionComponent::ReflectType(Schematyc::CTypeDesc<COcclusionComponent>&
 	desc.SetComponentFlags({ IEntityComponent::EFlags::Attach, IEntityComponent::EFlags::ClientOnly, IEntityComponent::EFlags::HideFromInspector });
 
 	desc.AddMember(&COcclusionComponent::m_occlusionType, 'occl', "occlusionType", "Occlusion Type", "The occlusion type to be used by this object.", CryAudio::EOcclusionType::Ignore);
+	desc.AddMember(&COcclusionComponent::m_occlusionRayOffset, 'offs', "occlusionRayOffset", "Occlusion Ray Offset", "The occlusion ray offset length to be used by this object.", 0.1f);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -46,6 +47,14 @@ void COcclusionComponent::Register(Schematyc::CEnvRegistrationScope& componentSc
 		pFunction->BindInput(1, 'occl', "Occlusion Type");
 		componentScope.Register(pFunction);
 	}
+
+	{
+		auto const pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&COcclusionComponent::SetOcclusionRayOffset, "9FB80B31-9A90-476D-BDF5-4D8F41F885E3"_cry_guid, "SetOcclusionRayOffset");
+		pFunction->SetDescription("Allows for setting the object's occlusion ray offset length.");
+		pFunction->SetFlags({ Schematyc::EEnvFunctionFlags::Member, Schematyc::EEnvFunctionFlags::Construction });
+		pFunction->BindInput(1, 'offs', "Occlusion Ray Offset");
+		componentScope.Register(pFunction);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -55,6 +64,7 @@ void COcclusionComponent::Initialize()
 	{
 		m_pIEntityAudioComponent = m_pEntity->GetOrCreateComponent<IEntityAudioComponent>();
 		m_pIEntityAudioComponent->SetObstructionCalcType(m_occlusionType, CryAudio::InvalidAuxObjectId);
+		m_pIEntityAudioComponent->SetOcclusionRayOffset(m_occlusionRayOffset);
 	}
 }
 
@@ -69,17 +79,17 @@ void COcclusionComponent::OnShutDown()
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint64 COcclusionComponent::GetEventMask() const
+Cry::Entity::EventFlags COcclusionComponent::GetEventMask() const
 {
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 #else
-	return 0;
+	return Cry::Entity::EventFlags();
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
-void COcclusionComponent::ProcessEvent(const SEntityEvent& event)
+void COcclusionComponent::ProcessEvent(SEntityEvent const& event)
 {
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
 	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
@@ -87,6 +97,9 @@ void COcclusionComponent::ProcessEvent(const SEntityEvent& event)
 		if (m_pIEntityAudioComponent != nullptr)
 		{
 			m_pIEntityAudioComponent->SetObstructionCalcType(m_occlusionType, CryAudio::InvalidAuxObjectId);
+
+			m_occlusionRayOffset = std::max(0.0f, m_occlusionRayOffset);
+			m_pIEntityAudioComponent->SetOcclusionRayOffset(m_occlusionRayOffset);
 		}
 	}
 #endif  // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
@@ -95,7 +108,19 @@ void COcclusionComponent::ProcessEvent(const SEntityEvent& event)
 //////////////////////////////////////////////////////////////////////////
 void COcclusionComponent::SetOcclusionType(CryAudio::EOcclusionType const occlusionType)
 {
-	m_occlusionType = occlusionType;
+	if (m_pIEntityAudioComponent != nullptr)
+	{
+		m_pIEntityAudioComponent->SetObstructionCalcType(occlusionType, CryAudio::InvalidAuxObjectId);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void COcclusionComponent::SetOcclusionRayOffset(float const offset)
+{
+	if (m_pIEntityAudioComponent != nullptr)
+	{
+		m_pIEntityAudioComponent->SetOcclusionRayOffset(std::max(0.0f, offset));
+	}
 }
 } // namespace DefaultComponents
 } // namespace Audio

@@ -4,7 +4,7 @@
 #undef	 max
 #include <algorithm>
 #include "ZipFileFormat.h"
-#include "ZipDirStructures.h"
+#include "zipdirstructures.h"
 #include "ZipDirList.h"
 #include "ZipDirTree.h"
 

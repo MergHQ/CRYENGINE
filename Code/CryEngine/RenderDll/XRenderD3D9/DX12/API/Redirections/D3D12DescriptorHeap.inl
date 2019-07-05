@@ -3,11 +3,12 @@
 #include <array>
 #include <d3d12.h>
 
-template<const int numTargets>
+template<int numTargets>
 class BroadcastableD3D12DescriptorHeap : public ID3D12DescriptorHeap, public Handable<BroadcastableD3D12DescriptorHeap<numTargets>*, numTargets>
 {
-	template<const int numTargets> friend class BroadcastableD3D12CommandQueue;
-	template<const int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
+	template<int numTargets> friend class BroadcastableD3D12CommandQueue;
+	template<int numTargets> friend class BroadcastableD3D12GraphicsCommandList;
+	typedef Handable<BroadcastableD3D12DescriptorHeap<numTargets>*, numTargets> Handable;
 	friend Handable;
 
 	int m_RefCount;
@@ -21,11 +22,11 @@ public:
 	  _In_ const D3D12_DESCRIPTOR_HEAP_DESC* pDescriptorHeapDesc,
 	  REFIID riid) : m_RefCount(1), Handable(this)
 	{
-		D3D12_CPU_DELTA_ADDRESS deltaCPUAddresses = { 0ULL, 0ULL };
-		D3D12_GPU_DELTA_ADDRESS deltaGPUAddresses = { 0ULL, 0ULL };
+		typename Handable::D3D12_CPU_DELTA_ADDRESS deltaCPUAddresses = { 0ULL, 0ULL };
+		typename Handable::D3D12_GPU_DELTA_ADDRESS deltaGPUAddresses = { 0ULL, 0ULL };
 		D3D12_DESCRIPTOR_HEAP_DESC DescriptorHeapDesc = *pDescriptorHeapDesc;
 
-		DX12_ASSERT(m_Handle < DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, "Too many descriptor heaps allocated, adjust the vector-size!");
+		DX12_ASSERT(this->m_Handle < DX12_MULTIGPU_NUM_DESCRIPTORHEAPS, "Too many descriptor heaps allocated, adjust the vector-size!");
 		DX12_ASSERT(pDescriptorHeapDesc->NodeMask != 0, "0 is not allowed in the broadcaster!");
 		for (int i = 0; i < numTargets; ++i)
 		{
@@ -38,21 +39,19 @@ public:
 				if (CRenderer::CV_r_StereoEnableMgpu < 0)
 					DescriptorHeapDesc.NodeMask = 1;
 #endif
-
-				HRESULT ret = pDevice->CreateDescriptorHeap(
-				  &DescriptorHeapDesc, riid, (void**)&m_Targets[i]);
-				DX12_ASSERT(ret == S_OK, "Failed to create descriptor heap!");
+				if (pDevice->CreateDescriptorHeap(&DescriptorHeapDesc, riid, (void**)&m_Targets[i]) != S_OK)
+					DX12_ERROR("Failed to create descriptor heap!");
 			}
 
 			if (m_Targets[i])
 			{
-				deltaCPUAddresses[i] = m_Targets[i]->GetCPUDescriptorHandleForHeapStart().ptr - (SIZE_T(m_Handle) << 32);
-				deltaGPUAddresses[i] = m_Targets[i]->GetGPUDescriptorHandleForHeapStart().ptr - (SIZE_T(m_Handle) << 32);
+				deltaCPUAddresses[i] = m_Targets[i]->GetCPUDescriptorHandleForHeapStart().ptr - (SIZE_T(this->m_Handle) << 32);
+				deltaGPUAddresses[i] = m_Targets[i]->GetGPUDescriptorHandleForHeapStart().ptr - (SIZE_T(this->m_Handle) << 32);
 			}
 		}
 
-		AssignCPUDeltasToHandle(m_Handle, deltaCPUAddresses);
-		AssignGPUDeltasToHandle(m_Handle, deltaGPUAddresses);
+		Handable::AssignCPUDeltasToHandle(this->m_Handle, deltaCPUAddresses);
+		Handable::AssignGPUDeltasToHandle(this->m_Handle, deltaGPUAddresses);
 	}
 
 #define Pick(i, func) \
@@ -161,14 +160,14 @@ public:
 	virtual D3D12_CPU_DESCRIPTOR_HANDLE STDMETHODCALLTYPE GetCPUDescriptorHandleForHeapStart(void) final
 	{
 		D3D12_CPU_DESCRIPTOR_HANDLE handle;
-		handle.ptr = SIZE_T(m_Handle) << 32;
+		handle.ptr = SIZE_T(this->m_Handle) << 32;
 		return handle;
 	}
 
 	virtual D3D12_GPU_DESCRIPTOR_HANDLE STDMETHODCALLTYPE GetGPUDescriptorHandleForHeapStart(void) final
 	{
 		D3D12_GPU_DESCRIPTOR_HANDLE handle;
-		handle.ptr = SIZE_T(m_Handle) << 32;
+		handle.ptr = SIZE_T(this->m_Handle) << 32;
 		return handle;
 	}
 

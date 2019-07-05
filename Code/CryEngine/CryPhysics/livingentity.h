@@ -77,6 +77,12 @@ struct SLivingEntityNetSerialize {
 	Vec3 pos;
 	Vec3 vel;
 	Vec3 velRequested;
+	bool bFlying;
+	bool bJumpRequested;
+	float dh, dhSpeed, stablehTime;
+	int idEntGroundCollider;
+	int ipartGroundCollider;
+	Vec3 posOnGroundCollider;
 	void Serialize( TSerialize ser );
 };
 
@@ -213,7 +219,7 @@ public:
 
 	bool m_forceFly;
 
-	static le_precomp_data s_precompData[MAX_PHYS_THREADS+1]; 
+	static le_precomp_data s_precompData[MAX_TOT_THREADS]; 
 };
 
 #endif

@@ -91,6 +91,8 @@ namespace Schematyc2
 
 		IDocGraphPtr CDocGraphFactory::CreateGraph(IScriptFile& file, const SGUID& guid, const SGUID& scopeGUID, const char* szName, EScriptGraphType type, const SGUID& contextGUID)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Allocate Graph");
+
 			switch(type)
 			{
 			case EScriptGraphType::AbstractInterfaceFunction:
@@ -124,6 +126,8 @@ namespace Schematyc2
 
 		IScriptElementPtr CScriptElementFactory::CreateElement(IScriptFile& file, EScriptElementType elementType)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Allocate Element");
+
 			switch(elementType)
 			{
 			case EScriptElementType::Module:
@@ -216,6 +220,8 @@ namespace Schematyc2
 
 		IScriptElementPtr CScriptElementFactory::CreateElement(Serialization::IArchive& archive, const char* szName)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Create Element");
+
 			IScriptFile* pFile = SerializationContext::GetScriptFile(archive);
 			if(pFile)
 			{
@@ -232,6 +238,8 @@ namespace Schematyc2
 
 				if(elementType == EScriptElementType::Graph)
 				{
+					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Create Graph");
+
 					// #SchematycTODO : This is a bit of a hack to maintain compatibility with old files. We should update the format to combine header and detail once graphs become optional element extensions.
 					SGraphHeader graphHeader;
 					archive(ArchiveBlock(graphHeader, "header"), szName);
@@ -244,6 +252,8 @@ namespace Schematyc2
 				}
 				else
 				{
+					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Create Script Element");
+
 					IScriptElementPtr pElement = CreateElement(*pFile, elementType);
 					if(pElement)
 					{
@@ -262,6 +272,8 @@ namespace Schematyc2
 
 		void CInputBlock::SElement::Serialize(Serialization::IArchive& archive)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Serialize Element");
+
 			if(ptr)
 			{
 				SCHEMATYC2_SYSTEM_ASSERT(serializationPass <= ESerializationPass::PostLoad)
@@ -437,6 +449,8 @@ namespace Schematyc2
 
 		void CInputBlock::BuildElementHierarchy(IScriptElement& parent)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Build Element Dependencies");
+
 			typedef std::unordered_map<SGUID, IScriptElement*> ElementsByGUID;
 
 			ElementsByGUID elementsByGUID;
@@ -480,14 +494,20 @@ namespace Schematyc2
 
 		void CInputBlock::AppendElements(Elements& dst, const Elements& src) const
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Append Element");
+
 			for(const SElement& element : src)
 			{
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Add Element");
+
 				dst.push_back(element);
 			}
 		}
 
 		void CInputBlock::EraseEmptyElements(Elements &elements) const
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Erase Empty Elements");
+
 			size_t elementCount = elements.size();
 			for(size_t elementIdx = 0; elementIdx < elementCount; )
 			{
@@ -509,6 +529,8 @@ namespace Schematyc2
 
 		void CInputBlock::SortElementsByDependency(Elements &elements)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Sort Elements By Dependency");
+
 			typedef std::unordered_map<SGUID, size_t> DependencyMap;
 
 			// Give include elements maximum sort priority to ensure they are loaded first.
@@ -587,6 +609,8 @@ namespace Schematyc2
 
 		void CInputBlock::VerifyElementDependencies(const Elements &elements)
 		{
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Verify Element Dependencies");
+
 			typedef std::unordered_set<SGUID> Dependencies;
 
 			Dependencies dependencies;

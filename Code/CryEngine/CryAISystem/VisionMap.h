@@ -52,7 +52,7 @@ public:
 	virtual void                    AddPriorityMapEntry(const PriorityMapEntry& priorityMapEntry);
 	virtual void                    ClearPriorityMap();
 
-	virtual void                    Update(float frameTime);
+	virtual void                    Update(const CTimeValue frameStartTime, const float frameTime);
 
 #if VISIONMAP_DEBUG
 	void DebugDraw();
@@ -257,7 +257,9 @@ private:
 	int         m_pendingRayCounts[RayCastRequest::TotalNumberOfPriorities];
 #endif
 
-	uint32 m_visionIdCounter;
+	uint32     m_visionIdCounter;
+	CTimeValue m_frameStartTime;
+	float      m_frameDeltaTime;
 };
 
 #endif // __VisionMap_h__

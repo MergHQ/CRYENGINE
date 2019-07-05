@@ -1,12 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <Cry3DEngine/IIndexedMesh.h>
 #include <CryRenderer/IShader.h>
-#include "Common/RenderView.h"
+#include <CryRenderer/IMeshBaking.h>
 
 //#define CREATE_RENDERDOC_CAPTURE
 
@@ -14,7 +13,7 @@
 class CREBaker : public CRenderElement
 {
 private:
-	CRenderElement*                    m_pSrc;
+	CRenderElement*                  m_pSrc;
 	std::vector<IIndexedMesh*>       m_pDst;
 	CMesh*                           m_pSrcMesh;
 	int                              m_nPhase;
@@ -34,11 +33,11 @@ public:
 	{}
 
 	virtual ~CREBaker() {}
-	inline uint32              mfGetFlags(void)                                                                        { return m_pSrc->mfGetFlags(); }
-	inline void                mfSetFlags(uint32 fl)                                                                   { m_pSrc->mfSetFlags(fl); }
-	inline void                mfUpdateFlags(uint32 fl)                                                                { m_pSrc->mfUpdateFlags(fl); }
-	inline void                mfClearFlags(uint32 fl)                                                                 { m_pSrc->mfClearFlags(fl); }
-	inline bool                mfCheckUpdate(InputLayoutHandle eVertFormat, int Flags, uint16 nFrame)                  { return m_pSrc->mfCheckUpdate(eVertFormat, Flags, nFrame); }
+	inline ERenderElementFlags mfGetFlags(void)                                                                        { return m_pSrc->mfGetFlags(); }
+	inline void                mfSetFlags(ERenderElementFlags fl)                                                      { m_pSrc->mfSetFlags(fl); }
+	inline void                mfUpdateFlags(ERenderElementFlags fl)                                                   { m_pSrc->mfUpdateFlags(fl); }
+	inline void                mfClearFlags(ERenderElementFlags fl)                                                    { m_pSrc->mfClearFlags(fl); }
+	inline bool                mfCheckUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, int nFrame)       { return m_pSrc->mfCheckUpdate(eVertFormat, StreamMask, nFrame); }
 
 	virtual CRenderChunk*      mfGetMatInfo()                                                                          { return m_pSrc->mfGetMatInfo(); }
 	virtual TRenderChunkArray* mfGetMatInfoList()                                                                      { return m_pSrc->mfGetMatInfoList(); }
@@ -47,14 +46,14 @@ public:
 	virtual bool               mfIsHWSkinned()                                                                         { return m_pSrc->mfIsHWSkinned(); }
 	virtual CRenderElement*    mfCopyConstruct(void)                                                                   { return m_pSrc->mfCopyConstruct(); }
 	virtual void               mfCenter(Vec3& centr, CRenderObject* pObj, const SRenderingPassInfo& passInfo)          { m_pSrc->mfCenter(centr, pObj, passInfo); }
-	virtual void               mfGetBBox(Vec3& vMins, Vec3& vMaxs) const                                               { m_pSrc->mfGetBBox(vMins, vMaxs); }
+	virtual void               mfGetBBox(AABB& bb) const                                                               { m_pSrc->mfGetBBox(bb); }
 	virtual void               mfGetPlane(Plane& pl)                                                                   { m_pSrc->mfGetPlane(pl); }
 
-	virtual void*              mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, int Flags) { return m_pSrc->mfGetPointer(ePT, Stride, Type, Dst, Flags); }
+	virtual void*              mfGetPointer(ESrcPointer ePT, int* Stride, EParamType Type, ESrcPointer Dst, EStreamMasks StreamMask) { return m_pSrc->mfGetPointer(ePT, Stride, Type, Dst, StreamMask); }
 
-	virtual bool               mfUpdate(InputLayoutHandle eVertFormat, int Flags, bool bTessellation = false)          
+	virtual bool               mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false)
 	{
-		bool bRet = m_pSrc->mfUpdate(eVertFormat, Flags, bTessellation); 
+		bool bRet = m_pSrc->mfUpdate(eVertFormat, StreamMask, bTessellation);
 		return bRet;
 	}
 
@@ -279,7 +278,7 @@ bool CREBaker::mfDraw(CShader* ef, SShaderPass* sfm)
 					{
 						// Send the commands to the GPU to make sure we don't timeout the driver
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-						rd->GetDeviceContext().Flush();
+						rd->GetDeviceContext()->Flush();
 #endif
 						Sleep(1);
 					}
@@ -378,21 +377,21 @@ static IMaterial* PatchMaterial(IMaterial* pMat)
 
 static void EtchAlphas(std::vector<IIndexedMesh*> outputList, IMaterial* pMaterial, const SMeshBakingMaterialParams* params, int numParams)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	//CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	if (outputList.empty())
 		return;
 
-	int i = 0;
+	//int i = 0;
 	for (std::vector<IIndexedMesh*>::iterator mit = outputList.begin(), mend = outputList.end(); mit != mend; ++mit)
 	{
 		IIndexedMesh* pOutput = *mit;
 		if (!pOutput)
 			continue;
-		int numOutputTriangles = pOutput->GetIndexCount() / 3;
-		CMesh* pOutputMesh = pOutput->GetMesh();
-		vtx_idx* pOutIndices = pOutputMesh->GetStreamPtr<vtx_idx>(CMesh::INDICES);
-		SMeshTexCoord* pOutTexCoords = pOutputMesh->GetStreamPtr<SMeshTexCoord>(CMesh::TEXCOORDS);
+		//int numOutputTriangles = pOutput->GetIndexCount() / 3;
+		//CMesh* pOutputMesh = pOutput->GetMesh();
+		//vtx_idx* pOutIndices = pOutputMesh->GetStreamPtr<vtx_idx>(CMesh::INDICES);
+		//SMeshTexCoord* pOutTexCoords = pOutputMesh->GetStreamPtr<SMeshTexCoord>(CMesh::TEXCOORDS);
 
 		// OLD PIPELINE
 		ASSERT_LEGACY_PIPELINE
@@ -438,7 +437,7 @@ static void EtchAlphas(std::vector<IIndexedMesh*> outputList, IMaterial* pMateri
 			{
 				// Send the commands to the GPU to make sure we don't timeout the driver
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-				rd->GetDeviceContext().Flush();
+				rd->GetDeviceContext()->Flush();
 #endif
 				Sleep(1);
 			}
@@ -735,7 +734,7 @@ bool CD3D9Renderer::BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBa
 			pBakeMaterial.push_back(PatchMaterial(*it)); // Replace current shader with MeshBake
 		}
 
-		CTexture* pTmpDepthSurface = CreateDepthTarget(outputWidth, outputHeight, Clr_Empty, eTF_Unknown);
+		CTexture* pTmpDepthSurface = CRendererResources::CreateDepthTarget(outputWidth, outputHeight, Clr_Empty, eTF_Unknown);
 		if (!pTmpDepthSurface)
 		{
 			CryLog("BakeMesh: Failed as temporary depth surface could not be created of size %dx%d\n", outputWidth, outputHeight);
@@ -744,8 +743,6 @@ bool CD3D9Renderer::BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBa
 		}
 
 		PROFILE_LABEL_SCOPE("BakeMesh");
-
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera());
 
 		bool bAlphaCutout = false;
 		for (int i = 0; i < pInputParams->numMaterialParams; i++)

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ImageHDR.h"
 #include <CrySystem/File/CryFile.h>
+#include <CryThreading/CryThread.h>
 
 // We need globals because of the callbacks (they don't allow us to pass state)
 static CryMutex globalFileMutex;
@@ -89,7 +90,7 @@ int RGBE_ReadPixels_RLE(CCryFile* fp, float* data, uint32 scanline_width,
 
 #include <math.h>
 #include <malloc.h>
-#include <string.h>
+#include <cstring>
 #include <ctype.h>
 
 /* This file contains code to read and write four byte rgbe file format
@@ -450,4 +451,3 @@ bool CImageHDR::Load(const string& fileName, CImageEx& outImage)
 
 	return bRet;
 }
-

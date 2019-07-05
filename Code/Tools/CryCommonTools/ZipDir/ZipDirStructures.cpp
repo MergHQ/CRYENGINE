@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include <zlib.h>
 #include "ZipFileFormat.h"
-#include "ZipDirStructures.h"
+#include "zipdirstructures.h"
 #include <time.h>
 #include <CryString/CryStringUtils.h>
 
@@ -328,6 +328,7 @@ uint64 ZipDir::FileEntry::GetModificationTime()
 	st.wMilliseconds = 0;
 	FILETIME ft;
 	SystemTimeToFileTime(&st, &ft);
+
 	LARGE_INTEGER lt;
 	lt.HighPart = ft.dwHighDateTime;
 	lt.LowPart = ft.dwLowDateTime;
@@ -354,7 +355,7 @@ bool ZipDir::FileEntry::CompareFileTimeNTFS( __int64 timestamp )
 	ft.dwLowDateTime = timestamp & 0xFFFFFFFF;
 
 	WORD dosTime,dosDate;
-	FileTimeToDosDateTime( &ft,&dosDate,&dosTime );
+	FileTimeToDosDateTime(&ft, &dosDate, &dosTime );
 
 	return (nLastModTime == dosTime && nLastModDate == dosDate);
 }

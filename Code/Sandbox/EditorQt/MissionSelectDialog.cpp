@@ -108,4 +108,3 @@ void CMissionSelectDialog::OnUpdateDescription()
 		m_descriptions[sel] = m_description;
 	}
 }
-

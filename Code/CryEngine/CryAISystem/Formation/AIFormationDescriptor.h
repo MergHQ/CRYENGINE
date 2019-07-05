@@ -56,7 +56,7 @@ public:
 	unsigned int   m_nNameCRC32;
 	TVectorOfNodes m_Nodes;
 public:
-	CFormationDescriptor() {};
+	CFormationDescriptor() : m_nNameCRC32(0) {};
 	void AddNode(const FormationNode& nodeDescriptor);
 	int  GetNodeClass(int i) const
 	{

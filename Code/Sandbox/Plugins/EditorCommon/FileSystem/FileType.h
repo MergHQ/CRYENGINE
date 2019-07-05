@@ -1,9 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <QMetaType>
 #include <QString>
 #include <QVector>
-#include <QMetaType>
 
 /**
  * \brief statically describes a known file type of engine
@@ -15,7 +15,7 @@ struct SFileType
 	static const char*      trContext; ///< context for nameKey
 
 	const char*             nameTrKey;        ///< translatable name for the file type
-	QString                 iconPath;         ///< icon path used for visualisations
+	QString                 iconPath;         ///< icon path used for visualizations
 	QVector<QString>        folders;          ///< engine folders this file type exists in (empty means all folders)
 	QString                 primaryExtension; ///< main extension (default for opening & saving the file)
 	QVector<QString>        extraExtensions;  ///< additional file name extensions
@@ -30,4 +30,3 @@ struct SFileType
 };
 
 Q_DECLARE_METATYPE(const SFileType*)
-

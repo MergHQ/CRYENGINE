@@ -1,11 +1,9 @@
 #include "StdAfx.h"
 #include "ProjectorLightComponent.h"
 
-#include <CrySystem/IProjectManager.h>
-#include <ILevelSystem.h>
-#include <Cry3DEngine/IRenderNode.h>
-
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <array>
+
 
 namespace Cry
 {
@@ -68,7 +66,22 @@ void CProjectorLightComponent::Initialize()
 
 	//TODO: Automatically add DLF_FAKE when using beams or flares
 
-	if (m_shadows.m_castShadowSpec != EMiniumSystemSpec::Disabled && (int)gEnv->pSystem->GetConfigSpec() >= (int)m_shadows.m_castShadowSpec)
+	bool shouldCastShadows = false;
+	if (m_shadows.m_castShadowSpec != EMiniumSystemSpec::Disabled)
+	{
+		const int sysSpec = gEnv->pSystem->GetConfigSpec();
+		if (sysSpec != CONFIG_CUSTOM)
+		{
+			shouldCastShadows = sysSpec >= static_cast<int>(m_shadows.m_castShadowSpec);
+		}
+		else
+		{
+			if (ICVar* const pSysSpecShadow = gEnv->pConsole->GetCVar("sys_spec_shadow"))
+				shouldCastShadows = pSysSpecShadow->GetIVal() >= static_cast<int>(m_shadows.m_castShadowSpec);
+		}
+	}
+
+	if (shouldCastShadows)
 	{
 		light.m_Flags |= DLF_CASTSHADOW_MAPS;
 
@@ -210,15 +223,15 @@ void CProjectorLightComponent::Initialize()
 
 void CProjectorLightComponent::ProcessEvent(const SEntityEvent& event)
 {
-	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED || ENTITY_EVENT_BIT(ENTITY_EVENT_LINK) || ENTITY_EVENT_BIT(ENTITY_EVENT_DELINK))
+	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED || event.event == ENTITY_EVENT_LINK || event.event == ENTITY_EVENT_DELINK)
 	{
 		Initialize();
 	}
 }
 
-uint64 CProjectorLightComponent::GetEventMask() const
+Cry::Entity::EventFlags CProjectorLightComponent::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED) | ENTITY_EVENT_BIT(ENTITY_EVENT_LINK) | ENTITY_EVENT_BIT(ENTITY_EVENT_DELINK);
+	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_LINK | ENTITY_EVENT_DELINK;
 }
 
 #ifndef RELEASE

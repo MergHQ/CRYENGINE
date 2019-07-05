@@ -6,23 +6,29 @@
 
 extern int g_nPrintDX12;
 
-#ifdef _DEBUG
-	#define DX12_LOG(cond, ...) \
-		do { if (cond || g_nPrintDX12) { CryLog("DX12 Log: " __VA_ARGS__); } } while (0)
+#if !_RELEASE
 	#define DX12_ERROR(...) \
-		do { CryLog("DX12 Error: " __VA_ARGS__); } while (0)
+		do { CryLog("DX12 Error: " __VA_ARGS__); } while (false)
 	#define DX12_ASSERT(cond, ...) \
-		do { if (!(cond)) { DX12_ERROR(__VA_ARGS__); CRY_ASSERT_MESSAGE(0, __VA_ARGS__); } } while (0)
-	#define DX12_WARNING(cond, ...) \
-		do { if (!(cond)) { DX12_LOG(__VA_ARGS__); } } while (0)
+		do { if (!(cond)) { DX12_ERROR(#cond); CRY_ASSERT(false, __VA_ARGS__); } } while (false)
 #else
-	#define DX12_LOG(cond, ...) do {} while (0)
-	#define DX12_ERROR(...)     do {} while (0)
-	#define DX12_ASSERT(cond, ...)
-	#define DX12_WARNING(cond, ...)
+	#define DX12_ERROR(...)        ((void)0)
+	#define DX12_ASSERT(cond, ...) ((void)0)
 #endif
 
-#define DX12_NOT_IMPLEMENTED DX12_ASSERT(0, "Not implemented!");
+#ifdef _DEBUG
+	#define DX12_LOG(cond, ...) \
+		do { if (cond || g_nPrintDX12) { CryLog("DX12 Log: " __VA_ARGS__); } } while (false)
+	#define DX12_WARNING(cond, ...) \
+		do { if (!(cond)) { DX12_LOG(__VA_ARGS__); } } while (false)
+	#define DX12_ASSERT_DEBUG(cond, ...) DX12_ASSERT(cond, __VA_ARGS__)
+#else
+	#define DX12_LOG(cond, ...)          ((void)0)
+	#define DX12_WARNING(cond, ...)      ((void)0)
+	#define DX12_ASSERT_DEBUG(cond, ...) ((void)0)
+#endif
+
+#define DX12_NOT_IMPLEMENTED DX12_ASSERT(false, "Not implemented!");
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -56,6 +62,14 @@ extern int g_nPrintDX12;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+HRESULT WINAPI D3DReflectDXILorDXBC(
+	_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData,
+	_In_ SIZE_T SrcDataSize,
+	_In_ REFIID pInterface,
+	_Out_ void** ppReflector);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 HRESULT WINAPI DX12CreateDXGIFactory1(REFIID riid, void** ppFactory);
 
 HRESULT WINAPI DX12CreateDevice(
@@ -69,3 +83,52 @@ HRESULT WINAPI DX12CreateDevice(
   ID3D11Device** ppDevice,
   D3D_FEATURE_LEVEL* pFeatureLevel,
   ID3D11DeviceContext** ppImmediateContext);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template<class ID3D11DeviceChildDerivative>
+inline void ClearDebugName(ID3D11DeviceChildDerivative* pWrappedResource)
+{
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+	if (!pWrappedResource)
+		return;
+
+	pWrappedResource->SetPrivateData(WKPDID_D3DDebugObjectName, 0, nullptr);
+#endif
+}
+
+template<class ID3D11DeviceChildDerivative>
+inline void SetDebugName(ID3D11DeviceChildDerivative* pWrappedResource, const char* name)
+{
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+	if (!pWrappedResource)
+		return;
+
+	pWrappedResource->SetPrivateData(WKPDID_D3DDebugObjectName, 0, nullptr);
+	pWrappedResource->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(name)+1, name);
+#endif
+}
+
+template<class ID3D11DeviceChildDerivative>
+inline std::string GetDebugName(ID3D11DeviceChildDerivative* pWrappedResource)
+{
+#if !defined(RELEASE) && CRY_PLATFORM_WINDOWS
+	if (!pWrappedResource)
+		return "nullptr";
+
+	UINT length = 512;
+	do
+	{
+		char* buffer = (char*)_alloca(length);
+		HRESULT hr = pWrappedResource->GetPrivateData(WKPDID_D3DDebugObjectName, &length, buffer);
+		if (hr == S_OK)
+			return buffer;
+		if (hr != D3D12_MESSAGE_ID_GETPRIVATEDATA_MOREDATA)
+			return "failure";
+
+		length += 512;
+	} while (true);
+#endif
+
+	return "";
+}

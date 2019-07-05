@@ -6,10 +6,11 @@
 
 #include <QAbstractItemModel>
 
-struct SPreferencePage;
+class QAdvancedPropertyTreeLegacy;
+class QContainer;
 class QObjectTreeWidget;
 class QSplitter;
-class QContainer;
+struct SPreferencePage;
 
 class EDITOR_COMMON_API QPreferencePage : public QWidget
 {
@@ -17,13 +18,22 @@ class EDITOR_COMMON_API QPreferencePage : public QWidget
 public:
 	QPreferencePage(SPreferencePage* pPreferencePage, QWidget* pParent = nullptr);
 	QPreferencePage(std::vector<SPreferencePage*> preferences, const char* path, QWidget* pParent = nullptr);
+	~QPreferencePage();
+
+private:
+	void InitUI();
+	void OnPreferenceChanged();
+
+	void ConnectPreferences();
+	void DisconnectPreferences();
 
 private slots:
 	void OnPropertyChanged();
 	void OnResetToDefault();
 
 private:
-	SPreferencePage* m_pPreferencePage;
+	QAdvancedPropertyTreeLegacy* m_pPropertyTree;
+	std::vector<SPreferencePage*> m_preferencePages;
 	const string m_path;
 };
 
@@ -50,4 +60,3 @@ private:
 	QObjectTreeWidget* m_pTreeView;
 	string             m_currPath;
 };
-

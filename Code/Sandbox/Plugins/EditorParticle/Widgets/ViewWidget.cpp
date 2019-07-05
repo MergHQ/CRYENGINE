@@ -10,17 +10,18 @@
 #include <QtUtil.h>
 #include "Undo.h"
 
-#include <ICommandManager.h>
+#include <Commands/ICommandManager.h>
 #include <NodeGraph/NodeGraphUndo.h>
 
 #include <QVBoxLayout>
 #include <QlineEdit>
 #include <QLabel>
 #include <QSpacerItem>
-#include <QAdvancedPropertyTree.h>
+#include <QAdvancedPropertyTreeLegacy.h>
 #include <QControls.h>
 
-namespace CryParticleEditor {
+namespace CryParticleEditor
+{
 
 void CItemProperties::SFeatureSerializer::Serialize(Serialization::IArchive& archive)
 {
@@ -85,9 +86,6 @@ CItemProperties::CItemProperties(CryGraphEditor::GraphItemSet& selectedItems)
 
 	if (nodesByNameCrc.size() == 1)
 	{
-		QWidget* pContainer = new QWidget();
-		QVBoxLayout* pLayout = new QVBoxLayout();
-
 		SNode& node = nodesByNameCrc.begin()->second;
 		m_pNodeItem = node.pNodeItem;
 
@@ -102,7 +100,7 @@ CItemProperties::CItemProperties(CryGraphEditor::GraphItemSet& selectedItems)
 			feature.name = QtUtil::ToString(QString("%1: %2").arg(pFeatureItem->GetGroupName()).arg(pFeatureItem->GetName()));
 		}
 
-		m_pPropertyTree = new QAdvancedPropertyTree(node.pNodeItem->GetName());
+		m_pPropertyTree = new QAdvancedPropertyTreeLegacy(node.pNodeItem->GetName());
 		// WORKAROUND: Serialization of features doesn't work with the default style.
 		//						 We either need to fix serialization or property tree. As soon as it's
 		//						 done use the commented out code below.
@@ -122,8 +120,9 @@ CItemProperties::CItemProperties(CryGraphEditor::GraphItemSet& selectedItems)
 
 		m_pNodeItem->SignalInvalidated.Connect(this, &CItemProperties::OnItemsChanged);
 		m_pNodeItem->SignalDeletion.Connect(this, &CItemProperties::OnItemsDeletion);
-		QObject::connect(m_pPropertyTree, &QPropertyTree::signalPushUndo, this, &CItemProperties::OnPushUndo);
-		QObject::connect(m_pPropertyTree, &QPropertyTree::signalChanged, this, &CItemProperties::OnItemsChanged);
+		QObject::connect(m_pPropertyTree, &QPropertyTreeLegacy::signalBeginUndo, this, &CItemProperties::OnBeginUndo);
+		QObject::connect(m_pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &CItemProperties::OnItemsChanged);
+		QObject::connect(m_pPropertyTree, &QPropertyTreeLegacy::signalEndUndo, this, &CItemProperties::OnEndUndo);
 
 		QVBoxLayout* pMainLayout = new QVBoxLayout(this);
 		pMainLayout->addWidget(m_pPropertyTree);
@@ -155,12 +154,26 @@ void CItemProperties::showEvent(QShowEvent* pEvent)
 		m_pPropertyTree->setSizeToContent(true);
 }
 
-void CItemProperties::OnPushUndo()
+void CItemProperties::OnBeginUndo()
 {
 	m_isPushingUndo = true;
 	CryGraphEditor::CUndoNodePropertiesChange* pUndoObject = new CryGraphEditor::CUndoNodePropertiesChange(*m_pNodeItem);
-	CUndo undo(pUndoObject->GetDescription());
-	CUndo::Record(pUndoObject);
+	m_latestUndoDescription = pUndoObject->GetDescription();
+	GetIEditor()->GetIUndoManager()->Begin();
+	GetIEditor()->GetIUndoManager()->RecordUndo(pUndoObject);
+}
+
+void CItemProperties::OnEndUndo(bool undoAccepted)
+{
+	if (undoAccepted)
+	{
+		GetIEditor()->GetIUndoManager()->Accept(m_latestUndoDescription);
+	}
+	else
+	{
+		GetIEditor()->GetIUndoManager()->Cancel();
+	}
+
 	m_isPushingUndo = false;
 }
 
@@ -168,6 +181,8 @@ void CItemProperties::OnItemsChanged()
 {
 	if (m_pPropertyTree && !m_isPushingUndo)
 		m_pPropertyTree->revertNoninterrupting();
+
+	signalItemsChanged();
 }
 
 void CItemProperties::OnItemsDeletion()
@@ -176,15 +191,8 @@ void CItemProperties::OnItemsDeletion()
 }
 
 CGraphView::CGraphView()
-	: CNodeGraphView()
-	, m_pMovingFeatureWidget(nullptr)
+	: m_pMovingFeatureWidget(nullptr)
 {
-
-}
-
-CGraphView::~CGraphView()
-{
-
 }
 
 void CGraphView::OnFeatureMouseEvent(QGraphicsItem* pSender, SFeatureMouseEventArgs& args)
@@ -322,6 +330,11 @@ bool CGraphView::MoveFeatureToIndex(CFeatureWidget& featureWidget, uint32 destIn
 	return false;
 }
 
+void CGraphView::OnItemsChanged()
+{
+	static_cast<CParticleGraphModel*>(GetModel())->signalChanged(nullptr);
+}
+
 void CGraphView::ShowFeatureContextMenu(CFeatureWidget* pFeatureWidget, QPointF screenPos)
 {
 	ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
@@ -352,7 +365,7 @@ void CGraphView::ShowFeatureContextMenu(CFeatureWidget* pFeatureWidget, QPointF 
 		QObject::connect(pAction, &QAction::triggered, this, [pItem](bool isChecked)
 			{
 				pItem->SetDeactivated(!isChecked);
-		  });
+			});
 	}
 
 	const QPoint parent = mapFromGlobal(QPoint(screenPos.x(), screenPos.y()));
@@ -364,7 +377,9 @@ void CGraphView::ShowFeatureContextMenu(CFeatureWidget* pFeatureWidget, QPointF 
 
 QWidget* CGraphView::CreatePropertiesWidget(CryGraphEditor::GraphItemSet& selectedItems)
 {
-	return new CItemProperties(selectedItems);
+	CItemProperties* const pItemProperties = new CItemProperties(selectedItems);
+	pItemProperties->signalItemsChanged.Connect(this, &CGraphView::OnItemsChanged);
+	return pItemProperties;
 }
 
 bool CGraphView::PopulateNodeContextMenu(CryGraphEditor::CAbstractNodeItem& node, QMenu& menu)
@@ -413,7 +428,7 @@ bool CGraphView::PopulateMenuWithFeatures(const char* szTitle, CryGraphEditor::C
 				else
 					GetIEditor()->GetIUndoManager()->Cancel();
 
-		  });
+			});
 
 		result->second.m_subActions[actionName] = pAction;
 	}
@@ -459,4 +474,3 @@ void CGraphView::OnRemoveCustomItem(CryGraphEditor::CAbstractNodeGraphViewModelI
 }
 
 }
-

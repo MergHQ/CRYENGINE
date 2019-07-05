@@ -9,11 +9,13 @@ class CScriptType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CScriptType);
 
-	virtual const char* GetTypeName() const override { return "Script"; }
-	virtual const char* GetUiTypeName() const override { return QT_TR_NOOP("Script"); }
-	virtual const char* GetFileExtension() const override { return "lua"; }
-	virtual bool        IsImported() const override { return false; }
-	virtual bool        CanBeEdited() const override { return false; }
+	virtual const char* GetTypeName() const override           { return "Script"; }
+	virtual const char* GetUiTypeName() const override         { return QT_TR_NOOP("Script"); }
+	virtual const char* GetFileExtension() const override      { return "lua"; }
+	virtual bool        IsImported() const override            { return false; }
+	virtual bool        CanBeEdited() const override           { return false; }
+	virtual bool        CanAutoRepairMetadata() const override { return false; }
+	virtual QColor      GetThumbnailColor() const override     { return QColor(201, 96, 191); }
 
 private:
 	virtual CryIcon GetIconInternal() const override
@@ -29,11 +31,13 @@ class CXmlType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CXmlType);
 
-	virtual const char* GetTypeName() const override { return "Xml"; }
-	virtual const char* GetUiTypeName() const override { return QT_TR_NOOP("Xml"); }
-	virtual const char* GetFileExtension() const override { return "xml"; }
-	virtual bool IsImported() const override { return false; }
-	virtual bool CanBeEdited() const override { return true; }
+	virtual const char* GetTypeName() const override           { return "Xml"; }
+	virtual const char* GetUiTypeName() const override         { return QT_TR_NOOP("Xml"); }
+	virtual const char* GetFileExtension() const override      { return "xml"; }
+	virtual bool        IsImported() const override            { return false; }
+	virtual bool        CanBeEdited() const override           { return true; }
+	virtual bool        CanAutoRepairMetadata() const override { return false; }
+	virtual QColor      GetThumbnailColor() const override     { return QColor(201, 96, 191); }
 
 private:
 	virtual CryIcon GetIconInternal() const override
@@ -42,9 +46,9 @@ private:
 	}
 
 	virtual std::vector<CItemModelAttribute*> GetDetails() const override;
-	virtual QVariant GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const override;
+	virtual QVariant                          GetDetailValue(const CAsset* pAsset, const CItemModelAttribute* pDetail) const override;
 
-	CAssetEditor* Edit(CAsset* pAsset) const override;
+	CAssetEditor*                             Edit(CAsset* pAsset) const override;
 
 public:
 	static CItemModelAttributeEnumFunc s_xmlTypeAttribute;
@@ -57,11 +61,14 @@ class CAnimatedMeshType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CAnimatedMeshType);
 
-	virtual const char* GetTypeName() const override { return "AnimatedMesh"; }
-	virtual const char* GetUiTypeName() const override { return QT_TR_NOOP("Animated Mesh"); }
-	virtual const char* GetFileExtension() const override { return "cga"; }
-	virtual bool        IsImported() const override { return false; }
-	virtual bool        CanBeEdited() const override { return false; }
+	virtual const char* GetTypeName() const override       { return "AnimatedMesh"; }
+	virtual const char* GetUiTypeName() const override     { return QT_TR_NOOP("Animated Mesh"); }
+	virtual const char* GetFileExtension() const override  { return "cga"; }
+	virtual bool        IsImported() const override        { return false; }
+	virtual bool        CanBeCopied() const override       { return true; }
+	virtual bool        CanBeEdited() const override       { return false; }
+	virtual QColor      GetThumbnailColor() const override { return QColor(210, 75, 64); }
+	virtual const char* GetObjectClassName() const         { return "EntityWithAnimatedMeshComponent"; }
 
 private:
 	virtual CryIcon GetIconInternal() const override
@@ -77,11 +84,13 @@ class CMeshAnimationType : public CAssetType
 public:
 	DECLARE_ASSET_TYPE_DESC(CMeshAnimationType);
 
-	virtual const char* GetTypeName() const override { return "MeshAnimation"; }
-	virtual const char* GetUiTypeName() const override { return QT_TR_NOOP("Mesh Animation"); }
-	virtual const char* GetFileExtension() const override { return "anm"; }
-	virtual bool        IsImported() const override { return false; }
-	virtual bool        CanBeEdited() const override { return false; }
+	virtual const char* GetTypeName() const override       { return "MeshAnimation"; }
+	virtual const char* GetUiTypeName() const override     { return QT_TR_NOOP("Mesh Animation"); }
+	virtual const char* GetFileExtension() const override  { return "anm"; }
+	virtual bool        IsImported() const override        { return false; }
+	virtual bool        CanBeCopied() const override       { return true; }
+	virtual bool        CanBeEdited() const override       { return false; }
+	virtual QColor      GetThumbnailColor() const override { return QColor(210, 75, 64); }
 
 private:
 	virtual CryIcon GetIconInternal() const override
@@ -89,4 +98,3 @@ private:
 		return CryIcon("icons:common/assets_animation.ico");
 	}
 };
-

@@ -2,11 +2,14 @@
 
 #pragma once
 
-#include <QAbstractItemModel>
-#include <ProxyModels/ItemModelAttribute.h>
-
 #include "LevelModel.h"
 
+#include <ObjectEvent.h>
+#include <IObjectManager.h>
+#include <Objects/BaseObject.h>
+#include <ProxyModels/ItemModelAttribute.h>
+
+#include <QAbstractItemModel>
 class CObjectLayer;
 class CLevelModelsManager;
 struct CLayerChangeEvent;
@@ -29,6 +32,7 @@ extern CItemModelAttribute s_lodCountAttribute;
 extern CItemModelAttribute s_specAttribute;
 extern CItemModelAttribute s_aiGroupIdAttribute;
 extern CItemModelAttribute s_LayerColorAttribute;
+extern CItemModelAttribute s_linkedToAttribute;
 }
 
 //! This class is not meant to be instantiated directly, request an instance from LevelModelsManager
@@ -41,7 +45,8 @@ public:
 		eObjectColumns_LayerColor,
 		eObjectColumns_Visible, //Must be kept index 0 to match eLayerColumns_Visible
 		eObjectColumns_Frozen,  //Must be kept index 1 to match eLayerColumns_Frozen
-		eObjectColumns_Name,    //Must be kept index 2 to match eLayerColumns_Name
+		eObjectColumns_VCS,     //Must be kept index 2 to match eLayerColumns_VCS
+		eObjectColumns_Name,    //Must be kept index 3 to match eLayerColumns_Name
 		eObjectColumns_Layer,
 		eObjectColumns_Type,
 		eObjectColumns_TypeDesc,
@@ -55,6 +60,7 @@ public:
 		eObjectColumns_LODCount,
 		eObjectColumns_MinSpec,
 		eObjectColumns_AI_GroupId,
+		eObjectColumns_LinkedTo,
 		eObjectColumns_Size
 	};
 
@@ -101,8 +107,8 @@ public:
 	CObjectLayer* GetLayer() { return m_pLayer; }
 
 private:
-	void              OnLink(CBaseObject* pObject);
-	void              OnUnLink(CBaseObject* pObject);
+	void              OnLink(const CBaseObject* pObject);
+	void              OnUnLink(const CBaseObject* pObject);
 
 	static bool       Filter(CBaseObject const& obj, void* pLayer);
 
@@ -112,48 +118,56 @@ private:
 	void        Connect();
 	void        Rebuild();
 	void        Clear();
-	void        AddObject(CBaseObject* pObject);
+	void        AddObject(const CBaseObject* pObject);
 	void        AddObjects(const std::vector<CBaseObject*>& objects);
-	void        RemoveObject(CBaseObject* pObject);
+	void        RemoveObject(const CBaseObject* pObject);
 	void        RemoveObjects(int row, int count = 1);
 	void        RemoveObjects(const std::vector<CBaseObject*>& objects);
-	void        UpdateCachedDataForObject(CBaseObject* pObject);
+	void        UpdateCachedDataForObject(const CBaseObject* pObject);
 
-	void        OnObjectEvent(CObjectEvent&);
+	void        OnObjectEvent(const std::vector<CBaseObject*>& objects, const CObjectEvent&);
 	void        OnSelectionChanged();
-	void        OnBeforeObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool shouldKeepTransform);
-	void        OnObjectsAttached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void        OnBeforeObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects, bool shouldKeepTransform);
-	void        OnObjectsDetached(CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
-	void        OnBeforeObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects);
-	void        OnObjectsDeleted(const CObjectLayer& layer, const std::vector<CBaseObject*>& objects);
+	void        OnBeforeObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnObjectsAttached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnBeforeObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnObjectsDetached(const CBaseObject* pParent, const std::vector<CBaseObject*>& objects);
+	void        OnBeforeObjectsDeleted(const std::vector<CBaseObject*>& objects);
+	void        OnObjectsDeleted(const std::vector<CBaseObject*>& objects);
 
 	const char* GetMaterialName(CBaseObject* pObject, bool bUseCustomMaterial) const;
 	const char* GetObjectBreakability(CBaseObject* pObject) const;
 	void        GetMaterialBreakability(std::set<string>* breakTypes, CMaterial* pMaterial) const;
 	const char* GetSmartObject(CBaseObject* pObject) const;
 	const char* GetFlowGraphNames(CBaseObject* pObject) const;
-	const char* GetGeometryFile(CBaseObject* pObject) const;
+	const char* GetGeometryFile(const CBaseObject* pObject) const;
 	uint        GetInstancesCount(CBaseObject* pObject) const;
 	uint        GETLODNumber(CBaseObject* pObject) const;
 	int         GetAIGroupID(CBaseObject* pObject) const;
-	void        NotifyUpdateObject(CBaseObject* pObject, const QVector<int>& updateRoles);
+	void        NotifyUpdateObject(const CBaseObject* pObject, const QVector<int>& updateRoles);
 
 	bool        IsRelatedToTopLevelObject(CBaseObject* pObject) const;
 
-	void StartBatchProcess();
-	void FinishBatchProcess();
+	void        StartBatchProcess();
+	void        FinishBatchProcess();
 
-	CObjectLayer* m_pLayer;
-	CBaseObject*  m_pTopLevelNotificationObj;
+	CObjectLayer*      m_pLayer;
+	const CBaseObject* m_pTopLevelNotificationObj;
 
 	// Cached data
 	CBaseObjectsArray                m_rootObjects;
 	std::map<CBaseObjectPtr, string> m_flowGraphMap;
 	std::map<string, int>            m_geometryCountMap;
 
-	bool m_isRuningBatchProcess{ false };
+	// Precached icons: prevents CryIcon ctor on each data() call
+	CryIcon m_iconVisibilityTrue;
+	CryIcon m_iconVisibilityFalse;
+	CryIcon m_iconGeneralLockFalse;
+	CryIcon m_iconLink;
+	CryIcon m_iconPlaceHolder;
+	CryIcon m_iconLevelExplorerLockTrue;
+
+	bool    m_isRuningBatchProcess{ false };
+	bool    m_isDisconnected{ false };
 
 	friend class CLevelModelsManager;
 };
-

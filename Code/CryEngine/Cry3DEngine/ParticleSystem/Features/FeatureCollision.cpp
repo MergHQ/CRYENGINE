@@ -1,7 +1,8 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved. 
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "FeatureCollision.h"
+#include <Cry3DEngine/ISurfaceType.h>
 
 namespace pfx2
 {
@@ -11,7 +12,7 @@ MakeDataType(EPDT_ContactNext, SContactPredict);
 MakeDataType(EPDT_CollideSpeed, float);
 MakeDataType(EPDT_CollisionCount, uint);
 
-MakeDataType(EPVF_PositionPrev,  Vec3);
+extern TDataType<Vec3> EPVF_PositionPrev;
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureCollision
@@ -19,6 +20,7 @@ MakeDataType(EPVF_PositionPrev,  Vec3);
 void CFeatureCollision::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	pComponent->PostInitParticles.add(this);
+	pComponent->PastUpdateParticles.add(this);
 	pComponent->PostUpdateParticles.add(this);
 	pComponent->AddParticleData(EPVF_PositionPrev);
 	pComponent->AddParticleData(EPDT_ContactPoint);
@@ -71,58 +73,33 @@ int CFeatureCollision::GetRayTraceFilter() const
 	return filter;
 }
 
-struct SCollisionLimitIgnore
-{
-	SCollisionLimitIgnore(CParticleContainer& container)
-		: m_contactPoints(container.IOStream(EPDT_ContactPoint)) {}
-	void CollisionLimit(TParticleId particleId)
-	{
-		SContactPoint& contact = m_contactPoints[particleId];
-		contact.m_ignore = 1;
-		contact.m_collided = 0;
-	}
-	TIOStream<SContactPoint> m_contactPoints;
-};
-
-struct SCollisionLimitStop
-{
-	SCollisionLimitStop(CParticleContainer& container)
-		: m_contactPoints(container.IOStream(EPDT_ContactPoint))
-		, m_positions(container.GetIOVec3Stream(EPVF_Position))
-		, m_velocities(container.GetIOVec3Stream(EPVF_Velocity)) {}
-	void CollisionLimit(TParticleId particleId)
-	{
-		SContactPoint& contact = m_contactPoints[particleId];
-		contact.m_ignore = 1;
-		contact.m_stopped = 1;
-		contact.m_collided = 0;
-		m_positions.Store(particleId, contact.m_point);
-		m_velocities.Store(particleId, Vec3(ZERO));
-	}
-	TIOStream<SContactPoint> m_contactPoints;
-	IOVec3Stream             m_positions;
-	IOVec3Stream             m_velocities;
-};
-
-struct SCollisionLimitKill
-{
-	SCollisionLimitKill(CParticleContainer& container)
-		: m_ages(container.GetIOFStream(EPDT_NormalAge)) {}
-	void CollisionLimit(TParticleId particleId)
-	{
-		m_ages.Store(particleId, 1.0f);
-	}
-	IOFStream m_ages;
-};
-
 void CFeatureCollision::PostInitParticles(CParticleComponentRuntime& runtime)
 {
+	if (C3DEngine::GetCVars()->e_ParticlesCollisions == 0)
+		return;
+	if (runtime.IsPreRunning())
+		return;
+
 	CParticleContainer& container = runtime.GetContainer();
-	container.FillData(EPDT_ContactPoint, SContactPoint(), container.GetSpawnedRange());
-	container.FillData(EPDT_ContactNext, SContactPredict(), container.GetSpawnedRange());
-	container.FillData(EPDT_CollisionCount, 0u, container.GetSpawnedRange());
-	container.FillData(EPDT_CollideSpeed, 0.0f, container.GetSpawnedRange());
-	container.CopyData(EPVF_PositionPrev, EPVF_Position, container.GetSpawnedRange());
+	container.FillData(EPDT_ContactPoint, SContactPoint(), container.SpawnedRange());
+	container.FillData(EPDT_ContactNext, SContactPredict(), container.SpawnedRange());
+	container.FillData(EPDT_CollisionCount, 0u, container.SpawnedRange());
+	container.FillData(EPDT_CollideSpeed, 0.0f, container.SpawnedRange());
+}
+
+void CFeatureCollision::PastUpdateParticles(CParticleComponentRuntime& runtime)
+{
+	if (C3DEngine::GetCVars()->e_ParticlesCollisions == 0)
+		return;
+	if (runtime.IsPreRunning())
+		return;
+
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	m_doPrediction = false;
+	m_objectFilter = GetRayTraceFilter();
+
+	DoCollisions(runtime, runtime.SpawnedRange());
 }
 
 // Collision constants
@@ -312,7 +289,7 @@ bool CFeatureCollision::RayWorldIntersection(SContactPoint& contact, const Vec3&
 	if (m_objectFilter & ~ent_terrain_raytrace)
 	{
 		ray_hit rayHit;
-		while (gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, (m_objectFilter & ~ent_terrain_raytrace | ent_no_ondemand_activation), kCollisionsFlags, &rayHit, 1))
+		for (uint i = 0; i < kTotalLimit && gEnv->pPhysicalWorld->RayWorldIntersection(start, ray, (m_objectFilter & ~ent_terrain_raytrace | ent_no_ondemand_activation), kCollisionsFlags, &rayHit, 1); ++i)
 		{
 			if ((rayHit.n | ray) >= 0.0f)
 			{
@@ -360,7 +337,7 @@ bool CFeatureCollision::PathWorldIntersection(SContactPoint& contact, const Quad
 		Vec3 posD = path.PosD(t0, t1);
 		Vec3 posH = path.PosD(t0, (t0 + t1) * 0.5f);
 		float sqrD = posD.len2(), sqrH = posH.len2(), dotDH = posD | posH;
-		float maxDev = kMaxPathDeviation * (path.timeD > path.time1 ? 0.75f : 1.0f);
+
 		if (sqrH * sqrD - sqr(dotDH) > sqr(kMaxPathDeviation) * sqrD)
 		{
 			float tDiv = (t0 + t1) * 0.5f;
@@ -469,6 +446,8 @@ bool CFeatureCollision::DoCollision(SContactPredict& contactNext, SContactPoint&
 		path.SlideAdjust(contact, m_friction);
 		if (wasStopped && contact.m_stopped)
 			return false;
+		if (!contact.m_sliding)
+			contactNext.m_time = 0;
 	}
 
 	if (m_doPrediction)
@@ -512,9 +491,11 @@ bool CFeatureCollision::DoCollision(SContactPredict& contactNext, SContactPoint&
 			// New test
 			static_cast<SContactPoint&>(contactNext) = contact;
 			PathWorldIntersection(contactNext, path, 0.0f, path.timeD, true);
-			contactNext.m_testDir = (contactNext.m_point - path.pos0).GetNormalized();
 			if (contactNext.m_time > path.time1)
+			{
 				contact.m_collided = false;
+				contactNext.m_testDir = (contactNext.m_point - path.pos0).GetNormalized();
+			}
 			else 
 			{
 				if (contactNext.m_collided)
@@ -556,27 +537,24 @@ bool CFeatureCollision::DoCollision(SContactPredict& contactNext, SContactPoint&
 	return contact.m_collided;
 }
 
-void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime) const
+void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime, SUpdateRange range) const
 {
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
 	CParticleContainer& container = runtime.GetContainer();
-	const IFStream normAges = container.IStream(EPDT_NormalAge);
-	const IFStream lifeTimes = container.IStream(EPDT_LifeTime);
-	IVec3Stream positionsPrev = container.IStream(EPVF_PositionPrev);
-	IOVec3Stream positions = container.IOStream(EPVF_Position);
-	IOQuatStream orientations = container.IOStream(EPQF_Orientation);
-	IOVec3Stream velocities = container.IOStream(EPVF_Velocity);
-	IOFStream collideSpeeds = container.IOStream(EPDT_CollideSpeed);
-	IOUintStream collisionCounts = container.IOStream(EPDT_CollisionCount);
-	TIOStream<SContactPoint> contactPoints = container.IOStream(EPDT_ContactPoint);
-	TIOStream<SContactPredict> contactNexts = container.IOStream(EPDT_ContactNext);
+	auto normAges = container.IOStream(EPDT_NormalAge);
+	auto lifeTimes = container.IStream(EPDT_LifeTime);
+	auto positionsPrev = container.IStream(EPVF_PositionPrev);
+	auto positions = container.IOStream(EPVF_Position);
+	auto orientations = container.IOStream(EPQF_Orientation);
+	auto velocities = container.IOStream(EPVF_Velocity);
+	auto collideSpeeds = container.IOStream(EPDT_CollideSpeed);
+	auto collisionCounts = container.IOStream(EPDT_CollisionCount);
+	auto contactPoints = container.IOStream(EPDT_ContactPoint);
+	auto contactNexts = container.IOStream(EPDT_ContactNext);
 
-	SContactPredict contactNextDummy;
-
-	for (auto particleId : runtime.FullRange())
+	for (auto particleId : range)
 	{
 		SContactPoint& contact = contactPoints[particleId];
+		contact.m_collided = 0;
 		if (contact.m_ignore)
 			continue;
 
@@ -586,18 +564,20 @@ void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime) const
 		if (tD <= 0.0f)
 			continue;
 
-		Vec3 position0 = positionsPrev.Load(particleId);
-		Vec3 position1 = positions.Load(particleId);
-		Vec3 velocity1 = velocities.Load(particleId);
+		const Vec3 position0 = positionsPrev.Load(particleId);
+		const Vec3 position1 = positions.Load(particleId);
+		const Vec3 velocity1 = velocities.Load(particleId);
 
 		// Create path struct
 		QuadPath path;
 		const float tMax = tD + max(tLife - normAge * tLife, 0.0f);
 		path.FromPos01Vel1(position0, position1, velocity1, tD, tMax);
 
-		SContactPredict& contactNext = contactNexts.IsValid() ? contactNexts[particleId] : contactNextDummy;
+		SContactPredict& contactNext = contactNexts[particleId];
 
-		contact.m_collided = 0;
+		uint frameLimit = kTotalLimit;
+		if (m_collisionsLimitMode != ECollisionLimitMode::Unlimited)
+			frameLimit = min(frameLimit, m_maxCollisions - collisionCounts[particleId]);
 		uint immediateContacts = 0;  // Escape anomalous infinite loop
 		uint totalContacts = 0;
 		float timeContact = 0.0f;
@@ -614,14 +594,16 @@ void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime) const
 			timeContact += contact.m_time;
 			contact.m_time = timeContact;
 
-			if (immediateContacts >= kImmediateLimit || totalContacts >= kTotalLimit)
+			if (immediateContacts >= kImmediateLimit || totalContacts >= frameLimit)
 				break;
 		}
+		
+		contact.m_collided = totalContacts > 0;
 
 		if (totalContacts || contact.m_sliding)
 		{
-			positions.Store(particleId, path.pos1);
-			velocities.Store(particleId, path.vel1);
+			if (container.HasData(EPDT_CollideSpeed))
+				collideSpeeds.Store(particleId, collideSpeed);
 			if (m_rotateToNormal)
 			{
 				Quat orientation = orientations.Load(particleId);
@@ -629,65 +611,53 @@ void CFeatureCollision::DoCollisions(CParticleComponentRuntime& runtime) const
 				orientation = rotate * orientation;
 				orientations.Store(particleId, orientation);
 			}
-		}
 
-		contact.m_collided = totalContacts > 0;
-		if (collideSpeeds.IsValid())
-			collideSpeeds.Store(particleId, collideSpeed);
-		if (collisionCounts.IsValid())
-		{
-			uint collisionCount = collisionCounts.Load(particleId);
-			collisionCounts.Store(particleId, collisionCount + totalContacts);
+			if (m_collisionsLimitMode != ECollisionLimitMode::Unlimited)
+			{
+				collisionCounts[particleId] += totalContacts;
+				if (collisionCounts[particleId] == m_maxCollisions)
+				{
+					switch (m_collisionsLimitMode)
+					{
+					case ECollisionLimitMode::Ignore:
+						contact.m_ignore = 1;
+						continue; // Do not alter final position or velocity
+					case ECollisionLimitMode::Stop:
+						contact.m_ignore = 1;
+						contact.m_stopped = 1;
+						path.vel1 = Vec3(ZERO);
+						break;
+					case ECollisionLimitMode::Kill:
+						normAges.Store(particleId, 1.0f);
+						break;
+					}
+				}
+			}
+
+			positions.Store(particleId, path.pos1);
+			velocities.Store(particleId, path.vel1);
 		}
 	}
 }
 
 void CFeatureCollision::PostUpdateParticles(CParticleComponentRuntime& runtime)
 {
-	CRY_PFX2_PROFILE_DETAIL;
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
 	if (C3DEngine::GetCVars()->e_ParticlesCollisions == 0)
+		return;
+	if (runtime.IsPreRunning())
 		return;
 
 	m_doPrediction = !(C3DEngine::GetCVars()->e_ParticlesCollisions & AlphaBit('p'));
 	m_objectFilter = GetRayTraceFilter();
 
-	DoCollisions(runtime);
-
-	switch (m_collisionsLimitMode)
-	{
-	case ECollisionLimitMode::Ignore:
-		UpdateCollisionLimit<SCollisionLimitIgnore>(runtime);
-		break;
-	case ECollisionLimitMode::Stop:
-		UpdateCollisionLimit<SCollisionLimitStop>(runtime);
-		break;
-	case ECollisionLimitMode::Kill:
-		UpdateCollisionLimit<SCollisionLimitKill>(runtime);
-		break;
-	}
-
-	CParticleContainer& container = runtime.GetContainer();
-	container.CopyData(EPVF_PositionPrev, EPVF_Position, container.GetFullRange());
-}
-
-template<typename TCollisionLimit>
-void CFeatureCollision::UpdateCollisionLimit(CParticleComponentRuntime& runtime) const
-{
-	CParticleContainer& container = runtime.GetContainer();
-	TCollisionLimit limiter(container);
-	const auto collisionCounts = container.IStream(EPDT_CollisionCount);
-
-	for (auto particleId : runtime.FullRange())
-	{
-		if (collisionCounts.Load(particleId) >= m_maxCollisions)
-			limiter.CollisionLimit(particleId);
-	}
+	DoCollisions(runtime, runtime.FullRange());
 }
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureCollision, "Motion", "Collisions", colorMotion);
 
-//////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 // CFeatureGPUCollision
 
 void CFeatureGPUCollision::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)

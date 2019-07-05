@@ -273,11 +273,11 @@ bool CMouse::SetExclusiveMode(bool value)
 
 	if (value)
 	{
-		hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), DISCL_EXCLUSIVE | DISCL_FOREGROUND);
+		hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), DISCL_EXCLUSIVE | DISCL_FOREGROUND);
 	}
 	else
 	{
-		hr = GetDirectInputDevice()->SetCooperativeLevel(GetDXInput().GetHWnd(), DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+		hr = GetDirectInputDevice()->SetCooperativeLevel((HWND)GetDXInput().GetHWnd(), DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
 	}
 
 	if (FAILED(hr))

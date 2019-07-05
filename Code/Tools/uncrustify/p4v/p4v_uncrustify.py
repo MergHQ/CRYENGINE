@@ -150,6 +150,11 @@ def main():
     """
     args, filelist = parse_arguments()
     uncrustify = UncrustifyRunner(args.user, args.client, args.patterns, args.trigger)
+
+    if args.file_list:
+        with open(args.file_list) as fd:
+            filelist = [line.strip() for line in fd.readlines()]
+
     try:
         return not uncrustify.run(changelist=args.changelist, filelist=filelist, check=not args.apply)
     except ValueError as e:
@@ -166,6 +171,7 @@ def parse_arguments():
     parser.add_argument('--user', default='', help='Perforce username.')
     parser.add_argument('--client', default='', help='Perforce client.')
     parser.add_argument('--changelist', default='', help='Changelist containing files on which to run Uncrustify.')
+    parser.add_argument('--file-list', default='', help='List of the files to parse (one per line).')
     parser.add_argument('--trigger', action='store_true', default=False,
                         help='Run as a trigger.')
     parser.add_argument('--pattern', dest='patterns', action='append', default=[],

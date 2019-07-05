@@ -53,12 +53,16 @@ namespace Schematyc2
 		virtual CVariant GetVariant(size_t iVariant) const override;
 		virtual const CVariantContainer* GetContainer(size_t iContainer) const override;
 		virtual IAnyConstPtr GetProperty(uint32 propertyIdx) const override;
-		virtual TimerId GetTimerId(size_t iTimer) const override;
+		virtual TimerId GetTimerId(size_t iTimer) const override; // Do not save TimerIds returned by this function as they can change if timers are destroyed
 		virtual IComponentPtr GetComponentInstance(size_t componentInstanceIdx) override;
 		virtual IPropertiesPtr GetComponentInstanceProperties(size_t componentInstanceIdx) override;
 		virtual void VisitActiveTimers(const ObjectActiveTimerVisitor& visitor) const override;
 		virtual void VisitActiveActionInstances(const ObjectActiveActionInstanceVisitor& visitor) const override;
 		virtual const ObjectSignalHistory& GetSignalHistory() const override;
+		virtual const ObjectNodeHistory& GetNodeHistory() const override;
+		virtual void ClearNodeHistory() override;
+		virtual void SetDebuggingActive(const bool active) override;
+		virtual bool IsDebuggingActive() const override;
 
 		// ~IObject
 
@@ -170,7 +174,7 @@ namespace Schematyc2
 				}
 			}
 
-			SGUID								signalGUID;
+			SGUID				signalGUID;
 			TVariantConstArray	inputs;
 		};
 
@@ -201,7 +205,7 @@ namespace Schematyc2
 		void CreateAndInitComponents(const IObjectNetworkSpawnParamsPtr& pNetworkSpawnParams);
 		void CreateAndInitActions();
 
-		int32 GetNetworkAspect() const;
+		int32 GetStateMachineNetworkAspect(const ILibStateMachine& libStateMachine) const;
 		void MarkAspectDirtyForStateMachine(size_t iStateMachine);
 		bool HaveNetworkAuthority() const;
 		bool EvaluateTransitions(size_t iStateMachine, size_t iState, const SEvent& event, const TVariantConstArray& inputs);
@@ -215,23 +219,25 @@ namespace Schematyc2
 		void ProcessFunction(const LibFunctionId& functionId, const TVariantConstArray& inputs, const TVariantArray& outputs);
 		void NetworkSerialize(TSerialize serialize, int32 aspects, uint8 profile, int flags);
 
-		ObjectId												m_objectId;
-		ILibClassConstPtr								m_pLibClass;
-		INetworkObject*									m_pNetworkObject;
-		ExplicitEntityId								m_entityId;
-		int32														m_serverAspect;
-		int32														m_clientAspect;
-		EObjectFlags										m_flags;
-		ESimulationMode									m_simulationMode;
-		TStateMachineVector							m_stateMachines;
-		TVariantVector									m_variants;
-		TContainerVector								m_containers;
-		TTimerVector										m_timers;
-		ComponentInstances              m_componentInstances;
-		TActionInstanceVector						m_actionInstances;
-		ObjectSignalHistory							m_signalHistory;
-		TSignalObserverConnectionArray	m_signalObservers;
-		TemplateUtils::CConnectionScope	m_connectionScope;
-		CStateNetIdxMapper									m_stateNetIdxMapper;
+		ObjectId							m_objectId;
+		ILibClassConstPtr					m_pLibClass;
+		INetworkObject*						m_pNetworkObject;
+		ExplicitEntityId					m_entityId;
+		int32								m_serverAspect;
+		int32								m_clientAspect;
+		EObjectFlags						m_flags;
+		ESimulationMode						m_simulationMode;
+		TStateMachineVector					m_stateMachines;
+		TVariantVector						m_variants;
+		TContainerVector					m_containers;
+		TTimerVector						m_timers;
+		ComponentInstances					m_componentInstances;
+		TActionInstanceVector				m_actionInstances;
+		ObjectSignalHistory					m_signalHistory;
+		ObjectNodeHistory                   m_nodeHistory;
+		TSignalObserverConnectionArray		m_signalObservers;
+		TemplateUtils::CConnectionScope		m_connectionScope;
+		CStateNetIdxMapper					m_stateNetIdxMapper;
+		bool                                m_debuggingActive;
 	};
 }

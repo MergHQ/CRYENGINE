@@ -13,11 +13,13 @@
 *************************************************************************/
 
 #include "StdAfx.h"
+#include <CrySystem/CryVersion.h>
 #include "GameAIRecorder.h"
 #include "GameAISystem.h"
 #include "GameCVars.h"
 #include "GameRules.h"
 #include "Agent.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 //////////////////////////////////////////////////////////////////////////
 void RecordAIComment(EntityId entityId, const char* szComment, ...)
@@ -410,7 +412,7 @@ bool CGameAIRecorder::FinalizeRemoteArchive(const char* szRecordingFile)
 		bPAKCreated = AddFileToRemoteArchive(szRecordingFile);
 
 		// Also attempt to add game log
-		AddFileToRemoteArchive(gEnv->pSystem->GetILog()->GetFileName());
+		AddFileToRemoteArchive(gEnv->pSystem->GetILog()->GetFilePath());
 
 		// Close the archive so it can be sent
 		m_pRemoteArchive = NULL;

@@ -34,7 +34,7 @@ private:
 	HANDLE m_handle;
 };
 
-class CResourceTracker
+class CResourceTracker final
 {
 public:
 	CResourceTracker(size_t maxOpenFilesCount, size_t maxMemoryUsageBytes)
@@ -61,7 +61,7 @@ public:
 		++m_openFilesCount;
 	}
 
-	// Signal a free file slot/memoty is available.
+	// Signal a free file slot/memory is available.
 	void Signal(size_t freedSizeInBytes)
 	{
 		{
@@ -76,7 +76,7 @@ public:
 		m_condition.notify_one();
 	}
 
-	virtual void WaitForIdle()
+	void WaitForIdle()
 	{
 		std::unique_lock<std::mutex> lock(m_mutex);
 		m_condition.wait(lock, [this]()
@@ -162,7 +162,7 @@ public:
 		WaitForCompletion();
 
 		// Signal the Completion threads to exit.
-		for (const CUniqueHandle& t : m_threads)
+		for (size_t num = m_threads.size(), i = 0; i < num; ++i)
 		{
 			::PostQueuedCompletionStatus(m_completionPort, 0, 0, nullptr);
 		}
@@ -275,4 +275,3 @@ std::unique_ptr<IFileReader> CreateCompletionPortFileReader()
 }
 
 }
-

@@ -1,80 +1,45 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <StdAfx.h>
+#include "StdAfx.h"
+#include "QtMainFrame.h"
+
+#include "Commands/CommandManager.h"
+#include "Commands/KeybindEditor.h"
+#include "QT/QMainFrameMenuBar.h"
+#include "QT/QtMainFrameWidgets.h"
+#include "QT/QToolTabManager.h"
+#include "QT/TraySearchBox.h"
+#include "AboutDialog.h"
+#include "CryEdit.h"
+#include "CryEditDoc.h"
+#include "LevelIndependentFileMan.h"
+#include "LinkTool.h"
+#include "LogFile.h"
+
+// MFC
+#include <QMfcApp/qmfchost.h>
+
+// EditorCommon
+#include <Controls/SaveChangesDialog.h>
+#include <EditorFramework/BroadcastManager.h>
+#include <EditorFramework/Events.h>
+#include <EditorFramework/PersonalizationManager.h>
+#include <EditorFramework/ToolBar/ToolBarCustomizeDialog.h>
+#include <EditorFramework/WidgetsGlobalActionRegistry.h>
+#include <Menu/MenuWidgetBuilders.h>
+#include <Preferences/GeneralPreferences.h>
+#include <QTrackingTooltip.h>
+#include <QtUtil.h>
+#include <RenderViewport.h>
 
 #include <CrySystem/IProjectManager.h>
 
-//////////////////////////////////////////////////////////////////////////
-// QT headers
-#include <QTimer>
-#include <QMenu>
 #include <QMenuBar>
-#include <QLayout>
-#include <QDockWidget>
-#include <QLineEdit>
-#include <QFile>
-#include <QDir>
-#include <QToolBar>
-#include <QLabel>
-#include <QToolButton>
-#include <QToolBox>
-#include <QPushButton>
-#include <QImageReader>
 #include <QMouseEvent>
-#include <QAbstractEventDispatcher>
-#include <QCursor>
+#include <QToolBar>
+#include <QToolWindowManager/QToolWindowRollupBarArea.h>
 
 #include <algorithm>
-//////////////////////////////////////////////////////////////////////////
-
-#include <CryIcon.h>
-#include <QtUtil.h>
-#include "QtUtil.h"
-
-#include "QtMainFrame.h"
-#include "QtMainFrameWidgets.h"
-#include "QMainFrameMenuBar.h"
-#include "Commands/QCommandAction.h"
-#include "QtViewPane.h"
-#include "RenderViewport.h"
-
-//////////////////////////////////////////////////////////////////////////
-#include "CryEdit.h"
-#include "CryEditDoc.h"
-#include "LevelEditor/LevelEditor.h"
-//////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-#include "Util/BoostPythonHelpers.h"
-#include "ViewManager.h"
-#include "IBackgroundTaskManager.h"
-#include "ProcessInfo.h"
-#include "QToolTabManager.h"
-#include "LevelIndependentFileMan.h"
-#include "Commands/KeybindEditor.h"
-#include "KeyboardShortcut.h"
-#include "EditorFramework/Events.h"
-#include <Preferences/GeneralPreferences.h>
-#include "Controls/SandboxWindowing.h"
-#include "QToolWindowManager/QToolWindowManager.h"
-#include "QToolWindowManager/QCustomWindowFrame.h"
-#include "DockingSystem/DockableContainer.h"
-#include "QTrackingTooltip.h"
-#include "QT/MainToolBars/QMainToolBarManager.h"
-#include "QT/MainToolBars/QToolBarCreator.h"
-#include "QT/Widgets/QWaitProgress.h"
-#include "QT/TraySearchBox.h"
-#include "Controls/EditorDialog.h"
-#include "Controls/SaveChangesDialog.h"
-#include "QControls.h"
-#include "AboutDialog.h"
-#include "QMfcApp/qmfchost.h"
-#include "KeyboardShortcut.h"
-#include "Menu/MenuWidgetBuilders.h"
-#include "LinkTool.h"
-
-#include <CrySchematyc/Env/IEnvRegistry.h>
-#include <CrySchematyc/Env/Elements/EnvComponent.h>
 
 REGISTER_HIDDEN_VIEWPANE_FACTORY(QPreferencesDialog, "Preferences", "Editor", true)
 
@@ -103,11 +68,12 @@ REGISTER_PREFERENCES_PAGE_PTR(SPerformancePreferences, &gPerformancePreferences)
 
 //////////////////////////////////////////////////////////////////////////
 
-CEditorMainFrame * CEditorMainFrame::m_pInstance = 0;
+CEditorMainFrame * CEditorMainFrame::m_pInstance = nullptr;
 
 namespace
 {
-CTabPaneManager* s_pToolTabManager = 0;
+CTabPaneManager*              s_pToolTabManager = nullptr;
+CWidgetsGlobalActionRegistry* s_pWidgetGlobalActionRegistry = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -133,136 +99,44 @@ public:
 	{
 		return new QNotifierSplitter;
 	}
+
+	virtual IToolWindowArea* createArea(QToolWindowManager* manager, QWidget* parent = 0, QTWMWrapperAreaType areaType = watTabs) Q_DECL_OVERRIDE
+	{
+		if (manager->config().value(QTWM_SUPPORT_SIMPLE_TOOLS, false).toBool() && areaType == watRollups)
+			return new QToolWindowRollupBarArea(manager, parent);
+		else
+			return new QToolsMenuToolWindowArea(manager, parent);
+	}
 };
 
 class Ui_MainWindow
 {
+	class CMenu : public QMenu
+	{
+	public:
+		CMenu(QWidget* pParent = nullptr)
+			: QMenu(pParent)
+		{
+		}
+
+		QCommandAction* AddCommand(const char* szCommand)
+		{
+			QCommandAction* pAction = GetIEditorImpl()->GetCommandManager()->GetCommandAction(szCommand);
+			if (pAction)
+			{
+				addAction(pAction);
+			}
+
+			CRY_ASSERT_MESSAGE(pAction, "Trying to add unexisting command to menu: %s", szCommand);
+
+			return pAction;
+		}
+	};
+
 public:
-	QAction*  actionNew;
-	QAction*  actionOpen;
-	QAction*  actionSave_As;
-	QAction*  actionToggle_Content_Browser;
-	QAction*  actionExport_to_Engine;
-	QAction*  actionSave_Level_Resources;
-	QAction*  actionExport_Selected_Objects;
-	QAction*  actionExport_Occlusion_Mesh;
 	QAction*  actionShow_Log_File;
-	QAction*  actionExit;
-	QAction*  actionUndo;
-	QAction*  actionRedo;
-	QAction*  actionDelete;
-	QAction*  actionDuplicate;
-	QAction*  actionCopy;
-	QAction*  actionCut;
-	QAction*  actionPaste;
-	QAction*  actionHide_Selection;
-	QAction*  actionUnhide_All;
-	QAction*  actionFreeze_Selection;
-	QAction*  actionUnfreeze_All;
-	QAction*  actionSelect_None;
-	QAction*  actionSelect_Invert;
-	QAction*  actionFind;
-	QAction*  actionFindPrevious;
-	QAction*  actionFindNext;
-	QAction*  actionLock_Selection;
-	QAction*  actionSelect_Mode;
-	QAction*  actionMove;
-	QAction*  actionRotate;
-	QAction*  actionScale;
-	QAction*  actionLink;
-	QAction*  actionUnlink;
-	QAction*  actionAlign_To_Grid;
-	QAction*  actionAlign_To_Object;
-	QAction*  actionRotate_X_Axis;
-	QAction*  actionRotate_Y_Axis;
-	QAction*  actionRotate_Z_Axis;
-	QAction*  actionRotate_Angle;
-	QAction*  actionGoto_Selection;
-	QAction*  actionMaterial_Assign_Current;
-	QAction*  actionMaterial_Reset_to_Default;
-	QAction*  actionMaterial_Get_from_Selected;
-	QAction*  actionLighting_Regenerate_All_Cubemap;
-	QAction*  actionPick_Material;
-	QAction*  actionGet_Physics_State;
-	QAction*  actionReset_Physics_State;
-	QAction*  actionPhysics_Simulate_Objects;
-	QAction*  actionPhysics_Generate_Joints;
-	QAction*  actionWireframe;
 	QAction*  actionRuler;
-	QAction*  actionToggleGridSnapping;
-	QAction*  actionToggleAngleSnapping;
-	QAction*  actionToggleScaleSnapping;
-	QAction*  actionToggleVertexSnapping;
-	QAction*  actionToggleTerrainSnapping;
-	QAction*  actionToggleGeometrySnapping;
-	QAction*  actionToggleNormalSnapping;
-	QAction*  actionGoto_Position;
-	QAction*  actionRemember_Location_1;
-	QAction*  actionRemember_Location_2;
-	QAction*  actionRemember_Location_3;
-	QAction*  actionRemember_Location_4;
-	QAction*  actionRemember_Location_5;
-	QAction*  actionRemember_Location_6;
-	QAction*  actionRemember_Location_7;
-	QAction*  actionRemember_Location_8;
-	QAction*  actionRemember_Location_9;
-	QAction*  actionRemember_Location_10;
-	QAction*  actionRemember_Location_11;
-	QAction*  actionRemember_Location_12;
-	QAction*  actionGoto_Location_1;
-	QAction*  actionGoto_Location_2;
-	QAction*  actionGoto_Location_3;
-	QAction*  actionGoto_Location_4;
-	QAction*  actionGoto_Location_5;
-	QAction*  actionGoto_Location_6;
-	QAction*  actionGoto_Location_7;
-	QAction*  actionGoto_Location_8;
-	QAction*  actionGoto_Location_9;
-	QAction*  actionGoto_Location_10;
-	QAction*  actionGoto_Location_11;
-	QAction*  actionGoto_Location_12;
-	QAction*  actionCamera_Default;
-	QAction*  actionCamera_Sequence;
-	QAction*  actionCamera_Selected_Object;
-	QAction*  actionCamera_Cycle;
-	QAction*  actionShow_Hide_Helpers;
-	QAction*  actionCycle_Display_Info;
-	QAction*  actionToggle_Fullscreen_Viewport;
-	QAction*  actionGroup;
-	QAction*  actionUngroup;
-	QAction*  actionGroup_Open;
-	QAction*  actionGroup_Close;
-	QAction*  actionGroup_Attach;
-	QAction*  actionGroup_Detach;
-	QAction*  actionGroup_DetachToRoot;
-	QAction*  actionReload_Terrain;
-	QAction*  actionSwitch_to_Game;
-	QAction*  actionSuspend_Game_Input;
-	QAction*  actionEnable_Physics_AI;
-	QAction*  actionSynchronize_Player_with_Camera;
-	QAction*  actionEdit_Equipment_Packs;
-	QAction*  actionReload_All_Scripts;
-	QAction*  actionReload_Entity_Scripts;
-	QAction*  actionReload_Item_Scripts;
-	QAction*  actionReload_AI_Scripts;
-	QAction*  actionReload_UI_Scripts;
-	QAction*  actionReload_Archetypes;
-	QAction*  actionReload_Texture_Shaders;
-	QAction*  actionReload_Geometry;
-	QAction*  actionCheck_Level_for_Errors;
-	QAction*  actionCheck_Object_Positions;
-	QAction*  actionSave_Level_Statistics;
-	QAction*  actionCompile_Script;
 	QAction*  actionReduce_Working_Set;
-	QAction*  actionUpdate_Procedural_Vegetation;
-	QAction*  actionSave;
-	QAction*  actionSave_Selected_Objects;
-	QAction*  actionLoad_Selected_Objects;
-	QAction*  actionLock_X_Axis;
-	QAction*  actionLock_Y_Axis;
-	QAction*  actionLock_Z_Axis;
-	QAction*  actionLock_XY_Axis;
-	QAction*  actionResolve_Missing_Objects;
 	QAction*  actionVery_High;
 	QAction*  actionHigh;
 	QAction*  actionMedium;
@@ -273,474 +147,66 @@ public:
 	QAction*  actionMute_Audio;
 	QAction*  actionStop_All_Sounds;
 	QAction*  actionRefresh_Audio;
-	QAction*  actionCoordinates_View;
-	QAction*  actionCoordinates_Local;
-	QAction*  actionCoordinates_Parent;
-	QAction*  actionCoordinates_World;
 	QWidget*  centralwidget;
 	QMenuBar* menubar;
-	QMenu*    menuFile;
+	CMenu*    menuFile;
+	CMenu*    menuFileNew;
+	CMenu*    menuFileOpen;
 	QMenu*    menuRecent_Files;
-	QMenu*    menuEdit;
-	QMenu*    menuEditing_Mode;
-	QMenu*    menuConstrain;
-	QMenu*    menuFast_Rotate;
-	QMenu*    menuAlign_Snap;
-	QMenu*    menuLevel;
-	QMenu*    menuPhysics;
-	QMenu*    menuGroup;
-	QMenu*    menuLink;
-	QMenu*    menuPrefabs;
-	QMenu*    menuSelection;
-	QMenu*    menuMaterial;
-	QMenu*    menuLighting;
-	QMenu*    menuDisplay;
-	QMenu*    menuLocation;
-	QMenu*    menuRemember_Location;
-	QMenu*    menuGoto_Location;
-	QMenu*    menuSwitch_Camera;
-	QMenu*    menuGame;
-	QMenu*    menuTools;
-	QMenu*    menuLayout;
-	QMenu*    menuHelp;
-	QMenu*    menuGraphics;
-	QMenu*    menuAudio;
-	QMenu*    menuAI;
-	QMenu*    menuAINavigationUpdate;
-	QMenu*    menuDebug;
-	QMenu*    menuReload_Scripts;
-	QMenu*    menuAdvanced;
-	QMenu*    menuCoordinates;
+	CMenu*    menuEdit;
+	CMenu*    menuEditing_Mode;
+	CMenu*    menuConstrain;
+	CMenu*    menuFast_Rotate;
+	CMenu*    menuAlign_Snap;
+	CMenu*    menuLevel;
+	CMenu*    menuPhysics;
+	CMenu*    menuGroup;
+	CMenu*    menuLink;
+	CMenu*    menuPrefabs;
+	CMenu*    menuSelection;
+	CMenu*    menuMaterial;
+	CMenu*    menuLighting;
+	CMenu*    menuDisplay;
+	CMenu*    menuLocation;
+	CMenu*    menuRemember_Location;
+	CMenu*    menuGoto_Location;
+	CMenu*    menuSwitch_Camera;
+	CMenu*    menuGame;
+	CMenu*    menuTools;
+	CMenu*    menuLayout;
+	CMenu*    menuHelp;
+	CMenu*    menuGraphics;
+	CMenu*    menuDisplayInfo;
+	CMenu*    menuAudio;
+	CMenu*    menuAI;
+	CMenu*    menuAINavigationUpdate;
+	CMenu*    menuDebug;
+	CMenu*    menuReload_Scripts;
+	CMenu*    menuAdvanced;
+	CMenu*    menuCoordinates;
 	QMenu*    menuSelection_Mask;
 	QMenu*    menuDebug_Agent_Type;
 	QMenu*    menuRegenerate_MNM_Agent_Type;
 
 	void setupUi(QMainWindow* MainWindow)
 	{
-		CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
-
 		if (MainWindow->objectName().isEmpty())
 			MainWindow->setObjectName(QStringLiteral("MainWindow"));
 		MainWindow->resize(1172, 817);
-		actionNew = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionNew->setIcon(CryIcon("icons:General/File_New.ico"));
-		actionNew->setObjectName(QStringLiteral("actionNew"));
-		actionOpen = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionOpen->setObjectName(QStringLiteral("actionOpen"));
-		CryIcon icon;
-		icon.addFile(QStringLiteral("icons:General/Folder_Open.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionOpen->setIcon(icon);
-		actionSave_As = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSave_As->setObjectName(QStringLiteral("actionSave_As"));
-		actionSave_As->setIcon(CryIcon("icons:General/Save_as.ico"));
-		actionToggle_Content_Browser = new QCommandAction("Quick Asset Browser", "asset.toggle_browser", MainWindow);
-		actionToggle_Content_Browser->setIcon(CryIcon("icons:Tools/tools_asset-browser.ico"));
-		actionExport_to_Engine = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionExport_to_Engine->setObjectName(QStringLiteral("actionExport_to_Engine"));
-		actionExport_to_Engine->setIcon(CryIcon("icons:General/Export.ico"));
-		actionExport_Occlusion_Mesh = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionExport_Occlusion_Mesh->setObjectName(QStringLiteral("actionExport_Occlusion_Mesh"));
-		actionSave_Level_Resources = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSave_Level_Resources->setObjectName(QStringLiteral("actionSave_Level_Resources"));
-		actionExport_Selected_Objects = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionExport_Selected_Objects->setObjectName(QStringLiteral("actionExport_Selected_Objects"));
-		actionExport_Selected_Objects->setIcon(CryIcon("icons:Tools/Export_Selected_Objects.ico"));
 		actionShow_Log_File = new QCommandAction(nullptr, nullptr, MainWindow);
 		actionShow_Log_File->setObjectName(QStringLiteral("actionShow_Log_File"));
-		actionExit = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionExit->setObjectName(QStringLiteral("actionExit"));
-		actionExit->setIcon(CryIcon("icons:General/Exit.ico"));
-		actionUndo = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionUndo->setObjectName(QStringLiteral("actionUndo"));
-		CryIcon icon1;
-		icon1.addFile(QStringLiteral("icons:General/History_Undo.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionUndo->setIcon(icon1);
-		actionRedo = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRedo->setObjectName(QStringLiteral("actionRedo"));
-		CryIcon icon2;
-		icon2.addFile(QStringLiteral("icons:General/History_Redo.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionRedo->setIcon(icon2);
-		actionDelete = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionDelete->setObjectName(QStringLiteral("actionDelete"));
-		actionDelete->setIcon(CryIcon("icons:General/Close.ico"));
-		actionDelete->setIcon(CryIcon("icons:General/Delete_Asset.ico"));
-		actionDuplicate = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionDuplicate->setObjectName(QStringLiteral("actionDuplicate"));
-		actionDuplicate->setIcon(CryIcon("icons:General/Duplicate_asset.ico"));
-		actionCopy = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCopy->setIcon(CryIcon("icons:General/Copy_Asset.ico"));
-		actionCopy->setObjectName(QStringLiteral("actionCopy"));
-		actionCut = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCut->setIcon(CryIcon("icons:General/Cut_Asset.ico"));
-		actionCut->setObjectName(QStringLiteral("actionCut"));
-		actionPaste = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionPaste->setIcon(CryIcon("icons:General/Paste_Asset.ico"));
-		actionPaste->setObjectName(QStringLiteral("actionPaste"));
-		actionHide_Selection = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionHide_Selection->setObjectName(QStringLiteral("actionHide_Selection"));
-		actionUnhide_All = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionUnhide_All->setObjectName(QStringLiteral("actionUnhide_All"));
-		actionFreeze_Selection = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionFreeze_Selection->setObjectName(QStringLiteral("actionFreeze_Selection"));
-		CryIcon icon3;
-		icon3.addFile(QStringLiteral("icons:General/editable_false.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionFreeze_Selection->setIcon(icon3);
-		actionUnfreeze_All = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionUnfreeze_All->setObjectName(QStringLiteral("actionUnfreeze_All"));
-		CryIcon icon4;
-		icon4.addFile(QStringLiteral("icons:General/editable_true.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionUnfreeze_All->setIcon(icon4);
-		actionSelect_None = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSelect_None->setObjectName(QStringLiteral("actionSelect_None"));
-		actionSelect_Invert = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSelect_Invert->setObjectName(QStringLiteral("actionSelect_Invert"));
-		actionFind = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionFind->setObjectName(QStringLiteral("actionFind"));
-		CryIcon icon7;
-		icon7.addFile(QStringLiteral("icons:General/Search.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionFind->setIcon(icon7);
-		actionFindPrevious = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionFindPrevious->setObjectName(QStringLiteral("actionFindPrevious"));
-		CryIcon iconFindPrevious;
-		iconFindPrevious.addFile(QStringLiteral("icons:General/Arrow_Left.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionFindPrevious->setIcon(iconFindPrevious);
-		CryIcon iconFindNext;
-		iconFindNext.addFile(QStringLiteral("icons:General/Arrow_Right.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionFindNext = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionFindNext->setObjectName(QStringLiteral("actionFindNext"));
-		actionFindNext->setIcon(iconFindNext);
-		actionLock_Selection = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLock_Selection->setObjectName(QStringLiteral("actionLock_Selection"));
-		actionLock_Selection->setCheckable(true);
-		actionSelect_Mode = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSelect_Mode->setObjectName(QStringLiteral("actionSelect_Mode"));
-		actionSelect_Mode->setCheckable(true);
-		int editMode = GetIEditorImpl()->GetEditMode();
-		actionSelect_Mode->setChecked(editMode == eEditModeSelect);
-		CryIcon icon8;
-		icon8.addFile(QStringLiteral("icons:Navigation/Basics_Select.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionSelect_Mode->setIcon(icon8);
-		actionMove = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionMove->setObjectName(QStringLiteral("actionMove"));
-		actionMove->setCheckable(true);
-		CryIcon icon9;
-		icon9.addFile(QStringLiteral("icons:Navigation/Basics_Move.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionMove->setIcon(icon9);
-		actionRotate = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRotate->setObjectName(QStringLiteral("actionRotate"));
-		actionRotate->setCheckable(true);
-		CryIcon icon10;
-		icon10.addFile(QStringLiteral("icons:Navigation/Basics_Rotate.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionRotate->setIcon(icon10);
-		actionScale = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionScale->setObjectName(QStringLiteral("actionScale"));
-		actionScale->setCheckable(true);
-		CryIcon icon11;
-		icon11.addFile(QStringLiteral("icons:Navigation/Basics_Scale.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionScale->setIcon(icon11);
-		actionLink = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLink->setObjectName(QStringLiteral("actionLink"));
-		CryIcon icon13;
-		icon13.addFile(QStringLiteral("icons:Navigation/Tools_Link.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionLink->setIcon(icon13);
-		actionLink->setCheckable(true);
-		actionUnlink = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionUnlink->setObjectName(QStringLiteral("actionUnlink"));
-		CryIcon icon14;
-		icon14.addFile(QStringLiteral("icons:Navigation/Tools_Link_Unlink.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionUnlink->setIcon(icon14);
-		actionAlign_To_Grid = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionAlign_To_Grid->setObjectName(QStringLiteral("actionAlign_To_Grid"));
-		actionAlign_To_Grid->setCheckable(false);
-		CryIcon icon15;
-		icon15.addFile(QStringLiteral("icons:Navigation/Align_To_Grid.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionAlign_To_Grid->setIcon(icon15);
-		actionAlign_To_Object = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionAlign_To_Object->setObjectName(QStringLiteral("actionAlign_To_Object"));
-		CryIcon icon16;
-		icon16.addFile(QStringLiteral("icons:Viewport/viewport-snap-pivot.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionAlign_To_Object->setIcon(icon16);
-		actionRotate_X_Axis = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRotate_X_Axis->setObjectName(QStringLiteral("actionRotate_X_Axis"));
-		actionRotate_Y_Axis = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRotate_Y_Axis->setObjectName(QStringLiteral("actionRotate_Y_Axis"));
-		actionRotate_Z_Axis = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRotate_Z_Axis->setObjectName(QStringLiteral("actionRotate_Z_Axis"));
-		actionRotate_Angle = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRotate_Angle->setObjectName(QStringLiteral("actionRotate_Angle"));
-		actionGoto_Selection = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Selection->setObjectName(QStringLiteral("actionGoto_Selection"));
-		CryIcon icon17;
-		icon17.addFile(QStringLiteral("icons:General/Go_To_Selection.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionGoto_Selection->setIcon(icon17);
-		actionMaterial_Assign_Current = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionMaterial_Assign_Current->setObjectName(QStringLiteral("actionMaterial_Assign_Current"));
-		actionMaterial_Assign_Current->setIcon(CryIcon("icons:MaterialEditor/Material_Editor_Assign_To_Object.ico"));
-		actionMaterial_Reset_to_Default = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionMaterial_Reset_to_Default->setObjectName(QStringLiteral("actionMaterial_Reset_to_Default"));
-		actionMaterial_Reset_to_Default->setIcon(CryIcon("icons:MaterialEditor/Material_Editor_Reset_Material.ico"));
-		actionMaterial_Get_from_Selected = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionMaterial_Get_from_Selected->setObjectName(QStringLiteral("actionMaterial_Get_from_Selected"));
-		actionMaterial_Get_from_Selected->setIcon(CryIcon("icons:MaterialEditor/Material_Editor_Pick_From_Object.ico"));
-		actionLighting_Regenerate_All_Cubemap = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLighting_Regenerate_All_Cubemap->setObjectName(QStringLiteral("actionLighting_Regenerate_All_Cubemap"));
-		actionPick_Material = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionPick_Material->setObjectName(QStringLiteral("actionPick_Material"));
-		actionPick_Material->setIcon(CryIcon("icons:General/Picker.ico"));
-		actionGet_Physics_State = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGet_Physics_State->setObjectName(QStringLiteral("actionGet_Physics_State"));
-		CryIcon icon18;
-		icon18.addFile(QStringLiteral("icons:General/Get_Physics.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionGet_Physics_State->setIcon(icon18);
-		actionReset_Physics_State = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReset_Physics_State->setObjectName(QStringLiteral("actionReset_Physics_State"));
-		CryIcon icon19;
-		icon19.addFile(QStringLiteral("icons:General/Reset_Physics.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionReset_Physics_State->setIcon(icon19);
-		actionPhysics_Simulate_Objects = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionPhysics_Simulate_Objects->setObjectName(QStringLiteral("actionPhysics_Simulate_Objects"));
-		CryIcon icon20;
-		icon20.addFile(QStringLiteral("icons:General/Simulate_Physics.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionPhysics_Simulate_Objects->setIcon(icon20);
-		actionPhysics_Generate_Joints = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionPhysics_Generate_Joints->setObjectName(QStringLiteral("actionPhysics_Generate_Joints"));
-		actionPhysics_Generate_Joints->setIcon(CryIcon("icons:General/Physics_Generate_Joints.ico"));
-		actionWireframe = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionWireframe->setObjectName(QStringLiteral("actionWireframe"));
-		actionWireframe->setIcon(CryIcon("icons:Viewport/Modes/display_wireframe.ico"));
 		actionRuler = new QCommandAction(nullptr, nullptr, MainWindow);
 		actionRuler->setObjectName(QStringLiteral("actionRuler"));
 		actionRuler->setIcon(CryIcon("icons:Tools/tools-ruler.ico"));
 		actionRuler->setCheckable(true);
-		actionToggleGridSnapping = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_grid");
-		actionToggleGridSnapping->setCheckable(true);
-		actionToggleAngleSnapping = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_angle");
-		actionToggleAngleSnapping->setCheckable(true);
-		actionToggleScaleSnapping = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_scale");
-		actionToggleScaleSnapping->setCheckable(true);
-		actionToggleVertexSnapping = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_vertex");
-		actionToggleVertexSnapping->setCheckable(true);
-		actionToggleTerrainSnapping = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_terrain");
-		actionToggleTerrainSnapping->setCheckable(true);
-		actionToggleGeometrySnapping = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_geometry");
-		actionToggleGeometrySnapping->setCheckable(true);
-		actionToggleNormalSnapping = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_surface_normal");
-		actionToggleNormalSnapping->setCheckable(true);
-		actionAlign_To_Object = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_snap_to_pivot");
-		actionAlign_To_Object->setCheckable(true);
-		QString name("Snap Settings");
-		QString cmd = QString("general.open_pane '%1'").arg(name);
-		QCommandAction* pSnapSettings = new QCommandAction(name.append("..."), (const char*)cmd.toLocal8Bit(), menuAlign_Snap);
+
+		string name("Snap Settings");
+		string command;
+		command.Format("general.open_pane '%s'", name);
+		QCommandAction* pSnapSettings = new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), menuAlign_Snap);
 		pSnapSettings->setIcon(CryIcon("icons:Viewport/viewport-snap-options.ico"));
-		actionGoto_Position = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Position->setObjectName(QStringLiteral("actionGoto_Position"));
-		actionGoto_Position->setIcon(CryIcon("icons:Tools/Go_To_Position.ico"));
-		actionRemember_Location_1 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_1->setObjectName(QStringLiteral("actionRemember_Location_1"));
-		actionRemember_Location_2 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_2->setObjectName(QStringLiteral("actionRemember_Location_2"));
-		actionRemember_Location_3 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_3->setObjectName(QStringLiteral("actionRemember_Location_3"));
-		actionRemember_Location_4 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_4->setObjectName(QStringLiteral("actionRemember_Location_4"));
-		actionRemember_Location_5 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_5->setObjectName(QStringLiteral("actionRemember_Location_5"));
-		actionRemember_Location_6 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_6->setObjectName(QStringLiteral("actionRemember_Location_6"));
-		actionRemember_Location_7 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_7->setObjectName(QStringLiteral("actionRemember_Location_7"));
-		actionRemember_Location_8 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_8->setObjectName(QStringLiteral("actionRemember_Location_8"));
-		actionRemember_Location_9 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_9->setObjectName(QStringLiteral("actionRemember_Location_9"));
-		actionRemember_Location_10 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_10->setObjectName(QStringLiteral("actionRemember_Location_10"));
-		actionRemember_Location_11 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_11->setObjectName(QStringLiteral("actionRemember_Location_11"));
-		actionRemember_Location_12 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionRemember_Location_12->setObjectName(QStringLiteral("actionRemember_Location_12"));
-		actionGoto_Location_1 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_1->setObjectName(QStringLiteral("actionGoto_Location_1"));
-		actionGoto_Location_2 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_2->setObjectName(QStringLiteral("actionGoto_Location_2"));
-		actionGoto_Location_3 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_3->setObjectName(QStringLiteral("actionGoto_Location_3"));
-		actionGoto_Location_4 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_4->setObjectName(QStringLiteral("actionGoto_Location_4"));
-		actionGoto_Location_5 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_5->setObjectName(QStringLiteral("actionGoto_Location_5"));
-		actionGoto_Location_6 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_6->setObjectName(QStringLiteral("actionGoto_Location_6"));
-		actionGoto_Location_7 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_7->setObjectName(QStringLiteral("actionGoto_Location_7"));
-		actionGoto_Location_8 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_8->setObjectName(QStringLiteral("actionGoto_Location_8"));
-		actionGoto_Location_9 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_9->setObjectName(QStringLiteral("actionGoto_Location_9"));
-		actionGoto_Location_10 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_10->setObjectName(QStringLiteral("actionGoto_Location_10"));
-		actionGoto_Location_11 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_11->setObjectName(QStringLiteral("actionGoto_Location_11"));
-		actionGoto_Location_12 = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGoto_Location_12->setObjectName(QStringLiteral("actionGoto_Location_12"));
-		actionCamera_Default = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCamera_Default->setObjectName(QStringLiteral("actionCamera_Default"));
-		actionCamera_Sequence = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCamera_Sequence->setObjectName(QStringLiteral("actionCamera_Sequence"));
-		actionCamera_Selected_Object = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCamera_Selected_Object->setObjectName(QStringLiteral("actionCamera_Selected_Object"));
-		actionCamera_Cycle = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCamera_Cycle->setObjectName(QStringLiteral("actionCamera_Cycle"));
-		actionShow_Hide_Helpers = GetIEditorImpl()->GetICommandManager()->GetAction("level.toggle_display_helpers");
-		actionShow_Hide_Helpers->setCheckable(true);
-		actionCycle_Display_Info = GetIEditorImpl()->GetICommandManager()->GetAction("general.cycle_displayinfo");
-		actionToggle_Fullscreen_Viewport = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionToggle_Fullscreen_Viewport->setObjectName(QStringLiteral("actionToggle_Fullscreen_Viewport"));
-		actionGroup = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGroup->setObjectName(QStringLiteral("actionGroup"));
-		actionGroup->setIcon(CryIcon("icons:General/Group.ico"));
-		actionUngroup = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionUngroup->setObjectName(QStringLiteral("actionUngroup"));
-		actionUngroup->setIcon(CryIcon("icons:General/UnGroup.ico"));
-		actionGroup_Open = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGroup_Open->setObjectName(QStringLiteral("actionGroup_Open"));
-		actionGroup_Close = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGroup_Close->setObjectName(QStringLiteral("actionGroup_Close"));
-		actionGroup_Attach = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGroup_Attach->setObjectName(QStringLiteral("actionGroup_Attach"));
-		actionGroup_Detach = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGroup_Detach->setObjectName(QStringLiteral("actionGroup_Detach"));
-		actionGroup_DetachToRoot = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionGroup_DetachToRoot->setObjectName(QStringLiteral("actionGroup_DetachToRoot"));
-		actionReload_Terrain = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_Terrain->setObjectName(QStringLiteral("actionReload_Terrain"));
-		actionSwitch_to_Game = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSwitch_to_Game->setObjectName(QStringLiteral("actionSwitch_to_Game"));
-		actionSwitch_to_Game->setIcon(CryIcon("icons:Game/Game_Play.ico"));
-		actionSuspend_Game_Input = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSuspend_Game_Input->setObjectName(QStringLiteral("actionSuspend_Game_Input"));
-		actionEnable_Physics_AI = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionEnable_Physics_AI->setObjectName(QStringLiteral("actionEnable_Physics_AI"));
-		actionEnable_Physics_AI->setCheckable(true);
-		actionEnable_Physics_AI->setIcon(CryIcon("icons:common/general_physics_play.ico"));
-		actionSynchronize_Player_with_Camera = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSynchronize_Player_with_Camera->setObjectName(QStringLiteral("actionSynchronize_Player_with_Camera"));
-		actionSynchronize_Player_with_Camera->setCheckable(true);
-
-		QCommandAction* actionAIShowNavigationAreas = pCommandManager->GetCommandAction("ai.show_navigation_areas");
-		if (actionAIShowNavigationAreas)
-		{
-			actionAIShowNavigationAreas->setCheckable(true);
-			actionAIShowNavigationAreas->setChecked(gAINavigationPreferences.navigationShowAreas());
-		}
-		QCommandAction* actionAIVisualizeNavigationAccessibility = pCommandManager->GetCommandAction("ai.visualize_navigation_accessibility");
-		if (actionAIVisualizeNavigationAccessibility)
-		{
-			actionAIVisualizeNavigationAccessibility->setCheckable(true);
-			actionAIVisualizeNavigationAccessibility->setChecked(gAINavigationPreferences.visualizeNavigationAccessibility());
-		}
-
-		actionReload_All_Scripts = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_All_Scripts->setObjectName(QStringLiteral("actionReload_All_Scripts"));
-		actionReload_Entity_Scripts = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_Entity_Scripts->setObjectName(QStringLiteral("actionReload_Entity_Scripts"));
-		actionReload_Item_Scripts = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_Item_Scripts->setObjectName(QStringLiteral("actionReload_Item_Scripts"));
-		actionReload_AI_Scripts = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_AI_Scripts->setObjectName(QStringLiteral("actionReload_AI_Scripts"));
-		actionReload_UI_Scripts = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_UI_Scripts->setObjectName(QStringLiteral("actionReload_UI_Scripts"));
-		actionReload_Archetypes = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_Archetypes->setObjectName(QStringLiteral("actionReload_Archetypes"));
-		actionReload_Texture_Shaders = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_Texture_Shaders->setObjectName(QStringLiteral("actionReload_Texture_Shaders"));
-		actionReload_Geometry = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionReload_Geometry->setObjectName(QStringLiteral("actionReload_Geometry"));
-		actionCheck_Level_for_Errors = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCheck_Level_for_Errors->setObjectName(QStringLiteral("actionCheck_Level_for_Errors"));
-		actionCheck_Object_Positions = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCheck_Object_Positions->setObjectName(QStringLiteral("actionCheck_Object_Positions"));
-		actionSave_Level_Statistics = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSave_Level_Statistics->setObjectName(QStringLiteral("actionSave_Level_Statistics"));
-		actionCompile_Script = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCompile_Script->setObjectName(QStringLiteral("actionCompile_Script"));
 		actionReduce_Working_Set = new QCommandAction(nullptr, nullptr, MainWindow);
 		actionReduce_Working_Set->setObjectName(QStringLiteral("actionReduce_Working_Set"));
-		actionUpdate_Procedural_Vegetation = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionUpdate_Procedural_Vegetation->setObjectName(QStringLiteral("actionUpdate_Procedural_Vegetation"));
-		actionSave = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSave->setObjectName(QStringLiteral("actionSave"));
-		CryIcon icon22;
-		icon22.addFile(QStringLiteral("icons:General/File_Save.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionSave->setIcon(icon22);
-		actionSave_Selected_Objects = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionSave_Selected_Objects->setObjectName(QStringLiteral("actionSave_Selected_Objects"));
-		CryIcon icon23;
-		icon23.addFile(QStringLiteral("icons:MaterialEditor/Material_Save.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionSave_Selected_Objects->setIcon(icon23);
-		actionLoad_Selected_Objects = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLoad_Selected_Objects->setObjectName(QStringLiteral("actionLoad_Selected_Objects"));
-		CryIcon icon24;
-		icon24.addFile(QStringLiteral("icons:MaterialEditor/Material_Load.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionLoad_Selected_Objects->setIcon(icon24);
-		actionLock_X_Axis = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLock_X_Axis->setObjectName(QStringLiteral("actionLock_X_Axis"));
-		actionLock_X_Axis->setCheckable(true);
-		CryIcon icon25;
-		icon25.addFile(QStringLiteral("icons:Navigation/Axis_X.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionLock_X_Axis->setIcon(icon25);
-		actionLock_Y_Axis = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLock_Y_Axis->setObjectName(QStringLiteral("actionLock_Y_Axis"));
-		actionLock_Y_Axis->setCheckable(true);
-		CryIcon icon26;
-		icon26.addFile(QStringLiteral("icons:Navigation/Axis_Y.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionLock_Y_Axis->setIcon(icon26);
-		actionLock_Z_Axis = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLock_Z_Axis->setObjectName(QStringLiteral("actionLock_Z_Axis"));
-		actionLock_Z_Axis->setCheckable(true);
-		CryIcon icon27;
-		icon27.addFile(QStringLiteral("icons:Navigation/Axis_Z.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionLock_Z_Axis->setIcon(icon27);
-		actionLock_XY_Axis = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionLock_XY_Axis->setObjectName(QStringLiteral("actionLock_XY_Axis"));
-		actionLock_XY_Axis->setCheckable(true);
-		CryIcon icon28;
-		icon28.addFile(QStringLiteral("icons:Navigation/Axis_XY.ico"), QSize(), CryIcon::Normal, CryIcon::Off);
-		actionLock_XY_Axis->setIcon(icon28);
-		actionCoordinates_View = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCoordinates_View->setObjectName(QStringLiteral("actionCoordinates_View"));
-		actionCoordinates_View->setCheckable(true);
-		actionCoordinates_View->setIcon(CryIcon("icons:Navigation/Coordinates_View.ico"));
-		actionCoordinates_Local = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCoordinates_Local->setObjectName(QStringLiteral("actionCoordinates_Local"));
-		actionCoordinates_Local->setCheckable(true);
-		actionCoordinates_Local->setIcon(CryIcon("icons:Navigation/Coordinates_Local.ico"));
-		actionCoordinates_Parent = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCoordinates_Parent->setObjectName(QStringLiteral("actionCoordinates_Parent"));
-		actionCoordinates_Parent->setCheckable(true);
-		actionCoordinates_Parent->setIcon(CryIcon("icons:Navigation/Coordinates_Parent.ico"));
-		actionCoordinates_World = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionCoordinates_World->setObjectName(QStringLiteral("actionCoordinates_World"));
-		actionCoordinates_World->setCheckable(true);
-		actionCoordinates_World->setIcon(CryIcon("icons:Navigation/Coordinates_World.ico"));
-		RefCoordSys value = GetIEditorImpl()->GetReferenceCoordSys();
-		switch (value)
-		{
-		case COORDS_WORLD:
-			actionCoordinates_World->setChecked(true);
-			break;
-		case COORDS_PARENT:
-			actionCoordinates_Parent->setChecked(true);
-			break;
-		case COORDS_VIEW:
-			actionCoordinates_View->setChecked(true);
-			break;
-		case COORDS_LOCAL:
-			actionCoordinates_Local->setChecked(true);
-			break;
-		}
-		actionResolve_Missing_Objects = new QCommandAction(nullptr, nullptr, MainWindow);
-		actionResolve_Missing_Objects->setObjectName(QStringLiteral("actionResolve_Missing_Objects"));
 
 		QActionGroup* renderQualityGroup = new QActionGroup(menuGraphics);
 		actionVery_High = new QCommandAction(nullptr, nullptr, MainWindow);
@@ -788,77 +254,80 @@ public:
 		menubar = new QMenuBar(MainWindow);
 		menubar->setObjectName(QStringLiteral("menubar"));
 		menubar->setGeometry(QRect(0, 0, 1172, 21));
-		menuFile = new QMenu(menubar);
+		menuFile = new CMenu(menubar);
 		menuFile->setObjectName(QStringLiteral("menuFile"));
 		menuRecent_Files = new QMenu(menuFile);
 		menuRecent_Files->setObjectName(QStringLiteral("menuRecent_Files"));
-		menuEdit = new QMenu(menubar);
+		menuEdit = new CMenu(menubar);
 		menuEdit->setObjectName(QStringLiteral("menuEdit"));
-		menuEditing_Mode = new QMenu(menuEdit);
+		menuEditing_Mode = new CMenu(menuEdit);
 		menuEditing_Mode->setObjectName(QStringLiteral("menuEditing_Mode"));
-		menuConstrain = new QMenu(menuEdit);
+		menuConstrain = new CMenu(menuEdit);
 		menuConstrain->setObjectName(QStringLiteral("menuConstrain"));
-		menuFast_Rotate = new QMenu(menuEdit);
+		menuFast_Rotate = new CMenu(menuEdit);
 		menuFast_Rotate->setObjectName(QStringLiteral("menuFast_Rotate"));
-		menuAlign_Snap = new QMenu(menuEdit);
+		menuAlign_Snap = new CMenu(menuEdit);
 		menuAlign_Snap->setObjectName(QStringLiteral("menuAlign_Snap"));
 
-		menuLevel = new QMenu(menubar);
+		menuLevel = new CMenu(menubar);
 		menuLevel->setObjectName(QStringLiteral("menuLevel"));
-		menuPhysics = new QMenu(menuLevel);
+		menuPhysics = new CMenu(menuLevel);
 		menuPhysics->setObjectName(QStringLiteral("menuPhysics"));
-		menuGroup = new QMenu(menuLevel);
+		menuGroup = new CMenu(menuLevel);
 		menuGroup->setObjectName(QStringLiteral("menuGroup"));
-		menuLink = new QMenu(menuLevel);
+		menuLink = new CMenu(menuLevel);
 		menuLink->setObjectName(QStringLiteral("menuLink"));
-		menuPrefabs = new QMenu(menuLevel);
+		menuPrefabs = new CMenu(menuLevel);
 		menuPrefabs->setObjectName(QStringLiteral("menuPrefabs"));
-		menuSelection = new QMenu(menuLevel);
+		menuSelection = new CMenu(menuLevel);
 		menuSelection->setObjectName(QStringLiteral("menuSelection"));
 		menuSelection_Mask = new QSelectionMaskMenu();
 		menuSelection_Mask->setObjectName(QStringLiteral("menuSelection_Mask"));
-		menuLighting = new QMenu(menuLevel);
+		menuLighting = new CMenu(menuLevel);
 		menuLighting->setObjectName(QStringLiteral("menuLighting"));
-		menuMaterial = new QMenu(menuLevel);
+		menuMaterial = new CMenu(menuLevel);
 		menuMaterial->setObjectName(QStringLiteral("menuMaterial"));
 
-		menuDisplay = new QMenu(menubar);
+		menuDisplay = new CMenu(menubar);
 		menuDisplay->setObjectName(QStringLiteral("menuDisplay"));
-		menuLocation = new QMenu(menuDisplay);
+		menuLocation = new CMenu(menuDisplay);
 		menuLocation->setObjectName(QStringLiteral("menuLocation"));
-		menuRemember_Location = new QMenu(menuLocation);
+		menuRemember_Location = new CMenu(menuLocation);
 		menuRemember_Location->setObjectName(QStringLiteral("menuRemember_Location"));
-		menuGoto_Location = new QMenu(menuLocation);
+		menuGoto_Location = new CMenu(menuLocation);
 		menuGoto_Location->setObjectName(QStringLiteral("menuGoto_Location"));
-		menuSwitch_Camera = new QMenu(menuDisplay);
+		menuSwitch_Camera = new CMenu(menuDisplay);
 		menuSwitch_Camera->setObjectName(QStringLiteral("menuSwitch_Camera"));
-		menuGame = new QMenu(menubar);
+		menuGame = new CMenu(menubar);
 		menuGame->setObjectName(QStringLiteral("menuGame"));
-		menuTools = new QMenu(menubar);
+		menuTools = new CMenu(menubar);
 		menuTools->setObjectName(QStringLiteral("menuTools"));
-		menuLayout = new QMenu(menubar);
+		menuLayout = new CMenu(menubar);
 		menuLayout->setObjectName(QStringLiteral("menuLayout"));
-		menuHelp = new QMenu(menubar);
+		menuHelp = new CMenu(menubar);
 		menuHelp->setObjectName(QStringLiteral("menuHelp"));
-		menuGraphics = new QMenu(menuDisplay);
+		menuGraphics = new CMenu(menuDisplay);
 		menuGraphics->setObjectName(QStringLiteral("menuGraphics"));
-		menuAudio = new QMenu(menuGame);
+		menuDisplayInfo = new CMenu(menuDisplay);
+		menuDisplayInfo->setObjectName(QStringLiteral("menuDisplayInfo"));
+		menuDisplayInfo->setIcon(CryIcon("icons:Viewport/viewport-displayinfo.ico"));
+		menuAudio = new CMenu(menuGame);
 		menuAudio->setObjectName(QStringLiteral("menuAudio"));
-		menuAI = new QMenu(menuGame);
+		menuAI = new CMenu(menuGame);
 		menuAI->setObjectName(QStringLiteral("menuAI"));
-		menuAINavigationUpdate = new QMenu(menuAI);
+		menuAINavigationUpdate = new CMenu(menuAI);
 		menuAINavigationUpdate->setObjectName(QStringLiteral("menuAINavigationUpdate"));
-		menuDebug = new QMenu(menubar);
+		menuDebug = new CMenu(menubar);
 		menuDebug->setObjectName(QStringLiteral("menuDebug"));
 		menuDebug_Agent_Type = new QNavigationAgentTypeMenu();
 		menuDebug_Agent_Type->setObjectName(QStringLiteral("menuDebug_Agent_Type"));
 		menuRegenerate_MNM_Agent_Type = new QMNMRegenerationAgentTypeMenu();
 		menuRegenerate_MNM_Agent_Type->setObjectName(QStringLiteral("menuRegenerate_MNM_Agent_Type"));
-		menuReload_Scripts = new QMenu(menuDebug);
+		menuReload_Scripts = new CMenu(menuDebug);
 		menuReload_Scripts->setObjectName(QStringLiteral("menuReload_Scripts"));
-		menuAdvanced = new QMenu(menuDebug);
+		menuAdvanced = new CMenu(menuDebug);
 		menuAdvanced->setObjectName(QStringLiteral("menuAdvanced"));
-		menuCoordinates = new QMenu(menuEdit);
+		menuCoordinates = new CMenu(menuEdit);
 		menuCoordinates->setObjectName(QStringLiteral("menuCoordinates"));
 		MainWindow->setMenuBar(menubar);
 
@@ -871,36 +340,44 @@ public:
 		menubar->addAction(menuTools->menuAction());
 		menubar->addAction(menuLayout->menuAction());
 		menubar->addAction(menuHelp->menuAction());
-		menuFile->addAction(actionNew);
-		menuFile->addAction(actionOpen);
-		menuFile->addAction(actionSave);
-		menuFile->addAction(actionSave_As);
-		menuFile->addSeparator();
-		menuFile->addAction(actionToggle_Content_Browser);
-		menuFile->addSeparator();
-		menuFile->addAction(actionExport_to_Engine);
-		menuFile->addAction(actionExport_Occlusion_Mesh);
 
-		QAction* actionExportSvogiData = pCommandManager->GetCommandAction("general.export_svogi_data");
-		if (actionExportSvogiData)
-		{
-			menuFile->addAction(actionExportSvogiData);
-		}
+		menuFileNew = new CMenu(menuFile);
+		menuFileNew->AddCommand("project.new");
+		QCommandAction* pCommandAciton = GetIEditor()->GetICommandManager()->CreateNewAction("general.new");
+		pCommandAciton->setText("Level...");
+		menuFileNew->addAction(pCommandAciton);
+		menuFile->addAction(menuFileNew->menuAction());
 
+		menuFileOpen = new CMenu(menuFile);
+		menuFileOpen->AddCommand("project.open");
+		pCommandAciton = GetIEditor()->GetICommandManager()->CreateNewAction("general.open");
+		pCommandAciton->setText("Level...");
+		menuFileOpen->addAction(pCommandAciton);
+		menuFile->addAction(menuFileOpen->menuAction());
+
+		menuFile->AddCommand("general.save");
+		menuFile->AddCommand("general.save_as");
+		menuFile->addSeparator();
+		menuFile->AddCommand("asset.toggle_browser");
+		menuFile->addSeparator();
+		menuFile->AddCommand("exporter.export_to_engine");
+		menuFile->AddCommand("exporter.export_occlusion_mesh");
+		menuFile->AddCommand("exporter.export_svogi_data");
 		menuFile->addSeparator();
 		menuFile->addAction(menuRecent_Files->menuAction());
 		menuFile->addSeparator();
-		menuFile->addAction(actionExit);
-		menuEdit->addAction(actionUndo);
-		menuEdit->addAction(actionRedo);
+		menuFile->AddCommand("general.exit");
+		menuEdit->AddCommand("general.undo");
+		menuEdit->AddCommand("general.redo");
 		menuEdit->addSeparator();
-		menuEdit->addAction(actionDelete);
-		menuEdit->addAction(actionDuplicate);
-		menuEdit->addAction(actionCopy);
-		menuEdit->addAction(actionCut);
-		menuEdit->addAction(actionPaste);
+		menuEdit->AddCommand("general.delete");
+		menuEdit->AddCommand("general.rename");
+		menuEdit->AddCommand("general.duplicate");
+		menuEdit->AddCommand("general.copy");
+		menuEdit->AddCommand("general.cut");
+		menuEdit->AddCommand("general.paste");
 		menuEdit->addSeparator();
-		menuEdit->addAction(actionFind);
+		menuEdit->AddCommand("general.find");
 		menuEdit->addAction(menuAlign_Snap->menuAction());
 		menuEdit->addAction(menuEditing_Mode->menuAction());
 		menuEdit->addAction(menuConstrain->menuAction());
@@ -908,32 +385,33 @@ public:
 		menuEdit->addSeparator();
 		menuEdit->addMenu(menuCoordinates);
 		menuEdit->addSeparator();
-		menuEditing_Mode->addAction(actionSelect_Mode);
-		menuEditing_Mode->addAction(actionMove);
-		menuEditing_Mode->addAction(actionRotate);
-		menuEditing_Mode->addAction(actionScale);
-		menuConstrain->addAction(actionLock_X_Axis);
-		menuConstrain->addAction(actionLock_Y_Axis);
-		menuConstrain->addAction(actionLock_Z_Axis);
-		menuConstrain->addAction(actionLock_XY_Axis);
-		menuFast_Rotate->addAction(actionRotate_X_Axis);
-		menuFast_Rotate->addAction(actionRotate_Y_Axis);
-		menuFast_Rotate->addAction(actionRotate_Z_Axis);
-		menuFast_Rotate->addAction(actionRotate_Angle);
-		menuAlign_Snap->addAction(actionAlign_To_Grid);
-		menuAlign_Snap->addAction(actionAlign_To_Object);
+		// TODO: State tracking for edit mode should be improved and this action group should not be necessary
+		QActionGroup* pActionGroup = new QActionGroup(MainWindow);
+		pActionGroup->addAction(menuEditing_Mode->AddCommand("tools.select"));
+		pActionGroup->addAction(menuEditing_Mode->AddCommand("tools.move"));
+		pActionGroup->addAction(menuEditing_Mode->AddCommand("tools.rotate"));
+		pActionGroup->addAction(menuEditing_Mode->AddCommand("tools.scale"));
+		menuConstrain->AddCommand("tools.enable_x_axis_constraint");
+		menuConstrain->AddCommand("tools.enable_y_axis_constraint");
+		menuConstrain->AddCommand("tools.enable_z_axis_constraint");
+		menuConstrain->AddCommand("tools.enable_xy_axis_constraint");
+		menuFast_Rotate->AddCommand("tools.fast_rotate_x");
+		menuFast_Rotate->AddCommand("tools.fast_rotate_y");
+		menuFast_Rotate->AddCommand("tools.fast_rotate_z");
+		menuFast_Rotate->AddCommand("tools.set_fast_rotate_angle");
+		menuAlign_Snap->AddCommand("level.align_to_grid");
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_pivot");
 		menuAlign_Snap->addSeparator();
-		menuAlign_Snap->addAction(actionToggleGridSnapping);
-		menuAlign_Snap->addAction(actionToggleAngleSnapping);
-		menuAlign_Snap->addAction(actionToggleScaleSnapping);
-		menuAlign_Snap->addAction(actionToggleVertexSnapping);
-		menuAlign_Snap->addAction(actionToggleTerrainSnapping);
-		menuAlign_Snap->addAction(actionToggleGeometrySnapping);
-		menuAlign_Snap->addAction(actionToggleNormalSnapping);
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_grid");
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_angle");
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_scale");
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_vertex");
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_terrain");
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_geometry");
+		menuAlign_Snap->AddCommand("level.toggle_snap_to_surface_normal");
 		menuAlign_Snap->addAction(pSnapSettings);
-
-		menuLevel->addAction(actionSave_Selected_Objects);
-		menuLevel->addAction(actionLoad_Selected_Objects);
+		menuLevel->AddCommand("object.save_to_grp");
+		menuLevel->AddCommand("object.load_from_grp");
 		menuLevel->addSeparator();
 		menuLevel->addAction(menuLink->menuAction());
 		menuLevel->addAction(menuGroup->menuAction());
@@ -945,14 +423,14 @@ public:
 			//Intentionally using new menu syntax instead of mimicking generated code
 			CAbstractMenu builder;
 
-			builder.AddCommandAction("level.hide_all_layers");
-			builder.AddCommandAction("level.show_all_layers");
+			builder.CreateCommandAction("layer.hide_all");
+			builder.CreateCommandAction("layer.unhide_all");
 
 			const int sec = builder.GetNextEmptySection();
 
-			builder.AddCommandAction("level.freeze_all_layers", sec);
-			builder.AddCommandAction("level.unfreeze_all_layers", sec);
-			builder.AddCommandAction("level.freeze_read_only_layers", sec);
+			builder.CreateCommandAction("layer.lock_all", sec);
+			builder.CreateCommandAction("layer.unlock_all", sec);
+			builder.CreateCommandAction("layer.lock_read_only_layers", sec);
 
 			QMenu* menuLayers = menuLevel->addMenu(QObject::tr("Layers"));
 			builder.Build(MenuWidgetBuilders::CMenuBuilder(menuLayers));
@@ -962,113 +440,106 @@ public:
 		menuLevel->addAction(menuLighting->menuAction());
 		menuLevel->addAction(menuPhysics->menuAction());
 		menuLevel->addSeparator();
-		menuLevel->addAction(actionGoto_Position);
-		menuLevel->addAction(actionGoto_Selection);
+		menuLevel->AddCommand("level.go_to_position");
+		menuLevel->AddCommand("selection.go_to");
 		menuLevel->addSeparator();
 		menuLevel->addAction(actionRuler);
 		menuLevel->addSeparator();
-		menuLevel->addAction(actionSave_Level_Resources);
-		menuLevel->addAction(actionExport_Selected_Objects);
+		menuLevel->AddCommand("exporter.save_level_resources");
+		menuLevel->AddCommand("exporter.export_selected_objects");
 
-		menuPhysics->addAction(actionGet_Physics_State);
-		menuPhysics->addAction(actionReset_Physics_State);
-		menuPhysics->addAction(actionPhysics_Simulate_Objects);
-		menuPhysics->addAction(actionPhysics_Generate_Joints);
-		menuGroup->addAction(actionGroup);
-		menuGroup->addAction(actionUngroup);
+		menuPhysics->AddCommand("physics.get_state_selection");
+		menuPhysics->AddCommand("physics.reset_state_selection");
+		menuPhysics->AddCommand("physics.simulate_objects");
+		menuPhysics->AddCommand("physics.generate_joints");
+		menuGroup->AddCommand("group.create_from_selection");
+		menuGroup->AddCommand("group.ungroup");
 		menuGroup->addSeparator();
-		menuGroup->addAction(actionGroup_Open);
-		menuGroup->addAction(actionGroup_Close);
+		menuGroup->AddCommand("group.open");
+		menuGroup->AddCommand("group.close");
 		menuGroup->addSeparator();
-		menuGroup->addAction(actionGroup_Attach);
-		menuGroup->addAction(actionGroup_Detach);
-		menuGroup->addAction(actionGroup_DetachToRoot);
-		menuLink->addAction(actionLink);
-		menuLink->addAction(actionUnlink);
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.create_from_selection"));
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.add_to_prefab"));
+		menuGroup->AddCommand("group.attach_to");
+		menuGroup->AddCommand("group.detach");
+		menuGroup->AddCommand("group.detach_from_hierarchy");
+		menuLink->AddCommand("tools.link");
+		menuLink->AddCommand("tools.unlink");
+		menuPrefabs->AddCommand("prefab.create_from_selection");
+		menuPrefabs->AddCommand("prefab.add_to_prefab");
 		menuPrefabs->addSeparator();
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.open"));
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.close"));
+		menuPrefabs->AddCommand("prefab.open");
+		menuPrefabs->AddCommand("prefab.close");
 		menuPrefabs->addSeparator();
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.open_all"));
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.close_all"));
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.reload_all"));
+		menuPrefabs->AddCommand("prefab.open_all");
+		menuPrefabs->AddCommand("prefab.close_all");
+		menuPrefabs->AddCommand("prefab.reload_all");
 		menuPrefabs->addSeparator();
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.extract_all"));
-		menuPrefabs->addAction(pCommandManager->GetCommandAction("prefab.clone_all"));
+		menuPrefabs->AddCommand("prefab.extract_all");
+		menuPrefabs->AddCommand("prefab.clone_all");
 		menuPrefabs->addSeparator();
-		menuSelection->addAction(pCommandManager->GetCommandAction("general.select_all"));
-		menuSelection->addAction(actionSelect_None);
-		menuSelection->addAction(actionSelect_Invert);
-		menuSelection->addAction(actionLock_Selection);
+		menuSelection->AddCommand("general.select_all");
+		menuSelection->AddCommand("selection.clear");
+		menuSelection->AddCommand("selection.invert");
+		menuSelection->AddCommand("selection.lock");
 		menuSelection->addMenu(menuSelection_Mask);
 		menuSelection->addSeparator();
-		menuSelection->addAction(actionHide_Selection);
-		menuSelection->addAction(actionUnhide_All);
+		menuSelection->AddCommand("selection.hide_objects");
+		menuSelection->AddCommand("object.show_all");
 		menuSelection->addSeparator();
-		menuSelection->addAction(actionFreeze_Selection);
-		menuSelection->addAction(actionUnfreeze_All);
-		menuMaterial->addAction(actionMaterial_Assign_Current);
-		menuMaterial->addAction(actionMaterial_Reset_to_Default);
-		menuMaterial->addAction(actionMaterial_Get_from_Selected);
-		menuMaterial->addAction(actionPick_Material);
-		menuLighting->addAction(actionLighting_Regenerate_All_Cubemap);
-		menuDisplay->addAction(actionWireframe);
+		menuSelection->AddCommand("selection.lock_objects");
+		menuSelection->AddCommand("object.unlock_all");
+		menuMaterial->AddCommand("material.assign_current_to_selection");
+		menuMaterial->AddCommand("material.reset_selection");
+		menuMaterial->AddCommand("material.set_current_from_object");
+		menuMaterial->AddCommand("tools.pick_material");
+		menuLighting->AddCommand("object.generate_all_cubemaps");
+		menuDisplay->AddCommand("viewport.toggle_wireframe_mode");
 		menuDisplay->addAction(menuGraphics->menuAction());
 		menuDisplay->addSeparator();
-		menuDisplay->addAction(actionShow_Hide_Helpers);
-		menuDisplay->addAction(actionCycle_Display_Info);
+		menuDisplay->addAction(menuDisplayInfo->menuAction());
+		menuDisplayInfo->AddCommand("level.toggle_display_info");
+		menuDisplayInfo->addSeparator();
+		menuDisplayInfo->AddCommand("level.display_info_low");
+		menuDisplayInfo->AddCommand("level.display_info_medium");
+		menuDisplayInfo->AddCommand("level.display_info_high");
 		menuDisplay->addAction(menuLocation->menuAction());
 		menuDisplay->addAction(menuSwitch_Camera->menuAction());
-		QAction* cameraSpeedHeightRelative = GetIEditorImpl()->GetICommandManager()->GetAction("camera.toggle_speed_height_relative");
-		cameraSpeedHeightRelative->setCheckable(true);
-		menuDisplay->addAction(cameraSpeedHeightRelative);
-		QAction* cameraToggleTerrainCollisions = GetIEditorImpl()->GetICommandManager()->GetAction("camera.toggle_terrain_collisions");
-		cameraToggleTerrainCollisions->setCheckable(true);
-		menuDisplay->addAction(cameraToggleTerrainCollisions);
-		QAction* toggleObjectCollisions = GetIEditorImpl()->GetICommandManager()->GetAction("camera.toggle_object_collisions");
-		toggleObjectCollisions->setCheckable(true);
-		menuDisplay->addAction(toggleObjectCollisions);
-		menuDisplay->addAction(actionToggle_Fullscreen_Viewport);
+		menuDisplay->AddCommand("camera.toggle_speed_height_relative");
+		menuDisplay->AddCommand("camera.toggle_terrain_collisions");
+		menuDisplay->AddCommand("camera.toggle_object_collisions");
+		menuDisplay->AddCommand("general.fullscreen");
+
 		menuLocation->addAction(menuRemember_Location->menuAction());
 		menuLocation->addAction(menuGoto_Location->menuAction());
-		menuRemember_Location->addAction(actionRemember_Location_1);
-		menuRemember_Location->addAction(actionRemember_Location_2);
-		menuRemember_Location->addAction(actionRemember_Location_3);
-		menuRemember_Location->addAction(actionRemember_Location_4);
-		menuRemember_Location->addAction(actionRemember_Location_5);
-		menuRemember_Location->addAction(actionRemember_Location_6);
-		menuRemember_Location->addAction(actionRemember_Location_7);
-		menuRemember_Location->addAction(actionRemember_Location_8);
-		menuRemember_Location->addAction(actionRemember_Location_9);
-		menuRemember_Location->addAction(actionRemember_Location_10);
-		menuRemember_Location->addAction(actionRemember_Location_11);
-		menuRemember_Location->addAction(actionRemember_Location_12);
-		menuGoto_Location->addAction(actionGoto_Location_1);
-		menuGoto_Location->addAction(actionGoto_Location_2);
-		menuGoto_Location->addAction(actionGoto_Location_3);
-		menuGoto_Location->addAction(actionGoto_Location_4);
-		menuGoto_Location->addAction(actionGoto_Location_5);
-		menuGoto_Location->addAction(actionGoto_Location_6);
-		menuGoto_Location->addAction(actionGoto_Location_7);
-		menuGoto_Location->addAction(actionGoto_Location_8);
-		menuGoto_Location->addAction(actionGoto_Location_9);
-		menuGoto_Location->addAction(actionGoto_Location_10);
-		menuGoto_Location->addAction(actionGoto_Location_11);
-		menuGoto_Location->addAction(actionGoto_Location_12);
-		menuSwitch_Camera->addAction(actionCamera_Default);
-		menuSwitch_Camera->addAction(actionCamera_Sequence);
-		menuSwitch_Camera->addAction(actionCamera_Selected_Object);
-		menuSwitch_Camera->addAction(actionCamera_Cycle);
-		menuGame->addAction(actionSwitch_to_Game);
-		menuGame->addAction(actionSuspend_Game_Input);
-		menuGame->addAction(actionEnable_Physics_AI);
+		for (auto i = 1; i <= 12; ++i)
+		{
+			// Create remember location actions based on command
+			QCommandAction* pRememberLocation = new QCommandAction(QString("Remember Location %1").arg(i),
+			                                                       QString("level.tag_location '%1'").arg(i).toStdString().c_str(), nullptr);
+			QKeySequence rememberLocationShortcut(QString("Ctrl+Alt+F%1").arg(i));
+			pRememberLocation->setShortcuts({ rememberLocationShortcut });
+			pRememberLocation->SetDefaultShortcuts({ rememberLocationShortcut });
+			menuRemember_Location->addAction(pRememberLocation);
+
+			// Create go to location actions based on command
+			QCommandAction* pGoToLocation = new QCommandAction(QString("Go to Location %1").arg(i),
+			                                                   QString("level.go_to_tag_location '%1'").arg(i).toStdString().c_str(), nullptr);
+			QKeySequence goToLocationShortcut(QString("Ctrl+F%1").arg(i));
+			pGoToLocation->setShortcuts({ goToLocationShortcut });
+			pGoToLocation->SetDefaultShortcuts({ goToLocationShortcut });
+			menuGoto_Location->addAction(pGoToLocation);
+		}
+
+		menuSwitch_Camera->AddCommand("viewport.make_default_camera_current");
+		menuSwitch_Camera->AddCommand("viewport.make_selected_camera_current");
+		menuSwitch_Camera->AddCommand("viewport.cycle_current_camera");
+		menuGame->AddCommand("game.toggle_game_mode");
+		menuGame->AddCommand("game.toggle_suspend_input");
+		menuGame->AddCommand("game.toggle_simulate_physics_ai");
 		menuGame->addSeparator();
 		menuGame->addAction(menuAudio->menuAction());
 		menuGame->addAction(menuAI->menuAction());
 		menuGame->addSeparator();
-		menuGame->addAction(actionSynchronize_Player_with_Camera);
+		menuGame->AddCommand("game.sync_player_with_camera");
 		menuGraphics->addAction(actionVery_High);
 		menuGraphics->addAction(actionHigh);
 		menuGraphics->addAction(actionMedium);
@@ -1083,35 +554,35 @@ public:
 		menuAI->addMenu(menuRegenerate_MNM_Agent_Type);
 		menuAI->addSeparator();
 		menuAI->addMenu(menuDebug_Agent_Type);
-		menuAI->addAction(actionAIVisualizeNavigationAccessibility);
-		menuAI->addAction(actionAIShowNavigationAreas);
+		menuAI->AddCommand("ai.visualize_navigation_accessibility");
+		menuAI->AddCommand("ai.show_navigation_areas");
 		menuAI->addSeparator();
-		menuAI->addAction(pCommandManager->GetCommandAction("ai.generate_cover_surfaces"));
+		menuAI->AddCommand("ai.generate_cover_surfaces");
 		menuDebug->addAction(menuReload_Scripts->menuAction());
-		menuDebug->addAction(actionReload_Texture_Shaders);
-		menuDebug->addAction(actionReload_Archetypes);
-		menuDebug->addAction(actionReload_Geometry);
-		menuDebug->addAction(actionReload_Terrain);
-		menuDebug->addAction(actionCheck_Level_for_Errors);
-		menuDebug->addAction(actionCheck_Object_Positions);
-		menuDebug->addAction(actionResolve_Missing_Objects);
-		menuDebug->addAction(actionSave_Level_Statistics);
+		menuDebug->AddCommand("level.reload_textures_shaders");
+		menuDebug->AddCommand("entity.reload_all_archetypes");
+		menuDebug->AddCommand("level.reload_geometry");
+		menuDebug->AddCommand("terrain.reload_terrain");
+		menuDebug->AddCommand("level.validate");
+		menuDebug->AddCommand("object.validate_positions");
+		menuDebug->AddCommand("object.resolve_missing_objects_materials");
+		menuDebug->AddCommand("level.save_stats");
 		menuDebug->addSeparator();
 		menuDebug->addAction(menuAdvanced->menuAction());
 		menuDebug->addSeparator();
 		menuDebug->addAction(actionShow_Log_File);
-		menuReload_Scripts->addAction(actionReload_All_Scripts);
-		menuReload_Scripts->addAction(actionReload_Entity_Scripts);
-		menuReload_Scripts->addAction(actionReload_Item_Scripts);
-		menuReload_Scripts->addAction(actionReload_AI_Scripts);
-		menuReload_Scripts->addAction(actionReload_UI_Scripts);
-		menuAdvanced->addAction(actionCompile_Script);
+		menuReload_Scripts->AddCommand("level.reload_all_scripts");
+		menuReload_Scripts->AddCommand("entity.reload_all_scripts");
+		menuReload_Scripts->AddCommand("game.reload_item_scripts");
+		menuReload_Scripts->AddCommand("ai.reload_all_scripts");
+		menuReload_Scripts->AddCommand("ui.reload_all_scripts");
+		menuAdvanced->AddCommand("entity.compile_scripts");
 		menuAdvanced->addAction(actionReduce_Working_Set);
-		menuAdvanced->addAction(actionUpdate_Procedural_Vegetation);
-		menuCoordinates->addAction(actionCoordinates_View);
-		menuCoordinates->addAction(actionCoordinates_Local);
-		menuCoordinates->addAction(actionCoordinates_Parent);
-		menuCoordinates->addAction(actionCoordinates_World);
+		menuAdvanced->AddCommand("level.update_procedural_vegetation");
+		menuCoordinates->AddCommand("level.set_view_coordinate_system");
+		menuCoordinates->AddCommand("level.set_local_coordinate_system");
+		menuCoordinates->AddCommand("level.set_parent_coordinate_system");
+		menuCoordinates->AddCommand("level.set_world_coordinate_system");
 
 		retranslateUi(MainWindow);
 
@@ -1120,251 +591,41 @@ public:
 
 	void retranslateUi(QMainWindow* MainWindow)
 	{
-		actionNew->setText(QApplication::translate("MainWindow", "&New...", 0));
-		actionNew->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "New", 0)));
-		actionNew->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.new", 0)));
-		actionOpen->setText(QApplication::translate("MainWindow", "&Open...", 0));
-		actionOpen->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "Open", 0)));
-		actionOpen->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.open", 0)));
-		actionSave_As->setText(QApplication::translate("MainWindow", "Save As...", 0));
-		actionSave_As->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "SaveAs", 0)));
-		actionSave_As->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.save_as", 0)));
-		actionToggle_Content_Browser->setProperty("command", QVariant(QApplication::translate("MainWindow", "asset.toggle_browser", 0)));
-		actionExport_to_Engine->setText(QApplication::translate("MainWindow", "Export to Engine", 0));
-		actionExport_to_Engine->setShortcuts(CKeyboardShortcut("F7; Ctrl+E").ToKeySequence());
-		actionExport_Occlusion_Mesh->setText(QApplication::translate("MainWindow", "Export Occlusion Mesh", 0));
-		actionSave_Level_Resources->setText(QApplication::translate("MainWindow", "Save Level Resources", 0));
-		actionExport_Selected_Objects->setText(QApplication::translate("MainWindow", "Export Selected Objects", 0));
 		actionShow_Log_File->setText(QApplication::translate("MainWindow", "Show Log File", 0));
-		actionExit->setText(QApplication::translate("MainWindow", "Exit", 0));
-		actionExit->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.exit", 0)));
-		actionExit->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "Quit", 0)));
-		actionExit->setProperty("menurole", QVariant(QApplication::translate("MainWindow", "QuitRole", 0)));
-		actionUndo->setText(QApplication::translate("MainWindow", "Undo", 0));
-		actionUndo->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "Undo", 0)));
-		actionUndo->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.undo", 0)));
-		actionRedo->setText(QApplication::translate("MainWindow", "Redo", 0));
-		actionRedo->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "Redo", 0)));
-		actionRedo->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.redo", 0)));
-		actionDelete->setText(QApplication::translate("MainWindow", "Delete", 0));
-		actionDelete->setShortcut(QApplication::translate("MainWindow", "Del", 0));
-		actionDelete->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "Delete", 0)));
-		actionDelete->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.delete", 0)));
-		actionDuplicate->setText(QApplication::translate("MainWindow", "Duplicate", 0));
-		actionDuplicate->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.duplicate", 0)));
-		actionCopy->setText(QApplication::translate("MainWindow", "Copy", 0));
-		actionCopy->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.copy", 0)));
-		actionCut->setText(QApplication::translate("MainWindow", "Cut", 0));
-		actionCut->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.cut", 0)));
-		actionPaste->setText(QApplication::translate("MainWindow", "Paste", 0));
-		actionPaste->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.paste", 0)));
-		actionHide_Selection->setText(QApplication::translate("MainWindow", "Hide Selection", 0));
-		actionHide_Selection->setShortcut(QApplication::translate("MainWindow", "H", 0));
-		actionUnhide_All->setText(QApplication::translate("MainWindow", "Unhide All", 0));
-		actionUnhide_All->setShortcut(QApplication::translate("MainWindow", "Shift+H", 0));
-		actionFreeze_Selection->setText(QApplication::translate("MainWindow", "Freeze Selection", 0));
-		actionFreeze_Selection->setShortcut(QApplication::translate("MainWindow", "F", 0));
-		actionUnfreeze_All->setText(QApplication::translate("MainWindow", "Unfreeze All Objects", 0));
-		actionUnfreeze_All->setShortcut(QApplication::translate("MainWindow", "Shift+F", 0));
-		actionSelect_None->setText(QApplication::translate("MainWindow", "Select None", 0));
-		actionSelect_None->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "SelectNone", 0)));
-		actionSelect_Invert->setText(QApplication::translate("MainWindow", "Select Invert", 0));
-		actionFind->setText(QApplication::translate("MainWindow", "Find...", 0));
-		actionFind->setShortcut(QApplication::translate("MainWindow", "Ctrl+F", 0));
-		actionFind->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.find", 0)));
-		actionFindPrevious->setText(QApplication::translate("MainWindow", "Find Previous", 0));
-		actionFindPrevious->setShortcut(QApplication::translate("MainWindow", "Shift+F3", 0));
-		actionFindPrevious->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.find_previous", 0)));
-		actionFindNext->setText(QApplication::translate("MainWindow", "Find Next", 0));
-		actionFindNext->setShortcut(QApplication::translate("MainWindow", "F3", 0));
-		actionFindNext->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.find_next", 0)));
-		actionLock_Selection->setText(QApplication::translate("MainWindow", "Lock Selection", 0));
-		actionLock_Selection->setShortcut(QApplication::translate("MainWindow", "Ctrl+Shift+Space", 0));
-		actionSelect_Mode->setText(QApplication::translate("MainWindow", "Select", 0));
-		actionSelect_Mode->setShortcut(QApplication::translate("MainWindow", "4", 0));
-		actionSelect_Mode->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "EditModeGroup", 0)));
-		actionMove->setText(QApplication::translate("MainWindow", "Move", 0));
-		actionMove->setShortcut(QApplication::translate("MainWindow", "1", 0));
-		actionMove->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "EditModeGroup", 0)));
-		actionRotate->setText(QApplication::translate("MainWindow", "Rotate", 0));
-		actionRotate->setShortcut(QApplication::translate("MainWindow", "2", 0));
-		actionRotate->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "EditModeGroup", 0)));
-		actionScale->setText(QApplication::translate("MainWindow", "Scale", 0));
-		actionScale->setShortcut(QApplication::translate("MainWindow", "3", 0));
-		actionScale->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "EditModeGroup", 0)));
-		actionLink->setText(QApplication::translate("MainWindow", "Link", 0));
-		actionUnlink->setText(QApplication::translate("MainWindow", "Unlink", 0));
-		actionAlign_To_Grid->setText(QApplication::translate("MainWindow", "Align to Grid", 0));
-		actionAlign_To_Object->setText(QApplication::translate("MainWindow", "Snap to Pivot", 0));
-		actionRotate_X_Axis->setText(QApplication::translate("MainWindow", "Rotate X Axis", 0));
-		actionRotate_Y_Axis->setText(QApplication::translate("MainWindow", "Rotate Y Axis", 0));
-		actionRotate_Z_Axis->setText(QApplication::translate("MainWindow", "Rotate Z Axis", 0));
-		actionRotate_Angle->setText(QApplication::translate("MainWindow", "Rotate Angle...", 0));
-		actionGoto_Selection->setText(QApplication::translate("MainWindow", "Go to Selection", 0));
-		actionGoto_Selection->setProperty("command", QVariant(QApplication::translate("MainWindow", "level.go_to_selection", 0)));
-		actionMaterial_Assign_Current->setText(QApplication::translate("MainWindow", "Assign Current", 0));
-		actionMaterial_Reset_to_Default->setText(QApplication::translate("MainWindow", "Reset to Default", 0));
-		actionMaterial_Get_from_Selected->setText(QApplication::translate("MainWindow", "Get from Selected", 0));
-		actionLighting_Regenerate_All_Cubemap->setText(QApplication::translate("MainWindow", "Regenerate All Cubemaps", 0));
-		actionLighting_Regenerate_All_Cubemap->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.generate_all_cubemaps", 0)));
-		actionPick_Material->setText(QApplication::translate("MainWindow", "Pick Material", 0));
-		actionGet_Physics_State->setText(QApplication::translate("MainWindow", "Get Physics State", 0));
-		actionReset_Physics_State->setText(QApplication::translate("MainWindow", "Reset Physics State", 0));
-		actionPhysics_Simulate_Objects->setText(QApplication::translate("MainWindow", "Simulate Objects", 0));
-		actionPhysics_Generate_Joints->setText(QApplication::translate("MainWindow", "Generate Breakable Joints", 0));
-		actionWireframe->setText(QApplication::translate("MainWindow", "Wireframe/Solid Mode", 0));
-		actionWireframe->setShortcut(QApplication::translate("MainWindow", "Alt+W", 0));
 		actionRuler->setText(QApplication::translate("MainWindow", "Ruler", 0));
-		actionGoto_Position->setText(QApplication::translate("MainWindow", "Go to Position", 0));
-		actionRemember_Location_1->setText(QApplication::translate("MainWindow", "Remember Location 1", 0));
-		actionRemember_Location_1->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F1", 0));
-		actionRemember_Location_2->setText(QApplication::translate("MainWindow", "Remember Location 2", 0));
-		actionRemember_Location_2->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F2", 0));
-		actionRemember_Location_3->setText(QApplication::translate("MainWindow", "Remember Location 3", 0));
-		actionRemember_Location_3->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F3", 0));
-		actionRemember_Location_4->setText(QApplication::translate("MainWindow", "Remember Location 4", 0));
-		actionRemember_Location_4->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F4", 0));
-		actionRemember_Location_5->setText(QApplication::translate("MainWindow", "Remember Location 5", 0));
-		actionRemember_Location_5->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F5", 0));
-		actionRemember_Location_6->setText(QApplication::translate("MainWindow", "Remember Location 6", 0));
-		actionRemember_Location_6->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F6", 0));
-		actionRemember_Location_7->setText(QApplication::translate("MainWindow", "Remember Location 7", 0));
-		actionRemember_Location_7->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F7", 0));
-		actionRemember_Location_8->setText(QApplication::translate("MainWindow", "Remember Location 8", 0));
-		actionRemember_Location_8->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F8", 0));
-		actionRemember_Location_9->setText(QApplication::translate("MainWindow", "Remember Location 9", 0));
-		actionRemember_Location_9->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F9", 0));
-		actionRemember_Location_10->setText(QApplication::translate("MainWindow", "Remember Location 10", 0));
-		actionRemember_Location_10->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F10", 0));
-		actionRemember_Location_11->setText(QApplication::translate("MainWindow", "Remember Location 11", 0));
-		actionRemember_Location_11->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F11", 0));
-		actionRemember_Location_12->setText(QApplication::translate("MainWindow", "Remember Location 12", 0));
-		actionRemember_Location_12->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+F12", 0));
-		actionGoto_Location_1->setText(QApplication::translate("MainWindow", "Go to Location 1", 0));
-		actionGoto_Location_1->setShortcut(QApplication::translate("MainWindow", "Ctrl+F1", 0));
-		actionGoto_Location_2->setText(QApplication::translate("MainWindow", "Go to Location 2", 0));
-		actionGoto_Location_2->setShortcut(QApplication::translate("MainWindow", "Ctrl+F2", 0));
-		actionGoto_Location_3->setText(QApplication::translate("MainWindow", "Go to Location 3", 0));
-		actionGoto_Location_3->setShortcut(QApplication::translate("MainWindow", "Ctrl+F3", 0));
-		actionGoto_Location_4->setText(QApplication::translate("MainWindow", "Go to Location 4", 0));
-		actionGoto_Location_4->setShortcut(QApplication::translate("MainWindow", "Ctrl+F4", 0));
-		actionGoto_Location_5->setText(QApplication::translate("MainWindow", "Go to Location 5", 0));
-		actionGoto_Location_5->setShortcut(QApplication::translate("MainWindow", "Ctrl+F5", 0));
-		actionGoto_Location_6->setText(QApplication::translate("MainWindow", "Go to Location 6", 0));
-		actionGoto_Location_6->setShortcut(QApplication::translate("MainWindow", "Ctrl+F6", 0));
-		actionGoto_Location_7->setText(QApplication::translate("MainWindow", "Go to Location 7", 0));
-		actionGoto_Location_7->setShortcut(QApplication::translate("MainWindow", "Ctrl+F7", 0));
-		actionGoto_Location_8->setText(QApplication::translate("MainWindow", "Go to Location 8", 0));
-		actionGoto_Location_8->setShortcut(QApplication::translate("MainWindow", "Ctrl+F8", 0));
-		actionGoto_Location_9->setText(QApplication::translate("MainWindow", "Go to Location 9", 0));
-		actionGoto_Location_9->setShortcut(QApplication::translate("MainWindow", "Ctrl+F9", 0));
-		actionGoto_Location_10->setText(QApplication::translate("MainWindow", "Go to Location 10", 0));
-		actionGoto_Location_10->setShortcut(QApplication::translate("MainWindow", "Ctrl+F10", 0));
-		actionGoto_Location_11->setText(QApplication::translate("MainWindow", "Go to Location 11", 0));
-		actionGoto_Location_11->setShortcut(QApplication::translate("MainWindow", "Ctrl+F11", 0));
-		actionGoto_Location_12->setText(QApplication::translate("MainWindow", "Go to Location 12", 0));
-		actionGoto_Location_12->setShortcut(QApplication::translate("MainWindow", "Ctrl+F12", 0));
-		actionCamera_Default->setText(QApplication::translate("MainWindow", "Default Camera", 0));
-		actionCamera_Sequence->setText(QApplication::translate("MainWindow", "Sequence Camera", 0));
-		actionCamera_Selected_Object->setText(QApplication::translate("MainWindow", "Selected Camera Object", 0));
-		actionCamera_Cycle->setText(QApplication::translate("MainWindow", "Cycle Camera", 0));
-		actionCamera_Cycle->setShortcut(QApplication::translate("MainWindow", "Ctrl+'", 0));
-		actionShow_Hide_Helpers->setText(QApplication::translate("MainWindow", "Show/Hide Helpers", 0));
-		actionToggle_Fullscreen_Viewport->setText(QApplication::translate("MainWindow", "Toggle Fullscreen", 0));
-		actionToggle_Fullscreen_Viewport->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "FullScreen", 0)));
-		actionToggle_Fullscreen_Viewport->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.fullscreen", 0)));
-		actionGroup->setText(QApplication::translate("MainWindow", "Group", 0));
-		actionUngroup->setText(QApplication::translate("MainWindow", "Ungroup", 0));
-		actionGroup_Open->setText(QApplication::translate("MainWindow", "Open", 0));
-		actionGroup_Close->setText(QApplication::translate("MainWindow", "Close", 0));
-		actionGroup_Attach->setText(QApplication::translate("MainWindow", "Attach to...", 0));
-		actionGroup_Detach->setText(QApplication::translate("MainWindow", "Detach", 0));
-		actionGroup_DetachToRoot->setText(QApplication::translate("MainWindow", "Detach from Hierarchy", 0));
-		actionReload_Terrain->setText(QApplication::translate("MainWindow", "Reload Terrain", 0));
-		actionReload_Terrain->setProperty("command", QVariant(QApplication::translate("MainWindow", "terrain.reload_terrain", 0)));
-		actionSwitch_to_Game->setText(QApplication::translate("MainWindow", "Switch to Game", 0));
-		actionSwitch_to_Game->setShortcuts(CKeyboardShortcut("F5; Ctrl+G").ToKeySequence());
-		actionSuspend_Game_Input->setText(QApplication::translate("MainWindow", "Suspend Game Input", 0));
-		actionSuspend_Game_Input->setShortcut(QApplication::translate("MainWindow", "Pause", 0));
-		actionSuspend_Game_Input->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.suspend_game_input", 0)));
-		actionEnable_Physics_AI->setText(QApplication::translate("MainWindow", "Enable Physics/AI", 0));
-		actionEnable_Physics_AI->setShortcut(QApplication::translate("MainWindow", "Ctrl+P", 0));
-		actionSynchronize_Player_with_Camera->setText(QApplication::translate("MainWindow", "Synchronize Player", 0));
-#ifndef QT_NO_TOOLTIP
-		actionSynchronize_Player_with_Camera->setToolTip(QApplication::translate("MainWindow", "Synchronize Player with Camera", 0));
-#endif // QT_NO_TOOLTIP
 
-		actionReload_All_Scripts->setText(QApplication::translate("MainWindow", "Reload All Scripts", 0));
-		actionReload_Entity_Scripts->setText(QApplication::translate("MainWindow", "Reload Entity Scripts", 0));
-		actionReload_Item_Scripts->setText(QApplication::translate("MainWindow", "Reload Item Scripts", 0));
-		actionReload_AI_Scripts->setText(QApplication::translate("MainWindow", "Reload AI Scripts", 0));
-		actionReload_UI_Scripts->setText(QApplication::translate("MainWindow", "Reload UI Scripts", 0));
-		actionReload_Archetypes->setText(QApplication::translate("MainWindow", "Reload Archetypes", 0));
-		actionReload_Texture_Shaders->setText(QApplication::translate("MainWindow", "Reload Texture/Shaders", 0));
-		actionReload_Geometry->setText(QApplication::translate("MainWindow", "Reload Geometry", 0));
-		actionCheck_Level_for_Errors->setText(QApplication::translate("MainWindow", "Check Level for Errors", 0));
-		actionCheck_Object_Positions->setText(QApplication::translate("MainWindow", "Check Object Positions", 0));
-		actionSave_Level_Statistics->setText(QApplication::translate("MainWindow", "Save Level Statistics", 0));
-		actionCompile_Script->setText(QApplication::translate("MainWindow", "Compile Script", 0));
 		actionReduce_Working_Set->setText(QApplication::translate("MainWindow", "Reduce Working Set", 0));
-		actionUpdate_Procedural_Vegetation->setText(QApplication::translate("MainWindow", "Update Procedural Vegetation", 0));
-		actionSave->setText(QApplication::translate("MainWindow", "&Save", 0));
-		actionSave->setProperty("standardkey", QVariant(QApplication::translate("MainWindow", "Save", 0)));
-		actionSave->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.save", 0)));
-		actionSave_Selected_Objects->setText(QApplication::translate("MainWindow", "Save Selected Objects", 0));
-		actionSave_Selected_Objects->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+S", 0));
-		actionLoad_Selected_Objects->setText(QApplication::translate("MainWindow", "Load Selected Objects", 0));
-		actionLoad_Selected_Objects->setShortcut(QApplication::translate("MainWindow", "Ctrl+Alt+L", 0));
-		actionLock_X_Axis->setText(QApplication::translate("MainWindow", "Lock on X Axis", 0));
-		actionLock_X_Axis->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "LockAxisGroup", 0)));
-		actionLock_Y_Axis->setText(QApplication::translate("MainWindow", "Lock on Y Axis", 0));
-		actionLock_Y_Axis->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "LockAxisGroup", 0)));
-		actionLock_Z_Axis->setText(QApplication::translate("MainWindow", "Lock on Z Axis", 0));
-		actionLock_Z_Axis->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "LockAxisGroup", 0)));
-		actionLock_XY_Axis->setText(QApplication::translate("MainWindow", "Lock on XY Plane", 0));
-		actionLock_XY_Axis->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "LockAxisGroup", 0)));
-		actionCoordinates_View->setText(QApplication::translate("MainWindow", "View", 0));
-		actionCoordinates_View->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "CoordinatesGroup", 0)));
-		actionCoordinates_View->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_view_coordinates", 0)));
-		actionCoordinates_Local->setText(QApplication::translate("MainWindow", "Local", 0));
-		actionCoordinates_Local->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "CoordinatesGroup", 0)));
-		actionCoordinates_Local->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_local_coordinates", 0)));
-		actionCoordinates_Parent->setText(QApplication::translate("MainWindow", "Parent", 0));
-		actionCoordinates_Parent->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "CoordinatesGroup", 0)));
-		actionCoordinates_Parent->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_parent_coordinates", 0)));
-		actionCoordinates_World->setText(QApplication::translate("MainWindow", "World", 0));
-		actionCoordinates_World->setProperty("actionGroup", QVariant(QApplication::translate("MainWindow", "CoordinatesGroup", 0)));
-		actionCoordinates_World->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_world_coordinates", 0)));
-		actionResolve_Missing_Objects->setText(QApplication::translate("MainWindow", "Resolve Missing Objects/Materials", 0));
 
 		ESystemConfigSpec currentConfigSpec = GetIEditorImpl()->GetEditorConfigSpec();
 
 		actionVery_High->setText(QApplication::translate("MainWindow", "Very High", 0));
-		actionVery_High->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 4", 0)));
+		actionVery_High->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_VERYHIGH_SPEC));
 		actionVery_High->setChecked(currentConfigSpec == CONFIG_VERYHIGH_SPEC);
 		actionHigh->setText(QApplication::translate("MainWindow", "High", 0));
-		actionHigh->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 3", 0)));
+		actionHigh->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_HIGH_SPEC));
 		actionHigh->setChecked(currentConfigSpec == CONFIG_HIGH_SPEC);
 		actionMedium->setText(QApplication::translate("MainWindow", "Medium", 0));
-		actionMedium->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 2", 0)));
+		actionMedium->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_MEDIUM_SPEC));
 		actionMedium->setChecked(currentConfigSpec == CONFIG_MEDIUM_SPEC);
 		actionLow->setText(QApplication::translate("MainWindow", "Low", 0));
-		actionLow->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 1", 0)));
+		actionLow->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_LOW_SPEC));
 		actionLow->setChecked(currentConfigSpec == CONFIG_LOW_SPEC);
-		actionXBox_One->setText(QApplication::translate("MainWindow", "XBox One", 0));
-		actionXBox_One->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 5", 0)));
+		actionXBox_One->setText(QApplication::translate("MainWindow", "Xbox One", 0));
+		actionXBox_One->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_DURANGO));
 		actionXBox_One->setChecked(currentConfigSpec == CONFIG_DURANGO);
 		actionPS4->setText(QApplication::translate("MainWindow", "PS4", 0));
-		actionPS4->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 6", 0)));
+		actionPS4->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_ORBIS));
 		actionPS4->setChecked(currentConfigSpec == CONFIG_ORBIS);
 		actionCustom->setText(QApplication::translate("MainWindow", "Custom", 0));
-		actionCustom->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 0", 0)));
+		actionCustom->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_CUSTOM));
 		actionCustom->setChecked(currentConfigSpec == CONFIG_CUSTOM);
 
 		actionMute_Audio->setText(QApplication::translate("MainWindow", "Mute Audio", 0));
 		actionStop_All_Sounds->setText(QApplication::translate("MainWindow", "Stop All Sounds", 0));
 		actionRefresh_Audio->setText(QApplication::translate("MainWindow", "Refresh Audio", 0));
 		menuFile->setTitle(QApplication::translate("MainWindow", "&File", 0));
+		menuFileNew->setTitle(QApplication::translate("MainWindow", "New", 0));
+		menuFileOpen->setTitle(QApplication::translate("MainWindow", "Open", 0));
 		menuRecent_Files->setTitle(QApplication::translate("MainWindow", "Recent Files", 0));
 		menuEdit->setTitle(QApplication::translate("MainWindow", "Edit", 0));
 		menuEditing_Mode->setTitle(QApplication::translate("MainWindow", "Editing Mode", 0));
@@ -1390,6 +651,7 @@ public:
 		menuLayout->setTitle(QApplication::translate("MainWindow", "Layout", 0));
 		menuHelp->setTitle(QApplication::translate("MainWindow", "Help", 0));
 		menuGraphics->setTitle(QApplication::translate("MainWindow", "Graphics", 0));
+		menuDisplayInfo->setTitle(QApplication::translate("MainWindow", "Display Info", 0));
 		menuAudio->setTitle(QApplication::translate("MainWindow", "Audio", 0));
 		menuAI->setTitle(QApplication::translate("MainWindow", "AI", 0));
 		menuAINavigationUpdate->setTitle(QApplication::translate("MainWindow", "Navigation Update Mode", 0));
@@ -1412,7 +674,9 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	, m_bClosing(false)
 	, m_bUserEventPriorityMode(false)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+
+	m_levelEditor->Initialize();
 
 	// Make the level editor the fallback handler for all unhandled events
 	m_loopHandler.SetDefaultHandler(m_levelEditor.get());
@@ -1420,7 +684,7 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	m_pAboutDlg = nullptr;
 	Ui_MainWindow().setupUi(this);
 	s_pToolTabManager = new CTabPaneManager(this);
-	m_pMainToolBarManager = new QMainToolBarManager(this);
+	s_pWidgetGlobalActionRegistry = new CWidgetsGlobalActionRegistry();
 	connect(m_levelEditor.get(), &CLevelEditor::LevelLoaded, this, &CEditorMainFrame::UpdateWindowTitle);
 
 	setAttribute(Qt::WA_DeleteOnClose, true);
@@ -1482,23 +746,19 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	QToolWindowManager* mainDockArea = m_toolManager;
 	setCentralWidget(mainDockArea);
 
-	CViewManager* pViewManager = GetIEditorImpl()->GetViewManager();
-	pViewManager->signalAxisConstrainChanged.Connect(this, &CEditorMainFrame::OnAxisConstrainChanged);
-
 	UpdateWindowTitle();
 
 	setWindowIcon(QIcon("icons:editor_icon.ico"));
 	qApp->setWindowIcon(windowIcon());
 
-	//QWidget* w = QCustomWindowFrame::wrapWidget(this);
 	QWidget* w = QSandboxWindow::wrapWidget(this, m_toolManager);
 	w->setObjectName("mainWindow");
 	w->show();
 
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &CEditorMainFrame::OnEditToolChanged);
+
 	//Important so the focus is set to this and messages reach the CLevelEditor when clicking on the menu.
 	setFocusPolicy(Qt::StrongFocus);
-
-	GetIEditorImpl()->Notify(eNotify_OnMainFrameCreated);
 }
 
 void CEditorMainFrame::UpdateWindowTitle(const QString& levelPath /*= "" */)
@@ -1515,9 +775,10 @@ void CEditorMainFrame::UpdateWindowTitle(const QString& levelPath /*= "" */)
 	setWindowTitle(title);
 }
 
-//////////////////////////////////////////////////////////////////////////
 CEditorMainFrame::~CEditorMainFrame()
 {
+	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.DisconnectObject(this);
+
 	m_loopHandler.RemoveNativeHandler(reinterpret_cast<uintptr_t>(this));
 
 	if (m_pAutoBackupTimer)
@@ -1525,12 +786,11 @@ CEditorMainFrame::~CEditorMainFrame()
 
 	if (m_pInstance)
 	{
+		SAFE_DELETE(s_pWidgetGlobalActionRegistry);
 		SAFE_DELETE(s_pToolTabManager);
 		m_pInstance = 0;
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 void CEditorMainFrame::SetDefaultLayout()
 {
@@ -1551,13 +811,23 @@ void CEditorMainFrame::SetDefaultLayout()
 	w->showMaximized();
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::PostLoad()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	InitActions();
 	InitMenus();
-	m_pMainToolBarManager->CreateMainFrameToolBars();
+
+	// First attempt to migrate any toolbars in the root path to the mainframe folder. This will place any toolbars in the root
+	// in this editor's (MainFrame) specific folder. It will also upgrade toolbars to the latest version
+	GetIEditor()->GetToolBarService()->MigrateToolBars("", "MainFrame");
+
+	// Hardcoded editor name because mainframe toolbars are just a hack caused by not having a proper standalone level editor
+	std::vector<QToolBar*> toolbars = GetIEditor()->GetToolBarService()->LoadToolBars("MainFrame");
+	for (QToolBar* pToolBar : toolbars)
+	{
+		addToolBar(pToolBar);
+	}
+
 	GetIEditorImpl()->GetTrayArea()->RegisterTrayWidget<CTraySearchBox>(0);
 	InitMenuBar();
 
@@ -1567,16 +837,14 @@ void CEditorMainFrame::PostLoad()
 	}
 
 	GetIEditorImpl()->GetTrayArea()->MainFrameInitialized();
+	GetIEditorImpl()->Notify(eNotify_OnMainFrameInitialized);
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 CEditorMainFrame* CEditorMainFrame::GetInstance()
 {
 	return m_pInstance;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::CreateToolsMenu()
 {
 	std::vector<IViewPaneClass*> viewPaneClasses;
@@ -1603,17 +871,15 @@ void CEditorMainFrame::CreateToolsMenu()
 		temp = "";
 	}
 
-	int i;
-
 	std::map<string, int> numClassesInCategory;
 
 	std::vector<IClassDesc*> classes;
 	GetIEditorImpl()->GetClassFactory()->GetClassesBySystemID(ESYSTEM_CLASS_VIEWPANE, classes);
-	for (i = 0; i < classes.size(); i++)
+	for (int i = 0; i < classes.size(); i++)
 	{
 		numClassesInCategory[classes[i]->Category()]++;
 	}
-	for (i = 0; i < classes.size(); i++)
+	for (int i = 0; i < classes.size(); i++)
 	{
 		IClassDesc* pClass = classes[i];
 		IViewPaneClass* pViewClass = (IViewPaneClass*)pClass;
@@ -1623,9 +889,10 @@ void CEditorMainFrame::CreateToolsMenu()
 			continue;
 		}
 		if (stl::find(viewPaneClasses, pViewClass))
+		{
 			continue;
+		}
 
-		int numClasses = numClassesInCategory[pViewClass->Category()];
 		string name = pViewClass->ClassName();
 		string category = pViewClass->Category();
 
@@ -1684,8 +951,6 @@ void CEditorMainFrame::CreateToolsMenu()
 
 	for (QAction* pAction : actions)
 	{
-		QMenu* menu = pAction->menu();
-
 		if (!pAction->menu())
 		{
 			looseActions.append(pAction);
@@ -1806,11 +1071,10 @@ void CEditorMainFrame::BindAIMenu()
 	{
 		pUpdateModeActionGroup->addAction(pContinousUpdate);
 		pUpdateModeMenu->addAction(pContinousUpdate);
-		pContinousUpdate->setCheckable(true);
-		pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Continuous);
+		pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Continuous);
 		gAINavigationPreferences.signalSettingsChanged.Connect([pContinousUpdate]()
 		{
-			pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Continuous);
+			pContinousUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Continuous);
 		});
 	}
 
@@ -1819,11 +1083,10 @@ void CEditorMainFrame::BindAIMenu()
 	{
 		pUpdateModeActionGroup->addAction(pAfterChangeUpdate);
 		pUpdateModeMenu->addAction(pAfterChangeUpdate);
-		pAfterChangeUpdate->setCheckable(true);
-		pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::AfterStabilization);
+		pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::AfterStabilization);
 		gAINavigationPreferences.signalSettingsChanged.Connect([pAfterChangeUpdate]()
 		{
-			pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::AfterStabilization);
+			pAfterChangeUpdate->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::AfterStabilization);
 		});
 	}
 
@@ -1832,11 +1095,10 @@ void CEditorMainFrame::BindAIMenu()
 	{
 		pUpdateModeActionGroup->addAction(pUpdateDisabled);
 		pUpdateModeMenu->addAction(pUpdateDisabled);
-		pUpdateDisabled->setCheckable(true);
-		pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Disabled);
+		pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Disabled);
 		gAINavigationPreferences.signalSettingsChanged.Connect([pUpdateDisabled]()
 		{
-			pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateType::Disabled);
+			pUpdateDisabled->setChecked(gAINavigationPreferences.navigationUpdateType() == ENavigationUpdateMode::Disabled);
 		});
 	}
 }
@@ -1934,9 +1196,9 @@ void CEditorMainFrame::InitMenus()
 		connect(displayMenu, &QMenu::aboutToShow, [this]()
 		{
 			ICommandManager* pCommandManager = GetIEditorImpl()->GetICommandManager();
-			pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(CRenderViewport::s_cameraPreferences.speedHeightRelativeEnabled);
-			pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(CRenderViewport::s_cameraPreferences.terrainCollisionEnabled);
-			pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(CRenderViewport::s_cameraPreferences.objectCollisionEnabled);
+			pCommandManager->GetAction("camera.toggle_speed_height_relative")->setChecked(CRenderViewport::s_cameraPreferences.IsSpeedHeightRelativeEnabled());
+			pCommandManager->GetAction("camera.toggle_terrain_collisions")->setChecked(CRenderViewport::s_cameraPreferences.IsTerrainCollisionEnabled());
+			pCommandManager->GetAction("camera.toggle_object_collisions")->setChecked(CRenderViewport::s_cameraPreferences.IsObjectCollisionEnabled());
 		});
 	}
 
@@ -1949,15 +1211,16 @@ void CEditorMainFrame::InitMenus()
 	else
 	{
 		// Add entries
-		QString name("Keyboard Shortcuts");
-		QString cmd = QString("general.open_pane '%1'").arg(name);
-		QCommandAction* pKeyboardShortcuts = new QCommandAction(name.append("..."), (const char*)cmd.toLocal8Bit(), editMenu);
+		string name("Keyboard Shortcuts");
+		string command;
+		command.Format("general.open_pane '%s'", name);
+		QCommandAction* pKeyboardShortcuts = new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), editMenu);
 		pKeyboardShortcuts->setIcon(CryIcon("icons:Tools/Keyboard_Shortcuts.ico"));
 		editMenu->addAction(pKeyboardShortcuts);
 
 		name = "Preferences";
-		cmd = QString("general.open_pane '%1'").arg(name);
-		editMenu->addAction(new QCommandAction(name.append("..."), (const char*)cmd.toLocal8Bit(), editMenu));
+		command.Format("general.open_pane '%s'", name);
+		editMenu->addAction(new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), editMenu));
 
 		// Search for the action (separator) right after redo
 		QList<QAction*> editActions = editMenu->actions();
@@ -1975,8 +1238,8 @@ void CEditorMainFrame::InitMenus()
 		}
 
 		name = "Undo History";
-		cmd = QString("general.open_pane '%1'").arg(name);
-		QAction* pUndoHistory = new QCommandAction(name, (const char*)cmd.toLocal8Bit(), editMenu);
+		command.Format("general.open_pane '%s'", name);
+		QAction* pUndoHistory = new QCommandAction(QtUtil::ToQString(name) + "...", command.c_str(), editMenu);
 		pUndoHistory->setIcon(CryIcon("icons:General/History_Undo_List.ico"));
 		editMenu->insertAction(pAfterRedo, pUndoHistory);
 
@@ -2011,22 +1274,23 @@ void CEditorMainFrame::InitMenus()
 
 		pHelpMenu->addSeparator();
 
-		QString name = "Console Commands";
-		QString cmd = QString("general.open_pane '%1'").arg(name);
-		QAction* pAction = new QCommandAction(name, static_cast<const char*>(cmd.toLocal8Bit()), pHelpMenu);
+		const char* szName = "Console Commands";
+		string command;
+		command.Format("general.open_pane '%s'", szName);
+		QAction* pAction = new QCommandAction(QtUtil::ToQString(szName) + "...", command.c_str(), pHelpMenu);
 		pAction->setIcon(CryIcon("icons:ObjectTypes/Console_Commands.ico"));
 		pHelpMenu->addAction(pAction);
 
-		name = "Console Variables";
-		cmd = QString("general.open_pane '%1'").arg(name);
-		pAction = new QCommandAction(name, static_cast<const char*>(cmd.toLocal8Bit()), pHelpMenu);
+		szName = "Console Variables";
+		command.Format("general.open_pane '%s'", szName);
+		pAction = new QCommandAction(QtUtil::ToQString(szName) + "...", command.c_str(), pHelpMenu);
 		pAction->setIcon(CryIcon("icons:ObjectTypes/Console_Variables.ico"));
 		pHelpMenu->addAction(pAction);
 
 		pHelpMenu->addSeparator();
 
-		name = "About Sandbox...";
-		pAction = new QAction(name, pHelpMenu);
+		szName = "About Sandbox...";
+		pAction = new QAction(szName, pHelpMenu);
 		pAction->setProperty("menurole", QVariant(QApplication::translate("MainWindow", "AboutRole", 0)));
 		connect(pAction, &QAction::triggered, [this]()
 		{
@@ -2037,7 +1301,6 @@ void CEditorMainFrame::InitMenus()
 		});
 
 		pHelpMenu->addAction(pAction);
-
 	}
 }
 
@@ -2046,11 +1309,9 @@ void CEditorMainFrame::InitMenuBar()
 	setMenuWidget(new QMainFrameMenuBar(menuBar(), this));
 }
 
-//////////////////////////////////////////////////////////////////////////
-
 void CEditorMainFrame::InitActions()
 {
-	CEditorCommandManager* commandMgr = GetIEditorImpl()->GetCommandManager();
+	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
 
 	//For all actions defined in the ui file...
 	QList<QAction*> actions = findChildren<QAction*>();
@@ -2088,7 +1349,6 @@ void CEditorMainFrame::InitActions()
 			if (pythonProp.isValid())
 			{
 				//Note : could also replace the action in the menu by a QPythonAction
-				QObject* object = action->parent();
 				string command("python.execute '");
 				command += pythonProp.toString().toStdString().c_str() + '\'';
 				action->SetCommand(command);
@@ -2110,7 +1370,7 @@ void CEditorMainFrame::InitActions()
 				}
 
 				action->SetCommand(command);
-				commandMgr->RegisterAction(action, command);
+				pCommandManager->RegisterAction(action, command);
 			}
 
 			// Create ActionGroups from Action properties
@@ -2129,26 +1389,25 @@ void CEditorMainFrame::InitActions()
 		}
 	}
 
-	//Register actions from the command manager to the main frame if they have been created before
+	// Workaround for having CEditorMainframe handle shortcuts for all registered commands
+	pCommandManager->signalCommandAdded.Connect(this, &CEditorMainFrame::AddCommand);
+
+	// Register any existing commands from the command manager as actions of the main frame
 	std::vector<CCommand*> commands;
-	commandMgr->GetCommandList(commands);
+	pCommandManager->GetCommandList(commands);
 	for (CCommand* cmd : commands)
 	{
 		if (cmd->CanBeUICommand())
 		{
-			QCommandAction* action = commandMgr->GetCommandAction(cmd->GetCommandString());
-
-			// Make sure shortcuts are callable from other windows as well (we might need to specialize this a bit more in the future)
-			action->setShortcutContext(Qt::WindowShortcut);
-
-			if (action->parent() == nullptr)
+			QCommandAction* pCommandAction = pCommandManager->GetCommandAction(cmd->GetCommandString());
+			if (pCommandAction->parent() == nullptr)
 			{
-				addAction(action);
+				addAction(pCommandAction);
 			}
 		}
 	}
 
-	//Must be called after actions declared in the .ui file are registered to the command manager
+	// Must be called after actions declared in the .ui file are registered to the command manager
 	CKeybindEditor::LoadUserKeybinds();
 }
 
@@ -2162,13 +1421,6 @@ void CEditorMainFrame::InitLayout()
 
 	if (!bLayoutLoaded)
 		SetDefaultLayout();
-}
-
-bool CEditorMainFrame::focusNextPrevChild(bool next)
-{
-	if (GetIEditorImpl()->GetEditTool() && GetIEditorImpl()->GetEditTool()->IsAllowTabKey())
-		return false;
-	return __super::focusNextPrevChild(next);
 }
 
 void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
@@ -2209,14 +1461,83 @@ void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
 
 	menu.addSeparator();
 	QAction* pCustomize = menu.addAction("Customize...");
-	connect(pCustomize, &QAction::triggered, [this](bool bChecked)
-	{
-		QToolBarCreator* pToolBarCreator = new QToolBarCreator();
-		pToolBarCreator->show();
-		m_pMainToolBarManager->CreateMainFrameToolBars();
-	});
+	connect(pCustomize, &QAction::triggered, this, &CEditorMainFrame::OnCustomizeToolBar);
 
 	menu.exec(pEvent->globalPos());
+}
+
+void CEditorMainFrame::OnCustomizeToolBar()
+{
+	CToolBarCustomizeDialog* pToolBarCustomizeDialog = new CToolBarCustomizeDialog(this, "MainFrame");
+
+	pToolBarCustomizeDialog->signalToolBarAdded.Connect(this, &CEditorMainFrame::OnToolBarAdded);
+	pToolBarCustomizeDialog->signalToolBarModified.Connect(this, &CEditorMainFrame::OnToolBarModified);
+	pToolBarCustomizeDialog->signalToolBarRenamed.Connect(this, &CEditorMainFrame::OnToolBarRenamed);
+	pToolBarCustomizeDialog->signalToolBarRemoved.Connect(this, &CEditorMainFrame::OnToolBarRemoved);
+
+	connect(pToolBarCustomizeDialog, &QWidget::destroyed, [this, pToolBarCustomizeDialog]()
+	{
+		pToolBarCustomizeDialog->signalToolBarRemoved.DisconnectObject(this);
+		pToolBarCustomizeDialog->signalToolBarModified.DisconnectObject(this);
+		pToolBarCustomizeDialog->signalToolBarAdded.DisconnectObject(this);
+	});
+
+	pToolBarCustomizeDialog->show();
+}
+
+void CEditorMainFrame::OnToolBarAdded(QToolBar* pToolBar)
+{
+	// Make sure new toolbars start up as invisible
+	pToolBar->setVisible(false);
+
+	addToolBar(pToolBar);
+}
+
+void CEditorMainFrame::OnToolBarModified(QToolBar* pToolBar)
+{
+	QList<QToolBar*> oldToolBars = findChildren<QToolBar*>(pToolBar->objectName(), Qt::FindDirectChildrenOnly);
+
+	if (!oldToolBars.isEmpty())
+	{
+		QToolBar* pFirstToolBar = oldToolBars.first();
+		insertToolBar(pFirstToolBar, pToolBar);
+		pToolBar->setVisible(pFirstToolBar->isVisible());
+	}
+
+	for (QToolBar* pOldToolBar : oldToolBars)
+	{
+		// This is necessary because the modified toolbars placement will be incorrect if we remove/delete it's old version
+		// on the same tick of the event loop
+		QTimer::singleShot(0, [this, pOldToolBar]
+		{
+			removeToolBar(pOldToolBar);
+			pOldToolBar->deleteLater();
+		});
+	}
+}
+
+void CEditorMainFrame::OnToolBarRenamed(const char* szOldToolBarName, QToolBar* pToolBar)
+{
+	OnToolBarRemoved(szOldToolBarName);
+	OnToolBarAdded(pToolBar);
+}
+
+void CEditorMainFrame::OnToolBarRemoved(const char* szToolBarName)
+{
+	QToolBar* pOldToolBar = findChild<QToolBar*>(szToolBarName);
+	removeToolBar(pOldToolBar);
+	pOldToolBar->deleteLater();
+}
+
+void CEditorMainFrame::OnEditToolChanged()
+{
+	if (!GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CLinkTool)))
+	{
+		if (QAction* pAction = GetIEditorImpl()->GetICommandManager()->GetAction("tools.link"))
+		{
+			pAction->setChecked(false);
+		}
+	}
 }
 
 void CEditorMainFrame::OnEditorNotifyEvent(EEditorNotifyEvent event)
@@ -2244,14 +1565,6 @@ void CEditorMainFrame::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			actionCustom->setChecked(currentConfigSpec == CONFIG_CUSTOM);
 		}
 		break;
-	case eNotify_OnEditToolEndChange:
-		{
-			if (!GetIEditorImpl()->GetEditTool()->IsKindOf(RUNTIME_CLASS(CLinkTool)))
-			{
-				findChild<QAction*>("actionLink")->setChecked(false);
-			}
-		}
-		break;
 	}
 }
 
@@ -2270,7 +1583,7 @@ void CEditorMainFrame::closeEvent(QCloseEvent* event)
 
 bool CEditorMainFrame::BeforeClose()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	SaveConfig();
 	// disconnect now or we'll end up closing all panels and saving an empty layout
 	disconnect(m_layoutChangedConnection);
@@ -2279,7 +1592,7 @@ bool CEditorMainFrame::BeforeClose()
 	GetIEditorImpl()->GetGlobalBroadcastManager()->Broadcast(aboutToQuitEvent);
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CEditorMainFrame::BeforeClose() Save Changes?");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CEditorMainFrame::BeforeClose() Save Changes?");
 
 		if (aboutToQuitEvent.GetChangeListCount() > 0)
 		{
@@ -2314,8 +1627,8 @@ bool CEditorMainFrame::BeforeClose()
 	pDoc->SetModifiedFlag(FALSE);
 
 	// Close all edit panels.
-	GetIEditorImpl()->ClearSelection();
-	GetIEditorImpl()->SetEditTool(0);
+	GetIEditorImpl()->GetObjectManager()->ClearSelection();
+	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
 
 	CTabPaneManager::GetInstance()->CloseAllPanes();
 
@@ -2323,10 +1636,9 @@ bool CEditorMainFrame::BeforeClose()
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::SaveConfig()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!GetIEditorImpl()->IsInMatEditMode())
 	{
 		CTabPaneManager::GetInstance()->SaveLayout();
@@ -2377,44 +1689,6 @@ bool CEditorMainFrame::event(QEvent* event)
 	return QMainWindow::event(event);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CEditorMainFrame::OnAxisConstrainChanged(int axis)
-{
-	QAction* pAction = nullptr;
-	switch (axis)
-	{
-	case AXIS_X:
-		pAction = findChild<QAction*>("actionLock_X_Axis");
-		break;
-
-	case AXIS_Y:
-		pAction = findChild<QAction*>("actionLock_Y_Axis");
-		break;
-
-	case AXIS_Z:
-		pAction = findChild<QAction*>("actionLock_Z_Axis");
-		break;
-
-	case AXIS_XY:
-		pAction = findChild<QAction*>("actionLock_XY_Axis");
-		break;
-
-	default:
-		pAction = findChild<QAction*>("actionLock_X_Axis");
-		pAction->setChecked(false);
-		pAction = findChild<QAction*>("actionLock_Y_Axis");
-		pAction->setChecked(false);
-		pAction = findChild<QAction*>("actionLock_Z_Axis");
-		pAction->setChecked(false);
-		pAction = findChild<QAction*>("actionLock_XY_Axis");
-		pAction->setChecked(false);
-		return;
-	}
-
-	if (pAction)
-		pAction->setChecked(true);
-}
-
 void CEditorMainFrame::OnAutoBackupTimeChanged()
 {
 	m_pAutoBackupTimer->setInterval(gEditorFilePreferences.autoSaveTime() * 60 * 1000);
@@ -2451,10 +1725,21 @@ bool CEditorMainFrame::OnNativeEvent(void* message, long* result)
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
+void CEditorMainFrame::AddCommand(CCommand* pCommand)
+{
+	QAction* pAction = GetIEditor()->GetICommandManager()->GetAction(pCommand->GetCommandString().c_str());
+
+	// This is a valid case because there might be for example, a user created command that has an error in it.
+	// We don't generate an action in this case
+	if (!pAction)
+		return;
+
+	addAction(pAction);
+}
+
 void CEditorMainFrame::OnIdleCallback()
 {
-	if (gEnv->stoppedOnAssert)
+	if (Cry::Assert::IsInAssert())
 	{
 		// If inside assert dialog, we keep idling.
 		QTimer::singleShot(30, this, &CEditorMainFrame::OnIdleCallback);
@@ -2498,7 +1783,6 @@ void CEditorMainFrame::OnIdleCallback()
 	QTimer::singleShot(res ? 0 : 16, this, &CEditorMainFrame::OnIdleCallback);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CEditorMainFrame::OnBackgroundUpdateTimer()
 {
 	int period = 0;
@@ -2517,16 +1801,9 @@ void CEditorMainFrame::OnBackgroundUpdateTimer()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
 QToolWindowManager* CEditorMainFrame::GetToolManager()
 {
 	return m_toolManager;
-}
-
-//////////////////////////////////////////////////////////////////////////
-QMainToolBarManager* CEditorMainFrame::GetToolBarManager()
-{
-	return m_pMainToolBarManager;
 }
 
 void CEditorMainFrame::AddWaitProgress(CWaitProgress* task)
@@ -2547,4 +1824,3 @@ bool CEditorMainFrame::IsClosing() const
 {
 	return m_bClosing;
 }
-

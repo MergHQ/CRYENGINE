@@ -150,4 +150,3 @@ SSubTreeMonitorUpdate CSubTreeMonitors::FilterUpdate(const SEntry& entry, const 
 
 } // namespace Internal
 } // namespace FileSystem
-

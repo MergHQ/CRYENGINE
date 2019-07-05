@@ -1,8 +1,10 @@
 <RCC>
     <qresource prefix="/icons">
         <file alias="audio/assets/environment.ico">Icons/assets/environment.ico</file>
+        <file alias="audio/assets/listener.ico">Icons/assets/listener.ico</file>
         <file alias="audio/assets/parameter.ico">Icons/assets/parameter.ico</file>
         <file alias="audio/assets/preload.ico">Icons/assets/preload.ico</file>
+        <file alias="audio/assets/setting.ico">Icons/assets/setting.ico</file>
         <file alias="audio/assets/state.ico">Icons/assets/state.ico</file>
         <file alias="audio/assets/switch.ico">Icons/assets/switch.ico</file>
         <file alias="audio/assets/trigger.ico">Icons/assets/trigger.ico</file>

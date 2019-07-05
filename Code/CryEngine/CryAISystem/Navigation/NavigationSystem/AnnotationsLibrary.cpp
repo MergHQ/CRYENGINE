@@ -12,12 +12,16 @@ void CAnnotationsLibrary::Clear()
 	m_areaFlags.clear();
 
 	m_areasColorMap.clear();
-	m_flagsColorMap.clear();
 
 	m_defaultColor = ColorB(Col_Azure, 0.65f);
 
-	CreateAreaFlag(0, "Walkable");
-	CreateAreaType(0, "Default", BIT(0));
+	const ColorB inaccessibleColor(Col_DimGray, 0.65f);
+
+	const NavigationAreaFlagID defaultFlag = CreateAreaFlag(0, "Walkable");
+	CreateAreaFlag(1, "Inaccessible", &inaccessibleColor);
+	m_inacessibleAreaFlagIdx = m_areaFlags.size() - 1;
+
+	CreateAreaType(0, "Default", GetAreaFlag(defaultFlag)->value);
 }
 
 NavigationAreaTypeID CAnnotationsLibrary::CreateAreaType(const uint32 id, const char* szName, const uint32 defaultFlags, const ColorB* pColor)
@@ -27,7 +31,7 @@ NavigationAreaTypeID CAnnotationsLibrary::CreateAreaType(const uint32 id, const 
 	if (id >= AreaAnnotation::MaxAreasCount())
 	{
 		AIWarning("Trying to create NavigationSystem AreaType with invalid id '%u'. Id must be between 0 and %d!", id, AreaAnnotation::MaxAreasCount());
-		CRY_ASSERT_MESSAGE(id < AreaAnnotation::MaxAreasCount(), "Trying to create NavigationSystem AreaType with invalid id '%u'. Id can be between 0 and %d!", id, AreaAnnotation::MaxAreasCount());
+		CRY_ASSERT(id < AreaAnnotation::MaxAreasCount(), "Trying to create NavigationSystem AreaType with invalid id '%u'. Id can be between 0 and %d!", id, AreaAnnotation::MaxAreasCount());
 		return NavigationAreaTypeID();
 	}
 
@@ -50,13 +54,13 @@ NavigationAreaTypeID CAnnotationsLibrary::CreateAreaType(const uint32 id, const 
 			}
 
 			AIWarning("Trying to create NavigationSystem AreaType with duplicate id '%u'. Area type %s has the same id!", id, areaType.name.c_str());
-			CRY_ASSERT_MESSAGE(areaType.id != id, "Trying to create NavigationSystem AreaType with duplicate id '%u'. Area type %s has the same id!", id, areaType.name.c_str());
+			CRY_ASSERT(areaType.id != id, "Trying to create NavigationSystem AreaType with duplicate id '%u'. Area type %s has the same id!", id, areaType.name.c_str());
 			return NavigationAreaTypeID();
 		}
 		if (!areaType.name.compareNoCase(szName))
 		{
 			AIWarning("Trying to create NavigationSystem AreaType with duplicate name '%s'!", szName);
-			CRY_ASSERT_MESSAGE(areaType.name.compareNoCase(szName), "Trying to create NavigationSystem AreaType with duplicate name '%s'!", szName);
+			CRY_ASSERT(areaType.name.compareNoCase(szName), "Trying to create NavigationSystem AreaType with duplicate name '%s'!", szName);
 			return NavigationAreaTypeID();
 		}
 	}
@@ -135,7 +139,7 @@ NavigationAreaFlagID CAnnotationsLibrary::CreateAreaFlag(const uint32 id, const 
 	if (id >= AreaAnnotation::MaxFlagsCount())
 	{
 		AIWarning("Trying to create NavigationSystem AreaFlag with invalid id '%u'. Id must be between 0 and %d!", id, AreaAnnotation::MaxFlagsCount());
-		CRY_ASSERT_MESSAGE(id < AreaAnnotation::MaxFlagsCount(), "Trying to create NavigationSystem AreaFlag with invalid id '%u'. Id can be between 0 and %d!", id, AreaAnnotation::MaxFlagsCount());
+		CRY_ASSERT(id < AreaAnnotation::MaxFlagsCount(), "Trying to create NavigationSystem AreaFlag with invalid id '%u'. Id can be between 0 and %d!", id, AreaAnnotation::MaxFlagsCount());
 		return NavigationAreaFlagID();
 	}
 
@@ -158,13 +162,13 @@ NavigationAreaFlagID CAnnotationsLibrary::CreateAreaFlag(const uint32 id, const 
 			}
 
 			AIWarning("Trying to create NavigationSystem AreaFlag with duplicate id '%u'. Area flag %s has the same id!", id, areaFlag.name.c_str());
-			CRY_ASSERT_MESSAGE(areaFlag.id != id, "Trying to create NavigationSystem AreaFlag with duplicate id '%u'. Area flag %s has the same id!", id, areaFlag.name.c_str());
+			CRY_ASSERT(areaFlag.id != id, "Trying to create NavigationSystem AreaFlag with duplicate id '%u'. Area flag %s has the same id!", id, areaFlag.name.c_str());
 			return NavigationAreaFlagID();
 		}
 		if (!areaFlag.name.compareNoCase(szName))
 		{
 			AIWarning("Trying to create NavigationSystem AreaFlag with duplicate name '%s'!", szName);
-			CRY_ASSERT_MESSAGE(areaFlag.name.compareNoCase(szName), "Trying to create NavigationSystem AreaFlag with duplicate name '%s'!", szName);
+			CRY_ASSERT(areaFlag.name.compareNoCase(szName), "Trying to create NavigationSystem AreaFlag with duplicate name '%s'!", szName);
 			return NavigationAreaFlagID();
 		}
 	}

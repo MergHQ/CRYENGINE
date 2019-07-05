@@ -58,7 +58,7 @@ bool CTornado::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnPar
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CTornado::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CTornado::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -66,7 +66,7 @@ bool CTornado::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnPar
 //------------------------------------------------------------------------
 bool CTornado::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CTornado::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CTornado::GetEntityPoolSignature not implemented");
 	
 	return true;
 }
@@ -286,9 +286,9 @@ void CTornado::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-uint64 CTornado::GetEventMask() const
+Cry::Entity::EventFlags CTornado::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET);
+	return ENTITY_EVENT_RESET;
 }
 
 //------------------------------------------------------------------------

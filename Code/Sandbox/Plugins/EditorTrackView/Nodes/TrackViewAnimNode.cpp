@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Source File.
-// Copyright (C), Crytek, 1999-2014.
-
 #include "StdAfx.h"
 #include "TrackViewAnimNode.h"
 #include "TrackViewTrack.h"
@@ -225,7 +222,11 @@ CTrackViewAnimNode* CTrackViewAnimNode::CreateSubNode(const string& name, const 
 	}
 
 	pNewAnimNode->SetName(name);
-	pNewAnimNode->CreateDefaultTracks();
+	if (animNodeType != eAnimNodeType_Entity)
+	{
+		pNewAnimNode->CreateDefaultTracks();
+	}
+
 	pNewAnimNode->SetParent(m_pAnimNode);
 
 	CTrackViewAnimNodeFactory animNodeFactory;
@@ -752,7 +753,6 @@ CTrackViewAnimNodeBundle CTrackViewAnimNode::AddSelectedEntities()
 		}
 
 		// Get node type (either entity or camera)
-		EAnimNodeType nodeType = eAnimNodeType_Invalid;
 		CTrackViewAnimNode* pAnimNode = nullptr;
 		if (pObject->IsKindOf(RUNTIME_CLASS(CCameraObject)))
 		{
@@ -1125,4 +1125,3 @@ void CTrackViewAnimNode::Serialize(Serialization::IArchive& ar)
 {
 	CTrackViewNode::Serialize(ar);
 }
-

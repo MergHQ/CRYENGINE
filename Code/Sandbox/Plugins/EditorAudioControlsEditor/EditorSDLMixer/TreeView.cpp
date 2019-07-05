@@ -2,8 +2,8 @@
 
 #include "StdAfx.h"
 #include "TreeView.h"
+#include "../Common/ModelUtils.h"
 
-#include <ModelUtils.h>
 #include <CryAudio/IAudioSystem.h>
 
 #include <QHeaderView>
@@ -15,8 +15,8 @@ namespace Impl
 namespace SDLMixer
 {
 //////////////////////////////////////////////////////////////////////////
-CTreeView::CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
-	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(flags), pParent)
+CTreeView::CTreeView(QWidget* const pParent)
+	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute), pParent)
 {
 	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this]() { scrollTo(currentIndex()); });
 }
@@ -82,7 +82,7 @@ ControlId CTreeView::GetItemId(QModelIndex const& index) const
 
 	if (index.isValid())
 	{
-		QModelIndex const itemIndex = index.sibling(index.row(), m_nameColumn);
+		QModelIndex const itemIndex = index.sibling(index.row(), g_nameColumn);
 
 		if (itemIndex.isValid())
 		{

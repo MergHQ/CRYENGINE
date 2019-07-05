@@ -26,8 +26,6 @@
 #include <CryMemory/CrySizer.h>
 #include <CryMemory/PoolAllocator.h>
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed
-
 //////////////////////////////////////////////////////////////////////////
 //! Reports a Game Warning to validator with WARNING severity.
 #ifdef _RELEASE

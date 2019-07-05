@@ -31,4 +31,3 @@ private slots:
 private:
 	QAdvancedTreeView* m_pTree;
 };
-

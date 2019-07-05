@@ -6,6 +6,7 @@
 #include "IVehicleSystem.h"
 #include "Game.h"
 #include "GameRules.h"
+#include <CryMath/Random.h>
 
 //------------------------------------------------------------------------
 CVehicleDamageBehaviorExplosion::CVehicleDamageBehaviorExplosion() 

@@ -3,20 +3,18 @@
 #include "StdAfx.h"
 #include "PresetCreator.h"
 
-#include <QDialogButtonBox>
-#include <QVBoxLayout>
-#include <QString>
-
-#include "FileDialogs/FileNameLineEdit.h"
-#include "FilePathUtil.h"
-#include "AssetSystem/Asset.h"
-#include "AssetSystem/AssetManager.h"
-#include "AssetSystem/Browser/AssetFoldersView.h"
-#include "OutputsWidget.h"
-#include "QAdvancedTreeView.h"
-#include "Controls/QuestionDialog.h"
 #include "OutputEditorDialog.h"
 #include "EditorSubstanceManager.h"
+
+#include <AssetSystem/Asset.h>
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetFoldersView.h>
+#include <Controls/QuestionDialog.h>
+#include <FileDialogs/FileNameLineEdit.h>
+#include <OutputsWidget.h>
+#include <PathUtils.h>
+#include <QAdvancedTreeView.h>
+#include <QBoxLayout>
 
 namespace EditorSubstance
 {
@@ -38,7 +36,7 @@ namespace EditorSubstance
 		m_pModalGuard->resize(size());
 		m_pModalGuard->hide();
 		m_foldersView = new CAssetFoldersView(this);
-		m_foldersView->SelectFolder(asset->GetFolder());
+		m_foldersView->SelectFolder(asset->GetFolder().c_str());
 		m_foldersView->setSelectionMode(QAbstractItemView::SingleSelection);
 		m_pPathEdit = new CFileNameLineEdit(this);
 		m_pPathEdit->setText(QString(PathUtil::GetUniqueName(string(asset->GetName()) + "." + CAssetManager::GetInstance()->FindAssetType("SubstanceInstance")->GetFileExtension(), asset->GetFolder()).c_str()));

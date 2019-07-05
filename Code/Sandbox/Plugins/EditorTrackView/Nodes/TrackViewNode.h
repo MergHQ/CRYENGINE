@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// CryEngine Header File.
-// Copyright (C), Crytek, 1999-2014.
-
 #pragma once
 #include <CryMovie/AnimKey.h>
 
@@ -80,14 +77,12 @@ private:
 
 // Abstract base class that defines common
 // operations for key bundles and tracks
-class ITrackViewKeyBundle
+struct ITrackViewKeyBundle
 {
-public:
+	virtual ~ITrackViewKeyBundle() {}
 	virtual bool                AreAllKeysOfSameType() const = 0;
-
 	virtual unsigned int        GetKeyCount() const = 0;
 	virtual CTrackViewKeyHandle GetKey(unsigned int index) = 0;
-
 	virtual void                SelectKeys(const bool bSelected) = 0;
 };
 
@@ -141,7 +136,7 @@ public:
 
 	// Name
 	virtual const char* GetName() const = 0;
-	virtual bool        SetName(const char* pName) { return false; };
+	virtual bool        SetName(const char* pName) { return false; }
 	virtual bool        CanBeRenamed() const       { return false; }
 
 	// CryMovie node type
@@ -199,7 +194,7 @@ public:
 
 	// Called when node is added/removed from sequence
 	virtual void OnAdded()   {}
-	virtual void OnRemoved() {};
+	virtual void OnRemoved() {}
 
 	// Only for displaying sequence properties at the moment
 	virtual void Serialize(Serialization::IArchive& ar);
@@ -213,4 +208,3 @@ protected:
 
 	bool m_bSelected;
 };
-

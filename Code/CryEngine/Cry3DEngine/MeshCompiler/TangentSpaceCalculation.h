@@ -3,25 +3,11 @@
 //
 // Used with permission to distribute for non-commercial purposes.
 //
-//
-//	File:TangentSpaceCalculation.h
 //  Description: calculated the tangent space base vector for a given mesh
 //  Dependencies: none
 //  Documentation: "How to calculate tangent base vectors.doc"
 //
-//	History:
-//	- 12/07/2002: Created by Martin Mittring as part of CryEngine
-//  - 08/18/2003: MM improved stability (no illegal floats) with bad input data
-//  - 08/19/2003: MM added check for input data problems (DebugMesh() is deactivated by default)
-//  - 10/02/2003: MM removed rundundant code
-//  - 10/01/2004: MM added errorcodes (NAN texture coordinates)
-//  - 05/21/2005: MM made proxy interface typesafe
-//  - 22/09/2012: Bogdan refactored and added Mikkelsen's Tangent Basis algorithm to have better support for mirrored geometry
-//
 //////////////////////////////////////////////////////////////////////
-
-#ifndef TANGENTSPACECALCULATION_H
-#define TANGENTSPACECALCULATION_H
 
 #pragma once
 
@@ -34,9 +20,8 @@ enum eCalculateTangentSpaceErrorCode
 	MEMORY_ALLOCATION_FAILED
 };
 
-class ITriangleInputProxy
+struct ITriangleInputProxy
 {
-public:
 	virtual ~ITriangleInputProxy(){}
 
 	virtual uint32 GetTriangleCount() const = 0;
@@ -88,7 +73,7 @@ private:
 		uint32 m_normIndex;
 	};
 
-	struct CBaseIndexOrder : public std::binary_function<CBaseIndex, CBaseIndex, bool>
+	struct CBaseIndexOrder
 	{
 		bool operator()(const CBaseIndex& a, const CBaseIndex& b) const;
 	};
@@ -112,5 +97,3 @@ private:
 	void     DebugMesh(const ITriangleInputProxy& inInput) const;
 	float    CalcAngleBetween(const Vec3& invA, const Vec3& invB);
 };
-
-#endif

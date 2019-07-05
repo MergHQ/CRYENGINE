@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
 
@@ -12,6 +13,7 @@
 #include <CrySerialization/Color.h>
 #include <CrySerialization/Decorators/BitFlags.h>
 #include <CrySerialization/Decorators/Range.h>
+#include <CrySerialization/Decorators/Resources.h>
 #include <Serialization/Decorators/ToggleButton.h>
 #include <Serialization/Qt.h>
 #include <CrySerialization/ClassFactory.h>
@@ -41,4 +43,3 @@ void EDITOR_COMMON_API SerializeFromMemory(const SStruct& outObj, const std::vec
 void EDITOR_COMMON_API SerializeFromMemory(const SStruct& outObj, const DynArray<char>& buffer);
 
 }
-

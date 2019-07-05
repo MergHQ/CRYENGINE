@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "IntersectionAssistanceUnit.h"
 #include "Player.h"
+#include "GameCVars.h"
 #include <CryMath/Cry_GeoOverlap.h>
 
 #ifndef _RELEASE

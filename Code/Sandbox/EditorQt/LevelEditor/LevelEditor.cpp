@@ -3,75 +3,96 @@
 #include "LevelEditor.h"
 
 // LevelEditor
+#include "LevelAssetType.h"
+#include "LevelExplorer.h"
 #include "LevelFileUtils.h"
 #include "NewLevelDialog.h"
-#include "OpenLevelDialog.h"
-#include "SaveLevelDialog.h"
-#include "LevelAssetType.h"
+#include "TagLocations.h"
 
 // EditorQt
-#include "GameEngine.h"
-#include "GameExporter.h"
-#include "LevelIndependentFileMan.h"
-#include "AlignTool.h"
-#include "IEditorImpl.h"
-#include "CryEdit.h"
-#include "CryEditDoc.h"
-#include "ViewManager.h"
+#include "EditMode/VertexSnappingModeTool.h"
 #include "QT/QtMainFrame.h"
 #include "QT/QToolTabManager.h"
-#include "Commands/QCommandAction.h"
-#include "PickObjectTool.h"
-#include "EditMode/VertexSnappingModeTool.h"
-#include "LevelExplorer.h"
-#include "Util/Clipboard.h"
-#include "Grid.h"
-#include "QtViewPane.h"
+#include "AlignTool.h"
+#include "CryEdit.h"
+#include "CryEditDoc.h"
+#include "GameEngine.h"
+#include "GameExporter.h"
+#include "IEditorImpl.h"
+#include "LevelIndependentFileMan.h"
+#include "ViewManager.h"
+#include "Objects/SelectionGroup.h"
+
+#include <Util/Clipboard.h>
 
 // EditorCommon
-#include "QtUtil.h"
-#include "EditorFramework/Inspector.h"
-#include <Notifications/NotificationCenterTrayWidget.h>
+#include <AssetSystem/AssetManager.h>
+#include <AssetSystem/Browser/AssetBrowser.h>
+#include <AssetSystem/Browser/AssetBrowserDialog.h>
+#include <AssetSystem/EditableAsset.h>
+#include <Commands/QCommandAction.h>
+#include <Controls/QuestionDialog.h>
+#include <EditorFramework/InspectorLegacy.h>
+#include <EditorFramework/Events.h>
 #include <EditorFramework/PreferencesDialog.h>
+#include <EditorStyleHelper.h>
+#include <FileUtils.h>
+#include <LevelEditor/Tools/PickObjectTool.h>
+#include <Notifications/NotificationCenterTrayWidget.h>
+#include <Objects/ObjectLoader.h>
+#include <PathUtils.h>
 #include <Preferences/GeneralPreferences.h>
-#include "Objects/ObjectLoader.h"
-#include "AssetSystem/AssetManager.h"
-#include "AssetSystem/Browser/AssetBrowser.h"
-#include "Controls/DockableDialog.h"
-#include "FilePathUtil.h"
-#include "ThreadingUtils.h"
-#include "EditorStyleHelper.h"
-#include "Util/FileUtil.h"
+#include <Preferences/SnappingPreferences.h>
+#include <QtUtil.h>
+#include <QtViewPane.h>
+#include <ThreadingUtils.h>
+#include <Util/FileUtil.h>
+#include <IObjectManager.h>
 
 // CryCommon
 #include <CrySandbox/ScopedVariableSetter.h>
 #include <CrySystem/IProjectManager.h>
+#include <CrySystem/ICmdLine.h>
 
 // Qt
-#include <QMenu>
-#include <QtGlobal>
-#include <QMenuBar>
 #include <QDir>
-#include <QFileInfo>
 #include <QDirIterator>
-#include <QTimer>
-
-#include "Controls/QuestionDialog.h"
+#include <QFileInfo>
+#include <QMenu>
+#include <QMenuBar>
+#include <QtGlobal>
+#include <QVBoxLayout>
 
 // Register viewpanes defined in EditorCommon
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CNotificationCenterDockable, "Notification Center", "Advanced", true, "Advanced")
 
-class CLevelEditorInspector : public CInspector
+class CLevelEditorInspector : public CInspectorLegacy
 {
 public:
 	CLevelEditorInspector()
-		: CInspector(CEditorMainFrame::GetInstance()->GetLevelEditor())
+		: CInspectorLegacy(CEditorMainFrame::GetInstance()->GetLevelEditor())
 	{
 		GetIEditorImpl()->GetObjectManager()->EmitPopulateInspectorEvent();
 	}
 };
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CLevelEditorInspector, "Properties", "Tools", false, "Level Editor")
+
+class CQuickAssetBrowser : public CAssetBrowser
+{
+public:
+	CQuickAssetBrowser()
+	{
+		RegisterAction("asset.toggle_browser", &CQuickAssetBrowser::OnToggleAssetBrowser);
+	}
+
+	void OnToggleAssetBrowser()
+	{
+		signalToggleAssetBrowser();
+	}
+
+	CCrySignal<void()> signalToggleAssetBrowser;
+};
 
 namespace Private_LevelEditor
 {
@@ -86,10 +107,10 @@ std::vector<string> CollectCryLevels()
 	// It seems ScanDirectoryRecursive can return *.cry* files. Remove them from the list, if any.
 	// Also do not convert already converted levels.
 	levels.erase(std::remove_if(levels.begin(), levels.end(), [](const string& x)
-	{
-		return stricmp(PathUtil::GetExt(x.c_str()), "cry") != 0
+		{
+			return stricmp(PathUtil::GetExt(x.c_str()), "cry") != 0
 			|| GetISystem()->GetIPak()->IsFileExist(PathUtil::ReplaceExtension(x, "level"), ICryPak::eFileLocation_OnDisk);
-	}), levels.end());
+		}), levels.end());
 
 	return levels;
 }
@@ -98,7 +119,7 @@ void DeleteObsoleteMetadataFile(const string& level)
 {
 	const string filename(string().Format("%s.cryasset", level.c_str()));
 	const string absPath(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), filename));
-	PathUtil::RemoveFile(absPath);
+	FileUtils::RemoveFile(absPath);
 }
 
 bool UnpakCryFile(ICryPak* pCryPak, const string& cryFilename, const string& destinationFolder, std::function<void(float)> progress)
@@ -111,7 +132,7 @@ bool UnpakCryFile(ICryPak* pCryPak, const string& cryFilename, const string& des
 		return false;
 	}
 
-	PathUtil::Unpak(cryPakPath, destinationFolder, std::move(progress));
+	FileUtils::Pak::Unpak(cryPakPath, destinationFolder, std::move(progress));
 	pCryPak->ClosePack(cryPakPath);
 	return true;
 }
@@ -145,7 +166,6 @@ void UpdateLevels(const std::vector<string>& levels)
 			const float totalProgress = minBound + (maxBound - minBound) * unpakProgress;
 			notif.SetProgress(totalProgress);
 		};
-
 		const CLevelEditor* const pLevelEditor = static_cast<const CLevelEditor* const>(GetIEditorImpl()->GetLevelEditor());
 		if (!UnpakCryFile(pCryPak, oldFilePath, levelFolder, updateProgressBar) || !pLevelEditor->ConvertEditorXmlToLevelAssetType(levelFolder, szOldFilename))
 		{
@@ -153,7 +173,7 @@ void UpdateLevels(const std::vector<string>& levels)
 			continue;
 		}
 		DeleteObsoleteMetadataFile(oldFilePath);
-		CFileUtil::BackupFile(PathUtil::Make(levelFolder, szOldFilename));
+		FileUtils::BackupFile(PathUtil::Make(levelFolder, szOldFilename));
 
 		++countOfImported;
 		notif.SetProgress(float(i + 1) / n);
@@ -175,16 +195,16 @@ public:
 		const QString link("http://docs.cryengine.com/pages/viewpage.action?pageId=29800625#CRYENGINE5.5.0Preview(s)-NewLevelFileFormat");
 
 		const QString text =
-		  tr("<p>"
-		     "This change fully integrates the levels into the CRYENGINE Sandbox asset system and allows for a proper collaborative workflow.<br>"
-		     "To benefit from this the editor will have to convert all levels of this project.<br>"
-		     "Before you continue you should <span style = \"color:%1\">quit the editor and manually backup your project</span>.<br>"
-		     "Please refer to the CRYENGINE documentation for more details:"
-		     "<a style = \"color:%2;\" href=\"%3\"> New Level File Format </a>"
-		     "</p>")
-		  .arg(GetStyleHelper()->warningColor().name())
-		  .arg(GetStyleHelper()->selectedIconTint().name())
-		  .arg(link);
+			tr("<p>"
+			   "This change fully integrates the levels into the CRYENGINE Sandbox asset system and allows for a proper collaborative workflow.<br>"
+			   "To benefit from this the editor will have to convert all levels of this project.<br>"
+			   "Before you continue you should <span style = \"color:%1\">quit the editor and manually backup your project</span>.<br>"
+			   "Please refer to the CRYENGINE documentation for more details:"
+			   "<a style = \"color:%2;\" href=\"%3\"> New Level File Format </a>"
+			   "</p>")
+			.arg(GetStyleHelper()->warningColor().name())
+			.arg(GetStyleHelper()->selectedIconTint().name())
+			.arg(link);
 
 		dialog.SetupWarning(tr("New Level File Format"), text, QDialogButtonBox::Yes | QDialogButtonBox::No, QDialogButtonBox::No);
 		dialog.m_buttons->button(QDialogButtonBox::Yes)->setText(tr("Convert all levels"));
@@ -195,165 +215,71 @@ public:
 	}
 };
 
-};
+}
 
 CLevelEditor::CLevelEditor()
 	: CEditor(nullptr)
-	, m_findWindow(nullptr)
-	, m_assetBrowser(nullptr)
+	, m_pLevelExplorer(nullptr)
+	, m_pFindDialog(nullptr)
+	, m_pQuickAssetBrowser(nullptr)
+	, m_pQuickAssetBrowserDialog(nullptr)
+	, m_pTagLocations(new CTagLocations())
 {
-	auto cmdManager = GetIEditorImpl()->GetCommandManager();
-	ICommandManager* pCmdMgr = GetIEditorImpl()->GetICommandManager();
+	InitActions();
 }
 
 CLevelEditor::~CLevelEditor()
 {
-	if (m_assetBrowser)
+	if (m_pQuickAssetBrowserDialog)
 	{
-		delete m_assetBrowser;
-		m_assetBrowser = nullptr;
+		m_pQuickAssetBrowserDialog->deleteLater();
+		m_pQuickAssetBrowserDialog = nullptr;
 	}
 
-	if (m_findWindow)
+	if (m_pFindDialog)
 	{
-		delete m_findWindow;
-		m_findWindow = nullptr;
+		m_pFindDialog->deleteLater();
+		m_pFindDialog = nullptr;
 	}
+
+	delete m_pTagLocations;
 }
 
-void CLevelEditor::customEvent(QEvent* pEvent)
+void CLevelEditor::InitActions()
 {
-	CEditor::customEvent(pEvent);
+	// Register general command handlers
+	RegisterAction("general.new", &CLevelEditor::OnNew);
+	RegisterAction("general.open", &CLevelEditor::OnOpen);
+	RegisterAction("general.save", &CLevelEditor::OnSave);
+	RegisterAction("general.save_as", &CLevelEditor::OnSaveAs);
+	RegisterAction("general.delete", &CLevelEditor::OnDelete);
+	RegisterAction("general.duplicate", &CLevelEditor::OnDuplicate);
+	RegisterAction("general.cut", &CLevelEditor::OnCut);
+	RegisterAction("general.copy", &CLevelEditor::OnCopy);
+	RegisterAction("general.paste", &CLevelEditor::OnPaste);
+	RegisterAction("general.select_all", &CLevelEditor::OnSelectAll);
 
-	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
-
-		//Note: this could be optimized this with a hash map
-		//TODO : better system of macros and registration of those commands in EditorCommon (or move all of this in Editor)
-		QStringList params = QtUtil::ToQString(pCommandEvent->GetCommand()).split(' ');
-
-		if (params.empty())
-			return;
-
-		QString command = params[0];
-		params.removeFirst();
-
-		QStringList fullCommand = command.split('.');
-		QString module = fullCommand[0];
-		command = fullCommand[1];
-
-		if (module == "level")
-		{
-			if (command == "snap_to_grid")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnableGridSnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_grid")
-			{
-				EnableGridSnapping(!IsGridSnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "snap_to_angle")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnableAngleSnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_angle")
-			{
-				EnableAngleSnapping(!IsAngleSnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "snap_to_scale")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnableScaleSnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_scale")
-			{
-				EnableScaleSnapping(!IsScaleSnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "snap_to_vertex")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnableVertexSnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_vertex")
-			{
-				EnableVertexSnapping(!IsVertexSnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "snap_to_pivot")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnablePivotSnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_pivot")
-			{
-				EnablePivotSnapping(!IsPivotSnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "snap_to_terrain")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnableTerrainSnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_terrain")
-			{
-				EnableTerrainSnapping(!IsTerrainSnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "snap_to_geometry")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnableGeometrySnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_geometry")
-			{
-				EnableGeometrySnapping(!IsGeometrySnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "snap_to_surface_normal")
-			{
-				const bool bEnable = (params[0])[1] != 0; // Argument is expected to be 0 or 1 enclosed by ''.
-				EnableSurfaceNormalSnapping(bEnable);
-			}
-			else if (command == "toggle_snap_to_surface_normal")
-			{
-				EnableSurfaceNormalSnapping(!IsSurfaceNormalSnappingEnabled());
-				pEvent->setAccepted(true);
-			}
-			else if (command == "toggle_display_helpers")
-			{
-				EnableHelpersDisplay(!IsHelpersDisplayed());
-				pEvent->setAccepted(true);
-			}
-		}
-		else if (module == "asset")
-		{
-			if (command == "toggle_asset_browser")
-			{
-				OnToggleAssetBrowser();
-			}
-			else if (command == "show_in_asset_browser")
-			{
-				if (!m_assetBrowser || !m_assetBrowser->isActiveWindow())
-					OnToggleAssetBrowser();
-
-				CAssetBrowser* pAssetBrowser = m_assetBrowser->GetPaneT<CAssetBrowser>();
-				pAssetBrowser->SelectAsset(params[0].toLocal8Bit());
-			}
-		}
-		else if (module == "general")
-		{
-			if (command == "select_all")
-			{
-				GetIEditorImpl()->GetObjectManager()->SelectAll();
-			}
-		}
-	}
+	// Register level specific command handlers
+	RegisterAction("level.snap_to_grid",           &CLevelEditor::EnableGridSnapping);
+	RegisterAction("level.snap_to_angle",          &CLevelEditor::EnableAngleSnapping);
+	RegisterAction("level.snap_to_scale",          &CLevelEditor::EnableScaleSnapping);
+	RegisterAction("level.snap_to_vertex",         &CLevelEditor::EnableVertexSnapping);
+	RegisterAction("level.snap_to_pivot",          &CLevelEditor::EnablePivotSnapping);
+	RegisterAction("level.snap_to_terrain",        &CLevelEditor::EnableTerrainSnapping);
+	RegisterAction("level.snap_to_geometry",       &CLevelEditor::EnableGeometrySnapping);
+	RegisterAction("level.snap_to_surface_normal", &CLevelEditor::EnableSurfaceNormalSnapping);
+	RegisterAction("level.toggle_snap_to_grid",           [this]() { EnableGridSnapping(!IsGridSnappingEnabled()); });
+	RegisterAction("level.toggle_snap_to_angle",          [this]() { EnableAngleSnapping(!IsAngleSnappingEnabled()); });
+	RegisterAction("level.toggle_snap_to_scale",          [this]() { EnableScaleSnapping(!IsScaleSnappingEnabled()); });
+	RegisterAction("level.toggle_snap_to_vertex",         [this]() { EnableVertexSnapping(!IsVertexSnappingEnabled()); });
+	RegisterAction("level.toggle_snap_to_pivot",          [this]() { EnablePivotSnapping(!IsPivotSnappingEnabled()); });
+	RegisterAction("level.toggle_snap_to_terrain",        [this]() { EnableTerrainSnapping(!IsTerrainSnappingEnabled()); });
+	RegisterAction("level.toggle_snap_to_geometry",       [this]() { EnableGeometrySnapping(!IsGeometrySnappingEnabled()); });
+	RegisterAction("level.toggle_snap_to_surface_normal", [this]() { EnableSurfaceNormalSnapping(!IsSurfaceNormalSnappingEnabled()); });
+	RegisterAction("level.tag_location",                  [this](int slot) { m_pTagLocations->TagLocation(slot); });
+	RegisterAction("level.go_to_tag_location",            [this](int slot) { m_pTagLocations->GotoTagLocation(slot); });
+	RegisterAction("asset.show_in_browser", &CLevelEditor::OnShowInAssetBrowser);
+	RegisterAction("asset.toggle_browser", &CLevelEditor::OnToggleAssetBrowser);
 }
 
 void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
@@ -369,8 +295,10 @@ void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		QString levelPath = QtUtil::ToQString(currPath);
 		LevelLoaded(levelPath);
 		AddRecentFile(levelPath);
+
+		m_pTagLocations->LoadTagLocations();
 	}
-	else if (event == eNotify_OnMainFrameCreated)
+	else if (event == eNotify_OnMainFrameInitialized)
 	{
 		ThreadingUtils::AsyncQueue([this]()
 		{
@@ -381,19 +309,19 @@ void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			std::vector<string> levels = CollectCryLevels();
 			if (levels.empty())
 			{
-				return;
+			  return;
 			}
 
 			ThreadingUtils::PostOnMainThread([this, levels]()
 			{
 				if (CUpdateLevelsDialog::SWarning() != QDialogButtonBox::Yes)
 				{
-					// Quit the editor right after the initialization is done. 
-					QTimer::singleShot(0, []() 
+				  // Quit the editor right after the initialization is done.
+				  QTimer::singleShot(0, []()
 					{
 						GetIEditor()->ExecuteCommand("general.exit");
 					});
-					return;
+				  return;
 				}
 
 				ThreadingUtils::AsyncQueue([this, levels]()
@@ -406,10 +334,10 @@ void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 						QStringList recent = GetRecentFiles();
 						for (QString& fileName : recent)
 						{
-							int i = fileName.lastIndexOf(".");
-							if (i > 0)
-							{
-								fileName = fileName.left(i + 1).append(CLevelType::GetFileExtensionStatic());
+						  int i = fileName.lastIndexOf(".");
+						  if (i > 0)
+						  {
+						    fileName = fileName.left(i + 1).append(CLevelType::GetFileExtensionStatic());
 							}
 						}
 						SetProjectProperty("Recent Files", recent);
@@ -417,6 +345,18 @@ void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
 				});
 			});
 		});
+
+		// Load specified level from command line argument on Sandbox startup.
+		const ICmdLineArg* pLevelArg = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "level");
+		if (pLevelArg != nullptr)
+		{
+			string levelName = pLevelArg->GetValue();
+			if (!levelName.empty())
+			{
+				CCryEditApp::GetInstance()->DiscardLevelChanges();
+				CCryEditApp::GetInstance()->LoadLevel(levelName.c_str());
+			}
+		}
 	}
 }
 
@@ -437,23 +377,24 @@ void CLevelEditor::CreateRecentFilesMenu(QMenu* pRecentFilesMenu)
 
 void CLevelEditor::EnableVertexSnapping(bool bEnable)
 {
-	bEnable ? GetIEditorImpl()->SetEditTool("EditTool.VertexSnappingMode") : GetIEditorImpl()->SetEditTool(NULL);
+	bEnable ? GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool("EditTool.VertexSnappingMode") : 
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(NULL);
 
 	VertexSnappingEnabled(bEnable);
 }
 
 void CLevelEditor::EnablePivotSnapping(bool bEnable)
 {
-	bEnable ? GetIEditorImpl()->PickObject(new CAlignPickCallback) : GetIEditorImpl()->SetEditTool(NULL);
+	bEnable ? GetIEditorImpl()->GetLevelEditorSharedState()->PickObject(new CAlignPickCallback()) : 
+		GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(NULL);
 
-	GetIEditorImpl()->EnablePivotSnapping(bEnable);
+	gSnappingPreferences.EnablePivotSnapping(bEnable);
 
 	PivotSnappingEnabled(bEnable);
 }
 
 void CLevelEditor::EnableGridSnapping(bool bEnable)
 {
-
 	gSnappingPreferences.setGridSnappingEnabled(bEnable);
 
 	GridSnappingEnabled(bEnable);
@@ -475,41 +416,34 @@ void CLevelEditor::EnableScaleSnapping(bool bEnable)
 
 void CLevelEditor::EnableTerrainSnapping(bool bEnable)
 {
-	GetIEditorImpl()->EnableSnapToTerrain(bEnable);
+	gSnappingPreferences.EnableSnapToTerrain(bEnable);
 
 	TerrainSnappingEnabled(bEnable);
 }
 
 void CLevelEditor::EnableGeometrySnapping(bool bEnable)
 {
-	GetIEditorImpl()->EnableSnapToGeometry(bEnable);
+	gSnappingPreferences.EnableSnapToGeometry(bEnable);
 
 	GeometrySnappingEnabled(bEnable);
 }
 
 void CLevelEditor::EnableSurfaceNormalSnapping(bool bEnable)
 {
-	GetIEditorImpl()->EnableSnapToNormal(bEnable);
+	gSnappingPreferences.EnableSnapToNormal(bEnable);
 
 	SurfaceNormalSnappingEnabled(bEnable);
 }
 
-void CLevelEditor::EnableHelpersDisplay(bool bEnable)
-{
-	GetIEditorImpl()->EnableHelpersDisplay(bEnable);
-	HelpersDisplayEnabled(bEnable);
-	GetIEditorImpl()->GetObjectManager()->SendEvent(GetIEditor()->IsHelpersDisplayed() ? EVENT_SHOW_HELPER : EVENT_HIDE_HELPER);
-}
-
 bool CLevelEditor::IsVertexSnappingEnabled() const
 {
-	CEditTool* pTool = GetIEditorImpl()->GetEditTool();
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
 	return pTool && pTool->IsKindOf(RUNTIME_CLASS(CVertexSnappingModeTool));
 }
 
 bool CLevelEditor::IsPivotSnappingEnabled() const
 {
-	return GetIEditorImpl()->IsPivotSnappingEnabled();
+	return gSnappingPreferences.IsPivotSnappingEnabled();
 }
 
 bool CLevelEditor::IsGridSnappingEnabled() const
@@ -529,22 +463,17 @@ bool CLevelEditor::IsScaleSnappingEnabled() const
 
 bool CLevelEditor::IsTerrainSnappingEnabled() const
 {
-	return GetIEditorImpl()->IsSnapToTerrainEnabled();
+	return gSnappingPreferences.IsSnapToTerrainEnabled();
 }
 
 bool CLevelEditor::IsGeometrySnappingEnabled() const
 {
-	return GetIEditorImpl()->IsSnapToGeometryEnabled();
+	return gSnappingPreferences.IsSnapToGeometryEnabled();
 }
 
 bool CLevelEditor::IsSurfaceNormalSnappingEnabled() const
 {
-	return GetIEditorImpl()->IsSnapToNormalEnabled();
-}
-
-bool CLevelEditor::IsHelpersDisplayed() const
-{
-	return GetIEditorImpl()->IsHelpersDisplayed();
+	return gSnappingPreferences.IsSnapToNormalEnabled();
 }
 
 bool CLevelEditor::IsLevelLoaded()
@@ -557,7 +486,7 @@ bool CLevelEditor::ConvertEditorXmlToLevelAssetType(const string& levelFolder, c
 	// Rename level.editor_xml to a new *.level
 	const string oldFilename = PathUtil::Make(levelFolder, "level.editor_xml");
 	const string newFilename = PathUtil::Make(levelFolder, PathUtil::ReplaceExtension(szName, CLevelType::GetFileExtensionStatic()));
-	if (PathUtil::MoveFileAllowOverwrite(oldFilename, newFilename))
+	if (FileUtils::MoveFileAllowOverwrite(oldFilename, newFilename))
 	{
 		CAssetType* pType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
 		CRY_ASSERT(pType);
@@ -568,10 +497,10 @@ bool CLevelEditor::ConvertEditorXmlToLevelAssetType(const string& levelFolder, c
 		CAsset asset(pType->GetTypeName(), CryGUID::Create(), PathUtil::GetFile(cryassetPath));
 		CEditableAsset editAsset(asset);
 		editAsset.SetMetadataFile(cryassetPath);
-		
+
 		const string rootFolder = PathUtil::GetParentDirectory(path);
 		editAsset.AddFile(PathUtil::AbsoluteToRelativePath(newFilename, rootFolder));
-		
+
 		editAsset.WriteToFile();
 
 		return true;
@@ -593,13 +522,11 @@ bool CLevelEditor::OnNew()
 		return false;
 	}
 
-	CSaveLevelDialog levelSaveDialog(QString(tr("Create New Level")));
-	QString lastLoadedLevelName(GetIEditorImpl()->GetDocument()->GetLastLoadedLevelName());
-	if (!lastLoadedLevelName.isEmpty())
-	{
-		levelSaveDialog.SelectLevelFile(lastLoadedLevelName);
-	}
-	if (levelSaveDialog.exec() != QDialog::Accepted)
+	const static CAssetType* const pLevelType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
+	CRY_ASSERT(pLevelType);
+
+	const string selectedAssetPath = CAssetBrowserDialog::CreateSingleAssetForType(pLevelType->GetTypeName(), CAssetBrowserDialog::OverwriteMode::AllowOverwrite);
+	if (selectedAssetPath.empty())
 	{
 		return true;
 	}
@@ -610,32 +537,25 @@ bool CLevelEditor::OnNew()
 		return true;
 	}
 
-	const static CAssetType* const pLevelType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
-	CRY_ASSERT(pLevelType);
-
-	// Convert "Levels/LevelName/LevelName.cry" to "Levels/LevelName.cry.cryasset"
-	const QString absoluteFilePath = levelSaveDialog.GelAcceptedAbsoluteLevelFile();
-	const QString levelFilePath = LevelFileUtils::ConvertAbsoluteToGamePath(absoluteFilePath);
-	const QString levelPath = QFileInfo(levelFilePath).path();
-	const string cryassetPath = QtUtil::ToString(QString("%1.%2.cryasset").arg(levelPath).arg(QtUtil::ToQString(pLevelType->GetFileExtension())));
+	const string cryassetPath = string().Format("%s.%s.cryasset", selectedAssetPath.c_str(), pLevelType->GetFileExtension());
+	const QString levelDirectory = QtUtil::ToQString(selectedAssetPath);
 
 	// levelSaveDialog has got the confirmation to overwrite the level.
 	CAsset* pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(cryassetPath);
-	size_t filesDeleted = 0;
 
 	// If new level path does not point to a level
 	if (!pAsset)
 	{
-		QDir dirToDelete(QFileInfo(absoluteFilePath).path());
+		const QString absLevelDirectory = QtUtil::ToQString(PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), selectedAssetPath));
+
+		QDir dirToDelete(absLevelDirectory);
 		if (dirToDelete.exists())
 		{
-			const QString question = tr("All existing contents of the folder %1 will be deleted.\nDo you really want to continue?").arg(levelPath);
+			const QString question = tr("All existing contents of the folder %1 will be deleted.\nDo you really want to continue?").arg(levelDirectory);
 			if (CQuestionDialog::SQuestion(tr("New Level"), question) != QDialogButtonBox::Yes)
 			{
 				return true;
 			}
-
-			QDir dirToDelete(QFileInfo(absoluteFilePath).path());
 
 			// Make sure none of files to be deleted are read only.
 			QDirIterator iterator(dirToDelete, QDirIterator::Subdirectories);
@@ -651,19 +571,23 @@ bool CLevelEditor::OnNew()
 
 			if (!dirToDelete.removeRecursively())
 			{
-				auto messageText = tr("Failed to remove some files of the existing folder:\n%1").arg(levelPath);
+				auto messageText = tr("Failed to remove some files of the existing folder:\n%1").arg(levelDirectory);
 				CQuestionDialog::SWarning(tr("New Level failed"), messageText);
 				return true;
 			}
 		}
 	}
-	else if (!pLevelType->DeleteAssetFiles(*pAsset, false, filesDeleted))
+	else
 	{
-		if (filesDeleted)
+		const CLevelType::SLevelCreateParams createParams = settingsDialog.GetResult();
+		pAsset->signalAfterRemoved.Connect([createParams](const CAsset* pAsset)
 		{
-			auto messageText = tr("Failed to remove some files of the level that has to be overwritten:\n%1").arg(levelPath);
-			CQuestionDialog::SWarning(tr("New Level failed"), messageText);
-		}
+			const static CAssetType* const pLevelType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
+			pLevelType->Create(pAsset->GetMetadataFile(), &createParams);
+		});
+
+		CAssetManager::GetInstance()->DeleteAssetsWithFiles({ pAsset });
+
 		return true;
 	}
 
@@ -679,24 +603,30 @@ bool CLevelEditor::OnOpen()
 	{
 		return true;
 	}
-	// We need to ensure that the level path exists before calling the dialog, else the filesystem model will be initialized
-	// with an invalid path
-	if (!LevelFileUtils::EnsureLevelPathsValid())
-	{
-		return true;
-	}
-	COpenLevelDialog levelOpenDialog;
+
+	CAssetBrowserDialog dialog({ "Level" }, CAssetBrowserDialog::Mode::OpenSingleAsset);
 	QString lastLoadedLevelName(GetIEditorImpl()->GetDocument()->GetLastLoadedLevelName());
 	if (!lastLoadedLevelName.isEmpty())
 	{
-		levelOpenDialog.SelectLevelFile(lastLoadedLevelName);
+		CAssetManager* const pManager = CAssetManager::GetInstance();
+		const CAsset* pAsset = pManager->FindAssetForFile(lastLoadedLevelName.toStdString().c_str());
+		if (pAsset)
+		{
+			dialog.SelectAsset(*pAsset);
+		}
 	}
-	if (levelOpenDialog.exec() == QDialog::Accepted)
+
+	if (dialog.Execute())
 	{
-		auto filename = levelOpenDialog.GetAcceptedLevelFile().toStdString();//will be relative to working directory/project root
-		CCryEditApp::GetInstance()->DiscardLevelChanges();
-		CCryEditApp::GetInstance()->LoadLevel(filename.c_str());
+		if (CAsset* pSelectedAsset = dialog.GetSelectedAsset())
+		{
+			CCryEditApp::GetInstance()->DiscardLevelChanges();
+
+			const string levelPath = PathUtil::Make(PathUtil::GetGameProjectAssetsPath(), pSelectedAsset->GetFile(0));
+			CCryEditApp::GetInstance()->LoadLevel(levelPath);
+		}
 	}
+
 	return true;
 }
 
@@ -717,16 +647,22 @@ bool CLevelEditor::OnSaveAs()
 	if (openlevel.empty())
 		return true;
 
-	CSaveLevelDialog levelSaveDialog;
+	CAssetBrowserDialog dialog({ "Level" }, CAssetBrowserDialog::Mode::Save);
 	QString lastLoadedLevelName(GetIEditorImpl()->GetDocument()->GetLastLoadedLevelName());
 	if (!lastLoadedLevelName.isEmpty())
 	{
-		levelSaveDialog.SelectLevelFile(lastLoadedLevelName);
+		CAssetManager* const pManager = CAssetManager::GetInstance();
+		const CAsset* const pAsset = pManager->FindAssetForFile(QtUtil::ToString(lastLoadedLevelName).c_str());
+		if (pAsset)
+		{
+			dialog.SelectAsset(*pAsset);
+		}
 	}
-	if (levelSaveDialog.exec() == QDialog::Accepted)
+
+	if (dialog.Execute())
 	{
-		auto filename = levelSaveDialog.GetAcceptedLevelFile().toStdString();
-		GetIEditorImpl()->GetDocument()->DoSave(filename.c_str(), true);
+		auto filename = CLevelType::MakeLevelFilename(dialog.GetSelectedAssetPath());
+		GetIEditorImpl()->GetDocument()->DoSave(PathUtil::GamePathToCryPakPath(filename, true), true);
 		SaveCryassetFile(GetIEditorImpl()->GetDocument()->GetPathName());
 	}
 	return true;
@@ -735,9 +671,9 @@ bool CLevelEditor::OnSaveAs()
 bool CLevelEditor::OnDelete()
 {
 	// If Edit tool active cannot delete object.
-	if (GetIEditorImpl()->GetEditTool())
+	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool())
 	{
-		if (GetIEditorImpl()->GetEditTool()->OnKeyDown(GetIEditorImpl()->GetViewManager()->GetView(0), Qt::Key_Delete, 0, 0))
+		if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool()->OnKeyDown(GetIEditorImpl()->GetViewManager()->GetView(0), Qt::Key_Delete, 0, 0))
 			return true;
 	}
 
@@ -762,46 +698,58 @@ bool CLevelEditor::OnDuplicate()
 
 bool CLevelEditor::OnFind()
 {
-	if (!m_findWindow)
+	if (!m_pFindDialog)
 	{
-		m_findWindow = new CDockableDialog("level_editor_find", "Level Explorer");
-		m_findWindow->SetHideOnClose();
-		m_findWindow->SetTitle(tr("Find Objects"));
-		auto levelExplorer = m_findWindow->GetPaneT<CLevelExplorer>();
-		levelExplorer->SetSyncSelection(false);
-		levelExplorer->SetModelType(CLevelExplorer::Objects);
-		levelExplorer->ShowActiveLayerWidget(false);
-		m_findWindow->Popup();
-		m_findWindow->SetPosCascade();
-		levelExplorer->GrabFocusSearchBar();
+		m_pFindDialog = new CEditorDialog(tr("Find Objects"));
+		QVBoxLayout* pMainLayout = new QVBoxLayout();
+		pMainLayout->setMargin(0);
+		pMainLayout->setSpacing(0);
+		m_pFindDialog->SetHideOnClose();
+		m_pLevelExplorer = new CLevelExplorer();
+		m_pLevelExplorer->Initialize();
+		m_pLevelExplorer->SetSyncSelection(false);
+		m_pLevelExplorer->SetModelType(CLevelExplorer::Objects);
+		pMainLayout->addWidget(m_pLevelExplorer);
+		m_pFindDialog->setLayout(pMainLayout);
+		m_pFindDialog->Popup();
+		m_pFindDialog->SetPosCascade();
+		m_pLevelExplorer->GrabFocusSearchBar();
 	}
 	else
 	{
-		m_findWindow->Popup();
-		m_findWindow->GetPaneT<CLevelExplorer>()->GrabFocusSearchBar();
+		m_pFindDialog->Popup();
+		m_pLevelExplorer->GrabFocusSearchBar();
 	}
 	return true;
 }
 
 void CLevelEditor::OnToggleAssetBrowser()
 {
-	if (!m_assetBrowser)
+	if (!m_pQuickAssetBrowserDialog)
 	{
-		m_assetBrowser = new CDockableDialog("Quick Asset Browser", "Asset Browser");
-		m_assetBrowser->SetHideOnClose();
-		m_assetBrowser->SetTitle(tr("Quick Asset Browser"));
-		m_assetBrowser->Popup();
-		m_assetBrowser->SetPosCascade();
-		m_assetBrowser->GetPaneT<CAssetBrowser>()->GrabFocusSearchBar();
+		m_pQuickAssetBrowserDialog = new CEditorDialog("Quick Asset Browser");
+		QVBoxLayout* pMainLayout = new QVBoxLayout();
+		pMainLayout->setMargin(0);
+		pMainLayout->setSpacing(0);
+		m_pQuickAssetBrowser = new CQuickAssetBrowser();
+		m_pQuickAssetBrowser->Initialize();
+		m_pQuickAssetBrowser->signalToggleAssetBrowser.Connect(this, &CLevelEditor::OnToggleAssetBrowser);
+		pMainLayout->addWidget(m_pQuickAssetBrowser);
+		m_pQuickAssetBrowserDialog->setLayout(pMainLayout);
+		m_pQuickAssetBrowserDialog->Popup();
+		m_pQuickAssetBrowserDialog->SetHideOnClose();
+		m_pQuickAssetBrowserDialog->SetPosCascade();
+		m_pQuickAssetBrowser->GrabFocusSearchBar();
 	}
-	else if (m_assetBrowser->window() && m_assetBrowser->window()->isActiveWindow())
+	else if (m_pQuickAssetBrowserDialog->window() && m_pQuickAssetBrowserDialog->window()->isActiveWindow())
 	{
-		m_assetBrowser->hide();
+		m_pQuickAssetBrowserDialog->hide();
 	}
 	else
 	{
-		m_assetBrowser->Popup();
-		m_assetBrowser->GetPaneT<CAssetBrowser>()->GrabFocusSearchBar();
+		m_pQuickAssetBrowserDialog->Popup();
+		m_pQuickAssetBrowserDialog->activateWindow();
+		m_pQuickAssetBrowser->GrabFocusSearchBar();
 	}
 }
 
@@ -812,7 +760,7 @@ void CLevelEditor::SaveCryassetFile(const string& levelPath)
 	if (pAsset)
 	{
 		CEditableAsset editAsset(*pAsset);
-		CLevelType::UpdateDependencies(editAsset);
+		CLevelType::UpdateFilesAndDependencies(editAsset);
 		editAsset.WriteToFile();
 		return;
 	}
@@ -825,8 +773,7 @@ void CLevelEditor::SaveCryassetFile(const string& levelPath)
 	CAsset asset(pType->GetTypeName(), CryGUID::Create(), PathUtil::GetFile(cryassetPath));
 	CEditableAsset editAsset(asset);
 	editAsset.SetMetadataFile(cryassetPath);
-	editAsset.AddFile(localLevelPath);
-	CLevelType::UpdateDependencies(editAsset);
+	CLevelType::UpdateFilesAndDependencies(editAsset);
 	editAsset.WriteToFile();
 }
 
@@ -891,188 +838,34 @@ bool CLevelEditor::OnPaste()
 		return false;
 	}
 
-	IObjectManager* objManager = GetIEditorImpl()->GetObjectManager();
+	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
 
-	CObjectArchive archive(objManager, copyNode, true);
+	CObjectArchive archive(pObjectManager, copyNode, true);
 
 	CRandomUniqueGuidProvider guidProvider;
 	archive.SetGuidProvider(&guidProvider);
 	archive.LoadInCurrentLayer(true);
-	{
-		CUndo undo("Paste Objects");
-
-		objManager->ClearSelection();
-		// instantiate the new objects
-		objManager->LoadObjects(archive, true);
-
-		//Make sure the new objects have unique names
-		const CSelectionGroup* selGroup = objManager->GetSelection();
-
-		for (int i = 0, nObj = selGroup->GetCount(); i < nObj; ++i)
-		{
-			CBaseObject* pObj = selGroup->GetObject(i);
-			pObj->SetName(objManager->GenUniqObjectName(pObj->GetName()));
-		}
-	}
+	pObjectManager->CreateAndSelectObjects(archive);
 
 	return true;
 }
 
-namespace
+bool CLevelEditor::OnSelectAll()
 {
-
-namespace Private_LevelCommands
-{
-void PySnapToGrid(const bool bEnable)
-{
-	char buffer[31];
-	cry_sprintf(buffer, "level.snap_to_grid '%i'", bEnable);
-	CommandEvent(buffer).SendToKeyboardFocus();
+	GetIEditorImpl()->GetObjectManager()->SelectAll();
+	return true;
 }
 
-void PyToggleSnapToGrid()
+void CLevelEditor::OnShowInAssetBrowser(const char* asset)
 {
-	CommandEvent("level.toggle_snap_to_grid").SendToKeyboardFocus();
+	CAssetBrowser* pAssetBrowser = static_cast<CAssetBrowser*>(CTabPaneManager::GetInstance()->FindPaneByClass("Asset Browser"));
+	if (!pAssetBrowser)
+	{
+		if (!m_pQuickAssetBrowserDialog || !m_pQuickAssetBrowserDialog->isActiveWindow())
+		{
+			OnToggleAssetBrowser();
+		}
+		pAssetBrowser = m_pQuickAssetBrowser;
+	}
+	pAssetBrowser->SelectAsset(asset);
 }
-
-void PySnapToAngle(const bool bEnable)
-{
-	char buffer[32];
-	cry_sprintf(buffer, "level.snap_to_angle '%i'", bEnable);
-	CommandEvent(buffer).SendToKeyboardFocus();
-}
-
-void PyToggleSnapToAngle()
-{
-	CommandEvent("level.toggle_snap_to_angle").SendToKeyboardFocus();
-}
-
-void PyToggleSnapToScale()
-{
-	CommandEvent("level.toggle_snap_to_scale").SendToKeyboardFocus();
-}
-
-void PySnapToVertex(const bool bEnable)
-{
-	char buffer[33];
-	cry_sprintf(buffer, "level.snap_to_vertex '%i'", bEnable);
-	CommandEvent(buffer).SendToKeyboardFocus();
-}
-
-void PyToggleSnapToVertex()
-{
-	CommandEvent("level.toggle_snap_to_vertex").SendToKeyboardFocus();
-}
-
-void PySnapToPivot(const bool bEnable)
-{
-	char buffer[32];
-	cry_sprintf(buffer, "level.snap_to_pivot '%i'", bEnable);
-	CommandEvent(buffer).SendToKeyboardFocus();
-}
-
-void PyToggleSnapToPivot()
-{
-	CommandEvent("level.toggle_snap_to_pivot").SendToKeyboardFocus();
-}
-
-void PySnapToTerrain(const bool bEnable)
-{
-	char buffer[34];
-	cry_sprintf(buffer, "level.snap_to_terrain '%i'", bEnable);
-	CommandEvent(buffer).SendToKeyboardFocus();
-}
-
-void PyToggleSnapToTerrain()
-{
-	CommandEvent("level.toggle_snap_to_terrain").SendToKeyboardFocus();
-}
-
-void PySnapToGeometry(const bool bEnable)
-{
-	char buffer[35];
-	cry_sprintf(buffer, "level.snap_to_geometry '%i'", bEnable);
-	CommandEvent(buffer).SendToKeyboardFocus();
-}
-
-void PyToggleSnapToGeometry()
-{
-	CommandEvent("level.toggle_snap_to_geometry").SendToKeyboardFocus();
-}
-
-void PySnapToSurfaceNormal(const bool bEnable)
-{
-	char buffer[41];
-	cry_sprintf(buffer, "level.snap_to_surface_normal '%i'", bEnable);
-	CommandEvent(buffer).SendToKeyboardFocus();
-}
-
-void PyToggleSnapToSurfaceNormal()
-{
-	CommandEvent("level.toggle_snap_to_surface_normal").SendToKeyboardFocus();
-}
-
-void PyToggle_display_helpers()
-{
-	CommandEvent("level.toggle_display_helpers").SendToKeyboardFocus();
-}
-}
-}
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToGrid, level, snap_to_grid,
-                                   CCommandDescription("Enable/Disable snapping to grid").Param("enable", "0: Disable, 1: Enable"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToGrid, level, toggle_snap_to_grid,
-                                   CCommandDescription("Toggle snapping to grid"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_grid, "", "I", "icons:Viewport/viewport-snap-grid.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToAngle, level, snap_to_angle,
-                                   CCommandDescription("Enable/Disable snapping to angle").Param("enable", "0: Disable, 1: Enable"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToAngle, level, toggle_snap_to_angle,
-                                   CCommandDescription("Toggle snapping to angle"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_angle, "", "L", "icons:Viewport/viewport-snap-angle.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToScale, level, toggle_snap_to_scale,
-                                   CCommandDescription("Toggle snapping to scale"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_scale, "", "K", "icons:Viewport/viewport-snap-scale.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToVertex, level, snap_to_vertex,
-                                   CCommandDescription("Enable/Disable snapping to vertex").Param("enable", "0: Disable, 1: Enable"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToVertex, level, toggle_snap_to_vertex,
-                                   CCommandDescription("Toggle snapping to vertex"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_vertex, "", "V", "icons:Viewport/viewport-snap-vertex.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToPivot, level, snap_to_pivot,
-                                   CCommandDescription("Enable/Disable snapping to privot").Param("enable", "0: Disable, 1: Enable"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToPivot, level, toggle_snap_to_pivot,
-                                   CCommandDescription("Toggle snapping to pivot"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_pivot, "", "P", "icons:Viewport/viewport-snap-pivot.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToTerrain, level, snap_to_terrain,
-                                   CCommandDescription("Enable/Disable snapping to terrain").Param("enable", "0: Disable, 1: Enable"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToTerrain, level, toggle_snap_to_terrain,
-                                   CCommandDescription("Toggle snapping to terrain"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_terrain, "", "T", "icons:common/viewport-snap-terrain.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToGeometry, level, snap_to_geometry,
-                                   CCommandDescription("Enable/Disable snapping to geometry").Param("enable", "0: Disable, 1: Enable"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToGeometry, level, toggle_snap_to_geometry,
-                                   CCommandDescription("Toggle snapping to geometry"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_geometry, "", "O", "icons:common/viewport-snap-geometry.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToSurfaceNormal, level, snap_to_surface_normal,
-                                   CCommandDescription("Enable/Disable snapping to surface normal").Param("enable", "0: Disable, 1: Enable"));
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToSurfaceNormal, level, toggle_snap_to_surface_normal,
-                                   CCommandDescription("Toggle snapping to surface normal"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_surface_normal, "", "N", "icons:common/viewport-snap-normal.ico")
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggle_display_helpers, level, toggle_display_helpers,
-                                   CCommandDescription("Toggle display of helpers in the level editor viewport"));
-REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_display_helpers, "", "Ctrl+H", "icons:Viewport/viewport-helpers.ico")
-

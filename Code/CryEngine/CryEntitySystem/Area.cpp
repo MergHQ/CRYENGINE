@@ -6,6 +6,7 @@
 #include "Entity.h"
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/GeomQuery.h>
+#include <Cry3DEngine/I3DEngine.h>
 
 namespace
 {
@@ -2488,11 +2489,13 @@ void CArea::ResolveEntityIds()
 {
 	if ((m_state & Cry::AreaManager::EAreaState::EntityIdsResolved) == 0)
 	{
-		size_t index = 0;
-
-		for (auto const& guid : m_entityGuids)
+		for (std::pair<EntityId, EntityGUID>& identifierPair : m_entityIdentifiers)
 		{
-			m_entityIds[index++] = g_pIEntitySystem->FindEntityByGuid(guid);
+			if (identifierPair.first == INVALID_ENTITYID)
+			{
+				identifierPair.first = g_pIEntitySystem->FindEntityByGuid(identifierPair.second);
+				AddEntity(identifierPair.first);
+			}
 		}
 
 		m_state |= Cry::AreaManager::EAreaState::EntityIdsResolved;
@@ -2514,9 +2517,9 @@ float CArea::GetFadeDistance()
 	{
 		m_fadeDistance = 0.0f;
 
-		for (auto const entityId : m_entityIds)
+		for (const std::pair<EntityId, EntityGUID>& identifierPair : m_entityIdentifiers)
 		{
-			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
+			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(identifierPair.first);
 
 			if (pIEntity != nullptr)
 			{
@@ -2540,9 +2543,9 @@ float CArea::GetEnvironmentFadeDistance()
 	{
 		m_environmentFadeDistance = 0.0f;
 
-		for (auto const entityId : m_entityIds)
+		for (const std::pair<EntityId, EntityGUID>& identifierPair : m_entityIdentifiers)
 		{
-			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
+			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(identifierPair.first);
 
 			if (pIEntity != nullptr)
 			{
@@ -2568,9 +2571,9 @@ float CArea::GetGreatestFadeDistance()
 	{
 		m_greatestFadeDistance = 0.0f;
 
-		for (auto const entityId : m_entityIds)
+		for (const std::pair<EntityId, EntityGUID>& identifierPair : m_entityIdentifiers)
 		{
-			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(entityId);
+			CEntity const* const pIEntity = g_pIEntitySystem->GetEntityFromID(identifierPair.first);
 
 			if (pIEntity != nullptr)
 			{
@@ -2631,9 +2634,9 @@ void CArea::AddEntity(const EntityId entId)
 		}
 
 		// Always add as the entity might not exist yet.
-		stl::push_back_unique(m_entityIds, entId);
-
 		CEntity* const pIEntity = g_pIEntitySystem->GetEntityFromID(entId);
+
+		stl::push_back_unique(m_entityIdentifiers, std::pair<EntityId, EntityGUID>{ entId, pIEntity != nullptr ? pIEntity->GetGuid() : CryGUID::Null() });
 
 		if (pIEntity != nullptr)
 		{
@@ -2658,19 +2661,21 @@ void CArea::AddEntity(const EntityId entId)
 //////////////////////////////////////////////////////////////////////////
 void CArea::AddEntity(const EntityGUID entGuid)
 {
-	stl::push_back_unique(m_entityGuids, entGuid);
-	AddEntity(g_pIEntitySystem->FindEntityByGuid(entGuid));
+	const EntityId id = g_pIEntitySystem->FindEntityByGuid(entGuid);
+	stl::push_back_unique(m_entityIdentifiers, std::pair<EntityId, EntityGUID>{ id, entGuid });
+
+	if (id != INVALID_ENTITYID)
+	{
+		AddEntity(id);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CArea::AddEntities(const EntityIdVector& entIDs)
+void CArea::AddEntities(const EntityIdVector& entityIdentifiers)
 {
-	EntityIdVector::const_iterator Iter(entIDs.begin());
-	EntityIdVector::const_iterator const IterEnd(entIDs.end());
-
-	for (; Iter != IterEnd; ++Iter)
+	for (const std::pair<EntityId, EntityGUID>& identifierPair : entityIdentifiers)
 	{
-		AddEntity(*Iter);
+		AddEntity(identifierPair.first);
 	}
 }
 
@@ -2688,7 +2693,10 @@ void CArea::RemoveEntity(EntityId const entId)
 		}
 
 		// Always remove as the entity might be already gone.
-		stl::find_and_erase(m_entityIds, entId);
+		stl::find_and_erase_if(m_entityIdentifiers, [entId](const std::pair<EntityId, EntityGUID>& identifierPair) -> bool
+		{
+			return identifierPair.first == entId;
+		});
 
 		CEntity* const pIEntity = g_pIEntitySystem->GetEntityFromID(entId);
 
@@ -2715,25 +2723,25 @@ void CArea::RemoveEntity(EntityId const entId)
 //////////////////////////////////////////////////////////////////////////
 void CArea::RemoveEntity(EntityGUID const entGuid)
 {
-	stl::find_and_erase(m_entityGuids, entGuid);
+	stl::find_and_erase_if(m_entityIdentifiers, [&entGuid](const std::pair<EntityId, EntityGUID>& identifierPair) -> bool
+	{
+		return identifierPair.second == entGuid;
+	});
+
 	RemoveEntity(g_pIEntitySystem->FindEntityByGuid(entGuid));
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CArea::RemoveEntities()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	// Inform all attached entities that they have been disconnected to prevent lost entities.
-	EntityIdVector const tmpVec(std::move(m_entityIds));
-	EntityIdVector::const_iterator Iter(tmpVec.begin());
-	EntityIdVector::const_iterator const IterEnd(tmpVec.end());
+	EntityIdVector const tmpVec(std::move(m_entityIdentifiers));
 
-	for (; Iter != IterEnd; ++Iter)
+	for (const std::pair<EntityId, EntityGUID>& identifierPair : tmpVec)
 	{
-		RemoveEntity(*Iter);
+		RemoveEntity(identifierPair.second);
 	}
-
-	m_entityGuids.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2812,13 +2820,14 @@ void CArea::SendCachedEventsFor(EntityId const nEntityID)
 //////////////////////////////////////////////////////////////////////////
 void CArea::SendEvent(SEntityEvent& newEvent, bool bClearCachedEvents /* = true */)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
 	m_pAreaManager->OnEvent(newEvent.event, (EntityId)newEvent.nParam[0], this);
 
-	size_t const nCountEntities = m_entityIds.size();
+	size_t const nCountEntities = m_entityIdentifiers.size();
 
 	for (size_t eIdx = 0; eIdx < nCountEntities; ++eIdx)
 	{
-		if (CEntity* pAreaAttachedEntity = g_pIEntitySystem->GetEntityFromID(m_entityIds[eIdx]))
+		if (CEntity* pAreaAttachedEntity = g_pIEntitySystem->GetEntityFromID(m_entityIdentifiers[eIdx].first))
 		{
 			pAreaAttachedEntity->SendEvent(newEvent);
 
@@ -2982,11 +2991,11 @@ void CArea::ExclusiveUpdateAreaInside(
 			CryLog("<AreaManager> Area %u Direct Event: %s", m_entityId, "MOVEINSIDE");
 		}
 
-		size_t const numAttachedEntities = m_entityIds.size();
+		size_t const numAttachedEntities = m_entityIdentifiers.size();
 
 		for (size_t index = 0; index < numAttachedEntities; ++index)
 		{
-			CEntity* const pEntity = g_pIEntitySystem->GetEntityFromID(m_entityIds[index]);
+			CEntity* const pEntity = g_pIEntitySystem->GetEntityFromID(m_entityIdentifiers[index].first);
 
 			if (pEntity != nullptr)
 			{
@@ -3020,11 +3029,11 @@ void CArea::ExclusiveUpdateAreaNear(
 			CryLogAlways("<AreaManager> Area %u Direct Event: %s", m_entityId, "MOVENEAR");
 		}
 
-		size_t const numAttachedEntities = m_entityIds.size();
+		size_t const numAttachedEntities = m_entityIdentifiers.size();
 
 		for (size_t index = 0; index < numAttachedEntities; ++index)
 		{
-			CEntity* const pEntity = g_pIEntitySystem->GetEntityFromID(m_entityIds[index]);
+			CEntity* const pEntity = g_pIEntitySystem->GetEntityFromID(m_entityIdentifiers[index].first);
 
 			if (pEntity != nullptr)
 			{
@@ -3406,16 +3415,23 @@ float CArea::GetExtent(EGeomForm eForm)
 			}
 			else
 			{
+				size_t const numAreaPoints = m_areaPoints.size();
+				size_t const numAreaSegments = m_areaSegments.size();
+
 				if (eForm == GeomForm_Edges && m_height > 0.0f)
 				{
 					// Add vertical edges
-					ext.ReserveParts(m_areaPoints.size() + m_areaSegments.size());
-					for (auto const& point : m_areaPoints)
+					ext.ReserveParts(numAreaPoints + numAreaSegments);
+
+					for (size_t i = 0; i < numAreaPoints; ++i)
+					{
 						ext.AddPart(m_height);
+					}
 				}
 
 				// Add horizontal edges/surfaces
-				ext.ReserveParts(m_areaSegments.size());
+				ext.ReserveParts(numAreaSegments);
+
 				for (const auto& segment : m_areaSegments)
 				{
 					float extent = (segment->bbox.min - segment->bbox.max).GetLength();
@@ -3461,8 +3477,10 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 		{
 			point.vPos = m_areaPoints[n];
 			point.vPos.z += m_height * tv;
-			if (!m_bClosed && (n == 0 || n == m_areaPoints.size() - 1))
+			if (!m_bClosed && n == 0)
 				point.vNorm = Vec3(m_areaSegments[n]->normal);
+			else if (!m_bClosed && n == m_areaPoints.size() - 1)
+				point.vNorm = Vec3(m_areaSegments[n-1]->normal);
 			else
 				point.vNorm = Vec3(m_areaSegments[n]->normal + m_areaSegments[PrevPoint(n)]->normal).GetNormalized();
 		};

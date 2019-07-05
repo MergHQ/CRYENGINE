@@ -234,8 +234,12 @@ float  NumToFromString(float val, int digits, bool floating, char buffer[], int 
 	else
 		cry_sprintf(buffer, buf_size, "%.*f", digits, float(val));
 
+#if defined(USE_CRY_ASSERT)
 	int readCount = sscanf_s(buffer, "%g", &val);
 	assert(readCount == 1);
+#else
+	sscanf_s(buffer, "%g", &val);
+#endif
 	return val;
 }
 
@@ -432,7 +436,7 @@ inline cstr DisplayName(cstr name)
 }
 
 CStructInfo::CStructInfo(cstr name, size_t size, size_t align, Array<CVarInfo> vars, Array<CTypeInfo const*> templates)
-	: CTypeInfo(name, size, align), Vars(vars), TemplateTypes(templates), HasBitfields(false)
+	: CTypeInfo(name, size, align), Vars(vars), HasBitfields(false), TemplateTypes(templates)
 {
 	// Process and validate offsets and sizes.
 	if (Vars.size() > 0)

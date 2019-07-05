@@ -1,7 +1,9 @@
 #!python3
 """
-This script combines the required engine and project files into a single directory.
-It also creates .pak files from the asset directory and writes an appropriate system.cfg.
+This script combines the required engine and project files into a single
+directory.
+It also creates .pak files from the asset directory and writes an
+appropriate system.cfg.
 """
 import os
 import sys
@@ -10,7 +12,10 @@ import stat
 import fnmatch
 import subprocess
 import platform
+import cryplugin
 import cryproject
+import cryregistry
+import crypath
 import release_project_gui
 
 HAS_WIN_MODULES = True
@@ -25,7 +30,8 @@ DEFAULT_CONFIGURATIONS = [
     ("win_x86:Profile", os.path.join("bin", "win_x86")),
     ("win_x86:Release", os.path.join("bin", "win_x86_release")),
     ("linux_x64_clang:Profile", os.path.join("bin", "linux_x64_clang")),
-    ("linux_x64_clang:Release", os.path.join("bin", "linux_x64_clang_release")),
+    ("linux_x64_clang:Release", os.path.join(
+        "bin", "linux_x64_clang_release")),
     ("linux_x64_gcc:Profile", os.path.join("bin", "linux_x64_gcc")),
     ("linux_x64_gcc:Release", os.path.join("bin", "linux_x64_gcc_release"))
 ]
@@ -41,43 +47,65 @@ CONFIGURATION_PLATFORM_LOOKUP = {
     "linux_x64_gcc:Release": "Linux",
 }
 
-# "\\\\?\\" is added to make sure copying doesn't crash on Windows because the path gets too long for some files.
+CONFIGURATION_BUILD_TARGET_LOOKUP = {
+    "win_x64:Profile": "win_x64",
+    "win_x64:Release": "win_x64",
+    "win_x86:Profile": "win_x86",
+    "win_x86:Release": "win_x86",
+    "linux_x64_clang:Profile": "win_x64",
+    "linux_x64_clang:Release": "win_x64",
+    "linux_x64_gcc:Profile": "win_x64",
+    "linux_x64_gcc:Release": "win_x64",
+}
+
+# "\\\\?\\" is added to make sure copying doesn't crash on Windows
+# because the path gets too long for some files.
 # This is a requirement to copy the Mono folder on Windows.
 LONG_PATH_PREFIX = "\\\\?\\" if platform.system() == "Windows" else ""
+
 
 def run(project_file):
     """
     Entry point for setting up the process to release a packaged build.
     """
-    # Path to the project file as created by the launcher - engine and project path are derivable from this.
-    project = cryproject.load(project_file)
-    project_title = project['info']['name']
+    # Path to the project file as created by the launcher
+    # Engine and project path are derivable from this.
+    project = cryproject.CryProject()
+    try:
+        project.load(project_file)
+    except Exception:
+        print("Unable to read project file %s" % (project_file))
+        raise
 
     # The path the folder that contains the .cryproject file.
     project_path = os.path.normpath(os.path.dirname(project_file))
     project_path_long = LONG_PATH_PREFIX + project_path
 
     # The path to the engine that is being used by the project.
-    engine_path = os.path.normpath(get_engine_path())
+    engine_path = crypath.get_engine_path()
     engine_path_long = LONG_PATH_PREFIX + engine_path
 
     # Path to which the game is to be exported.
-    export_path = os.path.join(project_path, '{}_package'.format(project_title))
+    export_path = os.path.join(
+        project_path, '{}_package'.format(project.name()))
 
     configurations = get_available_configurations(engine_path)
     if not configurations:
-        print("Unable to find a valid engine configuration. Make sure to build your engine to the following locations.")
+        print("Unable to find a valid engine configuration. Make sure to "
+              "build your engine to the following locations.")
         for key, value in DEFAULT_CONFIGURATIONS:
             print("Configuration: {} \n Location: {}".format(key, value))
         print("Press Enter to exit")
         input()
         return
 
-    # configuration is returned as (export_path, config_name, config_bin_folder, include_symbols)
-    configuration = release_project_gui.configure_build(export_path, configurations)
+    # configuration is returned as
+    # (export_path, config_name, config_bin_folder, include_symbols)
+    configuration = release_project_gui.configure_build(
+        export_path, configurations)
     if not configuration:
-        # No configuration selected.
-        # Most likely because the user closed the window, so close this as well.
+        # No configuration selected. Most likely because the user closed
+        # the window, so close this as well.
         return
 
     export_path = os.path.normpath(configuration[0])
@@ -85,30 +113,51 @@ def run(project_file):
     config_type = configuration[1]
     bin_path = os.path.normpath(configuration[2])
     include_symbols = configuration[3]
+    bit_type = CONFIGURATION_BUILD_TARGET_LOOKUP[config_type]
 
-    print("Packaging project {}".format(project_title))
+    print("Packaging project {}".format(project.name()))
     print("Configuration: {}".format(config_type))
-    print("Debug symbols are {}".format("included" if include_symbols else "excluded"))
+    print("Debug symbols are {}".format(
+        "included" if include_symbols else "excluded"))
     print("Building to: {}".format(export_path))
 
     task_list = []
 
     if os.path.exists(export_path_long):
-        task_list.append(("Deleting previous build...", delete_previous_build, export_path_long))
+        task_list.append(("Deleting previous build...",
+                          delete_previous_build, export_path_long))
 
-    task_list.append(("Packaging custom engine assets...", package_engine_assets, engine_path, export_path))
-    task_list.append(("Copying default engine assets...", copy_engine_assets, engine_path_long, export_path_long))
-    task_list.append(("Copying engine binaries...", copy_engine_binaries, engine_path_long, export_path_long, bin_path, include_symbols))
+    task_list.append(("Packaging custom engine assets...",
+                      package_engine_assets, engine_path, export_path))
+    task_list.append(("Copying default engine assets...",
+                      copy_engine_assets, engine_path_long, export_path_long))
+    task_list.append(("Copying engine binaries...", copy_engine_binaries,
+                      engine_path_long, export_path_long, bin_path,
+                      include_symbols))
 
     if requires_mono(project, project_path_long):
-        task_list.append(("Copying mono files...", copy_mono_files, engine_path_long, export_path_long))
+        task_list.append((
+            "Copying mono files...", copy_mono_files, engine_path_long,
+            export_path_long))
 
-    task_list.append(("Copying game binaries...", copy_project_plugins, project, project_path, export_path, bin_path, config_type, include_symbols))
-    task_list.append(("Copying shared libraries...", copy_libs, project, project_path, export_path, include_symbols))
-    task_list.append(("Copying existing game asset packages...", copy_assets, project, project_path_long, export_path_long))
-    task_list.append(("Packaging game assets...", package_assets, project, engine_path, project_path, export_path))
-    task_list.append(("Cleaning up temp folders...", delete_temp_folders, engine_path_long, project_path_long))
-    task_list.append(("Creating config files...", create_config, project_file, export_path))
+    task_list.append((
+        "Copying game binaries...", copy_project_plugins, project,
+        project_path, export_path, bin_path, config_type, include_symbols))
+    task_list.append((
+        "Copying shared libraries...", copy_libs,
+        project, project_path, export_path, bin_path, bit_type, include_symbols))
+    task_list.append((
+        "Copying existing game asset packages...",
+        copy_assets, project, project_path_long, export_path_long))
+    task_list.append((
+        "Packaging game assets...", package_assets,
+        project, engine_path, project_path, export_path))
+    task_list.append((
+        "Cleaning up temp folders...",
+        delete_temp_folders, engine_path_long, project_path_long))
+    task_list.append((
+        "Creating config files...", create_config, project_file, export_path,
+        bin_path, config_type))
 
     i = 0
     count = len(task_list)
@@ -124,6 +173,7 @@ def run(project_file):
     print("Press Enter to exit")
     input()
 
+
 def get_available_configurations(engine_path):
     """
     Returns the configurations that are available for this engine.
@@ -137,6 +187,7 @@ def get_available_configurations(engine_path):
 
     return available_configurations
 
+
 def delete_previous_build(export_path):
     """
     Deletes the folder found at export_path, and properly handles deleting
@@ -145,6 +196,7 @@ def delete_previous_build(export_path):
     if os.path.exists(export_path):
         shutil.rmtree(export_path, onerror=on_rm_error)
 
+
 def delete_temp_folders(engine_path, project_path):
     """
     Deletes the temporary folders created by RC.
@@ -152,23 +204,27 @@ def delete_temp_folders(engine_path, project_path):
     delete_temp_engine_folder(engine_path)
     delete_temp_assets_folder(project_path)
 
+
 def delete_temp_engine_folder(engine_path):
     """
     Deletes the temporary engine folder created by RC.
     """
-    temp_dir = os.path.abspath(os.path.join(engine_path, os.pardir, "_rc_PC"))
+    temp_dir = os.path.abspath(os.path.join(engine_path, "rc_out_PC"))
     if os.path.exists(temp_dir):
         os.chmod(temp_dir, stat.S_IWRITE)
         shutil.rmtree(temp_dir, onerror=on_rm_error)
+
 
 def delete_temp_assets_folder(project_path):
     """
     Deletes the temporary assets folder created by RC.
     """
-    temp_dir = os.path.abspath(os.path.join(project_path, os.pardir, "_rc_PC_pure"))
+    temp_dir = os.path.abspath(os.path.join(
+        project_path, "rc_out_PC"))
     if os.path.exists(temp_dir):
         os.chmod(temp_dir, stat.S_IWRITE)
         shutil.rmtree(temp_dir, onerror=on_rm_error)
+
 
 def on_rm_error(func, path, exc_info):
     """
@@ -180,38 +236,24 @@ def on_rm_error(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)
     os.unlink(path)
 
+
 def requires_mono(project, project_path):
     """
     Returns true if the project requires Mono, false otherwise.
     """
-    if cryproject.is_managed(project):
+    if project.is_managed():
         return True
 
-    asset_path = os.path.join(project_path, cryproject.asset_dir(project))
+    asset_path = os.path.join(project_path, project.asset_dir())
     return directory_contains_file(asset_path, ["*.cs"])
 
-def get_tools_path():
-    """
-    Returns the path to the Tools folder, based on the location of this file.
-    """
-    if getattr(sys, 'frozen', False):
-        script_path = sys.executable
-    else:
-        script_path = __file__
-
-    return os.path.abspath(os.path.join(os.path.dirname(script_path), '..'))
-
-def get_engine_path():
-    """
-    Returns the path to the engine's root folder.
-    """
-    return os.path.abspath(os.path.join(get_tools_path(), '..'))
 
 def get_percentage(index, count):
     """
     Returns index / count but as a percentage from 0 - 100.
     """
     return (100.0 / count) * index
+
 
 def set_title(title):
     """
@@ -220,21 +262,23 @@ def set_title(title):
     if not title:
         title = "Building..."
 
-    #using the kernel32 should be better, but in case it's not working it can switch to using system().
+    # using the kernel32 should be better, but in case it's not working
+    # it can switch to using os.system().
     if HAS_WIN_MODULES:
         try:
             kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
             if kernel32:
                 kernel32.SetConsoleTitleW(u"{}".format(title))
-        except:
-            system("title {}".format(title))
+        except Exception:
+            os.system("title {}".format(title))
     else:
-        system("title {}".format(title))
+        os.system("title {}".format(title))
+
 
 def copy_engine_binaries(engine_path, export_path, rel_dir, include_symbols):
     """
     Copy a directory to its corresponding location in the export directory.
-    :param engine_path: Current location of the files (project_path or engine_path).
+    :param engine_path: Current location of the files.
     :param export_path: Path to which the binaries should be exported.
     :param rel_dir: Path of the directory to copy, relative to *source_dir*.
     """
@@ -267,7 +311,7 @@ def copy_engine_binaries(engine_path, export_path, rel_dir, include_symbols):
                 'CryQt*',
                 '_CryQt*',
                 '*.pyd'
-               ]
+                ]
 
     if not include_symbols:
         excludes.append('*.pdb')
@@ -300,7 +344,8 @@ def copy_mono_files(engine_path, export_path):
     input_bindir = os.path.join(engine_path, 'bin')
     output_bindir = os.path.join(export_path, 'bin')
 
-    shutil.copytree(os.path.join(input_bindir, 'common'), os.path.join(output_bindir, 'common'))
+    shutil.copytree(os.path.join(input_bindir, 'common'),
+                    os.path.join(output_bindir, 'common'))
 
     for csharp_file in os.listdir(os.path.join(input_bindir, 'win_x64')):
         # We've already copied the non-C# libraries, so skip them here.
@@ -308,6 +353,7 @@ def copy_mono_files(engine_path, export_path):
             continue
         shutil.copyfile(os.path.join(input_bindir, 'win_x64', csharp_file),
                         os.path.join(output_bindir, 'win_x64', csharp_file))
+
 
 def run_command(command, silent=True):
     """
@@ -327,21 +373,25 @@ def run_command(command, silent=True):
             subprocess.check_call(command_str)
     except subprocess.CalledProcessError as exception:
         if not exception.returncode == 0:
-            print("Encountered and error while running command '{}'!".format(command_str))
+            print("Encountered an error while running command '{}'!".format(
+                command_str))
             print(exception.output)
             return False
 
     return True
 
+
 def package_engine_assets(engine_path, export_path):
     """
     Runs the Resource Compiler on the engine assets following the
-    instructions of rcjob_release_engine_assets.xml. Outputs the
+    instructions of engine_assets.xml. Outputs the
     .pak files in the Engine folder of the build.
     """
 
     rc_path = os.path.join(engine_path, "Tools", "rc", "rc.exe")
-    rc_job_path = os.path.join(engine_path, "Tools", "CryVersionSelector", "rc_jobs", "rcjob_release_engine_assets.xml")
+    rc_job_path = os.path.join(
+        engine_path, "Tools", "CryVersionSelector", "rc_jobs",
+        "engine_assets.xml")
 
     if os.path.isfile(rc_path) and os.path.isfile(rc_job_path):
         pwd = os.getcwd()
@@ -357,9 +407,12 @@ def package_engine_assets(engine_path, export_path):
         os.chdir(pwd)
     else:
         if not os.path.isfile(rc_path):
-            print("Unable to package the engine assets with the resource compiler because '{}' is missing!".format(rc_path))
+            print("Unable to package the engine assets with the resource "
+                  "compiler because '{}' is missing!".format(rc_path))
         else:
-            print("Unable to package the engine assets with the resource compiler because '{}' is missing!".format(rc_job_path))
+            print("Unable to package the engine assets with the resource "
+                  "compiler because '{}' is missing!".format(rc_job_path))
+
 
 def copy_engine_assets(engine_path, export_path):
     """
@@ -372,19 +425,23 @@ def copy_engine_assets(engine_path, export_path):
 
     copy_directory_contents(srcpath, dstpath, ["*.pak"], ["*.cryasset.pak"])
 
+
 def copy_assets(project, project_path, export_path):
     """
     Copies existing .pak files from the assets directory to the
     export location. Other assets can be added to these pak files
     later on in package_assets().
     """
-    asset_dir = cryproject.asset_dir(project)
+    asset_dir = project.asset_dir()
     srcpath = os.path.join(project_path, asset_dir)
     dstpath = os.path.join(export_path, asset_dir)
 
     copy_directory_contents(srcpath, dstpath, ["*.pak"], ["*.cryasset.pak"])
 
-def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_patterns=None, recursive=True, overwrite=False):
+
+def copy_directory_contents(
+        src_dir, dst_dir, include_patterns=None, exclude_patterns=None,
+        recursive=True, overwrite=False):
     """
     Copies all files that match the include patterns and don't
     match the exclude patterns to the destination directory.
@@ -397,13 +454,16 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         dstpath = os.path.join(dst_dir, file)
 
         if os.path.isdir(srcpath) and recursive:
-            copy_directory_contents(srcpath, dstpath, include_patterns, exclude_patterns, recursive, overwrite)
+            copy_directory_contents(
+                srcpath, dstpath, include_patterns, exclude_patterns,
+                recursive, overwrite)
             continue
 
         if exclude_patterns:
             exclude = False
             for pattern in exclude_patterns:
-                exclude = fnmatch.fnmatch(srcpath, os.path.join(clean_dir, pattern))
+                exclude = fnmatch.fnmatch(
+                    srcpath, os.path.join(clean_dir, pattern))
                 if exclude:
                     break
             if exclude:
@@ -412,7 +472,8 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
         if include_patterns:
             include = False
             for pattern in include_patterns:
-                include = fnmatch.fnmatch(srcpath, os.path.join(clean_dir, pattern))
+                include = fnmatch.fnmatch(
+                    srcpath, os.path.join(clean_dir, pattern))
                 if include:
                     break
             if not include:
@@ -425,7 +486,9 @@ def copy_directory_contents(src_dir, dst_dir, include_patterns=None, exclude_pat
 
         shutil.copyfile(srcpath, dstpath)
 
-def directory_contains_file(directory, include_patterns, exclude_patterns=None, recursive=True):
+
+def directory_contains_file(
+        directory, include_patterns, exclude_patterns=None, recursive=True):
     """
     Checks if a directory contains a file that matches the specified pattern.
     """
@@ -434,14 +497,16 @@ def directory_contains_file(directory, include_patterns, exclude_patterns=None, 
         file_path = os.path.join(directory, file)
 
         if os.path.isdir(file_path) and recursive:
-            if directory_contains_file(file_path, include_patterns, exclude_patterns, recursive):
+            if directory_contains_file(
+                    file_path, include_patterns, exclude_patterns, recursive):
                 return True
             continue
 
         if exclude_patterns:
             exclude = False
             for pattern in exclude_patterns:
-                exclude = fnmatch.fnmatch(file_path, os.path.join(clean_dir, pattern))
+                exclude = fnmatch.fnmatch(
+                    file_path, os.path.join(clean_dir, pattern))
                 if exclude:
                     break
             if exclude:
@@ -450,7 +515,8 @@ def directory_contains_file(directory, include_patterns, exclude_patterns=None, 
         if include_patterns:
             include = False
             for pattern in include_patterns:
-                include = fnmatch.fnmatch(file_path, os.path.join(clean_dir, pattern))
+                include = fnmatch.fnmatch(
+                    file_path, os.path.join(clean_dir, pattern))
                 if include:
                     break
             if include:
@@ -458,24 +524,28 @@ def directory_contains_file(directory, include_patterns, exclude_patterns=None, 
 
     return False
 
+
 def sanitize_for_fn(text):
     """
     Escapes the [ and ] characters by wrapping them in [].
     """
     return text.translate(str.maketrans({'[': '[[]', ']': '[]]'}))
 
+
 def package_assets(project, engine_path, project_path, export_path):
     """
     Runs the Resource Compiler on the game assets following the
-    instructions of rcjob_release_game_assets.xml. Outputs the
+    instructions of game_assets.xml. Outputs the
     .pak files in the Assets folder of the build that's specified
     in the project file.
     """
     rc_path = os.path.join(engine_path, "Tools", "rc", "rc.exe")
-    rc_job_path = os.path.join(engine_path, "Tools", "CryVersionSelector", "rc_jobs", "rcjob_release_game_assets.xml")
+    rc_job_path = os.path.join(
+        engine_path, "Tools", "CryVersionSelector", "rc_jobs",
+        "game_assets.xml")
 
     if os.path.isfile(rc_path) and os.path.isfile(rc_job_path):
-        asset_dir = cryproject.asset_dir(project)
+        asset_dir = project.asset_dir()
         pwd = os.getcwd()
         os.chdir(project_path)
         rc_cmd = ['"{}"'.format(rc_path),
@@ -490,21 +560,87 @@ def package_assets(project, engine_path, project_path, export_path):
         os.chdir(pwd)
     else:
         if not os.path.isfile(rc_path):
-            print("Unable to package the game assets with the resource compiler because '{}' is missing!".format(rc_path))
+            print("Unable to package the game assets with the resource "
+                  "compiler because '{}' is missing!".format(rc_path))
         else:
-            print("Unable to package the game assets with the resource compiler because '{}' is missing!".format(rc_job_path))
+            print("Unable to package the game assets with the resource "
+                  "compiler because '{}' is missing!".format(rc_job_path))
 
-def create_config(project_file, export_path):
+
+def serialize_plugin_for_config(plugin, engine_id, config_path):
+    plugins = []
+
+    if plugin.dependencies():
+        for it in plugin.dependencies():
+            dependency = cryplugin.CryPlugin()
+            dependency.load(cryplugin.find(engine_id, it['guid']))
+
+            serialized_dependencies = serialize_plugin_for_config(
+                dependency, engine_id, config_path)
+
+            for it2 in serialized_dependencies:
+                plugins.append(it2)
+
+    for it in plugin.binaries(config_path):
+        serialized_plugin = {}
+        if plugin.isNative():
+            serialized_plugin['type'] = 'EPluginType::Native'
+        else:
+            serialized_plugin['type'] = 'EPluginType::Managed'
+        serialized_plugin['path'] = os.path.basename(it)
+        plugins.append(serialized_plugin)
+
+    return plugins
+
+
+def create_config(project_file, export_path, config_path, config_type):
     """
-    Create the config file which contains the cryproject file, and generates the system.cfg.
+    Create the config file which contains the cryproject file,
+    and generates the system.cfg.
     """
     project_name = "game.cryproject"
     alt_project_name = "game.crygame"
     dst_file = os.path.join(export_path, project_name)
-    shutil.copyfile(project_file, dst_file)
+
+    # Replace GUIDs with binary names
+    project = cryproject.CryProject()
+    try:
+        project.load(project_file)
+    except Exception:
+        print("Unable to read project file %s" % (project_file))
+        raise
+
+    engine_id = project.engine_id()
+    plugins = project.plugins_list()
+    new_plugins = []
+    if plugins:
+        for it in plugins:
+            platforms = it.get("platforms")
+            if platforms:
+                current_platform = CONFIGURATION_PLATFORM_LOOKUP[config_type]
+                if current_platform not in platforms:
+                    continue
+
+            if "guid" in it:
+                plugin = cryplugin.CryPlugin()
+                plugin.load(cryplugin.find(engine_id, it["guid"]))
+
+                serialized_plugins = serialize_plugin_for_config(
+                    plugin, engine_id, config_path)
+
+                for it2 in serialized_plugins:
+                    new_plugins.append(it2)
+            else:
+                new_plugins.append(it)
+
+        project.set_plugin_list(new_plugins)
+
+    project.save(dst_file)
+
     use_config = True
-    # If possible put the project file in a pak. Otherwise rename the project file's extension to crygame
-    # so it won't show all the cryproject options on right-click.
+    # If possible put the project file in a pak. Otherwise rename the
+    # project file's extension to crygame so it won't show all the
+    # cryproject options on right-click.
     if create_config_pak(export_path, dst_file) and os.path.isfile(dst_file):
         os.remove(dst_file)
     else:
@@ -517,17 +653,19 @@ def create_config(project_file, export_path):
         file_handle.write('sys_asserts=0\n')
         file_handle.write('sys_float_exceptions = 0\n')
 
+
 def create_config_pak(export_path, project_file):
     """
     Tries to package the cryproject file in a config.pak.
     Returns True if successful, False otherwise.
     """
-    zip_exe = os.path.join(get_tools_path(), '7za.exe')
+    zip_exe = os.path.join(crypath.get_tools_path(), '7za.exe')
     if not os.path.isfile(zip_exe):
         return False
 
     dst_file = os.path.join(export_path, "config.pak")
-    # By setting the current working directory we prevent the project file to be in a folder in the config.pak.
+    # By setting the current working directory we prevent the project
+    # file to be in a folder in the config.pak.
     pwd = os.getcwd()
     os.chdir(export_path)
     zip_cmd = ['"{}"'.format(zip_exe),
@@ -541,52 +679,90 @@ def create_config_pak(export_path, project_file):
 
     return os.path.isfile(dst_file)
 
-def copy_project_plugins(project, project_path, export_path, config_path, config_type, include_symbols):
+
+def copy_project_plugins(
+        project, project_path, export_path, config_path, config_type,
+        include_symbols):
     """
     Copies all .dll files that belong to the plugins of the project.
     """
-    plugins = cryproject.plugins_list(project)
+    plugins = project.plugins_list()
     for plugin in plugins:
+        guid = plugin.get("guid")
         path = plugin.get("path")
         plugin_type = plugin.get("type")
         platforms = plugin.get("platforms")
 
-        if not path:
-            continue
+        if guid:
+            if platforms:
+                current_platform = CONFIGURATION_PLATFORM_LOOKUP[config_type]
+                if current_platform not in platforms:
+                    continue
 
-        # Skip engine plugins. They are copied elsewhere.
-        if not path.endswith(".dll"):
-            continue
+            engine_registry = cryregistry.load_engines()
 
-        if platforms:
-            current_platform = CONFIGURATION_PLATFORM_LOOKUP[config_type]
-            platform_included = current_platform in platforms
-            if not platform_included:
+            engine = engine_registry[project.engine_id()]
+            installed_plugins = engine.get('plugins', {})
+
+            _plugin = cryplugin.CryPlugin()
+            try:
+                _plugin.load(installed_plugins[guid]['uri'])
+            except Exception:
+                print("Unable to read plugin file %s" % (guid))
+                sys.excepthook(*sys.exc_info())
                 continue
 
-        src_file = os.path.join(project_path, path)
-        dst_file = os.path.join(export_path, path)
+            for it in _plugin.binaries(config_path):
+                src_file = it
+                dst_file = os.path.join(
+                    export_path, config_path, os.path.basename(it))
 
-        if plugin_type == "EPluginType::Native":
-            # Try to apply the selected engine configuration to the plugin as well.
-            # This prevents mixing release with profile configurations for example.
-            # This does assume plugins follow the same naming-rules as the engine does, as defined in DEFAULT_CONFIGURATIONS.
-            adjusted_src_file = os.path.join(project_path, config_path, os.path.basename(path))
-            if os.path.isfile(adjusted_src_file):
-                src_file = adjusted_src_file
-
-        if os.path.isfile(src_file):
-            os.makedirs(os.path.dirname(dst_file), exist_ok=True)
-            shutil.copyfile(src_file, dst_file)
-
-            # Copy debug symbols
-            if include_symbols:
-                src_file = "{}.pdb".format(os.path.splitext(src_file)[0])
                 if os.path.isfile(src_file):
-                    dst_file = "{}.pdb".format(os.path.splitext(dst_file)[0])
+                    os.makedirs(os.path.dirname(dst_file), exist_ok=True)
                     shutil.copyfile(src_file, dst_file)
+
         else:
-            print("Failed to copy plugin file '{}' from {}!".format(path, src_file))
+            if not path:
+                continue
+
+            # Skip engine plugins. They are copied elsewhere.
+            if not path.endswith(".dll"):
+                continue
+
+            if platforms:
+                current_platform = CONFIGURATION_PLATFORM_LOOKUP[config_type]
+                platform_included = current_platform in platforms
+                if not platform_included:
+                    continue
+
+            src_file = os.path.join(project_path, path)
+            dst_file = os.path.join(export_path, path)
+
+            if plugin_type == "EPluginType::Native":
+                # Try to apply the selected engine configuration to the
+                # plugin as well. This prevents mixing release with profile
+                # configurations for example. This does assume plugins
+                # follow the same naming-rules as the engine does,
+                # as defined in DEFAULT_CONFIGURATIONS.
+                adjusted_src_file = os.path.join(
+                    project_path, config_path, os.path.basename(path))
+                if os.path.isfile(adjusted_src_file):
+                    src_file = adjusted_src_file
+
+            if os.path.isfile(src_file):
+                os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+                shutil.copyfile(src_file, dst_file)
+
+                # Copy debug symbols
+                if include_symbols:
+                    src_file = "{}.pdb".format(os.path.splitext(src_file)[0])
+                    if os.path.isfile(src_file):
+                        dst_file = "{}.pdb".format(
+                            os.path.splitext(dst_file)[0])
+                        shutil.copyfile(src_file, dst_file)
+            else:
+                print("Failed to copy plugin file '{}' from {}!".format(
+                    path, src_file))
 
     # Also copy the assembly generated from C# assets
     asset_assembly = os.path.join("bin", "CRYENGINE.CSharp.dll")
@@ -604,25 +780,26 @@ def copy_project_plugins(project, project_path, export_path, config_path, config
             else:
                 src_file = "{}.dll.mdb".format(os.path.splitext(src_file)[0])
                 if os.path.isfile(src_file):
-                    dst_file = "{}.dll.mdb".format(os.path.splitext(dst_file)[0])
+                    dst_file = "{}.dll.mdb".format(
+                        os.path.splitext(dst_file)[0])
                     shutil.copyfile(src_file, dst_file)
 
 
-def copy_libs(project, project_path, export_path, include_symbols):
+def copy_libs(project, project_path, export_path, bin_path, config, include_symbols):
     """
     Searches the bin folder for files that fit the name of the shared libs,
     and copies them to the export directory.
     """
-    libs = cryproject.libs_list(project)
+    libs = project.libs_list()
 
     if not libs:
         return
 
-    bin_dir = os.path.join(project_path, "bin")
-    if not os.path.isdir(bin_dir):
+    src_path = os.path.join(project_path, bin_path)
+    if not os.path.isdir(src_path):
         return
 
-    export_bin = os.path.join(export_path, "bin")
+    dst_path = os.path.join(export_path, bin_path)
 
     exclude = ["*.mdb", "*.xml", "*.ilk"]
     if not include_symbols:
@@ -637,17 +814,14 @@ def copy_libs(project, project_path, export_path, include_symbols):
             continue
 
         any_config = shared.get("any", None)
-        win86 = shared.get("win_x86", None)
-        win64 = shared.get("win_x64", None)
+        specific_config = shared.get(config, None)
+        if specific_config == any_config:
+            specific_config = None
 
         if any_config:
             include = ["{}*".format(any_config)]
-            copy_directory_contents(bin_dir, export_bin, include, exclude)
+            copy_directory_contents(src_path, dst_path, include, exclude)
 
-        if win86:
-            include = ["{}*".format(win86)]
-            copy_directory_contents(os.path.join(bin_dir, "win_x86"), os.path.join(export_bin, "win_x86"), include, exclude)
-
-        if win64:
-            include = ["{}*".format(win64)]
-            copy_directory_contents(os.path.join(bin_dir, "win_x64"), os.path.join(export_bin, "win_x64"), include, exclude)
+        if specific_config:
+            include = ["{}*".format(specific_config)]
+            copy_directory_contents(src_path, dst_path, include, exclude)

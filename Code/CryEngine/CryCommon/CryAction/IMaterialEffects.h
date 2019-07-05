@@ -8,19 +8,20 @@
 #include <CryFlowGraph/IFlowSystem.h> // <> required for Interfuscator
 #include <CryParticleSystem/IParticles.h>
 #include <CryMath/Cry_Color.h>
+#include <CryCore/Containers/CryFixedArray.h>
 
 struct IEntityClass;
 struct ISurfaceType;
 
 //////////////////////////////////////////////////////////////////////////
-enum EMFXPlayFlags
+enum EMFXPlayFlags : uint32
 {
-	eMFXPF_Disable_Delay = BIT(0),
-	eMFXPF_Audio         = BIT(1),
-	eMFXPF_Decal         = BIT(2),
-	eMFXPF_Particles     = BIT(3),
-	eMFXPF_Flowgraph     = BIT(4),
-	eMFXPF_ForceFeedback = BIT(5),
+	eMFXPF_Disable_Delay = BIT32(0),
+	eMFXPF_Audio         = BIT32(1),
+	eMFXPF_Decal         = BIT32(2),
+	eMFXPF_Particles     = BIT32(3),
+	eMFXPF_Flowgraph     = BIT32(4),
+	eMFXPF_ForceFeedback = BIT32(5),
 	eMFXPF_All           = (eMFXPF_Audio | eMFXPF_Decal | eMFXPF_Particles | eMFXPF_Flowgraph | eMFXPF_ForceFeedback),
 };
 
@@ -71,8 +72,7 @@ struct SMFXRunTimeEffectParams
 	static const int MAX_PARTICLE_PARAMS = 4;
 
 	SMFXRunTimeEffectParams()
-		: playSoundFP(false)
-		, playflags(eMFXPF_All)
+		: playflags(eMFXPF_All)
 		, fLastTime(0.0f)
 		, src(0)
 		, trg(0)
@@ -84,6 +84,9 @@ struct SMFXRunTimeEffectParams
 		, pos(ZERO)
 		, decalPos(ZERO)
 		, normal(0.0f, 0.0f, 1.0f)
+		, objectDir(0.0f, 0.0f, 1.0f)
+		, objectVelocityDir(0.0f, 0.0f, 1.0f)
+		, jointDir(0.0f, 0.0f, 1.0f)
 		, angle(MFX_INVALID_ANGLE)
 		, scale(1.0f)
 		, audioProxyEntityId(0)
@@ -131,7 +134,6 @@ struct SMFXRunTimeEffectParams
 	}
 
 public:
-	uint16       playSoundFP; //!< Sets 1p/3p audio switch.
 	uint16       playflags;   //!< See EMFXPlayFlags.
 	float        fLastTime;   //!< Last time this effect was played.
 	float        fDecalPlacementTestMaxSize;
@@ -148,6 +150,9 @@ public:
 	Vec3         decalPos;
 	Vec3         dir[2];
 	Vec3         normal;
+	Vec3         objectDir;
+	Vec3         objectVelocityDir;
+	Vec3         jointDir;
 	float        angle;
 	float        scale;
 
@@ -155,6 +160,7 @@ public:
 	EntityId              audioProxyEntityId; //!< If set, uses this Entity's audio proxy to execute audio triggers. otherwise creates independent sound.
 	CryAudio::AuxObjectId audioProxyId;       //!< If set, uses the specified audio proxy of the entity, otherwise the default proxy id will be used.
 	Vec3                  audioProxyOffset;   //!< In case of audio proxy, uses this offset.
+	std::vector<std::pair<CryAudio::ControlId, CryAudio::SwitchStateId>> audioSwitchStates;
 
 	SMFXAudioEffectRtpc   audioRtpcs[MAX_AUDIO_RTPCS];
 	uint32                numAudioRtpcs;
@@ -165,15 +171,15 @@ public:
 
 struct SMFXBreakageParams
 {
-	enum EBreakageRequestFlags
+	enum EBreakageRequestFlags : uint32
 	{
-		eBRF_Matrix           = BIT(0),
-		eBRF_HitPos           = BIT(1),
-		eBRF_HitImpulse       = BIT(2),
-		eBRF_Velocity         = BIT(3),
-		eBRF_ExplosionImpulse = BIT(4),
-		eBRF_Mass             = BIT(5),
-		eBFR_Entity           = BIT(6),
+		eBRF_Matrix           = BIT32(0),
+		eBRF_HitPos           = BIT32(1),
+		eBRF_HitImpulse       = BIT32(2),
+		eBRF_Velocity         = BIT32(3),
+		eBRF_ExplosionImpulse = BIT32(4),
+		eBRF_Mass             = BIT32(5),
+		eBFR_Entity           = BIT32(6),
 	};
 
 	SMFXBreakageParams() :

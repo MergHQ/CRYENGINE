@@ -1,18 +1,9 @@
-/********************************************************************
-Crytek Source File.
-Copyright (C), Crytek Studios, 2001-2008.
--------------------------------------------------------------------------
-File name:   AIBubblesSystemImpl.h
-Description: Central class to create and display speech bubbles over the
-AI agents to notify messages to the designers
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
--------------------------------------------------------------------------
-History:
-- 09:11:2011 : Created by Francesco Roccucci
-*********************************************************************/
+#pragma once
 
-#ifndef __AIBubblesSystem_h__
-#define __AIBubblesSystem_h__
+// Description: Central class to create and display speech bubbles over the
+// AI agents to notify messages to the designers
 
 #include "AIBubblesSystem.h"
 
@@ -70,7 +61,7 @@ private:
 	private:
 		void UpdateDuration(const float duration)
 		{
-			expiringTime = gEnv->pTimer->GetFrameStartTime() + (duration ? CTimeValue(duration) : CTimeValue(gAIEnv.CVars.BubblesSystemDecayTime));
+			expiringTime = GetAISystem()->GetFrameStartTime() + (duration ? CTimeValue(duration) : CTimeValue(gAIEnv.CVars.legacyBubblesSystem.BubblesSystemDecayTime));
 		}
 
 		uint32           messageNameId;
@@ -116,5 +107,3 @@ private:
 	SBubbleRequestId m_requestIdCounter;
 };
 #endif // CRYAISYSTEM_DEBUG
-
-#endif // __AIBubblesSystem_h__

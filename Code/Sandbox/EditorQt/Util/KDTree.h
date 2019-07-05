@@ -1,20 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-//  Crytek Engine Source File.
-//  (c) 2001 - 2012 Crytek GmbH
-// -------------------------------------------------------------------------
-//  File name:   KDTree.h
-//  Created:     Sep/10/2012 by Jaesik.
-////////////////////////////////////////////////////////////////////////////
+#include <CryMath/Cry_Math.h>
+#include <CryMath/Cry_Geo.h>
+#include <CryCore/smartptr.h>
+#include <vector>
 
 class KDTreeNode;
+struct IStatObj;
 
 class CKDTree
 {
 public:
-
 	CKDTree();
 	~CKDTree();
 
@@ -46,9 +43,6 @@ private:
 	static const int s_MinimumVertexSizeInLeafNode = 4;
 
 private:
-
 	KDTreeNode*           m_pRootNode;
 	std::vector<SStatObj> m_StatObjectList;
-
 };
-

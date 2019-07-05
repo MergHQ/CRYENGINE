@@ -1,28 +1,23 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __aimanager_h__
-#define __aimanager_h__
-
-#if _MSC_VER > 1000
-	#pragma once
-#endif
+#pragma once
 
 #include <IAIManager.h>
 
 #include "Util/Variable.h"
 
-#include <CryAISystem/IAgent.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/NavigationSystem/INavigationUpdatesManager.h>
 #include <EditorFramework/Preferences.h>
 #include <CrySerialization/yasli/decorators/Range.h>
 #include "IEditor.h"
 
-enum class ENavigationUpdateType
+enum class ENavigationUpdateMode
 {
 	Continuous,
 	AfterStabilization,
 	Disabled,
+	Count,
 };
 
 // forward declarations.
@@ -78,7 +73,7 @@ public:
 class CSOTemplate
 {
 public:
-	CSOTemplate() : params(0) {}
+	CSOTemplate() : params(0), id(0) {}
 	~CSOTemplate() { if (params) delete params; }
 
 	int           id;          // id used in the rules to reference this template
@@ -99,7 +94,7 @@ struct SAINavigationPreferences : public SPreferencePage
 		: SPreferencePage("Navigation", "AI/Navigation")
 		, m_navigationDebugAgentType(0)
 		, m_navigationShowAreas(true)
-		, m_navigationUpdateType(ENavigationUpdateType::AfterStabilization)
+		, m_navigationUpdateType(ENavigationUpdateMode::AfterStabilization)
 		, m_navigationDebugDisplay(false)
 		, m_visualizeNavigationAccessibility(false)
 		, m_navigationRegenDisabledOnLevelLoad(true)
@@ -111,7 +106,7 @@ struct SAINavigationPreferences : public SPreferencePage
 	{
 		INavigationSystem* pNavigationSystem = gEnv->pAISystem->GetNavigationSystem();
 
-		IF_UNLIKELY(pNavigationSystem == nullptr)
+		IF_UNLIKELY (pNavigationSystem == nullptr)
 		{
 			return false;
 		}
@@ -122,7 +117,7 @@ struct SAINavigationPreferences : public SPreferencePage
 		for (int agentIndex = 0; agentIndex < agentTypeCount; ++agentIndex)
 		{
 			const NavigationAgentTypeID currentAgentID = pNavigationSystem->GetAgentTypeID(agentIndex);
-			const char *szCurrentAgentName = pNavigationSystem->GetAgentTypeName(currentAgentID);
+			const char* szCurrentAgentName = pNavigationSystem->GetAgentTypeName(currentAgentID);
 			agentTypeList.push_back(szCurrentAgentName);
 		}
 
@@ -134,7 +129,7 @@ struct SAINavigationPreferences : public SPreferencePage
 		ar(m_navigationRegenDisabledOnLevelLoad, "navigationRegenDisabledOnLevelLoad", "Disable Navigation Regeneration on Level Load");
 		ar(m_initialNavigationAreaHeightOffset, "initNavAreaHeightOffset", "Initial Navigation Area Height Offset");
 		ar.doc("Initial navigation area height offset from the terrain when the area is created.");
-		
+
 		if (agentTypeCount > 0)
 		{
 			Serialization::StringListValue agentTypeValue(agentTypeList, m_navigationDebugAgentType);
@@ -157,7 +152,7 @@ struct SAINavigationPreferences : public SPreferencePage
 
 	ADD_PREFERENCE_PAGE_PROPERTY(int, navigationDebugAgentType, setNavigationDebugAgentType)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, navigationShowAreas, setNavigationShowAreas)
-	ADD_PREFERENCE_PAGE_PROPERTY(ENavigationUpdateType, navigationUpdateType, setNavigationUpdateType)
+	ADD_PREFERENCE_PAGE_PROPERTY(ENavigationUpdateMode, navigationUpdateType, setNavigationUpdateType)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, navigationRegenDisabledOnLevelLoad, setNavigationRegenDisabledOnLevelLoad)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, navigationDebugDisplay, setNavigationDebugDisplay)
 	ADD_PREFERENCE_PAGE_PROPERTY(bool, visualizeNavigationAccessibility, setVisualizeNavigationAccessibility)
@@ -189,7 +184,7 @@ public:
 	~CAIManager() override;
 	void Init(ISystem* system);
 
-	void Update(uint32 updateFlags);
+	void Update(const CTimeValue frameStartTime, const float frameDeltaTime, uint32 updateFlags);
 
 	// IAutoEditorNotifyListener
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event);
@@ -199,19 +194,13 @@ public:
 	virtual void                OnAreaModified(const AABB& aabb, const CBaseObject* modifiedByObject = nullptr) override;
 	virtual bool                IsReadyToGameExport(unsigned int& adjustedExportFlags) const override;
 
-	virtual bool                NewAction(string& filename) override;
 	virtual const MapTemplates& GetMapTemplates() const override { return m_mapTemplates; }
-	virtual void                GetSmartObjectActions(std::vector<string>& values) const override;
+	virtual bool                NewAction(string& filename) override;
 	// !IAIManager
 
 	IAISystem*            GetAISystem();
-	CAIBehaviorLibrary*   GetBehaviorLibrary()     { return m_pBehaviorLibrary; };
-	CCoverSurfaceManager* GetCoverSurfaceManager() { return m_coverSurfaceManager.get(); };
-
-	//////////////////////////////////////////////////////////////////////////
-	//! Smart Objects States and Actions enumeration
-	void GetSmartObjectStates(std::vector<string>& values) const;
-	void AddSmartObjectState(const char* sState);
+	CAIBehaviorLibrary*   GetBehaviorLibrary()     { return m_pBehaviorLibrary; }
+	CCoverSurfaceManager* GetCoverSurfaceManager() { return m_coverSurfaceManager.get(); }
 
 	//////////////////////////////////////////////////////////////////////////
 	//! AI Anchor Actions enumeration.
@@ -258,10 +247,11 @@ public:
 	void                              LateUpdate();
 	void                              EarlyUpdate();
 
-	void                              SetNavigationUpdateType(ENavigationUpdateType updateType);
+	void                              SetNavigationUpdateType(ENavigationUpdateMode updateType);
 	void                              OnNavigationUpdateChanged();
 
 	void                              RegenerateNavigationByTypeName(const char* szType);
+	void                              RegenerateNavigationIgnoredChanges();
 
 private:
 	void               OnHideMaskChanged();
@@ -275,7 +265,7 @@ private:
 	bool               ReloadTemplates();
 	CSOParamBase*      LoadTemplateParams(XmlNodeRef root) const;
 
-	void               OnNavigationMeshChanged(NavigationAgentTypeID agentTypeId, NavigationMeshID navigationMeshId, uint32 i);
+	void               OnNavigationMeshChanged(NavigationAgentTypeID agentTypeId, NavigationMeshID navigationMeshId, MNM::TileID i);
 
 	void               StartNavigationWorldMonitor();
 	void               StopNavigationWorldMonitor();
@@ -285,18 +275,16 @@ private:
 	void               SetNavigationWorldMonitorState(const ENavigationWorldMonitorState newState);
 	static const char* GetNavigationWorldMonitorStateName(const ENavigationWorldMonitorState state);
 
-	void               PauseMNMRegeneration();
-	void               ResumeMNMRegeneration(bool updateChangedVolumes = true);
+	void               PauseNavigationRegeneration();
+	void               ResumeNavigationRegeneration();
 
-	// Resume navigation regeneration updating but without updating the changes that were made to NavMesh areas, when the navigation generation was disabled.
-	void               ResumeMNMRegenerationWithoutUpdatingPengingNavMeshChanges();
+	MapTemplates                          m_mapTemplates;
 
-	MapTemplates                        m_mapTemplates;
 
-	CAIBehaviorLibrary*                 m_pBehaviorLibrary;
-	IAISystem*                          m_pAISystem;
+	CAIBehaviorLibrary*                   m_pBehaviorLibrary;
+	IAISystem*                            m_pAISystem;
 
-	std::auto_ptr<CCoverSurfaceManager> m_coverSurfaceManager;
+	std::unique_ptr<CCoverSurfaceManager> m_coverSurfaceManager;
 
 	//! AI Anchor Actions.
 	friend struct CAIAnchorDump;
@@ -306,14 +294,21 @@ private:
 	typedef std::map<string, AgentPathfindingProperties> PFPropertiesMap;
 	PFPropertiesMap              m_mapPFProperties;
 
-	ENavigationUpdateType        m_currentUpdateType;
+	// NavMesh update mode used in the editor that can be changed by user from Sandbox menu
+	ENavigationUpdateMode        m_NavigationEditorUpdateMode;
+
+	// NavMesh update mode used in the engine
+	INavigationUpdatesManager::EUpdateMode m_NavigationUpdateMode;
+
 	ENavigationWorldMonitorState m_navigationWorldMonitorState;
-	int                          m_MNMRegenerationPausedCount;
-	bool                         m_pendingNavigationCalculateAccessibility;
-	bool                         m_refreshMnmOnGameExit;
-	bool                         m_resumeMNMRegenWhenPumpedPhysicsEventsAreFinished;
+	int                          m_navigationRegenerationPausedCount;
+	bool                         m_refreshNavigationOnGameExit;
+	bool                         m_resumeNavigationRegenWhenPumpedPhysicsEventsAreFinished;
 
 	bool                         m_navigationUpdatePaused;
+
+	CTimeValue                   m_frameStartTime;
+	float                        m_frameDeltaTime;
 
 	struct SNavigationUpdateProgress
 	{
@@ -333,6 +328,3 @@ private:
 };
 
 extern SAINavigationPreferences gAINavigationPreferences;
-
-#endif // __aimanager_h__
-

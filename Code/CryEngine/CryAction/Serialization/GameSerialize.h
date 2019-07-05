@@ -101,12 +101,7 @@ public:
 	// ~IEntitySystemSink
 
 	// ILevelSystemListener
-	virtual void OnLevelNotFound(const char* levelName)                    {}
-	virtual void OnLoadingStart(ILevelInfo* pLevel);
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel)           {};
-	virtual void OnLoadingComplete(ILevelInfo* pLevel)                     {}
-	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error)     {}
-	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) {}
+	virtual bool OnLoadingStart(ILevelInfo* pLevel);
 	virtual void OnUnloadComplete(ILevelInfo* pLevel);
 	// ~ILevelSystemListener
 
@@ -144,9 +139,8 @@ private:
 	std::map<string, SaveGameFactory> m_saveGameFactories;
 	std::map<string, LoadGameFactory> m_loadGameFactories;
 
-	typedef std::vector<EntityId> TEntityVector;
 	typedef std::set<EntityId>    TEntitySet;
-	TEntityVector m_serializeEntities;
+	std::vector<CryGUID> m_serializedEntityGUIDs;
 	TEntitySet    m_dynamicEntities;
 };
 

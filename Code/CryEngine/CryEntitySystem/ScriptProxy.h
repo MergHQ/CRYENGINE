@@ -30,14 +30,9 @@ public:
 	// IEntityComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void   ProcessEvent(const SEntityEvent& event) final;
-	virtual uint64 GetEventMask() const final; // Need all events except pre-physics update
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityComponent implementation.
-	//////////////////////////////////////////////////////////////////////////
+	virtual Cry::Entity::EventFlags GetEventMask() const final; // Need all events except pre-physics update
 	virtual EEntityProxy GetProxyType() const final { return ENTITY_PROXY_SCRIPT; }
-	virtual void         Release()  final           { delete this; };
+	virtual void         Release()  final           { delete this; }
 	virtual void         LegacySerializeXML(XmlNodeRef& entityNode, XmlNodeRef& componentNode, bool bLoading) override final;
 	virtual void         GameSerialize(TSerialize ser) final;
 	virtual bool         NeedGameSerialize() final;
@@ -46,8 +41,8 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityScriptComponent implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void          SetScriptUpdateRate(float fUpdateEveryNSeconds) final { m_fScriptUpdateRate = fUpdateEveryNSeconds; };
-	virtual IScriptTable* GetScriptTable() final                                { return m_pThis; };
+	virtual void          SetScriptUpdateRate(float fUpdateEveryNSeconds) final { m_fScriptUpdateRate = fUpdateEveryNSeconds; }
+	virtual IScriptTable* GetScriptTable() final                                { return m_pThis; }
 
 	virtual void          CallEvent(const char* sEvent) final;
 	virtual void          CallEvent(const char* sEvent, float fValue) final;
@@ -73,7 +68,7 @@ public:
 	// State Management public interface.
 	//////////////////////////////////////////////////////////////////////////
 	virtual bool        GotoState(const char* sStateName) final;
-	virtual bool        GotoStateId(int nState) final { return GotoState(nState); };
+	virtual bool        GotoStateId(int nState) final { return GotoState(nState); }
 	bool                GotoState(int nState);
 	virtual bool        IsInState(const char* sStateName) final;
 	bool                IsInState(int nState);

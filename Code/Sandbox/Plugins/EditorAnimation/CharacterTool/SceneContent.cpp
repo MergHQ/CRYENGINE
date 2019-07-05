@@ -230,4 +230,3 @@ MotionParameters& SceneContent::GetMotionParameters()
 }
 
 }
-

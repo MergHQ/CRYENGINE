@@ -2,11 +2,13 @@
 
 #include "StdAfx.h"
 #include "CameraObject.h"
+#include "IEditorImpl.h"
 #include "Viewport.h"
 #include "Controls/DynamicPopupMenu.h"
 #include "RenderViewport.h"
 #include "ViewManager.h"
 #include "Objects/InspectorWidgetCreator.h"
+#include <IObjectManager.h>
 
 REGISTER_CLASS_DESC(CCameraObjectClassDesc);
 REGISTER_CLASS_DESC(CCameraObjectTargetClassDesc);
@@ -17,7 +19,8 @@ REGISTER_CLASS_DESC(CCameraObjectTargetClassDesc);
 IMPLEMENT_DYNCREATE(CCameraObject, CEntityObject)
 IMPLEMENT_DYNCREATE(CCameraObjectTarget, CEntityObject)
 
-#define CAMERA_COLOR       RGB(0, 255, 255)
+const ColorB g_cameraColor(0, 255, 255);
+
 #define CAMERA_CONE_LENGTH 4
 #define CAMERABOX_RADIUS   0.7f
 #define MIN_FOV_IN_DEG     0.1f
@@ -56,14 +59,14 @@ CCameraObject::CCameraObject() : m_listeners(1)
 	mv_cameraShakeSeed = 0;
 	mv_omniCamera = 0;
 
-	SetColor(CAMERA_COLOR);
+	SetColor(g_cameraColor);
 	UseMaterialLayersMask(false);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CCameraObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	CViewManager* pManager = GetIEditorImpl()->GetViewManager();
 	if (pManager && pManager->GetCameraObjectId() == GetId())
 	{
@@ -188,7 +191,7 @@ int CCameraObject::MouseCreateCallback(IDisplayViewport* view, EMouseEvent event
 {
 	if (event == eMouseMove || event == eMouseLDown || event == eMouseLUp)
 	{
-		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, 0, true, GetCreationOffsetFromTerrain());
+		Vec3 pos = ((CViewport*)view)->MapViewToCP(point, CLevelEditorSharedState::Axis::None, true, GetCreationOffsetFromTerrain());
 
 		if (m_creationStep == 1)
 		{
@@ -263,7 +266,6 @@ Vec3 CCameraObject::GetLookAtEntityPos() const
 //////////////////////////////////////////////////////////////////////////
 void CCameraObject::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	Matrix34 wtm = GetWorldTM();
 
 	if (m_pEntity)
@@ -276,6 +278,8 @@ void CCameraObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	//float fScale = dc.view->GetScreenScaleFactor(wp) * 0.03f;
 	float fScale = GetHelperScale();
+
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 
 	if (IsHighlighted() && !IsFrozen())
 		dc.SetLineWidth(3);
@@ -432,7 +436,7 @@ void CCameraObject::GetConePoints(Vec3 q[4], float dist, const float fAspectRati
 	q[3] = Vec3(w, dist, -h);
 }
 
-void CCameraObject::DrawCone(DisplayContext& dc, float dist, float fScale)
+void CCameraObject::DrawCone(SDisplayContext& dc, float dist, float fScale)
 {
 	Vec3 q[4];
 	GetConePoints(q, dist, dc.view->GetAspectRatio());
@@ -583,7 +587,7 @@ void CCameraObject::OnCameraShakeSeedChange(IVariable* var)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraObject::OnOmniCameraChange(IVariable *var)
+void CCameraObject::OnOmniCameraChange(IVariable* var)
 {
 	for (CListenerSet<ICameraObjectListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 	{
@@ -646,28 +650,25 @@ void CCameraObject::SetFrequencyBMult(const float frequencyBMult)
 //////////////////////////////////////////////////////////////////////////
 CCameraObjectTarget::CCameraObjectTarget()
 {
-	SetColor(CAMERA_COLOR);
+	SetColor(g_cameraColor);
 	UseMaterialLayersMask(false);
 }
 
 bool CCameraObjectTarget::Init(CBaseObject* prev, const string& file)
 {
-	SetColor(CAMERA_COLOR);
+	SetColor(g_cameraColor);
 	bool res = CEntityObject::Init(prev, file);
 	m_entityClass = "CameraTarget";
 	return res;
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCameraObjectTarget::InitVariables()
 {
-
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CCameraObjectTarget::Display(CObjectRenderHelper& objRenderHelper)
 {
-	DisplayContext& dc = objRenderHelper.GetDisplayContextRef();
+	SDisplayContext& dc = objRenderHelper.GetDisplayContextRef();
 	Vec3 wp = GetWorldPos();
 
 	//float fScale = dc.view->GetScreenScaleFactor(wp) * 0.03f;
@@ -686,7 +687,6 @@ void CCameraObjectTarget::Display(CObjectRenderHelper& objRenderHelper)
 	DrawDefault(dc);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool CCameraObjectTarget::HitTest(HitContext& hc)
 {
 	Vec3 origin = GetWorldPos();
@@ -720,4 +720,3 @@ void CCameraObjectTarget::Serialize(CObjectArchive& ar)
 {
 	CEntityObject::Serialize(ar);
 }
-

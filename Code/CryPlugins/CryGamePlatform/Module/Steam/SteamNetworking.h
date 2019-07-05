@@ -1,6 +1,9 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
 
 #include "IPlatformNetworking.h"
+#include "SteamTypes.h"
 
 namespace Cry
 {
@@ -16,11 +19,11 @@ namespace Cry
 				virtual ~CNetworking() = default;
 
 				// INetworking
-				virtual bool SendPacket(IUser::Identifier remoteUser, void* pData, uint32 dataLength);
-				virtual bool CloseSession(IUser::Identifier remoteUser);
+				virtual bool SendPacket(const AccountIdentifier& remoteUser, void* pData, uint32 dataLength);
+				virtual bool CloseSession(const AccountIdentifier& remoteUser);
 
 				virtual bool IsPacketAvailable(uint32* pPacketSizeOut) const;
-				virtual bool ReadPacket(void* pDest, uint32 destLength, uint32* pMessageSizeOut, IUser::Identifier* pRemoteIdOut);
+				virtual bool ReadPacket(void* pDest, uint32 destLength, uint32* pMessageSizeOut, AccountIdentifier* pRemoteIdOut);
 				// ~INetworking
 
 				ISteamNetworking* GetSteamNetworking() const;

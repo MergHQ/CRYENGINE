@@ -1,13 +1,15 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "Geometry/EdMesh.h"
 #include "SplineDistributor.h"
+#include "IEditorImpl.h"
+#include "Geometry/EdMesh.h"
 #include "Viewport.h"
 #include <Preferences/ViewportPreferences.h>
 #include "Material/Material.h"
 #include "Util/MFCUtil.h"
 #include "Objects/InspectorWidgetCreator.h"
+#include <Cry3DEngine/I3DEngine.h>
 
 //////////////////////////////////////////////////////////////////////////
 IMPLEMENT_DYNCREATE(CSplineDistributor, CSplineObject)
@@ -33,7 +35,7 @@ CSplineDistributor::CSplineDistributor() :
 	mv_integrQuality = 0;
 	mv_Occluder = false;
 
-	SetColor(CMFCUtils::Vec2Rgb(Vec3(0.4f, 0.5f, 0.4f)));
+	SetColor(ColorB(102, 128, 102));
 
 	if (m_pVarObject == nullptr)
 	{
@@ -95,7 +97,7 @@ void CSplineDistributor::CreateInspectorWidgets(CInspectorWidgetCreator& creator
 //////////////////////////////////////////////////////////////////////////
 void CSplineDistributor::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	FreeGameData();
 	__super::Done();
 }
@@ -215,7 +217,6 @@ void CSplineDistributor::UpdateEngineNode(bool bOnlyTransform)
 	if (m_renderNodes.empty() || GetPointCount() == 0)
 		return;
 
-	float length = GetSplineLength();
 	int numObjects = m_renderNodes.size();
 
 	for (int i = 0; i < numObjects; ++i)
@@ -349,11 +350,10 @@ void CSplineDistributor::SetLayerId(uint16 nLayerId)
 class CSplineDistributorClassDesc : public CObjectClassDesc
 {
 public:
-	ObjectType     GetObjectType()     { return OBJTYPE_SHAPE; }
-	const char*    ClassName()         { return "SplineDistributor"; }
-	const char*    Category()          { return "Misc"; }
-	CRuntimeClass* GetRuntimeClass()   { return RUNTIME_CLASS(CSplineDistributor); }
+	ObjectType     GetObjectType()   { return OBJTYPE_SHAPE; }
+	const char*    ClassName()       { return "SplineDistributor"; }
+	const char*    Category()        { return "Misc"; }
+	CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CSplineDistributor); }
 };
 
 REGISTER_CLASS_DESC(CSplineDistributorClassDesc);
-

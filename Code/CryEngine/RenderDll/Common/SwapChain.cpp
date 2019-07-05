@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include "SwapChain.h"
@@ -7,7 +7,6 @@ void CSwapChain::ReadSwapChainSurfaceDesc()
 {
 	CRY_ASSERT(m_pSwapChain);
 
-	HRESULT hr = S_OK;
 	ZeroMemory(&m_surfaceDesc, sizeof(DXGI_SURFACE_DESC));
 
 	//////////////////////////////////////////////////////////////////////////
@@ -19,7 +18,7 @@ void CSwapChain::ReadSwapChainSurfaceDesc()
 	m_surfaceDesc.Format = desc.format;
 	m_surfaceDesc.SampleDesc.Count = 1;
 	m_surfaceDesc.SampleDesc.Quality = 0;
-	hr = m_pSwapChain->GnmIsValid() ? S_OK : E_FAIL;
+	CRY_VERIFY(m_pSwapChain->GnmIsValid());
 #else
 	DXGI_SWAP_CHAIN_DESC backBufferSurfaceDesc = GetDesc();
 
@@ -34,12 +33,16 @@ void CSwapChain::ReadSwapChainSurfaceDesc()
 	m_surfaceDesc.SampleDesc.Quality = 0;
 #endif
 #endif
-	//////////////////////////////////////////////////////////////////////////
-	CRY_ASSERT(!FAILED(hr));
 }
 
 DXGI_FORMAT CSwapChain::GetSwapChainFormat()
 {
+	//	TODO: Activate once sRGB encoding is gone from the shader
+	//	m_devInfo.SwapChainDesc().BufferDesc.Format =
+	//		((nNewColDepth / 4) <=  8 ? DXGI_FORMAT_R8G8B8A8_UNORM :
+	//		((nNewColDepth / 4) <= 10 ? DXGI_FORMAT_R10G10B10A2_UNORM :
+	//		                            DXGI_FORMAT_R16G16B16A16_FLOAT));
+
 #if CRY_PLATFORM_DURANGO
 	DXGI_FORMAT fmt = DXGI_FORMAT_R8G8B8A8_UNORM;
 #elif CRY_RENDERER_GNM
@@ -70,7 +73,7 @@ DXGI_FORMAT CSwapChain::GetSwapChainFormat()
 }
 
 #if !CRY_PLATFORM_DURANGO && !CRY_RENDERER_GNM
-CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync)
+CSwapChain CSwapChain::CreateSwapChain(CRY_HWND hWnd, DXGIOutput* pOutput, uint32_t width, uint32_t height, bool isMainContext, bool isFullscreen, bool vsync)
 {
 	IDXGISwapChain* piSwapChain = nullptr;
 	DXGI_SWAP_CHAIN_DESC scDesc;
@@ -88,7 +91,7 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 
 	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_SHADER_INPUT;
 	scDesc.BufferCount = CRenderer::CV_r_MaxFrameLatency + 1;
-	scDesc.OutputWindow = hWnd;
+	scDesc.OutputWindow = (HWND)hWnd;
 
 	// Always create a swapchain for windowed mode as per Microsoft recommendations here: https://msdn.microsoft.com/en-us/library/windows/desktop/bb174579(v=vs.85).aspx
 	// Specifically: "We recommend that you create a windowed swap chain and allow the end user to change the swap chain to full screen through SetFullscreenState; that is, do not set the Windowed member of DXGI_SWAP_CHAIN_DESC to FALSE to force the swap chain to be full screen."
@@ -125,8 +128,6 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 
 #if defined(SUPPORT_DEVICE_INFO)
 	HRESULT hr = gcpRendD3D.DevInfo().Factory()->CreateSwapChain(gcpRendD3D.DevInfo().Device(), &scDesc, &piSwapChain);
-#elif CRY_PLATFORM_ORBIS
-	HRESULT hr = CCryDXOrbisGIFactory().CreateSwapChain(gcpRendD3D.GetDevice().GetRealDevice(), &scDesc, &piSwapChain);
 #else
 #error UNKNOWN PLATFORM TRYING TO CREATE SWAP CHAIN
 #endif
@@ -141,12 +142,16 @@ CSwapChain CSwapChain::CreateSwapChain(HWND hWnd, DXGIOutput* pOutput, uint32_t 
 	_smart_ptr<DXGISwapChain> pSmartSwapChain;
 	pSmartSwapChain.Assign_NoAddRef(pSwapChainRawPtr);
 
-	CSwapChain sc = { std::move(pSmartSwapChain) };
-#if defined(SUPPORT_DEVICE_INFO)
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	if (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
+		pSmartSwapChain->SetMaximumFrameLatency(CRendererCVars::CV_r_MaxFrameLatency);
+#endif
+
+	CSwapChain sc = { std::move(pSmartSwapChain), pOutput };
+
 	auto refreshRate = isFullscreen ? scDesc.BufferDesc.RefreshRate : desktopRefreshRate;
 	sc.m_refreshRateNumerator = refreshRate.Numerator;
 	sc.m_refreshRateDenominator = refreshRate.Denominator;
-#endif
 
 	return sc;
 }
@@ -175,7 +180,7 @@ CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11
 
 	DXGISwapChain* pSwapChain = nullptr;
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("Xbox -- CRenderDisplayContext::CreateSwapChain: CreateSwapChainForCoreWindow()");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Xbox -- CRenderDisplayContext::CreateSwapChain: CreateSwapChainForCoreWindow()");
 #if (CRY_RENDERER_DIRECT3D >= 120)
 		IDXGISwapChain1ToCall* pDXGISwapChain = nullptr;
 		HRESULT hr = pDXGIFactory->CreateSwapChainForCoreWindow(pD3D12Device, (IUnknown*)gEnv->pWindow, &swapChainDesc, nullptr, &pDXGISwapChain);
@@ -185,10 +190,15 @@ CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11
 		HRESULT hr = pDXGIFactory->CreateSwapChainForCoreWindow(pD3D11Device, (IUnknown*)gEnv->pWindow, &swapChainDesc, nullptr, &pSwapChain);
 #endif
 
-		CRY_ASSERT(SUCCEEDED(hr) && pSwapChain != nullptr);
+		CRY_VERIFY(SUCCEEDED(hr) && pSwapChain != nullptr);
 	}
 
-	return CSwapChain{ pSwapChain };
+	CSwapChain sc = { pSwapChain, nullptr };
+
+	sc.m_refreshRateNumerator = 60;
+	sc.m_refreshRateDenominator = 1;
+
+	return sc;
 }
 #endif
 
@@ -204,18 +214,9 @@ CSwapChain CSwapChain::CreateSwapChain(uint32_t width, uint32_t height)
 
 	DXGISwapChain* pSwapChain = nullptr;
 	HRESULT hr = GnmCreateSwapChain(desc, &pSwapChain) ? S_OK : E_FAIL;
-	CRY_ASSERT(SUCCEEDED(hr) && pSwapChain != nullptr);
+	CRY_VERIFY(SUCCEEDED(hr) && pSwapChain != nullptr);
 
-	CSwapChain sc = { pSwapChain };
-#if defined(SUPPORT_DEVICE_INFO)
-	DXGI_SWAP_CHAIN_DESC scDesc;
-	pSwapChain->GetDesc(&scDesc);
-
-	sc.m_refreshRateNumerator = scDesc.BufferDesc.RefreshRate.Numerator;
-	sc.m_refreshRateDenominator = scDesc.BufferDesc.RefreshRate.Denominator;
-#endif
-
-	return sc;
+	return CSwapChain{ pSwapChain, nullptr };
 }
 #endif
 
@@ -234,6 +235,7 @@ inline const char* GetScanlineOrderNaming(DXGI_MODE_SCANLINE_ORDER v)
 		return "unspecified";
 	}
 }
+
 void CSwapChain::UserOverrideDisplayProperties(DXGI_MODE_DESC& desc)
 {
 	if (gcpRendD3D->IsFullscreen())
@@ -271,7 +273,7 @@ void CSwapChain::UserOverrideDisplayProperties(DXGI_MODE_DESC& desc)
 }
 #endif
 
-void CSwapChain::ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t height, bool isMainContext, bool bResizeTarget /*= false*/)
+void CSwapChain::ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t height, bool isFullscreen, bool isMainContext, bool bResizeTarget /*= false*/)
 {
 #if !CRY_PLATFORM_DURANGO && !CRY_RENDERER_GNM
 	// Wait for GPU to finish occupying the resources
@@ -280,7 +282,6 @@ void CSwapChain::ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t heig
 	m_surfaceDesc.Width = width;
 	m_surfaceDesc.Height = height;
 
-#if (CRY_RENDERER_DIRECT3D >= 110) || (CRY_RENDERER_VULKAN >= 10)
 	DXGI_SWAP_CHAIN_DESC scDesc = GetDesc();
 
 	scDesc.BufferCount = buffers;
@@ -292,30 +293,33 @@ void CSwapChain::ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t heig
 		UserOverrideDisplayProperties(scDesc.BufferDesc);
 #endif
 
-	//	TODO: Activate once sRGB encoding is gone from the shader
-	//	m_devInfo.SwapChainDesc().BufferDesc.Format =
-	//		((nNewColDepth / 4) <=  8 ? DXGI_FORMAT_R8G8B8A8_UNORM :
-	//		((nNewColDepth / 4) <= 10 ? DXGI_FORMAT_R10G10B10A2_UNORM :
-	//		                            DXGI_FORMAT_R16G16B16A16_FLOAT));
-
 	// Resize the hWnd's dimensions associated with the SwapChain (triggers EVENT)
 	if (bResizeTarget)
 	{
 		HRESULT hr = m_pSwapChain->ResizeTarget(&scDesc.BufferDesc);
-		CRY_ASSERT(SUCCEEDED(hr));
+		CRY_VERIFY(SUCCEEDED(hr));
 	}
 
-	// Resize the Resources associated with the SwapChain
+	{
+#if (CRY_RENDERER_DIRECT3D >= 120)
+		CRY_ASSERT(!isFullscreen || (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) == 0, "Fullscreen does not work with Waitable SwapChain");
+#endif
+
+		m_pSwapChain->SetFullscreenState(isFullscreen, NULL);
+	}
+
+	// Resize the Resources associated with the SwapChain (needed after going fullscreen):
+	// The application has not called ResizeBuffers or re-created the SwapChain after a fullscreen or windowed transition.
+	// Flip model swapchains (DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL and DXGI_SWAP_EFFECT_FLIP_DISCARD) are required to do so.
 	{
 		HRESULT hr = m_pSwapChain->ResizeBuffers(scDesc.BufferCount, scDesc.BufferDesc.Width, scDesc.BufferDesc.Height, DXGI_FORMAT_UNKNOWN, scDesc.Flags);
-		CRY_ASSERT(SUCCEEDED(hr));
+		CRY_VERIFY(SUCCEEDED(hr));
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
 		if (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT)
 			m_pSwapChain->SetMaximumFrameLatency(CRendererCVars::CV_r_MaxFrameLatency);
 #endif
 	}
-#endif
 
 	ReadSwapChainSurfaceDesc();
 #endif

@@ -42,16 +42,20 @@ namespace UQS
 			virtual SDebugCameraView           GetIdealDebugCameraView(EHistoryOrigin whichHistory, const CQueryID& queryID, const SDebugCameraView& currentCameraView) const override;
 			// ~IQueryHistoryManager
 
-			HistoricQuerySharedPtr             AddNewLiveHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID);
+			HistoricQuerySharedPtr             AddNewLiveHistoricQuery(const CQueryID& queryID, const char* szQuerierName, const CQueryID& parentQueryID, int priority);
 			void                               UnderlyingQueryJustGotCreated(const CQueryID& queryID);
 			void                               UnderlyingQueryIsGettingDestroyed(const CQueryID& queryID);
 
 			void                               AutomaticUpdateDebugRendering3DBegin();
 			void                               AutomaticUpdateDebugRendering3DEnd();
 
+			void                               SerializeLiveQueryHistoryAsync(const char* szXmlFilePath);
+			void                               PrintStatisticsOfLiveAndDeserializedHistoryToConsole() const;
+
 		private:
 			                                   UQS_NON_COPYABLE(CQueryHistoryManager);
 
+			void                               AddSomeMetaDataToLiveHistory();
 			void                               NotifyListeners(IQueryHistoryListener::EEventType eventType) const;
 			void                               NotifyListeners(IQueryHistoryListener::EEventType eventType, const CQueryID& relatedQueryID) const;
 

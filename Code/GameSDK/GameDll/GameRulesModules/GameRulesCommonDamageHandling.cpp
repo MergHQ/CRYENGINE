@@ -16,6 +16,7 @@
 #include "GameRulesCommonDamageHandling.h"
 #include <CrySystem/XML/IXml.h>
 #include "GameRules.h"
+#include "GameCVars.h"
 #include "Actor.h"
 #include "Player.h"
 #include "PersistantDebug.h"
@@ -470,6 +471,7 @@ float CGameRulesCommonDamageHandling::GetVehicleForeignCollisionMultiplier( cons
 //------------------------------------------------------------------------
 void CGameRulesCommonDamageHandling::LogHit(const HitInfo& hit, bool extended, bool dead)
 {
+#if !defined(EXCLUDE_NORMAL_LOG)
 	const IEntity* shooter = gEnv->pEntitySystem->GetEntity(hit.shooterId);
 	const IEntity* target = gEnv->pEntitySystem->GetEntity(hit.targetId);
 	const IEntity* weapon = gEnv->pEntitySystem->GetEntity(hit.weaponId);
@@ -495,6 +497,7 @@ void CGameRulesCommonDamageHandling::LogHit(const HitInfo& hit, bool extended, b
 		else
 			CryLog("  health.....: N/A");
 	}
+#endif
 }
 
 #ifndef _RELEASE

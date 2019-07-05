@@ -6,6 +6,9 @@
 #include <CrySchematyc/ResourceTypes.h>
 #include <CrySchematyc/MathTypes.h>
 #include <CrySchematyc/Env/IEnvRegistrar.h>
+#include <CryPhysics/physinterface.h>
+
+struct EventPhysPostStep;
 
 namespace Cry
 {
@@ -16,26 +19,40 @@ namespace Cry
 		protected:
 			// IEntityComponent
 
-			virtual void Initialize() final { Physicalize(); }
+			virtual void Initialize() { Physicalize(); }
 
-			virtual void ProcessEvent(const SEntityEvent& event) final
+			virtual void ProcessEvent(const SEntityEvent& event)
 			{
-				if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+				switch (event.event)
 				{
-					m_pEntity->UpdateComponentEventMask(this);
+					case ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED: m_pEntity->UpdateComponentEventMask(this); break;
+					case ENTITY_EVENT_PHYS_POSTSTEP: OnPostStep(event.fParam[0]); break;
 				}
 			}
 
-			virtual uint64 GetEventMask() const final	{	return ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED); }
+			virtual Cry::Entity::EventFlags GetEventMask() const	{	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_PHYS_POSTSTEP; }
 
 			// ~IEntityComponent
 
 		public:
-			CSampleActorComponent();
+			CSampleActorComponent() {}
 			virtual ~CSampleActorComponent();
 
 			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
-			static void ReflectType(Schematyc::CTypeDesc<CSampleActorComponent>& desc);
+			static void ReflectType(Schematyc::CTypeDesc<CSampleActorComponent>& desc)
+			{
+				desc.SetGUID(CSampleActorComponent::IID());
+				desc.SetEditorCategory("Physics");
+				desc.SetLabel("Sample Rigidbody Actor");
+				desc.SetDescription("Very basic sample support for the new actor (walking rigid) entity in physics");
+				//desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+
+				desc.AddMember(&CSampleActorComponent::m_friction, 'fric', "Friction", "Friction", "Ground friction when standing still", 1.0f);
+				desc.AddMember(&CSampleActorComponent::m_minMass, 'gmas', "MinGroundMass", "MinGroundMass", "Only check ground colliders with this or higher masses", 1.0f);
+				desc.AddMember(&CSampleActorComponent::m_legStiffness, 'stif', "LegStiffness", "LegStiffness", "Leg stiffness", 10.0f);
+			}
+
 
 			static CryGUID& IID()
 			{
@@ -53,10 +70,10 @@ namespace Cry
 				OnInput();
 			}
 
-			void Physicalize();
-			void SetupLegs(bool immediately = false);
-			void OnInput();
-			int  OnPostStep(const EventPhysPostStep *epps);
+			virtual void Physicalize();
+			virtual void SetupLegs(bool immediately = false);
+			virtual void OnInput();
+			virtual int  OnPostStep(float deltaTime);
 
 			float m_friction     = 1.0f;
 			float m_minMass      = 1.0f;
@@ -66,8 +83,6 @@ namespace Cry
 			Vec3  m_velMove = Vec3(ZERO);
 			Vec3  m_velJump = Vec3(ZERO);
 			float m_timeFly = 0.0f;
-
-			static int g_numActors;
 		};
 	}
 }

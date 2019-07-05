@@ -58,6 +58,7 @@
 #include "Melee.h"
 #include "GameRulesModules/IGameRulesObjectivesModule.h"
 #include "GameRulesModules/IGameRulesTeamsModule.h"
+#include "IGameplayRecorder.h"
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)
@@ -528,7 +529,7 @@ bool CWeapon::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile,
 
 			if (owner)
 			{
-				if (IInventory* inv = owner->GetInventory())
+				if (owner->GetInventory() != nullptr)
 				{
 					if (IFireMode* ifm = GetFireMode(GetCurrentFireMode()))
 					{
@@ -1129,9 +1130,9 @@ void CWeapon::ProcessEvent(const SEntityEvent& event)
 	BaseClass::ProcessEvent(event);
 }
 
-uint64 CWeapon::GetEventMask() const
+Cry::Entity::EventFlags CWeapon::GetEventMask() const
 {
-	return BaseClass::GetEventMask() | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_ANIM_EVENT);
+	return BaseClass::GetEventMask() | ENTITY_EVENT_HIDE | ENTITY_EVENT_RESET | ENTITY_EVENT_ANIM_EVENT;
 }
 
 bool CWeapon::ResetParams()
@@ -2282,7 +2283,6 @@ void CWeapon::SetAmmoCount(IEntityClass* pAmmoType, int count)
 			currentCapacity = pInventory->GetAmmoCapacity(pAmmoType);
 		}
 	}
-	const bool ammoChanged = currentCount != count;
 
 	const bool bExistingAmmoType = SWeaponAmmoUtils::SetAmmo(m_ammo, pAmmoType, count);
 	if (!bExistingAmmoType && m_isRegisteredAmmoWithInventory)
@@ -4476,7 +4476,6 @@ bool CWeapon::CheckAmmoRestrictionsForBonusAndMagazineAmmo(IInventory& inventory
 
 	if (!m_ammo.empty())
 	{
-		const TAmmoVector& accesoryAmmoMap = m_weaponsharedparams->ammoParams.accessoryAmmo;
 		const TAmmoVector::const_iterator ammoEndCit = m_ammo.end();
 
 		for (TAmmoVector::const_iterator ammoCit = m_ammo.begin(); ammoCit != ammoEndCit; ++ammoCit)
@@ -4823,7 +4822,7 @@ void CWeapon::UpdateBulletBelt()
 
 				const int16 jointId = rIDefaultSkeleton.GetJointIDByName(jointName.c_str());
 
-				CRY_ASSERT_TRACE(jointId >= 0, ("Invalid joint name '%s' in bullet belt params of %s belonging to %s", jointName.c_str(), GetEntity()->GetEntityTextDescription().c_str(), GetOwnerActor() ? GetOwnerActor()->GetEntity()->GetEntityTextDescription().c_str() : "nobody"));
+				CRY_ASSERT(jointId >= 0, "Invalid joint name '%s' in bullet belt params of %s belonging to %s", jointName.c_str(), GetEntity()->GetEntityTextDescription().c_str(), GetOwnerActor() ? GetOwnerActor()->GetEntity()->GetEntityTextDescription().c_str() : "nobody");
 
 				if (jointId >= 0)
 				{

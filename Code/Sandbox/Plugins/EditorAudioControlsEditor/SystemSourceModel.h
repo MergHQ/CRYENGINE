@@ -3,6 +3,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 class CItemModelAttribute;
 
@@ -15,7 +16,7 @@ class CSystemSourceModel : public QAbstractItemModel
 {
 public:
 
-	enum class EColumns
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Notification,
 		Type,
@@ -25,10 +26,15 @@ public:
 		PakStatus,
 		InPak,
 		OnDisk,
-		Scope,
+		Context,
 		Name,
-		Count,
-	};
+		Count, };
+
+	CSystemSourceModel() = delete;
+	CSystemSourceModel(CSystemSourceModel const&) = delete;
+	CSystemSourceModel(CSystemSourceModel&&) = delete;
+	CSystemSourceModel& operator=(CSystemSourceModel const&) = delete;
+	CSystemSourceModel& operator=(CSystemSourceModel&&) = delete;
 
 	CSystemSourceModel(QObject* const pParent);
 	virtual ~CSystemSourceModel() override;
@@ -43,6 +49,8 @@ public:
 
 	static bool                 CanDropData(QMimeData const* const pData, CAsset const& parent);
 	static bool                 DropData(QMimeData const* const pData, CAsset* const pParent);
+
+	static size_t               GetNumDroppedItems() { return s_numDroppedItems; }
 
 protected:
 
@@ -65,7 +73,8 @@ private:
 
 	void ConnectSignals();
 
-	bool      m_ignoreLibraryUpdates;
-	int const m_nameColumn;
+	bool          m_ignoreLibraryUpdates;
+
+	static size_t s_numDroppedItems;
 };
 } // namespace ACE

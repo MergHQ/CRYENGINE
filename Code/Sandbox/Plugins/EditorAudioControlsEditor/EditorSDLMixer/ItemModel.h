@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include <QAbstractItemModel>
+#include "../Common/SharedData.h"
+#include "../Common/FileImportInfo.h"
 
-#include <SharedData.h>
-#include <FileImportInfo.h>
+#include <QAbstractItemModel>
 #include <FileDialogs/ExtensionFilter.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 
 namespace ACE
 {
@@ -21,23 +22,30 @@ class CItemModel final : public QAbstractItemModel
 {
 public:
 
-	enum class EColumns
+	CItemModel() = delete;
+	CItemModel(CItemModel const&) = delete;
+	CItemModel(CItemModel&&) = delete;
+	CItemModel& operator=(CItemModel const&) = delete;
+	CItemModel& operator=(CItemModel&&) = delete;
+
+	enum class EColumns : CryAudio::EnumFlagsType
 	{
 		Notification,
 		Connected,
 		PakStatus,
 		InPak,
 		OnDisk,
+		Localized,
 		Name,
-		Count,
-	};
+		Count, };
 
 	explicit CItemModel(CImpl const& impl, CItem const& rootItem, QObject* const pParent);
+	virtual ~CItemModel() override = default;
 
-	CItemModel() = delete;
+	QString       GetTargetFolderName(QModelIndex const& index, bool& isLocalized) const;
+	void          Reset();
 
-	QString GetTargetFolderName(QModelIndex const& index) const;
-	void    Reset();
+	static CItem* GetItemFromIndex(QModelIndex const& index);
 
 protected:
 

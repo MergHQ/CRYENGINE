@@ -2,21 +2,22 @@
 
 #include "StdAfx.h"
 #include "SplashScreen.h"
-#include <QPainter>
-#include <QApplication>
+#include "Version.h"
 
-SplashScreen* SplashScreen::s_pLogoWindow = 0;
+#include <QApplication>
+#include <QPainter>
+
+SplashScreen* SplashScreen::s_pLogoWindow = nullptr;
 
 SplashScreen::SplashScreen(const QPixmap& pixmap /* = QPixmap() */, Qt::WindowFlags f /* = 0 */)
 	: QSplashScreen(pixmap, f)
 {
-	init();
-}
+	s_pLogoWindow = this;
+	setWindowIcon(QIcon("icons:editor_icon.ico"));
+	setWindowTitle("CRYENGINE Sandbox");
 
-SplashScreen::SplashScreen(QWidget* parent, const QPixmap& pixmap /* = QPixmap() */, Qt::WindowFlags f /* = 0 */)
-	: QSplashScreen(parent, pixmap, f)
-{
-	init();
+	//Should be set after parent construction: it overwrites default Qt behavior
+	setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
 }
 
 SplashScreen::~SplashScreen()
@@ -40,10 +41,12 @@ void SplashScreen::SetInfo(const char* text)
 	qApp->processEvents();
 }
 
-void SplashScreen::SetText(const char* text)
+void SplashScreen::SetText(const char* szText)
 {
 	if (s_pLogoWindow)
-		s_pLogoWindow->SetInfo(text);
+	{
+		s_pLogoWindow->SetInfo(szText);
+	}
 }
 
 void SplashScreen::drawContents(QPainter* painter)
@@ -53,10 +56,3 @@ void SplashScreen::drawContents(QPainter* painter)
 	painter->drawText(rect().adjusted(30, 5, -5, -42), Qt::AlignLeft | Qt::AlignBottom, version);
 	painter->drawText(rect().adjusted(30, 5, -5, -25), Qt::AlignLeft | Qt::AlignBottom, m_text);
 }
-
-void SplashScreen::init()
-{
-	s_pLogoWindow = this;
-	setWindowTitle("Starting Crytek Sandbox Editor");
-}
-

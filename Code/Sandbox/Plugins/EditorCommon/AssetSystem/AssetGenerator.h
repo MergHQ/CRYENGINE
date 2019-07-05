@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "EditorCommonAPI.h"
 #include "AssetManagerHelpers.h"
 #include <CrySystem/File/IFileChangeMonitor.h>
 #include <CryRenderer/IRenderer.h>
@@ -27,12 +28,13 @@ public:
 	virtual void OnCompilationQueueTriggered(int nPending) override;
 	virtual void OnCompilationQueueDepleted() override;
 
+	void GenerateCryasset(const string& filePath, const string& destFolder = "");
+
 	//! Generates/repair *.cryasset files for the current project.
 	static bool GenerateCryassets();
 
 private:
 	CAssetGenerator();
-	void GenerateCryasset(const string& filePath);
 
 private:
 	CProcessingQueue m_fileQueue;
@@ -41,5 +43,9 @@ private:
 	string m_rcSettings;
 	std::mutex m_textureCompilerMutex;
 };
+
+//! Generates/repair *.cryasset files for the asset file. 
+//! \param filePath string with path to the data file. The path can be absolute or relative to the project assets root folder.
+EDITOR_COMMON_API void GenerateCryasset(const string& filePath);
 
 };

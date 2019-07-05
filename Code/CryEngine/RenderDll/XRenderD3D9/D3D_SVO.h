@@ -1,14 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-
-   Revision history:
-* Created by Vladimir Kajalin
-
-   =============================================================================*/
-
-#ifndef __D3D_SVO__H__
-#define __D3D_SVO__H__
+#pragma once
 
 #if defined(FEATURE_SVO_GI)
 
@@ -19,8 +11,8 @@ class CSvoComputePass : public CComputeRenderPass
 {
 public:
 
-	CSvoComputePass()
-		: CComputeRenderPass::CComputeRenderPass(CSvoComputePass::eFlags_ReflectConstantBuffersFromShader)
+	CSvoComputePass(CGraphicsPipeline* pGraphicsPipeline)
+		: CComputeRenderPass::CComputeRenderPass(pGraphicsPipeline, CSvoComputePass::eFlags_ReflectConstantBuffersFromShader)
 	{
 	}
 
@@ -30,12 +22,17 @@ public:
 class CSvoFullscreenPass : public CFullscreenPass
 {
 public:
-
+	CSvoFullscreenPass(CGraphicsPipeline* pGraphicsPipeline) : CFullscreenPass(pGraphicsPipeline) {}
 	int nPrevTargetSize = 0;
 };
 
 struct SSvoTargetsSet
 {
+	SSvoTargetsSet(CGraphicsPipeline* pGraphicsPipeline)
+		: passConeTrace(pGraphicsPipeline)
+		, passDemosaic(pGraphicsPipeline)
+		, passUpscale(pGraphicsPipeline) {}
+
 	// tracing targets
 	_smart_ptr<CTexture> pRT_RGB_0, pRT_ALD_0, pRT_RGB_1, pRT_ALD_1;
 
@@ -49,6 +46,24 @@ struct SSvoTargetsSet
 	CSvoFullscreenPass   passConeTrace;
 	CSvoFullscreenPass   passDemosaic;
 	CSvoFullscreenPass   passUpscale;
+};
+
+struct SSvoPrimitivePasses
+{
+	SSvoTargetsSet m_tsDiff, m_tsSpec;
+
+	// passes
+	CSvoComputePass      m_passClearBricks;
+	CSvoComputePass      m_passInjectDynamicLights;
+	CSvoComputePass      m_passInjectStaticLights;
+	CSvoComputePass      m_passInjectAirOpacity;
+	CSvoComputePass      m_passPropagateLighting_1to2;
+	CSvoComputePass      m_passPropagateLighting_2to3;
+	CSvoFullscreenPass   m_passTroposphere;
+
+	SGraphicsPipelineKey currentKey;
+
+	SSvoPrimitivePasses(CGraphicsPipeline* pGraphicsPipeline);
 };
 
 class CSvoRenderer : public ISvoRenderer
@@ -71,10 +86,11 @@ public:
 	int                  GetIntegratioMode(bool& bSpecTracingInUse) const;
 	bool                 GetUseLightProbes() const { return e_svoTI_SkyColorMultiplier >= 0; }
 	void                 DebugDrawStats(const RPProfilerStats* pBasicStats, float& ypos, const float ystep, float xposms);
+	size_t               GetAllocatedMemory();
 
 	static bool          SetShaderParameters(float*& pSrc, uint32 paramType, UFloat4* sData);
-	static CTexture*     GetRsmColorMap(const ShadowMapFrustum& rFr, bool bCheckUpdate = false);
-	static CTexture*     GetRsmNormlMap(const ShadowMapFrustum& rFr, bool bCheckUpdate = false);
+	static CTexture*     GetRsmColorMap(CGraphicsPipeline& graphicsPipeline, const ShadowMapFrustum& rFr, bool bCheckUpdate = false);
+	static CTexture*     GetRsmNormlMap(CGraphicsPipeline& graphicsPipeline, const ShadowMapFrustum& rFr, bool bCheckUpdate = false);
 	ShadowMapFrustum*    GetRsmSunFrustum(const CRenderView* pRenderView) const;
 	CTexture*            GetTroposphereMinRT();
 	CTexture*            GetTroposphereMaxRT();
@@ -91,6 +107,14 @@ public:
 
 	void                 FillForwardParams(SForwardParams& svogiParams, bool enable = true) const;
 
+	void                 BeginFrame(CGraphicsPipeline* pGraphicsPipeline)
+	{
+		if (!m_pPasses || m_pPasses->currentKey != pGraphicsPipeline->GetKey())
+		{
+			m_pPasses = stl::make_unique<SSvoPrimitivePasses>(pGraphicsPipeline);
+		}
+	}
+
 protected:
 
 	CSvoRenderer();
@@ -100,7 +124,8 @@ protected:
 	void                   SetEditingHelper(const Sphere& sp) final;
 	bool                   IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN) final;
 
-	static CTexture*       GetGBuffer(int nId);
+	static CTexture*       GetGBuffer(const CGraphicsPipelineResources& pipelineResources, int nId);
+	static CTexture*       GetZBuffer(const CGraphicsPipelineResources& pipelineResources, bool bLinear = true);
 	void                   UpscalePass(SSvoTargetsSet* pTS);
 	void                   DemosaicPass(SSvoTargetsSet* pTS);
 	void                   ConeTracePass(SSvoTargetsSet* pTS);
@@ -129,7 +154,7 @@ protected:
 	void                   VoxelizeRE();
 	bool                   VoxelizeMeshes(CShader* ef, SShaderPass* sfm);
 
-	CRenderView*           RenderView() const { return m_pRenderView; };
+	CRenderView*           RenderView() const { return m_pRenderView; }
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 	_smart_ptr<CTexture> m_pRT_NID_0;
@@ -172,14 +197,6 @@ protected:
 	SVoxPool             vp_RGB4;
 	SVoxPool             vp_NORM;
 	SVoxPool             vp_ALDI;
-
-	_smart_ptr<CTexture> m_pTexTexA;
-	_smart_ptr<CTexture> m_pTexTriA;
-	_smart_ptr<CTexture> m_pTexIndA;
-	_smart_ptr<CTexture> m_pTexTree;
-	_smart_ptr<CTexture> m_pTexOpac;
-	_smart_ptr<CTexture> m_pTexTris;
-	_smart_ptr<CTexture> m_pGlobalSpecCM;
 	#endif
 
 	PodArray<I3DEngine::SSvoNodeInfo> m_arrNodesForUpdateIncr;
@@ -196,16 +213,7 @@ protected:
 	static CSvoRenderer*              s_pInstance;
 	PodArray<I3DEngine::SSvoNodeInfo> m_arrNodeInfo;
 
-	SSvoTargetsSet                    m_tsDiff, m_tsSpec;
-
-	// passes
-	CSvoComputePass    m_passClearBricks;
-	CSvoComputePass    m_passInjectDynamicLights;
-	CSvoComputePass    m_passInjectStaticLights;
-	CSvoComputePass    m_passInjectAirOpacity;
-	CSvoComputePass    m_passPropagateLighting_1to2;
-	CSvoComputePass    m_passPropagateLighting_2to3;
-	CSvoFullscreenPass m_passTroposphere;
+	std::unique_ptr<SSvoPrimitivePasses> m_pPasses;
 
 	// cvar values
 	#define INIT_ALL_SVO_CVARS                                      \
@@ -214,6 +222,7 @@ protected:
 	  INIT_SVO_CVAR(int, e_svoRender);                              \
 	  INIT_SVO_CVAR(int, e_svoTI_ResScaleBase);                     \
 	  INIT_SVO_CVAR(int, e_svoTI_ResScaleAir);                      \
+	  INIT_SVO_CVAR(int, e_svoTI_ResScaleSpecular);                 \
 	  INIT_SVO_CVAR(int, e_svoTI_Active);                           \
 	  INIT_SVO_CVAR(int, e_svoTI_IntegrationMode);                  \
 	  INIT_SVO_CVAR(float, e_svoTI_InjectionMultiplier);            \
@@ -257,7 +266,11 @@ protected:
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_CloudGenTurb_Freq);  \
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_CloudGenTurb_Scale); \
 	  INIT_SVO_CVAR(float, e_svoTI_Troposphere_Density);            \
-	  INIT_SVO_CVAR(float, e_svoTI_RT_MaxDist);                     \
+	  INIT_SVO_CVAR(int,   e_svoTI_RT_Active);                      \
+	  INIT_SVO_CVAR(float, e_svoTI_RT_MaxDistRay);                  \
+	  INIT_SVO_CVAR(float, e_svoTI_RT_MaxDistCam);                  \
+	  INIT_SVO_CVAR(float, e_svoTI_RT_MinGloss);                    \
+	  INIT_SVO_CVAR(float, e_svoTI_RT_MinRefl);                     \
 	  INIT_SVO_CVAR(float, e_svoTI_ShadowsSoftness);                \
 	  INIT_SVO_CVAR(float, e_svoTI_Specular_Sev);                   \
 	  INIT_SVO_CVAR(float, e_svoTI_SSAOAmount);                     \
@@ -295,5 +308,4 @@ protected:
 	#undef INIT_SVO_CVAR
 };
 
-#endif
-#endif
+#endif // FEATURE_SVO_GI

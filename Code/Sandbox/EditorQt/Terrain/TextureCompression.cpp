@@ -2,28 +2,23 @@
 
 #include "stdafx.h"
 #include "TextureCompression.h"
+#include "IEditorImpl.h"
 
 #undef MAKEFOURCC
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)              \
   ((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) | \
    ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24))
 #include <Cry3DEngine/ImageExtensionHelper.h>
+#include <CryRenderer/IRenderer.h>
 
-//////////////////////////////////////////////////////////////////////
-// Construction/Destruction
-//////////////////////////////////////////////////////////////////////
 CFile* CTextureCompression::m_pFile = NULL;
 CryCriticalSection CTextureCompression::m_sFileLock;
 
-CTextureCompression::CTextureCompression(const bool bHighQuality) : m_bHighQuality(bHighQuality)
+CTextureCompression::CTextureCompression(const bool bHighQuality)
+	: m_bHighQuality(bHighQuality)
 {
 }
 
-CTextureCompression::~CTextureCompression()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CTextureCompression::SaveCompressedMipmapLevel(const void* data, size_t size, void* userData)
 {
 	assert(m_pFile);
@@ -32,7 +27,6 @@ void CTextureCompression::SaveCompressedMipmapLevel(const void* data, size_t siz
 	m_pFile->Write(data, size);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void CTextureCompression::WriteDDSToFile(CFile& file, unsigned char* dat, int w, int h, int Size, ETEX_Format eSrcF, ETEX_Format eDstF, int NumMips, const bool bHeader, const bool bDither)
 {
 	if (bHeader)
@@ -190,4 +184,3 @@ void CTextureCompression::WriteDDSToFile(CFile& file, unsigned char* dat, int w,
 
 	SAFE_DELETE_ARRAY(data);
 }
-

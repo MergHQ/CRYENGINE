@@ -1,0 +1,436 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>UseJava &mdash; CMake 3.14.5 Documentation</title>
+
+    <link rel="stylesheet" href="../_static/cmake.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/cmake-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="UseJavaSymlinks" href="UseJavaSymlinks.html" />
+    <link rel="prev" title="UseJavaClassFilelist" href="UseJavaClassFilelist.html" />
+  
+ 
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="UseJavaSymlinks.html" title="UseJavaSymlinks"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="UseJavaClassFilelist.html" title="UseJavaClassFilelist"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" accesskey="U">cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="usejava">
+<span id="module:UseJava"></span><h1>UseJava<a class="headerlink" href="#usejava" title="Permalink to this headline">¶</a></h1>
+<p>Use Module for Java</p>
+<p>This file provides functions for Java.  It is assumed that
+FindJava.cmake has already been loaded.  See FindJava.cmake for
+information on how to load Java into your CMake project.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>add_jar(target_name
+        [SOURCES] source1 [source2 ...] [resource1 ...]
+        [INCLUDE_JARS jar1 [jar2 ...]]
+        [ENTRY_POINT entry]
+        [VERSION version]
+        [OUTPUT_NAME name]
+        [OUTPUT_DIR dir]
+        [GENERATE_NATIVE_HEADERS target [DESTINATION dir]]
+        )
+</pre></div>
+</div>
+<p>This command creates a &lt;target_name&gt;.jar.  It compiles the given
+source files (source) and adds the given resource files (resource) to
+the jar file.  Source files can be java files or listing files
+(prefixed by ‘&#64;’).  If only resource files are given then just a jar file
+is created.  The list of include jars are added to the classpath when
+compiling the java sources and also to the dependencies of the target.
+INCLUDE_JARS also accepts other target names created by add_jar.  For
+backwards compatibility, jar files listed as sources are ignored (as
+they have been since the first version of this module).</p>
+<p>The default OUTPUT_DIR can also be changed by setting the variable
+CMAKE_JAVA_TARGET_OUTPUT_DIR.</p>
+<p>Optionally, using option GENERATE_NATIVE_HEADERS, native header files can be generated
+for methods declared as native. These files provide the connective glue that allow your
+Java and C code to interact. An INTERFACE target will be created for an easy usage
+of generated files. Sub-option DESTINATION can be used to specify output directory for
+generated header files.</p>
+<p>GENERATE_NATIVE_HEADERS option requires, at least, version 1.8 of the JDK.</p>
+<p>Additional instructions:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>To add compile flags to the target you can set these flags with
+the following variable:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>set(CMAKE_JAVA_COMPILE_FLAGS -nowarn)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>To add a path or a jar file to the class path you can do this
+with the CMAKE_JAVA_INCLUDE_PATH variable.
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>set(CMAKE_JAVA_INCLUDE_PATH /usr/share/java/shibboleet.jar)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>To use a different output name for the target you can set it with:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>add_jar(foobar foobar.java OUTPUT_NAME shibboleet.jar)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>To use a different output directory than CMAKE_CURRENT_BINARY_DIR
+you can set it with:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>add_jar(foobar foobar.java OUTPUT_DIR ${PROJECT_BINARY_DIR}/bin)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>To define an entry point in your jar you can set it with the ENTRY_POINT
+named argument:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>add_jar(example ENTRY_POINT com/examples/MyProject/Main)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>To define a custom manifest for the jar, you can set it with the manifest
+named argument:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>add_jar(example MANIFEST /path/to/manifest)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>To add a VERSION to the target output name you can set it using
+the VERSION named argument to add_jar. This will create a jar file with the
+name shibboleet-1.0.0.jar and will create a symlink shibboleet.jar
+pointing to the jar with the version information.
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>add_jar(shibboleet shibbotleet.java VERSION 1.2.0)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>If the target is a JNI library, utilize the following commands to
+create a JNI symbolic link:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>set(CMAKE_JNI_TARGET TRUE)
+add_jar(shibboleet shibbotleet.java VERSION 1.2.0)
+install_jar(shibboleet ${LIB_INSTALL_DIR}/shibboleet)
+install_jni_symlink(shibboleet ${JAVA_LIB_INSTALL_DIR})
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>If a single target needs to produce more than one jar from its
+java source code, to prevent the accumulation of duplicate class
+files in subsequent jars, set/reset CMAKE_JAR_CLASSES_PREFIX prior
+to calling the add_jar() function:
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>set(CMAKE_JAR_CLASSES_PREFIX com/redhat/foo)
+add_jar(foo foo.java)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>set(CMAKE_JAR_CLASSES_PREFIX com/redhat/bar)
+add_jar(bar bar.java)
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>For an optimum usage of option GENERATE_NATIVE_HEADERS, it is recommended to
+include module JNI before any call to add_jar. The produced target for native
+headers can then be used to compile C/C++ sources with command
+target_link_libraries.
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>find_package(JNI)
+add_jar(foo foo.java GENERATE_NATIVE_HEADERS foo-native)
+add_library(bar bar.cpp)
+target_link_libraries(bar PRIVATE foo-native)
+</pre></div>
+</div>
+<p>Target Properties:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>The add_jar() function sets some target properties. You can get these
+properties with the
+   get_property(TARGET &lt;target_name&gt; PROPERTY &lt;propery_name&gt;)
+command.
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>INSTALL_FILES      The files which should be installed. This is used by
+                   install_jar().
+JNI_SYMLINK        The JNI symlink which should be installed.
+                   This is used by install_jni_symlink().
+JAR_FILE           The location of the jar file so that you can include
+                   it.
+CLASSDIR           The directory where the class files can be found. For
+                   example to use them with javah.
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>find_jar(&lt;VAR&gt;
+         name | NAMES name1 [name2 ...]
+         [PATHS path1 [path2 ... ENV var]]
+         [VERSIONS version1 [version2]]
+         [DOC &quot;cache documentation string&quot;]
+         )
+</pre></div>
+</div>
+<p>This command is used to find a full path to the named jar.  A cache
+entry named by &lt;VAR&gt; is created to stor the result of this command.
+If the full path to a jar is found the result is stored in the
+variable and the search will not repeated unless the variable is
+cleared.  If nothing is found, the result will be &lt;VAR&gt;-NOTFOUND, and
+the search will be attempted again next time find_jar is invoked with
+the same variable.  The name of the full path to a file that is
+searched for is specified by the names listed after NAMES argument.
+Additional search locations can be specified after the PATHS argument.
+If you require special a version of a jar file you can specify it with
+the VERSIONS argument.  The argument after DOC will be used for the
+documentation string in the cache.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>install_jar(target_name destination)
+install_jar(target_name DESTINATION destination [COMPONENT component])
+</pre></div>
+</div>
+<p>This command installs the TARGET_NAME files to the given DESTINATION.
+It should be called in the same scope as add_jar() or it will fail.</p>
+<p>Target Properties:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>The install_jar() function sets the INSTALL_DESTINATION target property
+on jars so installed. This property holds the DESTINATION as described
+above, and is used by install_jar_exports(). You can get this property
+with the
+   get_property(TARGET &lt;target_name&gt; PROPERTY INSTALL_DESTINATION)
+command.
+</pre></div>
+</div>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>install_jni_symlink(target_name destination)
+install_jni_symlink(target_name DESTINATION destination [COMPONENT component])
+</pre></div>
+</div>
+<p>This command installs the TARGET_NAME JNI symlinks to the given
+DESTINATION.  It should be called in the same scope as add_jar() or it
+will fail.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>install_jar_exports(TARGETS jars...
+                    [NAMESPACE &lt;namespace&gt;]
+                    FILE &lt;filename&gt;
+                    DESTINATION &lt;dir&gt; [COMPONENT &lt;component&gt;])
+</pre></div>
+</div>
+<p>This command installs a target export file <code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;</span></code> for the named jar
+targets to the given <code class="docutils literal notranslate"><span class="pre">DESTINATION</span></code>. Its function is similar to that of
+<span class="target" id="index-0-command:install"></span><a class="reference internal" href="../command/install.html#command:install" title="install"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">install(EXPORTS</span> <span class="pre">...)</span></code></a>.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>export_jars(TARGETS jars...
+            [NAMESPACE &lt;namespace&gt;]
+            FILE &lt;filename&gt;)
+</pre></div>
+</div>
+<p>This command writes a target export file <code class="docutils literal notranslate"><span class="pre">&lt;filename&gt;</span></code> for the named jar
+targets. Its function is similar to that of <span class="target" id="index-0-command:export"></span><a class="reference internal" href="../command/export.html#command:export" title="export"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">export(...)</span></code></a>.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>create_javadoc(&lt;VAR&gt;
+               PACKAGES pkg1 [pkg2 ...]
+               [SOURCEPATH &lt;sourcepath&gt;]
+               [CLASSPATH &lt;classpath&gt;]
+               [INSTALLPATH &lt;install path&gt;]
+               [DOCTITLE &quot;the documentation title&quot;]
+               [WINDOWTITLE &quot;the title of the document&quot;]
+               [AUTHOR TRUE|FALSE]
+               [USE TRUE|FALSE]
+               [VERSION TRUE|FALSE]
+               )
+</pre></div>
+</div>
+<p>Create java documentation based on files or packages.  For more
+details please read the javadoc manpage.</p>
+<p>There are two main signatures for create_javadoc.  The first signature
+works with package names on a path with source files:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Example:
+create_javadoc(my_example_doc
+  PACKAGES com.example.foo com.example.bar
+  SOURCEPATH &quot;${CMAKE_CURRENT_SOURCE_DIR}&quot;
+  CLASSPATH ${CMAKE_JAVA_INCLUDE_PATH}
+  WINDOWTITLE &quot;My example&quot;
+  DOCTITLE &quot;&lt;h1&gt;My example&lt;/h1&gt;&quot;
+  AUTHOR TRUE
+  USE TRUE
+  VERSION TRUE
+)
+</pre></div>
+</div>
+<p>The second signature for create_javadoc works on a given list of
+files.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>create_javadoc(&lt;VAR&gt;
+               FILES file1 [file2 ...]
+               [CLASSPATH &lt;classpath&gt;]
+               [INSTALLPATH &lt;install path&gt;]
+               [DOCTITLE &quot;the documentation title&quot;]
+               [WINDOWTITLE &quot;the title of the document&quot;]
+               [AUTHOR TRUE|FALSE]
+               [USE TRUE|FALSE]
+               [VERSION TRUE|FALSE]
+              )
+</pre></div>
+</div>
+<p>Example:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>create_javadoc(my_example_doc
+  FILES ${example_SRCS}
+  CLASSPATH ${CMAKE_JAVA_INCLUDE_PATH}
+  WINDOWTITLE &quot;My example&quot;
+  DOCTITLE &quot;&lt;h1&gt;My example&lt;/h1&gt;&quot;
+  AUTHOR TRUE
+  USE TRUE
+  VERSION TRUE
+)
+</pre></div>
+</div>
+<p>Both signatures share most of the options.  These options are the same
+as what you can find in the javadoc manpage.  Please look at the
+manpage for CLASSPATH, DOCTITLE, WINDOWTITLE, AUTHOR, USE and VERSION.</p>
+<p>The documentation will be by default installed to</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>${CMAKE_INSTALL_PREFIX}/share/javadoc/&lt;VAR&gt;
+</pre></div>
+</div>
+<p>if you don’t set the INSTALLPATH.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>create_javah(TARGET &lt;target&gt;
+             GENERATED_FILES &lt;VAR&gt;
+             CLASSES &lt;class&gt;...
+             [CLASSPATH &lt;classpath&gt;...]
+             [DEPENDS &lt;depend&gt;...]
+             [OUTPUT_NAME &lt;path&gt;|OUTPUT_DIR &lt;path&gt;]
+             )
+</pre></div>
+</div>
+<p>Create C header files from java classes. These files provide the connective glue
+that allow your Java and C code to interact.</p>
+<p>This command will no longer be supported starting with version 10 of the JDK due
+to the <a class="reference external" href="http://openjdk.java.net/jeps/313">suppression of javah tool</a>.
+Command <code class="docutils literal notranslate"><span class="pre">add_jar(GENERATE_NATIVE_HEADERS)</span></code> must be used instead.</p>
+<p>There are two main signatures for create_javah.  The first signature
+returns generated files through variable specified by GENERATED_FILES option:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Example:
+Create_javah(GENERATED_FILES files_headers
+  CLASSES org.cmake.HelloWorld
+  CLASSPATH hello.jar
+)
+</pre></div>
+</div>
+<p>The second signature for create_javah creates a target which encapsulates
+header files generation.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Example:
+Create_javah(TARGET target_headers
+  CLASSES org.cmake.HelloWorld
+  CLASSPATH hello.jar
+)
+</pre></div>
+</div>
+<p>Both signatures share same options.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">CLASSES</span> <span class="pre">&lt;class&gt;...</span></code></dt>
+<dd>Specifies Java classes used to generate headers.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">CLASSPATH</span> <span class="pre">&lt;classpath&gt;...</span></code></dt>
+<dd>Specifies various paths to look up classes. Here .class files, jar files or targets
+created by command add_jar can be used.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">DEPENDS</span> <span class="pre">&lt;depend&gt;...</span></code></dt>
+<dd>Targets on which the javah target depends</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">OUTPUT_NAME</span> <span class="pre">&lt;path&gt;</span></code></dt>
+<dd>Concatenates the resulting header files for all the classes listed by option CLASSES
+into &lt;path&gt;. Same behavior as option ‘-o’ of javah tool.</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">OUTPUT_DIR</span> <span class="pre">&lt;path&gt;</span></code></dt>
+<dd>Sets the directory where the header files will be generated. Same behavior as option
+‘-d’ of javah tool. If not specified, ${CMAKE_CURRENT_BINARY_DIR} is used as output directory.</dd>
+</dl>
+</div></blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="UseJavaClassFilelist.html"
+                        title="previous chapter">UseJavaClassFilelist</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="UseJavaSymlinks.html"
+                        title="next chapter">UseJavaSymlinks</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/module/UseJava.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="UseJavaSymlinks.html" title="UseJavaSymlinks"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="UseJavaClassFilelist.html" title="UseJavaClassFilelist"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" >cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2000-2019 Kitware, Inc. and Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
+  </body>
+</html>

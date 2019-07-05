@@ -18,7 +18,7 @@
 #include "IGameSessionHandler.h"
 #include "CryAction.h"
 #include "GameRulesSystem.h"
-#include <CryScriptSystem/ScriptHelpers.h>
+#include <CryScriptSystem/IScriptSystem.h>
 #include "GameObjects/GameObject.h"
 #include "ScriptRMI.h"
 #include <CryPhysics/IPhysics.h>
@@ -33,8 +33,11 @@
 #include "CVarListProcessor.h"
 #include "NetworkCVars.h"
 #include "CryActionCVars.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 #include <CryNetwork/INetwork.h>
 #include <CryCore/Platform/IPlatformOS.h>
+#include <CrySystem/CryVersion.h>
+#include <CrySystem/IManualFrameStepController.h>
 
 // context establishment tasks
 #include <CryNetwork/NetHelpers.h>
@@ -188,7 +191,7 @@ void CGameContext::Init(INetContext* pNetContext)
 
 #if ENABLE_NETDEBUG
 	m_pNetDebug = new CNetDebug();
-	assert(m_pNetDebug);
+	CRY_ASSERT(m_pNetDebug);
 #endif
 
 	m_pNetContext->DeclareAspect("GameClientDynamic", eEA_GameClientDynamic, eAF_Delegatable);
@@ -199,6 +202,7 @@ void CGameContext::Init(INetContext* pNetContext)
 	m_pNetContext->DeclareAspect("Script", eEA_Script, 0);
 
 	m_pNetContext->DeclareAspect("GameClientA", eEA_GameClientA, eAF_Delegatable);
+	m_pNetContext->DeclareAspect("eEA_Aspect30", eEA_Aspect30, eAF_Delegatable);
 	m_pNetContext->DeclareAspect("PlayerUpdate", eEA_Aspect31, eAF_Delegatable);
 	m_pNetContext->DeclareAspect("GameServerA", eEA_GameServerA, 0);
 	m_pNetContext->DeclareAspect("GameClientB", eEA_GameClientB, eAF_Delegatable);
@@ -279,6 +283,7 @@ void CGameContext::AddLoadLevelTasks(IContextEstablisher* pEst, bool isServer, i
 		const bool loadingNewLevel = (flags & eEF_LoadNewLevel) != 0;
 		if (flags & eEF_LevelLoaded)
 		{
+			AddActionEvent(pEst, eCVS_Begin, SActionEvent(eAE_resetLoadedLevel, loadingNewLevel));
 			AddRandomSystemReset(pEst, eCVS_Begin, loadingNewLevel);
 		}
 		if (flags & eEF_LoadNewLevel)
@@ -481,6 +486,7 @@ void AddWaitForPendingConnections(IContextEstablisher* pEst, EContextViewState s
 
 bool CGameContext::InitGlobalEstablishmentTasks(IContextEstablisher* pEst, int establishedToken)
 {
+	AddStartedEstablishingContext(pEst, eCVS_Initial, establishedToken);
 	AddSetValue(pEst, eCVS_Begin, &m_bStarted, false, "GameNotStarted");
 	AddWaitForPendingConnections(pEst, eCVS_Begin, m_pGame, m_pFramework);
 	if (gEnv->IsEditor())
@@ -626,7 +632,13 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 	}
 
 	if (isClient && !gEnv->IsEditor() && !gEnv->bMultiplayer && !(m_flags & eGSF_DemoPlayback))
-		AddInitialSaveGame(pEst, eCVS_InGame);
+	{
+		ICVar* pCVar = gEnv->pConsole->GetCVar("g_EnableLoadSave");
+		if (pCVar && pCVar->GetIVal() == 1)
+		{
+			AddInitialSaveGame(pEst, eCVS_InGame);
+		}
+	}
 
 	if (isClient)
 	{
@@ -651,6 +663,7 @@ bool CGameContext::InitChannelEstablishmentTasks(IContextEstablisher* pEst, INet
 	if (pServerChannel)
 		pServerChannel->AddUpdateLevelLoaded(pEst);
 
+	AddGameChannelLoadingTasks(pEst, isServer);
 	return true;
 }
 
@@ -1707,7 +1720,7 @@ void CGameContext::GetMemoryUsage(ICrySizer* s) const
 
 static ILINE bool IsDX11()
 {
-	ERenderType renderType = gEnv->pRenderer->GetRenderType();
+	//ERenderType renderType = gEnv->pRenderer->GetRenderType();
 	return true;//renderType == eRT_DX11;	// marcio: in this context, we assume DX11 for Crysis2, so immersiveness can work
 }
 
@@ -1787,7 +1800,7 @@ string CGameContext::GetConnectionString(CryFixedStringT<HOST_MIGRATION_MAX_PLAY
 	constr += ':';
 	constr += ToHexStr(playerName.data(), playerName.size());
 	constr += ':';
-	constr += fake ? "fake" : m_connectionString;
+	constr += fake ? "fake" : m_connectionString.c_str();
 	cry_sprintf(buf, "%d", (int)time(NULL));
 	constr = buf + constr;
 	int len = constr.length();

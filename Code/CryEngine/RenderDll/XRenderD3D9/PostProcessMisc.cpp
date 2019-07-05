@@ -10,7 +10,6 @@
    =============================================================================*/
 
 #include "StdAfx.h"
-#include "DriverD3D.h"
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
 
@@ -22,7 +21,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CVolumetricScattering::Render()
+void CVolumetricScattering::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -99,7 +98,7 @@ void CVolumetricScattering::Render()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void CPost3DRenderer::Render()
+void CPost3DRenderer::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -177,18 +176,7 @@ void CPost3DRenderer::GammaCorrection(float screenRect[4])
 
 void CPost3DRenderer::RenderSilhouettes(uint8 groupId, float screenRect[4])
 {
-	PROFILE_LABEL_SCOPE("SILHOUTTES");
-
-	RenderMeshes(groupId, screenRect, eRMM_Custom);
-
-	CTexture* pOutlineTex = CRendererResources::s_ptexBackBufferScaled[0];
-	CTexture* pGlowTex = CRendererResources::s_ptexBackBufferScaled[1];
-
-	uint64 nRTMaskQ = ApplyShaderQuality();
-	SilhouetteOutlines(pOutlineTex, pGlowTex);
-	SilhouetteGlow(pOutlineTex, pGlowTex);
-	SilhouetteCombineBlurAndOutline(pOutlineTex, pGlowTex);
-	GammaCorrection(screenRect);
+	ASSERT_LEGACY_PIPELINE
 }
 
 void CPost3DRenderer::SilhouetteCombineBlurAndOutline(CTexture* pOutlineTex, CTexture* pGlowTex)

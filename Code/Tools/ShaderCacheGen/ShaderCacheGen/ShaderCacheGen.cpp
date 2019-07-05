@@ -3,13 +3,13 @@
 #include "stdafx.h"
 
 // Insert your headers here
-#include <CrySystem/ISystem.h>
-#include <CryCore/Platform/CryLibrary.h>
-#include <CrySystem/IConsole.h>
-#include <CryString/StringUtils.h>
 #include <CryCore/Platform/platform_impl.inl>
-
 #include <CryCore/Platform/CryWindows.h>
+#include <CryCore/Platform/CryLibrary.h>
+#include <CrySystem/ISystem.h>
+#include <CrySystem/SystemInitParams.h>
+#include <CrySystem/IConsole.h>
+#include <CryString/CryWinStringUtils.h>
 #include <ShellAPI.h>
 
 // We need shell api for Current Root Extraction.
@@ -32,7 +32,6 @@ int main(int argc, char* argv[])
 
 	startupParams.bShaderCacheGen = true;
 	startupParams.bDedicatedServer = false;
-	startupParams.bPreview = false;
 	startupParams.bMinimal = true;
 	startupParams.bSkipFont = true;
 

@@ -15,7 +15,7 @@
 	#define PROFILE_BUCKET_CLEANUP 0
 
 //#define BUCKET_ALLOCATOR_MAP_DOWN
-	#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || (CRY_PLATFORM_LINUX && CRY_PLATFORM_32BIT) || CRY_PLATFORM_ANDROID
+	#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ANDROID
 		#define BUCKET_ALLOCATOR_4K
 	#endif
 
@@ -224,7 +224,7 @@ bool BucketAllocator<TraitsT >::Refill(uint8 bucket)
 	#ifdef BUCKET_ALLOCATOR_PACK_SMALL_SIZES
 	UINT_PTR alignmentMask = 0;
 	#else
-	UINT_PTR alignmentMask = MEMORY_ALLOCATION_ALIGNMENT - 1;
+	UINT_PTR alignmentMask = CRY_MEMORY_ALLOCATION_ALIGNMENT - 1;
 	#endif
 
 	if ((SmallBlockLength % itemSize) == 0)
@@ -298,11 +298,10 @@ bool BucketAllocator<TraitsT >::Refill(uint8 bucket)
 
 	size_t smallBlockIdx = (baseAddress - blockBase) / SmallBlockLength;
 	size_t smallBlockEnd = ((endAddress - itemSize - blockBase) + SmallBlockOffsetMask) / SmallBlockLength;
-	size_t numSmallBlocks = smallBlockEnd - smallBlockIdx;
 
 	BucketAssert(useForward || !(endAddress & SmallBlockOffsetMask));
 	BucketAssert(!useForward || !(baseAddress & 7));
-	BucketAssert(numSmallBlocks > 0);
+	BucketAssert((smallBlockEnd - smallBlockIdx) > 0);
 	BucketAssert(smallBlockIdx < SmallBlocksPerPage);
 	BucketAssert(smallBlockEnd <= SmallBlocksPerPage);
 	BucketAssert(baseAddress >= fbh->start);
@@ -587,7 +586,6 @@ void BucketAllocator<TraitsT >::CleanupInternal(bool sortFreeLists)
 	for (int segId = 0; segId < numSegments; ++segId)
 	{
 		SegmentHot& segh = m_segmentsHot[segId];
-		SegmentCold& segc = m_segmentsCold[segId];
 
 		size_t basePageId = segId * NumPages;
 

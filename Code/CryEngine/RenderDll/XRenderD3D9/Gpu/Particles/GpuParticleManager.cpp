@@ -13,9 +13,9 @@ namespace gpu_pfx2
 static const int kMaxRuntimes = 4096;
 
 CManager::CManager()
-	: m_readback(kMaxRuntimes)
-	, m_counter(kMaxRuntimes)
+	: m_counter(kMaxRuntimes)
 	, m_scratch(kMaxRuntimes)
+	, m_readback(kMaxRuntimes)
 	, m_numRuntimesReadback(0)
 {
 }
@@ -32,7 +32,7 @@ IParticleComponentRuntime* CManager::CreateParticleContainer(const SComponentPar
 
 void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 {
-	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_ComputeParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
+	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute& BIT((eStage_ComputeParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
 	const bool bReadbackBoundingBox = CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes ? false : true;
 
 	if (!CRenderer::CV_r_GpuParticles)
@@ -70,12 +70,11 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 		context.pCounterBuffer = &m_counter.GetBuffer();
 		context.pScratchBuffer = &m_scratch.GetBuffer();
 		context.pReadbackBuffer = &m_readback.GetBuffer();
-		context.deltaTime = gEnv->pTimer->GetFrameTime();
 
 		{
 			for (auto& pRuntime : GetReadRuntimes())
 			{
-				pRuntime->Initialize();
+				pRuntime->Initialize(pRenderView->GetGraphicsPipeline().get());
 			}
 		}
 
@@ -127,11 +126,11 @@ void CManager::RenderThreadPreUpdate(CRenderView* pRenderView)
 {
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{
-		std::vector<CGpuBuffer*> UAVs;
+		std::vector<CDeviceBuffer*> UAVs;
 
 		UAVs.reserve(numRuntimes);
 		for (auto& pRuntime : GetReadRuntimes())
-			UAVs.emplace_back(&pRuntime->PrepareForUse());
+			UAVs.emplace_back(pRuntime->PrepareForUse().GetDevBuffer());
 
 		// Prepare particle buffers which have been used in the compute shader for vertex use
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->PrepareUAVsForUse(numRuntimes, &UAVs[0], false);
@@ -142,11 +141,11 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 {
 	if (uint32 numRuntimes = uint32(GetReadRuntimes().size()))
 	{
-		std::vector<CGpuBuffer*> UAVs;
+		std::vector<CDeviceBuffer*> UAVs;
 
 		UAVs.reserve(numRuntimes);
 		for (auto& pRuntime : GetReadRuntimes())
-			UAVs.emplace_back(&pRuntime->PrepareForUse());
+			UAVs.emplace_back(pRuntime->PrepareForUse().GetDevBuffer());
 
 		// Prepare particle buffers which have been used in the vertex shader for compute use
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->PrepareUAVsForUse(numRuntimes, &UAVs[0], true);
@@ -157,10 +156,10 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 
 #if (CRY_RENDERER_DIRECT3D >= 111)
 			const UINT numRanges = 1;
-			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 0 };
+			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 1 };
 
-			gcpRendD3D->GetGraphicsPipeline().GetOrCreateUtilityPass<CClearRegionPass>()->Execute(&m_counter.GetBuffer(), nulls, numRanges, &uavRange);
-			gcpRendD3D->GetGraphicsPipeline().GetOrCreateUtilityPass<CClearRegionPass>()->Execute(&m_scratch.GetBuffer(), nulls, numRanges, &uavRange);
+			m_clearRegionPass->Execute(&m_counter.GetBuffer(), nulls, numRanges, &uavRange);
+			m_clearRegionPass->Execute(&m_scratch.GetBuffer(), nulls, numRanges, &uavRange);
 #else
 			CClearSurfacePass::Execute(&m_counter.GetBuffer(), nulls);
 			CClearSurfacePass::Execute(&m_scratch.GetBuffer(), nulls);
@@ -169,10 +168,10 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 	}
 }
 
-gpu::CBitonicSort* CManager::GetBitonicSort()
+gpu::CBitonicSort* CManager::GetBitonicSort(CGraphicsPipeline* pGraphicsPipeline)
 {
 	if (!m_pBitonicSort)
-		m_pBitonicSort = std::unique_ptr<gpu::CBitonicSort>(new gpu::CBitonicSort());
+		m_pBitonicSort = std::unique_ptr<gpu::CBitonicSort>(new gpu::CBitonicSort(pGraphicsPipeline));
 	return m_pBitonicSort.get();
 }
 

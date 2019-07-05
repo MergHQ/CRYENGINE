@@ -2,10 +2,26 @@
 
 #pragma once
 
-// forward declarations.
-struct SEntityEvent;
+struct bop_meshupdate;
+struct EventPhysCollision;
+struct EventPhysJointBroken;
+struct EventPhysPostStep;
+struct IFoliage;
+struct IGeometry;
+struct IMaterial;
 struct IPhysicalEntity;
 struct IPhysicalWorld;
+struct IRenderMesh;
+struct IStatObj;
+struct pe_action_move_parts;
+struct pe_status_pos;
+struct phys_geometry;
+struct SEntityEvent;
+struct SEntityPhysicalizeParams;
+
+class CEntity;
+
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 #if 0 // uncomment if more than 64 parts are needed and the mask can no longer fit into an int64
 	#include <CryCore/BitMask.h>
@@ -27,8 +43,6 @@ public:
 	// ISimpleEntityEventListener
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 	// ~ISimpleEntityEventListener
-
-	void RegisterEventListeners(IEntityComponent::ComponentEventPriority priority);
 
 	void SerializeXML(XmlNodeRef& entityNode, bool bLoading);
 	bool NeedNetworkSerialize();
@@ -58,6 +72,7 @@ public:
 	void OnPhysicsPostStep(EventPhysPostStep* pEvent = 0);
 	void AttachToPhysicalEntity(IPhysicalEntity* pPhysEntity);
 	void CreateRenderGeometry(int nSlot, IGeometry* pFromGeom, bop_meshupdate* pLastUpdate = 0);
+	void OnPhysicsStateChanged(int previousSimulationClass);
 	//////////////////////////////////////////////////////////////////////////
 
 	void              UpdateSlotGeometry(int nSlot, IStatObj* pStatObjNew = 0, float mass = -1.0f, int bNoSubslots = 1);
@@ -76,13 +91,18 @@ public:
 	void              ReattachSoftEntityVtx(IPhysicalEntity* pAttachToEntity, int nAttachToPart);
 
 #if !defined(_RELEASE)
-	static void EnableValidation();
-	static void DisableValidation();
+	static void       EnableValidation();
+	static void       DisableValidation();
 #endif
+
+	void              PrepareForDeletion();
+	void              OnCollision(const EventPhysCollision& collision, int sourceIndex);
+	void              SendBreakEvent(EventPhysJointBroken* pEvent);
+	void              OnGlobalEntityMaterialChanged(IMaterial* pMaterial);
 
 private:
 	IPhysicalWorld*  PhysicalWorld() const { return gEnv->pPhysicalWorld; }
-	void             OnEntityXForm(const SEntityEvent& event);
+	void             OnEntityXForm(EntityTransformationFlagsMask transformReasons);
 	void             OnChangedPhysics(bool bEnabled);
 	void             DestroyPhysicalEntity(bool bDestroyCharacters = true, int iMode = 0);
 
@@ -92,15 +112,15 @@ private:
 	void             PhysicalizeSoft(SEntityPhysicalizeParams& params);
 	void             AttachSoftVtx(IRenderMesh* pRM, IPhysicalEntity* pAttachToEntity, int nAttachToPart);
 	void             PhysicalizeArea(SEntityPhysicalizeParams& params);
+#if defined(USE_GEOM_CACHES)
 	bool             PhysicalizeGeomCache(SEntityPhysicalizeParams& params);
+#endif
 	bool             PhysicalizeCharacter(SEntityPhysicalizeParams& params);
 	bool             ConvertCharacterToRagdoll(SEntityPhysicalizeParams& params, const Vec3& velInitial);
 
 	void             CreatePhysicalEntity(SEntityPhysicalizeParams& params);
 	phys_geometry*   GetSlotGeometry(int nSlot);
 	void             SyncCharacterWithPhysics();
-
-	void             MoveChildPhysicsParts(IPhysicalEntity* pSrcAdam, CEntity* pChild, pe_action_move_parts& amp, uint64 usedRanges);
 
 	IPhysicalEntity* QueryPhyscalEntity(IEntity* pEntity) const;
 	CEntity*         GetCEntity(IPhysicalEntity* pPhysEntity);
@@ -115,6 +135,11 @@ private:
 
 	void             AwakeOnRender(bool vRender);
 	void             OnTimer(int id);
+	void             OnEntityHiddenOrMadeInvisible();
+	void             OnEntityUnhiddenOrMadeVisible();
+	void             OnEntityUnhidden();
+	void             OnChildEntityAttached(EntityId childEntityId);
+	void             OnChildEntityDetached(EntityId childEntityId);
 
 private:
 	CEntity* GetEntity() const;
@@ -124,5 +149,4 @@ private:
 
 	// Pointer to physical object.
 	IPhysicalEntity* m_pPhysicalEntity = nullptr;
-	int32 m_timerId = IEntity::CREATE_NEW_UNIQUE_TIMER_ID;
 };

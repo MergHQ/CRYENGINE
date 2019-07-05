@@ -428,7 +428,7 @@ bool ReadRichGameMediaHeader(const char* filename, FILE* pFile, RichSaveGames::R
 bool ReadRichGameMetaData(const string& filename, CPlayerProfileManager::SSaveGameMetaData& metaData)
 {
 	ICryPak* pCryPak = gEnv->pCryPak;
-	FILE* pFile = pCryPak->FOpen(filename, "rbx"); // x=don't chache full file
+	FILE* pFile = pCryPak->FOpen(filename, "rb");
 	if (!pFile)
 		return false;
 
@@ -498,7 +498,6 @@ bool CRichSaveGameHelper::GetSaveGames(CPlayerProfileManager::SUserEntry* pEntry
 	profilePrefix += '_';
 	size_t profilePrefixLen = profilePrefix.length();
 
-	ICryPak* pCryPak = gEnv->pCryPak;
 	_finddata_t fd;
 
 	path.TrimRight("/\\");
@@ -584,15 +583,14 @@ public:
 		m_thumbnailWidth = 0;
 		m_thumbnailHeight = 0;
 		m_thumbnailDepth = 0;
-		assert(m_pProfileImpl != 0);
-		assert(m_pEntry != 0);
+		CRY_ASSERT(m_pProfileImpl != 0);
+		CRY_ASSERT(m_pEntry != 0);
 	}
 
 	// ILoadGame
 	virtual bool Init(const char* name)
 	{
-		assert(m_pEntry->pCurrentProfile != 0);
-		if (m_pEntry->pCurrentProfile == 0)
+		if (!CRY_VERIFY(m_pEntry->pCurrentProfile != 0))
 		{
 			GameWarning("CXMLRichSaveGame: Entry for user '%s' has no current profile", m_pEntry->userId.c_str());
 			return false;
@@ -601,7 +599,7 @@ public:
 #ifdef TEST_THUMBNAIL_AUTOCAPTURE
 		// the image file we write out is always in 16:9 format, e.g. 256x144
 		// or scaled depending on renderer height
-		const int h = gEnv->pRenderer->GetHeight();
+		const int h = gEnv->pRenderer->GetOverlayHeight();
 		const int imageDepth = RichSaveGames::THUMBNAIL_DEFAULT_DEPTH;
 		int imageHeight = std::min(RichSaveGames::THUMBNAIL_DEFAULT_HEIGHT, h);
 		int imageWidth = imageHeight * 16 / 9;
@@ -732,8 +730,8 @@ public:
 		// debug: get screen shot here
 		if (thumbnailSize > 0)
 		{
-			int w = gEnv->pRenderer->GetWidth();
-			int h = gEnv->pRenderer->GetHeight();
+			int w = gEnv->pRenderer->GetOverlayWidth();
+			int h = gEnv->pRenderer->GetOverlayHeight();
 
 			// initialize to stretch thumbnail
 			int captureDestWidth = m_thumbnailWidth;
@@ -762,9 +760,8 @@ public:
 				// CryLogAlways("CXMLRichSaveGame: TEST_THUMBNAIL_AUTOCAPTURE: capWidth=%d capHeight=%d (off=%d,%d) thmbw=%d thmbh=%d rw=%d rh=%d",
 				//	captureDestWidth, captureDestHeight, captureDestOffX, captureDestOffY, m_thumbnailWidth, m_thumbnailHeight, w,h);
 
-				if (captureDestWidth > m_thumbnailWidth || captureDestHeight > m_thumbnailHeight)
+				if (!CRY_VERIFY(captureDestWidth <= m_thumbnailWidth && captureDestHeight <= m_thumbnailHeight))
 				{
-					assert(false);
 					GameWarning("CXMLRichSaveGame: TEST_THUMBNAIL_AUTOCAPTURE: capWidth=%d capHeight=%d", captureDestWidth, captureDestHeight);
 					captureDestHeight = m_thumbnailHeight;
 					captureDestWidth = m_thumbnailWidth;
@@ -840,15 +837,14 @@ public:
 	{
 		m_pImpl = pImpl;
 		m_pEntry = pEntry;
-		assert(m_pImpl != 0);
-		assert(m_pEntry != 0);
+		CRY_ASSERT(m_pImpl != 0);
+		CRY_ASSERT(m_pEntry != 0);
 	}
 
 	// ILoadGame
 	virtual bool Init(const char* name)
 	{
-		assert(m_pEntry->pCurrentProfile != 0);
-		if (m_pEntry->pCurrentProfile == 0)
+		if (!CRY_VERIFY(m_pEntry->pCurrentProfile != 0))
 		{
 			GameWarning("CXMLRichLoadGame: Entry for user '%s' has no current profile", m_pEntry->userId.c_str());
 			return false;
@@ -881,7 +877,7 @@ public:
 		}
 
 		ICryPak* pCryPak = gEnv->pCryPak;
-		FILE* pFile = pCryPak->FOpen(filename, "rbx"); // x=don't chache full file
+		FILE* pFile = pCryPak->FOpen(filename, "rb");
 		if (!pFile)
 			return false;
 
@@ -1053,8 +1049,7 @@ bool CRichSaveGameHelper::MoveSaveGames(CPlayerProfileManager::SUserEntry* pEntr
 
 bool CRichSaveGameHelper::GetSaveGameThumbnail(CPlayerProfileManager::SUserEntry* pEntry, const char* saveGameName, CPlayerProfileManager::SThumbnail& thumbnail)
 {
-	assert(pEntry->pCurrentProfile != 0);
-	if (pEntry->pCurrentProfile == 0)
+	if (!CRY_VERIFY(pEntry->pCurrentProfile != 0))
 	{
 		GameWarning("CXMLRichLoadGame:GetSaveGameThumbnail: Entry for user '%s' has no current profile", pEntry->userId.c_str());
 		return false;
@@ -1066,7 +1061,7 @@ bool CRichSaveGameHelper::GetSaveGameThumbnail(CPlayerProfileManager::SUserEntry
 	filename.append(strippedName);
 
 	ICryPak* pCryPak = gEnv->pCryPak;
-	FILE* pFile = pCryPak->FOpen(filename, "rbx"); // x=don't chache full file
+	FILE* pFile = pCryPak->FOpen(filename, "rb");
 	if (!pFile)
 		return false;
 

@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "PointConstraint.h"
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace Cry
 {
@@ -44,7 +45,8 @@ namespace Cry
 		{
 			if (m_bActive)
 			{
-				ConstrainToPoint();
+				auto attach = m_attacher.FindAttachments(this);
+				ConstrainTo(attach.first, m_attacher.noAttachColl, attach.second);
 			}
 			else
 			{
@@ -64,12 +66,16 @@ namespace Cry
 
 				Reset();
 			}
+			else if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
+			{
+				m_constraintIds.clear();
+			}
 		}
 
-		uint64 CPointConstraintComponent::GetEventMask() const
+		Cry::Entity::EventFlags CPointConstraintComponent::GetEventMask() const
 		{
-			uint64 bitFlags = m_bActive ? ENTITY_EVENT_BIT(ENTITY_EVENT_START_GAME) : 0;
-			bitFlags |= ENTITY_EVENT_BIT(ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED);
+			Cry::Entity::EventFlags bitFlags = m_bActive ? (ENTITY_EVENT_START_GAME | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED) : Cry::Entity::EventFlags();
+			bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 			return bitFlags;
 		}

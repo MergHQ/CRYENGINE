@@ -76,14 +76,14 @@ bool CSmartMine::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 	ResetGameObject();
 	SM::RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE(false, "CSmartMine::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CSmartMine::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CSmartMine::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CSmartMine::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CSmartMine::GetEntityPoolSignature not implemented");
 
 	return true;
 }
@@ -220,9 +220,9 @@ void CSmartMine::ProcessEvent( const SEntityEvent& entityEvent )
 	}
 }
 
-uint64 CSmartMine::GetEventMask() const
+Cry::Entity::EventFlags CSmartMine::GetEventMask() const
 {
-	return ENTITY_EVENT_BIT(ENTITY_EVENT_RESET) | ENTITY_EVENT_BIT(ENTITY_EVENT_ENTERAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_LEAVEAREA) | ENTITY_EVENT_BIT(ENTITY_EVENT_HIDE) | ENTITY_EVENT_BIT(ENTITY_EVENT_UNHIDE);
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_ENTERAREA | ENTITY_EVENT_LEAVEAREA | ENTITY_EVENT_HIDE | ENTITY_EVENT_UNHIDE;
 }
 
 void CSmartMine::GetMemoryUsage( ICrySizer *pSizer ) const

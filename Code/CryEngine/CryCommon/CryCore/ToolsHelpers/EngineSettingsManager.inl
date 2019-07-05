@@ -44,13 +44,7 @@ BOOL BrowseForFolder(HWND hWnd, LPCWSTR szInitialPath, LPWSTR szPath, LPCWSTR sz
 // Desc: Static msg handler which passes messages to the application class.
 LRESULT static CALLBACK WndProcSettingsManager(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	assert(g_pThis);
-
-	if (uMsg == WM_INITDIALOG)
-	{
-		int a = 0;   // placeholder for debug breakpoint
-	}
-
+	CRY_ASSERT(g_pThis);
 	return g_pThis->HandleProc(hWnd, uMsg, wParam, lParam);
 }
 
@@ -104,7 +98,6 @@ CEngineSettingsManager::CEngineSettingsManager(const wchar_t* moduleName, const 
 		m_sModuleName = moduleName;
 
 		// find INI filename located in module path
-		HMODULE hInstance = GetModuleHandleW(moduleName);
 		wchar_t szFilename[_MAX_PATH];
 		GetModuleFileNameW((HINSTANCE)&__ImageBase, szFilename, _MAX_PATH);
 		wchar_t drive[_MAX_DRIVE];
@@ -1005,7 +998,7 @@ BOOL BrowseForFolder(HWND hWnd, LPCWSTR szInitialPath, LPWSTR szPath, LPCWSTR sz
 
 	if (pidl != NULL)
 	{
-		BOOL retval = SHGetPathFromIDListW(pidl, szPath);
+		SHGetPathFromIDListW(pidl, szPath);
 		CoTaskMemFree(pidl);
 		CoUninitialize();
 		return TRUE;

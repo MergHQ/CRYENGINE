@@ -180,7 +180,7 @@ inline void MultiBuffer<TTypeList >::unlock()
 
 	for (size_t i = 1; i < FIELDS_COUNT; ++i)
 	{
-		assert(m_offsets[i] >= m_offsets[i - 1]);
+		CRY_ASSERT(m_offsets[i] >= m_offsets[i - 1]);
 		m_offsets[i] = m_offsets[i] - m_offsets[i - 1];
 	}
 }
@@ -216,7 +216,7 @@ template<size_t index>
 inline void MultiBuffer<TTypeList >::resize(const size_t size, const size_t padding)
 {
 	static_assert(index < FIELDS_COUNT, "Index is out of range!");
-	assert(IsPowerOfTwo(padding));
+	CRY_ASSERT(IsPowerOfTwo(padding));
 
 	m_offsets[index] = Align(size * sizeof(typename get_field_type<index>::type), padding);
 }
@@ -227,8 +227,8 @@ inline auto MultiBuffer<TTypeList>::get()->typename get_field_type<index>::type 
 {
 	static_assert(index < FIELDS_COUNT, "Index out of range!");
 
-	assert(*this);
-	assert(reinterpret_cast<uintptr_t>(GetField(index)) % ComputeFieldAlignment(index) == 0);
+	CRY_ASSERT(*this);
+	CRY_ASSERT(reinterpret_cast<uintptr_t>(GetField(index)) % ComputeFieldAlignment(index) == 0);
 
 	return static_cast<typename get_field_type<index>::type*>(GetField(index));
 }
@@ -246,7 +246,7 @@ inline size_t MultiBuffer<TTypeList >::size() const
 {
 	const size_t beginOffset = (index > 0) ? (m_offsets[index - 1]) : (0);
 	const size_t endOffset = m_offsets[index];
-	assert(endOffset >= beginOffset);
+	CRY_ASSERT(endOffset >= beginOffset);
 
 	return (endOffset - beginOffset) / sizeof(typename get_field_type<index>::type);
 }
@@ -348,8 +348,8 @@ inline void MultiBuffer<TTypeList >::UpdateBuffers()
 template<typename TTypeList>
 inline void MultiBuffer<TTypeList >::CopyBuffersFrom(const MultiBuffer& other)
 {
-	assert(other);
-	assert(m_offsets[FIELDS_COUNT - 1] == other.m_offsets[FIELDS_COUNT - 1]);
+	CRY_ASSERT(other);
+	CRY_ASSERT(m_offsets[FIELDS_COUNT - 1] == other.m_offsets[FIELDS_COUNT - 1]);
 
 	UpdateBuffers();
 	if (*this)
@@ -357,8 +357,8 @@ inline void MultiBuffer<TTypeList >::CopyBuffersFrom(const MultiBuffer& other)
 		const size_t dataSize = m_offsets[FIELDS_COUNT - 1];
 		if (dataSize > 0)
 		{
-			assert(dataSize <= m_bufferSize);
-			assert(dataSize <= other.m_bufferSize);
+			CRY_ASSERT(dataSize <= m_bufferSize);
+			CRY_ASSERT(dataSize <= other.m_bufferSize);
 			memcpy(m_pBuffer, other.m_pBuffer, dataSize);
 		}
 	}
@@ -373,10 +373,11 @@ inline void* MultiBuffer<TTypeList >::GetBuffer()
 template<typename TTypeList>
 inline void* MultiBuffer<TTypeList >::GetField(size_t index)
 {
-	assert(GetBuffer());
+	void* pBuffer = GetBuffer();
+	CRY_ASSERT(pBuffer);
 
 	const size_t offset = (index > 0) ? (m_offsets[index - 1]) : (0);
-	return static_cast<char*>(GetBuffer()) + offset;
+	return static_cast<char*>(pBuffer) + offset;
 }
 
 template<typename TTypeList>

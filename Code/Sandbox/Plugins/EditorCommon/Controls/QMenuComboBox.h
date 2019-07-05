@@ -29,11 +29,12 @@ public:
 	QMenuComboBox(QWidget* parent = nullptr);
 	~QMenuComboBox();
 
-	void ShowPopup();
+	virtual void ShowPopup();
 
 	//Content
 	void AddItem(const QString& str, const QVariant& userData = QVariant());
 	void AddItems(const QStringList& items);
+	void AddItems(const std::vector<QString>& items);
 
 	void RemoveItem(int index);
 
@@ -94,7 +95,7 @@ public:
 	//Internal state
 
 	//! Use before adding items, Default is false
-	void SetMultiSelect(bool multiSelect) { m_multiSelect = multiSelect;  }
+	void SetMultiSelect(bool multiSelect) { m_multiSelect = multiSelect; }
 
 	//! Use before adding items, Default is false
 	void SetCanHaveEmptySelection(bool emptySelect) { m_emptySelect = emptySelect; }
@@ -151,4 +152,3 @@ private:
 	QSize             m_sizeHint;
 	int               m_widthOffset;
 };
-
