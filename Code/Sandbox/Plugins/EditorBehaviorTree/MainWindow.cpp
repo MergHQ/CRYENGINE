@@ -105,14 +105,14 @@ void CMainWindow::InitMenuBar()
 	m_pEnableGameSDKEventsMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableGameSDKEventsMenuAction, &QAction::triggered, [this]()
 	{
-		m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
+		m_pTreePanel->OnWindowEvent_ShowGameSDKSignals(GetEnableGameSDKEvents());
 	});
 
 	m_pEnableDeprecatedEventsMenuAction = pMenuEvents->CreateAction("Enable Deprecated events", section);
 	m_pEnableDeprecatedEventsMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableDeprecatedEventsMenuAction, &QAction::triggered, [this]()
 	{
-		m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
+		m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableDeprecatedEvents());
 	});
 
 	// Debug

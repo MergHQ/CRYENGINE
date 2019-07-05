@@ -160,13 +160,13 @@ void TreePanel::OnWindowEvent_ShowCryEngineSignals(const bool enable)
 
 void TreePanel::OnWindowEvent_ShowDeprecatedSignals(const bool enable)
 {
-	ShowGameSDKSignals(enable);
+	ShowDeprecatedSignals(enable);
 	ForceAttachDocumentToPropertyTree();
 }
 
 void TreePanel::OnWindowEvent_ShowGameSDKSignals(const bool enable)
 {
-	ShowDeprecatedSignals(enable);
+	ShowGameSDKSignals(enable);
 	ForceAttachDocumentToPropertyTree();
 }
 
