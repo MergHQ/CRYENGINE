@@ -334,11 +334,6 @@ bool CGameEngine::Init(bool bTestMode, bool bShaderCacheGen, const char* sInCmdL
 	SSystemInitParams startupParams;
 
 	startupParams.bEditor = true;
-	
-	if (AfxGetMainWnd())
-	{
-		startupParams.hWnd = AfxGetMainWnd()->GetSafeHwnd();
-	}
 
 	startupParams.sLogFileName = "Editor.log";
 	startupParams.pUserCallback = m_pSystemUserCallback;

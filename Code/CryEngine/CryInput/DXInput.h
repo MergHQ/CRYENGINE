@@ -36,7 +36,7 @@ class CKeyboard;
 class CDXInput : public CBaseInput, public IWindowMessageHandler
 {
 public:
-	CDXInput(ISystem* pSystem, CRY_HWND hwnd);
+	CDXInput(ISystem* pSystem);
 	virtual ~CDXInput();
 
 	// IInput overrides

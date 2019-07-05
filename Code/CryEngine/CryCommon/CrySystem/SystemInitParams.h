@@ -51,6 +51,7 @@ struct SSystemInitParams
 	bool bUnattendedMode;                      //!< When running as part of a build on build-machines: Prevent popping up of any dialog.
 
 #if CRY_PLATFORM_DURANGO
+	Windows::UI::Core::ICoreWindow^ window;
 	const EPLM_Event* pLastPLMEvent;
 	Windows::ApplicationModel::Activation::IActivatedEventArgs^ pFirstActivatedEventArgs;
 #endif

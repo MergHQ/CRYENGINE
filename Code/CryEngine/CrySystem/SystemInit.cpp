@@ -1437,12 +1437,6 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 
 	if (m_env.pRenderer)
 	{
-#ifndef RELEASE
-		const CRY_HWND hwnd = (startupParams.bEditor) ? (CRY_HWND)1 : m_hWnd;
-#else
-		const CRY_HWND hwnd = m_hWnd;
-#endif
-
 		int width = m_rWidth->GetIVal();
 		int height = m_rHeight->GetIVal();
 		if (gEnv->IsEditor())
@@ -1455,9 +1449,7 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 		m_hWnd = m_env.pRenderer->Init(
 			0, 0, width, height,
 			m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
-			hwnd, false, startupParams.bShaderCacheGen);
-
-		startupParams.hWnd = m_hWnd;
+			startupParams, false);
 
 		m_env.pAuxGeomRenderer = m_env.pRenderer->GetIRenderAuxGeom();
 		InitPhysicsRenderer(startupParams);
@@ -2546,8 +2538,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	// Get file version information.
 	QueryVersionInfo();
 	DetectGameFolderAccessRights();
-
-	m_hWnd = (CRY_HWND)startupParams.hWnd;
 
 	m_binariesDir = startupParams.szBinariesDir;
 

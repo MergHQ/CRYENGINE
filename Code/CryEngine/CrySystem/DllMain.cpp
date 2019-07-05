@@ -166,7 +166,7 @@ extern "C"
 #if !defined(_LIB)
 			gEnv = pSystem->GetGlobalEnvironment();
 #endif
-			gEnv->pWindow = startupParams.hWnd;
+			gEnv->pWindow = pSystem->GetHWND();
 #endif
 
 #if CRY_PLATFORM_WINDOWS

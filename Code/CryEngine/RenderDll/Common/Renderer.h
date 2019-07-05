@@ -856,7 +856,7 @@ public:
 
 	virtual ERenderType GetRenderType() const override;
 
-	virtual CRY_HWND    Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, CRY_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override = 0;
+	virtual CRY_HWND    Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, SSystemInitParams& initParams, bool bReInit = false) override = 0;
 
 	virtual int         GetFeatures() override { return m_Features; }
 

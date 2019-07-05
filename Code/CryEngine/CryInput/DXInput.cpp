@@ -41,12 +41,12 @@
 
 CDXInput* CDXInput::This = 0;
 
-CDXInput::CDXInput(ISystem* pSystem, CRY_HWND hwnd) : CBaseInput()
+CDXInput::CDXInput(ISystem* pSystem) : CBaseInput()
 {
 	assert(!This && "CDXInput has been instantiated more than once");
 
 	m_bImeComposing = false;
-	m_hwnd = hwnd;
+	m_hwnd = pSystem->GetHWND();
 	m_pKeyboard = nullptr;
 	m_lastLayout = 0;
 	This = this;

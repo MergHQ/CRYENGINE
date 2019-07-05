@@ -50,7 +50,7 @@ class CEngineModule_CryInput : public IInputEngineModule
 		if (gEnv->pRenderer)
 		{
 #if defined(USE_DXINPUT)
-			pInput = new CDXInput(env.pSystem, (HWND) initParams.hWnd);
+			pInput = new CDXInput(env.pSystem);
 #elif defined(USE_DURANGOINPUT)
 			pInput = new CDurangoInput(env.pSystem);
 #elif defined(USE_LINUXINPUT)

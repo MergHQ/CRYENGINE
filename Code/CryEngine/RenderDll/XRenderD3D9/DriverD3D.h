@@ -262,7 +262,7 @@ public:
 
 	//===============================================================================
 
-	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, CRY_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) override;
+	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, SSystemInitParams& initParams, bool bReInit = false) override;
 
 	virtual void     GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t& vidMemUsedRecently, bool bGetPoolsSizes = false) override;
 

@@ -5,6 +5,7 @@
 #include <CryCore/Platform/WindowsUtils.h>
 #include <CrySystem/IProjectManager.h>
 #include <CrySystem/ConsoleRegistration.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CryFont/IFont.h>
 
 #include "D3DStereo.h"
@@ -1062,7 +1063,7 @@ const char* sGetSQuality(const char* szName)
 	}
 }
 
-CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, CRY_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
+CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, SSystemInitParams& initParams, bool bReInit)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
@@ -1093,16 +1094,13 @@ CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 	iLog->Log("Creating window called '%s' (%dx%d)", m_WinTitle, width, height);
 
-	if (Glhwnd == (CRY_HWND)1)
+	m_bEditor = gEnv->IsEditor();
+	if (m_bEditor && m_currWindowState == EWindowState::Fullscreen)
 	{
-		Glhwnd = 0;
-		m_bEditor = true;
-
-		if (m_currWindowState == EWindowState::Fullscreen)
-			m_currWindowState = EWindowState::Windowed;
+		m_currWindowState = EWindowState::Windowed;
 	}
 
-	m_bShaderCacheGen = bShaderCacheGen;
+	m_bShaderCacheGen = initParams.bShaderCacheGen;
 
 	// RenderPipeline parameters
 	int renderWidth, renderHeight;
@@ -1125,20 +1123,19 @@ CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 		// call init stereo before device is created!
 		m_pStereoRenderer->InitDeviceBeforeD3D();
 
-		while (true)
+#if CRY_PLATFORM_DURANGO
+		m_hWnd = (CRY_HWND)initParams.window;
+#else
+		m_hWnd = CRY_HWND(0);
+#endif
+
+		// Creates Device here.
+		bool bRes = m_pRT->RC_CreateDevice();
+		if (!bRes)
 		{
-			m_hWnd = (HWND)Glhwnd;
-
-			// Creates Device here.
-			bool bRes = m_pRT->RC_CreateDevice();
-			if (!bRes)
-			{
-				CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "Rendering device creation failed!");
-				ShutDown(true);
-				return 0;
-			}
-
-			break;
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR, "Rendering device creation failed!");
+			ShutDown(true);
+			return CRY_HWND(0);
 		}
 
 #if defined(SUPPORT_DEVICE_INFO)
@@ -1321,7 +1318,7 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	                 "Takes a PIX GPU capture with the specified name\n");
 #endif
 
-	if (!bShaderCacheGen)
+	if (!m_bShaderCacheGen)
 	{
 		ExecuteRenderThreadCommand([=] { this->RT_Init(); }, ERenderCommandFlags::FlushAndWait);
 	}

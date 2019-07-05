@@ -970,7 +970,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual ERenderType GetRenderType() const = 0;
 
 	//! Initializes the renderer, parameters are self-explanatory.
-	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, CRY_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) = 0;
+	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, struct SSystemInitParams& initParams, bool bReInit = false) = 0;
 	virtual void     PostInit() = 0;
 
 	virtual void UpdateVsync() = 0;
