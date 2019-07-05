@@ -208,8 +208,6 @@ CReflectionRegistryDockable::CReflectionRegistryDockable(QWidget* const pParent)
 	pLayout->setMenuBar(pMenuBar);
 	pLayout->addWidget(m_pReflectionRegistryWidget);
 	SetContent(pLayout);
-
-	InstallReleaseMouseFilter(this);
 }
 
 CReflectionRegistryDockable::~CReflectionRegistryDockable()

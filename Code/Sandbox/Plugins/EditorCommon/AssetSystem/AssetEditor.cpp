@@ -518,6 +518,10 @@ bool CAssetEditor::CanQuit(std::vector<string>& unsavedChanges)
 
 void CAssetEditor::closeEvent(QCloseEvent* pEvent)
 {
+	// Make sure to give CDockableEditor a chance to handle the event as well
+	// Currently it makes sure to save personalization/layout changes on close
+	CDockableEditor::closeEvent(pEvent);
+
 	if (TryCloseAsset())
 	{
 		pEvent->accept();

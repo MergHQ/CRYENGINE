@@ -236,7 +236,6 @@ class EDITOR_COMMON_API CDockableEditor : public CEditor, public IPane
 	Q_INTERFACES(IPane);
 public:
 	CDockableEditor(QWidget* pParent = nullptr);
-	virtual ~CDockableEditor();
 
 	virtual void        Initialize() override                    { CEditor::Initialize(); }
 	virtual QWidget*    GetWidget() final                        { return this; }
@@ -259,8 +258,5 @@ public:
 	void Highlight();
 
 protected:
-	void InstallReleaseMouseFilter(QObject* object);
-
-private:
-	QObject* m_pReleaseMouseFilter;
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 };

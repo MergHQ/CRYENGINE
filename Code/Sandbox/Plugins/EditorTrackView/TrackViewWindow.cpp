@@ -67,7 +67,6 @@ CTrackViewWindow::CTrackViewWindow(QWidget* pParent)
 
 	RegisterActions();
 	InitMenu();
-	InstallReleaseMouseFilter(this);
 }
 
 void CTrackViewWindow::RegisterActions()

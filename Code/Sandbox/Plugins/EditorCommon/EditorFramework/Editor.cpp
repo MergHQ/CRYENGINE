@@ -59,40 +59,6 @@ private:
 	CBroadcastManager& m_broadcastManager;
 };
 
-class CReleaseMouseFilter : public QObject
-{
-public:
-	explicit CReleaseMouseFilter(CDockableEditor& dockableEditor)
-		: m_dockableEditor(dockableEditor)
-	{
-		m_connection = connect(&m_eventTimer, &QTimer::timeout, [this]()
-			{
-				m_dockableEditor.SaveLayoutPersonalization();
-			});
-		m_eventTimer.setSingleShot(true);
-
-		connect(&dockableEditor, &QObject::destroyed, [this]()
-			{
-				disconnect(m_connection);
-			});
-	}
-
-protected:
-	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override
-	{
-		if (pEvent->type() == QEvent::MouseButtonRelease)
-		{
-			m_eventTimer.start(1000);
-		}
-		return QObject::eventFilter(pObject, pEvent);
-	}
-
-private:
-	QTimer                  m_eventTimer;
-	CDockableEditor&        m_dockableEditor;
-	QMetaObject::Connection m_connection;
-};
-
 } // namespace Private_EditorFramework
 
 CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false */)
@@ -557,17 +523,7 @@ CBroadcastManager& CEditor::GetBroadcastManager()
 CDockableEditor::CDockableEditor(QWidget* pParent)
 	: CEditor(pParent)
 {
-	m_pReleaseMouseFilter = new Private_EditorFramework::CReleaseMouseFilter(*this);
 	setAttribute(Qt::WA_DeleteOnClose);
-}
-
-CDockableEditor::~CDockableEditor()
-{
-	if (m_pReleaseMouseFilter)
-	{
-		m_pReleaseMouseFilter->deleteLater();
-		m_pReleaseMouseFilter = nullptr;
-	}
 }
 
 QMenu* CDockableEditor::GetPaneMenu() const
@@ -605,13 +561,8 @@ void CDockableEditor::Highlight()
 	//TODO : implement this !
 }
 
-void CDockableEditor::InstallReleaseMouseFilter(QObject* object)
+void CDockableEditor::closeEvent(QCloseEvent* pEvent)
 {
-	object->installEventFilter(m_pReleaseMouseFilter);
-
-	QList<QWidget*> childWidgets = object->findChildren<QWidget*>();
-	for (QWidget* pChild : childWidgets)
-	{
-		InstallReleaseMouseFilter(pChild);
-	}
+	SaveLayoutPersonalization();
+	CEditor::closeEvent(pEvent);
 }

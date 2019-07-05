@@ -208,8 +208,6 @@ CTerrainEditor::CTerrainEditor(QWidget* parent)
 
 	// Should be called after tabs were created
 	RegisterActions();
-
-	InstallReleaseMouseFilter(this);
 }
 
 void CTerrainEditor::RegisterActions()

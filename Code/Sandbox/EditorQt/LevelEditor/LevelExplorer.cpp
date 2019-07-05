@@ -250,8 +250,6 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	//Register to any LevelLayerModel reset event, this will be used to stop selection reset
 	CLevelModelsManager::GetInstance().signalLayerModelResetBegin.Connect(this, &CLevelExplorer::OnLayerModelResetBegin);
 	CLevelModelsManager::GetInstance().signalLayerModelResetEnd.Connect(this, &CLevelExplorer::OnLayerModelResetEnd);
-
-	InstallReleaseMouseFilter(this);
 }
 
 CLevelExplorer::~CLevelExplorer()

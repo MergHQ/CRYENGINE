@@ -533,7 +533,6 @@ CAssetBrowser::CAssetBrowser(bool bHideEngineFolder /*= false*/, QWidget* pParen
 
 	m_pAssetDropHandler.reset(new CAssetDropHandler());
 	setAcceptDrops(true);
-	InstallReleaseMouseFilter(this);
 	UpdateSelectionDependantActions();
 
 	WaitUntilAssetsAreReady();
@@ -561,7 +560,6 @@ CAssetBrowser::CAssetBrowser(const std::vector<CAssetType*>& assetTypes, bool bH
 
 	m_pAssetDropHandler.reset(new CAssetDropHandler());
 	setAcceptDrops(true);
-	InstallReleaseMouseFilter(this);
 	UpdateSelectionDependantActions();
 
 	WaitUntilAssetsAreReady();
