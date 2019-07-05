@@ -1437,7 +1437,7 @@ void CPhysArea::DrawHelperInformation(IPhysRenderer *pRenderer, int flags)
 				i1 = i0+1 & i0-m_npt+1>>31;
 				pRenderer->DrawLine(m_R*Vec3(m_pt[i0].x,m_pt[i0].y,m_zlim[j])*m_scale+m_offset,
 														m_R*Vec3(m_pt[i1].x,m_pt[i1].y,m_zlim[j])*m_scale+m_offset, m_iSimClass);
-				((hash ^= ((Vec3i*)m_pt)[i0].x*3) ^= ((Vec3i*)m_pt)[i0].y*5) ^= ((Vec3i*)m_pt)[i0].z*7;
+				(hash ^= ((Vec2i*)m_pt)[i0].x*3) ^= ((Vec2i*)m_pt)[i0].y*5;
 			}
 			hash+=iszero(hash+1);	hash+=iszero(hash);
 			PREFAST_SUPPRESS_WARNING(6240);
