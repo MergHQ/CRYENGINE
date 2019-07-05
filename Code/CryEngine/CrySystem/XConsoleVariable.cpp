@@ -420,7 +420,7 @@ string CXConsoleVariableCVarGroup::GetValueSpec(const string& key, const int* pS
 	if (it != m_CVarGroupDefault.m_KeyValuePair.cend())
 		return it->second;
 
-	CRY_ASSERT_MESSAGE(false, "Internal error");
+	CRY_ASSERT(false, "Internal error");
 	return "";
 }
 

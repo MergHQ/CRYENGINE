@@ -308,7 +308,7 @@ void CCryMemoryManager::FreePages(void* p, size_t size)
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 	#if defined(_DEBUG)
 	int ret = munmap(p, size);
-	CRY_ASSERT_MESSAGE(ret == 0, "munmap returned error.");
+	CRY_ASSERT(ret == 0, "munmap returned error.");
 	#else
 	munmap(p, size);
 	#endif

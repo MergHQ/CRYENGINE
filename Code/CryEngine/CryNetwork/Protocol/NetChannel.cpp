@@ -125,16 +125,16 @@ CNetChannel::~CNetChannel()
 void CNetChannel::SetClient(INetContext* pNetContext)
 {
 	SCOPED_GLOBAL_LOCK;
-	CRY_ASSERT_MESSAGE(!m_pContextView, "Error: setting the channel type twice.");
-	CRY_ASSERT_MESSAGE(pNetContext, "Must set a context to make a client.");
+	CRY_ASSERT(!m_pContextView, "Error: setting the channel type twice.");
+	CRY_ASSERT(pNetContext, "Must set a context to make a client.");
 	m_pContextView = new CClientContextView(this, (CNetContext*)pNetContext);
 }
 
 void CNetChannel::SetServer(INetContext* pNetContext)
 {
 	SCOPED_GLOBAL_LOCK;
-	CRY_ASSERT_MESSAGE(!m_pContextView, "Error: setting the channel type twice.");
-	CRY_ASSERT_MESSAGE(pNetContext, "Must set a context to make a server.");
+	CRY_ASSERT(!m_pContextView, "Error: setting the channel type twice.");
+	CRY_ASSERT(pNetContext, "Must set a context to make a server.");
 	m_pContextView = new CServerContextView(this, (CNetContext*)pNetContext);
 	m_fastLookupId = CNetwork::Get()->RegisterForFastLookup(this);
 }

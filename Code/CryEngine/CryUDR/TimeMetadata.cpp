@@ -37,7 +37,7 @@ namespace Cry
 			{
 				return frameIDStart >= m_frameID && m_frameID <= frameIDEnd;
 			}
-			CRY_ASSERT_MESSAGE(isValid, "Function should not be called on a non-valid Metadata object.");
+			CRY_ASSERT(isValid, "Function should not be called on a non-valid Metadata object.");
 			return false;
 		}
 
@@ -48,7 +48,7 @@ namespace Cry
 			{
 				return timeStart >= m_timestamp && m_timestamp <= timeEnd;
 			}
-			CRY_ASSERT_MESSAGE(isValid, "Function should not be called on a non-valid Metadata object.");
+			CRY_ASSERT(isValid, "Function should not be called on a non-valid Metadata object.");
 			return false;
 		}
 
@@ -77,37 +77,37 @@ namespace Cry
 
 		bool CTimeMetadata::operator <(const CTimeMetadata& rhs) const
 		{
-			CRY_ASSERT_MESSAGE(IsValid() && rhs.IsValid(), "Both operands must be valid.");
+			CRY_ASSERT(IsValid() && rhs.IsValid(), "Both operands must be valid.");
 			return m_frameID < rhs.m_frameID || (m_frameID == rhs.m_frameID && m_timestamp < rhs.m_timestamp);
 		}
 
 		bool CTimeMetadata::operator >(const CTimeMetadata& rhs) const
 		{
-			CRY_ASSERT_MESSAGE(IsValid() && rhs.IsValid(), "Both operands must be valid.");
+			CRY_ASSERT(IsValid() && rhs.IsValid(), "Both operands must be valid.");
 			return m_frameID > rhs.m_frameID || (m_frameID == rhs.m_frameID && m_timestamp > rhs.m_timestamp);
 		}
 
 		bool CTimeMetadata::operator >=(const CTimeMetadata& rhs) const
 		{
-			CRY_ASSERT_MESSAGE(IsValid() && rhs.IsValid(), "Both operands must be valid.");
+			CRY_ASSERT(IsValid() && rhs.IsValid(), "Both operands must be valid.");
 			return m_frameID > rhs.m_frameID || (m_frameID == rhs.m_frameID && m_timestamp >= rhs.m_timestamp);
 		}
 
 		bool CTimeMetadata::operator <=(const CTimeMetadata& rhs) const
 		{
-			CRY_ASSERT_MESSAGE(IsValid() && rhs.IsValid(), "Both operands must be valid.");
+			CRY_ASSERT(IsValid() && rhs.IsValid(), "Both operands must be valid.");
 			return m_frameID < rhs.m_frameID || (m_frameID == rhs.m_frameID && m_timestamp <= rhs.m_timestamp);
 		}
 
 		bool CTimeMetadata::operator ==(const CTimeMetadata& rhs) const
 		{
-			CRY_ASSERT_MESSAGE(IsValid() && rhs.IsValid(), "Both operands must be valid.");
+			CRY_ASSERT(IsValid() && rhs.IsValid(), "Both operands must be valid.");
 			return m_frameID == rhs.m_frameID && m_timestamp == rhs.m_timestamp;
 		}
 
 		bool CTimeMetadata::operator !=(const CTimeMetadata& rhs) const
 		{
-			CRY_ASSERT_MESSAGE(IsValid() && rhs.IsValid(), "Both operands must be valid.");
+			CRY_ASSERT(IsValid() && rhs.IsValid(), "Both operands must be valid.");
 			return m_frameID != rhs.m_frameID && m_timestamp != rhs.m_timestamp;
 		}
 

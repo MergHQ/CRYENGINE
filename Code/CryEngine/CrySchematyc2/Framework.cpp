@@ -177,7 +177,7 @@ namespace Schematyc2
 }
 void CFramework::SetEnvRegistryBridge(IEnvRegistry* pEnvRegistry)
 {
-	CRY_ASSERT_MESSAGE(!m_pEnvRegistryBridge, "EnvRegistryWrapper is overwritten. This shouldn't happen.");
+	CRY_ASSERT(!m_pEnvRegistryBridge, "EnvRegistryWrapper is overwritten. This shouldn't happen.");
 	if (m_pEnvRegistryBridge)
 	{
 		delete m_pEnvRegistryBridge;

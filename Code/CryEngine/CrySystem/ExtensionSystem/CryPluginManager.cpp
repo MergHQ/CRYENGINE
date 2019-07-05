@@ -251,7 +251,7 @@ void CCryPluginManager::LoadProjectPlugins()
 #if CrySharedLibrarySupported
 bool CCryPluginManager::LoadPluginBinary(EType type, const char* szBinaryPath, bool notifyUserOnFailure)
 {
-	CRY_ASSERT_MESSAGE(m_bLoadedProjectPlugins, "Plug-ins must not be loaded before LoadProjectPlugins!");
+	CRY_ASSERT(m_bLoadedProjectPlugins, "Plug-ins must not be loaded before LoadProjectPlugins!");
 
 	const string binaryName = PathUtil::GetFileName(szBinaryPath);
 	CryLogAlways("Loading plug-in %s", binaryName.c_str());

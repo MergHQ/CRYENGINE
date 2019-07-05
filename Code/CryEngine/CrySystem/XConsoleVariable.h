@@ -20,7 +20,7 @@ public:
 		, m_flags(flags)
 		, m_pConsole(pConsole)
 	{
-		CRY_ASSERT_MESSAGE(m_pConsole != nullptr, "Console must always exist");
+		CRY_ASSERT(m_pConsole != nullptr, "Console must always exist");
 	}
 	//! destructor
 	virtual ~CXConsoleVariableBase() {}
@@ -79,7 +79,7 @@ public:
 	}
 	virtual const SmallFunction<void()>& GetOnChangeFunctor(uint64 id) const override
 	{
-		CRY_ASSERT_MESSAGE(id < m_changeFunctorIdTotal, "[CXConsoleVariableBase::GetOnChangeFunctor] Functor id out of range");
+		CRY_ASSERT(id < m_changeFunctorIdTotal, "[CXConsoleVariableBase::GetOnChangeFunctor] Functor id out of range");
 
 		const auto iter = std::find_if(m_onChangeCallbacks.begin(), m_onChangeCallbacks.end(), [id](const SCallback& callback)
 		{
@@ -189,22 +189,22 @@ public:
 
 	virtual void Set(const char* szValue) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::String, "Wrong Set() function called. Use SetFromString() if you intended to set a numeric cvar with a string. %s", GetName());
+		CRY_ASSERT(GetType() == ECVarType::String, "Wrong Set() function called. Use SetFromString() if you intended to set a numeric cvar with a string. %s", GetName());
 		SetInternal<base_type>(szValue);
 	}
 	virtual void Set(float value) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::Float, "Wrong Set() function called. %s", GetName());
+		CRY_ASSERT(GetType() == ECVarType::Float, "Wrong Set() function called. %s", GetName());
 		SetInternal(static_cast<base_type>(value));
 	}
 	virtual void Set(int value) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::Int, "Wrong Set() function called. %s", GetName());
+		CRY_ASSERT(GetType() == ECVarType::Int, "Wrong Set() function called. %s", GetName());
 		SetInternal(static_cast<base_type>(value));
 	}
 	virtual void Set(int64 value) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::Int64, "Wrong Set() function called. %s", GetName());
+		CRY_ASSERT(GetType() == ECVarType::Int64, "Wrong Set() function called. %s", GetName());
 		SetInternal(static_cast<base_type>(value));
 	}
 
@@ -221,54 +221,54 @@ public:
 
 	virtual void SetMaxValue(int max) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Int, "Wrong type used (%s)", GetName());
-		CRY_ASSERT_MESSAGE((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
-		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "SetMaxValue() called after SetAllowedValues(), the maximum will be ignored (%s)", GetName());
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Int, "Wrong type used (%s)", GetName());
+		CRY_ASSERT((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
+		CRY_ASSERT(m_allowedValues.empty(), "SetMaxValue() called after SetAllowedValues(), the maximum will be ignored (%s)", GetName());
 
 		m_maxValue = static_cast<base_type>(max);
 		SetInternal(m_value);
 	}
 	virtual void SetMaxValue(int64 max) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Int64, "Wrong type used (%s)", GetName());
-		CRY_ASSERT_MESSAGE((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
-		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "SetMaxValue() called after SetAllowedValues(), the maximum will be ignored (%s)", GetName());
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Int64, "Wrong type used (%s)", GetName());
+		CRY_ASSERT((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
+		CRY_ASSERT(m_allowedValues.empty(), "SetMaxValue() called after SetAllowedValues(), the maximum will be ignored (%s)", GetName());
 
 		m_maxValue = static_cast<base_type>(max);
 		SetInternal(m_value);
 	}
 	virtual void SetMaxValue(float max) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Float, "Wrong type used (%s)", GetName());
-		CRY_ASSERT_MESSAGE((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
-		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "SetMaxValue() called after SetAllowedValues(), the maximum will be ignored (%s)", GetName());
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Float, "Wrong type used (%s)", GetName());
+		CRY_ASSERT((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
+		CRY_ASSERT(m_allowedValues.empty(), "SetMaxValue() called after SetAllowedValues(), the maximum will be ignored (%s)", GetName());
 
 		m_maxValue = static_cast<base_type>(max);
 		SetInternal(m_value);
 	}
 	virtual void SetMinValue(int min) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Int, "Wrong type used (%s)", GetName());
-		CRY_ASSERT_MESSAGE((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
-		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "SetMinValue() called after SetAllowedValues(), the minimum will be ignored (%s)", GetName());
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Int, "Wrong type used (%s)", GetName());
+		CRY_ASSERT((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
+		CRY_ASSERT(m_allowedValues.empty(), "SetMinValue() called after SetAllowedValues(), the minimum will be ignored (%s)", GetName());
 
 		m_minValue = static_cast<base_type>(min);
 		SetInternal(m_value);
 	}
 	virtual void SetMinValue(int64 min) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Int64, "Wrong type used (%s)", GetName());
-		CRY_ASSERT_MESSAGE((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
-		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "SetMinValue() called after SetAllowedValues(), the minimum will be ignored (%s)", GetName());
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Int64, "Wrong type used (%s)", GetName());
+		CRY_ASSERT((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
+		CRY_ASSERT(m_allowedValues.empty(), "SetMinValue() called after SetAllowedValues(), the minimum will be ignored (%s)", GetName());
 
 		m_minValue = static_cast<base_type>(min);
 		SetInternal(m_value);
 	}
 	virtual void SetMinValue(float min) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Float, "Wrong type used (%s)", GetName());
-		CRY_ASSERT_MESSAGE((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
-		CRY_ASSERT_MESSAGE(m_allowedValues.empty(), "SetMinValue() called after SetAllowedValues(), the minimum will be ignored (%s)", GetName());
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Float, "Wrong type used (%s)", GetName());
+		CRY_ASSERT((m_flags & VF_BITFIELD) == 0, "Trying to set a minimum value on a bitfield (%s)", GetName());
+		CRY_ASSERT(m_allowedValues.empty(), "SetMinValue() called after SetAllowedValues(), the minimum will be ignored (%s)", GetName());
 
 		m_minValue = static_cast<base_type>(min);
 		SetInternal(m_value);
@@ -276,22 +276,22 @@ public:
 
 	virtual void SetAllowedValues(std::initializer_list<int> values) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Int, "Wrong type used");
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Int, "Wrong type used");
 		SetAllowedValuesInternal(values);
 	}
 	virtual void SetAllowedValues(std::initializer_list<int64> values) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Int64, "Wrong type used");
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Int64, "Wrong type used");
 		SetAllowedValuesInternal(values);
 	}
 	virtual void SetAllowedValues(std::initializer_list<float> values) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::Float, "Wrong type used");
+		CRY_ASSERT(GetTypeInternal() == ECVarType::Float, "Wrong type used");
 		SetAllowedValuesInternal(values);
 	}
 	virtual void SetAllowedValues(std::initializer_list<string> values) override
 	{
-		CRY_ASSERT_MESSAGE(GetTypeInternal() == ECVarType::String, "Wrong type used");
+		CRY_ASSERT(GetTypeInternal() == ECVarType::String, "Wrong type used");
 	}
 
 	virtual ECVarType GetType() const override
@@ -353,14 +353,14 @@ protected:
 	template<class U>
 	typename std::enable_if<std::is_same<base_type, U>::value>::type SetAllowedValuesInternal(std::initializer_list<U> values)
 	{
-		CRY_ASSERT_MESSAGE(values.size() == 0 || (m_maxValue == std::numeric_limits<base_type>::max() && m_minValue == std::numeric_limits<base_type>::lowest()),
+		CRY_ASSERT(values.size() == 0 || (m_maxValue == std::numeric_limits<base_type>::max() && m_minValue == std::numeric_limits<base_type>::lowest()),
 		                   "SetAllowedValues() called after SetMinValue() and/or SetMinValue(), minimum and maximum will be ignored (%s)", GetName());
 		m_allowedValues = values;
 	}
 	template<class U>
 	typename std::enable_if<!std::is_same<base_type, U>::value>::type SetAllowedValuesInternal(std::initializer_list<U> values)
 	{
-		CRY_ASSERT_MESSAGE(values.size() == 0 || (m_maxValue == std::numeric_limits<base_type>::max() && m_minValue == std::numeric_limits<base_type>::lowest()),
+		CRY_ASSERT(values.size() == 0 || (m_maxValue == std::numeric_limits<base_type>::max() && m_minValue == std::numeric_limits<base_type>::lowest()),
 		                   "SetAllowedValues() called after SetMinValue() and/or SetMinValue(), minimum and maximum will be ignored (%s)", GetName());
 
 		if (values.size() > 0)
@@ -555,7 +555,7 @@ public:
 	}
 	virtual void Set(float value) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::String, "Wrong Set() function called. %s", GetName());
+		CRY_ASSERT(GetType() == ECVarType::String, "Wrong Set() function called. %s", GetName());
 
 		stack_string temp;
 		temp.Format("%g", value);
@@ -563,7 +563,7 @@ public:
 	}
 	virtual void Set(int value) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::String, "Wrong Set() function called. %s", GetName());
+		CRY_ASSERT(GetType() == ECVarType::String, "Wrong Set() function called. %s", GetName());
 
 		stack_string temp;
 		temp.Format("%d", value);
@@ -571,7 +571,7 @@ public:
 	}
 	virtual void Set(int64 value) override
 	{
-		CRY_ASSERT_MESSAGE(GetType() == ECVarType::String, "Wrong Set() function called. %s", GetName());
+		CRY_ASSERT(GetType() == ECVarType::String, "Wrong Set() function called. %s", GetName());
 
 		stack_string temp;
 		temp.Format("%lld", value);
@@ -583,16 +583,16 @@ public:
 		Set(szValue);
 	}
 
-	virtual void      SetMinValue(int min) override                                   { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void      SetMinValue(int64 min) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void      SetMinValue(float min) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a minimum value on a string CVar."); }
-	virtual void      SetMaxValue(int max) override                                   { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
-	virtual void      SetMaxValue(int64 max) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
-	virtual void      SetMaxValue(float max) override                                 { CRY_ASSERT_MESSAGE(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void      SetMinValue(int min) override                                   { CRY_ASSERT(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void      SetMinValue(int64 min) override                                 { CRY_ASSERT(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void      SetMinValue(float min) override                                 { CRY_ASSERT(false, "Trying to set a minimum value on a string CVar."); }
+	virtual void      SetMaxValue(int max) override                                   { CRY_ASSERT(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void      SetMaxValue(int64 max) override                                 { CRY_ASSERT(false, "Trying to set a maximum value on a string CVar."); }
+	virtual void      SetMaxValue(float max) override                                 { CRY_ASSERT(false, "Trying to set a maximum value on a string CVar."); }
 
-	virtual void      SetAllowedValues(std::initializer_list<int> values) override    { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
-	virtual void      SetAllowedValues(std::initializer_list<int64> values) override  { CRY_ASSERT_MESSAGE(false, "Trying to set allowed int values on a string CVar."); }
-	virtual void      SetAllowedValues(std::initializer_list<float> values) override  { CRY_ASSERT_MESSAGE(false, "Trying to set allowed float values on a string CVar."); }
+	virtual void      SetAllowedValues(std::initializer_list<int> values) override    { CRY_ASSERT(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void      SetAllowedValues(std::initializer_list<int64> values) override  { CRY_ASSERT(false, "Trying to set allowed int values on a string CVar."); }
+	virtual void      SetAllowedValues(std::initializer_list<float> values) override  { CRY_ASSERT(false, "Trying to set allowed float values on a string CVar."); }
 	virtual void      SetAllowedValues(std::initializer_list<string> values) override { m_allowedValues = values; }
 
 	virtual ECVarType GetType() const override                                        { return ECVarType::String; }

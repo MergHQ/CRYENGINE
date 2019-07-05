@@ -323,7 +323,7 @@ static void CmdCrashTest(IConsoleCmdArgs* pArgs)
 		// CryAssert
 		case 6:
 			{
-				CRY_ASSERT_MESSAGE(false, "Testing assert for testing crashes");
+				CRY_ASSERT(false, "Testing assert for testing crashes");
 			}
 			break;
 
@@ -1320,7 +1320,7 @@ bool CSystem::InitUDR(const SSystemInitParams& startupParams)
 	const bool initializedSuccessfully = m_env.pUDR->Initialize();
 	if (!initializedSuccessfully)
 	{
-		CRY_ASSERT_MESSAGE(initializedSuccessfully, "UDR System could not be initialized.");
+		CRY_ASSERT(initializedSuccessfully, "UDR System could not be initialized.");
 		gEnv->pLog->LogWarning("UDR System could not be initialized.");
 		return false;
 		

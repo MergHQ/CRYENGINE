@@ -573,7 +573,7 @@ int CSystem::GetApplicationInstance()
 			path.Format("/tmp/CrytekApplication%d.lock", i);
 
 			int fd = open(path.c_str(), O_CREAT | O_RDWR, 0666);
-			CRY_ASSERT_MESSAGE(fd >= 0, "Failed to create mutex file, errno %d", errno);
+			CRY_ASSERT(fd >= 0, "Failed to create mutex file, errno %d", errno);
 			if (fd >= 0)
 			{
 				flock lock;

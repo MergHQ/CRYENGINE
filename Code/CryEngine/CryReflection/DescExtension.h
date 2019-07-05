@@ -45,7 +45,7 @@ inline bool CExtensibleDesc<INTERFACE_TYPE >::AddExtension(CDescExtension* pExte
 	};
 
 	const auto result = std::find_if(m_extensions.begin(), m_extensions.end(), condition);
-	CRY_ASSERT_MESSAGE(result == m_extensions.end(), "Extension of type '%s' is already registered.", pExtension->GetLabel());
+	CRY_ASSERT(result == m_extensions.end(), "Extension of type '%s' is already registered.", pExtension->GetLabel());
 
 	if (result == m_extensions.end())
 	{

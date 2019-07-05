@@ -81,7 +81,7 @@ private:
 template<>
 void CFlowDataReadVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(TFlowInputDataVariant& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 class CFlowDataWriteVisitor
@@ -154,7 +154,7 @@ private:
 template<>
 void CFlowDataWriteVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 bool SetFromString(TFlowInputData& value, const char* str)

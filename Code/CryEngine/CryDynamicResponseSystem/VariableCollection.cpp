@@ -31,7 +31,7 @@ CVariableCollection::~CVariableCollection()
 CVariable* CVariableCollection::CreateVariable(const CHashedString& name, const CVariableValue& initialValue)
 {
 #if defined ENABLE_VARIABLE_VALUE_TYPE_CHECKINGS
-	CRY_ASSERT_MESSAGE(GetVariable(name) == nullptr, "Variable with this name already exists");
+	CRY_ASSERT(GetVariable(name) == nullptr, "Variable with this name already exists");
 #endif
 	if (!name.IsValid())
 		return nullptr;

@@ -209,7 +209,7 @@ private:
 				CStackString backupFileName("LogBackups/");
 				backupFileName.append(m_fileName.c_str());
 #if CRY_PLATFORM_DURANGO
-				CRY_ASSERT_MESSAGE(false, "MoveFileEx not supported on Durango!");
+				CRY_ASSERT(false, "MoveFileEx not supported on Durango!");
 #else
 				CopyFile(m_fileName.c_str(), backupFileName.c_str(), true);
 #endif

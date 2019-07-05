@@ -1072,7 +1072,7 @@ namespace Schematyc2
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Node) already registred.");
+					CRY_ASSERT(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Node) already registred.");
 				}
 			}
 		}
@@ -1089,7 +1089,7 @@ namespace Schematyc2
 				m_debugSymbolTable.emplace(pos, SDebugSymbol(guid, input, ILibFunction::SDebugSymbol::EDebugSymbolType::Input));
 			}
 
-			CRY_ASSERT_MESSAGE(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Input) already registered.");
+			CRY_ASSERT(result == m_debugSymbolTable.end(), "[Schematyc Debugger] Trying to add a debug symbol (Input) already registered.");
 		}
 	}
 
@@ -1129,7 +1129,7 @@ namespace Schematyc2
 			return gEnv->pSystem->IsDevMode();
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "Wrong execution filter value in schematyc function.");
+			CRY_ASSERT(false, "Wrong execution filter value in schematyc function.");
 		}
 		return false;
 	}

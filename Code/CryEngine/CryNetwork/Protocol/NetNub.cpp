@@ -2070,7 +2070,7 @@ void CNetNub::ProcessSetup(const TNetAddress& from, const uint8* pData, uint32 n
 		// What we can say is if CryMatchMaking knows of this address then it doesn't want to be disconnected because of m_disconnectMap so make sure it is not stored.
 		m_disconnectMap.erase(from);
 
-		CRY_ASSERT_MESSAGE(session != CrySessionInvalidHandle, "Incoming connection with no session");
+		CRY_ASSERT(session != CrySessionInvalidHandle, "Incoming connection with no session");
 
 		if (session == CrySessionInvalidHandle || !m_pLobby->GetMatchMakingPrivate()->IsNetAddressInLobbyConnection(from))
 		{

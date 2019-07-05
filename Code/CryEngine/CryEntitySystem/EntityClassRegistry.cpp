@@ -454,7 +454,7 @@ public:
 		{
 			if (!pObject->SetSimulationMode(Schematyc::ESimulationMode::Preview, Schematyc::EObjectSimulationUpdatePolicy::Always))
 			{
-				CRY_ASSERT_MESSAGE(0, "Failed to reset Schematyc Preview.");
+				CRY_ASSERT(0, "Failed to reset Schematyc Preview.");
 				DestroyObject(m_objectId);
 			}
 		}

@@ -1396,12 +1396,12 @@ void CLog::CreateBackupFile()
 	{
 		string durangoPath = PathUtil::ToDosPath(path);
 		durangoPath.replace(' ', '_');
-		CRY_ASSERT_MESSAGE(durangoPath.size() <= MAX_PATH, "Log backup path is larger than MAX_PATH");
+		CRY_ASSERT(durangoPath.size() <= MAX_PATH, "Log backup path is larger than MAX_PATH");
 		return CryStringUtils::UTF8ToWStrSafe(durangoPath);
 	};
 	const wstring durangoSrcFilePath = processDurangoPath(m_filePath);
 	const wstring durangosDstFilePath = processDurangoPath(m_backupFilePath);
-	CRY_VERIFY_WITH_MESSAGE(CopyFile2(durangoSrcFilePath, durangosDstFilePath, nullptr) == S_OK, "Error copying log backup file");
+	CRY_VERIFY(CopyFile2(durangoSrcFilePath, durangosDstFilePath, nullptr) == S_OK, "Error copying log backup file");
 #else
 	CopyFile(m_filePath, m_backupFilePath, false);
 #endif

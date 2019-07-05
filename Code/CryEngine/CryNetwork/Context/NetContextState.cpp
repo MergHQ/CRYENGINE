@@ -27,7 +27,7 @@ static uint8 GetDefaultProfileForAspect(EntityId id, EEntityAspects aspectID)
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 	if (!pEntity)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->IsEditor(), "Trying to get default profile for aspect %d on unknown entity %d", aspectID, id);
+		CRY_ASSERT(gEnv->IsEditor(), "Trying to get default profile for aspect %d on unknown entity %d", aspectID, id);
 		return ~uint8(0);
 	}
 	INetEntity* pNetEntity = pEntity->GetNetEntity();
@@ -2498,7 +2498,7 @@ void CNetContextState::GC_BoundObject(const EntityId eid)
 	ENSURE_REALTIME;
 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(eid);
-	CRY_ASSERT_MESSAGE(pEntity, "[net] notification of binding non existant entity %.8x received", eid);
+	CRY_ASSERT(pEntity, "[net] notification of binding non existant entity %.8x received", eid);
 	if (INetEntity* pNetEntity = (pEntity ? pEntity->GetNetEntity() : nullptr))
 		pNetEntity->BecomeBound();
 }

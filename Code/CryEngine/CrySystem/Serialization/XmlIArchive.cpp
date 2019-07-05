@@ -345,7 +345,7 @@ bool Serialization::CXmlInputArchive::operator()(IString& value, const char* nam
 
 bool Serialization::CXmlInputArchive::operator()(IWString& value, const char* name, const char* label)
 {
-	CRY_ASSERT_MESSAGE(0,"CXmlInputArchive::operator() with IWString is not implemented");
+	CRY_ASSERT(0,"CXmlInputArchive::operator() with IWString is not implemented");
 	CryFatalError("CXmlInputArchive::operator() with IWString is not implemented");
 	return false;
 }

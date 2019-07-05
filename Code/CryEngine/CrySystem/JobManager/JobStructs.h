@@ -143,7 +143,7 @@ inline JobManager::detail::EAddJobRes JobManager::SJobQueue<nMaxWorkQueueJobsHig
 
 		if (bWait)
 		{
-			CRY_ASSERT_MESSAGE(false, "JobManager: Exceeded job queue size (%u) for priority level \"%s\"", nMaxWorkerQueueJobs, PrioToString(nPriorityLevel));
+			CRY_ASSERT(false, "JobManager: Exceeded job queue size (%u) for priority level \"%s\"", nMaxWorkerQueueJobs, PrioToString(nPriorityLevel));
 			pPushInfoBlock->Wait(nRoundID, (1 << JobManager::SJobQueuePos::eBitsPerPriorityLevel) / nMaxWorkerQueueJobs);
 		}
 

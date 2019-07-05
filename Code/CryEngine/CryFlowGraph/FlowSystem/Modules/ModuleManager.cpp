@@ -551,7 +551,7 @@ void CFlowGraphModuleManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam,
 	case ESYSTEM_EVENT_GAME_POST_INIT:
 		{
 #if !defined (_RELEASE)
-			CRY_ASSERT_MESSAGE(gEnv->pGameFramework, "Unable to register as Framework listener!");
+			CRY_ASSERT(gEnv->pGameFramework, "Unable to register as Framework listener!");
 			if (gEnv->pGameFramework)
 			{
 				gEnv->pGameFramework->RegisterListener(this, "FlowGraphModuleManager", FRAMEWORKLISTENERPRIORITY_GAME);
@@ -623,7 +623,7 @@ void DrawModuleTextLabel(float x, float y, const float* pColor, const char* pFor
 
 void RenderModuleDebugInfo()
 {
-	CRY_ASSERT_MESSAGE(gEnv->pFlowSystem, "No Flowsystem available!");
+	CRY_ASSERT(gEnv->pFlowSystem, "No Flowsystem available!");
 
 	if (!gEnv->pFlowSystem || !gEnv->pFlowSystem->GetIModuleManager())
 		return;

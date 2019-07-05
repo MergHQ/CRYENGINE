@@ -140,10 +140,10 @@ bool CEntity::SendEventInternal(const SEntityEvent& event)
 
 	if (m_eventListenerMask.Check(event.event))
 	{
-		CRY_ASSERT_MESSAGE(event.event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should be handled in CEntitySystem!");
+		CRY_ASSERT(event.event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should be handled in CEntitySystem!");
 
 		auto it = std::lower_bound(m_simpleEventListeners.begin(), m_simpleEventListeners.end(), event.event, [](const std::unique_ptr<SEventListenerSet>& a, const EEntityEvent event) -> bool { return a->event < event; });
-		CRY_ASSERT_MESSAGE(it != m_simpleEventListeners.end() && it->get()->event == event.event, "Listener must be contained in storage if m_eventListenerMask is set!");
+		CRY_ASSERT(it != m_simpleEventListeners.end() && it->get()->event == event.event, "Listener must be contained in storage if m_eventListenerMask is set!");
 
 		SEventListenerSet& listenerSet = *it->get();
 
@@ -218,7 +218,7 @@ void CEntity::ClearComponentEventListeners()
 void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener, IEntityComponent::ComponentEventPriority priority)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
-	CRY_ASSERT_MESSAGE(event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
+	CRY_ASSERT(event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
 
 	SEventListener eventListener = SEventListener {
 		pListener, priority
@@ -264,7 +264,7 @@ void CEntity::AddSimpleEventListener(EEntityEvent event, ISimpleEntityEventListe
 void CEntity::RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventListener* pListener)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
-	CRY_ASSERT_MESSAGE(event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
+	CRY_ASSERT(event <= Cry::Entity::EEvent::LastNonPerformanceCritical, "Performance critical events should not add listeners, as they are sent by the entity system and not entity instances");
 
 #ifdef ENABLE_PROFILING_CODE
 	g_pIEntitySystem->m_profiledEvents[GetEntityEventIndex(event)].numListenerRemovals++;
@@ -1743,7 +1743,7 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 
 			if (pLegacyComponentFactory == nullptr || !pLegacyComponentFactory->ClassSupports(cryiidof<IEntityComponent>()))
 			{
-				CRY_ASSERT_MESSAGE(0, "No component implementation registered for the given component interface");
+				CRY_ASSERT(0, "No component implementation registered for the given component interface");
 				return nullptr;
 			}
 
@@ -1752,7 +1752,7 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE("Tried to create unregistered component with type id %s!", interfaceId.ToDebugString());
+			CRY_ASSERT("Tried to create unregistered component with type id %s!", interfaceId.ToDebugString());
 			return nullptr;
 		}
 	}
@@ -1792,9 +1792,9 @@ bool CEntity::AddComponent(std::shared_ptr<IEntityComponent> pComponent, IEntity
 //////////////////////////////////////////////////////////////////////////
 void CEntity::AddComponentInternal(std::shared_ptr<IEntityComponent> pComponent, const CryGUID& componentTypeID, IEntityComponent::SInitParams* pInitParams, const CEntityComponentClassDesc* pClassDescription)
 {
-	CRY_ASSERT_MESSAGE(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ClientOnly) && !gEnv->IsClient()), "Trying to add a client-only component on the server!");
-	CRY_ASSERT_MESSAGE(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ServerOnly) && !gEnv->bServer), "Trying to add a server-only component on the client!");
-	CRY_ASSERT_MESSAGE(pInitParams == nullptr || !pInitParams->guid.IsNull(), "Components require a valid instance guid!");
+	CRY_ASSERT(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ClientOnly) && !gEnv->IsClient()), "Trying to add a client-only component on the server!");
+	CRY_ASSERT(pClassDescription == nullptr || !(pClassDescription->GetComponentFlags().Check(EEntityComponentFlags::ServerOnly) && !gEnv->bServer), "Trying to add a server-only component on the client!");
+	CRY_ASSERT(pInitParams == nullptr || !pInitParams->guid.IsNull(), "Components require a valid instance guid!");
 
 	// Initialize common component members
 	pComponent->PreInit(pInitParams != nullptr ? *pInitParams : IEntityComponent::SInitParams(this, CryGUID::Create(), "", pClassDescription, EEntityComponentFlags::None, nullptr, nullptr));
@@ -1859,7 +1859,7 @@ void CEntity::RemoveAllComponents()
 void CEntity::ReplaceComponent(IEntityComponent* pExistingComponent, std::shared_ptr<IEntityComponent> pNewComponent)
 {
 	TComponentsRecord::TRecordStorage::iterator it = m_components.FindExistingComponent(pExistingComponent);
-	CRY_ASSERT_MESSAGE(it != m_components.GetEnd(), "Tried to replace an non-existent component!");
+	CRY_ASSERT(it != m_components.GetEnd(), "Tried to replace an non-existent component!");
 
 	SEntityComponentRecord& record = *it;
 
@@ -2941,9 +2941,9 @@ IEntityLink* CEntity::GetEntityLinks()
 //////////////////////////////////////////////////////////////////////////
 IEntityLink* CEntity::AddEntityLink(const char* szLinkName, EntityId entityId, EntityGUID entityGuid)
 {
-	CRY_ASSERT_MESSAGE(entityId != INVALID_ENTITYID, "Can't create a link with an invalid EntityId");
-	CRY_ASSERT_MESSAGE(!entityGuid.IsNull(), "Can't create a link with an invalid EntityGUID");
-	CRY_ASSERT_MESSAGE(entityId != m_id, "Entity can't be linked with itself");
+	CRY_ASSERT(entityId != INVALID_ENTITYID, "Can't create a link with an invalid EntityId");
+	CRY_ASSERT(!entityGuid.IsNull(), "Can't create a link with an invalid EntityGUID");
+	CRY_ASSERT(entityId != m_id, "Entity can't be linked with itself");
 
 	if (szLinkName == nullptr)
 		return nullptr;

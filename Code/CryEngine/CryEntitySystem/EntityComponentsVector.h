@@ -117,7 +117,7 @@ public:
 	CEntityComponentsVector() : m_activeScopes(0), m_cleanupRequired(false), m_sortingValid(true) {}
 	~CEntityComponentsVector()
 	{
-		CRY_ASSERT_MESSAGE(m_activeScopes == 0, "Entity components vector was destroyed while scopes were active, most likely on another thread!");
+		CRY_ASSERT(m_activeScopes == 0, "Entity components vector was destroyed while scopes were active, most likely on another thread!");
 		CRY_ASSERT(!m_cleanupRequired);
 	};
 
@@ -125,7 +125,7 @@ public:
 	//! \param componentRecord Component record which should be inserted into the collection
 	const TRecord& SortedEmplace(TRecord&& componentRecord)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Components vector can only be added to by the main thread!");
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Components vector can only be added to by the main thread!");
 		CRY_ASSERT(m_sortingValid || m_activeScopes > 0);
 
 		CryAutoCriticalSection lock(m_lock);
@@ -149,7 +149,7 @@ public:
 
 	iterator FindExistingComponent(IEntityComponent* pExistingComponent)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be queried by the main thread, or use FindComponent!");
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be queried by the main thread, or use FindComponent!");
 		return std::find_if(m_vector.begin(), m_vector.end(), [pExistingComponent](const TRecord& record) -> bool
 		{
 			return record.GetComponent() == pExistingComponent;
@@ -160,8 +160,8 @@ public:
 
 	void           ReSortComponent(iterator it)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be re-sorted by the main thread!");
-		CRY_ASSERT_MESSAGE(m_activeScopes == 0, "Re-sorting an existing component record while iteration is in progress is not supported!");
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be re-sorted by the main thread!");
+		CRY_ASSERT(m_activeScopes == 0, "Re-sorting an existing component record while iteration is in progress is not supported!");
 		CRY_ASSERT(!m_cleanupRequired);
 		CRY_ASSERT(m_sortingValid);
 
@@ -178,7 +178,7 @@ public:
 	//! Removes a component from the collection.
 	void Remove(IEntityComponent* pComponent)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be removed by the main thread!");
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Existing component can only be removed by the main thread!");
 
 		iterator endIter = m_vector.end();
 		iterator it = std::find_if(m_vector.begin(), endIter, [pComponent](const TRecord& record) -> bool
@@ -211,7 +211,7 @@ public:
 	//! Removes all components from the collection
 	void Clear()
 	{
-		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Components vector can only be cleared by the main thread!");
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Components vector can only be cleared by the main thread!");
 		CRY_ASSERT(!m_cleanupRequired);
 		CRY_ASSERT(m_activeScopes == 0);
 
@@ -246,7 +246,7 @@ public:
 	//! Reserves space to help avoid runtime reallocation.
 	void Reserve(size_t capacity)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Components vector capacity can only be changed by the main thread!");
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId(), "Components vector capacity can only be changed by the main thread!");
 		if (m_vector.capacity() < capacity)
 		{
 			m_vector.reserve(capacity);
@@ -272,7 +272,7 @@ public:
 	template<typename LambdaFunction>
 	void ForEach(const LambdaFunction& func)
 	{
-		CRY_ASSERT_MESSAGE(m_activeScopes > 0 || (m_sortingValid && !m_cleanupRequired), "Non-recursive call to ForEach should not require cleanup or sorting!");
+		CRY_ASSERT(m_activeScopes > 0 || (m_sortingValid && !m_cleanupRequired), "Non-recursive call to ForEach should not require cleanup or sorting!");
 
 		CryAutoCriticalSection lock(m_lock);
 		++m_activeScopes;

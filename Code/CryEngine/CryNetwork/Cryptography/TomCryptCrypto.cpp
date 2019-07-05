@@ -113,9 +113,9 @@ void CTomCryptAesCipher::Init(const STomCryptAesInitState& initState)
 
 bool CTomCryptAesCipher::EncryptInPlace(uint8* pBuf, const size_t bufSize)
 {
-	CRY_ASSERT_MESSAGE(m_pState, "CTomCryptAesCipher is not initialized");
+	CRY_ASSERT(m_pState, "CTomCryptAesCipher is not initialized");
 	CRY_ASSERT(pBuf != nullptr);
-	CRY_ASSERT_MESSAGE(bufSize % 16 == 0, "Encryption buffer has wrong size");
+	CRY_ASSERT(bufSize % 16 == 0, "Encryption buffer has wrong size");
 
 	if (!m_pState || !pBuf)
 		return false;
@@ -149,9 +149,9 @@ bool CTomCryptAesCipher::EncryptInPlace(uint8* pBuf, const size_t bufSize)
 
 bool CTomCryptAesCipher::DecryptInPlace(uint8* pBuf, const size_t bufSize)
 {
-	CRY_ASSERT_MESSAGE(m_pState, "CTomCryptAesCipher is not initialized");
+	CRY_ASSERT(m_pState, "CTomCryptAesCipher is not initialized");
 	CRY_ASSERT(pBuf != nullptr);
-	CRY_ASSERT_MESSAGE(bufSize % 16 == 0, "Encryption buffer has wrong size");
+	CRY_ASSERT(bufSize % 16 == 0, "Encryption buffer has wrong size");
 
 	if (!m_pState || !pBuf)
 		return false;

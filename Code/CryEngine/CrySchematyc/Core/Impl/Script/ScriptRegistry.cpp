@@ -124,7 +124,7 @@ bool CScriptRegistry::Load()
 			CScript* pScript = GetScript(inputBlock.guid);
 			if (!pScript)
 			{
-				CRY_ASSERT_MESSAGE(szFileName && szFileName[0], "Undefined file name!");
+				CRY_ASSERT(szFileName && szFileName[0], "Undefined file name!");
 				if (szFileName && szFileName[0])
 				{
 					CScriptPtr pSharedScript = std::make_shared<CScript>(inputBlock.guid, szFileName);
@@ -902,7 +902,7 @@ IScript* CScriptRegistry::LoadScript(const char* szFilePath)
 
 	CScript* pScript = nullptr;
 
-	CRY_ASSERT_MESSAGE(szFilePath && szFilePath[0], "Undefined file name!");
+	CRY_ASSERT(szFilePath && szFilePath[0], "Undefined file name!");
 	if (szFilePath && szFilePath[0])
 	{
 		const uint32 fileNameCrc = CCrc32::ComputeLowercase(szFilePath);
@@ -1110,7 +1110,7 @@ void CScriptRegistry::AddElement(const IScriptElementPtr& pElement, IScriptEleme
 
 	if (bCreateScript)
 	{
-		CRY_ASSERT_MESSAGE(szFilePath, "Script file path must be not null!");
+		CRY_ASSERT(szFilePath, "Script file path must be not null!");
 		// #SchematycTODO : We should do this when patching up script elements!!!
 		if (szFilePath)
 		{
@@ -1167,7 +1167,7 @@ void CScriptRegistry::SaveScript(CScript& script)
 	const CStackString fileName = script.GetFilePath();
 	const bool hasFileName = !fileName.empty();
 
-	CRY_ASSERT_MESSAGE(hasFileName, "Trying to save Schematyc script without a defined file name.");
+	CRY_ASSERT(hasFileName, "Trying to save Schematyc script without a defined file name.");
 	if (hasFileName)
 	{
 		CStackString folder = fileName.substr(0, fileName.rfind('/'));

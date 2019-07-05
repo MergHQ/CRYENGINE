@@ -89,7 +89,7 @@ private:
 template<>
 void CFlowDataToScriptDataVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 class CFlowDataToScriptParamVisitor
@@ -151,7 +151,7 @@ private:
 template<>
 void CFlowDataToScriptParamVisitor::VisitVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 /*

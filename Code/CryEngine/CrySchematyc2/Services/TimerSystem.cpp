@@ -256,7 +256,7 @@ namespace Schematyc2
 				--iTimer;
 			}
 
-			CRY_ASSERT_MESSAGE(m_timersPendingDestroy == 0, "[CrySchematy2] Not all timers were destroyed during cleanup");
+			CRY_ASSERT(m_timersPendingDestroy == 0, "[CrySchematy2] Not all timers were destroyed during cleanup");
 			m_timers.resize(timerCount);
 		}
 	}

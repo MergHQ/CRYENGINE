@@ -198,7 +198,7 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		// we use the lock to ensure that we don't recurse into the assert while handling it (which is going to allocate memory, too)
 		if (useBucket && BucketFull::mutex.TryLock())
 		{
-			CRY_ASSERT_MESSAGE(!useBucket, "BucketAllocator is full!");
+			CRY_ASSERT(!useBucket, "BucketAllocator is full!");
 			BucketFull::mutex.Unlock();
 		}
 #endif

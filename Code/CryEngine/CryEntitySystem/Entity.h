@@ -640,7 +640,7 @@ protected:
 			auto upperBoundIt = std::upper_bound(listeners.begin(), listeners.end(), listener.eventPriority, [](const int eventPriority, const SEventListener& existingListener) -> bool { return eventPriority < existingListener.eventPriority; });
 			listeners.emplace(upperBoundIt, std::move(listener));
 			hasValidElements = 1;
-			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<uint16>::max(), "Max entity event listener count exceeded!");
+			CRY_ASSERT(listeners.size() <= std::numeric_limits<uint16>::max(), "Max entity event listener count exceeded!");
 		}
 
 		void UnsortedInsert(SEventListener& listener)
@@ -652,7 +652,7 @@ protected:
 
 			// Adding of event listener while we are iterating, we cannot sort here so push to back and require sort when iteration is done
 			listeners.emplace_back(listener);
-			CRY_ASSERT_MESSAGE(listeners.size() <= std::numeric_limits<uint16>::max(), "Max entity event listener count exceeded!");
+			CRY_ASSERT(listeners.size() <= std::numeric_limits<uint16>::max(), "Max entity event listener count exceeded!");
 			hasValidElements = 1;
 		}
 

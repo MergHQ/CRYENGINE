@@ -30,7 +30,7 @@ CReflection::~CReflection()
 
 CReflection& CReflection::GetInstance()
 {
-	CRY_ASSERT_MESSAGE(s_pInstance, "Reflection not yet initialized.");
+	CRY_ASSERT(s_pInstance, "Reflection not yet initialized.");
 	return *s_pInstance;
 }
 
@@ -44,13 +44,13 @@ bool CReflection::Initialize(SSystemGlobalEnvironment& env, const SSystemInitPar
 
 CReflectedTypeDesc* CReflection::Register(const CryTypeDesc& typeDesc, const CryGUID& guid, ReflectTypeFunction pReflectFunc, const SSourceFileInfo& srcPos)
 {
-	CRY_ASSERT_MESSAGE(pReflectFunc, "Callback for ReflectTypeFunction must be non-null!");
+	CRY_ASSERT(pReflectFunc, "Callback for ReflectTypeFunction must be non-null!");
 	if (pReflectFunc == nullptr)
 	{
 		return nullptr;
 	}
 
-	CRY_ASSERT_MESSAGE(typeDesc.IsArray() == false, "Only non-array types are allowed to be registered.");
+	CRY_ASSERT(typeDesc.IsArray() == false, "Only non-array types are allowed to be registered.");
 	if (typeDesc.IsArray())
 	{
 		return nullptr;
@@ -62,7 +62,7 @@ CReflectedTypeDesc* CReflection::Register(const CryTypeDesc& typeDesc, const Cry
 		const CReflectedTypeDesc& rtDesc = m_typesByIndex[resultByGuid->second];
 		const SSourceFileInfo srcPos = rtDesc.m_sourcePos;
 
-		CRY_ASSERT_MESSAGE(resultByGuid != m_typeIndicesByGuid.end(),
+		CRY_ASSERT(resultByGuid != m_typeIndicesByGuid.end(),
 		                   "Type registration rejected. Guid %s already used for type '%s', registered in file '%s', line '%d', function '%s'.",
 		                   guid.ToString().c_str(),
 		                   rtDesc.GetLabel(),
@@ -79,7 +79,7 @@ CReflectedTypeDesc* CReflection::Register(const CryTypeDesc& typeDesc, const Cry
 		const CReflectedTypeDesc& rtDesc = m_typesByIndex[resultByGuid->second];
 		const SSourceFileInfo srcPos = rtDesc.m_sourcePos;
 
-		CRY_ASSERT_MESSAGE(resultByTypeId != m_typeIndicesByTypeId.end(),
+		CRY_ASSERT(resultByTypeId != m_typeIndicesByTypeId.end(),
 		                   "Type registration rejected. Type '%s' is already registered with label '%s' in file '%s', line '%d', function '%s'.",
 		                   rtDesc.GetRawName(),
 		                   rtDesc.GetLabel(),
@@ -91,7 +91,7 @@ CReflectedTypeDesc* CReflection::Register(const CryTypeDesc& typeDesc, const Cry
 	}
 
 	const size_t index = m_typesByIndex.size();
-	CRY_ASSERT_MESSAGE(index + 1 < std::numeric_limits<TypeIndex::ValueType>::max(), "Index of type exceeded max of TypeIndex.");
+	CRY_ASSERT(index + 1 < std::numeric_limits<TypeIndex::ValueType>::max(), "Index of type exceeded max of TypeIndex.");
 	if (index + 1 < std::numeric_limits<TypeIndex::ValueType>::max())
 	{
 		m_typesByIndex.emplace_back(guid, typeDesc);
@@ -131,7 +131,7 @@ const ITypeDesc* CReflection::FindTypeByGuid(CryGUID guid) const
 	if (result != m_typeIndicesByGuid.end())
 	{
 		const size_t index = result->second;
-		CRY_ASSERT_MESSAGE(index < m_typesByIndex.size(), "Type Registry is corrupted.");
+		CRY_ASSERT(index < m_typesByIndex.size(), "Type Registry is corrupted.");
 		if (index < m_typesByIndex.size())
 		{
 			return &m_typesByIndex[index];
@@ -146,7 +146,7 @@ const ITypeDesc* CReflection::FindTypeById(CryTypeId typeId) const
 	if (result != m_typeIndicesByTypeId.end())
 	{
 		const size_t index = result->second;
-		CRY_ASSERT_MESSAGE(index < m_typesByIndex.size(), "Type Registry is corrupted.");
+		CRY_ASSERT(index < m_typesByIndex.size(), "Type Registry is corrupted.");
 		if (index < m_typesByIndex.size())
 		{
 			return &m_typesByIndex[index];
@@ -163,7 +163,7 @@ void CReflection::RegisterSystemRegistry(ISystemTypeRegistry* pSystemRegistry)
 	};
 
 	auto result = std::find_if(m_customRegistriesByIndex.begin(), m_customRegistriesByIndex.end(), condition);
-	CRY_ASSERT_MESSAGE(result == m_customRegistriesByIndex.end(), "Custom type registry '%s' is already registered", pSystemRegistry->GetLabel());
+	CRY_ASSERT(result == m_customRegistriesByIndex.end(), "Custom type registry '%s' is already registered", pSystemRegistry->GetLabel());
 	if (result == m_customRegistriesByIndex.end())
 	{
 		m_customRegistriesByIndex.emplace_back(pSystemRegistry);

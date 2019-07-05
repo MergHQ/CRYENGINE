@@ -34,7 +34,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::Init(uint32 nSysMaxWorker)
 	const uint32 numAvailableCores = 4;
 #else
 	const int numPhysicalCores = static_cast<int>(std::thread::hardware_concurrency());
-	CRY_ASSERT_MESSAGE(numPhysicalCores > 0, "Failed to get physical core count");
+	CRY_ASSERT(numPhysicalCores > 0, "Failed to get physical core count");
 	if (!numPhysicalCores)
 	{
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to get physical core count.");

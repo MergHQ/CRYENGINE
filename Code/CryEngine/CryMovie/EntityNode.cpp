@@ -1871,7 +1871,7 @@ void CAnimEntityNode::Activate(bool bActivate)
 
 void CAnimEntityNode::OnStart()
 {
-	CRY_ASSERT_MESSAGE(m_activeAudioTriggers.empty(), "m_activeAudioTriggers is not empty during CAnimEntityNode::OnStart");
+	CRY_ASSERT(m_activeAudioTriggers.empty(), "m_activeAudioTriggers is not empty during CAnimEntityNode::OnStart");
 
 	m_bIsAnimDriven = false;
 

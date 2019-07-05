@@ -195,9 +195,9 @@ void CCngAesCipher::Init(const SCngAesInitState& initState)
 
 bool CCngAesCipher::EncryptInPlace(uint8* pBuf, const size_t bufSize)
 {
-	CRY_ASSERT_MESSAGE(m_key, "CCngAesCipher is not initialized");
+	CRY_ASSERT(m_key, "CCngAesCipher is not initialized");
 	CRY_ASSERT(pBuf != nullptr);
-	CRY_ASSERT_MESSAGE(bufSize % 16 == 0, "Encryption buffer has wrong size");
+	CRY_ASSERT(bufSize % 16 == 0, "Encryption buffer has wrong size");
 
 	if (!m_key || !pBuf)
 		return false;
@@ -215,9 +215,9 @@ bool CCngAesCipher::EncryptInPlace(uint8* pBuf, const size_t bufSize)
 
 bool CCngAesCipher::DecryptInPlace(uint8* pBuf, const size_t bufSize)
 {
-	CRY_ASSERT_MESSAGE(m_key, "CCngAesCipher is not initialized");
+	CRY_ASSERT(m_key, "CCngAesCipher is not initialized");
 	CRY_ASSERT(pBuf != nullptr);
-	CRY_ASSERT_MESSAGE(bufSize % 16 == 0, "Decryption buffer has wrong size");
+	CRY_ASSERT(bufSize % 16 == 0, "Decryption buffer has wrong size");
 
 	if (!m_key || !pBuf)
 	{
@@ -328,7 +328,7 @@ CCngSha256Hmac::CCngSha256Hmac(SCngHashHandle&& handle, bool isReusable, size_t 
 
 bool CCngSha256Hmac::Hash(const uint8* pBuf, const size_t bufSize)
 {
-	CRY_ASSERT_MESSAGE(m_handle, "CCngSha256Hmac is not initialized");
+	CRY_ASSERT(m_handle, "CCngSha256Hmac is not initialized");
 	if (!m_handle)
 	{
 		return false;
@@ -363,7 +363,7 @@ bool CCngSha256Hmac::FinishAndRestartHash(HashResult& result)
 
 bool CCngSha256Hmac::FinishHash(HashResult& result)
 {
-	CRY_ASSERT_MESSAGE(m_handle, "CCngSha256Hmac is not initialized");
+	CRY_ASSERT(m_handle, "CCngSha256Hmac is not initialized");
 	if (!m_handle)
 	{
 		return false;

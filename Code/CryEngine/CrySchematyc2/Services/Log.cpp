@@ -218,7 +218,7 @@ namespace Schematyc2
 						stack_string backupFileName("LogBackups/");
 						backupFileName.append(m_fileName.c_str());
 #if CRY_PLATFORM_DURANGO
-						CRY_VERIFY_WITH_MESSAGE(CopyFile2(CryStringUtils::UTF8ToWStrSafe(m_fileName), CryStringUtils::UTF8ToWStrSafe(backupFileName), nullptr) == S_OK, "Error copying schematyc log backup file");
+						CRY_VERIFY(CopyFile2(CryStringUtils::UTF8ToWStrSafe(m_fileName), CryStringUtils::UTF8ToWStrSafe(backupFileName), nullptr) == S_OK, "Error copying schematyc log backup file");
 #else
 						CopyFile(m_fileName.c_str(), backupFileName.c_str(), true);
 #endif

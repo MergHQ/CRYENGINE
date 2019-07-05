@@ -378,7 +378,7 @@ void CManagedEntityComponent::SendSignal(int signalId, MonoInternals::MonoArray*
 			break;
 
 			default:
-				CRY_ASSERT_MESSAGE(false, "Tried to send Schematyc signal with non-primitive parameter type!");
+				CRY_ASSERT(false, "Tried to send Schematyc signal with non-primitive parameter type!");
 				return;
 			}
 

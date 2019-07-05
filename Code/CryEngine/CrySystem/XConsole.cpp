@@ -422,7 +422,7 @@ void Command_DumpVars(IConsoleCmdArgs* Cmd)
 bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigFile)
 {
 #if defined(USE_RUNTIME_CVAR_OVERRIDES)
-	CRY_ASSERT_MESSAGE(m_mapVariables.empty(), "There should not be any cvars registered before parsing the runtime CVar overrides file, num: %i", m_mapVariables.size());
+	CRY_ASSERT(m_mapVariables.empty(), "There should not be any cvars registered before parsing the runtime CVar overrides file, num: %i", m_mapVariables.size());
 	
 	string sys_cvar_overrides_path;
 	{
@@ -432,7 +432,7 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 		inFile.open(path);
 		if (!inFile.is_open())
 		{
-			CRY_ASSERT_MESSAGE(false, "Failed to open the system.cfg file containing sys_cvar_overrides_path: %s", path.c_str());
+			CRY_ASSERT(false, "Failed to open the system.cfg file containing sys_cvar_overrides_path: %s", path.c_str());
 			return false;
 		}
 		std::stringstream strStream;
@@ -451,7 +451,7 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Failed to find/parse sys_cvar_overrides_path in system.cfg: %s", path.c_str());
+			CRY_ASSERT(false, "Failed to find/parse sys_cvar_overrides_path in system.cfg: %s", path.c_str());
 			return false;
 		}
 	}
@@ -466,7 +466,7 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 		inFile.open(fullPath);
 		if (!inFile.is_open())
 		{
-			CRY_ASSERT_MESSAGE(false, "Failed to open the cvar overrides file in sys_cvar_overrides_path: %s", sys_cvar_overrides_path.c_str());
+			CRY_ASSERT(false, "Failed to open the cvar overrides file in sys_cvar_overrides_path: %s", sys_cvar_overrides_path.c_str());
 			return false;
 		}
 		std::stringstream strStream;
@@ -490,7 +490,7 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 
 			if (GetCVar(cvarName) != nullptr)
 			{
-				CRY_ASSERT_MESSAGE(false, "Trying to override a CVar that was already registered: %s", cvarName.c_str());
+				CRY_ASSERT(false, "Trying to override a CVar that was already registered: %s", cvarName.c_str());
 				return false;
 			}
 
@@ -507,7 +507,7 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "Error parsing runtime CVar override string: %s = %s", cvarName.c_str(), cvarValStr.c_str());
+					CRY_ASSERT(false, "Error parsing runtime CVar override string: %s = %s", cvarName.c_str(), cvarValStr.c_str());
 					return false;
 				}
 			}
@@ -521,7 +521,7 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "Failed to parse runtime CVar override float value: %s = %s", cvarName.c_str(), cvarValStr.c_str());
+					CRY_ASSERT(false, "Failed to parse runtime CVar override float value: %s = %s", cvarName.c_str(), cvarValStr.c_str());
 					return false;
 				}
 			}
@@ -535,14 +535,14 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "Failed to parse runtime CVar override integer value: %s = %s", cvarName.c_str(), cvarValStr.c_str());
+					CRY_ASSERT(false, "Failed to parse runtime CVar override integer value: %s = %s", cvarName.c_str(), cvarValStr.c_str());
 					return false;
 				}
 			}
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Error matching regex while parsing CVar overrides file: %s", sys_cvar_overrides_path);
+			CRY_ASSERT(false, "Error matching regex while parsing CVar overrides file: %s", sys_cvar_overrides_path);
 			return false;
 		}
 		content = regexMatch.suffix();
@@ -1264,7 +1264,7 @@ void CXConsole::DumpCVars(ICVarDumpSink* pCallback, unsigned int nFlagsFilter)
 
 ICVar* CXConsole::GetCVar(const char* sName)
 {
-	CRY_ASSERT_MESSAGE(sName, "Calling GetCVar with a nullptr");
+	CRY_ASSERT(sName, "Calling GetCVar with a nullptr");
 
 	if (con_debug)
 	{
@@ -2165,7 +2165,7 @@ void CXConsole::SplitCommands(const char* line, std::list<string>& split)
 void CXConsole::ExecuteStringInternal(const char* command, const bool bFromConsole, const bool bSilentMode)
 {
 	CRY_ASSERT(command);
-	CRY_ASSERT_MESSAGE(command[0] != '\\', "ExecuteStringInternal command should not start with \"\\\"");
+	CRY_ASSERT(command[0] != '\\', "ExecuteStringInternal command should not start with \"\\\"");
 
 #if !defined(RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
 	if (command[0] == BACKGROUND_SERVER_CHAR)

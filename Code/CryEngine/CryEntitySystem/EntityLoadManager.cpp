@@ -425,7 +425,7 @@ bool CEntityLoadManager::CreateEntity(XmlNodeRef& entityNode, SEntitySpawnParams
 //////////////////////////////////////////////////////////////////////////
 bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadParams& loadParams, EntityId& outUsingId, bool bIsLoadingLevellFile)
 {
-	CRY_ASSERT_MESSAGE(loadParams.spawnParams.pClass != nullptr, "Create Entity was called without an entity class! This will lead to a crash!");
+	CRY_ASSERT(loadParams.spawnParams.pClass != nullptr, "Create Entity was called without an entity class! This will lead to a crash!");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Entity, "Entity %s", loadParams.spawnParams.pClass->GetName());
 
 	outUsingId = INVALID_ENTITYID;
@@ -562,7 +562,7 @@ bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadP
 		if (entityNode->getAttr("ParentGuid", parentGuid))
 		{
 			spawnParams.pParent = g_pIEntitySystem->GetEntity(g_pIEntitySystem->FindEntityByGuid(parentGuid));
-			CRY_ASSERT_MESSAGE(spawnParams.pParent != nullptr, "Parent must have been spawned before the child!");
+			CRY_ASSERT(spawnParams.pParent != nullptr, "Parent must have been spawned before the child!");
 		}
 		else
 		{
@@ -571,7 +571,7 @@ bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadP
 			if (entityNode->getAttr("ParentId", nParentId))
 			{
 				spawnParams.pParent = g_pIEntitySystem->GetEntity(nParentId);
-				CRY_ASSERT_MESSAGE(spawnParams.pParent != nullptr, "Parent must have been spawned before the child!");
+				CRY_ASSERT(spawnParams.pParent != nullptr, "Parent must have been spawned before the child!");
 			}
 		}
 

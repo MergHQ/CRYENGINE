@@ -843,7 +843,7 @@ CManagedEntityComponentFactory::CSchematycFunction::CSchematycFunction(std::shar
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "Tried to register Schematyc function with non-primitive parameter type!");
+			CRY_ASSERT(false, "Tried to register Schematyc function with non-primitive parameter type!");
 			break;
 		}
 
@@ -925,7 +925,7 @@ void CManagedEntityComponentFactory::CSchematycFunction::Execute(Schematyc::CRun
 				break;
 
 			default:
-				CRY_ASSERT_MESSAGE(false, "Tried to execute Schematyc function with non-primitive parameter type!");
+				CRY_ASSERT(false, "Tried to execute Schematyc function with non-primitive parameter type!");
 				break;
 			}
 		}
@@ -974,7 +974,7 @@ void CManagedEntityComponentFactory::CSchematycSignal::CSignalClassDesc::AddPara
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "Tried to add Schematyc signal parameter with non-primitive type!");
+		CRY_ASSERT(false, "Tried to add Schematyc signal parameter with non-primitive type!");
 		break;
 	}
 }

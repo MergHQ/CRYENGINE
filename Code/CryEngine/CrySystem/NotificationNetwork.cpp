@@ -927,7 +927,7 @@ bool CClient::ListenerRemove(INotificationNetworkListener* pListener)
 bool CClient::Send(const char* channelName, const void* pBuffer, size_t length)
 {
 	CRY_ASSERT(CChannel::IsNameValid(channelName));
-	//	CRY_ASSERT_MESSAGE(channelLength <= NN_CHANNEL_NAME_LENGTH_MAX,
+	//	CRY_ASSERT(channelLength <= NN_CHANNEL_NAME_LENGTH_MAX,
 	//		"Channel name \"%s\" was passed to a Notification Network method, the name cannot be longer than %d chars.",
 	//		channel, NN_CHANNEL_NAME_LENGTH_MAX);
 

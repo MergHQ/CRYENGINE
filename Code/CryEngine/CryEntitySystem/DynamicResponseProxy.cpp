@@ -48,14 +48,14 @@ Cry::Entity::EventFlags CEntityComponentDynamicResponse::GetEventMask() const
 //////////////////////////////////////////////////////////////////////////
 DRS::IVariableCollection* CEntityComponentDynamicResponse::GetLocalVariableCollection() const
 {
-	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
+	CRY_ASSERT(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
 	return m_pResponseActor->GetLocalVariables();
 }
 
 //////////////////////////////////////////////////////////////////////////
 DRS::IResponseActor* CEntityComponentDynamicResponse::GetResponseActor() const
 {
-	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
+	CRY_ASSERT(m_pResponseActor, "DRS Component without an Actor detected. Should never happen.");
 	return m_pResponseActor;
 }
 

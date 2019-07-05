@@ -302,7 +302,7 @@ bool CPlatformOS_PC::CanRestartTitle() const
 
 void CPlatformOS_PC::RestartTitle(const char* pTitle)
 {
-	CRY_ASSERT_MESSAGE(CanRestartTitle(), "Restart title not implemented (or previously needed)");
+	CRY_ASSERT(CanRestartTitle(), "Restart title not implemented (or previously needed)");
 }
 
 bool CPlatformOS_PC::UsePlatformSavingAPI() const

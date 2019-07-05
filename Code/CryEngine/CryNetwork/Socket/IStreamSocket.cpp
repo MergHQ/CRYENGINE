@@ -53,7 +53,7 @@ private:
 template<>
 void SCreateStreamSocketVisitor::VisitVariant<stl::variant_size<TNetAddress>::value>(const TNetAddress& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 IStreamSocketPtr CreateStreamSocket(const TNetAddress& addr)

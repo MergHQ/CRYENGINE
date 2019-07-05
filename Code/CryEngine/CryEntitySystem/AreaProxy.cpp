@@ -82,7 +82,7 @@ void CEntityComponentArea::OnMove()
 					s_tmpWorldPoints[i] = worldTM.TransformPoint(m_localPoints[i]);
 				}
 
-				CRY_ASSERT_MESSAGE(!s_tmpWorldPoints.empty(), "An area shape without points cannot be moved, Verify that it is properly initialized!");
+				CRY_ASSERT(!s_tmpWorldPoints.empty(), "An area shape without points cannot be moved, Verify that it is properly initialized!");
 
 				if (!s_tmpWorldPoints.empty())
 				{

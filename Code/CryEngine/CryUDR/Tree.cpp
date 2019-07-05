@@ -33,7 +33,7 @@ namespace Cry
 		{
 			CRecursiveSyncObjectAutoLock _lock;
 			CNode* pFoundNode = m_root.FindNodeByINode(nodeToRemove);
-			CRY_ASSERT_MESSAGE(pFoundNode, "CTree::RemoveNode: the passed-in node does *not* belong to the tree! (wrong use of the RemoveNode() method!)");
+			CRY_ASSERT(pFoundNode, "CTree::RemoveNode: the passed-in node does *not* belong to the tree! (wrong use of the RemoveNode() method!)");
 
 			// trying to remove the tree node is a special case: just remove its children, but leave the root node around
 			if (pFoundNode == &m_root)

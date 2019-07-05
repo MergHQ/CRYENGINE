@@ -42,7 +42,7 @@ void CEntityComponentAudio::Initialize()
 void CEntityComponentAudio::OnMove()
 {
 	Matrix34 const tm = GetWorldTransformMatrix();
-	CRY_ASSERT_MESSAGE(tm.IsValid(), "Invalid Matrix34 during CEntityComponentAudio::OnMove");
+	CRY_ASSERT(tm.IsValid(), "Invalid Matrix34 during CEntityComponentAudio::OnMove");
 
 	if ((m_flags & eEntityAudioProxyFlags_CanMoveWithEntity) != 0)
 	{

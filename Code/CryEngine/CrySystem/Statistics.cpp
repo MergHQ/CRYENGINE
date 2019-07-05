@@ -223,7 +223,7 @@ public:                                 // -------------------------------------
 			OutputDebugString("ERROR: file wasn't registered with AddResource(): '");
 			OutputDebugString(sOutputFileName.c_str());
 			OutputDebugString("'\n");
-			CRY_ASSERT_MESSAGE(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
+			CRY_ASSERT(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
 			return;
 		}
 
@@ -256,7 +256,7 @@ public:                                 // -------------------------------------
 			OutputDebugString("ERROR: file wasn't registered with AddResource(): '");
 			OutputDebugString(sOutputFileName.c_str());
 			OutputDebugString("'\n");
-			CRY_ASSERT_MESSAGE(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
+			CRY_ASSERT(0, "The asset wasn't registered yet. AddResource() missing - unpredictable result might happen.");
 			return;
 		}
 

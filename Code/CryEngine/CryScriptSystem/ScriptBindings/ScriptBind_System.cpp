@@ -1466,7 +1466,7 @@ int CScriptBind_System::GetCVar(IFunctionHandler* pH)
 		}
 		else if (pCVar->GetType() == ECVarType::Int64)
 		{
-			CRY_ASSERT_MESSAGE(false, "CScriptBind_System::GetCVar int64 cvar not implemented");
+			CRY_ASSERT(false, "CScriptBind_System::GetCVar int64 cvar not implemented");
 		}
 	}
 

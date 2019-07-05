@@ -1252,7 +1252,7 @@ namespace Schematyc2
 		CRY_PROFILE_FUNCTION_ARG(PROFILE_GAME, m_pLibClass->GetName());
 		const ILibFunction*	pFunction = m_pLibClass->GetFunction(functionId);
 
-		CRY_ASSERT_MESSAGE(pFunction, "Function %s not found in class %s", pFunction->GetName(), m_pLibClass->GetName());
+		CRY_ASSERT(pFunction, "Function %s not found in class %s", pFunction->GetName(), m_pLibClass->GetName());
 		if(pFunction)
 		{
 			CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "ProcessFunction", pFunction->GetName());
@@ -1276,7 +1276,7 @@ namespace Schematyc2
 			const size_t inputCount = defaultInputs.size();
 			TVariantConstArray defaultOutputs = pFunction->GetVariantOutputs();
 			const size_t outputCount = defaultOutputs.size();
-			CRY_ASSERT_MESSAGE((inputs.size() >= inputCount) && (outputs.size() >= outputCount), "Input or output mismatch. In function %s in class %s", pFunction->GetName(), m_pLibClass->GetName());
+			CRY_ASSERT((inputs.size() >= inputCount) && (outputs.size() >= outputCount), "Input or output mismatch. In function %s in class %s", pFunction->GetName(), m_pLibClass->GetName());
 			if((inputs.size() >= inputCount) && (outputs.size() >= outputCount))
 			{
 				// Initialize stack.
@@ -1323,7 +1323,7 @@ namespace Schematyc2
 						{
 							if (pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Node || pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput)
 							{
-								CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+								CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 								m_nodeHistory.push_back(SExecutionHistoryItem(pDebugSymbol->originGuid, "", "", 0, SExecutionHistoryItem::EExecutionHistoryType::Node));
 
 								if (pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::NodeAndInput)
@@ -1356,7 +1356,7 @@ namespace Schematyc2
 
 								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
 								{
-									CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in PUSH operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in PUSH operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 									string value;
 									StringUtils::VariantToString(pFunction->GetVariantConsts()[pPushOp->iConstValue], value);
 
@@ -1381,7 +1381,7 @@ namespace Schematyc2
 
 								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
 								{
-									CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in SET operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in SET operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 									string value;
 									StringUtils::VariantToString(pFunction->GetVariantConsts()[pSetOp->iConstValue], value);
 
@@ -1411,7 +1411,7 @@ namespace Schematyc2
 
 								if (pDebugSymbol && pDebugSymbol->type == ILibFunction::SDebugSymbol::EDebugSymbolType::Input)
 								{
-									CRY_ASSERT_MESSAGE(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in COPY operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+									CRY_ASSERT(!pDebugSymbol->originGuid.cryGUID.IsNull(), "[Schematyc Debugger] Null guid found in COPY operation function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 									string value;
 									StringUtils::VariantToString(stack[pCopyOp->srcPos], value);
 
@@ -1671,7 +1671,7 @@ namespace Schematyc2
 							{
 								pSignal = libRegistry.GetSignal(pSendSignalOp->guid);
 							}
-							CRY_ASSERT_MESSAGE(pSignal != NULL, "Invalid signal found  in SEND_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+							CRY_ASSERT(pSignal != NULL, "Invalid signal found  in SEND_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pSignal != NULL)
 							{
 								const size_t	stackSize = stack.GetSize();
@@ -1702,7 +1702,7 @@ namespace Schematyc2
 							{
 								pSignal = libRegistry.GetSignal(pBroadcastSignalOp->guid);
 							}
-							CRY_ASSERT_MESSAGE(pSignal != NULL, "Invalid signal found  in BROADCAST_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+							CRY_ASSERT(pSignal != NULL, "Invalid signal found  in BROADCAST_SIGNAL operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pSignal != NULL)
 							{
 								const size_t	stackSize = stack.GetSize();
@@ -1743,7 +1743,7 @@ namespace Schematyc2
 						{
 							const SVMCallEnvAbstractInterfaceFunctionOp*	pCallEnvAbstractInterfaceFunctionOp = static_cast<const SVMCallEnvAbstractInterfaceFunctionOp*>(pOp);
 							IAbstractInterfaceFunctionConstPtr						pAbstractInterfaceFunction = gEnv->pSchematyc2->GetEnvRegistry().GetAbstractInterfaceFunction(pCallEnvAbstractInterfaceFunctionOp->functionGUID);
-							CRY_ASSERT_MESSAGE(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_ENV_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+							CRY_ASSERT(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_ENV_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pAbstractInterfaceFunction)
 							{
 								size_t				prevStackSize = stack.GetSize();
@@ -1779,7 +1779,7 @@ namespace Schematyc2
 						{
 							const SVMCallLibAbstractInterfaceFunctionOp*	pCallLibAbstractInterfaceFunctionOp = static_cast<const SVMCallLibAbstractInterfaceFunctionOp*>(pOp);
 							ILibAbstractInterfaceFunctionConstPtr					pAbstractInterfaceFunction = gEnv->pSchematyc2->GetLibRegistry().GetAbstractInterfaceFunction(pCallLibAbstractInterfaceFunctionOp->functionGUID);
-							CRY_ASSERT_MESSAGE(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_LIB_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
+							CRY_ASSERT(pAbstractInterfaceFunction, "Invalid abstract function found  in CALL_LIB_ABSTRACT_INTERFACE_FUNCTION operation in function %s in class %s, position %zu", pFunction->GetName(), m_pLibClass->GetName(), pos);
 							if(pAbstractInterfaceFunction)
 							{
 								size_t				prevStackSize = stack.GetSize();

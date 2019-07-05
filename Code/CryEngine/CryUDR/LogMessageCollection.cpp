@@ -107,7 +107,7 @@ namespace Cry
 
 		void CLogMessageCollection::UpdateTimeMetadata(const CTimeMetadata& timeMetadata)
 		{
-			CRY_ASSERT_MESSAGE(timeMetadata.IsValid(), "Parameter 'timeMetadata' must be valid.");
+			CRY_ASSERT(timeMetadata.IsValid(), "Parameter 'timeMetadata' must be valid.");
 
 			if (!m_timeMetadataMin.IsValid() || m_timeMetadataMin > timeMetadata)
 			{

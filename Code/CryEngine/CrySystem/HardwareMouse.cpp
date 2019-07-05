@@ -661,7 +661,7 @@ void CHardwareMouse::GetHardwareMouseClientPosition(float* pfX, float* pfY)
 		return;
 
 	HWND hWnd = (HWND)GetConfinedWindowHandle();
-	CRY_ASSERT_MESSAGE(hWnd, "Impossible to get client coordinates from a non existing window!");
+	CRY_ASSERT(hWnd, "Impossible to get client coordinates from a non existing window!");
 
 	if (hWnd)
 	{
@@ -688,7 +688,7 @@ void CHardwareMouse::SetHardwareMouseClientPosition(float fX, float fY)
 {
 #if CRY_PLATFORM_WINDOWS
 	HWND hWnd = (HWND)GetConfinedWindowHandle();
-	CRY_ASSERT_MESSAGE(hWnd, "Impossible to set position of the mouse relative to client coordinates from a non existing window!");
+	CRY_ASSERT(hWnd, "Impossible to set position of the mouse relative to client coordinates from a non existing window!");
 
 	if (hWnd)
 	{

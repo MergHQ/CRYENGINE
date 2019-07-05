@@ -212,7 +212,7 @@ namespace ChannelSecurity
 
 #if ALLOW_HMAC
 #if HMAC_CNG_SHA256 || HMAC_TOMCRYPT_SHA256
-		CRY_ASSERT_MESSAGE(m_pHmac, "HMAC is not initialized");
+		CRY_ASSERT(m_pHmac, "HMAC is not initialized");
 		return m_pHmac->Hash(pBuf, bufSize);
 #else
 #error "Unknown configuration"
@@ -229,7 +229,7 @@ namespace ChannelSecurity
 
 #if ALLOW_HMAC
 #if HMAC_CNG_SHA256 || HMAC_TOMCRYPT_SHA256
-		CRY_ASSERT_MESSAGE(m_pHmac, "HMAC is not initialized");
+		CRY_ASSERT(m_pHmac, "HMAC is not initialized");
 		bool res = m_pHmac->FinishAndRestartHash(result);
 #else
 #error "Unknown configuration"

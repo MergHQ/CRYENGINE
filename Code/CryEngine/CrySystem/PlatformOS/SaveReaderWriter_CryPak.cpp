@@ -34,7 +34,7 @@ int TranslateSeekMode(IPlatformOS::ISaveReader::ESeekMode mode)
 		return SEEK_END;
 	default:
 		{
-			CRY_ASSERT_TRACE(false, ("Unrecognized seek mode %i", static_cast<int>(mode)));
+			CRY_ASSERT(false, "Unrecognized seek mode %i", static_cast<int>(mode));
 			return INVALID_SEEK;
 		}
 	}

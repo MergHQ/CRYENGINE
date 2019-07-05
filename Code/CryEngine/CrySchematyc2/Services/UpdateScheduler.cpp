@@ -180,7 +180,7 @@ namespace Schematyc2
 
 #if DEBUG_RELEVANCE_GRID
 			const bool erased = stl::find_and_erase_if(*pUpdateSlots, [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
-			CRY_ASSERT_MESSAGE(erased, "Unable to find scope for entity %x at cell %u", pScope->GetEntity() ? pScope->GetEntity()->GetId() : INVALID_ENTITYID, cellIdx);
+			CRY_ASSERT(erased, "Unable to find scope for entity %x at cell %u", pScope->GetEntity() ? pScope->GetEntity()->GetId() : INVALID_ENTITYID, cellIdx);
 #else
 			stl::find_and_erase_if(*pUpdateSlots, [&pScope](const CRelevanceGrid::SUpdateCallback& cb) { return pScope == cb.pScope; });
 #endif

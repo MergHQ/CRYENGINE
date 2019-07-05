@@ -291,7 +291,7 @@ CMonoDomain* CMonoRuntime::GetActiveDomain()
 		return pDomain;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "Kept here for safety if code reaches it, but should never be called");
+	CRY_ASSERT(false, "Kept here for safety if code reaches it, but should never be called");
 	m_domains.emplace_back(std::make_shared<CAppDomain>(pActiveMonoDomain));
 	static_cast<CAppDomain*>(m_domains.back().get())->Initialize();
 	return m_domains.back().get();

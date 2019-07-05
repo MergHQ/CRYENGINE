@@ -62,7 +62,7 @@ namespace Cry
 			REGISTER_COMMAND("UDR_PrintStatistics", CmdPrintStatistics, 0, "");
 
 			const bool timeMetadataInitializedSuccessfully = m_timeMetadataBase.Initialize();
-			CRY_ASSERT_MESSAGE(timeMetadataInitializedSuccessfully, "Base Time metadata for the UDR System could not be initialized.");
+			CRY_ASSERT(timeMetadataInitializedSuccessfully, "Base Time metadata for the UDR System could not be initialized.");
 			return timeMetadataInitializedSuccessfully;
 		}
 		
@@ -114,7 +114,7 @@ namespace Cry
 		{
 			CRecursiveSyncObjectAutoLock lock;
 
-			CRY_ASSERT_MESSAGE(duration >= 0.0f, "Parameter 'duration' must be >= 0.0f.");
+			CRY_ASSERT(duration >= 0.0f, "Parameter 'duration' must be >= 0.0f.");
 			m_primitivesQueue.emplace_back(pPrimitive, CalculateDurationUsingCVars(duration));
 		}
 

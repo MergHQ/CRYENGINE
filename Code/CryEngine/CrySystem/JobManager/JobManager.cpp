@@ -180,7 +180,7 @@ void JobManager::CWorkerBackEndProfiler::GetFrameStatsSummary(SJobFrameStatsSumm
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::RegisterJob(const uint32 jobId, const char* jobName)
 {
-	CRY_ASSERT_MESSAGE(jobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS,
+	CRY_ASSERT(jobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS,
 	                   string().Format("JobManager::CWorkerBackEndProfiler::RegisterJob: Limit for current max supported jobs reached. Current limit: %u. Increase JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS limit."
 	                                   , JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS));
 
@@ -191,7 +191,7 @@ void JobManager::CWorkerBackEndProfiler::RegisterJob(const uint32 jobId, const c
 ///////////////////////////////////////////////////////////////////////////////
 void JobManager::CWorkerBackEndProfiler::RecordJob(const uint16 profileIndex, const uint8 workerId, const uint32 jobId, const uint32 runTimeMicroSec)
 {
-	CRY_ASSERT_MESSAGE(workerId < m_WorkerStatsInfo.m_nNumWorkers, string().Format("JobManager::CWorkerBackEndProfiler::RecordJob: workerId is out of scope. workerId:%u , scope:%u"
+	CRY_ASSERT(workerId < m_WorkerStatsInfo.m_nNumWorkers, string().Format("JobManager::CWorkerBackEndProfiler::RecordJob: workerId is out of scope. workerId:%u , scope:%u"
 	                                                                               , workerId, m_WorkerStatsInfo.m_nNumWorkers));
 
 	JobManager::SJobFrameStats& jobStats = m_JobStatsInfo.m_pJobStats[(profileIndex* JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS) +jobId];
@@ -282,7 +282,7 @@ void JobManager::CWorkerBackEndProfiler::GetJobStats(const uint8 nBufferIndex, T
 	case JobManager::IWorkerBackEndProfiler::eJobSortOrder_NoSort:
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, "Unsupported type");
+		CRY_ASSERT(false, "Unsupported type");
 	}
 	;
 }
@@ -1372,7 +1372,7 @@ JobManager::IBackend* JobManager::CJobManager::GetBackEnd(JobManager::EBackEndTy
 	case eBET_Blocking:
 		return m_pBlockingBackEnd;
 	default:
-		CRY_ASSERT_MESSAGE(0, "Unsupported EBackEndType encountered.");
+		CRY_ASSERT(0, "Unsupported EBackEndType encountered.");
 		return nullptr;
 	}
 

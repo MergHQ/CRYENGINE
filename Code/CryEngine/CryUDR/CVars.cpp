@@ -59,17 +59,17 @@ namespace Cry
 
 		void SCvars::Validate()
 		{
-			CRY_ASSERT_MESSAGE(debugDrawZTestOn == 0 || debugDrawZTestOn == 1, "CVar '%s' value must be 0/1.", szDebugDrawZTestOn);
+			CRY_ASSERT(debugDrawZTestOn == 0 || debugDrawZTestOn == 1, "CVar '%s' value must be 0/1.", szDebugDrawZTestOn);
 
-			CRY_ASSERT_MESSAGE(debugDrawLineThickness > 0.0f, "CVar '%s' value must be > 0.0f.", szDebugDrawLineThickness);
+			CRY_ASSERT(debugDrawLineThickness > 0.0f, "CVar '%s' value must be > 0.0f.", szDebugDrawLineThickness);
 			
-			CRY_ASSERT_MESSAGE(debugDrawUpdate == 0 || debugDrawUpdate == 1, "CVar '%s' value must be 0/1.", szDebugDrawUpdate);
+			CRY_ASSERT(debugDrawUpdate == 0 || debugDrawUpdate == 1, "CVar '%s' value must be 0/1.", szDebugDrawUpdate);
 			
-			CRY_ASSERT_MESSAGE(debugDrawDuration >= 0.0f, "CVar '%s' value must be >= 0.0f.", szDebugDrawDuration);
+			CRY_ASSERT(debugDrawDuration >= 0.0f, "CVar '%s' value must be >= 0.0f.", szDebugDrawDuration);
 			
-			CRY_ASSERT_MESSAGE(debugDrawMinimumDuration >= 0.0f, "CVar '%s' value must be >= 0.0f.", szDebugDrawMinimumDuration);
+			CRY_ASSERT(debugDrawMinimumDuration >= 0.0f, "CVar '%s' value must be >= 0.0f.", szDebugDrawMinimumDuration);
 			
-			CRY_ASSERT_MESSAGE(debugDrawMaximumDuration >= 0.0f, "CVar '%s' value must be >= 0.0f.", szDebugDrawMaximumDuration);
+			CRY_ASSERT(debugDrawMaximumDuration >= 0.0f, "CVar '%s' value must be >= 0.0f.", szDebugDrawMaximumDuration);
 		}
 
 	}

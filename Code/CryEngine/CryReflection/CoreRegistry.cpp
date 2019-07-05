@@ -24,13 +24,13 @@ CCoreRegistry::CCoreRegistry()
 
 ITypeDesc* CCoreRegistry::RegisterType(const Type::CTypeDesc& typeDesc, CGuid guid, ReflectTypeFunction pReflectFunc, const SSourceFileInfo& srcPos)
 {
-	CRY_ASSERT_MESSAGE(pReflectFunc, "Callback for ReflectTypeFunction must be non-null!");
+	CRY_ASSERT(pReflectFunc, "Callback for ReflectTypeFunction must be non-null!");
 	if (pReflectFunc == nullptr)
 	{
 		return nullptr;
 	}
 
-	CRY_ASSERT_MESSAGE(typeDesc.IsArray() == false, "Only non-array types are allowed to be registered.");
+	CRY_ASSERT(typeDesc.IsArray() == false, "Only non-array types are allowed to be registered.");
 	if (typeDesc.IsArray())
 	{
 		return nullptr;
@@ -45,7 +45,7 @@ ITypeDesc* CCoreRegistry::RegisterType(const Type::CTypeDesc& typeDesc, CGuid gu
 		const SSourceFileInfo& srcPos = foundTypeDesc.m_sourcePos;
 #endif
 
-		CRY_ASSERT_MESSAGE(resultByGuid == m_typeIndicesByGuid.end(),
+		CRY_ASSERT(resultByGuid == m_typeIndicesByGuid.end(),
 		                   "Type registration rejected. Guid %s already used for type '%s', registered in file '%s', line '%d', function '%s'.",
 		                   guid.ToDebugString(),
 		                   foundTypeDesc.GetLabel(),
@@ -65,7 +65,7 @@ ITypeDesc* CCoreRegistry::RegisterType(const Type::CTypeDesc& typeDesc, CGuid gu
 		const SSourceFileInfo& srcPos = foundTypeDesc.m_sourcePos;
 #endif
 
-		CRY_ASSERT_MESSAGE(resultByTypeId == m_typeIndicesByTypeId.end(),
+		CRY_ASSERT(resultByTypeId == m_typeIndicesByTypeId.end(),
 		                   "Type registration rejected. Type '%s' is already registered with label '%s' {%s} in file '%s', line '%d', function '%s'.",
 		                   foundTypeDesc.GetFullQualifiedName(),
 		                   foundTypeDesc.GetLabel(),
@@ -78,7 +78,7 @@ ITypeDesc* CCoreRegistry::RegisterType(const Type::CTypeDesc& typeDesc, CGuid gu
 	}
 
 	const size_t index = m_typesByIndex.size();
-	CRY_ASSERT_MESSAGE(index + 1 < TypeIndex::MaxValue, "Index of type exceeded max of TypeIndex.");
+	CRY_ASSERT(index + 1 < TypeIndex::MaxValue, "Index of type exceeded max of TypeIndex.");
 	if (index + 1 < TypeIndex::MaxValue)
 	{
 		m_typesByIndex.emplace_back(guid, typeDesc);
@@ -123,7 +123,7 @@ const ITypeDesc* CCoreRegistry::GetTypeByGuid(CGuid guid) const
 	if (result != m_typeIndicesByGuid.end())
 	{
 		const size_t index = result->second;
-		CRY_ASSERT_MESSAGE(index < m_typesByIndex.size(), "Type Registry is corrupted.");
+		CRY_ASSERT(index < m_typesByIndex.size(), "Type Registry is corrupted.");
 		if (index < m_typesByIndex.size())
 		{
 			return &m_typesByIndex[index];
@@ -138,7 +138,7 @@ const ITypeDesc* CCoreRegistry::GetTypeById(CTypeId typeId) const
 	if (result != m_typeIndicesByTypeId.end())
 	{
 		const size_t index = result->second;
-		CRY_ASSERT_MESSAGE(index < m_typesByIndex.size(), "Type Registry is corrupted.");
+		CRY_ASSERT(index < m_typesByIndex.size(), "Type Registry is corrupted.");
 		if (index < m_typesByIndex.size())
 		{
 			return &m_typesByIndex[index];
@@ -149,7 +149,7 @@ const ITypeDesc* CCoreRegistry::GetTypeById(CTypeId typeId) const
 
 IFunctionDesc* CCoreRegistry::RegisterFunction(const Reflection::CFunction& function, CGuid guid, const char* szLabel, ReflectFunctionFunction pReflectFunc, const SSourceFileInfo& srcPos)
 {
-	CRY_ASSERT_MESSAGE(pReflectFunc, "Callback for ReflectFunctionFunction must be non-null!");
+	CRY_ASSERT(pReflectFunc, "Callback for ReflectFunctionFunction must be non-null!");
 	if (pReflectFunc == nullptr)
 	{
 		return nullptr;
@@ -163,7 +163,7 @@ IFunctionDesc* CCoreRegistry::RegisterFunction(const Reflection::CFunction& func
 		const SSourceFileInfo& srcPos = pFunctionDesc->GetSourceInfo();
 #endif
 
-		CRY_ASSERT_MESSAGE(!pFunctionDesc,
+		CRY_ASSERT(!pFunctionDesc,
 			"Function registration rejected. Guid '{%s}' already used for function '%s', registered in file '%s', line '%d', function '%s'.",
 			guid.ToDebugString(),
 			pFunctionDesc->GetFullQualifiedName(),
@@ -184,7 +184,7 @@ IFunctionDesc* CCoreRegistry::RegisterFunction(const Reflection::CFunction& func
 		const SSourceFileInfo& srcPos = pFunctionDesc->GetSourceInfo();
 #endif
 
-		CRY_ASSERT_MESSAGE(!pFunctionDesc,
+		CRY_ASSERT(!pFunctionDesc,
 			"Function registration rejected. Function '%s' is already registered with label '%s' '{%s}' in file '%s', line '%d', function '%s'.",
 			pFunctionDesc->GetFullQualifiedName(),
 			pFunctionDesc->GetLabel(),
@@ -197,7 +197,7 @@ IFunctionDesc* CCoreRegistry::RegisterFunction(const Reflection::CFunction& func
 	}
 
 	const size_t index = m_functionsByIndex.size();
-	CRY_ASSERT_MESSAGE(index + 1 < FunctionIndex::MaxValue, "Index of function exceeded max of FunctionIndex.");
+	CRY_ASSERT(index + 1 < FunctionIndex::MaxValue, "Index of function exceeded max of FunctionIndex.");
 	if (index + 1 < FunctionIndex::MaxValue)
 	{
 		CFunctionDesc* pReflectedFunctionDesc = new CFunctionDesc(
@@ -257,7 +257,7 @@ const IFunctionDesc* CCoreRegistry::GetFunctionByName(const char* szName)
 			}
 		}
 	}
-	CRY_ASSERT_MESSAGE(szName, "Can't search for a function without a name.");
+	CRY_ASSERT(szName, "Can't search for a function without a name.");
 	return nullptr;
 }
 
@@ -269,7 +269,7 @@ void CCoreRegistry::RegisterRegistry(IRegistry* pRegistry)
 	};
 
 	auto result = std::find_if(m_customRegistriesByIndex.begin(), m_customRegistriesByIndex.end(), condition);
-	CRY_ASSERT_MESSAGE(result == m_customRegistriesByIndex.end(), "Custom type registry '%s' is already registered", pRegistry->GetLabel());
+	CRY_ASSERT(result == m_customRegistriesByIndex.end(), "Custom type registry '%s' is already registered", pRegistry->GetLabel());
 	if (result == m_customRegistriesByIndex.end())
 	{
 		m_customRegistriesByIndex.emplace_back(pRegistry);

@@ -76,7 +76,7 @@ void CCodeCheckpointMgr::RegisterCheckpoint(CCodeCheckpoint* pCheckpoint)
 		}
 
 		// Ensure duplicate code checkpoints are renamed
-		CRY_ASSERT_TRACE(oldRec.m_pCheckpoint == NULL, ("Duplicate CODECHECKPOINT(\"%s\") found. Please rename!", pCheckpoint->Name()));
+		CRY_ASSERT(oldRec.m_pCheckpoint == NULL, "Duplicate CODECHECKPOINT(\"%s\") found. Please rename!", pCheckpoint->Name());
 	}
 }
 

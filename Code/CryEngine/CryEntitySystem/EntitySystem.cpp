@@ -718,7 +718,7 @@ void CEntitySystem::ClearEntityArray()
 #if defined(USE_CRY_ASSERT)
 	for(const CEntity* const pEntity : m_entityArray)
 	{
-		CRY_ASSERT_TRACE(pEntity == nullptr, ("About to \"leak\" entity id %d (%s)", pEntity->GetId(), pEntity->GetName()));
+		CRY_ASSERT(pEntity == nullptr, "About to \"leak\" entity id %d (%s)", pEntity->GetId(), pEntity->GetName());
 	}
 #endif
 
@@ -3741,12 +3741,12 @@ void CEntitySystem::EndCreateEntities()
 #ifndef PURE_CLIENT
 CEntitySystem::StaticEntityNetworkIdentifier CEntitySystem::GetStaticEntityNetworkId(const EntityId id) const
 {
-	CRY_ASSERT_MESSAGE(gEnv->bServer, "Static entity network identifier should only be queried by the server!");
+	CRY_ASSERT(gEnv->bServer, "Static entity network identifier should only be queried by the server!");
 
 	// Look up index for the specified static (loaded from level) entity in the vector
 	// The entry has to be contained here, or it shows a severe issue in the entity system
 	auto it = std::find(m_staticEntityIds.begin(), m_staticEntityIds.end(), id);
-	CRY_ASSERT_MESSAGE(it != m_staticEntityIds.end(), "Static entity was not present in the static entity vector! This indicates a severe system error!");
+	CRY_ASSERT(it != m_staticEntityIds.end(), "Static entity was not present in the static entity vector! This indicates a severe system error!");
 
 	return static_cast<StaticEntityNetworkIdentifier>(std::distance(m_staticEntityIds.begin(), it));
 }
@@ -3754,8 +3754,8 @@ CEntitySystem::StaticEntityNetworkIdentifier CEntitySystem::GetStaticEntityNetwo
 
 EntityId CEntitySystem::GetEntityIdFromStaticEntityNetworkId(const StaticEntityNetworkIdentifier id) const
 {
-	CRY_ASSERT_MESSAGE(gEnv->IsClient(), "Retrieving entity id from static entity network identifier should only be done by the client!");
-	CRY_ASSERT_MESSAGE(id < m_staticEntityIds.size(), "Static entity identifier exceeded range! Probable level mismatch detected!");
+	CRY_ASSERT(gEnv->IsClient(), "Retrieving entity id from static entity network identifier should only be done by the client!");
+	CRY_ASSERT(id < m_staticEntityIds.size(), "Static entity identifier exceeded range! Probable level mismatch detected!");
 	if (id < m_staticEntityIds.size())
 	{
 		return m_staticEntityIds[id];
@@ -3768,7 +3768,7 @@ EntityId CEntitySystem::GetEntityIdFromStaticEntityNetworkId(const StaticEntityN
 
 void CEntitySystem::AddStaticEntityId(const EntityId id, StaticEntityNetworkIdentifier networkIdentifier)
 {
-	CRY_ASSERT_MESSAGE(m_staticEntityIds.empty() || m_staticEntityIds.back() < id || id == INVALID_ENTITYID, "Static entity identifiers must be added sequentially!");
+	CRY_ASSERT(m_staticEntityIds.empty() || m_staticEntityIds.back() < id || id == INVALID_ENTITYID, "Static entity identifiers must be added sequentially!");
 	CRY_ASSERT(networkIdentifier < m_staticEntityIds.size());
 
 	// Static entity identifiers start at index 1, 0 being game rules
@@ -3785,7 +3785,7 @@ void CEntitySystem::PurgeDeferredCollisionEvents(bool force)
 
 		if (pEntity->m_keepAliveCounter == 0 || force)
 		{
-			CRY_ASSERT_MESSAGE(pEntity->IsGarbage(), "Entity must have been marked as removed to be deferred deleted!");
+			CRY_ASSERT(pEntity->IsGarbage(), "Entity must have been marked as removed to be deferred deleted!");
 			stl::push_back_unique(m_deletedEntities, pEntity);
 			it = m_deferredUsedEntities.erase(it);
 		}

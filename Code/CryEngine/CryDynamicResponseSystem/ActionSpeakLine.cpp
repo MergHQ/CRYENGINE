@@ -155,7 +155,7 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 		}
 		else if (lineEvent == eLineEvent_Finished)
 		{
-			CRY_ASSERT_MESSAGE(m_currentState == CS_RUNNING, "received a 'line-finished' callback when the speak-line action was not in the running state, should not happen");
+			CRY_ASSERT(m_currentState == CS_RUNNING, "received a 'line-finished' callback when the speak-line action was not in the running state, should not happen");
 			m_currentState = CS_FINISHED;
 			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnFinish) > 0)
 			{
@@ -167,7 +167,7 @@ void CActionSpeakLineInstance::OnLineEvent(const DRS::IResponseActor* pSpeaker, 
 		}
 		else if (lineEvent == eLineEvent_Canceled)
 		{
-			CRY_ASSERT_MESSAGE(m_currentState == CS_RUNNING, "received a 'line-canceled' callback when the speak-line action was not in the running state, should not happen");
+			CRY_ASSERT(m_currentState == CS_RUNNING, "received a 'line-canceled' callback when the speak-line action was not in the running state, should not happen");
 			m_currentState = CS_CANCELED;
 			if ((m_flags & CActionSpeakLine::ESpeakLineFlags_SendSignalOnCancel) > 0)
 			{

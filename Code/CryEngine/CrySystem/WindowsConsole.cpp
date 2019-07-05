@@ -846,7 +846,7 @@ void CWindowsConsole::CCellBuffer::AddCharacter(WCHAR ch, SPosition& position)
 
 	int32 index = (((position.head + position.lines + m_size.Y - 1) % m_size.Y) * m_size.X) + position.offset;
 
-	CRY_ASSERT_MESSAGE(index >= 0 && index < m_buffer.size(), "Invalid text position, would overflow");
+	CRY_ASSERT(index >= 0 && index < m_buffer.size(), "Invalid text position, would overflow");
 	CHAR_INFO& info = m_buffer[index];
 
 	info.Attributes = m_attr;

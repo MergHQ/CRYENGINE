@@ -114,7 +114,7 @@ bool CCompiledMonoLibrary::Load(int loadIndex)
 			MonoInternals::MonoString* pMonoString = reinterpret_cast<MonoInternals::MonoString*>(pObjectString);
 			CMonoString managedValue(pMonoString);
 			const char* szErrorMessage = managedValue.GetString();
-			CRY_ASSERT_MESSAGE(szErrorMessage, "Error message must be non-null.");
+			CRY_ASSERT(szErrorMessage, "Error message must be non-null.");
 			if (szErrorMessage)
 			{
 				monoCompileErrrors.emplace_back(szErrorMessage);

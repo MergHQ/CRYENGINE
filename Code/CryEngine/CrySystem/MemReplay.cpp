@@ -1445,7 +1445,7 @@ bool ReplayLogStream::EnableAsynchMode()
 	m_recordThread = new(m_allocator.Allocate(sizeof(ReplayRecordThread)))ReplayRecordThread(m_compressor);
 	if (!gEnv->pThreadManager->SpawnThread(m_recordThread, "ReplayRecord"))
 	{
-		CRY_ASSERT_MESSAGE(false, "Error spawning \"ReplayRecord\" thread.");
+		CRY_ASSERT(false, "Error spawning \"ReplayRecord\" thread.");
 		m_recordThread->~ReplayRecordThread();
 		m_recordThread = NULL;
 		return false;

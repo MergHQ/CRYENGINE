@@ -171,7 +171,7 @@ void CAsyncIOFileRequest::DecompressBlockEntry(SStreamJobEngineState engineState
 
 	CAsyncIOFileRequest_TransferPtr pSelf(this);
 
-	if (!CRY_VERIFY_WITH_MESSAGE(m_pDecompQueue, "File request queue not initialized or prematurely deleted"))
+	if (!CRY_VERIFY(m_pDecompQueue, "File request queue not initialized or prematurely deleted"))
 	{
 		Failed(ERROR_UNEXPECTED_DESTRUCTION);
 		JobFinalize_Decompress(pSelf, engineState);
@@ -296,7 +296,7 @@ void CAsyncIOFileRequest::DecryptBlockEntry(SStreamJobEngineState engineState, i
 	STREAM_DECOMPRESS_TRACE("[StreamDecrypt] DecryptBlockEntry(%x) %p %s %i\n", CryGetCurrentThreadId(), this, m_strFileName.c_str(), nJob);
 
 	CAsyncIOFileRequest_TransferPtr pSelf(this);
-	if (!CRY_VERIFY_WITH_MESSAGE(m_pDecryptQueue, "File request queue not initialized or prematurely deleted"))
+	if (!CRY_VERIFY(m_pDecryptQueue, "File request queue not initialized or prematurely deleted"))
 	{
 		Failed(ERROR_UNEXPECTED_DESTRUCTION);
 		JobFinalize_Decrypt(pSelf, engineState);

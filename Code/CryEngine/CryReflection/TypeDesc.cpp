@@ -80,7 +80,7 @@ CTypeDesc::CTypeDesc(CTypeDesc&& rhs)
 
 bool CTypeDesc::AddBaseType(CTypeId typeId, Type::CBaseCastFunction baseCastFunction, const SSourceFileInfo& srcPos)
 {
-	CRY_ASSERT_MESSAGE(IsClass(), "Base can only be added to class types.");
+	CRY_ASSERT(IsClass(), "Base can only be added to class types.");
 	if (IsClass())
 	{
 #if defined(USE_CRY_ASSERT)
@@ -90,7 +90,7 @@ bool CTypeDesc::AddBaseType(CTypeId typeId, Type::CBaseCastFunction baseCastFunc
 		};
 #endif
 
-		CRY_ASSERT_MESSAGE(std::find_if(m_classMembers.baseTypesByIndex.begin(), m_classMembers.baseTypesByIndex.end(), compare) == m_classMembers.baseTypesByIndex.end(), "Type already registered as base.");
+		CRY_ASSERT(std::find_if(m_classMembers.baseTypesByIndex.begin(), m_classMembers.baseTypesByIndex.end(), compare) == m_classMembers.baseTypesByIndex.end(), "Type already registered as base.");
 		CBaseTypeDesc* pBaseTypeDesc = new CBaseTypeDesc(typeId, baseCastFunction);
 		m_classMembers.baseTypesByIndex.emplace_back(pBaseTypeDesc);
 		return true;
@@ -109,7 +109,7 @@ const IBaseTypeDesc* CTypeDesc::GetBaseTypeByIndex(size_t index) const
 
 IFunctionDesc* CTypeDesc::AddFunction(const CFunction& function, const char* szLabel, CGuid guid, const SSourceFileInfo& srcPos)
 {
-	CRY_ASSERT_MESSAGE(IsClass(), "Functions can only be added to class types.");
+	CRY_ASSERT(IsClass(), "Functions can only be added to class types.");
 	if (IsClass())
 	{
 		auto compare = [&guid](const CFunctionDesc* pDesc) -> bool
@@ -118,7 +118,7 @@ IFunctionDesc* CTypeDesc::AddFunction(const CFunction& function, const char* szL
 		};
 
 		const bool isGuidUnused = (std::find_if(m_classMembers.functionsByIndex.begin(), m_classMembers.functionsByIndex.end(), compare) == m_classMembers.functionsByIndex.end());
-		CRY_ASSERT_MESSAGE(isGuidUnused, "Function guid {%s} already used.", guid.ToDebugString());
+		CRY_ASSERT(isGuidUnused, "Function guid {%s} already used.", guid.ToDebugString());
 		if (isGuidUnused)
 		{
 			CFunctionDesc* pFunctionDesc = new CFunctionDesc(this, function.GetReturnTypeId(), function.GetFunctionDelegate(), function.GetParams(), szLabel, guid);
@@ -140,7 +140,7 @@ const IFunctionDesc* CTypeDesc::GetFunctionByIndex(size_t index) const
 
 IVariableDesc* CTypeDesc::AddVariable(CTypeId typeId, ptrdiff_t offset, const char* szLabel, CGuid guid, bool isConst, bool isPublic, const SSourceFileInfo& srcPos)
 {
-	CRY_ASSERT_MESSAGE(IsClass(), "Variables can only be added to class types.");
+	CRY_ASSERT(IsClass(), "Variables can only be added to class types.");
 	if (IsClass())
 	{
 		// TODO: Decide if we should always check.
@@ -150,7 +150,7 @@ IVariableDesc* CTypeDesc::AddVariable(CTypeId typeId, ptrdiff_t offset, const ch
 			return (pDesc->GetOffset() == offset);
 		};
 #endif
-		CRY_ASSERT_MESSAGE(std::find_if(m_classMembers.variablesByIndex.begin(), m_classMembers.variablesByIndex.end(), compare) == m_classMembers.variablesByIndex.end(), "Variable already registered.");
+		CRY_ASSERT(std::find_if(m_classMembers.variablesByIndex.begin(), m_classMembers.variablesByIndex.end(), compare) == m_classMembers.variablesByIndex.end(), "Variable already registered.");
 
 		CVariableDesc* pVariableDesc = new CVariableDesc(offset, szLabel, *this, typeId, guid, isConst, isPublic, srcPos);
 
@@ -171,7 +171,7 @@ const IVariableDesc* CTypeDesc::GetVariableByIndex(size_t index) const
 
 IEnumValueDesc* CTypeDesc::AddEnumValue(const char* szLabel, uint64 value, const char* szDescription)
 {
-	CRY_ASSERT_MESSAGE(IsEnum(), "Enum values can only be added to enum types.");
+	CRY_ASSERT(IsEnum(), "Enum values can only be added to enum types.");
 	if (IsEnum())
 	{
 		// TODO: Decide if we should always check.
@@ -182,7 +182,7 @@ IEnumValueDesc* CTypeDesc::AddEnumValue(const char* szLabel, uint64 value, const
 			return (*pDesc == enumNameValue);
 		};
 #endif
-		CRY_ASSERT_MESSAGE(std::find_if(m_enumMembers.valuesByIndex.begin(), m_enumMembers.valuesByIndex.end(), compare) == m_enumMembers.valuesByIndex.end(), "Name '%s' with value '%d' already exists.", szLabel, value);
+		CRY_ASSERT(std::find_if(m_enumMembers.valuesByIndex.begin(), m_enumMembers.valuesByIndex.end(), compare) == m_enumMembers.valuesByIndex.end(), "Name '%s' with value '%d' already exists.", szLabel, value);
 		// ~TODO
 
 		CEnumValueDesc* pEnumDesc = new CEnumValueDesc(szLabel, value, szDescription ? szDescription : "");
@@ -205,7 +205,7 @@ const IEnumValueDesc* CTypeDesc::GetEnumValueByIndex(size_t index) const
 bool CTypeDesc::AddConversionOperator(CTypeId typeId, Type::CConversionOperator conversionOperator)
 {
 	const bool isNotRegistered = (m_conversionsByTypeId.find(typeId) == m_conversionsByTypeId.end());
-	CRY_ASSERT_MESSAGE(isNotRegistered, "Conversion already registered.");
+	CRY_ASSERT(isNotRegistered, "Conversion already registered.");
 	if (isNotRegistered)
 	{
 		m_conversionsByTypeId.emplace(typeId, conversionOperator);

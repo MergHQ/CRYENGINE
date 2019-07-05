@@ -196,9 +196,9 @@ void CNetEntity::RmiRegister(const SRmiHandler& handler)
 		[&handler](SRmiHandler &p) { return p.decoder == handler.decoder; });
 #endif
 
-	CRY_ASSERT_MESSAGE(found == m_rmiHandlers.end(), "Registering a duplicate RMI message.");
+	CRY_ASSERT(found == m_rmiHandlers.end(), "Registering a duplicate RMI message.");
 
-	CRY_ASSERT_MESSAGE(m_rmiHandlers.size() < std::numeric_limits<decltype(SRmiIndex::value)>::max(),
+	CRY_ASSERT(m_rmiHandlers.size() < std::numeric_limits<decltype(SRmiIndex::value)>::max(),
 		"Too many RMIs registered for the entity %s (%d)",
 		m_pEntity->GetName(), m_pEntity->GetId());
 
@@ -209,7 +209,7 @@ INetEntity::SRmiIndex CNetEntity::RmiByDecoder(SRmiHandler::DecoderF decoder, SR
 {
 	auto found = std::find_if(m_rmiHandlers.begin(), m_rmiHandlers.end(),
 		[&decoder](SRmiHandler &p) { return p.decoder == decoder; });
-	CRY_ASSERT_MESSAGE(found != m_rmiHandlers.end(), "Sending an unregistered RMI message.");
+	CRY_ASSERT(found != m_rmiHandlers.end(), "Sending an unregistered RMI message.");
 
 	*handler = &*found;
 	return SRmiIndex(found - m_rmiHandlers.begin());

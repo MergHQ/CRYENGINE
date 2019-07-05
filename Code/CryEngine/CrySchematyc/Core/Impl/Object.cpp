@@ -87,7 +87,7 @@ bool CObject::Init(CryGUID classGUID, const IObjectPropertiesPtr& pProperties)
 	m_pProperties = pProperties;
 
 	CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(classGUID);
-	CRY_ASSERT_MESSAGE(pClass, "Schematyc class '%s' couldn't be found in class registry.");
+	CRY_ASSERT(pClass, "Schematyc class '%s' couldn't be found in class registry.");
 	if (!pClass)
 	{
 		return false;
@@ -105,18 +105,18 @@ ObjectId CObject::GetId() const
 
 const IRuntimeClass& CObject::GetClass() const
 {
-	CRY_ASSERT_MESSAGE(m_pClass, "Runtime class of Schematyc Object must be not null.");
+	CRY_ASSERT(m_pClass, "Runtime class of Schematyc Object must be not null.");
 	return *m_pClass;
 }
 
 const char* CObject::GetScriptFile() const
 {
 	const IScriptElement* pElement = CCore::GetInstance().GetScriptRegistry().GetElement(m_pClass->GetGUID());
-	CRY_ASSERT_MESSAGE(pElement, "Script Element not found!");
+	CRY_ASSERT(pElement, "Script Element not found!");
 	if (pElement && pElement->GetType() == EScriptElementType::Class || pElement->GetType() == EScriptElementType::Module)
 	{
 		const IScript* pScript = pElement->GetScript();
-		CRY_ASSERT_MESSAGE(pScript, "Script Element doesn't have a script.");
+		CRY_ASSERT(pScript, "Script Element doesn't have a script.");
 		if (pScript)
 		{
 			return pScript->GetFilePath() + sizeof("assets");
@@ -144,7 +144,7 @@ bool CObject::SetSimulationMode(ESimulationMode simulationMode, EObjectSimulatio
 		if (simulationMode != ESimulationMode::Idle)
 		{
 			CRuntimeClassConstPtr pClass = CCore::GetInstance().GetRuntimeRegistryImpl().GetClassImpl(GetClass().GetGUID());
-			CRY_ASSERT_MESSAGE(pClass, "Schematyc class '%s' couldn't be found in class registry.");
+			CRY_ASSERT(pClass, "Schematyc class '%s' couldn't be found in class registry.");
 			if (pClass)
 			{
 				if (m_pClass->GetTimeStamp() < pClass->GetTimeStamp())

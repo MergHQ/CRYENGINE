@@ -46,8 +46,8 @@ struct SSaltBufferArray
 	//   Handle - must be not nil
 	void InsertKnownHandle(const SEntityIdentifier& handle)
 	{
-		CRY_ASSERT_MESSAGE(handle.GetId() != 0, "Entity index 0 cannot be reserved!");
-		CRY_ASSERT_MESSAGE(handle.GetIndex() < EntityArraySize, "Entity index exceeded maximum bounds!");
+		CRY_ASSERT(handle.GetId() != 0, "Entity index 0 cannot be reserved!");
+		CRY_ASSERT(handle.GetIndex() < EntityArraySize, "Entity index exceeded maximum bounds!");
 
 		if (!IsUsed(handle.GetIndex()))
 		{
@@ -88,7 +88,7 @@ struct SSaltBufferArray
 		m_freeListStartIndex = saltBufferElement.m_nextIndex;
 		saltBufferElement.MarkUsed();
 
-		CRY_ASSERT_MESSAGE(IsUsed(entityId.GetIndex()), "Entity identifier was not correctly marked as used!");
+		CRY_ASSERT(IsUsed(entityId.GetIndex()), "Entity identifier was not correctly marked as used!");
 
 		return entityId;
 	}
@@ -96,7 +96,7 @@ struct SSaltBufferArray
 	// O(1) - don't call for invalid handles and don't remove objects twice
 	void Remove(const SEntityIdentifier& handle)
 	{
-		CRY_ASSERT_MESSAGE(handle.GetId() != 0, "Validity checks should not be performed on entity index 0");
+		CRY_ASSERT(handle.GetId() != 0, "Validity checks should not be performed on entity index 0");
 		CRY_ASSERT(handle.GetIndex() < EntityArraySize);
 
 		const EntityIndex index = handle.GetIndex();
@@ -105,12 +105,12 @@ struct SSaltBufferArray
 		const EntitySalt oldSalt = m_buffer[index].m_salt;
 #endif
 
-		CRY_ASSERT_MESSAGE(IsUsed(index), "Tried to remove entity identifier that was already marked as not in use!");
+		CRY_ASSERT(IsUsed(index), "Tried to remove entity identifier that was already marked as not in use!");
 		CRY_ASSERT(handle.GetSalt() == oldSalt);
 
 		m_buffer[index].m_salt++;
 
-		CRY_ASSERT_MESSAGE(m_buffer[index].m_salt > oldSalt, "Entity salt overflowed, consider decreasing EntityIndexBitCount!");
+		CRY_ASSERT(m_buffer[index].m_salt > oldSalt, "Entity salt overflowed, consider decreasing EntityIndexBitCount!");
 		
 		m_buffer[index].m_nextIndex = m_freeListStartIndex;
 		m_freeListStartIndex = index;
@@ -121,7 +121,7 @@ struct SSaltBufferArray
 	//   true=handle is referencing to a valid object, false=handle is not or referencing to an object that was removed
 	bool IsValid(const SEntityIdentifier& handle) const
 	{
-		CRY_ASSERT_MESSAGE(handle.GetId() != 0, "Validity checks should not be performed on entity index 0");
+		CRY_ASSERT(handle.GetId() != 0, "Validity checks should not be performed on entity index 0");
 		CRY_ASSERT(handle.GetIndex() < EntityArraySize);
 
 		return m_buffer[handle.GetIndex()].m_salt == handle.GetSalt();
@@ -163,7 +163,7 @@ private:
 					break;
 				}
 
-				CRY_ASSERT_MESSAGE(!m_buffer[currentIndex].IsLastItem(), "Tried to remove non-existing entity index from the free list!");
+				CRY_ASSERT(!m_buffer[currentIndex].IsLastItem(), "Tried to remove non-existing entity index from the free list!");
 
 				previousIndex = currentIndex;
 				currentIndex = nextIndex;

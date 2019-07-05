@@ -179,7 +179,7 @@ void CAudioNode::Animate(SAnimContext& animContext)
 
 void CAudioNode::OnStart()
 {
-	CRY_ASSERT_MESSAGE(m_activeAudioTriggers.empty(), "m_activeAudioTriggers is not empty during CAudioNode::OnStart");
+	CRY_ASSERT(m_activeAudioTriggers.empty(), "m_activeAudioTriggers is not empty during CAudioNode::OnStart");
 }
 
 void CAudioNode::OnReset()

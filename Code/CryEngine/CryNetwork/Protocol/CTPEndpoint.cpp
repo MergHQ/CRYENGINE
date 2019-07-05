@@ -865,7 +865,7 @@ void CCTPEndpoint::BeginInit()
 	MMM_REGION(m_pMMM);
 	// these are the interfaces we use
 
-	CRY_ASSERT_MESSAGE(m_pParent == nullptr, "BeginInit is called on intialized CCTPEndpoint");
+	CRY_ASSERT(m_pParent == nullptr, "BeginInit is called on intialized CCTPEndpoint");
 	m_queue.SetParent(this);
 
 	m_entityId = 0;
@@ -882,7 +882,7 @@ void CCTPEndpoint::BeginInit()
 
 void CCTPEndpoint::EndInit(CNetChannel& parent, const SEndInitParams& params)
 {
-	CRY_ASSERT_MESSAGE(m_pParent == nullptr, "EndInit is called on intialized CCTPEndpoint");
+	CRY_ASSERT(m_pParent == nullptr, "EndInit is called on intialized CCTPEndpoint");
 	m_pParent = &parent;
 
 	MMM_REGION(m_pMMM);

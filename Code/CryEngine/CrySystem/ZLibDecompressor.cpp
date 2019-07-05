@@ -101,7 +101,7 @@ unsigned int CZLibInflateStream::GetBytesOutput()
 
 void CZLibInflateStream::Input(const char* pInSource, unsigned int inSourceSize)
 {
-	CRY_ASSERT_MESSAGE(m_currentState == eZInfState_AwaitingInput, "CZLibInflateStream::Input() called when stream is not awaiting input or has finished");
+	CRY_ASSERT(m_currentState == eZInfState_AwaitingInput, "CZLibInflateStream::Input() called when stream is not awaiting input or has finished");
 
 	m_decompressStream.next_in = (Bytef*)pInSource;
 	m_decompressStream.avail_in = inSourceSize;
@@ -110,7 +110,7 @@ void CZLibInflateStream::Input(const char* pInSource, unsigned int inSourceSize)
 
 void CZLibInflateStream::EndInput()
 {
-	CRY_ASSERT_MESSAGE(m_currentState == eZInfState_AwaitingInput, "CZLibInflateStream::EndInput() called when stream is not awaiting input");
+	CRY_ASSERT(m_currentState == eZInfState_AwaitingInput, "CZLibInflateStream::EndInput() called when stream is not awaiting input");
 
 	m_zlibFlush = Z_FINISH;
 }
@@ -176,14 +176,14 @@ EZInflateState CZLibInflateStream::RunInflate()
 		break;
 
 	case eZInfState_Inflating:
-		CRY_ASSERT_MESSAGE(false, "Shouldn't be trying to run inflate whilst a inflate is in progress");
+		CRY_ASSERT(false, "Shouldn't be trying to run inflate whilst a inflate is in progress");
 		break;
 
 	case eZInfState_Error:
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "unknown state");
+		CRY_ASSERT(false, "unknown state");
 		break;
 	}
 

@@ -77,7 +77,7 @@ public:
 
 inline static int Lookup(int inIndex, const int* pInValues, int inMaxValues)
 {
-	CRY_ASSERT_MESSAGE(inIndex >= 0 && inIndex < inMaxValues, "CZLibDeflateStream mapping invalid");
+	CRY_ASSERT(inIndex >= 0 && inIndex < inMaxValues, "CZLibDeflateStream mapping invalid");
 	return pInValues[inIndex];
 }
 
@@ -181,7 +181,7 @@ void CZLibDeflateStream::Input(
   const char* pInSource,
   int inSourceSize)
 {
-	CRY_ASSERT_MESSAGE(m_curState == eZDefState_AwaitingInput, "CZLibDeflateStream::Input() called when stream is not awaiting input");
+	CRY_ASSERT(m_curState == eZDefState_AwaitingInput, "CZLibDeflateStream::Input() called when stream is not awaiting input");
 
 	m_compressStream.next_in = (Bytef*)pInSource;
 	m_compressStream.avail_in = inSourceSize;
@@ -190,7 +190,7 @@ void CZLibDeflateStream::Input(
 
 void CZLibDeflateStream::EndInput()
 {
-	CRY_ASSERT_MESSAGE(m_curState == eZDefState_AwaitingInput, "CZLibDeflateStream::EndInput() called when stream is not awaiting input");
+	CRY_ASSERT(m_curState == eZDefState_AwaitingInput, "CZLibDeflateStream::EndInput() called when stream is not awaiting input");
 
 	m_zlibFlush = Z_FINISH;
 }
@@ -261,14 +261,14 @@ EZDeflateState CZLibDeflateStream::RunDeflate()
 		break;
 
 	case eZDefState_Deflating:
-		CRY_ASSERT_MESSAGE(0, "Shouldn't be trying to run deflate whilst a deflate is in progress");
+		CRY_ASSERT(0, "Shouldn't be trying to run deflate whilst a deflate is in progress");
 		break;
 
 	case eZDefState_Error:
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(0, "unknown state");
+		CRY_ASSERT(0, "unknown state");
 		break;
 	}
 

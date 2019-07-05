@@ -20,7 +20,7 @@ CModule::CModule()
 
 CModule& CModule::GetInstance()
 {
-	CRY_ASSERT_MESSAGE(s_pInstance, "Reflection not yet initialized.");
+	CRY_ASSERT(s_pInstance, "Reflection not yet initialized.");
 	return *s_pInstance;
 }
 

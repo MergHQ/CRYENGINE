@@ -141,13 +141,13 @@ CTestSystem::CTestSystem(ISystem* pSystem)
 	// Listen to asserts and fatal errors, turn them into test failures during the test
 	if (!gEnv->pSystem->RegisterErrorObserver(this))
 	{
-		CRY_ASSERT_MESSAGE(false, "Test system failed to register error system callback");
+		CRY_ASSERT(false, "Test system failed to register error system callback");
 	}
 
 	// Spawn a thread to help figuring out time out or hang
 	if (!gEnv->pThreadManager->SpawnThread(this, "Test System"))
 	{
-		CRY_ASSERT_MESSAGE(false, "Error spawning test system watch thread.");
+		CRY_ASSERT(false, "Error spawning test system watch thread.");
 	}
 
 	// Register tests defined in this module
@@ -168,7 +168,7 @@ CTestSystem::~CTestSystem()
 	// Clean up listening to asserts and fatal errors
 	if (!gEnv->pSystem->UnregisterErrorObserver(this))
 	{
-		CRY_ASSERT_MESSAGE(false, "Test system failed to unregister error system callback");
+		CRY_ASSERT(false, "Test system failed to unregister error system callback");
 	}
 }
 

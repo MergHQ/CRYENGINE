@@ -1750,7 +1750,7 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 		nFile = newSize - 1;
 		if (!m_arrOpenFiles[nFile].TryConstruct(pFileData, nOSFlags))
 		{
-			CRY_ASSERT_MESSAGE(false, "Newly created file slot is already in use");
+			CRY_ASSERT(false, "Newly created file slot is already in use");
 		}
 	}
 

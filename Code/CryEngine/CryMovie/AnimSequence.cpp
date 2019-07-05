@@ -737,7 +737,7 @@ void CAnimSequence::Serialize(XmlNodeRef& xmlNode, bool bLoading, bool bLoadEmpt
 		{
 			if (CLightAnimWrapper::GetLightAnimSet())
 			{
-				CRY_ASSERT_MESSAGE(0, "Track Sequence flagged as LightAnimationSet have LightAnimationSet pointer already set");
+				CRY_ASSERT(0, "Track Sequence flagged as LightAnimationSet have LightAnimationSet pointer already set");
 			}
 			CLightAnimWrapper::SetLightAnimSet(this);
 		}

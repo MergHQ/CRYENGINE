@@ -81,7 +81,7 @@ public:
 
 	//! Get XML node tag.
 	const char* getTag() const          { return _string(_node()->nTagStringOffset); };
-	void        setTag(const char* tag) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void        setTag(const char* tag) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Return true if given tag is equal to node tag.
 	bool isTag(const char* tag) const;
@@ -93,8 +93,8 @@ public:
 	//! Return attribute key and value by attribute index, string version.
 	virtual bool getAttributeByIndex(int index, XmlString& key, XmlString& value);
 
-	virtual void shareChildren(const XmlNodeRef& fromNode) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	virtual void copyAttributes(XmlNodeRef fromNode)       { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	virtual void shareChildren(const XmlNodeRef& fromNode) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	virtual void copyAttributes(XmlNodeRef fromNode)       { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Get XML Node attribute for specified key.
 	const char* getAttr(const char* key) const;
@@ -106,14 +106,14 @@ public:
 	//! Check if attributes with specified key exist.
 	bool       haveAttr(const char* key) const;
 
-	XmlNodeRef newChild(const char* tagName)                     { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return 0; };
-	void       replaceChild(int inChild, const XmlNodeRef& node) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void       insertChild(int inChild, const XmlNodeRef& node)  { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void       addChild(const XmlNodeRef& node)                  { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void       removeChild(const XmlNodeRef& node)               { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	XmlNodeRef newChild(const char* tagName)                     { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return 0; };
+	void       replaceChild(int inChild, const XmlNodeRef& node) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void       insertChild(int inChild, const XmlNodeRef& node)  { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void       addChild(const XmlNodeRef& node)                  { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void       removeChild(const XmlNodeRef& node)               { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Remove all child nodes.
-	void removeAllChilds() { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void removeAllChilds() { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Get number of child XML nodes.
 	int getChildCount() const { return (int)_node()->nChildCount; };
@@ -123,15 +123,15 @@ public:
 
 	//! Find node with specified tag.
 	XmlNodeRef findChild(const char* tag) const;
-	void       deleteChild(const char* tag) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void       deleteChildAt(int nIndex)    { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void       deleteChild(const char* tag) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void       deleteChildAt(int nIndex)    { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Get parent XML node.
 	XmlNodeRef getParent() const;
 
 	//! Returns content of this node.
 	const char* getContent() const          { return _string(_node()->nContentStringOffset); };
-	void        setContent(const char* str) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void        setContent(const char* str) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Creates a clone of the XML node. Because XMLBinaryNode is read only this creates a normal XML node (converted from the binary).
 	XmlNodeRef  clone()    { return Convert(this); }
@@ -139,32 +139,32 @@ public:
 	//! Returns line number for XML tag.
 	int  getLine() const   { return 0; };
 	//! Set line number in xml.
-	void setLine(int line) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setLine(int line) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Returns XML of this node and sub nodes.
-	virtual IXmlStringData* getXMLData(int nReserveMem = 0) const                                      { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return 0; };
-	XmlString               getXML(int level = 0) const                                                { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return ""; };
-	bool                    saveToFile(const char* fileName)                                           { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return false; }; // saves in one huge chunk
-	bool                    saveToFile(const char* fileName, size_t chunkSizeBytes, FILE* file = NULL) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return false; }; // save in small memory chunks
+	virtual IXmlStringData* getXMLData(int nReserveMem = 0) const                                      { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return 0; };
+	XmlString               getXML(int level = 0) const                                                { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return ""; };
+	bool                    saveToFile(const char* fileName)                                           { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return false; }; // saves in one huge chunk
+	bool                    saveToFile(const char* fileName, size_t chunkSizeBytes, FILE* file = NULL) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); return false; }; // save in small memory chunks
 
 	//! Set new XML Node attribute (or override attribute with same key).
-	void setAttr(const char* key, const char* value)                                    { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, int value)                                            { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, unsigned int value)                                   { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, int64 value)                                          { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, uint64 value, bool useHexFormat = true /* ignored */) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, float value)                                          { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, double value)                                         { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, const Vec2& value)                                    { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, const Vec2d& value)                                   { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, const Ang3& value)                                    { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, const Vec3& value)                                    { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, const Vec4& value)                                    { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, const Vec3d& value)                                   { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void setAttr(const char* key, const Quat& value)                                    { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
-	void delAttr(const char* key)                                                       { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const char* value)                                    { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, int value)                                            { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, unsigned int value)                                   { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, int64 value)                                          { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, uint64 value, bool useHexFormat = true /* ignored */) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, float value)                                          { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, double value)                                         { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const Vec2& value)                                    { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const Vec2d& value)                                   { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const Ang3& value)                                    { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const Vec3& value)                                    { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const Vec4& value)                                    { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const Vec3d& value)                                   { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void setAttr(const char* key, const Quat& value)                                    { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void delAttr(const char* key)                                                       { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 	void setAttr(const char* key, const CryGUID& value);
-	void removeAllAttributes()                                                          { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
+	void removeAllAttributes()                                                          { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); };
 
 	//! Get attribute value of node.
 	bool getAttr(const char* key, int& value) const;
@@ -225,7 +225,7 @@ private:
 	XmlNodeRef Convert(XmlNodeRef source);
 
 protected:
-	virtual void setParent(const XmlNodeRef& inRef) { CRY_ASSERT_MESSAGE(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); }
+	virtual void setParent(const XmlNodeRef& inRef) { CRY_ASSERT(0, "XMLBinaryNode is read only. Use clone() to create an editable node."); }
 
 	//////////////////////////////////////////////////////////////////////////
 private:
