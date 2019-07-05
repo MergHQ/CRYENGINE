@@ -73,7 +73,16 @@ void CVirtualMemory::UnmapPages(void* pBase, size_t size)
 {
 	UINT_PTR baseAddr = (UINT_PTR)pBase & ~(s_systemPageSize - 1);
 	UINT_PTR endAddr = Align((UINT_PTR)pBase + size, s_systemPageSize);
-	VirtualAllocator::UnmapPageBlock((void*)baseAddr, endAddr - baseAddr);
+
+	// We cannot use VirtualAllocator::UnmapPageBlock() here  as the CVirtualMemory interface 
+	// does not guarantee parameters to match the previous MapPages() call.
+	// Hence we need to split it into multiple unmaps
+	while (baseAddr < endAddr)
+	{
+		VirtualAllocator::UnmapPage((void*)baseAddr, s_systemPageSize);
+		baseAddr += s_systemPageSize;
+	}
+
 	VA_UNREGISTER_PAGE(pBase, size);
 }
 #endif
