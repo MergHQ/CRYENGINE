@@ -569,7 +569,7 @@ public: //! Etc methods
 
 	//! Invalidate AABB referred by nShelf so that the AABB will be updated as needed to have the up-to-date aabb
 	//! \param nShelf the input shelf. any means the both shelves
-	void InvalidateAABB(ShelfID nShelf = eShelf_Any) const;
+	void InvalidateAABB(ShelfID nShelf = eShelf_Any);
 
 	//! Invalidate the whole smoothing groups so that they are updated out of the latest data as needed to have the right renderable mesh from the up-to-date smoothing groups
 	void InvalidateSmoothingGroups() const;
