@@ -50,6 +50,7 @@
 #include "DefaultComponents/Physics/LocalGridComponent.h"
 #include "DefaultComponents/Physics/SpherePrimitiveComponent.h"
 #include "DefaultComponents/Physics/AreaComponent.h"
+#include "DefaultComponents/Physics/WaterVolumeComponent.h"
 #include "DefaultComponents/Physics/ThrusterComponent.h"
 #include "DefaultComponents/Physics/Vehicles/VehicleComponent.h"
 #include "DefaultComponents/Physics/Vehicles/WheelComponent.h"
@@ -275,6 +276,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CAreaComponent));
 			Cry::DefaultComponents::CAreaComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CWaterVolumeComponent));
+			Cry::DefaultComponents::CWaterVolumeComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CThrusterComponent));
