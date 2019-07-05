@@ -6,6 +6,7 @@
 
 #include <Dialogs/TreeViewDialog.h>
 
+#include <QEvent>
 #include <QObject>
 #include <QMenu>
 #include <QStandardItemModel>
@@ -26,9 +27,34 @@ namespace Private_MenuCombobox
 class QPropertyRowComboboxMenu : public QMenu
 {
 public:
-	QPropertyRowComboboxMenu(QWidget* parent) : QMenu(parent) {}
+	QPropertyRowComboboxMenu(QWidget* parent)
+		: QMenu(parent)
+		, m_mouseDownReceived(false)
+	{
+	}
 
 protected:
+	virtual bool event(QEvent* pEvent) override
+	{
+		switch (pEvent->type())
+		{
+		case QEvent::MouseButtonPress:
+			m_mouseDownReceived = true;
+			break;
+		case QEvent::MouseButtonRelease:
+			if (m_mouseDownReceived)
+			{
+				return QMenu::event(pEvent);
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		return QMenu::event(pEvent);
+	}
+
 	virtual void leaveEvent(QEvent* e) override
 	{
 		// fix for Qt 5.6. bug, every mouse move calls leaveEvent, that sets the activeAction to nullptr
@@ -38,6 +64,8 @@ protected:
 		QMenu::leaveEvent(e);
 		setActiveAction(pAction);
 	}
+
+	bool                m_mouseDownReceived;
 };
 
 class QComboBoxHandler : public QObject

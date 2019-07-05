@@ -28,8 +28,12 @@ struct QMenuComboBox::MenuAction : public QAction
 class QMenuComboBox::Popup : public QMenu
 {
 public:
-	Popup(QMenuComboBox* parent) : QMenu(parent), m_parent(parent)
-	{}
+	Popup(QMenuComboBox* parent)
+		: QMenu(parent)
+		, m_parent(parent)
+		, m_mouseDownReceived(false)
+	{
+	}
 
 	virtual bool event(QEvent* event) override
 	{
@@ -72,13 +76,33 @@ public:
 			//Intentional fall through
 			case QEvent::MouseButtonRelease:
 				{
-					auto action = activeAction();
-					if (action)
+					if (m_mouseDownReceived)
 					{
-						action->trigger();
-						return true;
+						auto action = activeAction();
+						if (action)
+						{
+							action->trigger();
+							return true;
+						}
 					}
 				}
+				break;
+			}
+		}
+
+		switch (event->type())
+		{
+		case QEvent::MouseButtonPress:
+			m_mouseDownReceived = true;
+			break;
+		case QEvent::MouseButtonRelease:
+			if (m_mouseDownReceived)
+			{
+				return QMenu::event(event);
+			}
+			else
+			{
+				return false;
 			}
 		}
 
@@ -87,11 +111,13 @@ public:
 
 	void DoPopup(const QPoint& p, QAction* atAction)
 	{
+		m_mouseDownReceived = false;
 		setMinimumSize(m_parent->size());
 		popup(p, atAction);
 	}
 
 	QMenuComboBox* m_parent;
+	bool           m_mouseDownReceived;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -521,39 +547,39 @@ bool QMenuComboBox::event(QEvent* event)
 	switch (event->type())
 	{
 	case QEvent::MouseButtonPress:
-	{
-		QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-		if (mouseEvent->button() == Qt::LeftButton)
 		{
-			ShowPopup();
-			return true;
-		}
-		break;
-	}
-	case QEvent::Wheel:
-	{
-		QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
-		ApplyDelta(-(wheelEvent->angleDelta().y() / 120));
-		return true;
-	}
-	case QEvent::KeyPress:
-	{
-		QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-		switch (keyEvent->key())
-		{
-		case Qt::Key_Up:
-			ApplyDelta(-1);
-			return true;
-		case Qt::Key_Down:
-			ApplyDelta(1);
-			return true;
-		case Qt::Key_Space:
-			ShowPopup();
-			return true;
-		default:
+			QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+			if (mouseEvent->button() == Qt::LeftButton)
+			{
+				ShowPopup();
+				return true;
+			}
 			break;
 		}
-	}
+	case QEvent::Wheel:
+		{
+			QWheelEvent* wheelEvent = static_cast<QWheelEvent*>(event);
+			ApplyDelta(-(wheelEvent->angleDelta().y() / 120));
+			return true;
+		}
+	case QEvent::KeyPress:
+		{
+			QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+			switch (keyEvent->key())
+			{
+			case Qt::Key_Up:
+				ApplyDelta(-1);
+				return true;
+			case Qt::Key_Down:
+				ApplyDelta(1);
+				return true;
+			case Qt::Key_Space:
+				ShowPopup();
+				return true;
+			default:
+				break;
+			}
+		}
 	default:
 		break;
 	}
