@@ -421,6 +421,7 @@ void CEntityProtLibDialog::SelectItem(CBaseLibraryItem* item, bool bForceReload)
 		m_propsCtrl.SetRootName("Class Properties");
 		m_propsCtrl.ExpandAll();
 		m_propsCtrl.SetUpdateCallback(functor(*this, &CEntityProtLibDialog::OnUpdateProperties));
+		m_propsCtrl.SetCallbackOnNonModified(false);
 
 		CVarBlock* pArchetypeVarBlock = prototype->GetProperties();
 		CVarBlock* pEntScriptVarBlock = prototype->GetScript() ? prototype->GetScript()->GetDefaultProperties() : NULL;
