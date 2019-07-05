@@ -574,10 +574,8 @@ void SJointPhysics::Serialize(Serialization::IArchive& ar)
 	auto& jointProperties = (type == EType::Rope) ? ropeProperties : clothProperties;
 	for (int setIndex = 0; setIndex < ePropertySetIndex_COUNT; ++setIndex)
 	{
-		if (setIndex == ePropertySetIndex_Alive)
-			ar.openBlock("aliveProperties", "Properties When Alive");
-		else
-			ar.openBlock("ragdollProperties", "Properties When Ragdollized");
+		if (!(setIndex == ePropertySetIndex_Alive ? ar.openBlock("aliveProperties", "Properties When Alive") : ar.openBlock("ragdollProperties", "Properties When Ragdollized")))
+			continue;
 
 		if (jointProperties[setIndex].empty())
 		{
