@@ -77,6 +77,7 @@ class CD3DStereoRenderer : public IStereoRenderer
 	friend class CD3DOpenVRRenderer;
 	friend class CD3DOculusRenderer;
 	friend class CD3DOsvrRenderer;
+	friend class CD3DHmdEmulatorRenderer;
 
 public:
 	CD3DStereoRenderer();
@@ -126,7 +127,7 @@ public:
 
 	void              ReleaseBuffers();
 	void              OnResolutionChanged(int newWidth, int newHeight);
-	void              CalculateResolution(int requestedWidth, int requestedHeight, int* pRenderWidth, int *pRenderHeight);
+	void              CalculateResolution(int* pRenderWidth, int *pRenderHeight, int* pDisplayWidth, int* pDisplayHeight);
 	void              OnStereoModeChanged();
 
 	SStereoRenderContext PrepareStereoRenderingContext(int nFlags, const SRenderingPassInfo& passInfo) const;

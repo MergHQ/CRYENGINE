@@ -13,7 +13,8 @@ enum EHmdClass
 {
 	eHmdClass_Oculus,
 	eHmdClass_OpenVR,
-	eHmdClass_Osvr
+	eHmdClass_Osvr,
+	eHmdClass_Emulator
 };
 
 enum EHmdStatus

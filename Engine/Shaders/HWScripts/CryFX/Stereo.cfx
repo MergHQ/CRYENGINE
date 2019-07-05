@@ -10,8 +10,9 @@ float Script : STANDARDSGLOBAL
 
 float2 ScreenSize : PB_ScreenSize;
 
-Texture2D StereoL : register(t0);
-Texture2D StereoR : register(t1);
+Texture2D StereoL    : register(t0);
+Texture2D StereoR    : register(t1);
+Texture2D QuadLayer0 : register(t2);
 
 SamplerState StereoClampSamplerState : register(s0) = SS_TrilinearClamp;
 
@@ -57,8 +58,9 @@ psout SideBySidePS(v2f IN)
 	
 	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, left_texcoord);
 	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, right_texcoord);	
+	half4 qC = GetTexture2D(QuadLayer0, StereoClampSamplerState, IN.baseTC.x < 0.5 ? left_texcoord : right_texcoord);
  
-	OUT.Primary = IN.baseTC.x < 0.5 ? cL : cR;
+	OUT.Primary = lerp((IN.baseTC.x < 0.5) ? cL : cR, qC, qC.a);
 	
 	return OUT;
 }
@@ -69,10 +71,11 @@ psout LineByLinePS(v2f IN)
 
 	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
 	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, IN.baseTC.xy);
+	half4 qC = GetTexture2D(QuadLayer0, StereoClampSamplerState, IN.baseTC.xy);
  
 	int pixLine = IN.baseTC.y * ScreenSize.y;
  
-	OUT.Primary = pixLine % 2 == 0 ? cR : cL;
+	OUT.Primary = lerp(pixLine % 2 == 0 ? cL : cR, qC, qC.a);
 	
 	return OUT;
 }
@@ -83,11 +86,12 @@ psout CheckerboardPS(v2f IN)
 	
 	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
 	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, IN.baseTC.xy);
+	half4 qC = GetTexture2D(QuadLayer0, StereoClampSamplerState, IN.baseTC.xy);
  
 	int pixLine = IN.baseTC.y * ScreenSize.y;
 	int pixColumn = IN.baseTC.x * ScreenSize.x;
  
-	OUT.Primary = (pixLine + pixColumn) % 2 == 0 ? cL : cR;
+	OUT.Primary = lerp(((pixLine + pixColumn) % 2 == 0) ? cL : cR, qC, qC.a);
 	
 	return OUT;
 }
@@ -98,10 +102,13 @@ psout AnaglyphPS(v2f IN)
   
 	half4 cL = GetTexture2D(StereoL, StereoClampSamplerState, IN.baseTC.xy);
 	half4 cR = GetTexture2D(StereoR, StereoClampSamplerState, IN.baseTC.xy);
+	half4 qC = GetTexture2D(QuadLayer0, StereoClampSamplerState, IN.baseTC.xy);
  
 	OUT.Primary.r = cL.r;
 	OUT.Primary.gb = cR.gb;
 	OUT.Primary.a = 0.0;
+	
+	OUT.Primary.rgb = lerp(OUT.Primary.rgb, qC.rgb, qC.a);
 	
 	return OUT;
 }

@@ -96,7 +96,8 @@ void CHmdManager::SetupAction(EHmdSetupAction cmd)
 					{
 						const char* vrPluginPriorities[] = {
 							"Plugin_OculusVR",
-							"Plugin_OpenVR"
+							"Plugin_OpenVR",
+							"Plugin_EmulatorVR"
 						};
 
 						for (const auto *plug : vrPluginPriorities)
