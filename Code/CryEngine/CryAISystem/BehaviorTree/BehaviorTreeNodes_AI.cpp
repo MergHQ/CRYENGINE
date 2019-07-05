@@ -262,18 +262,17 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		m_behaviorName = xml->getAttr("name");
 
 		if (m_behaviorName.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("LuaBehavior", "name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -393,6 +392,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode)
 	{
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
+
 		m_message = xml->getAttr("message");
 		m_duration = 2.0f;
 		xml->getAttr("duration", m_duration);
@@ -404,7 +405,6 @@ public:
 		if (m_baloonFlag) m_balloonFlags |= eBNS_Balloon;
 		if (m_logFlag) m_balloonFlags |= eBNS_Log;
 
-
 		if (m_message.empty())
 		{
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Bubble", "message").c_str());
@@ -415,7 +415,7 @@ public:
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Bubble", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -578,8 +578,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		xml->getAttr("stopWithinDistance", m_stopWithinDistance);
 		if (m_stopWithinDistance > 0.0f)
@@ -625,7 +624,7 @@ public:
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Move", "stopDistanceVariation", ToString(m_stopDistanceVariation), "Value must be greater or equal than stopWithinDistance value").c_str());
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1057,8 +1056,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		const char* queryName = xml->getAttr("name");
 		m_queryID = queryName ? gEnv->pAISystem->GetTacticalPointSystem()->GetQueryID(queryName) : TPSQueryID(0);
@@ -1066,7 +1064,7 @@ public:
 		if (m_queryID == 0)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("QueryTPS", "name", queryName, "Query does not exist").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
@@ -1076,10 +1074,10 @@ public:
 		if (!s_dictionaries.registerXml.Get(xml, "register", m_register))
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("QueryTPS", "register").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1282,22 +1280,33 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
+		LoadResult result = LoadSuccess;
+
 		m_code = xml->getAttr("code");
 
 		if (m_code.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("LuaGate", "code").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_scriptFunction = SmartScriptFunction(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "LuaGate"));
 		if (!m_scriptFunction)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("LuaGate", "code", m_code, "Could not compile code").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadChildFromXml(xml, context, strictMode);
+		const LoadResult childResult = LoadChildFromXml(xml, context, strictMode);
+
+		if (result == LoadSuccess && childResult == LoadSuccess)
+		{
+			return result;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1538,17 +1547,16 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		if (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		xml->getAttr("value", m_alertness);
 
 		if (m_alertness < 0 || m_alertness > 2)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("SetAlertness", "value", "", "Valid range is between 0 and 2.").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1672,8 +1680,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		ICommunicationManager* communicationManager = gEnv->pAISystem->GetCommunicationManager();
 
@@ -1685,13 +1692,13 @@ public:
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Communicate", "name", m_commName, "Communication name does not exist").c_str());
 				m_commID = CommID(0);
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 		else
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Communicate", "name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_channelName = xml->getAttr("channel");
@@ -1701,13 +1708,13 @@ public:
 			if (!m_channelID)
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Communicate", "channel", m_channelName, "Channel name does not exist").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 		else
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Communicate", "channel").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		if (xml->haveAttr("waitUntilFinished"))
@@ -1738,7 +1745,7 @@ public:
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Communicate", "expiry", ToString(m_expiry), "Value must be greater or equal than 0").c_str());
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1964,11 +1971,13 @@ public:
 
 		LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context, const Animate& parent)
 		{
+			LoadResult result = LoadSuccess;
+
 			m_name = xml->getAttr("name");
 			IF_UNLIKELY (m_name.empty())
 			{
 				ErrorReporter(parent, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Animate", "name").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 
 			xml->getAttr("urgent", m_urgent);
@@ -1978,7 +1987,7 @@ public:
 				if (!s_dictionaries.playModeXml.Get(xml, "playMode", m_playMode))
 				{
 					ErrorReporter(parent, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Animate", "playMode").c_str());
-					return LoadFailure;
+					result = LoadFailure;
 				}
 			}
 			else
@@ -1993,16 +2002,24 @@ public:
 
 			xml->getAttr("setBodyDirectionTowardsAttentionTarget", m_setBodyDirectionTowardsAttentionTarget);
 
-			return LoadSuccess;
+			return result;
 		}
 	};
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
-		return m_configurationData.LoadFromXml(xml, context, *this);
+		const LoadResult configurationResult = m_configurationData.LoadFromXml(xml, context, *this);
+		
+		if (result == LoadSuccess && configurationResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2191,20 +2208,19 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		m_signalName = xml->getAttr("name");
 
 		if (m_signalName.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Signal", "name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		s_signalDictionaries.filtersXml.Get(xml, "filter", m_filter);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2549,24 +2565,23 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (Action::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		m_code = xml->getAttr("code");
 		IF_UNLIKELY (m_code.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("ExecuteLua", "code").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "ExecuteLua behavior tree node"));
 		IF_UNLIKELY(!m_scriptFunction)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ExecuteLua", "code", m_code, "Code could not be compiled").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2644,24 +2659,23 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		m_code = xml->getAttr("code");
 		IF_UNLIKELY (m_code.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AssertLua", "code").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_scriptFunction.reset(gEnv->pScriptSystem, gEnv->pScriptSystem->CompileBuffer(m_code.c_str(), m_code.length(), "AssertLua behavior tree node"));
 		IF_UNLIKELY (!m_scriptFunction)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("AssertLua", "code", m_code, "Code could not be compiled").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2773,12 +2787,14 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const stack_string scopeName = xml->getAttr("name");
 
 		if (scopeName.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("GroupScope", "name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_scopeID = CAIGroup::GetGroupScopeId(scopeName.c_str());
@@ -2789,7 +2805,16 @@ public:
 
 		xml->getAttr("allowedConcurrentUsers", m_allowedConcurrentUsers);
 
-		return LoadChildFromXml(xml, context, strictMode);
+		const LoadResult childResult = LoadChildFromXml(xml, context, strictMode);
+
+		if (result == LoadSuccess && childResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2937,8 +2962,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		IF_UNLIKELY (!s_lookDictionaries.lookAtXml.Get(xml, "at", m_targetType))
 		{
@@ -2950,11 +2974,11 @@ public:
 			else
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Look", "at").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -3102,8 +3126,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		float angleThresholdInDegrees = 30.0f;
 		xml->getAttr("angleThreshold", angleThresholdInDegrees);
@@ -3131,7 +3154,7 @@ public:
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Aim", "durationOnceWithinThreshold", ToString(m_durationOnceWithinThreshold), "Value must be greater or equal than 0").c_str());
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -3313,8 +3336,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		float maxAngleRange = 30.0f;
 		xml->getAttr("maxAngleRange", maxAngleRange);
@@ -3332,10 +3354,10 @@ public:
 			// of the machine gun
 			// Only accepted value is 1
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AimAroundWhileUsingAMachingGun", "useReferencePointForInitialDirectionAndPivotPosition").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 protected:
@@ -3458,8 +3480,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		m_alignWithTarget = false;
 		m_turnTarget = TurnTarget_Invalid;
@@ -3481,7 +3502,7 @@ public:
 			if ((stopWithinAngleDegrees < 0.0f) || (stopWithinAngleDegrees > 180.0f))
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "stopWithinAngle", ToString(stopWithinAngleDegrees), "Valid range is between 0 and 180").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 			m_stopWithinAngleCosined = cosf(DEG2RAD(stopWithinAngleDegrees));
 		}
@@ -3497,7 +3518,7 @@ public:
 			{
 				
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "randomMinAngle", ToString(angleDegrees), "Valid range is between 0 and 180").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 			m_randomMinAngle = DEG2RAD(angleDegrees);
 		}
@@ -3507,7 +3528,7 @@ public:
 			if ((angleDegrees < 0.0f) || (angleDegrees > 180.0f))
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "randomMaxAngle", ToString(angleDegrees), "Valid range is between 0 and 180").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 			m_randomMaxAngle = DEG2RAD(angleDegrees);
 		}
@@ -3524,7 +3545,7 @@ public:
 			if (m_randomMinAngle > m_randomMaxAngle)
 			{
 				ErrorReporter(*this, context).LogError("Min. and max. random angles are swapped");
-				return LoadFailure;
+				result = LoadFailure;
 			}
 
 			m_randomTurnRightChance = 0.5f;
@@ -3533,7 +3554,7 @@ public:
 				if ((m_randomTurnRightChance < 0.0f) || (m_randomTurnRightChance > 1.0f))
 				{
 					ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("TurnBody", "randomTurnRightChance", ToString(m_randomTurnRightChance), "Valid range is between 0 and 1").c_str());
-					return LoadFailure;
+					result = LoadFailure;
 				}
 			}
 
@@ -3547,10 +3568,10 @@ public:
 		if (m_turnTarget == TurnTarget_Invalid)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("TurnBody", "target").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 protected:
@@ -3838,8 +3859,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		m_waitUntilStopped = false;
 		xml->getAttr("waitUntilStopped", m_waitUntilStopped);
@@ -3847,7 +3867,7 @@ public:
 		m_waitUntilIdleAnimation = false;
 		xml->getAttr("waitUntilIdleAnimation", m_waitUntilIdleAnimation);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -4234,8 +4254,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		const stack_string modeStr = xml->getAttr("mode");
 		if (modeStr == "UseLiveTarget")
@@ -4247,7 +4266,7 @@ public:
 			m_mode = UseAttentionTarget;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 protected:
@@ -4352,11 +4371,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const char* tagName = xml->getAttr("name");
 		if (!tagName)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AnimationTagWrapper", "name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
@@ -4364,7 +4385,17 @@ public:
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 		m_nameCRC = CCrc32::ComputeLowercase(tagName);
-		return LoadChildFromXml(xml, context, strictMode);
+
+		const LoadResult childResult = LoadChildFromXml(xml, context, strictMode);
+
+		if (result == LoadSuccess && childResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
@@ -4446,13 +4477,12 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		IF_UNLIKELY (!xml->getAttr("duration", m_duration))
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("ShootFromCover", "duration").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		if (xml->haveAttr("fireMode"))
@@ -4462,7 +4492,7 @@ public:
 			IF_UNLIKELY (!agentDictionary.fireModeXml.Get(xml, "fireMode", m_fireMode))
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ShootFromCover", "fireMode", "", "Unknown fire mode").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 
@@ -4478,7 +4508,7 @@ public:
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("ShootFromCover", "aimObstructedTimeout", ToString(m_aimObstructedTimeout), "Value must be greater or equal than 0").c_str());
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -4749,13 +4779,12 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		IF_UNLIKELY (!xml->getAttr("duration", m_duration) || m_duration < 0.0f)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "duration", ToString(m_duration), "Missing or invalid value. Duration cannot be empty and should be greater or equal to 0").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		const ShootOpDictionary shootOpDictionary;
@@ -4770,7 +4799,7 @@ public:
 			else 
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "at", "", "Missing or invalid value").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 
@@ -4779,13 +4808,13 @@ public:
 		IF_UNLIKELY (!agentDictionary.fireModeXml.Get(xml, "fireMode", m_fireMode))
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "fireMode", "", "Missing or invalid value").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		IF_UNLIKELY (!s_stanceDictionary.stancesXml.Get(xml, "stance", m_stance))
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "stance", "", "Missing or invalid value").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		if (m_shootAt == ShootOp::ShootAt::LocalSpacePosition)
@@ -4793,7 +4822,7 @@ public:
 			IF_UNLIKELY (!xml->getAttr("position", m_position))
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Shoot", "position", "", "Missing or invalid value").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 
@@ -4804,7 +4833,7 @@ public:
 		s_stanceDictionary.stancesXml.Get(xml, "stanceToUseIfSlopeIsTooSteep", m_stanceToUseIfSlopeIsTooSteep);
 		xml->getAttr("aimObstructedTimeout", m_aimObstructedTimeout);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -5071,13 +5100,12 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool strictMode) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, strictMode) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, strictMode);
 
 		IF_UNLIKELY (!xml->getAttr("timeout", m_timeout) || m_timeout < 0.0f)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ThrowGrenade", "timeout", ToString(m_timeout), "Missing or invalid value. Timeout cannot be empty and should be greater or equal to 0").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		const stack_string grenadeTypeName = xml->getAttr("type");
@@ -5096,10 +5124,10 @@ public:
 		else
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("ThrowGrenade", "type", ToString(m_timeout), "Missing or invalid value").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 	virtual void HandleEvent(const EventContext& context, const Event& event) override

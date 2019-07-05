@@ -43,17 +43,16 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const size_t maxChildCount = std::numeric_limits<IndexType>::max();
 		IF_UNLIKELY ((size_t) xml->getChildCount() > maxChildCount)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren(xml->getTag(), xml->getChildCount(), maxChildCount).c_str());  
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -260,10 +259,12 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		IF_UNLIKELY (xml->getChildCount() > 32)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren(xml->getTag(), xml->getChildCount(), 32).c_str());  
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_successMode = SuccessMode_All;
@@ -283,7 +284,7 @@ public:
 			else
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Parallel", "failureMode", failureMode, "Valid values are 'all' or 'any'").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 
@@ -301,11 +302,19 @@ public:
 			else
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Parallel", "successMode", successMode, "Valid values are 'all' or 'any'").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 
-		return CompositeWithChildLoader::LoadFromXml(xml, context, isLoadingFromEditor);
+		const LoadResult childLoaderResult = CompositeWithChildLoader::LoadFromXml(xml, context, isLoadingFromEditor);
+		if (result == LoadSuccess && childLoaderResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -519,13 +528,12 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		m_desiredRepeatCount = 0;     // 0 means infinite
 		xml->getAttr("count", m_desiredRepeatCount);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -620,13 +628,12 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		m_maxAttemptCount = 0;     // 0 means infinite
 		xml->getAttr("attemptCount", m_maxAttemptCount);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -697,10 +704,12 @@ struct Case
 {
 	LoadResult LoadFromXml(const XmlNodeRef& xml, const LoadContext& context, const bool isLoadingFromEditor = true)
 	{
+		LoadResult result = LoadSuccess;
+
 		if (!xml->isTag("Case"))
 		{
 			gEnv->pLog->LogError("Case(%d) [Tree='%s'] Priority node must only contain children nodes of the type 'Case' and there is a child of type '%s'", xml->getLine(), context.treeName, xml->getTag());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		string conditionString = xml->getAttr("condition");
@@ -711,7 +720,7 @@ struct Case
 		if (!condition.Valid())
 		{
 			gEnv->pLog->LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("Case", "condition", conditionString, "Could not be parsed").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -721,7 +730,7 @@ struct Case
 		if (!xml->getChildCount() == 1)
 		{
 			gEnv->pLog->LogError("Case(%d) [Tree='%s'] Priority case must have exactly one child", xml->getLine(), context.treeName);
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		XmlNodeRef childXml = xml->getChild(0);
@@ -729,10 +738,10 @@ struct Case
 		if (!node)
 		{
 			gEnv->pLog->LogError("Case(%d) [Tree='%s'] Priority case failed to load child", xml->getLine(), context.treeName);
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -811,14 +820,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const int childCount = xml->getChildCount();
 		IF_UNLIKELY (childCount < 1)
 		{
 			ErrorReporter(*this, context).LogError("A priority node must have at least one case childs.");
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		const size_t maxChildCount = std::numeric_limits<CaseIndexType>::max();
@@ -826,7 +834,7 @@ public:
 		{
 			
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren("Priority", childCount, maxChildCount).c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		for (int i = 0; i < childCount; ++i)
@@ -837,13 +845,13 @@ public:
 			IF_UNLIKELY (priorityCase.LoadFromXml(caseXml, context, isLoadingFromEditor) == LoadFailure)
 			{
 				ErrorReporter(*this, context).LogError("Failed to load Case.");
-				return LoadFailure;
+				result = LoadFailure;
 			}
 
 			m_cases.push_back(priorityCase);
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -958,6 +966,8 @@ struct Transition
 {
 	LoadResult LoadFromXml(const XmlNodeRef& transitionXml)
 	{
+		LoadResult result = LoadSuccess;
+
 		destinationStateCRC32 = 0;
 		destinationStateIndex = StateIndexInvalid;
 #ifdef STORE_INFORMATION_FOR_STATE_MACHINE_NODE
@@ -973,7 +983,7 @@ struct Transition
 			const string errorMessage = string().Format("Transition(%d) Unknown event '%s' used. Event will be declared automatically.", transitionXml->getLine()) + ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Transition", "to");
 			gEnv->pLog->LogError("%s", errorMessage.c_str());
 
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		destinationStateCRC32 = CCrc32::ComputeLowercase(to);
@@ -989,7 +999,7 @@ struct Transition
 		else
 		{
 			gEnv->pLog->LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("Transition", "onEvent").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		triggerEvent = Event(onEvent);
@@ -998,7 +1008,7 @@ struct Transition
 		triggerEventName = onEvent;
 #endif
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1063,10 +1073,12 @@ struct State
 
 	LoadResult LoadFromXml(const XmlNodeRef& stateXml, const LoadContext& context, const bool isLoadingFromEditor = true)
 	{
+		LoadResult result = LoadSuccess;
+
 		if (!stateXml->isTag("State"))
 		{
 			gEnv->pLog->LogError("StateMachine(%d) [Tree='%s'] StateMachine node must contain children nodes of type 'State' and there is a child of type '%s'", stateXml->getLine(), context.treeName, stateXml->getTag());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		const char* stateName;
@@ -1088,7 +1100,7 @@ struct State
 			const string errorMessage = string().Format("State(%d) [Tree='%s'] ", stateXml->getLine(), context.treeName) +
 				ErrorReporter::ErrorMessageInvalidAttribute("State", "name", stateName, "Missing or invalid value");
 			gEnv->pLog->LogError("%s", errorMessage.c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		const XmlNodeRef transitionsXml = stateXml->findChild("Transitions");
@@ -1100,7 +1112,7 @@ struct State
 				if (transition.LoadFromXml(transitionsXml->getChild(i)) == LoadFailure)
 				{
 					gEnv->pLog->LogError("State(%d) [Tree='%s'] Failed to load transition.", stateXml->getLine(), context.treeName);
-					return LoadFailure;
+					result = LoadFailure;
 				}
 
 #if defined(STORE_INFORMATION_FOR_STATE_MACHINE_NODE) && defined(USING_BEHAVIOR_TREE_SERIALIZATION)
@@ -1124,23 +1136,23 @@ struct State
 #else
 			gEnv->pLog->LogError("State(%d) [Tree='%s'] A state node must contain a 'BehaviorTree' child", stateXml->getLine(), context.treeName);
 #endif
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		if (behaviorTreeXml->getChildCount() != 1)
 		{
 			gEnv->pLog->LogError("State(%d) [Tree='%s'] A state node must contain a 'BehaviorTree' child, which in turn must have exactly one child.", stateXml->getLine(), context.treeName);
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		node = context.nodeFactory.CreateNodeFromXml(behaviorTreeXml->getChild(0), context, isLoadingFromEditor);
 		if (!node)
 		{
 			gEnv->pLog->LogError("State(%d) [Tree='%s'] State failed to load child.", stateXml->getLine(), context.treeName);
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1316,21 +1328,22 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const size_t maxChildCount = std::numeric_limits<StateIndexType>::max();
 
 		IF_UNLIKELY ((size_t)xml->getChildCount() >= maxChildCount)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageTooManyChildren("StateMachine", xml->getChildCount(), maxChildCount).c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		IF_UNLIKELY (xml->getChildCount() <= 0)
 		{
 			ErrorReporter(*this, context).LogError("A state machine node must contain at least one child state node.");
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		bool childFailed = false;
 		for (int i = 0; i < xml->getChildCount(); ++i)
 		{
 			State state;
@@ -1338,7 +1351,7 @@ public:
 
 			if (state.LoadFromXml(stateXml, context, isLoadingFromEditor) == LoadFailure)
 			{
-				childFailed = true;
+				result = LoadFailure;
 				ErrorReporter(*this, context).LogError("Failed to load State.");
 			}
 
@@ -1347,12 +1360,14 @@ public:
 
 		const LoadResult loadResultLinkTransitions = LinkAllTransitions();
 
-		if (childFailed)
+		if (result == LoadSuccess && loadResultLinkTransitions == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
 		{
 			return LoadFailure;
 		}
-
-		return loadResultLinkTransitions;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1461,6 +1476,8 @@ private:
 
 	LoadResult LinkAllTransitions()
 	{
+		LoadResult result = LoadSuccess;
+
 		for (States::iterator stateIt = m_states.begin(), end = m_states.end(); stateIt != end; ++stateIt)
 		{
 			State& state = *stateIt;
@@ -1488,7 +1505,7 @@ private:
 
 					gEnv->pLog->LogError("SendTransitionEvent(%d) Cannot transition to unknown state '%s'", transition.xmlLine, transition.destinationStateName);
 #endif
-					return LoadFailure;
+					result = LoadFailure;
 				}
 				else
 				{
@@ -1497,7 +1514,7 @@ private:
 			}
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 	StateIndex GetIndexOfState(uint32 stateNameLowerCaseCRC32)
@@ -1531,14 +1548,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string eventName = xml->getAttr("name");
 		IF_UNLIKELY (eventName.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("SendEvent","name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_eventToSend = Event(eventName);
@@ -1552,7 +1568,7 @@ public:
 		}
 #endif // STORE_EVENT_NAME && USING_BEHAVIOR_TREE_SERIALIZATION
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1632,19 +1648,18 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string eventName = xml->getAttr("name");
 		IF_UNLIKELY (eventName.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("SendTransitionEvent", "name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_eventToSend = Event(eventName);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1731,6 +1746,8 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
 		{
@@ -1744,10 +1761,19 @@ public:
 		if (!m_condition.Valid())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("IfCondition", "value", conditionString, "Could not parse condition").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadChildFromXml(xml, context, isLoadingFromEditor);
+		const LoadResult childResult =  LoadChildFromXml(xml, context, isLoadingFromEditor);
+
+		if (result == LoadSuccess && childResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1839,14 +1865,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AssertCondition", "condition").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
@@ -1857,10 +1882,10 @@ public:
 		if (!m_condition.Valid())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("AssertCondition", "condition", conditionString, "Could not parse condition").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -1940,28 +1965,27 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string conditionString = xml->getAttr("condition");
 		if (conditionString.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("MonitorCondition", "condition").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		m_condition = Variables::Expression(conditionString, context.variableDeclarations);
 		IF_UNLIKELY (!m_condition.Valid())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("MonitorCondition", "condition", conditionString, "Could not parse condition").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
 		m_conditionString = conditionString.c_str();
 #endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef DEBUG_MODULAR_BEHAVIOR_TREE
@@ -2135,10 +2159,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		if (Action::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-		{
-			return LoadFailure;
-		}
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		xml->getAttr("duration", m_duration);
 
@@ -2147,7 +2168,7 @@ public:
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Timeout", "duration", ToString(m_duration), "Value must be greater or equal than 0").c_str());
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2220,10 +2241,7 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor)
 	{
-		if (Action::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-		{
-			return LoadFailure;
-		}
+		const LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		xml->getAttr("duration", m_duration);
 		xml->getAttr("variation", m_variation);
@@ -2238,7 +2256,7 @@ public:
 			ErrorReporter(*this, context).LogWarning("%s", ErrorReporter::ErrorMessageInvalidAttribute("Wait", "variation", ToString(m_variation), "Value must be greater or equal than 0").c_str());
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2324,14 +2342,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
-		IF_UNLIKELY (BaseClass::LoadFromXml(xml, context, isLoadingFromEditor) == LoadFailure)
-			return LoadFailure;
+		LoadResult result = BaseClass::LoadFromXml(xml, context, isLoadingFromEditor);
 
 		const stack_string eventName = xml->getAttr("name");
 		IF_UNLIKELY (eventName.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitForEvent", "name").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #if defined(USING_BEHAVIOR_TREE_SERIALIZATION)
@@ -2355,11 +2372,11 @@ public:
 			else
 			{
 				ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageInvalidAttribute("WaitForEvent", "result", resultString, "Valid value are 'Success' or 'Failure'").c_str());
-				return LoadFailure;
+				result = LoadFailure;
 			}
 		}
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2455,11 +2472,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const char* timestampName = xml->getAttr("since");
 		if (!timestampName)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfTime", "since").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -2477,14 +2496,23 @@ public:
 		else
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("IfTime", "isMoreThan or isLessThan").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		xml->getAttr("orNeverBeenSet", m_openGateIfTimestampWasNeverSet);
 
 		m_timestampID = TimestampID(timestampName);
 
-		return LoadChildFromXml(xml, context, isLoadingFromEditor);
+		const LoadResult childResult = LoadChildFromXml(xml, context, isLoadingFromEditor);
+
+		if (result == LoadSuccess && childResult == LoadSuccess)
+		{
+			return LoadSuccess;
+		}
+		else
+		{
+			return LoadFailure;
+		}
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2633,11 +2661,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const char* timestampName = xml->getAttr("since");
 		if (!timestampName)
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitUntilTime", "since").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -2655,14 +2685,14 @@ public:
 		else
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitUntilTime", "isMoreThan or isLessThan").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		xml->getAttr("succeedIfNeverBeenSet", m_succeedIfTimestampWasNeverSet);
 
 		m_timestampID = TimestampID(timestampName);
 
-		return LoadSuccess;
+		return result;
 	}
 
 #ifdef USING_BEHAVIOR_TREE_XML_DESCRIPTION_CREATION
@@ -2779,11 +2809,13 @@ public:
 
 	virtual LoadResult LoadFromXml(const XmlNodeRef& xml, const struct LoadContext& context, const bool isLoadingFromEditor) override
 	{
+		LoadResult result = LoadSuccess;
+
 		const stack_string timestampName = xml->getAttr("since");
 		IF_UNLIKELY (timestampName.empty())
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("AssertTime", "since").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 #ifdef USING_BEHAVIOR_TREE_EDITOR
@@ -2801,14 +2833,14 @@ public:
 		else
 		{
 			ErrorReporter(*this, context).LogError("%s", ErrorReporter::ErrorMessageMissingOrEmptyAttribute("WaitUntilTime", "isMoreThan or isLessThan").c_str());
-			return LoadFailure;
+			result = LoadFailure;
 		}
 
 		xml->getAttr("orNeverBeenSet", m_succeedIfTimestampWasNeverSet);
 
 		m_timestampID = TimestampID(timestampName);
 
-		return LoadSuccess;
+		return result;
 	}
 
 	enum CompareOp
