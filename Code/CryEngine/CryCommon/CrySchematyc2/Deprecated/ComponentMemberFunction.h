@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // #SchematycTODO : Investigate - Is there a dependency between the order of params and the order in which they are bound to inputs/outputs? If so can we just sort inputs and outputs?
 // #SchematycTODO : Investigate - Can we bind a reference/pointer to an input and an output?

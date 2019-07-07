@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma warning disable 675 // Bitwise-or operator used on a sign-extended operand
 

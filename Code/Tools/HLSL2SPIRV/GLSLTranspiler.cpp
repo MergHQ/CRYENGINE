@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <assert.h>

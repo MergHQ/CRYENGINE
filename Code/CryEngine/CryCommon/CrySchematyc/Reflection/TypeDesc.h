@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // Use Schematyc::GetTypeDesc<TYPE>() to get descriptor for a specific type.
 // Calling Schematyc::GetTypeDesc where TYPE is not reflected will result in the following compile error: 'Type must be reflected, see TypeDesc.h for details!'

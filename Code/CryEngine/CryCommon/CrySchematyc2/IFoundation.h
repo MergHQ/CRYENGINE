@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // #SchematycTODO : Rename IEnvClass/IEnvBaseClass?
 // #SchematycTODO : Move IFoundationPreviewExtension to a separate header?

@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // #SchematycTODO : Maybe we don't need to mark/store persistent timers, actions etc. If they can be turned on/off we can just default to on and turn off if they belong to a state.
 // #SchematycTODO : Simplify structure and compilation by giving lib classes a default action?

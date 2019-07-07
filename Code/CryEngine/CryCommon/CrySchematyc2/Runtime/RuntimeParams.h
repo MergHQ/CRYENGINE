@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // #SchematycTODO : Make sure we can allocate on stack! Can we use CScratchPad to do this?
 // #SchematycTODO : Do we need to be able to pass IAny data?

@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 // Helper for tracking identity of nodes in a scene, attempts to follow changes in the source asset.
 
 #include <StdAfx.h>

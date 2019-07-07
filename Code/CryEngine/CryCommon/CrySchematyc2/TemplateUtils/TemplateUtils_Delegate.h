@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // TODO : Consider renaming CDelegateContextAllocator to CAbstractAllocator and moving to separate file, it might be useful.
 // TODO : Can we avoid heap allocation when using lambda functions?

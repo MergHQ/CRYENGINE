@@ -1,4 +1,4 @@
-# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+# Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 from waflib import Configure, Logs, Utils, Node, TaskGen, Options, ConfigSet
 from waflib.Build import BuildContext, CleanContext, Context

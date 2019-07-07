@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #ifndef INCLUDING_FROM_TEMPLATE_UTILS_SIGNAL_HEADER
 #error This file should only be included from TemplateUtils_Signalv2.h!

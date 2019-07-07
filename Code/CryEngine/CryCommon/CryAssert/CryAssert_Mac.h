@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 bool CryAssert(const char* szCondition, const char* szFile, unsigned int line, bool* pIgnore)
 {
