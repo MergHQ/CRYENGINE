@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // #SchematycTODO : Remove s_sizeTStringBufferSize and size_t functions, we should be using uint32 and uint64 instead.
 // #SchematycTODO : Remove Vec2 and Vec3 functions?.

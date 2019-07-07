@@ -1,4 +1,4 @@
-# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+# Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 objects = object.get_all_objects("AnimObject", "") # Get the name list of all anim objects in the level.
 selection.clear()

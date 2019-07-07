@@ -1,4 +1,4 @@
-# Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+# Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 '''
 Generates a 50% lod for the selected model

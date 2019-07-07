@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #ifndef DYNAMICRESPONSESYSTEM_PROXY_H_
 #define DYNAMICRESPONSESYSTEM_PROXY_H_

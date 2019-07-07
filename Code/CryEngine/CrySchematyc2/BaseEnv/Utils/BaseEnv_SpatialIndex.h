@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // TODO : Rename volumes to objects?
 // TODO : Investigate possibility of storing world position separately for box shapes in order to avoid matrix inverse calculations.

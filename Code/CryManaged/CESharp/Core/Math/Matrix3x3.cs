@@ -1,4 +1,4 @@
-// Copyright 2001-2017 Crytek GmbH / CrytekGroup. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / CrytekGroup. All rights reserved.
 
 using System;
 using System.Globalization;

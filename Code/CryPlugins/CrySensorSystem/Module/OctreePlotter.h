@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // #TODO : Would it be possible to support different depth, width and height resolutions? Alternatively we could just create an equivalent CQuadtreePlotter class.
 

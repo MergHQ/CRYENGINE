@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // This is the source file for the general utility dialog for
 // string input. The purpose of this dialog, as one might imagine, is to get

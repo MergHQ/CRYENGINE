@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 // Metadata serialize/deserialize helper for user settings
 #pragma once
 #if !defined(CRY_PLATFORM) || (!defined(NOT_USE_CRY_STRING) && !defined(CRY_STRING))

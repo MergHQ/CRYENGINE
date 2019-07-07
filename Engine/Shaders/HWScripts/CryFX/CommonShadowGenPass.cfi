@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 ///////////////// vertex shader //////////////////
 v2f_sh Common_SG_VS(app2vertSGGeneral IN_common)

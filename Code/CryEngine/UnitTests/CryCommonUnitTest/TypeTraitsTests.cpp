@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 //! Meta-programming unit tests are implemented as compile-time checks
 //! Therefore none of these tests will appear in the unit test system

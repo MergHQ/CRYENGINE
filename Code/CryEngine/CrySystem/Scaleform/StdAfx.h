@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #if !defined(CRY_IS_SCALEFORM_HELPER)
 	// In case Scaleform integration is compiled directly into CrySystem, we need to use CrySystem StdAfx.h

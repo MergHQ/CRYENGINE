@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #ifdef CRY_PFX2_USE_SSE
 template<> ILINE pfx2::UColv convert<pfx2::UColv>(UCol v) { return _mm_set1_epi32(v.dcolor); }

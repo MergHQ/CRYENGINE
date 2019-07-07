@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 //
 // A couple of helper class that manage pending ray-casts
 // that we are using to compute sound attenuation ( = stimuli

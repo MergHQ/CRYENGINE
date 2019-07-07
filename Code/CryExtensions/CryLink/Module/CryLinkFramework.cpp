@@ -1,4 +1,4 @@
-// Copyright 2001-2015 Crytek GmbH. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH. All rights reserved.
 
 #include "StdAfx.h"
 

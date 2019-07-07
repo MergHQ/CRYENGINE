@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 ////////////////////// Optimized handling for binding ranges of resources ////////////////////////////////
 template<typename T, uint32 MaxResourceCount>

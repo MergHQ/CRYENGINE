@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #ifndef __IGAMEOBJECTSYSTEM_H__
 #define __IGAMEOBJECTSYSTEM_H__

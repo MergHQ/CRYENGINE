@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 // #SchematycTODO : Can we use shallow copy and reference counting to reduce cost of copying containers?
 // #SchematycTODO : Move declaration of CVariantContainer after declaration of CVariant?

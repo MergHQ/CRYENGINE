@@ -1,4 +1,4 @@
-// Copyright 2001-20178 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-20198 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
