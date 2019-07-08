@@ -82,6 +82,8 @@ public:
 
 	virtual void UpdateSpawners(CParticleComponentRuntime& runtime) {}
 
+	virtual void DestroySpawners(CParticleComponentRuntime& runtime, TConstArray<TParticleId> ids) {}
+
 	// Particle initialization
 	virtual void KillParticles(CParticleComponentRuntime& runtime) {}
 
@@ -95,7 +97,7 @@ public:
 
 	virtual void PastUpdateParticles(CParticleComponentRuntime& runtime) {}
 
-	virtual void DestroyParticles(CParticleComponentRuntime& runtime) {}
+	virtual void DestroyParticles(CParticleComponentRuntime& runtime, TConstArray<TParticleId> ids) {}
 
 	// Particle update
 	virtual void PreUpdateParticles(CParticleComponentRuntime& runtime) {}
@@ -137,6 +139,7 @@ struct SFeatureDispatchers
 	FEATURE_DISPATCHER(CullSpawners);
 	FEATURE_DISPATCHER(InitSpawners);
 	FEATURE_DISPATCHER(UpdateSpawners);
+	FEATURE_DISPATCHER(DestroySpawners);
 	FEATURE_DISPATCHER(KillParticles);
 	FEATURE_DISPATCHER(SpawnParticles);
 
@@ -167,16 +170,15 @@ static const ColorB colorField      = HexToColor(0x02ba25);
 static const ColorB colorRender     = HexToColor(0xc2fbbe);
 static const ColorB colorLocation   = HexToColor(0x30a8fd);
 static const ColorB colorAngles     = HexToColor(0x84d7fa);
+static const ColorB colorProject    = HexToColor(0xc080c0);
 static const ColorB colorSpawn      = HexToColor(0xfc7070);
 static const ColorB colorLife       = HexToColor(0xd0c0ac);
 static const ColorB colorKill       = HexToColor(0xd0c0ac);
 static const ColorB colorVelocity   = HexToColor(0xcea639);
 static const ColorB colorMotion     = HexToColor(0xfb9563);
-static const ColorB colorLight      = HexToColor(0xfffdd0);
-static const ColorB colorAudio      = HexToColor(0xd671f7);
 static const ColorB colorGeneral    = HexToColor(0xececec);
 static const ColorB colorChild      = HexToColor(0xc0c0c0);
-static const ColorB colorProject    = HexToColor(0xc080c0);
+static const ColorB colorAux        = HexToColor(0xd671f7);
 static const ColorB colorGPU        = HexToColor(0x00e87e);
 static const ColorB colorComponent  = HexToColor(0x80c0c0);
 

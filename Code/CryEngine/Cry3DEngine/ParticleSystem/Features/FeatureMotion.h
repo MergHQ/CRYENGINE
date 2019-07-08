@@ -49,7 +49,6 @@ public:
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void InitParticles(CParticleComponentRuntime& runtime) override;
 	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override;
 	// ~CParticleFeature
 
@@ -65,18 +64,18 @@ private:
 	void AngularLinearIntegral(CParticleComponentRuntime& runtime);
 	void AngularDragFastIntegral(CParticleComponentRuntime& runtime);
 
-	CParamMod<EDD_ParticleUpdate, SFloat> m_gravity;
-	CParamMod<EDD_ParticleUpdate, UFloat> m_drag;
-	UFloat                               m_windMultiplier;
-	UFloat                               m_angularDragMultiplier;
-	bool                                 m_perParticleForceComputation;
-	Vec3                                 m_uniformAcceleration;
-	Vec3                                 m_uniformWind;
-	std::vector<PLocalEffector>          m_localEffectors;
+	CParamData<EDD_ParticleUpdate, SFloat> m_gravity;
+	CParamData<EDD_ParticleUpdate, UFloat> m_drag;
+	UFloat                                 m_windMultiplier;
+	UFloat                                 m_angularDragMultiplier;
+	bool                                   m_perParticleForceComputation;
+	Vec3                                   m_uniformAcceleration;
+	Vec3                                   m_uniformWind;
+	std::vector<PLocalEffector>            m_localEffectors;
 
-	std::vector<ILocalEffector*>         m_computeList;
-	std::vector<ILocalEffector*>         m_moveList;
-	uint                                 m_environFlags;
+	std::vector<ILocalEffector*>           m_computeList;
+	std::vector<ILocalEffector*>           m_moveList;
+	uint                                   m_environFlags;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -103,7 +102,7 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	virtual void PostInitParticles(CParticleComponentRuntime& runtime) override;
 	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override;
-	virtual void DestroyParticles(CParticleComponentRuntime& runtime) override;
+	virtual void DestroyParticles(CParticleComponentRuntime& runtime, TConstArray<TParticleId> ids) override;
 
 private:
 	typedef TValue<ConvertScale<THardMin<float, 0>, 1000, 1>> UDensity;

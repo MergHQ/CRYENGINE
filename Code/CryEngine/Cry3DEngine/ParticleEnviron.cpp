@@ -183,8 +183,6 @@ void SWorldPhysEnviron::Update()
 		}
 
 		pe_status_pos spos;
-		Matrix33 matArea;
-		spos.pMtx3x3 = &matArea;
 		if (!pArea->GetStatus(&spos))
 			continue;
 
@@ -260,9 +258,9 @@ void SWorldPhysEnviron::Update()
 					area.m_nGeomShape = geom_type;
 					area.m_fFalloffScale = div_min(1.f, 1.f - parea.falloff0, fHUGE);
 
-					// Construct world-to-unit-sphere transform.
+					// Construct world-to-unit-box transform.
 					area.m_vCenter = spos.pos;
-					area.m_matToLocal = (matArea * Matrix33::CreateScale(area.m_bounds.GetSize() * 0.5f)).GetInverted();
+					area.m_matToLocal = Matrix33::CreateScale(area.m_bounds.GetSize() * 0.5f).GetInverted() * Matrix33(spos.q.GetInverted());
 					area.m_bCacheForce = true;
 				}
 				if (!area.m_bCacheForce)

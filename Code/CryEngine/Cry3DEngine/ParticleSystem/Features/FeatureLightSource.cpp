@@ -124,6 +124,7 @@ private:
 	}
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLightSource, "Light", "Light", colorLight);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLightSource, "Aux", "Light", colorAux);
+CRY_PFX2_LEGACY_FEATURE(CFeatureLightSource, "Light", "Light");
 
 }

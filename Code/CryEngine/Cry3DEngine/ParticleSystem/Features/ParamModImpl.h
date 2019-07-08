@@ -11,6 +11,8 @@ void CParamMod<Domain, T>::AddToComponent(CParticleComponent* pComponent, CParti
 {
 	if (Domain & EDD_Particle)
 		pComponent->InitParticles.add(pFeature);
+	else if (Domain & EDD_Spawner)
+		pComponent->InitSpawners.add(pFeature);
 
 	for (auto& pMod : m_modifiers)
 	{
@@ -36,6 +38,8 @@ void CParamMod<Domain, T>::AddToComponent(CParticleComponent* pComponent, CParti
 		pComponent->AddParticleData(dataType.InitType());
 		if (Domain & EDD_Particle)
 			pComponent->UpdateParticles.add(pFeature);
+		else if (Domain & EDD_Spawner)
+			pComponent->UpdateSpawners.add(pFeature);
 	}
 }
 

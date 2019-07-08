@@ -60,18 +60,17 @@ public:
 	IPidStream                        GetIPidStream(TDataType<TParticleId> type, TParticleId defaultVal = gInvalidId) const  { return IStream(type, defaultVal); }
 	IOPidStream                       GetIOPidStream(TDataType<TParticleId> type)                                            { return IOStream(type); }
 
-	uint32                            Size() const                    { CRY_PFX2_ASSERT(!HasNewBorns()); return m_lastId; }
-	uint32                            RealSize() const                { return m_lastId + HasNewBorns() * NumSpawned(); }
+	uint32                            Size() const                    { CRY_ASSERT(!HasNewBorns()); return m_lastId; }
+	uint32                            RealSize() const                { return m_lastId + HasNewBorns() * NumSpawned() + DeadRange().size(); }
 	uint32                            ExtendedSize() const            { return m_lastDeadId;}
 	uint32                            AlignedSize() const             { return CRY_PFX2_GROUP_ALIGN(m_lastDeadId); }
-	uint32                            NumElements() const             { return RealSize() + DeadRange().size(); }
 	uint32                            Capacity() const                { return m_capacity; }
 	uint32                            LastSpawned() const             { return m_lastSpawnId; }
 	uint32                            NumSpawned() const              { return m_lastSpawnId - m_firstSpawnId; }
 	bool                              HasNewBorns() const             { return m_lastSpawnId > m_lastId; }
 	bool                              IsNewBorn(TParticleId id) const { return id >= m_firstSpawnId && id < m_lastSpawnId; }
 	TParticleId                       RealId(TParticleId pId) const;
-	SUpdateRange                      FullRange() const               { CRY_PFX2_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_lastId); }
+	SUpdateRange                      FullRange() const               { CRY_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_lastId); }
 	SUpdateRange                      SpawnedRange() const            { return SUpdateRange(m_firstSpawnId, m_lastSpawnId); }
 	SUpdateRange                      NonSpawnedRange() const         { return SUpdateRange(0, min(m_lastId, m_firstSpawnId)); }
 	SUpdateRange                      DeadRange() const               { return SUpdateRange(m_firstDeadId, m_lastDeadId); }
@@ -97,9 +96,10 @@ private:
 	template<typename T> const T*     Data(TDataType<T> type) const          { return reinterpret_cast<const T*>(ByteData(type)); }
 	template<typename T> T*           Data(TDataType<T> type)                { return reinterpret_cast<T*>(ByteData(type)); }
 
-	byte*                             AllocData(uint cap, uint size);
+	void                              AddUsedElems(int32 delta);
+	byte*                             AllocData(uint32 size, uint32 cap);
 	void                              FreeData();
-	void                              MoveData(uint dst, uint src, uint count);
+	void                              MoveData(uint32 dst, uint32 src, uint32 count);
 	void                              MoveData(TConstArray<detail::SMoveElem> toMove, TVarArray<TParticleId> swapIds);
 
 	TParticleId m_lastId       = 0;

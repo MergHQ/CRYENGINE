@@ -24,6 +24,11 @@ CParticleContainer::~CParticleContainer()
 	FreeData();
 }
 
+void CParticleContainer::AddUsedElems(int32 delta)
+{
+	UsedMem[m_useData.domain] += delta * m_useData.totalSize;
+}
+
 byte* CParticleContainer::AllocData(uint32 size, uint32 cap)
 {
 	if (!cap)
@@ -40,11 +45,11 @@ void CParticleContainer::FreeData()
 	if (!m_pData)
 		return;
 	CryModuleMemalignFree(m_pData);
-	UsedMem[m_useData.domain] -= NumElements() * m_useData.totalSize;
+	UsedMem[m_useData.domain] -= RealSize() * m_useData.totalSize;
 	AllocMem[m_useData.domain] -= Capacity() * m_useData.totalSize;
 }
 
-void CParticleContainer::MoveData(uint dst, uint src, uint count)
+void CParticleContainer::MoveData(uint32 dst, uint32 src, uint32 count)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -68,7 +73,7 @@ void CParticleContainer::Resize(uint32 newSize)
 
 	const size_t newCapacity = m_lastId <= CRY_PFX2_GROUP_STRIDE * 2 ? newSize : CRY_PFX2_GROUP_ALIGN(newSize + (newSize >> 1));
 
-	byte* pNew = AllocData(newSize * m_useData.totalSize, newCapacity * m_useData.totalSize);
+	byte* pNew = AllocData(0, newCapacity * m_useData.totalSize);
 	if (m_capacity)
 	{
 		for (auto type : EParticleDataType::indices())
@@ -114,7 +119,7 @@ void CParticleContainer::SetUsedData(const PUseData& pUseData, EDataDomain domai
 
 void CParticleContainer::CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range)
 {
-	CRY_PFX2_ASSERT(dstType.info().type == srcType.info().type);
+	CRY_ASSERT(dstType.info().type == srcType.info().type);
 	if (HasData(dstType) && HasData(srcType))
 	{
 		size_t stride = dstType.info().typeSize;
@@ -251,6 +256,7 @@ void CParticleContainer::AddElements(uint count, TVarArray<TParticleId> swapIds)
 	}
 
 	m_totalSpawned += count;
+	AddUsedElems(count);
 }
 
 void CParticleContainer::RemoveElements(TConstArray<TParticleId> toRemove, TConstArray<bool> doPreserve, TVarArray<TParticleId> swapIds)
@@ -261,7 +267,9 @@ void CParticleContainer::RemoveElements(TConstArray<TParticleId> toRemove, TCons
 	// Create move schema
 	TDynArray<detail::SMoveElem> toMove;
 
+	int32 deltaCount = 0 - toRemove.size();
 	uint archiveCount = 0;
+
 	if (doPreserve.size())
 	{
 		CRY_ASSERT(doPreserve.size() >= ExtendedSize());
@@ -269,8 +277,13 @@ void CParticleContainer::RemoveElements(TConstArray<TParticleId> toRemove, TCons
 		// Remove unpreserved dead elements
 		for (TParticleId id = m_lastDeadId; id-- > m_firstDeadId; )
 		{
+
+			// Remove unpreserved dead elements
 			if (!doPreserve[id])
+			{
 				detail::AddMove(toMove, --m_lastDeadId, id);
+				deltaCount--;
+			}
 		}
 
 		// Count archived elements
@@ -284,6 +297,7 @@ void CParticleContainer::RemoveElements(TConstArray<TParticleId> toRemove, TCons
 				m_firstDeadId = m_lastDeadId = CRY_PFX2_GROUP_ALIGN(m_lastId);
 			m_lastDeadId += archiveCount;
 			Resize(m_lastDeadId);
+			deltaCount += archiveCount;
 		}
 	}
 
@@ -302,6 +316,7 @@ void CParticleContainer::RemoveElements(TConstArray<TParticleId> toRemove, TCons
 	m_firstSpawnId = m_lastSpawnId = m_lastId;
 
 	MoveData(toMove, swapIds);
+	AddUsedElems(deltaCount);
 }
 
 void CParticleContainer::Reparent(TConstArray<TParticleId> swapIds, TDataType<TParticleId> parentType)

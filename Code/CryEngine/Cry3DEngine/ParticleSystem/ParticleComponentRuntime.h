@@ -84,7 +84,7 @@ public:
 	}
 	STimingParams             GetMaxTimings() const;
 	void                      GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
-	void                      GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const;
+	void                      GetEmitLocations(TVarArray<QuatT> locations, uint firstIndex = 0) const;
 	void                      EmitParticle();
 
 	bool                      HasParticles() const;

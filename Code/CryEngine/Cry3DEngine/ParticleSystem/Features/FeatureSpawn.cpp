@@ -46,6 +46,17 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
+		m_amount.AddToComponent(pComponent, ESDT_Amount);
+		m_duration.AddToComponent(pComponent, ESDT_LifeTime);
+		m_delay.AddToComponent(pComponent, this, ESDT_Age);
+		if (m_restart.IsEnabled())
+			m_restart.AddToComponent(pComponent, ESDT_Restart);
+
+		pComponent->AddParticleData(ESDT_Spawned);
+		if (m_duration.IsEnabled())
+			pComponent->AddParticleData(ESDT_Fraction);
+		pComponent->AddParticleData(ESDT_ParentId);
+
 		pComponent->RemoveSpawners.add(this);
 		pComponent->AddSpawners.add(this);
 		pComponent->InitSpawners.add(this);
@@ -53,17 +64,6 @@ public:
 		pComponent->SpawnParticles.add(this);
 		pComponent->GetDynamicData.add(this);
 		pComponent->OnEdit.add(this);
-		
-		m_amount.AddToComponent(pComponent, this, ESDT_Amount);
-		m_duration.AddToComponent(pComponent, this, ESDT_LifeTime);
-		m_delay.AddToComponent(pComponent, this, ESDT_Age);
-		if (m_restart.IsEnabled())
-			pComponent->AddParticleData(ESDT_Restart);
-
-		pComponent->AddParticleData(ESDT_Spawned);
-		if (m_duration.IsEnabled())
-			pComponent->AddParticleData(ESDT_Fraction);
-		pComponent->AddParticleData(ESDT_ParentId);
 
 		if (m_duration.GetBaseValue() == 0.0f)
 		{
@@ -122,7 +122,7 @@ public:
 		if (params.m_keepParentAlive)
 		{
 			const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
-			assert(valueisfinite(particleLife));
+			CRY_ASSERT(valueisfinite(particleLife));
 			extendedLife += particleLife + dT;
 		}
 
@@ -159,7 +159,7 @@ public:
 		if (doRestart)
 		{
 			THeapArray<SSpawnerDesc> spawners(runtime.MemHeap());
-			spawners.reserve(container.Size());
+			spawners.reserve(container.NonSpawnedRange().size());
 
 			auto ages = runtime.IStream(ESDT_Age);
 			auto lifetimes = runtime.IStream(ESDT_LifeTime);
@@ -167,7 +167,7 @@ public:
 			auto parentIds = runtime.IStream(ESDT_ParentId);
 			const float dT = runtime.DeltaTime();
 
-			for (auto i : container.FullRange())
+			for (auto i : container.NonSpawnedRange())
 			{
 				// Add new spawner if this one will die next frame
 				if (ages[i] <= lifetimes[i] && ages[i] + dT > lifetimes[i])
@@ -280,9 +280,6 @@ protected:
 		}
 
 		float countScale = CountScale(runtime);
-
-		m_amount.Update(runtime, ESDT_Amount);
-
 		THeapArray<float> counts(runtime.MemHeap(), range.size());
 		GetSpawnCounts(runtime, counts);
 
@@ -351,20 +348,16 @@ protected:
 				ages[i] -= delays[i];
 		}
 
-		m_amount.Init(runtime, ESDT_Amount, range);
-		m_duration.Init(runtime, ESDT_LifeTime, range);
-		m_restart.Init(runtime, ESDT_Restart, range);
-
 		runtime.FillData(ESDT_Spawned, 0.0f, range);
 		runtime.FillData(ESDT_Fraction, 0.0f, range);
 	}
 
 protected:
 
-	CParamMod<EDD_SpawnerUpdate, UFloat> m_amount   = 1;
-	CParamMod<EDD_Spawner, UFloat>       m_delay    = 0;
-	CParamMod<EDD_Spawner, UInfFloat>    m_duration = gInfinity;
-	CParamMod<EDD_Spawner, UInfFloat>    m_restart  = gInfinity;
+	CParamData<EDD_SpawnerUpdate, UFloat> m_amount   = 1;
+	CParamMod<EDD_Spawner, UFloat>        m_delay    = 0;
+	CParamData<EDD_Spawner, UInfFloat>    m_duration = gInfinity;
+	CParamData<EDD_Spawner, UInfFloat>    m_restart  = gInfinity;
 };
 
 SERIALIZATION_DECLARE_ENUM(ESpawnCountMode,
@@ -546,7 +539,7 @@ public:
 		auto range = runtime.SpawnedRange(EDD_Spawner);
 		auto emitPositions = runtime.IOStream(ESVT_EmitPos);
 
-		THeapArray<QuatTS> locations(runtime.MemHeap(), range.size());
+		THeapArray<QuatT> locations(runtime.MemHeap(), range.size());
 		runtime.GetEmitLocations(locations, range.m_begin);
 
 		for (auto i : range)
@@ -561,8 +554,8 @@ public:
 		auto amounts = GetAmounts(runtime, tempBuffer, EDD_Spawner);
 		auto emitPositions = runtime.IOStream(ESVT_EmitPos);
 
-		THeapArray<QuatTS> locations(runtime.MemHeap(), counts.size());
-		runtime.GetEmitLocations(locations, 0);
+		THeapArray<QuatT> locations(runtime.MemHeap(), counts.size());
+		runtime.GetEmitLocations(locations);
 
 		for (uint i = 0; i < counts.size(); ++i)
 		{

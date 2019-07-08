@@ -90,10 +90,10 @@ public:
 			TriggerSingleAudioEvents(runtime);
 	}
 
-	void DestroyParticles(CParticleComponentRuntime& runtime) override
+	void DestroyParticles(CParticleComponentRuntime& runtime, TConstArray<TParticleId> ids) override
 	{
-		auto audioObjects = runtime.GetContainer().IStream(EPDT_AudioObject);
-		for (auto particleId : runtime.FullRange())
+		auto audioObjects = runtime.IOStream(EPDT_AudioObject);
+		for (auto particleId : ids)
 		{
 			if (auto pIObject = audioObjects.Load(particleId))
 			{
@@ -236,7 +236,7 @@ private:
 	CryAudio::EOcclusionType m_occlusionType  = CryAudio::EOcclusionType::Ignore;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioTrigger, "Audio", "Trigger", colorAudio);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioTrigger, "Audio", "Trigger", colorAux);
 
 class CFeatureAudioParameter : public CParticleFeature
 {
@@ -288,5 +288,5 @@ private:
 	CParamMod<EDD_ParticleUpdate, SFloat> m_value;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioParameter, "Audio", "Rtpc", colorAudio);
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAudioParameter, "Audio", "Rtpc", colorAux);
 }// namespace pfx2

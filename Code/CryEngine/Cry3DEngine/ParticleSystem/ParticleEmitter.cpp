@@ -208,14 +208,6 @@ bool CParticleEmitter::UpdateState()
 	if (m_attributeInstance.WasChanged())
 		SetChanged();
 
-	if (m_runtimesFor.empty())
-	{
-		assert(!m_active);
-		if (!m_active)
-			return false;
-		UpdateRuntimes();
-	}
-
 	UpdateFromEntity();
 
 	if (m_reRegister)
@@ -332,7 +324,7 @@ void CParticleEmitter::RenderDeferred(const SRenderContext& renderContext)
 	}
 }
 
-void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
+void CParticleEmitter::DebugRender() const
 {
 	if (!GetRenderer())
 		return;
@@ -347,7 +339,7 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 	const bool stable = IsStable();
 
 	const float maxDist = non_const(*this).GetMaxViewDist();
-	const float dist = (GetPos() - passInfo.GetCamera().GetPosition()).GetLength();
+	const float dist = (GetPos() - GetISystem()->GetViewCamera().GetPosition()).GetLength();
 	const float alpha = sqr(crymath::saturate(1.0f - dist / maxDist));
 	const float ac = alpha * 0.75f + 0.25f;
 	const ColorF alphaColor(ac, ac, ac, alpha);
@@ -367,7 +359,7 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 				const ColorB componentColor = ColorF(!hasShadows, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
 				string label = string().Format("%s #S:%d #P:%d",
-					pRuntime->GetComponent()->GetName(), pRuntime->Container(EDD_Spawner).Size(), numParticles);
+					pRuntime->GetComponent()->GetName(), pRuntime->Container(EDD_Spawner).RealSize(), numParticles);
 				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
 			}
 		}

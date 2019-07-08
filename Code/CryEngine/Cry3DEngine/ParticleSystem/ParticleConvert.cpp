@@ -431,11 +431,6 @@ void ConvertSpawn(IParticleComponent& component, ParticleParams& params, bool al
 
 void ConvertAppearance(IParticleComponent& component, ParticleParams& params)
 {
-	// Blending feature
-	XmlNodeRef blending = MakeFeature("AppearanceBlending");
-	ConvertValueString(blending, "BlendMode", params.eBlendType, ParticleParams::EBlend(ParticleParams::EBlend::AlphaBased));
-	AddFeature(component, blending);
-
 	// Material feature
 	XmlNodeRef material = MakeFeature("AppearanceMaterial");
 
@@ -478,15 +473,6 @@ void ConvertAppearance(IParticleComponent& component, ParticleParams& params)
 		ConvertValue(lighting, "Emissive", params.fEmissiveLighting);
 		AddValue(lighting, "AffectedByFog", !ResetValue(params.bNotAffectedByFog));
 		AddFeature(component, lighting);
-	}
-
-	// Soft particle
-	if (params.bSoftParticle)
-	{
-		XmlNodeRef soft = MakeFeature("AppearanceSoftIntersect");
-		AddValue(soft, "Softness", params.bSoftParticle.fSoftness);
-		ResetValue(params.bSoftParticle);
-		AddFeature(component, soft);
 	}
 
 	// Pixel size
@@ -537,11 +523,13 @@ void ConvertSprites(IParticleComponent& component, ParticleParams& params)
 			if (params.eFacing == ParticleParams::EFacing::Camera || params.eFacing == ParticleParams::EFacing::Free)
 				ConvertValueString(render, "RibbonMode", params.eFacing);
 
-			ConvertValue(render, "ConnectToOrigin", params.Connection.bConnectToOrigin);
+			ConvertValue(render, "Tessellated", params.bTessellation);
+			ConvertValue(render, "ConnectToParent", params.Connection.bConnectToOrigin);
 			AddValue(render, "StreamSource",
 				ResetValue(params.Connection.eTextureMapping) == ParticleParams::SConnection::ETextureMapping::PerParticle ? "Spawn" : "Age");
 			ConvertValue(render, "TextureFrequency", params.Connection.fTextureFrequency, 1.f);
 			ResetValue(static_cast<TSmallBool&>(params.Connection));
+			ConvertValue(render, "FillCost", params.fFillRateCost);
 		}
 		else
 		{
@@ -586,6 +574,7 @@ void ConvertSprites(IParticleComponent& component, ParticleParams& params)
 			Vec2 pivot(params.fPivotX, -params.fPivotY);
 			ConvertValue(render, "Offset", pivot, Vec2(ZERO));
  			params.fPivotX.Set(0); params.fPivotY.Set(0);
+			ConvertValue(render, "FillCost", params.fFillRateCost);
 		}
 
 		if (XmlNodeRef project =
@@ -645,11 +634,17 @@ void ConvertGeometry(IParticleComponent& component, ParticleParams& params)
 void ConvertFields(IParticleComponent& component, ParticleParams& params, bool bInherit = false)
 {
 	// Opacity
-	XmlNodeRef opacity = MakeFeature("FieldOpacity");
+	XmlNodeRef opacity = MakeFeature("AppearanceOpacity");
+	ConvertValueString(opacity, "BlendMode", params.eBlendType, ParticleParams::EBlend(ParticleParams::EBlend::AlphaBased));
 	ConvertParam(opacity, "value", params.fAlpha, 1.f, 1.f, bInherit);
 	ConvertValue(opacity, "AlphaScale", reinterpret_cast<Vec2&>(params.AlphaClip.fScale), Vec2(0, 1));
 	ConvertValue(opacity, "ClipLow", reinterpret_cast<Vec2&>(params.AlphaClip.fSourceMin), Vec2(0, 0));
 	ConvertValue(opacity, "ClipRange", reinterpret_cast<Vec2&>(params.AlphaClip.fSourceWidth), Vec2(1, 1));
+	if (params.bSoftParticle)
+	{
+		ConvertValue(opacity, "Softness", params.bSoftParticle.fSoftness);
+		ResetValue(params.bSoftParticle);
+	}
 	AddFeature(component, opacity);
 
 	// Color
@@ -986,6 +981,16 @@ void ConvertAudioSource(IParticleComponent& component, ParticleParams& params, c
 	}
 }
 
+void ConvertForceGeneration(IParticleComponent& component, ParticleParams& params)
+{
+	if (params.eForceGeneration)
+	{
+		XmlNodeRef force = MakeFeature("AuxForce");
+		ConvertValueString(force, "Type", params.eForceGeneration);
+		AddFeature(component, force);
+	}
+}
+
 void ConvertConfigSpec(IParticleComponent& component, ParticleParams& params)
 {
 	XmlNodeRef spec = MakeFeature("ComponentEnableByConfig");
@@ -1085,6 +1090,7 @@ void ConvertParamsToFeatures(IParticleComponent& component, const ParticleParams
 		ConvertAngles2D(component, params);
 	ConvertLightSource(component, params);
 	ConvertAudioSource(component, params, paramsOrig, newEffect, parent);
+	ConvertForceGeneration(component, params);
 	ConvertVisibility(component, params);
 
 	// Report unconverted params.
@@ -1170,8 +1176,6 @@ struct ParticleParamsUnconverted
 		Terrain                                     // NO for ribbons
 	};
 
-	TSmallBool             bTessellation;           //!< If hardware supports, tessellate particles for better shadowing and curved connected particles.
-
 	struct STargetAttraction
 	{
 		enum ETargeting {
@@ -1184,12 +1188,6 @@ struct ParticleParamsUnconverted
 		TSmallBool          bOrbit;                 //!< Orbit target at specified distance, rather than disappearing.
 		TVarEPParam<SFloat> fRadius;                //!< Radius of attractor, for vanishing or orbiting.
 	}                      TargetAttraction;        //!< Specify target attractor behavior.
-
-	enum EForce {
-		None,
-		Wind,
-		Gravity
-	}                      eForceGeneration;        //!< Generate physical forces if set.
 
 	// MEDIUM PRIORITY
 
@@ -1228,9 +1226,6 @@ struct ParticleParamsUnconverted
 
 	TRangedType<uint8, 0, 2>  nSortQuality;         //!< Sort new particles as accurately as possible into list, by main camera distance.
 	SFloat                    fSortBoundsScale;     //!< <SoftMin=-1> <SoftMax=1> Choose emitter point for sorting; 1 = bounds nearest, 0 = origin, -1 = bounds farthest.
-
-	UFloat                    fFillRateCost = 1;    //!< Adjustment to max screen fill allowed per emitter.
-
 
 	// LOW PRIORITY
 

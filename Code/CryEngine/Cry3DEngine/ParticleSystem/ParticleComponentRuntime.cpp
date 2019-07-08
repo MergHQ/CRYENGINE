@@ -19,6 +19,16 @@ extern TDataType<Quat> EPQF_ParentOrientation;
 MakeDataType(EEDT_ParticleCounts, SMaxParticleCounts, EDD_Emitter);
 MakeDataType(EEDT_Timings, STimingParams, EDD_Emitter);
 
+struct TLinearArray: TDynArray<TParticleId>
+{
+	TLinearArray(uint size)
+		: TDynArray<TParticleId>(size)
+	{
+		for (uint i = 0; i < size; ++i)
+			(*this)[i] = i;
+	}
+};
+
 extern TDataType<Vec4> ESDT_SpatialExtents;
 
 CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponentRuntime* pParent, CParticleComponent* pComponent)
@@ -47,8 +57,7 @@ CParticleComponentRuntime::CParticleComponentRuntime(CParticleEmitter* pEmitter,
 
 CParticleComponentRuntime::~CParticleComponentRuntime()
 {
-	if (Container().Size())
-		GetComponent()->DestroyParticles(*this);
+	Clear();
 }
 
 bool CParticleComponentRuntime::IsValidForComponent() const
@@ -85,6 +94,11 @@ void CParticleComponentRuntime::Initialize()
 
 void CParticleComponentRuntime::Clear()
 {
+	const uint numParticles = Container().Size();
+	if (numParticles && GetComponent()->DestroyParticles.size())
+	{
+		GetComponent()->DestroyParticles(*this, TLinearArray(numParticles));
+	}
 	Container().Clear();
 	RemoveAllSpawners();
 	m_deltaTime = -1.0f;
@@ -188,6 +202,15 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 
 void CParticleComponentRuntime::RemoveAllSpawners()
 {
+	const uint numSpawners = Container(EDD_Spawner).Size();
+	if (numSpawners == 0)
+		return;
+
+	if (GetComponent()->DestroySpawners.size())
+	{
+		GetComponent()->DestroySpawners(*this, TLinearArray(numSpawners));
+	}
+	
 	if (Container().HasData(EPDT_SpawnerId))
 	{
 		THeapArray<TParticleId> swapIds(MemHeap(), Container(EDD_Spawner).Size());
@@ -207,23 +230,25 @@ void CParticleComponentRuntime::Reparent(TConstArray<TParticleId> swapIds)
 
 extern TDataType<Vec3> ESDT_EmitOffset;
 
-void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const
+void CParticleComponentRuntime::GetEmitLocations(TVarArray<QuatT> locations, uint firstIndex) const
 {
 	auto const& parentContainer = ParentContainer();
 	auto parentIds = IStream(ESDT_ParentId);
 	auto parentPositions = parentContainer.GetIVec3Stream(EPVF_Position, GetEmitter()->GetLocation().t);
 	auto parentRotations = parentContainer.GetIQuatStream(EPQF_Orientation, GetEmitter()->GetLocation().q);
 
-	SDynamicData<Vec3> offsets(*this, ESDT_EmitOffset, EDD_Spawner, SUpdateRange(firstInstance, firstInstance + locations.size()));
+	SDynamicData<Vec3> offsets(*this, ESDT_EmitOffset, EDD_Spawner, SUpdateRange(firstIndex, firstIndex + locations.size()));
 
 	for (uint idx = 0; idx < locations.size(); ++idx)
 	{
-		QuatTS& loc = locations[idx];
+		QuatT& loc = locations[idx];
 		const TParticleId parentId = parentIds[idx];
-		loc.t = parentPositions.SafeLoad(parentId);
-		loc.q = parentRotations.SafeLoad(parentId);
-		loc.s = 1.0f;
-		loc.t = loc * offsets[idx];
+		if (parentId != gInvalidId)
+		{
+			loc.t = parentPositions.SafeLoad(parentId);
+			loc.q = parentRotations.SafeLoad(parentId);
+			loc.t = loc * offsets[idx];
+		}
 	}
 }
 
@@ -280,6 +305,7 @@ void CParticleComponentRuntime::RemoveSpawners(TConstArray<TParticleId> removeId
 
 	CRY_PFX2_PROFILE_DETAIL;
 
+	GetComponent()->DestroySpawners(*this, removeIds);
 	if (Container().HasData(EPDT_SpawnerId))
 	{
 		THeapArray<TParticleId> swapIds(MemHeap(), Container(EDD_Spawner).Size());
@@ -602,7 +628,7 @@ void CParticleComponentRuntime::CalculateBounds()
 		m_bounds.Add(position, size);
 	}
 
-	CRY_PFX2_ASSERT(m_bounds.GetRadius() < 1000000.f);
+	CRY_ASSERT(m_bounds.GetRadius() < 1000000.f);
 }
 
 void CParticleComponentRuntime::AgeUpdate()
@@ -705,7 +731,7 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 		for (auto particleId : SpawnedRange())
 		{
 			TParticleId parentId = parentIds.Load(particleId);
-			CRY_PFX2_ASSERT(parentContainer.IdIsValid(parentId));  // newborn particles cannot be orphans
+			CRY_ASSERT(parentContainer.IdIsValid(parentId));  // newborn particles cannot be orphans
 		}
 	}
 	else
@@ -713,7 +739,7 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 		for (auto particleId : FullRange())
 		{
 			TParticleId parentId = parentIds.Load(particleId);
-			CRY_PFX2_ASSERT((allowInvalid && parentId == gInvalidId) || parentContainer.IdIsValid(parentId));   // this particle is not pointing to the correct parent
+			CRY_ASSERT((allowInvalid && parentId == gInvalidId) || parentContainer.IdIsValid(parentId));   // this particle is not pointing to the correct parent
 		}
 	}
 
@@ -721,7 +747,7 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 	for (auto id : FullRange(EDD_Spawner))
 	{
 		TParticleId parentId = parentIds.Load(id);
-		CRY_PFX2_ASSERT(parentId == gInvalidId || parentContainer.IdIsValid(parentId));   // this spawner is not pointing to the correct parent
+		CRY_ASSERT(parentId == gInvalidId || parentContainer.IdIsValid(parentId));   // this spawner is not pointing to the correct parent
 	}
 #endif
 }
@@ -739,7 +765,7 @@ void CParticleComponentRuntime::AccumStats(bool updated)
 	auto& stats = GetPSystem()->GetThreadData().statsCPU;
 	stats.components.alive += IsAlive();
 	stats.spawners.alloc += Container(EDD_Spawner).Capacity();
-	stats.spawners.alive += Container(EDD_Spawner).Size();
+	stats.spawners.alive += Container(EDD_Spawner).RealSize();
 	stats.particles.alloc += allocParticles;
 	stats.particles.alive += aliveParticles;
 

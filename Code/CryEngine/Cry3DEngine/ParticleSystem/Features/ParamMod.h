@@ -115,6 +115,53 @@ struct ClassFactoryInheritor
 #define SERIALIZATION_INHERIT_CREATORS(BaseType, Type) \
 	static ClassFactoryInheritor<BaseType, Type> ClassFactoryInherit_ ## Type;
 
+//////////////////////////////////////////////////////////////////////////
+// CParamData
+
+template<EDataDomain Domain, typename T>
+struct CParamData: CParticleFeature, CParamMod<Domain, T>
+{
+	typedef CParamMod<Domain, T> TParam;
+	typedef typename T::TStore TType;
+
+	using TParam::TParam;
+	using TParam::IsEnabled;
+	using TParam::Serialize;
+
+	TDataType<TType> DataType() const { return m_dataType; }
+
+	void AddToComponent(CParticleComponent* pComponent, TDataType<TType> dataType)
+	{
+		m_dataType = dataType;
+		TParam::AddToComponent(pComponent, this, dataType);
+	}
+	void InitParticles(CParticleComponentRuntime& runtime) override
+	{
+		if (Domain & EDD_Particle)
+			TParam::Init(runtime, m_dataType);
+	}
+	void UpdateParticles(CParticleComponentRuntime& runtime) override
+	{
+		if (Domain & EDD_Particle)
+			TParam::Update(runtime, m_dataType);
+	}
+	void InitSpawners(CParticleComponentRuntime& runtime) override
+	{
+		if (Domain & EDD_Spawner)
+			TParam::Init(runtime, m_dataType);
+	}
+	void UpdateSpawners(CParticleComponentRuntime& runtime) override
+	{
+		if (Domain & EDD_Spawner)
+			TParam::Update(runtime, m_dataType);
+	}
+
+private:
+	void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override {}
+
+	TDataType<TType> m_dataType = 0U;
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // Temp buffers
 

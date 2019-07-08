@@ -38,10 +38,10 @@ CFeatureMotionPhysics::CFeatureMotionPhysics()
 
 void CFeatureMotionPhysics::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	pComponent->UpdateParticles.add(this);
+	m_gravity.AddToComponent(pComponent, EPDT_Gravity);
+	m_drag.AddToComponent(pComponent, EPDT_Drag);
 
-	m_gravity.AddToComponent(pComponent, this, EPDT_Gravity);
-	m_drag.AddToComponent(pComponent, this, EPDT_Drag);
+	pComponent->UpdateParticles.add(this);
 
 	m_environFlags = 0;
 	if (m_gravity.GetBaseValue() != 0.0f)
@@ -99,19 +99,11 @@ void CFeatureMotionPhysics::Serialize(Serialization::IArchive& ar)
 	ar(m_localEffectors, "localEffectors", "Local Effectors");
 }
 
-void CFeatureMotionPhysics::InitParticles(CParticleComponentRuntime& runtime)
-{
-	m_gravity.Init(runtime, EPDT_Gravity);
-	m_drag.Init(runtime, EPDT_Drag);
-}
-
 void CFeatureMotionPhysics::UpdateParticles(CParticleComponentRuntime& runtime)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
 	CParticleContainer& container = runtime.GetContainer();
-	m_gravity.Update(runtime, EPDT_Gravity);
-	m_drag.Update(runtime, EPDT_Drag);
 
 	if (!m_moveList.empty())
 	{
@@ -332,24 +324,23 @@ void CFeatureMotionPhysics::Integrate(CParticleComponentRuntime& runtime)
 	for (ILocalEffector* pEffector : m_computeList)
 		effectorFlags |= pEffector->ComputeEffector(runtime, velocityField, accelerations);
 
+	// Get forces for each area
 	const auto& physEnv = pEmitter->GetPhysicsEnv();
 	SPhysForces uniformForces;
-	if (m_perParticleForceComputation && !(C3DEngine::GetCVars()->e_ParticlesDebug & AlphaBit('f')))
-	{
-		// Get per-particle forces for each area
-		uniformForces = physEnv.m_UniformForces; // Base forces ignore non-uniform areas
-		physEnv.ForNonumiformAreas(runtime.GetBounds(), m_environFlags, 
-			[&](const SArea& area)
-			{
+	const bool perParticle = m_perParticleForceComputation && !(GetCVars()->e_ParticlesDebug & AlphaBit('f'));
+
+	uniformForces = physEnv.m_UniformForces; // Base forces ignore non-uniform areas
+	physEnv.ForNonumiformAreas(runtime.GetBounds(), m_environFlags, 
+		[&](const SArea& area)
+		{
+			void* pIgnore = area.m_pArea->GetForeignData();
+			if (pIgnore == &runtime || pIgnore == runtime.GetEmitter())
+				return;
+			if (perParticle)
 				effectorFlags |= ComputeEffectors(runtime, area); 
-			}
-		);
-	}
-	else
-	{
-		// Get average forces for each area
-		physEnv.GetForces(uniformForces, runtime.GetBounds(), m_environFlags, true);
-	}
+			else
+				area.GetForces(uniformForces, runtime.GetBounds(), m_environFlags, true); 
+	});
 
 	const Vec3v uniformAccel = ToVec3v(m_uniformAcceleration);
 	const Vec3v uniformGravity = ToVec3v(uniformForces.vAccel);
@@ -689,14 +680,12 @@ void CFeatureMotionCryPhysics::UpdateParticles(CParticleComponentRuntime& runtim
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
 	CParticleContainer& container = runtime.GetContainer();
 	auto physicalEntities = container.IOStream(EPDT_PhysicalEntity);
 	IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 	IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
 	IOVec3Stream angularVelocities = container.GetIOVec3Stream(EPVF_AngularVelocity);
 	IOQuatStream orientations = container.GetIOQuatStream(EPQF_Orientation);
-	const IFStream ages = container.GetIFStream(EPDT_NormalAge);
 
 	for (auto particleId : runtime.FullRange())
 	{
@@ -717,19 +706,13 @@ void CFeatureMotionCryPhysics::UpdateParticles(CParticleComponentRuntime& runtim
 			velocities.Store(particleId, statusDynamics.v);
 			angularVelocities.Store(particleId, statusDynamics.w);
 		}
-
-		if (IsExpired(ages.Load(particleId)))
-		{
-			pPhysicalWorld->DestroyPhysicalEntity(pPhysicalEntity);
-			physicalEntities.Store(particleId, 0);
-		}
 	}
 }
 
-void CFeatureMotionCryPhysics::DestroyParticles(CParticleComponentRuntime& runtime)
+void CFeatureMotionCryPhysics::DestroyParticles(CParticleComponentRuntime& runtime, TConstArray<TParticleId> ids)
 {
-	auto physicalEntities = runtime.GetContainer().IStream(EPDT_PhysicalEntity);
-	for (auto particleId : runtime.FullRange())
+	auto physicalEntities = runtime.IOStream(EPDT_PhysicalEntity);
+	for (auto particleId : ids)
 	{
 		if (auto pPhysicalEntity = physicalEntities.Load(particleId))
 			gEnv->pPhysicalWorld->DestroyPhysicalEntity(pPhysicalEntity);

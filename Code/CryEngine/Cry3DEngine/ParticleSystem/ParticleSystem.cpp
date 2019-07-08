@@ -223,7 +223,7 @@ void CParticleSystem::FinishRenderTasks(const SRenderingPassInfo& passInfo)
 	if (DebugMode('b'))
 	{
 		for (auto& pEmitter : m_emitters)
-			pEmitter->DebugRender(passInfo);
+			pEmitter->DebugRender();
 	}
 }
 

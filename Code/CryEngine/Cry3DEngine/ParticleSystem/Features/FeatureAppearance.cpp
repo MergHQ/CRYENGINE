@@ -29,7 +29,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		m_opacity.AddToComponent(pComponent, this, EPDT_Alpha);
+		m_opacity.AddToComponent(pComponent, EPDT_Alpha);
 
 		pParams->m_renderStateFlags = (pParams->m_renderStateFlags & ~OS_TRANSPARENT) | (int)m_blendMode;
 
@@ -100,26 +100,14 @@ public:
 		}
 	}
 
-	virtual void InitParticles(CParticleComponentRuntime& runtime) override
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		m_opacity.Init(runtime, EPDT_Alpha);
-	}
-
-	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		m_opacity.Update(runtime, EPDT_Alpha);
-	}
-
 protected:
-	CParamMod<EDD_ParticleUpdate, UUnitFloat> m_opacity;
-	EBlendMode                                m_blendMode     = EBlendMode::Alpha;
-	UFloat                                    m_softIntersect = 0.0f;
-	bool                                      m_castShadows   = true;
-	Range                                     m_alphaScale    {0, 1};
-	Range                                     m_clipLow       {0, 0};
-	Range                                     m_clipRange     {1, 1};
+	CParamData<EDD_ParticleUpdate, UUnitFloat> m_opacity;
+	EBlendMode                                 m_blendMode     = EBlendMode::Alpha;
+	UFloat                                     m_softIntersect = 0.0f;
+	bool                                       m_castShadows   = true;
+	Range                                      m_alphaScale    {0, 1};
+	Range                                      m_clipLow       {0, 0};
+	Range                                      m_clipRange     {1, 1};
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceOpacity, "Appearance", "Opacity", colorAppearance);

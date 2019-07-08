@@ -7,7 +7,6 @@
 #include "ParticleSystem/ParticleEmitter.h"
 #include "ParticleSystem/ParticleDataTypes.h"
 #include "ParamMod.h"
-#include "FeatureColor.h"
 
 namespace pfx2
 {

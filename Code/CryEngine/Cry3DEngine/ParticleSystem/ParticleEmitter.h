@@ -75,7 +75,7 @@ public:
 
 	// CParticleEmitter
 	void                      InitSeed();
-	void                      DebugRender(const SRenderingPassInfo& passInfo) const;
+	void                      DebugRender() const;
 	void                      CheckUpdated();
 	bool                      UpdateState();
 	bool                      UpdateParticles();

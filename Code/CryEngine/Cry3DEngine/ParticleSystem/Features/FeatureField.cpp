@@ -20,7 +20,7 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		m_size.AddToComponent(pComponent, this, EPDT_Size);
+		m_size.AddToComponent(pComponent, EPDT_Size);
 		pParams->m_maxParticleSize = m_size.GetValueRange().end;
 
 		if (auto gpuInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldSize))
@@ -44,20 +44,8 @@ public:
 	virtual EFeatureType GetFeatureType() override { return EFT_Size; }
 	static uint DefaultForType() { return EFT_Size; }
 
-	virtual void InitParticles(CParticleComponentRuntime& runtime) override
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		m_size.Init(runtime, EPDT_Size);
-	}
-
-	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
-	{
-		CRY_PFX2_PROFILE_DETAIL;
-		m_size.Update(runtime, EPDT_Size);
-	}
-
 private:
-	CParamMod<EDD_ParticleUpdate, UFloat10> m_size;
+	CParamData<EDD_ParticleUpdate, UFloat10> m_size;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldSize, "Field", "Size", colorField);

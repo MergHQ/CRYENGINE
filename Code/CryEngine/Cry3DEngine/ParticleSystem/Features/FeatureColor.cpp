@@ -1,7 +1,6 @@
 // Copyright 2015-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "FeatureColor.h"
 #include "Domain.h"
 #include "ParticleSystem/ParticleEmitter.h"
 #include "ParticleSystem/ParticleComponentRuntime.h"
@@ -20,44 +19,45 @@ ILINE void VecMul(Vec3_tpl<F>& a, Vec3_tpl<F> const& b)
 
 MakeDataType(EPDT_Color, UCol, EDD_ParticleUpdate);
 
-using IColorModifier = ITypeModifier<UCol, Vec3>;
+//////////////////////////////////////////////////////////////////////////
+// Feature Field Color
 
-void CFeatureFieldColor::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
+using CParamDataColor = CParamData<EDD_ParticleUpdate, UColor>;
+
+class CFeatureFieldColor : public CParamDataColor
 {
-	CParamModColor::AddToComponent(pComponent, this, EPDT_Color);
+public:
+	CRY_PFX2_DECLARE_FEATURE;
 
-	if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Color))
+	virtual void Serialize(Serialization::IArchive& ar) override
 	{
-		const int numSamples = gpu_pfx2::kNumModifierSamples;
-		Vec3 samples[numSamples];
-		Sample(samples);
-		gpu_pfx2::SFeatureParametersColorTable table;
-		table.samples = samples;
-		table.numSamples = numSamples;
-		pInt->SetParameters(table);
+		CParticleFeature::Serialize(ar);
+		ar(static_cast<CParamDataColor&>(*this), "Color", "Color");
 	}
-}
 
-void CFeatureFieldColor::Serialize(Serialization::IArchive& ar)
-{
-	CParticleFeature::Serialize(ar);
-	ar(static_cast<CParamModColor&>(*this), "Color", "Color");
-}
+	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	{
+		CParamDataColor::AddToComponent(pComponent, EPDT_Color);
 
-void CFeatureFieldColor::InitParticles(CParticleComponentRuntime& runtime)
-{
-	Init(runtime, EPDT_Color);
-}
-
-void CFeatureFieldColor::UpdateParticles(CParticleComponentRuntime& runtime)
-{
-	Update(runtime, EPDT_Color);
-}
+		if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Color))
+		{
+			const int numSamples = gpu_pfx2::kNumModifierSamples;
+			Vec3 samples[numSamples];
+			Sample(samples);
+			gpu_pfx2::SFeatureParametersColorTable table;
+			table.samples = samples;
+			table.numSamples = numSamples;
+			pInt->SetParameters(table);
+		}
+	}
+};
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureFieldColor, "Field", "Color", colorField);
 
 //////////////////////////////////////////////////////////////////////////
 // CColorRandom
+
+using IColorModifier = ITypeModifier<UCol, Vec3>;
 
 class CColorRandom : public IColorModifier
 {
