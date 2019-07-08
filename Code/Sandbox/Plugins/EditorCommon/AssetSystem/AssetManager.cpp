@@ -387,7 +387,7 @@ void CAssetManager::MergeAssets(std::vector<CAsset*> assets)
 				editable.SetDetails(assets[i]->GetDetails());
 
 				// Force to update the thumbnail.
-				if (!pExistingAsset->IsImmutable())
+				if (pExistingAsset->IsThumbnailLoaded() && !pExistingAsset->IsImmutable())
 				{
 					pPak->RemoveFile(pExistingAsset->GetThumbnailPath());
 				}

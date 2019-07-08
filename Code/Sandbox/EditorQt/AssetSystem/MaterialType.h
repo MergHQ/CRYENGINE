@@ -30,6 +30,7 @@ public:
 	virtual CAssetEditor*                     Edit(CAsset* pAsset) const override;
 	virtual bool                              OnCreate(INewAsset& asset, const SCreateParams* pCreateParams) const override;
 	virtual bool                              RenameAsset(CAsset* pAsset, const char* szNewName) const override;
+	virtual void                              PreDeleteAssetFiles(const CAsset& asset) const;
 private:
 	virtual CryIcon                           GetIconInternal() const override;
 

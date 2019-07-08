@@ -136,3 +136,17 @@ bool CMaterialType::RenameAsset(CAsset* pAsset, const char* szNewName) const
 
 	return true;
 }
+
+void CMaterialType::PreDeleteAssetFiles(const CAsset& asset) const
+{
+	CMaterialManager* const pMaterialManager = GetIEditor()->GetMaterialManager();
+	CRY_ASSERT(pMaterialManager);
+
+	const string materialName = pMaterialManager->FilenameToMaterial(asset.GetFile(0));
+	IDataBaseItem* const pMaterial = pMaterialManager->FindItemByName(materialName);
+	if (!pMaterial)
+	{
+		return;
+	}
+	pMaterialManager->DeleteItem(pMaterial);
+}
