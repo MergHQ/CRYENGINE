@@ -441,9 +441,9 @@ half KajiyaKayAnisotropic(half3 T, half3 H, half Exp)
 }
 
 // Constants
-const static float LTC_LUT_SIZE = 64.0f;
-const static float LTC_LUT_SCALE = (LTC_LUT_SIZE - 1.0f) / LTC_LUT_SIZE;
-const static float LTC_LUT_BIAS = 0.5f / LTC_LUT_SIZE;
+static const float LTC_LUT_SIZE = 64.0f;
+static const float LTC_LUT_SCALE = (LTC_LUT_SIZE - 1.0f) / LTC_LUT_SIZE;
+static const float LTC_LUT_BIAS = 0.5f / LTC_LUT_SIZE;
 
 #define AREALIGHT_TYPE_RECTANGLE 1
 #define AREALIGHT_TYPE_DISK 2
