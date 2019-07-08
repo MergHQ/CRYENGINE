@@ -44,6 +44,7 @@ set i=0
 call :CheckCompiler %1 "HKEY_CLASSES_ROOT\WDExpress.DTE.14.0" "Visual Studio 14 2015%generator_suffix%" "Visual Studio 2015 Express"
 call :CheckCompiler %1 "HKEY_CLASSES_ROOT\VisualStudio.DTE.14.0" "Visual Studio 14 2015%generator_suffix%" "Visual Studio 2015"
 call :CheckCompiler %1 "HKEY_CLASSES_ROOT\VisualStudio.DTE.15.0" "Visual Studio 15 2017%generator_suffix%" "Visual Studio 2017"
+call :CheckCompiler %1 "HKEY_CLASSES_ROOT\VisualStudio.DTE.16.0" "Visual Studio 16 2019" "Visual Studio 2019"
 goto :eof
 
 
