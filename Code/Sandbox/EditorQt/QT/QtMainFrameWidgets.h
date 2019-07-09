@@ -22,6 +22,11 @@ class QSelectionMaskMenu : public QDynamicPopupMenu
 {
 	Q_OBJECT
 
+public:
+	QSelectionMaskMenu(QWidget* pParent)
+		: QDynamicPopupMenu(pParent)
+	{}
+
 protected:
 
 	virtual void OnPopulateMenu() override
@@ -180,7 +185,8 @@ class QNavigationAgentTypeMenu : public QDynamicPopupMenu
 	Q_OBJECT
 
 public:
-	QNavigationAgentTypeMenu()
+	QNavigationAgentTypeMenu(QWidget* pParent)
+		: QDynamicPopupMenu(pParent)
 	{
 		m_pActionGroup = new QActionGroup(this);
 		m_pActionGroup->setObjectName("VisualizeAgentTypeGroup");
@@ -264,7 +270,8 @@ class QMNMRegenerationAgentTypeMenu : public QDynamicPopupMenu
 	Q_OBJECT
 
 public:
-	QMNMRegenerationAgentTypeMenu()
+	QMNMRegenerationAgentTypeMenu(QWidget* pParent)
+		: QDynamicPopupMenu(pParent)
 	{
 		OnPopulateMenu();
 	}

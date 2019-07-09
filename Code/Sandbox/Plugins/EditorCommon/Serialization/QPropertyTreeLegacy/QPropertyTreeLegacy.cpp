@@ -269,8 +269,10 @@ private:
 // ---------------------------------------------------------------------------
 
 DragWindow::DragWindow(QPropertyTreeLegacy* tree)
-: tree_(tree)
-, offset_(0, 0)
+	: QWidget(tree)
+	, tree_(tree)
+	, offset_(0, 0)
+	, row_(nullptr)
 {
 	QWidget::setWindowFlags(Qt::ToolTip);
 	QWidget::setWindowOpacity(192.0f/ 256.0f);
@@ -369,6 +371,11 @@ protected:
 
 void DragWindow::drawRow(QPainter& p)
 {
+	if (!row_)
+	{
+		return;
+	}
+
 	QRect entireRowRect(0, 0, rect_.width() + 4, rect_.height() + 4);
 
 	p.setBrush(tree_->palette().button());
@@ -612,6 +619,7 @@ QPropertyTreeLegacy::QPropertyTreeLegacy(QWidget* parent)
 
 QPropertyTreeLegacy::~QPropertyTreeLegacy()
 {
+	delete dragController_;
 	clearMenuHandlers();
 }
 
