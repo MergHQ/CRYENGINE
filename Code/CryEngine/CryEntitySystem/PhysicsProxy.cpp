@@ -1854,16 +1854,6 @@ bool CEntityPhysics::ConvertCharacterToRagdoll(SEntityPhysicalizeParams& params,
 		}
 	}
 
-	// Force character bones to be updated from physics bones.
-	//if (m_pPhysicalEntity)
-	//	pCharacter->SynchronizeWithPhysicalEntity( m_pPhysicalEntity );
-	/*SEntityUpdateContext ctx;
-	   if (GetEntity()->GetEntityRender())
-	   GetEntity()->GetEntityRender()->Update(ctx);*/
-	GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsIgnoreTransformEvent, true);
-	GetEntity()->SetRotation(Quat(IDENTITY));
-	GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsIgnoreTransformEvent, false);
-
 	return true;
 }
 
