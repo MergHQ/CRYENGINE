@@ -91,7 +91,14 @@ public:
 	virtual void GetMemoryUsage(ICrySizer * pSizer) const override;
 	virtual void Serialize(TSerialize ser) override;
 	virtual Cry::Anim::ECharacterStaticity GetStaticity() const override { return m_staticity; }
-	virtual void SetStaticity(Cry::Anim::ECharacterStaticity staticity) override { m_staticity = staticity; }
+	virtual void SetStaticity(Cry::Anim::ECharacterStaticity staticity) override
+	{
+		if (staticity != m_staticity)
+		{
+			m_staticity = staticity;
+			ResetQuasiStaticSleepTimer();
+		}
+	}
 #ifdef EDITOR_PCDEBUGCODE
 	virtual uint32 GetResetMode() const override        { return m_ResetMode; }
 	virtual void   SetResetMode(uint32 rm) override     { m_ResetMode = rm > 0; }
