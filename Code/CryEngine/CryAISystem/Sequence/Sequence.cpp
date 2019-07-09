@@ -142,6 +142,17 @@ void Sequence::RequestActionStart(TFlowNodeId actionNodeId)
 	}
 }
 
+void Sequence::RequestActionRestart()
+{
+	if (m_currentActionNodeId != InvalidFlowNodeId)
+	{
+		SendEventToNode(SequenceStopped, m_currentActionNodeId);
+		SendEventToNode(StartAction, m_currentActionNodeId);
+		return;
+	}
+	CRY_ASSERT_MESSAGE(m_currentActionNodeId != InvalidFlowNodeId, "Sequence can't be restarted because 'm_currentActionNodeId' is not valid.");
+}
+
 void Sequence::ActionComplete()
 {
 	m_currentActionNodeId = InvalidFlowNodeId;

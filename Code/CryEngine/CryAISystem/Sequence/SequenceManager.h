@@ -23,23 +23,24 @@ public:
 	void Reset();
 
 	// AIActionSequence::ISequenceManager
-	virtual bool RegisterSequence(EntityId entityId, TFlowNodeId startNodeId, SequenceProperties sequenceProperties, IFlowGraph* flowGraph);
-	virtual void UnregisterSequence(SequenceId sequenceId);
+	virtual bool RegisterSequence(EntityId entityId, TFlowNodeId startNodeId, SequenceProperties sequenceProperties, IFlowGraph* flowGraph) override;
+	virtual void UnregisterSequence(SequenceId sequenceId) override;
 
-	virtual void StartSequence(SequenceId sequenceId);
-	virtual void CancelSequence(SequenceId sequenceId);
-	virtual bool IsSequenceActive(SequenceId sequenceId);
+	virtual void StartSequence(SequenceId sequenceId) override;
+	virtual void CancelSequence(SequenceId sequenceId) override;
+	virtual bool IsSequenceActive(SequenceId sequenceId) override;
 
-	virtual void SequenceBehaviorReady(EntityId entityId);
-	virtual void SequenceInterruptibleBehaviorLeft(EntityId entityId);
-	virtual void SequenceNonInterruptibleBehaviorLeft(EntityId entityId);
-	virtual void AgentDisabled(EntityId entityId);
+	virtual void SequenceBehaviorReady(EntityId entityId) override;
+	virtual void SequenceInterruptibleBehaviorLeft(EntityId entityId) override;
+	virtual void SequenceNonInterruptibleBehaviorLeft(EntityId entityId) override;
+	virtual void AgentDisabled(EntityId entityId) override;
 
-	virtual void RequestActionStart(SequenceId sequenceId, TFlowNodeId actionNodeId);
-	virtual void ActionCompleted(SequenceId sequenceId);
-	virtual void SetBookmark(SequenceId sequenceId, TFlowNodeId bookmarkNodeId);
+	virtual void RequestActionStart(SequenceId sequenceId, TFlowNodeId actionNodeId) override;
+	virtual void RequestActionRestart(SequenceId sequenceId) override;
+	virtual void ActionCompleted(SequenceId sequenceId) override;
+	virtual void SetBookmark(SequenceId sequenceId, TFlowNodeId bookmarkNodeId) override;
 
-	virtual void SetAgentAdapter(IAgentAdapter* pAgentAdapter);
+	virtual void SetAgentAdapter(IAgentAdapter* pAgentAdapter) override;
 	// ~AIActionSequence::ISequenceManager
 
 	IAgentAdapter* InitAgentAdapter(EntityId entityId);
