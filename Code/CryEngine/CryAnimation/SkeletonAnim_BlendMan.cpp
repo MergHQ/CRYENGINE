@@ -145,7 +145,12 @@ uint32 CSkeletonAnim::BlendManager(f32 fDeltaTime, DynArray<CAnimation>& arrAFIF
 		CRY_ASSERT(rCurAnim.IsActivated());
 		if (rCurAnim.HasStaticFlag(CA_FORCE_SKELETON_UPDATE))
 		{
-			m_pSkeletonPose->m_bFullSkeletonUpdate = 1; //This means we have to do a full-skeleton update
+			// We need to proceed like this because this is executed after m_bFullSkeletonUpdated is
+			// computed for this frame
+			m_pSkeletonPose->m_bFullSkeletonUpdate = 1; //Overwrite the current full skeleton update flag
+			// Set the force skeleton update value for next frame to at least one frame.
+			// This prevents quasi-static culling from skipping the Blend Manager the next frame
+			m_pSkeletonPose->m_nForceSkeletonUpdate = max(1, m_pSkeletonPose->m_nForceSkeletonUpdate);
 			//	float fColor[4] = {1,1,0,1};
 			//	g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.7f, fColor, false,"CA_FORCE_SKELETON_UPDATE" );
 			//	g_YLine+=16.0f;
