@@ -2052,15 +2052,15 @@ void CD3D9Renderer::UpdateResolution()
 #if CRY_PLATFORM_WINDOWS
 	// The ISystemEventListener will catch the resize/etc event generated from the ::SetWindowPos call below, and resize graphics resources on that event
 
-	// Set self as the active window
-	::SetActiveWindow(static_cast<HWND>(GetHWND()));
-
-	const HWND hWnd = static_cast<HWND>(m_hWnd);
-	RECT targetRect{ 0, 0, 0, 0 };
-
 	// Move/size the window to the new coordinates/resolution in non-editor mode
 	if (!IsEditorMode())
 	{
+		// Set self as the active window
+		::SetActiveWindow(static_cast<HWND>(GetHWND()));
+
+		const HWND hWnd = static_cast<HWND>(m_hWnd);
+		RECT targetRect{ 0, 0, 0, 0 };
+
 		// Get client area dimensions in screen space (to use the top-left point)
 		::GetClientRect(hWnd, &targetRect);
 		::ClientToScreen(hWnd, (POINT*)&targetRect.left);
