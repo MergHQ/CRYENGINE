@@ -1936,6 +1936,7 @@ IPhysicalEntity* CSkeletonPhysics::RelinquishCharacterPhysics(const Matrix34& mt
 			switch (Console::GetInst().ca_ApplyJointVelocitiesMode)
 			{
 			case Console::ApplyJointVelocitiesAnimation:
+				m_pCharPhysics->GetParams(&pp);
 				m_pInstance->ApplyJointVelocitiesToPhysics(res, pp.q, velHost);
 				break;
 
