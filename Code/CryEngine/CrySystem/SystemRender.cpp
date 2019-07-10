@@ -89,17 +89,29 @@ void OnWindowStateChanged(ICVar* pCVar)
 	{
 		pFullscreenCVar->Set(pCVar->GetIVal() == 3 ? 1 : 0);
 	}
-	GetISystem()->GetIRenderer()->UpdateWindowMode();
+	IRenderer* pRenderer = GetISystem()->GetIRenderer();
+	if (pRenderer)
+	{
+		pRenderer->UpdateWindowMode();
+	}
 }
 
 void OnHeightChanged(ICVar* var)
 {
-	GetISystem()->GetIRenderer()->UpdateResolution();
+	IRenderer* pRenderer = GetISystem()->GetIRenderer();
+	if (pRenderer)
+	{
+		pRenderer->UpdateResolution();
+	}
 }
 
 void OnWidthChanged(ICVar* var)
 {
-	GetISystem()->GetIRenderer()->UpdateResolution();
+	IRenderer* pRenderer = GetISystem()->GetIRenderer();
+	if (pRenderer)
+	{
+		pRenderer->UpdateResolution();
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
