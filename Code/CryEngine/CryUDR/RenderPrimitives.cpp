@@ -128,6 +128,8 @@ namespace Cry
 		//
 		//===================================================================================
 
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Sphere, "CRenderPrimitive_Sphere", "");
+
 		CRenderPrimitive_Sphere::CRenderPrimitive_Sphere()
 			: m_pos(ZERO)
 			, m_radius(0.0f)
@@ -169,6 +171,8 @@ namespace Cry
 		// CRenderPrimitive_Line
 		//
 		//===================================================================================
+		
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Line, "CRenderPrimitive_Line", "");
 
 		CRenderPrimitive_Line::CRenderPrimitive_Line()
 			: m_pos1(ZERO)
@@ -211,6 +215,8 @@ namespace Cry
 		// CRenderPrimitive_Triangle
 		//
 		//===================================================================================
+
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Triangle, "CRenderPrimitive_Triangle", "");
 
 		CRenderPrimitive_Triangle::CRenderPrimitive_Triangle()
 			: m_vtx1(ZERO)
@@ -257,6 +263,8 @@ namespace Cry
 		// CRenderPrimitive_Text
 		//
 		//===================================================================================
+		
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Text, "CRenderPrimitive_Text", "");
 
 		CRenderPrimitive_Text::CRenderPrimitive_Text()
 			: m_pos(ZERO)
@@ -314,6 +322,8 @@ namespace Cry
 		//
 		//===================================================================================
 
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Arrow, "CRenderPrimitive_Arrow", "");
+
 		CRenderPrimitive_Arrow::CRenderPrimitive_Arrow()
 			: m_from(ZERO)
 			, m_to(ZERO)
@@ -366,6 +376,8 @@ namespace Cry
 		//
 		//===================================================================================
 
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_AABB, "CRenderPrimitive_AABB", "");
+
 		CRenderPrimitive_AABB::CRenderPrimitive_AABB()
 			: m_aabb()
 			, m_color(Col_Black)
@@ -406,6 +418,8 @@ namespace Cry
 		// CRenderPrimitive_OBB
 		//
 		//===================================================================================
+
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_OBB, "CRenderPrimitive_OBB", "");
 
 		CRenderPrimitive_OBB::CRenderPrimitive_OBB()
 			: m_obb()
@@ -453,6 +467,8 @@ namespace Cry
 		// CRenderPrimitive_Cylinder
 		//
 		//===================================================================================
+
+		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Cylinder, "CRenderPrimitive_Cylinder", "");
 
 		CRenderPrimitive_Cylinder::CRenderPrimitive_Cylinder()
 			: m_pos(ZERO)
