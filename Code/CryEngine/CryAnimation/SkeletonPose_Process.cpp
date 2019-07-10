@@ -38,8 +38,7 @@ void CSkeletonPose::SkeletonPostProcess(Skeleton::CPoseData& poseData)
 	// -------------------------------------------------------------------------
 
 	m_pInstance->m_location = rAnimLocationNext;
-	if (m_physics.m_bPhysicsRelinquished)
-		m_pInstance->m_location.q.SetIdentity();
+
 	//m_pInstance->m_fOriginalDeltaTime = g_pITimer->GetFrameTime();
 	//m_pInstance->m_fDeltaTime = m_pInstance->m_fOriginalDeltaTime * m_pInstance->m_fPlaybackScale;
 
