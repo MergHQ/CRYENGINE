@@ -119,6 +119,7 @@ struct ISequenceManager
 	virtual void AgentDisabled(EntityId entityId) = 0;
 
 	virtual void RequestActionStart(SequenceId sequenceId, TFlowNodeId actionNodeId) = 0;
+	virtual void RequestActionRestart(SequenceId sequenceId) = 0;
 	virtual void ActionCompleted(SequenceId sequenceId) = 0;
 	virtual void SetBookmark(SequenceId sequenceId, TFlowNodeId bookmarkNodeId) = 0;
 

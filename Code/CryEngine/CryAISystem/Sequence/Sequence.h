@@ -32,6 +32,7 @@ public:
 	void       Stop();
 	void       Cancel();
 	void       RequestActionStart(TFlowNodeId actionNodeId);
+	void       RequestActionRestart();
 	void       ActionComplete();
 	void       SetBookmark(TFlowNodeId bookmarkNodeId);
 

@@ -159,6 +159,18 @@ void SequenceManager::RequestActionStart(SequenceId sequenceId, TFlowNodeId acti
 	sequence->RequestActionStart(actionNodeId);
 }
 
+void SequenceManager::RequestActionRestart(SequenceId sequenceId)
+{
+	Sequence* sequence = GetSequence(sequenceId);
+	if (!sequence)
+	{
+		CRY_ASSERT_MESSAGE(false, "Could not access sequence.");
+		return;
+	}
+
+	sequence->RequestActionRestart();
+}
+
 void SequenceManager::ActionCompleted(SequenceId sequenceId)
 {
 	Sequence* sequence = GetSequence(sequenceId);

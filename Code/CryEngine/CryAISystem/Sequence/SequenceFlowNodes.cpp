@@ -257,6 +257,52 @@ void CFlowNode_AISequenceBookmark::HandleSequenceEvent(SequenceEvent sequenceEve
 
 //////////////////////////////////////////////////////////////////////////
 
+void CFlowNode_AISequenceActionBase::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+{
+	switch (event)
+	{
+	case eFE_Initialize:
+	{
+		m_actInfo = *pActInfo;
+		break;
+	}
+	case eFE_Activate:
+	{
+		m_actInfo = *pActInfo;
+
+		const SequenceId assignedSequenceId = GetAssignedSequenceId();
+		if (m_isRunning)
+		{
+			GetAISystem()->GetSequenceManager()->RequestActionRestart(assignedSequenceId);
+		}
+		else if(IsPortActive(pActInfo, InputPort_Start))
+		{
+			GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
+		}
+		break;
+	}
+	}
+}
+
+void CFlowNode_AISequenceActionBase::HandleSequenceEvent(SequenceEvent sequenceEvent)
+{
+	switch (sequenceEvent)
+	{
+	case StartAction:
+	{
+		m_isRunning = true;
+		break;
+	}
+	case SequenceStopped:
+	{
+		m_isRunning = false;
+		break;
+	}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 void CFlowNode_AISequenceActionMove::GetConfiguration(SFlowNodeConfig& config)
 {
 	static const SInputPortConfig inputPortConfig[] =
@@ -286,6 +332,8 @@ void CFlowNode_AISequenceActionMove::GetConfiguration(SFlowNodeConfig& config)
 
 void CFlowNode_AISequenceActionMove::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
+	CFlowNode_AISequenceActionBase::ProcessEvent(event, pActInfo);
+
 	switch (event)
 	{
 	case eFE_Update:
@@ -312,6 +360,7 @@ void CFlowNode_AISequenceActionMove::ProcessEvent(EFlowEvent event, SActivationI
 
 					pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
 
+					m_isRunning = false;
 					GetAISystem()->GetSequenceManager()->ActionCompleted(GetAssignedSequenceId());
 					ActivateOutput(&m_actInfo, OutputPort_Done, true);
 				}
@@ -319,30 +368,10 @@ void CFlowNode_AISequenceActionMove::ProcessEvent(EFlowEvent event, SActivationI
 		}
 		break;
 	}
-	case eFE_Initialize:
-	{
-		m_actInfo = *pActInfo;
-		break;
-	}
 	case eFE_Activate:
 	{
-		m_actInfo = *pActInfo;
-
-		CRY_ASSERT(m_movementRequestID.IsInvalid());
-
-		m_movementRequestID = 0;
 		m_stopRadiusSqr = 0.0f;
-
-		const SequenceId assignedSequenceId = GetAssignedSequenceId();
-		//assert(assignedSequenceId);
-		if (!assignedSequenceId)
-			return;
-
-		if (IsPortActive(pActInfo, InputPort_Start))
-		{
-			GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
-			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
-		}
+		pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
 		break;
 	}
 	}
@@ -350,6 +379,8 @@ void CFlowNode_AISequenceActionMove::ProcessEvent(EFlowEvent event, SActivationI
 
 void CFlowNode_AISequenceActionMove::HandleSequenceEvent(SequenceEvent sequenceEvent)
 {
+	CFlowNode_AISequenceActionBase::HandleSequenceEvent(sequenceEvent);
+
 	switch (sequenceEvent)
 	{
 	case StartAction:
@@ -385,6 +416,7 @@ void CFlowNode_AISequenceActionMove::MovementRequestCallback(const MovementReque
 	CRY_ASSERT(m_movementRequestID == result.requestID);
 
 	m_movementRequestID = 0;
+	m_isRunning = false;
 
 	if (result.result != MovementRequestResult::ReachedDestination)
 	{
@@ -453,34 +485,10 @@ void CFlowNode_AISequenceActionMoveAlongPath::GetConfiguration(SFlowNodeConfig& 
 	config.SetCategory(EFLN_APPROVED);
 }
 
-void CFlowNode_AISequenceActionMoveAlongPath::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-{
-	switch (event)
-	{
-	case eFE_Initialize:
-		m_actInfo = *pActInfo;
-		break;
-	case eFE_Activate:
-	{
-		m_actInfo = *pActInfo;
-
-		CRY_ASSERT(m_movementRequestID.IsInvalid());
-		m_movementRequestID = 0;
-
-		if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
-		{
-			if (IsPortActive(pActInfo, InputPort_Start))
-			{
-				GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
-			}
-		}
-		break;
-	}
-	}
-}
-
 void CFlowNode_AISequenceActionMoveAlongPath::HandleSequenceEvent(SequenceEvent sequenceEvent)
 {
+	CFlowNode_AISequenceActionBase::HandleSequenceEvent(sequenceEvent);
+
 	switch (sequenceEvent)
 	{
 	case StartAction:
@@ -539,6 +547,7 @@ void CFlowNode_AISequenceActionMoveAlongPath::MovementRequestCallback(const Move
 	CRY_ASSERT(m_movementRequestID == result.requestID);
 
 	m_movementRequestID = 0;
+	m_isRunning = false;
 
 	if (result.result != MovementRequestResult::ReachedDestination)
 	{
@@ -608,6 +617,8 @@ void CFlowNode_AISequenceActionAnimation::GetConfiguration(SFlowNodeConfig& conf
 
 void CFlowNode_AISequenceActionAnimation::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
+	CFlowNode_AISequenceActionBase::ProcessEvent(event, pActInfo);
+
 	switch (event)
 	{
 	case eFE_Update:
@@ -619,6 +630,7 @@ void CFlowNode_AISequenceActionAnimation::ProcessEvent(EFlowEvent event, SActiva
 				if (!pActor->QueryBodyInfo().isMoving)
 				{
 					pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
+					m_isRunning = false;
 
 					GetAISystem()->GetSequenceManager()->ActionCompleted(GetAssignedSequenceId());
 					ActivateOutput(&m_actInfo, OutputPort_Done, true);
@@ -627,15 +639,8 @@ void CFlowNode_AISequenceActionAnimation::ProcessEvent(EFlowEvent event, SActiva
 		}
 		break;
 	}
-	case eFE_Initialize:
-	{
-		m_actInfo = *pActInfo;
-		break;
-	}
 	case eFE_Activate:
 	{
-		m_actInfo = *pActInfo;
-
 		m_movementRequestID = 0;
 		m_bTeleportWhenNotMoving = false;
 
@@ -645,14 +650,13 @@ void CFlowNode_AISequenceActionAnimation::ProcessEvent(EFlowEvent event, SActiva
 
 		if (IsPortActive(pActInfo, InputPort_Start))
 		{
-			GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
 		}
 
-		if (m_running && IsPortActive(pActInfo, InputPort_Stop))
+		if (m_isRunning && IsPortActive(pActInfo, InputPort_Stop))
 		{
 			ClearAnimation(false);
-			m_running = false;
+			m_isRunning = false;
 
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
 
@@ -683,6 +687,8 @@ void CFlowNode_AISequenceActionAnimation::GetPositionAndDirectionForDestination(
 
 void CFlowNode_AISequenceActionAnimation::HandleSequenceEvent(SequenceEvent sequenceEvent)
 {
+	CFlowNode_AISequenceActionBase::HandleSequenceEvent(sequenceEvent);
+
 	switch (sequenceEvent)
 	{
 	case StartAction:
@@ -733,14 +739,12 @@ void CFlowNode_AISequenceActionAnimation::HandleSequenceEvent(SequenceEvent sequ
 			movementRequest.dangersFlags = eMNMDangers_None;
 
 			m_movementRequestID = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
-			m_running = true;
 		}
 		break;
 
 	case SequenceStopped:
 		{
 			ClearAnimation(true);
-			m_running = false;
 
 			if (!m_movementRequestID.IsInvalid())
 			{
@@ -757,7 +761,7 @@ void CFlowNode_AISequenceActionAnimation::MovementRequestCallback(const Movement
 	CRY_ASSERT(m_movementRequestID == result.requestID);
 
 	m_movementRequestID = 0;
-	m_running = false;
+	m_isRunning = false;
 
 	if (result.result != MovementRequestResult::ReachedDestination)
 	{
@@ -852,6 +856,8 @@ void CFlowNode_AISequenceActionWait::GetConfiguration(SFlowNodeConfig& config)
 
 void CFlowNode_AISequenceActionWait::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
+	CFlowNode_AISequenceActionBase::ProcessEvent(event, pActInfo);
+
 	switch (event)
 	{
 	case eFE_Update:
@@ -859,16 +865,11 @@ void CFlowNode_AISequenceActionWait::ProcessEvent(EFlowEvent event, SActivationI
 		const CTimeValue timeElapsed = GetAISystem()->GetFrameStartTime() - m_startTime;
 		if (timeElapsed.GetMilliSecondsAsInt64() > m_waitTimeMs)
 		{
+			m_isRunning = false;
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
-			
 			GetAISystem()->GetSequenceManager()->ActionCompleted(GetAssignedSequenceId());
 			ActivateOutput(&m_actInfo, OutputPort_Done, true);
 		}
-		break;
-	}
-	case eFE_Initialize:
-	{
-		m_actInfo = *pActInfo;
 		break;
 	}
 	case eFE_Activate:
@@ -879,7 +880,6 @@ void CFlowNode_AISequenceActionWait::ProcessEvent(EFlowEvent event, SActivationI
 		{
 			if (IsPortActive(pActInfo, InputPort_Start))
 			{
-				GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, pActInfo->myID);
 				pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
 			}
 		}
@@ -890,6 +890,8 @@ void CFlowNode_AISequenceActionWait::ProcessEvent(EFlowEvent event, SActivationI
 
 void CFlowNode_AISequenceActionWait::HandleSequenceEvent(SequenceEvent sequenceEvent)
 {
+	CFlowNode_AISequenceActionBase::HandleSequenceEvent(sequenceEvent);
+
 	switch (sequenceEvent)
 	{
 	case AIActionSequence::StartAction:
@@ -931,6 +933,8 @@ void CFlowNode_AISequenceActionShoot::GetConfiguration(SFlowNodeConfig& config)
 
 void CFlowNode_AISequenceActionShoot::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 {
+	CFlowNode_AISequenceActionBase::ProcessEvent(event, pActInfo);
+
 	switch (event)
 	{
 	case eFE_Update:
@@ -947,37 +951,20 @@ void CFlowNode_AISequenceActionShoot::ProcessEvent(EFlowEvent event, SActivation
 				pPipeUser->SetFireTarget(NILREF);
 			}
 
+			m_isRunning = false;
 			pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, false);
-
 			GetAISystem()->GetSequenceManager()->ActionCompleted(GetAssignedSequenceId());
 			ActivateOutput(&m_actInfo, OutputPort_Done, true);
 		}
 		break;
 	}
-	case eFE_Initialize:
-		{
-			m_actInfo = *pActInfo;
-		}
-		break;
-
-	case eFE_Activate:
-		{
-			m_actInfo = *pActInfo;
-
-			if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
-			{
-				if (IsPortActive(pActInfo, InputPort_Start))
-				{
-					GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, pActInfo->myID);
-				}
-			}
-		}
-		break;
 	}
 }
 
 void CFlowNode_AISequenceActionShoot::HandleSequenceEvent(SequenceEvent sequenceEvent)
 {
+	CFlowNode_AISequenceActionBase::HandleSequenceEvent(sequenceEvent);
+
 	switch (sequenceEvent)
 	{
 	case StartAction:

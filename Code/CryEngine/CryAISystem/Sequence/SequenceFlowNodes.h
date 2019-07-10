@@ -48,15 +48,14 @@ public:
 
 	virtual ~CFlowNode_AISequenceStart();
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceStart(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceStart(pActInfo); }
 
-	virtual void         Serialize(SActivationInfo* pActInfo, TSerialize ser);
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         PostSerialize(SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
-
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
+	virtual void         Serialize(SActivationInfo* pActInfo, TSerialize ser) override;
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         PostSerialize(SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 
 private:
 	void InitializeSequence(SActivationInfo* pActInfo);
@@ -85,11 +84,11 @@ public:
 	CFlowNode_AISequenceEnd(SActivationInfo* pActInfo) {}
 	virtual ~CFlowNode_AISequenceEnd() {}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceEnd(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceEnd(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
 
 private:
 };
@@ -114,13 +113,12 @@ public:
 		: m_actInfo(*pActInfo)
 	{}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceBookmark(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceBookmark(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
-
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 
 private:
 	SActivationInfo m_actInfo;
@@ -128,8 +126,42 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
+// Only used to inherit from.
+class CFlowNode_AISequenceActionBase
+	: public SequenceFlowNodeBase 
+{
+protected:
+	CFlowNode_AISequenceActionBase(SActivationInfo* pActInfo)
+		: m_actInfo(*pActInfo)
+	{}
+
+	// SequenceFlowNodeBase
+	virtual void    ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void    HandleSequenceEvent(SequenceEvent sequenceEvent) override;
+	// ~SequenceFlowNodeBase
+
+private:
+
+	enum InputPort
+	{
+		InputPort_Start,
+	};
+
+	enum OutputPort
+	{
+		OutputPort_Done,
+	};
+
+protected:
+
+	SActivationInfo m_actInfo;
+	bool            m_isRunning = false;
+};
+
+//////////////////////////////////////////////////////////////////////////
+
 class CFlowNode_AISequenceActionMove
-	: public SequenceFlowNodeBase
+	: public CFlowNode_AISequenceActionBase
 {
 public:
 	enum InputPort
@@ -149,24 +181,23 @@ public:
 	};
 
 	CFlowNode_AISequenceActionMove(SActivationInfo* pActInfo)
-		: m_actInfo(*pActInfo)
+		: CFlowNode_AISequenceActionBase(pActInfo)
 		, m_stopRadiusSqr(0.0f)
 	{
 	}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceActionMove(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceActionMove(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
 	void                 MovementRequestCallback(const MovementRequestResult& result);
 
 private:
 	void GetPositionAndDirectionForDestination(OUT Vec3& position, OUT Vec3& direction);
 
-	SActivationInfo   m_actInfo;
 	MovementRequestID m_movementRequestID;
 
 	Vec3              m_destPosition;
@@ -178,7 +209,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 class CFlowNode_AISequenceActionMoveAlongPath
-	: public SequenceFlowNodeBase
+	: public CFlowNode_AISequenceActionBase
 {
 public:
 	enum InputPort
@@ -195,30 +226,28 @@ public:
 	};
 
 	CFlowNode_AISequenceActionMoveAlongPath(SActivationInfo* pActInfo)
-		: m_actInfo(*pActInfo)
+		: CFlowNode_AISequenceActionBase(pActInfo)
 	{
 	}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceActionMoveAlongPath(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceActionMoveAlongPath(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
 	void                 MovementRequestCallback(const MovementRequestResult& result);
 
 private:
 	void GetTeleportEndPositionAndDirection(const char* pathName, Vec3& position, Vec3& direction);
 
-	SActivationInfo   m_actInfo;
 	MovementRequestID m_movementRequestID;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class CFlowNode_AISequenceActionAnimation
-	: public SequenceFlowNodeBase
+	: public CFlowNode_AISequenceActionBase
 {
 public:
 	enum InputPort
@@ -243,19 +272,18 @@ public:
 	};
 
 	CFlowNode_AISequenceActionAnimation(SActivationInfo* pActInfo)
-		: m_actInfo(*pActInfo)
-		, m_running(false)
+		: CFlowNode_AISequenceActionBase(pActInfo)
 		, m_bTeleportWhenNotMoving(false)
 	{
 	}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceActionAnimation(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceActionAnimation(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
 	void                 MovementRequestCallback(const MovementRequestResult& result);
 
 private:
@@ -263,19 +291,17 @@ private:
 	void       ClearAnimation(bool bHurry);
 	IAIObject* GetAssignedEntityAIObject();
 
-	SActivationInfo   m_actInfo;
 	MovementRequestID m_movementRequestID;
 
 	Vec3              m_destPosition;
 	Vec3              m_destDirection;
-	bool              m_running;
 	bool              m_bTeleportWhenNotMoving;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 class CFlowNode_AISequenceActionWait
-	: public SequenceFlowNodeBase
+	: public CFlowNode_AISequenceActionBase
 {
 public:
 	enum InputPort
@@ -290,19 +316,18 @@ public:
 	};
 
 	CFlowNode_AISequenceActionWait(SActivationInfo* pActInfo)
-		: m_actInfo(*pActInfo)
+		: CFlowNode_AISequenceActionBase(pActInfo)
 		, m_waitTimeMs(0)
 	{}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceActionWait(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceActionWait(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override ;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
 
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 private:
-	SActivationInfo m_actInfo;
 	CTimeValue m_startTime;
 	int m_waitTimeMs;
 };
@@ -310,7 +335,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 
 class CFlowNode_AISequenceActionShoot
-	: public SequenceFlowNodeBase
+	: public CFlowNode_AISequenceActionBase
 {
 public:
 	enum InputPort
@@ -327,21 +352,19 @@ public:
 	};
 
 	CFlowNode_AISequenceActionShoot(SActivationInfo* pActInfo)
-		: m_actInfo(*pActInfo)
+		: CFlowNode_AISequenceActionBase(pActInfo)
 		, m_fireTimeMS(0)
 	{
 	}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceActionShoot(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceActionShoot(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
-
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 
 private:
-	SActivationInfo m_actInfo;
 
 	CTimeValue m_startTime;
 	int m_fireTimeMS;
@@ -371,11 +394,11 @@ public:
 
 	virtual ~CFlowNode_AISequenceHoldFormation() {}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceHoldFormation(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceHoldFormation(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
 
 private:
 	SActivationInfo m_actInfo;
@@ -403,11 +426,11 @@ public:
 
 	virtual ~CFlowNode_AISequenceJoinFormation() {}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceJoinFormation(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceJoinFormation(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
 
 private:
 
@@ -440,13 +463,12 @@ public:
 
 	virtual ~CFlowNode_AISequenceAction_Stance() {}
 
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) { return new CFlowNode_AISequenceAction_Stance(pActInfo); }
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override { return new CFlowNode_AISequenceAction_Stance(pActInfo); }
 
-	virtual void         GetConfiguration(SFlowNodeConfig& config);
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo);
-	virtual void         GetMemoryUsage(ICrySizer* sizer) const { sizer->Add(*this); }
-
-	void                 HandleSequenceEvent(SequenceEvent sequenceEvent);
+	virtual void         GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void         GetMemoryUsage(ICrySizer* sizer) const override { sizer->Add(*this); }
+	virtual void         HandleSequenceEvent(SequenceEvent sequenceEvent) override;
 
 private:
 	SActivationInfo m_actInfo;
