@@ -63,7 +63,6 @@ namespace Cry
 			float                   m_radius;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Sphere, "CRenderPrimitive_Sphere", "");
 
 		//===================================================================================
 		//
@@ -90,7 +89,6 @@ namespace Cry
 			Vec3                    m_pos2;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Line, "CRenderPrimitive_Line", "");
 
 		//===================================================================================
 		//
@@ -118,7 +116,6 @@ namespace Cry
 			Vec3                    m_vtx3;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Triangle, "CRenderPrimitive_Triangle", "");
 
 		//===================================================================================
 		//
@@ -146,7 +143,6 @@ namespace Cry
 			stack_string            m_text;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Text, "CRenderPrimitive_Text", "");
 
 		//===================================================================================
 		//
@@ -175,7 +171,6 @@ namespace Cry
 			float                   m_coneHeight;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Arrow, "CRenderPrimitive_Arrow", "");
 
 		//===================================================================================
 		//
@@ -201,7 +196,6 @@ namespace Cry
 			AABB                    m_aabb;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_AABB, "CRenderPrimitive_AABB", "");
 
 		//===================================================================================
 		//
@@ -227,7 +221,6 @@ namespace Cry
 			Vec3                    m_pos;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_OBB, "CRenderPrimitive_OBB", "");
 
 		//===================================================================================
 		//
@@ -256,7 +249,6 @@ namespace Cry
 			float                   m_height;
 			ColorF                  m_color;
 		};
-		SERIALIZATION_CLASS_NAME(CRenderPrimitiveBase, CRenderPrimitive_Cylinder, "CRenderPrimitive_Cylinder", "");
 
 	}
 }
