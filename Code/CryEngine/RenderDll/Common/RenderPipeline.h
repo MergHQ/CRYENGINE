@@ -227,7 +227,7 @@ enum EBatchFlags
 	FB_LAYER_EFFECT    = 0x2000,
 	FB_WATER_REFL      = 0x4000,
 	FB_WATER_CAUSTIC   = 0x8000,
-	FB_DEBUG           = 0x10000,
+	// UNUSED          = 0x10000,
 	FB_TILED_FORWARD   = 0x20000,
 	FB_REFRACTION      = 0x40000,
 	FB_EYE_OVERLAY     = 0x80000,

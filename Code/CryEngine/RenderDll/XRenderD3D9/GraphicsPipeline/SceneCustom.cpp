@@ -607,7 +607,7 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 		renderItemDrawer.InitDrawSubmission();
 
 		m_debugViewPass.BeginExecution(m_graphicsPipeline);
-		m_debugViewPass.SetupDrawContext(StageID, ePass_DebugViewDrawModes, TTYPE_DEBUG, FB_DEBUG);
+		m_debugViewPass.SetupDrawContext(StageID, ePass_DebugViewDrawModes, TTYPE_DEBUG, FB_GENERAL | FB_TILED_FORWARD);
 		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
 		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_BW);
 		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_AW);

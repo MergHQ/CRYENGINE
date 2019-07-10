@@ -482,9 +482,6 @@ void CStandardGraphicsPipeline::Execute()
 			GetStage<CSceneCustomStage>()->ExecuteSelectionHighlight();
 		}
 
-		if (GetStage<CSceneCustomStage>()->IsDebugOverlayEnabled())
-			GetStage<CSceneCustomStage>()->ExecuteDebugOverlay();
-
 		// Display tone mapping debugging information on the screen
 		if (GetStage<CToneMappingStage>()->IsDebugInfoEnabled())
 			GetStage<CToneMappingStage>()->DisplayDebugInfo();
