@@ -281,7 +281,7 @@ public:
 		menuPrefabs->setObjectName(QStringLiteral("menuPrefabs"));
 		menuSelection = new CMenu(menuLevel);
 		menuSelection->setObjectName(QStringLiteral("menuSelection"));
-		menuSelection_Mask = new QSelectionMaskMenu();
+		menuSelection_Mask = new QSelectionMaskMenu(menuSelection);
 		menuSelection_Mask->setObjectName(QStringLiteral("menuSelection_Mask"));
 		menuLighting = new CMenu(menuLevel);
 		menuLighting->setObjectName(QStringLiteral("menuLighting"));
@@ -319,9 +319,9 @@ public:
 		menuAINavigationUpdate->setObjectName(QStringLiteral("menuAINavigationUpdate"));
 		menuDebug = new CMenu(menubar);
 		menuDebug->setObjectName(QStringLiteral("menuDebug"));
-		menuDebug_Agent_Type = new QNavigationAgentTypeMenu();
+		menuDebug_Agent_Type = new QNavigationAgentTypeMenu(menuAI);
 		menuDebug_Agent_Type->setObjectName(QStringLiteral("menuDebug_Agent_Type"));
-		menuRegenerate_MNM_Agent_Type = new QMNMRegenerationAgentTypeMenu();
+		menuRegenerate_MNM_Agent_Type = new QMNMRegenerationAgentTypeMenu(menuAI);
 		menuRegenerate_MNM_Agent_Type->setObjectName(QStringLiteral("menuRegenerate_MNM_Agent_Type"));
 		menuReload_Scripts = new CMenu(menuDebug);
 		menuReload_Scripts->setObjectName(QStringLiteral("menuReload_Scripts"));
