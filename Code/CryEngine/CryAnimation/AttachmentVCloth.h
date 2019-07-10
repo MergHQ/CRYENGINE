@@ -323,6 +323,7 @@ public:
 
 	void                 StartStep(float time_interval, const QuatT& location);
 	int                  Step();
+	void                 Reset();
 
 	bool                 AddGeometry(phys_geometry* pgeom);
 	void                 SetSkinnedPositions(const Vector4* points);
@@ -544,28 +545,28 @@ private:
 
 public:
 	CClothPiece()
+		: m_pCharInstance(NULL)
+		, m_pVClothAttachment(NULL)
+		, m_bHidden(false)
+		, m_numLods(0)
+		, m_clothGeom(NULL)
+		, m_lastVisible(false)
+		, m_bAlwaysVisible(false)
+		, m_currentLod(0)
+		, m_buffers(NULL)
+		, m_poolIdx(-1)
+		, m_initialized(false)
+		, m_reset(true)
 	{
-		m_pCharInstance = NULL;
-		m_pVClothAttachment = NULL;
-		m_bHidden = false;
-		m_numLods = 0;
-		m_clothGeom = NULL;
-		//	m_bSingleThreaded = false;
-		m_lastVisible = false;
-		m_bAlwaysVisible = false;
-		m_currentLod = 0;
-		m_buffers = NULL;
-		m_poolIdx = -1;
-		m_initialized = false;
 	}
 
 	// initializes the object given a skin and a stat obj
 	bool                 Initialize(const CAttachmentVCLOTH* pVClothAttachment);
+	void				 Reset() { m_reset = true; }
 
 	void                 Dettach();
 
-	int                  GetNumLods()      { return m_numLods; }
-	//	bool IsSingleThreaded() { return m_bSingleThreaded; }
+	int                  GetNumLods() { return m_numLods; }
 	bool                 IsAlwaysVisible() { return m_bAlwaysVisible; }
 
 	bool                 PrepareCloth(CSkeletonPose& skeletonPose, const Matrix34& worldMat, bool visible, int lod);
@@ -625,6 +626,7 @@ private:
 	CCharInstance* m_pCharInstance;
 
 	bool           m_initialized;
+	bool           m_reset;
 };
 
 ILINE Vector4 CClothPiece::SkinByTriangle(int i, strided_pointer<Vec3>& pVtx, int lod)

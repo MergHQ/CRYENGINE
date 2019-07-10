@@ -112,6 +112,8 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 
 	static_cast<CSKINAttachment*>(m_pIAttachmentObject)->m_pIAttachmentSkin = this;
 
+	m_clothPiece.Reset();
+
 	return 1;
 }
 
@@ -853,7 +855,6 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 		}
 	}
 
-	//	CryFatalError("CryAnimation: pMaster is zero");
 	if (pRenderMesh)
 	{
 		//g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, ColorF(0,1,0,1), false,"VCloth name: %s",GetName()),g_YLine+=16.0f;
@@ -2145,6 +2146,13 @@ int CClothSimulator::Step()
 	return 0; // continue substepping
 }
 
+void CClothSimulator::Reset()
+{
+	PositionsSetToSkinned(true, true);
+	m_doSkinningForNSteps = 1;
+	EnableFadeInPhysics();
+}
+
 void CClothSimulator::LaplaceFilterPositions(Vector4* positions, float intensity)
 {
 	Vector4*& pos = positions;
@@ -2967,7 +2975,16 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 
 	// In case of skinning:   Set all vertices to skinned position
 	// In case of simulation: Set all attached vertices to skinned positions, to avoid any floating-point issues on final positions (e.g., if cloth is cut into skinned & simulated parts)
-	const bool setAllPositions = doSkinning;
+	bool setAllPositions = doSkinning;
+
+	if (m_reset)
+	{
+		m_reset = false;
+		setAllPositions = true;
+		m_simulator.Reset();
+		m_simulator.GetVertices(&tmpClothVtx[0]);
+	}
+
 	SetRenderPositionsFromSkinnedPositions(setAllPositions);
 }
 
