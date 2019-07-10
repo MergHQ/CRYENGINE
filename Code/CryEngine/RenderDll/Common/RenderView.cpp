@@ -1595,8 +1595,8 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 
 	if (distributeToOtherLists)
 	{
-		const bool hasDeferredOpaqueFlags = (nBatchFlags & (FB_Z)) != 0;
-		const bool hasForwardOpaqueFlags = (nBatchFlags & (FB_DEBUG | FB_TILED_FORWARD)) != 0;
+		const bool hasDeferredOpaqueFlags = (nBatchFlags & FB_Z) != 0;
+		const bool hasForwardOpaqueFlags = (nBatchFlags & FB_TILED_FORWARD) != 0;
 		const bool isTransparent = renderList == EFSLIST_TRANSP_BW || renderList == EFSLIST_TRANSP_AW || renderList == EFSLIST_TRANSP_NEAREST;
 		const bool isForwardOpaque = renderList == EFSLIST_FORWARD_OPAQUE || renderList == EFSLIST_FORWARD_OPAQUE_NEAREST;
 		const bool isSelectable = pObj->m_editorSelectionID > 0;
