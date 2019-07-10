@@ -45,7 +45,9 @@ enum EBoxPhase
 class RectangleTool : public ShapeTool
 {
 public:
-	RectangleTool(EDesignerTool tool) : ShapeTool(tool)
+	RectangleTool(EDesignerTool tool) 
+		: ShapeTool(tool)
+		, m_Phase(eBoxPhase_PlaceStartingPoint)
 	{
 	}
 

@@ -424,7 +424,10 @@ void ClipVolumeObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 			    ar(Serialization::ActionButton([ = ]
 					{
 						GetIEditor()->ExecuteCommand("general.open_pane 'Modeling'");
-
+						if (!DesignerSession::GetInstance()->GetIsActive())
+						{
+							DesignerSession::GetInstance()->BeginSession();
+						}
 						GetIEditor()->GetLevelEditorSharedState()->SetEditTool("EditTool.ClipVolumeTool", false);
 			    }),
 			       "edit", "^Edit");

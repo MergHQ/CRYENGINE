@@ -298,14 +298,6 @@ void CLevelEditorSharedState::SetEditTool(CEditTool* tool, bool bStopCurrentTool
 
 void CLevelEditorSharedState::SetEditTool(const string& sEditToolName, bool bStopCurrentTool)
 {
-	CEditTool* pTool = GetEditTool();
-	if (pTool && pTool->GetRuntimeClass()->m_lpszClassName)
-	{
-		// Check if already selected.
-		if (stricmp(pTool->GetRuntimeClass()->m_lpszClassName, sEditToolName) == 0)
-			return;
-	}
-
 	IClassDesc* pClass = GetIEditor()->GetClassFactory()->FindClass(sEditToolName);
 	if (!pClass)
 	{
@@ -320,6 +312,14 @@ void CLevelEditorSharedState::SetEditTool(const string& sEditToolName, bool bSto
 	CRuntimeClass* pRtClass = pClass->GetRuntimeClass();
 	if (pRtClass && pRtClass->IsDerivedFrom(RUNTIME_CLASS(CEditTool)))
 	{
+		CEditTool* pTool = GetEditTool();
+		if (pTool)
+		{
+			// Check if already selected.
+			if (pTool->GetRuntimeClass() == pRtClass)
+				return;
+		}
+
 		CEditTool* pEditTool = (CEditTool*)pRtClass->CreateObject();
 		SetEditTool(pEditTool);
 		return;
