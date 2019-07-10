@@ -600,9 +600,12 @@ void CSceneGBufferStage::Execute()
 		m_graphicsPipeline.UpdateRenderPasses();
 #endif
 
-			// Reading depth produces depth-target transitions which have to be reverted
-			m_graphicsPipeline.GetStage<CSceneDepthStage>()->Execute();
-			m_overlayPass.PrepareRenderPassForUse(commandList);
+		// Reading depth produces depth-target transitions which have to be reverted
+		m_graphicsPipeline.GetStage<CSceneDepthStage>()->Execute();
+
+#if !CRY_RENDERER_GNM
+		m_overlayPass.PrepareRenderPassForUse(commandList);
+#endif
 
 		rendItemDrawer.InitDrawSubmission();
 
