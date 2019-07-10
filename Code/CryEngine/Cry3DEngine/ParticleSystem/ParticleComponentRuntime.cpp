@@ -799,11 +799,10 @@ CRenderObject* CParticleComponentRuntime::CreateRenderObject(uint64 renderFlags)
 	CRY_PFX2_PROFILE_DETAIL;
 	const SComponentParams& params = ComponentParams();
 	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
-	auto particleMaterial = params.m_pMaterial;
 
 	pRenderObject->SetIdentityMatrix();
 	pRenderObject->m_fAlpha = 1.0f;
-	pRenderObject->m_pCurrMaterial = particleMaterial;
+	pRenderObject->m_pCurrMaterial = params.m_pMaterial;
 	pRenderObject->m_pRenderNode = m_pEmitter;
 	pRenderObject->m_ObjFlags = ERenderObjectFlags(renderFlags & ~0xFF);
 	pRenderObject->m_RState = uint8(renderFlags);
@@ -829,7 +828,7 @@ CRenderObject* CParticleComponentRuntime::GetRenderObject(uint threadId, ERender
 		if (pRO)
 		{
 			auto objRenderFlags = (pRO->m_ObjFlags & ~0xFF) | pRO->m_RState;
-			if (objRenderFlags == curRenderFlags)
+			if (objRenderFlags == curRenderFlags && params.m_pMaterial == pRO->m_pCurrMaterial)
 				return pRO;
 		}
 		else
