@@ -71,10 +71,6 @@ def command_title(args):
 # --- errors
 
 
-SUBPROCESS_NO_STDERR = 'An unexpected error occurred. Press OK to review ' \
-                       'the output log.'
-
-
 def error_project_not_found(args):
     """
     Error to specify that the .cryproject file couldn't be found.
@@ -171,13 +167,28 @@ def error_engine_tool_not_found(args, path):
         sys.stderr.write(message)
     sys.exit(620)
 
+
+def error_subprocess_error(args, message: str, return_code: int):
+    if not message:
+        message = 'An unexpected error occurred. Press OK to review the output log.'
+
+    if not args.silent and HAS_WIN_MODULES:
+        MESSAGEBOX(None, message, command_title(args),
+                   win32con.MB_OK | win32con.MB_ICONERROR)
+        print(message)
+    else:
+        sys.stderr.write(message)
+    sys.exit(return_code)
+
+
 def get_cryrun_path(engine_path):
     """
     For backward compatibility, when using the frozen version we search both 
     Tools/CryVersionSelect/bin/cryselect and Tools/CryVersionSelect/
     """
     if getattr(sys, 'frozen', False):
-        path = os.path.join(engine_path, 'Tools/CryVersionSelector/bin/cryrun/cryrun.exe')
+        path = os.path.join(
+            engine_path, 'Tools/CryVersionSelector/bin/cryrun/cryrun.exe')
         return path if os.path.isfile(path) else os.path.join(engine_path, 'Tools/CryVersionSelector/cryrun.exe')
     else:
         return os.path.join(engine_path, 'Tools/CryVersionSelector/cryrun.py')
@@ -1004,24 +1015,13 @@ def cmd_run_project(args, sys_argv=sys.argv[1:]):
     subcmd.extend(sys_argv)
 
     print_subprocess(subcmd)
-    process = subprocess.Popen(subcmd, stderr=subprocess.PIPE)
-    returncode = process.wait()
-
-    if not args.silent and returncode != 0:
-        title = command_title(args)
-        text = process.stderr.read().strip().decode()
-        if not text:
-            text = SUBPROCESS_NO_STDERR
-        if HAS_WIN_MODULES:
-            result = MESSAGEBOX(None, text, title,
-                                win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
-            if result == win32con.IDOK:
-                input()  # Keeps the window from closing
-        else:
-            sys.stderr.write(text)
-
-    if returncode != 0:
-        sys.exit(returncode)
+    try:
+        subprocess.run(subcmd, stdout=None,
+                       stderr=None, check=True,
+                       universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+        error_subprocess_error(
+            args, "Encountered an error while running command '{}'!".format(e.cmd), e.returncode)
 
 
 def cmd_run_engine(args, sys_argv=sys.argv[1:]):
@@ -1049,24 +1049,13 @@ def cmd_run_engine(args, sys_argv=sys.argv[1:]):
     subcmd.extend(sys_argv)
 
     print_subprocess(subcmd)
-    p = subprocess.Popen(subcmd, stderr=subprocess.PIPE)
-    returncode = p.wait()
-
-    if not args.silent and returncode != 0:
-        title = command_title(args)
-        text = p.stderr.read().strip().decode()
-        if not text:
-            text = SUBPROCESS_NO_STDERR
-        if HAS_WIN_MODULES:
-            result = MESSAGEBOX(None, text, title,
-                                win32con.MB_OKCANCEL | win32con.MB_ICONERROR)
-            if result == win32con.IDOK:
-                input()  # Keeps the window from closing
-        else:
-            sys.stderr.write(text)
-
-    if returncode != 0:
-        sys.exit(returncode)
+    try:
+        subprocess.run(subcmd, stdout=None,
+                       stderr=None, check=True,
+                       universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+        error_subprocess_error(
+            args, "Encountered an error while running command '{}'!".format(e.cmd), e.returncode)
 
 # --- MAIN ---
 

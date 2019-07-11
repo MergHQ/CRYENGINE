@@ -199,7 +199,7 @@ def open_cmake_gui(source_dir, build_dir):
     if not os.path.isfile(cmake_gui_path):
         error_cmake_not_found()
 
-    command_str = '"{}" -H"{}" -B"{}"'.format(
+    command_str = '"{}" -S"{}" -B"{}"'.format(
         cmake_gui_path, source_dir, build_dir)
     subprocess.Popen(command_str, cwd=source_dir)
 
@@ -403,6 +403,7 @@ def generate_solution(working_directory, cmakelists_dir, config, open_gui):
     cmake_command = list(filter(bool, cmake_command))
 
     try:
+        print("Solution generation command '{}'".format(cmake_command))
         subprocess.run(cmake_command, cwd=solution_path, stdout=None,
                        stderr=None, check=True,
                        universal_newlines=True)
@@ -410,8 +411,6 @@ def generate_solution(working_directory, cmakelists_dir, config, open_gui):
         print("Encountered and error while running command '{}'!".format(e.cmd))
         print("Look for errors in the output above.")
         print("Generating solution has failed!")
-        print("Press Enter to exit")
-        input()
         sys.exit(1)
 
     if open_gui:
