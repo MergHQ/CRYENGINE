@@ -71,7 +71,7 @@ public:
 public:
 	CRopeRenderNode();
 
-	void CreateRenderMesh();
+	void CreateRenderMesh(int lod = 0);
 	void UpdateRenderMesh();
 	void AnchorEndPoints(pe_params_rope& pr);
 	void SyncWithPhysicalRope(bool bForce);
@@ -91,6 +91,7 @@ private:
 	Matrix34                m_InvWorldTM;
 	_smart_ptr<IMaterial>   m_pMaterial;
 	_smart_ptr<IRenderMesh> m_pRenderMesh;
+	_smart_ptr<IRenderMesh> m_pRenderMeshLods[MAX_STATOBJ_LODS_NUM];
 	IPhysicalEntity*        m_pPhysicalEntity;
 
 	uint32                  m_nLinkedEndsMask;
@@ -112,6 +113,7 @@ private:
 	_smart_ptr<IStatObj>                 m_segObj;
 	SSkinningData*                       m_skinDataHist[3] = {};
 	uint                                 m_idSkinFrame = ~0u;
+	float 															 m_lodRatio = 0.01f;
 
 	SRopeParams       m_params;
 	bool              m_paramsChanged = true;
