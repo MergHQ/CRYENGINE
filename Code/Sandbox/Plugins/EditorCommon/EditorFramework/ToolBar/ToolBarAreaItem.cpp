@@ -86,6 +86,7 @@ protected:
 			pDragData->SetCustomData(CToolBarAreaItem::GetMimeType(), byteArray);
 
 			QPixmap* pPixmap = new QPixmap(m_pContent->size());
+			pPixmap->fill(QColor(0,0,0,0));
 			m_pContent->render(pPixmap);
 
 			signalDragStart();
