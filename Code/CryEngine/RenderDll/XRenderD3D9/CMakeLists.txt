@@ -871,7 +871,7 @@ end_sources()
 
 set(extra_defines)
 
-if(PLUGIN_VR_OCULUS OR PLUGIN_VR_OSVR OR PLUGIN_VR_OPENVR)
+if(PLUGIN_VR_OCULUS OR PLUGIN_VR_OSVR OR PLUGIN_VR_OPENVR OR PLUGIN_VR_EMULATOR)
 	message(STATUS "Enabling VR rendering.")
 	list(APPEND extra_defines -DINCLUDE_VR_RENDERING)
 endif()
