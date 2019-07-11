@@ -234,12 +234,10 @@ protected:
 			
 				void Serialize(Serialization::IArchive& ar)
 				{
-					typedef CParamMod<EDD_Spawner, UFloat> TTimeParam;
-
 					bool state = false;
 					ar(state, "State", "^");
 					if (state)
-						ar(reinterpret_cast<TTimeParam&>(m_value), "Value", "^");
+						ar(m_value, "Value", "^");
 				}
 			};
 			param = disabledValue;
