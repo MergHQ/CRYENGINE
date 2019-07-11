@@ -199,7 +199,7 @@ def open_cmake_gui(source_dir, build_dir):
     if not os.path.isfile(cmake_gui_path):
         error_cmake_not_found()
 
-    command_str = '"{}" -H"{}" -B"{}"'.format(
+    command_str = '"{}" -S"{}" -B"{}"'.format(
         cmake_gui_path, source_dir, build_dir)
     subprocess.Popen(command_str, cwd=source_dir)
 
