@@ -1373,6 +1373,12 @@ void CAssetBrowser::SetBreadcrumbsVisible(const bool isVisible)
 	m_pBreadcrumbs->setVisible(isVisible);
 	m_pBackButton->setVisible(isVisible);
 	m_pForwardButton->setVisible(isVisible);
+	m_pMultipleFoldersLabel->setVisible(isVisible);
+
+	if (isVisible)
+	{
+		OnFolderSelectionChanged(m_pFoldersView->GetSelectedFolders());
+	}
 }
 
 QVariantMap CAssetBrowser::GetLayout() const
@@ -2141,7 +2147,7 @@ bool CAssetBrowser::OnHideIrrelevantFolders()
 
 bool CAssetBrowser::OnShowHideBreadcrumbBar() 
 {
-	SetBreadcrumbsVisible(!m_pBreadcrumbs->isVisible());
+	SetBreadcrumbsVisible(m_pActionShowHideBreadcrumb->isChecked());
 	return true;
 }
 
@@ -2401,16 +2407,22 @@ void CAssetBrowser::OnFolderSelectionChanged(const QStringList& selectedFolders)
 	const int numFolders = selectedFolders.size();
 	if (numFolders > 1)
 	{
-		m_pBreadcrumbs->hide();
-		m_pMultipleFoldersLabel->show();
+		if (m_pActionShowHideBreadcrumb->isChecked())
+		{
+			m_pBreadcrumbs->hide();
+			m_pMultipleFoldersLabel->show();
+		}
 
 		pThumbnailsView->SetRootFolder(QString());
 		pDetailsView->SetRootFolder(QString());
 	}
 	else
 	{
-		m_pBreadcrumbs->show();
-		m_pMultipleFoldersLabel->hide();
+		if (m_pActionShowHideBreadcrumb->isChecked())
+		{
+			m_pBreadcrumbs->show();
+			m_pMultipleFoldersLabel->hide();
+		}
 
 		UpdateBreadcrumbsBar(CAssetFoldersModel::GetInstance()->GetPrettyPath(selectedFolders.first()));
 
