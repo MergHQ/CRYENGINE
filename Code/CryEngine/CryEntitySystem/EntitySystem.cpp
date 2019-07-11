@@ -6,7 +6,6 @@
 
 #include "Entity.h"
 #include "EntityClassRegistry.h"
-#include "ReflectionRegistry.h"
 #include "ScriptBind_Entity.h"
 #include "PhysicsEventListener.h"
 #include "AreaManager.h"
@@ -208,7 +207,6 @@ CEntitySystem::~CEntitySystem()
 	Unload();
 
 	SAFE_DELETE(m_pClassRegistry);
-	SAFE_DELETE(m_pReflectionRegistry);
 
 	SAFE_DELETE(m_pCharacterBoneAttachmentManager);
 #if defined(USE_GEOM_CACHES)
@@ -242,8 +240,6 @@ bool CEntitySystem::Init(ISystem* pSystem)
 	m_pClassRegistry = new CEntityClassRegistry;
 	m_pClassRegistry->InitializeDefaultClasses();
 
-	m_pReflectionRegistry = new Cry::Entity::CReflectionRegistry();
-
 	//////////////////////////////////////////////////////////////////////////
 	// Initialize entity script bindings.
 	m_pEntityScriptBinding = new CScriptBind_Entity(pSystem->GetIScriptSystem(), pSystem);
@@ -268,12 +264,6 @@ bool CEntitySystem::Init(ISystem* pSystem)
 IEntityClassRegistry* CEntitySystem::GetClassRegistry()
 {
 	return m_pClassRegistry;
-}
-
-//////////////////////////////////////////////////////////////////////////
-Cry::Entity::IReflectionRegistry* CEntitySystem::GetReflectionRegistry() const
-{
-	return m_pReflectionRegistry;
 }
 
 //////////////////////////////////////////////////////////////////////

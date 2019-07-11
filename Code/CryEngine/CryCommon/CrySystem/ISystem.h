@@ -118,16 +118,6 @@ struct ITelemetrySystem;
 }
 
 namespace Cry {
-
-namespace Reflection {
-struct IModule;
-}   // ~Reflection namespace
-
-namespace Script {
-struct ICoreEnvironment;
-struct ICoreRegistry;
-}   // ~Script namespace
-
 namespace UDR {
 struct IUDRSystem;
 }
@@ -775,9 +765,6 @@ struct SSystemGlobalEnvironment
 	IScaleformHelper*              pScaleformHelper = nullptr;
 	ICrySchematycCore*             pSchematyc = nullptr;
 	Schematyc2::IFramework*        pSchematyc2 = nullptr;
-	Cry::Reflection::IModule*      pReflection = nullptr;
-	Cry::Script::ICoreEnvironment* pScriptCoreEnv = nullptr;
-	Cry::Script::ICoreRegistry*    pScriptCoreRegistry = nullptr;
 	Cry::UDR::IUDRSystem*          pUDR = nullptr;
 
 #if CRY_PLATFORM_DURANGO

@@ -39,14 +39,6 @@ struct SComponentRegisteredEvents;
 struct SpawnParams;
 struct SRenderNodeCloneLookup;
 
-namespace Cry {
-namespace Entity {
-
-struct IReflectionRegistry;
-
-} // ~Entity namespace
-} // ~Cry namespace
-
 //! SpecType for entity layers.
 //! Add new bits to update. Do not just rename, cause values are used for saving levels.
 enum ESpecType : uint32
@@ -367,10 +359,6 @@ struct IEntitySystem
 	//! Retrieves the entity class registry interface.
 	//! \return Pointer to the valid entity class registry interface.
 	virtual IEntityClassRegistry* GetClassRegistry() = 0;
-
-	//! Retrieves the new entity reflection registry interface.
-	//! \return Pointer to the valid entity reflection registry interface.
-	virtual Cry::Entity::IReflectionRegistry* GetReflectionRegistry() const = 0;
 
 	//! Spawns a new entity according to the data in the Entity Descriptor.
 	//! \param params		Entity descriptor structure that describes what kind of entity needs to be spawned.

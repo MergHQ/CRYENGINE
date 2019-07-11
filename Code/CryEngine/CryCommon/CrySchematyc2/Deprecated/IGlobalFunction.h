@@ -6,7 +6,6 @@
 
 #include "CrySchematyc2/Any.h"
 #include "CrySchematyc2/Deprecated/Variant.h"
-#include <CryReflection/IFunctionDesc.h>
 
 namespace Schematyc2
 {
@@ -42,7 +41,6 @@ namespace Schematyc2
 		virtual void Call(const TVariantConstArray& inputs, const TVariantArray& outputs) const = 0;
 		virtual void RegisterInputParamsForResourcePrecache() = 0;
 		virtual bool AreInputParamsResources() const = 0;
-		virtual const Cry::Reflection::CFunction& GetFunction() const = 0;
 
 		template <typename TYPE> inline void BindInput(size_t paramIdx, const char* szName, const char* szDescription, const TYPE& value)
 		{

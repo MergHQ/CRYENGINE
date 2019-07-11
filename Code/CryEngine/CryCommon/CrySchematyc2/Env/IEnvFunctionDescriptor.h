@@ -7,7 +7,6 @@
 #include "CrySchematyc2/GUID.h"
 #include "CrySchematyc2/IAny.h"
 #include "CrySchematyc2/Env/EnvTypeId.h"
-#include <CryReflection/IFunctionDesc.h>
 
 namespace Schematyc2
 {
@@ -53,6 +52,5 @@ namespace Schematyc2
 		virtual const char* GetOutputDescription(uint32 outputIdx) const = 0;
 		virtual IAnyConstPtr GetOutputValue(uint32 outputIdx) const = 0;
 		virtual SEnvFunctionResult Execute(const SEnvFunctionContext& context, void* pObject, const EnvFunctionInputs& inputs, const EnvFunctionOutputs& outputs) const = 0;
-		virtual const Cry::Reflection::CFunction& GetFunction() const = 0;
 	};
 }

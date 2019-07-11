@@ -42,11 +42,6 @@ public:
 
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
 
-	// ICore
-	virtual Cry::Schematyc::IRuntime* GetGameRuntime() const override final;
-	virtual Cry::Schematyc::IRuntime* CreateEditorRuntime() override final;
-	// ~ICore
-
 	// IFramework
 	virtual void                         SetGUIDGenerator(const GUIDGenerator& guidGenerator) override;
 	virtual SGUID                        CreateGUID() const override;
@@ -88,8 +83,6 @@ public:
 	virtual void               PrePhysicsUpdate() override;
 	virtual void               Update() override;
 	virtual void               SetUpdateRelevancyContext(CUpdateRelevanceContext& context) override { m_updateRelevanceContext = context; }
-
-	virtual void SetEnvRegistryBridge(IEnvRegistry* pEnvRegistry) override;
 	// ~IFramework
 
 	void RefreshLogFileConfiguration();
@@ -116,8 +109,5 @@ private:
 	SFrameworkSignals                           m_signals;
 	std::unique_ptr<SchematycBaseEnv::CBaseEnv> m_pBaseEnv;
 	CUpdateRelevanceContext                     m_updateRelevanceContext;
-
-	// New
-	IEnvRegistry* m_pEnvRegistryBridge;
 };
 }

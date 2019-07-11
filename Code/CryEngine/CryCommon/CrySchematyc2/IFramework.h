@@ -11,21 +11,6 @@
 #include <CrySchematyc2/IBaseEnv.h>
 #include <CrySchematyc2/ILibRegistry.h>
 
-
-namespace Cry {
-namespace Schematyc {
-
-struct IRuntime;
-
-struct ICore
-{
-	virtual IRuntime* GetGameRuntime() const = 0;
-	virtual IRuntime* CreateEditorRuntime() = 0;
-};
-
-} // ~Schematyc namespace
-} // ~Cry namespace
-
 namespace Schematyc2 {
 
 struct ICompiler;
@@ -65,7 +50,7 @@ struct SFrameworkSignals
 	EnvRefreshSignal envRefresh;
 };
 
-struct IFramework : public Cry::IDefaultModule, public Cry::Schematyc::ICore
+struct IFramework : public Cry::IDefaultModule
 {
 	CRYINTERFACE_DECLARE_GUID(IFramework, "{C2D28CFF-542F-448E-9499-653C4077F28E}"_cry_guid);
 
@@ -112,8 +97,6 @@ struct IFramework : public Cry::IDefaultModule, public Cry::Schematyc::ICore
 	virtual void               PrePhysicsUpdate() = 0;
 	virtual void               Update() = 0;
 	virtual void               SetUpdateRelevancyContext(CUpdateRelevanceContext& context) = 0;
-
-	virtual void SetEnvRegistryBridge(IEnvRegistry* pEnvRegistry) = 0;
 };
 
 } // ~Schematyc2 namespace

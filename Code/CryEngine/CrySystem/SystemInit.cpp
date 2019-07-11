@@ -46,7 +46,6 @@
 #include <CryMovie/IMovieSystem.h>
 #include <CryNetwork/INetwork.h>
 #include <CryPhysics/IPhysics.h>
-#include <CryReflection/Framework.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/File/ICryPak.h>
@@ -1143,23 +1142,6 @@ bool CSystem::InitNetwork(const SSystemInitParams& startupParams)
 	if (m_env.pNetwork == NULL)
 	{
 		CryFatalError("Error creating Network System!");
-		return false;
-	}
-
-	return true;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-bool CSystem::InitReflectionSystem(const SSystemInitParams& startupParams)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
-
-	if (!InitializeEngineModule(startupParams, "CryReflection", cryiidof<Cry::Reflection::IModule>(), true))
-		return false;
-
-	if (!m_env.pReflection)
-	{
-		CryFatalError("Error initializing Reflection!");
 		return false;
 	}
 
@@ -2828,12 +2810,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		CryGetIMemReplay()->EnableAsynchMode();
 
-		if (!InitReflectionSystem(startupParams))
-		{
-			return false;
-		}
-
-		Cry::Reflection::CTypeRegistrationChain::Execute(g_cvars.sys_reflection_natvis != 0);
 		// Init UDR
 
 		if (!startupParams.bShaderCacheGen)
@@ -5294,10 +5270,6 @@ void CSystem::CreateSystemVars()
 
 #if CRY_PLATFORM_WINDOWS
 	REGISTER_CVAR2("sys_highrestimer", &g_cvars.sys_highrestimer, 0, VF_REQUIRE_APP_RESTART, "Enables high resolution system timer.");
-#endif
-
-#if CRY_PLATFORM_WINDOWS
-	REGISTER_CVAR2("sys_reflection_natvis", &g_cvars.sys_reflection_natvis, 0, VF_NULL, "Enables reflection .natvis file generation on startup.");
 #endif
 
 	g_cvars.sys_intromoviesduringinit = 0;

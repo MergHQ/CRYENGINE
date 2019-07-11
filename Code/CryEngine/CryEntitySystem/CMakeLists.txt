@@ -107,8 +107,6 @@ add_sources("CryEntitySystem_uber_0.cpp"
 		"GeomCacheAttachmentManager.cpp"
 		"EntityUnitTests.cpp"
 		"EntityUnitTests.h"
-		"ReflectionRegistry.cpp"
-		"ReflectionRegistry.h"
 )
 
 add_sources("CryEntitySystem_uber_1.cpp"

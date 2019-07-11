@@ -21,27 +21,6 @@
 
 #include "BaseEnv/BaseEnv_BaseEnv.h"
 
-//////////////////////////////////////////////////////////////////////////
-// NEW RUNTIME
-//////////////////////////////////////////////////////////////////////////
-#include <CryReflection/Register/TypeRegistrationChain.h>
-
-namespace Schematyc2 {
-
-Cry::Schematyc::IRuntime* CFramework::GetGameRuntime() const
-{
-	return nullptr;
-}
-
-Cry::Schematyc::IRuntime* CFramework::CreateEditorRuntime()
-{
-	return nullptr;
-}
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 namespace Schematyc2
 {
 	namespace
@@ -91,10 +70,8 @@ namespace Schematyc2
 
 	CFramework::CFramework()
 	: m_updateRelevanceContext(nullptr, 0, 0.f, 0.f)
-	, m_pEnvRegistryBridge(nullptr)
-{
-	Cry::Reflection::CTypeRegistrationChain::Execute();
-}
+	{
+	}
 
 	CFramework::~CFramework() 
 	{
@@ -166,24 +143,8 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	IEnvRegistry& CFramework::GetEnvRegistry()
 	{
-	if (m_pEnvRegistryBridge)
-	{
-		return *m_pEnvRegistryBridge;
-	}
-	else
-	{
 		return m_envRegistry;
 	}
-}
-void CFramework::SetEnvRegistryBridge(IEnvRegistry* pEnvRegistry)
-{
-	CRY_ASSERT(!m_pEnvRegistryBridge, "EnvRegistryWrapper is overwritten. This shouldn't happen.");
-	if (m_pEnvRegistryBridge)
-	{
-		delete m_pEnvRegistryBridge;
-	}
-	m_pEnvRegistryBridge = pEnvRegistry;
-}
 
 	SchematycBaseEnv::IBaseEnv& CFramework::GetBaseEnv()
 	{

@@ -475,14 +475,6 @@ add_sources("CrySystem_uber_9.cpp"
 		"ZLibDecompressor.cpp"
 )
 
-add_sources("CrySystem_uber_10.cpp"
-	PROJECTS CrySystem
-	SOURCE_GROUP "Reflection"
-		"Reflection/FundamentalTypes.cpp"
-		"Reflection/MathTypes.cpp"
-		"Reflection/CommonTypes.cpp"
-)
-
 add_sources("NoUberFile"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Mac"

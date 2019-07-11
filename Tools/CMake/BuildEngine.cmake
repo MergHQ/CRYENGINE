@@ -439,7 +439,6 @@ endif()
 	
 if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/CryEngine/CrySystem")
-	add_subdirectory ("Code/CryEngine/CryReflection")
 	add_subdirectory ("Code/CryEngine/RenderDll/XRenderD3D9")
 	
 	# Shaders custom project
@@ -591,7 +590,6 @@ if (OPTION_ENGINE)
 
 	    add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/CryCommonUnitTest")
         add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/CrySystemUnitTest")
-        add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/CryReflectionUnitTest")
         add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/CryEntitySystemUnitTest")
 		add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/CryAnimationUnitTest")
 		add_subdirectory("${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Cry3DEngineUnitTest")

@@ -211,12 +211,6 @@ add_sources("Uber_AssetSystem.cpp"
 		"AssetSystem/Loader/AssetLoaderBackgroundTask.cpp"
 )
 
-add_sources("Uber_Debug.cpp"
-	SOURCE_GROUP "Debug"
-		"Debug/ReflectionRegistryWidget.cpp"
-		"Debug/ReflectionRegistryWidget.h"
-)
-
 add_sources("Uber_Deprecated.cpp"
 	SOURCE_GROUP "Deprecated\\\\Database"
 		"UIEnumsDatabase.cpp"
