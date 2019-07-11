@@ -1274,34 +1274,20 @@ inline void SSequenceAudioTrigger::Serialize(XmlNodeRef xmlNode, bool bLoading)
 
 inline void SSequenceAudioTrigger::Serialize(Serialization::IArchive& ar)
 {
+	ar(Serialization::AudioTrigger<string>(m_onStopTriggerName), "onStopAudioTrigger", "onStop");
+	ar(Serialization::AudioTrigger<string>(m_onPauseTriggerName), "onPauseAudioTrigger", "onPause");
+	ar(Serialization::AudioTrigger<string>(m_onResumeTriggerName), "onResumeAudioTrigger", "onResume");
+
 	if (ar.isInput())
 	{
-		string stopTriggerName;
-		ar(Serialization::AudioTrigger<string>(stopTriggerName), "onStopAudioTrigger", "onStop");
-		if (!stopTriggerName.empty())
-		{
-			m_onStopTrigger = CryAudio::StringToId(stopTriggerName.c_str());
-		}
+		if (m_onStopTriggerName.empty() == false)
+			m_onStopTrigger = CryAudio::StringToId(m_onStopTriggerName.c_str());
 
-		string pauseTriggerName;
-		ar(Serialization::AudioTrigger<string>(pauseTriggerName), "onPauseAudioTrigger", "onPause");
-		if (!pauseTriggerName.empty())
-		{
-			m_onPauseTrigger = CryAudio::StringToId(pauseTriggerName.c_str());
-		}
+		if (m_onPauseTriggerName.empty() == false)
+			m_onPauseTrigger = CryAudio::StringToId(m_onPauseTriggerName.c_str());
 
-		string resumeTriggerName;
-		ar(Serialization::AudioTrigger<string>(resumeTriggerName), "onResumeAudioTrigger", "onResume");
-		if (!resumeTriggerName.empty())
-		{
-			m_onResumeTrigger = CryAudio::StringToId(resumeTriggerName.c_str());
-		}
-	}
-	else
-	{
-		ar(Serialization::AudioTrigger<string>(m_onStopTriggerName), "onStopAudioTrigger", "onStop");
-		ar(Serialization::AudioTrigger<string>(m_onPauseTriggerName), "onPauseAudioTrigger", "onPause");
-		ar(Serialization::AudioTrigger<string>(m_onResumeTriggerName), "onResumeAudioTrigger", "onResume");
+		if (m_onResumeTriggerName.empty() == false)
+			m_onResumeTrigger = CryAudio::StringToId(m_onResumeTriggerName.c_str());
 	}
 }
 
