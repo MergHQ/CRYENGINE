@@ -370,7 +370,6 @@ void CFlowNode_AISequenceActionMove::ProcessEvent(EFlowEvent event, SActivationI
 	}
 	case eFE_Activate:
 	{
-		m_stopRadiusSqr = 0.0f;
 		pActInfo->pGraph->SetRegularlyUpdated(pActInfo->myID, true);
 		break;
 	}
@@ -641,7 +640,6 @@ void CFlowNode_AISequenceActionAnimation::ProcessEvent(EFlowEvent event, SActiva
 	}
 	case eFE_Activate:
 	{
-		m_movementRequestID = 0;
 		m_bTeleportWhenNotMoving = false;
 
 		const SequenceId assignedSequenceId = GetAssignedSequenceId();
@@ -873,9 +871,7 @@ void CFlowNode_AISequenceActionWait::ProcessEvent(EFlowEvent event, SActivationI
 		break;
 	}
 	case eFE_Activate:
-	{
-		m_waitTimeMs = 0;
-		
+	{		
 		if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
 		{
 			if (IsPortActive(pActInfo, InputPort_Start))
