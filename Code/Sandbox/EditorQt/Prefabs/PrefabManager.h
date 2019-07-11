@@ -152,9 +152,6 @@ protected:
 	virtual const char*       GetFileExtension() const override { return "prefab"; }
 
 private:
-	void ExpandGroup(CBaseObject* pObject, CSelectionGroup& selection) const;
-
-private:
 	CPrefabEvents* m_pPrefabEvents;
 	bool           m_skipPrefabUpdate;
 };

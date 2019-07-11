@@ -1090,93 +1090,55 @@ void CPrefabObject::CreateInspectorWidgets(CInspectorWidgetCreator& creator)
 	});
 }
 
-void CPrefabObject::CloneAll(std::vector<CBaseObject*>& extractedObjects)
+void CPrefabObject::ExtractChildrenClones(const std::unordered_set<CBaseObject*> objects, std::vector<CBaseObject*>& clonedObjects) const
 {
-	if (!m_pPrefabItem || !m_pPrefabItem->GetObjectsNode())
+	if (objects.empty())
 		return;
-
-	// Take the prefab lib representation and clone it
-	XmlNodeRef objectsNode = m_pPrefabItem->GetObjectsNode();
-
-	const Matrix34 prefabPivotTM = GetWorldTM();
-
-	CObjectArchive clonedObjectArchive(GetObjectManager(), objectsNode, true);
-	clonedObjectArchive.EnableProgressBar(false); // No progress bar is shown when loading objects.
-	CPrefabChildGuidProvider guidProvider = { this };
-	clonedObjectArchive.SetGuidProvider(&guidProvider);
-	clonedObjectArchive.LoadInCurrentLayer(true);
-	clonedObjectArchive.EnableReconstructPrefabObject(true);
-	clonedObjectArchive.LoadObjects(objectsNode);
-	clonedObjectArchive.ResolveObjects();
-
-	extractedObjects.reserve(extractedObjects.size() + clonedObjectArchive.GetLoadedObjectsCount());
-	IObjectLayer* pThisLayer = GetLayer();
-
-	CScopedSuspendUndo suspendUndo;
-	for (int i = 0, numObjects = clonedObjectArchive.GetLoadedObjectsCount(); i < numObjects; ++i)
-	{
-		CBaseObject* pClonedObject = clonedObjectArchive.GetLoadedObject(i);
-
-		// Add to selection
-		pClonedObject->SetIdInPrefab(CryGUID::Null());
-		// If we don't have a parent transform with the world matrix
-		if (!pClonedObject->GetParent())
-			pClonedObject->SetWorldTM(prefabPivotTM * pClonedObject->GetWorldTM());
-
-		pClonedObject->SetLayer(pThisLayer);
-		extractedObjects.push_back(pClonedObject);
-	}
-}
-
-void CPrefabObject::CloneSelected(CSelectionGroup* pSelectedGroup, std::vector<CBaseObject*>& clonedObjects)
-{
-	if (pSelectedGroup == NULL || !pSelectedGroup->GetCount())
-		return;
-
-	XmlNodeRef objectsNode = XmlHelpers::CreateXmlNode("Objects");
-	std::map<CryGUID, XmlNodeRef> objects;
-	for (int i = 0, count = pSelectedGroup->GetCount(); i < count; ++i)
-	{
-		CBaseObject* pSelectedObj = pSelectedGroup->GetObject(i);
-		XmlNodeRef serializedObject = m_pPrefabItem->FindObjectByGuid(pSelectedObj->GetIdInPrefab(), true);
-		if (!serializedObject)
-			return;
-
-		XmlNodeRef cloneObject = serializedObject->clone();
-
-		CryGUID cloneObjectID = CryGUID::Null();
-		if (cloneObject->getAttr("Id", cloneObjectID))
-			objects[cloneObjectID] = cloneObject;
-
-		objectsNode->addChild(cloneObject);
-	}
 
 	std::vector<Matrix34> clonedObjectsPivotLocalTM;
 
 	const Matrix34 prefabPivotTM = GetWorldTM();
 	const Matrix34 prefabPivotInvTM = prefabPivotTM.GetInverted();
 
-	// Delete outside referenced objects which were not part of the selected Group
-	for (int i = 0, count = objectsNode->getChildCount(); i < count; ++i)
+	XmlNodeRef objectsNode = XmlHelpers::CreateXmlNode("Objects");
+	std::unordered_map<CryGUID, XmlNodeRef> guidToSerializedObjects;
+	for (CBaseObject* pObject : objects)
 	{
-		XmlNodeRef object = objectsNode->getChild(i);
-		CryGUID objectID = CryGUID::Null();
-		object->getAttr("Id", objectID);
-		// If parent is not part of the selection remove it
-		if (object->getAttr("Parent", objectID) && objects.find(objectID) == objects.end())
-			object->delAttr("Parent");
+		XmlNodeRef serializedObject = m_pPrefabItem->FindObjectByGuid(pObject->GetIdInPrefab(), true);
+		if (!serializedObject)
+			return;
 
-		const CBaseObject* pChild = pSelectedGroup->GetObjectByGuidInPrefab(objectID);
-		const Matrix34 childTM = pChild->GetWorldTM();
+		XmlNodeRef cloneObject = serializedObject->clone();
+
+		CryGUID objectID = CryGUID::Null();
+		// Store the serialized object Id. We'll use this to check if the parent is part of the object hierarchy that we're cloning
+		// If it's not then we need to remove the parent guid later on
+		if (cloneObject->getAttr("Id", objectID))
+		{
+			guidToSerializedObjects[objectID] = cloneObject;
+			// Delete the Id attribute so the cloned object can get a new ID when created
+			cloneObject->delAttr("Id");
+		}
+
+		const Matrix34 childTM = pObject->GetWorldTM();
 		const Matrix34 childRelativeToPivotTM = prefabPivotInvTM * childTM;
 
 		clonedObjectsPivotLocalTM.push_back(childRelativeToPivotTM);
+
+		objectsNode->addChild(cloneObject);
+	}
+
+	for (int i = 0, count = objectsNode->getChildCount(); i < count; ++i)
+	{
+		CryGUID parentID = CryGUID::Null();
+		XmlNodeRef cloneObject = objectsNode->getChild(i);
+		// If parent is not part of the list of cloned objects, then clear the parent Id
+		if (cloneObject->getAttr("Parent", parentID) && guidToSerializedObjects.find(parentID) == guidToSerializedObjects.end())
+			cloneObject->delAttr("Parent");
 	}
 
 	CObjectArchive clonedObjectArchive(GetObjectManager(), objectsNode, true);
 	clonedObjectArchive.EnableProgressBar(false); // No progress bar is shown when loading objects.
-	CPrefabChildGuidProvider guidProvider = { this };
-	clonedObjectArchive.SetGuidProvider(&guidProvider);
 	clonedObjectArchive.EnableReconstructPrefabObject(true);
 	clonedObjectArchive.LoadObjects(objectsNode);
 	clonedObjectArchive.ResolveObjects();
