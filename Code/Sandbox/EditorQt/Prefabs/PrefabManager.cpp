@@ -109,6 +109,58 @@ private:
 	bool                             m_isReleased = { false };
 };
 
+void CollectAffectedPrefabsFor(const std::vector<CBaseObject*>& objects, std::unordered_map<CPrefabObject*, std::unordered_set<CBaseObject*>>& outResult)
+{
+	for (CBaseObject* pObject : objects)
+	{
+		// Get the current object's prefab
+		CPrefabObject* pPrefab = (CPrefabObject*)pObject->GetPrefab();
+		if (pPrefab)
+		{
+			// Add this object to the set of affected objects
+			std::unordered_set<CBaseObject*>& objects = outResult[pPrefab];
+			objects.insert(pObject);
+		}
+	}
+}
+
+void CloneObjects(const std::unordered_map<CPrefabObject*, std::unordered_set<CBaseObject*>>& objectsPerPrefabContainer)
+{
+	IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+	CUndo undo("Clone objects from prefab(s)");
+
+	std::vector<CBaseObject*> objectsToSelect;
+	for (auto objectsPerPrefab : objectsPerPrefabContainer)
+	{
+		CPrefabObject* pPrefab = objectsPerPrefab.first;
+		std::unordered_set<CBaseObject*>& objects = objectsPerPrefab.second;
+
+		std::vector<CBaseObject*> newChildren;
+		pPrefab->ExtractChildrenClones(objects, newChildren);
+
+		objectsToSelect.insert(objectsToSelect.cend(), newChildren.begin(), newChildren.end());
+	}
+
+	pObjectManager->SelectObjects(objectsToSelect);
+}
+
+void GetSelectedPrefabs(std::vector<CPrefabObject*>& outResult)
+{
+	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
+
+	if (!pSelection)
+		return;
+
+	for (int i = 0, count = pSelection->GetCount(); i < count; i++)
+	{
+		if (pSelection->GetObject(i) && pSelection->GetObject(i)->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
+		{
+			CPrefabObject* pPrefab = static_cast<CPrefabObject*>(pSelection->GetObject(i));
+			outResult.push_back(pPrefab);
+		}
+	}
+}
+
 }
 //////////////////////////////////////////////////////////////////////////
 // CUndoGroupObjectOpenClose implementation.
@@ -459,15 +511,6 @@ void CPrefabManager::ExtractObjectsFromPrefabs(std::vector<CBaseObject*>& childO
 	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
 	for (CBaseObject* pChild : childObjects)
 	{
-		CPrefabObject* pPrefab = (CPrefabObject*)pChild->GetPrefab();
-
-		for (int i = 0, count = pPrefab->GetChildCount(); i < count; ++i)
-		{
-			CBaseObject* pChildToReparent = pPrefab->GetChild(i);
-			pPrefab->AttachChild(pChildToReparent);
-			pChildToReparent->UpdatePrefab();
-		}
-
 		pObjectManager->DeleteObject(pChild);
 	}
 }
@@ -488,21 +531,8 @@ void CPrefabManager::ExtractAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 
 void CPrefabManager::ExtractAllFromSelection()
 {
-	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-
-	if (!pSelection)
-		return;
-
 	std::vector<CPrefabObject*> prefabs;
-
-	for (int i = 0, count = pSelection->GetCount(); i < count; i++)
-	{
-		if (pSelection->GetObject(i) && pSelection->GetObject(i)->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			CPrefabObject* pPrefab = static_cast<CPrefabObject*>(pSelection->GetObject(i));
-			prefabs.push_back(pPrefab);
-		}
-	}
+	Private_PrefabManager::GetSelectedPrefabs(prefabs);
 
 	if (!prefabs.empty())
 	{
@@ -561,31 +591,9 @@ void CPrefabManager::CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObj
 	if (childObjects.empty())
 		return;
 
-	CUndo undo("Clone Object(s) from Prefab");
-
-	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
-	pObjectManager->ClearSelection();
-
-	std::vector<CBaseObject*> clonedObjects;
-	std::map<CPrefabObject*, CSelectionGroup> prefabObjectsToBeExtracted;
-
-	for (int i = 0, childCount = childObjects.size(); i < childCount; ++i)
-	{
-		if (CPrefabObject* pPrefab = (CPrefabObject*)childObjects[i]->GetPrefab())
-		{
-			CSelectionGroup& selGroup = prefabObjectsToBeExtracted[pPrefab];
-			ExpandGroup(childObjects[i], selGroup);
-		}
-	}
-
-	std::map<CPrefabObject*, CSelectionGroup>::iterator it = prefabObjectsToBeExtracted.begin();
-	std::map<CPrefabObject*, CSelectionGroup>::iterator end = prefabObjectsToBeExtracted.end();
-	for (; it != end; ++it)
-	{
-		(it->first)->CloneSelected(&(it->second), clonedObjects);
-	}
-
-	pObjectManager->AddObjectsToSelection(clonedObjects);
+	std::unordered_map<CPrefabObject*, std::unordered_set<CBaseObject*>> objectsPerPrefabContainer;
+	Private_PrefabManager::CollectAffectedPrefabsFor(childObjects, objectsPerPrefabContainer);
+	Private_PrefabManager::CloneObjects(objectsPerPrefabContainer);
 }
 
 void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
@@ -594,55 +602,32 @@ void CPrefabManager::CloneAllFromPrefabs(std::vector<CPrefabObject*>& prefabs)
 
 	CUndo undo("Clone all from prefab(s)");
 
-	pObjectManager->ClearSelection();
-
 	std::vector<CBaseObject*> objectsToSelect;
 	for (CPrefabObject* pPrefab : prefabs)
 	{
-		bool autoUpdatePrefab = pPrefab->GetAutoUpdatePrefab();
-		pPrefab->SetAutoUpdatePrefab(false);
-		pPrefab->StoreUndo("Set Auto Update");
-
-		auto childCount = pPrefab->GetChildCount();
-		std::vector<CBaseObject*> children;
+		const auto childCount = pPrefab->GetChildCount();
+		std::unordered_set<CBaseObject*> children;
 		std::vector<CBaseObject*> newChildren;
 		children.reserve(childCount);
 		newChildren.reserve(childCount);
 
 		for (auto i = 0; i < childCount; ++i)
 		{
-			children.push_back(pPrefab->GetChild(i));
+			children.insert(pPrefab->GetChild(i));
 		}
 
-		pObjectManager->CloneObjects(children, newChildren);
-
-		pPrefab->RemoveMembers(newChildren);
-		pPrefab->SetAutoUpdatePrefab(autoUpdatePrefab);
-		pPrefab->StoreUndo("Set Auto Update");
+		pPrefab->ExtractChildrenClones(children, newChildren);
 
 		objectsToSelect.insert(objectsToSelect.cend(), newChildren.begin(), newChildren.end());
 	}
 
-	pObjectManager->AddObjectsToSelection(objectsToSelect);
+	pObjectManager->SelectObjects(objectsToSelect);
 }
 
 void CPrefabManager::CloneAllFromSelection()
 {
-	const CSelectionGroup* pSelection = GetIEditorImpl()->GetSelection();
-
-	if (!pSelection)
-		return;
-
 	std::vector<CPrefabObject*> prefabs;
-
-	for (int i = 0, count = pSelection->GetCount(); i < count; i++)
-	{
-		if (pSelection->GetObject(i) && pSelection->GetObject(i)->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			CPrefabObject* pPrefab = static_cast<CPrefabObject*>(pSelection->GetObject(i));
-			prefabs.push_back(pPrefab);
-		}
-	}
+	Private_PrefabManager::GetSelectedPrefabs(prefabs);
 
 	if (!prefabs.empty())
 	{
@@ -937,19 +922,6 @@ IDataBaseItem* CPrefabManager::LoadItem(const CryGUID& guid)
 	}
 
 	return nullptr;
-}
-
-void CPrefabManager::ExpandGroup(CBaseObject* pObject, CSelectionGroup& selection) const
-{
-	selection.AddObject(pObject);
-	if (pObject->IsKindOf(RUNTIME_CLASS(CGroup)) && !pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-	{
-		CGroup* pGroup = static_cast<CGroup*>(pObject);
-		for (int i = 0, count = pGroup->GetChildCount(); i < count; ++i)
-		{
-			ExpandGroup(pGroup->GetChild(i), selection);
-		}
-	}
 }
 
 IDataBaseLibrary* CPrefabManager::LoadLibrary(const string& filename, bool bReload)

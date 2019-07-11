@@ -100,15 +100,15 @@ public:
 	void         SetAutoUpdatePrefab(bool autoUpdate);
 	bool         GetAutoUpdatePrefab() const { return m_autoUpdatePrefabs; }
 
-	// Extract all objects inside.
-	void         CloneAll(std::vector<CBaseObject*>& extractedObjects);
+	// Extracts clones of the provided children of this prefab. In this way the user can create a duplicate of the objects within without affecting the prefab itself
+	void         ExtractChildrenClones(const std::unordered_set<CBaseObject*> objects, std::vector<CBaseObject*>& clonedObjects) const;
+
 	void         SyncPrefab(const SObjectChangedContext& context);
 	bool         SuspendUpdate(bool bForceSuspend = true);
 	void         ResumeUpdate();
 	void         InitObjectPrefabId(CBaseObject* object);
 	bool         IsModifyInProgress() const                 { return m_bModifyInProgress; }
 	void         SetModifyInProgress(const bool inProgress) { m_bModifyInProgress = inProgress; }
-	void         CloneSelected(CSelectionGroup* pSelectedGroup, std::vector<CBaseObject*>& clonedObjects);
 	void         SetPrefabFlagForLinkedObjects(CBaseObject* object);
 	void         SetObjectPrefabFlagAndLayer(CBaseObject* object);
 	void         SetChangePivotMode(bool changePivotMode) { m_bChangePivotPoint = changePivotMode; }
