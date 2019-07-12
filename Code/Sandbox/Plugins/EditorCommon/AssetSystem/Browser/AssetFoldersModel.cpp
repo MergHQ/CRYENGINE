@@ -286,7 +286,7 @@ bool CAssetFoldersModel::canDropMimeData(const QMimeData* pMimeData, Qt::DropAct
 	const QStringList filePaths = pDragDropData->GetFilePaths();
 	if (!filePaths.empty())
 	{
-		return true;
+		return CAssetDropHandler::CanImportAny(filePaths);
 	}
 
 	if (pDragDropData->HasCustomData("Assets"))
