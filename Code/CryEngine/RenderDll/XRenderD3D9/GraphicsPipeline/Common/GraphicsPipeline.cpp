@@ -399,6 +399,13 @@ void CGraphicsPipelineResources::Update(EShaderRenderingFlags renderingFlags)
 		m_pTexRainOcclusion->ReleaseDeviceTexture(false);
 	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(m_pTexRainOcclusion))
 		m_pTexRainOcclusion->CreateRenderTarget(eTF_R8, Clr_Neutral);
+
+	// Clear texture because it's being reused for TAA
+	CClipVolumesStage* pClipVolumeStage = m_graphicsPipeline.GetStage<CClipVolumesStage>();
+	if (!pClipVolumeStage || !pClipVolumeStage->IsStageActive(renderingFlags))
+	{
+		CClearSurfacePass::Execute(m_pTexClipVolumes, m_pTexClipVolumes->GetClearColor());
+	}
 }
 
 bool CGraphicsPipelineResources::RainOcclusionMapsEnabled()
