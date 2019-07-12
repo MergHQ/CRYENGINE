@@ -548,6 +548,12 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 	const uint32 ImageWidth = max(1, min(4096, GetCVars()->e_ScreenShotWidth));
 	const uint32 ImageHeight = max(1, min(4096, GetCVars()->e_ScreenShotHeight));
 
+	// Wait until all objects are streamed in before taking the screenshot
+	I3DEngine::SObjectsStreamingStatus objectsStreamingStatus;
+	gEnv->p3DEngine->GetObjectsStreamingStatus(objectsStreamingStatus);
+	if (objectsStreamingStatus.nReady != objectsStreamingStatus.nActive)
+		return;
+
 	switch (abs(GetCVars()->e_ScreenShot))
 	{
 	case ESST_HIGHRES:
@@ -3534,7 +3540,13 @@ bool C3DEngine::ScreenShotMap(CStitchedImage* pStitchedImage,
 	const f32 drawnearfov_backup = r_drawnearfov->GetFVal();
 	if (max(AngleX, AngleY) <= 0)
 		return false;
-	cam.SetFrustum(pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), max(0.001f, max(AngleX, AngleY) * 2.f), Height - 8000.f, Height + 1000.f);
+
+	// Construct frustum for top-down orthographic minimap capture from octree bounds
+	AABB objTreeBox = m_pObjectsTree->GetNodeBox();
+	float octreeBoundsMax = objTreeBox.max.z;
+	CRY_ASSERT(octreeBoundsMax <= Height); // octree must not be higher than minimap camera
+
+	cam.SetFrustum(pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), max(0.001f, max(AngleX, AngleY) * 2.f), Height - octreeBoundsMax, Height);
 	r_drawnearfov->Set(-1.0f);
 	ScreenShotHighRes(pStitchedImage, nRenderFlags, SRenderingPassInfo::CreateTempRenderingInfo(cam, passInfo), SliceCount, fTransitionSize);
 	r_drawnearfov->Set(drawnearfov_backup);
