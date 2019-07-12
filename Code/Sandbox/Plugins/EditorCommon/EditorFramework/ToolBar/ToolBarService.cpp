@@ -118,8 +118,9 @@ public:
 					break;
 				case ECVarType::String:
 					pCVar->Set(variant.toString().toStdString().c_str());
+					break;
 				case ECVarType::Int64:
-					CRY_ASSERT_MESSAGE(false, "CEditorToolBarService::CreateToolBar int64 cvar not implemented");
+					pCVar->Set(variant.toLongLong());
 					break;
 				default:
 					break;
