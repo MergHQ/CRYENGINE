@@ -235,18 +235,13 @@ bool CTexture::Resolve(int nTarget, bool bUseViewportSize)
 
 	CRY_ASSERT((m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)) && (m_eFlags & FT_USAGE_MSAA) && GetDevTexture() && GetDevTexture()->GetMSAATexture());
 
-#if defined(USE_CRY_ASSERT) || defined(RENDERER_ENABLE_LEGACY_PIPELINE)
+#if defined(USE_CRY_ASSERT)
 	CDeviceTexture* pDestSurf = GetDevTexture();
 	CRY_ASSERT(pDestSurf != nullptr);
 	CDeviceTexture* pSrcSurf = pDestSurf->GetMSAATexture();
 	CRY_ASSERT(pSrcSurf != nullptr);
 #endif
 
-#ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-	const SPixFormat* pPF;
-	ETEX_Format eDstFormat = CTexture::GetClosestFormatSupported(m_eDstFormat, pPF);
-	gcpRendD3D->GetDeviceContext()->ResolveSubresource(pDestSurf->Get2DTexture(), 0, pSrcSurf->Get2DTexture(), 0, (DXGI_FORMAT)pPF->DeviceFormat);
-#endif
 	return true;
 }
 

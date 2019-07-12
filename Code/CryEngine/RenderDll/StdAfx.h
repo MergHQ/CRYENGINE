@@ -7,27 +7,21 @@
 #include <CryCore/Platform/platform.h>
 #include <CryMemory/CrySizer.h>
 
-/* externally defined renderer-implementation toggles:
+/* Externally defined renderer-implementation toggles:
  *  CRY_RENDERER_DIRECT3D       110, 111, 120, 121, 122
  *  CRY_RENDERER_GNM            40
  *  CRY_RENDERER_VULKAN         10
  *
+ * Combinations with other symbols can be used to select special code paths:
  *  CRY_RENDERER_DIRECT3D + CRY_PLATFORM_DURANGO -> Durango-only Direct3D extensions
  *  CRY_RENDERER_DIRECT3D + USE_NV_API           -> Nvidia-only Direct3D extensions
  */
-
-// Do not run legacy pipeline in vulkan
-#if !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
-	//#define RENDERER_ENABLE_LEGACY_PIPELINE
-#endif
-
 
 /* Choice of rendering pipeline: 
  * RENDERER_ENABLE_FULL_PIPELINE   - full rendering pipeline with all bells and whistles
  * RENDERER_ENABLE_MOBILE_PIPELINE - reduced rendering pipeline with limited features for mobile
  * Note that both pipelines can be enabled simultaneously and runtime-switched via r_GraphicsPipelineMobile cvar
 */
-
 #if !CRY_PLATFORM_MOBILE
 	#define RENDERER_ENABLE_FULL_PIPELINE   1
 #else
@@ -908,10 +902,8 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 	#include <io.h>
 #endif
 
-#if defined(RENDERER_ENABLE_LEGACY_PIPELINE) || defined(CRY_RENDERER_DIRECT3D)
-	#if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-		#include NV_API_HEADER
-	#endif
+#if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+	#include NV_API_HEADER
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
