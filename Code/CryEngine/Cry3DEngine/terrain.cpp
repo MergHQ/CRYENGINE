@@ -56,8 +56,6 @@ void CTerrain::CheckVis(const SRenderingPassInfo& passInfo, FrustumMaskType pass
 
 	if (passInfo.IsGeneralPass())
 	{
-		m_bOceanIsVisible = (int)((m_fDistanceToSectorWithWater != OCEAN_IS_VERY_FAR_AWAY) || !m_checkVisSectorsCount);
-
 		if (m_fDistanceToSectorWithWater < 0)
 			m_fDistanceToSectorWithWater = 0;
 

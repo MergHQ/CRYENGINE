@@ -1902,7 +1902,7 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 
 	// check for case when no any visible terrain sectors has minz lower than ocean level
 	bool bOceanVisible = !Get3DEngine()->m_bShowTerrainSurface;
-	bOceanVisible |= m_pTerrain->GetDistanceToSectorWithWater() >= 0 && fOceanLevel && m_pTerrain->IsOceanVisible();
+	bOceanVisible |= m_pTerrain->GetDistanceToSectorWithWater() >= 0 && fOceanLevel;
 
 	if (bOceanVisible && passInfo.RenderWaterOcean() && m_bOcean)
 	{
