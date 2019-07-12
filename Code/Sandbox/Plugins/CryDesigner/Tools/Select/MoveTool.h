@@ -39,6 +39,7 @@ private:
 	std::unique_ptr<MovePipeline> m_Pipeline;
 	bool                          m_bManipulatingGizmo;
 	BrushVec3                     m_SelectedElementNormal;
+	BrushVec3                     m_value;
 };
 
 GENERATE_MOVETOOL_CLASS(Vertex, EDesignerTool)

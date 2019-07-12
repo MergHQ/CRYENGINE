@@ -123,7 +123,19 @@ void MoveTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator*
 	if (!m_bManipulatingGizmo)
 		return;
 
-	TransformSelections(GetOffsetTM(pManipulator, value, GetWorldTM()));
+	const CLevelEditorSharedState::EditMode editMode = GetIEditor()->GetLevelEditorSharedState()->GetEditMode();
+
+	// Rotate provides the dragging value as a difference from the previous event frame of the dragging.
+	if (editMode == CLevelEditorSharedState::EditMode::Rotate)
+	{
+		m_value += value; // accumulate the values to get the difference from the original value.  
+	}
+	else // the dragging value is already a difference from the original value, memorized on the beginning of the dragging.
+	{
+		m_value = value;
+	}
+
+	TransformSelections(GetOffsetTM(pManipulator, m_value, GetWorldTM()));
 }
 
 void MoveTool::StartTransformation(bool bIsoloated)
@@ -178,6 +190,7 @@ void MoveTool::OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulator
 		bool bIsolated = (flags & MK_SHIFT) || pSelected->IsIsolated();
 		StartTransformation(bIsolated);
 		m_bManipulatingGizmo = true;
+		m_value = BrushVec3(0);
 	}
 }
 
