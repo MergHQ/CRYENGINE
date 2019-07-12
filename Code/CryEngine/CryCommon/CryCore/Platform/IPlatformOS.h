@@ -535,6 +535,10 @@ struct IPlatformOS
 			TInputDeviceId gamepadId = InvalidInputDeviceId;
 		};
 
+		struct SGamepadPairingLock : public _reference_target_t
+		{};
+		using SGamepadPairingLockPtr = _smart_ptr<SGamepadPairingLock>;
+
 		//! Add IUserManagerListener event listener
 		virtual void AddListener(IUserManagerListener& listener, const char* szName) = 0;
 
@@ -543,6 +547,9 @@ struct IPlatformOS
 
 		//! Obtain information about assigned gamepad
 		virtual const SGamepadInfo* GetUserGamepadInfo(uint32 userIndex) const = 0;
+
+		//! Obtain ref-counted lock object to prevent user sign-out on gamepad pairing changes
+		virtual SGamepadPairingLockPtr LockUserGamepadPairing(uint32 userIndex) = 0;
 
 		//! Initiates the procedure to sign-in user: waits for user engagement, shows account picker, etc.
 		virtual bool RequestSignIn() = 0;
@@ -560,8 +567,11 @@ struct IPlatformOS
 		//! Called on "sign-in" user state change
 		virtual void OnUserSignIn(uint32 userIndex) {}
 
-		//! Called on "sign-out" user state change
-		virtual void OnUserSignOut(uint32 userIndex) {}
+		//! Called on starting user "sign-out"
+		virtual void OnUserStartSignOut(uint32 userIndex) {}
+
+		//! Called on completing user "sign-out"
+		virtual void OnUserCompleteSignOut(uint32 userIndex) {}
 
 		//! Called on starting user selection procedures.
 		virtual void OnStartSelectingUser() {}
