@@ -43,7 +43,7 @@ private:
 	void CloneSelection();
 	void SetConstrPlane(CViewport* view, CPoint point);
 
-	const CSelectionGroup* m_selection;
+	const CSelectionGroup* m_pSelection;
 	Vec3                   m_origin;
 	bool                   m_bSetConstrPlane;
 	Vec3                   m_initPosition;

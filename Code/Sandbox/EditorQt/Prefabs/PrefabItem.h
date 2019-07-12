@@ -35,6 +35,12 @@ public:
 
 	void                      Serialize(SerializeContext& ctx);
 
+	//! Resets the item by xml representation by removing all the objects from the m_objectsNode node (note that this does not remove objects form prefab object instances)
+	void ResetObjectsNode();
+
+	//! Returns xml node containing prefab objects.
+	XmlNodeRef GetObjectsNode() { return m_objectsNode; }
+
 	//! Make prefab from selection of objects.
 	void MakeFromSelection(const CSelectionGroup& selection);
 
@@ -45,18 +51,17 @@ public:
 	void UpdateFromPrefabObject(CPrefabObject* pPrefabObject, const SObjectChangedContext& context);
 
 	//! Called after particle parameters where updated.
-	void       Update();
-	//! Returns xml node containing prefab objects.
-	XmlNodeRef GetObjectsNode()           { return m_objectsNode; }
-	string     GetPrefabObjectClassName() { return m_PrefabClassName; }
-	void       SetPrefabClassName(string prefabClassNameString);
+	void   Update();
 
-	void       UpdateObjects();
+	string GetPrefabObjectClassName() { return m_PrefabClassName; }
+	void   SetPrefabClassName(string prefabClassNameString);
+
+	void   UpdateObjects();
 	//! Go through all the objects in the xml archive and find if there are xml nodes with tag object. In those nodes check the prefab id to make sure they don't have common highparts
-	//! This check is important because the id resolve process will end up generating the same instance ids if the objects have the same highpart in the prefab id 
-	bool       ScanForDuplicateObjects();
+	//! This check is important because the id resolve process will end up generating the same instance ids if the objects have the same highpart in the prefab id
+	bool ScanForDuplicateObjects();
 	//! Fix all duplicate Id in child objects by assigning random guids to the duplicated Id fields
-	bool       FixDuplicateObjects();
+	bool FixDuplicateObjects();
 
 	//! Searches and finds the XmlNode with a specified Id in m_objectsNode (the XML representation of this prefab in the prefab library)
 	XmlNodeRef             FindObjectByGuid(const CryGUID& guid, bool fowardSearch = true);

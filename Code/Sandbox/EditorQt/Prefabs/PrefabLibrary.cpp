@@ -30,7 +30,6 @@ void CPrefabLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 {
 	if (bLoading)
 	{
-		// Loading.
 		RemoveAllItems();
 
 		if (stricmp(root->getTag(), "Prefab") == 0)
@@ -42,22 +41,35 @@ void CPrefabLibrary::Serialize(XmlNodeRef& root, bool bLoading)
 			pItem->Serialize(ctx);
 
 			SetModified(false);
-
 		}
 	}
 	else if(GetItemCount()) // saving
 	{
+		CRY_ASSERT(GetItemCount() <= 1, "Library %s has more than one prefab item", m_name.c_str());
+
 		CBaseLibraryItem::SerializeContext ctx(root, bLoading);
 		GetItem(0)->Serialize(ctx);
 	}
+}
 
+void CPrefabLibrary::AddItem(IDataBaseItem* item, bool bRegister /* = true */)
+{
+	CRY_ASSERT(!GetItemCount(), "Library %s already has one prefab item", m_name.c_str());
+
+	//make sure we only have one item in this library
+	if (!GetItemCount())
+	{
+		CBaseLibrary::AddItem(item, bRegister);
+	}
 }
 
 void CPrefabLibrary::UpdatePrefabObjects()
 {
-	for (int i = 0, iItemSize(m_items.size()); i < iItemSize; ++i)
+	CRY_ASSERT(GetItemCount() <= 1, "Library %s has more than one prefab item", m_name.c_str());
+
+	if (m_items.size())
 	{
-		CPrefabItem* pPrefabItem = (CPrefabItem*)&*m_items[i];
+		CPrefabItem* pPrefabItem = (CPrefabItem*)&*m_items[0];
 		pPrefabItem->UpdateObjects();
 	}
 }
