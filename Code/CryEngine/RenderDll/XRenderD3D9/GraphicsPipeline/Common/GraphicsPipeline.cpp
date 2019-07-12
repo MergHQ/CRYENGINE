@@ -698,14 +698,14 @@ CDeviceResourceLayoutPtr CGraphicsPipeline::CreateScenePassLayout(const CDeviceR
 //////////////////////////////////////////////////////////////////////////
 void CGraphicsPipeline::Resize(int renderWidth, int renderHeight)
 {
+	m_pipelineResources.Resize(renderWidth, renderHeight);
+
 	// Sets the current render resolution on all the pipeline stages.
 	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
 	{
 		if (*it)
 			(*it)->Resize(renderWidth, renderHeight);
 	}
-
-	m_pipelineResources.Resize(renderWidth, renderHeight);
 
 	m_renderWidth  = renderWidth;
 	m_renderHeight = renderHeight;
