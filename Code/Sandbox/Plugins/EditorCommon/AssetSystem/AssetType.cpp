@@ -650,7 +650,7 @@ public:
 	DECLARE_ASSET_TYPE_DESC(CCryAssetType);
 
 	virtual const char* GetTypeName() const override           { return "cryasset"; }
-	virtual const char* GetUiTypeName() const override         { return "cryasset"; }
+	virtual const char* GetUiTypeName() const override         { return "Unknown"; }
 	virtual const char* GetFileExtension() const override      { return "unregistered"; }
 	virtual bool        IsImported() const override            { return false; }
 	virtual bool        CanBeEdited() const override           { return false; }
