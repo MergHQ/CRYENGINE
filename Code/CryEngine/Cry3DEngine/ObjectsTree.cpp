@@ -189,7 +189,7 @@ void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRender
 	const bool bPushIntoOcclusionCuller = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
 	// check culling of all passes
-	//passCullMask = UpdateCullMask(m_onePassTraversalFrameId, ~0, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, !bPushIntoOcclusionCuller, bNodeCompletelyInFrustum, &m_occlusionTestClient, passCullMask);
+	passCullMask = UpdateCullMask(m_onePassTraversalFrameId, ~0, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, !bPushIntoOcclusionCuller, bNodeCompletelyInFrustum, &m_occlusionTestClient, passCullMask);
 
 	// stop if no any passes see this node
 	if (passCullMask == 0)
@@ -268,7 +268,7 @@ void COctreeNode::Render_Light_Nodes(bool bNodeCompletelyInFrustum, int nRenderM
 	const bool bPushIntoOcclusionCuller = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
 	// check culling of all passes
-	//passCullMask = UpdateCullMask(m_onePassTraversalFrameId, ~0, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, !bPushIntoOcclusionCuller, bNodeCompletelyInFrustum, &m_occlusionTestClient, passCullMask);
+	passCullMask = UpdateCullMask(m_onePassTraversalFrameId, ~0, m_renderFlags, passInfo, m_objectsBox, nodeDistance, m_fObjectsMaxViewDist, !bPushIntoOcclusionCuller, bNodeCompletelyInFrustum, &m_occlusionTestClient, passCullMask);
 
 	// stop if no any passes see this node
 	if (!passCullMask)
@@ -686,7 +686,7 @@ FrustumMaskType COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint
 				bool bCompletellyInShadowFrustum = false;
 				if (!bSkipCaster && pFr->IntersectAABB(nodeBox, &bCompletellyInShadowFrustum, shadowPass.ShadowFrustumSide()))
 				{
-#if 0
+#if 1 // TODO: CVar or removal, as it causes shadow-artifacts
 					// if completely in frustum - cull all bigger dynamic cascades
 					if (bCompletellyInShadowFrustum && pFr->IsDynamicGsmCascade())
 					{
@@ -2847,7 +2847,7 @@ void COctreeNode::RenderLights(TDoublyLinkedList<IRenderNode>* lstObjects, const
 		bool bObjectCompletelyInFrustum = bOcNodeCompletelyInFrustum;
 		const auto objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, true, bObjectCompletelyInFrustum, nullptr, passCullMask);
 
-		if (objCullMask /*&& pObj->IsVisible(objBox, fEntDistance, passInfo)*/)
+		if (objCullMask != 0 /*&& pObj->IsVisible(objBox, fEntDistance, passInfo)*/)
 		{
 			if (pObj->CanExecuteRenderAsJob() || !bOcclusionCullerInUse)
 			{
