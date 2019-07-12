@@ -496,7 +496,7 @@ namespace Schematyc2
 				IGlobalFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetGlobalFunction(refGUID);
 				if(!pFunction)
 				{
-					archive.error(*this, "Unable to retrieve global function!");
+					archive.error(*this, "[Schematyc] Unable to retrieve global function! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				break;
 			}
@@ -505,12 +505,12 @@ namespace Schematyc2
 				const IScriptComponentInstance* pComponentInstance = domainContext.GetScriptComponentInstance(contextGUID);
 				if(!pComponentInstance)
 				{
-					archive.error(*this, "Unable to retrieve component instance!");
+					archive.error(*this, "[Schematyc] Unable to retrieve component instance! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				IComponentMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetComponentMemberFunction(refGUID);
 				if(!pFunction)
 				{
-					archive.error(*this, "Unable to retrieve component function!");
+					archive.error(*this, "[Schematyc] Unable to retrieve component function! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				break;
 			}
@@ -519,12 +519,12 @@ namespace Schematyc2
 				const IScriptActionInstance* pActionInstance = domainContext.GetScriptActionInstance(contextGUID);
 				if(!pActionInstance)
 				{
-					archive.error(*this, "Unable to retrieve action instance!");
+					archive.error(*this, "[Schematyc] Unable to retrieve action instance! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				IActionMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetActionMemberFunction(refGUID);
 				if(!pFunction)
 				{
-					archive.error(*this, "Unable to retrieve action function!");
+					archive.error(*this, "[Schematyc] Unable to retrieve action function! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				break;
 			}
@@ -533,7 +533,7 @@ namespace Schematyc2
 				const IDocGraph* pGraph = domainContext.GetDocGraph(refGUID);
 				if(!pGraph)
 				{
-					archive.error(*this, "Unable to retrieve script function!");
+					archive.error(*this, "[Schematyc] Unable to retrieve script function! In file: %s guid = %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToString().c_str());
 				}
 				break;
 			}
@@ -596,7 +596,7 @@ namespace Schematyc2
 				if(pFunction)
 				{
 					const size_t actionInstanceIdx = LibUtils::FindActionInstanceByGUID(compiler.GetLibClass(), contextGUID);
-					SCHEMATYC2_SYSTEM_ASSERT(actionInstanceIdx != INVALID_INDEX);
+					SCHEMATYC2_SYSTEM_ASSERT_MESSAGE(actionInstanceIdx != INVALID_INDEX, "[Schematyc] Action function %s missing action instance. File: %s, guid: %s", pFunction->GetName(), CDocGraphNodeBase::GetFile().GetFileName(), pFunction->GetGUID().cryGUID.ToDebugString());
 					if(actionInstanceIdx != INVALID_INDEX)
 					{
 #ifdef SCHEMATYC2_ASSERTS_ENABLED

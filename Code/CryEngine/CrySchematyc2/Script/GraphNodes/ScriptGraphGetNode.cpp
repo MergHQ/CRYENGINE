@@ -243,7 +243,7 @@ namespace Schematyc2
 		{
 			if(!pGraph->GetElement_New().GetFile().GetElement(m_refGUID)) // #SchematycTODO : Should we be using a domain context to retrieve this?
 			{
-				archive.error(*this, "Failed to retrieve reference!");
+				archive.error(*this, "[Schematyc] Failed to retrieve reference! In file: %s, guid: %s", pGraph->GetElement_New().GetFile().GetFileName(), CScriptGraphNodeBase::GetGUID().cryGUID.ToDebugString());
 			}
 		}
 	}

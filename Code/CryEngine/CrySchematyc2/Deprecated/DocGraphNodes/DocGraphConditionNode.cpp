@@ -500,12 +500,12 @@ namespace Schematyc2
 				{
 					if(!DocGraphConditionNodeUtils::FunctionIsCondition(*pFunction))
 					{
-						archive.error(*this, "Global function is not valid condition!");
+						archive.error(*this, "[Schematyc] Global function is not valid condition! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 					}
 				}
 				else
 				{
-					archive.error(*this, "Unable to retrieve global function!");
+					archive.error(*this, "[Schematyc] Unable to retrieve global function! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				break;
 			}
@@ -514,19 +514,19 @@ namespace Schematyc2
 				const IScriptComponentInstance* pComponentInstance = domainContext.GetScriptComponentInstance(contextGUID);
 				if(!pComponentInstance)
 				{
-					archive.error(*this, "Unable to retrieve component instance!");
+					archive.error(*this, "[Schematyc] Unable to retrieve component instance! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				IComponentMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetComponentMemberFunction(refGUID);
 				if(pFunction)
 				{
 					if(!DocGraphConditionNodeUtils::FunctionIsCondition(*pFunction))
 					{
-						archive.error(*this, "Component function is not valid condition!");
+						archive.error(*this, "[Schematyc] Component function is not valid condition! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 					}
 				}
 				else
 				{
-					archive.error(*this, "Unable to retrieve component function!");
+					archive.error(*this, "[Schematyc] Unable to retrieve component function! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());;
 				}
 				break;
 			}
@@ -535,19 +535,19 @@ namespace Schematyc2
 				const IScriptActionInstance* pActionInstance = domainContext.GetScriptActionInstance(contextGUID);
 				if(!pActionInstance)
 				{
-					archive.error(*this, "Unable to retrieve action instance!");
+					archive.error(*this, "[Schematyc] Unable to retrieve action instance! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				IActionMemberFunctionConstPtr pFunction = gEnv->pSchematyc2->GetEnvRegistry().GetActionMemberFunction(refGUID);
 				if(pFunction)
 				{
 					if(!DocGraphConditionNodeUtils::FunctionIsCondition(*pFunction))
 					{
-						archive.error(*this, "Action function is not valid condition!");
+						archive.error(*this, "[Schematyc] Action function is not valid condition! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 					}
 				}
 				else
 				{
-					archive.error(*this, "Unable to retrieve action function!");
+					archive.error(*this, "[Schematyc] Unable to retrieve action function! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				break;
 			}
@@ -556,7 +556,7 @@ namespace Schematyc2
 				const IDocGraph* pGraph = domainContext.GetDocGraph(refGUID);
 				if(!pGraph || (pGraph->GetType() != EScriptGraphType::Condition))
 				{
-					archive.error(*this, "Unable to retrieve script condition!");
+					archive.error(*this, "[Schematyc] Unable to retrieve script condition! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), GetGUID().cryGUID.ToDebugString());
 				}
 				break;
 			}
@@ -592,7 +592,7 @@ namespace Schematyc2
 					if(DocGraphConditionNodeUtils::FunctionIsCondition(*pFunction))
 					{
 						const size_t componentInstanceIdx = LibUtils::FindComponentInstanceByGUID(compiler.GetLibClass(), contextGUID);
-						SCHEMATYC2_SYSTEM_ASSERT(componentInstanceIdx != INVALID_INDEX);
+						SCHEMATYC2_SYSTEM_ASSERT_MESSAGE(componentInstanceIdx != INVALID_INDEX, "[Schematyc] Component function %s missing component instance. File: %s, guid: %s", pFunction->GetName(), CDocGraphNodeBase::GetFile().GetFileName(), pFunction->GetGUID().cryGUID.ToDebugString());
 						if(componentInstanceIdx != INVALID_INDEX)
 						{
 #ifdef SCHEMATYC2_ASSERTS_ENABLED
@@ -617,7 +617,7 @@ namespace Schematyc2
 					if(DocGraphConditionNodeUtils::FunctionIsCondition(*pFunction))
 					{
 						const size_t actionInstanceIdx = LibUtils::FindActionInstanceByGUID(compiler.GetLibClass(), contextGUID);
-						SCHEMATYC2_SYSTEM_ASSERT(actionInstanceIdx != INVALID_INDEX);
+						SCHEMATYC2_SYSTEM_ASSERT_MESSAGE(actionInstanceIdx != INVALID_INDEX, "[Schematyc] Action function %s missing action instance. File: %s, guid: %s", pFunction->GetName(), CDocGraphNodeBase::GetFile().GetFileName(), pFunction->GetGUID().cryGUID.ToDebugString());
 						if(actionInstanceIdx != INVALID_INDEX)
 						{
 #ifdef SCHEMATYC2_ASSERTS_ENABLED

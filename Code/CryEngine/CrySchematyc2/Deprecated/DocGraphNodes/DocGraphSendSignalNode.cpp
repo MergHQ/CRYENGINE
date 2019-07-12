@@ -131,8 +131,7 @@ namespace Schematyc2
 			const IScriptSignal* pSignal = ScriptIncludeRecursionUtils::GetSignal(file, refGUID).second;
 			if(!pSignal)
 			{
-				char stringBuffer[StringUtils::s_guidStringBufferSize] = "";
-				archive.error(*this, "Unable to retrieve signal: guid = %s", StringUtils::SysGUIDToString(refGUID.sysGUID, stringBuffer));
+				archive.error(*this, "[Schematyc] Unable to retrieve signal: file: %s guid = %s", file.GetFileName(), GetGUID().cryGUID.ToDebugString());
 			}
 		}
 	}

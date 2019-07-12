@@ -1326,7 +1326,7 @@ namespace Schematyc2
 			}
 			else
 			{
-				SCHEMATYC2_SYSTEM_WARNING("Failed to find parent element!");
+				SCHEMATYC2_SYSTEM_WARNING("[Schematyc] Tried to add Schematyc element but scope guid (parent element) was not found! File: %s, element guid: %s, scope guid: %s", element.GetFile().GetFileName(), element.GetGUID().cryGUID.ToDebugString(), scopeGUID.cryGUID.ToDebugString());
 			}
 		}
 		else

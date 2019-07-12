@@ -35,6 +35,22 @@ namespace Schematyc2
 					m_typeDescsByGUID.insert(TypeDescByGUIDMap::value_type(guid, pTypeDesc));
 					return true;
 				}
+				else
+				{
+					if (!GetTypeDesc(id))
+					{
+						CryFatalError("Duplicated guid when registering type with guid:%s (%s)", guid.cryGUID.ToString().c_str(), pTypeDesc->GetName());
+					}
+					else if (!GetTypeDesc(guid))
+					{
+						CryFatalError("Duplicated type id %s when registering type with guid: %s (%s)", id.c_str(), guid.cryGUID.ToString().c_str(), pTypeDesc->GetName());
+					}
+					else
+					{
+						CryFatalError("Unknown error when registering type with guid: %s (%s)", guid.cryGUID.ToString().c_str(), pTypeDesc->GetName());
+					}
+					
+				}
 			}
 		}
 		return false;

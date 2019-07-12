@@ -132,7 +132,7 @@ namespace Schematyc2
 	{
 		if(!CDocGraphNodeBase::GetFile().GetElement(CDocGraphNodeBase::GetRefGUID()))
 		{
-			archive.error(*this, "Failed to retrieve reference!");
+			archive.error(*this, "[Schematyc] Failed to retrieve reference! In file: %s, guid: %s", CDocGraphNodeBase::GetFile().GetFileName(), CDocGraphNodeBase::GetGUID().cryGUID.ToDebugString());
 		}
 	}
 

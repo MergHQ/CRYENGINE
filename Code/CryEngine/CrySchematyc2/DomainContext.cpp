@@ -43,10 +43,10 @@ namespace Schematyc2
 			const IScriptClass* pScriptClass = file.GetClass(guid);
 			if(!pScriptClass)
 			{
-				auto visitScriptInclude = [&guid, &pScriptClass] (const IScriptInclude& scriptInclude) -> EVisitStatus
+				auto visitScriptInclude = [&file, &guid, &pScriptClass] (const IScriptInclude& scriptInclude) -> EVisitStatus
 				{
 					const IScriptFile* pIncludeFile = gEnv->pSchematyc2->GetScriptRegistry().GetFile(scriptInclude.GetRefGUID());
-					CRY_ASSERT(pIncludeFile);
+					CRY_ASSERT_MESSAGE(pIncludeFile, "[Schematyc] Missing include file: %s, include: %s", file.GetFileName(), scriptInclude.GetFileName());
 					if(pIncludeFile)
 					{
 						pScriptClass = GetScriptClass(*pIncludeFile, guid);
@@ -133,7 +133,7 @@ namespace Schematyc2
 				auto visitScriptInclude = [&file, &guid, elementType, &pScriptElement] (const IScriptInclude& scriptInclude) -> EVisitStatus
 				{
 					const IScriptFile* pIncludeFile = gEnv->pSchematyc2->GetScriptRegistry().GetFile(scriptInclude.GetRefGUID());
-					CRY_ASSERT(pIncludeFile);
+					CRY_ASSERT_MESSAGE(pIncludeFile, "[Schematyc] Missing include file: %s, include: %s", file.GetFileName(), scriptInclude.GetFileName());
 					if(pIncludeFile)
 					{
 						pScriptElement = GetScriptElement(*pIncludeFile, guid, elementType);
