@@ -10,12 +10,17 @@
 #include "Objects/SequenceObject.h"
 #include "Objects/EntityObject.h"
 
+#include <CryMovie/IMovieSystem.h>
+
 CUndoSequenceSettings::CUndoSequenceSettings(CTrackViewSequence* pSequence)
 	: m_pSequence(pSequence)
 	, m_oldTimeRange(pSequence->GetTimeRange())
 	, m_oldPlaybackRange(pSequence->GetPlaybackRange())
 	, m_oldFlags(pSequence->GetFlags())
 {
+	IAnimSequence* pAnimationSequence = pSequence->GetIAnimSequence();
+	if (pAnimationSequence)
+		m_oldSequenceAudioTrigger = pAnimationSequence->GetAudioTrigger();
 }
 
 void CUndoSequenceSettings::Undo(bool bUndo)
@@ -27,6 +32,13 @@ void CUndoSequenceSettings::Undo(bool bUndo)
 	m_pSequence->SetTimeRange(m_oldTimeRange);
 	m_pSequence->SetPlaybackRange(m_oldPlaybackRange);
 	m_pSequence->SetFlags(m_oldFlags);
+
+	IAnimSequence* pAnimationSequence = m_pSequence->GetIAnimSequence();
+	if (pAnimationSequence)
+	{
+		m_newSequenceAudioTrigger = pAnimationSequence->GetAudioTrigger();
+		pAnimationSequence->SetAudioTrigger(m_oldSequenceAudioTrigger);
+	}
 }
 
 void CUndoSequenceSettings::Redo()
@@ -34,6 +46,12 @@ void CUndoSequenceSettings::Redo()
 	m_pSequence->SetTimeRange(m_newTimeRange);
 	m_pSequence->SetPlaybackRange(m_newPlaybackRange);
 	m_pSequence->SetFlags(m_newFlags);
+
+	IAnimSequence* pAnimationSequence = m_pSequence->GetIAnimSequence();
+	if (pAnimationSequence)
+	{
+		pAnimationSequence->SetAudioTrigger(m_newSequenceAudioTrigger);
+	}
 }
 
 CUndoAnimKeySelection::CUndoAnimKeySelection(CTrackViewSequence* pSequence)

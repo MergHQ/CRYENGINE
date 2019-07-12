@@ -32,6 +32,8 @@ private:
 	TRange<SAnimTime>                 m_newPlaybackRange;
 	IAnimSequence::EAnimSequenceFlags m_newFlags;
 	IAnimSequence::EAnimSequenceFlags m_oldFlags;
+	SSequenceAudioTrigger             m_newSequenceAudioTrigger;
+	SSequenceAudioTrigger             m_oldSequenceAudioTrigger;
 };
 
 /** Undo object stored when keys were selected
