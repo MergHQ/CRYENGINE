@@ -31,7 +31,7 @@ void CPlayerComponent::Initialize()
 
 	// Create the advanced animation component, responsible for updating Mannequin and animating the player
 	m_pAnimationComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CAdvancedAnimationComponent>();
-	
+
 	// Set the player geometry, this also triggers physics proxy creation
 	m_pAnimationComponent->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
 	m_pAnimationComponent->SetCharacterFile("Objects/Characters/SampleCharacter/thirdperson.cdf");
@@ -49,10 +49,10 @@ void CPlayerComponent::Initialize()
 
 	// Acquire tag identifiers to avoid doing so each update
 	m_walkTagId = m_pAnimationComponent->GetTagId("Walk");
-	
+
 	// Mark the entity to be replicated over the network
 	m_pEntity->GetNetEntity()->BindToNetwork();
-	
+
 	// Register the RemoteReviveOnClient function as a Remote Method Invocation (RMI) that can be executed by the server on clients
 	SRmi<RMI_WRAP(&CPlayerComponent::RemoteReviveOnClient)>::Register(this, eRAT_NoAttach, false, eNRT_ReliableOrdered);
 }
@@ -63,13 +63,13 @@ void CPlayerComponent::InitializeLocalPlayer()
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CCameraComponent>();
 	// Get the input component, wraps access to action mapping so we can easily get callbacks when inputs are triggered
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
-	
-	// Register an action, and the callback that will be sent when it's triggered
-	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) { HandleInputFlagChange(EInputFlag::MoveLeft, (EActionActivationMode)activationMode);  }); 
-	// Bind the 'A' key the "moveleft" action
-	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse,	EKeyId::eKI_A);
 
-	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value) { HandleInputFlagChange(EInputFlag::MoveRight, (EActionActivationMode)activationMode);  }); 
+	// Register an action, and the callback that will be sent when it's triggered
+	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) { HandleInputFlagChange(EInputFlag::MoveLeft, (EActionActivationMode)activationMode);  });
+	// Bind the 'A' key the "moveleft" action
+	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse, EKeyId::eKI_A);
+
+	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value) { HandleInputFlagChange(EInputFlag::MoveRight, (EActionActivationMode)activationMode);  });
 	m_pInputComponent->BindAction("player", "moveright", eAID_KeyboardMouse, EKeyId::eKI_D);
 
 	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value)
@@ -125,7 +125,8 @@ void CPlayerComponent::InitializeLocalPlayer()
 Cry::Entity::EventFlags CPlayerComponent::GetEventMask() const
 {
 	return Cry::Entity::EEvent::BecomeLocalPlayer |
-			Cry::Entity::EEvent::Update;
+		Cry::Entity::EEvent::Update |
+		Cry::Entity::EEvent::GameplayStarted;
 }
 
 void CPlayerComponent::ProcessEvent(const SEntityEvent& event)
@@ -137,12 +138,19 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& event)
 		InitializeLocalPlayer();
 	}
 	break;
+	case Cry::Entity::EEvent::GameplayStarted:
+	{
+		const Matrix34 newTransform = CSpawnPointComponent::GetFirstSpawnPointTransform();
+
+		Revive(newTransform);
+	}
+	break;
 	case Cry::Entity::EEvent::Update:
 	{
 		// Don't update the player if we haven't spawned yet
-		if(!m_isAlive)
+		if (!m_isAlive)
 			return;
-		
+
 		const float frameTime = event.fParam[0];
 
 		// Start by updating the movement request we want to send to the character controller
@@ -164,7 +172,7 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& event)
 
 bool CPlayerComponent::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
 {
-	if(aspect == InputAspect)
+	if (aspect == InputAspect)
 	{
 		ser.BeginGroup("PlayerInput");
 
@@ -191,7 +199,7 @@ bool CPlayerComponent::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8
 
 		ser.EndGroup();
 	}
-	
+
 	return true;
 }
 
@@ -226,7 +234,7 @@ void CPlayerComponent::UpdateAnimation(float frameTime)
 void CPlayerComponent::UpdateCamera(float frameTime)
 {
 	Matrix34 localTransform = IDENTITY;
-	
+
 	const float viewDistance = 5;
 	const float viewOffsetUp = 2.f;
 
@@ -242,14 +250,14 @@ void CPlayerComponent::UpdateCamera(float frameTime)
 void CPlayerComponent::OnReadyForGameplayOnServer()
 {
 	CRY_ASSERT(gEnv->bServer, "This function should only be called on the server!");
-	
+
 	const Matrix34 newTransform = CSpawnPointComponent::GetFirstSpawnPointTransform();
-	
+
 	Revive(newTransform);
-	
+
 	// Invoke the RemoteReviveOnClient function on all remote clients, to ensure that Revive is called across the network
 	SRmi<RMI_WRAP(&CPlayerComponent::RemoteReviveOnClient)>::InvokeOnOtherClients(this, RemoteReviveParams{ newTransform.GetTranslation(), Quat(newTransform) });
-	
+
 	// Go through all other players, and send the RemoteReviveOnClient on their instances to the new player that is ready for gameplay
 	const int channelId = m_pEntity->GetNetEntity()->GetChannelId();
 	CGamePlugin::GetInstance()->IterateOverPlayers([this, channelId](CPlayerComponent& player)
@@ -279,14 +287,9 @@ bool CPlayerComponent::RemoteReviveOnClient(RemoteReviveParams&& params, INetCha
 void CPlayerComponent::Revive(const Matrix34& transform)
 {
 	m_isAlive = true;
-	
-	// Set the entity transformation, except if we are in the editor
-	// In the editor case we always prefer to spawn where the viewport is
-	if(!gEnv->IsEditor())
-	{
-		m_pEntity->SetWorldTM(transform);
-	}
-	
+
+	m_pEntity->SetWorldTM(transform);
+
 	// Apply the character to the entity and queue animations
 	m_pAnimationComponent->ResetCharacter();
 	m_pCharacterController->Physicalize();
@@ -322,8 +325,8 @@ void CPlayerComponent::HandleInputFlagChange(const CEnumFlags<EInputFlag> flags,
 	}
 	break;
 	}
-	
-	if(IsLocalClient())
+
+	if (IsLocalClient())
 	{
 		NetMarkAspectsDirty(InputAspect);
 	}
