@@ -1624,28 +1624,27 @@ void C3DEngine::OnExplosion(Vec3 vPos, float fRadius, bool bDeformTerrain)
 
 float C3DEngine::GetMaxViewDistance(bool bScaled)
 {
-	// spec lerp factor
-	float lerpSpec = clamp_tpl(GetCVars()->e_MaxViewDistSpecLerp, 0.0f, 1.0f);
+	double fMaxViewDist = static_cast<double>(GetFloatCVar(e_MaxViewDistance));
 
-	// camera height lerp factor
-	float lerpHeight = clamp_tpl(max(0.f, GetSystem()->GetViewCamera().GetPosition().z - GetWaterLevel()) / GetFloatCVar(e_MaxViewDistFullDistCamHeight), 0.0f, 1.0f);
+	if (fMaxViewDist < 0)
+	{
+		// spec lerp factor
+		double lerpSpec = static_cast<double>(clamp_tpl(GetCVars()->e_MaxViewDistSpecLerp, 0.0f, 1.0f));
 
-	// lerp between specs
-	float fMaxViewDist = m_fMaxViewDistLowSpec * (1.f - lerpSpec) + m_fMaxViewDistHighSpec * lerpSpec;
+		// camera height lerp factor
+		double lerpHeight = static_cast<double>(clamp_tpl(max(0.f, GetSystem()->GetViewCamera().GetPosition().z - GetWaterLevel()) / GetFloatCVar(e_MaxViewDistFullDistCamHeight), 0.0f, 1.0f));
 
-	// lerp between prev result and high spec
-	fMaxViewDist = fMaxViewDist * (1.f - lerpHeight) + m_fMaxViewDistHighSpec * lerpHeight;
+		// lerp between specs
+		fMaxViewDist = m_fMaxViewDistLowSpec * (1.0 - lerpSpec) + m_fMaxViewDistHighSpec * lerpSpec;
 
-	if (bScaled)
-		fMaxViewDist *= m_fMaxViewDistScale;
+		// lerp between prev result and high spec
+		fMaxViewDist = fMaxViewDist * (1.0 - lerpHeight) + m_fMaxViewDistHighSpec * lerpHeight;
 
-	// for debugging
-	const float fMaxViewDistCVar = GetFloatCVar(e_MaxViewDistance);
-	fMaxViewDist = (float)__fsel(fMaxViewDistCVar, fMaxViewDistCVar, fMaxViewDist);
+		if (bScaled)
+			fMaxViewDist *= m_fMaxViewDistScale;
+	}
 
-	fMaxViewDist = (float)__fsel(fabsf(fMaxViewDist) - 0.100001f, fMaxViewDist, 0.100001f);
-
-	return fMaxViewDist;
+	return static_cast<float>(max(fMaxViewDist, 0.100001));
 }
 
 void C3DEngine::SetFrameLodInfo(const SFrameLodInfo& frameLodInfo)
