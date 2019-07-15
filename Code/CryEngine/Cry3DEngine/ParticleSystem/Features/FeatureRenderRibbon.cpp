@@ -173,21 +173,6 @@ void CFeatureRenderRibbon::MakeRibbons(const CParticleComponentRuntime& runtime,
 
 static const float minParticleSize = 1e-6f;
 
-ILINE float NormalizeSafe(Vec3& out, const Vec3& v, float size)
-{
-	float lensqr = v.len2();
-	if (lensqr > sqr(FLT_EPSILON))
-	{
-		out = v * (rsqrt(lensqr) * size);
-		return size;
-	}
-	else
-	{
-		out.zero();
-		return 0.0f;
-	}
-}
-
 class CRibbonAxes
 {
 public:
@@ -206,14 +191,18 @@ public:
 		if (m_facing == ERibbonMode::Camera)
 		{
 			const Vec3 front = movingPositions[1] - m_cameraPosition;
-			return NormalizeSafe(axes.xAxis, axes.yAxis ^ front, size) > minParticleSize;
+			axes.xAxis = axes.yAxis ^ front;
+			float lensqr = axes.xAxis.len2();
+			if (lensqr <= sqr(FLT_EPSILON))
+				return false;
+			axes.xAxis *= rsqrt(lensqr) * size;
 		}
 		else
 		{
 			const Quat orientation = m_orientations.Load(particleId);
 			axes.xAxis = orientation.GetColumn0() * -size;
-			return true;
 		}
+		return true;
 	}
 
 private:
@@ -316,7 +305,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 		float axisScale = 1.0f;
 
 		const uint lastIdx = ribbon.m_lastIdx + m_connectToParent;
-		uint ribbonLen = 0;
+		int prevSize = localPositions.Array().size();
 		for (uint i = ribbon.m_firstIdx; i < lastIdx; ++i)
 		{
 			const TParticleId particleId = sortEntries[min(i, ribbon.m_lastIdx - 1)];
@@ -356,13 +345,12 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 				localPositions.Array().push_back(position);
 				localAxes.Array().push_back(axes);
 				localColorSTs.Array().push_back(colorST);
-				ribbonLen++;
 			}
 			axisScale = 0.5f;
 		}
 
 		// Add degenerate vertex between ribbons
-		if (ribbonLen > 0 && ribbonId < ribbons.size() - 1)
+		if (localPositions.Array().size() > prevSize && ribbonId < ribbons.size() - 1)
 		{
 			colorST.st.x = 255;
 			localPositions.Array().push_back(position);

@@ -160,6 +160,26 @@ struct SFeatureDispatchers
 	FEATURE_DISPATCHER(ComputeVertices);
 };
 
+// Serialization tools
+using Serialization::IArchive;
+
+// If archive is being edited, return feature's component
+CParticleComponent* EditingComponent(IArchive& ar);
+
+// Automatically check a feature for editing, and update relevant emitters
+struct SCheckEditFeature
+{
+	SCheckEditFeature(IArchive& ar, CParticleFeature& feature);
+	~SCheckEditFeature();
+
+private:
+	CParticleComponent* m_pComponent;
+	CParticleFeature&   m_feature;
+	string              m_archiveText;
+
+	void SaveText(string& dest);
+};
+
 ILINE ColorB HexToColor(uint hex)
 {
 	return ColorB((hex >> 16) & 0xff, (hex >> 8) & 0xff, hex & 0xff);
@@ -229,3 +249,5 @@ namespace yasli
 		return it->second->create();
 	}
 }
+
+

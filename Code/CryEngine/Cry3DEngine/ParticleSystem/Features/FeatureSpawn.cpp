@@ -116,14 +116,13 @@ public:
 		auto ages = runtime.IOStream(ESDT_Age);
 		auto lifetimes = runtime.IStream(ESDT_LifeTime);
 
-		const float dT = runtime.DeltaTime();
-		float extendedLife = 0.0f;
+		float extendedLife = runtime.DeltaTime();
 		const auto& params = runtime.ComponentParams();
 		if (params.m_keepParentAlive)
 		{
 			const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
 			CRY_ASSERT(valueisfinite(particleLife));
-			extendedLife += particleLife + dT;
+			extendedLife += particleLife;
 		}
 
 		TParticleIdArray removeIds(runtime.MemHeap());
@@ -163,15 +162,17 @@ public:
 
 			auto ages = runtime.IStream(ESDT_Age);
 			auto lifetimes = runtime.IStream(ESDT_LifeTime);
-			auto restarts = runtime.IStream(ESDT_Restart);
+			auto restarts = runtime.IOStream(ESDT_Restart);
 			auto parentIds = runtime.IStream(ESDT_ParentId);
-			const float dT = runtime.DeltaTime();
 
 			for (auto i : container.NonSpawnedRange())
 			{
-				// Add new spawner if this one will die next frame
-				if (ages[i] <= lifetimes[i] && ages[i] + dT > lifetimes[i])
+				// Add new spawner if this one will die this frame
+				if (restarts[i] > 0.0f && ages[i] > lifetimes[i])
+				{
 					spawners.push_back(SSpawnerDesc(parentIds[i], max(restarts[i] - ages[i], 0.0f)));
+					restarts[i] = 0;
+				}
 			}
 			runtime.AddSpawners(spawners, false);
 		}
@@ -375,6 +376,7 @@ public:
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
+		SCheckEditFeature check(ar, *this);
 		CParticleFeatureSpawnBase::Serialize(ar);
 		if (m_duration.IsEnabled() && m_duration.GetBaseValue() > 0.0f)
 			ar(m_mode, "Mode", "Mode");
@@ -475,6 +477,7 @@ public:
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
+		SCheckEditFeature check(ar, *this);
 		CParticleFeatureSpawnBase::Serialize(ar);
 		ar(m_mode, "Mode", "Mode");
 	}
@@ -520,6 +523,7 @@ public:
 
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
+		SCheckEditFeature check(ar, *this);
 		CParticleFeatureSpawnBase::Serialize(ar);
 		ar(m_mode, "Mode", "Mode");
 	}

@@ -723,8 +723,6 @@ void CParticleEmitter::UpdateRuntimes()
 		else
 		{
 			pRuntime->Initialize();
-			if (pRuntime->HasParticles())
-				pComponent->OnEdit(*pRuntime);
 		}
 
 		newRuntimes.push_back(pRuntime);

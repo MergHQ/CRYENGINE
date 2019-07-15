@@ -64,6 +64,7 @@ public:
 	};
 
 	PParticleEffect          LoadEffect(cstr effectName);
+	void                     OnEditFeature(const CParticleComponent* pComponent, CParticleFeature* pFeature);
 
 	SThreadData&             GetThreadData() { return m_threadData[JobManager::GetWorkerThreadId() + 1]; }
 	SThreadData&             GetMainData()   { return m_threadData.front(); }

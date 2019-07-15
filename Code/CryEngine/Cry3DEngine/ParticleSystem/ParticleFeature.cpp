@@ -30,4 +30,39 @@ gpu_pfx2::IParticleFeature* CParticleFeature::MakeGpuInterface(CParticleComponen
 	return m_gpuInterface;
 }
 
+CParticleComponent* EditingComponent(IArchive& ar)
+{
+	if (ar.isInput() && ar.isEdit())
+		return static_cast<CParticleComponent*>(ar.context<IParticleComponent>());
+	return nullptr;
+}
+
+// SCheckEditFeature implementation
+SCheckEditFeature::SCheckEditFeature(IArchive& ar, CParticleFeature& feature)
+	: m_pComponent(EditingComponent(ar))
+	, m_feature(feature)
+{
+	if (!m_pComponent)
+		return;
+	SaveText(m_archiveText);
+}
+
+SCheckEditFeature::~SCheckEditFeature()
+{
+	if (!m_pComponent)
+		return;
+	string newText;
+	SaveText(newText);
+	if (newText != m_archiveText)
+		GetPSystem()->OnEditFeature(m_pComponent, &m_feature);
+}
+
+void SCheckEditFeature::SaveText(string& dest)
+{
+	// Save current state of feature
+	DynArray<char> buffer;
+	Serialization::SaveJsonBuffer(buffer, m_feature);
+	dest = string(buffer.data(), buffer.size());
+}
+
 }

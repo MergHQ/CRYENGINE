@@ -186,7 +186,7 @@ void CParticleSystem::Update()
 	{
 		if (!pEmitter->IsAlive())
 			continue;
-		for (auto& pRuntime: pEmitter->GetRuntimesPreUpdate())
+		for (auto& pRuntime : pEmitter->GetRuntimesPreUpdate())
 		{
 			pRuntime->GetComponent()->MainPreUpdate(*pRuntime);
 		}
@@ -490,6 +490,25 @@ PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 
 	m_effects[effectName] = _smart_ptr<CParticleEffect>();
 	return PParticleEffect();
+}
+
+void CParticleSystem::OnEditFeature(const CParticleComponent* pComponent, CParticleFeature* pFeature)
+{
+	if (!pComponent || !pFeature)
+		return;
+
+	// Update runtimes which contain edited feature
+	CParticleEffect* pEffect = pComponent->GetEffect();
+	for (auto& pEmitter : m_emitters)
+	{
+		if (pEmitter->IsAlive() && pEmitter->GetCEffect() == pEffect)
+		{
+			if (auto pRuntime = pEmitter->GetRuntimeFor(pComponent))
+			{
+				pFeature->OnEdit(*pRuntime);
+			}
+		}
+	}
 }
 
 const SParticleFeatureParams* CParticleSystem::FindFeatureParam(cstr groupName, cstr featureName)
