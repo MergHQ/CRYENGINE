@@ -17,6 +17,7 @@ protected:
 	virtual bool PopulateNodeContextMenu(CryGraphEditor::CAbstractNodeItem& node, QMenu& menu) override;
 	virtual void ShowGraphContextMenu(QPointF screenPos) override;
 	void         OnContextMenuEntryClicked(CAbstractDictionaryEntry& entry);
+	virtual void closeEvent(QCloseEvent*pEvent) override;
 private:
 	std::unique_ptr<QPopupWidget> m_pSearchPopup;
 	CDictionaryWidget*            m_pSearchPopupContent;
