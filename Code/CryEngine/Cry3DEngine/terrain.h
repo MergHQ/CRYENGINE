@@ -286,7 +286,6 @@ public:
 	void          ResetTerrainVertBuffers(const AABB* pBox);
 	void          SetTerrainSectorTexture(int nTexSectorX, int nTexSectorY, unsigned int textureId, bool bMergeNotAllowed);
 	void          SetDetailLayerProperties(int nId, float fScaleX, float fScaleY, uint8 ucProjAxis, const char* szSurfName, const PodArray<int>& lstnVegetationGroups, IMaterial* pMat);
-	bool          IsOceanVisible() { return m_bOceanIsVisible != 0; }
 	void          SetTerrainElevation(int x1, int y1, int nSizeX, int nSizeY, float* pTerrainBlock, SSurfaceTypeItem* pSurfaceData, int nSurfOrgX, int nSurfOrgY, int nSurfSizeX, int nSurfSizeY, uint32* pResolMap, int nResolMapSizeX, int nResolMapSizeY);
 	void          HighlightTerrain(int x1, int y1, int x2, int y2);
 	bool          CanPaintSurfaceType(int x, int y, int r, uint16 usGlobalSurfaceType);
@@ -463,7 +462,6 @@ protected:
 
 	CTerrainModifications m_StoredModifications;                // to serialize (load/save) terrain heighmap changes and limit the modification
 	int                   m_nLoadedSectors;                     //
-	bool                  m_bOceanIsVisible;                    //
 	bool                  m_bProcVegetationInUse;
 	bool                  m_bHeightMapModified;
 	int                   m_nUnitsToSectorBitShift;

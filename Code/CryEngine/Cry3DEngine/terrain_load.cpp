@@ -26,7 +26,6 @@ CTerrain::CTerrain(const STerrainInfo& TerrainInfo)
 	m_bHeightMapModified = false;
 	m_bProcVegetationInUse = false;
 	m_nLoadedSectors = 0;
-	m_bOceanIsVisible = 0;
 	m_fDistanceToSectorWithWater = 0;
 	//	m_nDiffTexIndexTableSize = 0;
 	//	m_nDiffTexTreeLevelOffset = 0;
