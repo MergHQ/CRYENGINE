@@ -30,7 +30,7 @@ public:
 
 	bool        IsStageActive(EShaderRenderingFlags flags) const final
 	{
-		if (flags & EShaderRenderingFlags::SHDF_SECONDARY_VIEWPORT)
+		if (flags & (EShaderRenderingFlags::SHDF_SECONDARY_VIEWPORT | EShaderRenderingFlags::SHDF_FORWARD_MINIMAL))
 			return false;
 
 		return true;
