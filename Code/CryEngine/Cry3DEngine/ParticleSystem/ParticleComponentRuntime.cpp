@@ -240,12 +240,13 @@ void CParticleComponentRuntime::UpdateSpawners()
 
 	CParticleContainer& container = m_containers[EDD_Spawner];
 
-	GetComponent()->RemoveSpawners(*this);
 	container.BeginSpawn();
 	GetComponent()->AddSpawners(*this);
 	if (container.HasNewBorns())
 		GetComponent()->InitSpawners(*this);
 	container.EndSpawn();
+
+	GetComponent()->RemoveSpawners(*this);
 	GetComponent()->UpdateSpawners(*this);
 
 	DebugStabilityCheck();

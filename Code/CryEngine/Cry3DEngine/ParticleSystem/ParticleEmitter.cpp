@@ -367,7 +367,7 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 				const ColorB componentColor = ColorF(!hasShadows, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
 				string label = string().Format("%s #S:%d #P:%d",
-					pRuntime->GetComponent()->GetName(), pRuntime->Container(EDD_Spawner).Size(), numParticles);
+					pRuntime->GetComponent()->GetName(), pRuntime->Container(EDD_Spawner).RealSize(), numParticles);
 				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
 			}
 		}
@@ -731,8 +731,6 @@ void CParticleEmitter::UpdateRuntimes()
 		else
 		{
 			pRuntime->Initialize();
-			if (pRuntime->HasParticles())
-				pComponent->OnEdit(*pRuntime);
 		}
 
 		newRuntimes.push_back(pRuntime);

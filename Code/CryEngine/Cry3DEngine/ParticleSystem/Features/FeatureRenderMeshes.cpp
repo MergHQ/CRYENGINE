@@ -43,13 +43,23 @@ public:
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
+		auto prevMesh = m_meshName;
 		ar(Serialization::ModelFilename(m_meshName), "Mesh", "Mesh");
+		if (m_aSubObjects.size() && m_meshName != prevMesh)
+			GetPSystem()->OnEditFeature(EditingComponent(ar), this);
+
 		SERIALIZE_VAR(ar, m_scale);
 		SERIALIZE_VAR(ar, m_sizeMode);
 		SERIALIZE_VAR(ar, m_originMode);
 		SERIALIZE_VAR(ar, m_piecesMode);
 		SERIALIZE_VAR(ar, m_piecePlacement);
 		SERIALIZE_VAR(ar, m_castShadows);
+	}
+
+	virtual void OnEdit(CParticleComponentRuntime& runtime) override
+	{
+		// Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
+		runtime.GetContainer().FillData(EPDT_MeshGeometry, (IMeshObj*)nullptr, runtime.FullRange());
 	}
 
 	virtual EFeatureType GetFeatureType() override { return EFT_Render; }
@@ -119,7 +129,6 @@ public:
 				{
 					// Require per-particle sub-objects
 					assert(m_aSubObjects.size() < 256);
-					component.OnEdit.add(this);
 					component.InitParticles.add(this);
 					component.AddParticleData(EPDT_MeshGeometry);
 					if (m_piecesMode == EPiecesMode::AllPieces)
@@ -149,12 +158,6 @@ public:
 		return m_originMode == EOriginMode::Center ? 
 			bb.GetRadiusSqr() :
 			max(bb.min.GetLengthSquared(), bb.max.GetLengthSquared());
-	}
-
-	virtual void OnEdit(CParticleComponentRuntime& runtime) override
-	{
-		// Submesh pointers must be cleared on edit to avoid referencing freed parent mesh
-		runtime.GetContainer().FillData(EPDT_MeshGeometry, (IMeshObj*)nullptr, runtime.FullRange());
 	}
 
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override
