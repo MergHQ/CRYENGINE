@@ -1090,13 +1090,29 @@ static void OnReleaseGeom(IGeometry* pGeom)
 		pStatObj->Release();
 }
 
-void C3DEngine::UnloadPhysicsData()
+void C3DEngine::ResetWindSystem()
 {
 	if (m_pGlobalWind != 0)
 	{
 		gEnv->pPhysicalWorld->DestroyPhysicalEntity(m_pGlobalWind);
 		m_pGlobalWind = 0;
 	}
+	m_fLastWindProcessedTime = 0.0f;
+	m_vProcessedGlobalWind   = Vec3(0, 0, 0);
+	m_nProcessedWindAreas    = -1;
+	m_nFrameWindAreas        = 0;
+	m_nCurrentWindAreaList   = -1;
+	m_outdoorWindAreas[0].reserve(0); 
+	m_outdoorWindAreas[1].reserve(0);
+	m_indoorWindAreas [0].reserve(0);
+	m_indoorWindAreas [1].reserve(0);
+	m_forcedWindAreas    .reserve(0);
+}
+
+void C3DEngine::UnloadPhysicsData()
+{
+	ResetWindSystem();
+
 	if (gEnv->pPhysicalWorld)
 	{
 		// Pause and wait for the physics

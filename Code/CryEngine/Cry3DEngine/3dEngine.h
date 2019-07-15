@@ -1049,6 +1049,7 @@ public:
 	bool                          LoadUsedShadersList();
 	bool                          PrecreateDecals();
 	void                          LoadPhysicsData();
+	void                          ResetWindSystem();
 	void                          UnloadPhysicsData();
 	void                          LoadFlaresData();
 	void                          FreeFoliages();
