@@ -176,6 +176,7 @@ int CArticulatedEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams* _params
 	if (i==m_nJoints) {
 		if (m_nJoints==m_nJointsAlloc) 
 			ReallocateList(m_joints, m_nJoints,m_nJointsAlloc+=4);
+		new(m_joints+m_nJoints) ae_joint();
 		m_joints[m_nJoints].iStartPart = idx;
 		m_joints[m_nJoints].nParts = 0;
 		if (m_joints[0].fs) {
@@ -276,8 +277,11 @@ void CArticulatedEntity::RemoveGeometry(int id, int bThreadSafe)
 		if (--m_joints[j=m_infos[i].iJoint].nParts<=0 && !m_joints[j].nChildren) {
 			for(int ij=0;ij<m_nJoints;ij++) 
 				m_joints[ij].iParent -= isneg(j-m_joints[ij].iParent);
-			if (m_joints[j].iParent>=0)
-				m_joints[m_joints[j].iParent].nChildren--, m_joints[m_joints[j].iParent].nChildrenTree--;
+			if (m_joints[j].iParent>=0) {
+				m_joints[m_joints[j].iParent].nChildren--;
+				for(int iparent=m_joints[j].iParent; iparent>=0; iparent=m_joints[iparent].iParent)
+					m_joints[iparent].nChildrenTree--;
+			}
 			memmove(m_joints+j, m_joints+j+1, (--m_nJoints-j)*sizeof(ae_joint));
 			for(int ipart=0;ipart<m_nParts;ipart++)
 				m_infos[ipart].iJoint -= isneg(j-m_infos[ipart].iJoint);
