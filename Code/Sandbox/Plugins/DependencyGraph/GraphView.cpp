@@ -139,6 +139,12 @@ void CGraphView::OnContextMenuEntryClicked(CAbstractDictionaryEntry& entry)
 	}
 }
 
+void CGraphView::closeEvent(QCloseEvent*pEvent)
+{
+	pEvent->accept();
+	SetModel(nullptr);
+}
+
 CAssetWidget::CAssetWidget(CAssetNodeBase& item, CryGraphEditor::CNodeGraphView& view)
 	: CryGraphEditor::CNodeWidget(item, view)
 {
