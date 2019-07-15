@@ -1954,10 +1954,10 @@ int CRopeEntity::Step(float time_interval)
 		return 1;
 	}
 	if (m_pWorld->m_bWorldStep!=2) {
-		if (m_timeStepPerformed>m_timeStepFull-0.001f || m_timeStepPerformed>0 && (m_flags & pef_invisible))
+		if (m_timeStepPerformed>m_timeStepFull-0.0001f || m_timeStepPerformed>0 && (m_flags & pef_invisible))
 			return 1;
 	}	else if (time_interval>0)
-		time_interval = max(0.001f, min(m_timeStepFull-m_timeStepPerformed, time_interval));
+		time_interval = max(0.0001f, min(m_timeStepFull-m_timeStepPerformed, time_interval));
 	else
 		return 1;
 

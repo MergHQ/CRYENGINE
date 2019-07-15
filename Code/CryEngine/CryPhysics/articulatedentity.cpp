@@ -1664,7 +1664,7 @@ int CArticulatedEntity::Step(float time_interval)
 	m_bUpdateBodies = 0;
 	m_iLastLog = max(1,m_iLastLog);
 
-	if (m_timeStepPerformed > m_timeStepFull-0.001f || m_flags & pef_disabled)
+	if (m_flags & pef_disabled)
 		return UpdateHistory(1);
 	m_timeStepPerformed += time_interval;
 	m_lastTimeStep = time_interval;
