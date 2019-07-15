@@ -129,8 +129,6 @@ pixout StarsPS(v2f IN)
 	float3 colFinal = SkyDome_StarIntensity * (colCool * scale + 5 * colHot * pow(scale, 10));
 		
 	OUT.Color = float4(colFinal, scale);
-	
-	Fwd_ApplyFog(worldPos, cameraToWorldPos, IN.Position, OUT.Color.xyz);
 
 	return OUT;
 }
@@ -244,8 +242,6 @@ pixout SkyPassPS(vtxOut IN)
 		#endif
 	}
 #endif
-	
-	Fwd_ApplyFog(worldPos, cameraToWorldPos, IN.WPos, OUT.Color.xyz);
 
 	return OUT;
 }
