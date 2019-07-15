@@ -454,6 +454,9 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 
 			if (bOpaquePass)
 				pSceneRenderPass = &m_forwardOpaqueRecursivePass;
+
+			if (bOverlay)
+				pSceneRenderPass = &m_forwardOverlayRecursivePass;
 		}
 		else if (bOpaquePass)
 		{
