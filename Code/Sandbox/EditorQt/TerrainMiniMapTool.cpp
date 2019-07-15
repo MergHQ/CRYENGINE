@@ -278,7 +278,7 @@ void CTerrainMiniMapTool::Generate(bool bHideProxy)
 
 	GetIEditorImpl()->SetConsoleVar("e_ScreenShotWidth", m_minimap.textureWidth);
 	GetIEditorImpl()->SetConsoleVar("e_screenShotHeight", m_minimap.textureHeight);
-	GetIEditorImpl()->SetConsoleVar("e_ScreenShotMapCamHeight", 100000.f);
+	GetIEditorImpl()->SetConsoleVar("e_ScreenShotMapCamHeight", 10000.f);
 	GetIEditorImpl()->SetConsoleVar("e_ScreenShotMapOrientation", m_minimap.orientation);
 
 	GetIEditorImpl()->SetConsoleVar("e_ScreenShotMapCenterX", m_minimap.vCenter.x);
@@ -314,25 +314,25 @@ void CTerrainMiniMapTool::Generate(bool bHideProxy)
 	}
 	else
 	{
-		m_constClearList["r_HDRRendering"] = gEnv->pConsole->GetCVar("r_HDRRendering")->GetFVal();
 		m_constClearList["r_PostProcessEffects"] = gEnv->pConsole->GetCVar("r_PostProcessEffects")->GetFVal();
 		m_constClearList["e_Lods"] = gEnv->pConsole->GetCVar("e_Lods")->GetFVal();
 		m_constClearList["e_ViewDistRatio"] = gEnv->pConsole->GetCVar("e_ViewDistRatio")->GetFVal();
-		m_constClearList["e_VegetationSpritesDistanceRatio"] = gEnv->pConsole->GetCVar("e_VegetationSpritesDistanceRatio")->GetFVal();
 		m_constClearList["e_ViewDistRatioVegetation"] = gEnv->pConsole->GetCVar("e_ViewDistRatioVegetation")->GetFVal();
-		m_constClearList["e_TerrainLodRatio"] = gEnv->pConsole->GetCVar("e_TerrainLodRatio")->GetFVal();
 		m_constClearList["e_ScreenShotQuality"] = gEnv->pConsole->GetCVar("e_ScreenShotQuality")->GetFVal();
 		m_constClearList["e_Vegetation"] = gEnv->pConsole->GetCVar("e_Vegetation")->GetFVal();
+		m_constClearList["e_CoverageBuffer"] = gEnv->pConsole->GetCVar("e_CoverageBuffer")->GetFVal();
+		m_constClearList["e_StatObjBufferRenderTasks"] = gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks")->GetFVal();
+		m_constClearList["e_Skybox"] = gEnv->pConsole->GetCVar("e_Skybox")->GetFVal();
 
-		gEnv->pConsole->GetCVar("r_HDRRendering")->Set(0);
 		gEnv->pConsole->GetCVar("r_PostProcessEffects")->Set(0);
 		gEnv->pConsole->GetCVar("e_ScreenShotQuality")->Set(0);
-		gEnv->pConsole->GetCVar("e_ViewDistRatio")->Set(10000.f);
-		gEnv->pConsole->GetCVar("e_VegetationSpritesDistanceRatio")->Set(20);
+		gEnv->pConsole->GetCVar("e_ViewDistRatio")->Set(100000.f);
 		gEnv->pConsole->GetCVar("e_ViewDistRatioVegetation")->Set(100.f);
 		gEnv->pConsole->GetCVar("e_Lods")->Set(0);
-		gEnv->pConsole->GetCVar("e_TerrainLodRatio")->Set(0.f);
 		gEnv->pConsole->GetCVar("e_Vegetation")->Set(0);
+		gEnv->pConsole->GetCVar("e_CoverageBuffer")->Set(0);
+		gEnv->pConsole->GetCVar("e_StatObjBufferRenderTasks")->Set(0);
+		gEnv->pConsole->GetCVar("e_Skybox")->Set(0);
 	}
 	gEnv->pConsole->GetCVar("e_ScreenShotQuality")->Set(0);
 

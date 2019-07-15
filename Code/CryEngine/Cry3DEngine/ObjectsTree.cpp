@@ -619,6 +619,8 @@ FrustumMaskType COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint
 
 	if ((passCullMask & kPassCullMainMask) != 0)
 	{
+		const bool bAllowCoverageBuffer = !!gEnv->pConsole->GetCVar("e_CoverageBuffer")->GetIVal();
+
 		// check frustum culling of main view
 		if (!bCompletelyInMainFrustum && !passInfo.GetCamera().IsAABBVisible_EH(nodeBox, &bCompletelyInMainFrustum))
 		{
@@ -630,7 +632,7 @@ FrustumMaskType COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint
 			passCullMask &= ~kPassCullMainMask;
 		}
 		// check against coverage buffer in main view
-		else if (bTestCoverageBuffer && !GetObjManager()->CheckOcclusion_TestAABB(nodeBox, nodeDistance))
+		else if (bAllowCoverageBuffer && bTestCoverageBuffer && !GetObjManager()->CheckOcclusion_TestAABB(nodeBox, nodeDistance))
 		{
 			passCullMask &= ~kPassCullMainMask;
 		}
