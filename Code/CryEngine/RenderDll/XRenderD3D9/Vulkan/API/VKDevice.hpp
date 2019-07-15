@@ -113,6 +113,9 @@ public:
 	void FlushReleaseHeaps(const UINT64 (&completedFenceValues)[CMDQUEUE_NUM], const UINT64 (&pruneFenceValues)[CMDQUEUE_NUM]) threadsafe;
 	void FlushAndWaitForGPU();
 
+	bool IsTessellationShaderSupported() const;
+	bool IsGeometryShaderSupported()     const;
+
 private:
 	const SPhysicalDeviceInfo* m_pDeviceInfo;
 	VkPipelineCache m_pipelineCache;

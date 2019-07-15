@@ -667,4 +667,8 @@ void CDevice::FlushAndWaitForGPU()
 	m_Scheduler.GetCommandListPool(CMDQUEUE_GRAPHICS).WaitForFenceOnCPU();
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+bool CDevice::IsTessellationShaderSupported() const { return m_pDeviceInfo->deviceFeatures.geometryShader; }
+bool CDevice::IsGeometryShaderSupported()     const { return m_pDeviceInfo->deviceFeatures.tessellationShader; }
+
 }

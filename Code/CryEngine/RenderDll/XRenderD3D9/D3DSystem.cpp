@@ -1895,11 +1895,11 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 #endif
 
 	rd->m_bDeviceSupportsGeometryShaders = (rd->m_Features & RFT_HW_SM40) != 0;
-
-#if !CRY_RENDERER_VULKAN
 	rd->m_bDeviceSupportsTessellation = (rd->m_Features & RFT_HW_SM50) != 0;
-#else
-	rd->m_bDeviceSupportsTessellation = false;
+
+#if CRY_RENDERER_VULKAN
+	rd->m_bDeviceSupportsGeometryShaders &= GetDeviceObjectFactory().GetVKDevice()->IsGeometryShaderSupported();
+	rd->m_bDeviceSupportsTessellation &= GetDeviceObjectFactory().GetVKDevice()->IsTessellationShaderSupported();
 #endif
 
 	rd->m_Features |= RFT_OCCLUSIONTEST;

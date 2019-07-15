@@ -207,22 +207,27 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 	{
 		bool showWarnings = false;
 		
+		const bool needsInvertingY = strncmp(pTarget, "vs", 2) == 0 || strncmp(pTarget, "ds", 2) == 0;
+
 		char params[1001];
-		cry_sprintf(params, " -spirv -O3 -Zpr \"%s%s\" -Fo \"%s%s\" -Fc \"%s%s\" -T %s -E \"%s\" %s %s",
-			shaderPathWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
+		cry_sprintf(params, " %s %s -Zpr -spirv %s -E %s -T %s -Fo \"%s%s\" -Fc \"%s%s\" \"%s%s\"",
+			needsInvertingY ? "-fvk-invert-y" : "",
+			CRenderer::CV_r_shadersdebug == 3 ? "-Od" : "-O3",
+			showWarnings ? "" : "-no-warnings",
+			pEntrypoint,
+			pTarget,
 			shaderPathWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
 			shaderPathWithoutFormat.c_str(), OUTPUT_HUMAN_READABLE_SPIRV_FORMAT,
-			pTarget,
-			pEntrypoint,
-			strncmp(pTarget, "vs", 2) == 0 ? "-fvk-invert-y" : "",
-			showWarnings ? "" : "-no-warnings");
+			shaderPathWithoutFormat.c_str(), INPUT_HLSL_FORMAT);
 
-		ShellExecute("%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V003\\dxc\\dxc.exe", params);
+		ShellExecute("%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V006\\dxc\\dxc.exe", params);
 	}
 	else if (vkShaderCompiler == STR_VK_SHADER_COMPILER_GLSLANG)
 	{
 		std::string targetEnv = "vulkan1.0";
 		
+		const bool needsInvertingY = strncmp(pTarget, "vs", 2) == 0 || strncmp(pTarget, "ds", 2) == 0;
+
 		char params[1001];
 		cry_sprintf(params, " -D -fhlsl_functionality1 \"%s%s\" -o \"%s%s\" --target-env %s -S %s -e %s -V100 %s",
 			shaderPathWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
@@ -230,7 +235,7 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 			targetEnv.c_str(),
 			GetGLSLANGTargetName(pTarget),
 			pEntrypoint,
-			strncmp(pTarget, "vs", 2) == 0 ? "--invert-y" : "");
+			needsInvertingY ? "--invert-y" : "");
 
 		ShellExecute("%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V003\\glslang\\glslangValidator.exe", params);
 	}

@@ -1163,16 +1163,15 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	}
 	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_DXC) == 0)
 	{
-		// " -spirv -Od -Zpr \"%s.%s\" -Fo \"%s.%s\" -Fc \"%s.%s\" -T %s -E \"%s\" %s %s"
-		compilerSPIRV.Format("SPIRV/V003/dxc/dxc.exe %s %s ", eClass == eHWSC_Vertex ? " -fvk-invert-y " : "", CRenderer::CV_r_shadersdebug == 3 ? " -Od " : " -O3 ");
+		bool needsToInvertY = eClass == eHWSC_Vertex || eClass == eHWSC_Domain;
+		compilerSPIRV.Format("SPIRV/V006/dxc/dxc.exe %s %s ", needsToInvertY ? " -fvk-invert-y " : "", CRenderer::CV_r_shadersdebug == 3 ? " -Od " : " -O3 ");
 		compilerSPIRV += " -Zpr -spirv -no-warnings -E %s -T %s -Fo %s %s";
 	}
 	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_GLSLANG) == 0)
 	{
-		//-D - fhlsl_functionality1 - V100 --target-env vulkan1.0 -S frag -e AuxGeomTexturePS -o vs_5_0_shader.out .\shader.in
-
+		bool needsToInvertY = eClass == eHWSC_Vertex || eClass == eHWSC_Domain;
 		compilerSPIRV.Format("SPIRV/V003/glslang/glslangValidator.exe -D -fhlsl_functionality1 -V100 --target-env vulkan1.0 %s -S %s", 
-			eClass == eHWSC_Vertex ? "--invert-y" : "", GetGLSLANGTargetName(eClass));
+			needsToInvertY ? "--invert-y" : "", GetGLSLANGTargetName(eClass));
 		compilerSPIRV += " -e %s -I%s -o %s %s";
 	}
 
