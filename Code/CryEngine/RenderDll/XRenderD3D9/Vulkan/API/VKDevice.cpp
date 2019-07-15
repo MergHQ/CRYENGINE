@@ -668,7 +668,7 @@ void CDevice::FlushAndWaitForGPU()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-bool CDevice::IsTessellationShaderSupported() const { return m_pDeviceInfo->deviceFeatures.geometryShader; }
-bool CDevice::IsGeometryShaderSupported()     const { return m_pDeviceInfo->deviceFeatures.tessellationShader; }
+bool CDevice::IsTessellationShaderSupported() const { return m_pDeviceInfo->deviceFeatures.geometryShader     != 0u; }
+bool CDevice::IsGeometryShaderSupported()     const { return m_pDeviceInfo->deviceFeatures.tessellationShader != 0u; }
 
 }
