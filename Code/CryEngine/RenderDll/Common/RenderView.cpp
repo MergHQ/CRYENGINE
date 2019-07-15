@@ -1617,7 +1617,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_DiscardingZPrePass && (isTesselated)) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_DiscardingZPrePass && (objDistance > CRenderer::CV_r_ZPrepassMaxDist));
 
-		if (skipPrepass && hasDeferredOpaqueFlags)
+		if (isTransparent || (skipPrepass && hasDeferredOpaqueFlags))
 			nBatchFlags &= ~FB_ZPREPASS;
 
 		// These lists are traversed by the GBuffer-pass by default (see CSceneGBufferStage::ExecuteSceneOpaque)
