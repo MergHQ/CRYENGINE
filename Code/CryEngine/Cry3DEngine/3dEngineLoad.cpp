@@ -1101,7 +1101,7 @@ void C3DEngine::ResetWindSystem()
 	m_vProcessedGlobalWind   = Vec3(0, 0, 0);
 	m_nProcessedWindAreas    = -1;
 	m_nFrameWindAreas        = 0;
-	m_nCurrentWindAreaList   = -1;
+	m_nCurrentWindAreaList   = 0;
 	m_outdoorWindAreas[0].reserve(0); 
 	m_outdoorWindAreas[1].reserve(0);
 	m_indoorWindAreas [0].reserve(0);
