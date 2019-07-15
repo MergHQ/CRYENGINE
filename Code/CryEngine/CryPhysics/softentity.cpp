@@ -1589,7 +1589,7 @@ int CSoftEntity::Step(float time_interval)
 			m_timeStepSurplus-=m_maxAllowedStep; time_interval=m_maxAllowedStep;
 		}	else
 			return 1;
-	if (m_timeStepPerformed>m_timeStepFull-0.001f)
+	if (m_timeStepPerformed>m_timeStepFull-0.0001f)
 		return 1;
 	m_timeStepPerformed += time_interval;
 	ktimeBack = (m_timeStepFull-m_timeStepPerformed)/m_timeStepFull*(iszero(m_pWorld->m_bWorldStep-2)^1);
@@ -1722,7 +1722,7 @@ int CSoftEntity::Step(float time_interval)
 		m_vtx[i].vcontact = m_vtx[i].vel = (pbody->v+(pbody->w^m_vtx[i].pos-pbody->pos))*(1-m_kRigid);
 		m_vtx[i].pos -= m_pos+m_offs0;
 
-		if (min(m_maxSafeStep,m_timeStepPerformed+0.001f-m_timeStepFull)>0) 
+		if (min(m_maxSafeStep,m_timeStepPerformed+0.0001f-m_timeStepFull)>0) 
 			for(j=m_vtx[i].iStartEdge; j<=m_vtx[i].iEndEdge; j++) if (m_edges[m_pVtxEdges[j]].len>=0) {
 				int i2 = m_edges[m_pVtxEdges[j]].ivtx[0]+m_edges[m_pVtxEdges[j]].ivtx[1]-i;
 				if (m_vtx[i2].idx0>i0 && (m_vtx[i2].pos-m_vtx[i].pos).len2() > sqr(m_edges[m_pVtxEdges[j]].len0*(1.0f+m_maxSafeStep))) {
