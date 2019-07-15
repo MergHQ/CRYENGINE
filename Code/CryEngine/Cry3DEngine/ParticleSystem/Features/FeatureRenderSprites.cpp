@@ -319,7 +319,11 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	{
 		CRY_PROFILE_SECTION(PROFILE_PARTICLE, "pfx2::CullParticles:Water");
 		CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
-		float waterSign = 0.0f;
+
+		static const float Expand = 1.002f; // fix rcp_fast inaccuracy
+		static const Slope<float> AboveSlope { Expand, Expand * 2 }; // fade range is water depth from -1 to 0, increasing
+		static const Slope<float> BelowSlope { 0, -Expand }; // fade range is water depth from -1 to 0, decreasing
+		Slope<float> waterSlope { 0, 0 };
 
 		const auto& params = runtime.ComponentParams();
 		if (params.m_renderStateFlags & OS_TRANSPARENT)
@@ -327,20 +331,19 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 			// Transparent particles always clipped to water volume
 			const bool isAfterWater = (spritesContext.m_renderFlags & FOB_AFTER_WATER) != 0;
 			const bool cameraUnderWater = spritesContext.m_camInfo.bCameraUnderwater;
-			waterSign = (cameraUnderWater == isAfterWater) ? -1.0f : 1.0f;
+			waterSlope = cameraUnderWater != isAfterWater ? AboveSlope : BelowSlope;
 		}
 		else
 		{
 			// Opaque particles clipped only if specified
 			if (params.m_visibility.m_waterVisibility == EWaterVisibility::AboveWaterOnly)
-				waterSign = 1.0f;
+				waterSlope = AboveSlope;
 			else if (params.m_visibility.m_waterVisibility == EWaterVisibility::BelowWaterOnly)
-				waterSign = -1.0f;
+				waterSlope = BelowSlope;
 		}
-		if (waterSign != 0.0f)
-		{
-			waterSign *= 1.002f;  // Expand to fix rcp_fast inaccuracy
 
+		if (waterSlope.scale != 0)
+		{
 			Plane waterPlane;
 			numParticles = 0;
 			for (auto particleId : particleIds)
@@ -349,7 +352,7 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 				const Vec3 position = positions.Load(particleId);
 				const float waterDist = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, radius);
 				const float distRel = waterDist * rcp_fast(radius);
-				const float waterAlpha = saturate((distRel + 1.0f) * waterSign);
+				const float waterAlpha = saturate(waterSlope(distRel));
 				spriteAlphas[particleId] *= waterAlpha;
 
 				if (waterAlpha > 0.0f)
