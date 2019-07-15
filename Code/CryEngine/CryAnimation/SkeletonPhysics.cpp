@@ -646,7 +646,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 							pj.kd[j] = stiffness_scale;
 						}
 					}
-					if (strstr(GetModelJointPointer(i)->m_strJointName.c_str(), "Thigh") || strstr(GetModelJointPointer(i)->m_strJointName.c_str(), "Calf"))
+					if (!nLod && (strstr(GetModelJointPointer(i)->m_strJointName.c_str(), "Thigh") || strstr(GetModelJointPointer(i)->m_strJointName.c_str(), "Calf")))
 						pj.flags |= joint_ignore_impulses;
 
 					pj.pMtx0 = 0;
