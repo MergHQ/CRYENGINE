@@ -771,15 +771,6 @@ CBootProfiler& CBootProfiler::GetInstance()
 	return gProfilerInstance;
 }
 
-CBootProfiler::CBootProfiler()
-	: m_pCurrentSession(nullptr)
-	, m_quitSaveThread(false)
-	, m_pMainThreadFrameRecord(nullptr)
-	, m_numFramesToLog(0)
-	, m_levelLoadAdditionalFrames(0)
-	, m_countdownToNextSaveSesssion(0)
-{}
-
 CBootProfiler::~CBootProfiler()
 {
 	StopSaveSessionsThread();

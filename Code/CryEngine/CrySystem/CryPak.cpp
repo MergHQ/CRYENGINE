@@ -1284,11 +1284,14 @@ bool CCryPak::CopyFileOnDisk(const char* source, const char* dest, bool bFailIfE
 		return false;
 
 	FILE* hSource = fopen(source, "r");
+	if (hSource == nullptr)
+		return false;
+
 	FILE* hDestination = fopen(dest, "w");
-	if (hSource == nullptr || hDestination == nullptr)
+	if (hDestination == nullptr)
 	{
-		fclose(hSource);
-		fclose(hDestination);
+		if (hSource)
+			fclose(hSource);
 		return false;
 	}
 

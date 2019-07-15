@@ -39,7 +39,6 @@ public:
 	};
 
 public:
-	CBootProfiler();
 	~CBootProfiler();
 
 	// IThread
@@ -78,10 +77,10 @@ private:
 
 	static void                SaveProfileSessionToDisk(const float funcMinTimeThreshold, CBootProfilerSession* pSession);
 		
-	CBootProfilerSession*      m_pCurrentSession;
+	CBootProfilerSession*      m_pCurrentSession = nullptr;
 
-	bool                       m_quitSaveThread;
-	bool                       m_initialized;
+	bool                       m_quitSaveThread = false;
+	bool                       m_initialized = false;
 	CryEvent                   m_saveThreadWakeUpEvent;
 	TSessionsToSave            m_sessionsToSave;
 
@@ -96,10 +95,10 @@ private:
 	static float               CV_sys_bp_time_threshold;
 	static ICVar*              CV_sys_bp_frames_required_label;
 
-	CBootProfilerRecord*       m_pMainThreadFrameRecord;
-	int                        m_numFramesToLog;
-	int                        m_levelLoadAdditionalFrames;
-	int                        m_countdownToNextSaveSesssion;
+	CBootProfilerRecord*       m_pMainThreadFrameRecord = nullptr;
+	int                        m_numFramesToLog = 0;
+	int                        m_levelLoadAdditionalFrames = 0;
+	int                        m_countdownToNextSaveSesssion = 0;
 };
 
 #else //ENABLE_LOADING_PROFILER
