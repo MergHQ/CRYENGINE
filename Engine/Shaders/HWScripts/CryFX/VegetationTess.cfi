@@ -79,8 +79,9 @@ void ProcessEvalOutput_Vegetation(in CommonEvaluationOutputDS evalOutput, inout 
 	dsOutput.HPosition = mul(g_VS_ViewProjZeroMatr, float4(evalOutput.vPos.xyz, 1));
 }
 
-void EvaluateVegetationSpecific(inout vtxOutVegetation output, in HS_CONTROL_POINT_OUTPUT_VEGETATION triPatch[3],
-                                in float3 vBaryCoords, in CommonEvaluationOutputDS evalOutput)
+void EvaluateVegetationSpecific(inout vtxOutVegetation output, 
+	in OutputPatch<HS_CONTROL_POINT_OUTPUT_VEGETATION, 3> triPatch, in float3 vBaryCoords, 
+	in CommonEvaluationOutputDS evalOutput)
 {
 	output.screenProj = HPosToScreenTC(output.HPosition);
 	output.screenProj.z = EvalVec(triPatch[0].screenProj.z, triPatch[1].screenProj.z, triPatch[2].screenProj.z, vBaryCoords);

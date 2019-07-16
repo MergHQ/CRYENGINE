@@ -684,7 +684,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 	perInstanceExtraResources.SetConstantBuffer(
 		eConstantBufferShaderSlot_PerGroup,
 		m_pCompiledParticle->m_pShaderDataCB,
-		EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Pixel);
+		EShaderStage_Vertex | EShaderStage_Domain | EShaderStage_Hull | EShaderStage_Pixel);
 
 	if (isGpuParticles)
 	{
