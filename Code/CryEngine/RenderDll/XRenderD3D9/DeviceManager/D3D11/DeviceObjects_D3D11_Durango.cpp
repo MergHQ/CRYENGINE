@@ -242,7 +242,7 @@ bool CDurangoGPUMemoryManager::Init(size_t maximumSize, size_t bankSize, size_t 
 	}
 #endif
 
-	maximumSize = std::max(maximumSize, reserveSize);
+	m_maximumAllocationSize = maximumSize = std::max(maximumSize, reserveSize);
 	m_memType = xgMemType;
 
 	m_bankShift = IntegerLog2_RoundUp(bankSize);
@@ -347,7 +347,7 @@ void CDurangoGPUMemoryManager::DeInit()
 
 size_t CDurangoGPUMemoryManager::GetPoolSize() const
 {
-	return m_banks.size() * (1ull << m_bankShift);
+	return m_maximumAllocationSize;
 }
 
 size_t CDurangoGPUMemoryManager::GetPoolAllocated() const
