@@ -57,8 +57,7 @@ struct SAuxVS2PSWithColor
 
 
 // Default vertex shader to transform auxiliary 3D geometries
-SAuxVS2PS
-AuxGeomVS( SAuxGeomApp2VS IN )
+SAuxVS2PS AuxGeomVS( SAuxGeomApp2VS IN )
 {
   SAuxVS2PS OUT = (SAuxVS2PS) 0;
 
@@ -69,8 +68,7 @@ AuxGeomVS( SAuxGeomApp2VS IN )
 }
 
 // Default vertex shader to transform auxiliary 3D geometries
-SAuxVS2PSWithColor
-AuxGeomTextureVS( SAuxGeomApp2VS IN )
+SAuxVS2PSWithColor AuxGeomTextureVS( SAuxGeomApp2VS IN )
 {
   SAuxVS2PSWithColor OUT;
 
@@ -83,8 +81,7 @@ AuxGeomTextureVS( SAuxGeomApp2VS IN )
 
 
 // Default vertex shader to transform auxiliary 3D geometry objects
-SAuxVS2PS
-AuxGeomObjVS( SAuxGeomObjApp2VS IN )
+SAuxVS2PS AuxGeomObjVS( SAuxGeomObjApp2VS IN )
 {
   SAuxVS2PS OUT = (SAuxVS2PS) 0;
 
@@ -99,8 +96,7 @@ AuxGeomObjVS( SAuxGeomObjApp2VS IN )
 
 
 // Default pixel shader to render auxiliary 2D/3D geometries and geometry objects
-float4
-AuxGeomPS( SAuxVS2PS IN ) : SV_Target0
+float4 AuxGeomPS( SAuxVS2PS IN ) : SV_Target0
 {
   return IN.col;
 }
@@ -111,18 +107,16 @@ SamplerState smpAux : register(s0);
 
 
 // Default pixel shader to render auxiliary 2D/3D geometries and geometry objects with texture
-float4
-AuxGeomTexturePS( SAuxVS2PSWithColor IN ) : SV_Target0
+float4 AuxGeomTexturePS( SAuxVS2PSWithColor IN ) : SV_Target0
 {
   float4 col = IN.col;
   float4 tex = GetTexture2D(texAux, smpAux, IN.tex.xy);
   return col.rgba * tex.rgba;
 }
 
-SAuxVS2PSWithColor
-AuxGeomThickLineVS( SAuxGeomApp2VS IN )
+SAuxGeomApp2VS AuxGeomThickLineVS( SAuxGeomApp2VS IN )
 {
-  SAuxVS2PSWithColor OUT = (SAuxVS2PSWithColor) 0;
+  SAuxGeomApp2VS OUT = (SAuxGeomApp2VS) 0;
 
   OUT.pos = mul( cbAuxGeom.matViewProj, IN.pos );
   OUT.col = GetInputColor( IN.col );
