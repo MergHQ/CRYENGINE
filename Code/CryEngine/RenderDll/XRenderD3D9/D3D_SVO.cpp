@@ -1026,8 +1026,9 @@ void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo
 	if (texInfo.pGlobalSpecCM)
 		rp.SetTexture(6, static_cast<CTexture*>(texInfo.pGlobalSpecCM.get()));
 
-	if (texInfo.pTexRgb0.get())
-		rp.SetTexture(25, static_cast<CTexture*>(texInfo.pTexRgb0.get()));
+	CTexture* pTexRgb0 = static_cast<CTexture*>(texInfo.pTexRgb0.get());
+	if (CTexture::IsTextureExist(pTexRgb0))
+		rp.SetTexture(25, pTexRgb0);
 
 	#endif
 }
@@ -2012,7 +2013,7 @@ void CSvoRenderer::SVoxPool::Init(ITexture* _pTex)
 {
 	pTex = (CTexture*)_pTex;
 
-	if (pTex)
+	if (CTexture::IsTextureExist(pTex))
 	{
 		if (CSvoRenderer::s_pInstance && CSvoRenderer::s_pInstance->GetIntegratioMode())
 		{
