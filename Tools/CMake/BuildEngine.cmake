@@ -62,6 +62,12 @@ if(WINDOWS)
 	option(OPTION_PHYSDBGR "Include standalone physics debugger in the build" OFF)
 endif()
 
+
+if(WINDOWS)
+	option(PLUGIN_VR_EMULATOR "VR emulation support" ON)
+endif()
+
+
 if(WINDOWS OR LINUX)
 	option(PLUGIN_USERANALYTICS "Enable User Analytics" ON)
 	if(EXISTS "${SDK_DIR}/OpenVR")

@@ -549,8 +549,6 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 	{
 		gRenDev->GetIRenderAuxGeom()->Submit();
 	}
-
-	pRenderView->GetGraphicsPipeline()->SetCurrentRenderView(nullptr);
 }
 
 // Render thread only scene rendering
@@ -704,6 +702,7 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 			}
 			else
 			{
+				pRenderView->SetCurrentEye(CCamera::eEye_Left);
 				pRenderView->SetZoomFactor(passInfo.GetZoomFactor());
 				RT_RenderScene(pRenderView);
 			}

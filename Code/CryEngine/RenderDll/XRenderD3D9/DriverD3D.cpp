@@ -634,9 +634,10 @@ void CD3D9Renderer::HandleDisplayPropertyChanges(std::shared_ptr<CGraphicsPipeli
 
 		CalculateResolutions(displayWidthRequested, displayHeightRequested, &renderWidth, &renderHeight, &outputWidth, &outputHeight, &displayWidth, &displayHeight);
 
-		if (!IsEditorMode() && m_pStereoRenderer && m_pStereoRenderer->IsStereoEnabled())
+		if (m_pStereoRenderer && m_pStereoRenderer->IsStereoEnabled())
 		{
-			m_pStereoRenderer->CalculateResolution(renderWidth, renderHeight, &renderWidth, &renderHeight);
+			int hmdDisplayWidth, hmdDisplayHeight;
+			m_pStereoRenderer->CalculateResolution(&renderWidth, &renderHeight, &hmdDisplayWidth, &hmdDisplayHeight);
 		}
 
 		// Renderer resize
@@ -648,7 +649,7 @@ void CD3D9Renderer::HandleDisplayPropertyChanges(std::shared_ptr<CGraphicsPipeli
 			bChangedRendering = pDC->IsMainViewport();
 
 			// Hack for editor (editor viewports will be resized earlier)
-			if (IsEditorMode() && pDC->IsMainViewport())
+			if (IsEditorMode() && pDC->IsMainViewport() && !IsStereoEnabled())
 				bResizeSwapchain = true;
 		}
 
@@ -3243,6 +3244,8 @@ void CD3D9Renderer::RT_EndFrame()
 
 	CTimeValue timePresentBegin = iTimer->GetAsyncTime();
 	GetS3DRend().SubmitFrameToHMD();
+
+	GetActiveGraphicsPipeline()->SetCurrentRenderView(nullptr);
 
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)

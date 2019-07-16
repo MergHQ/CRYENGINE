@@ -546,6 +546,7 @@ add_sources("CryRenderer_uber_0.cpp"
 		"D3DOcclQuery.cpp"
 		"D3DOculus.cpp"
 		"D3DOpenVR.cpp"
+		"D3DHmdEmulator.cpp"
 		"D3DREBreakableGlass.cpp"
 		"D3DREBreakableGlassBuffer.cpp"
 		"D3D_SVO.cpp"
@@ -656,6 +657,7 @@ add_sources("CryRenderer_uber_3.cpp"
 		"D3DHWShader.h"
 		"D3DOculus.h"
 		"D3DOpenVR.h"
+		"D3DHmdEmulator.h"
 		"D3DPostProcess.h"
 		"D3DRenderAuxGeom.h"
 		"D3DStereo.h"
@@ -869,7 +871,7 @@ end_sources()
 
 set(extra_defines)
 
-if(PLUGIN_VR_OCULUS OR PLUGIN_VR_OSVR OR PLUGIN_VR_OPENVR)
+if(PLUGIN_VR_OCULUS OR PLUGIN_VR_OSVR OR PLUGIN_VR_OPENVR OR PLUGIN_VR_EMULATOR)
 	message(STATUS "Enabling VR rendering.")
 	list(APPEND extra_defines -DINCLUDE_VR_RENDERING)
 endif()

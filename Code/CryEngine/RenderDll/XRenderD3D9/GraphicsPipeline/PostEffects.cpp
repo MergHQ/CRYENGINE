@@ -942,7 +942,6 @@ void CPostStereoPass::Execute()
 	CRY_ASSERT(pTmpMaskTex);
 	CRY_ASSERT(pTmpMaskTex->GetWidth() == pSrcBackBufferTexture->GetWidth());
 	CRY_ASSERT(pTmpMaskTex->GetHeight() == pSrcBackBufferTexture->GetHeight());
-	CRY_ASSERT(pTmpMaskTex->GetDstFormat() == pSrcBackBufferTexture->GetDstFormat());
 	CTexture* pZTexture = m_pContext->GetRenderView()->GetDepthTarget();
 
 	const bool bReverseDepth = true;
@@ -957,7 +956,7 @@ void CPostStereoPass::Execute()
 		if (pass.IsDirty(pTmpMaskTex->GetID()))
 		{
 			static CCryNameTSCRC techName("StereoNearMask");
-			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 			pass.SetTechnique(CShaderMan::s_shPostEffects, techName, 0);
 
 			int32 nRS = GS_DEPTHFUNC_LEQUAL;

@@ -7,6 +7,7 @@
 #include "D3DOculus.h"
 #include "D3DOsvr.h"
 #include "D3DOpenVR.h"
+#include "D3DHmdEmulator.h"
 
 #include <Common/RenderDisplayContext.h>
 #include <CrySystem/ConsoleRegistration.h>
@@ -162,12 +163,27 @@ void CD3DStereoRenderer::OnStereoModeChanged()
 {
 	if (m_mode == EStereoMode::STEREO_MODE_NO_STEREO)
 	{
-		DisableStereo();
+		gcpRendD3D->ExecuteRenderThreadCommand(
+			[&] {
+				DisableStereo();
+			}, ERenderCommandFlags::FlushAndWait
+		);
 	}
 	else
 	{
-		EnableStereo();
-		ShutdownHmdRenderer();
+		gcpRendD3D->ExecuteRenderThreadCommand(
+			[&]{
+				EnableStereo();
+				ShutdownHmdRenderer();
+				ICVar* hmdDeviceCVar = gEnv->pConsole->GetCVar("hmd_device");
+				if (hmdDeviceCVar)
+					hmdDeviceCVar->SetFromString(m_output != EStereoOutput::STEREO_OUTPUT_HMD && m_mode != EStereoMode::STEREO_MODE_NO_STEREO ? "Plugin_EmulatorVR" : "");
+				gEnv->pSystem->GetHmdManager()->SetupAction(IHmdManager::eHmdSetupAction_Init);
+				if (m_device != EStereoDevice::STEREO_DEVICE_NONE && m_mode != EStereoMode::STEREO_MODE_NO_STEREO)
+				 	PrepareStereo();
+				gcpRendD3D->HandleDisplayPropertyChanges(gcpRendD3D->GetActiveGraphicsPipeline());
+			}, ERenderCommandFlags::FlushAndWait
+		);
 	}
 }
 
@@ -416,15 +432,15 @@ void CD3DStereoRenderer::PrepareStereo()
 		m_maxSeparationScene *= m_stereoStrength;
 
 		auto device = gEnv->pSystem->GetHmdManager()->GetHmdDevice();
-		if (m_output == EStereoOutput::STEREO_OUTPUT_HMD && m_pHmdRenderer == nullptr && device)
+		if (m_pHmdRenderer == nullptr && device)
 		{
 			// Create the HMD renderer
 			m_pHmdRenderer = CreateHmdRenderer(*device);
 
 			if (m_pHmdRenderer != nullptr)
 			{
-				int eyeWidth, eyeHeight;
-				CalculateResolution(0, 0, &eyeWidth, &eyeHeight);
+				int eyeWidth, eyeHeight, displayWidth, displayHeight;
+				CalculateResolution(&eyeWidth, &eyeHeight, &displayWidth, &displayHeight);
 
 				if (!m_pHmdRenderer->Initialize(eyeWidth, eyeHeight))
 				{
@@ -513,7 +529,7 @@ CCamera CD3DStereoRenderer::PrepareCamera(int nEye, const CCamera& currentCamera
 	{
 		if (ICVar* pCvar = gEnv->pConsole->GetCVar("sys_vr_support"))
 		{
-			renderToHmd = pCvar->GetIVal() > 0;
+			renderToHmd = pCvar->GetIVal() > 0 && m_output == EStereoOutput::STEREO_OUTPUT_HMD;
 		}
 	}
 
@@ -632,7 +648,6 @@ SStereoRenderContext CD3DStereoRenderer::PrepareStereoRenderingContext(int nFlag
 	IHmdManager* pHmdManager = gEnv->pSystem->GetHmdManager();
 	if (pHmdManager)
 	{
-
 		IHmdDevice* pHmdDevice = pHmdManager->GetHmdDevice();
 		if (pHmdDevice)
 			context.orientationForLateCameraInjection = pHmdDevice->GetOrientationForLateCameraInjection();
@@ -733,6 +748,7 @@ void CD3DStereoRenderer::RenderScene(const SStereoRenderContext& context)
 		}
 
 		// Right eye
+		if(!IsPostStereoEnabled())
 		{
 			if (g_pMgpu && CRenderer::CV_r_StereoEnableMgpu)
 			{
@@ -1050,42 +1066,42 @@ void CD3DStereoRenderer::OnResolutionChanged(int newWidth, int newHeight)
 	m_headlockedQuadCamera.SetFrustum(newWidth, newHeight);
 }
 
-void CD3DStereoRenderer::CalculateResolution(int requestedWidth, int requestedHeight, int* pDisplayWidth, int* pDisplayHeight)
+void CD3DStereoRenderer::CalculateResolution(int* pRenderWidth, int *pRenderHeight, int* pDisplayWidth, int* pDisplayHeight)
 {
+	CRY_ASSERT(gEnv->pSystem->GetHmdManager()->GetHmdDevice());
+	IHmdDevice* pHmdDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice();
+
+	// Update renderer resolution
+	HmdDeviceInfo deviceInfo;
+	pHmdDevice->GetDeviceInfo(deviceInfo);
+	const float resolutionScale = gEnv->pConsole->GetCVar("hmd_resolution_scale")->GetFVal();
+
+	*pDisplayWidth = deviceInfo.screenWidth;
+	*pDisplayHeight = deviceInfo.screenHeight;
+
 	switch (m_output)
 	{
-		case EStereoOutput::STEREO_OUTPUT_SIDE_BY_SIDE:
-			*pDisplayWidth  = requestedWidth * 2;
-			*pDisplayHeight = requestedHeight;
-			break;
-		case EStereoOutput::STEREO_OUTPUT_ABOVE_AND_BELOW:
-			*pDisplayWidth  = requestedWidth;
-			*pDisplayHeight = requestedHeight * 2;
-			break;
-		case EStereoOutput::STEREO_OUTPUT_HMD:
-			if (IHmdDevice* pHmdDevice = gEnv->pSystem->GetHmdManager()->GetHmdDevice())
-			{
-				// Update renderer resolution
-				HmdDeviceInfo deviceInfo;
-				pHmdDevice->GetDeviceInfo(deviceInfo);
-
-				const float resolutionScale = gEnv->pConsole->GetCVar("hmd_resolution_scale")->GetFVal();
-				const int screenWidth  = (int)floor(float(deviceInfo.screenWidth / 2) * resolutionScale);
-				const int screenHeight = (int)floor(float(deviceInfo.screenHeight   ) * resolutionScale);
-
-				*pDisplayWidth  = screenWidth;
-				*pDisplayHeight = screenHeight;
-			}
-			else
-			{
-				*pDisplayWidth  = requestedWidth;
-				*pDisplayHeight = requestedHeight;
-			}
-			break;
-		default:
-			*pDisplayWidth  = requestedWidth;
-			*pDisplayHeight = requestedHeight;
-			break;
+	case EStereoOutput::STEREO_OUTPUT_SIDE_BY_SIDE:
+	case EStereoOutput::STEREO_OUTPUT_HMD:
+	{
+		*pRenderWidth = (int)floor(float(deviceInfo.screenWidth / 2) * resolutionScale);
+		*pRenderHeight = (int)floor(float(deviceInfo.screenHeight) * resolutionScale);
+	}
+	break;
+	case EStereoOutput::STEREO_OUTPUT_ABOVE_AND_BELOW:
+	{
+		*pRenderWidth = (int)floor(float(deviceInfo.screenWidth) * resolutionScale);
+		*pRenderHeight = (int)floor(float(deviceInfo.screenHeight / 2) * resolutionScale);
+	}
+	break;
+	case EStereoOutput::STEREO_OUTPUT_LINE_BY_LINE:
+	case EStereoOutput::STEREO_OUTPUT_CHECKERBOARD:
+	case EStereoOutput::STEREO_OUTPUT_ANAGLYPH:
+	default:
+	{
+		*pRenderWidth = (int)floor(float(deviceInfo.screenWidth) * resolutionScale);
+		*pRenderHeight = (int)floor(float(deviceInfo.screenHeight) * resolutionScale);
+	}
 	}
 }
 
@@ -1116,11 +1132,13 @@ IHmdRenderer* CD3DStereoRenderer::CreateHmdRenderer(IHmdDevice& device)
 	switch (device.GetClass())
 	{
 	case eHmdClass_Oculus:
-		return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(&device), gcpRendD3D, this);
+			return new CD3DOculusRenderer(static_cast<CryVR::Oculus::IOculusDevice*>(&device), gcpRendD3D, this);
 	case eHmdClass_OpenVR:
-		return new CD3DOpenVRRenderer(static_cast<CryVR::OpenVR::IOpenVRDevice*>(&device), gcpRendD3D, this);
+			return new CD3DOpenVRRenderer(static_cast<CryVR::OpenVR::IOpenVRDevice*>(&device), gcpRendD3D, this);
 	case eHmdClass_Osvr:
-		return new CD3DOsvrRenderer(static_cast<CryVR::Osvr::IOsvrDevice*>(&device), gcpRendD3D, this);
+			return new CD3DOsvrRenderer(static_cast<CryVR::Osvr::IOsvrDevice*>(&device), gcpRendD3D, this);
+		case eHmdClass_Emulator:
+			return new CD3DHmdEmulatorRenderer(&device, gcpRendD3D, this);
 	default:
 		iLog->LogError("Tried to create HMD renderer for unknown headset!");
 		break;
