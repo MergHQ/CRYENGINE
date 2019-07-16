@@ -172,7 +172,7 @@ def cmake_configure(generator,
     os.system("start /wait cmd /c \"" + cmd + '\"')
 
     # Start cmake-gui application
-    subprocess.Popen([CMAKE_GUI_EXE, '-H' + srcdir, '-B' + builddir])
+    subprocess.Popen([CMAKE_GUI_EXE, '-S' + srcdir, '-B' + builddir])
     sys.exit(0)
 
 
