@@ -246,6 +246,7 @@ private:
 	void* m_pCPUAddr;
 	UINT_PTR m_bankShift;
 	UINT m_memType;
+	size_t m_maximumAllocationSize;
 	bool m_allowAdditionalBanks;
 	size_t m_overflowAllocationSize;
 	std::unordered_map<void*, size_t> m_overflowAllocationMap;
