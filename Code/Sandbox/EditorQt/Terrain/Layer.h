@@ -195,9 +195,6 @@ private:
 	// Get native resolution for layer mask (For not autogen levels).
 	int GetNativeMaskResolution() const;
 
-	CXTPMenuBar m_wndMenuBar;
-	CXTPToolBar m_wndToolBar;
-
 	string      m_strLayerName;        // Name (might not be unique)
 	string      m_strLayerPath;
 

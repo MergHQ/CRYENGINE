@@ -328,13 +328,12 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 
 	ASSERT(iWidth && iHeight);
 
-	int prevWidth, prevHeight, prevUnitSize;
-	prevWidth = m_iWidth;
-	prevHeight = m_iHeight;
-	prevUnitSize = m_unitSize;
+	const int prevWidth = m_iWidth;
+	const int prevHeight = m_iHeight;
+	const int prevUnitSize = m_unitSize;
 
-	t_hmap* prevHeightmap = 0;
-	TImage<unsigned char> prevLayerIdBitmap;
+	t_hmap* prevHeightmap = nullptr;
+	CSurfTypeImage prevLayerIdBitmap;
 
 	if (bCleanOld)
 	{
@@ -408,9 +407,9 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 		{
 			CWaitCursor wait;
 			if (prevUnitSize == m_unitSize)
-				CopyFrom(prevHeightmap, prevLayerIdBitmap.GetData(), prevWidth);
+				CopyFrom(prevHeightmap, prevLayerIdBitmap, prevWidth);
 			else
-				CopyFromInterpolate(prevHeightmap, prevLayerIdBitmap.GetData(), prevWidth, prevUnitSize);
+				CopyFromInterpolate(prevHeightmap, prevLayerIdBitmap, prevWidth, prevUnitSize);
 		}
 	}
 
@@ -471,8 +470,8 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 				{
 					if (lstInstances[i])
 					{
-					  gEnv->p3DEngine->UnRegisterEntityDirect(lstInstances[i]);
-				  }
+						gEnv->p3DEngine->UnRegisterEntityDirect(lstInstances[i]);
+					}
 				}
 
 				// recreate terrain in the engine
@@ -487,8 +486,8 @@ void CHeightmap::Resize(int iWidth, int iHeight, float unitSize, bool bCleanOld,
 				{
 					if (lstInstances[i])
 					{
-					  gEnv->p3DEngine->RegisterEntity(lstInstances[i]);
-				  }
+						gEnv->p3DEngine->RegisterEntity(lstInstances[i]);
+					}
 				}
 
 				// restore level rendering
@@ -939,38 +938,18 @@ void CHeightmap::Smooth(CFloatImage& hmap, const CRect& rect)
 		for (i = x1; i < x2; i++)
 		{
 			pData[i + pos] =
-			  (pData[i + pos] +
-			   pData[i + 1 + pos] +
-			   pData[i - 1 + pos] +
-			   pData[i + pos + w] +
-			   pData[i + pos - w] +
-			   pData[(i - 1) + pos - w] +
-			   pData[(i + 1) + pos - w] +
-			   pData[(i - 1) + pos + w] +
-			   pData[(i + 1) + pos + w])
-			  * (1.0f / 9.0f);
+				(pData[i + pos] +
+				 pData[i + 1 + pos] +
+				 pData[i - 1 + pos] +
+				 pData[i + pos + w] +
+				 pData[i + pos - w] +
+				 pData[(i - 1) + pos - w] +
+				 pData[(i + 1) + pos - w] +
+				 pData[(i - 1) + pos + w] +
+				 pData[(i + 1) + pos + w])
+				* (1.0f / 9.0f);
 		}
 	}
-	/*
-	   for (j=y2-1; j > y1; j--)
-	   {
-	   pos = j*w;
-	   for (i=x2-1; i > x1; i--)
-	   {
-	    pData[i + pos] =
-	      (pData[i + pos] +
-	      pData[i + 1 + pos] +
-	      pData[i - 1 + pos] +
-	      pData[i + pos+w] +
-	      pData[i + pos-w] +
-	      pData[(i - 1) + pos-w] +
-	      pData[(i + 1) + pos-w] +
-	      pData[(i - 1) + pos+w] +
-	      pData[(i + 1) + pos+w])
-	 * (1.0f/9.0f);
-	   }
-	   }
-	 */
 }
 
 void CHeightmap::Smooth()
@@ -993,16 +972,16 @@ void CHeightmap::Smooth()
 		for (j = 1; j < m_iHeight - 1; j++)
 		{
 			m_pHeightmap[i + j * m_iWidth] =
-			  (m_pHeightmap[i + j * m_iWidth] +
-			   m_pHeightmap[(i + 1) + j * m_iWidth] +
-			   m_pHeightmap[i + (j + 1) * m_iWidth] +
-			   m_pHeightmap[(i + 1) + (j + 1) * m_iWidth] +
-			   m_pHeightmap[(i - 1) + j * m_iWidth] +
-			   m_pHeightmap[i + (j - 1) * m_iWidth] +
-			   m_pHeightmap[(i - 1) + (j - 1) * m_iWidth] +
-			   m_pHeightmap[(i + 1) + (j - 1) * m_iWidth] +
-			   m_pHeightmap[(i - 1) + (j + 1) * m_iWidth])
-			  / 9.0f;
+				(m_pHeightmap[i + j * m_iWidth] +
+				 m_pHeightmap[(i + 1) + j * m_iWidth] +
+				 m_pHeightmap[i + (j + 1) * m_iWidth] +
+				 m_pHeightmap[(i + 1) + (j + 1) * m_iWidth] +
+				 m_pHeightmap[(i - 1) + j * m_iWidth] +
+				 m_pHeightmap[i + (j - 1) * m_iWidth] +
+				 m_pHeightmap[(i - 1) + (j - 1) * m_iWidth] +
+				 m_pHeightmap[(i + 1) + (j - 1) * m_iWidth] +
+				 m_pHeightmap[(i - 1) + (j + 1) * m_iWidth])
+				/ 9.0f;
 		}
 
 	// We modified the heightmap.
@@ -1018,11 +997,9 @@ void CHeightmap::Invert()
 	if (CUndo::IsRecording())
 		CUndo::Record(new CUndoHeightmapModify(this));
 
-	unsigned int i;
-
 	Verify();
 
-	for (i = 0; i < m_iWidth * m_iHeight; i++)
+	for (uint64 i = 0; i < m_iWidth * m_iHeight; ++i)
 	{
 		m_pHeightmap[i] = m_fMaxHeight - m_pHeightmap[i];
 		if (m_pHeightmap[i] > m_fMaxHeight)
@@ -1053,29 +1030,28 @@ void CHeightmap::Normalize()
 
 	// Find the value range
 	for (i = 0; i < m_iWidth; i++)
+	{
 		for (j = 0; j < m_iHeight; j++)
 		{
 			fLowestPoint = __min(fLowestPoint, GetXY(i, j));
 			fHighestPoint = __max(fHighestPoint, GetXY(i, j));
 		}
+	}
 
 	// Storing the value range in this way saves us a division and a multiplication
 	fValueRange = (1.0f / (fHighestPoint - (float) fLowestPoint)) * m_fMaxHeight;
 
 	// Normalize the heightmap
 	for (i = 0; i < m_iWidth; i++)
+	{
 		for (j = 0; j < m_iHeight; j++)
 		{
 			fHeight = GetXY(i, j);
-
-			//			fHeight += (float) fabs(fLowestPoint);
 			fHeight -= fLowestPoint;
 			fHeight *= fValueRange;
-
-			//			fHeight=128.0f;
-
 			SetXY(i, j, fHeight);
 		}
+	}
 
 	fLowestPoint = 512000.0f, fHighestPoint = -512000.0f;
 
@@ -1329,6 +1305,7 @@ bool CHeightmap::GetData(const CRect& srcRect, const int resolution, const CPoin
 
 	// Only if requested resolution, higher then current resolution.
 	if (resolution > m_iWidth)
+	{
 		if (bNoise)
 		{
 			InitNoise();
@@ -1344,10 +1321,10 @@ bool CHeightmap::GetData(const CRect& srcRect, const int resolution, const CPoin
 				for (int x = 0; x < xe; x++)
 				{
 					*pData++ += cry_random(0.0f, 1.0f / 16.0f);
-					//*pData++ += cry_random(0.0f, 1.0f / 8.0f)
 				}
 			}
 		}
+	}
 
 	if (bSmooth)
 		Smooth(hmap, srcRect - vTexOffset);
@@ -1526,10 +1503,10 @@ void CHeightmap::SmoothSlope()
 
 			// Get the average value for this area
 			float fAverage =
-			  (m_pHeightmap[iCurPos] + m_pHeightmap[iCurPos + 1] + m_pHeightmap[iCurPos + m_iWidth] +
-			   m_pHeightmap[iCurPos + m_iWidth + 1] + m_pHeightmap[iCurPos - 1] + m_pHeightmap[iCurPos - m_iWidth] +
-			   m_pHeightmap[iCurPos - m_iWidth - 1] + m_pHeightmap[iCurPos - m_iWidth + 1] + m_pHeightmap[iCurPos + m_iWidth - 1])
-			  * 0.11111111111f;
+				(m_pHeightmap[iCurPos] + m_pHeightmap[iCurPos + 1] + m_pHeightmap[iCurPos + m_iWidth] +
+				 m_pHeightmap[iCurPos + m_iWidth + 1] + m_pHeightmap[iCurPos - 1] + m_pHeightmap[iCurPos - m_iWidth] +
+				 m_pHeightmap[iCurPos - m_iWidth - 1] + m_pHeightmap[iCurPos - m_iWidth + 1] + m_pHeightmap[iCurPos + m_iWidth - 1])
+				* 0.11111111111f;
 
 			// Clamp the surrounding values to the given level
 			ClampToAverage(&m_pHeightmap[iCurPos], fAverage);
@@ -1557,10 +1534,10 @@ void CHeightmap::SmoothSlope()
 
 			// Get the average value for this area
 			float fAverage =
-			  (m_pHeightmap[iCurPos] + m_pHeightmap[iCurPos + 1] + m_pHeightmap[iCurPos + m_iWidth] +
-			   m_pHeightmap[iCurPos + m_iWidth + 1] + m_pHeightmap[iCurPos - 1] + m_pHeightmap[iCurPos - m_iWidth] +
-			   m_pHeightmap[iCurPos - m_iWidth - 1] + m_pHeightmap[iCurPos - m_iWidth + 1] + m_pHeightmap[iCurPos + m_iWidth - 1])
-			  * 0.11111111111f;
+				(m_pHeightmap[iCurPos] + m_pHeightmap[iCurPos + 1] + m_pHeightmap[iCurPos + m_iWidth] +
+				 m_pHeightmap[iCurPos + m_iWidth + 1] + m_pHeightmap[iCurPos - 1] + m_pHeightmap[iCurPos - m_iWidth] +
+				 m_pHeightmap[iCurPos - m_iWidth - 1] + m_pHeightmap[iCurPos - m_iWidth + 1] + m_pHeightmap[iCurPos + m_iWidth - 1])
+				* 0.11111111111f;
 
 			// Clamp the surrounding values to the given level
 			ClampToAverage(&m_pHeightmap[iCurPos], fAverage);
@@ -1817,15 +1794,15 @@ void CHeightmap::Copy(const AABB& srcBox, int targetRot, const Vec3& targetPos, 
 					CImageEx tmpImage;
 					image.Allocate((rcCropSrc.Width()) * nRes / GetWidth(), (rcCropSrc.Height()) * nRes / GetHeight());
 					pRGBLayer->GetSubImageStretched(
-					  (float)rcCropSrc.left / GetWidth(), (float)rcCropSrc.top / GetHeight(),
-					  (float)rcCropSrc.right / GetWidth(), (float)rcCropSrc.bottom / GetHeight(), image);
+						(float)rcCropSrc.left / GetWidth(), (float)rcCropSrc.top / GetHeight(),
+						(float)rcCropSrc.right / GetWidth(), (float)rcCropSrc.bottom / GetHeight(), image);
 
 					if (targetRot != eRR_0)
 						tmpImage.RotateOrt(image, targetRot);
 
 					pRGBLayer->SetSubImageStretched(
-					  ((float)rcCropDst.left) / GetWidth(), ((float)rcCropDst.top) / GetHeight(),
-					  ((float)rcCropDst.right) / GetWidth(), ((float)rcCropDst.bottom) / GetHeight(), targetRot ? tmpImage : image);
+						((float)rcCropDst.left) / GetWidth(), ((float)rcCropDst.top) / GetHeight(),
+						((float)rcCropDst.right) / GetWidth(), ((float)rcCropDst.bottom) / GetHeight(), targetRot ? tmpImage : image);
 				}
 
 				UpdateLayerTexture(rcCropDst);
@@ -2586,8 +2563,8 @@ void CHeightmap::UpdateEngineTerrain(int x1, int y1, int areaSize, int _height, 
 		delete[] pResolutions;
 	}
 
-	const Vec2 worldModPosition(originalInputY1 * nHeightMapUnitSize + originalInputAreaSize * nHeightMapUnitSize / 2,
-	                            originalInputX1 * nHeightMapUnitSize + originalInputAreaSize * nHeightMapUnitSize / 2);
+	const Vec2 worldModPosition(originalInputY1* nHeightMapUnitSize + originalInputAreaSize* nHeightMapUnitSize / 2,
+	                            originalInputX1* nHeightMapUnitSize + originalInputAreaSize* nHeightMapUnitSize / 2);
 	const float areaRadius = originalInputAreaSize * nHeightMapUnitSize / 2;
 
 	GetIEditorImpl()->GetGameEngine()->OnTerrainModified(worldModPosition, areaRadius, (originalInputAreaSize == m_iWidth), updateFlags & (ETerrainUpdateType::Elevation | ETerrainUpdateType::InfoBits));
@@ -2773,7 +2750,7 @@ void CHeightmap::SerializeTerrain(CXmlArchive& xmlAr)
 			if (xmlAr.pNamedData->GetDataBlock("TerrainCompiledData", pData, nSize))
 			{
 				/*STerrainChunkHeader* pHeader = (STerrainChunkHeader*)pData;
-				if ((pHeader->nVersion == TERRAIN_CHUNK_VERSION) && (pHeader->TerrainInfo.sectorSize_InMeters == pHeader->TerrainInfo.unitSize_InMeters * SECTOR_SIZE_IN_UNITS))
+				   if ((pHeader->nVersion == TERRAIN_CHUNK_VERSION) && (pHeader->TerrainInfo.sectorSize_InMeters == pHeader->TerrainInfo.unitSize_InMeters * SECTOR_SIZE_IN_UNITS))
 				   {
 				   SSectorInfo si;
 				   GetSectorsInfo(si);
@@ -2947,12 +2924,12 @@ float CHeightmap::GetZInterpolated(const float x, const float y)
 	float dy1 = y - nY;
 
 	float dDownLandZ0 =
-	  (1.f - dx1) * (m_pHeightmap[nX + nY * m_iWidth]) +
-	  (dx1) * (m_pHeightmap[(nX + 1) + nY * m_iWidth]);
+		(1.f - dx1) * (m_pHeightmap[nX + nY * m_iWidth]) +
+		(dx1) * (m_pHeightmap[(nX + 1) + nY * m_iWidth]);
 
 	float dDownLandZ1 =
-	  (1.f - dx1) * (m_pHeightmap[nX + (nY + 1) * m_iWidth]) +
-	  (dx1) * (m_pHeightmap[(nX + 1) + (nY + 1) * m_iWidth]);
+		(1.f - dx1) * (m_pHeightmap[nX + (nY + 1) * m_iWidth]) +
+		(dx1) * (m_pHeightmap[(nX + 1) + (nY + 1) * m_iWidth]);
 
 	float dDownLandZ = (1 - dy1) * dDownLandZ0 + (dy1) * dDownLandZ1;
 
@@ -3514,7 +3491,7 @@ void CHeightmap::ExportSegmentLayerIDs(CMemoryBlock& mem, const CRect& rc)
 	memAggregated.Compress(mem);
 }
 
-void CHeightmap::CopyFrom(t_hmap* pHmap, unsigned char* pLayerIdBitmap, int resolution)
+void CHeightmap::CopyFrom(t_hmap* pHmap, const CSurfTypeImage& layerIdBitmap, int resolution)
 {
 	int res = min(resolution, (int)m_iWidth);
 	for (int y = 0; y < res; y++)
@@ -3522,12 +3499,12 @@ void CHeightmap::CopyFrom(t_hmap* pHmap, unsigned char* pLayerIdBitmap, int reso
 		for (int x = 0; x < res; x++)
 		{
 			SetXY(x, y, pHmap[x + y * resolution]);
-			m_layerIdBitmap.ValueAt(x, y) = pLayerIdBitmap[x + y * resolution];
+			m_layerIdBitmap.ValueAt(x, y) = layerIdBitmap.ValueAt(x, y);
 		}
 	}
 }
 
-void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitmap, int resolution, int prevUnitSize)
+void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, const CSurfTypeImage& layerIdBitmap, int resolution, int prevUnitSize)
 {
 	float fKof = float(prevUnitSize) / m_unitSize;
 	if (fKof > 1)
@@ -3546,6 +3523,7 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 			for (int x = 0, x2 = 0; x < iWidth; x += kof, x2++)
 			{
 				for (int y1 = 0; y1 < kof; y1++)
+				{
 					for (int x1 = 0; x1 < kof; x1++)
 					{
 						if (x + x1 < iWidth && y + y1 < iHeight && x2 < resolution && y2 < resolution)
@@ -3555,21 +3533,6 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 
 							int x3 = x2 + 1;
 							int y3 = y2 + 1;
-							/*
-							      if(x2>0 && y2>0 && x3+1<resolution && y3+1<resolution)
-							      {
-							        t_hmap p1xy2 = pHmap[x2 + y2*resolution] + (pHmap[x2 + y2*resolution] - pHmap[x2-1 + y2*resolution])/3;
-							        t_hmap p2xy2 = pHmap[x3 + y2*resolution] + (pHmap[x3 + y2*resolution] - pHmap[x3+1 + y2*resolution])/3;
-
-							        t_hmap p1xy3 = pHmap[x2 + y3*resolution] + (pHmap[x2 + y3*resolution] - pHmap[x2-1 + y3*resolution])/3;
-							        t_hmap p2xy3 = pHmap[x3 + y3*resolution] + (pHmap[x3 + y3*resolution] - pHmap[x3+1 + y3*resolution])/3;
-
-
-							        t_hmap pxy2 = p1xy2
-							      }
-							      else
-							      {
-							 */
 							if (x3 >= resolution)
 								x3 = x2;
 							if (y3 >= resolution)
@@ -3577,75 +3540,16 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 
 							SetXY(x + x1, y + y1,
 							      (1.0f - kofy) * ((1.0f - kofx) * pHmap[x2 + y2 * resolution] + kofx * pHmap[x3 + y2 * resolution]) +
-							      kofy * ((1.0f - kofx) * pHmap[x2 + y3 * resolution] + kofx * pHmap[x3 + y3 * resolution])
-							      );
+							      kofy * ((1.0f - kofx) * pHmap[x2 + y3 * resolution] + kofx * pHmap[x3 + y3 * resolution]));
 
-							m_layerIdBitmap.ValueAt(x + x1, y + y1) = pLayerIdBitmap[x2 + y2 * resolution];
+							m_layerIdBitmap.ValueAt(x + x1, y + y1) = layerIdBitmap.ValueAt(x2, y2);
 						}
 					}
-				unsigned char val = pLayerIdBitmap[x2 + y2 * resolution];
-
-				if (y2 < resolution - 1)
-				{
-					unsigned char val1 = pLayerIdBitmap[x2 + (y2 + 1) * resolution];
-					if (val1 > val)
-						m_layerIdBitmap.ValueAt(x, y + kof - 1) = val1;
-				}
-
-				if (x2 < resolution - 1)
-				{
-					unsigned char val1 = pLayerIdBitmap[x2 + 1 + y2 * resolution];
-					if (val1 > val)
-						m_layerIdBitmap.ValueAt(x + kof - 1, y) = val1;
-				}
-
-				if (x2 < resolution - 1 && y2 < resolution - 1)
-				{
-					// Choose max occurred value or max value between several max occurred
-					unsigned char valu[4];
-					int bal[4];
-					valu[0] = val;
-					valu[1] = pLayerIdBitmap[x2 + 1 + y2 * resolution];
-					valu[2] = pLayerIdBitmap[x2 + (y2 + 1) * resolution];
-					valu[3] = pLayerIdBitmap[x2 + 1 + (y2 + 1) * resolution];
-
-					int max = 0;
-
-					int k = 0;
-					for (k = 0; k < 4; k++)
-					{
-						bal[k] = 1000 + valu[k];
-						if (bal[k] > max)
-						{
-							val = valu[k];
-							max = bal[k];
-						}
-						if (k > 0)
-						{
-							for (int kj = 0; kj < k; kj++)
-							{
-								if (valu[kj] == valu[k])
-								{
-									valu[k] = 0;
-									bal[kj] += bal[k];
-									bal[k] = 0;
-									if (bal[kj] > max)
-									{
-										val = valu[kj];
-										max = bal[kj];
-									}
-									break;
-								}
-							}
-						}
-					}
-
-					m_layerIdBitmap.ValueAt(x + kof - 1, y + kof - 1) = val;
 				}
 			}
 		}
 	}
-	else if (0.1f < fKof && fKof < 1.0f)
+	else if (0.1f < fKof && fKof <= 1.0f)
 	{
 		int kof = int(1.0f / fKof + 0.5f);
 		for (int y = 0; y < m_iHeight; y++)
@@ -3657,7 +3561,7 @@ void CHeightmap::CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitma
 				if (x2 < resolution && y2 < resolution)
 				{
 					SetXY(x, y, pHmap[x2 + y2 * resolution]);
-					m_layerIdBitmap.ValueAt(x, y) = pLayerIdBitmap[x2 + y2 * resolution];
+					m_layerIdBitmap.ValueAt(x, y) = layerIdBitmap.ValueAt(x2, y2);
 				}
 			}
 		}
@@ -3788,11 +3692,11 @@ void CHeightmap::UpdateLayerTexture(const CRect& rect)
 				image.Allocate(iLocalOutMaxX - iLocalOutMinX, iLocalOutMaxY - iLocalOutMinY);
 
 				m_terrainRGBTexture.GetSubImageStretched(
-				  (iSectX + (float)iLocalOutMinX / dwNeededResolution) / iTexSectorsNum,
-				  (iSectY + (float)iLocalOutMinY / dwNeededResolution) / iTexSectorsNum,
-				  (iSectX + (float)iLocalOutMaxX / dwNeededResolution) / iTexSectorsNum,
-				  (iSectY + (float)iLocalOutMaxY / dwNeededResolution) / iTexSectorsNum,
-				  image);
+					(iSectX + (float)iLocalOutMinX / dwNeededResolution) / iTexSectorsNum,
+					(iSectY + (float)iLocalOutMinY / dwNeededResolution) / iTexSectorsNum,
+					(iSectX + (float)iLocalOutMaxX / dwNeededResolution) / iTexSectorsNum,
+					(iSectY + (float)iLocalOutMaxY / dwNeededResolution) / iTexSectorsNum,
+					image);
 
 				// convert RGB colour into format that has less compression artifacts for brightness variations
 				{
@@ -3948,11 +3852,11 @@ void CHeightmap::UpdateSectorTexture(CPoint texsector,
 			image.Allocate(iLocalOutMaxX - iLocalOutMinX, iLocalOutMaxY - iLocalOutMinY);
 
 			m_terrainRGBTexture.GetSubImageStretched(
-			  fMinX + fInvSectorCnt / dwNeededResolution * iLocalOutMinX,
-			  fMinY + fInvSectorCnt / dwNeededResolution * iLocalOutMinY,
-			  fMinX + fInvSectorCnt / dwNeededResolution * iLocalOutMaxX,
-			  fMinY + fInvSectorCnt / dwNeededResolution * iLocalOutMaxY,
-			  image);
+				fMinX + fInvSectorCnt / dwNeededResolution * iLocalOutMinX,
+				fMinY + fInvSectorCnt / dwNeededResolution * iLocalOutMinY,
+				fMinX + fInvSectorCnt / dwNeededResolution * iLocalOutMaxX,
+				fMinY + fInvSectorCnt / dwNeededResolution * iLocalOutMaxY,
+				image);
 
 			// convert RGB colour into format that has less compression artifacts for brightness variations
 			{
@@ -4081,7 +3985,7 @@ void CHeightmap::ClearModSectors()
 
 void CHeightmap::UnlockSectorsTexture(const CRect& rc)
 {
-	for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end(); )
+	for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end();)
 	{
 		CPoint pointSector(it->x, it->y);
 		if (rc.PtInRect(pointSector))
@@ -4170,15 +4074,15 @@ void CHeightmap::UpdateModSectors()
 	int iTerrainSize = p3DEngine->GetTerrainSize();
 	if (!iTerrainSize)
 	{
-		assert(false && "[CHeightmap::UpdateModSectors] Zero sized terrain.");     // maybe we should visualized this to the user
+		assert(false && "[CHeightmap::UpdateModSectors] Zero sized terrain."); // maybe we should visualized this to the user
 		return;
 	}
 
 	if (m_modSectors.size())
 	{
-		for (std::vector<Vec2i>::iterator it = m_modSectors.begin(); it != m_modSectors.end(); ++it)
+		for (const Vec2i& sector : m_modSectors)
 		{
-			UpdateSectorTexture(CPoint(it->x, it->y), 0, 0, 1, 1);
+			UpdateSectorTexture(CPoint(sector.x, sector.y), 0, 0, 1, 1);
 		}
 	}
 	m_updateModSectors = false;

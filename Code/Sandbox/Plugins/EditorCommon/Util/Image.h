@@ -21,7 +21,7 @@ class TImage
 public:
 	TImage()
 	{
-		m_data = 0;
+		m_data = nullptr;
 		m_width = 0;
 		m_height = 0;
 		m_bHasAlphaChannel = false;
@@ -32,7 +32,7 @@ public:
 		m_format = eTF_Unknown;
 		m_strDccFilename = "";
 	}
-	virtual ~TImage() {}
+	~TImage() {}
 
 	T&       ValueAt(int x, int y)       { return m_data[x + y * m_width]; }
 	const T& ValueAt(int x, int y) const { return m_data[x + y * m_width]; }

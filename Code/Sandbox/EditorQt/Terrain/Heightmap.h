@@ -251,8 +251,8 @@ public:
 	}
 
 	//! Copy from different heightmap data.
-	void CopyFrom(t_hmap* pHmap, unsigned char* pLayerIdBitmap, int resolution);
-	void CopyFromInterpolate(t_hmap* pHmap, unsigned char* pLayerIdBitmap, int resolution, int prevUnitSize);
+	void CopyFrom(t_hmap* pHmap, const CSurfTypeImage& layerIdBitmap, int resolution);
+	void CopyFromInterpolate(t_hmap* pHmap, const CSurfTypeImage& layerIdBitmap, int resolution, int prevUnitSize);
 
 	//! Dump to log sizes of all layers.
 	//! @return Total size allocated for layers.
