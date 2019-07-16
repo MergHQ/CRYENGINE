@@ -165,7 +165,7 @@ const int ResourceSetMaxUavCount = 8;      // Maximum number of UAVs per resourc
 const int ResourceSetMaxSrvCount = 64;     // Internal limitation
 const int ResourceSetMaxSamplerCount = 16; // Maximum number of Samplers per resource set. Dx11 limitation, DO NOT CHANGE!
 
-class CDeviceResourceSetDesc : NoCopy
+class TMP_RENDER_API CDeviceResourceSetDesc : NoCopy
 {
 public:
 	enum EDirtyFlags : uint32
@@ -219,7 +219,7 @@ private:
 };
 DEFINE_ENUM_FLAG_OPERATORS(CDeviceResourceSetDesc::EDirtyFlags)
 
-class CDeviceResourceSet : NoCopy
+class TMP_RENDER_API CDeviceResourceSet : NoCopy
 {
 	friend class CDeviceObjectFactory;
 	friend struct SDeviceResourceLayoutDesc;
@@ -260,7 +260,7 @@ typedef std::shared_ptr<CDeviceResourceSet> CDeviceResourceSetPtr;
 
 typedef std::bitset<EResourceLayoutSlot_Num> UsedBindSlotSet;
 
-struct SDeviceResourceLayoutDesc
+struct TMP_RENDER_API SDeviceResourceLayoutDesc
 {
 	enum class ELayoutSlotType : uint8
 	{

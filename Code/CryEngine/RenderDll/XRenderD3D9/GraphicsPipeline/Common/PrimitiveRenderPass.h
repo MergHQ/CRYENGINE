@@ -45,8 +45,7 @@ struct SCompiledRenderPrimitive : private NoCopy
 	SDrawInfo                  m_drawInfo;
 };
 
-
-class CRenderPrimitive : public SCompiledRenderPrimitive
+class TMP_RENDER_API CRenderPrimitive : public SCompiledRenderPrimitive
 {
 public:
 	enum EPrimitiveType
@@ -194,7 +193,7 @@ DEFINE_ENUM_FLAG_OPERATORS(CRenderPrimitive::EPrimitiveFlags);
 
 struct VrProjectionInfo;
 
-class CPrimitiveRenderPass : public CRenderPassBase, private NoCopy
+class TMP_RENDER_API CPrimitiveRenderPass : public CRenderPassBase, private NoCopy
 {
 	friend class CRenderPassScheduler;
 
@@ -233,6 +232,7 @@ public:
 	using  CRenderPassBase::IsDirty;
 
 	const D3DViewPort&            GetViewport() const { return m_viewport; }
+	uint32 GetTargetClearMask() const { return m_clearMask; }
 
 	void                          Reset();
 
@@ -245,7 +245,7 @@ public:
 	uint32                        GetPrimitiveCount()            const { return m_compiledPrimitives.size(); }
 	CTexture*                     GetRenderTarget(int index)     const { return m_renderPassDesc.GetRenderTargets()[index].pTexture; }
 	ResourceViewHandle            GetRenderTargetView(int index) const { return m_renderPassDesc.GetRenderTargets()[index].view; }
-	const CTexture*               GetDepthTarget()               const { return m_renderPassDesc.GetDepthTarget().pTexture; }
+	CTexture*                     GetDepthTarget()               const { return m_renderPassDesc.GetDepthTarget().pTexture; }
 	ResourceViewHandle            GetDepthTargetView()           const { return m_renderPassDesc.GetDepthTarget().view; }
 
 	CDeviceResourceSetPtr         GetOutputResourceSet()      const    { return m_pOutputResourceSet; }

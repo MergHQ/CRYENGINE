@@ -3,7 +3,7 @@
 #pragma once
 
 ////////////////////////////////////////////////////////////////////////////
-class CDeviceGraphicsPSODesc
+class TMP_RENDER_API CDeviceGraphicsPSODesc
 {
 public:
 	CDeviceGraphicsPSODesc();

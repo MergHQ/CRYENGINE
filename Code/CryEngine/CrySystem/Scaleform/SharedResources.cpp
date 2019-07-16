@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#include "SharedResources.h"
 	#include "SharedStates.h"
@@ -454,4 +454,4 @@ void MeshCacheResetThread::IssueReset()
 auto* g_ignore = static_cast<int(*)(char*, size_t, const char*, va_list)>(&vsprintf_s);
 #endif
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

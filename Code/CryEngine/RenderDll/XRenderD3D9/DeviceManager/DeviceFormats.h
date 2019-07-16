@@ -238,5 +238,5 @@ namespace DeviceFormats
 	inline ETEX_Format ConvertToFloat       (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToFloat         (ConvertFromTexFormat(nFormat))); }
 	inline ETEX_Format ConvertToTypeless    (ETEX_Format nFormat) { return ConvertToTexFormat(ConvertToTypeless      (ConvertFromTexFormat(nFormat))); }
 
-	UINT GetStride                   (D3DFormat format   );
+	TMP_RENDER_API UINT GetStride           (D3DFormat format   );
 }

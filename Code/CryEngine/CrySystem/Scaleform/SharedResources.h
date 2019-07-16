@@ -1,11 +1,8 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _SHARED_RESOURCES_H_
-#define _SHARED_RESOURCES_H_
-
 #pragma once
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 #pragma warning(push)
 #pragma warning(disable : 6326)   // Potential comparison of a constant with another constant
@@ -14,16 +11,19 @@
 #include <GFxLoader.h>            // includes <windows.h>
 #include <CryRenderer/IScaleform.h>
 #pragma warning(pop)
+#include <GConfig.h>
 #include <CrySystem/Scaleform/ConfigScaleform.h>
-#include "GAllocatorCryMem.h"
 #include <CryMemory/CrySizer.h>
 #include <CryThreading/IThreadManager.h>
+#include "GAllocatorCryMem.h"
 
 class GFxLoader2;
 class ICrySizer;
 class GSystemInitWrapper;
 class MeshCacheResetThread;
 class GImeHelper;
+struct IScaleformRecording;
+
 
 class CSharedFlashPlayerResources
 {
@@ -118,6 +118,4 @@ private:
 	CryEvent m_awakeThread;
 };
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
-
-#endif // #ifndef _SHARED_RESOURCES_H_
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

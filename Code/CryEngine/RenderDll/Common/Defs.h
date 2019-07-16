@@ -3,6 +3,17 @@
 #ifndef DEFS_H
 #define DEFS_H
 
+#if !defined(CRY_IS_MONOLITHIC_BUILD) && (defined(CRY_PLATFORM_DURANGO) || defined(CRY_PLATFORM_WINDOWS))
+	#pragma warning(disable : 4251)   // agregates not exported in exported class
+	#if defined(TEMPORARY_RENDERER_EXPORTS)
+		#define TMP_RENDER_API __declspec(dllexport)
+	#else
+		#define TMP_RENDER_API __declspec(dllimport)
+	#endif
+#else
+	#define TMP_RENDER_API
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

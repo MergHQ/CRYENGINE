@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Defs.h"
 #include <CryCore/optional.h>
 
 class CRenderDisplayContext;
@@ -10,7 +11,7 @@ struct SDynTexture;
 
 //////////////////////////////////////////////////////////////////////////
 //! Render Output is a target for a Render View rendering.
-class CRenderOutput
+class TMP_RENDER_API CRenderOutput
 {
 public:
 	typedef _smart_ptr<CTexture> TexSmartPtr;

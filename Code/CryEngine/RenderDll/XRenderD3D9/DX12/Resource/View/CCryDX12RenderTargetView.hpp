@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include "Common/Defs.h"
 #include "DX12/Resource/CCryDX12View.hpp"
 
-class CCryDX12RenderTargetView : public CCryDX12View<ID3D11RenderTargetViewToImplement>
+class TMP_RENDER_API CCryDX12RenderTargetView : public CCryDX12View<ID3D11RenderTargetViewToImplement>
 {
 public:
 	DX12_OBJECT(CCryDX12RenderTargetView, CCryDX12View<ID3D11RenderTargetViewToImplement> );

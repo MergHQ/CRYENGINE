@@ -58,13 +58,14 @@ public:
 		return m_DX12View;
 	}
 
+#if !defined(RELEASE)
 	std::string GetResourceName()
 	{
 		ICryDX12Resource* ires = DX12_EXTRACT_ICRYDX12RESOURCE(m_pResource11.get());
 		CCryDX12Resource<ID3D11ResourceToImplement>* cres = static_cast<CCryDX12Resource<ID3D11ResourceToImplement>*>(ires);
 		return cres ? cres->GetName() : "-";
 	}
-
+#endif
 	template<class T>
 	void SetResourceState(T* pCmdList, D3D12_RESOURCE_STATES desiredState)
 	{

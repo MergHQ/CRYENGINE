@@ -1,7 +1,7 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 	#include "ScaleformHelper.h"
 
 // Engine module wrapper for Scaleform Helper.

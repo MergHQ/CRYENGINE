@@ -149,8 +149,8 @@ public:
 public:
 	static size_t m_RTallocs, m_DTallocs;
 
-	static CTexture*   CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
-	static CTexture*   CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
+	static TMP_RENDER_API CTexture* CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
+	static TMP_RENDER_API CTexture* CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF);
 
 	static ETEX_Format GetHDRFormat(bool withAlpha, bool lowQuality);
 	static ETEX_Format GetLDRFormat(bool precisionBits);
@@ -212,7 +212,7 @@ public:
 
 	// From file loaded textures ===============================================================================
 
-	static CTexture* s_ptexNoTexture;
+	TMP_RENDER_API static CTexture* s_ptexNoTexture;
 	static CTexture* s_ptexNoTextureCM;
 	static CTexture* s_ptexWhite;
 	static CTexture* s_ptexGray;

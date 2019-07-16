@@ -186,7 +186,8 @@ extern AAssetManager* androidGetAssetManager();
 #define DLL_LIVECREATE    "CryLiveCreate"
 #define DLL_MONO_BRIDGE   "CryMonoBridge"
 #define DLL_UDR           "CryUDR"
-#define DLL_SCALEFORM     "CryScaleformHelper"
+#define DLL_SCALEFORM3    "CryScaleformHelper"
+#define DLL_SCALEFORM4    "CryScaleform"
 
 //////////////////////////////////////////////////////////////////////////
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_DURANGO || CRY_PLATFORM_APPLE
@@ -1240,6 +1241,67 @@ bool CSystem::InitDynamicResponseSystem(const SSystemInitParams& startupParams)
 	}
 
 	return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+void CSystem::InitScaleformSystem(const SSystemInitParams& startupParams)
+{
+	m_env.pScaleformHelper = nullptr;
+
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+	ICVar* pCVar = gEnv->pConsole->GetCVar("sys_scaleform_version");
+	const CryInterfaceID* pSFModuleID = nullptr;
+	if (pCVar)
+	{
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Scaleform System");
+
+		if (-1 == pCVar->GetIVal())
+		{
+#ifdef INCLUDE_SCALEFORM3_SDK
+			pCVar->Set(3);
+#else
+			pCVar->Set(4);
+#endif // INCLUDE_SCALEFORM3_SDK
+		}
+
+		string scaleformLibraryName;
+		if (3 == pCVar->GetIVal())
+		{
+			scaleformLibraryName.assign(DLL_SCALEFORM3);
+			pSFModuleID = &cryiidof<IScaleformHelperEngineModule>();
+		}
+		else if (4 == pCVar->GetIVal())
+		{
+			scaleformLibraryName.assign(DLL_SCALEFORM4);
+			pSFModuleID = &cryiidof<Cry::ScaleformModule::IModule>();
+			for (const auto& module : m_moduleDLLHandles)
+			{
+				if (0 == module.first.find("CryRender"))
+				{
+					scaleformLibraryName += module.first.c_str() + strlen("CryRender");
+					break;
+				}
+			}
+		}
+
+		if (!InitializeEngineModule(startupParams, scaleformLibraryName, *pSFModuleID, false))
+		{
+			m_env.pScaleformHelper = nullptr;
+			CryLog("Attempt to load Scaleform helper library from '%s' failed, this feature will not be available", scaleformLibraryName.c_str());
+		}
+		else if (!m_env.pScaleformHelper->Init())
+		{
+			m_env.pScaleformHelper->Destroy();
+			m_env.pScaleformHelper = nullptr;
+			CryLog("Unable to initialize Scaleform helper library, this feature will not be available");
+		}
+		else
+		{
+			m_env.pScaleformHelper->SetAmpEnabled(false);
+		}
+		}
+#endif // defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -3163,29 +3225,9 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 				if (bMultiGPUEnabled)
 					LoadConfiguration("mgpu.cfg");
 
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
 				if (!m_bShaderCacheGenMode)
 				{
-					if (!InitializeEngineModule(startupParams, DLL_SCALEFORM, cryiidof<IScaleformHelperEngineModule>(), false))
-					{
-						m_env.pScaleformHelper = nullptr;
-						CryLog("Attempt to load Scaleform helper library from '%s' failed, this feature will not be available", DLL_SCALEFORM);
-					}
-					else if (!m_env.pScaleformHelper->Init())
-					{
-						m_env.pScaleformHelper->Destroy();
-						m_env.pScaleformHelper = nullptr;
-						CryLog("Unable to initialize Scaleform helper library, this feature will not be available");
-					}
-					else
-					{
-						m_env.pScaleformHelper->SetAmpEnabled(false);
-					}
-				}
-#endif
-				else
-				{
-					m_env.pScaleformHelper = nullptr;
+					InitScaleformSystem(startupParams);
 				}
 			}
 		}
@@ -5284,6 +5326,12 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_INT("sys_system_timer_resolution", 1, VF_NULL, "(Windows only) Value of the system timer resolution in milliseconds (ms)");
 
+	REGISTER_INT("sys_scaleform_version", -1, VF_INVISIBLE,
+		"Select scaleform version:\n"
+		"-1: Auto select any available Scalefom.\n"
+		" 3: Scaleform 3.\n"
+		" 4: Scaleform 4.\n"
+		" Any other value: Disable Scaleform.\n");
 #if defined(MAP_LOADING_SLICING)
 	CreateSystemScheduler(this);
 #endif // defined(MAP_LOADING_SLICING)

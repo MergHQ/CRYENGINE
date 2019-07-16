@@ -156,13 +156,6 @@ SSF_ResourcesD3D::SSF_ResourcesD3D(CD3D9Renderer* pRenderer)
 	m_vertexDecls[IScaleformPlayback::Vertex_XY16iCF32] = InputLayoutHandle::Unspecified;
 	m_vertexDecls[IScaleformPlayback::Vertex_Glyph    ] = InputLayoutHandle::Unspecified;
 	
-	m_pVertexDecls[IScaleformPlayback::Vertex_None     ] = nullptr;
-	m_pVertexDecls[IScaleformPlayback::Vertex_XY16i    ] = nullptr;
-	m_pVertexDecls[IScaleformPlayback::Vertex_XY32f    ] = nullptr;
-	m_pVertexDecls[IScaleformPlayback::Vertex_XY16iC32 ] = nullptr;
-	m_pVertexDecls[IScaleformPlayback::Vertex_XY16iCF32] = nullptr;
-	m_pVertexDecls[IScaleformPlayback::Vertex_Glyph    ] = nullptr;
-
 	m_FilterTechnique[SSF_GlobalDrawParams::None                               ] = nullptr;
 	m_FilterTechnique[SSF_GlobalDrawParams::Box2InnerShadow                    ] = &m_shTech_InnerShadow_Box2;
 	m_FilterTechnique[SSF_GlobalDrawParams::Box2InnerShadowHighlight           ] = &m_shTech_InnerShadowHighlight_Box2;
@@ -219,13 +212,6 @@ SSF_ResourcesD3D::SSF_ResourcesD3D(CD3D9Renderer* pRenderer)
 
 SSF_ResourcesD3D::~SSF_ResourcesD3D()
 {
-	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_None     ]);
-	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_XY16i    ]);
-	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_XY32f    ]);
-	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_XY16iC32 ]);
-	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_XY16iCF32]);
-	SAFE_RELEASE(m_pVertexDecls[IScaleformPlayback::Vertex_Glyph    ]);
-
 	m_PrimitiveHeap.Clear();
 
 	FreeColorSurfaces();

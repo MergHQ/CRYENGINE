@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#include "GFxVideoWrapper.h"
 
@@ -607,4 +607,4 @@ void CryGFxVideoPlayer_SystemEventListener::OnSystemEvent(ESystemEvent event, UI
 
 	#endif // #if defined(USE_GFX_VIDEO)
 
-#endif   //#ifdef INCLUDE_SCALEFORM_SDK
+#endif   //#ifdef INCLUDE_SCALEFORM3_SDK

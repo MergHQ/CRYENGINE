@@ -1206,8 +1206,7 @@ bool CFlashTextureSourceBase::Update()
 
 	{
 		PROFILE_LABEL_SCOPE("FlashDynTexture");
-
-		CScaleformPlayback::RenderFlashPlayerToTexture(pFlashPlayer.get(), pDynTexture->m_pTexture);
+		pFlashPlayer->RenderToTexture(pDynTexture->m_pTexture);
 
 		pDynTexture->SetUpdateMask();
 	}

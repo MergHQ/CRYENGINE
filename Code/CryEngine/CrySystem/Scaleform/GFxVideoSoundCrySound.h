@@ -5,7 +5,7 @@
 
 #pragma once
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 namespace CryVideoSoundSystem
 {
@@ -79,10 +79,11 @@ namespace CryVideoSoundSystem
 	};
 }                                        // namespace CryVideoSoundSystem
 
-#endif                                   //#ifdef INCLUDE_SCALEFORM_SDK
+#endif                                   //#ifdef INCLUDE_SCALEFORM3_SDK
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
+#include <GConfig.h>
 #include <CrySystem/Scaleform/ConfigScaleform.h>
 
 #if defined(USE_GFX_VIDEO)
@@ -123,6 +124,6 @@ public:
 
 #endif   // #if defined(USE_GFX_VIDEO)
 
-#endif   // #ifdef INCLUDE_SCALEFORM_SDK
+#endif   // #ifdef INCLUDE_SCALEFORM3_SDK
 
 #endif   // #ifndef _GFXVIDEOSOUNDCRYSOUND_H_

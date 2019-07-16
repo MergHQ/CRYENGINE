@@ -548,6 +548,7 @@ private:
 	bool InitMonoBridge(const SSystemInitParams& startupParams);
 	bool InitUDR(const SSystemInitParams& startupParams);
 	void InitGameFramework(SSystemInitParams& startupParams);
+	void InitScaleformSystem(const SSystemInitParams& startupParams);
 	bool OpenRenderLibrary(const SSystemInitParams& startupParams, int type);
 	bool OpenRenderLibrary(const SSystemInitParams& startupParams, const char* t_rend);
 	bool CloseRenderLibrary(const char* t_rend);

@@ -4,7 +4,7 @@
 
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 // Define this to place instances of CFlashPlayer and CFlashVariableObject into GFx' own pool.
 // Currently disabled to enable easier tracking of level heap conflicts.
@@ -123,6 +123,7 @@ public:
 	virtual void           AvoidStencilClear(bool avoid);
 	virtual void           EnableMaskedRendering(bool enable);
 	virtual void           ExtendCanvasToViewport(bool extend);
+	virtual void           RenderToTexture(ITexture* pTexture);
 
 	virtual void           Restart();
 	virtual bool           IsPaused() const;
@@ -239,7 +240,7 @@ private:
 private:
 	static bool IsFlashEnabled();
 
-private:
+	#if defined(ENABLE_FLASH_INFO)
 	typedef FlashHelpers::LinkedResourceList<CFlashPlayer>           PlayerList;
 	typedef FlashHelpers::LinkedResourceList<CFlashPlayer>::NodeType PlayerListNodeType;
 
@@ -254,10 +255,9 @@ private:
 		return ms_playerList.GetRoot();
 	}
 
-private:
-	#if defined(ENABLE_FLASH_INFO)
 	static ICVar * CV_sys_flash_info_peak_exclude;
 	#endif
+
 	static int ms_sys_flash;
 	static int ms_sys_flash_edgeaa;
 	#if defined(ENABLE_FLASH_INFO)
@@ -400,8 +400,8 @@ private:
 	GPtr<GFxLoader2> m_pLoader;
 	GPtr<IScaleformRecording> m_pRenderer;
 	const stringPtr m_filePath;
-	PlayerListNodeType m_node;
 #if defined(ENABLE_FLASH_INFO)
+	PlayerListNodeType m_node;
 	mutable SFlashProfilerData* m_pProfilerData;
 #endif
 	const CryCriticalSectionPtr m_lock;
@@ -412,4 +412,4 @@ private:
 #endif
 };
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

@@ -7,6 +7,7 @@
 
 #include <memory>
 
+struct ITexture;
 struct IFlashVariableObject;
 struct IFlashPlayerBootStrapper;
 struct IFSCommandHandler;
@@ -77,7 +78,7 @@ struct IFlashPlayer
 		eAT_BottomLeft,
 		eAT_BottomRight
 	};
-	
+
 	//! Initialization.
 	virtual bool Load(const char* pFilePath, unsigned int options = DEFAULT, unsigned int cat = eCat_Default) = 0;
 
@@ -102,6 +103,7 @@ struct IFlashPlayer
 	virtual void           AvoidStencilClear(bool avoid) = 0;
 	virtual void           EnableMaskedRendering(bool enable) = 0; // special render mode for Crysis 2 HUD markers (in stereo)
 	virtual void           ExtendCanvasToViewport(bool extend) = 0;
+	virtual void           RenderToTexture(ITexture* pTexture) = 0;
 
 	// Execution State
 	virtual void         Restart() = 0;
@@ -622,28 +624,36 @@ public:
 
 		FDIF_Alpha     = 0x200,
 		FDIF_Visible   = 0x400,
+
+		FDIF_Fov       = 0x800,
+		FDIF_EdgeAA    = 0x4000,
+	};
+
+	enum EdgeAAMode
+	{
+		FDIEAAM_Inherit = 0x0000,    // Take EdgeAA setting from parent; On by default.
+		FDIEAAM_On      = 0x0004,    // Use EdgeAA for this node and its children, unless disabled.
+		FDIEAAM_Off     = 0x0008,    // Do not use EdgeAA for this node or its children.
+		FDIEAAM_Disable = 0x000C     // Disable EdgeAA for this node and subtree, overriding On settings.
 	};
 
 	SFlashDisplayInfo()
 		: m_x(0), m_y(0), m_z(0)
 		, m_xscale(0), m_yscale(0), m_zscale(0)
 		, m_rotation(0), m_xrotation(0), m_yrotation(0)
-		, m_alpha(0)
-		, m_visible(false)
+		, m_alpha(0), m_visible(false), m_fov(0), m_edgeAA(FDIEAAM_Inherit)
 		, m_varsSet(0)
 	{}
 
 	SFlashDisplayInfo(float x, float y, float z,
 	                  float xscale, float yscale, float zscale,
 	                  float rotation, float xrotation, float yrotation,
-	                  float alpha,
-	                  bool visible,
+	                  float alpha, bool visible, float fov, EdgeAAMode edgeAA,
 	                  unsigned short varsSet)
 		: m_x(x), m_y(y), m_z(z)
 		, m_xscale(xscale), m_yscale(yscale), m_zscale(zscale)
 		, m_rotation(rotation), m_xrotation(xrotation), m_yrotation(yrotation)
-		, m_alpha(alpha)
-		, m_visible(visible)
+		, m_alpha(alpha), m_visible(visible), m_fov(fov), m_edgeAA(edgeAA)
 		, m_varsSet(varsSet)
 	{}
 
@@ -670,11 +680,13 @@ public:
 	void SetScale(float xscale, float yscale)               { SetFlags(FDIF_XScale | FDIF_YScale); m_xscale = xscale; m_yscale = yscale; }
 	void SetScale(float xscale, float yscale, float zscale) { SetFlags(FDIF_XScale | FDIF_YScale | FDIF_ZScale); m_xscale = xscale; m_yscale = yscale; m_zscale = zscale; }
 
+	void SetFov(float fov)                                  { SetFlags(FDIF_Fov); m_fov = fov; }
+	void SetEdgeAA(EdgeAAMode edgeAA)                       { SetFlags(FDIF_EdgeAA); m_edgeAA = edgeAA; }
+
 	void Set(float x, float y, float z,
 	         float xscale, float yscale, float zscale,
 	         float rotation, float xrotation, float yrotation,
-	         float alpha,
-	         bool visible)
+	         float alpha, bool visible, float fov, EdgeAAMode edgeAA)
 	{
 		m_x = x;
 		m_y = y;
@@ -690,30 +702,34 @@ public:
 
 		m_alpha = alpha;
 		m_visible = visible;
+		m_fov = fov;
+		m_edgeAA = edgeAA;
 
 		SetFlags(FDIF_X | FDIF_Y | FDIF_Z |
 		         FDIF_XScale | FDIF_YScale | FDIF_ZScale |
 		         FDIF_Rotation | FDIF_XRotation | FDIF_YRotation |
-		         FDIF_Alpha | FDIF_Visible);
+		         FDIF_Alpha | FDIF_Visible | FDIF_Fov | FDIF_EdgeAA);
 	}
 
-	float GetX() const                       { return m_x; }
-	float GetY() const                       { return m_y; }
-	float GetZ() const                       { return m_z; }
+	float      GetX() const                       { return m_x; }
+	float      GetY() const                       { return m_y; }
+	float      GetZ() const                       { return m_z; }
 
-	float GetXScale() const                  { return m_xscale; }
-	float GetYScale() const                  { return m_yscale; }
-	float GetZScale() const                  { return m_zscale; }
+	float      GetXScale() const                  { return m_xscale; }
+	float      GetYScale() const                  { return m_yscale; }
+	float      GetZScale() const                  { return m_zscale; }
 
-	float GetRotation() const                { return m_rotation; }
-	float GetXRotation() const               { return m_xrotation; }
-	float GetYRotation() const               { return m_yrotation; }
+	float      GetRotation() const                { return m_rotation; }
+	float      GetXRotation() const               { return m_xrotation; }
+	float      GetYRotation() const               { return m_yrotation; }
 
-	float GetAlpha() const                   { return m_alpha; }
-	bool  GetVisible() const                 { return m_visible; }
+	float      GetAlpha() const                   { return m_alpha; }
+	bool       GetVisible() const                 { return m_visible; }
+	float      GetFov() const                     { return m_fov; }
+	EdgeAAMode GetEdgeAA() const                  { return m_edgeAA; }
 
-	bool  IsAnyFlagSet() const               { return 0 != m_varsSet; }
-	bool  IsFlagSet(unsigned int flag) const { return 0 != (m_varsSet & flag); }
+	bool       IsAnyFlagSet() const               { return 0 != m_varsSet; }
+	bool       IsFlagSet(unsigned int flag) const { return 0 != (m_varsSet & flag); }
 
 private:
 	void SetFlags(unsigned int flags) { m_varsSet |= flags; }
@@ -733,6 +749,8 @@ private:
 
 	float          m_alpha;
 	bool           m_visible;
+	float          m_fov;
+	EdgeAAMode     m_edgeAA;
 
 	unsigned short m_varsSet;
 };

@@ -1897,6 +1897,11 @@ std::shared_ptr<CRenderOutput> CScaleformPlayback::GetRenderOutput() const
 	return m_pRenderOutput;
 }
 
+void CScaleformPlayback::RenderToTexture(IFlashPlayer* pPlayer, ITexture* pTexture)
+{
+	RenderFlashPlayerToTexture(pPlayer, (CTexture*)pTexture);
+}
+
 void CScaleformPlayback::RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, CTexture* pOutput)
 {
 	CRenderOutputPtr pTempRenderOutput = std::make_shared<CRenderOutput>(pOutput, FRT_CLEAR_COLOR /* no automatic clears */, Clr_Transparent, 0.0f);

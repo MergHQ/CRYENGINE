@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "GImeHelper.h"
-#if defined(INCLUDE_SCALEFORM_SDK) && defined(USE_GFX_IME)
+#if defined(INCLUDE_SCALEFORM3_SDK) && defined(USE_GFX_IME)
 	#include "System.h"
 	#include "ImeManager.h"
 	#include "SharedResources.h"
@@ -133,4 +133,4 @@ bool GImeHelper::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 	return false;
 }
 	#endif // CRY_PLATFORM_WINDOWS
-#endif   //defined(INCLUDE_SCALEFORM_SDK) && defined(USE_GFX_IME)
+#endif   //defined(INCLUDE_SCALEFORM3_SDK) && defined(USE_GFX_IME)

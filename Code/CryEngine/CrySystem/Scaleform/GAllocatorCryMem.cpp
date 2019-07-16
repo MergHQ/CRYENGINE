@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#include "GAllocatorCryMem.h"
 	#include "SharedStates.h"
@@ -331,4 +331,4 @@ bool GFxMemoryArenaWrapper::Free(void* ptr, UPInt size, UPInt align)
 	return m_pAlloc->Free(ptr, size, align);
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

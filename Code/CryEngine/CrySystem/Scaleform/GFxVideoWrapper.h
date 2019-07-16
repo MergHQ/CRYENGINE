@@ -5,8 +5,9 @@
 
 #pragma once
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
+#include <GConfig.h>
 #include <CrySystem/Scaleform/ConfigScaleform.h>
 
 #if defined(USE_GFX_VIDEO)
@@ -79,6 +80,6 @@ const unsigned char fxvideoplayer_swf[] =
 
 #endif   // #if defined(USE_GFX_VIDEO)
 
-#endif   // #ifdef INCLUDE_SCALEFORM_SDK
+#endif   // #ifdef INCLUDE_SCALEFORM3_SDK
 
 #endif   // #ifndef _GFXVIDEOWRAPPER_H_

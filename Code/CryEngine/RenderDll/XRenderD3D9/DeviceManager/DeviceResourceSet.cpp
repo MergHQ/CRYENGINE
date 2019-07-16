@@ -58,19 +58,6 @@ const std::pair<SResourceView, CDeviceResourceView*>* SResourceBinding::GetDevic
 	return nullptr;
 }
 
-template<typename T> T* SResourceBinding::GetDeviceResourceView() const
-{
-	if (fastCompare)
-	{
-		if (auto pResourceViewInfo = GetDeviceResourceViewInfo())
-		{
-			return reinterpret_cast<T*>(pResourceViewInfo->second);
-		}
-	}
-
-	return nullptr;
-}
-
 template D3DSurface*      SResourceBinding::GetDeviceResourceView<D3DSurface>() const;
 
 // These are #defined to the same thing (NCryVulkan::CImageView) on Linux.

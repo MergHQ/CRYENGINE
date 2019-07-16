@@ -23,7 +23,7 @@ struct SCustomGraphicsState
 	SCachedValue<D3D12_PRIMITIVE_TOPOLOGY> primitiveTopology;
 };
 
-class CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomGraphicsState, SEmpty>
+class TMP_RENDER_API CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomGraphicsState, SEmpty>
 {
 public:
 	inline CDeviceGraphicsCommandInterfaceImpl* GetGraphicsInterfaceImpl()
@@ -137,7 +137,7 @@ protected:
 	void DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
 };
 
-class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
+class TMP_RENDER_API CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
 	void CopyImpl(D3DResource*    pSrc, D3DResource*    pDst);

@@ -10,7 +10,7 @@
 	#include <CryCore/Platform/platform.h>
 
 	// Sanity check, WAF should not have tried to build this.
-	#ifndef INCLUDE_SCALEFORM_SDK
+	#ifndef INCLUDE_SCALEFORM3_SDK
 		#error Scaleform helper can not be compiled without Scaleform support
 	#endif
 
@@ -24,6 +24,7 @@
 	#define EXCLUDE_SCALEFORM_VIDEO
 
 	#include <CrySystem/ISystem.h>
+	#include <GConfig.h>
 	#include <CrySystem/Scaleform/ConfigScaleform.h>
 	#include <CrySystem/Scaleform/ConfigScaleform_impl.h>
 #endif

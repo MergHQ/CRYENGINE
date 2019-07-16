@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////
 // Device Render Pass
 
-class CDeviceRenderPassDesc : NoCopy
+class TMP_RENDER_API CDeviceRenderPassDesc : NoCopy
 {
 	friend class CDeviceObjectFactory;
 

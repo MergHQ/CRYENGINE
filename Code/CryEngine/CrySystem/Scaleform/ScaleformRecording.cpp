@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 #include "GTexture_Impl.h"
 #include "ScaleformRecording.h"
 
@@ -879,4 +879,4 @@ void CScaleformRecording::SetRecordingCommandBuffer(GRendererCommandBuffer* pCmd
 	m_pCmdBuf = pCmdBuf;
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

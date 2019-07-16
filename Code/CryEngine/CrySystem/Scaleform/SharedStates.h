@@ -5,7 +5,7 @@
 
 #pragma once
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#pragma warning(push)
 	#pragma warning(disable : 6326)// Potential comparison of a constant with another constant
@@ -229,6 +229,6 @@ private:
 	CryGFxImageLoader();
 };
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK
 
 #endif // #ifndef _SHARED_STATES_H_

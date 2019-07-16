@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#include "GFileCryPak.h"
 	#include "SharedStates.h"
@@ -615,4 +615,4 @@ bool GFileInMemoryCryStream::Close()
 	return m_pMemFile->Close();
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

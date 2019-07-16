@@ -180,7 +180,7 @@
 #include <CryRenderer/IScaleform.h> // expensive header
 #include <CryRenderer/IRenderer.h> // expensive header
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 	#include <GRefCount.h>
 	#include <GMemory.h>
 	#include <GMemoryHeap.h>

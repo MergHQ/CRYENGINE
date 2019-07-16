@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#include <CrySystem/ISystem.h>
 	#include <CrySystem/Scaleform/IFlashPlayer.h>
@@ -297,4 +297,4 @@ GTexture* GImageInfoILMISrcXRender::GetTexture(GRenderer* pRenderer)
 	return m_pTex;
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

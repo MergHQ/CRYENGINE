@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#include "GFxVideoSoundCrySound.h"
 	#include <CrySystem/ConsoleRegistration.h>
@@ -20,7 +20,7 @@ static float s_sys_flash_video_subaudiovolume = 1.0f;
 //#define ENABLE_VIDEOSOUND_UPDATE_LOGGING
 
 //////////////////////////////////////////////////////////////////////////
-		#if defined(INCLUDE_SCALEFORM_SDK) && !CRY_PLATFORM_ORBIS
+		#if defined(INCLUDE_SCALEFORM3_SDK) && !CRY_PLATFORM_ORBIS
 
 namespace CryVideoSoundSystem
 {
@@ -310,7 +310,7 @@ protected:
 //	return pFMOD && pAllocator ? CryVideoSoundSystem::PlayerDelegate::CreateInstance(pAllocator, pFMOD) : 0;
 //}
 
-		#endif // #if defined(INCLUDE_SCALEFORM_SDK) && !CRY_PLATFORM_ORBIS
+		#endif // #if defined(INCLUDE_SCALEFORM3_SDK) && !CRY_PLATFORM_ORBIS
 
 using namespace CryVideoSoundSystem;
 
@@ -1041,4 +1041,4 @@ void GFxVideoCrySoundSystem::InitCVars()
 	REGISTER_CVAR2("sys_flash_video_subaudiovolume", &s_sys_flash_video_subaudiovolume, s_sys_flash_video_subaudiovolume, VF_NULL, "Sets volume of video's sub audio sound track (0..1). Has no effect if video support is not compiled in.");
 }
 
-#endif   //#ifdef INCLUDE_SCALEFORM_SDK
+#endif   //#ifdef INCLUDE_SCALEFORM3_SDK

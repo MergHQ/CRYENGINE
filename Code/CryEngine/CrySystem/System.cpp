@@ -3127,19 +3127,19 @@ void CSystem::OnLanguageCVarChanged(ICVar* const pLanguage)
 
 				char const* const szNewLanguage = pLanguage->GetString();
 				pSystem->OpenLanguagePak(szNewLanguage);
+
+#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
+				if (gEnv->pScaleformHelper)
+				{
+					gEnv->pScaleformHelper->OnLanguageChanged();
+				}
+#endif
 				pLocalizationManager->SetLanguage(szNewLanguage);
 
 				for (auto& tag : tags)
 				{
 					pLocalizationManager->LoadLocalizationDataByTag(tag.c_str());
 				}
-
-#if defined(INCLUDE_SCALEFORM_SDK) || defined(CRY_FEATURE_SCALEFORM_HELPER)
-				if (gEnv->pScaleformHelper)
-				{
-					gEnv->pScaleformHelper->SetTranslatorDirty(true);
-				}
-#endif
 			}
 		}
 	}

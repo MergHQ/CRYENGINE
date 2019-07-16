@@ -51,7 +51,7 @@ struct SCustomComputeState
 	std::bitset<D3D11_PS_CS_UAV_REGISTER_COUNT> boundUAVs;
 };
 
-class CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomGraphicsState, SCustomComputeState>
+class TMP_RENDER_API CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomGraphicsState, SCustomComputeState>
 {
 public:
 	CDeviceGraphicsCommandInterfaceImpl* GetGraphicsInterfaceImpl()
@@ -178,7 +178,7 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////
 
-class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
+class TMP_RENDER_API CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
 	void CopyImpl(D3DResource*    pSrc, D3DResource*    pDst);

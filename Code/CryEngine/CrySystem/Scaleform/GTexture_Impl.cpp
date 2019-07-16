@@ -2,11 +2,11 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 #include "GTexture_Impl.h"
 
-	#include <CrySystem/Scaleform/GMemorySTLAlloc.h>
+	#include "GMemorySTLAlloc.h"
 	#include <CryString/StringUtils.h>
 	#include <GImage.h>
 
@@ -646,4 +646,4 @@ bool GTextureXRenderYUV::Unmap(int level, int n, MapRect* maps, int /*flags*/)
 	return true;
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

@@ -73,7 +73,7 @@ struct SDescriptorSet
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // Constant buffer wrapper class
-class CConstantBuffer
+class TMP_RENDER_API CConstantBuffer
 {
 public:
 	CDeviceBuffer* m_buffer;
@@ -177,7 +177,7 @@ private:
 	static CryCriticalSection                          s_accessLock;
 };
 
-class CDeviceBufferManager
+class TMP_RENDER_API CDeviceBufferManager
 {
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Debug consistency functions

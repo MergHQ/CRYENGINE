@@ -1455,8 +1455,19 @@ void CShaderMan::mfLoadBasicSystemShaders()
 	{
 		sLoadShader("Fallback", s_ShaderFallback);
 		sLoadShader("FixedPipelineEmu", s_ShaderFPEmu);
-		sLoadShader("Scaleform", s_ShaderScaleForm);
 
+		ICVar* pCVar = gEnv->pConsole->GetCVar("sys_scaleform_version");
+		if (pCVar)
+		{
+			if (3 == pCVar->GetIVal())
+			{
+				sLoadShader("Scaleform3", s_ShaderScaleForm);
+			}
+			else if (4 == pCVar->GetIVal())
+			{
+				sLoadShader("Scaleform4", s_ShaderScaleForm);
+			}
+		}
 		mfRefreshSystemShader("Stereo", CShaderMan::s_ShaderStereo);
 	}
 
@@ -1476,11 +1487,22 @@ void CShaderMan::mfLoadDefaultSystemShaders()
 	{
 		m_bLoadedSystem = true;
 
+		ICVar* pCVar = gEnv->pConsole->GetCVar("sys_scaleform_version");
+		if (pCVar)
+		{
+			if (3 == pCVar->GetIVal())
+			{
+				sLoadShader("Scaleform3", s_ShaderScaleForm);
+			}
+			else if (4 == pCVar->GetIVal())
+			{
+				sLoadShader("Scaleform4", s_ShaderScaleForm);
+			}
+		}
+
 		sLoadShader("Fallback", s_ShaderFallback);
 		sLoadShader("FixedPipelineEmu", s_ShaderFPEmu);
-		sLoadShader("Scaleform", s_ShaderScaleForm);
 		sLoadShader("Light", s_ShaderLightStyles);
-
 		sLoadShader("ShadowMaskGen", s_ShaderShadowMaskGen);
 		sLoadShader("HDRPostProcess", s_shHDRPostProcess);
 		sLoadShader("Hud3D", s_sh3DHUD);

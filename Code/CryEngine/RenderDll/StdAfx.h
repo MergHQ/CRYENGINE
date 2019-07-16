@@ -3,7 +3,9 @@
 #pragma once
 
 #include <CryCore/Project/CryModuleDefs.h>
+#ifndef eCryModule
 #define eCryModule eCryM_Render
+#endif
 #include <CryCore/Platform/platform.h>
 #include <CryMemory/CrySizer.h>
 

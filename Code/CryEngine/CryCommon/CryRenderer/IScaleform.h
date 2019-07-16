@@ -7,13 +7,10 @@
 #pragma warning(disable : 6326)// Potential comparison of a constant with another constant
 #pragma warning(disable : 6011)// Dereferencing NULL pointer
 #include <CryCore/Platform/CryWindows.h>
-#include <GRenderer.h> // includes <windows.h>
 #pragma warning(pop)
 
 #include <vector>
-#include <CrySystem/Scaleform/GMemorySTLAlloc.h>
 
-struct IScaleformRecording;
 struct IScaleformPlayback;
 
 class CScaleformRecording;
@@ -204,92 +201,6 @@ enum EGRendererCommandBufferCmds
 	//GRCBA_GetStats,
 	//GRCBA_ReleaseResources
 };
-
-#ifdef INCLUDE_SCALEFORM_SDK
-
-//////////////////////////////////////////////////////////////////////
-struct IScaleformRecording : public GRenderer
-{
-	// GRenderer interface
-public:
-	virtual bool           GetRenderCaps(RenderCaps* pCaps) override = 0;
-	virtual GTexture*      CreateTexture() override = 0;
-	virtual GTexture*      CreateTextureYUV() override = 0;
-
-	virtual GRenderTarget* CreateRenderTarget() override = 0;
-	virtual void           SetDisplayRenderTarget(GRenderTarget* pRT, bool setState = 1) override = 0;
-	virtual void           PushRenderTarget(const GRectF& frameRect, GRenderTarget* pRT) override = 0;
-	virtual void           PopRenderTarget() override = 0;
-	virtual GTexture*      PushTempRenderTarget(const GRectF& frameRect, UInt targetW, UInt targetH, bool wantStencil = 0) override = 0;
-
-	virtual void           BeginDisplay(GColor backgroundColor, const GViewport& viewport, Float x0, Float x1, Float y0, Float y1) override = 0;
-	virtual void           EndDisplay() override = 0;
-
-	virtual void           SetMatrix(const GMatrix2D& m) override = 0;
-	virtual void           SetUserMatrix(const GMatrix2D& m) override = 0;
-	virtual void           SetCxform(const Cxform& cx) override = 0;
-
-	virtual void           PushBlendMode(BlendType mode) override = 0;
-	virtual void           PopBlendMode() override = 0;
-
-	virtual void           SetPerspective3D(const GMatrix3D& projMatIn) override = 0;
-	virtual void           SetView3D(const GMatrix3D& viewMatIn) override = 0;
-	virtual void           SetWorld3D(const GMatrix3D* pWorldMatIn) override = 0;
-
-	virtual void           SetVertexData(const void* pVertices, int numVertices, VertexFormat vf, CacheProvider* pCache = 0) override = 0;
-	virtual void           SetIndexData(const void* pIndices, int numIndices, IndexFormat idxf, CacheProvider* pCache = 0) override = 0;
-	virtual void           ReleaseCachedData(CachedData* pData, CachedDataType type) override = 0;
-
-	virtual void           DrawIndexedTriList(int baseVertexIndex, int minVertexIndex, int numVertices, int startIndex, int triangleCount) override = 0;
-	virtual void           DrawLineStrip(int baseVertexIndex, int lineCount) override = 0;
-
-	virtual void           LineStyleDisable() override = 0;
-	virtual void           LineStyleColor(GColor color) override = 0;
-
-	virtual void           FillStyleDisable() override = 0;
-	virtual void           FillStyleColor(GColor color) override = 0;
-	virtual void           FillStyleBitmap(const FillTexture* pFill) override = 0;
-	virtual void           FillStyleGouraud(GouraudFillType fillType, const FillTexture* pTexture0 = 0, const FillTexture* pTexture1 = 0, const FillTexture* pTexture2 = 0) override = 0;
-
-	virtual void           DrawBitmaps(BitmapDesc* pBitmapList, int listSize, int startIndex, int count, const GTexture* pTi, const GMatrix2D& m, CacheProvider* pCache = 0) override = 0;
-
-	virtual void           BeginSubmitMask(SubmitMaskMode maskMode) override = 0;
-	virtual void           EndSubmitMask() override = 0;
-	virtual void           DisableMask() override = 0;
-
-	virtual UInt           CheckFilterSupport(const BlurFilterParams& params) override = 0;
-	virtual void           DrawBlurRect(GTexture* pSrcIn, const GRectF& inSrcRect, const GRectF& inDestRect, const BlurFilterParams& params, bool isLast = false) override = 0;
-	virtual void           DrawColorMatrixRect(GTexture* pSrcIn, const GRectF& inSrcRect, const GRectF& inDestRect, const Float* pMatrix, bool isLast = false) override = 0;
-
-	virtual void           GetRenderStats(Stats* pStats, bool resetStats = false) override = 0;
-	virtual void           GetStats(GStatBag* pBag, bool reset = true) override = 0;
-	virtual void           ReleaseResources() override = 0;
-
-	// IScaleformRenderer interface
-public:
-	virtual IScaleformPlayback*    GetPlayback() const = 0;
-
-	virtual void                   SetClearFlags(uint32 clearFlags, ColorF clearColor = Clr_Transparent) = 0;
-	virtual void                   SetCompositingDepth(float depth) = 0;
-
-	virtual void                   SetStereoMode(bool stereo, bool isLeft) = 0;
-	virtual void                   StereoEnforceFixedProjectionDepth(bool enforce) = 0;
-	virtual void                   StereoSetCustomMaxParallax(float maxParallax) = 0;
-
-	virtual void                   AvoidStencilClear(bool avoid) = 0;
-	virtual void                   EnableMaskedRendering(bool enable) = 0;
-	virtual void                   ExtendCanvasToViewport(bool extend) = 0;
-
-	virtual void                   SetThreadIDs(uint32 mainThreadID, uint32 renderThreadID) = 0;
-	virtual void                   SetRecordingCommandBuffer(GRendererCommandBuffer* pCmdBuf) = 0;
-	virtual bool                   IsMainThread() const = 0;
-	virtual bool                   IsRenderThread() const = 0;
-
-	virtual void                   GetMemoryUsage(ICrySizer* pSizer) const = 0;
-
-	virtual std::vector<ITexture*> GetTempRenderTargets() const = 0;
-};
-#endif
 
 //////////////////////////////////////////////////////////////////////
 struct IScaleformPlayback
@@ -530,6 +441,7 @@ public:
 
 	// IScaleformRenderer interface
 public:
+	virtual void                   RenderToTexture(IFlashPlayer* pPlayer, ITexture* pTexture) = 0;
 	virtual void                   SetClearFlags(uint32 clearFlags, ColorF clearColor = Clr_Transparent) = 0;
 	virtual void                   SetCompositingDepth(float depth) = 0;
 

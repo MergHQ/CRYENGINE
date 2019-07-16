@@ -2,7 +2,7 @@
 
 #pragma once
 #include <CrySystem/Scaleform/ConfigScaleform.h>
-#if defined(INCLUDE_SCALEFORM_SDK) && defined(USE_GFX_IME)
+#if defined(INCLUDE_SCALEFORM3_SDK) && defined(USE_GFX_IME)
 	#include "GFxIMEManager.h"
 	#include <CrySystem/IWindowMessageHandler.h>
 
@@ -36,4 +36,4 @@ private:
 	GFxMovieView* m_pCurrentMovie;
 };
 
-#endif //defined(INCLUDE_SCALEFORM_SDK) && defined(USE_GFX_IME)
+#endif //defined(INCLUDE_SCALEFORM3_SDK) && defined(USE_GFX_IME)

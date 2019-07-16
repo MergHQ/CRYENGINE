@@ -24,6 +24,7 @@ add_sources("ScaleformHelper_uber.cpp"
 		"SharedStates.cpp"
 		"FlashPlayerInstance.h"
 		"GAllocatorCryMem.h"
+		"GMemorySTLAlloc.h"
 		"GFileCryPak.h"
 		"GFxVideoSoundCrySound.h"
 		"GFxVideoWrapper.h"
@@ -41,7 +42,7 @@ end_sources()
 #END-FILE-LIST
 
 # Some platforms can never build to shared libraries, so we need to skip the helper library for those.
-if(OPTION_SCALEFORMHELPER AND NOT (ORBIS OR ANDROID))
+if(OPTION_SCALEFORM3 AND NOT (ORBIS OR ANDROID))
 	CryEngineModule(CryScaleformHelper SOLUTION_FOLDER "CryEngine" FORCE_SHARED)
 
 	target_include_directories( ${THIS_PROJECT} PRIVATE .. )

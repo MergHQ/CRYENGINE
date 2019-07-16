@@ -378,10 +378,10 @@ public:
 	virtual std::vector<ITexture*> GetTempRenderTargets() const override;
 
 	// Helper functions
-	static void RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, CTexture* pOutput);
-	static void RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, const std::shared_ptr<CRenderOutput>& output);
-
-	void        SetRenderOutput(std::shared_ptr<CRenderOutput> pRenderOutput);
+	static void  RenderFlashPlayerToTexture(IFlashPlayer* pFlashPlayer, CTexture* pOutput);
+	static void  RenderFlashPlayerToOutput(IFlashPlayer* pFlashPlayer, const std::shared_ptr<CRenderOutput>& output);
+	virtual void RenderToTexture(IFlashPlayer* pPlayer, ITexture* pTexture) override;
+	void         SetRenderOutput(std::shared_ptr<CRenderOutput> pRenderOutput);
 
 private:
 	std::shared_ptr<CRenderOutput> GetRenderOutput() const;
@@ -575,7 +575,7 @@ public:
 	virtual bool                   IsRenderThread() const override                                                                        { return false; }
 
 	virtual void                   GetMemoryUsage(ICrySizer* pSizer) const override                                                       {}
-
+	virtual void                   RenderToTexture(IFlashPlayer* pPlayer, ITexture* pTexture) override                                    {}
 	virtual std::vector<ITexture*> GetTempRenderTargets() const override                                                                  { return std::vector<ITexture*>(); }
 };
 

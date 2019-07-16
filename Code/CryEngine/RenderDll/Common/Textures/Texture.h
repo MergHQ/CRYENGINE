@@ -4,6 +4,7 @@
 
 #include <set>
 #include <atomic>
+#include "../Defs.h"
 #include "../../XRenderD3D9/DeviceManager/DeviceFormats.h" // SPixFormat
 #include "../ResFile.h"
 #include "../CommonRender.h" // CBaseResource, SResourceView, SSamplerState
@@ -672,7 +673,7 @@ struct SStreamFormatCode
 
 //////////////////////////////////////////////////////////////////////////
 
-class CTexture : public ITexture, public CBaseResource
+class TMP_RENDER_API CTexture : public ITexture, public CBaseResource
 {
 	friend struct SDynTexture;
 	friend class CRendererResources;

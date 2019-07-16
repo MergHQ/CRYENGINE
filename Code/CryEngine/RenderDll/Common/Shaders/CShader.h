@@ -202,7 +202,7 @@ enum EShaderCacheMode
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CShaderMan :
+class TMP_RENDER_API CShaderMan :
 	public ISystemEventListener
 #if defined(SHADERS_SERIALIZING)
 	, public CShaderSerialize

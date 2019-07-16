@@ -94,7 +94,7 @@ struct SDebugRenderTargetInfo
 	std::vector<std::string> args;
 };
 
-class CD3D9Renderer final : public CRenderer, public ISystemEventListener
+class TMP_RENDER_API CD3D9Renderer final : public CRenderer, public ISystemEventListener
 {
 	friend struct SPixFormat;
 	friend class CD3DStereoRenderer;

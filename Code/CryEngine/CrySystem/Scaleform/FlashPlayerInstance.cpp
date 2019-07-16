@@ -10,7 +10,7 @@
 #include <CrySystem/ConsoleRegistration.h>
 
 // flash player implementation via Scaleform's GFx
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 	#include <CryString/CryPath.h>
 
@@ -1936,6 +1936,8 @@ bool CFlashVariableObject::GetDisplayInfo(SFlashDisplayInfo& info) const
 
 			  di.IsFlagSet(GFxValue::DisplayInfo::V_alpha) ? (float) di.GetAlpha() : 0,
 			  di.IsFlagSet(GFxValue::DisplayInfo::V_visible) ? di.GetVisible() : false,
+			  0,
+			  SFlashDisplayInfo::FDIEAAM_Inherit,
 			  varsSet);
 		}
 	}
@@ -2470,6 +2472,7 @@ int CFlashPlayer::ms_sys_flash_edgeaa(1);
 //int CFlashPlayer::ms_sys_flash_info(0);
 float CFlashPlayer::ms_sys_flash_info_peak_tolerance(5.0f);
 float CFlashPlayer::ms_sys_flash_info_histo_scale(1.0f);
+CFlashPlayer::PlayerList CFlashPlayer::ms_playerList;
 	#endif
 int CFlashPlayer::ms_sys_flash_log_options(0);
 float CFlashPlayer::ms_sys_flash_curve_tess_error(1.0f);
@@ -2481,7 +2484,6 @@ int CFlashPlayer::ms_sys_flash_reset_mesh_cache(0);
 int CFlashPlayer::ms_sys_flash_check_filemodtime(0);
 int CFlashPlayer::ms_sys_flash_mipmaps(0);
 
-CFlashPlayer::PlayerList CFlashPlayer::ms_playerList;
 IFlashLoadMovieHandler* CFlashPlayer::ms_pLoadMovieHandler(0);
 
 CFlashPlayer::CFlashPlayer()
@@ -2510,10 +2512,10 @@ CFlashPlayer::CFlashPlayer()
 	, m_pLoader(0)
 	, m_pRenderer(0)
 	, m_filePath(new string) // Level heap note: this new doesn't go into the GFx mem pool! Then again the counter object of the shared ptr doesn't neither.
-	, m_node()
 	#if defined(ENABLE_FLASH_INFO)
+	, m_node()
 	, m_pProfilerData(0)
-	#endif
+	#endif // ENABLE_FLASH_INFO
 	, m_lock(new CryCriticalSection) // Level heap note: this new doesn't go into the GFx mem pool! Then again the counter object of the shared ptr doesn't neither.
 	, m_retValRefHolder()
 	, m_cmdBuf()
@@ -2528,17 +2530,22 @@ CFlashPlayer::CFlashPlayer()
 	m_pRenderer = *CSharedFlashPlayerResources::GetAccess().GetRenderer();
 
 	//m_cmdBuf.Init(GMemory::GetGlobalHeap());
-
+#if defined(ENABLE_FLASH_INFO)
 	m_node.m_pHandle = this;
 	GetList().Link(m_node);
+#endif // ENABLE_FLASH_INFO
 }
 
 CFlashPlayer::~CFlashPlayer()
 {
-	CSharedFlashPlayerResources::GetAccess().SetImeFocus(m_pMovieView, false);
-
+#if defined(ENABLE_FLASH_INFO)
 	GetList().Unlink(m_node);
 	m_node.m_pHandle = 0;
+#endif
+
+	SYNC_THREADS;
+
+	CSharedFlashPlayerResources::GetAccess().SetImeFocus(m_pMovieView, false);
 
 	// release ref counts of all shared resources
 	{
@@ -3187,6 +3194,11 @@ void CFlashPlayer::Advance(float deltaTime)
 		UpdateASVerbosity();
 		m_pMovieView->Advance(deltaTime);
 	}
+}
+
+void CFlashPlayer::RenderToTexture(ITexture* pTexture)
+{
+	m_pRenderer->GetPlayback()->RenderToTexture(this, pTexture);
 }
 
 void CFlashPlayer::Render()
@@ -4692,11 +4704,13 @@ void CFlashPlayer::RenderFlashInfo()
 		GRenderer::Stats stats;
 		if (pFlashRenderer)
 			pFlashRenderer->GetRenderStats(&stats, true);
-		DrawText(xAdj + 10.0f, yAdj + 10.0f, color, "#Tris      : %5d", stats.Triangles);
-		DrawText(xAdj + 10.0f, yAdj + 22.0f, color, "#Lines     : %5d", stats.Lines);
-		DrawText(xAdj + 10.0f, yAdj + 34.0f, color, "#Masks     : %5d", stats.Masks);
-		DrawText(xAdj + 10.0f, yAdj + 46.0f, color, "#DrawCalls : %5d", stats.Primitives);
-		DrawText(xAdj + 10.0f, yAdj + 58.0f, color, "#Filters   : %5d", stats.Filters);
+		
+		DrawText(xAdj + 10.0f, yAdj + 10.0f, color, "Scaleform version %d.%d.%d", GFC_FX_MAJOR_VERSION, GFC_FX_MINOR_VERSION, GFC_FX_BUILD_VERSION);
+		DrawText(xAdj + 10.0f, yAdj + 24.0f, color, "#Tris      : %5d", stats.Triangles);
+		DrawText(xAdj + 10.0f, yAdj + 36.0f, color, "#Lines     : %5d", stats.Lines);
+		DrawText(xAdj + 10.0f, yAdj + 48.0f, color, "#Masks     : %5d", stats.Masks);
+		DrawText(xAdj + 10.0f, yAdj + 64.0f, color, "#DrawCalls : %5d", stats.Primitives);
+		DrawText(xAdj + 10.0f, yAdj + 76.0f, color, "#Filters   : %5d", stats.Filters);
 
 		// display memory statistics
 		if (pGFxHeap)
@@ -5244,7 +5258,7 @@ void CFlashPlayer::RenderFlashInfo()
 
 void CFlashPlayer::DumpAndFixLeaks()
 {
-	#if !defined(RELEASE)
+#if defined(ENABLE_FLASH_INFO)
 	ILog* pLog = gEnv->pLog;
 	assert(pLog);
 	bool leaksDetected = false;
@@ -5369,7 +5383,7 @@ unsigned int CFlashPlayer::GetLogOptions()
 
 void CFlashPlayer::GetFlashProfileResults(float& accumTime)
 {
-	#if defined(INCLUDE_SCALEFORM_SDK) && defined(ENABLE_LW_PROFILERS)
+	#if defined(INCLUDE_SCALEFORM3_SDK) && defined(ENABLE_LW_PROFILERS)
 		#if defined(ENABLE_FLASH_INFO)
 	const bool calcCost = ms_sys_flash_info == 0; // don't let lightweight profiler measure cost of full profiler when active (sys_flash_info 1)
 		#else
@@ -5391,4 +5405,4 @@ size_t CFlashPlayer::GetAddressSpaceSize()
 	return (size_t)ms_sys_flash_address_space_kb << 10;
 }
 
-#endif                                          // #ifdef INCLUDE_SCALEFORM_SDK
+#endif                                          // #ifdef INCLUDE_SCALEFORM3_SDK

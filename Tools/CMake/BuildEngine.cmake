@@ -13,14 +13,12 @@ if (WINDOWS)
 	option(OPTION_ENABLE_CRASHRPT "Enable CrashRpt crash reporting library" ON)
 endif()
 
-if(NOT ANDROID AND NOT ORBIS)
-	option(OPTION_SCALEFORMHELPER "Use Scaleform Helper" ON)
-else()
-	set(OPTION_SCALEFORMHELPER ON)
-endif()
-
 if(OPTION_DEDICATED_SERVER)
-	set(OPTION_SCALEFORMHELPER OFF)
+	set(OPTION_SCALEFORM3 OFF)
+	set(OPTION_SCALEFORM4 OFF)
+else()
+	option(OPTION_SCALEFORM3 "Enable Scaleform3 support" ON)
+	option(OPTION_SCALEFORM4 "Enable Scaleform4 support" ON)
 endif()
 
 option(OPTION_DEVELOPER_CONSOLE_IN_RELEASE "Enables the developer console in Release builds" ON)
@@ -435,7 +433,7 @@ include_directories("${CRYENGINE_DIR}/Code/CryEngine/CrySchematyc/Core/Interface
 #	link_libraries (Ntdll)
 #endif (WINDOWS)
 
-if (OPTION_SCALEFORMHELPER AND NOT (OPTION_ENGINE OR OPTION_SHADERCACHEGEN))
+if (OPTION_SCALEFORM3 AND NOT (OPTION_ENGINE OR OPTION_SHADERCACHEGEN))
 	add_subdirectory ("Code/CryEngine/CrySystem/Scaleform")
 endif()
 
@@ -446,6 +444,7 @@ endif()
 if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/CryEngine/CrySystem")
 	add_subdirectory ("Code/CryEngine/CryReflection")
+	add_subdirectory ("Code/CryEngine/CryScaleform")
 	add_subdirectory ("Code/CryEngine/RenderDll/XRenderD3D9")
 	
 	# Shaders custom project
@@ -609,7 +608,7 @@ if (OPTION_ENGINE)
     endif()
 endif()
 
-if (OPTION_SCALEFORMHELPER OR OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
+if (OPTION_SCALEFORM3 OR OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/Libs/zlib")
 	add_subdirectory ("Code/Libs/expat")
 	if (WINDOWS)

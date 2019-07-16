@@ -1,13 +1,9 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CONFIG_SCALEFORM_H_
-#define _CONFIG_SCALEFORM_H_
-
 #pragma once
 
 #ifdef INCLUDE_SCALEFORM_SDK
 #include <CryCore/Platform/CryWindows.h>
-#include <GConfig.h>   // Requires <windows.h> because of WIN32 definition in GConfigAddon.h (and potentially other Scaleform files)
 #include <CryCore/Project/ProjectDefines.h>
 
 
@@ -22,8 +18,7 @@
 #if defined(ENABLE_GFX_VIDEO) && !defined(EXCLUDE_SCALEFORM_VIDEO)
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
 #define USE_GFX_VIDEO
-#elif CRY_PLATFORM_DURANGO
-#define USE_GFX_VIDEO
+#define GFX_ENABLE_VIDEO
 #endif
 #endif
 
@@ -46,10 +41,4 @@
 #undef USE_GFX_PNG
 #endif
 
-#if !defined(GFC_USE_IME) && defined(USE_GFX_IME)
-#undef USE_GFX_IME
-#endif
-
 #endif // #ifdef INCLUDE_SCALEFORM_SDK
-
-#endif // #ifndef _CONFIG_SCALEFORM_H_

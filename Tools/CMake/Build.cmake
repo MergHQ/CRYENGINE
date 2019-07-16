@@ -4,7 +4,7 @@ include_guard(GLOBAL)
 # Templates do need Configure.cmake to set up some defines.
 # In order to not have duplicate add_subdirectory calls (which causes errors), we need an include guard here.
 
-if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX OR OPTION_PAKTOOLS OR OPTION_DOXYGEN_EXAMPLES)
+if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORM3 OR OPTION_SCALEFORM4 OR OPTION_SANDBOX OR OPTION_PAKTOOLS OR OPTION_DOXYGEN_EXAMPLES)
 	# Add custom project with just listing of cmake files
 	add_subdirectory("${TOOLS_CMAKE_DIR}")
 

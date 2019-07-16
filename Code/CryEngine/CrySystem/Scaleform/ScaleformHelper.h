@@ -1,11 +1,11 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 #include <CrySystem/Scaleform/IScaleformHelper.h>
 #include <CrySystem/ISystem.h>
-
+#include <GConfig.h>
 #include <CrySystem/Scaleform/ConfigScaleform.h>
 #include "SharedResources.h"
 #include "SharedStates.h"
@@ -51,7 +51,7 @@ public:
 		CryGFxTranslator::GetAccess().SetWordWrappingMode(szLanguage);
 	}
 
-	virtual void SetTranslatorDirty(bool bDirty) override
+	virtual void OnLanguageChanged() override
 	{
 		CryGFxTranslator::GetAccess().SetDirty(true);
 	}

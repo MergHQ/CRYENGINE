@@ -1589,7 +1589,7 @@ void CHud3DPass::ExecuteFlashUpdate(CHud3D& hud3d)
 				pData.pFlashPlayer->AvoidStencilClear(!CRendererCVars::CV_r_PostProcessHUD3DStencilClear);
 
 				// Lockless rendering playback.
-				CScaleformPlayback::RenderFlashPlayerToTexture(pData.pFlashPlayer, hud3d.m_pHUD_RT);
+				pData.pFlashPlayer->RenderToTexture(hud3d.m_pHUD_RT);
 
 				pData.pFlashPlayer->AvoidStencilClear(false);
 

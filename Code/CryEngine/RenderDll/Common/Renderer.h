@@ -731,7 +731,7 @@ struct CRY_ALIGN(128) SRenderStatistics
 };
 
 //////////////////////////////////////////////////////////////////////
-class CRenderer : public IRenderer, public CRendererResources, public CRendererCVars
+class TMP_RENDER_API CRenderer : public IRenderer, public CRendererResources, public CRendererCVars
 {
 	friend class CRendererResources;
 	friend class CRendererCVars;

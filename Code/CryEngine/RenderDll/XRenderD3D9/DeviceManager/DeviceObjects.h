@@ -87,7 +87,7 @@ private:
 	}
 };
 
-class CDeviceObjectFactory
+class TMP_RENDER_API CDeviceObjectFactory
 {
 	static CDeviceObjectFactory m_singleton;
 

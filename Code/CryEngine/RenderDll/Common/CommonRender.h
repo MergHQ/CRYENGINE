@@ -704,7 +704,7 @@ static_assert(sizeof(SResourceBindPoint::fastCompare) == sizeof(SResourceBindPoi
 
 DEFINE_ENUM_FLAG_OPERATORS(SResourceBindPoint::EFlags)
 
-struct SResourceBinding
+struct TMP_RENDER_API SResourceBinding
 {
 	typedef bool InvalidateCallbackSignature(void*, SResourceBindPoint, UResourceReference, uint32);
 	typedef std::function<InvalidateCallbackSignature> InvalidateCallbackFunction;
@@ -782,7 +782,7 @@ struct SResourceBinding
 	EResourceType      type;
 };
 
-class CResourceBindingInvalidator
+class TMP_RENDER_API CResourceBindingInvalidator
 {
 
 private:
@@ -854,7 +854,7 @@ struct SResourceContainer
 typedef std::map<CCryNameTSCRC, SResourceContainer*> ResourceClassMap;
 typedef ResourceClassMap::iterator                   ResourceClassMapItor;
 
-class CBaseResource : NoCopy, public CResourceBindingInvalidator
+class TMP_RENDER_API CBaseResource : NoCopy, public CResourceBindingInvalidator
 {
 private:
 	// Per resource variables
@@ -946,3 +946,17 @@ public:
 
 	virtual void               GetMemoryUsage(ICrySizer* pSizer) const = 0;
 };
+
+template<typename T> T* SResourceBinding::GetDeviceResourceView() const
+{
+	if (fastCompare)
+	{
+		if (auto pResourceViewInfo = GetDeviceResourceViewInfo())
+		{
+			return reinterpret_cast<T*>(pResourceViewInfo->second);
+		}
+	}
+
+	return nullptr;
+}
+

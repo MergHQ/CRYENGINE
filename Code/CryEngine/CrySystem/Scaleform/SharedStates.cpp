@@ -2,9 +2,10 @@
 
 #include "StdAfx.h"
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 #include <CryMath/Cry_Math.h>
+#include <GConfig.h>
 #include <CrySystem/Scaleform/ConfigScaleform.h>
 	#include "SharedStates.h"
 
@@ -682,4 +683,4 @@ GImageInfoBase* CryGFxImageLoader::LoadImage(const char* pUrl)
 	return pImageInfo;
 }
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

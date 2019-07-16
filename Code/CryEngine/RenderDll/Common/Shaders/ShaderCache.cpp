@@ -12,6 +12,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include "RemoteCompiler.h"
 #include <CryCore/Base64.h>
+#include "CShader.h"
 
 bool SShaderCombIdent::operator==(const SShaderCombIdent& other) const
 {

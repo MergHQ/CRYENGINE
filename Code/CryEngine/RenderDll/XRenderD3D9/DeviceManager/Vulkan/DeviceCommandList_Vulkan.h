@@ -53,7 +53,7 @@ struct SCustomState
 	SPendingBindings pendingBindings;
 };
 
-class CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomState, SCustomState>
+class TMP_RENDER_API CDeviceCommandListImpl : public CDeviceCommandListCommon<SSharedState, SCustomState, SCustomState>
 {
 public:
 	~CDeviceCommandListImpl();
@@ -180,7 +180,7 @@ protected:
 	void DiscardUAVContentsImpl(D3DBaseView* pView, uint32 numRects, const D3D11_RECT* pRects);
 };
 
-class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
+class TMP_RENDER_API CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 public:
 	void                                CopyBuffer(NCryVulkan::CBufferResource* pSrc, NCryVulkan::CBufferResource* pDst, const SResourceRegionMapping& mapping);                      // GPU-side copy

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#ifdef INCLUDE_SCALEFORM_SDK
+#ifdef INCLUDE_SCALEFORM3_SDK
 
 #include <CryCore/Platform/platform.h>
 #include <CryRenderer/IRenderer.h>
@@ -195,4 +195,4 @@ private:
 	bool m_isStereoContent;
 };
 
-#endif // #ifdef INCLUDE_SCALEFORM_SDK
+#endif // #ifdef INCLUDE_SCALEFORM3_SDK

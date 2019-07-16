@@ -66,7 +66,6 @@ struct SSF_ResourcesD3D
 	CShader* m_pShader;
 
 	InputLayoutHandle m_vertexDecls[IScaleformPlayback::Vertex_Num];
-	D3DVertexDeclaration* m_pVertexDecls[IScaleformPlayback::Vertex_Num];
 
 	SamplerStateHandle samplerStateHandles[8];
 	std::vector<CTexture*> m_renderTargets;
