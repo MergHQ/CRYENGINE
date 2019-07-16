@@ -213,6 +213,7 @@ set(TOOLS_CMAKE_DIR "$${CRYENGINE_DIR}/Tools/CMake")
 
 set(PROJECT_BUILD 1)
 set(PROJECT_DIR "$${CMAKE_SOURCE_DIR}/../")
+set(PROJECT_BOOTSTRAP "$${CMAKE_SOURCE_DIR}/bootstrap.dat")
 
 include("$${TOOLS_CMAKE_DIR}/CommonOptions.cmake")
 
@@ -358,6 +359,10 @@ endif()\n'''
                     custom_block_contents[
                         add_subdirectory_index: close_scope_index])
 
+                # Do not generate cmake file for SDKs
+                if 'SDKs' in standalone_directory:
+                    continue
+
                 standalone_directory = standalone_directory.replace('"', '')
 
                 standalone_project_name = standalone_directory
@@ -385,6 +390,9 @@ endif()\n'''
     cmakelists_sources = ""
 
     source_count = 0
+
+    # Do not auto add source files to SDK cmake files
+    standalone_directories.append('SDKs')
 
     directory_sources = add_cpp_sources(
         code_directory, project_name, code_directory, standalone_directories)
