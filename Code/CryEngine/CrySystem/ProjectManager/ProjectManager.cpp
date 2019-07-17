@@ -357,8 +357,8 @@ void CProjectManager::RegisterCVars()
 
 	// Legacy
 	m_sys_game_name = REGISTER_STRING("sys_game_name", "CRYENGINE", VF_DUMPTODISK, "Specifies the name to be displayed in the Launcher window title bar");
-	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", VF_CONST_CVAR | VF_REQUIRE_APP_RESTART, "Specifies the game DLL to load");
-	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "", VF_CONST_CVAR | VF_REQUIRE_APP_RESTART, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
+	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", VF_REQUIRE_APP_RESTART, "Specifies the game DLL to load");
+	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "", VF_REQUIRE_APP_RESTART, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
 }
 
 //--- UTF8 parse helper routines

@@ -927,7 +927,7 @@ CLevelSystem::~CLevelSystem()
 //------------------------------------------------------------------------
 void CLevelSystem::Rescan(const char* levelsFolder, const uint32 tag)
 {
-	if (levelsFolder)
+	if (levelsFolder && strlen(levelsFolder))
 	{
 		if (const ICmdLineArg* pModArg = m_pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "MOD"))
 		{
@@ -939,6 +939,11 @@ void CLevelSystem::Rescan(const char* levelsFolder, const uint32 tag)
 		}
 
 		m_levelsFolder = levelsFolder;
+	}
+	else
+	{
+		const ICVar* pSysGameFolderCVar = gEnv->pConsole->GetCVar("sys_game_folder");
+		m_levelsFolder = PathUtil::Make(PathUtil::GetProjectFolder(), pSysGameFolderCVar->GetString());
 	}
 
 	m_levelInfos.reserve(64);
