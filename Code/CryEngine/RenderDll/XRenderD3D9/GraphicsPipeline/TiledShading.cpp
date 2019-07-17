@@ -222,6 +222,13 @@ void CTiledShadingStage::Execute()
 			SScopedComputeCommandList computeCommandList(bAsynchronousCompute);
 
 			m_passCullingShading.Execute(computeCommandList, EShaderStage_All);
+
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+			// This is needed because of a bug in Durango D3D driver
+			ID3DXboxPerformanceContext* const pPerformanceContext = GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->GetDX11CommandList()->GetD3D11PerformanceContext();
+			pPerformanceContext->InsertWaitUntilIdle(0);
+			pPerformanceContext->FlushGpuCacheRange(D3D11_FLUSH_TEXTURE_L2_WRITEBACK, 0, D3D11_FLUSH_GPU_CACHE_RANGE_ALL);
+#endif
 		}
 	}
 
