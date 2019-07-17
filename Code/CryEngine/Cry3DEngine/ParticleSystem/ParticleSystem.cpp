@@ -138,7 +138,8 @@ void CParticleSystem::Update()
 	m_emitters.append(m_newEmitters);
 	for (auto& pEmitter : m_newEmitters)
 	{
-		pEmitter->CheckUpdated();
+		if (pEmitter->IsActive() && !pEmitter->HasRuntimes())
+			pEmitter->UpdateRuntimes();
 		if (pEmitter->GetRuntimesPreUpdate().size())
 			m_emittersPreUpdate.push_back(pEmitter);
 	}
@@ -329,6 +330,9 @@ void CParticleSystem::DisplayStats(Vec2& location, float lineHeight)
 void CParticleSystem::ClearRenderResources()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	m_emittersPreUpdate.clear();
+
 #if !defined(_RELEASE)
 	// All external references need to be released before this point to prevent leaks
 	for (const auto& pEmitter : m_emitters)
@@ -339,7 +343,6 @@ void CParticleSystem::ClearRenderResources()
 
 	m_emitters.clear();
 	m_newEmitters.clear();
-	m_emittersPreUpdate.clear();
 
 	for (auto it = m_effects.begin(); it != m_effects.end(); )
 	{

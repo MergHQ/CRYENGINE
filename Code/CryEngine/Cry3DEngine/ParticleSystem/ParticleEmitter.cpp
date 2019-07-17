@@ -166,18 +166,11 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 
 void CParticleEmitter::CheckUpdated()
 {
-	if (!m_active)
-		return;
-
 	CRY_PFX2_PROFILE_DETAIL;
 
 	if (gEnv->IsEditing() && m_effectEditVersion != m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion)
 	{
 		m_attributeInstance.Reset(m_pEffectOriginal->GetAttributeTable());
-		UpdateRuntimes();
-	}
-	if (m_runtimesFor.empty())
-	{
 		UpdateRuntimes();
 	}
 }
@@ -463,7 +456,10 @@ void CParticleEmitter::Activate(bool activate)
 		m_effectEditVersion = -1; // Force creation of Runtimes next Update
 
 		if (!isNew)
-			CheckUpdated();
+		{
+			if (!HasRuntimes())
+				UpdateRuntimes();
+		}
 	}
 	else
 	{
@@ -748,7 +744,7 @@ void CParticleEmitter::UpdateRuntimes()
 		m_reRegister = true;
 
 	m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
-	m_alive = true;
+	m_alive = m_active = true;
 
 	const STimingParams timings = GetMaxTimings();
 	m_timeStable = m_timeCreated + timings.m_equilibriumTime;
@@ -850,6 +846,8 @@ void CParticleEmitter::Clear()
 	Unregister();
 	m_runtimes.clear();
 	m_runtimesFor.clear();
+	m_runtimesPreUpdate.clear();
+	m_runtimesDeferred.clear();
 }
 
 bool CParticleEmitter::HasParticles() const

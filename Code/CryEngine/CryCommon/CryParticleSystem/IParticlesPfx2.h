@@ -18,7 +18,7 @@ typedef Serialization::IArchive IArchive;
 
 template<typename F>
 struct TParticleStats
-	: INumberVector<F, 17, TParticleStats<F>>
+	: INumberVector<F, 21, TParticleStats<F>>
 {
 	TElementCounts<F> emitters;
 	TElementCounts<F> components;

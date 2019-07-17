@@ -88,6 +88,7 @@ public:
 	const TRuntimes&          GetRuntimesPreUpdate() const { return m_runtimesPreUpdate; }
 	const TRuntimes&          GetRuntimesDeferred() const  { return m_runtimesDeferred; }
 	CParticleComponentRuntime*GetRuntimeFor(const CParticleComponent* pComponent) { return m_runtimesFor[pComponent->GetComponentId()]; }
+	bool                      HasRuntimes() const          { return !m_runtimesFor.empty(); }
 	const CParticleEffect*    GetCEffect() const           { return m_pEffect; }
 	CParticleEffect*          GetCEffect()                 { return m_pEffect; }
 	void                      Register();
