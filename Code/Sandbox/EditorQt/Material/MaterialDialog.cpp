@@ -1288,7 +1288,7 @@ void CMaterialUI::SetToMaterial(CMaterial* mtl, int propagationFlags)
 
 	if (propagationFlags & MTL_PROPAGATE_MATERIAL_SETTINGS)
 	{
-		mtl->SetSurfaceTypeName(surfaceType);
+		mtl->SetSurfaceTypeName(surfaceType, false); // do not update material info here, it happens afterwards
 		// If shader name is different reload shader.
 		mtl->SetShaderName(shader);
 	}
