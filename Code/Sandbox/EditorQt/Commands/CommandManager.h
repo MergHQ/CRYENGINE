@@ -77,6 +77,7 @@ protected:
 	std::vector<CCustomCommand*> m_CustomCommands;
 
 	bool                         m_bWarnDuplicate;
+	bool                         m_areActionsEnabled;
 
 	static string GetFullCommandName(const string& module, const string& name);
 	static void   GetArgsFromString(const string& argsTxt, CCommand::CArgs& argList);

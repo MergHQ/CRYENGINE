@@ -1565,6 +1565,22 @@ void CEditorMainFrame::OnEditorNotifyEvent(EEditorNotifyEvent event)
 			actionCustom->setChecked(currentConfigSpec == CONFIG_CUSTOM);
 		}
 		break;
+
+		// disable commands while loading. Since we process events this can trigger actions
+		// that tweak incomplete object state.
+		case eNotify_OnBeginLoad:
+		case eNotify_OnBeginNewScene:
+		case eNotify_OnBeginSceneClose:
+			GetIEditorImpl()->SetActionsEnabled(false);
+			break;
+
+		case eNotify_OnEndLoad:
+		case eNotify_OnEndNewScene:
+			GetIEditorImpl()->SetActionsEnabled(true);
+			break;
+
+		default:
+			break;
 	}
 }
 

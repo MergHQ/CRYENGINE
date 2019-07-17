@@ -572,7 +572,7 @@ void CCryEditApp::InitLevel(CEditCommandLineInfo& cmdInfo)
 
 	if (m_bPreviewMode)
 	{
-		GetIEditorImpl()->EnableAcceleratos(false);
+		GetIEditorImpl()->SetActionsEnabled(false);
 
 		// Load geometry object.
 		if (!cmdInfo.m_strFileName.IsEmpty())
@@ -1058,6 +1058,7 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 		return ECLR_DIR_CREATION_FAILED;
 	}
 
+	CProgressNotification notification("Creating Level", QtUtil::ToQString(levelName));
 	// First cleanup previous document
 	GetIEditorImpl()->CloseDocument();
 	// Create empty document
@@ -1072,7 +1073,6 @@ CCryEditApp::ECreateLevelResult CCryEditApp::CreateLevel(const string& levelName
 	GetIEditorImpl()->GetGameEngine()->SetLevelPath(levelPath);
 	gEnv->pGameFramework->SetEditorLevel(levelName, levelPath);
 	pDoc->InitEmptyLevel(resolution, unitSize, bUseTerrain);
-	CProgressNotification notification("Creating Level", QtUtil::ToQString(levelName));
 
 	// Save the document to this folder
 	pDoc->SetPathName(filename.GetBuffer());
@@ -1114,9 +1114,6 @@ CCryEditDoc* CCryEditApp::LoadLevel(const char* lpszFileName)//this path is a pa
 	if (GetIEditorImpl()->GetLevelIndependentFileMan()->PromptChangedFiles() && GetIEditorImpl()->GetDocument()->CanClose())
 	{
 		CProgressNotification notification("Loading Level", QString(lpszFileName));
-		// disable commands while loading. Since we process events this can trigger actions
-		// that tweak incomplete object state.
-		GetIEditorImpl()->EnableAcceleratos(false);
 
 		if (pDoc)
 		{
@@ -1126,10 +1123,6 @@ CCryEditDoc* CCryEditApp::LoadLevel(const char* lpszFileName)//this path is a pa
 
 		const string newPath = PathUtil::AbsolutePathToCryPakPath(lpszFileName);
 		pDoc->OnOpenDocument(newPath);
-
-		// Re-enable accelerators here
-		GetIEditorImpl()->EnableAcceleratos(true);
-
 		pDoc->SetLastLoadedLevelName(newPath);
 	}
 

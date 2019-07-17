@@ -143,7 +143,7 @@ public:
 
 	//! Enables/Disable updates of editor.
 	void         EnableUpdate(bool enable) { m_bUpdates = enable; }
-	void         EnableAcceleratos(bool bEnable);
+	void         SetActionsEnabled(bool bEnable);
 	CGameEngine* GetGameEngine()           { return m_pGameEngine; }
 	void         SetModifiedFlag(bool modified = true);
 

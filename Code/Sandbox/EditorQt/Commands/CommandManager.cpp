@@ -14,7 +14,10 @@
 #include <QtUtil.h>
 
 CEditorCommandManager::CEditorCommandManager()
-	: m_bWarnDuplicate(true) {}
+	: m_bWarnDuplicate(true)
+	, m_areActionsEnabled(true)
+{
+}
 
 void CEditorCommandManager::RegisterAutoCommands()
 {
@@ -661,6 +664,9 @@ QAction* CEditorCommandManager::GetAction(const char* cmdFullName, const char* t
 
 void CEditorCommandManager::SetEditorUIActionsEnabled(bool bEnabled)
 {
+	if (m_areActionsEnabled == bEnabled)
+		return;
+
 	CommandTable::const_iterator iter = m_commands.begin(), end = m_commands.end();
 
 	for (; iter != end; ++iter)
@@ -702,4 +708,6 @@ void CEditorCommandManager::SetEditorUIActionsEnabled(bool bEnabled)
 			suspendAction->setEnabled(true);
 		}
 	}
+
+	m_areActionsEnabled = bEnabled;
 }

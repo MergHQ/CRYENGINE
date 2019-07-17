@@ -29,6 +29,7 @@
 #include "PathUtils.h"
 #include "PluginManager.h"
 #include "Prefabs/PrefabManager.h"
+#include <QT/Widgets/QWaitProgress.h>
 #include "ShaderCache.h"
 #include "SurfaceTypeValidator.h"
 #include "Terrain/SurfaceType.h"
@@ -1429,6 +1430,8 @@ void CCryEditDoc::InitEmptyLevel(int resolution, float unitSize, bool bUseTerrai
 
 	GetIEditorImpl()->Notify(eNotify_OnBeginNewScene);
 	CLogFile::WriteLine("Preparing new document...");
+	CWaitProgress progress(_T("Creating Level"));
+	progress.Step(-1, true);
 
 	////////////////////////////////////////////////////////////////////////
 	// Reset heightmap (water level, etc) to default
@@ -1438,6 +1441,7 @@ void CCryEditDoc::InitEmptyLevel(int resolution, float unitSize, bool bUseTerrai
 	// If possible set terrain to correct size here, this will help with initial camera placement in new levels
 	if (bUseTerrain)
 		GetIEditorImpl()->GetTerrainManager()->SetTerrainSize(resolution, unitSize);
+	progress.Step(-1, true);
 
 	////////////////////////////////////////////////////////////////////////
 	// Reset the terrain texture of the top render window
@@ -1465,12 +1469,17 @@ void CCryEditDoc::InitEmptyLevel(int resolution, float unitSize, bool bUseTerrai
 				showTerrainSurface->setAttr("value", "false");
 			}
 		}
+		progress.Step(-1, true);
 
 		GetCurrentMission(true);  // true = skip loading the AI in case the content needs to get synchronized (otherwise it would attempt to load AI stuff from the previously loaded level (!) which might give confusing warnings)
 		GetIEditorImpl()->GetGameEngine()->SetMissionName(GetCurrentMission()->GetName().GetString());
+		progress.Step(-1, true);
 		GetIEditorImpl()->GetGameEngine()->SetLevelCreated(true);
+		progress.Step(-1, true);
 		GetIEditorImpl()->GetGameEngine()->ReloadEnvironment();
+		progress.Step(-1, true);
 		GetIEditorImpl()->GetGameEngine()->SetLevelCreated(false);
+		progress.Step(-1, true);
 
 		// Default time of day.
 		ITimeOfDay* const pTimeOfDay = gEnv->p3DEngine->GetTimeOfDay();
@@ -1484,6 +1493,7 @@ void CCryEditDoc::InitEmptyLevel(int resolution, float unitSize, bool bUseTerrai
 	{
 		pObjectLayerManager->CreateLayer("Terrain", eObjectLayerType_Terrain);
 	}
+	progress.Step(-1, true);
 
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_LOAD_END, 0, 0);
 

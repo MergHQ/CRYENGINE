@@ -880,7 +880,7 @@ void CGameEngine::SwitchToInGame()
 	}
 
 	// Disable accelerators.
-	GetIEditorImpl()->EnableAcceleratos(false);
+	GetIEditorImpl()->SetActionsEnabled(false);
 	// Reset physics state before switching to game.
 	m_pISystem->GetIPhysicalWorld()->ResetDynamicEntities();
 	// Reset mission script.
@@ -951,7 +951,7 @@ void CGameEngine::SwitchToInEditor()
 	gEnv->p3DEngine->GetDeferredPhysicsEventManager()->ClearDeferredEvents();
 
 	// Enable accelerators.
-	GetIEditorImpl()->EnableAcceleratos(true);
+	GetIEditorImpl()->SetActionsEnabled(true);
 	// Reset mission script.
 	GetIEditorImpl()->GetDocument()->GetCurrentMission()->ResetScript();
 
@@ -1750,7 +1750,7 @@ void CGameEngine::ToggleGameInputSuspended()
 	if (m_bGameModeSuspended)
 	{
 		// reenable accelerators and actions for editor
-		GetIEditorImpl()->EnableAcceleratos(true);
+		GetIEditorImpl()->SetActionsEnabled(true);
 
 		m_pISystem->GetIInput()->SetExclusiveMode(eIDT_Keyboard, false, hWnd);
 		m_pISystem->GetIInput()->ClearKeyState();
@@ -1770,7 +1770,7 @@ void CGameEngine::ToggleGameInputSuspended()
 		pViewWidget->setFocus();
 
 		// disable accelerators and actions for editor
-		GetIEditorImpl()->EnableAcceleratos(false);
+		GetIEditorImpl()->SetActionsEnabled(false);
 
 		m_pISystem->GetIInput()->SetExclusiveMode(eIDT_Keyboard, false, hWnd);
 		m_pISystem->GetIInput()->ClearKeyState();

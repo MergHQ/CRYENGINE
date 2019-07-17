@@ -76,7 +76,7 @@ bool CWaitProgress::Step(int nPercentage, bool bProcessEvents)
 	if (!m_bStarted)
 		Start();
 
-	if (m_percent == nPercentage)
+	if (nPercentage >= 0 && m_percent == nPercentage)
 		return true;
 
 	m_percent = nPercentage;

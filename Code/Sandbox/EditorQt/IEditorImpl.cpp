@@ -1022,7 +1022,7 @@ bool CEditorImpl::IsInPreviewMode()
 	return CCryEditApp::GetInstance()->IsInPreviewMode();
 }
 
-void CEditorImpl::EnableAcceleratos(bool bEnable)
+void CEditorImpl::SetActionsEnabled(bool bEnable)
 {
 	m_pCommandManager->SetEditorUIActionsEnabled(bEnable);
 }
