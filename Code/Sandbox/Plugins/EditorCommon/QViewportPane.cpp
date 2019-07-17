@@ -637,8 +637,7 @@ void QAspectLayout::setGeometry(const QRect& rect)
 	}
 
 	QRect source(upleft, downRight);
-	QRect limits(0, 0, rect.width() - 1, rect.height() - 1);
-	m_child->setGeometry(source.intersected(limits));
+	m_child->setGeometry(source.intersected(rect));
 }
 
 QViewportPane::QViewportPane(CViewport* viewport, QWidget* headerWidget)
