@@ -303,7 +303,7 @@ void CTerrainDialog::OnTerrainGenerate()
 	sParam.iHeight = m_pHeightmap->GetHeight();
 	sParam.bBlueSky = false;
 
-	// Save the paramters
+	// Save the parameters
 	ZeroStruct(*m_sLastParam);
 
 	CWaitCursor wait;
@@ -374,7 +374,7 @@ void CTerrainDialog::OnModifyMakeisle()
 	CWaitCursor wait;
 	CUndo undo("Make Isle");
 
-	// Call the make isle fucntion of the heightmap class
+	// Call the make isle function of the heightmap class
 	m_pHeightmap->MakeIsle();
 
 	InvalidateTerrain();
@@ -513,7 +513,7 @@ void CTerrainDialog::OnHeightmapShowLargePreview()
 	{
 		for (UINT x = 0; x < iWidth; ++x)
 		{
-			// Get a normalized grayscale value from the heigthmap
+			// Get a normalized grayscale value from the Heightmap
 			uint8 iColor = (uint8)__min(pHeightmap[x + y * iWidth] / fMaxHeight * 255.0f, 255.0f);
 
 			// Create a BGR grayscale value and store it in the image

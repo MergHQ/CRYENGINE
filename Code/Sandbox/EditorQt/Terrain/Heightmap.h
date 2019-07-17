@@ -295,8 +295,7 @@ private:
 	void ClampHeight(float& h) { h = min(m_fMaxHeight, max(0.0f, h)); }
 
 	// Helper functions
-	__inline void  ClampToAverage(t_hmap* pValue, float fAverage);
-	__inline float ExpCurve(float v, float fCover, float fSharpness);
+	__inline void ClampToAverage(t_hmap* pValue, float fAverage);
 
 	// Verify internal class state
 	__inline void Verify()

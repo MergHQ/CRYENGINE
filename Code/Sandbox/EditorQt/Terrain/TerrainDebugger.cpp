@@ -96,11 +96,18 @@ void DumpDetailedLayers(const QString& rootFolder)
 	CImageUtil::SaveBitmap(PathUtil::Make(outFolder, "holes.bmp"), holes);
 }
 
+void DumpHightmap(const QString& rootFolder)
+{
+	const string path = PathUtil::Make(QtUtil::ToString(rootFolder), "hightmap.bmp");
+	GetIEditorImpl()->GetTerrainManager()->GetHeightmap()->SaveImage(path.c_str());
+}
+
 void DumpTerrainData()
 {
 	const QString rootFolder = CreateRootDumpFolder();
 	DumpRgbTiles(rootFolder);
 	DumpDetailedLayers(rootFolder);
+	DumpHightmap(rootFolder);
 }
 
 } // namespace Private_TerrainDumper

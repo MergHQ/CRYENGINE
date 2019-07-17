@@ -1633,58 +1633,21 @@ void CHeightmap::MakeIsle()
 
 void CHeightmap::Flatten(float fFactor)
 {
-	////////////////////////////////////////////////////////////////////////
-	// Increase the number of flat areas on the heightmap (TODO: Fix !)
-	////////////////////////////////////////////////////////////////////////
-
-	t_hmap* pHeightmapData = m_pHeightmap;
-	t_hmap* pHeightmapDataEnd = &m_pHeightmap[m_iWidth * m_iHeight];
-	float fRes;
-
 	if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 		GetIEditorImpl()->GetIUndoManager()->RecordUndo(new CUndoHeightmapModify(this));
 
 	CLogFile::WriteLine("Flattening heightmap...");
 
-	// Perform the conversion
+	t_hmap* pHeightmapData = m_pHeightmap;
+	const t_hmap* pHeightmapDataEnd = &m_pHeightmap[m_iWidth * m_iHeight];
 	while (pHeightmapData != pHeightmapDataEnd)
 	{
-		// Get the exponential value for this height value
-		fRes = ExpCurve(*pHeightmapData, 128.0f, 0.985f);
-
-		// Is this part of the landscape a potential flat area ?
-		// Only modify parts of the landscape that are above the water level
-		if (fRes < 100 && *pHeightmapData > m_fWaterLevel)
-		{
-			// Yes, apply the factor to it
-			*pHeightmapData = (t_hmap) (*pHeightmapData * fFactor);
-
-			// When we use a factor greater than 0.5, we don't want to drop below
-			// the water level
-			*pHeightmapData++ = __max(m_fWaterLevel, *pHeightmapData);
-		}
-		else
-		{
-			// No, use the exponential function to make smooth transitions
-			*pHeightmapData++ = (t_hmap) fRes;
-		}
+		*pHeightmapData = (t_hmap) (*pHeightmapData * fFactor);
+		++pHeightmapData;
 	}
 
 	// We modified the heightmap.
 	GetIEditorImpl()->GetTerrainManager()->SetModified();
-}
-
-float CHeightmap::ExpCurve(float v, float fCover, float fSharpness)
-{
-	//////////////////////////////////////////////////////////////////////
-	// Exponential function
-	//////////////////////////////////////////////////////////////////////
-	float c = v - fCover;
-
-	if (c < 0)
-		c = 0;
-
-	return m_fMaxHeight - (float) ((pow(fSharpness, c)) * m_fMaxHeight);
 }
 
 void CHeightmap::Copy(const AABB& srcBox, int targetRot, const Vec3& targetPos, const Vec3& dym, const Vec3& sourcePos, bool bOnlyVegetation, bool bOnlyTerrain)
