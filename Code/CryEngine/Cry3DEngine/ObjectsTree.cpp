@@ -3535,7 +3535,9 @@ int CObjManager::GetObjectLOD(const IRenderNode* pObj, float fDistance)
 		resultLod = (int)(fDistance * (fLodRatioNorm * fLodRatioNorm) / (max(frameLodInfo.fLodRatio * min(fRadius, GetFloatCVar(e_LodCompMaxSize)), 0.001f)));
 	}
 
-	return resultLod;
+	int eLodMin = GetCVars()->e_LodMin;
+	int eLodMax = GetCVars()->e_LodMax;
+	return clamp_tpl(resultLod, eLodMin, eLodMax);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
