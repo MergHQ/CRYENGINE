@@ -1163,13 +1163,13 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 	}
 	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_DXC) == 0)
 	{
-		bool needsToInvertY = eClass == eHWSC_Vertex || eClass == eHWSC_Domain;
+		bool needsToInvertY = eClass == eHWSC_Vertex || eClass == eHWSC_Geometry || eClass == eHWSC_Domain;
 		compilerSPIRV.Format("SPIRV/V006/dxc/dxc.exe %s %s ", needsToInvertY ? " -fvk-invert-y " : "", CRenderer::CV_r_shadersdebug == 3 ? " -Od " : " -O3 ");
 		compilerSPIRV += " -Zpr -spirv -no-warnings -E %s -T %s -Fo %s %s";
 	}
 	else if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_GLSLANG) == 0)
 	{
-		bool needsToInvertY = eClass == eHWSC_Vertex || eClass == eHWSC_Domain;
+		bool needsToInvertY = eClass == eHWSC_Vertex || eClass == eHWSC_Geometry || eClass == eHWSC_Domain;
 		compilerSPIRV.Format("SPIRV/V003/glslang/glslangValidator.exe -D -fhlsl_functionality1 -V100 --target-env vulkan1.0 %s -S %s", 
 			needsToInvertY ? "--invert-y" : "", GetGLSLANGTargetName(eClass));
 		compilerSPIRV += " -e %s -I%s -o %s %s";
