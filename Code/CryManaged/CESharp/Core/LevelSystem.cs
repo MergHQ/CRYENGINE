@@ -54,7 +54,7 @@ namespace CryEngine
 		/// <param name="pLevel"></param>
 		public override bool OnLoadingStart(ILevelInfo pLevel)
 		{
-			return LoadingStart?.Invoke(new EventArgs<ILevelInfo>(pLevel)) ?? false;
+			return LoadingStart?.Invoke(new EventArgs<ILevelInfo>(pLevel)) ?? true;
 		}
 
 		/// <summary>
