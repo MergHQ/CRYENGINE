@@ -19,9 +19,11 @@ else()
 	set(OPTION_SCALEFORMHELPER ON)
 endif()
 
+
 if(OPTION_DEDICATED_SERVER)
 	set(OPTION_SCALEFORMHELPER OFF)
 endif()
+
 
 option(OPTION_DEVELOPER_CONSOLE_IN_RELEASE "Enables the developer console in Release builds" ON)
 
