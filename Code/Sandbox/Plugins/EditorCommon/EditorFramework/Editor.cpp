@@ -73,7 +73,7 @@ CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false 
 	if (bIsOnlyBackend)
 		return;
 
-	m_pPaneMenu = new QMenu();
+	m_pPaneMenu = new QMenu(this);
 
 	setLayout(new QVBoxLayout());
 	layout()->setMargin(0);
