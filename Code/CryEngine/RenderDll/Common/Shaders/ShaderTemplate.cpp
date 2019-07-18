@@ -326,8 +326,10 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		TexPic = pipelineResources.m_pTexSceneTarget;
 	else if (!stricmp(mapname, "$HDR_FinalBloom"))
 		TexPic = pipelineResources.m_pTexHDRFinalBloom;
-	else if (!stricmp(mapname, "$HDR_TargetPrev"))
-		TexPic = pipelineResources.m_pTexHDRTargetPrev;
+	else if (!stricmp(mapname, "$HDR_TargetPrev_Left"))
+		TexPic = pipelineResources.m_pTexHDRTargetPrev[0];
+	else if (!stricmp(mapname, "$HDR_TargetPrev_Right"))
+		TexPic = pipelineResources.m_pTexHDRTargetPrev[1];
 	else if (!stricmp(mapname, "$HDR_AverageLuminance"))
 		TexPic = CRendererResources::s_ptexHDRMeasuredLuminanceDummy;
 	else if (!stricmp(mapname, "$ZTarget"))

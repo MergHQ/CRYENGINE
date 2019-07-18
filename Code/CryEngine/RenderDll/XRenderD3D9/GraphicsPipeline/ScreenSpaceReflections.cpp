@@ -59,7 +59,7 @@ void CScreenSpaceReflectionsStage::Execute()
 			m_passRaytracing.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
 			m_passRaytracing.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneSpecular);
 			m_passRaytracing.SetTexture(3, m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]);
-			m_passRaytracing.SetTexture(4, m_graphicsPipelineResources.m_pTexHDRTargetPrev);
+			m_passRaytracing.SetTexture(4, m_graphicsPipelineResources.m_pTexHDRTargetPrev[RenderView()->GetCurrentEye()]);
 			m_passRaytracing.SetTexture(5, m_graphicsPipelineResources.m_pTexHDRMeasuredLuminance[rd->RT_GetCurrGpuID()]);
 
 			m_passRaytracing.SetSampler(0, EDefaultSamplerStates::PointClamp);

@@ -566,8 +566,9 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 
 	if (GetIntegratioMode() && e_svoTI_SSDepthTrace)
 	{
-		if (pipelineResources.m_pTexHDRTargetPrev->GetUpdateFrameID() > 1)
-			rp.SetTexture(12, pipelineResources.m_pTexHDRTargetPrev);
+		auto pTexHDRTargetPrev = pipelineResources.m_pTexHDRTargetPrev[RenderView()->GetCurrentEye()];
+		if (pTexHDRTargetPrev->GetUpdateFrameID() > 1)
+			rp.SetTexture(12, pTexHDRTargetPrev);
 		else
 			rp.SetTexture(12, CRendererResources::s_ptexBlack);
 	}

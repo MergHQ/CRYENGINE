@@ -232,7 +232,8 @@ void CGraphicsPipelineResources::CreateHDRMaps(int resourceWidth, int resourceHe
 	m_renderTargetPool.AddRenderTarget(width_r8, height_r8, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/8b").c_str(), &m_pTexHDRTargetMaskedScaled[2][1], FT_DONT_RELEASE);
 	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16a").c_str(), &m_pTexHDRTargetMaskedScaled[3][0], FT_DONT_RELEASE);
 	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16b").c_str(), &m_pTexHDRTargetMaskedScaled[3][1], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetPrev").c_str(), &m_pTexHDRTargetPrev);
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetPrev_Left").c_str(), &m_pTexHDRTargetPrev[0]);
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetPrev_Right").c_str(), &m_pTexHDRTargetPrev[1]);
 	m_renderTargetPool.AddRenderTarget(width, height, Clr_Transparent, nHDRAFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked").c_str(), &m_pTexHDRTargetMasked, nHDRTargetFlags);
 	
 	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTargetR11G11B10F_0").c_str(), &m_pTexSceneTargetR11G11B10F[0], nHDRTargetFlagsUAV);
@@ -418,7 +419,8 @@ void CGraphicsPipelineResources::Shutdown()
 	DestroyRainOcclusionMaps();
 
 	SAFE_RELEASE_FORCE(m_pTexHDRTarget);
-	SAFE_RELEASE_FORCE(m_pTexHDRTargetPrev);
+	SAFE_RELEASE_FORCE(m_pTexHDRTargetPrev[0]);
+	SAFE_RELEASE_FORCE(m_pTexHDRTargetPrev[1]);
 	SAFE_RELEASE_FORCE(m_pTexHDRTargetMasked);
 	SAFE_RELEASE_FORCE(m_pTexLinearDepth);
 	SAFE_RELEASE_FORCE(m_pTexSceneDiffuse);
@@ -489,7 +491,8 @@ void CGraphicsPipelineResources::Discard()
 	//------------------------------------------------------------------------------
 #if (CRY_RENDERER_DIRECT3D >= 111)
 	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTarget->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetPrev->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetPrev[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetPrev[1]->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetMasked->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexLinearDepth->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneDiffuse->GetDevTexture(false)->GetNativeResource());

@@ -93,7 +93,7 @@ public:
 	CTexture* m_pTexDisplayTargetSrc = nullptr;                                             // display-colorspace target
 	CTexture* m_pTexSceneSelectionIDs = nullptr;                                            // Selection ID buffer used for selection and highlight passes
 	CTexture* m_pTexSceneTargetR11G11B10F[2] = { nullptr, nullptr };                        // CMotionBlurStage
-	CTexture* m_pTexHDRTargetPrev = nullptr;                                                // CScreenSpaceReflectionsStage, CWaterStage, CMotionBlurStage, CSvoRenderer
+	CTexture* m_pTexHDRTargetPrev[2] = { nullptr, nullptr };                                // CScreenSpaceReflectionsStage, CWaterStage, CMotionBlurStage, CSvoRenderer
 	CTexture* m_pTexHDRMeasuredLuminance[MAX_GPU_NUM];                                      // CAutoExposureStage, CScreenSpaceReflectionsStage
 	CTexture* m_pTexHDRTargetMasked = nullptr;                                              // CScreenSpaceReflectionsStage, CPostAAStage
 	CTexture* m_pTexSceneTarget = nullptr;                                                  // Shared rt for generic usage (refraction/srgb/diffuse accumulation/hdr motionblur/etc)

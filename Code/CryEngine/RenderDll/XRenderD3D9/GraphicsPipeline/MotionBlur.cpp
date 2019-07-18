@@ -183,7 +183,7 @@ void CMotionBlurStage::Execute()
 			m_passMotionBlur.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 			m_passMotionBlur.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 			m_passMotionBlur.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA);
-			m_passMotionBlur.SetTexture(0, bGatherDofEnabled ? m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0] : m_graphicsPipelineResources.m_pTexHDRTargetPrev);
+			m_passMotionBlur.SetTexture(0, bGatherDofEnabled ? m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0] : m_graphicsPipelineResources.m_pTexHDRTargetPrev[RenderView()->GetCurrentEye()]);
 			m_passMotionBlur.SetTexture(1, m_graphicsPipelineResources.m_pTexVelocity);
 			m_passMotionBlur.SetTexture(2, m_graphicsPipelineResources.m_pTexVelocityTiles[2]);
 			m_passMotionBlur.SetSampler(0, EDefaultSamplerStates::LinearClamp);

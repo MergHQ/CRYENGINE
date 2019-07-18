@@ -223,7 +223,7 @@ void CCharacterToolGraphicsPipeline::Execute()
 
 	// Note: MB uses m_pTexHDRTargetPrev to avoid doing another copy, so this should be right before the MB pass
 	{
-		m_FrameToFramePass->Execute(m_pipelineResources.m_pTexHDRTarget, m_pipelineResources.m_pTexHDRTargetPrev);
+		m_FrameToFramePass->Execute(m_pipelineResources.m_pTexHDRTarget, m_pipelineResources.m_pTexHDRTargetPrev[pRenderView->GetCurrentEye()]);
 	}
 
 	GetStage<CMobileCompositionStage>()->ExecutePostProcessing(m_pipelineResources.m_pTexDisplayTargetDst);
