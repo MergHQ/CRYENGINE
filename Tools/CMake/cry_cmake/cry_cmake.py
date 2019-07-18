@@ -25,16 +25,6 @@ CONFIGS = [
             'key_path': r'\WDExpress.DTE.14.0'
         }
     },
-    {
-        'title': 'Visual Studio 2015 Express Win32',
-        'cmake_toolchain': 'toolchain/windows/WindowsPC-MSVC.cmake',
-        'cmake_generator': 'Visual Studio 14 2015',
-        'cmake_builddir': 'solutions/win32',
-        'compiler': {
-            'key_path': r'\WDExpress.DTE.14.0'
-        }
-    },
-
     # Visual Studio 2015
     {
         'title': 'Visual Studio 2015 Win64',
@@ -45,22 +35,6 @@ CONFIGS = [
             'key_path': r'\VisualStudio.DTE.14.0'
         }
     },
-    {
-        'title': 'Visual Studio 2015 Win32',
-        'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
-        'cmake_generator': 'Visual Studio 14 2015',
-        'cmake_builddir': 'solutions_cmake/win32',
-        'compiler': {
-            'key_path': r'\VisualStudio.DTE.14.0'
-        }
-    },
-    # {
-    #     'title':'Visual Studio 2015 Android Nsight Tegra',
-    #     'cmake_toolchain': r'toolchain\android\Android-Nsight.cmake',
-    #     'cmake_generator': 'Visual Studio 14 2015 ARM',
-    #     'cmake_builddir': 'solutions_cmake/android',
-    # },
-
     # Visual Studio 2017
     {
         'title': 'Visual Studio 2017 Win64',
@@ -71,23 +45,6 @@ CONFIGS = [
             'key_path': r'\VisualStudio.DTE.15.0'
         }
     },
-    {
-        'title': 'Visual Studio 2017 Win32',
-        'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
-        'cmake_generator': 'Visual Studio 15 2017',
-        'cmake_builddir': 'solutions_cmake/win32',
-        'compiler': {
-            'key_path': r'\VisualStudio.DTE.15.0'
-        }
-    },
-
-    # {
-    #     'title': 'Visual Studio 2017 Android Nsight Tegra',
-    #     'cmake_toolchain': r'toolchain\android\Android-Nsight.cmake',
-    #     'cmake_generator': 'Visual Studio 15 2017 ARM',
-    #     'cmake_builddir': 'solutions_cmake/android',
-    # },
-
     # Visual Studio 2019
     {
         'title': 'Visual Studio 2019 Win64',
@@ -98,17 +55,7 @@ CONFIGS = [
         'compiler': {
             'key_path': r'\VisualStudio.DTE.16.0'
         }
-    },
-    {
-        'title': 'Visual Studio 2019 Win32',
-        'cmake_toolchain': r'toolchain\windows\WindowsPC-MSVC.cmake',
-        'cmake_generator': 'Visual Studio 16 2019',
-        'cmake_options': ['-A Win32'],
-        'cmake_builddir': 'solutions_cmake/win32',
-        'compiler': {
-            'key_path': r'\VisualStudio.DTE.16.0'
-        }
-    },
+    }
 ]
 
 
