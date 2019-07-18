@@ -3192,6 +3192,8 @@ void CHWShader_D3D::mfSubmitRequestLine(SHWSInstance* pInst, string* pRequestLin
 		  "ShaderList_Orbis.txt",
 #elif CRY_PLATFORM_DURANGO
 		  "ShaderList_Durango.txt",
+#elif CRY_RENDERER_VULKAN
+		  "ShaderList_Vulkan.txt",
 #else
 		  "ShaderList_PC.txt",
 #endif
@@ -3832,6 +3834,8 @@ void CAsyncShaderTask::SubmitAsyncRequestLine(SShaderAsyncInfo* pAsync)
 			  "ShaderList_Orbis.txt",
 	#elif CRY_PLATFORM_DURANGO
 			  "ShaderList_Durango.txt",
+	#elif CRY_RENDERER_VULKAN
+			  "ShaderList_Vulkan.txt",
 	#else
 			  "ShaderList_PC.txt",
 	#endif
