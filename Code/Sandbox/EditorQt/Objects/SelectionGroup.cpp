@@ -136,6 +136,20 @@ CBaseObject* CSelectionGroup::GetObjectByGuidInPrefab(CryGUID guid) const
 	return nullptr;
 }
 
+std::vector<CBaseObject*> CSelectionGroup::GetObjectsByFilter(std::function<bool(CBaseObject* pObject)> filter) const
+{
+	std::vector<CBaseObject*> objects;
+	for (int i = 0; i < GetCount(); i++)
+	{
+		CBaseObject* pObject = GetObject(i);
+		if (filter(pObject))
+		{
+			objects.push_back(pObject);
+		}
+	}
+	return objects;
+}
+
 void CSelectionGroup::Copy(const CSelectionGroup& from)
 {
 	m_name = from.m_name;

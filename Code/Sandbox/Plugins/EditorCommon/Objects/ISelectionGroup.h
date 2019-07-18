@@ -29,9 +29,11 @@ public:
 	virtual void RemoveObject(CBaseObject* obj) = 0;
 	//! Get object at given index.
 	virtual CBaseObject* GetObject(int index) const = 0;
+	//! Get all the objects that satisfy the filter function
+	virtual std::vector<CBaseObject*> GetObjectsByFilter(std::function<bool(CBaseObject* pObject)> filter) const = 0;
 	//! Number of selected object.
 	virtual int GetCount() const = 0;
-	//! Return true if selection doesnt contain any object.
+	//! Return true if selection does not contain any object.
 	virtual bool IsEmpty() const = 0;
 	//! Get mass center of selected objects.
 	virtual Vec3 GetCenter() const = 0;

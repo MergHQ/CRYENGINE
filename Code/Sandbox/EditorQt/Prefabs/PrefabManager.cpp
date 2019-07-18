@@ -206,91 +206,6 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-// CUndoAddObjectsToPrefab implementation.
-//////////////////////////////////////////////////////////////////////////
-
-CUndoAddObjectsToPrefab::CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, std::vector<CBaseObject*>& objects)
-{
-	m_pPrefabObject = prefabObj;
-
-	// Rearrange to parent-first
-	for (int i = 0; i < objects.size(); i++)
-	{
-		if (objects[i]->GetParent())
-		{
-			// Find later in array.
-			for (int j = i + 1; j < objects.size(); j++)
-			{
-				if (objects[j] == objects[i]->GetParent())
-				{
-					// Swap the objects.
-					std::swap(objects[i], objects[j]);
-					i--;
-					break;
-				}
-			}
-		}
-	}
-
-	m_addedObjects.reserve(objects.size());
-	for (size_t i = 0, count = objects.size(); i < count; ++i)
-	{
-		m_addedObjects.push_back(SObjectsLinks());
-		SObjectsLinks& addedObject = m_addedObjects.back();
-
-		addedObject.m_object = objects[i]->GetId();
-		// Store parent before the add operation
-		addedObject.m_objectParent = objects[i]->GetParent() ? objects[i]->GetParent()->GetId() : CryGUID::Null();
-		// Store children before the add operation
-		if (const size_t childsCount = objects[i]->GetChildCount())
-		{
-			addedObject.m_objectsChilds.reserve(childsCount);
-			for (size_t j = 0; j < childsCount; ++j)
-			{
-				addedObject.m_objectsChilds.push_back(objects[i]->GetChild(j)->GetId());
-			}
-		}
-	}
-}
-
-void CUndoAddObjectsToPrefab::Undo(bool bUndo)
-{
-	// Start from the back where the childs are
-	for (int i = m_addedObjects.size() - 1; i >= 0; --i)
-	{
-		IObjectManager* pObjMan = GetIEditorImpl()->GetObjectManager();
-
-		// Remove from prefab
-		if (CBaseObject* pMember = pObjMan->FindObject(m_addedObjects[i].m_object))
-		{
-			m_pPrefabObject->RemoveMember(pMember);
-			// Restore parent links
-			if (CBaseObject* pParent = pObjMan->FindObject(m_addedObjects[i].m_objectParent))
-				pParent->AttachChild(pMember);
-
-			// Restore child links
-			if (const int childsCount = m_addedObjects[i].m_objectsChilds.size())
-			{
-				for (int j = 0; j < childsCount; ++j)
-				{
-					if (CBaseObject* pChild = pObjMan->FindObject(m_addedObjects[i].m_objectsChilds[j]))
-						pMember->AttachChild(pChild);
-				}
-			}
-		}
-	}
-}
-
-void CUndoAddObjectsToPrefab::Redo()
-{
-	for (int i = 0, count = m_addedObjects.size(); i < count; ++i)
-	{
-		if (CBaseObject* pMember = GetIEditorImpl()->GetObjectManager()->FindObject(m_addedObjects[i].m_object))
-			m_pPrefabObject->AddMember(pMember);
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 // CPrefabManager implementation.
 //////////////////////////////////////////////////////////////////////////
 
@@ -392,32 +307,29 @@ CPrefabItem* CPrefabManager::MakeFromSelection(const CSelectionGroup* pSelection
 	return static_cast<CPrefabItem*>(GetIEditor()->GetPrefabManager()->LoadItem(pAsset->GetGUID()));
 }
 
-void CPrefabManager::AddSelectionToPrefab()
+void CPrefabManager::AddSelectionToPrefab(const CSelectionGroup& selection)
 {
-	const CSelectionGroup* pSel = GetIEditorImpl()->GetSelection();
-	CPrefabObject* pPrefab = 0;
-	int selectedPrefabCount = 0;
-	for (int i = 0; i < pSel->GetCount(); i++)
+	//Get all the prefabs in the selection
+	std::vector<CBaseObject*> prefabsInSelection = selection.GetObjectsByFilter([](CBaseObject* pObject)
 	{
-		CBaseObject* pObj = pSel->GetObject(i);
-		if (pObj->IsKindOf(RUNTIME_CLASS(CPrefabObject)))
-		{
-			++selectedPrefabCount;
-			pPrefab = (CPrefabObject*) pObj;
-		}
-	}
-	if (selectedPrefabCount == 0)
+		return pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject));
+	});
+
+	Private_PrefabManager::CObjectsRefOwner objectOwner(prefabsInSelection);
+
+	//Make sure we have one prefab and log errors if we don't
+	if (!prefabsInSelection.size())
 	{
 		Warning("Select a prefab and objects");
 		return;
 	}
-	if (selectedPrefabCount > 1)
+	else if (prefabsInSelection.size() > 1)
 	{
 		Warning("Select only one prefab");
 		return;
 	}
 
-	AddSelectionToPrefab(pPrefab);
+	AddSelectionToPrefab(static_cast<CPrefabObject*>(prefabsInSelection[0]), selection);
 }
 
 void CPrefabManager::OpenSelected()
@@ -458,45 +370,23 @@ void CPrefabManager::CloseSelected()
 	ClosePrefabs(selectedPrefabs);
 }
 
-void CPrefabManager::AddSelectionToPrefab(CPrefabObject* pPrefab)
+void CPrefabManager::AddSelectionToPrefab(CPrefabObject* pPrefab, const CSelectionGroup& selection)
 {
-	using namespace Private_PrefabManager;
-	const CSelectionGroup* pSel = GetIEditorImpl()->GetSelection();
-
+	
 	std::vector<CBaseObject*> objects;
-	objects.reserve(pSel->GetCount());
-	for (int i = 0; i < pSel->GetCount(); i++)
-	{
-		CBaseObject* pObj = pSel->GetObject(i);
-		if (pObj != pPrefab)
-			objects.push_back(pObj);
-	}
+	selection.GetObjects(objects);
 
-	CObjectsRefOwner objectOwner(objects);
-
-	// Check objects if they can be added
-	bool invalidAddOperation = false;
-	for (int i = 0, count = objects.size(); i < count; ++i)
-	{
-		if (!pPrefab->CanAddMember(objects[i]))
-		{
-			Warning("Object %s is already part of a prefab (%s)", objects[i]->GetName(), objects[i]->GetPrefab()->GetName());
-			invalidAddOperation = true;
-		}
-	}
-
-	if (invalidAddOperation)
-		return;
+	Private_PrefabManager::CObjectsRefOwner objectOwner(objects);
 
 	CUndo undo("Add Objects To Prefab");
-	if (CUndo::IsRecording())
-		CUndo::Record(new CUndoAddObjectsToPrefab(pPrefab, objects));
 
 	pPrefab->AddMembers(objects);
 
 	// If we have nested dependencies between these object send an modify event afterwards to resolve them properly (e.g. shape objects linked to area triggers)
 	for (int i = 0; i < objects.size(); i++)
+	{
 		objects[i]->UpdatePrefab();
+	}
 }
 
 void CPrefabManager::ExtractObjectsFromPrefabs(std::vector<CBaseObject*>& childObjects)
@@ -538,52 +428,6 @@ void CPrefabManager::ExtractAllFromSelection()
 	{
 		ExtractAllFromPrefabs(prefabs);
 	}
-}
-
-bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* pPrefab, CBaseObject* pObject)
-{
-	if (pPrefab && pObject)
-	{
-		if (!pPrefab->CanAddMember(pObject))
-		{
-			Warning("Object %s cannot be added as a Member to prefab %s", pObject->GetName(), pPrefab->GetName());
-			return false;
-		}
-
-		std::vector<CBaseObject*> objects;
-
-		CUndo undo("Add Object To Prefab");
-		if (CUndo::IsRecording())
-		{
-			// If this is not a group add all the attached children to the prefab,
-			// otherwise the group children adding is handled by the AddMember in CPrefabObject
-			if (!pObject->IsKindOf(RUNTIME_CLASS(CGroup)))
-			{
-				objects.reserve(pObject->GetChildCount() + 1);
-				objects.push_back(pObject);
-				TBaseObjects descendants;
-				descendants.reserve(pObject->GetChildCount() + 1);
-				pObject->GetAllDescendants(descendants);
-				for (const auto& child : descendants)
-				{
-					objects.push_back(child);
-				}
-			}
-			else
-			{
-				objects.push_back(pObject);
-			}
-
-			CUndo::Record(new CUndoAddObjectsToPrefab(pPrefab, objects));
-		}
-
-		for (int i = 0; i < objects.size(); i++)
-		{
-			pPrefab->AddMember(objects[i]);
-		}
-		return true;
-	}
-	return false;
 }
 
 void CPrefabManager::CloneObjectsFromPrefabs(std::vector<CBaseObject*>& childObjects)

@@ -223,7 +223,7 @@ static void PyCreateFromSelection()
 
 static void PyAddSelection()
 {
-	GetIEditorImpl()->GetPrefabManager()->AddSelectionToPrefab();
+	GetIEditorImpl()->GetPrefabManager()->AddSelectionToPrefab(*GetIEditor()->GetObjectManager()->GetSelection());
 }
 
 static void PyExtractAllFromSelection()

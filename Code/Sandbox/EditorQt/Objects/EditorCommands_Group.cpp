@@ -61,7 +61,7 @@ public:
 			CUndo undo("Attach to Prefab");
 
 			CPrefabObject* pPickedGroup = static_cast<CPrefabObject*>(pPickedObject);
-			GetIEditor()->GetPrefabManager()->AddSelectionToPrefab(pPickedGroup);
+			GetIEditor()->GetPrefabManager()->AddSelectionToPrefab(pPickedGroup, *pObjectManager->GetSelection());
 		}
 
 		delete this;

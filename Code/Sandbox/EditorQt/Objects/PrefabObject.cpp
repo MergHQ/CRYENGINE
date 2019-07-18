@@ -243,7 +243,8 @@ class PrefabLinkTool : public CPickObjectTool
 		{
 			if (m_prefab)
 			{
-				GetIEditor()->GetPrefabManager()->AttachObjectToPrefab(m_prefab, pObj);
+				CUndo undo("Add Object To Prefab");
+				m_prefab->AddMember(pObj);
 			}
 		}
 
@@ -1015,11 +1016,14 @@ void CPrefabObject::SerializeMembers(Serialization::IArchive& ar)
 					CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(link.guid);
 					if (pObject->GetParent() != this)
 					{
-						GetIEditor()->GetPrefabManager()->AttachObjectToPrefab(this, pObject);
+						CUndo undo("Add Object To Prefab");
+						AddMember(pObject);
 					}
 				}
 				else // if the guid is already there, then remove it from the list (because remaining guids will be removed from the prefab)
+				{
 					childGuids.erase(link.guid);
+				}
 			}
 
 			// Any remaining guids will be removed from the prefab
@@ -1173,6 +1177,12 @@ void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKe
 		SetPrefab(m_prefabGUID, true);
 		if (!m_pPrefabItem)
 			return;
+	}
+
+	if (!CanAddMembers(objects))
+	{
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "Cannot add objects to prefab %s", GetName().c_str());
+		return;
 	}
 
 	AttachChildren(objects, shouldKeepPos);

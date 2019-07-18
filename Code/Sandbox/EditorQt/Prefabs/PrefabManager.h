@@ -14,32 +14,6 @@ class CPrefabEvents;
 
 typedef _smart_ptr<CPrefabObject> CPrefabObjectPtr;
 
-class CUndoAddObjectsToPrefab : public IUndoObject
-{
-public:
-	CUndoAddObjectsToPrefab(CPrefabObject* prefabObj, std::vector<CBaseObject*>& objects);
-
-protected:
-	virtual const char* GetDescription() { return "Add Objects To Prefab"; }
-
-	virtual void        Undo(bool bUndo);
-	virtual void        Redo();
-
-private:
-
-	struct SObjectsLinks
-	{
-		CryGUID              m_object;
-		CryGUID              m_objectParent;
-		std::vector<CryGUID> m_objectsChilds;
-	};
-
-	typedef std::vector<SObjectsLinks> TObjectsLinks;
-
-	CPrefabObjectPtr m_pPrefabObject;
-	TObjectsLinks    m_addedObjects;
-};
-
 //! \sa CAssetType::Create
 struct SPrefabCreateParams : CAssetType::SCreateParams
 {
@@ -91,9 +65,11 @@ public:
 	//! Make new prefab item from selection. Displays a pop-up dialog to save new prefab.
 	CPrefabItem* MakeFromSelection(const CSelectionGroup* pSelectionGroup);
 
-	//! Add selected objects to prefab (which selected too)
-	void         AddSelectionToPrefab();
-	void         AddSelectionToPrefab(CPrefabObject* pPrefab);
+	//! Add selected objects to a prefab 
+	//! This function expects the selection to have one prefab plus a set of other non-prefab objects
+	void         AddSelectionToPrefab(const CSelectionGroup& selection);
+	//! Add a selection to a prefab
+	void         AddSelectionToPrefab(CPrefabObject* pPrefab, const CSelectionGroup& selection);
 
 	void         OpenSelected();
 	void         CloseSelected();
@@ -105,8 +81,6 @@ public:
 	virtual void ExtractObjectsFromPrefabs(std::vector<CBaseObject*>& childObjects);
 	void         ExtractAllFromPrefabs(std::vector<CPrefabObject*>& pPrefabs);
 	void         ExtractAllFromSelection();
-
-	virtual bool AttachObjectToPrefab(CPrefabObject* pPrefab, CBaseObject* pObject);
 
 	bool         ClosePrefabs(std::vector<CPrefabObject*>& prefabObjects);
 	bool         OpenPrefabs(std::vector<CPrefabObject*>& prefabObjects);

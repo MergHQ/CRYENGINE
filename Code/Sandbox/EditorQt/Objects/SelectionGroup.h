@@ -24,29 +24,31 @@ public:
 	const string& GetName() const             { return m_name; }
 
 	//! Reserves space for X amount of objects in the selection list
-	void         Reserve(size_t count);
+	void                      Reserve(size_t count);
 	//! Adds object into selection list.
-	void         AddObject(CBaseObject* obj);
+	void                      AddObject(CBaseObject* obj);
 	//! Remove object from selection list.
-	void         RemoveObject(CBaseObject* obj);
+	void                      RemoveObject(CBaseObject* obj);
 	//! Remove all objects from selection.
-	void         RemoveAll();
+	void                      RemoveAll();
 	//! Check if object contained in selection list.
-	bool         IsContainObject(CBaseObject* obj) const;
+	bool                      IsContainObject(CBaseObject* obj) const;
 	//! Return true if selection does not contain any object.
-	bool         IsEmpty() const override;
+	bool                      IsEmpty() const override;
 	//! Number of selected object.
-	int          GetCount() const;
+	int                       GetCount() const;
 	//! Get object at given index.
-	CBaseObject* GetObject(int index) const;
+	CBaseObject*              GetObject(int index) const;
 	//! Get all selected objects.
-	void GetObjects(std::vector<CBaseObject*>& objects) const;
+	void                      GetObjects(std::vector<CBaseObject*>& objects) const;
 	//! Get object from a GUID
-	CBaseObject* GetObjectByGuid(CryGUID guid) const;
+	CBaseObject*              GetObjectByGuid(CryGUID guid) const;
 	//! Get object from a GUID in a prefab
-	CBaseObject* GetObjectByGuidInPrefab(CryGUID guid) const;
+	CBaseObject*              GetObjectByGuidInPrefab(CryGUID guid) const;
+	//! Get all the objects that satisfy the filter function
+	std::vector<CBaseObject*> GetObjectsByFilter(std::function<bool(CBaseObject* pObject)> filter) const override;
 	//! Get matrix suitable for manipulator
-	bool         GetManipulatorMatrix(Matrix34& tm) const override;
+	bool                      GetManipulatorMatrix(Matrix34& tm) const override;
 
 	//! Get mass center of selected objects.
 	Vec3 GetCenter() const;
