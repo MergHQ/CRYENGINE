@@ -4,6 +4,7 @@
 #include "AnimationType.h"
 
 #include <AssetSystem/AssetEditor.h>
+#include <AssetSystem/AssetResourceSelector.h>
 
 REGISTER_ASSET_TYPE(CAnimationType)
 
@@ -16,3 +17,6 @@ CryIcon CAnimationType::GetIconInternal() const
 {
 	return CryIcon("icons:common/assets_animation.ico");
 }
+
+//Group all animation-derived types into one practical "AnyAnimation" selector
+REGISTER_RESOURCE_SELECTOR_ASSET_MULTIPLETYPES("AnyAnimation", std::vector<string>({ "Animation", "MeshAnimation" }));

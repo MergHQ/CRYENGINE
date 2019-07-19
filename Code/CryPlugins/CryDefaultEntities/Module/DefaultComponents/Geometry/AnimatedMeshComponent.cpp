@@ -4,6 +4,10 @@
 #include "AnimatedMeshComponent.h"
 
 #include <Cry3DEngine/IRenderNode.h>
+#include <CrySerialization/Decorators/Resources.h>
+#include <CryType/Type.h>
+#include <CrySerialization/IArchive.h>
+#include <CryCore/Assert/CryAssert.h>
 
 namespace Cry
 {
@@ -14,9 +18,17 @@ void CAnimatedMeshComponent::Register(Schematyc::CEnvRegistrationScope& componen
 	// Functions
 	{
 		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::PlayAnimation, "{DCEBBA52-CECE-4823-AC35-1A590A944F99}"_cry_guid, "PlayAnimation");
-		pFunction->SetDescription("Plays a low-level animation on the animated mesh");
+		pFunction->SetDescription("Plays a low-level animation file on the animated mesh");
 		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::None);
-		pFunction->BindInput(1, 'name', "Name");
+		pFunction->BindInput(1, 'name', "Animation File");
+		pFunction->BindInput(2, 'loop', "Looped");
+		componentScope.Register(pFunction);
+	}
+	{
+		auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAnimatedMeshComponent::PlayAnimationByName, "{37B044D0-A419-47A9-B8AE-5BF03FC99C1A}"_cry_guid, "PlayAnimationByName");
+		pFunction->SetDescription("Plays a low-level animation on the animated mesh by using the raw animation name.");
+		pFunction->SetFlags(Schematyc::EEnvFunctionFlags::None);
+		pFunction->BindInput(1, 'name', "Raw Animation Name");
 		pFunction->BindInput(2, 'loop', "Looped");
 		componentScope.Register(pFunction);
 	}
@@ -66,10 +78,14 @@ void CAnimatedMeshComponent::LoadFromDisk()
 	{
 		m_pCachedCharacter = nullptr;
 	}
+
+	m_defaultAnimation.FillAnimationList(m_pCachedCharacter ? m_pCachedCharacter->GetIAnimationSet() : nullptr);
 }
 
 void CAnimatedMeshComponent::ResetObject()
 {
+	m_defaultAnimation.isUsingResourcePicker = !m_bIsUsingRawAnimationName;
+
 	if (m_pCachedCharacter == nullptr)
 	{
 		FreeEntitySlot();
@@ -86,19 +102,49 @@ void CAnimatedMeshComponent::ResetObject()
 		}
 	}
 
-	if (m_defaultAnimation.value.size() > 0)
+	m_animationParams.m_fPlaybackSpeed = m_defaultAnimationSpeed;
+
+	if (m_bIsUsingRawAnimationName)
 	{
-		m_animationParams.m_fPlaybackSpeed = m_defaultAnimationSpeed;
-		PlayAnimation(m_defaultAnimation, m_bLoopDefaultAnimation);
+		if (!m_defaultAnimation.animationString.empty())
+		{
+			PlayAnimationByName(m_defaultAnimation.animationString.c_str(), m_bLoopDefaultAnimation);
+		}
 	}
+	else
+	{
+		if (!m_defaultAnimation.animationString.empty())
+		{
+			PlayAnimation(m_defaultAnimation.animationString.c_str(), m_bLoopDefaultAnimation);
+		}
+	}
+}
+
+int CAnimatedMeshComponent::FindAnimId(const char* szFilepath) 
+{
+	int32 crc32 = CCrc32::ComputeLowercase(szFilepath);
+	CRY_ASSERT(m_pCachedCharacter);
+	IAnimationSet* pAnimSet = m_pCachedCharacter->GetIAnimationSet();
+	if (CRY_VERIFY(pAnimSet))
+	{
+		for (int i = 0; i < pAnimSet->GetAnimationCount(); ++i)
+		{
+			if (crc32 == pAnimSet->GetFilePathCRCByAnimID(i))
+			{
+				return i;
+			}
+		}
+		CryWarning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_ERROR, "Animation file '%s' not found in Animation List of character '%s'!", szFilepath, m_pCachedCharacter->GetFilePath());
+	}
+	return -1;
 }
 
 void CAnimatedMeshComponent::ProcessEvent(const SEntityEvent& event)
 {
-	if (event.event == ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED)
+	if (event.event == EEntityEvent::EditorPropertyChanged)
 	{
 		m_pEntity->UpdateComponentEventMask(this);
-
+		
 		LoadFromDisk();
 		ResetObject();
 
@@ -120,9 +166,15 @@ void CAnimatedMeshComponent::SetCharacterFile(const char* szPath)
 	m_filePath = szPath;
 }
 
+void CAnimatedMeshComponent::SetIsUsingRawAnimationName(bool bIsUsingRawAnimationName)
+{
+	m_bIsUsingRawAnimationName = bIsUsingRawAnimationName;
+	m_defaultAnimation.isUsingResourcePicker = !m_bIsUsingRawAnimationName;
+}
+
 void CAnimatedMeshComponent::SetDefaultAnimationName(const char* szPath)
 {
-	m_defaultAnimation = szPath;
+	m_defaultAnimation.animationString = szPath;
 }
 
 bool CAnimatedMeshComponent::SetMaterial(int slotId, const char* szMaterial)
@@ -145,5 +197,6 @@ bool CAnimatedMeshComponent::SetMaterial(int slotId, const char* szMaterial)
 
 	return false;
 }
+
 }
 }

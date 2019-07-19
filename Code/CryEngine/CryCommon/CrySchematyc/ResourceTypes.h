@@ -130,13 +130,22 @@ inline void ReflectType(CTypeDesc<AnyModelFileName>& desc)
 	desc.SetDescription("Model file name");
 }
 
+typedef SerializationUtils::SResourceNameSelector<&Serialization::AnyAnimationPath<string>> AnyLowLevelAnimationName;
+
+inline void ReflectType(CTypeDesc<AnyLowLevelAnimationName>& desc)
+{
+	desc.SetGUID("{429CCE3A-9F51-4C1E-85D8-C5BDE0E8C4B2}"_cry_guid);
+	desc.SetLabel("Any Animation Name");
+	desc.SetDescription("Name of an animation exported to the engine (.caf / .anm)");
+}
+
 typedef SerializationUtils::SResourceNameSelector<&Serialization::AnimationPath<string>> LowLevelAnimationName;
 
 inline void ReflectType(CTypeDesc<LowLevelAnimationName>& desc)
 {
 	desc.SetGUID("{7BAA3267-E7BB-4B02-A223-2CB03F6BF35A}"_cry_guid);
 	desc.SetLabel("Animation Name");
-	desc.SetDescription("Name of an animation exported to the engine");
+	desc.SetDescription("Name of an animation exported to the engine (.caf)");
 }
 
 typedef SerializationUtils::SResourceNameSelector<&Serialization::ParticlePicker<string>> ParticleEffectName;

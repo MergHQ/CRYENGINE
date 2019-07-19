@@ -18,6 +18,7 @@ ResourceSelector<T> MakeResourceSelector(T& s, const char* selectorType)
 // animation resources
 template<class T> ResourceSelector<T> AnimationAlias(T& s)                   { return ResourceSelector<T>(s, "AnimationAlias"); } // "name" from animation set
 template<class T> ResourceSelector<T> AnimationPath(T& s)                    { return ResourceSelector<T>(s, "Animation"); }
+template<class T> ResourceSelector<T> AnyAnimationPath(T& s)                 { return ResourceSelector<T>(s, "AnyAnimation"); }
 template<class T> ResourceSelector<T> AnimationOrBlendSpacePath(T& s)        { return ResourceSelector<T>(s, "AnimationOrBSpace"); }
 inline ResourceSelectorWithId         AnimationPathWithId(string& s, int id) { return ResourceSelectorWithId(s, "AnimationOrBSpace", id); }
 template<class T> ResourceSelector<T> CharacterPath(T& s)                    { return ResourceSelector<T>(s, "Character"); }
