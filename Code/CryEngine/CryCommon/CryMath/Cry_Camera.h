@@ -227,7 +227,7 @@ private:
 
 	Matrix34 m_Matrix;                   //!< World space-matrix.
 
-	f32      m_fov;                  //!< Vertical fov in radiants [0..1*PI].
+	f32      m_fov;                  //!< Vertical fov in radians [0..1*2PI].
 	int      m_Width;                //!< Surface width-resolution.
 	int      m_Height;               //!< Surface height-resolution.
 	f32      m_ProjectionRatio;      //!< Ratio between width and height of view-surface.

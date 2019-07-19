@@ -2000,12 +2000,13 @@ void C3DEngine::ProcessSky(const SRenderingPassInfo& passInfo)
 	// Overlay sky box
 	if (bOverlaySkyBox)
 	{
-		//!< Vertical fov in radiants [0..1*PI].
+		//!< Vertical fov in radians [0..1*2PI].
 		// Example:
 		// - fFoV is 90deg (or PI/2rad), so 25% of the sky-box fills the screen
 		// - fMipFactor is -2 (2^-2 = 0.25)
-		float fFoV = passInfo.GetCamera().GetFov() / 3.14159265358979323846f /*M_PI*/;
+		float fFoV = passInfo.GetCamera().GetFov() / (2 * 3.14159265358979323846f) /*M_2PI*/;
 		float fMipFactor = log2f(fFoV);
+		fMipFactor = expf(fMipFactor * 2.0f * 0.69314718055994530941723212145818f /*M_LN2*/);
 
 		pSkyMaterial->RequestTexturesLoading(fMipFactor);
 	//	gRenDev->EF_PrecacheResource(pShaderResources, ?, ?, ?, ?);
