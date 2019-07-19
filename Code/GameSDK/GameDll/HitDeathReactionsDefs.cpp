@@ -511,14 +511,13 @@ void SReactionParams::SMannequinData::ReleaseRequestedAnims()
 void SReactionParams::SMannequinData::OnTimer(void* pUserData, IGameFramework::TimerID handler) const
 {
 	CRY_ASSERT(g_pGame->GetHitDeathReactionsSystem().IsStreamingEnabled());
-	CRY_ASSERT(m_pRequestedFragment != 0);
 
 	m_iTimerHandle = 0;
 
 	UpdateRequestedAnimStatus();
 
 	// If still is not loaded, wait 0.5 seconds for the next
-	if (m_pRequestedFragment != NULL)
+	if (m_pRequestedFragment)
 	{
 		m_iTimerHandle = gEnv->pGameFramework->AddTimer(CTimeValue(0.5f), false, functor(*this, &SMannequinData::OnTimer), NULL);	
 	}
