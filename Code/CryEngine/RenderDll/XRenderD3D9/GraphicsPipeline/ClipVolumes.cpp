@@ -585,7 +585,7 @@ void CClipVolumesStage::Execute()
 		{
 			PROFILE_LABEL_SCOPE("RESOLVE");
 
-			if (m_stencilResolvePass.IsDirty())
+			if (m_stencilResolvePass.IsDirty(m_pDepthTarget->GetID(), m_pBlendValuesRT->GetID()))
 			{
 				static CCryNameTSCRC techResolveStencil("ResolveStencil");
 
