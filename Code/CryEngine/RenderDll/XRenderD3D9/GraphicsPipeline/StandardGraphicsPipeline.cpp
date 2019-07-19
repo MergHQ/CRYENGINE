@@ -252,18 +252,6 @@ void CStandardGraphicsPipeline::Execute()
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	// TODO: Make this into it's own stage or pipeline
-	if (GetStage<CSceneCustomStage>() && GetStage<CSceneCustomStage>()->IsDebuggerEnabled() &&
-		m_renderingFlags & EShaderRenderingFlags::SHDF_ALLOW_RENDER_DEBUG)
-	{
-		GetStage<CSceneCustomStage>()->ExecuteDebugger();
-
-		if (GetStage<CSceneCustomStage>()->IsDebugOverlayEnabled())
-			GetStage<CSceneCustomStage>()->ExecuteDebugOverlay();
-
-		return;
-	}
-
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = GetCurrentRenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
@@ -272,6 +260,14 @@ void CStandardGraphicsPipeline::Execute()
 	m_renderPassScheduler.SetEnabled(true);
 
 	PROFILE_LABEL_PUSH("GRAPHICS_PIPELINE");
+
+	// TODO: Make this into it's own stage or pipeline
+	if (GetStage<CSceneCustomStage>()->IsStageActive(m_renderingFlags) &&
+	   !GetStage<CSceneCustomStage>()->IsDebugOverlayEnabled())
+	{
+		if(GetStage<CSceneCustomStage>()->ExecuteDebugger())
+			return;
+	}
 
 	// Generate cloud volume textures for shadow mapping. Only needs view, and needs to run before ShadowMaskgen.
 	GetStage<CVolumetricCloudsStage>()->ExecuteShadowGen();

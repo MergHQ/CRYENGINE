@@ -34,7 +34,6 @@ public:
 		ePass_DebugViewSolid = 0,
 		ePass_DebugViewWireframe,
 		ePass_DebugViewOverdraw,
-		ePass_DebugViewDrawModes,
 		ePass_SelectionIDs, // draw highlighted objects from editor
 		ePass_Silhouette,
 
@@ -49,8 +48,11 @@ public:
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
-		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
+		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL &&
+		  !(flags & EShaderRenderingFlags::SHDF_ALLOW_RENDER_DEBUG))
+		{
 			return false;
+		}
 
 		return true;
 	}
@@ -65,14 +67,12 @@ public:
 
 	void ExecuteSilhouettePass();
 	void ExecuteHelpers();
-	void ExecuteDebugger();
-	void ExecuteDebugOverlay();
+	bool ExecuteDebugger();
 	void ExecuteSelectionHighlight();
 
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 
-	bool IsDebuggerEnabled()           const;
 	bool IsSelectionHighlightEnabled() const { return gEnv->IsEditor() && !gEnv->IsEditorGameMode(); }
 	bool IsDebugOverlayEnabled()       const { return CRenderer::CV_e_DebugDraw > 0; }
 

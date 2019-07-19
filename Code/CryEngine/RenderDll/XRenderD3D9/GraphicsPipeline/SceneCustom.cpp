@@ -91,12 +91,6 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 		psoDesc.m_RenderState = GS_NODEPTHTEST;
 		pSceneRenderPass = &m_debugViewPass;
 	}
-	else if (passID == ePass_DebugViewDrawModes)
-	{
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE2];
-		psoDesc.m_RenderState = GS_DEPTHFUNC_LEQUAL | GS_DEPTHWRITE;
-		pSceneRenderPass = &m_debugViewPass;
-	}
 	else if (passID == ePass_SelectionIDs)
 	{
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SAMPLE1];
@@ -153,7 +147,6 @@ bool CSceneCustomStage::CreatePipelineStates(DevicePipelineStatesArray* pStateAr
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewSolid, stageStates[ePass_DebugViewSolid]);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewWireframe, stageStates[ePass_DebugViewWireframe]);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewOverdraw , stageStates[ePass_DebugViewOverdraw ]);
-	bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_DebugViewDrawModes, stageStates[ePass_DebugViewDrawModes]);
 	if (gcpRendD3D->IsEditorMode())
 		bFullyCompiled &= CreatePipelineState(_stateDesc, ePass_SelectionIDs, stageStates[ePass_SelectionIDs]);
 
@@ -352,27 +345,19 @@ void CSceneCustomStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 	}
 }
 
-bool CSceneCustomStage::IsDebuggerEnabled() const
+bool CSceneCustomStage::ExecuteDebugger()
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
-	bool bViewWireframe    = pRenderer->GetWireframeMode() != R_SOLID_MODE;
-	bool bViewOverdraw     = CRenderer::CV_r_OverdrawComplexity != 0;
-	bool bDebugDraw        = IsDebugOverlayEnabled();
+	bool bViewWireframe = gcpRendD3D->GetWireframeMode() != R_SOLID_MODE;
+	bool bViewOverdraw = CRenderer::CV_r_OverdrawComplexity != 0;
+	bool bViewODZPrePass = CRenderer::CV_r_OverdrawComplexity < 0;
 
-	return (bViewTexelDensity || bViewWireframe || bViewOverdraw || bDebugDraw);
-}
+	// Early out if special debug drawing modes are not necessary
+	if (!(bViewTexelDensity || bViewWireframe || bViewOverdraw))
+		return false;
 
-void CSceneCustomStage::ExecuteDebugger()
-{
 	CRenderView* pRenderView = RenderView();
 	const SRenderViewport& rViewport = pRenderView->GetViewport();
-
-	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
-	bool bViewWireframe    = gcpRendD3D->GetWireframeMode() != R_SOLID_MODE;
-	bool bViewOverdraw     = CRenderer::CV_r_OverdrawComplexity != 0;
-	bool bViewODZPrePass   = CRenderer::CV_r_OverdrawComplexity < 0;
 
 	{
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
@@ -574,50 +559,8 @@ void CSceneCustomStage::ExecuteDebugger()
 	}
 
 	SAFE_RELEASE(pTargetDS);
-}
 
-void CSceneCustomStage::ExecuteDebugOverlay()
-{
-	FUNCTION_PROFILER_RENDERER();
-
-	CRenderView* pRenderView = RenderView();
-
-	{
-		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
-		cb->CP_Custom_ViewMode = Vec4(0.f, 0.f, 0.f, 0.f);
-		cb.CopyToDevice();
-	}
-
-	CTexture* pTargetRT = pRenderView->GetRenderOutput()->GetColorTarget();
-	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
-
-	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
-
-	m_debugViewPass.ExchangeRenderTarget(0, pTargetRT);
-	m_debugViewPass.ExchangeDepthTarget(pTargetDS);
-
-	// NOTE: no more external state changes in here, everything should have been setup
-	{
-		// Prepare ========================================================================
-		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
-		m_debugViewPass.PrepareRenderPassForUse(commandList);
-
-		// Execute ========================================================================
-		auto& renderItemDrawer = pRenderView->GetDrawer();
-		renderItemDrawer.InitDrawSubmission();
-
-		m_debugViewPass.BeginExecution(m_graphicsPipeline);
-		m_debugViewPass.SetupDrawContext(StageID, ePass_DebugViewDrawModes, TTYPE_DEBUG, FB_GENERAL | FB_TILED_FORWARD);
-		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
-		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_BW);
-		m_debugViewPass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_AW);
-		m_debugViewPass.EndExecution();
-
-		renderItemDrawer.JobifyDrawSubmission();
-		renderItemDrawer.WaitForDrawSubmission();
-	}
-
-	SAFE_RELEASE(pTargetDS);
+	return true;
 }
 
 void CSceneCustomStage::ExecuteSelectionHighlight()
