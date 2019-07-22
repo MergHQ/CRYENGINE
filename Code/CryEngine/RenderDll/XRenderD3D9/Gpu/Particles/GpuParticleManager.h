@@ -40,18 +40,18 @@ public:
 
 	virtual IParticleFeature* CreateParticleFeature(EGpuFeatureType) override;
 
-	void RenderThreadUpdate(CRenderView* pRenderView);
-	void RenderThreadPreUpdate(CRenderView* pRenderView);
-	void RenderThreadPostUpdate(CRenderView* pRenderView);
+	// this needs to be called from the render thread when the renderer
+	// releases resources to release references to ComputePSOs
+	void ReleaseResources() override;
+
+	virtual void RenderThreadUpdate(CRenderView* pRenderView) override;
+	virtual void RenderThreadPreUpdate(CRenderView* pRenderView) override;
+	virtual void RenderThreadPostUpdate(CRenderView* pRenderView) override;
 
 	// gets initialized the first time it is called and will allocate buffers
 	// (so make sure its only called from the render thread)
 	gpu::CBitonicSort* GetBitonicSort(CGraphicsPipeline* pGraphicsPipeline);
 
-	// this needs to be called from the render thread when the renderer
-	// is teared down to make sure the runtimes are not still persistent when the
-	// render thread is gone
-	void CleanupResources();
 private:
 	std::vector<_smart_ptr<CParticleComponentRuntime>>& GetWriteRuntimes()
 	{

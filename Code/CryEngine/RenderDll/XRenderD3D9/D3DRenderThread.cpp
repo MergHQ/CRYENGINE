@@ -218,6 +218,9 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 			m_pRenderAuxGeomD3D->ReleaseResources();
 #endif //ENABLE_RENDER_AUX_GEOM
 
+		if (m_pGpuParticleManager)
+			m_pGpuParticleManager->ReleaseResources();
+
 		if (!(nFlags & FRR_TEXTURES))
 		{
 			m_pActiveGraphicsPipeline->GetPipelineResources().Clear();

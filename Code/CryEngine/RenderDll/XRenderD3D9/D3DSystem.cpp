@@ -552,10 +552,6 @@ static CryCriticalSection gs_contextLock;
 
 void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
-	if (m_pGpuParticleManager)
-		static_cast<gpu_pfx2::CManager*>(m_pGpuParticleManager)->CleanupResources();
-
-
 	CSceneRenderPass::Shutdown();
 	m_particleBuffer.Release();
 

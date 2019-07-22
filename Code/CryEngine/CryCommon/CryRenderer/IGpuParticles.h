@@ -304,8 +304,13 @@ class IManager
 {
 public:
 	virtual void BeginFrame() = 0;
-
+	virtual void RenderThreadUpdate(CRenderView* pRenderView) = 0;
+	virtual void RenderThreadPreUpdate(CRenderView* pRenderView) = 0;
+	virtual void RenderThreadPostUpdate(CRenderView* pRenderView) = 0;
+	
 	virtual IParticleComponentRuntime* CreateParticleContainer(const SComponentParams& params, TConstArray<IParticleFeature*> features) = 0;
 	virtual IParticleFeature* CreateParticleFeature(EGpuFeatureType) = 0;
+	virtual void ReleaseResources() = 0;
+
 };
 }

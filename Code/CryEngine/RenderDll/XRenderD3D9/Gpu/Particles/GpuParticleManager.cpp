@@ -226,7 +226,7 @@ IParticleFeature* CManager::CreateParticleFeature(EGpuFeatureType feature)
 	return result;
 }
 
-void CManager::CleanupResources()
+void CManager::ReleaseResources()
 {
 	GetWriteRuntimes().clear();
 	ProcessResources();

@@ -26,7 +26,7 @@ void CComputeParticlesStage::Update()
 	int CurrentFrameID = pRenderView->GetFrameId();
 	if (CurrentFrameID != m_oldFrameIdExecute)
 	{
-		static_cast<gpu_pfx2::CManager*>(gcpRendD3D->GetGpuParticleManager())->RenderThreadUpdate(pRenderView);
+		gcpRendD3D->GetGpuParticleManager()->RenderThreadUpdate(pRenderView);
 		m_oldFrameIdExecute = CurrentFrameID;
 	}
 }
@@ -37,7 +37,7 @@ void CComputeParticlesStage::PreDraw()
 	int CurrentFrameID = pRenderView->GetFrameId();
 	if (CurrentFrameID != m_oldFrameIdPreDraw)
 	{
-		static_cast<gpu_pfx2::CManager*>(gcpRendD3D->GetGpuParticleManager())->RenderThreadPreUpdate(pRenderView);
+		gcpRendD3D->GetGpuParticleManager()->RenderThreadPreUpdate(pRenderView);
 		m_oldFrameIdPreDraw = CurrentFrameID;
 	}
 }
@@ -48,7 +48,7 @@ void CComputeParticlesStage::PostDraw()
 	int CurrentFrameID = pRenderView->GetFrameId();
 	if (CurrentFrameID != m_oldFrameIdPostDraw)
 	{
-		static_cast<gpu_pfx2::CManager*>(gcpRendD3D->GetGpuParticleManager())->RenderThreadPostUpdate(pRenderView);
+		gcpRendD3D->GetGpuParticleManager()->RenderThreadPostUpdate(pRenderView);
 		m_oldFrameIdPostDraw = CurrentFrameID;
 	}
 }
