@@ -806,7 +806,6 @@ void CGraphicsPipeline::ExecuteAnisotropicVerticalBlur(CTexture* pTex, int nAmou
 const SRenderViewInfo& CGraphicsPipeline::GetCurrentViewInfo(CCamera::EEye eye) const
 {
 	const CRenderView* pRenderView = GetCurrentRenderView();
-	CRY_ASSERT(pRenderView);
 	if (pRenderView)
 	{
 		return pRenderView->GetViewInfo(eye);
