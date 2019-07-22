@@ -156,9 +156,10 @@ void QSearchBox::OnSearch()
 	const QString currentText = text();
 	if (m_searchFunction && currentText != m_lastSearchedText)
 	{
-		m_searchFunction(text());
-		signalOnSearch(m_lastSearchedText.isEmpty());
+		const bool isNewSearch = m_lastSearchedText.isEmpty();
 		m_lastSearchedText = currentText;
+		m_searchFunction(text());
+		signalOnSearch(isNewSearch);
 	}
 }
 

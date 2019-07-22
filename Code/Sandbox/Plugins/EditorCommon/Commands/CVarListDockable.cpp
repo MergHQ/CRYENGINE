@@ -155,22 +155,6 @@ public:
 
 		return QStyledItemDelegate::setEditorData(pEditor, index);
 	}
-
-	virtual QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
-	{
-		// TODO: Cache the size somehow. Not done currently as the size is different depending on the edit control.
-		auto size = QStyledItemDelegate::sizeHint(option, index);
-		const auto pEditorWidget = std::unique_ptr<QWidget>(createEditor(nullptr, option, index));
-		if (pEditorWidget)
-		{
-			if (pEditorWidget->sizeHint().height() > size.height())
-			{
-				size.setHeight(pEditorWidget->sizeHint().height());
-			}
-		}
-
-		return size;
-	}
 };
 
 class CFavoriteFilterProxy : public QDeepFilterProxyModel
@@ -513,7 +497,7 @@ CCVarBrowser::CCVarBrowser(QWidget* pParent /* = nullptr*/)
 	m_pTreeView->setAllColumnsShowFocus(true);
 	m_pTreeView->header()->setStretchLastSection(true);
 	m_pTreeView->header()->setDefaultSectionSize(300);
-	m_pTreeView->setEditTriggers(QTreeView::DoubleClicked | QTreeView::EditKeyPressed | QTreeView::SelectedClicked | QTreeView::CurrentChanged);
+	m_pTreeView->setEditTriggers(QTreeView::EditKeyPressed | QTreeView::SelectedClicked | QTreeView::DoubleClicked);
 	m_pTreeView->setColumnWidth(eCVarListColumn_Favorite, 20);
 	m_pTreeView->setColumnWidth(eCVarListColumn_Value, 75);
 	m_pTreeView->setColumnWidth(eCVarListColumn_Type, 75);
