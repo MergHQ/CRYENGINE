@@ -24,7 +24,7 @@ vert2FragGeneral ReferenceImageVS(app2vertGeneral IN)
   return OUT;
 }
 
-float4 ReferenceImagePS(in vert2FragGeneral IN) : COLOR
+float4 ReferenceImagePS(in vert2FragGeneral IN) : SV_Target0
 { 
   float4 cColor = GetDiffuseTex(diffuseTex, IN.baseTC);
 
