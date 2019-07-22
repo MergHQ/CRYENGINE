@@ -464,6 +464,10 @@ protected:
 			return;
 		}
 
+		//If m_object was a prefab child and the prefab parent was then deleted the prefab delete undo will create a NEW object. 
+		//m_object will point to a stale object (with an id that's still the ID in prefab), this means that we need to reassign the object pointer on undo to the new one recreated by the prefab
+		m_object = pObject;
+
 		if (bUndo)
 		{
 			m_redo = XmlHelpers::CreateXmlNode("Redo");
