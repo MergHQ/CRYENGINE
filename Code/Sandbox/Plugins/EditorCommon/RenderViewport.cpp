@@ -1655,17 +1655,19 @@ bool CRenderViewport::CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportTyp
 
 		m_displayContextKey = m_renderer->CreateSwapChainBackedContext(desc);
 
-		if (viewportType == IRenderer::eViewportType_Default)
-		{
-			m_graphicsPipelineDesc.type = EGraphicsPipelineType::Standard;
-			m_graphicsPipelineDesc.shaderFlags = SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO | SHDF_ALLOW_SKY | SHDF_ALLOW_RENDER_DEBUG;
-		}
-		else
+		if (viewportType == IRenderer::eViewportType_Secondary)
 		{
 			m_graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
 			m_graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+			m_graphicsPipelineKey = m_renderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
 		}
-		m_graphicsPipelineKey = m_renderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
+		else
+		{
+			// Assign base graphics pipeline to main render viewport
+			m_graphicsPipelineDesc.type = EGraphicsPipelineType::Standard;
+			m_graphicsPipelineDesc.shaderFlags = SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO | SHDF_ALLOW_SKY | SHDF_ALLOW_RENDER_DEBUG;
+			m_graphicsPipelineKey = SGraphicsPipelineKey::BaseGraphicsPipelineKey;
+		}
 
 		m_bRenderContextCreated = true;
 
