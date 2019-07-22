@@ -1437,3 +1437,16 @@ technique ParticlesZPrePassTessellated
     }
 }
 
+technique ParticlesZPrePassGpu
+{
+    pass p0
+    {
+        VertexShader = GpuParticleVS() ParticleVS;
+        GeometryShader = $AutoGS_MultiRes();
+        PixelShader = ParticleZPrePassPS();
+
+        ZEnable = true;
+        ZWriteEnable = true;
+        CullMode = None;
+    }
+}

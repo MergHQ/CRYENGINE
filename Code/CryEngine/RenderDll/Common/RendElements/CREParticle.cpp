@@ -493,6 +493,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 		VolFog,
 		ZPass,
 		ZPassTess,
+		ZPassGPU,
 	};
 
 	ETechnique techniqueId = ETechnique::None;
@@ -646,7 +647,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 
 	if (pRenderObject->m_ObjFlags & FOB_ZPREPASS)
 	{
-		stateDesc.shaderItem.m_nTechnique = (int)(isTessellated ? ETechnique::ZPassTess : ETechnique::ZPass);
+		stateDesc.shaderItem.m_nTechnique = (int)(isGpuParticles ? ETechnique::ZPassGPU : isTessellated ? ETechnique::ZPassTess : ETechnique::ZPass);
 		bCompiled &= pGraphicsPipeline->GetStage<CSceneGBufferStage>()->CreatePipelineState(stateDesc, CSceneGBufferStage::ePass_DepthBufferFill, pGraphicsPSO);
 		m_pCompiledParticle->m_StandardGraphicsPSOs[eStage_SceneGBuffer][CSceneGBufferStage::ePass_DepthBufferFill] = pGraphicsPSO;
 

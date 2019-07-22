@@ -1028,7 +1028,6 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainV
 		viewInfo.cameraProjZeroMatrix = m_ViewProjMatrix;
 		viewInfo.cameraProjMatrix = m_ViewProjMatrix;
 		viewInfo.cameraProjNearestMatrix = m_ViewProjMatrix;
-		viewInfo.cameraOrigin = viewInfo.pCamera->GetPosition();
 		viewInfo.projMatrix = m_ViewProjMatrix;
 		viewInfo.prevCameraProjMatrix = m_ViewProjMatrix;
 		viewInfo.prevCameraProjNearestMatrix = m_ViewProjMatrix;
@@ -1036,6 +1035,13 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainV
 		viewInfo.viewport.height = m_renderPassDesc.GetDepthTarget().pTexture->GetHeight();
 		viewInfo.downscaleFactor = Vec4(1);
 		viewInfo.pFrustumPlanes = frustum.FrustumPlanes[0].GetFrustumPlane(0);
+
+		// The shadow frustum camera must be used for cameraOrigin and cameraV*.
+		const CCamera& shadowCam = frustum.pFrustumOwner->FrustumPlanes[m_nShadowFrustumSide];
+		viewInfo.cameraOrigin = shadowCam.GetPosition();
+		viewInfo.cameraVX = shadowCam.GetRenderVectorX();
+		viewInfo.cameraVY = shadowCam.GetRenderVectorY();
+		viewInfo.cameraVZ = shadowCam.GetRenderVectorZ();
 
 		m_pShadowMapStage->m_graphicsPipeline.GeneratePerViewConstantBuffer(&viewInfo, 1, m_pPerViewConstantBuffer);
 
