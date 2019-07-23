@@ -22,6 +22,16 @@ float3 sqr(float3 x)
 	return x * x;
 }
 
+float2 sqr(float2 x)
+{
+	return x*x;
+}
+
+float  sqr(float x)
+{ 
+	return x*x; 
+}
+
 float hmin(float4 c)
 {
 	float2 d = min(c.xy, c.zw);

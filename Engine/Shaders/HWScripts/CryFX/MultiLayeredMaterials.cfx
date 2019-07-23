@@ -282,12 +282,6 @@ float BumpMapTile
 	float UIStep = 0.01;
 > = 1.0;
 
-
-float  sqr(float x)  { return x*x; }
-float2 sqr(float2 x) { return x*x; }
-float3 sqr(float3 x) { return x*x; }
-float4 sqr(float4 x) { return x*x; }
-
 // Complex division
 float2 cdiv(float2 a, float2 b) { return float2(dot(a,b), a.y*b.x-a.x*b.y) / (sqr(b.x) + sqr(b.y)); }
 // Complex magnitude squared
