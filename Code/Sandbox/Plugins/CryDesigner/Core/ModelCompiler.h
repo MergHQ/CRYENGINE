@@ -43,6 +43,8 @@ public:
 	void         SetStaticObjFlags(int nStaticObjFlag);
 	int          GetStaticObjFlags();
 
+	void         SetSelected(bool bSelect);
+
 	void         AddFlags(int nFlags)         { m_nCompilerFlag |= nFlags; }
 	void         RemoveFlags(int nFlags)      { m_nCompilerFlag &= (~nFlags); }
 	bool         CheckFlags(int nFlags) const { return (m_nCompilerFlag & nFlags) ? true : false; }

@@ -502,6 +502,12 @@ void DesignerObject::SetMaterial(const string& materialName)
 	UpdateEngineNode();
 }
 
+void DesignerObject::SetSelected(bool bSelect)
+{
+	CBaseObject::SetSelected(bSelect);
+	GetCompiler()->SetSelected(bSelect);
+}
+
 string DesignerObject::GetMaterialName() const
 {
 	if (!m_materialNameOverride.IsEmpty())

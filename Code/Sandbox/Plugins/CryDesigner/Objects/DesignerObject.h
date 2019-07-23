@@ -62,6 +62,8 @@ public:
 	void                       SetMaterial(IEditorMaterial* mtl) override;
 	void                       SetMaterial(const string& materialName) override;
 
+	virtual void               SetSelected(bool bSelect) override;
+
 	string                     GetMaterialName() const override;
 
 	void                       SetMaterialLayersMask(uint32 nLayersMask);

@@ -263,6 +263,22 @@ int ModelCompiler::GetStaticObjFlags()
 	return m_pStatObj[0]->GetFlags();
 }
 
+void ModelCompiler::SetSelected(bool bSelect)
+{
+	for (int shelfID = 0; shelfID < cShelfMax; ++shelfID)
+	{
+		if (m_pRenderNode[shelfID])
+		{
+			if (bSelect)
+				m_RenderFlags |= ERF_SELECTED;
+			else
+				m_RenderFlags &= ~ERF_SELECTED;
+
+			m_pRenderNode[shelfID]->SetRndFlags(ERF_SELECTED, bSelect);
+		}
+	}
+}
+
 void ModelCompiler::DeleteAllRenderNodes()
 {
 	for (int shelfID = 0; shelfID < cShelfMax; ++shelfID)
