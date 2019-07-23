@@ -16,8 +16,8 @@ class CEntityObject;
 namespace LensFlareUtil
 {
 
-static constexpr CryInterfaceID s_pointLightID = "07D0CAD1-8E79-4177-9ADD-A2464A009FA5"_cry_guid;
-static constexpr CryInterfaceID s_projectorLightID = "0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid;
+static constexpr CryInterfaceID s_pointLightID = "0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid;
+static constexpr CryInterfaceID s_projectorLightID = "07D0CAD1-8E79-4177-9ADD-A2464A009FA5"_cry_guid;
 
 inline bool IsElement(EFlareType type)
 {
