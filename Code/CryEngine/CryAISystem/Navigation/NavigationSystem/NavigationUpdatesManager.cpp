@@ -104,13 +104,11 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 	{
 		const EntityUpdate& entityUpdate = it.second;
 
-		if (!entityUpdate.aabbNew.IsReset())
+		if (!entityUpdate.aabbNew.IsReset() && 
+			((entityUpdate.aabbOld.min - entityUpdate.aabbNew.min).len2() + (entityUpdate.aabbOld.max - entityUpdate.aabbNew.max).len2()) > 0.0f)
 		{
-			if (((entityUpdate.aabbOld.min - entityUpdate.aabbNew.min).len2() + (entityUpdate.aabbOld.max - entityUpdate.aabbNew.max).len2()) > 0.0f)
-			{
-				RequestQueueWorldUpdate(queueAndState, entityUpdate.aabbOld);
-				RequestQueueWorldUpdate(queueAndState, entityUpdate.aabbNew);
-			}
+			RequestQueueWorldUpdate(queueAndState, entityUpdate.aabbOld);
+			RequestQueueWorldUpdate(queueAndState, entityUpdate.aabbNew);
 		}
 		else
 		{
