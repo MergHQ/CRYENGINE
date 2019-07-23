@@ -8,10 +8,6 @@ struct v2f
 {
 	float4 HPosition  : SV_POSITION;   
 	float4 baseTC     : TEXCOORDN;
-	float4 vTangent   : TEXCOORDN;
-	float4 vBinormal  : TEXCOORDN;
-	float4 vView      : TEXCOORDN;  
-	float4 screenPos : TEXCOORDN;
 };
 
 v2f MonoFrameworkUIVS(app2vertGeneral IN)
@@ -25,18 +21,6 @@ v2f MonoFrameworkUIVS(app2vertGeneral IN)
 	OUT.HPosition = Pos_VS_General(g_VS_ViewProjZeroMatr, vertPassPos);    
 
 	OUT.baseTC = vertPassPos.baseTC;
-
-	float3 worldTangentS = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[0]) );
-	float3 worldTangentT = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[1]) );
-	float3 worldTangentN = normalize( mul((const float3x3)vertPassPos.InstMatrix, vertPassPos.ObjToTangentSpace[2]) );
-
-	OUT.vTangent = float4(worldTangentS, vertPassPos.Tangent.w); 
-	OUT.vBinormal.xyz = worldTangentT;
-	OUT.screenPos = HPosToScreenTC(OUT.HPosition);
-
-	float3 viewVec = ViewPos.xyz - vertPassPos.Position.xyz;
-	OUT.vView.xyz= (mul(vertPassPos.ObjToTangentSpace, viewVec.xyz));
-	OUT.vView.w = OUT.HPosition.w;
 
 	return OUT;
 }
@@ -58,8 +42,8 @@ technique General
 {
 	pass p0
 	{
-		VertexShader = MonoFrameworkUIVS() WaterFallVS;
-		PixelShader = MonoFrameworkUIPS() WaterFallPS;
+		VertexShader = MonoFrameworkUIVS();
+		PixelShader = MonoFrameworkUIPS();
 
 		ZEnable = false;
 		ZFunc = LEqual;
