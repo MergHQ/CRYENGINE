@@ -3777,22 +3777,22 @@ void CSystem::ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::SubmitLastIRenderAuxGeomForRendering()
 {
-	// Consume the FIFO head
-	auto curRenderAuxGeom = m_currentRenderAuxGeom.exchange(nullptr);
-	if (curRenderAuxGeom)
+	if (m_lastDebugRenderSubmitExternalFrame != gEnv->nMainFrameID)
 	{
-		// Replace the active Aux rendering by a new one only if there is a new one
-		// Otherwise keep rendering the currently active one
-		auto oldRenderAuxGeom = m_lastRenderAuxGeom.exchange(curRenderAuxGeom);
-		if (oldRenderAuxGeom)
+		// get auxGeom from "storage"
+		auto pCurrentRenderAuxGeom = m_currentRenderAuxGeom.exchange(nullptr);
+		if (pCurrentRenderAuxGeom != nullptr)
 		{
-			gEnv->pRenderer->DeleteAuxGeom(oldRenderAuxGeom);
+			gEnv->pRenderer->SubmitAuxGeom(pCurrentRenderAuxGeom, true);
+			// if another auxGeom was stored in the meantime, we can throw away the current one
+			// otherwise we keep it around for re-use, to avoid flickering
+			IRenderAuxGeom* pExpected = nullptr;
+			if (!m_currentRenderAuxGeom.compare_exchange_strong(pExpected, pCurrentRenderAuxGeom))
+			{
+				gEnv->pRenderer->DeleteAuxGeom(pCurrentRenderAuxGeom);
+			}
+			m_lastDebugRenderSubmitExternalFrame = gEnv->nMainFrameID;
 		}
-	}
-
-	if (m_lastRenderAuxGeom != (volatile IRenderAuxGeom*)nullptr)
-	{
-		gEnv->pRenderer->SubmitAuxGeom(m_lastRenderAuxGeom);
 	}
 }
 

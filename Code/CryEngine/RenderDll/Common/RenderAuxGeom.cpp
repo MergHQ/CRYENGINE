@@ -7,7 +7,7 @@
 #include "Common/RenderDisplayContext.h"
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
-#include "ReverseDepth.h"
+	#include "ReverseDepth.h"
 
 static inline uint32 PackColor(const ColorB& col)
 {
@@ -209,7 +209,7 @@ void CAuxGeomCB::DrawLines(const Vec3* v, const uint32* packedColorARGB8888, uin
 	if (thickness <= 1.0f)
 	{
 		SAuxVertex* pVertices(nullptr);
-		AddPrimitive(pVertices, numPoints, CreateLineRenderFlags(false) | AlphaFlags(ColorB(0,0,0, alphaFlag ? 255 : 0) ) );
+		AddPrimitive(pVertices, numPoints, CreateLineRenderFlags(false) | AlphaFlags(ColorB(0, 0, 0, alphaFlag ? 255 : 0)));
 
 		for (uint32 i(0); i < numPoints; ++i)
 		{
@@ -307,7 +307,7 @@ void CAuxGeomCB::DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, 
 	}
 }
 
-void CAuxGeomCB::DrawLineStrip(const Vec3 * v, uint32 numPoints, const ColorB* col, float thickness)
+void CAuxGeomCB::DrawLineStrip(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness)
 {
 	CRY_ASSERT(numPoints >= 2);
 
@@ -434,7 +434,7 @@ void CAuxGeomCB::DrawThickLine(const Vec3& v0, const ColorB& colV0, const Vec3& 
 	pVertices[1].st = Vec2(thickness, 0.0f);
 }
 
-void CAuxGeomCB::DrawThickLineStrip(const Vec3 * v, uint32 numPoints, const ColorB & col, float thickness)
+void CAuxGeomCB::DrawThickLineStrip(const Vec3* v, uint32 numPoints, const ColorB& col, float thickness)
 {
 	CRY_ASSERT(thickness > 0.0f);
 	CRY_ASSERT(gRenDev != nullptr);
@@ -545,7 +545,7 @@ void CAuxGeomCB::DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bo
 	EndDrawBuffer(numVertices);
 }
 
-SAuxVertex * CAuxGeomCB::BeginDrawBuffer(uint32 maxVertices, bool textured)
+SAuxVertex* CAuxGeomCB::BeginDrawBuffer(uint32 maxVertices, bool textured)
 {
 	CRY_ASSERT(!IsDrawBufferActive(), "Nested BeginDrawBuffer-EndDrawBuffer is not allowed.");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Debug);
@@ -1634,14 +1634,14 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const Col
 			AddIndexedPrimitive(pVertices, 24, pIndices, 36, CreateTriangleRenderFlags(true));
 
 			AABB aabb(obb.c - obb.h, obb.c + obb.h);
-			Vec3 xyz(obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z) + pos);
-			Vec3 xyZ(obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z) + pos);
-			Vec3 xYz(obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z) + pos);
-			Vec3 xYZ(obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z) + pos);
-			Vec3 Xyz(obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z) + pos);
-			Vec3 XyZ(obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z) + pos);
-			Vec3 XYz(obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z) + pos);
-			Vec3 XYZ(obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z) + pos);
+			Vec3 xyz(obb.m33* Vec3(aabb.min.x, aabb.min.y, aabb.min.z) + pos);
+			Vec3 xyZ(obb.m33* Vec3(aabb.min.x, aabb.min.y, aabb.max.z) + pos);
+			Vec3 xYz(obb.m33* Vec3(aabb.min.x, aabb.max.y, aabb.min.z) + pos);
+			Vec3 xYZ(obb.m33* Vec3(aabb.min.x, aabb.max.y, aabb.max.z) + pos);
+			Vec3 Xyz(obb.m33* Vec3(aabb.max.x, aabb.min.y, aabb.min.z) + pos);
+			Vec3 XyZ(obb.m33* Vec3(aabb.max.x, aabb.min.y, aabb.max.z) + pos);
+			Vec3 XYz(obb.m33* Vec3(aabb.max.x, aabb.max.y, aabb.min.z) + pos);
+			Vec3 XYZ(obb.m33* Vec3(aabb.max.x, aabb.max.y, aabb.max.z) + pos);
 
 			uint32 colDown(PackColor(ScaleColor(col, 0.5f)));
 			pVertices[0].xyz = xyz;
@@ -1914,14 +1914,14 @@ void CAuxGeomCB::DrawOBB(const OBB& obb, const Matrix34& mat, bool bSolid, const
 			AddIndexedPrimitive(pVertices, 24, pIndices, 36, CreateTriangleRenderFlags(true));
 
 			AABB aabb(obb.c - obb.h, obb.c + obb.h);
-			Vec3 xyz(obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.min.z));
-			Vec3 xyZ(obb.m33 * Vec3(aabb.min.x, aabb.min.y, aabb.max.z));
-			Vec3 xYz(obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.min.z));
-			Vec3 xYZ(obb.m33 * Vec3(aabb.min.x, aabb.max.y, aabb.max.z));
-			Vec3 Xyz(obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.min.z));
-			Vec3 XyZ(obb.m33 * Vec3(aabb.max.x, aabb.min.y, aabb.max.z));
-			Vec3 XYz(obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.min.z));
-			Vec3 XYZ(obb.m33 * Vec3(aabb.max.x, aabb.max.y, aabb.max.z));
+			Vec3 xyz(obb.m33* Vec3(aabb.min.x, aabb.min.y, aabb.min.z));
+			Vec3 xyZ(obb.m33* Vec3(aabb.min.x, aabb.min.y, aabb.max.z));
+			Vec3 xYz(obb.m33* Vec3(aabb.min.x, aabb.max.y, aabb.min.z));
+			Vec3 xYZ(obb.m33* Vec3(aabb.min.x, aabb.max.y, aabb.max.z));
+			Vec3 Xyz(obb.m33* Vec3(aabb.max.x, aabb.min.y, aabb.min.z));
+			Vec3 XyZ(obb.m33* Vec3(aabb.max.x, aabb.min.y, aabb.max.z));
+			Vec3 XYz(obb.m33* Vec3(aabb.max.x, aabb.max.y, aabb.min.z));
+			Vec3 XYZ(obb.m33* Vec3(aabb.max.x, aabb.max.y, aabb.max.z));
 
 			uint32 colDown(PackColor(ScaleColor(col, 0.5f)));
 			pVertices[0].xyz = xyz;
@@ -2145,7 +2145,6 @@ void CAuxGeomCB::DrawBone(const Vec3& p, const Vec3& c, ColorB col)
 	DrawLine(VBuffer[5], CBuffer[5], VBuffer[4], CBuffer[4]);
 }
 
-
 void CAuxGeomCB::RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text)
 {
 	if (!gEnv->IsDedicated())
@@ -2207,7 +2206,7 @@ void CAuxGeomCB::SetOrthographicProjection(bool enable, float l /*= 0*/, float r
 	}
 }
 
-void CAuxGeomCB::PushImage(const SRender2DImageDescription &image)
+void CAuxGeomCB::PushImage(const SRender2DImageDescription& image)
 {
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Debug);
 	m_rawData->m_2dImages.push_back(image);
@@ -2242,7 +2241,7 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 	IRenderAuxGeom* pAux = this;
 	SAuxGeomRenderFlags oldRenderFlags = pAux->GetRenderFlags();
 	SAuxGeomRenderFlags currRenderFlags = oldRenderFlags;
-	for (const SRender2DImageDescription &img : images)
+	for (const SRender2DImageDescription& img : images)
 	{
 		if (img.renderFlags != currRenderFlags)
 		{
@@ -2252,9 +2251,9 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 
 		float xpos = img.x;
 		float ypos = img.y;
-		float w    = img.w;
-		float h    = img.h;
-		float z    = img.z;
+		float w = img.w;
+		float h = img.h;
+		float z = img.z;
 
 		pAux->SetTexture(img.textureId);
 		UCol color;
@@ -2262,13 +2261,12 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 
 		// yv.y is swapped (1-inputTexCoord.y) for compatibility of old pipeline
 		SAuxVertex verts[6] = {
-			{ Vec3(xpos,ypos,z),        color,Vec2(img.uv[0].x,1.0f - img.uv[0].y) },
-			{ Vec3(xpos + w,ypos,z),    color,Vec2(img.uv[1].x,1.0f - img.uv[0].y) },
-			{ Vec3(xpos,ypos + h,z),    color,Vec2(img.uv[0].x,1.0f - img.uv[1].y) },
-			{ Vec3(xpos + w,ypos,z),    color,Vec2(img.uv[1].x,1.0f - img.uv[0].y) },
-			{ Vec3(xpos + w,ypos + h,z),color,Vec2(img.uv[1].x,1.0f - img.uv[1].y) },
-			{ Vec3(xpos,ypos + h,z),    color,Vec2(img.uv[0].x,1.0f - img.uv[1].y) },
-		};
+			{ Vec3(xpos,     ypos,     z), color, Vec2(img.uv[0].x, 1.0f - img.uv[0].y) },
+			{ Vec3(xpos + w, ypos,     z), color, Vec2(img.uv[1].x, 1.0f - img.uv[0].y) },
+			{ Vec3(xpos,     ypos + h, z), color, Vec2(img.uv[0].x, 1.0f - img.uv[1].y) },
+			{ Vec3(xpos + w, ypos,     z), color, Vec2(img.uv[1].x, 1.0f - img.uv[0].y) },
+			{ Vec3(xpos + w, ypos + h, z), color, Vec2(img.uv[1].x, 1.0f - img.uv[1].y) },
+			{ Vec3(xpos,     ypos + h, z), color, Vec2(img.uv[0].x, 1.0f - img.uv[1].y) }, };
 		pAux->DrawBuffer(verts, 6, true);
 	}
 	pAux->SetTexture(0);
@@ -2293,7 +2291,7 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 	SRenderViewport viewport = SRenderViewport(0, 0, camera.GetViewSurfaceX(), camera.GetViewSurfaceZ());
 	const float vw = static_cast<float>(viewport.width);
 	const float vh = static_cast<float>(viewport.height);
-	Vec3 scale800x600 = Vec3(vw/800.0f,vh/600.0f,1.0f);
+	Vec3 scale800x600 = Vec3(vw / 800.0f, vh / 600.0f, 1.0f);
 
 	SAuxGeomRenderFlags prevFlags = pAux->GetRenderFlags();
 	SAuxGeomRenderFlags flags;
@@ -2309,9 +2307,9 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 		const CTextMessages::SText* pText = pEntry->CastTo_Text();
 
 		Vec3 vPos(0, 0, 0);
-		int  nDrawFlags = 0;
+		int nDrawFlags = 0;
 		const char* szText = nullptr;
-		Vec4  vColor(1, 1, 1, 1);
+		Vec4 vColor(1, 1, 1, 1);
 		Vec2 fSize;
 		bool bDraw = true;
 
@@ -2344,10 +2342,10 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 			{
 				float fDist = 1;   //GetDistance(pTextInfo->pos,GetCamera().GetPosition());
 
-				float     farPlane = camera.GetFarPlane();
+				float farPlane = camera.GetFarPlane();
 				float K = farPlane / fDist;
 				if (fDist > farPlane * 0.5)
-					vPos = camera.GetPosition()*(1 - K) + K * vPos;
+					vPos = camera.GetPosition() * (1 - K) + K * vPos;
 
 				Vec3 screenPos(0, 0, 0);
 				camera.Project(vPos, screenPos);
@@ -2367,14 +2365,14 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 			bDraw &= vPos.y >= 0 && vPos.y <= fMaxPosY;
 			bDraw &= vPos.z >= 0 && vPos.z <= 1;
 			//
-			// 			if( nDrawFlags & eDrawText_DepthTest )
-			// 			{
-			// 				sz = 1.0f - 2.0f * sz;
-			// 			}
-			// 			else
-			// 			{
-			// 				sz = 1.0f;
-			// 			}
+			//      if( nDrawFlags & eDrawText_DepthTest )
+			//      {
+			//        sz = 1.0f - 2.0f * sz;
+			//      }
+			//      else
+			//      {
+			//        sz = 1.0f;
+			//      }
 
 			vPos.x *= (b800x600 ? 8.f : 1.f);
 			vPos.y *= (b800x600 ? 6.f : 1.f);
@@ -2412,7 +2410,7 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 
 				if (nDrawFlags & eDrawText_800x600)
 				{
-					vPos = Vec3(vPos.x*scale800x600.x,vPos.y*scale800x600.y,vPos.z);
+					vPos = Vec3(vPos.x * scale800x600.x, vPos.y * scale800x600.y, vPos.z);
 				}
 			}
 			else if (nDrawFlags & eDrawText_FixedSize)
@@ -2423,7 +2421,7 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 
 				if (nDrawFlags & eDrawText_800x600)
 				{
-					vPos = Vec3(vPos.x*scale800x600.x,vPos.y*scale800x600.y,vPos.z);
+					vPos = Vec3(vPos.x * scale800x600.x, vPos.y * scale800x600.y, vPos.z);
 				}
 			}
 			else
@@ -2466,7 +2464,6 @@ void CAuxGeomCB::DrawTextMessages(CTextMessages& messages, bool reset)
 	messages.Clear(!reset);
 }
 
-
 void CAuxGeomCB::SAuxGeomCBRawData::GetSortedPushBuffer(size_t begin, size_t end, AuxSortedPushBuffer& auxSortedPushBuffer) const
 {
 	CRY_ASSERT(begin < end);
@@ -2481,6 +2478,24 @@ void CAuxGeomCB::SAuxGeomCBRawData::GetSortedPushBuffer(size_t begin, size_t end
 	}
 
 	std::sort(auxSortedPushBuffer.begin(), auxSortedPushBuffer.end(), PushBufferSortFunc());
+}
+
+void CAuxGeomCB::SAuxGeomCBRawData::Reset()
+{
+	m_auxPushBuffer.resize(0);
+	m_auxVertexBuffer.resize(0);
+	m_auxIndexBuffer.resize(0);
+	m_auxDrawObjParamBuffer.resize(0);
+	m_auxOrthoMatrices.resize(0);
+	m_auxWorldMatrices.resize(0);
+	m_TextMessages.Clear();
+	m_2dImages.clear();
+
+	m_curRenderFlags = e_Def3DPublicRenderflags;
+	m_curTransMatIdx = -1;
+	m_curWorldMatIdx = -1;
+	m_textureID = -1;
+	m_uCount = 0;
 }
 
 void CAuxGeomCB::SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey)
@@ -2498,12 +2513,12 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 	int textureID = IsTextured(renderFlags) ? AccessData()->m_textureID : -1;
 
 	if (false == auxPushBuffer.empty() &&
-		(e_PtList == primType || e_LineList == primType || e_TriList == primType || e_LineStrip == primType) &&
+	    (e_PtList == primType || e_LineList == primType || e_TriList == primType || e_LineStrip == primType) &&
 	    auxPushBuffer[auxPushBuffer.size() - 1].m_displayContextKey == m_rawData->displayContextKey &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_textureID         == textureID &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_renderFlags       == renderFlags &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_transMatrixIdx    == GetTransMatrixIndex() &&
-	    auxPushBuffer[auxPushBuffer.size() - 1].m_worldMatrixIdx    == GetWorldMatrixIndex())
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_textureID == textureID &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_renderFlags == renderFlags &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_transMatrixIdx == GetTransMatrixIndex() &&
+	    auxPushBuffer[auxPushBuffer.size() - 1].m_worldMatrixIdx == GetWorldMatrixIndex())
 	{
 		// Perform a runtime optimization (pre-merging) which effectively reduces the number of PB entries created.
 		// We can merge this entry with the previous one as its render flags match with the ones of the previous entry
@@ -2530,7 +2545,7 @@ void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const 
 	CRY_ASSERT(!IsDrawBufferActive(), "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
 	CRY_ASSERT(numVertices > 0);
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Debug);
-	
+
 	// add push buffer entry to allow later merging of batches committed via DP
 	AddPushBufferEntry(numVertices, 0, renderFlags);
 
@@ -2548,7 +2563,7 @@ void CAuxGeomCB::AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices,
 	CRY_ASSERT(numVertices > 0);
 	CRY_ASSERT(numIndices > 0);
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Debug);
-	
+
 	// add push buffer entry to allow later merging of batches committed via DIP
 	AddPushBufferEntry(numVertices, numIndices, renderFlags);
 
@@ -2593,40 +2608,40 @@ void CAuxGeomCB::SAuxGeomCBRawData::GetMemoryUsage(ICrySizer* pSizer) const
 void CAuxGeomCB::SetActivateDrawBuffer(bool enabled)
 {
 	CRY_ASSERT(!enabled || !IsDrawBufferActive(), "a buffer cannot be re-enabled while it is active.");
-	if(enabled)
+	if (enabled)
 		m_activeDrawBufferInfo.m_state |= SActiveDrawBufferInfo::Enabled;
 	else
 		m_activeDrawBufferInfo.m_state &= ~SActiveDrawBufferInfo::Enabled;
 }
 
 void CAuxGeomCB::SetUseScratchActiveDrawBuffer(bool use)
-{ 
-	if(use)
+{
+	if (use)
 		m_activeDrawBufferInfo.m_state |= SActiveDrawBufferInfo::UseScratchBuffer;
 	else
 		m_activeDrawBufferInfo.m_state &= ~SActiveDrawBufferInfo::UseScratchBuffer;
 }
 void CAuxGeomCB::SetTexturedActiveDrawBuffer(bool textured)
-{ 
-	if(textured)
+{
+	if (textured)
 		m_activeDrawBufferInfo.m_state |= SActiveDrawBufferInfo::Textured;
 	else
 		m_activeDrawBufferInfo.m_state &= ~SActiveDrawBufferInfo::Textured;
 }
 
 bool CAuxGeomCB::IsDrawBufferActive()
-{ 
-	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::Enabled) != 0; 
+{
+	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::Enabled) != 0;
 }
 
 bool CAuxGeomCB::IsActiveDrawBufferUsingScratch()
-{ 
-	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::UseScratchBuffer) != 0; 
+{
+	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::UseScratchBuffer) != 0;
 }
 
 bool CAuxGeomCB::IsActiveDrawBufferTextured()
-{ 
-	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::Textured) != 0; 
+{
+	return (m_activeDrawBufferInfo.m_state & SActiveDrawBufferInfo::Textured) != 0;
 }
 
 #endif // #if defined(ENABLE_RENDER_AUX_GEOM)

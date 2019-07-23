@@ -143,7 +143,7 @@ private:
 	void HandleRefresh();
 
 	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom{ nullptr };
-	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom{ nullptr };
+	uint32                       m_lastDebugRenderSubmitExternalFrame{ 0 };
 	std::atomic_bool             m_canDraw{ true };
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 };

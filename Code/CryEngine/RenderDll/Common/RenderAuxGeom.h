@@ -10,10 +10,10 @@
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 
-#include <CryRenderer/VertexFormats.h>
-#include <CryMemory/CrySizer.h>
-#include "RenderOutput.h"
-#include "TextMessages.h"
+	#include <CryRenderer/VertexFormats.h>
+	#include <CryMemory/CrySizer.h>
+	#include "RenderOutput.h"
+	#include "TextMessages.h"
 
 struct IRenderAuxGeom;
 struct SAuxGeomCBRawDataPackagedConst;
@@ -43,69 +43,69 @@ public:
 	SAuxGeomRenderFlags SetRenderFlags(const SAuxGeomRenderFlags& renderFlags) final;
 	SAuxGeomRenderFlags GetRenderFlags() final;
 
-	const CCamera&      GetCamera() const final;
+	const CCamera& GetCamera() const final;
 
-	void                SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) override;
+	void           SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) override;
 
-	void                DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) override;
-	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) override;
-	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB* col, uint8 size = 1) override;
+	void           DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) override;
+	void           DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) override;
+	void           DrawPoints(const Vec3* v, uint32 numPoints, const ColorB* col, uint8 size = 1) override;
 
-	void                DrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, float thickness = 1.0f) override;
-	void                DrawLines(const Vec3* v, uint32 numPoints, const ColorB& col, float thickness = 1.0f) override;
-	void                DrawLines(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) override;
-	void                DrawLines(const Vec3* v, const uint32* packedColorARGB8888, uint32 numPoints, float thickness = 1.0f, bool alphaFlag = true) override;
-	void                DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col, float thickness = 1.0f) override;
-	void                DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col, float thickness = 1.0f) override;
-	void                DrawLineStrip(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) override;
-	void                DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB& col, float thickness = 1.0f) override;
-	void                DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB* col, float thickness = 1.0f) override;
+	void           DrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, float thickness = 1.0f) override;
+	void           DrawLines(const Vec3* v, uint32 numPoints, const ColorB& col, float thickness = 1.0f) override;
+	void           DrawLines(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) override;
+	void           DrawLines(const Vec3* v, const uint32* packedColorARGB8888, uint32 numPoints, float thickness = 1.0f, bool alphaFlag = true) override;
+	void           DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col, float thickness = 1.0f) override;
+	void           DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col, float thickness = 1.0f) override;
+	void           DrawLineStrip(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) override;
+	void           DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB& col, float thickness = 1.0f) override;
+	void           DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB* col, float thickness = 1.0f) override;
 
-	void                DrawTriangle(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, const Vec3& v2, const ColorB& colV2) override;
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB& col) override;
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB* col) override;
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col) override;
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) override;
+	void           DrawTriangle(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, const Vec3& v2, const ColorB& colV2) override;
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB& col) override;
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB* col) override;
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col) override;
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) override;
 
-	void                DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) override;
-	SAuxVertex*         BeginDrawBuffer(uint32 maxVertices, bool textured) override;
-	void                EndDrawBuffer(uint32 numVertices) override;
+	void           DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) override;
+	SAuxVertex*    BeginDrawBuffer(uint32 maxVertices, bool textured) override;
+	void           EndDrawBuffer(uint32 numVertices) override;
 
-	void                DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
-	void                DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
-	void                DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
+	void           DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
+	void           DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
+	void           DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
 
-	void                DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
-	void                DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
+	void           DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
+	void           DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) override;
 
-	void                DrawSphere(const Vec3& pos, float radius, const ColorB& col, bool drawShaded = true) override;
-	void                DrawCone(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) override;
-	void                DrawCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) override;
+	void           DrawSphere(const Vec3& pos, float radius, const ColorB& col, bool drawShaded = true) override;
+	void           DrawCone(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) override;
+	void           DrawCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) override;
 
-	void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col) override;
+	void           DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col) override;
 
-	void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) override;
+	void           RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) override;
 
-	int                 SetTexture(int texID) override;
-	int                 PushMatrix(const Matrix34& mat) override;
-	Matrix34*           GetMatrix() override;
-	void                SetMatrixIndex(int matID) override;
-	void                SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) override;
+	int            SetTexture(int texID) override;
+	int            PushMatrix(const Matrix34& mat) override;
+	Matrix34*      GetMatrix() override;
+	void           SetMatrixIndex(int matID) override;
+	void           SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) override;
 
-	void                PushImage(const SRender2DImageDescription &image) override;
+	void           PushImage(const SRender2DImageDescription& image) override;
 
-	void                Submit(uint frames = 0) override;
+	void           Submit(uint frames = 0) override;
 
-	void                Draw2dImages(SAux2DImages& images, bool reset);
-	void                DrawTextMessages(CTextMessages& tMessages, bool reset);
+	void           Draw2dImages(SAux2DImages& images, bool reset);
+	void           DrawTextMessages(CTextMessages& tMessages, bool reset);
 
 private:
 	// These functions are private so that aux geom command buffer cannot be changed.
 	// In ideal case, the camera must be set during construction and everything should be rendered/created relative to it.
 	// SetCamera is only accessible to the AuxGeomCBCollector so that it can update AuxGeomCBs.
-	void                SetCamera(const CCamera& camera);
-	void                SetUsingCustomCamera(bool isUsing);
-	bool                IsUsingCustomCamera() const;
+	void SetCamera(const CCamera& camera);
+	void SetUsingCustomCamera(bool isUsing);
+	bool IsUsingCustomCamera() const;
 
 public:
 	enum EPrimType
@@ -163,27 +163,27 @@ public:
 
 		SAuxPushBufferEntry(uint32 numVertices, uint32 numIndices, uint32 vertexOffs, uint32 indexOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const SDisplayContextKey& displayContextKey = {})
 			: m_numVertices(numVertices)
-			, m_numIndices(numIndices)
-			, m_vertexOffs(vertexOffs)
-			, m_indexOffs(indexOffs)
-			, m_transMatrixIdx(transMatrixIdx)
-			, m_worldMatrixIdx(worldMatrixIdx)
-			, m_textureID(texID)
-			, m_renderFlags(renderFlags)
-			, m_displayContextKey(displayContextKey)
+			  , m_numIndices(numIndices)
+			  , m_vertexOffs(vertexOffs)
+			  , m_indexOffs(indexOffs)
+			  , m_transMatrixIdx(transMatrixIdx)
+			  , m_worldMatrixIdx(worldMatrixIdx)
+			  , m_textureID(texID)
+			  , m_renderFlags(renderFlags)
+			  , m_displayContextKey(displayContextKey)
 		{
 		}
 
 		SAuxPushBufferEntry(uint32 drawParamOffs, uint32 transMatrixIdx, int worldMatrixIdx, const SAuxGeomRenderFlags& renderFlags, int texID = -1, const SDisplayContextKey& displayContextKey = {})
 			: m_numVertices(0)
-			, m_numIndices(0)
-			, m_vertexOffs(drawParamOffs)
-			, m_indexOffs(0)
-			, m_transMatrixIdx(transMatrixIdx)
-			, m_worldMatrixIdx(worldMatrixIdx)
-			, m_textureID(texID)
-			, m_renderFlags(renderFlags)
-			, m_displayContextKey(displayContextKey)
+			  , m_numIndices(0)
+			  , m_vertexOffs(drawParamOffs)
+			  , m_indexOffs(0)
+			  , m_transMatrixIdx(transMatrixIdx)
+			  , m_worldMatrixIdx(worldMatrixIdx)
+			  , m_textureID(texID)
+			  , m_renderFlags(renderFlags)
+			  , m_displayContextKey(displayContextKey)
 		{
 			CRY_ASSERT(e_Obj == GetPrimType(m_renderFlags));
 		}
@@ -203,16 +203,16 @@ public:
 			pSizer->AddObject(this, sizeof(*this));
 		}
 
-		uint32                  m_numVertices;
-		uint32                  m_numIndices;
-		uint32                  m_vertexOffs;
-		uint32                  m_indexOffs;
-		int                     m_transMatrixIdx;
-		int                     m_worldMatrixIdx;
-		int                     m_textureID;
-		SAuxGeomRenderFlags     m_renderFlags;
+		uint32              m_numVertices;
+		uint32              m_numIndices;
+		uint32              m_vertexOffs;
+		uint32              m_indexOffs;
+		int                 m_transMatrixIdx;
+		int                 m_worldMatrixIdx;
+		int                 m_textureID;
+		SAuxGeomRenderFlags m_renderFlags;
 
-		SDisplayContextKey m_displayContextKey;
+		SDisplayContextKey  m_displayContextKey;
 	};
 
 	using AuxPushBuffer = std::vector<SAuxPushBufferEntry>;
@@ -239,23 +239,7 @@ public:
 		void GetSortedPushBuffer(size_t begin, size_t end, AuxSortedPushBuffer& auxSortedPushBuffer) const;
 		void GetMemoryUsage(ICrySizer* pSizer) const;
 
-		void Reset()
-		{
-			m_auxPushBuffer.resize(0);
-			m_auxVertexBuffer.resize(0);
-			m_auxIndexBuffer.resize(0);
-			m_auxDrawObjParamBuffer.resize(0);
-			m_auxOrthoMatrices.resize(0);
-			m_auxWorldMatrices.resize(0);
-			m_TextMessages.Clear();
-			m_2dImages.clear();
-
-			m_curRenderFlags = e_Def3DPublicRenderflags;
-			m_curTransMatIdx = -1;
-			m_curWorldMatIdx = -1;
-			m_textureID = -1;
-			m_uCount = 0;
-		}
+		void Reset();
 
 		bool IsUsed() const
 		{
@@ -278,26 +262,26 @@ public:
 		}
 
 	public:
-		AuxPushBuffer           m_auxPushBuffer;
-		AuxVertexBuffer         m_auxVertexBuffer;
-		AuxIndexBuffer          m_auxIndexBuffer;
-		AuxDrawObjParamBuffer   m_auxDrawObjParamBuffer;
-		AuxOrthoMatrixBuffer    m_auxOrthoMatrices;
-		AuxWorldMatrixBuffer    m_auxWorldMatrices;
-		CTextMessages           m_TextMessages;
-		SAux2DImages            m_2dImages;
-		SAuxGeomRenderFlags     m_curRenderFlags;
-		int                     m_curTransMatIdx;
-		int                     m_curWorldMatIdx;
-		int                     m_textureID;
-		uint                    m_uCount;
-		bool                    m_isUsed = false;
+		AuxPushBuffer         m_auxPushBuffer;
+		AuxVertexBuffer       m_auxVertexBuffer;
+		AuxIndexBuffer        m_auxIndexBuffer;
+		AuxDrawObjParamBuffer m_auxDrawObjParamBuffer;
+		AuxOrthoMatrixBuffer  m_auxOrthoMatrices;
+		AuxWorldMatrixBuffer  m_auxWorldMatrices;
+		CTextMessages         m_TextMessages;
+		SAux2DImages          m_2dImages;
+		SAuxGeomRenderFlags   m_curRenderFlags;
+		int                   m_curTransMatIdx;
+		int                   m_curWorldMatIdx;
+		int                   m_textureID;
+		uint                  m_uCount;
+		bool                  m_isUsed = false;
 
-		SDisplayContextKey displayContextKey;
-		
+		SDisplayContextKey    displayContextKey;
+
 		// Camera used for 3D->2D elements projection
-		CCamera                 m_camera;
-		bool                    m_usingCustomCamera;
+		CCamera m_camera;
+		bool    m_usingCustomCamera;
 	};
 
 public:
@@ -367,8 +351,8 @@ private:
 	};
 
 private:
-	void                Flush(bool reset);
-	void                Flush();
+	void   Flush(bool reset);
+	void   Flush();
 
 	uint32 CreatePointRenderFlags(uint8 size);
 	uint32 CreateLineRenderFlags(bool indexed);
@@ -391,12 +375,12 @@ public:
 		uint32_t m_maxVertices;
 		enum State : uint8
 		{
-			Enabled = BIT(0),
-			Textured = BIT(1),
+			Enabled          = BIT(0),
+			Textured         = BIT(1),
 			UseScratchBuffer = BIT(2),
 
-			None = 0,
-			All = Enabled | Textured | UseScratchBuffer
+			None             = 0,
+			All              = Enabled | Textured | UseScratchBuffer
 		} m_state;
 	};
 private:
@@ -447,12 +431,11 @@ protected:
 		}
 	};
 
-	SAuxGeomCBRawData*			   m_rawData = nullptr;
-	static const size_t            m_maxScratchBufferVertices = 16 * 1024;
+	SAuxGeomCBRawData*  m_rawData = nullptr;
+	static const size_t m_maxScratchBufferVertices = 16 * 1024;
 	std::array<SAuxVertex, m_maxScratchBufferVertices> m_scratchBuffer;
 };
 DEFINE_ENUM_FLAG_OPERATORS(CAuxGeomCB::SActiveDrawBufferInfo::State);
-
 
 // package CAuxGeomCB::SAuxGeomCBRawData ptr via seperate struct as nested types cannot be forward declared
 struct SAuxGeomCBRawDataPackagedConst
@@ -622,57 +605,57 @@ public:
 	SAuxGeomRenderFlags SetRenderFlags(const SAuxGeomRenderFlags& renderFlags) final                                                                         { return SAuxGeomRenderFlags(); }
 	SAuxGeomRenderFlags GetRenderFlags() final                                                                                                               { return SAuxGeomRenderFlags(); }
 
-	const CCamera&      GetCamera() const final                                                                                                              { static CCamera camera; return camera; }
+	const CCamera& GetCamera() const final                                                                                                              { static CCamera camera; return camera; }
 
-	void                SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) final                                                          {}
+	void           SetCurrentDisplayContext(const SDisplayContextKey& displayContextKey) final                                                          {}
 
-	void                DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) final                                                                    {}
-	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) final                                                 {}
-	void                DrawPoints(const Vec3* v, uint32 numPoints, const ColorB* col, uint8 size = 1) final                                                 {}
+	void           DrawPoint(const Vec3& v, const ColorB& col, uint8 size = 1) final                                                                    {}
+	void           DrawPoints(const Vec3* v, uint32 numPoints, const ColorB& col, uint8 size = 1) final                                                 {}
+	void           DrawPoints(const Vec3* v, uint32 numPoints, const ColorB* col, uint8 size = 1) final                                                 {}
 
-	void                DrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, float thickness = 1.0f) final                     {}
-	void                DrawLines(const Vec3* v, uint32 numPoints, const ColorB& col, float thickness = 1.0f) final                                          {}
-	void                DrawLines(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) final                                          {}
-	void                DrawLines(const Vec3* v, const uint32* packedColorARGB8888, uint32 numPoints, float thickness = 1.0f, bool alphaFlag = true) final   {}
-	void                DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col, float thickness = 1.0f) final   {}
-	void                DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col, float thickness = 1.0f) final   {}
-	void                DrawLineStrip(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) final										 {}
-	void                DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB& col, float thickness = 1.0f) final                          {}
-	void                DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB* col, float thickness = 1.0f) final                          {}
+	void           DrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, float thickness = 1.0f) final                     {}
+	void           DrawLines(const Vec3* v, uint32 numPoints, const ColorB& col, float thickness = 1.0f) final                                          {}
+	void           DrawLines(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) final                                          {}
+	void           DrawLines(const Vec3* v, const uint32* packedColorARGB8888, uint32 numPoints, float thickness = 1.0f, bool alphaFlag = true) final   {}
+	void           DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col, float thickness = 1.0f) final   {}
+	void           DrawLines(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col, float thickness = 1.0f) final   {}
+	void           DrawLineStrip(const Vec3* v, uint32 numPoints, const ColorB* col, float thickness = 1.0f) final                                      {}
+	void           DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB& col, float thickness = 1.0f) final                          {}
+	void           DrawPolyline(const Vec3* v, uint32 numPoints, bool closed, const ColorB* col, float thickness = 1.0f) final                          {}
 
-	void                DrawTriangle(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, const Vec3& v2, const ColorB& colV2) final    {}
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB& col) final                                                              {}
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB* col) final                                                              {}
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col) final                       {}
-	void                DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) final                       {}
+	void           DrawTriangle(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, const Vec3& v2, const ColorB& colV2) final    {}
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB& col) final                                                              {}
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const ColorB* col) final                                                              {}
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB& col) final                       {}
+	void           DrawTriangles(const Vec3* v, uint32 numPoints, const vtx_idx* ind, uint32 numIndices, const ColorB* col) final                       {}
 
-	void                DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) final                                                    {}
-	SAuxVertex*         BeginDrawBuffer(uint32 maxVertices, bool textured) final                                                                             { return nullptr; }
-	void                EndDrawBuffer(uint32 numVertices) final                                                                                              {}
+	void           DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bool textured) final                                                    {}
+	SAuxVertex*    BeginDrawBuffer(uint32 maxVertices, bool textured) final                                                                             { return nullptr; }
+	void           EndDrawBuffer(uint32 numVertices) final                                                                                              {}
 
-	void                DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final                           {}
-	void                DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final       {}
-	void                DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final {}
+	void           DrawAABB(const AABB& aabb, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final                           {}
+	void           DrawAABBs(const AABB* aabbs, uint32 aabbCount, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final       {}
+	void           DrawAABB(const AABB& aabb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final {}
 
-	void                DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final             {}
-	void                DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final    {}
+	void           DrawOBB(const OBB& obb, const Vec3& pos, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final             {}
+	void           DrawOBB(const OBB& obb, const Matrix34& matWorld, bool bSolid, const ColorB& col, const EBoundingBoxDrawStyle& bbDrawStyle) final    {}
 
-	void                DrawSphere(const Vec3& pos, float radius, const ColorB& col, bool drawShaded = true) final                                           {}
-	void                DrawCone(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) final              {}
-	void                DrawCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) final          {}
+	void           DrawSphere(const Vec3& pos, float radius, const ColorB& col, bool drawShaded = true) final                                           {}
+	void           DrawCone(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) final              {}
+	void           DrawCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, const ColorB& col, bool drawShaded = true) final          {}
 
-	void                DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col) final                                                                   {}
+	void           DrawBone(const Vec3& rParent, const Vec3& rBone, ColorB col) final                                                                   {}
 
-	void                RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) final                                                          {}
+	void           RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) final                                                          {}
 
-	void                PushImage(const SRender2DImageDescription &image) final                                                                              {}
+	void           PushImage(const SRender2DImageDescription& image) final                                                                              {}
 
-	int                 PushMatrix(const Matrix34& mat) final                                                                                                { return -1; }
-	Matrix34*           GetMatrix() final                                                                                                                    { return nullptr; }
-	void                SetMatrixIndex(int matID) final                                                                                                      {}
-	void                SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) final	 {}
+	int            PushMatrix(const Matrix34& mat) final                                                                                                { return -1; }
+	Matrix34*      GetMatrix() final                                                                                                                    { return nullptr; }
+	void           SetMatrixIndex(int matID) final                                                                                                      {}
+	void           SetOrthographicProjection(bool enable, float l = 0, float r = 1, float b = 0, float t = 1, float n = -1e10, float f = 1e10) final    {}
 
-	void                Submit(uint frames = 0) final                                                                                                        {}
+	void           Submit(uint frames = 0) final                                                                                                        {}
 
 public:
 	CAuxGeomCB_Null() = default;
