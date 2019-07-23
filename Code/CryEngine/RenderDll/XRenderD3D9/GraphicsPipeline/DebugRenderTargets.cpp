@@ -196,7 +196,7 @@ void CDebugRenderTargetsStage::OnShowRenderTargetsCmd(SDebugRenderTargetInfo& de
 					rtInfo.bFiltered = bFiltered;
 					rtInfo.bRGBKEncoded = bRGBKEncoded;
 					rtInfo.bAliased = bAliased;
-					rtInfo.pTexture = allRTs[k];
+					rtInfo.textureName = allRTs[k]->GetNameCRC();
 					rtInfo.channelWeight = channelWeight;
 					rtInfo.mip = mip;
 					rtInfo.slice = slice;
@@ -231,7 +231,7 @@ void CDebugRenderTargetsStage::OnShowRenderTargetsCmd(SDebugRenderTargetInfo& de
 		for (size_t k = 0; k < allRTs.size(); ++k)
 		{
 			SRenderTargetInfo rtInfo;
-			rtInfo.pTexture = allRTs[k];
+			rtInfo.textureName = allRTs[k]->GetNameCRC();
 			m_renderTargetList.push_back(rtInfo);
 		}
 	}
@@ -244,7 +244,7 @@ void CDebugRenderTargetsStage::Execute()
 		ResetRenderTargetList();
 
 		SRenderTargetInfo rtInfo;
-		rtInfo.pTexture = m_graphicsPipelineResources.m_pTexSceneDiffuseTmp;
+		rtInfo.textureName = m_graphicsPipelineResources.m_pTexSceneDiffuseTmp->GetName();
 		m_renderTargetList.push_back(rtInfo);
 		m_columnCount = 1;
 
@@ -276,7 +276,7 @@ void CDebugRenderTargetsStage::Execute()
 		iLog->Log("RenderTargets:\n");
 		for (size_t i = 0; i < m_renderTargetList.size(); ++i)
 		{
-			CTexture* pTex = m_renderTargetList[i].pTexture;
+			CTexture* pTex = CTexture::GetByNameCRC(m_renderTargetList[i].textureName);
 			if (pTex)
 				iLog->Log("\t%" PRISIZE_T "  %s\t--------------%s  %d x %d\n", i, pTex->GetName(), pTex->GetFormatName(), pTex->GetWidth(), pTex->GetHeight());
 			else
@@ -329,7 +329,8 @@ void CDebugRenderTargetsStage::ExecuteShowTargets()
 		for (size_t i = 0; i < tileCount; ++i)
 		{
 			SRenderTargetInfo& rtInfo = m_renderTargetList[i];
-			if (!CTexture::IsTextureExist(rtInfo.pTexture))
+			CTexture* pTexture = CTexture::GetByNameCRC(rtInfo.textureName);
+			if (!CTexture::IsTextureExist(pTexture))
 				continue;
 
 			float curX = (i % m_columnCount) * (tileW + tileGapW);
@@ -339,7 +340,7 @@ void CDebugRenderTargetsStage::ExecuteShowTargets()
 
 			if (rtInfo.mip != -1 || rtInfo.slice != -1)
 			{
-				STextureLayout texLayout = rtInfo.pTexture->GetDevTexture()->GetLayout();
+				STextureLayout texLayout = pTexture->GetDevTexture()->GetLayout();
 
 				int firstSlice = clamp_tpl(rtInfo.slice, 0, texLayout.m_nArraySize - 1);
 				int sliceCount = clamp_tpl(rtInfo.slice < 0 ? texLayout.m_nArraySize : 1, 1, int(texLayout.m_nArraySize));
@@ -348,14 +349,14 @@ void CDebugRenderTargetsStage::ExecuteShowTargets()
 				int mipCount = clamp_tpl(rtInfo.mip < 0 ? texLayout.m_nMips : 1, 1, int(texLayout.m_nMips));
 
 				SResourceView srv = SResourceView::ShaderResourceView(DeviceFormats::ConvertFromTexFormat(texLayout.m_eDstFormat), firstSlice, sliceCount, firstMip, mipCount);
-				textureView = rtInfo.pTexture->GetDevTexture()->GetOrCreateResourceViewHandle(srv);
+				textureView = pTexture->GetDevTexture()->GetOrCreateResourceViewHandle(srv);
 			}
 
 			CRenderPrimitive& prim = m_debugPrimitives[m_primitiveCount++];
 			prim.SetTechnique(CShaderMan::s_ShaderDebug, "Debug_RenderTarget", 0);
 			prim.SetPrimitiveType(CRenderPrimitive::ePrim_FullscreenQuad);
 			prim.SetCullMode(eCULL_None);
-			prim.SetTexture(0, rtInfo.pTexture, textureView, EShaderStage_Pixel);
+			prim.SetTexture(0, pTexture, textureView, EShaderStage_Pixel);
 			prim.SetSampler(0, rtInfo.bFiltered ? EDefaultSamplerStates::LinearClamp : EDefaultSamplerStates::PointClamp);
 
 			if (prim.Compile(m_debugPass) == CRenderPrimitive::eDirty_None)
@@ -378,8 +379,8 @@ void CDebugRenderTargetsStage::ExecuteShowTargets()
 
 				m_debugPass.AddPrimitive(&prim);
 
-				IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 - 15), 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", rtInfo.pTexture->GetFormatName(), CTexture::NameForTextureType(rtInfo.pTexture->GetTextureType()));
-				IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 + 1),  1, 1, 1, 1, 1, 1, "%s   %d x %d",      rtInfo.pTexture->GetName(),       rtInfo.pTexture->GetWidth(), rtInfo.pTexture->GetHeight());
+				IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 - 15), 1, 1, 1, 1, 1, 1, "Fmt: %s, Type: %s", pTexture->GetFormatName(), CTexture::NameForTextureType(pTexture->GetTextureType()));
+				IRenderAuxText::WriteXY((int)(curX * 800 + 2), (int)((curY + tileH) * 600 + 1),  1, 1, 1, 1, 1, 1, "%s   %d x %d",      pTexture->GetName(),       pTexture->GetWidth(), pTexture->GetHeight());
 			}
 		}
 

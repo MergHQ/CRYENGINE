@@ -21,7 +21,7 @@ private:
 
 	struct SRenderTargetInfo
 	{
-		CTexture* pTexture      = nullptr;
+		CCryNameTSCRC textureName = "";
 		Vec4      channelWeight = Vec4(1.0f);
 		bool      bFiltered     = false;
 		bool      bRGBKEncoded  = false;
