@@ -17,7 +17,7 @@
     </qresource>
 	<qresource>
         <file>toolbar-drop-target.png</file>
-		<file>splash.bmp</file>
+		<file>splash.png</file>
 		<file>about.png</file>
 	</qresource>
 </RCC>

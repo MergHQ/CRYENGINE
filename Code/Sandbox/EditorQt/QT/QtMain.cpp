@@ -233,7 +233,7 @@ int main(int argc, char* argv[])
 		timeoutDialog.Execute(waitForSeconds);
 	}
 
-	QPixmap pixmap(":/splash.bmp");
+	QPixmap pixmap(":/splash.png");
 	SplashScreen splash(pixmap);
 	splash.show();
 	qApp->processEvents();
