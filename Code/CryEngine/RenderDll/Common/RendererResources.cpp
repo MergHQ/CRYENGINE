@@ -71,6 +71,7 @@ SPixFormatSupport CRendererResources::s_hwTexFormatSupport;
 CTexture* CRendererResources::s_ptexNoTexture;
 CTexture* CRendererResources::s_ptexNoTextureCM;
 CTexture* CRendererResources::s_ptexWhite;
+CTexture* CRendererResources::s_ptexWhite3D;
 CTexture* CRendererResources::s_ptexGray;
 CTexture* CRendererResources::s_ptexMedian;
 CTexture* CRendererResources::s_ptexBlack;
@@ -342,6 +343,13 @@ void CRendererResources::LoadDefaultSystemTextures()
 
 		//s_ptexHitAreaRT[0] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_0", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		//s_ptexHitAreaRT[1] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_1", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+
+		s_ptexWhite3D = CTexture::GetOrCreateTextureObject("White3D", 0, 0, 1, eTT_3D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown, TO_WINDGRID);
+		if (!CTexture::IsTextureExist(s_ptexWhite3D))
+		{
+			static float white[4] = { 1, 1, 1, 1 };
+			s_ptexWhite3D->Create3DTexture(1, 1, 1, 1, FT_DONT_RELEASE | FT_DONT_STREAM, (const byte*)white, eTF_R32G32B32A32F);
+		}
 
 		s_ptexWindGrid = CTexture::GetOrCreateTextureObject("WindGrid", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown, TO_WINDGRID);
 		if (!CTexture::IsTextureExist(s_ptexWindGrid))

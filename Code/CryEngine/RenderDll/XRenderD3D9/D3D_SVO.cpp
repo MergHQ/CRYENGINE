@@ -992,37 +992,42 @@ void CSvoRenderer::SetupSvoTexturesForRead(I3DEngine::SSvoStaticTexInfo& texInfo
 {
 	rp.SetTexture(0, (static_cast<CTexture*>(texInfo.pTexTree.get())));
 
-	rp.SetTexture(1, CRendererResources::s_ptexBlack);
+	rp.SetTexture(1, CRendererResources::s_ptexWhite3D);
 
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
 	if (nStage == 0)
-		rp.SetTexture(1, CTexture::GetByID(vp_RGB0.nTexId));
+		rp.SetTexture(1, vp_RGB0.nTexId == 0 ? CRendererResources::s_ptexWhite3D : CTexture::GetByID(vp_RGB0.nTexId));
 	else if (nStage == 1)
-		rp.SetTexture(1, CTexture::GetByID(vp_RGB1.nTexId));
+		rp.SetTexture(1, vp_RGB1.nTexId == 0 ? CRendererResources::s_ptexWhite3D : CTexture::GetByID(vp_RGB1.nTexId));
 	else if (nStage == 2)
-		rp.SetTexture(1, CTexture::GetByID(vp_RGB2.nTexId));
+		rp.SetTexture(1, vp_RGB2.nTexId == 0 ? CRendererResources::s_ptexWhite3D : CTexture::GetByID(vp_RGB2.nTexId));
 	else if (nStage == 3)
-		rp.SetTexture(1, CTexture::GetByID(vp_RGB3.nTexId));
+		rp.SetTexture(1, vp_RGB3.nTexId == 0 ? CRendererResources::s_ptexWhite3D : CTexture::GetByID(vp_RGB3.nTexId));
 	else if (nStage == 4)
-		rp.SetTexture(1, CTexture::GetByID(vp_RGB4.nTexId));
+		rp.SetTexture(1, vp_RGB4.nTexId == 0 ? CRendererResources::s_ptexWhite3D : CTexture::GetByID(vp_RGB4.nTexId));
 
 	if (nStageNorm == 0)
-		rp.SetTexture(2, CTexture::GetByID(vp_NORM.nTexId));
+		rp.SetTexture(2, vp_NORM.nTexId == 0 ? CRendererResources::s_ptexWhite3D : CTexture::GetByID(vp_NORM.nTexId));
 
 	#endif
 
-	if (nStageOpa == 0)
-		rp.SetTexture(3, static_cast<CTexture*>(texInfo.pTexOpac.get()));
 
+	if (nStageOpa == 0)
+	{
+		CTexture* pTexOpac = static_cast<CTexture*>(texInfo.pTexOpac.get());
+		rp.SetTexture(3, !pTexOpac ? CRendererResources::s_ptexWhite3D : pTexOpac);
+	}
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 
 	else if (nStageOpa == 1)
-		rp.SetTexture(3, CTexture::GetByID(vp_RGB4.nTexId));
+		rp.SetTexture(3, vp_RGB4.nTexId == 0 ? CRendererResources::s_ptexWhite3D : CTexture::GetByID(vp_RGB4.nTexId));
 
 	// set tris pool, each voxel contain start triangle id and tris num
 	if (texInfo.pTexTris)
+	{
 		rp.SetTexture(17, static_cast<CTexture*>(texInfo.pTexTris.get()));
+	}
 
 	if (texInfo.pGlobalSpecCM)
 		rp.SetTexture(6, static_cast<CTexture*>(texInfo.pGlobalSpecCM.get()));
