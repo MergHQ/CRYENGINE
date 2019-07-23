@@ -312,7 +312,7 @@ void CPrefabManager::AddSelectionToPrefab(const CSelectionGroup& selection)
 	//Get all the prefabs in the selection
 	std::vector<CBaseObject*> prefabsInSelection = selection.GetObjectsByFilter([](CBaseObject* pObject)
 	{
-		return pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject));
+		return static_cast<bool>(pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject)));
 	});
 
 	Private_PrefabManager::CObjectsRefOwner objectOwner(prefabsInSelection);
