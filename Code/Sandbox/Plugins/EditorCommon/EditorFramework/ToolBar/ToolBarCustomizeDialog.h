@@ -112,7 +112,9 @@ public:
 
 	QCustomToolBar*                                CreateToolBar(const QString& title, const std::shared_ptr<CToolBarService::QToolBarDesc>& pToolBarDesc);
 	std::shared_ptr<CToolBarService::QToolBarDesc> GetCurrentToolBarDesc() { return m_pCurrentToolBarDesc; }
-	void                                           SetSelectedActionIcon(const char* szPath);
+	void                                           SetIcon(const char* szPath);
+	void                                           SetCVarName(const char* szCVarName);
+	void                                           SetCVarValue(const char* szCVarValue);
 
 	virtual bool                                   eventFilter(QObject* pObject, QEvent* pEvent) override;
 	virtual void                                   mouseMoveEvent(QMouseEvent* pEvent) override;
@@ -130,8 +132,8 @@ public:
 	CCrySignal<void(std::shared_ptr<CToolBarService::QToolBarDesc> )> signalToolBarModified;
 
 protected:
-	int GetIndexFromMouseCoord(const QPoint& globalPos);
-	void paintEvent(QPaintEvent *event) override;
+	int  GetIndexFromMouseCoord(const QPoint& globalPos);
+	void paintEvent(QPaintEvent* event) override;
 
 private:
 	void UpdateToolBar();

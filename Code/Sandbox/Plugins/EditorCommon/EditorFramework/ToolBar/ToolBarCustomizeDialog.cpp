@@ -298,8 +298,15 @@ void CToolBarCustomizeDialog::QDropContainer::BuildPreview()
 	m_pCurrentToolBar = CreateToolBar(m_pCurrentToolBarDesc->GetName(), m_pCurrentToolBarDesc);
 	m_pPreviewLayout->addWidget(m_pCurrentToolBar);
 
-	if (pSelectedItem && m_pCurrentToolBarDesc && m_pCurrentToolBarDesc->GetItems().contains(pSelectedItem))
+	int index = m_pCurrentToolBarDesc->GetItems().indexOf(pSelectedItem);
+	if (pSelectedItem && m_pCurrentToolBarDesc && index >= 0)
 	{
+		QList<QAction*> actions = m_pCurrentToolBar->actions();
+		QToolButton* pToolButton = qobject_cast<QToolButton*>(m_pCurrentToolBar->widgetForAction(actions[index]));
+		if (pToolButton)
+		{
+			m_pCurrentToolBar->SelectWidget(pToolButton);
+		}
 		m_pSelectedItem = pSelectedItem;
 		selectedItemChanged(pSelectedItem);
 	}
@@ -333,7 +340,7 @@ void CToolBarCustomizeDialog::QDropContainer::ShowContextMenu(const QPoint& posi
 	});
 }
 
-void CToolBarCustomizeDialog::QDropContainer::SetSelectedActionIcon(const char* szIconPath)
+void CToolBarCustomizeDialog::QDropContainer::SetIcon(const char* szIconPath)
 {
 	if (!m_pSelectedItem)
 	{
@@ -347,6 +354,45 @@ void CToolBarCustomizeDialog::QDropContainer::SetSelectedActionIcon(const char* 
 	else if (m_pSelectedItem->GetType() == CToolBarService::QItemDesc::CVar)
 	{
 		std::static_pointer_cast<CToolBarService::QCVarDesc>(m_pSelectedItem)->SetIcon(szIconPath);
+	}
+	UpdateToolBar();
+}
+
+void CToolBarCustomizeDialog::QDropContainer::SetCVarName(const char* szCVarName)
+{
+	if (m_pSelectedItem->GetType() == CToolBarService::QItemDesc::CVar)
+	{
+		std::static_pointer_cast<CToolBarService::QCVarDesc>(m_pSelectedItem)->SetCVar(szCVarName);
+	}
+	UpdateToolBar();
+}
+
+void CToolBarCustomizeDialog::QDropContainer::SetCVarValue(const char* szCVarValue)
+{
+	std::shared_ptr<CToolBarService::QCVarDesc> pSelectedCVarItem = std::static_pointer_cast<CToolBarService::QCVarDesc>(m_pSelectedItem);
+	const QString cvarName = pSelectedCVarItem->GetName();
+	ICVar* pCVar = gEnv->pConsole->GetCVar(QtUtil::ToString(cvarName).c_str());
+	if (!pCVar)
+		return;
+
+	QString valueStr(szCVarValue);
+
+	switch (pCVar->GetType())
+	{
+	case ECVarType::Int:
+		pSelectedCVarItem->SetCVarValue(valueStr.toInt());
+		break;
+	case ECVarType::Float:
+		pSelectedCVarItem->SetCVarValue(valueStr.toDouble());
+		break;
+	case ECVarType::Int64:
+		pSelectedCVarItem->SetCVarValue(valueStr.toLongLong());
+		break;
+	case ECVarType::String:
+		pSelectedCVarItem->SetCVarValue(szCVarValue);
+		break;
+	default:
+		CRY_ASSERT_MESSAGE(0, "Trying to set a value on an unsupported CVar type");
 	}
 	UpdateToolBar();
 }
@@ -798,7 +844,9 @@ void CToolBarCustomizeDialog::SetCVarName(const char* szCVarName)
 		return;
 	}
 
+	m_pDropContainer->SetCVarName(szCVarName);
 	std::static_pointer_cast<CToolBarService::QCVarDesc>(m_pSelectedItem)->SetCVar(szCVarName);
+
 	m_pCVarValueInput->setEnabled(true);
 	SetCVarValueRegExp();
 }
@@ -836,21 +884,7 @@ void CToolBarCustomizeDialog::SetCVarValue(const char* cvarValue)
 		return;
 	}
 
-	QString valueStr(cvarValue);
-	switch (pCVar->GetType())
-	{
-	case ECVarType::Int:
-		std::static_pointer_cast<CToolBarService::QCVarDesc>(m_pSelectedItem)->SetCVarValue(valueStr.toInt());
-		break;
-	case ECVarType::Float:
-		std::static_pointer_cast<CToolBarService::QCVarDesc>(m_pSelectedItem)->SetCVarValue(valueStr.toDouble());
-		break;
-	case ECVarType::Int64:
-		CRY_ASSERT_MESSAGE(false, "CToolBarCustomizeDialog::SetCVarValue int64 cvar not implemented");
-	// fall through
-	default:
-		std::static_pointer_cast<CToolBarService::QCVarDesc>(m_pSelectedItem)->SetCVarValue(cvarValue);
-	}
+	m_pDropContainer->SetCVarValue(cvarValue);
 }
 
 void CToolBarCustomizeDialog::SetCommandName(const char* commandName)
@@ -868,7 +902,7 @@ void CToolBarCustomizeDialog::SetCommandName(const char* commandName)
 
 void CToolBarCustomizeDialog::SetIconPath(const char* szIconPath)
 {
-	m_pDropContainer->SetSelectedActionIcon(szIconPath);
+	m_pDropContainer->SetIcon(szIconPath);
 }
 
 void CToolBarCustomizeDialog::OnSelectedItemChanged(std::shared_ptr<CToolBarService::QItemDesc> selectedItem)
