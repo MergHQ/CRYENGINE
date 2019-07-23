@@ -1079,10 +1079,8 @@ cbuffer CBPerPassVolFogInj : register(b5)
 		float4 vfHeightDensityParams;
 		float4 vfHeightDensityRampParams;
 		float4 vfDistanceParams;
-#if %_RT_VOLUMETRIC_FOG
 		float4 vfGlobalEnvProbeParams0;
 		float4 vfGlobalEnvProbeParams1;
-#endif
 	} cbVolFogInj;
 };
 
