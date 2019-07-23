@@ -229,6 +229,7 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 		m_pBaseGraphicsPipeline.reset();
 		m_pActiveGraphicsPipeline.reset();
 		m_graphicsPipelines.clear();
+		m_renderToTexturePipelineKey = SGraphicsPipelineKey::InvalidGraphicsPipelineKey;
 
 #if defined(FEATURE_SVO_GI)
 		// TODO: GraphicsPipeline-Stage shutdown with ShutDown()
