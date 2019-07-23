@@ -88,7 +88,7 @@ public:
 	Listeners const&       GetListeners() const      { return m_listeners; }
 	CTransformation const& GetTransformation() const { return m_transformation; }
 
-	bool                   IsPlaying() const;
+	bool                   IsActive() const;
 	bool                   HasPendingCallbacks() const;
 
 	EObjectFlags           GetFlags() const { return m_flags; }

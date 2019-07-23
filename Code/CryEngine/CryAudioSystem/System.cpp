@@ -759,7 +759,10 @@ void UpdateActiveObjects(float const deltaTime)
 		UpdateGlobalData(deltaTime);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		g_previewObject.Update(deltaTime);
+		if (g_previewObject.IsActive())
+		{
+			g_previewObject.Update(deltaTime);
+		}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 		auto iter = g_activeObjects.begin();
@@ -769,7 +772,7 @@ void UpdateActiveObjects(float const deltaTime)
 		{
 			CObject* const pObject = *iter;
 
-			if (pObject->IsPlaying())
+			if (pObject->IsActive())
 			{
 				pObject->Update(deltaTime);
 			}
@@ -801,7 +804,10 @@ void UpdateActiveObjects(float const deltaTime)
 		UpdateGlobalData(deltaTime);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		g_previewObject.Update(deltaTime);
+		if (g_previewObject.IsActive())
+		{
+			g_previewObject.Update(deltaTime);
+		}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 		for (auto const pObject : g_activeObjects)

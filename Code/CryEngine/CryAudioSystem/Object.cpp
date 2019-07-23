@@ -210,7 +210,7 @@ void CObject::StopAllTriggers()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CObject::IsPlaying() const
+bool CObject::IsActive() const
 {
 	return !m_triggerInstances.empty();
 }
