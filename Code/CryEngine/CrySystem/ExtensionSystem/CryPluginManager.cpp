@@ -204,7 +204,12 @@ void CCryPluginManager::LoadProjectPlugins()
 
 	// Load plug-ins specified in the .cryproject file from disk
 	Cry::CProjectManager* pProjectManager = static_cast<Cry::CProjectManager*>(gEnv->pSystem->GetIProjectManager());
+#ifdef CRY_TESTING
+	std::vector<Cry::SPluginDefinition> pluginDefinitions = pProjectManager->GetPluginDefinitions();
+	pluginDefinitions.push_back({ EType::Native, "TestPlugin" });
+#else
 	const std::vector<Cry::SPluginDefinition>& pluginDefinitions = pProjectManager->GetPluginDefinitions();
+#endif
 
 	for (const Cry::SPluginDefinition& pluginDefinition : pluginDefinitions)
 	{
@@ -770,6 +775,8 @@ void CCryPluginManager::OnPluginUpdateFlagsChanged(Cry::IEnginePlugin& plugin, u
 	}
 }
 
+#ifdef CRY_TESTING
+
 CRY_TEST_SUITE(CryPluginSystemTest)
 {
 
@@ -779,18 +786,18 @@ CRY_TEST_SUITE(CryPluginSystemTest)
 		// Start declaring the inheritance hierarchy for this plug-in
 		// This is followed by any number of CRYINTERFACE_ADD, passing an interface implementing ICryUnknown that has declared its own GUID using CRYINTERFACE_DECLARE_GUID
 		CRYINTERFACE_BEGIN()
-			// Indicate that we implement Cry::IEnginePlugin, this is mandatory in order for the plug-in instance to be detected after the plug-in has been loaded
-			CRYINTERFACE_ADD(Cry::IEnginePlugin)
-			// End the declaration of inheritance hierarchy
-			CRYINTERFACE_END()
+		// Indicate that we implement Cry::IEnginePlugin, this is mandatory in order for the plug-in instance to be detected after the plug-in has been loaded
+		CRYINTERFACE_ADD(Cry::IEnginePlugin)
+		// End the declaration of inheritance hierarchy
+		CRYINTERFACE_END()
 
-			// Set the GUID for our plug-in, this should be unique across all used plug-ins
-			// Can be generated in Visual Studio under Tools -> Create GUID
-			CRYGENERATE_SINGLETONCLASS_GUID(CTestPlugin, "TestPlugin", "{213DF908-0944-44F3-A501-70E6E4FE2E86}"_cry_guid)
+		// Set the GUID for our plug-in, this should be unique across all used plug-ins
+		// Can be generated in Visual Studio under Tools -> Create GUID
+		CRYGENERATE_SINGLETONCLASS_GUID(CTestPlugin, "TestPlugin", "{213DF908-0944-44F3-A501-70E6E4FE2E86}"_cry_guid)
 
-			// Called shortly after loading the plug-in from disk
-			// This is usually where you would initialize any third-party APIs and custom code
-			virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
+		// Called shortly after loading the plug-in from disk
+		// This is usually where you would initialize any third-party APIs and custom code
+		virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 		{
 			/* Initialize plug-in here */
 
@@ -831,3 +838,5 @@ CRY_TEST_SUITE(CryPluginSystemTest)
 		};
 	}
 }
+
+#endif

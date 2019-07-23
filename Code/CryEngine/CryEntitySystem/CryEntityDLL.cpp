@@ -49,11 +49,10 @@ public:
 				Schematyc::CEntityDebugTextAction::Register(registrar);
 				Schematyc::Entity::RegisterUtilFunctions(registrar);
 				Schematyc::CEntityUtilsComponent::Register(registrar);
-
-				if (gEnv->bTesting)
-				{
-					RegisterUnitTestComponents(registrar);
-				}
+				
+#ifdef CRY_TESTING
+				RegisterUnitTestComponents(registrar);
+#endif
 			};
 
 			gEnv->pSchematyc->GetEnvRegistry().RegisterPackage(

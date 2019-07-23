@@ -1,6 +1,7 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
+#ifdef CRY_TESTING
 #include "Entity.h"
 #include "EntitySystem.h"
 
@@ -946,3 +947,5 @@ void RegisterUnitTestComponents(Schematyc::IEnvRegistrar& registrar)
 		scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(EntityTestsSuit::CComponent2));
 	}
 }
+
+#endif // #ifdef CRY_TESTING
