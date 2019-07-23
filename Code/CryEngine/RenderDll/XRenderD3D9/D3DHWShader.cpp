@@ -753,10 +753,6 @@ SDeviceShaderEntry CHWShader_D3D::mfShaderEntryFromCache(CShader* pFX, const CDi
 
 void CHWShader_D3D::mfPrecacheAllCombinations(CShader* pFX, CResFileOpenScope& rfOpenGuard, SDiskShaderCache& cache)
 {
-#if CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
-	return;
-#endif
-
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CHWShader_D3D::mfPrecacheAllCombinations()");
 
