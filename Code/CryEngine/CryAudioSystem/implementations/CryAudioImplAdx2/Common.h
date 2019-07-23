@@ -75,6 +75,23 @@ inline void Fill3DAttributeVelocity(Vec3 const& velocity, S3DAttributes& attribu
 	attributes.vel.z = static_cast<CriFloat32>(velocity.y);
 }
 
+//////////////////////////////////////////////////////////////////////////
+inline float NormalizeValue(float value, float const minValue, float const maxValue)
+{
+	if (minValue == 0.0f)
+	{
+		CRY_ASSERT(maxValue != 0.0f, "maxValue is 0.0f during %s", __FUNCTION__);
+		value = value / maxValue;
+	}
+	else
+	{
+		CRY_ASSERT(maxValue != minValue, "minValue and maxValue are equal during %s", __FUNCTION__);
+		value = (value - minValue) / (maxValue - minValue);
+	}
+
+	return value;
+}
+
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 using GameVariableValues = std::map<CryFixedStringT<MaxControlNameLength>, float>;
 extern GameVariableValues g_gameVariableValues;

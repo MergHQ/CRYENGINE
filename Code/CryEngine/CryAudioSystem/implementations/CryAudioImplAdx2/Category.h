@@ -22,8 +22,15 @@ public:
 	CCategory& operator=(CCategory const&) = delete;
 	CCategory& operator=(CCategory&&) = delete;
 
-	explicit CCategory(char const* const szName, float const multiplier, float const shift)
+	explicit CCategory(
+		char const* const szName,
+		float const minValue,
+		float const maxValue,
+		float const multiplier,
+		float const shift)
 		: m_name(szName)
+		, m_minValue(minValue)
+		, m_maxValue(maxValue)
 		, m_multiplier(multiplier)
 		, m_shift(shift)
 	{}
@@ -38,6 +45,8 @@ public:
 private:
 
 	CryFixedStringT<MaxControlNameLength> const m_name;
+	float const m_minValue;
+	float const m_maxValue;
 	float const m_multiplier;
 	float const m_shift;
 };

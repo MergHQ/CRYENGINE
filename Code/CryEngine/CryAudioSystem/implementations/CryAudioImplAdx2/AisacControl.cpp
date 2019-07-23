@@ -16,14 +16,14 @@ void CAisacControl::Set(IObject* const pIObject, float const value)
 	auto const pObject = static_cast<CObject const*>(pIObject);
 
 	CriAtomExPlayerHn const pPlayer = pObject->GetPlayer();
-	criAtomExPlayer_SetAisacControlById(pPlayer, m_id, static_cast<CriFloat32>(m_multiplier * value + m_shift));
+	criAtomExPlayer_SetAisacControlById(pPlayer, m_id, static_cast<CriFloat32>(m_multiplier * NormalizeValue(value, m_minValue, m_maxValue) + m_shift));
 	criAtomExPlayer_UpdateAll(pPlayer);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAisacControl::SetGlobally(float const value)
 {
-	auto const finalValue = static_cast<CriFloat32>(m_multiplier * value + m_shift);
+	auto const finalValue = static_cast<CriFloat32>(m_multiplier * NormalizeValue(value, m_minValue, m_maxValue) + m_shift);
 
 	for (auto const pObject : g_constructedObjects)
 	{

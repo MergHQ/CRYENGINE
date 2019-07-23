@@ -23,16 +23,41 @@ public:
 	CParameterConnection& operator=(CParameterConnection const&) = delete;
 	CParameterConnection& operator=(CParameterConnection&&) = delete;
 
-	explicit CParameterConnection(ControlId const id, float const mult, float const shift)
+	explicit CParameterConnection(ControlId const id, EAssetType const type)
 		: m_id(id)
+		, m_type(type)
+		, m_minValue(CryAudio::Impl::Adx2::g_defaultParamMinValue)
+		, m_maxValue(CryAudio::Impl::Adx2::g_defaultParamMaxValue)
+		, m_mult(CryAudio::Impl::Adx2::g_defaultParamMultiplier)
+		, m_shift(CryAudio::Impl::Adx2::g_defaultParamShift)
+	{}
+
+	explicit CParameterConnection(
+		ControlId const id,
+		EAssetType const type,
+		float const minValue,
+		float const maxValue,
+		float const mult,
+		float const shift)
+		: m_id(id)
+		, m_type(type)
+		, m_minValue(minValue)
+		, m_maxValue(maxValue)
 		, m_mult(mult)
 		, m_shift(shift)
 	{}
 
-	explicit CParameterConnection(ControlId const id)
+	explicit CParameterConnection(
+		ControlId const id,
+		EAssetType const type,
+		float const mult,
+		float const shift)
 		: m_id(id)
-		, m_mult(CryAudio::Impl::Adx2::g_defaultParamMultiplier)
-		, m_shift(CryAudio::Impl::Adx2::g_defaultParamShift)
+		, m_type(type)
+		, m_minValue(CryAudio::Impl::Adx2::g_defaultParamMinValue)
+		, m_maxValue(CryAudio::Impl::Adx2::g_defaultParamMaxValue)
+		, m_mult(mult)
+		, m_shift(shift)
 	{}
 
 	virtual ~CParameterConnection() override = default;
@@ -43,14 +68,21 @@ public:
 	virtual void      Serialize(Serialization::IArchive& ar) override;
 	// ~CBaseConnection
 
-	float GetMultiplier() const { return m_mult; }
-	float GetShift() const      { return m_shift; }
+	EAssetType GetType() const       { return m_type; }
+
+	float      GetMinValue() const   { return m_minValue; }
+	float      GetMaxValue() const   { return m_maxValue; }
+	float      GetMultiplier() const { return m_mult; }
+	float      GetShift() const      { return m_shift; }
 
 private:
 
-	ControlId const m_id;
-	float           m_mult;
-	float           m_shift;
+	ControlId const  m_id;
+	EAssetType const m_type;
+	float            m_minValue;
+	float            m_maxValue;
+	float            m_mult;
+	float            m_shift;
 };
 } // namespace Adx2
 } // namespace Impl

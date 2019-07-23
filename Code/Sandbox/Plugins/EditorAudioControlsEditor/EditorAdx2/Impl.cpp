@@ -558,7 +558,7 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 			case EAssetType::Parameter: // Intentional fall-through.
 			case EAssetType::Environment:
 				{
-					pIConnection = static_cast<IConnection*>(new CParameterConnection(pItem->GetId()));
+					pIConnection = static_cast<IConnection*>(new CParameterConnection(pItem->GetId(), assetType));
 					break;
 				}
 			case EAssetType::State:
@@ -647,15 +647,32 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetTy
 				{
 					switch (assetType)
 					{
-					case EAssetType::Parameter: // Intentional fall-through.
+					case EAssetType::Parameter:
+						{
+							float minValue = CryAudio::Impl::Adx2::g_defaultParamMinValue;
+							float maxValue = CryAudio::Impl::Adx2::g_defaultParamMaxValue;
+							float mult = CryAudio::Impl::Adx2::g_defaultParamMultiplier;
+							float shift = CryAudio::Impl::Adx2::g_defaultParamShift;
+
+							node->getAttr(CryAudio::Impl::Adx2::g_szValueMinAttribute, minValue);
+							node->getAttr(CryAudio::Impl::Adx2::g_szValueMaxAttribute, maxValue);
+							node->getAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, mult);
+							node->getAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, shift);
+
+							auto const pParameterConnection = new CParameterConnection(pItem->GetId(), assetType, minValue, maxValue, mult, shift);
+							pIConnection = static_cast<IConnection*>(pParameterConnection);
+
+							break;
+						}
 					case EAssetType::Environment:
 						{
 							float mult = CryAudio::Impl::Adx2::g_defaultParamMultiplier;
 							float shift = CryAudio::Impl::Adx2::g_defaultParamShift;
+
 							node->getAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, mult);
 							node->getAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, shift);
 
-							auto const pParameterConnection = new CParameterConnection(pItem->GetId(), mult, shift);
+							auto const pParameterConnection = new CParameterConnection(pItem->GetId(), assetType, mult, shift);
 							pIConnection = static_cast<IConnection*>(pParameterConnection);
 
 							break;
@@ -812,7 +829,32 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 
 				switch (assetType)
 				{
-				case EAssetType::Parameter: // Intentional fall-through.
+				case EAssetType::Parameter:
+					{
+						auto const pParamConnection = static_cast<CParameterConnection const*>(pIConnection);
+
+						if (pParamConnection->GetMinValue() != CryAudio::Impl::Adx2::g_defaultParamMinValue)
+						{
+							node->setAttr(CryAudio::Impl::Adx2::g_szValueMinAttribute, pParamConnection->GetMinValue());
+						}
+
+						if (pParamConnection->GetMaxValue() != CryAudio::Impl::Adx2::g_defaultParamMaxValue)
+						{
+							node->setAttr(CryAudio::Impl::Adx2::g_szValueMaxAttribute, pParamConnection->GetMaxValue());
+						}
+
+						if (pParamConnection->GetMultiplier() != CryAudio::Impl::Adx2::g_defaultParamMultiplier)
+						{
+							node->setAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, pParamConnection->GetMultiplier());
+						}
+
+						if (pParamConnection->GetShift() != CryAudio::Impl::Adx2::g_defaultParamShift)
+						{
+							node->setAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, pParamConnection->GetShift());
+						}
+
+						break;
+					}
 				case EAssetType::Environment:
 					{
 						auto const pParamConnection = static_cast<CParameterConnection const*>(pIConnection);

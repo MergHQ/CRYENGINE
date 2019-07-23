@@ -966,40 +966,78 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		CriAtomExAisacControlId const id = criAtomExAcf_GetAisacControlIdByName(szName);
 
+		float minValue = g_defaultParamMinValue;
+		float maxValue = g_defaultParamMaxValue;
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
+
+		rootNode->getAttr(g_szValueMinAttribute, minValue);
+		rootNode->getAttr(g_szValueMaxAttribute, maxValue);
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
+
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+		if (minValue > maxValue)
+		{
+			Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
+		}
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacControl");
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, multiplier, shift, szName));
+		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, minValue, maxValue, multiplier, shift, szName));
 #else
-		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, multiplier, shift));
+		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, minValue, maxValue, multiplier, shift));
 #endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+
+		float minValue = g_defaultParamMinValue;
+		float maxValue = g_defaultParamMaxValue;
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
+
+		rootNode->getAttr(g_szValueMinAttribute, minValue);
+		rootNode->getAttr(g_szValueMaxAttribute, maxValue);
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+		if (minValue > maxValue)
+		{
+			Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
+		}
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCategory");
-		pIParameterConnection = static_cast<IParameterConnection*>(new CCategory(szName, multiplier, shift));
+		pIParameterConnection = static_cast<IParameterConnection*>(new CCategory(szName, minValue, maxValue, multiplier, shift));
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+
+		float minValue = g_defaultParamMinValue;
+		float maxValue = g_defaultParamMaxValue;
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
+
+		rootNode->getAttr(g_szValueMinAttribute, minValue);
+		rootNode->getAttr(g_szValueMaxAttribute, maxValue);
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+		if (minValue > maxValue)
+		{
+			Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
+		}
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGameVariable");
-		pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName, multiplier, shift));
+		pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName, minValue, maxValue, multiplier, shift));
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else

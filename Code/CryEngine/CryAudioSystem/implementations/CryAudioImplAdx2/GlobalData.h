@@ -28,6 +28,8 @@ constexpr char const* g_szSnapshotTag = "Snapshot";
 // XML attributes
 constexpr char const* g_szCueSheetAttribute = "cuesheet";
 constexpr char const* g_szValueAttribute = "value";
+constexpr char const* g_szValueMinAttribute = "value_min";
+constexpr char const* g_szValueMaxAttribute = "value_max";
 constexpr char const* g_szMutiplierAttribute = "value_multiplier";
 constexpr char const* g_szShiftAttribute = "value_shift";
 constexpr char const* g_szLocalizedAttribute = "localized";
@@ -55,6 +57,8 @@ constexpr char const* g_szPauseValue = "pause";
 constexpr char const* g_szResumeValue = "resume";
 
 // Default values
+constexpr float g_defaultParamMinValue = 0.0f;
+constexpr float g_defaultParamMaxValue = 1.0f;
 constexpr float g_defaultParamMultiplier = 1.0f;
 constexpr float g_defaultParamShift = 0.0f;
 constexpr float g_defaultStateValue = 0.0f;
