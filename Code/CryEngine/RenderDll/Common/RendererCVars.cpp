@@ -240,6 +240,7 @@ float CRendererCVars::CV_r_shadow_jittering;
 int CRendererCVars::CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
 int CRendererCVars::CV_r_ShadowCastingLightsMaxCount;
 int CRendererCVars::CV_r_ShadowsLocalLightsLinearizeDepth;
+int CRendererCVars::CV_e_ShadowsPoolSize;
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowsGridAligned);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowMapsUpdate);
 AllocateConstIntCVar(CRendererCVars, CV_r_ShadowGenDepthClip);
@@ -1743,6 +1744,9 @@ void CRendererCVars::InitCVars()
 	                  "0=output non-linear depth\n"
 	                  "1=output linear depth (default)\n",
 	                  OnChange_CV_r_ShadowsLocalLightsLinearizeDepth);
+
+	REGISTER_CVAR3("e_ShadowsPoolSize", CV_e_ShadowsPoolSize, 2048, VF_NULL,
+		"Set size of shadow pool (e_ShadowsPoolSize*e_ShadowsPoolSize)");
 
 #if !CRY_RENDERER_VULKAN
 	REGISTER_CVAR3_CB("r_HeightMapAO", CV_r_HeightMapAO, 1, VF_NULL,

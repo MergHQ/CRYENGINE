@@ -173,9 +173,8 @@ void CGraphicsPipelineResources::CreateDeferredMaps(int resourceWidth, int resou
 	IF(gcpRendD3D->m_pRT->IsRenderThread() && gEnv->p3DEngine, 1)
 	{
 		//init shadow pool size
-		static ICVar* p_e_ShadowsPoolSize = iConsole->GetCVar("e_ShadowsPoolSize");
-		gcpRendD3D->m_nShadowPoolHeight = p_e_ShadowsPoolSize->GetIVal();
-		gcpRendD3D->m_nShadowPoolWidth = gcpRendD3D->m_nShadowPoolHeight; //square atlas
+		gcpRendD3D->m_nShadowPoolHeight = CRendererCVars::CV_e_ShadowsPoolSize;
+		gcpRendD3D->m_nShadowPoolWidth = CRendererCVars::CV_e_ShadowsPoolSize; //square atlas
 	}
 }
 

@@ -195,7 +195,7 @@ void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 {
 	CDeferredShading* pDeferredShading = pRenderView->GetGraphicsPipeline()->GetDeferredShading();
 
-	const auto nRequestedPoolSize = iConsole->GetCVar("e_ShadowsPoolSize")->GetIVal();
+	const auto nRequestedPoolSize = CRendererCVars::CV_e_ShadowsPoolSize;
 	auto& shadowPoolSize = pDeferredShading->m_nShadowPoolSize;
 	auto& blockPack = pDeferredShading->m_blockPack;
 	auto& shadowPoolAlloc = pDeferredShading->m_shadowPoolAlloc;

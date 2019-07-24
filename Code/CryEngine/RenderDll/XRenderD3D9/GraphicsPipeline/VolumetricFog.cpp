@@ -1374,8 +1374,7 @@ void CVolumetricFogStage::GenerateLightList()
 						if (numTileLights + numSides > MaxNumTileLights)
 							continue;  // Skip light
 
-						static ICVar* pShadowAtlasResCVar = iConsole->GetCVar("e_ShadowsPoolSize");
-						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)pShadowAtlasResCVar->GetIVal()), firstFrustum.fDepthConstBias);
+						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)CRendererCVars::CV_e_ShadowsPoolSize), firstFrustum.fDepthConstBias);
 
 						const Vec3 cubeDirs[6] = { Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, -1, 0), Vec3(0, 1, 0), Vec3(0, 0, -1), Vec3(0, 0, 1) };
 

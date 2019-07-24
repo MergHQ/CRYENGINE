@@ -1401,7 +1401,8 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 
 		nTexSize = int((fSMZ1 - fSMZ0) * ((float)GetCVars()->e_ShadowsMaxTexRes * fCoverageScaleFactor /*/(7*cCam.GetFarPlane())*/));
 
-		uint32 nPoolSize = GetCVars()->e_ShadowsPoolSize;
+		static ICVar* const pPoolSizeCVar = GetConsole()->GetCVar("e_ShadowsPoolSize");
+		uint32 nPoolSize = pPoolSizeCVar ? pPoolSizeCVar->GetIVal() : 0;
 		uint32 nMaxTexRes = GetCVars()->e_ShadowsMaxTexRes;
 
 		uint32 nMinRes, nMaxRes, nPhysicalMaxRes;

@@ -435,7 +435,6 @@ struct CVars : public Cry3DEngineBase
 	int   e_ParticlesMinPhysicsDynamicBounds;
 	int   e_ParticlesSortQuality;
 	DeclareConstIntCVar(e_Ropes, 1);
-	int   e_ShadowsPoolSize;
 	int   e_ShadowsMaxTexRes;
 	int   e_Sun;
 	DeclareConstFloatCVar(e_MinMassDistanceCheckRenderMeshCollision);

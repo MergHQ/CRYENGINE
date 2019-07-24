@@ -470,6 +470,7 @@ public:
 
     static int   CV_r_ShadowsLocalLightsLinearizeDepth;
 	static int   CV_r_ShadowPoolMaxTimeslicedUpdatesPerFrame;
+	static int   CV_e_ShadowsPoolSize;
 	static int   CV_r_ShadowCastingLightsMaxCount;
 	static int   CV_r_HeightMapAO;
 	static float CV_r_HeightMapAOAmount;

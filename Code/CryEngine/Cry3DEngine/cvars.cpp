@@ -448,8 +448,6 @@ void CVars::Init()
 	              "NOTE: individual texture resolution is rounded to next power of two ");
 	REGISTER_CVAR(e_ShadowsClouds, 1, VF_NULL,
 	              "Cloud shadows"); // no cheat var because this feature shouldn't be strong enough to affect gameplay a lot
-	REGISTER_CVAR(e_ShadowsPoolSize, 2048, VF_NULL,
-	              "Set size of shadow pool (e_ShadowsPoolSize*e_ShadowsPoolSize)");
 	REGISTER_CVAR(e_ShadowsMaxTexRes, 1024, VF_NULL,
 	              "Set maximum resolution of shadow map\n256(faster), 512(medium), 1024(better quality)");
 	REGISTER_CVAR(e_ShadowsResScale, 2.8f, VF_NULL,

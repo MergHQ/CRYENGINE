@@ -90,14 +90,12 @@ void CShadowMapStage::Init()
 	m_perPassResources.AcceptChangedBindPoints();
 
 	{
-		int nShadowTexFormat = CRendererCVars::CV_r_shadowtexformat;
+		const int nShadowTexFormat = CRendererCVars::CV_r_shadowtexformat;
 
-		int nShadowPoolSize = 2048;
-		if (ICVar* pShadowsPoolSizeCVar = iConsole->GetCVar("e_ShadowsPoolSize"))
-			nShadowPoolSize = pShadowsPoolSizeCVar->GetIVal();
+		const int nShadowPoolSize = CRendererCVars::CV_e_ShadowsPoolSize;
 
-		int nShadowCacheFormat = CRendererCVars::CV_r_ShadowsCacheFormat;
-		int nShadowCacheLODs = CRendererCVars::CV_r_ShadowsCache;
+		const int nShadowCacheFormat = CRendererCVars::CV_r_ShadowsCacheFormat;
+		const int nShadowCacheLODs = CRendererCVars::CV_r_ShadowsCache;
 
 		int nShadowCacheCascades = 0;
 		if (ICVar* pGsmLodsVar = gEnv->pConsole->GetCVar("e_GsmLodsNum"))
@@ -176,10 +174,14 @@ void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
 		m_pTexRT_ShadowPool->Invalidate(shadowPoolSize, shadowPoolSize, eShadowTexFormat);
 		if (!CTexture::IsTextureExist(m_pTexRT_ShadowPool))
 		{
-#if !defined(_RELEASE) && !CRY_PLATFORM_WINDOWS
+#if !defined(_RELEASE) && CRY_PLATFORM_CONSOLE
 			static int reallocationCount = 0;
-			assert(reallocationCount == 0); // don't want any realloc on consoles
-			++reallocationCount;
+			
+			if (shadowPoolSize > 0)
+			{
+				CRY_ASSERT(reallocationCount == 0); // don't want any realloc on consoles
+				++reallocationCount;
+			}
 #endif
 
 			m_pTexRT_ShadowPool->CreateDepthStencil(eShadowTexFormat, ColorF(Clr_FarPlane.r, 5.f, 0.f, 0.f));
@@ -322,12 +324,10 @@ void CShadowMapStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 		if (cvarUpdater.GetCVar("r_ShadowTexFormat"))
 			nShadowTexFormat = cvarUpdater.GetCVar("r_ShadowTexFormat")->intValue;
 
-		int nShadowPoolSize = 2048;
+		int nShadowPoolSize = CRendererCVars::CV_e_ShadowsPoolSize;
 		if (cvarUpdater.GetCVar("e_ShadowsPoolSize"))
 			nShadowPoolSize = cvarUpdater.GetCVar("e_ShadowsPoolSize")->intValue;
-		else if (ICVar* pShadowsPoolSizeCVar = iConsole->GetCVar("e_ShadowsPoolSize"))
-			nShadowPoolSize = pShadowsPoolSizeCVar->GetIVal();
-
+		
 		int nShadowCacheFormat = CRendererCVars::CV_r_ShadowsCacheFormat;
 		if (cvarUpdater.GetCVar("r_ShadowsCacheFormat"))
 			nShadowCacheFormat = cvarUpdater.GetCVar("r_ShadowsCacheFormat")->intValue;

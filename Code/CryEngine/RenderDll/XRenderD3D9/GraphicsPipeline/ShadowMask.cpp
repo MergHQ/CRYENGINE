@@ -1297,8 +1297,7 @@ void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitiv
 		vSphereAdjust = Vec4(pLight->m_Origin, pLight->m_fRadius * 1.1f);
 	}
 
-	static ICVar* pVar = iConsole->GetCVar("e_ShadowsPoolSize");
-	const int nShadowAtlasRes = pVar->GetIVal();
+	const int nShadowAtlasRes = CRendererCVars::CV_e_ShadowsPoolSize;
 	float kernelSize = pFrustum->bOmniDirectionalShadow ? 2.5f : 1.5f;
 	const Vec4 vShadowParams(kernelSize * (float(pFrustum->nTexSize) / nShadowAtlasRes), float(pFrustum->nTexSize), 0.0f, pFrustum->fDepthConstBias);
 
