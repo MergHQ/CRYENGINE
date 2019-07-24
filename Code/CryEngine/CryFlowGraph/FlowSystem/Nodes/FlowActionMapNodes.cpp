@@ -229,7 +229,8 @@ class CFlowNode_InputActionListener : public CFlowBaseNode<eNCT_Instanced>, publ
 		EOP_DISABLED,
 		EOP_PRESSED,
 		EOP_RELEASED,
-		EOP_HOLD
+		EOP_HOLD,
+		EOP_VALUE,
 	};
 
 public:
@@ -263,6 +264,7 @@ public:
 			OutputPortConfig<string>("Pressed",  _HELP("Action trigger pressed.")),
 			OutputPortConfig<string>("Released", _HELP("Action trigger released.")),
 			OutputPortConfig<string>("Hold",     _HELP("Action trigger hold. Make sure the action map is enabled, since this port goes properly through the action manager.")),
+			OutputPortConfig<float>("Value",     _HELP("In case an action has a value it will be returned through this port.")),
 			{ 0 }
 		};
 
@@ -474,6 +476,7 @@ public:
 					if (pAction && pAction->GetActionId() == action && (activationMode & (eAAM_Always | eAAM_OnHold)))
 					{
 						ActivateOutput(&m_pActInfo, EOP_HOLD, actionName);
+						ActivateOutput(&m_pActInfo, EOP_VALUE, value);
 					}
 				}
 			}
