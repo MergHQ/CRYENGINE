@@ -25,32 +25,13 @@ public:
 	CAisacControl& operator=(CAisacControl&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	explicit CAisacControl(
-		CriAtomExAisacControlId const id,
-		float const minValue,
-		float const maxValue,
-		float const multiplier,
-		float const shift,
-		char const* const szName)
+	explicit CAisacControl(CriAtomExAisacControlId const id, char const* const szName)
 		: m_id(id)
-		, m_minValue(minValue)
-		, m_maxValue(maxValue)
-		, m_multiplier(multiplier)
-		, m_shift(shift)
 		, m_name(szName)
 	{}
 #else
-	explicit CAisacControl(
-		CriAtomExAisacControlId const id,
-		float const minValue,
-		float const maxValue,
-		float const multiplier,
-		float const shift)
+	explicit CAisacControl(CriAtomExAisacControlId const id)
 		: m_id(id)
-		, m_minValue(minValue)
-		, m_maxValue(maxValue)
-		, m_multiplier(multiplier)
-		, m_shift(shift)
 	{}
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
@@ -64,10 +45,6 @@ public:
 private:
 
 	CriAtomExAisacControlId const m_id;
-	float const                   m_minValue;
-	float const                   m_maxValue;
-	float const                   m_multiplier;
-	float const                   m_shift;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;

@@ -22,13 +22,8 @@ public:
 	CParameter& operator=(CParameter const&) = delete;
 	CParameter& operator=(CParameter&&) = delete;
 
-	explicit CParameter(
-		CParameterInfo const& parameterInfo,
-		float const multiplier,
-		float const shift)
+	explicit CParameter(CParameterInfo const& parameterInfo)
 		: m_parameterInfo(parameterInfo)
-		, m_multiplier(multiplier)
-		, m_shift(shift)
 	{}
 
 	virtual ~CParameter() override;
@@ -41,8 +36,6 @@ public:
 private:
 
 	CParameterInfo m_parameterInfo;
-	float const    m_multiplier;
-	float const    m_shift;
 };
 } // namespace Fmod
 } // namespace Impl

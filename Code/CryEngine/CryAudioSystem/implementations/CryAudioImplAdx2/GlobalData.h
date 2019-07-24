@@ -38,11 +38,15 @@ constexpr char const* g_szTimeAttribute = "time";
 // XML attributes for impl data node
 constexpr char const* g_szCuesAttribute = "cues";
 constexpr char const* g_szAisacControlsAttribute = "aisaccontrols";
+constexpr char const* g_szAisacControlsAdvancedAttribute = "aisaccontrolsadvanced";
 constexpr char const* g_szAisacEnvironmentsAttribute = "aisacenvironments";
+constexpr char const* g_szAisacEnvironmentsAdvancedAttribute = "aisacenvironmentsadvanced";
 constexpr char const* g_szAisacStatesAttribute = "aisacstates";
 constexpr char const* g_szCategoriesAttribute = "categories";
+constexpr char const* g_szCategoriesAdvancedAttribute = "categoriesadvanced";
 constexpr char const* g_szCategoryStatesAttribute = "categorystates";
 constexpr char const* g_szGameVariablesAttribute = "gamevariables";
+constexpr char const* g_szGameVariablesAdvancedAttribute = "gamevariablesadvanced";
 constexpr char const* g_szGameVariableStatesAttribute = "gamevariablestates";
 constexpr char const* g_szSelectorLabelsAttribute = "selectorlabels";
 constexpr char const* g_szDspBusesAttribute = "dspbuses";
@@ -76,11 +80,15 @@ struct SPoolSizes final
 {
 	uint16 cues = 0;
 	uint16 aisacControls = 0;
+	uint16 aisacControlsAdvanced = 0;
 	uint16 aisacEnvironments = 0;
+	uint16 aisacEnvironmentsAdvanced = 0;
 	uint16 aisacStates = 0;
 	uint16 categories = 0;
+	uint16 categoriesAdvanced = 0;
 	uint16 categoryStates = 0;
 	uint16 gameVariables = 0;
+	uint16 gameVariablesAdvanced = 0;
 	uint16 gameVariableStates = 0;
 	uint16 selectorLabels = 0;
 	uint16 dspBuses = 0;

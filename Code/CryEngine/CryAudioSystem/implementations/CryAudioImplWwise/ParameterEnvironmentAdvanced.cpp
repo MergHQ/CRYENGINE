@@ -1,7 +1,7 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "ParameterEnvironment.h"
+#include "ParameterEnvironmentAdvanced.h"
 #include "Object.h"
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
@@ -13,10 +13,12 @@ namespace Impl
 namespace Wwise
 {
 //////////////////////////////////////////////////////////////////////////
-void CParameterEnvironment::Set(IObject* const pIObject, float const amount)
+void CParameterEnvironmentAdvanced::Set(IObject* const pIObject, float const amount)
 {
 	auto const pObject = static_cast<CObject*>(pIObject);
-	AK::SoundEngine::SetRTPCValue(m_rtpcId, static_cast<AkRtpcValue>(amount), pObject->GetId());
+	auto const rtpcValue = static_cast<AkRtpcValue>(m_multiplier * amount + m_shift);
+
+	AK::SoundEngine::SetRTPCValue(m_rtpcId, rtpcValue, pObject->GetId());
 }
 } // namespace Wwise
 } // namespace Impl

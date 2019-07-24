@@ -32,7 +32,9 @@ constexpr char const* g_szEventAttribute = "event";
 // XML attributes for impl data node
 constexpr char const* g_szEventsAttribute = "events";
 constexpr char const* g_szParametersAttribute = "parameters";
+constexpr char const* g_szParametersAdvancedAttribute = "parametersadvanced";
 constexpr char const* g_szParameterEnvironmentsAttribute = "parameterenvironments";
+constexpr char const* g_szParameterEnvironmentsAdvancedAttribute = "parameterenvironmentsadvanced";
 constexpr char const* g_szParameterStatesAttribute = "parameterstates";
 constexpr char const* g_szSnapshotsAttribute = "snapshots";
 constexpr char const* g_szReturnsAttribute = "returns";
@@ -61,7 +63,9 @@ struct SPoolSizes final
 {
 	uint16 events = 0;
 	uint16 parameters = 0;
+	uint16 parametersAdvanced = 0;
 	uint16 parameterEnvironments = 0;
+	uint16 parameterEnvironmentsAdvanced = 0;
 	uint16 parameterStates = 0;
 	uint16 snapshots = 0;
 	uint16 returns = 0;

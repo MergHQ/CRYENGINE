@@ -13,28 +13,39 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-class CVolumeParameter final : public IParameterConnection, public CPoolObject<CVolumeParameter, stl::PSyncNone>
+class CVolumeParameterAdvanced final : public IParameterConnection, public CPoolObject<CVolumeParameterAdvanced, stl::PSyncNone>
 {
 public:
 
-	CVolumeParameter() = delete;
-	CVolumeParameter(CVolumeParameter const&) = delete;
-	CVolumeParameter(CVolumeParameter&&) = delete;
-	CVolumeParameter& operator=(CVolumeParameter const&) = delete;
-	CVolumeParameter& operator=(CVolumeParameter&&) = delete;
+	CVolumeParameterAdvanced() = delete;
+	CVolumeParameterAdvanced(CVolumeParameterAdvanced const&) = delete;
+	CVolumeParameterAdvanced(CVolumeParameterAdvanced&&) = delete;
+	CVolumeParameterAdvanced& operator=(CVolumeParameterAdvanced const&) = delete;
+	CVolumeParameterAdvanced& operator=(CVolumeParameterAdvanced&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
-	explicit CVolumeParameter(SampleId const sampleId, char const* const szName)
+	explicit CVolumeParameterAdvanced(
+		SampleId const sampleId,
+		float const multiplier,
+		float const shift,
+		char const* const szName)
 		: m_sampleId(sampleId)
+		, m_multiplier(multiplier)
+		, m_shift(shift)
 		, m_name(szName)
 	{}
 #else
-	explicit CVolumeParameter(SampleId const sampleId)
+	explicit CVolumeParameterAdvanced(
+		SampleId const sampleId,
+		float const multiplier,
+		float const shift)
 		: m_sampleId(sampleId)
+		, m_multiplier(multiplier)
+		, m_shift(shift)
 	{}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
-	virtual ~CVolumeParameter() override = default;
+	virtual ~CVolumeParameterAdvanced() override = default;
 
 	// IParameterConnection
 	virtual void Set(IObject* const pIObject, float const value) override;
@@ -44,6 +55,8 @@ public:
 private:
 
 	SampleId const m_sampleId;
+	float const    m_multiplier;
+	float const    m_shift;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;

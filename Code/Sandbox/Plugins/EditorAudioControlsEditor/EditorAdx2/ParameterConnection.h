@@ -25,6 +25,7 @@ public:
 
 	explicit CParameterConnection(ControlId const id, EAssetType const type)
 		: m_id(id)
+		, m_isAdvanced(false)
 		, m_type(type)
 		, m_minValue(CryAudio::Impl::Adx2::g_defaultParamMinValue)
 		, m_maxValue(CryAudio::Impl::Adx2::g_defaultParamMaxValue)
@@ -34,12 +35,14 @@ public:
 
 	explicit CParameterConnection(
 		ControlId const id,
+		bool const isAdvanced,
 		EAssetType const type,
 		float const minValue,
 		float const maxValue,
 		float const mult,
 		float const shift)
 		: m_id(id)
+		, m_isAdvanced(isAdvanced)
 		, m_type(type)
 		, m_minValue(minValue)
 		, m_maxValue(maxValue)
@@ -49,10 +52,12 @@ public:
 
 	explicit CParameterConnection(
 		ControlId const id,
+		bool const isAdvanced,
 		EAssetType const type,
 		float const mult,
 		float const shift)
 		: m_id(id)
+		, m_isAdvanced(isAdvanced)
 		, m_type(type)
 		, m_minValue(CryAudio::Impl::Adx2::g_defaultParamMinValue)
 		, m_maxValue(CryAudio::Impl::Adx2::g_defaultParamMaxValue)
@@ -68,6 +73,8 @@ public:
 	virtual void      Serialize(Serialization::IArchive& ar) override;
 	// ~CBaseConnection
 
+	bool       IsAdvanced() const;
+
 	EAssetType GetType() const       { return m_type; }
 
 	float      GetMinValue() const   { return m_minValue; }
@@ -77,7 +84,10 @@ public:
 
 private:
 
+	void Reset();
+
 	ControlId const  m_id;
+	bool             m_isAdvanced;
 	EAssetType const m_type;
 	float            m_minValue;
 	float            m_maxValue;

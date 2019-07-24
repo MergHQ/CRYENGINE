@@ -11,7 +11,9 @@
 #include "MasterBank.h"
 #include "Object.h"
 #include "Parameter.h"
+#include "ParameterAdvanced.h"
 #include "ParameterEnvironment.h"
+#include "ParameterEnvironmentAdvanced.h"
 #include "ParameterInfo.h"
 #include "ParameterState.h"
 #include "Return.h"
@@ -71,9 +73,17 @@ void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 	node->getAttr(g_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
+	uint16 numParametersAdvanced = 0;
+	node->getAttr(g_szParametersAdvancedAttribute, numParametersAdvanced);
+	poolSizes.parametersAdvanced += numParametersAdvanced;
+
 	uint16 numParameterEnvironments = 0;
 	node->getAttr(g_szParameterEnvironmentsAttribute, numParameterEnvironments);
 	poolSizes.parameterEnvironments += numParameterEnvironments;
+
+	uint16 numParameterEnvironmentsAdvanced = 0;
+	node->getAttr(g_szParameterEnvironmentsAdvancedAttribute, numParameterEnvironmentsAdvanced);
+	poolSizes.parameterEnvironmentsAdvanced += numParameterEnvironmentsAdvanced;
 
 	uint16 numParameterStates = 0;
 	node->getAttr(g_szParameterStatesAttribute, numParameterStates);
@@ -107,7 +117,9 @@ void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize
 	CEventInstance::CreateAllocator(eventPoolSize);
 	CEvent::CreateAllocator(g_poolSizes.events);
 	CParameter::CreateAllocator(g_poolSizes.parameters);
+	CParameterAdvanced::CreateAllocator(g_poolSizes.parametersAdvanced);
 	CParameterEnvironment::CreateAllocator(g_poolSizes.parameterEnvironments);
+	CParameterEnvironmentAdvanced::CreateAllocator(g_poolSizes.parameterEnvironmentsAdvanced);
 	CParameterState::CreateAllocator(g_poolSizes.parameterStates);
 	CSnapshot::CreateAllocator(g_poolSizes.snapshots);
 	CReturn::CreateAllocator(g_poolSizes.returns);
@@ -123,7 +135,9 @@ void FreeMemoryPools()
 	CEventInstance::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
 	CParameter::FreeMemoryPool();
+	CParameterAdvanced::FreeMemoryPool();
 	CParameterEnvironment::FreeMemoryPool();
+	CParameterEnvironmentAdvanced::FreeMemoryPool();
 	CParameterState::FreeMemoryPool();
 	CSnapshot::FreeMemoryPool();
 	CReturn::FreeMemoryPool();
@@ -313,7 +327,9 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 				g_poolSizes.events += iterPoolSizes.events;
 				g_poolSizes.parameters += iterPoolSizes.parameters;
+				g_poolSizes.parametersAdvanced += iterPoolSizes.parametersAdvanced;
 				g_poolSizes.parameterEnvironments += iterPoolSizes.parameterEnvironments;
+				g_poolSizes.parameterEnvironmentsAdvanced += iterPoolSizes.parameterEnvironmentsAdvanced;
 				g_poolSizes.parameterStates += iterPoolSizes.parameterStates;
 				g_poolSizes.snapshots += iterPoolSizes.snapshots;
 				g_poolSizes.returns += iterPoolSizes.returns;
@@ -332,7 +348,9 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 				maxContextPoolSizes.events = std::max(maxContextPoolSizes.events, iterPoolSizes.events);
 				maxContextPoolSizes.parameters = std::max(maxContextPoolSizes.parameters, iterPoolSizes.parameters);
+				maxContextPoolSizes.parametersAdvanced = std::max(maxContextPoolSizes.parametersAdvanced, iterPoolSizes.parametersAdvanced);
 				maxContextPoolSizes.parameterEnvironments = std::max(maxContextPoolSizes.parameterEnvironments, iterPoolSizes.parameterEnvironments);
+				maxContextPoolSizes.parameterEnvironmentsAdvanced = std::max(maxContextPoolSizes.parameterEnvironmentsAdvanced, iterPoolSizes.parameterEnvironmentsAdvanced);
 				maxContextPoolSizes.parameterStates = std::max(maxContextPoolSizes.parameterStates, iterPoolSizes.parameterStates);
 				maxContextPoolSizes.snapshots = std::max(maxContextPoolSizes.snapshots, iterPoolSizes.snapshots);
 				maxContextPoolSizes.returns = std::max(maxContextPoolSizes.returns, iterPoolSizes.returns);
@@ -343,7 +361,9 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 			g_poolSizes.events += maxContextPoolSizes.events;
 			g_poolSizes.parameters += maxContextPoolSizes.parameters;
+			g_poolSizes.parametersAdvanced += maxContextPoolSizes.parametersAdvanced;
 			g_poolSizes.parameterEnvironments += maxContextPoolSizes.parameterEnvironments;
+			g_poolSizes.parameterEnvironmentsAdvanced += maxContextPoolSizes.parameterEnvironmentsAdvanced;
 			g_poolSizes.parameterStates += maxContextPoolSizes.parameterStates;
 			g_poolSizes.snapshots += maxContextPoolSizes.snapshots;
 			g_poolSizes.returns += maxContextPoolSizes.returns;
@@ -360,7 +380,9 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 	g_poolSizes.events = std::max<uint16>(1, g_poolSizes.events);
 	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
+	g_poolSizes.parametersAdvanced = std::max<uint16>(1, g_poolSizes.parametersAdvanced);
 	g_poolSizes.parameterEnvironments = std::max<uint16>(1, g_poolSizes.parameterEnvironments);
+	g_poolSizes.parameterEnvironmentsAdvanced = std::max<uint16>(1, g_poolSizes.parameterEnvironmentsAdvanced);
 	g_poolSizes.parameterStates = std::max<uint16>(1, g_poolSizes.parameterStates);
 	g_poolSizes.snapshots = std::max<uint16>(1, g_poolSizes.snapshots);
 	g_poolSizes.returns = std::max<uint16>(1, g_poolSizes.returns);
@@ -891,13 +913,24 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 
 			CParameterInfo const parameterInfo(parameterDescription.id, isGlobal, fullName.c_str());
 
+			bool isAdvanced = false;
+
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
-			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
-			rootNode->getAttr(g_szShiftAttribute, shift);
 
-			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameter");
-			pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(parameterInfo, multiplier, shift));
+			isAdvanced |= rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+			isAdvanced |= rootNode->getAttr(g_szShiftAttribute, shift);
+
+			if (isAdvanced)
+			{
+				MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameterAdvanced");
+				pIParameterConnection = static_cast<IParameterConnection*>(new CParameterAdvanced(parameterInfo, multiplier, shift));
+			}
+			else
+			{
+				MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameter");
+				pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(parameterInfo));
+			}
 		}
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 		else
@@ -1080,13 +1113,24 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 		{
 			CParameterInfo const parameterInfo(fullName.c_str());
 
+			bool isAdvanced = false;
+
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
-			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
-			rootNode->getAttr(g_szShiftAttribute, shift);
 
-			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameterEnvironment");
-			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironment(parameterInfo, multiplier, shift));
+			isAdvanced |= rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+			isAdvanced |= rootNode->getAttr(g_szShiftAttribute, shift);
+
+			if (isAdvanced)
+			{
+				MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameterEnvironmentAdvanced");
+				pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironmentAdvanced(parameterInfo, multiplier, shift));
+			}
+			else
+			{
+				MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameterEnvironment");
+				pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironment(parameterInfo));
+			}
 		}
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 		else
@@ -1604,6 +1648,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		}
 	}
 
+	if (g_debugPoolSizes.parametersAdvanced > 0)
+	{
+		auto& allocator = CParameterAdvanced::GetAllocator();
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Advanced Parameters", g_poolSizes.parametersAdvanced);
+		}
+	}
+
 	if (g_debugPoolSizes.parameterEnvironments > 0)
 	{
 		auto& allocator = CParameterEnvironment::GetAllocator();
@@ -1613,6 +1669,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		if (drawDetailedInfo)
 		{
 			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Parameter Environments", g_poolSizes.parameterEnvironments);
+		}
+	}
+
+	if (g_debugPoolSizes.parameterEnvironmentsAdvanced > 0)
+	{
+		auto& allocator = CParameterEnvironmentAdvanced::GetAllocator();
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Advanced Parameter Environments", g_poolSizes.parameterEnvironmentsAdvanced);
 		}
 	}
 

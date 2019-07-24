@@ -22,17 +22,8 @@ public:
 	CGameVariable& operator=(CGameVariable const&) = delete;
 	CGameVariable& operator=(CGameVariable&&) = delete;
 
-	explicit CGameVariable(
-		char const* const szName,
-		float const minValue,
-		float const maxValue,
-		float const multiplier,
-		float const shift)
+	explicit CGameVariable(char const* const szName)
 		: m_name(szName)
-		, m_minValue(minValue)
-		, m_maxValue(maxValue)
-		, m_multiplier(multiplier)
-		, m_shift(shift)
 	{}
 
 	virtual ~CGameVariable() override = default;
@@ -45,10 +36,6 @@ public:
 private:
 
 	CryFixedStringT<MaxControlNameLength> const m_name;
-	float const m_minValue;
-	float const m_maxValue;
-	float const m_multiplier;
-	float const m_shift;
 };
 } // namespace Adx2
 } // namespace Impl

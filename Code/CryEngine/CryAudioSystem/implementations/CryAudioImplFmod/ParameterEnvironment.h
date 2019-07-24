@@ -22,13 +22,8 @@ public:
 	CParameterEnvironment& operator=(CParameterEnvironment const&) = delete;
 	CParameterEnvironment& operator=(CParameterEnvironment&&) = delete;
 
-	explicit CParameterEnvironment(
-		CParameterInfo const& parameterInfo,
-		float const multiplier,
-		float const shift)
+	explicit CParameterEnvironment(CParameterInfo const& parameterInfo)
 		: m_parameterInfo(parameterInfo)
-		, m_multiplier(multiplier)
-		, m_shift(shift)
 	{}
 
 	virtual ~CParameterEnvironment() override;
@@ -40,8 +35,6 @@ public:
 private:
 
 	CParameterInfo m_parameterInfo;
-	float const    m_multiplier;
-	float const    m_shift;
 };
 } // namespace Fmod
 } // namespace Impl

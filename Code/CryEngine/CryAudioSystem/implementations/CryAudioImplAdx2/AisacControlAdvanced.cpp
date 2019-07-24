@@ -1,7 +1,7 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AisacControl.h"
+#include "AisacControlAdvanced.h"
 #include "Object.h"
 
 namespace CryAudio
@@ -11,19 +11,19 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-void CAisacControl::Set(IObject* const pIObject, float const value)
+void CAisacControlAdvanced::Set(IObject* const pIObject, float const value)
 {
 	auto const pObject = static_cast<CObject const*>(pIObject);
 
 	CriAtomExPlayerHn const pPlayer = pObject->GetPlayer();
-	criAtomExPlayer_SetAisacControlById(pPlayer, m_id, static_cast<CriFloat32>(value));
+	criAtomExPlayer_SetAisacControlById(pPlayer, m_id, static_cast<CriFloat32>(m_multiplier * NormalizeValue(value, m_minValue, m_maxValue) + m_shift));
 	criAtomExPlayer_UpdateAll(pPlayer);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAisacControl::SetGlobally(float const value)
+void CAisacControlAdvanced::SetGlobally(float const value)
 {
-	auto const finalValue = static_cast<CriFloat32>(value);
+	auto const finalValue = static_cast<CriFloat32>(m_multiplier * NormalizeValue(value, m_minValue, m_maxValue) + m_shift);
 
 	for (auto const pObject : g_constructedObjects)
 	{

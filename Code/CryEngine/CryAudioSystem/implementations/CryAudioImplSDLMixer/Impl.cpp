@@ -9,6 +9,7 @@
 #include "Listener.h"
 #include "Object.h"
 #include "VolumeParameter.h"
+#include "VolumeParameterAdvanced.h"
 #include "VolumeState.h"
 
 #include <IEnvironmentConnection.h>
@@ -273,6 +274,10 @@ void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 	node->getAttr(g_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
+	uint16 numParametersAdvanced = 0;
+	node->getAttr(g_szParametersAdvancedAttribute, numParametersAdvanced);
+	poolSizes.parametersAdvanced += numParametersAdvanced;
+
 	uint16 numSwitchStates = 0;
 	node->getAttr(g_szSwitchStatesAttribute, numSwitchStates);
 	poolSizes.switchStates += numSwitchStates;
@@ -285,6 +290,7 @@ void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const eventPoolSize
 	CEventInstance::CreateAllocator(eventPoolSize);
 	CEvent::CreateAllocator(g_poolSizes.events);
 	CVolumeParameter::CreateAllocator(g_poolSizes.parameters);
+	CVolumeParameterAdvanced::CreateAllocator(g_poolSizes.parametersAdvanced);
 	CVolumeState::CreateAllocator(g_poolSizes.switchStates);
 }
 
@@ -295,6 +301,7 @@ void FreeMemoryPools()
 	CEventInstance::FreeMemoryPool();
 	CEvent::FreeMemoryPool();
 	CVolumeParameter::FreeMemoryPool();
+	CVolumeParameterAdvanced::FreeMemoryPool();
 	CVolumeState::FreeMemoryPool();
 }
 
@@ -495,6 +502,7 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 				g_poolSizes.events += iterPoolSizes.events;
 				g_poolSizes.parameters += iterPoolSizes.parameters;
+				g_poolSizes.parametersAdvanced += iterPoolSizes.parametersAdvanced;
 				g_poolSizes.switchStates += iterPoolSizes.switchStates;
 			}
 		}
@@ -508,11 +516,13 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 				maxContextPoolSizes.events = std::max(maxContextPoolSizes.events, iterPoolSizes.events);
 				maxContextPoolSizes.parameters = std::max(maxContextPoolSizes.parameters, iterPoolSizes.parameters);
+				maxContextPoolSizes.parametersAdvanced = std::max(maxContextPoolSizes.parametersAdvanced, iterPoolSizes.parametersAdvanced);
 				maxContextPoolSizes.switchStates = std::max(maxContextPoolSizes.switchStates, iterPoolSizes.switchStates);
 			}
 
 			g_poolSizes.events += maxContextPoolSizes.events;
 			g_poolSizes.parameters += maxContextPoolSizes.parameters;
+			g_poolSizes.parametersAdvanced += maxContextPoolSizes.parametersAdvanced;
 			g_poolSizes.switchStates += maxContextPoolSizes.switchStates;
 		}
 	}
@@ -524,6 +534,7 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 	g_poolSizes.events = std::max<uint16>(1, g_poolSizes.events);
 	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
+	g_poolSizes.parametersAdvanced = std::max<uint16>(1, g_poolSizes.parametersAdvanced);
 	g_poolSizes.switchStates = std::max<uint16>(1, g_poolSizes.switchStates);
 }
 
@@ -818,20 +829,36 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
 		SampleId const sampleId = LoadSample(fullFilePath, true, isLocalized);
+		bool isAdvanced = false;
 
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
-		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		multiplier = std::max(0.0f, multiplier);
-		rootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CParameter");
+		isAdvanced |= rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		isAdvanced |= rootNode->getAttr(g_szShiftAttribute, shift);
+
+		if (isAdvanced)
+		{
+			multiplier = std::max(0.0f, multiplier);
+
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CVolumeParameterAdvanced");
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
-		pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameter(sampleId, multiplier, shift, szFileName));
+			pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameterAdvanced(sampleId, multiplier, shift, szFileName));
 #else
-		pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameter(sampleId, multiplier, shift));
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+			pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameterAdvanced(sampleId, multiplier, shift));
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+		}
+		else
+		{
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CVolumeParameter");
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+			pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameter(sampleId, szFileName));
+#else
+			pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameter(sampleId));
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+		}
 	}
 
 	return pIParameterConnection;
@@ -863,7 +890,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 		rootNode->getAttr(g_szValueAttribute, value);
 		value = crymath::clamp(value, 0.0f, 1.0f);
 
-		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CSwitchState");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CVolumeState");
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CVolumeState(sampleId, value, szFileName));
@@ -1127,6 +1154,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		if (drawDetailedInfo)
 		{
 			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
+		}
+	}
+
+	if (g_debugPoolSizes.parametersAdvanced > 0)
+	{
+		auto& allocator = CVolumeParameterAdvanced::GetAllocator();
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Advanced Parameters", g_poolSizes.parametersAdvanced);
 		}
 	}
 

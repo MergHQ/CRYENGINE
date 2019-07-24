@@ -13,28 +13,39 @@ namespace Impl
 {
 namespace Wwise
 {
-class CParameter final : public IParameterConnection, public CPoolObject<CParameter, stl::PSyncNone>
+class CParameterAdvanced final : public IParameterConnection, public CPoolObject<CParameterAdvanced, stl::PSyncNone>
 {
 public:
 
-	CParameter() = delete;
-	CParameter(CParameter const&) = delete;
-	CParameter(CParameter&&) = delete;
-	CParameter& operator=(CParameter const&) = delete;
-	CParameter& operator=(CParameter&&) = delete;
+	CParameterAdvanced() = delete;
+	CParameterAdvanced(CParameterAdvanced const&) = delete;
+	CParameterAdvanced(CParameterAdvanced&&) = delete;
+	CParameterAdvanced& operator=(CParameterAdvanced const&) = delete;
+	CParameterAdvanced& operator=(CParameterAdvanced&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	explicit CParameter(AkRtpcID const id, char const* const szName)
-		: m_id(id)
+	explicit CParameterAdvanced(
+		AkRtpcID const id,
+		float const mult,
+		float const shift,
+		char const* const szName)
+		: m_multiplier(mult)
+		, m_shift(shift)
+		, m_id(id)
 		, m_name(szName)
 	{}
 #else
-	explicit CParameter(AkRtpcID const id)
-		: m_id(id)
+	explicit CParameterAdvanced(
+		AkRtpcID const id,
+		float const mult,
+		float const shift)
+		: m_multiplier(mult)
+		, m_shift(shift)
+		, m_id(id)
 	{}
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
-	virtual ~CParameter() override = default;
+	virtual ~CParameterAdvanced() override = default;
 
 	// IParameterConnection
 	virtual void Set(IObject* const pIObject, float const value) override;
@@ -43,6 +54,8 @@ public:
 
 private:
 
+	float const    m_multiplier;
+	float const    m_shift;
 	AkRtpcID const m_id;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)

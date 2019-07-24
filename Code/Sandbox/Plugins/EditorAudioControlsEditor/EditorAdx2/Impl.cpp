@@ -153,7 +153,8 @@ char const* TypeToTag(EItemType const type)
 void CountConnections(
 	EAssetType const assetType,
 	EItemType const itemType,
-	CryAudio::ContextId const contextId)
+	CryAudio::ContextId const contextId,
+	bool const isAdvanced)
 {
 	switch (itemType)
 	{
@@ -168,7 +169,15 @@ void CountConnections(
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections[contextId].aisacControls;
+					if (isAdvanced)
+					{
+						++g_connections[contextId].aisacControlsAdvanced;
+					}
+					else
+					{
+						++g_connections[contextId].aisacControls;
+					}
+
 					break;
 				}
 			case EAssetType::State:
@@ -178,7 +187,15 @@ void CountConnections(
 				}
 			case EAssetType::Environment:
 				{
-					++g_connections[contextId].aisacEnvironments;
+					if (isAdvanced)
+					{
+						++g_connections[contextId].aisacEnvironmentsAdvanced;
+					}
+					else
+					{
+						++g_connections[contextId].aisacEnvironments;
+					}
+
 					break;
 				}
 			default:
@@ -195,7 +212,15 @@ void CountConnections(
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections[contextId].categories;
+					if (isAdvanced)
+					{
+						++g_connections[contextId].categoriesAdvanced;
+					}
+					else
+					{
+						++g_connections[contextId].categories;
+					}
+
 					break;
 				}
 			case EAssetType::State:
@@ -217,7 +242,15 @@ void CountConnections(
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections[contextId].gameVariables;
+					if (isAdvanced)
+					{
+						++g_connections[contextId].gameVariablesAdvanced;
+					}
+					else
+					{
+						++g_connections[contextId].gameVariables;
+					}
+
 					break;
 				}
 			case EAssetType::State:
@@ -649,30 +682,34 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetTy
 					{
 					case EAssetType::Parameter:
 						{
+							bool isAdvanced = false;
+
 							float minValue = CryAudio::Impl::Adx2::g_defaultParamMinValue;
 							float maxValue = CryAudio::Impl::Adx2::g_defaultParamMaxValue;
 							float mult = CryAudio::Impl::Adx2::g_defaultParamMultiplier;
 							float shift = CryAudio::Impl::Adx2::g_defaultParamShift;
 
-							node->getAttr(CryAudio::Impl::Adx2::g_szValueMinAttribute, minValue);
-							node->getAttr(CryAudio::Impl::Adx2::g_szValueMaxAttribute, maxValue);
-							node->getAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, mult);
-							node->getAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, shift);
+							isAdvanced |= node->getAttr(CryAudio::Impl::Adx2::g_szValueMinAttribute, minValue);
+							isAdvanced |= node->getAttr(CryAudio::Impl::Adx2::g_szValueMaxAttribute, maxValue);
+							isAdvanced |= node->getAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, mult);
+							isAdvanced |= node->getAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, shift);
 
-							auto const pParameterConnection = new CParameterConnection(pItem->GetId(), assetType, minValue, maxValue, mult, shift);
+							auto const pParameterConnection = new CParameterConnection(pItem->GetId(), isAdvanced, assetType, minValue, maxValue, mult, shift);
 							pIConnection = static_cast<IConnection*>(pParameterConnection);
 
 							break;
 						}
 					case EAssetType::Environment:
 						{
+							bool isAdvanced = false;
+
 							float mult = CryAudio::Impl::Adx2::g_defaultParamMultiplier;
 							float shift = CryAudio::Impl::Adx2::g_defaultParamShift;
 
-							node->getAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, mult);
-							node->getAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, shift);
+							isAdvanced |= node->getAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, mult);
+							isAdvanced |= node->getAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, shift);
 
-							auto const pParameterConnection = new CParameterConnection(pItem->GetId(), assetType, mult, shift);
+							auto const pParameterConnection = new CParameterConnection(pItem->GetId(), isAdvanced, assetType, mult, shift);
 							pIConnection = static_cast<IConnection*>(pParameterConnection);
 
 							break;
@@ -778,6 +815,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 	if (pItem != nullptr)
 	{
 		auto const type = pItem->GetType();
+		bool isAdvanced = false;
 		node = GetISystem()->CreateXmlNode(TypeToTag(type));
 
 		switch (type)
@@ -832,25 +870,29 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				case EAssetType::Parameter:
 					{
 						auto const pParamConnection = static_cast<CParameterConnection const*>(pIConnection);
+						isAdvanced = pParamConnection->IsAdvanced();
 
-						if (pParamConnection->GetMinValue() != CryAudio::Impl::Adx2::g_defaultParamMinValue)
+						if (isAdvanced)
 						{
-							node->setAttr(CryAudio::Impl::Adx2::g_szValueMinAttribute, pParamConnection->GetMinValue());
-						}
+							if (pParamConnection->GetMinValue() != CryAudio::Impl::Adx2::g_defaultParamMinValue)
+							{
+								node->setAttr(CryAudio::Impl::Adx2::g_szValueMinAttribute, pParamConnection->GetMinValue());
+							}
 
-						if (pParamConnection->GetMaxValue() != CryAudio::Impl::Adx2::g_defaultParamMaxValue)
-						{
-							node->setAttr(CryAudio::Impl::Adx2::g_szValueMaxAttribute, pParamConnection->GetMaxValue());
-						}
+							if (pParamConnection->GetMaxValue() != CryAudio::Impl::Adx2::g_defaultParamMaxValue)
+							{
+								node->setAttr(CryAudio::Impl::Adx2::g_szValueMaxAttribute, pParamConnection->GetMaxValue());
+							}
 
-						if (pParamConnection->GetMultiplier() != CryAudio::Impl::Adx2::g_defaultParamMultiplier)
-						{
-							node->setAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, pParamConnection->GetMultiplier());
-						}
+							if (pParamConnection->GetMultiplier() != CryAudio::Impl::Adx2::g_defaultParamMultiplier)
+							{
+								node->setAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, pParamConnection->GetMultiplier());
+							}
 
-						if (pParamConnection->GetShift() != CryAudio::Impl::Adx2::g_defaultParamShift)
-						{
-							node->setAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, pParamConnection->GetShift());
+							if (pParamConnection->GetShift() != CryAudio::Impl::Adx2::g_defaultParamShift)
+							{
+								node->setAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, pParamConnection->GetShift());
+							}
 						}
 
 						break;
@@ -858,15 +900,19 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				case EAssetType::Environment:
 					{
 						auto const pParamConnection = static_cast<CParameterConnection const*>(pIConnection);
+						isAdvanced = pParamConnection->IsAdvanced();
 
-						if (pParamConnection->GetMultiplier() != CryAudio::Impl::Adx2::g_defaultParamMultiplier)
+						if (isAdvanced)
 						{
-							node->setAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, pParamConnection->GetMultiplier());
-						}
+							if (pParamConnection->GetMultiplier() != CryAudio::Impl::Adx2::g_defaultParamMultiplier)
+							{
+								node->setAttr(CryAudio::Impl::Adx2::g_szMutiplierAttribute, pParamConnection->GetMultiplier());
+							}
 
-						if (pParamConnection->GetShift() != CryAudio::Impl::Adx2::g_defaultParamShift)
-						{
-							node->setAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, pParamConnection->GetShift());
+							if (pParamConnection->GetShift() != CryAudio::Impl::Adx2::g_defaultParamShift)
+							{
+								node->setAttr(CryAudio::Impl::Adx2::g_szShiftAttribute, pParamConnection->GetShift());
+							}
 						}
 
 						break;
@@ -946,7 +992,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		}
 
-		CountConnections(assetType, type, contextId);
+		CountConnections(assetType, type, contextId, isAdvanced);
 	}
 
 	return node;
@@ -971,9 +1017,19 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const
 			node->setAttr(CryAudio::Impl::Adx2::g_szAisacControlsAttribute, g_connections[contextId].aisacControls);
 		}
 
+		if (g_connections[contextId].aisacControlsAdvanced > 0)
+		{
+			node->setAttr(CryAudio::Impl::Adx2::g_szAisacControlsAdvancedAttribute, g_connections[contextId].aisacControlsAdvanced);
+		}
+
 		if (g_connections[contextId].aisacEnvironments > 0)
 		{
 			node->setAttr(CryAudio::Impl::Adx2::g_szAisacEnvironmentsAttribute, g_connections[contextId].aisacEnvironments);
+		}
+
+		if (g_connections[contextId].aisacEnvironmentsAdvanced > 0)
+		{
+			node->setAttr(CryAudio::Impl::Adx2::g_szAisacEnvironmentsAdvancedAttribute, g_connections[contextId].aisacEnvironmentsAdvanced);
 		}
 
 		if (g_connections[contextId].aisacStates > 0)
@@ -986,6 +1042,11 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const
 			node->setAttr(CryAudio::Impl::Adx2::g_szCategoriesAttribute, g_connections[contextId].categories);
 		}
 
+		if (g_connections[contextId].categoriesAdvanced > 0)
+		{
+			node->setAttr(CryAudio::Impl::Adx2::g_szCategoriesAdvancedAttribute, g_connections[contextId].categoriesAdvanced);
+		}
+
 		if (g_connections[contextId].categoryStates > 0)
 		{
 			node->setAttr(CryAudio::Impl::Adx2::g_szCategoryStatesAttribute, g_connections[contextId].categoryStates);
@@ -994,6 +1055,11 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const
 		if (g_connections[contextId].gameVariables > 0)
 		{
 			node->setAttr(CryAudio::Impl::Adx2::g_szGameVariablesAttribute, g_connections[contextId].gameVariables);
+		}
+
+		if (g_connections[contextId].gameVariablesAdvanced > 0)
+		{
+			node->setAttr(CryAudio::Impl::Adx2::g_szGameVariablesAdvancedAttribute, g_connections[contextId].gameVariablesAdvanced);
 		}
 
 		if (g_connections[contextId].gameVariableStates > 0)

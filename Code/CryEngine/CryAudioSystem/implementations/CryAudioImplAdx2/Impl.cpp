@@ -7,15 +7,19 @@
 #include "Listener.h"
 #include "Object.h"
 #include "AisacControl.h"
+#include "AisacControlAdvanced.h"
 #include "AisacEnvironment.h"
+#include "AisacEnvironmentAdvanced.h"
 #include "AisacState.h"
 #include "Binary.h"
 #include "Category.h"
+#include "CategoryAdvanced.h"
 #include "CategoryState.h"
 #include "Cue.h"
 #include "CueInstance.h"
 #include "DspBus.h"
 #include "GameVariable.h"
+#include "GameVariableAdvanced.h"
 #include "GameVariableState.h"
 #include "SelectorLabel.h"
 #include "Snapshot.h"
@@ -76,9 +80,17 @@ void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 	node->getAttr(g_szAisacControlsAttribute, numAisacControls);
 	poolSizes.aisacControls += numAisacControls;
 
+	uint16 numAisacControlsAdvanced = 0;
+	node->getAttr(g_szAisacControlsAdvancedAttribute, numAisacControlsAdvanced);
+	poolSizes.aisacControlsAdvanced += numAisacControlsAdvanced;
+
 	uint16 numAisacEnvironments = 0;
 	node->getAttr(g_szAisacEnvironmentsAttribute, numAisacEnvironments);
 	poolSizes.aisacEnvironments += numAisacEnvironments;
+
+	uint16 numAisacEnvironmentsAdvanced = 0;
+	node->getAttr(g_szAisacEnvironmentsAdvancedAttribute, numAisacEnvironmentsAdvanced);
+	poolSizes.aisacEnvironmentsAdvanced += numAisacEnvironmentsAdvanced;
 
 	uint16 numAisacStates = 0;
 	node->getAttr(g_szAisacStatesAttribute, numAisacStates);
@@ -88,6 +100,10 @@ void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 	node->getAttr(g_szCategoriesAttribute, numCategories);
 	poolSizes.categories += numCategories;
 
+	uint16 numCategoriesAdvanced = 0;
+	node->getAttr(g_szCategoriesAdvancedAttribute, numCategoriesAdvanced);
+	poolSizes.categoriesAdvanced += numCategoriesAdvanced;
+
 	uint16 numCategoryStates = 0;
 	node->getAttr(g_szCategoryStatesAttribute, numCategoryStates);
 	poolSizes.categoryStates += numCategoryStates;
@@ -95,6 +111,10 @@ void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 	uint16 numGameVariables = 0;
 	node->getAttr(g_szGameVariablesAttribute, numGameVariables);
 	poolSizes.gameVariables += numGameVariables;
+
+	uint16 numGameVariablesAdvanced = 0;
+	node->getAttr(g_szGameVariablesAdvancedAttribute, numGameVariablesAdvanced);
+	poolSizes.gameVariablesAdvanced += numGameVariablesAdvanced;
 
 	uint16 numGameVariableStates = 0;
 	node->getAttr(g_szGameVariableStatesAttribute, numGameVariableStates);
@@ -128,11 +148,15 @@ void AllocateMemoryPools(uint16 const objectPoolSize, uint16 const cueInstancePo
 	CCueInstance::CreateAllocator(cueInstancePoolSize);
 	CCue::CreateAllocator(g_poolSizes.cues);
 	CAisacControl::CreateAllocator(g_poolSizes.aisacControls);
+	CAisacControlAdvanced::CreateAllocator(g_poolSizes.aisacControlsAdvanced);
 	CAisacEnvironment::CreateAllocator(g_poolSizes.aisacEnvironments);
+	CAisacEnvironmentAdvanced::CreateAllocator(g_poolSizes.aisacEnvironmentsAdvanced);
 	CAisacState::CreateAllocator(g_poolSizes.aisacStates);
 	CCategory::CreateAllocator(g_poolSizes.categories);
+	CCategoryAdvanced::CreateAllocator(g_poolSizes.categoriesAdvanced);
 	CCategoryState::CreateAllocator(g_poolSizes.categoryStates);
 	CGameVariable::CreateAllocator(g_poolSizes.gameVariables);
+	CGameVariableAdvanced::CreateAllocator(g_poolSizes.gameVariablesAdvanced);
 	CGameVariableState::CreateAllocator(g_poolSizes.gameVariableStates);
 	CSelectorLabel::CreateAllocator(g_poolSizes.selectorLabels);
 	CDspBus::CreateAllocator(g_poolSizes.dspBuses);
@@ -148,11 +172,15 @@ void FreeMemoryPools()
 	CCueInstance::FreeMemoryPool();
 	CCue::FreeMemoryPool();
 	CAisacControl::FreeMemoryPool();
+	CAisacControlAdvanced::FreeMemoryPool();
 	CAisacEnvironment::FreeMemoryPool();
+	CAisacEnvironmentAdvanced::FreeMemoryPool();
 	CAisacState::FreeMemoryPool();
 	CCategory::FreeMemoryPool();
+	CCategoryAdvanced::FreeMemoryPool();
 	CCategoryState::FreeMemoryPool();
 	CGameVariable::FreeMemoryPool();
+	CGameVariableAdvanced::FreeMemoryPool();
 	CGameVariableState::FreeMemoryPool();
 	CSelectorLabel::FreeMemoryPool();
 	CDspBus::FreeMemoryPool();
@@ -454,11 +482,15 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 				g_poolSizes.cues += iterPoolSizes.cues;
 				g_poolSizes.aisacControls += iterPoolSizes.aisacControls;
+				g_poolSizes.aisacControlsAdvanced += iterPoolSizes.aisacControlsAdvanced;
 				g_poolSizes.aisacEnvironments += iterPoolSizes.aisacEnvironments;
+				g_poolSizes.aisacEnvironmentsAdvanced += iterPoolSizes.aisacEnvironmentsAdvanced;
 				g_poolSizes.aisacStates += iterPoolSizes.aisacStates;
 				g_poolSizes.categories += iterPoolSizes.categories;
+				g_poolSizes.categoriesAdvanced += iterPoolSizes.categoriesAdvanced;
 				g_poolSizes.categoryStates += iterPoolSizes.categoryStates;
 				g_poolSizes.gameVariables += iterPoolSizes.gameVariables;
+				g_poolSizes.gameVariablesAdvanced += iterPoolSizes.gameVariablesAdvanced;
 				g_poolSizes.gameVariableStates += iterPoolSizes.gameVariableStates;
 				g_poolSizes.selectorLabels += iterPoolSizes.selectorLabels;
 				g_poolSizes.dspBuses += iterPoolSizes.dspBuses;
@@ -477,11 +509,15 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 				maxContextPoolSizes.cues = std::max(maxContextPoolSizes.cues, iterPoolSizes.cues);
 				maxContextPoolSizes.aisacControls = std::max(maxContextPoolSizes.aisacControls, iterPoolSizes.aisacControls);
+				maxContextPoolSizes.aisacControlsAdvanced = std::max(maxContextPoolSizes.aisacControlsAdvanced, iterPoolSizes.aisacControlsAdvanced);
 				maxContextPoolSizes.aisacEnvironments = std::max(maxContextPoolSizes.aisacEnvironments, iterPoolSizes.aisacEnvironments);
+				maxContextPoolSizes.aisacEnvironmentsAdvanced = std::max(maxContextPoolSizes.aisacEnvironmentsAdvanced, iterPoolSizes.aisacEnvironmentsAdvanced);
 				maxContextPoolSizes.aisacStates = std::max(maxContextPoolSizes.aisacStates, iterPoolSizes.aisacStates);
 				maxContextPoolSizes.categories = std::max(maxContextPoolSizes.categories, iterPoolSizes.categories);
+				maxContextPoolSizes.categoriesAdvanced = std::max(maxContextPoolSizes.categoriesAdvanced, iterPoolSizes.categoriesAdvanced);
 				maxContextPoolSizes.categoryStates = std::max(maxContextPoolSizes.categoryStates, iterPoolSizes.categoryStates);
 				maxContextPoolSizes.gameVariables = std::max(maxContextPoolSizes.gameVariables, iterPoolSizes.gameVariables);
+				maxContextPoolSizes.gameVariablesAdvanced = std::max(maxContextPoolSizes.gameVariablesAdvanced, iterPoolSizes.gameVariablesAdvanced);
 				maxContextPoolSizes.gameVariableStates = std::max(maxContextPoolSizes.gameVariableStates, iterPoolSizes.gameVariableStates);
 				maxContextPoolSizes.selectorLabels = std::max(maxContextPoolSizes.selectorLabels, iterPoolSizes.selectorLabels);
 				maxContextPoolSizes.dspBuses = std::max(maxContextPoolSizes.dspBuses, iterPoolSizes.dspBuses);
@@ -492,11 +528,15 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 			g_poolSizes.cues += maxContextPoolSizes.cues;
 			g_poolSizes.aisacControls += maxContextPoolSizes.aisacControls;
+			g_poolSizes.aisacControlsAdvanced += maxContextPoolSizes.aisacControlsAdvanced;
 			g_poolSizes.aisacEnvironments += maxContextPoolSizes.aisacEnvironments;
+			g_poolSizes.aisacEnvironmentsAdvanced += maxContextPoolSizes.aisacEnvironmentsAdvanced;
 			g_poolSizes.aisacStates += maxContextPoolSizes.aisacStates;
 			g_poolSizes.categories += maxContextPoolSizes.categories;
+			g_poolSizes.categoriesAdvanced += maxContextPoolSizes.categoriesAdvanced;
 			g_poolSizes.categoryStates += maxContextPoolSizes.categoryStates;
 			g_poolSizes.gameVariables += maxContextPoolSizes.gameVariables;
+			g_poolSizes.gameVariablesAdvanced += maxContextPoolSizes.gameVariablesAdvanced;
 			g_poolSizes.gameVariableStates += maxContextPoolSizes.gameVariableStates;
 			g_poolSizes.selectorLabels += maxContextPoolSizes.selectorLabels;
 			g_poolSizes.dspBuses += maxContextPoolSizes.dspBuses;
@@ -513,11 +553,15 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 
 	g_poolSizes.cues = std::max<uint16>(1, g_poolSizes.cues);
 	g_poolSizes.aisacControls = std::max<uint16>(1, g_poolSizes.aisacControls);
+	g_poolSizes.aisacControlsAdvanced = std::max<uint16>(1, g_poolSizes.aisacControlsAdvanced);
 	g_poolSizes.aisacEnvironments = std::max<uint16>(1, g_poolSizes.aisacEnvironments);
+	g_poolSizes.aisacEnvironmentsAdvanced = std::max<uint16>(1, g_poolSizes.aisacEnvironmentsAdvanced);
 	g_poolSizes.aisacStates = std::max<uint16>(1, g_poolSizes.aisacStates);
 	g_poolSizes.categories = std::max<uint16>(1, g_poolSizes.categories);
+	g_poolSizes.categoriesAdvanced = std::max<uint16>(1, g_poolSizes.categoriesAdvanced);
 	g_poolSizes.categoryStates = std::max<uint16>(1, g_poolSizes.categoryStates);
 	g_poolSizes.gameVariables = std::max<uint16>(1, g_poolSizes.gameVariables);
+	g_poolSizes.gameVariablesAdvanced = std::max<uint16>(1, g_poolSizes.gameVariablesAdvanced);
 	g_poolSizes.gameVariableStates = std::max<uint16>(1, g_poolSizes.gameVariableStates);
 	g_poolSizes.selectorLabels = std::max<uint16>(1, g_poolSizes.selectorLabels);
 	g_poolSizes.dspBuses = std::max<uint16>(1, g_poolSizes.dspBuses);
@@ -965,79 +1009,111 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		CriAtomExAisacControlId const id = criAtomExAcf_GetAisacControlIdByName(szName);
+		bool isAdvanced = false;
 
 		float minValue = g_defaultParamMinValue;
 		float maxValue = g_defaultParamMaxValue;
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 
-		rootNode->getAttr(g_szValueMinAttribute, minValue);
-		rootNode->getAttr(g_szValueMaxAttribute, maxValue);
-		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		rootNode->getAttr(g_szShiftAttribute, shift);
+		isAdvanced |= rootNode->getAttr(g_szValueMinAttribute, minValue);
+		isAdvanced |= rootNode->getAttr(g_szValueMaxAttribute, maxValue);
+		isAdvanced |= rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		isAdvanced |= rootNode->getAttr(g_szShiftAttribute, shift);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-		if (minValue > maxValue)
+		if (isAdvanced)
 		{
-			Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
-		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+			if (minValue > maxValue)
+			{
+				Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
+			}
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
-		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacControl");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacControlAdvanced");
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, minValue, maxValue, multiplier, shift, szName));
+			pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControlAdvanced(id, minValue, maxValue, multiplier, shift, szName));
 #else
-		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, minValue, maxValue, multiplier, shift));
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+			pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControlAdvanced(id, minValue, maxValue, multiplier, shift));
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+		}
+		else
+		{
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacControl");
+
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+			pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, szName));
+#else
+			pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id));
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+		}
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+		bool isAdvanced = false;
 
 		float minValue = g_defaultParamMinValue;
 		float maxValue = g_defaultParamMaxValue;
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 
-		rootNode->getAttr(g_szValueMinAttribute, minValue);
-		rootNode->getAttr(g_szValueMaxAttribute, maxValue);
-		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		rootNode->getAttr(g_szShiftAttribute, shift);
+		isAdvanced |= rootNode->getAttr(g_szValueMinAttribute, minValue);
+		isAdvanced |= rootNode->getAttr(g_szValueMaxAttribute, maxValue);
+		isAdvanced |= rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		isAdvanced |= rootNode->getAttr(g_szShiftAttribute, shift);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-		if (minValue > maxValue)
+		if (isAdvanced)
 		{
-			Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
-		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+			if (minValue > maxValue)
+			{
+				Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
+			}
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
-		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCategory");
-		pIParameterConnection = static_cast<IParameterConnection*>(new CCategory(szName, minValue, maxValue, multiplier, shift));
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCategoryAdvanced");
+			pIParameterConnection = static_cast<IParameterConnection*>(new CCategoryAdvanced(szName, minValue, maxValue, multiplier, shift));
+		}
+		else
+		{
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCategory");
+			pIParameterConnection = static_cast<IParameterConnection*>(new CCategory(szName));
+		}
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+		bool isAdvanced = false;
 
 		float minValue = g_defaultParamMinValue;
 		float maxValue = g_defaultParamMaxValue;
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 
-		rootNode->getAttr(g_szValueMinAttribute, minValue);
-		rootNode->getAttr(g_szValueMaxAttribute, maxValue);
-		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		rootNode->getAttr(g_szShiftAttribute, shift);
+		isAdvanced |= rootNode->getAttr(g_szValueMinAttribute, minValue);
+		isAdvanced |= rootNode->getAttr(g_szValueMaxAttribute, maxValue);
+		isAdvanced |= rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		isAdvanced |= rootNode->getAttr(g_szShiftAttribute, shift);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-		if (minValue > maxValue)
+		if (isAdvanced)
 		{
-			Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
-		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+			if (minValue > maxValue)
+			{
+				Cry::Audio::Log(ELogType::Warning, "Min value (%f) was greater than max value (%f) of %s", minValue, maxValue, szName);
+			}
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
-		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGameVariable");
-		pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName, minValue, maxValue, multiplier, shift));
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGameVariableAdvanced");
+			pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariableAdvanced(szName, minValue, maxValue, multiplier, shift));
+		}
+		else
+		{
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGameVariable");
+			pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName));
+		}
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
@@ -1174,19 +1250,34 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		CriAtomExAisacControlId const id = criAtomExAcf_GetAisacControlIdByName(szName);
+		bool isAdvanced = false;
 
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
-		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		rootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacEnvironment");
+		isAdvanced |= rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		isAdvanced |= rootNode->getAttr(g_szShiftAttribute, shift);
+
+		if (isAdvanced)
+		{
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacEnvironmentAdvanced");
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(id, multiplier, shift, szName));
+			pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironmentAdvanced(id, multiplier, shift, szName));
 #else
-		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(id, multiplier, shift));
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+			pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironmentAdvanced(id, multiplier, shift));
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+		}
+		else
+		{
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacEnvironment");
+
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+			pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(id, szName));
+#else
+			pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(id));
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+		}
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
@@ -1616,6 +1707,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		}
 	}
 
+	if (g_debugPoolSizes.aisacControlsAdvanced > 0)
+	{
+		auto& allocator = CAisacControlAdvanced::GetAllocator();
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Advanced Aisac-Controls", g_poolSizes.aisacControlsAdvanced);
+		}
+	}
+
 	if (g_debugPoolSizes.aisacEnvironments > 0)
 	{
 		auto& allocator = CAisacEnvironment::GetAllocator();
@@ -1625,6 +1728,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		if (drawDetailedInfo)
 		{
 			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Aisac-Controls on Environments", g_poolSizes.aisacEnvironments);
+		}
+	}
+
+	if (g_debugPoolSizes.aisacEnvironmentsAdvanced > 0)
+	{
+		auto& allocator = CAisacEnvironmentAdvanced::GetAllocator();
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Advanced Aisac-Controls on Environments", g_poolSizes.aisacEnvironmentsAdvanced);
 		}
 	}
 
@@ -1652,6 +1767,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		}
 	}
 
+	if (g_debugPoolSizes.categoriesAdvanced > 0)
+	{
+		auto& allocator = CCategoryAdvanced::GetAllocator();
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Advanced Categories", g_poolSizes.categoriesAdvanced);
+		}
+	}
+
 	if (g_debugPoolSizes.categoryStates > 0)
 	{
 		auto& allocator = CCategoryState::GetAllocator();
@@ -1673,6 +1800,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		if (drawDetailedInfo)
 		{
 			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "GameVariables", g_poolSizes.gameVariables);
+		}
+	}
+
+	if (g_debugPoolSizes.gameVariablesAdvanced > 0)
+	{
+		auto& allocator = CGameVariableAdvanced::GetAllocator();
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Advanced GameVariables", g_poolSizes.gameVariablesAdvanced);
 		}
 	}
 

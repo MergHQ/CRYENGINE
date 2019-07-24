@@ -35,6 +35,7 @@ constexpr char const* g_szLocalizedAttribute = "localized";
 // XML attributes for impl data node
 constexpr char const* g_szEventsAttribute = "events";
 constexpr char const* g_szParametersAttribute = "parameters";
+constexpr char const* g_szParametersAdvancedAttribute = "parametersadvanced";
 constexpr char const* g_szSwitchStatesAttribute = "switchstates";
 
 // XML values
@@ -66,6 +67,7 @@ struct SPoolSizes final
 {
 	uint16 events = 0;
 	uint16 parameters = 0;
+	uint16 parametersAdvanced = 0;
 	uint16 switchStates = 0;
 };
 } // namespace SDL_mixer

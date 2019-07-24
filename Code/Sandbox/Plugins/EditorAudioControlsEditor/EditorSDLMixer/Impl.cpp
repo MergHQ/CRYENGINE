@@ -31,7 +31,7 @@ constexpr uint32 g_parameterConnectionPoolSize = 256;
 constexpr uint32 g_stateConnectionPoolSize = 256;
 
 //////////////////////////////////////////////////////////////////////////
-void CountConnections(EAssetType const assetType, CryAudio::ContextId const contextId)
+void CountConnections(EAssetType const assetType, CryAudio::ContextId const contextId, bool const isAdvanced)
 {
 	switch (assetType)
 	{
@@ -42,7 +42,15 @@ void CountConnections(EAssetType const assetType, CryAudio::ContextId const cont
 		}
 	case EAssetType::Parameter:
 		{
-			++g_connections[contextId].parameters;
+			if (isAdvanced)
+			{
+				++g_connections[contextId].parametersAdvanced;
+			}
+			else
+			{
+				++g_connections[contextId].parameters;
+			}
+
 			break;
 		}
 	case EAssetType::State:
@@ -431,13 +439,15 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetTy
 					}
 				case EAssetType::Parameter:
 					{
+						bool isAdvanced = false;
+
 						float mult = CryAudio::Impl::SDL_mixer::g_defaultParamMultiplier;
-						node->getAttr(CryAudio::Impl::SDL_mixer::g_szMutiplierAttribute, mult);
-
 						float shift = CryAudio::Impl::SDL_mixer::g_defaultParamShift;
-						node->getAttr(CryAudio::Impl::SDL_mixer::g_szShiftAttribute, shift);
 
-						pIConnection = static_cast<IConnection*>(new CParameterConnection(pItem->GetId(), mult, shift));
+						isAdvanced |= node->getAttr(CryAudio::Impl::SDL_mixer::g_szMutiplierAttribute, mult);
+						isAdvanced |= node->getAttr(CryAudio::Impl::SDL_mixer::g_szShiftAttribute, shift);
+
+						pIConnection = static_cast<IConnection*>(new CParameterConnection(pItem->GetId(), isAdvanced, mult, shift));
 
 						break;
 					}
@@ -474,6 +484,8 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 
 	if (pItem != nullptr)
 	{
+		bool isAdvanced = false;
+
 		switch (assetType)
 		{
 		case EAssetType::Trigger:
@@ -567,6 +579,8 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 
 				if (pParameterConnection != nullptr)
 				{
+					isAdvanced = pParameterConnection->IsAdvanced();
+
 					node = GetISystem()->CreateXmlNode(CryAudio::Impl::SDL_mixer::g_szEventTag);
 					node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
@@ -577,14 +591,17 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 						node->setAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute, pItem->GetPath());
 					}
 
-					if (pParameterConnection->GetMultiplier() != CryAudio::Impl::SDL_mixer::g_defaultParamMultiplier)
+					if (isAdvanced)
 					{
-						node->setAttr(CryAudio::Impl::SDL_mixer::g_szMutiplierAttribute, pParameterConnection->GetMultiplier());
-					}
+						if (pParameterConnection->GetMultiplier() != CryAudio::Impl::SDL_mixer::g_defaultParamMultiplier)
+						{
+							node->setAttr(CryAudio::Impl::SDL_mixer::g_szMutiplierAttribute, pParameterConnection->GetMultiplier());
+						}
 
-					if (pParameterConnection->GetShift() != CryAudio::Impl::SDL_mixer::g_defaultParamShift)
-					{
-						node->setAttr(CryAudio::Impl::SDL_mixer::g_szShiftAttribute, pParameterConnection->GetShift());
+						if (pParameterConnection->GetShift() != CryAudio::Impl::SDL_mixer::g_defaultParamShift)
+						{
+							node->setAttr(CryAudio::Impl::SDL_mixer::g_szShiftAttribute, pParameterConnection->GetShift());
+						}
 					}
 
 					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
@@ -627,7 +644,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			}
 		}
 
-		CountConnections(assetType, contextId);
+		CountConnections(assetType, contextId, isAdvanced);
 	}
 
 	return node;
@@ -650,6 +667,11 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const
 		if (g_connections[contextId].parameters > 0)
 		{
 			node->setAttr(CryAudio::Impl::SDL_mixer::g_szParametersAttribute, g_connections[contextId].parameters);
+		}
+
+		if (g_connections[contextId].parametersAdvanced > 0)
+		{
+			node->setAttr(CryAudio::Impl::SDL_mixer::g_szParametersAdvancedAttribute, g_connections[contextId].parametersAdvanced);
 		}
 
 		if (g_connections[contextId].switchStates > 0)
