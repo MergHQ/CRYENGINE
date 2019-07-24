@@ -1180,20 +1180,6 @@ void CTrackViewSequenceTabWidget::UpdateActiveSequence()
 	}
 }
 
-void CTrackViewSequenceTabWidget::UpdateCurveEditorSelection()
-{
-	if (m_pCurrentSelectionCurveEditor)
-	{
-		std::set<SAnimTime> selectedTimes;
-		for (const SSelectedKey& selectedKey : m_currentKeySelection)
-		{
-			selectedTimes.insert(selectedKey.m_key->GetTime());
-		}
-
-		m_pCurrentSelectionCurveEditor->SelectKeysWidthTimes(selectedTimes);
-	}
-}
-
 void CTrackViewSequenceTabWidget::ShowSequenceProperties(CTrackViewSequence* pSequence)
 {
 	if (pSequence)
@@ -1858,9 +1844,9 @@ void CTrackViewSequenceTabWidget::OnCurveEditorContentChanged()
 		}
 	}
 
-	m_bDontUpdateCurveEditor = false;
-
 	OnSelectionChanged(false);
+
+	m_bDontUpdateCurveEditor = false;
 }
 
 void CTrackViewSequenceTabWidget::OnDopesheetScrub()
@@ -2438,7 +2424,7 @@ void CTrackViewSequenceTabWidget::OnSelectionChanged(bool /*bContinuous*/)
 			}
 		}
 
-		UpdateCurveEditorSelection();
+		UpdateCurveEditor(m_pCurrentSelectionDopeSheet, m_pCurrentSelectionCurveEditor);
 
 		TSelectedTracks selectedTracks;
 		GetSelectedTracks(pContent->track, selectedTracks);
