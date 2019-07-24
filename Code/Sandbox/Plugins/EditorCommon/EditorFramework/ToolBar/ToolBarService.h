@@ -91,7 +91,7 @@ public:
 	class EDITOR_COMMON_API QCVarDesc : public QItemDesc
 	{
 	public:
-		QCVarDesc() {}
+		QCVarDesc();
 		QCVarDesc(const QVariantMap& variantMap, int version);
 
 		virtual Type     GetType() const override { return CVar; }

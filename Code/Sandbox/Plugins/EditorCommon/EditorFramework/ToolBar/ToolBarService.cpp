@@ -301,6 +301,14 @@ void CToolBarService::QCommandDesc::SetIcon(const QString& path)
 
 //////////////////////////////////////////////////////////////////////////
 
+CToolBarService::QCVarDesc::QCVarDesc()
+	: name("")
+	, iconPath("")
+	, value("")
+	, isBitFlag(false)
+{
+}
+
 CToolBarService::QCVarDesc::QCVarDesc(const QVariantMap& variantMap, int version)
 	: name(variantMap["name"].toString())
 	, iconPath(variantMap["iconPath"].toString())
