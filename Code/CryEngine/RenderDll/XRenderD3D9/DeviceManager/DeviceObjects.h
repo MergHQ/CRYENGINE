@@ -59,7 +59,7 @@ struct SInputLayoutCompositionDescriptor
 		: VertexFormat(VertexFormat)
 		, StreamMask(static_cast<uint8_t>(Stream & VSM_MASK))
 		, ShaderMask(GenerateShaderMask(VertexFormat, pShaderReflection))
-		, bInstanced((StreamMask & VSM_INSTANCED) != 0)
+		, bInstanced((Stream & VSM_INSTANCED) != 0)
 	{}
 
 	SInputLayoutCompositionDescriptor(SInputLayoutCompositionDescriptor&&) = default;
