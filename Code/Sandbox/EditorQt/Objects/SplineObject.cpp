@@ -48,7 +48,7 @@ public:
 	virtual void GetManipulatorPosition(Vec3& position) override;
 	virtual bool IsManipulatorVisible() override;
 
-	void         OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags);
+	void         OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData);
 	void         OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags);
 	void         OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator);
 	void         OnSplineEvent(const CBaseObject* pObject, const CObjectEvent& event);
@@ -189,7 +189,7 @@ void CEditSplineObjectTool::SelectPoint(int index)
 	m_pSpline->SelectPoint(index);
 }
 
-void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
+void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData)
 {
 	// get world/local coordinate system setting.
 	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
@@ -206,7 +206,7 @@ void CEditSplineObjectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransfor
 		Vec3 pos = m_pSpline->GetPoint(index);
 
 		Vec3 wp = splineTM.TransformPoint(pos);
-		Vec3 newPos = wp + value;
+		Vec3 newPos = wp + dragData.accumulateDelta;
 
 		if (!GetAsyncKeyState(VK_CONTROL) && gSnappingPreferences.IsSnapToTerrainEnabled())
 		{

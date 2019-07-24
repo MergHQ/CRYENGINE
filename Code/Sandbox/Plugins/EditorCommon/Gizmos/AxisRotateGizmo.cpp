@@ -44,7 +44,7 @@ public:
 		: m_initPosition(gizmo.GetPosition())
 		, m_initAxis(gizmo.GetAxis())
 		, m_angle(0.0f)
-		, m_bScreenAligned(gizmo.GetScreemAligned())
+		, m_bScreenAligned(gizmo.GetScreenAligned())
 	{
 	}
 
@@ -56,7 +56,7 @@ public:
 
 	//! Calculates the angle value which can later be retrieved by the GetAngle method. Returns success or failure in case
 	//! of division by zero errors or similar.
-	virtual bool Interact(IDisplayViewport* view, POINT point, AngleAxis& rotation, bool bUseMultiplier) = 0;
+	virtual bool Interact(IDisplayViewport* view, POINT point, AngleAxis& totalRotation, AngleAxis& deltaRotation, bool bUseMultiplier) = 0;
 
 	//! Get initial position of the gizmo
 	Vec3& GetInitialPosition() { return m_initPosition; }
@@ -64,7 +64,7 @@ public:
 	//! Get cursor position in 3D world. This lies on the same plane as the gizmo center, aligned to the view direction
 	Vec3& GetCursorPosition() { return m_cursorPosition; }
 
-	//! Get the angle calculated during the Interact call
+	//! Get total rotation since the beginning of the rotation
 	float        GetAngle() { return m_angle; }
 
 	virtual void DrawCursor(SDisplayContext& dc, float scale) = 0;
@@ -194,7 +194,7 @@ public:
 		Intersect::Ray_Plane(ray, p, m_cursorPosition, false);
 	}
 
-	virtual bool Interact(IDisplayViewport* view, POINT point, AngleAxis& rotation, bool bUseMultiplier) override
+	virtual bool Interact(IDisplayViewport* view, POINT point, AngleAxis& totalRotation, AngleAxis& deltaRotation, bool bUseMultiplier) override
 	{
 		CalculateCursorPosition(view, point);
 
@@ -249,8 +249,11 @@ public:
 			m_angle = -m_angle;
 		}
 
-		rotation.angle = m_angle - oldAngle;
-		rotation.axis = axis;
+		totalRotation.angle = m_angle;
+		totalRotation.axis = axis;
+
+		deltaRotation.angle = m_angle - oldAngle;
+		deltaRotation.axis = axis;
 		return true;
 	}
 
@@ -320,7 +323,7 @@ public:
 		return true;
 	}
 
-	virtual bool Interact(IDisplayViewport* view, POINT point, AngleAxis& rotation, bool bUseMultiplier) override
+	virtual bool Interact(IDisplayViewport* view, POINT point, AngleAxis& totalRotation, AngleAxis& deltaRotation, bool bUseMultiplier) override
 	{
 		float scale = view->GetScreenScaleFactor(m_initPosition) * gGizmoPreferences.axisGizmoSize * m_scale;
 
@@ -380,10 +383,11 @@ public:
 			m_angle = DEG2RAD(gSnappingPreferences.SnapAngle(angle));
 		}
 
-		rotation.axis = axis;
+		totalRotation.axis = axis;
+		totalRotation.angle = m_angle;
 
-		// Pass delta of rotation; m_angle is used for text rendering
-		rotation.angle = m_angle - oldAngle;
+		deltaRotation.axis = axis;
+		deltaRotation.angle = m_angle - oldAngle;
 
 		return true;
 	}
@@ -570,12 +574,14 @@ bool CAxisRotateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, 
 		{
 		case eMouseMove:
 			{
-				AngleAxis rotation;
+				AngleAxis totalRotation;
+				AngleAxis deltaRotation;
 				bool bUseMultiplier = (nFlags & MK_SHIFT) != 0;
 
-				if (m_interaction->Interact(view, point, rotation, bUseMultiplier))
+				if (m_interaction->Interact(view, point, totalRotation, deltaRotation, bUseMultiplier))
 				{
-					signalDragging(view, this, rotation, point, nFlags);
+					totalRotation.angle = m_interaction->GetAngle();
+					signalDragging(view, this, totalRotation, deltaRotation, point, nFlags);
 				}
 			}
 			break;

@@ -125,13 +125,15 @@ bool CAxisTranslateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent even
 		{
 		case eMouseMove:
 			{
+				const Vec3 prevOffset = m_interactionOffset;
 				m_interactionOffset = view->ViewToAxisConstraint(point, m_initDirection, m_initPosition) - m_initOffset;
 				if (gSnappingPreferences.gridSnappingEnabled())
 				{
 					float fDist = m_interactionOffset.len();
 					m_interactionOffset = gSnappingPreferences.SnapLength(fDist) * m_interactionOffset.GetNormalized();
 				}
-				signalDragging(view, this, m_interactionOffset, point, nFlags);
+				const Vec3 deltaOffset = m_interactionOffset - prevOffset;
+				signalDragging(view, this, m_interactionOffset, deltaOffset, point, nFlags);
 				break;
 			}
 

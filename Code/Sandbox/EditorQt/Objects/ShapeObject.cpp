@@ -81,7 +81,7 @@ public:
 	bool           IsDisplayGrid()                           { return false; }
 
 	void           OnManipulatorBeginDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, int flags);
-	void           OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3&, int);
+	void           OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const SDragData& dragData);
 	void           OnManipulatorEndDrag(IDisplayViewport*, ITransformManipulator*);
 
 	virtual bool   GetManipulatorMatrix(Matrix34& tm) override;
@@ -199,13 +199,13 @@ void CEditShapeTool::OnManipulatorBeginDrag(IDisplayViewport* view, ITransformMa
 	}
 }
 
-void CEditShapeTool::OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3& offset, int flags)
+void CEditShapeTool::OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const SDragData& dragData)
 {
 	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		Matrix34 m = m_shape->GetWorldTM();
 		m.Invert();
-		Vec3 transformedOffset = m.TransformVector(offset);
+		Vec3 transformedOffset = m.TransformVector(dragData.accumulateDelta);
 
 		m_shape->SetPoint(m_shape->GetSelectedPoint(), m_pointPos + transformedOffset);
 	}

@@ -65,7 +65,7 @@ public:
 	void SelectPolygonsBySubMatID(int matID);
 	bool GetTexInfoOfSelectedPolygon(TexInfo& outTexInfo) const;
 
-	void OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int nFlags) override;
+	void OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData) override;
 	void OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& point, int flags) override;
 	void OnManipulatorEnd(IDisplayViewport* pView, ITransformManipulator* pManipulator) override;
 	void RecordTextureMappingUndo(const char* sUndoDescription) const;

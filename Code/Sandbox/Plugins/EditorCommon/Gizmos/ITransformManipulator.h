@@ -6,6 +6,21 @@
 #include "LevelEditor/LevelEditorSharedState.h"
 #include <CrySandbox/CrySignal.h>
 
+struct SDragData
+{
+	SDragData(int flags, const Vec2i& viewportPos, const Vec3& frameDelta = { 0.0f, 0.0f, 0.0f }, const Vec3& accumulateDelta = { 0.0f, 0.0f, 0.0f })
+		: flags(flags)
+		, viewportPos(viewportPos) 
+		, accumulateDelta(accumulateDelta)
+		, frameDelta(frameDelta)
+	{}
+
+	int   flags;           // MK_* flags
+	Vec2i viewportPos;
+	Vec3  accumulateDelta; // Accumulated delta since the beginning of the dragging operation
+	Vec3  frameDelta;      // Change since last move
+};
+
 struct EDITOR_COMMON_API ITransformManipulator
 {
 	virtual ~ITransformManipulator() {}
@@ -14,8 +29,8 @@ struct EDITOR_COMMON_API ITransformManipulator
 	// invalidate. Manipulator will request transform from owner during next draw
 	virtual void     Invalidate() = 0;
 
-	CCrySignal<void (IDisplayViewport*, ITransformManipulator*, const Vec2i&, int)>              signalBeginDrag;
-	CCrySignal<void (IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3&, int)> signalDragging;
+	CCrySignal<void (IDisplayViewport*, ITransformManipulator*, const Vec2i&, int)>     signalBeginDrag;
+	CCrySignal<void (IDisplayViewport*, ITransformManipulator*, const SDragData& data)> signalDragging;
 	CCrySignal<void (IDisplayViewport*, ITransformManipulator*)> signalEndDrag;
 };
 

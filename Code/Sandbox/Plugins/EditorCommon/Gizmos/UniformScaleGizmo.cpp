@@ -100,6 +100,7 @@ bool CUniformScaleGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event
 		{
 		case eMouseMove:
 			{
+				const float prevScale = m_interactionScale;
 				float fDiff = (m_initPoint.y - point.y) / 50.0f;
 				if (fDiff > 0.0f)
 				{
@@ -114,8 +115,9 @@ bool CUniformScaleGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event
 				{
 					m_interactionScale = gSnappingPreferences.SnapScale(m_interactionScale);
 				}
-
-				signalDragging(view, this, m_interactionScale, point, nFlags);
+				
+				const float deltaScale = m_interactionScale / prevScale;
+				signalDragging(view, this, m_interactionScale, deltaScale, point, nFlags);
 				break;
 			}
 

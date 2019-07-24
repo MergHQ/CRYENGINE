@@ -313,13 +313,13 @@ void UVMappingTool::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	}
 }
 
-void UVMappingTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int nFlags)
+void UVMappingTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData)
 {
 	if (m_MouseDownContext.m_UVInfos.empty())
 		return;
 
 	BrushMatrix34 offsetTM;
-	offsetTM = GetOffsetTM(pManipulator, value, GetWorldTM());
+	offsetTM = GetOffsetTM(pManipulator, dragData.accumulateDelta, GetWorldTM());
 
 	MODEL_SHELF_RECONSTRUCTOR(GetModel());
 
@@ -368,7 +368,7 @@ void UVMappingTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipul
 			else
 				tn.x = tn.y = 0;
 
-			float fDeltaRotation = (180.0F / PI) * value.x;
+			float fDeltaRotation = (180.0F / PI) * dragData.frameDelta.x;
 			if (tn.y < 0 || tn.x > 0 || tn.z > 0)
 				fDeltaRotation = -fDeltaRotation;
 

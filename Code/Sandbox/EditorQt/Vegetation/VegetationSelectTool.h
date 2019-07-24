@@ -24,9 +24,9 @@ public:
 	virtual string GetDisplayName() const override { return "Select Vegetation"; }
 	virtual void   Display(SDisplayContext& dc);
 
-	// Overides from CEditTool
+	// Overrides from CEditTool
 	virtual bool MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags);
-	virtual void OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int nFlags);
+	virtual void OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData);
 
 	// Key down.
 	virtual bool                             OnKeyDown(CViewport* pView, uint32 key, uint32 repCnt, uint32 flags);

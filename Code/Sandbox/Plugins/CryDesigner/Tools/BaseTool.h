@@ -4,8 +4,9 @@
 
 #include "DesignerSession.h"
 
-struct ITransformManipulator;
 struct IDisplayViewport;
+struct ITransformManipulator;
+struct SDragData;
 
 class ModelCompiler;
 
@@ -40,9 +41,9 @@ public:
 
 	virtual bool OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags);
 	virtual void Display(SDisplayContext& dc);
-	virtual void OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int flags) {}
-	virtual void OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, CPoint& point, int flags)              {}
-	virtual void OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator)                                          {}
+	virtual void OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const SDragData& dragData) {}
+	virtual void OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, CPoint& point, int flags) {}
+	virtual void OnManipulatorEnd(IDisplayViewport* view, ITransformManipulator* pManipulator)                             {}
 
 	virtual void Enter();
 	virtual void Leave();

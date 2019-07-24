@@ -24,12 +24,7 @@ public:
 	bool OnLButtonUp(CViewport* view, UINT nFlags, CPoint point) override;
 	bool OnMouseMove(CViewport* view, UINT nFlags, CPoint point) override;
 
-	void OnManipulatorDrag(
-	  IDisplayViewport* pView,
-	  ITransformManipulator* pManipulator,
-	  CPoint& p0,
-	  BrushVec3 value,
-	  int nFlags) override;
+	void OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData) override;
 
 	void OnManipulatorBegin(
 	  IDisplayViewport* pView,

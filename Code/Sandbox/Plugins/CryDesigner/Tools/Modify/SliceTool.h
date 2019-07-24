@@ -33,7 +33,7 @@ public:
 
 	void         Serialize(Serialization::IArchive& ar);
 
-	void         OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int nFlags) override;
+	void         OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData) override;
 	void         OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& point, int flags) override;
 	bool         IsManipulatorVisible() override { return true; }
 

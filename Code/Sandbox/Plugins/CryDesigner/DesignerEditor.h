@@ -36,12 +36,7 @@ public:
 	  CViewport* view,
 	  EMouseEvent event,
 	  CPoint& point, int flags) override;
-	void OnManipulatorDrag(
-	  IDisplayViewport* view,
-	  ITransformManipulator* pManipulator,
-	  const Vec2i& p0,
-	  const Vec3& value,
-	  int nFlags);
+	void OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const SDragData& dragData);
 	void OnManipulatorBegin(
 	  IDisplayViewport* view,
 	  ITransformManipulator* pManipulator,

@@ -40,7 +40,7 @@ public:
 	virtual bool   OnKeyUp(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 nFlags) { return false; }
 
 	void           OnManipulatorBeginDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, int flags);
-	void           OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3&, int);
+	void           OnManipulatorDrag(IDisplayViewport*, ITransformManipulator*, const SDragData& dragData);
 	void           OnManipulatorEndDrag(IDisplayViewport*, ITransformManipulator*);
 
 	virtual bool   GetManipulatorMatrix(Matrix34& tm) override;
@@ -154,13 +154,13 @@ void CEditGravityVolumeTool::OnManipulatorBeginDrag(IDisplayViewport* view, ITra
 	}
 }
 
-void CEditGravityVolumeTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator*, const Vec2i&, const Vec3& offset, int)
+void CEditGravityVolumeTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator*, const SDragData& dragData)
 {
 	if (GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Move)
 	{
 		Matrix34 m = m_GravityVolume->GetWorldTM();
 		m.Invert();
-		Vec3 transformedOffset = m.TransformVector(offset);
+		Vec3 transformedOffset = m.TransformVector(dragData.accumulateDelta);
 
 		m_GravityVolume->SetPoint(m_GravityVolume->GetSelectedPoint(), m_pointPos + transformedOffset);
 	}

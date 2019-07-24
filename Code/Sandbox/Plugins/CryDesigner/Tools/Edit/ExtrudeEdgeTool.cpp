@@ -111,14 +111,9 @@ void ExtrudeEdgeTool::OnManipulatorBegin(
 	}
 }
 
-void ExtrudeEdgeTool::OnManipulatorDrag(
-  IDisplayViewport* pView,
-  ITransformManipulator* pManipulator,
-  CPoint& p0,
-  BrushVec3 value,
-  int nFlags)
-{
-	BrushMatrix34 offsetTM = GetOffsetTM(pManipulator, value, GetWorldTM());
+void ExtrudeEdgeTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData)
+ {
+	BrushMatrix34 offsetTM = GetOffsetTM(pManipulator, dragData.accumulateDelta, GetWorldTM());
 	Extrude(offsetTM);
 }
 

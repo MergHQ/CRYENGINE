@@ -128,6 +128,8 @@ bool CAxisScaleGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, C
 		{
 		case eMouseMove:
 			{
+				const float prevScale = m_scaleInteraction;
+
 				// calculate the position starting from the original offset
 				Vec3 offset = view->ViewToAxisConstraint(point, m_direction, m_position + m_origLenInteraction * m_direction);
 				float l = offset.len();
@@ -146,8 +148,8 @@ bool CAxisScaleGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, C
 				{
 					m_scaleInteraction = gSnappingPreferences.SnapScale(m_scaleInteraction);
 				}
-
-				signalDragging(view, this, m_scaleInteraction, point, nFlags);
+				const float deltaScale = m_scaleInteraction / prevScale;
+				signalDragging(view, this, m_scaleInteraction, deltaScale, point, nFlags);
 				break;
 			}
 

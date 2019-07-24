@@ -494,12 +494,7 @@ void DesignerEditor::DisableTool(
 	m_DisabledTools.insert(tool);
 }
 
-void DesignerEditor::OnManipulatorDrag(
-	IDisplayViewport* view,
-	ITransformManipulator* pManipulator,
-	const Vec2i& p0,
-	const Vec3& value,
-	int nFlags)
+void DesignerEditor::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const SDragData& dragData)
 {
 	if (pManipulator != m_pManipulator)
 	{
@@ -512,13 +507,7 @@ void DesignerEditor::OnManipulatorDrag(
 		return;
 	}
 
-	CPoint p(p0.x, p0.y);
-	pTool->OnManipulatorDrag(
-		view,
-		pManipulator,
-		p,
-		value,
-		nFlags);
+	pTool->OnManipulatorDrag(view, pManipulator, dragData);
 }
 
 void DesignerEditor::OnManipulatorBegin(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags)

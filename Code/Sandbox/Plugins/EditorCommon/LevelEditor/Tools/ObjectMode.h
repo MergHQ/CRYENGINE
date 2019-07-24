@@ -98,7 +98,7 @@ public:
 	virtual bool   IsDisplayGrid() override;
 
 	void           OnManipulatorBeginDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, int flags);
-	void           OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& p0, const Vec3& value, int flags);
+	void           OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const SDragData& data);
 	void           OnManipulatorEndDrag(IDisplayViewport* view, ITransformManipulator* pManipulator);
 
 	void           RegisterSubTool(ISubTool* pSubTool);

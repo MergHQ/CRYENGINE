@@ -159,9 +159,9 @@ bool PivotTool::OnKeyDown(CViewport* view, uint32 nChar, uint32 nRepCnt, uint32 
 	return true;
 }
 
-void PivotTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int flags)
+void PivotTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData)
 {
-	BrushMatrix34 moveTM = GetOffsetTM(pManipulator, value, GetWorldTM());
+	BrushMatrix34 moveTM = GetOffsetTM(pManipulator, dragData.accumulateDelta, GetWorldTM());
 	m_PivotPos = moveTM.TransformPoint(m_StartingDragManipulatorPos);
 	GetDesigner()->UpdateTMManipulator(m_PivotPos, BrushVec3(0, 0, 1));
 }

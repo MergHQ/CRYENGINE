@@ -220,11 +220,11 @@ void CPreviewWidget::SetComponentInstance(const IScriptComponentInstance* pCompo
 			};
 			m_pGizmo->signalBeginDrag.Connect(onBeginDrag);
 
-			auto onDrag = [this](IDisplayViewport*, ITransformManipulator*, const Vec2i&, const Vec3& offset, int)
+			auto onDrag = [this](IDisplayViewport*, ITransformManipulator*, const SDragData& dragData)
 			{
 				if (m_pGizmoTransformOp)
 				{
-					m_pGizmoTransformOp->OnMove(offset);
+					m_pGizmoTransformOp->OnMove(dragData.accumulateDelta);
 				}
 			};
 			m_pGizmo->signalDragging.Connect(onDrag);

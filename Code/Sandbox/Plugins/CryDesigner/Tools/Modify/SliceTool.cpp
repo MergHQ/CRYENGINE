@@ -223,12 +223,12 @@ void SliceTool::InvertSlicePlane()
 	GenerateLoop(m_SlicePlane, m_MainTraverseLines);
 }
 
-void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int nFlags)
+void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData)
 {
 	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Scale)
 		return;
 
-	BrushVec3 vDelta = value - m_PrevGizmoPos;
+	BrushVec3 vDelta = dragData.accumulateDelta - m_PrevGizmoPos;
 	if (Comparison::IsEquivalent(vDelta, BrushVec3(0, 0, 0)))
 		return;
 
@@ -254,7 +254,7 @@ void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator
 	}
 
 	GetDesigner()->UpdateTMManipulator(m_GizmoPos, BrushVec3(0, 0, 1));
-	m_PrevGizmoPos = value;
+	m_PrevGizmoPos = dragData.accumulateDelta;
 }
 
 void SliceTool::OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& point, int flags)

@@ -1411,7 +1411,7 @@ void CObjectMode::OnManipulatorEndDrag(IDisplayViewport* view, ITransformManipul
 //////////////////////////////////////////////////////////////////////////
 // This callback is currently called only to handle the case of the 'move by the face normal'.
 // Other movements of the object are handled in the 'CObjectMode::OnMouseMove()' method.
-void CObjectMode::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& point, const Vec3& value, int flags)
+void CObjectMode::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const SDragData& data)
 {
 	if (m_commandMode == MoveMode)
 	{
@@ -1419,7 +1419,7 @@ void CObjectMode::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulato
 		CRect rcDrag(m_cMouseDownPos.x, m_cMouseDownPos.y, m_cMouseDownPos.x, m_cMouseDownPos.y);
 		InflateRect(rcDrag, halfLength, halfLength);
 
-		CPoint p(point.x, point.y);
+		CPoint p(data.viewportPos.x, data.viewportPos.y);
 		if (PtInRect(rcDrag, p))
 		{
 			return;
@@ -1442,7 +1442,7 @@ void CObjectMode::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulato
 		if (gSnappingPreferences.IsSnapToNormalEnabled())
 			selectionFlags |= ISelectionGroup::eMS_SnapToNormal;
 
-		pSelection->Move(value, selectionFlags, p, true);
+		pSelection->Move(data.accumulateDelta, selectionFlags, p, true);
 
 		if (m_pHitObject)
 			UpdateMoveByFaceNormGizmo(m_pHitObject);
@@ -1455,8 +1455,8 @@ void CObjectMode::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulato
 	}
 	else if (m_commandMode == RotateMode)
 	{
-		// Unfortunately more conversion to fit selectiongroup format
-		Ang3 angles = RAD2DEG(-value);
+		// Unfortunately more conversion to fit selection group format
+		Ang3 angles = RAD2DEG(-data.frameDelta);
 
 		const ISelectionGroup* pSelection = GetIEditor()->GetISelectionGroup();
 		pSelection->Rotate(angles);
@@ -1464,7 +1464,7 @@ void CObjectMode::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulato
 	else if (m_commandMode == ScaleMode)
 	{
 		const ISelectionGroup* pSelection = GetIEditor()->GetISelectionGroup();
-		pSelection->Scale(value);
+		pSelection->Scale(data.accumulateDelta);
 		m_bDragThresholdExceeded = true;
 	}
 }

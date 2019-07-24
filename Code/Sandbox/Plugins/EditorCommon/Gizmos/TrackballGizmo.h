@@ -31,7 +31,7 @@ public:
 	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalBeginDrag;
 
 	// emitted while dragging.
-	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& rotationAxis, const CPoint& point, int nFlags)> signalDragging;
+	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& totalRotation, const AngleAxis& deltaRotation, const CPoint& point, int nFlags)> signalDragging;
 
 	// emitted when finished dragging
 	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalEndDrag;

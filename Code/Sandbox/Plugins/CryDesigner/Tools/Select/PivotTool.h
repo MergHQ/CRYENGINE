@@ -30,7 +30,7 @@ public:
 
 	void SetSelectionType(EPivotSelectionType selectionType, bool bForce = false);
 
-	void OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int flags) override;
+	void OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData) override;
 	void OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& point, int flags) override;
 
 	void Serialize(Serialization::IArchive& ar);

@@ -78,6 +78,8 @@ bool CViewTranslateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent even
 		{
 		case eMouseMove:
 			{
+				const Vec3 prevOffset = m_interactionOffset;
+
 				Vec3 raySrc, rayDir;
 				Vec3 vDir = view->ViewDirection();
 
@@ -85,8 +87,8 @@ bool CViewTranslateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent even
 
 				m_interactionOffset = raySrc + ((m_initPosition - raySrc) * vDir) / (vDir * rayDir) * rayDir - m_initPosition - m_initOffset;
 				m_interactionOffset = gSnappingPreferences.Snap3D(m_interactionOffset, m_rotAxisX, m_rotAxisY);
-
-				signalDragging(view, this, m_interactionOffset, point, nFlags);
+				const Vec3 deltaOffset = m_interactionOffset - prevOffset;
+				signalDragging(view, this, m_interactionOffset, deltaOffset, point, nFlags);
 				break;
 			}
 

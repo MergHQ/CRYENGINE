@@ -34,7 +34,7 @@ public:
 	//! It should be perpendicular to the axis!
 	void         SetAlignmentAxis(Vec3 axis);
 	void         SetScreenAligned(bool aligned) { m_bScreenAligned = aligned; }
-	bool         GetScreemAligned() const       { return m_bScreenAligned; }
+	bool         GetScreenAligned() const       { return m_bScreenAligned; }
 
 	virtual void Display(SDisplayContext& dc) override;
 
@@ -48,7 +48,7 @@ public:
 	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalBeginDrag;
 
 	// emitted while dragging.
-	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& rotationAxis, const CPoint& point, int nFlags)> signalDragging;
+	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& totalRotation, const AngleAxis& deltaRotation, const CPoint& point, int nFlags)> signalDragging;
 
 	// emitted when finished dragging
 	CCrySignal<void(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)> signalEndDrag;

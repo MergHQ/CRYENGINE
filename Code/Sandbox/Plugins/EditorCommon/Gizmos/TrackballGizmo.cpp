@@ -90,14 +90,17 @@ bool CTrackballGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, C
 				m_rotatedX += xradians;
 				m_rotatedY += yradians;
 
-				Quat xrot = Quat::CreateRotationAA(-xradians, yDir);
-				Quat yrot = Quat::CreateRotationAA(yradians, xDir);
-
+				Quat xrot = Quat::CreateRotationAA(-m_rotatedX, yDir);
+				Quat yrot = Quat::CreateRotationAA(m_rotatedY, xDir);
 				// arbitrary ordering, apply xrotation first, then yrotation
-				Quat finalQuat = yrot * xrot;
-				AngleAxis finalAngle(finalQuat);
+				const AngleAxis totalRotation(yrot * xrot);
 
-				signalDragging(view, this, finalAngle, point, nFlags);
+				xrot = Quat::CreateRotationAA(-xradians, yDir);
+				yrot = Quat::CreateRotationAA(yradians, xDir);
+				const AngleAxis deltaRotation(yrot * xrot);
+
+
+				signalDragging(view, this, totalRotation, deltaRotation, point, nFlags);
 				break;
 			}
 

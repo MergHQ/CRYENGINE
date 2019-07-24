@@ -813,10 +813,10 @@ void CTransformManipulator::BeginMoveDrag(IDisplayViewport* view, CGizmo* gizmo,
 	SetFlag(EGIZMO_INTERACTING);
 }
 
-void CTransformManipulator::MoveDragging(IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags)
+void CTransformManipulator::MoveDragging(IDisplayViewport* view, CGizmo* gizmo, const Vec3& totalMove, const Vec3& deltaMove, const CPoint& point, int nFlags)
 {
-	Vec2i ipoint(point.x, point.y);
-	signalDragging(view, this, ipoint, offset, nFlags);
+	SDragData data(nFlags, { point.x, point.y }, totalMove, deltaMove);
+	signalDragging(view, this, data);
 }
 
 void CTransformManipulator::BeginRotateDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)
@@ -855,51 +855,69 @@ void CTransformManipulator::BeginRotateDrag(IDisplayViewport* view, CGizmo* gizm
 	SetFlag(EGIZMO_INTERACTING);
 }
 
-void CTransformManipulator::RotateDragging(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& rotationAxis, const CPoint& point, int nFlags)
+void CTransformManipulator::RotateDragging(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& totalRotation, const AngleAxis& deltaRotation, const CPoint& point, int nFlags)
 {
-	Vec3 vDragValue(0.0f, 0.0f, 0.0f);
+	SDragData data(nFlags, { point.x, point.y });
 
 	// in view space coordinates, we create a rotation in world space
 	if (GetIEditor()->GetLevelEditorSharedState()->GetCoordSystem() == CLevelEditorSharedState::CoordSystem::View)
 	{
-		Matrix33 customSpaceRot = Matrix33::CreateRotationAA(rotationAxis.angle, rotationAxis.axis);
-		Ang3 ang(customSpaceRot);
-		vDragValue = ang;
+		Matrix33 customSpaceRotDelta = Matrix33::CreateRotationAA(deltaRotation.angle, deltaRotation.axis);
+		Ang3 angDelta(customSpaceRotDelta);
+		data.frameDelta = angDelta;
+
+		Matrix33 customSpaceRotTotal = Matrix33::CreateRotationAA(totalRotation.angle, totalRotation.axis);
+		Ang3 angTotal(customSpaceRotTotal);
+		data.accumulateDelta = angTotal;
 	}
 	else if (gizmo == &m_viewRotationGizmo || gizmo == &m_trackballGizmo)
 	{
-		// custom transforms need more care, because users will expect that the vectors will describe an euler decomposition in
+		// custom transforms need more care, because users will expect that the vectors will describe an Euler decomposition in
 		// their own custom space
 		if (m_bUseCustomTransform)
 		{
 			// rotationAxis is in world space, so what we do is apply the matrix transform first, to bring the transform space to global,
 			// then apply the rotation itself which is in global space, then invert back to the custom space
-			Matrix33 customSpaceRot = m_initMatrixInverse * Matrix33::CreateRotationAA(rotationAxis.angle, rotationAxis.axis) * m_initMatrix;
-			Ang3 ang(customSpaceRot);
-			vDragValue = ang;
+			{
+				Matrix33 customSpaceRotDelta = m_initMatrixInverse * Matrix33::CreateRotationAA(deltaRotation.angle, deltaRotation.axis) * m_initMatrix;
+				Ang3 angDelta(customSpaceRotDelta);
+				data.frameDelta = angDelta;
+			}
+
+			{
+				Matrix33 customSpaceRotDelta = m_initMatrixInverse * Matrix33::CreateRotationAA(totalRotation.angle, totalRotation.axis) * m_initMatrix;
+				Ang3 angDelta(customSpaceRotDelta);
+				data.accumulateDelta = angDelta;
+			}
 		}
 		else
 		{
-			Quat q = Quat::CreateRotationAA(rotationAxis.angle, rotationAxis.axis);
-			Ang3 ang(q);
-			vDragValue = ang;
+			Quat qDelta = Quat::CreateRotationAA(deltaRotation.angle, deltaRotation.axis);
+			Ang3 angDelta(qDelta);
+			data.frameDelta = angDelta;
+
+			Quat qTotal = Quat::CreateRotationAA(totalRotation.angle, totalRotation.axis);
+			Ang3 angTotal(qTotal);
+			data.accumulateDelta = angTotal;
 		}
 	}
 	else if (gizmo == &m_xWheelGizmo)
 	{
-		vDragValue.x = rotationAxis.angle;
+		data.accumulateDelta.x = totalRotation.angle;
+		data.frameDelta.x = deltaRotation.angle;
 	}
 	else if (gizmo == &m_yWheelGizmo)
 	{
-		vDragValue.y = rotationAxis.angle;
+		data.accumulateDelta.y = totalRotation.angle;
+		data.frameDelta.y = deltaRotation.angle;
 	}
 	else if (gizmo == &m_zWheelGizmo)
 	{
-		vDragValue.z = rotationAxis.angle;
+		data.accumulateDelta.z = totalRotation.angle;
+		data.frameDelta.z = deltaRotation.angle;
 	}
 
-	Vec2i ipoint(point.x, point.y);
-	signalDragging(view, this, ipoint, vDragValue, nFlags);
+	signalDragging(view, this, data);
 }
 
 void CTransformManipulator::BeginScaleDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)
@@ -945,46 +963,61 @@ void CTransformManipulator::BeginScaleDrag(IDisplayViewport* view, CGizmo* gizmo
 	SetFlag(EGIZMO_INTERACTING);
 }
 
-void CTransformManipulator::ScaleDragging(IDisplayViewport* view, CGizmo* gizmo, float scale, const CPoint& point, int nFlags)
+void CTransformManipulator::ScaleDragging(IDisplayViewport* view, CGizmo* gizmo, float scaleTotal, float scaleDelta, const CPoint& point, int nFlags)
 {
-	Vec3 vDragValue(1.0f, 1.0f, 1.0f);
+	SDragData dragData(nFlags, {point.x, point.y}, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f, 1.0f });
 
 	if (gizmo == &m_xScaleAxis)
 	{
-		vDragValue.x = scale;
+		dragData.frameDelta.x = scaleDelta;
+		dragData.accumulateDelta.x = scaleTotal;
 	}
 	else if (gizmo == &m_yScaleAxis)
 	{
-		vDragValue.y = scale;
+		dragData.frameDelta.y = scaleDelta;
+		dragData.accumulateDelta.y = scaleTotal;
 	}
 	else if (gizmo == &m_zScaleAxis)
 	{
-		vDragValue.z = scale;
+		dragData.frameDelta.z = scaleDelta;
+		dragData.accumulateDelta.z = scaleTotal;
 	}
 	else if (gizmo == &m_xyScalePlane)
 	{
-		vDragValue.x = scale;
-		vDragValue.y = scale;
+		dragData.frameDelta.x = scaleDelta;
+		dragData.frameDelta.y = scaleDelta;
+
+		dragData.accumulateDelta.x = scaleTotal;
+		dragData.accumulateDelta.y = scaleTotal;
 	}
 	else if (gizmo == &m_yzScalePlane)
 	{
-		vDragValue.y = scale;
-		vDragValue.z = scale;
+		dragData.frameDelta.y = scaleDelta;
+		dragData.frameDelta.z = scaleDelta;
+
+		dragData.accumulateDelta.y = scaleTotal;
+		dragData.accumulateDelta.z = scaleTotal;
 	}
 	else if (gizmo == &m_zxScalePlane)
 	{
-		vDragValue.z = scale;
-		vDragValue.x = scale;
+		dragData.frameDelta.x = scaleDelta;
+		dragData.frameDelta.z = scaleDelta;
+
+		dragData.accumulateDelta.x = scaleTotal;
+		dragData.accumulateDelta.z = scaleTotal;
 	}
 	else if (gizmo == &m_xyzScaleGizmo)
 	{
-		vDragValue.x = scale;
-		vDragValue.y = scale;
-		vDragValue.z = scale;
+		dragData.frameDelta.x = scaleDelta;
+		dragData.frameDelta.y = scaleDelta;
+		dragData.frameDelta.z = scaleDelta;
+
+		dragData.accumulateDelta.x = scaleTotal;
+		dragData.accumulateDelta.y = scaleTotal;
+		dragData.accumulateDelta.z = scaleTotal;
 	}
 
-	Vec2i ipoint(point.x, point.y);
-	signalDragging(view, this, ipoint, vDragValue, nFlags);
+	signalDragging(view, this, dragData);
 }
 
 void CTransformManipulator::EndDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags)

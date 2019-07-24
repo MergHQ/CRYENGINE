@@ -123,6 +123,7 @@ bool CPlaneTranslateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent eve
 		{
 		case eMouseMove:
 			{
+				const Vec3 prevOffset = m_interactionOffset;
 				Vec3 raySrc, rayDir;
 				view->ViewToWorldRay(point, raySrc, rayDir);
 
@@ -135,7 +136,10 @@ bool CPlaneTranslateGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent eve
 				// find the world space vector on the plane
 				m_interactionOffset = raySrc + fac * rayDir - m_initOffset;
 				m_interactionOffset = gSnappingPreferences.SnapPlane(m_interactionOffset, m_xVector, m_yVector);
-				signalDragging(view, this, m_interactionOffset, point, nFlags);
+
+				const Vec3 deltaOffset = m_interactionOffset - prevOffset;
+
+				signalDragging(view, this, m_interactionOffset, deltaOffset, point, nFlags);
 				break;
 			}
 

@@ -165,7 +165,7 @@ bool CVegetationSelectTool::MouseCallback(CViewport* pView, EMouseEvent event, C
 	return processed;
 }
 
-void CVegetationSelectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const Vec2i& point0, const Vec3& value, int flags)
+void CVegetationSelectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData)
 {
 	auto editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 
@@ -174,18 +174,18 @@ void CVegetationSelectTool::OnManipulatorDrag(IDisplayViewport* pView, ITransfor
 	{
 	case CLevelEditorSharedState::EditMode::Move:
 		GetIEditorImpl()->GetIUndoManager()->Restore();
-		MoveSelected(pView, value);
+		MoveSelected(pView, dragData.accumulateDelta);
 		break;
 	case CLevelEditorSharedState::EditMode::Rotate:
 		GetIEditorImpl()->GetIUndoManager()->Restore();
-		RotateSelected(value);
+		RotateSelected(dragData.accumulateDelta);
 		break;
 	case CLevelEditorSharedState::EditMode::Scale:
 		{
 			GetIEditorImpl()->GetIUndoManager()->Restore();
 
-			float scale = max(value.x, value.y);
-			scale = max(scale, value.z);
+			float scale = max(dragData.accumulateDelta.x, dragData.accumulateDelta.y);
+			scale = max(scale, dragData.accumulateDelta.z);
 			ScaleSelected(scale);
 		}
 		break;

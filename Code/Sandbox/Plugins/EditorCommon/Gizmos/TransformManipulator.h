@@ -44,13 +44,13 @@ public:
 	bool             NeedsSnappingGrid() const override;
 
 	void             BeginMoveDrag(IDisplayViewport* view, CGizmo* gizmo, const Vec3& initialPosition, const CPoint& point, int nFlags);
-	void             MoveDragging(IDisplayViewport* view, CGizmo* gizmo, const Vec3& offset, const CPoint& point, int nFlags);
+	void             MoveDragging(IDisplayViewport* view, CGizmo* gizmo, const Vec3& totalMove, const Vec3& deltaMove, const CPoint& point, int nFlags);
 
 	void             BeginRotateDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
-	void             RotateDragging(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& rotationAxis, const CPoint& point, int nFlags);
+	void             RotateDragging(IDisplayViewport* view, CGizmo* gizmo, const AngleAxis& totalRotation, const AngleAxis& deltaRotation, const CPoint& point, int nFlags);
 
 	void             BeginScaleDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
-	void             ScaleDragging(IDisplayViewport* view, CGizmo* gizmo, float scale, const CPoint& point, int nFlags);
+	void             ScaleDragging(IDisplayViewport* view, CGizmo* gizmo, float scaleTotal, float scaleDelta, const CPoint& point, int nFlags);
 
 	void             EndDrag(IDisplayViewport* view, CGizmo* gizmo, const CPoint& point, int nFlags);
 

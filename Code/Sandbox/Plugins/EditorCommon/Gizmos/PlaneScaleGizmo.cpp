@@ -129,6 +129,7 @@ bool CPlaneScaleGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, 
 		{
 		case eMouseMove:
 			{
+				const float prevScale = m_interactionScale;
 				Vec3 direction = m_xVector + m_yVector;
 				direction.Normalize();
 				Vec3 offset = view->ViewToAxisConstraint(point, direction, m_position + m_initLen * direction);
@@ -147,7 +148,9 @@ bool CPlaneScaleGizmo::MouseCallback(IDisplayViewport* view, EMouseEvent event, 
 					m_interactionScale = gSnappingPreferences.SnapScale(m_interactionScale);
 				}
 
-				signalDragging(view, this, m_interactionScale, point, nFlags);
+				float deltaScale = m_interactionScale / prevScale;
+
+				signalDragging(view, this, m_interactionScale, deltaScale, point, nFlags);
 				break;
 			}
 

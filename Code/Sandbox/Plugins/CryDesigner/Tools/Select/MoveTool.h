@@ -18,7 +18,7 @@ public:
 	bool        OnLButtonDown(CViewport* pView, UINT nFlags, CPoint point) override;
 	bool        OnLButtonUp(CViewport* pView, UINT nFlags, CPoint point) override;
 	bool        OnMouseMove(CViewport* pView, UINT nFlags, CPoint point) override;
-	void        OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& p0, BrushVec3 value, int flags) override;
+	void        OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator* pManipulator, const SDragData& dragData) override;
 	void        OnManipulatorBegin(IDisplayViewport* pView, ITransformManipulator* pManipulator, CPoint& point, int flags) override;
 	void        OnManipulatorEnd(IDisplayViewport* pView, ITransformManipulator* pManipulator) override;
 
@@ -39,7 +39,6 @@ private:
 	std::unique_ptr<MovePipeline> m_Pipeline;
 	bool                          m_bManipulatingGizmo;
 	BrushVec3                     m_SelectedElementNormal;
-	BrushVec3                     m_value;
 };
 
 GENERATE_MOVETOOL_CLASS(Vertex, EDesignerTool)

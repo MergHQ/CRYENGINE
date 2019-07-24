@@ -325,7 +325,7 @@ void CTerrainMoveTool::Select(int nBox)
 	}
 }
 
-void CTerrainMoveTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const Vec2i& p0, const Vec3& value, int nFlags)
+void CTerrainMoveTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManipulator* pManipulator, const SDragData& dragData)
 {
 	CLevelEditorSharedState::EditMode editMode = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditMode();
 	if (editMode == CLevelEditorSharedState::EditMode::Move)
@@ -334,7 +334,7 @@ void CTerrainMoveTool::OnManipulatorDrag(IDisplayViewport* view, ITransformManip
 		GetIEditorImpl()->GetIUndoManager()->Restore();
 
 		Vec3 pos = m_source.pos;
-		Vec3 val = value;
+		Vec3 val = dragData.accumulateDelta;
 
 		Vec3 max = pHeightmap->HmapToWorld(CPoint(pHeightmap->GetWidth(), pHeightmap->GetHeight()));
 
