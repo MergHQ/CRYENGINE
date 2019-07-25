@@ -228,7 +228,7 @@ void SliceTool::OnManipulatorDrag(IDisplayViewport* pView, ITransformManipulator
 	if (GetIEditor()->GetLevelEditorSharedState()->GetEditMode() == CLevelEditorSharedState::EditMode::Scale)
 		return;
 
-	BrushVec3 vDelta = dragData.accumulateDelta - m_PrevGizmoPos;
+	BrushVec3 vDelta = BrushVec3(dragData.accumulateDelta) - m_PrevGizmoPos;
 	if (Comparison::IsEquivalent(vDelta, BrushVec3(0, 0, 0)))
 		return;
 
