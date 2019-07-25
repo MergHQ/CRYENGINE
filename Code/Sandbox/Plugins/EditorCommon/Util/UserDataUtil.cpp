@@ -133,6 +133,8 @@ QVariant Load(const char* szRelativeFilePath, LoadType loadType)
 	{
 	case LoadType::PrioritizeUserData:
 		return Private_UserDataUtil::Load(GetUserPath(szRelativeFilePath).c_str());
+	case LoadType::EngineDefaults:
+		return Private_UserDataUtil::Load(Private_UserDataUtil::GetEnginePath(szRelativeFilePath).c_str());
 	case LoadType::MergeData:
 		return Private_UserDataUtil::LoadMerged(szRelativeFilePath);
 	}

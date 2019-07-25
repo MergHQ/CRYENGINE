@@ -24,6 +24,7 @@ CPersonalizationManager::CPersonalizationManager()
 	m_saveProjectStateTimer.setSingleShot(this);
 	m_saveProjectStateTimer.connect(&m_saveProjectStateTimer, &QTimer::timeout, [this]() { SaveProjectState(); });
 
+	LoadDefaultState();
 	LoadSharedState();
 	LoadProjectState();
 }
@@ -51,6 +52,11 @@ bool CPersonalizationManager::HasProperty(const QString& moduleName, const QStri
 {
 	const QVariantMap& moduleState = m_sharedState[moduleName];
 	return moduleState.contains(propName);
+}
+
+const QVariantMap& CPersonalizationManager::GetDefaultState(const QString& moduleName)
+{
+	return m_defaultState[moduleName];
 }
 
 void CPersonalizationManager::SetState(const QString& moduleName, const QVariantMap& state)
@@ -119,6 +125,11 @@ CPersonalizationManager::ModuleStateMap CPersonalizationManager::FromVariant(con
 	}
 
 	return map;
+}
+
+void CPersonalizationManager::LoadDefaultState()
+{
+	m_defaultState = FromVariant(UserDataUtil::Load(Private_Personalization::szPersonalizationPath, UserDataUtil::LoadType::EngineDefaults));
 }
 
 void CPersonalizationManager::SaveSharedState() const

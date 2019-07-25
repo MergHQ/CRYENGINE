@@ -15,6 +15,7 @@ namespace UserDataUtil
 enum class LoadType
 {
 	PrioritizeUserData,
+	EngineDefaults,
 	MergeData,
 };
 

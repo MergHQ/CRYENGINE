@@ -59,6 +59,8 @@ private:
 	CBroadcastManager& m_broadcastManager;
 };
 
+const char* szDockLayoutPropertyName = "dockLayout";
+
 } // namespace Private_EditorFramework
 
 CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false */)
@@ -302,9 +304,21 @@ void CEditor::EnableDockingSystem()
 	//Add window menu in the correct position beforehand
 	AddToMenu(MenuItems::WindowMenu);
 
-	m_dockingRegistry = new CDockableContainer(this, GetProperty("dockLayout").toMap());
+	m_dockingRegistry = new CDockableContainer(this, GetProperty(Private_EditorFramework::szDockLayoutPropertyName).toMap());
 	connect(m_dockingRegistry, &CDockableContainer::OnLayoutChange, this, &CEditor::OnLayoutChange);
-	m_dockingRegistry->SetDefaultLayoutCallback([=](CDockableContainer* sender) { CreateDefaultLayout(sender); });
+	m_dockingRegistry->SetDefaultLayoutCallback([this](CDockableContainer* sender)
+	{
+		const QVariantMap& state = GetIEditor()->GetPersonalizationManager()->GetDefaultState(GetEditorName());
+		QVariant layout = state.value(Private_EditorFramework::szDockLayoutPropertyName);
+		if (layout.isValid())
+		{
+			m_dockingRegistry->SetState(layout.toMap());
+		}
+		else
+		{
+			CreateDefaultLayout(sender);
+		}
+	});
 	m_dockingRegistry->SetMenu(GetMenu(MenuItems::WindowMenu));
 	SetContent(m_dockingRegistry);
 }
@@ -362,7 +376,7 @@ QVariantMap CEditor::GetLayout() const
 
 void CEditor::OnLayoutChange(const QVariantMap& state)
 {
-	SetProperty("dockLayout", state);
+	SetProperty(Private_EditorFramework::szDockLayoutPropertyName, state);
 }
 
 void CEditor::OnMainFrameAboutToClose(BroadcastEvent& event)

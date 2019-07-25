@@ -45,6 +45,10 @@ public:
 		return false;
 	}
 
+	// Returns engine defaults for the given module
+	const QVariantMap& GetDefaultState(const QString& moduleName);
+
+	// Returns user personalization for the given module
 	void               SetState(const QString& moduleName, const QVariantMap& state);
 	const QVariantMap& GetState(const QString& moduleName);
 
@@ -63,15 +67,23 @@ private:
 	static QVariant       ToVariant(const ModuleStateMap& map);
 	static ModuleStateMap FromVariant(const QVariant& variant);
 
+	// Loads engine defaults from disk
+	void                  LoadDefaultState();
+
+	// Save/Load user personalization to/from disk
 	void                  SaveSharedState() const;
 	void                  LoadSharedState();
 
+	// Save/Load project specific personalization to/from disk
 	void                  SaveProjectState() const;
 	void                  LoadProjectState();
 
 private:
-
+	// Engine defaults for personalization. Ex. what features should be enabled by default
+	ModuleStateMap m_defaultState;
+	// User personalization during editor use. Ex. features the user has enabled/disabled
 	ModuleStateMap m_sharedState;
+	// Project specific personalization. Ex. last folder used for opening a specific asset type
 	ModuleStateMap m_projectState;
 
 	QTimer         m_saveSharedStateTimer;
