@@ -1343,6 +1343,7 @@ void QToolWindowManager::bringToFront(QWidget* toolWindow)
 	pWindow->setWindowState((pWindow->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
 	pWindow->show();
 	pWindow->raise();
+	pWindow->activateWindow();
 
 	toolWindow->setFocus();
 }
