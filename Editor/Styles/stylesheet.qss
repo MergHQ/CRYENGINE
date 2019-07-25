@@ -418,12 +418,10 @@ QMenu::item:selected
 QMenu:separator 
 {
 	border-radius:2px;
-	background-color:rgb(77,77,77);
-	height:2px;
-	margin-left: 4px;
-	margin-right: 4px;
-	margin-top: 4px;
-	margin-bottom: 4px;
+    background: rgb(102,102,102);
+	height:1px;
+	margin-top: 2px;
+	margin-bottom: 2px;
 }
 
 QLabelSeparatorWidget 
@@ -719,6 +717,7 @@ QPropertyTreeLegacy
 	qproperty-branchOpened: url(icons:Window/Collapse_Arrow_Down_Shifted_Tinted.ico);
 	qproperty-editsScale: 1.4;
 	qproperty-rowSpacing: 1.2;
+	background-color: rgb(77,77,77);
 }
 
 QPropertyGroupHeader 
@@ -1194,8 +1193,20 @@ QCustomTitleBar > QLabel#active
 
 QCustomTitleBar 
 {
-	border-style:solid;
-	border:0px;
+	max-height:24px;
+	margin:0;
+	padding:0;
+	border:none;
+	spacing:0;
+}
+
+QSandboxTitleBar
+{
+	min-height:24px;
+	margin:0;
+	padding:0;
+	border:none;
+	spacing:0;
 }
 
 QCustomWindowFrame, QToolWindowCustomWrapper 
@@ -1235,52 +1246,21 @@ QCustomWindowFrame > QToolWindowCustomWrapper
 	padding:0;
 }
 
-QCustomTitleBar #minimizeButton 
+#minimizeButton, #maximizeButton,  #restoreButton, #closeButton 
 {
-	margin:0 2 0 2;
-	max-width:24px;
-	max-height:24px;
+	border-radius:0;
+	margin:0;
+	padding:0;
+	min-width:44px;
+	min-height:20px;
 	background-color: rgb(14,14,14);
 	color:rgb(50,50,50);
 	qproperty-iconSize: 24px;
 }
 
-QCustomTitleBar #maximizeButton 
+#minimizeButton::hover, #maximizeButton::hover, #restoreButton::hover, #closeButton::hover 
 {
-	margin:0 2 0 2;
-	max-width:24px;
-	max-height:24px;
-	background-color: rgb(14,14,14);
-	color:rgb(50,50,50);
-	qproperty-iconSize: 24px;
-}
-
-QCustomTitleBar #restoreButton 
-{
-	margin:0 2 0 2;
-	max-width:24px;
-	max-height:24px;
-	background-color: rgb(14,14,14);
-	color:rgb(50,50,50);
-	qproperty-iconSize: 24px;
-}
-
-QCustomTitleBar #closeButton 
-{
-	margin:0 4 0 2;
-	max-width:24px;
-	max-height:24px;
-	background-color: rgb(14,14,14);
-	color:rgb(50,50,50);
-	qproperty-iconSize: 24px;
-	image: url(icons:Window/Window_Close.ico);
-}
-
-QCustomTitleBar #minimizeButton::hover, QCustomTitleBar #maximizeButton::hover, QCustomTitleBar #restoreButton::hover, QCustomTitleBar #closeButton::hover 
-{
-	background: qlineargradient(y1:1,
-				stop:1 rgba(255,255,255,20),
-				stop:0.7 rgba(255,255,255,15));
+	background: rgb(102,102,102);
 }
 
 QCustomTitleBar #sysMenu 
@@ -1325,8 +1305,10 @@ QToolButton#QuickAccessButton
 	background:transparent;
 	max-width: 24;
 	max-height: 24;
-	margin:2;
+	margin:0;
+	padding:2;
 	qproperty-iconSize: 16px;
+	border-radius:0;
 }
 
 QToolButton#QuickAccessButton:hover 
@@ -1444,7 +1426,7 @@ EditorStyleHelper
 	qproperty-iconTint: rgb(209,209,209); /* normal */
 	qproperty-disabledIconTint: rgb(105, 105, 105);
 	qproperty-activeIconTint: rgb(209,209,209);/* hover */
-	qproperty-selectedIconTint: rgb(97, 172, 236);
+	qproperty-selectedIconTint: rgb(97,172,236);
 	qproperty-alternateSelectedIconTint: rgb(0,0,0);
 	qproperty-alternateHoverIconTint: rgb(46,46,46); /* added to normal tint for QTreeView */
 	qproperty-contrastingIconTint: rgb(35, 35, 35);
@@ -1465,7 +1447,7 @@ EditorStyleHelper
 	qproperty-timelineOutsideTrackColor: rgba(60, 60, 60,120);
 	qproperty-timelineDescriptionTrackColor: rgb(91, 91, 91);
 	qproperty-timelineCompositeTrackColor: rgb(77, 77, 77);
-	qproperty-timelineSelectionColor: rgb(97, 172, 236);
+	qproperty-timelineSelectionColor: rgb(97,172,236);
 	qproperty-timelineDescriptionTextColor: rgb(149, 149, 149);
 	qproperty-timelineInnerTickLines: rgb(50, 50, 50);
 	qproperty-timelineOuterTickLines: rgb(55, 55, 55);
@@ -2567,22 +2549,22 @@ CToolBarArea
 
 CToolBarArea[dragHover=true]
 {
-	background-color: rgb(97, 172, 236, 128);
-	border: 1px solid rgb(97, 172, 236, 192);
+	background-color: rgb(97,172,236, 128);
+	border: 1px solid rgb(97,172,236, 192);
 	border-radius:3;
 }
 
 CToolBarArea[dragHover=false]
 {
-	background-color: rgb(97, 172, 236, 64);
-	border: 1px solid rgb(97, 172, 236, 128);
+	background-color: rgb(97,172,236, 64);
+	border: 1px solid rgb(97,172,236, 128);
 	border-radius:3;
 }
 
 CToolBarArea[dragAndDropMode=true]
 {
-	background-color: rgb(97, 172, 236, 64);
-	border: 1px solid rgb(97, 172, 236, 128);
+	background-color: rgb(97,172,236, 64);
+	border: 1px solid rgb(97,172,236, 128);
 	min-height: 38;
 	min-width: 38;
 	border-radius:3;
@@ -2821,4 +2803,16 @@ CEditor CDockableContainer QSplitter::handle
 CDockableContainer QSplitter::handle
 {
 	background-color: rgb(14,14,14);
+}
+
+#QPanel
+{
+	background:rgb(77,77,77);
+}
+
+CDockableWidget
+{
+	margin:0;
+	border:none;
+	padding:0;
 }

@@ -76,7 +76,7 @@ void QPreferencePage::InitUI()
 
 	QHBoxLayout* pActionLayout = new QHBoxLayout();
 	pActionLayout->setSpacing(0);
-	pActionLayout->setContentsMargins(0, 5, 0, 0);
+	pActionLayout->setContentsMargins(0, 4, 4, 4);
 	pActionLayout->addItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 	QPushButton* pResetButton = new QPushButton("Reset to Default");
 	connect(pResetButton, &QPushButton::clicked, this, &QPreferencePage::OnResetToDefault);
@@ -136,8 +136,9 @@ QPreferencesDialog::QPreferencesDialog(QWidget* pParent /*= nullptr*/)
 	}
 	m_pTreeView->ExpandAll();
 
-	// Create empty preference page container
+	// Create empty preference  page container
 	m_pContainer = new QContainer();
+	m_pContainer->setObjectName("QPanel");
 	m_pSplitter = new QSplitter(Qt::Horizontal);
 	m_pSplitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 	m_pSplitter->addWidget(m_pTreeView);
