@@ -8,7 +8,7 @@
 
 struct SDragData
 {
-	SDragData(int flags, const Vec2i& viewportPos, const Vec3& frameDelta = { 0.0f, 0.0f, 0.0f }, const Vec3& accumulateDelta = { 0.0f, 0.0f, 0.0f })
+	SDragData(int flags, const Vec2i& viewportPos, const Vec3& accumulateDelta = { 0.0f, 0.0f, 0.0f }, const Vec3& frameDelta = { 0.0f, 0.0f, 0.0f })
 		: flags(flags)
 		, viewportPos(viewportPos) 
 		, accumulateDelta(accumulateDelta)
