@@ -1018,7 +1018,7 @@ float3 tiledShading(float in_eta, layer_properties_t properties[layers_count + t
     float3 acc = float3(0,0,0);
     diffuse_contributions = 0;
     TiledForwardShading(attribs, diffuse_contributions, acc, ssTrilinearClamp, ssComparison,
-                        true, true, true, false, true);
+                        true, true, true, false, false);
 
 	return max(0, acc);
 }
