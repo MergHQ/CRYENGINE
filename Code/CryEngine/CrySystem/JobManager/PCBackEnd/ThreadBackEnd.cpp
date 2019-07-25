@@ -118,9 +118,10 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::ShutDown()
 void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock)
 {
 	uint32 nJobPriority = crJob.GetPriorityLevel();
-#if !defined(_RELEASE) || defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if !defined(_RELEASE) || defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	CJobManager* __restrict pJobManager = CJobManager::Instance();
 #endif
+
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Acquire Infoblock to use
@@ -153,7 +154,7 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	const uint32 cJobId = cJobHandle->jobId;
 	rJobInfoBlock.jobId = (unsigned char)cJobId;
 
-#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
+#if !defined(_RELEASE) && defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	assert(cJobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS);
 	m_pBackEndWorkerProfiler->RegisterJob(cJobId, pJobManager->GetJobName(rInfoBlock.jobInvoker));
 	rJobInfoBlock.frameProfIndex = (unsigned char)m_pBackEndWorkerProfiler->GetProfileIndex();

@@ -2896,13 +2896,11 @@ void CStatsToExcelExporter::ExportDependencies(CResourceCollector& stats)
 
 		for (it = stats.m_Dependencies.begin();; ++it)
 		{
-			uint32 dwAssetsSize = stats.m_Assets.size();
-
 			if (it == end || (*it).m_idAsset != dwCurrentAssetID)
 			{
 				if (dwSum != 0 && dwSumFile != 0xffffffff)
 				{
-					assert(dwCurrentAssetID < dwAssetsSize);
+					assert(dwCurrentAssetID < stats.m_Assets.size());
 
 					char szAName0[1024];
 					cry_sprintf(szAName0, "A%u %s", dwCurrentAssetID, stats.m_Assets[dwCurrentAssetID].m_sFileName.c_str());
@@ -2922,7 +2920,7 @@ void CStatsToExcelExporter::ExportDependencies(CResourceCollector& stats)
 
 			const CResourceCollector::SDependencyPair& rRef = *it;
 
-			assert(rRef.m_idDependsOnAsset < dwAssetsSize);
+			assert(rRef.m_idDependsOnAsset < stats.m_Assets.size());
 
 			CResourceCollector::SAssetEntry& rDepAsset = stats.m_Assets[rRef.m_idDependsOnAsset];
 
