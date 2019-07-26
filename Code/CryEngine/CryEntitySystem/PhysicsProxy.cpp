@@ -448,9 +448,10 @@ void CEntityPhysics::OnTimer(int id)
 				continue;
 			pe_params_foreign_data pfd;
 			m_pPhysicalEntity->GetParams(&pfd);
+			IPhysicalEntity* pAttachTo = nullptr;
 			if (pfd.iForeignData != PHYS_FOREIGN_ID_ENTITY)
 			{
-				IPhysicalEntity* pAttachTo = gEnv->pPhysicalWorld->GetPhysicalEntityById(pfd.iForeignData - PHYS_FOREIGN_ID_USER);
+				pAttachTo = gEnv->pPhysicalWorld->GetPhysicalEntityById(pfd.iForeignData - PHYS_FOREIGN_ID_USER);
 				if (pAttachTo)
 				{
 					pe_status_pos sp;
@@ -458,8 +459,8 @@ void CEntityPhysics::OnTimer(int id)
 					if (1 << sp.iSimClass > ent_independent)
 						pAttachTo = 0;
 				}
-				AttachSoftVtx(pRM, pAttachTo, pfd.iForeignFlags);
 			}
+			AttachSoftVtx(pRM, pAttachTo, pfd.iForeignFlags);
 			pfd.pForeignData = GetEntity();
 			pfd.iForeignData = PHYS_FOREIGN_ID_ENTITY;
 			pfd.iForeignFlags = 0;
