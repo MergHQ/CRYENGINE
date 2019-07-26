@@ -1349,7 +1349,7 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::SetSelectedCamer
 REGISTER_EDITOR_UI_COMMAND_DESC(viewport, make_selected_camera_current, "Selected Camera", "", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionCamera_Selected_Object, viewport, make_selected_camera_current)
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::SetSelectedCamera, viewport, cycle_current_camera,
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelEditorCommands::CycleCurrentCamera, viewport, cycle_current_camera,
                                    CCommandDescription("Cycle current active camera"))
 REGISTER_EDITOR_UI_COMMAND_DESC(viewport, cycle_current_camera, "Cycle Camera", "Ctrl+'", "", false)
 REGISTER_COMMAND_REMAPPING(ui_action, actionCamera_Cycle, viewport, cycle_current_camera)
