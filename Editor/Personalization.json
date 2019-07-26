@@ -76,7 +76,7 @@
             },
             "foldersSplitter": "AAAA/wAAAAEAAAACAAABNwAAA2wB/////wEAAAABAA==",
             "mainViewSplitter": "AAAA/wAAAAEAAAACAAAATAAAAQAB/////wEAAAABAA==",
-            "recursiveView": true,
+            "recursiveView": false,
             "showFolders": true,
             "thumbnailView": {
                 "size": {
@@ -236,7 +236,7 @@
                 ]
             },
             "mainViewSplitter": "AAAA/wAAAAEAAAACAAAAOgAAAQAB/////wEAAAABAA==",
-            "recursiveView": true,
+            "recursiveView": false,
             "showFolders": false,
             "syncSelection": true,
             "thumbnailView": {
@@ -603,7 +603,7 @@
                         },
                         "foldersSplitter": "AAAA/wAAAAEAAAAC/////wAAAqwB/////wEAAAACAA==",
                         "mainViewSplitter": "AAAA/wAAAAEAAAAC/////wAAAQAB/////wEAAAABAA==",
-                        "recursiveView": true,
+                        "recursiveView": false,
                         "showFolders": false,
                         "syncSelection": true,
                         "thumbnailView": {
@@ -776,7 +776,7 @@
                         },
                         "foldersSplitter": "AAAA/wAAAAEAAAACAAAARQAAAqwB/////wEAAAACAA==",
                         "mainViewSplitter": "AAAA/wAAAAEAAAACAAAAOgAAAQAB/////wEAAAABAA==",
-                        "recursiveView": true,
+                        "recursiveView": false,
                         "showFolders": false,
                         "syncSelection": true,
                         "thumbnailView": {
@@ -1075,7 +1075,7 @@
                             ]
                         },
                         "mainViewSplitter": "AAAA/wAAAAEAAAAC/////wAAAQAB/////wEAAAABAA==",
-                        "recursiveView": true,
+                        "recursiveView": false,
                         "showFolders": false,
                         "syncSelection": true,
                         "thumbnailView": {
@@ -1301,7 +1301,7 @@
                             ]
                         },
                         "mainViewSplitter": "AAAA/wAAAAEAAAAC//////////8B/////wEAAAABAA==",
-                        "recursiveView": true,
+                        "recursiveView": false,
                         "showFolders": false,
                         "syncSelection": true,
                         "thumbnailView": {

@@ -360,7 +360,7 @@
                     ]
                 },
                 "mainViewSplitter": "AAAA/wAAAAEAAAACAAAATAAAAQAB/////wEAAAABAA==",
-                "recursiveView": true,
+                "recursiveView": false,
                 "showFolders": true,
                 "thumbnailView": {
                     "size": {
