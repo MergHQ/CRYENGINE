@@ -9,8 +9,7 @@ CRYREGISTER_CLASS( CProceduralContextAim );
 
 //////////////////////////////////////////////////////////////////////////
 CProceduralContextAim::CProceduralContextAim()
-: m_pPoseBlenderAim( NULL )
-, m_gameRequestsAiming( true )
+: m_gameRequestsAiming( true )
 , m_procClipRequestsAiming( false )
 , m_gameAimTarget( 0, 0, 0 )
 , m_defaultPolarCoordinatesMaxSmoothRateRadiansPerSecond( DEG2RAD( 360 ), DEG2RAD( 360 ) )
@@ -46,9 +45,7 @@ void CProceduralContextAim::InitialisePoseBlenderAim()
 		return;
 	}
 
-	m_pPoseBlenderAim = pSkeletonPose->GetIPoseBlenderAim();
-
-	if ( m_pPoseBlenderAim )
+	if (IAnimationPoseBlenderDir* pPoseBlenderAim = GetPoseBlenderAim())
 	{
 		m_defaultPolarCoordinatesSmoothTimeSeconds = 0.1f;
 		float polarCoordinatesMaxYawDegreesPerSecond = 360.f;
@@ -75,12 +72,12 @@ void CProceduralContextAim::InitialisePoseBlenderAim()
 
 		m_defaultPolarCoordinatesMaxSmoothRateRadiansPerSecond = Vec2( DEG2RAD( polarCoordinatesMaxYawDegreesPerSecond ), DEG2RAD( polarCoordinatesMaxPitchDegreesPerSecond ) );
 
-		m_pPoseBlenderAim->SetPolarCoordinatesSmoothTimeSeconds( m_defaultPolarCoordinatesSmoothTimeSeconds );
-		m_pPoseBlenderAim->SetPolarCoordinatesMaxRadiansPerSecond( m_defaultPolarCoordinatesMaxSmoothRateRadiansPerSecond );
-		m_pPoseBlenderAim->SetFadeInSpeed( fadeInSeconds );
-		m_pPoseBlenderAim->SetFadeOutSpeed( fadeOutSeconds );
-		m_pPoseBlenderAim->SetFadeOutMinDistance( fadeOutMinDistance );
-		m_pPoseBlenderAim->SetState( false );
+		pPoseBlenderAim->SetPolarCoordinatesSmoothTimeSeconds( m_defaultPolarCoordinatesSmoothTimeSeconds );
+		pPoseBlenderAim->SetPolarCoordinatesMaxRadiansPerSecond( m_defaultPolarCoordinatesMaxSmoothRateRadiansPerSecond );
+		pPoseBlenderAim->SetFadeInSpeed( fadeInSeconds );
+		pPoseBlenderAim->SetFadeOutSpeed( fadeOutSeconds );
+		pPoseBlenderAim->SetFadeOutMinDistance( fadeOutMinDistance );
+		pPoseBlenderAim->SetState( false );
 	}
 }
 
@@ -89,11 +86,11 @@ void CProceduralContextAim::InitialisePoseBlenderAim()
 void CProceduralContextAim::InitialiseGameAimTarget()
 {
 	CRY_ASSERT( m_entity );
+	m_gameAimTarget = (m_entity->GetForwardDir() * 10.0f) + m_entity->GetWorldPos();
 
-	m_gameAimTarget = ( m_entity->GetForwardDir() * 10.0f ) + m_entity->GetWorldPos();
-	if ( m_pPoseBlenderAim )
+	if (IAnimationPoseBlenderDir* pPoseBlenderAim = GetPoseBlenderAim())
 	{
-		m_pPoseBlenderAim->SetTarget( m_gameAimTarget );
+		pPoseBlenderAim->SetTarget( m_gameAimTarget );
 	}
 }
 
@@ -101,19 +98,20 @@ void CProceduralContextAim::InitialiseGameAimTarget()
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextAim::Update( float timePassedSeconds )
 {
-	if ( m_pPoseBlenderAim == NULL )
+	IAnimationPoseBlenderDir* pPoseBlenderAim = GetPoseBlenderAim();
+	if (pPoseBlenderAim == NULL )
 	{
 		return;
 	}
 
 	const bool canAim = ( m_gameRequestsAiming && m_procClipRequestsAiming );
-	m_pPoseBlenderAim->SetState( canAim );
+	pPoseBlenderAim->SetState( canAim );
 
 	UpdatePolarCoordinatesSmoothingParameters();
 
 	if ( canAim )
 	{
-		m_pPoseBlenderAim->SetTarget( m_gameAimTarget );
+		pPoseBlenderAim->SetTarget( m_gameAimTarget );
 	}
 }
 
@@ -121,7 +119,8 @@ void CProceduralContextAim::Update( float timePassedSeconds )
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextAim::UpdatePolarCoordinatesSmoothingParameters()
 {
-	CRY_ASSERT( m_pPoseBlenderAim );
+	IAnimationPoseBlenderDir* pPoseBlenderAim = GetPoseBlenderAim();
+	CRY_ASSERT(pPoseBlenderAim);
 
 	Vec2 polarCoordinatesMaxSmoothRateRadiansPerSecond = m_defaultPolarCoordinatesMaxSmoothRateRadiansPerSecond;
 	float polarCoordinatesSmoothTimeSeconds = m_defaultPolarCoordinatesSmoothTimeSeconds;
@@ -135,10 +134,28 @@ void CProceduralContextAim::UpdatePolarCoordinatesSmoothingParameters()
 		polarCoordinatesSmoothTimeSeconds = request.smoothTimeSeconds;
 	}
 
-	m_pPoseBlenderAim->SetPolarCoordinatesMaxRadiansPerSecond( polarCoordinatesMaxSmoothRateRadiansPerSecond );
-	m_pPoseBlenderAim->SetPolarCoordinatesSmoothTimeSeconds( polarCoordinatesSmoothTimeSeconds );
+	pPoseBlenderAim->SetPolarCoordinatesMaxRadiansPerSecond( polarCoordinatesMaxSmoothRateRadiansPerSecond );
+	pPoseBlenderAim->SetPolarCoordinatesSmoothTimeSeconds( polarCoordinatesSmoothTimeSeconds );
 }
 
+
+IAnimationPoseBlenderDir* CProceduralContextAim::GetPoseBlenderAim()
+{
+	if (m_entity)
+	{
+		if (ICharacterInstance* pCharInst = m_entity->GetCharacter(0))
+		{
+			if (ISkeletonPose* pSkelPose = pCharInst->GetISkeletonPose())
+			{
+				if (IAnimationPoseBlenderDir* pPoseBlenderAim = pSkelPose->GetIPoseBlenderAim())
+				{
+					return pPoseBlenderAim;
+				}
+			}
+		}
+	}
+	return nullptr;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextAim::UpdateGameAimingRequest( const bool aimRequest )
@@ -164,24 +181,26 @@ void CProceduralContextAim::UpdateGameAimTarget( const Vec3& aimTarget )
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextAim::SetBlendInTime( const float blendInTime )
 {
-	if ( m_pPoseBlenderAim == NULL )
+	IAnimationPoseBlenderDir* pPoseBlenderAim = GetPoseBlenderAim();
+	if (pPoseBlenderAim == NULL )
 	{
 		return;
 	}
 
-	m_pPoseBlenderAim->SetFadeInSpeed( blendInTime );
+	pPoseBlenderAim->SetFadeInSpeed( blendInTime );
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextAim::SetBlendOutTime( const float blendOutTime )
 {
-	if ( m_pPoseBlenderAim == NULL )
+	IAnimationPoseBlenderDir* pPoseBlenderAim = GetPoseBlenderAim();
+	if (pPoseBlenderAim == NULL)
 	{
 		return;
 	}
 
-	m_pPoseBlenderAim->SetFadeOutSpeed( blendOutTime );
+	pPoseBlenderAim->SetFadeOutSpeed( blendOutTime );
 }
 
 

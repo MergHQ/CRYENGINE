@@ -47,7 +47,7 @@ private:
 	void UpdatePolarCoordinatesSmoothingParameters();
 
 private:
-	IAnimationPoseBlenderDir* m_pPoseBlenderAim;
+	IAnimationPoseBlenderDir* GetPoseBlenderAim();
 
 	bool m_gameRequestsAiming;
 	bool m_procClipRequestsAiming;
