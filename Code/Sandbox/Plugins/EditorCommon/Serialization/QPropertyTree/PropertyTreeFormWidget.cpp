@@ -1588,6 +1588,12 @@ void CInlineWidgetBox::AddWidget(QWidget* pWidget, QPropertyTree* pPropertyTree)
 	IPropertyTreeWidget* pPropertyTreeWidget = qobject_cast<IPropertyTreeWidget*>(pWidget);
 	if (pPropertyTreeWidget)
 	{
+		// Force disconnect of all signals since they're not being cleaned up correctly when reusing this widget
+		pPropertyTreeWidget->signalDiscarded.DisconnectAll();
+		pPropertyTreeWidget->signalPreChanged.DisconnectAll();
+		pPropertyTreeWidget->signalChanged.DisconnectAll();
+		pPropertyTreeWidget->signalContinuousChanged.DisconnectAll();
+
 		pPropertyTreeWidget->signalDiscarded.Connect(pPropertyTree, &QPropertyTree::OnRowDiscarded);
 		pPropertyTreeWidget->signalPreChanged.Connect(pPropertyTree, &QPropertyTree::OnRowPreChanged);
 		pPropertyTreeWidget->signalChanged.Connect(pPropertyTree, &QPropertyTree::OnRowChanged);
