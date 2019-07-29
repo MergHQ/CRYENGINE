@@ -8,6 +8,7 @@
 #include "EditorStyleHelper.h"
 #include "Commands/ICommandManager.h"
 #include <IEditor.h>
+#include <IUndoManager.h>
 
 #include "QSearchBox.h"
 
@@ -2009,9 +2010,10 @@ struct CTimeline::SPasteHandler : SShiftHandler
 		m_startTime = m_clickTime;
 
 		m_elementTimes = GetSelectedElementTimes(m_timeline->m_pContent->track);
-		m_timeline->ContentChanged(true);
 
-		CryLog("m_startPoint.x = %i", m_startPoint.x());
+		GetIEditor()->GetIUndoManager()->Suspend();
+		m_timeline->ContentChanged(true);
+		GetIEditor()->GetIUndoManager()->Resume();
 	}
 
 	void mousePressEvent(QMouseEvent* ev) override
@@ -2043,7 +2045,10 @@ struct CTimeline::SPasteHandler : SShiftHandler
 			  element.added = true;
 			}
 		});
+
+		GetIEditor()->GetIUndoManager()->Suspend();
 		m_timeline->ContentChanged(true);
+		GetIEditor()->GetIUndoManager()->Resume();
 
 		MoveElements(m_timeline->m_pContent->track, moveElementsDeltaTime);
 	}
