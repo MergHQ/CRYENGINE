@@ -49,6 +49,8 @@ namespace Cry
 					desc.AddMember(&CClothComponent::SSimulationParameters::accuracy, 'accu', "Accuracy", "Accuracy", "Accuracy (allowed velocity error per frame) of the cloth solver", 0.05f);
 					desc.AddMember(&CClothComponent::SSimulationParameters::maxStretch, 'stch', "MaxStretch", "Max Stretch", "Maximum allowed streching before positional enforcement is activated, in fractions of 1 (i.e. 0.05=5%)\
 Smaller values to be used to remove stretching even with low Max Iters. It's a cheaper, but less physically accurate way.", 0.3f);
+					desc.AddMember(&CClothComponent::SSimulationParameters::stiffNorm, 'stnm', "StiffNorm", "Bend Stiffness", "Stiffness against bending", 0.0f);
+					desc.AddMember(&CClothComponent::SSimulationParameters::stiffTang, 'sttg', "StiffTang", "Shear Stiffness", "Strength against shearing.", 0.0f);
 				}
 
 				float maxTimeStep = 0.02f;
@@ -58,6 +60,8 @@ Smaller values to be used to remove stretching even with low Max Iters. It's a c
 				int   maxIters = 20;
 				float accuracy = 0.05f;
 				float maxStretch = 0.2f;
+				float stiffNorm = 0;
+				float stiffTang = 0;
 			};
 
 			static void ReflectType(Schematyc::CTypeDesc<CClothComponent>& desc)

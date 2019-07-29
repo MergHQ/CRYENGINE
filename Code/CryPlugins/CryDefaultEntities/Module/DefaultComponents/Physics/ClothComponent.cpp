@@ -81,6 +81,8 @@ void CClothComponent::Physicalize()
 	psb.nMaxIters = m_simulationParameters.maxIters;
 	psb.accuracy = m_simulationParameters.accuracy;
 	psb.maxSafeStep = m_simulationParameters.maxStretch;
+	psb.shapeStiffnessNorm = m_simulationParameters.stiffNorm;
+	psb.shapeStiffnessTang = m_simulationParameters.stiffTang;
 	m_pEntity->GetPhysicalEntity()->SetParams(&psb);
 }
 
