@@ -1162,6 +1162,8 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey, c
 	{
 		m_SceneRecurseCount++;
 	}
+
+	m_maskRenderPhaseLog |= eRP_BeginFrame;
 }
 
 bool CD3D9Renderer::RT_StoreTextureToFile(const char* szFilePath, CTexture* pSrc)
@@ -3206,6 +3208,24 @@ void CD3D9Renderer::RT_EndFrame()
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	m_pPipelineProfiler->BeginSection("END");
 #endif
+
+	m_maskRenderPhaseLog |= eRP_EndFrame;
+
+	// If SubmitRenderViewForRendering is not called ...
+	if (!(m_maskRenderPhaseLog & eRP_PreRenderScene))
+	{
+		// ... call memory pool managements ...
+		RT_PreRenderScene(nullptr);
+
+		// ... and pretend everything happened the right way.
+		m_maskRenderPhaseLog |=
+			eRP_PreRenderScene +
+			eRP_RenderScene +
+			eRP_PostRenderScene;
+	}
+
+	CRY_ASSERT(m_maskRenderPhaseLog == eRP_AllRenderPhases);
+	m_maskRenderPhaseLog = 0;
 
 	if (!m_SceneRecurseCount)
 	{

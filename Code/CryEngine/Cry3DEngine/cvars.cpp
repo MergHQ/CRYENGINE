@@ -673,8 +673,13 @@ void CVars::Init()
 	              "Camera speed during test (meters/sec)");
 
 	// Small temp pool size for consoles, editor and pc have much larger capabilities
-	DefineConstIntCVar(e_3dEngineTempPoolSize, 1024, VF_NULL,
-	                   "pool size for temporary allocations in kb, requires app restart");
+#if CRY_PLATFORM_DESKTOP
+	REGISTER_CVAR(e_3dEngineTempPoolSize, 8192, VF_REQUIRE_APP_RESTART,
+		            "pool size for temporary allocations in kb, requires app restart");
+#else
+	REGISTER_CVAR(e_3dEngineTempPoolSize, 1024, VF_REQUIRE_APP_RESTART,
+		            "pool size for temporary allocations in kb, requires app restart");
+#endif
 
 	DefineConstIntCVar(e_3dEngineLogAlways, 0, VF_NULL,
 	                   "Set maximum verbosity to 3dengine.dll log messages");

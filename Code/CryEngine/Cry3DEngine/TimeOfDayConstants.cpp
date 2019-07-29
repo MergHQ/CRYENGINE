@@ -292,11 +292,13 @@ void TotalIllumAdvImpl::Serialize(Serialization::IArchive& ar)
 	SerializeSvoTi(ar, translucentBrightness, 0.0f, 8.0f, "TranslucentBrightness", "Translucent Brightness");
 	SerializeSvoTi(ar, pointLightsBias, 0.0f, 1.0f, "PointLightsBias", "Point Lights Bias");
 	SerializeSvoTi(ar, highGlossOcclusion, -100.0f, 1.0f, "HighGlossOcclusion", "High Gloss Occlusion");
-	SerializeSvoTi(ar, rtActive, "RT_Active", "RT Active", "e_svoTI_");
-	SerializeSvoTi(ar, rtMaxDistRay, "RT_MaxDistRay", "RT Max Dist Ray", "e_svoTI_");
-	SerializeSvoTi(ar, rtMaxDistCam, "RT_MaxDistCam", "RT Max Dist Cam", "e_svoTI_");
-	SerializeSvoTi(ar, rtMinGloss, "RT_MinGloss", "RT Min Gloss", "e_svoTI_");
-	SerializeSvoTi(ar, rtMinRefl, "RT_MinRefl", "RT Min Refl", "e_svoTI_");
+
+//  ** Early version of RT is excluded from UI until we integrate proper version from Neon Noir branch **
+// 	SerializeSvoTi(ar, rtActive, "RT_Active", "RT Active", "e_svoTI_");
+// 	SerializeSvoTi(ar, rtMaxDistRay, "RT_MaxDistRay", "RT Max Dist Ray", "e_svoTI_");
+// 	SerializeSvoTi(ar, rtMaxDistCam, "RT_MaxDistCam", "RT Max Dist Cam", "e_svoTI_");
+// 	SerializeSvoTi(ar, rtMinGloss, "RT_MinGloss", "RT Min Gloss", "e_svoTI_");
+// 	SerializeSvoTi(ar, rtMinRefl, "RT_MinRefl", "RT Min Refl", "e_svoTI_");
 }
 
 //////////////////////////////////////////////////////////////////////////

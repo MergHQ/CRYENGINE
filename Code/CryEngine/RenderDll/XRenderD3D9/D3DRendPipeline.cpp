@@ -451,31 +451,34 @@ void CD3D9Renderer::FX_ClearCharInstCB(uint32 frameId)
 
 void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 {
-	std::shared_ptr<CGraphicsPipeline> pActiveGraphicsPipeline = pRenderView->GetGraphicsPipeline();
-	const uint32 shaderRenderingFlags = pActiveGraphicsPipeline->GetRenderFlags();
-	pActiveGraphicsPipeline->SetCurrentRenderView(pRenderView);
+	std::shared_ptr<CGraphicsPipeline> pActiveGraphicsPipeline = pRenderView ? pRenderView->GetGraphicsPipeline() : nullptr;
+	const uint32 shaderRenderingFlags = pActiveGraphicsPipeline ? pActiveGraphicsPipeline->GetRenderFlags() : 0U;
+
+	if (pActiveGraphicsPipeline)
+		pActiveGraphicsPipeline->SetCurrentRenderView(pRenderView);
 
 	//if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
 	//{
 	//	m_pGpuParticleManager->RenderThreadPreUpdate();
 	//}
 
-	const bool bRecurse = pRenderView->IsRecursive();
-	const bool bAllowPostProcess = pActiveGraphicsPipeline->IsPostProcessingEnabled();
+	const bool bRecurse = pRenderView ? pRenderView->IsRecursive() : false;
+	const bool bAllowPostProcess = pActiveGraphicsPipeline ? pActiveGraphicsPipeline->IsPostProcessingEnabled() : false;
 	const bool bAllowPostAA = bAllowPostProcess
 	                          && (GetWireframeMode() == R_SOLID_MODE)
 	                          && (CRenderer::CV_r_DeferredShadingDebugGBuffer == 0);
 
 	// Update the character CBs (only active on D3D11 style platforms)
 	// Needs to be done before objects are compiled
-	RT_UpdateSkinningConstantBuffers(pRenderView);
+	if (pRenderView)
+		RT_UpdateSkinningConstantBuffers(pRenderView);
 
 	CRenderMesh::RT_PerFrameTick();
 	CMotionBlur::InsertNewElements();
 	CRenderMesh::UpdateModified();
 
 	// Calculate AA jitter
-	if (bAllowPostAA)
+	if (pActiveGraphicsPipeline && bAllowPostAA)
 	{
 		if (GetS3DRend().IsStereoEnabled())
 		{
@@ -511,26 +514,31 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 		}
 	}
 
-	static int lightVolumeOldFrameID = -1;
-	const int newFrameID = pRenderView->GetFrameId();
-
-	// Update light volumes info
-	const bool updateLightVolumes =
-		lightVolumeOldFrameID != newFrameID &&
-		!bRecurse &&
-		(shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS) != 0;
-	if (updateLightVolumes)
+	if (pActiveGraphicsPipeline)
 	{
-		CTiledLightVolumesStage* pLightVolumeStage = pActiveGraphicsPipeline->GetStage<CTiledLightVolumesStage>();
-		if (pLightVolumeStage)
+		static int lightVolumeOldFrameID = -1;
+		const int newFrameID = pRenderView->GetFrameId();
+
+		// Update light volumes info
+		const bool updateLightVolumes =
+			lightVolumeOldFrameID != newFrameID &&
+			!bRecurse &&
+			(shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS) != 0;
+		if (updateLightVolumes)
 		{
-			pLightVolumeStage->GetLightVolumeBuffer().UpdateContent();
+			CTiledLightVolumesStage* pLightVolumeStage = pActiveGraphicsPipeline->GetStage<CTiledLightVolumesStage>();
+			if (pLightVolumeStage)
+			{
+				pLightVolumeStage->GetLightVolumeBuffer().UpdateContent();
+			}
+
+			lightVolumeOldFrameID = newFrameID;
 		}
-		
-		lightVolumeOldFrameID = newFrameID;
+
+		pActiveGraphicsPipeline->m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
 	}
 
-	pActiveGraphicsPipeline->m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
+	m_maskRenderPhaseLog |= eRP_PreRenderScene;
 }
 
 void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
@@ -549,6 +557,8 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 	{
 		gRenDev->GetIRenderAuxGeom()->Submit();
 	}
+
+	m_maskRenderPhaseLog |= eRP_PostRenderScene;
 }
 
 // Render thread only scene rendering
@@ -652,6 +662,8 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 
 	if (CRendererCVars::CV_r_FlushToGPU >= 1)
 		GetDeviceObjectFactory().FlushToGPU();
+
+	m_maskRenderPhaseLog |= eRP_RenderScene;
 }
 
 //======================================================================================================

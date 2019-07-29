@@ -36,7 +36,8 @@ namespace
 	template<typename T, typename... TConstructorParams>
 	T* Construct(void* (*pAllocFnc)(size_t), TConstructorParams&&... params)
 	{
-		return new (pAllocFnc(sizeof(T))) T(std::forward<TConstructorParams>(params)...);
+		void * ptr = pAllocFnc(sizeof(T));
+		return ptr ? (new (ptr) T(std::forward<TConstructorParams>(params)...)) : nullptr;
 	}
 }
 
@@ -2330,6 +2331,14 @@ bool CLoaderCGF::LoadNodeChunk(IChunkFile::ChunkDesc* pChunkDesc, bool bJustGeom
 	pChunkDesc->bSwapEndian = false;
 
 	CNodeCGF* pNodeCGF = Construct<CNodeCGF>(m_pAllocFnc, m_pDestructFnc);
+	if (!pNodeCGF)
+	{
+		m_LastError.Format(
+			"Could not allocate %" PRISIZE_T " bytes from temporary pool, consider increasing e_3dEngineTempPoolSize", 
+			sizeof(CNodeCGF));
+		return false;
+	}
+
 	m_pCGF->AddNode(pNodeCGF);
 
 	cry_strcpy(pNodeCGF->name, nodeChunk->name);
@@ -3865,6 +3874,14 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 		SwapEndian(chunk, bSwapEndianness);
 
 		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(m_pAllocFnc, m_pDestructFnc);
+		if (!pMtlCGF)
+		{
+			m_LastError.Format(
+				"Could not allocate %" PRISIZE_T " bytes from temporary pool, consider increasing e_3dEngineTempPoolSize", 
+				sizeof(CMaterialCGF));
+			return NULL;
+		}
+
 		pMtlCGF->nChunkId = pChunkDesc->chunkId;
 		m_pCGF->AddMaterial(pMtlCGF);
 
@@ -3950,6 +3967,14 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 		}
 
 		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(m_pAllocFnc, m_pDestructFnc);
+		if (!pMtlCGF)
+		{
+			m_LastError.Format(
+				"Could not allocate %" PRISIZE_T " bytes from temporary pool, consider increasing e_3dEngineTempPoolSize", 
+				sizeof(CMaterialCGF));
+			return NULL;
+		}
+
 		pMtlCGF->nChunkId = pChunkDesc->chunkId;
 		m_pCGF->AddMaterial(pMtlCGF);
 		cry_strcpy(pMtlCGF->name, chunk.name);

@@ -327,7 +327,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstIntCVar(e_CoverageBufferDrawOccluders, 0);
 	DeclareConstIntCVar(e_ObjectsTreeBBoxes, 0);
 	DeclareConstIntCVar(e_PrepareDeformableObjectsAtLoadTime, 0);
-	DeclareConstIntCVar(e_3dEngineTempPoolSize, 1024);
+	int   e_3dEngineTempPoolSize;
 	DeclareConstFloatCVar(e_MaxViewDistFullDistCamHeight);
 	int   e_VegetationBending;
 	DeclareConstFloatCVar(e_StreamPredictionAheadDebug);

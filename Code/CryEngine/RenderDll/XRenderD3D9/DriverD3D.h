@@ -88,6 +88,17 @@ enum class EWindowState
 	Fullscreen,
 };
 
+enum ERenderPhase
+{
+	eRP_BeginFrame      = BIT(0),
+	eRP_PreRenderScene  = BIT(1),
+	eRP_RenderScene     = BIT(2),
+	eRP_PostRenderScene = BIT(3),
+	eRP_EndFrame        = BIT(4),
+
+	eRP_AllRenderPhases = BIT(5) - 1,
+};
+
 struct SDebugRenderTargetInfo
 {
 	bool                     wasTriggered = false;
@@ -743,6 +754,7 @@ private:
 	// PRIVATE MEMBERS
 	//////////////////////////////////////////////////////////////////////////
 	bool m_bInitialized = false;
+	uint32 m_maskRenderPhaseLog = 0U; // see ERenderPhase
 
 	// Windows context
 	char     m_WinTitle[80];

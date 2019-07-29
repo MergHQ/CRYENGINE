@@ -109,10 +109,6 @@ public:
 	{
 		AUTO_LOCK_T(CryCriticalSectionNonRecursive, Lock);
 		void* pData = Pool.Allocate<void*>(size, align);
-		if (pData == nullptr)
-		{
-			CryFatalError("**** could not allocate %" PRISIZE_T " bytes from temporary pool", size);
-		}
 		return Pool.Resolve<void*>(pData);
 	}
 
