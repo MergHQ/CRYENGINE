@@ -1,0 +1,18 @@
+{
+	"description"                           : "Configuration to build the ShaderCache Generator",
+	"valid_platforms"                       : [ "win_x86", "win_x64" ],
+	"valid_configuration"                   : [ "debug", "profile"],
+	"visual_studio_name"                    : "ShaderCacheGen",
+
+	"win_module_extensions"                 : ["audio_fmod", "brofiler", "spirv-cross"],
+
+	"win_modules" :
+	[
+		"CryCommon",
+		"CrySystem",
+		"CryRenderD3D11",
+		"CryRenderOpenGL",
+		"CryRenderVulkan",
+		"ShaderCacheGen"
+	]
+}

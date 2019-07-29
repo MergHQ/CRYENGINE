@@ -1,0 +1,51 @@
+{
+	"description"                           : "Configuration to build Pipeline",
+	"valid_platforms"                       : [ "win_x86", "win_x64" ],
+	"valid_configuration"                   : [ "debug", "release" ],
+	"visual_studio_name"                    : "Pipeline",
+
+	"win_modules" :
+	[
+		"CryCommon",
+		"CryExport12",
+		"CryExport13",
+		"CryExport14",
+		"CryExport15",
+		"CryTIFPluginCS4_11",
+		"MayaCryExport22009",
+		"MayaCryExport22010",
+		"MayaCryExport22011",
+		"MayaCryExport22012",
+		"MayaCryExport22013",
+		"MBCryExport2012",
+		"HLSLcc",
+
+		"zlib",
+		"tiff",
+		"expat",
+		"tomcrypt"
+	],
+
+	"win_x86_modules" :
+	[
+		"MBCryExport75",
+		"PakEncrypt",
+		"PakDecrypt",
+		"PakSign",
+		"KeyGen"
+	],
+
+	"win_x64_modules" :
+	[
+		"CryExport16",
+		"CryExport17",
+		"CryExport18",
+		"CryExport19",
+		"MayaCryExport22014",
+		"MayaCryExport22015",
+		"MayaCryExport22016",
+		"MBCryExport2014",
+		"MBCryExport2015",
+		"MBCryExport2016"
+	]
+}

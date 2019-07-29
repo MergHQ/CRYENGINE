@@ -1,0 +1,12 @@
+{
+	"NoUberFile":
+	{
+		"Root":
+		[
+			"stdafx.h",
+			"stdafx.cpp",
+			"targetver.h",
+			"PakCrypt.cpp"
+		]
+	}
+}
