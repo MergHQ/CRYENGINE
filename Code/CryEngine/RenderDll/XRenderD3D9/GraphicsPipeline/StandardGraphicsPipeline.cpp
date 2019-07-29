@@ -261,14 +261,6 @@ void CStandardGraphicsPipeline::Execute()
 
 	PROFILE_LABEL_PUSH("GRAPHICS_PIPELINE");
 
-	// TODO: Make this into it's own stage or pipeline
-	if (GetStage<CSceneCustomStage>()->IsStageActive(m_renderingFlags) &&
-	   !GetStage<CSceneCustomStage>()->IsDebugOverlayEnabled())
-	{
-		if(GetStage<CSceneCustomStage>()->ExecuteDebugger())
-			return;
-	}
-
 	// Generate cloud volume textures for shadow mapping. Only needs view, and needs to run before ShadowMaskgen.
 	GetStage<CVolumetricCloudsStage>()->ExecuteShadowGen();
 
@@ -285,157 +277,161 @@ void CStandardGraphicsPipeline::Execute()
 			GetStage<CRainStage>()->ExecuteRainOcclusion();
 	}
 
-	// GBuffer
-	GetStage<CSceneGBufferStage>()->Execute();
+	const bool debugEnabled = GetStage<CSceneCustomStage>()->IsStageActive(m_renderingFlags) &&
+		!GetStage<CSceneCustomStage>()->IsDebugOverlayEnabled() &&
+		GetStage<CSceneCustomStage>()->ExecuteDebugger();
 
-	// Issue split barriers for GBuffer
-	CTexture* pTextures[] = {
-		m_pipelineResources.m_pTexSceneNormalsMap,
-		m_pipelineResources.m_pTexSceneDiffuse,
-		m_pipelineResources.m_pTexSceneSpecular,
-		pZTexture
-	};
-
-	CDeviceGraphicsCommandInterface* pCmdList = GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface();
-	pCmdList->BeginResourceTransitions(CRY_ARRAY_COUNT(pTextures), pTextures, eResTransition_TextureRead);
-	// Shadow maps
-	if (GetStage<CShadowMapStage>()->IsStageActive(m_renderingFlags))
-		GetStage<CShadowMapStage>()->Execute();
-
-	// Wait for Shadow Map draw jobs to finish (also required for HeightMap AO and SVOGI)
-	renderItemDrawer.WaitForDrawSubmission();
-
-	if (GetStage<CDeferredDecalsStage>()->IsStageActive(m_renderingFlags))
-		GetStage<CDeferredDecalsStage>()->Execute();
-
-	if (GetStage<CSceneGBufferStage>()->IsGBufferVisualizationEnabled())
-		GetStage<CSceneGBufferStage>()->ExecuteGBufferVisualization();
-
-	// GBuffer modifiers
-	if (GetStage<CRainStage>()->IsDeferredRainEnabled())
-		GetStage<CRainStage>()->ExecuteDeferredRainGBuffer();
-
-	if (GetStage<CSnowStage>()->IsDeferredSnowEnabled())
-		GetStage<CSnowStage>()->ExecuteDeferredSnowGBuffer();
-
-	// Generate cloud volume textures for shadow mapping.
-	if (GetStage<CVolumetricCloudsStage>()->IsStageActive(m_renderingFlags))
-		GetStage<CVolumetricCloudsStage>()->ExecuteShadowGen();
-
-	// SVOGI
+	if (!debugEnabled)
 	{
-#if defined(FEATURE_SVO_GI)
-		if (CSvoRenderer::GetInstance())
+		// GBuffer
+		GetStage<CSceneGBufferStage>()->Execute();
+
+		// Issue split barriers for GBuffer
+		CTexture* pTextures[] = {
+			m_pipelineResources.m_pTexSceneNormalsMap,
+			m_pipelineResources.m_pTexSceneDiffuse,
+			m_pipelineResources.m_pTexSceneSpecular,
+			pZTexture
+		};
+
+		CDeviceGraphicsCommandInterface* pCmdList = GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface();
+		pCmdList->BeginResourceTransitions(CRY_ARRAY_COUNT(pTextures), pTextures, eResTransition_TextureRead);
+		// Shadow maps
+		if (GetStage<CShadowMapStage>()->IsStageActive(m_renderingFlags))
+			GetStage<CShadowMapStage>()->Execute();
+
+		// Wait for Shadow Map draw jobs to finish (also required for HeightMap AO and SVOGI)
+		renderItemDrawer.WaitForDrawSubmission();
+
+		if (GetStage<CDeferredDecalsStage>()->IsStageActive(m_renderingFlags))
+			GetStage<CDeferredDecalsStage>()->Execute();
+
+		if (GetStage<CSceneGBufferStage>()->IsGBufferVisualizationEnabled())
+			GetStage<CSceneGBufferStage>()->ExecuteGBufferVisualization();
+
+		// GBuffer modifiers
+		if (GetStage<CRainStage>()->IsDeferredRainEnabled())
+			GetStage<CRainStage>()->ExecuteDeferredRainGBuffer();
+
+		if (GetStage<CSnowStage>()->IsDeferredSnowEnabled())
+			GetStage<CSnowStage>()->ExecuteDeferredSnowGBuffer();
+
+		// Generate cloud volume textures for shadow mapping.
+		if (GetStage<CVolumetricCloudsStage>()->IsStageActive(m_renderingFlags))
+			GetStage<CVolumetricCloudsStage>()->ExecuteShadowGen();
+
+		// SVOGI
 		{
-			PROFILE_LABEL_SCOPE("SVOGI");
+#if defined(FEATURE_SVO_GI)
+			if (CSvoRenderer::GetInstance())
+			{
+				PROFILE_LABEL_SCOPE("SVOGI");
 
-			CSvoRenderer::GetInstance()->UpdateCompute(pRenderView);
-			CSvoRenderer::GetInstance()->UpdateRender(pRenderView);
+				CSvoRenderer::GetInstance()->UpdateCompute(pRenderView);
+				CSvoRenderer::GetInstance()->UpdateRender(pRenderView);
+			}
+#endif
 		}
-#endif
-	}
 
-	// Screen Space Reflections
-	if (GetStage<CScreenSpaceReflectionsStage>()->IsStageActive(m_renderingFlags))
-		GetStage<CScreenSpaceReflectionsStage>()->Execute();
+		// Screen Space Reflections
+		if (GetStage<CScreenSpaceReflectionsStage>()->IsStageActive(m_renderingFlags))
+			GetStage<CScreenSpaceReflectionsStage>()->Execute();
 
-	// Height Map AO
-	if (GetStage<CHeightMapAOStage>()->IsStageActive(m_renderingFlags))
-		GetStage<CHeightMapAOStage>()->Execute();
+		// Height Map AO
+		if (GetStage<CHeightMapAOStage>()->IsStageActive(m_renderingFlags))
+			GetStage<CHeightMapAOStage>()->Execute();
 
-	// Screen Space Obscurance
-	if (GetStage<CScreenSpaceObscuranceStage>()->IsStageActive(m_renderingFlags))
-		GetStage<CScreenSpaceObscuranceStage>()->Execute();
-
-	if (GetStage<CTiledShadingStage>()->IsStageActive(m_renderingFlags))
-		GetStage<CTiledLightVolumesStage>()->Execute();
-
-	// Water volume caustics (before m_pTiledShadingStage->Execute())
-	GetStage<CWaterStage>()->ExecuteWaterVolumeCaustics();
-
-	SetPipelineFlags(GetPipelineFlags() | EPipelineFlags::NO_SHADER_FOG);
-
-#if DURANGO_USE_ESRAM
-	m_pipelineResources.m_pTexLinearDepthScaled[0]->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Transfer);
-	m_pipelineResources.m_pTexHDRTarget->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
-	UpdatePerPassResourceSet();
-	UpdateRenderPasses();
-#endif
-
-	// Deferred shading
-	{
-		PROFILE_LABEL_SCOPE("DEFERRED_LIGHTING");
-
-		GetStage<CClipVolumesStage>()->GenerateClipVolumeInfo();
-		GetStage<CClipVolumesStage>()->Prepare();
-		GetStage<CClipVolumesStage>()->Execute();
+		// Screen Space Obscurance
+		if (GetStage<CScreenSpaceObscuranceStage>()->IsStageActive(m_renderingFlags))
+			GetStage<CScreenSpaceObscuranceStage>()->Execute();
 
 		if (GetStage<CTiledShadingStage>()->IsStageActive(m_renderingFlags))
+			GetStage<CTiledLightVolumesStage>()->Execute();
+
+		// Water volume caustics (before m_pTiledShadingStage->Execute())
+		GetStage<CWaterStage>()->ExecuteWaterVolumeCaustics();
+
+		SetPipelineFlags(GetPipelineFlags() | EPipelineFlags::NO_SHADER_FOG);
+
+#if DURANGO_USE_ESRAM
+		m_pipelineResources.m_pTexLinearDepthScaled[0]->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Transfer);
+		m_pipelineResources.m_pTexHDRTarget->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		UpdatePerPassResourceSet();
+		UpdateRenderPasses();
+#endif
+
+		// Deferred shading
 		{
-			GetStage<CShadowMaskStage>()->Prepare();
-			GetStage<CShadowMaskStage>()->Execute();
+			PROFILE_LABEL_SCOPE("DEFERRED_LIGHTING");
 
-			GetStage<CTiledShadingStage>()->Execute();
+			GetStage<CClipVolumesStage>()->GenerateClipVolumeInfo();
+			GetStage<CClipVolumesStage>()->Prepare();
+			GetStage<CClipVolumesStage>()->Execute();
 
-			if (GetStage<CScreenSpaceSSSStage>()->IsStageActive(m_renderingFlags))
-				GetStage<CScreenSpaceSSSStage>()->Execute(m_pipelineResources.m_pTexSceneTargetR11G11B10F[0]);
+			if (GetStage<CTiledShadingStage>()->IsStageActive(m_renderingFlags))
+			{
+				GetStage<CShadowMaskStage>()->Prepare();
+				GetStage<CShadowMaskStage>()->Execute();
+
+				GetStage<CTiledShadingStage>()->Execute();
+
+				if (GetStage<CScreenSpaceSSSStage>()->IsStageActive(m_renderingFlags))
+					GetStage<CScreenSpaceSSSStage>()->Execute(m_pipelineResources.m_pTexSceneTargetR11G11B10F[0]);
+			}
 		}
-	}
 
-	{
-		PROFILE_LABEL_SCOPE("FORWARD Z");
+		{
+			PROFILE_LABEL_SCOPE("FORWARD Z");
 
-		GetStage<CSceneForwardStage>()->ExecuteOpaque();
+			GetStage<CSceneForwardStage>()->ExecuteOpaque();
 
-		// Opaque forward passes
-		if (GetStage<CSkyStage>()->IsStageActive(m_renderingFlags))
-			GetStage<CSkyStage>()->Execute(m_pipelineResources.m_pTexHDRTarget, pZTexture);
-	}
+			// Opaque forward passes
+			if (GetStage<CSkyStage>()->IsStageActive(m_renderingFlags))
+				GetStage<CSkyStage>()->Execute(m_pipelineResources.m_pTexHDRTarget, pZTexture);
+		}
 
-	// Deferred ocean caustics
-	if (GetStage<CWaterStage>()->IsDeferredOceanCausticsEnabled())
-		GetStage<CWaterStage>()->ExecuteDeferredOceanCaustics();
-	{
-		// Fog
-		if (GetStage<CVolumetricFogStage>()->IsStageActive(m_renderingFlags))
-			GetStage<CVolumetricFogStage>()->Execute();
+		// Deferred ocean caustics
+		if (GetStage<CWaterStage>()->IsDeferredOceanCausticsEnabled())
+			GetStage<CWaterStage>()->ExecuteDeferredOceanCaustics();
+		{
+			// Fog
+			if (GetStage<CVolumetricFogStage>()->IsStageActive(m_renderingFlags))
+				GetStage<CVolumetricFogStage>()->Execute();
 
-		if (GetStage<CFogStage>()->IsStageActive(m_renderingFlags))
-			GetStage<CFogStage>()->Execute();
+			if (GetStage<CFogStage>()->IsStageActive(m_renderingFlags))
+				GetStage<CFogStage>()->Execute();
 
-		SetPipelineFlags(GetPipelineFlags() & ~EPipelineFlags::NO_SHADER_FOG);
+			SetPipelineFlags(GetPipelineFlags() & ~EPipelineFlags::NO_SHADER_FOG);
 
-		// Clouds
-		if (GetStage<CVolumetricCloudsStage>()->IsStageActive(m_renderingFlags))
-			GetStage<CVolumetricCloudsStage>()->Execute();
+			// Clouds
+			if (GetStage<CVolumetricCloudsStage>()->IsStageActive(m_renderingFlags))
+				GetStage<CVolumetricCloudsStage>()->Execute();
 
-		// Water fog volumes
-		GetStage<CWaterStage>()->ExecuteWaterFogVolumeBeforeTransparent();
-	}
+			// Water fog volumes
+			GetStage<CWaterStage>()->ExecuteWaterFogVolumeBeforeTransparent();
+		}
 
-	{
-		PROFILE_LABEL_SCOPE("FORWARD T");
+		{
+			PROFILE_LABEL_SCOPE("FORWARD T");
 
-		// Transparent (below water)
-		GetStage<CSceneForwardStage>()->ExecuteTransparentBelowWater();
-		// Ocean and water volumes
-		GetStage<CWaterStage>()->Execute();
-		// Transparent (above water)
-		GetStage<CSceneForwardStage>()->ExecuteTransparentAboveWater();
+			// Transparent (below water)
+			GetStage<CSceneForwardStage>()->ExecuteTransparentBelowWater();
+			// Ocean and water volumes
+			GetStage<CWaterStage>()->Execute();
+			// Transparent (above water)
+			GetStage<CSceneForwardStage>()->ExecuteTransparentAboveWater();
 
-		if (GetStage<CSceneForwardStage>()->IsTransparentDepthFixupEnabled())
-			GetStage<CSceneForwardStage>()->ExecuteTransparentDepthFixup();
+			if (GetStage<CSceneForwardStage>()->IsTransparentDepthFixupEnabled())
+				GetStage<CSceneForwardStage>()->ExecuteTransparentDepthFixup();
 
-		// Half-res particles
-		if (GetStage<CSceneForwardStage>()->IsTransparentLoResEnabled())
-			GetStage<CSceneForwardStage>()->ExecuteTransparentLoRes(1 + crymath::clamp<int>(CRendererCVars::CV_r_ParticlesHalfResAmount, 0, 1));
+			// Half-res particles
+			if (GetStage<CSceneForwardStage>()->IsTransparentLoResEnabled())
+				GetStage<CSceneForwardStage>()->ExecuteTransparentLoRes(1 + crymath::clamp<int>(CRendererCVars::CV_r_ParticlesHalfResAmount, 0, 1));
+		}
 	}
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
 	pRenderer->InsertParticleVideoDataFence(pRenderer->GetRenderFrameID());
-
-	if (GetStage<CSnowStage>()->IsDeferredSnowDisplacementEnabled())
-		GetStage<CSnowStage>()->ExecuteDeferredSnowDisplacement();
 
 	if (pRenderView->GetCurrentEye() == CCamera::eEye_Right ||
 	    !pRenderer->GetS3DRend().IsStereoEnabled() ||
@@ -443,6 +439,12 @@ void CStandardGraphicsPipeline::Execute()
 	{
 		GetStage<CComputeParticlesStage>()->PostDraw();
 	}
+
+	if (debugEnabled)
+		return;
+
+	if (GetStage<CSnowStage>()->IsDeferredSnowDisplacementEnabled())
+		GetStage<CSnowStage>()->ExecuteDeferredSnowDisplacement();
 
 	if (!(m_renderingFlags & SHDF_CUBEMAPGEN))
 	{

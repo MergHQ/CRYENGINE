@@ -515,7 +515,6 @@ bool CSceneCustomStage::ExecuteDebugger()
 			m_debugViewPass.EndExecution();
 		}
 
-		if (0 /* TODO */)
 		{
 			m_debugViewPass.BeginExecution(m_graphicsPipeline);
 			m_debugViewPass.SetupDrawContext(StageID, passID, TTYPE_DEBUG, FB_GENERAL);

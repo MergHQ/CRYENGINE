@@ -36,7 +36,8 @@ public:
 	gpu_pfx2::IParticleComponentRuntime* GetGpuRuntime() const { return m_pGpuRuntime; }
 	CParticleComponent*           GetComponent() const   { return m_pComponent; }
 	bool                          IsValidForComponent() const;
-	const AABB&                   GetBounds() const      { return m_pGpuRuntime ? m_pGpuRuntime->GetBounds() : m_bounds; }
+	const AABB&                   GetBounds() const      { return m_bounds; }
+	uint                          GetNumParticles() const;
 	void                          AddBounds(const AABB& bounds);
 	bool                          IsChild() const        { return m_pComponent->GetParentComponent() != nullptr; }
 	void                          Reparent(TConstArray<TParticleId> swapIds);

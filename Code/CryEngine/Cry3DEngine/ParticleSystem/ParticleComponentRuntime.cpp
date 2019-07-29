@@ -59,6 +59,20 @@ bool CParticleComponentRuntime::IsValidForComponent() const
 		return m_pGpuRuntime && m_pGpuRuntime->IsValidForParams(m_pComponent->GPUComponentParams());
 }
 
+uint CParticleComponentRuntime::GetNumParticles() const
+{
+	if (m_pGpuRuntime)
+	{
+		SParticleStats stats;
+		m_pGpuRuntime->AccumStats(stats);
+		return stats.particles.alive;
+	}
+	else
+	{
+		return GetContainer().RealSize();
+	}
+}
+
 void CParticleComponentRuntime::AddBounds(const AABB& bounds)
 {
 	m_bounds.Add(bounds);
@@ -603,7 +617,8 @@ void CParticleComponentRuntime::CalculateBounds()
 		m_bounds.Add(position, size);
 	}
 
-	CRY_PFX2_ASSERT(m_bounds.GetRadius() < 1000000.f);
+	CRY_ASSERT_MESSAGE(m_bounds.GetRadius() < 1000000.f, "Effect component %s .%s",
+		m_pComponent->GetEffect()->GetName(), m_pComponent->GetName());
 }
 
 void CParticleComponentRuntime::AgeUpdate()
@@ -666,6 +681,8 @@ void CParticleComponentRuntime::UpdateGPURuntime()
 
 	if (stats.particles.alive)
 		SetAlive();
+
+	m_bounds = m_pGpuRuntime->GetBounds();
 
 	gpu_pfx2::SUpdateParams params;
 
