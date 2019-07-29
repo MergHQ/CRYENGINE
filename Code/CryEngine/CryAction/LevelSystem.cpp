@@ -801,6 +801,8 @@ void CLevelInfo::ReadMetaData()
 				foundMinimapInfo &= rulesNode->getAttr("Filename", &minimap_dds);
 				m_minimapImagePath = minimap_dds;
 				m_minimapInfo.sMinimapName = GetPath();
+				size_t pos = m_minimapInfo.sMinimapName.find("Level");
+				m_minimapInfo.sMinimapName = m_minimapInfo.sMinimapName.substr(pos);
 				m_minimapInfo.sMinimapName.append("/");
 				m_minimapInfo.sMinimapName.append(minimap_dds);
 

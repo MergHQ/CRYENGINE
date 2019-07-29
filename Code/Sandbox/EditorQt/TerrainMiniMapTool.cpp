@@ -210,7 +210,6 @@ void CTerrainMiniMapTool::SendParameters(void* data, uint32 width, uint32 height
 	string levelName = GetIEditorImpl()->GetGameEngine()->GetLevelName();
 	string dataFile = m_path + m_filename + ".xml";
 	string imageTIFFile = m_path + levelName + ".tif";
-	string imageDDSFile = m_path + levelName + ".dds";
 	string imageDDSFileShort = levelName + ".dds";
 
 	uint8* buf = (uint8*)data;
@@ -218,24 +217,25 @@ void CTerrainMiniMapTool::SendParameters(void* data, uint32 width, uint32 height
 	CImageEx image;
 	image.Allocate(width, height);
 
-	if (m_exportDds)
-	{
-		for (int y = 0; y < height; y++)
-			for (int x = 0; x < width; x++)
-				image.ValueAt(x, y) = RGBA8(buf[x * 3 + y * width * 3], buf[x * 3 + 1 + y * width * 3], buf[x * 3 + 2 + y * width * 3], 255);
-
-		GetIEditorImpl()->GetRenderer()->WriteDDS((byte*)image.GetData(), width, height, 4, imageDDSFile, eTF_BC2, 1);
-	}
-
 	if (m_exportTif)
 	{
 		for (int y = 0; y < height; y++)
 			for (int x = 0; x < width; x++)
-				image.ValueAt(x, y) = RGBA8(buf[x * 3 + 2 + y * width * 3], buf[x * 3 + 1 + y * width * 3], buf[x * 3 + y * width * 3], 255);
+				image.ValueAt(x, y) = RGBA8(buf[x * 3 + 2 + y * width * 3] * m_minimap.brightness,
+					                        buf[x * 3 + 1 + y * width * 3] * m_minimap.brightness,
+					                        buf[x * 3 +     y * width * 3] * m_minimap.brightness,
+					                        255);
 
 		CImageTIF imageTIF;
 		imageTIF.SaveRAW(imageTIFFile, image.GetData(), image.GetWidth(), image.GetHeight(), 1, 4, false, "Minimap");
 	}
+
+	if (m_exportDds)
+	{
+		// Manual dds conversion not supported, leave it to the RC
+		CResourceCompilerHelper::CallResourceCompiler(imageTIFFile, nullptr, nullptr, false, CResourceCompilerHelper::eRcExePath_editor, true, true);
+	}
+
 
 	XmlNodeRef dataNode = GetISystem()->LoadXmlFromFile(dataFile);
 	if (!dataNode)
@@ -431,6 +431,7 @@ void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 	float extends = m_minimap.vExtends.x;
 	string fileName(m_filename.GetBuffer());
 	bool orientation = m_minimap.orientation > 0;
+	float brightness = m_minimap.brightness;
 
 	if (ar.openBlock("minimap", "Mini Map"))
 	{
@@ -439,9 +440,11 @@ void CTerrainMiniMapTool::Serialize(Serialization::IArchive& ar)
 		ar(fileName, "filename", "File Name");
 		ar(m_exportDds, "dds", "Export as DDS");
 		ar(m_exportTif, "tif", "Export as TIF");
+		ar(Serialization::Range(brightness, 0.01f, 1.0f, 0.01f), "brightness", "Brightness");
 
 		if (ar.isInput())
 		{
+			m_minimap.brightness = brightness;
 			m_minimap.textureWidth = minimapRes;
 			m_minimap.textureHeight = minimapRes;
 			m_minimap.vExtends.x = extends;

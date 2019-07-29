@@ -18,6 +18,7 @@ struct SMinimapInfo
 	int  textureWidth;
 	int  textureHeight;
 	int  orientation;
+	float brightness;
 };
 
 /*!
