@@ -200,11 +200,9 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 		}
 	}
 
+	// Texture might take a couple of frames to be accessible
 	if (!Tex)
-	{
-		CRY_ASSERT(Tex, "DrawToRenderTarget called without passing a target texture!");
 		return false;
-	}
 
 	if (m_pRT->IsRenderThread() && Tex && Tex->IsLocked())
 		return true;
