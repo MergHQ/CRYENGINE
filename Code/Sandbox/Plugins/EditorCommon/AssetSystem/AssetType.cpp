@@ -241,13 +241,13 @@ bool CAssetType::Create(const char* szFilepath, const SCreateParams* pCreatePara
 		return false;
 	}
 
-	CAssetPtr const pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(adjustedFilepath, metadata.GetMetadata());
+	CAssetPtr pNewAsset = AssetLoader::CAssetFactory::CreateFromMetadata(adjustedFilepath, metadata.GetMetadata());
 	CEditableAsset editAsset(*pNewAsset);
 	if (!editAsset.WriteToFile())
 	{
 		return false;
 	}
-	CAssetManager::GetInstance()->MergeAssets({ pNewAsset });
+	CAssetManager::GetInstance()->MergeAssets({ pNewAsset.ReleaseOwnership() });
 	return true;
 }
 

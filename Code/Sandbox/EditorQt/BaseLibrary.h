@@ -40,7 +40,7 @@ public:
 	// Working with items.
 	//////////////////////////////////////////////////////////////////////////
 	//! Add a new prototype to library.
-	void           AddItem(IDataBaseItem* item, bool bRegister = true);
+	virtual void   AddItem(IDataBaseItem* item, bool bRegister = true);
 	//! Get number of known prototypes.
 	int            GetItemCount() const { return m_items.size(); }
 	//! Get prototype by index.

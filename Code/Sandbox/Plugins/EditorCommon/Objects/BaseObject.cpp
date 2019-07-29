@@ -2615,6 +2615,14 @@ bool CBaseObject::IsLinkedDescendantOf(const CBaseObject* pObject) const
 	return false;
 }
 
+void CBaseObject::GetAllChildren(std::vector<CBaseObject*>& outAllChildren)
+{
+	for (CBaseObject* pChild : m_children)
+	{
+		outAllChildren.push_back(pChild);
+	}
+}
+
 void CBaseObject::GetAllDescendants(TBaseObjects& outAllDescendants, CBaseObject* pObject) const
 {
 	const CBaseObject* pBaseObject = pObject ? pObject : this;

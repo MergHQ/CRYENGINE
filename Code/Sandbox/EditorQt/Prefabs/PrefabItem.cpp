@@ -104,6 +104,11 @@ void CPrefabItem::Serialize(SerializeContext& ctx)
 	}
 }
 
+void CPrefabItem::ResetObjectsNode()
+{
+	m_objectsNode = XmlHelpers::CreateXmlNode("Objects");
+}
+
 void CPrefabItem::Update()
 {
 	// Mark library as modified.

@@ -237,13 +237,35 @@ void CPrefabManager::ClearAll()
 IDataBaseItem* CPrefabManager::CreateItem(const string& filename)
 {
 	const string libraryName = PathUtil::RemoveExtension(filename);
+
 	IDataBaseLibrary* const pLibrary = AddLibrary(libraryName);
 	if (!pLibrary)
 	{
 		return nullptr;
 	}
 
-	return CBaseLibraryManager::CreateItem(pLibrary);
+	return CreateItem(pLibrary);
+}
+
+IDataBaseItem* CPrefabManager::CreateItem(IDataBaseLibrary* pLibrary)
+{
+	if (!pLibrary)
+	{
+		return nullptr;
+	}
+
+	IDataBaseItem* pItem = nullptr;
+	//Prefabs libraries are supposed to only have one item, if it already exist just return it
+	if (pLibrary->GetItemCount())
+	{
+		pItem = pLibrary->GetItem(0);
+	}
+	else //if the library is empty create the item
+	{
+		pItem = CBaseLibraryManager::CreateItem(pLibrary);
+	}
+
+	return pItem;
 }
 
 CBaseLibraryItem* CPrefabManager::MakeNewItem()
@@ -590,7 +612,7 @@ string CPrefabManager::MakeFilename(const string& library)
 	return string().Format("%s.%s", library.c_str(), GetFileExtension());
 }
 
-void CPrefabManager::importAssetsFromLevel(XmlNodeRef& levelRoot)
+void CPrefabManager::ImportAssetsFromLevel(XmlNodeRef& levelRoot)
 {
 	using namespace Private_PrefabManager;
 

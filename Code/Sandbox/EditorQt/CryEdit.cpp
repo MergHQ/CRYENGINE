@@ -990,10 +990,10 @@ void CCryEditApp::OnEditDuplicate()
 		return;
 	}
 
-	CEditTool* tool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
-	if (tool && tool->IsKindOf(RUNTIME_CLASS(CObjectCloneTool)))
+	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
+	if (pTool && pTool->IsKindOf(RUNTIME_CLASS(CObjectCloneTool)))
 	{
-		((CObjectCloneTool*)tool)->Accept();
+		((CObjectCloneTool*)pTool)->Accept();
 	}
 
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(new CObjectCloneTool);

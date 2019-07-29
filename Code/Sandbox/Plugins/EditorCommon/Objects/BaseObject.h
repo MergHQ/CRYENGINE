@@ -417,7 +417,9 @@ public:
 	virtual bool         IsChildOf(const CBaseObject* pObject) const;
 	//! Scans hierarchy up to determine if we are linked to the specified object.
 	virtual bool         IsLinkedDescendantOf(const CBaseObject* pObject) const;
-	//! Get all child objects
+	//! Get all the direct children of this object
+	void                 GetAllChildren(std::vector<CBaseObject*>& outAllChildren);
+	//! Get all descendants objects
 	void                 GetAllDescendants(TBaseObjects& outAllDescendants, CBaseObject* pObject = NULL) const;
 	void                 GetAllDescendants(DynArray<_smart_ptr<CBaseObject>>& outAllDescendants, CBaseObject* pObject = NULL) const;
 	void                 GetAllDescendants(ISelectionGroup& outAllDescendants, CBaseObject* pObject = NULL) const;

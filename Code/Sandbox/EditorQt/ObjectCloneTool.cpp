@@ -19,12 +19,12 @@ CObjectCloneTool::CObjectCloneTool()
 	//m_bSetCapture = false;
 
 	GetIEditorImpl()->GetIUndoManager()->Begin();
-	m_selection = 0;
+	m_pSelection = 0;
 	if (!GetIEditorImpl()->GetSelection()->IsEmpty())
 	{
 		CWaitCursor wait;
 		CloneSelection();
-		m_selection = GetIEditorImpl()->GetSelection();
+		m_pSelection = GetIEditorImpl()->GetSelection();
 		GetIEditorImpl()->GetIUndoManager()->Suspend();
 	}
 	GetIEditor()->GetObjectManager()->signalSelectionChanged.Connect(this, &CObjectCloneTool::OnSelectionChanged);
@@ -96,7 +96,7 @@ void CObjectCloneTool::Display(SDisplayContext& dc)
 
 bool CObjectCloneTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
 {
-	if (m_selection)
+	if (m_pSelection)
 	{
 		// Set construction plane origin to selection origin.
 		if (m_bSetConstrPlane)

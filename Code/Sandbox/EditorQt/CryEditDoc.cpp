@@ -194,7 +194,7 @@ void LoadPrefabDatabase(TDocMultiArchive& arrXmlAr)
 {
 	CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Importing Prefabs");
 	CAutoLogTime logtime("Importing Prefabs");
-	GetIEditorImpl()->GetPrefabManager()->importAssetsFromLevel((*arrXmlAr[DMAS_GENERAL]).root);
+	GetIEditorImpl()->GetPrefabManager()->ImportAssetsFromLevel((*arrXmlAr[DMAS_GENERAL]).root);
 }
 
 void CreateMovieSystemSequenceObjects()

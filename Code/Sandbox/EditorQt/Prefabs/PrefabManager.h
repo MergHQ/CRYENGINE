@@ -47,11 +47,14 @@ public:
 	CPrefabManager();
 	~CPrefabManager();
 
-	// Clear all prototypes
+	//! Clear all items
 	void           ClearAll();
 
+	//!Create an item from filename
 	IDataBaseItem* CreateItem(const string& filename);
-	//virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override { return CBaseLibraryManager::CreateItem(pLibrary); }
+  
+	//!Create an item in a prefab library
+	virtual IDataBaseItem* CreateItem(IDataBaseLibrary* pLibrary) override;
 
 	//! Delete item from library and manager.
 	void DeleteItem(IDataBaseItem* pItem);
@@ -105,7 +108,7 @@ public:
 	virtual string            MakeFilename(const string& library) override;
 
 	// Allows to generate prefab assets from level files of CE5.5
-	static void importAssetsFromLevel(XmlNodeRef& levelRoot);
+	static void ImportAssetsFromLevel(XmlNodeRef& levelRoot);
 
 	//Updates all the assets to the latest version
 	void UpdateAllPrefabsToLatestVersion();
