@@ -5,6 +5,7 @@ import argparse
 import os.path
 import subprocess
 import shutil
+import re
 
 import configparser
 import tempfile
@@ -381,8 +382,20 @@ def generate_solution(working_directory, cmakelists_dir, config, open_gui):
     # toolchain is relative path, e.g. toolchain/windows/WindowsPC-MSVC.cmake
     toolchain = config['cmake_toolchain']
     solution_path = os.path.join(working_directory, config['cmake_builddir'])
-    print("Solution path: {}".format(solution_path))
     generator = config['cmake_generator']
+
+    # Due to a bug in CMake visual studio generation, we cannot have certain characters in the cmake path.
+    # CMake will generate a command for the INSTALL project in visual studio, which reruns cmake on build.
+    # However, the path in the command is not properly quoted by CMake which breaks the build.
+    regex = re.compile('[(){}]')
+    if "Visual Studio" in generator and os.path.isabs(cmake_path) and regex.search(cmake_path) is not None:
+        print("ERROR:")
+        print("Cannot generate a Visual Studio solution for projects outside the engine installation folder when the engine is installed in a path that contains the following characters: '(){}' due to a CMake bug.")
+        print("Engine path: {}".format(cmake_path))
+        print("Generating solution has failed!")
+        sys.exit(1)
+
+    print("Solution path: {}".format(solution_path))
 
     check_cmake_cache(solution_path, generator)
     if not os.path.isdir(solution_path):
