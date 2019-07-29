@@ -7,8 +7,7 @@ CRYREGISTER_CLASS( CProceduralContextLook );
 
 //////////////////////////////////////////////////////////////////////////
 CProceduralContextLook::CProceduralContextLook()
-	: m_pPoseBlenderLook( NULL )
-	, m_gameRequestsLooking( true )
+	: m_gameRequestsLooking( true )
 	, m_procClipRequestsLooking( false )
 	, m_gameLookTarget( 0, 0, 0 )
 {
@@ -41,9 +40,7 @@ void CProceduralContextLook::InitialisePoseBlenderLook()
 		return;
 	}
 
-	m_pPoseBlenderLook = pSkeletonPose->GetIPoseBlenderLook();
-
-	if ( m_pPoseBlenderLook )
+	if (IAnimationPoseBlenderDir* pPoseBlenderLook = GetPoseBlenderLook())
 	{
 		float polarCoordinatesSmoothTimeSeconds = 0.1f;
 		float polarCoordinatesMaxYawDegreesPerSecond = 360.f;
@@ -68,12 +65,12 @@ void CProceduralContextLook::InitialisePoseBlenderLook()
 			}
 		}
 
-		m_pPoseBlenderLook->SetPolarCoordinatesSmoothTimeSeconds( polarCoordinatesSmoothTimeSeconds );
-		m_pPoseBlenderLook->SetPolarCoordinatesMaxRadiansPerSecond( Vec2( DEG2RAD( polarCoordinatesMaxYawDegreesPerSecond ), DEG2RAD( polarCoordinatesMaxPitchDegreesPerSecond ) ) );
-		m_pPoseBlenderLook->SetFadeInSpeed( fadeInSeconds );
-		m_pPoseBlenderLook->SetFadeOutSpeed( fadeOutSeconds );
-		m_pPoseBlenderLook->SetFadeOutMinDistance( fadeOutMinDistance );
-		m_pPoseBlenderLook->SetState( false );
+		pPoseBlenderLook->SetPolarCoordinatesSmoothTimeSeconds( polarCoordinatesSmoothTimeSeconds );
+		pPoseBlenderLook->SetPolarCoordinatesMaxRadiansPerSecond( Vec2( DEG2RAD( polarCoordinatesMaxYawDegreesPerSecond ), DEG2RAD( polarCoordinatesMaxPitchDegreesPerSecond ) ) );
+		pPoseBlenderLook->SetFadeInSpeed( fadeInSeconds );
+		pPoseBlenderLook->SetFadeOutSpeed( fadeOutSeconds );
+		pPoseBlenderLook->SetFadeOutMinDistance( fadeOutMinDistance );
+		pPoseBlenderLook->SetState( false );
 	}
 }
 
@@ -84,9 +81,9 @@ void CProceduralContextLook::InitialiseGameLookTarget()
 	CRY_ASSERT( m_entity );
 
 	m_gameLookTarget = ( m_entity->GetForwardDir() * 10.0f ) + m_entity->GetWorldPos();
-	if ( m_pPoseBlenderLook )
+	if (IAnimationPoseBlenderDir* pPoseBlenderLook = GetPoseBlenderLook())
 	{
-		m_pPoseBlenderLook->SetTarget( m_gameLookTarget );
+		pPoseBlenderLook->SetTarget( m_gameLookTarget );
 	}
 }
 
@@ -94,16 +91,14 @@ void CProceduralContextLook::InitialiseGameLookTarget()
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextLook::Update( float timePassedSeconds )
 {
-	if ( m_pPoseBlenderLook == NULL )
+	if (IAnimationPoseBlenderDir* pPoseBlenderLook = GetPoseBlenderLook())
 	{
-		return;
-	}
-
-	const bool canLook = ( m_gameRequestsLooking && m_procClipRequestsLooking );
-	m_pPoseBlenderLook->SetState( canLook );
-	if ( canLook )
-	{
-		m_pPoseBlenderLook->SetTarget( m_gameLookTarget );
+		const bool canLook = (m_gameRequestsLooking && m_procClipRequestsLooking);
+		pPoseBlenderLook->SetState(canLook);
+		if (canLook)
+		{
+			pPoseBlenderLook->SetTarget(m_gameLookTarget);
+		}
 	}
 }
 
@@ -132,34 +127,47 @@ void CProceduralContextLook::UpdateGameLookTarget( const Vec3& lookTarget )
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextLook::SetBlendInTime( const float blendInTime )
 {
-	if ( m_pPoseBlenderLook == NULL )
-	{
-		return;
-	}
 
-	m_pPoseBlenderLook->SetFadeInSpeed( blendInTime );
+	if (IAnimationPoseBlenderDir* pPoseBlenderLook = GetPoseBlenderLook())
+	{
+		pPoseBlenderLook->SetFadeInSpeed(blendInTime);
+	}
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextLook::SetBlendOutTime( const float blendOutTime )
 {
-	if ( m_pPoseBlenderLook == NULL )
+	if (IAnimationPoseBlenderDir* pPoseBlenderLook = GetPoseBlenderLook())
 	{
-		return;
+		pPoseBlenderLook->SetFadeOutSpeed(blendOutTime);
 	}
-
-	m_pPoseBlenderLook->SetFadeOutSpeed( blendOutTime );
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 void CProceduralContextLook::SetFovRadians( const float fovRadians )
 {
-	if ( m_pPoseBlenderLook == NULL )
+	if (IAnimationPoseBlenderDir* pPoseBlenderLook = GetPoseBlenderLook())
 	{
-		return;
+		pPoseBlenderLook->SetFadeoutAngle(fovRadians);
 	}
+}
 
-	m_pPoseBlenderLook->SetFadeoutAngle( fovRadians );
+IAnimationPoseBlenderDir* CProceduralContextLook::GetPoseBlenderLook()
+{
+	if (m_entity)
+	{
+		if (ICharacterInstance* pCharInst = m_entity->GetCharacter(0))
+		{
+			if (ISkeletonPose* pSkelPose = pCharInst->GetISkeletonPose())
+			{
+				if (IAnimationPoseBlenderDir* pPoseBlenderAim = pSkelPose->GetIPoseBlenderLook())
+				{
+					return pPoseBlenderAim;
+				}
+			}
+		}
+	}
+	return nullptr;
 }

@@ -41,7 +41,7 @@ private:
 	void InitialiseGameLookTarget();
 
 private:
-	IAnimationPoseBlenderDir* m_pPoseBlenderLook;
+	IAnimationPoseBlenderDir* GetPoseBlenderLook();
 
 	bool m_gameRequestsLooking;
 	bool m_procClipRequestsLooking;
