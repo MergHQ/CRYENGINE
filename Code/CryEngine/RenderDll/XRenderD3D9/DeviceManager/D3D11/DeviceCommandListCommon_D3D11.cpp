@@ -796,20 +796,23 @@ void CDeviceComputeCommandInterfaceImpl::DispatchImpl(uint32 X, uint32 Y, uint32
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	GetDX11CommandList()->GetD3D11DeviceContext()->ClearRectsUnorderedAccessViewFloat(pView, Values, NumRects, pRects);
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	GetDX11CommandList()->GetD3D11DeviceContext()->ClearView(pView, Values, pRects, NumRects);
 #else
-	CRY_ASSERT(NumRects == 0); // not supported on dx11
+	CRY_ASSERT(NumRects == 0); // not supported on dx11.0
 	GetDX11CommandList()->GetD3D11DeviceContext()->ClearUnorderedAccessViewFloat(pView, Values);
 #endif
 }
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
-#if (CRY_RENDERER_DIRECT3D >= 120)
-	GetDX11CommandList()->GetD3D11DeviceContext()->ClearRectsUnorderedAccessViewUint(pView, Values, NumRects, pRects);
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	// If the format is integer, such as DXGI_FORMAT_R8G8B8A8_UINT, the runtime interprets inputs as integral floats.
+	// Therefore, 235.0f maps to 235 (rounds to zero, out of range/INF values clamp to target range, and NaN to 0).
+	const FLOAT FValues[4] = { FLOAT(Values[0]), FLOAT(Values[1]), FLOAT(Values[2]), FLOAT(Values[3]) };
+	GetDX11CommandList()->GetD3D11DeviceContext()->ClearView(pView, FValues, pRects, NumRects);
 #else
-	CRY_ASSERT(NumRects == 0); // not supported on dx11
+	CRY_ASSERT(NumRects == 0); // not supported on dx11.0
 	GetDX11CommandList()->GetD3D11DeviceContext()->ClearUnorderedAccessViewUint(pView, Values);
 #endif
 }

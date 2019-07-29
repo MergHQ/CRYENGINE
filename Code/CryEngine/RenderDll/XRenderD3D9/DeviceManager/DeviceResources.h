@@ -474,11 +474,12 @@ public:
 		return m_bCube;
 	}
 
+	// Store the owning CTexture, and assign the name of the owner for enhanced debugging
 #if DEVICE_TEXTURE_STORE_OWNER
-	void SetOwner(CTexture* pOwner) { m_pOwner = pOwner; }
+	void SetOwner(CTexture* pOwner, const char* debugName) { if (debugName) SetDebugName(debugName); m_pOwner = pOwner; }
 	CTexture* GetOwner() { return m_pOwner; }
 #else
-	void SetOwner(CTexture* pOwner) {}
+	void SetOwner(CTexture* pOwner, const char* debugName) { if (debugName) SetDebugName(debugName); }
 	CTexture* GetOwner() { return nullptr; }
 #endif
 

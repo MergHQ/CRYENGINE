@@ -729,7 +729,10 @@ static void OnSysSpecChange(ICVar* pVar)
 		GetISystem()->LoadConfiguration("vr.cfg", 0, eLoadConfigSystemSpec);
 
 	if (gEnv->pRenderer)
-		gEnv->pRenderer->EF_ReloadTextures();
+		gEnv->pRenderer->EF_RefreshTextures();
+
+	if (gEnv->p3DEngine)
+		gEnv->p3DEngine->ResetTemporalCaches();
 
 	if (gEnv->p3DEngine)
 		gEnv->p3DEngine->GetMaterialManager()->RefreshMaterialRuntime();

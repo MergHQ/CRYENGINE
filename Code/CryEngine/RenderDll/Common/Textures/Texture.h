@@ -1223,7 +1223,7 @@ public:
 	bool                       StreamPrepare_Finalise(bool bFromLoad);
 	STexPool*                  StreamGetPool(int8 nStartMip, int8 nMips);
 	STexPoolItem*              StreamGetPoolItem(int8 nStartMip, int8 nMips, bool bShouldBeCreated, bool bCreateFromMipData = false, bool bCanCreate = true, bool bForStreamOut = false);
-	void                       StreamRemoveFromPool();
+	bool                       StreamRemoveFromPool();
 	void                       StreamAssignPoolItem(STexPoolItem* pItem, int8 nMinMip);
 
 	static void                StreamState_Update();
@@ -1258,17 +1258,23 @@ public:
 	static void                 ReloadFile(const char* szFileName) threadsafe;
 	static void                 ReloadFile_Request(const char* szFileName);
 	static void                 ReloadTextures() threadsafe;
+	static void                 RefreshTextures() threadsafe;
 	static void                 ToggleTexturesStreaming() threadsafe;
 	static void                 LogTextures(ILog* pLog) threadsafe;
 	static void                 Update();
 	static void                 RT_LoadingUpdate();
 	static void                 RLT_LoadingUpdate();
 
+	static void                 RT_ReloadTextures();
+	static void                 RT_RefreshTextures();
+	static void                 RT_ToggleTexturesStreaming();
+
 	// Loading/creating functions
 	void  Load(ETEX_Format eFormat);
 	void  Load(CImageFilePtr&& pImage);
 	void  LoadFromImage(const char* name, ETEX_Format eFormat = eTF_Unknown);
 	void  Reload();
+	void  Refresh();
 	void  ToggleStreaming(const bool bEnable);
 	virtual void UpdateData(STexDataPtr&& td, int flags);
 
@@ -1292,8 +1298,8 @@ public:
 	void               Create3DTexture(int nWidth, int nHeight, int nDepth, int nMips, int nFlags, const byte* pData, ETEX_Format eTFSrc);
 
 	// High-level functions calling Create...()
-	static CTexture*              GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
-	static CTexture*              GetOrCreateTextureArray(const char* name, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, ETEX_Type eType, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
+	static CTexture*   GetOrCreateTextureObject(const char* name, uint32 nWidth, uint32 nHeight, int nDepth, ETEX_Type eTT, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
+	static CTexture*   GetOrCreateTextureArray(const char* name, uint32 nWidth, uint32 nHeight, uint32 nArraySize, int nMips, ETEX_Type eType, uint32 nFlags, ETEX_Format eFormat, int nCustomID = -1);
 
 	// High-level functions calling GetOrCreate...() and Create...()
 	static CTexture*   GetOrCreateRenderTarget(const char* name, uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Type eTT, uint32 nFlags, ETEX_Format eSrcFormat, int nCustomID = -1);

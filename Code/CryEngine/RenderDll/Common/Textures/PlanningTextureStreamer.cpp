@@ -279,7 +279,6 @@ void CPlanningTextureStreamer::ApplySchedule(EApplyScheduleFlags asf)
 		}
 
 		CTexture::s_nStatsAllocFails = m_nStreamAllocFails;
-
 	}
 	else
 	{
@@ -622,7 +621,7 @@ void CPlanningTextureStreamer::SyncWithJob_Locked() threadsafe
 }
 
 #if defined(TEXSTRM_TEXTURECENTRIC_MEMORY)
-bool CPlanningTextureStreamer::TrimTexture(int nBias, TStreamerTextureVec& trimmable, STexPool* pPrioritise)
+bool CPlanningTextureStreamer::TrimTexture(int16 nBias, TStreamerTextureVec& trimmable, STexPool* pPrioritise)
 {
 	FUNCTION_PROFILER_RENDERER();
 

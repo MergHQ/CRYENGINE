@@ -377,6 +377,9 @@ public:
 	void                     RenderDecalsAndRoads(TDoublyLinkedList<IRenderNode>* lstObjects, const FrustumMaskType passCullMask, int nRenderMask, const Vec3& vAmbColor, const bool bOcNodeCompletelyInFrustum, const SRenderingPassInfo& passInfo);
 	void                     RenderBrushes       (TDoublyLinkedList<IRenderNode>* lstObjects, const FrustumMaskType passCullMask, const bool bOcNodeCompletelyInFrustum, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo);
 
+	bool                     HasLinkedObjectTypes_Object_Nodes() { return (m_linkedTypes & ~(1U << eERType_Light) ? true : false); }
+	bool                     HasLinkedObjectTypes_Light_Nodes () { return (m_linkedTypes &  (1U << eERType_Light) ? true : false); }
+
 	static void              RenderObjectIntoShadowViews(const SRenderingPassInfo& passInfo, float fEntDistance, IRenderNode* pObj, const AABB& objBox, const FrustumMaskType passCullMask);
 	static bool              IsShadowCaster(IRenderNode* pObj);
 	void                     InvalidateCachedShadowData();

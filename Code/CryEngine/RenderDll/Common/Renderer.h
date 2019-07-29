@@ -1063,6 +1063,7 @@ public:
 	virtual bool                   EF_ReloadFile_Request(const char* szFileName) override;
 	virtual void                   EF_ReloadShaderFiles(int nCategory) override;
 	virtual void                   EF_ReloadTextures() override;
+	virtual void                   EF_RefreshTextures() override;
 	virtual int                    EF_LoadLightmap(const char* nameTex) override;
 	virtual DynArray<uint16_t>     EF_RenderEnvironmentCubeHDR(int size, const Vec3& Pos) override;
 	virtual bool                   WriteTIFToDisk(const void* pData, int width, int height, int bytesPerChannel, int numChannels, bool bFloat, const char* szPreset, const char* szFileName) override;

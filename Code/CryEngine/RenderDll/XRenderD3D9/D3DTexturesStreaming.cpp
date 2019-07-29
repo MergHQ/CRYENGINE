@@ -487,12 +487,12 @@ void CTexture::StreamApplyDeferred(ID3D11CommandList* pCmdList)
 
 // Just remove item from the texture object and keep Item in Pool list for future use
 // This function doesn't release API texture
-void CTexture::StreamRemoveFromPool()
+bool CTexture::StreamRemoveFromPool()
 {
 	CHK_MAINORRENDTH;
 
 	if (!m_pFileTexMips || !m_pFileTexMips->m_pPoolItem)
-		return;
+		return false;
 
 	AUTO_LOCK(STexPoolItem::s_sSyncLock);
 
@@ -507,7 +507,7 @@ void CTexture::StreamRemoveFromPool()
 
 	if (m_pDevTexture)
 	{
-		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->SetOwner(nullptr, nullptr);
 		m_pDevTexture = nullptr;
 	}
 
@@ -516,6 +516,8 @@ void CTexture::StreamRemoveFromPool()
 
 	CryInterlockedAdd(&s_nStatsStreamPoolBoundMem, -nSize);
 	CryInterlockedAdd(&s_nStatsStreamPoolBoundPersMem, -nPersSize);
+
+	return true;
 }
 
 void CTexture::StreamAssignPoolItem(STexPoolItem* pItem, int8 nMinMip)
@@ -563,8 +565,6 @@ void CTexture::StreamAssignPoolItem(STexPoolItem* pItem, int8 nMinMip)
 
 	CryInterlockedAdd(&s_nStatsStreamPoolBoundMem, pItem->m_nDevTextureSize);
 	CryInterlockedAdd(&s_nStatsStreamPoolBoundPersMem, nPersSize);
-
-	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
 }
 
 STexPool* CTexture::StreamGetPool(int8 nStartMip, int8 nMips)

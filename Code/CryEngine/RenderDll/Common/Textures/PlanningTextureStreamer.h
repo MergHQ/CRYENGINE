@@ -255,7 +255,7 @@ private:
 	                       int& nNumSubmittedLoad, size_t& nAmtSubmittedLoad);
 
 #if defined(TEXSTRM_TEXTURECENTRIC_MEMORY)
-	bool      TrimTexture(int nBias, TStreamerTextureVec& trimmable, STexPool* pPrioritise);
+	bool      TrimTexture(int16 nBias, TStreamerTextureVec& trimmable, STexPool* pPrioritise);
 #endif
 	ptrdiff_t TrimTextures(ptrdiff_t nRequired, int16 nBias, TStreamerTextureVec& trimmable);
 	ptrdiff_t KickTextures(CTexture** pTextures, ptrdiff_t nRequired, int nBalancePoint, int& nKickIdx);

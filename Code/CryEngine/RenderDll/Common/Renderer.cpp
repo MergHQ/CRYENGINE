@@ -1438,6 +1438,11 @@ void CRenderer::EF_ReloadTextures()
 	CTexture::ReloadTextures();
 }
 
+void CRenderer::EF_RefreshTextures()
+{
+	CTexture::RefreshTextures();
+}
+
 _smart_ptr<IImageFile> CRenderer::EF_LoadImage(const char* szFileName, uint32 nFlags)
 {
 	return CImageFile::mfLoad_file(szFileName, nFlags);

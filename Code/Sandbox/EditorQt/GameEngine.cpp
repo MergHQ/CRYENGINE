@@ -807,6 +807,7 @@ void CGameEngine::SwitchToInGame()
 	if (gEnv->p3DEngine)
 	{
 		gEnv->p3DEngine->ResetPostEffects();
+		gEnv->p3DEngine->ResetTemporalCaches();
 	}
 
 	GetIEditorImpl()->Notify(eNotify_OnBeginGameMode);
@@ -931,6 +932,7 @@ void CGameEngine::SwitchToInEditor()
 		// Reset 3d engine effects
 		gEnv->p3DEngine->ResetPostEffects();
 		gEnv->p3DEngine->ResetParticlesAndDecals();
+		gEnv->p3DEngine->ResetTemporalCaches();
 	}
 
 	if (GetIEditorImpl()->GetObjectManager() && GetIEditorImpl()->GetObjectManager()->GetLayersManager())

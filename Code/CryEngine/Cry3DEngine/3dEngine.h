@@ -508,6 +508,7 @@ public:
 	virtual void                           DeleteClipVolume(IClipVolume* pClipVolume);
 	virtual void                           UpdateClipVolume(IClipVolume* pClipVolume, _smart_ptr<IRenderMesh> pRenderMesh, IBSPTree3D* pBspTree, const Matrix34& worldTM, uint8 viewDistRatio, bool bActive, uint32 flags, const char* szName);
 	virtual void                           ResetParticlesAndDecals();
+	virtual void                           ResetTemporalCaches();
 	virtual IRenderNode*                   CreateRenderNode(EERType type);
 	virtual void                           DeleteRenderNode(IRenderNode* pRenderNode);
 	void                                   TickDelayedRenderNodeDeletion();

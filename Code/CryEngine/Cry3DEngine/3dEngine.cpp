@@ -2889,6 +2889,15 @@ void C3DEngine::ResetParticlesAndDecals()
 	ReRegisterKilledVegetationInstances();
 }
 
+void C3DEngine::ResetTemporalCaches()
+{
+	if (m_nGsmCache > 0)
+	{
+		m_CachedShadowsBounds.Reset();
+		SetRecomputeCachedShadows(m_nCachedShadowsUpdateStrategy = ShadowMapFrustum::ShadowCacheData::eFullUpdate);
+	}
+}
+
 IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 {
 	switch (type)

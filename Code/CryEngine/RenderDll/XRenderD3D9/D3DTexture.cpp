@@ -284,18 +284,12 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 	MEMSTAT_CONTEXT(EMemStatContextType::Texture, "Creating Texture");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "%s %ix%ix%i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nMips, m_eFlags);
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
+	CDeviceTexture* pDeviceTex;
 
 	if (m_eFlags & FT_USAGE_MSAA)
 		m_bResolved = false;
 
 	m_nMinMipVidActive = 0;
-
-	//if we have any device owned resources allocated, we must sync with render thread
-	if (m_pDevTexture)
-	{
-		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
-		RT_ReleaseDeviceTexture(false, false);
-	}
 
 	// The payload can only be passed untiled currently
 	STextureLayout TL = GetLayout();
@@ -303,27 +297,20 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 
 	CRY_ASSERT(!pData.m_subresourcePointers || m_eSrcTileMode != eTM_Unspecified);
 	bool bHasPayload = DecompressSubresourcePayload(TL, m_eSrcTileMode, pData, TI);
-	if (!(m_pDevTexture = CDeviceTexture::Create(TL, bHasPayload ? &TI : nullptr)))
+	if (!(pDeviceTex = CDeviceTexture::Create(TL, bHasPayload ? &TI : nullptr)))
 		return false;
 
-	// Assign name to Texture for enhanced debugging
-	m_pDevTexture->SetOwner(this);
-	m_pDevTexture->SetDebugName(m_SrcName);
+	// Notify that resource is dirty
+	SetDevTexture(pDeviceTex);
 
-	assert(!IsStreamed());
-
+	if (!IsStreamed())
 	{
-		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
-
 		volatile size_t* pTexMem = &CTexture::s_nStatsCurManagedNonStreamedTexMem;
 		if (IsDynamic())
 			pTexMem = &CTexture::s_nStatsCurDynamicTexMem;
 
 		CryInterlockedAdd(pTexMem, m_nDevTextureSize);
 	}
-
-	// Notify that resource is dirty
-	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
 
 	if (!bHasPayload)
 		return true;
@@ -361,12 +348,12 @@ void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thr
 	if (!m_bNoTexture)
 	{
 		// The responsible code-path for deconstruction is the m_pFileTexMips->m_pPoolItem's dtor, if either of these is set
-		if (!m_pFileTexMips || !m_pFileTexMips->m_pPoolItem)
+		if (!StreamRemoveFromPool())
 		{
 			if (CDeviceTexture* const pDevTex = m_pDevTexture)
 			{
-				CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
-				pDevTex->SetOwner(nullptr);
+				CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || pDevTex->GetOwner() == this);
+				pDevTex->SetOwner(nullptr, nullptr);
 
 				// Ref-Counting only works when there is a backing native objects, otherwise it's -1
 				if (IsStreamed() || !pDevTex->GetNativeResource())
@@ -385,13 +372,13 @@ void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thr
 					CRY_ASSERT(*pTexMem >= ptrdiff_t(m_nDevTextureSize));
 					CryInterlockedAdd(pTexMem, -ptrdiff_t(m_nDevTextureSize));
 				}
+
+				m_pDevTexture = nullptr;
 			}
 		}
-
-		if (m_pFileTexMips)
+		else
 		{
 			m_bStreamPrepared = false;
-			StreamRemoveFromPool();
 			if (bKeepLastMips)
 			{
 				const int nLastMipsStart = m_nMips - m_CacheFileHeader.m_nMipsPersistent;
@@ -425,6 +412,8 @@ void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thr
 #if DURANGO_USE_ESRAM
 	m_nESRAMSize = 0;
 #endif
+
+	InvalidateDeviceResource(this, eDeviceResourceDirty);
 }
 
 const SPixFormat* CTexture::GetPixFormat(ETEX_Format eTFDst)

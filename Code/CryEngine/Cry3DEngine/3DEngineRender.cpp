@@ -1638,7 +1638,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		CLightEntity::SetShadowFrustumsCollector(nullptr);
 
 		auto outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
-		if (outdoorCullMask != 0)
+		if (outdoorCullMask != 0 && m_pObjectsTree->HasLinkedObjectTypes_Light_Nodes())
 			m_pObjectsTree->Render_Light_Nodes(false, OCTREENODE_RENDER_FLAG_LIGHTS, GetSkyColor(), outdoorCullMask, passInfo);
 	}
 
@@ -1695,7 +1695,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		{
 			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Outdoor Octree");
 			auto outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
-			if (outdoorCullMask != 0)
+			if (outdoorCullMask != 0 && m_pObjectsTree->HasLinkedObjectTypes_Object_Nodes())
 				m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), outdoorCullMask, passInfo);
 		}
 
@@ -1722,7 +1722,10 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			{
 				CCamera cam = passInfo.GetCamera();
 				cam.SetFrustum(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ(), cam.GetFov(), min(cam.GetNearPlane(), 1.f), 2.f, cam.GetPixelAspectRatio());
-				m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS | OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES, GetSkyColor(), passCullMask & kPassCullMainMask, SRenderingPassInfo::CreateTempRenderingInfo(cam, passInfo));
+
+				auto indoorCullMask = passCullMask & kPassCullMainMask;
+				if (indoorCullMask != 0 && m_pObjectsTree->HasLinkedObjectTypes_Object_Nodes())
+					m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS | OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES, GetSkyColor(), indoorCullMask, SRenderingPassInfo::CreateTempRenderingInfo(cam, passInfo));
 			}
 		}
 	}
@@ -3708,7 +3711,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 	if (IsObjectsTreeValid())
 	{
 		auto outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
-		if (outdoorCullMask != 0)
+		if (outdoorCullMask != 0 && m_pObjectsTree->HasLinkedObjectTypes_Light_Nodes())
 			m_pObjectsTree->Render_Light_Nodes(false, OCTREENODE_RENDER_FLAG_LIGHTS, GetSkyColor(), outdoorCullMask, passInfo);
 	}
 
@@ -3717,7 +3720,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 	{
 		CVisArea* pArea = m_pVisAreaManager->m_lstVisibleAreas[i];
 
-		if (pArea->IsObjectsTreeValid())
+		if (pArea->IsObjectsTreeValid() && pArea->GetObjectsTree()->HasLinkedObjectTypes_Light_Nodes())
 		{
 			for (int c = 0; c < pArea->m_lstCurCamerasLen; ++c)
 				pArea->GetObjectsTree()->Render_Light_Nodes(false, OCTREENODE_RENDER_FLAG_LIGHTS, GetSkyColor(), passCullMask, SRenderingPassInfo::CreateTempRenderingInfo(CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + c], passInfo));

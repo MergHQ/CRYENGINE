@@ -363,7 +363,7 @@ void CTexture::RefDevTexture(CDeviceTexture* pDeviceTex)
 		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == nullptr);
 
 	if ((m_pDevTexture = pDeviceTex))
-		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->SetOwner(nullptr, nullptr);
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
 }
@@ -374,14 +374,14 @@ void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 	if ((m_pDevTexture))
 	{
 		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
-		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->SetOwner(nullptr, nullptr);
 		m_pDevTexture->Release();
 	}
 
 	if ((m_pDevTexture = pDeviceTex))
 	{
 		m_pDevTexture->SetNoDelete(!!(m_eFlags & FT_DONT_RELEASE));
-		m_pDevTexture->SetOwner(this);
+		m_pDevTexture->SetOwner(this, m_SrcName.c_str());
 
 		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
 	}
@@ -395,13 +395,13 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 	if ((m_pDevTexture))
 	{
 		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
-		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->SetOwner(nullptr, nullptr);
 		m_pDevTexture->Release();
 	}
 
 	if ((m_pDevTexture = pDeviceTex))
 	{
-		m_pDevTexture->SetOwner(this);
+		m_pDevTexture->SetOwner(this, m_SrcName.c_str());
 
 		const STextureLayout Layput = m_pDevTexture->GetLayout();
 
@@ -762,6 +762,33 @@ CTexture* CTexture::GetOrCreate3DTexture(const char* szName, int nWidth, int nHe
 
 //=======================================================
 
+// This function tries to do the minimum amount of operations for events like SysSpec changes,
+// where it's unclear which changes in the texture's state and residency are required to get
+// from the old to the new spec.
+void CTexture::Refresh()
+{
+	if (IsStreamed())
+	{
+		AbortStreamingTasks(this);
+
+		// Demote streamed textures to their minimum persistent mips
+		// Configuration changes will stream the texture in with the final configurations.
+		int8 nKillMip = m_nMinMipVidUploaded;
+		int8 nKillPersMip = m_bForceStreamHighRes ? 0 : m_nMips - m_CacheFileHeader.m_nMipsPersistent;
+
+		if (nKillPersMip > nKillMip)
+		{
+			StreamTrim(nKillPersMip);
+		}
+	}
+	else
+	{
+		// Very difficult case, as CVars can clamp number of mips, and it's not anticipateable
+		// what the final calculated configurations for these textures are.
+		Reload();
+	}
+}
+
 void CTexture::Reload()
 {
 	// If the texture is flagged to not be released, we skip the reloading
@@ -772,17 +799,18 @@ void CTexture::Reload()
 	{
 		ReleaseDeviceTexture(false);
 		ToggleStreaming(true);
-		return;
-	}
-
-	if (m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL))
-	{
-		SSubresourceData pData(nullptr);
-		CreateDeviceTexture(std::move(pData));
 	}
 	else
 	{
-		LoadFromImage(m_SrcName.c_str());
+		if (m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL))
+		{
+			SSubresourceData pData(nullptr);
+			CreateDeviceTexture(std::move(pData));
+		}
+		else
+		{
+			LoadFromImage(m_SrcName.c_str());
+		}
 	}
 
 	PostCreate();
@@ -1059,6 +1087,7 @@ void CTexture::ToggleStreaming(const bool bEnable)
 			StreamState_ReleaseInfo(this, m_pFileTexMips);
 			m_pFileTexMips = NULL;
 		}
+
 		m_bStreamed = false;
 		if (m_bNoTexture)
 			return;
@@ -2289,10 +2318,15 @@ void CTexture::ReloadFile(const char* szFileName) threadsafe
 
 void CTexture::ReloadTextures() threadsafe
 {
+	gRenDev->ExecuteRenderThreadCommand([]{ CTexture::RT_ReloadTextures(); }, ERenderCommandFlags::LevelLoadingThread_executeDirect);
+}
+
+void CTexture::RT_ReloadTextures()
+{
 	FUNCTION_PROFILER_RENDERER();
 
 	// Flush any outstanding texture requests before reloading
-	gEnv->pRenderer->FlushPendingTextureTasks();
+	CTexture::RT_FlushStreaming(true);
 
 	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
 
@@ -2323,12 +2357,58 @@ void CTexture::ReloadTextures() threadsafe
 	}
 }
 
-void CTexture::ToggleTexturesStreaming() threadsafe
+void CTexture::RefreshTextures() threadsafe
+{
+	gRenDev->ExecuteRenderThreadCommand([]{ CTexture::RT_RefreshTextures(); }, ERenderCommandFlags::LevelLoadingThread_executeDirect);
+}
+
+void CTexture::RT_RefreshTextures()
 {
 	FUNCTION_PROFILER_RENDERER();
 
 	// Flush any outstanding texture requests before reloading
-	gEnv->pRenderer->FlushPendingTextureTasks();
+	CTexture::RT_FlushStreaming(true);
+
+	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
+
+	// Search texture(s) in a thread-safe manner, and protect the found texture(s) from deletion
+	// Loop should block the resource-library as briefly as possible (don't call heavy stuff in the loop)
+	{
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		if (pRL)
+		{
+			ResourcesMapItor itor;
+			for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+			{
+				CTexture* pTexture = (CTexture*)itor->second;
+				if (!pTexture || !(pTexture->m_eFlags & FT_FROMIMAGE))
+					continue;
+
+				pFoundTextures.emplace_front(pTexture);
+			}
+		}
+	}
+
+	// Trigger the texture(s)'s refresh without holding the resource-library lock to evade dead-locks
+	{
+		// TODO: jobbable
+		pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture) { pTexture->Refresh(); return true; });
+	}
+}
+
+void CTexture::ToggleTexturesStreaming() threadsafe
+{
+	gRenDev->ExecuteRenderThreadCommand([]{ CTexture::RT_ToggleTexturesStreaming(); }, ERenderCommandFlags::LevelLoadingThread_executeDirect);
+}
+
+void CTexture::RT_ToggleTexturesStreaming()
+{
+	FUNCTION_PROFILER_RENDERER();
+
+	// Flush any outstanding texture requests before reloading
+	CTexture::RT_FlushStreaming(true);
 
 	std::forward_list<_smart_ptr<CTexture>> pFoundTextures;
 
@@ -2410,7 +2490,6 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 		m_cMinColor = 0.0f;
 		m_cMaxColor = 1.0f;
 		m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
-
 
 		m_bNoTexture = true;
 		if (m_pFileTexMips)

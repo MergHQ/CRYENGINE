@@ -1536,6 +1536,9 @@ struct I3DEngine : public IProcess
 	//! Removes all particles and decals from the world.
 	virtual void ResetParticlesAndDecals() = 0;
 
+	//! Clear temporal caches and resets time sliced calculations
+	virtual void ResetTemporalCaches() = 0;
+
 	//! Creates new decals on the walls, static objects, terrain and entities.
 	//! \param Decal - Structure describing the decal effect to be applied
 	virtual void CreateDecal(const CryEngineDecalInfo& Decal) = 0;

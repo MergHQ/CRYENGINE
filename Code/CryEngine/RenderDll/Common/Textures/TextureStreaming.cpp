@@ -1526,11 +1526,9 @@ void CTexture::InitStreaming()
 	}
 	iLog->Log("  Video textures: Dynamic managed max size: %u Mb", SDynTexture::s_CurDynTexMaxSize);
 
-	// re-init all textures
-	iLog->Log("  Reloading all textures...");
+	// Toggle streaming on all texture already loaded
 	CTexture::ToggleTexturesStreaming();
 
-	iLog->Log("  Finished reloading textures...");
 	iLog->Log("  Finished initializing textures streaming...");
 
 	if (gEnv->pLocalMemoryUsage)

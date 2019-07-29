@@ -1812,11 +1812,7 @@ void C3DEngine::PostLoadLevel()
 	// refresh material constants pulled in from resources (such as textures)
 	GetMatMan()->RefreshShaderResourceConstants();
 
-	if (m_nGsmCache > 0)
-	{
-		m_CachedShadowsBounds.Reset();
-		SetRecomputeCachedShadows(m_nCachedShadowsUpdateStrategy = ShadowMapFrustum::ShadowCacheData::eFullUpdate);
-	}
+	ResetTemporalCaches();
 }
 
 int C3DEngine::SaveStatObj(IStatObj* pStatObj, TSerialize ser)

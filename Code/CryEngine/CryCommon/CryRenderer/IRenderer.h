@@ -1254,6 +1254,9 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Reload all texture files.
 	virtual void EF_ReloadTextures() = 0;
 
+	//! Refresh all texture files after sucessive configuration changes (e.g. spec change).
+	virtual void EF_RefreshTextures() = 0;
+
 	//! Get texture object by ID.
 	virtual ITexture* EF_GetTextureByID(int Id) = 0;
 
