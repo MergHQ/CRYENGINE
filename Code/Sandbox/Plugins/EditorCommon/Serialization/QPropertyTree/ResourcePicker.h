@@ -37,7 +37,7 @@ protected:
 
 private:
 	void Init(Serialization::IResourceSelector* pSelector, const yasli::Archive& ar);
-	void AddButton(const char* szIconPath, const char* szToolTip, void (CResourcePicker::* pCallback)());
+	QWidget* AddButton(const char* szIconPath, const char* szToolTip, void (CResourcePicker::* pCallback)());
 
 	void OnValueChanged(const char* newValue);
 	void OnEdit();
@@ -51,4 +51,6 @@ private:
 	string                              m_type;
 	QHBoxLayout*                        m_pLayout;
 	CAssetDragDropLineEdit*             m_pLineEdit;
+	QWidget*                            m_pLegacyPickerButton;
+	QWidget*                            m_pEditButton;
 };

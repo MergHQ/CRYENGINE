@@ -190,6 +190,9 @@ void CResourcePicker::Init(Serialization::IResourceSelector* pSelector, const ya
 	// If we have a valid selector and the type hasn't changed for this row, then return
 	if (m_pSelector && strcmp(pSelector->resourceType, m_context.typeName) == 0)
 	{
+		m_pLegacyPickerButton->setVisible(m_pSelector->HasLegacyPicker());
+		m_pEditButton->setVisible(m_pSelector->CanEdit());
+
 		return;
 	}
 
@@ -216,28 +219,26 @@ void CResourcePicker::Init(Serialization::IResourceSelector* pSelector, const ya
 		delete pItem;
 	}
 
-	if (m_pSelector->HasLegacyPicker())
-	{
-		AddButton("icons:General/LegacyResourceSelectorPicker.ico", "Legacy Open", &CResourcePicker::OnPickLegacy);
-	}
+	m_pLegacyPickerButton = AddButton("icons:General/LegacyResourceSelectorPicker.ico", "Legacy Open", &CResourcePicker::OnPickLegacy);
+	m_pLegacyPickerButton->setVisible(m_pSelector->HasLegacyPicker());
 
-	if (m_pSelector->CanEdit())
-	{
-		AddButton("icons:General/Edit_Asset.ico", "Edit", &CResourcePicker::OnEdit);
-	}
+	m_pEditButton = AddButton("icons:General/Edit_Asset.ico", "Edit", &CResourcePicker::OnEdit);
+	m_pEditButton->setVisible(m_pSelector->CanEdit());
 
 	AddButton("icons:General/Folder.ico", "Open", &CResourcePicker::OnPick);
 
 	m_pLineEdit->SetResourceSelector(m_pSelector);
 }
 
-void CResourcePicker::AddButton(const char* szIconPath, const char* szToolTip, void (CResourcePicker::* pCallback)())
+QWidget* CResourcePicker::AddButton(const char* szIconPath, const char* szToolTip, void (CResourcePicker::* pCallback)())
 {
 	QToolButton* pButton = new QToolButton();
 	pButton->setIcon(CryIcon(szIconPath));
 	pButton->setToolTip(szToolTip);
 	m_pLayout->addWidget(pButton);
 	connect(pButton, &QToolButton::clicked, this, pCallback);
+
+	return pButton;
 }
 
 void CResourcePicker::SetValue(void* pValue, const yasli::TypeID& type, const yasli::Archive& ar)
@@ -253,6 +254,7 @@ void CResourcePicker::SetValue(void* pValue, const yasli::TypeID& type, const ya
 	Init(pSelector, ar);
 
 	m_pLineEdit->setText(pSelector->GetValue());
+	m_previousValue = m_pLineEdit->text();
 }
 
 void CResourcePicker::GetValue(void* pValue, const yasli::TypeID& type) const

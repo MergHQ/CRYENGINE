@@ -1131,7 +1131,7 @@ bool CFormWidget::focusNextPrevChild(bool next)
 	{
 		return QWidget::focusNextPrevChild(next);
 	}
-	else if (m_pParentTree->GetActiveRow() != nullptr)
+	else if (m_pParentTree && m_pParentTree->GetActiveRow() != nullptr)
 	{
 		//TODO: with inlining this may not be the right widget, tab navigation needs to be adressed
 		if (m_pParentTree->GetActiveRow()->IsWidgetSet())
