@@ -420,6 +420,8 @@ namespace Cry
 				if (m_options.m_bAffectsVolumetricFog)
 					light.m_Flags |= DLF_VOLUMETRIC_FOG;
 
+				light.m_nSortPriority = m_options.sortPriority;
+
 				light.SetFalloffMax(m_options.m_attenuationFalloffMax);
 
 				if (m_options.m_bBoxProjection)
