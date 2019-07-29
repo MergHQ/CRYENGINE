@@ -387,12 +387,7 @@ bool CXConsoleVariableCVarGroup::_TestCVars(const SCVarGroup& group, const ICVar
 		}
 		else
 		{
-			if (gEnv->pSystem)
-			{
-				// Do not warn about D3D registered cvars, which carry the prefix "q_", as they are not actually registered with the cvar system.
-				if (strcmp(key.c_str(), "q") < 0)
-					gEnv->pLog->LogError("[CVARS]: [MISSING] [%s] is not a registered console variable; referenced when testing console variable group [%s] = [%s]", key.c_str(), GetName(), GetString());
-			}
+			gEnv->pConsole->LoadConfigVar(key.c_str(), value.c_str());
 		}
 	}
 
