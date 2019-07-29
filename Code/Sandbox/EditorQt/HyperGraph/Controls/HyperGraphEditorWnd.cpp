@@ -749,7 +749,7 @@ void CHyperGraphDialog::SaveGraph(CHyperGraph* pGraph /*, bool bCopyToFile*/)
 
 	CString filename = pGraph->GetFilename();
 	filename = PathUtil::ReplaceExtension(filename.GetString(), ".xml");
-	if (filename.IsEmpty())
+	if (pGraph->GetFilename().IsEmpty())
 	{
 		ExportGraph(pGraph);
 	}
