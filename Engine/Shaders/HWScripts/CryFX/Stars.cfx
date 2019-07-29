@@ -194,8 +194,9 @@ pixout SkyPassPS(vtxOut IN)
 		float cosine = -dot(SkyDome_SunDirection, skyDir);
 		float cosine2 = cosine * cosine;
 
+		float miePhaseTmp = miePart_g2_1 + miePart_g_2 * cosine;
 		//float miePhase = miePart * ( 1.0 + cosine2 ) / pow( 1.0 + g2 - 2.0 * g * cosine, 1.5 );
-		float miePhase = ( 1.0 + cosine2 ) * pow( miePart_g2_1 + miePart_g_2 * cosine, -1.5 );
+		float miePhase = miePhaseTmp > 0 ? ( 1.0 + cosine2 ) * pow(miePhaseTmp, -1.5 ) : 0;
 		float rayleighPhase = 0.75 * ( 1.0 + cosine2 );
 		
 		dayLight = ColorMie * SkyDome_PartialMieInScatteringConst * miePhase + ColorRayleigh * SkyDome_PartialRayleighInScatteringConst * rayleighPhase;
