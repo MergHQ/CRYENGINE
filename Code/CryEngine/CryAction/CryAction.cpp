@@ -4275,7 +4275,6 @@ void CCryAction::GetAbsLevelPath(char* const pPathBuffer, const uint32 pathBuffe
 
 		// todo: abs path
 		cry_strcpy(pPathBuffer, pathBufferSize, levelFolder);
-
 		return;
 	}
 
@@ -4283,8 +4282,10 @@ void CCryAction::GetAbsLevelPath(char* const pPathBuffer, const uint32 pathBuffe
 	{
 		if (ILevelInfo* pLevelInfo = GetILevelSystem()->GetCurrentLevel())
 		{
-			// todo: abs path
-			cry_sprintf(pPathBuffer, pathBufferSize, "%s/%s", PathUtil::GetGameFolder().c_str(), pLevelInfo->GetPath());
+			if (PathUtil::IsRelativePath(pLevelInfo->GetPath())) // todo: abs path
+				cry_sprintf(pPathBuffer, pathBufferSize, "%s/%s", PathUtil::GetGameFolder().c_str(), pLevelInfo->GetPath());
+			else
+				cry_strcpy(pPathBuffer, pathBufferSize, pLevelInfo->GetPath());
 			return;
 		}
 	}
