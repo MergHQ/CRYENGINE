@@ -217,13 +217,10 @@ CPrefabManager::CPrefabManager()
 	m_pPrefabEvents = new CPrefabEvents();
 
 	m_skipPrefabUpdate = false;
-
-	GetIEditorImpl()->GetIUndoManager()->AddListener(this);
 }
 
 CPrefabManager::~CPrefabManager()
 {
-	GetIEditorImpl()->GetIUndoManager()->RemoveListener(this);
 	SAFE_DELETE(m_pPrefabEvents);
 }
 

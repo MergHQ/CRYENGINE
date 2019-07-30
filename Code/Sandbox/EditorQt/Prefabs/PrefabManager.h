@@ -29,7 +29,7 @@ struct SPrefabCreateParams : CAssetType::SCreateParams
 
 /** Manages Prefab libraries and systems.
  */
-class SANDBOX_API CPrefabManager : public CBaseLibraryManager, public IUndoManagerListener
+class SANDBOX_API CPrefabManager : public CBaseLibraryManager
 {
 public:
 	struct SkipPrefabUpdate
@@ -99,9 +99,6 @@ public:
 
 	bool                      ShouldSkipPrefabUpdate() const     { return m_skipPrefabUpdate; }
 	void                      SetSkipPrefabUpdate(bool skip)     { m_skipPrefabUpdate = skip; }
-
-	virtual void              BeginRestoreTransaction() override { SetSkipPrefabUpdate(true); }
-	virtual void              EndRestoreTransaction() override   { SetSkipPrefabUpdate(false); }
 
 	virtual IDataBaseLibrary* AddLibrary(const string& library, bool bSetFullFilename = false) override;
 	virtual IDataBaseLibrary* LoadLibrary(const string& filename, bool bReload = false) override;
