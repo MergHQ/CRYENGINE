@@ -2921,6 +2921,7 @@ CCryLobby::CMemAllocator::CMemAllocator()
 	m_bucketAllocator.EnableExpandCleanups(false);
 #endif
 	m_pGeneralHeap = CryGetIMemoryManager()->CreateGeneralExpandingMemoryHeap(LOBBY_GENERAL_HEAP_SIZE, LOBBY_GENERAL_HEAP_SIZE, "CryLobby General");
+
 	m_totalBucketAllocated = 0;
 	m_totalGeneralHeapAllocated = 0;
 	m_MaxBucketAllocated = 0;
@@ -2930,11 +2931,6 @@ CCryLobby::CMemAllocator::CMemAllocator()
 CCryLobby::CMemAllocator::~CMemAllocator()
 {
 	PrintStats();
-
-	if (m_pGeneralHeap)
-	{
-		m_pGeneralHeap->Release();
-	}
 }
 
 TMemHdl CCryLobby::CMemAllocator::MemAlloc(size_t sz)

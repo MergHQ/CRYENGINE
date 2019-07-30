@@ -230,9 +230,9 @@ private:
 	char*                                                GetFrameDecompressData(SGeomCacheStreamInfo* pStreamInfo, const uint frameIndex);
 	int*                                                 GetDependencyCounter(SGeomCacheStreamInfo* pStreamInfo, const uint frameIndex);
 
-	void*               m_pPoolBaseAddress;
-	IGeneralMemoryHeap* m_pPool;
-	size_t              m_poolSize;
+	void*                          m_pPoolBaseAddress;
+	_smart_ptr<IGeneralMemoryHeap> m_pPool;
+	size_t                         m_poolSize;
 
 	uint                m_lastRequestStream;
 

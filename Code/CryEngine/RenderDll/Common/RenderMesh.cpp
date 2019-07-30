@@ -68,8 +68,8 @@ namespace
 
 	struct SMeshPool
 	{
-		IGeneralMemoryHeap *m_MeshDataPool;
-		IGeneralMemoryHeap *m_MeshInstancePool;
+		_smart_ptr<IGeneralMemoryHeap> m_MeshDataPool;
+		_smart_ptr<IGeneralMemoryHeap> m_MeshInstancePool;
 		void* m_MeshDataMemory;
 		void* m_MeshInstanceMemory;
 #if !defined(_RELEASE)
@@ -78,9 +78,7 @@ namespace
 		SMeshPoolStatistics m_MeshPoolStats; 
 
 		SMeshPool()
-			: m_MeshDataPool()
-			, m_MeshInstancePool()
-			, m_MeshDataMemory()
+			: m_MeshDataMemory()
 			, m_MeshInstanceMemory()
 #if !defined(_RELEASE)
 			, m_MeshPoolStatsCS()
@@ -268,22 +266,13 @@ namespace
 
 	static void ShutdownPool()
 	{
-		if (s_MeshPool.m_MeshDataPool)
-		{
-			s_MeshPool.m_MeshDataPool->Release();
-			s_MeshPool.m_MeshDataPool = NULL;
-		}
+		s_MeshPool.m_MeshDataPool = nullptr;
 		if (s_MeshPool.m_MeshDataMemory)
 		{
 			CryModuleMemalignFree(s_MeshPool.m_MeshDataMemory);
 			s_MeshPool.m_MeshDataMemory = NULL;
 		}
-		if (s_MeshPool.m_MeshInstancePool)
-		{
-			s_MeshPool.m_MeshInstancePool->Cleanup();
-			s_MeshPool.m_MeshInstancePool->Release();
-			s_MeshPool.m_MeshInstancePool = NULL;
-		}
+		s_MeshPool.m_MeshInstancePool = nullptr;
 		if (s_MeshPool.m_MeshInstanceMemory)
 		{
 			CryModuleMemalignFree(s_MeshPool.m_MeshInstanceMemory);

@@ -36,11 +36,7 @@ CSimpleHttpServer::CSimpleHttpServer() : m_internal(this)
 }
 
 CSimpleHttpServer::~CSimpleHttpServer()
-{
-#if defined(HTTP_WEBSOCKETS)
-	SAFE_RELEASE(m_pWsAllocHeap);
-#endif
-}
+{}
 
 void CSimpleHttpServer::Start(uint16 port, const string& password, IHttpServerListener* pListener)
 {

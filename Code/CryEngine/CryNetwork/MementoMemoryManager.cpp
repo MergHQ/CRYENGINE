@@ -361,13 +361,6 @@ CMementoMemoryManager::CMementoMemoryManagerAllocator::CMementoMemoryManagerAllo
 CMementoMemoryManager::CMementoMemoryManagerAllocator::~CMementoMemoryManagerAllocator()
 {
 	NET_ASSERT(m_handles.size() == m_freeHandles.size());
-
-#if !defined(PURE_CLIENT)
-	if (m_pGeneralHeap)
-	{
-		m_pGeneralHeap->Release();
-	}
-#endif
 }
 
 void CMementoMemoryManager::CMementoMemoryManagerAllocator::AddCMementoMemoryManager()

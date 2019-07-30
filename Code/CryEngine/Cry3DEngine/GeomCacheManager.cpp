@@ -31,8 +31,7 @@ const uint kMaxBufferSizeInMiB = 2048;
 }
 
 CGeomCacheManager::CGeomCacheManager()
-	: m_pPoolBaseAddress(NULL)
-	, m_pPool(NULL)
+	: m_pPoolBaseAddress(nullptr)
 	, m_poolSize(0)
 	, m_lastRequestStream(0)
 	, m_numMissedFrames(0)
@@ -58,9 +57,7 @@ CGeomCacheManager::~CGeomCacheManager()
 	UnloadGeomCaches();
 
 	#if !defined(DEDICATED_SERVER)
-	m_pPool->Release();
-	m_pPool = NULL;
-
+	m_pPool = nullptr;
 	CryGetIMemoryManager()->FreePages(m_pPoolBaseAddress, m_poolSize);
 	#endif
 }
@@ -204,7 +201,7 @@ void CGeomCacheManager::ChangeBufferSize(const uint newSizeInMiB)
 	}
 
 	#if !defined(DEDICATED_SERVER)
-	SAFE_RELEASE(m_pPool);
+	m_pPool = nullptr;
 	if (m_pPoolBaseAddress)
 	{
 		CryGetIMemoryManager()->FreePages(m_pPoolBaseAddress, m_poolSize);

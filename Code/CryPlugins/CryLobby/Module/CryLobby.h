@@ -856,7 +856,7 @@ private:
 #endif
 
 		static LobbyBuckets m_bucketAllocator;
-		IGeneralMemoryHeap* m_pGeneralHeap;
+		_smart_ptr<IGeneralMemoryHeap> m_pGeneralHeap;
 
 		size_t              m_totalBucketAllocated;
 		size_t              m_totalGeneralHeapAllocated;

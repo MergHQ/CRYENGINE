@@ -24,7 +24,7 @@ bool CParserBin::m_bShaderCacheGen = false;
 
 ShaderBucketAllocator g_shaderBucketAllocator;
 
-IGeneralMemoryHeap* g_shaderGeneralHeap;
+_smart_ptr<IGeneralMemoryHeap> g_shaderGeneralHeap;
 
 CParserBin::CParserBin(SShaderBin* pBin)
 {

@@ -11,7 +11,7 @@
 typedef cry_crt_node_allocator ShaderBucketAllocator;
 
 extern ShaderBucketAllocator g_shaderBucketAllocator;
-extern IGeneralMemoryHeap* g_shaderGeneralHeap;
+extern _smart_ptr<IGeneralMemoryHeap> g_shaderGeneralHeap;
 
 template<class T>
 class STLShaderAllocator : public stl::SAllocatorConstruct

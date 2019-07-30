@@ -124,7 +124,7 @@ private:
 #endif
 
 #if !defined(PURE_CLIENT)
-		IGeneralMemoryHeap* m_pGeneralHeap;
+		_smart_ptr<IGeneralMemoryHeap> m_pGeneralHeap;
 		size_t              m_generalHeapTotalRequested;
 		size_t              m_generalHeapTotalAllocated;
 #endif

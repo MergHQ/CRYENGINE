@@ -113,6 +113,7 @@ CMTSafeHeap::CMTSafeHeap()
 	m_pGeneralHeapStorage = (char*)malloc(MTSAFE_GENERAL_HEAP_SIZE);
 	m_pGeneralHeapStorageEnd = m_pGeneralHeapStorage + MTSAFE_GENERAL_HEAP_SIZE;
 	m_pGeneralHeap = CryGetIMemoryManager()->CreateGeneralMemoryHeap(m_pGeneralHeapStorage, MTSAFE_GENERAL_HEAP_SIZE, "MTSafeHeap");
+	m_pGeneralHeap->AddRef();
 #endif
 
 #if MTSAFE_USE_VIRTUALALLOC

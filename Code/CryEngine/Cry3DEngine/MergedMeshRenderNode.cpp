@@ -26,7 +26,7 @@
 
 namespace
 {
-static IGeneralMemoryHeap* s_MergedMeshPool = NULL;
+static _smart_ptr<IGeneralMemoryHeap> s_MergedMeshPool;
 static CryCriticalSection s_MergedMeshPoolLock;
 
 static inline SMeshBoneMapping_uint8 _SortBoneMapping(const SMeshBoneMapping_uint8& a)
