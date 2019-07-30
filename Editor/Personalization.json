@@ -316,6 +316,107 @@
                     "class": "Properties"
                 }
             }
+        },
+        "layout": {
+            "adaptiveLayout": true,
+            "dockingState": {
+                "ToolsLayout": {
+                    "floatingWindows": [
+                    ],
+                    "mainWrapper": {
+                        "geometry": "AdnQywADAAAAAAACAAAAAgAABjQAAAMmAAAAAgAAAAIAAAY0AAADJgAAAAAAAAAAB4AAAAACAAAAAgAABjQAAAMm",
+                        "name": "mainWrapper",
+                        "splitter": {
+                            "items": [
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Audio System Controls"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "items": [
+                                        {
+                                            "currentIndex": 0,
+                                            "objectNames": [
+                                                "Properties"
+                                            ],
+                                            "type": "area"
+                                        },
+                                        {
+                                            "currentIndex": 0,
+                                            "objectNames": [
+                                                "Contexts"
+                                            ],
+                                            "type": "area"
+                                        }
+                                    ],
+                                    "state": "AAAA/wAAAAEAAAACAAADwAAAAeAA/////wEAAAACAA==",
+                                    "type": "splitter"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Middleware Data"
+                                    ],
+                                    "type": "area"
+                                }
+                            ],
+                            "state": "AAAA/wAAAAEAAAADAAAA0wAAANIAAADTAP////8BAAAAAQA=",
+                            "type": "splitter"
+                        }
+                    },
+                    "toolWindowManagerStateFormat": 2
+                },
+                "Windows": {
+                    "Audio System Controls": {
+                        "class": "Audio System Controls"
+                    },
+                    "Contexts": {
+                        "class": "Contexts"
+                    },
+                    "Middleware Data": {
+                        "class": "Middleware Data"
+                    },
+                    "Properties": {
+                        "class": "Properties"
+                    }
+                }
+            },
+            "editorContent": {
+                "isLocked": true,
+                "toolBarArea": [
+                    {
+                        "items": [
+                            {
+                                "index": 0,
+                                "name": "GeneralToolBar",
+                                "type": 0,
+                                "visible": true
+                            }
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    }
+                ],
+                "toolBars": [
+                    {
+                        "area": 0,
+                        "name": "GeneralToolBar"
+                    }
+                ]
+            }
         }
     },
     "BaseObject": {
@@ -502,6 +603,55 @@
                     "class": "Graph"
                 }
             }
+        },
+        "layout": {
+            "adaptiveLayout": true,
+            "dockingState": {
+                "ToolsLayout": {
+                    "floatingWindows": [
+                    ],
+                    "mainWrapper": {
+                        "area": {
+                            "currentIndex": 0,
+                            "objectNames": [
+                                "Graph"
+                            ],
+                            "type": "area"
+                        },
+                        "geometry": "AdnQywADAAAAAAACAAAAAgAABjcAAANOAAAAAgAAAAIAAAY3AAADTgAAAAAAAAAAB4AAAAACAAAAAgAABjcAAANO",
+                        "name": "mainWrapper"
+                    },
+                    "toolWindowManagerStateFormat": 2
+                },
+                "Windows": {
+                    "Graph": {
+                        "class": "Graph"
+                    }
+                }
+            },
+            "editorContent": {
+                "isLocked": false,
+                "toolBarArea": [
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    }
+                ],
+                "toolBars": [
+                ]
+            }
         }
     },
     "Environment Editor": {
@@ -625,6 +775,231 @@
                     "class": "Variables"
                 }
             }
+        },
+        "layout": {
+            "adaptiveLayout": true,
+            "dockingState": {
+                "ToolsLayout": {
+                    "floatingWindows": [
+                    ],
+                    "mainWrapper": {
+                        "geometry": "AdnQywADAAAAAAACAAAAAgAABjYAAANOAAAAAgAAAAIAAAY2AAADTgAAAAAAAAAAB4AAAAACAAAAAgAABjYAAANO",
+                        "name": "mainWrapper",
+                        "splitter": {
+                            "items": [
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Asset Browser"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Constants"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Variables"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Curve Editor"
+                                    ],
+                                    "type": "area"
+                                }
+                            ],
+                            "state": "AAAA/wAAAAEAAAAEAAABCgAAATEAAAFIAAACpgD/////AQAAAAEA",
+                            "type": "splitter"
+                        }
+                    },
+                    "toolWindowManagerStateFormat": 2
+                },
+                "Windows": {
+                    "Asset Browser": {
+                        "class": "Asset Browser",
+                        "state": {
+                            "adaptiveLayout": true,
+                            "breadcrumbsVisible": true,
+                            "detailsView": {
+                                "columnData": {
+                                    "Favorite": {
+                                        "data": "Favorite",
+                                        "visible": true,
+                                        "visualIndex": 0,
+                                        "width": 16
+                                    },
+                                    "Folder": {
+                                        "data": "Folder",
+                                        "visible": false,
+                                        "visualIndex": 4,
+                                        "width": 0
+                                    },
+                                    "Name": {
+                                        "data": "Name",
+                                        "visible": true,
+                                        "visualIndex": 1,
+                                        "width": 208
+                                    },
+                                    "Status": {
+                                        "data": "Status",
+                                        "visible": true,
+                                        "visualIndex": 3,
+                                        "width": 100
+                                    },
+                                    "Type": {
+                                        "data": "Type",
+                                        "visible": true,
+                                        "visualIndex": 2,
+                                        "width": 120
+                                    },
+                                    "Unique Id": {
+                                        "data": "Unique Id",
+                                        "visible": false,
+                                        "visualIndex": 5,
+                                        "width": 0
+                                    },
+                                    "_filter_string_": {
+                                        "data": "_filter_string_",
+                                        "visible": false,
+                                        "visualIndex": 7,
+                                        "width": 0
+                                    },
+                                    "_thumb_": {
+                                        "data": "_thumb_",
+                                        "visible": false,
+                                        "visualIndex": 6,
+                                        "width": 0
+                                    }
+                                },
+                                "columnOrder": [
+                                    "Favorite",
+                                    "Name",
+                                    "Type",
+                                    "Status",
+                                    "Folder",
+                                    "Unique Id",
+                                    "_thumb_",
+                                    "_filter_string_"
+                                ],
+                                "headerSortingOrder": {
+                                    "sortOrder": 0,
+                                    "sortedSection": 1
+                                },
+                                "version": 1
+                            },
+                            "editorContent": {
+                                "isLocked": true,
+                                "toolBarArea": [
+                                    {
+                                        "items": [
+                                            {
+                                                "index": 0,
+                                                "name": "View - AdvancedToolBar",
+                                                "type": 0,
+                                                "visible": true
+                                            },
+                                            {
+                                                "index": 1,
+                                                "spacerType": 0,
+                                                "type": 1
+                                            },
+                                            {
+                                                "index": 2,
+                                                "name": "ViewToolBar",
+                                                "type": 0,
+                                                "visible": true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    }
+                                ],
+                                "toolBars": [
+                                    {
+                                        "area": 0,
+                                        "name": "ViewToolBar"
+                                    },
+                                    {
+                                        "area": 0,
+                                        "name": "View - AdvancedToolBar"
+                                    }
+                                ]
+                            },
+                            "filters": {
+                                "expanded": false,
+                                "favoriteFilter": false
+                            },
+                            "foldersSplitter": "AAAA/wAAAAEAAAACAAAARQAAAqwB/////wEAAAACAA==",
+                            "foldersView": {
+                                "selected": [
+                                    ""
+                                ]
+                            },
+                            "mainViewSplitter": "AAAA/wAAAAEAAAACAAAAOgAAAQAB/////wEAAAABAA==",
+                            "recursiveView": false,
+                            "showFolders": false,
+                            "syncSelection": true,
+                            "thumbnailView": {
+                                "size": {
+                                    "height": 64,
+                                    "width": 64
+                                }
+                            },
+                            "viewMode": 1
+                        }
+                    },
+                    "Constants": {
+                        "class": "Constants"
+                    },
+                    "Curve Editor": {
+                        "class": "Curve Editor"
+                    },
+                    "Variables": {
+                        "class": "Variables"
+                    }
+                }
+            },
+            "editorContent": {
+                "isLocked": false,
+                "toolBarArea": [
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    }
+                ],
+                "toolBars": [
+                ]
+            }
         }
     },
     "FlowGraph": {
@@ -665,6 +1040,59 @@
                 "Settings": {
                     "class": "Settings"
                 }
+            }
+        },
+        "layout": {
+            "adaptiveLayout": true,
+            "dockingState": {
+                "ToolsLayout": {
+                    "floatingWindows": [
+                    ],
+                    "mainWrapper": {
+                        "area": {
+                            "currentIndex": 0,
+                            "objectNames": [
+                                "Settings",
+                                "Environment Presets"
+                            ],
+                            "type": "area"
+                        },
+                        "geometry": "AdnQywADAAAAAAACAAAAAgAAAUEAAAKjAAAAAgAAAAIAAAFBAAACowAAAAAAAAAAB4AAAAACAAAAAgAAAUEAAAKj",
+                        "name": "mainWrapper"
+                    },
+                    "toolWindowManagerStateFormat": 2
+                },
+                "Windows": {
+                    "Environment Presets": {
+                        "class": "Environment Presets"
+                    },
+                    "Settings": {
+                        "class": "Settings"
+                    }
+                }
+            },
+            "editorContent": {
+                "isLocked": false,
+                "toolBarArea": [
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    }
+                ],
+                "toolBars": [
+                ]
             }
         }
     },
@@ -798,6 +1226,245 @@
                     "class": "Properties"
                 }
             }
+        },
+        "layout": {
+            "adaptiveLayout": true,
+            "dockingState": {
+                "ToolsLayout": {
+                    "floatingWindows": [
+                    ],
+                    "mainWrapper": {
+                        "geometry": "AdnQywADAAAAAAACAAAAAgAABjQAAANOAAAAAgAAAAIAAAY0AAADTgAAAAAAAAAAB4AAAAACAAAAAgAABjQAAANO",
+                        "name": "mainWrapper",
+                        "splitter": {
+                            "items": [
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Asset Browser"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Material"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Properties"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Preview"
+                                    ],
+                                    "type": "area"
+                                }
+                            ],
+                            "state": "AAAA/wAAAAEAAAAEAAACBAAAASkAAAEoAAAB1wD/////AQAAAAEA",
+                            "type": "splitter"
+                        }
+                    },
+                    "toolWindowManagerStateFormat": 2
+                },
+                "Windows": {
+                    "Asset Browser": {
+                        "class": "Asset Browser",
+                        "state": {
+                            "adaptiveLayout": true,
+                            "breadcrumbsVisible": true,
+                            "detailsView": {
+                                "columnData": {
+                                    "Favorite": {
+                                        "data": "Favorite",
+                                        "visible": true,
+                                        "visualIndex": 0,
+                                        "width": 16
+                                    },
+                                    "Folder": {
+                                        "data": "Folder",
+                                        "visible": false,
+                                        "visualIndex": 4,
+                                        "width": 0
+                                    },
+                                    "Name": {
+                                        "data": "Name",
+                                        "visible": true,
+                                        "visualIndex": 1,
+                                        "width": 208
+                                    },
+                                    "Status": {
+                                        "data": "Status",
+                                        "visible": true,
+                                        "visualIndex": 3,
+                                        "width": 100
+                                    },
+                                    "Sub Mtl count": {
+                                        "data": "Sub Mtl count",
+                                        "visible": false,
+                                        "visualIndex": 8,
+                                        "width": 0
+                                    },
+                                    "Texture count": {
+                                        "data": "Texture count",
+                                        "visible": false,
+                                        "visualIndex": 9,
+                                        "width": 0
+                                    },
+                                    "Type": {
+                                        "data": "Type",
+                                        "visible": true,
+                                        "visualIndex": 2,
+                                        "width": 120
+                                    },
+                                    "Unique Id": {
+                                        "data": "Unique Id",
+                                        "visible": false,
+                                        "visualIndex": 5,
+                                        "width": 0
+                                    },
+                                    "_filter_string_": {
+                                        "data": "_filter_string_",
+                                        "visible": false,
+                                        "visualIndex": 7,
+                                        "width": 0
+                                    },
+                                    "_thumb_": {
+                                        "data": "_thumb_",
+                                        "visible": false,
+                                        "visualIndex": 6,
+                                        "width": 0
+                                    }
+                                },
+                                "columnOrder": [
+                                    "Favorite",
+                                    "Name",
+                                    "Type",
+                                    "Status",
+                                    "Folder",
+                                    "Unique Id",
+                                    "_thumb_",
+                                    "_filter_string_",
+                                    "Sub Mtl count",
+                                    "Texture count"
+                                ],
+                                "headerSortingOrder": {
+                                    "sortOrder": 0,
+                                    "sortedSection": 1
+                                },
+                                "version": 1
+                            },
+                            "editorContent": {
+                                "isLocked": true,
+                                "toolBarArea": [
+                                    {
+                                        "items": [
+                                            {
+                                                "index": 0,
+                                                "name": "View - AdvancedToolBar",
+                                                "type": 0,
+                                                "visible": true
+                                            },
+                                            {
+                                                "index": 1,
+                                                "spacerType": 0,
+                                                "type": 1
+                                            },
+                                            {
+                                                "index": 2,
+                                                "name": "ViewToolBar",
+                                                "type": 0,
+                                                "visible": true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    }
+                                ],
+                                "toolBars": [
+                                    {
+                                        "area": 0,
+                                        "name": "ViewToolBar"
+                                    },
+                                    {
+                                        "area": 0,
+                                        "name": "View - AdvancedToolBar"
+                                    }
+                                ]
+                            },
+                            "filters": {
+                                "expanded": false,
+                                "favoriteFilter": false
+                            },
+                            "foldersSplitter": "AAAA/wAAAAEAAAACAAAARQAAAqwB/////wEAAAACAA==",
+                            "foldersView": {
+                                "selected": [
+                                    ""
+                                ]
+                            },
+                            "mainViewSplitter": "AAAA/wAAAAEAAAACAAAAOgAAAQAB/////wEAAAABAA==",
+                            "recursiveView": false,
+                            "showFolders": false,
+                            "syncSelection": true,
+                            "thumbnailView": {
+                                "size": {
+                                    "height": 64,
+                                    "width": 64
+                                }
+                            },
+                            "viewMode": 1
+                        }
+                    },
+                    "Material": {
+                        "class": "Material"
+                    },
+                    "Preview": {
+                        "class": "Preview"
+                    },
+                    "Properties": {
+                        "class": "Properties"
+                    }
+                }
+            },
+            "editorContent": {
+                "isLocked": false,
+                "toolBarArea": [
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    }
+                ],
+                "toolBars": [
+                ]
+            }
         }
     },
     "Mesh Importer": {
@@ -884,7 +1551,7 @@
                 "floatingWindows": [
                 ],
                 "mainWrapper": {
-                    "geometry": "AdnQywADAAAAAAACAAAAAgAAAxUAAAGaAAAAAgAAAAIAAAMVAAABmgAAAAAAAAAACgAAAAACAAAAAgAAAxUAAAGa",
+                    "geometry": "AdnQywADAAAAAAACAAAAAgAABjcAAAMmAAAAAgAAAAIAAAY3AAADJgAAAAAAAAAAB4AAAAACAAAAAgAABjcAAAMm",
                     "name": "mainWrapper",
                     "splitter": {
                         "items": [
@@ -896,40 +1563,21 @@
                                 "type": "area"
                             },
                             {
-                                "items": [
-                                    {
-                                        "items": [
-                                            {
-                                                "currentIndex": 0,
-                                                "objectNames": [
-                                                    "Effect Graph"
-                                                ],
-                                                "type": "area"
-                                            },
-                                            {
-                                                "currentIndex": 0,
-                                                "objectNames": [
-                                                    "Inspector"
-                                                ],
-                                                "type": "area"
-                                            }
-                                        ],
-                                        "state": "AAAA/wAAAAEAAAACAAAAnwAAAJ8A/////wEAAAABAA==",
-                                        "type": "splitter"
-                                    },
-                                    {
-                                        "currentIndex": 0,
-                                        "objectNames": [
-                                            "Curve Editor"
-                                        ],
-                                        "type": "area"
-                                    }
+                                "currentIndex": 0,
+                                "objectNames": [
+                                    "Effect Graph"
                                 ],
-                                "state": "AAAA/wAAAAEAAAACAAAA7gAAAO4A/////wEAAAACAA==",
-                                "type": "splitter"
+                                "type": "area"
+                            },
+                            {
+                                "currentIndex": 0,
+                                "objectNames": [
+                                    "Inspector"
+                                ],
+                                "type": "area"
                             }
                         ],
-                        "state": "AAAA/wAAAAEAAAACAAABPgAAAT4A/////wEAAAABAA==",
+                        "state": "AAAA/wAAAAEAAAADAAABTAAAA2QAAAGBAP////8BAAAAAQA=",
                         "type": "splitter"
                     }
                 },
@@ -940,6 +1588,7 @@
                     "class": "Asset Browser",
                     "state": {
                         "adaptiveLayout": true,
+                        "breadcrumbsVisible": true,
                         "detailsView": {
                             "columnData": {
                                 "Components count": {
@@ -1022,7 +1671,7 @@
                             "version": 1
                         },
                         "editorContent": {
-                            "isLocked": false,
+                            "isLocked": true,
                             "toolBarArea": [
                                 {
                                     "items": [
@@ -1068,13 +1717,13 @@
                             "expanded": false,
                             "favoriteFilter": false
                         },
-                        "foldersSplitter": "AAAA/wAAAAEAAAAC/////wAAAqwB/////wEAAAABAA==",
+                        "foldersSplitter": "AAAA/wAAAAEAAAACAAAARQAAAqwB/////wEAAAACAA==",
                         "foldersView": {
                             "selected": [
-                                ""
+                                "particles/examples"
                             ]
                         },
-                        "mainViewSplitter": "AAAA/wAAAAEAAAAC/////wAAAQAB/////wEAAAABAA==",
+                        "mainViewSplitter": "AAAA/wAAAAEAAAACAAAAOgAAAQAB/////wEAAAABAA==",
                         "recursiveView": false,
                         "showFolders": false,
                         "syncSelection": true,
@@ -1087,15 +1736,261 @@
                         "viewMode": 1
                     }
                 },
-                "Curve Editor": {
-                    "class": "Curve Editor"
-                },
                 "Effect Graph": {
                     "class": "Effect Graph"
                 },
                 "Inspector": {
                     "class": "Inspector"
                 }
+            }
+        },
+        "layout": {
+            "adaptiveLayout": true,
+            "dockingState": {
+                "ToolsLayout": {
+                    "floatingWindows": [
+                    ],
+                    "mainWrapper": {
+                        "geometry": "AdnQywADAAAAAAACAAAAAgAABjcAAAMmAAAAAgAAAAIAAAY3AAADJgAAAAAAAAAAB4AAAAACAAAAAgAABjcAAAMm",
+                        "name": "mainWrapper",
+                        "splitter": {
+                            "items": [
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Asset Browser"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Effect Graph"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Inspector"
+                                    ],
+                                    "type": "area"
+                                }
+                            ],
+                            "state": "AAAA/wAAAAEAAAADAAABSwAAA8UAAAEeAP////8BAAAAAQA=",
+                            "type": "splitter"
+                        }
+                    },
+                    "toolWindowManagerStateFormat": 2
+                },
+                "Windows": {
+                    "Asset Browser": {
+                        "class": "Asset Browser",
+                        "state": {
+                            "adaptiveLayout": true,
+                            "breadcrumbsVisible": true,
+                            "detailsView": {
+                                "columnData": {
+                                    "Components count": {
+                                        "data": "Components count",
+                                        "visible": false,
+                                        "visualIndex": 8,
+                                        "width": 0
+                                    },
+                                    "Favorite": {
+                                        "data": "Favorite",
+                                        "visible": true,
+                                        "visualIndex": 0,
+                                        "width": 16
+                                    },
+                                    "Features count": {
+                                        "data": "Features count",
+                                        "visible": false,
+                                        "visualIndex": 9,
+                                        "width": 0
+                                    },
+                                    "Folder": {
+                                        "data": "Folder",
+                                        "visible": false,
+                                        "visualIndex": 4,
+                                        "width": 0
+                                    },
+                                    "Name": {
+                                        "data": "Name",
+                                        "visible": true,
+                                        "visualIndex": 1,
+                                        "width": 208
+                                    },
+                                    "Status": {
+                                        "data": "Status",
+                                        "visible": true,
+                                        "visualIndex": 3,
+                                        "width": 100
+                                    },
+                                    "Type": {
+                                        "data": "Type",
+                                        "visible": true,
+                                        "visualIndex": 2,
+                                        "width": 120
+                                    },
+                                    "Unique Id": {
+                                        "data": "Unique Id",
+                                        "visible": false,
+                                        "visualIndex": 5,
+                                        "width": 0
+                                    },
+                                    "_filter_string_": {
+                                        "data": "_filter_string_",
+                                        "visible": false,
+                                        "visualIndex": 7,
+                                        "width": 0
+                                    },
+                                    "_thumb_": {
+                                        "data": "_thumb_",
+                                        "visible": false,
+                                        "visualIndex": 6,
+                                        "width": 0
+                                    }
+                                },
+                                "columnOrder": [
+                                    "Favorite",
+                                    "Name",
+                                    "Type",
+                                    "Status",
+                                    "Folder",
+                                    "Unique Id",
+                                    "_thumb_",
+                                    "_filter_string_",
+                                    "Components count",
+                                    "Features count"
+                                ],
+                                "headerSortingOrder": {
+                                    "sortOrder": 0,
+                                    "sortedSection": 1
+                                },
+                                "version": 1
+                            },
+                            "editorContent": {
+                                "isLocked": true,
+                                "toolBarArea": [
+                                    {
+                                        "items": [
+                                            {
+                                                "index": 0,
+                                                "name": "View - AdvancedToolBar",
+                                                "type": 0,
+                                                "visible": true
+                                            },
+                                            {
+                                                "index": 1,
+                                                "spacerType": 0,
+                                                "type": 1
+                                            },
+                                            {
+                                                "index": 2,
+                                                "name": "ViewToolBar",
+                                                "type": 0,
+                                                "visible": true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    },
+                                    {
+                                        "items": [
+                                        ]
+                                    }
+                                ],
+                                "toolBars": [
+                                    {
+                                        "area": 0,
+                                        "name": "ViewToolBar"
+                                    },
+                                    {
+                                        "area": 0,
+                                        "name": "View - AdvancedToolBar"
+                                    }
+                                ]
+                            },
+                            "filters": {
+                                "expanded": false,
+                                "favoriteFilter": false
+                            },
+                            "foldersSplitter": "AAAA/wAAAAEAAAACAAAARQAAAqwB/////wEAAAACAA==",
+                            "foldersView": {
+                                "selected": [
+                                    "particles/examples"
+                                ]
+                            },
+                            "mainViewSplitter": "AAAA/wAAAAEAAAACAAAAOgAAAQAB/////wEAAAABAA==",
+                            "recursiveView": false,
+                            "showFolders": false,
+                            "syncSelection": true,
+                            "thumbnailView": {
+                                "size": {
+                                    "height": 64,
+                                    "width": 64
+                                }
+                            },
+                            "viewMode": 1
+                        }
+                    },
+                    "Effect Graph": {
+                        "class": "Effect Graph"
+                    },
+                    "Inspector": {
+                        "class": "Inspector"
+                    }
+                }
+            },
+            "editorContent": {
+                "isLocked": true,
+                "toolBarArea": [
+                    {
+                        "items": [
+                            {
+                                "index": 0,
+                                "name": "EffectToolBar",
+                                "type": 0,
+                                "visible": true
+                            },
+                            {
+                                "index": 1,
+                                "name": "LibraryToolBar",
+                                "type": 0,
+                                "visible": true
+                            }
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    }
+                ],
+                "toolBars": [
+                    {
+                        "area": 0,
+                        "name": "EffectToolBar"
+                    },
+                    {
+                        "area": 0,
+                        "name": "LibraryToolBar"
+                    }
+                ]
             }
         }
     },
@@ -1538,6 +2433,71 @@
                 "Tests": {
                     "class": "Tests"
                 }
+            }
+        },
+        "layout": {
+            "adaptiveLayout": true,
+            "dockingState": {
+                "ToolsLayout": {
+                    "floatingWindows": [
+                    ],
+                    "mainWrapper": {
+                        "geometry": "AdnQywADAAAAAAACAAAAAgAAAWYAAAKmAAAAAgAAAAIAAAFmAAACpgAAAAAAAAAAB4AAAAACAAAAAgAAAWYAAAKm",
+                        "name": "mainWrapper",
+                        "splitter": {
+                            "items": [
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Tests"
+                                    ],
+                                    "type": "area"
+                                },
+                                {
+                                    "currentIndex": 0,
+                                    "objectNames": [
+                                        "Output"
+                                    ],
+                                    "type": "area"
+                                }
+                            ],
+                            "state": "AAAA/wAAAAEAAAACAAABeQAAASgA/////wEAAAACAA==",
+                            "type": "splitter"
+                        }
+                    },
+                    "toolWindowManagerStateFormat": 2
+                },
+                "Windows": {
+                    "Output": {
+                        "class": "Output"
+                    },
+                    "Tests": {
+                        "class": "Tests"
+                    }
+                }
+            },
+            "editorContent": {
+                "isLocked": false,
+                "toolBarArea": [
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    },
+                    {
+                        "items": [
+                        ]
+                    }
+                ],
+                "toolBars": [
+                ]
             }
         }
     },

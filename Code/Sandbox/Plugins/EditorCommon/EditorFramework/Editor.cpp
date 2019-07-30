@@ -60,6 +60,7 @@ private:
 };
 
 const char* szDockLayoutPropertyName = "dockLayout";
+const char* szLayoutPropertyName = "layout";
 
 } // namespace Private_EditorFramework
 
@@ -309,10 +310,10 @@ void CEditor::EnableDockingSystem()
 	m_dockingRegistry->SetDefaultLayoutCallback([this](CDockableContainer* sender)
 	{
 		const QVariantMap& state = GetIEditor()->GetPersonalizationManager()->GetDefaultState(GetEditorName());
-		QVariant layout = state.value(Private_EditorFramework::szDockLayoutPropertyName);
+		QVariant layout = state.value(Private_EditorFramework::szLayoutPropertyName);
 		if (layout.isValid())
 		{
-			m_dockingRegistry->SetState(layout.toMap());
+			SetLayout(layout.toMap());
 		}
 		else
 		{
@@ -549,7 +550,7 @@ void CDockableEditor::LoadLayoutPersonalization()
 {
 	auto personalization = GetPersonalizationState();
 
-	QVariant layout = personalization.value("layout");
+	QVariant layout = personalization.value(Private_EditorFramework::szLayoutPropertyName);
 	if (layout.isValid())
 	{
 		SetLayout(layout.toMap());
@@ -561,7 +562,7 @@ void CDockableEditor::SaveLayoutPersonalization()
 	auto layout = GetLayout();
 	auto personalization = GetPersonalizationState();
 
-	personalization.insert("layout", layout);
+	personalization.insert(Private_EditorFramework::szLayoutPropertyName, layout);
 	SetPersonalizationState(personalization);
 }
 

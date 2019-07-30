@@ -327,6 +327,9 @@ void CMainWindow::closeEvent(QCloseEvent* pEvent)
 {
 	if (TryClose())
 	{
+		// Give CDockableEditor a chance to handle the close event as well. It should at the very least
+		// save any user personalization
+		CDockableEditor::closeEvent(pEvent);
 		pEvent->accept();
 	}
 	else
