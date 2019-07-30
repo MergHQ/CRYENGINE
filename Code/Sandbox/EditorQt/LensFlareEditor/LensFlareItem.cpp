@@ -93,7 +93,7 @@ void CLensFlareItem::SetName(const string& name, bool bRefreshWhenUndo, bool bRe
 
 void CLensFlareItem::UpdateLights(IOpticsElementBasePtr pSrcOptics)
 {
-	string srcFullOpticsName = GetFullName();
+	string srcFullOpticsName = GetName();
 	bool bUpdateChildren = false;
 	if (pSrcOptics == NULL)
 	{
