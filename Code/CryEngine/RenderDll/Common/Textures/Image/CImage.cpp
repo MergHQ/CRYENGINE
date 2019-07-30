@@ -63,20 +63,21 @@ void CImageFile::mfSet_error(const EImFileError error, const char* detail)
 
 namespace
 {
-struct DDSCallback : public IImageFileStreamCallback
-{
-	DDSCallback()
-		: ok(false)
+	struct DDSCallback : public IImageFileStreamCallback
 	{
-	}
-	virtual void OnImageFileStreamComplete(CImageFile* pImFile)
-	{
-		ok = pImFile != NULL;
-		waitEvent.Set();
+		DDSCallback()
+			: ok(false)
+		{}
+
+		virtual void OnImageFileStreamComplete(CImageFile* pImFile)
+		{
+			ok = pImFile != NULL;
+			waitEvent.Set();
+		}
+
+		CryEvent      waitEvent;
+		volatile bool ok;
 	};
-	CryEvent      waitEvent;
-	volatile bool ok;
-};
 }
 
 CImageFilePtr CImageFile::mfLoad_file(const string& filename, const uint32 nFlags)
@@ -100,6 +101,7 @@ CImageFilePtr CImageFile::mfLoad_file(const string& filename, const uint32 nFlag
 	{
 		if (!(nFlags & FIM_READ_VIA_STREAMS))
 		{
+			SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 			pImageFile = new CImageDDSFile(sFileToLoad, nFlags);
 		}
 		else

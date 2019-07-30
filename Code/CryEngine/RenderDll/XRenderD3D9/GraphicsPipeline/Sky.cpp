@@ -4,6 +4,7 @@
 #include "Sky.h"
 
 #include <CrySystem/File/CryBufferedFileReader.h>
+#include <CryThreading/CryThread.h>
 
 CSkyStage::CSkyStage(CGraphicsPipeline& graphicsPipeline)
 	: CGraphicsPipelineStage(graphicsPipeline)
@@ -19,10 +20,7 @@ void CSkyStage::Init()
 {
 	// Create HDR Sky Dome textures
 	CreateSkyDomeTextures(SSkyLightRenderParams::skyDomeTextureWidth, SSkyLightRenderParams::skyDomeTextureHeight);
-	if (!LoadStarsData())
-	{
-		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Failed to load stars data");
-	}
+	LoadStarsDataAsync();
 	m_skyDomeTextureLastTimeStamp = -1;
 }
 
@@ -46,80 +44,90 @@ void CSkyStage::CreateSkyDomeTextures(int32 width, int32 height)
 	m_pSkyDomeTextureRayleigh->Create2DTexture(width, height, 1, creationFlags, nullptr, eTF_R16G16B16A16F);
 }
 
-bool CSkyStage::LoadStarsData()
+void CSkyStage::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 {
-	const uint32 c_fileTag(0x52415453);       // "STAR"
-	const uint32 c_fileVersion(0x00010001);
-	const char c_fileName[] = "%ENGINE%/engineassets/sky/stars.dat";
+	if (pStream->GetError() != 0)
+	{
+		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Failed to load stars data. Stream error %d", pStream->GetError());
+		return;
+	}
+
+	const void* const pBufferStart = pStream->GetBuffer();
+	const void* pBufferReadHead = pBufferStart;
+	const size_t bufferSize = pStream->GetBytesRead();
+	const bool needsSwap = (eEndianness_Native != eEndianness_Little);
+
+	constexpr uint32 c_fileTag(0x52415453);       // "STAR"
+	constexpr uint32 c_fileVersion(0x00010001);
 	
-	CCryBufferedFileReader file;
-	if (file.Open(c_fileName, "rb"))
+	if (bufferSize < sizeof(c_fileTag) + sizeof(c_fileVersion) + sizeof(m_numStars))
+	{
+		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Failed to load stars data. Too little data.");
+		return;
+	}
+
 	{
 		// read and validate header
-		size_t itemsRead(0);
-		uint32 fileTag(0);
-		itemsRead = file.ReadType(&fileTag);
-		if (itemsRead != 1 || fileTag != c_fileTag)
+		uint32 fileTag = *StepData<uint32>(pBufferReadHead, needsSwap);
+		uint32 fileVersion = *StepData<uint32>(pBufferReadHead, needsSwap);
+		if (fileTag != c_fileTag || fileVersion != c_fileVersion)
 		{
-			return false;
-		}
-
-		uint32 fileVersion(0);
-		itemsRead = file.ReadType(&fileVersion);
-		if (itemsRead != 1 || fileVersion != c_fileVersion)
-		{
-			return false;
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Failed to load stars data. Invalid Header.");
+			return;
 		}
 
 		// read in stars
-		file.ReadType(&m_numStars);
+		m_numStars = *StepData<uint32>(pBufferReadHead, needsSwap);
+	}
 
-		SVF_P3S_C4B_T2S* pData(new SVF_P3S_C4B_T2S[6 * m_numStars]);
-
-		for (unsigned int i(0); i < m_numStars; ++i)
+	std::vector< SVF_P3S_C4B_T2S> data;
+	data.resize(6 * m_numStars);
+	
+	for (unsigned int i(0); i < m_numStars; ++i)
+	{
+		const ptrdiff_t bytesRemaining = (uintptr_t(pBufferStart) + bufferSize) - uintptr_t(pBufferReadHead);
+		if (bytesRemaining < 2 * sizeof(float) + 4 * sizeof(uint8))
 		{
-			float ra(0);
-			file.ReadType(&ra);
-
-			float dec(0);
-			file.ReadType(&dec);
-
-			uint8 r(0);
-			file.ReadType(&r);
-
-			uint8 g(0);
-			file.ReadType(&g);
-
-			uint8 b(0);
-			file.ReadType(&b);
-
-			uint8 mag(0);
-			file.ReadType(&mag);
-
-			Vec3 v;
-			v.x = -cosf(DEG2RAD(dec)) * sinf(DEG2RAD(ra * 15.0f));
-			v.y = cosf(DEG2RAD(dec)) * cosf(DEG2RAD(ra * 15.0f));
-			v.z = sinf(DEG2RAD(dec));
-
-			for (int k = 0; k < 6; k++)
-			{
-				pData[6 * i + k].xyz = v;
-				pData[6 * i + k].color.dcolor = (mag << 24) + (b << 16) + (g << 8) + r;
-			}
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Failed to load stars data. End of data with %u stars remaining.", m_numStars - i);
+			return;
 		}
 
-		m_pStarMesh = gRenDev->CreateRenderMeshInitialized(pData, 6 * m_numStars, EDefaultInputLayouts::P3S_C4B_T2S, 0, 0, prtTriangleList, "Stars", "Stars");
+		float ra = *StepData<float>(pBufferReadHead, needsSwap);
+		float dec = *StepData<float>(pBufferReadHead, needsSwap);
 
-		delete[] pData;
+		uint8 r = *StepData<uint8>(pBufferReadHead, needsSwap);
+		uint8 g = *StepData<uint8>(pBufferReadHead, needsSwap);
+		uint8 b = *StepData<uint8>(pBufferReadHead, needsSwap);
+		uint8 mag = *StepData<uint8>(pBufferReadHead, needsSwap);
 
-		// check if we read entire file
-		const size_t curPos(file.GetPosition());
-		file.Seek(0, SEEK_END);
-		const size_t endPos(file.GetPosition());
-		
-		return (curPos == endPos);
+		Vec3 v;
+		v.x = -cosf(DEG2RAD(dec)) * sinf(DEG2RAD(ra * 15.0f));
+		v.y = cosf(DEG2RAD(dec)) * cosf(DEG2RAD(ra * 15.0f));
+		v.z = sinf(DEG2RAD(dec));
+
+		for (int k = 0; k < 6; k++)
+		{
+			data[6 * i + k].xyz = v;
+			data[6 * i + k].color.dcolor = (mag << 24) + (b << 16) + (g << 8) + r;
+		}
 	}
-	return false;
+
+	auto pStarsMesh = gRenDev->CreateRenderMeshInitialized(data.data(), 6 * m_numStars, EDefaultInputLayouts::P3S_C4B_T2S, 0, 0, prtTriangleList, "Stars", "Stars");;
+	CryMT::CryMemoryBarrier();
+	m_pStarMesh = pStarsMesh;
+
+	const ptrdiff_t bytesRemaining = (uintptr_t(pBufferStart) + bufferSize) - uintptr_t(pBufferReadHead);
+	if (bytesRemaining != 0)
+	{
+		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, "Loaded stars data, but %" PRIdPTR " bytes remained.", bytesRemaining);
+	}
+}
+
+void CSkyStage::LoadStarsDataAsync()
+{
+	const char c_fileName[] = "%ENGINE%/engineassets/sky/stars.dat";
+	IStreamEngine* pStreamEngine = gEnv->pSystem->GetStreamEngine();
+	pStreamEngine->StartRead(eStreamTaskTypeGeometry, c_fileName, this);
 }
 
 void CSkyStage::SetSkyParameters()

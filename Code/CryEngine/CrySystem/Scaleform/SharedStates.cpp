@@ -50,8 +50,7 @@ GThread::ThreadPriority ConvertToGFxThreadPriority(int32 nPriority)
 // CryGFxFileOpener
 
 CryGFxFileOpener::CryGFxFileOpener()
-{
-}
+{}
 
 CryGFxFileOpener& CryGFxFileOpener::GetAccess()
 {
@@ -60,8 +59,7 @@ CryGFxFileOpener& CryGFxFileOpener::GetAccess()
 }
 
 CryGFxFileOpener::~CryGFxFileOpener()
-{
-}
+{}
 
 GFile* CryGFxFileOpener::OpenFile(const char* pUrl, SInt flags, SInt /*mode*/)
 {
@@ -572,6 +570,7 @@ static bool LookupDDS(const char* pFilePath, uint32& width, uint32& height)
 	}
 	else
 	{
+		SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 		CryStackStringT<char, 256> splitFilePath(pFilePath);
 		splitFilePath += ".0";
 

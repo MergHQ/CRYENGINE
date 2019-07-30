@@ -3,8 +3,9 @@
 #pragma once
 
 #include "Common/GraphicsPipelineStage.h"
+#include <CrySystem/IStreamEngine.h>
 
-class CSkyStage : public CGraphicsPipelineStage
+class CSkyStage : public CGraphicsPipelineStage, IStreamCallback
 {
 public:
 	static const EGraphicsPipelineStage StageID = eStage_Sky;
@@ -25,9 +26,11 @@ public:
 	void Execute(CTexture* pColorTex, CTexture* pDepthTex);
 	void ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
+	void StreamAsyncOnComplete(IReadStream* pStream, unsigned nError) override final;
+
 private:
 	void CreateSkyDomeTextures(int32 width, int32 height);
-	bool LoadStarsData();
+	void LoadStarsDataAsync();
 	void SetSkyParameters();
 	void SetHDRSkyParameters();
 

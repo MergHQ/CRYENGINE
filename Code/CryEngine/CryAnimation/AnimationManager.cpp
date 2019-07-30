@@ -442,10 +442,7 @@ bool CAnimationManager::DBA_LockStatus(const char* pFilePathDBA, uint32 status, 
 			m_arrGlobalHeaderDBA[dba].m_bDBALock = status;
 			if (status)
 			{
-				if (Console::GetInst().ca_UseIMG_CAF)
-					m_arrGlobalHeaderDBA[dba].StartStreamingDBA(highPriority);
-				else
-					m_arrGlobalHeaderDBA[dba].LoadDatabaseDBA("");
+				m_arrGlobalHeaderDBA[dba].StartStreamingDBA(highPriority);
 			}
 			return 1;
 		}
