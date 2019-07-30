@@ -176,13 +176,10 @@ public:
 
 				m_editState.editState = EditState::None;
 			}
-			else
+			else if (m_editState.editState == EditState::None)
 			{
-				//just a line edit selection
-				if (!hasFocus())
-				{
-					selectAll();
-				}
+				setTextEditMode(true);
+				selectAll();
 			}
 		}
 		else
