@@ -3008,6 +3008,11 @@ void CCryAction::EndGameContext()
 	}
 #endif
 
+	if (!gEnv->IsEditor())
+	{
+		gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_UNLOAD_START, 0, 0);
+	}
+
 	m_pGame = 0;
 	pGame = 0;
 

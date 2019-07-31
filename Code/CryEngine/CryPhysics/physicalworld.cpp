@@ -1351,7 +1351,7 @@ int CPhysicalWorld::DestroyPhysicalEntity(IPhysicalEntity* _pent,int mode,int bT
 		if (ppc->m_iSimClass!=5) {
 			if (mode & 4 && ((CPhysicalEntity*)ppc)->Release()>0)
 				return 0;
-			if (!bThreadSafe && m_vars.lastTimeStep>0.0f) {
+			if (!bThreadSafe) {
 				EventPhysEntityDeleted eped;
 				eped.pEntity=ppc; eped.mode=mode;
 				eped.pForeignData=ppc->m_pForeignData; eped.iForeignData=ppc->m_iForeignData;

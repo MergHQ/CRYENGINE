@@ -321,6 +321,9 @@ enum ESystemEvent
 	//! Sent when level loading is completely finished with no more onscreen movie or info rendering, and when actual gameplay can start.
 	ESYSTEM_EVENT_LEVEL_GAMEPLAY_START,
 
+	//! Sent before starting unloading a level
+	ESYSTEM_EVENT_LEVEL_UNLOAD_START,
+
 	//! Level is unloading.
 	ESYSTEM_EVENT_LEVEL_UNLOAD,
 

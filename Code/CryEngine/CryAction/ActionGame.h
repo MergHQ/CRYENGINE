@@ -256,11 +256,13 @@ struct SBrokenMeshSize
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CActionGame : public IHitListener, public CMultiThreadRefCount, public IHostMigrationEventListener
+class CActionGame : public IHitListener, public CMultiThreadRefCount, public IHostMigrationEventListener, public ISystemEventListener
 {
 public:
 	CActionGame(CScriptRMI*);
 	~CActionGame();
+
+	virtual void  OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
 
 	bool          Init(const SGameStartParams*);
 	void          ServerInit(const SGameStartParams* pGameStartParams, bool* io_ok, bool* io_hasPbSvStarted);

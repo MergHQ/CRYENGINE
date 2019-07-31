@@ -213,6 +213,7 @@ CActionGame::CActionGame(CScriptRMI* pScriptRMI)
 	s_this = this;
 
 	m_pNetwork->AddHostMigrationEventListener(this, "CActionGame", ELPT_PostEngine);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CActionGame");
 
 	m_pGameContext = new CGameContext(CCryAction::GetCryAction(), pScriptRMI, this);
 	m_pGameTokenSystem = CCryAction::GetCryAction()->GetIGameTokenSystem();
@@ -225,6 +226,8 @@ CActionGame::~CActionGame()
 	CryLog("Destroying CActionGame instance %p (level=\"%s\")", this, GetLevelName().c_str());
 	INDENT_LOG_DURING_SCOPE();
 #endif
+
+	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 
 	m_pNetwork->RemoveHostMigrationEventListener(this);
 
@@ -327,6 +330,17 @@ CActionGame::~CActionGame()
 	}
 #endif
 	s_this = 0;
+}
+
+void CActionGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	if (event == ESystemEvent::ESYSTEM_EVENT_LEVEL_UNLOAD_START)
+	{
+		if (gEnv->pPhysicalWorld)
+		{
+			gEnv->pPhysicalWorld->RemoveEventClient(EventPhysEntityDeleted::id, OnPhysEntityDeleted, 0);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

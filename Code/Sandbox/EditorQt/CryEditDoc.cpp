@@ -328,6 +328,8 @@ void CCryEditDoc::DeleteContents()
 
 	m_bIsClosing = true;
 
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_LEVEL_UNLOAD_START, 0, 0);
+
 	SetDocumentReady(false);
 
 	{
