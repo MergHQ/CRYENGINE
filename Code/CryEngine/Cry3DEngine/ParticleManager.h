@@ -317,8 +317,6 @@ private:
 	uint32               m_nAllowedEnvironmentFlags;        // Which particle features are allowed.
 	TrinaryFlags<uint64> m_RenderFlags;                     // OS_ and FOB_ flags.
 
-	bool                 m_bParticleTessellation = false;   // tessellation feature is allowed to use.
-
 	SWorldPhysEnviron    m_PhysEnv;                         // Per-frame computed physics area information.
 	std::shared_ptr<pfx2::IParticleSystem>
 		                 m_pParticleSystem;

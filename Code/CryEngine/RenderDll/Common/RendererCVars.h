@@ -375,7 +375,11 @@ public:
 	static int   CV_r_ParticlesHalfRes;
 	DeclareStaticConstIntCVar(CV_r_ParticlesHalfResAmount, 0);
 	DeclareStaticConstIntCVar(CV_r_ParticlesHalfResBlendMode, 0);
+#if CRY_PLATFORM_ORBIS
+	DeclareStaticConstIntCVar(CV_r_ParticlesInstanceVertices, 0);
+#else
 	DeclareStaticConstIntCVar(CV_r_ParticlesInstanceVertices, 1);
+#endif
 	DeclareStaticConstIntCVar(CV_r_AntialiasingModeEditor, 1);
 	DeclareStaticConstIntCVar(CV_r_AntialiasingModeDebug, 0);
 	static int CV_r_rain;

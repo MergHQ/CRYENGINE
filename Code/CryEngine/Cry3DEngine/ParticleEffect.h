@@ -37,7 +37,7 @@ struct TrinaryFlags
 		: On(0), Off(0) {}
 
 	void Clear()
-	{ On = Off = 0; }
+		{ On = Off = 0; }
 
 	// Set from an int where -1 is off, 0 is neutral, 1 is forced
 	void SetState(int state, T flags)
@@ -51,15 +51,17 @@ struct TrinaryFlags
 	}
 
 	TrinaryFlags& operator|=(T flags)
-	{ On |= flags; return *this; }
+		{ On |= flags; return *this; }
 	TrinaryFlags& operator&=(T flags)
-	{ Off |= ~flags; return *this; }
+		{ Off |= ~flags; return *this; }
 
 	T operator&(T flags) const
-	{ return (flags | On) & ~Off; }
-
+		{ return (flags | On) & ~Off; }
 	T operator&(TrinaryFlags<T> const& other) const
-	{ return (On | other.On) & ~(Off | other.Off); }
+		{ return (On | other.On) & ~(Off | other.Off); }
+
+	bool operator!=(const TrinaryFlags& o) const
+		{ return ((On ^ o.On) | (Off ^ o.Off)) != 0; }
 };
 
 //////////////////////////////////////////////////////////////////////////

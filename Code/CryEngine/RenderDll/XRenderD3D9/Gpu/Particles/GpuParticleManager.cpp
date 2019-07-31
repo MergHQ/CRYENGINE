@@ -35,7 +35,7 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute& BIT((eStage_ComputeParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
 	const bool bReadbackBoundingBox = CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes ? false : true;
 
-	if (!CRenderer::CV_r_GpuParticles)
+	if (!CRenderer::CV_r_GpuParticles || gEnv->pSystem->IsPaused())
 		return;
 
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);

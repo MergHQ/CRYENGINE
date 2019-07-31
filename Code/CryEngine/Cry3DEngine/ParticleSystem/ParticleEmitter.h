@@ -32,7 +32,7 @@ public:
 	virtual void             SetMaterial(IMaterial* pMat) override         {}
 	virtual IMaterial*       GetMaterial(Vec3* pHitPos = 0) const override { return nullptr; }
 	virtual IMaterial*       GetMaterialOverride() const override          { return nullptr; }
-	virtual float            GetMaxViewDist() const override;
+	virtual float            GetMaxViewDist() const override               { return m_maxViewDist; }
 	virtual void             Precache() override                           {}
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual const AABB       GetBBox() const                      override { return m_bounds.IsReset() ? AABB(m_location.t, 0.05f) : m_bounds; }
@@ -96,6 +96,7 @@ public:
 	void                      Clear();
 	void                      UpdateRuntimes();
 	void                      UpdateEmitGeomFromEntity();
+	float                     ComputeMaxViewDist() const;
 	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
 	const SPhysEnviron&       GetPhysicsEnv() const        { return m_physEnviron; }
 	void                      UpdatePhysEnv();
@@ -156,6 +157,7 @@ private:
 	int                         m_emitterGeometrySlot;
 	ColorF                      m_profilerColor;
 	float                       m_viewDistRatio;
+	float                       m_maxViewDist;
 	float                       m_time;
 	float                       m_timeCreated;
 	float                       m_timeStable;

@@ -42,6 +42,7 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 	, m_nextBounds(AABB::RESET)
 	, m_bounds(AABB::RESET)
 	, m_viewDistRatio(1.0f)
+	, m_maxViewDist(0.0f)
 	, m_active(false)
 	, m_alive(true)
 	, m_location(IDENTITY)
@@ -339,11 +340,10 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 	const bool visible = WasRenderedLastFrame();
 	const bool stable = IsStable();
 
-	const float maxDist = non_const(*this).GetMaxViewDist();
-	const float dist = (GetPos() - passInfo.GetCamera().GetPosition()).GetLength();
-	const float alpha = sqr(crymath::saturate(1.0f - dist / maxDist));
-	const float ac = alpha * 0.75f + 0.25f;
-	const ColorF alphaColor(ac, ac, ac, alpha);
+	const float dist = m_bounds.GetDistance(passInfo.GetCamera().GetPosition());
+	const float alpha = sqr(crymath::saturate(1.0f - 0.5f * dist / m_maxViewDist)) * 0.75f + 0.25f;
+	const ColorF alphaColor(alpha, alpha, alpha, 1);
+	const ColorF emitterColor = ColorF(1, stable, visible) * alphaColor;
 
 	if (visible)
 	{
@@ -353,23 +353,21 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 		{
 			if (pRuntime->GetComponent()->IsVisible() && !pRuntime->GetBounds().IsReset())
 			{
-				uint numParticles = pRuntime->Container().RealSize();
+				uint numParticles = pRuntime->GetNumParticles();
 				emitterParticles += numParticles;
 				const float volumeRatio = div_min(pRuntime->GetBounds().GetVolume(), m_realBounds.GetVolume(), 1.0f);
 				bool hasShadows = !!(pRuntime->ComponentParams().m_environFlags & ENV_CAST_SHADOWS);
 				const ColorB componentColor = ColorF(!hasShadows, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
-				string label = string().Format("%s #S:%d #P:%d",
+				IRenderAuxText::DrawLabelExF(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, "%s #S:%d #P:%d",
 					pRuntime->GetComponent()->GetName(), pRuntime->Container(EDD_Spawner).RealSize(), numParticles);
-				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
 			}
 		}
-		string label = string().Format("%s Age:%.3f #P:%d", m_pEffect->GetShortName().c_str(), GetAge(), emitterParticles);
-		IRenderAuxText::DrawLabelEx(m_location.t, 1.5f, (float*)&alphaColor, true, true, label);
+		IRenderAuxText::DrawLabelExF(m_location.t, 1.5f, emitterColor, true, true, "%s Age:%.3f #P:%d", 
+			m_pEffect->GetShortName().c_str(), GetAge(), emitterParticles);
 	}
 	if (!m_bounds.IsReset())
 	{
-		const ColorB emitterColor = ColorF(1, stable, visible) * alphaColor;
 		pRenderAux->DrawAABB(m_bounds, false, emitterColor, eBBD_Faceted);
 	}
 }
@@ -380,7 +378,7 @@ void CParticleEmitter::PostUpdate()
 	m_parentContainer.GetIOVec3Stream(EPVF_AngularVelocity).Store(TParticleGroupId(0), Vec3v(ZERO));
 }
 
-float CParticleEmitter::GetMaxViewDist() const
+float CParticleEmitter::ComputeMaxViewDist() const
 {
 	IRenderer* pRenderer = GetRenderer();
 	const float angularDensity =
@@ -740,9 +738,6 @@ void CParticleEmitter::UpdateRuntimes()
 
 	m_runtimes = newRuntimes;
 
-	if (!!(GetRndFlags() & ERF_CASTSHADOWMAPS) != !!(m_environFlags & ENV_CAST_SHADOWS))
-		m_reRegister = true;
-
 	m_effectEditVersion = m_pEffectOriginal->GetEditVersion() + m_emitterEditVersion;
 	m_alive = m_active = true;
 
@@ -755,6 +750,15 @@ void CParticleEmitter::UpdateRuntimes()
 		if (m_timeUpdated == m_timeCreated)
 			m_time = m_timeStable;
 	}
+
+	float maxViewDist = ComputeMaxViewDist();
+	if (maxViewDist != m_maxViewDist)
+	{
+		m_maxViewDist = maxViewDist;
+		m_reRegister = true;
+	}
+	if (!!(GetRndFlags() & ERF_CASTSHADOWMAPS) != !!(m_environFlags & ENV_CAST_SHADOWS))
+		m_reRegister = true;
 }
 
 ILINE void CParticleEmitter::UpdateFromEntity()
@@ -811,6 +815,7 @@ void CParticleEmitter::Register()
 		return;
 	}
 
+	m_maxViewDist = ComputeMaxViewDist();
 	bool posContained = GetBBox().IsContainPoint(GetPos());
 	SetRndFlags(ERF_REGISTER_BY_POSITION, posContained);
 	SetRndFlags(ERF_REGISTER_BY_BBOX, m_spawnParams.bRegisterByBBox);

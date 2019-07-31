@@ -726,6 +726,13 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 	{
 		// Copy pre-computed render and state flags.
 		ERenderObjectFlags nObjFlags = ERenderObjectFlags(pParams->nRenObjFlags & PRParams.m_nRenObjFlags);
+		if (nObjFlags & FOB_ALLOW_TESSELLATION)
+		{
+			// Even when point sprites (vertex instancing) is disabled for regular sprites, 
+			// we need the flag for tessellated sprites, to distinguish them from tessellated ribbons
+			if (pParams->nRenObjFlags.On & FOB_POINT_SPRITE)
+				nObjFlags |= FOB_POINT_SPRITE;
+		}
 
 		IF (pParams->eFacing == pParams->eFacing.Water, 0)
 		{

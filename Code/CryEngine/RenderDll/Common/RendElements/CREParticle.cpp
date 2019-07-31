@@ -880,11 +880,6 @@ void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraph
 	const auto& particleBuffer = gcpRendD3D.GetParticleBufferSet();
 
 	// Disable vertex instancing on unsupported hardware, or from cvar.
-#if CRY_PLATFORM_ORBIS
-	const bool canInstance = false;
-#else
-	const bool canInstance = (CRendererCVars::CV_r_ParticlesInstanceVertices != 0);
-#endif
 	const bool isPointSprites = (pRenderObject->m_ObjFlags & FOB_POINT_SPRITE) != 0;
 	const bool isTessellated = (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
 
@@ -898,18 +893,19 @@ void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraph
 
 	const uint numVertices = m_RenderVerts.aVertices.size();
 	const uint numIndices = m_RenderVerts.aIndices.size();
-	if (isTessellated && isPointSprites)
+	
+	if (numIndices > 0)
+	{
+		commandInterface.DrawIndexed(numIndices, 1, m_nFirstIndex, m_nFirstVertex, 0);
+	}
+	else if (isTessellated && isPointSprites)
 	{
 		commandInterface.Draw(numVertices, 1, m_nFirstVertex, 0);
 	}
-	else if (isPointSprites && canInstance)
+	else
 	{
 		const bool isOctagonal = (pRenderObject->m_ObjFlags & FOB_OCTAGONAL) != 0;
 		const uint verticesPerInstance = isOctagonal ? 8 : 4;
 		commandInterface.Draw(verticesPerInstance, numVertices, 0, m_nFirstVertex);
-	}
-	else
-	{
-		commandInterface.DrawIndexed(numIndices, 1, m_nFirstIndex, m_nFirstVertex, 0);
 	}
 }

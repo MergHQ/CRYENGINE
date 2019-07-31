@@ -26,10 +26,6 @@ namespace pfx2
 {
 
 
-#if !CRY_PLATFORM_ORBIS
-	#define CRY_PFX2_POINT_SPRITES
-#endif
-
 class CFeatureRenderGpuSprites : public CParticleRenderBase
 {
 public:

@@ -885,33 +885,34 @@ void CParticleManager::UpdateEngineData()
 	}
 
 	// Render object flags, using cvar convention of 1 = allowed, 2 = forced.
+	auto prevRenderFlags = m_RenderFlags;
 	m_RenderFlags.Clear();
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesAnimBlend - 1, OS_ANIM_BLEND);
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesMotionBlur - 1, FOB_MOTION_BLUR);
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesShadows - 1, FOB_INSHADOW);
 	m_RenderFlags.SetState(GetCVars()->e_ParticlesSoftIntersect - 1, FOB_SOFT_PARTICLE);
 
-	bool bInvalidateCachedRenderObjects = false;
-
 	if (GetRenderer())
 	{
 		bool bParticleTesselation = false;
 		GetRenderer()->EF_Query(EFQ_ParticlesTessellation, bParticleTesselation);
 		m_RenderFlags.SetState(int(bParticleTesselation) - 1, FOB_ALLOW_TESSELLATION);
-
-		bInvalidateCachedRenderObjects = (m_bParticleTessellation != bParticleTesselation);
-		m_bParticleTessellation = bParticleTesselation;
 	}
 
+	if (ICVar* pInstanceVertices = GetConsole()->GetCVar("r_ParticlesInstanceVertices"))
+	{
+		if (!pInstanceVertices->GetIVal())
+			m_RenderFlags.SetState(-1, FOB_POINT_SPRITE);
+	}
 	if (ICVar* pZPass = GetConsole()->GetCVar("r_UseZPass"))
 	{
 		if (pZPass->GetIVal() < 2)
 			m_RenderFlags.SetState(-1, FOB_ZPREPASS);
 	}
 
-	if (m_pLastDefaultParams != &GetDefaultParams() || bInvalidateCachedRenderObjects)
+	if (m_pLastDefaultParams != &GetDefaultParams() || m_RenderFlags != prevRenderFlags)
 	{
-		// Default effect or config spec changed.
+		// Default effect or allowed render flags changed.
 		m_pLastDefaultParams = &GetDefaultParams();
 		ReloadAllEffects();
 	}

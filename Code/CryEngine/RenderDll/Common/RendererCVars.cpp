@@ -1346,7 +1346,12 @@ void CRendererCVars::InitCVars()
 	                    "Sets particle half-res buffer to half (0) or quarter (1) screen size.\n"
 	                    "Usage: r_ParticlesHalfResForce [0/1]");
 
-	DefineConstIntCVar3("r_ParticlesInstanceVertices", CV_r_ParticlesInstanceVertices, 1, VF_NULL,
+#if CRY_PLATFORM_ORBIS
+	#define r_ParticlesInstanceVerticesDefault 0
+#else
+	#define r_ParticlesInstanceVerticesDefault 1
+#endif
+	DefineConstIntCVar3("r_ParticlesInstanceVertices", CV_r_ParticlesInstanceVertices, r_ParticlesInstanceVerticesDefault, VF_NULL,
 	                    "Enable instanced-vertex rendering.\n"
 	                    "Usage: r_ParticlesInstanceVertices [0/1]");
 
@@ -3083,8 +3088,8 @@ void CRendererCVars::InitCVars()
 	               "1 - Enabled.\n"
 	               );
 
-	REGISTER_CVAR3("r_GpuParticlesConstantRadiusBoundingBoxes", CV_r_GpuParticlesConstantRadiusBoundingBoxes, 100, VF_NULL,
-	               "Constant radius bounding boxes for GPU particles (Default: 100).\n"
+	REGISTER_CVAR3("r_GpuParticlesConstantRadiusBoundingBoxes", CV_r_GpuParticlesConstantRadiusBoundingBoxes, 0, VF_NULL,
+	               "Constant radius bounding boxes for GPU particles (Default: 0).\n"
 	               "0 - Dynamic Calculation.\n"
 	               ">0 - Bounding Box radius.\n"
 	               );
