@@ -89,6 +89,7 @@ protected:
 	virtual void drawBranchIndicator(QPainter* painter, const QStyleOptionViewItem* opt) const;
 
 	virtual void mousePressEvent(QMouseEvent* pEvent) override;
+	virtual void mouseReleaseEvent(QMouseEvent* pEvent) override;
 	virtual bool viewportEvent(QEvent* event) override;
 
 	virtual void dragLeaveEvent(QDragLeaveEvent* pEvent) override;

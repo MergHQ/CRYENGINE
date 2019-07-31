@@ -805,6 +805,20 @@ void QAdvancedTreeView::mousePressEvent(QMouseEvent* pEvent)
 	setAutoScroll(true);
 }
 
+void QAdvancedTreeView::mouseReleaseEvent(QMouseEvent* pEvent)
+{
+	// Forward mouse release events to the advanced item delegate so it can have a chance of handling the event.
+	// We use this to enable dragging of checkbox items to quickly toggle their state. This issue was introduced
+	// when updating to Qt 5.12 and a bug is now tracked:
+	// https://bugreports.qt.io/browse/QTBUG-77251
+	QAdvancedItemDelegate* pItemDelegate = GetAdvancedDelegate();
+	if (pItemDelegate)
+	{
+		pItemDelegate->editorEvent(pEvent, model(), viewOptions(), model()->buddy(indexAt(pEvent->pos())));
+	}
+	QTreeView::mouseReleaseEvent(pEvent);
+}
+
 void QAdvancedTreeView::dragLeaveEvent(QDragLeaveEvent* pEvent)
 {
 	ClearDragHandlerData();
