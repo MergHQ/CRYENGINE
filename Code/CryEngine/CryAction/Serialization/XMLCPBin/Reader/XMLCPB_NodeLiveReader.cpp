@@ -34,7 +34,7 @@ void CNodeLiveReaderRef::CopyFrom(const CNodeLiveReaderRef& other)
 {
 	m_nodeId = other.m_nodeId;
 	m_pNode_Debug = NULL;
-	if (!CRY_VERIFY(m_nodeId == XMLCPB_INVALID_ID))
+	if (CRY_VERIFY(m_nodeId != XMLCPB_INVALID_ID))
 	{
 		CNodeLiveReader* pNode = m_Reader.GetNodeLive(m_nodeId);
 		m_pNode_Debug = pNode;
