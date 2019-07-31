@@ -668,6 +668,7 @@ void CFormWidget::contextMenuEvent(QContextMenuEvent* pEvent)
 	}
 
 	QMenu* pMenu = new QMenu();
+	pMenu->setAttribute(Qt::WA_DeleteOnClose);
 
 	//Active row
 	if (m_pActiveRow->m_pModel->GetPropertyTreeWidget())
