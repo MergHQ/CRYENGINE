@@ -2656,7 +2656,7 @@ SamplerState vcTemporalReprojectionSState : register(s0) = SS_TrilinearClamp;
 
 cbuffer CBReprojection : register(b3)
 {
-	struct SReprojectionParams
+	struct
 	{
 		float4   screenSize; // xy: screen size, zw: reciprocal of screen size
 		float4   reprojectionParams; // xy: factors for converting linear depth to non-linear depth, zw: unused
@@ -2667,6 +2667,13 @@ cbuffer CBReprojection : register(b3)
 // TODO: remove after old graphics pipeline is removed.
 float4x4 ReprojectionMatrix;
 float4 ReprojectionParam; // xy: factors for converting linear depth to non-linear depth, zw: unused
+
+struct SReprojectionParams
+{
+	float4   screenSize; // xy: screen size, zw: reciprocal of screen size
+	float4   reprojectionParams; // xy: factors for converting linear depth to non-linear depth, zw: unused
+	float4x4 reprojectionMatrix;
+};
 
 SReprojectionParams GetReprojectionParams()
 {
