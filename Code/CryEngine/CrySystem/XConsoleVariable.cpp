@@ -255,7 +255,14 @@ void CXConsoleVariableCVarGroup::OnCVarChangeFunc(ICVar* pVar)
 		pGroup = itGroup->second;
 
 	if (pGroup)
+	{
 		pThis->ApplyCVars(*pGroup);
+	}
+	else
+	{
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_SYSTEM, EValidatorSeverity::VALIDATOR_COMMENT
+				, "Trying to set CVarGroup '%s' to unknown value %d; will fall back to default.", pThis->GetName(), value);
+	}
 
 	pThis->ApplyCVars(pThis->m_CVarGroupDefault, pGroup);
 }
@@ -430,6 +437,8 @@ void CXConsoleVariableCVarGroup::ApplyCVars(const SCVarGroup& group, const SCVar
 	CXConsole* const pConsole = static_cast<CXConsole*>(m_pConsole);
 	const bool wasProcessingGroup = pConsole->GetIsProcessingGroup();
 	pConsole->SetProcessingGroup(true);
+	const bool isSpecGroup = (cry_strncmp(m_name.c_str(), "sys_spec") == 0);
+	const ELoadConfigurationType wasConfigType = pConsole->SetCurrentConfigType(isSpecGroup ? eLoadConfigSystemSpec : eLoadConfigDefault);
 
 	for (const auto& it : group.m_KeyValuePair)
 	{
@@ -442,5 +451,6 @@ void CXConsoleVariableCVarGroup::ApplyCVars(const SCVarGroup& group, const SCVar
 		m_pConsole->LoadConfigVar(rKey, it.second);
 	}
 
+	pConsole->SetCurrentConfigType(wasConfigType);
 	pConsole->SetProcessingGroup(wasProcessingGroup);
 }

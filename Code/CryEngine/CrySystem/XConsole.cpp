@@ -332,7 +332,7 @@ CXConsole::CXConsole(CSystem& system)
 	m_waitSeconds = 0.0f;
 	m_blockCounter = 0;
 
-	m_currentLoadConfigType = eLoadConfigInit;
+	m_currentLoadConfigType = eLoadConfigDefault;
 	m_readOnly = false;
 
 	CNotificationNetworkConsole::Initialize();

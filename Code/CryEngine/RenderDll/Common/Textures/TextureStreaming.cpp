@@ -1498,9 +1498,15 @@ void CTexture::InitStreaming()
 
 		if (CRenderer::CV_r_TexturesStreamPoolSize >= 0)
 		{
-			int nMinTexStreamPool = gEnv->IsEditor() ? 512 : 192;
-			int nMaxTexStreamPool = videoMem * 7 / 8;
-			CRenderer::CV_r_TexturesStreamPoolSize = clamp_tpl(CRenderer::CV_r_TexturesStreamPoolSize, nMinTexStreamPool, nMaxTexStreamPool);
+			const int minTexStreamPoolSize = gEnv->IsEditor() ? 512 : 192;
+			const int maxTexStreamPoolSize = videoMem * 7 / 8;
+			const int clampedPoolSize = clamp_tpl(CRenderer::CV_r_TexturesStreamPoolSize, minTexStreamPoolSize, maxTexStreamPoolSize);;
+			if (CRenderer::CV_r_TexturesStreamPoolSize != clampedPoolSize)
+			{
+				CryLog("CVar r_TexturesStreamPoolSize: value %d got clamped to range [%d, %d]"
+						, CRenderer::CV_r_TexturesStreamPoolSize, minTexStreamPoolSize, maxTexStreamPoolSize);
+			}
+			CRenderer::CV_r_TexturesStreamPoolSize = clampedPoolSize;
 		}
 
 		// Don't skip mips in the editor so that assets can be viewed in full resolution
