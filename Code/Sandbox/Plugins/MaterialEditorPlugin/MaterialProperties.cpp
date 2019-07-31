@@ -1066,25 +1066,25 @@ void CMaterialSerializer::SerializeShaderGenParams(Serialization::IArchive& ar)
 	if (count <= 0)
 		return;
 
-	ar.openBlock("shaderGenParams", "Shader Generation Params");
-
-	for (int i = 0; i < count; i++)
+	if (ar.openBlock("shaderGenParams", "Shader Generation Params"))
 	{
-		const SShaderGenBit* pGenBit = shaderGen->m_BitMask[i];
-		if (pGenBit->m_Flags & SHGF_HIDDEN)
-			continue;
-
-		if (!pGenBit->m_ParamProp.empty())
+		for (int i = 0; i < count; i++)
 		{
-			bool flag = (pGenBit->m_Mask & shaderGenMask) != 0;
-			ar(flag, pGenBit->m_ParamProp.c_str(), pGenBit->m_ParamProp.c_str());
-			ar.doc(pGenBit->m_ParamDesc.c_str());
+			const SShaderGenBit* pGenBit = shaderGen->m_BitMask[i];
+			if (pGenBit->m_Flags & SHGF_HIDDEN)
+				continue;
 
-			SetFlag(shaderGenMask, pGenBit->m_Mask, flag);
+			if (!pGenBit->m_ParamProp.empty())
+			{
+				bool flag = (pGenBit->m_Mask & shaderGenMask) != 0;
+				ar(flag, pGenBit->m_ParamProp.c_str(), pGenBit->m_ParamProp.c_str());
+				ar.doc(pGenBit->m_ParamDesc.c_str());
+
+				SetFlag(shaderGenMask, pGenBit->m_Mask, flag);
+			}
 		}
+		ar.closeBlock();
 	}
-
-	ar.closeBlock();
 
 	//This ensures that the material data is loaded to render thread and the results are correctly updated into material resources
 	m_pMaterial->SetShaderGenMaskFromUI(shaderGenMask);
