@@ -2343,8 +2343,8 @@ void CRigidEntity::UpdateConstraints(float time_interval)
 				epc.pEntity[j]=pent; epc.pForeignData[j]=pent->m_pForeignData; epc.iForeignData[j]=pent->m_iForeignData;
 				epc.partid[j] = pent->m_parts[m_pConstraints[i].ipart[j]].id;
 				epc.vloc[j] = m_pConstraints[i].flags & contact_angular ? pbody->w : pbody->v+(pbody->w^epc.pt-pbody->pos);
-				epc.idmat[j] = pent->m_nParts ? pent->GetMatId(pent->m_parts[m_pConstraints[i].ipart[j]].pPhysGeom->pGeom->GetPrimitiveId(0,0x40),m_pConstraints[i].ipart[j]):0;
 			}
+			epc.idmat[0]=epc.idmat[1] = m_nParts>m_pConstraints[i].ipart[0] ? GetMatId(m_parts[m_pConstraints[i].ipart[0]].pPhysGeom->pGeom->GetPrimitiveId(0,0x40),m_pConstraints[i].ipart[0]):0;
 			epc.idCollider = m_pConstraints[i].pent[1]->m_id;
 			epc.mass[0] = m_body.M;
 			epc.mass[1] = m_pConstraints[i].pent[1]->GetMass(m_pConstraints[i].ipart[1]);
