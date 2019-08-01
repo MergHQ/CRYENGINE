@@ -231,6 +231,9 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 		m_graphicsPipelines.clear();
 		m_renderToTexturePipelineKey = SGraphicsPipelineKey::InvalidGraphicsPipelineKey;
 
+		if (nFlags == FRR_SHUTDOWN)
+			CRenderMesh::ShutDown();
+
 #if defined(FEATURE_SVO_GI)
 		// TODO: GraphicsPipeline-Stage shutdown with ShutDown()
 		if (auto pSvoRenderer = CSvoRenderer::GetInstance(false))

@@ -4505,11 +4505,6 @@ void CRenderMesh::ShutDown()
 {
 	if (CRenderer::CV_r_releaseallresourcesonexit)
 	{
-		if (gRenDev->m_pRT)
-		{
-			Tick(MAX_RELEASED_MESH_FRAMES);
-		}
-
 		AUTO_LOCK(m_sLinkLock);
 		while (&CRenderMesh::s_MeshList != CRenderMesh::s_MeshList.prev)
 		{
@@ -4521,6 +4516,11 @@ void CRenderMesh::ShutDown()
 				iLog->Log("Warning: CRenderMesh::ShutDown: RenderMesh leak %s: %0.3fMb", pRM->m_sSource.c_str(), fSize);
 			}
 			SAFE_RELEASE_FORCE(pRM);
+		}
+
+		if (gRenDev->m_pRT)
+		{
+			Tick(MAX_RELEASED_MESH_FRAMES);
 		}
 	}
 

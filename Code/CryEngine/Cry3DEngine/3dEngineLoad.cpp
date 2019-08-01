@@ -9,6 +9,7 @@
 #include "ClipVolumeManager.h"
 #include "DecalManager.h"
 #include "FogVolumeRenderNode.h"
+#include "GeomCacheManager.h"
 #include "IndexedMesh.h"
 #include "LightEntity.h"
 #include "MatMan.h"
@@ -366,6 +367,13 @@ void C3DEngine::UnloadLevel()
 
 #if defined(FEATURE_SVO_GI)
 	CSvoManager::Release();
+#endif
+
+#if defined(USE_GEOM_CACHES)
+	if (m_pGeomCacheManager)
+	{
+		m_pGeomCacheManager->Reset();
+	}
 #endif
 
 	m_visibleNodesManager.ClearAll();
