@@ -26,6 +26,7 @@ class CAssetDragDropLineEdit : public QLineEdit
 
 public:
 	CAssetDragDropLineEdit();
+	~CAssetDragDropLineEdit();
 	void SetResourceSelector(const SStaticResourceSelectorEntry* pSelector) { m_pSelector = pSelector; }
 	//! Sent when a valid asset is dropped
 	CCrySignal<void(CAsset&)> signalValidAssetDropped;

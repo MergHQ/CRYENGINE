@@ -87,6 +87,12 @@ CAssetDragDropLineEdit::CAssetDragDropLineEdit()
 	CDragDropData::signalDragEnd.Connect(this, &CAssetDragDropLineEdit::DragDropEnd);
 }
 
+CAssetDragDropLineEdit::~CAssetDragDropLineEdit()
+{
+	CDragDropData::signalDragStart.DisconnectObject(this);
+	CDragDropData::signalDragEnd.DisconnectObject(this);
+}
+
 void CAssetDragDropLineEdit::dragEnterEvent(QDragEnterEvent* pEvent)
 {
 
@@ -144,7 +150,11 @@ void CAssetDragDropLineEdit::dragLeaveEvent(QDragLeaveEvent* pEvent)
 
 void CAssetDragDropLineEdit::DragDropStart(QMimeData* pMimeData)
 {
-	if (Private_ResourcePickers::GetValidAssetForSelector(*(qobject_cast<CDragDropData*>(pMimeData)), m_pSelector))
+	CDragDropData* pDragDropData = qobject_cast<CDragDropData*>(pMimeData);
+	if (!pDragDropData)
+		return;
+
+	if (Private_ResourcePickers::GetValidAssetForSelector(*pDragDropData, m_pSelector))
 	{
 		setProperty(Private_ResourcePickers::s_dragStateName, "valid");
 		style()->unpolish(this);
