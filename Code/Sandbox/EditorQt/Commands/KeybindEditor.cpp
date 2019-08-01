@@ -100,14 +100,80 @@ void PySetKeybind(const char* command, const char* shortcut)
 	}
 }
 
+void SetKeyBindFor(const char* szCommand, const QVariant& shortCutState)
+{
+	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
+
+	QCommandAction* pAction = pCommandManager->GetCommandAction(szCommand);
+	if (pAction)
+	{
+		if (!shortCutState.isValid())
+			return;
+
+		QStringList shortcutsAsString = shortCutState.toStringList();
+		QList<QKeySequence> shortcutsAsKeySequence;
+
+		for (const QString& shortcutString : shortcutsAsString)
+		{
+			shortcutsAsKeySequence.push_back(QKeySequence(shortcutString, QKeySequence::PortableText));
+		}
+		pAction->setShortcuts(shortcutsAsKeySequence);
+	}
+}
+
+void ResetKeyBindFor(const char* szCommand)
+{
+	QVariant keyBindsState = UserDataUtil::Load(szKeybindsPath, UserDataUtil::LoadType::EngineDefaults);
+	if (!keyBindsState.isValid() || keyBindsState.type() != QVariant::Map)
+		return;
+
+	QVariantMap varMap = keyBindsState.value<QVariantMap>();
+	QVariant commandState = varMap[szCommand];
+
+	if (!commandState.isValid() || keyBindsState.type() != QVariant::Map)
+		return;
+
+	QVariantMap commandData = commandState.toMap();
+	SetKeyBindFor(szCommand, commandData.value("shortcuts"));
+
+	//Notify change
+	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
+	pCommandManager->signalChanged();
+}
+
+void SetKeyBinds(const QVariant& keybindState)
+{
+	if (!keybindState.isValid() || keybindState.type() != QVariant::Map)
+		return;
+
+	QVariantMap varMap = keybindState.value<QVariantMap>();
+
+	for (auto it = varMap.begin(); it != varMap.end(); ++it)
+	{
+		QVariantMap commandData = it.value().toMap();
+		string command = QtUtil::ToString(it.key());
+		SetKeyBindFor(command.c_str(), commandData.value("shortcuts"));
+	}
+
+	//Notify change
+	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
+	pCommandManager->signalChanged();
+}
+
 void PyResetAllKeybinds()
 {
+	// Reset to hard-coded value
 	GetIEditorImpl()->GetCommandManager()->ResetAllShortcuts();
+	// Try to overload keybind shortcut with engine default if it exists
+	SetKeyBinds(UserDataUtil::Load(szKeybindsPath, UserDataUtil::LoadType::EngineDefaults));
 }
 
 void PyResetKeybind(const char* command)
 {
+	// Reset to hard-coded value
 	GetIEditorImpl()->GetCommandManager()->ResetShortcut(command);
+	// Try to overload keybind shortcut with engine default if it exists
+	ResetKeyBindFor(command);
 }
 
 void PyAddCustomCommand(const char* uiName = nullptr, const char* command = nullptr, const char* shortcut = nullptr)
@@ -998,12 +1064,12 @@ std::vector<string> CKeybindEditor::GetKeyBindDirectories(const char* szRelative
 {
 	std::vector<string> result;
 
-	string editorToolbarPath = PathUtil::Make("Editor", szRelativePath);
+	string editorKeybindsPath = PathUtil::Make("Editor", szRelativePath);
 
 	// Engine defaults
-	result.push_back(PathUtil::Make(PathUtil::GetEnginePath().c_str(), editorToolbarPath));
+	result.push_back(PathUtil::Make(PathUtil::GetEnginePath().c_str(), editorKeybindsPath));
 	// Game project specific tool-bars
-	result.push_back(PathUtil::Make(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute(), editorToolbarPath));
+	result.push_back(PathUtil::Make(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute(), editorKeybindsPath));
 	// User tool-bars
 	result.push_back(UserDataUtil::GetUserPath(szRelativePath));
 
