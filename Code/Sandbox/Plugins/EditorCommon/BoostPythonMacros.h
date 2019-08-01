@@ -68,12 +68,25 @@ namespace Private_CryPython
 	EDITOR_COMMON_API void RegisterSandboxPythonSubModule(const char* szModuleName);
 	EDITOR_COMMON_API void RegisterSandboxPythonCommand(const char* szModuleName, const char* szFunctionName, const char* szDescription, const char* szExample, std::function<void()> regFunction);
 
-	template<class Fn>
-	inline std::function<void()> CreateExposedCppFunction(const char* szFunctionName, Fn functionPtr, const char* szDescription)
+	//T2 can be either:
+	// 1. const char* szDescription
+	// 2. boost::python overloaded object
+	template<typename Fn, typename T2>
+	inline std::function<void()> CreateExposedCppFunction(const char* szFunctionName, const char* szModuleName, Fn functionPtr, T2 extraParam)
 	{
 		auto func = [=]() 
 		{
-			boost::python::def(szFunctionName, functionPtr, szDescription);
+			namespace bp = boost::python;
+			bp::docstring_options local_docstring_options(true, true, false);
+			bp::object mainModule = bp::import("__main__");
+			bp::scope mainScope = mainModule;
+			
+			const string submoduleName = string("sandbox.") + szModuleName;
+			bp::object currentModule(bp::handle<>(bp::borrowed(PyImport_AddModule(submoduleName.c_str()))));
+			CRY_ASSERT(!PyErr_Occurred());
+			
+			bp::scope submoduleScope = currentModule;
+			boost::python::def(szFunctionName, functionPtr, extraParam);
 		};
 		return std::function<void()>(func);
 	}
@@ -91,20 +104,20 @@ namespace Private_CryPython
 		CAutoRegisterPythonCommandHelper g_AutoRegPythonCmdHelper ## moduleName ## functionName([]()    						                        \
 			{	                                                                                                                                        \
 				/* Expose a function from current process to Python*/                                                                                   \
-				auto exposedCppFunctionToPythonScope = ::Private_CryPython::CreateExposedCppFunction(#functionName, functionPtr, #description);         \
-				::Private_CryPython::RegisterSandboxPythonCommand(#moduleName, #functionName, #description, #example, exposedCppFunctionToPythonScope); \
+				auto exposedCppFunctionToPython = ::Private_CryPython::CreateExposedCppFunction(#functionName, #moduleName, functionPtr, #description); \
+				::Private_CryPython::RegisterSandboxPythonCommand(#moduleName, #functionName, #description, #example, exposedCppFunctionToPython);      \
 			});                                                                                                                                         \
 	}
 
-#define REGISTER_PYTHON_OVERLOAD_COMMAND(functionPtr, moduleName, functionName, functionOverload, description, example)                                         \
-	namespace Private_CryPython                                                                                                                                 \
-	{                                                                                                                                                           \
-		CAutoRegisterPythonCommandHelper g_AutoRegPythonCmdHelper ## moduleName ## functionName([]()    						                                \
-			{	                                                                                                                                                \
-				/* Expose a function from current process to Python*/                                                                                           \
-				auto exposedOverloadCppFunctionToPythonScope = []() { boost::python::def(# functionName, functionPtr, functionOverload()); };                   \
-				::Private_CryPython::RegisterSandboxPythonCommand(#moduleName, #functionName, #description, #example, exposedOverloadCppFunctionToPythonScope); \
-			});                                                                                                                                                 \
+#define REGISTER_PYTHON_OVERLOAD_COMMAND(functionPtr, moduleName, functionName, functionOverload, description, example)                                       \
+	namespace Private_CryPython                                                                                                                               \
+	{                                                                                                                                                         \
+		CAutoRegisterPythonCommandHelper g_AutoRegPythonCmdHelper ## moduleName ## functionName([]()    						                              \
+			{	                                                                                                                                              \
+				/* Expose an overloaded function from current process to Python*/                                                                             \
+				auto exposedCppFunctionToPython = ::Private_CryPython::CreateExposedCppFunction(#functionName, #moduleName, functionPtr, functionOverload()); \
+				::Private_CryPython::RegisterSandboxPythonCommand(#moduleName, #functionName, #description, #example, exposedCppFunctionToPython);            \
+			});                                                                                                                                               \
 	}
 
 #define REGISTER_ONLY_PYTHON_COMMAND(functionPtr, moduleName, functionName, description) \
@@ -139,8 +152,17 @@ namespace Private_CryPython
 	CAutoRegisterPythonCommandHelper g_AutoRegPythonEnumHelper ## moduleName ## enumName(RegisterPythonEnum ## moduleName ## enumName); \
 	void DoRegisterPythonEnum ## moduleName ## enumName()                                                                               \
 	{                                                                                                                                   \
+		namespace bp = boost::python;                                                                                                   \
+		bp::docstring_options local_docstring_options(true, true, false);																\
+		bp::object mainModule = bp::import("__main__");																					\
+		bp::scope mainScope = mainModule;																								\
+																																		\
+		const string submoduleName = string("sandbox.") + #moduleName;																    \
+		bp::object currentModule(bp::handle<>(bp::borrowed(PyImport_AddModule(submoduleName.c_str()))));								\
+		CRY_ASSERT(!PyErr_Occurred());																									\
+																																		\
+		bp::scope submoduleScope = currentModule;																						\
 		boost::python::enum_<enumType>( # enumName)                                                                                     \
-
 
 #define REGISTER_PYTHON_ENUM_ITEM(item, name) .value( # name, item)
 

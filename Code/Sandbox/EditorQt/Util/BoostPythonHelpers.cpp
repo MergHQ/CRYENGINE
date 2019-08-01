@@ -2180,6 +2180,25 @@ PyMODINIT_FUNC PyInitRedirecting()
 	return pModule;
 }
 
+PyMODINIT_FUNC PyInitSandboxModule()
+{
+	static PyModuleDef moduledef = {
+		PyModuleDef_HEAD_INIT,
+		"sandbox", /* m_name */
+		nullptr,    /* m_doc */
+		-1,         /* m_size */
+		nullptr,    /* m_methods */
+		nullptr,    /* m_reload */
+		nullptr,    /* m_traverse */
+		nullptr,    /* m_clear */
+		nullptr,    /* m_free */
+	};
+
+	PyObject* pModule = PyModule_Create(&moduledef);
+	return pModule;
+}
+
+
 void SetStdOutCallback(TRedirectWriteFunc func)
 {
 	if (!s_pStdOut)
@@ -2609,6 +2628,7 @@ void InitializePython()
 	RegisterListener(s_pLogOutput);
 
 	PyImport_AppendInittab("redirectstdout", PyScript::PyInitRedirecting);
+	PyImport_AppendInittab("sandbox", PyScript::PyInitSandboxModule);
 
 	char szExecFilePath[_MAX_PATH];
 	CryGetExecutableFolder(CRY_ARRAY_COUNT(szExecFilePath), szExecFilePath);
@@ -2645,6 +2665,9 @@ void InitializePython()
 	InitSubmoduleSearchPath();
 
 	init_module_sandbox();
+
+	CAutoRegisterPythonCommandHelper::RegisterAll();
+	CAutoRegisterPythonModuleHelper::RegisterAll();
 }
 
 void ShutdownPython()

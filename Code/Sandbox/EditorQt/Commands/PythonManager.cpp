@@ -61,21 +61,10 @@ void CEditorPythonManager::RegisterPythonModule(const SPythonModule& module)
 		registeredModule = &m_pythonModules.back();
 	}
 
-	string submoduleName = registeredModule->m_name;
-	PyObject* pCurrModule = PyImport_AddModule(submoduleName.c_str());
-
-	boost::python::object currentModule(boost::python::handle<>(boost::python::borrowed(pCurrModule)));
-	boost::python::scope submoduleScope(currentModule);
-	CRY_ASSERT(!PyErr_Occurred());
 
 	for (SPythonCommand& cmd : registeredModule->m_commands)
 	{
 		cmd.m_registerFunc();
 	}
 
-	string importStatement;
-	// TODO for keeping back compatibility, doing auto import as "from sandbox import *". 
-	// But when we get rid of python calls inside sandbox we should remove the import completely.
-	importStatement.Format("from sandbox import %s", module.m_name);
-	PyRun_SimpleString(importStatement.c_str());
 }

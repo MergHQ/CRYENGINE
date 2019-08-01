@@ -63,8 +63,8 @@ inline void RegisterPlugin()
 	CAutoRegisterClassHelper::RegisterAll();
 	CAutoRegisterCommandHelper::RegisterAll();
 	CAutoRegisterUiCommandHelper::RegisterAll();
-	CAutoRegisterPythonModuleHelper::RegisterAll(); // Modules should be registered before python commands
 	CAutoRegisterPythonCommandHelper::RegisterAll();
+	CAutoRegisterPythonModuleHelper::RegisterAll();
 	CAutoRegisterPreferencesHelper::RegisterAll();
 	CAutoRegisterTrayAreaHelper::RegisterAll();
 	CAutoRegisterResourceSelector::RegisterAll();
