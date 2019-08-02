@@ -715,6 +715,15 @@ void CFormWidget::mousePressEvent(QMouseEvent* pEvent)
 		m_mouseDownPos = m_lastCursorPos;
 	}
 
+	const int splitterPos = GetSplitterPosition();
+	if (abs(pEvent->x() - splitterPos) <= 5)
+	{
+		m_pParentTree->SetDraggingSplitter(true);
+		grabMouse();
+		update();
+		return;
+	}
+
 	if (m_pActiveRow)
 	{
 		if (m_pActiveRow->m_pModel->HasVisibleChildren())
@@ -725,14 +734,6 @@ void CFormWidget::mousePressEvent(QMouseEvent* pEvent)
 				ToggleExpand(*m_pActiveRow);
 			}
 		}
-	}
-
-	const int splitterPos = GetSplitterPosition();
-	if (abs(pEvent->x() - splitterPos) <= 5)
-	{
-		m_pParentTree->SetDraggingSplitter(true);
-		grabMouse();
-		update();
 	}
 }
 
