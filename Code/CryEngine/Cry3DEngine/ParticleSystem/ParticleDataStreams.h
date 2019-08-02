@@ -17,8 +17,6 @@ struct TIOStream
 	: TVarArray<T>
 #endif
 {
-	typedef vector4_t<typename std::remove_const<T>::type> Tv;
-
 #ifdef CRY_PFX2_DEBUG
 	explicit TIOStream(T* pStream, uint count) : TVarArray<T>(pStream, count) {}
 	
@@ -36,11 +34,15 @@ struct TIOStream
 	void Fill(SUpdateRange range, T value);
 
 #ifdef CRY_PFX2_USE_SSE
+	using Tv = vector4_t<typename std::remove_const<T>::type>;
+
 	Tv   Load(TParticleGroupId pgId) const      { return (*this)[pgId]; }
 	void Store(TParticleGroupId pgId, Tv value) { (*this)[pgId] = value; }
 
 	Tv operator[](TParticleGroupId pgId) const  { return (const Tv&)(*this)[+pgId]; }
 	Tv& operator[](TParticleGroupId pgId)       { return (Tv&)(*this)[+pgId]; }
+#else
+	using Tv = T;
 #endif
 
 	T* Data()                                   { return m_aElems; }
@@ -57,17 +59,19 @@ protected:
 template<typename T>
 struct TIStream: public TIOStream<const T>
 {
-	typedef vector4_t<T> Tv;
-
 	explicit TIStream(const T* pStream, uint count, T defaultVal = T());
 	bool IsValid() const                       { return m_safeMask != 0; }
 	T SafeLoad(TParticleId pId) const          { return Base::operator[](pId & m_safeMask); }
 	T operator[](TParticleId pId) const        { return SafeLoad(pId); }
 
 #ifdef CRY_PFX2_USE_SSE
+	using Tv = vector4_t<T>;
+
 	Tv SafeLoad(TParticleGroupId pgId) const   { return Base::operator[](pgId & m_safeMask); }
 	Tv operator[](TParticleGroupId pgId) const { return SafeLoad(pgId); }
 	Tv SafeLoad(TParticleIdv pIdv) const;
+#else
+	using Tv = T;
 #endif
 
 private:

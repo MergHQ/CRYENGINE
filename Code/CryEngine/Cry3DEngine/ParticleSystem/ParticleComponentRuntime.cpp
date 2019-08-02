@@ -837,6 +837,7 @@ CRenderObject* CParticleComponentRuntime::GetRenderObject(uint threadId, ERender
 {
 	// Determine needed render flags from component params, render context, and cvars
 	auto allowedRenderFlags = CParticleManager::Instance()->GetRenderFlags();
+	allowedRenderFlags.Off &= ~FOB_POINT_SPRITE;
 	const SComponentParams& params = ComponentParams();
 	uint64 curRenderFlags = allowedRenderFlags & (params.m_renderObjectFlags | params.m_renderStateFlags | extraFlags);
 

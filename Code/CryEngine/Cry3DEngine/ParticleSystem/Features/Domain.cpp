@@ -17,7 +17,8 @@ bool Serialize(Serialization::IArchive& ar, EDomainField& value, cstr name, cstr
 	if (!EDomainField::count())
 	{
 		for (auto type : EParticleDataType::values())
-			if (type.info().isType<float>(1) && type != EPDT_NormalAge && type != EPDT_SpawnFraction && type != EPDT_InvLifeTime)
+			if (type.info().domain & EDD_Particle && type.info().isType<float>(1) 
+			&& type != EPDT_NormalAge && type != EPDT_SpawnFraction && type != EPDT_InvLifeTime)
 				EDomainField::container().add(type, type.name(), type.label());
 	}
 
