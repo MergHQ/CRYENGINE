@@ -203,7 +203,8 @@ enum ESystemConfigSpec
 
 	CONFIG_DURANGO       = 5, //! Xbox One (Potato)
 	CONFIG_DURANGO_X     = 6, //! Xbox One X
-	CONFIG_ORBIS         = 7,
+	CONFIG_ORBIS         = 7, //! PS4 (Potato)
+	CONFIG_ORBIS_NEO     = 9, //! PS4 Pro
 
 	//! Specialized detail config setting.
 	CONFIG_DETAIL_SPEC = 8,

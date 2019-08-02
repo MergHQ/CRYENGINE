@@ -650,24 +650,8 @@ static void OnSysSpecChange(ICVar* pVar)
 		pVar->Set(spec);
 	}
 
-#if CRY_PLATFORM_ORBIS
-	spec = CONFIG_ORBIS;
-#elif CRY_PLATFORM_DURANGO
-	switch (GetConsoleType())
-	{
-	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE: // Fallthrough
-	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE_S:
-		spec = CONFIG_DURANGO;
-		break;
-	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE_X: // Fallthrough
-	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE_X_DEVKIT:
-		spec = CONFIG_DURANGO_X;
-		break;
-	default:
-		CRY_ASSERT_MESSAGE(false, "Unknown Xbox type");
-		spec = CONFIG_DURANGO;
-		break;
-	}
+#if USE_FIXED_SYS_SPEC
+	spec = gEnv->pSystem->GetPlatformOS()->GetFixedSysSpec();
 #elif CRY_PLATFORM_MOBILE
 	spec = CONFIG_CUSTOM;
 	GetISystem()->LoadConfiguration("mobile.cfg", 0, eLoadConfigSystemSpec);
@@ -700,6 +684,11 @@ static void OnSysSpecChange(ICVar* pVar)
 		break;
 	case CONFIG_ORBIS:
 		GetISystem()->LoadConfiguration("config/orbis.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/orbis_non_neo.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		break;
+	case CONFIG_ORBIS_NEO:
+		GetISystem()->LoadConfiguration("config/orbis.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
+		GetISystem()->LoadConfiguration("config/orbis_neo.cfg", pSysSpecOverrideSinkConsole, eLoadConfigSystemSpec);
 		break;
 
 	default:

@@ -33,7 +33,8 @@ SERIALIZATION_DECLARE_ENUM(EParticleSpec,
 	VeryHigh = CONFIG_VERYHIGH_SPEC,
 	XBoxOne  = CONFIG_DURANGO,
 	XBoxOneX = CONFIG_DURANGO_X,
-	PS4      = CONFIG_ORBIS
+	PS4      = CONFIG_ORBIS,
+	PS4Neo   = CONFIG_ORBIS_NEO
 );
 
 //! Real-time params to control particle emitters.

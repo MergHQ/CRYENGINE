@@ -127,6 +127,10 @@ struct IPlatformOS
 {
 	virtual const char* GetPlatformName() const = 0;
 
+#if USE_FIXED_SYS_SPEC
+	virtual ESystemConfigSpec GetFixedSysSpec() const = 0;
+#endif
+
 	enum ECreateFlags : uint32
 	{
 		eCF_EarlyCorruptionDetected = BIT32(1)

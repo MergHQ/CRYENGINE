@@ -2344,6 +2344,9 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	case CONFIG_ORBIS:
 		AppendString(szFlagsEnd, "PS4Spec");
 		break;
+	case CONFIG_ORBIS_NEO:
+		AppendString(szFlagsEnd, "PS4ProSpec");
+		break;
 	default:
 		assert(0);
 	}

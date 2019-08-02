@@ -37,6 +37,10 @@ enum class EPlatform
 #endif
 };
 
+#if CRY_PLATFORM_CONSOLE
+	#define USE_FIXED_SYS_SPEC 1
+#endif
+
 // Alignment|InitializerList support.
 #if CRY_COMPILER_MSVC && (_MSC_VER >= 1800)
 	#define _ALLOW_INITIALIZER_LISTS

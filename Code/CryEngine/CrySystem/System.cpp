@@ -356,7 +356,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bGameFolderWritable = false;
 
 	m_nServerConfigSpec = CONFIG_VERYHIGH_SPEC;
-	m_nMaxConfigSpec = CONFIG_ORBIS;
+	m_nMaxConfigSpec = CONFIG_ORBIS_NEO;
 
 	//m_hPhysicsThread = INVALID_HANDLE_VALUE;
 	//m_hPhysicsActive = INVALID_HANDLE_VALUE;
