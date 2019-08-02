@@ -507,6 +507,13 @@ void CLevelExplorer::InitActions()
 	RegisterAction("level_explorer.show_all_objects", [this]() { SetModelType(Objects); });
 	RegisterAction("level_explorer.show_active_layer_contents", [this]() { SetModelType(ActiveLayer); });
 	
+	SetActionText("general.hide_children", "Hide Child Objects");
+	SetActionText("general.unhide_children", "Unhide Child Objects");
+	SetActionText("general.toggle_children_visibility", "Toggle Child Object Visibility");
+	SetActionText("general.lock_children", "Lock Child Objects");
+	SetActionText("general.unlock_children", "Unlock Child Objects");
+	SetActionText("general.toggle_children_locking", "Toggle Child Object Locking");
+
 	// Register path commands
 	RegisterAction("path_utils.copy_name", [this]()
 	{
@@ -1187,7 +1194,7 @@ bool CLevelExplorer::OnUnhideChildren()
 
 	for (CObjectLayer* pLayer : allLayers)
 	{
-		OnUnlockAllInLayer(pLayer);
+		OnUnhideAllInLayer(pLayer);
 	}
 
 	return true;
