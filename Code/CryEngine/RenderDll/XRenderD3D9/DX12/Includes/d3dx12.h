@@ -654,6 +654,7 @@ struct CD3DX12_RANGE : public D3D12_RANGE
 	}
 };
 
+#if NTDDI_WIN10_RS2 && (WDK_NTDDI_VERSION >= NTDDI_WIN10_RS2)
 //------------------------------------------------------------------------------------------------
 struct CD3DX12_RANGE_UINT64 : public D3D12_RANGE_UINT64
 {
@@ -698,6 +699,7 @@ struct CD3DX12_SUBRESOURCE_RANGE_UINT64 : public D3D12_SUBRESOURCE_RANGE_UINT64
 	}
 	operator const D3D12_SUBRESOURCE_RANGE_UINT64&() const { return *this; }
 };
+#endif
 
 //------------------------------------------------------------------------------------------------
 struct CD3DX12_SHADER_BYTECODE : public D3D12_SHADER_BYTECODE
