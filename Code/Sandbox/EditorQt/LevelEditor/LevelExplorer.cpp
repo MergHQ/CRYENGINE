@@ -1436,6 +1436,9 @@ void CLevelExplorer::UpdateCurrentIndex()
 	if (pSelection->GetCount())
 	{
 		QModelIndex index = FindObjectIndex(pSelection->GetObject(pSelection->GetCount() - 1));
+		// Early out if this is already the current index
+		if (index.row() == m_treeView->currentIndex().row())
+			return;
 
 		// Clear the current index in case that it hasn't changed, yet we still want to scroll to the currentIndex
 		m_treeView->selectionModel()->clearCurrentIndex();
