@@ -288,7 +288,7 @@ bool HavePhysics(const std::vector<CObjectLayer*>& layers)
 void TogglePhysics(std::vector<CObjectLayer*>& layers)
 {
 	bool havePhysics = HavePhysics(layers);
-	std::function<void(CObjectLayer*)> layerStateCallBack = [havePhysics](CObjectLayer* pLayer) { pLayer->SetDefaultLoaded(!havePhysics); };
+	std::function<void(CObjectLayer*)> layerStateCallBack = [havePhysics](CObjectLayer* pLayer){ pLayer->SetHavePhysics(!havePhysics); };
 	Private_LevelExplorerCommandHelper::SetState(layers, layerStateCallBack);
 }
 
