@@ -11,6 +11,7 @@
 
 class CBroadcastManager;
 class CEditor;
+class CLabel;
 class PopulateInspectorEvent;
 class QEvent;
 class QLabel;
@@ -93,7 +94,7 @@ private:
 
 	QPointer<CBroadcastManager> m_pBroadcastManager;
 	QToolButton*                m_pLockButton;
-	QLabel*                     m_pTitleLabel;
+	CLabel*                     m_pTitleLabel;
 	bool                        m_isLocked;
 	//!The layout we actually add a widget to
 	QVBoxLayout*                m_pWidgetLayout;

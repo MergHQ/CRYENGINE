@@ -1717,6 +1717,7 @@ CInspector QLabel {
 	font-size: 12px;
 	margin: 0px;
 	padding: 0px;
+	min-width: 250;
 }
 
 CKeybindEditor QTreeView QToolButton 

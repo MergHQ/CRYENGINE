@@ -138,3 +138,22 @@ protected:
 	int           m_elapsedTime; // In ms. Needed because QTimer doesn't track elapsed time
 	bool          m_bLoading;
 };
+
+//! Provides extended feature-set to QLabel like text elision
+class CLabel : public QLabel
+{
+public:
+	CLabel(QWidget* pParent = nullptr);
+	void SetText(const QString& text);
+	void SetTextElideMode(Qt::TextElideMode textElideMode);
+
+private:
+	virtual void resizeEvent(QResizeEvent* pEvent) override;
+	void         setText(const QString& text);
+
+	void         UpdatePresentation();
+
+private:
+	QString           m_text;
+	Qt::TextElideMode m_textElideMode;
+};

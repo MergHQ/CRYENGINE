@@ -232,3 +232,45 @@ void QLoading::paintEvent(QPaintEvent* pEvent)
 		p.drawPixmap(QRect(0, 0, pixMapSize, pixMapSize), m_doneImage);
 	}
 }
+
+CLabel::CLabel(QWidget* pParent)
+	: QLabel(pParent)
+	, m_textElideMode(Qt::ElideNone)
+{
+}
+
+void CLabel::resizeEvent(QResizeEvent* pEvent)
+{
+	QLabel::resizeEvent(pEvent);
+	UpdatePresentation();
+}
+
+void CLabel::SetTextElideMode(Qt::TextElideMode textElideMode)
+{
+	m_textElideMode = textElideMode;
+	if (m_textElideMode != Qt::ElideNone)
+	{
+		// Make sure to modify size policy when enabling elision
+		setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+	}
+	UpdatePresentation();
+}
+
+void CLabel::SetText(const QString& text)
+{
+	m_text = text;
+	UpdatePresentation();
+}
+
+void CLabel::UpdatePresentation()
+{
+	QString presentationText = m_text;
+	QFontMetrics metrics(font());
+	presentationText = metrics.elidedText(m_text, m_textElideMode, width());
+	setText(presentationText);
+}
+
+void CLabel::setText(const QString& text)
+{
+	QLabel::setText(text);
+}

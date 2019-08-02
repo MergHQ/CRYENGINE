@@ -6,6 +6,7 @@
 #include "EditorFramework/BroadcastManager.h"
 #include "EditorFramework/Editor.h"
 #include "EditorFramework/Events.h"
+#include "QControls.h"
 #include "QScrollableBox.h"
 #include "QtViewPane.h"
 #include "Serialization\QPropertyTree\PropertyTree.h"
@@ -47,18 +48,16 @@ CInspector::CInspector(CBroadcastManager* pBroadcastManager)
 void CInspector::Init()
 {
 	m_pLockButton = new QToolButton();
-	m_pTitleLabel = new QLabel();
+	m_pTitleLabel = new CLabel();
 	QFont font = m_pTitleLabel->font();
 	font.setBold(true);
 	m_pTitleLabel->setFont(font);
-
-	QWidget* pSpacer = new QWidget();
-	pSpacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	m_pTitleLabel->SetTextElideMode(Qt::ElideLeft);
 
 	CInspectorHeaderWidget* pHeader = new CInspectorHeaderWidget();
 	QHBoxLayout* pToolbarLayout = new QHBoxLayout(pHeader);
-	pToolbarLayout->addWidget(m_pTitleLabel);
-	pToolbarLayout->addWidget(pSpacer);
+	pToolbarLayout->addWidget(m_pTitleLabel, Qt::AlignLeft);
+	pToolbarLayout->addSpacerItem(new QSpacerItem(QSizePolicy::Expanding, QSizePolicy::Fixed));
 	pToolbarLayout->addWidget(m_pLockButton);
 
 	QVBoxLayout* pLayout = new QVBoxLayout();
@@ -115,7 +114,7 @@ void CInspector::OnPopulate(PopulateInspectorEvent& event)
 	event.GetCallback()(*this);
 
 	// Set the final title
-	m_pTitleLabel->setText(event.GetTitle());
+	m_pTitleLabel->SetText(event.GetTitle());
 
 	setUpdatesEnabled(true);
 }
