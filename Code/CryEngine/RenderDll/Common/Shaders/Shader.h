@@ -228,12 +228,14 @@ struct SFXParam
 	byte                m_eType;       // EParamType
 	int8                m_nCB;
 	short               m_nRegister[eHWSC_Num];
+	uint64              m_mask;
 	SFXParam()
 	{
 		m_nParameters = 0;
 		m_nComps = 0;
 		m_nCB = -1;
 		m_nFlags = 0;
+		m_mask = 0;
 		m_nRegister[0] = 10000;
 		m_nRegister[1] = 10000;
 		m_nRegister[2] = 10000;

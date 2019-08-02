@@ -789,6 +789,7 @@ struct SSFXParam
 	uint32 m_nsValues;      // Parameter values (after '=')
 	byte   m_eType;         // EParamType
 	int8   m_nCB;
+	uint64 m_mask;
 
 	//TODO, this struct will array will be bigger on PC, to support more shader types
 	short m_nRegister[3];  // VS, PS, GS

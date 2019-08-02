@@ -2798,6 +2798,13 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Par
 		}
 	}
 
+	for (int i = 0; i < AffectedParams.size(); i++)
+	{
+		SFXParam s = AffectedParams[i];
+	
+		nAffectMask |= s.m_mask;
+	}
+
 	if (CParserBin::m_bParseFX)
 	{
 		FXMacroBinItor itor;

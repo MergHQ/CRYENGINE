@@ -12,6 +12,7 @@
 #include <CryMemory/BucketAllocatorImpl.h>
 #include <CryCore/CryCrc32.h>
 #include <locale>
+#include <stack>
 
 const char* g_KeyTokens[eT_max];
 TArray<bool> sfxIFDef;
@@ -1526,6 +1527,9 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 	uint32 nT = 0;
 	const uint32* pTokens = &Tokens[0];
 	const uint32 nTSize = Tokens.size();
+
+	std::stack<uint32> firstTokenForMask;
+
 	while (nT < nTSize)
 	{
 		uint32 nToken = NextToken(pTokens, nT, nTSize - 1);
@@ -1643,6 +1647,8 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 				tokensBuffer.AddList((uint32*)pTokens + nS, nT - nS);
 
 				m_IfAffectMask.AddElem(nIfMask);
+
+				firstTokenForMask.push(tokensBuffer.size() - 1);
 			}
 			else
 			{
@@ -1663,6 +1669,8 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 				{
 					sfxIFDef.AddElem(true);
 				}
+
+				firstTokenForMask.push(tokensBuffer.size() - 1);
 			}
 			break;
 		case eT_elif:
@@ -1713,6 +1721,8 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 							m_IfAffectMask[nLevel] = nIfMask;
 						}
 					}
+					firstTokenForMask.pop();
+					firstTokenForMask.push(tokensBuffer.size()-1);
 				}
 			}
 			break;
@@ -1759,7 +1769,17 @@ bool CParserBin::PreprocessTokens(ShaderTokensVec& Tokens, int nPass, PodArray<u
 					InsertSkipTokens(pTokens, nT - 1, Tokens.size(), true, tokensBuffer);
 				sfxIFDef.Remove(nLevel);
 				sfxIFIgnore.Remove(nLevel);
+				uint32 firstToken = firstTokenForMask.top();
+				firstTokenForMask.pop();
+				uint64 combinedMask = 0;
+				for (uint64 mask : m_IfAffectMask)
+				{
+					combinedMask |= mask;
+				}
+				TokenMask tokenMask{ firstToken, (uint32)tokensBuffer.size() - 1, combinedMask };
 				m_IfAffectMask.Remove(nLevel);
+				m_tokenMasks.Add(tokenMask);
+
 			}
 			break;
 		case eT_warning:
@@ -1856,6 +1876,7 @@ bool CParserBin::Preprocess(int nPass, ShaderTokensVec& Tokens, const FXShaderTo
 	m_IfAffectMask.SetUse(0);
 	sfxIFDef.SetUse(0);
 	sfxIFIgnore.SetUse(0);
+	m_tokenMasks.clear();
 
 	m_Macros[nPass].clear();
 
@@ -2662,6 +2683,8 @@ void SFXParam::PostLoad(CParserBin& Parser, SParserFrame& Name, SParserFrame& An
 	uint32 nCur = Annotations.m_nFirstToken;
 	uint32 nLast = Annotations.m_nLastToken;
 	uint32* pTokens = &Parser.m_Tokens[0];
+	m_mask = Parser.GetTokenMask(nCur);
+
 	while (nCur <= nLast)
 	{
 		uint32 nTok = pTokens[nCur++];

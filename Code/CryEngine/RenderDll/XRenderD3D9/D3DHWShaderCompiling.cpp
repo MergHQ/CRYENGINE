@@ -3998,6 +3998,7 @@ bool SFXParam::Export(SShaderSerializeContext& SC)
 	PR.m_nCB = m_nCB;
 	PR.m_nComps = m_nComps;
 	PR.m_nFlags = m_nFlags;
+	PR.m_mask = m_mask;
 	PR.m_nParameters = m_nParameters;
 	PR.m_nRegister[0] = m_nRegister[0];
 	PR.m_nRegister[1] = m_nRegister[1];
@@ -4020,6 +4021,7 @@ bool SFXParam::Import(SShaderSerializeContext& SC, SSFXParam* pPR)
 	m_nCB = pPR->m_nCB;
 	m_nComps = pPR->m_nComps;
 	m_nFlags = pPR->m_nFlags;
+	m_mask = pPR->m_mask;
 	m_nParameters = pPR->m_nParameters;
 	m_nRegister[0] = pPR->m_nRegister[0];
 	m_nRegister[1] = pPR->m_nRegister[1];

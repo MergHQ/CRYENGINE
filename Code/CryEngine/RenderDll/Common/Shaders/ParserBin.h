@@ -734,6 +734,20 @@ class CParserBin;
 typedef std::map<uint32, SMacroBinFX> FXMacroBin;
 typedef FXMacroBin::iterator          FXMacroBinItor;
 
+struct TokenMask
+{
+	uint32 m_firstToken;
+	uint32 m_lastToken;
+	uint64 m_mask;
+
+	TokenMask(uint32 firstToken, uint32 lastToken, uint64 mask)
+	{
+		m_firstToken = firstToken;
+		m_lastToken = lastToken;
+		m_mask = mask;
+	}
+};
+
 struct SParserFrame
 {
 	uint32 m_nFirstToken;
@@ -832,6 +846,7 @@ class CParserBin
 	FXMacroBin m_Macros[3];
 	FXShaderToken m_TokenTable;
 	TArray<uint64> m_IfAffectMask;
+	TArray<TokenMask> m_tokenMasks;
 	//std::vector<std::vector<int>> m_KeyOffsets;
 	EToken m_eToken;
 	uint32 m_nFirstToken;
@@ -916,6 +931,18 @@ public:
 				continue;
 			}
 			return nToken;
+		}
+		return 0;
+	}
+
+	inline uint64 GetTokenMask(uint32 token)
+	{
+		for (TokenMask tokenMask : m_tokenMasks)
+		{
+			if (tokenMask.m_firstToken <= token && tokenMask.m_lastToken >= token)
+			{
+				return tokenMask.m_mask;
+			}
 		}
 		return 0;
 	}
