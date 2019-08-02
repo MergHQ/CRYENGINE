@@ -39,7 +39,11 @@ CRY_TEST_SUITE(EntityTestsSuit)
 			desc.SetLabel("Unified Entity Component");
 			desc.SetDescription("Does stuff");
 			desc.SetIcon("icons:ObjectTypes/light.ico");
-			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+			desc.SetComponentFlags({ IEntityComponent::EFlags::Transform,
+				IEntityComponent::EFlags::Socket,
+				IEntityComponent::EFlags::Attach,
+				IEntityComponent::EFlags::HiddenFromUser,
+				IEntityComponent::EFlags::HideFromInspector });
 
 			desc.AddMember(&CUnifiedEntityComponent::m_bMyBool, 'bool', "Bool", "Bool", "Bool desc", false);
 			desc.AddMember(&CUnifiedEntityComponent::m_myFloat, 'floa', "Float", "Float", "Float desc", 0.f);
@@ -246,6 +250,7 @@ CRY_TEST_SUITE(EntityTestsSuit)
 		{
 			desc.SetGUID("{8B80B6EA-3A85-48F0-89DC-EDE69E72BC08}"_cry_guid);
 			desc.SetLabel("CComponent2");
+			desc.SetComponentFlags({ IEntityComponent::EFlags::HiddenFromUser, IEntityComponent::EFlags::HideFromInspector});
 		}
 
 		virtual void Initialize() override
@@ -264,6 +269,7 @@ CRY_TEST_SUITE(EntityTestsSuit)
 			desc.SetGUID("{00235E09-55EC-46AD-A6C7-606EA4A40A6B}"_cry_guid);
 			desc.SetLabel("CComponent1");
 			desc.AddMember(&CComponent1::m_bLoadingFromDisk, 'load', "Loading", "Loading", "", false);
+			desc.SetComponentFlags({ IEntityComponent::EFlags::HiddenFromUser, IEntityComponent::EFlags::HideFromInspector});
 		}
 
 		virtual void Initialize() override
