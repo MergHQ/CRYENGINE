@@ -263,8 +263,6 @@ void CJob::Wait() const
 {
 	DEFINE_PROFILER_FUNCTION();
 
-	if (!m_jobState.IsRunning())
-		return;
 	// wait for task to finish
 	gEnv->GetJobManager()->WaitForJob(m_jobState);
 }
@@ -288,12 +286,6 @@ void CJob::Execute(bool bImmediate)
 
 	CRY_ASSERT(m_pCtx->slot >= 0);
 	queue.ExecuteForContext(m_pCtx->slot, CharacterInstanceProcessing::SExecuteJob());
-	queue.ExecuteForDirectChildrenWithoutStateChange(
-	  m_pCtx->slot, [bImmediate](CharacterInstanceProcessing::SContext& ctx)
-		{
-			ctx.pInstance->WaitForSkinningJob();
-			ctx.job.Begin(bImmediate);
-	  });
 }
 
 Memory::CPoolFrameLocal* s_pMemoryPool = NULL;

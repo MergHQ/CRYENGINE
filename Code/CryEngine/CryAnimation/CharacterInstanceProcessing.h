@@ -116,6 +116,17 @@ public:
 		}
 	}
 	template<class Function>
+	void ExecuteForContextAndAllChildrenRecursivelyWithoutStateChange(int parentIndex, Function f)
+	{
+		const int start = parentIndex;
+		const int end = start + m_contexts[parentIndex].numChildren + 1;
+		for (int i = start; i < end; ++i)
+		{
+			auto& ctx = m_contexts[i];
+			f(ctx);
+		}
+	}
+	template<class Function>
 	void ExecuteForContext(int index, Function f)
 	{
 		auto& ctx = m_contexts[index];

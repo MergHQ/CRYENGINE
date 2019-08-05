@@ -167,16 +167,21 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 
 	bool bImmediate = (Console::GetInst().ca_thread == 0);
 
-	if (ctx.state == CharacterInstanceProcessing::SContext::EState::StartAnimationProcessed)
-	{
-		WaitForSkinningJob();
-		ctx.job.Begin(bImmediate);
-	}
+	queue.ExecuteForContextAndAllChildrenRecursivelyWithoutStateChange(
+		m_processingContext, [bImmediate](CharacterInstanceProcessing::SContext& thisCtx)
+		{
+			if (thisCtx.state == CharacterInstanceProcessing::SContext::EState::StartAnimationProcessed)
+			{
+				thisCtx.pInstance->WaitForSkinningJob();
+				thisCtx.job.Begin(bImmediate);
+			}
 
-	if (bImmediate)
-	{
-		m_SkeletonAnim.FinishAnimationComputations();
-	}	
+			if (bImmediate)
+			{
+				thisCtx.pInstance->m_SkeletonAnim.FinishAnimationComputations();
+			}
+		}
+	);
 }
 
 //////////////////////////////////////////////////////////////////////////
