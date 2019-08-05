@@ -16,8 +16,6 @@
 #include "../System.h"
 #include "../CPUDetect.h"
 
-#include <3rdParty/concqueue/concqueue.hpp>
-
 namespace JobManager {
 namespace Detail {
 

@@ -13,16 +13,10 @@ namespace JobManager
 {
 namespace detail
 {
-// return results for AddJob
-enum EAddJobRes
-{
-	eAJR_Success,                       // success of adding job
-};
 
-//triple buffer frame stats
 enum
 {
-	eJOB_FRAME_STATS               = 3,
+	eJOB_FRAME_STATS               = 3, //triple buffer frame stats
 	eJOB_FRAME_STATS_MAX_SUPP_JOBS = 64
 };
 
@@ -86,7 +80,7 @@ struct SJobQueue
 	void Init();
 
 	//gets job slot for next job (to get storage index for SJobdata), waits until a job slots becomes available again since data get overwritten
-	JobManager::detail::EAddJobRes GetJobSlot(uint32& rJobSlot, uint32 nPriorityLevel);
+	bool GetJobSlot(uint32& rJobSlot, uint32 nPriorityLevel, bool bWaitForFreeJobSlot);
 
 	static uint32                  GetMaxWorkerQueueJobs(uint32 nPriorityLevel);
 	static const char*             PrioToString(uint32 nPriorityLevel);
@@ -100,7 +94,7 @@ typedef SJobQueue<JobManager::detail::cMaxWorkQueueJobs_BlockingBackEnd_HighPrio
 
 ///////////////////////////////////////////////////////////////////////////////
 template<int nMaxWorkQueueJobsHighPriority, int nMaxWorkQueueJobsRegularPriority, int nMaxWorkQueueJobsLowPriority, int nMaxWorkQueueJobsStreamPriority>
-inline JobManager::detail::EAddJobRes JobManager::SJobQueue<nMaxWorkQueueJobsHighPriority, nMaxWorkQueueJobsRegularPriority, nMaxWorkQueueJobsLowPriority, nMaxWorkQueueJobsStreamPriority >::GetJobSlot(uint32& rJobSlot, uint32 nPriorityLevel)
+inline bool JobManager::SJobQueue<nMaxWorkQueueJobsHighPriority, nMaxWorkQueueJobsRegularPriority, nMaxWorkQueueJobsLowPriority, nMaxWorkQueueJobsStreamPriority >::GetJobSlot(uint32& rJobSlot, uint32 nPriorityLevel, bool bWaitForFreeJobSlot)
 {
 	// verify assumation about queue size at compile time
 	STATIC_CHECK(IsPowerOfTwoCompileTime<eMaxWorkQueueJobsHighPriority>::IsPowerOfTwo, ERROR_MAX_JOB_QUEUE_SIZE__HIGH_PRIORITY_IS_NOT_POWER_OF_TWO);
@@ -144,6 +138,12 @@ inline JobManager::detail::EAddJobRes JobManager::SJobQueue<nMaxWorkQueueJobsHig
 		if (bWait)
 		{
 			CRY_ASSERT(false, "JobManager: Exceeded job queue size (%u) for priority level \"%s\"", nMaxWorkerQueueJobs, PrioToString(nPriorityLevel));
+
+			if (!bWaitForFreeJobSlot)
+			{
+				return false;
+			}
+
 			pPushInfoBlock->Wait(nRoundID, (1 << JobManager::SJobQueuePos::eBitsPerPriorityLevel) / nMaxWorkerQueueJobs);
 		}
 
@@ -155,7 +155,7 @@ inline JobManager::detail::EAddJobRes JobManager::SJobQueue<nMaxWorkQueueJobsHig
 	}
 	while (true);
 
-	return JobManager::detail::eAJR_Success;
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

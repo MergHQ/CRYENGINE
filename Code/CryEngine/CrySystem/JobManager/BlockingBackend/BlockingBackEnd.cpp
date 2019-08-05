@@ -13,6 +13,13 @@
 #include "../JobManager.h"
 #include "../../System.h"
 #include "../../CPUDetect.h"
+#include <3rdParty/concqueue/concqueue.hpp>
+
+namespace JobManager {
+	namespace BlockingBackEnd {
+		static UnboundMPSC<JobManager::SInfoBlock*> gFallbackInfoBlocks;
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::BlockingBackEnd::CBlockingBackEnd::CBlockingBackEnd(JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads) :
@@ -95,15 +102,16 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Acquire Infoblock to use
-	uint32 jobSlot;
-
-	m_JobQueue.GetJobSlot(jobSlot, nJobPriority);
+	uint32 jobSlot = ~0;
+	const bool bWaitForFreeJobSlot = (JobManager::IsWorkerThread() == false) && (JobManager::IsBlockingWorkerThread() == false);
+	const bool hasJobSlot = m_JobQueue.GetJobSlot(jobSlot, nJobPriority, bWaitForFreeJobSlot);
+	JobManager::SInfoBlock* pFallbackInfoBlock = hasJobSlot ? nullptr : new JobManager::SInfoBlock();
 
 #if !defined(_RELEASE)
 	CJobManager::Instance()->IncreaseRunJobs();
 #endif
 	// copy info block into job queue
-	JobManager::SInfoBlock& RESTRICT_REFERENCE rJobInfoBlock = m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot];
+	JobManager::SInfoBlock& rJobInfoBlock = pFallbackInfoBlock ? *pFallbackInfoBlock : m_JobQueue.jobInfoBlocks[nJobPriority][jobSlot];
 
 	// since we will use the whole InfoBlock, and it is aligned to 128 bytes, clear the cacheline, this is faster than a cachemiss on write
 	//STATIC_CHECK( sizeof(JobManager::SInfoBlock) == 512, ERROR_SIZE_OF_SINFOBLOCK_NOT_EQUALS_512 );
@@ -140,7 +148,14 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 
 	//CryLogAlways("Add Job to Slot 0x%x, priority 0x%x", jobSlot, nJobPriority );
 	MemoryBarrier();
-	m_JobQueue.jobInfoBlockStates[nJobPriority][jobSlot].SetReady();
+	IF_LIKELY(!pFallbackInfoBlock)
+	{
+		m_JobQueue.jobInfoBlockStates[nJobPriority][jobSlot].SetReady();
+	}
+	else
+	{
+		BlockingBackEnd::gFallbackInfoBlocks.enqueue(&rJobInfoBlock);
+	}
 
 	// Release semaphore count to signal the workers that work is available
 	m_Semaphore.Release();
@@ -181,34 +196,22 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		IF (m_bStop == true, 0)
 			break;
 
-		bool bFoundBlockingFallbackJob = false;
-
-		// handle fallbacks added by other worker threads
-		for (uint32 i = 0; i < m_nRegularWorkerThreads; ++i)
+		JobManager::SInfoBlock* pFallbackInfoBlock = nullptr;
+		IF_UNLIKELY (BlockingBackEnd::gFallbackInfoBlocks.dequeue(pFallbackInfoBlock))
 		{
-			if (m_pRegularWorkerFallbacks[i])
-			{
-				JobManager::SInfoBlock* pRegularWorkerFallback = NULL;
-				do
-				{
-					pRegularWorkerFallback = const_cast<JobManager::SInfoBlock*>(*(const_cast<volatile JobManager::SInfoBlock**>(&m_pRegularWorkerFallbacks[i])));
-				}
-				while (CryInterlockedCompareExchangePointer(alias_cast<void* volatile*>(&m_pRegularWorkerFallbacks[i]), pRegularWorkerFallback->pNext, alias_cast<void*>(pRegularWorkerFallback)) != pRegularWorkerFallback);
+			//CRY_PROFILE_REGION(PROFILE_SYSTEM, "Get Job (Fallback)");
 
-				// in case of a fallback job, just get it from the global per thread list
-				pRegularWorkerFallback->AssignMembersTo(&infoBlock);
-				JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pRegularWorkerFallback->GetParamAddress());
+			// in case of a fallback job, just get it from the global per thread list
+			pFallbackInfoBlock->AssignMembersTo(&infoBlock);
+			JobManager::CJobManager::CopyJobParameter(infoBlock.paramSize << 4, infoBlock.GetParamAddress(), pFallbackInfoBlock->GetParamAddress());
 
-				// free temp info block again
-				delete pRegularWorkerFallback;
 
-				bFoundBlockingFallbackJob = true;
-				break;
-			}
+			// free temp info block
+			delete pFallbackInfoBlock;
+			pFallbackInfoBlock = nullptr;
 		}
-
 		// in case we didn't find a fallback, try the regular queue
-		if (bFoundBlockingFallbackJob == false)
+		else
 		{
 			///////////////////////////////////////////////////////////////////////////
 			// multiple steps to get a job of the queue
@@ -338,14 +341,3 @@ JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::~CBlockingBackEndWork
 
 }
 
-///////////////////////////////////////////////////////////////////////////////
-void JobManager::BlockingBackEnd::CBlockingBackEnd::AddBlockingFallbackJob(JobManager::SInfoBlock* pInfoBlock, uint32 nWorkerThreadID)
-{
-	volatile JobManager::SInfoBlock* pCurrentWorkerFallback = NULL;
-	do
-	{
-		pCurrentWorkerFallback = *(const_cast<volatile JobManager::SInfoBlock**>(&m_pRegularWorkerFallbacks[nWorkerThreadID]));
-		pInfoBlock->pNext = const_cast<JobManager::SInfoBlock*>(pCurrentWorkerFallback);
-	}
-	while (CryInterlockedCompareExchangePointer(alias_cast<void* volatile*>(&m_pRegularWorkerFallbacks[nWorkerThreadID]), pInfoBlock, alias_cast<void*>(pCurrentWorkerFallback)) != pCurrentWorkerFallback);
-}
