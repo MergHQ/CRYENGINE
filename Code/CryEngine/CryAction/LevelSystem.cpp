@@ -1399,9 +1399,12 @@ public:
 				pCustomActionManager->LoadLibraryActions(CUSTOM_ACTIONS_PATH);
 			}
 
-			if (gEnv->pGameFramework->GetIGameRulesSystem())
+			if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
 			{
-				gEnv->pGameFramework->GetIGameRulesSystem()->CreateGameRules(CCryAction::GetCryAction()->GetGameContext()->GetRequestedGameRules());
+				if (IGameRulesSystem* pGameRulesSystem = gEnv->pGameFramework->GetIGameRulesSystem())
+				{
+					pGameRulesSystem->CreateGameRules(pGameContext->GetRequestedGameRules());
+				}
 			}
 		}
 
