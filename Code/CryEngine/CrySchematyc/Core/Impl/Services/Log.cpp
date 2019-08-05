@@ -215,8 +215,14 @@ private:
 #endif
 			}
 
-			m_pFile = fxopen(m_fileName.c_str(), "wtc");
-			setvbuf(m_pFile, m_writeBuffer, _IOFBF, sizeof(m_writeBuffer));
+			if (m_pFile = fxopen(m_fileName.c_str(), "wtc"))
+			{
+				setvbuf(m_pFile, m_writeBuffer, _IOFBF, sizeof(m_writeBuffer));
+			}
+			else
+			{
+				CryWarning(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_WARNING, "Failed to write Schematyc log to disk!");
+			}
 
 			m_messagQueue.reserve(100);
 		}
