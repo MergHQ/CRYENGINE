@@ -212,6 +212,7 @@ public:
 	}
 
 	ICharacterInstance* GetCharacter() const { return m_pCachedCharacter; }
+	IActionController* GetActionController() const { return m_pActionController; }
 
 	// Loads character and mannequin data from disk
 	virtual void LoadFromDisk()
