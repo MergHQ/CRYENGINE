@@ -67,4 +67,9 @@ void CEditorPythonManager::RegisterPythonModule(const SPythonModule& module)
 		cmd.m_registerFunc();
 	}
 
+	// TODO for keeping back compatibility, doing auto import as "from sandbox import *". 
+	// But when we get rid of python calls inside sandbox we should remove the import completely.
+	string importStatement;
+	importStatement.Format("from sandbox import %s", module.m_name);
+	PyRun_SimpleString(importStatement.c_str());
 }
