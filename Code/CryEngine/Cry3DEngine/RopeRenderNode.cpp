@@ -1729,9 +1729,9 @@ void CRopeRenderNode::UpdateRenderMesh()
 				texSeg.data = (Vec2*)pSegMesh->GetUVPtr(texSeg.iStride, FSL_READ);
 				strided_pointer<SPipTangents> tngSeg;
 				tngSeg.data = (SPipTangents*)pSegMesh->GetTangentPtr(tngSeg.iStride, FSL_READ);
-				strided_pointer<byte> clr, clrSeg;
-				if (clrSeg.data = (byte*)pSegMesh->GetColorPtr(clrSeg.iStride, FSL_READ))
-					clr.data = (byte*)m_pRenderMesh->GetColorPtr(clr.iStride, FSL_VIDEO_CREATE);
+				strided_pointer<ColorB> clr, clrSeg;
+				if (clrSeg.data = (ColorB*)pSegMesh->GetColorPtr(clrSeg.iStride, FSL_READ))
+					clr.data = (ColorB*)m_pRenderMesh->GetColorPtr(clr.iStride, FSL_VIDEO_CREATE);
 				Vec3_tpl<vtx_idx>* idxSeg = (Vec3_tpl<vtx_idx>*)pSegMesh->GetIndexPtr(FSL_READ);
 				int nvtx = pSegMesh->GetVerticesCount(), ntris = pSegMesh->GetIndicesCount() / 3;
 				m_tmpIdx.resize(m_params.nNumSegments * ntris);
@@ -1785,7 +1785,9 @@ void CRopeRenderNode::UpdateRenderMesh()
 					{
 						const float r = m_params.fThickness * (1 + pt.x * kr);
 						vtx[i] = Vec3(pt.x, pt.y * r, pt.z * r);
-						qtng[i] = SMeshQTangents(qtang * sgnnz(qtang.w));
+						Quat qtang1 = qtang * sgnnz(qtang.w);
+						qtang1.w = max(1.0f / 32767, qtang1.w);
+						qtng[i] = SMeshQTangents(qtang1);
 						tex[i].set(j * kU, pt.x * kV);
 						int iseg = iz % 3;
 						skin[i].boneIds[1] = (skin[i].boneIds[0] = 1 + (iz / 3)) + 1 + ((iseg - (w[0] & 1)) >> 31) * 2;
