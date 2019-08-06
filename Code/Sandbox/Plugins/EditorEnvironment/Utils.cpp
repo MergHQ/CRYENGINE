@@ -149,10 +149,11 @@ void RestoreTreeState(const CEditor& editor, QPropertyTreeLegacy* pTree, const c
 	QString state;
 	GetIEditor()->GetPersonalizationManager()->GetProperty(editor.GetEditorName(), szPropertyName, state);
 
-	yasli::JSONIArchive ia;
-	if (ia.open(state.toStdString().c_str(), state.size()))
+	yasli::JSONIArchive archive;
+	const std::string stdState = state.toStdString();
+	if (archive.open(stdState.c_str(), stdState.size()))
 	{
-		ia(*pTree);
+		archive(*pTree);
 	}
 	else
 	{
