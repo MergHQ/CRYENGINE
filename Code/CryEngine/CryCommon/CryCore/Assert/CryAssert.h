@@ -20,8 +20,8 @@
 	//-----------------------------------------------------------------------------------------------------
 	// Use like this:
 	// CRY_ASSERT(expression);
-	// CRY_ASSERT_MESSAGE(expression,"Useful message");
-	// CRY_ASSERT_TRACE(expression,("This should never happen because parameter %d named %s is %f",iParameter,szParam,fValue));
+	// CRY_ASSERT(expression, "Useful message");
+	// CRY_ASSERT(expression, "This should never happen because parameter %d named %s is %f", iParameter, szParam, fValue);
 	//-----------------------------------------------------------------------------------------------------
 
 	#if defined(USE_CRY_ASSERT)
@@ -115,7 +115,7 @@
 
 		//! The code to insert when assert is used.
 		//! There should be no need to use this macro directly in your code.
-		//! Use CRY_ASSERT[_MESSAGE]  and CRY_VERIFY[_WITH_MESSAGE] instead.
+		//! Use CRY_ASSERT  and CRY_VERIFY instead.
 		#define CRY_ASSERT_MESSAGE_IMPL(condition, szCondition, file, line, ...) \
 			do                                                 \
 			{                                                  \
@@ -139,10 +139,12 @@
 				PREFAST_ASSUME(condition);                     \
 			} while (false)	
 
+		//! DEPRECATED You can use CRY_ASSERT() instead
 		#define CRY_ASSERT_MESSAGE(condition, ...) CRY_ASSERT_MESSAGE_IMPL(condition, # condition, __FILE__, __LINE__, ##__VA_ARGS__)
 
 		#define CRY_AUX_VA_ARGS(...)    __VA_ARGS__
 		#define CRY_AUX_STRIP_PARENS(X) X
+		//! DEPRECATED You can use CRY_ASSERT() instead
 		#define CRY_ASSERT_TRACE(condition, parenthese_message) \
 			CRY_ASSERT_MESSAGE(condition, CRY_AUX_STRIP_PARENS(CRY_AUX_VA_ARGS parenthese_message))
 
@@ -187,9 +189,8 @@
 	}
 
 	#define CRY_VERIFY(expr, ...)              Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, ##__VA_ARGS__)
-	#define CRY_VERIFY_WITH_MESSAGE(expr, ...) Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, ##__VA_ARGS__)
 
-	#define CRY_FUNCTION_NOT_IMPLEMENTED       CRY_ASSERT_MESSAGE(false, "Call to not implemented function: %s", __func__)
+	#define CRY_FUNCTION_NOT_IMPLEMENTED       CRY_ASSERT(false, "Call to not implemented function: %s", __func__)
 
 	//! This forces boost to use CRY_ASSERT, regardless of what it is defined as.
 	#define BOOST_ENABLE_ASSERT_HANDLER
@@ -208,7 +209,7 @@
 			};
 			::Cry::Assert::Detail::CryAssertHandler(assertData, assertCond, szMsg);
 	#else
-			CRY_ASSERT_TRACE(false, ("An assertion failed in boost: expr=%s, msg=%s, function=%s, file=%s, line=%d", szExpr, szMsg, szFunction, szFile, (int)line));
+			CRY_ASSERT(false, "An assertion failed in boost: expr=%s, msg=%s, function=%s, file=%s, line=%d", szExpr, szMsg, szFunction, szFile, (int)line);
 	#endif // USE_CRY_ASSERT
 		}
 

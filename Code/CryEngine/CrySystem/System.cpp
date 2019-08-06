@@ -395,7 +395,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	{
 		if (strstr(startupParams.szSystemCmdLine, profilerEntry.cmdLineArgument.c_str()) != nullptr)
 		{
-			if (CRY_VERIFY_WITH_MESSAGE(cmdLineProfilerChoice == nullptr, "You specified more than one profiler on the command line!"))
+			if (CRY_VERIFY(cmdLineProfilerChoice == nullptr, "You specified more than one profiler on the command line!"))
 				cmdLineProfilerChoice = &profilerEntry;
 		}
 	}

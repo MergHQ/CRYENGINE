@@ -48,7 +48,7 @@ static void DeadListValidate(const uint8* p, size_t sz, uint8 val)
 {
 	for (const uint8* pe = p + sz; p != pe; ++p)
 	{
-		if (!CRY_VERIFY_WITH_MESSAGE(*p == val, "Deadlist validation failed, there seems to have been a use after free"))
+		if (!CRY_VERIFY(*p == val, "Deadlist validation failed, there seems to have been a use after free"))
 		{
 			CryGetIMemReplay()->Stop();
 		}
