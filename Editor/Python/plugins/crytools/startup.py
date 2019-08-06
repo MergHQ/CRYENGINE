@@ -1,4 +1,3 @@
-import imp
 import os
 import sys
 
@@ -27,4 +26,10 @@ if not init_script:
 # Load init script if it has been found
 if init_script:
     print('Loading crytools from ' + os.path.dirname(init_script))
-    imp.load_source('sandbox_init_script', init_script)
+    if sys.version_info.major > 2:
+        from importlib.machinery import SourceFileLoader
+        module = SourceFileLoader('sandbox_init_script', init_script).load_module()
+    else:
+        import imp
+        module = imp.load_source('sandbox_init_script', init_script)
+    print('module loaded: %s' % module)
