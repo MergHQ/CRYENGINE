@@ -117,6 +117,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 	{
 		CRY_ASSERT(cacheLod >= 0 && cacheLod < MAX_GSM_CACHED_LODS_NUM);
 
+		pFr->bIncrementalUpdate = false;
 		pFr->pShadowCacheData->Reset(GetNextGenerationID());
 		pFr->RequestSamples(1);
 
@@ -141,6 +142,10 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 		const float arrWidthS[] = { 1.94f, 1.0f, 0.8f, 0.5f, 0.3f, 0.3f, 0.3f, 0.3f };
 		pFr->fWidthS = pFr->fWidthT = arrWidthS[nLod];
 		pFr->fBlurS = pFr->fBlurT = 0.0f;
+	}
+	else
+	{
+		pFr->bIncrementalUpdate = true;
 	}
 
 	// set up frustum planes for culling
@@ -195,8 +200,6 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 	{
 		jobLambda();
 	}
-
-	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && pFr->pShadowCacheData->mObjectsRendered != 0;
 }
 
 void ShadowCacheGenerator::InitHeightMapAOFrustum(ShadowMapFrustumPtr& pFr, int nLod, int nFirstStaticLod, const SRenderingPassInfo& passInfo)

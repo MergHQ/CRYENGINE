@@ -59,11 +59,9 @@ struct ShadowMapFrustum : public CMultiThreadRefCount
 			memset(mOctreePath, 0x0, sizeof(mOctreePath));
 			memset(mOctreePathNodeProcessed, 0x0, sizeof(mOctreePathNodeProcessed));
 			mGeneration = cacheGeneration;
-			mObjectsRendered = 0;
 			mTraverseOctreeJobState.Wait();
 		}
 		
-		uint32                           mObjectsRendered;
 		uint8                            mGeneration;
 
 		static const int                 MAX_TRAVERSAL_PATH_LENGTH = 32;
@@ -454,8 +452,6 @@ public:
 		{
 			CRY_ASSERT(nShadowCacheLod >= 0 && nShadowCacheLod < MAX_GSM_CACHED_LODS_NUM);
 			pNode->m_shadowCacheLastRendered[nShadowCacheLod] = isCached ? pShadowCacheData->mGeneration : 0;
-			// TODO: Number might not be right when called from multiple threads
-			pShadowCacheData->mObjectsRendered++;
 		}
 	}
 
