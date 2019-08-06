@@ -154,7 +154,7 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 			// Minimal clear
 			const ColorI nulls = { 0, 0, 0, 0 };
 
-#if (CRY_RENDERER_DIRECT3D >= 111)
+#if (CRY_RENDERER_DIRECT3D >= 111) && 0 // TODO: find and fix bug which reads out of cleared bounds
 			const UINT numRanges = 1;
 			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 1 };
 
