@@ -209,10 +209,6 @@ void IDebugCallStack::FatalError(const char* description)
 		CryMessageBox(description, "CryEngine Fatal Error", eMB_Error);
 	}
 #endif
-
-#if CRY_PLATFORM_WINDOWS || !defined(_RELEASE)
-	__debugbreak(); // We're intentionally stopping execution and crashing here.
-#endif
 }
 
 void IDebugCallStack::WriteLineToLog(const char* format, ...)

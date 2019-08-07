@@ -1136,11 +1136,11 @@ void CSystem::FatalError(const char* format, ...)
 	_flushall();
 	#endif
 
-	#if CRY_PLATFORM_ORBIS
-	_Exit(1);
-	#else
-	_exit(1);
+	#ifdef CRY_USE_CRASHRPT
+	// we don't want to catch the abort we're about to call
+	CCrashRpt::UninstallHandler();
 	#endif
+	std::abort();
 #endif
 }
 

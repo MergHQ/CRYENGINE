@@ -368,7 +368,6 @@ void CCrashRpt::FatalError()
 	ei.pexcptrs = NULL;
 	ei.bManual = TRUE;
 	crGenerateErrorReport(&ei);
-	_exit(1); // Immediate termination of process.
 }
 
 void CCrashRpt::ReInstallCrashRptHandler(ICVar*)
