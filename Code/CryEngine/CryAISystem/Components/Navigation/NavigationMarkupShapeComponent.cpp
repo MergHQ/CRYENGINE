@@ -12,7 +12,7 @@ void CAINavigationMarkupShapeComponent::SMarkupShapeProperties::ReflectType(Sche
 }
 void CAINavigationMarkupShapeComponent::SMarkupShapeProperties::Serialize(Serialization::IArchive& archive)
 {
-	archive(name, "name", "^Name");
+	archive(name, "name", "Name");
 	archive.doc("Name of the shape. Needs to be unique among all defined shapes.");
 
 	archive(position, "position", "Position");
@@ -53,6 +53,7 @@ public:
 
 void CAINavigationMarkupShapeComponent::ReflectType(Schematyc::CTypeDesc<CAINavigationMarkupShapeComponent>& desc)
 {
+	desc.AddBase<IEntityMarkupShapeComponent>();
 	desc.SetGUID(CAINavigationMarkupShapeComponent::IID());
 	desc.SetLabel("AI Navigation Markup Shape");
 	desc.SetDescription("Navigation Markup Shape Component");
@@ -72,7 +73,7 @@ void CAINavigationMarkupShapeComponent::Register(Schematyc::IEnvRegistrar& regis
 		{
 			// Functions
 			{
-				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAINavigationMarkupShapeComponent::SetAnnotationFlag, "299851E7-89E1-431B-A9E0-E085361F674D"_cry_guid, "SetAnnotationFlag");
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAINavigationMarkupShapeComponent::SetAnnotationFlagSchematyc, "299851E7-89E1-431B-A9E0-E085361F674D"_cry_guid, "SetAnnotationFlag");
 				pFunction->SetDescription("Enable or disable annotation flag for a given shape");
 				pFunction->BindInput(1, 'sn', "Shape Name", "Shape name");
 				pFunction->BindInput(2, 'flag', "Flag", "Flag to be changed");
@@ -80,7 +81,7 @@ void CAINavigationMarkupShapeComponent::Register(Schematyc::IEnvRegistrar& regis
 				componentScope.Register(pFunction);
 			}
 			{
-				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAINavigationMarkupShapeComponent::ToggleAnnotationFlags, "9E1F9DCE-58D4-4A11-B5B3-3D9D2578DDDE"_cry_guid, "ToggleAnnotationFlags");
+				auto pFunction = SCHEMATYC_MAKE_ENV_FUNCTION(&CAINavigationMarkupShapeComponent::ToggleAnnotationFlagsSchematyc, "9E1F9DCE-58D4-4A11-B5B3-3D9D2578DDDE"_cry_guid, "ToggleAnnotationFlags");
 				pFunction->SetDescription("Toggle selected annotation flags for a given shape.");
 				pFunction->BindInput(1, 'sn', "Shape Name", "Shape name");
 				pFunction->BindInput(2, 'fgmk', "Flags", "Flags to be switched", NavigationComponentHelpers::SAnnotationFlagsMask());
@@ -183,39 +184,38 @@ void CAINavigationMarkupShapeComponent::RegisterAndUpdateComponent()
 	UpdateVolumes();
 }
 
-void CAINavigationMarkupShapeComponent::ToggleAnnotationFlags(const Schematyc::CSharedString& shapeName, const NavigationComponentHelpers::SAnnotationFlagsMask& flags)
+void CAINavigationMarkupShapeComponent::SetAnnotationFlag(const char* szShapeName, const NavigationAreaFlagID& flagId, bool enableFlag)
 {
-	size_t index = 0;
-	for (size_t count = m_shapesProperties.shapes.size(); index < count; ++index)
-	{
-		if (m_shapesProperties.shapes[index].name == shapeName.c_str())
-			break;
-	}
-
-	if (index >= m_runtimeData.size())
-	{
-		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "NavigationMarkupShapes::SwitchAnnotationFlag, invalid shape name '%s'!", shapeName.c_str());
-		return;
-	}
-	
-	SRuntimeData& runtimeData = m_runtimeData[index];
-
-	runtimeData.m_currentAreaAnotation.SetFlags(runtimeData.m_currentAreaAnotation.GetFlags() ^ flags.mask);
-	gEnv->pAISystem->GetNavigationSystem()->SetAnnotationForMarkupTriangles(runtimeData.m_volumeId, runtimeData.m_currentAreaAnotation);
+	SetAnnotationFlagInternal(szShapeName, flagId, enableFlag);
 }
 
-void CAINavigationMarkupShapeComponent::SetAnnotationFlag(const Schematyc::CSharedString& shapeName, const NavigationAreaFlagID& flagId, bool bEnable)
+void CAINavigationMarkupShapeComponent::ToggleAnnotationFlags(const char* szShapeName, const MNM::AreaAnnotation annotationFlags)
+{
+	ToggleAnnotationFlagsInternal(szShapeName, annotationFlags.GetRawValue());
+}
+
+void CAINavigationMarkupShapeComponent::SetAnnotationFlagSchematyc(const Schematyc::CSharedString& shapeName, const NavigationAreaFlagID& flagId, bool enableFlag)
+{
+	SetAnnotationFlagInternal(shapeName.c_str(), flagId, enableFlag);
+}
+
+void CAINavigationMarkupShapeComponent::ToggleAnnotationFlagsSchematyc(const Schematyc::CSharedString& shapeName, const NavigationComponentHelpers::SAnnotationFlagsMask& flags)
+{
+	ToggleAnnotationFlagsInternal(shapeName.c_str(), flags.mask);
+}
+
+void CAINavigationMarkupShapeComponent::SetAnnotationFlagInternal(const char* szShapeName, const NavigationAreaFlagID& flagId, bool bEnable)
 {
 	size_t index = 0;
 	for (size_t count = m_shapesProperties.shapes.size(); index < count; ++index)
 	{
-		if (m_shapesProperties.shapes[index].name == shapeName.c_str())
+		if (m_shapesProperties.shapes[index].name == szShapeName)
 			break;
 	}
 
 	if (index >= m_runtimeData.size())
 	{
-		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "NavigationMarkupShapes::SetAnnotationFlag, invalid shape name '%s'!", shapeName.c_str());
+		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "NavigationMarkupShapes::SetAnnotationFlag, invalid shape name '%s'!", szShapeName);
 		return;
 	}
 
@@ -237,6 +237,27 @@ void CAINavigationMarkupShapeComponent::SetAnnotationFlag(const Schematyc::CShar
 	}
 	runtimeData.m_currentAreaAnotation.SetFlags(currentFlagMask);
 
+	gEnv->pAISystem->GetNavigationSystem()->SetAnnotationForMarkupTriangles(runtimeData.m_volumeId, runtimeData.m_currentAreaAnotation);
+}
+
+void CAINavigationMarkupShapeComponent::ToggleAnnotationFlagsInternal(const char* szShapeName, const MNM::AreaAnnotation::value_type flagsMask)
+{
+	size_t index = 0;
+	for (size_t count = m_shapesProperties.shapes.size(); index < count; ++index)
+	{
+		if (m_shapesProperties.shapes[index].name == szShapeName)
+			break;
+	}
+
+	if (index >= m_runtimeData.size())
+	{
+		CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "NavigationMarkupShapes::SwitchAnnotationFlag, invalid shape name '%s'!", szShapeName);
+		return;
+	}
+
+	SRuntimeData& runtimeData = m_runtimeData[index];
+
+	runtimeData.m_currentAreaAnotation.SetFlags(runtimeData.m_currentAreaAnotation.GetFlags() ^ flagsMask);
 	gEnv->pAISystem->GetNavigationSystem()->SetAnnotationForMarkupTriangles(runtimeData.m_volumeId, runtimeData.m_currentAreaAnotation);
 }
 

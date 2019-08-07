@@ -2,13 +2,15 @@
 
 #pragma once
 
-#include <CryEntitySystem/IEntityComponent.h>
+#include <CryAISystem/Components/IEntityMarkupShapeComponent.h>
 #include <CryAISystem/INavigationSystem.h>
 
 #include "Navigation/NavigationSystemSchematyc.h"
 
+#include <CrySerialization/SerializationUtils.h>
+
 class CAINavigationMarkupShapeComponent final 
-	: public IEntityComponent
+	: public IEntityMarkupShapeComponent
 	, public INavigationSystem::INavigationSystemListener
 {
 public:
@@ -25,6 +27,12 @@ public:
 	virtual void          ProcessEvent(const SEntityEvent& event) override;
 	virtual IEntityComponentPreviewer* GetPreviewer() override;
 	// ~IEntityComponent
+
+	// IEntityMarkupShapeComponent
+	virtual void SetAnnotationFlag(const char* szShapeName, const NavigationAreaFlagID& flagId, bool enableFlag) override;
+	virtual void ToggleAnnotationFlags(const char* szShapeName, const MNM::AreaAnnotation annotationFlags) override;
+	virtual void ResetAnotations() override;
+	// ~IEntityMarkupShapeComponent
 
 	// INavigationSystem::INavigationSystemListener
 	virtual void OnNavigationEvent(const INavigationSystem::ENavigationEvent event) override;
@@ -88,10 +96,11 @@ private:
 	void UpdateAnnotations();
 	void UpdateVolumes();
 
-	void SetAnnotationFlag(const Schematyc::CSharedString& shapeName, const NavigationAreaFlagID& flagId, bool bEnable);
+	void SetAnnotationFlagSchematyc(const Schematyc::CSharedString& shapeName, const NavigationAreaFlagID& flagId, bool bEnable);
+	void ToggleAnnotationFlagsSchematyc(const Schematyc::CSharedString& shapeName, const NavigationComponentHelpers::SAnnotationFlagsMask& flags);
 
-	void ToggleAnnotationFlags(const Schematyc::CSharedString& shapeName, const NavigationComponentHelpers::SAnnotationFlagsMask& flags);
-	void ResetAnotations();
+	void SetAnnotationFlagInternal(const char* szShapeName, const NavigationAreaFlagID& flagId, bool bEnable);
+	void ToggleAnnotationFlagsInternal(const char* szShapeName, const MNM::AreaAnnotation::value_type flagsMask);
 
 	SShapesArray m_shapesProperties;
 	bool m_isGeometryIgnoredInNavMesh = true;
@@ -101,5 +110,20 @@ private:
 
 inline bool Serialize(Serialization::IArchive& archive, CAINavigationMarkupShapeComponent::SShapesArray& value, const char* szName, const char* szLabel)
 {
-	return archive(value.shapes, szName, szLabel);
+	const bool result = archive(value.shapes, szName, szLabel);
+
+	if (archive.isEdit())
+	{
+		for (size_t i = 0, count = value.shapes.size(); i < count; ++i)
+		{
+			for (size_t j = i + 1; j < count; ++j)
+			{
+				if (value.shapes[i].name == value.shapes[j].name)
+				{
+					archive.error(value.shapes[i].name, SerializationUtils::Messages::ErrorDuplicatedValue("Name", value.shapes[i].name.GetStorage()));
+				}
+			}
+		}
+	}
+	return result;
 }

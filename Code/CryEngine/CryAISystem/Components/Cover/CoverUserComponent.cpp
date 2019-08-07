@@ -208,14 +208,14 @@ bool CEntityAICoverUserComponent::IsGameOrSimulation() const
 
 Cry::Entity::EventFlags CEntityAICoverUserComponent::GetEventMask() const
 { 
-	return ENTITY_EVENT_LEVEL_LOADED | ENTITY_EVENT_RESET;
+	return ENTITY_EVENT_RESET | ENTITY_EVENT_START_GAME;
 }
 
 void CEntityAICoverUserComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
-		case ENTITY_EVENT_LEVEL_LOADED:
+		case ENTITY_EVENT_START_GAME:
 		{
 			if (IsGameOrSimulation())
 			{
