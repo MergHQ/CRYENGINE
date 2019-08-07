@@ -174,7 +174,7 @@ struct STimeDemoFrame_2
 	}
 };
 
-template <int DESCRIPTION_LENGTH>
+template<int DESCRIPTION_LENGTH>
 struct SRecordedGameEvent
 {
 	uint32 gameEventType;
@@ -649,9 +649,7 @@ std::array<EEntityEvent, 8> g_recordedEntityEvents =
 		ENTITY_EVENT_DETACH,
 		ENTITY_EVENT_DETACH_THIS,
 		ENTITY_EVENT_ENABLE_PHYSICS,
-		ENTITY_EVENT_ENTER_SCRIPT_STATE
-	}
-};
+		ENTITY_EVENT_ENTER_SCRIPT_STATE } };
 
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::Record(bool bEnable)
@@ -742,15 +740,8 @@ void CTimeDemoRecorder::Play(bool bEnable)
 		// Try to load demo file.
 		string filename = PathUtil::Make(GetCurrentLevelPath(), s_timedemo_file->GetString(), "tmd");
 
-		// Put it back later!
-		Load(filename);
-
-		if (m_records.empty())
+		if (!Load(filename))
 		{
-			//Prevent the timedemo from exiting to the game menu if the file is not found.
-			m_bDemoEnded = true;
-			
-			m_bDemoFinished = true;
 			return;
 		}
 
@@ -1556,13 +1547,13 @@ void CTimeDemoRecorder::PostUpdate()
 				gEnv->pConsole->ExecuteString(szFinishCmd);
 			}
 		}
+		if (!m_bDemoEnded)
+		{
+			EndDemo();
+		}
 		if (m_demo_quit)
 		{
 			QuitGame();
-		}
-		else if (!m_bDemoEnded)
-		{
-			EndDemo();
 		}
 	}
 
@@ -1725,7 +1716,7 @@ bool CTimeDemoRecorder::PlayFrame()
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////
-	
+
 	if (IEntity* pPlayerEntity = gEnv->pGameFramework->GetClientEntity())
 	{
 		if (pPlayerEntity->GetParent() == 0)
@@ -2088,7 +2079,7 @@ void CTimeDemoRecorder::StopSession()
 		pClientActor->EnableTimeDemo(false);
 
 	gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
-	
+
 	// Revert the profiling CVARs
 	ICryProfilingSystem* pProfSystem = GetISystem()->GetProfilingSystem();
 	if (m_demo_profile)
@@ -2112,7 +2103,7 @@ void CTimeDemoRecorder::ResetSessionLoop()
 		case 1:
 			// Quick load at the begining of the playback, so we restore initial state as good as possible.
 			if (gEnv->pGameFramework)
-				gEnv->pGameFramework->LoadGame(GetInitSaveFileName());//, true, true);
+				gEnv->pGameFramework->LoadGame(GetInitSaveFileName()); //, true, true);
 
 			break;
 
@@ -2411,7 +2402,7 @@ void CTimeDemoRecorder::OnFrameEnd(TTime time, ILegacyProfiler* pProfSystem)
 			return;
 
 		const size_t peakCount = pPeaks->size();
-		for(size_t i = 0; i < peakCount; ++i)
+		for (size_t i = 0; i < peakCount; ++i)
 		{
 			const SPeakRecord& peak = (*pPeaks)[i];
 			if (peak.frame == frame) // do not log peaks repeatedly
@@ -2568,14 +2559,14 @@ void CTimeDemoRecorder::StartNextChainedLevel()
 			gEnv->pConsole->ExecuteString(szFinishCmd);
 		}
 	}
+	if (!m_bDemoEnded)
+	{
+		EndDemo();
+	}
 	if (m_demo_quit)
 	{
 		// If No more chained levels. quit.
 		QuitGame();
-	}
-	else if (!m_bDemoEnded)
-	{
-		EndDemo();
 	}
 }
 
@@ -2638,16 +2629,21 @@ void CTimeDemoRecorder::EndDemo()
 		CryGetIMemReplay()->Stop();
 #endif
 
-	CryLogAlways("Testing Successfully Finished, Quiting...");
+	CryLogAlways("Testing Successfully Finished");
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::QuitGame()
 {
-	CryLogAlways("Testing Successfully Finished, Quiting...");
-
-	m_bDemoFinished = true;
-	GetISystem()->Quit();
+	CryLogAlways("Quitting game after test has finished");
+	if (gEnv->IsEditor())
+	{
+		gEnv->pConsole->ExecuteString("ed_disable_game_mode");
+	}
+	else
+	{
+		GetISystem()->Quit();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
