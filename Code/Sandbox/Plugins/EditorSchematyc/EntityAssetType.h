@@ -15,7 +15,7 @@ public:
 
 	// CAssetType
 	virtual const char*   GetTypeName() const override       { return TypeName(); }
-	virtual const char*   GetUiTypeName() const override     { return QT_TR_NOOP("Schematyc Entity"); }
+	virtual const char*   GetUiTypeName() const override     { return QT_TR_NOOP("Schematyc Entity (Deprecated)"); }
 
 	virtual const char*   GetFileExtension() const override  { return "schematyc_ent"; }
 
